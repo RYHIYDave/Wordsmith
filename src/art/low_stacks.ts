@@ -5,6 +5,10 @@
 // needs the rows to maybe only be one block high, and there shouldn’t be any little doodad in the isles”. The main chat's
 // reading (its 15:05 to this chat): in the stacks the ROWS stand only one block high, low bookcases he sees over, so that the
 // aisles and who is in them are plain; the rooms' own walls stay as they are; the aisles' doodads are the main chat's.
+// Shown pictures and a film from the game (the stacks as they are and with the rows one block high; the knight walking an
+// aisle, round a row's end and back along the next), asked “Are the library's stacks right, with each row of shelves a low
+// bookcase one block high? When you're behind one, it fades around you like the walls do.”, his answer to the art chat by
+// 13:06 Pacific, 23 Oct: “Yes, send to main (Recommended)”.
 //
 // WHAT IT IS: each row of shelves a low bookcase as tall as a tile is wide (LOW_RISE, a block), a tile thick, as long as its row:
 // a skirting, two shelves of books on each long side (the room's walls' own books, bays and light: art/library.ts), a top board

@@ -1,0 +1,390 @@
+# (SCRATCH) The lines that drew floor 15's low stacks in the art chat's scratch copy of the main chat's exits (at 361e997), for the
+# pictures he said yes to. A GUIDE ONLY, not to apply as it is: LOW_SEEN and the 'low' bits were tried and left off (the low rows
+# are seen through as the walls are); the map-maker's lines are the main chat's to write its own way.
+diff --git a/src/game/act2/library.ts b/src/game/act2/library.ts
+index 92a603f..8986e9f 100644
+--- a/src/game/act2/library.ts
++++ b/src/game/act2/library.ts
+@@ -382,7 +382,8 @@ export function generate(depth: number, seed: number): Laid | null {
+       zones[ty * W + tx] = LB.Hall;
+     }
+   }
+-  for (const r of P.rooms) if (r.kind === 'stacks' || r.kind === 'sidestacks') shelve(rng, tiles, W, r.box, !!r.rowsX);
++  const shelvesMask = new Uint8Array(W * H);
++  for (const r of P.rooms) if (r.kind === 'stacks' || r.kind === 'sidestacks') shelve(rng, tiles, W, r.box, !!r.rowsX, shelvesMask);
+ 
+   // THE START, THE BOSS, THE WAY ON
+   const E = P.rooms[0].box;
+@@ -492,6 +493,7 @@ export function generate(depth: number, seed: number): Laid | null {
+     arrive: { ...start },
+     zones,
+     bells,
++    shelves: shelvesMask,
+   };
+   return { floor, land };
+ }
+@@ -502,7 +504,7 @@ export function generate(depth: number, seed: number): Laid | null {
+  * the room's ends (a cross aisle three wide there), broken by a cross aisle two wide through the middle of a long room, and
+  * now and then once more.
+  */
+-function shelve(rng: RNG, tiles: Uint8Array, W: number, b: Box, rowsX: boolean): void {
++function shelve(rng: RNG, tiles: Uint8Array, W: number, b: Box, rowsX: boolean, mask?: Uint8Array): void {
+   const across = rowsX ? b.h : b.w;
+   const along = rowsX ? b.w : b.h;
+   const a0 = rowsX ? b.x : b.y;
+@@ -521,6 +523,7 @@ function shelve(rng: RNG, tiles: Uint8Array, W: number, b: Box, rowsX: boolean):
+       const tx = rowsX ? a : c0 + k;
+       const ty = rowsX ? c0 + k : a;
+       tiles[ty * W + tx] = T_WALL;
++      if (mask) mask[ty * W + tx] = 1;
+     }
+   }
+ }
+@@ -746,6 +749,9 @@ export function dress(L: Level, depth: number, seed: number): LibraryDress | nul
+     const out: { tx: number; ty: number; face: 0 | 1 }[] = [];
+     for (let ty = r.y; ty < r.y + r.h; ty++) for (let tx = r.x; tx < r.x + r.w; tx++) {
+       if (!floorAt(tx, ty) || f.tiles[ty * W + tx] !== T_FLOOR) continue;
++      // (SCRATCH) no sconce on a low row of shelves
++      const shelf = (x: number, y: number): boolean => !!land.shelves && x >= 0 && y >= 0 && x < W && y < H && land.shelves[y * W + x] === 1;
++      if (shelf(tx, ty - 1) || shelf(tx - 1, ty)) continue;
+       if (wallAt(tx, ty - 1) && wallAt(tx - 1, ty - 1) && wallAt(tx + 1, ty - 1) && floorAt(tx - 1, ty) && floorAt(tx + 1, ty)) out.push({ tx, ty, face: 0 });
+       if (wallAt(tx - 1, ty) && wallAt(tx - 1, ty - 1) && wallAt(tx - 1, ty + 1) && floorAt(tx, ty - 1) && floorAt(tx, ty + 1)) out.push({ tx, ty, face: 1 });
+     }
+@@ -980,7 +986,7 @@ export function dress(L: Level, depth: number, seed: number): LibraryDress | nul
+     // open one spanning y (3), and the other way about (1); standing in the middle of the aisle's two tiles, open, walked through
+     const aisles: number[] = [];
+     for (let k = 0; k + 1 <= across - 1; k += 3) aisles.push(c0 + k);
+-    for (const c of rng.shuffle(aisles).slice(0, rng.int(0, 2))) {
++    for (const c of rng.shuffle(aisles).slice(0, 0)) {
+       const a = rng.chance(0.5) ? a0 + 3 : a0 + along - 4;
+       const [tx, ty] = at(a, c);
+       if (taken[ty * W + tx] || !floorAt(tx, ty)) continue;
+diff --git a/src/game/act2_types.ts b/src/game/act2_types.ts
+index bc59079..d70b6f4 100644
+--- a/src/game/act2_types.ts
++++ b/src/game/act2_types.ts
+@@ -44,6 +44,8 @@ export interface Act2Land {
+   yards?: [number, number, number, number][];
+   /** THE BELLS, where they are on this floor. */
+   bells?: BellsPlan;
++  /** (SCRATCH) THE GREAT LIBRARY: 1 for each tile of the stacks' shelves (art/low_stacks.ts). */
++  shelves?: Uint8Array;
+   /** (THE CAMP, game/camp.ts: the Gate Ward's ground as the city's people keep it, art/gateward.ts GateWardLand.swept) */
+   swept?: boolean;
+ }
+diff --git a/src/render/act2_walls.ts b/src/render/act2_walls.ts
+index 65914d7..99579b5 100644
+--- a/src/render/act2_walls.ts
++++ b/src/render/act2_walls.ts
+@@ -37,6 +37,8 @@ export function wallsThick(land: Land): number {
+ 
+ /** One bit of the walls standing whole, as the ground's pieces keep it: its depth (a tile's x + y, plus 1), where it is in the world's picture (picture pixels), and its picture. */
+ export interface WallBit {
++  /** (SCRATCH) a low row of the stacks (art/low_stacks.ts): not seen through */
++  low?: boolean;
+   d: number;
+   x0: number;
+   y0: number;
+diff --git a/src/render/outdoor.ts b/src/render/outdoor.ts
+index dc2b14d..cf59841 100644
+--- a/src/render/outdoor.ts
++++ b/src/render/outdoor.ts
+@@ -32,6 +32,8 @@ import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
+ import { LB_DEEP, greatLibraryLook } from '../art/library';
+ // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
+ import { nearOf, paintWithStanding, standingBits } from '../art/standing';
++import { LOW_STACKS, lowStacksFloor, paintLowStacks, rowsOf, withLowStacks } from '../art/low_stacks';
++import type { Rows } from '../art/low_stacks';
+ import { wallsThick } from './act2_walls';
+ import type { WallBit } from './act2_walls';
+ import { blobDist, laneDist, segDist } from '../game/act1_layout';
+@@ -141,11 +143,23 @@ function flowOf(pts: readonly [number, number][]): (x: number, y: number) => [nu
+  * houses as they are seen inside, their fronts cut down: art/gateward.ts gateWardPaintFloor, 'open'; the shells laid over
+  * them, faded as he goes in, are render's.)
+  */
++/** (SCRATCH) Whether the low rows are seen through round him as the walls are. */
++export const LOW_SEEN = true;
++/** (SCRATCH) THE GREAT LIBRARY's stacks one block high (art/low_stacks.ts): its rows, or null. */
++export function lowRowsOf(land: Land, floor: Floor): Rows | null {
++  return LOW_STACKS.on && land.kind === 'library' && land.shelves ? rowsOf(land.shelves, floor.w, floor.h) : null;
++}
++/** (SCRATCH) The walls standing whole with the low rows laid in. */
++export function withLow(rows: Rows | null, st: ReturnType<typeof paintWithStanding>['standing'], x0: number, y0: number, w: number, h: number): ReturnType<typeof paintWithStanding>['standing'] {
++  return rows ? withLowStacks(st, paintLowStacks(rows, x0, y0, w, h)) : st;
++}
+ export function landTerrain(land: Land, floor: Floor, fresh = false): Terrain {
+   if (land.kind === 'gateward') {
+     const gl = gateWardLand(land, floor, fresh);
+     return terrainOf(gateWardPaintFloor(gl, 'open'), gateWardLook(gl, 'open'));
+   }
++  const rows = lowRowsOf(land, floor);
++  if (rows) return terrainOf(lowStacksFloor(floor, rows), landLook(land, floor, fresh));
+   return terrainOf(floor, landLook(land, floor, fresh));
+ }
+ 
+@@ -185,7 +199,7 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
+     case 'housequiet':
+       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
+     case 'library':
+-      return greatLibraryLook({ floor, zone: zoneOf(land, W, H) });
++      return greatLibraryLook({ floor, zone: zoneOf(land, W, H), rows: lowRowsOf(land, floor) ?? undefined });
+     case 'quarry':
+       return QUARRY_LOOK;
+     case 'canyon':
+@@ -413,14 +427,16 @@ export class OutdoorGround {
+     const piece: Piece = { cvs, seen: this.frame };
+     // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, in bits)
+     if (both) {
+-      const bits = standingBits(both.standing);
++      const rows = this.land ? lowRowsOf(this.land, this.floor!) : null;
++      const bits: (ReturnType<typeof standingBits>[number] & { low?: boolean })[] = standingBits(LOW_SEEN ? withLow(rows, both.standing, i * PIECE, j * PIECE, PIECE, PIECE) : both.standing);
++      if (rows && !LOW_SEEN) for (const b of standingBits(paintLowStacks(rows, i * PIECE, j * PIECE, PIECE, PIECE))) bits.push({ ...b, low: true });
+       if (bits.length) {
+         piece.walls = bits.map((b) => {
+           const bc = document.createElement('canvas');
+           bc.width = b.w;
+           bc.height = b.h;
+           (bc.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0);
+-          return { d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc };
++          return { d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc, low: b.low };
+         });
+       }
+     }
+diff --git a/src/render/painter.ts b/src/render/painter.ts
+index 9adccc8..632c07d 100644
+--- a/src/render/painter.ts
++++ b/src/render/painter.ts
+@@ -39,7 +39,8 @@ import type { ClassId } from '../game/types';
+ import type { Terrain } from '../art/terrain';
+ import type { Land } from '../game/act1_layout';
+ import type { Floor } from '../game/types';
+-import { PIECE, gateWardLand, landTerrain } from './outdoor';
++import { LOW_SEEN, PIECE, gateWardLand, landTerrain, lowRowsOf, withLow } from './outdoor';
++import { paintLowStacks } from '../art/low_stacks';
+ // (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
+ import { shellMaker } from './act2_houses';
+ import { releaseSprite } from '../engine/px';
+@@ -91,6 +92,8 @@ type Ask =
+   | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
+ /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
+ interface WallBitMsg {
++  /** (SCRATCH) a low row of the stacks: not seen through */
++  low?: boolean;
+   d: number;
+   x0: number;
+   y0: number;
+@@ -750,7 +753,7 @@ export function paintWorkerMain(): void {
+   let seq = 0;
+   let going = false;
+   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
+-  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null } | null = null;
++  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows?: ReturnType<typeof lowRowsOf> } | null = null;
+   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
+ 
+   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
+@@ -877,10 +880,13 @@ export function paintWorkerMain(): void {
+           const bmp = cv.transferToImageBitmap();
+           const walls: WallBitMsg[] = [];
+           if (both) {
+-            for (const b of standingBits(both.standing)) {
++            const rows = ground.rows ?? null;
++            const bits: (ReturnType<typeof standingBits>[number] & { low?: boolean })[] = standingBits(LOW_SEEN ? withLow(rows, both.standing, a.i * PIECE, a.j * PIECE, PIECE, PIECE) : both.standing);
++            if (rows && !LOW_SEEN) for (const b of standingBits(paintLowStacks(rows, a.i * PIECE, a.j * PIECE, PIECE, PIECE))) bits.push({ ...b, low: true });
++            for (const b of bits) {
+               const bc = new OffscreenCanvas(b.w, b.h);
+               (bc.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0);
+-              walls.push({ d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc.transferToImageBitmap() });
++              walls.push({ d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc.transferToImageBitmap(), low: b.low });
+             }
+           }
+           scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls }, [bmp, ...walls.map((b) => b.img)]);
+@@ -920,7 +926,7 @@ export function paintWorkerMain(): void {
+         const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
+         const near = ask.walls > 0 ? nearOf(T, ask.walls) : null;
+         const stands = near ? (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
+-        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near };
++        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor) };
+       } catch (err) {
+         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
+       }
+diff --git a/src/render/render.ts b/src/render/render.ts
+index 5968485..072c274 100644
+--- a/src/render/render.ts
++++ b/src/render/render.ts
+@@ -3493,7 +3493,7 @@ export class Renderer {
+       const w = b.w / 2;
+       const hh = b.h / 2;
+       if (x > W || y > H || x + w < 0 || y + hh < 0) return;
+-      const holes = this.wallWindows.holesOf(key, b.d, x, y, w, hh, wins, t);
++      const holes = b.low ? null : this.wallWindows.holesOf(key, b.d, x, y, w, hh, wins, t);
+       this.stand(b.d, { img: b.img as HTMLCanvasElement, w, h: hh, ax: 0, ay: 0 }, x, y);
+       if (holes) this.stands[this.stands.length - 1].holes = holes;
+     });
+diff --git a/tools/scenarios/_stacks_film.mjs b/tools/scenarios/_stacks_film.mjs
+new file mode 100644
+index 0000000..cbc058c
+--- /dev/null
++++ b/tools/scenarios/_stacks_film.mjs
+@@ -0,0 +1,89 @@
++// (SCRATCH) FLOOR 15'S STACKS, A FILM: the knight walking along an aisle, round the row's end and back along the aisle behind it.
++// SEED, PICK (which row); the game slowed four times, a frame as often as the page gives one (their times in shots/<out>_times.json).
++import fs from 'node:fs';
++export default async function (page, snap) {
++  const seed = Number(process.env.SEED ?? 3);
++  const pick = Number(process.env.PICK ?? 0);
++  const info = await page.evaluate(([seed, pick]) => {
++    const D = window.__dbg;
++    D.saving(false);
++    D.run('warrior', seed);
++    D.seasoned(20);
++    D.god = true;
++    D.act2(true, 15);
++    const g = D.game();
++    const f = g.level.floor;
++    const at = (x, y) => (x >= 0 && y >= 0 && x < f.w && y < f.h ? f.tiles[y * f.w + x] : -1);
++    const FLOOR = 1;
++    const runs = [];
++    for (let y = 1; y < f.h - 1; y++) {
++      let x0 = -1;
++      for (let x = 0; x <= f.w; x++) {
++        const ok = x < f.w && at(x, y) !== FLOOR && at(x, y - 1) === FLOOR && at(x, y + 1) === FLOOR;
++        if (ok && x0 < 0) x0 = x;
++        if (!ok && x0 >= 0) { if (x - x0 >= 5) runs.push({ alongX: true, a0: x0, a1: x, c: y }); x0 = -1; }
++      }
++    }
++    for (let x = 1; x < f.w - 1; x++) {
++      let y0 = -1;
++      for (let y = 0; y <= f.h; y++) {
++        const ok = y < f.h && at(x, y) !== FLOOR && at(x - 1, y) === FLOOR && at(x + 1, y) === FLOOR;
++        if (ok && y0 < 0) y0 = y;
++        if (!ok && y0 >= 0) { if (y - y0 >= 5) runs.push({ alongX: false, a0: y0, a1: y, c: x }); y0 = -1; }
++      }
++    }
++    const inner = runs.filter((r) => runs.some((q) => q.alongX === r.alongX && q.c === r.c - 3 && q.a0 < r.a1 && q.a1 > r.a0));
++    inner.sort((p, q) => q.a1 - q.a0 - (p.a1 - p.a0));
++    const r = inner[Math.min(pick, inner.length - 1)] ?? runs[0];
++    window.__stacks = { r };
++    g.monsters.length = 0;
++    const P = (a, c) => (r.alongX ? [a, c] : [c, a]);
++    const [x, y] = P(r.a0 + 0.5, r.c + 1.5);
++    g.hero.x = x;
++    g.hero.y = y;
++    return { row: r };
++  }, [seed, pick]);
++  console.log('  stacks', JSON.stringify(info));
++  await page.waitForTimeout(6000);
++  const held = new Set();
++  const hold = async (want) => {
++    for (const k of [...held]) if (!want.includes(k)) { await page.keyboard.up(k); held.delete(k); }
++    for (const k of want) if (!held.has(k)) { await page.keyboard.down(k); held.add(k); }
++  };
++  const times = [];
++  let n = 0;
++  const frame = async () => {
++    times.push(await page.evaluate(() => window.__dbg.game().time));
++    await snap(`f${String(n++).padStart(4, '0')}`);
++  };
++  const walkTo = async (a, c, ms) => {
++    const end = Date.now() + ms;
++    while (Date.now() < end) {
++      await frame();
++      const h = await page.evaluate(([a, c]) => { const { r } = window.__stacks; const h = window.__dbg.game().hero; const [x, y] = r.alongX ? [a, c] : [c, a]; return { dx: x - h.x, dy: y - h.y }; }, [a, c]);
++      if (Math.hypot(h.dx, h.dy) < 0.3) { await hold([]); break; }
++      const sx = (h.dx - h.dy) * 2;
++      const sy = h.dx + h.dy;
++      const m = Math.hypot(sx, sy);
++      const want = [];
++      if (sx > 0.38 * m) want.push('KeyD');
++      if (sx < -0.38 * m) want.push('KeyA');
++      if (sy > 0.38 * m) want.push('KeyS');
++      if (sy < -0.38 * m) want.push('KeyW');
++      await hold(want);
++    }
++    await hold([]);
++    const h = await page.evaluate(() => { const h = window.__dbg.game().hero; return [h.x.toFixed(2), h.y.toFixed(2)]; });
++    console.log('  leg to', a, c, 'at', h.join(','), 'frames', n);
++  };
++  await page.evaluate(() => { window.__dbg.slowmo = 0.1; window.__dbg.fx.messages.length = 0; });
++  const r = info.row;
++  for (let k = 0; k < 6; k++) await frame();
++  await walkTo(r.a1 - 0.5, r.c + 1.5, 240000);
++  await walkTo(r.a1 + 1.5, r.c + 1.5, 90000);
++  await walkTo(r.a1 + 1.5, r.c - 1.5, 90000);
++  await walkTo(r.a0 + 0.5, r.c - 1.5, 240000);
++  for (let k = 0; k < 6; k++) await frame();
++  fs.writeFileSync(`${process.env.TIMES ?? 'times.json'}`, JSON.stringify(times));
++  await page.evaluate(() => { window.__dbg.slowmo = 1; });
++}
+diff --git a/tools/scenarios/_stacks_pics.mjs b/tools/scenarios/_stacks_pics.mjs
+new file mode 100644
+index 0000000..10b22b8
+--- /dev/null
++++ b/tools/scenarios/_stacks_pics.mjs
+@@ -0,0 +1,67 @@
++// (SCRATCH) FLOOR 15'S STACKS: the hero in an aisle before a row, and just behind one; SEED, PICK (which row), WAIT (ms).
++export default async function (page, snap) {
++  const seed = Number(process.env.SEED ?? 3);
++  const pick = Number(process.env.PICK ?? 0);
++  const wait = Number(process.env.WAIT ?? 5000);
++  const info = await page.evaluate(([seed, pick]) => {
++    const D = window.__dbg;
++    D.saving(false);
++    D.run('warrior', seed);
++    D.seasoned(20);
++    D.god = true;
++    D.act2(true, 15);
++    const g = D.game();
++    const f = g.level.floor;
++    const at = (x, y) => (x >= 0 && y >= 0 && x < f.w && y < f.h ? f.tiles[y * f.w + x] : -1);
++    const FLOOR = 1;
++    const WALL = at(0, 0);
++    // rows: runs of wall with floor both sides across them, five long or more
++    const runs = [];
++    for (let y = 1; y < f.h - 1; y++) {
++      let x0 = -1;
++      for (let x = 0; x <= f.w; x++) {
++        const ok = x < f.w && at(x, y) !== FLOOR && at(x, y - 1) === FLOOR && at(x, y + 1) === FLOOR;
++        if (ok && x0 < 0) x0 = x;
++        if (!ok && x0 >= 0) {
++          if (x - x0 >= 5) runs.push({ alongX: true, a0: x0, a1: x, c: y });
++          x0 = -1;
++        }
++      }
++    }
++    for (let x = 1; x < f.w - 1; x++) {
++      let y0 = -1;
++      for (let y = 0; y <= f.h; y++) {
++        const ok = y < f.h && at(x, y) !== FLOOR && at(x - 1, y) === FLOOR && at(x + 1, y) === FLOOR;
++        if (ok && y0 < 0) y0 = y;
++        if (!ok && y0 >= 0) {
++          if (y - y0 >= 5) runs.push({ alongX: false, a0: y0, a1: y, c: x });
++          y0 = -1;
++        }
++      }
++    }
++    // (one with another row two tiles behind it and floor before: a row inside the stacks)
++    const inner = runs.filter((r) => runs.some((q) => q.alongX === r.alongX && q.c === r.c - 3 && q.a0 < r.a1 && q.a1 > r.a0));
++    const r = inner[Math.min(pick, inner.length - 1)] ?? runs[0];
++    const mid = Math.floor((r.a0 + r.a1) / 2);
++    window.__stacks = { r, mid };
++    g.monsters.length = 0;
++    return { runs: runs.length, inner: inner.length, row: r, kind: g.level.land?.kind, shelves: !!g.level.land?.shelves };
++  }, [seed, pick]);
++  console.log('  stacks', JSON.stringify(info));
++  const place = async (name, ahead, side) => {
++    await page.evaluate(([ahead, side]) => {
++      const g = window.__dbg.game();
++      const { r, mid } = window.__stacks;
++      const a = mid + 0.5 + side;
++      const c = r.c + 0.5 + ahead;
++      g.hero.x = r.alongX ? a : c;
++      g.hero.y = r.alongX ? c : a;
++    }, [ahead, side]);
++    await page.waitForTimeout(wait);
++    await snap(name);
++  };
++  // in the aisle before the row (toward the eye), then just behind it, then in the aisle behind that
++  await place('front', 1.5, 0);
++  await place('behind', -1, 0);
++  await place('behind2', -2, -3);
++}

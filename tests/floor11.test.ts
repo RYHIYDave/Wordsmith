@@ -62,6 +62,7 @@ test('in the game only through its own (ACT 2, THE HUSH: render/act1_pieces.ts);
     }
     return out.join('/');
   };
+  own.add('art/low_stacks.ts'); // the stacks' rows one block high (mockup/low-stacks): Act 2's quiet colours
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor11|floor11_moments|act2_set|act2_kit|act2_quiet|gateward|crier|crier_moves|crier_shots|hushed|hushed_moves|hushed_watch|hushed_watch_moves|scribes|scribes_moves|scribe_shots|hounds|undercity|floor12|floor13|millrace|floor14|housequiet|floor15|floor15_moments|library|hub2)\.ts$/.test(f) || own.has(f)) continue;
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
