@@ -10,6 +10,9 @@ import { SPIKE, onHazard, slotMouth, spikeAt } from '../game/traps';
 import { WORD_IDS } from '../game/types';
 import { doorMiddle } from '../game/doors';
 import { topStep } from '../game/ways';
+// (the kinds' rules all at once first, as the game takes them: the Censor's own file, taken alone first, finds them
+// half made, they taking it in turn)
+import '../game/act1_rules/index';
 import { CENSOR, barsOf, inked, strikeFrom, underBar } from '../game/act1_rules/censor';
 
 export interface BotState {
