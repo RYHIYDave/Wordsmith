@@ -10,6 +10,7 @@ import { SPIKE, onHazard, slotMouth, spikeAt } from '../game/traps';
 import { WORD_IDS } from '../game/types';
 import { doorMiddle } from '../game/doors';
 import { topStep } from '../game/ways';
+import { CENSOR, barsOf, inked, strikeFrom, underBar } from '../game/act1_rules/censor';
 
 export interface BotState {
   flow: Uint16Array | null;
@@ -37,6 +38,13 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
   // (THE TRAPS, as a person soon learns them: it does that whether or not it steps out of attacks)
   minded(g, c);
   if (!st.dodge) return;
+  // (THE CENSOR'S INK, as a person soon learns it: out of the bars marked out where he stands, off a line about to run)
+  const ink = censorDodge(g);
+  if (ink) {
+    c.mx = ink.x;
+    c.my = ink.y;
+    return;
+  }
   // An attack is about to land where the hero stands: walk straight out of it.
   const h = g.hero;
   for (const z of g.zones) {
@@ -72,6 +80,65 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
     }
     return;
   }
+}
+
+/**
+ * (THE CENSOR, game/act1_rules/censor.ts) Where to step to be out of what of his is about to land where the hero stands: his
+ * bars marked out (out of each sideways, all of them at once), a line of ink about to run through him, his Strike-Through's
+ * aim; null if nothing is.
+ */
+function censorDodge(g: Game): { x: number; y: number } | null {
+  const h = g.hero;
+  let x = 0;
+  let y = 0;
+  const off = (ox: number, oy: number, ux: number, uy: number, reach: number): void => {
+    const along = (h.x - ox) * ux + (h.y - oy) * uy;
+    const across = (h.x - ox) * -uy + (h.y - oy) * ux;
+    if (along < -0.5 || along > reach + 0.5 || Math.abs(across) > 1.0) return;
+    const side = across >= 0 ? 1 : -1;
+    x += -uy * side;
+    y += ux * side;
+  };
+  for (const p of g.perils) {
+    if (p.kind !== 'act1' || !p.a1 || !p.a1.startsWith('censor:')) continue;
+    if (p.a1 === 'censor:bars' && !p.done && p.t > -CENSOR.redact.warn - 0.05) {
+      for (const b of barsOf(p)) {
+        if (!underBar(b, h.x, h.y, 0.95)) continue;
+        const v = b.along === 0 ? h.y - b.y : h.x - b.x;
+        const side = v >= 0 ? 1 : -1;
+        if (b.along === 0) y += side;
+        else x += side;
+      }
+    } else if ((p.a1 === 'censor:margin' || p.a1 === 'censor:line') && !p.done && p.t > -0.6) {
+      // (off a line until its head has run past: from where its head is now)
+      const head = Math.max(p.b, Math.min(p.a, p.b + CENSOR.strike.speed * Math.max(0, p.t)));
+      const r = (h.x - p.x) * p.fx + (h.y - p.y) * p.fy;
+      if (r >= head - 0.5) off(p.x, p.y, p.fx, p.fy, p.a);
+    }
+  }
+  for (const m of g.monsters) {
+    if (m.dead || !m.act || m.act.id !== 'censor:strike' || m.act.t > CENSOR.strike.hit + 0.1) continue;
+    const o = strikeFrom(m, m.act.hand);
+    off(o.x, o.y, m.fx, m.fy, m.act.a);
+  }
+  // (off his ink, laid to stay: to the nearest tile clear of it)
+  if (x === 0 && y === 0 && inked(g.level, h.x, h.y)) {
+    let best: { x: number; y: number } | null = null;
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        const tx = Math.floor(h.x) + dx + 0.5;
+        const ty = Math.floor(h.y) + dy + 0.5;
+        if (inked(g.level, tx, ty) || !g.free(g.level.walk, tx, ty, TUNE.heroRadius)) continue;
+        if (!best || Math.hypot(tx - h.x, ty - h.y) < Math.hypot(best.x - h.x, best.y - h.y)) best = { x: tx, y: ty };
+      }
+    }
+    if (best) {
+      x = best.x - h.x;
+      y = best.y - h.y;
+    }
+  }
+  const d = Math.hypot(x, y);
+  return d > 0.01 ? { x: x / d, y: y / d } : null;
 }
 
 function think(g: Game, c: Controls, st: BotState, dt: number): void {

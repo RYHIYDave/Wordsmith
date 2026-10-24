@@ -46,13 +46,28 @@
 // it (Land.zones, the library's LB_ZONE.Reading); else his open area (the stand-in floor: Land.areas' boss); else the floor
 // round where he stood (the practice room), each as far as it is joined to where he stood.
 //
+// THE INK FILLS THE FLOOR (CENSOR_FIGHT, below; his gameplay rulebook, "Fights": a boss's fight made long by what it
+// throws, not by more life). The owner's pick, 24 Oct 2026, by 06:48 (Pacific), “Floor 15's Censor”; his words to the main
+// chat at 06:49, “He’s not the act 2 boss, but he is the boss of the lower city so he does need to be something special”;
+// shown him made harder each of three phases (floor15_censor.mp4), by 08:42: “I don’t think he needs three phases.  Just
+// one phase is fine.  I like the ink spreading on the floor.  What is this boss’s thing?  What’s his story I don’t
+// remember”, and “I’d like the ink to fill the floor as you fight and you take damage if you stand on the ink spots. Does
+// that make sense?”. So: one phase, his life as it was. Bars of ink slam down round the hero all the while (a cross), and
+// now and then a line of ink run across the room through him from its walls; Strike-Through twice in a row; Redaction one
+// way, both ways at once (the squares between to stand in), and the page struck out line by line (every line of it marked
+// out first, each with its gap), by turns. AND WHAT HE LAYS STAYS: every bar and every line of ink lies on the floor where
+// it fell, and whoever stands on it is hurt; so the floor fills as the fight goes, the more the more of his life is gone
+// (from `fill.least` of his ground to `fill.most`), the oldest ink drying away when there is more than that. It takes the
+// place of the floor blacked out at half his life. As he dies, all of it dries away.
+//
 // Every number here that is a picture's is written down here; tests/act2_censor.test.ts holds it to the art.
 
 import { RNG } from '../../engine/rng';
 import { blobDist } from '../act1_layout';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { HUSH_FOR, MSG, TUNE } from '../defs';
-import { beside, fromFigure } from '../facing';
+import { beside, fromFigure, handOf } from '../facing';
+import type { Game } from '../game';
 import type { Level, Monster, Peril } from '../state';
 import { T_FLOOR } from '../types';
 import type { Act1Rules } from './types';
@@ -109,6 +124,37 @@ export const CENSOR = {
 
 /** His walk, painted for 0.8 tiles a second (CE_PACE; twelve frames at eight a second): stopped at any frame of it. */
 export const CENSOR_GAIT: GaitDef = { pace: 0.8, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 2.0, slack: 0.6, trueBack: true };
+
+/**
+ * THE INK FILLS THE FLOOR (see above). `on`: so; off, his fight as it was (the blacking out at half his life; what he lays
+ * dried away). One phase.
+ *   INK, all the while (not through his Redaction until its last bar has slammed, nor at a hero gone from his ground): every
+ *     `ink.every` seconds, a cross of two bars `ink.bar` tiles long through where the hero is heading (or stands), each
+ *     marked out as Redaction's are and struck with `ink.dmg` of his blow; every `ink.line`th time with it a line of ink run
+ *     across the room through where the hero stands from the wall behind him (marked `ink.warn` before, as Strike-Through's
+ *     aim), `ink.lineDmg`.
+ *   STRIKE-THROUGH, `row` in a row, one straight after another; the second where the hero is heading.
+ *   REDACTION by turns: its bars one way (as it was); both ways at once (the hatch: the squares between to stand in); the
+ *     page struck out (`page`): `n` lines across his room a tile apart, from his side of the hero to past him, every one
+ *     marked out at once, each with a gap `gap` tiles wide within `wander` of the hero, slammed one after another `apart`
+ *     seconds apart, each `long` tiles at most, its first as his brush comes down. Its cooldown `redactCd`; the Hush's
+ *     `hushCd`; his rests after a move `rest` of what they were.
+ *   WHAT HE LAYS STAYS (`fill`): every bar as it slams, every line of ink once its head has run out (his Strike-Through's
+ *     and the room's), lies on the floor, on the tiles it covers; whoever stands on such a tile is hurt every `tick` seconds,
+ *     `dmg` of his blow. As much of his ground may lie under it as `least` of it at his full life, to `most` as he comes to
+ *     his end; past that, the oldest of it dries away (in `dry` seconds) as more is laid.
+ */
+export const CENSOR_FIGHT = {
+  on: true,
+  ink: { every: 1.8, bar: 5, dmg: 0.8, line: 3, warn: 0.8, lineDmg: 1.0, lineLeast: 5 },
+  lead: { lead: 0.5, most: 2.2 },
+  row: 2,
+  page: { n: 9, apart: 0.3, long: 13, gap: 2, wander: 3 },
+  redactCd: 9,
+  hushCd: 15,
+  rest: 0.85,
+  fill: { least: 0.12, most: 0.52, tick: 0.5, dmg: 0.25, dry: 0.8 },
+};
 
 /** His four, his basic blow first and his biggest last (his rulebook: the bigger the hit, the longer the cooldown), and the blacking out, brought by the rules. */
 export const CENSOR_ACTS: readonly ActDef[] = [
@@ -182,6 +228,68 @@ export function redactBars(L: Level, cx: number, cy: number, along: 0 | 1, n: nu
     if (long < 1.5) continue;
     const mid = (hi - lo) / 2;
     out.push({ x: mx + ux * mid, y: my + uy * mid, along, long, wide: R.wide });
+  }
+  return out;
+}
+
+/**
+ * (CENSOR_FIGHT) A BAR through (x, y) along `along`, at most `long` tiles, over floor that can be walked on: from there each
+ * way as far as it goes (to `long` / 2 either side, or from `lo` to `hi` along it); null where it would be shorter than `least`.
+ */
+export function barThrough(L: Level, x: number, y: number, along: 0 | 1, long: number, least = 1.5, lo = -long / 2, hi = long / 2): Bar | null {
+  const f = L.floor;
+  const walk = (px: number, py: number): boolean => {
+    const tx = Math.floor(px);
+    const ty = Math.floor(py);
+    return tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && L.walk[ty * f.w + tx] === 1;
+  };
+  const ux = along === 0 ? 1 : 0;
+  const uy = along === 0 ? 0 : 1;
+  // (from the point of it nearest (x, y), each way)
+  const s0 = Math.max(lo, Math.min(hi, 0));
+  if (!walk(x + ux * s0, y + uy * s0)) return null;
+  let a = s0;
+  let b = s0;
+  for (let s = s0 + 0.25; s <= hi + 1e-6; s += 0.25) {
+    if (!walk(x + ux * s, y + uy * s)) break;
+    b = s;
+  }
+  for (let s = s0 - 0.25; s >= lo - 1e-6; s -= 0.25) {
+    if (!walk(x + ux * s, y + uy * s)) break;
+    a = s;
+  }
+  const len = b - a + 0.2;
+  if (len < least) return null;
+  const mid = (a + b) / 2;
+  return { x: x + ux * mid, y: y + uy * mid, along, long: len, wide: CENSOR.redact.wide };
+}
+
+/**
+ * (CENSOR_FIGHT) THE PAGE STRUCK OUT round the hero at (hx, hy), from his side (him at (mx, my)): `page.n` lines along
+ * `along`, a tile apart, the first on his side of the hero and the last past him; each `page.long` at most, cut where the
+ * floor is, a gap `page.gap` wide in it within `page.wander` of the hero (`pick`: a number 0 to 1 for each line's gap).
+ * Each line its bars (one either side of its gap), in the order they slam.
+ */
+export function pageLines(L: Level, hx: number, hy: number, mx: number, my: number, along: 0 | 1, pick: () => number): Bar[][] {
+  const P = CENSOR_FIGHT.page;
+  const cx = Math.floor(hx) + 0.5;
+  const cy = Math.floor(hy) + 0.5;
+  // (the lines march across the way they lie: from his side)
+  const toward = along === 0 ? Math.sign(hy - my) || 1 : Math.sign(hx - mx) || 1;
+  const K = (P.n - 1) / 2;
+  const out: Bar[][] = [];
+  for (let k = 0; k < P.n; k++) {
+    const off = (k - K) * toward;
+    const x = along === 0 ? cx : cx + off;
+    const y = along === 0 ? cy + off : cy;
+    // (the gap whole tiles: from the edge of one)
+    const g0 = Math.round((pick() * 2 - 1) * P.wander) - P.gap / 2 + 0.5;
+    const line: Bar[] = [];
+    const a = barThrough(L, x, y, along, P.long, 0.6, -P.long / 2, g0 - 0.1);
+    const b = barThrough(L, x, y, along, P.long, 0.6, g0 + P.gap + 0.1, P.long / 2);
+    if (a) line.push(a);
+    if (b) line.push(b);
+    out.push(line);
   }
   return out;
 }
@@ -322,8 +430,9 @@ function reached(L: Level, room: Uint8Array, from: number, less: ReadonlySet<num
 /**
  * WHICH PARTS OF HIS GROUND HE BLACKS OUT (see above): runs of tiles along its walls, chosen by the floor's own dice, each
  * kept only if the room stays joined; as the bars that lay them (a tile wide). Empty where there is no room for any.
+ * `share`: of his ground's floor (what is blacked out already counted in it), never more than `most` in all.
  */
-export function blackoutPlan(R: BossRules, m: Monster): { tiles: number[]; bars: Bar[] } {
+export function blackoutPlan(R: BossRules, m: Monster, share: number = CENSOR.blackout.want): { tiles: number[]; bars: Bar[] } {
   const g = R.g;
   const L = g.level;
   const f = L.floor;
@@ -418,8 +527,11 @@ export function blackoutPlan(R: BossRules, m: Monster): { tiles: number[]; bars:
   order.sort((a, b) => a.k - b.k);
   runs.length = 0;
   for (const o of order) runs.push(o.r);
-  const want = Math.round(opens.length * B.want);
-  const most = Math.floor(opens.length * B.most);
+  let gone = 0;
+  for (const i of ground) if (BLACKED.get(L)?.has(i)) gone++;
+  const total = opens.length + gone;
+  const want = Math.round(total * share);
+  const most = Math.floor(total * B.most) - gone;
   const chosen = new Set<number>(BLACKED.get(L) ?? []);
   // (his ground and its ways in, walked from where he stands, or from a way in)
   const room = new Uint8Array(W * H);
@@ -493,6 +605,231 @@ function planFor(R: BossRules, m: Monster): { tiles: number[]; bars: Bar[] } {
   return plan;
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE INK FILLS THE FLOOR (CENSOR_FIGHT)
+
+/** His ground, a tile to each: 1 for his. */
+const MASKS = new WeakMap<readonly number[], Uint8Array>();
+function groundMask(L: Level, m: Monster): Uint8Array {
+  const home = homeOf(m);
+  const tiles = censorGround(L, home.x, home.y);
+  let k = MASKS.get(tiles);
+  if (!k) {
+    k = new Uint8Array(L.floor.w * L.floor.h);
+    for (const i of tiles) k[i] = 1;
+    MASKS.set(tiles, k);
+  }
+  return k;
+}
+/** Whether (x, y) is on his ground and can be walked on. */
+function onGround(L: Level, m: Monster, x: number, y: number): boolean {
+  const tx = Math.floor(x);
+  const ty = Math.floor(y);
+  const W = L.floor.w;
+  if (tx < 0 || ty < 0 || tx >= W || ty >= L.floor.h) return false;
+  const i = ty * W + tx;
+  return groundMask(L, m)[i] === 1 && L.walk[i] === 1;
+}
+
+/** Where the hero is heading: where he will be `lead` seconds on at the pace he is going, on his ground; null if he stands, or it is nowhere he could stand. */
+function ahead(R: BossRules, m: Monster): { x: number; y: number } | null {
+  const h = R.g.hero;
+  const s = m.a1;
+  const vx = s?.vx ?? 0;
+  const vy = s?.vy ?? 0;
+  const v = Math.hypot(vx, vy);
+  if (v < 0.8) return null;
+  const k = Math.min(CENSOR_FIGHT.lead.lead, CENSOR_FIGHT.lead.most / v);
+  const x = h.x + vx * k;
+  const y = h.y + vy * k;
+  return onGround(R.g.level, m, x, y) ? { x, y } : null;
+}
+
+/** Is a bar of his yet to slam (a Redaction's, the page's, his ink's)? */
+function barsToCome(R: BossRules, m: Monster, page = false): boolean {
+  for (const p of R.g.perils) if (p.kind === 'act1' && p.a1 === 'censor:bars' && !p.done && p.from === m.name && (!page || p.c === 2)) return true;
+  return false;
+}
+
+/** Bars of ink marked out now and slamming down by themselves `wait` seconds after their warning (`c`: 1 his ink, 2 a line of the page). */
+function inkBars(R: BossRules, m: Monster, bars: Bar[], dmg: number, c: number, wait = 0): Peril | null {
+  if (!bars.length) return null;
+  const Rd = CENSOR.redact;
+  const b = bars[0];
+  const p = R.peril(m, 'act1', b.x, b.y, { a1: 'censor:bars', t: -Rd.warn - wait, hit: 0, dur: Rd.lie, dmg: R.g.rollMonsterDmg(m) * dmg, a: b.along, c, d: 1 });
+  BARS.set(p, bars);
+  return p;
+}
+
+/**
+ * A LINE OF INK RUN ACROSS THE ROOM through (x, y) from the wall behind it, along a way of eight (the one it runs furthest
+ * along, of a few tried): marked out `ink.warn` before it runs, then run out as Strike-Through's line is.
+ */
+function marginLine(R: BossRules, m: Monster, x: number, y: number): Peril | null {
+  const g = R.g;
+  const I = CENSOR_FIGHT.ink;
+  const S = CENSOR.strike;
+  let best: { ox: number; oy: number; ux: number; uy: number; reach: number } | null = null;
+  const first = Math.floor(g.rng.range(0, 8));
+  for (let k = 0; k < 8; k++) {
+    const a = ((first + k * 3) % 8) * (Math.PI / 4);
+    const ux = Math.round(Math.cos(a) * 1e6) / 1e6;
+    const uy = Math.round(Math.sin(a) * 1e6) / 1e6;
+    // (back from him to the wall, then on through him to the wall before him)
+    let back = 0;
+    for (let s = 0.1; s <= 30; s += 0.1) {
+      if (!g.isOpen(x - ux * s, y - uy * s)) break;
+      back = s;
+    }
+    let on = 0;
+    for (let s = 0.1; s <= 30; s += 0.1) {
+      if (!g.isOpen(x + ux * s, y + uy * s)) break;
+      on = s;
+    }
+    if (back < 2) continue;
+    const reach = Math.min(back + on, S.most + 14);
+    if (!best || reach > best.reach) best = { ox: x - ux * back, oy: y - uy * back, ux, uy, reach };
+    if (k >= 2 && best.reach >= I.lineLeast + 4) break;
+  }
+  if (!best || best.reach < I.lineLeast) return null;
+  return R.peril(m, 'act1', best.ox, best.oy, { a1: 'censor:margin', t: -I.warn, hit: 0, dur: S.lie, dmg: g.rollMonsterDmg(m) * I.lineDmg, a: best.reach, b: 0, fx: best.ux, fy: best.uy, hand: 1 });
+}
+
+/**
+ * HIS INK, all the while (CENSOR_FIGHT.ink): a cross of bars slamming down where the hero is heading, and every so often a
+ * line across the room through him; not through his Redaction (the page) until its last bar has slammed, nor at a hero
+ * gone from his ground.
+ */
+function ink(R: BossRules, m: Monster, dt: number): void {
+  const g = R.g;
+  const h = g.hero;
+  const s = m.a1!;
+  const I = CENSOR_FIGHT.ink;
+  if (s.iw === undefined) s.iw = I.every;
+  if (h.life <= 0 || g.over) return;
+  if (m.state === 'act' && m.act && m.act.id === 'censor:redact') return;
+  if (barsToCome(R, m, true)) return;
+  if (!onGround(g.level, m, h.x, h.y)) return;
+  s.iw -= dt;
+  if (s.iw > 0) return;
+  s.iw += I.every;
+  if (s.iw < 0) s.iw = I.every;
+  const n = (s.ik = (s.ik ?? 0) + 1);
+  const at = ahead(R, m) ?? { x: h.x, y: h.y };
+  const cx = Math.floor(at.x) + 0.5;
+  const cy = Math.floor(at.y) + 0.5;
+  const bars: Bar[] = [];
+  for (const along of [0, 1] as const) {
+    const b = barThrough(g.level, cx, cy, along, I.bar);
+    if (b) bars.push(b);
+  }
+  inkBars(R, m, bars, I.dmg, 1);
+  if (I.line && n % I.line === 0) marginLine(R, m, h.x, h.y);
+}
+
+/** WHAT OF HIS INK LIES ON A LEVEL'S FLOOR: each bar's peril laid to stay, oldest first, with its tiles; how many lie on each tile, how many tiles have any; when it last hurt the hero, and how hard it hurts. */
+interface Pool {
+  list: Peril[];
+  tiles: Map<Peril, number[]>;
+  on: Uint16Array;
+  n: number;
+  hurtT: number;
+  dmg: number;
+}
+const POOLS = new WeakMap<Level, Pool>();
+function poolOf(L: Level): Pool {
+  let k = POOLS.get(L);
+  if (!k) {
+    k = { list: [], tiles: new Map(), on: new Uint16Array(L.floor.w * L.floor.h), n: 0, hurtT: -1e9, dmg: 0 };
+    POOLS.set(L, k);
+  }
+  return k;
+}
+/** Whether the tile (x, y) is on lies under his ink, laid to stay and not drying. */
+export function inked(L: Level, x: number, y: number): boolean {
+  const k = POOLS.get(L);
+  const tx = Math.floor(x);
+  const ty = Math.floor(y);
+  if (!k || tx < 0 || ty < 0 || tx >= L.floor.w || ty >= L.floor.h) return false;
+  return k.on[ty * L.floor.w + tx] > 0;
+}
+/** How many tiles of a level lie under his ink, laid to stay and not drying. */
+export function inkedCount(L: Level): number {
+  return POOLS.get(L)?.n ?? 0;
+}
+/** A bar's peril laid to stay: since when it dries (seconds of its own clock; -1 not drying), or undefined if it is not laid to stay. */
+const LASTING = new WeakMap<Peril, { dry: number }>();
+export function lastingOf(p: Peril): { readonly dry: number } | undefined {
+  return LASTING.get(p);
+}
+
+/** The whole tiles bars cover (their middle lines', on floor that can be walked on). */
+function barTiles(L: Level, bars: readonly Bar[]): number[] {
+  const W = L.floor.w;
+  const out = new Set<number>();
+  for (const b of bars) {
+    const lo = (b.along === 0 ? b.x : b.y) - b.long / 2 + 0.15;
+    const hi = (b.along === 0 ? b.x : b.y) + b.long / 2 - 0.15;
+    for (let u = Math.floor(lo); u <= Math.floor(hi); u++) {
+      const tx = b.along === 0 ? u : Math.floor(b.x);
+      const ty = b.along === 0 ? Math.floor(b.y) : u;
+      if (tx < 0 || ty < 0 || tx >= W || ty >= L.floor.h || L.walk[ty * W + tx] !== 1) continue;
+      out.add(ty * W + tx);
+    }
+  }
+  return [...out];
+}
+
+/** Its tiles no longer under it (it dries, or is gone). */
+function lift(k: Pool, p: Peril): void {
+  const tiles = k.tiles.get(p);
+  if (!tiles) return;
+  for (const i of tiles) if (k.on[i] > 0 && --k.on[i] === 0) k.n--;
+  k.tiles.delete(p);
+  const j = k.list.indexOf(p);
+  if (j >= 0) k.list.splice(j, 1);
+}
+
+/** It begins to dry away (CENSOR_FIGHT.fill.dry): it hurts no more, and is gone once dried. */
+function dryAway(k: Pool, p: Peril): void {
+  const s = LASTING.get(p);
+  if (!s || s.dry >= 0) return;
+  s.dry = p.t;
+  lift(k, p);
+}
+
+/**
+ * THE BARS LAID TO STAY (CENSOR_FIGHT.fill), as they slam: on the tiles they cover; while more of his ground lies under his
+ * ink than his share now (the more the more of his life is gone), the oldest dries away.
+ */
+function lay(g: Game, m: Monster, p: Peril): void {
+  const F = CENSOR_FIGHT.fill;
+  const L = g.level;
+  const tiles = barTiles(L, barsOf(p));
+  if (!tiles.length) return;
+  const k = poolOf(L);
+  p.dur = Infinity;
+  LASTING.set(p, { dry: -1 });
+  k.list.push(p);
+  k.tiles.set(p, tiles);
+  for (const i of tiles) if (k.on[i]++ === 0) k.n++;
+  k.dmg = g.rollMonsterDmg(m) * F.dmg;
+  // (his share: of his ground's floor, `least` at his full life to `most` at his end)
+  const mask = groundMask(L, m);
+  let room = 0;
+  for (let i = 0; i < mask.length; i++) if (mask[i] && L.walk[i] === 1) room++;
+  const gone = 1 - Math.max(0, Math.min(1, m.life / m.maxLife));
+  const most = Math.round(room * (F.least + (F.most - F.least) * gone));
+  while (k.n > most && k.list.length > 1 && k.list[0] !== p) dryAway(k, k.list[0]);
+}
+
+/** As he dies: all his ink dries away. */
+function dryAll(L: Level): void {
+  const k = POOLS.get(L);
+  if (!k) return;
+  for (const p of [...k.list]) dryAway(k, p);
+}
+
 /** The peril of his act now (his Redaction's bars, or the blacking out's), kept while the act is made. */
 const LAYING = new WeakMap<Monster, Peril>();
 
@@ -516,6 +853,25 @@ export const RULES: Act1Rules | null = {
     m.a1 = { hx: m.x, hy: m.y, blk: 0, rp: 0 };
   },
 
+  tick(R, m, dt) {
+    if (!CENSOR_FIGHT.on || !m.a1) return false;
+    const s = m.a1;
+    // (the hero's pace, for where he is heading)
+    const h = R.g.hero;
+    if (s.lx !== undefined && s.ly !== undefined && dt > 0) {
+      const ix = (h.x - s.lx) / dt;
+      const iy = (h.y - s.ly) / dt;
+      // (a leap or a warp is not a pace)
+      const ok = Math.hypot(ix, iy) < 12;
+      s.vx = (s.vx ?? 0) * 0.75 + (ok ? ix : 0) * 0.25;
+      s.vy = (s.vy ?? 0) * 0.75 + (ok ? iy : 0) * 0.25;
+    }
+    s.lx = h.x;
+    s.ly = h.y;
+    ink(R, m, dt);
+    return false;
+  },
+
   can(R, m, a) {
     // (the Hush: not while the hero's words are dark still)
     if (a.id === 'censor:hush') return R.g.hushT <= 0.5;
@@ -523,9 +879,19 @@ export const RULES: Act1Rules | null = {
   },
 
   forced(R, m, acts) {
+    const s = m.a1;
+    if (s && CENSOR_FIGHT.on) {
+      // (CENSOR_FIGHT: no blacking out: his ink fills the floor instead. Strike-Through in a row: the next straight after, while the hero is in its reach and his sight)
+      if ((s.sn ?? 0) > 0) {
+        const h = R.g.hero;
+        const S = acts.find((x) => x.id === 'censor:strike')!;
+        if (Math.hypot(h.x - m.x, h.y - m.y) <= S.far && R.g.sees(m.x, m.y, h.x, h.y)) return acts.indexOf(S);
+        s.sn = 0;
+      }
+      return -1;
+    }
     // AT HALF HIS LIFE: the floor blacked out, where there is floor to black out (`blk`: 0 not yet, 1 to come as soon as
     // he stands, 2 made or not to be made)
-    const s = m.a1;
     if (!s || s.blk === 2) return -1;
     if (!s.blk) {
       if (m.life > m.maxLife * CENSOR.blackout.at) return -1;
@@ -538,12 +904,36 @@ export const RULES: Act1Rules | null = {
   start(R, m, a) {
     const g = R.g;
     const act = m.act!;
+    const F = CENSOR_FIGHT;
+    const s = (m.a1 ??= {});
     if (a.id === 'censor:strike') {
+      if (F.on) {
+        // (CENSOR_FIGHT: a row begun, or the next of it; the second where the hero is heading)
+        if (!(s.sn ?? 0)) {
+          s.sn = F.row;
+          s.sk = 0;
+        } else s.sk = (s.sk ?? 0) + 1;
+        const to = s.sk === 1 ? ahead(R, m) : null;
+        if (to) {
+          const d = Math.hypot(to.x - m.x, to.y - m.y);
+          if (d > 0.5) {
+            m.fx = (to.x - m.x) / d;
+            m.fy = (to.y - m.y) / d;
+            act.hand = handOf(CENSOR_GAIT.trueBack, m.fx, m.fy);
+          }
+        }
+      }
       // (the line he will draw: from his brush's line, the way he faces now, to the first wall)
       act.a = strikeLine(R, m, act.hand).reach;
       g.sfx('swing', 0.3);
     } else if (a.id === 'censor:redact') {
       m.a1 = { ...(m.a1 ?? {}), rp: ((m.a1?.rp ?? 0) + 1) % 2 };
+      // (CENSOR_FIGHT: by turns, his bars one way (`b` 0), both ways at once (1), the page struck out (2))
+      if (F.on) {
+        const n = (m.a1.rn = ((m.a1.rn ?? -1) + 1) % 3);
+        act.b = n;
+        if (act.b === 2) g.msg(`${m.name} strikes out the page`, MSG.foe);
+      }
     } else if (a.id === 'censor:blackout') {
       // (worked out where he stands now: he may have walked a step or two to a stand since it was brought)
       m.a1 = { ...(m.a1 ?? {}), blk: 2 };
@@ -595,10 +985,28 @@ export const RULES: Act1Rules | null = {
         // (the bars marked out on the floor from REDACT_WARN before the slam: Redaction's about the hero as it begins)
         if (a.id === 'censor:redact' && at(a.hit - Rd.warn)) {
           const along = ((m.a1?.rp ?? 0) % 2) as 0 | 1;
-          const bars = redactBars(g.level, Math.floor(h.x) + 0.5, Math.floor(h.y) + 0.5, along);
-          const p = R.peril(m, 'act1', h.x, h.y, { a1: 'censor:bars', t: -Rd.warn, hit: 0, dur: Rd.lie, dmg: 0, a: along });
-          BARS.set(p, bars);
-          LAYING.set(m, p);
+          const cx = Math.floor(h.x) + 0.5;
+          const cy = Math.floor(h.y) + 0.5;
+          if (act.b === 2) {
+            // (CENSOR_FIGHT) THE PAGE STRUCK OUT: every line of it marked out now; its first slams as his brush comes down,
+            // the rest one after another after it, by themselves
+            const lines = pageLines(g.level, h.x, h.y, m.x, m.y, along, () => g.rng.next());
+            const P = CENSOR_FIGHT.page;
+            lines.forEach((line, k) => {
+              if (!line.length) return;
+              if (k === 0) {
+                const p = R.peril(m, 'act1', line[0].x, line[0].y, { a1: 'censor:bars', t: -Rd.warn, hit: 0, dur: Rd.lie, dmg: 0, a: along, c: 2 });
+                BARS.set(p, line);
+                LAYING.set(m, p);
+              } else inkBars(R, m, line, a.dmg, 2, k * P.apart);
+            });
+          } else {
+            // (CENSOR_FIGHT: by turns, both ways at once)
+            const bars = act.b === 1 ? [...redactBars(g.level, cx, cy, 0), ...redactBars(g.level, cx, cy, 1)] : redactBars(g.level, cx, cy, along);
+            const p = R.peril(m, 'act1', h.x, h.y, { a1: 'censor:bars', t: -Rd.warn, hit: 0, dur: Rd.lie, dmg: 0, a: along });
+            BARS.set(p, bars);
+            LAYING.set(m, p);
+          }
         }
         const p = LAYING.get(m);
         if (!p || p.done) break;
@@ -619,7 +1027,11 @@ export const RULES: Act1Rules | null = {
           slam(R, m, a, barsOf(p));
           putOff(R, h, TUNE.heroRadius);
           for (const o of g.monsters) if (!o.dead) putOff(R, o, Math.min(o.r, 0.42));
-        } else slam(R, m, a, barsOf(p));
+        } else {
+          slam(R, m, a, barsOf(p));
+          // (CENSOR_FIGHT: laid to stay)
+          if (CENSOR_FIGHT.on) lay(g, m, p);
+        }
         break;
       }
       case 'censor:hush': {
@@ -635,8 +1047,27 @@ export const RULES: Act1Rules | null = {
     }
   },
 
-  end(_R, m) {
+  end(R, m, a) {
     LAYING.delete(m);
+    const F = CENSOR_FIGHT;
+    const s = m.a1;
+    if (!F.on || !s) return;
+    // (Strike-Through in a row: the next straight after)
+    if (a.id === 'censor:strike') {
+      s.sn = Math.max(0, (s.sn ?? 0) - 1);
+      if (s.sn > 0) {
+        m.cd = 0;
+        return;
+      }
+    }
+    // (his rests, and his cooldowns)
+    m.cd *= F.rest;
+    const i = CENSOR_ACTS.findIndex((x) => x.id === a.id);
+    if (m.moveCd && i >= 0 && a.cooldown > 0) {
+      if (a.id === 'censor:redact') m.moveCd[i] *= F.redactCd / a.cooldown;
+      else if (a.id === 'censor:hush') m.moveCd[i] *= F.hushCd / a.cooldown;
+    }
+    void R;
   },
 
   peril(R, p, dt) {
@@ -644,6 +1075,10 @@ export const RULES: Act1Rules | null = {
     const h = g.hero;
     void dt;
     switch (p.a1) {
+      case 'censor:margin':
+        // (CENSOR_FIGHT: a line of ink across the room from its wall: marked out first, then run out as his line is)
+        if (p.t < 0) return;
+      // falls through
       case 'censor:line': {
         // THE LINE runs out from his brush's point: whoever its head runs through is struck
         if (p.done) return;
@@ -660,8 +1095,33 @@ export const RULES: Act1Rules | null = {
         return;
       }
       case 'censor:bars': {
-        // (lying wet: whoever walks in it is slowed by it, until it dries)
         const Rd = CENSOR.redact;
+        // (CENSOR_FIGHT: his ink, and the page's lines after its first, slam down by themselves as their warning ends)
+        if (!p.done && p.d === 1 && p.t >= 0) {
+          p.done = 1;
+          if (!g.over && barsOf(p).some((b) => underBar(b, h.x, h.y))) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+          g.emit({ t: 'shake', amount: p.c === 2 ? 2 : 1 });
+          g.sfx('slam', p.c === 2 ? 0.6 : 0.35);
+          // (CENSOR_FIGHT: laid to stay, while he lives)
+          const m = CENSOR_FIGHT.on ? g.monsters.find((o) => !o.dead && o.kind === 'censor' && o.name === p.from) : undefined;
+          if (m) lay(g, m, p);
+        }
+        // (CENSOR_FIGHT) LAID TO STAY: whoever stands on it is hurt, every `fill.tick` (once for all of it: the oldest's step
+        // does it); drying away, gone once dried
+        const last = LASTING.get(p);
+        if (last) {
+          const F = CENSOR_FIGHT.fill;
+          if (last.dry >= 0) {
+            if (p.t - last.dry >= F.dry) p.dur = p.t;
+            return;
+          }
+          const k = poolOf(g.level);
+          if (k.list[0] === p && !g.over && h.life > 0 && g.time - k.hurtT >= F.tick && inked(g.level, h.x, h.y)) {
+            k.hurtT = g.time;
+            g.hurtHero(k.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+          }
+        }
+        // (lying wet: whoever walks in it is slowed by it, until it dries)
         if (!p.done || p.t > Rd.lie - 0.5) return;
         if (barsOf(p).some((b) => underBar(b, h.x, h.y))) {
           h.chill = Math.max(h.chillT > 0 ? h.chill : 0, Rd.slow);
@@ -709,7 +1169,8 @@ export const RULES: Act1Rules | null = {
         continue;
       }
       if (p.a1 === 'censor:bars' && !p.done) p.dur = Math.min(p.dur, p.t);
-      else if (p.a1 === 'censor:line') {
+      else if (p.a1 === 'censor:margin' && p.t < 0) p.dur = p.t;
+      else if (p.a1 === 'censor:line' || p.a1 === 'censor:margin') {
         // (a line still running stops where its head is, harming no more, and dries there)
         p.done = 1;
         p.a = Math.min(p.a, p.b + CENSOR.strike.speed * Math.max(0, p.t));
@@ -719,6 +1180,8 @@ export const RULES: Act1Rules | null = {
       }
     }
     LAYING.delete(m);
+    // (CENSOR_FIGHT: his ink on the floor dries away)
+    dryAll(g.level);
     // THE BOOK OF STOLEN WORDS BURSTS, where it lies on its lectern: the words fly home
     let book = null as (typeof g.level.props)[number] | null;
     let bd = Infinity;

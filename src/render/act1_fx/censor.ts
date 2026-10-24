@@ -18,7 +18,7 @@ import { hash } from '../../art/kit';
 import { FLAME } from '../../art/mkit';
 import type { FloorAt } from '../../art/mob_shots';
 import { drawRedaction, drawRoomHush, drawSlashMark, drawStrikeAim, drawStrikeLine } from '../../art/censor_shots';
-import { BLACKED_TILE, CENSOR, barsOf, strikeFrom, tilesOf } from '../../game/act1_rules/censor';
+import { BLACKED_TILE, CENSOR, CENSOR_FIGHT, barsOf, lastingOf, strikeFrom, tilesOf } from '../../game/act1_rules/censor';
 import type { Peril } from '../../game/state';
 import { act1Pieces } from '../act1_pieces';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -39,6 +39,66 @@ function mirrored(at: FloorAt, px: number, py: number, fx: number, fy: number): 
     const u = dx * fx + dy * fy;
     return at(px + 2 * u * fx - dx, py + 2 * u * fy - dy);
   };
+}
+
+/**
+ * (CENSOR_FIGHT) HIS INK LAID TO STAY: once its slam's spatter has settled (`SETTLED` seconds on), its bars lie as the art's
+ * bars lie wet; painted once, as the art draws them at that moment, and laid down from then on (a floor's tiles are 32 by 16
+ * of the game's pixels, the same everywhere on a flat floor); drying away, faded out. Where there is no page to paint on
+ * (the tests), drawn as the art draws them.
+ */
+const SETTLED = 0.45;
+const LAID = new WeakMap<Peril, { cv: HTMLCanvasElement; ox: number; oy: number } | null>();
+function laidInk(c: Act1FxCtx, p: Peril, dry: number): void {
+  const g = c.g!;
+  const was = g.globalAlpha;
+  const fade = dry >= 0 ? 1 - clamp01((p.t - dry) / CENSOR_FIGHT.fill.dry) : 1;
+  if (fade <= 0) return;
+  let k = LAID.get(p);
+  if (k === undefined) {
+    k = null;
+    if (typeof document !== 'undefined') {
+      // (the bars' corners, measured from the peril's own point, on the screen)
+      const rel = (x: number, y: number): [number, number] => [(x - p.x - (y - p.y)) * 16, (x - p.x + (y - p.y)) * 8];
+      let x0 = Infinity;
+      let y0 = Infinity;
+      let x1 = -Infinity;
+      let y1 = -Infinity;
+      for (const b of barsOf(p)) {
+        for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+          const du = (u * b.long) / 2;
+          const dv = (v * b.wide) / 2 + v * 0.5;
+          const [sx, sy] = rel(b.x + (b.along === 0 ? du : dv), b.y + (b.along === 0 ? dv : du));
+          x0 = Math.min(x0, sx);
+          y0 = Math.min(y0, sy);
+          x1 = Math.max(x1, sx);
+          y1 = Math.max(y1, sy);
+        }
+      }
+      if (x0 < x1) {
+        const ox = Math.ceil(-x0) + 4;
+        const oy = Math.ceil(-y0) + 8;
+        const cv = document.createElement('canvas');
+        cv.width = Math.ceil(x1 - x0) + 8;
+        cv.height = Math.ceil(y1 - y0) + 16;
+        const cg = cv.getContext('2d');
+        if (cg) {
+          drawRedaction(cg, (x, y) => {
+            const [sx, sy] = rel(x, y);
+            return [sx + ox, sy + oy];
+          }, barsOf(p), SETTLED);
+          k = { cv, ox, oy };
+        }
+      }
+    }
+    LAID.set(p, k);
+  }
+  g.globalAlpha = was * fade;
+  if (k) {
+    const [bx, by] = c.at(p.x, p.y);
+    g.drawImage(k.cv, Math.round(bx) - k.ox, Math.round(by) - k.oy);
+  } else drawRedaction(g, c.at, barsOf(p), SETTLED);
+  g.globalAlpha = was;
 }
 
 /** THE FLOOR BLACKED OUT where the floor is not dressed (the practice room): the art's tile on each, at its tile's middle (the Hush's floor tiles are anchored there: art/act2_kit.ts lying). */
@@ -104,12 +164,26 @@ export const FX: Act1Fx | null = {
         // (his right to his left as his picture has it: the art's way round is his left in a picture turned over)
         drawSlashMark(g, p.hand === 1 ? mirrored(c.at, p.x, p.y, p.fx, p.fy) : c.at, p.x, p.y, p.fx, p.fy, p.t);
         return;
-      case 'censor:bars':
-        drawRedaction(g, c.at, barsOf(p), p.t);
+      case 'censor:bars': {
+        // (CENSOR_FIGHT: laid to stay, once settled)
+        const last = lastingOf(p);
+        if (last && (p.t >= SETTLED || last.dry >= 0)) {
+          laidInk(c, p, last.dry);
+          return;
+        }
+        // (CENSOR_FIGHT: the page's lines all marked out from the first, each as a third of the way into its warning until
+        // its own warning has come that far)
+        drawRedaction(g, c.at, barsOf(p), p.c === 2 ? Math.max(p.t, -CENSOR.redact.warn * 0.7) : p.t);
         return;
+      }
       case 'censor:black':
         blackTiles(c, p);
         drawRedaction(g, c.at, barsOf(p), p.t);
+        return;
+      case 'censor:margin':
+        // (CENSOR_FIGHT: a line of ink across the room from its wall: marked out as Strike-Through's aim, then run out)
+        if (p.t < 0) drawStrikeAim(g, c.at, p.x, p.y, p.fx, p.fy, p.a, 1 + p.t / CENSOR_FIGHT.ink.warn);
+        else drawStrikeLine(g, c.at, p.x, p.y, p.fx, p.fy, p.a, p.t);
         return;
       case 'censor:line':
         drawStrikeLine(g, c.at, p.x + p.fx * p.b, p.y + p.fy * p.b, p.fx, p.fy, Math.max(0, p.a - p.b), p.t);

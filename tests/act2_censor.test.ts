@@ -22,6 +22,22 @@
 //   9. what he draws is the Order's black, the enemy's pink and the Hush's grey, never cyan; in the practice room his own
 //      pictures lay the floor blacked out;
 //  10. a long fight on floor 15: no exceptions, every act made, the blacking out too.
+//  THE INK FILLS THE FLOOR (CENSOR_FIGHT; his gameplay rulebook, "Fights"; the owner's pick of 24 Oct 2026, by 06:48,
+//  “Floor 15's Censor”, his 06:49, and by 08:42 “I don’t think he needs three phases.  Just one phase is fine.  I like the
+//  ink spreading on the floor.” and “I’d like the ink to fill the floor as you fight and you take damage if you stand on
+//  the ink spots. Does that make sense?”). Tests 1 to 10 are his fight as it was (the switch off for them), these with it on:
+//  11. one phase: his life as it was; the floor not blacked out (his ink fills it instead);
+//  12. his ink all the while: a cross of bars through where the hero stands, and every so often a line of ink run across
+//      the room through him from its wall; whoever stands under it as it slams struck, whoever steps out not; none at a
+//      hero gone from his ground;
+//  13. Strike-Through twice in a row, one straight after the other; the second where the hero is heading;
+//  14. Redaction by turns: one way, both ways at once (the squares between to stand in), the page struck out (its lines
+//      all marked out at once, each with its gap, slammed one after another); in a gap, not struck; on a line, struck once;
+//      killed with the page or his ink to come, nothing of it harms the hero;
+//  15. WHAT HE LAYS STAYS: his bars lie where they slammed; whoever stands on them is hurt every so often, and not off
+//      them; as much of his ground under it as his share, the more the more of his life is gone, the oldest drying away;
+//      as he dies all of it dries away and hurts no more;
+//  16. a long fight on floor 15: no exceptions, every act made but the blacking out, the page too; the floor filling.
 //   run: tsx --test tests/act2_censor.test.ts
 
 // @ts-ignore
@@ -38,7 +54,7 @@ import { greatLibraryPieces } from '../src/art/floor15';
 import { LB_ZONE } from '../src/art/library';
 import { TILE3, skeletonAt } from '../src/art/new_mobs3';
 import { ACT2 } from '../src/game/act1';
-import { BLACKED_TILE, CENSOR, CENSOR_ACTS, CENSOR_GAIT, READING_ZONE, RULES, STOLEN_BOOK, barsOf, blackedOut, blackoutPlan, censorGround, tilesOf, underBar } from '../src/game/act1_rules/censor';
+import { BLACKED_TILE, CENSOR, CENSOR_ACTS, CENSOR_FIGHT, CENSOR_GAIT, READING_ZONE, RULES, STOLEN_BOOK, barsOf, blackedOut, blackoutPlan, censorGround, inked, inkedCount, lastingOf, tilesOf, underBar } from '../src/game/act1_rules/censor';
 import { bossKind, gaitOf } from '../src/game/bosses';
 import { BOSS_LINES, HUSH_FOR, MONSTERS, TUNE, sizeOf } from '../src/game/defs';
 import { beside } from '../src/game/facing';
@@ -60,6 +76,18 @@ const assert: Assert = nodeAssert;
 // needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
 nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
 ACT2.on = false;
+// (and his ink filling the floor: tests 1 to 10 are his fight as it was, and turn it off for themselves; 11 on, it on)
+nodeAssert.equal(CENSOR_FIGHT.on, true, 'his ink filling the floor is on in the game');
+CENSOR_FIGHT.on = false;
+function fight<T>(fn: () => T): T {
+  const was = CENSOR_FIGHT.on;
+  CENSOR_FIGHT.on = true;
+  try {
+    return fn();
+  } finally {
+    CENSOR_FIGHT.on = was;
+  }
+}
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 function hush<T>(fn: () => T): T {
   const was = ACT2.on;
@@ -521,3 +549,431 @@ test('10. a long fight on floor 15: no exceptions, every act made, the blacking 
   }
   for (const a of CENSOR_ACTS) assert.ok(acts.has(a.id), `he made his ${a.id} (made: ${[...acts].join(', ')})`);
 }));
+
+// ---------------------------------------------------------------------------------------------
+// THE INK FILLS THE FLOOR (CENSOR_FIGHT)
+
+const F = CENSOR_FIGHT;
+/** His perils of a name, now. */
+const perilsOf = (g: Game, a1: string) => g.perils.filter((p) => p.a1 === a1);
+/** None of his ink, his acts held off, the hero at a tile's middle `far` from him (the practice room). */
+function quiet(far = 8, ink = false): { g: Game; m: Monster } {
+  const { g, m } = room('censor', far);
+  m.moveCd = CENSOR_ACTS.map(() => 1e9);
+  if (!ink) m.a1 = { ...(m.a1 ?? {}), iw: 1e9 };
+  g.hero.x = Math.floor(g.hero.x) + 0.5;
+  g.hero.y = Math.floor(g.hero.y) + 0.5;
+  return { g, m };
+}
+
+test('11. one phase: his life as it was; the floor not blacked out, his ink fills it instead', () => hush(() => {
+  for (const seed of [1, 2]) {
+    const off = floor(15, seed).boss!.maxLife;
+    fight(() => {
+      const g = undying(floor(15, seed));
+      const m = g.boss!;
+      assert.equal(m.maxLife, off, `seed ${seed}: his life as it was (${m.maxLife})`);
+      g.bossReady();
+      const h = g.hero;
+      const sp = g.spotsRound(m.x, m.y, 60).find((q) => Math.hypot(q.x - m.x, q.y - m.y) > 4 && Math.hypot(q.x - m.x, q.y - m.y) < 6)!;
+      h.x = sp.x;
+      h.y = sp.y;
+      m.state = 'chase';
+      m.cd = 0;
+      m.life = Math.floor(m.maxLife * 0.3);
+      const s = watch(g, m, 6, undefined, () => !!m.act && m.act.id === 'censor:blackout');
+      assert.ok(s.act !== 'censor:blackout' && !(m.act && m.act.id === 'censor:blackout'), 'he does not black out the floor');
+      assert.equal(blackedOut(g.level).size, 0, 'none of it blacked out');
+      assert.ok(inkedCount(g.level) > 0, 'his ink lies on it');
+    });
+  }
+}));
+
+test('12. his ink all the while: a cross where the hero stands, a line across the room now and then; stepped out of, not struck', () => fight(() => {
+  {
+    const { g, m } = quiet(8, true);
+    const h = g.hero;
+    const secs = 12;
+    const seen = new Set<object>();
+    let inks = 0;
+    let lines = 0;
+    let under = 0;
+    const s = watch(g, m, secs, undefined, () => {
+      for (const p of g.perils) {
+        if (seen.has(p)) continue;
+        if (p.a1 === 'censor:bars' && p.c === 1) {
+          seen.add(p);
+          inks++;
+          assert.equal(barsOf(p).length, 2, 'a cross');
+          assert.ok(barsOf(p).some((b) => b.along === 0) && barsOf(p).some((b) => b.along === 1), 'across and along');
+          if (barsOf(p).every((b) => underBar(b, h.x, h.y))) under++;
+        } else if (p.a1 === 'censor:margin') {
+          seen.add(p);
+          lines++;
+          const r = { fwd: (h.x - p.x) * p.fx + (h.y - p.y) * p.fy, left: (h.x - p.x) * -p.fy + (h.y - p.y) * p.fx };
+          assert.ok(Math.abs(r.left) < 0.05 && r.fwd > 1.9 && r.fwd < p.a, 'a line through where he stands, from the wall behind him');
+        }
+      }
+      // (he keeps his distance: the Censor held off)
+      m.x = h.x + 8;
+      m.y = h.y;
+      return false;
+    });
+    const want = Math.floor(secs / F.ink.every);
+    assert.ok(inks >= want - 1 && inks <= want + 1, `a cross every ${F.ink.every} s (${inks} in ${secs} s)`);
+    assert.equal(under, inks, 'each through where he stands');
+    assert.ok(lines >= Math.floor(inks / F.ink.line) - 1 && lines <= Math.ceil(inks / F.ink.line), `a line across the room every ${F.ink.line} (${lines})`);
+    assert.ok(s.hurts.length >= inks + lines - 2, `standing still, struck (${s.hurts.length} of ${inks + lines}, and his ink under him after)`);
+  }
+  // (stepped out of it as it is marked out, to a spot near by under none of it and off his ink: not struck)
+  {
+    const { g, m } = quiet(8, true);
+    const h = g.hero;
+    const home = { x: h.x, y: h.y };
+    const coming = (x: number, y: number): boolean =>
+      inked(g.level, x, y) ||
+      g.perils.some((q) => !q.done && ((q.a1 === 'censor:bars' && q.t < 0 && barsOf(q).some((b) => underBar(b, x, y, 0.9))) || (q.a1 === 'censor:margin' && Math.abs((x - q.x) * -q.fy + (y - q.y) * q.fx) < 0.9)));
+    const met = new Set<object>();
+    let k = 0;
+    const s = watch(g, m, 12, undefined, () => {
+      m.x = home.x + 8;
+      m.y = home.y;
+      const fresh = g.perils.filter((q) => (q.a1 === 'censor:bars' || q.a1 === 'censor:margin') && q.t < 0 && !q.done && !met.has(q));
+      if (!fresh.length) return false;
+      for (const q of fresh) met.add(q);
+      k++;
+      let best: { x: number; y: number } | null = null;
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const x = home.x + dx;
+        const y = home.y + dy;
+        if (coming(x, y) || !g.free(g.level.walk, x, y, TUNE.heroRadius)) continue;
+        if (!best || Math.hypot(x - h.x, y - h.y) < Math.hypot(best.x - h.x, best.y - h.y)) best = { x, y };
+      }
+      if (best) {
+        h.x = best.x;
+        h.y = best.y;
+      }
+      return false;
+    });
+    assert.ok(k >= 6, `ink and lines came (${k})`);
+    assert.equal(s.hurts.length, 0, 'stepped out of each as it was marked, and off his ink: not struck');
+  }
+  // (none at a hero gone from his ground: on floor 15, out of the Reading Room)
+  hush(() => {
+    const g = undying(floor(15, 1));
+    const m = g.boss!;
+    g.bossReady();
+    m.moveCd = CENSOR_ACTS.map(() => 1e9);
+    const s = watch(g, m, 6, undefined, () => {
+      m.state = 'chase';
+      return false;
+    });
+    void s;
+    assert.equal(perilsOf(g, 'censor:bars').length + perilsOf(g, 'censor:margin').length, 0, 'none while the hero is out of his Reading Room');
+  });
+}));
+
+test('13. Strike-Through twice in a row, one straight after the other; the second where the hero is heading', () => fight(() => {
+  const { g, m } = room('censor', 6, 'censor:strike');
+  m.a1 = { ...(m.a1 ?? {}), iw: 1e9 };
+  const h = g.hero;
+  const ns: number[] = [];
+  const starts: number[] = [];
+  let aimed = 0;
+  let t = 0;
+  watch(g, m, 8.8, (tt, c) => {
+    c.mx = 0;
+    c.my = Math.sin(tt * 2) > 0 ? 1 : -1;
+  }, () => {
+    t += 1 / 60;
+    m.a1!.iw = 1e9;
+    if (m.act && m.act.id === 'censor:strike' && !ns.includes(m.act.n)) {
+      ns.push(m.act.n);
+      starts.push(t);
+      if (ns.length === 2) {
+        const toHero = Math.atan2(h.y - m.y, h.x - m.x);
+        const faced = Math.atan2(m.fy, m.fx);
+        let d = Math.abs(toHero - faced);
+        if (d > Math.PI) d = 2 * Math.PI - d;
+        aimed = d;
+      }
+    }
+    return false;
+  });
+  assert.equal(ns.length, F.row, `${F.row} in a row (${ns.length})`);
+  for (let k = 1; k < starts.length; k++) assert.ok(starts[k] - starts[k - 1] <= CENSOR.strike.long + 0.1, 'one straight after the other');
+  assert.ok(aimed > 0.05, `the second where he is heading (${((aimed * 180) / Math.PI).toFixed(0)} degrees off where he stands)`);
+}));
+
+test('14. Redaction by turns: one way, both ways at once, the page struck out: all marked, each with its gap, one after another', () => fight(() => {
+  const Rd = CENSOR.redact;
+  // (by turns)
+  {
+    const { g, m } = room('censor', 4, 'censor:redact');
+    m.a1 = { ...(m.a1 ?? {}), iw: 1e9 };
+    const forms: number[] = [];
+    for (let k = 0; k < 4; k++) {
+      assert.ok(untilAct(g, m, 'censor:redact', 20), 'he redacts');
+      forms.push(m.act!.b);
+      watch(g, m, 6, undefined, () => m.state !== 'act');
+      m.moveCd![CENSOR_ACTS.findIndex((a) => a.id === 'censor:redact')] = 0;
+      m.cd = 0;
+    }
+    assert.equal(forms.join(','), '0,1,2,0', `one way, both ways, the page, by turns (${forms.join(',')})`);
+  }
+  // (BOTH WAYS AT ONCE: the middle struck, a square between not)
+  for (const [dx, dy, hurt] of [[0, 0, true], [1, 1, false], [1, 0, true]] as const) {
+    const { g, m } = room('censor', 4, 'censor:redact');
+    m.a1 = { ...(m.a1 ?? {}), iw: 1e9, rn: 0 };
+    assert.ok(untilAct(g, m, 'censor:redact'), 'he redacts');
+    assert.equal(m.act!.b, 1, 'both ways');
+    const h = g.hero;
+    h.x = Math.floor(h.x) + 0.5;
+    h.y = Math.floor(h.y) + 0.5;
+    watch(g, m, 1, undefined, () => g.perils.some((p) => p.a1 === 'censor:bars'));
+    const bars = barsOf(perilsOf(g, 'censor:bars')[0]);
+    assert.equal(bars.filter((b) => b.along === 0).length, Rd.n, 'its bars across');
+    assert.equal(bars.filter((b) => b.along === 1).length, Rd.n, 'and along');
+    h.x += dx;
+    h.y += dy;
+    const s = watch(g, m, 1, undefined, () => {
+      m.a1!.iw = 1e9;
+      return !!m.act && m.act.t >= Rd.hit + 0.05;
+    });
+    assert.equal(s.hurts.length, hurt ? 1 : 0, `${dx}, ${dy} from the middle: ${hurt ? 'under a bar, struck once' : 'in a square between, not struck'}`);
+  }
+  // (THE PAGE)
+  const P = F.page;
+  for (const where of ['gap', 'line'] as const) {
+    const { g, m } = room('censor', 4, 'censor:redact');
+    m.a1 = { ...(m.a1 ?? {}), iw: 1e9, rn: 1 };
+    assert.ok(untilAct(g, m, 'censor:redact'), 'he redacts');
+    assert.equal(m.act!.b, 2, 'the page');
+    const h = g.hero;
+    h.x = Math.floor(h.x) + 0.5;
+    h.y = Math.floor(h.y) + 0.5;
+    watch(g, m, 1, undefined, () => g.perils.some((p) => p.a1 === 'censor:bars'));
+    const lines = perilsOf(g, 'censor:bars').filter((p) => p.c === 2);
+    assert.equal(lines.length, P.n, `${P.n} lines, every one marked out at once`);
+    assert.ok(lines.every((p) => p.t < 0), 'none yet slammed');
+    const along = lines[0].a;
+    const rows = lines.map((p) => (along === 0 ? barsOf(p)[0].y : barsOf(p)[0].x));
+    for (let k = 1; k < rows.length; k++) near(Math.abs(rows[k] - rows[k - 1]), 1, 1e-6, 'a tile apart');
+    for (const p of lines) {
+      const bs = barsOf(p);
+      assert.ok(bs.every((b) => b.along === along), 'the one way');
+      if (bs.length === 2) {
+        const [a, b] = [...bs].sort((u, v) => (along === 0 ? u.x - v.x : u.y - v.y));
+        const ga = along === 0 ? a.x + a.long / 2 : a.y + a.long / 2;
+        const gb = along === 0 ? b.x - b.long / 2 : b.y - b.long / 2;
+        near(gb - ga, P.gap, 0.25, 'its gap');
+      }
+    }
+    const mine = lines.find((p) => barsOf(p).some((b) => Math.abs(along === 0 ? b.y - h.y : b.x - h.x) < 0.1))!;
+    assert.ok(mine, 'a line through where he stands');
+    const bs = [...barsOf(mine)].sort((u, v) => (along === 0 ? u.x - v.x : u.y - v.y));
+    if (where === 'gap' && bs.length === 2) {
+      const ga = along === 0 ? bs[0].x + bs[0].long / 2 : bs[0].y + bs[0].long / 2;
+      if (along === 0) h.x = ga + 0.5;
+      else h.y = ga + 0.5;
+    } else if (where === 'line') {
+      if (along === 0) h.x = bs[0].x;
+      else h.y = bs[0].y;
+    }
+    const when = new Map<object, number>();
+    let t = 0;
+    const s = watch(g, m, 5, (_t, c) => {
+      // (he steps off the ink once his line has slammed)
+      if (mine.done && inked(g.level, h.x, h.y)) {
+        if (along === 0) c.my = 1;
+        else c.mx = 1;
+      }
+    }, () => {
+      t += 1 / 60;
+      m.a1!.iw = 1e9;
+      for (const p of lines) if (p.done && !when.has(p)) when.set(p, t);
+      return false;
+    });
+    const ts = lines.map((p) => when.get(p) ?? -1);
+    assert.ok(ts.every((x) => x > 0), 'every line slammed');
+    for (let k = 1; k < ts.length; k++) near(ts[k] - ts[k - 1], P.apart, 2.5 / 60, `line ${k + 1} after line ${k}`);
+    const slams = s.hurts.filter((x) => x.n > 0);
+    if (where === 'gap') assert.ok(slams.every((x) => x.n < 0.5 * g.rollMonsterDmg(m)), 'in his line\'s gap: not struck by it');
+    else assert.ok(slams.length >= 1, 'on his line: struck');
+  }
+  // (killed with the page to come, and his ink: nothing of it harms the hero after)
+  {
+    const { g, m } = room('censor', 4, 'censor:redact');
+    m.a1 = { ...(m.a1 ?? {}), rn: 1 };
+    untilAct(g, m, 'censor:redact');
+    watch(g, m, 1, undefined, () => g.perils.some((p) => p.a1 === 'censor:bars' && p.c === 2));
+    const p = g.perils.find((q) => q.a1 === 'censor:bars')!;
+    g.perils.push({ ...p, c: 1, d: 1, t: -0.3 });
+    g.kill(m);
+    const s = watch(g, m, 5);
+    assert.equal(s.hurts.length, 0, 'nothing of his harms the hero after');
+    assert.equal(g.perils.filter((q) => q.a1 && q.a1.startsWith('censor:') && q.a1 !== 'censor:book').length, 0, 'nothing of his left after');
+  }
+}));
+
+test('15. what he lays stays: whoever stands on it hurt, and not off it; his share of the floor, the more the more of his life is gone; dried as he dies', () => fight(() => {
+  const FL = F.fill;
+  // (a cross slams by him, and lies: he steps onto it, and off)
+  {
+    const { g, m } = quiet(8, true);
+    const h = g.hero;
+    const home = { x: h.x, y: h.y };
+    watch(g, m, 3, undefined, () => {
+      m.x = home.x + 8;
+      m.y = home.y;
+      return g.perils.some((q) => q.a1 === 'censor:bars' && q.c === 1);
+    });
+    // (he steps out of it as it is marked out)
+    h.x += 3;
+    h.y += 3;
+    const p = g.perils.find((q) => q.a1 === 'censor:bars' && q.c === 1)!;
+    assert.ok(p, 'a cross thrown');
+    m.a1!.iw = 1e9;
+    watch(g, m, 2, undefined, () => {
+      m.x = home.x + 8;
+      m.y = home.y;
+      return false;
+    });
+    assert.ok(lastingOf(p), 'laid to stay as it slammed');
+    watch(g, m, 6, undefined, () => {
+      m.a1!.iw = 1e9;
+      return false;
+    });
+    assert.ok(g.perils.includes(p), 'and lies there still, long after the art\'s ink would have dried');
+    const b = barsOf(p)[0];
+    h.x = b.along === 0 ? b.x + 1 : b.x;
+    h.y = b.along === 0 ? b.y : b.y + 1;
+    h.x = Math.floor(h.x) + 0.5;
+    h.y = Math.floor(h.y) + 0.5;
+    assert.ok(inked(g.level, h.x, h.y), 'he stands on it');
+    const on = watch(g, m, 2.05, undefined, () => {
+      m.a1!.iw = 1e9;
+      return false;
+    });
+    assert.ok(on.hurts.length >= Math.floor(2 / FL.tick) - 1 && on.hurts.length <= Math.ceil(2 / FL.tick) + 1, `on it: hurt every ${FL.tick} s (${on.hurts.length} in 2 s)`);
+    near(on.hurts[0].n, g.rollMonsterDmg(m) * FL.dmg, g.rollMonsterDmg(m) * FL.dmg * 0.8, 'by his share of a blow');
+    // (off it)
+    let off = { x: h.x, y: h.y };
+    for (let r = 1; r < 6 && inked(g.level, off.x, off.y); r++) off = { x: h.x + r * (b.along === 0 ? 0 : 1), y: h.y + r * (b.along === 0 ? 1 : 0) };
+    h.x = off.x;
+    h.y = off.y;
+    const away = watch(g, m, 2, undefined, () => {
+      m.a1!.iw = 1e9;
+      return false;
+    });
+    assert.equal(away.hurts.length, 0, 'off it: not hurt');
+  }
+  // (his share: at his full life `least` of his ground; near his end up to `most`; the oldest dried away past it)
+  for (const life of [1, 0.05]) {
+    const { g, m } = quiet(8, true);
+    m.life = m.maxLife * life;
+    const h = g.hero;
+    const home = { x: h.x, y: h.y };
+    let most = 0;
+    let dried = 0;
+    const seen = new Set<object>();
+    watch(g, m, 40, undefined, () => {
+      m.x = home.x + 12;
+      m.y = home.y;
+      // (he walks round a ring of four tiles' radius, so that the ink falls all about)
+      const a = g.time * 0.7;
+      h.x = Math.floor(home.x + Math.cos(a) * 5) + 0.5;
+      h.y = Math.floor(home.y + Math.sin(a) * 5) + 0.5;
+      most = Math.max(most, inkedCount(g.level));
+      for (const p of g.perils) {
+        const l = lastingOf(p);
+        if (l && l.dry >= 0 && !seen.has(p)) {
+          seen.add(p);
+          dried++;
+        }
+      }
+      return false;
+    });
+    const ground = censorGround(g.level, m.a1!.hx, m.a1!.hy).filter((i) => g.level.walk[i] === 1).length;
+    const share = FL.least + (FL.most - FL.least) * (1 - life);
+    assert.ok(most <= Math.round(ground * share) + 10, `at ${life * 100} in 100 of his life: at most his share under his ink (${most} of ${ground} tiles; his share ${Math.round(ground * share)})`);
+    if (life === 1) assert.ok(dried > 0, `the oldest dried away past his share (${dried})`);
+    else assert.ok(most > ground * (FL.least + 0.05), `near his end, more of it (${most} of ${ground})`);
+  }
+  // (as he dies, all of it dries away, and hurts no more)
+  {
+    const { g, m } = quiet(8, true);
+    const h = g.hero;
+    const home = { x: h.x, y: h.y };
+    watch(g, m, 8, undefined, () => {
+      m.x = home.x + 8;
+      m.y = home.y;
+      return false;
+    });
+    assert.ok(inkedCount(g.level) > 0, 'his ink on the floor');
+    const p = g.perils.find((q) => lastingOf(q))!;
+    const b = barsOf(p)[0];
+    h.x = Math.floor(b.x) + 0.5;
+    h.y = Math.floor(b.y) + 0.5;
+    g.kill(m);
+    assert.equal(inkedCount(g.level), 0, 'as he dies, none of it hurts');
+    const s = watch(g, m, 3);
+    assert.equal(s.hurts.length, 0, 'nothing of his harms the hero after');
+    assert.equal(g.perils.filter((q) => q.a1 === 'censor:bars').length, 0, 'all of it dried away');
+  }
+}));
+
+test('16. a long fight on floor 15: no exceptions, every act made but the blacking out, the page too; the floor filling', () => hush(() => fight(() => {
+  const g = undying(floor(15, 2));
+  const m = g.boss!;
+  g.bossReady();
+  const h = g.hero;
+  const sp = g.spotsRound(m.x, m.y, 60).find((q) => Math.hypot(q.x - m.x, q.y - m.y) > 3)!;
+  h.x = sp.x;
+  h.y = sp.y;
+  m.state = 'chase';
+  const acts = new Set<string>();
+  let page = 0;
+  let margins = 0;
+  const filled: number[] = [];
+  const seen = new Set<object>();
+  const c = emptyControls();
+  for (let k = 0; k < 120 * 60; k++) {
+    const t = k / 60;
+    Object.assign(c, emptyControls());
+    if (Math.floor(t / 2.5) % 2 === 0) {
+      c.mx = Math.cos(t * 0.9);
+      c.my = Math.sin(t * 0.9);
+    } else {
+      c.fire = true;
+      c.aimX = m.x;
+      c.aimY = m.y;
+    }
+    if (k % 211 === 90) {
+      c.evade = true;
+      c.evadeX = h.x - h.fx * 3;
+      c.evadeY = h.y - h.fy * 3;
+    }
+    // (his life brought down by a third each 40 s)
+    if (k === 40 * 60) m.life = Math.min(m.life, Math.floor(m.maxLife * 0.66));
+    if (k === 80 * 60) m.life = Math.min(m.life, Math.floor(m.maxLife * 0.2));
+    g.update(1 / 60, c);
+    h.life = h.d.maxLife;
+    if (m.act) acts.add(m.act.id);
+    if (m.act && m.act.id === 'censor:redact' && m.act.b === 2) page++;
+    for (const p of g.perils) {
+      if (seen.has(p)) continue;
+      seen.add(p);
+      if (p.a1 === 'censor:margin') margins++;
+    }
+    if (k % (40 * 60) === 40 * 60 - 1) filled.push(inkedCount(g.level));
+    g.events.length = 0;
+    if (g.over || m.dead) break;
+  }
+  assert.ok(!m.dead, 'still standing (his life as it was)');
+  for (const a of CENSOR_ACTS) if (a.id !== 'censor:blackout') assert.ok(acts.has(a.id), `he made his ${a.id} (made: ${[...acts].join(', ')})`);
+  assert.ok(!acts.has('censor:blackout'), 'not the blacking out');
+  assert.ok(page > 0, 'the page struck out');
+  assert.ok(margins > 2, `lines across the room (${margins})`);
+  assert.ok(filled.length === 3 && filled[2] > filled[0], `the floor filling as his life goes (${filled.join(', ')} tiles under his ink)`);
+})));
