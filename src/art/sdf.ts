@@ -116,6 +116,11 @@ export interface Light {
   /** A rim from behind (the colour, and the direction on the screen it comes from: x right, y down). */
   rim?: string;
   rimFrom?: readonly [number, number];
+  /**
+   * Inked as a comic inks it, in place of shading round: below `black` the shadow is solid ink (the spotted blacks), a band of
+   * hatching at its edge; then one flat middle tone; above `light` the lit tone; above `hi` its brightest.
+   */
+  cel?: { black: number; light: number; hi?: number };
 }
 
 /** The camera: looking along `look` (a unit), `up` up the screen; `scale` pixels to a unit; the figure's origin at (ox, oy) on the canvas. */
@@ -148,19 +153,48 @@ export class Figure {
     this.solids.push({ k: 'block', stuff, c, r, ax, round, blend, carve });
     return this;
   }
+  readonly lines: { pts: readonly V3[]; c: string; w: number }[] = [];
+  /** A line inked on the figure through `pts` (a wrinkle, a knuckle, a fold), drawn only where those points are seen. */
+  line(pts: readonly V3[], c = INK, w = 1): this {
+    this.lines.push({ pts, c, w });
+    return this;
+  }
   /** A mark drawn on the figure where its point is seen (an eye's light): colours from its middle out, `w` wide. */
   mark(p: V3, c: readonly string[], w = 2): this {
     this.marks.push({ p, c, w });
     return this;
   }
 
-  /** The field of one stuff at `p`: its solids melted together, its carvings taken away. */
+  /** Each stuff's solids, each with a ball round it (its middle, its reach): made when it is drawn. */
+  private groups: { s: Solid; c: V3; r: number }[][] = [];
+  private group(): void {
+    this.groups = this.stuffs.map((_, m) =>
+      this.solids
+        .filter((s) => s.stuff === m)
+        .map((s) => {
+          if (s.k === 'rod') return { s, c: mul(add(s.a, s.b), 0.5), r: len(sub(s.b, s.a)) / 2 + Math.max(s.ra, s.rb) };
+          if (s.k === 'block') return { s, c: s.c, r: Math.hypot(s.r[0], s.r[1], s.r[2]) };
+          return { s, c: s.c, r: Math.max(s.r[0], s.r[1], s.r[2]) };
+        }),
+    );
+  }
+  /**
+   * The field of one stuff at `p`: its solids melted together, its carvings taken away. (A solid whose ball is further than
+   * what is already nearest by more than its melt cannot change it, nor a carving whose ball is further than its melt: both
+   * passed over.)
+   */
   private ofStuff(m: number, p: V3): number {
     let d = Infinity;
-    for (const s of this.solids) {
-      if (s.stuff !== m) continue;
-      const e = distOf(s, p);
-      d = s.carve ? smax(d, -e, s.blend) : d === Infinity ? e : smin(d, e, s.blend);
+    for (const { s, c, r } of this.groups[m]) {
+      const b = len(sub(p, c)) - r;
+      if (s.carve) {
+        if (d === Infinity || b > s.blend + 0.02) continue;
+        d = smax(d, -distOf(s, p), s.blend);
+      } else {
+        if (d !== Infinity && b >= d + s.blend) continue;
+        const e = distOf(s, p);
+        d = d === Infinity ? e : smin(d, e, s.blend);
+      }
     }
     return d;
   }
@@ -185,6 +219,7 @@ export class Figure {
   draw(p: Px, cam: Camera, light: Light, inkOut = true): Float32Array {
     const W = p.w;
     const H = p.h;
+    this.group();
     const look = unit(cam.look);
     const right = unit(cross(look, cam.up));
     const down = unit(cross(look, right));
@@ -263,7 +298,15 @@ export class Figure {
         const own = st.paint ? st.paint(q, n, v) : null;
         if (open < 0.32 * ck && !own) colour[k] = INK;
         else if (own) colour[k] = own;
-        else if (st.hatch && v < 1 / st.tones.length && (x + y) % st.hatch === 0) colour[k] = INK;
+        else if (light.cel) {
+          const c = light.cel;
+          const n = st.tones.length;
+          if (v < c.black) colour[k] = INK;
+          else if (v < c.black + 0.07 && (x + y) % 3 === 0) colour[k] = INK;
+          else if (v < c.light) colour[k] = st.tones[Math.max(1, Math.floor((n - 1) * 0.45))];
+          else if (v < (c.hi ?? 2)) colour[k] = st.tones[n - 2];
+          else colour[k] = st.tones[n - 1];
+        } else if (st.hatch && v < 1 / st.tones.length && (x + y) % st.hatch === 0) colour[k] = INK;
         else colour[k] = toneAt(st.tones, v, x, y);
       }
     }
@@ -323,6 +366,29 @@ export class Figure {
         }
       }
       for (let i = 0; i < out.length; i += 2) p.set(out[i], out[i + 1], INK);
+    }
+    // the lines inked on it, where they are seen
+    for (const ln of this.lines) {
+      for (let i = 1; i < ln.pts.length; i++) {
+        const a = ln.pts[i - 1];
+        const b = ln.pts[i];
+        const ax = dt(a, right) * cam.scale + cam.ox;
+        const ay = dt(a, down) * cam.scale + cam.oy;
+        const bx = dt(b, right) * cam.scale + cam.ox;
+        const by = dt(b, down) * cam.scale + cam.oy;
+        const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) * 1.5));
+        for (let j = 0; j <= n; j++) {
+          const u = j / n;
+          const X = Math.round(ax + (bx - ax) * u);
+          const Y = Math.round(ay + (by - ay) * u);
+          if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+          const kk = Y * W + X;
+          const zd = -dt(add(a, mul(sub(b, a), u)), look);
+          if (stuffAt[kk] < 0 || depth[kk] > zd + 0.3) continue;
+          p.set(X, Y, ln.c);
+          if (ln.w > 1 && X + 1 < W && stuffAt[kk + 1] >= 0) p.set(X + 1, Y, ln.c);
+        }
+      }
     }
     // the marks (an eye's light), where their point is seen
     for (const mk of this.marks) {

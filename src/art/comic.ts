@@ -257,6 +257,18 @@ export function wash(p: Px, c: string, fn: (x: number, y: number) => number): vo
 }
 
 /** A light's glow laid over `p` in a few flat rings of `c` (no smooth ramp: rings, as the comic draws a lamp's light). */
+/**
+ * A light's glow on what lies round it, as a comic prints one: a faint wash of its colour, and its halftone's dots thinning out
+ * from the light to nothing (no rings).
+ */
+export function shine(p: Px, x: number, y: number, r: number, c: string, _rings = 0, a = 0.5): void {
+  wash(p, c, (px, py) => {
+    const g = glow(px, py, x, y, r);
+    if (g <= 0) return 0;
+    return (dot(px, py, Math.min(1, g * 1.8), 3) ? a * 1.2 : 0) + g * a * 0.45;
+  });
+}
+
 export function halo(p: Px, x: number, y: number, r: number, c: string, rings = 3, a = 0.5): void {
   wash(p, c, (px, py) => {
     const d = Math.hypot(px - x, py - y) / r;
