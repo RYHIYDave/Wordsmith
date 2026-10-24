@@ -181,11 +181,16 @@ export default async function (page, snap) {
     await walkTo(way.x, way.y, 12000, () => { const g = window.__dbg.game(); return !!g.leaving; });
     if (!(await page.evaluate(() => !!window.__dbg.game().leaving))) {
       log('walked in', 'no: put into it');
-      await page.evaluate(() => {
-        const g = window.__dbg.game();
-        const on = g.level.ways.onward;
-        g.hero.x = Math.floor(on.x) + 0.5; g.hero.y = Math.floor(on.y) + 0.5;
-      });
+      // (its way in: its own tile, or (floor 13's door) a tile or two on along its way)
+      for (let k = 0; k < 3 && !(await page.evaluate(() => !!window.__dbg.game().leaving)); k++) {
+        await page.evaluate(([U, k]) => {
+          const g = window.__dbg.game();
+          const on = g.level.ways.onward;
+          const u = eval(U)[g.level.ways.a1.dir];
+          g.hero.x = Math.floor(on.x) + 0.5 + u[0] * k; g.hero.y = Math.floor(on.y) + 0.5 + u[1] * k;
+        }, [U, k]);
+        await rec(700);
+      }
     }
     await rec(4000, () => { const g = window.__dbg.game(); return g.depth !== window.__filmDepth || g.level.town; });
     log('on', await page.evaluate(() => ({ depth: window.__dbg.game().depth, town: window.__dbg.game().level.town })));

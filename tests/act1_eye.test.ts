@@ -24,7 +24,7 @@ import { GRAIN } from '../src/art/kit';
 import { TILE3 } from '../src/art/new_mobs3';
 import { act1Rules } from '../src/game/act1_rules/index';
 import {
-  BURSTS, CALL, EYE_ACTS, EYE_ARENA, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_EGG, EYE_EMPOWER, EYE_MOVES, EYE_OBELISKS, EYE_SPEW, EYE_SPLASH, EYE_STAND,
+  BURSTS, CALL, SWEEPS, SWELL, sweepWay, EYE_ACTS, EYE_ARENA, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_EGG, EYE_EMPOWER, EYE_MOVES, EYE_OBELISKS, EYE_SPEW, EYE_SPLASH, EYE_STAND,
   EYE_BARS, EYE_SURFACE, EYE_SWEEP, EYE_TILE, FASTER, PHASES, RULES, SPAWN, aimOf, eggLanding, eyeClip, eyeClock, eyePhase, figureAct, moveOf, obeliskAt, onAim, rimOn, ringOn, sweepAngle, waveAt,
 } from '../src/game/act1_rules/eye';
 import { bossKind } from '../src/game/bosses';
@@ -68,6 +68,8 @@ function arena(seed: number): { g: Game; m: Monster } {
   m.life = m.maxLife = 1e9;
   m.cd = 0;
   g.events.length = 0;
+  // (each of his moves alone: the swell of arms round the hero, SWELL, kept off; test 13 has it)
+  SWELL.on = false;
   return { g, m };
 }
 /** The hero stood on the ring `r` tiles from his middle, as near the line `aim` as there is floor (and returns where). */
@@ -385,6 +387,9 @@ test('6. his arms burst up where the hero stood, when their cracks have glowed, 
 });
 
 test('7. his sweep strikes whoever is within its reach as it comes round, and no one beyond it, nor one who rolls over it', () => {
+  // (one sweep: the rest of a row of them, SWEEPS, in test 14)
+  const row = SWEEPS.n;
+  SWEEPS.n = 1;
   {
     const { g, m } = arena(11);
     const at = stand(g, m, 30, 4.6);
@@ -407,6 +412,7 @@ test('7. his sweep strikes whoever is within its reach as it comes round, and no
     assert.ok(Math.hypot(at.x - m.x, at.y - m.y) > EYE_SWEEP.reach + TUNE.heroRadius, 'beyond its reach');
     assert.equal(s.hurts.length, 0, 'beyond its reach, it misses');
   }
+  SWEEPS.n = row;
 });
 
 test('8. his splash: the wave strikes him as it rolls over where he stands; his spew\'s eggs land where his picture throws them and hatch his eyespawn', () => {
@@ -591,4 +597,99 @@ test('12. he is seen from wherever on his ring the hero sees any of his pool, no
     watch(g, m, 0.3);
     assert.ok(!m.seen, 'not seen from thirty tiles off');
   }
+});
+
+test('13. the swell: arms burst up round the hero all the while, more each phase, the siege\'s bolts with them in phase 3; none as he changes, none at a hero off his ring', () => {
+  // (the owner, 23 Oct 2026, by 20:48: “Each phase should be harder than the last so by phase three there should be stuff
+  // everywhere.  I’d like constant hit boxes being thrown out.”)
+  const thrown: { arms: number; bolts: number }[] = [];
+  for (const ph of [0, 1, 2]) {
+    const { g, m } = arena(41 + ph);
+    m.a1!.ph = ph;
+    SWELL.on = true;
+    const at = stand(g, m, 20, 4.8);
+    const seen = new Set<object>();
+    let arms = 0;
+    let bolts = 0;
+    let far = 0;
+    // (not to fall: two or three at once are more than his life)
+    g.hero.invuln = 1e9;
+    watch(g, m, 8, null as never, () => {
+      // (his own moves kept cooling: the swell alone)
+      m.moveCd = EYE_ACTS.map(() => 1e9);
+      m.cd = 1e9;
+      g.hero.x = at.x;
+      g.hero.y = at.y;
+      for (const p of g.perils) {
+        if (seen.has(p) || (p.a1 !== 'eye:burst' && p.a1 !== 'eye:bolt')) continue;
+        seen.add(p);
+        if (p.a1 === 'eye:burst') {
+          arms++;
+          if (Math.hypot(p.x - at.x, p.y - at.y) > SWELL.far + 0.05) far++;
+        } else bolts++;
+      }
+    });
+    near(arms, (8 / SWELL.every[ph]) * SWELL.n[ph], SWELL.n[ph] * 1.01, `phase ${ph + 1}: arms in eight seconds`);
+    near(bolts, (8 / SWELL.every[ph]) * SWELL.bolts[ph], SWELL.bolts[ph] * 1.01 + 0.01, `phase ${ph + 1}: bolts in eight seconds`);
+    assert.equal(far, 0, `phase ${ph + 1}: every arm round the hero`);
+    thrown.push({ arms, bolts });
+  }
+  assert.ok(thrown[0].arms + thrown[0].bolts < thrown[1].arms + thrown[1].bolts, 'more in phase 2 than 1');
+  assert.ok(thrown[1].arms + thrown[1].bolts < thrown[2].arms + thrown[2].bolts, 'more in phase 3 than 2');
+  // (none while he changes into his next phase)
+  {
+    const { g, m } = arena(47);
+    SWELL.on = true;
+    m.life = 1;
+    m.maxLife = 1e9;
+    stand(g, m, 20, 4.8);
+    let n = 0;
+    watch(g, m, EYE_SURFACE.long - 0.2, null as never, () => {
+      n += g.perils.filter((p) => p.a1 === 'eye:burst' && p.t < 0.05).length;
+    });
+    assert.equal(n, 0, 'none as he surfaces');
+  }
+  // (none at a hero who has left his ring)
+  {
+    const { g, m } = arena(48);
+    SWELL.on = true;
+    const at = stand(g, m, 20, EYE_ARENA.ring.rx + 3.5);
+    let n = 0;
+    watch(g, m, 5, null as never, () => {
+      m.moveCd = EYE_ACTS.map(() => 1e9);
+      m.cd = 1e9;
+      g.hero.x = at.x;
+      g.hero.y = at.y;
+      n += g.perils.filter((p) => (p.a1 === 'eye:burst' || p.a1 === 'eye:bolt') && p.t < 0.05).length;
+    });
+    assert.equal(n, 0, 'none at a hero off his ring');
+  }
+  SWELL.on = false;
+});
+
+test('14. his sweep back and forth: three in a row, as his round comes, the second the other way round, each striking whoever is in its reach', () => {
+  // (the owner, 23 Oct 2026, by 20:48: “Like the tentacle swipe should be back and forth, maybe three times in a row.”)
+  const { g, m } = arena(19);
+  const at = stand(g, m, 30, 4.6);
+  keep(m, 'eye:sweep');
+  const sweeps: { n: number; hand: number; a: number; t: number }[] = [];
+  let k = 0;
+  const s = watch(g, m, 14, null as never, () => {
+    k++;
+    g.hero.x = at.x;
+    g.hero.y = at.y;
+    g.hero.invuln = 0;
+    if (m.act && m.act.id === 'eye:sweep' && !sweeps.some((w) => w.n === m.act!.n)) sweeps.push({ n: m.act.n, hand: m.act.hand, a: m.act.a, t: k / 60 });
+  });
+  assert.equal(sweeps.length, SWEEPS.n, `${SWEEPS.n} sweeps (${sweeps.length})`);
+  assert.deepEqual(sweeps.map((w) => w.hand), [1, -1, 1], 'back and forth');
+  for (let i = 1; i < sweeps.length; i++) near(sweeps[i].t - sweeps[i - 1].t, EYE_STAND.period, 0.05, `sweep ${i + 1} as his round comes after the last`);
+  assert.equal(s.hurts.length, SWEEPS.n, 'each strikes him');
+  // (the one the other way round comes round from his other side: its arm's angle grows as it goes, and passes where he stands)
+  const back = sweeps[1];
+  const a0 = sweepWay(EYE_SWEEP.hurt, back.a, back.hand);
+  const a1 = sweepWay(EYE_SWEEP.over, back.a, back.hand);
+  assert.ok(a1 > a0, `the other way round (${a0.toFixed(0)} to ${a1.toFixed(0)})`);
+  const mid = a0 + ((((at.aim - a0) % 360) + 360) % 360);
+  assert.ok(mid >= a0 && mid <= a1 + 1e-6, `it passes where he stands (${at.aim.toFixed(0)} between ${a0.toFixed(0)} and ${a1.toFixed(0)})`);
 });

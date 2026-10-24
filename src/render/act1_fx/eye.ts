@@ -14,7 +14,7 @@ import { FLAME } from '../../art/mkit';
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
 import { actDef } from '../../game/bosses';
-import { EYE_STAND, EYE_SWEEP, eyeClip, eyeClock, eyePhase, figureAct, moveOf, onAim, sweepAngle } from '../../game/act1_rules/eye';
+import { EYE_STAND, EYE_SWEEP, eyeClip, eyeClock, eyePhase, figureAct, moveOf, onAim, sweepWay } from '../../game/act1_rules/eye';
 import type { Monster, Peril } from '../../game/state';
 import { clipIndex, paintedNear } from '../figure';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -65,8 +65,9 @@ function sweepWarning(c: Act1FxCtx, p: Peril): void {
   if (!g) return;
   const S = EYE_SWEEP;
   const k = Math.min(1, p.t / S.sweep[0]);
-  const a0 = sweepAngle(S.sweep[0], p.a);
-  const a1 = sweepAngle(S.over, p.a);
+  // (either way round: SWEEPS, the peril's hand)
+  const a0 = sweepWay(S.sweep[0], p.a, p.hand);
+  const a1 = sweepWay(S.over, p.a, p.hand);
   // (as close set as the Headsman's ring: a dot every two or three of the game's pixels along it)
   const n = Math.max(48, Math.round((Math.abs(a1 - a0) / 360) * S.reach * 80));
   const run = (c.t * 1.4) % 1;
@@ -92,8 +93,10 @@ export const FX: Act1Fx = {
   sprite(m: Monster, _art: ActorArt, set: AnimSet): Sprite | null {
     const s = figureNow(m, set);
     if (!s) return null;
-    // (never turned over: where the game would turn him to the hero, as a boss who waits for his gate is, it is undone)
-    return m.fx - m.fy < 0 ? flipSprite(s) : s;
+    // (never turned over: where the game would turn him to the hero, as a boss who waits for his gate is, it is undone;
+    // but his sweep the other way round, SWEEPS, is his picture of it turned over)
+    const back = m.state === 'act' && !!m.act && m.act.id === 'eye:sweep' && m.act.hand < 0;
+    return (m.fx - m.fy < 0) !== back ? flipSprite(s) : s;
   },
 
   ground(c: Act1FxCtx, _m: Monster | null, p: Peril | null): void {

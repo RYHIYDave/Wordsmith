@@ -155,6 +155,11 @@ export function sweepAngle(t: number, aim: number): number {
   if (t < S.over) return a1 - 12 - 14 * sm((t - S.sweep[1]) / (S.over - S.sweep[1]));
   return a1 - 26;
 }
+/** Where his sweep's arm lies at `t` going `way` round (1 as painted, -1 turned over: aimed `aim` as painted, it comes round about `-aim` the other way). */
+export function sweepWay(t: number, aim: number, way: number): number {
+  const a = sweepAngle(t, aim);
+  return way < 0 ? -a : a;
+}
 /** How far across the ring his splash's wave has rolled at `t` (0 at the pool's rim, 1 at the ring's edge), or null (the art's waveAt). */
 export function waveAt(t: number): number | null {
   const S = EYE_SPLASH;
@@ -210,6 +215,23 @@ export const BLAZING = { hurry: 0.65 };
  * quicker still. Where you are heading: where you will be `lead` seconds on at the pace you are going (at most `most` tiles on).
  */
 export const FASTER = { warn: 0.55, lead: 0.5, most: 2.2 };
+/**
+ * HARDER EACH PHASE, SOMETHING ALWAYS COMING. The owner, shown him from the game and asked whether he was right now, by
+ * 20:48, 23 Oct 2026 (Pacific): “Each phase should be harder than the last so by phase three there should be stuff
+ * everywhere.  I’d like constant hit boxes being thrown out.  Like the tentacle swipe should be back and forth, maybe three
+ * times in a row.  When the player is dodging and running, he’s not doing damage so the fights go on longer and are more
+ * engaging than just increasing the total boss HP to another 2x just to get a decently long fight”. So, his life as it was:
+ * THE SWELL: arms bursting up round the hero all the while, between his moves and through them (not while he changes into
+ * his next phase, nor at a hero gone from his ring): every `every[ph]` seconds `n[ph]` of them, the first where the hero is
+ * heading (or by him), the rest `near` to `far` tiles round him; and in phase 3 `bolts[ph]` of the siege's bolts with them,
+ * the first by him, the rest anywhere on the ring. (`on`: the tests of each of his moves alone turn it off.)
+ */
+export const SWELL = { on: true, every: [2.0, 1.2, 0.8] as const, n: [1, 2, 2] as const, bolts: [0, 0, 2] as const, near: 0.6, far: 3.2 };
+/**
+ * HIS SWEEP BACK AND FORTH (his words above): `n` sweeps in a row, each as his round next comes to its start (0.6 s after
+ * the last), every other one the other way round: his picture of it turned over, the arm coming round from the other side.
+ */
+export const SWEEPS = { n: 3 };
 
 /**
  * HIS ACTS: his basic blow first and his biggest last; `forced` ones are his phases' changes. `clip`: the picture each
@@ -221,13 +243,13 @@ export const EYE_ACTS: readonly ActDef[] = [
   // (several at once round you, the first under you)
   { id: 'eye:bursts', clip: 'burst', long: 1.4, hit: EYE_BURST.burst, dmg: 0.85, cooldown: 4.5, first: 2.5, after: 0.4, near: 0, far: 12 },
   // (phase 1: an arm out of the pool, cocked back, whipped round 170 degrees low over the ring: step out of its reach, or leap or roll over it)
-  { id: 'eye:sweep', clip: 'sweepUnder', long: EYE_SWEEP.long, hit: EYE_SWEEP.sweep[0], dmg: 1.2, cooldown: 5.5, first: 3, after: 0.3, near: 0, far: EYE_SWEEP.reach + 0.6 },
+  { id: 'eye:sweep', clip: 'sweepUnder', long: EYE_SWEEP.long, hit: EYE_SWEEP.sweep[0], dmg: 1.2, cooldown: 9, first: 3, after: 0.3, near: 0, far: EYE_SWEEP.reach + 0.6 },
   // (phase 2: eggs spewed out over the ring, each hatching an eyespawn)
   { id: 'eye:spew', clip: 'spew', long: EYE_SPEW.long, hit: EYE_SPEW.eggs[0], dmg: 0, cooldown: 12, first: 3, after: 0.3, near: 0, far: 13 },
   // (phase 2: he heaves his bulk up and crashes down, a wave rolling out over the whole ring: leap or roll through it)
   { id: 'eye:splash', clip: 'splash', long: EYE_SPLASH.long, hit: EYE_SPLASH.crash, dmg: 1.3, cooldown: 7.5, first: 5, after: 0.3, near: 0, far: 9.5 },
   // (phase 3: he calls the siege down: its bolts rain on the ring, one where you stand)
-  { id: 'eye:call', clip: 'call', long: EYE_CALL.long, hit: CALL.from + EYE_BOLT.strike, dmg: 1.0, cooldown: 5.5, first: 2, after: 0.3, near: 0, far: 14 },
+  { id: 'eye:call', clip: 'call', long: EYE_CALL.long, hit: CALL.from + EYE_BOLT.strike, dmg: 1.0, cooldown: 4.5, first: 2, after: 0.3, near: 0, far: 14 },
   // (his phases' changes)
   { id: 'eye:surface', clip: 'surface', long: EYE_SURFACE.long, hit: EYE_SURFACE.boil, dmg: 0.5, cooldown: 0, first: 0, after: 0.8, near: 0, far: 0, forced: true },
   { id: 'eye:empower', clip: 'empower', long: EYE_EMPOWER.long, hit: EYE_EMPOWER.burst, dmg: 0.6, cooldown: 0, first: 0, after: 0.8, near: 0, far: 0, forced: true },
@@ -260,6 +282,12 @@ interface EyeState {
   /** (FASTER) Where he was heading as his bursts began (the second of them goes there). */
   ax?: number;
   ay?: number;
+  /** (SWELL) Seconds to the swell's next arms; how many it has thrown (for their pictures' turns). */
+  sw?: number;
+  sk?: number;
+  /** (SWEEPS) Sweeps still to come in a row (0: none), and the way the next goes round (1 as painted, -1 turned over). */
+  sn?: number;
+  sd?: 1 | -1;
 }
 function st(m: Monster): EyeState {
   if (!m.a1 || m.a1.hx === undefined) m.a1 = { ph: 0, base: 0, c0: 0, el: 0, pc: 0, ws: 0, hx: m.x, hy: m.y };
@@ -341,6 +369,37 @@ function ahead(R: BossRules, m: Monster): { x: number; y: number } | null {
   if (!g.free(g.level.walk, x, y, 0.3)) return null;
   if (Math.hypot((x - m.x) / EYE_ARENA.pool.rx, (y - m.y) / EYE_ARENA.pool.ry) < 1.08) return null;
   return { x, y };
+}
+
+/**
+ * (SWELL) Arms bursting up round the hero all the while, and in phase 3 the siege's bolts with them: whatever he is doing,
+ * but not as he changes into his next phase, nor at a hero who has left his ring.
+ */
+function swell(R: BossRules, m: Monster, dt: number, dist: number): void {
+  const g = R.g;
+  const h = g.hero;
+  const s = st(m);
+  const ph = Math.min(2, s.ph);
+  if (s.sw === undefined) s.sw = SWELL.every[ph];
+  const changing = m.state === 'act' && !!m.act && (m.act.id === 'eye:surface' || m.act.id === 'eye:empower');
+  if (!SWELL.on || changing || (EYE_BARS.on && s.ph < 2 && m.life <= 1) || h.life <= 0) return;
+  if (dist > ringOn(aimOf(h.x - m.x, h.y - m.y)) + 1.5) return;
+  s.sw -= dt;
+  if (s.sw > 0) return;
+  s.sw += SWELL.every[ph];
+  if (s.sw < 0) s.sw = SWELL.every[ph];
+  const arm = EYE_ACTS[0];
+  const n = (s.sk = (s.sk ?? 0) + 3);
+  for (let k = 0; k < SWELL.n[ph]; k++) {
+    const p = (k === 0 ? ahead(R, m) : null) ?? spotOn(R, m, { x: h.x, y: h.y }, k === 0 ? 0 : SWELL.near, k === 0 ? SWELL.near : SWELL.far);
+    if (p) burstAt(R, m, arm, p.x, p.y, n + k);
+  }
+  const call = EYE_ACTS.find((a) => a.id === 'eye:call')!;
+  for (let k = 0; k < SWELL.bolts[ph]; k++) {
+    const p = k === 0 ? spotOn(R, m, { x: h.x, y: h.y }, 1.2, SWELL.far) : spotOn(R, m, null, 0, 0);
+    if (!p) continue;
+    R.peril(m, 'act1', p.x, p.y, { a1: 'eye:bolt', hit: EYE_BOLT.strike, dur: EYE_BOLT.long, dmg: g.rollMonsterDmg(m) * call.dmg, el: 'lightning', c: (n + k) % 3 });
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -449,6 +508,7 @@ export const RULES: Act1Rules = {
       s.lx = h.x;
       s.ly = h.y;
     }
+    swell(R, m, dt, dist);
     if (m.state === 'act' && m.act) {
       // (an act: BossRules runs its clock; his arms' acts keep how far his stand has run under them)
       s.el = m.animT;
@@ -469,6 +529,13 @@ export const RULES: Act1Rules = {
     s.pc = c;
     // what he does now: a phase's change; or the biggest of his moves that is ready and the hero is in reach of
     let want = RULES.forced!(R, m, acts);
+    // (SWEEPS: one still to come in a row is all he does, as his round comes; the hero gone out of its reach, or his
+    // phase changed, and the row is over)
+    if (want < 0 && (s.sn ?? 0) > 0) {
+      const i = acts.findIndex((a) => a.id === 'eye:sweep');
+      if (s.ph === 0 && dist <= acts[i].far) want = i;
+      else s.sn = 0;
+    }
     if (want < 0 && m.cd <= 0) {
       const h = g.hero;
       // (he sees whoever is in sight of the ring's inner stones: from his middle the rim's stones, cut corner to corner,
@@ -507,6 +574,16 @@ export const RULES: Act1Rules = {
     act.a = mv ? nearestAim(mv, aim) : aim;
     act.b = 0;
     s.ws = 0;
+    if (a.id === 'eye:sweep') {
+      // (SWEEPS: the first of a row as painted, the next the other way round: its picture turned over, aimed as painted
+      // at the hero's aim turned over)
+      if (!(s.sn ?? 0)) {
+        s.sn = SWEEPS.n;
+        s.sd = 1;
+      }
+      act.hand = s.sd ?? 1;
+      if (act.hand < 0) act.a = nearestAim('sweepUnder', -aim);
+    }
     if (a.id === 'eye:sweep') {
       // (the reach of his sweep, laid on the ring's stones while his arm is cocked: the warning, drawn by render/act1_fx/eye.ts;
       // where it lies is a point of the ring before the hero, his middle and the sweep's aim kept with it)
@@ -561,11 +638,12 @@ export const RULES: Act1Rules = {
         if (act.b || t1 <= EYE_SWEEP.hurt || t0 >= EYE_SWEEP.over) break;
         if (dist > EYE_SWEEP.reach + TUNE.heroRadius) break;
         // (the arm passes where he stands: it sweeps from the far side round to the near)
-        const b0 = sweepAngle(Math.max(EYE_SWEEP.hurt, t0), act.a);
-        const b1 = sweepAngle(Math.min(EYE_SWEEP.over, t1), act.a);
+        // (either way round: SWEEPS, act.hand)
+        const b0 = sweepWay(Math.max(EYE_SWEEP.hurt, t0), act.a, act.hand);
+        const b1 = sweepWay(Math.min(EYE_SWEEP.over, t1), act.a, act.hand);
         const hb = near180(aimOf(dx, dy), (b0 + b1) / 2);
         const pad = (TUNE.heroRadius / Math.max(1, dist)) / D;
-        if (hb <= b0 + pad && hb >= b1 - pad) {
+        if (hb <= Math.max(b0, b1) + pad && hb >= Math.min(b0, b1) - pad) {
           act.b = 1;
           if (!h.move && h.invuln <= 0) {
             R.blow(m, a.dmg);
@@ -676,6 +754,13 @@ export const RULES: Act1Rules = {
     if (a.id === 'eye:surface') s.ph = 1;
     else if (a.id === 'eye:empower') s.ph = 2;
     m.phase = s.ph;
+    // (SWEEPS: another to come in the row, the other way round, as his round next comes; the row over, its cooldown from now)
+    if (a.id === 'eye:sweep') {
+      s.sn = Math.max(0, (s.sn ?? 1) - 1);
+      s.sd = s.sd === -1 ? 1 : -1;
+      if (s.sn > 0) m.cd = 0;
+      else s.sd = 1;
+    } else if (a.forced) s.sn = 0;
     // (EYE_BARS: out of his change with his bar full again)
     if (EYE_BARS.on && (a.id === 'eye:surface' || a.id === 'eye:empower')) m.life = m.maxLife;
     if (s.ph >= 2) m.cd *= BLAZING.hurry;
