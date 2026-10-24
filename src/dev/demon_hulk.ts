@@ -451,7 +451,7 @@ export function paintHulk(o: HulkLook, view: GameView = 'front'): Painted {
 }
 
 /** What pours off it, about the points given. */
-interface AuraAt {
+export interface AuraAt {
   /** Where it rises from: the hump, the shoulders, the back, the forearms. */
   from: V3[];
   horns: V3[];
@@ -465,7 +465,7 @@ const FIRE = ['#a8300c', '#e05018', '#ff8a2a', '#ffc24a', '#fff0a0', '#ffffff'];
 const FROST = ['#1c4a9a', '#2e6cc8', '#58a8f0', '#b0e0ff', '#ffffff'];
 const BOLT = ['#c8b020', '#fff060', '#ffffd0', '#ffffff'];
 const STINK = ['#4a5a0c', '#7c9416', '#b4cc24', '#e6f47a'];
-function drawAura(st0: Stage, out: Px, kind: Aura, at: AuraAt): void {
+export function drawAura(st0: Stage, out: Px, kind: Aura, at: AuraAt): void {
   // (drawn on the finished picture, so that the friend's rim goes round him and not round his smoke: what is "under" him only
   // where he is not)
   const st = {

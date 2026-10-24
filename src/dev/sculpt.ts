@@ -50,6 +50,8 @@ export interface Mat {
   paint?: (h: Hit) => string | null;
   /** Takes this much of the light off all of it (under a brim, a far limb). */
   shade?: number;
+  /** How dark its creases go (the share of the light taken off where it is hemmed in; the default CREASE). */
+  crease?: number;
 }
 
 interface Common {
@@ -72,7 +74,9 @@ export interface Cone extends Common { k: 'cone'; a: V3; b: V3; ra: number; rb: 
 export interface Ell extends Common { k: 'ell'; c: V3; axes: readonly [V3, V3, V3] }
 /** A block with rounded edges: its middle, its three half-lengths along their own lines, and how round. */
 export interface Box extends Common { k: 'box'; c: V3; axes: readonly [V3, V3, V3]; round: number }
-export type Prim = Cone | Ell | Box;
+/** A flat three-cornered sheet `thick` either side of its plane (a wing's leather between two of its fingers). */
+export interface Tri extends Common { k: 'tri'; a: V3; b: V3; c: V3; thick: number }
+export type Prim = Cone | Ell | Box | Tri;
 
 // (what each solid works out once: its bounds, its axes as units and lengths)
 interface Ready {
@@ -126,9 +130,18 @@ export class Sculpt {
     this.prims.push(p);
     return p;
   }
+  tri(mat: number, piece: string, a: V3, b: V3, c: V3, thick: number, blend = 0.6, more: Partial<Common> = {}): Tri {
+    const p: Tri = { k: 'tri', mat, piece, blend, a, b, c, thick, ...more };
+    this.prims.push(p);
+    return p;
+  }
 }
 
 function ready(p: Prim): Ready {
+  if (p.k === 'tri') {
+    const c: V3 = [(p.a[0] + p.b[0] + p.c[0]) / 3, (p.a[1] + p.b[1] + p.c[1]) / 3, (p.a[2] + p.b[2] + p.c[2]) / 3];
+    return { p, bc: c, br: Math.max(lenOf(sub(p.a, c)), lenOf(sub(p.b, c)), lenOf(sub(p.c, c))) + p.thick };
+  }
   if (p.k === 'cone') {
     const ab = sub(p.b, p.a);
     const L = lenOf(ab);
@@ -150,7 +163,9 @@ function ready(p: Prim): Ready {
 function dist(r: Ready, q: V3): number {
   const p = r.p;
   let d: number;
-  if (p.k === 'cone') {
+  if (p.k === 'tri') {
+    d = triDist(q, p.a, p.b, p.c) - p.thick;
+  } else if (p.k === 'cone') {
     // a rod that tapers, rounded at its ends (a capsule whose radius runs from ra to rb)
     const pa = sub(q, p.a);
     const ba = r.ba as V3;
@@ -181,6 +196,29 @@ function dist(r: Ready, q: V3): number {
   }
   if (p.cuts) for (const c of p.cuts) d = Math.max(d, dot(q, c.n) - c.o);
   return d;
+}
+
+/** How far a point is from a triangle (Inigo Quilez's way). */
+function triDist(p: V3, a: V3, b: V3, c: V3): number {
+  const ba = sub(b, a);
+  const pa = sub(p, a);
+  const cb = sub(c, b);
+  const pb = sub(p, b);
+  const ac = sub(a, c);
+  const pc = sub(p, c);
+  const cr = (x: V3, y: V3): V3 => [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]];
+  const nor = cr(ba, ac);
+  const sg = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0);
+  const inside = sg(dot(cr(ba, nor), pa)) + sg(dot(cr(cb, nor), pb)) + sg(dot(cr(ac, nor), pc)) >= 2;
+  if (inside) {
+    const nn = dot(nor, nor) || 1e-9;
+    return Math.abs(dot(nor, pa)) / Math.sqrt(nn);
+  }
+  const seg = (e: V3, w: V3): number => {
+    const t = Math.max(0, Math.min(1, dot(e, w) / (dot(e, e) || 1e-9)));
+    return Math.hypot(e[0] * t - w[0], e[1] * t - w[1], e[2] * t - w[2]);
+  };
+  return Math.min(seg(ba, pa), seg(cb, pb), seg(ac, pc));
 }
 
 /** The whole figure's distance field, worked out per material. */
@@ -370,7 +408,7 @@ export function draw(sc: Sculpt, view: PaintView, ax: number, ay: number, size: 
       const o2 = f.at([q[0] + n[0] * 2.6, q[1] + n[1] * 2.6, q[2] + n[2] * 2.6]).d / 2.6;
       const open = Math.max(0, Math.min(1, (o1 + o2) / 2));
       const mat = sc.mats[m];
-      const tone = toneOf(nl - (1 - open) * CREASE - (mat.shade ?? 0));
+      const tone = toneOf(nl - (1 - open) * (mat.crease ?? CREASE) - (mat.shade ?? 0));
       const prim = f.nearest(m, q);
       const h: Hit = { p: q, n, nl, tone, prim, x, y };
       const c = (mat.paint && mat.paint(h)) || mat.ramp[tone];
@@ -506,7 +544,8 @@ export function onCone(c: Cone, p: V3, ref: V3): { t: number; around: number } {
   return { t, around: Math.atan2(dot(out, v), dot(out, u)) };
 }
 /** Where a point is on a ball or a block, along its own three lines (-1 to 1 at its skin). */
-export function onBall(e: Ell | Box, p: V3): V3 {
+export function onBall(e: Ell | Box | Tri, p: V3): V3 {
+  if (e.k === 'tri') return [0, 0, 0];
   const v = sub(p, e.c);
   return e.axes.map((a) => dot(v, a) / Math.max(1e-6, dot(a, a))) as unknown as V3;
 }
