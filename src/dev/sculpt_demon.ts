@@ -166,12 +166,14 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
 
   // ---- THE ARMS: a shoulder like a boulder under a crest of bone plates and a spike; forearms like trunks, spines and plates
   // down them; a broken shackle at each wrist; hands like shovels; long hooked claws
+  /** Where the fire sits: in the palm of his raised hand (set as the hand is built). */
+  const FIRE_AT: { at: V3 } = { at: P(38, -36, 90) };
   const arm = (side: 1 | -1): void => {
     const piece = side > 0 ? 'armL' : 'armR';
     const raised = side < 0;
     const sh = P(6, side * 22, 74);
     const el = raised ? P(18, side * 40, 66) : P(14, side * 36, 44);
-    const ha = raised ? P(38, side * 36, 84) : P(28, side * 32, 10);
+    const ha = raised ? P(38, side * 36, 84) : P(22, side * 32, 10);
     sc.ell(hide, piece, sh, X(8.2, 8.2, 7.8), 2.4, { tag: 'delt' });
     sc.cone(hide, piece, sh, lerp3(sh, el, 0.5), 6.8, 7.4, 1.8, { tag: 'upper' });
     sc.cone(hide, piece, lerp3(sh, el, 0.5), el, 7.4, 5.8, 1.8, { tag: 'upper' });
@@ -199,16 +201,9 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
       const at = add(cuff, add(mul(U, -(i * 4.6 + 3)), mul(F, 3 + i * 0.8)));
       sc.ell(steel, piece, at, X(1.6, i % 2 ? 0.9 : 2.2, 2.6), 0, { tag: 'link' });
     }
-    // the hand, and its claws: four, long, hooked
-    sc.ell(hide, piece, ha, X(7, 6.2, 6.2), 2.0, { tag: 'palm' });
-    const dir = raised ? norm(add(mul(F, 1), mul(U, 0.6))) : norm(add(mul(F, 0.7), mul(U, -1)));
-    for (const k of [-1.5, -0.5, 0.5, 1.5]) {
-      const a0 = add(ha, add(mul(dir, 5.0), mul(L, k * 2.7)));
-      const m = raised ? add(a0, add(mul(dir, 6.5), mul(F, -0.5))) : add(a0, add(mul(dir, 4.5), mul(F, 3.0)));
-      const b = raised ? add(m, add(mul(dir, 3.0), mul(F, -4))) : [m[0] + F[0] * 6, m[1] + F[1] * 6, 0.6] as V3;
-      sc.cone(hide, piece, a0, m, 1.9, 1.4, 1.0, { tag: 'finger' });
-      sc.cone(bone, piece, m, b, 1.5, 0.2, 0.3, { tag: 'claw' });
-    }
+    // THE HAND, BUILT AS A HAND (demonHand, below)
+    const fire = demonHand(sc, hide, bone, piece, ha, el, raised);
+    if (fire) FIRE_AT.at = fire;
   };
   arm(1);
   arm(-1);
@@ -273,14 +268,14 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
     }
   }
 
-  const d = draw(sc, view, HULK_CANVAS.ax, HULK_CANVAS.ay, HULK_CANVAS, (st) => handFire(st, P(46, -36, 92), 5.5, 2), FRIEND_RIM);
+  const d = draw(sc, view, HULK_CANVAS.ax, HULK_CANVAS.ay, HULK_CANVAS, (st) => handFire(st, FIRE_AT.at, 4.0, 2), FRIEND_RIM);
   const behind = nearOf(F) < 0;
   drawAura(d.st, d.px, aura, {
     from: [P(-6, 0, 88), P(0, 20, 86), P(0, -20, 86), P(-12, 12, 82), P(-12, -12, 82), P(20, -38, 72), P(20, 34, 30), P(-2, 0, 70)],
     horns: [P(51, 19, 84), P(51, -19, 84), P(43, 23, 88), P(43, -23, 88)],
     jaw: P(40, 0, 62),
-    claws: [P(38, -36, 84), P(30, 32, 4)],
-    feet: [P(4, 13, 2), P(-2, -13, 2), P(34, 32, 1)],
+    claws: [P(38, -36, 96), P(32, 32, 3)],
+    feet: [P(4, 13, 2), P(-2, -13, 2), P(26, 32, 1)],
     behind,
   });
   // NO PIXEL ALONE (his rulebook's Pixels 1): a spark, a flake or a drop of what pours off it left alone on the dark is
@@ -301,6 +296,86 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
     }
   }
   return d;
+}
+
+/**
+ * THE DEMON'S HAND, BUILT AS A HAND (his “No the thumb isn’t in the right place.  Take a second to figure out hands and
+ * claws then do it right”, 24 Oct). A broad palm; four fingers along its far edge, index to little finger, each of two
+ * joints; the thumb set apart at the side of the palm by the wrist, on the side a thumb is: his RIGHT hand PALM UP has its
+ * thumb on its right; his LEFT hand PALM DOWN has its thumb on its right too, toward his middle. Then, his “More like
+ * talons, and the fingers and thumb more splayed out on the left hand” (by 09:30): fingers and thumb SPREAD WIDE, fanned
+ * out from the palm (on both hands); out of each tip a TALON, thick at its root, long, curved over to a point. The raised
+ * (right) hand holds the fire in its palm, its fingers spread round it, talons hooked over it; the other is planted on the
+ * floor, spread, its talons arched and dug in. Returns where the fire sits (in the raised hand's palm), else null.
+ */
+export function demonHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, raised: boolean): V3 | null {
+  const U: V3 = [0, 0, 1];
+  /** (a demon's hand is big: a shovel, broader than its forearm) */
+  const S = 1.45;
+  const m = (v: V3, k: number): V3 => mul(v, k * S);
+  const fore = norm(sub(ha, el));
+  const fwd = norm([fore[0], fore[1], 0]);
+  const across = norm(cross(U, fwd));
+  const thumbWay: V3 = [-across[0], -across[1], -across[2]];
+  const lift = (p: V3, z: number): V3 => [p[0], p[1], z];
+  const fan = (deg: number): V3 => norm(add(mul(fwd, Math.cos((deg * Math.PI) / 180)), mul(thumbWay, Math.sin((deg * Math.PI) / 180))));
+  /** A talon along `pts`, thick at its root and drawn to a point. */
+  const talon = (pts: V3[]): void => {
+    const r = [1.5, 1.15, 0.7, 0.08];
+    for (let i = 0; i + 1 < pts.length; i++) sc.cone(bone, piece, pts[i], pts[i + 1], r[i] * S, r[i + 1] * S, 0.15, { tag: 'claw' });
+  };
+  const palmC = add(ha, m(fwd, 1.5));
+  sc.ell(hide, piece, palmC, [m(fwd, 5.0), m(across, 5.0), m(U, 2.4)], 1.6 * S, { tag: 'palm' });
+  // index, middle, ring, little: fanned out (degrees toward the thumb's side), and how long
+  const fingers: [number, number][] = [[34, 1.0], [11, 1.12], [-12, 1.0], [-35, 0.84]];
+  for (const [deg, len] of fingers) {
+    const dir = fan(deg);
+    const base = add(palmC, m(dir, 4.3));
+    let k1: V3;
+    let k2: V3;
+    let pts: V3[];
+    if (raised) {
+      k1 = add(base, add(m(dir, 3.0 * len), m(U, 0.8)));
+      k2 = add(k1, add(m(dir, 1.8 * len), m(U, 2.2 * len)));
+      const t1 = add(k2, add(m(dir, 0.6 * len), m(U, 2.6 * len)));
+      const t2 = add(t1, add(m(dir, -1.0 * len), m(U, 1.5 * len)));
+      pts = [k2, t1, t2, add(t2, add(m(dir, -1.9 * len), m(U, -0.6)))];
+    } else {
+      k1 = add(base, add(m(dir, 3.0 * len), m(U, -2.2)));
+      k2 = lift(add(k1, m(dir, 2.4 * len)), 3.0 * S);
+      const t1 = lift(add(k2, m(dir, 2.0 * len)), 3.7 * S);
+      const t2 = lift(add(t1, m(dir, 1.7 * len)), 2.5 * S);
+      pts = [k2, t1, t2, lift(add(t2, m(dir, 1.0 * len)), 0.5)];
+    }
+    sc.cone(hide, piece, base, k1, 1.45 * S, 1.25 * S, 0.5, { tag: 'finger' });
+    sc.cone(hide, piece, k1, k2, 1.25 * S, 1.1 * S, 0.3, { tag: 'finger' });
+    talon(pts);
+  }
+  // the thumb: out of the side of the palm by the wrist, spread wide from the fingers, then its talon
+  {
+    const dir = fan(78);
+    const tb = add(palmC, add(m(fwd, -1.2), m(thumbWay, 4.0)));
+    let t1: V3;
+    let t2: V3;
+    let pts: V3[];
+    if (raised) {
+      t1 = add(tb, add(m(dir, 2.8), m(U, 0.8)));
+      t2 = add(t1, add(m(dir, 1.4), m(U, 2.2)));
+      const c1 = add(t2, add(m(dir, 0.4), m(U, 2.3)));
+      const c2 = add(c1, add(m(dir, -1.0), m(U, 1.3)));
+      pts = [t2, c1, c2, add(c2, add(m(dir, -1.7), m(U, -0.5)))];
+    } else {
+      t1 = add(tb, add(m(dir, 2.8), m(U, -2.0)));
+      t2 = lift(add(t1, m(dir, 2.0)), 2.9 * S);
+      const c1 = lift(add(t2, m(dir, 1.8)), 3.4 * S);
+      const c2 = lift(add(c1, m(dir, 1.5)), 2.3 * S);
+      pts = [t2, c1, c2, lift(add(c2, m(dir, 0.9)), 0.5)];
+    }
+    sc.cone(hide, piece, tb, t1, 1.7 * S, 1.4 * S, 0.6, { tag: 'finger' });
+    sc.cone(hide, piece, t1, t2, 1.4 * S, 1.15 * S, 0.3, { tag: 'finger' });
+    talon(pts);
+  }
+  return raised ? add(palmC, add(m(fwd, 0.6), m(U, 4.6))) : null;
 }
 
 /** Which of the demon's hides goes with each aura (his “Yes, ash black (Recommended)” for no word). */

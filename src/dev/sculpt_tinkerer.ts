@@ -101,27 +101,51 @@ export function womanHead(sc: Sculpt, w: Who, skin: number): void {
 // ---------------------------------------------------------------------------------------------
 // THE TINKERER
 
-/** Tan leather: her work gloves. */
-const TAN: Ramp = ['#3a2014', '#6a3c22', '#a0663a', '#d09a5a', '#f0c888'];
 
-/** QUICK AND NIMBLE: crouched light on her toes, turned a little, a vial up by her ear in her right hand, ready to lob; her
- * wrench out low in her left; her head up, grinning. */
-export function tinkererStance(B: Build): Bones {
+/**
+ * WHAT SHE HOLDS, AND HOW SHE STANDS WITH IT (his word, 24 Oct, by 07:33: “The brawlers is good but the tinkerers are weird.
+ * She doesn’t need that vial in her hand at the moment since her archetype has changed”): no vial; her tools, in fingerless
+ * gloves. Four to pick from.
+ */
+export type TinkerKit = 'shoulder' | 'key' | 'remote' | 'tools';
+export const TINKER_KITS: { id: TinkerKit; name: string }[] = [
+  { id: 'shoulder', name: 'Wrench on her shoulder' },
+  { id: 'key', name: "The Golem's winding key" },
+  { id: 'remote', name: 'A control box' },
+  { id: 'tools', name: 'Hammer and wrench' },
+];
+/** As she was first drawn: the vial by her ear (his “She doesn’t need that vial”); kept to draw her as before. */
+export const TINKER_KIT: TinkerKit | 'vial' = 'shoulder';
+
+/** QUICK AND NIMBLE: crouched light on her toes, turned a little, her head up, grinning; her hands as her kit has them. */
+export function tinkererStance(B: Build, kit: TinkerKit | 'vial' = TINKER_KIT): Bones {
   const t = B.tall / 55;
-  return {
-    ...standing(B),
+  const legs = {
     pz: -2.6 * t, yaw: -16, bend: 10, twist: -10, side: 4, faceTurn: 14, faceUp: 6, faceTilt: 6,
     lfx: 3.2 * t, lfy: 2.6 * t, lft: 24, lk: 22, lfp: 12,
     rfx: -2.8 * t, rfy: -2.4 * t, rft: -20, rk: -18, rfp: 24, rfz: 0.4 * t,
-    lhIn: 0, lhx: 8.5 * t, lhy: 4.5 * t, lhz: -10.0 * t, le: 30,
-    rhIn: 0, rhx: -3.4 * t, rhy: -6.0 * t, rhz: 4.0 * t, re: 60,
   };
+  const hands =
+    kit === 'shoulder'
+      ? // (the wrench over her right shoulder, her left fist on her hip: cocky)
+        { lhIn: 0 as const, lhx: -1.4 * t, lhy: 3.6 * t, lhz: -12.5 * t, le: 85, rhIn: 0 as const, rhx: 3.4 * t, rhy: -0.6 * t, rhz: -2.6 * t, re: 70 }
+      : kit === 'key'
+        ? // (the Golem's great key held out before her in her left; the wrench low in her right)
+          { lhIn: 0 as const, lhx: 10.0 * t, lhy: 2.4 * t, lhz: -6.0 * t, le: 26, rhIn: 0 as const, rhx: 4.0 * t, rhy: -4.6 * t, rhz: -11.5 * t, re: 26 }
+        : kit === 'remote'
+          ? // (pointing her minions on with her left; the control box at her chest in her right)
+            { lhIn: 0 as const, lhx: 5.0 * t, lhy: 11.5 * t, lhz: 1.5 * t, le: 20, rhIn: 0 as const, rhx: 7.5 * t, rhy: -3.0 * t, rhz: -4.0 * t, re: 50 }
+          : kit === 'tools'
+            ? // (a tool in each hand, both out low and ready)
+              { lhIn: 0 as const, lhx: 8.5 * t, lhy: 4.5 * t, lhz: -10.0 * t, le: 30, rhIn: 0 as const, rhx: 7.0 * t, rhy: -5.0 * t, rhz: -9.0 * t, re: 34 }
+            : { lhIn: 0 as const, lhx: 8.5 * t, lhy: 4.5 * t, lhz: -10.0 * t, le: 30, rhIn: 0 as const, rhx: -3.4 * t, rhy: -6.0 * t, rhz: 4.0 * t, re: 60 };
+  return { ...standing(B), ...legs, ...hands };
 }
 
 /** The Tinkerer sculpted, standing as she stands, in one of the game's views. */
-export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
+export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: TinkerKit | 'vial' = TINKER_KIT): Drawn {
   const B = TINKERER_BODY;
-  const q = (pose ?? tinkererStance(B)) as Posed;
+  const q = (pose ?? tinkererStance(B, kit)) as Posed;
   const s = solve(B, q);
   const w: Who = { s, B, view, spin: turn };
   const sc = new Sculpt();
@@ -209,22 +233,68 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
     const c = add(bc, add(mul(dir, t.belly.h[0] * 0.5 + t.belly.h[1] * 0.5 + 1.9), mul(u, -0.9)));
     sc.cone(vialMats[(i + 1) % 4], 'hips', add(c, mul(u, -1.0)), add(c, mul(u, 0.7)), 0.75, 0.65, 0.3, { tag: 'vial' });
   }
-  // HER HANDS, in leather work gloves with flared cuffs: big enough to read (his “Her hands are tiny too”, 24 Oct, by 06:57
-  // Pacific), about half her head's width, as the heroes' are
+  // HER HANDS: in fingerless gloves of dark leather, her fingers bare, a fist round what she holds; a size to read beside
+  // her (his “Her hands are tiny too”, 24 Oct)
   const glove = sc.mat({
-    ramp: TAN,
+    ramp: HIDE,
     paint: (h) => {
-      if (h.prim.tag === 'cuff') return shadeOf(TAN, h.tone - (farArm(h.prim.piece) ? 2 : 1));
-      return farArm(h.prim.piece) ? shadeOf(TAN, h.tone - 1) : null;
+      const k = farArm(h.prim.piece) ? 1 : 0;
+      if (h.prim.tag === 'fist' || h.prim.tag === 'palm') {
+        const b = onBall(h.prim as Ell, h.p);
+        // (her fingers out of the glove: the front of the fist bare)
+        if (b[0] > 0.3) return shadeOf(SKIN_F, h.tone - k);
+      }
+      if (h.prim.tag === 'finger' || h.prim.tag === 'thumb') return shadeOf(SKIN_F, h.tone - k);
+      if (h.prim.tag === 'cuff') return shadeOf(HIDE, h.tone - 1 - k);
+      return k ? shadeOf(HIDE, h.tone - 1) : null;
     },
   });
-  const gloved = (el: V3, ha: V3, d: V3, o: V3, piece: string, cuffFrom: number): void => {
+  const steel = sc.mat({ ramp: STEEL5 });
+  const brassT = sc.mat({ ramp: BRASS, paint: (h) => (h.prim.tag === 'bit' || h.prim.tag === 'trim' ? shadeOf(BRASS, h.tone - 1) : null) });
+  const woodT = sc.mat({ ramp: ['#1a0c08', '#341a10', '#5a3018', '#84502a', '#aa7440'] });
+  interface Hand {
+    /** The middle of the fist, the way out along the arm, and the way across the palm (what it holds runs along this). */
+    c: V3;
+    d: V3;
+    g: V3;
+  }
+  /** A hand: `open` a flat hand pointing, else a fist; returns where it is and which ways it lies. */
+  const handOf = (side: 'L' | 'R', open = false): Hand => {
+    const el = side === 'L' ? s.elbowL : s.elbowR;
+    const ha = side === 'L' ? s.handL : s.handR;
+    const piece = `arm${side}`;
+    const [d, o] = limbFrame(el, ha, side === 'L' ? l : mul(l, -1));
     const x = norm(cross(d, o));
-    sc.cone(glove, piece, lerp3(el, ha, cuffFrom), add(ha, mul(d, -0.1)), 1.6, 2.25, 0.3, { tag: 'cuff' });
-    sc.box(glove, piece, add(ha, mul(d, 1.15)), [mul(d, 1.5), mul(o, 1.45), mul(x, 1.8)], 0.85, 0.6, { tag: 'hand' });
-    sc.ell(glove, piece, add(ha, add(mul(d, 0.95), mul(x, -1.7))), [mul(d, 1.25), mul(o, 0.75), mul(x, 0.7)], 0.5, { tag: 'thumb' });
+    sc.cone(glove, piece, lerp3(el, ha, 0.86), add(ha, mul(d, 0.2)), 1.2, 1.45, 0.3, { tag: 'cuff' });
+    if (open) {
+      sc.box(glove, piece, add(ha, mul(d, 1.0)), [mul(d, 1.2), mul(o, 0.6), mul(x, 1.25)], 0.5, 0.5, { tag: 'palm' });
+      sc.cone(glove, piece, add(ha, add(mul(d, 1.9), mul(x, 0.5))), add(ha, add(mul(d, 4.2), mul(x, 0.6))), 0.5, 0.42, 0.3, { tag: 'finger' });
+      sc.ell(glove, piece, add(ha, add(mul(d, 1.2), mul(x, -1.3))), [mul(d, 0.9), mul(o, 0.5), mul(x, 0.5)], 0.3, { tag: 'thumb' });
+      return { c: add(ha, mul(d, 1.0)), d, g: x };
+    }
+    const c = add(ha, mul(d, 1.3));
+    sc.box(glove, piece, c, [mul(d, 1.45), mul(o, 1.2), mul(x, 1.55)], 0.8, 0.5, { tag: 'fist' });
+    sc.ell(glove, piece, add(c, add(mul(x, -1.4), mul(o, 0.7))), [mul(d, 0.9), mul(o, 0.55), mul(x, 0.55)], 0.3, { tag: 'thumb' });
+    return { c, d, g: x };
   };
-  // HER TOOLS: a brass bracer of gears on her left forearm; a wrench in her left hand; a copper gauge on her belt
+  /** A wrench in a fist, running `way` from it (a unit: which way its head is). */
+  // (her tools BIG, as a gleeful tinkerer's are: a wrench as long as her leg)
+  const wrenchIn = (hd: Hand, way: V3, len = 9): void => {
+    const w1 = add(hd.c, mul(way, len));
+    sc.cone(steel, 'wrench', add(hd.c, mul(way, -1.8)), w1, 0.75, 0.85, 0.2, { tag: 'shaft' });
+    const side = norm(cross(way, hd.d));
+    sc.box(steel, 'wrench', add(w1, mul(way, 1.0)), [mul(way, 1.35), mul(side, 2.0), mul(norm(cross(way, side)), 0.7)], 0.4, 0.3, { tag: 'jaw' });
+    sc.box(steel, 'wrench', add(w1, mul(way, 1.9)), [mul(way, 0.9), mul(side, 0.7), mul(norm(cross(way, side)), 1.0)], 0.1, 0, { tag: 'gap', carve: true });
+  };
+  /** A hammer: a wooden haft, a steel head across its end, a claw behind. */
+  const hammerIn = (hd: Hand, way: V3): void => {
+    const h1 = add(hd.c, mul(way, 8));
+    sc.cone(woodT, 'hammer', add(hd.c, mul(way, -1.6)), h1, 0.7, 0.8, 0.2, { tag: 'haft' });
+    const across = norm(cross(way, hd.d));
+    sc.box(steel, 'hammer', add(h1, mul(across, 0.9)), [mul(across, 2.3), mul(way, 1.25), mul(hd.d, 1.25)], 0.35, 0.2, { tag: 'head' });
+    sc.cone(steel, 'hammer', add(h1, mul(across, -1.2)), add(h1, add(mul(across, -3.8), mul(way, -1.3))), 0.85, 0.25, 0.2, { tag: 'claw' });
+  };
+  // a brass bracer of gears on her left forearm (her own work); a copper gauge on her belt
   {
     const el = s.elbowL;
     const ha = s.handL;
@@ -249,24 +319,47 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
     sc.cone(brassM, 'armL', lerp3(el, ha, 0.25), lerp3(el, ha, 0.75), 1.75, 1.45, 0.4, { tag: 'bracer' });
     const gc = add(lerp3(el, ha, 0.45), mul(o, 1.6));
     sc.ell(brassM, 'armL', gc, [mul(d, 1.5), mul(norm(cross(d, o)), 1.5), mul(o, 0.4)], 0.1, { tag: 'gear' });
-    // her hand in its glove, and the wrench in it, its jaws up
-    gloved(el, ha, d, o, 'armL', 0.8);
-    const steel = sc.mat({ ramp: STEEL5 });
-    const w0 = add(ha, mul(d, 1.1));
-    const w1 = add(w0, add(mul(u, 5.2), mul(d, 1.2)));
-    sc.cone(steel, 'wrench', add(w0, mul(u, -1.2)), w1, 0.55, 0.55, 0.2, { tag: 'shaft' });
-    sc.box(steel, 'wrench', add(w1, mul(u, 0.6)), [mul(d, 1.2), mul(o, 0.45), mul(u, 0.9)], 0.3, 0.3, { tag: 'jaw' });
-    sc.box(steel, 'wrench', add(w1, mul(u, 1.1)), [mul(d, 0.4), mul(o, 0.5), mul(u, 0.6)], 0.1, 0, { tag: 'gap', carve: true });
     const gauge = sc.mat({ ramp: COPPER, paint: (h) => (onBall(h.prim as Ell, h.p)[0] > 0.55 ? (h.tone >= 2 ? '#f4f0e0' : '#a8a090') : null) });
     sc.ell(gauge, 'hips', add(bc, add(mul(l, -(t.belly.h[1] + 1.6)), add(mul(f, 1.6), mul(u, -2.0)))), [mul(f, 0.9), mul(l, 1.4), mul(u, 1.4)], 0.2, { tag: 'gauge' });
   }
-  // her right hand up by her ear, a flask of cyan in it
-  {
-    const el = s.elbowR;
-    const ha = s.handR;
-    const [d, o] = limbFrame(el, ha, mul(l, -1));
-    gloved(el, ha, d, o, 'armR', 0.42);
-    const c = add(ha, add(mul(d, 1.5), mul(u, 2.8)));
+  /** Of two ways across a fist, the one nearer `want`. */
+  const toward = (g: V3, want: V3): V3 => (g[0] * want[0] + g[1] * want[1] + g[2] * want[2] >= 0 ? g : mul(g, -1));
+  if (kit === 'shoulder') {
+    // the wrench over her right shoulder, its head behind her; her left fist on her hip
+    const r = handOf('R');
+    wrenchIn(r, norm(add(toward(r.g, u), mul(f, -0.9))), 10);
+    handOf('L');
+  } else if (kit === 'key') {
+    // THE GOLEM'S KEY, held out before her by its bow: a great brass bow either side of her fist, its shaft out, its bit
+    const k = handOf('L');
+    const way = norm(add(k.d, mul(u, 0.15)));
+    for (const sd of [1, -1]) sc.ell(brassT, 'key', add(k.c, mul(k.g, sd * 2.9)), [mul(k.g, 2.2), mul(u, 2.5), mul(norm(cross(k.g, u)), 0.7)], 0.3, { tag: 'bow' });
+    sc.cone(brassT, 'key', add(k.c, mul(way, 1.4)), add(k.c, mul(way, 10.0)), 0.85, 0.85, 0.2, { tag: 'shaft' });
+    sc.box(brassT, 'key', add(k.c, add(mul(way, 8.6), mul(u, -1.5))), [mul(way, 1.3), mul(norm(cross(way, u)), 0.55), mul(u, 1.5)], 0.2, 0.2, { tag: 'bit' });
+    const r = handOf('R');
+    wrenchIn(r, toward(r.g, mul(u, -1)), 5.4);
+  } else if (kit === 'remote') {
+    // pointing her minions on with her left; in her right a brass control box, a lever on it and a lamp of cyan
+    handOf('L', true);
+    const r = handOf('R');
+    const bx = add(r.c, add(mul(u, 1.8), mul(f, 0.6)));
+    sc.box(brassT, 'remote', bx, [mul(f, 1.7), mul(l, 2.4), mul(u, 1.5)], 0.5, 0.3, { tag: 'box' });
+    sc.box(brassT, 'remote', add(bx, mul(f, 1.6)), [mul(f, 0.2), mul(l, 2.1), mul(u, 1.25)], 0.1, 0, { tag: 'trim' });
+    sc.cone(steel, 'remote', add(bx, add(mul(u, 1.4), mul(l, 1.1))), add(bx, add(mul(u, 4.6), add(mul(l, 0.9), mul(f, 1.3)))), 0.42, 0.42, 0.1, { tag: 'lever' });
+    sc.ell(sc.mat({ ramp: RED_HAIR }), 'remote', add(bx, add(mul(u, 4.9), add(mul(l, 0.9), mul(f, 1.4)))), [mul(f, 0.8), mul(l, 0.8), mul(u, 0.8)], 0.1, { tag: 'knob' });
+    sc.ell(sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) }), 'remote', add(bx, add(mul(u, 1.4), mul(l, -1.1))), [mul(f, 0.85), mul(l, 0.85), mul(u, 0.7)], 0.1, { tag: 'lamp' });
+  } else if (kit === 'tools') {
+    // a hammer in her right, the wrench in her left, both out low and ready, their heads up
+    const r = handOf('R');
+    hammerIn(r, toward(r.g, u));
+    const k = handOf('L');
+    wrenchIn(k, toward(k.g, u), 5.6);
+  } else {
+    // (as she was first drawn: the wrench low in her left, a flask of cyan up by her ear in her right)
+    const k = handOf('L');
+    wrenchIn(k, toward(k.g, u), 5.2);
+    const r = handOf('R');
+    const c = add(r.c, add(mul(r.d, 0.5), mul(u, 2.4)));
     sc.ell(glassC, 'flask', c, [mul(f, 1.4), mul(l, 1.4), mul(u, 1.5)], 0.5, { tag: 'flask' });
     sc.cone(glassC, 'flask', add(c, mul(u, 1.0)), add(c, mul(u, 2.6)), 0.55, 0.5, 0.4, { tag: 'neck' });
     sc.ell(t.bootMat(BRASS, null), 'flask', add(c, mul(u, 2.8)), [mul(f, 0.6), mul(l, 0.6), mul(u, 0.4)], 0.1, { tag: 'cork' });

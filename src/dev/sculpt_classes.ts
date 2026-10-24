@@ -440,6 +440,66 @@ const CREAM: Ramp = ['#4a3a34', '#7a6658', '#b8a48c', '#e4d4b4', '#fff4dc'];
 /** Dark wood: prayer beads. */
 const WOOD: Ramp = ['#1a0c08', '#341a10', '#5a3018', '#84502a', '#aa7440'];
 
+/** Rough brown cloth: the pit fighter's trousers. */
+const PELT_T: Ramp = ['#1a0e0e', '#2e1a16', '#4c2c22', '#6c4430', '#8e6040'];
+/** A grey metal: a buckle. */
+const GREY_M: Ramp = ['#24223a', '#3c3a5a', '#6a6890', '#a8a6c8', '#dcdaf0'];
+/** Dark red leather: the champion's boots. */
+const RED_DARK: Ramp = ['#1e040c', '#3a0814', '#601420', '#8c2a2a', '#b4483a'];
+/** One of the ten outfits after the brigand: what it is made of. */
+interface CoatSpec {
+  id: Outfit;
+  name: string;
+  /** What covers his trunk: a coat closed to the neck, open down to the belt, a vest, a jerkin to the hips, a short jacket. */
+  body: 'coat' | 'open' | 'vest' | 'jerkin' | 'jacket';
+  ramp: Ramp;
+  trim?: Ramp;
+  shirt?: Ramp;
+  /** The shirt under it studded in brass, a brigandine (the mix of his 7 and 10). */
+  shirtStuds?: boolean;
+  sleeves: 'none' | 'cap' | 'rolled' | 'full';
+  sleeveRamp?: Ramp;
+  collar: 'none' | 'stand' | 'high' | 'fur' | 'hood' | 'scarf' | 'capelet';
+  capeRamp?: Ramp;
+  fasten: 'none' | 'double' | 'single' | 'buckles' | 'toggles';
+  straps: 'none' | 'bandolier' | 'cross';
+  belt: 'none' | 'belt' | 'double' | 'sash';
+  beltRamp?: Ramp;
+  /** How long its tails hang below the belt (0 none), and how wide it is open at the front. */
+  tails: number;
+  tailGap: number;
+  studs?: boolean;
+  trousers: Ramp;
+  loose?: number;
+  boots: 'tall' | 'cuffed' | 'low' | 'wrapped';
+  bootRamp?: Ramp;
+}
+const CHARCOAL: Ramp = ['#0c0c16', '#1a1a2a', '#2c2c46', '#46466a', '#66668e'];
+const FOREST: Ramp = ['#061410', '#0e241a', '#183c2a', '#2a5c40', '#46805a'];
+const OLIVE: Ramp = ['#141408', '#262612', '#3e3e1e', '#5c5c30', '#80804a'];
+const DUST: Ramp = ['#1a1614', '#2e2824', '#4a423a', '#6c6256', '#908676'];
+const GOLD_T: Ramp = ['#3a2410', '#6a4a18', '#a8802a', '#dcb44a', '#f8e08a'];
+/**
+ * THE TEN AFTER THE BRIGAND (his word, 24 Oct, by 07:33: “The brigand is close but not it.  I’ll have a barbarian and a
+ * gladiator later so we can use those.  Give me 10 more”): most of them in the brigand's way (coats, vests, collars, tall
+ * boots), a few further from it, each its own shape and colours.
+ */
+export const COATS: CoatSpec[] = [
+  { id: 'highwayman', name: 'Highwayman', body: 'coat', ramp: CHARCOAL, sleeves: 'none', collar: 'capelet', capeRamp: CHARCOAL, fasten: 'single', straps: 'none', belt: 'double', tails: 22, tailGap: 0.55, trousers: CHAR, boots: 'cuffed' },
+  { id: 'duelist', name: 'Duelist', body: 'jerkin', ramp: FOREST, trim: GOLD_T, sleeves: 'cap', collar: 'high', fasten: 'single', straps: 'none', belt: 'sash', beltRamp: RED, tails: 6, tailGap: 0.5, trousers: CHAR, boots: 'tall' },
+  { id: 'waistcoat', name: 'Pit boss', body: 'vest', ramp: HIDE, shirt: CREAM, sleeves: 'rolled', sleeveRamp: CREAM, collar: 'none', fasten: 'single', straps: 'none', belt: 'belt', tails: 0, tailGap: 0, trousers: CHARCOAL, boots: 'low' },
+  { id: 'hooded', name: 'Hooded rogue', body: 'jerkin', ramp: OLIVE, sleeves: 'none', collar: 'hood', fasten: 'buckles', straps: 'bandolier', belt: 'belt', tails: 5, tailGap: 0.45, trousers: CHAR, boots: 'wrapped', bootRamp: HIDE },
+  { id: 'scarf', name: 'Scarf and long coat', body: 'open', ramp: TWILL, trim: RED, sleeves: 'rolled', collar: 'scarf', fasten: 'none', straps: 'none', belt: 'belt', tails: 20, tailGap: 0.6, trousers: CHAR, boots: 'tall' },
+  { id: 'buccaneer', name: 'Buccaneer', body: 'open', ramp: RED_DARK, trim: GOLD_T, sleeves: 'full', collar: 'stand', fasten: 'none', straps: 'none', belt: 'sash', beltRamp: CREAM, tails: 19, tailGap: 0.7, trousers: CHAR, boots: 'cuffed' },
+  { id: 'brigandine', name: 'Studded brigandine', body: 'jerkin', ramp: BLACKHIDE, sleeves: 'cap', collar: 'stand', fasten: 'buckles', straps: 'none', belt: 'double', beltRamp: HIDE, tails: 7, tailGap: 0.4, studs: true, trousers: DUST, boots: 'tall', bootRamp: HIDE },
+  { id: 'furcoat', name: 'Fur-collared coat', body: 'coat', ramp: HIDE, sleeves: 'none', collar: 'fur', fasten: 'toggles', straps: 'none', belt: 'belt', tails: 21, tailGap: 0.5, trousers: CHARCOAL, boots: 'tall' },
+  { id: 'jacket', name: 'Short jacket, bound belly', body: 'jacket', ramp: BLACKHIDE, trim: RED, sleeves: 'rolled', collar: 'stand', fasten: 'none', straps: 'none', belt: 'sash', beltRamp: RED, tails: 0, tailGap: 0, trousers: TWILL, loose: 1.3, boots: 'wrapped', bootRamp: HIDE },
+  { id: 'wanderer', name: 'Hooded long coat', body: 'coat', ramp: DUST, sleeves: 'none', collar: 'hood', fasten: 'double', straps: 'cross', belt: 'belt', tails: 26, tailGap: 0.5, trousers: CHAR, boots: 'tall', bootRamp: HIDE },
+  // (his “7 or 10 I think”, 24 Oct, by 08:08: the two, and this, the one under the other; then, by 08:55, “Gimme 11 but we
+  // don’t need the hood.”)
+  { id: 'hoodbrig', name: 'Long coat over the brigandine', body: 'open', ramp: DUST, shirt: BLACKHIDE, shirtStuds: true, sleeves: 'cap', sleeveRamp: BLACKHIDE, collar: 'none', fasten: 'buckles', straps: 'none', belt: 'double', beltRamp: HIDE, tails: 26, tailGap: 0.55, trousers: CHAR, boots: 'tall', bootRamp: HIDE },
+];
+
 /**
  * THE FOUR NEW OUTFITS (his word, 24 Oct, by 06:57 Pacific: “His hands are tiny compared to his body.  And I still don’t
  * like his outfit.”): four that are not like each other, nor like the five he has seen: each a different shape round him
@@ -447,7 +507,8 @@ const WOOD: Ramp = ['#1a0c08', '#341a10', '#5a3018', '#84502a', '#aa7440'];
  * whether it dressed him.
  */
 function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
-  if (outfit !== 'gladiator' && outfit !== 'barbarian' && outfit !== 'monk' && outfit !== 'brigand') return false;
+  const coat = COATS.find((c) => c.id === outfit);
+  if (!coat && outfit !== 'gladiator' && outfit !== 'barbarian' && outfit !== 'monk' && outfit !== 'brigand') return false;
   const { s, B } = w;
   const t = tailorFor(sc, w, bulk);
   const { overTrunk, legsIn, boots, bootMat, waistBand, strapOver, front, shoulderTop, hipFront, dot3, ribs, belly, pel, f, l, u } = t;
@@ -484,6 +545,188 @@ function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
     ankle: side === 'L' ? s.ankleL : s.ankleR,
     out: mul(l, side === 'L' ? 1 : -1),
   });
+
+  if (coat) {
+    // ONE OF THE TEN AFTER THE BRIGAND (his “The brigand is close but not it”): built of the same parts as each other
+    const c = coat;
+    const k = bulk;
+    const farArm = (piece: string): boolean => (piece.endsWith('L') ? farSide(w, s.elbowL) : piece.endsWith('R') ? farSide(w, s.elbowR) : false);
+    const main = sc.mat({
+      ramp: c.ramp,
+      paint: (h) => {
+        const tg = h.prim.tag ?? '';
+        const far = farArm(h.prim.piece) ? 1 : 0;
+        if (c.studs && (tg === 'coat' || tg === 'cape') && (h.x * 2 + h.y) % 5 === 0 && h.y % 2 === 0) return shadeOf(BRASS, h.tone);
+        if (tg === 'panel') {
+          const b = onBall(h.prim as Ell, h.p);
+          if (b[0] > 0.84 && c.trim) return shadeOf(c.trim, h.tone);
+          if (Math.abs(b[1]) > 0.8) return shadeOf(c.ramp, h.tone - 1);
+        }
+        if ((tg === 'cuffs' || tg === 'collar') && c.trim) return shadeOf(c.trim, h.tone - far);
+        if (tg === 'roll') return shadeOf(c.ramp, h.tone + 1 - far);
+        if (tg === 'hood') {
+          // the mouth of the hood lying open on his back, dark inside
+          const b = onBall(h.prim as Ell, h.p);
+          if (b[2] > 0.2 && b[0] > -0.3 && Math.abs(b[1]) < 0.7) return shadeOf(c.ramp, 0);
+          return shadeOf(c.ramp, h.tone + (b[2] > 0 ? 1 : 0));
+        }
+        return far ? shadeOf(c.ramp, h.tone - 1) : null;
+      },
+    });
+    const trimM = sc.mat({ ramp: c.trim ?? c.ramp });
+    // HIS SHIRT under it, if he wears one
+    if (c.shirt) {
+      const sr = c.shirt;
+      overTrunk(sc.mat({ ramp: sr, paint: (h) => (c.shirtStuds && (h.x * 2 + h.y) % 5 === 0 && h.y % 2 === 0 ? shadeOf(BRASS, h.tone) : null) }), c.shirtStuds ? 0.55 : 0.4, [], 'shirt', true);
+    }
+    // THE BODY OF IT
+    const vOpen = (to: number, dg: number, mat: number): void => {
+      const vAt = front(0, to, 0);
+      sc.box(mat, 'torso', add(vAt, add(mul(u, dg * Math.SQRT2), mul(f, 1.5))), [mul(f, 4.6), mul(norm(add(u, l)), dg), mul(norm(sub(u, l)), dg)], 0.2, 0.4, { carve: true });
+    };
+    if (c.body === 'coat' || c.body === 'open' || c.body === 'jerkin') {
+      overTrunk(main, 0.85, [], 'coat', true);
+      if (c.body === 'open') vOpen(-ribs.h[2] * 0.75, 5.4, main);
+      if (c.body === 'jerkin') sc.ell(main, 'hips', pel.c, [mul(pel.r[0], pel.h[0] + 1.1), mul(pel.r[1], pel.h[1] + 1.0), mul(pel.r[2], pel.h[2] + 0.7)], 1.6, { tag: 'coat', cuts: [{ n: down, o: -(pel.c[2] - pel.h[2] * 0.2) }] });
+    } else if (c.body === 'vest') {
+      overTrunk(main, 0.8, [{ n: down, o: -(belly.c[2] - belly.h[2] * 0.5) }], 'coat', true);
+      vOpen(ribs.h[2] * 0.05, 4.0, main);
+    } else {
+      // (a short jacket to his ribs, open, the belly under it bound in linen)
+      overTrunk(main, 0.8, [{ n: down, o: -(ribs.c[2] - ribs.h[2] * 0.45) }], 'coat', true);
+      vOpen(-ribs.h[2] * 0.4, 5.0, main);
+      const band = sc.mat({ ramp: CREAM, paint: (h) => (Math.floor(h.p[2] * 1.1) % 2 === 0 ? shadeOf(CREAM, h.tone - 1) : null) });
+      sc.ell(band, 'torso', add(belly.c, mul(belly.r[0], 0.3)), [mul(belly.r[0], belly.h[0] + 0.45), mul(belly.r[1], belly.h[1] * 0.98 + 0.45), mul(belly.r[2], belly.h[2] * 1.05 + 0.2)], 1.0, { tag: 'binding', cuts: [{ n: u, o: dot3(u, ribs.c) - ribs.h[2] * 0.2 }] });
+    }
+    // THE SLEEVES
+    for (const side of ['L', 'R'] as const) {
+      if (c.sleeves === 'none') break;
+      const { sh, el, out } = sh3(side);
+      const ha = side === 'L' ? s.handL : s.handR;
+      const piece = `arm${side}`;
+      const sm = c.sleeveRamp
+        ? sc.mat({ ramp: c.sleeveRamp, paint: (h) => (c.shirtStuds && (h.x * 2 + h.y) % 5 === 0 && h.y % 2 === 0 ? shadeOf(BRASS, h.tone) : shadeOf(c.sleeveRamp as Ramp, h.tone - (farArm(h.prim.piece) ? 1 : 0) + (h.prim.tag === 'roll' ? 1 : 0))) })
+        : main;
+      const [, o0] = limbFrame(sh, el, out);
+      sc.ell(sm, piece, add(sh, add(mul(u, -0.5), mul(o0, 0.8))), [mul(f, 2.8 * k + 0.6), mul(o0, 2.5 * k + 0.6), mul(u, 2.5 * k + 0.6)], 1.6, { tag: 'sleeve' });
+      if (c.sleeves === 'cap') continue;
+      sc.cone(sm, piece, sh, el, 2.75 * k + 0.25, 2.25 * k + 0.35, 1.2, { tag: 'sleeve' });
+      if (c.sleeves === 'rolled') {
+        sc.cone(sm, piece, add(el, mul(norm(sub(el, sh)), -0.4)), add(el, mul(norm(sub(el, sh)), 0.5)), 2.3 * k + 0.75, 2.25 * k + 0.75, 0.3, { tag: 'roll' });
+      } else {
+        sc.cone(sm, piece, el, lerp3(el, ha, 0.5), 2.35 * k + 0.4, 1.8 * k + 0.5, 1.0, { tag: 'sleeve' });
+        sc.cone(sm, piece, lerp3(el, ha, 0.42), lerp3(el, ha, 0.56), 2.0 * k + 0.9, 2.1 * k + 1.0, 0.3, { tag: 'cuffs' });
+      }
+    }
+    // THE COLLAR
+    const ring = (mat: number, n: number, r: number, size: number, up: number, skipFront: number, tag: string): void => {
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        if (Math.cos(a) > skipFront) continue;
+        const dir = add(mul(f, Math.cos(a)), mul(l, Math.sin(a)));
+        sc.ell(mat, 'torso', add(s.neck, add(mul(u, up), mul(dir, r))), [mul(dir, size * 0.8), mul(cross(u, dir), size), mul(u, size * 0.8)], 1.4, { tag });
+      }
+    };
+    if (c.collar === 'stand' || c.collar === 'high') {
+      const hi = c.collar === 'high' ? 3.4 : 1.6;
+      sc.cone(main, 'torso', add(s.neck, mul(u, -1.2)), add(s.neck, add(mul(u, hi), mul(f, -0.6))), 3.5, c.collar === 'high' ? 4.4 : 3.9, 0.6, { tag: 'collar', cuts: [{ n: f, o: dot3(f, s.neck) + (c.collar === 'high' ? 0.4 : 1.2) }] });
+    } else if (c.collar === 'fur') {
+      const fur = sc.mat({ ramp: FUR, crease: 0.5, paint: (h) => ((h.x * 2 + Math.floor(h.y / 2)) % 5 === 0 ? shadeOf(FUR, h.tone - 1) : null) });
+      ring(fur, 10, B.shoulderHalf * 0.46, 2.5, -0.8, 0.8, 'fur');
+      for (const side of [1, -1]) sc.ell(fur, 'torso', add(shoulderTop(side, 0.2), mul(u, -0.4)), [mul(f, 2.6), mul(l, 2.4), mul(u, 1.6)], 1.4, { tag: 'fur' });
+    } else if (c.collar === 'hood') {
+      // the hood down: its folds heaped behind his neck, a cowl round it
+      // (its own piece, laid on the coat, not melted into it: so it is inked off it and its open mouth shows dark)
+      sc.ell(main, 'hood', add(s.neck, add(mul(f, -4.4), mul(u, -1.2))), [mul(f, 3.2), mul(l, 5.4), mul(u, 4.4)], 0.4, { tag: 'hood' });
+      sc.ell(main, 'hood', add(s.neck, add(mul(f, -6.0), mul(u, -4.8))), [mul(f, 1.8), mul(l, 3.6), mul(u, 3.4)], 0.6, { tag: 'hood' });
+      ring(main, 9, B.shoulderHalf * 0.4, 1.7, -0.6, 0.7, 'hood');
+    } else if (c.collar === 'scarf') {
+      const scarf = sc.mat({ ramp: c.trim ?? RED, paint: (h) => ((h.x + h.y * 2) % 6 === 0 ? shadeOf(c.trim ?? RED, h.tone - 1) : null) });
+      ring(scarf, 10, B.shoulderHalf * 0.36, 1.9, 0.0, 2, 'scarf');
+      // its ends: one down his front, one thrown back over his shoulder
+      const knot = add(s.neck, add(mul(f, B.shoulderHalf * 0.4), mul(l, -1.6)));
+      sc.cone(scarf, 'torso', knot, add(knot, add(mul(f, 1.6), add(mul(u, -9), mul(l, -1.4)))), 1.3, 1.1, 0.4, { tag: 'scarfTail' });
+      sc.cone(scarf, 'torso', add(s.neck, add(mul(f, -1.4), mul(l, 2.6))), add(s.neck, add(mul(f, -5.4), add(mul(u, -7.5), mul(l, 3.2)))), 1.2, 1.0, 0.4, { tag: 'scarfTail' });
+    } else if (c.collar === 'capelet') {
+      // a short cape over his shoulders to the middle of his chest, clasped in brass at his throat
+      const cape = sc.mat({ ramp: c.capeRamp ?? c.ramp, paint: (h) => (h.prim.k !== 'cone' && onBall(h.prim as Ell, h.p)[2] < -0.75 ? shadeOf(c.capeRamp ?? c.ramp, h.tone - 1) : null) });
+      const cut = [{ n: down, o: -(ribs.c[2] + ribs.h[2] * 0.05) }];
+      overTrunk(cape, 1.7, cut, 'cape', true);
+      for (const side of [1, -1]) {
+        const { sh, el, out } = sh3(side > 0 ? 'L' : 'R');
+        const [, o0] = limbFrame(sh, el, out);
+        sc.ell(cape, 'torso', add(sh, add(mul(u, 0.4), mul(o0, 0.6))), [mul(f, 3.6 * k), mul(o0, 3.4 * k), mul(u, 3.4)], 1.8, { tag: 'cape', cuts: cut });
+      }
+      sc.ell(brass, 'torso', add(s.neck, add(mul(f, B.shoulderHalf * 0.5 + 1.0), mul(u, -1.4))), [mul(f, 0.6), mul(l, 1.0), mul(u, 1.0)], 0.1, { tag: 'clasp' });
+    }
+    // HOW IT FASTENS
+    if (c.fasten === 'double' || c.fasten === 'single') {
+      const cols = c.fasten === 'double' ? [0.36, -0.36] : [0];
+      for (const side of cols) for (let i = 0; i < 4; i++) sc.ell(brass, 'torso', front(side, ribs.h[2] * (0.55 - i * 0.42) - 1.0, 0.95 + (i > 1 ? 0.3 : 0)), [mul(f, 0.5), mul(l, 0.6), mul(u, 0.6)], 0.05, { tag: 'button' });
+    } else if (c.fasten === 'buckles') {
+      const strap = sc.mat({ ramp: BLACKHIDE });
+      for (let i = 0; i < 3; i++) {
+        const up = ribs.h[2] * (0.5 - i * 0.5) - 0.5;
+        strapOver(strap, front(0.85, up, -0.2), front(-0.85, up, -0.2), 0.55, 0.15, 'buckleStrap');
+        sc.box(brass, 'torso', front(0.25, up, 1.35 + (i > 1 ? 0.3 : 0)), [mul(f, 0.3), mul(l, 0.75), mul(u, 0.65)], 0.15, 0.05, { tag: 'buckle' });
+      }
+    } else if (c.fasten === 'toggles') {
+      const bone = sc.mat({ ramp: BONE });
+      for (let i = 0; i < 3; i++) {
+        const p = front(0, ribs.h[2] * (0.4 - i * 0.5) - 0.6, 1.15 + (i > 1 ? 0.3 : 0));
+        sc.cone(bone, 'torso', add(p, mul(l, 1.1)), add(p, mul(l, -1.1)), 0.45, 0.45, 0.05, { tag: 'toggle' });
+      }
+    }
+    // STRAPS
+    if (c.straps === 'bandolier' || c.straps === 'cross') {
+      const strap = sc.mat({ ramp: BLACKHIDE });
+      const pouch = sc.mat({ ramp: HIDE });
+      const ways = c.straps === 'cross' ? [1, -1] : [1];
+      for (const side of ways) {
+        const a = shoulderTop(side, 0.8);
+        const b = hipFront(-side);
+        strapOver(strap, a, b, 0.75, 0.9, 'strap');
+        if (side === 1) for (const at of [0.42, 0.62]) {
+          const p0 = lerp3(a, b, at);
+          const out0 = norm(sub(p0, lerp3(s.waist, s.neck, 0.5)));
+          sc.box(pouch, 'torso', add(p0, mul(out0, 2.2)), [mul(out0, 0.8), mul(norm(cross(u, out0)), 1.1), mul(u, 1.2)], 0.4, 0.2, { tag: 'pouch' });
+        }
+      }
+    }
+    // THE BELT
+    const beltM = sc.mat({ ramp: c.beltRamp ?? BLACKHIDE, paint: (h) => (h.prim.tag === 'band' && onBall(h.prim as Ell, h.p)[0] > 0.84 && Math.abs(onBall(h.prim as Ell, h.p)[1]) < 0.18 ? shadeOf(BRASS, h.tone) : null) });
+    const over = c.body === 'jacket' || c.body === 'vest' ? 1.2 : 1.85;
+    if (c.belt === 'belt') waistBand(beltM, 1.0, over, 0.45);
+    else if (c.belt === 'double') {
+      waistBand(beltM, 0.7, over, 0.3);
+      waistBand(beltM, 0.7, over + 0.1, 0.75);
+    } else if (c.belt === 'sash') {
+      const sash = sc.mat({ ramp: c.beltRamp ?? RED, paint: (h) => ((h.x + h.y) % 4 === 0 ? shadeOf(c.beltRamp ?? RED, h.tone - 1) : null) });
+      const bc = waistBand(sash, 1.7, over, 0.4);
+      const knot = add(bc, add(mul(f, belly.h[0] * 0.7 + 1.2), mul(l, -(belly.h[1] * 0.75 + 0.6))));
+      sc.ell(sash, 'hips', knot, [mul(f, 1.2), mul(l, 1.0), mul(u, 1.2)], 0.4, { tag: 'knot' });
+      for (const [kk, len] of [[0.9, 7.6], [-0.2, 6.0]] as const) sc.cone(sash, 'hips', knot, add(knot, add(mul(f, kk), add(mul(l, -0.7), mul(u, -len)))), 1.05, 0.8, 0.4, { tag: 'tail' });
+    }
+    // THE TAILS
+    if (c.tails > 0) panels(main, 10, c.tails, c.tails * 0.22, 4.2, 0.8, c.tailGap, c.body === 'jerkin' ? 0.9 : 0.5);
+    // TROUSERS AND BOOTS
+    legsIn(sc.mat({ ramp: c.trousers }), c.boots === 'tall' || c.boots === 'cuffed' ? 1.6 : 1.85, c.loose ?? 0.9);
+    const boot = bootMat(c.bootRamp ?? BLACKHIDE, null);
+    boots(boot, c.boots === 'tall' || c.boots === 'cuffed', null);
+    for (const side of ['L', 'R'] as const) {
+      const { knee, ankle } = sh3(side);
+      const [, lK, lA] = B.legR;
+      if (c.boots === 'cuffed') {
+        const at = lerp3(knee, ankle, 0.36);
+        sc.cone(boot, `leg${side}`, add(at, mul(norm(sub(knee, ankle)), 0.7)), add(at, mul(norm(sub(knee, ankle)), -0.7)), lK + 1.25, lK + 1.15, 0.2, { tag: 'cuff' });
+      } else if (c.boots === 'wrapped') {
+        const binding = sc.mat({ ramp: CREAM, paint: (h) => (Math.floor(onCone(h.prim as Cone, h.p, u).t * 6 + onCone(h.prim as Cone, h.p, u).around / 1.6) % 2 === 0 ? shadeOf(CREAM, h.tone - 1) : null) });
+        sc.cone(binding, `leg${side}`, lerp3(knee, ankle, 0.5), lerp3(knee, ankle, 0.92), lK * 0.9 + 0.75, lA + 0.6, 0.6, { tag: 'binding' });
+      }
+    }
+    void trimM;
+    return true;
+  }
 
   if (outfit === 'gladiator') {
     // THE ARENA GLADIATOR: a great pauldron of layered leather on his lead shoulder, strapped across his chest; a broad
@@ -676,12 +919,6 @@ function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
   return true;
 }
 
-/** Rough brown cloth: the pit fighter's trousers. */
-const PELT_T: Ramp = ['#1a0e0e', '#2e1a16', '#4c2c22', '#6c4430', '#8e6040'];
-/** A grey metal: a buckle. */
-const GREY_M: Ramp = ['#24223a', '#3c3a5a', '#6a6890', '#a8a6c8', '#dcdaf0'];
-/** Dark red leather: the champion's boots. */
-const RED_DARK: Ramp = ['#1e040c', '#3a0814', '#601420', '#8c2a2a', '#b4483a'];
 
 /** A BEARD of one of four kinds, on a head (`hat`: a point of the head by its own shares). */
 function beardOf(sc: Sculpt, mat: number, hat: (fw: number, lf: number, up: number) => V3, hf: V3, hl: V3, hu: V3, R: V3, kind: BrawlerLook['beard'], chestF: V3): void {
@@ -761,9 +998,16 @@ export interface Look {
 export const BRAWLER_BUILD = 1;
 
 /** What he wears: the wrestler's singlet and trunks (his first pick; then, by 23:06, “I don’t like his outfit”), or one of four new. */
-export type Outfit = 'singlet' | 'prize' | 'pit' | 'street' | 'champ' | 'gladiator' | 'barbarian' | 'monk' | 'brigand';
-/** HIS PICK, at 23:11 Pacific, 23 Oct, to the four offered: “1” (the old-time prizefighter). */
-export const BRAWLER_OUTFIT: Outfit = 'prize';
+export type Outfit =
+  | 'singlet' | 'prize' | 'pit' | 'street' | 'champ' | 'gladiator' | 'barbarian' | 'monk' | 'brigand'
+  | 'highwayman' | 'duelist' | 'waistcoat' | 'hooded' | 'scarf' | 'buccaneer' | 'brigandine' | 'furcoat' | 'jacket' | 'wanderer'
+  | 'hoodbrig';
+/**
+ * HIS PICK: at 23:11 Pacific, 23 Oct, “1” (the old-time prizefighter); then, 24 Oct, “And I still don’t like his outfit.”;
+ * by 08:08 “7 or 10 I think”; by 08:55 “Gimme 11 but we don’t need the hood.”; and by 09:30, shown it, “Yes, this is him
+ * (Recommended)”: the long coat over the studded brigandine.
+ */
+export const BRAWLER_OUTFIT: Outfit = 'hoodbrig';
 /** The four new, after his “I still don’t like his outfit” (24 Oct, by 06:57 Pacific): each its own shape. */
 export const OUTFITS_2: { id: Outfit; name: string }[] = [
   { id: 'gladiator', name: 'Arena gladiator' },

@@ -112,7 +112,7 @@ claws, a row of eyes). THE DEMON slimmed (a waist under a deep chest, thinner ar
 reach kept) and his wings whole: the leather now runs from the last finger back along the arm to his flank and back, the
 edge only gently scalloped (dev/sculpt_demon.ts).
 
-Shown them (07:2x Pacific, the four sheets), his answers by 07:33:
+Shown them (the four sheets), his answers by 07:33:
 - The brawler's outfit: “The brigand is close but not it.  I’ll have a barbarian and a gladiator later so we can use
   those.  Give me 10 more”.
 - The Golem: “Ground pound might be one of his moves but it doesn’t need to factor into his design.  I like the furnace
@@ -127,6 +127,41 @@ outfits, most leaning the brigand's way. The furnace belly and the ape kept in t
 each as unlike the others as can be, not shaped by the ground pound. The Tinkerer's hands and what she holds redone (tools,
 no vial), a stance to go with it, a few versions; the vials on her belt and bandolier kept as her Contraptions' ammunition
 unless he says otherwise. The demon as he is, his claws more and longer, spread and turned to be seen from in front.
+
+Shown (by 08:08): ten more outfits, ten more Golems, four ways for the Tinkerer to hold her tools, the demon's claws. His
+answers by 08:08:
+- The outfits: “7 or 10 I think” (7 the studded brigandine, 10 the hooded long coat).
+- The Golems: “Better, I like the direction, but it’s still just two big arms.  Let’s get a little more creative.  10 more”.
+- The Tinkerer: “1. Wrench on shoulder (Recommended)”.
+- The demon's claws: “No?  Isn’t the flame supposed to be in his palm?  The claws aren’t facing the right way.”.
+Read as (told him so): 7 and 10 shown larger, with a third, the one under the other; ten Golems each hitting its own way,
+few with two fists; the Tinkerer's wrench over her shoulder; the demon's fire in his palm, his claws curled round it.
+
+Shown (by 08:55): the ten Golems that hit their own ways, 7, 10 and 11 (the hooded long coat over the brigandine), the fire
+in his palm. His answers by 08:55:
+- The Golem: “I like the one big arm.  Can I get the one big arm on a bunch of golems”.
+- The outfit: “Gimme 11 but we don’t need the hood.”.
+- The demon: “No the thumb isn’t in the right place.  Take a second to figure out hands and claws then do it right”.
+Read as (told him so): one giant arm put on ten bodies, for him to pick the body; 11 without its hood; the demon's hands
+built as hands (four fingers in a row, the thumb by the wrist on the side a thumb is), checked alone from five sides.
+
+Shown (by 09:30): the one giant arm on ten bodies, 11 without the hood, the hands. His answers by 09:30: the Golem “Boiler
+ape”; the outfit “Yes, this is him (Recommended)”; the hands “Close, change a detail”, and asked which, “More like talons,
+and the fingers and thumb more splayed out on the left hand”. Read as (told him so): talons thick at the root and hooked;
+fingers and thumbs spread wide, on both hands (his own left is the one on the ground; the fire hand is the one on the
+picture's left). Shown them, by 10:26: “Yes (Recommended)”.
+
+AS PICKED, 24 Oct: THE BRAWLER, build B, his fists big and wrapped, in 11: a long sleeveless coat of dusty grey-brown open
+down the front over a brigandine of black leather studded in brass, its shoulders capped in the same, buckled straps
+across it, a double belt, dark trousers, tall boots (dev/sculpt_classes.ts COATS `hoodbrig`, BRAWLER_OUTFIT). THE
+TINKERER with her big wrench over her right shoulder, her left fist on her hip, in fingerless gloves; no vial in her hand
+(TINKER_KIT `shoulder`). HER GOLEM the boiler ape with one giant arm (dev/sculpt_golem.ts GOLEM_PICK). THE DEMON slimmed,
+his wings whole, his hands built as hands: the fire in his raised right palm, fingers and thumb spread round it, the other
+planted on the floor, spread, talons dug in (demonHand). Every check run on all of them and every one he was shown: 59 of
+59 (tests/classes_sculpt.test.ts).
+
+Asked what next, by 10:40: “Polish faces up close”. Read as (told him so): the brawler's face and beard, the Tinkerer's
+face, the warlock's under his hood; each worked close, checked at the game's size.
 
 ## What glows
 

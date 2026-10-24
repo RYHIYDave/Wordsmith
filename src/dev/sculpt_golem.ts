@@ -26,22 +26,62 @@ import { BRASS, shadeOf } from './sculpt_classes';
 import { STEEL5 } from './sculpt_warlock';
 
 const D = Math.PI / 180;
+const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const COPPER: Ramp = ['#2a0e0a', '#521c12', '#8a3a1e', '#c4642e', '#ec9a56'];
 /** The dark inside of it: a grille, a furnace's mouth, the gaps of a tread. */
 const DARK: Ramp = ['#0a0810', '#141020', '#201a30', '#2e2640', '#3e3454'];
 
 /** Which Golem: its id and its name for him. */
-export type GolemBuild = 'ape' | 'tank' | 'belly' | 'crab';
+export type GolemBuild =
+  | 'ape' | 'tank' | 'belly' | 'crab'
+  | 'kettle' | 'bell' | 'clock' | 'wheel' | 'strider' | 'anvil' | 'lantern' | 'cauldron' | 'ball' | 'bellows'
+  | 'onearm' | 'mallets' | 'flails' | 'jack' | 'crane' | 'ram' | 'hoses' | 'pincers' | 'paddles' | 'tongs';
+/** The first four (24 Oct): his “I like the furnace belly because it’s the most different.  The crab is cool but too messy.  The ape is good as well.” */
 export const GOLEM_BUILDS: { id: GolemBuild; name: string }[] = [
   { id: 'ape', name: 'Boiler ape' },
   { id: 'tank', name: 'Tread tank' },
   { id: 'belly', name: 'Furnace belly' },
   { id: 'crab', name: 'Crab walker' },
 ];
+/** THE NEXT TEN (his “Keep trying, maybe give me 10 at a time”, 24 Oct, by 07:33): each as unlike the others as can be. */
+export const GOLEM_BUILDS_2: { id: GolemBuild; name: string }[] = [
+  { id: 'kettle', name: 'Kettle' },
+  { id: 'bell', name: 'Bell on a spring' },
+  { id: 'clock', name: 'Grandfather clock' },
+  { id: 'wheel', name: 'Roller' },
+  { id: 'strider', name: 'Strider' },
+  { id: 'anvil', name: 'Anvil' },
+  { id: 'lantern', name: 'Lantern' },
+  { id: 'cauldron', name: 'Cauldron' },
+  { id: 'ball', name: 'Ball-roller' },
+  { id: 'bellows', name: 'Bellows' },
+];
+/**
+ * THE THIRD TEN (his word, 24 Oct, by 08:08: “Better, I like the direction, but it’s still just two big arms.  Let’s get a
+ * little more creative.  10 more”): each hits in its own way, few of them with two fists.
+ */
+export const GOLEM_BUILDS_3: { id: GolemBuild; name: string }[] = [
+  { id: 'onearm', name: 'One giant arm' },
+  { id: 'mallets', name: 'Mallet arms' },
+  { id: 'flails', name: 'Chain flails' },
+  { id: 'jack', name: 'Jack-in-the-box punch' },
+  { id: 'crane', name: 'Wrecking ball' },
+  { id: 'ram', name: 'Battering ram' },
+  { id: 'hoses', name: 'Steam hoses' },
+  { id: 'pincers', name: 'Pincers' },
+  { id: 'paddles', name: 'Paddle wheel' },
+  { id: 'tongs', name: 'Scissor arms' },
+];
+/** Dark wood, a clock's case. */
+const WOOD: Ramp = ['#140806', '#2a120c', '#4a2216', '#6e3a22', '#965834'];
+/** A clock's dial, old enamel. */
+const DIAL: Ramp = ['#4a4038', '#7a6e60', '#b8ac98', '#e6dcc4', '#fff8e8'];
 
 /** A Golem, sculpted, standing ready, in one of the game's views; `turn`: truly turned (Sculpt.spin) this many degrees. */
-export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, yaw = -14): Drawn {
+export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, yaw0 = -14, giant = false): Drawn {
   const sc = new Sculpt();
+  // (a few are best seen from the side: the ram charging)
+  const yaw = yaw0 + (YAW_OF[build] ?? 0);
   sc.spin = turn;
   // (built facing as it stands, toward the eye's lower right turned by `yaw`; its left the picture's upper right)
   const F0 = norm([1, -1, 0]);
@@ -130,7 +170,11 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.cone(dark, piece, add(top, mul(U, 0.5)), add(top, mul(U, 0.9)), r * 0.85, r * 0.85, 0, { tag: 'mouth' });
   };
   /** A HUGE FIST: its knuckles out along `d`, its thumb toward `th`; `R` its half-size (bigger than a hero's head). */
+  // (GIANT: his “I like the one big arm.  Can I get the one big arm on a bunch of golems”, 24 Oct, by 08:55: its own arms
+  // left off, where each was rooted kept, and one giant arm put on its right, a little tool arm on its left)
+  const roots: Record<string, V3> = {};
   const fistAt = (piece: string, c: V3, d: V3, th: V3, R: number): void => {
+    if (giant && !piece.startsWith('giant')) return;
     const s1 = norm(sub(th, mul(d, th[0] * d[0] + th[1] * d[1] + th[2] * d[2])));
     const s2 = norm(cross(d, s1));
     sc.box(brass, piece, c, [mul(d, R * 0.95), mul(s1, R * 0.92), mul(s2, R)], R * 0.42, 0.6, { tag: 'fist' });
@@ -139,6 +183,10 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
   };
   /** AN ARM of pistons: a steel ball at its root, a steel rod with a copper piston along it, a steel elbow, a flaring brass gauntlet. */
   const armOf = (piece: string, root: V3, el: V3, wrist: V3, r: number): void => {
+    if (giant && !piece.startsWith('giant')) {
+      roots[piece] ??= root;
+      return;
+    }
     sc.ell(steel, piece, root, X(r * 1.45, r * 1.45, r * 1.45), 0.5, { tag: 'ball' });
     sc.cone(steel, piece, root, el, r, r * 0.85, 0.5, { tag: 'upper' });
     const d = norm(sub(el, root));
@@ -148,7 +196,9 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.cone(brass, piece, el, wrist, r * 1.05, r * 1.5, 0.4, { tag: 'gauntlet' });
   };
   /** A LEG: a steel thigh, a brass knee, a greave flaring to a great flat steel foot on the floor. */
-  const legOf = (piece: string, hip: V3, knee: V3, ankle: V3, r: number, footLen: number): void => {
+  const legOf = (piece: string, hip: V3, knee: V3, ankle0: V3, r: number, footLen: number): void => {
+    // (the ankle kept high enough that its greave stands on the foot, not through the floor)
+    const ankle: V3 = [ankle0[0], ankle0[1], Math.max(ankle0[2], r * 1.2 + 0.3)];
     sc.cone(steel, piece, hip, knee, r, r * 0.85, 0.5, { tag: 'thigh' });
     sc.ell(brass, piece, knee, X(r * 0.95, r * 0.95, r * 0.95), 0.3, { tag: 'kneecap' });
     sc.cone(brass, piece, knee, ankle, r * 0.95, r * 1.2, 0.4, { tag: 'greave' });
@@ -165,6 +215,16 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.ell(glow, piece, add(c, mul(n, r * 0.4)), [mul(n, r * 0.5), mul(s1, r), mul(s2, r)], 0.05, { tag: 'lens' });
   };
 
+  /** A ring (a hoop, a rim, a tire): `n` short rods round a circle of radius `R` in the plane of `a1` and `a2`. */
+  const ringOf = (mat: number, piece: string, c: V3, a1: V3, a2: V3, R: number, r: number, n: number, tag: string): void => {
+    let prev: V3 | null = null;
+    for (let i = 0; i <= n; i++) {
+      const th = (i / n) * Math.PI * 2;
+      const p = add(c, add(mul(a1, Math.cos(th) * R), mul(a2, Math.sin(th) * R)));
+      if (prev) sc.cone(mat, piece, prev, p, r, r, 0.5, { tag });
+      prev = p;
+    }
+  };
   if (build === 'ape') {
     // THE BOILER APE: a great boiler for a body, leaning forward over its fists; it walks on its knuckles, its fists on the
     // floor before it; short stumpy legs behind; no head but a turret sunk between its shoulders, one eye; two stacks
@@ -236,7 +296,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     }
     for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(-2, side * 8, 26), P(3, side * 12, 14), P(0, side * 12, 5), 4.4, 6);
     stackAt('stacks', P(-4, 0, 58), P(-6, 0, 82), 2.6);
-  } else {
+  } else if (build === 'crab') {
     // THE CRAB WALKER: a broad carapace of brass on four jointed legs, its two fists held up before it like a crab's claws;
     // a row of eyes along its front; a stack on its back
     sc.ell(brass, 'torso', P(0, 0, 36), X(17, 19, 10), 2.0, { tag: 'shell' });
@@ -261,14 +321,562 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
       fistAt(piece, P(25, side * 14.5, 68), norm(add(U, mul(F, 0.5))), mul(L, -side), 6.4);
     }
     stackAt('stacks', P(-10, 0, 44), P(-13, 0, 64), 2.4);
+  } else if (build === 'kettle') {
+    // THE KETTLE: a great squat kettle of copper and brass on three stove legs; its spout its snout, steam at its tip; its
+    // lid a dome, its handle an arch over its back; two lamps for eyes; fists out of its sides
+    sc.ell(copper, 'torso', P(0, 0, 38), X(16, 16, 13), 2.0, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(0, 0, 38), X(16.8, 16.8, 1.6), 0.4, { tag: 'chest' });
+    sc.ell(brass, 'torso', P(0, 0, 49), X(10, 10, 4), 1.0, { tag: 'shell' });
+    sc.ell(brass, 'torso', P(0, 0, 54.5), X(2.6, 2.6, 2.6), 0.4, { tag: 'knob' });
+    sc.cone(copper, 'snout', P(12, 0, 38), P(27, 0, 50), 4.0, 1.9, 1.2, { tag: 'spout' });
+    sc.cone(brass, 'snout', P(26.5, 0, 49.5), P(28, 0, 51), 2.3, 2.3, 0.2, { tag: 'tip' });
+    const handle = [P(-8, 0, 48), P(-14, 0, 58), P(-22, 0, 52), P(-22, 0, 38), P(-15, 0, 30)];
+    for (let i = 0; i + 1 < handle.length; i++) sc.cone(steel, 'handle', handle[i], handle[i + 1], 1.4, 1.4, 0.6, { tag: 'handle' });
+    for (const side of [1, -1]) eyeAt('torso', P(13.6, side * 5.4, 44), norm(add(F, mul(L, side * 0.3))), 2.0);
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2 + Math.PI / 3;
+      const dir = add(mul(F, Math.cos(ang)), mul(L, Math.sin(ang)));
+      const piece = ['legA', 'legB', 'legC'][i];
+      const hip = add(P(0, 0, 28), mul(dir, 9));
+      const foot = add(P(0, 0, 0), mul(dir, 16));
+      sc.cone(steel, piece, hip, add(foot, mul(U, 1.6)), 2.6, 1.8, 0.4, { tag: 'shin' });
+      sc.ell(brass, piece, add(foot, mul(U, 1.6)), X(3.2, 3.2, 1.6), 0.3, { tag: 'foot' });
+    }
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 16, 40), P(4, side * 24, 30), P(10, side * 23, 22), 3.0);
+      fistAt(piece, P(14, side * 21, 18), norm(add(F, mul(U, -0.6))), mul(L, -side), 6.0);
+    }
+  } else if (build === 'bell') {
+    // THE BELL ON A SPRING: a great brass bell for a body, hopping on one coiled spring; a slit of cyan light across its
+    // front for its eye; its clapper hanging under it; long arms from its shoulders, fists swinging
+    sc.cone(brass, 'torso', P(0, 0, 70), P(0, 0, 40), 7.5, 15.5, 2.6, { tag: 'drum', cuts: [{ n: mul(U, -1), o: -39 }] });
+    sc.ell(brass, 'torso', P(0, 0, 70), X(7.5, 7.5, 4.5), 1.6, { tag: 'shell' });
+    sc.cone(brass, 'torso', P(0, 0, 76), P(0, 0, 79.5), 2.6, 2.0, 0.6, { tag: 'crown' });
+    sc.ell(brass, 'torso', P(0, 0, 38.5), X(17.5, 17.5, 2.2), 0.6, { tag: 'chest' });
+    sc.box(dark, 'torso', P(12.6, 0, 56), X(1.2, 7.4, 1.6), 0.6, 0.1, { tag: 'slit' });
+    sc.box(glow, 'torso', P(12.9, 0, 56), X(0.9, 6.6, 1.0), 0.4, 0, { tag: 'lens' });
+    sc.ell(steel, 'clapper', P(0, 0, 33), X(4.2, 4.2, 4.2), 0.4, { tag: 'clapper' });
+    // the spring: a helix of steel down to a foot plate on the floor
+    const turns = 5;
+    let prev: V3 | null = null;
+    for (let i = 0; i <= turns * 12; i++) {
+      const th = (i / 12) * Math.PI * 2;
+      const p = add(P(0, 0, 4 + (i / (turns * 12)) * 26), add(mul(F, Math.cos(th) * 5.5), mul(L, Math.sin(th) * 5.5)));
+      if (prev) sc.cone(steel, 'spring', prev, p, 1.15, 1.15, 0.3, { tag: 'coil' });
+      prev = p;
+    }
+    sc.box(brass, 'spring', P(0, 0, 1.4), X(8, 8, 1.4), 0.8, 0.4, { tag: 'foot' });
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 10, 66), P(2, side * 22, 54), P(6, side * 25, 34), 2.8);
+      fistAt(piece, P(9, side * 24.5, 27), mul(U, -1), mul(L, -side), 6.2);
+    }
+  } else if (build === 'clock') {
+    // THE GRANDFATHER CLOCK: a tall case of dark wood bound in brass, its dial its face, its pendulum swinging behind a
+    // window of cyan glass; it walks on four bun feet; long arms out of its sides
+    const wood = sc.mat({ ramp: WOOD, paint: (h) => ((h.x + Math.floor(h.y / 3)) % 7 === 0 ? shadeOf(WOOD, h.tone - 1) : null) });
+    sc.box(wood, 'torso', P(0, 0, 44), X(7.5, 9.5, 26), 1.2, 0.4, { tag: 'drum' });
+    sc.box(wood, 'torso', P(0, 0, 72.5), X(9, 11, 3), 1.0, 0.4, { tag: 'chest' });
+    sc.ell(wood, 'torso', P(0, 0, 75), X(6, 9.5, 5), 0.6, { tag: 'shell' });
+    sc.box(brass, 'torso', P(0, 0, 18.5), X(8.5, 10.5, 1.4), 0.6, 0.2, { tag: 'trim' });
+    sc.box(brass, 'torso', P(0, 0, 69.2), X(8.3, 10.3, 0.8), 0.4, 0.2, { tag: 'trim' });
+    const dial = sc.mat({
+      ramp: DIAL,
+      paint: (h) => {
+        const b = onBall(h.prim as Ell, h.p);
+        const r = Math.hypot(b[1], b[2]);
+        const ang = Math.atan2(b[2], b[1]);
+        // its hours round its edge, its two hands, the cyan at its heart
+        if (r > 0.78 && Math.floor(((ang + Math.PI) * 6) / Math.PI) % 2 === 0) return DARK[1];
+        if (r < 0.22) return h.tone >= 2 ? '#e8ffff' : CYAN[3];
+        if ((Math.abs(b[1]) < 0.09 && b[2] > 0 && b[2] < 0.62) || (Math.abs(b[2] + b[1] * 0.4) < 0.09 && b[1] > 0 && b[1] < 0.5)) return DARK[0];
+        return null;
+      },
+    });
+    sc.ell(brass, 'torso', P(7.2, 0, 60), X(1.4, 7.6, 7.6), 0.2, { tag: 'bezel' });
+    sc.ell(dial, 'torso', P(7.9, 0, 60), X(1.0, 6.6, 6.6), 0.1, { tag: 'dial' });
+    sc.box(brass, 'torso', P(7.2, 0, 36), X(0.8, 6, 12), 0.4, 0.1, { tag: 'trim' });
+    sc.box(heart, 'torso', P(7.6, 0, 36), X(0.6, 5, 11), 0.3, 0, { tag: 'window' });
+    sc.cone(brass, 'torso', P(8.4, 0, 46), P(8.4, 0, 31), 0.4, 0.4, 0.1, { tag: 'rod' });
+    sc.ell(brass, 'torso', P(8.6, 0, 30), X(0.6, 3.0, 3.0), 0.1, { tag: 'bob' });
+    for (const [fw, sd] of [[5, 7], [5, -7], [-5, 7], [-5, -7]] as const) sc.ell(brass, `foot${fw > 0 ? 'F' : 'B'}${sd > 0 ? 'l' : 'r'}`, P(fw, sd, 9), X(4, 4, 9), 0.4, { tag: 'bun' });
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 11, 62), P(4, side * 20, 46), P(8, side * 20, 26), 2.6);
+      fistAt(piece, P(10, side * 19.5, 18), norm(add(mul(U, -1), mul(F, 0.2))), mul(L, -side), 6.0);
+    }
+  } else if (build === 'wheel') {
+    // THE ROLLER: a great iron roller for its feet, a boiler drum riding on it between two brass forks; a dome on top with
+    // one eye, a stack behind; its arms thrown out, huge fists
+    const iron = sc.mat({ ramp: DARK, paint: (h) => (Math.floor(h.p[2] * 0.9) % 2 === 0 && h.tone >= 2 ? DARK[Math.min(4, h.tone + 1)] : null) });
+    sc.cone(iron, 'roller', P(0, -10, 12), P(0, 10, 12), 11.6, 11.6, 0.4, { tag: 'roller', cuts: [{ n: L, o: 10 }, { n: mul(L, -1), o: 10 }] });
+    for (const side of [1, -1]) {
+      ringOf(brass, 'roller', P(0, side * 10, 12), F, U, 11, 1.2, 20, 'rim');
+      sc.ell(brass, 'roller', P(0, side * 10.4, 12), X(3.2, 1.2, 3.2), 0.3, { tag: 'hub' });
+      sc.cone(steel, 'fork', P(0, side * 11.6, 12), P(0, side * 10, 36), 1.6, 1.6, 0.4, { tag: 'fork' });
+    }
+    sc.cone(brass, 'torso', P(0, 0, 34), P(0, 0, 56), 11, 11.5, 1.2, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(0, 0, 34), X(11.5, 11.5, 3.6), 1.0, { tag: 'chest' });
+    sc.ell(steel, 'head', P(0, 0, 57), X(9, 9, 6.5), 1.0, { tag: 'shell' });
+    eyeAt('head', P(7.4, 0, 59), F, 2.8);
+    heartAt('torso', P(11.2, 0, 44), F, 4.2);
+    stackAt('stacks', P(-9, 0, 50), P(-11, 0, 72), 2.2);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 12, 51), P(4, side * 22, 44), P(10, side * 24, 36), 2.8);
+      fistAt(piece, P(13, side * 23.5, 32), norm(add(F, mul(U, -0.4))), U, 6.0);
+    }
+  } else if (build === 'strider') {
+    // THE STRIDER: a long boiler carried level on two long legs that bend backward like a bird's; a lamp of an eye at its
+    // front end, a stack at its back; short arms under its front, big fists
+    sc.cone(brass, 'torso', P(-13, 0, 54), P(11, 0, 57), 9.5, 10.5, 1.4, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(12, 0, 57), X(4.5, 10.5, 10.5), 1.2, { tag: 'chest' });
+    sc.ell(steel, 'hips', P(-2, 0, 46), X(8, 9, 5), 1.2, { tag: 'pelvis' });
+    eyeAt('torso', P(16, 0, 59), F, 3.4);
+    sc.box(dark, 'torso', P(16, 0, 52.4), X(1.4, 6, 1.6), 0.5, 0.2, { tag: 'grille' });
+    stackAt('stacks', P(-12, 0, 62), P(-16, 0, 80), 2.4);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'legL' : 'legR';
+      const hip = P(-2, side * 8, 46);
+      const knee = P(6, side * 10, 32);
+      const hock = P(-6, side * 10, 15);
+      const foot = P(2, side * 10, 0);
+      sc.ell(steel, piece, hip, X(3.6, 3.6, 3.6), 0.3, { tag: 'ball' });
+      sc.cone(steel, piece, hip, knee, 3.3, 2.7, 0.5, { tag: 'thigh' });
+      sc.ell(brass, piece, knee, X(3.2, 3.2, 3.2), 0.3, { tag: 'kneecap' });
+      sc.cone(brass, piece, knee, hock, 2.7, 2.2, 0.4, { tag: 'shin' });
+      sc.ell(steel, piece, hock, X(2.4, 2.4, 2.4), 0.3, { tag: 'joint' });
+      sc.cone(steel, piece, hock, add(foot, mul(U, 1.4)), 2.0, 1.6, 0.4, { tag: 'shank' });
+      for (const toe of [-0.5, 0, 0.5]) sc.cone(brass, piece, add(foot, mul(U, 1.4)), add(foot, add(mul(F, 6 * Math.cos(toe)), add(mul(L, 6 * Math.sin(toe)), mul(U, 0.9)))), 1.4, 0.7, 0.3, { tag: 'toe' });
+      sc.cone(brass, piece, add(foot, mul(U, 1.4)), add(foot, add(mul(F, -4), mul(U, 0.9))), 1.2, 0.7, 0.3, { tag: 'toe' });
+    }
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(8, side * 9, 50), P(13, side * 13, 41), P(19, side * 12, 37), 2.4);
+      fistAt(piece, P(23, side * 11.5, 36), F, U, 5.4);
+    }
+  } else if (build === 'anvil') {
+    // THE ANVIL: an iron anvil for a body, top-heavy, its horn thrust forward; a slit of cyan in its waist; short thick legs;
+    // great hammer fists hanging from under its face
+    const iron = sc.mat({ ramp: STEEL5, paint: (h) => ((h.x * 3 + h.y) % 11 === 0 ? shadeOf(STEEL5, h.tone - 1) : far(h.prim.piece) ? shadeOf(STEEL5, h.tone - 1) : null) });
+    // (its long way across it, the horn out to its right where it is seen)
+    sc.box(iron, 'torso', P(0, 0, 58), X(9.5, 15, 5.5), 1.6, 0.4, { tag: 'chest' });
+    sc.cone(iron, 'torso', P(0, -14, 59), P(0, -30, 61.5), 6, 0.9, 1.0, { tag: 'horn' });
+    sc.box(iron, 'torso', P(-1, 0, 46), X(6, 8, 7.5), 2.0, 2.0, { tag: 'drum' });
+    sc.box(iron, 'hips', P(-1, 0, 35), X(10, 13, 4), 1.4, 1.6, { tag: 'pelvis' });
+    sc.box(brass, 'torso', P(0, 0, 63.6), X(9, 14.4, 0.5), 0.3, 0.1, { tag: 'face' });
+    sc.box(dark, 'torso', P(5.3, 0, 47), X(0.8, 5, 1.5), 0.5, 0.1, { tag: 'slit' });
+    sc.box(glow, 'torso', P(5.7, 0, 47), X(0.6, 4.2, 0.9), 0.3, 0, { tag: 'lens' });
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(-1, side * 7, 32), P(2, side * 10, 17), P(-1, side * 10, 5), 5.0, 6.5);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(4, side * 10, 53), P(9, side * 18, 40), P(11, side * 19, 24), 3.4);
+      fistAt(piece, P(12, side * 19, 15), mul(U, -1), mul(L, -side), 7.6);
+    }
+  } else if (build === 'lantern') {
+    // THE LANTERN: a cage of brass bars round a great cyan flame, a cap and a ring on top, on three thin legs; jointed
+    // arms from its cage, fists
+    sc.ell(glow, 'torso', P(0, 0, 46), X(8, 8, 11), 0.6, { tag: 'flame' });
+    for (let i = 0; i < 6; i++) {
+      const th = (i / 6) * Math.PI * 2 + 0.3;
+      const dir = add(mul(F, Math.cos(th)), mul(L, Math.sin(th)));
+      sc.cone(brass, 'bars', add(P(0, 0, 33), mul(dir, 10.6)), add(P(0, 0, 60), mul(dir, 10)), 0.8, 0.8, 0.2, { tag: 'bar' });
+    }
+    sc.ell(brass, 'torso', P(0, 0, 32), X(12, 12, 2.4), 0.6, { tag: 'chest' });
+    sc.ell(copper, 'torso', P(0, 0, 62), X(11.4, 11.4, 3.2), 0.6, { tag: 'cap' });
+    sc.cone(copper, 'torso', P(0, 0, 63), P(0, 0, 67), 5, 2.6, 0.8, { tag: 'cap' });
+    sc.ell(steel, 'torso', P(0, 0, 71), X(4.4, 1.2, 4.4), 0.2, { tag: 'ring' });
+    sc.ell(dark, 'torso', P(0, 0, 71), X(3, 2, 3), 0, { tag: 'hole', carve: true });
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2 + Math.PI / 3;
+      const dir = add(mul(F, Math.cos(ang)), mul(L, Math.sin(ang)));
+      const piece = ['legA', 'legB', 'legC'][i];
+      const hip = add(P(0, 0, 30), mul(dir, 8));
+      const knee = add(P(0, 0, 22), mul(dir, 16));
+      const foot = add(P(0, 0, 1.2), mul(dir, 19));
+      sc.cone(steel, piece, hip, knee, 1.8, 1.5, 0.3, { tag: 'thigh' });
+      sc.ell(brass, piece, knee, X(2.2, 2.2, 2.2), 0.2, { tag: 'joint' });
+      sc.cone(steel, piece, knee, foot, 1.5, 1.0, 0.3, { tag: 'shin' });
+      sc.ell(brass, piece, foot, X(2.6, 2.6, 1.2), 0.2, { tag: 'foot' });
+    }
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 10.8, 50), P(4, side * 22, 46), P(10, side * 23, 32), 2.6);
+      fistAt(piece, P(12, side * 22.5, 25), norm(add(mul(U, -1), mul(F, 0.3))), mul(L, -side), 5.8);
+    }
+  } else if (build === 'cauldron') {
+    // THE CAULDRON: a great iron pot on three stubby feet, its brew the friend's cyan bubbling at its brim; two lamps for
+    // eyes on its belly; fists from its rim
+    const iron = sc.mat({ ramp: DARK, paint: (h) => (far(h.prim.piece) ? shadeOf(DARK, h.tone - 1) : null) });
+    sc.ell(iron, 'torso', P(0, 0, 42), X(16, 16, 15), 2.0, { tag: 'drum', cuts: [{ n: U, o: 51 }] });
+    ringOf(steel, 'torso', P(0, 0, 51.5), F, L, 14, 1.8, 24, 'rim');
+    const brew = sc.mat({ ramp: CYAN, paint: (h) => ((h.x * 3 + h.y * 5) % 13 < 2 ? '#e8ffff' : h.tone >= 3 ? CYAN[3] : CYAN[2]) });
+    sc.ell(brew, 'torso', P(0, 0, 50.4), X(13.4, 13.4, 1.4), 0.3, { tag: 'brew' });
+    for (const [bf, bl, r] of [[3, -4, 1.8], [-5, 3, 1.4], [6, 5, 1.1]] as const) sc.ell(brew, 'torso', P(bf, bl, 51.6), X(r, r, r), 0.2, { tag: 'bubble' });
+    sc.ell(brass, 'torso', P(0, 0, 40), X(16.6, 16.6, 1.4), 0.3, { tag: 'band' });
+    for (const side of [1, -1]) eyeAt('torso', P(13.4, side * 5.6, 45.5), norm(add(F, mul(L, side * 0.3))), 2.0);
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2 + Math.PI / 3;
+      const dir = add(mul(F, Math.cos(ang)), mul(L, Math.sin(ang)));
+      const piece = ['legA', 'legB', 'legC'][i];
+      sc.cone(iron, piece, add(P(0, 0, 30), mul(dir, 10)), add(P(0, 0, 2.2), mul(dir, 14)), 3.4, 2.4, 0.8, { tag: 'shin' });
+      sc.ell(steel, piece, add(P(0, 0, 2.2), mul(dir, 14.5)), X(3.2, 3.2, 2.0), 0.3, { tag: 'foot' });
+    }
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 15.5, 50), P(5, side * 23, 42), P(10, side * 21, 32), 3.0);
+      fistAt(piece, P(13, side * 20.5, 26), norm(add(mul(U, -1), mul(F, 0.4))), mul(L, -side), 6.4);
+    }
+  } else if (build === 'ball') {
+    // THE BALL-ROLLER: a body of brass balanced on one great steel ball it rolls about on; a single great eye in its
+    // body; a stack; arms out and fists up
+    const ballM = sc.mat({ ramp: STEEL5, paint: (h) => (Math.floor((Math.atan2(h.p[1], h.p[0]) + Math.PI) * 3) % 2 === 0 && Math.abs(h.p[2] - 11) < 2.0 ? shadeOf(BRASS, h.tone) : null) });
+    sc.ell(ballM, 'ball', P(0, 0, 11.5), X(11.5, 11.5, 11.5), 0.4, { tag: 'ball' });
+    sc.cone(steel, 'torso', P(0, 0, 21), P(0, 0, 25), 8.5, 9.5, 0.6, { tag: 'collar' });
+    sc.cone(brass, 'torso', P(0, 0, 26), P(0, 0, 54), 10, 14.5, 1.6, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(0, 0, 54), X(14.5, 14.5, 7), 1.6, { tag: 'shell' });
+    eyeAt('torso', P(13, 0, 48), F, 4.4);
+    stackAt('stacks', P(-10, 0, 56), P(-12, 0, 76), 2.4);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 14, 50), P(6, side * 24, 42), P(14, side * 22, 46), 2.9);
+      fistAt(piece, P(19, side * 20.5, 48), F, U, 6.2);
+    }
+  } else if (build === 'bellows') {
+    // THE BELLOWS: a body of pleated leather between plates of brass, breathing; a nozzle for a snout; two lamps for eyes
+    // on its top plate; short stumpy legs; fists from its top plate
+    const leather = sc.mat({ ramp: ['#1e1008', '#3a2014', '#5e3820', '#8a5a34', '#b07c4c'], paint: (h) => (far(h.prim.piece) ? shadeOf(['#1e1008', '#3a2014', '#5e3820', '#8a5a34', '#b07c4c'], h.tone - 1) : null) });
+    for (let i = 0; i < 5; i++) {
+      const z = 31 + i * 5.4;
+      sc.ell(leather, 'torso', P(0, 0, z), X(14 + (i % 2) * 2.2, 15 + (i % 2) * 2.2, 3.4), i ? 0.8 : 0.8, { tag: 'drum' });
+    }
+    sc.box(brass, 'torso', P(0, 0, 58), X(16, 17, 2.2), 1.6, 0.4, { tag: 'chest' });
+    sc.box(brass, 'hips', P(0, 0, 27.5), X(15, 16, 2.0), 1.4, 0.4, { tag: 'pelvis' });
+    sc.cone(steel, 'snout', P(14, 0, 40), P(22, 0, 35), 3.6, 1.8, 1.2, { tag: 'nozzle' });
+    sc.cone(brass, 'snout', P(21.4, 0, 35.4), P(23, 0, 34.4), 2.4, 2.4, 0.2, { tag: 'tip' });
+    for (const side of [1, -1]) eyeAt('torso', P(12, side * 6, 61.4), norm(add(F, mul(U, 0.7))), 2.4);
+    heartAt('torso', P(-2, 0, 60.6), U, 4.2);
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(-1, side * 8, 26), P(3, side * 11, 15), P(0, side * 11, 5), 4.4, 6);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 17, 58), P(5, side * 26, 46), P(11, side * 25, 32), 3.1);
+      fistAt(piece, P(14, side * 24, 25), norm(add(mul(U, -1), mul(F, 0.3))), mul(L, -side), 6.8);
+    }
+  }
+  // ---- THE THIRD TEN ----
+  /** A chain of links from `a` to `b`, each link `r` big, turned a quarter to the last. */
+  const chainOf = (piece: string, a: V3, b: V3, r: number): void => {
+    const len = Math.hypot(...sub(b, a));
+    const n = Math.max(2, Math.round(len / (r * 1.7)));
+    const d = norm(sub(b, a));
+    const s1 = norm(cross(d, U[2] > 0 && Math.abs(d[2]) > 0.9 ? F : U));
+    const s2 = norm(cross(d, s1));
+    for (let i = 0; i < n; i++) {
+      const c = lerp3(a, b, (i + 0.5) / n);
+      sc.ell(steel, piece, c, [mul(d, r * 1.05), mul(i % 2 ? s1 : s2, r * 0.7), mul(i % 2 ? s2 : s1, r * 0.3)], 0, { tag: 'link' });
+    }
+  };
+  /** A bellows-pleated tube from `a` to `b` (a hose, a spring's sleeve): rings of `r` and a little less. */
+  const pleated = (mat: number, piece: string, a: V3, b: V3, r: number, n: number, tag: string): void => {
+    const d = norm(sub(b, a));
+    const s1 = norm(cross(d, Math.abs(d[2]) > 0.9 ? F : U));
+    const s2 = norm(cross(d, s1));
+    const step = Math.hypot(...sub(b, a)) / n;
+    for (let i = 0; i <= n; i++) sc.ell(mat, piece, lerp3(a, b, i / n), [mul(d, step * 0.62), mul(s1, i % 2 ? r * 0.82 : r), mul(s2, i % 2 ? r * 0.82 : r)], 0.4, { tag });
+  };
+  if (build === 'onearm') {
+    // ONE GIANT ARM: a hunched boiler on two short legs, its right arm a monstrous piston arm with a fist bigger than its
+    // body; its left a little tool arm with a pincer; one eye on a stalk
+    sc.cone(brass, 'torso', P(-6, 0, 28), P(2, 0, 46), 11, 12.5, 1.6, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(1, 0, 48), X(10, 12, 6), 1.6, { tag: 'chest' });
+    heartAt('torso', P(10.6, 2, 38), F, 4.0);
+    sc.cone(steel, 'head', P(4, 4, 52), P(8, 6, 62), 1.0, 0.8, 0.3, { tag: 'stalk' });
+    eyeAt('head', P(9, 6.4, 63.6), F, 2.6);
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(-6, side * 7, 24), P(-2, side * 9, 13), P(-6, side * 9, 5), 4.0, 6);
+    // the giant arm: a great shoulder of plates, a piston rod and its sleeve, a gauntlet like a boiler, the fist on the floor
+    sc.ell(brass, 'armR', P(0, -14, 50), X(9, 7, 8), 0.6, { tag: 'plate' });
+    armOf('armR', P(0, -14, 46), P(10, -24, 36), P(18, -24, 20), 4.8);
+    fistAt('armR', P(21, -24, 12.8), norm(add(mul(U, -1), mul(F, 0.25))), mul(L, 1), 10.5);
+    // the tool arm: thin, a pincer
+    armOf('armL', P(2, 12, 44), P(8, 16, 38), P(14, 15, 40), 1.6);
+    for (const sd of [1, -1]) sc.cone(steel, 'armL', P(15, 15, 40), add(P(19, 15, 40), mul(U, sd * 1.6)), 0.8, 0.4, 0.2, { tag: 'jaw' });
+    stackAt('stacks', P(-8, 4, 46), P(-11, 6, 64), 2.0);
+  } else if (build === 'mallets') {
+    // MALLET ARMS: a tall drum of brass on two legs, its arms ending not in fists but in great mallets, banded in brass
+    sc.cone(brass, 'torso', P(0, 0, 26), P(0, 0, 62), 10, 11, 1.4, { tag: 'drum' });
+    sc.ell(copper, 'torso', P(0, 0, 63), X(11, 11, 4), 1.0, { tag: 'shell' });
+    sc.box(dark, 'torso', P(10.4, 0, 54), X(1.0, 6, 1.4), 0.5, 0.1, { tag: 'grille' });
+    for (const side of [1, -1]) eyeAt('torso', P(10.6, side * 3.4, 58), F, 1.7);
+    heartAt('torso', P(10.8, 0, 40), F, 4.2);
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(-1, side * 6, 26), P(3, side * 9, 14), P(0, side * 9, 5), 3.8, 6);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 11, 54), P(4, side * 20, 42), P(9, side * 21, 30), 2.8);
+      // the mallet: its handle the forearm's end, its head a short fat drum across it
+      const head = P(11, side * 21, 24);
+      const ax = norm(add(L, mul(F, -side * 0.25)));
+      sc.cone(steel, piece, P(9, side * 21, 30), head, 1.4, 1.4, 0.3, { tag: 'haft' });
+      sc.cone(brass, piece, add(head, mul(ax, -6.5)), add(head, mul(ax, 6.5)), 5.6, 5.6, 0.3, { tag: 'mallet', cuts: [{ n: ax, o: dot3(ax, head) + 6.5 }, { n: mul(ax, -1), o: -dot3(ax, head) + 6.5 }] });
+      for (const e of [-1, 1]) sc.cone(steel, piece, add(head, mul(ax, e * 5.6)), add(head, mul(ax, e * 6.6)), 6.0, 6.0, 0.1, { tag: 'band', cuts: [{ n: ax, o: dot3(ax, head) + 6.6 }, { n: mul(ax, -1), o: -dot3(ax, head) + 6.6 }] });
+    }
+  } else if (build === 'flails') {
+    // CHAIN FLAILS: a round furnace on three short legs; its arms short stumps that swing chains, a spiked iron ball on each
+    sc.ell(brass, 'torso', P(0, 0, 40), X(15, 16, 15), 2.0, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(0, 0, 40), X(16, 17, 2.4), 0.6, { tag: 'chest' });
+    const mouthC = P(14, 0, 35);
+    sc.box(dark, 'torso', mouthC, X(2, 7, 3), 1.2, 0.2, { tag: 'grille' });
+    sc.box(glow, 'torso', add(mouthC, P(-0.5, 0, 0)), X(1.6, 6.2, 2.2), 0.9, 0, { tag: 'fire' });
+    for (const side of [1, -1]) eyeAt('torso', P(12.6, side * 6, 46), norm(add(F, mul(L, side * 0.3))), 2.2);
+    stackAt('stacks', P(-3, 0, 53), P(-5, 0, 72), 2.4);
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2 + Math.PI / 3;
+      const dir = add(mul(F, Math.cos(ang)), mul(L, Math.sin(ang)));
+      const piece = ['legA', 'legB', 'legC'][i];
+      sc.cone(steel, piece, add(P(0, 0, 28), mul(dir, 8)), add(P(0, 0, 2.4), mul(dir, 13)), 3.0, 2.2, 0.5, { tag: 'shin' });
+      sc.ell(brass, piece, add(P(0, 0, 2.4), mul(dir, 13.4)), X(3.2, 3.2, 1.8), 0.3, { tag: 'foot' });
+    }
+    const spiked = sc.mat({ ramp: DARK });
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      sc.ell(steel, piece, P(0, side * 15.5, 44), X(4.4, 4.4, 4.4), 0.4, { tag: 'ball' });
+      sc.cone(brass, piece, P(0, side * 17, 44), P(3, side * 22, 46), 3.2, 2.6, 0.4, { tag: 'upper' });
+      const ballC = P(10, side * 27, 12);
+      chainOf(piece, P(3, side * 23, 45), add(ballC, mul(U, 5.4)), 1.5);
+      sc.ell(spiked, piece, ballC, X(5.4, 5.4, 5.4), 0.3, { tag: 'mace' });
+      for (const [a1, a2] of [[0, 0], [90, 0], [180, 0], [270, 0], [0, 70], [0, -70], [120, 40], [240, 40], [60, -40], [300, -40]] as const) {
+        const az = (a1 * Math.PI) / 180;
+        const el = (a2 * Math.PI) / 180;
+        const dir = add(mul(add(mul(F, Math.cos(az)), mul(L, Math.sin(az))), Math.cos(el)), mul(U, Math.sin(el)));
+        sc.cone(steel, piece, add(ballC, mul(dir, 4.8)), add(ballC, mul(dir, 8.0)), 1.3, 0.15, 0.2, { tag: 'spike' });
+      }
+    }
+  } else if (build === 'jack') {
+    // JACK-IN-THE-BOX: a riveted box of brass on four stubby legs, a crank on its side; its punch a boxing glove of
+    // leather on a coiled spring flung out of a hatch in its front; two little arms to turn its crank
+    sc.box(brass, 'torso', P(0, 0, 36), X(12, 12, 13), 1.6, 0.4, { tag: 'drum' });
+    sc.box(copper, 'torso', P(0, 0, 49.6), X(12.6, 12.6, 1.4), 0.8, 0.2, { tag: 'lid' });
+    sc.box(dark, 'torso', P(11.6, 0, 38), X(1.0, 6.4, 6.4), 0.8, 0.1, { tag: 'hatch' });
+    sc.box(copper, 'torso', P(13.4, -7.6, 38), X(0.8, 1.6, 6.8), 0.4, 0.1, { tag: 'door' });
+    for (const side of [1, -1]) eyeAt('torso', P(12.4, side * 6, 46.4), F, 2.0);
+    // the spring and the glove
+    const turns = 4;
+    let prev: V3 | null = null;
+    for (let i = 0; i <= turns * 12; i++) {
+      const th = (i / 12) * Math.PI * 2;
+      const p = add(P(12 + (i / (turns * 12)) * 13, 0, 38), add(mul(L, Math.cos(th) * 3.6), mul(U, Math.sin(th) * 3.6)));
+      if (prev) sc.cone(steel, 'spring', prev, p, 0.8, 0.8, 0.2, { tag: 'coil' });
+      prev = p;
+    }
+    const glove = sc.mat({ ramp: ['#2a0610', '#5a0e1c', '#9a1c26', '#d23a34', '#f46a4a'] });
+    sc.ell(glove, 'spring', P(30, 0, 39), X(6, 6.4, 6.2), 1.0, { tag: 'glove' });
+    sc.ell(glove, 'spring', P(28, -5.6, 41), X(2.8, 2.2, 2.6), 0.6, { tag: 'thumb' });
+    sc.cone(sc.mat({ ramp: ['#4a4038', '#7a6e60', '#b8ac98', '#e6dcc4', '#fff8e8'] }), 'spring', P(24.4, 0, 39), P(25.6, 0, 39), 4.4, 4.4, 0.2, { tag: 'cuff' });
+    for (const [fw, sd] of [[7, 7], [7, -7], [-7, 7], [-7, -7]] as const) {
+      const piece = `foot${fw > 0 ? 'F' : 'B'}${sd > 0 ? 'l' : 'r'}`;
+      sc.cone(steel, piece, P(fw, sd, 23), P(fw * 1.1, sd * 1.1, 3), 2.4, 2.0, 0.3, { tag: 'shin' });
+      sc.ell(brass, piece, P(fw * 1.1, sd * 1.1, 2.2), X(3.2, 3.2, 2.0), 0.2, { tag: 'foot' });
+    }
+    // the crank, and the little arm that winds it
+    sc.cone(steel, 'crank', P(0, 12.4, 38), P(0, 16, 38), 1.0, 1.0, 0.2, { tag: 'shaft' });
+    sc.cone(steel, 'crank', P(0, 16, 38), P(0, 16, 44), 0.9, 0.9, 0.2, { tag: 'handle' });
+    sc.ell(copper, 'crank', P(0, 16, 45), X(1.4, 1.4, 1.4), 0.2, { tag: 'knob' });
+    armOf('armL', P(-6, 12, 46), P(-4, 18, 50), P(-1, 17, 46), 1.4);
+    stackAt('stacks', P(-8, -5, 50), P(-9, -6, 66), 1.8);
+  } else if (build === 'crane') {
+    // THE WRECKING BALL: a cab of brass on tracks, a crane's jib rising off its back and over its head, a great iron ball
+    // swinging from it on a chain; one eye in its cab
+    const treads = sc.mat({ ramp: ['#100c18', '#1e1a2c', '#2e2a44', '#48446a', '#6a6690'], paint: (h) => (Math.abs(onBall(h.prim as Box, h.p)[2]) > 0.55 && Math.floor((onBall(h.prim as Box, h.p)[0] + 1) * 9) % 2 === 0 ? STEEL5[Math.max(0, Math.min(4, h.tone))] : null) });
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'treadL' : 'treadR';
+      sc.box(treads, piece, P(-2, side * 10, 6), X(14, 4.4, 6), 5.4, 0.2, { tag: 'track' });
+      for (const fw of [-11, -2, 7]) sc.ell(brass, piece, P(fw, side * 14.6, 6), X(3.4, 0.9, 3.4), 0.2, { tag: 'wheel' });
+    }
+    sc.box(brass, 'torso', P(-2, 0, 22), X(12, 11, 9), 2.0, 0.6, { tag: 'drum' });
+    sc.ell(copper, 'torso', P(-2, 0, 31), X(12, 11, 3), 0.8, { tag: 'shell' });
+    sc.box(dark, 'torso', P(9.8, 0, 25), X(0.8, 7, 3), 0.8, 0.1, { tag: 'grille' });
+    eyeAt('torso', P(10.4, 0, 25), F, 2.4);
+    stackAt('stacks', P(-10, -6, 30), P(-12, -7, 46), 1.8);
+    // the jib: a lattice of two rails from its back up and forward, the pulley at its head
+    const foot = P(-6, -2, 32);
+    const top = P(12, -20, 68);
+    for (const sd of [1.6, -1.6]) sc.cone(steel, 'crane', add(foot, mul(L, sd)), add(top, mul(L, sd * 0.6)), 1.2, 1.0, 0.2, { tag: 'rail' });
+    for (let i = 1; i < 6; i++) sc.cone(steel, 'crane', lerp3(foot, top, i / 6), lerp3(foot, top, (i + 0.6) / 6), 0.6, 0.6, 0.2, { tag: 'strut' });
+    sc.ell(brass, 'crane', top, X(2.6, 2.4, 2.6), 0.2, { tag: 'pulley' });
+    const ballC = P(13, -21, 15);
+    chainOf('crane', add(top, mul(U, -2)), add(ballC, mul(U, 9)), 1.4);
+    const iron = sc.mat({ ramp: DARK, paint: (h) => (h.tone >= 3 ? STEEL5[3] : null) });
+    sc.ell(iron, 'ball', ballC, X(9, 9, 9), 0.2, { tag: 'wrecking' });
+    sc.cone(steel, 'ball', add(ballC, mul(U, 8.4)), add(ballC, mul(U, 10)), 1.8, 1.8, 0.2, { tag: 'eye' });
+  } else if (build === 'ram') {
+    // THE BATTERING RAM: no arms; a long boiler carried level on four short legs like a bull's, its front a great iron ram
+    // with a ring of plates; two lamps for eyes over the ram; a stack on its back. It charges.
+    sc.cone(brass, 'torso', P(-16, 0, 30), P(10, 0, 32), 11, 12, 1.4, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(-3, 0, 36), X(12, 12, 9), 1.6, { tag: 'chest' });
+    const iron = sc.mat({ ramp: STEEL5, paint: (h) => (far(h.prim.piece) ? shadeOf(STEEL5, h.tone - 1) : null) });
+    sc.cone(iron, 'ram', P(10, 0, 32), P(22, 0, 31), 10, 9, 0.6, { tag: 'neck' });
+    sc.box(iron, 'ram', P(24, 0, 31), X(3, 10, 10), 2.4, 0.4, { tag: 'ram' });
+    for (const sd of [1, -1]) sc.cone(iron, 'ram', P(24, sd * 8, 38), P(28, sd * 13, 44), 2.6, 0.6, 0.4, { tag: 'horn' });
+    for (let i = 0; i < 2; i++) ringOf(copper, 'ram', P(13 + i * 5, 0, 31.6), L, U, 10.2 - i * 0.4, 1.1, 20, 'hoop');
+    for (const side of [1, -1]) eyeAt('torso', P(12, side * 6.4, 44), F, 2.0);
+    for (const [fw, sd] of [[4, 8], [4, -8], [-12, 8], [-12, -8]] as const) {
+      const piece = `leg${fw > 0 ? 'F' : 'B'}${sd > 0 ? 'l' : 'r'}`;
+      sc.cone(steel, piece, P(fw, sd, 24), P(fw + 2, sd * 1.05, 10), 3.6, 3.0, 0.4, { tag: 'thigh' });
+      sc.cone(brass, piece, P(fw + 2, sd * 1.05, 10), P(fw + 1, sd * 1.05, 4.4), 3.4, 3.8, 0.4, { tag: 'greave' });
+      sc.ell(steel, piece, P(fw + 1.5, sd * 1.05, 2.0), X(4.4, 4, 2.0), 0.3, { tag: 'foot' });
+    }
+    stackAt('stacks', P(-10, 0, 42), P(-12, 0, 58), 2.2);
+    stackAt('stacks', P(-16, 0, 40), P(-19, 0, 54), 1.8);
+  } else if (build === 'hoses') {
+    // STEAM HOSES: a squat tank on two short legs; its arms two long pleated hoses of copper, curling, each ending in a
+    // brass nozzle that blasts steam; gauges on its front
+    sc.cone(brass, 'torso', P(0, 0, 24), P(0, 0, 50), 14, 14, 1.2, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(0, 0, 50), X(14, 14, 6), 1.2, { tag: 'shell' });
+    sc.ell(steel, 'hips', P(0, 0, 24), X(13, 13, 4), 1.0, { tag: 'pelvis' });
+    const gauge = sc.mat({ ramp: DIAL, paint: (h) => (Math.abs(onBall(h.prim as Ell, h.p)[1] - onBall(h.prim as Ell, h.p)[2] * 0.6) < 0.12 ? DARK[0] : null) });
+    for (const [sd, up] of [[-5, 44], [5, 44]] as const) {
+      sc.ell(brass, 'torso', P(13.4, sd, up), X(1.2, 3.0, 3.0), 0.2, { tag: 'bezel' });
+      sc.ell(gauge, 'torso', P(14.2, sd, up), X(0.8, 2.3, 2.3), 0.1, { tag: 'gauge' });
+    }
+    eyeAt('torso', P(13.6, 0, 52), norm(add(F, mul(U, 0.3))), 2.6);
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(0, side * 8, 24), P(4, side * 11, 13), P(1, side * 11, 5), 4.2, 6);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'hoseL' : 'hoseR';
+      const pts = [P(0, side * 14, 44), P(4, side * 22, 50), P(10, side * 28, 44), P(16, side * 27, 34), P(20, side * 22, 30)];
+      for (let i = 0; i + 1 < pts.length; i++) pleated(copper, piece, pts[i], pts[i + 1], 2.8, 4, 'hose');
+      sc.cone(brass, piece, P(20, side * 22, 30), P(25, side * 19, 28), 2.6, 1.6, 0.4, { tag: 'nozzle' });
+      sc.cone(dark, piece, P(25, side * 19, 28), P(25.6, side * 18.6, 27.8), 1.2, 1.2, 0, { tag: 'mouth' });
+    }
+    stackAt('stacks', P(-9, 0, 52), P(-11, 0, 70), 2.4);
+  } else if (build === 'pincers') {
+    // PINCERS: a dome like a bell jar on a stout steel body, the cyan heart showing through its glass; two short legs; its
+    // arms ending in great hooked pincers
+    sc.cone(brass, 'torso', P(0, 0, 26), P(0, 0, 42), 12, 13, 1.2, { tag: 'drum' });
+    sc.ell(brass, 'torso', P(0, 0, 42), X(13.6, 13.6, 2.4), 0.6, { tag: 'chest' });
+    const jar = sc.mat({ ramp: ['#0a2a3a', '#124a5c', '#1e7488', '#4aa8b4', '#a6e2e2'], paint: (h) => (h.tone >= 4 ? '#e8ffff' : null) });
+    sc.ell(jar, 'head', P(0, 0, 46), X(10, 10, 14), 0.4, { tag: 'shell', cuts: [{ n: mul(U, -1), o: -43 }] });
+    sc.ell(heart, 'head', P(0, 0, 51), X(5, 5, 5), 0.2, { tag: 'core' });
+    sc.ell(brass, 'head', P(0, 0, 60), X(3, 3, 2), 0.4, { tag: 'cap' });
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(0, side * 7, 26), P(4, side * 10, 14), P(1, side * 10, 5), 4.0, 6);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      armOf(piece, P(0, side * 13, 38), P(6, side * 23, 34), P(14, side * 24, 30), 2.8);
+      // the pincer: two great hooked jaws, open
+      const base = P(15, side * 24, 30);
+      sc.ell(brass, piece, base, X(4, 4, 4), 0.4, { tag: 'pincerBase' });
+      for (const j of [1, -1]) {
+        const out = norm(add(F, mul(L, side * 0.8)));
+        const m = add(base, add(mul(out, 6), mul(U, j * 5)));
+        const tip = add(base, add(mul(out, 11), mul(U, j * 1.2)));
+        sc.cone(brass, piece, add(base, mul(U, j * 1.6)), m, 2.6, 1.8, 0.4, { tag: 'jaw' });
+        sc.cone(brass, piece, m, tip, 1.8, 0.3, 0.3, { tag: 'jaw' });
+      }
+    }
+    stackAt('stacks', P(-10, 0, 36), P(-12, 0, 56), 2.0);
+  } else if (build === 'paddles') {
+    // THE PADDLE WHEEL: a tall box on two legs, a great wheel of four paddles turning on its front that beats whatever is
+    // before it; one eye over the wheel; a stack
+    sc.box(brass, 'torso', P(0, 0, 40), X(8, 11, 17), 1.6, 0.4, { tag: 'drum' });
+    sc.ell(copper, 'torso', P(0, 0, 57.5), X(8.4, 11.4, 2.4), 0.6, { tag: 'shell' });
+    eyeAt('torso', P(8.2, 0, 51), F, 2.6);
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(0, side * 6, 24), P(4, side * 9, 13), P(1, side * 9, 5), 3.8, 6);
+    const hub = P(11, 0, 38);
+    sc.cone(steel, 'wheel', P(7, 0, 38), hub, 2.0, 2.0, 0.2, { tag: 'axle' });
+    sc.ell(brass, 'wheel', hub, X(1.6, 3, 3), 0.2, { tag: 'hub' });
+    const wood = sc.mat({ ramp: WOOD, paint: (h) => (Math.abs(onBall(h.prim as Box, h.p)[1]) > 0.8 ? shadeOf(WOOD, h.tone - 1) : null) });
+    for (let i = 0; i < 4; i++) {
+      const th = (i / 4) * Math.PI * 2 + Math.PI / 8;
+      const out = add(mul(L, Math.cos(th)), mul(U, Math.sin(th)));
+      sc.cone(steel, 'wheel', hub, add(hub, mul(out, 11)), 0.9, 0.7, 0.2, { tag: 'spoke' });
+      sc.box(wood, 'wheel', add(hub, add(mul(out, 13), mul(F, 0.5))), [mul(out, 5), mul(norm(cross(F, out)), 4.5), mul(F, 1.0)], 0.6, 0.2, { tag: 'paddle' });
+    }
+    stackAt('stacks', P(-6, 5, 58), P(-8, 6, 74), 2.0);
+  } else if (build === 'tongs') {
+    // SCISSOR ARMS: a round brass body on two legs, its arms lazy-tongs of steel that shoot out in a zigzag, a fist at
+    // each end; a ring of portholes for eyes
+    sc.ell(brass, 'torso', P(0, 0, 42), X(13, 14, 14), 1.8, { tag: 'drum' });
+    sc.ell(steel, 'hips', P(0, 0, 28), X(10, 11, 4), 1.0, { tag: 'pelvis' });
+    for (const sd of [-6, 0, 6]) eyeAt('torso', P(12, sd, 47), norm(add(F, mul(L, sd * 0.05))), 1.8);
+    heartAt('torso', P(12.8, 0, 37), F, 3.4);
+    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(0, side * 7, 28), P(4, side * 10, 15), P(1, side * 10, 5), 4.0, 6);
+    for (const side of [1, -1]) {
+      const piece = side > 0 ? 'armL' : 'armR';
+      const root = P(2, side * 13, 44);
+      sc.ell(steel, piece, root, X(3.6, 3.6, 3.6), 0.3, { tag: 'ball' });
+      // the tongs: four crossed pairs, zigzagging out along the reach
+      const reach = norm(add(F, mul(L, side * 0.55)));
+      const up = U;
+      const n = 4;
+      const seg = 6.4;
+      for (let i = 0; i < n; i++) {
+        const a0 = add(root, mul(reach, i * seg));
+        const a1 = add(root, mul(reach, (i + 1) * seg));
+        sc.cone(steel, piece, add(a0, mul(up, 2.6)), add(a1, mul(up, -2.6)), 0.75, 0.75, 0.1, { tag: 'tong' });
+        sc.cone(steel, piece, add(a0, mul(up, -2.6)), add(a1, mul(up, 2.6)), 0.75, 0.75, 0.1, { tag: 'tong' });
+        sc.ell(brass, piece, lerp3(a0, a1, 0.5), X(0.9, 0.9, 0.9), 0.05, { tag: 'pin' });
+      }
+      const end = add(root, mul(reach, n * seg + 3));
+      fistAt(piece, end, reach, U, 5.6);
+    }
+    stackAt('stacks', P(-8, 0, 52), P(-10, 0, 72), 2.2);
+  }
+
+  if (giant) {
+    // THE ONE GIANT ARM: out of its right side, a great shoulder of plates, a piston arm as thick as a leg, a gauntlet like a
+    // boiler, and a fist bigger than its head resting knuckles-down on the floor before it
+    const at = (p: V3): [number, number, number] => [dot3(p, F), dot3(p, L), p[2]];
+    const r0 = roots.armR ?? P(0, -14, 46);
+    const [rf, rl, ru] = at(r0);
+    const reach = Math.max(rf, 0);
+    sc.ell(brass, 'giantR', P(rf, rl - 1, ru + 3.5), X(9, 7, 7.5), 0.6, { tag: 'plate' });
+    armOf('giantR', P(rf, rl, ru), P(reach + 10, rl - 10, ru * 0.62 + 6), P(reach + 18, rl - 10, 21), 4.8);
+    fistAt('giantR', P(reach + 21, rl - 10, 12.8), norm(add(mul(U, -1), mul(F, 0.25))), mul(L, 1), 10.5);
+    // the tool arm: thin, a pincer, held up
+    const l0 = roots.armL ?? P(0, 14, 44);
+    const [lf, ll, lu] = at(l0);
+    armOf('giantL', P(lf, ll, lu), P(lf + 6, ll + 4, lu - 6), P(lf + 12, ll + 3, lu - 4), 1.6);
+    for (const sd of [1, -1]) sc.cone(steel, 'giantL', P(lf + 13, ll + 3, lu - 4), add(P(lf + 17, ll + 3, lu - 4), mul(U, sd * 1.6)), 0.8, 0.4, 0.2, { tag: 'jaw' });
   }
   // (built at a size easy to think in, then made the size it stands at: a head over the knight, as his brief asked)
-  scaleBy(sc, GOLEM_SIZE[build]);
+  scaleBy(sc, GOLEM_SIZE[build] ?? GOLEM_TOP / topOf(sc));
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }
 
-/** How much each is scaled from the size it was built at. */
-export const GOLEM_SIZE: Record<GolemBuild, number> = { ape: 0.82, tank: 0.9, belly: 0.88, crab: 0.98 };
+/** HIS PICK, 24 Oct, by 09:30: “Boiler ape”, with one giant arm. */
+export const GOLEM_PICK = { build: 'ape' as GolemBuild, giant: true };
+/** The bodies he is shown with one giant arm (his “I like the one big arm.  Can I get the one big arm on a bunch of golems”). */
+export const GIANT_BODIES: { id: GolemBuild; name: string }[] = [
+  { id: 'belly', name: 'Furnace belly' },
+  { id: 'ape', name: 'Boiler ape' },
+  { id: 'bell', name: 'Bell on a spring' },
+  { id: 'kettle', name: 'Kettle' },
+  { id: 'cauldron', name: 'Cauldron' },
+  { id: 'clock', name: 'Grandfather clock' },
+  { id: 'anvil', name: 'Anvil' },
+  { id: 'ball', name: 'Ball-roller' },
+  { id: 'bellows', name: 'Bellows' },
+  { id: 'tank', name: 'Tread tank' },
+];
+/** Turned this much more than the others, to be seen as they are best seen. */
+const YAW_OF: Partial<Record<GolemBuild, number>> = { ram: 50 };
+/** How much each is scaled from the size it was built at (the rest: made GOLEM_TOP high). */
+export const GOLEM_SIZE: Partial<Record<GolemBuild, number>> = { ape: 0.82, tank: 0.9, belly: 0.88, crab: 0.98, crane: 1.12 };
+/** How high the top of a Golem stands (a head and more over the knight, as the first four). */
+export const GOLEM_TOP = 77;
+
+/** How high a figure's highest solid reaches. */
+function topOf(sc: Sculpt): number {
+  let top = 0;
+  for (const p of sc.prims) {
+    if (p.carve) continue;
+    let z: number;
+    if (p.k === 'cone') z = Math.max(p.a[2] + p.ra, p.b[2] + p.rb);
+    else if (p.k === 'tri') z = Math.max(p.a[2], p.b[2], p.c[2]) + p.thick;
+    else z = p.c[2] + Math.hypot(p.axes[0][2], p.axes[1][2], p.axes[2][2]) + (p.k === 'box' ? Math.abs(p.axes[0][2]) + Math.abs(p.axes[1][2]) + Math.abs(p.axes[2][2]) - Math.hypot(p.axes[0][2], p.axes[1][2], p.axes[2][2]) : 0);
+    top = Math.max(top, z);
+  }
+  return top;
+}
 
 /** Every solid of a figure made `k` times its size about the floor point under it (its cuts and marks with it). */
 function scaleBy(sc: Sculpt, k: number): void {

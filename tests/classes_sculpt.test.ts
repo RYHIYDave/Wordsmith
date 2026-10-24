@@ -30,10 +30,10 @@ import type { GameView } from '../src/art/skin';
 import type { Px } from '../src/engine/px';
 import { LAST, primDist, primLow } from '../src/dev/sculpt';
 import type { Drawn, Prim, Sculpt } from '../src/dev/sculpt';
-import { BRAWLER_BUILD, BRAWLER_LOOKS, OUTFITS_2, boxerStance, sculptBrawler } from '../src/dev/sculpt_classes';
+import { BRAWLER_BUILD, BRAWLER_LOOKS, COATS, OUTFITS_2, boxerStance, sculptBrawler } from '../src/dev/sculpt_classes';
 import { DEMON_LOOKS, sculptDemon } from '../src/dev/sculpt_demon';
-import { GOLEM_BUILDS, sculptGolemBuild } from '../src/dev/sculpt_golem';
-import { TINKERER_BODY, sculptContraption, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
+import { GIANT_BODIES, GOLEM_BUILDS, GOLEM_BUILDS_2, GOLEM_BUILDS_3, sculptGolemBuild } from '../src/dev/sculpt_golem';
+import { TINKERER_BODY, TINKER_KITS, sculptContraption, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
 import { WARLOCK_SCULPT_BODY, sculptWarlock, warlockStance } from '../src/dev/sculpt_warlock';
 import { hsv, rgb } from './floor_checks';
 
@@ -61,12 +61,17 @@ const FIGS: Fig[] = [
   { name: 'the brawler', make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, undefined, t), body: true, turns: true },
   { name: 'the warlock', make: (v, t) => sculptWarlock(v, warlockStance(WARLOCK_SCULPT_BODY), t), body: true, turns: true },
   { name: 'the Tinkerer', make: (v, t) => sculptTinkerer(v, tinkererStance(TINKERER_BODY), t), body: true, turns: true },
-  // (the Golem freed from the human frame, 24 Oct: each of the four builds he is offered)
-  ...GOLEM_BUILDS.map((g): Fig => ({ name: `the Golem, ${g.name}`, make: (v, t) => sculptGolemBuild(v, g.id, t), body: true, turns: true })),
+  // (and with each of the four kits of tools he is offered, 24 Oct)
+  ...TINKER_KITS.map((k): Fig => ({ name: `the Tinkerer, ${k.name}`, make: (v, t) => sculptTinkerer(v, tinkererStance(TINKERER_BODY, k.id), t, k.id), body: true, turns: true })),
+  // (the Golem freed from the human frame, 24 Oct: each build still in the running (his “The crab is cool but too
+  // messy”: the crab is out), and the twenty after them)
+  ...[...GOLEM_BUILDS.filter((g) => g.id !== 'crab'), ...GOLEM_BUILDS_2, ...GOLEM_BUILDS_3].map((g): Fig => ({ name: `the Golem, ${g.name}`, make: (v, t) => sculptGolemBuild(v, g.id, t), body: true, turns: true })),
+  // (and with one giant arm, his “Can I get the one big arm on a bunch of golems”, 24 Oct)
+  ...GIANT_BODIES.map((g): Fig => ({ name: `the Golem, ${g.name}, one giant arm`, make: (v, t) => sculptGolemBuild(v, g.id, t, -14, true), body: true, turns: true })),
   { name: 'the Contraption', make: (v, t) => sculptContraption(v, t), body: false, turns: true },
   { name: "the warlock's demon", make: (v, t) => sculptDemon(v, 'smoke', 0, -16 + t), body: true, turns: true },
   // (and the brawler in each of the four new outfits he is offered, 24 Oct)
-  ...OUTFITS_2.map((o): Fig => ({ name: `the brawler as ${o.name}`, make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, o.id, t), body: true, turns: true })),
+  ...[...OUTFITS_2, ...COATS].map((o): Fig => ({ name: `the brawler as ${o.name}`, make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, o.id, t), body: true, turns: true })),
 ];
 
 const FRIEND = rgb(FRIEND_RIM);
@@ -192,7 +197,7 @@ test('at phone size: a hero about the knight’s height, the Golem a head over h
     const r = h(hero) / knight;
     assert.ok(r > 0.82 && r < 1.3, `${hero} ${h(hero)} high, the knight ${knight}`);
   }
-  for (const g of GOLEM_BUILDS) {
+  for (const g of [...GOLEM_BUILDS.filter((b) => b.id !== 'crab'), ...GOLEM_BUILDS_2, ...GOLEM_BUILDS_3, ...GIANT_BODIES.map((b) => ({ ...b, name: `${b.name}, one giant arm` }))]) {
     const name = `the Golem, ${g.name}`;
     assert.ok(h(name) > knight * 1.12, `${name} ${h(name)} high, the knight ${knight}`);
   }
