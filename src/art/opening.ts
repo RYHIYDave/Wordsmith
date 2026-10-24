@@ -17,7 +17,7 @@
 // Every box is painted on its own, in its own picture pixels, and laid on its page.
 
 import { Px } from '../engine/px';
-import { INK, band, bandBy, bands, caption, captionSize, clamp01, facets, fbm, glow, halo, hash, inside, layerOf, lerp, limbSolid, loop, mix, noise, over, path, shadeSolid, sm, solid, wash } from './comic';
+import { INK, band, bandBy, bands, balloon, caption, captionSize, clamp01, dot, facets, fbm, glow, halo, hash, inside, layerOf, lerp, limbSolid, loop, mix, noise, over, path, shadeSolid, sm, solid, wash } from './comic';
 import type { Pt, Tones, V3 } from './comic';
 import { Figure, axes, cross, unit } from './sdf';
 
@@ -723,6 +723,21 @@ function inkLine(p: Px, pts: readonly Pt[], w = 1, c = INK, on?: (x: number, y: 
   }
 }
 
+/** Ink a line through `pts`, straight from each to the next (`w` wide: 1 or 2), in `c`. */
+function stroke(p: Px, pts: readonly Pt[], w = 1, c = INK): void {
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1];
+    const [x1, y1] = pts[i];
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 1.5));
+    for (let j = 0; j <= n; j++) {
+      const X = Math.round(x0 + ((x1 - x0) * j) / n);
+      const Y = Math.round(y0 + ((y1 - y0) * j) / n);
+      p.set(X, Y, c);
+      if (w > 1) p.set(X + 1, Y, c).set(X, Y + 1, c);
+    }
+  }
+}
+
 /**
  * Light a silhouette from a lamp at (lx, ly): every pixel of `l` within `reach` of its edge on the side toward the lamp lit in
  * `tones` (darkest first: the body's own black at [0]), the nearer the edge and the lamp the brighter; the rest left its black.
@@ -1267,6 +1282,692 @@ function paintFarKeep(p: Px, x: number, y: number, k: number): void {
   over(p, l, null);
 }
 
+// =============================================================================================
+// PAGE 3, BOX 1: THE OLD WORDSMITH at a bend of the road, high on the mountain, night coming on: he points his staff up at
+// the prison on its crag, its head burning cyan, the runes along his mantle burning with it. "Up there. The altar sleeps in
+// the old prison." His look: as far ahead on page 1 (the wordsmiths' teal hood and mantle, the fallen wordsmith's brown robe,
+// art/body.ts, his book at his hip); his face lean and old, a grey beard to a point, his eyes the friend's cyan.
+
+/** The old wordsmith's stuffs, for a figure (his robe, his teal, his skin, his grey hair, his staff's wood, his book). */
+function oldSmithStuffs(f: Figure, runes: (q: V3) => boolean) {
+  return {
+    robe: f.stuff({ tones: [INK, '#2e1e14', '#4a3220', '#6a4a2e', '#90683e', '#bc9060'], hatch: 4, crease: 0.8 }),
+    brow: f.stuff({ tones: [INK, '#2a2638', '#4a4658', '#6e6a80', '#9a96aa', '#bcb8cc'], meld: true, crease: 0.4 }),
+    teal: f.stuff({ tones: [INK, '#0e2a30', '#1a4448', '#2a6a6c', '#3e9290', '#5ab8b0'], crease: 0.8, paint: (q) => (runes(q) ? CYANS[0] : null) }),
+    skin: f.stuff({ tones: [INK, '#2a1e3a', '#5a4258', '#94707e', '#d0aab0', '#f0e6f0'], hatch: 4, crease: 0.45 }),
+    hair: f.stuff({ tones: [INK, '#3a3448', '#6a6478', '#a8a2b4', '#dcd8e6', '#ffffff'], meld: true, crease: 0.5 }),
+    wood: f.stuff({ tones: [INK, '#2a1a10', '#4a2e1a', '#6e4a2a', '#9a6e40', '#c49a64'] }),
+    leath: f.stuff({ tones: [INK, '#1a0e0a', '#3a2216', '#5e3a22', '#8a5a34'] }),
+    book: f.stuff({ tones: [INK, '#0a2024', '#123638', '#1e5454', '#2e7a76'], paint: (_q, _n, v) => (v > 0.9 ? '#e8d8a8' : null) }),
+  };
+}
+
+/** Turn `q` about the line through `o` along x, by `a` (the head tipped back to look up). */
+function tipX(q: V3, o: V3, a: number): V3 {
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const y = q[1] - o[1];
+  const z = q[2] - o[2];
+  return [q[0], o[1] + y * c - z * s, o[2] + y * s + z * c];
+}
+
+export function paintOldSmith(p: Px, t: number): void {
+  const W = p.w;
+  const H = p.h;
+  const k = W / 231;
+  const S = (x: number, y: number): Pt => [x * k, y * (H / 360)];
+  const flick = 0.85 + 0.15 * Math.sin(t * 6.1);
+  const gust = Math.sin(t * 1.3) * 0.15;
+  // THE CAMERA: low on the road, looking up at him
+  const cam = { look: unit([0.2, 1, 0.12]), up: [0, 0, 1] as V3, scale: 24 * k, ox: S(96, 0)[0], oy: S(0, 420)[1] };
+  const onScreen = (q: V3): Pt => {
+    const rr = unit(cross(cam.look, cam.up));
+    const dd = unit(cross(cam.look, rr));
+    return [dt3(q, rr) * cam.scale + cam.ox, dt3(q, dd) * cam.scale + cam.oy];
+  };
+  // where his staff points: up to the prison, top right
+  const yaw = 0.95;
+  const c = Math.cos(yaw);
+  const sn = Math.sin(yaw);
+  const at = (q: V3): V3 => [q[0] * c - q[1] * sn, q[0] * sn + q[1] * c, q[2]];
+  const back = (q: V3): V3 => [q[0] * c + q[1] * sn, -q[0] * sn + q[1] * c, q[2]];
+  const ax = (tilt = 0, roll = 0) => axes(yaw, tilt, roll);
+  const fistL: V3 = [1.75, -0.55, 11.3];
+  const F = at(fistL);
+  const dir = unit([0.55, 0.3, 0.78]);
+  const top = add3(F, scale3(dir, 5.0));
+  const head3 = add3(top, scale3(dir, 0.35));
+  const hs = onScreen(head3);
+  const lamp = (x: number, y: number, r = W * 0.9): number => glow(x, y, hs[0], hs[1], r);
+  // THE NIGHT COMING ON: the dusk sunk to a band low on the right, stars over it
+  const sky = layerOf(p);
+  sky.rect(0, 0, W, H, DUSK[1]);
+  bands(sky, DUSK, (x, y) => -0.05 + glow(x, y, W * 1.05, H * 0.55, W * 1.2) * 0.75 + lamp(x, y, W * 0.45) * 0.2);
+  sky.each((x, y) => (y < H * 0.5 && hash(x, y, 811) > 0.994 ? (hash(x, y, 812) > 0.5 ? '#e8e4ff' : '#9a94c8') : undefined));
+  over(p, sky, null);
+  // THE PRISON on its crag, top right, black on the last light; the far range under it, the valley's mist
+  const far = layerOf(p);
+  far.poly(loop([S(-4, 250), S(60, 228), S(110, 238), S(150, 214), S(196, 222), S(236, 206), S(236, 300), S(-4, 300)], 6, [0, 6, 7]), FAR[0]);
+  bands(far, FAR, (x, y) => 0.3 + glow(x, y, W * 1.05, H * 0.55, W * 0.9) * 1.2);
+  far.each((x, y) => (!far.has(x, y - 1) ? FAR_RIM : undefined));
+  over(p, far, null);
+  const crag = layerOf(p);
+  crag.poly(loop([S(150, 240), S(160, 200), S(172, 186), S(170, 150), S(184, 124), S(182, 96), S(192, 70), S(194, 50), S(232, 46), S(236, 46), S(236, 244)], 3, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), ROCK[0]);
+  facets(crag, ROCK, [0.8, -0.5, 0.3], { cw: 14, ch: 9, seed: 731, tilt: [0.3, -0.6], spread: 0.8, extra: (x, y) => glow(x, y, W * 1.05, H * 0.5, W * 0.8) * 0.8 - 0.2 });
+  crag.each((x, y) => (!crag.has(x, y - 1) || !crag.has(x + 1, y) ? ROCK_RIM : undefined));
+  over(p, crag, INK);
+  paintFarKeep(p, S(213, 48)[0], S(213, 48)[1], 2.3 * k);
+  const mist = layerOf(p);
+  mist.rect(0, Math.round(S(0, 262)[1]), W, Math.round(H * 0.2), '#3a2e58');
+  mist.each((x, y) => (Math.sin(x * 0.05 + y * 0.3) + (fbm(x / 20, y / 6, 821) - 0.5) * 2 > 0.4 ? '#4a3a68' : undefined));
+  over(p, mist, null);
+  // THE ROCK WALL behind him, on the left, up out of the top
+  const wall = layerOf(p);
+  wall.poly(loop([S(-4, -4), S(70, -4), S(84, 60), S(70, 130), S(96, 210), S(110, 300), S(-4, 300)], 6, [0, 1, 6]), ROCK[0]);
+  facets(wall, ROCK, [0.4, -0.6, 0.5], { cw: 18, ch: 12, seed: 733, tilt: [0.2, -0.4], spread: 0.9, extra: (x, y) => lamp(x, y, W * 0.7) * 1.2 - 0.25 });
+  wall.each((x, y) => (!wall.has(x + 1, y) && lamp(x, y, W) > 0.12 ? '#2a6a6c' : undefined));
+  over(p, wall, INK);
+  // THE ROAD at the bend, its edge stones on the drop
+  const rd = layerOf(p);
+  rd.poly(loop([S(-4, 296), S(80, 288), S(160, 290), S(236, 300), S(236, 364), S(-4, 364)], 6, [0, 3, 4, 5]), ROAD[0]);
+  bands(rd, ROAD, (x, y) => 0.25 + lamp(x, y, W * 0.8) * 0.9 + (fbm(x / 7, y / 3, 841) - 0.5) * 0.35);
+  over(p, rd, INK);
+  for (const [x, w] of [[132, 18], [156, 14], [176, 20], [202, 16], [222, 14]] as const) {
+    const st = solid(p, [S(x, 300), S(x + 2, 288), S(x + w - 3, 287), S(x + w, 298), S(x + w - 1, 304), S(x + 1, 305)], ROCK, [0.2, -0.7, 0.6], { round: 0.6, hard: 1 });
+    over(p, st, INK);
+  }
+  // HIM, SCULPTED: a tenth of a metre to a unit, up is z, his front toward -y before he is turned to the prison
+  const f = new Figure();
+  function runes(q0: V3): boolean {
+    const q = back(q0);
+    if (q[2] < 7.25 || q[2] > 7.7) return false;
+    const a = Math.atan2(q[1], q[0]);
+    const u = Math.floor(((a + Math.PI) / (Math.PI * 2)) * 44);
+    const v = Math.floor((q[2] - 7.25) / 0.11);
+    const pat = ['#.##', '.#.#', '##.#', '#..#'];
+    return u % 3 !== 2 && pat[v % 4][(u + Math.floor(u / 3)) % 4] === '#';
+  }
+  const M = oldSmithStuffs(f, runes);
+  // his robe, long, its hem blown back behind him; his boots under it
+  f.rod(M.robe, at([0, 0.05, 6.0]), at([0, 0.2, 0.7]), 1.0, 1.45, 0.8);
+  f.egg(M.robe, at([0, 0.5, 1.2]), [1.4, 1.5, 0.75], ax(), 0.7);
+  f.rod(M.robe, at([0.1, 0.9, 2.8]), at([0.3, 2.3 + gust, 1.2]), 0.85, 0.35, 0.7);
+  f.egg(M.leath, at([-0.42, -0.6, 0.3]), [0.3, 0.55, 0.28], ax(), 0.2);
+  f.egg(M.leath, at([0.5, -0.2, 0.3]), [0.3, 0.55, 0.28], ax(), 0.2);
+  // his body, his belt, the book at his hip
+  f.egg(M.robe, at([0, 0, 7.4]), [1.12, 0.8, 1.6], ax(), 0.8);
+  f.egg(M.robe, at([0, -0.05, 8.35]), [1.15, 0.78, 0.8], ax(), 0.8);
+  f.egg(M.leath, at([0, 0, 6.05]), [1.08, 0.8, 0.15], ax(), 0.1);
+  f.block(M.book, at([-1.12, -0.15, 5.25]), [0.2, 0.62, 0.78], 0.08, ax(), 0.1);
+  f.rod(M.leath, at([-1.0, -0.3, 6.0]), at([-1.28, -0.2, 4.9]), 0.06, 0.06, 0);
+  // his mantle over his shoulders and his arms to the elbow, its edge burning with runes
+  f.egg(M.teal, at([0, 0.05, 8.95]), [1.55, 1.05, 0.62], ax(), 0.6);
+  f.egg(M.teal, at([0, 0.1, 8.25]), [1.62, 1.1, 0.95], ax(), 0.5);
+  // his head, tipped back to look up at the prison: the hood, the face in it, the grey beard
+  const piv: V3 = [0, 0, 9.8];
+  const hd = (q: V3): V3 => at(tipX(q, piv, -0.3));
+  const hax = () => ax(-0.3);
+  f.egg(M.teal, hd([0, 0.15, 10.6]), [0.95, 1.0, 1.05], hax(), 0.5);
+  f.egg(M.teal, hd([0, -0.9, 10.45]), [0.62, 0.62, 0.86], hax(), 0.15, true);
+  f.rod(M.teal, hd([0, 0.8, 11.2]), hd([0, 1.5, 10.1]), 0.36, 0.08, 0.4);
+  f.egg(M.skin, hd([0, -0.24, 10.45]), [0.54, 0.62, 0.78], hax(), 0.4);
+  f.egg(M.skin, hd([-0.22, -0.84, 10.62]), [0.13, 0.09, 0.08], hax(), 0.06, true);
+  f.egg(M.skin, hd([0.22, -0.84, 10.62]), [0.13, 0.09, 0.08], hax(), 0.06, true);
+  f.rod(M.skin, hd([0, -0.86, 10.62]), hd([0, -1.1, 10.22]), 0.08, 0.12, 0.12);
+  f.mark(hd([-0.22, -0.9, 10.6]), [CYANS[0], CYANS[1], CYANS[2]], 2);
+  f.mark(hd([0.22, -0.9, 10.6]), [CYANS[0], CYANS[1], CYANS[2]], 2);
+  f.rod(M.brow, hd([-0.1, -0.9, 10.76]), hd([-0.5, -0.72, 10.9]), 0.075, 0.05, 0.06);
+  f.rod(M.brow, hd([0.1, -0.9, 10.76]), hd([0.5, -0.72, 10.9]), 0.075, 0.05, 0.06);
+  f.rod(M.hair, hd([0, -1.0, 10.1]), hd([-0.36, -0.86, 9.9]), 0.08, 0.06, 0.08);
+  f.rod(M.hair, hd([0, -1.0, 10.1]), hd([0.36, -0.86, 9.9]), 0.08, 0.06, 0.08);
+  f.egg(M.hair, hd([0, -0.72, 9.85]), [0.44, 0.3, 0.4], hax(), 0.3);
+  f.egg(M.hair, hd([0, -0.78, 9.35]), [0.28, 0.22, 0.45], hax(), 0.3);
+  f.egg(M.hair, hd([0, -0.76, 8.92]), [0.1, 0.1, 0.26], hax(), 0.25);
+  // his far arm up, the fist round the staff; the staff up from it to the prison, its head burning
+  f.rod(M.robe, at([1.3, 0, 8.7]), at([1.95, -0.25, 10.0]), 0.42, 0.36, 0.5);
+  f.rod(M.robe, at([1.95, -0.25, 10.0]), at([1.78, -0.5, 11.05]), 0.36, 0.42, 0.4);
+  f.egg(M.skin, F, [0.27, 0.27, 0.3], ax(), 0.2);
+  f.rod(M.wood, add3(F, scale3(dir, -4.6)), top, 0.12, 0.11, 0);
+  f.egg(M.wood, top, [0.24, 0.24, 0.3], ax(), 0.15);
+  f.rod(M.wood, add3(top, scale3(dir, 0.1)), add3(top, [-0.35, 0.1, 0.55]), 0.09, 0.06, 0.15);
+  // his near arm down, his hand on the book
+  f.rod(M.robe, at([-1.3, 0, 8.7]), at([-1.5, 0.1, 7.2]), 0.4, 0.36, 0.5);
+  f.rod(M.robe, at([-1.5, 0.1, 7.2]), at([-1.25, -0.4, 6.15]), 0.36, 0.34, 0.4);
+  f.egg(M.skin, at([-1.2, -0.55, 6.05]), [0.24, 0.3, 0.2], ax(), 0.2);
+  f.draw(p, cam, { at: head3, hard: 1, fill: [-0.1, -1, 0.35], fillK: 0.34, rim: '#e0885a', rimFrom: [1, 0] });
+  // THE STAFF'S HEAD, burning: a knot of cyan fire, its rays
+  const hx = hs[0];
+  const hy = hs[1];
+  for (let j = 0; j < 10; j++) {
+    const an = (j / 10) * Math.PI * 2 + t * 0.6;
+    const r0 = 5 * k;
+    const r1 = r0 + (j % 2 ? 4 : 9) * k * flick;
+    for (let r = r0; r <= r1; r += 0.6) p.set(Math.round(hx + Math.cos(an) * r), Math.round(hy + Math.sin(an) * r), r > r1 - 2 ? CYANS[2] : CYANS[1]);
+  }
+  const fire = layerOf(p);
+  fire.ellipse(hx, hy, 4.5 * k, 5 * k, CYANS[1]);
+  fire.each((x, y) => (glow(x, y, hx, hy, 5 * k) > 0.25 ? CYANS[0] : undefined));
+  over(p, fire, null);
+  // HIS WORDS
+  const mouth = onScreen(hd([0, -1.0, 10.0]));
+  balloon(p, 'Up there. The altar sleeps in the old prison.', Math.round(6 * k), Math.round(8 * k), 62, [mouth[0] - 4 * k, mouth[1] - 16 * k]);
+}
+
+// =============================================================================================
+// PAGE 3, BOX 2: HIS EYES, close, under the rim of his hood: looking up at the prison, the cyan of them burning, the staff's
+// light on his brow from above.
+
+export function paintEyes(p: Px, t: number): void {
+  const W = p.w;
+  const H = p.h;
+  const S = (x: number, y: number): Pt => [(x / 153) * W, (y / 176) * H];
+  const k = W / 153;
+  const flick = 0.9 + 0.1 * Math.sin(t * 6.1);
+  /** His skin by the staff's cold light, from the darkest to the lit. */
+  const SKIN: Tones = ['#140e20', '#2e2040', '#58405c', '#8a6a80', '#c0a0aa', '#ecd8de'];
+  const GREY: Tones = ['#2a2638', '#4a4658', '#6e6a80', '#9a96aa', '#d8d4e4'];
+  const L: V3 = [0.75, -0.75, 0.6];
+  // the dark of his hood
+  p.rect(0, 0, W, H, '#05090c');
+  // HIS FACE, turned up to the right: the whole of it shaded round from the light above to the right
+  const face = solid(p, [S(-6, 40), S(40, 30), S(110, 26), S(160, 34), S(160, 182), S(-6, 182)], SKIN, L, { c: S(96, 110), r: [W * 0.75, H * 0.75], round: 0.8, hard: 1, hatch: 4 });
+  over(p, face, null);
+  // his forehead's lines
+  for (const [y, x0, x1] of [[46, 40, 128], [55, 30, 120], [63, 50, 112]] as const) {
+    const pts: Pt[] = [];
+    for (let x = x0; x <= x1; x += 4) pts.push(S(x, y + Math.sin((x - x0) * 0.05) * 2 - (x - x0) * 0.05));
+    stroke(p, pts, 1);
+  }
+  // THE BROW, heavy, standing out over the eyes; the shadow it throws down over them
+  over(p, solid(p, loop([S(8, 78), S(40, 66), S(76, 70), S(98, 62), S(140, 58), S(160, 62), S(160, 76), S(128, 78), S(98, 80), S(78, 86), S(44, 84)], 6), SKIN, L, { round: 1, hard: 1, rim: SKIN[5], back: [0.8, -0.6] }), INK);
+  const sock = layerOf(p);
+  sock.poly(loop([S(10, 86), S(42, 86), S(72, 90), S(70, 108), S(48, 116), S(18, 110)], 5), INK);
+  sock.poly(loop([S(92, 84), S(128, 80), S(156, 82), S(156, 104), S(132, 116), S(100, 110)], 5), '#140e20');
+  over(p, sock, null);
+  // THE NOSE: its bridge down from between the brows, lit on its right, its shadow thrown to the left
+  const nose = layerOf(p);
+  nose.poly(loop([S(76, 86), S(90, 84), S(98, 130), S(104, 168), S(96, 182), S(70, 182), S(74, 140)], 5, [5]), SKIN[3]);
+  shadeSolid(nose, SKIN, L, { round: 1, hard: 1, rim: SKIN[5], back: [1, -0.3] });
+  over(p, nose, INK);
+  const cast = layerOf(p);
+  cast.poly(loop([S(76, 92), S(60, 118), S(46, 150), S(52, 182), S(72, 182), S(74, 140)], 5), '#140e20');
+  cast.each((x, y) => (dot(x, y, 0.5) ? INK : undefined));
+  over(p, cast, null);
+  // THE CHEEK under the near eye, lit, the bags under the eye, the lines at its corner
+  over(p, solid(p, loop([S(102, 118), S(132, 118), S(158, 112), S(160, 160), S(124, 168), S(104, 150)], 6), SKIN, L, { round: 1, hard: 1 }), null);
+  for (const [x0, y0, x1, y1] of [[104, 120, 130, 122], [108, 128, 134, 128], [140, 96, 156, 90], [141, 101, 158, 101], [139, 106, 156, 112]] as const) stroke(p, [S(x0, y0), S(x1, y1)], 1);
+  for (const [x0, y0, x1, y1] of [[22, 116, 46, 120], [26, 124, 50, 124]] as const) stroke(p, [S(x0, y0), S(x1, y1)], 1);
+  // THE EYES, deep under the brow: almonds of the friend's cyan, burning, looking up to the right
+  for (const [ex, ey, rw, rh] of [[40, 99, 15, 6], [118, 97, 19, 7.5]] as const) {
+    const [cx, cy] = S(ex, ey);
+    const w = rw * k;
+    const h = rh * k;
+    const eye = layerOf(p);
+    eye.poly(loop([[cx - w, cy + 1], [cx - w * 0.3, cy - h], [cx + w * 0.55, cy - h * 0.9], [cx + w, cy - 1], [cx + w * 0.3, cy + h * 0.75], [cx - w * 0.5, cy + h * 0.65]], 4, [0, 3]), '#0c3038');
+    const ix = cx + w * 0.3;
+    const iy = cy - h * 0.25;
+    const ir = h * 0.95;
+    eye.each((x, y) => {
+      const d = Math.hypot(x + 0.5 - ix, y + 0.5 - iy) / ir;
+      return d < 0.45 ? '#e6ffff' : d < 0.8 ? CYANS[1] : d < 1.05 ? CYANS[2] : undefined;
+    });
+    over(p, eye, INK, 0, 0, 2);
+    // the lid over its top, and the glint
+    stroke(p, [[cx - w * 0.9, cy - h * 0.2], [cx - w * 0.3, cy - h - 1], [cx + w * 0.55, cy - h - 1], [cx + w, cy - 1]], 2);
+    p.set(Math.round(ix + ir * 0.3), Math.round(iy - ir * 0.35), '#ffffff').set(Math.round(ix + ir * 0.3) + 1, Math.round(iy - ir * 0.35), '#ffffff');
+    halo(p, ix, iy, 13 * k * flick, CYANS[2], 2, 0.16);
+  }
+  // HIS BROWS: grey, wild, swept up at their ends
+  for (let j = 0; j < 110; j++) {
+    const u = hash(j, 3, 951);
+    const far = j < 44;
+    const x0 = far ? 8 + u * 62 : 90 + u * 68;
+    const y0 = (far ? 82 - u * 14 : 76 - u * 14) + (hash(j, 7, 951) - 0.5) * 7;
+    const len = 7 + hash(j, 4, 951) * 11 + u * 6;
+    const an = (far ? -0.1 : -0.15) - u * 0.75 + (hash(j, 5, 951) - 0.5) * 0.5;
+    const mid: Pt = S(x0 + Math.cos(an) * len * 0.5, y0 + Math.sin(an) * len * 0.5 - 1.5);
+    const pts: Pt[] = [S(x0, y0), mid, S(x0 + Math.cos(an) * len, y0 + Math.sin(an) * len + 1)];
+    const lit = Math.min(GREY.length - 1, Math.floor(hash(j, 6, 951) * 3) + (far ? 0 : 2));
+    stroke(p, pts, hash(j, 8, 951) > 0.6 ? 2 : 1, j % 9 === 0 ? INK : GREY[lit]);
+  }
+  // THE RIM OF HIS HOOD over it all: teal, heavy, lit along its edge by the staff
+  const hood = layerOf(p);
+  hood.poly(loop([S(-6, -6), S(160, -6), S(160, 30), S(136, 26), S(100, 22), S(60, 28), S(24, 40), S(-6, 52)], 6, [0, 1]), '#1a4448');
+  shadeSolid(hood, ['#071a1e', '#0e2a30', '#1a4448', '#2a6a6c', '#3e9290', '#6ad0c8'], [0.6, -0.4, 0.8], { round: 0.6, hard: 1, hatch: 4 });
+  hood.each((x, y) => (!hood.has(x, y + 1) || !hood.has(x, y + 2) ? '#8af0e8' : undefined));
+  over(p, hood, INK, 0, 0, 2);
+  for (const [x0, y0, x1, y1] of [[30, 2, 46, 30], [70, 0, 78, 22], [112, 0, 116, 18]] as const) stroke(p, [S(x0, y0), S((x0 + x1) / 2 + 3, (y0 + y1) / 2), S(x1, y1)], 1);
+}
+
+// =============================================================================================
+// PAGE 3, BOX 3: ABOVE THE ROAD. The rocks over them, black on the night; in their dark, a glint of the enemy's pink, and the
+// shape of a hood against the stars, if you look.
+
+export function paintGlint(p: Px, t: number): void {
+  const W = p.w;
+  const H = p.h;
+  const k = W / 153;
+  const blink = 0.5 + 0.5 * Math.sin(t * 3.7);
+  const sky = layerOf(p);
+  sky.rect(0, 0, W, H, DUSK[0]);
+  bands(sky, DUSK, (x, y) => -0.1 + (1 - y / H) * 0.0 + glow(x, y, W * 1.1, H * 0.2, W * 1.0) * 0.5);
+  sky.each((x, y) => (hash(x, y, 911) > 0.993 ? (hash(x, y, 912) > 0.5 ? '#e8e4ff' : '#8a84b8') : undefined));
+  over(p, sky, null);
+  // THE ROCKS: a great shelf of them leaning out over the road from the left, boulders on its lip
+  const r = layerOf(p);
+  r.poly(loop([[-4, H * 0.3], [W * 0.3, H * 0.42], [W * 0.58, H * 0.4], [W * 0.78, H * 0.5], [W * 0.9, H * 0.66], [W + 4, H * 0.7], [W + 4, H + 4], [-4, H + 4]], 6, [0, 5, 6, 7]), ROCK[0]);
+  facets(r, ROCK, [0.6, -0.5, 0.4], { cw: 16, ch: 10, seed: 931, tilt: [0.3, -0.5], spread: 0.8, extra: (x, y) => glow(x, y, W * 1.1, H * 0.2, W * 0.9) * 0.6 - 0.35 });
+  r.each((x, y) => (!r.has(x, y - 1) ? ROCK_RIM : undefined));
+  over(p, r, INK);
+  for (const [x, y, s, seed] of [[W * 0.2, H * 0.4, 13, 1], [W * 0.46, H * 0.4, 10, 2], [W * 0.66, H * 0.46, 15, 3]] as const) {
+    const pts: Pt[] = [];
+    for (let j = 0; j < 7; j++) {
+      const an = (j / 7) * Math.PI * 2;
+      const rr = s * k * (0.75 + hash(j, seed, 941) * 0.4);
+      pts.push([x + Math.cos(an) * rr * 1.2, y - Math.abs(Math.sin(an)) * rr * 0.4 + Math.sin(an) * rr * 0.7]);
+    }
+    over(p, solid(p, pts, ROCK, [0.6, -0.6, 0.5], { round: 0.5, hard: 1, rim: ROCK_RIM }), INK);
+  }
+  // A HOOD between the boulders, black on the stars, its point leaning; in it, two slits of pink; beside it, the glint
+  const hx = W * 0.56;
+  const hy = H * 0.34;
+  const q = 1.7 * k;
+  const hood = layerOf(p);
+  hood.poly(loop([[hx - 17 * q, hy + 10 * q], [hx - 13 * q, hy + 5 * q], [hx - 8 * q, hy + 3 * q], [hx - 7 * q, hy - 3 * q], [hx - 2 * q, hy - 9 * q], [hx + 3 * q, hy - 14 * q], [hx + 5 * q, hy - 7 * q], [hx + 8 * q, hy + 1 * q], [hx + 12 * q, hy + 4 * q], [hx + 16 * q, hy + 10 * q]], 4, [0, 5, 9]), '#0a0814');
+  hood.each((x, y) => (!hood.has(x, y - 1) || !hood.has(x + 1, y) ? KEEP_RIM : undefined));
+  over(p, hood, INK);
+  if (blink > 0.15) {
+    for (const sd of [-1, 1]) {
+      const ex = Math.round(hx + sd * 3.4 * q);
+      const ey = Math.round(hy);
+      p.set(ex - 2 * sd, ey - 1, '#c02a6a').set(ex - sd, ey - 1, '#ff5aa0').set(ex, ey, '#ff5aa0').set(ex + sd, ey, '#ffb0d0');
+    }
+  }
+  // the glint: a blade's edge catching the last light, a four-pointed spark of pink
+  const gx = Math.round(hx + 16 * q);
+  const gy = Math.round(hy + 5 * q);
+  const g = Math.round((3 + blink * 5) * k);
+  for (let d = -g; d <= g; d++) {
+    const c = Math.abs(d) < 2 ? '#ffffff' : Math.abs(d) < g * 0.6 ? '#ffb0d0' : '#ff5aa0';
+    p.set(gx + d, gy, c);
+    p.set(gx, gy + d, c);
+  }
+  for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) p.set(gx + dx, gy + dy, '#ffb0d0');
+}
+
+// =============================================================================================
+// PAGE 4, THE WHOLE PAGE: THE AMBUSH. Night. The cult pours down the slope at them, hooded, in the cult's violet with its pink
+// stoles (art/cultists.ts: deep cowls with a point, two slanting slashes of pink for eyes in the dark of them, the robes girded
+// up to run in, bony forearms, the long wavy daggers of bone), torches high; the first of them leaping at us, his dagger up.
+// A firebomb bursts on the last wagon's canvas. "The cult was waiting."
+
+/** A cultist's stance: where his joints are, in his own measures (a tenth of a metre to a unit, up z, his front toward -y). */
+interface CultPose {
+  hip: V3;
+  chest: V3;
+  head: V3;
+  sh: readonly [V3, V3];
+  el: readonly [V3, V3];
+  ha: readonly [V3, V3];
+  kn: readonly [V3, V3];
+  ft: readonly [V3, V3];
+  /** The middle of his robe's hem. */
+  hem: V3;
+  /** Which hand holds the dagger (0 his right, 1 his left), and which a torch; where each points. */
+  dagger?: { hand: 0 | 1; to: V3 };
+  torch?: { hand: 0 | 1; to: V3 };
+}
+
+/** Three unit lines for a part lying along `z` (its length), its breadth toward `xHint`. */
+function frame(z0: V3, xHint: V3): readonly [V3, V3, V3] {
+  const z = unit(z0);
+  const x = unit(sub3(xHint, scale3(z, dt3(xHint, z))));
+  return [x, cross(z, x), z];
+}
+function lerp3(a: V3, b: V3, u: number): V3 {
+  return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
+}
+
+/** A cultist sculpted into `f` at `o`, turned `yaw`: where his torch burns (if he has one), and his eyes. */
+function sculptCultist(f: Figure, o: V3, yaw: number, P: CultPose, eyeW = 1): { torch: V3 | null; eyes: V3[] } {
+  const c = Math.cos(yaw);
+  const sn = Math.sin(yaw);
+  const rot = (q: V3): V3 => [q[0] * c - q[1] * sn, q[0] * sn + q[1] * c, q[2]];
+  const at = (q: V3): V3 => add3(o, rot(q));
+  const fr = (z: V3, x: V3 = [1, 0, 0]): readonly [V3, V3, V3] => frame(z, x).map(rot) as unknown as readonly [V3, V3, V3];
+  const robe = f.stuff({ tones: [INK, '#1e1030', '#341a4e', '#4e2a6e', '#6e3e8e', '#a86a9e'], hatch: 4, crease: 0.8 });
+  const stole = f.stuff({ tones: [INK, '#4a0c2a', '#7a1a44', '#b02a60', '#e04a88', '#ff8ab8'], crease: 0.6 });
+  const rag = f.stuff({ tones: [INK, '#120c16', '#221826', '#342636', '#4a3a48', '#6a5662'], crease: 0.6 });
+  const bone = f.stuff({ tones: [INK, '#2e2638', '#5e5268', '#968aa0', '#cabed0', '#f0e8f0'], crease: 0.4 });
+  const rope = f.stuff({ tones: [INK, '#2a1a10', '#4a3420', '#6e5434', '#94784c'] });
+  const dark = f.stuff({ tones: [INK, INK, '#0a0812', '#0e0a16'] });
+  const ivory = f.stuff({ tones: [INK, '#4a4030', '#8a7c60', '#c8b890', '#efe4c4', '#ffffff'] });
+  const wood = f.stuff({ tones: [INK, '#2a1a10', '#4a2e1a', '#6e4a2a', '#9a6e40'] });
+  const H = P.hip;
+  const C = P.chest;
+  const u = unit(sub3(C, H));
+  const fwd = unit(sub3([0, -1, 0], scale3(u, dt3([0, -1, 0], u))));
+  const across: V3 = unit(cross(fwd, u)).map((v) => -v) as unknown as V3;
+  const waist = lerp3(H, C, 0.22);
+  // HIS ROBE: the chest and shoulders broad, the waist narrow where the rope girds it, the skirt flaring to a ragged hem at his
+  // knees, split before for his stride; its folds
+  f.egg(robe, at(lerp3(H, C, 0.78)), [1.05, 0.66, 0.92], fr(u, across), 0.7);
+  f.rod(robe, at(lerp3(H, C, 0.55)), at(waist), 0.8, 0.64, 0.6);
+  f.rod(robe, at(waist), at(P.hem), 0.66, 1.2, 0.3);
+  const skirt = unit(sub3(P.hem, waist));
+  f.rod(robe, at(add3(P.hem, scale3(fwd, 1.0))), at(add3(lerp3(waist, P.hem, 0.35), scale3(fwd, 0.7))), 0.28, 0.04, 0.12, true);
+  // (its hem ragged: slits cut up into it, long and short)
+  for (let i = 0; i < 16; i++) {
+    const an = (i / 16) * Math.PI * 2 + 0.2;
+    const ring = add3(scale3(across, Math.cos(an) * 1.25), scale3(fwd, Math.sin(an) * 1.1));
+    const lo = add3(add3(P.hem, scale3(skirt, 0.4)), ring);
+    const hi = add3(add3(P.hem, scale3(skirt, -0.35 - 0.45 * hash(i, 1, 1011))), scale3(ring, 0.92));
+    f.rod(robe, at(lo), at(hi), 0.09, 0.02, 0.04, true);
+  }
+  for (const an of [-1.2, -0.5, 0.25, 1.0, 2.2, 3.4]) {
+    const dirn = add3(scale3(across, Math.cos(an)), scale3(fwd, Math.sin(an)));
+    f.rod(robe, at(add3(lerp3(waist, P.hem, 0.2), scale3(dirn, 0.76))), at(add3(P.hem, scale3(dirn, 1.2))), 0.05, 0.08, 0.05, true);
+  }
+  f.egg(rope, at(waist), [0.72, 0.6, 0.11], fr(u, across), 0.08);
+  f.egg(rope, at(add3(add3(waist, scale3(fwd, 0.6)), scale3(across, 0.25))), [0.12, 0.1, 0.12], fr(u), 0.05);
+  f.rod(rope, at(add3(add3(waist, scale3(fwd, 0.62)), scale3(across, 0.25))), at(add3(add3(waist, scale3(fwd, 0.72)), add3(scale3(across, 0.32), scale3(u, -1.1)))), 0.05, 0.05, 0);
+  // his cape of the cowl over his shoulders
+  f.egg(robe, at(add3(C, scale3(u, 0.45))), [1.28, 0.82, 0.42], fr(u, across), 0.5);
+  // HIS LEGS: the thighs under the skirt, the shins bound in rags (the bindings' ridges), the feet wrapped
+  for (const j of [0, 1] as const) {
+    f.rod(robe, at(add3(H, scale3(across, j ? 0.45 : -0.45))), at(P.kn[j]), 0.46, 0.34, 0.4);
+    f.rod(rag, at(P.kn[j]), at(P.ft[j]), 0.27, 0.2, 0.3);
+    const shin = unit(sub3(P.ft[j], P.kn[j]));
+    for (const w of [0.3, 0.55, 0.8]) f.egg(rag, at(lerp3(P.kn[j], P.ft[j], w)), [0.3, 0.3, 0.05], fr(shin), 0.04, true);
+    f.egg(rag, at(add3(P.ft[j], scale3(fwd, 0.3))), [0.22, 0.42, 0.18], fr([0, 0, 1], across), 0.2);
+  }
+  // HIS ARMS: the sleeves pushed back and bunched at the elbows, the forearms bare and bony, the hands claws
+  for (const j of [0, 1] as const) {
+    const sh = P.sh[j];
+    const el = P.el[j];
+    const ha = P.ha[j];
+    const up = unit(sub3(el, sh));
+    const lo = unit(sub3(ha, el));
+    f.egg(robe, at(sh), [0.5, 0.5, 0.46], fr(u, across), 0.5);
+    f.rod(robe, at(sh), at(el), 0.36, 0.44, 0.4);
+    f.egg(robe, at(add3(el, scale3(up, -0.1))), [0.52, 0.52, 0.36], fr(up), 0.3);
+    f.rod(bone, at(add3(el, scale3(lo, 0.2))), at(lerp3(el, ha, 0.86)), 0.19, 0.12, 0.15);
+    f.egg(bone, at(lerp3(el, ha, 0.32)), [0.2, 0.2, 0.42], fr(lo), 0.15);
+    const holding = (P.dagger && P.dagger.hand === j) || (P.torch && P.torch.hand === j);
+    if (holding) f.egg(bone, at(ha), [0.2, 0.2, 0.22], fr(lo), 0.15);
+    else {
+      f.egg(bone, at(ha), [0.18, 0.08, 0.2], fr(lo, across), 0.12);
+      for (let i = 0; i < 4; i++) {
+        const sp = (i - 1.5) * 0.12;
+        const base = add3(add3(ha, scale3(lo, 0.16)), scale3(across, sp));
+        const tip = add3(add3(base, scale3(lo, 0.34)), add3(scale3(across, sp * 1.4), scale3(fwd, 0.14)));
+        const hook = add3(tip, add3(scale3(lo, 0.12), scale3(fwd, 0.18)));
+        f.rod(bone, at(base), at(tip), 0.055, 0.045, 0.05);
+        f.rod(bone, at(tip), at(hook), 0.045, 0.02, 0.03);
+      }
+    }
+  }
+  // THE STOLE: two bands of the cult's pink, from behind his neck over his collar and down his front past the rope
+  for (const sd of [-1, 1]) {
+    const top = add3(add3(C, scale3(u, 0.3)), add3(scale3(across, sd * 0.36), scale3(fwd, 0.6)));
+    const bot = add3(add3(waist, scale3(u, -1.0)), add3(scale3(across, sd * 0.42), scale3(fwd, 0.86)));
+    const along = sub3(bot, top);
+    f.block(stole, at(lerp3(top, bot, 0.5)), [0.17, 0.05, Math.hypot(along[0], along[1], along[2]) / 2], 0.03, fr(along, across), 0.05);
+  }
+  // HIS COWL, deep, its point fallen back; the dark in it; his eyes, two slashes of pink
+  const hd = P.head;
+  const hu = unit(sub3(hd, add3(C, scale3(u, 0.6))));
+  const hf = unit(sub3(fwd, scale3(hu, dt3(fwd, hu))));
+  const hx = (q: readonly [number, number, number]): V3 => add3(hd, add3(add3(scale3(across, q[0]), scale3(hf, -q[1])), scale3(hu, q[2])));
+  const hfr = fr(hu, across);
+  f.egg(robe, at(hd), [0.84, 0.9, 0.95], hfr, 0.5);
+  f.rod(robe, at(hx([0, 0.3, 0.7])), at(hx([0, 1.4, 1.35])), 0.46, 0.05, 0.45);
+  f.egg(robe, at(hx([0, -0.85, -0.05])), [0.55, 0.5, 0.7], hfr, 0.15, true);
+  f.egg(dark, at(hx([0, -0.15, -0.05])), [0.55, 0.6, 0.68], hfr, 0.3);
+  const eyes: V3[] = [];
+  for (const sd of [-1, 1]) eyes.push(at(hx([sd * 0.16, -0.78, 0])), at(hx([sd * 0.26, -0.76, 0.06])), at(hx([sd * 0.34, -0.72, 0.11])));
+  for (const e of eyes) f.mark(e, ['#ff8ab8', '#ff5aa0', '#c02a6a'], eyeW);
+  // THE DAGGER: a long wavy blade of bone from his fist, a dark guard, the grip bound in pink
+  if (P.dagger) {
+    const h = P.dagger.hand;
+    const dd = unit(sub3(P.dagger.to, P.ha[h]));
+    const side = unit(cross(dd, Math.abs(dd[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1]));
+    let prev = add3(P.ha[h], scale3(dd, 0.24));
+    f.rod(dark, at(add3(prev, scale3(side, -0.3))), at(add3(prev, scale3(side, 0.3))), 0.07, 0.07, 0);
+    f.rod(stole, at(add3(P.ha[h], scale3(dd, -0.32))), at(prev), 0.08, 0.08, 0);
+    for (let i = 1; i <= 6; i++) {
+      const q = add3(add3(P.ha[h], scale3(dd, 0.24 + i * 0.34)), scale3(side, (i % 2 ? 0.08 : -0.08) * (i < 6 ? 1 : 0)));
+      f.rod(ivory, at(prev), at(q), 0.12 - i * 0.014, 0.11 - i * 0.016, 0.05);
+      prev = q;
+    }
+  }
+  // A TORCH: its haft up from his fist, the rag bound round its head, burning
+  let torch: V3 | null = null;
+  if (P.torch) {
+    const h = P.torch.hand;
+    const dd = unit(sub3(P.torch.to, P.ha[h]));
+    const top = add3(P.ha[h], scale3(dd, 2.0));
+    f.rod(wood, at(add3(P.ha[h], scale3(dd, -0.6))), at(top), 0.1, 0.12, 0);
+    f.egg(rag, at(top), [0.2, 0.2, 0.3], fr(dd), 0.1);
+    torch = at(add3(top, scale3(dd, 0.3)));
+  }
+  return { torch, eyes };
+}
+
+/** One cultist, big, to look at: tsx dbg paintCultistTest. */
+export function paintCultistTest(p: Px, t: number): void {
+  p.rect(0, 0, p.w, p.h, '#2a2440');
+  const f = new Figure();
+  const r = sculptCultist(f, [0, 0, 0], 0.6, AMBUSH_POSES.run(0.4, t * 8 + 0.8, 1));
+  const cam = { look: unit([0.1, 1, -0.05]), up: [0, 0, 1] as V3, scale: 26, ox: p.w * 0.3, oy: p.h * 0.95 };
+  f.draw(p, cam, { at: [3, -4, 9], hard: 1, fill: [-0.5, -1, 0.5], fillK: 0.35, rim: '#ffb060', rimFrom: [1, 0.3] });
+  void r;
+  const g = new Figure();
+  sculptCultist(g, [0, 0, 0], 0.9, AMBUSH_POSES.leap);
+  g.draw(p, { ...cam, ox: p.w * 0.5 + 170, oy: p.h * 0.9 }, { at: [3, -4, 9], hard: 1, fill: [-0.5, -1, 0.5], fillK: 0.35, rim: '#ffb060', rimFrom: [1, 0.3] });
+}
+
+/** The ambush's stances: running down with a torch and a dagger (`lean` forward, `ph` the stride), and leaping. */
+const AMBUSH_POSES = {
+  run: (lean: number, ph: number, torchHand: 0 | 1): CultPose => {
+    const sw = Math.sin(ph);
+    return {
+      hip: [0, 0, 5.2], chest: [0, -1.2 * lean, 7.6], head: [0, -1.9 * lean - 0.2, 9.4],
+      sh: [[-1.15, -1.1 * lean, 8.1], [1.15, -1.1 * lean, 8.1]],
+      el: torchHand === 0 ? [[-1.7, -1.3 * lean - 0.4, 9.2], [1.6, 0.5, 6.9]] : [[-1.6, -1.2 * lean - 0.6, 7.0], [1.7, -1.3 * lean - 0.2, 9.2]],
+      ha: torchHand === 0 ? [[-1.5, -1.6 * lean - 0.9, 10.5], [1.5, -0.6, 5.9]] : [[-1.3, -1.6 * lean - 1.6, 6.3], [1.5, -1.6 * lean - 0.7, 10.5]],
+      kn: [[-0.45, -1.3 * sw - 0.3, 2.9 + 0.5 * Math.max(0, sw)], [0.45, 1.3 * sw - 0.3, 2.9 + 0.5 * Math.max(0, -sw)]],
+      ft: [[-0.45, -0.9 * sw + 0.5, 0.3 + 0.6 * Math.max(0, -sw)], [0.45, 0.9 * sw + 0.5, 0.3 + 0.6 * Math.max(0, sw)]],
+      hem: [0, 0.4, 3.0],
+      dagger: { hand: torchHand === 0 ? 1 : 0, to: torchHand === 0 ? [2.4, -2.4, 4.6] : [-2.6, -3.4, 6.0] },
+      torch: { hand: torchHand, to: torchHand === 0 ? [-1.9, -2.2, 13] : [1.9, -2.2, 13] },
+    };
+  },
+  leap: {
+    hip: [0, 0.4, 5.4], chest: [0, -1.4, 7.3], head: [0, -2.4, 8.6],
+    sh: [[-1.15, -1.3, 7.9], [1.15, -1.3, 7.9]],
+    el: [[-1.6, -0.6, 9.4], [1.5, -2.6, 7.2]],
+    ha: [[-1.1, -1.1, 10.7], [1.2, -3.8, 6.7]],
+    kn: [[-0.5, -1.6, 4.4], [0.5, 1.4, 3.4]],
+    ft: [[-0.5, -1.0, 2.2], [0.5, 2.9, 2.6]],
+    hem: [0, 0.9, 3.2],
+    dagger: { hand: 0, to: [-0.6, -2.8, 12.6] },
+  } as CultPose,
+};
+
+/** A torch's flame at (x, y), `s` its size: a tongue licking up, white-gold at its heart, and the sparks off it. */
+function paintFlame(p: Px, x: number, y: number, s: number, t: number, seed: number): void {
+  const l = layerOf(p);
+  const sway = Math.sin(t * 7 + seed) * 0.25 * s;
+  l.poly(loop([[x - 3 * s, y + 2 * s], [x - 3.5 * s, y - 1 * s], [x - 1.5 * s + sway, y - 5 * s], [x + sway * 2, y - 9 * s], [x + 1.6 * s + sway, y - 4.5 * s], [x + 3.4 * s, y - 1 * s], [x + 2.8 * s, y + 2 * s]], 4, [3]), '#e8601c');
+  l.each((px, py) => {
+    const g = glow(px, py, x, y - 0.5 * s, 4.2 * s);
+    return g > 0.45 ? '#fff3c0' : g > 0.2 ? '#ffc040' : g > 0.06 ? '#ff8a2a' : undefined;
+  });
+  over(p, l, INK);
+  for (let j = 0; j < 4; j++) {
+    const a = hash(j, seed, 961) * 1.2 - 0.6;
+    const r = (6 + hash(j, seed, 962) * 8 + ((t * 9 + j * 3) % 6)) * s;
+    p.set(Math.round(x + Math.sin(a) * r * 0.5), Math.round(y - 6 * s - r), j % 2 ? '#ffc040' : '#ff8a2a');
+  }
+}
+
+export function paintAmbush(p: Px, t: number): void {
+  const W = p.w;
+  const H = p.h;
+  const S = (x: number, y: number): Pt => [(x / 392) * W, (y / 360) * H];
+  const k = W / 392;
+  const flick = 0.85 + 0.15 * Math.sin(t * 9.1);
+  const boom = S(318, 250);
+  const fire = (x: number, y: number, r = W * 0.6): number => glow(x, y, boom[0], boom[1], r) * flick;
+  // THE NIGHT, the prison's crag far off right, black on it
+  const sky = layerOf(p);
+  sky.rect(0, 0, W, H, DUSK[0]);
+  bands(sky, DUSK, (x, y) => -0.05 + glow(x, y, W * 0.95, H * 0.15, W * 0.7) * 0.4 + fire(x, y, W * 0.8) * 0.55);
+  sky.each((x, y) => (y < H * 0.4 && hash(x, y, 971) > 0.994 ? '#c8c4f0' : undefined));
+  over(p, sky, null);
+  const crag = layerOf(p);
+  crag.poly(loop([S(296, 170), S(306, 140), S(318, 132), S(322, 104), S(334, 92), S(338, 66), S(350, 52), S(392, 48), S(396, 48), S(396, 176)], 2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), KEEP[0]);
+  crag.each((x, y) => (!crag.has(x, y - 1) ? KEEP_RIM : undefined));
+  over(p, crag, null);
+  paintFarKeep(p, S(368, 46)[0], S(368, 46)[1], 1.8 * k);
+  // THE SLOPE they pour down, from the top left to the road at the bottom right; the road
+  const slope = layerOf(p);
+  slope.poly(loop([S(-4, 40), S(70, 60), S(150, 100), S(230, 150), S(300, 196), S(396, 214), S(396, 364), S(-4, 364)], 6, [0, 6, 7]), ROCK[0]);
+  facets(slope, ROCK, [0.5, -0.6, 0.5], { cw: 22, ch: 12, seed: 981, tilt: [0.5, -0.4], spread: 0.8, extra: (x, y) => fire(x, y, W * 0.7) * 1.3 - 0.15 });
+  slope.each((x, y) => (!slope.has(x, y - 1) ? (fire(x, y) > 0.08 ? '#e07848' : ROCK_RIM) : undefined));
+  over(p, slope, INK);
+  const road = layerOf(p);
+  road.poly(loop([S(160, 364), S(240, 300), S(300, 276), S(396, 262), S(396, 364)], 6, [0, 3, 4]), ROAD[0]);
+  bands(road, ROAD, (x, y) => 0.2 + fire(x, y, W * 0.6) * 1.3 + (fbm(x / 7, y / 3, 983) - 0.5) * 0.3);
+  over(p, road, INK);
+  // THE FAR ONES, a stream of them along the ridge: hooded shapes black on the night, their eyes pink, torches high
+  const swarm = layerOf(p);
+  const flames: [number, number, number][] = [];
+  const pinks: Pt[] = [];
+  for (let j = 0; j < 11; j++) {
+    const u = j / 10;
+    const x = S(20 + u * 210, 0)[0] + (hash(j, 1, 991) - 0.5) * 12 * k;
+    const y = S(0, 52 + u * u * 70 + u * 40)[1] + (hash(j, 2, 991) - 0.5) * 8 * k;
+    const s = (0.75 + u * 0.5) * k;
+    const lean = (hash(j, 3, 991) - 0.3) * 3 * s;
+    const step = Math.sin(t * 8 + j * 1.7) * 2 * s;
+    swarm.poly(loop([[x - 6 * s, y + 18 * s], [x - 5 * s + lean, y + 4 * s], [x - 3 * s + lean, y - 4 * s], [x + lean * 1.5 + 1 * s, y - 12 * s], [x + 4 * s + lean, y - 3 * s], [x + 6 * s + lean, y + 5 * s], [x + 8 * s + step, y + 18 * s], [x + 2 * s, y + 13 * s], [x - 2 * s - step, y + 18 * s]], 3, [3, 6, 8]), '#0a0814');
+    pinks.push([x + lean + 2 * s, y - 3 * s]);
+    if (j % 3 !== 1) {
+      const tx = x + 9 * s + lean;
+      const ty = y - 6 * s;
+      swarm.poly(band([[x + 5 * s + lean, y + 4 * s], [tx, ty]], 1.4 * s), '#0a0814');
+      flames.push([tx, ty - 1 * s, s * 0.55]);
+    }
+  }
+  swarm.each((x, y) => (fire(x, y, W * 0.9) > 0.05 && !swarm.has(x + 1, y) ? '#c0604a' : undefined));
+  over(p, swarm, INK);
+  for (const [x, y] of pinks) p.set(Math.round(x), Math.round(y), '#ff5aa0').set(Math.round(x) - 2, Math.round(y), '#ff5aa0');
+  flames.forEach(([x, y, s], j) => paintFlame(p, x, y, s, t, j));
+  // THE LAST WAGON, bottom right, its canvas bursting into fire where the bomb struck it
+  const wag = layerOf(p);
+  wag.poly(loop([S(262, 330), S(266, 262), S(286, 232), S(330, 220), S(380, 226), S(400, 246), S(400, 330)], 6, [0, 6]), CANVAS[0]);
+  bands(wag, CANVAS, (x, y) => fire(x, y, W * 0.5) * 1.4 + Math.sin(x * 0.3 + y * 0.05) * 0.05 - 0.1);
+  over(p, wag, INK);
+  over(p, solid(p, [S(254, 328), S(400, 322), S(400, 342), S(254, 348)], [INK, WOOD[1], WOOD[2], WOOD[3], WOOD[4]], [0.6, -0.6, 0.4], { round: 0.3, hard: 1 }), INK);
+  paintWheel(p, S(290, 352)[0], S(290, 352)[1], 26 * k, (x, y) => fire(x, y, W * 0.4), t);
+  // THE BURST: a ragged star of fire, white at its heart, the canvas torn round it; smoke rolling up off it; sparks flung
+  const smoke = layerOf(p);
+  const puffs: Pt[][] = [];
+  for (let j = 0; j < 8; j++) {
+    const a = -Math.PI / 2 + (hash(j, 1, 1001) - 0.55) * 1.9;
+    const r = (30 + j * 9 + t * 5 * hash(j, 3, 1001)) * k;
+    const cx = boom[0] + Math.cos(a) * r;
+    const cy = boom[1] - 16 * k + Math.sin(a) * r * 1.1;
+    const rr = (13 + hash(j, 4, 1001) * 12 + j * 1.5) * k;
+    // (a billow: lobes round its rim, flattened under, as smoke rolls)
+    const pts: Pt[] = [];
+    for (let i = 0; i < 14; i++) {
+      const b = (i / 14) * Math.PI * 2;
+      const lobe = 0.78 + 0.3 * Math.abs(Math.sin(b * 3.5 + j)) + (hash(i, j, 1005) - 0.5) * 0.12;
+      pts.push([cx + Math.cos(b) * rr * lobe * 1.15, cy + Math.sin(b) * rr * lobe * (Math.sin(b) > 0 ? 0.6 : 0.95)]);
+    }
+    puffs.push(pts);
+  }
+  for (const pts of puffs) smoke.poly(loop(pts, 3), '#2a2034');
+  bands(smoke, ['#1a1222', '#2e2236', '#46344c', '#644450', '#94583e'], (x, y) => 0.15 + fire(x, y, W * 0.55) * 1.6 + (fbm(x / 9, y / 9, 1003) - 0.5) * 0.5);
+  over(p, smoke, INK);
+  // (the billows' lower edges, inked where one rolls over the next)
+  for (const pts of puffs.slice(1)) {
+    const lower = loop(pts, 3).filter(([x, y]) => y > pts.reduce((m, q) => m + q[1], 0) / pts.length);
+    for (const [x, y] of lower) p.set(Math.round(x), Math.round(y), INK);
+  }
+  const burst = layerOf(p);
+  const star = (n: number, r0: number, r1: number, seed: number): Pt[] => {
+    const pts: Pt[] = [];
+    for (let j = 0; j < n * 2; j++) {
+      const a = (j / (n * 2)) * Math.PI * 2 + seed;
+      const r = (j % 2 ? r0 : r1 * (0.7 + hash(j, seed * 10, 1007) * 0.55)) * k * (0.92 + 0.08 * flick);
+      pts.push([boom[0] + Math.cos(a) * r * 1.15, boom[1] + Math.sin(a) * r * 0.85]);
+    }
+    return pts;
+  };
+  burst.poly(star(13, 26, 66, 0.1), '#c43a1c');
+  burst.poly(star(11, 18, 44, 0.35), '#ff8a2a');
+  burst.each((x, y, c) => {
+    const g = glow(x, y, boom[0], boom[1], 46 * k);
+    return g > 0.5 ? '#ffffff' : g > 0.3 ? '#fff3c0' : g > 0.14 ? '#ffc040' : c;
+  });
+  // (tongues of fire licking up the canvas from it)
+  for (let j = 0; j < 5; j++) {
+    const x = boom[0] + (j - 2) * 15 * k + Math.sin(t * 6 + j) * 2 * k;
+    const y = boom[1] - 30 * k;
+    const h = (24 + hash(j, 9, 1001) * 22) * k;
+    burst.poly(loop([[x - 7 * k, y + 8 * k], [x - 4 * k, y - h * 0.4], [x + Math.sin(t * 5 + j) * 4 * k, y - h], [x + 5 * k, y - h * 0.45], [x + 7 * k, y + 8 * k]], 4, [2]), j % 2 ? '#ff8a2a' : '#ffc040');
+  }
+  over(p, burst, INK, 0, 0, 2);
+  for (let j = 0; j < 26; j++) {
+    const a = hash(j, 6, 1001) * Math.PI * 2;
+    const r = (50 + hash(j, 7, 1001) * 60 + ((t * 40 + j * 13) % 30)) * k;
+    const x = boom[0] + Math.cos(a) * r;
+    const y = boom[1] + Math.sin(a) * r * 0.8;
+    p.set(Math.round(x), Math.round(y), j % 3 ? '#ffc040' : '#fff3c0').set(Math.round(x + Math.cos(a)), Math.round(y + Math.sin(a)), '#ff8a2a');
+  }
+  // THE NEAR ONES, sculpted: two running down with torches and daggers, and the first, leaping at us, his dagger up
+  const look = unit([0.1, 1, -0.05]);
+  const draws: { f: Figure; cam: { look: V3; up: V3; scale: number; ox: number; oy: number }; torch: V3 | null }[] = [];
+  const run = AMBUSH_POSES.run;
+  {
+    const f = new Figure();
+    const r = sculptCultist(f, [0, 0, 0], 0.5, run(0.5, t * 8, 1));
+    draws.push({ f, cam: { look, up: [0, 0, 1], scale: 8 * k, ox: S(262, 0)[0], oy: S(0, 212)[1] }, torch: r.torch });
+  }
+  {
+    const f = new Figure();
+    const r = sculptCultist(f, [0, 0, 0], 0.7, run(0.7, t * 8 + 2, 0));
+    draws.push({ f, cam: { look, up: [0, 0, 1], scale: 12 * k, ox: S(220, 0)[0], oy: S(0, 300)[1] }, torch: r.torch });
+  }
+  {
+    // the leaper: thrown forward at us, his knee up, his dagger high over his head, his other hand clawing out
+    const f = new Figure();
+    const P = AMBUSH_POSES.leap;
+    sculptCultist(f, [0, 0, 0], 0.9, P, 2);
+    draws.push({ f, cam: { look, up: [0, 0, 1], scale: 25 * k, ox: S(92, 0)[0], oy: S(0, 410)[1] }, torch: null });
+  }
+  for (const dw of draws) {
+    const right = unit(cross(dw.cam.look, dw.cam.up));
+    const dn = unit(cross(dw.cam.look, right));
+    const scr = (q: V3): Pt => [dt3(q, right) * dw.cam.scale + dw.cam.ox, dt3(q, dn) * dw.cam.scale + dw.cam.oy];
+    // (lit by the fire: the burst's place, brought into the figure's own measures; and by his torch)
+    const bx = (boom[0] - dw.cam.ox) / dw.cam.scale;
+    const by = (boom[1] - dw.cam.oy) / dw.cam.scale;
+    const B3 = add3(add3(scale3(right, bx), scale3(dn, by)), scale3(dw.cam.look, -6));
+    dw.f.draw(p, dw.cam, { at: dw.torch ?? B3, hard: 1, fill: unit(sub3(B3, [0, 0, 6])), fillK: 0.4, rim: '#ffb060', rimFrom: [1, 0.3] });
+    if (dw.torch) {
+      const ts = scr(dw.torch);
+      paintFlame(p, ts[0], ts[1], dw.cam.scale / 9, t, Math.round(dw.cam.scale));
+    }
+  }
+  // the words
+  caption(p, 'The cult was waiting.', Math.round(6 * k), Math.round(6 * k), 120);
+}
+
 function dt3(a: V3, b: V3): number {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
@@ -1297,6 +1998,14 @@ export const PAGES: readonly (readonly BoxDef[])[] = [
     { x: 0, y: 0.5, w: 0.5, h: 0.5, paint: paintStranger, say: '...seeking the Meldstone,' },
     { x: 0.5, y: 0.5, w: 0.5, h: 0.5, paint: paintCompany, say: '...and the altar that wakes the words.' },
   ],
+  // PAGE 3
+  [
+    { x: 0, y: 0, w: 0.6, h: 1, paint: paintOldSmith, say: 'Up there. The altar sleeps in the old prison.' },
+    { x: 0.6, y: 0, w: 0.4, h: 0.5, paint: paintEyes },
+    { x: 0.6, y: 0.5, w: 0.4, h: 0.5, paint: paintGlint },
+  ],
+  // PAGE 4
+  [{ x: 0, y: 0, w: 1, h: 1, paint: paintAmbush, say: 'The cult was waiting.' }],
 ];
 
 /** A spread (pages `k` and `k + 1`), `t` seconds on: the paper, its boxes painted and inked round, the spine's shadow. */

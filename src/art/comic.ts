@@ -350,6 +350,36 @@ export function facets(
 
 
 /** A caption box at (x, y) (picture pixels), at most `maxW` game pixels of text wide: the paper's colour, inked round, the words in ink. Returns its height. */
+/**
+ * A speech balloon: `text` in the game's lettering in a rounded box whose top left is (x, y), wrapped to `maxW`, its tail
+ * reaching to `to` (the speaker's mouth). Returns its height.
+ */
+export function balloon(p: Px, text: string, x: number, y: number, maxW: number, to: Pt, paper = '#f6f2e8', ink = INK): number {
+  const lines = wrapText(text, maxW, 'normal');
+  const [cw, ch] = captionSize(text, maxW);
+  const bw = cw + 4;
+  const bh = ch;
+  const l = new Px(p.w, p.h);
+  const r = 7;
+  l.poly(loop([[x + r, y], [x + bw - r, y], [x + bw, y + r], [x + bw, y + bh - r], [x + bw - r, y + bh], [x + r, y + bh], [x, y + bh - r], [x, y + r]], 4), paper);
+  // (the tail: from under the box, narrowing to the mouth)
+  const mx = Math.max(x + r + 4, Math.min(x + bw - r - 12, to[0] - (to[0] - (x + bw / 2)) * 0.6));
+  l.poly([[mx, y + bh - 2], [mx + 12, y + bh - 2], [to[0], to[1]]], paper);
+  over(p, l, ink, 0, 0, 2);
+  lines.forEach((ln, k) => {
+    let w = 0;
+    for (const c of ln) w += glyphRows(c).length ? glyphRows(c)[0].length + 2 : 0;
+    let cx = Math.round(x + (bw - (w - 2)) / 2);
+    const cy = y + 5 + k * 18;
+    for (const c of ln) {
+      const rows = glyphRows(c);
+      for (let rr = 0; rr < rows.length; rr++) for (let cc = 0; cc < rows[rr].length; cc++) if (rows[rr].charCodeAt(cc) === 35) p.set(cx + cc, cy + rr, ink);
+      cx += (rows[0]?.length ?? 0) + 2;
+    }
+  });
+  return bh;
+}
+
 /** How big a caption of `text` stands (its box, with its ink edge), wrapped to `maxW`: [width, height]. */
 export function captionSize(text: string, maxW: number): [number, number] {
   const lines = wrapText(text, maxW, 'normal');

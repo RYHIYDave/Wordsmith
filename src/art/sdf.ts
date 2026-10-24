@@ -191,14 +191,31 @@ export class Figure {
     // (the figure's reach: the bounds of its solids on the screen, and how near and far)
     let near = -Infinity;
     let far = Infinity;
+    // (and its box on the screen: only the pixels in it are looked for it)
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let y0 = Infinity;
+    let y1 = -Infinity;
     for (const s of this.solids) {
+      if (s.carve) continue;
       const pts: V3[] = s.k === 'rod' ? [s.a, s.b] : [s.c];
-      const r = s.k === 'rod' ? Math.max(s.ra, s.rb) : Math.max(s.r[0], s.r[1], s.r[2]);
+      const r = s.k === 'rod' ? Math.max(s.ra, s.rb) : s.k === 'block' ? Math.hypot(s.r[0], s.r[1], s.r[2]) : Math.max(s.r[0], s.r[1], s.r[2]);
       for (const q of pts) {
         near = Math.max(near, -dt(q, look) + r + 1);
         far = Math.min(far, -dt(q, look) - r - 1);
+        const sx = dt(q, right) * cam.scale + cam.ox;
+        const sy = dt(q, down) * cam.scale + cam.oy;
+        const rr = (r + s.blend) * cam.scale + 2;
+        x0 = Math.min(x0, sx - rr);
+        x1 = Math.max(x1, sx + rr);
+        y0 = Math.min(y0, sy - rr);
+        y1 = Math.max(y1, sy + rr);
       }
     }
+    const XA = Math.max(0, Math.floor(x0));
+    const XB = Math.min(W - 1, Math.ceil(x1));
+    const YA = Math.max(0, Math.floor(y0));
+    const YB = Math.min(H - 1, Math.ceil(y1));
     const N = W * H;
     const depth = new Float32Array(N).fill(-Infinity);
     const stuffAt = new Int16Array(N).fill(-1);
@@ -206,8 +223,8 @@ export class Figure {
     const key = light.at;
     const hard = light.hard ?? 1;
     const E = 0.04;
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
+    for (let y = YA; y <= YB; y++) {
+      for (let x = XA; x <= XB; x++) {
         const sx = (x + 0.5 - cam.ox) / cam.scale;
         const sy = (y + 0.5 - cam.oy) / cam.scale;
         const base = add(mul(right, sx), mul(down, sy));
