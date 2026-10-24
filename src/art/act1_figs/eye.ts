@@ -61,7 +61,8 @@ export function makeEyeArt(): ActorArt {
     if (mv === 'stand3') moves.bolt = { frames: lazyFrames(Math.round(EYE_BOLT.long * EYE_BOLT.fps), (i) => boltFrame(i / EYE_BOLT.fps, 'front', 0)), fps: EYE_BOLT.fps };
   }
   const set: AnimSet = { idle: stand, walk: stand, attack: [], idleFps: EYE_STAND.fps, walkFps: EYE_STAND.fps, clips: { moves, die: clipOf('death', 0) } };
-  return { front: set, back: set };
+  // (painted coarse first: art/bestiary.ts paintOrder; the game shows the nearest frame painted, render/act1_fx/eye.ts)
+  return { front: set, back: set, coarse: true };
 }
 
 export const FIG: Act1Fig = {

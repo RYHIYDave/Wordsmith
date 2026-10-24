@@ -420,16 +420,21 @@ export function paintOrder(art: ActorArt): [number, number, number][] {
     (a) => [a.clips?.die?.frames ?? []],
   ];
   const out: [number, number, number][] = [];
-  for (const pick of picks) {
+  // (ActorArt.coarse: his moves first, then his stand and walk, and the rest as ever)
+  const order = art.coarse ? [picks[5], picks[0], picks[1], picks[2], picks[3], picks[4], picks[6]] : picks;
+  for (const pick of order) {
     for (let v = 0; v < sets.length; v++) {
       for (const frames of pick(sets[v])) {
         const l = lists[v].indexOf(frames as Sprite[]);
         if (l < 0) continue;
-        for (let i = 0; i < frames.length; i++) out.push([v, l, i]);
+        for (let i = 0; i < frames.length; i++) if (!art.coarse || !out.some(([a, b, c]) => a === v && b === l && c === i)) out.push([v, l, i]);
       }
     }
   }
-  return out;
+  if (!art.coarse) return out;
+  // (coarse first: a frame in four of every list, then in two, then the rest)
+  const pass = (keep: (i: number) => boolean, from: [number, number, number][]): [number, number, number][] => from.filter(([, , i]) => keep(i));
+  return [...pass((i) => i % 4 === 0, out), ...pass((i) => i % 4 === 2, out), ...pass((i) => i % 2 === 1, out)];
 }
 
 /**

@@ -38,12 +38,22 @@ export default async function (page, snap) {
   });
   // (the bot fights him: the hero moves and strikes as a player would)
   await page.evaluate(() => { const d = window.__dbg; if (d.bot) d.bot(true); });
+  // (FILM: the game at half speed, a frame each snap; PHASES=1: his bar emptied by script a third and two thirds of the way
+  // through, so that his surfacing and his pulling the siege in, and each phase's moves, are in it)
+  if (film) await page.evaluate(() => { window.__dbg.slowmo = 0.5; });
+  const phases = process.env.PHASES === '1';
   const t0 = Date.now();
   let k = 0;
+  let pushed = 0;
   while (Date.now() - t0 < secs * 1000) {
-    if (film) { await snap(`f${String(k++).padStart(4, '0')}`); await page.waitForTimeout(60); }
+    if (phases && pushed < 2 && Date.now() - t0 > ((pushed + 1) * secs * 1000) / 3) {
+      pushed++;
+      await page.evaluate(() => { const b = window.__dbg.game().monsters.find((m) => m.boss && !m.dead); if (b) b.life = 1; });
+    }
+    if (film) { await snap(`f${String(k++).padStart(4, '0')}`); await page.waitForTimeout(20); }
     else { await page.waitForTimeout(5000); await snap(`t${String(k++).padStart(2, '0')}`); }
   }
+  if (film) await page.evaluate(() => { window.__dbg.slowmo = 1; });
   await page.evaluate(() => { const d = window.__dbg; if (d.bot) d.bot(false); });
   const r = await page.evaluate(() => {
     const f = window.__frames.slice(5);

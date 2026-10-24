@@ -161,4 +161,9 @@ export interface ActorArt {
   front: AnimSet;
   /** Facing away (moving up the screen): we see the back. */
   back: AnimSet;
+  /**
+   * (A figure whose frames are slow to paint, the Drowned Eye's: art/bestiary.ts paintOrder) Painted coarse first: his moves before
+   * his stand, and of each a frame in four, then in two, then the rest, so that the whole of what he does is seen, roughly, soon.
+   */
+  coarse?: boolean;
 }
