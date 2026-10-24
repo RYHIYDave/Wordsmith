@@ -7,6 +7,8 @@ import { CANVAS3 } from '../art/skin';
 import type { Px } from '../engine/px';
 import { paintClassLook } from './options_classes';
 import { BRAWLER_BUILD, BRAWLER_LOOKS, OUTFITS, sculptBrawler } from './sculpt_classes';
+import { sculptWarlock } from './sculpt_warlock';
+import { sculptContraption, sculptGolem, sculptTinkerer } from './sculpt_tinkerer';
 
 const [whatArg = 'brawler', scaleArg = '5', colsArg = '4'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const S = Number(scaleArg) || 5;
@@ -21,6 +23,7 @@ interface Pane {
 let heading = '';
 const panes: Pane[] = [];
 let HALF = 32;
+void HALF;
 let UP = 80;
 let DOWN = 8;
 if (whatArg === 'brawler') {
@@ -33,6 +36,23 @@ if (whatArg === 'brawler') {
   heading = 'The brawler: four builds · sculpted sketches · not in the game';
   BRAWLER_LOOKS.forEach((l, k) => panes.push({ name: `${'ABCD'[k]}. ${l.name}`, px: sculptBrawler('front', undefined, k).px }));
   BRAWLER_LOOKS.forEach((l, k) => panes.push({ name: `${'ABCD'[k]}, from behind`, px: sculptBrawler('back', undefined, k).px }));
+} else if (whatArg === 'warlock') {
+  heading = 'The warlock, sculpted · a sketch · not in the game';
+  panes.push({ name: 'The brawler, for size', px: sculptBrawler('front').px });
+  panes.push({ name: 'Before (the sketch)', px: paintClassLook('warlock3', 0, 'front').px });
+  panes.push({ name: 'Now, front', px: sculptWarlock('front').px });
+  panes.push({ name: 'Now, back', px: sculptWarlock('back').px });
+  UP = 88;
+} else if (whatArg === 'tinkerer') {
+  heading = 'The Tinkerer, her Contraption and her Golem · sculpted sketches · not in the game';
+  panes.push({ name: 'The knight, for size', px: paintMove3(MOVES3.ktown, 0, 'front').px });
+  panes.push({ name: 'The Tinkerer, front', px: sculptTinkerer('front').px });
+  panes.push({ name: 'The Tinkerer, back', px: sculptTinkerer('back').px });
+  panes.push({ name: 'Contraption (tap)', px: sculptContraption('front').px });
+  panes.push({ name: 'Golem (tap and hold), front', px: sculptGolem('front').px });
+  panes.push({ name: 'Golem, back', px: sculptGolem('back').px });
+  UP = 96;
+  HALF = 34;
 } else if (whatArg === 'outfits') {
   heading = 'The brawler (B): four outfits · sculpted sketches · not in the game';
   OUTFITS.forEach((o, k) => panes.push({ name: `${k + 1}. ${o.name}`, px: sculptBrawler('front', undefined, BRAWLER_BUILD, o.id).px }));

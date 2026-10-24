@@ -101,9 +101,10 @@ export class Sculpt {
   readonly mats: Mat[] = [];
   readonly prims: Prim[] = [];
   /** Marks drawn on the figure after it is lit, where their point is seen (an eye, a brow): `w` by `h` pixels from it. */
-  readonly marks: { p: V3; c: string; w: number; h: number; dx: number; dy: number }[] = [];
-  mark(p: V3, c: string, w = 1, h = 1, dx = 0, dy = 0): void {
-    this.marks.push({ p, c, w, h, dx, dy });
+  readonly marks: { p: V3; c: string; w: number; h: number; dx: number; dy: number; through: number; on: number }[] = [];
+  /** A mark: drawn if what is at its pixel is no more than `through` nearer than it (and, given `on`, is that material). */
+  mark(p: V3, c: string, w = 1, h = 1, dx = 0, dy = 0, through = 1.2, on = -1): void {
+    this.marks.push({ p, c, w, h, dx, dy, through, on });
   }
   /** A material; returns its number. */
   mat(m: Mat): number {
@@ -420,12 +421,13 @@ export function draw(sc: Sculpt, view: PaintView, ax: number, ay: number, size: 
     const x0m = Math.floor(mx) + mk.dx;
     const y0m = Math.floor(my) + mk.dy;
     const k0 = Math.floor(my) * W + Math.floor(mx);
-    if (k0 < 0 || k0 >= N || stuff[k0] < 0 || zb[k0] - mz > 1.2) continue;
+    if (k0 < 0 || k0 >= N || stuff[k0] < 0 || zb[k0] - mz > mk.through || (mk.on >= 0 && stuff[k0] !== mk.on)) continue;
     for (let yy = y0m; yy < y0m + mk.h; yy++) for (let xx = x0m; xx < x0m + mk.w; xx++) {
       if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
       const k = yy * W + xx;
       if (stuff[k] !== stuff[k0]) continue;
       colour[k] = pack(mk.c);
+      // (a mark is no seam: it keeps the colour it is given)
     }
   }
   const out = new Px(W, H);

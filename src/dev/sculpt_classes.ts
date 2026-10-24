@@ -22,18 +22,18 @@ import type { Cone, Drawn, Ell, Hit } from './sculpt';
 /** Skin: a man's, warm under the dungeon's cool light (the style's lavender would read as a purple lump on a bare chest). */
 export const SKIN_W: Ramp = ['#3a1c34', '#6e3a50', '#b06a6a', '#e09a84', '#ffd2b0'];
 /** The brawler's red: the singlet and the trunks. */
-const RED: Ramp = ['#3a0618', '#6e1024', '#b8202e', '#ec4a3a', '#ff8a5a'];
+export const RED: Ramp = ['#3a0618', '#6e1024', '#b8202e', '#ec4a3a', '#ff8a5a'];
 /** Wraps: linen gone grey with use. */
-const WRAP: Ramp = ['#3a3450', '#5a5474', '#9a94b4', '#d4cee6', '#f4f0ff'];
+export const WRAP: Ramp = ['#3a3450', '#5a5474', '#9a94b4', '#d4cee6', '#f4f0ff'];
 /** Leather, boots and cuffs. */
-const HIDE: Ramp = ['#1e1018', '#3a2026', '#64382e', '#94583c', '#b8784e'];
+export const HIDE: Ramp = ['#1e1018', '#3a2026', '#64382e', '#94583c', '#b8784e'];
 /** A big yellow beard. */
 const BEARD: Ramp = ['#5a3418', '#8a5a24', '#d09a34', '#f4cc58', '#fff09a'];
 
 /** Brass: a buckle, gears, fittings. */
-const BRASS: Ramp = ['#3a2410', '#5e4018', '#94702a', '#d0a84a', '#f6e08a'];
+export const BRASS: Ramp = ['#3a2410', '#5e4018', '#94702a', '#d0a84a', '#f6e08a'];
 
-const shadeOf = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, k))];
+export const shadeOf = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, k))];
 
 /** How far below his left shoulder's top the singlet's neckline runs (it slants down across him to under his right arm). */
 export const TUNE = { cutDrop: 7.0 };
@@ -52,12 +52,12 @@ export interface Who {
 const nearIn = (view: GameView, p: V3): number => project(p, view)[2];
 
 /** A part of the far side of the body from the eye: painted a step darker, as the heroes' far arm and leg are. */
-function farSide(w: Who, p: V3): boolean {
+export function farSide(w: Who, p: V3): boolean {
   return nearIn(w.view, p) < nearIn(w.view, w.s.pelvis) - 1.6;
 }
 
 /** The three ways a limb's own frame lies: along it, out (away from the body's middle line), and the third. */
-function limbFrame(a: V3, b: V3, out: V3): readonly [V3, V3, V3] {
+export function limbFrame(a: V3, b: V3, out: V3): readonly [V3, V3, V3] {
   const d = norm(sub(b, a));
   const o0 = sub(out, mul(d, out[0] * d[0] + out[1] * d[1] + out[2] * d[2]));
   const o = norm(o0, [0, 0, 1]);
@@ -65,7 +65,7 @@ function limbFrame(a: V3, b: V3, out: V3): readonly [V3, V3, V3] {
 }
 
 /** A man's body of flesh, sculpted on the bones. `bulk`: how heavily muscled (1 a strong man). */
-export function manBody(sc: Sculpt, w: Who, skin: number, bulk = 1): void {
+export function manBody(sc: Sculpt, w: Who, skin: number, bulk = 1, noArm: 'L' | 'R' | null = null): void {
   const { s, B } = w;
   const [f, l, u] = s.chest;
   const trunk = trunkOf(B, s);
@@ -89,6 +89,7 @@ export function manBody(sc: Sculpt, w: Who, skin: number, bulk = 1): void {
   sc.cone(skin, 'head', add(s.neck, mul(u, -1.5)), s.skull, 2.4 * k, 2.1 * k, 1.4, { tag: 'neck' });
   // THE ARMS
   for (const side of ['L', 'R'] as const) {
+    if (side === noArm) continue;
     const sh = side === 'L' ? s.shoulderL : s.shoulderR;
     const el = side === 'L' ? s.elbowL : s.elbowR;
     const ha = side === 'L' ? s.handL : s.handR;
@@ -188,14 +189,15 @@ export function faceMarks(sc: Sculpt, w: Who, o: { eyes?: string; brow?: string;
 }
 
 /** Dark cloth: breeches, trousers. */
-const CHAR: Ramp = ['#0e0a1a', '#1c162e', '#30294a', '#4a416a', '#665c8c'];
+export const CHAR: Ramp = ['#0e0a1a', '#1c162e', '#30294a', '#4a416a', '#665c8c'];
 /** Faded blue twill. */
 const TWILL: Ramp = ['#0c1024', '#18203e', '#28365e', '#40548a', '#6078ae'];
 /** Dark leather, a vest, a harness. */
-const BLACKHIDE: Ramp = ['#0e080e', '#1e1218', '#36222a', '#56383c', '#7a5450'];
+export const BLACKHIDE: Ramp = ['#0e080e', '#1e1218', '#36222a', '#56383c', '#7a5450'];
 
 /** DRESSING THE BRAWLER in one of his outfits. */
-function dressBrawler(sc: Sculpt, w: Who, bulk: number, outfit: Outfit, trunksTo: number): void {
+/** A TAILOR for a sculpted body: cloth over its trunk, its legs, boots, a band round the waist, a strap over the chest. */
+export function tailorFor(sc: Sculpt, w: Who, bulk: number) {
   const { s, B } = w;
   const [f, l, u] = s.chest;
   const trunk = trunkOf(B, s);
@@ -291,6 +293,13 @@ function dressBrawler(sc: Sculpt, w: Who, bulk: number, outfit: Outfit, trunksTo
   const front = (side: number, up: number, out: number): V3 => add(ribs.c, add(mul(f, ribs.h[0] * 0.9 + out), add(mul(l, side * ribs.h[1] * 0.5), mul(u, up))));
   const shoulderTop = (side: number, fwd: number): V3 => add(side > 0 ? s.shoulderL : s.shoulderR, add(mul(u, 2.4), add(mul(l, -side * 1.6), mul(f, fwd))));
   const hipFront = (side: number): V3 => add(belly.c, add(mul(f, belly.h[0] + 0.9), add(mul(l, side * belly.h[1] * 0.6), mul(u, -belly.h[2] * 0.4))));
+  return { overTrunk, legsIn, boots, bootMat, waistBand, strapOver, front, shoulderTop, hipFront, dot3, ribs, belly, pel, f, l, u };
+}
+
+function dressBrawler(sc: Sculpt, w: Who, bulk: number, outfit: Outfit, trunksTo: number): void {
+  const { s, B } = w;
+  const { overTrunk, legsIn, boots, bootMat, waistBand, strapOver, front, shoulderTop, hipFront, dot3, ribs, belly, f, l, u } = tailorFor(sc, w, bulk);
+  void B;
   const brass = sc.mat({ ramp: BRASS });
 
   if (outfit === 'singlet') {
