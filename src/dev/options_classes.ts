@@ -1061,7 +1061,7 @@ export const APOTHECARIES: ClassLook[] = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// THE SECOND ROUND (his picks of the first, 23 Oct, by 16:50 Pacific: "Can I get a few more like 3" (the brawler); "A few
+// THE SECOND ROUND (his picks of the first, 23 Oct (Pacific; by 18:43): "Can I get a few more like 3" (the brawler); "A few
 // more like 1 and 2" (the warlock); "Few more like 2, 3, and 7" (the apothecary)). Each sheet begins with the ones he named.
 
 /** A singlet: its body from the chest down, and one strap (over the left shoulder) or two. */
@@ -1478,9 +1478,11 @@ export const APOTHECARIES2: ClassLook[] = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// HIS PICKS (23 Oct, of the second sheets): "3 with a yellow beard" (the brawler); "A with the spiked pauldron" (the warlock);
+// HIS PICKS (23 Oct (Pacific; by 18:43), of the second sheets): "3 with a yellow beard" (the brawler); "A with the spiked pauldron" (the warlock);
 // "B with D’s hair, and I don’t like the jeweled knee pads.  I’d like either a belt with vials, and bandolier with vials, or a
-// side satchel" (the apothecary: both ways, to choose between).
+// side satchel" (the apothecary: both ways, to choose between). Then, asked "Are the brawler and the warlock right as shown?",
+// "Yes, both (Recommended)" (offered as: next, each drawn from front and back, then the warlock's demon form); and asked
+// "Which apothecary kit?", "Vial belt + bandolier (Recommended)".
 
 export const BRAWLER_PICK: ClassLook[] = [
   {
