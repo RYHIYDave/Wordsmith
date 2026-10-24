@@ -111,7 +111,9 @@ export default async function (page, snap) {
       if (r.ms < 0) { fails++; console.log(`  !! touching the town's stairs did not take him down them: town=${r.s.town} errand=${r.s.errand}`); }
       log('touch the town\'s stairs', `down them: town=${r.s.town} depth=${r.s.depth} after ${r.ms} ms`);
       await page.evaluate(() => { const g = window.__dbg.game(); g.enterTown(); });
-      await page.waitForTimeout(500);
+      // (back in town: the view let come to rest before what is touched next is measured)
+      await page.waitForTimeout(1200);
+      await hands.settle();
     }
   }
 
