@@ -127,7 +127,11 @@ export default async function (page, snap) {
   if (card) {
     const onGame = card.x >= game.x && card.y >= game.y && card.x + card.w <= game.x + game.w && card.y + card.h <= game.y + game.h;
     check('the card lies on the game\'s side', onGame, JSON.stringify(card));
-    check('against the inventory\'s edge', upright ? inv.y - (card.y + card.h) <= 4 : inv.x - (card.x + card.w) <= 4);
+    // (WORD_HALF, 24.2: in the narrow layout the words' own panel stands at the game half's foot, against the inventory: the
+    // card against that panel's top instead, over none of the words)
+    const wordsUp = Object.entries(s.rects).filter(([k, r]) => k.startsWith('word:') && r.y + r.h <= inv.y).map(([, r]) => r.y);
+    if (upright && wordsUp.length) check('against the words\' panel over the inventory\'s edge', card.y + card.h <= Math.min(...wordsUp) && Math.min(...wordsUp) - (card.y + card.h) <= 24, `${card.y + card.h}, the words from ${Math.min(...wordsUp)}`);
+    else check('against the inventory\'s edge', upright ? inv.y - (card.y + card.h) <= 4 : inv.x - (card.x + card.w) <= 4);
     check('with EQUIP and DROP on it', !!s.rects['button:EQUIP'] && !!s.rects['button:DROP']);
     await snap('03_card');
     // a press on the card (its text, not a button) is not a press on the game
