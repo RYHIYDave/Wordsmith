@@ -225,7 +225,7 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
-Version 23.0 (24.1 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Version 23.0 (24.2 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
 Ward (the Crier), the Undercity (the Rat King), the Millrace (the Scraper and the Quill), the House of Quiet (the Physician) and the
 Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
 others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
@@ -257,6 +257,12 @@ cage up the old shaft, into the town's corner; the town's big gate stays barred 
 the Quarry. On floors 6 to 10 each way on opens as its boss dies (the quarry's stair, the ledge's chimney, the canyon's slot,
 the pinewood's trail, the fen's causeway), and the next floor begins where it comes out. From floor 10 on, your town is the
 camp inside Vellum's gate.
+Version 24.2: floor 10's boss, the Drowned Eye, no longer drops out of view behind his ring's pillars, and is harder each
+phase: arms burst up round you all the while, more each phase, with the siege's bolts at the last, and his sweep comes back
+and forth three times in a row. Floors 11 to 15's ways on open as their bosses die, as floors 6 to 10's do. The rivers flow,
+the mill wheel turns, and your swipe move takes you over the rivers and the mill race. Floor 15's stacks are low bookcases you
+see over, the aisles clear. Every word you hold shows as its rune stone beside the inventory, and each way out is named once
+it opens.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
