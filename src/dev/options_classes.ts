@@ -12,7 +12,7 @@
 //   THE WARLOCK: big for a caster; each look carries the demon he becomes (horns, a clawed hand, cracks of light, a tail).
 //   THE APOTHECARY: lithe; a flask in the throwing hand, more on the belt and the bandolier.
 
-import { BONE, CYAN, GLINT, INDIGO, INK, LEAF, MAIL, PINK, PLUM, ROBE, SKIN4, SPARK, STEEL, TEAL, dim } from '../art/kit';
+import { BONE, CYAN, GLINT, INDIGO, INK, LEAF, MAIL, PINK, PLUM, ROBE, SKIN4, SPARK, STEEL, TEAL, dim, hash } from '../art/kit';
 import type { Painted, Ramp } from '../art/kit';
 import { FRIEND_RIM } from '../art/hero3_knight';
 import { HEAD_B } from '../art/moves3';
@@ -94,15 +94,17 @@ export function castOf(B: Build): Bones {
   };
 }
 /** THE APOTHECARY READY TO THROW: weight back, a flask up by his right shoulder; his left hand out before him, aiming. */
+/** (the throw's hands: left forward, left, up, its elbow; the right the same; and the chest's twist) */
+export const THROW = [12, 0, -5, 10, 1, 0, 14, 60, -12];
 export function throwOf(B: Build): Bones {
   const t = B.tall / 56;
   return {
     ...standing(B),
-    pz: -0.8 * t, yaw: -12, twist: -6, faceTurn: 6,
+    pz: -0.8 * t, yaw: -12, twist: THROW[8], faceTurn: 6,
     lfx: 2.6 * t, lfy: 1.8 * t, lft: 14, lk: 12,
     rfx: -2.2 * t, rfy: -2.0 * t, rft: -20, rk: -12,
-    lhIn: 0, lhx: 11.0 * t, lhy: 3.0 * t, lhz: -4.0 * t, le: 20,
-    rhIn: 0, rhx: -1.0 * t, rhy: -3.5 * t, rhz: 5.0 * t, re: 70,
+    lhIn: 0, lhx: THROW[0] * t, lhy: THROW[1] * t, lhz: THROW[2] * t, le: THROW[3],
+    rhIn: 0, rhx: THROW[4] * t, rhy: THROW[5] * t, rhz: THROW[6] * t, re: THROW[7],
   };
 }
 
@@ -1550,7 +1552,8 @@ function bomberPick(kit: 'vials' | 'satchel'): (c: C) => void {
       belt(c, BROWN, CYAN, 2);
       sideBag(c, body);
     }
-    fighterArms(c, { skin: SK, sleeve: LEATHER, to: 1.6, wrap: null, thick: 0.1, fist: LEATHER });
+    // (his arms in the jerkin's sleeves, slimmer than a fighter's, gloved: the mages' arms)
+    arms(c, { upper: LEATHER, fore: LEATHER, hand: BROWN, bell: 0.15 });
     const hd = face(c, { hairAt: drawnBack, hair: WINE, paint: masked(TEAL), mouth: null });
     goggles(c, hd, false);
     pony(c, WINE, 10);
@@ -1569,7 +1572,7 @@ export const APOTHECARY_PICKS: ClassLook[] = [
 // grown into bone; a rag of his coat left round the hips. Bigger than he is. What glows on him is cyan, as on any friend.
 
 /** The demon: half again a hero's bulk, a head taller than the knight. */
-export const DEMON_BODY: Build = buildOf(68, HEAD_B * 0.92, { shoulders: 1.42, chest: 1.4, waist: 1.04, hips: 1.0, depth: 1.2, arms: 1.12, limbs: 1.42, pad: 1.2 });
+export const DEMON_BODY: Build = buildOf(82, HEAD_B * 1.02, { shoulders: 1.42, chest: 1.3, waist: 0.86, hips: 0.92, depth: 1.15, arms: 1.14, legs: 1.0, limbs: 1.22, pad: 1.2 });
 export const DEMON_LEAN: Build = buildOf(68, HEAD_B * 0.92, { shoulders: 1.2, chest: 1.12, waist: 0.86, hips: 0.9, depth: 1.0, arms: 1.16, limbs: 1.1, pad: 1.0 });
 /** THE DEMON'S STANCE: hunched forward, knees wide and bent, his arms out from him, claws open. */
 export function menaceOf(B: Build): Bones {
@@ -1840,6 +1843,380 @@ export const DEMONS: ClassLook[] = [
     },
   },
 ];
+
+// ---------------------------------------------------------------------------------------------
+// THE CLASSIC DEMON (his word, 23 Oct (Pacific; by 20:47), of the six forms: "I want the demon form to look like a demon, and these are
+// characters, the most important art in the game.  Let’s make sure it’s good"; and of which way: "Classic demon
+// (Recommended)", offered as: goat legs and hooves, big curled horns, bat wings, a spaded tail, fangs, burning eyes, hunched
+// and huge). Built muscle by muscle on the bones: a bull's neck and shoulders, the head low and forward between them; arms
+// long, hands great and clawed; legs a goat's, bent back at the hock, on cloven hooves; wings of leather on bone fingers; a
+// whip of a tail ending in a spade. Still the warlock: his pact's cracks of cyan light, his fire in the left hand, his red book
+// chained at the hip, a rag of his coat; the spiked pauldron grown into a crest of bone spikes on that shoulder.
+
+/** Its hide: dark crimson, the light on its muscle warmer (never a glow). */
+const CRIMSON: Ramp = ['#1e040c', '#1e040c', '#5a1222', '#982c34', '#d05a4c'];
+const CRIMSON4: R4 = ['#3a0a18', '#6a1a28', '#8c2a32', '#b4443e'];
+/** Its legs' coarse hair and the dark of its hands and feet. */
+const PELT: Ramp = ['#1a0e12', '#1a0e12', '#43242a', '#6e3e3c', '#94584a'];
+/** Its wings' leather. */
+const LEATHERWING: Ramp = ['#14040c', '#14040c', '#3a0e1c', '#5c1a28', '#7a2832'];
+/** Its horns: black at the root to bone at the tip. */
+const HORN2: Ramp = ['#0e0a14', '#0e0a14', '#2e2632', '#6e6476', '#cfc6da'];
+
+export interface DemonLook {
+  name: string;
+  /** Its horns: curled up and back as a goat's, out and up as a bull's, or swept long behind. */
+  horns: 'goat' | 'bull' | 'swept';
+  /** How far its wings are spread (0 folded to 1 wide). */
+  spread: number;
+  /** Its hide. */
+  hide?: Ramp;
+  hide4?: R4;
+}
+
+/** A point along a curve through `pts` (Catmull-Rom), `t` 0..1. */
+function along(pts: readonly V3[], t: number): V3 {
+  const n = pts.length - 1;
+  const f = Math.min(n - 1e-6, Math.max(0, t * n));
+  const i = Math.floor(f);
+  const u = f - i;
+  const p0 = pts[Math.max(0, i - 1)];
+  const p1 = pts[i];
+  const p2 = pts[i + 1];
+  const p3 = pts[Math.min(n, i + 2)];
+  const w = (a: number, b: number, c: number, d: number): number => 0.5 * (2 * b + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
+  return [w(p0[0], p1[0], p2[0], p3[0]), w(p0[1], p1[1], p2[1], p3[1]), w(p0[2], p1[2], p2[2], p3[2])];
+}
+/** A tapering tube along a curve: `r0` thick at its start to `r1` at its end, in `n` rods. `ramp(t)`: its colour along it. */
+function tube(c: C, sheet: Sheet, pts: readonly V3[], r0: number, r1: number, ramp: (t: number) => Ramp, n = 12): V3[] {
+  const out: V3[] = [];
+  for (let i = 0; i <= n; i++) out.push(along(pts, i / n));
+  for (let i = 0; i < n; i++) rod(sheet, c.st, out[i], out[i + 1], r0 + ((r1 - r0) * i) / n, r0 + ((r1 - r0) * (i + 1)) / n, ramp(i / n));
+  return out;
+}
+/** A flat shape filled on the picture (wing leather, a spade): its outline in points of the figure, at one depth. `tone(x, y)`: the colour at a pixel. */
+function fillFlat(c: C, sheet: Sheet, outline: readonly V3[], z: number, tone: (x: number, y: number) => string): void {
+  const pts = outline.map((p) => c.st.at(p));
+  const ys = pts.map((p) => p[1]);
+  for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
+    const xs: number[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const [ax, ay] = pts[i];
+      const [bx, by] = pts[(i + 1) % pts.length];
+      const yy = y + 0.5;
+      if ((ay <= yy && by > yy) || (by <= yy && ay > yy)) xs.push(ax + ((yy - ay) * (bx - ax)) / (by - ay));
+    }
+    xs.sort((a, b) => a - b);
+    for (let k = 0; k + 1 < xs.length; k += 2) for (let x = Math.round(xs[k]); x < Math.round(xs[k + 1]); x++) sheet.put(x, y, tone(x, y), z);
+  }
+}
+
+/** The trunk, muscle by muscle, EACH ITS OWN PART so that the style's dark seam draws where one meets another: ribcage and
+ * belly, two slabs of chest, the bull's neck rising to the skull, the belly's blocks, a V to the waist. */
+function demonBody(c: C, hide: Ramp): Sheet {
+  const { st, s, B, trunk } = c;
+  const body = st.part(s.ribs);
+  const balls = trunkBalls(trunk, 0.6);
+  ball(body, st, balls[0].c, balls[0].axes, hide);
+  ball(body, st, balls[1].c, [mul(s.chest[0], B.waistDeep + 0.3), mul(s.chest[1], B.waistHalf + 0.2), mul(s.chest[2], 4.6)], hide);
+  ball(st.part(s.pelvis), st, balls[2].c, balls[2].axes, hide);
+  // (the bull's neck: a slope of muscle from the back of the skull out to each shoulder)
+  for (const side of [1, -1]) {
+    const sh = side > 0 ? s.shoulderL : s.shoulderR;
+    const tr = st.part(st.near(lerp3(s.neck, sh, 0.5)) - 0.4);
+    rod(tr, st, off(s.neck, s.chest, -1.4, 0, -0.6), off(sh, s.chest, -0.8, -side * 1.4, 0.2), 2.4, 2.0, hide);
+  }
+  // (the chest: two slabs either side of the breastbone, each its own)
+  for (const side of [1, -1]) {
+    const at = off(s.neck, s.chest, B.ribDeep * 0.62, side * B.ribHalf * 0.5, -5.6);
+    const pec = st.part(st.near(at) + 0.6);
+    ball(pec, st, at, [mul(s.chest[0], 2.4), mul(s.chest[1], B.ribHalf * 0.54), mul(s.chest[2], 3.0)], hide);
+  }
+  // (the belly: two rows of blocks either side of the middle)
+  for (const up of [0.6, 3.6]) {
+    for (const side of [1, -1]) {
+      const at = off(s.waist, s.hips, B.waistDeep * 0.8, side * 1.6, up);
+      const ab = st.part(st.near(at) + 0.3);
+      ball(ab, st, at, [mul(s.hips[0], 1.5), mul(s.hips[1], 1.7), mul(s.hips[2], 1.4)], hide);
+    }
+  }
+  return body;
+}
+/** An arm: shoulder, upper arm and forearm each its own part; a forearm thicker than the upper arm, a great dark hand, three long
+ * curved claws; spines down the forearm's back. */
+function demonLimb(c: C, side: 'L' | 'R', hide: Ramp): void {
+  const { st, s, B, mine } = c;
+  const [aS, aE, aW] = B.armR;
+  const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+  const el = side === 'L' ? s.elbowL : s.elbowR;
+  const hand = side === 'L' ? s.handL : s.handR;
+  const out = side === 'L' ? 1 : -1;
+  const delt = st.part(st.near(sh) + 0.9);
+  ball(delt, st, off(sh, s.chest, 0, out * 0.4, 0.6), [mul(s.chest[0], aS + 1.4), mul(s.chest[1], aS + 1.3), mul(s.chest[2], aS + 1.1)], mine(hide, sh));
+  const up = st.part(mid(sh, el));
+  rod(up, st, sh, lerp3(sh, el, 0.5), aS + 0.8, aS + 1.1, mine(hide, el));
+  rod(up, st, lerp3(sh, el, 0.5), el, aS + 1.1, aE + 0.6, mine(hide, el));
+  const fo = st.part(mid(el, hand, 0.4));
+  rod(fo, st, el, lerp3(el, hand, 0.35), aE + 0.9, aE + 1.4, mine(hide, hand));
+  rod(fo, st, lerp3(el, hand, 0.35), lerp3(el, hand, 0.9), aE + 1.4, aW + 0.7, mine(hide, hand));
+  const dir = norm(sub(hand, el));
+  for (let i = 1; i <= 3; i++) {
+    const at = lerp3(el, hand, 0.1 + i * 0.2);
+    const sp = st.part(st.near(at) - 0.2);
+    rod(sp, st, at, add(at, add(mul(dir, -1.0), [0, 0, 3.0 - i * 0.5])), 0.8, 0.15, HORN2);
+  }
+  const palm = st.part(st.near(hand) + 0.3);
+  ball(palm, st, hand, [[aW + 1.7, 0, 0], [0, aW + 1.7, 0], [0, 0, aW + 1.5]], mine(PELT, hand));
+  const across = norm([-dir[1], dir[0], 0], [1, 0, 0]);
+  for (const k of [-1.3, 0, 1.3]) {
+    const a = add(hand, add(mul(dir, 1.4), mul(across, k)));
+    const m = add(a, add(mul(dir, 3.0), [0, 0, -1.2]));
+    const b = add(m, add(mul(dir, 0.8), [0, 0, -3.0]));
+    const p = st.part(st.near(a) + 0.4);
+    rod(p, st, a, m, 1.0, 0.7, IVORY);
+    rod(p, st, m, b, 0.7, 0.15, IVORY);
+  }
+  cracks(c, fo, el, hand, 1, side === 'L' ? 3 : 8);
+}
+/** COARSE HAIR on a part already painted: darker strands down it, and its outline ragged with tufts out either side. */
+function shag(sheet: Sheet, ramp: Ramp, seed: number): void {
+  const W = sheet.w;
+  const H = sheet.h;
+  const add_: [number, number, string, number][] = [];
+  for (let y = 0; y < H; y++) {
+    let x0 = -1;
+    let x1 = -1;
+    for (let x = 0; x < W; x++) {
+      if (!sheet.has(x, y)) continue;
+      if (x0 < 0) x0 = x;
+      x1 = x;
+      // (strands: short dark runs down the hair)
+      if (hash(x, Math.floor((y + (x % 3)) / 3), seed) < 0.28) sheet.mark(x, y, ramp[1]);
+    }
+    if (x0 < 0) continue;
+    // (tufts: now and then a pixel or two of hair out past the edge, angled down)
+    const z0 = sheet.z[y * W + x0];
+    const z1 = sheet.z[y * W + x1];
+    if (hash(x0, y, seed + 1) < 0.35) add_.push([x0 - 1, y + 1, ramp[2], z0]);
+    if (hash(x1, y, seed + 2) < 0.35) add_.push([x1 + 1, y + 1, ramp[1], z1]);
+  }
+  for (const [x, y, col, z] of add_) sheet.put(x, y, col, Number.isNaN(z) ? sheet.near : z);
+}
+/** A goat's leg: a great thigh, the knee forward, the shin back to a raised hock, a cannon down to a cloven hoof, each its own
+ * part; coarse hair from mid-thigh down, tufted at the hock. */
+function goatLeg(c: C, side: 'L' | 'R', hide: Ramp): void {
+  const { st, s, B, mine } = c;
+  const [lH, lK, lA] = B.legR;
+  const hip = side === 'L' ? s.hipL : s.hipR;
+  const knee = side === 'L' ? s.kneeL : s.kneeR;
+  const heel = side === 'L' ? s.heelL : s.heelR;
+  const toe = side === 'L' ? s.toeL : s.toeR;
+  const fwd = norm([toe[0] - heel[0], toe[1] - heel[1], 0], [1, 0, 0]);
+  const hoof = add(lerp3(heel, toe, 0.72), [0, 0, 1.3]);
+  const hock = add(add(hoof, mul(fwd, -7.0)), [0, 0, 12.5]);
+  const kn = add(knee, add(mul(fwd, 3.4), [0, 0, 2.0]));
+  const thigh = st.part(mid(hip, kn));
+  rod(thigh, st, hip, lerp3(hip, kn, 0.55), lH + 1.6, lH + 1.3, mine(hide, kn));
+  const hair = st.part(st.near(lerp3(hip, kn, 0.75)) + 0.2);
+  rod(hair, st, lerp3(hip, kn, 0.55), kn, lH + 1.4, lK + 0.9, mine(PELT, kn));
+  // (the hair shaggy: tufts off the back of the thigh and the knee)
+  for (const k of [0.6, 0.8, 1.0]) {
+    const at = lerp3(hip, kn, k);
+    rod(hair, st, at, add(add(at, mul(fwd, -(lH + 2.6))), [0, 0, -1.8]), 1.0, 0.2, mine(PELT, kn));
+  }
+  const shin = st.part(mid(kn, hock));
+  rod(shin, st, kn, hock, lK + 0.5, lA + 0.2, mine(PELT, hock));
+  for (const k of [0, 1, 2]) rod(shin, st, add(hock, [0, 0, k * 1.4]), add(add(hock, mul(fwd, -2.8)), [0, 0, k * 1.4 - 1.6]), 0.9, 0.2, mine(PELT, hock));
+  const can = st.part(mid(hock, hoof));
+  rod(can, st, hock, hoof, Math.max(1.1, lA - 0.2), Math.max(1.0, lA - 0.3), mine(PELT, hoof));
+  shag(hair, PELT, side === 'L' ? 31 : 37);
+  shag(shin, PELT, side === 'L' ? 41 : 47);
+  const h = st.part(st.near(hoof) + 0.3);
+  ball(h, st, add(hoof, add(mul(fwd, 1.0), [0, 0, 0.3])), [mul(fwd, 3.4), mul(norm([-fwd[1], fwd[0], 0], [0, 1, 0]), 2.8), [0, 0, 1.9]], (u, t) => (Math.abs(u[1]) < 0.12 && u[0] > -0.2 ? INK : t >= 3 ? HORN2[3] : HORN2[t >= 2 ? 2 : 1]));
+}
+/** The tail: from the small of its back out behind, round to its side and up, a spade at its end. */
+function spadeTail(c: C, hide: Ramp, side = -1): void {
+  const { st, s, B } = c;
+  const f = s.hips[0];
+  const l = s.hips[1];
+  const root = off(s.pelvis, s.hips, -B.pelvisDeep - 0.4, 0, 1.5);
+  const pts: V3[] = [
+    root,
+    add(root, add(mul(f, -5), [0, 0, -6])),
+    add(root, add(add(mul(f, -6), mul(l, side * 7)), [0, 0, -13])),
+    add(root, add(add(mul(f, -1), mul(l, side * 15)), [0, 0, -12])),
+    add(root, add(add(mul(f, 3), mul(l, side * 19)), [0, 0, -5])),
+  ];
+  const p = st.part(st.near(root) - 1.0);
+  const line = tube(c, p, pts, 2.0, 0.8, () => hide, 16);
+  // (the spade: a flat heart of hide on its end, pointing on the way it goes)
+  const e = line[line.length - 1];
+  const d = norm(sub(e, line[line.length - 3]));
+  const w = norm([-d[1], d[0], 0], [0, 1, 0]);
+  const outline: V3[] = [add(e, mul(d, -0.6)), add(add(e, mul(d, 1.0)), mul(w, 2.6)), add(e, mul(d, 4.6)), add(add(e, mul(d, 1.0)), mul(w, -2.6))];
+  fillFlat(c, p, outline, st.near(e) + 0.5, (x, y) => ((x + y) % 5 === 0 ? hide[3] : hide[2]));
+}
+/** A wing: its arm up and out from the shoulder blade to a clawed wrist, four fingers fanned from the wrist, leather between them scalloped at its trailing edge, and from the last finger down to its flank. */
+function batWing(c: C, side: number, spread: number, leather: Ramp, hide: Ramp): void {
+  const { st, s, B } = c;
+  const F = s.chest[0];
+  const L = s.chest[1];
+  const U = s.chest[2];
+  const at = (o: V3, f: number, l: number, u: number): V3 => add(o, add(add(mul(F, f), mul(L, side * l)), mul(U, u)));
+  const root = at(s.ribs, -B.ribDeep - 0.5, 3.0, 7.5);
+  const sp = 0.55 + 0.45 * spread;
+  const elbow = at(root, -4, 7 * sp, 12);
+  const wrist = at(root, -5, 14 * sp, 24);
+  const tips = [at(wrist, -2, 8 * sp, 9), at(wrist, -3, 17 * sp, 2), at(wrist, -3, 16 * sp, -12), at(wrist, -2, 9 * sp, -22)];
+  const flank = at(s.waist, -B.waistDeep * 0.5, B.waistHalf * 0.9, -1);
+  const z = st.near(s.ribs) - 3 - (side * st.near(L) > 0 ? 0 : 0.5);
+  const p = st.part(z);
+  // (the leather: wrist, each tip and, between tips, the edge bowed in toward the wrist)
+  const outline: V3[] = [root, elbow, wrist, tips[0]];
+  for (let i = 0; i + 1 < tips.length; i++) {
+    for (let k = 1; k <= 5; k++) {
+      const t = k / 6;
+      const base = lerp3(tips[i], tips[i + 1], t);
+      outline.push(lerp3(base, wrist, Math.sin(t * Math.PI) * 0.28));
+    }
+    outline.push(tips[i + 1]);
+  }
+  for (let k = 1; k <= 5; k++) {
+    const t = k / 6;
+    outline.push(lerp3(lerp3(tips[3], flank, t), wrist, Math.sin(t * Math.PI) * 0.2));
+  }
+  outline.push(flank);
+  const [wx, wy] = st.at(wrist);
+  const far = Math.max(...outline.map((q) => { const [x, y] = st.at(q); return Math.hypot(x - wx, y - wy); }));
+  fillFlat(c, p, outline, z, (x, y) => {
+    // (lit along its top, darkening toward its trailing edge)
+    const d = Math.hypot(x - wx, y - wy) / far;
+    return y < wy - 1 ? leather[4] : d > 0.78 ? leather[1] : d > 0.45 ? leather[2] : leather[3];
+  });
+  // (its bones over the leather: arm, forearm, fingers; a claw at the wrist)
+  rod(p, st, root, elbow, 1.7, 1.4, hide);
+  rod(p, st, elbow, wrist, 1.4, 1.0, hide);
+  for (const t of tips) rod(p, st, wrist, t, 0.8, 0.25, HORN2);
+  rod(p, st, wrist, at(wrist, 0, 1.0, 3.2), 0.9, 0.2, HORN2);
+}
+/** The head: hide, a heavy brow, burning eyes, pointed ears, a jaw of fangs; horns. */
+function demonFace(c: C, o: DemonLook, hide4: R4): void {
+  const { st, s, hf, hl, hu, R } = c;
+  const hd = head(c, {
+    skin: hide4,
+    blind: true,
+    mouth: null,
+    neck: o.hide ?? CRIMSON,
+    // (the brow: a ridge of shadow over the eyes)
+    paint: (f, l, up, t) => (f > 0.3 && up > 0.24 && up < 0.42 ? hide4[0] : undefined),
+  });
+  // (the muzzle: the jaw thrust forward and down from under the face, broad, its own part)
+  {
+    const jaw = add(s.head, add(mul(hf, R[0] * 0.75), mul(hu, -R[2] * 0.45)));
+    ball(st.part(st.near(jaw) + 0.2), st, jaw, [mul(hf, R[0] * 0.6), mul(hl, R[1] * 0.72), mul(hu, R[2] * 0.42)], o.hide ?? CRIMSON);
+  }
+  // (the eyes: slanted slits of white and cyan, burning)
+  for (const [i, turn] of EYES.entries()) {
+    const slant = i === 0 ? -1 : 1;
+    dotOn(c, hd, turn, 0.16, '#ffffff');
+    dotOn(c, hd, turn, 0.16, GLINT, slant, 0);
+    dotOn(c, hd, turn, 0.16, SPARK[2], -slant, 1);
+  }
+  // (the mouth: a dark grin from cheek to cheek, fangs down from it and two tusks up)
+  const mid_ = (EYES[0] + EYES[1]) / 2;
+  for (let d = -22; d <= 16; d += 4) dotOn(c, hd, mid_ + d, -0.52, INK);
+  for (const d of [-14, -4, 6]) dotOn(c, hd, mid_ + d, -0.52, '#ffffff', 0, 1);
+  for (const d of [-20, 12]) {
+    dotOn(c, hd, mid_ + d, -0.42, '#ffffff');
+    dotOn(c, hd, mid_ + d, -0.42, IVORY[3], 0, -1);
+  }
+  // (pointed ears, swept back)
+  for (const side of [1, -1]) {
+    const a = add(s.head, add(add(mul(hl, side * R[1] * 0.92), mul(hf, -R[0] * 0.1)), mul(hu, R[2] * 0.05)));
+    const b = add(a, add(add(mul(hl, side * 2.6), mul(hf, -2.6)), mul(hu, 1.6)));
+    rod(st.part(st.near(a) + 0.2), st, a, b, 1.1, 0.2, o.hide ?? CRIMSON);
+  }
+  // (the horns)
+  const p = st.part(st.near(s.head) + 0.5);
+  for (const side of DEBUG_DEMON.horns ? [1, -1] : []) {
+    const v = (f: number, l: number, u: number): V3 => add(add(mul(hf, f), mul(hl, side * l)), mul(hu, u));
+    const root = add(s.head, v(R[0] * 0.15, R[1] * 0.5, R[2] * 0.8));
+    let pts: V3[];
+    if (o.horns === 'goat') pts = [root, add(root, v(-0.5, 1.6, 3.6)), add(root, v(-3.2, 3.0, 6.4)), add(root, v(-7.0, 3.6, 5.6)), add(root, v(-8.6, 3.2, 2.0)), add(root, v(-7.4, 2.6, -0.6))];
+    else if (o.horns === 'bull') pts = [root, add(root, v(0.4, 3.6, 0.8)), add(root, v(0.6, 6.4, 3.4)), add(root, v(0.4, 7.0, 7.0)), add(root, v(1.4, 6.0, 9.6))];
+    else pts = [root, add(root, v(-0.8, 2.0, 2.4)), add(root, v(-4.0, 3.4, 4.4)), add(root, v(-9.0, 4.0, 5.4)), add(root, v(-13.0, 4.0, 5.6))];
+    const line = tube(c, p, pts, 2.0, 0.4, (t) => (t < 0.3 ? [IVORY[0], IVORY[0], IVORY[1], IVORY[2], IVORY[2]] : t < 0.75 ? [IVORY[1], IVORY[1], IVORY[2], IVORY[3], IVORY[3]] : [IVORY[1], IVORY[1], IVORY[3], IVORY[4], IVORY[4]]), 16);
+    // (ridges round it, a dark ring every so far)
+    for (let i = 2; i < line.length - 3; i += 3) {
+      const [x, y] = st.at(line[i]);
+      for (const dx of [-1, 0, 1]) p.mark(Math.round(x) + dx, Math.round(y), IVORY[1]);
+    }
+  }
+}
+
+/** (scratch: parts left out, to see what is under them) */
+export const DEBUG_DEMON = { horns: true, wings: true };
+/** THE CLASSIC DEMON, as `o`. */
+function classicDemon(c: C, o: DemonLook): void {
+  const hide = o.hide ?? CRIMSON;
+  const hide4 = o.hide4 ?? CRIMSON4;
+  if (DEBUG_DEMON.wings) {
+    batWing(c, 1, o.spread, LEATHERWING, hide);
+    batWing(c, -1, o.spread, LEATHERWING, hide);
+  }
+  spadeTail(c, hide, -1);
+  goatLeg(c, 'L', hide);
+  goatLeg(c, 'R', hide);
+  // (a rag of his coat round the hips, its red hem; his book chained at the hip)
+  skirt(c, COAL, { drop: c.B.thigh * 0.26, wide: 1.8, deep: 1.8, hem: RUST, ragged: true, folds: [0, 180, 90, -90] });
+  grimoire(c);
+  const body = demonBody(c, hide);
+  cracks(c, body, off(c.s.neck, c.s.chest, c.B.ribDeep, 2.0, -5), off(c.s.waist, c.s.hips, c.B.waistDeep, -2.0, 2), 2, 7);
+  demonLimb(c, 'L', hide);
+  demonLimb(c, 'R', hide);
+  // (the warlock's spiked pauldron grown into a crest of bone spikes on his left shoulder)
+  const { st, s } = c;
+  for (const [k, len] of [[-0.6, 5.5], [0.3, 7.0], [1.2, 5.0]] as const) {
+    const a = off(s.shoulderL, s.chest, k, 1.2, 2.6);
+    rod(st.part(st.near(a) + 0.8), st, a, off(a, s.chest, k * 0.6, 2.2, len), 1.4, 0.2, IVORY);
+  }
+  demonFace(c, o, hide4);
+  handFire(c, s.handL, 1.3);
+}
+
+export const CLASSIC_DEMONS: DemonLook[] = [
+  { name: 'Goat horns curled back, wings half spread', horns: 'goat', spread: 0.6 },
+  { name: 'Bull horns, wings wide', horns: 'bull', spread: 1 },
+  { name: 'Long swept horns, wings close', horns: 'swept', spread: 0.25 },
+];
+
+/** The demon's canvas: bigger than a hero's, for its wings and horns. */
+export const DEMON_CANVAS = { w: 300, h: 270, ax: 150, ay: 222 };
+/** THE CLASSIC DEMON'S STANCE: hunched, the head low and forward, knees wide on its hooves, arms hanging forward, claws open. */
+export function demonStance(B: Build): Bones {
+  const t = B.tall / 68;
+  return {
+    ...standing(B),
+    pz: -2.4 * t, bend: DSTANCE[0], pitch: 0, yaw: DSTANCE[10], faceUp: DSTANCE[1],
+    lfx: 1.6 * t, lfy: 3.4 * t, lft: 18, lk: 22,
+    rfx: -2.2 * t, rfy: -3.4 * t, rft: -22, rk: -20,
+    lhIn: 0, lhx: DSTANCE[2] * t, lhy: DSTANCE[3] * t, lhz: DSTANCE[4] * t, le: DSTANCE[5],
+    rhIn: 0, rhx: DSTANCE[6] * t, rhy: DSTANCE[7] * t, rhz: DSTANCE[8] * t, re: DSTANCE[9],
+  };
+}
+/** (its stance's numbers, to try: the bend, the face up, the left hand forward, left, up, its elbow, the right the same) */
+export const DSTANCE = [4, 2, 6, 7, -19, 35, 5, -7, -20, 35, -20];
+/** One of the classic demons, standing so. */
+export function paintClassicDemon(k: number, view: GameView = 'front'): Painted {
+  const B = DEMON_BODY;
+  const q = demonStance(B) as Posed;
+  const s = solve(B, q);
+  plainly(true);
+  const st = stage(view, DEMON_CANVAS.ax, DEMON_CANVAS.ay, DEMON_CANVAS);
+  classicDemon(ctxOf(st, s, q, B), CLASSIC_DEMONS[k]);
+  plainly(false);
+  return { px: st.whole(FRIEND_RIM), lights: [], tails: [] };
+}
 
 void [CYAN, curtain, fringe, rope, streak, tresses, satchel, MOSS, GREY, collar, hidden, thread, braid, PINK, BRASS, brimHat];
 
