@@ -128,6 +128,26 @@ export function band(pts: readonly Pt[], w0: number, w1: number = w0): Pt[] {
   }
   return [...left, ...right.reverse()];
 }
+/** A band along `pts` whose width at each point is `w(u)` (u 0 at its start to 1 at its end): a limb that swells and narrows. */
+export function bandBy(pts: readonly Pt[], w: (u: number) => number): Pt[] {
+  const left: Pt[] = [];
+  const right: Pt[] = [];
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(n - 1, i + 1)];
+    let dx = b[0] - a[0];
+    let dy = b[1] - a[1];
+    const l = Math.hypot(dx, dy) || 1;
+    dx /= l;
+    dy /= l;
+    const h = w(n > 1 ? i / (n - 1) : 0) / 2;
+    left.push([pts[i][0] - dy * h, pts[i][1] + dx * h]);
+    right.push([pts[i][0] + dy * h, pts[i][1] - dx * h]);
+  }
+  return [...left, ...right.reverse()];
+}
+
 /** Is (x, y) inside the polygon? */
 export function inside(pts: readonly Pt[], x: number, y: number): boolean {
   let c = false;
@@ -330,6 +350,18 @@ export function facets(
 
 
 /** A caption box at (x, y) (picture pixels), at most `maxW` game pixels of text wide: the paper's colour, inked round, the words in ink. Returns its height. */
+/** How big a caption of `text` stands (its box, with its ink edge), wrapped to `maxW`: [width, height]. */
+export function captionSize(text: string, maxW: number): [number, number] {
+  const lines = wrapText(text, maxW, 'normal');
+  let w = 0;
+  for (const ln of lines) {
+    let lw = 0;
+    for (const ch of ln) lw += glyphRows(ch).length ? glyphRows(ch)[0].length + 2 : 0;
+    w = Math.max(w, lw - 2);
+  }
+  return [w + 8 + 4, lines.length * 18 + 6 + 4];
+}
+
 export function caption(p: Px, text: string, x: number, y: number, maxW: number, paper = '#efe4c4', ink = INK): number {
   const lines = wrapText(text, maxW, 'normal');
   const pad = 4;
@@ -355,4 +387,157 @@ export function caption(p: Px, text: string, x: number, y: number, maxW: number,
     }
   });
   return bh;
+}
+
+// ---------------------------------------------------------------------------------------------
+// SOLIDS: shapes shaded round, as a comic shades a head, an arm, a body: in flat bands from one light, rimmed from behind
+
+export type V3 = readonly [number, number, number];
+
+/** The bands of `tones` for light `v` (0..1), the bottom of each band dotted over the band below. */
+export function toneAt(tones: Tones, v: number, x: number, y: number, dots = true): string {
+  const n = tones.length;
+  const s = clamp01(v) * n;
+  let k = Math.min(n - 1, Math.floor(s));
+  const f = s - Math.floor(s);
+  if (dots && k > 0 && f < 0.3 && dot(x, y, 1 - f / 0.3, 3)) k--;
+  return tones[k];
+}
+
+function unit(v: V3): V3 {
+  const l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+}
+
+export interface SolidOpts {
+  /** The middle and the radii of the round it is shaded as (default: its bounds'). */
+  c?: Pt;
+  r?: Pt;
+  /** How round across (1) or flat (0) it is. */
+  round?: number;
+  /** A light from behind (a direction on the screen, x right y down) and its colour: the edges facing it rimmed. */
+  back?: readonly [number, number];
+  rim?: string;
+  /** Added to its light. */
+  extra?: (x: number, y: number) => number;
+  dots?: boolean;
+  /** How hard the light falls: 0.5 soft (every side lit some), 1 hard (the far side in the dark). Default 0.5. */
+  hard?: number;
+  /** Ink hatching laid in its darkest band (the comic's shadow): lines this far apart. */
+  hatch?: number;
+}
+
+/** The light `v` (-1..1, the normal against the light) as a band's light (0..1), hard or soft. */
+function lightOf(d: number, hard: number): number {
+  return clamp01(d * (0.5 + hard * 0.3) + 0.5 - hard * 0.12);
+}
+/** Is (x, y) on a hatching line `gap` apart (slanting down to the left, as a right hand hatches)? */
+export function hatched(x: number, y: number, gap: number): boolean {
+  return ((x + y) % gap + gap) % gap === 0;
+}
+
+/** Shade what is painted on `l` (its pixels in `pts`, or all of `l`) as one rounded solid lit by `L`, in `tones`. */
+export function shadeSolid(l: Px, tones: Tones, L: V3, o: SolidOpts = {}, pts?: readonly Pt[]): void {
+  const Lu = unit(L);
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  if (pts) {
+    for (const [x, y] of pts) {
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x);
+      y1 = Math.max(y1, y);
+    }
+  } else {
+    const b = l.bounds();
+    if (!b) return;
+    x0 = b.x;
+    y0 = b.y;
+    x1 = b.x + b.w;
+    y1 = b.y + b.h;
+  }
+  const c = o.c ?? [(x0 + x1) / 2, (y0 + y1) / 2];
+  const r = o.r ?? [(x1 - x0) / 2, (y1 - y0) / 2];
+  const round = o.round ?? 1;
+  const want = (x: number, y: number): boolean => !pts || inside(pts, x + 0.5, y + 0.5);
+  const done = new Set<number>();
+  l.each((x, y) => {
+    if (!want(x, y)) return undefined;
+    const nx = ((x + 0.5 - c[0]) / r[0]) * round;
+    const ny = ((y + 0.5 - c[1]) / r[1]) * round;
+    const nz = Math.sqrt(Math.max(0.08, 1 - Math.min(1, nx * nx + ny * ny)));
+    const n = unit([nx, ny, nz]);
+    const v = lightOf(n[0] * Lu[0] + n[1] * Lu[1] + n[2] * Lu[2], o.hard ?? 0.5) + (o.extra ? o.extra(x, y) : 0);
+    done.add(y * l.w + x);
+    if (o.hatch && v < 1 / tones.length && hatched(x, y, o.hatch)) return INK;
+    return toneAt(tones, v, x, y, o.dots !== false);
+  });
+  if (o.back && o.rim) {
+    const [bx, by] = o.back;
+    const rim = o.rim;
+    const marks: number[] = [];
+    for (const i of done) {
+      const x = i % l.w;
+      const y = (i - x) / l.w;
+      // (an edge pixel whose outside lies toward the back light)
+      const out = (dx: number, dy: number): boolean => !l.has(x + dx, y + dy) || !done.has((y + dy) * l.w + x + dx);
+      if ((bx > 0.3 && out(1, 0)) || (bx < -0.3 && out(-1, 0)) || (by > 0.3 && out(0, 1)) || (by < -0.3 && out(0, -1))) marks.push(x, y);
+    }
+    for (let k = 0; k < marks.length; k += 2) l.set(marks[k], marks[k + 1], rim);
+  }
+}
+
+/** Fill `pts` on a new layer the size of `p` and shade it as a solid: the layer, to be put on with `over`. */
+export function solid(p: { w: number; h: number }, pts: readonly Pt[], tones: Tones, L: V3, o: SolidOpts = {}): Px {
+  const l = new Px(p.w, p.h);
+  l.poly(pts, tones[0]);
+  shadeSolid(l, tones, L, o, pts);
+  return l;
+}
+
+/**
+ * A limb (an arm, a finger, a rope): a band along `line`, `w0` wide at its start to `w1` at its end, shaded round across its
+ * width (a cylinder) by `L`, in `tones`; its edges facing `back` rimmed.
+ */
+export function limbSolid(p: { w: number; h: number }, line: readonly Pt[], w0: number, w1: number, tones: Tones, L: V3, o: SolidOpts & { width?: (u: number) => number } = {}): Px {
+  const l = new Px(p.w, p.h);
+  const wid = o.width ?? ((u: number) => lerp(w0, w1, u));
+  const poly = bandBy(line, wid);
+  l.poly(poly, tones[0]);
+  const Lu = unit(L);
+  const n = line.length;
+  l.each((x, y) => {
+    // the nearest point of the line, and how far across the limb this is
+    let best = Infinity;
+    let bi = 0;
+    for (let i = 0; i < n; i++) {
+      const d = (line[i][0] - x - 0.5) ** 2 + (line[i][1] - y - 0.5) ** 2;
+      if (d < best) {
+        best = d;
+        bi = i;
+      }
+    }
+    const a = line[Math.max(0, bi - 1)];
+    const b = line[Math.min(n - 1, bi + 1)];
+    let tx = b[0] - a[0];
+    let ty = b[1] - a[1];
+    const tl = Math.hypot(tx, ty) || 1;
+    tx /= tl;
+    ty /= tl;
+    const half = wid(n > 1 ? bi / (n - 1) : 0) / 2;
+    const across = ((x + 0.5 - line[bi][0]) * -ty + (y + 0.5 - line[bi][1]) * tx) / Math.max(0.5, half);
+    const u = Math.max(-1, Math.min(1, across));
+    const nn = unit([-ty * u, tx * u, Math.sqrt(Math.max(0.08, 1 - u * u))]);
+    const v = lightOf(nn[0] * Lu[0] + nn[1] * Lu[1] + nn[2] * Lu[2], o.hard ?? 0.5) + (o.extra ? o.extra(x, y) : 0);
+    if (o.hatch && v < 1 / tones.length && hatched(x, y, o.hatch)) return INK;
+    return toneAt(tones, v, x, y, o.dots !== false);
+  });
+  if (o.back && o.rim) {
+    const [bx, by] = o.back;
+    const rim = o.rim;
+    l.each((x, y) => ((bx > 0.3 && !l.has(x + 1, y)) || (bx < -0.3 && !l.has(x - 1, y)) || (by > 0.3 && !l.has(x, y + 1)) || (by < -0.3 && !l.has(x, y - 1)) ? rim : undefined));
+  }
+  return l;
 }
