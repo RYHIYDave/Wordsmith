@@ -165,6 +165,8 @@ face, the warlock's under his hood; each worked close, checked at the game's siz
 
 A RULE FOR ALL ART, at 10:41: “I’d like the circles and squares comment to be made a rule for all characters and bosses at least.  Maybe all art needs that rule.” Asked how far it should reach, his pick by 10:44: “All art (Recommended)”. Written into his art rulebook (his doc at rev 85; docs/art/RULEBOOK.md here) as How art is made and approved, rule 9, “Real shapes, not circles and squares”, and named in the Never line under the pillars.
 
+THE FACES, CLOSE UP (his “Polish faces up close”, by 10:40), shown before and now, close and at game size: THE BRAWLER his head turned to us (it was turned away, his face side-on, his two eyes one smudge) and his chin up; a heavy brow in a scowl, the beard’s dark gold, his eyes deep under it; the beard a tone lighter, yellow as he picked it, and grown out of his jaw (no ink round it, only its shadow); an old scar over his crown. THE TINKERER her head turned to us; her goggles pushed up onto her hair (on her brow they read as a second pair of eyes), their lenses without the white glints; her eyes with a lash at the corner, her brows arched, her grin wider, its teeth showing. THE WARLOCK his hood turned to us, so both cyan eyes show in it, each with its light on the hollow under it; his face all but lost in the hood’s dark, only the bridge of his nose and his chin caught. Every check on all of them: 59 of 59. Checked by eye against his rule 9 (real shapes, not circles and squares).
+
 ## What glows
 
 All of them are the hero's side: what glows on them, the demon, the Contraption and the Golem too, is the friend's cyan.

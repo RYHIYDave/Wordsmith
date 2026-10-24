@@ -52,6 +52,12 @@ export interface Mat {
   shade?: number;
   /** How dark its creases go (the share of the light taken off where it is hemmed in; the default CREASE). */
   crease?: number;
+  /**
+   * It grows out of what it lies on (a beard on a jaw, hair on a brow): where it meets another stuff at one depth there is
+   * no ink, only a soft line of that stuff's own dark tone, as a beard's shadow on the skin (his 23 Oct, “make sure the
+   * characters don’t just look like circles and squares slapped together”: a beard ringed in ink reads as a bib).
+   */
+  meld?: boolean;
 }
 
 interface Common {
@@ -335,6 +341,8 @@ const PIECE_STEP = 1.6;
 /** How far nearer a fold of one part must stand over the rest of it to be inked off. */
 const SELF_STEP = 5.5;
 /** How dark a crease is: the share of the light taken off where the skin is hemmed in. */
+/** How near in depth two stuffs must be, one of them melding, for their meeting to be soft and not inked. */
+const MELD_STEP = 0.6;
 const CREASE = 0.32;
 
 /**
@@ -508,6 +516,7 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
       const k = y * W + x;
       const i = k * 4;
       let seam = false;
+      let soft = false;
       for (let side = 0; side < 4 && !seam; side++) {
         const xx = side === 0 ? x - 1 : side === 1 ? x + 1 : x;
         const yy = side === 2 ? y - 1 : side === 3 ? y + 1 : y;
@@ -519,11 +528,23 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
           continue;
         }
         const dz = zb[j] - zb[k];
-        if (stuff[j] !== stuff[k]) seam = dz > 0.4 || (dz > -0.4 && stuff[j] > stuff[k]);
+        if (stuff[j] !== stuff[k]) {
+          seam = dz > 0.4 || (dz > -0.4 && stuff[j] > stuff[k]);
+          if (seam && Math.abs(dz) <= MELD_STEP && stuff[j] < 1000 && stuff[k] < 1000 && (sc.mats[stuff[j]].meld || sc.mats[stuff[k]].meld)) {
+            seam = false;
+            soft = true;
+          }
+        }
         else if (piece[j] !== piece[k]) seam = dz > PIECE_STEP;
         else seam = dz > SELF_STEP;
       }
-      if (seam) {
+      if (!seam && soft) {
+        const c = rgba(sc.mats[stuff[k]].ramp[1]);
+        o[i] = c[0];
+        o[i + 1] = c[1];
+        o[i + 2] = c[2];
+        o[i + 3] = 255;
+      } else if (seam) {
         o[i] = ink[0];
         o[i + 1] = ink[1];
         o[i + 2] = ink[2];

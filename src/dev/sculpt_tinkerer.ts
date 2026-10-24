@@ -117,11 +117,18 @@ export const TINKER_KITS: { id: TinkerKit; name: string }[] = [
 /** As she was first drawn: the vial by her ear (his “She doesn’t need that vial”); kept to draw her as before. */
 export const TINKER_KIT: TinkerKit | 'vial' = 'shoulder';
 
+/**
+ * How her face is held (his “Polish faces up close”, 24 Oct): `turn`, her head turned to us (it was 14 the other way, her face
+ * side-on); `up`, her chin; her goggles pushed up onto her hair (`gog` up, `gogF` forward: they were on her brow, and read as
+ * a second pair of eyes).
+ */
+export const HER_FACE = { turn: -24, up: 4, gog: 0.84, gogF: 0.55, glint: 4 };
+
 /** QUICK AND NIMBLE: crouched light on her toes, turned a little, her head up, grinning; her hands as her kit has them. */
 export function tinkererStance(B: Build, kit: TinkerKit | 'vial' = TINKER_KIT): Bones {
   const t = B.tall / 55;
   const legs = {
-    pz: -2.6 * t, yaw: -16, bend: 10, twist: -10, side: 4, faceTurn: 14, faceUp: 6, faceTilt: 6,
+    pz: -2.6 * t, yaw: -16, bend: 10, twist: -10, side: 4, faceTurn: HER_FACE.turn, faceUp: HER_FACE.up, faceTilt: 6,
     lfx: 3.2 * t, lfy: 2.6 * t, lft: 24, lk: 22, lfp: 12,
     rfx: -2.8 * t, rfy: -2.4 * t, rft: -20, rk: -18, rfp: 24, rfz: 0.4 * t,
   };
@@ -167,14 +174,17 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
   const [hf, hl, hu] = s.face;
   const R = B.headR;
   const hat = (fw: number, lf: number, up: number): V3 => add(s.head, add(mul(hf, R[0] * fw), add(mul(hl, R[1] * lf), mul(hu, R[2] * up))));
-  // HER FACE: eyes and brows, freckles of a darker tone, a wide grin
+  // HER FACE (his “Polish faces up close”, 24 Oct): the eyes dark, a lash flicked out at the corner of each; her brows red
+  // and arched up, gleeful; freckles of a darker tone; a wide grin, its teeth showing
   for (const side of [1, -1]) {
+    const out = side > 0 ? 0 : -1;
     sc.mark(hat(0.86, side * 0.36, 0.06), '#1a0c1a');
-    sc.mark(hat(0.9, side * 0.38, 0.26), RED_HAIR[1], 2, 1, side > 0 ? 0 : -1);
+    sc.mark(hat(0.86, side * 0.36, 0.06), '#1a0c1a', 1, 1, side > 0 ? 1 : -1, -1);
+    sc.mark(hat(0.9, side * 0.4, 0.3), RED_HAIR[1], 2, 1, out, 0);
     sc.mark(hat(0.84, side * 0.46, -0.16), SKIN_F[2]);
   }
-  sc.mark(hat(0.92, 0, -0.42), '#5a1a2a', 3, 1, -1);
-  sc.mark(hat(0.92, 0, -0.42), '#fff4ec', 1, 1, 0, 1);
+  sc.mark(hat(0.94, 0, -0.42), '#4a1020', 3, 1, -1);
+  sc.mark(hat(0.94, 0, -0.42), '#fff4ec', 2, 1, -1, 0);
   const t = tailorFor(sc, w, 0.9);
   // HER CLOTHES: a dark blue shirt, its sleeves rolled to the elbow; the leather jerkin laced over it; trousers tucked into
   // tall boots; a teal cloth knotted at her throat
@@ -390,10 +400,10 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
   }
   // HER GOGGLES: pushed up on her brow, brass rims, teal lenses
   const rim = sc.mat({ ramp: BRASS });
-  const lens = sc.mat({ ramp: GLASS, paint: (h) => (h.tone >= 3 ? '#e8ffff' : null) });
+  const lens = sc.mat({ ramp: GLASS, paint: (h) => (h.tone >= HER_FACE.glint ? '#e8ffff' : null) });
   sc.cone(sc.mat({ ramp: HIDE }), 'head', hat(0.2, -1.0, 0.42), hat(0.2, 1.0, 0.42), 0.5, 0.5, 0.2, { tag: 'band' });
   for (const side of [1, -1]) {
-    const c = hat(0.86, side * 0.4, 0.54);
+    const c = hat(HER_FACE.gogF, side * 0.4, HER_FACE.gog);
     sc.ell(rim, 'goggles', c, [mul(hf, 0.8), mul(hl, 1.35), mul(hu, 1.2)], 0.2, { tag: 'rim' });
     sc.ell(lens, 'goggles', add(c, mul(hf, 0.5)), [mul(hf, 0.45), mul(hl, 1.0), mul(hu, 0.9)], 0.1, { tag: 'lens' });
   }

@@ -957,12 +957,43 @@ let BRASS_MAT = 0;
 
 export const BOXER_BODY: Build = buildOf(57, HEAD_B * 1.1, { shoulders: 1.18, chest: 1.14, waist: 0.94, hips: 0.92, depth: 1.08, arms: 1.0, limbs: 1.08, pad: 1.0 });
 
+/**
+ * How his face is held and drawn (his “Polish faces up close”, 24 Oct): `up`, his chin (it was down 6); `turn`, his head
+ * turned to us (it was 16 the other way: his face seen side-on, his two eyes one smudge); his beard a tone lighter, yellow
+ * as he picked it; his brows the beard's dark gold; the scar's colour.
+ */
+export const FACE = { up: 0, turn: -24, beardUp: 1, brow: '#6a3a1c', scar: true, scarC: '#b8666a' };
+
+/**
+ * THE BRAWLER'S FACE, drawn close (his “Polish faces up close”, 24 Oct): a heavy brow in a scowl, the eyes deep under it,
+ * a scar over the crown; the beard grows out of his jaw (its stuff melds), not laid on it.
+ */
+function brawlerFace(sc: Sculpt, w: Who): void {
+  const { s, B } = w;
+  const [hf, hl, hu] = s.face;
+  const R = B.headR;
+  const at = (fw: number, lf: number, up: number): V3 => add(s.head, add(mul(hf, R[0] * fw), add(mul(hl, R[1] * lf), mul(hu, R[2] * up))));
+  // (a point on the crown of his skull, `fw` and `lf` across it: manHead's skull, a little proud of it)
+  const crown = (fw: number, lf: number): V3 => at(fw, lf, Math.sqrt(Math.max(0, 1 - ((fw + 0.1) / 0.88) ** 2 - (lf / 0.96) ** 2)) * 0.74 - 0.04 + 0.04);
+  for (const side of [1, -1]) {
+    const out = side > 0 ? 0 : -1;
+    // the socket's shadow, the eye deep in it
+    sc.mark(at(0.84, side * 0.38, 0.04), SKIN_W[1], 2, 1, out);
+    sc.mark(at(0.86, side * 0.34, 0.06), '#140a18');
+    // the brow over it, the beard's own dark gold, its inner end dropped: the scowl
+    sc.mark(at(0.86, side * 0.42, 0.28), FACE.brow, 2, 1, out);
+    sc.mark(at(0.92, side * 0.16, 0.2), FACE.brow);
+  }
+  // an old scar over the crown, pale, on the side the light falls on
+  if (FACE.scar) for (let i = 0; i < 4; i++) sc.mark(crown(0.3 - i * 0.16, -0.2 - i * 0.1), FACE.scarC);
+}
+
 /** HIS STANCE: up on the balls of his feet, side-on a little, the lead fist out, the rear by his jaw, chin tucked. */
 export function boxerStance(B: Build): Bones {
   const t = B.tall / 57;
   return {
     ...standing(B),
-    pz: -1.4 * t, yaw: -22, twist: 10, bend: 8, faceTurn: 16, faceUp: -6,
+    pz: -1.4 * t, yaw: -22, twist: 10, bend: 8, faceTurn: FACE.turn, faceUp: FACE.up,
     lfx: 3.6 * t, lfy: 1.6 * t, lft: 22, lk: 18, lfp: 14,
     rfx: -3.0 * t, rfy: -2.0 * t, rft: -18, rk: -12, rfp: 26, rfz: 0.6 * t,
     lhIn: 0, lhx: 10.5 * t, lhy: 0.6 * t, lhz: 1.0 * t, le: 46,
@@ -1043,14 +1074,15 @@ export function sculptBrawler(view: GameView, pose?: Bones, k = BRAWLER_BUILD, o
         if (c) return c;
         // (a face is painted a step lighter than the light gives it, as the heroes' are: it must read; the crown and the
         // back of the head as the light has them, so the skull keeps its shape)
-        if (h.prim.tag !== 'neck' && onHead(w, h.p)[0] > 0.25) return shadeOf(SKIN_W, h.tone + 1);
+        const [ff, , fu] = onHead(w, h.p);
+        if (h.prim.tag !== 'neck' && ff > 0.42 && fu < 0.3) return shadeOf(SKIN_W, h.tone + 1);
       }
       return far ? shadeOf(SKIN_W, h.tone - 1) : null;
     },
   });
   manBody(sc, w, skin, bulk);
   manHead(sc, w, skin);
-  faceMarks(sc, w, { brow: '#3a1a1a', socket: SKIN_W[2] });
+  brawlerFace(sc, w);
   dressBrawler(sc, w, bulk, outfit, look ? look.trunksTo : 0.8);
   // THE WRAPS: his fists and wrists bound in linen
   const wraps = sc.mat({
@@ -1092,13 +1124,14 @@ export function sculptBrawler(view: GameView, pose?: Bones, k = BRAWLER_BUILD, o
   const hat = (fw: number, lf: number, up: number): V3 => add(s.head, add(mul(hf, R[0] * fw), add(mul(hl, R[1] * lf), mul(hu, R[2] * up))));
   const beard = sc.mat({
     ramp: BEARD,
+    meld: true,
     paint: (h) => {
       const [, , hu2] = onHead(w, h.p);
       // its strands: hair falls down the picture, so darker runs down it every few pixels, broken now and then; the
       // moustache and the top of it lit, its foot in its own shadow
       const strand = (h.x + Math.floor(h.y / 3)) % 3 === 0;
       const lift = hu2 > -0.5 ? 1 : hu2 < -1.25 ? -1 : 0;
-      return shadeOf(BEARD, h.tone + lift - (strand ? 1 : 0));
+      return shadeOf(BEARD, h.tone + lift + FACE.beardUp - (strand ? 1 : 0));
     },
   });
   BRASS_MAT = sc.mat({ ramp: BRASS });

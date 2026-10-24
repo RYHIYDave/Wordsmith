@@ -33,13 +33,20 @@ const BOOKRED: Ramp = ['#22040c', '#420a16', '#6e1420', '#a02a2c', '#c84a3e'];
 /** THE WARLOCK'S BODY: the knight's height, broad: a big man for one who reads. */
 export const WARLOCK_SCULPT_BODY: Build = buildOf(58, HEAD_B * 1.12, { shoulders: 1.16, chest: 1.1, waist: 1.0, hips: 1.0, depth: 1.05, limbs: 1.08, pad: 1.1 });
 
+/**
+ * How his face is held under the hood (his “Polish faces up close”, 24 Oct): `turn`, his hood turned to us (it was 2: its
+ * opening side-on, one eye seen); his face all but lost in its dark (`shadow`), the bridge of his nose and his chin caught
+ * cold (`lit`); each eye's light on the hollow under it.
+ */
+export const HIS_FACE = { turn: -20, up: 4, dark: true, lit: '#5a4a6a', slant: 0, shadow: '#22121e' };
+
 /** HUNCHED AND PAINED: stooped, his shoulders up, his weight back on his right foot; the demon arm thrust out before him,
  * its claws open on the fire; his right hand clamped round its forearm, holding it back. */
 export function warlockStance(B: Build): Bones {
   const t = B.tall / 58;
   return {
     ...standing(B),
-    pz: -1.2 * t, yaw: -18, bend: 16, side: -6, twist: 10, faceTurn: 2, faceUp: 4, faceTilt: -6,
+    pz: -1.2 * t, yaw: -18, bend: 16, side: -6, twist: 10, faceTurn: HIS_FACE.turn, faceUp: HIS_FACE.up, faceTilt: -6,
     lfx: 2.4 * t, lfy: 1.6 * t, lft: 14, lk: 12,
     rfx: -2.0 * t, rfy: -2.2 * t, rft: -18, rk: -12, rfp: 6,
     lhIn: 0, lhx: 9.0 * t, lhy: 7.5 * t, lhz: -3.0 * t, le: 40,
@@ -86,7 +93,20 @@ export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
   const [f, l, u] = s.chest;
   const farArm = (piece: string): boolean => piece.endsWith('L') ? farSide(w, s.elbowL) : piece.endsWith('R') ? farSide(w, s.elbowR) : false;
   // HIS SKIN (seen only at his throat and right hand): the face is in the hood's dark
-  const skin = sc.mat({ ramp: SKIN_W, shade: 0.5, paint: (h) => (farArm(h.prim.piece) ? shadeOf(SKIN_W, h.tone - 1) : null) });
+  const skin = sc.mat({
+    ramp: SKIN_W,
+    shade: 0.5,
+    paint: (h) => {
+      if (h.prim.piece === 'head' && h.prim.tag !== 'neck') {
+        // HIS FACE in the hood's dark (his “Polish faces up close”, 24 Oct): all but lost in it, gaunt; only the bone of his
+        // cheeks, his nose and his chin caught, cold, by the light of his eyes
+        const [a, b, c] = onHead(w, h.p);
+        if (HIS_FACE.dark && a > 0.5 && ((c < -0.62 && Math.abs(b) < 0.3) || (Math.abs(b) < 0.1 && c < -0.05 && c > -0.3))) return HIS_FACE.lit;
+        if (HIS_FACE.dark) return HIS_FACE.shadow;
+      }
+      return farArm(h.prim.piece) ? shadeOf(SKIN_W, h.tone - 1) : null;
+    },
+  });
   // (his body under the coat: the man's, so the coat lies on a body; his left arm is the demon's, built below)
   manBody(sc, w, skin, 1.0, 'L');
   manHead(sc, w, skin);
@@ -232,7 +252,11 @@ export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
   sc.ell(hood, 'head', hat(1.15, 0, -0.18), [mul(hf, R[0] * 0.7), mul(hl, R[1] * 0.78), mul(hu, R[2] * 0.82)], 0.5, { carve: true });
   // the dark of his face in it, and his eyes
   // (seen under the hood's brim: drawn on the dark of the hood's opening, from up to its depth in front of them)
-  for (const side of [1, -1]) sc.mark(hat(0.84, side * 0.34, 0.02), CYAN[3], 1, 1, 0, 0, 4.5);
+  for (const side of [1, -1]) {
+    sc.mark(hat(0.84, side * 0.34, 0.02), CYAN[3], 1, 1, 0, 0, 4.5);
+    // (and their light on the hollow round them, a pixel below each)
+    if (HIS_FACE.dark) sc.mark(hat(0.84, side * 0.34, 0.02), CYAN[1], 1, 1, HIS_FACE.slant ? (side > 0 ? 1 : -1) : 0, HIS_FACE.slant || 1, 4.5);
+  }
   // THE HORNS: from his temples through the hood, swept back and curling up at their tips
   const horn = sc.mat({
     ramp: IVORY,
