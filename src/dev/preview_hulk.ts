@@ -6,7 +6,7 @@ import { paintMove3 } from '../art/heroes3';
 import type { Painted } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
-import { AURAS, HULKS, HULK_CANVAS, paintHulk } from './demon_hulk';
+import { AURAS, HULKS, HULK_CANVAS, HULK_HIDES, paintHulk } from './demon_hulk';
 import { paintClassLook } from './options_classes';
 
 const [scaleArg = '4', whichArg = '', mode = ''] = decodeURIComponent(location.hash.slice(1)).split(':');
@@ -50,7 +50,35 @@ g.fillStyle = '#ffd866';
 g.font = '700 22px system-ui, sans-serif';
 g.textBaseline = 'middle';
 g.fillText("The warlock's demon, hulking · sketches · not in the game", PAD + 4, PAD + HEAD / 2);
-if (mode === 'auras') {
+if (mode === 'colours') {
+  // THE SECOND ROUND: more detail, wings back, his hide in each colour (and each damage kind's under its aura); and from behind
+  const cols = 3;
+  const half = 100;
+  const up = 176;
+  const sw = half * 2 * S;
+  const sh = (up + DOWN) * S;
+  const base = { ...HULKS[which[0]], wings: true, detail: true };
+  const looks: { label: string; look: typeof base; view: 'front' | 'back' }[] = HULK_HIDES.map((h) => ({ label: h.name, look: { ...base, hide: h.hide, aura: h.aura }, view: 'front' }));
+  looks.push({ label: 'From behind (ash black)', look: { ...base, hide: HULK_HIDES[0].hide, aura: 'smoke' }, view: 'back' });
+  cv.width = PAD + cols * (sw + PAD);
+  cv.height = PAD + HEAD + Math.ceil(looks.length / cols) * (NAME + sh + PAD);
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#ffd866';
+  g.font = '700 22px system-ui, sans-serif';
+  g.fillText("The warlock's demon: more detail, wings, his colours · sketches · not in the game", PAD + 4, PAD + HEAD / 2);
+  looks.forEach((it, i) => {
+    const x = PAD + (i % cols) * (sw + PAD);
+    const top = PAD + HEAD + Math.floor(i / cols) * (NAME + sh + PAD);
+    g.fillStyle = '#cfc8ff';
+    g.font = '600 17px system-ui, sans-serif';
+    g.fillText(it.label, x + 4, top + NAME / 2 + 1);
+    g.fillStyle = PANEL[i % 2];
+    g.fillRect(x, top + NAME, sw, sh);
+    const f = paintHulk(it.look, it.view);
+    g.drawImage(f.px.toCanvas(), HULK_CANVAS.ax - half, HULK_CANVAS.ay - up, half * 2, up + DOWN, x, top + NAME, sw, sh);
+  });
+} else if (mode === 'auras') {
   // EVERY AURA: the first look, front view, smoke and each damage word's
   const cols = 3;
   const sw = HALF * 2 * S;
@@ -76,7 +104,7 @@ if (mode === 'auras') {
     g.drawImage(f.px.toCanvas(), HULK_CANVAS.ax - HALF, HULK_CANVAS.ay - UP, HALF * 2, UP + DOWN, x, top + NAME, sw, sh);
   });
 }
-if (mode !== 'auras') which.forEach((k, row) => {
+if (mode !== 'auras' && mode !== 'colours') which.forEach((k, row) => {
   const top = PAD + HEAD + row * (NAME + PH + PAD);
   g.fillStyle = '#ffd866';
   g.font = '800 24px system-ui, sans-serif';
@@ -106,10 +134,10 @@ if (mode !== 'auras') which.forEach((k, row) => {
   });
 });
 const sTop = PAD + HEAD + which.length * (NAME + PH + PAD);
-if (mode !== 'auras') g.fillStyle = '#cfc8ff';
-if (mode !== 'auras') g.font = '600 17px system-ui, sans-serif';
-if (mode !== 'auras') g.fillText('As big as in the game, beside the knight and the warlock', PAD + 4, sTop + NAME / 2);
-if (mode !== 'auras') strip.forEach((it, i) => {
+if (mode !== 'auras' && mode !== 'colours') g.fillStyle = '#cfc8ff';
+if (mode !== 'auras' && mode !== 'colours') g.font = '600 17px system-ui, sans-serif';
+if (mode !== 'auras' && mode !== 'colours') g.fillText('As big as in the game, beside the knight and the warlock', PAD + 4, sTop + NAME / 2);
+if (mode !== 'auras' && mode !== 'colours') strip.forEach((it, i) => {
   const x = PAD + i * SW;
   const y = sTop + NAME;
   g.fillStyle = PANEL[i % 2];

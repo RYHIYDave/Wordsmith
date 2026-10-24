@@ -23,6 +23,8 @@ export const HULK_HIDE: Ramp = ['#07040a', '#07040a', '#1c0b14', '#36141e', '#5a
 /** Horn, claw and hoof: black at the root to bone at the tip. */
 const HORN: Ramp = ['#08060c', '#08060c', '#2a2430', '#6a6070', '#cfc6da'];
 const BONE: Ramp = ['#2a2236', '#2a2236', '#8a7c96', '#d6cce2', '#f4f0fa'];
+/** Old bone grown through the hide: duller than the horns' tips. */
+const PLATE: Ramp = ['#16121c', '#16121c', '#3e3646', '#6e6478', '#9a90a6'];
 /** The rag of his coat round its loins. */
 const COAL: Ramp = ['#141226', '#141226', '#2a2640', '#4a4462', '#4a4462'];
 const RUST: Ramp = ['#3e1222', '#3e1222', '#7a2432', '#b44a44', '#b44a44'];
@@ -42,6 +44,10 @@ export interface HulkLook {
   wings: boolean;
   /** What pours off it: black smoke, or, with a word of that kind on him, flames, frost, lightning or poison's stink. */
   aura?: Aura;
+  /** Its hide (HULK_HIDES), if not the first. */
+  hide?: Ramp;
+  /** The second round: bone plates, scars, broken shackles, great tattered wings (his: "More detail,Wings back"). */
+  detail?: boolean;
 }
 /** (the owner, 23 Oct 2026, 21:07 Pacific: “Have the demon effuse black smoke.  I’d like the demon form to change based on the
  * damage word type attached to it.  So the black smoke can turn to flames or frost, or crackling lightning, or green stink lines
@@ -50,6 +56,17 @@ export interface HulkLook {
 export type Aura = 'smoke' | 'fire' | 'frost' | 'lightning' | 'poison';
 export const AURAS: Aura[] = ['smoke', 'fire', 'frost', 'lightning', 'poison'];
 
+/** ITS HIDE, a few ways (his: "Let’s see him in different colors.  I think he’ll be better as a darker less saturated color but
+ * let’s see a few.  Especially the colors of the damage types, green for poison, blue for frost, etc"). The darker, the duller
+ * first; then each damage kind's, dark and dull, under that kind's aura. */
+export const HULK_HIDES: { name: string; hide: Ramp; aura: Aura }[] = [
+  { name: 'Ash black, smoke', hide: ['#050407', '#050407', '#141118', '#26212c', '#3a3342'], aura: 'smoke' },
+  { name: 'Old blood, smoke', hide: ['#080406', '#080406', '#1e0f15', '#331a20', '#4c262a'], aura: 'smoke' },
+  { name: 'Fire: dark ember, flames', hide: ['#080302', '#080302', '#240c06', '#40180c', '#62260f'], aura: 'fire' },
+  { name: 'Frost: dark ice blue, frost', hide: ['#03050a', '#03050a', '#0e1828', '#1a2c46', '#2a4264'], aura: 'frost' },
+  { name: 'Lightning: dark storm grey, sparks', hide: ['#060608', '#060608', '#18181c', '#2c2c30', '#44424a'], aura: 'lightning' },
+  { name: 'Poison: dark bile green, stink', hide: ['#040604', '#040604', '#101a0e', '#1e2e18', '#304422'], aura: 'poison' },
+];
 export const HULKS: HulkLook[] = [
   { name: 'Horns forward, its fire raised', yaw: -18, horns: 'forward', raised: true, wings: false },
   { name: 'Horns swept back, arms hanging', yaw: -22, horns: 'back', raised: false, wings: false },
@@ -77,7 +94,7 @@ export function paintHulk(o: HulkLook, view: GameView = 'front'): Painted {
   const U: V3 = [0, 0, 1];
   const P = (f: number, l: number, u: number): V3 => add(add(mul(F, f), mul(L, l)), mul(U, u));
   const axes = (rf: number, rl: number, ru: number): readonly [V3, V3, V3] => [mul(F, rf), mul(L, rl), mul(U, ru)];
-  const hide = HULK_HIDE;
+  const hide = o.hide ?? HULK_HIDE;
   const behind = st.near(F) < 0;
   /** A part as near as `p`, plus a little. */
   const part = (p: V3, more = 0): Sheet => st.part(st.near(p) + more);
@@ -111,8 +128,58 @@ export function paintHulk(o: HulkLook, view: GameView = 'front'): Painted {
     rod(p, st, pts[4], P(-4, -44, 18), 2.4, 0.3, HORN);
   }
 
-  // ---- RAGGED WINGS folded on its back (the third look)
-  if (o.wings) {
+  // ---- WINGS. The first round: ragged and folded (the third look). The second: GREAT TATTERED WINGS half spread behind it, their
+  // tips over its horns: an arm of bone up and out from the shoulder blade, four fingers fanned from the wrist, leather torn
+  // between them, holes through it, its trailing edge in tatters; a hooked claw at the wrist.
+  if (o.wings && o.detail) {
+    for (const side of [1, -1]) {
+      const z = st.near(P(-20, 0, 80)) - 6;
+      const p = st.part(z);
+      const root = P(-14, side * 14, 90);
+      const elbow = P(-22, side * 34, 112);
+      const wrist = P(-26, side * 50, 136);
+      const tips = [P(-28, side * 64, 132), P(-30, side * 78, 110), P(-28, side * 74, 80), P(-24, side * 60, 56), P(-18, side * 40, 44)];
+      const flank = P(-12, side * 22, 60);
+      const outline: V3[] = [root, elbow, wrist, tips[0]];
+      for (let i = 0; i + 1 < tips.length; i++) {
+        for (let k = 1; k <= 6; k++) {
+          const t = k / 7;
+          outline.push(lerp3(lerp3(tips[i], tips[i + 1], t), wrist, Math.sin(t * Math.PI) * 0.24));
+        }
+        outline.push(tips[i + 1]);
+      }
+      for (let k = 1; k <= 4; k++) outline.push(lerp3(lerp3(tips[tips.length - 1], flank, k / 5), wrist, Math.sin((k / 5) * Math.PI) * 0.12));
+      outline.push(flank);
+      const pix = outline.map((q) => st.at(q));
+      const ys = pix.map((q) => q[1]);
+      const [wx, wy] = st.at(wrist);
+      const far = Math.max(...pix.map(([x, y]) => Math.hypot(x - wx, y - wy)));
+      for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
+        const xs: number[] = [];
+        for (let i = 0; i < pix.length; i++) {
+          const [ax, ay] = pix[i];
+          const [bx, by] = pix[(i + 1) % pix.length];
+          const yy = y + 0.5;
+          if ((ay <= yy && by > yy) || (by <= yy && ay > yy)) xs.push(ax + ((yy - ay) * (bx - ax)) / (by - ay));
+        }
+        xs.sort((u, v) => u - v);
+        for (let k = 0; k + 1 < xs.length; k += 2) {
+          for (let x = Math.round(xs[k]); x < Math.round(xs[k + 1]); x++) {
+            const d = Math.hypot(x - wx, y - wy) / far;
+            // (its trailing edge in tatters; the leather thin and dark in rents, not holed through: a hole would take the rim)
+            if (d > 0.84 && hash(x >> 1, y >> 2, side + 30) < 0.4) continue;
+            const rent = hash(x >> 2, y >> 2, side + 31) < 0.07;
+            const tone = rent ? 0 : d > 0.8 ? 1 : d > 0.5 ? 2 : 3;
+            p.put(x, y, hide[tone], z);
+          }
+        }
+      }
+      rod(p, st, root, elbow, 3.6, 3.0, hide);
+      rod(p, st, elbow, wrist, 3.0, 2.2, hide);
+      for (const t of tips) rod(p, st, wrist, t, 1.8, 0.5, HORN);
+      rod(p, st, wrist, P(-24, side * 52, 144), 2.0, 0.3, BONE);
+    }
+  } else if (o.wings) {
     for (const side of [1, -1]) {
       const p = part(P(-16, side * 20, 84), -8);
       const root = P(-10, side * 16, 88);
@@ -120,9 +187,6 @@ export function paintHulk(o: HulkLook, view: GameView = 'front'): Painted {
       rod(p, st, root, wrist, 3.0, 2.2, hide);
       const tips = [P(-24, side * 40, 112), P(-26, side * 42, 86), P(-24, side * 36, 60)];
       for (const t of tips) rod(p, st, wrist, t, 1.6, 0.4, HORN);
-      const rings: Ring[] = [];
-      void rings;
-      // (the leather: torn between the fingers)
       const pts = [root, wrist, ...tips, P(-14, side * 22, 64)];
       const pix = pts.map((q) => st.at(q));
       const ys = pix.map((q) => q[1]);
@@ -241,6 +305,37 @@ export function paintHulk(o: HulkLook, view: GameView = 'front'): Painted {
     }
   }
 
+  // ---- DETAIL (the second round): plates of bone grown through the hide of its shoulders and down its forearms; old scars
+  // across its chest and arms; broken shackles on its wrists, their chains hanging
+  if (o.detail) {
+    for (const A of arms) {
+      // (a crest of bone plates over the shoulder, each overlapping the next, a spike off the biggest)
+      for (const [k, r] of [[0, 8.5], [1, 7], [2, 5.5]] as const) {
+        const at = add(A.sh, add(mul(U, 9 - k * 3.2), add(mul(F, -2 + k * 2.6), mul(L, A.side * (3 - k * 1.2)))));
+        const bp = part(at, 2.6 + k * 0.4);
+        ball(bp, st, at, axes(r * 0.9, r, r * 0.55), PLATE);
+      }
+      const sp = part(A.sh, 3.4);
+      const s0 = add(A.sh, add(mul(U, 13), mul(L, A.side * 3)));
+      rod(sp, st, s0, add(s0, add(mul(U, 9), add(mul(L, A.side * 5), mul(F, -2)))), 3.0, 0.3, [PLATE[1], PLATE[1], PLATE[2], PLATE[3], BONE[3]]);
+      // (bone plates down the outside of the forearm)
+      for (let i = 0; i < 3; i++) {
+        const at = add(lerp3(A.el, A.hand, 0.2 + i * 0.22), mul(L, A.side * 7.5));
+        const bp = part(at, 2.2);
+        ball(bp, st, at, axes(4.4, 2.4, 3.6), PLATE);
+      }
+      // (a broken shackle: an iron ring round the wrist, two links and a broken end hanging)
+      const cuff = lerp3(A.hand, A.el, 0.18);
+      const cp = part(cuff, 2.8);
+      ball(cp, st, cuff, axes(8.2, 8.2, 3.2), (u, t) => (Math.abs(u[2]) > 0.7 ? null : ['#141220', '#141220', '#3a364c', '#6e6884', '#a49ebc'][t]));
+      const hang: V3[] = [add(cuff, add(mul(U, -4), mul(F, 3))), add(cuff, add(mul(U, -10), mul(F, 5))), add(cuff, add(mul(U, -16), mul(F, 5.5)))];
+      for (let i = 0; i < hang.length; i++) {
+        const lp = part(hang[i], 3);
+        ball(lp, st, hang[i], axes(1.6, i % 2 ? 0.8 : 2.2, 2.6), (u, t) => (Math.hypot(u[0], u[2]) < 0.45 ? null : ['#141220', '#141220', '#3a364c', '#6e6884', '#a49ebc'][t]));
+      }
+    }
+  }
+
   // ---- THE HEAD: hung low and forward under the hump; a brow like a shelf; a jaw thrust out, fangs up out of it and down
   // into it; burning eyes; horns
   const hd = part(head, 3);
@@ -308,6 +403,26 @@ export function paintHulk(o: HulkLook, view: GameView = 'front'): Painted {
     crack(P(20, 4, 82), P(22, -6, 62), 1);
     crack(P(22, -6, 62), P(18, 2, 48), 2);
     for (const A of arms) crack(lerp3(A.el, A.hand, 0.15), lerp3(A.el, A.hand, 0.7), 20 + A.side, 1);
+    // old scars: pale ridged lines across the chest and the right arm
+    if (o.detail) {
+      const scar = (a: V3, b: V3): void => {
+        const [x0, y0] = st.at(a);
+        const [x1, y1] = st.at(b);
+        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+        for (let i = 0; i <= n; i++) {
+          const x = Math.round(x0 + ((x1 - x0) * i) / n);
+          const y = Math.round(y0 + ((y1 - y0) * i) / n);
+          st.over.set(x, y, hide[4]);
+          if (i % 3 === 1) {
+            st.over.set(x, y - 1, hide[3]);
+            st.over.set(x, y + 1, hide[1]);
+          }
+        }
+      };
+      scar(P(22, 18, 76), P(26, 4, 64));
+      scar(P(24, -14, 70), P(20, -22, 80));
+      scar(lerp3(arms[1].sh, arms[1].el, 0.3), add(lerp3(arms[1].sh, arms[1].el, 0.55), mul(F, 6)));
+    }
     // the fire in its left hand
     const fire = arms[0].raised ? add(arms[0].hand, mul(U, 6)) : add(arms[0].hand, mul(U, 4));
     const [fx, fy] = st.at(fire);
