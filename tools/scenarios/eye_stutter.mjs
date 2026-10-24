@@ -3,7 +3,8 @@
 // the page took, how many ran long (over 100 ms: the game held still), the longest, and in how many frames he was drawn. Off
 // the clock of the page itself (requestAnimationFrame). Pictures every few seconds. '!!' where frames ran long.
 //   node tools/playtest.mjs --file dist/next.html --touch --size 844x390 --dpr 1.5 --scenario tools/scenarios/eye_stutter.mjs --out shots/eye/x
-// SECS: how long the fight is watched (30). SEED (5). FILM=1: a frame every 100 ms for a video.
+// SECS: how long the fight is watched (30). SEED (5). FILM=1: frames as fast as they come, the game slowed (SLOW, 0.5), each
+// frame's game clock logged at the end ('TIMES [...]'), so that a video can be put together at the game's own speed.
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
@@ -40,7 +41,9 @@ export default async function (page, snap) {
   await page.evaluate(() => { const d = window.__dbg; if (d.bot) d.bot(true); });
   // (FILM: the game at half speed, a frame each snap; PHASES=1: his bar emptied by script a third and two thirds of the way
   // through, so that his surfacing and his pulling the siege in, and each phase's moves, are in it)
-  if (film) await page.evaluate(() => { window.__dbg.slowmo = 0.5; });
+  const slow = Number(process.env.SLOW) || 0.5;
+  if (film) await page.evaluate((k) => { window.__dbg.fx.messages.length = 0; window.__dbg.slowmo = k; }, slow);
+  const times = [];
   const phases = process.env.PHASES === '1';
   const t0 = Date.now();
   let k = 0;
@@ -50,10 +53,13 @@ export default async function (page, snap) {
       pushed++;
       await page.evaluate(() => { const b = window.__dbg.game().monsters.find((m) => m.boss && !m.dead); if (b) b.life = 1; });
     }
-    if (film) { await snap(`f${String(k++).padStart(4, '0')}`); await page.waitForTimeout(20); }
+    if (film) {
+      times.push(await page.evaluate(() => window.__dbg.game().time));
+      await snap(`f${String(k++).padStart(4, '0')}`);
+    }
     else { await page.waitForTimeout(5000); await snap(`t${String(k++).padStart(2, '0')}`); }
   }
-  if (film) await page.evaluate(() => { window.__dbg.slowmo = 1; });
+  if (film) { await page.evaluate(() => { window.__dbg.slowmo = 1; }); log('TIMES', JSON.stringify(times.map((t) => +t.toFixed(3)))); }
   await page.evaluate(() => { const d = window.__dbg; if (d.bot) d.bot(false); });
   const r = await page.evaluate(() => {
     const f = window.__frames.slice(5);
