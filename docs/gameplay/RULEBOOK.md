@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. Since 23 Oct (the same): the ways between the floors. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. Since 23 Oct (the same): the ways between the floors; a boss's fight made long by what it throws, not by more life. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -144,6 +144,21 @@ far it is pushed (22:25).
   flasks is a good idea kept for later.
 - **Swings have weight.** Strike chains into a two-hit combo, and each swing steps the hero a
   little forward.
+
+**Bosses: long fights from what you dodge, not from more life (since 23 Oct).** A boss's fight is
+made long by what it throws at you. While you are dodging and running you are not striking, so
+each of a boss's phases is harder than the last, with something always coming at you, and by its
+last phase there is something everywhere; its life is not raised to make a fight last. Your words,
+23 Oct 2026, by 20:48 (Pacific), of the Drowned Eye: “Each phase should be harder than the last so
+by phase three there should be stuff everywhere.  I’d like constant hit boxes being thrown out.
+Like the tentacle swipe should be back and forth, maybe three times in a row.  When the player is
+dodging and running, he’s not doing damage so the fights go on longer and are more engaging than
+just increasing the total boss HP to another 2x just to get a decently long fight”. Asked “Should
+every boss be built this way: long fights from attacks you have to dodge, not from more health? I'd
+add it to your gameplay rulebook.”, by 21:46: “Yes, add it (Recommended)” (offered as: new bosses
+are made this way; the others are looked at one at a time). The first made so: the Drowned Eye,
+floor 10 (arms bursting up round you all the while, more each phase, the siege's bolts with them at
+the last; his sweep back and forth three times in a row; his life as it was).
 
 ## Wordsmithing and power
 
