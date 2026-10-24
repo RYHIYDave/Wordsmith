@@ -39,7 +39,7 @@ if (picks && lookArg === 'turn') {
   panes.length = 0;
   panes.push({ n: '', name: 'The knight, front', f: paintMove3(MOVES3.ktown, 0, 'front'), flies: WARRIOR_TAILS });
   panes.push({ n: '', name: 'The knight, back', f: paintMove3(MOVES3.ktown, 0, 'back'), flies: WARRIOR_TAILS });
-  for (const id of ['brawler3', 'warlock3', 'apothecary3'] as const) {
+  for (const id of ['brawler3', 'warlock3', 'apothecary4'] as const) {
     const l = CLASSES[id].looks[0];
     const who = CLASSES[id].title.replace('The ', '');
     panes.push({ n: '', name: `The ${who}, front`, f: paintClassLook(id, 0, 'front') });

@@ -15,7 +15,7 @@
 import { BONE, CYAN, GLINT, INDIGO, INK, LEAF, MAIL, PINK, PLUM, ROBE, SKIN4, SPARK, STEEL, TEAL, dim, hash } from '../art/kit';
 import type { Painted, Ramp } from '../art/kit';
 import { FRIEND_RIM } from '../art/hero3_knight';
-import { HEAD_B } from '../art/moves3';
+import { HEAD_B, MOVES3, RANGER_BODY } from '../art/moves3';
 import { ball, band, cloth, girdle, hidden, mid, off, rod, skirtOf, stage, thread, trunkBalls } from '../art/skin';
 import type { GameView, Ring, Sheet } from '../art/skin';
 import { add, buildOf, lerp3, mul, norm, solve, standing, sub } from '../art/skeleton';
@@ -1560,6 +1560,32 @@ function bomberPick(kit: 'vials' | 'satchel'): (c: C) => void {
     flask(c, c.s.handR, SPARK, 2.3);
   };
 }
+/** THE APOTHECARY ON THE HEROES' OWN BONES (his word, by 21:05: "Just use a wire skeleton and make it look like a normal human"):
+ * the ranger's body and the ranger's way of standing in town, his arms hanging as a man's do; the flask in his right hand; his
+ * hair tied back in a tail down his back. */
+function humanBomber(c: C): void {
+  trousers(c, NIGHT, LEATHER, { wide: 0.4 });
+  const body = torso(c, LEATHER, NIGHT);
+  strap(c, body, BROWN, false, (at, i) => vial(c, at, [SPARK, LEAF, ROBE][i % 3]), 5);
+  bottleBelt(c, BROWN, [SPARK, ROBE, LEAF], 4, CYAN);
+  arms(c, { upper: LEATHER, fore: LEATHER, hand: BROWN, bell: 0.1 });
+  const hd = face(c, { hairAt: drawnBack, hair: WINE, paint: masked(TEAL), mouth: null });
+  goggles(c, hd, false);
+  // (his hair tied at the nape, a tail of it down his back)
+  {
+    const { st, s, R } = c;
+    const nape = off(s.head, s.face, -R[0] * 0.8, 0, -R[2] * 0.2);
+    const end = off(s.neck, s.chest, -c.B.ribDeep - 0.8, 0, -9);
+    const tie = st.part(st.near(nape) - 0.2);
+    rod(tie, st, nape, lerp3(nape, end, 0.5), 1.5, 1.3, WINE);
+    rod(tie, st, lerp3(nape, end, 0.5), end, 1.3, 0.5, WINE);
+    ball(st.part(st.near(nape)), st, nape, [[1.2, 0, 0], [0, 1.2, 0], [0, 0, 0.9]], LEATHER);
+  }
+  flask(c, add(c.s.handR, [0, 0, -1.6]), SPARK, 2.1);
+}
+export const APOTHECARY_HUMAN: ClassLook[] = [{ n: 'B', name: 'The apothecary, on the heroes\' bones', paint: humanBomber }];
+/** The ranger standing in town, his hands empty: the pose the human apothecary stands in. */
+export const rangerTownPose = (): Bones => MOVES3.rtown.rest;
 export const APOTHECARY_PICKS: ClassLook[] = [
   { n: 'B', name: 'Apothecary: vials', paint: bomberPick('vials') },
   { n: 'B', name: 'Apothecary: satchel', paint: bomberPick('satchel') },
@@ -2232,6 +2258,7 @@ export const CLASSES = {
   warlock3: { title: 'The warlock', body: WARLOCK_BODY, bodyF: WARLOCK_F_BODY, pose: castOf, looks: WARLOCK_PICK },
   apothecary3: { title: 'The apothecary', body: APOTHECARY_BODY, bodyF: APOTHECARY_F_BODY, pose: throwOf, looks: APOTHECARY_PICKS },
   demon: { title: "The warlock's demon", body: DEMON_BODY, bodyF: DEMON_LEAN, pose: menaceOf, looks: DEMONS },
+  apothecary4: { title: 'The apothecary', body: RANGER_BODY, bodyF: RANGER_BODY, pose: rangerTownPose, looks: APOTHECARY_HUMAN },
 } as const;
 export type ClassId = keyof typeof CLASSES;
 
