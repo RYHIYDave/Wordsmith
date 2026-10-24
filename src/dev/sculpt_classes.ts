@@ -506,6 +506,13 @@ export const COATS: CoatSpec[] = [
  * (a great pauldron and a skirt of strips; a fur mantle; a wrap top, baggy trousers and beads; a long coat). Returns
  * whether it dressed him.
  */
+/**
+ * HIS COAT'S TAILS TRAIL HIM (his art rulebook's Movement 4, “Loose things follow”): how far, and which way, the foot of a
+ * coat's tails is carried from where it would hang, for a tail 26 long (a shorter one, less). Set by what draws him moving
+ * (dev/brawler_moves.ts), from where his hips were a moment before; none while he is drawn standing still.
+ */
+export const COAT_SWING: { v: V3 } = { v: [0, 0, 0] };
+
 function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
   const coat = COATS.find((c) => c.id === outfit);
   if (!coat && outfit !== 'gladiator' && outfit !== 'barbarian' && outfit !== 'monk' && outfit !== 'brigand') return false;
@@ -531,7 +538,8 @@ function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
       if (near < gap) continue;
       const dir = norm(add(mul(fw0, Math.cos(a) * rx), mul(sd0, Math.sin(a) * ry)));
       const top = add(beltC, add(mul(fw0, Math.cos(a) * rx), mul(sd0, Math.sin(a) * ry)));
-      const foot = add(top, add(mul(down, len), mul(dir, flare)));
+      // (its foot trails where his body has been, as cloth does: COAT_SWING, set while he moves)
+      const foot = add(add(top, add(mul(down, len), mul(dir, flare))), mul(COAT_SWING.v, len / 26));
       const along = norm(sub(foot, top));
       const tg = norm(cross([0, 0, 1], dir));
       const nn = norm(cross(along, tg));
