@@ -176,3 +176,31 @@ export async function giveStone(page, hands) {
   await page.keyboard.press('KeyE');
   return 'KeyE';
 }
+
+/**
+ * THE WAYS BETWEEN THE FLOORS (Version 24.1, game/ways.ts EXITS): a new game begins in town, the way to the first floor being
+ * the stairs in the hall. In town, this takes him down them by script, as a new player would have gone: the walking learned,
+ * the wordsmith's quest given, then set on their top step; it waits until he is on the first floor. Nothing if he is not in
+ * town. Whether he is on the first floor.
+ */
+export async function downTheStairs(page, ms = 9000) {
+  const went = await page.evaluate(() => {
+    const g = window.__dbg.game();
+    if (!g || !g.level.town) return false;
+    const st = g.level.ways && g.level.ways.stair;
+    if (!st || !st.open) return false;
+    if (g.guide) g.guide.walked = 99;
+    g.questGiven = true;
+    g.hero.x = st.x + 0.5; g.hero.y = st.y + 0.5;
+    return true;
+  });
+  if (!went) return await page.evaluate(() => { const g = window.__dbg.game(); return !!g && !g.level.town && g.depth === 1; });
+  for (let t = 0; t <= ms; t += 100) {
+    if (await page.evaluate(() => { const g = window.__dbg.game(); return !g.level.town && g.depth === 1; })) {
+      await page.waitForTimeout(700);
+      return true;
+    }
+    await page.waitForTimeout(100);
+  }
+  return false;
+}

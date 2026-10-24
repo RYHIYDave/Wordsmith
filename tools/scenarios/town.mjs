@@ -387,7 +387,40 @@ export default async function (page, snap) {
     await page.waitForTimeout(600);
     s = await st();
     log('walked into the gate', `in town ${s.town}, dungeon ${s.depth}`);
-    check('walked into, the gate takes him to the first floor', !s.town && s.depth === 1, `town ${s.town}, depth ${s.depth}`);
+    // (THE WAYS BETWEEN THE FLOORS, Version 24.1, game/ways.ts EXITS: the gate is barred until the Fleshmancer is beaten, and the
+    // way to the first floor is the stairs in the hall: walked onto, from a tile and a half before their top step)
+    const exitsOn = await page.evaluate(() => !!(window.__dbg.exits && window.__dbg.exits.on));
+    if (exitsOn) {
+      check('walked into, the barred gate keeps him in town (barred until the Fleshmancer is beaten)', s.town, `town ${s.town}, depth ${s.depth}`);
+      const way = await page.evaluate(() => {
+        const g = window.__dbg.game(); const st = g.level.ways.stair; const h = g.hero;
+        if (!st) return null;
+        // (a tile before its top step, in whichever of its lanes is clear (the stash stands by it); then on along the way the
+        // steps go: on the screen, world +x is down and right (S and D), world +y down and left (S and A))
+        for (let k = 0; k < (st.wide || 2); k++) {
+          const t = st.way === 'x' ? { x: st.x - 1.1, y: st.y + 0.5 + k } : { x: st.x + 0.5 + k, y: st.y - 1.1 };
+          if (!g.free(g.level.walk, t.x, t.y, 0.45)) continue;
+          h.x = t.x; h.y = t.y;
+          return st.way === 'x' ? ['KeyS', 'KeyD'] : ['KeyS', 'KeyA'];
+        }
+        return null;
+      });
+      check('the town has its stairs down, and a clear tile before them', !!way, String(way));
+      if (way) {
+        await page.waitForTimeout(400);
+        for (const key of way) await page.keyboard.down(key);
+        let down = false;
+        for (let k = 0; k < 40 && !down; k++) {
+          await page.waitForTimeout(100);
+          down = !(await st()).town;
+        }
+        for (const key of way) await page.keyboard.up(key);
+        await page.waitForTimeout(600);
+        s = await st();
+        log('walked onto the stairs', `in town ${s.town}, dungeon ${s.depth}`);
+        check('walked onto, the town\'s stairs take him to the first floor', !s.town && s.depth === 1, `town ${s.town}, depth ${s.depth}`);
+      }
+    } else check('walked into, the gate takes him to the first floor', !s.town && s.depth === 1, `town ${s.town}, depth ${s.depth}`);
     await snap('dungeon');
     const missing = await page.evaluate(() => window.__dbg.missing());
     if (missing.length) bad('text asked for characters the fonts cannot draw: ' + missing.join(' '));

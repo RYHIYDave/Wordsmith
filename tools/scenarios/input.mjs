@@ -9,8 +9,11 @@ export default async function (page, snap) {
     const toCss = (x, y) => ({ x: (c.ox + (x - y) * 16) * css, y: (c.oy + (x + y) * 8) * css });
     const near = g.monsters.filter((m) => !m.dead).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
     // (the way on: in town the gate in the back wall, used from the floor before it; in a dungeon the portal home)
-    const way = (g.level.town ? g.level.stations.find((q) => q.kind === 'gate') : g.level.portal) ?? { x: h.x, y: h.y };
-    return { ways: !!g.level.ways, town: g.level.town, x: h.x, y: h.y, life: h.life, uses: h.skills.map((k) => k.uses), kills: g.kills, proj: g.projectiles.length, zones: g.zones.length,
+    // (THE WAYS BETWEEN THE FLOORS, Version 24.1, game/ways.ts EXITS: in town the way to the first floor is the stairs in the
+    // hall, the gate barred until the Fleshmancer is beaten: the middle of their opening, where a touch on them is taken)
+    const stair = g.level.town && d.exits && d.exits.on && g.level.ways ? g.level.ways.stair : null;
+    const way = stair ? { x: stair.x + stair.long / 2, y: stair.y + stair.wide / 2 } : (g.level.town ? g.level.stations.find((q) => q.kind === 'gate') : g.level.portal) ?? { x: h.x, y: h.y };
+    return { ways: !!g.level.ways, stairs: !!stair, town: g.level.town, x: h.x, y: h.y, life: h.life, uses: h.skills.map((k) => k.uses), kills: g.kills, proj: g.projectiles.length, zones: g.zones.length,
       skills: h.skills.map((k) => k.r.name), words: h.words, panel: d.panels.open, portal: toCss(way.x, way.y),
       hero: toCss(h.x, h.y), near: near ? { ...toCss(near.x, near.y), dist: Math.hypot(near.x - h.x, near.y - h.y), state: near.state } : null, cd: h.skills.map((k) => k.charges), css };
   });
@@ -61,13 +64,15 @@ export default async function (page, snap) {
   // 3. (THE WAYS, game/ways.ts, on since Version 20.2) a click on the gate's arch: the hero is sent into
   // its doorway; it rises as he comes, and takes him through to the first floor
   if (s.ways) {
-    await page.mouse.click(s.portal.x, s.portal.y - 30 * s.css);
+    // (the gate's arch stands over the floor it is used from; the stairs lie in it)
+    const toStairs = s.stairs;
+    await page.mouse.click(s.portal.x, s.portal.y - (toStairs ? 4 : 30) * s.css);
     for (let i = 0; i < 40 && s.town; i++) { await page.waitForTimeout(200); s = await st(); }
     await page.waitForTimeout(500);
     s = await st();
-    log('clicked the gate: in dungeon', String(!s.town));
+    log(toStairs ? 'clicked the stairs: in dungeon' : 'clicked the gate: in dungeon', String(!s.town));
     await snap('gate');
-    if (s.town) { bad('a click on the gate did not take the hero through it'); return; }
+    if (s.town) { bad(toStairs ? 'a click on the town\'s stairs did not take the hero down them' : 'a click on the gate did not take the hero through it'); return; }
   } else {
   // 3. hold the left button on the portal: walk there, then press E
   await page.mouse.move(s.portal.x, s.portal.y + 10);

@@ -45,7 +45,9 @@ export default async function (page, snap) {
   let f = await stored();
   let now = await guiding();
   log('NEW GAME, Mage: where / a run stored', `${JSON.stringify(now)} / ${f && f.run ? f.run.cls : 'none'}, prompts stored: ${!!(f && f.run && f.run.guide)}, taught: ${f ? f.meta.taught : '-'}`);
-  if (!now || !now.guide || now.town || now.depth !== 1) await fail('a new character should be in the first dungeon, with its prompts');
+  // (THE WAYS BETWEEN THE FLOORS, Version 24.1, game/ways.ts EXITS: a new game begins in town, its prompts with it)
+  const inTown = await page.evaluate(() => !!(window.__dbg.exits && window.__dbg.exits.on));
+  if (!now || !now.guide || (inTown ? !now.town : now.town || now.depth !== 1)) await fail(`a new character should be ${inTown ? 'in town' : 'in the first dungeon'}, with its prompts`);
   if (!f || !f.run || f.run.cls !== 'mage' || !f.run.guide || f.meta.taught) await fail('a new character should be stored at once, its prompts with it, and not yet as taught');
   await reload();
   hands = await makeHands(page);

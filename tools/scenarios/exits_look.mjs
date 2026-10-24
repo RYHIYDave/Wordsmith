@@ -152,7 +152,8 @@ export default async function (page, snap) {
   await page.waitForTimeout(3000);
   log('arrived', JSON.stringify(await state()));
   // ---- THE GATE, the first time he comes in sight of it after: unbarred ----
-  await hero(14.5, 12.5, -0.7071, -0.7071);
+  // (within UNBAR_SEEN, 6 tiles, of the gate's middle, (14.5, 5.5): 5 tiles off)
+  await hero(14.5, 10.5, -0.7071, -0.7071);
   if (film) {
     for (let k = 0; k < 32; k++) {
       await page.waitForTimeout(100);

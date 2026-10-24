@@ -60,7 +60,7 @@ import { PINE_PATH } from './game/act1_layout';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
-import { EXITS, WAYS, onwardKey, stairMiddle, startKey, topStep } from './game/ways';
+import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
@@ -396,7 +396,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let padHoldUses = -1;
   let padPrompt = false;
   /** Something the player touched in order to use it: the hero walks there, and then it is used. */
-  let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array } | null = null;
+  let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array; walk: Uint8Array } | null = null;
   // (BOSS_INTRO, FLOOR_NAMES: the boss's name and the floor's, across the screen: ui/cards.ts)
   let bossCard: BossCard | null = null;
   let floorCard: FloorCard | null = null;
@@ -1020,7 +1020,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const spot = poke && !monsterAt(g, poke.x, poke.y) ? spotAt(g, poke.x, poke.y) : null;
     if (spot) {
       const f = g.level.floor;
-      errand = { kind: spot.kind, x: spot.x, y: spot.y, t: 0, level: g.level, flow: flowField(g.level.walk, f.w, f.h, spot.x, spot.y, Infinity, undefined, g.level.step) };
+      // (the way it walks: over an open stairwell's top step only to the stairs themselves, game/ways.ts errandWalk)
+      const walk = errandWalk(g.level, spot.x, spot.y);
+      errand = { kind: spot.kind, x: spot.x, y: spot.y, t: 0, level: g.level, flow: flowField(walk, f.w, f.h, spot.x, spot.y, Infinity, undefined, g.level.step), walk };
       order = null;
       sfx('click');
     } else if (poke) errand = null;
@@ -1351,7 +1353,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         else if (e.kind !== 'body' && e.kind !== 'through') openStation(e.kind);
       } else {
         const f = g.level.floor;
-        const walk = g.level.walk;
+        const walk = e.walk;
         const ux = (e.x - h.x) / d;
         const uy = (e.y - h.y) / d;
         // with a clear run to the spot beside it, walk straight; otherwise follow the path round what is in the way

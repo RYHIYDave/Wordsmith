@@ -34,8 +34,19 @@ export default async function (page, snap) {
   // through to the first floor (touched, the hero is sent into its doorway), not a service; and a
   // dungeon's way on is its stairwell, its way home a waypoint, not the portal
   const ways = await page.evaluate(() => !!window.__dbg.game().level.ways);
-  /** Touched, the gate takes the hero through it to the first floor; then back to town, where he stood. */
+  // (THE WAYS BETWEEN THE FLOORS, Version 24.1, game/ways.ts EXITS: the gate is barred until the Fleshmancer is beaten, the way
+  // to the first floor being the stairs in the hall; and the wordsmith gives his quest the first time he is used: given here,
+  // so that a touch on him opens his panel)
+  const exitsOn = await page.evaluate(() => !!(window.__dbg.exits && window.__dbg.exits.on));
+  if (exitsOn) await page.evaluate(() => { window.__dbg.game().questGiven = true; });
+  /** Touched, the gate takes the hero through it to the first floor; then back to town, where he stood. (Barred, nowhere.) */
   const through = async (what) => {
+    if (exitsOn && !what.includes('stairs')) {
+      const r = await waitFor((s) => !s.town, 2500);
+      if (r.ms >= 0) { fails++; console.log(`  !! touching ${what} took him out through the barred gate: depth=${r.s.depth}`); await page.evaluate(() => { const g = window.__dbg.game(); g.enterTown(); }); }
+      log(`touch ${what}`, `barred: still in town ${r.s.town}`);
+      return;
+    }
     const r = await waitFor((s) => !s.town, 9000);
     if (r.ms < 0) { fails++; console.log(`  !! touching ${what} did not take the hero through the gate: town=${r.s.town} errand=${r.s.errand}`); }
     log(`touch ${what}`, `through the gate: town=${r.s.town} depth=${r.s.depth} after ${r.ms} ms`);
@@ -86,6 +97,24 @@ export default async function (page, snap) {
     if (kind === 'wordsmith' && trades) await snap('wordsmith_open');
     if (kind === 'stranger') await snap('stranger_open');
     await close();
+  }
+
+  // ---- the town's stairs, touched where they lie: down them to the first floor ----
+  if (exitsOn) {
+    await home();
+    await page.waitForTimeout(250);
+    const sp = await page.evaluate(() => { const d = window.__dbg; const st = d.game().level.ways.stair; return st ? d.at(st.x + st.long / 2, st.y + st.wide / 2) : null; });
+    if (!sp) { fails++; console.log('  !! the town has no stairs'); }
+    else {
+      await hands.pressAt(sp.x, sp.y - 4);
+      const r = await waitFor((s) => !s.town && s.depth === 1, 9000);
+      if (r.ms < 0) { fails++; console.log(`  !! touching the town's stairs did not take him down them: town=${r.s.town} errand=${r.s.errand}`); }
+      log('touch the town\'s stairs', `down them: town=${r.s.town} depth=${r.s.depth} after ${r.ms} ms`);
+      await page.evaluate(() => { const g = window.__dbg.game(); g.enterTown(); });
+      // (back in town: the view let come to rest before what is touched next is measured)
+      await page.waitForTimeout(1200);
+      await hands.settle();
+    }
   }
 
   // ---- the name over a service, and the furniture beside a townsperson ----

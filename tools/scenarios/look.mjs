@@ -1,11 +1,12 @@
 // A quick look at the screens, for whoever is working on them: the starting screen and its pages,
-// then a new game (the first dungeon with its prompts), the body, the word, the inventory.
+// then a new game (the first dungeon with its prompts; since Version 24.1 by the town and its stairs), the body, the word,
+// the inventory.
 // THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5): the body holds
 // the MASTER RUNE-STONE, the word is the wordsmith's in town once it lights his ring (the way home and the
 // walk to him by script: guide.mjs makes them with real input), and the word is carried to the
 // slow attack and back at level 2, when that attack has opened and has a slot.
 //   node tools/playtest.mjs --scenario tools/scenarios/look.mjs --out shots/look
-import { makeHands, log, giveStone } from './lib.mjs';
+import { makeHands, log, giveStone, downTheStairs } from './lib.mjs';
 
 export default async function (page, snap) {
   const cls = process.env.CLS || 'ranger';
@@ -32,6 +33,11 @@ export default async function (page, snap) {
   await page.waitForTimeout(900);
   await snap('07_first_dungeon_move');
   log('game', await page.evaluate(() => { const g = window.__dbg.game(); return g ? { town: g.level.town, depth: g.depth, guide: !!g.guide, step: g.guideStep() } : null; }));
+  // (THE WAYS BETWEEN THE FLOORS, Version 24.1: a new game begins in town; down its stairs to the first dungeon, by script)
+  if (await page.evaluate(() => window.__dbg.game().level.town)) {
+    if (!(await downTheStairs(page))) console.log('  !! the town\'s stairs did not take him down to the first dungeon');
+    await snap('07b_first_dungeon');
+  }
   // walk a little, then stand near the first pack
   await page.evaluate(() => {
     const d = window.__dbg; const g = d.game(); d.autoLevel = false;
