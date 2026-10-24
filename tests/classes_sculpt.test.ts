@@ -35,7 +35,7 @@ import { DEMON_LOOKS, sculptDemon } from '../src/dev/sculpt_demon';
 import { GIANT_BODIES, GOLEM_BUILDS, GOLEM_BUILDS_2, GOLEM_BUILDS_3, sculptGolemBuild } from '../src/dev/sculpt_golem';
 import { TINKERER_BODY, TINKER_KITS, sculptContraption, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
 import { WARLOCK_SCULPT_BODY, sculptWarlock, warlockStance } from '../src/dev/sculpt_warlock';
-import { CONTRAPTION_BUILDS, sculptContraptionBuild } from '../src/dev/sculpt_contraption';
+import { CONTRAPTION_BUILDS, CONTRAPTION_TWO, sculptContraptionBuild } from '../src/dev/sculpt_contraption';
 import { hsv, rgb } from './floor_checks';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
@@ -72,6 +72,8 @@ const FIGS: Fig[] = [
   { name: 'the Contraption', make: (v, t) => sculptContraption(v, t), body: false, turns: true },
   // (and the eight he is offered in its place, his “Look at the Contraption”, 24 Oct)
   ...CONTRAPTION_BUILDS.map((b): Fig => ({ name: `the Contraption, ${b.name}`, make: (v, t) => sculptContraptionBuild(v, b.id, t), body: false, turns: true })),
+  // (his two, made again: his “Either the current one or the revolver drum”, 24 Oct)
+  ...CONTRAPTION_TWO.filter((b) => b.id === 'tripod').map((b): Fig => ({ name: `the Contraption, ${b.name}`, make: (v, t) => sculptContraptionBuild(v, b.id, t), body: false, turns: true })),
   { name: "the warlock's demon", make: (v, t) => sculptDemon(v, 'smoke', 0, -16 + t), body: true, turns: true },
   // (and the brawler in each of the four new outfits he is offered, 24 Oct)
   ...[...OUTFITS_2, ...COATS].map((o): Fig => ({ name: `the brawler as ${o.name}`, make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, o.id, t), body: true, turns: true })),
@@ -204,6 +206,6 @@ test('at phone size: a hero about the knight’s height, the Golem a head over h
     const name = `the Golem, ${g.name}`;
     assert.ok(h(name) > knight * 1.12, `${name} ${h(name)} high, the knight ${knight}`);
   }
-  for (const c of ['the Contraption', ...CONTRAPTION_BUILDS.map((b) => `the Contraption, ${b.name}`)]) assert.ok(h(c) < knight * 0.6, `${c} ${h(c)} high, the knight ${knight}`);
+  for (const c of ['the Contraption', ...CONTRAPTION_BUILDS.map((b) => `the Contraption, ${b.name}`), 'the Contraption, The tripod mortar, made again']) assert.ok(h(c) < knight * 0.6, `${c} ${h(c)} high, the knight ${knight}`);
   assert.ok(h("the warlock's demon") > h('the warlock') * 1.3, `the demon ${h("the warlock's demon")} high, the warlock ${h('the warlock')}`);
 });

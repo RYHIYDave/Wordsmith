@@ -37,7 +37,7 @@ const AMBER_G: Ramp = ['#2a1406', '#5a2e0c', '#9a5a14', '#d89a2c', '#f8d070'];
 const EMBER: Ramp = ['#3a0e04', '#7a2208', '#c24a10', '#f08a20', '#ffd060'];
 
 /** Which Contraption: its id and its name for him. */
-export type ContraptionBuild = 'mortar' | 'catapult' | 'trebuchet' | 'kettle' | 'bellows' | 'drum' | 'sling' | 'volley';
+export type ContraptionBuild = 'mortar' | 'catapult' | 'trebuchet' | 'kettle' | 'bellows' | 'drum' | 'sling' | 'volley' | 'tripod';
 export const CONTRAPTION_BUILDS: { id: ContraptionBuild; name: string }[] = [
   { id: 'mortar', name: 'Field mortar' },
   { id: 'catapult', name: 'Spoon catapult' },
@@ -47,6 +47,14 @@ export const CONTRAPTION_BUILDS: { id: ContraptionBuild; name: string }[] = [
   { id: 'drum', name: 'Revolver drum' },
   { id: 'sling', name: 'Slingshot' },
   { id: 'volley', name: 'Volley sled' },
+];
+/**
+ * HIS TWO (24 Oct, by 12:38: “Either the current one or the revolver drum”): the one he has, a mortar on a tripod, made
+ * again in real shapes; and the revolver drum, its six vials seen. Both shown for him to pick.
+ */
+export const CONTRAPTION_TWO: { id: ContraptionBuild; name: string }[] = [
+  { id: 'tripod', name: 'The tripod mortar, made again' },
+  { id: 'drum', name: 'The revolver drum, made again' },
 ];
 
 /** A unit at right angles to `a`. */
@@ -194,6 +202,20 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
   const lamp = (piece: string, at: V3, r = 0.7): void => {
     const m = sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) });
     sc.ell(m, piece, at, [[r, 0, 0], [0, r, 0], [0, 0, r]], 0.1, { tag: 'lamp' });
+  };
+
+  /** Three legs splayed from under `hub`, each with a knee and a clawed foot, `reach` out at the floor. */
+  const tripod = (hub: V3, reach: number, turnBy = 0.5): void => {
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + turnBy;
+      const dir: V3 = [Math.cos(a), Math.sin(a), 0];
+      const knee: V3 = [hub[0] + dir[0] * reach * 0.6, hub[1] + dir[1] * reach * 0.6, hub[2] * 0.55];
+      const ankle: V3 = [hub[0] + dir[0] * reach, hub[1] + dir[1] * reach, 1.3];
+      sc.cone(steel, 'legs', add(hub, [0, 0, -0.4]), knee, 0.75, 0.6, 0.3, { tag: 'leg' });
+      sc.cone(steel, 'legs', knee, ankle, 0.6, 0.5, 0.3, { tag: 'leg' });
+      sc.ell(brass, 'legs', knee, [[0.85, 0, 0], [0, 0.85, 0], [0, 0, 0.85]], 0.2, { tag: 'joint' });
+      clawFoot(brass, 'legs', ankle, dir);
+    }
   };
 
   // (where it throws: up and toward the picture's right, so its barrel or arm is seen side-on)
@@ -354,37 +376,69 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
     sc.cone(steel, 'lever', F(0.4, 0, 11.9), F(0.4, 0, 10.4), 0.3, 0.3, 0.1, { tag: 'rod' });
     sc.box(steel, 'lever', F(2.6, 0, 13.4), [mul(fwd, 1.2), mul(side, 1.2), [0, 0, 1.1]], 0.5, 0.3, { tag: 'weight' });
     spring(brass, 'lever', F(-4.6, 0, 7.0), up, 3.6, 0.8, 4, 0.3);
-  } else if (build === 'drum') {
-    // THE REVOLVER DRUM: a steel tripod, a turret head on it: a drum of six chambers, a vial in each, turning to feed a short
-    // flared barrel cocked up; a crank on its side
-    const head = F(0, 0, 9.6);
+  } else if (build === 'drum' || build === 'tripod') {
+    // HIS TWO, ON THE FRAME OF THE ONE HE HAS (dev/sculpt_tinkerer.ts sculptContraption: its sizes, its aim, its tripod),
+    // each made again in real shapes. THE TRIPOD MORTAR: its body a cast brass bell, banded and riveted, a dome on it; its
+    // copper mortar flared at the mouth, banded, on its trunnions; its magazine of vials on its back; its gear and crank; its
+    // lamp. THE REVOLVER DRUM: on the same tripod, a brass collar, and a drum of six vials lying in its grooves all round it,
+    // their glass showing, feeding a short flared barrel; a crank on its side.
+    const K = 1.35 / CONTRAPTION_SCALE;
+    const P = (x: number, y: number, z: number): V3 => [x * K, y * K, z * K];
+    const hub = P(0, 0, 7);
     for (let i = 0; i < 3; i++) {
-      const a = (i / 3) * Math.PI * 2 + 0.5;
+      const a = (i / 3) * Math.PI * 2 + 0.6;
       const dir: V3 = [Math.cos(a), Math.sin(a), 0];
-      const knee = add(F(0, 0, 4.0), mul(dir, 3.4));
-      sc.cone(steel, 'legs', add(head, [0, 0, -2.0]), knee, 0.65, 0.5, 0.3, { tag: 'leg' });
-      sc.cone(steel, 'legs', knee, add([dir[0] * 5.6, dir[1] * 5.6, 0], [0, 0, 0.5]), 0.5, 0.4, 0.3, { tag: 'leg' });
-      sc.ell(brass, 'legs', [dir[0] * 5.8, dir[1] * 5.8, 0.4], [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 0.4]], 0.2, { tag: 'foot' });
+      const knee = P(Math.cos(a) * 4.6, Math.sin(a) * 4.6, 4.6);
+      const ankle: V3 = [Math.cos(a) * 6.6 * K, Math.sin(a) * 6.6 * K, 1.4];
+      sc.cone(steel, 'legs', add(hub, [0, 0, -1]), knee, 0.9 * K, 0.75 * K, 0.4, { tag: 'leg' });
+      sc.cone(steel, 'legs', knee, ankle, 0.75 * K, 0.6 * K, 0.4, { tag: 'leg' });
+      sc.ell(brass, 'legs', knee, [P(0.85, 0, 0), P(0, 0.85, 0), P(0, 0, 0.85)], 0.2, { tag: 'joint' });
+      clawFoot(brass, 'legs', ankle, dir);
     }
-    sc.ell(brass, 'head', add(head, [0, 0, -1.6]), [mul(fwd, 2.4), mul(side, 2.4), [0, 0, 0.8]], 0.5, { tag: 'band' });
-    // the drum: its axle along the aim, six vials round it pointing back out of their chambers
-    const aim = aimAt(36);
-    const dc = add(head, mul(aim, -0.6));
+    const pot = add(hub, P(0, 0, 2.2));
+    const aim = norm([0.35, 1, 1.05]);
     const u = perp(aim);
     const v = norm(cross(aim, u));
-    sc.cone(brass, 'drum', add(dc, mul(aim, -1.6)), add(dc, mul(aim, 1.6)), 2.9, 2.9, 0.4, { tag: 'drum', cuts: [{ n: aim, o: dot3(aim, dc) + 1.6 }, { n: mul(aim, -1) as V3, o: -dot3(aim, dc) + 1.6 }] });
-    for (let i = 0; i < 6; i++) {
-      const th = (i / 6) * Math.PI * 2;
-      const at = add(dc, add(mul(u, Math.cos(th) * 1.9), mul(v, Math.sin(th) * 1.9)));
-      vial(i, 'drum', add(at, mul(aim, -1.2)), mul(aim, -1), 2.0, 0.62);
+    if (build === 'tripod') {
+      // the body: a bell of cast brass, broad at its foot, a dome on it, a band round it riveted
+      sc.cone(brass, 'body', add(pot, P(0, 0, -1.8)), add(pot, P(0, 0, 1.2)), 4.0 * K, 3.1 * K, 1.0, { tag: 'housing', cuts: [{ n: [0, 0, -1], o: -(pot[2] - 2.4 * K) }] });
+      sc.ell(brass, 'body', add(pot, P(0, 0, 1.3)), [P(3.1, 0, 0), P(0, 3.1, 0), P(0, 0, 1.5)], 1.0, { tag: 'housing' });
+      disc(brass, 'body', add(pot, P(0, 0, -1.6)), up, 4.4 * K, 0.5 * K, 'band');
+      // the mortar on its trunnions, flared, banded
+      const b0 = add(pot, P(0.4, 0, 1.6));
+      barrel(copper, 'barrel', b0, aim, 8.2 * K, 2.0 * K, 1.75 * K, 2.3 * K);
+      for (const k of [1, -1]) sc.cone(steel, 'barrel', add(b0, mul(u, k * 2.0 * K)), add(b0, mul(u, k * 3.2 * K)), 0.8 * K, 0.8 * K, 0.2, { tag: 'pin' });
+      // the magazine of vials on its back: a curved brass case, three vials standing in it
+      const mag = add(pot, P(0, -3.0, 2.6));
+      sc.box(brass, 'magazine', mag, [P(2.7, 0, 0), P(0, 1.5, 0), P(0, 0, 1.5)], 1.1 * K, 0.6, { tag: 'band' });
+      for (let i = 0; i < 3; i++) vial(i, 'magazine', add(mag, P((i - 1) * 1.6, 0, 1.2)), [0, 0, 1], 2.3 * K, 0.65 * K);
+      // the gear and its crank, on its side
+      const g = add(pot, P(4.1, -0.6, 0.2));
+      gear('gear', g, [1, 0, 0], 2.1 * K, 0.5 * K);
+      sc.cone(steel, 'gear', add(g, P(0.5, 0, 0)), add(g, P(1.7, -0.4, 1.8)), 0.45 * K, 0.4 * K, 0.2, { tag: 'crank' });
+      sc.cone(oak, 'gear', add(g, P(1.7, -0.4, 1.8)), add(g, P(2.9, -0.4, 1.8)), 0.55 * K, 0.55 * K, 0.2, { tag: 'grip' });
+      lamp('body', add(pot, P(2.6, 2.2, 0.6)), 0.75 * K);
+    } else {
+      // the collar on the tripod, and the drum: its axle along the aim
+      sc.cone(brass, 'head', add(hub, P(0, 0, -0.4)), add(hub, P(0, 0, 1.6)), 3.0 * K, 2.2 * K, 0.6, { tag: 'band', cuts: [{ n: [0, 0, -1], o: -(hub[2] - 0.6 * K) }] });
+      const dc = add(pot, P(0, 0, 1.4));
+      const end = (k: number): { n: V3; o: number } => ({ n: mul(aim, k) as V3, o: k * dot3(aim, dc) + 2.2 * K });
+      sc.cone(brass, 'drum', add(dc, mul(aim, -2.2 * K)), add(dc, mul(aim, 2.2 * K)), 2.7 * K, 2.7 * K, 0.3, { tag: 'drum', cuts: [end(1), end(-1)] });
+      for (const k of [1, -1]) disc(brass, 'drum', add(dc, mul(aim, k * 2.25 * K)), aim, 3.6 * K, 0.5 * K, 'band');
+      for (let i = 0; i < 6; i++) {
+        const th = (i / 6) * Math.PI * 2 + 0.25;
+        const at = add(dc, add(mul(u, Math.cos(th) * 2.75 * K), mul(v, Math.sin(th) * 2.75 * K)));
+        sc.cone(glass[i % 3], 'drum', add(at, mul(aim, -1.5 * K)), add(at, mul(aim, 1.5 * K)), 1.0 * K, 1.0 * K, 0.1, { tag: 'vial' });
+      }
+      sc.cone(steel, 'drum', add(dc, mul(aim, -3.0 * K)), add(dc, mul(aim, 2.6 * K)), 0.6 * K, 0.6 * K, 0.1, { tag: 'axle' });
+      barrel(copper, 'barrel', add(dc, mul(aim, 2.7 * K)), aim, 5.0 * K, 1.8 * K, 1.6 * K, 2.3 * K);
+      // the crank on its side
+      const c0 = add(dc, P(4.2, -0.4, 0));
+      sc.cone(steel, 'crank', add(dc, P(2.8, -0.4, 0)), c0, 0.5 * K, 0.5 * K, 0.1, { tag: 'crank' });
+      sc.cone(steel, 'crank', c0, add(c0, P(0, 0, -2.6)), 0.5 * K, 0.5 * K, 0.1, { tag: 'crank' });
+      sc.cone(oak, 'crank', add(c0, P(0, 0, -2.6)), add(c0, P(1.6, 0, -2.6)), 0.6 * K, 0.6 * K, 0.1, { tag: 'grip' });
+      lamp('head', add(hub, P(2.0, 1.6, 0.8)), 0.75 * K);
     }
-    barrel(copper, 'barrel', add(dc, mul(aim, 1.4)), aim, 4.6, 1.5, 1.3, 2.1);
-    // the crank on its side
-    const c0 = add(dc, mul(side, -3.0));
-    sc.cone(steel, 'crank', add(dc, mul(side, -2.6)), c0, 0.35, 0.35, 0.1, { tag: 'crank' });
-    sc.cone(steel, 'crank', c0, add(c0, [0, 0, -2.2]), 0.35, 0.35, 0.1, { tag: 'crank' });
-    sc.cone(oak, 'crank', add(c0, add([0, 0, -2.2], mul(side, -0.1))), add(c0, add([0, 0, -2.2], mul(side, -1.4))), 0.45, 0.45, 0.1, { tag: 'grip' });
-    lamp('head', add(head, F(-1.6, 1.8, 1.8)), 0.55);
   } else if (build === 'sling') {
     // THE SLINGSHOT: an oak fork on an iron stake, braced on three struts; its leather band drawn back by a line to a
     // clockwork winch at its foot, a vial in the pouch. (Its throw away from the eye, so its band comes toward it.)
