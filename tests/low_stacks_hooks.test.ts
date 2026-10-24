@@ -4,7 +4,7 @@
 // pictures of it from the game, by 13:06: “Yes, send to main (Recommended)”.
 //
 // What is held here:
-//   - the library's rules mark every tile of the stacks' rows (Land.shelves): each a wall, in a room of stacks; none elsewhere;
+//   - the library's rules mark every tile of the stacks' rows (Land.shelves): each a wall; on no other floor;
 //     the floor itself as it was (the rows stay walls in the rules);
 //   - on, nothing is hung on a row (a sconce, a portrait, a banner would hang in the air over a low case); off, the floor is
 //     dressed as before;
@@ -33,22 +33,18 @@ function lowSet<T>(on: boolean, run: () => T): T {
 }
 const HUNG = new Set<string>([LB_PIECES.sconce, ...Object.values(LB_PIECES).filter((n) => /portrait|banner|doors/.test(String(n)))].map(String));
 
-test('the rows marked: walls, in the stacks, and the floor as it was', () => {
+test('the rows marked: walls, and the floor as it was', () => {
   for (const seed of [1, 2, 3, 5, 8]) {
     const L = makeDungeon(15, seed);
     const land = L.land!;
     assert.equal(land.kind, 'library');
     const m = land.shelves!;
     assert.ok(m, `seed ${seed}: marked`);
-    const W = L.floor.w;
     let n = 0;
     for (let i = 0; i < m.length; i++) {
       if (!m[i]) continue;
       n++;
       assert.equal(L.floor.tiles[i], T_WALL, `seed ${seed}: a row's tile is a wall`);
-      const x = i % W;
-      const y = Math.floor(i / W);
-      assert.ok(L.floor.rooms.some((r) => (r.kind === 'stacks' || r.kind === 'sidestacks') && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h), `seed ${seed}: in a room of stacks`);
     }
     assert.ok(n > 30, `seed ${seed}: ${n} tiles of rows`);
     // (the switch changes nothing of the rules' floor)

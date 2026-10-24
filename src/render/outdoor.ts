@@ -101,7 +101,7 @@ export interface FlowBits<T> {
   frames: T[];
 }
 /** Paint a piece's water, every frame of it, each cut to the part with water (`cut` makes a picture of a frame's rgba within the box). */
-export function paintFlows<T>(layer: FlowLayer, x0: number, y0: number, cut: (rgba: Uint8ClampedArray, box: { x: number; y: number; w: number; h: number }) => T): FlowBits<T> | null {
+export function paintFlows<T>(layer: FlowLayer, x0: number, y0: number, cut: (rgba: Uint8ClampedArray<ArrayBuffer>, box: { x: number; y: number; w: number; h: number }) => T): FlowBits<T> | null {
   const frames: T[] = [];
   let box: FlowBits<T>['box'] | null = null;
   for (let f = 0; f < FLOW_FRAMES; f++) {
@@ -109,7 +109,7 @@ export function paintFlows<T>(layer: FlowLayer, x0: number, y0: number, cut: (rg
     if (!fp.box) return null;
     // (every frame cut to the first one's box, grown to hold each: the water lies in the same place, only its look moves)
     if (!box) box = { ...fp.box };
-    frames.push(cut(fp.rgba, box));
+    frames.push(cut(fp.rgba as Uint8ClampedArray<ArrayBuffer>, box));
   }
   return box ? { box, frames } : null;
 }

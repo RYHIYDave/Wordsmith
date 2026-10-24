@@ -82,7 +82,7 @@ test('1. the switch off, and the game files that use it are the main chat\'s hoo
       if (parts.join('/') === 'art/low_stacks') users.push(f);
     }
   }
-  assert.equal(users.sort().join(' '), 'game/act2/library.ts main.ts render/outdoor.ts render/painter.ts', 'game files that import it');
+  assert.equal([...new Set(users)].sort().join(' '), 'game/act2/library.ts main.ts render/outdoor.ts render/painter.ts', 'game files that import it');
 });
 
 test('2. the floor the ground is painted from: the rows floor, nothing else; under them the stacks\' own floor', () => {
