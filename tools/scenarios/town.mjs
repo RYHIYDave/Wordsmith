@@ -83,7 +83,8 @@ export default async function (page, snap) {
   /** A card is being read, with these buttons (by the start of their labels) and no others. */
   // (COMPARE is on the card of every piece that is not worn, since 5 Oct 2026: tools/scenarios/pages.mjs, 3b, presses it)
   const cardHas = async (what, wanted) => {
-    const names = (await hands.marks()).filter((m) => m.startsWith('button:') && !/^button:(DONE|GEAR|ATTACKS|STATS|TALENTS|ENTER|TAKE IT OUT)/.test(m)).map((m) => m.slice(7));
+    // (WORD_ROOM, 24.2: the tile that turns the bottom to every word and back, ALL WORDS or BAG, is the panel's, not the card's)
+    const names = (await hands.marks()).filter((m) => m.startsWith('button:') && !/^button:(DONE|GEAR|ATTACKS|STATS|TALENTS|ENTER|TAKE IT OUT|ALL WORDS$|BAG$)/.test(m)).map((m) => m.slice(7));
     const card = await hands.mark('card');
     check(what, !!card && names.length === wanted.length && wanted.every((w) => names.some((n) => n.startsWith(w))), names.join(' | ') || 'no buttons');
   };

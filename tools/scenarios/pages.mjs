@@ -97,7 +97,9 @@ export default async function (page, snap) {
   const onBottom = (q) => {
     // nothing of a page may lie on the bag or on the words
     const pg = q.rects[`page:${q.page}`];
-    const tops = Object.entries(q.rects).filter(([k]) => k.startsWith('bag:') || k.startsWith('word:')).map(([, r]) => r.y);
+    // (WORD_HALF, 24.2: the words in a panel of their own over the game's half are not the panel's bottom: only those below the
+    // page's top are; above it, in the narrow layout, they lie over the game)
+    const tops = Object.entries(q.rects).filter(([k, r]) => k.startsWith('bag:') || (k.startsWith('word:') && (!pg || r.y >= pg.y))).map(([, r]) => r.y);
     const top = Math.min(...tops);
     const own = Object.entries(q.rects).filter(([k]) => k.startsWith('gear:') || k.startsWith('socket:')).filter(([, r]) => r.y + r.h > top).map(([k]) => k);
     return { ok: !!pg && pg.y + pg.h <= top && own.length === 0, top, page: pg ? pg.y + pg.h : -1, own };

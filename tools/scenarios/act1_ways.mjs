@@ -98,6 +98,17 @@ export default async function (page, snap) {
   for (let i = 0; i < 80; i++) {
     after = await page.evaluate(() => { const g = window.__dbg.game(); return { depth: g.depth, town: g.level.town, cleared: g.cleared, wayDepth: g.wayDepth }; });
     if (home ? after.town : after.depth === depth + 1) break;
+    // (24.2, the art chat's ways of floors 11 to 15: a way's way in may be a tile or two on along it from where it stands,
+    // floor 13's postern's door: stepped along it in turn)
+    if (i % 4 === 3) {
+      await page.evaluate(([x, y, k]) => {
+        const g = window.__dbg.game();
+        const a1 = g.level.ways && g.level.ways.a1;
+        if (!a1 || g.depth !== a1.floor) return;
+        const u = { 'x+': [1, 0], 'x-': [-1, 0], 'y+': [0, 1], 'y-': [0, -1] }[a1.dir];
+        g.hero.x = Math.floor(x) + 0.5 + u[0] * k; g.hero.y = Math.floor(y) + 0.5 + u[1] * k;
+      }, [on.x, on.y, ((i + 1) / 4) % 3]);
+    }
     await page.waitForTimeout(500);
   }
   log('after', JSON.stringify(after));
