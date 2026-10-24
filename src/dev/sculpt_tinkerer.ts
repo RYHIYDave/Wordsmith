@@ -30,7 +30,7 @@ import { STEEL5 } from './sculpt_warlock';
 /** Her skin: fair, warm. */
 export const SKIN_F: Ramp = ['#42203a', '#7a4658', '#bc7c7c', '#e8b09c', '#ffdcc4'];
 /** Her red hair. */
-export const RED_HAIR: Ramp = ['#3a0820', '#6c122e', '#aa2840', '#dc5060', '#f8908a'];
+export const RED_HAIR: Ramp = ['#3a0810', '#6c1418', '#aa2a22', '#dc5232', '#f8885a'];
 /** Her jerkin's leather, a warm brown. */
 const JERKIN: Ramp = ['#1e0e10', '#3e2018', '#68381e', '#9a5a2c', '#c4843e'];
 /** Dark blue cloth: her shirt and trousers. */
@@ -116,12 +116,13 @@ export function tinkererStance(B: Build): Bones {
 }
 
 /** The Tinkerer sculpted, standing as she stands, in one of the game's views. */
-export function sculptTinkerer(view: GameView, pose?: Bones): Drawn {
+export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
   const B = TINKERER_BODY;
   const q = (pose ?? tinkererStance(B)) as Posed;
   const s = solve(B, q);
-  const w: Who = { s, B, view };
+  const w: Who = { s, B, view, spin: turn };
   const sc = new Sculpt();
+  sc.spin = turn;
   const [f, l, u] = s.chest;
   const farArm = (piece: string): boolean => piece.endsWith('L') ? farSide(w, s.elbowL) : piece.endsWith('R') ? farSide(w, s.elbowR) : false;
   const skin = sc.mat({
@@ -293,8 +294,9 @@ export function sculptTinkerer(view: GameView, pose?: Bones): Drawn {
 // THE CONTRAPTION: her turret, a little brass mortar on three legs that lobs her vials
 
 /** The Contraption sculpted, set down on the floor, in one of the game's views; `fire`: its last loosed vial's flash. */
-export function sculptContraption(view: GameView): Drawn {
+export function sculptContraption(view: GameView, turn = 0): Drawn {
   const sc = new Sculpt();
+  sc.spin = turn;
   const K = 1.35;
   const P = (x: number, y: number, z: number): V3 => [x * K, y * K, z * K];
   const brass = sc.mat({
@@ -378,14 +380,14 @@ export function sculptContraption(view: GameView): Drawn {
 // THE GOLEM: a clockwork bruiser of brass, a head taller than the knight
 
 /** Its build: tall, a great chest, short thick legs, long arms, a head carried low and forward. */
-export const GOLEM_BODY: Build = buildOf(70, 1.45, { shoulders: 1.45, chest: 1.5, waist: 1.05, hips: 1.1, legs: 0.84, arms: 1.12, depth: 1.3, limbs: 1.4 });
+export const GOLEM_BODY: Build = buildOf(80, 1.4, { shoulders: 1.45, chest: 1.5, waist: 1.05, hips: 1.1, legs: 0.84, arms: 1.12, depth: 1.3, limbs: 1.4 });
 
 /** STANDING READY: hunched forward, its head low before its shoulders, its fists hanging by its knees. */
 export function golemStance(B: Build): Bones {
   const t = B.tall / 70;
   return {
     ...standing(B),
-    pz: -1.6 * t, yaw: -12, bend: 16, faceUp: 18,
+    pz: -1.6 * t, yaw: -12, bend: 10, faceUp: 14,
     lfx: 1.4 * t, lfy: 2.6 * t, lft: 12, lk: 14,
     rfx: -1.4 * t, rfy: -2.6 * t, rft: -12, rk: -14,
     lhIn: 0, lhx: 7.0 * t, lhy: 5.5 * t, lhz: -(B.upperArm + B.foreArm) * 0.84, le: 24,
@@ -394,12 +396,13 @@ export function golemStance(B: Build): Bones {
 }
 
 /** The Golem sculpted, standing ready, in one of the game's views. */
-export function sculptGolem(view: GameView, pose?: Bones): Drawn {
+export function sculptGolem(view: GameView, pose?: Bones, turn = 0): Drawn {
   const B = GOLEM_BODY;
   const q = (pose ?? golemStance(B)) as Posed;
   const s = solve(B, q);
-  const w: Who = { s, B, view };
+  const w: Who = { s, B, view, spin: turn };
   const sc = new Sculpt();
+  sc.spin = turn;
   const [f, l, u] = s.chest;
   const [ribs, belly, pel] = trunkOf(B, s);
   const far = (piece: string): boolean => piece.endsWith('L') ? farSide(w, s.elbowL) : piece.endsWith('R') ? farSide(w, s.elbowR) : false;
@@ -505,11 +508,13 @@ export function sculptGolem(view: GameView, pose?: Bones): Drawn {
     const piece = `leg${side}`;
     sc.cone(steel, piece, hip, knee, 3.3, 2.7, 0.6, { tag: 'thigh' });
     sc.ell(brass, piece, add(knee, mul(f, 1.2)), [mul(f, 2.0), mul(l, 3.0), mul(u, 2.6)], 0.3, { tag: 'kneecap' });
-    sc.cone(brass, piece, knee, ankle, 3.2, 3.9, 0.4, { tag: 'greave' });
+    sc.cone(brass, piece, knee, lerp3(knee, ankle, 0.82), 3.2, 3.8, 0.4, { tag: 'greave' });
     const fd = norm(sub(toe, heel));
     const fs = norm(cross([0, 0, 1], fd));
-    const fc = add(lerp3(heel, toe, 0.55), [0, 0, 1.5]);
-    sc.box(steel, piece, fc, [mul(fd, Math.hypot(...sub(toe, heel)) * 0.5 + 2.6), mul(fs, 3.3), [0, 0, 1.6]], 0.9, 0.6, { tag: 'foot' });
+    const fc = add(lerp3(heel, toe, 0.55), [0, 0, 1.6]);
+    const fhalf = Math.hypot(...sub(toe, heel)) * 0.5 + 2.6;
+    const lift = Math.max(0, -(fc[2] - Math.abs(fd[2]) * fhalf - 1.6));
+    sc.box(steel, piece, add(fc, [0, 0, lift]), [mul(fd, fhalf), mul(fs, 3.3), [0, 0, 1.6]], 0.9, 0.6, { tag: 'foot' });
   }
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }

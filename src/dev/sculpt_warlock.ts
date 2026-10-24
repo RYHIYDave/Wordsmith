@@ -76,12 +76,13 @@ export function handFire(st: Stage, at: V3, size: number, seed = 0): void {
 }
 
 /** The warlock sculpted, standing as he stands, in one of the game's views. */
-export function sculptWarlock(view: GameView, pose?: Bones): Drawn {
+export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
   const B = WARLOCK_SCULPT_BODY;
   const q = (pose ?? warlockStance(B)) as Posed;
   const s = solve(B, q);
-  const w: Who = { s, B, view };
+  const w: Who = { s, B, view, spin: turn };
   const sc = new Sculpt();
+  sc.spin = turn;
   const [f, l, u] = s.chest;
   const farArm = (piece: string): boolean => piece.endsWith('L') ? farSide(w, s.elbowL) : piece.endsWith('R') ? farSide(w, s.elbowR) : false;
   // HIS SKIN (seen only at his throat and right hand): the face is in the hood's dark
@@ -260,5 +261,5 @@ export function sculptWarlock(view: GameView, pose?: Bones): Drawn {
   void cross;
   void sub;
   void BRASS;
-  return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, (st) => handFire(st, add(s.handL, mul(limbFrame(s.elbowL, s.handL, l)[0], 2.4)), 3.8, 1), FRIEND_RIM);
+  return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, (st) => handFire(st, sc.at(add(s.handL, mul(limbFrame(s.elbowL, s.handL, l)[0], 2.4))), 3.8, 1), FRIEND_RIM);
 }

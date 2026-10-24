@@ -110,6 +110,19 @@ export class Sculpt {
   mark(p: V3, c: string, w = 1, h = 1, dx = 0, dy = 0, through = 1.2, on = -1): void {
     this.marks.push({ p, c, w, h, dx, dy, through, on });
   }
+  /**
+   * TRULY TURNED (his rulebook's Heroes 7, “Truly turned, eight ways”): the whole figure turned this many degrees to its
+   * left about the floor point under it, as it is drawn; never its picture flipped. `at` gives a point of it so turned
+   * (for what is drawn beside it: a flame in its hand, its smoke).
+   */
+  spin = 0;
+  at(p: V3): V3 {
+    if (!this.spin) return p;
+    const a = (this.spin * Math.PI) / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    return [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]];
+  }
   /** A material; returns its number. */
   mat(m: Mat): number {
     this.mats.push(m);
@@ -221,6 +234,24 @@ function triDist(p: V3, a: V3, b: V3, c: V3): number {
   return Math.min(seg(ba, pa), seg(cb, pb), seg(ac, pc));
 }
 
+/** How far a point is from one solid's skin (for a check: is an arm inside the trunk?). */
+export function primDist(p: Prim, q: V3): number {
+  return dist(ready(p), q);
+}
+/** How low a solid reaches (its lowest point's height over the floor), for a check that nothing sinks into the floor. */
+export function primLow(p: Prim): number {
+  let low: number;
+  if (p.k === 'cone') low = Math.min(p.a[2] - p.ra, p.b[2] - p.rb);
+  else if (p.k === 'tri') low = Math.min(p.a[2], p.b[2], p.c[2]) - p.thick;
+  else {
+    const reach = p.k === 'ell' ? Math.hypot(p.axes[0][2], p.axes[1][2], p.axes[2][2]) : Math.abs(p.axes[0][2]) + Math.abs(p.axes[1][2]) + Math.abs(p.axes[2][2]);
+    low = p.c[2] - reach;
+  }
+  // (a cut may take away its lowest part: a coat's hem cut level above the floor)
+  if (p.cuts) for (const c of p.cuts) if (c.n[2] < -0.99) low = Math.max(low, -c.o);
+  return low;
+}
+
 /** The whole figure's distance field, worked out per material. */
 export class Field {
   readonly rs: Ready[];
@@ -314,11 +345,12 @@ const CREASE = 0.32;
 /** (for looking into a fault: the last figure drawn) */
 export const LAST: { sc: Sculpt | null } = { sc: null };
 
-export function draw(sc: Sculpt, view: PaintView, ax: number, ay: number, size: { readonly w: number; readonly h: number }, extras?: Extras, rim: string | null = null): Drawn {
+export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size: { readonly w: number; readonly h: number }, extras?: Extras, rim: string | null = null): Drawn {
+  const sc = spun(sc0);
   const W = size.w;
   const H = size.h;
   const st = stage(view, ax, ay, size);
-  LAST.sc = sc;
+  LAST.sc = sc0;
   const f = new Field(sc);
   const extraParts: Sheet[] = [];
   if (extras) {
@@ -523,6 +555,33 @@ export function draw(sc: Sculpt, view: PaintView, ax: number, ay: number, size: 
   }
   if (rim) edge(out, rim);
   return { px: out, z: zb, stuff, st };
+}
+
+/** A figure as its `spin` turns it: every solid, cut and mark turned round the floor point under it. */
+function spun(sc: Sculpt): Sculpt {
+  if (!sc.spin) return sc;
+  const t = (p: V3): V3 => sc.at(p);
+  const out = new Sculpt();
+  out.mats.push(...sc.mats);
+  for (const p of sc.prims) {
+    const cuts = p.cuts?.map((c) => ({ n: t(c.n), o: c.o }));
+    if (p.k === 'cone') out.prims.push({ ...p, a: t(p.a), b: t(p.b), cuts });
+    else if (p.k === 'tri') out.prims.push({ ...p, a: t(p.a), b: t(p.b), c: t(p.c), cuts });
+    else out.prims.push({ ...p, c: t(p.c), axes: [t(p.axes[0]), t(p.axes[1]), t(p.axes[2])], cuts } as Prim);
+  }
+  for (const m of sc.marks) out.marks.push({ ...m, p: t(m.p) });
+  // (a material's painter is told where on the figure a point is as it was built, so its stripes and seams turn with it)
+  const back = (p: V3): V3 => {
+    const a = (-sc.spin * Math.PI) / 180;
+    return [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a), p[2]];
+  };
+  const was = new Map<Prim, Prim>();
+  out.prims.forEach((p, i) => was.set(p, sc.prims[i]));
+  out.mats.length = 0;
+  for (const m of sc.mats) {
+    out.mats.push(!m.paint ? m : { ...m, paint: (h) => (m.paint as (h: Hit) => string | null)({ ...h, p: back(h.p), n: back(h.n), prim: was.get(h.prim) ?? h.prim }) });
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------

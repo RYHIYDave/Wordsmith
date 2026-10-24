@@ -52,6 +52,7 @@ export interface DemonPose {
 /** THE DEMON, sculpted, in one of the game's views; `aura`: what pours off it (smoke, or a damage word's); `hide`: its colour. */
 export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, yaw = -16): Drawn {
   const sc = new Sculpt();
+  // (it is built facing as it stands, `yaw`; truly turned by turning that: it stands free, on no hero's bones)
   const F0 = norm([1, -1, 0]);
   const L0 = norm([1, 1, 0]);
   const a = yaw * D;
@@ -217,7 +218,7 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
     const hip = P(0, side * 12, 42);
     const knee = P(12, side * 17, 26);
     const hock = P(-6, side * 16, 13);
-    const hoof = P(side > 0 ? 4 : -2, side * 15, 2.6);
+    const hoof = P(side > 0 ? 4 : -2, side * 15, 3.4);
     sc.cone(hide, piece, hip, knee, 11, 8, 2.6, { tag: 'thigh' });
     sc.cone(shag, piece, knee, hock, 7.5, 4.5, 1.6, { tag: 'shank' });
     sc.cone(shag, piece, hock, hoof, 4.2, 3.2, 1.4, { tag: 'pastern' });
@@ -274,6 +275,23 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
     feet: [P(4, 15, 2), P(-2, -15, 2), P(34, 37, 1)],
     behind,
   });
+  // NO PIXEL ALONE (his rulebook's Pixels 1): a spark, a flake or a drop of what pours off it left alone on the dark is
+  // drawn two pixels long, down the picture
+  const { w, h, d: px } = d.px;
+  const solid = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < w && y < h && px[(y * w + x) * 4 + 3] === 255;
+  for (let y = 0; y < h - 1; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!solid(x, y) || solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1)) continue;
+      const i = (y * w + x) * 4;
+      const j = ((y + 1) * w + x) * 4;
+      if (px[j + 3] === 0) {
+        px[j] = px[i];
+        px[j + 1] = px[i + 1];
+        px[j + 2] = px[i + 2];
+        px[j + 3] = 255;
+      } else px[i + 3] = 0;
+    }
+  }
   return d;
 }
 

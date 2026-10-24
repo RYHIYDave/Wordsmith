@@ -484,7 +484,8 @@ export function drawAura(st0: Stage, out: Px, kind: Aura, at: AuraAt): void {
       for (let i = -r; i <= r; i++) {
         const d = Math.hypot(i, j) / r;
         if (d > 1) continue;
-        if (every > 1 && (x + i + y + j) % every !== 0) continue;
+        // (thinned in blocks of two by two, not pixel by pixel: no pixel is left alone)
+        if (every > 1 && (((x + i) >> 1) + ((y + j) >> 1)) % every !== 0) continue;
         const lit = -i - j > r * 0.6;
         L.set(x + i, y + j, d > 0.8 ? tones[lit ? 3 : 1] : lit ? tones[2] : tones[d < 0.45 ? 0 : 1]);
       }

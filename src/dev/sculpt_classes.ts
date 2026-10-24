@@ -46,6 +46,8 @@ export interface Who {
   s: Skeleton;
   B: Build;
   view: GameView;
+  /** How far the figure is truly turned (Sculpt.spin), for which side of it is the far one. */
+  spin?: number;
 }
 
 /** How near the eye a point is in a view (bigger nearer). */
@@ -53,7 +55,9 @@ const nearIn = (view: GameView, p: V3): number => project(p, view)[2];
 
 /** A part of the far side of the body from the eye: painted a step darker, as the heroes' far arm and leg are. */
 export function farSide(w: Who, p: V3): boolean {
-  return nearIn(w.view, p) < nearIn(w.view, w.s.pelvis) - 1.6;
+  const a = ((w.spin ?? 0) * Math.PI) / 180;
+  const t = (q: V3): V3 => [q[0] * Math.cos(a) - q[1] * Math.sin(a), q[0] * Math.sin(a) + q[1] * Math.cos(a), q[2]];
+  return nearIn(w.view, t(p)) < nearIn(w.view, t(w.s.pelvis)) - 1.6;
 }
 
 /** The three ways a limb's own frame lies: along it, out (away from the body's middle line), and the third. */
@@ -251,10 +255,18 @@ export function tailorFor(sc: Sculpt, w: Who, bulk: number) {
       sc.cone(mat, `leg${side}`, lerp3(knee, ankle, high ? 0.42 : 0.82), ankle, high ? lK * 0.98 + 0.35 : lA + 0.7, lA * 0.95 + 0.6, 1.0, { tag: laces ? 'laced' : 'top' });
       const fd = norm(sub(toe, heel));
       const fs = norm(cross([0, 0, 1], fd));
-      const fc = add(lerp3(heel, toe, 0.5), [0, 0, 0.9]);
       const half = Math.hypot(...sub(toe, heel)) * 0.5;
-      sc.box(mat, `leg${side}`, fc, [mul(fd, half + 0.6), mul(fs, 1.55), [0, 0, 1.15]], 0.9, 1.2, { tag: 'foot' });
-      sc.box(mat, `leg${side}`, add(fc, [0, 0, -0.85]), [mul(fd, half + 0.8), mul(fs, 1.7), [0, 0, 0.35]], 0.3, 0.3, { tag: 'sole' });
+      // (the foot turned as the foot is, its sole under it; then set ON the floor, its lowest corner at the floor and no
+      // lower: a foot up on its toes stands on them)
+      const fup = norm(cross(fd, fs));
+      const up3: V3 = fup[2] < 0 ? mul(fup, -1) : fup;
+      let fc = add(lerp3(heel, toe, 0.5), mul(up3, 0.9));
+      const sc0 = add(fc, mul(up3, -0.85));
+      const lowSole = sc0[2] - Math.abs(fd[2]) * (half + 0.8) - Math.abs(fs[2]) * 1.7 - Math.abs(up3[2]) * 0.35;
+      const lift = Math.max(0, -lowSole);
+      fc = add(fc, [0, 0, lift]);
+      sc.box(mat, `leg${side}`, fc, [mul(fd, half + 0.6), mul(fs, 1.55), mul(up3, 1.15)], 0.9, 1.2, { tag: 'foot' });
+      sc.box(mat, `leg${side}`, add(fc, mul(up3, -0.85)), [mul(fd, half + 0.8), mul(fs, 1.7), mul(up3, 0.35)], 0.3, 0.3, { tag: 'sole' });
     }
   };
   const bootMat = (ramp: Ramp, laces: Ramp | null): number => sc.mat({
@@ -508,14 +520,15 @@ export const OUTFITS: { id: Outfit; name: string }[] = [
 ];
 
 /** The brawler sculpted, standing as he stands, in one of the game's views (`k`: which of his looks). */
-export function sculptBrawler(view: GameView, pose?: Bones, k = BRAWLER_BUILD, outfit: Outfit = BRAWLER_OUTFIT): Drawn {
+export function sculptBrawler(view: GameView, pose?: Bones, k = BRAWLER_BUILD, outfit: Outfit = BRAWLER_OUTFIT, turn = 0): Drawn {
   const look = k >= 0 ? BRAWLER_LOOKS[k] : null;
   const B = look ? buildOf(look.tall, HEAD_B * look.head, look.shape) : BOXER_BODY;
   const bulk = look ? look.bulk : 1.12;
   const q = (pose ?? boxerStance(B)) as Posed;
   const s = solve(B, q);
-  const w: Who = { s, B, view };
+  const w: Who = { s, B, view, spin: turn };
   const sc = new Sculpt();
+  sc.spin = turn;
   const [f, l, u] = s.chest;
   const farArm = (piece: string): boolean => piece.endsWith('L') ? farSide(w, s.elbowL) : piece.endsWith('R') ? farSide(w, s.elbowR) : false;
   const skin = sc.mat({
