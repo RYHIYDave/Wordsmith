@@ -410,6 +410,16 @@ function glyphOf(f: Font, code: number): number {
   return i;
 }
 
+/**
+ * (THE OPENING, art/opening.ts) A character's glyph as its rows ('#' ink, '.' empty) at the finer grain, as the screen draws
+ * it: for lettering painted into a picture off the screen (a comic's captions). Its advance is its width plus GAP, in game
+ * pixels (half the rows' length).
+ */
+export function glyphRows(ch: string, font: FontId = 'normal'): string[] {
+  const f = fontOf(font);
+  return fineRows(f.rows[glyphOf(f, ch.charCodeAt(0))], FONT_BOLD[font]);
+}
+
 /** Width of one line at scale 1: the glyph widths plus a 1 px gap between neighbours. */
 function measure(f: Font, text: string): number {
   const n = text.length;
