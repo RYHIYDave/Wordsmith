@@ -225,7 +225,7 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
-Version 23.0 (24.0 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Version 23.0 (24.1 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
 Ward (the Crier), the Undercity (the Rat King), the Millrace (the Scraper and the Quill), the House of Quiet (the Physician) and the
 Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
 others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
@@ -251,6 +251,12 @@ Version 23.9: Binding, found from floor 11 down, holds what it hits in place and
 and Volatile melds with each damage word into a word of its own: Demolition, Powderkeg, Shatter, Chain Reaction, Rupture.
 Version 24.0: a level select in the Options: pick any floor from 1 to 15 and a class, and a test hero, levelled and geared
 for that floor, starts there. Nothing of it is saved; your own hero is left as it was.
+Version 24.1: the ways between the floors. A new game begins in town: the wordsmith gives you the quest, and stairs in the
+hall lead down to floor 1. Floor 4 ends in its wall crumbling into a cave, the way into the Fleshmancer's lair; floor 5 in the
+cage up the old shaft, into the town's corner; the town's big gate stays barred until the Fleshmancer falls, then leads out to
+the Quarry. On floors 6 to 10 each way on opens as its boss dies (the quarry's stair, the ledge's chimney, the canyon's slot,
+the pinewood's trail, the fen's causeway), and the next floor begins where it comes out. From floor 10 on, your town is the
+camp inside Vellum's gate.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
