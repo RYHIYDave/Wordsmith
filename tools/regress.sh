@@ -525,6 +525,9 @@ wait
 run eye_sweeps --touch --size 844x390 --dpr 1.5 --scenario $S/eye_sweeps.mjs &
 PARTS=stacks,river9 SECS=1 run next_looks $P --scenario $S/next_looks.mjs &
 wait
+# FLOOR 15'S CENSOR (24.3): one phase, his ink filling the floor; the bot fights him through his life brought down by thirds
+SECS=24 PHASES=1 LONG_OK=1 run censor_fight --touch --size 844x390 --dpr 1.5 --scenario $S/censor_fight.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

@@ -4,6 +4,7 @@
 //   node tools/playtest.mjs --file dist/next.html --touch --size 844x390 --dpr 1.5 --scenario tools/scenarios/censor_fight.mjs --out shots/censor/x
 // SECS: how long the fight is watched (30). SEED (5). CLS: the hero's class (warrior). FILM=1: frames as fast as they come, the game slowed (SLOW, 0.5), each
 // frame's game clock logged at the end ('TIMES [...]'), so that a video can be put together at the game's own speed.
+// LONG_OK=1: frames over 100 ms logged, not flagged (in the regression, two playtests at a time).
 // PHASES=1: his life brought down by script to just under two thirds and then one third, a third and two thirds of the way through.
 import { log } from './lib.mjs';
 
@@ -78,5 +79,9 @@ export default async function (page, snap) {
   });
   log('frames', JSON.stringify(r));
   log('long at (s, ms, painted so far)', JSON.stringify(await page.evaluate(() => window.__longAt.slice(0, 40))));
-  if (r.long > 3) log(`!! ${r.long} frames ran over 100 ms (the longest ${r.longest} ms, ${r.sumLong} ms in all)`);
+  if (r.long > 3 && !process.env.LONG_OK) log(`!! ${r.long} frames ran over 100 ms (the longest ${r.longest} ms, ${r.sumLong} ms in all)`);
+  // (CENSOR_FIGHT: his ink laid to stay, lying on the floor long after the art's would have dried)
+  const ink = await page.evaluate(() => window.__dbg.game().perils.filter((p) => p.a1 === 'censor:bars' && p.done && p.t > 3).length);
+  log('his ink lying on the floor (bars laid over 3 s ago)', ink);
+  if (!ink) log('!! none of his ink lay on the floor');
 }

@@ -37,7 +37,10 @@
 //  15. WHAT HE LAYS STAYS: his bars lie where they slammed; whoever stands on them is hurt every so often, and not off
 //      them; as much of his ground under it as his share, the more the more of his life is gone, the oldest drying away;
 //      as he dies all of it dries away and hurts no more;
-//  16. a long fight on floor 15: no exceptions, every act made but the blacking out, the page too; the floor filling.
+//  16. a long fight on floor 15: no exceptions, every act made but the blacking out, the page too; the floor filling;
+//  17. HE MOVES (his 09:34, “The ink is good but the censor needs to move more or melee classes will always be stuck
+//      fighting on ink”): standing in his ink, he walks off to clean floor, none of his ink within a tile of it; and so
+//      after his Redaction; his walk's frames as far apart on the floor as painted.
 //   run: tsx --test tests/act2_censor.test.ts
 
 // @ts-ignore
@@ -977,3 +980,54 @@ test('16. a long fight on floor 15: no exceptions, every act made but the blacki
   assert.ok(margins > 2, `lines across the room (${margins})`);
   assert.ok(filled.length === 3 && filled[2] > filled[0], `the floor filling as his life goes (${filled.join(', ')} tiles under his ink)`);
 })));
+
+test('17. he moves: standing in his ink he walks off to clean floor; and after his Redaction; his walk\'s frames at its painted pace', () => fight(() => {
+  const Wk = F.walk;
+  // (his ink thrown at the hero beside him, so that it lies round him too; his acts held off)
+  {
+    const { g, m } = quiet(8, true);
+    const h = g.hero;
+    m.x = h.x + 1;
+    m.y = h.y;
+    const from = { x: m.x, y: m.y };
+    let set = -1;
+    let to = null as { x: number; y: number } | null;
+    let moved = 0;
+    let frames = 0;
+    let was = { x: m.x, y: m.y, t: 0 };
+    watch(g, m, 14, undefined, () => {
+      const s = m.a1!;
+      if (set < 0 && s.wk === 1) {
+        set = g.time;
+        to = { x: s.wx, y: s.wy };
+        assert.ok(inked(g.level, from.x, from.y) || [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => inked(g.level, from.x + dx, from.y + dy))), 'he stood in his ink');
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) assert.ok(!inked(g.level, s.wx + dx, s.wy + dy), 'to floor with none of his ink within a tile of it');
+        const d = Math.hypot(s.wx - m.x, s.wy - m.y);
+        assert.ok(d >= Wk.near - 1e-6 && d <= Wk.far + 1e-6, `${Wk.near} to ${Wk.far} tiles off (${d.toFixed(1)})`);
+        was = { x: m.x, y: m.y, t: m.gait ? m.gait.t : 0 };
+      } else if (set >= 0 && m.a1!.wk === 1 && m.gait && m.gait.mode === 'walk') {
+        moved += Math.hypot(m.x - was.x, m.y - was.y);
+        frames += m.gait.t - was.t;
+        was = { x: m.x, y: m.y, t: m.gait.t };
+        assert.equal(m.anim, 'walk', 'walking');
+      }
+      // (the hero stands where he was)
+      return set >= 0 && m.a1!.wk !== 1;
+    });
+    assert.ok(set >= 0, 'he walked off');
+    const end = to as { x: number; y: number } | null;
+    assert.ok(end && Math.hypot(m.x - end.x, m.y - end.y) < 0.2, 'to his clean floor');
+    // (give or take where the hero and he jostle)
+    near(frames * CENSOR_GAIT.pace, moved, 0.05 + moved * 0.05, 'his walk\'s frames as far apart on the floor as they are painted for');
+  }
+  // (his Redaction over: he walks off)
+  {
+    const { g, m } = room('censor', 4, 'censor:redact');
+    m.a1 = { ...(m.a1 ?? {}), iw: 1e9 };
+    assert.ok(untilAct(g, m, 'censor:redact'), 'he redacts');
+    watch(g, m, 4, undefined, () => m.state !== 'act');
+    const s = watch(g, m, 0.5, undefined, () => m.a1!.wk === 1);
+    void s;
+    assert.equal(m.a1!.wk, 1, 'his Redaction over, he walks off to clean floor');
+  }
+}));

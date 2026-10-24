@@ -143,6 +143,12 @@ export const CENSOR_GAIT: GaitDef = { pace: 0.8, cycle: 1 / 8, setOff: 0, halt: 
  *     and the room's), lies on the floor, on the tiles it covers; whoever stands on such a tile is hurt every `tick` seconds,
  *     `dmg` of his blow. As much of his ground may lie under it as `least` of it at his full life, to `most` as he comes to
  *     his end; past that, the oldest of it dries away (in `dry` seconds) as more is laid.
+ *   HE MOVES (`walk`; the owner, shown it, by 09:34: “The ink is good but the censor needs to move more or melee classes
+ *     will always be stuck fighting on ink”): standing with `crowd` or more of the nine tiles round him under his ink, or
+ *     his Redaction, his Hush or his row of Strike-Through over, he walks off to clean floor: a spot `near` to `far` tiles
+ *     from him with none of his ink within a tile of it, the nearer the hero the better (so that the fight goes with him),
+ *     walked to straight; at `speed` (his walk's frames as far apart on the floor as they are painted for: quicker, his feet
+ *     never sliding); not again for `again` seconds; given up after `most`.
  */
 export const CENSOR_FIGHT = {
   on: true,
@@ -153,7 +159,8 @@ export const CENSOR_FIGHT = {
   redactCd: 9,
   hushCd: 15,
   rest: 0.85,
-  fill: { least: 0.12, most: 0.52, tick: 0.5, dmg: 0.25, dry: 0.8 },
+  fill: { least: 0.08, most: 0.32, tick: 0.5, dmg: 0.25, dry: 0.8 },
+  walk: { speed: 1.2, crowd: 3, near: 3, far: 6.5, again: 2.5, most: 7 },
 };
 
 /** His four, his basic blow first and his biggest last (his rulebook: the bigger the hit, the longer the cooldown), and the blacking out, brought by the rules. */
@@ -823,6 +830,98 @@ function lay(g: Game, m: Monster, p: Peril): void {
   while (k.n > most && k.list.length > 1 && k.list[0] !== p) dryAway(k, k.list[0]);
 }
 
+/** How many of the nine tiles round (x, y) lie under his ink. */
+function inkAround(L: Level, x: number, y: number): number {
+  let n = 0;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inked(L, x + dx, y + dy)) n++;
+  return n;
+}
+
+/** (CENSOR_FIGHT.walk) Clean floor to walk off to: none of his ink within a tile of it; `near` to `far` from him, the nearer the hero the better; walked to straight. */
+function cleanSpot(R: BossRules, m: Monster): { x: number; y: number } | null {
+  const g = R.g;
+  const L = g.level;
+  const Wk = CENSOR_FIGHT.walk;
+  const h = g.hero;
+  const r = Math.min(m.r, 0.42);
+  let best: { x: number; y: number } | null = null;
+  let bs = Infinity;
+  const R0 = Math.ceil(Wk.far);
+  for (let dy = -R0; dy <= R0; dy++) {
+    for (let dx = -R0; dx <= R0; dx++) {
+      const x = Math.floor(m.x) + dx + 0.5;
+      const y = Math.floor(m.y) + dy + 0.5;
+      const d = Math.hypot(x - m.x, y - m.y);
+      if (d < Wk.near || d > Wk.far || !onGround(L, m, x, y) || inkAround(L, x, y) > 0 || !g.free(L.walk, x, y, r)) continue;
+      // (straight there, over floor he may stand on)
+      let clear = true;
+      for (let s = 0.25; s < d && clear; s += 0.25) if (!g.free(L.walk, m.x + ((x - m.x) * s) / d, m.y + ((y - m.y) * s) / d, r)) clear = false;
+      if (!clear) continue;
+      const score = Math.abs(Math.hypot(x - h.x, y - h.y) - 2.5) + 0.3 * Math.abs(d - (Wk.near + Wk.far) / 2) + g.rng.range(0, 0.6);
+      if (score < bs) {
+        bs = score;
+        best = { x, y };
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * (CENSOR_FIGHT.walk) HE WALKS OFF TO CLEAN FLOOR, standing in his ink or his big move over (`wo`): to a spot of it (`wx`,
+ * `wy`; `wk` while he goes), straight, at his `walk.speed`, his walk's frames as far apart on the floor as they are painted
+ * for. True while he goes (the step is all he does: his cooldowns run on).
+ */
+function walkOff(R: BossRules, m: Monster, dt: number): boolean {
+  const g = R.g;
+  const L = g.level;
+  const Wk = CENSOR_FIGHT.walk;
+  const s = m.a1!;
+  if (m.state === 'act') return false;
+  s.ww = (s.ww ?? 0) - dt;
+  if (!s.wk) {
+    const want = s.wo === 1 || (s.ww <= 0 && inkAround(L, m.x, m.y) >= Wk.crowd);
+    if (!want || s.ww > 0) return false;
+    s.wo = 0;
+    s.ww = Wk.again;
+    const to = cleanSpot(R, m);
+    if (!to) return false;
+    s.wk = 1;
+    s.wx = to.x;
+    s.wy = to.y;
+    s.wt = 0;
+    s.sn = 0;
+  }
+  const dx = s.wx - m.x;
+  const dy = s.wy - m.y;
+  const d = Math.hypot(dx, dy);
+  s.wt = (s.wt ?? 0) + dt;
+  const stop = (): boolean => {
+    s.wk = 0;
+    s.ww = Wk.again;
+    m.gait = { mode: 'stand', t: 0 };
+    m.anim = 'idle';
+    m.state = 'chase';
+    return false;
+  };
+  if (d < 0.12 || s.wt > Wk.most) return stop();
+  const sp = Wk.speed * (m.chillT > 0 ? 1 - (m.chill ?? 0) : 1);
+  m.fx = dx / d;
+  m.fy = dy / d;
+  const step = Math.min(d, sp * dt);
+  const x0 = m.x;
+  const y0 = m.y;
+  g.slide(m, Math.min(m.r, 0.42), m.fx * step, m.fy * step, L.walk, true);
+  // (held up: he stands, and looks again in a while)
+  if (Math.hypot(m.x - x0, m.y - y0) < step * 0.2) return stop();
+  if (!m.gait || m.gait.mode !== 'walk') m.gait = { mode: 'walk', t: 0 };
+  m.gait.t += (Math.hypot(m.x - x0, m.y - y0)) / CENSOR_GAIT.pace;
+  m.anim = 'walk';
+  m.state = 'chase';
+  if (m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= dt;
+  return true;
+}
+
 /** As he dies: all his ink dries away. */
 function dryAll(L: Level): void {
   const k = POOLS.get(L);
@@ -869,7 +968,8 @@ export const RULES: Act1Rules | null = {
     s.lx = h.x;
     s.ly = h.y;
     ink(R, m, dt);
-    return false;
+    // (he moves: off his ink to clean floor)
+    return walkOff(R, m, dt);
   },
 
   can(R, m, a) {
@@ -1059,6 +1159,11 @@ export const RULES: Act1Rules | null = {
         m.cd = 0;
         return;
       }
+    }
+    // (he moves: his big move over, he walks off to clean floor)
+    if (a.id === 'censor:strike' || a.id === 'censor:redact' || a.id === 'censor:hush') {
+      s.wo = 1;
+      s.ww = 0;
     }
     // (his rests, and his cooldowns)
     m.cd *= F.rest;
