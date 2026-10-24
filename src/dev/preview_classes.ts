@@ -14,6 +14,7 @@ import { CLASSES, paintClassLook } from './options_classes';
 import type { ClassId } from './options_classes';
 
 const [whatArg = 'brawler', scaleArg = '5', colsArg = '4', lookArg = ''] = decodeURIComponent(location.hash.slice(1)).split(':');
+const picks = whatArg === 'picks';
 const what = (whatArg in CLASSES ? whatArg : 'brawler') as ClassId;
 const S = Number(scaleArg) || 5;
 const COLS = Number(colsArg) || 4;
@@ -32,7 +33,13 @@ let UP = 80;
 let DOWN = 8;
 let CLOSE = 0;
 panes.push({ n: '', name: 'The knight, for size', f: paintMove3(MOVES3.ktown, 0, 'front'), flies: WARRIOR_TAILS });
-cl.looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(what, k) }));
+if (picks) {
+  // HIS PICKS, the three classes side by side (the apothecary both ways)
+  heading = 'Your picks · sketches · not in the game';
+  for (const id of ['brawler3', 'warlock3', 'apothecary3'] as const) {
+    CLASSES[id].looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(id, k) }));
+  }
+} else cl.looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(what, k) }));
 if (lookArg === 'close') {
   heading = heading.replace(' · sketches', ', close up · sketches');
   HALF = 24;

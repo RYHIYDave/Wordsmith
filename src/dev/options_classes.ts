@@ -1102,7 +1102,7 @@ function forkedBeard(c: C, ramp: Ramp, len = 4.5): void {
   }
 }
 /** THE DEMON'S ARM (the left: the one with the fire in it): its hide to the shoulder, clawed, cracked with light; `chains` wound round it. */
-function demonArm(c: C, hide: Ramp, o: { chains?: boolean; spike?: boolean; to?: number } = {}): void {
+function demonArm(c: C, hide: Ramp, o: { chains?: boolean; spike?: boolean; plate?: Ramp; to?: number } = {}): void {
   const { st, s, B } = c;
   const [aS, aE, aW] = B.armR;
   const up = st.part(mid(s.shoulderL, s.elbowL));
@@ -1119,7 +1119,7 @@ function demonArm(c: C, hide: Ramp, o: { chains?: boolean; spike?: boolean; to?:
     rod(fo, st, at, add(at, [0, 0, 2.2]), 0.7, 0.15, IVORY);
   }
   if (o.chains) for (let i = 0; i < 4; i++) chain(c, st.part(st.near(s.elbowL) + 0.6), lerp3(s.shoulderL, s.handL, 0.2 + i * 0.18), add(lerp3(s.shoulderL, s.handL, 0.28 + i * 0.18), [0, 0, -2]));
-  if (o.spike) pauldron(c, COAL, 1, true);
+  if (o.spike) pauldron(c, o.plate ?? COAL, 1, true);
 }
 /** The other arm (the right) in its sleeve, a hand at its end. */
 function sleeveArm(c: C, ramp: Ramp, hand: Ramp, bell = 1.0): void {
@@ -1477,6 +1477,87 @@ export const APOTHECARIES2: ClassLook[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------------------------
+// HIS PICKS (23 Oct, of the second sheets): "3 with a yellow beard" (the brawler); "A with the spiked pauldron" (the warlock);
+// "B with D’s hair, and I don’t like the jeweled knee pads.  I’d like either a belt with vials, and bandolier with vials, or a
+// side satchel" (the apothecary: both ways, to choose between).
+
+export const BRAWLER_PICK: ClassLook[] = [
+  {
+    n: '3',
+    name: 'Brawler: yellow beard',
+    paint: (c) => {
+      trousers(c, RUST, LEATHER, { to: 0.15, shin: DEEP });
+      const body = torso(c, DEEP, RUST);
+      pecs(c, body, DEEP);
+      singlet(c, RUST);
+      belt(c, LEATHER, CYAN, 3);
+      fighterArms(c, { skin: DEEP, cuff: LEATHER, thick: 1.0 });
+      face(c, { skin: SKIN_DEEP, hairAt: () => false });
+      beard(c, BLONDE, 4.5, 1.15);
+    },
+  },
+];
+export const WARLOCK_PICK: ClassLook[] = [
+  {
+    n: 'A',
+    name: 'Warlock: spiked pauldron',
+    paint: (c) => {
+      legs(c, COAL, LEATHER, true);
+      longCoat(c, COAL, RUST);
+      const body = torso(c, COAL, COAL);
+      seam(c, body, RUST[3]);
+      belt(c, LEATHER, CYAN, 2);
+      grimoire(c);
+      sleeveArm(c, COAL, SK, 0.6);
+      demonArm(c, RUST, { spike: true, plate: STEEL });
+      face(c, { hairAt: () => true, hair: RAVEN, shade: 0.2, blind: true });
+      for (const turn of EYES) dotOn(c, c.st.part(c.st.near(c.s.head) + 0.9), turn, 0.14, GLINT);
+      hood(c, COAL, 0.8);
+      horns(c, 'swept', { long: 8, up: 0.8 });
+      handFire(c, c.s.handL);
+    },
+  },
+];
+/** A leather satchel on his right hip (the side toward the eye), its flap buckled, its strap across him from the left shoulder. */
+function sideBag(c: C, body: Sheet): void {
+  const { st, s, B } = c;
+  const bag = off(s.hipR, s.hips, 1.6, -B.pelvisHalf * 0.4 - 4.2, -3.0);
+  const layer = st.part(st.near(bag) + 1.5);
+  ball(layer, st, bag, [mul(s.hips[0], 4.2), mul(s.hips[1], 2.4), [0, 0, 4.0]], BROWN);
+  ball(layer, st, add(bag, [0, 0, 1.6]), [mul(s.hips[0], 4.4), mul(s.hips[1], 2.6), [0, 0, 1.8]], LEATHER);
+  const [bx, by] = st.at(add(bag, [0, 0, 0.6]));
+  layer.mark(Math.round(bx), Math.round(by), BRASS[3]);
+  layer.mark(Math.round(bx) - 1, Math.round(by), BRASS[2]);
+  // (a vial's neck and a sprig sticking out of it)
+  const top = add(bag, [0, 0, 4.4]);
+  rod(st.part(st.near(top) + 1.2), st, add(top, [0, 0, -1]), add(top, [0, 0, 1.6]), 0.7, 0.6, [SPARK[1], SPARK[1], SPARK[2], SPARK[3], SPARK[3]]);
+  strap(c, body, LEATHER, true);
+}
+/** The goggled bomber with the tinkerer's red ponytail: `kit` his belt of vials and bandolier of vials, or a satchel at his side. */
+function bomberPick(kit: 'vials' | 'satchel'): (c: C) => void {
+  return (c) => {
+    trousers(c, NIGHT, LEATHER, { wide: 0.5 });
+    const body = torso(c, LEATHER, NIGHT);
+    if (kit === 'vials') {
+      strap(c, body, BROWN, false, (at, i) => vial(c, at, [SPARK, LEAF, ROBE][i % 3]), 5);
+      bottleBelt(c, BROWN, [SPARK, ROBE, LEAF], 4, CYAN);
+    } else {
+      belt(c, BROWN, CYAN, 2);
+      sideBag(c, body);
+    }
+    fighterArms(c, { skin: SK, sleeve: LEATHER, to: 1.6, wrap: null, thick: 0.1, fist: LEATHER });
+    const hd = face(c, { hairAt: drawnBack, hair: WINE, paint: masked(TEAL), mouth: null });
+    goggles(c, hd, false);
+    pony(c, WINE, 10);
+    flask(c, c.s.handR, SPARK, 2.3);
+  };
+}
+export const APOTHECARY_PICKS: ClassLook[] = [
+  { n: 'B', name: 'Apothecary: vials', paint: bomberPick('vials') },
+  { n: 'B', name: 'Apothecary: satchel', paint: bomberPick('satchel') },
+];
+
 void [CYAN, curtain, fringe, rope, streak, tresses, satchel, MOSS, GREY, collar, hidden, thread, braid, PINK, BRASS, brimHat];
 
 /** The class sheets: which body, which stance, which looks. */
@@ -1487,6 +1568,9 @@ export const CLASSES = {
   brawler2: { title: 'The brawler: more like 3', body: BRAWLER_BODY, bodyF: BRAWLER_F_BODY, pose: guardOf, looks: BRAWLERS2 },
   warlock2: { title: 'The warlock: more like 1 and 2', body: WARLOCK_BODY, bodyF: WARLOCK_F_BODY, pose: castOf, looks: WARLOCKS2 },
   apothecary2: { title: 'The apothecary: more like 2, 3 and 7', body: APOTHECARY_BODY, bodyF: APOTHECARY_F_BODY, pose: throwOf, looks: APOTHECARIES2 },
+  brawler3: { title: 'The brawler', body: BRAWLER_BODY, bodyF: BRAWLER_F_BODY, pose: guardOf, looks: BRAWLER_PICK },
+  warlock3: { title: 'The warlock', body: WARLOCK_BODY, bodyF: WARLOCK_F_BODY, pose: castOf, looks: WARLOCK_PICK },
+  apothecary3: { title: 'The apothecary', body: APOTHECARY_BODY, bodyF: APOTHECARY_F_BODY, pose: throwOf, looks: APOTHECARY_PICKS },
 } as const;
 export type ClassId = keyof typeof CLASSES;
 
