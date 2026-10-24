@@ -31,9 +31,9 @@ const SCREENS = [
   { name: 'a tablet held upright', w: 308, h: 410 },
 ];
 
-test('the switches, off until his yes to the game\'s pictures', () => {
-  assert.equal(WORD_HALF.on, false);
-  assert.equal(WORD_ROOM.on, false);
+test('the switches, on: his yes by 22:06, 23 Oct 2026, to the game\'s pictures: “Yes, next version (Recommended)”', () => {
+  assert.equal(WORD_HALF.on, true);
+  assert.equal(WORD_ROOM.on, true);
   assert.ok(ALL.length >= 38, `${ALL.length} words there are`);
 });
 

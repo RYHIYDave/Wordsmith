@@ -65,8 +65,9 @@ const differ = (a: FlowPiece, b: FlowPiece): number => {
 // (Recommended)”: the ground's looks and the water laid over its pieces (render/outdoor.ts, on the page and in the painter's
 // worker), the wheel's frames (render/act1_pieces.ts), and the page's handle holds the switch for pictures. Still off until he
 // says to put it live.)
-test('1. the switch off; nothing of the game imports it but the art that paints the water and the wheel', () => {
-  assert.equal(OFF, false, 'FLOW is off');
+// (ON, at his word in the main chat: his yes by 22:06, 23 Oct 2026, to the game's pictures: “Yes, next version (Recommended)”)
+test('1. the switch on; nothing of the game imports it but the art that paints the water and the wheel', () => {
+  assert.equal(OFF, true, 'FLOW is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/flowing.ts') continue;

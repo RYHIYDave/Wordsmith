@@ -23,7 +23,7 @@ import type { RGB } from './terrain';
 import { fbm, worldOf } from './terrain';
 
 /** THE SWITCH: off, the rivers are painted as before, still. */
-export const FLOW = { on: false };
+export const FLOW = { on: true };
 
 /** How many frames go round, and how many a second: a round of 1.5 s. */
 export const FLOW_FRAMES = 18;

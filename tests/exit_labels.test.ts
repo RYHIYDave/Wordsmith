@@ -45,8 +45,8 @@ function fell(g: Game): void {
   }
 }
 
-test('the switch, off until his yes', () => {
-  assert.equal(EXIT_LABELS.on, false);
+test('the switch, on: his yes by 22:06, 23 Oct 2026, to the game\'s pictures: “Yes, next version (Recommended)”', () => {
+  assert.equal(EXIT_LABELS.on, true);
 });
 
 test('no name while the boss lives; once the way has opened, what it is', () => {

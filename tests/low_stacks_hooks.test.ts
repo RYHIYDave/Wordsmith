@@ -56,8 +56,8 @@ test('the rows marked: walls, and the floor as it was', () => {
 
 test('on, nothing hung on a row; off, dressed as before', () => {
   for (const seed of [1, 2, 3, 5, 8]) {
-    const off = makeDungeon(15, seed);
-    const again = makeDungeon(15, seed);
+    const off = lowSet(false, () => makeDungeon(15, seed));
+    const again = lowSet(false, () => makeDungeon(15, seed));
     assert.deepEqual(again.props.map((p) => `${p.name}@${p.tx},${p.ty}`), off.props.map((p) => `${p.name}@${p.tx},${p.ty}`), 'off: the same dressing every time');
     const L = lowSet(true, () => makeDungeon(15, seed));
     const W = L.floor.w;
@@ -78,7 +78,7 @@ test('on, nothing hung on a row; off, dressed as before', () => {
 test('the ground: rows only on, only on the library, just the marked tiles; painted with them as floor', () => {
   const L = makeDungeon(15, 3);
   const land = L.land!;
-  assert.equal(lowRowsOf(land, L.floor), null, 'off: none');
+  assert.equal(lowSet(false, () => lowRowsOf(land, L.floor)), null, 'off: none');
   lowSet(true, () => {
     const rows = lowRowsOf(land, L.floor)!;
     assert.ok(rows, 'on: the rows');

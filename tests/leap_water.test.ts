@@ -31,9 +31,9 @@ function waterSet<T>(on: boolean, run: () => T): T {
   }
 }
 
-test('the switch, off until his yes; off, no water', () => {
-  assert.equal(LEAP_WATER.on, false);
-  const L = makeDungeon(13, 5);
+test('the switch, on: his yes by 22:06, 23 Oct 2026, to the game\'s pictures: “Yes, next version (Recommended)”; off, no water', () => {
+  assert.equal(LEAP_WATER.on, true);
+  const L = waterSet(false, () => makeDungeon(13, 5));
   assert.equal(L.water, undefined);
 });
 

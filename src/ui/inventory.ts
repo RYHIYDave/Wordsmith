@@ -289,7 +289,7 @@ export function rangeText(o: ImbueOption, limit: Limit): string {
  * on the words, the other pages on the bag; a service that buys or keeps gear on the bag, one that takes words on the
  * words; a piece of gear carried onto the BAG tile turns to the bag. Nothing above the bottom moves.
  */
-export const WORD_ROOM = { on: false };
+export const WORD_ROOM = { on: true };
 /** The tile that turns the bottom from the bag to every word and back: as wide as a bag's cell. */
 export const SWAP_W = 22;
 /**
@@ -304,7 +304,7 @@ export const SWAP_W = 22;
  * rune stones, and asked which way, by 11:37: “I like the second picture with the runes”: so the words are their rune
  * stones here, always.
  */
-export const WORD_HALF = { on: false };
+export const WORD_HALF = { on: true };
 /** (WORD_HALF) How far in from the game half's edges the words' panel's lines are, and the room its words have there: how wide, and how many lines. */
 export const HALF_M = 6;
 export function halfRoom(gameR: Rect): { w: number; lines: number } {

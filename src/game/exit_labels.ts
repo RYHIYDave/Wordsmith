@@ -16,7 +16,7 @@ import type { Level } from './state';
 import { EXITS, ONWARD, stairMiddle, STAIR_OPENING } from './ways';
 
 /** THE SWITCH. */
-export const EXIT_LABELS = { on: false };
+export const EXIT_LABELS = { on: true };
 
 /** Floors 6 to 10's ways on, what each is. */
 export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY', 11: 'GRATE', 12: 'OUTFALL', 13: 'POSTERN', 14: 'DOOR', 15: 'GREAT DOORS' };

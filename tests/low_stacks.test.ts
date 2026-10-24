@@ -67,8 +67,9 @@ const LOW = paintLowStacks(rows, X0, Y0, PW, PH);
 // (TOLD BY THE MAIN CHAT, 23 Oct 2026: hooked in behind the switch, on his yes in the art chat by 13:06, “Yes, send to main
 // (Recommended)”: the library's rules mark the rows and hang nothing on them, the ground paints them low, and the page's handle
 // holds the switch for pictures. Still off until he says to put it live.)
-test('1. the switch off, and the game files that use it are the main chat\'s hooks', () => {
-  assert.equal(LOW_STACKS.on, false, 'LOW_STACKS is off');
+// (ON, at his word in the main chat: his yes by 22:06, 23 Oct 2026, to the game's pictures: “Yes, next version (Recommended)”)
+test('1. the switch on, and the game files that use it are the main chat\'s hooks', () => {
+  assert.equal(LOW_STACKS.on, true, 'LOW_STACKS is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/low_stacks.ts') continue;

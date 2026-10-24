@@ -58,7 +58,30 @@ export default async function (page, snap) {
       const at = W.a1 && W.onward ? W.onward : W.cave ? { x: W.cave.spot.alongX ? W.cave.spot.a + 1.5 : W.cave.spot.plane + 3, y: W.cave.spot.alongX ? W.cave.spot.plane + 3 : W.cave.spot.a + 1.5 } : W.shaft ? { x: W.shaft.x + 2.5, y: W.shaft.y + 2.5 } : W.stair ? { x: W.stair.x + 3, y: W.stair.y + 3 } : W.onward;
       return at ? { x: at.x, y: at.y } : null;
     });
-    if (where) await page.evaluate(([x, y]) => { const h = window.__dbg.game().hero; h.x = x - 2.5; h.y = y - 2.5; }, [where.x, where.y]);
+    // (the hero put down 3.5 to 5 tiles from it, where he can stand, never on its way in: behind a way on, from its way)
+    if (where) {
+      const put = await page.evaluate(([x, y]) => {
+        const g = window.__dbg.game();
+        const L = g.level; const f = L.floor; const W = L.ways;
+        const U = { 'x+': [1, 0], 'x-': [-1, 0], 'y+': [0, 1], 'y-': [0, -1] };
+        const u = W.a1 ? U[W.a1.dir] : null;
+        let best = null;
+        for (let ty = Math.floor(y - 6); ty <= y + 6; ty++) for (let tx = Math.floor(x - 6); tx <= x + 6; tx++) {
+          const cx = tx + 0.5; const cy = ty + 0.5;
+          const d = Math.hypot(cx - x, cy - y);
+          if (d < 3.5 || d > 5 || !g.free(L.walk, cx, cy, 0.4)) continue;
+          if (u && (cx - x) * u[0] + (cy - y) * u[1] > -1) continue;
+          if (W.stair && Math.hypot(cx - (W.stair.x + 1), cy - (W.stair.y + 1)) < 3.5) continue;
+          // (nearer the bottom of the screen first: the name stands up over its foot)
+          const score = cx + cy - x - y;
+          if (!best || score > best.score) best = { x: cx, y: cy, score };
+        }
+        if (!best) return null;
+        g.hero.x = best.x; g.hero.y = best.y;
+        return best;
+      }, [where.x, where.y]);
+      log('hero at', JSON.stringify(put));
+    }
     await page.waitForTimeout(800);
     await page.evaluate(() => { window.__dbg.fx.messages.length = 0; });
     const names = await page.evaluate(() => window.__dbg.exitNames ? window.__dbg.exitNames() : null);

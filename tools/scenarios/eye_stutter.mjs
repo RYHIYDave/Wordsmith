@@ -33,8 +33,15 @@ export default async function (page, snap) {
   // (the page's own frames, timed)
   await page.evaluate(() => {
     window.__frames = [];
-    let last = performance.now();
-    const tick = (now) => { window.__frames.push(now - last); last = now; if (window.__frames.length < 100000) requestAnimationFrame(tick); };
+    window.__longAt = [];
+    const t0 = performance.now();
+    let last = t0;
+    const tick = (now) => {
+      window.__frames.push(now - last);
+      if (now - last > 100) window.__longAt.push([+((now - t0) / 1000).toFixed(1), Math.round(now - last), window.__dbg.painting ? window.__dbg.painting.frames : 0]);
+      last = now;
+      if (window.__frames.length < 100000) requestAnimationFrame(tick);
+    };
     requestAnimationFrame(tick);
   });
   // (the bot fights him: the hero moves and strikes as a player would)
@@ -69,5 +76,6 @@ export default async function (page, snap) {
     return { frames: f.length, long: long.length, longest: Math.round(Math.max(...f)), sumLong: Math.round(long.reduce((a, x) => a + x, 0)), phase: b ? b.phase : null, life: b ? Math.round(b.life) : null, painted: window.__dbg.painting ? window.__dbg.painting.frames : null };
   });
   log('frames', JSON.stringify(r));
+  log('long at (s, ms, painted so far)', JSON.stringify(await page.evaluate(() => window.__longAt.slice(0, 40))));
   if (r.long > 3) log(`!! ${r.long} frames ran over 100 ms (the longest ${r.longest} ms, ${r.sumLong} ms in all)`);
 }

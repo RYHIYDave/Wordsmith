@@ -37,7 +37,7 @@ import type { RGB } from './terrain';
 import { HWP, worldOf } from './terrain';
 
 /** THE SWITCH: off, the stacks' rows are the floor's walls, standing whole to the dark as now. */
-export const LOW_STACKS = { on: false };
+export const LOW_STACKS = { on: true };
 
 /** How tall a low row stands, picture pixels: a block, as tall as a tile is wide (a tile's edge is about 40 of them). */
 export const LOW_RISE = 42;

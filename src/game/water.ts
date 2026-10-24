@@ -11,7 +11,7 @@ import type { Land } from './act1_layout';
 import type { Level } from './state';
 
 /** THE SWITCH. */
-export const LEAP_WATER = { on: false };
+export const LEAP_WATER = { on: true };
 
 /** How far from a river's middle line, and from a race's, a tile's middle may be and its tile be water (tiles): the open ground stops at 0.95 and 0.5 (act2/millrace.ts MR_WET, the Pinewood's the same), and the bank's tile beyond it is water's too. */
 export const WATER_REACH = { river: 1.5, race: 1.0 };

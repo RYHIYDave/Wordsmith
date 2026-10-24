@@ -1,6 +1,7 @@
 // THE SWIPE OVER WATER (game/water.ts LEAP_WATER, off; turned on here): A FILM FROM THE GAME for his yes. Floor 13, the Millrace:
 // the hero in the mill's yard beside the race, his swipe move across it onto the strip past the wheel, the walk up the strip to
-// the chest, and the swipe on over the river to its far bank. Frames as it plays, slowed (<out>_<cls>_f0000.png ...), for a video
+// the chest, and (by the mill the river runs along the floor's edge) at the nearest place with ground on both banks, the swipe
+// over the river to its far bank. Frames as it plays, slowed (<out>_<cls>_f0000.png ...), for a video
 // put together after. Each swipe's landing is logged, with '!!' if he stands in the water or did not cross. Not a test.
 //   node tools/playtest.mjs --file dist/next.html --touch --size 844x390 --dpr 1.5 --scenario tools/scenarios/leap_water_film.mjs --out shots/leap/x
 // SEED: the run's dice (5). CLASSES: whose swipes (warrior,ranger,mage). SLOW: how slowed (0.4).
@@ -96,9 +97,36 @@ export default async function (page, snap) {
     // ---- up the strip to the chest ----
     await walkTo(m.chest[0] - 0.4, m.chest[1] + 0.5 + m.s, 6000);
     await rec(1500);
-    // ---- over the river, to its far bank ----
-    const b = await swipe(m.cx + 7.5, m.chest[1] + 0.5 + m.s, `${cls}, over the river`);
-    if (!b.ground || b.water || b.x < m.cx + 5.5) log(`!! ${cls}: did not land on the river's far bank`);
+    // ---- over the river, to its far bank: by the mill it runs along the floor's edge, so a place along it nearest the mill
+    // with ground on both banks within the swipe's reach ----
+    const cross = await page.evaluate(([mx, my]) => {
+      const g = window.__dbg.game();
+      const L = g.level; const f = L.floor; const rv = L.land.river;
+      const ok = (x, y) => x >= 0 && y >= 0 && x < f.w && y < f.h && L.walk[Math.floor(y) * f.w + Math.floor(x)] === 1 && g.free(L.walk, x, y, 0.35);
+      let best = null;
+      for (let j = 0; j + 1 < rv.length; j++) {
+        const [x0, y0] = rv[j]; const [x1, y1] = rv[j + 1];
+        const len = Math.hypot(x1 - x0, y1 - y0);
+        for (let u = 0; u < len; u += 0.5) {
+          const px = x0 + ((x1 - x0) * u) / len; const py = y0 + ((y1 - y0) * u) / len;
+          const nx = -(y1 - y0) / len; const ny = (x1 - x0) / len;
+          let a = null; let b = null;
+          for (let d = 1.2; d <= 3 && !a; d += 0.1) if (ok(px + nx * d, py + ny * d)) a = { x: px + nx * (d + 0.4), y: py + ny * (d + 0.4) };
+          for (let d = 1.2; d <= 3 && !b; d += 0.1) if (ok(px - nx * d, py - ny * d)) b = { x: px - nx * (d + 0.4), y: py - ny * (d + 0.4) };
+          if (!a || !b || !ok(a.x, a.y) || !ok(b.x, b.y) || Math.hypot(a.x - b.x, a.y - b.y) > 5.5) continue;
+          const dm = Math.hypot(px - mx, py - my);
+          if (!best || dm < best.d) best = { a, b, d: dm };
+        }
+      }
+      return best;
+    }, [m.chest[0], m.chest[1]]);
+    log(`${cls}: a crossing`, JSON.stringify(cross));
+    if (cross) {
+      await page.evaluate(([x, y]) => { const h = window.__dbg.game().hero; h.x = x; h.y = y; }, [cross.a.x, cross.a.y]);
+      await rec(2500);
+      const b = await swipe(cross.b.x, cross.b.y, `${cls}, over the river`);
+      if (!b.ground || b.water || Math.hypot(b.x - cross.b.x, b.y - cross.b.y) > 1.2) log(`!! ${cls}: did not land on the river's far bank`);
+    } else log(`!! ${cls}: no place to cross the river`);
     await rec(1200);
     await page.evaluate(() => { window.__dbg.slowmo = 1; });
   }

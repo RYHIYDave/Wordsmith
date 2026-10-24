@@ -56,7 +56,7 @@ export const BUILT = true;
  * steps, the catalogue and the heaps of books stay at the shelves' ends, on the rows' own lines. (The dice are thrown as before,
  * so that nothing else of the floor moves.)
  */
-export const AISLES_CLEAR = { on: false };
+export const AISLES_CLEAR = { on: true };
 
 /**
  * WHAT EACH WALKABLE TILE IS (Land.zones), as the art's look reads it (art/library.ts LB_ZONE: these are its numbers, held to
