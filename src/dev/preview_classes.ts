@@ -33,14 +33,34 @@ let UP = 80;
 let DOWN = 8;
 let CLOSE = 0;
 panes.push({ n: '', name: 'The knight, for size', f: paintMove3(MOVES3.ktown, 0, 'front'), flies: WARRIOR_TAILS });
-if (picks) {
+if (picks && lookArg === 'turn') {
+  // HIS PICKS FROM FRONT AND BACK (the apothecary with the vials, his pick)
+  heading = 'Your picks, front and back · sketches · not in the game';
+  panes.length = 0;
+  panes.push({ n: '', name: 'The knight, front', f: paintMove3(MOVES3.ktown, 0, 'front'), flies: WARRIOR_TAILS });
+  panes.push({ n: '', name: 'The knight, back', f: paintMove3(MOVES3.ktown, 0, 'back'), flies: WARRIOR_TAILS });
+  for (const id of ['brawler3', 'warlock3', 'apothecary3'] as const) {
+    const l = CLASSES[id].looks[0];
+    const who = CLASSES[id].title.replace('The ', '');
+    panes.push({ n: '', name: `The ${who}, front`, f: paintClassLook(id, 0, 'front') });
+    panes.push({ n: '', name: `The ${who}, back`, f: paintClassLook(id, 0, 'back') });
+    void l;
+  }
+} else if (what === 'demon') {
+  // THE DEMON FORMS, beside the knight and the warlock he picked
+  heading = "The warlock's demon: forms to choose from · sketches · not in the game";
+  panes.push({ n: '', name: 'The warlock (A, his pick)', f: paintClassLook('warlock3', 0) });
+  cl.looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(what, k) }));
+  HALF = 46;
+  UP = 112;
+} else if (picks) {
   // HIS PICKS, the three classes side by side (the apothecary both ways)
   heading = 'Your picks · sketches · not in the game';
   for (const id of ['brawler3', 'warlock3', 'apothecary3'] as const) {
     CLASSES[id].looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(id, k) }));
   }
 } else cl.looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(what, k) }));
-if (lookArg === 'close') {
+if (lookArg === 'close' && !picks) {
   heading = heading.replace(' · sketches', ', close up · sketches');
   HALF = 24;
   UP = 90;

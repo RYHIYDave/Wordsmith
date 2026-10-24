@@ -461,6 +461,8 @@ export interface ClassLook {
   name: string;
   /** Which body (a man's or a woman's of the class) */
   f?: boolean;
+  /** (the demon) the leaner of its two bodies */
+  lean?: boolean;
   paint: (c: C) => void;
 }
 
@@ -1560,6 +1562,285 @@ export const APOTHECARY_PICKS: ClassLook[] = [
   { n: 'B', name: 'Apothecary: satchel', paint: bomberPick('satchel') },
 ];
 
+// ---------------------------------------------------------------------------------------------
+// THE WARLOCK'S DEMON: what he turns into (the owner: "will transform into a demon so keep that in mind"; and his yes to "next,
+// each drawn from front and back, then the warlock's demon form"). Forms to choose from, each grown out of his pick: the
+// demon's arm he already has (red hide, claws, spines, cracks of cyan light), his swept ivory horns, the spiked pauldron
+// grown into bone; a rag of his coat left round the hips. Bigger than he is. What glows on him is cyan, as on any friend.
+
+/** The demon: half again a hero's bulk, a head taller than the knight. */
+export const DEMON_BODY: Build = buildOf(68, HEAD_B * 0.92, { shoulders: 1.42, chest: 1.4, waist: 1.04, hips: 1.0, depth: 1.2, arms: 1.12, limbs: 1.42, pad: 1.2 });
+export const DEMON_LEAN: Build = buildOf(68, HEAD_B * 0.92, { shoulders: 1.2, chest: 1.12, waist: 0.86, hips: 0.9, depth: 1.0, arms: 1.16, limbs: 1.1, pad: 1.0 });
+/** THE DEMON'S STANCE: hunched forward, knees wide and bent, his arms out from him, claws open. */
+export function menaceOf(B: Build): Bones {
+  const t = B.tall / 68;
+  return {
+    ...standing(B),
+    pz: -3.2 * t, bend: 14, pitch: 4, yaw: -8, faceUp: 6,
+    lfx: 2.4 * t, lfy: 3.6 * t, lft: 22, lk: 26,
+    rfx: -2.0 * t, rfy: -3.6 * t, rft: -26, rk: -24,
+    lhIn: 0, lhx: 9 * t, lhy: 8 * t, lhz: -7 * t, le: 55,
+    rhIn: 0, rhx: 8 * t, rhy: -8 * t, rhz: -8 * t, re: 55,
+  };
+}
+/** Hide: the demon's arm's red, and others. */
+const HIDE_RED: Ramp = RUST;
+const HIDE_BLACK: Ramp = ['#0c0a16', '#0c0a16', '#1e1a2c', '#38324e', '#38324e'];
+const FUR: Ramp = ['#24160e', '#24160e', '#4a3020', '#70482e', '#70482e'];
+
+/** A demon's trunk: hide, the muscle of the chest and belly marked, cracks of light over it (`n` of them). */
+function demonTrunk(c: C, hide: Ramp, n = 3): Sheet {
+  const body = torso(c, hide, hide, 0.9);
+  pecs(c, body, hide);
+  if (!c.fromBehind) {
+    for (const k of [0.35, 0.6]) lineOn(c, body, off(c.s.waist, c.s.hips, c.B.waistDeep + 0.8, 2.2, k * 5), off(c.s.waist, c.s.hips, c.B.waistDeep + 0.8, -2.2, k * 5), hide[1]);
+  }
+  if (n) cracks(c, body, off(c.s.neck, c.s.chest, c.B.ribDeep, 2.5, -3), off(c.s.waist, c.s.hips, c.B.waistDeep, -2.5, 1), n, 7);
+  return body;
+}
+/** Its arms: thick hide, claws on both hands, spines down the forearms, cracks of light. */
+function demonArms(c: C, hide: Ramp): void {
+  const { st, s, B, mine } = c;
+  const [aS, aE, aW] = B.armR;
+  for (const side of ['L', 'R'] as const) {
+    const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+    const el = side === 'L' ? s.elbowL : s.elbowR;
+    const hand = side === 'L' ? s.handL : s.handR;
+    const up = st.part(mid(sh, el));
+    rod(up, st, sh, el, aS + 1.1, aE + 0.9, mine(hide, el));
+    const fo = st.part(mid(el, hand, 0.6));
+    rod(fo, st, el, hand, aE + 1.0, aW + 0.9, mine(hide, hand));
+    ball(st.part(st.near(hand) + 0.2), st, hand, [[aW + 1.4, 0, 0], [0, aW + 1.4, 0], [0, 0, aW + 1.3]], mine(hide, hand));
+    claws(c, hand, el);
+    for (let i = 1; i <= 3; i++) {
+      const at = lerp3(el, hand, i * 0.22);
+      rod(fo, st, at, add(at, [0, 0, 2.4]), 0.75, 0.15, IVORY);
+    }
+    cracks(c, fo, el, hand, 1, side === 'L' ? 3 : 8);
+  }
+}
+/** Its legs: hide (or fur) to the ankle; feet clawed, or hooves. */
+function demonLegs(c: C, hide: Ramp, hoof = false, fur: Ramp | null = null): void {
+  const { st, s, B, mine } = c;
+  const [lH, lK, lA] = B.legR;
+  for (const side of ['L', 'R'] as const) {
+    const hip = side === 'L' ? s.hipL : s.hipR;
+    const knee = side === 'L' ? s.kneeL : s.kneeR;
+    const ankle = side === 'L' ? s.ankleL : s.ankleR;
+    const heel = side === 'L' ? s.heelL : s.heelR;
+    const toe = side === 'L' ? s.toeL : s.toeR;
+    const thigh = st.part(mid(hip, knee));
+    rod(thigh, st, hip, knee, lH + (fur ? 1.0 : 0.3), lK + (fur ? 1.0 : 0.3), mine(fur ?? hide, knee), { shade: 0.12 });
+    const shin = st.part(mid(knee, ankle));
+    rod(shin, st, knee, ankle, lK + (fur ? 0.9 : 0.3), lA + (fur ? 0.6 : 0.3), mine(fur ?? hide, ankle));
+    if (hoof) {
+      rod(shin, st, add(ankle, [0, 0, -0.4]), add(lerp3(heel, toe, 0.55), [0, 0, 1.2]), lA + 0.9, lA + 1.1, HORN, { shade: 0.1 });
+    } else {
+      rod(shin, st, add(heel, [0, 0, 1.6]), add(toe, [0, 0, 1.2]), 1.9, 1.5, mine(hide, ankle), { shade: 0.15 });
+      const fd = norm(sub(toe, heel));
+      for (const k of [-1, 1]) {
+        const a = add(toe, add(mul(fd, 0.6), [k * 0.8, k * 0.6, 1.0]));
+        rod(st.part(st.near(a) + 0.3), st, a, add(a, add(mul(fd, 2.2), [0, 0, -1.0])), 0.6, 0.2, IVORY);
+      }
+    }
+  }
+}
+/** Its head: hide, a heavy brow, eyes of cyan light, a jaw of fangs; horns. */
+function demonHead(c: C, hide: Ramp, hide4: R4, horn: HornKind, hornLong = 10, mane: Ramp | null = null): Sheet {
+  const hd = face(c, { skin: hide4, blind: true, hairAt: mane ? (f, l, up) => f < -0.1 || up > 0.55 : () => false, hair: mane ?? undefined, mouth: null, neck: hide });
+  for (const turn of EYES) {
+    dotOn(c, hd, turn, 0.14, '#ffffff');
+    dotOn(c, hd, turn, 0.14, GLINT, 1, 0);
+    dotOn(c, hd, turn, 0.24, hide[1]);
+    dotOn(c, hd, turn, 0.24, hide[1], 1, 0);
+  }
+  // (the fangs: white teeth in a dark mouth)
+  for (let d = -16; d <= 12; d += 5) {
+    const t = (EYES[0] + EYES[1]) / 2 + d;
+    dotOn(c, hd, t, -0.5, INK);
+    dotOn(c, hd, t, -0.5, d % 2 === 0 ? '#ffffff' : INK, 0, 1);
+  }
+  horns(c, horn, { long: hornLong, thick: 2.0 });
+  void hide;
+  return hd;
+}
+/** A rag of his coat round the hips. */
+function rag(c: C, ramp: Ramp = COAL): void {
+  const { B } = c;
+  skirt(c, ramp, { drop: B.thigh * 0.55, wide: 2.4, deep: 2.2, hem: RUST, ragged: true, folds: [0, 180, 90, -90] });
+}
+/** Great wings, leather between bone fingers, from his shoulder blades, half spread. */
+function wings(c: C, membrane: Ramp, span = 1): void {
+  const { st, s, B } = c;
+  const back = off(s.ribs, s.chest, -B.ribDeep - 0.5, 0, 2);
+  for (const side of [1, -1]) {
+    const root = off(back, s.chest, 0, side * 2.2, 1.5);
+    const elbow = off(root, s.chest, -4, side * 10 * span, 13 * span);
+    const tips = [off(elbow, s.chest, -2, side * 13 * span, 11 * span), off(elbow, s.chest, -3, side * 18 * span, 3 * span), off(elbow, s.chest, -2, side * 15 * span, -8 * span), off(elbow, s.chest, -1, side * 7 * span, -15 * span)];
+    const p = st.part(st.near(root) - 2);
+    // (the membrane: each pane between two fingers, filled flat, dark toward its trailing edge)
+    const pts = [elbow, ...tips];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const tri = [st.at(i === 0 ? root : elbow), st.at(pts[i]), st.at(pts[i + 1])];
+      const z = st.near(elbow) - 2.5;
+      const xs = tri.map((v) => v[0]);
+      const ys = tri.map((v) => v[1]);
+      for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
+        for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) {
+          const [a, b, cc] = tri;
+          const d1 = (x - b[0]) * (a[1] - b[1]) - (a[0] - b[0]) * (y - b[1]);
+          const d2 = (x - cc[0]) * (b[1] - cc[1]) - (b[0] - cc[0]) * (y - cc[1]);
+          const d3 = (x - a[0]) * (cc[1] - a[1]) - (cc[0] - a[0]) * (y - a[1]);
+          const neg = d1 < 0 || d2 < 0 || d3 < 0;
+          const pos = d1 > 0 || d2 > 0 || d3 > 0;
+          if (neg && pos) continue;
+          // (scalloped: the trailing edge between two finger tips bites in)
+          const mx = (b[0] + cc[0]) / 2;
+          const my = (b[1] + cc[1]) / 2;
+          const edge = Math.hypot(x - mx, y - my) / (Math.hypot(b[0] - cc[0], b[1] - cc[1]) / 2 + 0.01);
+          if (edge < 0.55) continue;
+          const tone = edge < 0.75 ? 1 : (x + y) % 7 === 0 ? 3 : 2;
+          p.put(x, y, membrane[tone], z);
+        }
+      }
+    }
+    rod(p, st, root, elbow, 1.6, 1.2, IVORY);
+    for (const t of tips) rod(p, st, elbow, t, 1.0, 0.3, IVORY);
+  }
+}
+/** Bone plates grown over the hide: a breastplate of ribs, both shoulders spiked. */
+function bonePlates(c: C, body: Sheet): void {
+  const { st, s, B } = c;
+  pauldron(c, IVORY, 1, true);
+  pauldron(c, IVORY, -1, true);
+  if (c.fromBehind) return;
+  for (let i = 0; i < 4; i++) {
+    const y = -2.5 - i * 1.8;
+    const a = off(s.neck, s.chest, B.ribDeep + 0.9, B.ribHalf * (0.9 - i * 0.08), y - 0.6);
+    const m = off(s.neck, s.chest, B.ribDeep + 1.2, 0, y);
+    const b = off(s.neck, s.chest, B.ribDeep + 0.9, -B.ribHalf * (0.9 - i * 0.08), y - 0.6);
+    const p = st.part(st.near(m) + 0.4);
+    rod(p, st, a, m, 0.9, 1.1, IVORY);
+    rod(p, st, m, b, 1.1, 0.9, IVORY);
+  }
+  void body;
+}
+/** A crown of cyan fire round the head, rising off it. */
+function fireCrown(c: C): void {
+  const { st, s, hu, R } = c;
+  const [x, y] = st.at(add(s.head, mul(hu, R[2] * 1.25)));
+  for (let i = -4; i <= 4; i++) {
+    if (i % 2 !== 0 && Math.abs(i) > 1) continue;
+    const h = 5 + Math.round(5 * Math.abs(Math.sin(i * 1.7))) - Math.abs(i) * 0.5;
+    for (let j = 0; j < h; j++) {
+      const k = j / h;
+      const col = k < 0.3 ? '#ffffff' : k < 0.65 ? SPARK[3] : SPARK[2];
+      st.over.set(Math.round(x + i + Math.sin(j * 0.8 + i) * k), Math.round(y - j), col);
+    }
+  }
+}
+
+export const DEMONS: ClassLook[] = [
+  {
+    n: '1',
+    name: 'The brute: horns, spiked bone, tail',
+    paint: (c) => {
+      tail(c, HIDE_RED, -1);
+      demonLegs(c, HIDE_RED);
+      rag(c);
+      demonTrunk(c, HIDE_RED);
+      demonArms(c, HIDE_RED);
+      pauldron(c, IVORY, 1, true);
+      grimoire(c);
+      demonHead(c, HIDE_RED, ['#3e1222', '#7a2432', '#9a3a3c', '#b44a44'], 'swept', 11);
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: '2',
+    name: 'Winged: great bat wings',
+    lean: true,
+    paint: (c) => {
+      wings(c, HIDE_RED, 1.35);
+      tail(c, HIDE_RED, -1);
+      demonLegs(c, HIDE_RED);
+      rag(c);
+      demonTrunk(c, HIDE_RED, 2);
+      demonArms(c, HIDE_RED);
+      pauldron(c, IVORY, 1, true);
+      demonHead(c, HIDE_RED, ['#3e1222', '#7a2432', '#9a3a3c', '#b44a44'], 'swept', 12);
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: '3',
+    name: 'Shadow: black hide, cracked with light',
+    paint: (c) => {
+      tail(c, HIDE_BLACK, -1);
+      demonLegs(c, HIDE_BLACK);
+      rag(c, RUST);
+      const body = demonTrunk(c, HIDE_BLACK, 6);
+      void body;
+      demonArms(c, HIDE_BLACK);
+      cracks(c, c.st.part(c.st.near(c.s.elbowL) + 0.8), c.s.shoulderL, c.s.handL, 3, 4);
+      cracks(c, c.st.part(c.st.near(c.s.elbowR) + 0.8), c.s.shoulderR, c.s.handR, 3, 9);
+      pauldron(c, IVORY, 1, true);
+      demonHead(c, HIDE_BLACK, ['#0c0a16', '#1e1a2c', '#2c2640', '#38324e'], 'ram', 9);
+      handFire(c, c.s.handL, 1.2);
+    },
+  },
+  {
+    n: '4',
+    name: 'Goat-legged: fur and hooves, ram horns',
+    paint: (c) => {
+      tail(c, HIDE_RED, -1);
+      demonLegs(c, HIDE_RED, true, FUR);
+      demonTrunk(c, HIDE_RED);
+      demonArms(c, HIDE_RED);
+      pauldron(c, IVORY, 1, true);
+      grimoire(c);
+      demonHead(c, HIDE_RED, ['#3e1222', '#7a2432', '#9a3a3c', '#b44a44'], 'ram', 10, FUR);
+      beard(c, FUR, 3.0, 0.8);
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: '5',
+    name: 'Bone-armoured: ribs of bone',
+    paint: (c) => {
+      tail(c, HIDE_RED, -1);
+      demonLegs(c, HIDE_RED);
+      rag(c);
+      const body = demonTrunk(c, HIDE_RED, 2);
+      demonArms(c, HIDE_RED);
+      bonePlates(c, body);
+      demonHead(c, HIDE_RED, ['#3e1222', '#7a2432', '#9a3a3c', '#b44a44'], 'wide', 11);
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: '6',
+    name: 'Crowned in fire, chains on his wrists',
+    lean: true,
+    paint: (c) => {
+      tail(c, HIDE_RED, -1);
+      demonLegs(c, HIDE_RED);
+      rag(c, NIGHT);
+      demonTrunk(c, HIDE_RED, 4);
+      demonArms(c, HIDE_RED);
+      const { st, s } = c;
+      for (const [h, e] of [[s.handL, s.elbowL], [s.handR, s.elbowR]] as const) {
+        rod(st.part(st.near(h) + 0.4), st, lerp3(h, e, 0.25), lerp3(h, e, 0.08), c.B.armR[2] + 1.6, c.B.armR[2] + 1.6, COAL);
+        chain(c, st.part(st.near(h) + 0.6), lerp3(h, e, 0.15), add(h, [0, 0, -8]));
+      }
+      pauldron(c, IVORY, 1, true);
+      demonHead(c, HIDE_RED, ['#3e1222', '#7a2432', '#9a3a3c', '#b44a44'], 'up', 9);
+      fireCrown(c);
+      handFire(c, c.s.handL);
+    },
+  },
+];
+
 void [CYAN, curtain, fringe, rope, streak, tresses, satchel, MOSS, GREY, collar, hidden, thread, braid, PINK, BRASS, brimHat];
 
 /** The class sheets: which body, which stance, which looks. */
@@ -1573,6 +1854,7 @@ export const CLASSES = {
   brawler3: { title: 'The brawler', body: BRAWLER_BODY, bodyF: BRAWLER_F_BODY, pose: guardOf, looks: BRAWLER_PICK },
   warlock3: { title: 'The warlock', body: WARLOCK_BODY, bodyF: WARLOCK_F_BODY, pose: castOf, looks: WARLOCK_PICK },
   apothecary3: { title: 'The apothecary', body: APOTHECARY_BODY, bodyF: APOTHECARY_F_BODY, pose: throwOf, looks: APOTHECARY_PICKS },
+  demon: { title: "The warlock's demon", body: DEMON_BODY, bodyF: DEMON_LEAN, pose: menaceOf, looks: DEMONS },
 } as const;
 export type ClassId = keyof typeof CLASSES;
 
@@ -1580,7 +1862,7 @@ export type ClassId = keyof typeof CLASSES;
 export function paintClassLook(id: ClassId, k: number, view: GameView = 'front', pose?: Bones): Painted {
   const cl = CLASSES[id];
   const look = cl.looks[k];
-  const B = look.f ? cl.bodyF : cl.body;
+  const B = look.f || look.lean ? cl.bodyF : cl.body;
   const q = (pose ?? cl.pose(B)) as Posed;
   const s = solve(B, q);
   plainly(true);
