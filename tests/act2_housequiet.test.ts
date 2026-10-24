@@ -75,6 +75,17 @@ test('the switch is off; with it on floor 14 is laid by its own map-maker: indoo
   }
 });
 
+// (EXITS: a way on that stands in a back wall, the art chat's (game/ways.ts ONWARD place 'wall'), is its doorway, shut until it
+// opens: what is reached is the floor before it, a tile back from the wall into the room)
+function wayInTile(L: Level): number {
+  const f = L.floor;
+  const a1 = L.ways?.a1;
+  const tile = Math.floor(L.land!.exit.y) * f.w + Math.floor(L.land!.exit.x);
+  if (!a1) return tile;
+  const u = ({ 'x+': [1, 0], 'x-': [-1, 0], 'y+': [0, 1], 'y-': [0, -1] } as Record<string, number[]>)[a1.way.dir];
+  return L.walk[tile] === 1 ? tile : (a1.way.ref.y - u[1]) * f.w + a1.way.ref.x - u[0];
+}
+
 test('everything that matters is reached from where he comes in, on the walk grid as dressed: each bell, the Muffled Bell, the boss, the way on, every room; nothing walled off', () => {
   for (const s of SEEDS) {
     const L = floorOf(s);
@@ -87,7 +98,7 @@ test('everything that matters is reached from where he comes in, on the walk gri
     const m = tileOf(L, b.muffled);
     for (const d of [-W - 1, -W, -W + 1, -1, 1, W - 1, W, W + 1]) if (f.tiles[m + d] === T_FLOOR) assert.equal(seen[m + d], 1, `seed ${s}: round the Muffled Bell`);
     assert.equal(seen[tileOf(L, f.boss)], 1, `seed ${s}: the boss`);
-    assert.equal(seen[tileOf(L, L.land!.exit)], 1, `seed ${s}: the way on`);
+    assert.equal(seen[wayInTile(L)], 1, `seed ${s}: the way on`);
     if (L.ways?.way) assert.equal(seen[tileOf(L, L.ways.way)], 1, `seed ${s}: the waypoint`);
     for (const p of f.packs) assert.equal(seen[tileOf(L, p)], 1, `seed ${s}: a pack at ${p.x},${p.y}`);
     for (const r of f.rooms) {

@@ -22,6 +22,10 @@ import { WORD_COLOR } from '../src/art/icons';
 import { TK, paintTerrain, pictureOf, terrainOf, worldOf } from '../src/art/terrain';
 import type { RGB, Terrain } from '../src/art/terrain';
 import { CUT_FAR, CUT_NEAR, T_FLOOR, T_WALL } from '../src/game/types';
+import { FLOW } from '../src/art/flowing';
+// (THE PINEWOOD'S LOOK AS IT WAS PAINTED BEFORE THE RIVERS FLOWED: FLOW off in this file, as each look is made with it; the
+// flowing river, on since his yes of 22:06, 23 Oct 2026, is held by tests/flowing.test.ts)
+FLOW.on = false;
 import type { Floor } from '../src/game/types';
 
 const test = nodeTest as (name: string, fn: () => void) => void;

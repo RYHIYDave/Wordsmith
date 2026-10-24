@@ -197,7 +197,7 @@ test('THE BELLS\' CONTRACT (docs/act2_build.md) holds on every floor, and their 
   }
 });
 
-test('the Crier\'s Square is at least 26 tiles across; his rostrum and the proclamation are in it; the way on at its far side', () => {
+test('the Crier\'s Square is at least 26 tiles across; his rostrum and the proclamation are in it; the way on in its middle', () => {
   for (const seed of SEEDS) {
     const L = floorOf(seed);
     const r = bossRect(L);
@@ -209,11 +209,12 @@ test('the Crier\'s Square is at least 26 tiles across; his rostrum and the procl
     assert.ok(rost && inR(rost), `seed ${seed}: his rostrum in it`);
     const quest = L.props.find((p) => p.name === GW_NAMES.quest);
     assert.ok(quest && !quest.solid && Math.hypot(quest.x - rost!.x, quest.y - rost!.y) < 2, `seed ${seed}: the crier's last proclamation by the rostrum, walked over`);
-    // (the way on at the far side from where the way came in: further from the square's way in than its middle is)
-    const way = L.land!.way;
-    const from = way[way.length - 2];
-    const [cx, cy] = [(r[0] + r[2]) / 2, (r[1] + r[3]) / 2];
-    assert.ok(Math.hypot(L.land!.exit.x - from[0], L.land!.exit.y - from[1]) > Math.hypot(cx - from[0], cy - from[1]), `seed ${seed}: the way on at the far side`);
+    // (EXITS: the way on, the Crier's grate, lies flat in the middle of his square, the crier's ring of setts: the art chat's
+    // want for its picture, his yes there by 11:06, 23 Oct 2026; game/ways.ts placeOnward, 'square'. It was at the square's far
+    // side from where the way came in)
+    const sq = (L.land!.squares ?? []).slice().sort((p, q) => q.r - p.r)[0];
+    assert.ok(sq, `seed ${seed}: the square's ring`);
+    assert.ok(Math.hypot(L.land!.exit.x - sq.x, L.land!.exit.y - sq.y) < 1, `seed ${seed}: the way on in the middle of the square`);
     // (the boss's ground as the game asks it: its blob round it)
     const boss = L.land!.areas.find((a) => a.role === 'boss')!;
     assert.ok(boss.blob.rx >= 13 && boss.blob.ry >= 13 && boss.blob.wob === 0);

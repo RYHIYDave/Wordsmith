@@ -513,6 +513,18 @@ wait
 FLOORS=9 run onward9 --scenario $S/onward_look.mjs &
 FLOORS=10 run onward10_upright $U --scenario $S/onward_look.mjs &
 wait
+# FLOOR 10'S BOSS AND THE NEXT FLOORS (24.2): floors 11 and 13's ways on (13's door a tile on from its anchor); the swipe
+# over the race and a river; the exits' names once open; the Drowned Eye's sweep three in a row, back and forth; the stacks
+# a block high and floor 9's river flowing
+FLOORS=11 run onward11_phone $P --scenario $S/onward_look.mjs &
+FLOORS=13 run onward13 --scenario $S/onward_look.mjs &
+wait
+CLASSES=warrior,mage run leap_water --touch --size 844x390 --dpr 1.5 --scenario $S/leap_water_film.mjs &
+FLOORS=2,5,7,13 run exit_labels --touch --size 844x390 --dpr 2 --scenario $S/exit_labels.mjs &
+wait
+run eye_sweeps --touch --size 844x390 --dpr 1.5 --scenario $S/eye_sweeps.mjs &
+PARTS=stacks,river9 SECS=1 run next_looks $P --scenario $S/next_looks.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

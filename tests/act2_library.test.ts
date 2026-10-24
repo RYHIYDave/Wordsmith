@@ -259,9 +259,14 @@ test('its dressing: the doors where he comes in; chandeliers hung (nothing of th
     const L = floor15(s);
     const f = L.floor;
     const doors = L.props.filter((p) => p.name === LB_PIECES.doors);
-    assert.equal(doors.length, 1, `seed ${s}`);
-    assert.ok(Math.hypot(doors[0].x - f.start.x, doors[0].y - f.start.y) < 4, `seed ${s}: the doors behind where he comes in`);
-    assert.equal(doors[0].variant >> 1, 1, 'standing open');
+    // (EXITS, the art chat's START: where it stands in a back wall, its side door is where he comes in, its own picture, and the
+    // library's doors are not hung there again)
+    const sideDoor = !!(L.ways?.a1 && !L.ways.a1.start.none);
+    assert.equal(doors.length, sideDoor ? 0 : 1, `seed ${s}`);
+    if (!sideDoor) {
+      assert.ok(Math.hypot(doors[0].x - f.start.x, doors[0].y - f.start.y) < 4, `seed ${s}: the doors behind where he comes in`);
+      assert.equal(doors[0].variant >> 1, 1, 'standing open');
+    }
     const ch = L.props.filter((p) => p.name === LB_PIECES.chandelier);
     assert.ok(ch.length >= 10, `seed ${s}: ${ch.length} chandeliers`);
     assert.ok(ch.every((p) => !p.solid), 'they hang');

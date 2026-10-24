@@ -795,8 +795,13 @@ export function dress(L: Level, depth: number, seed: number): LibraryDress | nul
     const sy = Math.floor(f.start.y);
     const yWall = wallAt(sx, sy - 4) && floorAt(sx, sy - 3);
     const at = yWall ? { tx: sx, ty: sy - 3, face: 0 as const } : { tx: sx - 3, ty: sy, face: 1 as const };
-    onWall(LB_PIECES.doors, at, 1, 1.5);
-    for (const k of [-2, 2]) onWall(LB_PIECES.sconce, yWall ? { tx: sx + k, ty: sy - 3, face: 0 } : { tx: sx - 3, ty: sy + k, face: 1 }, 0, 1.5);
+    // (EXITS, the art chat's START: where he comes in is its side door in a back wall, its own picture (art/act2_ways.ts
+    // libraryStart): the library's doors and their sconces are not hung there again)
+    const sideDoor = !!(L.ways?.a1 && !L.ways.a1.start.none);
+    if (!sideDoor) {
+      onWall(LB_PIECES.doors, at, 1, 1.5);
+      for (const k of [-2, 2]) onWall(LB_PIECES.sconce, yWall ? { tx: sx + k, ty: sy - 3, face: 0 } : { tx: sx - 3, ty: sy + k, face: 1 }, 0, 1.5);
+    }
     for (const k of [-3, 3]) stand(LB_PIECES.candelabrum, yWall ? sx + k : sx - 2, yWall ? sy - 2 : sy + k);
     const m = { x: entrance.x + entrance.w / 2, y: entrance.y + entrance.h / 2 };
     hang(m.x, m.y, true);

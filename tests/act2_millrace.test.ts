@@ -26,6 +26,8 @@ import { spikeAt } from '../src/game/traps';
 import { T_FLOOR } from '../src/game/types';
 import { Act1Pieces, SEE_TALL, act1Pieces } from '../src/render/act1_pieces';
 import { paintWithoutCanvas } from './helpers';
+import { FLOW } from '../src/art/flowing';
+import { WHEEL_STEPS } from '../src/art/floor13';
 // (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
 // needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
 assert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
@@ -292,7 +294,13 @@ test('drawn: the drying lines are seen through as the art drew them for it; the 
   const wf = map.get(MR_PIECE.wheel)!.frames!;
   const shown = new Set<number>();
   for (let k = 0; k < 16; k++) shown.add(wf.indexOf(pieces.sprite(wheel, 0, 0.3 + k / 8) as never));
-  assert.deepEqual([...shown].sort(), [4, 5, 6, 7]);
+  if (FLOW.on) {
+    // (FLOW, the art chat's livelier wheel, his yes by 15:23 and 22:06, 23 Oct 2026: four rounds of WHEEL_STEPS, the one along
+    // this wheel's way and turning its way; an eighth of a paddle a frame, so most of its round in two seconds)
+    const base = (wheel.variant & 4 ? 2 : 0) * WHEEL_STEPS + (wheel.variant & 8 ? WHEEL_STEPS : 0);
+    assert.ok([...shown].every((i) => i >= base && i < base + WHEEL_STEPS), `its own round (${[...shown].sort((a, b) => a - b)})`);
+    assert.ok(shown.size >= WHEEL_STEPS / 2, `turning (${shown.size} frames)`);
+  } else assert.deepEqual([...shown].sort(), [4, 5, 6, 7]);
   // the stamping mill: at rest while its trap is down, lifted in its warning, down and struck as it springs
   const st = L.props.find((p) => p.name === MR_PIECE.stamper)!;
   const sf = map.get(MR_PIECE.stamper)!.frames!;

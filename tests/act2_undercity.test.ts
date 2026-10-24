@@ -96,6 +96,17 @@ test('floor 12 is laid by its own map-maker; its zones are the art\'s', () => {
   });
 });
 
+// (EXITS: a way on that stands in a back wall, the art chat's (game/ways.ts ONWARD place 'wall'), is its doorway, shut until it
+// opens: what is reached is the floor before it, a tile back from the wall into the room)
+function wayInTile(L: Level): number {
+  const f = L.floor;
+  const a1 = L.ways?.a1;
+  const tile = Math.floor(L.land!.exit.y) * f.w + Math.floor(L.land!.exit.x);
+  if (!a1) return tile;
+  const u = ({ 'x+': [1, 0], 'x-': [-1, 0], 'y+': [0, 1], 'y-': [0, -1] } as Record<string, number[]>)[a1.way.dir];
+  return L.walk[tile] === 1 ? tile : (a1.way.ref.y - u[1]) * f.w + a1.way.ref.x - u[0];
+}
+
 test('everything that matters is reached from where he comes in, on the walk grid (each bell, the Muffled Bell, the King, the way on, every pack)', () => {
   for (const seed of SEEDS) {
     const L = level(seed);
@@ -104,8 +115,8 @@ test('everything that matters is reached from where he comes in, on the walk gri
     const got = reached(L);
     const tile = (p: { x: number; y: number }): number => Math.floor(p.y) * W + Math.floor(p.x);
     assert.equal(got[tile(f.boss)], 1, `seed ${seed}: the King`);
-    assert.equal(got[tile(L.land!.exit)], 1, `seed ${seed}: the way on`);
-    assert.equal(L.walk[tile(L.land!.exit)], 1);
+    assert.equal(got[wayInTile(L)], 1, `seed ${seed}: the way on`);
+    assert.equal(L.walk[wayInTile(L)], 1);
     for (const p of f.packs) assert.equal(got[tile(p)], 1, `seed ${seed}: a pack at ${p.x}, ${p.y}`);
     const b = L.land!.bells!;
     for (const q of [b.muffled, ...b.bells]) {

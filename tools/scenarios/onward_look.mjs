@@ -131,12 +131,23 @@ export default async function (page, snap) {
     await quiet();
     await snap(`f${depth}_open`);
     // ---- WALKED INTO: ON ----
-    await page.evaluate(() => {
-      const g = window.__dbg.game();
-      const on = g.level.ways.onward;
-      g.hero.x = Math.floor(on.x) + 0.5; g.hero.y = Math.floor(on.y) + 0.5;
-    });
-    for (let k = 0; k < 20; k++) {
+    // (onto its way in: its own tile, or a tile or two on along its way, as floor 13's door is)
+    for (let k = 0; k < 3; k++) {
+      await page.evaluate((k) => {
+        const g = window.__dbg.game();
+        const on = g.level.ways.onward;
+        const u = { 'x+': [1, 0], 'x-': [-1, 0], 'y+': [0, 1], 'y-': [0, -1] }[g.level.ways.a1.dir];
+        g.hero.x = Math.floor(on.x) + 0.5 + u[0] * k; g.hero.y = Math.floor(on.y) + 0.5 + u[1] * k;
+      }, k);
+      let gone = false;
+      for (let j = 0; j < 8; j++) {
+        const s = await state();
+        if (s.depth !== depth || s.town) { gone = true; break; }
+        await page.waitForTimeout(250);
+      }
+      if (gone) break;
+    }
+    for (let k = 0; k < 12; k++) {
       const s = await state();
       if (s.depth !== depth || s.town) break;
       await page.waitForTimeout(250);
