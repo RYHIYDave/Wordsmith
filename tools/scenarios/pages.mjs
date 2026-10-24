@@ -279,6 +279,12 @@ export default async function (page, snap) {
   await press('bag:0');
   s = await st();
   check('a piece pressed on ATTACKS turns to GEAR, the piece looked at', s.page === 'gear' && !!s.sel && s.sel.kind === 'bag' && s.sel.i === 0, `${s.page} ${JSON.stringify(s.sel)}`);
+  // (WORD_HALF, 24.2: the piece's card stands above the words' panel, never over a word: they stay at hand while it is read)
+  {
+    const card = s.rects.card;
+    const under = card ? Object.entries(s.rects).filter(([k, r]) => k.startsWith('word:') && r.x < card.x + card.w && card.x < r.x + r.w && r.y < card.y + card.h && card.y < r.y + r.h).map(([k]) => k) : [];
+    check('its card lies over none of the words', !!card && under.length === 0, card ? under.join(' ') : 'no card');
+  }
 
   // ---- 5. a word carried over the name of a page turns to it ------------------------------------------------
   {

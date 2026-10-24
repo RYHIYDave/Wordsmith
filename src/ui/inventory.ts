@@ -1588,7 +1588,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
 
     const foot = buttons.length ? bh + 5 : 0;
     const tall = content(0, 0, inner, true, Infinity);
-    const most = (below ? gameR.h : H) - 6;
+    // (WORD_HALF: the card stands above the words' own panel, never over it: the words stay at hand while a piece is read)
+    const most = halfR ? Math.max(40, halfR.y - 5) : (below ? gameR.h : H) - 6;
     const ch = Math.min(most, 5 + tall + foot + 3);
     let cx: number;
     let cy0: number;
@@ -1620,6 +1621,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         cy0 = Math.max(2, Math.min(R.y - ch - 3, foot0 - ch));
       } else cy0 = Math.max(3, Math.min(H - ch - 3, foot0 - ch));
     }
+    if (halfR && cx < halfR.x + halfR.w && cx + cardW > halfR.x && cy0 + ch > halfR.y - 3) cy0 = Math.max(2, halfR.y - 3 - ch);
     if (side) {
       // (over a service's half the card lies on lettering, not on the game: a dark margin round it keeps the two apart)
       g.globalAlpha = 0.72;
