@@ -21,6 +21,8 @@ Oct 8, 2026
 > **CHANGED BY THE OWNER, 18 Oct 2026: BUILDINGS YOU CAN GO INTO.** His words to the art chat for floors 11 to 15, to the first picture of the Gate Ward: "It looks great, but I don’t like the big wood floors open.  Can we make it so the fronts of any building you can go into is there, but once you enter, the wholefacade fades to transparent so you can see inside?"; shown it so (a film of the knight walking into the tavern), his pick: "Yes, on to the pieces (Recommended)"; then: "Let’s make this a rule for rooms and buildings to go into.  The walls are transparent once you go into them.  Or look into them?"; asked when they clear, "Let’s try when you step inside, but remind me in a couple days to revisit this topic" (a reminder is set on his phone for 20 Oct). So Places has a new rule 9, and the doc is at rev 83 with it. The pictures and the code: the branch `mockup/act2-gateward` (`src/art/gateward.ts`, `houseShell`).
 >
 > **CHANGED BY THE OWNER, 14 Oct 2026: A FLIER IS THE EXCEPTION TO "FEET GRIP THE FLOOR".** Asked whether a flier is an exception to "Feet grip the floor" (Movement 8), his pick, 14 Oct: "Yes, add it (Recommended)". So Movement 8 says so. This copy has it; his living doc does not yet (this chat has not edited it).
+>
+> **CHANGED BY THE OWNER, 24 Oct 2026: REAL SHAPES, NOT CIRCLES AND SQUARES, FOR ALL ART.** His words to the art chat of the new classes, 23 Oct, by 22:21: “Wrap the fists but keep the outfit.  And make sure the characters don’t just look like circles and squares slapped together”; at 10:41, 24 Oct: “I’d like the circles and squares comment to be made a rule for all characters and bosses at least.  Maybe all art needs that rule.”; asked how far it should reach, his pick by 10:44: “All art (Recommended)”. So How art is made and approved has a new rule 9, and the Never line under the pillars names it. The doc is at rev 85 with both.
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
@@ -34,7 +36,7 @@ Five rules sit above all the others. When two rules clash, these win.
 4. **Friend cyan, enemy pink.** What glows on a friend is cyan. What glows on an enemy is hot pink burning to gold. Nothing else glows in those colours.
 5. **Wordsmithing glows.** The words are the heart of the game, and anything with a word in it shows it.
 
-**Never:** cute or kiddy (big eyes, round toy shapes, candy colours); plastic 3D (a smooth, shiny computer-render look); a copy of anyone else's design.
+**Never:** cute or kiddy (big eyes, round toy shapes, candy colours); plastic 3D (a smooth, shiny computer-render look); a copy of anyone else's design; circles and squares slapped together (How art is made and approved, rule 9).
 
 **The two games it sits between:** Dead Cells and Hyper Light Drifter. They are for feel only; nothing is copied from them.
 
@@ -203,6 +205,7 @@ Pictures first, your yes, then one chat puts it in.
 6. **Checked at phone size.** Every figure and effect is looked at as a phone shows it before it is sent to you.
 7. **Every boss through every check, as the heroes were.** Before you see a boss, he gets the whole review the heroes had on 8 Oct, in every frame of every move, from in front and from behind, by tests that run every time: nothing passes through his body or what he wears (his arms, an axe, a chain, a ball); his feet grip the floor; nothing of him sinks into it; nothing jerks or jumps, inside a move or from one move to the next; every blow winds up, turns the hips and follows through; a landing sinks; loose things follow; he breathes when still; only the enemy's colours glow; every pixel is crisp. One that fails is fixed before you see it. In your words, 9 Oct: “I need all bosses ran through all checks from now on.  These boss fights are important”, “Add it to the rulebook.  All checks must be made.” and “And every boss gets the same treatment as characters”.
 8. **Your words, exactly.** When a rule quotes you, the quote is exact.
+9. **Real shapes, not circles and squares.** Nothing in the game looks like circles and squares slapped together. A hero, monster, boss or helper is sculpted as one body: its parts grow into each other, with a real outline (a jaw, a waist, knuckles, the swell of a muscle, the hang of cloth). A prop, a piece of a place or an effect is shaped as the thing it is, never a plain ball, box or ring. Everything is checked for it before you see it. In your words, 23 Oct: “And make sure the characters don’t just look like circles and squares slapped together”; 24 Oct: “I’d like the circles and squares comment to be made a rule for all characters and bosses at least.  Maybe all art needs that rule.”; asked how far it reaches, “All art (Recommended)”.
 
 ## The numbers
 

@@ -163,6 +163,8 @@ planted on the floor, spread, talons dug in (demonHand). Every check run on all 
 Asked what next, by 10:40: “Polish faces up close”. Read as (told him so): the brawler's face and beard, the Tinkerer's
 face, the warlock's under his hood; each worked close, checked at the game's size.
 
+A RULE FOR ALL ART, at 10:41: “I’d like the circles and squares comment to be made a rule for all characters and bosses at least.  Maybe all art needs that rule.” Asked how far it should reach, his pick by 10:44: “All art (Recommended)”. Written into his art rulebook (his doc at rev 85; docs/art/RULEBOOK.md here) as How art is made and approved, rule 9, “Real shapes, not circles and squares”, and named in the Never line under the pillars.
+
 ## What glows
 
 All of them are the hero's side: what glows on them, the demon, the Contraption and the Golem too, is the friend's cyan.
