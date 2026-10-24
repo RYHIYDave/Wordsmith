@@ -52,6 +52,8 @@ export const CONTRAPTION_BUILDS: { id: ContraptionBuild; name: string }[] = [
  * HIS TWO (24 Oct, by 12:38: “Either the current one or the revolver drum”): the one he has, a mortar on a tripod, made
  * again in real shapes; and the revolver drum, its six vials seen. Both shown for him to pick.
  */
+/** HIS PICK of the two, by 12:43, 24 Oct: “1. Tripod mortar”. */
+export const CONTRAPTION_PICK: ContraptionBuild = 'tripod';
 export const CONTRAPTION_TWO: { id: ContraptionBuild; name: string }[] = [
   { id: 'tripod', name: 'The tripod mortar, made again' },
   { id: 'drum', name: 'The revolver drum, made again' },

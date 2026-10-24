@@ -11,6 +11,7 @@ import { GOLEM_BUILDS, GOLEM_PICK, sculptGolemBuild } from './sculpt_golem';
 import { sculptWarlock } from './sculpt_warlock';
 import { sculptContraption, sculptGolem, sculptTinkerer } from './sculpt_tinkerer';
 import { DEMON_LOOKS, sculptDemon } from './sculpt_demon';
+import { CONTRAPTION_PICK, sculptContraptionBuild } from './sculpt_contraption';
 import { HULK_CANVAS } from './demon_hulk';
 import { sculptWarlock as warlockFor } from './sculpt_warlock';
 
@@ -79,7 +80,7 @@ const build = (): void => {
     panes.push({ name: 'The warlock', px: sculptWarlock('front').px });
     panes.push({ name: 'The Tinkerer', px: sculptTinkerer('front').px });
     panes.push({ name: 'Her Golem', px: sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, GOLEM_PICK.giant).px });
-    panes.push({ name: 'Her Contraption', px: sculptContraption('front').px });
+    panes.push({ name: 'Her Contraption', px: sculptContraptionBuild('front', CONTRAPTION_PICK).px });
     UP = 98;
   } else if (whatArg === 'outfits2') {
     heading = 'The brawler: four new outfits · sculpted sketches · not in the game';
