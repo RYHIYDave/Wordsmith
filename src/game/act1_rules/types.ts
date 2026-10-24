@@ -45,6 +45,12 @@ export interface Act1Rules {
   floorBlow?(R: BossRules, p: Peril, x: number, y: number, rad: number, el: Element): void;
   /** A boss: where he stands as the floor is made (tiles), and the way he faces; null: where the floor has him. */
   bossAt?(L: Level): { x: number; y: number; fx: number; fy: number } | null;
+  /**
+   * Whether the hero sees it, a body too big for its middle tile alone to say: true if he sees any of it (`sees`: whether a
+   * tile is in his sight). The Drowned Eye fills his pool: the ring's stones and pillars hid his middle tile from a third of
+   * the ring, and him with it (game.ts updateMonsters; the owner, 23 Oct 2026, 15:21: “He stutters in and out of view”).
+   */
+  seenBy?(m: Monster, sees: (tx: number, ty: number) => boolean): boolean;
   /** Whether the hero's blows reach it now (false: under the water, below the lip). */
   reachable?(m: Monster): boolean;
   /** Up in the air now, over what is on the ground: it neither jostles nor is jostled by what stands under it (game.ts). Struck all the same: a vulture overhead. */

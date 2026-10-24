@@ -553,3 +553,42 @@ test('11. a long fight through all his phases to his death, nothing thrown; noth
   assert.equal(g.monsters.filter((o) => o.kind === 'spawn' && !o.dead).length, 0, 'his eyespawn go with him');
 });
 
+
+test('12. he is seen from wherever on his ring the hero sees any of his pool, not only his middle tile (his stutter in and out of view)', () => {
+  // (the owner, 23 Oct 2026, 15:21: “He stutters in and out of view”: his middle tile was hidden by the ring's stones and
+  // pillars from a third of the ring, and with it he went from sight, and was not drawn)
+  const { g, m } = arena(5);
+  assert.ok(RULES.seenBy, 'his rules say where he is seen from');
+  let places = 0;
+  let middleHid = 0;
+  for (const r of [4.2, 5.2, 6.5]) {
+    for (let k = 0; k < 24; k++) {
+      const aim = k * 15;
+      const p = onAim(aim, r);
+      if (!g.free(g.level.walk, m.x + p.x, m.y + p.y, TUNE.heroRadius + 0.05)) continue;
+      g.hero.x = m.x + p.x;
+      g.hero.y = m.y + p.y;
+      // (a few steps: the hero's sight is made again each tenth of a second)
+      watch(g, m, 0.25, null as never, () => {
+        g.hero.invuln = 1e9;
+      });
+      g.hero.x = m.x + p.x;
+      g.hero.y = m.y + p.y;
+      watch(g, m, 0.12);
+      places++;
+      const f = g.level.floor;
+      if (g.level.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] !== 1) middleHid++;
+      assert.ok(m.seen, `seen from ${r} tiles out at ${aim} degrees`);
+    }
+  }
+  assert.ok(places >= 50, `the ring stood on in ${places} places`);
+  // (the case it is for: from some of them his middle tile is out of sight)
+  assert.ok(middleHid > 0, `his middle tile hidden from ${middleHid} of them`);
+  // (and not from beyond the hero's sight)
+  g.hero.x = m.x + 30;
+  g.hero.y = m.y;
+  if (g.free(g.level.walk, g.hero.x, g.hero.y, TUNE.heroRadius)) {
+    watch(g, m, 0.3);
+    assert.ok(!m.seen, 'not seen from thirty tiles off');
+  }
+});

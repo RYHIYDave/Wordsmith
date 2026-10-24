@@ -6186,6 +6186,11 @@ export class Game {
       m.flash = Math.max(0, m.flash - dt);
       m.barT = Math.max(0, m.barT - dt);
       m.seen = L.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] === 1;
+      // (ACT 1: a body bigger than its middle tile, seen where any of it is, as its kind's rules have it: the Drowned Eye's pool)
+      if (!m.seen && ACT1.on) {
+        const r1 = act1Rules(m.kind);
+        if (r1 && r1.seenBy) m.seen = r1.seenBy(m, (tx, ty) => tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && L.visible[ty * f.w + tx] === 1);
+      }
       const dx = h.x - m.x;
       const dy = h.y - m.y;
       const dist = Math.hypot(dx, dy);

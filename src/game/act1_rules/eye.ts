@@ -195,6 +195,8 @@ export const CALL = { n: 9, from: 0.35, apart: 0.12, nearHim: 3 };
 export const SPAWN = { most: 3 };
 /** He sees what is in sight of this far out from his middle, toward it (tiles: past his pool's rim and the cut stones round it). */
 export const SIGHT_FROM = 3.6;
+/** The hero sees him if he sees any tile of his pool out to this much of its edge (RULES.seenBy): its rim's stones too. */
+export const SEEN_POOL = 1.1;
 /** In phase 3 he is quicker to move again, by this much (his waits between moves, and his moves' cooldowns). */
 export const BLAZING = { hurry: 0.65 };
 /**
@@ -373,6 +375,21 @@ export const RULES: Act1Rules = {
 
   // (always: his eye is in his pool, and whatever reaches it from the ring strikes him)
   reachable: () => true,
+
+  // (SEEN WHEREVER HIS POOL IS: he fills it, and rises out of it; his middle tile alone was hidden from a third of his ring by
+  // its stones and pillars, and he went from sight as the hero went round. The owner, 23 Oct 2026, 15:21: “He stutters in
+  // and out of view”)
+  seenBy(m, sees) {
+    const P = EYE_ARENA.pool;
+    const k = SEEN_POOL;
+    for (let ty = Math.floor(m.y - P.ry * k); ty <= Math.floor(m.y + P.ry * k); ty++) {
+      for (let tx = Math.floor(m.x - P.rx * k); tx <= Math.floor(m.x + P.rx * k); tx++) {
+        if (Math.hypot((tx + 0.5 - m.x) / P.rx, (ty + 0.5 - m.y) / P.ry) > k) continue;
+        if (sees(tx, ty)) return true;
+      }
+    }
+    return false;
+  },
 
   spawned(R, m) {
     st(m);
