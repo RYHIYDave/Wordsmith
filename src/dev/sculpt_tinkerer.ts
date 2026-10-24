@@ -101,6 +101,9 @@ export function womanHead(sc: Sculpt, w: Who, skin: number): void {
 // ---------------------------------------------------------------------------------------------
 // THE TINKERER
 
+/** Tan leather: her work gloves. */
+const TAN: Ramp = ['#3a2014', '#6a3c22', '#a0663a', '#d09a5a', '#f0c888'];
+
 /** QUICK AND NIMBLE: crouched light on her toes, turned a little, a vial up by her ear in her right hand, ready to lob; her
  * wrench out low in her left; her head up, grinning. */
 export function tinkererStance(B: Build): Bones {
@@ -206,6 +209,21 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
     const c = add(bc, add(mul(dir, t.belly.h[0] * 0.5 + t.belly.h[1] * 0.5 + 1.9), mul(u, -0.9)));
     sc.cone(vialMats[(i + 1) % 4], 'hips', add(c, mul(u, -1.0)), add(c, mul(u, 0.7)), 0.75, 0.65, 0.3, { tag: 'vial' });
   }
+  // HER HANDS, in leather work gloves with flared cuffs: big enough to read (his “Her hands are tiny too”, 24 Oct, by 06:57
+  // Pacific), about half her head's width, as the heroes' are
+  const glove = sc.mat({
+    ramp: TAN,
+    paint: (h) => {
+      if (h.prim.tag === 'cuff') return shadeOf(TAN, h.tone - (farArm(h.prim.piece) ? 2 : 1));
+      return farArm(h.prim.piece) ? shadeOf(TAN, h.tone - 1) : null;
+    },
+  });
+  const gloved = (el: V3, ha: V3, d: V3, o: V3, piece: string, cuffFrom: number): void => {
+    const x = norm(cross(d, o));
+    sc.cone(glove, piece, lerp3(el, ha, cuffFrom), add(ha, mul(d, -0.1)), 1.6, 2.25, 0.3, { tag: 'cuff' });
+    sc.box(glove, piece, add(ha, mul(d, 1.15)), [mul(d, 1.5), mul(o, 1.45), mul(x, 1.8)], 0.85, 0.6, { tag: 'hand' });
+    sc.ell(glove, piece, add(ha, add(mul(d, 0.95), mul(x, -1.7))), [mul(d, 1.25), mul(o, 0.75), mul(x, 0.7)], 0.5, { tag: 'thumb' });
+  };
   // HER TOOLS: a brass bracer of gears on her left forearm; a wrench in her left hand; a copper gauge on her belt
   {
     const el = s.elbowL;
@@ -231,10 +249,10 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
     sc.cone(brassM, 'armL', lerp3(el, ha, 0.25), lerp3(el, ha, 0.75), 1.75, 1.45, 0.4, { tag: 'bracer' });
     const gc = add(lerp3(el, ha, 0.45), mul(o, 1.6));
     sc.ell(brassM, 'armL', gc, [mul(d, 1.5), mul(norm(cross(d, o)), 1.5), mul(o, 0.4)], 0.1, { tag: 'gear' });
-    // her hand, and the wrench in it, its jaws up
-    sc.box(skin, 'armL', add(ha, mul(d, 0.5)), [mul(d, 1.1), mul(o, 0.8), mul(norm(cross(d, o)), 1.0)], 0.6, 0.8, { tag: 'hand' });
+    // her hand in its glove, and the wrench in it, its jaws up
+    gloved(el, ha, d, o, 'armL', 0.8);
     const steel = sc.mat({ ramp: STEEL5 });
-    const w0 = add(ha, mul(d, 0.6));
+    const w0 = add(ha, mul(d, 1.1));
     const w1 = add(w0, add(mul(u, 5.2), mul(d, 1.2)));
     sc.cone(steel, 'wrench', add(w0, mul(u, -1.2)), w1, 0.55, 0.55, 0.2, { tag: 'shaft' });
     sc.box(steel, 'wrench', add(w1, mul(u, 0.6)), [mul(d, 1.2), mul(o, 0.45), mul(u, 0.9)], 0.3, 0.3, { tag: 'jaw' });
@@ -247,8 +265,8 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0): Drawn {
     const el = s.elbowR;
     const ha = s.handR;
     const [d, o] = limbFrame(el, ha, mul(l, -1));
-    sc.box(skin, 'armR', add(ha, mul(d, 0.5)), [mul(d, 1.1), mul(o, 0.8), mul(norm(cross(d, o)), 1.0)], 0.6, 0.8, { tag: 'hand' });
-    const c = add(ha, add(mul(d, 1.2), mul(u, 1.6)));
+    gloved(el, ha, d, o, 'armR', 0.42);
+    const c = add(ha, add(mul(d, 1.5), mul(u, 2.8)));
     sc.ell(glassC, 'flask', c, [mul(f, 1.4), mul(l, 1.4), mul(u, 1.5)], 0.5, { tag: 'flask' });
     sc.cone(glassC, 'flask', add(c, mul(u, 1.0)), add(c, mul(u, 2.6)), 0.55, 0.5, 0.4, { tag: 'neck' });
     sc.ell(t.bootMat(BRASS, null), 'flask', add(c, mul(u, 2.8)), [mul(f, 0.6), mul(l, 0.6), mul(u, 0.4)], 0.1, { tag: 'cork' });

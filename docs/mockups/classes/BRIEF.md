@@ -81,6 +81,53 @@ all of them; and a brief for each, his answers below (each offered as the label 
 - The Golem's size: “Big bruiser (Recommended)” (a head taller than the knight, huge brass fists, heavy and slow).
 - The Golem's bigger move: “Ground pound (Recommended)” (both fists hammered down, a shockwave and a burst of steam).
 
+## His changes, 24 Oct (Pacific)
+
+Shown all of them sculpted and every check run on them, asked what he made of them (by 06:57): “Change something”;
+which: “The brawler,The Tinkerer and her minions,The demon”. What to change in each:
+
+- The brawler: “His hands are tiny compared to his body.  And I still don’t like his outfit.”
+- The Tinkerer and her minions: “The Golem,Her hands are tiny too.  The golem is suffering from the same issue as the
+  demon was at first.  It’s too humanoid”
+- The demon: “The menacing level is good, but he’s too hulking.  And the wings just have a huge triangle missing”
+
+Read as (told him so): the brawler's fists much bigger, and four outfits not like each other nor like the ones before, to
+pick from; the Tinkerer's hands bigger; the Golem freed from the human frame as the demon was (a construct, not a man in
+armour), a few builds to pick from; the demon slimmed but as menacing, his wings whole.
+
+Made (pictures to him first): THE BRAWLER'S FISTS about two thirds of his head across, the wraps thick up the wrist, a
+thumb folded over (dev/sculpt_classes.ts `FIST`); FOUR NEW OUTFITS on build B (`OUTFITS_2`): 1 an arena gladiator (a great
+pauldron of layered leather trimmed in brass on his near shoulder, strapped across him; a studded belt and a skirt of
+leather strips over red under-trunks; bronze greaves), 2 a barbarian (a wolf-fur mantle over his shoulders and down his
+back, a necklace of teeth, a kilt of dark hide, fur boots strapped to the knee, a band round his arm), 3 a wandering monk
+(a sleeveless wrap top of deep indigo crossed over his chest, its lapel trimmed in undyed cloth; a long sash knotted at his
+front; baggy trousers gathered at the shins in wraps; big wooden prayer beads), 4 a brigand (a long sleeveless coat of
+oxblood leather to his knees, buttoned in brass, a standing collar; a black belt over it; tall boots, their tops turned
+down). THE TINKERER'S HANDS in tan leather work gloves, the right a long gauntlet to her elbow (dev/sculpt_tinkerer.ts).
+THE GOLEM, four builds on no hero's bones (dev/sculpt_golem.ts): A a boiler ape (a boiler body leaning over its fists,
+walking on its knuckles, a turret with one eye sunk between its shoulders, two stacks), B a tread tank (tracks, a boiler
+drum, a dome with one great eye, piston arms), C a furnace belly (a round stove on stumpy legs, no head, its grate a grin
+with the cyan fire behind, two lamps for eyes), D a crab walker (a carapace on four jointed legs, its fists held up like
+claws, a row of eyes). THE DEMON slimmed (a waist under a deep chest, thinner arms and legs, a smaller hump, his height and
+reach kept) and his wings whole: the leather now runs from the last finger back along the arm to his flank and back, the
+edge only gently scalloped (dev/sculpt_demon.ts).
+
+Shown them (07:2x Pacific, the four sheets), his answers by 07:33:
+- The brawler's outfit: “The brigand is close but not it.  I’ll have a barbarian and a gladiator later so we can use
+  those.  Give me 10 more”.
+- The Golem: “Ground pound might be one of his moves but it doesn’t need to factor into his design.  I like the furnace
+  belly because it’s the most different.  The crab is cool but too messy.  The ape is good as well.  Keep trying, maybe
+  give me 10 at a time”.
+- The hands: “The brawlers is good but the tinkerers are weird.  She doesn’t need that vial in her hand at the moment
+  since her archetype has changed”.
+- The demon: “Yes, but I’d like to see more claws on the hands.  Maybe it’s just the stance or angle but I’d like to see
+  them better”.
+Read as (told him so): the brawler's fists kept; the barbarian and the gladiator kept for those classes later; ten more
+outfits, most leaning the brigand's way. The furnace belly and the ape kept in the running, the crab out; ten new Golems,
+each as unlike the others as can be, not shaped by the ground pound. The Tinkerer's hands and what she holds redone (tools,
+no vial), a stance to go with it, a few versions; the vials on her belt and bandolier kept as her Contraptions' ammunition
+unless he says otherwise. The demon as he is, his claws more and longer, spread and turned to be seen from in front.
+
 ## What glows
 
 All of them are the hero's side: what glows on them, the demon, the Contraption and the Golem too, is the friend's cyan.

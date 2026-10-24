@@ -6,7 +6,8 @@ import { MOVES3 } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import type { Px } from '../engine/px';
 import { paintClassLook } from './options_classes';
-import { BRAWLER_BUILD, BRAWLER_LOOKS, OUTFITS, sculptBrawler } from './sculpt_classes';
+import { BRAWLER_BUILD, BRAWLER_LOOKS, OUTFITS, OUTFITS_2, sculptBrawler } from './sculpt_classes';
+import { GOLEM_BUILDS, sculptGolemBuild } from './sculpt_golem';
 import { sculptWarlock } from './sculpt_warlock';
 import { sculptContraption, sculptGolem, sculptTinkerer } from './sculpt_tinkerer';
 import { DEMON_LOOKS, sculptDemon } from './sculpt_demon';
@@ -67,6 +68,32 @@ const build = (): void => {
     HALF = 100;
     UP = 196;
     DOWN = 12;
+  } else if (whatArg === 'turns') {
+    heading = 'Truly turned, eight ways (one of the checks) · sculpted sketches · not in the game';
+    for (const t of [0, 45, 90, 135, 180, 225, 270, 315]) panes.push({ name: `Brawler, ${t}°`, px: sculptBrawler('front', undefined, BRAWLER_BUILD, undefined, t).px });
+    for (const t of [0, 45, 90, 135, 180, 225, 270, 315]) panes.push({ name: `Tinkerer, ${t}°`, px: sculptTinkerer('front', undefined, t).px });
+  } else if (whatArg === 'lineup') {
+    heading = 'The new classes, side by side · sculpted sketches · not in the game';
+    panes.push({ name: 'The knight', px: paintMove3(MOVES3.ktown, 0, 'front').px });
+    panes.push({ name: 'The brawler', px: sculptBrawler('front').px });
+    panes.push({ name: 'The warlock', px: sculptWarlock('front').px });
+    panes.push({ name: 'The Tinkerer', px: sculptTinkerer('front').px });
+    panes.push({ name: 'Her Golem', px: sculptGolem('front').px });
+    panes.push({ name: 'Her Contraption', px: sculptContraption('front').px });
+    UP = 98;
+  } else if (whatArg === 'outfits2') {
+    heading = 'The brawler: four new outfits · sculpted sketches · not in the game';
+    OUTFITS_2.forEach((o, k) => panes.push({ name: `${k + 1}. ${o.name}`, px: sculptBrawler('front', undefined, BRAWLER_BUILD, o.id).px }));
+    OUTFITS_2.forEach((o, k) => panes.push({ name: `${k + 1}, from behind`, px: sculptBrawler('back', undefined, BRAWLER_BUILD, o.id).px }));
+  } else if (whatArg === 'golems') {
+    heading = 'The Golem, not a man in armour: four builds · sculpted sketches · not in the game';
+    panes.push({ name: 'The Tinkerer', px: sculptTinkerer('front').px });
+    GOLEM_BUILDS.forEach((g, k) => panes.push({ name: `${'ABCD'[k]}. ${g.name}`, px: sculptGolemBuild('front', g.id).px }));
+    panes.push({ name: 'Before', px: sculptGolem('front').px });
+    GOLEM_BUILDS.forEach((g, k) => panes.push({ name: `${'ABCD'[k]}, from behind`, px: sculptGolemBuild('back', g.id).px }));
+    UP = 104;
+    HALF = 46;
+    DOWN = 18;
   } else if (whatArg === 'outfits') {
     heading = 'The brawler (B): four outfits · sculpted sketches · not in the game';
     OUTFITS.forEach((o, k) => panes.push({ name: `${k + 1}. ${o.name}`, px: sculptBrawler('front', undefined, BRAWLER_BUILD, o.id).px }));

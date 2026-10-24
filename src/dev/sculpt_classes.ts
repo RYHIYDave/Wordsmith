@@ -37,6 +37,8 @@ export const shadeOf = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4,
 
 /** How far below his left shoulder's top the singlet's neckline runs (it slants down across him to under his right arm). */
 export const TUNE = { cutDrop: 7.0 };
+/** How big his fists are (1.15: about two thirds of his head across, after his “His hands are tiny compared to his body”). */
+export const FIST = { k: 1.15 };
 const CUT_DROP_OF = (): number => TUNE.cutDrop;
 
 // ---------------------------------------------------------------------------------------------
@@ -309,6 +311,7 @@ export function tailorFor(sc: Sculpt, w: Who, bulk: number) {
 }
 
 function dressBrawler(sc: Sculpt, w: Who, bulk: number, outfit: Outfit, trunksTo: number): void {
+  if (dressAnew(sc, w, bulk, outfit)) return;
   const { s, B } = w;
   const { overTrunk, legsIn, boots, bootMat, waistBand, strapOver, front, shoulderTop, hipFront, dot3, ribs, belly, f, l, u } = tailorFor(sc, w, bulk);
   void B;
@@ -424,6 +427,255 @@ function dressBrawler(sc: Sculpt, w: Who, bulk: number, outfit: Outfit, trunksTo
     boots(bootMat(RED_DARK, WRAP), true, WRAP);
   }
 }
+/** Bronze: a gladiator's greaves. */
+const BRONZE: Ramp = ['#2a1608', '#4a2a10', '#7a4a1e', '#b0763a', '#dca868'];
+/** A wolf's grey-brown fur. */
+const FUR: Ramp = ['#1a1416', '#36292a', '#5a4842', '#86705e', '#b09a82'];
+/** Bone and teeth. */
+const BONE: Ramp = ['#3a3024', '#6a5a44', '#a8957a', '#d8c8a8', '#f6ecd4'];
+/** Deep indigo cloth: the monk's top. */
+const INDIGO: Ramp = ['#0a0c22', '#161c40', '#24306a', '#3a4c94', '#5a70bc'];
+/** Undyed cloth: a sash, a lapel's trim, shin wraps. */
+const CREAM: Ramp = ['#4a3a34', '#7a6658', '#b8a48c', '#e4d4b4', '#fff4dc'];
+/** Dark wood: prayer beads. */
+const WOOD: Ramp = ['#1a0c08', '#341a10', '#5a3018', '#84502a', '#aa7440'];
+
+/**
+ * THE FOUR NEW OUTFITS (his word, 24 Oct, by 06:57 Pacific: “His hands are tiny compared to his body.  And I still don’t
+ * like his outfit.”): four that are not like each other, nor like the five he has seen: each a different shape round him
+ * (a great pauldron and a skirt of strips; a fur mantle; a wrap top, baggy trousers and beads; a long coat). Returns
+ * whether it dressed him.
+ */
+function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
+  if (outfit !== 'gladiator' && outfit !== 'barbarian' && outfit !== 'monk' && outfit !== 'brigand') return false;
+  const { s, B } = w;
+  const t = tailorFor(sc, w, bulk);
+  const { overTrunk, legsIn, boots, bootMat, waistBand, strapOver, front, shoulderTop, hipFront, dot3, ribs, belly, pel, f, l, u } = t;
+  const brass = sc.mat({ ramp: BRASS });
+  const down: V3 = [0, 0, -1];
+  /**
+   * A SKIRT OF PANELS hung from his belt (strips, flaps, a coat's tails): `n` panels round an oval as wide as his hips,
+   * each `len` long and flared `flare` out at its foot, `wide` across; `gap`: none hung within this angle of his front
+   * (a coat open there). Panels side by side melt together by `melt` (0: each a strip of its own).
+   */
+  const panels = (mat: number, n: number, len: number, flare: number, wide: number, melt: number, gap = 0, from = 0.6): void => {
+    const fw0 = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+    const sd0 = norm([s.hips[1][0], s.hips[1][1], 0], [0, 1, 0]);
+    const beltC = add(belly.c, mul(belly.r[2], -belly.h[2] * from));
+    const rx = B.pelvisDeep + 1.0;
+    const ry = B.pelvisHalf + 0.9;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.PI / n;
+      const near = Math.abs(Math.atan2(Math.sin(a), Math.cos(a)));
+      if (near < gap) continue;
+      const dir = norm(add(mul(fw0, Math.cos(a) * rx), mul(sd0, Math.sin(a) * ry)));
+      const top = add(beltC, add(mul(fw0, Math.cos(a) * rx), mul(sd0, Math.sin(a) * ry)));
+      const foot = add(top, add(mul(down, len), mul(dir, flare)));
+      const along = norm(sub(foot, top));
+      const tg = norm(cross([0, 0, 1], dir));
+      const nn = norm(cross(along, tg));
+      sc.box(mat, i % 2 ? 'skirt' : 'skirt2', lerp3(top, foot, 0.5), [mul(along, len * 0.5), mul(tg, wide * 0.5), mul(nn, 0.45)], 0.3, melt, { tag: 'panel' });
+    }
+  };
+  const sh3 = (side: 'L' | 'R') => ({
+    sh: side === 'L' ? s.shoulderL : s.shoulderR,
+    el: side === 'L' ? s.elbowL : s.elbowR,
+    knee: side === 'L' ? s.kneeL : s.kneeR,
+    ankle: side === 'L' ? s.ankleL : s.ankleR,
+    out: mul(l, side === 'L' ? 1 : -1),
+  });
+
+  if (outfit === 'gladiator') {
+    // THE ARENA GLADIATOR: a great pauldron of layered leather on his lead shoulder, strapped across his chest; a broad
+    // studded belt and a skirt of leather strips; bronze greaves; low boots
+    const leather = sc.mat({
+      ramp: HIDE,
+      paint: (h) => {
+        if (h.prim.tag === 'plate') {
+          const b = onBall(h.prim as Ell, h.p);
+          // each plate's lower edge trimmed in brass, its rivets darker on it; its top a step lighter, the plates stepped
+          if (b[1] < -0.5) return Math.abs(((b[0] + 2) * 3) % 1 - 0.5) < 0.16 ? shadeOf(BRASS, h.tone - 1) : shadeOf(BRASS, h.tone + 1);
+          if (b[1] > 0.3) return shadeOf(HIDE, h.tone + 1);
+        }
+        if (h.prim.tag === 'panel') {
+          const b = onBall(h.prim as Ell, h.p);
+          // a brass stud at each strip's foot; its edges darker
+          if (b[0] > 0.55 && b[0] < 0.85 && Math.abs(b[1]) < 0.4) return shadeOf(BRASS, h.tone);
+          if (Math.abs(b[1]) > 0.72) return shadeOf(HIDE, h.tone - 1);
+        }
+        return null;
+      },
+    });
+    // (on his right shoulder: the near one, seen from in front)
+    const L = sh3('R');
+    const [, o0] = limbFrame(L.sh, L.el, L.out);
+    const delt = add(L.sh, add(mul(u, -0.5), mul(o0, 0.8)));
+    for (let i = 0; i < 3; i++) {
+      const a = 0.25 + 0.5 * i;
+      const n = norm(add(mul(u, Math.cos(a)), mul(o0, Math.sin(a))));
+      const tg = norm(cross(n, f));
+      sc.ell(leather, `pauldron${i}`, add(delt, mul(n, 2.7 * bulk + 0.6 + i * 0.35)), [mul(f, 4.0 + i * 0.35), mul(tg, 2.7 + i * 0.1), mul(n, 0.9)], 0.2, { tag: 'plate' });
+    }
+    // the strap that holds it: from under it across his chest to under his right arm, and round his back
+    const under = add(ribs.c, add(mul(l, ribs.h[1] * 0.92), mul(u, ribs.h[2] * 0.05)));
+    strapOver(leather, shoulderTop(-1, 1.4), add(under, mul(f, 1.0)), 0.8, 0.3);
+    sc.cone(leather, 'torso', shoulderTop(-1, -2.2), add(under, mul(f, -2.2)), 0.7, 0.7, 0.3, { tag: 'strap' });
+    // red under-trunks; the belt; the skirt of strips over them
+    legsIn(sc.mat({ ramp: RED }), 0.36, 0.7);
+    panels(leather, 13, 7.6, 2.4, 2.3, 0);
+    const belt = sc.mat({
+      ramp: BLACKHIDE,
+      paint: (h) => {
+        const b = onBall(h.prim as Ell, h.p);
+        return Math.abs(b[2]) < 0.4 && Math.floor((Math.atan2(b[1], b[0]) + Math.PI) * 4.5) % 2 === 0 ? shadeOf(BRASS, h.tone) : null;
+      },
+    });
+    waistBand(belt, 1.55, 1.75, 0.5);
+    // bronze greaves, a ridge down each, a cap over the knee
+    const bronze = sc.mat({ ramp: BRONZE, paint: (h) => (h.prim.tag === 'greave' && Math.abs(onCone(h.prim as Cone, h.p, f).around) < 0.3 ? shadeOf(BRONZE, h.tone + 1) : null) });
+    for (const side of ['L', 'R'] as const) {
+      const { knee, ankle } = sh3(side);
+      const [, lK, lA] = B.legR;
+      sc.cone(bronze, `leg${side}`, lerp3(knee, ankle, 0.1), lerp3(knee, ankle, 0.8), lK * 0.98 + 0.75, lA + 0.7, 0.3, { tag: 'greave' });
+      const [kd, ko] = limbFrame(knee, ankle, f);
+      sc.ell(bronze, `leg${side}`, add(knee, mul(ko, lK * 0.8)), [mul(kd, 1.6), mul(ko, 1.0), mul(norm(cross(kd, ko)), 1.7)], 0.4, { tag: 'kneecap' });
+    }
+    boots(bootMat(HIDE, null), false, null);
+  } else if (outfit === 'barbarian') {
+    // THE BARBARIAN: a wolf-fur mantle over his shoulders and down his back; a necklace of teeth; a kilt of dark hide;
+    // fur boots strapped to the knee; a band round his arm
+    const fur = sc.mat({
+      ramp: FUR,
+      crease: 0.5,
+      paint: (h) => {
+        // its tufts: darker strands running down it, broken
+        const strand = (h.x * 2 + Math.floor(h.y / 2)) % 5 === 0;
+        return strand ? shadeOf(FUR, h.tone - 1) : null;
+      },
+    });
+    // (the mantle: over the back of him, the yoke and his shoulders, its front edge sloping from the neck to the armpit)
+    const nb = norm(add(f, mul(u, -0.9)));
+    overTrunk(fur, 1.7, [{ n: nb, o: dot3(nb, s.neck) + 0.6 }, { n: down, o: -(s.waist[2] + 3.2) }], 'mantle', true);
+    for (const side of [1, -1]) {
+      const { sh, el, out } = sh3(side > 0 ? 'L' : 'R');
+      const [, o0] = limbFrame(sh, el, out);
+      sc.ell(fur, 'torso', add(sh, add(mul(u, 1.2), mul(o0, 0.6))), [mul(f, 3.7 * bulk), mul(o0, 3.1 * bulk), mul(u, 2.3)], 1.8, { tag: 'mantle' });
+    }
+    // the ruff round his neck
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      if (Math.cos(a) > 0.6) continue;
+      const dir = add(mul(f, Math.cos(a)), mul(l, Math.sin(a)));
+      sc.ell(fur, 'torso', add(s.neck, add(mul(u, -0.6), mul(dir, B.shoulderHalf * 0.42))), [mul(dir, 2.0), mul(cross(u, dir), 2.6), mul(u, 2.0)], 1.6, { tag: 'mantle' });
+    }
+    // its ragged hem down his back
+    for (let i = -2; i <= 2; i++) sc.box(fur, 'torso', add(s.waist, add(mul(f, -(ribs.h[0] + 1)), add(mul(l, i * 2.6), [0, 0, 3.2]))), [mul(f, 3), mul(norm(add(l, mul(u, 1))), 0.9), mul(norm(sub(u, l)), 0.9)], 0.1, 0.3, { carve: true });
+    // a necklace of teeth on a cord over his chest
+    const cord = sc.mat({ ramp: BLACKHIDE });
+    const bone = sc.mat({ ramp: BONE });
+    let prev: V3 | null = null;
+    for (let i = -4; i <= 4; i++) {
+      const k = i / 4;
+      const p = front(k * 0.92, ribs.h[2] * 0.72 - (1 - k * k) * 3.0, 1.5);
+      if (prev) sc.cone(cord, 'torso', prev, p, 0.28, 0.28, 0.1, { tag: 'cord' });
+      if (i % 2 === 0 || Math.abs(i) === 1) sc.cone(bone, 'torso', p, add(p, add(mul(down, 1.7), mul(f, 0.3))), 0.6, 0.18, 0.1, { tag: 'tooth' });
+      prev = p;
+    }
+    // the kilt of dark hide, notched; a belt with an iron ring
+    const hide = sc.mat({ ramp: BLACKHIDE, paint: (h) => (h.prim.tag === 'panel' && Math.abs(onBall(h.prim as Ell, h.p)[1]) > 0.7 ? shadeOf(BLACKHIDE, h.tone - 1) : null) });
+    legsIn(hide, 0.3, 0.6);
+    panels(hide, 7, 7.4, 2.0, 4.6, 0);
+    const belt = sc.mat({ ramp: HIDE });
+    const bc = waistBand(belt, 1.35, 1.7, 0.5);
+    sc.cone(sc.mat({ ramp: GREY_M }), 'hips', add(bc, mul(f, belly.h[0] + 1.6)), add(bc, mul(f, belly.h[0] + 2.2)), 1.5, 1.5, 0.2, { tag: 'ring' });
+    // fur boots strapped to the knee, a cuff of fur at their top
+    boots(bootMat(FUR, HIDE), true, HIDE);
+    for (const side of ['L', 'R'] as const) {
+      const { knee, ankle } = sh3(side);
+      const [, lK] = B.legR;
+      const at = lerp3(knee, ankle, 0.4);
+      sc.ell(fur, `leg${side}`, at, [mul(norm(sub(knee, ankle)), 1.3), mul(f, lK + 1.4), mul(l, lK + 1.4)], 0.6, { tag: 'cuff' });
+    }
+    // the band round his right arm
+    const R = sh3('R');
+    sc.cone(belt, 'armR', lerp3(R.sh, R.el, 0.5), lerp3(R.sh, R.el, 0.62), 2.45 * bulk + 0.45, 2.4 * bulk + 0.45, 0.2, { tag: 'armband' });
+  } else if (outfit === 'monk') {
+    // THE WANDERING MONK: a sleeveless wrap top of deep indigo crossed over his chest, its lapel trimmed in undyed cloth; a
+    // long sash, knotted, its ends to his knees; baggy trousers gathered at the shins in wraps; prayer beads; sandals
+    const top = sc.mat({ ramp: INDIGO, paint: (h) => (Math.floor((h.x + h.y * 2) / 2) % 7 === 0 ? shadeOf(INDIGO, h.tone - 1) : null) });
+    overTrunk(top, 0.65, [{ n: down, o: -(belly.c[2] - belly.h[2] * 0.6) }], 'top', true);
+    // (the V of it open over his breastbone)
+    const vAt = front(0, ribs.h[2] * 0.05, 0);
+    const dg = 3.6;
+    sc.box(top, 'torso', add(vAt, add(mul(u, dg * Math.SQRT2), mul(f, 1.5))), [mul(f, 4.2), mul(norm(add(u, l)), dg), mul(norm(sub(u, l)), dg)], 0.2, 0.4, { carve: true });
+    const cream = sc.mat({ ramp: CREAM });
+    const neckL = add(s.neck, add(mul(l, 2.6), mul(f, 1.6)));
+    const neckR = add(s.neck, add(mul(l, -2.6), mul(f, 1.6)));
+    strapOver(cream, neckL, vAt, 0.6, 0.05, 'lapel');
+    strapOver(cream, neckR, vAt, 0.6, 0.05, 'lapel');
+    strapOver(cream, vAt, hipFront(-0.95), 0.6, 0.05, 'lapel');
+    // the sash: wide, knotted at his front, its two ends to his knees
+    const sash = sc.mat({ ramp: CREAM, paint: (h) => ((h.x + h.y) % 5 === 0 ? shadeOf(CREAM, h.tone - 1) : null) });
+    const bc = waistBand(sash, 1.8, 1.55, 0.45);
+    const knot = add(bc, add(mul(f, belly.h[0] + 1.8), mul(l, -1.2)));
+    sc.ell(sash, 'hips', knot, [mul(f, 1.2), mul(l, 1.3), mul(u, 1.3)], 0.4, { tag: 'knot' });
+    for (const [k, len] of [[1.4, 10.0], [-0.5, 8.2]] as const) sc.cone(sash, 'hips', knot, add(knot, add(mul(f, 0.8), add(mul(l, k), [0, 0, -len]))), 1.15, 0.9, 0.4, { tag: 'tail' });
+    // baggy trousers, gathered at the shin in wraps
+    const trousers = sc.mat({ ramp: CHAR, paint: (h) => (h.prim.tag === 'leg' && Math.floor((onCone(h.prim as Cone, h.p, f).around + Math.PI) * 2.5) % 3 === 0 ? shadeOf(CHAR, h.tone - 1) : null) });
+    legsIn(trousers, 1.7, 1.25, 0.6);
+    const binding = sc.mat({ ramp: CREAM, paint: (h) => (Math.floor(onCone(h.prim as Cone, h.p, u).t * 6 + onCone(h.prim as Cone, h.p, u).around / 1.6) % 2 === 0 ? shadeOf(CREAM, h.tone - 1) : null) });
+    for (const side of ['L', 'R'] as const) {
+      const { knee, ankle } = sh3(side);
+      const [, lK, lA] = B.legR;
+      sc.cone(binding, `leg${side}`, lerp3(knee, ankle, 0.6), lerp3(knee, ankle, 0.95), lK * 0.9 + 0.7, lA + 0.55, 0.6, { tag: 'binding' });
+    }
+    boots(bootMat(BLACKHIDE, null), false, null);
+    // prayer beads, big and dark, round his neck and down over his chest
+    const wood = sc.mat({ ramp: WOOD });
+    for (let i = -5; i <= 5; i++) {
+      const k = i / 5;
+      const p = front(k * 0.82, ribs.h[2] * 0.95 - (1 - k * k) * 4.2, 1.7);
+      sc.ell(wood, 'torso', p, [mul(f, 0.75), mul(l, 0.8), mul(u, 0.8)], 0.05, { tag: 'bead' });
+    }
+    for (const side of [1, -1]) for (const fw of [0.2, -1.4]) sc.ell(wood, 'torso', add(shoulderTop(side, fw), mul(u, 0.9)), [mul(f, 0.8), mul(l, 0.8), mul(u, 0.8)], 0.05, { tag: 'bead' });
+  } else {
+    // THE BRIGAND: a long sleeveless coat of oxblood leather, buttoned up his chest, a high collar, its tails split to his
+    // knees; a black belt over it; dark trousers; tall boots with turned-down cuffs
+    const coat = sc.mat({
+      ramp: RED_DARK,
+      paint: (h) => {
+        if (h.prim.tag === 'panel') {
+          const b = onBall(h.prim as Ell, h.p);
+          if (b[0] > 0.86) return shadeOf(RED_DARK, h.tone - 1);
+        }
+        return null;
+      },
+    });
+    overTrunk(coat, 0.85, [], 'coat', true);
+    // the collar, standing up round his neck, open at the front
+    sc.cone(coat, 'torso', add(s.neck, mul(u, -1.2)), add(s.neck, add(mul(u, 1.6), mul(f, -0.6))), 3.5, 3.9, 0.6, { tag: 'collar', cuts: [{ n: f, o: dot3(f, s.neck) + 1.2 }] });
+    // two rows of brass buttons up his front
+    for (const side of [1, -1]) for (let i = 0; i < 4; i++) {
+      sc.ell(brass, 'torso', front(side * 0.36, ribs.h[2] * (0.55 - i * 0.42) - 1.0, 0.9 + (i > 1 ? 0.3 : 0)), [mul(f, 0.5), mul(l, 0.6), mul(u, 0.6)], 0.05, { tag: 'button' });
+    }
+    // its tails: to his knees, split at the front and at the back
+    panels(coat, 10, 14, 3.0, 4.2, 0.8, 0.5, 0.5);
+    const belt = sc.mat({ ramp: BLACKHIDE, paint: (h) => (onBall(h.prim as Ell, h.p)[0] > 0.84 && Math.abs(onBall(h.prim as Ell, h.p)[1]) < 0.18 ? shadeOf(BRASS, h.tone) : null) });
+    waistBand(belt, 1.0, 1.85, 0.45);
+    legsIn(sc.mat({ ramp: CHAR }), 1.6, 0.9);
+    const boot = bootMat(BLACKHIDE, null);
+    boots(boot, true, null);
+    for (const side of ['L', 'R'] as const) {
+      const { knee, ankle } = sh3(side);
+      const [, lK] = B.legR;
+      const at = lerp3(knee, ankle, 0.36);
+      sc.cone(boot, `leg${side}`, add(at, mul(norm(sub(knee, ankle)), 0.7)), add(at, mul(norm(sub(knee, ankle)), -0.7)), lK + 1.25, lK + 1.15, 0.2, { tag: 'cuff' });
+    }
+  }
+  void bulk;
+  return true;
+}
+
 /** Rough brown cloth: the pit fighter's trousers. */
 const PELT_T: Ramp = ['#1a0e0e', '#2e1a16', '#4c2c22', '#6c4430', '#8e6040'];
 /** A grey metal: a buckle. */
@@ -509,9 +761,16 @@ export interface Look {
 export const BRAWLER_BUILD = 1;
 
 /** What he wears: the wrestler's singlet and trunks (his first pick; then, by 23:06, “I don’t like his outfit”), or one of four new. */
-export type Outfit = 'singlet' | 'prize' | 'pit' | 'street' | 'champ';
+export type Outfit = 'singlet' | 'prize' | 'pit' | 'street' | 'champ' | 'gladiator' | 'barbarian' | 'monk' | 'brigand';
 /** HIS PICK, at 23:11 Pacific, 23 Oct, to the four offered: “1” (the old-time prizefighter). */
 export const BRAWLER_OUTFIT: Outfit = 'prize';
+/** The four new, after his “I still don’t like his outfit” (24 Oct, by 06:57 Pacific): each its own shape. */
+export const OUTFITS_2: { id: Outfit; name: string }[] = [
+  { id: 'gladiator', name: 'Arena gladiator' },
+  { id: 'barbarian', name: 'Barbarian' },
+  { id: 'monk', name: 'Wandering monk' },
+  { id: 'brigand', name: 'Brigand' },
+];
 export const OUTFITS: { id: Outfit; name: string }[] = [
   { id: 'prize', name: 'Old-time prizefighter' },
   { id: 'pit', name: 'Pit fighter' },
@@ -575,8 +834,13 @@ export function sculptBrawler(view: GameView, pose?: Bones, k = BRAWLER_BUILD, o
     const d = norm(sub(ha, el));
     const across = norm(cross(d, side === 'L' ? l : mul(l, -1)));
     const side3 = norm(cross(across, d));
-    sc.cone(wraps, piece, lerp3(el, ha, outfit === 'pit' ? 0.12 : 0.62), lerp3(el, ha, 0.9), outfit === 'pit' ? 2.35 : 1.75, 1.65, 0.8, { tag: 'wrist' });
-    sc.box(wraps, piece, add(ha, mul(d, 0.7)), [mul(d, 1.9), mul(side3, 1.75), mul(across, 1.6)], 1.1, 1.0, { tag: 'fist' });
+    // (his fists BIG, as a boxer's read at this size: about two thirds of his head's width, the wraps thick up the wrist;
+    // his “His hands are tiny compared to his body”, 24 Oct)
+    const F = FIST.k;
+    sc.cone(wraps, piece, lerp3(el, ha, outfit === 'pit' ? 0.12 : 0.55), lerp3(el, ha, 0.92), outfit === 'pit' ? 2.35 : 1.85, 1.95 * F, 0.8, { tag: 'wrist' });
+    sc.box(wraps, piece, add(ha, mul(d, 1.25 * F)), [mul(d, 2.4 * F), mul(side3, 2.3 * F), mul(across, 2.15 * F)], 1.3 * F, 1.0, { tag: 'fist' });
+    // the thumb, folded over the fingers on the inside of the fist
+    sc.ell(wraps, piece, add(ha, add(mul(d, 1.6 * F), add(mul(across, -1.6 * F), mul(side3, -1.2 * F)))), [mul(d, 1.2 * F), mul(side3, 0.9 * F), mul(across, 0.8 * F)], 0.5, { tag: 'thumb' });
   }
   // THE BEARD: big and yellow, from under his jaw down onto his chest
   const [hf, hl, hu] = s.face;

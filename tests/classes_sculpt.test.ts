@@ -11,6 +11,8 @@
 //               of the above, and nothing of it is cut off at its picture's edge;
 //   Rule 6      at phone size: each as tall as it should be beside the knight (a hero about his height, the Golem a head
 //               over him, the Contraption knee high).
+// On 24 Oct (his “The Golem,Her hands are tiny too.  The golem is suffering from the same issue as the demon was at first.
+// It’s too humanoid”, “I still don’t like his outfit”), every Golem build and every new outfit he is offered is checked too.
 //   run: tsx --test tests/classes_sculpt.test.ts
 
 // @ts-ignore
@@ -28,9 +30,10 @@ import type { GameView } from '../src/art/skin';
 import type { Px } from '../src/engine/px';
 import { LAST, primDist, primLow } from '../src/dev/sculpt';
 import type { Drawn, Prim, Sculpt } from '../src/dev/sculpt';
-import { BRAWLER_BUILD, BRAWLER_LOOKS, boxerStance, sculptBrawler } from '../src/dev/sculpt_classes';
+import { BRAWLER_BUILD, BRAWLER_LOOKS, OUTFITS_2, boxerStance, sculptBrawler } from '../src/dev/sculpt_classes';
 import { DEMON_LOOKS, sculptDemon } from '../src/dev/sculpt_demon';
-import { GOLEM_BODY, TINKERER_BODY, golemStance, sculptContraption, sculptGolem, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
+import { GOLEM_BUILDS, sculptGolemBuild } from '../src/dev/sculpt_golem';
+import { TINKERER_BODY, sculptContraption, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
 import { WARLOCK_SCULPT_BODY, sculptWarlock, warlockStance } from '../src/dev/sculpt_warlock';
 import { hsv, rgb } from './floor_checks';
 
@@ -58,9 +61,12 @@ const FIGS: Fig[] = [
   { name: 'the brawler', make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, undefined, t), body: true, turns: true },
   { name: 'the warlock', make: (v, t) => sculptWarlock(v, warlockStance(WARLOCK_SCULPT_BODY), t), body: true, turns: true },
   { name: 'the Tinkerer', make: (v, t) => sculptTinkerer(v, tinkererStance(TINKERER_BODY), t), body: true, turns: true },
-  { name: 'the Golem', make: (v, t) => sculptGolem(v, golemStance(GOLEM_BODY), t), body: true, turns: true },
+  // (the Golem freed from the human frame, 24 Oct: each of the four builds he is offered)
+  ...GOLEM_BUILDS.map((g): Fig => ({ name: `the Golem, ${g.name}`, make: (v, t) => sculptGolemBuild(v, g.id, t), body: true, turns: true })),
   { name: 'the Contraption', make: (v, t) => sculptContraption(v, t), body: false, turns: true },
   { name: "the warlock's demon", make: (v, t) => sculptDemon(v, 'smoke', 0, -16 + t), body: true, turns: true },
+  // (and the brawler in each of the four new outfits he is offered, 24 Oct)
+  ...OUTFITS_2.map((o): Fig => ({ name: `the brawler as ${o.name}`, make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, o.id, t), body: true, turns: true })),
 ];
 
 const FRIEND = rgb(FRIEND_RIM);
@@ -103,7 +109,7 @@ function pictureFindings(px: Px): string[] {
   if (x0 < 2 || y0 < 2 || x1 > w - 3 || y1 > h - 3) out.push(`cut off at its picture's edge (${x0},${y0} to ${x1},${y1} of ${w} by ${h})`);
   return out;
 }
-const TRUNK = new Set(['ribs', 'yoke', 'belly', 'pec', 'lat', 'bust', 'chest', 'hump', 'pelvis', 'abs', 'waist']);
+const TRUNK = new Set(['ribs', 'yoke', 'belly', 'pec', 'lat', 'bust', 'chest', 'hump', 'pelvis', 'abs', 'waist', 'drum', 'shell']);
 const LIMB = new Set(['upper', 'fore', 'finger', 'gauntlet', 'wrist', 'thigh', 'shin', 'shank', 'pastern', 'calf', 'quad']);
 /** Points along a solid's line (a rod's), from `from` of the way along it to its end. */
 function along(p: Prim, from: number): [number, number, number][] {
@@ -186,7 +192,10 @@ test('at phone size: a hero about the knight’s height, the Golem a head over h
     const r = h(hero) / knight;
     assert.ok(r > 0.82 && r < 1.3, `${hero} ${h(hero)} high, the knight ${knight}`);
   }
-  assert.ok(h('the Golem') > knight * 1.12, `the Golem ${h('the Golem')} high, the knight ${knight}`);
+  for (const g of GOLEM_BUILDS) {
+    const name = `the Golem, ${g.name}`;
+    assert.ok(h(name) > knight * 1.12, `${name} ${h(name)} high, the knight ${knight}`);
+  }
   assert.ok(h('the Contraption') < knight * 0.6, `the Contraption ${h('the Contraption')} high, the knight ${knight}`);
   assert.ok(h("the warlock's demon") > h('the warlock') * 1.3, `the demon ${h("the warlock's demon")} high, the warlock ${h('the warlock')}`);
 });
