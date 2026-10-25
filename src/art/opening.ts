@@ -245,7 +245,7 @@ export function paintRoadUp(p: Px, t: number): void {
     const right = unit(cross(cam.look, cam.up));
     const dn = unit(cross(cam.look, right));
     stroke(p, [[smith[0] - 2, smith[1] + 1], [smith[0] - 16, smith[1] + 5]], 2, '#141020');
-    fig.f.draw(p, cam, { cel: { black: 0.16, light: 0.45, hi: 0.85 }, at: fig.head, hard: 1, fill: [1, -0.3, 0.3], fillK: 0.4, rim: '#e8904a', rimFrom: [1, 0] });
+    fig.f.draw(p, cam, { at: fig.head, hard: 1, fill: [1, -0.3, 0.3], fillK: 0.5, rim: '#e8904a', rimFrom: [1, 0] });
     const hs: Pt = [dt3(fig.head, right) * cam.scale + cam.ox, dt3(fig.head, dn) * cam.scale + cam.oy];
     shine(p, hs[0], hs[1], 12 + 2 * pulse, CYANS[2], 0, 0.45);
     p.set(Math.round(hs[0]), Math.round(hs[1]), CYANS[0]).set(Math.round(hs[0]) + 1, Math.round(hs[1]), CYANS[1]).set(Math.round(hs[0]), Math.round(hs[1]) - 1, CYANS[1]);
@@ -591,7 +591,7 @@ export function paintFarAhead(p: Px, t: number): void {
   const right = unit(cross(cam.look, cam.up));
   const dn = unit(cross(cam.look, right));
   const hs: Pt = [dt3(fig.head, right) * cam.scale + cam.ox, dt3(fig.head, dn) * cam.scale + cam.oy];
-  fig.f.draw(p, cam, { cel: { black: 0.16, light: 0.42, hi: 0.8 }, at: fig.head, hard: 1, fill: [-0.1, -1, 0.3], fillK: 0.34, rim: '#e8904a', rimFrom: [1, 0] });
+  fig.f.draw(p, cam, { at: fig.head, hard: 1, fill: [-0.1, -1, 0.3], fillK: 0.34, rim: '#e8904a', rimFrom: [1, 0] });
   paintStaffFire(p, hs[0], hs[1], W / 192, t, 0.85 + 0.15 * pulse);
   void SX;
   void SY;
@@ -795,7 +795,7 @@ function armourerFigure(breath: number, sway: number, onBench: boolean): Figure 
  */
 function mysticFigure(bob: number): Figure {
   const f = new Figure();
-  const robe = f.stuff({ tones: [INK, '#120a28', '#261a52', '#3e3a8a', '#5e72c0', '#9ad0f0'], hatch: 4, crease: 0.8 });
+  const robe = f.stuff({ tones: [INK, '#1a0a2a', '#36164e', '#562a78', '#7a46a0', '#a676c8'], hatch: 4, crease: 0.8 });
   const pale = f.stuff({ tones: [INK, '#5a6a7a', '#9ab8c0', '#b8d4d8', '#dceef0', '#ffffff'], crease: 0.9 });
   const veil = f.stuff({ tones: [INK, '#1e1030', '#3a2058', '#5a3a86', '#8a6ab8', '#c0a8e0'], crease: 0.9 });
   const skin = f.stuff({ tones: [INK, '#1a1028', '#3e2a3a', '#6e4a50', '#a87a74', '#e0c4bc'], hatch: 4, crease: 0.45 });
@@ -819,7 +819,7 @@ function mysticFigure(bob: number): Figure {
   f.egg(skin, [0, -0.62, 6.5], [0.55, 0.2, 0.13], axes(), 0.2);
   f.egg(skin, [-0.27, -0.78, 6.33], [0.15, 0.09, 0.08], axes(), 0.05, true);
   f.egg(skin, [0.27, -0.78, 6.33], [0.15, 0.09, 0.08], axes(), 0.05, true);
-  nose(f, skin, frameAt([0, -0.74, 6.38], [0, -0.15, -1], [0, -1, 0.15]), 1.1, 'long');
+  nose(f, skin, frameAt([0, -0.74, 6.38], [0, -0.15, -1], [0, -1, 0.15]), 0.9, 'small');
   f.mark([-0.27, -0.84, 6.32], [CYANS[0], CYANS[1], CYANS[2]], 2);
   f.mark([0.27, -0.84, 6.32], [CYANS[0], CYANS[1], CYANS[2]], 2);
   // his veil: thin cloth across his face under his eyes, hung in strips that fall in folds to a point on his chest, hooked
@@ -827,10 +827,10 @@ function mysticFigure(bob: number): Figure {
   for (let i = 0; i < 9; i++) {
     const u = (i - 4) / 4;
     const x0 = u * 0.62;
-    const top: V3 = [x0, -0.82 + Math.abs(u) * 0.28, 6.1 - Math.abs(u) * 0.06];
+    const top: V3 = [x0, -1.02 + Math.abs(u) * 0.36, 6.2 - Math.abs(u) * 0.08];
     const len = 1.3 - Math.abs(u) * 0.55;
-    const mid: V3 = [x0 * 1.05, -0.98 + Math.abs(u) * 0.22, top[2] - len * 0.45];
-    const bot: V3 = [x0 * 0.8, -1.02 + Math.abs(u) * 0.18, top[2] - len];
+    const mid: V3 = [x0 * 1.05, -1.12 + Math.abs(u) * 0.28, top[2] - len * 0.45];
+    const bot: V3 = [x0 * 0.8, -1.14 + Math.abs(u) * 0.22, top[2] - len];
     f.rod(veil, top, mid, 0.09, 0.1, 0.12);
     f.rod(veil, mid, bot, 0.1, 0.06, 0.12);
   }
@@ -839,16 +839,15 @@ function mysticFigure(bob: number): Figure {
   for (let i = 0; i <= 8; i++) {
     const u = (i - 4) / 4;
     const len = 1.3 - Math.abs(u) * 0.55;
-    f.egg(gold, [u * 0.62 * 0.8, -1.1 + Math.abs(u) * 0.18, 6.1 - Math.abs(u) * 0.06 - len - 0.08], [0.07, 0.03, 0.07], axes(), 0);
+    f.egg(gold, [u * 0.62 * 0.8, -1.22 + Math.abs(u) * 0.22, 6.2 - Math.abs(u) * 0.08 - len - 0.08], [0.08, 0.035, 0.08], axes(), 0);
   }
-  f.line([[-0.62, -0.62, 6.06], [-0.3, -0.84, 6.1], [0, -0.88, 6.12], [0.3, -0.84, 6.1], [0.62, -0.62, 6.06]], '#d09a20', 1);
   // HIS TURBAN: wound round and round his head, each wind a band of pale cloth lying a little across the last; its tail
   // down to his shoulder; the stone at its front in a setting of gold
-  f.egg(pale, [0, 0.08, 7.2], [1.02, 1.0, 0.95], axes(), 0.4);
+  f.egg(pale, [0, 0.08, 7.3], [0.96, 0.96, 1.0], axes(), 0.4);
   for (let w = 0; w < 5; w++) {
-    const z0 = 6.7 + w * 0.26;
-    const tilt = w % 2 ? 0.22 : -0.2;
-    const R = 1.1 - w * 0.1 - (w > 2 ? (w - 2) * 0.06 : 0);
+    const z0 = 6.7 + w * 0.3;
+    const tilt = w % 2 ? 0.3 : -0.26;
+    const R = [0.9, 1.0, 1.05, 0.98, 0.78][w];
     let prev: V3 | null = null;
     for (let i = 0; i <= 18; i++) {
       const a2 = (i / 18) * Math.PI * 2 + w;
@@ -884,10 +883,10 @@ function mysticFigure(bob: number): Figure {
   f.rod(robe, [-1.35, -0.55, 3.3], [-0.55, -1.25, 3.25], 0.38, 0.5, 0.4);
   forearm(f, skin, [-0.75, -1.1, 3.27], [-0.1, -1.6, 3.3], 0.26, [0, 0, 1]);
   hand(f, skin, frameAt([-0.1, -1.6, 3.3], [0.75, -0.55, 0.05], [0, 0, -1]), 0.6, 'open');
-  f.rod(robe, [1.25, 0.05, 4.6], [1.6, -0.45, 3.5], 0.42, 0.38, 0.5);
-  f.rod(robe, [1.6, -0.45, 3.5], [1.4, -1.0, 4.35], 0.38, 0.48, 0.4);
-  forearm(f, skin, [1.45, -0.95, 4.2], [1.15, -1.3, 4.75], 0.24, [1, 0, 0]);
-  hand(f, skin, frameAt([1.15, -1.3, 4.75], [-0.25, -0.35, 1], [1, 0.3, 0]), 0.62, 'open');
+  f.rod(robe, [1.25, 0.05, 4.6], [1.55, -0.6, 3.3], 0.42, 0.38, 0.5);
+  f.rod(robe, [1.55, -0.6, 3.3], [0.95, -1.35, 3.3], 0.38, 0.5, 0.4);
+  forearm(f, skin, [1.05, -1.25, 3.3], [0.45, -1.7, 3.35], 0.24, [0, 0, 1]);
+  hand(f, skin, frameAt([0.45, -1.7, 3.35], [-0.75, -0.5, 0.15], [0, 0, -1]), 0.6, 'open');
   void bob;
   return f;
 }
@@ -895,7 +894,7 @@ function mysticFigure(bob: number): Figure {
 /** The stranger sculpted, sitting back (up z; he lounges along x): as on page 2. */
 function strangerFigure(onBoard = false): Figure {
   const f = new Figure();
-  const cloak = f.stuff({ tones: [INK, '#1a1626', '#2e2840', '#4a4262', '#6a6088', '#9088b0'], hatch: 4, crease: 0.8 });
+  const cloak = f.stuff({ tones: [INK, '#141020', '#241e34', '#3a3250', '#564c70', '#7a6e96'], hatch: 4, crease: 0.9 });
   const boot = f.stuff({ tones: [INK, '#1a100a', '#2e1e14', '#4a3220', '#6e4c30', '#8e6a44'] });
   const glove = f.stuff({ tones: [INK, '#1a120e', '#2e2018', '#4a3426', '#6a4c38', '#8e6c52'], crease: 0.5 });
   const wood = f.stuff({ tones: [INK, WOOD[1], WOOD[2], WOOD[3], WOOD[4], '#a07a4c'] });
@@ -903,6 +902,8 @@ function strangerFigure(onBoard = false): Figure {
   // the tailboard he sits on: planks, its edge toward us
   if (onBoard) {
     f.block(wood, [0.6, 0.6, -0.35], [3.6, 2.4, 0.3], 0.06);
+    f.block(wood, [0.6, 2.6, -1.0], [3.8, 0.4, 0.55], 0.08);
+    for (const x of [-2.6, 3.8]) f.rod(wood, [x, -1.6, -0.4], [x, 2.4, -1.0], 0.08, 0.08, 0);
     for (const y of [-0.6, 0.4, 1.4]) f.line([[-3.0, y, -0.04], [4.2, y, -0.04]]);
   }
   // his body, leaning back, the cloak wrapped round it, its hem over the board; his belt, his purse at his hip
@@ -910,6 +911,11 @@ function strangerFigure(onBoard = false): Figure {
   f.rod(cloak, [-0.55, 0.15, 1.5], [-1.05, 0.25, 4.2], 1.15, 0.95, 0.8);
   f.egg(cloak, [-1.1, 0.25, 4.3], [1.15, 0.8, 0.75], axes(0, 0, 0.35), 0.7);
   for (const [a0, a1] of [[[-0.2, -1.0, 3.6], [0.5, -1.15, 0.6]], [[-0.9, -0.9, 3.8], [-0.4, -1.2, 1.0]]] as const) f.rod(cloak, a0 as V3, a1 as V3, 0.06, 0.08, 0.05, true);
+  // (the cloak's folds, inked: down his back from the hood, round over the knee, along its hem)
+  f.line([[-1.6, -0.2, 5.0], [-1.7, -0.5, 3.4], [-1.4, -0.9, 1.6], [-0.9, -1.2, 0.3]]);
+  f.line([[-1.2, -0.75, 4.6], [-1.0, -1.0, 3.0], [-0.6, -1.2, 1.4]]);
+  f.line([[0.5, -0.75, 1.9], [1.1, -0.95, 2.6], [1.5, -0.95, 2.8]]);
+  f.line([[-1.45, 0.2, 0.25], [-0.2, -1.15, 0.2], [1.1, -1.0, 0.25]]);
   f.egg(purse, [0.35, -1.05, 1.55], [0.3, 0.16, 0.36], axes(), 0.1);
   f.rod(purse, [0.3, -1.1, 1.95], [0.4, -1.05, 1.88], 0.07, 0.07, 0.02);
   // his hood, deep, its brim standing out and peaked, its point fallen back; under it only the dark, and his two eyes of gold
@@ -954,6 +960,15 @@ export function paintArmourer(p: Px, t: number): void {
   hill.poly(loop([P(96, 124), P(140, 104), P(176, 96), P(200, 90), P(200, 180), P(96, 180)], 6, [3, 4, 5]), '#120e22');
   hill.each((x, y) => (!hill.has(x, y - 1) ? '#7a3e58' : undefined));
   over(p, hill, INK);
+  // THE HORSE ahead of him in the shafts, at the right, going away up the road: its quarters, its tail, its back, the reins
+  // running to it
+  {
+    const hf = new Figure();
+    sculptHorse(hf, [0, 0, 0], -0.25, t * 3);
+    hf.draw(p, { look: unit([-0.55, 1, -0.15]), up: [0, 0, 1], scale: 10.5 * k, ox: P(184, 0)[0], oy: P(0, 212)[1] }, {
+      cel: COMIC, at: [-12, -6, 12], hard: 1, fill: [-0.6, 0.4, 0.5], fillK: 0.2, rim: '#e8904a', rimFrom: [1, 0],
+    });
+  }
   // THE WAGON'S CANVAS behind him, its edge toward the lamp lit
   const cov = layerOf(p);
   cov.poly(loop([P(-4, 180), P(-4, -4), P(90, -4), P(112, 26), P(118, 70), P(110, 120), P(96, 180)], 8, [0, 1, 2, 6]), CANVAS[0]);
@@ -1072,7 +1087,7 @@ export function paintMystic(p: Px, t: number): void {
   }
   // HIM, SCULPTED: seated cross-legged, turned a little to us; a tenth of a metre to a unit, up is z, he faces -y
   const f = mysticFigure(bob);
-  f.draw(p, cam, { cel: { black: 0.22, light: 0.54, hi: 0.82 }, at: C3, hard: 1, fill: [-0.7, -0.4, 0.7], fillK: 0.4, rim: '#e8904a', rimFrom: [-1, -0.5] });
+  f.draw(p, cam, { at: C3, hard: 1, fill: [-0.7, -0.4, 0.7], fillK: 0.4, rim: '#e8904a', rimFrom: [-1, -0.5] });
   // THE CRYSTAL, turning over his palm, and its light
   paintCrystal(p, cr[0], cr[1], 11 * k, t * 1.2);
 }
@@ -1124,12 +1139,11 @@ export function paintStranger(p: Px, t: number): void {
   over(p, wag, INK);
   stroke(p, loop([P(106, 20), P(150, 10), P(198, 14)], 4), 2, CANVAS[4]);
   const deep = P(178, 74);
-  shine(p, deep[0], deep[1], 22 * k, CYANS[3], 0, 0.22);
-  p.set(Math.round(deep[0]), Math.round(deep[1]), CYANS[1]).set(Math.round(deep[0]), Math.round(deep[1]) - 1, CYANS[0]);
+  void deep;
   // HIM, SCULPTED, on the tailboard: sitting sideways on it, leaning back against the canvas; a tenth of a metre a unit
   const f = strangerFigure(true);
   f.draw(p, { look: unit([0.3, 1, -0.2]), up: [0, 0, 1], scale: 16.5 * k, ox: P(62, 0)[0], oy: P(0, 160)[1] }, {
-    cel: { black: 0.2, light: 0.5, hi: 0.8 }, from: unit([-1, 0.35, 0.45]), hard: 1, fill: [0.3, -1, 0.3], fillK: 0.28, rim: '#f0a050', rimFrom: [-1, -0.2],
+    from: unit([-1, 0.35, 0.45]), hard: 1, fill: [0.3, -1, 0.3], fillK: 0.28, rim: '#f0a050', rimFrom: [-1, -0.2],
   });
   // THE COIN, turning in the air over his hand, the arc of its toss
   const toss = (t * 0.9) % 1;
@@ -1142,8 +1156,7 @@ export function paintStranger(p: Px, t: number): void {
     if (j % 2) p.set(Math.round(hx + (u - 0.5) * 10 * k), Math.round(ay), '#d09a20');
   }
   paintCoin(p, hx + (toss - 0.5) * 10 * k, base - Math.sin(toss * Math.PI) * (base - top), 5 * k, t * 9);
-  // the caption, at its head: the line runs on into the next box
-  caption(p, 'seeking the Meldstone,', Math.round(W - 6 - captionSize('seeking the Meldstone,', 70)[0]), 6, 70);
+  // (its caption runs across the foot of the page: PAGE_CAPTIONS)
 }
 
 // =============================================================================================
@@ -1154,7 +1167,9 @@ export function paintStranger(p: Px, t: number): void {
 // THE HERO IS THE ONE CHOSEN: the knight, the ranger or the mage (`OPENING_HERO`).
 
 /** How the opening's sculpted figures are inked (art/sdf.ts `cel`): the shadow solid ink, one flat middle tone, the lit tone, its brightest. */
-const COMIC = { black: 0.32, light: 0.6, hi: 0.86 };
+// (the owner, of the first polish, 17:0x on 24 Oct: "Everything looks completely flat": the flat inking is put away; the
+// figures are shaded round again, every tone of them)
+const COMIC: { black: number; light: number; hi?: number } | undefined = undefined;
 
 /** Which hero walks in the opening: the class chosen for the new game. */
 export const OPENING_HERO: { cls: 'warrior' | 'ranger' | 'mage' } = { cls: 'warrior' };
@@ -1247,7 +1262,7 @@ export function paintCompany(p: Px, t: number): void {
   const bobB = Math.abs(Math.sin(t * 2.4 + 1.3)) * 0.1;
   const flap = Math.sin(t * 3.1) * 0.25;
   // THE CAMERA: low, before them on the road, looking a little up at them; a tenth of a metre to a unit, up is z
-  const cam = { look: unit([0.04, 1, 0.1]), up: [0, 0, 1] as V3, scale: 18 * k, ox: P(48, 0)[0], oy: P(0, 290)[1] };
+  const cam = { look: unit([0.04, 1, 0.1]), up: [0, 0, 1] as V3, scale: 18 * k, ox: P(44, 0)[0], oy: P(0, 246)[1], persp: 26 };
   const onScreen = (q: V3): Pt => {
     const rr = unit(cross(cam.look, cam.up));
     const dd = unit(cross(cam.look, rr));
@@ -1289,7 +1304,7 @@ export function paintCompany(p: Px, t: number): void {
   // shoulder, glancing to the light
   const f = new Figure();
   wordsmithFigure('palm', f, [0, 0, bobA], 0.35);
-  sculptKnight(f, [4.3, -0.4, bobB], -0.3, {
+  sculptKnight(f, [5.0, -0.2, bobB], -0.3, {
     hip: [0, 0, 5.2], chest: [0, -0.1, 7.4], head: [-0.15, -0.2, 9.2],
     sh: [[-1.35, 0, 8.0], [1.35, 0, 8.0]],
     el: [[-1.65, -0.3, 6.3], [1.9, -0.9, 6.4]],
@@ -1299,7 +1314,7 @@ export function paintCompany(p: Px, t: number): void {
     sword: { hand: 1, tip: [2.6, 1.3, 12.6] },
     flap,
   });
-  f.draw(p, cam, { cel: COMIC, at: R3, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [0, -1] });
+  f.draw(p, cam, { cel: COMIC, at: R3, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [-1, -0.3] });
   shine(p, rr[0], rr[1] - 1, 30 * k * flick, CYANS[2], 0, 0.26);
   // THE RUNE in his palm: a glyph of light, and its glow on the dusk
   for (let j = 0; j < 8; j++) {
@@ -1308,18 +1323,19 @@ export function paintCompany(p: Px, t: number): void {
     const r1 = r0 + (j % 2 ? 2 : 4) * k * flick;
     for (let r = r0; r <= r1; r += 0.7) p.set(Math.round(rr[0] + Math.cos(an) * r), Math.round(rr[1] - 1 + Math.sin(an) * r), r > r1 - 1.2 ? CYANS[2] : CYANS[1]);
   }
-  const glyph = ['...#...', '..#.#..', '.#.#.#.', '..#.#..', '...#...', '...#...', '..###..'];
-  const gx = Math.round(rr[0] - 3);
-  const gy = Math.round(rr[1] - 5);
+  // (a rune of the wordsmiths' own: a stave with two branches up from it and a hook at its foot, its strokes two pixels
+  // thick, white-hot in the middle, its light round it)
+  const glyph = ['...##.....', '...##..##.', '...##.##..', '...####...', '...###....', '..####....', '.##.##....', '...##.....', '...##.....', '...###....', '....###...'];
+  const gx = Math.round(rr[0] - 5);
+  const gy = Math.round(rr[1] - 8);
   for (let r = 0; r < glyph.length; r++) {
     for (let c = 0; c < glyph[r].length; c++) {
       if (glyph[r][c] !== '#') continue;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (glyph[r + dy]?.[c + dx] !== '#') p.set(gx + c + dx, gy + r + dy, CYANS[1]);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (glyph[r + dy]?.[c + dx] !== '#') p.set(gx + c + dx, gy + r + dy, CYANS[2]);
     }
   }
-  for (let r = 0; r < glyph.length; r++) for (let c = 0; c < glyph[r].length; c++) if (glyph[r][c] === '#') p.set(gx + c, gy + r, CYANS[0]);
-  // the caption, at its head
-  caption(p, 'and the altar that wakes the words.', 6, 6, 64);
+  for (let r = 0; r < glyph.length; r++) for (let c = 0; c < glyph[r].length; c++) if (glyph[r][c] === '#') p.set(gx + c, gy + r, (r + c) % 3 ? CYANS[0] : CYANS[1]);
+  // (its caption runs across the foot of the page: PAGE_CAPTIONS)
 }
 
 /** The prison far off on its peak (its foot's middle at x, y; `k` the box's measure): a keep and two towers, black on the dusk, rimmed. */
@@ -1478,7 +1494,7 @@ export function paintOldSmith(p: Px, t: number): void {
   const flick = 0.85 + 0.15 * Math.sin(t * 6.1);
   const gust = Math.sin(t * 1.3) * 0.15;
   // THE CAMERA: low on the road, looking up at him
-  const cam = { look: unit([0.2, 1, 0.12]), up: [0, 0, 1] as V3, scale: 24 * k, ox: S(96, 0)[0], oy: S(0, 420)[1] };
+  const cam = { look: unit([0.32, 1, 0.1]), up: [0, 0, 1] as V3, scale: 29 * k, ox: S(84, 0)[0], oy: S(0, 492)[1] };
   const onScreen = (q: V3): Pt => {
     const rr = unit(cross(cam.look, cam.up));
     const dd = unit(cross(cam.look, rr));
@@ -1501,11 +1517,11 @@ export function paintOldSmith(p: Px, t: number): void {
   far.each((x, y) => (!far.has(x, y - 1) ? FAR_RIM : undefined));
   over(p, far, null);
   const crag = layerOf(p);
-  crag.poly(loop([S(150, 240), S(160, 200), S(172, 186), S(170, 150), S(184, 124), S(182, 96), S(192, 70), S(194, 50), S(232, 46), S(236, 46), S(236, 244)], 3, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), ROCK[0]);
+  crag.poly(loop([S(150, 240), S(160, 200), S(172, 186), S(170, 150), S(184, 132), S(182, 112), S(190, 94), S(192, 74), S(232, 70), S(236, 70), S(236, 244)], 3, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), ROCK[0]);
   facets(crag, ROCK, [0.8, -0.5, 0.3], { cw: 14, ch: 9, seed: 731, tilt: [0.3, -0.6], spread: 0.8, extra: (x, y) => glow(x, y, W * 1.05, H * 0.5, W * 0.8) * 0.8 - 0.2 });
   crag.each((x, y) => (!crag.has(x, y - 1) || !crag.has(x + 1, y) ? ROCK_RIM : undefined));
   over(p, crag, INK);
-  paintFarKeep(p, S(212, 48)[0], S(212, 48)[1], 0.98 * k);
+  paintFarKeep(p, S(212, 72)[0], S(212, 72)[1], 0.92 * k);
   const mist = layerOf(p);
   mist.rect(0, Math.round(S(0, 262)[1]), W, Math.round(H * 0.2), '#3a2e58');
   mist.each((x, y) => (Math.sin(x * 0.05 + y * 0.3) + (fbm(x / 20, y / 6, 821) - 0.5) * 2 > 0.4 ? '#4a3a68' : undefined));
@@ -1525,7 +1541,7 @@ export function paintOldSmith(p: Px, t: number): void {
     const st = solid(p, [S(x, 300), S(x + 2, 288), S(x + w - 3, 287), S(x + w, 298), S(x + w - 1, 304), S(x + 1, 305)], ROCK, [0.2, -0.7, 0.6], { round: 0.6, hard: 1 });
     over(p, st, INK);
   }
-  f.draw(p, cam, { cel: COMIC, at: head3, hard: 1, fill: [-0.1, -1, 0.35], fillK: 0.34, rim: '#e0885a', rimFrom: [1, 0] });
+  f.draw(p, cam, { at: head3, hard: 1, fill: [-0.3, -1, 0.4], fillK: 0.34, rim: '#e8904a', rimFrom: [1, 0] });
   // THE STAFF'S HEAD, burning
   paintStaffFire(p, hs[0], hs[1], k, t, flick);
   // HIS WORDS
@@ -1773,19 +1789,12 @@ function sculptCultist(f: Figure, o: V3, yaw: number, P: CultPose, eyeW = 1): { 
     f.egg(robe, at(add3(el, scale3(up, -0.1))), [0.52, 0.52, 0.36], fr(up), 0.3);
     f.rod(bone, at(add3(el, scale3(lo, 0.2))), at(lerp3(el, ha, 0.86)), 0.19, 0.12, 0.15);
     f.egg(bone, at(lerp3(el, ha, 0.32)), [0.2, 0.2, 0.42], fr(lo), 0.15);
-    const holding = (P.dagger && P.dagger.hand === j) || (P.torch && P.torch.hand === j);
-    if (holding) f.egg(bone, at(ha), [0.2, 0.2, 0.22], fr(lo), 0.15);
-    else {
-      f.egg(bone, at(ha), [0.18, 0.08, 0.2], fr(lo, across), 0.12);
-      for (let i = 0; i < 4; i++) {
-        const sp = (i - 1.5) * 0.12;
-        const base = add3(add3(ha, scale3(lo, 0.16)), scale3(across, sp));
-        const tip = add3(add3(base, scale3(lo, 0.34)), add3(scale3(across, sp * 1.4), scale3(fwd, 0.14)));
-        const hook = add3(tip, add3(scale3(lo, 0.12), scale3(fwd, 0.18)));
-        f.rod(bone, at(base), at(tip), 0.055, 0.045, 0.05);
-        f.rod(bone, at(tip), at(hook), 0.045, 0.02, 0.03);
-      }
-    }
+    // (the hand: bony, gripping the dagger or the torch, or clawing; its wrist a little back up the forearm)
+    const item = P.dagger && P.dagger.hand === j ? P.dagger.to : P.torch && P.torch.hand === j ? P.torch.to : null;
+    const wrist = add3(ha, scale3(lo, -0.3));
+    const zf = unit(rot(lo));
+    if (item) hand(f, bone, frameAt(at(wrist), zf, cross(zf, unit(rot(sub3(item, ha))))), 0.5, 'grip');
+    else hand(f, bone, frameAt(at(wrist), zf, rot(fwd)), 0.5, 'claw');
   }
   // THE STOLE: two bands of the cult's pink, from behind his neck over his collar and down his front past the rope
   for (const sd of [-1, 1]) {
@@ -2119,7 +2128,15 @@ interface KnightPose {
   flap: number;
 }
 
-/** The knight (the hero) sculpted into `f` at `o`, turned `yaw`: mail and the red tabard, the pointed helm, the scarf, the sword. */
+/**
+ * The knight (the hero) sculpted into `f` at `o`, turned `yaw`: THE GAME'S OWN KNIGHT (art/hero3_knight.ts, the owner's
+ * pick): over all of his head a round helm of steel with a POINTED VISOR (a cone of steel out from his face and a little
+ * down, drawn to a point; the two slots he sees through over it, a point of light in each; the holes he breathes through in
+ * it), mail at his neck; the red tabard over all his trunk, its skirt to his knees cut into points, a plum belt with its
+ * buckle of cyan; mail on his arms and thighs, steel caps over his shoulders wider than his arms, steel at his elbows, on
+ * his forearms, at his knees, on his shins and his feet; plum gloves; the dark red scarf wound thick round his neck, its
+ * ends flying; the great sword, its blade lit cyan.
+ */
 function sculptKnight(f: Figure, o: V3, yaw: number, P: KnightPose): void {
   const c = Math.cos(yaw);
   const sn = Math.sin(yaw);
@@ -2131,99 +2148,108 @@ function sculptKnight(f: Figure, o: V3, yaw: number, P: KnightPose): void {
   const u = unit(sub3(C, H));
   const fwd = unit(sub3([0, -1, 0], scale3(u, dt3([0, -1, 0], u))));
   const across: V3 = unit(cross(u, fwd));
-  const back = (q: V3): V3 => {
-    const d = sub3(q, H);
-    return [dt3(d, across), -dt3(d, fwd), dt3(d, u)];
-  };
-  const red = f.stuff({ tones: [INK, '#2a0a10', '#5a1420', '#8e2230', '#c43a40', '#f07060'], hatch: 4, crease: 0.8, paint: (q0) => {
-    const q = back(q0);
-    return q[1] < -0.55 && Math.abs(q[2] - (1.0 + Math.abs(q[0]) * 0.85)) < 0.16 ? '#e8d8c0' : null;
-  } });
-  const scarf = f.stuff({ tones: [INK, '#1e060a', '#3e0c14', '#661822', '#922a32', '#c04a4a'] });
-  const mail = f.stuff({ tones: [INK, '#1a1838', '#28245a', '#4a4690', '#7e7ac0', '#b8b4e8'], crease: 0.8, paint: (q, n, v) => ((Math.round(q[2] * 8) + Math.round(q[0] * 8 + q[1] * 3)) % 2 === 0 && v > 0.3 && v < 0.8 ? '#28245a' : null) });
-  const steel = f.stuff({ tones: [INK, '#22204e', '#3a3478', '#7a74c8', '#d6d0ff', '#ffffff'] });
-  const blade = f.stuff({ tones: [INK, '#1a3a5a', '#3a7aa0', '#7ad8f0', '#c8fcff', '#ffffff'] });
-  const leath = f.stuff({ tones: [INK, '#1a0e0a', '#3a2216', '#5e3a22', '#8a5a34'] });
-  const skin = f.stuff({ tones: [INK, '#2a1a3a', '#5a3a5a', '#9a7a9a', '#d8c0d0', '#f0f8ff'], hatch: 4, crease: 0.45 });
-  // his body: mail, the tabard over it to his thighs, the belt
-  f.egg(mail, at(lerp3(H, C, 0.75)), [1.3, 0.88, 0.95], fr(u, across), 0.7);
-  f.rod(mail, at(lerp3(H, C, 0.5)), at(H), 1.12, 0.95, 0.6);
-  f.block(red, at(lerp3(H, C, 0.3)), [1.12, 0.95, 1.75], 0.55, fr(u, across), 0.3);
-  f.egg(leath, at(lerp3(H, C, 0.12)), [1.1, 0.95, 0.15], fr(u, across), 0.1);
-  // his legs: mail, steel at the knees, boots
+  const tabard = f.stuff({ tones: [INK, '#3a0810', '#6a1020', '#a01c28', '#d02a30', '#ff7058'], hatch: 4, crease: 0.8 });
+  const scarf = f.stuff({ tones: [INK, '#24040e', '#3c0818', '#661020', '#8e1428', '#c83040'], crease: 0.8 });
+  const mail = f.stuff({ tones: [INK, '#1a1840', '#28245a', '#4a4690', '#7e7ac0', '#a8a4e0'], crease: 0.8, paint: (q, n, v) => ((Math.round(q[2] * 8) + Math.round(q[0] * 8 + q[1] * 3)) % 2 === 0 && v > 0.3 && v < 0.8 ? '#28245a' : null) });
+  const steel = f.stuff({ tones: [INK, '#22204e', '#3a3478', '#5a54a0', '#7a74c8', '#a8a2e8', '#d6d0ff', '#ffffff'], shine: 0.7 });
+  const glove = f.stuff({ tones: [INK, '#24102a', '#3a1c40', '#6e3a5c', '#a8607a', '#c88aa0'], crease: 0.5 });
+  const blade = f.stuff({ tones: [INK, '#0c6a80', '#22d0e0', '#8af6f0', '#ffffff'], shine: 0.5 });
+  const belt = f.stuff({ tones: [INK, '#24102a', '#3a1c40', '#6e3a5c', '#a8607a'] });
+  const waist = lerp3(H, C, 0.12);
+  // HIS TRUNK under the tabard: broad at the chest, the tabard over all of it
+  f.egg(tabard, at(lerp3(H, C, 0.72)), [1.35, 0.9, 1.0], fr(u, across), 0.7);
+  f.rod(tabard, at(lerp3(H, C, 0.5)), at(H), 1.15, 1.0, 0.6);
+  // the skirt of the tabard, hanging from his waist to his knees, cut into points at its hem
+  const knees = lerp3(P.kn[0], P.kn[1], 0.5);
+  const hem = lerp3(H, knees, 0.92);
+  const sk = unit(sub3(hem, waist));
+  f.rod(tabard, at(waist), at(hem), 1.1, 1.35, 0.4);
+  for (let i = 0; i < 12; i++) {
+    const an = (i / 12) * Math.PI * 2 + 0.26;
+    const ring = add3(scale3(across, Math.cos(an) * 1.4), scale3(fwd, Math.sin(an) * 1.3));
+    f.rod(tabard, at(add3(add3(hem, scale3(sk, 0.45)), ring)), at(add3(add3(hem, scale3(sk, -0.4)), scale3(ring, 0.95))), 0.22, 0.02, 0.05, true);
+  }
+  for (const an of [-0.9, 0.3, 1.3, 2.4]) {
+    const d = add3(scale3(across, Math.cos(an)), scale3(fwd, Math.sin(an)));
+    f.line([at(add3(lerp3(waist, hem, 0.2), scale3(d, 1.18))), at(add3(hem, scale3(d, 1.38)))]);
+  }
+  // the belt over it, and its buckle (a point of the friend's cyan)
+  f.egg(belt, at(waist), [1.16, 1.02, 0.17], fr(u, across), 0.08);
+  f.block(steel, at(add3(waist, scale3(fwd, 1.0))), [0.2, 0.06, 0.16], 0.04, fr(u, across), 0.02);
+  f.mark(at(add3(waist, scale3(fwd, 1.08))), ['#b8fff8', '#22d0e0', '#0c6a80'], 2);
+  // HIS LEGS: mail to the knee, a steel cop on it, a steel greave below, a steel shoe
   for (const j of [0, 1] as const) {
     const hipJ = add3(H, scale3(across, j ? 0.55 : -0.55));
-    f.rod(mail, at(hipJ), at(P.kn[j]), 0.5, 0.4, 0.4);
-    f.rod(mail, at(P.kn[j]), at(P.ft[j]), 0.38, 0.3, 0.3);
-    f.egg(steel, at(add3(P.kn[j], scale3(fwd, 0.25))), [0.36, 0.3, 0.34], fr(unit(sub3(P.ft[j], P.kn[j]))), 0.15);
-    f.rod(leath, at(lerp3(P.kn[j], P.ft[j], 0.55)), at(P.ft[j]), 0.38, 0.36, 0.2);
-    f.egg(leath, at(add3(P.ft[j], scale3(fwd, 0.35))), [0.32, 0.55, 0.26], fr([0, 0, 1], across), 0.2);
+    const shin = unit(sub3(P.ft[j], P.kn[j]));
+    f.rod(mail, at(hipJ), at(P.kn[j]), 0.52, 0.42, 0.4);
+    f.rod(steel, at(P.kn[j]), at(add3(P.ft[j], scale3(shin, -0.3))), 0.44, 0.36, 0.2);
+    f.egg(steel, at(add3(P.kn[j], scale3(fwd, 0.18))), [0.42, 0.36, 0.4], fr(shin, across), 0.1);
+    f.block(steel, at(add3(add3(P.ft[j], scale3(fwd, 0.35)), [0, 0, 0.05])), [0.34, 0.6, 0.24], 0.16, fr([0, 0, 1], across), 0.15);
   }
-  // his shoulders: mail, a steel plate over each
+  // HIS ARMS: mail, a steel cap over the shoulder wider than the arm, a cop at the elbow, a steel vambrace, a plum glove
   for (const j of [0, 1] as const) {
-    f.egg(mail, at(P.sh[j]), [0.66, 0.7, 0.6], fr(u, across), 0.5);
-    f.egg(steel, at(add3(P.sh[j], scale3(u, 0.32))), [0.68, 0.74, 0.34], fr(u, across), 0.2);
-    f.rod(mail, at(P.sh[j]), at(P.el[j]), 0.42, 0.38, 0.4);
-    f.rod(mail, at(P.el[j]), at(lerp3(P.el[j], P.ha[j], 0.55)), 0.38, 0.32, 0.35);
-    // (his gauntlet: a steel cuff flaring over the wrist, the hand plated, gripping his sword or clenched)
-    const zf = unit(rot(sub3(P.ha[j], P.el[j])));
+    const out = j ? 1 : -1;
+    const sh = P.sh[j];
+    f.egg(mail, at(sh), [0.62, 0.66, 0.6], fr(u, across), 0.5);
+    f.egg(steel, at(add3(add3(sh, scale3(u, 0.35)), scale3(across, out * 0.15))), [0.95, 0.85, 0.55], fr(u, across), 0.15);
+    f.rod(mail, at(sh), at(P.el[j]), 0.42, 0.38, 0.4);
+    const fore = unit(sub3(P.ha[j], P.el[j]));
+    f.egg(steel, at(P.el[j]), [0.38, 0.38, 0.38], fr(fore), 0.1);
+    const wrist = add3(P.ha[j], scale3(fore, -0.42));
+    f.rod(steel, at(P.el[j]), at(wrist), 0.36, 0.33, 0.1);
+    const zf = unit(rot(fore));
     const holds = P.sword.hand === j;
     const sd = unit(rot(sub3(P.sword.tip, P.ha[P.sword.hand])));
-    const wrist = at(add3(P.ha[j], scale3(unit(sub3(P.ha[j], P.el[j])), -0.42)));
-    f.rod(steel, at(lerp3(P.el[j], P.ha[j], 0.5)), wrist, 0.3, 0.38, 0.15);
-    hand(f, steel, frameAt(wrist, zf, holds ? cross(zf, sd) : [0, 0, 1]), 0.62, holds ? 'grip' : 'fist');
+    hand(f, glove, frameAt(at(wrist), zf, holds ? cross(zf, sd) : [0, 0, 1]), 0.62, holds ? 'grip' : 'fist');
   }
-  // the scarf round his neck, its tail out on the wind
-  const neck = add3(C, scale3(u, 0.6));
-  f.egg(scarf, at(neck), [1.0, 0.92, 0.32], fr(u, across), 0.3);
-  const tail1 = add3(neck, add3(scale3(fwd, -1.0), add3(scale3(across, 1.3), [0, 0, -0.3 + P.flap * 0.4])));
-  const tail2 = add3(tail1, add3(scale3(fwd, -0.6), add3(scale3(across, 1.2), [0, 0, 0.5 - P.flap])));
-  f.rod(scarf, at(add3(neck, scale3(across, 0.6))), at(tail1), 0.32, 0.25, 0.3);
-  f.rod(scarf, at(tail1), at(tail2), 0.25, 0.12, 0.25);
-  // the coif, the face in it, the pointed helm and its nasal bar; his eyes, the friend's cyan
+  // THE SCARF wound thick round his neck, hiding his chin; its two ends flying from the back of it
+  const neck = add3(C, scale3(u, 0.62));
+  f.egg(scarf, at(add3(neck, scale3(fwd, 0.1))), [1.05, 0.98, 0.42], fr(u, across), 0.3);
+  const knot = add3(neck, scale3(fwd, -0.8));
+  for (const [k1, k2] of [[0.0, 0.2], [0.25, -0.15]] as const) {
+    const t1 = add3(knot, add3(scale3(fwd, -1.0 - k1), add3(scale3(across, 1.2 + k1), [0, 0, -0.3 + P.flap * 0.4 + k2])));
+    const t2 = add3(t1, add3(scale3(fwd, -0.6), add3(scale3(across, 1.25), [0, 0, 0.45 - P.flap + k2])));
+    f.rod(scarf, at(knot), at(t1), 0.3, 0.24, 0.3);
+    f.rod(scarf, at(t1), at(t2), 0.24, 0.1, 0.25);
+  }
+  // HIS HELM over all of his head: mail at his neck; a round skull of steel; the pointed visor out from his face; the slots
   const hd = P.head;
   const hu = unit(sub3(hd, neck));
   const hf = unit(sub3(fwd, scale3(hu, dt3(fwd, hu))));
   const hx = (q: readonly [number, number, number]): V3 => add3(hd, add3(add3(scale3(across, q[0]), scale3(hf, -q[1])), scale3(hu, q[2])));
   const hfr = fr(hu, across);
-  f.egg(mail, at(hx([0, 0.05, -0.45])), [0.86, 0.84, 0.55], hfr, 0.5);
-  f.egg(mail, at(hx([0, 0.08, 0.1])), [0.8, 0.8, 0.85], hfr, 0.5);
-  f.egg(mail, at(hx([0, -0.86, -0.05])), [0.5, 0.52, 0.54], hfr, 0.12, true);
-  f.egg(skin, at(hx([0, -0.18, 0])), [0.58, 0.66, 0.72], hfr, 0.4);
-  f.rod(skin, at(hx([0, -0.82, 0.02])), at(hx([0, -0.96, -0.22])), 0.08, 0.11, 0.12);
-  f.mark(at(hx([-0.22, -0.86, 0.05])), [CYANS[0], CYANS[1], CYANS[2]], 2);
-  f.mark(at(hx([0.22, -0.86, 0.05])), [CYANS[0], CYANS[1], CYANS[2]], 2);
-  f.egg(steel, at(hx([0, 0.05, 0.5])), [0.9, 0.9, 0.22], hfr, 0.1);
-  f.egg(steel, at(hx([0, 0.06, 0.82])), [0.84, 0.84, 0.48], hfr, 0.4);
-  f.egg(steel, at(hx([0, 0.08, 1.3])), [0.58, 0.58, 0.45], hfr, 0.4);
-  f.egg(steel, at(hx([0, 0.1, 1.75])), [0.32, 0.32, 0.4], hfr, 0.35);
-  f.egg(steel, at(hx([0, 0.12, 2.12])), [0.1, 0.1, 0.28], hfr, 0.25);
-  f.rod(steel, at(hx([0, -0.98, 0.48])), at(hx([0, -1.02, -0.3])), 0.1, 0.08, 0.1);
-  f.block(steel, at(hx([0, -1.03, -0.32])), [0.13, 0.05, 0.06], 0.03, hfr, 0.05);
-  {
-    let prev: V3 | null = null;
-    for (let i = 0; i <= 20; i++) {
-      const an = (i / 20) * Math.PI * 2;
-      const q = hx([Math.cos(an) * 0.93, 0.05 + Math.sin(an) * 0.93, 0.52]);
-      if (prev) f.rod(steel, at(prev), at(q), 0.09, 0.09, 0.05);
-      if (i % 3 === 0 && Math.sin(an) < 0) f.mark(at(hx([Math.cos(an) * 1.02, 0.05 + Math.sin(an) * 1.02, 0.52])), ['#ffffff', '#d6d0ff'], 1);
-      prev = q;
+  f.rod(mail, at(neck), at(hd), 0.62, 0.62, 0.4);
+  const R = 0.78;
+  f.egg(steel, at(hx([0, 0, 0.05])), [R * 1.26, R * 1.18, R * 1.12], hfr, 0.3);
+  const root = hx([0, -R * 0.62, -R * 0.24]);
+  const point = hx([0, -R * 1.9, -R * 0.5]);
+  f.rod(steel, at(root), at(point), R * 0.62, R * 0.12, 0.25);
+  // (the ridge down its middle; the slots he sees through, over the visor, a point of light in each)
+  f.line([at(hx([0, -R * 1.15, R * 0.35])), at(hx([0, -R * 0.7, R * 0.95])), at(hx([0, 0, R * 1.15]))], '#3a3478', 1);
+  for (const sd of [-1, 1]) {
+    const slot: V3[] = [];
+    for (let i = 0; i <= 4; i++) {
+      const az = (sd * (0.18 + i * 0.11));
+      slot.push(at(hx([Math.sin(az) * R * 1.24, -Math.cos(az) * R * 1.17, R * 0.12])));
     }
-    f.rod(steel, at(hx([0, -0.88, 0.62])), at(hx([0, -0.2, 1.9])), 0.06, 0.04, 0.08);
+    f.line(slot, INK, 2);
+    f.mark(at(hx([Math.sin(sd * 0.32) * R * 1.3, -Math.cos(sd * 0.32) * R * 1.22, R * 0.14])), ['#7af8f0', '#22d0e0', '#0c6a80'], 2);
   }
-  // the great sword: pommel, grip, cross, the long blade
+  // (the holes he breathes through, in the visor)
+  for (const [ox2, oz] of [[0, 0], [-0.12, -0.06], [0.12, -0.06], [0, -0.13]] as const) f.mark(at(hx([ox2, -R * 1.42, -R * 0.38 + oz])), [INK], 1);
+  // THE GREAT SWORD: a wheel pommel, the grip wound, a cross with its ends turned, the long blade lit
   const fist = P.ha[P.sword.hand];
   const dir = unit(sub3(P.sword.tip, fist));
   const side = unit(cross(dir, Math.abs(dir[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1]));
   const G = add3(fist, scale3(dir, 0.4));
   f.egg(steel, at(add3(fist, scale3(dir, -0.6))), [0.2, 0.08, 0.2], fr(dir, side), 0.02);
-  f.rod(leath, at(add3(fist, scale3(dir, -0.5))), at(G), 0.1, 0.1, 0);
+  f.rod(belt, at(add3(fist, scale3(dir, -0.5))), at(G), 0.1, 0.1, 0);
   f.rod(steel, at(add3(G, scale3(side, -0.6))), at(add3(G, scale3(side, 0.6))), 0.09, 0.09, 0);
   for (const e of [-1, 1]) f.rod(steel, at(add3(G, scale3(side, e * 0.6))), at(add3(add3(G, scale3(side, e * 0.72)), scale3(dir, 0.14))), 0.09, 0.07, 0.04);
   const bl = Math.hypot(...sub3(P.sword.tip, G));
   f.block(blade, at(add3(G, scale3(dir, bl * 0.45))), [0.2, 0.05, bl * 0.42], 0.04, fr(dir, side), 0);
   f.egg(blade, at(add3(G, scale3(dir, bl * 0.86))), [0.2, 0.05, bl * 0.14], fr(dir, side), 0.05);
-  f.line([at(add3(G, scale3(dir, 0.3))), at(lerp3(G, P.sword.tip, 0.75))], '#3a7aa0', 1);
+  f.line([at(add3(G, scale3(dir, 0.3))), at(lerp3(G, P.sword.tip, 0.75))], '#0c6a80', 1);
 }
 
 /** A horse in harness sculpted into `f` at `o`, turned `yaw` (it faces +x), at `ph` in its gallop, its neck stretched to the pull. */
@@ -2933,8 +2959,8 @@ export const PAGES: readonly (readonly BoxDef[])[] = [
   [
     { x: 0, y: 0, w: 0.5, h: 0.5, paint: paintArmourer },
     { x: 0.5, y: 0, w: 0.5, h: 0.5, paint: paintMystic },
-    { x: 0, y: 0.5, w: 0.5, h: 0.5, paint: paintStranger, say: '...seeking the Meldstone,' },
-    { x: 0.5, y: 0.5, w: 0.5, h: 0.5, paint: paintCompany, say: '...and the altar that wakes the words.' },
+    { x: 0, y: 0.5, w: 0.5, h: 0.5, paint: paintStranger },
+    { x: 0.5, y: 0.5, w: 0.5, h: 0.5, paint: paintCompany },
   ],
   // PAGE 3
   [
@@ -2963,6 +2989,14 @@ export const PAGES: readonly (readonly BoxDef[])[] = [
 ];
 
 /** A spread (pages `k` and `k + 1`), `t` seconds on: the paper, its boxes painted and inked round, the spine's shadow. */
+/**
+ * Captions laid over the boxes of a page rather than in one box (a line of the telling running across two boxes): the page
+ * (0 the first), its text, where its top left is (a share of the page's inner width and height), how wide it may run.
+ */
+export const PAGE_CAPTIONS: readonly { page: number; say: string; x: number; y: number; maxW: number }[] = [
+  { page: 1, say: 'seeking the Meldstone, and the altar that wakes the words.', x: 0.03, y: 0.445, maxW: 176 },
+];
+
 export function paintSpread(k: number, t: number): Px {
   const PW = (SPREAD_W * DENSITY) / 2;
   const PH = SPREAD_H * DENSITY;
@@ -2980,6 +3014,12 @@ export function paintSpread(k: number, t: number): Px {
       b.paint(box, t);
       // (the box's frame: a heavy ink line round it)
       over(p, box, INK, r.x, r.y, 2);
+    }
+    for (const c of PAGE_CAPTIONS) {
+      if (c.page !== k + page) continue;
+      const iw = PW - 2 * MARGIN;
+      const ih = PH - 2 * MARGIN;
+      caption(p, c.say, Math.round(page * PW + MARGIN + c.x * iw), Math.round(MARGIN + c.y * ih), c.maxW);
     }
   }
   return p;

@@ -147,3 +147,290 @@ export function ear(f: Figure, stuff: number, F: Frame, s: number): void {
   f.egg(stuff, at(F, 0, 0.08 * s, 0.02 * s), [0.08 * s, 0.06 * s, 0.14 * s], ax, 0.04, true);
   f.egg(stuff, at(F, 0.02 * s, 0, -0.2 * s), [0.07 * s, 0.06 * s, 0.07 * s], ax, 0.06);
 }
+
+// =============================================================================================
+// A HUMAN BODY, at a man's true proportions (the owner, 24 Oct 2026, 17:22: "There are proportions that are all wrong
+// everywhere.  These are all humans and they need to look human."): every figure of the opening is built on it and dressed
+// over it, so that a head is an eighth of a man, his arms reach to the middle of his thighs, his hands are the size of his
+// face, and his limbs bend only at his joints, their bones always their own length.
+//
+// A tenth of a metre to a unit; up is z; the body faces -y (its right side toward -x) before it is turned and placed.
+
+/** How a body is built: its height, its breadth, its heft (a share of the usual for each). */
+export interface Build {
+  /** Height from the soles to the crown (17.6 a man of middle height). */
+  tall: number;
+  /** Broad in the shoulders (1 the usual). */
+  broad: number;
+  /** Heavy in the body and limbs (1 the usual; the armourer 1.35). */
+  heavy: number;
+}
+export const MAN: Build = { tall: 17.6, broad: 1, heavy: 1 };
+
+/** How a body stands: where it is and how its parts are turned, and where its hands and feet are put (its own frame). */
+export interface Pose {
+  /** The middle of the pelvis (its own frame, before the body is placed). Default: standing, [0, 0, 9.4] for a man. */
+  pelvis?: V3;
+  /** The spine bent forward (radians, + forward), to the side (+ to his left), twisted (+ his shoulders to his left). */
+  lean?: number;
+  side?: number;
+  twist?: number;
+  /** The head turned (+ to his left), nodded (+ down), tipped (+ to his left). */
+  turn?: number;
+  nod?: number;
+  tip?: number;
+  /** Where each hand is (right, left), and which way each elbow points (a hint; default out and back). */
+  hands: readonly [V3, V3];
+  elbows?: readonly [V3, V3];
+  /** Where each ankle is (right, left), and which way each knee points (default forward). */
+  feet?: readonly [V3, V3];
+  knees?: readonly [V3, V3];
+  /** Which way each hand's palm faces, and which way its fingers point (defaults: in toward the thigh, down). */
+  palms?: readonly [V3, V3];
+  fingers?: readonly [V3, V3];
+}
+
+/** A body posed: every joint, and the frames of its trunk and head. */
+export interface Body {
+  B: Build;
+  /** Units to a man of middle height (the build's height over 17.6). */
+  k: number;
+  pelvis: V3;
+  hips: readonly [V3, V3];
+  waist: V3;
+  chest: V3;
+  /** The trunk's lines: up its spine, out of its chest (forward), and across it (to its left). */
+  up: V3;
+  fwd: V3;
+  across: V3;
+  neck: V3;
+  head: V3;
+  /** The head's lines: up, forward (out of its face), across (to its left). */
+  hup: V3;
+  hfwd: V3;
+  hacross: V3;
+  shoulders: readonly [V3, V3];
+  elbows: readonly [V3, V3];
+  wrists: readonly [V3, V3];
+  knees: readonly [V3, V3];
+  ankles: readonly [V3, V3];
+  /** The hands' frames at the wrist (z along the hand, y its back), for `hand`. */
+  handFrames: readonly [Frame, Frame];
+}
+
+function rotAbout(v: V3, axis: V3, a: number): V3 {
+  const k = unit(axis);
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  return add(add(mul(v, c), mul(cross(k, v), s)), mul(k, dot(k, v) * (1 - c)));
+}
+
+/** Two bones from `a` to the joint to `b` (lengths `l1`, `l2`), the joint bent toward `pole`: the joint's place. `b` is drawn in if it is out of reach. */
+function reach(a: V3, b: V3, l1: number, l2: number, pole: V3): { joint: V3; end: V3 } {
+  let d = sub(b, a);
+  let L = Math.hypot(d[0], d[1], d[2]);
+  const most = (l1 + l2) * 0.999;
+  let end = b;
+  if (L > most) {
+    end = add(a, mul(d, most / L));
+    d = sub(end, a);
+    L = most;
+  }
+  const u = unit(d);
+  const along = (l1 * l1 - l2 * l2 + L * L) / (2 * L);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - along * along));
+  const pp = sub(pole, mul(u, dot(pole, u)));
+  const w = Math.hypot(pp[0], pp[1], pp[2]) > 1e-6 ? unit(pp) : unit(cross(u, [0, 0, 1]));
+  return { joint: add(add(a, mul(u, along)), mul(w, h)), end };
+}
+
+/** A body built `B` and posed `P`. */
+export function pose(B: Build, P: Pose): Body {
+  const k = B.tall / 17.6;
+  const pelvis = P.pelvis ?? [0, 0, 9.4 * k];
+  // the trunk: up from the pelvis, bent and twisted
+  let up: V3 = [0, 0, 1];
+  let fwd: V3 = [0, -1, 0];
+  up = rotAbout(up, [1, 0, 0], -(P.lean ?? 0));
+  fwd = rotAbout(fwd, [1, 0, 0], -(P.lean ?? 0));
+  up = rotAbout(up, fwd, -(P.side ?? 0));
+  fwd = rotAbout(fwd, up, P.twist ?? 0);
+  const across = unit(cross(up, fwd));
+  const hipsAcross: V3 = unit(cross([0, 0, 1], rotAbout([0, -1, 0], [0, 0, 1], (P.twist ?? 0) * 0.3)));
+  const waist = add(pelvis, mul(up, 1.3 * k));
+  const chest = add(pelvis, mul(up, 3.55 * k));
+  const neck = add(pelvis, mul(up, 5.1 * k));
+  const hips: [V3, V3] = [add(pelvis, add(mul(hipsAcross, -0.95 * k * B.heavy ** 0.3), [0, 0, -0.35 * k])), add(pelvis, add(mul(hipsAcross, 0.95 * k * B.heavy ** 0.3), [0, 0, -0.35 * k]))];
+  const shoulders: [V3, V3] = [add(add(pelvis, mul(up, 4.8 * k)), mul(across, -1.95 * k * B.broad)), add(add(pelvis, mul(up, 4.8 * k)), mul(across, 1.95 * k * B.broad))];
+  // the head: on the neck, turned, nodded, tipped
+  let hup = up;
+  let hfwd = fwd;
+  hfwd = rotAbout(hfwd, hup, P.turn ?? 0);
+  const hac0 = unit(cross(hup, hfwd));
+  hup = rotAbout(hup, hac0, -(P.nod ?? 0));
+  hfwd = rotAbout(hfwd, hac0, -(P.nod ?? 0));
+  hup = rotAbout(hup, hfwd, -(P.tip ?? 0));
+  const hacross = unit(cross(hup, hfwd));
+  const head = add(add(neck, mul(hup, 1.55 * k)), mul(hfwd, 0.1 * k));
+  // the limbs, each two bones of its own length, bent toward their hints
+  const arm1 = 3.1 * k;
+  const arm2 = 2.65 * k;
+  const elbows: V3[] = [];
+  const wrists: V3[] = [];
+  for (const j of [0, 1] as const) {
+    const side = j ? 1 : -1;
+    const pole = P.elbows?.[j] ?? add(mul(across, side * 0.5), mul(fwd, -1));
+    const r = reach(shoulders[j], P.hands[j], arm1, arm2, pole);
+    elbows.push(r.joint);
+    wrists.push(r.end);
+  }
+  const leg1 = 4.3 * k;
+  const leg2 = 4.1 * k;
+  const feet: readonly [V3, V3] = P.feet ?? [[-0.9 * k, 0, 0.75 * k], [0.9 * k, 0, 0.75 * k]];
+  const knees: V3[] = [];
+  const ankles: V3[] = [];
+  for (const j of [0, 1] as const) {
+    const pole = P.knees?.[j] ?? [0, -1, 0];
+    const r = reach(hips[j], feet[j], leg1, leg2, pole);
+    knees.push(r.joint);
+    ankles.push(r.end);
+  }
+  const handFrames = [0, 1].map((j) => {
+    const zf = P.fingers?.[j] ?? unit(sub(wrists[j], elbows[j]));
+    const back = P.palms?.[j] ? mul(P.palms[j], -1) : mul(across, j ? 1 : -1);
+    return frameAt(wrists[j], zf, back);
+  }) as unknown as [Frame, Frame];
+  return { B, k, pelvis, hips, waist, chest, up, fwd, across, neck, head, hup, hfwd, hacross, shoulders, elbows: elbows as unknown as [V3, V3], wrists: wrists as unknown as [V3, V3], knees: knees as unknown as [V3, V3], ankles: ankles as unknown as [V3, V3], handFrames };
+}
+
+/** A point by the head's lines: `a` to its left, `b` out of its face, `c` up; in units of a man's head. */
+export function onHead(b: Body, a: number, f: number, c: number): V3 {
+  return add(add(add(b.head, mul(b.hacross, a * b.k)), mul(b.hfwd, f * b.k)), mul(b.hup, c * b.k));
+}
+/** A point by the trunk's lines from the chest: `a` to its left, `b` forward, `c` up. */
+export function onChest(b: Body, a: number, f: number, c: number): V3 {
+  return add(add(add(b.chest, mul(b.across, a * b.k)), mul(b.fwd, f * b.k)), mul(b.up, c * b.k));
+}
+function axesOfHead(b: Body): readonly [V3, V3, V3] {
+  return [b.hacross, mul(b.hfwd, -1), b.hup];
+}
+function axesOfTrunk(b: Body): readonly [V3, V3, V3] {
+  return [b.across, mul(b.fwd, -1), b.up];
+}
+
+/** Which parts of a body to sculpt (what clothes hide need not be). */
+export interface BodyParts {
+  face?: boolean;
+  skull?: boolean;
+  neck?: boolean;
+  trunk?: boolean;
+  arms?: boolean;
+  forearms?: boolean;
+  hands?: false | 'fist' | 'grip' | 'flat' | 'claw' | 'open' | readonly ['fist' | 'grip' | 'flat' | 'claw' | 'open', 'fist' | 'grip' | 'flat' | 'claw' | 'open'];
+  legs?: boolean;
+  feet?: boolean;
+  /** The nose's kind. */
+  nose?: 'ram' | 'long' | 'small';
+  /** The eyes' light (the friend's two cyan points; the stranger's gold; none). */
+  eyes?: readonly string[] | null;
+  /** What a part is made of when it is not skin (mail on the arms, a sleeve, a boot), and how much thicker it is for it. */
+  as?: Partial<Record<'neck' | 'trunk' | 'arms' | 'forearms' | 'hands' | 'legs' | 'shins' | 'feet', { stuff: number; grow?: number }>>;
+}
+
+/**
+ * THE BODY SCULPTED: its skin (`skin`), the parts asked for. The face: a skull, a brow standing over the eyes, deep sockets,
+ * cheekbones, a jaw and chin, the nose, the mouth's line, ears; the eyes' light. The neck and the trapezius into the
+ * shoulders; the ribcage, the chest's muscles, the belly, the pelvis; the deltoids, the upper arms and their muscle, the
+ * forearms, the hands; the thighs, knees, calves, feet.
+ */
+export function sculptBody(f: Figure, skin: number, b: Body, parts: BodyParts): void {
+  const k = b.k;
+  const h = b.B.heavy;
+  const HA = axesOfHead(b);
+  const TA = axesOfTrunk(b);
+  const S = (part: 'neck' | 'trunk' | 'arms' | 'forearms' | 'hands' | 'legs' | 'shins' | 'feet'): [number, number] => {
+    const o = parts.as?.[part];
+    return o ? [o.stuff, o.grow ?? 1] : [skin, 1];
+  };
+  if (parts.skull !== false || parts.face !== false) {
+    f.egg(skin, onHead(b, 0, -0.12, 0.22), [0.82 * k, 1.0 * k, 1.05 * k], HA, 0.4);
+  }
+  if (parts.face !== false) {
+    f.egg(skin, onHead(b, 0, 0.42, -0.62), [0.58 * k * h ** 0.3, 0.55 * k, 0.55 * k], HA, 0.45);
+    f.egg(skin, onHead(b, 0, 0.62, -1.02), [0.28 * k, 0.24 * k, 0.22 * k], HA, 0.3);
+    f.egg(skin, onHead(b, 0, 0.8, 0.26), [0.6 * k, 0.17 * k, 0.13 * k], HA, 0.22);
+    for (const s of [-1, 1]) {
+      f.egg(skin, onHead(b, s * 0.5, 0.62, -0.12), [0.22 * k, 0.18 * k, 0.17 * k], HA, 0.2);
+      f.egg(skin, onHead(b, s * 0.31, 0.84, 0.06), [0.19 * k, 0.1 * k, 0.11 * k], HA, 0.06, true);
+      ear(f, skin, frameAt(onHead(b, s * 0.8, -0.02, -0.04), b.hup, mul(b.hacross, s)), 1.25 * k);
+      if (parts.eyes) f.mark(onHead(b, s * 0.31, 0.9, 0.04), parts.eyes, 2);
+    }
+    nose(f, skin, frameAt(onHead(b, 0, 0.88, 0.18), sub(mul(b.hfwd, 0.25), b.hup), b.hfwd), 1.15 * k, parts.nose ?? 'long');
+    f.line([onHead(b, -0.24, 0.84, -0.66), onHead(b, 0, 0.88, -0.62), onHead(b, 0.24, 0.84, -0.66)]);
+  }
+  if (parts.neck !== false) {
+    const [st, g] = S('neck');
+    f.rod(st, onHead(b, 0, -0.25, -0.8), b.neck, 0.52 * k * h ** 0.5 * g, 0.6 * k * h ** 0.5 * g, 0.35);
+    for (const s of [-1, 1]) f.egg(st, onChest(b, s * 0.85, -0.15, 1.6), [0.95 * k * g, 0.55 * k * g, 0.32 * k * g], TA, 0.4);
+  }
+  if (parts.trunk !== false) {
+    const [st, g] = S('trunk');
+    f.egg(st, onChest(b, 0, 0.05, -0.1), [1.5 * k * h ** 0.6 * g, 1.18 * k * h ** 0.6 * g, 1.55 * k * g], TA, 0.6);
+    f.egg(st, onChest(b, 0, -0.45, 0.55), [1.35 * k * h ** 0.6 * g, 0.72 * k * g, 1.05 * k * g], TA, 0.6);
+    f.egg(st, onChest(b, 0, 0.35, -1.55), [1.1 * k * h ** 0.8 * g, 0.9 * k * h ** 0.9 * g, 0.9 * k * g], TA, 0.6);
+    for (const s of [-1, 1]) f.egg(st, onChest(b, s * 0.68, 0.55, 0.3), [0.78 * k * g, 0.4 * k * g, 0.55 * k * g], TA, 0.35);
+    f.rod(st, onChest(b, 0, 0.05, -1.0), b.waist, 1.2 * k * h ** 0.7 * g, 1.12 * k * h ** 0.8 * g, 0.5);
+    f.egg(st, b.pelvis, [1.5 * k * h ** 0.5 * g, 1.05 * k * h ** 0.6 * g, 0.95 * k * g], TA, 0.5);
+  }
+  for (const j of [0, 1] as const) {
+    const sh = b.shoulders[j];
+    if (parts.arms !== false) {
+      const [st, g] = S('arms');
+      f.egg(st, sh, [0.6 * k * h ** 0.6 * g, 0.62 * k * h ** 0.6 * g, 0.66 * k * g], TA, 0.6);
+      f.rod(st, sh, b.elbows[j], 0.52 * k * h ** 0.6 * g, 0.4 * k * h ** 0.6 * g, 0.35);
+      const ua = sub(b.elbows[j], sh);
+      f.egg(st, add(sh, mul(ua, 0.45)), [0.5 * k * h ** 0.6 * g, 0.5 * k * h ** 0.6 * g, 0.95 * k], frameToAxes(frameAt(sh, ua, b.fwd)), 0.35);
+    }
+    if (parts.forearms !== false) {
+      const [st, g] = S('forearms');
+      forearm(f, st, b.elbows[j], b.wrists[j], 0.5 * k * h ** 0.6 * g, mul(b.across, j ? 1 : -1));
+    }
+    const hp = parts.hands === undefined ? 'open' : parts.hands;
+    if (hp) {
+      const kind = typeof hp === 'string' ? hp : hp[j];
+      const [st, g] = S('hands');
+      hand(f, st, b.handFrames[j], 1.12 * k * h ** 0.3 * g, kind);
+    }
+    if (parts.legs !== false) {
+      const [st, g] = S('legs');
+      f.rod(st, b.hips[j], b.knees[j], 0.82 * k * h ** 0.6 * g, 0.55 * k * h ** 0.6 * g, 0.4);
+      f.egg(st, b.knees[j], [0.48 * k * g, 0.48 * k * g, 0.5 * k * g], TA, 0.25);
+      const [st2, g2] = S('shins');
+      const shin = sub(b.ankles[j], b.knees[j]);
+      f.rod(st2, b.knees[j], b.ankles[j], 0.48 * k * h ** 0.6 * g2, 0.3 * k * h ** 0.5 * g2, 0.3);
+      f.egg(st2, add(add(b.knees[j], mul(shin, 0.32)), mul(b.fwd, -0.22 * k)), [0.48 * k * h ** 0.6 * g2, 0.48 * k * h ** 0.6 * g2, 1.1 * k], frameToAxes(frameAt(b.knees[j], shin, b.fwd)), 0.35);
+    }
+    if (parts.feet !== false) {
+      const [st, g] = S('feet');
+      sculptFoot(f, st, b, j, undefined, g);
+    }
+  }
+}
+
+/** A foot under the ankle: the heel, the arch, the ball, the toes; on the ground, pointing the body's way (or `toward`). */
+export function sculptFoot(f: Figure, stuff: number, b: Body, j: 0 | 1, toward?: V3, grow = 1): void {
+  const k = b.k;
+  const a = b.ankles[j];
+  const dir0 = toward ?? b.fwd;
+  const dir = unit([dir0[0], dir0[1], 0]);
+  const ground = Math.max(0, a[2] - 0.75 * k);
+  const heel: V3 = add([a[0], a[1], ground + 0.32 * k], mul(dir, -0.45 * k));
+  const ball: V3 = add([a[0], a[1], ground + 0.28 * k], mul(dir, 1.45 * k));
+  f.rod(stuff, a, heel, 0.36 * k * grow, 0.32 * k * grow, 0.25);
+  f.rod(stuff, heel, ball, 0.34 * k * grow, 0.3 * k * grow, 0.3);
+  f.egg(stuff, add(ball, mul(dir, 0.35 * k)), [0.42 * k * grow, 0.5 * k * grow, 0.24 * k * grow], frameToAxes(frameAt(ball, [0, 0, 1], dir)), 0.25);
+}
+
+function frameToAxes(F: Frame): readonly [V3, V3, V3] {
+  return [F.x, F.y, F.z];
+}

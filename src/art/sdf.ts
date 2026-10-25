@@ -26,6 +26,8 @@ export interface Stuff {
   paint?: (p: V3, n: V3, lit: number) => string | null;
   /** Hatch its darkest band with ink, lines this far apart. */
   hatch?: number;
+  /** It shines (steel, a blade): a hard glint where the light comes off it toward the eye, this strong (0..1). */
+  shine?: number;
   /** Grows out of what it lies on (a beard on a jaw): no ink where it meets another stuff at one depth. */
   meld?: boolean;
   /** How deep its creases go (1: as deep as they are; less for a face or a hand, all small parts close together). */
@@ -130,6 +132,11 @@ export interface Camera {
   scale: number;
   ox: number;
   oy: number;
+  /**
+   * Seen in perspective, the eye this far back from the plane through the figure's origin (its units): what is nearer is
+   * bigger, what is further smaller, lines running away draw together. Not given: seen square on (no perspective).
+   */
+  persp?: number;
 }
 
 /** A figure, sculpted. */
@@ -223,6 +230,13 @@ export class Figure {
     const look = unit(cam.look);
     const right = unit(cross(look, cam.up));
     const down = unit(cross(look, right));
+    const D = cam.persp ?? 0;
+    const eye: V3 = mul(look, -D);
+    /** Where a point is seen on the canvas, and how much nearer or further it is drawn (1 at the origin's plane). */
+    const proj = (q: V3): [number, number, number] => {
+      const f = D > 0 ? D / Math.max(0.05 * D, D + dt(q, look)) : 1;
+      return [dt(q, right) * f * cam.scale + cam.ox, dt(q, down) * f * cam.scale + cam.oy, f];
+    };
     // (the figure's reach: the bounds of its solids on the screen, and how near and far)
     let near = -Infinity;
     let far = Infinity;
@@ -238,9 +252,8 @@ export class Figure {
       for (const q of pts) {
         near = Math.max(near, -dt(q, look) + r + 1);
         far = Math.min(far, -dt(q, look) - r - 1);
-        const sx = dt(q, right) * cam.scale + cam.ox;
-        const sy = dt(q, down) * cam.scale + cam.oy;
-        const rr = (r + s.blend) * cam.scale + 2;
+        const [sx, sy, f] = proj(q);
+        const rr = (r + s.blend) * cam.scale * f * 1.15 + 2;
         x0 = Math.min(x0, sx - rr);
         x1 = Math.max(x1, sx + rr);
         y0 = Math.min(y0, sy - rr);
@@ -263,20 +276,27 @@ export class Figure {
         const sx = (x + 0.5 - cam.ox) / cam.scale;
         const sy = (y + 0.5 - cam.oy) / cam.scale;
         const base = add(mul(right, sx), mul(down, sy));
-        let t = near;
+        // (the ray: square on, from in front of the figure straight back along the look; in perspective, from the eye
+        // out through this pixel on the origin's plane)
+        const o: V3 = D > 0 ? eye : add(base, mul(look, -near));
+        const dir: V3 = D > 0 ? unit(sub(base, eye)) : look;
+        const along = dt(dir, look);
+        let s0 = D > 0 ? Math.max(0, (D - near) / along) : 0;
+        const s1 = D > 0 ? (D - far) / along : near - far;
         let hit = false;
-        let q: V3 = base;
+        let q: V3 = o;
         let m = -1;
-        for (let i = 0; i < 120 && t > far; i++) {
-          q = add(base, mul(look, -t));
+        for (let i = 0; i < 140 && s0 < s1; i++) {
+          q = add(o, mul(dir, s0));
           const a = this.at(q);
           if (a.d < 0.004) {
             hit = true;
             m = a.m;
             break;
           }
-          t -= Math.max(0.004, a.d * 0.85);
+          s0 += Math.max(0.004, a.d * 0.85);
         }
+        const t = -dt(q, look);
         if (!hit) continue;
         const g = (dx: number, dy: number, dz: number): number => this.ofStuff(m, [q[0] + dx, q[1] + dy, q[2] + dz]);
         const n = unit([g(E, 0, 0) - g(-E, 0, 0), g(0, E, 0) - g(0, -E, 0), g(0, 0, E) - g(0, 0, -E)]);
@@ -285,6 +305,13 @@ export class Figure {
         const fall = key ? Math.min(1, 2.2 / (0.6 + len(sub(key, q)) * 0.25)) : 1;
         let v = clamp01((dl * (0.5 + hard * 0.35) + 0.5 - hard * 0.25) * fall);
         if (light.fill) v = Math.max(v, clamp01(dt(n, unit(light.fill))) * (light.fillK ?? 0.25));
+        // (a shining stuff's glint: where the light comes off it toward the eye)
+        const shineK = this.stuffs[m].shine ?? 0;
+        if (shineK > 0) {
+          const toEye = D > 0 ? unit(sub(eye, q)) : mul(look, -1);
+          const rf = sub(mul(n, 2 * dl), L);
+          v += Math.pow(clamp01(dt(rf, toEye)), 14) * shineK;
+        }
         // its creases: how hemmed in the skin is, a little way out from it (darker; deep in one, an ink line)
         const o1 = this.at(add(q, mul(n, 0.12))).d / 0.12;
         const o2 = this.at(add(q, mul(n, 0.3))).d / 0.3;
@@ -372,10 +399,8 @@ export class Figure {
       for (let i = 1; i < ln.pts.length; i++) {
         const a = ln.pts[i - 1];
         const b = ln.pts[i];
-        const ax = dt(a, right) * cam.scale + cam.ox;
-        const ay = dt(a, down) * cam.scale + cam.oy;
-        const bx = dt(b, right) * cam.scale + cam.ox;
-        const by = dt(b, down) * cam.scale + cam.oy;
+        const [ax, ay] = proj(a);
+        const [bx, by] = proj(b);
         const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) * 1.5));
         for (let j = 0; j <= n; j++) {
           const u = j / n;
@@ -392,8 +417,7 @@ export class Figure {
     }
     // the marks (an eye's light), where their point is seen
     for (const mk of this.marks) {
-      const sx = dt(mk.p, right) * cam.scale + cam.ox;
-      const sy = dt(mk.p, down) * cam.scale + cam.oy;
+      const [sx, sy] = proj(mk.p);
       const X0 = Math.floor(sx);
       const Y0 = Math.floor(sy);
       if (X0 < 0 || Y0 < 0 || X0 >= W || Y0 >= H) continue;
