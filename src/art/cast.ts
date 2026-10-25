@@ -109,12 +109,16 @@ function skirt(f: Figure, st: number, b: Body, o: { hem: number; flare: number; 
     }
     return chain.reduce((m, q) => (q[2] < m[2] ? q : m));
   };
+  const hems: V3[] = [];
   for (const j of [0, 1] as const) {
     const s = j ? 1 : -1;
     const a = legAt(j, hemZ);
     const hp = add(add([a[0], a[1], hemZ - 0.3 * k], mul(ac, s * o.flare * 0.4 * k)), wind);
     f.rod(st, add(b.hips[j], mul(b.up, 0.5 * k)), hp, 0.98 * k * h ** 0.6, o.flare * 0.58 * k, 0.6);
+    hems.push(hp);
   }
+  // (and between the legs, however far apart they stride, the cloth hanging across: one sheet, not two sleeves)
+  for (const u of [0.25, 0.5, 0.75]) f.rod(st, top, lerp(hems[0], hems[1], u), 1.0 * k * h ** 0.6, o.flare * 0.55 * k, 0.6);
   // (its hem cut flat, a little higher at the front if lifted)
   const cutC = add(mid, [0, 0, -4.0 * k]);
   const tilt = o.lift ?? 0;
@@ -211,7 +215,7 @@ function beard(f: Figure, st: number, b: Body, o: { to: number; full: number; mo
   // its locks curling a little apart; strands down it)
   const L = len(sub(end, chin));
   const along = (u: number): V3 => (u < 0.5 ? lerp(chin, mid, u * 2) : lerp(mid, end, (u - 0.5) * 2));
-  for (const [u, w, th] of [[0.12, 0.62, 0.6], [0.36, 0.56, 0.52], [0.6, 0.44, 0.4], [0.8, 0.3, 0.28]] as const) {
+  for (const [u, w, th] of [[0.12, 0.64, 0.82], [0.36, 0.58, 0.7], [0.6, 0.46, 0.52], [0.8, 0.32, 0.34]] as const) {
     const c = along(u);
     const dz = unit(sub(along(Math.min(1, u + 0.1)), along(Math.max(0, u - 0.1))));
     const ax = unit(sub(b.hacross, mul(dz, dot(b.hacross, dz))));
@@ -229,6 +233,18 @@ function beard(f: Figure, st: number, b: Body, o: { to: number; full: number; mo
       pts.push(add(add(along(u * 0.92), mul(b.hacross, x * w * k * 1.4)), mul(b.fwd, 0.28 * k)));
     }
     f.line(pts, '#8a86a0', 1);
+  }
+  // (strands down its sides too, seen when he is seen from the side)
+  for (const sd of [-1, 1]) {
+    for (const fo of [-0.1, 0.25]) {
+      const pts: V3[] = [];
+      for (let i = 0; i <= 6; i++) {
+        const u = i / 6;
+        const w = (0.6 - u * 0.36) * o.full;
+        pts.push(add(add(along(0.05 + u * 0.85), mul(b.hacross, sd * w * k * 0.98)), mul(b.fwd, fo * (1 - u) * k)));
+      }
+      f.line(pts, '#8a86a0', 1);
+    }
   }
 }
 
@@ -851,9 +867,11 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
     let prev = add(grip, mul(dd, 0.4 * k));
     f.rod(dark, add(prev, mul(side, -0.35 * k)), add(prev, mul(side, 0.35 * k)), 0.08 * k, 0.08 * k, 0);
     f.rod(pink, add(grip, mul(dd, -0.4 * k)), prev, 0.1 * k, 0.1 * k, 0);
+    // (a curved blade, as a sickle's, bellied along its edge and drawn to a hooked point)
     for (let i = 1; i <= 6; i++) {
-      const q = add(add(grip, mul(dd, (0.4 + i * 0.45) * k)), mul(side, (i % 2 ? 0.2 : -0.2) * (i < 6 ? 1 : 0) * k));
-      f.rod(ivory, prev, q, (0.2 - i * 0.022) * k, (0.18 - i * 0.026) * k, 0.06);
+      const u = i / 6;
+      const q = add(add(grip, mul(dd, (0.4 + i * 0.42) * k)), mul(side, (Math.sin(u * Math.PI * 0.85) * 0.32 - u * u * 0.1) * k));
+      f.rod(ivory, prev, q, (0.24 - i * 0.026) * k, (0.22 - i * 0.032) * k, 0.06);
       prev = q;
     }
     tipOut = prev;
