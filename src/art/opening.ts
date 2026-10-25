@@ -2458,7 +2458,7 @@ function sculptWagon(f: Figure, o: V3, yaw: number, w: { roll?: number; horse?: 
  * comes up; the keep rising tall within, square, battlemented, a turret at its corner; arrow slits; all on a plinth of the
  * crag's own rock, broken and stepped. The one prison of the opening, near or far.
  */
-function sculptPrison(f: Figure, o: V3, yaw: number, courses = false, plinth = true): void {
+function sculptPrison(f: Figure, o: V3, yaw: number, courses = false, plinth = true, through = false): void {
   const c = Math.cos(yaw);
   const sn = Math.sin(yaw);
   const rot = (q: V3): V3 => [q[0] * c - q[1] * sn, q[0] * sn + q[1] * c, q[2]];
@@ -2531,8 +2531,20 @@ function sculptPrison(f: Figure, o: V3, yaw: number, courses = false, plinth = t
   for (let x = -30.5; x <= -17.5; x += 2.6) f.block(stone, at([x, -1.2, 15.6]), [0.65, 0.45, 0.75], 0.1, AX, 0.05);
   // (the gate's way through: an arched passage under the gatehouse, its far end dark with the yard beyond)
   const dark = f.stuff({ tones: ['#030208', '#05040a', '#08060e', '#0c0a14'] });
-  f.block(dark, at([-24, 3.4, 0.6]), [2.0, 0.25, 3.2], 0.1, AX, 0);
-  f.rod(dark, at([-24, 3.2, 3.7]), at([-24, 3.6, 3.7]), 2.0, 2.0, 0);
+  if (!through) {
+    f.block(dark, at([-24, 3.4, 0.6]), [2.0, 0.25, 3.2], 0.1, AX, 0);
+    f.rod(dark, at([-24, 3.2, 3.7]), at([-24, 3.6, 3.7]), 2.0, 2.0, 0);
+  } else {
+    // (seen from within: the yard's flags round the gate, the passage open to the night)
+    const flag = f.stuff({ tones: [INK, '#0e0b18', '#16122a', '#201a36', '#2c2446', '#3a3054'], crease: 0.6, paint: (q) => {
+      const l: V3 = [q[0] - o[0], q[1] - o[1], q[2]];
+      const u = ((l[0] + 40) % 1.6 + 1.6) % 1.6;
+      const v = ((l[1] + (Math.floor((l[0] + 40) / 1.6) % 2) * 0.6 + 40) % 1.2 + 1.2) % 1.2;
+      return Math.abs(l[2]) < 0.05 && (u < 0.07 || v < 0.07) ? '#0a0814' : null;
+    } });
+    f.block(flag, at([-6, 12, -0.5]), [30, 14, 0.5], 0.05, AX, 0);
+    f.block(flag, at([-24, 0.5, -0.5]), [1.8, 3.0, 0.5], 0.05, AX, 0);
+  }
   f.block(stone, at([-24, 0.5, 0.6]), [1.8, 3.0, 3.1], 0.1, AX, 0.1, true);
   f.rod(stone, at([-24, -2.6, 3.7]), at([-24, 3.0, 3.7]), 1.8, 1.8, 0.1, true);
   // (its voussoirs round the arch's face)
@@ -2836,56 +2848,38 @@ export function paintThroughGate(p: Px, t: number): void {
   const S = (x: number, y: number): Pt => [(x / 392) * W, (y / 118) * H];
   const k = W / 392;
   const flick = 0.85 + 0.15 * Math.sin(t * 9.1);
-  // THE BURNING WAGON going in under the gate: seen from outside, the gatehouse on the right (the one prison, sculpted, a
-  // metre a unit, its stones in courses), the wagon sculpted with it (a fifth of the measure), its horse gone in ahead of it
-  // into the dark of the passage, its canvas afire; the road behind it, the cult coming up it far back on the left
+  // THE BURNING WAGON going in under the gate: seen from the road before it, the gatehouse filling the box (the one prison,
+  // sculpted, a metre a unit, its stones in courses), its two towers either side of the arch; the wagon sculpted with it,
+  // its horse and its front gone in under the arch into the dark of the passage, its back end still out, its canvas
+  // afire, the flames licking up the arch's face and lighting the stone round it
   const f = new Figure();
   sculptPrison(f, [0, 0, 0], 0, true, false);
-  const wp = Cast.place(f, [-24.0, -3.2, 0], Math.PI / 2 + 0.04, () => sculptWagon(f, [0, 0, 0], 0, { roll: -t * 7, horse: { ph: t * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-4, 0, 11], driver: 'armourer' }), 0.25);
-  const cam = { look: unit([-0.5, 1, -0.09]), up: [0, 0, 1] as V3, scale: 8.5 * k, ox: 0, oy: 0, persp: 40 };
+  const wp = Cast.place(f, [-24, -1.0, 0], Math.PI / 2, () => sculptWagon(f, [0, 0, 0], 0, { roll: -t * 7, horse: { ph: t * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-6, 0, 11], driver: 'armourer' }), 0.25);
+  const cam = { look: unit([0.08, 1, -0.06]), up: [0, 0, 1] as V3, scale: 12.5 * k, ox: 0, oy: 0, persp: 40 };
   const g0 = seen(cam, [-24, -1.9, 0]);
-  cam.ox = S(236, 0)[0] - g0[0];
-  cam.oy = S(0, 112)[1] - g0[1];
-  const fire3 = wp.at([-4, 0, 13]);
+  cam.ox = S(206, 0)[0] - g0[0];
+  cam.oy = S(0, 114)[1] - g0[1];
+  const fire3 = wp.at([-6, 0, 12]);
   const blaze = seen(cam, fire3);
-  const lit = (x: number, y: number, r = W * 0.45): number => glow(x, y, blaze[0], blaze[1], r) * flick;
   const sky = layerOf(p);
   sky.rect(0, 0, W, H, DUSK[0]);
-  bands(sky, DUSK, (x, y) => -0.05 + lit(x, y, W * 0.6) * 0.7 + strata(x, y, 1708));
-  sky.each((x, y) => (y < H * 0.5 && hash(x, y, 1403) > 0.994 ? '#c8c4f0' : undefined));
+  bands(sky, DUSK, (x, y) => -0.05 + strata(x, y, 1708));
+  sky.each((x, y) => (hash(x, y, 1403) > 0.993 ? '#c8c4f0' : undefined));
   over(p, sky, null);
-  const hill = layerOf(p);
-  hill.poly(loop([S(-4, 64), S(60, 60), S(140, 70), S(240, 74), S(396, 70), S(396, 122), S(-4, 122)], 6, [4, 5, 6]), ROCK[1]);
-  bands(hill, ROCK, (x, y) => 0.2 + lit(x, y) * 1.0 + (fbm(x / 14, y / 5, 1404) - 0.5) * 0.3);
-  over(p, hill, INK);
-  const road = layerOf(p);
-  road.poly(loop([S(-4, 92), S(160, 98), S(320, 104), S(396, 106), S(396, 122), S(-4, 122)], 6, [3, 4, 5]), ROAD[0]);
-  bands(road, ROAD, (x, y) => 0.2 + lit(x, y) * 1.2 + (fbm(x / 8, y / 3, 1405) - 0.5) * 0.3);
-  over(p, road, INK);
-  // (the cult far back down the road, their torches up)
-  const fl: Pt[] = [];
-  for (let j = 0; j < 7; j++) {
-    const tp = miniCultist(p, S(10 + j * 15 + hash(j, 1, 1406) * 6, 0)[0], S(0, 84 + hash(j, 2, 1406) * 6)[1], 0.75 * k, t * 9 + j * 1.7, j % 2 === 0, 1.3);
-    if (tp) fl.push(tp);
+  f.draw(p, cam, { at: add3(fire3, [0, -4, 1]), hard: 1, fill: [-0.3, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
+  // (the fire's light over the stone round the arch, and the fire off the wagon's canvas licking up the arch's face)
+  shine(p, blaze[0], blaze[1], 90 * k * flick, '#ff8a2a', 2, 0.2);
+  const along: Pt[] = [];
+  for (let j = 0; j < 16; j++) {
+    const a2 = 0.3 + hash(j, 1, 1410) * 2.5;
+    along.push(seen(cam, wp.at([-8.2 + hash(j, 2, 1410) * 5, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.6])));
   }
-  fl.forEach(([x, y], j) => paintFlame(p, x, y, 0.3 * k, t, j + 60));
-  // (sparks streaming back off its fire)
-  for (let j = 0; j < 26; j++) {
-    const x = blaze[0] - ((hash(j, 1, 1407) * 120 + t * 90 + j * 9) % 140) * k;
-    const y = blaze[1] - hash(j, 2, 1407) * 26 * k + Math.sin(j + t * 3) * 4 * k;
+  paintFlames(p, along, 26 * k, 0.05, t, 1411);
+  for (let j = 0; j < 24; j++) {
+    const x = blaze[0] + (hash(j, 1, 1407) - 0.5) * 70 * k;
+    const y = blaze[1] - ((hash(j, 2, 1407) * 50 + t * 30 + j * 7) % 60) * k;
     p.set(Math.round(x), Math.round(y), j % 3 ? '#ffc040' : '#fff3c0');
   }
-  paintSmoke(p, blaze[0], blaze[1], 12 * k, 90 * k, -0.6, t, 1408, 1);
-  f.draw(p, cam, { from: unit([0.35, -1, 0.75]), hard: 1, fill: [-0.6, -0.6, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
-  shine(p, blaze[0], blaze[1] + 8 * k, 40 * k * flick, '#ff8a2a', 2, 0.16);
-  // (the flames off its canvas, streaming back out of the arch)
-  const along: Pt[] = [];
-  for (let j = 0; j < 12; j++) {
-    const a2 = 0.5 + hash(j, 1, 1410) * 1.6;
-    along.push(seen(cam, wp.at([-8 + j * 0.7, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.6])));
-  }
-  paintFlames(p, along, 22 * k, -0.12, t, 1411);
-  // (the passage's arch over the flames where the wagon has gone in under it)
   caption(p, 'Through the gate...', Math.round(6 * k), Math.round(6 * k), 120);
 }
 
