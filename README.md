@@ -225,7 +225,7 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
-Version 23.0 (24.2 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Version 23.0 (24.3 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
 Ward (the Crier), the Undercity (the Rat King), the Millrace (the Scraper and the Quill), the House of Quiet (the Physician) and the
 Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
 others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
@@ -263,6 +263,10 @@ and forth three times in a row. Floors 11 to 15's ways on open as their bosses d
 the mill wheel turns, and your swipe move takes you over the rivers and the mill race. Floor 15's stacks are low bookcases you
 see over, the aisles clear. Every word you hold shows as its rune stone beside the inventory, and each way out is named once
 it opens.
+Version 24.3: floor 15's boss, the Censor, fights in one phase and inks the floor as he goes: crosses of ink slam down
+where you are heading, lines of ink run across his room, and every bar he slams stays where it lands and hurts you while you
+stand on it, more of his room under it the lower his health, the oldest drying away. He strikes through twice in a row and
+redacts in turns (one way, both ways, the whole page struck out), and walks off his own ink to clean floor, so the fight moves.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
