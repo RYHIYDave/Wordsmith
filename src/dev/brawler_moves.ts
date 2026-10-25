@@ -18,8 +18,8 @@ import { BRAWLER_BUILD, BRAWLER_LOOKS, COAT_SWING, boxerStance, sculptBrawler } 
 import type { Drawn } from './sculpt';
 import type { GameView } from '../art/skin';
 
-const FR = 1 / 30;
-void FR;
+/** A frame, at thirty a second. */
+export const FR = 1 / 30;
 
 /** His build (his pick, B) and his stance: what every key of his starts from. */
 export const BRAWLER_B: Build = (() => {
@@ -44,7 +44,8 @@ export const GUARD: Bones = (() => {
     rhIn: 0, rhx: 6.6 * t, rhy: 0.6 * t, rhz: -2.8 * t, re: -18,
   };
 })();
-const T = BRAWLER_B.tall / 57;
+/** His own measure: a 57th of his height. */
+export const T = BRAWLER_B.tall / 57;
 
 /**
  * HIS BOUNCE COMES FROM HIS KNEES AND CALVES, HIS FEET PLANTED (his word, 24 Oct: “He’s not bouncing, he’s like twisting on
@@ -222,6 +223,26 @@ export function brawlerRun(): Motion {
   return { keys, loop: 0 };
 }
 
+// ---------------------------------------------------------------------------------------------
+// HIS FEET UP ON THEIR BALLS (his punches, dev/brawler_punches.ts, turn on them)
+
+/**
+ * A foot up on its ball, the ball kept where it is in his guard: the heel lifted `pitch` degrees and the foot turned `turn`
+ * (its ankle moved round the ball as a real one goes), over and above the pose `q`.
+ */
+export function onBall(right: boolean, pitch: number, turn: number, q: Partial<Bones>): Partial<Bones> {
+  const k = right ? { x: 'rfx', y: 'rfy', z: 'rfz', p: 'rfp', t: 'rft', toe: 'toeR' } : { x: 'lfx', y: 'lfy', z: 'lfz', p: 'lfp', t: 'lft', toe: 'toeL' };
+  const want = solve(BRAWLER_B, { ...GUARD, ...q, [k.p]: GUARD[k.p as 'lfp'], [k.t]: GUARD[k.t as 'lft'], [k.x]: GUARD[k.x as 'lfx'], [k.y]: GUARD[k.y as 'lfy'], [k.z]: GUARD[k.z as 'lfz'] } as Posed)[k.toe as 'toeL'];
+  const out: Record<string, number> = { [k.x]: GUARD[k.x as 'lfx'], [k.y]: GUARD[k.y as 'lfy'], [k.z]: GUARD[k.z as 'lfz'], [k.p]: pitch, [k.t]: (GUARD[k.t as 'lft'] as number) + turn };
+  for (let i = 0; i < 4; i++) {
+    const got = solve(BRAWLER_B, { ...GUARD, ...q, ...out } as Posed)[k.toe as 'toeL'];
+    out[k.x] += want[0] - got[0];
+    out[k.y] += want[1] - got[1];
+    out[k.z] += want[2] - got[2];
+  }
+  return out as Partial<Bones>;
+}
+
 /** A move of his, ready to draw: its keys, how long it is, and whether it goes round. */
 export interface BrawlerMove {
   name: string;
@@ -232,6 +253,39 @@ export interface BrawlerMove {
   travel?: number;
   /** ... and the same, forward, in his own measure a second: a foot down on the floor goes back under him just as fast. */
   carry?: number;
+  /** Its blows (a punch, a combo): each as it lands (dev/brawler_fx.ts). */
+  blows?: BlowAt[];
+  /** When he is off the floor altogether (a leap): from and to, seconds. */
+  air?: [number, number][];
+  /**
+   * When the game carries him the way he is going in one flash (his swipe's weaving dash): from and to, seconds. His pose
+   * stays where he is; the game moves him (as far as the swipe reaches) between the two, easing in and out.
+   */
+  dash?: [number, number];
+}
+/**
+ * A blow as it lands: the moment, the fist, how big what bursts off it grows (pixels); whether it shakes the floor (a ring
+ * of dust under him) or rolls a wave out along it ahead of him; and whether it is HEAVY (Movement 7: everything holds a
+ * tenth of a second as it lands, and the screen is kicked hard).
+ */
+export interface BlowAt {
+  at: number;
+  hand: 'left' | 'right';
+  size: number;
+  floor?: boolean;
+  roll?: boolean;
+  heavy?: boolean;
+  /** Whatever it hits is blasted away like a cannonball. */
+  launch?: boolean;
+  /** While it is wound up, from and to (seconds), the power gathering in the fist shows (his rulebook's Animations 5). */
+  charge?: [number, number];
+  /**
+   * How long the punch itself takes, from the end of its wind-up to the blow (seconds): LIGHTNING QUICK, a frame or two,
+   * a smear of after-images behind the fist (his words, 24 Oct, by 19:05, of a moving picture of a boxer's punch: “A gif
+   * of kinda the power I’m looking for”, “And speed”, “Like the wind up and wind down are big but the actual punch is
+   * lightning quick”).
+   */
+  strike?: number;
 }
 export function brawlerMoves(): BrawlerMove[] {
   return [

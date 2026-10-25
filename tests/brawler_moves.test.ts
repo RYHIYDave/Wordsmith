@@ -20,8 +20,13 @@ import { project, solve } from '../src/art/skeleton';
 import type { Posed, Skeleton, V3 } from '../src/art/skeleton';
 import { LAST } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
-import { BRAWLER_B, GUARD, brawlerMoves, brawlerPose, drawBrawlerAt } from '../src/dev/brawler_moves';
+import { BRAWLER_B, FR, GUARD, brawlerMoves, brawlerPose, drawBrawlerAt } from '../src/dev/brawler_moves';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
+import { drawPunchAt } from '../src/dev/brawler_fx';
+import { brawlerFights, strikes, struck } from '../src/dev/brawler_punches';
+
+/** Every move of his: standing, running, each punch from his guard, each of his eight combos and his swipe, the slip and counter (dev/brawler_punches.ts). */
+const ALL = [...brawlerMoves(), ...brawlerFights()];
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -36,7 +41,7 @@ const GIVE = 0.55;
 const JOINTS: (keyof Skeleton)[] = ['pelvis', 'neck', 'head', 'shoulderL', 'shoulderR', 'elbowL', 'elbowR', 'handL', 'handR', 'kneeL', 'kneeR', 'ankleL', 'ankleR', 'toeL', 'toeR'];
 const far = (a: V3, b: V3): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-for (const m of brawlerMoves()) {
+for (const m of ALL) {
   const fps = m.carry ? RUN_FPS : FPS;
   const n = Math.round(m.long * fps);
   const times = Array.from({ length: n + (m.loops ? 0 : 1) }, (_, i) => Math.min(m.long, i / fps));
@@ -49,7 +54,9 @@ for (const m of brawlerMoves()) {
         for (const f of pictureFindings(d.px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
         // (a run has its moments with both feet off the floor, between one step and the next: Movement 8 asks only that a
         // foot down stays where it is)
-        for (const f of bodyFindings(LAST.sc as Sculpt, true)) if (!(m.carry && f.startsWith('standing on nothing'))) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+        // (and a leap, while he is in the air)
+        const up = (m.air ?? []).some(([a, b]) => t >= a && t <= b);
+        for (const f of bodyFindings(LAST.sc as Sculpt, true)) if (!((m.carry || up) && f.startsWith('standing on nothing'))) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);
@@ -65,6 +72,12 @@ for (const m of brawlerMoves()) {
     // frame to frame: none leaps (more than twice as far as the frames either side of it), stalls and goes on, turns
     // straight back at speed, or starts or stops at its fastest; a loop's last frame steps to its first as any other
     const round = m.loops;
+    // (THE PUNCH ITSELF, from a frame before its strike begins to a frame after it lands, goes in a flash and is smeared:
+    // his words, 24 Oct, by 19:05, “Like the wind up and wind down are big but the actual punch is lightning quick”; it
+    // is not judged frame by frame, its wind-up and wind-down are)
+    // (AND HIS SWIPE'S WEAVE, a flash the game carries him through, smeared with his after-images: his pick, “Weaving dash,
+    // same reach (Recommended)”, under the same rule: its slip in and its landing are judged, the weave itself is not)
+    const quiet = [...strikes(m.blows ?? []), ...(m.dash ? [[m.dash[0] - FR, m.dash[1] + FR] as [number, number]] : [])];
     for (const j of JOINTS) {
       for (const view of ['front', 'back'] as const) {
         const xy = sk.map((k) => project(k[j] as V3, view));
@@ -74,6 +87,7 @@ for (const m of brawlerMoves()) {
         const n = sp.length;
         if (n < 3 || Math.max(...sp) < 2) continue;
         for (let i = 0; i < n; i++) {
+          if (struck(times[i], quiet)) continue;
           const a = sp[(i - 1 + n) % n];
           const b = sp[i];
           const c = sp[(i + 1) % n];
@@ -114,5 +128,21 @@ for (const m of brawlerMoves()) {
       }
     }
     assert.deepEqual(found, []);
+  });
+}
+
+// WHAT BURSTS OFF HIS BLOWS (dev/brawler_fx.ts), every frame of each punch with it, from in front and behind: crisp, no
+// pixel alone, nothing of the enemy's pink, nothing cut off (Pixels 1; Colour 3; Animations 8, effects are pixel art too)
+for (const m of ALL.filter((mv) => mv.blows)) {
+  test(`${m.name}: what bursts off it as it lands, and the streak behind the fist, in every frame: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+    const found: string[] = [];
+    const n = Math.round(m.long * FPS);
+    for (const view of ['front', 'back'] as const) {
+      for (let i = 0; i <= n; i++) {
+        const t = Math.min(m.long, i / FPS);
+        for (const f of pictureFindings(drawPunchAt(view, m, t).px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+      }
+    }
+    assert.deepEqual([...new Set(found)], []);
   });
 }
