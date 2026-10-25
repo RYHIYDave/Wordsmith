@@ -232,7 +232,7 @@ export function paintRoadUp(p: Px, t: number): void {
   // road, his light
   // (sculpted: sculptWagon, a fifth of a metre a unit; the furthest first)
   const lamps: Pt[] = [];
-  for (const [m, seed] of [[16.5, 0], [8, 1]] as const) {
+  for (const [m, seed] of [[14, 0], [5.5, 1]] as const) {
     const r = road(m);
     const wf = new Figure();
     const w = sculptWagon(wf, [0, 0, 0], Math.atan2(r.dir[1], r.dir[0]), { roll: seed * 0.7, horse: { ph: t * 2.2 + seed * 2.1, gallop: false }, lampSide: -1, driver: true, ribs: false });
@@ -2344,7 +2344,7 @@ function sculptWagon(f: Figure, o: V3, yaw: number, w: { roll?: number; horse?: 
       const t0 = (j / (NA - 1)) * Math.PI;
       const t1 = ((j + 1) / (NA - 1)) * Math.PI;
       panel(inner(t0), inner(t1), hoopAt(0, t0), hoopAt(0, t1));
-      if (j % 2 === 0) f.line([at(add3(inner(t0), [-0.35, 0, 0])), at(add3(lerp3(inner(t0), hoopAt(0, t0), 0.75), [-0.3, 0, 0]))], '#2a221c', 1);
+      if (j % 2 === 0 && w.ribs !== false) f.line([at(add3(inner(t0), [-0.35, 0, 0])), at(add3(lerp3(inner(t0), hoopAt(0, t0), 0.75), [-0.3, 0, 0]))], '#2a221c', 1);
     }
     // (and its lower part, under the mouth, closed down to the bed)
     panel(inner(0), inner(Math.PI), hoopAt(0, 0), hoopAt(0, Math.PI));
@@ -2599,12 +2599,16 @@ export function paintRun(p: Px, t: number): void {
       shine(p, ls[0], ls[1], 14 * k, LAMP[1], 2, 0.25);
     }
     // (the flames off its canvas, streaming back with the speed of it)
+    // (a body of fire over the back half of its cover, licking up and streaming back: many tongues close together, the
+    // tallest over where it caught; its light on everything near)
+    shine(p, blaze[0], blaze[1], 70 * k * flick, '#ff8a2a', 2, 0.18);
     const along: Pt[] = [];
-    for (let j = 0; j < 18; j++) {
-      const a2 = 0.55 + hash(j, 1, 1107) * 1.4;
-      along.push(seen(wcam, [-8 + j * 0.62, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.6]));
+    for (let j = 0; j < 30; j++) {
+      const u = j / 29;
+      const a2 = 0.3 + hash(j, 1, 1107) * 1.5;
+      along.push(seen(wcam, [-8.2 + u * 8.5, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.4]));
     }
-    paintFlames(p, along, 46 * k, -0.6, t, 1105);
+    paintFlames(p, along, 36 * k, -0.5, t, 1105);
   }
   for (let j = 0; j < 30; j++) {
     const x = blaze[0] - ((hash(j, 1, 1313) * 220 + t * 120 + j * 13) % 240) * k;
@@ -2814,7 +2818,8 @@ export function paintThroughGate(p: Px, t: number): void {
     p.set(Math.round(x), Math.round(y), j % 3 ? '#ffc040' : '#fff3c0');
   }
   paintSmoke(p, blaze[0], blaze[1], 12 * k, 90 * k, -0.6, t, 1408, 1);
-  f.draw(p, cam, { at: add3(fire3, [-3, -4, 2]), hard: 1, fill: [-0.4, -1, 0.3], fillK: 0.32, rim: '#ffb060', rimFrom: [-1, -0.4] });
+  f.draw(p, cam, { from: unit([0.35, -1, 0.75]), hard: 1, fill: [-0.6, -0.6, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
+  shine(p, blaze[0], blaze[1] + 8 * k, 40 * k * flick, '#ff8a2a', 2, 0.16);
   // (the flames off its canvas, streaming back out of the arch)
   const along: Pt[] = [];
   for (let j = 0; j < 12; j++) {

@@ -526,7 +526,7 @@ export function oldWordsmith(f: Figure, P: Pose, staff: { reach: number }, gust 
     z = unit(sub(z, mul(dir, dot(z, dir))));
     hand(f, skin, frameAt(b.wrists[j], z, cross(z, dir)), 1.08 * k, 'grip');
   }
-  const foot = add(grips[lo], mul(dir, -4.2 * k));
+  const foot = add(grips[lo], mul(dir, -7.6 * k));
   const tip = add(grips[hi], mul(dir, staff.reach * k));
   f.rod(wood, foot, tip, 0.15 * k, 0.13 * k, 0);
   f.egg(wood, tip, [0.3 * k, 0.3 * k, 0.36 * k], ax3(unit(cross(dir, [0, 0, 1])), unit(cross(dir, cross(dir, [0, 0, 1]))), dir), 0.15);
