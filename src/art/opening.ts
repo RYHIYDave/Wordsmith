@@ -127,20 +127,39 @@ function balloon(p: Px, say: string, x: number, y: number, maxW: number, tail: P
 /** How much bigger a box is baked than it is shown, that the picture can drift within its frame. */
 export const DRIFT = 1.08;
 
-/** A box baked: what stays still, painted at DRIFT times its size, and its pinned captions. */
-export function bakeBox(b: BoxDef, w: number, h: number): { img: Px; pins: Pin[] } {
-  const p = new Px(Math.round(w * DRIFT), Math.round(h * DRIFT));
+/** What a bake leaves besides its picture, for what moves to be painted over it later (in this run or another): the
+ * marks of what stands in front (`front`) and the poses baked (`posed`). */
+export interface BakeState {
+  fronts: [string, Uint8Array][];
+  poses: [string, Px[]][];
+}
+
+/** A box baked: what stays still, painted at `drift` times the size it is shown (that it can drift in its frame), its
+ * pinned captions, and what its moving paint will want of the bake. */
+export function bakeBox(b: BoxDef, w: number, h: number, drift = DRIFT): { img: Px; pins: Pin[]; state: BakeState } {
+  const p = new Px(Math.round(w * drift), Math.round(h * drift));
   PASS = 'base';
   PINS = [];
   try {
     b.paint(p, 0);
     frontsDone(p);
-    return { img: p, pins: PINS };
+    const mine = (k: string): boolean => k.endsWith(`@${p.w}x${p.h}`);
+    return {
+      img: p,
+      pins: PINS,
+      state: { fronts: [...FRONTS].filter(([k]) => mine(k)), poses: [...POSES].filter(([k]) => mine(k)) },
+    };
   } finally {
     PASS = 'all';
     PINS = null;
     FRONT_FROM.clear();
   }
+}
+
+/** A bake's state, made in another run, put back (bakeBox). */
+export function restoreBake(s: BakeState): void {
+  for (const [k, m] of s.fronts) FRONTS.set(k, m);
+  for (const [k, sheets] of s.poses) POSES.set(k, sheets);
 }
 
 /** A box `t` seconds on: what moves, painted over a copy of its bake. */
@@ -3678,6 +3697,119 @@ export function pagePins(pageNo: number, page: 0 | 1): Pin[] {
     y: Math.round(MARGIN + c.y * ih),
     maxW: c.maxW,
   }));
+}
+
+// =============================================================================================
+// HOW IT PLAYS: NOT A BOOK. His words, 25 Oct 2026, of the pages turning: “Okay, I know I said living comic book but I
+// didn’t actually mean it’s like a book with pages flipping.”; then: “The bigger shots cover the full screen, then the
+// smaller boxes transition in showing a closer or more intimate shot of what is happening”. So the story plays as SCENES:
+// each opens on one of its big boxes filling the screen, the camera moving slowly across it; over it the smaller boxes
+// slide in one at a time, closer shots of what is happening; then the next scene's big shot takes over. The boxes are the
+// pages' (PAGES), named by page and place ('p1b2', the first page's second box).
+
+/** The screen, in picture pixels. */
+export const SCREEN_W = SPREAD_W * DENSITY;
+export const SCREEN_H = SPREAD_H * DENSITY;
+
+/** A smaller box sliding in over a scene's big shot: which box, where its top left goes on the screen, how much bigger
+ * than on its page, which edge it slides in from; and which box before it on the screen it takes the place of. */
+export interface Inset {
+  box: string;
+  x: number;
+  y: number;
+  scale: number;
+  from: 'left' | 'right' | 'top' | 'bottom';
+  replaces?: string;
+}
+/** A scene: its big shot (a box), how much bigger than the screen it is baked (the room the camera has to move), the
+ * camera's way across it ([share of the scene's time, share of its room across, share of its room down], in order), how
+ * long it is shown before its first inset comes in, its insets; how it comes in from the scene before (a dissolve, a white
+ * flash, a cut); whether its box's own words are shown, and words of its own, top left. */
+export interface Scene {
+  big: string;
+  zoom: number;
+  pan: readonly (readonly [number, number, number])[];
+  lead: number;
+  insets: readonly Inset[];
+  into: 'dissolve' | 'flash' | 'cut';
+  ownWords?: boolean;
+  say?: string;
+}
+
+export const SCENES: readonly Scene[] = [
+  // THE ROAD UP: rising from the wagons on the road to the prison on its crag; the lantern swinging on the wagon, close;
+  // the old wordsmith far ahead with his light
+  {
+    big: 'p1b1', zoom: 1.25, lead: 2.6, into: 'dissolve',
+    pan: [[0, 0.1, 1], [1, 0.75, 0.15]],
+    insets: [
+      { box: 'p1b2', x: 20, y: 180, scale: 1.25, from: 'left' },
+      { box: 'p1b3', x: 572, y: 20, scale: 1.25, from: 'right' },
+    ],
+  },
+  // THE CARAVAN, close: the wagons rolling up the road; the company, one by one
+  {
+    big: 'p1b1', zoom: 2.4, lead: 2.2, into: 'dissolve', ownWords: false,
+    say: 'seeking the Meldstone, and the altar that wakes the words.',
+    pan: [[0, 0, 1], [1, 0.28, 0.9]],
+    insets: [
+      { box: 'p2b1', x: 20, y: 64, scale: 1.25, from: 'left' },
+      { box: 'p2b2', x: 572, y: 64, scale: 1.25, from: 'right' },
+      { box: 'p2b3', x: 20, y: 64, scale: 1.25, from: 'left', replaces: 'p2b1' },
+      { box: 'p2b4', x: 572, y: 64, scale: 1.25, from: 'right', replaces: 'p2b2' },
+    ],
+  },
+  // THE OLD WORDSMITH: on his face as he speaks, then up along his staff to the prison; his eyes; a glint in the rocks
+  {
+    big: 'p3b1', zoom: 1.04, lead: 3.4, into: 'dissolve',
+    pan: [[0, 0.5, 0.62], [0.3, 0.5, 0.62], [0.7, 0.5, 0], [1, 0.5, 0]],
+    insets: [
+      { box: 'p3b2', x: 20, y: 144, scale: 1.25, from: 'left' },
+      { box: 'p3b3', x: 621, y: 144, scale: 1.25, from: 'right' },
+    ],
+  },
+  // THE AMBUSH: a flash, the bomb; down from the cult pouring over the ridge to the last wagon burning
+  { big: 'p4b1', zoom: 1.08, lead: 5.6, into: 'flash', pan: [[0, 0.5, 0], [0.8, 0.5, 1], [1, 0.5, 1]], insets: [] },
+  // THE RUN FOR THE GATE: cut to it; your hero's stroke, then on to the gate
+  { big: 'p5b1', zoom: 1.08, lead: 6.4, into: 'cut', pan: [[0, 0.1, 0.5], [0.3, 0.1, 0.5], [1, 0.9, 0.5]], insets: [] },
+  // THROUGH THE GATE: across the gatehouse to the burning wagon going in; the doors pushed shut from either side, the hand
+  // through the gap, the bar heaved up
+  {
+    big: 'p7b1', zoom: 1.04, lead: 2.6, into: 'dissolve',
+    pan: [[0, 0, 0.5], [1, 1, 0.5]],
+    insets: [
+      { box: 'p7b2', x: 20, y: 218, scale: 1.25, from: 'left' },
+      { box: 'p7b3', x: 572, y: 218, scale: 1.25, from: 'right' },
+      { box: 'p7b4', x: 20, y: 218, scale: 1.25, from: 'left', replaces: 'p7b2' },
+      { box: 'p7b5', x: 572, y: 218, scale: 1.25, from: 'right', replaces: 'p7b3' },
+    ],
+  },
+  // BARRED: cut, the bar home; down from the bar to the company against the doors; the dark, over the doors above them
+  {
+    big: 'p8b1', zoom: 1.1, lead: 3.0, into: 'cut',
+    pan: [[0, 0.5, 0], [1, 0.5, 1]],
+    insets: [{ box: 'p8b2', x: 322, y: 20, scale: 1.25, from: 'top' }],
+  },
+];
+
+/** A box by its name ('p3b2'): its def, and its rectangle on its page. */
+export function boxNamed(id: string): { b: BoxDef; r: { x: number; y: number; w: number; h: number } } {
+  const pi = Number(id.slice(1, id.indexOf('b'))) - 1;
+  const bi = Number(id.slice(id.indexOf('b') + 1)) - 1;
+  const b = PAGES[pi][bi];
+  return { b, r: boxRect(b, (pi % 2) as 0 | 1) };
+}
+
+/** The size a scene's big shot is baked at: its box's shape, covering the screen, `zoom` times over. */
+export function bigSize(sc: Scene): { w: number; h: number } {
+  const { r } = boxNamed(sc.big);
+  const a = r.w / r.h;
+  if (a >= SCREEN_W / SCREEN_H) {
+    const h = Math.round(SCREEN_H * sc.zoom);
+    return { w: Math.round(h * a), h };
+  }
+  const w = Math.round(SCREEN_W * sc.zoom);
+  return { w, h: Math.round(w / a) };
 }
 
 export function paintSpread(k: number, t: number): Px {

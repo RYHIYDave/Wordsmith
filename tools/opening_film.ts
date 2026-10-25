@@ -1,16 +1,18 @@
-// The opening played as a film, to look at: every box baked once (art/opening.ts bakeBox), then frame by frame the spreads
-// filled box by box in reading order, each box coming in, its picture drifting slowly in its frame, its fire, smoke and
-// lights moving (liveBox), its captions pinned; the pages turning between spreads; written to an MP4 by ffmpeg.
-//   tsx tools/opening_film.ts <out.mp4> [fps=15] [spreads, e.g. 0-3] [scale=2]
-// With FRAMES=<dir>, every half second's frame is written there as a PNG as well.
+// The opening played as a film, to look at: its scenes (art/opening.ts SCENES), each a big shot filling the screen with
+// the camera moving slowly across it, its smaller boxes sliding in over it one at a time, closer shots; the fire, smoke,
+// lights and the hero's stroke moving (liveBox); one scene giving way to the next. Written to an MP4 by ffmpeg.
+//   tsx tools/opening_film.ts <out.mp4> [fps=15] [scenes, e.g. 0-6] [scale=2]
+// Every box is baked once into BAKES (default ./bakes; tools/opening_bake.ts, two at a time) and kept there: REBAKE=all,
+// or a list of boxes (p3b1,p7b1), bakes those again. With FRAMES=<dir>, every half second's frame is written there too.
 // @ts-ignore
 import { spawn } from 'node:child_process';
 // @ts-ignore
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { Px } from '../src/engine/px';
-import { PAGES, boxRect, bakeBox, liveBox, drawPin, paperSpread, pagePins, SPREAD_W, SPREAD_H, DENSITY } from '../src/art/opening';
-import type { BoxDef, Pin } from '../src/art/opening';
-import { INK, hash } from '../src/art/comic';
+import { SCENES, SCREEN_W, SCREEN_H, DRIFT, bigSize, boxNamed, liveBox, drawPin, restoreBake } from '../src/art/opening';
+import type { BoxDef, Inset, Pin, Scene } from '../src/art/opening';
+import { INK, hash, captionSize } from '../src/art/comic';
+import { readBake } from './opening_bake';
 import { writePng } from './px_png';
 
 // @ts-ignore
@@ -19,211 +21,262 @@ const argv: string[] = process.argv;
 const env: Record<string, string | undefined> = process.env;
 const OUT = argv[2] ?? 'opening.mp4';
 const FPS = Number(argv[3] ?? 15);
-const [S0, S1] = (argv[4] ?? '0-3').split('-').map(Number);
+const [S0, S1] = (argv[4] ?? `0-${SCENES.length - 1}`).split('-').map(Number);
 const SCALE = Number(argv[5] ?? 2);
+const BAKES = env.BAKES ?? 'bakes';
+const REBAKE = (env.REBAKE ?? '').split(',').filter(Boolean);
 const FRAMES = env.FRAMES;
+mkdirSync(BAKES, { recursive: true });
 if (FRAMES) mkdirSync(FRAMES, { recursive: true });
 
-const PW = (SPREAD_W * DENSITY) / 2;
-const PH = SPREAD_H * DENSITY;
-/** How long a box takes to come in; a page turn; the beat on a fresh spread before its first box; the look at a full one. */
-const REVEAL = 0.35;
-const TURN = 0.8;
-const LEAD = 0.5;
-const LOOK = 1.2;
-/** Reading time per letter of a caption. */
+const SW = SCREEN_W;
+const SH = SCREEN_H;
+/** Reading time per letter of a caption; an inset's hold; the look at a scene after its last inset; an inset's slide. */
 const READ = 0.055;
+const HOLD = 2.6;
+const TAIL = 1.2;
+const SLIDE = 0.3;
+/** How long each way from one scene to the next takes. */
+const INTO = { dissolve: 0.6, flash: 0.5, cut: 0 } as const;
+/** Which way each inset's picture drifts in its frame: from (x0, y0) to (x1, y1), shares of its room to move. */
+const DRIFTS: readonly [number, number, number, number][] = [[0, 0.5, 1, 0.5], [1, 0, 0, 1], [0.5, 1, 0.5, 0], [1, 0.5, 0, 0.5], [0, 0, 1, 1]];
 
-/** How long a box is held before the next comes in: by its size, and its words. */
-function holdOf(b: BoxDef, r: { w: number; h: number }, extra: string): number {
-  const f = (r.w * r.h) / (PW * PH);
-  const base = b.across ? 6.5 : f < 0.2 ? 2.2 : f < 0.4 ? 2.8 : f < 0.7 ? 3.4 : 4.6;
-  return base + ((b.say?.length ?? 0) + extra.length) * READ;
+// BAKE what is not baked yet
+interface Job { id: string; w: number; h: number; drift: number; file: string }
+const jobs = new Map<string, Job>();
+function job(id: string, w: number, h: number, drift: number): Job {
+  const file = `${BAKES}/${id}_${Math.round(w * drift)}x${Math.round(h * drift)}.bake`;
+  if (!jobs.has(file)) jobs.set(file, { id, w, h, drift, file });
+  return jobs.get(file)!;
 }
+const scenes = SCENES.slice(S0, S1 + 1);
+const plans = scenes.map((sc) => {
+  const bs = bigSize(sc);
+  return {
+    sc,
+    big: job(sc.big, bs.w, bs.h, 1),
+    insets: sc.insets.map((ins) => {
+      const { r } = boxNamed(ins.box);
+      return { ins, job: job(ins.box, Math.round(r.w * ins.scale), Math.round(r.h * ins.scale), DRIFT), w: Math.round(r.w * ins.scale), h: Math.round(r.h * ins.scale) };
+    }),
+  };
+});
 
-/** Which way each picture drifts in its frame: from (x0, y0) to (x1, y1), shares of its room to move. */
-const DRIFTS: readonly [number, number, number, number][] = [
-  [0.5, 1, 0.5, 0],
-  [0, 0.5, 1, 0.5],
-  [1, 0, 0, 1],
-  [1, 0.5, 0, 0.5],
-  [0, 0, 1, 1],
-  [0.5, 0, 0.5, 1],
-  [1, 1, 0, 0],
-];
-
-interface Entry {
-  b: BoxDef;
-  page: 0 | 1;
-  r: { x: number; y: number; w: number; h: number };
-  img: Px;
-  pins: Pin[];
-  at: number;
-  drift: readonly [number, number, number, number];
-}
-interface Spread {
-  k: number;
-  start: number;
-  end: number;
-  boxes: Entry[];
-  pagePins: { at: number; pin: Pin }[];
-}
-
-// BAKE every box, and lay out the time
-const spreads: Spread[] = [];
-let clock = 0;
-let n = 0;
-for (let s = S0; s <= S1; s++) {
-  const k = s * 2;
-  const sp: Spread = { k, start: clock, end: 0, boxes: [], pagePins: [] };
-  let cursor = clock + LEAD;
-  for (const page of [0, 1] as const) {
-    const pp = pagePins(k + page, page);
-    const extra = pp.map((q) => q.say).join('');
-    (PAGES[k + page] ?? []).forEach((b, i) => {
-      const r = boxRect(b, page);
-      const t0 = Date.now();
-      const { img, pins } = bakeBox(b, r.w, r.h);
-      console.log(`baked p${k + page + 1}b${i + 1}`, Date.now() - t0, 'ms');
-      // (a page's own caption runs over its top boxes: it comes in with the second of them)
-      const withPage = i === Math.min(1, (PAGES[k + page] ?? []).length - 1);
-      if (withPage) for (const pin of pp) sp.pagePins.push({ at: cursor + REVEAL, pin });
-      sp.boxes.push({ b, page, r, img, pins, at: cursor, drift: DRIFTS[n++ % DRIFTS.length] });
-      cursor += holdOf(b, r, withPage ? extra : '');
+async function bakeAll(): Promise<void> {
+  const todo = [...jobs.values()].filter((j) => !existsSync(j.file) || REBAKE.includes('all') || REBAKE.includes(j.id));
+  // (the biggest first, two at a time)
+  todo.sort((a, b) => b.w * b.h - a.w * a.h);
+  const run = (j: Job): Promise<void> =>
+    new Promise((ok, no) => {
+      const c = spawn('npx', ['--no-install', 'tsx', 'tools/opening_bake.ts', j.id, String(j.w), String(j.h), String(j.drift), j.file], { stdio: ['ignore', 'inherit', 'inherit'] });
+      c.on('close', (code: number) => (code === 0 ? ok() : no(new Error(`bake ${j.id} failed`))));
     });
-  }
-  sp.end = cursor + LOOK;
-  clock = sp.end + TURN;
-  spreads.push(sp);
+  const lanes = [0, 1].map(async () => {
+    for (let j = todo.shift(); j; j = todo.shift()) await run(j);
+  });
+  await Promise.all(lanes);
 }
-const TOTAL = spreads[spreads.length - 1].end + 1.0;
-console.log('film', TOTAL.toFixed(1), 's,', Math.ceil(TOTAL * FPS), 'frames');
 
-const ease = (u: number): number => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, u)));
+interface Baked { img: Px; pins: Pin[] }
+const baked = new Map<string, Baked>();
+function load(j: Job): Baked {
+  if (!baked.has(j.file)) {
+    const { img, pins, state } = readBake(j.file);
+    restoreBake(state);
+    baked.set(j.file, { img, pins });
+  }
+  return baked.get(j.file)!;
+}
 
-/** A spread at moment `t`: its paper, every box come in so far, moving. */
-function spreadAt(sp: Spread, t: number): Px {
-  const p = paperSpread();
-  for (const e of sp.boxes) {
-    const tl = t - e.at;
-    if (tl < 0) continue;
-    const { r, img } = e;
-    const mx = img.w - r.w;
-    const my = img.h - r.h;
-    const u = ease((t - e.at) / (sp.end - e.at));
-    let ox = mx * (e.drift[0] + (e.drift[2] - e.drift[0]) * u);
-    let oy = my * (e.drift[1] + (e.drift[3] - e.drift[1]) * u);
-    if (e.b.jolt !== undefined) {
-      const tj = tl - e.b.jolt;
-      if (tj >= 0 && tj < 0.4) {
-        const A = 5 * (1 - tj / 0.4);
-        ox += A * Math.sin(tj * 80);
-        oy += A * 0.7 * Math.cos(tj * 61);
+// THE TIMES: when each scene starts and ends, when each inset comes in, and goes
+interface Shown { ins: Inset; b: BoxDef; img: Px; pins: Pin[]; w: number; h: number; at: number; leave: number; drift: readonly [number, number, number, number] }
+interface Timed { sc: Scene; b: BoxDef; img: Px; pins: Pin[]; start: number; end: number; insets: Shown[] }
+
+function lay(): Timed[] {
+  const out: Timed[] = [];
+  let clock = 0;
+  let n = 0;
+  for (const pl of plans) {
+    const sc = pl.sc;
+    const big = load(pl.big);
+    const start = clock;
+    let cursor = start + sc.lead + (sc.say?.length ?? 0) * READ;
+    const insets: Shown[] = [];
+    for (const pi of pl.insets) {
+      const { b } = boxNamed(pi.ins.box);
+      const bk = load(pi.job);
+      insets.push({ ins: pi.ins, b, img: bk.img, pins: bk.pins, w: pi.w, h: pi.h, at: cursor, leave: Infinity, drift: DRIFTS[n++ % DRIFTS.length] });
+      if (pi.ins.replaces) {
+        const old = insets.find((q) => q.ins.box === pi.ins.replaces);
+        if (old) old.leave = cursor;
       }
+      cursor += HOLD + (b.say?.length ?? 0) * READ;
     }
-    ox = Math.round(Math.min(mx, Math.max(0, ox)));
-    oy = Math.round(Math.min(my, Math.max(0, oy)));
-    const win = liveBox(e.b, img, tl).crop(ox, oy, r.w, r.h);
-    if (tl >= REVEAL) for (const pin of e.pins) drawPin(win, pin, ox, oy);
-    // (its frame, a heavy ink line round it, at once; its picture inked in over the paper, in a dither, as it comes in)
-    p.rect(r.x - 2, r.y - 2, r.w + 4, r.h + 4, INK);
-    const v = tl / REVEAL;
-    for (let y = 0; y < r.h; y++) {
-      for (let x = 0; x < r.w; x++) {
-        const i = (y * r.w + x) * 4;
-        const j = ((r.y + y) * p.w + r.x + x) * 4;
-        if (v < 1 && hash(x >> 1, y >> 1, 4242) >= v) {
-          p.d[j] = 0xe6;
-          p.d[j + 1] = 0xdc;
-          p.d[j + 2] = 0xc4;
-          p.d[j + 3] = 255;
+    const end = cursor + (insets.length ? TAIL : 0);
+    out.push({ sc, b: boxNamed(sc.big).b, img: big.img, pins: big.pins, start, end, insets });
+    clock = end;
+  }
+  return out;
+}
+
+const clamp = (v: number, a: number, b: number): number => Math.min(b, Math.max(a, v));
+const ease = (u: number): number => 0.5 - 0.5 * Math.cos(Math.PI * clamp(u, 0, 1));
+const outBack = (u: number): number => {
+  const c = 1.4;
+  const x = clamp(u, 0, 1) - 1;
+  return 1 + (c + 1) * x * x * x + c * x * x;
+};
+
+/** Where the camera is on a scene's big shot at `u` of its time: a share of its room across, and down. */
+function panAt(sc: Scene, u: number): [number, number] {
+  const k = sc.pan;
+  if (u <= k[0][0]) return [k[0][1], k[0][2]];
+  for (let i = 1; i < k.length; i++) {
+    if (u <= k[i][0]) {
+      const v = ease((u - k[i - 1][0]) / (k[i][0] - k[i - 1][0]));
+      return [k[i - 1][1] + (k[i][1] - k[i - 1][1]) * v, k[i - 1][2] + (k[i][2] - k[i - 1][2]) * v];
+    }
+  }
+  const l = k[k.length - 1];
+  return [l[1], l[2]];
+}
+
+/** A picture laid on the screen at (x, y), in its frame: a line of ink, a band of paper, a line of ink. */
+function framed(p: Px, q: Px, x: number, y: number): void {
+  p.rect(x - 5, y - 5, q.w + 10, q.h + 10, INK);
+  p.rect(x - 4, y - 4, q.w + 8, q.h + 8, '#efe4c4');
+  p.rect(x - 2, y - 2, q.w + 4, q.h + 4, INK);
+  for (let j = 0; j < q.h; j++) {
+    const yy = y + j;
+    if (yy < 0 || yy >= p.h) continue;
+    const a = Math.max(0, -x);
+    const b = Math.min(q.w, p.w - x);
+    if (b <= a) continue;
+    p.d.set(q.d.subarray((j * q.w + a) * 4, (j * q.w + b) * 4), (yy * p.w + x + a) * 4);
+  }
+}
+
+/** A scene at moment `t` (seconds into the film): its big shot where the camera is, its words, its insets. */
+function sceneAt(s: Timed, t: number): Px {
+  const tl = t - s.start;
+  const [fx, fy] = panAt(s.sc, tl / (s.end - s.start));
+  let ox = fx * (s.img.w - SW);
+  let oy = fy * (s.img.h - SH);
+  if (s.b.jolt !== undefined) {
+    const tj = tl - s.b.jolt;
+    if (tj >= 0 && tj < 0.4) {
+      const A = 7 * (1 - tj / 0.4);
+      ox += A * Math.sin(tj * 80);
+      oy += A * 0.7 * Math.cos(tj * 61);
+    }
+  }
+  ox = Math.round(clamp(ox, 0, s.img.w - SW));
+  oy = Math.round(clamp(oy, 0, s.img.h - SH));
+  const p = liveBox(s.b, s.img, tl).crop(ox, oy, SW, SH);
+  // (the big shot's words: a caption stays where it is on the screen; a balloon goes with its speaker, over his mouth)
+  if (tl > 0.5) {
+    if (s.sc.ownWords !== false) {
+      for (const pin of s.pins) {
+        if (!pin.tail) {
+          drawPin(p, { ...pin, x: clamp(pin.x, 12, SW - 200), y: clamp(pin.y, 12, SH - 40) }, 0, 0);
           continue;
         }
-        p.d[j] = win.d[i];
-        p.d[j + 1] = win.d[i + 1];
-        p.d[j + 2] = win.d[i + 2];
-        p.d[j + 3] = 255;
+        const [bw, bh] = captionSize(pin.say, pin.maxW);
+        const tx = pin.tail[0] - ox;
+        const ty = pin.tail[1] - oy;
+        const bx = Math.round(clamp(tx - bw * 0.55 - 24, 12, SW - bw - 16));
+        // (it goes off the screen with him: kept from the top edge only)
+        const by = Math.round(Math.max(12, ty - bh - 40));
+        if (by > SH) continue;
+        drawPin(p, { say: pin.say, x: bx, y: by, maxW: pin.maxW, tail: [tx, ty] }, 0, 0);
       }
     }
+    if (s.sc.say) drawPin(p, { say: s.sc.say, x: 16, y: 14, maxW: 240 }, 0, 0);
   }
-  for (const q of sp.pagePins) if (t >= q.at) drawPin(p, q.pin, 0, 0);
+  for (const q of s.insets) {
+    const ti = t - q.at;
+    if (ti < 0 || t > q.leave + SLIDE) continue;
+    const mx = q.img.w - q.w;
+    const my = q.img.h - q.h;
+    const u = ease((t - q.at) / (s.end - q.at));
+    const ix = Math.round(mx * (q.drift[0] + (q.drift[2] - q.drift[0]) * u));
+    const iy = Math.round(my * (q.drift[1] + (q.drift[3] - q.drift[1]) * u));
+    const win = liveBox(q.b, q.img, ti).crop(ix, iy, q.w, q.h);
+    if (ti > SLIDE) for (const pin of q.pins) drawPin(win, pin, ix, iy);
+    // (sliding in from its edge, over-running a touch and settling; sliding out the same way when another takes its place)
+    const off: [number, number] =
+      q.ins.from === 'left' ? [-q.w - 16, q.ins.y] : q.ins.from === 'right' ? [SW + 16, q.ins.y] : q.ins.from === 'bottom' ? [q.ins.x, SH + 16] : [q.ins.x, -q.h - 16];
+    const e = outBack(ti / SLIDE);
+    const g = t > q.leave ? ease((t - q.leave) / SLIDE) : 0;
+    const x = off[0] + (q.ins.x - off[0]) * e + (off[0] - q.ins.x) * g;
+    const y = off[1] + (q.ins.y - off[1]) * e + (off[1] - q.ins.y) * g;
+    framed(p, win, Math.round(x), Math.round(y));
+  }
   return p;
 }
 
-/** A page turning: the old spread's right page folding over onto its left, the new spread's left page coming down. */
-function turnAt(a: Px, b: Px, u: number): Px {
-  const p = new Px(a.w, a.h);
-  // (under it: the old left page, the new right page)
-  p.blit(a.crop(0, 0, PW, PH), 0, 0);
-  p.blit(b.crop(PW, 0, PW, PH), PW, 0);
-  const c = Math.cos(Math.PI * ease(u));
-  const w = Math.round(Math.abs(c) * PW);
-  if (w < 1) return p;
-  const src = c > 0 ? a : b;
-  const sx0 = c > 0 ? PW : 0;
-  const shade = 0.25 + 0.75 * Math.abs(c);
-  for (let x = 0; x < w; x++) {
-    // (the turning page squeezed toward the spine, darker as it stands up edge on)
-    const dx = c > 0 ? PW + x : PW - w + x;
-    const sx = sx0 + Math.floor((x / w) * PW);
-    for (let y = 0; y < PH; y++) {
-      const i = (y * src.w + sx) * 4;
-      const j = (y * p.w + dx) * 4;
-      p.d[j] = src.d[i] * shade;
-      p.d[j + 1] = src.d[i + 1] * shade;
-      p.d[j + 2] = src.d[i + 2] * shade;
-      p.d[j + 3] = 255;
-    }
+function dim(p: Px, k: number): Px {
+  for (let i = 0; i < p.d.length; i += 4) {
+    p.d[i] *= k;
+    p.d[i + 1] *= k;
+    p.d[i + 2] *= k;
   }
-  // (its outer edge, inked)
-  const ex = c > 0 ? PW + w - 1 : PW - w;
-  for (let y = 0; y < PH; y++) p.set(ex, y, INK);
   return p;
 }
-
-// FILM it
-const ff = spawn('ffmpeg', [
-  '-y', '-loglevel', 'error',
-  '-f', 'rawvideo', '-pix_fmt', 'rgba', '-s', `${PW * 2}x${PH}`, '-r', String(FPS), '-i', '-',
-  '-vf', `scale=iw*${SCALE}:ih*${SCALE}:flags=neighbor`,
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
-  OUT,
-], { stdio: ['pipe', 'inherit', 'inherit'] });
-const write = (buf: Uint8Array): Promise<void> =>
-  new Promise((ok) => {
-    if (ff.stdin.write(buf)) ok();
-    else ff.stdin.once('drain', () => ok());
-  });
 
 async function main(): Promise<void> {
+  const tb = Date.now();
+  await bakeAll();
+  console.log('bakes ready', Math.round((Date.now() - tb) / 1000), 's');
+  const timed = lay();
+  const last = timed[timed.length - 1];
+  const TOTAL = last.end + 1.4;
   const frames = Math.ceil(TOTAL * FPS);
+  console.log('film', TOTAL.toFixed(1), 's,', frames, 'frames');
+  const ff = spawn('ffmpeg', [
+    '-y', '-loglevel', 'error',
+    '-f', 'rawvideo', '-pix_fmt', 'rgba', '-s', `${SW}x${SH}`, '-r', String(FPS), '-i', '-',
+    '-vf', `scale=iw*${SCALE}:ih*${SCALE}:flags=neighbor`,
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+    OUT,
+  ], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const write = (buf: Uint8Array): Promise<void> =>
+    new Promise((ok) => {
+      if (ff.stdin.write(buf)) ok();
+      else ff.stdin.once('drain', () => ok());
+    });
   const t0 = Date.now();
-  const last = spreads[spreads.length - 1];
-  let held: Px | null = null;
-  let heldK = -1;
-  const endOf = (sp: Spread): Px => {
-    if (heldK !== sp.k || !held) {
-      held = spreadAt(sp, sp.end);
-      heldK = sp.k;
-    }
-    return held;
-  };
   for (let f = 0; f < frames; f++) {
     const t = f / FPS;
-    let frame: Px;
-    if (t >= last.end) {
-      // (the end: the last spread, darkening away)
-      const fade = Math.min(1, (t - last.end) / 1.0);
-      frame = endOf(last).clone();
-      for (let i = 0; i < frame.d.length; i += 4) {
-        frame.d[i] *= 1 - fade;
-        frame.d[i + 1] *= 1 - fade;
-        frame.d[i + 2] *= 1 - fade;
+    let i = 0;
+    while (i + 1 < timed.length && timed[i + 1].start <= t) i++;
+    const s = timed[i];
+    let frame = sceneAt(s, Math.min(t, s.end + 0.6));
+    const into = INTO[s.sc.into];
+    const u = into > 0 ? (t - s.start) / into : 1;
+    if (i > 0 && u < 1) {
+      if (s.sc.into === 'dissolve') {
+        const a = sceneAt(timed[i - 1], t);
+        for (let y = 0, j = 0; y < SH; y++) {
+          for (let x = 0; x < SW; x++, j += 4) {
+            if (hash(x >> 1, y >> 1, 4243) < u) continue;
+            frame.d[j] = a.d[j];
+            frame.d[j + 1] = a.d[j + 1];
+            frame.d[j + 2] = a.d[j + 2];
+          }
+        }
+      } else {
+        // (a flash: white, then the scene coming up out of it)
+        const v = clamp((t - s.start - 0.08) / (into - 0.08), 0, 1);
+        for (let j = 0; j < frame.d.length; j += 4) {
+          frame.d[j] = 255 + (frame.d[j] - 255) * v;
+          frame.d[j + 1] = 255 + (frame.d[j + 1] - 255) * v;
+          frame.d[j + 2] = 255 + (frame.d[j + 2] - 255) * v;
+        }
       }
-    } else {
-      const sp = spreads.find((q) => t < q.end + TURN) ?? last;
-      frame = t < sp.end ? spreadAt(sp, t) : turnAt(endOf(sp), paperSpread(), (t - sp.end) / TURN);
     }
+    if (t < 0.8) frame = dim(frame, t / 0.8);
+    if (t > last.end) frame = dim(frame, 1 - clamp((t - last.end) / 1.2, 0, 1));
     await write(new Uint8Array(frame.d.buffer, frame.d.byteOffset, frame.d.byteLength).slice());
     if (FRAMES && f % Math.round(FPS / 2) === 0) writePng(frame, `${FRAMES}/f${String(f).padStart(5, '0')}.png`, 1);
     if (f % (FPS * 5) === 0) console.log('frame', f, '/', frames, Math.round((Date.now() - t0) / 1000), 's');
