@@ -2531,36 +2531,40 @@ export function paintRun(p: Px, t: number): void {
     sculptCultist(f, [0, 0, 0], 1.25, P, 2);
     f.draw(p, { look, up: [0, 0, 1], scale: 22 * k, ox: S(170, 0)[0], oy: S(0, 352)[1] }, { cel: COMIC, at: [8, -4, 8], hard: 1, fill: [0.6, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [1, -0.2] });
   }
-  // YOUR HERO at the rear, turned on them, lunging, his sword swung through from his right across to the left in an arc of cyan
-  const yaw = -0.93;
+  // YOUR HERO at the rear, turned on them: lunging at them, both hands on his sword's grip, his arms out straight, its blade
+  // level at them at the end of its swing from his right; the arc of cyan behind it where it has been (art/cast.ts)
+  const yaw = -1.2;
+  const f = new Figure();
+  const flap = Math.sin(t * 3.1);
+  const follow = Math.sin(t * 2.5) * 0.05;
+  const dirL = unit([0.18 + follow, -1, 0.04]);
+  const gM: V3 = [0.3, -4.0, 12.7];
+  const tipL = add3(gM, scale3(dirL, 10.8));
+  const wr = (g: V3, s: number): V3 => sub3(g, scale3(unit(sub3(g, [s * 2.2, 0, 14.2])), 0.62));
+  const gO = sub3(gM, scale3(dirL, 1.15));
+  // (the camera's line, as he is built: the flat of the blade turned to it)
   const cy0 = Math.cos(yaw);
   const sy0 = Math.sin(yaw);
-  const toLocal = (w: V3): V3 => [w[0] * cy0 + w[1] * sy0, -w[0] * sy0 + w[1] * cy0, w[2]];
-  const toWorld = (q: V3): V3 => [q[0] * cy0 - q[1] * sy0, q[0] * sy0 + q[1] * cy0, q[2]];
-  const follow = Math.sin(t * 2.5) * 0.15;
-  const hand: V3 = [1.0, -2.2, 7.9];
-  const KP: KnightPose = {
-    hip: [0, 0, 5.3], chest: [0.3, -0.25, 7.5], head: [0.45, -0.55, 9.4],
-    sh: [[-1.3, 0.15, 8.2], [1.3, -0.4, 8.1]],
-    el: [[-0.4, -1.6, 7.9], [2.3, 0.2, 7.6]],
-    ha: [hand, [3.1, 1.0, 7.1]],
-    kn: [[-0.8, 1.0, 2.8], [0.9, -1.7, 3.1]],
-    ft: [[-1.0, 2.5, 0.4], [1.2, -2.7, 0.4]],
-    sword: { hand: 0, tip: add3(hand, toLocal([-5.4, -1.0 + follow, 0.5])) },
-    flap: Math.sin(t * 3.1),
-  };
+  const lookL: V3 = [look[0] * cy0 + look[1] * sy0, -look[0] * sy0 + look[1] * cy0, look[2]];
+  const placed = Cast.place(f, [0, 0, 0], yaw, () => {
+    Cast.knight(f, {
+      pelvis: [0, -0.4, 8.8],
+      lean: 0.22,
+      twist: -0.15,
+      nod: 0.05,
+      hands: [wr(gM, -1), wr(gO, 1)],
+      elbows: [[-0.6, 0, -1], [0.6, 0, -1]],
+      feet: [[-1.3, 3.3, 1.2], [0.9, -3.9, 0.75]],
+      knees: [[0, -1, -0.2], [0.2, -1, 0.1]],
+    }, { hand: 0, tip: tipL, two: true, face: scale3(lookL, -1) }, flap);
+  }, OLD);
   const kcam = { look, up: [0, 0, 1] as V3, scale: 27 * k, ox: S(318, 0)[0], oy: S(0, 352)[1] };
-  const kright = unit(cross(kcam.look, kcam.up));
-  const kdn = unit(cross(kcam.look, kright));
-  const scr = (q: V3): Pt => {
-    const w = toWorld(q);
-    return [dt3(w, kright) * kcam.scale + kcam.ox, dt3(w, kdn) * kcam.scale + kcam.oy];
-  };
-  // (the arc of the swing first, behind him and his blade: a crescent of the friend's cyan from where the blade began)
+  // (the arc of the swing first, behind him and his blade: a crescent of the friend's cyan, from behind his right shoulder
+  // round to where the blade is now)
   {
-    const hs = scr(hand);
-    const tip = scr(KP.sword.tip);
-    const start = scr(add3(hand, toLocal([2.0, 3.2, 3.6])));
+    const hs = seen(kcam, placed.at(gM));
+    const tip = seen(kcam, placed.at(tipL));
+    const start = seen(kcam, placed.at([-7.5, 2.5, 15.5]));
     const R = Math.hypot(tip[0] - hs[0], tip[1] - hs[1]);
     const a1 = Math.atan2(tip[1] - hs[1], tip[0] - hs[0]);
     let a0 = Math.atan2(start[1] - hs[1], start[0] - hs[0]);
@@ -2589,11 +2593,7 @@ export function paintRun(p: Px, t: number): void {
     });
     over(p, arc, null);
   }
-  {
-    const f = new Figure();
-    sculptKnight(f, [0, 0, 0], yaw, KP);
-    f.draw(p, kcam, { cel: COMIC, at: [9, -3, 9], hard: 1, fill: [0.4, -1, 0.3], fillK: 0.32, rim: '#ffb060', rimFrom: [1, -0.3] });
-  }
+  f.draw(p, kcam, { cel: COMIC, at: [9, -3, 9], hard: 1, fill: [0.4, -1, 0.3], fillK: 0.32, rim: '#ffb060', rimFrom: [1, -0.3] });
 }
 
 // =============================================================================================

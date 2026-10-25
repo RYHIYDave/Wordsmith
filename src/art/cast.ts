@@ -223,7 +223,11 @@ export function standing(B: Build, over: Partial<Pose> = {}): Pose {
 }
 
 /** THE KNIGHT. `sword`: the great sword from his `hand` (0 right, 1 left) to `tip`, or on his back (null). */
-export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3 } | null, flap = 0): Body {
+/**
+ * `sword`: the hand that holds it (and `two`, the other hand on its grip below that one), the point its tip reaches, and
+ * `face`, which way the flat of its blade is turned (by default, his front).
+ */
+export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: boolean; face?: V3 } | null, flap = 0): Body {
   const B: Build = { tall: 18.2, broad: 1.12, heavy: 1.1 };
   const b = pose(B, P);
   const k = b.k;
@@ -251,59 +255,99 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3 } | nul
   f.egg(plum, b.waist, [1.32 * k, 1.14 * k, 0.2 * k], TA, 0.08);
   f.block(steel, add(b.waist, mul(b.fwd, 1.12 * k)), [0.24 * k, 0.07 * k, 0.18 * k], 0.04 * k, TA, 0.02);
   f.mark(add(b.waist, mul(b.fwd, 1.2 * k)), CYAN_EYES, 2);
-  // steel caps over his shoulders, wider than his arms; cops at his elbows and knees; his gloves
+  // THE SWORD'S LINE: from the holding fist to its tip; both fists closed round its grip if he holds it two-handed
+  const grips = [0, 1].map((j) => add(b.wrists[j], mul(b.handFrames[j].z, 0.62 * k)));
+  const sdir = sword ? unit(sub(sword.tip, grips[sword.hand])) : ([0, 0, 1] as V3);
+  // steel caps over his shoulders, wider than his arms: a dome, and two lames stepping down under it; cops at his elbows
+  // and knees, each with its wing; his gloves
   for (const j of [0, 1] as const) {
     const s = j ? 1 : -1;
-    f.egg(steel, add(add(b.shoulders[j], mul(b.up, 0.32 * k)), mul(b.across, s * 0.2 * k)), [1.0 * k, 0.92 * k, 0.6 * k], TA, 0.15);
-    f.egg(steel, add(add(b.shoulders[j], mul(b.up, -0.25 * k)), mul(b.across, s * 0.45 * k)), [0.82 * k, 0.78 * k, 0.45 * k], TA, 0.15);
-    f.egg(steel, b.elbows[j], [0.48 * k, 0.48 * k, 0.48 * k], TA, 0.1);
-    f.egg(steel, add(b.knees[j], mul(b.fwd, 0.25 * k)), [0.55 * k, 0.45 * k, 0.55 * k], TA, 0.1);
-    const holds = sword && sword.hand === j;
-    hand(f, plum, holds ? frameAt(b.wrists[j], b.handFrames[j].z, cross(b.handFrames[j].z, unit(sub(sword!.tip, b.wrists[j])))) : b.handFrames[j], 1.2 * k, holds ? 'grip' : 'fist');
-  }
-  // the scarf wound thick round his neck, hiding his chin; its two ends flying from the back of it
-  f.egg(wine, onChest(b, 0, 0.05, 1.62), [1.2 * k, 1.12 * k, 0.5 * k], TA, 0.3);
-  const knot = onChest(b, 0, -0.9, 1.6);
-  for (const [k1, k2] of [[0, 0.2], [0.3, -0.25]] as const) {
-    const t1 = add(knot, add(mul(b.fwd, (-1.2 - k1) * k), add(mul(b.across, (1.4 + k1) * k), [0, 0, (-0.4 + flap * 0.4 + k2) * k])));
-    const t2 = add(t1, add(mul(b.fwd, -0.7 * k), add(mul(b.across, 1.5 * k), [0, 0, (0.5 - flap + k2) * k])));
-    f.rod(wine, knot, t1, 0.34 * k, 0.28 * k, 0.3);
-    f.rod(wine, t1, t2, 0.28 * k, 0.1 * k, 0.25);
-  }
-  // HIS HELM over all of his head: a round skull of steel; the pointed visor out from his face; the slots; the breathing holes
-  f.rod(mail, onHead(b, 0, -0.1, -0.9), onChest(b, 0, 0, 1.6), 0.7 * k, 0.75 * k, 0.4);
-  f.egg(steel, onHead(b, 0, -0.08, 0.2), [0.98 * k, 1.12 * k, 1.12 * k], HA, 0.3);
-  const root = onHead(b, 0, 0.62, -0.32);
-  const point = onHead(b, 0, 1.62, -0.62);
-  f.rod(steel, root, point, 0.62 * k, 0.1 * k, 0.3);
-  f.line([onHead(b, 0, 1.0, 0.5), onHead(b, 0, 0.6, 1.0), onHead(b, 0, -0.1, 1.3)], '#3a3478', 1);
-  for (const s of [-1, 1]) {
-    const slot: V3[] = [];
-    for (let i = 0; i <= 4; i++) {
-      const az = s * (0.16 + i * 0.12);
-      slot.push(onHead(b, Math.sin(az) * 0.99, Math.cos(az) * 1.08 - 0.08, 0.2));
+    const sh = b.shoulders[j];
+    const ua = unit(sub(b.elbows[j], sh));
+    const out = unit(sub(mul(b.across, s), mul(ua, dot(mul(b.across, s), ua))));
+    const PA = ax3(unit(cross(ua, out)), out, mul(ua, -1));
+    // (one plate over the top of the shoulder and down the outside of the arm, its lames' edges inked across it)
+    const pc = add(add(add(sh, mul(b.up, 0.2 * k)), mul(out, 0.28 * k)), mul(ua, 0.55 * k));
+    f.egg(steel, pc, [0.92 * k, 0.88 * k, 1.25 * k], PA, 0.2);
+    for (const u of [0.25, 0.62]) {
+      const ring: V3[] = [];
+      for (let i = 0; i <= 8; i++) {
+        const an = -1.3 + (i / 8) * 2.6;
+        ring.push(add(add(pc, mul(ua, u * 1.25 * k)), add(mul(out, Math.cos(an) * 0.88 * k * Math.sqrt(1 - u * u * 0.6)), mul(PA[0], Math.sin(an) * 0.92 * k * Math.sqrt(1 - u * u * 0.6)))));
+      }
+      f.line(ring, '#3a3478', 1);
     }
-    f.line(slot, INK, 2);
-    f.mark(onHead(b, Math.sin(s * 0.34) * 1.02, Math.cos(s * 0.34) * 1.1 - 0.08, 0.22), ['#7af8f0', '#22d0e0', '#0c6a80'], 2);
+    f.egg(steel, b.elbows[j], [0.46 * k, 0.46 * k, 0.46 * k], TA, 0.1);
+    f.egg(steel, add(b.elbows[j], mul(out, 0.3 * k)), [0.12 * k, 0.5 * k, 0.42 * k], ax3(out, unit(cross(ua, out)), ua), 0.05);
+    f.egg(steel, add(b.knees[j], mul(b.fwd, 0.25 * k)), [0.55 * k, 0.45 * k, 0.55 * k], TA, 0.1);
+    const holds = sword && (sword.hand === j || sword.two);
+    let F = b.handFrames[j];
+    if (holds) {
+      const z = unit(sub(F.z, mul(sdir, dot(F.z, sdir))));
+      F = frameAt(b.wrists[j], z, cross(z, sdir));
+    }
+    hand(f, plum, F, 1.2 * k, holds ? 'grip' : 'fist');
   }
-  for (const [x, z] of [[0, 0], [-0.13, -0.07], [0.13, -0.07], [0, -0.15]] as const) f.mark(onHead(b, x, 1.22, -0.42 + z), [INK], 1);
-  // THE GREAT SWORD
+  // the scarf wound thick round his neck, hiding his chin, a fold of it over the wind below; its two ends flying from the
+  // back of it, broad flat strips of cloth rippling as they go, the further narrower
+  f.egg(wine, onChest(b, 0, 0.08, 1.55), [1.34 * k, 1.26 * k, 0.5 * k], TA, 0.3);
+  f.egg(wine, onChest(b, 0, 0.18, 1.12), [1.12 * k, 1.08 * k, 0.32 * k], TA, 0.2);
+  const knot = onChest(b, 0.35, -0.95, 1.5);
+  for (const [e, w, k2] of [[0, 0.62, 0.0], [1, 0.5, -0.35]] as const) {
+    let prev = knot;
+    let prevDir = unit(add(mul(b.fwd, -1), mul(b.across, 0.4)));
+    for (let i = 1; i <= 4; i++) {
+      const u = i / 4;
+      const wave = Math.sin(u * 4.2 + flap * 2.2 + e * 1.3) * 0.45;
+      const q = add(knot, add(mul(b.fwd, (-0.9 - 1.0 * u - e * 0.4 * u) * k * 1.6), add(mul(b.across, (0.8 + 1.4 * u + e * 0.3) * k * 1.4), [0, 0, (-0.7 * u + wave + k2 * u) * k])));
+      const d = unit(sub(q, prev));
+      const nrm = unit(cross(d, [0, 0, 1]));
+      const wide = w * (1 - u * 0.35) * k;
+      const mid = lerp(prev, q, 0.5);
+      f.egg(wine, mid, [len(sub(q, prev)) * 0.62, 0.1 * k, wide], ax3(d, nrm, unit(cross(d, nrm))), 0.18);
+      prev = q;
+      prevDir = d;
+    }
+    void prevDir;
+  }
+  // HIS HELM over all of his head (a hounskull, as the game draws it): the round skull of steel; the mail of its aventail
+  // flaring from its lower edge out over his shoulders, under the scarf; the visor a snout of steel drawn out from his face
+  // to a point, hung on a rivet at each temple; the two slots cut across its top that he sees through, a point of the
+  // friend's light in each; the holes he breathes through in its snout; a ridge over the crown
+  f.rod(mail, onHead(b, 0, -0.15, -0.55), onChest(b, 0, -0.15, 1.5), 0.86 * k, 1.12 * k, 0.3);
+  f.egg(steel, onHead(b, 0, -0.1, 0.24), [0.98 * k, 1.1 * k, 1.12 * k], HA, 0.3);
+  const root = onHead(b, 0, 0.42, -0.2);
+  const point = onHead(b, 0, 1.78, -0.42);
+  f.rod(steel, root, point, 0.8 * k, 0.09 * k, 0.22);
+  f.egg(steel, onHead(b, 0, 0.55, -0.62), [0.7 * k, 0.5 * k, 0.32 * k], HA, 0.2);
+  for (const s of [-1, 1]) {
+    f.rod(steel, onHead(b, s * 0.14, 1.12, 0.16), onHead(b, s * 0.66, 0.8, 0.2), 0.07 * k, 0.06 * k, 0.05, true);
+    f.mark(onHead(b, s * 0.36, 0.98, 0.17), ['#7af8f0', '#22d0e0', '#0c6a80'], 2);
+    f.egg(steel, onHead(b, s * 0.96, 0.02, 0.0), [0.1 * k, 0.12 * k, 0.12 * k], HA, 0.03);
+  }
+  f.line([onHead(b, 0, 1.0, 0.75), onHead(b, 0, 0.55, 1.18), onHead(b, 0, -0.2, 1.36), onHead(b, 0, -0.9, 1.0)], '#3a3478', 1);
+  for (const [x, z] of [[0, 0], [-0.14, -0.06], [0.14, -0.06], [-0.07, -0.16], [0.07, -0.16]] as const) f.mark(onHead(b, x, 1.3, -0.38 + z), [INK], 1);
+  // THE GREAT SWORD: a long grip for two hands, bound in plum, a wheel for its pommel; the cross of its guard; its long
+  // blade, lit cyan, its flat turned as he turns it, a fuller down its middle
   if (sword) {
-    const fist = b.wrists[sword.hand];
-    const fz = b.handFrames[sword.hand].z;
-    const grip = add(fist, mul(fz, 0.75 * k));
-    const dir = unit(sub(sword.tip, grip));
-    const side = unit(cross(dir, Math.abs(dir[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1]));
-    const G = add(grip, mul(dir, 0.55 * k));
-    const SA = ax3(side, cross(dir, side), dir);
-    f.egg(steel, add(grip, mul(dir, -0.75 * k)), [0.24 * k, 0.09 * k, 0.24 * k], SA, 0.02);
-    f.rod(plum, add(grip, mul(dir, -0.65 * k)), G, 0.12 * k, 0.12 * k, 0);
-    f.rod(steel, add(G, mul(side, -0.8 * k)), add(G, mul(side, 0.8 * k)), 0.11 * k, 0.11 * k, 0);
-    for (const e of [-1, 1]) f.rod(steel, add(G, mul(side, e * 0.8 * k)), add(add(G, mul(side, e * 0.95 * k)), mul(dir, 0.18 * k)), 0.11 * k, 0.08 * k, 0.04);
+    const dir = sdir;
+    const gM = grips[sword.hand];
+    let face = sword.face ?? b.fwd;
+    face = sub(face, mul(dir, dot(face, dir)));
+    if (len(face) < 0.2) face = sub(b.up, mul(dir, dot(b.up, dir)));
+    face = unit(face);
+    const side = unit(cross(dir, face));
+    const G = add(gM, mul(dir, 0.55 * k));
+    const end = add(gM, mul(dir, -(sword.two ? 1.85 : 0.85) * k));
+    const SA = ax3(side, face, dir);
+    f.egg(steel, end, [0.3 * k, 0.12 * k, 0.3 * k], ax3(side, face, dir), 0.02);
+    f.rod(plum, end, G, 0.13 * k, 0.13 * k, 0);
+    f.rod(steel, add(G, mul(side, -0.95 * k)), add(G, mul(side, 0.95 * k)), 0.12 * k, 0.12 * k, 0);
+    for (const e of [-1, 1]) f.rod(steel, add(G, mul(side, e * 0.95 * k)), add(add(G, mul(side, e * 1.1 * k)), mul(dir, 0.22 * k)), 0.12 * k, 0.08 * k, 0.04);
     const bl = len(sub(sword.tip, G));
-    f.block(blade, add(G, mul(dir, bl * 0.45)), [0.26 * k, 0.06 * k, bl * 0.43], 0.05 * k, SA, 0);
-    f.egg(blade, add(G, mul(dir, bl * 0.87)), [0.26 * k, 0.06 * k, bl * 0.14], SA, 0.05);
-    f.line([add(G, mul(dir, 0.4 * k)), add(G, mul(dir, bl * 0.75))], '#0c6a80', 1);
+    f.block(blade, add(G, mul(dir, bl * 0.42)), [0.3 * k, 0.07 * k, bl * 0.42], 0.05 * k, SA, 0);
+    f.egg(blade, add(G, mul(dir, bl * 0.84)), [0.3 * k, 0.07 * k, bl * 0.17], SA, 0.06);
+    f.line([add(G, mul(dir, 0.4 * k)), add(G, mul(dir, bl * 0.8))], '#0c6a80', 1);
   }
   return b;
 }

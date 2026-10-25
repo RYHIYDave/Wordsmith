@@ -279,7 +279,7 @@ export function pose(B: Build, P: Pose): Body {
   const wrists: V3[] = [];
   for (const j of [0, 1] as const) {
     const side = j ? 1 : -1;
-    const pole = P.elbows?.[j] ?? add(mul(across, side * 0.5), mul(fwd, -1));
+    const pole = P.elbows?.[j] ?? add(add(mul(across, side * 0.45), mul(fwd, -0.5)), mul(up, -0.75));
     const r = reach(shoulders[j], P.hands[j], arm1, arm2, pole);
     elbows.push(r.joint);
     wrists.push(r.end);
