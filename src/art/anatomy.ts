@@ -251,8 +251,8 @@ export function pose(B: Build, P: Pose): Body {
   // the trunk: up from the pelvis, bent and twisted
   let up: V3 = [0, 0, 1];
   let fwd: V3 = [0, -1, 0];
-  up = rotAbout(up, [1, 0, 0], -(P.lean ?? 0));
-  fwd = rotAbout(fwd, [1, 0, 0], -(P.lean ?? 0));
+  up = rotAbout(up, [1, 0, 0], P.lean ?? 0);
+  fwd = rotAbout(fwd, [1, 0, 0], P.lean ?? 0);
   up = rotAbout(up, fwd, -(P.side ?? 0));
   fwd = rotAbout(fwd, up, P.twist ?? 0);
   const across = unit(cross(up, fwd));
@@ -267,8 +267,8 @@ export function pose(B: Build, P: Pose): Body {
   let hfwd = fwd;
   hfwd = rotAbout(hfwd, hup, P.turn ?? 0);
   const hac0 = unit(cross(hup, hfwd));
-  hup = rotAbout(hup, hac0, -(P.nod ?? 0));
-  hfwd = rotAbout(hfwd, hac0, -(P.nod ?? 0));
+  hup = rotAbout(hup, hac0, P.nod ?? 0);
+  hfwd = rotAbout(hfwd, hac0, P.nod ?? 0);
   hup = rotAbout(hup, hfwd, -(P.tip ?? 0));
   const hacross = unit(cross(hup, hfwd));
   const head = add(add(neck, mul(hup, 1.55 * k)), mul(hfwd, 0.1 * k));
