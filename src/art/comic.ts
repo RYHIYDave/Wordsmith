@@ -265,7 +265,8 @@ export function shine(p: Px, x: number, y: number, r: number, c: string, _rings 
   wash(p, c, (px, py) => {
     const g = glow(px, py, x, y, r);
     if (g <= 0) return 0;
-    return (dot(px, py, Math.min(1, g * 1.8), 3) ? a * 1.2 : 0) + g * a * 0.45;
+    // (a soft light, stepped in a few rings as the comic's flat tones are, not a spray of dots)
+    return (Math.ceil(Math.min(1, g * 1.4) * 4) / 4) * a * 0.75;
   });
 }
 
@@ -437,12 +438,12 @@ export function caption(p: Px, text: string, x: number, y: number, maxW: number,
 export type V3 = readonly [number, number, number];
 
 /** The bands of `tones` for light `v` (0..1), the bottom of each band dotted over the band below. */
-export function toneAt(tones: Tones, v: number, x: number, y: number, dots = true): string {
+export function toneAt(tones: Tones, v: number, x: number, y: number, dots = true, zone = 0.3): string {
   const n = tones.length;
   const s = clamp01(v) * n;
   let k = Math.min(n - 1, Math.floor(s));
   const f = s - Math.floor(s);
-  if (dots && k > 0 && f < 0.3 && dot(x, y, 1 - f / 0.3, 3)) k--;
+  if (dots && k > 0 && f < zone && dot(x, y, 1 - f / zone, 3)) k--;
   return tones[k];
 }
 

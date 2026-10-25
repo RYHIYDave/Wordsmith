@@ -47,7 +47,7 @@ const T = {
   skinLight: [INK, '#3a2430', '#6a4248', '#9a6a66', '#c8988a', '#ecc6b0', '#fde2d2'],
   skinOld: [INK, '#2e2232', '#5a4250', '#8a6a72', '#b8968e', '#dcc0b4', '#f2e0d6'],
   skinDark: [INK, '#24141a', '#46282c', '#6e4438', '#9a6a52', '#c09276', '#e0b89c'],
-  skinBone: [INK, '#2e2638', '#4e4458', '#7a6e86', '#a89cb4', '#d0c6dc', '#f0e8f4'],
+  skinBone: [INK, '#2a2234', '#463c52', '#62566e', '#7e728c', '#9c90aa', '#b8aec4'],
   white: [INK, '#4a4660', '#7e7a96', '#aeaac4', '#d8d4e8', '#f2eef8', '#ffffff'],
   grey: [INK, '#2e2c3a', '#4e4a5e', '#76728a', '#9e9ab0', '#c4c0d4'],
   steel: [INK, '#22204e', '#3a3478', '#5a54a0', '#7a74c8', '#a8a2e8', '#d6d0ff'],
@@ -67,7 +67,7 @@ const T = {
   gold: ['#3a2a08', '#7a5210', '#b07a18', '#d09a20', '#e8c060', '#fff3b0'],
   bone: [INK, '#5a5040', '#8a7e68', '#b8ac90', '#dcd2b8', '#f2ead6', '#fffcf0'],
   cloak: [INK, '#0e0c16', '#16121e', '#1e1a2a', '#2a2438', '#3a3250', '#52486a'],
-  boot: [INK, '#140c08', '#22160e', '#2e1e14', '#3e2a1a', '#56402a', '#6e5236'],
+  boot: [INK, '#100a08', '#1a120e', '#241a14', '#30241c', '#40322a', '#544436'],
   violet: [INK, '#1e1030', '#341a4e', '#40205c', '#4e2a6e', '#6e3e8e', '#a86a9e'],
   pink: [INK, '#4a0c2a', '#7a1a44', '#9a2254', '#b02a60', '#e04a88', '#ff8ab8'],
   rag: [INK, '#120c16', '#221826', '#2a1e2e', '#342636', '#4a3a48', '#6a5662'],
@@ -149,7 +149,7 @@ function sleeves(f: Figure, st: number, b: Body, kind: 'bell' | 'rolled' | 'long
     const sh = b.shoulders[j];
     const el = b.elbows[j];
     const wr = b.wrists[j];
-    f.rod(st, add(sh, mul(b.up, 0.05 * k)), el, 0.6 * k * h ** 0.45, 0.5 * k * h ** 0.45, 0.45);
+    f.rod(st, add(sh, mul(b.up, 0.05 * k)), el, 0.56 * k * h ** 0.45, 0.46 * k * h ** 0.45, 0.45);
     if (kind === 'rolled') {
       const ua = unit(sub(el, sh));
       const end = lerp(sh, el, 0.88);
@@ -162,16 +162,15 @@ function sleeves(f: Figure, st: number, b: Body, kind: 'bell' | 'rolled' | 'long
     }
     const ua = unit(sub(wr, el));
     if (kind === 'long') {
-      f.rod(st, el, lerp(el, wr, 0.95), 0.5 * k, 0.48 * k, 0.4);
+      f.rod(st, el, lerp(el, wr, 0.95), 0.44 * k, 0.42 * k, 0.4);
       f.rod(st, lerp(el, wr, 1.04), lerp(el, wr, 0.82), 0.33 * k, 0.33 * k, 0.08, true);
       continue;
     }
     // (a bell: wider toward its mouth, and its lower side hanging below the forearm)
-    const mouth = lerp(el, wr, 1.0);
-    f.rod(st, el, mouth, 0.52 * k, 0.8 * k, 0.4);
-    const hang: V3 = add(lerp(el, wr, 0.85), [0, 0, -0.55 * k]);
-    f.rod(st, lerp(el, wr, 0.35), hang, 0.45 * k, 0.55 * k, 0.5);
-    f.rod(st, add(mouth, mul(ua, 0.3 * k)), lerp(el, wr, 0.9), 0.55 * k, 0.45 * k, 0.1, true);
+    const mouth = lerp(el, wr, 0.82);
+    f.rod(st, el, mouth, 0.52 * k, 0.72 * k, 0.4);
+    const hang: V3 = add(lerp(el, wr, 0.75), [0, 0, -0.5 * k]);
+    f.rod(st, lerp(el, wr, 0.35), hang, 0.45 * k, 0.5 * k, 0.5);
   }
 }
 
@@ -197,8 +196,8 @@ function hood(f: Figure, st: number, b: Body, o: { peak?: number; open?: number;
 function beard(f: Figure, st: number, b: Body, o: { to: number; full: number; moustache?: boolean; sway?: number; hang?: number }): void {
   const k = b.k;
   const HA = ax3(b.hacross, mul(b.hfwd, -1), b.hup);
-  f.egg(st, onHead(b, 0, 0.5, -0.72), [0.66 * k * o.full, 0.42 * k, 0.55 * k], HA, 0.35);
-  for (const s of [-1, 1]) f.egg(st, onHead(b, s * 0.52, 0.42, -0.35), [0.25 * k * o.full, 0.25 * k, 0.4 * k], HA, 0.3);
+  f.egg(st, onHead(b, 0, 0.52, -0.8), [0.64 * k * o.full, 0.5 * k, 0.55 * k], HA, 0.35);
+  for (const s of [-1, 1]) f.egg(st, onHead(b, s * 0.5, 0.36, -0.55), [0.22 * k * o.full, 0.3 * k, 0.32 * k], HA, 0.3);
   if (o.moustache !== false) {
     for (const s of [-1, 1]) {
       f.rod(st, onHead(b, s * 0.05, 0.96, -0.5), onHead(b, s * 0.42, 0.86, -0.72), 0.12 * k, 0.08 * k, 0.12);
@@ -212,7 +211,7 @@ function beard(f: Figure, st: number, b: Body, o: { to: number; full: number; mo
   // its locks curling a little apart; strands down it)
   const L = len(sub(end, chin));
   const along = (u: number): V3 => (u < 0.5 ? lerp(chin, mid, u * 2) : lerp(mid, end, (u - 0.5) * 2));
-  for (const [u, w, th] of [[0.12, 0.62, 0.42], [0.36, 0.56, 0.36], [0.6, 0.44, 0.3], [0.8, 0.3, 0.24]] as const) {
+  for (const [u, w, th] of [[0.12, 0.62, 0.6], [0.36, 0.56, 0.52], [0.6, 0.44, 0.4], [0.8, 0.3, 0.28]] as const) {
     const c = along(u);
     const dz = unit(sub(along(Math.min(1, u + 0.1)), along(Math.max(0, u - 0.1))));
     const ax = unit(sub(b.hacross, mul(dz, dot(b.hacross, dz))));
@@ -253,10 +252,10 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
   const HA = ax3(b.hacross, mul(b.hfwd, -1), b.hup);
-  const red = f.stuff({ tones: T.red, hatch: 4, crease: 0.8 });
+  const red = f.stuff({ tones: T.red, crease: 0.8 });
   const wine = f.stuff({ tones: T.wine, crease: 0.8 });
   const mail = f.stuff({ tones: T.mail, crease: 0.8, paint: (q, _n, v) => ((Math.round(q[2] * 6) % 2 === 0 && Math.round(q[0] * 6 + q[1] * 3) % 3 === 0) && v > 0.35 && v < 0.75 ? '#3a3676' : null) });
-  const steel = f.stuff({ tones: T.steel, shine: 0.7, crease: 0.7 });
+  const steel = f.stuff({ tones: T.steel, shine: 0.3, crease: 0.9 });
   const plum = f.stuff({ tones: T.plum, crease: 0.5 });
   const blade = f.stuff({ tones: T.blade, shine: 0.5 });
   // the body in its mail and plate: mail at the neck, arms and thighs, the tabard over the trunk, steel at the shins and feet
@@ -315,6 +314,20 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
     f.egg(steel, b.elbows[j], [0.46 * k, 0.46 * k, 0.46 * k], TA, 0.1);
     f.egg(steel, add(b.elbows[j], mul(out, 0.3 * k)), [0.12 * k, 0.5 * k, 0.42 * k], ax3(out, unit(cross(ua, out)), ua), 0.05);
     f.egg(steel, add(b.knees[j], mul(b.fwd, 0.25 * k)), [0.55 * k, 0.45 * k, 0.55 * k], TA, 0.1);
+    // (the edges of his plates: round each vambrace at the wrist and below the elbow, each greave under the knee and at
+    // the ankle, across his steel shoes)
+    const ringAt = (c: V3, along: V3, r: number): void => {
+      const F = frameAt(c, unit(along), b.fwd);
+      const pts: V3[] = [];
+      for (let i = 0; i <= 12; i++) pts.push(onFrame(F, Math.cos((i / 12) * Math.PI * 2) * r, Math.sin((i / 12) * Math.PI * 2) * r, 0));
+      f.line(pts, '#22204e', 1);
+    };
+    const fa = sub(b.wrists[j], b.elbows[j]);
+    ringAt(lerp(b.elbows[j], b.wrists[j], 0.22), fa, 0.6 * k);
+    ringAt(lerp(b.elbows[j], b.wrists[j], 0.92), fa, 0.42 * k);
+    const shin = sub(b.ankles[j], b.knees[j]);
+    ringAt(lerp(b.knees[j], b.ankles[j], 0.2), shin, 0.62 * k);
+    ringAt(lerp(b.knees[j], b.ankles[j], 0.9), shin, 0.42 * k);
     const holds = sword && (sword.hand === j || sword.two);
     let F = b.handFrames[j];
     if (holds) {
@@ -328,18 +341,18 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
   f.egg(wine, onChest(b, 0, 0.08, 1.55), [1.34 * k, 1.26 * k, 0.5 * k], TA, 0.3);
   f.egg(wine, onChest(b, 0, 0.18, 1.12), [1.12 * k, 1.08 * k, 0.32 * k], TA, 0.2);
   const knot = onChest(b, 0.35, -0.95, 1.5);
-  for (const [e, w, k2] of [[0, 0.62, 0.0], [1, 0.5, -0.35]] as const) {
+  for (const [e, w, k2] of [[0, 0.34, 0.0], [1, 0.27, -0.35]] as const) {
     let prev = knot;
     let prevDir = unit(add(mul(b.fwd, -1), mul(b.across, 0.4)));
     for (let i = 1; i <= 4; i++) {
       const u = i / 4;
       const wave = Math.sin(u * 4.2 + flap * 2.2 + e * 1.3) * 0.45;
-      const q = add(knot, add(mul(b.fwd, (-0.9 - 1.0 * u - e * 0.4 * u) * k * 1.6), add(mul(b.across, (0.8 + 1.4 * u + e * 0.3) * k * 1.4), [0, 0, (-0.7 * u + wave + k2 * u) * k])));
+      const q = add(knot, add(mul(b.fwd, (-0.7 - 0.9 * u - e * 0.4 * u) * k * 1.4), add(mul(b.across, (0.6 + 1.2 * u + e * 0.3) * k * 1.2), [0, 0, (-0.9 * u + wave * 0.8 + k2 * u) * k])));
       const d = unit(sub(q, prev));
       const nrm = unit(cross(d, [0, 0, 1]));
-      const wide = w * (1 - u * 0.35) * k;
+      const wide = w * (1 - u * 0.55) * k;
       const mid = lerp(prev, q, 0.5);
-      f.egg(wine, mid, [len(sub(q, prev)) * 0.62, 0.1 * k, wide], ax3(d, nrm, unit(cross(d, nrm))), 0.18);
+      f.egg(wine, mid, [len(sub(q, prev)) * 0.6, 0.07 * k, wide], ax3(d, nrm, unit(cross(d, nrm))), 0.1);
       prev = q;
       prevDir = d;
     }
@@ -351,17 +364,27 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
   // friend's light in each; the holes he breathes through in its snout; a ridge over the crown
   f.rod(mail, onHead(b, 0, -0.15, -0.55), onChest(b, 0, -0.15, 1.5), 0.86 * k, 1.12 * k, 0.3);
   f.egg(steel, onHead(b, 0, -0.1, 0.24), [0.98 * k, 1.1 * k, 1.12 * k], HA, 0.3);
-  const root = onHead(b, 0, 0.42, -0.2);
-  const point = onHead(b, 0, 1.78, -0.42);
-  f.rod(steel, root, point, 0.8 * k, 0.09 * k, 0.22);
+  const root = onHead(b, 0, 0.42, -0.15);
+  const point = onHead(b, 0, 2.0, -0.45);
+  f.rod(steel, root, point, 0.84 * k, 0.08 * k, 0.2);
   f.egg(steel, onHead(b, 0, 0.55, -0.62), [0.7 * k, 0.5 * k, 0.32 * k], HA, 0.2);
   for (const s of [-1, 1]) {
-    f.rod(steel, onHead(b, s * 0.14, 1.12, 0.16), onHead(b, s * 0.66, 0.8, 0.2), 0.07 * k, 0.06 * k, 0.05, true);
-    f.mark(onHead(b, s * 0.36, 0.98, 0.17), ['#7af8f0', '#22d0e0', '#0c6a80'], 2);
-    f.egg(steel, onHead(b, s * 0.96, 0.02, 0.0), [0.1 * k, 0.12 * k, 0.12 * k], HA, 0.03);
+    f.rod(steel, onHead(b, s * 0.08, 1.2, 0.14), onHead(b, s * 0.74, 0.76, 0.2), 0.14 * k, 0.11 * k, 0.03, true);
+    f.line([onHead(b, s * 0.06, 1.3, 0.14), onHead(b, s * 0.4, 1.14, 0.17), onHead(b, s * 0.74, 0.86, 0.2)], INK, 2);
+    f.mark(onHead(b, s * 0.36, 1.16, 0.17), ['#b8fff8', '#22d0e0', '#0c6a80'], 2);
+    f.egg(steel, onHead(b, s * 0.96, 0.02, 0.0), [0.12 * k, 0.14 * k, 0.14 * k], HA, 0.03);
+    // (the breathing holes, rows of them down each side of the snout)
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) f.mark(onHead(b, s * (0.16 + j * 0.13), 1.3 - j * 0.1 - i * 0.04, -0.22 - i * 0.14), [INK], 1);
   }
+  // (the visor's edge, where it is hinged over the face; the ridge down the middle of its snout; the crown's ridge)
+  const vring: V3[] = [];
+  for (let i = 0; i <= 16; i++) {
+    const an = -Math.PI + (i / 16) * Math.PI * 2;
+    vring.push(onHead(b, Math.sin(an) * 0.86, 0.48 + Math.cos(an) * 0.42, -0.2 + Math.cos(an) * 0.42));
+  }
+  f.line(vring, '#22204e', 1);
+  f.line([onHead(b, 0, 1.24, 0.2), onHead(b, 0, 1.5, -0.2), onHead(b, 0, 1.76, -0.4)], '#3a3478', 1);
   f.line([onHead(b, 0, 1.0, 0.75), onHead(b, 0, 0.55, 1.18), onHead(b, 0, -0.2, 1.36), onHead(b, 0, -0.9, 1.0)], '#3a3478', 1);
-  for (const [x, z] of [[0, 0], [-0.14, -0.06], [0.14, -0.06], [-0.07, -0.16], [0.07, -0.16]] as const) f.mark(onHead(b, x, 1.3, -0.38 + z), [INK], 1);
   // THE GREAT SWORD: a long grip for two hands, bound in plum, a wheel for its pommel; the cross of its guard; its long
   // blade, lit cyan, its flat turned as he turns it, a fuller down its middle
   if (sword) {
@@ -393,8 +416,8 @@ export function townWordsmith(f: Figure, P: Pose, o: { palm?: boolean; sway?: nu
   const b = pose(B, P);
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
-  const skin = f.stuff({ tones: T.skinOld, hatch: 4, crease: 0.5 });
-  const robe = f.stuff({ tones: T.nightBlue, hatch: 4, crease: 0.8 });
+  const skin = f.stuff({ tones: T.skinOld, crease: 0.5 });
+  const robe = f.stuff({ tones: T.nightBlue, crease: 0.8 });
   const teal = f.stuff({ tones: T.teal, crease: 0.8, paint: (q) => (runeOn(q) ? '#e6ffff' : null) });
   const white = f.stuff({ tones: T.white, meld: true, crease: 0.35 });
   const brow = f.stuff({ tones: T.grey, meld: true, crease: 0.4 });
@@ -443,8 +466,8 @@ export function oldWordsmith(f: Figure, P: Pose, staff: { reach: number }, gust 
   const b = pose(B, P);
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
-  const skin = f.stuff({ tones: T.skinOld, hatch: 4, crease: 0.5 });
-  const robe = f.stuff({ tones: T.brown, hatch: 4, crease: 0.8 });
+  const skin = f.stuff({ tones: T.skinOld, crease: 0.5 });
+  const robe = f.stuff({ tones: T.brown, crease: 0.8 });
   const teal = f.stuff({ tones: T.tealOld, crease: 0.8, paint: (q) => (mantleRune(q) ? '#8ff4ff' : null) });
   const grey = f.stuff({ tones: T.grey, meld: true, crease: 0.4 });
   const wood = f.stuff({ tones: T.wood });
@@ -501,8 +524,8 @@ export function armourer(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
   const b = pose(B, P);
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
-  const skin = f.stuff({ tones: T.skinLight, hatch: 4, crease: 0.5 });
-  const shirt = f.stuff({ tones: T.shirt, hatch: 4, crease: 0.8 });
+  const skin = f.stuff({ tones: T.skinLight, crease: 0.5 });
+  const shirt = f.stuff({ tones: T.shirt, crease: 0.8 });
   const leath = f.stuff({ tones: T.leather, crease: 0.8 });
   const white = f.stuff({ tones: T.white, meld: true, crease: 0.35 });
   const trews = f.stuff({ tones: T.cloak, crease: 0.8 });
@@ -538,9 +561,9 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
   const HA = ax3(b.hacross, mul(b.hfwd, -1), b.hup);
-  const skin = f.stuff({ tones: T.skinDark, hatch: 4, crease: 0.5 });
+  const skin = f.stuff({ tones: T.skinDark, crease: 0.5 });
   let hemZ = -99;
-  const robe = f.stuff({ tones: T.purple, hatch: 4, crease: 0.8, paint: (q) => (q[2] < hemZ + 0.32 * k ? '#d09a20' : q[2] < hemZ + 0.62 * k && q[2] > hemZ + 0.45 * k && Math.round(q[0] * 3 + q[1] * 3) % 3 === 0 ? '#b07a18' : null) });
+  const robe = f.stuff({ tones: T.purple, crease: 0.8, paint: (q) => (q[2] < hemZ + 0.32 * k ? '#d09a20' : q[2] < hemZ + 0.62 * k && q[2] > hemZ + 0.45 * k && Math.round(q[0] * 3 + q[1] * 3) % 3 === 0 ? '#b07a18' : null) });
   const gold = f.stuff({ tones: T.gold, shine: 0.6 });
   const cloth = f.stuff({ tones: T.bone, crease: 0.75 });
   const veil = f.stuff({ tones: [INK, '#0c3a4e', '#125462', '#16707e', '#2aa4a6', '#5ac8c0', '#8ae4da'], crease: 0.9 });
@@ -567,11 +590,11 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     const el = b.elbows[j];
     const wr = b.wrists[j];
     const ua = unit(sub(wr, el));
-    const F = frameAt(lerp(el, wr, 0.93), ua, [0, 0, 1]);
+    const F = frameAt(lerp(el, wr, 0.8), ua, [0, 0, 1]);
     let prev: V3 | null = null;
     for (let i = 0; i <= 12; i++) {
       const an = (i / 12) * Math.PI * 2;
-      const q = onFrame(F, Math.cos(an) * 0.78 * k, Math.sin(an) * 0.78 * k, 0);
+      const q = onFrame(F, Math.cos(an) * 0.72 * k, Math.sin(an) * 0.72 * k, 0);
       if (prev) f.rod(gold, prev, q, 0.07 * k, 0.07 * k, 0.02);
       prev = q;
     }
@@ -599,7 +622,7 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     const u = (i - 6) / 6;
     const a = Math.sin(u * 1.2) * 0.78;
     const fw = 0.62 + Math.cos(u * 1.25) * 0.68;
-    const top = onHead(b, a, fw, -0.44 + u * u * 0.16);
+    const top = onHead(b, a, fw, -0.58 + u * u * 0.16);
     const bot = onHead(b, a * 0.8, fw - 0.02 + (i % 2 ? 0.06 : 0), -1.55 + Math.abs(u) * 0.85);
     f.rod(veil, top, bot, 0.09 * k, 0.11 * k, 0.3);
     if (i % 2 === 1 && Math.abs(u) < 0.85) f.line([lerp(top, bot, 0.25), lerp(top, bot, 0.6), lerp(bot, top, 0.04)].map((q) => add(q, mul(b.hfwd, 0.1 * k))), '#0c3a4e', 1);
@@ -609,7 +632,7 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     const u = (i - 4) / 4;
     const a = Math.sin(u * 1.0) * 0.62;
     const fw = 0.68 + Math.cos(u * 1.05) * 0.72;
-    f.mark(onHead(b, a, fw + 0.06, -0.5 + u * u * 0.16), ['#fff3b0', '#d09a20'], 1);
+    f.mark(onHead(b, a, fw + 0.06, -0.64 + u * u * 0.16), ['#fff3b0', '#d09a20'], 1);
     if (i % 2 === 0) f.mark(onHead(b, a * 0.9, fw + 0.04, -0.86 + u * u * 0.18), ['#e8c060', '#b07a18'], 1);
   }
   // THE TURBAN: a great mass of pale cloth wound round his head, half as wide again as it and rounded over it; its edge low
@@ -622,7 +645,7 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   f.egg(cloth, onHead(b, 0, -0.1, 1.72), [1.12 * k, 1.18 * k, 0.5 * k], HA, 0.4);
   {
     const n = unit(sub(b.hup, mul(b.hfwd, 0.12)));
-    const on = onHead(b, 0, 1.3, 0.26);
+    const on = onHead(b, 0, 1.3, 0.34);
     const yA = unit(cross(n, b.hacross));
     f.block(cloth, sub(on, mul(n, 3 * k)), [3 * k, 3 * k, 3 * k], 0, ax3(b.hacross, yA, n), 0.18, true);
   }
@@ -649,7 +672,7 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     let prev: V3 | null = null;
     for (let i = 0; i <= 32; i++) {
       const an = (i / 32) * Math.PI * 2;
-      const q = onHead(b, Math.sin(an) * 1.08, Math.cos(an) * 1.2 - 0.06, 0.32 - (1 - Math.cos(an)) * 0.14);
+      const q = onHead(b, Math.sin(an) * 1.08, Math.cos(an) * 1.2 - 0.06, 0.4 - (1 - Math.cos(an)) * 0.14);
       if (prev) f.rod(cloth, prev, q, 0.15 * k, 0.15 * k, 0.2);
       prev = q;
     }
@@ -668,15 +691,15 @@ export function stranger(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
   const B: Build = { tall: 17.8, broad: 1.0, heavy: 0.92 };
   const b = pose(B, P);
   const k = b.k;
-  const cloak = f.stuff({ tones: T.cloak, hatch: 4, crease: 0.9 });
-  const under = f.stuff({ tones: T.rag, crease: 0.8 });
+  const cloak = f.stuff({ tones: T.cloak, crease: 0.9 });
+  const under = f.stuff({ tones: [INK, '#0c0a12', '#14101a', '#1c1624', '#26202e', '#322a3a'], crease: 0.8 });
   const glove = f.stuff({ tones: T.boot, crease: 0.5 });
   const boot = f.stuff({ tones: T.boot });
   const dark = f.stuff({ tones: T.dark });
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
   sculptBody(f, under, b, {
     face: false, skull: false, eyes: null, hands,
-    as: { hands: { stuff: glove }, shins: { stuff: boot, grow: 1.15 }, feet: { stuff: boot, grow: 1.15 }, arms: { stuff: cloak, grow: 1.25 }, forearms: { stuff: cloak, grow: 1.25 } },
+    as: { hands: { stuff: glove }, legs: { stuff: under, grow: 1.12 }, shins: { stuff: boot, grow: 1.35 }, feet: { stuff: boot, grow: 1.25 }, arms: { stuff: cloak, grow: 1.25 }, forearms: { stuff: cloak, grow: 1.25 } },
   });
   // THE CLOAK: over his shoulders and falling from them to his calves, its hem cut straight; open down the front from his
   // chest, so that his dark clothes and his boots are seen between its edges; folds down it; its weight over each shoulder
@@ -699,7 +722,7 @@ export function stranger(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
     f.block(cloak, [pv[0], pv[1], z0 - 4 * k], [8 * k, 8 * k, 4 * k], 0, ax3([1, 0, 0], [0, 1, 0], [0, 0, 1]), 0.15, true);
   } else {
   const ground = Math.min(b.ankles[0][2], b.ankles[1][2]) - 0.75 * k;
-  const hemZ = ground + 2.6 * k;
+  const hemZ = ground + 1.7 * k;
   const fwF = unit([b.fwd[0], b.fwd[1], 0]);
   const acF = unit([b.across[0], b.across[1], 0]);
   const mid = lerp(b.ankles[0], b.ankles[1], 0.5);
@@ -719,8 +742,52 @@ export function stranger(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
     f.rod(cloak, add(onChest(b, 0, 0, -1.2), mul(d, 1.55 * k)), add([mid[0], mid[1], hemZ - 0.6 * k], mul(d, 2.2 * k)), 0.03 * k, 0.16 * k, 0.12, true);
   }
   }
+  // THE MANTLE: a short cape over his shoulders, the hood rising out of it, so that the hood and the cloak are one cloth;
+  // its hem a ragged edge across his chest and back
+  f.egg(cloak, onChest(b, 0, -0.05, 1.45), [2.1 * k, 1.55 * k, 0.95 * k], TA, 0.7);
+  f.egg(cloak, onHead(b, 0, -0.2, -0.85), [1.12 * k, 1.12 * k, 0.75 * k], ax3(b.hacross, mul(b.hfwd, -1), b.hup), 0.6);
+  {
+    const hem: V3[] = [];
+    for (let i = 0; i <= 14; i++) {
+      const an = -1.35 + (i / 14) * 2.7;
+      hem.push(onChest(b, Math.sin(an) * 2.15, Math.cos(an) * 1.58 - 0.02, 0.55 - Math.abs(Math.sin(an)) * 0.2 + Math.sin(i * 1.7) * 0.05));
+    }
+    f.line(hem, '#06050a', 1);
+  }
+  // THE BALDRIC across his chest over the cloak, from his left shoulder to his right hip, its buckle of brass; three knives
+  // sheathed along it; his belt and its purse
+  const leath = f.stuff({ tones: T.leather, crease: 0.6 });
+  const brass = f.stuff({ tones: T.gold, shine: 0.5 });
+  const steel = f.stuff({ tones: T.steel, shine: 0.4 });
+  const onFront = (a: number, c: number, out = 0.08): V3 => {
+    const e = 1 - (a / 1.62) ** 2 - ((c + 0.1) / 1.75) ** 2;
+    const m = 1 - (a / 2.1) ** 2 - ((c - 1.45) / 0.95) ** 2;
+    return onChest(b, a, Math.max(0.35 + 1.28 * Math.sqrt(Math.max(0.02, e)), m > 0 ? -0.05 + 1.55 * Math.sqrt(m) : -9) + out, c);
+  };
+  const strap: V3[] = [];
+  for (let i = 0; i <= 8; i++) {
+    const u = i / 8;
+    strap.push(onFront(1.25 - 2.3 * u, 1.35 - 2.9 * u));
+  }
+  for (let i = 1; i < strap.length; i++) f.rod(leath, strap[i - 1], strap[i], 0.13 * k, 0.13 * k, 0.04);
+  f.block(brass, onFront(-0.05, -0.05, 0.14), [0.17 * k, 0.06 * k, 0.15 * k], 0.07 * k, TA, 0.03);
+  for (const u of [0.2, 0.3, 0.4]) {
+    const q = onFront(1.25 - 2.3 * u, 1.35 - 2.9 * u, 0.18);
+    const along = unit(sub(onFront(1.25 - 2.3 * (u + 0.05), 1.35 - 2.9 * (u + 0.05), 0.18), q));
+    f.rod(leath, add(q, mul(along, -0.22 * k)), add(q, mul(along, 0.18 * k)), 0.09 * k, 0.07 * k, 0.03);
+    f.egg(steel, add(q, mul(along, -0.3 * k)), [0.08 * k, 0.08 * k, 0.08 * k], TA, 0.02);
+  }
   // the hood, deep, its brim out over his face; the dark in it; two points of gold
   const HA = ax3(b.hacross, mul(b.hfwd, -1), b.hup);
+  // (its opening's edge turned back, the lining showing: a band round his face)
+  {
+    const edge: V3[] = [];
+    for (let i = 0; i <= 18; i++) {
+      const an = -Math.PI * 0.62 + (i / 18) * Math.PI * 1.24;
+      edge.push(onHead(b, Math.sin(an) * 0.78, 1.08 - (1 - Math.cos(an)) * 0.12, -0.1 + Math.cos(an) * 0.96));
+    }
+    f.line(edge, '#56404e', 1);
+  }
   f.egg(cloak, onHead(b, 0, -0.1, 0.25), [1.08 * k, 1.2 * k, 1.22 * k], HA, 0.5);
   f.egg(cloak, onHead(b, 0, 0.55, 0.45), [1.0 * k, 0.55 * k, 1.05 * k], HA, 0.35);
   f.rod(cloak, onHead(b, 0, 0.6, 1.3), onHead(b, 0, 1.15, 1.0), 0.25 * k, 0.06 * k, 0.25);
@@ -738,7 +805,7 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
   const HA = ax3(b.hacross, mul(b.hfwd, -1), b.hup);
   const bone = f.stuff({ tones: T.skinBone, crease: 0.45 });
-  const robe = f.stuff({ tones: T.violet, hatch: 4, crease: 0.85 });
+  const robe = f.stuff({ tones: T.violet, crease: 0.85 });
   const pink = f.stuff({ tones: T.pink, crease: 0.7 });
   const rag = f.stuff({ tones: T.rag, crease: 0.7 });
   const rope = f.stuff({ tones: T.rope });
@@ -785,8 +852,8 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
     f.rod(dark, add(prev, mul(side, -0.35 * k)), add(prev, mul(side, 0.35 * k)), 0.08 * k, 0.08 * k, 0);
     f.rod(pink, add(grip, mul(dd, -0.4 * k)), prev, 0.1 * k, 0.1 * k, 0);
     for (let i = 1; i <= 6; i++) {
-      const q = add(add(grip, mul(dd, (0.4 + i * 0.42) * k)), mul(side, (i % 2 ? 0.1 : -0.1) * (i < 6 ? 1 : 0) * k));
-      f.rod(ivory, prev, q, (0.15 - i * 0.018) * k, (0.14 - i * 0.02) * k, 0.05);
+      const q = add(add(grip, mul(dd, (0.4 + i * 0.45) * k)), mul(side, (i % 2 ? 0.2 : -0.2) * (i < 6 ? 1 : 0) * k));
+      f.rod(ivory, prev, q, (0.2 - i * 0.022) * k, (0.18 - i * 0.026) * k, 0.06);
       prev = q;
     }
     tipOut = prev;

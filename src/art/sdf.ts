@@ -334,7 +334,7 @@ export class Figure {
           else if (v < (c.hi ?? 2)) colour[k] = st.tones[n - 2];
           else colour[k] = st.tones[n - 1];
         } else if (st.hatch && v < 1 / st.tones.length && (x + y) % st.hatch === 0) colour[k] = INK;
-        else colour[k] = toneAt(st.tones, v, x, y);
+        else colour[k] = toneAt(st.tones, v, x, y, true, 0.12);
       }
     }
     // the rim from behind: the figure's edge toward it
