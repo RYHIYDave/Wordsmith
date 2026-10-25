@@ -57,6 +57,9 @@ export const CRAG_TOP = 1565;
 /** The shoulder the crag stands up out of, round the peak's top, where the road comes to the crag's foot. */
 export const SHOULDER = 1390;
 
+/** Where the bluff by the road is, that the cult waited behind. */
+export const BLUFF: Pt = [440, 600];
+
 /** How far out from the peak's middle the crag's edge is, round it. */
 export function cragEdge(th: number): number {
   return CRAG_R * (1 + 0.16 * (noise(th * 2.2 + 1, 0, 421) * 2 - 1) + 0.07 * (noise(th * 9, 3, 422) * 2 - 1) + 0.05 * (1 - Math.abs(noise(th * 23, 5, 424) * 2 - 1)));
@@ -121,6 +124,11 @@ function peak(x: number, y: number): number {
   const fr = bed - Math.floor(bed);
   h += (sstep(0.6, 0.78, fr) - fr) * 7 * inFace;
   h += fbm(x / 60, y / 60, 418, 3) * 9 * Math.sqrt(u);
+  // (close to, the rock broken: crags and ribs a few metres high, and the rubble between them)
+  const rock = sstep(0.02, 0.2, u);
+  const c1 = 1 - Math.abs(noise(x / 16, y / 16, 419) * 2 - 1);
+  const c2 = 1 - Math.abs(noise(x / 6.5 + 7, y / 6.5, 420) * 2 - 1);
+  h += ((c1 - 0.5) * 7 + (c2 - 0.5) * 2.2 + fbm(x / 2.2, y / 2.2, 426, 2) * 0.5) * rock;
   return h;
 }
 
@@ -144,6 +152,19 @@ export function natural(x: number, y: number): number {
         const d = Math.hypot(x - cx, (y - cy) * 1.2) / rr;
         if (d < 1) h += rr * 0.55 * Math.sqrt(1 - d * d) * (0.8 + 0.4 * noise(x / 1.5, y / 1.5, 408));
       }
+    }
+  }
+  // THE BLUFF by the road on the foothills, where the cult waited: a long rocky rise on the road's left as it goes toward the
+  // peak, its slope coming down to the road
+  {
+    const ax = x - BLUFF[0];
+    const ay = y - BLUFF[1];
+    const al = ax * 0.6 + ay * 0.8;
+    const ac = -ax * 0.8 + ay * 0.6;
+    const b = Math.exp(-((al / 120) ** 2) - ((ac / 34) ** 2));
+    if (b > 0.002) {
+      const crag = 1 - Math.abs(noise(x / 11, y / 11, 427) * 2 - 1);
+      h = smax(h, 4 + 52 * b + (crag - 0.5) * 9 * b + fbm(x / 4, y / 4, 428, 2) * 1.2 * b, 6);
     }
   }
   // THE PEAK
@@ -430,17 +451,45 @@ export class Land {
     if (!this.grids) {
       const near = new Grid(-160, -20, 0.25, 1700, 1700);
       const far = new Grid(-6000, -200, 4, 3500, 3200);
-      for (const g of [near, far]) {
-        for (let j = 0; j < g.ny; j++) {
-          for (let i = 0; i < g.nx; i++) g.h[j * g.nx + i] = carved(g.x0 + i * g.cell, g.y0 + j * g.cell, this.index);
+      const kept = GRID_STORE?.load(landKey(), near.h.length + far.h.length);
+      if (kept) {
+        near.h.set(kept.subarray(0, near.h.length));
+        far.h.set(kept.subarray(near.h.length));
+      } else {
+        for (const g of [near, far]) {
+          for (let j = 0; j < g.ny; j++) {
+            for (let i = 0; i < g.nx; i++) g.h[j * g.nx + i] = carved(g.x0 + i * g.cell, g.y0 + j * g.cell, this.index);
+          }
+        }
+        if (GRID_STORE) {
+          const all = new Float32Array(near.h.length + far.h.length);
+          all.set(near.h);
+          all.set(far.h, near.h.length);
+          GRID_STORE.save(landKey(), all);
         }
       }
       this.grids = { near, far };
     }
     return this.grids;
   }
+  private fine: Grid[] = [];
+  /** A fine grid of the heights round (x, y), `half` metres each way, for a camera standing there to see the road close. */
+  focus(x: number, y: number, half = 150): void {
+    const cell = 0.25;
+    const n = Math.round((half * 2) / cell);
+    const g = new Grid(Math.round(x - half), Math.round(y - half), cell, n, n);
+    const key = `${landKey()}-${g.x0}-${g.y0}-${n}`;
+    const kept = GRID_STORE?.load(key, n * n);
+    if (kept) g.h.set(kept);
+    else {
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) g.h[j * n + i] = carved(g.x0 + i * cell, g.y0 + j * cell, this.index);
+      GRID_STORE?.save(key, g.h);
+    }
+    this.fine.push(g);
+  }
   /** The height at (x, y). */
   height(x: number, y: number): number {
+    for (const f of this.fine) if (f.covers(x, y)) return f.at(x, y);
     const g = this.made();
     if (g.near.covers(x, y)) return g.near.at(x, y);
     if (g.far.covers(x, y)) return g.far.at(x, y);
@@ -471,6 +520,22 @@ export class Land {
     return { q: [a.q[0] + (b.q[0] - a.q[0]) * u, a.q[1] + (b.q[1] - a.q[1]) * u, a.q[2] + (b.q[2] - a.q[2]) * u], s, dir: a.dir, cut: a.cut };
   }
 }
+/** (For the tools that paint the opening outside the game: somewhere to keep the grids between runs, by what made them.) */
+export interface GridStore {
+  load(key: string, n: number): Float32Array | null;
+  save(key: string, h: Float32Array): void;
+}
+let GRID_STORE: GridStore | null = null;
+export function keepGrids(s: GridStore): void {
+  GRID_STORE = s;
+}
+/** What the land is made by, as a short name: changes whenever any of its makers does. */
+function landKey(): string {
+  const src = [natural, peak, mountain, buildRoad, carved, cragEdge].map((f) => f.toString()).join('|') + JSON.stringify([PEAK, CRAG_R, CRAG_TOP, SHOULDER, ROAD_HALF, BLUFF]);
+  let h = 2166136261;
+  for (let i = 0; i < src.length; i++) h = Math.imul(h ^ src.charCodeAt(i), 16777619) >>> 0;
+  return h.toString(16);
+}
 let LAND: Land | null = null;
 /** The land, built once. */
 export function theLand(): Land {
@@ -489,23 +554,47 @@ export interface LandCam {
   F: number;
   cx: number;
   hy: number;
+  /** How far it is tipped up to look (radians; none, a shifted lens's picture, by default): then what stands upright leans in toward the top. */
+  pitch?: number;
+}
+
+/** A camera's axes: ahead (as it is tipped), across to its right, up its picture. */
+function axes(c: LandCam): { f: V3; r: V3; u: V3 } {
+  const cs = Math.cos(c.yaw);
+  const sn = Math.sin(c.yaw);
+  const cp = Math.cos(c.pitch ?? 0);
+  const sp = Math.sin(c.pitch ?? 0);
+  return { f: [-sn * cp, cs * cp, sp], r: [cs, sn, 0], u: [sn * sp, -cs * sp, cp] };
 }
 
 /** Where a place is seen in the picture, and how far ahead of the camera it is. */
 export function seenAt(c: LandCam, q: V3): [number, number, number] {
-  const dx = q[0] - c.pos[0];
-  const dy = q[1] - c.pos[1];
-  const cs = Math.cos(c.yaw);
-  const sn = Math.sin(c.yaw);
-  const ax = dx * cs + dy * sn;
-  const ay = -dx * sn + dy * cs;
-  const fw = ay;
-  return [c.cx + (c.F * ax) / fw, c.hy - (c.F * (q[2] - c.pos[2])) / fw, fw];
+  const { f, r, u } = axes(c);
+  const d: V3 = [q[0] - c.pos[0], q[1] - c.pos[1], q[2] - c.pos[2]];
+  const fw = d[0] * f[0] + d[1] * f[1] + d[2] * f[2];
+  const ax = (d[0] * r[0] + d[1] * r[1]) / fw;
+  const az = (d[0] * u[0] + d[1] * u[1] + d[2] * u[2]) / fw;
+  return [c.cx + c.F * ax, c.hy - c.F * az, fw];
 }
-/** A camera for a thing sculpted (art/sdf.ts) standing at `q`, `u` metres to its unit, seen from this camera. */
-export function figCam(c: LandCam, q: V3, u: number): { look: V3; up: V3; scale: number; ox: number; oy: number } {
-  const [x, y, fw] = seenAt(c, q);
-  return { look: unit([q[0] - c.pos[0], q[1] - c.pos[1], (q[2] - c.pos[2]) * 0.6]), up: [0, 0, 1], scale: (c.F / fw) * u, ox: x, oy: y };
+/** A camera for a thing sculpted (art/sdf.ts) standing at `q`, `u` metres to its unit, seen exactly as this camera sees the
+ * land (in its perspective, tipped as it is): the camera, and how far the figure must be moved (Figure.moveBy) for it. */
+export function figView(c: LandCam, q: V3, u: number): { cam: { look: V3; up: V3; scale: number; ox: number; oy: number; persp: number }; shift: V3 } {
+  const { f, u: U } = axes(c);
+  const d: V3 = [q[0] - c.pos[0], q[1] - c.pos[1], q[2] - c.pos[2]];
+  const D = Math.max(1, d[0] * f[0] + d[1] * f[1] + d[2] * f[2]);
+  // (the figure's own origin is put on the camera's line, as far off as the thing is; the thing moved off it to where it is)
+  const o: V3 = [c.pos[0] + f[0] * D, c.pos[1] + f[1] * D, c.pos[2] + f[2] * D];
+  return {
+    cam: { look: f, up: U, scale: c.F / D * u, ox: c.cx, oy: c.hy, persp: D / u },
+    shift: [(q[0] - o[0]) / u, (q[1] - o[1]) / u, (q[2] - o[2]) / u],
+  };
+}
+
+/** A camera for a thing sculpted (art/sdf.ts) standing at `q`, `u` metres to its unit, seen from this camera, exactly
+ * (figView: the figure seen moved to where it stands). */
+export function figCam(c: LandCam, q: V3, u: number): { look: V3; up: V3; scale: number; ox: number; oy: number; persp: number; shift: V3 } {
+  const v = figView(c, q, u);
+  return { ...v.cam, shift: v.shift };
 }
 
 // =============================================================================================
@@ -545,7 +634,15 @@ function toned(tones: [number, number, number][], v: number, x: number, y: numbe
 
 /** What a box's camera sees of the land, painted over `p` (its sky already there, which the haze takes its colour from):
  * how far off each pixel's land is (Infinity where it is sky). */
-export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: number } = {}): Float32Array {
+/** A light in the land besides the evening's: a fire, where, its colour, how far its light reaches, how strong. */
+export interface LandLight {
+  at: V3;
+  color: string;
+  reach: number;
+  k: number;
+}
+
+export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: number; lights?: LandLight[] } = {}): Float32Array {
   const land = theLand();
   const W = p.w;
   const H = p.h;
@@ -554,17 +651,20 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
   const what = new Uint8Array(W * H);
   const zs = new Float32Array(W * H);
   const curv = new Float32Array(W * H);
-  const cs = Math.cos(c.yaw);
-  const sn = Math.sin(c.yaw);
+  const wx = new Float32Array(W * H);
+  const wy = new Float32Array(W * H);
+  const rdist = new Float32Array(W * H);
+  const { f: AF, r: AR, u: AU } = axes(c);
   const snowLine = opts.snowLine ?? 1250;
   const hazeK = opts.haze ?? 1;
   for (let sy = 0; sy < H; sy++) {
     for (let sx = 0; sx < W; sx++) {
       // (the ray: forward one metre, across and up by where the pixel is)
       const ax = (sx + 0.5 - c.cx) / c.F;
-      const az = (c.hy - sy - 0.5) / c.F;
-      const dx = ax * cs - sn;
-      const dy = ax * sn + cs;
+      const ay = (c.hy - sy - 0.5) / c.F;
+      const dx = AF[0] + AR[0] * ax + AU[0] * ay;
+      const dy = AF[1] + AR[1] * ax + AU[1] * ay;
+      const az = AF[2] + AU[2] * ay;
       let t = 1.5;
       let prev = t;
       let hit = false;
@@ -572,7 +672,7 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
         const x = c.pos[0] + dx * t;
         const y = c.pos[1] + dy * t;
         const z = c.pos[2] + az * t;
-        if (z > 1500 && az >= 0) break;
+        if (z > 2000 && az >= 0) break;
         if (t > 14000) break;
         const h = land.height(x, y);
         const gap = z - h;
@@ -612,9 +712,12 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
       // what it is: the road, its lip, the wall under it, the cut bank over it; snow; scrub; rock
       const r = land.index.near(x, y);
       let kd = 0;
+      wx[i] = x;
+      wy[i] = y;
+      rdist[i] = r ? r.d : 99;
       if (r && r.d <= ROAD_HALF + 0.15) kd = r.d > ROAD_HALF - 0.45 && zs[i] > r.z - 0.3 ? 2 : 1;
       else if (r && r.d < ROAD_HALF + 2.5 && zs[i] < r.z - 0.4) kd = 3;
-      else if (zs[i] > snowLine + fbm(x / 60, y / 60, 451, 2) * 90 && n[2] > 0.5 + fbm(x / 20, y / 20, 452, 2) * 0.15) kd = 4;
+      else if (zs[i] > snowLine + fbm(x / 60, y / 60, 451, 2) * 90 && zs[i] < CRAG_TOP - 60 && n[2] > 0.5 + fbm(x / 20, y / 20, 452, 2) * 0.15) kd = 4;
       else if (t < 900 && zs[i] < 420 && n[2] > 0.72) kd = 5;
       what[i] = kd;
     }
@@ -639,7 +742,13 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
       const right = sx < W - 1 ? depth[i + 1] : t;
       const edge = above > t * 1.12 + 3 || left > t * 1.25 + 5 || right > t * 1.25 + 5;
       const rimRow = sy > 1 && depth[i - 2 * W] > t * 1.12 + 3;
-      if (kd === 1) col = toned(DUST_RGB, 0.25 + sky * 0.35 + sun * 0.9 + (noise(sx / 3, sy / 2, 461) - 0.5) * 0.12, sx, sy);
+      if (kd === 1) {
+        // (the road's dust; the two ruts worn in it by the wheels; a stone here and there)
+        const rut = Math.abs(rdist[i] - 1.1) < 0.28 && t < 300;
+        const v = 0.25 + sky * 0.35 + sun * 0.9 + (noise(wx[i] * 1.5, wy[i] * 1.5, 461) - 0.5) * 0.18 - (rut ? 0.22 : 0);
+        col = toned(DUST_RGB, v, sx, sy);
+        if (t < 120 && hash(Math.floor(wx[i] * 3), Math.floor(wy[i] * 3), 462) > 0.985) col = DUST_RGB[4];
+      }
       else if (kd === 2) col = LIP_RGB;
       else if (kd === 3) {
         // (the wall's stones in courses, their joints dark)
@@ -650,9 +759,23 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
       else if (kd === 5) col = toned(SCRUB_RGB, 0.15 + sky * 0.45 + sun * 0.7 + (noise(sx / 2, sy / 2, 465) - 0.5) * 0.25, sx, sy);
       else col = toned(ROCK_RGB, 0.08 + sky * 0.45 + sun * 0.6 + (noise(sx / 4, sy / 3, 467) - 0.5) * 0.1, sx, sy);
       // (the sun's rim on what turns to it: the ridges' sun-ward sides, the tops of slopes against what is behind)
-      if (kd !== 1 && kd !== 3 && sun > 0.3) col = toned(RIM_RGB, (sun - 0.3) * 1.6 + (edge || rimRow ? 0.25 : 0), sx, sy);
+      if (kd !== 1 && kd !== 3 && sun > 0.3) col = toned(RIM_RGB, Math.min(0.5, (sun - 0.3) * 1.1) + (edge || rimRow ? 0.45 : 0), sx, sy);
       else if ((edge || rimRow) && sun > 0.12 && kd !== 3) col = RIM_RGB[0];
       if (edge && !(sun > 0.3)) col = t > 2200 ? [col[0] * 0.55, col[1] * 0.55, col[2] * 0.6] : INK_RGB;
+      // (a fire's light on what faces it, in bands, near it)
+      for (const L of opts.lights ?? []) {
+        const lx = L.at[0] - wx[i];
+        const ly = L.at[1] - wy[i];
+        const lz = L.at[2] - zs[i];
+        const dd = Math.hypot(lx, ly, lz);
+        if (dd > L.reach) continue;
+        const face = Math.max(0, (n[0] * lx + n[1] * ly + n[2] * lz) / dd) * 0.7 + 0.3;
+        const a = (1 - dd / L.reach) ** 2 * L.k * face;
+        const st = Math.floor(a * 4 + (dot(sx, sy, (a * 4) % 1, 3) ? 1 : 0)) / 4;
+        if (st <= 0) continue;
+        const lc = rgb(L.color);
+        col = [col[0] + (lc[0] - col[0]) * Math.min(0.85, st), col[1] + (lc[1] - col[1]) * Math.min(0.85, st), col[2] + (lc[2] - col[2]) * Math.min(0.85, st)];
+      }
       // (the haze of the evening, more of it the further off; it takes the colour of the sky behind)
       const j = i * 4;
       const hz = clamp01((1 - Math.exp(-t / 6500)) * 1.05 * hazeK) * 0.75;
@@ -672,13 +795,13 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
     for (let sx = 0; sx < W; sx++) {
       const i = sy * W + sx;
       const t = depth[i];
-      if (t > 70 || (what[i] !== 5 && what[i] !== 0) || hash(sx, sy, 491) > 0.05 + 0.1 * clamp01(1 - t / 40)) continue;
+      if (t > 70 || what[i] !== 5 || hash(sx, sy, 491) > 0.05 + 0.1 * clamp01(1 - t / 40)) continue;
       const tall = Math.max(2, Math.round((0.5 + hash(sx, sy, 492) * 0.7) * c.F / t));
       const lean = hash(sx, sy, 493) - 0.5;
       for (let k = 0; k < tall; k++) {
         const yy = sy - k;
         const xx = Math.round(sx + lean * k * 0.6);
-        if (yy < 0 || xx < 0 || xx >= W || depth[yy * W + xx] < t - 1) continue;
+        if (yy < 0 || xx < 0 || xx >= W || depth[yy * W + xx] < t - 1 || (what[yy * W + xx] >= 1 && what[yy * W + xx] <= 3)) continue;
         const j = (yy * W + xx) * 4;
         const cc = k === tall - 1 ? RIM_RGB[0] : k > tall * 0.6 ? SCRUB_RGB[3] : SCRUB_RGB[1];
         out[j] = cc[0];

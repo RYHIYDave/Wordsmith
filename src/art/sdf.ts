@@ -137,6 +137,8 @@ export interface Camera {
    * bigger, what is further smaller, lines running away draw together. Not given: seen square on (no perspective).
    */
   persp?: number;
+  /** The figure seen moved by this much (its units) from where it was made (art/opening_land.ts figView). */
+  shift?: V3;
 }
 
 /** A figure, sculpted. */
@@ -169,6 +171,22 @@ export class Figure {
   /** A mark drawn on the figure where its point is seen (an eye's light): colours from its middle out, `w` wide. */
   mark(p: V3, c: readonly string[], w = 2): this {
     this.marks.push({ p, c, w });
+    return this;
+  }
+  /** How far the whole figure has been moved (moved): what a stuff's own paint is told of a place is where it was made. */
+  private moved: V3 = [0, 0, 0];
+  /** Move the whole figure by `d` (its units): every solid, line and mark. */
+  moveBy(d: V3): this {
+    const m = (v: V3): V3 => [v[0] + d[0], v[1] + d[1], v[2] + d[2]];
+    for (const q of this.solids as unknown as { k: string; a?: V3; b?: V3; c?: V3 }[]) {
+      if (q.k === 'rod') {
+        q.a = m(q.a!);
+        q.b = m(q.b!);
+      } else q.c = m(q.c!);
+    }
+    for (let i = 0; i < this.lines.length; i++) this.lines[i] = { ...this.lines[i], pts: this.lines[i].pts.map(m) };
+    for (let i = 0; i < this.marks.length; i++) this.marks[i] = { ...this.marks[i], p: m(this.marks[i].p) };
+    this.moved = m(this.moved);
     return this;
   }
 
@@ -224,6 +242,16 @@ export class Figure {
    * (-Infinity where it is not), for what is drawn over it.
    */
   draw(p: Px, cam: Camera, light: Light, inkOut = true): Float32Array {
+    // (a camera that sees it moved (Camera.shift): moved there for the drawing, and back)
+    if (cam.shift) {
+      const sh = cam.shift;
+      this.moveBy(sh);
+      try {
+        return this.draw(p, { ...cam, shift: undefined }, light, inkOut);
+      } finally {
+        this.moveBy([-sh[0], -sh[1], -sh[2]]);
+      }
+    }
     const W = p.w;
     const H = p.h;
     this.group();
@@ -322,7 +350,7 @@ export class Figure {
         const k = y * W + x;
         depth[k] = t;
         stuffAt[k] = m;
-        const own = st.paint ? st.paint(q, n, v) : null;
+        const own = st.paint ? st.paint(sub(q, this.moved), n, v) : null;
         if (open < 0.32 * ck && !own) colour[k] = INK;
         else if (own) colour[k] = own;
         else if (light.cel) {

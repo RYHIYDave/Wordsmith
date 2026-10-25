@@ -4,6 +4,26 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { Px } from '../src/engine/px';
 import { bakeBox, boxNamed } from '../src/art/opening';
+import { keepGrids } from '../src/art/opening_land';
+// @ts-ignore
+import { existsSync, mkdirSync } from 'node:fs';
+
+// (the land's grids kept between runs, in LAND_GRIDS (default ./bakes/land))
+// @ts-ignore
+const GRIDS: string = process.env.LAND_GRIDS ?? 'bakes/land';
+keepGrids({
+  load(key, n) {
+    const f = `${GRIDS}/${key}.f32`;
+    if (!existsSync(f)) return null;
+    const b: Uint8Array = readFileSync(f);
+    if (b.byteLength !== n * 4) return null;
+    return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+  },
+  save(key, h) {
+    mkdirSync(GRIDS, { recursive: true });
+    writeFileSync(`${GRIDS}/${key}.f32`, new Uint8Array(h.buffer, h.byteOffset, h.byteLength));
+  },
+});
 import type { BakeState, Pin } from '../src/art/opening';
 
 interface Head {
