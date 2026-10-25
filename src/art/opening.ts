@@ -2780,19 +2780,12 @@ export function paintGap(p: Px, t: number): void {
   const bone = f.stuff({ tones: [INK, '#2e2638', '#5e5268', '#968aa0', '#cabed0', '#f0e8f0'], crease: 0.5 });
   const robe = f.stuff({ tones: [INK, '#1e1030', '#341a4e', '#4e2a6e', '#6e3e8e', '#a86a9e'] });
   const reach = Math.sin(t * 2.2) * 0.2;
-  f.rod(robe, [0, 4, 6.0], [0, 1.6, 5.8], 0.55, 0.5, 0.3);
-  f.rod(bone, [0, 1.8, 5.8], [0.6, -1.6 - reach, 5.4], 0.3, 0.22, 0.2);
-  f.egg(bone, [0.25, 0.4, 5.62], [0.34, 0.6, 0.3], frame([0.2, -1, -0.1], [1, 0, 0]), 0.2);
-  f.egg(bone, [0.75, -2.0 - reach, 5.35], [0.32, 0.4, 0.14], frame([0, -1, 0], [1, 0, 0]), 0.15);
-  for (let i = 0; i < 5; i++) {
-    const a = -0.9 + i * 0.45;
-    const base: V3 = [0.75 + Math.sin(a) * 0.3, -2.3 - reach, 5.35 + Math.cos(a) * 0.05];
-    const mid: V3 = [0.75 + Math.sin(a) * 0.75, -2.9 - reach + Math.abs(a) * 0.3, 5.5 + Math.cos(a) * 0.25];
-    const tip: V3 = [0.75 + Math.sin(a) * 0.9, -3.0 - reach + Math.abs(a) * 0.3, 5.0 + Math.cos(a) * 0.1];
-    f.rod(bone, base, mid, 0.08, 0.065, 0.06);
-    f.rod(bone, mid, tip, 0.065, 0.02, 0.04);
-  }
-  f.draw(p, { look: unit([0.1, 1, 0.25]), up: [0, 0, 1], scale: 27 * k, ox: gx - 10 * k, oy: S(0, 206)[1] }, { cel: COMIC, at: [1, 3, 7], hard: 1, fill: [0, -1, 0.3], fillK: 0.3, rim: '#ff8a2a', rimFrom: [0, -1] });
+  f.rod(robe, [0, 4.5, 6.4], [-0.1, 2.3, 6.15], 0.34, 0.3, 0.2);
+  // (a man's forearm and hand, at the old measure: thin, the bones of it showing; the fingers hooked, the nails long)
+  const wrist: V3 = [0.05, -1.1 - reach, 5.7];
+  forearm(f, bone, [-0.2, 2.2, 6.1], wrist, 0.2, [1, 0, 0]);
+  hand(f, bone, frameAt(wrist, unit([0.1, -1, -0.15]), [0, 0.25, 1]), 0.9, 'claw');
+  f.draw(p, { look: unit([0.1, 1, 0.25]), up: [0, 0, 1], scale: 27 * k, ox: gx, oy: S(0, 206)[1] }, { cel: COMIC, at: [1, 3, 7], hard: 1, fill: [-0.4, -1, 0.5], fillK: 0.6, rim: '#ff8a2a', rimFrom: [0, -1] });
 }
 
 export function paintBar(p: Px, t: number): void {
