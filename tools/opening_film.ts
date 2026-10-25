@@ -187,7 +187,8 @@ function sceneAt(s: Timed, t: number): Px {
         const [bw, bh] = captionSize(pin.say, pin.maxW);
         const tx = pin.tail[0] - ox;
         const ty = pin.tail[1] - oy;
-        const bx = Math.round(clamp(tx - bw * 0.55 - 24, 12, SW - bw - 16));
+        // (off to the speaker's side, clear of what he holds up)
+        const bx = Math.round(clamp(tx - bw - 40, 12, SW - bw - 16));
         // (it goes off the screen with him: kept from the top edge only)
         const by = Math.round(Math.max(12, ty - bh - 40));
         if (by > SH) continue;
