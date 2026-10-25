@@ -527,8 +527,8 @@ function paintWagonSmall(p: Px, x: number, y: number, s: number, lamps: Pt[], se
   });
   over(p, pool, null);
   // the cover: an arch of canvas over its hoops, higher at the back, sagging a little between them
-  const cover: Pt[] = loop([m(-L, 3.2), m(-L - 0.4, 7.6), m(-L * 0.4, 10.4), m(L * 0.25, 10.0), m(L - 0.6, 7.2), m(L - 0.6, 3.2)], 6, [0, 5]);
-  w.poly(cover, '#c8b088');
+  const cover: Pt[] = loop([m(-L + 0.4, 3.2), m(-L - 1.2, 9.6), m(-L - 1.6, 11.0), m(-L * 0.35, 9.6), m(L * 0.3, 9.4), m(L + 0.9, 10.6), m(L + 0.5, 9.2), m(L - 0.6, 3.2)], 4, [0, 2, 5, 7]);
+  w.poly(cover, '#b8a080');
   const ribs = [-0.62, -0.05, 0.5].map((r) => [m(r * L, 3.2), m(r * L, 10.6)] as const);
   w.each((qx, qy) => {
     if (!inside(cover, qx + 0.5, qy + 0.5)) return undefined;
@@ -542,7 +542,7 @@ function paintWagonSmall(p: Px, x: number, y: number, s: number, lamps: Pt[], se
     const u = ((qx - x) * d[0] + (qy - y) * d[1]) / s / L;
     const v = ((qx - x) * n[0] + (qy - y) * n[1]) / s / 10;
     const kk = u * 0.5 + v * 0.5;
-    return kk > 0.55 ? '#e6d4aa' : kk > 0.2 ? '#c8b088' : '#97805e';
+    return kk > 0.55 ? '#d8c6a0' : kk > 0.2 ? '#b8a080' : '#86704e';
   });
   // the bed and its side boards; the bench at its front, the driver hunched on it in his cloak and hood
   w.poly([m(-L - 0.6, 3.4), m(L + 0.6, 3.4), m(L, 1.6), m(-L, 1.6)], '#4a3020');
@@ -1345,7 +1345,7 @@ export function paintMystic(p: Px, t: number): void {
   const bob = Math.sin(t * 1.9) * 0.08;
   // THE CRYSTAL over his open palm, before him: the light of the box
   const C3: V3 = [-2.9, -2.3, 7.4 + bob];
-  const cam = { look: unit([0.25, 1, -0.16]), up: [0, 0, 1] as V3, scale: 10.5 * k, ox: P(106, 0)[0], oy: P(0, 166)[1], persp: 60 };
+  const cam = { look: unit([0.25, 1, -0.16]), up: [0, 0, 1] as V3, scale: 10.5 * k, ox: P(106, 0)[0], oy: P(0, 176)[1], persp: 60 };
   const rr = unit(cross(cam.look, cam.up));
   const dd = unit(cross(cam.look, rr));
   const onScreen = (q: V3): Pt => seen(cam, q);
@@ -3343,7 +3343,7 @@ export const PAGES: readonly (readonly BoxDef[])[] = [
  * (0 the first), its text, where its top left is (a share of the page's inner width and height), how wide it may run.
  */
 export const PAGE_CAPTIONS: readonly { page: number; say: string; x: number; y: number; maxW: number }[] = [
-  { page: 1, say: 'seeking the Meldstone, and the altar that wakes the words.', x: 0.02, y: 0.012, maxW: 150 },
+  { page: 1, say: 'seeking the Meldstone, and the altar that wakes the words.', x: 0.02, y: 0.008, maxW: 176 },
 ];
 
 export function paintSpread(k: number, t: number): Px {
