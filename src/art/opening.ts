@@ -369,10 +369,10 @@ export function paintPointing(p: Px, t: number): void {
   const side: V3 = [up[1], -up[0], 0];
   // (further back than he is tall, and with a long lens: the peak looms over him, the prison on its crag big enough to
   // read, him in the foot of the picture from his knees up)
-  const cx = at.q[0] - up[0] * 7.5 + side[0] * 2.4;
-  const cy = at.q[1] - up[1] * 7.5 + side[1] * 2.4;
+  const cx = at.q[0] - up[0] * 4.8 + side[0] * 1.7;
+  const cy = at.q[1] - up[1] * 4.8 + side[1] * 1.7;
   if (still()) land.focus(cx, cy, 140);
-  const cam: LandCam = { pos: [cx, cy, land.exact(cx, cy) + 1.5], yaw: Math.atan2(-up[0], up[1]) - 0.05, pitch: 0.3, F: W * 0.45, cx: W * 0.5, hy: H * 0.47 };
+  const cam: LandCam = { pos: [cx, cy, land.exact(cx, cy) + 1.5], yaw: Math.atan2(-up[0], up[1]) - 0.08, pitch: 0.17, F: W * 0.375, cx: W * 0.5, hy: H * 0.5 };
   paintValley(p, t, cam, { wagons: [{ s: s0 - 16, seed: 0, driver: true }] });
   // HIM, his staff up at the prison
   const prison: V3 = [PEAK[0], PEAK[1], CRAG_TOP + 20];
