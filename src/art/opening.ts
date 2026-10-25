@@ -293,8 +293,59 @@ export function paintCaravan(p: Px, t: number): void {
   const H = p.h;
   const land = theLand();
   const sc = land.index.near(300, 477)?.s ?? 0;
-  const cam: LandCam = { pos: [314, 459, land.exact(314, 459) + 1.6], yaw: -0.22, F: W * 0.72, cx: W * 0.5, hy: H * 0.6 };
-  paintValley(p, t, cam, { wagons: [{ s: sc + 30, seed: 0, driver: true }, { s: sc + 14, seed: 1, driver: 'armourer' }], smithAt: SMITH_AT });
+  const cam: LandCam = { pos: [314, 459, land.exact(314, 459) + 1.6], yaw: -0.22, F: W * 0.72, cx: W * 0.5, hy: H * 0.56 };
+  paintValley(p, t, cam, { wagons: [{ s: sc + 33, seed: 0, driver: true }, { s: sc + 17, seed: 1, driver: 'armourer' }, { s: sc + 1, seed: 2, driver: true }], smithAt: SMITH_AT });
+  // YOUR HERO AND YOUR WORDSMITH walking beside the wagons on the road's near side, the wordsmith's rune alight in his palm
+  // (art/cast.ts, as on page 2, at their true size)
+  const ph = T0(t) * 2.4;
+  const walker = (s: number, off: number): { q: V3; yaw: number } => {
+    const r = land.along(s);
+    // (on the road's side toward us)
+    const sg = (cam.pos[0] - r.q[0]) * r.dir[1] - (cam.pos[1] - r.q[1]) * r.dir[0] > 0 ? 1 : -1;
+    const n: V3 = [r.dir[1] * sg, -r.dir[0] * sg, 0];
+    const x = r.q[0] + n[0] * off;
+    const y = r.q[1] + n[1] * off;
+    return { q: [x, y, land.exact(x, y)], yaw: Math.atan2(r.dir[0], -r.dir[1]) };
+  };
+  const sNear = land.index.near(cam.pos[0], cam.pos[1])?.s ?? sc + 14;
+  const ws = walker(sNear + 1.5, 2.0);
+  const kn = walker(sNear - 1.2, 2.4);
+  const wf = new Figure();
+  const A = Cast.place(wf, [0, 0, 0], ws.yaw - 0.35, () => Cast.townWordsmith(wf, {
+    pelvis: [0, 0, 9.15],
+    lean: 0.05,
+    turn: 0.35,
+    nod: -0.05,
+    hands: [[-2.1, -0.2 + Math.sin(ph) * 0.6, 8.6], [3.4, -1.7, 11.4]],
+    palms: [[0, 1, 0], [0, 0, 1]],
+    fingers: [[0, 0, -1], [0.1, -1, 0.15]],
+    elbows: [[-1, 0.3, -0.5], [1, 0.4, -1]],
+    feet: [[-0.85, -1.2 - Math.sin(ph) * 0.8, 0.75], [0.85, 1.0 + Math.sin(ph) * 0.8, 0.95]],
+  }, { palm: true }));
+  const kf = new Figure();
+  Cast.place(kf, [0, 0, 0], kn.yaw + 0.25, () => Cast.knight(kf, {
+    pelvis: [0, 0, 9.4],
+    lean: 0.06,
+    turn: -0.15,
+    nod: 0.05,
+    hands: [[-2.3, 0.4 + Math.sin(ph + 1.3) * 0.6, 8.9], [1.45, -1.4, 11.9]],
+    elbows: [[-1, 0.3, -0.5], [1, 0, -1]],
+    fingers: [[0, 0, -1], [-0.2, -0.6, 0.75]],
+    palms: [[1, 0, 0], [-1, 0, 0]],
+    feet: [[-0.9, 1.1 + Math.sin(ph + 1.3) * 0.8, 1.0], [0.9, -1.2 - Math.sin(ph + 1.3) * 0.8, 0.75]],
+  }, { hand: 1, tip: [2.4, 5.0, 20.6] }, Math.sin(T0(t) * 3.1) * 0.25));
+  const wc = figCam(cam, ws.q, 0.1);
+  const kc = figCam(cam, kn.q, 0.1);
+  const rune = seen(wc, A.at([3.75, -2.0, 12.6]));
+  if (still()) {
+    kf.draw(p, kc, { cel: COMIC, at: [9, -12, 14], hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
+    wf.draw(p, wc, { cel: COMIC, at: A.at([3.75, -2.0, 12.6]), hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
+  }
+  if (moving()) {
+    const fl = 0.85 + 0.15 * Math.sin(t * 5.3);
+    shine(p, rune[0], rune[1], wc.scale * 5 * fl, CYANS[2], 2, 0.3);
+    shine(p, rune[0], rune[1], wc.scale * 1.4 * fl, CYANS[0], 2, 0.7);
+  }
 }
 
 /** Where on the road they stop, out on the foothills before the peak, and he points up it (metres along it). */
@@ -316,10 +367,12 @@ export function paintPointing(p: Px, t: number): void {
   const up = unit([PEAK[0] - at.q[0], PEAK[1] - at.q[1], 0]);
   // (we are on the road a few steps back and to his left, low)
   const side: V3 = [up[1], -up[0], 0];
-  const cx = at.q[0] - up[0] * 3.2 + side[0] * 1.9;
-  const cy = at.q[1] - up[1] * 3.2 + side[1] * 1.9;
+  // (further back than he is tall, and with a long lens: the peak looms over him, the prison on its crag big enough to
+  // read, him in the foot of the picture from his knees up)
+  const cx = at.q[0] - up[0] * 7.5 + side[0] * 2.4;
+  const cy = at.q[1] - up[1] * 7.5 + side[1] * 2.4;
   if (still()) land.focus(cx, cy, 140);
-  const cam: LandCam = { pos: [cx, cy, land.exact(cx, cy) + 1.5], yaw: Math.atan2(-up[0], up[1]) - 0.1, pitch: 0.32, F: W * 0.36, cx: W * 0.5, hy: H * 0.44 };
+  const cam: LandCam = { pos: [cx, cy, land.exact(cx, cy) + 1.5], yaw: Math.atan2(-up[0], up[1]) - 0.05, pitch: 0.3, F: W * 0.45, cx: W * 0.5, hy: H * 0.47 };
   paintValley(p, t, cam, { wagons: [{ s: s0 - 16, seed: 0, driver: true }] });
   // HIM, his staff up at the prison
   const prison: V3 = [PEAK[0], PEAK[1], CRAG_TOP + 20];
@@ -426,31 +479,58 @@ function sculptFortress(f: Figure, close: boolean): V3 {
   const o = pp.gate;
   const at = (q: V3): V3 => [q[0] - o[0], q[1] - o[1], q[2] - o[2]];
   const base = CRAG_TOP - 3;
+  const STONES = ['#0c0a18', '#120f22', '#1b1630', '#262040', '#342a50', '#46385e', '#56466a'];
   const stone = f.stuff({
     tones: [INK, '#120f22', '#1b1630', '#262040', '#342a50', '#46385e'],
     crease: 0.5,
-    paint: (q, n) => {
+    paint: (q, n, lit) => {
       if (Math.abs(n[2]) > 0.45) return null;
       // (in its own place: q is round the gate)
       const wx = q[0] + o[0];
       const wy = q[1] + o[1];
       const z = q[2] + o[2] - base;
-      const along = Math.abs(n[0]) > Math.abs(n[1]) ? wy : wx;
+      // (along the face, measured from near the gate, that it does not run away round a tower)
+      const along = (n[0] * q[1] - n[1] * q[0]) / Math.max(0.2, Math.hypot(n[0], n[1]));
+      void wx;
+      void wy;
       // windows: narrow, in rows, few; some lit
       const row = Math.floor(z / 6.5);
       const col = Math.floor(along / 4.5);
       const fz = z / 6.5 - row;
       const fa = along / 4.5 - col;
-      if (row >= 1 && fz > 0.35 && fz < 0.62 && fa > 0.42 && fa < 0.58) {
+      if (row >= 1 && fz > 0.35 && fz < 0.62 && fa > 0.44 && fa < 0.56) {
         const hh = hash(col, row, 1471);
-        if (hh < 0.12) return '#ffd98a';
+        if (hh < (close ? 0.05 : 0.12)) return '#ffd98a';
         if (hh < 0.24) return '#0a0814';
       }
       if (!close) return null;
-      const r2 = Math.floor(z / 0.85);
-      if (z - r2 * 0.85 < 0.09) return '#0c0a18';
-      const v = (((along + (r2 % 2) * 0.7) % 1.4) + 1.4) % 1.4;
-      return v < 0.1 ? '#0c0a18' : null;
+      // STONES LAID BY HAND: each course its own height, each stone its own length, the joints of one course off those of
+      // the next; each stone its own shade; old: streaked dark down from its sills and its top, the mortar fallen in
+      const zc = z + (noise(along / 9, 0.5, 1473) - 0.5) * 0.25;
+      const c0 = Math.floor(zc / 0.8);
+      const edges = [c0 - 1, c0, c0 + 1, c0 + 2].map((k) => k * 0.8 + (hash(k, 0, 1474) - 0.5) * 0.36);
+      let course = c0;
+      for (let k = 0; k < 3; k++) if (zc >= edges[k] && zc < edges[k + 1]) course = c0 - 1 + k;
+      const lo = edges[course - c0 + 1];
+      const hi = edges[course - c0 + 2];
+      // (the joints not ruled: each stone's edges a little out of true, its corners worn; the mortar fallen deeper here)
+      const wob = (noise(along * 2.3, zc * 2.3, 1478) - 0.5) * 0.07;
+      if (zc - lo < 0.045 + wob || hi - zc < 0.012) return STONES[0];
+      const sl = 0.9 + hash(course, 1, 1475) * 1.1;
+      const sa = along / sl + hash(course, 2, 1475) * 7;
+      const sid = Math.floor(sa);
+      const fs = sa - sid;
+      const fe = Math.min(fs, 1 - fs) * sl;
+      const fzs = Math.min(zc - lo, hi - zc);
+      if (fs < (0.045 + (noise(zc * 3.1, along, 1479) - 0.5) * 0.05) / sl) return STONES[0];
+      if (fe < 0.09 && fzs < 0.09 && hash(sid, course, 1480) > 0.4) return STONES[1];
+      // (each stone its own shade, and its face rough: pitted, a little lighter on its upper edge where the sky catches it)
+      const own = (hash(sid, course, 1476) - 0.5) * 1.4;
+      const rough = (noise(along * 7, z * 7, 1481) - 0.5) * 1.1 + (hash(Math.floor(along * 14), Math.floor(z * 14), 1482) > 0.93 ? -1 : 0);
+      const upper = hi - zc < 0.08 ? 0.6 : 0;
+      const streak = clamp01((noise(along * 1.3, z * 0.07, 1477) - 0.5) * 3) * 1.2;
+      const k = Math.round(1 + lit * 4.6 + own + rough + upper - streak);
+      return STONES[Math.max(1, Math.min(STONES.length - 1, k))];
     },
   });
   const slate = f.stuff({ tones: [INK, '#0c0a18', '#141026', '#1e1834', '#2a2244'], crease: 0.4 });
@@ -497,16 +577,23 @@ function sculptFortress(f: Figure, close: boolean): V3 {
     const I = pp.inward;
     const S: V3 = [-I[1], I[0], 0];
     const g: V3 = [o[0], o[1], 0];
-    tower([g[0] + S[0] * 8.5, g[1] + S[1] * 8.5, 0], 6, 28, 26);
-    tower([g[0] - S[0] * 8.5, g[1] - S[1] * 8.5, 0], 6, 28, 26);
+    tower([g[0] + S[0] * 8.5, g[1] + S[1] * 8.5, 0], 5, 28, 26);
+    tower([g[0] - S[0] * 8.5, g[1] - S[1] * 8.5, 0], 5, 28, 26);
     f.block(stone, at([g[0], g[1], base + 9]), [5.5, 4.5, 9], 0.2, [S, I, [0, 0, 1]], 0.2);
-    // (the arch: the way through, five metres wide and seven high, its top round; dark within)
-    const face: V3 = [g[0] - I[0] * 4.6, g[1] - I[1] * 4.6, 0];
-    // (its floor the road's, the crag's top)
+    // (the arch: the way through, five metres wide and seven and a half high, its top round, its floor the road's, the
+    // crag's top, where the terrace comes to it; dark at its far end, where it opens into the yard)
     const fl = CRAG_TOP;
-    f.block(stone, at([g[0], g[1], fl + 3.6]), [2.5, 5.2, 3.6], 0.05, [S, I, [0, 0, 1]], 0, true);
-    f.rod(stone, at([face[0] - I[0], face[1] - I[1], fl + 7.2]), at([g[0] + I[0] * 5, g[1] + I[1] * 5, fl + 7.2]), 2.5, 2.5, 0, true);
-    f.block(dark, at([g[0] + I[0] * 1.5, g[1] + I[1] * 1.5, fl + 3.6]), [2.4, 3.6, 3.5], 0.05, [S, I, [0, 0, 1]], 0);
+    f.block(stone, at([g[0], g[1], fl + 2.5]), [2.5, 5.2, 2.5 + 0.02], 0.02, [S, I, [0, 0, 1]], 0, true);
+    f.rod(stone, at([g[0] - I[0] * 5.4, g[1] - I[1] * 5.4, fl + 5.0]), at([g[0] + I[0] * 5.4, g[1] + I[1] * 5.4, fl + 5.0]), 2.5, 2.5, 0, true);
+    f.block(dark, at([g[0] + I[0] * 4.3, g[1] + I[1] * 4.3, fl + 2.5]), [2.45, 0.2, 2.5], 0.02, [S, I, [0, 0, 1]], 0);
+    f.rod(dark, at([g[0] + I[0] * 4.1, g[1] + I[1] * 4.1, fl + 5.0]), at([g[0] + I[0] * 4.5, g[1] + I[1] * 4.5, fl + 5.0]), 2.45, 2.45, 0);
+    // (its voussoirs, a ring of wedge stones round the arch's face; and the grooves the portcullis runs in)
+    for (let i = 0; i <= 10; i++) {
+      const an = (i / 10) * Math.PI;
+      const c = Math.cos(an);
+      const s = Math.sin(an);
+      f.line([at([g[0] - I[0] * 4.55 + S[0] * c * 2.5, g[1] - I[1] * 4.55 + S[1] * c * 2.5, fl + 5 + s * 2.5]), at([g[0] - I[0] * 4.55 + S[0] * c * 3.4, g[1] - I[1] * 4.55 + S[1] * c * 3.4, fl + 5 + s * 3.4])], '#0c0a18', 1);
+    }
     if (close) for (let m = -5; m <= 5; m += 2.5) f.block(stone, at([g[0] + S[0] * m - I[0] * 4, g[1] + S[1] * m - I[1] * 4, base + 18.6]), [0.6, 0.6, 0.7], 0.05, [S, I, [0, 0, 1]], 0);
   }
   // THE KEEP within, high and square, its turrets; the long halls round the yard
@@ -1081,11 +1168,11 @@ export function paintFarAhead(p: Px, t: number): void {
   const up = unit([PEAK[0] - at.q[0], PEAK[1] - at.q[1], 0]);
   const d = at.dir;
   // (we are on the road a little way on ahead of him, on its slope side, looking back at him and out over the drop)
-  const cx = at.q[0] + d[0] * 9 + up[0] * 1.6;
-  const cy = at.q[1] + d[1] * 9 + up[1] * 1.6;
+  const cx = at.q[0] + d[0] * 2.9 + up[0] * 0.6;
+  const cy = at.q[1] + d[1] * 2.9 + up[1] * 0.6;
   if (still()) land.focus(cx, cy, 120);
-  const look = unit([-d[0] * 0.75 - up[0] * 0.65, -d[1] * 0.75 - up[1] * 0.65, 0]);
-  const cam: LandCam = { pos: [cx, cy, land.exact(cx, cy) + 1.5], yaw: Math.atan2(-look[0], look[1]), pitch: -0.12, F: W * 0.62, cx: W * 0.5, hy: H * 0.42 };
+  const look = unit([-d[0] * 0.85 - up[0] * 0.5, -d[1] * 0.85 - up[1] * 0.5, 0]);
+  const cam: LandCam = { pos: [cx, cy, land.exact(cx, cy) + 0.8], yaw: Math.atan2(-look[0], look[1]), pitch: 0.12, F: W * 0.66, cx: W * 0.5, hy: H * 0.56 };
   paintValley(p, t, cam, {});
   // (he faces up the road, toward us and the peak; his staff up over his head)
   const face = unit([d[0] * 0.6 + up[0] * 0.8, d[1] * 0.6 + up[1] * 0.8, 0]);
@@ -1269,39 +1356,31 @@ function armourerDriving(breath: number, sway: number, t = 0): Figure {
 export function paintArmourer(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
-  const P = grid(W, H);
-  const k = W / 192;
-  const breath = Math.sin(T0(t) * 1.6) * 0.04;
-  const sway = Math.sin(T0(t) * 1.3) * 0.06;
-  // THE LANTERN ahead of him on its pole, at the right; the dusk beyond it
-  const lamp = P(166, 40);
-  if (still()) {
-  const back = layerOf(p);
-  back.rect(0, 0, W, H, DUSK[3]);
-  bands(back, DUSK, (x, y) => 0.18 + glow(x, y, W * 1.05, H * 0.72, W * 1.05) * 0.95);
-  over(p, back, null);
-  const hill = layerOf(p);
-  hill.poly(loop([P(96, 124), P(140, 104), P(176, 96), P(200, 90), P(200, 180), P(96, 180)], 6, [3, 4, 5]), '#120e22');
-  hill.each((x, y) => (!hill.has(x, y - 1) ? ROCK_RIM : undefined));
-  over(p, hill, INK);
-  // THE WAGON'S CANVAS behind him, its edge toward the lamp lit
-  const cov = layerOf(p);
-  cov.poly(loop([P(-4, 180), P(-4, -4), P(90, -4), P(112, 26), P(118, 70), P(110, 120), P(96, 180)], 8, [0, 1, 2, 6]), CANVAS[0]);
-  bands(cov, CANVAS, (x, y) => 0.32 + glow(x, y, lamp[0], lamp[1], W * 0.95) * 0.7 + Math.sin(x * 0.35 + y * 0.04) * 0.05);
-  over(p, cov, INK);
-  // HIM, SCULPTED: seated on the bench, his face turned to the road and the lamp; a tenth of a metre to a unit, up is z,
-  // he faces x, the far side of him is y
-  const f = armourerDriving(breath, sway, t);
-  const sc = 12.5 * k;
-  f.draw(p, { look: unit([-0.3, 1, -0.06]), up: [0, 0, 1], scale: sc, ox: P(60, 0)[0], oy: P(0, 214)[1], persp: 70 }, {
-    at: [8.5, -5.5, 13.5], hard: 1, fill: [-0.6, 0.4, 0.5], fillK: 0.22, rim: DUSK_RIM, rimFrom: [1, 0], cel: COMIC,
-  });
-  // THE LANTERN on its pole, ahead of him at the right
-  over(p, limbSolid(p, path([P(150, 182), P(156, 120), P(162, 34)], 10), 5 * k, 4 * k, WOOD, [1, -0.3, 0.3], { hard: 1 }), INK);
-  }
-  if (moving()) {
-    shine(p, lamp[0], lamp[1] + 10 * k, (22 + Math.sin(t * 5.3) * 1.5) * k, LAMP[2], 2, 0.18);
-    paintLantern(p, lamp[0], lamp[1] + 10 * k, Math.sin(t * 1.9) * 0.12, lamp[0] - 4 * k, lamp[1] - 14 * k);
+  // THE ARMOURER DRIVING, close: his wagon in the caravan on the road (as in the shot over it), seen from beside its front,
+  // low; him hunched on the bench over the reins, the lantern on its crook over him lighting him and the horse's rump;
+  // behind, the foothills, the peak going up into the dusk (the wagon sculpted, sculptWagon; the land at its true size)
+  const land = theLand();
+  const s0 = (land.index.near(300, 477)?.s ?? 0) + 17;
+  const r = land.along(s0);
+  const d: V3 = [r.dir[0], r.dir[1], 0];
+  const n: V3 = [d[1], -d[0], 0];
+  const wyaw = Math.atan2(d[1], d[0]);
+  const seat: V3 = [r.q[0] + d[0] * 1.75, r.q[1] + d[1] * 1.75, r.q[2] + 1.9];
+  const cpos: V3 = [seat[0] + n[0] * 2.4 + d[0] * 2.4, seat[1] + n[1] * 2.4 + d[1] * 2.4, seat[2] - 0.2];
+  const lk = unit([seat[0] - d[0] * 0.3 - cpos[0], seat[1] - d[1] * 0.3 - cpos[1], 0]);
+  if (still()) land.focus(cpos[0], cpos[1], 80);
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lk[0], lk[1]), pitch: 0.12, F: W * 1.0, cx: W * 0.5, hy: H * 0.55 };
+  paintValley(p, t, cam, {});
+  const f = new Figure();
+  const w = sculptWagon(f, [0, 0, 0], wyaw, { roll: 0.7, horse: { ph: T0(t) * 2.2 + 2.1, gallop: false }, lampSide: -1, driver: 'armourer', ribs: false });
+  const wc = figCam(cam, r.q, 0.2);
+  const lampAt = w.lamp ? add3(w.lamp, wc.shift) : undefined;
+  if (still()) f.draw(p, wc, { at: lampAt, from: lampAt ? undefined : unit([-0.35, -0.75, 0.6]), hard: 1, fill: [0.6, 0.6, 0.3], fillK: 0.35, rim: '#f0a070', rimFrom: [1, -0.4] });
+  if (moving() && w.lamp) {
+    const ls = seen(wc, w.lamp);
+    const fl = 0.9 + 0.1 * Math.sin(t * 5.3);
+    shine(p, ls[0], ls[1], wc.scale * 3.2 * fl, LAMP[2], 2, 0.18);
+    shine(p, ls[0], ls[1], wc.scale * 0.9 * fl, LAMP[0], 2, 0.6);
   }
 }
 
@@ -1519,7 +1598,7 @@ export function paintStranger(p: Px, t: number): void {
   const dusk = (x: number, y: number, r = W): number => glow(x, y, W * 0.05, H * 0.62, r);
   // THE ROAD BEHIND, falling away down the mountain into the dusk
   const { f, palm } = strangerOnWagon();
-  const scam = { look: unit([0.85, 0.5, -0.15]), up: [0, 0, 1] as V3, scale: 15.5 * k, ox: 0, oy: 0, persp: 46 };
+  const scam = { look: unit([0.42, 1, -0.14]), up: [0, 0, 1] as V3, scale: 15.5 * k, ox: 0, oy: 0, persp: 46 };
   const at0 = seen(scam, [-8.25, 0, 7.2]);
   scam.ox = P(76, 0)[0] - at0[0];
   scam.oy = P(0, 104)[1] - at0[1];
@@ -1945,26 +2024,37 @@ export function paintEyes(p: Px, t: number): void {
 export function paintGlint(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
-  const k = W / 153;
   const blink = 0.5 + 0.5 * Math.sin(t * 3.7);
-  const r = layerOf(p);
-  if (still()) {
-  const sky = layerOf(p);
-  sky.rect(0, 0, W, H, DUSK[0]);
-  bands(sky, DUSK, (x, y) => -0.1 + (1 - y / H) * 0.0 + glow(x, y, W * 1.1, H * 0.2, W * 1.0) * 0.5 + strata(x, y, 1705));
-  sky.each((x, y) => (hash(x, y, 911) > 0.993 ? (hash(x, y, 912) > 0.5 ? '#e8e4ff' : '#8a84b8') : undefined));
-  over(p, sky, null);
-  // THE ROCKS: a great shelf of them leaning out over the road from the left, boulders on its lip
-  r.poly(loop([[-4, H * 0.3], [W * 0.3, H * 0.42], [W * 0.58, H * 0.4], [W * 0.78, H * 0.5], [W * 0.9, H * 0.66], [W + 4, H * 0.7], [W + 4, H + 4], [-4, H + 4]], 6, [0, 5, 6, 7]), ROCK[0]);
-  facets(r, ROCK, [0.6, -0.5, 0.4], { cw: 16, ch: 10, seed: 931, tilt: [0.3, -0.5], spread: 0.9, extra: (x, y) => glow(x, y, W * 1.1, H * 0.2, W * 0.9) * 0.7 - 0.15 });
-  r.each((x, y) => (!r.has(x, y - 1) ? ROCK_RIM : undefined));
-  over(p, r, INK);
+  // A CULTIST crouched on the bluff by the road, among its rocks, watching them: seen from just behind him, over his
+  // shoulder, his cowl's point against the dusk, his dagger up by his shoulder with a glint running along its blade; below
+  // him, a long way off down the bluff, the road, the wagon stopped on it and the old wordsmith's light by it; the peak
+  // beyond (art/cast.ts, sculpted at his true size, on the land at its own)
+  const land = theLand();
+  const s0 = footOfFace();
+  const at = land.along(s0);
+  // (where he crouches: on the bluff's crest, on the side of it toward them)
+  let best: V3 = [BLUFF[0], BLUFF[1], 0];
+  let bh = -1e9;
+  for (let j = 0; j < 60; j++) {
+    const x = BLUFF[0] + (hash(j, 1, 1701) - 0.5) * 120;
+    const y = BLUFF[1] + (hash(j, 2, 1701) - 0.5) * 120;
+    const h = land.height(x, y) - Math.hypot(x - at.q[0], y - at.q[1]) * 0.08;
+    if (h > bh) {
+      bh = h;
+      best = [x, y, 0];
+    }
   }
-  // A CULTIST crouched among the boulders on the lip, looking down at the road: his cowl and shoulders over the rocks, his
-  // eyes two slashes of pink in its dark; his dagger up by his shoulder, a glint running along its blade (art/cast.ts)
+  const me: V3 = [best[0], best[1], land.exact(best[0], best[1])];
+  const to = unit([at.q[0] - me[0], at.q[1] - me[1], 0]);
+  const sideV: V3 = [to[1], -to[0], 0];
+  const cx = me[0] - to[0] * 2.3 + sideV[0] * 1.2;
+  const cy = me[1] - to[1] * 2.3 + sideV[1] * 1.2;
+  if (still()) land.focus(me[0], me[1], 100);
+  const lookV = unit([at.q[0] - cx, at.q[1] - cy, 0]);
+  const cam: LandCam = { pos: [cx, cy, Math.max(land.exact(cx, cy), me[2]) + 1.25], yaw: Math.atan2(-lookV[0], lookV[1]) + 0.3, pitch: -0.1, F: W * 1.15, cx: W * 0.5, hy: H * 0.4 };
+  paintValley(p, t, cam, { wagons: [{ s: s0 - 16, seed: 0, driver: true }], smithAt: s0 });
   const f = new Figure();
-  const cam = { look: unit([0.1, 1, 0.22]), up: [0, 0, 1] as V3, scale: 6.2 * k, ox: W * 0.52, oy: H * 0.78, persp: 60 };
-  const r3 = Cast.place(f, [1.5, 3.5, -2.5], 0.15, () => {
+  const r3 = Cast.place(f, [0, 0, 0], Math.atan2(to[0], -to[1]) + 0.2, () => {
     const c = Cast.cultist(f, {
       pelvis: [0, 0.6, 5.2],
       lean: 0.7,
@@ -1978,35 +2068,18 @@ export function paintGlint(p: Px, t: number): void {
     }, { hand: 0, to: [-2.3, -2.4, 19] }, null, 2);
     return c.tip;
   });
-  // the boulders on the lip, before him and about him, sculpted with him: rough, split, leaning on each other
-  const rk = f.stuff({ tones: [INK, '#16122a', '#221b38', '#33284c', '#4a3a60', '#6a5272'], crease: 0.9 });
-  for (const [x, y, w, d, h, a, tl, rl] of [
-    [-9.5, -6, 13, 9, 12, 0.4, 0.2, -0.3], [6.5, -5, 8, 6, 8.5, 0.35, 0.15, 0.28], [-1, -9, 5, 4, 4, -0.5, -0.25, 0.2],
-    [15, -1, 9, 7, 6, -0.7, 0.3, -0.2], [-22, 2, 8, 7, 7, 0.1, -0.1, 0.25], [24, 4, 12, 9, 11, 0.8, -0.2, 0.1],
-  ] as const) {
-    // (each a weathered stone: lumpy masses grown together, then a face or two split flat off it)
-    f.egg(rk, [x, y, h * 0.42 - 2], [w * 0.55, d * 0.55, h * 0.62], axes(a, tl, rl), 1.2);
-    f.egg(rk, [x + w * 0.25, y - 0.6, h * 0.5 - 2], [w * 0.38, d * 0.45, h * 0.45], axes(a + 0.9, -tl, rl), 1.4);
-    f.egg(rk, [x - w * 0.3, y + 0.4, h * 0.3 - 2], [w * 0.36, d * 0.42, h * 0.4], axes(a - 0.7, tl, -rl), 1.4);
-    // (split faces: planes cut off it at the top, the side toward us, the other side)
-    for (const [ca, ct, cr, sh] of [[a + 0.4, 0.75 + tl, rl, 0.42], [a - 1.2, -0.9, 0.3, 0.45], [a + 2.0, 1.2, -0.4, 0.5]] as const) {
-      const cut = axes(ca, ct, cr);
-      const ext = Math.max(w, h) * 0.55;
-      f.block(rk, add3([x, y, h * 0.42 - 2], scale3(cut[2], ext * sh + 2.8)), [w * 1.2, w * 1.2, 2.8], 0, cut, 0.25, true);
-    }
-  }
-  if (still()) f.draw(p, cam, { from: unit([0.8, -0.3, 0.5]), hard: 1, fill: [-0.3, -1, 0.2], fillK: 0.25, rim: '#8a6a7a', rimFrom: [1, -0.5] });
+  const fc = figCam(cam, me, 0.1);
+  if (still()) f.draw(p, fc, { from: unit([0.53, 1, 0.4]), hard: 1, fill: [-0.6, -0.6, 0.4], fillK: 0.3, rim: '#f0a070', rimFrom: [0.6, -1] });
   // (the glint: down the blade of his dagger, a spark of the last light at its point)
   if (!moving()) return;
-  const tip = seen(cam, r3.at(r3.r ?? [0, 0, 0]));
+  const tip = seen(fc, r3.at(r3.r ?? [0, 0, 0]));
+  const k = W / 153;
   const g = Math.round((2 + blink * 4) * k);
   for (let d = -g; d <= g; d++) {
     const c = Math.abs(d) < 2 ? '#ffffff' : '#e8d8ff';
     p.set(Math.round(tip[0]) + d, Math.round(tip[1]), c);
     p.set(Math.round(tip[0]), Math.round(tip[1]) + d, c);
   }
-  void r;
-
 }
 
 // =============================================================================================
@@ -2120,6 +2193,17 @@ const AMBUSH_POSES = {
       torch: { hand: torchHand, to: torchHand === 0 ? [-1.9, -2.2, 13] : [1.9, -2.2, 13] },
     };
   },
+  /** Struck: flung back, his arms thrown wide, his dagger flying from his hand, his feet going from under him. */
+  reel: {
+    hip: [0, 0.6, 5.0], chest: [0, 1.5, 7.3], head: [0, 2.4, 8.8],
+    sh: [[-1.15, 1.4, 7.8], [1.15, 1.4, 7.8]],
+    el: [[-2.3, 1.3, 8.6], [2.2, 0.8, 7.1]],
+    ha: [[-3.1, 0.6, 9.9], [3.0, -0.2, 6.3]],
+    kn: [[-0.5, -0.9, 2.9], [0.5, 0.7, 2.7]],
+    ft: [[-0.5, -1.2, 0.5], [0.5, 1.5, 0.3]],
+    hem: [0, 1.0, 3.0],
+    dagger: { hand: 1, to: [4.0, -0.6, 5.2] },
+  } as CultPose,
   leap: {
     hip: [0, 0.4, 5.6], chest: [0, -1.4, 7.4], head: [0, -2.4, 8.7],
     sh: [[-1.15, -1.3, 8.0], [1.15, -1.3, 8.0]],
@@ -2262,22 +2346,23 @@ function paintSmoke(p: Px, x: number, y: number, w: number, h: number, drift: nu
 }
 
 /** A torch's flame at (x, y), `s` its size: a tongue licking up, white-gold at its heart, and the sparks off it. */
+/** A torch's flame at (x, y), nine `s` high: a few ragged tongues licking up off the torch's head, white at their roots,
+ * the tallest torn at its tip, flickering; a spark or two going up off it. */
 function paintFlame(p: Px, x: number, y: number, s: number, t: number, seed: number): void {
-  const l = layerOf(p);
-  const sway = Math.sin(t * 7 + seed) * 0.25 * s;
-  l.poly(loop([[x - 3 * s, y + 2 * s], [x - 3.5 * s, y - 1 * s], [x - 1.5 * s + sway, y - 5 * s], [x + sway * 2, y - 9 * s], [x + 1.6 * s + sway, y - 4.5 * s], [x + 3.4 * s, y - 1 * s], [x + 2.8 * s, y + 2 * s]], 4, [3]), '#e8601c');
-  l.each((px, py) => {
-    const g = glow(px, py, x, y - 0.5 * s, 4.2 * s);
-    return g > 0.45 ? '#fff3c0' : g > 0.2 ? '#ffc040' : g > 0.06 ? '#ff8a2a' : undefined;
-  });
-  over(p, l, INK);
-  for (let j = 0; j < 4; j++) {
+  const h = 9 * s;
+  if (h < 5) {
+    // (far off, a point or two of flame)
+    p.set(Math.round(x), Math.round(y), '#ffc040').set(Math.round(x), Math.round(y) - 1, h > 3 ? '#ff8a2a' : '#ffc040');
+    return;
+  }
+  const base: Pt[] = [[x - 1.1 * s, y + 0.3 * s], [x + 0.2 * s, y + 0.6 * s], [x + 1.2 * s, y + 0.2 * s], [x - 0.3 * s, y - 0.2 * s]];
+  paintFlames(p, base, h * 0.8, Math.sin(t * 3.1 + seed) * 0.15 - 0.05, t, seed + 700);
+  for (let j = 0; j < 3; j++) {
     const a = hash(j, seed, 961) * 1.2 - 0.6;
     const r = (6 + hash(j, seed, 962) * 8 + ((t * 9 + j * 3) % 6)) * s;
     p.set(Math.round(x + Math.sin(a) * r * 0.5), Math.round(y - 6 * s - r), j % 2 ? '#ffc040' : '#ff8a2a');
   }
 }
-
 
 /**
  * A cultist far off, running (art/cast.ts, sculpted, seen square on): his feet at (x, y), `sc` pixels to his unit, at the
@@ -2369,14 +2454,15 @@ export function paintAmbush(p: Px, t: number): void {
   for (const [sx, sy, fw, j] of mob) {
     const sc = (cam.F * 0.1) / fw;
     const tp = miniCultist(p, sx, sy, sc, T0(t) * 8 + j * 1.7, j % 3 !== 1, down + (hash(j, 3, 993) - 0.5) * 0.9);
-    if (tp) flames.push([tp[0], tp[1], sc * 1.6]);
+    // (a torch's flame half a metre high: its painter's flame is nine of its measures high)
+    if (tp) flames.push([tp[0], tp[1], sc * 0.55]);
   }
   front(p, 'ambush.mob');
   if (moving()) {
     behind(p, 'ambush.mob', (q) => {
       flames.forEach(([x, y, sz], j) => paintFlame(q, x, y, sz, t, j));
       // THE SMOKE rolling up off the last wagon, leaning back up the hill, lit from under by the fire
-      paintSmoke(q, boom[0] + 6 * k, boom[1] - 14 * k, 26 * k, 210 * k, -0.45, t, 1003, 1);
+      paintSmoke(q, boom[0] + 6 * k, boom[1] - 14 * k, 24 * k, 110 * k, -1.3, t, 1003, 1);
     });
   }
   // THE LAST WAGON, its canvas burnt through and afire round where the bomb struck it
@@ -2440,7 +2526,7 @@ export function paintAmbush(p: Px, t: number): void {
         knees: [[0, -1, -0.4], [0, -1, 0.35]],
       }, { hand: 0, to: [-1.2, -3.5, 19.8] }, null, 2);
     }, OLD);
-    const pos = ground(-5.6, 0.6, 0.8);
+    const pos = ground(-4.2, 3.4, 1.1);
     draws.push({ f, at: pos, torch: null });
   }
   for (const dw of draws) {
@@ -2450,7 +2536,31 @@ export function paintAmbush(p: Px, t: number): void {
     if (still()) dw.f.draw(p, fc, { cel: COMIC, at: dw.torch ?? toFire, hard: 1, fill: unit(toFire), fillK: 0.4, rim: '#ffb060', rimFrom: [1, 0.3] });
     if (dw.torch && moving()) {
       const ts = seen(fc, dw.torch);
-      paintFlame(p, ts[0], ts[1], fc.scale / 9, t, Math.round(fc.scale));
+      shine(p, ts[0], ts[1] - fc.scale, fc.scale * 4 * flick, '#ff8a2a', 2, 0.2);
+      paintFlame(p, ts[0], ts[1], fc.scale * 0.3, t, Math.round(fc.scale));
+    }
+  }
+  // YOUR HERO AND YOUR WORDSMITH on the road between us and the wagon, turned to meet them: the hero's sword wound up over
+  // his head; the wordsmith's palm up, a rune alight over it, the friend's cyan against all their fire
+  {
+    const kAt = ground(-5.6, 0.9);
+    const kyaw = Math.atan2(up[0] - d[0] * 0.15, -(up[1] - d[1] * 0.15));
+    const kcam = figCam(cam, kAt, 0.175);
+    const cy0 = Math.cos(kyaw);
+    const sy0 = Math.sin(kyaw);
+    const lk = kcam.look;
+    const lookL: V3 = [lk[0] * cy0 + lk[1] * sy0, -lk[0] * sy0 + lk[1] * cy0, lk[2]];
+    if (still()) runHero(p, kcam, kyaw, lookL, Math.sin(T0(t) * 3.1), false);
+    const sAt = ground(-3.6, -1.6);
+    const syaw = Math.atan2(up[0] + d[0] * 0.3, -(up[1] + d[1] * 0.3));
+    const sf = wordsmithFigure('palm', undefined, [0, 0, 0], syaw);
+    const scam = figCam(cam, sAt, 0.175);
+    if (still()) sf.draw(p, scam, { cel: COMIC, at: [9, -6, 9], hard: 1, fill: [-0.4, -1, 0.4], fillK: 0.4, rim: '#ffb060', rimFrom: [1, -0.3] });
+    if (moving()) {
+      const palm = seen(scam, turnZ([1.2, -2.3, 8.55], syaw));
+      const pulse = 0.85 + 0.15 * Math.sin(t * 3.7);
+      shine(p, palm[0], palm[1], scam.scale * 2.4 * pulse, CYANS[2], 2, 0.25);
+      shine(p, palm[0], palm[1], scam.scale * 0.8 * pulse, CYANS[0], 2, 0.6);
     }
   }
   // the words
@@ -2671,10 +2781,11 @@ export function paintRun(p: Px, t: number): void {
   const H = p.h;
   const flick = 0.85 + 0.15 * Math.sin(t * 9.1);
   const land = theLand();
-  // WHERE: the last of the road, up the ledge cut in the crag's cliff to the prison's gate; the cliff going up over it to
-  // the prison's walls, falling away under it to the peak's shoulder far below. The lead wagon already in under the gate's
-  // arch; the last wagon, burning, at the gallop up the ledge after it; your hero at the rear, turned on them; the cult
-  // after them up the ledge. We hang out in the air off the cliff, behind them, looking along the ledge at them
+  // WHERE: the last of the road, the terrace along the crag's top under the prison's wall, to its gate; the wall and its
+  // towers going up over it, the drop falling away beside it to the peak far below. The lead wagon turning in at the gate;
+  // the last wagon, burning, at the gallop along the terrace after it; your hero at the rear, turned on the cult at their
+  // heels, his stroke going through the first of them. We are on the terrace below him, low, the first of them between us,
+  // looking up past him to the gate; the camera going on up from the stroke to the wall and the gatehouse over them
   const pp = prisonPlace();
   const sG = land.index.near(pp.gate[0], pp.gate[1])?.s ?? land.road[land.road.length - 1].s;
   const onLedge = (s: number): { q: V3; d: V3; out: V3 } => {
@@ -2682,27 +2793,38 @@ export function paintRun(p: Px, t: number): void {
     const out = unit([r.q[0] - PEAK[0], r.q[1] - PEAK[1], 0]);
     return { q: r.q, d: [r.dir[0], r.dir[1], 0], out };
   };
-  const H0 = onLedge(sG - 40);
+  const H0 = onLedge(sG - 24);
   const heroAt: V3 = H0.q;
   const dH = H0.d;
-  // (we are on the road just below him, on its outer side over the drop, low, looking up the road past him to the gate)
-  // (we hang out in the air off the ledge, behind them and above them, looking up the road past them to the gate)
-  const cpos: V3 = [heroAt[0] + H0.out[0] * 7 - dH[0] * 8, heroAt[1] + H0.out[1] * 7 - dH[1] * 8, heroAt[2] + 4.5];
+  // (we hang in the air off the terrace's edge, beside them, a little below the road: the cliff under us, the wall over
+  // them, the gate up the road)
+  const cpos: V3 = [heroAt[0] + H0.out[0] * 6.6 - dH[0] * 2.6, heroAt[1] + H0.out[1] * 6.6 - dH[1] * 2.6, heroAt[2] + 0.9];
+  // (him turned down the road on them, and a little toward us)
+  const fH = unit([-dH[0] * Math.cos(0.55) + H0.out[0] * Math.sin(0.55), -dH[1] * Math.cos(0.55) + H0.out[1] * Math.sin(0.55), 0]);
+  const yaw = Math.atan2(fH[0], -fH[1]);
+  const cyw = Math.cos(yaw);
+  const syw = Math.sin(yaw);
+  const local = (x: number, y: number): V3 => [heroAt[0] + x * cyw - y * syw, heroAt[1] + x * syw + y * cyw, heroAt[2]];
+  // (where his blade's end comes, in his own measure (runHero's), and in metres: the first of them is there, struck)
+  const M = OLD * 0.175;
+  const foeAt = local(6.2 * M + 0.05, -14.06 * M - 0.25);
   if (still()) land.focus(heroAt[0], heroAt[1], 120);
-  const aimAt: V3 = [heroAt[0] * 0.75 + pp.gate[0] * 0.25, heroAt[1] * 0.75 + pp.gate[1] * 0.25, 0];
+  const aimAt: V3 = [heroAt[0] + dH[0] * 2.5, heroAt[1] + dH[1] * 2.5, 0];
   const lookC = unit([aimAt[0] - cpos[0], aimAt[1] - cpos[1], 0]);
-  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lookC[0], lookC[1]), pitch: -0.1, F: W * 0.42, cx: W * 0.5, hy: H * 0.42 };
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lookC[0], lookC[1]), pitch: 0.22, F: W * 0.62, cx: W * 0.5, hy: H * 0.6 };
   // (the burning wagon: sculpted (sculptWagon), a fifth of a metre a unit, its horse at the gallop; where it burns)
-  const Wg = onLedge(sG - 23);
+  const Wg = onLedge(sG - 10);
   const wyaw = Math.atan2(Wg.d[1], Wg.d[0]);
   const wcam = figCam(cam, Wg.q, 0.2);
   const BURN: V3 = [-3.5, -1.5, 11.2];
   const blaze = seen(wcam, turnZ(BURN, wyaw));
   const k = wcam.scale / 10.5;
-  paintValley(p, t, cam, { lights: [{ at: [Wg.q[0], Wg.q[1], Wg.q[2] + 2.5], color: '#ff8a2a', reach: 30, k: 0.8 }], prisonClose: true });
-  // THE LEAD WAGON going in under the gate's arch, its lantern swinging
+  // (the fire's light on the stones near it; the torches of the cult, behind us, on the terrace round us)
+  const back = local(0, -9);
+  paintValley(p, t, cam, { lights: [{ at: [Wg.q[0], Wg.q[1], Wg.q[2] + 2.5], color: '#ff8a2a', reach: 16, k: 0.7 }, { at: [back[0], back[1], back[2] + 2.4], color: '#e8601c', reach: 11, k: 0.45 }], prisonClose: true });
+  // THE LEAD WAGON turning in at the gate, under its arch, its lantern swinging
   {
-    const L = onLedge(sG + 3);
+    const L = onLedge(sG + 2);
     const lf = new Figure();
     const lw = sculptWagon(lf, [0, 0, 0], Math.atan2(L.d[1], L.d[0]), { roll: T0(t) * 4, lampSide: -1 });
     const lcam = figCam(cam, L.q, 0.2);
@@ -2713,34 +2835,7 @@ export function paintRun(p: Px, t: number): void {
     }
   }
   front(p, 'run.gate');
-  // THE CULT at their heels, up the ledge behind (sculpted, miniCultist, at their true size)
-  const flames: [number, number, number][] = [];
-  const pursuers: [number, number, number, number][] = [];
-  for (let j = 0; j < 12; j++) {
-    const P = onLedge(sG - 46 - j * 2.2 - hash(j, 1, 1307) * 2);
-    const side = (hash(j, 2, 1307) - 0.5) * 4;
-    const q: V3 = [P.q[0] + P.out[0] * side, P.q[1] + P.out[1] * side, P.q[2]];
-    const [sx, sy, fw] = seenAt(cam, q);
-    if (fw < 3) continue;
-    pursuers.push([sx, sy, fw, j]);
-  }
-  pursuers.sort((a, b) => b[2] - a[2]);
-  const fwdC: V3 = [-Math.sin(cam.yaw), Math.cos(cam.yaw), 0];
-  const rgtC: V3 = [Math.cos(cam.yaw), Math.sin(cam.yaw), 0];
-  const upLedge = Math.atan2(dH[0] * rgtC[0] + dH[1] * rgtC[1], -(dH[0] * fwdC[0] + dH[1] * fwdC[1]));
-  for (const [sx, sy, fw, j] of pursuers) {
-    const sc = (cam.F * 0.1) / fw;
-    const tp = miniCultist(p, sx, sy, sc, T0(t) * 9 + j * 1.9, j % 2 === 0, upLedge + (hash(j, 4, 1307) - 0.5) * 0.4);
-    if (tp) flames.push([tp[0], tp[1], sc * 1.6]);
-  }
-  front(p, 'run.mob');
-  if (moving()) {
-    behind(p, 'run.mob', (q) => {
-      flames.forEach(([x, y, sc], j) => paintFlame(q, x, y, sc, t, j + 40));
-      paintSmoke(q, blaze[0] - 10 * k, blaze[1] - 10 * k, 34 * k, 140 * k, -2.0, t, 1311, 1);
-    });
-  }
-  // THE LAST WAGON, burning, its horse at the gallop; smoke and sparks streaming back off it
+  // THE LAST WAGON, burning, its horse at the gallop along the terrace; smoke and sparks streaming back off it
   {
     const f = new Figure();
     const wl = sculptWagon(f, [0, 0, 0], wyaw, { roll: -T0(t) * 7, horse: { ph: T0(t) * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: BURN, lampSide: -1, driver: 'armourer' });
@@ -2753,6 +2848,7 @@ export function paintRun(p: Px, t: number): void {
       }
       // (a body of fire over the back half of its cover, licking up and streaming back: many tongues close together, the
       // tallest over where it caught; its light on everything near)
+      paintSmoke(p, blaze[0] - 10 * k, blaze[1] - 10 * k, 34 * k, 140 * k, -2.0, t, 1311, 1);
       shine(p, blaze[0], blaze[1], 70 * k * flick, '#ff8a2a', 2, 0.18);
       const along: Pt[] = [];
       for (let j = 0; j < 30; j++) {
@@ -2768,17 +2864,9 @@ export function paintRun(p: Px, t: number): void {
       }
     });
   }
-  // THE PURSUERS nearest, sculpted: one struck, reeling back; one behind him, his dagger out
-  {
-    const f = new Figure();
-    const P = onLedge(sG - 43.5);
-    sculptCultist(f, [0, 0, 0], Math.atan2(dH[0], -dH[1]), AMBUSH_POSES.run(0.6, T0(t) * 9, 1), 1);
-    if (still()) f.draw(p, figCam(cam, P.q, 0.175), { cel: COMIC, at: [8, -4, 8], hard: 1, fill: [0.6, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [1, -0.2] });
-  }
   const STRUCK = 1.3;
   const since = t - STRUCK;
   const kcam = figCam(cam, heroAt, 0.175);
-  const yaw = Math.atan2(-dH[0], dH[1]);
   const look = kcam.look;
   const flap = Math.sin(T0(t) * 3.1);
   // (the camera's line, as he is built: the flat of the blade turned to it)
@@ -2829,17 +2917,52 @@ export function paintRun(p: Px, t: number): void {
   };
   posed(p, 'run.arc', 2, 1, since < 0 ? -1 : since < 0.09 ? 0 : 1, (q, i) => arcOf(q, i === 0), since < 0.09 ? 1 : 1 - (since - 0.09) / 0.6);
   posed(p, 'run.hero', 2, 1, since < 0 ? 0 : 1, (q, i) => hero(q, i === 1));
-  // (where the blade's end meets them, a burst of cyan as it strikes: a few frames)
-  if (moving() && PASS === 'live' && since >= 0 && since < 0.35) {
+  // THE FIRST OF THEM, between us and him, where his blade comes: lunging in at him, then struck, flung back; and two more
+  // of them at his heels either side of us, their torches up (sculpted at their true size, a man's height)
+  const toHero = (q: V3): number => Math.atan2(heroAt[0] - q[0], -(heroAt[1] - q[1]));
+  const sideA = local(-1.4, -2.4);
+  const sideB = local(2.0, -3.3);
+  const torches: [number, number, number][] = [];
+  const near = (q: Px, i: number): void => {
+    const f = new Figure();
+    sculptCultist(f, [0, 0, 0], toHero(foeAt), i === 0 ? AMBUSH_POSES.run(0.7, 1.2, 1) : AMBUSH_POSES.reel, 1);
+    f.draw(q, figCam(cam, foeAt, 0.175), { cel: COMIC, at: [6, -2, 9], hard: 1, fill: [0.6, -1, 0.3], fillK: 0.3, rim: i === 0 ? '#ffb060' : CYANS[1], rimFrom: [0, -1] });
+    for (const [j, at] of [sideA, sideB].entries()) {
+      const g = new Figure();
+      const fc = figCam(cam, at, 0.175);
+      const r = sculptCultist(g, [0, 0, 0], toHero(at) + (j ? 0.25 : -0.25), AMBUSH_POSES.run(0.55, 2.1 + j * 2.6, j === 0 ? 1 : 0), 1);
+      g.draw(q, fc, { cel: COMIC, at: [6, -2, 9], hard: 1, fill: [0.6, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [j ? -1 : 1, -0.5] });
+      if (i === 0 && r.torch) torches.push([...seen(fc, r.torch), fc.scale]);
+    }
+  };
+  posed(p, 'run.near', 2, 1, since < 0 ? 0 : 1, near);
+  if (moving() && torches.length === 0) {
+    // (where their torches burn, worked out again for the moving paint: the figures are not painted then)
+    for (const [j, at] of [sideA, sideB].entries()) {
+      const r = sculptCultist(new Figure(), [0, 0, 0], toHero(at) + (j ? 0.25 : -0.25), AMBUSH_POSES.run(0.55, 2.1 + j * 2.6, j === 0 ? 1 : 0), 1);
+      const fc = figCam(cam, at, 0.175);
+      if (r.torch) torches.push([...seen(fc, r.torch), fc.scale]);
+    }
+  }
+  if (moving()) {
+    for (const [j, [x, y, sc]] of torches.entries()) {
+      shine(p, x, y - sc, sc * 4 * flick, '#ff8a2a', 2, 0.2);
+      paintFlame(p, x, y, sc * 0.3, t, j + 40);
+    }
+  }
+  // (where the blade's end meets him, a burst of cyan as it strikes: white hot, then the friend's cyan, sparks flung out)
+  if (moving() && PASS === 'live' && since >= 0 && since < 0.45) {
     const placed = Cast.place(new Figure(), [0, 0, 0], yaw, () => undefined, OLD);
     const tip = seen(kcam, placed.at(tipL));
-    const u = since / 0.35;
+    const u = since / 0.45;
     const k = kcam.scale / 18.4;
-    shine(p, tip[0], tip[1], (20 + 30 * u) * k, CYANS[0], 2, 0.5 * (1 - u));
-    for (let j = 0; j < 10; j++) {
+    shine(p, tip[0], tip[1], (30 + 50 * u) * k, u < 0.2 ? '#ffffff' : CYANS[0], 2, 0.6 * (1 - u));
+    for (let j = 0; j < 18; j++) {
       const a = hash(j, 1, 1321) * Math.PI * 2;
-      const r = (6 + u * 40 * (0.5 + hash(j, 2, 1321))) * k;
-      p.set(Math.round(tip[0] + Math.cos(a) * r), Math.round(tip[1] + Math.sin(a) * r), j % 2 ? CYANS[0] : '#ffffff');
+      const r = (6 + u * 70 * (0.5 + hash(j, 2, 1321))) * k;
+      const x = Math.round(tip[0] + Math.cos(a) * r);
+      const y = Math.round(tip[1] + Math.sin(a) * r + u * u * 20 * k);
+      p.set(x, y, j % 2 ? CYANS[0] : '#ffffff').set(x + 1, y, CYANS[1]);
     }
   }
 }
@@ -2918,45 +3041,59 @@ export function paintThroughGate(p: Px, t: number): void {
   const H = p.h;
   const k = W / 392;
   const flick = 0.85 + 0.15 * Math.sin(t * 9.1);
-  // THE BURNING WAGON going in under the gate: seen from the road below the gatehouse, the prison's wall going away either
-  // side of it along the crag's edge, its two great towers either side of the arch; the wagon going in under it, its horse
-  // and its front gone into the dark of the way through, its back end still out, its canvas afire, the flames licking up
-  // the arch's face and lighting the stone round it
+  // THE BURNING WAGON TURNING IN AT THE GATE: seen from the terrace behind it, low, at its outer edge over the drop; the
+  // terrace running on ahead under the prison's wall to the gatehouse, its two great towers either side of the arch; the
+  // wagon turning in under it, its canvas afire, the fire's light on the stones; beside us the drop, the peak's slopes and
+  // the valley far below in the dusk. Then the wagon gone in, its fire's light still in the way through
   const land = theLand();
   const pp = prisonPlace();
   const sG = land.index.near(pp.gate[0], pp.gate[1])?.s ?? land.road[land.road.length - 1].s;
-  // (we hang out in the air off the crag, before the gate, a little below it, looking in at it)
-  const out: V3 = [-pp.inward[0], -pp.inward[1], 0];
-  const side: V3 = [-out[1], out[0], 0];
-  const cpos: V3 = [pp.gate[0] + out[0] * 22 + side[0] * 5, pp.gate[1] + out[1] * 22 + side[1] * 5, CRAG_TOP + 1];
+  // (we hang in the air out over the drop before the gate, off to the side the terrace comes along, a little under it)
+  const Ig = pp.inward;
+  const Sg: V3 = [-Ig[1], Ig[0], 0];
+  const before = land.along(sG - 30).q;
+  const sideSign = (before[0] - pp.gate[0]) * Sg[0] + (before[1] - pp.gate[1]) * Sg[1] > 0 ? 1 : -1;
+  const cpos: V3 = [pp.gate[0] - Ig[0] * 44 + Sg[0] * sideSign * 16, pp.gate[1] - Ig[1] * 44 + Sg[1] * sideSign * 16, CRAG_TOP - 1];
   if (still()) land.focus(pp.gate[0], pp.gate[1], 120);
-  const look = unit([pp.gate[0] - cpos[0], pp.gate[1] - cpos[1], 0]);
-  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-look[0], look[1]), pitch: 0.1, F: W * 0.34, cx: W * 0.5, hy: H * 0.56 };
-  // (the wagon going in: its front half in under the arch, its back end out; facing in, along the way through)
+  const aim: V3 = [pp.gate[0] - Ig[0] * 4, pp.gate[1] - Ig[1] * 4, 0];
+  const look = unit([aim[0] - cpos[0], aim[1] - cpos[1], 0]);
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-look[0], look[1]), pitch: 0.2, F: W * 0.42, cx: W * 0.5, hy: H * 0.62 };
+  // (the wagon turning in: its front in under the arch, its back end out; facing in, along the way through)
   const I = pp.inward;
-  const wq: V3 = [pp.gate[0] + I[0] * 1.2, pp.gate[1] + I[1] * 1.2, CRAG_TOP];
-  const wyaw = Math.atan2(I[1], I[0]);
+  const wq: V3 = [pp.gate[0] - I[0] * 3.2, pp.gate[1] - I[1] * 3.2, CRAG_TOP];
+  const wyaw = Math.atan2(I[1], I[0]) - 0.25;
   const wcam = figCam(cam, wq, 0.2);
   const fire3: V3 = turnZ([-6, 0, 12], wyaw);
   const blaze = seen(wcam, fire3);
-  paintValley(p, t, cam, { lights: [{ at: [wq[0], wq[1], wq[2] + 3], color: '#ff8a2a', reach: 26, k: 0.9 }], prisonClose: true });
-  const wf = new Figure();
-  sculptWagon(wf, [0, 0, 0], wyaw, { roll: -T0(t) * 7, horse: { ph: T0(t) * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-6, 0, 11], driver: 'armourer' });
-  if (still()) wf.draw(p, wcam, { at: add3(fire3, [0, -4, 1]), hard: 1, fill: [-0.3, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
-  // (the fire's light over the stone round the arch, and the fire off the wagon's canvas licking up the arch's face)
+  const gone = t >= 2.4;
+  paintValley(p, t, cam, { lights: [{ at: [wq[0], wq[1], wq[2] + 3], color: '#ff8a2a', reach: 18, k: 0.8 }], prisonClose: true });
+  front(p, 'gate.wagon');
+  posed(p, 'gate.wagon', 1, 0, gone ? -1 : 0, (q) => {
+    const wf = new Figure();
+    sculptWagon(wf, [0, 0, 0], wyaw, { roll: -T0(t) * 7, horse: { ph: T0(t) * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-6, 0, 11], driver: 'armourer' });
+    wf.draw(q, wcam, { at: add3(fire3, [0, -4, 1]), hard: 1, fill: [-0.3, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
+  });
+  // (the fire's light over the stone round the arch, and the fire off the wagon's canvas licking up the arch's face; once
+  // it is in, only its light in the way through, dying)
   if (moving()) {
     const sz = wcam.scale / 15;
-    shine(p, blaze[0], blaze[1], 60 * sz * flick, '#ff8a2a', 2, 0.2);
-    const along: Pt[] = [];
-    for (let j = 0; j < 16; j++) {
-      const a2 = 0.3 + hash(j, 1, 1410) * 2.5;
-      along.push(seen(wcam, turnZ([-8.2 + hash(j, 2, 1410) * 5, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.6], wyaw)));
-    }
-    paintFlames(p, along, 26 * sz, -0.25, t, 1411);
-    for (let j = 0; j < 24; j++) {
-      const x = blaze[0] + (hash(j, 1, 1407) - 0.5) * 70 * sz;
-      const y = blaze[1] - ((hash(j, 2, 1407) * 50 + t * 30 + j * 7) % 60) * sz;
-      p.set(Math.round(x), Math.round(y), j % 3 ? '#ffc040' : '#fff3c0');
+    if (!gone) {
+      shine(p, blaze[0], blaze[1], 60 * sz * flick, '#ff8a2a', 2, 0.2);
+      const along: Pt[] = [];
+      for (let j = 0; j < 16; j++) {
+        const a2 = 0.3 + hash(j, 1, 1410) * 2.5;
+        along.push(seen(wcam, turnZ([-8.2 + hash(j, 2, 1410) * 5, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.6], wyaw)));
+      }
+      paintFlames(p, along, 26 * sz, -0.25, t, 1411);
+      for (let j = 0; j < 24; j++) {
+        const x = blaze[0] + (hash(j, 1, 1407) - 0.5) * 70 * sz;
+        const y = blaze[1] - ((hash(j, 2, 1407) * 50 + t * 30 + j * 7) % 60) * sz;
+        p.set(Math.round(x), Math.round(y), j % 3 ? '#ffc040' : '#fff3c0');
+      }
+    } else {
+      const inq = seen(figCam(cam, [pp.gate[0] + I[0] * 3, pp.gate[1] + I[1] * 3, CRAG_TOP + 2.5], 1), [0, 0, 0]);
+      const fade = clamp01(1 - (t - 2.4) / 4);
+      behind(p, 'gate.wagon', (q) => shine(q, inq[0], inq[1], 40 * sz * flick * (0.4 + 0.6 * fade), '#ff8a2a', 2, 0.25 * fade + 0.05));
     }
   }
   caption(p, 'Through the gate...', Math.round(6 * k), Math.round(6 * k), 120);
@@ -3076,17 +3213,19 @@ export function paintGap(p: Px, t: number): void {
   front(p, 'gap.hand');
   // THE HAND through it: a bony forearm, the claws hooked at us
   const f = new Figure();
-  const bone = f.stuff({ tones: [INK, '#2e2638', '#5e5268', '#968aa0', '#cabed0', '#f0e8f0'], crease: 0.5 });
+  const bone = f.stuff({ tones: [INK, '#1a1424', '#30283e', '#4c4258', '#6e6278', '#948698'], crease: 0.7, hatch: 3 });
   const robe = f.stuff({ tones: [INK, '#16101e', '#241a30', '#3e2e4e', '#544066', '#76587e'], crease: 0.9 });
   const reach = Math.sin(T0(t) * 2.2) * 0.2;
   // (his arm forced in through the crack from his side, slantwise: the ragged sleeve fallen back to the elbow, the bony
   // forearm bare from it, the hand hooked round the edge of the near door, its claws at us)
-  f.rod(robe, [-0.15, 3.4, 6.5], [-0.05, 1.1, 6.35], 0.3, 0.27, 0.2);
-  for (const [dx, dz] of [[-0.22, -0.25], [0.05, -0.32], [0.24, -0.12], [0.18, 0.22]] as const) f.rod(robe, [-0.05, 1.1, 6.35], [dx, 0.75, 6.35 + dz], 0.12, 0.03, 0.08);
-  const wrist: V3 = [0.42, -1.0 - reach, 5.95];
-  forearm(f, bone, [-0.05, 1.1, 6.3], wrist, 0.2, [1, 0, 0]);
-  hand(f, bone, frameAt(wrist, unit([0.7, -0.62, -0.2]), [0, 0.25, 1]), 0.95, 'claw');
-  if (still()) f.draw(p, { look: unit([0.1, 1, 0.25]), up: [0, 0, 1], scale: 27 * k, ox: gx, oy: S(0, 206)[1] }, { cel: COMIC, at: [1, 3, 7], hard: 1, fill: [-0.4, -1, 0.5], fillK: 0.6, rim: '#ff8a2a', rimFrom: [0, -1] });
+  // (out of the crack, round the edge of the near door and onto its face: the sleeve's rags caught in the crack, the bony
+  // forearm bare out of it, the long hand spread flat on the oak, its claws hooked into the wood)
+  f.rod(robe, [-0.1, 3.4, 6.6], [-0.05, 0.9, 6.4], 0.3, 0.27, 0.2);
+  for (const [dx, dz] of [[-0.22, -0.25], [0.05, -0.32], [0.24, -0.12], [0.18, 0.22]] as const) f.rod(robe, [-0.05, 0.9, 6.4], [dx, 0.55, 6.4 + dz], 0.12, 0.03, 0.08);
+  const wrist: V3 = [0.62 + reach * 0.3, -0.42, 6.15];
+  forearm(f, bone, [-0.05, 0.9, 6.35], wrist, 0.2, [0, 0, 1]);
+  hand(f, bone, frameAt(wrist, unit([1, 0.12, -0.3]), [0, -1, 0.15]), 1.2, 'claw');
+  if (still()) f.draw(p, { look: unit([-0.32, 1, 0.08]), up: [0, 0, 1], scale: 27 * k, ox: gx, oy: S(0, 205)[1] }, { cel: COMIC, at: [-0.3, 2.5, 7.2], hard: 1, fill: [-0.4, -1, 0.5], fillK: 0.35, rim: '#ff8a2a', rimFrom: [-1, -0.3] });
 }
 
 /**
@@ -3164,33 +3303,34 @@ export function paintBar(p: Px, t: number): void {
   }
   // the armourer's great hand under its left end, palm up against it, his bare forearm up from his rolled sleeve; your
   // hero's plum glove under its right, his steel vambrace, the mail at his elbow (art/anatomy.ts: hands of a man's measure)
-  const zb = 1.0 + heave * 5 - 0.55;
-  const plum = f.stuff({ tones: [INK, '#24102a', '#3a1c40', '#6e3a5c', '#a8607a', '#c88aa0'], crease: 0.5 });
-  const wA: V3 = [-3.1, -1.55, zb - 0.7];
-  hand(f, skin, frameAt(wA, unit([0.1, 0.55, 0.85]), [0, -0.85, 0.5]), 0.95, 'grip');
-  forearm(f, skin, [-3.5, -1.9, -2.6], wA, 0.5, [-1, 0, 0]);
-  for (let i = 0; i < 7; i++) {
-    const an = (i / 7) * Math.PI * 2;
-    f.egg(shirt, add3([-3.55, -2.0, -2.9], [Math.cos(an) * 0.55, Math.sin(an) * 0.45, (i % 2) * 0.08]), [0.24, 0.24, 0.2], axes(), 0.15);
-  }
-  f.rod(shirt, [-3.55, -2.0, -3.0], [-3.6, -2.1, -4.6], 0.62, 0.66, 0.3);
-  const wK: V3 = [3.1, -1.55, zb - 0.68];
-  hand(f, plum, frameAt(wK, unit([-0.1, 0.55, 0.85]), [0, -0.85, 0.5]), 0.85, 'grip');
-  forearm(f, steel, [3.45, -1.9, -2.6], wK, 0.5, [1, 0, 0]);
-  // (the vambrace's plate edges, and the red of his tabard's sleeve-less shoulder far below: his, not theirs)
-  for (const u of [0.25, 0.7]) {
-    const c = lerp3([3.45, -1.9, -2.6], wK, u);
-    const ring: V3[] = [];
-    for (let i = 0; i <= 10; i++) {
-      const an = (i / 10) * Math.PI * 2;
-      ring.push(add3(c, [Math.cos(an) * 0.42, Math.sin(an) * 0.42, 0]));
-    }
-    f.line(ring, '#22204e', 1);
-  }
-  f.egg(steel, [3.5, -1.95, -2.6], [0.5, 0.5, 0.45], axes(), 0.1);
-  f.rod(mail, [3.5, -1.95, -2.8], [3.6, -2.1, -4.6], 0.5, 0.55, 0.3);
+  // THE TWO OF THEM UNDER IT, seen from behind and below: the armourer at its left end, your hero at its right, their arms
+  // up over their heads and their hands under the bar, heaving it up to the brackets; their weight thrown up into it, on
+  // their toes at the last (art/cast.ts, at their true size, a tenth of a metre a unit; their backs to us, facing the doors)
+  const zb = 1.0 + heave * 5 - 0.62;
+  const up = heave * 6;
+  const pose = (dx: number, rise: number) => ({
+    pelvis: [0, 0.3, 9.3 + rise] as V3,
+    lean: -0.08,
+    nod: -0.35,
+    hands: [[-1.05 + dx, -1.0, zb + 20.75 - up * 0.2], [1.05 + dx, -1.0, zb + 20.75 - up * 0.2]] as [V3, V3],
+    elbows: [[-1, 0.3, 0.1], [1, 0.3, 0.1]] as [V3, V3],
+    palms: [[0, 0, 1], [0, 0, 1]] as [V3, V3],
+    fingers: [[0, -1, 0.1], [0, -1, 0.1]] as [V3, V3],
+    feet: [[-1.5, 0.5, 0.75 + rise * 0.25], [1.5, -0.8, 0.75 + rise * 0.25]] as [V3, V3],
+    knees: [[-0.3, -1, 0.2], [0.3, -1, 0.2]] as [V3, V3],
+  });
+  Cast.place(f, [-3.2, -2.1, -20.3 + up * 0.2], Math.PI, () => {
+    Cast.armourer(f, pose(0, up * 0.3), ['flat', 'flat']);
+  });
+  Cast.place(f, [3.2, -2.1, -20.3 + up * 0.2], Math.PI, () => {
+    Cast.knight(f, pose(0, up * 0.3), null, 0, ['flat', 'flat']);
+  });
+  void skin;
+  void steel;
+  void shirt;
+  void mail;
   void by;
-  f.draw(p, { look: unit([0.1, 1, 0.12]), up: [0, 0, 1], scale: 17 * k, ox: S(96, 0)[0], oy: S(0, 74)[1] }, { cel: COMIC, at: [-6, -7, 7], hard: 1, fill: [0.4, -1, 0.3], fillK: 0.5, rim: '#ffb060', rimFrom: [-1, -0.4] });
+  f.draw(p, { look: unit([0.06, 1, 0.42]), up: [0, 0, 1], scale: 7.2 * k, ox: S(96, 0)[0], oy: S(0, 30)[1] }, { cel: COMIC, at: [-6, -7, 7], hard: 1, fill: [0.4, -1, 0.3], fillK: 0.5, rim: '#ffb060', rimFrom: [-1, -0.4] });
   });
 }
 
@@ -3338,51 +3478,85 @@ export function paintBarred(p: Px, t: number): void {
 export function paintDark(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
-  const S = (x: number, y: number): Pt => [(x / 392) * W, (y / 75) * H];
   const k = W / 392;
-  const far = S(360, 52);
-  const pulse = 0.7 + 0.3 * Math.sin(t * 2.3);
-  const cy = (x: number, y: number): number => glow(x, y, far[0], far[1], W * 0.22) * pulse;
+  const pulse = 0.8 + 0.2 * Math.sin(t * 2.3);
+  // THE WAY DOWN under the prison, seen from its top: a passage cut down through the rock, walled in laid stone, its vault
+  // round over it, its stairs going down and down away from us into the dark; dark but where a light is: the hall's lantern
+  // behind us, warm, on its first steps; and far down it his staff's cyan on the stones round him, and him, small, his back
+  // to us, going on down (sculpted: the passage in metres; him as on page 3, oldSmithFigure, a tenth of a metre a unit)
+  const d = unit([0, 1, -0.3]);
+  const upP: V3 = unit([0, 0.3, 1]);
+  const D = 4;
+  const look = unit([0, 1, -0.24]);
+  const eye: V3 = scale3(look, -D);
+  const top = sub3(sub3(eye, scale3(upP, 1.55)), d);
+  const at = (u: number): V3 => add3(top, scale3(d, u));
+  const L = 48;
+  const smith = add3(at(22), [0.25, 0, 0]);
+  const staff: V3 = add3(smith, [0.35, 0.15, 2.2]);
+  const lamp: V3 = add3(eye, [0.6, -1.5, 0.9]);
+  const COLD = ['#06050c', '#0c0b18', '#121424', '#16202e', '#1a3038', '#1e4650', '#2a6a74', '#4294a0', '#7ae0e6'];
+  const WARM = ['#06050c', '#0e0b16', '#1a121c', '#2a1a20', '#3e2420', '#5a3424', '#7a4a2c', '#9a663a'];
+  const f = new Figure();
+  const stone = f.stuff({
+    tones: [INK, '#07060e', '#0b0a16', '#0f1420'],
+    crease: 0.3,
+    paint: (q, n) => {
+      const tc = sub3(staff, q);
+      const dc = Math.hypot(tc[0], tc[1], tc[2]);
+      const tw = sub3(lamp, q);
+      const dw = Math.hypot(tw[0], tw[1], tw[2]);
+      const c = (0.3 + 0.7 * Math.max(0, dt3(n, tc) / dc)) * Math.exp(-dc / 8) * 1.7 + 0.1;
+      const w = (0.3 + 0.7 * Math.max(0, dt3(n, tw) / dw)) * Math.exp(-dw / 6) * 1.2;
+      const rel = sub3(q, top);
+      const along = dt3(rel, d);
+      const hgt = dt3(rel, upP);
+      let joint = false;
+      let own = 0;
+      let lip = 0;
+      if (dt3(n, upP) > 0.6) {
+        // (the stairs: a step every third of a metre down, each its own stone, the edge of each worn and catching the light)
+        const st = along / 0.34;
+        const fs = st - Math.floor(st);
+        joint = fs < 0.12;
+        lip = fs > 0.86 ? 0.12 : 0;
+        own = hash(Math.floor(st), Math.floor(q[0] / 0.7 + 9), 1801) - 0.5;
+      } else {
+        // (the walls and the vault: stones in courses, each its own length and shade)
+        const row = Math.floor((hgt + 6) / 0.42 + (dt3(n, upP) < -0.2 ? q[0] * 1.6 : 0));
+        const fr = (hgt + 6) / 0.42 - Math.floor((hgt + 6) / 0.42);
+        const sl = 0.6 + hash(row, 1, 1802) * 0.5;
+        const sa = along / sl + hash(row, 2, 1802) * 5;
+        joint = fr < 0.09 || sa - Math.floor(sa) < 0.06 / sl;
+        own = hash(Math.floor(sa), row, 1803) - 0.5;
+      }
+      const v = Math.max(c, w);
+      const ramp = c >= w ? COLD : WARM;
+      const kk = Math.round(v * (ramp.length - 1) * (joint ? 0.45 : 1) + (joint ? 0 : own * 0.9 + lip * (ramp.length - 1)));
+      return ramp[Math.max(0, Math.min(ramp.length - 1, kk))];
+    },
+  });
+  const mid = at(L / 2);
+  const AXP: readonly [V3, V3, V3] = [[1, 0, 0], d, upP];
+  f.block(stone, add3(mid, scale3(upP, 1.6)), [3.5, L / 2 + 1, 3.6], 0, AXP, 0);
+  f.block(stone, add3(mid, scale3(upP, 1.1)), [1.35, L / 2 + 4, 1.1], 0.02, AXP, 0, true);
+  f.rod(stone, add3(at(-4), scale3(upP, 2.2)), add3(at(L + 4), scale3(upP, 2.2)), 1.35, 1.35, 0, true);
+  const cam = { look, up: [0, 0, 1] as V3, scale: (W * 0.78) / D, ox: W * 0.5, oy: H * 0.42, persp: D };
   if (still()) {
-  p.rect(0, 0, W, H, '#05040a');
-  // A PASSAGE going down away from us under the prison, arch after arch, each further and smaller, toward the one light far
-  // down in it; the steps going down its floor; all of it dark but where his light touches
-  for (let j = 7; j >= 0; j--) {
-    const u = j / 7;
-    const sc = 1 - u * 0.86;
-    const cx = S(300 + u * 60, 0)[0];
-    const top = S(0, 6 + u * 38)[1];
-    const bot = S(0, 76 - u * 20)[1];
-    const half = 60 * k * sc;
-    const a = layerOf(p);
-    // (each arch a band of stone round its opening, lit only where his light reaches it, fading off into the dark)
-    const outer: Pt[] = loop([[cx - half * 1.25, bot + 2], [cx - half * 1.25, top + (bot - top) * 0.3], [cx, top - (bot - top) * 0.2], [cx + half * 1.25, top + (bot - top) * 0.3], [cx + half * 1.25, bot + 2]], 4, [0, 4]);
-    const hole: Pt[] = loop([[cx - half, bot + 2], [cx - half, top + (bot - top) * 0.35], [cx, top], [cx + half, top + (bot - top) * 0.35], [cx + half, bot + 2]], 4, [0, 4]);
-    a.poly(outer, '#0c0a14');
-    a.each((x, y) => {
-      if (inside(hole, x + 0.5, y + 0.5)) return '#00000000';
-      const l = cy(x, y) * 2.2;
-      return l > 0.55 ? '#1a4a50' : l > 0.3 ? '#123a40' : l > 0.12 && dot(x, y, (l - 0.12) / 0.18, 2) ? '#0e2a30' : '#0c0a14';
-    });
-    over(p, a, j === 0 ? INK : null);
+    p.rect(0, 0, W, H, '#040309');
+    f.draw(p, cam, { at: staff, hard: 1, fill: [0, -1, 0.3], fillK: 0.1 }, false);
   }
-  for (let j = 0; j < 10; j++) {
-    const u = j / 9;
-    const y = S(0, 74 - u * 20)[1];
-    const x0 = S(244 + u * 108, 0)[0];
-    const x1 = S(360, 0)[0] + (1 - u) * 56 * k;
-    for (let x = Math.round(x0); x < x1; x++) p.set(x, Math.round(y), dot(x, y, clamp01(cy(x, y) * 2.5), 2) ? '#123a40' : '#0c0a14');
-  }
-  // HIM, far down, small, his back to us, going down the steps; his staff up, and its light: a speck of the friend's cyan,
-  // its soft glow round it (oldSmithFigure, sculpted)
-  }
-  const fig = oldSmithFigure(Math.PI, 0, unit([0.1, 0.4, 1]), false, 19.2);
-  const cam = { look: unit([0, 1, -0.12]), up: [0, 0, 1] as V3, scale: 0.8 * k, ox: far[0] - 2 * k, oy: far[1] + 9 * k };
-  if (still()) fig.f.draw(p, cam, { at: fig.head, hard: 1, fill: [0, -1, 0.3], fillK: 0.2, rim: CYANS[2], rimFrom: [0, -1] });
-  const hs = seen(cam, fig.head);
+  // HIM, far down, his back to us, going down the steps; his staff up, burning
+  const fig = oldSmithFigure(Math.PI + 0.1, 0, unit([0.1, 0.5, 1]), false, 19.2);
+  const fcam = { ...cam, scale: cam.scale * 0.1, persp: D * 10, shift: scale3(smith, 10) as V3 };
+  if (still()) fig.f.draw(p, fcam, { at: scale3(staff, 10), hard: 1, fill: [0, -1, 0.3], fillK: 0.15, rim: CYANS[2], rimFrom: [0.3, -1] });
+  const hs = seen(fcam, fig.head);
   if (moving()) {
-  shine(p, hs[0], hs[1], 30 * k * pulse, CYANS[2], 2, 0.3);
-  p.set(Math.round(hs[0]), Math.round(hs[1]), CYANS[0]).set(Math.round(hs[0]) + 1, Math.round(hs[1]), CYANS[1]).set(Math.round(hs[0]), Math.round(hs[1]) - 1, CYANS[1]);
+    shine(p, hs[0], hs[1], 13 * k * pulse, CYANS[2], 2, 0.22);
+    shine(p, hs[0], hs[1], 4 * k * pulse, CYANS[0], 2, 0.6);
+    p.set(Math.round(hs[0]), Math.round(hs[1]), '#ffffff').set(Math.round(hs[0]) + 1, Math.round(hs[1]), CYANS[0]).set(Math.round(hs[0]), Math.round(hs[1]) - 1, CYANS[0]);
+    const ls = seen(cam, lamp);
+    void ls;
   }
   caption(p, 'The old wordsmith had gone on ahead... down into the dark.', Math.round(6 * k), Math.round(6 * k), 104);
 }
@@ -3520,11 +3694,13 @@ export const SCENES: readonly Scene[] = [
   // THE ROAD UP: rising from the wagons on the road to the prison on its crag; the lantern swinging on the wagon, close;
   // the old wordsmith far ahead with his light
   {
-    big: 'p1b1', zoom: 1.25, lead: 2.6, into: 'dissolve',
-    pan: [[0, 0.1, 1], [1, 0.75, 0.15]],
+    // (up from the wagons to the prison first; then, in the foot of the sky, the closer shots one after the other, clear of
+    // the wagons, the peak and the prison)
+    big: 'p1b1', zoom: 1.25, lead: 5.4, into: 'dissolve',
+    pan: [[0, 0.1, 1], [0.42, 0.8, 0], [1, 0.84, 0]],
     insets: [
-      { box: 'p1b2', x: 20, y: 180, scale: 1.25, from: 'left' },
-      { box: 'p1b3', x: 572, y: 20, scale: 1.25, from: 'right' },
+      { box: 'p1b2', x: 16, y: 120, scale: 1.25, from: 'left' },
+      { box: 'p1b3', x: 16, y: 120, scale: 1.25, from: 'left', replaces: 'p1b2' },
     ],
   },
   // THE CARAVAN, close: the wagons rolling up the road; the company, one by one
@@ -3551,7 +3727,7 @@ export const SCENES: readonly Scene[] = [
   // THE AMBUSH: a flash, the bomb; down from the cult pouring over the ridge to the last wagon burning
   { big: 'p4b1', zoom: 1.08, lead: 5.6, into: 'flash', pan: [[0, 0.5, 0], [0.8, 0.5, 1], [1, 0.5, 1]], insets: [] },
   // THE RUN FOR THE GATE: cut to it; your hero's stroke, then on to the gate
-  { big: 'p5b1', zoom: 1.08, lead: 6.4, into: 'cut', pan: [[0, 0.1, 0.5], [0.3, 0.1, 0.5], [1, 0.9, 0.5]], insets: [] },
+  { big: 'run', zoom: 1.04, lead: 6.4, into: 'cut', pan: [[0, 0.5, 1], [0.34, 0.5, 1], [1, 0.5, 0]], insets: [] },
   // THROUGH THE GATE: across the gatehouse to the burning wagon going in; the doors pushed shut from either side, the hand
   // through the gap, the bar heaved up
   {
@@ -3565,20 +3741,22 @@ export const SCENES: readonly Scene[] = [
     ],
   },
   // BARRED: cut, the bar home; down from the bar to the company against the doors; the dark, over the doors above them
-  {
-    big: 'p8b1', zoom: 1.1, lead: 3.0, into: 'cut',
-    pan: [[0, 0.5, 0], [1, 0.5, 1]],
-    insets: [{ box: 'p8b2', x: 322, y: 20, scale: 1.25, from: 'top' }],
-  },
+  { big: 'p8b1', zoom: 1.1, lead: 4.6, into: 'cut', pan: [[0, 0.5, 0], [0.75, 0.5, 0.85], [1, 0.5, 0.85]], insets: [] },
+  // THE WAY DOWN: the old wordsmith's light far down in the dark under the prison; the end
+  { big: 'dark', zoom: 1.1, lead: 6.0, into: 'dissolve', pan: [[0, 0.3, 0.2], [1, 0.6, 0.6]], insets: [] },
 ];
 
 /** A box by its name ('p3b2'): its def, and its rectangle on its page. */
 const NAMED: Record<string, BoxDef> = {
   caravan: { x: 0, y: 0, w: 1, h: 1, paint: paintCaravan },
   pointing: { x: 0, y: 0, w: 1, h: 1, paint: paintPointing },
+  // (the run: taller than the screen, for the camera to go up from the stroke to the gate)
+  run: { x: 0, y: 0, w: 1, h: 1.75, paint: paintRun, jolt: 1.3 },
+  // (the way down, the last shot: the screen's own shape)
+  dark: { x: 0, y: 0, w: 1, h: 1, paint: paintDark, say: 'The old wordsmith had gone on ahead... down into the dark.' },
 };
 export function boxNamed(id: string): { b: BoxDef; r: { x: number; y: number; w: number; h: number } } {
-  if (NAMED[id]) return { b: NAMED[id], r: { x: 0, y: 0, w: SCREEN_W, h: SCREEN_H } };
+  if (NAMED[id]) return { b: NAMED[id], r: { x: 0, y: 0, w: SCREEN_W * NAMED[id].w, h: Math.round(SCREEN_H * NAMED[id].h) } };
   const pi = Number(id.slice(1, id.indexOf('b'))) - 1;
   const bi = Number(id.slice(id.indexOf('b') + 1)) - 1;
   const b = PAGES[pi][bi];

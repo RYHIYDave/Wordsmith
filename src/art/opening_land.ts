@@ -208,6 +208,8 @@ export interface RoadPoint {
 
 /** How wide the road is, from its middle to its edge. */
 export const ROAD_HALF = 3;
+/** How far out from the crag's edge the road runs along its top, on the terrace built out under the wall to the gate. */
+export const TERRACE = 9.5;
 
 function buildRoad(): RoadPoint[] {
   // THE APPROACH across the foothills, smoothed through its keys, a point every two metres; its height the land's under
@@ -289,32 +291,36 @@ function buildRoad(): RoadPoint[] {
       pts.push(onFace(fa + (ta - fa) * u, za + (zb - za) * u));
     }
   }
-  // THE LAST: up the crag's cliff to the gate, on ledges cut back and forth across its face, steep as a stair
+  // THE LAST: up the crag's cliff to the gate, on a ledge cut into the cliff, winding once round the crag and a little more,
+  // climbing steadily as a wagon can (a metre in six), to come back round over where it began and in at the gate
   const ledgeFrom = pts.length;
   {
     const last = pts[pts.length - 1];
-    let th = Math.atan2(last[1] - PEAK[1], last[0] - PEAK[0]);
-    let z = last[2];
-    const legs = [face + 0.25, face + 0.85, face + 0.35, face + 0.8];
-    for (let L = 0; L < legs.length; L++) {
-      const target = legs[L];
-      const zTo = z + (CRAG_TOP - z) / (legs.length - L);
-      const n = Math.max(8, Math.round((Math.abs(target - th) * (CRAG_R + 20)) / 2));
-      const th0 = th;
-      const z0 = z;
-      for (let j = 1; j <= n; j++) {
-        const u = j / n;
-        const a = th0 + (target - th0) * u;
-        const zz = z0 + (zTo - z0) * u;
-        // (just out from the cliff, where the cliff stands at that height)
-        const r = cragEdge(a) + Math.max(0, (CRAG_TOP - zz) / 4.2) + 1.5;
-        pts.push([PEAK[0] + Math.cos(a) * r, PEAK[1] + Math.sin(a) * r, zz]);
-      }
-      th = target;
-      z = zTo;
+    const th0 = Math.atan2(last[1] - PEAK[1], last[0] - PEAK[0]);
+    const z0 = last[2];
+    let target = face + 0.8;
+    while (target < th0 + Math.PI * 2) target += Math.PI * 2;
+    // (how far out from the crag's edge its cliff is at a height: four metres up for one out at first, then steeper)
+    const cliffOut = (z: number): number => (z >= CRAG_TOP - 84 ? (CRAG_TOP - z) / 4.2 : 20 + (CRAG_TOP - 84 - z) / 6.7);
+    // (the last fifty metres level, along a terrace built out from the crag's top under its wall, past the gatehouse's
+    // towers, to the gate; then a turn in at the gate)
+    const level = 50 / (CRAG_R + 10);
+    const n = Math.round(((target - th0) * (CRAG_R + 30)) / 2);
+    for (let j = 1; j <= n; j++) {
+      const u = j / n;
+      const a = th0 + (target - th0) * u;
+      const zz = z0 + (CRAG_TOP - z0) * clamp01((a - th0) / (target - level - th0));
+      // (cut a metre into the cliff where it stands at that height; near the top, out on the terrace)
+      // (the crag's edge as the land has it, its angle taken round to the half turn either way)
+      const r = cragEdge(Math.atan2(Math.sin(a), Math.cos(a))) + Math.max(TERRACE, cliffOut(zz) - 1);
+      pts.push([PEAK[0] + Math.cos(a) * r, PEAK[1] + Math.sin(a) * r, zz]);
     }
     // (and in through the gate)
-    const a = th;
+    const a = Math.atan2(Math.sin(target), Math.cos(target));
+    for (let j = 1; j <= 2; j++) {
+      const r = cragEdge(a) + TERRACE - j * 3;
+      pts.push([PEAK[0] + Math.cos(a) * r, PEAK[1] + Math.sin(a) * r, CRAG_TOP]);
+    }
     for (let j = 1; j <= 6; j++) {
       const r = cragEdge(a) + 1.5 - j * 4;
       pts.push([PEAK[0] + Math.cos(a) * r, PEAK[1] + Math.sin(a) * r, CRAG_TOP]);
@@ -404,9 +410,13 @@ function carved(x: number, y: number, ri: RoadIndex): number {
   if (out <= 0) return n.z + 0.05 * Math.cos((n.d / ROAD_HALF) * Math.PI * 0.5);
   if (out > 28) return h;
   // (the cut bank rises a metre and a half for every one out, steepening, then gives way to the slope; the wall drops five)
-  const cut = ri.pts[n.i].cut;
+  const rp = ri.pts[n.i];
+  const cut = rp.cut;
   const bank = n.z + out * cut + Math.max(0, out - 8) ** 2 * 0.6;
-  return Math.min(Math.max(h, n.z - out * 5 - Math.max(0, out - 6) ** 2 * 0.6), bank);
+  const z = Math.min(Math.max(h, n.z - out * 5 - Math.max(0, out - 6) ** 2 * 0.6), bank);
+  // (on the crag's ledge and its terrace, the side toward the crag is built up level with it to the cliff: no gap between)
+  if (cut > 2 && out < 14 && Math.hypot(x - PEAK[0], y - PEAK[1]) < Math.hypot(rp.q[0] - PEAK[0], rp.q[1] - PEAK[1]) - ROAD_HALF) return Math.max(z, n.z);
+  return z;
 }
 
 // =============================================================================================
@@ -607,6 +617,7 @@ const RIM = ['#5a3a50', '#8e5a5c', '#c4785e', '#f0a070'];
 const SNOW = ['#2e2a4c', '#4a4270', '#6e6290', '#a08cb0', '#d4b0c4', '#f4d0cc'];
 const DUST = ['#1e1a2e', '#2a2238', '#3c3048', '#54445c', '#6e5a70'];
 const LIP = '#9a7a82';
+const CAP = ['#1e1830', '#2c2240', '#4a3a56', '#6e5868', '#9a7a82'];
 const STONE = ['#0a0814', '#141022', '#1e1830', '#2c2240'];
 const SCRUB = ['#08080f', '#0e0f1a', '#141726', '#1b2032', '#252b40'];
 
@@ -621,8 +632,39 @@ const DUST_RGB = DUST.map(rgb);
 const STONE_RGB = STONE.map(rgb);
 const SCRUB_RGB = SCRUB.map(rgb);
 const LIP_RGB = rgb(LIP);
+const CAP_RGB = CAP.map(rgb);
 const INK_RGB = rgb('#07060d');
 const HAZE_RGB = rgb('#3a2850');
+
+/** A scatter of points over the ground, one in each cell `s` metres across: how far (x, y) is from the nearest, how far
+ * from the next nearest (where the two are nearly equal is the crack between two stones), and the nearest's own number
+ * (0..1); where the nearest is. */
+function cells(x: number, y: number, s: number, seed: number): [number, number, number, number, number] {
+  const gx = Math.floor(x / s);
+  const gy = Math.floor(y / s);
+  let d1 = 1e9;
+  let d2 = 1e9;
+  let id = 0;
+  let cx0 = 0;
+  let cy0 = 0;
+  for (let j = -1; j <= 1; j++) {
+    for (let i = -1; i <= 1; i++) {
+      const cx = gx + i;
+      const cy = gy + j;
+      const px = (cx + 0.1 + 0.8 * hash(cx, cy, seed)) * s;
+      const py = (cy + 0.1 + 0.8 * hash(cx, cy, seed + 1)) * s;
+      const d = Math.hypot(x - px, y - py);
+      if (d < d1) {
+        d2 = d1;
+        d1 = d;
+        id = hash(cx, cy, seed + 2);
+        cx0 = px;
+        cy0 = py;
+      } else if (d < d2) d2 = d;
+    }
+  }
+  return [d1, d2, id, cx0, cy0];
+}
 
 /** A tone of `tones` for a light `v` (0..1) at (x, y): the band it falls in, the next band's dots laid over it near its top. */
 function toned(tones: [number, number, number][], v: number, x: number, y: number): [number, number, number] {
@@ -715,7 +757,8 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
       wx[i] = x;
       wy[i] = y;
       rdist[i] = r ? r.d : 99;
-      if (r && r.d <= ROAD_HALF + 0.15) kd = r.d > ROAD_HALF - 0.45 && zs[i] > r.z - 0.3 ? 2 : 1;
+      // (the lip only on its downhill side, where the wall's cap is; on its uphill side the dust runs into the ditch)
+      if (r && r.d <= ROAD_HALF + 0.15) kd = r.d > ROAD_HALF - 0.45 && zs[i] > r.z - 0.3 && natural(x, y) < r.z - 0.3 ? 2 : 1;
       else if (r && r.d < ROAD_HALF + 2.5 && zs[i] < r.z - 0.4) kd = 3;
       else if (zs[i] > snowLine + fbm(x / 60, y / 60, 451, 2) * 90 && zs[i] < CRAG_TOP - 60 && n[2] > 0.5 + fbm(x / 20, y / 20, 452, 2) * 0.15) kd = 4;
       else if (t < 900 && zs[i] < 420 && n[2] > 0.72) kd = 5;
@@ -742,24 +785,85 @@ export function paintLand(p: Px, c: LandCam, opts: { haze?: number; snowLine?: n
       const right = sx < W - 1 ? depth[i + 1] : t;
       const edge = above > t * 1.12 + 3 || left > t * 1.25 + 5 || right > t * 1.25 + 5;
       const rimRow = sy > 1 && depth[i - 2 * W] > t * 1.12 + 3;
+      // (how big a pixel is there, in metres: close to, the land shows its stones)
+      const px = t / c.F;
       if (kd === 1) {
-        // (the road's dust; the two ruts worn in it by the wheels; a stone here and there)
-        const rut = Math.abs(rdist[i] - 1.1) < 0.28 && t < 300;
-        const v = 0.25 + sky * 0.35 + sun * 0.9 + (noise(wx[i] * 1.5, wy[i] * 1.5, 461) - 0.5) * 0.18 - (rut ? 0.22 : 0);
+        // (the road's dust, patchy, darker where it is churned; the two ruts worn in it by the wheels, wandering a little;
+        // close to, stones and pebbles half sunk in it, each lit on its far side and dark on its near)
+        const rutD = Math.abs(rdist[i] - 1.1 - fbm(wx[i] / 7, wy[i] / 7, 468, 1) * 0.18);
+        const rut = rutD < 0.26 && t < 300;
+        const v = 0.25 + sky * 0.35 + sun * 0.9 + fbm(wx[i] / 3, wy[i] / 3, 466, 2) * 0.09 + (noise(wx[i] * 1.5, wy[i] * 1.5, 461) - 0.5) * 0.12 - (rut ? 0.2 : 0);
         col = toned(DUST_RGB, v, sx, sy);
-        if (t < 120 && hash(Math.floor(wx[i] * 3), Math.floor(wy[i] * 3), 462) > 0.985) col = DUST_RGB[4];
+        if (px < 0.05 && rutD > 0.2) {
+          const [d1, , id, cx0, cy0] = cells(wx[i], wy[i], 0.6, 469);
+          const r = 0.03 + (id - 0.7) * (id - 0.7) * 1.1;
+          if (id > 0.7 && d1 < r && r > px * 1.6) {
+            const tcx = c.pos[0] - cx0;
+            const tcy = c.pos[1] - cy0;
+            const nearSide = ((wx[i] - cx0) * tcx + (wy[i] - cy0) * tcy) / (Math.hypot(tcx, tcy) * r);
+            col = nearSide > 0.35 ? DUST_RGB[0] : nearSide < -0.3 ? DUST_RGB[3] : DUST_RGB[2];
+          } else if (id > 0.7 && d1 < r * 1.35 && r > px * 1.6) {
+            // (its shadow on the dust, on its near side)
+            const tcx = c.pos[0] - cx0;
+            const tcy = c.pos[1] - cy0;
+            if (((wx[i] - cx0) * tcx + (wy[i] - cy0) * tcy) / Math.hypot(tcx, tcy) > 0) col = DUST_RGB[Math.max(0, DUST_RGB.indexOf(col) - 1)] ?? DUST_RGB[0];
+          }
+        }
       }
-      else if (kd === 2) col = LIP_RGB;
+      else if (kd === 2) {
+        // (the wall's cap along the road's edge: from afar a pale line; close to, its stones, rough, with dark joints)
+        if (px < 0.1) {
+          const [d1, d2, id] = cells(wx[i], wy[i], 0.75, 471);
+          col = d2 - d1 < Math.max(0.05, px * 1.3) ? STONE_RGB[0] : toned(CAP_RGB, 0.3 + sky * 0.25 + sun * 0.5 + (id - 0.5) * 0.5 + fbm(wx[i] * 3, wy[i] * 3, 472, 1) * 0.08, sx, sy);
+        } else col = LIP_RGB;
+      }
       else if (kd === 3) {
-        // (the wall's stones in courses, their joints dark)
-        const course = Math.floor(zs[i] * 2.2);
-        const joint = Math.abs((zs[i] * 2.2) % 1) < 0.18 || hash(Math.floor(sx / 3) + course * 7, course, 463) < 0.18;
-        col = joint ? STONE_RGB[0] : toned(STONE_RGB, 0.3 + sky * 0.3 + sun * 0.8, sx, sy);
+        // (the wall's stones in courses, laid by hand: each course its own height, the stones along it their own lengths,
+        // their joints dark)
+        const zc = zs[i] + fbm(wx[i] / 5, wy[i] / 5, 464, 1) * 0.15;
+        const course = Math.floor(zc * 2.2);
+        const [d1, d2, id] = cells(wx[i] + course * 0.37, wy[i] - course * 0.29, 0.55, 463 + (course & 7));
+        const joint = Math.abs(zc * 2.2 - course) < Math.max(0.12, px * 2.2) || d2 - d1 < Math.max(0.05, px * 1.2);
+        col = joint ? STONE_RGB[0] : toned(STONE_RGB, 0.3 + sky * 0.3 + sun * 0.8 + (id - 0.5) * 0.35, sx, sy);
       } else if (kd === 4) col = toned(SNOW_RGB, 0.15 + sky * 0.35 + sun * 1.1, sx, sy);
       else if (kd === 5) col = toned(SCRUB_RGB, 0.15 + sky * 0.45 + sun * 0.7 + (noise(sx / 2, sy / 2, 465) - 0.5) * 0.25, sx, sy);
-      else col = toned(ROCK_RGB, 0.08 + sky * 0.45 + sun * 0.6 + (noise(sx / 4, sy / 3, 467) - 0.5) * 0.1, sx, sy);
+      else if (px < 0.25) {
+        // THE ROCK CLOSE TO: where it stands steep, in its beds, one over another, each a metre or three thick, its lip
+        // standing out over the shadow under it; split down through each bed into blocks by joints, the blocks of one bed
+        // not over those of the next; each block its own tone; where it lies flatter, broken into stones and rubble
+        const near = clamp01((0.25 - px) / 0.12);
+        const steep = clamp01((0.82 - n[2]) / 0.3);
+        // (its beds: each its own thickness, dipping a little and waving; their lips broken, standing out here and not there)
+        const zb = zs[i] + fbm(wx[i] / 14, wy[i] / 14, 501, 2) * 2.6 + wx[i] * 0.035 - wy[i] * 0.02;
+        const b0 = Math.floor(zb / 2.4);
+        const edges = [b0 - 1, b0, b0 + 1, b0 + 2].map((k) => k * 2.4 + (hash(k, 0, 502) - 0.5) * 1.9);
+        let bed = b0;
+        for (let k = 0; k < 3; k++) if (zb >= edges[k] && zb < edges[k + 1]) bed = b0 - 1 + k;
+        const lo = edges[bed - b0 + 1];
+        const hi = edges[bed - b0 + 2];
+        const fbz = (zb - lo) / Math.max(0.3, hi - lo);
+        const along = (n[0] * wy[i] - n[1] * wx[i]) / Math.max(0.2, Math.hypot(n[0], n[1]));
+        const lipOut = noise(along / 3.5, bed * 3.1, 506) > 0.42;
+        // (its joints: great cracks running down through the beds, jogging a little from one to the next; finer ones between)
+        const [d1, d2, id] = cells(wx[i] + bed * 0.35, wy[i] - bed * 0.25, steep > 0.5 ? 4.6 : 1.4, 503);
+        const [e1, e2] = cells(wx[i] - bed * 0.6, wy[i] + bed * 0.8, 1.5, 507 + (bed & 7));
+        const crack = d2 - d1 < Math.max(0.07, px * 1.4) * (1 + steep * 0.6);
+        const fine = steep > 0.4 && e2 - e1 < Math.max(0.03, px * 0.9) && noise(along / 2, zs[i] / 2, 508) > 0.5;
+        const under = steep > 0.4 && lipOut && (zb - lo) < Math.max(0.12, px * 1.8);
+        const lipTop = steep > 0.4 && lipOut && (hi - zb) < Math.max(0.08, px * 1.2);
+        // (its stains: streaks run down it from the lips, darker)
+        const stain = steep > 0.4 ? clamp01((noise(along * 1.1, zs[i] * 0.06, 509) - 0.55) * 3) * (1 - fbz) * 0.12 : 0;
+        let v = 0.08 + sky * 0.45 + sun * 0.6 + (noise(sx / 4, sy / 3, 467) - 0.5) * 0.1;
+        v += ((id - 0.5) * 0.12 + fbm(along * 0.8 + zs[i] * 0.3, zs[i] * 0.9, 505, 3) * 0.1 - stain) * near;
+        col = toned(ROCK_RGB, v + (lipTop ? 0.14 * near : 0), sx, sy);
+        if (near > 0.3 && (crack || under)) col = ROCK_RGB[crack && under ? 0 : 1];
+        else if (near > 0.5 && fine) col = ROCK_RGB[Math.max(1, ROCK_RGB.indexOf(col) - 1)];
+      } else col = toned(ROCK_RGB, 0.08 + sky * 0.45 + sun * 0.6 + (noise(sx / 4, sy / 3, 467) - 0.5) * 0.1, sx, sy);
       // (the sun's rim on what turns to it: the ridges' sun-ward sides, the tops of slopes against what is behind)
-      if (kd !== 1 && kd !== 3 && sun > 0.3) col = toned(RIM_RGB, Math.min(0.5, (sun - 0.3) * 1.1) + (edge || rimRow ? 0.45 : 0), sx, sy);
+      // (close to, only its edges: the rest of a face turned to the sun keeps its stone, warmed)
+      const nearPx = t / c.F < 0.25 && kd !== 4;
+      if (kd !== 1 && kd !== 3 && sun > 0.3 && (!nearPx || edge || rimRow)) col = toned(RIM_RGB, Math.min(0.5, (sun - 0.3) * 1.1) + (edge || rimRow ? 0.45 : 0), sx, sy);
+      else if (kd !== 1 && kd !== 3 && sun > 0.3) col = [col[0] * 0.75 + RIM_RGB[0][0] * 0.25, col[1] * 0.75 + RIM_RGB[0][1] * 0.25, col[2] * 0.75 + RIM_RGB[0][2] * 0.25];
       else if ((edge || rimRow) && sun > 0.12 && kd !== 3) col = RIM_RGB[0];
       if (edge && !(sun > 0.3)) col = t > 2200 ? [col[0] * 0.55, col[1] * 0.55, col[2] * 0.6] : INK_RGB;
       // (a fire's light on what faces it, in bands, near it)

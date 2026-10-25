@@ -513,8 +513,11 @@ export function sculptWagon2(
   const chz = (CTOP - 1.6) / 2;
   f.block(canvas, at([0, 0, cz]), [7.2, CW, chz], CR, AX, 0.4);
   // (its ends flaring out: at each end a short sheet leaning outward, melted into the body)
+  // (standing on the bed's ends, not hanging below them)
+  const ez = (CTOP + Z0 - 0.3) / 2;
+  const ehz = (CTOP - Z0 + 0.3) / 2;
   for (const s of [-1, 1]) {
-    f.block(canvas, at([s * 7.8, 0, cz - 0.15]), [0.85, CW * 1.01, chz], CR * 0.98, fr([s * 0.13, 0, 1], [1, 0, 0]), 0.9);
+    f.block(canvas, at([s * 7.8, 0, ez - 0.15]), [0.85, CW * 1.01, ehz], Math.min(CR * 0.98, ehz * 0.95), fr([s * 0.13, 0, 1], [1, 0, 0]), 0.9);
   }
   // (the sags between the bows: the canvas pressed in, a little, in a broad groove over the top and down each side)
   const arch = (x: number, out: number, k = 22): V3[] => {
@@ -576,7 +579,8 @@ export function sculptWagon2(
       const a = (k / 16) * Math.PI * 2;
       cord.push([ex + m.s * 0.1, Math.cos(a) * (m.r + 0.12), m.z + Math.sin(a) * (m.r + 0.12) * 1.06]);
     }
-    for (let k = 0; k < 16; k++) f.rod(rope, at(cord[k]), at(cord[k + 1]), 0.06, 0.06, 0.03);
+    // (thrown wide open, its drawstring let out and gone slack inside: no cord round it)
+    if (m.r <= 2) for (let k = 0; k < 16; k++) f.rod(rope, at(cord[k]), at(cord[k + 1]), 0.06, 0.06, 0.03);
   }
   // (tied down along its sides: a rope from each bow's foot to a cleat on the bed)
   for (const x of HX) {
@@ -649,14 +653,17 @@ export function sculptWagon2(
   if (w.lampSide) {
     const s = w.lampSide;
     const glass = f.stuff({ tones: ['#7a3a10', '#c8641c', '#ff9a2a', '#ffd060', '#fff2b0'], paint: (_q, nn) => (nn[2] > 0.6 ? '#2a2a34' : '#ffd060') });
-    f.rod(iron, at([8.0, s * 3.15, 5.3]), at([8.3, s * 3.25, 10.8]), 0.13, 0.11, 0.05);
-    f.rod(iron, at([8.3, s * 3.25, 10.8]), at([9.4, s * 3.25, 10.9]), 0.1, 0.1, 0.05);
-    f.rod(iron, at([9.4, s * 3.25, 10.9]), at([9.4, s * 3.25, 10.35]), 0.06, 0.06, 0.02);
-    f.block(glass, at([9.4, s * 3.25, 9.7]), [0.36, 0.36, 0.5], 0.08, AX, 0.05);
-    f.egg(iron, at([9.4, s * 3.25, 10.3]), [0.42, 0.42, 0.16], undefined, 0.05);
-    f.egg(iron, at([9.4, s * 3.25, 9.12]), [0.42, 0.42, 0.1], undefined, 0.05);
-    for (const [u, v] of [[-1, -1], [-1, 1], [1, -1], [1, 1]] as const) f.rod(iron, at([9.4 + u * 0.36, s * 3.25 + v * 0.36, 9.15]), at([9.4 + u * 0.36, s * 3.25 + v * 0.36, 10.25]), 0.05, 0.05, 0.02);
-    lamp = at([9.4, s * 3.25, 9.7]);
+    // (high on a tall crook, out over the horse's rump, above the driver's head: lighting him and the road before them)
+    const X = 10.4;
+    const Z = 11.9;
+    f.rod(iron, at([8.0, s * 3.15, 5.3]), at([8.3, s * 3.25, Z + 1.1]), 0.13, 0.11, 0.05);
+    f.rod(iron, at([8.3, s * 3.25, Z + 1.1]), at([X, s * 3.25, Z + 1.2]), 0.1, 0.1, 0.05);
+    f.rod(iron, at([X, s * 3.25, Z + 1.2]), at([X, s * 3.25, Z + 0.65]), 0.06, 0.06, 0.02);
+    f.block(glass, at([X, s * 3.25, Z]), [0.36, 0.36, 0.5], 0.08, AX, 0.05);
+    f.egg(iron, at([X, s * 3.25, Z + 0.6]), [0.42, 0.42, 0.16], undefined, 0.05);
+    f.egg(iron, at([X, s * 3.25, Z - 0.58]), [0.42, 0.42, 0.1], undefined, 0.05);
+    for (const [u, v] of [[-1, -1], [-1, 1], [1, -1], [1, 1]] as const) f.rod(iron, at([X + u * 0.36, s * 3.25 + v * 0.36, Z - 0.55]), at([X + u * 0.36, s * 3.25 + v * 0.36, Z + 0.55]), 0.05, 0.05, 0.02);
+    lamp = at([X, s * 3.25, Z]);
   }
   return { lamp };
 }

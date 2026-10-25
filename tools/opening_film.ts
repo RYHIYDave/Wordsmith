@@ -37,7 +37,7 @@ const HOLD = 2.6;
 const TAIL = 1.2;
 const SLIDE = 0.3;
 /** How long each way from one scene to the next takes. */
-const INTO = { dissolve: 0.6, flash: 0.5, cut: 0 } as const;
+const INTO = { dissolve: 0.6, flash: 0.8, cut: 0 } as const;
 /** Which way each inset's picture drifts in its frame: from (x0, y0) to (x1, y1), shares of its room to move. */
 const DRIFTS: readonly [number, number, number, number][] = [[0, 0.5, 1, 0.5], [1, 0, 0, 1], [0.5, 1, 0.5, 0], [1, 0.5, 0, 0.5], [0, 0, 1, 1]];
 
@@ -173,10 +173,13 @@ function sceneAt(s: Timed, t: number): Px {
   ox = Math.round(clamp(ox, 0, s.img.w - SW));
   oy = Math.round(clamp(oy, 0, s.img.h - SH));
   const p = liveBox(s.b, s.img, tl).crop(ox, oy, SW, SH);
-  // (the big shot's words: a caption stays where it is on the screen; a balloon goes with its speaker, over his mouth)
+  // (the big shot's words: a caption stays where it is on the screen; a balloon goes with its speaker, over his mouth, and
+  // is gone once the first closer shot comes in: his line is said, and no box is laid over it)
+  const spoken = s.insets.length > 0 && t >= s.insets[0].at;
   if (tl > 0.5) {
     if (s.sc.ownWords !== false) {
       for (const pin of s.pins) {
+        if (pin.tail && spoken) continue;
         if (!pin.tail) {
           drawPin(p, { ...pin, x: clamp(pin.x, 12, SW - 200), y: clamp(pin.y, 12, SH - 40) }, 0, 0);
           continue;
@@ -266,8 +269,8 @@ async function main(): Promise<void> {
           }
         }
       } else {
-        // (a flash: white, then the scene coming up out of it)
-        const v = clamp((t - s.start - 0.08) / (into - 0.08), 0, 1);
+        // (a flash: pure white a moment, then the scene coming up out of it, slowly at first)
+        const v = clamp((t - s.start - 0.2) / (into - 0.2), 0, 1) ** 1.6;
         for (let j = 0; j < frame.d.length; j += 4) {
           frame.d[j] = 255 + (frame.d[j] - 255) * v;
           frame.d[j + 1] = 255 + (frame.d[j + 1] - 255) * v;
