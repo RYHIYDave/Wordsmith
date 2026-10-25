@@ -1452,91 +1452,86 @@ function mysticSitting(): { f: Figure; palm: V3 } {
 export function paintMystic(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
-  const P = grid(W, H);
   const k = W / 192;
   const bob = Math.sin(t * 1.9) * 0.12;
   const bob0 = Math.sin(T0(t) * 1.9) * 0.12;
-  // THE CRYSTAL over his open palm, before him: the light of the box
-  const ms = mysticSitting();
-  const C3: V3 = add3(ms.palm, [0, 0, 1.6 + bob0]);
-  const C3t: V3 = add3(ms.palm, [0, 0, 1.6 + bob]);
-  const cam = { look: unit([0.25, 1, -0.16]), up: [0, 0, 1] as V3, scale: 10.5 * k, ox: P(106, 0)[0], oy: P(0, 176)[1], persp: 60 };
-  const rr = unit(cross(cam.look, cam.up));
-  const dd = unit(cross(cam.look, rr));
-  const onScreen = (q: V3): Pt => seen(cam, q);
-  void rr;
-  void dd;
-  const cr = onScreen(C3);
-  const lit = (x: number, y: number, r = W * 0.75): number => glow(x, y, cr[0], cr[1], r);
-  // THE WAGON'S INSIDE: its canvas over its hoops, the crystal's cold light on it; the mouth of it at the left, the dusk
-  // (in perspective: each further hoop the nearest drawn smaller toward where the wagon's length runs away, its mouth)
-  const hoopPt = (i: number, u: number): Pt => {
-    const sc = [1, 0.7, 0.5, 0.36][i];
-    const a = Math.PI * u;
-    const x0 = 150 - Math.cos(a) * 136;
-    const y0 = 186 - Math.sin(a) * 212;
-    return P(30 + (x0 - 30) * sc, 74 + (y0 - 74) * sc);
-  };
-  if (still()) {
-  const inn = layerOf(p);
-  inn.rect(0, 0, W, H, '#07060d');
-  bands(inn, ['#07060d', '#0c0c18', '#121a26', '#1a2a34', '#28404a'], (x, y) => lit(x, y, W * 0.85) * 1.25 - 0.05);
-  over(p, inn, null);
-  // (the wagon's mouth at the back, at the left: an arch of the canvas, the dusk and the road falling away beyond it)
-  const mouth = layerOf(p);
-  const arch: Pt[] = loop([P(-6, 150), P(-6, 52), P(4, 30), P(18, 22), P(32, 34), P(38, 60), P(38, 150)], 6, [0, 6]);
-  mouth.poly(arch, DUSK[4]);
-  bands(mouth, DUSK, (x, y) => 0.3 + (y / H) * 0.6);
-  mouth.each((x, y) => (y > P(0, 112 + (x / W) * 40)[1] ? (y > P(0, 120 + (x / W) * 40)[1] ? ROAD[1] : ROCK[2]) : undefined));
-  over(p, mouth, INK, 0, 0, 2);
-  stroke(p, loop([P(-6, 56), P(6, 32), P(20, 26), P(34, 38), P(40, 64)], 5), 2, CANVAS[2]);
-  // its hoops: bent wood arching over him, one behind another down the wagon toward its mouth at the left, each further
-  // one smaller and further left; the canvas over them; lit where the crystal reaches
-  for (const i of [3, 2, 1, 0]) {
-    const pts: Pt[] = [];
-    for (let j = 0; j <= 24; j++) pts.push(hoopPt(i, j / 24));
-    const wd = 7 - i * 1.4;
-    over(p, limbSolid(p, pts, wd * k, wd * k, WOOD, [0, -0.4, 0.9], { hard: 1, extra: (x, y) => lit(x, y) * 1.2 - i * 0.12 }), INK);
-  }  // sacks against its side, and his wares: charms hung from the hoop on cords, glinting
-  for (const [x, y, sx, sy, seed] of [[178, 162, 15, 12, 1], [158, 170, 12, 9, 2], [22, 170, 11, 9, 3]] as const) {
-    // (a sack: full and sagging at the foot, narrowing to its neck, tied off, the folds running up into the tie)
-    const pts: Pt[] = [P(x - sx * 0.95, y + sy * 0.7), P(x - sx * 1.05, y), P(x - sx * 0.6, y - sy * 0.75), P(x - sx * 0.18, y - sy * 1.05), P(x - sx * 0.25, y - sy * 1.45), P(x + sx * 0.05, y - sy * 1.6), P(x + sx * 0.3, y - sy * 1.42), P(x + sx * 0.22, y - sy * 1.02), P(x + sx * 0.7, y - sy * 0.65), P(x + sx * 1.05, y + sy * 0.1), P(x + sx * 0.9, y + sy * 0.8)];
-    over(p, solid(p, loop(pts, 3, [4, 5, 6]), ['#0c0a0c', '#1e1814', '#36281e', '#54402c', '#7a5c3c'], [-0.3, -0.6, 0.6], { round: 0.8, hard: 1, extra: (px, py) => lit(px, py) * 1.1 - 0.15 }), INK);
-    stroke(p, [P(x - sx * 0.22, y - sy * 1.05), P(x + sx * 0.22, y - sy * 1.02)], 2, '#1a120c');
-    for (const fx of [-0.5, 0.1, 0.55]) stroke(p, [P(x + fx * sx * 0.3, y - sy * 0.95), P(x + fx * sx, y - sy * 0.1 + seed)], 1, '#1a120c');
+  // THE MYSTIC IN THE WAGON, close: inside the lead wagon of the caravan, rolling up the road; from the front of its bed,
+  // low, looking back down it: the canvas over its bows, dark; him sitting cross-legged on the boards among his sacks, a
+  // charm or two hung from a bow over him; the crystal turning over his open palm, its cold light on him and the canvas
+  // round him; behind him, through the wagon's open back, the road falling away and the dusk (the wagon sculpted, hollow,
+  // a fifth of a metre a unit; him at half that, as on page 2; the land at its true size)
+  const land = theLand();
+  const s0 = (land.index.near(300, 477)?.s ?? 0) + 33;
+  const r = land.along(s0);
+  const wyaw = Math.atan2(r.dir[1], r.dir[0]);
+  const c = Math.cos(wyaw);
+  const sn = Math.sin(wyaw);
+  /** A place in the wagon (its own measure: x to its front, y across, z up) in the figure's. */
+  const WL = (L: V3): V3 => [L[0] * c - L[1] * sn, L[0] * sn + L[1] * c, L[2]];
+  const Z0 = 5.5;
+  const f = new Figure();
+  sculptWagon(f, [0, 0, 0], wyaw, { roll: 0.5, backOpen: true, hollow: true });
+  // HIM, sitting cross-legged on the boards, turned a little toward us; his palm up before him under the crystal
+  const myaw = Math.atan2(c, -sn) + 0.35;
+  const { r: palmL, at: mAt } = Cast.place(f, WL([0.4, -0.5, Z0]), myaw, () => {
+    const b = Cast.mystic(f, {
+      pelvis: [0, 0, 1.9],
+      lean: 0.06,
+      nod: 0.12,
+      turn: -0.3,
+      hands: [[-4.5, -1.3, 6.2], [1.7, -2.6, 2.9]],
+      elbows: [[-1, 0.4, -1], [1, 0.4, -0.3]],
+      palms: [[0.15, -0.55, 0.82], [0, 0, -1]],
+      fingers: [[-0.85, -0.35, 0.25], [0.2, -1, -0.3]],
+      feet: [[0.7, -2.4, 0.7], [-0.7, -2.0, 0.85]],
+      knees: [[-1, -0.6, -0.4], [1, -0.6, -0.4]],
+    }, ['open', 'flat'], { seated: true });
+    const F = b.handFrames[0];
+    return add3(add3(b.wrists[0], scale3(F.z, 0.62)), scale3(F.y, -0.15));
+  }, 0.5);
+  const C3 = mAt(add3(palmL, [0, 0, 1.6 + bob0]));
+  const C3t = mAt(add3(palmL, [0, 0, 1.6 + bob]));
+  // HIS WARES: sacks of burlap against the bed's sides, full and sagging, tied at their necks; a chest
+  const burlap = f.stuff({ tones: [INK, '#16120e', '#2a2018', '#40301e', '#5a4428', '#76603a'], crease: 0.7, hatch: 4 });
+  for (const [x, y, sz, tilt] of [[-3.2, 2.1, 1.0, 0.2], [-1.4, 2.35, 0.8, -0.15], [-4.6, -2.0, 0.95, -0.25], [2.6, 2.2, 0.75, 0.1]] as const) {
+    const q = WL([x, y, Z0 + 1.15 * sz]);
+    f.egg(burlap, q, [1.25 * sz, 1.05 * sz, 1.2 * sz], axes(wyaw + tilt, 0, tilt * 0.4), 0.3);
+    f.egg(burlap, WL([x + 0.1, y - 0.05, Z0 + 0.45 * sz]), [1.35 * sz, 1.15 * sz, 0.55 * sz], axes(wyaw), 0.5);
+    const neck = WL([x + tilt, y, Z0 + 2.35 * sz]);
+    f.egg(burlap, neck, [0.42 * sz, 0.4 * sz, 0.5 * sz], axes(wyaw + tilt, tilt, 0), 0.35);
+    f.rod(burlap, WL([x + tilt * 1.2, y, Z0 + 2.8 * sz]), WL([x + tilt * 1.6, y + 0.15, Z0 + 3.25 * sz]), 0.3 * sz, 0.12 * sz, 0.2);
+    f.line([WL([x + tilt - 0.4 * sz, y - 0.38 * sz, Z0 + 2.2 * sz]), WL([x + tilt + 0.4 * sz, y - 0.38 * sz, Z0 + 2.25 * sz])], '#0c0806', 1);
+    for (const u of [-0.5, 0.1, 0.6]) f.line([WL([x + tilt + u * 0.3 * sz, y - 0.45 * sz, Z0 + 2.0 * sz]), WL([x + u * 1.1 * sz, y - 1.0 * sz, Z0 + 0.9 * sz])], '#120c08', 1);
   }
+  const oak = f.stuff({ tones: OAK, crease: 0.6 });
+  const brass = f.stuff({ tones: [INK, '#3a2a10', '#6a4c18', '#a07a28', '#d0a840', '#f0d070'], shine: 0.4, crease: 0.4 });
+  f.block(oak, WL([-5.6, 0.9, Z0 + 0.75]), [0.9, 1.3, 0.75], 0.12, [WL([1, 0, 0]), WL([0, 1, 0]), [0, 0, 1]], 0.05);
+  f.rod(oak, WL([-5.6, -0.4, Z0 + 1.5]), WL([-5.6, 2.2, Z0 + 1.5]), 0.9, 0.9, 0.05);
+  for (const y of [0.0, 1.8]) f.block(brass, WL([-5.6, y, Z0 + 1.05]), [0.95, 0.08, 0.8], 0.04, [WL([1, 0, 0]), WL([0, 1, 0]), [0, 0, 1]], 0.02);
+  // (charms hung on cords from the bow over him: an amulet of gold round a stone, a bundle of herbs)
+  for (const [x, y, len, kind] of [[0, 1.4, 2.2, 0], [0, -1.1, 1.6, 1], [-3.45, 0.6, 2.6, 0]] as const) {
+    const top = WL([x, y, 11.9 - Math.abs(y) * 0.35]);
+    const end = WL([x, y, 11.9 - Math.abs(y) * 0.35 - len]);
+    f.line([top, end], '#3a3448', 1);
+    if (kind === 0) f.egg(brass, end, [0.32, 0.12, 0.32], axes(wyaw + 0.4), 0.05);
+    else f.rod(burlap, end, add3(end, [0, 0, -0.9]), 0.22, 0.32, 0.1);
   }
-  // (his charms swaying on their cords, and the crystal turning over his palm: what moves)
-  if (moving()) {
-  for (const [u, len, kind] of [[0.3, 30, 0], [0.38, 20, 1], [0.62, 26, 2], [0.7, 16, 0]] as const) {
-    const x = u * 100;
-    const sw = Math.sin(t * 1.4 + x) * 1.5;
-    const top = hoopPt(1, u);
-    const end: Pt = [top[0] + sw * k, top[1] + len * k];
-    stroke(p, [top, end], 1, '#3a3448');
-    const ch = layerOf(p);
-    const [ex, ey] = end;
-    // (his charms: an amulet, a ring of gold round a stone; a little bundle of dried herbs, bound; a carved tag of bone)
-    if (kind === 0) {
-      ch.ellipse(ex, ey + 2.5 * k, 2.6 * k, 2.6 * k, '#b07a18');
-      ch.ellipse(ex, ey + 2.5 * k, 1.4 * k, 1.4 * k, '#2a8a9a');
-      ch.set(Math.round(ex - 0.5 * k), Math.round(ey + 2 * k), '#8ff4ff');
-    } else if (kind === 1) {
-      ch.poly(loop([[ex - 1.5 * k, ey], [ex + 1.5 * k, ey], [ex + 2.5 * k, ey + 6 * k], [ex - 2.5 * k, ey + 6 * k]], 2, [0, 1]), '#4a5a2a');
-      ch.hline(Math.round(ex - 1.5 * k), Math.round(ey + 1.5 * k), Math.round(3 * k), '#8a6a3a');
-    } else {
-      ch.poly([[ex - 1.5 * k, ey], [ex + 1.5 * k, ey], [ex + 1.5 * k, ey + 5 * k], [ex, ey + 6 * k], [ex - 1.5 * k, ey + 5 * k]], '#cfc2a0');
-      ch.vline(Math.round(ex), Math.round(ey + 1.5 * k), Math.round(2.5 * k), '#7a6e58');
-    }
-    over(p, ch, INK);
-  }
-  }
-  // HIM, SCULPTED: seated cross-legged, turned a little to us; a tenth of a metre to a unit, up is z, he faces -y
-  const f = ms.f;
-  if (still()) f.draw(p, cam, { at: C3, hard: 1, fill: [0.75, -0.55, 0.35], fillK: 0.55, rim: '#e8904a', rimFrom: [-1, -0.5] });
+  // THE CAMERA: in the front of the bed, low, behind the driver's bench, looking back down the wagon at him and out of its
+  // open back; the land, and its sky, seen through that
+  const eyeL: V3 = [6.4, 1.0, 9.0];
+  const toL: V3 = [-6, -0.7, 7.6];
+  const eye = WL(eyeL);
+  const tw = WL([toL[0] - eyeL[0], toL[1] - eyeL[1], 0]);
+  const pos: V3 = [r.q[0] + eye[0] * 0.2, r.q[1] + eye[1] * 0.2, r.q[2] + eye[2] * 0.2];
+  const dh = Math.hypot(tw[0], tw[1]);
+  const cam: LandCam = { pos, yaw: Math.atan2(-tw[0] / dh, tw[1] / dh), pitch: Math.atan2(toL[2] - eyeL[2], dh), F: W * 0.5, cx: W * 0.5, hy: H * 0.46 };
+  if (still()) land.focus(pos[0], pos[1], 80);
+  paintValley(p, t, cam, {});
+  const fc = figCam(cam, r.q, 0.2);
+  if (still()) f.draw(p, fc, { at: add3(C3, fc.shift), hard: 1, fill: [0.6, -0.4, 0.5], fillK: 0.12, rim: CYANS[2], rimFrom: [0, -1] });
   // THE CRYSTAL, turning over his palm, and its light
   if (moving()) {
-    const ct = onScreen(C3t);
+    const ct = seen(fc, C3t);
     shine(p, ct[0], ct[1], (40 + Math.sin(t * 2.3) * 4) * k, CYANS[2], 2, 0.16);
     paintCrystal(p, ct[0], ct[1], 5.5 * k, t * 1.2);
   }

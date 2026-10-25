@@ -398,7 +398,7 @@ export function sculptWagon2(
   f: Figure,
   o: V3,
   yaw: number,
-  w: { roll?: number; horse?: { ph: number; gallop: boolean }; lampSide?: 1 | -1; burn?: number; burnAt?: V3; driver?: boolean | 'armourer'; ribs?: boolean; backOpen?: boolean } = {},
+  w: { roll?: number; horse?: { ph: number; gallop: boolean }; lampSide?: 1 | -1; burn?: number; burnAt?: V3; driver?: boolean | 'armourer'; ribs?: boolean; backOpen?: boolean; hollow?: boolean } = {},
 ): { lamp: V3 | null } {
   const c = Math.cos(yaw);
   const sn = Math.sin(yaw);
@@ -485,9 +485,19 @@ export function sculptWagon2(
   const canvas = f.stuff({
     tones: CANVAS,
     crease: 0.25,
-    paint: (q, nn) => {
+    paint: (q, nn, lit) => {
       const l = unrot(sub3(q, o));
       const ln = unrot(nn);
+      // (hollow, seen from within: its inside, under the bows, in the cold light inside it, dark away from it)
+      if (w.hollow && ln[1] * -l[1] + ln[2] * (CTOP - CR - l[2]) > 0.2 && Math.abs(l[0]) < 7.4) {
+        const IN = ['#07060a', '#0c0c13', '#11181f', '#16242b', '#1d343a', '#2a4c50', '#44706e', '#6e9a92'];
+        // (between each two bows the canvas sags: lit in the middle of the bay, darker by the bow it hangs from, a shadow
+        // down the bow's far side; wrinkles running down from the bows)
+        const bay = (((l[0] + 6.9) % 3.45) + 3.45) % 3.45 / 3.45;
+        const sag = Math.sin(bay * Math.PI) * 0.9 - (bay > 0.9 ? 1.2 : 0);
+        const wr = Math.sin(l[0] * 7.3 + Math.sin(l[2] * 2.1) * 1.4) > 0.86 ? -1 : 0;
+        return IN[Math.max(0, Math.min(IN.length - 1, Math.round(lit * lit * 6 + sag + wr)))];
+      }
       // (inside, through a mouth: dark)
       if (Math.abs(l[0]) > 7.3 && ln[0] * l[0] < -0.2) return '#120e0c';
       for (const m of mouths) {
@@ -555,6 +565,14 @@ export function sculptWagon2(
   }
   // (cut level at the bed's top, inside it)
   f.block(canvas, at([0, 0, 2.5]), [9.5, 4.5, Z0 - 0.15 - 2.5 + 0.4], 0.01, AX, 0.05, true);
+  // (hollow, to be seen from within: the canvas a sheet over the bows, the bows bent wood standing under it)
+  if (w.hollow) {
+    f.block(canvas, at([0, 0, cz - 0.05]), [7.25, CW - 0.18, chz - 0.2], CR - 0.18, AX, 0, true);
+    for (const x of HX) {
+      const pts = arch(x, -0.3, 18);
+      for (let j = 0; j < pts.length - 1; j++) f.rod(wood, at(pts[j]), at(pts[j + 1]), 0.13, 0.13, 0.04);
+    }
+  }
   // THE MOUTHS: each end gathered by its drawstring to a puckered round mouth (the front's wider, the driver looking out
   // through it); the folds running in to it; the cord round it
   for (const m of mouths) {
