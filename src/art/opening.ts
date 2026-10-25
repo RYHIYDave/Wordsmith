@@ -272,6 +272,19 @@ function paintPineNear(p: Px, depth: Float32Array, x: number, y: number, h: numb
   }
 }
 
+/** THE VALLEY BEHIND A CLOSE BOX (the land, paintValley): seen from the road `s` metres along it (`off` metres out to its
+ * left), `eye` metres up, looking along it turned `turn` from its way; `F` and `hy` shares of the box's width and height. */
+function valleyBehind(p: Px, t: number, s: number, turn: number, eye: number, F: number, hy: number, pitch = 0, off = 0): void {
+  const land = theLand();
+  const r = land.along(s);
+  const a = Math.atan2(r.dir[1], r.dir[0]) + turn;
+  const x = r.q[0] - r.dir[1] * off;
+  const y = r.q[1] + r.dir[0] * off;
+  land.focus(x, y, 90);
+  const cam: LandCam = { pos: [x, y, land.exact(x, y) + eye], yaw: Math.atan2(-Math.cos(a), Math.sin(a)), pitch, F: p.w * F, cx: p.w * 0.5, hy: p.h * hy };
+  paintValley(p, t, cam, {});
+}
+
 /** THE CARAVAN, CLOSE (scene 2's big shot, a box of its own, not on a page): down by the road as the wagons come by, low,
  * the nearer filling the lower middle of the picture, the other behind it; behind them the foothills and the peak's face
  * going up out of the top of the picture, the road switching back and forth up it; the evening's glow behind the peak. */
@@ -491,8 +504,8 @@ function sculptFortress(f: Figure, close: boolean): V3 {
     const face: V3 = [g[0] - I[0] * 4.6, g[1] - I[1] * 4.6, 0];
     // (its floor the road's, the crag's top)
     const fl = CRAG_TOP;
-    f.block(dark, at([g[0], g[1], fl + 3.6]), [2.5, 5.2, 3.6], 0.05, [S, I, [0, 0, 1]], 0, true);
-    f.rod(dark, at([face[0] - I[0], face[1] - I[1], fl + 7.2]), at([g[0] + I[0] * 5, g[1] + I[1] * 5, fl + 7.2]), 2.5, 2.5, 0, true);
+    f.block(stone, at([g[0], g[1], fl + 3.6]), [2.5, 5.2, 3.6], 0.05, [S, I, [0, 0, 1]], 0, true);
+    f.rod(stone, at([face[0] - I[0], face[1] - I[1], fl + 7.2]), at([g[0] + I[0] * 5, g[1] + I[1] * 5, fl + 7.2]), 2.5, 2.5, 0, true);
     f.block(dark, at([g[0] + I[0] * 1.5, g[1] + I[1] * 1.5, fl + 3.6]), [2.4, 3.6, 3.5], 0.05, [S, I, [0, 0, 1]], 0);
     if (close) for (let m = -5; m <= 5; m += 2.5) f.block(stone, at([g[0] + S[0] * m - I[0] * 4, g[1] + S[1] * m - I[1] * 4, base + 18.6]), [0.6, 0.6, 0.7], 0.05, [S, I, [0, 0, 1]], 0);
   }
@@ -578,7 +591,8 @@ function paintValley(p: Px, t: number, cam: LandCam, v: Valley): Float32Array | 
     const lay = layerOf(p);
     // (lit as the land is: the sun low behind the peak rimming what turns to it; the evening sky's light from up on the left
     // on the faces turned to us)
-    const fd = pf.draw(lay, pc, { from: unit([0.53, 1, 0.3]), hard: 1, fill: unit([-0.7, -0.6, 0.5]), fillK: 0.62, rim: '#f0a070', rimFrom: [1, -0.6] });
+    const close = v.prisonClose ?? false;
+    const fd = pf.draw(lay, pc, { from: unit([0.53, 1, 0.3]), hard: 1, fill: close ? unit([-0.4, -0.9, 0.35]) : unit([-0.7, -0.6, 0.5]), fillK: close ? 0.85 : 0.62, rim: '#f0a070', rimFrom: [1, -0.6] });
     // (its windows lit, a few, here and there in its walls and towers)
     for (let k = 0, lit = 0; k < 4000 && lit < 14; k++) {
       const x = Math.floor(hash(k, 1, 497) * W);
@@ -918,17 +932,8 @@ export function paintLanterns(p: Px, t: number): void {
   const [LX, LY] = lampAt(t);
   if (still()) {
   // THE DUSK behind, top left: the glow low, the slope's dark edge across it
-  const sky = layerOf(p);
-  sky.rect(0, 0, W, H, DUSK[2]);
-  bands(sky, DUSK, (x, y) => 0.25 + (1 - y / (H * 0.6)) * -0.2 + glow(x, y, -W * 0.1, H * 0.55, W * 0.9) * 0.9 + strata(x, y, 1700));
-  over(p, sky, null);
-  const hill = layerOf(p);
-  hill.poly(loop([[-5, H * 0.42], [W * 0.2, H * 0.36], [W * 0.45, H * 0.3], [W + 5, H * 0.22], [W + 5, H + 5], [-5, H + 5]], 8, [3, 4, 5]), '#0e0b1a');
-  bands(hill, ['#08060f', '#0e0b1a', '#171228', '#241a36'], (x, y) => 0.55 - (y - H * 0.35) / H * 1.2 + lamp(x, y, W * 0.5) * 0.8 + (fbm(x / 14, y / 5, 33) - 0.5) * 0.4);
-  hill.each((x, y) => (!hill.has(x, y - 1) ? '#5a3c42' : undefined));
-  paintPine(hill, W * 0.08, H * 0.42, 26, 4);
-  paintPine(hill, W * 0.2, H * 0.38, 18, 5);
-  over(p, hill, null);
+  // (the land behind, across the road: the meadow, the pines, the evening over the foothills)
+  valleyBehind(p, t, 260, Math.PI / 2 + 0.3, 1.5, 0.6, 0.46, 0.04, -6);
   // THE ROAD'S MUD at the bottom, its ruts catching the lamp
   const mud = layerOf(p);
   mud.poly(loop([[-5, H * 0.8], [W * 0.4, H * 0.77], [W + 5, H * 0.74], [W + 5, H + 5], [-5, H + 5]], 8, [2, 3, 4]), MUD[0]);
@@ -1519,21 +1524,8 @@ export function paintStranger(p: Px, t: number): void {
   scam.ox = P(76, 0)[0] - at0[0];
   scam.oy = P(0, 104)[1] - at0[1];
   if (still()) {
-  const sky = layerOf(p);
-  sky.rect(0, 0, W, H, DUSK[2]);
-  bands(sky, DUSK, (x, y) => 0.1 + dusk(x, y, W * 1.05) * 1.05 + strata(x, y, 1702));
-  over(p, sky, null);
-  const far = layerOf(p);
-  far.poly(loop([P(-4, 96), P(26, 88), P(52, 96), P(76, 84), P(120, 94), P(200, 88), P(200, 180), P(-4, 180)], 4, [0, 1, 2, 3, 4, 5, 6, 7]), FAR[0]);
-  bands(far, FAR, (x, y) => 0.2 + dusk(x, y) * 1.1);
-  far.each((x, y) => (!far.has(x, y - 1) ? FAR_RIM : undefined));
-  over(p, far, INK);
-  const rd = layerOf(p);
-  rd.poly(loop([P(-10, 190), P(-10, 150), P(30, 124), P(70, 108), P(96, 102), P(200, 112), P(200, 190)], 6, [0, 6]), ROAD[1]);
-  bands(rd, ROAD, (x, y) => 0.15 + dusk(x, y, W * 0.7) * 1.0 + (fbm(x / 7, y / 3, 1601) - 0.5) * 0.3);
-  // (its ruts, running back down the hill)
-  for (const [x0, x1] of [[0, 62], [30, 86]] as const) stroke(rd, path([P(x0 - 20, 186), P((x0 + x1) / 2 - 6, 140), P(x1, 106)], 6), 1, ROAD[0]);
-  over(p, rd, INK);
+  // (the land behind: the road falling away down the face below the wagon's back, the valley far under it)
+  valleyBehind(p, t, ambushAt() + 900, Math.PI + 0.25, 3.2, 0.5, 0.42, -0.12);
   // THE WAGON'S BACK AND HIM ON IT, SCULPTED, seen from behind it and to his side
   // (the wagon's shadow on the road under it)
   const sh = layerOf(p);
@@ -1700,29 +1692,12 @@ export function paintCompany(p: Px, t: number): void {
   const rr = seen(cam, R3);
   // THE DUSK behind them, the peaks under it, the slope they climb
   if (still()) {
-  const sky = layerOf(p);
-  sky.rect(0, 0, W, H, DUSK[2]);
-  bands(sky, DUSK, (x, y) => 0.08 + glow(x, y, W * 0.15, H * 0.75, W * 1.1) * 1.0 + strata(x, y, 1703));
-  over(p, sky, null);
-  const far = layerOf(p);
-  far.poly(loop([P(-4, 92), P(18, 76), P(34, 86), P(62, 58), P(80, 62), P(97, 34), P(104, 36), P(122, 62), P(146, 48), P(172, 72), P(200, 64), P(200, 180), P(-4, 180)], 6, [0, 5, 6, 11, 12]), '#1a1430');
-  facets(far, ['#16112a', '#1e1836', '#282042', '#342a50', '#46385e'], [-0.8, -0.3, 0.4], { cw: 16, ch: 22, seed: 1705, tilt: [0.2, -0.3], spread: 1.0, cracks: false, extra: (x, y) => glow(x, y, W * 0.1, H * 0.7, W * 0.9) * 0.7 - (y / H) * 0.3 });
-  far.each((x, y) => (!far.has(x, y - 1) && glow(x, y, W * 0.1, H * 0.7, W * 1.1) > 0.08 ? FAR_RIM : undefined));
-  over(p, far, INK);
-  // (the prison on the peak between their heads, where they are going; on the road below it, a point of cyan: the old
-  // wordsmith's staff, far ahead of them)
-  paintFarKeep(p, P(94, 48)[0], P(94, 48)[1], 0.6 * k);
-  const hill = layerOf(p);
-  hill.poly(loop([P(-4, 128), P(60, 118), P(130, 110), P(200, 98), P(200, 180), P(-4, 180)], 6, [3, 4, 5]), '#0e0b1a');
-  bands(hill, ['#08060f', '#0e0b1a', '#171228', '#241a36'], (x, y) => 0.35 + glow(x, y, rr[0], rr[1], W * 0.55) * 0.9 + (fbm(x / 14, y / 5, 33) - 0.5) * 0.4);
-  hill.each((x, y) => (!hill.has(x, y - 1) ? '#5a3c42' : undefined));
-  over(p, hill, null);
+  // (the land behind them: the road they have come up, the foothills and the valley under the evening; we stand on the
+  // road before them, looking back down it at them)
+  valleyBehind(p, t, footOfFace() - 120, Math.PI, 1.3, 0.55, 0.6, 0.02);
   f.draw(p, cam, { cel: COMIC, at: R3, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [-1, -0.3] });
   }
   if (!moving()) return;
-  // (far ahead on the road under the prison, a point of cyan: the old wordsmith's staff, winking)
-  const ahead = P(84, 56);
-  p.set(Math.round(ahead[0]), Math.round(ahead[1]), Math.sin(t * 2.4) > -0.3 ? CYANS[0] : CYANS[1]).set(Math.round(ahead[0]) + 1, Math.round(ahead[1]), CYANS[2]).set(Math.round(ahead[0]), Math.round(ahead[1]) - 1, CYANS[1]);
   shine(p, rr[0], rr[1] - 1, 30 * k * flick, CYANS[2], 0, 0.26);
   // THE RUNE in his palm: a glyph of light, and its glow on the dusk
   for (let j = 0; j < 8; j++) {
@@ -2711,12 +2686,12 @@ export function paintRun(p: Px, t: number): void {
   const heroAt: V3 = H0.q;
   const dH = H0.d;
   // (we are on the road just below him, on its outer side over the drop, low, looking up the road past him to the gate)
-  const back = onLedge(sG - 47.5);
-  const cpos: V3 = [back.q[0] + back.out[0] * 2.4, back.q[1] + back.out[1] * 2.4, back.q[2] + 1.5];
+  // (we hang out in the air off the ledge, behind them and above them, looking up the road past them to the gate)
+  const cpos: V3 = [heroAt[0] + H0.out[0] * 7 - dH[0] * 8, heroAt[1] + H0.out[1] * 7 - dH[1] * 8, heroAt[2] + 4.5];
   if (still()) land.focus(heroAt[0], heroAt[1], 120);
-  const aimAt = onLedge(sG - 6).q;
+  const aimAt: V3 = [heroAt[0] * 0.75 + pp.gate[0] * 0.25, heroAt[1] * 0.75 + pp.gate[1] * 0.25, 0];
   const lookC = unit([aimAt[0] - cpos[0], aimAt[1] - cpos[1], 0]);
-  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lookC[0], lookC[1]) + 0.12, pitch: 0.2, F: W * 0.42, cx: W * 0.5, hy: H * 0.58 };
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lookC[0], lookC[1]), pitch: -0.1, F: W * 0.42, cx: W * 0.5, hy: H * 0.42 };
   // (the burning wagon: sculpted (sculptWagon), a fifth of a metre a unit, its horse at the gallop; where it burns)
   const Wg = onLedge(sG - 23);
   const wyaw = Math.atan2(Wg.d[1], Wg.d[0]);
@@ -2953,16 +2928,18 @@ export function paintThroughGate(p: Px, t: number): void {
   // (we hang out in the air off the crag, before the gate, a little below it, looking in at it)
   const out: V3 = [-pp.inward[0], -pp.inward[1], 0];
   const side: V3 = [-out[1], out[0], 0];
-  const cpos: V3 = [pp.gate[0] + out[0] * 34 + side[0] * 6, pp.gate[1] + out[1] * 34 + side[1] * 6, CRAG_TOP - 3];
+  const cpos: V3 = [pp.gate[0] + out[0] * 22 + side[0] * 5, pp.gate[1] + out[1] * 22 + side[1] * 5, CRAG_TOP + 1];
   if (still()) land.focus(pp.gate[0], pp.gate[1], 120);
   const look = unit([pp.gate[0] - cpos[0], pp.gate[1] - cpos[1], 0]);
-  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-look[0], look[1]), pitch: 0.16, F: W * 0.34, cx: W * 0.5, hy: H * 0.6 };
-  const Wg = land.along(sG - 1.5);
-  const wyaw = Math.atan2(Wg.dir[1], Wg.dir[0]);
-  const wcam = figCam(cam, Wg.q, 0.2);
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-look[0], look[1]), pitch: 0.1, F: W * 0.34, cx: W * 0.5, hy: H * 0.56 };
+  // (the wagon going in: its front half in under the arch, its back end out; facing in, along the way through)
+  const I = pp.inward;
+  const wq: V3 = [pp.gate[0] + I[0] * 1.2, pp.gate[1] + I[1] * 1.2, CRAG_TOP];
+  const wyaw = Math.atan2(I[1], I[0]);
+  const wcam = figCam(cam, wq, 0.2);
   const fire3: V3 = turnZ([-6, 0, 12], wyaw);
   const blaze = seen(wcam, fire3);
-  paintValley(p, t, cam, { lights: [{ at: [Wg.q[0], Wg.q[1], Wg.q[2] + 3], color: '#ff8a2a', reach: 26, k: 0.9 }], prisonClose: true });
+  paintValley(p, t, cam, { lights: [{ at: [wq[0], wq[1], wq[2] + 3], color: '#ff8a2a', reach: 26, k: 0.9 }], prisonClose: true });
   const wf = new Figure();
   sculptWagon(wf, [0, 0, 0], wyaw, { roll: -T0(t) * 7, horse: { ph: T0(t) * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-6, 0, 11], driver: 'armourer' });
   if (still()) wf.draw(p, wcam, { at: add3(fire3, [0, -4, 1]), hard: 1, fill: [-0.3, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
@@ -3579,7 +3556,7 @@ export const SCENES: readonly Scene[] = [
   // through the gap, the bar heaved up
   {
     big: 'p7b1', zoom: 1.04, lead: 2.6, into: 'dissolve',
-    pan: [[0, 0, 0.5], [1, 1, 0.5]],
+    pan: [[0, 0.15, 0.5], [1, 0.6, 0.5]],
     insets: [
       { box: 'p7b2', x: 20, y: 218, scale: 1.25, from: 'left' },
       { box: 'p7b3', x: 572, y: 218, scale: 1.25, from: 'right' },

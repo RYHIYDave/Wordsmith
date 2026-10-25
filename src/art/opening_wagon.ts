@@ -558,7 +558,8 @@ export function sculptWagon2(
     const ex = m.s * 8.75;
     f.egg(canvas, at([ex, 0, m.z]), [1.6, m.r, m.r * 1.08], AX, 0.25, true);
     // (the folds: ridges of canvas running out from the mouth to the rim, and the creases between them)
-    const folds = 11;
+    // (thrown wide open, there is no gathering left to fold)
+    const folds = m.r > 2 ? 0 : 11;
     for (let k = 0; k < folds; k++) {
       const a = (k / folds) * Math.PI * 2 + 0.2;
       const r0 = m.r + 0.2;
