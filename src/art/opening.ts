@@ -2854,11 +2854,11 @@ export function paintThroughGate(p: Px, t: number): void {
   // afire, the flames licking up the arch's face and lighting the stone round it
   const f = new Figure();
   sculptPrison(f, [0, 0, 0], 0, true, false);
-  const wp = Cast.place(f, [-24, -1.0, 0], Math.PI / 2, () => sculptWagon(f, [0, 0, 0], 0, { roll: -t * 7, horse: { ph: t * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-6, 0, 11], driver: 'armourer' }), 0.25);
-  const cam = { look: unit([0.08, 1, -0.06]), up: [0, 0, 1] as V3, scale: 12.5 * k, ox: 0, oy: 0, persp: 40 };
+  const wp = Cast.place(f, [-24.6, -3.0, 0], Math.PI / 2 - 0.5, () => sculptWagon(f, [0, 0, 0], 0, { roll: -t * 7, horse: { ph: t * 9 + 2.83, gallop: true }, burn: 0.85, burnAt: [-6, 0, 11], driver: 'armourer' }), 0.25);
+  const cam = { look: unit([-0.55, 1, -0.06]), up: [0, 0, 1] as V3, scale: 15 * k, ox: 0, oy: 0, persp: 30 };
   const g0 = seen(cam, [-24, -1.9, 0]);
-  cam.ox = S(206, 0)[0] - g0[0];
-  cam.oy = S(0, 114)[1] - g0[1];
+  cam.ox = S(262, 0)[0] - g0[0];
+  cam.oy = S(0, 116)[1] - g0[1];
   const fire3 = wp.at([-6, 0, 12]);
   const blaze = seen(cam, fire3);
   const sky = layerOf(p);
@@ -2866,15 +2866,26 @@ export function paintThroughGate(p: Px, t: number): void {
   bands(sky, DUSK, (x, y) => -0.05 + strata(x, y, 1708));
   sky.each((x, y) => (hash(x, y, 1403) > 0.993 ? '#c8c4f0' : undefined));
   over(p, sky, null);
+  // (the hill falling away behind on the left, the road down it, the cult's torches coming up it)
+  const hill = layerOf(p);
+  hill.poly(loop([S(-4, 70), S(80, 66), S(170, 74), S(260, 80), S(260, 122), S(-4, 122)], 6, [3, 4, 5]), ROCK[1]);
+  bands(hill, ROCK, (x, y) => 0.15 + glow(x, y, S(200, 90)[0], S(0, 90)[1], W * 0.5) * 0.8 + (fbm(x / 14, y / 5, 1404) - 0.5) * 0.3);
+  over(p, hill, INK);
+  const fl: Pt[] = [];
+  for (let j = 0; j < 7; j++) {
+    const tp = miniCultist(p, S(14 + j * 16 + hash(j, 1, 1406) * 6, 0)[0], S(0, 82 + hash(j, 2, 1406) * 6)[1], 0.7 * k, t * 9 + j * 1.7, j % 2 === 0, 1.3);
+    if (tp) fl.push(tp);
+  }
+  fl.forEach(([x, y], j) => paintFlame(p, x, y, 0.3 * k, t, j + 60));
   f.draw(p, cam, { at: add3(fire3, [0, -4, 1]), hard: 1, fill: [-0.3, -1, 0.3], fillK: 0.3, rim: '#ffb060', rimFrom: [-1, -0.4] });
   // (the fire's light over the stone round the arch, and the fire off the wagon's canvas licking up the arch's face)
-  shine(p, blaze[0], blaze[1], 90 * k * flick, '#ff8a2a', 2, 0.2);
+  shine(p, blaze[0], blaze[1], 60 * k * flick, '#ff8a2a', 2, 0.2);
   const along: Pt[] = [];
   for (let j = 0; j < 16; j++) {
     const a2 = 0.3 + hash(j, 1, 1410) * 2.5;
     along.push(seen(cam, wp.at([-8.2 + hash(j, 2, 1410) * 5, -Math.cos(a2) * 3.3, 5.4 + Math.sin(a2) * 6.6])));
   }
-  paintFlames(p, along, 26 * k, 0.05, t, 1411);
+  paintFlames(p, along, 26 * k, -0.25, t, 1411);
   for (let j = 0; j < 24; j++) {
     const x = blaze[0] + (hash(j, 1, 1407) - 0.5) * 70 * k;
     const y = blaze[1] - ((hash(j, 2, 1407) * 50 + t * 30 + j * 7) % 60) * k;
