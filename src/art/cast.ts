@@ -65,8 +65,8 @@ const T = {
   wood: [INK, '#24180e', '#3c2818', '#4c3420', '#5c3e24', '#86603a', '#a87e50'],
   purple: [INK, '#1a0a2a', '#36164e', '#46205e', '#562a78', '#7a46a0', '#a676c8'],
   gold: ['#3a2a08', '#7a5210', '#b07a18', '#d09a20', '#e8c060', '#fff3b0'],
-  bone: [INK, '#4a4030', '#7a6e58', '#a89a7c', '#cfc2a0', '#ebe0c2', '#fff8e4'],
-  cloak: [INK, '#141020', '#1e1a2c', '#2a2440', '#3a3250', '#564c70', '#7a6e96'],
+  bone: [INK, '#5a5040', '#8a7e68', '#b8ac90', '#dcd2b8', '#f2ead6', '#fffcf0'],
+  cloak: [INK, '#0e0c16', '#16121e', '#1e1a2a', '#2a2438', '#3a3250', '#52486a'],
   boot: [INK, '#140c08', '#22160e', '#2e1e14', '#3e2a1a', '#56402a', '#6e5236'],
   violet: [INK, '#1e1030', '#341a4e', '#40205c', '#4e2a6e', '#6e3e8e', '#a86a9e'],
   pink: [INK, '#4a0c2a', '#7a1a44', '#9a2254', '#b02a60', '#e04a88', '#ff8ab8'],
@@ -149,14 +149,14 @@ function sleeves(f: Figure, st: number, b: Body, kind: 'bell' | 'rolled' | 'long
     const sh = b.shoulders[j];
     const el = b.elbows[j];
     const wr = b.wrists[j];
-    f.rod(st, add(sh, mul(b.up, 0.1 * k)), el, 0.62 * k * h ** 0.6, 0.5 * k * h ** 0.6, 0.45);
+    f.rod(st, add(sh, mul(b.up, 0.05 * k)), el, 0.6 * k * h ** 0.45, 0.5 * k * h ** 0.45, 0.45);
     if (kind === 'rolled') {
       const ua = unit(sub(el, sh));
       const end = lerp(sh, el, 0.88);
       const F = frameAt(end, ua, b.fwd);
       for (let i = 0; i < 9; i++) {
         const an = (i / 9) * Math.PI * 2;
-        f.egg(st, onFrame(F, Math.cos(an) * 0.5 * k * h ** 0.6, Math.sin(an) * 0.5 * k * h ** 0.6, (i % 3 - 1) * 0.05 * k), [0.2 * k, 0.2 * k, 0.17 * k], ax3(F.x, F.y, F.z), 0.18);
+        f.egg(st, onFrame(F, Math.cos(an) * 0.48 * k * h ** 0.45, Math.sin(an) * 0.48 * k * h ** 0.45, (i % 3 - 1) * 0.05 * k), [0.19 * k, 0.19 * k, 0.16 * k], ax3(F.x, F.y, F.z), 0.18);
       }
       continue;
     }
@@ -169,9 +169,9 @@ function sleeves(f: Figure, st: number, b: Body, kind: 'bell' | 'rolled' | 'long
     // (a bell: wider toward its mouth, and its lower side hanging below the forearm)
     const mouth = lerp(el, wr, 1.0);
     f.rod(st, el, mouth, 0.52 * k, 0.8 * k, 0.4);
-    const hang: V3 = add(lerp(el, wr, 0.92), [0, 0, -0.75 * k]);
+    const hang: V3 = add(lerp(el, wr, 0.85), [0, 0, -0.55 * k]);
     f.rod(st, lerp(el, wr, 0.35), hang, 0.45 * k, 0.55 * k, 0.5);
-    f.rod(st, add(mouth, mul(ua, 0.35 * k)), lerp(el, wr, 0.72), 0.62 * k, 0.4 * k, 0.1, true);
+    f.rod(st, add(mouth, mul(ua, 0.3 * k)), lerp(el, wr, 0.9), 0.55 * k, 0.45 * k, 0.1, true);
   }
 }
 
@@ -206,11 +206,31 @@ function beard(f: Figure, st: number, b: Body, o: { to: number; full: number; mo
     }
   }
   const chin = onHead(b, 0, 0.78, -1.12);
-  const end = o.hang ? add(chin, add([0, 0, -o.hang * k], mul(b.fwd, 0.15 * k))) : add(lerp(onChest(b, 0, 1.3, 0.6), b.waist, o.to), mul(b.fwd, 0.6 * k * (1 - o.to)));
+  const end = o.hang ? add(chin, add([0, 0, -o.hang * k], mul(b.fwd, (0.15 + 0.32 * o.hang) * k))) : add(lerp(onChest(b, 0, 1.3, 0.6), b.waist, o.to), mul(b.fwd, 0.6 * k * (1 - o.to)));
   const mid = add(lerp(chin, end, 0.5), add(mul(b.fwd, 0.15 * k), mul(b.across, (o.sway ?? 0) * k)));
-  f.rod(st, chin, mid, 0.5 * k * o.full, 0.38 * k * o.full, 0.35);
-  f.rod(st, mid, end, 0.38 * k * o.full, 0.08 * k, 0.35);
-  for (const x of [-0.25, -0.08, 0.1, 0.26]) f.line([add(chin, mul(b.hacross, x * k * 1.6)), add(mid, mul(b.hacross, x * k)), add(end, mul(b.hacross, x * k * 0.3))], '#6a6680', 1);
+  // (the fall of it: full under the jaw, flattened against the chest, narrowing in locks to a rounded point; the ends of
+  // its locks curling a little apart; strands down it)
+  const L = len(sub(end, chin));
+  const along = (u: number): V3 => (u < 0.5 ? lerp(chin, mid, u * 2) : lerp(mid, end, (u - 0.5) * 2));
+  for (const [u, w, th] of [[0.12, 0.62, 0.42], [0.36, 0.56, 0.36], [0.6, 0.44, 0.3], [0.8, 0.3, 0.24]] as const) {
+    const c = along(u);
+    const dz = unit(sub(along(Math.min(1, u + 0.1)), along(Math.max(0, u - 0.1))));
+    const ax = unit(sub(b.hacross, mul(dz, dot(b.hacross, dz))));
+    f.egg(st, c, [w * k * o.full, th * k, L * 0.2], ax3(ax, unit(cross(dz, ax)), dz), 0.32);
+  }
+  for (const s of [-1, 1]) {
+    const c = add(along(0.9), mul(b.hacross, s * 0.12 * k * o.full));
+    f.egg(st, c, [0.16 * k * o.full, 0.16 * k, L * 0.09], ax3(b.hacross, mul(b.hfwd, -1), unit(sub(end, mid))), 0.15);
+  }
+  for (const x of [-0.32, -0.14, 0.04, 0.2, 0.34]) {
+    const pts: V3[] = [];
+    for (let i = 0; i <= 6; i++) {
+      const u = i / 6;
+      const w = (0.62 - u * 0.4) * o.full;
+      pts.push(add(add(along(u * 0.92), mul(b.hacross, x * w * k * 1.4)), mul(b.fwd, 0.28 * k)));
+    }
+    f.line(pts, '#8a86a0', 1);
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -227,7 +247,7 @@ export function standing(B: Build, over: Partial<Pose> = {}): Pose {
  * `sword`: the hand that holds it (and `two`, the other hand on its grip below that one), the point its tip reaches, and
  * `face`, which way the flat of its blade is turned (by default, his front).
  */
-export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: boolean; face?: V3 } | null, flap = 0): Body {
+export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: boolean; face?: V3 } | null, flap = 0, kinds: readonly ['fist' | 'flat' | 'open', 'fist' | 'flat' | 'open'] = ['fist', 'fist']): Body {
   const B: Build = { tall: 18.2, broad: 1.12, heavy: 1.1 };
   const b = pose(B, P);
   const k = b.k;
@@ -235,18 +255,33 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
   const HA = ax3(b.hacross, mul(b.hfwd, -1), b.hup);
   const red = f.stuff({ tones: T.red, hatch: 4, crease: 0.8 });
   const wine = f.stuff({ tones: T.wine, crease: 0.8 });
-  const mail = f.stuff({ tones: T.mail, crease: 0.8, paint: (q, _n, v) => ((Math.round(q[2] * 7) + Math.round(q[0] * 7 + q[1] * 3)) % 2 === 0 && v > 0.3 && v < 0.8 ? '#28245a' : null) });
+  const mail = f.stuff({ tones: T.mail, crease: 0.8, paint: (q, _n, v) => ((Math.round(q[2] * 6) % 2 === 0 && Math.round(q[0] * 6 + q[1] * 3) % 3 === 0) && v > 0.35 && v < 0.75 ? '#3a3676' : null) });
   const steel = f.stuff({ tones: T.steel, shine: 0.7, crease: 0.7 });
   const plum = f.stuff({ tones: T.plum, crease: 0.5 });
   const blade = f.stuff({ tones: T.blade, shine: 0.5 });
   // the body in its mail and plate: mail at the neck, arms and thighs, the tabard over the trunk, steel at the shins and feet
   sculptBody(f, mail, b, {
     face: false, skull: false, hands: false,
-    as: { trunk: { stuff: red, grow: 1.05 }, arms: { stuff: mail, grow: 1.15 }, forearms: { stuff: steel, grow: 1.22 }, legs: { stuff: mail, grow: 1.22 }, shins: { stuff: steel, grow: 1.32 }, feet: { stuff: steel, grow: 1.22 } },
+    as: { trunk: { stuff: mail, grow: 1.04 }, arms: { stuff: mail, grow: 1.15 }, forearms: { stuff: steel, grow: 1.22 }, legs: { stuff: mail, grow: 1.22 }, shins: { stuff: steel, grow: 1.32 }, feet: { stuff: steel, grow: 1.22 } },
   });
-  // the tabard's skirt to his knees, cut into points at its hem; the belt and its buckle
-  const hemZ = skirt(f, red, b, { hem: 6.7, flare: 1.5, folds: 5 });
+  // THE TABARD over his mail: a long cloth of red over his chest and back (the trunk's own shape, a little fuller), its
+  // skirt to the middle of his thighs; open down each side from under the arm to the hem, so that the mail shows there;
+  // belted; its hem cut into points
+  {
+    const g = 1.08;
+    const h = b.B.heavy;
+    f.egg(red, onChest(b, 0, 0.05, -0.1), [1.5 * k * h ** 0.6 * g, 1.18 * k * h ** 0.6 * g, 1.55 * k * g], TA, 0.6);
+    f.egg(red, onChest(b, 0, -0.45, 0.55), [1.35 * k * h ** 0.6 * g, 0.72 * k * g, 1.05 * k * g], TA, 0.6);
+    f.egg(red, onChest(b, 0, 0.35, -1.55), [1.1 * k * h ** 0.8 * g, 0.9 * k * h ** 0.9 * g, 0.9 * k * g], TA, 0.6);
+    f.rod(red, onChest(b, 0, 0.05, -1.0), b.waist, 1.2 * k * h ** 0.7 * g, 1.12 * k * h ** 0.8 * g, 0.5);
+  }
+  const hemZ = skirt(f, red, b, { hem: 6.6, flare: 1.55, folds: 4 });
   const footMid = lerp(b.ankles[0], b.ankles[1], 0.5);
+  for (const e of [-1, 1]) {
+    const top = onChest(b, e * 1.75, 0, 0.2);
+    const bot: V3 = add([footMid[0], footMid[1], hemZ - 0.5 * k], mul(b.across, e * 1.9 * k));
+    f.rod(red, top, bot, 0.32 * k, 0.55 * k, 0.1, true);
+  }
   for (let i = 0; i < 10; i++) {
     const an = (i / 10) * Math.PI * 2 + 0.31;
     const d = add(mul(b.across, Math.cos(an) * 1.75 * k), mul(b.fwd, Math.sin(an) * 1.5 * k));
@@ -286,7 +321,7 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
       const z = unit(sub(F.z, mul(sdir, dot(F.z, sdir))));
       F = frameAt(b.wrists[j], z, cross(z, sdir));
     }
-    hand(f, plum, F, 1.2 * k, holds ? 'grip' : 'fist');
+    hand(f, plum, F, 1.2 * k, holds ? 'grip' : kinds[j]);
   }
   // the scarf wound thick round his neck, hiding his chin, a fold of it over the wind below; its two ends flying from the
   // back of it, broad flat strips of cloth rippling as they go, the further narrower
@@ -437,7 +472,7 @@ export function oldWordsmith(f: Figure, P: Pose, staff: { reach: number }, gust 
   f.block(book, bk, [0.18 * k, 0.6 * k, 0.75 * k], 0.06 * k, TA, 0.08);
   f.rod(leath, add(b.waist, mul(b.across, -1.2 * k)), add(bk, mul(b.up, 0.6 * k)), 0.06 * k, 0.06 * k, 0);
   // his mantle, its edge burning with runes; his hood, peaked behind
-  f.egg(teal, onChest(b, 0, 0.05, 1.05), [2.0 * k, 1.4 * k, 1.0 * k], TA, 0.5);
+  f.egg(teal, onChest(b, 0, 0.05, 1.1), [1.72 * k, 1.28 * k, 0.95 * k], TA, 0.5);
   hood(f, teal, b, { peak: 1, open: 0.7 });
   // his lean face's grey: brows, a short beard to a point
   for (const s of [-1, 1]) f.rod(grey, onHead(b, s * 0.12, 0.92, 0.36), onHead(b, s * 0.55, 0.74, 0.46), 0.08 * k, 0.05 * k, 0.07);
@@ -462,7 +497,7 @@ export function oldWordsmith(f: Figure, P: Pose, staff: { reach: number }, gust 
 
 /** THE ARMOURER: heavy, bald, a great pale beard; his teal shirt, its sleeves rolled; a leather apron. */
 export function armourer(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'flat' | 'open', 'fist' | 'grip' | 'flat' | 'open'] = ['fist', 'fist']): Body {
-  const B: Build = { tall: 17.6, broad: 1.22, heavy: 1.38 };
+  const B: Build = { tall: 17.6, broad: 1.32, heavy: 1.62 };
   const b = pose(B, P);
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
@@ -479,16 +514,19 @@ export function armourer(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
   });
   sleeves(f, shirt, b, 'rolled');
   // his apron of leather, from his chest to his knees, its strap round his neck
-  const top = onChest(b, 0, 1.12, 0.6);
+  const top = onChest(b, 0, 1.25 * b.B.heavy ** 0.5, 0.6);
   const knees = lerp(b.knees[0], b.knees[1], 0.5);
-  const bot = add(knees, mul(b.fwd, 1.0 * k));
-  const mid = add(lerp(top, bot, 0.5), mul(b.fwd, 0.55 * k));
+  const mid = add(b.waist, mul(b.fwd, 1.4 * k * b.B.heavy ** 0.75));
+  const bot = add(add(knees, mul(sub(knees, mid), 0.05)), mul(b.up, 0.55 * k));
   f.block(leath, lerp(top, mid, 0.5), [1.0 * k, 0.1 * k, len(sub(mid, top)) * 0.52], 0.08 * k, ax3(b.across, unit(cross(b.across, unit(sub(mid, top)))), unit(sub(mid, top))), 0.3);
-  f.block(leath, lerp(mid, bot, 0.5), [1.15 * k, 0.1 * k, len(sub(bot, mid)) * 0.52], 0.08 * k, ax3(b.across, unit(cross(b.across, unit(sub(bot, mid)))), unit(sub(bot, mid))), 0.3);
+  // (below his belt it hangs to his knees; sitting, it falls between them)
+  const seated = knees[2] > b.waist[2] - 2.5 * k;
+  const bot2: V3 = seated ? add(mid, add(mul(b.fwd, 0.6 * k), [0, 0, -2.6 * k])) : bot;
+  f.block(leath, lerp(mid, bot2, 0.5), [1.15 * k, 0.1 * k, len(sub(bot2, mid)) * 0.52], 0.08 * k, ax3(b.across, unit(cross(b.across, unit(sub(bot2, mid)))), unit(sub(bot2, mid))), 0.3);
   for (const s of [-1, 1]) f.rod(leath, add(top, mul(b.across, s * 0.8 * k)), onChest(b, s * 0.7, 0.1, 1.75), 0.08 * k, 0.08 * k, 0.05);
   // his beard, great and pale, to the middle of his chest; his brows; bald
   for (const s of [-1, 1]) f.rod(white, onHead(b, s * 0.12, 0.92, 0.36), onHead(b, s * 0.58, 0.74, 0.44), 0.11 * k, 0.07 * k, 0.08);
-  beard(f, white, b, { to: 0.4, full: 1.25 });
+  beard(f, white, b, { to: 0, full: 1.3, hang: 3.4 });
   void TA;
   return b;
 }
@@ -505,8 +543,8 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   const robe = f.stuff({ tones: T.purple, hatch: 4, crease: 0.8, paint: (q) => (q[2] < hemZ + 0.32 * k ? '#d09a20' : q[2] < hemZ + 0.62 * k && q[2] > hemZ + 0.45 * k && Math.round(q[0] * 3 + q[1] * 3) % 3 === 0 ? '#b07a18' : null) });
   const gold = f.stuff({ tones: T.gold, shine: 0.6 });
   const cloth = f.stuff({ tones: T.bone, crease: 0.75 });
-  const veil = f.stuff({ tones: T.teal, crease: 0.7 });
-  const stone = f.stuff({ tones: T.pink, shine: 0.6 });
+  const veil = f.stuff({ tones: [INK, '#0c3a4e', '#125462', '#16707e', '#2aa4a6', '#5ac8c0', '#8ae4da'], crease: 0.9 });
+  const stone = f.stuff({ tones: [INK, '#2a0610', '#5a0c1c', '#8a1624', '#b8323a', '#e0786a'], shine: 0.7 });
   sculptBody(f, skin, b, {
     eyes: CYAN_EYES, nose: 'small', hands,
     as: { neck: { stuff: robe, grow: 1.15 }, trunk: { stuff: robe, grow: 1.08 }, arms: { stuff: robe, grow: 1.1 }, legs: { stuff: robe }, shins: { stuff: robe } },
@@ -524,13 +562,27 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     hemZ = -99;
   } else hemZ = skirt(f, robe, b, { hem: 0.2, flare: 2.15, folds: 8 });
   sleeves(f, robe, b, 'bell');
+  // (a band of gold round each sleeve's mouth)
+  for (const j of [0, 1] as const) {
+    const el = b.elbows[j];
+    const wr = b.wrists[j];
+    const ua = unit(sub(wr, el));
+    const F = frameAt(lerp(el, wr, 0.93), ua, [0, 0, 1]);
+    let prev: V3 | null = null;
+    for (let i = 0; i <= 12; i++) {
+      const an = (i / 12) * Math.PI * 2;
+      const q = onFrame(F, Math.cos(an) * 0.78 * k, Math.sin(an) * 0.78 * k, 0);
+      if (prev) f.rod(gold, prev, q, 0.07 * k, 0.07 * k, 0.02);
+      prev = q;
+    }
+  }
   const slipper = f.stuff({ tones: T.leather });
   for (const j of [0, 1] as const) {
     f.rod(skin, lerp(b.elbows[j], b.wrists[j], 0.5), b.wrists[j], 0.32 * k, 0.27 * k, 0.2);
     if (!o.seated) sculptFoot(f, slipper, b, j, undefined, 1.05);
   }
   // the sash of gold round his waist, its knot and end at his side; the chains at his neck
-  f.egg(gold, b.waist, [1.36 * k, 1.18 * k, 0.2 * k], TA, 0.06);
+  f.egg(gold, add(b.waist, mul(b.up, 0.15 * k)), [1.42 * k, 1.24 * k, 0.32 * k], TA, 0.06);
   f.rod(gold, add(b.waist, add(mul(b.across, 0.8 * k), mul(b.fwd, 0.85 * k))), add(b.waist, add(mul(b.across, 1.0 * k), add(mul(b.fwd, 0.95 * k), mul(b.up, -1.2 * k)))), 0.12 * k, 0.16 * k, 0.05);
   for (const [z0, sag] of [[1.15, 0.3], [0.95, 0.5]] as const) {
     let prev: V3 | null = null;
@@ -548,8 +600,9 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     const a = Math.sin(u * 1.2) * 0.78;
     const fw = 0.62 + Math.cos(u * 1.25) * 0.68;
     const top = onHead(b, a, fw, -0.44 + u * u * 0.16);
-    const bot = onHead(b, a * 0.82, fw - 0.04 + (i % 2 ? 0.05 : 0), -1.32 + Math.abs(u) * 0.55);
+    const bot = onHead(b, a * 0.8, fw - 0.02 + (i % 2 ? 0.06 : 0), -1.55 + Math.abs(u) * 0.85);
     f.rod(veil, top, bot, 0.09 * k, 0.11 * k, 0.3);
+    if (i % 2 === 1 && Math.abs(u) < 0.85) f.line([lerp(top, bot, 0.25), lerp(top, bot, 0.6), lerp(bot, top, 0.04)].map((q) => add(q, mul(b.hfwd, 0.1 * k))), '#0c3a4e', 1);
   }
   for (const s2 of [-1, 1]) f.rod(veil, onHead(b, s2 * 0.75, 0.55, -0.18), onHead(b, s2 * 0.86, 0.05, 0.12), 0.05 * k, 0.04 * k, 0.06);
   for (let i = 0; i <= 8; i++) {
@@ -563,10 +616,10 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   // over his brow, so that his eyes are in its shadow, and lower behind; the winds lying slantwise over the front of it,
   // crossing one another over the stone in its setting of gold (each wind's edge a fold pressed into the cloth); behind,
   // the cloth's end hanging to his shoulder
-  const TC = onHead(b, 0, -0.05, 0.9);
-  const TR: V3 = [1.24, 1.34, 0.95];
+  const TC = onHead(b, 0, -0.05, 1.08);
+  const TR: V3 = [1.52, 1.58, 0.98];
   f.egg(cloth, TC, [TR[0] * k, TR[1] * k, TR[2] * k], HA, 0.3);
-  f.egg(cloth, onHead(b, 0, -0.1, 1.48), [0.92 * k, 1.0 * k, 0.6 * k], HA, 0.4);
+  f.egg(cloth, onHead(b, 0, -0.1, 1.72), [1.12 * k, 1.18 * k, 0.5 * k], HA, 0.4);
   {
     const n = unit(sub(b.hup, mul(b.hfwd, 0.12)));
     const on = onHead(b, 0, 1.3, 0.26);
@@ -575,25 +628,28 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   }
   /** A point on the turban's surface: `an` round it from the front (+ to his left), `z` up the head. */
   const onTurban = (an: number, z: number, out = 0): V3 => {
-    const sz = Math.sqrt(Math.max(0.05, 1 - ((z - 0.9) / TR[2]) ** 2));
+    const sz = Math.sqrt(Math.max(0.05, 1 - ((z - 1.08) / TR[2]) ** 2));
     return onHead(b, Math.sin(an) * (TR[0] * sz + out), Math.cos(an) * (TR[1] * sz + out) - 0.05, z);
   };
-  for (let w = 0; w < 5; w++) {
+  // (the winds: each from low over one temple up across the front to high over the other, the next the other way, so
+  // that they cross over the stone; their edges pressed in, the cloth between them full)
+  for (let w = 0; w < 4; w++) {
     const side = w % 2 ? 1 : -1;
     const pts: V3[] = [];
     for (let i = 0; i <= 16; i++) {
       const u = i / 16;
-      const an = -1.9 + u * 3.8;
-      pts.push(onTurban(an, 0.42 + w * 0.2 + side * (u - 0.5) * 0.55, 0.02));
+      const an = -1.75 + u * 3.5;
+      pts.push(onTurban(an, 0.55 + Math.floor(w / 2) * 0.42 + side * (u - 0.5) * 1.0, 0.03));
     }
-    for (let i = 1; i < pts.length; i++) f.rod(cloth, pts[i - 1], pts[i], 0.05 * k, 0.05 * k, 0.08, true);
+    for (let i = 1; i < pts.length; i++) f.rod(cloth, pts[i - 1], pts[i], 0.06 * k, 0.06 * k, 0.08, true);
+    f.line(pts.map((q) => add(q, mul(unit(sub(q, TC)), 0.02 * k))), '#8a7e68', 1);
   }
   {
     // (its lower edge: the cloth turned under, a soft roll)
     let prev: V3 | null = null;
     for (let i = 0; i <= 32; i++) {
       const an = (i / 32) * Math.PI * 2;
-      const q = onHead(b, Math.sin(an) * 1.12, Math.cos(an) * 1.24 - 0.06, 0.34 - (1 - Math.cos(an)) * 0.14);
+      const q = onHead(b, Math.sin(an) * 1.08, Math.cos(an) * 1.2 - 0.06, 0.32 - (1 - Math.cos(an)) * 0.14);
       if (prev) f.rod(cloth, prev, q, 0.15 * k, 0.15 * k, 0.2);
       prev = q;
     }
@@ -653,9 +709,11 @@ export function stranger(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
   }
   f.rod(cloak, onChest(b, 0, -0.7, 0.6), [mid[0] - fwF[0] * 1.2 * k, mid[1] - fwF[1] * 1.2 * k, hemZ - 0.3 * k], 1.3 * k, 1.75 * k, 0.6);
   f.block(cloak, [mid[0], mid[1], hemZ - 4 * k], [7 * k, 7 * k, 4 * k], 0, ax3([1, 0, 0], [0, 1, 0], [0, 0, 1]), 0.1, true);
-  const slitTop = onChest(b, 0, 1.25, -0.4);
-  const slitBot: V3 = [mid[0] + fwF[0] * 1.55 * k, mid[1] + fwF[1] * 1.55 * k, hemZ - 1.0 * k];
-  f.rod(cloak, slitTop, slitBot, 0.05 * k, 0.95 * k, 0.15, true);
+  // (its two edges meeting down his front, a little open only toward the hem, over his boots)
+  const slitTop: V3 = add(lerp(b.knees[0], b.knees[1], 0.5), mul(fwF, 1.4 * k));
+  const slitBot: V3 = [mid[0] + fwF[0] * 1.6 * k, mid[1] + fwF[1] * 1.6 * k, hemZ - 1.0 * k];
+  f.rod(cloak, slitTop, slitBot, 0.05 * k, 0.6 * k, 0.15, true);
+  f.line([onChest(b, 0.1, 1.45, -0.6), add(slitTop, [0, 0, 0.2 * k])], '#0a0812', 1);
   for (const [s, an] of [[-1, 0.9], [-1, 1.7], [1, 0.9], [1, 1.7], [0, 3.1], [-1, 2.5], [1, 2.5]] as const) {
     const d = add(mul(acF, Math.sin(an) * (s === 0 ? 1 : s)), mul(fwF, Math.cos(an)));
     f.rod(cloak, add(onChest(b, 0, 0, -1.2), mul(d, 1.55 * k)), add([mid[0], mid[1], hemZ - 0.6 * k], mul(d, 2.2 * k)), 0.03 * k, 0.16 * k, 0.12, true);
@@ -673,7 +731,7 @@ export function stranger(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
 }
 
 /** A CULTIST: his violet robe girded up with rope, the deep pointed cowl, the pink slashes of his eyes, the stole; his dagger. */
-export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | null, torch: { hand: 0 | 1; to: V3 } | null, eyeW = 1): { b: Body; torch: V3 | null } {
+export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | null, torch: { hand: 0 | 1; to: V3 } | null, eyeW = 1): { b: Body; torch: V3 | null; tip: V3 | null } {
   const B: Build = { tall: 17.2, broad: 0.92, heavy: 0.82 };
   const b = pose(B, P);
   const k = b.k;
@@ -690,7 +748,7 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
   const holds = (j: number): 'grip' | 'claw' => ((dagger && dagger.hand === j) || (torch && torch.hand === j) ? 'grip' : 'claw');
   sculptBody(f, bone, b, {
     face: false, skull: false, hands: [holds(0), holds(1)],
-    as: { trunk: { stuff: robe, grow: 1.06 }, arms: { stuff: robe, grow: 1.12 }, legs: { stuff: robe, grow: 1.05 }, shins: { stuff: rag, grow: 1.1 }, feet: { stuff: rag, grow: 1.1 } },
+    as: { neck: { stuff: dark, grow: 1.1 }, trunk: { stuff: robe, grow: 1.06 }, arms: { stuff: robe, grow: 1.12 }, legs: { stuff: robe, grow: 1.05 }, shins: { stuff: rag, grow: 1.1 }, feet: { stuff: rag, grow: 1.1 } },
   });
   // the robe girded up to his knees, ragged at its hem; the rope round him; the sleeves pushed back to the elbows
   skirt(f, robe, b, { hem: 4.3, flare: 1.6, folds: 5, ragged: 1 });
@@ -698,11 +756,18 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
   f.rod(rope, add(b.waist, add(mul(b.fwd, 1.0 * k), mul(b.across, 0.3 * k))), add(b.waist, add(mul(b.fwd, 1.1 * k), add(mul(b.across, 0.4 * k), mul(b.up, -1.4 * k)))), 0.06 * k, 0.06 * k, 0);
   for (const j of [0, 1] as const) f.egg(robe, b.elbows[j], [0.62 * k, 0.62 * k, 0.48 * k], TA, 0.3);
   // the stole: two bands of the cult's pink from his neck down his front past the rope
+  // (one long band round the back of his neck, over each shoulder and down his chest on either side, lying on him, out
+  // over the rope, its ends fringed)
   for (const s of [-1, 1]) {
-    const top = onChest(b, s * 0.42, 1.0, 1.4);
-    const bot = add(add(b.waist, mul(b.up, -1.3 * k)), add(mul(b.across, s * 0.5 * k), mul(b.fwd, 1.15 * k)));
-    const along = sub(bot, top);
-    f.block(pink, lerp(top, bot, 0.5), [0.2 * k, 0.06 * k, len(along) / 2], 0.04 * k, ax3(b.across, unit(cross(b.across, unit(along))), unit(along)), 0.05);
+    const pts: V3[] = [onChest(b, s * 0.55, -0.55, 1.45), onChest(b, s * 0.75, 0.55, 1.5), onChest(b, s * 0.55, 1.18 * b.B.heavy ** 0.6, 0.6), onChest(b, s * 0.5, 1.22, -0.9), add(add(b.waist, mul(b.up, -1.5 * k)), add(mul(b.across, s * 0.5 * k), mul(b.fwd, 1.25 * k)))];
+    for (let i = 1; i < pts.length; i++) {
+      const d = unit(sub(pts[i], pts[i - 1]));
+      const nrm = unit(sub(sub(pts[i], b.chest), mul(d, dot(sub(pts[i], b.chest), d))));
+      const wdt = unit(cross(nrm, d));
+      f.block(pink, add(lerp(pts[i - 1], pts[i], 0.5), mul(nrm, 0.05 * k)), [0.3 * k, 0.045 * k, len(sub(pts[i], pts[i - 1])) * 0.52], 0.03 * k, ax3(wdt, nrm, d), 0.08);
+    }
+    const end = pts[pts.length - 1];
+    for (const e of [-0.15, 0, 0.15]) f.rod(pink, end, add(end, add(mul(b.across, e * k), [0, 0, -0.45 * k])), 0.04 * k, 0.03 * k, 0.02);
   }
   // the deep cowl with its point fallen back; the dark in it; the slanting slashes of pink
   f.egg(robe, onHead(b, 0, -0.18, 0.28), [1.1 * k, 1.25 * k, 1.28 * k], HA, 0.5);
@@ -711,6 +776,7 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
   f.egg(dark, onHead(b, 0, 0.15, -0.1), [0.72 * k, 0.72 * k, 0.85 * k], HA, 0.3);
   for (const s of [-1, 1]) for (const [a, c] of [[0.18, -0.02], [0.28, 0.04], [0.38, 0.1]] as const) f.mark(onHead(b, s * a, 0.82, c), ['#ff8ab8', '#ff5aa0', '#c02a6a'], eyeW);
   // the dagger: a long wavy blade of bone, a dark guard, its grip bound in pink
+  let tipOut: V3 | null = null;
   if (dagger) {
     const grip = add(b.wrists[dagger.hand], mul(b.handFrames[dagger.hand].z, 0.7 * k));
     const dd = unit(sub(dagger.to, grip));
@@ -723,6 +789,7 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
       f.rod(ivory, prev, q, (0.15 - i * 0.018) * k, (0.14 - i * 0.02) * k, 0.05);
       prev = q;
     }
+    tipOut = prev;
   }
   let flame: V3 | null = null;
   if (torch) {
@@ -733,7 +800,7 @@ export function cultist(f: Figure, P: Pose, dagger: { hand: 0 | 1; to: V3 } | nu
     f.egg(rag, top, [0.26 * k, 0.26 * k, 0.36 * k], ax3(b.across, mul(b.fwd, -1), dd), 0.1);
     flame = add(top, mul(dd, 0.35 * k));
   }
-  return { b, torch: flame };
+  return { b, torch: flame, tip: tipOut };
 }
 
 // ---------------------------------------------------------------------------------------------

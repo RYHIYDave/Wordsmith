@@ -371,7 +371,9 @@ export function sculptBody(f: Figure, skin: number, b: Body, parts: BodyParts): 
   if (parts.neck !== false) {
     const [st, g] = S('neck');
     f.rod(st, onHead(b, 0, -0.25, -0.8), b.neck, 0.52 * k * h ** 0.5 * g, 0.6 * k * h ** 0.5 * g, 0.35);
-    for (const s of [-1, 1]) f.egg(st, onChest(b, s * 0.85, -0.15, 1.6), [0.95 * k * g, 0.55 * k * g, 0.32 * k * g], TA, 0.4);
+    // (the slope of the shoulders from the neck: of what covers the trunk)
+    const [st2, g2] = parts.trunk !== false ? S('trunk') : [st, g];
+    for (const s of [-1, 1]) f.egg(st2, onChest(b, s * 0.85, -0.15, 1.6), [0.95 * k * g2, 0.55 * k * g2, 0.32 * k * g2], TA, 0.4);
   }
   if (parts.trunk !== false) {
     const [st, g] = S('trunk');
