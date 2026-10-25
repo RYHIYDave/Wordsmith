@@ -16,6 +16,8 @@
 // sideways; a bigger screen shows the desk round it), painted at the finer grain (DENSITY picture pixels to a game pixel).
 // Every box is painted on its own, in its own picture pixels, and laid on its page.
 
+import { CRAG_TOP, PEAK, ROAD_HALF, figCam, paintFarPine, paintLand, seenAt, theLand } from './opening_land';
+import type { LandCam } from './opening_land';
 import { Px } from '../engine/px';
 import { INK, band, bandBy, bands, balloon as comicBalloon, shine, caption as comicCaption, captionSize, clamp01, dot, facets, fbm, glow, hash, inside, layerOf, lerp, limbSolid, loop, mix, noise, over, path, shadeSolid, sm, solid, wash } from './comic';
 import type { Pt, Tones, V3 } from './comic';
@@ -254,36 +256,32 @@ export const LAMP = ['#fff6d8', '#ffd98a', '#f4a648', '#c46a2c'];
 /** The wordsmiths' light: the friend's cyan. */
 export const CYANS = ['#e6ffff', '#8ff4ff', '#28dcf0', '#1898b4'];
 
+/** A pine near enough to see its boughs (paintPine), its foot at (x, y) `t` metres off, kept off what stands before it. */
+function paintPineNear(p: Px, depth: Float32Array, x: number, y: number, h: number, t: number, seed: number): void {
+  const lay = layerOf(p);
+  paintPine(lay, x, y, h, seed);
+  // (its boughs' undersides, toward us, caught by the evening on their sun-ward side)
+  lay.each((xx, yy) => (lay.has(xx, yy) && !lay.has(xx + 1, yy) && hash(xx, yy, 499) > 0.4 ? '#2a1e30' : undefined));
+  for (let yy = 0; yy < p.h; yy++) {
+    for (let xx = 0; xx < p.w; xx++) {
+      const i = yy * p.w + xx;
+      if (lay.d[i * 4 + 3] === 0 || depth[i] < t - 3) continue;
+      p.d.set(lay.d.subarray(i * 4, i * 4 + 4), i * 4);
+    }
+  }
+}
+
+/** How far up the road the old wordsmith is, ahead of the wagons, in the first box (metres along it). */
+const SMITH_AT = 3500;
+
 export function paintRoadUp(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
   // where the glow is: low on the horizon, behind the crag
   const GX = W * 0.76;
   const GY = H * 0.34;
-  // THE CRAG: a spire of rock standing up out of the slope at the right, flat topped, the prison on it; cut in tall facets,
-  // a cliff, its faces toward the glow lit
-  const spire: Pt[] = loop([
-    [W * 0.5, H + 10],
-    [W * 0.56, H * 0.66],
-    [W * 0.575, H * 0.58],
-    [W * 0.6, H * 0.55],
-    [W * 0.6, H * 0.46],
-    [W * 0.615, H * 0.4],
-    [W * 0.612, H * 0.36],
-    [W * 0.63, H * 0.33],
-    [W * 0.64, H * 0.3],
-    [W * 0.66, H * 0.285],
-    [W * 0.88, H * 0.285],
-    [W * 0.892, H * 0.31],
-    [W * 0.9, H * 0.36],
-    [W * 0.915, H * 0.4],
-    [W * 0.912, H * 0.47],
-    [W * 0.935, H * 0.52],
-    [W * 0.95, H * 0.6],
-    [W * 0.98, H * 0.66],
-    [W + 10, H * 0.72],
-    [W + 10, H + 10],
-  ], 2, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  // (its measures were set at its page's size; shown bigger, everything drawn so many pixels across grows with it)
+  const u = W / 392;
   if (still()) {
   // THE SKY, in flat bands, the dots of each band laid over the next: dark up, burning low behind the crag
   const sky = layerOf(p);
@@ -293,142 +291,125 @@ export function paintRoadUp(p: Px, t: number): void {
     return clamp01(0.05 + Math.pow(y / H, 1.2) * 0.3 + g * 1.05 + strata(x, y, 1690));
   });
   // a few stars, high and away from the glow
-  for (let k = 0; k < 46; k++) {
+  for (let k = 0; k < Math.round(46 * u); k++) {
     const x = Math.floor(hash(k, 1, 91) * W);
     const y = Math.floor(hash(k, 2, 91) * H * 0.3);
     if (glow(x, y, GX, GY, W * 0.7) > 0.04) continue;
     sky.set(x, y, hash(k, 3, 91) > 0.75 ? '#efe8ff' : '#7c74a8');
   }
   over(p, sky, null);
-  // LONG CLOUDS across the glow, dark, their undersides lit
+  // LONG CLOUDS across the glow: ragged banks, broken into pieces, dark above, warming down to their undersides, which the
+  // glow lights
   const cl = layerOf(p);
   for (const [cy, x0, x1, th, sd] of [[0.2, 0.34, 1.05, 5, 1], [0.28, 0.5, 1.08, 4, 2], [0.13, 0.62, 0.98, 3, 3]] as const) {
-    const top: Pt[] = [];
-    const bot: Pt[] = [];
-    for (let x = x0 * W; x <= x1 * W; x += 4) {
+    for (let x = Math.floor(x0 * W); x <= x1 * W; x++) {
       const f = (x - x0 * W) / ((x1 - x0) * W);
-      const thick = th * Math.sin(Math.PI * f) * (0.7 + 0.6 * noise(x / 18, sd, 40));
-      top.push([x, H * cy - thick * 0.6]);
-      bot.push([x, H * cy + thick * 0.4]);
+      const lump = fbm(x / (26 * u), sd * 7.3, 40 + sd);
+      const thick = th * u * 2.4 * Math.pow(Math.sin(Math.PI * f), 0.6) * clamp01((lump - 0.32) * 2.6) * (0.75 + 0.5 * noise(x / (7 * u), sd, 41));
+      if (thick < 1) continue;
+      const top = H * cy - thick * 0.65;
+      const bot = H * cy + thick * 0.35;
+      const lit = glow(x, bot, GX, GY, W * 0.7);
+      for (let y = Math.ceil(top); y <= bot; y++) {
+        const d = bot - y;
+        const c = d < 1.2 * u ? (lit > 0.15 ? '#f0a070' : '#9a4a5a') : d < thick * 0.45 && dot(x, y, 1 - d / (thick * 0.45), 2) ? (lit > 0.15 ? '#6a2e4a' : '#3a1e40') : '#2a1838';
+        cl.set(x, y, c);
+      }
     }
-    cl.poly([...top, ...bot.reverse()], '#2a1838');
   }
-  cl.each((x, y) => (!cl.has(x, y + 1) || !cl.has(x, y + 2) ? (glow(x, y, GX, GY, W * 0.7) > 0.15 ? '#f0a070' : '#9a4a5a') : undefined));
   over(p, cl, null);
-  // THE FAR RANGE: jagged, cut in big facets, the faces toward the glow lit
-  const far = layerOf(p);
-  const ridge = (x: number): number => {
-    const u = x / W;
-    const saw = Math.abs(((u * 5.3 + 0.2) % 1) - 0.5) * 2;
-    return H * (0.44 + 0.06 * saw + 0.05 * fbm(x / 40, 0, 7, 3) + 0.04 * Math.sin(u * 3.1));
-  };
-  for (let x = 0; x < W; x++) far.vline(x, Math.round(ridge(x)), H, FAR[0]);
-  facets(far, ['#1e1838', '#2a2048', '#3a2a56', '#5a3460', '#8a4660'], [0.9, -0.2, 0.25], {
-    cw: 22, ch: 30, seed: 5, tilt: [-0.1, -0.3], spread: 1.1, cracks: false,
-    extra: (x, y) => glow(x, y, GX, GY, W * 0.6) * 0.5 - 0.15,
-  });
-  for (let x = 0; x < W; x++) {
-    const y = Math.round(ridge(x));
-    if (glow(x, y, GX, GY, W * 0.55) > 0.1) far.set(x, y, FAR_RIM);
   }
-  over(p, far, null);
-  // THE MOUNTAIN: a long slope from the lower left up toward the crag's foot
-  const slope: Pt[] = loop([
-    [-10, H * 0.66],
-    [W * 0.14, H * 0.6],
-    [W * 0.3, H * 0.54],
-    [W * 0.44, H * 0.47],
-    [W * 0.56, H * 0.43],
-    [W * 0.66, H * 0.45],
-    [W + 10, H * 0.52],
-    [W + 10, H + 10],
-    [-10, H + 10],
-  ], 8, [0, 6, 7, 8]);
-  const mtn = layerOf(p);
-  mtn.poly(slope, ROCK[0]);
-  bands(mtn, ROCK, (x, y) => 0.5 + glow(x, y, GX, GY, W * 0.75) * 0.6 - ((y - H * 0.45) / H) * 0.9 + (fbm(x / 30, y / 12, 12) - 0.5) * 0.35);
-  // (strata: long ink strokes along the slope's grain, in its shadows; its skyline rimmed toward the glow)
-  for (let k = 0; k < 16; k++) {
-    const sx = hash(k, 1, 61) * W * 0.7;
-    const sy = H * (0.58 + hash(k, 2, 61) * 0.4);
-    const len = 18 + hash(k, 3, 61) * 40;
-    const pts = path([[sx, sy], [sx + len * 0.5, sy - len * 0.16 + (hash(k, 4, 61) - 0.5) * 4], [sx + len, sy - len * 0.3]], 8);
-    for (const [x, y] of pts) if (mtn.has(Math.round(x), Math.round(y))) mtn.set(Math.round(x), Math.round(y), '#0a0816');
-  }
-  mtn.each((x, y) => (!mtn.has(x, y - 1) && glow(x, y, GX, GY, W * 0.6) > 0.05 ? ROCK_RIM : undefined));
-  over(p, mtn, INK);
-  }
-  // THE ROAD, built where it lies (paintRoad3D): switchbacks up the slope, round behind the crag's foot
-  const road = paintRoad3D(p, W, H, GX, GY);
+  // THE MOUNTAIN, at its true size (art/opening_land.ts): we stand by the road at its start, looking up at the peak; the
+  // road going away from us across the foothills, then back and forth up the peak's face to the crag on its top
+  const land = theLand();
+  // (we stand a little off the road, on the near side of it, low, looking across it and up at the peak)
+  const sc = land.index.near(300, 477)?.s ?? 0;
+  const cam: LandCam = { pos: [322, 452, land.exact(322, 452) + 3.4], yaw: 0, F: W * 0.45, cx: W * 0.5, hy: H * 0.78 };
+  let depth: Float32Array | null = null;
   if (still()) {
-  // THE CRAG, over the road where it goes round behind it: a spire of rock, flat topped, the prison on it; cut in tall
-  // facets, a sheer cliff, cracks down it and ledges across it, its faces toward the glow lit, a little haze on it
-  const crag = layerOf(p);
-  crag.poly(spire, ROCK[0]);
-  facets(crag, ['#0d0b1c', '#16122a', '#221b38', '#33284c', '#4a3a60', '#6a5272'], [0.9, -0.35, 0.25], {
-    cw: 7, ch: 26, seed: 13, tilt: [0.25, 0], spread: 1.6,
-    extra: (x, y) => glow(x, y, GX, GY, W * 0.42) * 0.9 - ((y - H * 0.3) / H) * 0.5 + 0.08,
-  });
-  crag.each((x, y) => (!crag.has(x, y - 1) || (!crag.has(x + 1, y) && glow(x, y, GX, GY, W * 0.4) > 0.1) ? ROCK_RIM : undefined));
-  over(p, crag, INK);
-  // (the road again, where it comes out on the crag's face: a ledge cut across it and back, up to the gate)
-  const ledge: Pt[] = path([[W * 0.598, H * 0.47], [W * 0.66, H * 0.42], [W * 0.715, H * 0.385], [W * 0.66, H * 0.35], [W * 0.63, H * 0.325], [W * 0.66, H * 0.3], [W * 0.695, H * 0.293]], 8);
-  for (let i = 1; i < ledge.length; i++) {
-    const [x0, y0] = ledge[i - 1];
-    const [x1, y1] = ledge[i];
-    const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0)));
-    for (let q = 0; q <= n; q++) {
-      const x = Math.round(x0 + ((x1 - x0) * q) / n);
-      const y = Math.round(y0 + ((y1 - y0) * q) / n);
-      p.set(x, y - 1, glow(x, y, GX, GY, W * 0.45) > 0.15 ? '#8a6a72' : '#54445c');
-      p.set(x, y, '#3c3048');
-      p.set(x, y + 1, '#07060d');
+    depth = paintLand(p, cam);
+    // THE WOODS low on the foothills and the peak's lower slopes: pines, each as tall as it would be seen from here, darker
+    // and hazier the further off (the scale of the mountain is in them)
+    const land = theLand();
+    const trees: [number, number, number, number][] = [];
+    for (let k = 0; k < 16000; k++) {
+      const x = -1800 + hash(k, 1, 481) * 4200;
+      const y = 120 + Math.pow(hash(k, 2, 481), 1.3) * 2300;
+      if (fbm(x / 260, y / 260, 482) < 0.42) continue;
+      const z = land.height(x, y);
+      if (z > 430 + fbm(x / 90, y / 90, 483) * 120) continue;
+      const n = land.normal(x, y, 3);
+      if (n[2] < 0.6) continue;
+      const r = land.index.near(x, y);
+      if (r && r.d < ROAD_HALF + 4) continue;
+      const [sx, sy, fw] = seenAt(cam, [x, y, z]);
+      if (sx < -10 || sx > W + 10 || fw < 20) continue;
+      trees.push([sx, sy, fw, k]);
+    }
+    trees.sort((a, b) => b[2] - a[2]);
+    for (const [sx, sy, fw, k] of trees) {
+      const hp = ((14 + hash(k, 3, 481) * 10) * cam.F) / fw;
+      if (hp < 1.5) continue;
+      const hz = clamp01(fw / 3200);
+      const col = hz > 0.66 ? '#2a1e3c' : hz > 0.33 ? '#181428' : '#0a0912';
+      if (hp > 40) paintPineNear(p, depth, sx, sy + 2, hp, fw, k);
+      else paintFarPine(p, depth, sx, sy + 1, hp, fw, k, col, hp > 6 && hz < 0.5 ? '#3a2a44' : null);
     }
   }
-  // THE PRISON on the crag
-  {
-    // (sculpted: sculptPrison, a metre a unit; seen from below, against the glow)
+  // THE PRISON on the crag, big as forts go and small against the mountain (sculptPrison, two and a half metres a unit:
+  // its walls a hundred and fifty metres across), black against the glow, its windows lit
+  if (still()) {
     const pf = new Figure();
-    sculptPrison(pf, [0, 0, 0], 0.12);
-    pf.draw(p, { look: unit([0.1, 1, 0.08]), up: [0, 0, 1], scale: W * 0.00315, ox: W * 0.77, oy: H * 0.3, persp: 260 }, { from: unit([0.35, 0.8, 0.6]), hard: 1, fill: [-0.2, -1, 0.3], fillK: 0.4, rim: KEEP_RIM, rimFrom: [0.3, -1] });
+    sculptPrison(pf, [0, 0, 0], 0.5, false, false);
+    const at: V3 = [PEAK[0] - 20, PEAK[1] - 10, CRAG_TOP - 2];
+    const pc = figCam(cam, at, 3.2);
+    const lay = layerOf(p);
+    pf.draw(lay, pc, { from: unit([0.35, 0.8, 0.6]), hard: 1, fill: [-0.6, -0.7, 0.4], fillK: 0.45, rim: '#f0a070', rimFrom: [1, -0.4] });
+    const fw = seenAt(cam, at)[2];
+    // (its windows lit, a few, here and there in its walls and towers)
+    for (let k = 0, lit = 0; k < 4000 && lit < 14; k++) {
+      const x = Math.floor(hash(k, 1, 497) * W);
+      const y = Math.floor(hash(k, 2, 497) * H);
+      if (lay.d[(y * W + x) * 4 + 3] === 0 || lay.d[((y + 2) * W + x) * 4 + 3] === 0 || lay.d[((y - 2) * W + x) * 4 + 3] === 0) continue;
+      if (lay.d[(y * W + x - 1) * 4 + 3] === 0 || lay.d[(y * W + x + 1) * 4 + 3] === 0) continue;
+      lay.set(x, y, '#ffd98a');
+      if (hash(k, 3, 497) > 0.5) lay.set(x, y + 1, '#f4a648');
+      lit++;
+    }
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (lay.d[i * 4 + 3] === 0 || (depth && depth[i] < fw - 60)) continue;
+        p.d.set(lay.d.subarray(i * 4, i * 4 + 4), i * 4);
+      }
+    }
   }
-  }
-  // THE WAGONS on the lowest bend, their lanterns lit, each set on the road and tilted with it; THE OLD WORDSMITH far up the
-  // road, his light
-  // (sculpted: sculptWagon, a fifth of a metre a unit; the furthest first)
+  // THE WAGONS on the road before us, their lanterns lit (sculptWagon, a fifth of a metre a unit); THE OLD WORDSMITH far up
+  // the road ahead of them, on a bend of it up the peak's face: a speck, and his light
   const lamps: Pt[] = [];
-  for (const [m, seed] of [[14, 0], [5.5, 1]] as const) {
-    const r = road(m);
+  for (const [s0, seed] of [[sc + 24, 0], [sc + 8, 1]] as const) {
+    const r = land.along(s0);
     const wf = new Figure();
     const w = sculptWagon(wf, [0, 0, 0], Math.atan2(r.dir[1], r.dir[0]), { roll: seed * 0.7, horse: { ph: T0(t) * 2.2 + seed * 2.1, gallop: false }, lampSide: -1, driver: seed === 1 ? 'armourer' : true, ribs: false });
-    const cam = r.cam(0.2);
-    if (still()) wf.draw(p, cam, { from: unit([-0.35, -0.75, 0.6]), hard: 1, fill: [0.6, 0.6, 0.3], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.4] });
-    if (w.lamp) lamps.push(seen(cam, w.lamp));
+    const wc = figCam(cam, r.q, 0.2);
+    if (still()) wf.draw(p, wc, { from: unit([-0.35, -0.75, 0.6]), hard: 1, fill: [0.6, 0.6, 0.3], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.4] });
+    if (w.lamp) lamps.push(seen(wc, w.lamp));
   }
   // (the lanterns' light, flickering)
-  if (moving()) for (const [i, [x, y]] of lamps.entries()) shine(p, x, y, 8 + Math.sin(t * 9.3 + i * 2) * 0.8, LAMP[1], 2, 0.3);
-  // (the old wordsmith, small, up on the next bend of the road, well ahead of them, his staff up at the prison, burning; his
-  // long shadow down the road behind him)
-  // (sculpted as on page 3, oldSmithFigure, drawn larger than he would be seen so far off, that he is seen at all)
-  const rs = road(268);
-  const sf = oldSmithFigure(Math.atan2(rs.dir[0], -rs.dir[1]), Math.sin(T0(t) * 1.3) * 0.15, unit([0.35, 0.9, 0.75]), true, 19.2);
-  const scs = rs.cam(0.48);
-  if (still()) stroke(p, [[rs.x - 1, rs.y + 1], [rs.x - 12, rs.y + 3]], 1, '#141020');
-  if (still()) sf.f.draw(p, scs, { from: unit([0.55, 1, 0.3]), hard: 1, fill: [-0.3, -1, 0.5], fillK: 0.45, rim: CYANS[2], rimFrom: [1, -0.6] });
-  const sh2 = seen(scs, sf.head);
-  if (moving()) paintStaffFire(p, sh2[0], sh2[1], 0.32, t, 0.85 + 0.15 * Math.sin(t * 2.4));
-  // THE NEAR SLOPE: black rock and pines framing the bottom right, their tops caught by the glow
+  const L = cam.F / 520;
+  if (moving()) for (const [i, [x, y]] of lamps.entries()) shine(p, x, y, (8 + Math.sin(t * 9.3 + i * 2) * 0.8) * L, LAMP[1], 2, 0.3);
+  const ahead = land.along(SMITH_AT);
+  const [hx, hy] = seenAt(cam, [ahead.q[0], ahead.q[1], ahead.q[2] + 1.8]);
   if (still()) {
-  const near = layerOf(p);
-  near.poly(loop([[W * 0.6, H + 10], [W * 0.68, H * 0.88], [W * 0.8, H * 0.8], [W * 0.9, H * 0.71], [W + 10, H * 0.66], [W + 10, H + 10]], 10, [0, 4, 5]), '#06050c');
-  paintPine(near, W * 0.83, H * 0.84, 52, 0);
-  paintPine(near, W * 0.94, H * 0.76, 70, 1);
-  paintPine(near, W * 0.74, H * 0.92, 34, 2);
-  near.each((x, y) => (!near.has(x, y - 1) && glow(x, y, GX, GY, W * 0.7) > 0.05 ? '#4a3036' : undefined));
-  over(p, near, INK);
+    p.set(Math.round(hx), Math.round(hy), '#07060d').set(Math.round(hx), Math.round(hy) + 1, '#07060d');
+  }
+  if (moving()) {
+    const fl = 0.85 + 0.15 * Math.sin(t * 2.4);
+    shine(p, hx, hy - 1, 7 * L * fl, CYANS[2], 2, 0.4);
+    p.set(Math.round(hx), Math.round(hy) - 1, CYANS[0]).set(Math.round(hx) + 1, Math.round(hy) - 1, CYANS[1]);
   }
   // THE CAPTION
-  caption(p, 'They followed the old wordsmith up the mountain...', 6, 6, 92);
+  caption(p, 'They followed the old wordsmith up the mountain...', 6, 6, 150);
 }
 
 /**
@@ -444,6 +425,7 @@ function paintRoad3D(p: Px, W: number, H: number, GX: number, GY: number): (m: n
   const F = W * 0.78;
   const HY = H * 0.44;
   const EYE = 28;
+  const u = W / 392;
   const proj = (q: V3): Pt => [W / 2 + (F * q[0]) / q[1], HY - (F * (q[2] - EYE)) / q[1]];
   /** A point of the road put where it is seen on the picture at `d` metres away. */
   const at = (sx: number, sy: number, d: number): V3 => [((sx - W / 2) * d) / F, d, EYE + ((HY - sy) * d) / F];
@@ -546,11 +528,11 @@ function paintRoad3D(p: Px, W: number, H: number, GX: number, GY: number): (m: n
         fill([proj(upA), proj(upB), proj(dnB), proj(dnA)], 1, 0.4 + g * 0.85 + toward * 0.1, d);
         // its ruts, where it is wide enough to show them; the joints of the wall's stones, where it is tall enough
         const wide = Math.hypot(proj(upA)[0] - proj(dnA)[0], proj(upA)[1] - proj(dnA)[1]);
-        if (wide > 5) {
+        if (wide > 5 * u) {
           for (const v of [-0.55, 0.55]) line(proj(off(a, side0, v * HALF, 0.01)), proj(off(b, side, v * HALF, 0.01)), 4, 0.2, d);
         }
         const tall = Math.abs(proj(wa)[1] - proj(dnA)[1]);
-        if (tall > 4) {
+        if (tall > 4 * u) {
           line(proj(off(dnA, side0, -0.3, -WALL * 0.5)), proj(off(dnB, side, -0.3, -WALL * 0.5)), 5, 0, d);
           if (i % 2 === 0) line(proj(off(dnA, side0, -0.15, -0.1)), proj(off(dnA, side0, -0.3, -WALL * 0.5)), 5, 0, d);
           else line(proj(off(dnA, side0, -0.3, -WALL * 0.5)), proj(off(dnA, side0, -0.6, -WALL)), 5, 0, d);
@@ -580,7 +562,7 @@ function paintRoad3D(p: Px, W: number, H: number, GX: number, GY: number): (m: n
       const kd = kind[i];
       if (!kd) continue;
       const tones = TONES[kd];
-      const v = clamp01(lit[i] + (fbm(x / 4, y / 4, 21 + kd) - 0.5) * 0.3) * (tones.length - 1);
+      const v = clamp01(lit[i] + (fbm(x / (4 * u), y / (4 * u), 21 + kd) - 0.5) * 0.3) * (tones.length - 1);
       const lo = Math.floor(v);
       const c = lo < tones.length - 1 && dot(x, y, v - lo, 3) ? tones[lo + 1] : tones[lo];
       const hz = clamp01((far[i] - 120) / 700) * 0.55;
@@ -597,7 +579,7 @@ function paintRoad3D(p: Px, W: number, H: number, GX: number, GY: number): (m: n
       const i = y * W + x;
       if (kind[i]) {
         since = 0;
-        reach = Math.max(4, Math.min(16, 1800 / Math.max(60, far[i])));
+        reach = Math.max(4, Math.min(16, 1800 / Math.max(60, far[i]))) * u;
         continue;
       }
       since++;
