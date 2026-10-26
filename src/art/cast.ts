@@ -135,8 +135,8 @@ function skirt(f: Figure, st: number, b: Body, o: { hem: number; flare: number; 
     f.rod(st, at0, at1, 0.03 * k, 0.17 * k, 0.12, true);
   }
   if (o.ragged) {
-    for (let i = 0; i < 14; i++) {
-      const an = (i / 14) * Math.PI * 2 + 0.2;
+    for (let i = 0; i < 22; i++) {
+      const an = (i / 22) * Math.PI * 2 + 0.2;
       const d = add(mul(ac, Math.cos(an) * o.flare * k), mul(fw, Math.sin(an) * o.flare * 0.85 * k));
       const z = hemZ + (0.25 + ((i * 7) % 5) * 0.12) * o.ragged * k;
       f.rod(st, add(add(mid, d), [0, 0, -0.6 * k]), add(add(mid, mul(d, 1.02)), [0, 0, z - mid[2]]), 0.3 * k, 0.03 * k, 0.05, true);
@@ -594,7 +594,7 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   const stone = f.stuff({ tones: [INK, '#2a0610', '#5a0c1c', '#8a1624', '#b8323a', '#e0786a'], shine: 0.7 });
   sculptBody(f, skin, b, {
     eyes: CYAN_EYES, nose: 'small', hands,
-    as: { neck: { stuff: robe, grow: 1.15 }, trunk: { stuff: robe, grow: 1.08 }, arms: { stuff: robe, grow: 1.1 }, legs: { stuff: robe }, shins: { stuff: robe } },
+    as: { neck: { stuff: robe, grow: 1.15 }, trunk: { stuff: robe, grow: 1.2 }, arms: { stuff: robe, grow: 1.25 }, legs: { stuff: robe }, shins: { stuff: robe } },
     forearms: false, feet: false,
   });
   const slipperS = f.stuff({ tones: [INK, '#2a1006', '#4a1e0c', '#7a3416', '#a85224', '#d07a3a'], crease: 0.5 });
@@ -605,16 +605,29 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     // robe drawn over each knee to a point, sagging between them into his lap; spread on the floor round him, wider across
     // than before)
     const TA0 = ax3(b.across, mul(b.fwd, -1), b.up);
-    // (the robe drawn over all of it as one low mound, wide across: a knee at each end of it, standing up out of it; the
-    // crossed shins a roll along its front between them; the cloth sunk between the knees, where the shins cross, and
-    // spread on the floor round it; his slippers peeping out at the knees)
-    const mid = lerp(b.ankles[0], b.ankles[1], 0.5);
-    const front: V3 = [mid[0], mid[1], Math.max(0.55 * k, mid[2])];
-    f.egg(robe, [b.pelvis[0] + b.fwd[0] * 0.9 * k, b.pelvis[1] + b.fwd[1] * 0.9 * k, 0.4 * k], [4.4 * k, 2.3 * k, 0.7 * k], TA0, 0.8);
+    // (the robe loose and full, billowing out round him as he sits: from his chest it falls wide over his crossed legs, his
+    // knees standing up under it at either side, and pools on the floor all round him, rumpled at its edge; deep soft folds
+    // running down it from his middle out to the floor)
+    const ctr: V3 = [b.pelvis[0] + b.fwd[0] * 0.9 * k, b.pelvis[1] + b.fwd[1] * 0.9 * k, 0];
+    f.rod(robe, add(b.chest, mul(b.up, -0.4 * k)), [ctr[0], ctr[1], 0.9 * k], 1.75 * k, 3.6 * k, 0.9);
+    f.egg(robe, [ctr[0], ctr[1], 0.45 * k], [5.0 * k, 3.6 * k, 0.6 * k], TA0, 0.9);
     for (const j of [0, 1] as const) {
-      f.egg(robe, b.knees[j], [0.78 * k, 0.78 * k, 0.62 * k], TA0, 0.55);
-      f.rod(robe, b.knees[j], front, 0.66 * k, 0.6 * k, 0.6);
+      f.egg(robe, b.knees[j], [0.95 * k, 0.95 * k, 0.75 * k], TA0, 0.7);
       sculptFoot(f, slipperS, b, j, mul(b.across, j ? -1 : 1), 1.0);
+    }
+    for (let i = 0; i < 14; i++) {
+      const an = (i / 14) * Math.PI * 2 + 0.2;
+      const ca = Math.cos(an);
+      const sa = Math.sin(an);
+      const dir: V3 = [b.across[0] * ca * 1.3 + b.fwd[0] * sa, b.across[1] * ca * 1.3 + b.fwd[1] * sa, 0];
+      const edge: V3 = [ctr[0] + dir[0] * 4.6 * k, ctr[1] + dir[1] * 4.6 * k, 0.25 * k];
+      // (the rumpled hem lying on the floor)
+      f.egg(robe, edge, [(0.55 + ((i * 37) % 5) * 0.08) * k, (0.85 + ((i * 53) % 4) * 0.1) * k, 0.3 * k], ax3(unit([dir[0], dir[1], 0]), unit([-dir[1], dir[0], 0]), [0, 0, 1]), 0.8);
+      // (a fold running down to it: a ridge, and the hollow beside it)
+      const top: V3 = [ctr[0] + dir[0] * 1.9 * k, ctr[1] + dir[1] * 1.9 * k, 2.2 * k];
+      const low: V3 = [ctr[0] + dir[0] * 3.9 * k, ctr[1] + dir[1] * 3.9 * k, 0.45 * k];
+      if (i % 3 === 0) f.rod(robe, top, low, 0.14 * k, 0.26 * k, 0.8);
+      else if (i % 3 === 1) f.rod(robe, top, low, 0.08 * k, 0.16 * k, 0.4, true);
     }
     hemZ = -99;
   } else hemZ = skirt(f, robe, b, { hem: 0.2, flare: 2.15, folds: 8 });
