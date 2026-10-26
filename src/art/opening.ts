@@ -26,6 +26,7 @@ import { Figure, axes, cross, unit } from './sdf';
 import { ear, forearm, frameAt, hand, nose } from './anatomy';
 import * as Cast from './cast';
 import { knight4, swordOnShoulder } from './opening_knight';
+import { WORDSMITH_BUILD, wordsmith4 } from './opening_smith';
 import type { KnightSword } from './opening_knight';
 
 // ---------------------------------------------------------------------------------------------
@@ -288,6 +289,21 @@ function valleyBehind(p: Px, t: number, s: number, turn: number, eye: number, F:
 }
 
 /**
+ * A pose of the wordsmith's as it was first made, for a man of 17.4 (art/cast.ts townWordsmith): where his pelvis, hands and
+ * feet are, grown to his own height (art/opening_smith.ts: a head taller than the heroes, as the game's wordsmith is).
+ */
+function smithGrown(P: Cast.PoseOf): Cast.PoseOf {
+  const g = WORDSMITH_BUILD.tall / 17.4;
+  const s3 = (v: V3): V3 => [v[0] * g, v[1] * g, v[2] * g];
+  return { ...P, pelvis: P.pelvis ? s3(P.pelvis) : undefined, hands: [s3(P.hands[0]), s3(P.hands[1])], feet: P.feet ? [s3(P.feet[0]), s3(P.feet[1])] : undefined };
+}
+/** Where the rune burns over the wordsmith's open palm (his own measure, a pose of smithGrown's): over his hand `j`. */
+function runeOver(P: Cast.PoseOf, j: 0 | 1): V3 {
+  const h = P.hands[j];
+  return [h[0] + (j ? 0.4 : -0.4), h[1] - 0.35, h[2] + 1.3];
+}
+
+/**
  * THE KNIGHT WALKING at his ease (art/opening_knight.ts), his great sword lying on his left shoulder, held in his left fist
  * before him; his right arm swinging against his stride, his hips and shoulders going with it; `ph` his stride, `turn` his
  * head. (Not stiff: his words, 26 Oct, of the new knight standing, “I guess he looks right, just a little stiff”.)
@@ -340,26 +356,27 @@ export function paintCaravan(p: Px, t: number): void {
   const ws = walker(sNear + 1.5, 2.0);
   const kn = walker(sNear - 1.2, 2.4);
   const wf = new Figure();
-  const A = Cast.place(wf, [0, 0, 0], ws.yaw - 0.35, () => Cast.townWordsmith(wf, {
+  const wP = smithGrown({
     pelvis: [0, 0, 9.15],
-    lean: 0.05,
+    lean: 0.08,
     turn: 0.35,
-    nod: -0.05,
+    nod: 0.02,
     hands: [[-2.1, -0.2 + Math.sin(ph) * 0.6, 8.6], [3.4, -1.7, 11.4]],
-    palms: [[0, 1, 0], [0, 0, 1]],
+    palms: [[1, 0.2, 0], [0, 0, 1]],
     fingers: [[0, 0, -1], [0.1, -1, 0.15]],
     elbows: [[-1, 0.3, -0.5], [1, 0.4, -1]],
     feet: [[-0.85, -1.2 - Math.sin(ph) * 0.8, 0.75], [0.85, 1.0 + Math.sin(ph) * 0.8, 0.95]],
-  }, { palm: true }));
+  });
+  const A = Cast.place(wf, [0, 0, 0], ws.yaw - 0.35, () => wordsmith4(wf, wP, { palm: true }));
   const kf = new Figure();
   const kW = knightWalking(ph, -0.15);
   Cast.place(kf, [0, 0, 0], kn.yaw + 0.25, () => knight4(kf, kW.P, kW.sword, Math.sin(T0(t) * 3.1) * 0.25));
   const wc = figCam(cam, ws.q, 0.1);
   const kc = figCam(cam, kn.q, 0.1);
-  const rune = seen(wc, A.at([3.75, -2.0, 12.6]));
+  const rune = seen(wc, A.at(runeOver(wP, 1)));
   if (still()) {
     kf.draw(p, kc, { cel: COMIC, at: [9, -12, 14], hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
-    wf.draw(p, wc, { cel: COMIC, at: A.at([3.75, -2.0, 12.6]), hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
+    wf.draw(p, wc, { cel: COMIC, at: A.at(runeOver(wP, 1)), hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
   }
   if (moving()) {
     const fl = 0.85 + 0.15 * Math.sin(t * 5.3);
@@ -1916,23 +1933,24 @@ export function paintCompany(p: Px, t: number): void {
   const yawUp = Math.atan2(d[0], -d[1]);
   const wf = new Figure();
   // (turned to the knight walking at his right, his right palm up toward him with the rune over it)
-  const A = Cast.place(wf, [0, 0, 0], yawUp + 0.45, () => Cast.townWordsmith(wf, {
+  const wP = smithGrown({
     pelvis: [0, 0, 9.15 + Math.abs(Math.sin(ph)) * 0.08],
-    lean: 0.05,
+    lean: 0.08,
     turn: -0.35,
-    nod: -0.05,
+    nod: 0.02,
     hands: [[-3.4, -1.7, 11.4], [2.1, -0.2 + Math.sin(ph) * 0.6, 8.6]],
-    palms: [[0, 0, 1], [0, 1, 0]],
+    palms: [[0, 0, 1], [-1, 0.2, 0]],
     fingers: [[-0.1, -1, 0.15], [0, 0, -1]],
     elbows: [[-1, 0.4, -1], [1, 0.3, -0.5]],
     feet: [[-0.85, -1.2 - Math.sin(ph) * 0.8, 0.75], [0.85, 1.0 + Math.sin(ph) * 0.8, 0.95]],
-  }, { palm: true }));
+  });
+  const A = Cast.place(wf, [0, 0, 0], yawUp + 0.45, () => wordsmith4(wf, wP, { palm: true }));
   const kf = new Figure();
   const kW = knightWalking(ph, 0.3);
   Cast.place(kf, [0, 0, 0], yawUp + 0.1, () => knight4(kf, kW.P, kW.sword, Math.sin(t0 * 3.1) * 0.25));
   const wc = figCam(cam, wsAt, 0.1);
   const kc = figCam(cam, knAt, 0.1);
-  const R3 = A.at([-3.75, -2.0, 12.6]);
+  const R3 = A.at(runeOver(wP, 0));
   const rr = seen(wc, R3);
   if (still()) {
     // (the nearer drawn last)
@@ -3583,15 +3601,15 @@ export function paintBarred(p: Px, t: number): void {
   // THE WORDSMITH, standing back against the door, his hand up on the bar over him, getting his breath
   {
     const f = new Figure();
-    Cast.place(f, [0, 0, 0], 0.2, () => Cast.townWordsmith(f, {
+    Cast.place(f, [0, 0, 0], 0.2, () => wordsmith4(f, smithGrown({
       lean: -0.08 + pant(3.9, 2),
       nod: -0.25,
       side: 0.08,
       hands: [[-2.0, 0.6, 16.4], [2.2, -0.2, 8.8]],
       elbows: [[-1, 0.3, 0], [1, 0.3, -0.5]],
-      palms: [[0, -1, 0], [-1, 0, 0]],
+      palms: [[0, 1, 0.2], [-1, 0.1, 0]],
       fingers: [[0, 0, 1], [0, 0, -1]],
-    }), OLD);
+    })), OLD);
     f.draw(p, at(282, 252, 10.6, [0.25, 1, -0.05]), lampLight(282));
   }
   // THE MYSTIC sunk down cross-legged, his hands in his lap, his head bowed
