@@ -36,6 +36,13 @@ export interface Stuff {
   grain?: number;
   /** Cloth's folds: how many hang down it (default: cloth, a stuff that creases deep and does not shine, has them). */
   folds?: number;
+  /**
+   * Polished steel: it gives back the world round it as a mirror does, more than it takes the light (0..1, how much): the
+   * dusk sky over the horizon in it, the horizon a bright line across it, the dark ground under; `horizon` the colour that
+   * line is warmed toward (the sunset's in it).
+   */
+  metal?: number;
+  horizon?: string;
 }
 
 /** Smooth noise in three dimensions, 0..1. */
@@ -363,6 +370,18 @@ export class Figure {
         const fall = key ? (light.reach ? Math.min(1, 1.25 * Math.exp(-len(sub(key, q)) / light.reach)) : Math.min(1, 2.2 / (0.6 + len(sub(key, q)) * 0.25))) : 1;
         let v = clamp01((dl * (0.5 + hard * 0.35) + 0.5 - hard * 0.25) * fall);
         if (light.fill) v = Math.max(v, clamp01(dt(n, unit(light.fill))) * (light.fillK ?? 0.25));
+        // (polished steel: the world in it, the sky and the bright horizon and the dark ground, by where the eye's line
+        // glances off it to; lit a little by the key as well)
+        let band = false;
+        const metalK = this.stuffs[m].metal ?? 0;
+        if (metalK > 0) {
+          const toEye = D > 0 ? unit(sub(eye, q)) : mul(look, -1);
+          const rz = 2 * dt(n, toEye) * n[2] - toEye[2];
+          const env = rz > 0.3 ? 0.78 - (rz - 0.3) * 0.42 : rz > 0.04 ? 1.02 : rz > -0.04 ? 0.62 : 0.1 + Math.max(0, rz + 0.5) * 0.18;
+          band = rz > 0.04 && rz <= 0.3;
+          const lit = clamp01(dl * 0.5 + 0.5) * fall;
+          v = v * (1 - metalK) + env * (0.42 + 0.58 * lit) * metalK;
+        }
         // (a shining stuff's glint: where the light comes off it toward the eye)
         const shineK = this.stuffs[m].shine ?? 0;
         if (shineK > 0) {
@@ -407,6 +426,7 @@ export class Figure {
           else colour[k] = st.tones[n - 1];
         } else if (st.hatch && v < 1 / st.tones.length && (x + y) % st.hatch === 0) colour[k] = INK;
         else colour[k] = toneAt(st.tones, v, x, y, true, 0.12);
+        if (band && st.horizon && v > 0.7 && colour[k] !== INK) colour[k] = mixHex(colour[k]!, st.horizon, 0.5);
       }
     }
     // the rim from behind: the figure's edge toward it

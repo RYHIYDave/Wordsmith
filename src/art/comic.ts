@@ -1,4 +1,4 @@
-// THE OPENING'S COMIC (art/opening.ts): the tools its pages are painted with. As the start screen is painted (art/title_smith3.ts):
+// THE OPENING'S COMIC (art/opening.ts): the tools its pages are painted with. As the start screen is painted (its own painter, art/title_smith*):
 // in code, in the game's own crisp pixels, at the finer grain (two picture pixels to a game pixel), no smoothing and no blur.
 // What makes it a comic book's: every shape inked round with a black line; flat bands of colour from one light, never a smooth
 // ramp; the shadows' last band laid in dots (the printed comic's halftone); captions in boxes; pages with gutters.

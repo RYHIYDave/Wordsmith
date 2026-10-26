@@ -1185,7 +1185,7 @@ export function paintFarAhead(p: Px, t: number): void {
 
 // =============================================================================================
 // PAGE 2: THE CARAVAN, close, each in a box of his own, in the lantern's light (from the front, on the left) and the dusk
-// behind (on the right). Their skin the game's own (art/title_smith3.ts SKIN_T), warmed where the lamp is on it; their eyes
+// behind (on the right). Their skin the game's own (the start screen's SKIN_T), warmed where the lamp is on it; their eyes
 // the friend's two points of cyan light (the stranger's gold).
 
 /** Skin in lamplight, darkest first: the game's, warmed toward its brightest. */

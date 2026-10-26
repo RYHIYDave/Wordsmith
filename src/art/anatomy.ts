@@ -175,6 +175,8 @@ export interface Pose {
   lean?: number;
   side?: number;
   twist?: number;
+  /** The hips tipped, one higher than the other (radians, + his left hip up): the weight on the higher one's leg. */
+  hipTilt?: number;
   /** The head turned (+ to his left), nodded (+ down), tipped (+ to his left). */
   turn?: number;
   nod?: number;
@@ -256,7 +258,8 @@ export function pose(B: Build, P: Pose): Body {
   up = rotAbout(up, fwd, -(P.side ?? 0));
   fwd = rotAbout(fwd, up, P.twist ?? 0);
   const across = unit(cross(up, fwd));
-  const hipsAcross: V3 = unit(cross([0, 0, 1], rotAbout([0, -1, 0], [0, 0, 1], (P.twist ?? 0) * 0.3)));
+  const hipsLevel: V3 = unit(cross([0, 0, 1], rotAbout([0, -1, 0], [0, 0, 1], (P.twist ?? 0) * 0.3)));
+  const hipsAcross: V3 = rotAbout(hipsLevel, unit(cross(hipsLevel, [0, 0, 1])), P.hipTilt ?? 0);
   const waist = add(pelvis, mul(up, 1.3 * k));
   const chest = add(pelvis, mul(up, 3.55 * k));
   const neck = add(pelvis, mul(up, 5.1 * k));

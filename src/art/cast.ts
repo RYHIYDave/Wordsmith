@@ -43,7 +43,7 @@ export const GOLD_EYES = ['#ffd866', '#d09a20', '#7a5210'];
 // ---------------------------------------------------------------------------------------------
 // WHAT THEY ARE MADE OF (each a run of tones, darkest first)
 
-const T = {
+export const T = {
   skinLight: [INK, '#3a2430', '#6a4248', '#9a6a66', '#c8988a', '#ecc6b0', '#fde2d2'],
   skinOld: [INK, '#2e2232', '#5a4250', '#8a6a72', '#b8968e', '#dcc0b4', '#f2e0d6'],
   skinDark: [INK, '#24141a', '#46282c', '#6e4438', '#9a6a52', '#c09276', '#e0b89c'],
@@ -265,7 +265,8 @@ export function standing(B: Build, over: Partial<Pose> = {}): Pose {
  * `face`, which way the flat of its blade is turned (by default, his front).
  */
 export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: boolean; face?: V3 } | null, flap = 0, kinds: readonly ['fist' | 'flat' | 'open', 'fist' | 'flat' | 'open'] = ['fist', 'fist']): Body {
-  const B: Build = { tall: 18.2, broad: 1.12, heavy: 1.1 };
+  // (a big man, broad and heavy, his plate and mail standing out from him: his words, 25 Oct 2026, “the knight needs beef”)
+  const B: Build = { tall: 18.4, broad: 1.34, heavy: 1.42 };
   const b = pose(B, P);
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
@@ -279,7 +280,7 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
   // the body in its mail and plate: mail at the neck, arms and thighs, the tabard over the trunk, steel at the shins and feet
   sculptBody(f, mail, b, {
     face: false, skull: false, hands: false,
-    as: { trunk: { stuff: mail, grow: 1.04 }, arms: { stuff: mail, grow: 1.15 }, forearms: { stuff: steel, grow: 1.22 }, legs: { stuff: mail, grow: 1.22 }, shins: { stuff: steel, grow: 1.32 }, feet: { stuff: steel, grow: 1.22 } },
+    as: { trunk: { stuff: mail, grow: 1.08 }, arms: { stuff: mail, grow: 1.32 }, forearms: { stuff: steel, grow: 1.38 }, legs: { stuff: mail, grow: 1.34 }, shins: { stuff: steel, grow: 1.42 }, feet: { stuff: steel, grow: 1.3 } },
   });
   // THE TABARD over his mail: a long cloth of red over his chest and back (the trunk's own shape, a little fuller), its
   // skirt to the middle of his thighs; open down each side from under the arm to the hem, so that the mail shows there;
@@ -321,9 +322,9 @@ export function knight(f: Figure, P: Pose, sword: { hand: 0 | 1; tip: V3; two?: 
     // (one plate over the top of the shoulder and down the outside of the arm, its lames' edges inked across it)
     const pc = add(add(add(sh, mul(b.up, 0.2 * k)), mul(out, 0.28 * k)), mul(ua, 0.55 * k));
     // (a dome over the shoulder's point, and under it two lames, each a little narrower, overlapping down the arm)
-    f.egg(steel, add(pc, mul(ua, -0.25 * k)), [0.95 * k, 0.9 * k, 0.72 * k], PA, 0.05);
-    f.egg(steel, add(pc, mul(ua, 0.35 * k)), [0.9 * k, 0.86 * k, 0.5 * k], PA, 0.02);
-    f.egg(steel, add(pc, mul(ua, 0.8 * k)), [0.8 * k, 0.78 * k, 0.42 * k], PA, 0.02);
+    f.egg(steel, add(pc, mul(ua, -0.25 * k)), [1.2 * k, 1.12 * k, 0.86 * k], PA, 0.05);
+    f.egg(steel, add(pc, mul(ua, 0.4 * k)), [1.12 * k, 1.06 * k, 0.6 * k], PA, 0.02);
+    f.egg(steel, add(pc, mul(ua, 0.92 * k)), [1.0 * k, 0.96 * k, 0.5 * k], PA, 0.02);
     for (const u of [0.25, 0.62]) {
       const ring: V3[] = [];
       for (let i = 0; i <= 8; i++) {
@@ -556,7 +557,7 @@ export function armourer(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 
   const trews = f.stuff({ tones: T.cloak, crease: 0.8 });
   const boot = f.stuff({ tones: T.boot });
   sculptBody(f, skin, b, {
-    eyes: CYAN_EYES, nose: 'ram', hands,
+    eyes: ['#2a1c14', '#120c08', '#0a0806'], nose: 'ram', hands,
     as: { trunk: { stuff: shirt, grow: 1.05 }, legs: { stuff: trews, grow: 1.08 }, shins: { stuff: boot, grow: 1.12 }, feet: { stuff: boot, grow: 1.15 } },
     arms: false,
   });
