@@ -170,11 +170,13 @@ function sleeves(f: Figure, st: number, b: Body, kind: 'bell' | 'rolled' | 'long
       f.rod(st, lerp(el, wr, 1.04), lerp(el, wr, 0.82), 0.33 * k, 0.33 * k, 0.08, true);
       continue;
     }
-    // (a bell: wider toward its mouth, and its lower side hanging below the forearm)
-    const mouth = lerp(el, wr, 0.82);
-    f.rod(st, el, mouth, 0.52 * k, 0.72 * k, 0.4);
-    const hang: V3 = add(lerp(el, wr, 0.75), [0, 0, -0.5 * k]);
-    f.rod(st, lerp(el, wr, 0.35), hang, 0.45 * k, 0.5 * k, 0.5);
+    // (a bell: wider toward its mouth, and its lower side hanging below the forearm; its mouth open, the dark inside it round
+    // the bare forearm coming out of it, well short of the wrist, that the wrist and the hand stand clear of it)
+    const mouth = lerp(el, wr, 0.66);
+    f.rod(st, el, mouth, 0.52 * k, 0.8 * k, 0.4);
+    const hang: V3 = add(lerp(el, wr, 0.6), [0, 0, -0.5 * k]);
+    f.rod(st, lerp(el, wr, 0.3), hang, 0.45 * k, 0.5 * k, 0.5);
+    f.rod(st, lerp(el, wr, 0.72), lerp(el, wr, 0.5), 0.66 * k, 0.5 * k, 0.05, true);
   }
 }
 
@@ -612,18 +614,18 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     const el = b.elbows[j];
     const wr = b.wrists[j];
     const ua = unit(sub(wr, el));
-    const F = frameAt(lerp(el, wr, 0.8), ua, [0, 0, 1]);
+    const F = frameAt(lerp(el, wr, 0.655), ua, [0, 0, 1]);
     let prev: V3 | null = null;
-    for (let i = 0; i <= 12; i++) {
-      const an = (i / 12) * Math.PI * 2;
-      const q = onFrame(F, Math.cos(an) * 0.72 * k, Math.sin(an) * 0.72 * k, 0);
+    for (let i = 0; i <= 16; i++) {
+      const an = (i / 16) * Math.PI * 2;
+      const q = onFrame(F, Math.cos(an) * 0.79 * k, Math.sin(an) * 0.79 * k, 0);
       if (prev) f.rod(gold, prev, q, 0.07 * k, 0.07 * k, 0.02);
       prev = q;
     }
   }
   const slipper = f.stuff({ tones: T.leather });
   for (const j of [0, 1] as const) {
-    f.rod(skin, lerp(b.elbows[j], b.wrists[j], 0.5), b.wrists[j], 0.32 * k, 0.27 * k, 0.2);
+    f.rod(skin, lerp(b.elbows[j], b.wrists[j], 0.45), b.wrists[j], 0.31 * k, 0.24 * k, 0.15);
     if (!o.seated) sculptFoot(f, slipper, b, j, undefined, 1.05);
   }
   // the sash of gold round his waist, its knot and end at his side; the chains at his neck
@@ -704,7 +706,7 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   f.egg(gold, onTurban(0, 0.88, 0.04), [0.24 * k, 0.1 * k, 0.28 * k], HA, 0.04);
   f.egg(stone, onTurban(0, 0.88, 0.12), [0.15 * k, 0.08 * k, 0.18 * k], HA, 0.02);
   // a bangle of gold at each wrist
-  for (const j of [0, 1] as const) f.rod(gold, lerp(b.elbows[j], b.wrists[j], 0.86), lerp(b.elbows[j], b.wrists[j], 0.93), 0.33 * k, 0.33 * k, 0.02);
+  for (const j of [0, 1] as const) f.rod(gold, lerp(b.elbows[j], b.wrists[j], 0.86), lerp(b.elbows[j], b.wrists[j], 0.9), 0.29 * k, 0.29 * k, 0.01);
   return b;
 }
 
