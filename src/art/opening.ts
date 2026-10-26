@@ -1629,18 +1629,21 @@ export function paintMystic(p: Px, t: number): void {
       lean: 0.06,
       nod: 0.12,
       turn: -0.2,
-      hands: [[-3.2, -3.6, 6.4], [1.7, -2.6, 2.9]],
-      elbows: [[-1, 0.2, -1], [1, 0.4, -0.3]],
-      palms: [[0, 0, 1], [0, 0, -1]],
-      fingers: [[-0.3, -1, 0.15], [0.2, -1, -0.3]],
+      // (his left beside it under the crystal too, open, palm up, its fingers toward the other's, the wrist straight from the
+      // forearm: both hands holding it up between them)
+      hands: [[-3.2, -3.6, 6.4], [-1.3, -4.1, 6.0]],
+      elbows: [[-1, 0.2, -1], [1, 0.2, -1]],
+      palms: [[0, 0, 1], [0, 0, 1]],
+      fingers: [[-0.3, -1, 0.15], [-0.75, -0.65, 0.05]],
       feet: [[0.7, -2.4, 0.7], [-0.7, -2.0, 0.85]],
       knees: [[-1, -0.6, -0.4], [1, -0.6, -0.4]],
-    }, ['open', 'flat'], { seated: true });
-    const F = b.handFrames[0];
-    return add3(add3(b.wrists[0], scale3(F.z, 0.62)), scale3(F.y, -0.15));
+    }, ['open', 'open'], { seated: true });
+    // (between his two palms)
+    const palm = (j: 0 | 1): V3 => add3(add3(b.wrists[j], scale3(b.handFrames[j].z, 0.62)), scale3(b.handFrames[j].y, -0.15));
+    return scale3(add3(palm(0), palm(1)), 0.5);
   }, 0.5);
-  const C3 = mAt(add3(palmL, [0, 0, 1.6 + bob0]));
-  const C3t = mAt(add3(palmL, [0, 0, 1.6 + bob]));
+  const C3 = mAt(add3(palmL, [0, 0, 2.0 + bob0]));
+  const C3t = mAt(add3(palmL, [0, 0, 2.0 + bob]));
   wagonWares(f, WL, wyaw, Z0);
   // THE CAMERA: in the front of the bed, low, behind the driver's bench, looking back down the wagon at him and out of its
   // open back; the land, and its sky, seen through that
