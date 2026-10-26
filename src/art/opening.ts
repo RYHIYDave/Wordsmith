@@ -27,6 +27,7 @@ import { ear, forearm, frameAt, hand, nose } from './anatomy';
 import * as Cast from './cast';
 import { knight4, swordOnShoulder } from './opening_knight';
 import { WORDSMITH_BUILD, wordsmith4 } from './opening_smith';
+import { armourer4 } from './opening_armourer';
 import type { KnightSword } from './opening_knight';
 
 // ---------------------------------------------------------------------------------------------
@@ -1374,7 +1375,7 @@ function armourerDriving(breath: number, sway: number, t = 0): Figure {
     f.rod(wood, [3.0, 0.6, 4.75], [4.1, 0.0, 4.75], 0.13, 0.13, 0);
     f.block(iron, [2.65, 0.75, 4.8], [0.32, 0.55, 0.26], 0.05, axes(0.4), 0);
     // HIM: leaning forward over his knees, the reins in his fists
-    const b = Cast.armourer(f, {
+    const b = armourer4(f, {
       pelvis: [0, 0.2, 5.45 + breath * 0.5],
       lean: 0.42,
       nod: -0.42,
@@ -1923,10 +1924,10 @@ export function paintCompany(p: Px, t: number): void {
   // (the wagon on the road's middle; the two of them walking beside its horse, on its right; we are ahead, low)
   const wsAt = onRoad(sW + 5.0, 1.7);
   const knAt = onRoad(sW + 4.4, 2.75);
-  const cpos0 = onRoad(sW + 7.7, 2.55);
+  const cpos0 = onRoad(sW + 8.5, 2.35);
   const cpos: V3 = [cpos0[0], cpos0[1], cpos0[2] + 1.2];
   const mid: V3 = [(wsAt[0] + knAt[0]) / 2, (wsAt[1] + knAt[1]) / 2, 0];
-  const lk = unit([mid[0] - cpos[0] + n[0] * 0.2, mid[1] - cpos[1] + n[1] * 0.2, 0]);
+  const lk = unit([mid[0] - cpos[0] + n[0] * 0.05, mid[1] - cpos[1] + n[1] * 0.05, 0]);
   if (still()) land.focus(cpos[0], cpos[1], 90);
   const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lk[0], lk[1]), pitch: 0.06, F: W * 1.2, cx: W * 0.5, hy: H * 0.48 };
   paintValley(p, t, cam, { wagons: [{ s: sW, seed: 1, driver: 'armourer' }], belt: 0.42 });
@@ -3209,7 +3210,7 @@ function sculptArmourer(f: Figure, o: V3, lean: number, door: number, t: number)
   Cast.place(f, o, 0, () => {
     // (his left shoulder to the door, his whole weight leant into it: both hands flat on it before his chest, the left
     // high by his shoulder, the right across him lower; his feet driven back on the flags, the back leg straight)
-    Cast.armourer(f, {
+    armourer4(f, {
       pelvis: [-2.6, 0.2, 8.1],
       side: 0.62 + breath,
       lean: 0.12,
@@ -3510,7 +3511,7 @@ export function paintBar(p: Px, t: number): void {
     knees: [[-0.3, -1, 0.2], [0.3, -1, 0.2]] as [V3, V3],
   });
   Cast.place(f, [-3.2, -2.1, -20.3 + up * 0.2], Math.PI, () => {
-    Cast.armourer(f, pose(0, up * 0.3), ['flat', 'flat']);
+    armourer4(f, pose(0, up * 0.3), ['flat', 'flat']);
   });
   Cast.place(f, [3.2, -2.1, -20.3 + up * 0.2], Math.PI, () => {
     knight4(f, pose(0, up * 0.3), null, 0, ['flat', 'flat']);
@@ -3601,11 +3602,12 @@ export function paintBarred(p: Px, t: number): void {
   // THE WORDSMITH, standing back against the door, his hand up on the bar over him, getting his breath
   {
     const f = new Figure();
+    // (the bar no higher for his being taller: his hand on it where it is, his arm less raised)
     Cast.place(f, [0, 0, 0], 0.2, () => wordsmith4(f, smithGrown({
       lean: -0.08 + pant(3.9, 2),
       nod: -0.25,
       side: 0.08,
-      hands: [[-2.0, 0.6, 16.4], [2.2, -0.2, 8.8]],
+      hands: [[-2.1, 0.62, 16.4 * (17.4 / WORDSMITH_BUILD.tall)], [2.2, -0.2, 8.8]],
       elbows: [[-1, 0.3, 0], [1, 0.3, -0.5]],
       palms: [[0, 1, 0.2], [-1, 0.1, 0]],
       fingers: [[0, 0, 1], [0, 0, -1]],
@@ -3647,7 +3649,7 @@ export function paintBarred(p: Px, t: number): void {
   // THE ARMOURER nearest, sat down on the floor, his back to the door, his knees up, his forearms over them, his head down
   {
     const f = new Figure();
-    Cast.place(f, [0, 0, 0], 0.25, () => Cast.armourer(f, {
+    Cast.place(f, [0, 0, 0], 0.25, () => armourer4(f, {
       pelvis: [0, 0.6, 1.75],
       lean: -0.12 + pant(4, 0),
       nod: 0.45,

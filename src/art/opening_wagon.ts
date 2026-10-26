@@ -28,6 +28,7 @@ import type { Tones } from './comic';
 import { Figure, cross, unit } from './sdf';
 import type { V3 } from './sdf';
 import * as Cast from './cast';
+import { armourer4 } from './opening_armourer';
 
 const add3 = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub3 = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -647,7 +648,7 @@ export function sculptWagon2(
     // seat, the reins in his fists, out to the horse)
     const leath = f.stuff({ tones: [INK, '#1a0e08', '#40261a', '#583420', '#704628'] });
     Cast.place(f, at([8.7, -0.6, 4.18]), yaw + Math.PI / 2, () => {
-      const b = Cast.armourer(f, {
+      const b = armourer4(f, {
         pelvis: [0, 0.2, 5.45],
         lean: 0.42,
         nod: -0.3,
