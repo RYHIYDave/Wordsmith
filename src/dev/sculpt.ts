@@ -353,7 +353,12 @@ const CREASE = 0.32;
 /** (for looking into a fault: the last figure drawn) */
 export const LAST: { sc: Sculpt | null } = { sc: null };
 
-export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size: { readonly w: number; readonly h: number }, extras?: Extras, rim: string | null = null): Drawn {
+/**
+ * A sculpture drawn on a canvas, `extras` painted with it, and its crisp edge (`rim`). `overNear`, if given, how near the eye
+ * the light painted over everything stands (as `Stage.near` measures it): where the sculpture is nearer than that, it hides
+ * the light (a claw curled round in front of a fire held in it); without it, the light is over everything.
+ */
+export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size: { readonly w: number; readonly h: number }, extras?: Extras, rim: string | null = null, overNear?: () => number): Drawn {
   const sc = spun(sc0);
   const W = size.w;
   const H = size.h;
@@ -560,6 +565,7 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
   }
   const ud = st.under.d;
   const vd = st.over.d;
+  const lightNear = overNear ? overNear() : Infinity;
   for (let i = 0; i < N * 4; i += 4) {
     if (o[i + 3] === 0 && ud[i + 3] > 0) {
       o[i] = ud[i];
@@ -567,7 +573,7 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
       o[i + 2] = ud[i + 2];
       o[i + 3] = 255;
     }
-    if (vd[i + 3] > 0) {
+    if (vd[i + 3] > 0 && !(o[i + 3] > 0 && zb[i >> 2] > lightNear)) {
       o[i] = vd[i];
       o[i + 1] = vd[i + 1];
       o[i + 2] = vd[i + 2];

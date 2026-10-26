@@ -10,8 +10,8 @@ import { CYAN } from '../art/kit';
 import { FRIEND_RIM } from '../art/hero3_knight';
 import { HEAD_B } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
-import type { GameView } from '../art/skin';
-import { add, buildOf, cross, lerp3, mul, norm, project, solve, standing, sub, trunkOf } from '../art/skeleton';
+import type { GameView, PaintView } from '../art/skin';
+import { add, buildOf, cross, curled, lerp3, mul, norm, project, solve, standing, sub, trunkOf } from '../art/skeleton';
 import type { Bones, Build, Posed, Shape, Skeleton, V3 } from '../art/skeleton';
 import { Sculpt, draw, onBall, onCone } from './sculpt';
 import type { Cone, Drawn, Ell, Hit } from './sculpt';
@@ -47,13 +47,14 @@ const CUT_DROP_OF = (): number => TUNE.cutDrop;
 export interface Who {
   s: Skeleton;
   B: Build;
-  view: GameView;
+  /** The view it is painted in: from behind as the game paints the heroes (a mirror), or as the camera truly sees it ('rear'). */
+  view: PaintView;
   /** How far the figure is truly turned (Sculpt.spin), for which side of it is the far one. */
   spin?: number;
 }
 
 /** How near the eye a point is in a view (bigger nearer). */
-const nearIn = (view: GameView, p: V3): number => project(p, view)[2];
+const nearIn = (view: PaintView, p: V3): number => project(p, view)[2];
 
 /** A part of the far side of the body from the eye: painted a step darker, as the heroes' far arm and leg are. */
 export function farSide(w: Who, p: V3): boolean {
@@ -70,23 +71,43 @@ export function limbFrame(a: V3, b: V3, out: V3): readonly [V3, V3, V3] {
   return [d, o, norm(cross(d, o))];
 }
 
+/**
+ * THE TOP OF A CURLED BACK (art/skeleton.ts Bones.hunch): where the back curls forward over the chest, the round of it
+ * between the shoulder blades, from where it curls up to the root of the neck; `pad` off the skin (cloth over it). Nothing,
+ * where the back is not curled.
+ */
+export function upperBack(sc: Sculpt, mat: number, w: Who, pad: number, cuts: { n: V3; o: number }[], tag: string): void {
+  const { s, B } = w;
+  if (!curled(s)) return;
+  const [f, l, u] = s.upper;
+  const ribs = trunkOf(B, s)[0];
+  const c = add(s.back, add(mul(u, B.chest * HUMP.up), mul(f, -ribs.h[0] * HUMP.back)));
+  sc.ell(mat, 'torso', c, [mul(f, ribs.h[0] * HUMP.deep + pad), mul(l, ribs.h[1] * HUMP.wide + pad), mul(u, B.chest * HUMP.tall + pad)], 2.2, { cuts, tag });
+}
+/** The round of a curled back: how high on the top of the back, how far back of the spine, and its depth, width and height (shares of the ribs' own). */
+export const HUMP = { up: 0.3, back: 0.25, deep: 0.8, wide: 0.86, tall: 0.42 };
+
 /** A man's body of flesh, sculpted on the bones. `bulk`: how heavily muscled (1 a strong man). */
 export function manBody(sc: Sculpt, w: Who, skin: number, bulk = 1, noArm: 'L' | 'R' | null = null): void {
   const { s, B } = w;
-  const [f, l, u] = s.chest;
+  // (the yoke, the trapezius and the neck hang from the top of the back, which is the chest unless the back is curled:
+  // art/skeleton.ts Bones.hunch; the breast and the lats lie on the ribs)
+  const [f, l, u] = s.upper;
   const trunk = trunkOf(B, s);
   const [ribs, belly] = trunk;
+  const [rf, rl, ru] = ribs.r;
   const k = bulk;
   // THE TRUNK: the ribcage, broad at the top and drawn in to the waist (the V of a fighter), the belly under it
   sc.ell(skin, 'torso', ribs.c, [mul(ribs.r[0], ribs.h[0] * 0.92), mul(ribs.r[1], ribs.h[1] * 0.98), mul(ribs.r[2], ribs.h[2] * 1.02)], 2.2, { tag: 'ribs' });
+  upperBack(sc, skin, w, 0, [], 'ribs');
   sc.ell(skin, 'torso', add(s.neck, add(mul(u, -3.2 * k), mul(f, -0.4))), [mul(f, ribs.h[0] * 0.8), mul(l, B.shoulderHalf * 0.86), mul(u, 2.8)], 2.4, { tag: 'yoke' });
   sc.ell(skin, 'torso', add(belly.c, mul(belly.r[0], 0.3)), [mul(belly.r[0], belly.h[0] * 1.0), mul(belly.r[1], belly.h[1] * 0.98), mul(belly.r[2], belly.h[2] * 1.05)], 2.4, { tag: 'belly' });
   // the breast muscles, one each side, and the lats under the arms
   for (const side of [1, -1]) {
-    const pc = add(ribs.c, add(mul(f, ribs.h[0] * 0.55), add(mul(l, side * ribs.h[1] * 0.44), mul(u, ribs.h[2] * 0.36))));
-    sc.ell(skin, 'torso', pc, [mul(f, 2.0 * k), mul(norm(add(mul(l, 1), mul(u, side * 0.0))), 3.1 * k), mul(u, 2.3 * k)], 1.6, { tag: 'pec' });
-    const lat = add(ribs.c, add(mul(f, -ribs.h[0] * 0.2), add(mul(l, side * ribs.h[1] * 0.78), mul(u, ribs.h[2] * 0.05))));
-    sc.ell(skin, 'torso', lat, [mul(f, 2.6), mul(l, 1.6 * k), mul(u, 3.6)], 2.0, { tag: 'lat' });
+    const pc = add(ribs.c, add(mul(rf, ribs.h[0] * 0.55), add(mul(rl, side * ribs.h[1] * 0.44), mul(ru, ribs.h[2] * 0.36))));
+    sc.ell(skin, 'torso', pc, [mul(rf, 2.0 * k), mul(norm(add(mul(rl, 1), mul(ru, side * 0.0))), 3.1 * k), mul(ru, 2.3 * k)], 1.6, { tag: 'pec' });
+    const lat = add(ribs.c, add(mul(rf, -ribs.h[0] * 0.2), add(mul(rl, side * ribs.h[1] * 0.78), mul(ru, ribs.h[2] * 0.05))));
+    sc.ell(skin, 'torso', lat, [mul(rf, 2.6), mul(rl, 1.6 * k), mul(ru, 3.6)], 2.0, { tag: 'lat' });
     // the trapezius, from the neck out to the shoulder
     const sh = side > 0 ? s.shoulderL : s.shoulderR;
     sc.cone(skin, 'torso', add(s.neck, add(mul(u, -0.2), mul(f, -0.8))), add(sh, add(mul(u, 0.5), mul(f, -0.5))), 1.8 * k, 1.4 * k, 1.8, { tag: 'trap' });
@@ -205,9 +226,11 @@ export const BLACKHIDE: Ramp = ['#0e080e', '#1e1218', '#36222a', '#56383c', '#7a
 /** A TAILOR for a sculpted body: cloth over its trunk, its legs, boots, a band round the waist, a strap over the chest. */
 export function tailorFor(sc: Sculpt, w: Who, bulk: number) {
   const { s, B } = w;
-  const [f, l, u] = s.chest;
+  // (over the yoke and the trapezius, the top of the back's own way: as the body under it, manBody)
+  const [f, l, u] = s.upper;
   const trunk = trunkOf(B, s);
   const [ribs, belly, pel] = trunk;
+  const [rf, rl, ru] = ribs.r;
   const dot3 = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   /** Cloth over the trunk (the chest, the belly), `pad` off the skin, kept under the cuts. */
   const overTrunk = (mat: number, pad: number, cuts: { n: V3; o: number }[], tag = 'cloth', shoulders = false): void => {
@@ -220,12 +243,13 @@ export function tailorFor(sc: Sculpt, w: Who, bulk: number) {
       }
     }
     sc.ell(mat, 'torso', ribs.c, [mul(ribs.r[0], ribs.h[0] * 0.92 + pad), mul(ribs.r[1], ribs.h[1] * 0.98 + pad), mul(ribs.r[2], ribs.h[2] * 1.02 + pad)], 2.2, { cuts, tag });
+    upperBack(sc, mat, w, pad, cuts, tag);
     sc.ell(mat, 'torso', add(belly.c, mul(belly.r[0], 0.3)), [mul(belly.r[0], belly.h[0] + pad), mul(belly.r[1], belly.h[1] * 0.98 + pad), mul(belly.r[2], belly.h[2] * 1.05 + pad)], 2.4, { cuts, tag });
     for (const side of [1, -1]) {
-      const pc = add(ribs.c, add(mul(f, ribs.h[0] * 0.55), add(mul(l, side * ribs.h[1] * 0.44), mul(u, ribs.h[2] * 0.36))));
-      sc.ell(mat, 'torso', pc, [mul(f, 2.0 * bulk + pad), mul(l, 3.1 * bulk + pad), mul(u, 2.3 * bulk + pad)], 1.6, { cuts, tag });
-      const lat = add(ribs.c, add(mul(f, -ribs.h[0] * 0.2), add(mul(l, side * ribs.h[1] * 0.78), mul(u, ribs.h[2] * 0.05))));
-      sc.ell(mat, 'torso', lat, [mul(f, 2.6 + pad), mul(l, 1.6 * bulk + pad), mul(u, 3.6 + pad)], 2.0, { cuts, tag });
+      const pc = add(ribs.c, add(mul(rf, ribs.h[0] * 0.55), add(mul(rl, side * ribs.h[1] * 0.44), mul(ru, ribs.h[2] * 0.36))));
+      sc.ell(mat, 'torso', pc, [mul(rf, 2.0 * bulk + pad), mul(rl, 3.1 * bulk + pad), mul(ru, 2.3 * bulk + pad)], 1.6, { cuts, tag });
+      const lat = add(ribs.c, add(mul(rf, -ribs.h[0] * 0.2), add(mul(rl, side * ribs.h[1] * 0.78), mul(ru, ribs.h[2] * 0.05))));
+      sc.ell(mat, 'torso', lat, [mul(rf, 2.6 + pad), mul(rl, 1.6 * bulk + pad), mul(ru, 3.6 + pad)], 2.0, { cuts, tag });
     }
   };
   /** Legs in cloth: the seat, and each leg from the hip to `to` (1 the knee, 2 the ankle), `loose` how far off the leg. */

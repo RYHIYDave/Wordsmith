@@ -138,7 +138,7 @@ const LENGTHS = new Set<keyof Bones>(['px', 'py', 'pz', 'lhx', 'lhy', 'lhz', 'rh
 /** His rest pose: his master's, every length made smaller. */
 export const MINI_REST: Bones = (() => {
   const out = { ...FM_REST } as Record<string, number>;
-  for (const k of LENGTHS) out[k] = FM_REST[k] * K;
+  for (const k of LENGTHS) out[k] = (FM_REST[k] as number) * K;
   // (no staff: his right hand held out at his side as his left is, a claw of fire in each)
   Object.assign(out, { rhIn: 0, rhx: 4.0 * K, rhy: -14.0 * K, rhz: 3.0 * K, re: 46, yaw: -4, twist: 2 });
   return out as unknown as Bones;
