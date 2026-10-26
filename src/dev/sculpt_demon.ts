@@ -28,9 +28,9 @@ import type { Aura } from './demon_hulk';
 import { IVORY, STEEL5, handFire } from './sculpt_warlock';
 
 const D = Math.PI / 180;
-const tone5 = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, k))];
+export const tone5 = (r: Ramp, k: number): string => r[Math.max(0, Math.min(4, k))];
 /** A hide of five steps, made from one of the demon's hides (theirs have the darkest twice). */
-function five(r: Ramp): Ramp {
+export function five(r: Ramp): Ramp {
   return [r[0], mixHex(r[0], r[2], 0.5), r[2], r[3], r[4]];
 }
 function mixHex(a: string, b: string, k: number): string {
@@ -39,7 +39,7 @@ function mixHex(a: string, b: string, k: number): string {
   return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 /** Its hide lifted a step, so that a figure so dark still shows its shape on the dungeon's dark (its top light, the rim). */
-function lifted(r: Ramp): Ramp {
+export function lifted(r: Ramp): Ramp {
   return [r[0], mixHex(r[1], r[2], 0.5), mixHex(r[2], r[3], 0.6), mixHex(r[4], '#8a82a6', 0.22), mixHex(r[4], '#a8a0c4', 0.5)];
 }
 
