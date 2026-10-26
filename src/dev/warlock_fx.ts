@@ -681,3 +681,80 @@ export function stepLight(m: WarlockMove, t: number, view: GameView, turn = 0): 
   l.lay(out);
   return out;
 }
+
+// ---------------------------------------------------------------------------------------------
+// THE CHANGE (his pick of his brief, “Violent burst (Recommended)”: he doubles over, the demon tears out of him in a blast of
+// smoke and a shockwave): as he bursts (the move's CHANGE_BURST), HE IS GONE INTO SMOKE in a blink (`dissolve`); a BLAST OF
+// BLACK SMOKE billows out where he stood, cyan embers flung out of it; a SHOCKWAVE runs out over the floor, a ring of
+// smoke and cyan light; and out of the smoke THE DEMON forms where he stood (dev/sculpt_demon.ts, its own figure).
+
+/** The scene for it: big enough for the demon (dev/demon_hulk.ts HULK_CANVAS), the floor point under them both at (`ax`, `ay`). */
+export const CHANGE_SCENE = { w: 380, h: 380, ax: 190, ay: 284 };
+/** Where his canvas and the demon's go in that scene (top left). */
+export const CHANGE_MAN_AT: [number, number] = [CHANGE_SCENE.ax - CANVAS3.ax, CHANGE_SCENE.ay - CANVAS3.ay];
+/** How long after he bursts the demon begins to form out of the smoke, and how long it takes. */
+export const DEMON_FORMS: [number, number] = [0.12, 0.45];
+
+/** How far the man is gone into smoke at a moment of the change (`burst`, the moment he bursts). */
+export function changeGone(burst: number, t: number): number {
+  const u = Math.max(0, Math.min(1, (t - (burst - FR)) / (2 * FR)));
+  return u * u * (3 - 2 * u);
+}
+/** How far the demon is still smoke (1 all smoke, 0 all there) at a moment of the change. */
+export function demonSmoke(burst: number, t: number): number {
+  const u = Math.max(0, Math.min(1, (t - burst - DEMON_FORMS[0]) / DEMON_FORMS[1]));
+  return 1 - u * u * (3 - 2 * u);
+}
+
+/** THE CHANGE'S SMOKE AND LIGHT AT A MOMENT (seconds from the start of the change move; `burst` the moment he bursts): see above. On a scene of its own (CHANGE_SCENE). */
+export function changeLight(burst: number, t: number, view: GameView): Px {
+  const out = new Px(CHANGE_SCENE.w, CHANGE_SCENE.h);
+  const l = new Light();
+  const sm = new Light();
+  const since = t - burst;
+  if (since < -FR) return out;
+  const { ax, ay } = CHANGE_SCENE;
+  void view;
+  // (THE SHOCKWAVE: a ring running out over the floor, flat as the floor lies, smoke boiling up off it, light on its edge)
+  if (since >= 0 && since < 0.5) {
+    const u = since / 0.5;
+    const r = 8 + u * 120;
+    const ring = 7 + 8 * u;
+    for (let y = Math.floor(ay - r * 0.5 - 12); y <= Math.ceil(ay + r * 0.5 + 4); y++) {
+      for (let x = Math.floor(ax - r - 6); x <= Math.ceil(ax + r + 6); x++) {
+        const d = Math.hypot(x - ax, (y - ay) * 2);
+        const off = r - d;
+        if (off < 0 || off > ring) continue;
+        const n = noise2(x * 0.3, y * 0.3 + since * 9);
+        if (n < 0.15 + u * 0.55) continue;
+        // (its leading edge light, smoke behind it)
+        if (off < 2.4 && u < 0.75) l.put(x, y, u < 0.3 ? 3 : off < 1.2 ? 2 : 1);
+        else sm.put(x, y - Math.round((off / ring) * 4), off > ring * 0.6 ? 2 : 1);
+      }
+    }
+  }
+  // (THE BLAST OF SMOKE where he stood: billowing out and up, thinning as the demon forms in it)
+  const grow = Math.min(1, Math.max(0, since + FR) / 0.25);
+  const thin = Math.max(0, Math.min(1, (since - 0.35) / 0.7));
+  if (thin < 1) {
+    cloud(sm, ax, ay + 4, 60 + 70 * grow, 70 + 50 * grow, t, 0.15 + thin * 0.85, 31);
+    for (const [ox, oy, k] of [[-46, -10, 0], [44, -16, 1], [-24, -60, 2], [30, -70, 3], [0, -90, 4]] as const) {
+      cloud(sm, ax + ox * grow, ay + oy * grow, 30 + 20 * grow, 30 + 20 * grow, t + k, 0.25 + thin * 0.75, 40 + k);
+    }
+  }
+  // (cyan embers flung out of it)
+  if (since >= 0 && since < 0.9) {
+    for (let e = 0; e < 18; e++) {
+      const ang = hash(e * 3) * Math.PI * 2;
+      const sp = 60 + 120 * hash(e * 3 + 1);
+      const x = ax + Math.cos(ang) * sp * since;
+      const y = ay - 40 + Math.sin(ang) * sp * since * 0.6 + 60 * since * since;
+      if (hash(e * 3 + 2) < since * 1.1) continue;
+      l.put(x, y, since < 0.3 ? 3 : 2);
+      l.put(x + 1, y, since < 0.3 ? 2 : 1);
+    }
+  }
+  sm.lay(out, SMOKE);
+  l.lay(out);
+  return out;
+}

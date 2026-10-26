@@ -183,7 +183,7 @@ export function handFire(st: Stage, at: V3, size: number, t = 0, lean = 0): void
  * At rest, as he was drawn before.
  */
 export const SKIRT_SWING: { v: V3 } = { v: [0, 0, 0] };
-export const ARM_FIRE = { size: 4.0, seed: 1, t: 0, lean: 0, open: 0 };
+export const ARM_FIRE = { size: 4.0, seed: 1, t: 0, lean: 0, open: 0, blaze: 0 };
 /** As he runs his coat swings open at the front, its skirts flung back behind his legs (`on`); standing, it hangs closed. */
 export const SKIRT_OPEN = { on: false };
 
@@ -397,9 +397,12 @@ export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
         if (p.tag === 'claw' || p.tag === 'spine') return null;
         if (p.k === 'cone') {
           const { t: along, around } = onCone(p, h.p, u);
-          // cracks of cyan light running down it, branching
+          // cracks of cyan light running down it, branching; BLAZING (his pact meter full: his pick, “Arm blazes cyan
+          // (Recommended)”) wider, more of them, white-hot
           const zig = Math.sin(along * 22 + around * 1.5) * 0.35;
-          if (Math.abs(around - 0.6 - zig) < 0.16 || (along > 0.4 && Math.abs(around + 1.4 + zig * 0.6) < 0.12)) return h.tone >= 2 ? CYAN[3] : CYAN[2];
+          const wide = 1 + 0.9 * ARM_FIRE.blaze;
+          if (Math.abs(around - 0.6 - zig) < 0.16 * wide || (along > 0.4 && Math.abs(around + 1.4 + zig * 0.6) < 0.12 * wide)) return ARM_FIRE.blaze > 0.5 ? (h.tone >= 1 ? '#ffffff' : CYAN[3]) : h.tone >= 2 ? CYAN[3] : CYAN[2];
+          if (ARM_FIRE.blaze > 0.5 && Math.abs(around - 2.2 + zig * 0.8) < 0.1 * wide) return h.tone >= 2 ? CYAN[3] : CYAN[2];
         }
         return farSide(w, el) ? shadeOf(DEMON_RED, h.tone - 1) : null;
       },
@@ -517,5 +520,15 @@ export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
     const seat = sc.at(fireSeat(s, ARM_FIRE.size));
     fireNear = st.near(seat) + FIRE_DEEP;
     handFire(st, seat, ARM_FIRE.size, ARM_FIRE.t, ARM_FIRE.lean);
+    // (THE ARM BLAZING, his pact meter full: cyan fire licking up all along it, shoulder to claws, pulsing)
+    if (ARM_FIRE.blaze > 0) {
+      const pulse = 0.8 + 0.25 * Math.sin(ARM_FIRE.t * 9);
+      const along: V3[] = [];
+      for (let i = 0; i < 6; i++) along.push(i < 3 ? lerp3(s.shoulderL, s.elbowL, 0.2 + i * 0.32) : lerp3(s.elbowL, s.handL, (i - 3) * 0.33 + 0.1));
+      along.forEach((p, i) => {
+        const size = ARM_FIRE.blaze * pulse * (1.9 + 0.5 * Math.sin(ARM_FIRE.t * 7 + i * 1.9));
+        if (size > 0.9) handFire(st, sc.at(add(p, [0, 0, 2.2])), size, ARM_FIRE.t + i * 0.37, ARM_FIRE.lean);
+      });
+    }
   }, FRIEND_RIM, () => fireNear);
 }

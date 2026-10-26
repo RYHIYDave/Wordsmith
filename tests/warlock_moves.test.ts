@@ -24,7 +24,9 @@ import { FR, STANCE, WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from 
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { strikes, struck } from '../src/dev/brawler_punches';
 import { warlockSpells } from '../src/dev/warlock_spells';
-import { boltLight, curseLight, dissolve, spreadLight, stepGone, stepLight } from '../src/dev/warlock_fx';
+import { boltLight, changeGone, changeLight, curseLight, demonSmoke, dissolve, spreadLight, stepGone, stepLight } from '../src/dev/warlock_fx';
+import { CHANGE_BURST } from '../src/dev/warlock_spells';
+import { sculptDemon } from '../src/dev/sculpt_demon';
 
 /** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step). */
 const ALL = [...warlockMoves(), ...warlockSpells()];
@@ -211,6 +213,26 @@ for (const m of ALL.filter((mv) => mv.name.includes('smoke step'))) {
         const gone = stepGone(m, tm);
         if (gone > 0 && gone < 1) for (const f of pictureFindings(dissolve(drawWarlockAt(view, m, tm).px, gone, t))) found.push(`${view}, ${t.toFixed(2)} s, him: ${f}`);
         for (const f of pictureFindings(stepLight(m, t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+      }
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}
+
+// THE CHANGE (dev/warlock_fx.ts): him bursting into smoke, the blast and the shockwave, and the demon forming out of the smoke,
+// every frame, from in front and behind: crisp, no pixel alone, nothing pink, nothing cut off
+for (const m of ALL.filter((mv) => mv.name.startsWith('Tapped'))) {
+  test(`${m.name}: him bursting into smoke, the blast and the shockwave, the demon forming out of it, every frame: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+    const found: string[] = [];
+    for (const view of ['front', 'back'] as const) {
+      const demon = sculptDemon(view).px;
+      for (let i = 0; i <= (m.long + 2.0) * FPS; i++) {
+        const t = i / FPS;
+        const g = changeGone(CHANGE_BURST, t);
+        if (g > 0 && g < 1) for (const f of pictureFindings(dissolve(drawWarlockAt(view, m, Math.min(t, m.long)).px, g, t))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s, him: ${f}`);
+        const d = demonSmoke(CHANGE_BURST, t);
+        if (d > 0 && d < 1) for (const f of pictureFindings(dissolve(demon, d, t))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s, the demon: ${f}`);
+        for (const f of pictureFindings(changeLight(CHANGE_BURST, t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);

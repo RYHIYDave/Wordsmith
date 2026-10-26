@@ -8,7 +8,7 @@
 // and winds down big, the strike itself a flash.
 
 import type { Bones, Key3, Motion } from '../art/skeleton';
-import { FR, STANCE, T, WARLOCK_B, clamp, clutch, curl } from './warlock_moves';
+import { FR, STAND_FIRE, STAND_LONG, STANCE, T, WARLOCK_B, clamp, clutch, curl, warlockStand } from './warlock_moves';
 import type { WarlockMove } from './warlock_moves';
 
 /** His demon arm's whole reach, shoulder to claws. */
@@ -147,10 +147,47 @@ export function smokeStep(): Motion {
 export const STEP_FIRE: [number, number][] = [[0, 4.0], [7 * FR, 3.0], [9 * FR, 0.5], [17 * FR, 0.5], [21 * FR, 5.6], [30 * FR, 4.3], [STEP_LONG, 4.0]];
 export const STEP_OPEN: [number, number][] = [[0, 0], [17 * FR, 0], [21 * FR, 1], [28 * FR, 0.6], [36 * FR, 0]];
 
+/**
+ * THE CHANGE (his design, 25 Oct: his hits fill a pact meter; full, “Arm blazes cyan (Recommended)”; then a tap on the warlock
+ * himself; and how he changes, of his brief, “Violent burst (Recommended)”, offered as: he doubles over, the demon tears out
+ * of him in a blast of smoke and a shockwave). TAPPED, he jolts; the pain DOUBLES HIM OVER, convulsing, his right hand
+ * clamped on the blazing arm; then he is TORN UPRIGHT, head thrown back, arms flung wide, and bursts (dev/warlock_fx.ts:
+ * the blast of smoke, the shockwave, the demon standing in his place).
+ */
+export const CHANGE_BURST = 21 * FR;
+export const CHANGE_LONG = 24 * FR;
+export function theChange(): Motion {
+  const keys: Key3[] = [];
+  const held = (at: number, pose: Partial<Bones>, ease: Key3['ease'] = 'io'): void => {
+    keys.push({ at: at * FR, ease, pose: { ...pose, ...clamp(pose) } });
+  };
+  const claws = (x: number, y: number, z: number, e: number): Partial<Bones> => ({ lhIn: 1, lhx: x * T, lhy: y * T, lhz: z * T, le: e });
+  held(0, {});
+  // (the jolt as he is tapped: his head snapped up, the arm jerking)
+  held(3, { ...curl(-6), pz: STANCE.pz + 0.3 * T, faceUp: STANCE.faceUp + 12, ...claws(9, 6, -6, 46) }, 'out');
+  // (DOUBLED OVER, convulsing)
+  const bent = (k: number, sideways: number): Partial<Bones> => ({ ...curl(k), pz: STANCE.pz - (1.6 + k * 0.025) * T, pitch: 4, twist: STANCE.twist + sideways * 8, side: STANCE.side + sideways * 5, faceUp: STANCE.faceUp - 18, ...claws(5, 4 + sideways, -21, 30) });
+  held(6, bent(40, 0));
+  held(8, bent(44, 1), 'lin');
+  held(10, bent(36, -1), 'lin');
+  held(12, bent(45, 1), 'lin');
+  held(14, bent(38, -1), 'lin');
+  held(16, bent(46, 0.6), 'lin');
+  held(18, bent(48, 0));
+  // (TORN UPRIGHT, head thrown back, arms flung wide: he bursts)
+  keys.push({ at: 20 * FR, ease: 'out', pose: { ...curl(-24), pz: STANCE.pz - 0.4 * T, faceUp: STANCE.faceUp + 34, ...claws(2, 15, 3, 70), rhIn: 1, rhx: 2 * T, rhy: -14 * T, rhz: -4 * T, re: 40 } });
+  keys.push({ at: CHANGE_LONG, ease: 'lin', pose: { ...curl(-26), pz: STANCE.pz - 0.3 * T, faceUp: STANCE.faceUp + 36, ...claws(2, 16, 4, 72), rhIn: 1, rhx: 2 * T, rhy: -15 * T, rhz: -3 * T, re: 42 } });
+  return { keys };
+}
+export const CHANGE_FIRE: [number, number][] = [[0, 4.6], [3 * FR, 6.0], [6 * FR, 3.4], [18 * FR, 4.4], [20 * FR, 8.5], [CHANGE_LONG, 9.0]];
+
 export function warlockSpells(): WarlockMove[] {
   return [
     { name: 'Tap: hellfire bolt', motion: hellfireBolt(), long: BOLT_LONG, loops: false, fire: BOLT_FIRE, open: BOLT_OPEN, blows: [{ at: BOLT_HIT, hand: 'left', size: 18, strike: 2 * FR }] },
     { name: 'Tap and hold: the Curse', motion: theCurse(), long: CURSE_LONG, loops: false, fire: CURSE_FIRE, open: CURSE_OPEN, blows: [{ at: CURSE_HIT, hand: 'left', size: 18, strike: 2 * FR }] },
     { name: 'Swipe: the smoke step', motion: smokeStep(), long: STEP_LONG, loops: false, fire: STEP_FIRE, open: STEP_OPEN, dash: STEP_GONE },
+    { name: 'Pact meter full: the arm blazes', motion: warlockStand(), long: STAND_LONG, loops: true, fire: STAND_FIRE, blaze: [[0, 1], [STAND_LONG, 1]] },
+    // (torn upright in a flash as he bursts: the strike of it, Movement 9, not judged frame by frame)
+    { name: 'Tapped: the change', motion: theChange(), long: CHANGE_LONG, loops: false, fire: CHANGE_FIRE, blows: [{ at: 20 * FR, hand: 'left', size: 0, strike: 2 * FR }], blaze: [[0, 1], [18 * FR, 1], [CHANGE_LONG, 1.4]], open: [[0, 0], [18 * FR, 0.2], [20 * FR, 1], [CHANGE_LONG, 1]] },
   ];
 }

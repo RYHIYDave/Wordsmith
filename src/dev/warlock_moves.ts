@@ -33,6 +33,8 @@ export interface WarlockMove extends BrawlerMove {
   fire?: [number, number][];
   /** How far the demon's claws are flung open (seconds, 0 curled round the fire to 1 wide): curled unless a move opens them. */
   open?: [number, number][];
+  /** How far the demon arm BLAZES (seconds, 0 not at all to 1 his pact meter full): not at all unless a move says. */
+  blaze?: [number, number][];
 }
 
 /**
@@ -277,6 +279,7 @@ export function drawWarlockAt(view: GameView, m: WarlockMove, t: number, turn = 
   SKIRT_SWING.v = n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : v;
   ARM_FIRE.size = fireAt(m, t);
   ARM_FIRE.open = openAt(m, t);
+  ARM_FIRE.blaze = trackAt(m.blaze ?? [[0, 0]], t);
   ARM_FIRE.seed = 1 + t * 9;
   ARM_FIRE.t = t;
   // (the fire leans back off the way his claws go, and off the way he runs)
@@ -302,6 +305,7 @@ export function drawWarlockAt(view: GameView, m: WarlockMove, t: number, turn = 
     ARM_FIRE.t = 0;
     ARM_FIRE.lean = 0;
     ARM_FIRE.open = 0;
+    ARM_FIRE.blaze = 0;
     SKIRT_OPEN.on = false;
   }
 }
