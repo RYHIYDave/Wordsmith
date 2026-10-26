@@ -186,20 +186,20 @@ export function knight4(f: Figure, P: Pose, sword: KnightSword | null, flap = 0,
 
   // THE BODY under it all, in mail where it shows: a deep barrel of a chest, broad over the shoulders, a thick waist
   f.egg(mail, onChest(b, 0, 0.05, -0.1), [1.7 * k * hb, 1.32 * k * hb, 1.6 * k], TA, 0.6);
-  f.egg(mail, onChest(b, 0, -0.3, 0.8), [2.05 * k * hb, 0.98 * k * hb, 0.9 * k], TA, 0.6);
+  f.egg(mail, onChest(b, 0, -0.3, 0.6), [2.0 * k * hb, 0.98 * k * hb, 0.8 * k], TA, 0.6);
   f.rod(mail, onChest(b, 0, 0.0, -1.0), b.waist, 1.42 * k * hb, 1.34 * k * hb, 0.5);
   f.egg(mail, b.pelvis, [1.62 * k * hb, 1.22 * k * hb, 1.0 * k], PA, 0.5);
   // (his neck, thick, in the mail of his coif, from under his helm down to his shoulders)
-  f.rod(mail, onHead(b, 0, -0.15, -0.6), b.neck, 1.02 * k, 1.2 * k, 0.4);
-  f.egg(mail, onChest(b, 0, -0.1, 1.45), [1.75 * k * hb, 1.25 * k * hb, 0.55 * k], TA, 0.4);
+  f.rod(mail, onHead(b, 0, -0.15, -0.6), onChest(b, 0, -0.15, 1.35), 1.0 * k, 0.95 * k, 0.4);
+  f.egg(mail, onChest(b, 0, -0.15, 1.62), [1.3 * k * hb, 1.0 * k * hb, 0.42 * k], TA, 0.4);
 
   // THE TABARD over his trunk: heavy red cloth over his chest and back, a little off him; from under his chest it hangs before
   // him and behind him to the middle of his thighs, clear of his legs however they go; open at the sides, where his mail
   // shows; its hem cut into points; the plum belt round it, its buckle of cyan
   f.egg(red, onChest(b, 0, 0.1, -0.05), [1.76 * k * hb, 1.42 * k * hb, 1.64 * k], TA, 0.5);
-  f.egg(red, onChest(b, 0, -0.28, 0.8), [2.1 * k * hb, 1.1 * k * hb, 0.86 * k], TA, 0.5);
+  f.egg(red, onChest(b, 0, -0.28, 0.86), [2.12 * k * hb, 1.12 * k * hb, 0.94 * k], TA, 0.5);
   f.rod(red, onChest(b, 0, 0.05, -1.0), add(b.waist, mul(b.up, -0.3 * k)), 1.5 * k * hb, 1.42 * k * hb, 0.5);
-  const hemZ = b.pelvis[2] - 3.15 * k;
+  const hemZ = b.pelvis[2] - 2.85 * k;
   /** Where a leg comes down to a height (along the thigh, then the shin). */
   const legAt = (j: 0 | 1, z: number): V3 => {
     const ch = [b.hips[j], b.knees[j], b.ankles[j]];
@@ -208,6 +208,21 @@ export function knight4(f: Figure, P: Pose, sword: KnightSword | null, flap = 0,
   };
   const fwdFlat = unit([b.fwd[0], b.fwd[1], 0]);
   const acFlat = unit([b.across[0], b.across[1], 0]);
+  /** A point of cloth pushed out of his legs, to `r` from the bone of the nearer (a knee raised, a leg bent under him). */
+  const clearOfLegs = (q: V3, r: number): V3 => {
+    let out = q;
+    for (const j of [0, 1] as const) {
+      for (const [a0, a1] of [[b.hips[j], b.knees[j]], [b.knees[j], b.ankles[j]]] as const) {
+        const ab = sub(a1, a0);
+        const t = Math.max(0, Math.min(1, dot(sub(out, a0), ab) / dot(ab, ab)));
+        const c = add(a0, mul(ab, t));
+        const d = sub(out, c);
+        const L = len(d);
+        if (L < r) out = add(c, mul(L > 1e-4 ? mul(d, 1 / L) : b.fwd, r));
+      }
+    }
+    return out;
+  };
   const top0 = add(b.waist, mul(b.up, -0.15 * k));
   const legMid = lerp(legAt(0, hemZ), legAt(1, hemZ), 0.5);
   const hemC: V3 = [legMid[0], legMid[1], hemZ];
@@ -223,9 +238,9 @@ export function knight4(f: Figure, P: Pose, sword: KnightSword | null, flap = 0,
       const a = add(top0, add(mul(acFlat, Math.sin(th) * 1.5 * k * hb), mul(fwdFlat, e * Math.cos(th) * 1.38 * k * hb)));
       const wob = 0.09 * k * Math.sin(i * 2.3 + e);
       const z = hemZ + (i % 2 ? 0.14 * k : -0.04 * k);
-      const bq = add([hemC[0], hemC[1], z], add(mul(acFlat, Math.sin(th) * 1.85 * k * hb), mul(fwdFlat, e * (Math.cos(th) * fy + wob))));
+      const bq = clearOfLegs(add([hemC[0], hemC[1], z], add(mul(acFlat, Math.sin(th) * 1.85 * k * hb), mul(fwdFlat, e * (Math.cos(th) * fy + wob)))), 1.12 * k * hb);
       f.rod(red, a, bq, 0.24 * k, 0.3 * k, 0.32);
-      f.rod(red, bq, add(bq, [0, 0, -0.6 * k]), 0.28 * k, 0.03 * k, 0.1);
+      f.rod(red, bq, clearOfLegs(add(bq, [0, 0, -0.6 * k]), 0.95 * k * hb), 0.28 * k, 0.03 * k, 0.1);
     }
   }
   // (the belt over the tabard at his waist; its buckle, a stone of the friend's cyan in it)
@@ -250,7 +265,8 @@ export function knight4(f: Figure, P: Pose, sword: KnightSword | null, flap = 0,
     rivet(add(add(c2, mul(pd.out, 1.0 * k)), mul(pd.ua, 0.1 * k)), 0.09);
     f.block(steel, add(add(sh, mul(b.up, 1.02 * k)), mul(b.across, -s * 0.48 * k)), [0.08 * k, 0.66 * k, 0.38 * k], 0.06 * k, TA, 0.05);
     // (the upper arm in mail, thick; the elbow's cop, a cup over its point, and its fan; the forearm in a shell of steel)
-    f.rod(mail, sh, b.elbows[j], 0.86 * k * hb, 0.68 * k * hb, 0.35);
+    f.rod(mail, lerp(sh, b.elbows[j], 0.2), b.elbows[j], 0.86 * k * hb, 0.68 * k * hb, 0.35);
+    f.egg(mail, add(sh, mul(b.up, -0.4 * k)), [0.72 * k, 0.72 * k, 0.66 * k], TA, 0.3);
     const fa = sub(b.wrists[j], b.elbows[j]);
     const ua = unit(sub(b.elbows[j], sh));
     const outE = unit(sub(mul(b.across, s), mul(ua, dot(mul(b.across, s), ua))));
@@ -298,11 +314,11 @@ export function knight4(f: Figure, P: Pose, sword: KnightSword | null, flap = 0,
   // THE SCARF wound thick round his neck, up to hide his chin; its knot at the back; its two ends flying from it
   for (let i = 0; i < 10; i++) {
     const a = (i / 10) * Math.PI * 2;
-    const lift = 0.5 + 0.18 * Math.cos(a) + 0.08 * Math.sin(a * 3);
+    const lift = 0.36 + 0.18 * Math.cos(a) + 0.08 * Math.sin(a * 3);
     f.egg(wine, onChest(b, Math.sin(a) * 1.18, Math.cos(a) * 1.0 - 0.08, 1.55 + lift), [0.62 * k, 0.6 * k, 0.52 * k], TA, 0.3);
   }
   f.egg(wine, onChest(b, 0, 0.8, 2.45), [1.0 * k, 0.55 * k, 0.4 * k], TA, 0.3);
-  f.egg(wine, onChest(b, 0.15, 0.9, 1.75), [1.15 * k, 0.5 * k, 0.36 * k], TA, 0.3);
+  f.egg(wine, onChest(b, 0.15, 0.9, 1.62), [1.25 * k, 0.55 * k, 0.4 * k], TA, 0.3);
   const knot = onChest(b, 0.5, -1.1, 1.95);
   f.egg(wine, knot, [0.45 * k, 0.42 * k, 0.45 * k], TA, 0.2);
   for (const e of [0, 1]) {

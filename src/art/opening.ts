@@ -25,6 +25,8 @@ import type { Pt, Tones, V3 } from './comic';
 import { Figure, axes, cross, unit } from './sdf';
 import { ear, forearm, frameAt, hand, nose } from './anatomy';
 import * as Cast from './cast';
+import { knight4, swordOnShoulder } from './opening_knight';
+import type { KnightSword } from './opening_knight';
 
 // ---------------------------------------------------------------------------------------------
 // MOVING (his 25 Oct: “why don’t we get things moving”): every box painted once as it stands still (BAKED: what is
@@ -285,6 +287,33 @@ function valleyBehind(p: Px, t: number, s: number, turn: number, eye: number, F:
   paintValley(p, t, cam, {});
 }
 
+/**
+ * THE KNIGHT WALKING at his ease (art/opening_knight.ts), his great sword lying on his left shoulder, held in his left fist
+ * before him; his right arm swinging against his stride, his hips and shoulders going with it; `ph` his stride, `turn` his
+ * head. (Not stiff: his words, 26 Oct, of the new knight standing, “I guess he looks right, just a little stiff”.)
+ */
+function knightWalking(ph: number, turn: number): { P: Cast.PoseOf; sword: KnightSword } {
+  const s = Math.sin(ph + 1.3);
+  const P: Cast.PoseOf = {
+    pelvis: [0, 0, 9.62 + (1 - Math.abs(s)) * 0.14],
+    hipTilt: s * 0.04,
+    lean: 0.05,
+    side: -s * 0.025,
+    twist: s * 0.08,
+    turn,
+    nod: 0.05,
+    tip: -0.04,
+    hands: [[-2.5, 0.5 - s * 0.9, 9.3], [0.95, -3.1, 12.7]],
+    elbows: [[-1, 0.3, -0.5], [1, 0.2, -1]],
+    fingers: [[0, -0.2 * s, -1], [-0.6, -0.7, 0.3]],
+    palms: [[1, 0, 0], [-1, 0, 0]],
+    feet: [[-0.95, 1.2 * s, 0.8 + Math.max(0, s) * 0.25], [0.95, -1.2 * s, 0.8 + Math.max(0, -s) * 0.25]],
+  };
+  const sw = swordOnShoulder(P, 1, 1, 11);
+  return { P, sword: { hand: 1, tip: sw.tip, face: sw.face } };
+}
+
+
 /** THE CARAVAN, CLOSE (scene 2's big shot, a box of its own, not on a page): down by the road as the wagons come by, low,
  * the nearer filling the lower middle of the picture, the other behind it; behind them the foothills and the peak's face
  * going up out of the top of the picture, the road switching back and forth up it; the evening's glow behind the peak. */
@@ -323,17 +352,8 @@ export function paintCaravan(p: Px, t: number): void {
     feet: [[-0.85, -1.2 - Math.sin(ph) * 0.8, 0.75], [0.85, 1.0 + Math.sin(ph) * 0.8, 0.95]],
   }, { palm: true }));
   const kf = new Figure();
-  Cast.place(kf, [0, 0, 0], kn.yaw + 0.25, () => Cast.knight(kf, {
-    pelvis: [0, 0, 9.4],
-    lean: 0.06,
-    turn: -0.15,
-    nod: 0.05,
-    hands: [[-2.3, 0.4 + Math.sin(ph + 1.3) * 0.6, 8.9], [1.45, -1.4, 11.9]],
-    elbows: [[-1, 0.3, -0.5], [1, 0, -1]],
-    fingers: [[0, 0, -1], [-0.2, -0.6, 0.75]],
-    palms: [[1, 0, 0], [-1, 0, 0]],
-    feet: [[-0.9, 1.1 + Math.sin(ph + 1.3) * 0.8, 1.0], [0.9, -1.2 - Math.sin(ph + 1.3) * 0.8, 0.75]],
-  }, { hand: 1, tip: [2.4, 5.0, 20.6] }, Math.sin(T0(t) * 3.1) * 0.25));
+  const kW = knightWalking(ph, -0.15);
+  Cast.place(kf, [0, 0, 0], kn.yaw + 0.25, () => knight4(kf, kW.P, kW.sword, Math.sin(T0(t) * 3.1) * 0.25));
   const wc = figCam(cam, ws.q, 0.1);
   const kc = figCam(cam, kn.q, 0.1);
   const rune = seen(wc, A.at([3.75, -2.0, 12.6]));
@@ -393,7 +413,7 @@ const SMITH_AT = 3500;
 /** THE DUSK SKY (box 1's; his words of it, 25 Oct 2026: “The sky is actually really good”): its glow low at (GX, GY);
  * in flat bands, the dots of each band laid over the next, dark up, burning low behind the peak; a few stars; long ragged
  * banks of cloud across the glow. */
-function paintDuskSky(p: Px, GX: number, GY: number): void {
+function paintDuskSky(p: Px, GX: number, GY: number, belt?: { y: number; k: number }): void {
   const W = p.w;
   const H = p.h;
   const u = W / 392;
@@ -402,7 +422,8 @@ function paintDuskSky(p: Px, GX: number, GY: number): void {
   sky.rect(0, 0, W, H, DUSK[0]);
   bands(sky, DUSK, (x, y) => {
     const g = glow(x * 0.62, y * 2.2, GX * 0.62, GY * 2.2, W * 0.8);
-    return clamp01(0.05 + Math.pow(y / H, 1.2) * 0.3 + g * 1.05 + strata(x, y, 1690));
+    const b = belt ? belt.k * Math.exp(-(((y - (belt.y - 0.09 * H)) / (0.085 * H)) ** 2)) - (y > belt.y - 0.02 * H ? belt.k * 0.25 : 0) : 0;
+    return clamp01(0.05 + Math.pow(y / H, 1.2) * 0.3 + g * 1.05 + b + strata(x, y, 1690));
   });
   // a few stars, high and away from the glow
   for (let k = 0; k < Math.round(46 * u); k++) {
@@ -624,6 +645,11 @@ interface Valley {
   /** The prison drawn (by default), and its stones in courses (close to). */
   prison?: boolean;
   prisonClose?: boolean;
+  /**
+   * The sky away from the sunset (the shot looking from it): the pink of the evening's afterglow low over the horizon, the
+   * earth's blue shadow rising under it (how strong).
+   */
+  belt?: number;
 }
 
 /** A SHOT OF THE VALLEY from `cam` (art/opening_land.ts): the dusk sky, the mountain at its true size and the road up it,
@@ -635,7 +661,8 @@ function paintValley(p: Px, t: number, cam: LandCam, v: Valley): Float32Array | 
   const land = theLand();
   if (still()) {
     const [GX, GY] = glowSeen(cam);
-    paintDuskSky(p, GX, GY);
+    const hz = v.belt ? seenAt(cam, [cam.pos[0] - Math.sin(cam.yaw) * 1e6, cam.pos[1] + Math.cos(cam.yaw) * 1e6, cam.pos[2]])[1] : undefined;
+    paintDuskSky(p, GX, GY, hz === undefined ? undefined : { y: hz, k: v.belt ?? 0 });
   }
   let depth: Float32Array | null = null;
   if (still()) {
@@ -1879,13 +1906,13 @@ export function paintCompany(p: Px, t: number): void {
   // (the wagon on the road's middle; the two of them walking beside its horse, on its right; we are ahead, low)
   const wsAt = onRoad(sW + 5.0, 1.7);
   const knAt = onRoad(sW + 4.4, 2.75);
-  const cpos0 = onRoad(sW + 8.9, 2.7);
-  const cpos: V3 = [cpos0[0], cpos0[1], cpos0[2] + 1.15];
+  const cpos0 = onRoad(sW + 7.7, 2.55);
+  const cpos: V3 = [cpos0[0], cpos0[1], cpos0[2] + 1.2];
   const mid: V3 = [(wsAt[0] + knAt[0]) / 2, (wsAt[1] + knAt[1]) / 2, 0];
   const lk = unit([mid[0] - cpos[0] + n[0] * 0.2, mid[1] - cpos[1] + n[1] * 0.2, 0]);
   if (still()) land.focus(cpos[0], cpos[1], 90);
-  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lk[0], lk[1]), pitch: 0.08, F: W * 1.2, cx: W * 0.5, hy: H * 0.48 };
-  paintValley(p, t, cam, { wagons: [{ s: sW, seed: 1, driver: 'armourer' }] });
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lk[0], lk[1]), pitch: 0.06, F: W * 1.2, cx: W * 0.5, hy: H * 0.48 };
+  paintValley(p, t, cam, { wagons: [{ s: sW, seed: 1, driver: 'armourer' }], belt: 0.42 });
   const yawUp = Math.atan2(d[0], -d[1]);
   const wf = new Figure();
   // (turned to the knight walking at his right, his right palm up toward him with the rune over it)
@@ -1901,17 +1928,8 @@ export function paintCompany(p: Px, t: number): void {
     feet: [[-0.85, -1.2 - Math.sin(ph) * 0.8, 0.75], [0.85, 1.0 + Math.sin(ph) * 0.8, 0.95]],
   }, { palm: true }));
   const kf = new Figure();
-  Cast.place(kf, [0, 0, 0], yawUp + 0.1, () => Cast.knight(kf, {
-    pelvis: [0, 0, 9.4 + Math.abs(Math.sin(ph + 1.3)) * 0.1],
-    lean: 0.06,
-    turn: 0.3,
-    nod: 0.05,
-    hands: [[-2.3, 0.4 + Math.sin(ph + 1.3) * 0.6, 8.9], [1.45, -1.4, 11.9]],
-    elbows: [[-1, 0.3, -0.5], [1, 0, -1]],
-    fingers: [[0, 0, -1], [-0.2, -0.6, 0.75]],
-    palms: [[1, 0, 0], [-1, 0, 0]],
-    feet: [[-0.9, 1.1 + Math.sin(ph + 1.3) * 0.8, 1.0], [0.9, -1.2 - Math.sin(ph + 1.3) * 0.8, 0.75]],
-  }, { hand: 1, tip: [2.4, 5.0, 20.6] }, Math.sin(t0 * 3.1) * 0.25));
+  const kW = knightWalking(ph, 0.3);
+  Cast.place(kf, [0, 0, 0], yawUp + 0.1, () => knight4(kf, kW.P, kW.sword, Math.sin(t0 * 3.1) * 0.25));
   const wc = figCam(cam, wsAt, 0.1);
   const kc = figCam(cam, knAt, 0.1);
   const R3 = A.at([-3.75, -2.0, 12.6]);
@@ -1920,9 +1938,10 @@ export function paintCompany(p: Px, t: number): void {
     // (the nearer drawn last)
     const wD = Math.hypot(wsAt[0] - cpos[0], wsAt[1] - cpos[1]);
     const kD = Math.hypot(knAt[0] - cpos[0], knAt[1] - cpos[1]);
-    const drawW = (): void => void wf.draw(p, wc, { cel: COMIC, at: add3(R3, wc.shift), reach: 22, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
+    // (lit by the afterglow of the sunset behind us, warm on their fronts from their left; the rune's cyan at their edges)
+    const drawW = (): void => void wf.draw(p, wc, { cel: COMIC, from: SKY_SUN, hard: 0.8, fill: [0.1, -0.4, 1], fillK: 0.34, rim: CYANS[2], rimFrom: [-1, -0.2] });
     const kLight = add3(scale3(sub3(add3(R3, wc.shift), scale3(wc.shift, 1)), 1), kc.shift);
-    const drawK = (): void => void kf.draw(p, kc, { cel: COMIC, at: add3(add3(R3, [ (wsAt[0] - knAt[0]) * 10, (wsAt[1] - knAt[1]) * 10, 0 ]), kc.shift), reach: 22, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: CYANS[2], rimFrom: [-1, -0.3] });
+    const drawK = (): void => void kf.draw(p, kc, { cel: COMIC, from: SKY_SUN, hard: 0.8, fill: [0.1, -0.4, 1], fillK: 0.34, rim: CYANS[2], rimFrom: [1, -0.2] });
     void kLight;
     if (wD > kD) {
       drawW();
@@ -2750,7 +2769,7 @@ interface KnightPose {
  */
 function sculptKnight(f: Figure, o: V3, yaw: number, P: KnightPose): void {
   Cast.place(f, o, yaw, () => {
-    Cast.knight(f, oldPose(P), { hand: P.sword.hand, tip: scale3(P.sword.tip, 1 / OLD) }, P.flap);
+    knight4(f, oldPose(P), { hand: P.sword.hand, tip: scale3(P.sword.tip, 1 / OLD) }, P.flap);
   }, OLD);
 }
 
@@ -2904,7 +2923,7 @@ export function runHero(q: Px, kcam: { look: V3; up: V3; scale: number; ox: numb
   const tip = add3(g, scale3(dir, 10.8));
   const gO = sub3(g, scale3(dir, 1.15));
   Cast.place(f, [0, 0, 0], yaw, () => {
-    Cast.knight(f, struck ? {
+    knight4(f, struck ? {
       pelvis: [0, -0.6, 8.9],
       lean: 0.3,
       twist: 0.35,
@@ -3296,7 +3315,7 @@ export function paintHeroDoor(p: Px, t: number): void {
   Cast.place(f, [0, 0, 0], 0, () => {
     // (his right shoulder to the door, his weight leant into it: both hands flat on it, the right high by his shoulder,
     // the left across him lower; his feet driven back on the flags, the back leg straight)
-    Cast.knight(f, {
+    knight4(f, {
       pelvis: [D + 6.4, 0.2, 8.3],
       side: -0.62,
       lean: 0.12,
@@ -3476,7 +3495,7 @@ export function paintBar(p: Px, t: number): void {
     Cast.armourer(f, pose(0, up * 0.3), ['flat', 'flat']);
   });
   Cast.place(f, [3.2, -2.1, -20.3 + up * 0.2], Math.PI, () => {
-    Cast.knight(f, pose(0, up * 0.3), null, 0, ['flat', 'flat']);
+    knight4(f, pose(0, up * 0.3), null, 0, ['flat', 'flat']);
   });
   void skin;
   void steel;
@@ -3596,7 +3615,7 @@ export function paintBarred(p: Px, t: number): void {
   {
     const f = new Figure();
     const pt = Math.sin(T0(t) * 4.2) * 0.06;
-    Cast.place(f, [0, 0, 0], 0.25, () => Cast.knight(f, {
+    Cast.place(f, [0, 0, 0], 0.25, () => knight4(f, {
       pelvis: [0, 0.6, 6.2],
       lean: 0.38 + pt,
       nod: 0.45,
