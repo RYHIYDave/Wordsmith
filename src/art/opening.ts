@@ -1623,7 +1623,7 @@ export function paintMystic(p: Px, t: number): void {
   // HIM, sitting cross-legged on the boards, turned a little toward us; his right palm up before him under the crystal,
   // its fingers out before him and his thumb to the outside
   const myaw = Math.atan2(c, -sn) + 0.35;
-  const { r: palmL, at: mAt } = Cast.place(f, WL([0.6, -0.3, Z0]), myaw, () => {
+  const { r: palmL, at: mAt } = Cast.place(f, WL([-0.3, -0.2, Z0]), myaw, () => {
     const b = Cast.mystic(f, {
       pelvis: [0, 0, 1.9],
       lean: 0.06,
@@ -1636,8 +1636,8 @@ export function paintMystic(p: Px, t: number): void {
       palms: [[0, 0, 1], [0, 0, 1]],
       fingers: [[-0.3, -1, 0.15], [-0.75, -0.65, 0.05]],
       // (cross-legged: each foot tucked in under the other knee, the knees out wide to the sides and low)
-      feet: [[0.35, -3.5, 0.45], [-0.35, -3.1, 0.62]],
-      knees: [[-1, -0.6, 0.15], [1, -0.6, 0.15]],
+      feet: [[0.5, -3.0, 0.4], [-0.5, -2.7, 0.55]],
+      knees: [[-1, -0.3, 0], [1, -0.3, 0]],
     }, ['open', 'open'], { seated: true });
     // (between his two palms)
     const palm = (j: 0 | 1): V3 => add3(add3(b.wrists[j], scale3(b.handFrames[j].z, 0.62)), scale3(b.handFrames[j].y, -0.15));
@@ -1649,7 +1649,7 @@ export function paintMystic(p: Px, t: number): void {
   // THE CAMERA: in the front of the bed, low, behind the driver's bench, looking back down the wagon at him and out of its
   // open back; the land, and its sky, seen through that
   const eyeL: V3 = [6.6, 0.5, 10.1];
-  const toL: V3 = [-6, -0.7, 7.6];
+  const toL: V3 = [-6, -0.6, 5.6];
   const eye = WL(eyeL);
   const tw = WL([toL[0] - eyeL[0], toL[1] - eyeL[1], 0]);
   const pos: V3 = [r.q[0] + eye[0] * 0.2, r.q[1] + eye[1] * 0.2, r.q[2] + eye[2] * 0.2];

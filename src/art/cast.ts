@@ -605,16 +605,16 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     // robe drawn over each knee to a point, sagging between them into his lap; spread on the floor round him, wider across
     // than before)
     const TA0 = ax3(b.across, mul(b.fwd, -1), b.up);
+    // (the robe drawn over all of it as one low mound, wide across: a knee at each end of it, standing up out of it; the
+    // crossed shins a roll along its front between them; the cloth sunk between the knees, where the shins cross, and
+    // spread on the floor round it; his slippers peeping out at the knees)
+    const mid = lerp(b.ankles[0], b.ankles[1], 0.5);
+    const front: V3 = [mid[0], mid[1], Math.max(0.55 * k, mid[2])];
+    f.egg(robe, [b.pelvis[0] + b.fwd[0] * 0.9 * k, b.pelvis[1] + b.fwd[1] * 0.9 * k, 0.4 * k], [4.4 * k, 2.3 * k, 0.7 * k], TA0, 0.8);
     for (const j of [0, 1] as const) {
-      f.egg(robe, b.knees[j], [0.66 * k, 0.66 * k, 0.6 * k], TA0, 0.35);
-      // (his slippers peeping out, each from under the other knee, their toes curled up)
+      f.egg(robe, b.knees[j], [0.78 * k, 0.78 * k, 0.62 * k], TA0, 0.55);
+      f.rod(robe, b.knees[j], front, 0.66 * k, 0.6 * k, 0.6);
       sculptFoot(f, slipperS, b, j, mul(b.across, j ? -1 : 1), 1.0);
-    }
-    const lap = lerp(lerp(b.knees[0], b.knees[1], 0.5), b.pelvis, 0.45);
-    f.egg(robe, [lap[0], lap[1], Math.min(lap[2], b.pelvis[2] + 0.1 * k)], [1.5 * k, 1.1 * k, 0.45 * k], TA0, 0.7);
-    f.egg(robe, [b.pelvis[0], b.pelvis[1], 0.3 * k], [3.9 * k, 2.4 * k, 0.32 * k], TA0, 0.6);
-    for (const j of [0, 1] as const) {
-      for (const u of [0.3, 0.6]) f.rod(robe, add(lerp(b.knees[j], b.pelvis, u), mul(b.up, 0.62 * k)), add(lerp(b.knees[j], b.ankles[1 - j], u), mul(b.up, 0.62 * k)), 0.04 * k, 0.1 * k, 0.1, true);
     }
     hemZ = -99;
   } else hemZ = skirt(f, robe, b, { hem: 0.2, flare: 2.15, folds: 8 });
@@ -712,8 +712,19 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
       const an = -1.75 + u * 3.5;
       pts.push(onTurban(an, 0.55 + Math.floor(w / 2) * 0.42 + side * (u - 0.5) * 1.0, 0.03));
     }
-    for (let i = 1; i < pts.length; i++) f.rod(cloth, pts[i - 1], pts[i], 0.06 * k, 0.06 * k, 0.08, true);
-    f.line(pts.map((q) => add(q, mul(unit(sub(q, TC)), 0.02 * k))), '#8a7e68', 1);
+    // (each wind tucked in under the stone's setting: none of it, nor its edge, over the stone)
+    const gem = onTurban(0, 0.88, 0.04);
+    const clear = (q: V3): boolean => Math.hypot(q[0] - gem[0], q[1] - gem[1], q[2] - gem[2]) > 0.42 * k;
+    for (let i = 1; i < pts.length; i++) if (clear(pts[i - 1]) && clear(pts[i])) f.rod(cloth, pts[i - 1], pts[i], 0.06 * k, 0.06 * k, 0.08, true);
+    let run: V3[] = [];
+    for (const q of pts) {
+      if (clear(q)) run.push(add(q, mul(unit(sub(q, TC)), 0.02 * k)));
+      else {
+        if (run.length > 1) f.line(run, '#8a7e68', 1);
+        run = [];
+      }
+    }
+    if (run.length > 1) f.line(run, '#8a7e68', 1);
   }
   {
     // (its lower edge: the cloth turned under, a soft roll)
