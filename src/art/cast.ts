@@ -597,12 +597,22 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
     as: { neck: { stuff: robe, grow: 1.15 }, trunk: { stuff: robe, grow: 1.08 }, arms: { stuff: robe, grow: 1.1 }, legs: { stuff: robe }, shins: { stuff: robe } },
     forearms: false, feet: false,
   });
+  const slipperS = f.stuff({ tones: [INK, '#2a1006', '#4a1e0c', '#7a3416', '#a85224', '#d07a3a'], crease: 0.5 });
   if (o.seated) {
     // (sitting cross-legged: the robe over his lap and his crossed legs, spread on the floor round them, its folds running
     // from his knees in to his middle)
+    // (his knees out wide to either side and low, his shins crossed before him, each foot tucked under the other knee: the
+    // robe drawn over each knee to a point, sagging between them into his lap; spread on the floor round him, wider across
+    // than before)
     const TA0 = ax3(b.across, mul(b.fwd, -1), b.up);
-    f.egg(robe, add(b.pelvis, mul(b.fwd, 0.7 * k)), [1.7 * k, 1.5 * k, 0.75 * k], ax3(b.across, mul(b.fwd, -1), [0, 0, 1]), 0.6);
-    f.egg(robe, [b.pelvis[0], b.pelvis[1] - 0.8 * k, 0.35 * k], [3.4 * k, 2.8 * k, 0.4 * k], TA0, 0.6);
+    for (const j of [0, 1] as const) {
+      f.egg(robe, b.knees[j], [0.66 * k, 0.66 * k, 0.6 * k], TA0, 0.35);
+      // (his slippers peeping out, each from under the other knee, their toes curled up)
+      sculptFoot(f, slipperS, b, j, mul(b.across, j ? -1 : 1), 1.0);
+    }
+    const lap = lerp(lerp(b.knees[0], b.knees[1], 0.5), b.pelvis, 0.45);
+    f.egg(robe, [lap[0], lap[1], Math.min(lap[2], b.pelvis[2] + 0.1 * k)], [1.5 * k, 1.1 * k, 0.45 * k], TA0, 0.7);
+    f.egg(robe, [b.pelvis[0], b.pelvis[1], 0.3 * k], [3.9 * k, 2.4 * k, 0.32 * k], TA0, 0.6);
     for (const j of [0, 1] as const) {
       for (const u of [0.3, 0.6]) f.rod(robe, add(lerp(b.knees[j], b.pelvis, u), mul(b.up, 0.62 * k)), add(lerp(b.knees[j], b.ankles[1 - j], u), mul(b.up, 0.62 * k)), 0.04 * k, 0.1 * k, 0.1, true);
     }
@@ -631,12 +641,17 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   // the sash of gold round his waist, its knot and end at his side; the chains at his neck
   f.egg(gold, add(b.waist, mul(b.up, 0.15 * k)), [1.42 * k, 1.24 * k, 0.32 * k], TA, 0.06);
   f.rod(gold, add(b.waist, add(mul(b.across, 0.8 * k), mul(b.fwd, 0.85 * k))), add(b.waist, add(mul(b.across, 1.0 * k), add(mul(b.fwd, 0.95 * k), mul(b.up, -1.2 * k)))), 0.12 * k, 0.16 * k, 0.05);
+  // (lying on his chest, over the robe as it rounds: each link on its surface, a little sunk into the cloth)
   for (const [z0, sag] of [[1.15, 0.3], [0.95, 0.5]] as const) {
     let prev: V3 | null = null;
-    for (let i = 0; i <= 10; i++) {
-      const u = i / 10;
-      const q = onChest(b, -0.85 + 1.7 * u, 1.18 + 0.12 * Math.sin(u * Math.PI), z0 - sag * Math.sin(u * Math.PI));
-      if (prev) f.rod(gold, prev, q, 0.06 * k, 0.06 * k, 0);
+    for (let i = 0; i <= 14; i++) {
+      const u = i / 14;
+      const a = -0.85 + 1.7 * u;
+      const c = z0 - sag * Math.sin(u * Math.PI);
+      const e = 1 - (a / 1.62) ** 2 - ((c + 0.1) / 1.67) ** 2;
+      const fw = 0.05 + 1.27 * Math.sqrt(Math.max(0.12, e)) + 0.02;
+      const q = onChest(b, a, fw, c);
+      if (prev) f.rod(gold, prev, q, 0.065 * k, 0.065 * k, 0.04);
       prev = q;
     }
   }

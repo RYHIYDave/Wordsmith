@@ -490,13 +490,27 @@ export function sculptWagon2(
       const ln = unrot(nn);
       // (hollow, seen from within: its inside, under the bows, in the cold light inside it, dark away from it)
       if (w.hollow && ln[1] * -l[1] + ln[2] * (CTOP - CR - l[2]) > 0.2 && Math.abs(l[0]) < 7.4) {
-        const IN = ['#07060a', '#0c0c13', '#11181f', '#16242b', '#1d343a', '#2a4c50', '#44706e', '#6e9a92'];
+        // (two lights in it: the cold of what glows inside, and the warm of the dusk in at its open back; the canvas its own
+        // cream where neither is strong, dark away from both; stained, a patch sewn over a tear)
+        const COLD = ['#07060a', '#0c0e14', '#11181f', '#16242b', '#1d343a', '#2a4c50', '#44706e', '#7aa49a', '#b4d0c0'];
+        const WARM = ['#07060a', '#110d0e', '#1c1612', '#2a2018', '#3a2e20', '#4e3e2a', '#685236', '#846a44'];
+        const PATCH = ['#07060a', '#0e0a0c', '#181010', '#241814', '#34221a', '#463020', '#5c4028'];
         // (between each two bows the canvas sags: lit in the middle of the bay, darker by the bow it hangs from, a shadow
         // down the bow's far side; wrinkles running down from the bows)
         const bay = (((l[0] + 6.9) % 3.45) + 3.45) % 3.45 / 3.45;
         const sag = Math.sin(bay * Math.PI) * 0.9 - (bay > 0.9 ? 1.2 : 0);
         const wr = Math.sin(l[0] * 7.3 + Math.sin(l[2] * 2.1) * 1.4) > 0.86 ? -1 : 0;
-        return IN[Math.max(0, Math.min(IN.length - 1, Math.round(lit * lit * 6 + sag + wr)))];
+        const stain = fbm(l[0] * 0.55 + 3, l[2] * 0.7 + l[1] * 0.3, 1311) > 0.62 ? -1 : 0;
+        const cold = lit * lit * 7;
+        const dusk = 1.6 + 2.6 * Math.max(0, Math.min(1, (-l[0] - 1.5) / 5.5)) + (ln[2] < -0.3 ? 0.6 : 0);
+        const inPatch = l[0] > 0.6 && l[0] < 2.6 && l[2] > 8.4 && l[2] < 10.6 && l[1] > 0;
+        if (inPatch) {
+          const edge = l[0] < 0.75 || l[0] > 2.45 || l[2] < 8.55 || l[2] > 10.45;
+          if (edge && Math.round(l[0] * 6 + l[2] * 6) % 2 === 0) return '#8a7a5a';
+          return PATCH[Math.max(0, Math.min(PATCH.length - 1, Math.round(Math.max(cold, dusk) * 0.8 + sag)))];
+        }
+        if (cold > dusk) return COLD[Math.max(0, Math.min(COLD.length - 1, Math.round(cold + sag + wr + stain)))];
+        return WARM[Math.max(0, Math.min(WARM.length - 1, Math.round(dusk + sag + wr + stain)))];
       }
       // (inside, through a mouth: dark)
       if (Math.abs(l[0]) > 7.3 && ln[0] * l[0] < -0.2) return '#120e0c';

@@ -1501,7 +1501,7 @@ function wagonWares(f: Figure, WL: (q: V3) => V3, yaw: number, Z0: number): void
   crate(-4.0, -2.0, Z0, 0.9, 0.75, 0.8, 0.2);
   // A CHEST bound in brass, its lid domed, on the left by us; scrolls on it
   {
-    const x = 2.4;
+    const x = -1.7;
     const y = -2.05;
     const A = AXW;
     f.block(oak, WL([x, y, Z0 + 0.8]), [1.25, 0.75, 0.8], 0.08, A, 0.03);
@@ -1552,7 +1552,7 @@ function wagonWares(f: Figure, WL: (q: V3) => V3, yaw: number, Z0: number): void
   }
   // A BASKET OF SCROLLS on the left beyond the chest
   {
-    const bq = WL([1.0, -2.2, Z0 + 0.55]);
+    const bq = WL([3.4, -2.25, Z0 + 0.55]);
     f.rod(burlap, add3(bq, [0, 0, -0.55]), add3(bq, [0, 0, 0.5]), 0.62, 0.72, 0.2);
     for (let j = 0; j < 6; j++) {
       const a = j * 1.1;
@@ -1562,7 +1562,7 @@ function wagonWares(f: Figure, WL: (q: V3) => V3, yaw: number, Z0: number): void
   }
   // A RUG rolled and leaning against the crates; SACKS, full and tied
   f.rod(rug, WL([-4.6, 1.9, Z0 + 0.3]), WL([-5.4, 2.2, Z0 + 3.4]), 0.42, 0.42, 0.05);
-  for (const [x, y, sz, tilt] of [[-2.6, 2.15, 0.85, 0.15], [-3.4, -0.9, 0.7, -0.2], [-1.6, -2.3, 0.75, 0.25]] as const) {
+  for (const [x, y, sz, tilt] of [[-2.6, 2.15, 0.85, 0.15], [-3.6, -0.6, 0.7, -0.2], [-4.4, -2.3, 0.75, 0.25]] as const) {
     const lo = WL([x, y, Z0 + 0.5 * sz]);
     f.egg(burlap, lo, [1.15 * sz, 1.0 * sz, 0.6 * sz], ax(tilt), 0.5);
     f.egg(burlap, WL([x - tilt * 0.3, y, Z0 + 1.2 * sz]), [0.95 * sz, 0.85 * sz, 0.85 * sz], ax(tilt, tilt * 0.5, 0), 0.6);
@@ -1635,8 +1635,9 @@ export function paintMystic(p: Px, t: number): void {
       elbows: [[-1, 0.2, -1], [1, 0.2, -1]],
       palms: [[0, 0, 1], [0, 0, 1]],
       fingers: [[-0.3, -1, 0.15], [-0.75, -0.65, 0.05]],
-      feet: [[0.7, -2.4, 0.7], [-0.7, -2.0, 0.85]],
-      knees: [[-1, -0.6, -0.4], [1, -0.6, -0.4]],
+      // (cross-legged: each foot tucked in under the other knee, the knees out wide to the sides and low)
+      feet: [[0.35, -3.5, 0.45], [-0.35, -3.1, 0.62]],
+      knees: [[-1, -0.6, 0.15], [1, -0.6, 0.15]],
     }, ['open', 'open'], { seated: true });
     // (between his two palms)
     const palm = (j: 0 | 1): V3 => add3(add3(b.wrists[j], scale3(b.handFrames[j].z, 0.62)), scale3(b.handFrames[j].y, -0.15));
@@ -1647,7 +1648,7 @@ export function paintMystic(p: Px, t: number): void {
   wagonWares(f, WL, wyaw, Z0);
   // THE CAMERA: in the front of the bed, low, behind the driver's bench, looking back down the wagon at him and out of its
   // open back; the land, and its sky, seen through that
-  const eyeL: V3 = [6.6, 0.7, 9.6];
+  const eyeL: V3 = [6.6, 0.5, 10.1];
   const toL: V3 = [-6, -0.7, 7.6];
   const eye = WL(eyeL);
   const tw = WL([toL[0] - eyeL[0], toL[1] - eyeL[1], 0]);
