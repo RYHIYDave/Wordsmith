@@ -205,6 +205,8 @@ THE CURSE (25 Oct): asked how he casts it, “Chains of brand”; how a cursed o
 
 THE SPREAD (25 Oct): three cursed, the skeleton in the middle burning from his bolt too; it dies, and as it falls its fire leaps off it in arcs to the other two, trailing its smoke, and now they burn as well as smolder. Of it: “Good, on to the smoke step (Recommended)”.
 
+THE SMOKE STEP (25 Oct): he coils, breaks up into black smoke from his edges in, a rolling column of it streaks the swipe's six tiles, cursing whoever it passes (they smolder), and he forms out of it at the far end, rising with the claw flung open. Of it: “Trail needs work”; asked how, “Billowing, rising (Recommended)”; shown that, “Eh not quite.  I like it flowing on the ground, with smoke billowing up”. Read as (told him so): a river of smoke flowing along the floor where he went, rolling the way he went, puffs billowing up off it, thinning away. Shown that: “Good, on to the change (Recommended)”.
+
 ## What glows
 
 All of them are the hero's side: what glows on them, the demon, the Contraption and the Golem too, is the friend's cyan.

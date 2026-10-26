@@ -24,7 +24,7 @@ import { FR, STANCE, WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from 
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { strikes, struck } from '../src/dev/brawler_punches';
 import { warlockSpells } from '../src/dev/warlock_spells';
-import { boltLight, curseLight, spreadLight } from '../src/dev/warlock_fx';
+import { boltLight, curseLight, dissolve, spreadLight, stepGone, stepLight } from '../src/dev/warlock_fx';
 
 /** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step). */
 const ALL = [...warlockMoves(), ...warlockSpells()];
@@ -197,3 +197,22 @@ test('the Curse spreading: a cursed one dies and its burns leap to the others, e
   }
   assert.deepEqual([...new Set(found)], []);
 });
+
+// THE SMOKE STEP (dev/warlock_fx.ts): him breaking up into smoke and forming out of it, and the smoke itself (the column
+// carried across, its trail, the ones it curses), every frame, from in front and behind: crisp, no pixel alone, nothing pink,
+// nothing cut off
+for (const m of ALL.filter((mv) => mv.name.includes('smoke step'))) {
+  test(`${m.name}: him going into smoke and out of it, and the smoke, every frame: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+    const found: string[] = [];
+    for (const view of ['front', 'back'] as const) {
+      for (let i = 0; i <= (m.long + 1.2) * FPS; i++) {
+        const t = i / FPS;
+        const tm = Math.min(t, m.long);
+        const gone = stepGone(m, tm);
+        if (gone > 0 && gone < 1) for (const f of pictureFindings(dissolve(drawWarlockAt(view, m, tm).px, gone, t))) found.push(`${view}, ${t.toFixed(2)} s, him: ${f}`);
+        for (const f of pictureFindings(stepLight(m, t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+      }
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}

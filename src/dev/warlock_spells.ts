@@ -111,9 +111,46 @@ export const CURSE_FIRE: [number, number][] = [[0, 4.0], [8 * FR, 4.8], [16 * FR
 /** His claws through the Curse: splaying as he raises them, flung wide as he thrusts, curling back round the fire. */
 export const CURSE_OPEN: [number, number][] = [[0, 0], [8 * FR, 0.4], [16 * FR, 0.6], [22 * FR, 0.6], [CURSE_HIT, 1], [36 * FR, 1], [42 * FR, 0.7], [56 * FR, 0]];
 
+/**
+ * THE SMOKE STEP (his swipe; his word, 25 Oct: “I like smoke step, and we can have that apply the curse as well”): he COILS,
+ * dropping low, curling over the demon arm drawn in across him, smoke boiling up off him; then BURSTS INTO BLACK SMOKE, and
+ * the game carries the smoke in a flash to where you swiped (as far as the other heroes' swipes carry them), cursing
+ * whoever it passes through; there the smoke gathers and he steps out of it, crouched low, and rises, the demon arm flung
+ * wide, claws open, the fire roaring back up in them.
+ */
+export const STEP_GONE: [number, number] = [8 * FR, 16 * FR];
+export const STEP_LONG = 38 * FR;
+export function smokeStep(): Motion {
+  const keys: Key3[] = [];
+  const held = (at: number, pose: Partial<Bones>, ease: Key3['ease'] = 'io'): void => {
+    keys.push({ at: at * FR, ease, pose: { ...pose, ...clamp(pose) } });
+  };
+  const brace = (at: number, pose: Partial<Bones>, ease: Key3['ease'] = 'io'): void => {
+    keys.push({ at: at * FR, ease, pose: { ...pose, ...clutch(pose) } });
+  };
+  const claws = (x: number, y: number, z: number, e: number): Partial<Bones> => ({ lhIn: 1, lhx: x * T, lhy: y * T, lhz: z * T, le: e });
+  const low = { ...curl(20), pz: STANCE.pz - 2.4 * T, twist: STANCE.twist + 10, ...claws(5, -3, -13, 28), faceUp: STANCE.faceUp + 6 };
+  held(0, {});
+  // (THE COIL: dropping low, curling over the demon arm drawn in across him)
+  brace(4, { ...curl(12), pz: STANCE.pz - 1.4 * T, twist: STANCE.twist + 6, ...claws(6, -1, -11, 32), faceUp: STANCE.faceUp + 4 });
+  brace(7, low);
+  // (gone into smoke: the game carries it; as he is when he comes out of it)
+  brace(8, low, 'lin');
+  brace(16, low, 'lin');
+  brace(17, low, 'lin');
+  // (OUT OF IT: rising, the demon arm flung wide, claws open)
+  brace(21, { ...curl(2), pz: STANCE.pz - 0.6 * T, twist: STANCE.twist - 8, ...claws(9, 12, -3, 60), faceUp: STANCE.faceUp + 4 }, 'out');
+  brace(28, { ...curl(0), pz: STANCE.pz - 0.2 * T, twist: STANCE.twist - 4, ...claws(9, 10, -4, 52), faceUp: STANCE.faceUp + 2 });
+  held(38, {});
+  return { keys };
+}
+export const STEP_FIRE: [number, number][] = [[0, 4.0], [7 * FR, 3.0], [9 * FR, 0.5], [17 * FR, 0.5], [21 * FR, 5.6], [30 * FR, 4.3], [STEP_LONG, 4.0]];
+export const STEP_OPEN: [number, number][] = [[0, 0], [17 * FR, 0], [21 * FR, 1], [28 * FR, 0.6], [36 * FR, 0]];
+
 export function warlockSpells(): WarlockMove[] {
   return [
     { name: 'Tap: hellfire bolt', motion: hellfireBolt(), long: BOLT_LONG, loops: false, fire: BOLT_FIRE, open: BOLT_OPEN, blows: [{ at: BOLT_HIT, hand: 'left', size: 18, strike: 2 * FR }] },
     { name: 'Tap and hold: the Curse', motion: theCurse(), long: CURSE_LONG, loops: false, fire: CURSE_FIRE, open: CURSE_OPEN, blows: [{ at: CURSE_HIT, hand: 'left', size: 18, strike: 2 * FR }] },
+    { name: 'Swipe: the smoke step', motion: smokeStep(), long: STEP_LONG, loops: false, fire: STEP_FIRE, open: STEP_OPEN, dash: STEP_GONE },
   ];
 }

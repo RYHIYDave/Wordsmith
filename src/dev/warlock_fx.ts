@@ -61,13 +61,14 @@ class Light {
     if ((this.px.get(q) ?? -1) < k) this.px.set(q, k);
   }
   lay(on: Px, pal: readonly string[] = HELL): void {
-    const has = (x: number, y: number): boolean => this.px.has((y + 1024) * 4096 + (x + 1024));
+    // (kept two pixels in from the scene's edge: never cut off by it; and then none left alone)
+    const inside = (x: number, y: number): boolean => x >= 2 && y >= 2 && x <= on.w - 3 && y <= on.h - 3;
+    const has = (x: number, y: number): boolean => inside(x, y) && this.px.has((y + 1024) * 4096 + (x + 1024));
     for (const [q, k] of this.px) {
       const x = (q % 4096) - 1024;
       const y = Math.floor(q / 4096) - 1024;
+      if (!inside(x, y)) continue;
       if (!has(x - 1, y) && !has(x + 1, y) && !has(x, y - 1) && !has(x, y + 1)) continue;
-      // (kept two pixels in from the scene's edge: never cut off by it)
-      if (x < 2 || y < 2 || x > on.w - 3 || y > on.h - 3) continue;
       on.set(x, y, pal[k]);
     }
   }
@@ -465,6 +466,216 @@ export function spreadLight(t: number, view: GameView, turn = 0): Px {
       const h = (u - 1) * LEAP_FLIGHT;
       burst(l, tx, ty, 4 + h * 40, h / 0.25, 51 + i);
     }
+  });
+  sm.lay(out, SMOKE);
+  l.lay(out);
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SMOKE STEP (his swipe; his word, 25 Oct: “I like smoke step, and we can have that apply the curse as well”): smoke
+// boiling up off him as he coils; HE BREAKS UP INTO BLACK SMOKE (`dissolve`); the smoke, a rolling column of it, streaks
+// to where the swipe takes him, a trail of it left on the floor behind, cursing whoever it passes through (they smolder,
+// as the Curse leaves them); there it gathers, and he forms out of it.
+
+/** How far the swipe takes him (as far as the other heroes' swipes: six tiles), along his own forward. */
+export const STEP_REACH = 6 * UNITS_PER_TILE;
+/** The ones in his way, in his own lengths (forward, left): two, beside the line he takes. */
+export const STEP_TARGETS: readonly [number, number][] = [
+  [2.0 * UNITS_PER_TILE, 0.7 * UNITS_PER_TILE],
+  [4.0 * UNITS_PER_TILE, -0.7 * UNITS_PER_TILE],
+];
+/** The scene for it: his canvas where he starts (`x`, `y` its top left), room for all six tiles of it. */
+export const STEP_SCENE = { w: 470, h: 300, ax: CANVAS3.ax, ay: CANVAS3.ay + 38, x: 0, y: 38 };
+/** How long its trail of smoke lingers on the floor (seconds). */
+export const TRAIL_LIFE = 1.1;
+
+/** Where a point of his is in the smoke step's scene. */
+function onStep(p: V3, view: GameView, turn: number): [number, number] {
+  const a = (turn * Math.PI) / 180;
+  const q: V3 = [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a), p[2]];
+  const s = project(q, view === 'back' ? 'rear' : view);
+  return [STEP_SCENE.ax + s[0], STEP_SCENE.ay + s[1]];
+}
+/** How far along the step he is (0 where he starts, 1 where he ends), eased in and out across the move's flash (`dash`). */
+export function stepAlong(m: WarlockMove, t: number): number {
+  const [a, b] = m.dash ?? [0, 0];
+  const u = Math.max(0, Math.min(1, (t - a) / Math.max(1e-6, b - a)));
+  return u * u * (3 - 2 * u);
+}
+/** How far he is gone into smoke (0 all there, 1 all smoke) at a moment of the step. */
+export function stepGone(m: WarlockMove, t: number): number {
+  const [a, b] = m.dash ?? [0, 0];
+  const s = (x: number): number => Math.max(0, Math.min(1, x));
+  const e = (x: number): number => x * x * (3 - 2 * x);
+  return t < a ? e(s((t - (a - 2.5 * FR)) / (3 * FR))) : e(s(1 - (t - b) / (3.5 * FR)));
+}
+/** Where his canvas is drawn in the scene at a moment of the step (its top left): carried along with him. */
+export function stepCanvasAt(m: WarlockMove, t: number, view: GameView, turn = 0): [number, number] {
+  const [x0, y0] = onStep([0, 0, 0], view, turn);
+  const [x1, y1] = onStep([STEP_REACH * stepAlong(m, t), 0, 0], view, turn);
+  return [Math.round(STEP_SCENE.x + x1 - x0), Math.round(STEP_SCENE.y + y1 - y0)];
+}
+/** When, as a share of the flash, the eased step reaches `v` of the way (the inverse of smoothstep). */
+const unease = (v: number): number => 0.5 - Math.sin(Math.asin(Math.max(-1, Math.min(1, 1 - 2 * v))) / 3);
+/** Where the ones in his way stand in the scene (the floor under them). */
+export function stepFeet(view: GameView, turn = 0): [number, number][] {
+  return STEP_TARGETS.map(([x, y]) => onStep([x, y, 0], view, turn));
+}
+
+/**
+ * HIM BREAKING UP INTO SMOKE, `gone` of the way (0 all there, 1 all smoke): pixel by pixel, where the smoke's noise is under
+ * how far he is gone, he is smoke (black smoke's colours) and then nothing; none left alone. A new picture.
+ */
+export function dissolve(px: Px, gone: number, t: number): Px {
+  if (gone <= 0) return px;
+  const out = new Px(px.w, px.h);
+  const keep = new Uint8Array(px.w * px.h);
+  for (let y = 0; y < px.h; y++) {
+    for (let x = 0; x < px.w; x++) {
+      const i = (y * px.w + x) * 4;
+      if (px.d[i + 3] === 0) continue;
+      const n = noise2(x * 0.32 + 1.7, y * 0.32 - t * 6) * 0.75 + noise2(x * 0.9, y * 0.9 + 3.1) * 0.25;
+      const edge = gone * 1.35 - 0.15;
+      if (n < edge - 0.22) continue;
+      keep[y * px.w + x] = n < edge ? 2 : 1;
+    }
+  }
+  // (none left alone: a solid pixel with no solid one beside it goes, and an edge of light with no solid one beside it;
+  // twice over, as each going may leave another alone)
+  const solid = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < px.w && y < px.h && keep[y * px.w + x] > 0 && (keep[y * px.w + x] === 2 || px.d[(y * px.w + x) * 4 + 3] === 255);
+  for (let pass = 0; pass < 2; pass++) {
+    for (let y = 0; y < px.h; y++) {
+      for (let x = 0; x < px.w; x++) {
+        if (!keep[y * px.w + x]) continue;
+        if (!solid(x - 1, y) && !solid(x + 1, y) && !solid(x, y - 1) && !solid(x, y + 1)) keep[y * px.w + x] = 0;
+      }
+    }
+  }
+  for (let y = 0; y < px.h; y++) {
+    for (let x = 0; x < px.w; x++) {
+      const k = keep[y * px.w + x];
+      if (!k) continue;
+      const i = (y * px.w + x) * 4;
+      if (k === 2) {
+        // (turning to smoke: its colours, lighter at what was his edge)
+        const c = SMOKE[px.d[i + 3] === 255 ? (noise2(x * 0.5, y * 0.5 + t * 3) > 0.5 ? 1 : 2) : 3];
+        out.set(x, y, c);
+      } else {
+        out.d[i] = px.d[i];
+        out.d[i + 1] = px.d[i + 1];
+        out.d[i + 2] = px.d[i + 2];
+        out.d[i + 3] = px.d[i + 3];
+      }
+    }
+  }
+  return out;
+}
+
+/** A mass of black smoke, its foot at (`cx`, `cy`), `w` across and `h` high, rolling (`t`), torn ragged at its edges by noise; `thin` 0 dense to 1 gone. */
+function cloud(sm: Light, cx: number, cy: number, w: number, h: number, t: number, thin: number, seed: number, light = 0): void {
+  if (thin >= 1) return;
+  for (let y = Math.floor(cy - h - 3); y <= Math.ceil(cy + 2); y++) {
+    for (let x = Math.floor(cx - w / 2 - 4); x <= Math.ceil(cx + w / 2 + 4); x++) {
+      const ex = (x - cx) / (w / 2);
+      const ey = (y - (cy - h / 2)) / (h / 2);
+      const n = noise2(x * 0.22 + seed, (y + t * 30) * 0.2) * 0.65 + noise2(x * 0.6 - t * 3, y * 0.6 + seed) * 0.35;
+      const v = 1 - Math.hypot(ex, ey) + (n - 0.5) * 0.9 - thin * 1.1;
+      if (v < 0) continue;
+      // (dark through, its edge lighter only on top where the light catches it: no rimmed bubble)
+      sm.put(x, y, Math.min(3, (v > 0.45 ? 0 : v > 0.25 ? 1 : v > 0.1 || y > cy - h / 2 ? 2 : 3) + light));
+    }
+  }
+}
+
+/**
+ * THE SMOKE STEP'S SMOKE AND LIGHT AT A MOMENT of the move (`m`, its `dash` the flash the game carries him through): the
+ * smoke boiling up off him as he coils; the rolling column of it carried across, its embers swirling in it; the trail it
+ * leaves on the floor, lingering and thinning; the ones in his way cursed as it passes through them (smoldering from then
+ * on); the smoke gathering where he comes out of it, and thinning away off him. On a scene of its own (STEP_SCENE).
+ */
+export function stepLight(m: WarlockMove, t: number, view: GameView, turn = 0): Px {
+  const out = new Px(STEP_SCENE.w, STEP_SCENE.h);
+  const l = new Light();
+  const sm = new Light();
+  const [a, b] = m.dash ?? [0, 0];
+  const gone = stepGone(m, t);
+  const here = stepAlong(m, t);
+  const [hx, hy] = onStep([STEP_REACH * here, 0, 0], view, turn);
+  // (THE COLUMN: boiling up off him as he coils and breaks up; carried across; gathering where he comes out, and thinning off him)
+  const coil = Math.max(0, Math.min(1, (t - (a - 5 * FR)) / (5 * FR)));
+  const after = Math.max(0, (t - b) / 0.5);
+  const thin = t < a ? 1 - coil * 0.85 : t <= b ? 0.05 : Math.min(1, 0.15 + after);
+  // (streaked out along the way it goes while it is carried fastest)
+  const fast = t > a && t < b ? Math.sin(Math.PI * (t - a) / (b - a)) : 0;
+  cloud(sm, hx, hy, (30 + 12 * gone) * (1 + 0.9 * fast), 30 + 26 * gone * (t <= b ? 0.6 : 1), t, thin, 3.3);
+  // (embers swirling in it)
+  if (thin < 0.9) {
+    for (let e = 0; e < 6; e++) {
+      const ang = t * 7 + e * 1.05;
+      const ex = hx + Math.cos(ang) * (8 + 3 * Math.sin(e));
+      const ey = hy - 14 - e * 4 - Math.sin(ang) * 4;
+      l.put(ex, ey, 2);
+      l.put(ex + 1, ey, 1);
+    }
+  }
+  // (THE TRAIL)
+  if (t >= a) {
+    // (FLOWING ON THE GROUND, BILLOWING UP: his words, 25 Oct, of the trail: “Billowing, rising (Recommended)”, then “Eh
+    // not quite.  I like it flowing on the ground, with smoke billowing up”: a river of smoke along the floor where the
+    // column has passed, rolling on the way he went, and puffs billowing up off it, thinning away as it ages)
+    const [sx, sy] = onStep([0, 0, 0], view, turn);
+    const [ex, ey] = onStep([STEP_REACH * here, 0, 0], view, turn);
+    const [fx2, fy2] = onStep([STEP_REACH, 0, 0], view, turn);
+    const LEN = Math.hypot(fx2 - sx, fy2 - sy) || 1;
+    const ux = (fx2 - sx) / LEN;
+    const uy = (fy2 - sy) / LEN;
+    const reach = Math.hypot(ex - sx, ey - sy);
+    for (let y = Math.floor(Math.min(sy, ey) - 12); y <= Math.ceil(Math.max(sy, ey) + 8); y++) {
+      for (let x = Math.floor(Math.min(sx, ex) - 10); x <= Math.ceil(Math.max(sx, ex) + 10); x++) {
+        const along = (x - sx) * ux + (y - sy) * uy;
+        if (along < -4 || along > reach + 2) continue;
+        const v = Math.max(0, Math.min(1, along / LEN));
+        const age = (t - (a + (b - a) * unease(v))) / TRAIL_LIFE;
+        if (age >= 1) continue;
+        // (across the floor from its line: on screen, mostly up from it, a little down)
+        const off = (x - sx) * -uy + (y - sy) * ux + (noise2(along * 0.15 - t * 4, 7.7) - 0.5) * 3;
+        const flow = noise2((along - t * 70) * 0.09, off * 0.35 + 2.3) * 0.7 + noise2((along - t * 110) * 0.25, off * 0.6) * 0.3;
+        const half = (5 + 4 * flow) * (1 - 0.4 * Math.max(0, age));
+        const up = -off;
+        const depth = up > 0 ? up / (half * 1.3) : -up / (half * 0.45);
+        const vv = 1 - depth + (flow - 0.5) * 0.8 - Math.max(0, age - 0.45) * 1.8;
+        if (vv < 0) continue;
+        sm.put(x, y, vv > 0.55 ? 0 : vv > 0.3 ? 1 : vv > 0.12 || up < half * 0.5 ? 2 : 3);
+      }
+    }
+    // (puffs billowing up off it, each place along it sending one up after another while it lasts)
+    for (let k = 0; k <= 12; k++) {
+      const v = (k + 0.5) / 13;
+      if (v > here) break;
+      const born0 = a + (b - a) * unease(v);
+      const life = 0.9;
+      for (let j = 0; j < 3; j++) {
+        const born = born0 + j * 0.26 + hash(k * 3 + j) * 0.12;
+        const ph = (t - born) / life;
+        if (ph < 0 || ph >= 1 || born > born0 + TRAIL_LIFE * 0.7) continue;
+        const [px0, py0] = onStep([STEP_REACH * v, 0, 0], view, turn);
+        const lift = 1 - (1 - ph) * (1 - ph);
+        const drift = (noise2(k * 0.9 + j * 4, t * 0.7) - 0.5) * 16 * ph + (hash(k * 7 + j) - 0.5) * 8;
+        const size = (13 + 11 * ph) * (0.8 + 0.4 * hash(k * 11 + j));
+        // (born out of the river, rolling up off it, lighter than it as it thins)
+        cloud(sm, px0 + drift, py0 + 3 - lift * 22, size, size * 0.95, t + k, Math.max(0, (ph - 0.45) / 0.55), 7 + k * 3 + j, ph > 0.3 ? 1 : 0);
+      }
+    }
+  }
+  // (THE ONES IN HIS WAY, CURSED as the column passes through them: smoldering from then on)
+  stepFeet(view, turn).forEach(([gx, gy], i) => {
+    const v = STEP_TARGETS[i][0] / STEP_REACH;
+    const passed = a + (b - a) * unease(v);
+    const since = t - passed;
+    if (since < 0) return;
+    if (since < 0.25) burst(l, gx, gy - TARGET_BOX.h * 0.5, 3 + since * 30, since / 0.25, 61 + i);
+    smolder(l, sm, gx, gy, TARGET_BOX.w, TARGET_BOX.h, t, Math.min(1, since / 0.3), i + 4);
   });
   sm.lay(out, SMOKE);
   l.lay(out);
