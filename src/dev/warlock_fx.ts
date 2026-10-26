@@ -60,7 +60,7 @@ class Light {
     const q = (Math.round(y) + 1024) * 4096 + (Math.round(x) + 1024);
     if ((this.px.get(q) ?? -1) < k) this.px.set(q, k);
   }
-  lay(on: Px): void {
+  lay(on: Px, pal: readonly string[] = HELL): void {
     const has = (x: number, y: number): boolean => this.px.has((y + 1024) * 4096 + (x + 1024));
     for (const [q, k] of this.px) {
       const x = (q % 4096) - 1024;
@@ -68,7 +68,7 @@ class Light {
       if (!has(x - 1, y) && !has(x + 1, y) && !has(x, y - 1) && !has(x, y + 1)) continue;
       // (kept two pixels in from the scene's edge: never cut off by it)
       if (x < 2 || y < 2 || x > on.w - 3 || y > on.h - 3) continue;
-      on.set(x, y, HELL[k]);
+      on.set(x, y, pal[k]);
     }
   }
 }
@@ -203,6 +203,194 @@ export function boltLight(m: WarlockMove, t: number, view: GameView, turn = 0): 
     const [gx, gy] = targetFoot(view, turn);
     burn(l, gx, gy, TARGET_BOX.w, TARGET_BOX.h, t, Math.min(1, hit / 0.25) * flare);
   }
+  l.lay(out);
+  return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE CURSE (his tap+hold): CHAINS OF BRAND whipping out of the demon's claws to every enemy in range, branding each; and
+// then each cursed one seeping BLACK SMOKE, cyan embers in it, and no mark (his picks, 25 Oct: “Chains of brand”, “Smoke
+// only”): a smaller burn than the bolt's, told apart from it at a glance.
+
+/** Where the ones he curses stand, in his lengths (his own forward, left), on the floor: three of them, in range. */
+export const CURSE_TARGETS: readonly [number, number][] = [
+  [2.5 * UNITS_PER_TILE, 1.6 * UNITS_PER_TILE],
+  [3.0 * UNITS_PER_TILE, 0.1 * UNITS_PER_TILE],
+  [2.3 * UNITS_PER_TILE, -1.7 * UNITS_PER_TILE],
+];
+/** Where each of them stands in the scene (the floor under it). */
+export function curseFeet(view: GameView, turn = 0): [number, number][] {
+  return CURSE_TARGETS.map(([x, y]) => onScene([x, y, 0], view, turn));
+}
+/** How long a chain takes to reach its mark, how long it holds there, how long it takes to burn away to smoke (seconds). */
+export const CHAIN_REACH = 10 * FR;
+/** Each next chain leaves this much after the one before; he hauls them taut so long after they leave; they burn away so long after they leave, over CHAIN_FADE. */
+export const CHAIN_LAG = 2 * FR;
+export const CHAIN_YANK = 18 * FR;
+export const CHAIN_GONE = 26 * FR;
+export const CHAIN_FADE = 0.35;
+/** How thin a cursed one's smoke is (more, thinner). */
+export const SMOLDER = { thin: 0.22 };
+/** Black smoke, darkest to lightest at its edge where the light catches it. */
+export const SMOKE = ['#141018', '#28222e', '#3e3646', '#5a5066'];
+
+/**
+ * A CHAIN OF BLACK SMOKE (his word, 25 Oct, of the first: “Too fast, let them whip,Too straight,How about Smokey black
+ * chains”) from his claws at (`ax`, `ay`) to the one it brands at (`bx`, `by`): link after link of black smoke, wisps
+ * curling up off it and a cyan ember here and there in it, its tip a hot cyan brand. `u` how far out it has snaked (0 to 1);
+ * `wave` how hard it whips (a wave running down it from his hand to its tip); `slack` how far it sags in the middle and
+ * `swing` how far that sag swings across; burnt away to nothing from his claws out as far as `gone` (0 to 1).
+ */
+function chain(l: Light, sm: Light, ax: number, ay: number, bx: number, by: number, u: number, wave: number, slack: number, swing: number, gone: number, t: number, seed: number): void {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const at = (s: number): [number, number] => {
+    // (the part of it out so far, as a share of it: the sag and the swing are of that, the wave runs down it to its tip)
+    const v = u > 0 ? s / u : 0;
+    const bow = 4 * v * (1 - v);
+    const w = Math.sin(Math.PI * 2 * (1.3 * s - 2.4 * t) + seed) * wave * v * (1 - 0.4 * v);
+    const side = w + bow * swing;
+    return [ax + dx * s + nx * side, ay + dy * s + ny * side + bow * slack * u];
+  };
+  const LINK = 6;
+  const reach = len * u;
+  let last: [number, number] = [ax, ay];
+  for (let along = 0; along <= reach; along += 0.5) {
+    const s = along / len;
+    const [x, y] = at(s);
+    const [x2, y2] = at(Math.min(u, s + 0.01));
+    const tl = Math.hypot(x2 - x, y2 - y) || 1;
+    const cx = -(y2 - y) / tl;
+    const cy = (x2 - x) / tl;
+    last = [x, y];
+    if (s < gone) continue;
+    const n = Math.floor(along / LINK);
+    const f = (along % LINK) / LINK;
+    if (n % 2 === 0) {
+      // (a link seen flat: a ring of black smoke round a hole, its rim catching the light)
+      const half = Math.sin(Math.PI * f) * 2.8;
+      sm.put(x + cx * half, y + cy * half, 3);
+      sm.put(x - cx * half, y - cy * half, 2);
+      if (f < 0.14 || f > 0.86) sm.put(x, y, 1);
+    } else {
+      // (a link seen edge-on: a dark bar through the next)
+      sm.put(x, y, 0);
+      sm.put(x + cx * 0.9, y + cy * 0.9, 2);
+      sm.put(x - cx * 0.9, y - cy * 0.9, 1);
+    }
+    // (wisps of smoke curling up off it, and a cyan ember in it here and there)
+    if (along % 6 < 0.5) {
+      const k = Math.floor(along / 6);
+      const tall = Math.round(2 + 4 * noise2(k * 0.7 + seed, t * 5));
+      for (let h = 1; h <= tall; h++) {
+        const sw = Math.round(Math.sin(h * 0.7 + t * 6 + k) * 1.2);
+        sm.put(x + sw, y - 2 - h, h < tall * 0.5 ? 2 : 3);
+        sm.put(x + sw + 1, y - 2 - h, 3);
+      }
+    }
+    if (along % 9 < 0.5 && noise2(along * 0.3 + seed, t * 8) > 0.5) {
+      l.put(x, y - 1, 2);
+      l.put(x + 1, y - 1, 1);
+    }
+  }
+  // (ITS TIP, A HOT CYAN BRAND: a ring of white-hot fire where it bites)
+  if (gone < 1) {
+    const [tx, ty] = last;
+    for (let a = 0; a < 12; a++) {
+      const r = 2.2;
+      l.put(tx + Math.cos((a / 12) * Math.PI * 2) * r, ty + Math.sin((a / 12) * Math.PI * 2) * r, a % 3 === 0 ? 3 : 2);
+    }
+    l.put(tx, ty, 3);
+    l.put(tx + 1, ty, 3);
+  }
+}
+
+/**
+ * A CURSED ONE SEEPING SMOKE, its floor point at (`gx`, `gy`), `w` across and `h` high: puffs of black smoke seeping up off
+ * it and rising, swelling and thinning as they go, and a few cyan embers rising in them; `heat` 0 none to 1, more as each
+ * bite of the curse flares it.
+ */
+function smolder(l: Light, sm: Light, gx: number, gy: number, w: number, h: number, t: number, heat: number, seed: number): void {
+  if (heat <= 0) return;
+  // (WISPS OF IT rising off its shoulders and crown and sides: each a column of smoke that winds up off it, widening and
+  // thinning as it rises, torn by the air)
+  for (let i = 0; i < 4; i++) {
+    const k = seed * 13 + i * 5;
+    const up = [0.62, 0.85, 0.4, 0.72][i];
+    const x0 = gx + [-0.3, 0.05, 0.32, 0.22][i] * w;
+    const y0 = gy - h * up;
+    const TALL = 26 * heat;
+    for (let y = Math.floor(y0 - TALL); y <= Math.ceil(y0 + 2); y++) {
+      const rise = y0 - y;
+      const bend = (noise2(k * 0.4, (y + t * 16) * 0.05) - 0.5) * rise * 0.5;
+      const wide = 2.2 + rise * 0.22;
+      for (let x = Math.floor(x0 - wide - 8); x <= Math.ceil(x0 + wide + 8); x++) {
+        const off = Math.abs(x - x0 - bend) / wide;
+        if (off > 1.4) continue;
+        const v = noise2(x * 0.3 + k, (y + t * 18) * 0.16) * 0.7 + noise2(x * 0.7 + k * 2, (y + t * 26) * 0.32) * 0.4 - SMOLDER.thin - off * 0.3 - (rise / Math.max(1, TALL)) * 0.4;
+        if (v < 0) continue;
+        sm.put(x, y, v > 0.3 ? 0 : v > 0.18 ? 1 : v > 0.08 ? 2 : 3);
+      }
+    }
+  }
+  // (cyan embers rising in it, each a spark two pixels long)
+  for (let e = 0; e < 4; e++) {
+    const k = seed * 29 + e * 3;
+    const ph = (((t * (0.7 + 0.2 * hash(k)) + hash(k + 1)) % 1) + 1) % 1;
+    if (ph > 0.85) continue;
+    const x = gx + (hash(k + 2) - 0.5) * w * 0.6 + Math.sin(ph * 6 + e) * 2;
+    const y = gy - h * (0.3 + 0.5 * hash(k + 3)) - ph * 22;
+    l.put(x, y, ph < 0.4 ? 2 : 1);
+    l.put(x, y - 1, ph < 0.4 ? 2 : 1);
+  }
+}
+
+/**
+ * THE CURSE'S LIGHT AND SMOKE AT A MOMENT of the move that casts it (`m`, its blow the moment the chains leave the claws):
+ * the chains whipping out to each of the ones in range (CURSE_TARGETS), holding as they brand them while he hauls back on
+ * them, burning away to smoke; a flash where each brands; then the smoke seeping off every cursed one, and its embers. On a
+ * scene of its own, clear but for them (BOLT_SCENE). Empty before it is cast.
+ */
+export function curseLight(m: WarlockMove, t: number, view: GameView, turn = 0): Px {
+  const out = new Px(BOLT_SCENE.w, BOLT_SCENE.h);
+  const l = new Light();
+  const sm = new Light();
+  const go = (m.blows ?? [])[0]?.at ?? 0;
+  if (t < go) return out;
+  const since = t - go;
+  const hand = onScene(fireSeat(solve(WARLOCK_B, warlockPose(m.motion, Math.min(t, m.long))), 1.0), view, turn);
+  const feet = curseFeet(view, turn);
+  feet.forEach(([gx, gy], i) => {
+    const late = i * CHAIN_LAG;
+    const s = since - late;
+    if (s < 0) return;
+    const [bx, by] = [gx, gy - TARGET_BOX.h * 0.5];
+    if (since < CHAIN_GONE + CHAIN_FADE) {
+      // (snaking out, eased to a stop at its mark; whipping as it goes, the whip dying once it bites; slack and swinging
+      // until he hauls it taut)
+      const r = Math.min(1, s / CHAIN_REACH);
+      const u = 1 - (1 - r) * (1 - r);
+      const landed = Math.max(0, s - CHAIN_REACH);
+      const wave = (i % 2 === 0 ? 1 : -1) * 7 * (r < 1 ? 1 : Math.exp(-landed * 7));
+      const taut = Math.min(1, Math.max(0, (since - CHAIN_YANK) / (3 * FR)));
+      const slack = 12 * (1 - 0.8 * taut);
+      const swing = Math.sin(t * 7 + i * 2) * 4 * (1 - taut);
+      const gone = Math.max(0, (since - CHAIN_GONE) / CHAIN_FADE);
+      chain(l, sm, hand[0], hand[1], bx, by, u, wave, slack, swing, gone, t, i * 3.7 + 1);
+    }
+    // (the brand: a flash and a ring of flecks where the chain bites)
+    const bit = s - CHAIN_REACH;
+    if (bit >= 0 && bit < 0.25) burst(l, bx, by, 3 + bit * 40, bit / 0.25, 21 + i);
+    // (and from then on it smolders, every bite of the curse flaring it a little)
+    if (bit >= 0) {
+      const flare = 1 + 0.3 * Math.max(0, 1 - ((bit % TICK) / TICK) * 5);
+      smolder(l, sm, gx, gy, TARGET_BOX.w, TARGET_BOX.h, t, Math.min(1, bit / 0.3) * flare, i + 1);
+    }
+  });
+  sm.lay(out, SMOKE);
   l.lay(out);
   return out;
 }

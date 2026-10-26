@@ -24,9 +24,9 @@ import { FR, STANCE, WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from 
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { strikes, struck } from '../src/dev/brawler_punches';
 import { warlockSpells } from '../src/dev/warlock_spells';
-import { boltLight } from '../src/dev/warlock_fx';
+import { boltLight, curseLight } from '../src/dev/warlock_fx';
 
-/** Every move of his: standing, running, his hellfire bolt (and, as they come, his Curse, his smoke step). */
+/** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step). */
 const ALL = [...warlockMoves(), ...warlockSpells()];
 
 const test: (name: string, fn: () => void) => void = nodeTest;
@@ -169,14 +169,16 @@ for (const m of ALL) {
 // HIS HELLFIRE'S LIGHT (dev/warlock_fx.ts): the burst off his claws, the bolt in flight, its burst where it hits and the burn
 // on the one it hit, every frame of the move and a second and a half of the burn after it, from in front and behind: crisp,
 // no pixel alone, nothing of the enemy's pink, nothing cut off (Pixels 1; Colour 3; Animations 8, effects are pixel art too)
-for (const m of ALL.filter((mv) => mv.name.includes('bolt'))) {
-  test(`${m.name}: its light in every frame, in flight and burning: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+// (and THE CURSE'S: its chains of fire whipping out to every one in range, the brands, the smoke seeping off them)
+for (const m of ALL.filter((mv) => mv.name.includes('bolt') || mv.name.includes('Curse'))) {
+  const lightOf = m.name.includes('Curse') ? curseLight : boltLight;
+  test(`${m.name}: its light in every frame, and what it leaves on those it hits: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
     const found: string[] = [];
     const n = Math.round((m.long + 1.5) * FPS);
     for (const view of ['front', 'back'] as const) {
       for (let i = 0; i <= n; i++) {
         const t = i / FPS;
-        for (const f of pictureFindings(boltLight(m, t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+        for (const f of pictureFindings(lightOf(m, t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);
