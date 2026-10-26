@@ -394,3 +394,79 @@ export function curseLight(m: WarlockMove, t: number, view: GameView, turn = 0):
   l.lay(out);
   return out;
 }
+
+// ---------------------------------------------------------------------------------------------
+// THE SPREAD (his design, 25 Oct: “If a cursed enemy dies, it spreads all DOTs to other enemies in range.  So the play
+// pattern is: try to get the tap DOT to spread via the curse.”; his word to show it: “Good, show the spread next
+// (Recommended)”): the three cursed (CURSE_TARGETS), the middle one burning from his bolt too; it dies, and as it falls its
+// burns leap off it, a ball of his fire arcing to each of the others with a trail of its black smoke, bursting on each; and
+// now each burns as well as smolders.
+
+/** Which of CURSE_TARGETS dies; when its death begins; when its burns leap off it, how long they fly. */
+export const SPREAD_FROM = 1;
+export const DIES_AT = 1.0;
+export const LEAP_AT = 1.3;
+export const LEAP_FLIGHT = 0.42;
+/** How high (pixels) a leaping burn arcs over the floor between them. */
+const LEAP_ARC = 26;
+
+/** THE SPREAD'S LIGHT AND SMOKE AT A MOMENT (seconds from the start of the scene): see above. On a scene of its own (BOLT_SCENE). */
+export function spreadLight(t: number, view: GameView, turn = 0): Px {
+  const out = new Px(BOLT_SCENE.w, BOLT_SCENE.h);
+  const l = new Light();
+  const sm = new Light();
+  const feet = curseFeet(view, turn);
+  const mid = (i: number): [number, number] => [feet[i][0], feet[i][1] - TARGET_BOX.h * 0.5];
+  feet.forEach(([gx, gy], i) => {
+    const dying = i === SPREAD_FROM;
+    // (its curse: smoke off every one; off the dead one thinning away once it is down)
+    const smoke = dying ? Math.max(0, 1 - Math.max(0, t - LEAP_AT) / 0.8) : 1;
+    // (as it falls the dead one's smoke falls with it: its sources nearer the floor)
+    const sink = dying ? Math.min(1, Math.max(0, (t - DIES_AT) / 0.7)) : 0;
+    smolder(l, sm, gx, gy, TARGET_BOX.w, TARGET_BOX.h * (1 - 0.7 * sink), t, smoke, i + 1);
+    // (its burn: the dying one burning until its burns leap off it; the others from when they land)
+    const landed = t - (LEAP_AT + LEAP_FLIGHT);
+    const heat = dying ? (t < LEAP_AT ? 1 : Math.max(0, 1 - (t - LEAP_AT) / 0.15)) : landed >= 0 ? Math.min(1, landed / 0.25) : 0;
+    if (heat > 0) {
+      const bite = ((t + i * 0.17) % TICK) / TICK;
+      burn(l, gx, gy, TARGET_BOX.w, TARGET_BOX.h * (1 - 0.7 * sink), t, heat * (1 + 0.55 * Math.max(0, 1 - bite * 5)));
+    }
+  });
+  // (AS IT DIES ITS BURNS LEAP OFF IT: a flare on it, then a ball of fire to each of the others, arcing, its smoke trailing)
+  const since = t - LEAP_AT;
+  const [fx, fy] = mid(SPREAD_FROM);
+  if (since >= 0 && since < 0.22) burst(l, fx, fy, 5 + since * 50, since / 0.22, 41);
+  feet.forEach((_, i) => {
+    if (i === SPREAD_FROM || since < 0) return;
+    const [tx, ty] = mid(i);
+    const u = since / LEAP_FLIGHT;
+    const arc = (v: number): [number, number] => [fx + (tx - fx) * v, fy + (ty - fy) * v - LEAP_ARC * 4 * v * (1 - v)];
+    if (u <= 1) {
+      // (its smoke trailing it, thinning behind)
+      for (let k = 1; k <= 10; k++) {
+        const v = u - k * 0.035;
+        if (v <= 0) break;
+        const [sx, sy] = arc(v);
+        const r = 1.2 + k * 0.25;
+        for (let y = Math.floor(sy - r); y <= Math.ceil(sy + r); y++) {
+          for (let x = Math.floor(sx - r); x <= Math.ceil(sx + r); x++) {
+            if (Math.hypot(x - sx, y - sy) > r || hash(x * 13 + y * 7 + k) < k * 0.06) continue;
+            sm.put(x, y, k < 4 ? 1 : k < 7 ? 2 : 3);
+          }
+        }
+      }
+      // (the ball of fire, flying the way the arc goes)
+      const [bx, by] = arc(u);
+      const [ax, ay] = arc(Math.max(0, u - 0.05));
+      const wl = Math.hypot(bx - ax, by - ay) || 1;
+      bolt(l, bx, by, (bx - ax) / wl, (by - ay) / wl, 2.8, t, [fx, fy]);
+    } else if (u - 1 < 0.25 / LEAP_FLIGHT) {
+      // (bursting where it lands)
+      const h = (u - 1) * LEAP_FLIGHT;
+      burst(l, tx, ty, 4 + h * 40, h / 0.25, 51 + i);
+    }
+  });
+  sm.lay(out, SMOKE);
+  l.lay(out);
+  return out;
+}

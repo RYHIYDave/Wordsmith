@@ -24,7 +24,7 @@ import { FR, STANCE, WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from 
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { strikes, struck } from '../src/dev/brawler_punches';
 import { warlockSpells } from '../src/dev/warlock_spells';
-import { boltLight, curseLight } from '../src/dev/warlock_fx';
+import { boltLight, curseLight, spreadLight } from '../src/dev/warlock_fx';
 
 /** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step). */
 const ALL = [...warlockMoves(), ...warlockSpells()];
@@ -184,3 +184,16 @@ for (const m of ALL.filter((mv) => mv.name.includes('bolt') || mv.name.includes(
     assert.deepEqual([...new Set(found)], []);
   });
 }
+
+// THE SPREAD (dev/warlock_fx.ts spreadLight): a cursed one burning dies, its burns leaping to the others; every frame of it,
+// from in front and behind: crisp, no pixel alone, nothing pink, nothing cut off
+test('the Curse spreading: a cursed one dies and its burns leap to the others, every frame: crisp, no pixel alone, nothing pink, nothing cut off', () => {
+  const found: string[] = [];
+  for (const view of ['front', 'back'] as const) {
+    for (let i = 0; i <= 3.4 * FPS; i++) {
+      const t = i / FPS;
+      for (const f of pictureFindings(spreadLight(t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+    }
+  }
+  assert.deepEqual([...new Set(found)], []);
+});

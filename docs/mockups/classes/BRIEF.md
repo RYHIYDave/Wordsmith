@@ -203,6 +203,8 @@ THE HELLFIRE BOLT, FIRST PASS (25 Oct): he hauls the demon arm back and down at 
 
 THE CURSE (25 Oct): asked how he casts it, “Chains of brand”; how a cursed one looks, “Smoke only”. First pass: he hauls the claw up as he holds, thrusts it down and out in a flash, chains whip out to every enemy in range and brand them, he hauls back on them; each cursed one then seeps black smoke with cyan embers, no mark. Of it: “Chains need work”, then “Too fast, let them whip,Too straight,How about Smokey black chains”. Read as (told him so): chains of black smoke, snaking out slower and whipping, slack and swinging, snapped taut when he hauls back, a hot cyan brand at each tip, wisps of smoke off the links. Shown that: “Good, show the spread next (Recommended)”.
 
+THE SPREAD (25 Oct): three cursed, the skeleton in the middle burning from his bolt too; it dies, and as it falls its fire leaps off it in arcs to the other two, trailing its smoke, and now they burn as well as smolder. Of it: “Good, on to the smoke step (Recommended)”.
+
 ## What glows
 
 All of them are the hero's side: what glows on them, the demon, the Contraption and the Golem too, is the friend's cyan.
