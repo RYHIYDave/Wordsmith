@@ -641,19 +641,28 @@ export function mystic(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' | 'f
   // the sash of gold round his waist, its knot and end at his side; the chains at his neck
   f.egg(gold, add(b.waist, mul(b.up, 0.15 * k)), [1.42 * k, 1.24 * k, 0.32 * k], TA, 0.06);
   f.rod(gold, add(b.waist, add(mul(b.across, 0.8 * k), mul(b.fwd, 0.85 * k))), add(b.waist, add(mul(b.across, 1.0 * k), add(mul(b.fwd, 0.95 * k), mul(b.up, -1.2 * k)))), 0.12 * k, 0.16 * k, 0.05);
-  // (lying on his chest, over the robe as it rounds: each link on its surface, a little sunk into the cloth)
-  for (const [z0, sag] of [[1.15, 0.3], [0.95, 0.5]] as const) {
+  // (round his neck, from under the veil's sides, and down onto his chest, each lying on the robe as it rounds, a little sunk
+  // into the cloth; the longer with a pendant, a drop of gold round a red stone)
+  const onRobe = (a: number, c: number, out = 0.02): V3 => {
+    const e = 1 - (a / 1.62) ** 2 - ((c + 0.1) / 1.67) ** 2;
+    return onChest(b, a, 0.05 + 1.27 * Math.sqrt(Math.max(0.1, e)) + out, c);
+  };
+  for (const [drop, w] of [[0.75, 0.5], [1.15, 0.6]] as const) {
     let prev: V3 | null = null;
-    for (let i = 0; i <= 14; i++) {
-      const u = i / 14;
-      const a = -0.85 + 1.7 * u;
-      const c = z0 - sag * Math.sin(u * Math.PI);
-      const e = 1 - (a / 1.62) ** 2 - ((c + 0.1) / 1.67) ** 2;
-      const fw = 0.05 + 1.27 * Math.sqrt(Math.max(0.12, e)) + 0.02;
-      const q = onChest(b, a, fw, c);
+    for (let i = 0; i <= 16; i++) {
+      const u = i / 16;
+      const a = (u - 0.5) * 2 * w;
+      const c = 1.62 - drop * Math.pow(Math.sin(u * Math.PI), 0.75);
+      const q = onRobe(a, c);
       if (prev) f.rod(gold, prev, q, 0.065 * k, 0.065 * k, 0.04);
       prev = q;
     }
+  }
+  {
+    const top = onRobe(0, 1.62 - 1.15, 0.05);
+    const pend = onRobe(0, 1.62 - 1.5, 0.08);
+    f.egg(gold, lerp(top, pend, 0.55), [0.24 * k, 0.12 * k, 0.36 * k], TA, 0.06);
+    f.egg(stone, lerp(top, pend, 0.6), [0.13 * k, 0.1 * k, 0.2 * k], TA, 0.03);
   }
   // THE VEIL (teal, as the game has it): a cloth hooked up beside his eyes, drawn over the bridge of his nose under them and
   // falling over his mouth to below his chin, to a point; a row of little coins of gold along its top, another lower
