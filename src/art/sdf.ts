@@ -32,6 +32,34 @@ export interface Stuff {
   meld?: boolean;
   /** How deep its creases go (1: as deep as they are; less for a face or a hand, all small parts close together). */
   crease?: number;
+  /** Its surface's grain (the weave, the pores, the wood's figure): how much it mottles the light (default by its kind). */
+  grain?: number;
+  /** Cloth's folds: how many hang down it (default: cloth, a stuff that creases deep and does not shine, has them). */
+  folds?: number;
+}
+
+/** Smooth noise in three dimensions, 0..1. */
+function h3(x: number, y: number, z: number): number {
+  let h = (Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 1442695041)) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function vn3(x: number, y: number, z: number): number {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const zi = Math.floor(z);
+  const fx = x - xi;
+  const fy = y - yi;
+  const fz = z - zi;
+  const u = fx * fx * (3 - 2 * fx);
+  const v = fy * fy * (3 - 2 * fy);
+  const w = fz * fz * (3 - 2 * fz);
+  const l = (a: number, b: number, t: number): number => a + (b - a) * t;
+  return l(
+    l(l(h3(xi, yi, zi), h3(xi + 1, yi, zi), u), l(h3(xi, yi + 1, zi), h3(xi + 1, yi + 1, zi), u), v),
+    l(l(h3(xi, yi, zi + 1), h3(xi + 1, yi, zi + 1), u), l(h3(xi, yi + 1, zi + 1), h3(xi + 1, yi + 1, zi + 1), u), v),
+    w,
+  );
 }
 
 interface Base {
@@ -110,6 +138,8 @@ export interface Light {
   /** The key: a lamp at a point (`at`), or a direction it comes from (`from`, a unit toward the light). */
   at?: V3;
   from?: V3;
+  /** A lamp's light dying away with the distance from it (how far, in the figure's units, to fall to a third). */
+  reach?: number;
   /** How hard the light falls: 1, the far side in the dark. */
   hard?: number;
   /** A dim fill from this direction, at this strength (0..1 of a band or two). */
@@ -330,7 +360,7 @@ export class Figure {
         const n = unit([g(E, 0, 0) - g(-E, 0, 0), g(0, E, 0) - g(0, -E, 0), g(0, 0, E) - g(0, 0, -E)]);
         const L = key ? unit(sub(key, q)) : unit(light.from ?? [0, 0, 1]);
         const dl = dt(n, L);
-        const fall = key ? Math.min(1, 2.2 / (0.6 + len(sub(key, q)) * 0.25)) : 1;
+        const fall = key ? (light.reach ? Math.min(1, 1.25 * Math.exp(-len(sub(key, q)) / light.reach)) : Math.min(1, 2.2 / (0.6 + len(sub(key, q)) * 0.25))) : 1;
         let v = clamp01((dl * (0.5 + hard * 0.35) + 0.5 - hard * 0.25) * fall);
         if (light.fill) v = Math.max(v, clamp01(dt(n, unit(light.fill))) * (light.fillK ?? 0.25));
         // (a shining stuff's glint: where the light comes off it toward the eye)
@@ -347,6 +377,20 @@ export class Figure {
         const st = this.stuffs[m];
         const ck = st.crease ?? 1;
         v -= (1 - open) * 0.45 * ck;
+        // ITS SURFACE, not smooth: its grain mottling the light; cloth hanging in folds, each a dark line with its ridge lit
+        // beside it (in its own place, so that they stay on it as it moves)
+        {
+          const q0 = sub(q, this.moved);
+          const metal = (st.shine ?? 0) > 0;
+          const grain = st.grain ?? (metal ? 0.03 : st.meld ? 0.05 : 0.09);
+          if (grain > 0) v += (vn3(q0[0] * 2.3, q0[1] * 2.3, q0[2] * 2.3) - 0.5) * grain * 2 + (vn3(q0[0] * 6.1 + 9, q0[1] * 6.1, q0[2] * 6.1) - 0.5) * grain;
+          const folds = st.folds ?? (!metal && !st.meld && (st.crease ?? 1) >= 0.75 ? 1 : 0);
+          if (folds > 0) {
+            const fn = vn3(q0[0] * 1.15 * folds + 3.1, q0[1] * 1.15 * folds, q0[2] * 0.22) - 0.5;
+            if (Math.abs(fn) < 0.028) v -= 0.22;
+            else if (fn > 0.028 && fn < 0.07) v += 0.07;
+          }
+        }
         const k = y * W + x;
         depth[k] = t;
         stuffAt[k] = m;

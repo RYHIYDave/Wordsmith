@@ -298,7 +298,10 @@ export function pose(B: Build, P: Pose): Body {
   const handFrames = [0, 1].map((j) => {
     const zf = P.fingers?.[j] ?? unit(sub(wrists[j], elbows[j]));
     const back = P.palms?.[j] ? mul(P.palms[j], -1) : mul(across, j ? 1 : -1);
-    return frameAt(wrists[j], zf, back);
+    const F = frameAt(wrists[j], zf, back);
+    // (his right hand the mirror of his left: its thumb on its own side. His words, 25 Oct 2026, of the mystic's open hand:
+    // “His left hand is backwards, the thumb needs to be on the outside if he’s palm up.”)
+    return j === 0 ? { ...F, x: mul(F.x, -1) } : F;
   }) as unknown as [Frame, Frame];
   return { B, k, pelvis, hips, waist, chest, up, fwd, across, neck, head, hup, hfwd, hacross, shoulders, elbows: elbows as unknown as [V3, V3], wrists: wrists as unknown as [V3, V3], knees: knees as unknown as [V3, V3], ankles: ankles as unknown as [V3, V3], handFrames };
 }

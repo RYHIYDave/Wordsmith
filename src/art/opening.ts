@@ -1449,6 +1449,155 @@ function mysticSitting(): { f: Figure; palm: V3 } {
   return { f, palm: add3(add3(b.wrists[0], scale3(F.z, 0.62)), scale3(F.y, -0.15)) };
 }
 
+/**
+ * A MAGIC MERCHANT'S WARES packed into the wagon's bed (`WL` its places into the figure's, a fifth of a metre a unit; the
+ * floor at `Z0`): crates stacked at the back, their planks and battens; a chest bound in brass; a rack of potions in
+ * coloured glass; books in a heap; scrolls in a basket; jars; a rolled rug leaning; sacks, full and tied; and hung from the
+ * bows on cords, bundles of drying herbs, a lantern, a string of beads, a little bell.
+ */
+function wagonWares(f: Figure, WL: (q: V3) => V3, yaw: number, Z0: number): void {
+  const AXW: readonly [V3, V3, V3] = [WL([1, 0, 0]), WL([0, 1, 0]), [0, 0, 1]];
+  const ax = (a = 0, tl = 0, rl = 0) => axes(yaw + a, tl, rl);
+  const oak = f.stuff({ tones: OAK, crease: 0.6, grain: 0.14 });
+  const pine = f.stuff({ tones: [INK, '#2a1c10', '#4a3420', '#6a4c2c', '#8c6a3e', '#b08a54'], crease: 0.6, grain: 0.14 });
+  const brass = f.stuff({ tones: [INK, '#3a2a10', '#6a4c18', '#a07a28', '#d0a840', '#f0d070'], shine: 0.4, crease: 0.4 });
+  const iron = f.stuff({ tones: IRON_K, shine: 0.2, crease: 0.4 });
+  const burlap = f.stuff({ tones: [INK, '#16120e', '#2a2018', '#40301e', '#5a4428', '#76603a'], crease: 0.9, grain: 0.18 });
+  const parch = f.stuff({ tones: [INK, '#2a2418', '#4a4030', '#7a6a4c', '#b0a078', '#e0d4a8'], crease: 0.6 });
+  const leathers = [
+    f.stuff({ tones: [INK, '#2a0c0c', '#4a1616', '#6e2420', '#94382c', '#b85a44'], crease: 0.5 }),
+    f.stuff({ tones: [INK, '#0c1a14', '#14302a', '#1e4a3a', '#2e6a50', '#4a8a6a'], crease: 0.5 }),
+    f.stuff({ tones: [INK, '#1a120a', '#3a2614', '#5a3c1e', '#7c5428', '#a07038'], crease: 0.5 }),
+    f.stuff({ tones: [INK, '#160c22', '#2a1640', '#40225c', '#5a3478', '#7a4c98'], crease: 0.5 }),
+  ];
+  const glass = [
+    f.stuff({ tones: ['#041008', '#0a2414', '#103e24', '#1a6a3e', '#34a066', '#8ae0b0'], shine: 0.7, crease: 0.2, grain: 0.02 }),
+    f.stuff({ tones: ['#140802', '#2e1404', '#5a2808', '#9a4a10', '#d07a20', '#ffc070'], shine: 0.7, crease: 0.2, grain: 0.02 }),
+    f.stuff({ tones: ['#0c0418', '#1c0a34', '#34125a', '#56208a', '#8240c0', '#c08af0'], shine: 0.7, crease: 0.2, grain: 0.02 }),
+    f.stuff({ tones: ['#04101a', '#0a2434', '#103e5a', '#1a6a8a', '#34a0c0', '#8ae0f0'], shine: 0.7, crease: 0.2, grain: 0.02 }),
+  ];
+  const cork = f.stuff({ tones: [INK, '#2a1a0e', '#4a3018', '#6a4a28', '#8a6a3e'] });
+  const herb = f.stuff({ tones: [INK, '#101a0c', '#1c2e14', '#2c4420', '#40602e', '#5a7a3e'], crease: 0.9, grain: 0.2 });
+  const clay = f.stuff({ tones: [INK, '#2a120c', '#4a2214', '#6e3820', '#94522e', '#b87444'], crease: 0.4 });
+  const rug = f.stuff({ tones: [INK, '#2a0a0e', '#4a1218', '#6e1c22', '#94302c', '#b84a3a'], crease: 0.7, paint: (q, _n, v) => {
+    const b = Math.floor((q[2] + q[0] * 0.3) * 2.2);
+    return b % 5 === 0 ? (v > 0.45 ? '#d0a840' : '#7a5c20') : b % 5 === 2 ? (v > 0.45 ? '#2a8a8a' : '#145050') : null;
+  } });
+  // CRATES at the back, stacked two high on the left and one on the right; their planks, the battens at their corners
+  const crate = (x: number, y: number, z: number, sx: number, sy: number, sz: number, a: number): void => {
+    const q = WL([x, y, z + sz]);
+    const A = ax(a);
+    f.block(pine, q, [sx, sy, sz], 0.06, A, 0.03);
+    for (let j = 1; j < 3; j++) f.line([WL([x - sx * 1.01, y - sy * 1.01, z + (2 * sz * j) / 3]), WL([x + sx * 1.01, y - sy * 1.01, z + (2 * sz * j) / 3])], '#1a1008', 1);
+    for (const u of [-1, 1]) {
+      f.block(oak, WL([x + u * (sx - 0.12), y - sy - 0.04, z + sz]), [0.14, 0.06, sz], 0.03, A, 0.02);
+      f.block(oak, WL([x - sx - 0.04, y + u * (sy - 0.12), z + sz]), [0.06, 0.14, sz], 0.03, A, 0.02);
+    }
+    f.mark(WL([x - sx * 0.6, y - sy - 0.08, z + sz * 1.7]), ['#8a8a9a'], 1);
+  };
+  crate(-6.4, -1.4, Z0, 1.3, 1.3, 1.1, 0.05);
+  crate(-6.3, -1.5, Z0 + 2.2, 1.1, 1.1, 0.9, -0.12);
+  crate(-6.6, 1.5, Z0, 1.2, 1.15, 1.25, -0.08);
+  crate(-4.0, -2.0, Z0, 0.9, 0.75, 0.8, 0.2);
+  // A CHEST bound in brass, its lid domed, on the left by us; scrolls on it
+  {
+    const x = 2.4;
+    const y = -2.05;
+    const A = AXW;
+    f.block(oak, WL([x, y, Z0 + 0.8]), [1.25, 0.75, 0.8], 0.08, A, 0.03);
+    f.rod(oak, WL([x - 1.25, y, Z0 + 1.6]), WL([x + 1.25, y, Z0 + 1.6]), 0.75, 0.75, 0.04);
+    // (its bands of old brass, thin, over the lid and down the sides)
+    const band = f.stuff({ tones: [INK, '#22180a', '#3e2e12', '#5e461c', '#80622a', '#a07e38'], shine: 0.25, crease: 0.4 });
+    for (const u of [-0.85, 0.85]) {
+      f.block(band, WL([x + u, y, Z0 + 0.8]), [0.07, 0.77, 0.81], 0.02, A, 0.01);
+      f.rod(band, WL([x + u, y - 0.07, Z0 + 1.6]), WL([x + u, y + 0.07, Z0 + 1.6]), 0.77, 0.77, 0.01);
+    }
+    f.egg(brass, WL([x, y - 0.8, Z0 + 1.35]), [0.22, 0.08, 0.26], ax(), 0.02);
+    for (const [dx, dy, a] of [[-0.6, -0.1, 0.3], [0.2, 0.25, -0.2], [0.7, -0.15, 0.6]] as const) {
+      const c0 = WL([x + dx, y + dy, Z0 + 2.48]);
+      const d = WL([Math.cos(a) * 0.75, Math.sin(a) * 0.75, 0]);
+      f.rod(parch, sub3(c0, scale3(d, 0.7)), add3(c0, scale3(d, 0.7)), 0.15, 0.15, 0.02);
+      f.line([add3(c0, WL([0, -0.21, 0.02])), add3(c0, WL([0, 0.21, 0.02]))], '#6e1c22', 1);
+    }
+  }
+  // A RACK OF POTIONS on the right by us: bottles of coloured glass, corked, in a crate's open top
+  {
+    const x = 3.3;
+    const y = 2.1;
+    crate(x, y, Z0, 1.15, 0.7, 0.55, 0);
+    for (let j = 0; j < 7; j++) {
+      const bx = x - 0.85 + (j % 4) * 0.55 + (j > 3 ? 0.27 : 0);
+      const by = y + (j > 3 ? 0.3 : -0.25);
+      const hgt = 0.9 + ((j * 37) % 5) * 0.12;
+      const g = glass[j % glass.length];
+      const base = WL([bx, by, Z0 + 1.0]);
+      f.rod(g, base, add3(base, [0, 0, hgt * 0.55]), 0.24, 0.22, 0.1);
+      f.egg(g, add3(base, [0, 0, hgt * 0.62]), [0.24, 0.24, 0.18], ax(), 0.15);
+      f.rod(g, add3(base, [0, 0, hgt * 0.7]), add3(base, [0, 0, hgt]), 0.09, 0.08, 0.05);
+      f.rod(cork, add3(base, [0, 0, hgt]), add3(base, [0, 0, hgt + 0.16]), 0.1, 0.09, 0.02);
+    }
+  }
+  // BOOKS in a heap beside him, on the right; a jar and a candle on them
+  {
+    let z = Z0;
+    for (let j = 0; j < 5; j++) {
+      const th = 0.22 + ((j * 13) % 4) * 0.05;
+      f.block(leathers[j % leathers.length], WL([1.9 + ((j * 7) % 3) * 0.08, 2.0, z + th]), [0.62 - (j % 2) * 0.08, 0.45, th], 0.04, ax(0.2 * ((j % 3) - 1)), 0.02);
+      z += th * 2;
+    }
+    const jar = WL([1.9, 2.0, z + 0.55]);
+    f.egg(clay, jar, [0.42, 0.42, 0.5], ax(), 0.2);
+    f.rod(clay, add3(jar, [0, 0, 0.35]), add3(jar, [0, 0, 0.62]), 0.24, 0.26, 0.08);
+    f.egg(cork, add3(jar, [0, 0, 0.66]), [0.27, 0.27, 0.08], ax(), 0.05);
+  }
+  // A BASKET OF SCROLLS on the left beyond the chest
+  {
+    const bq = WL([1.0, -2.2, Z0 + 0.55]);
+    f.rod(burlap, add3(bq, [0, 0, -0.55]), add3(bq, [0, 0, 0.5]), 0.62, 0.72, 0.2);
+    for (let j = 0; j < 6; j++) {
+      const a = j * 1.1;
+      const tip = add3(bq, [Math.cos(a) * 0.3, Math.sin(a) * 0.3, 0.6 + (j % 3) * 0.3]);
+      f.rod(parch, add3(bq, [Math.cos(a) * 0.15, Math.sin(a) * 0.15, -0.2]), tip, 0.13, 0.13, 0.02);
+    }
+  }
+  // A RUG rolled and leaning against the crates; SACKS, full and tied
+  f.rod(rug, WL([-4.6, 1.9, Z0 + 0.3]), WL([-5.4, 2.2, Z0 + 3.4]), 0.42, 0.42, 0.05);
+  for (const [x, y, sz, tilt] of [[-2.6, 2.15, 0.85, 0.15], [-3.4, -0.9, 0.7, -0.2], [-1.6, -2.3, 0.75, 0.25]] as const) {
+    const lo = WL([x, y, Z0 + 0.5 * sz]);
+    f.egg(burlap, lo, [1.15 * sz, 1.0 * sz, 0.6 * sz], ax(tilt), 0.5);
+    f.egg(burlap, WL([x - tilt * 0.3, y, Z0 + 1.2 * sz]), [0.95 * sz, 0.85 * sz, 0.85 * sz], ax(tilt, tilt * 0.5, 0), 0.6);
+    f.egg(burlap, WL([x - tilt * 0.6, y, Z0 + 1.9 * sz]), [0.5 * sz, 0.46 * sz, 0.45 * sz], ax(tilt), 0.45);
+    f.rod(burlap, WL([x - tilt * 0.7, y, Z0 + 2.25 * sz]), WL([x - tilt * 1.2 + 0.15, y + 0.1, Z0 + 2.75 * sz]), 0.28 * sz, 0.1 * sz, 0.15);
+    f.rod(iron, WL([x - tilt * 0.65, y - 0.02, Z0 + 2.2 * sz]), WL([x - tilt * 0.65, y + 0.02, Z0 + 2.24 * sz]), 0.33 * sz, 0.33 * sz, 0.01);
+  }
+  // HUNG FROM THE BOWS on cords: bundles of herbs drying, a lantern, a string of beads, a little bell
+  const bowTop = (x: number, y: number): V3 => WL([x, y, 11.6 - y * y * 0.12]);
+  const hang = (x: number, y: number, len: number): [V3, V3] => {
+    const top = bowTop(x, y);
+    const end = add3(top, [0, 0, -len]);
+    f.line([top, end], '#2a2430', 1);
+    return [top, end];
+  };
+  for (const [x, y, len] of [[0, 1.9, 0.9], [0, -1.9, 1.1], [-3.45, 1.0, 1.4], [-3.45, -1.5, 1.0], [-3.45, 1.9, 0.8]] as const) {
+    const [, end] = hang(x, y, len);
+    for (let j = 0; j < 5; j++) {
+      const a = j * 1.3 + x;
+      f.rod(herb, end, add3(end, [Math.cos(a) * 0.14, Math.sin(a) * 0.14, -0.7 - (j % 2) * 0.2]), 0.05, 0.1, 0.05);
+    }
+    f.rod(rug, add3(end, [0, 0, 0.05]), add3(end, [0, 0, -0.12]), 0.14, 0.14, 0.02);
+  }
+  {
+    const [, end] = hang(-3.45, -0.3, 1.3);
+    f.block(iron, add3(end, [0, 0, -0.45]), [0.28, 0.28, 0.4], 0.06, ax(), 0.03);
+    f.egg(iron, add3(end, [0, 0, -0.02]), [0.32, 0.32, 0.12], ax(), 0.04);
+    f.rod(glass[1], add3(end, [0, 0, -0.75]), add3(end, [0, 0, -0.15]), 0.2, 0.2, 0.02);
+    const [t2, e2] = hang(-3.45, 0.1, 1.0);
+    void t2;
+    f.egg(brass, add3(e2, [0, 0, -0.25]), [0.22, 0.22, 0.28], ax(), 0.08);
+    for (let j = 0; j < 9; j++) f.egg(glass[(j * 3) % 4], WL([-0.2 - j * 0.38, 2.2, 10.6 - Math.sin((j / 8) * Math.PI) * 0.8]), [0.1, 0.1, 0.1], ax(), 0.02);
+  }
+}
+
 export function paintMystic(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
@@ -1468,21 +1617,22 @@ export function paintMystic(p: Px, t: number): void {
   const sn = Math.sin(wyaw);
   /** A place in the wagon (its own measure: x to its front, y across, z up) in the figure's. */
   const WL = (L: V3): V3 => [L[0] * c - L[1] * sn, L[0] * sn + L[1] * c, L[2]];
-  const Z0 = 5.5;
+  const Z0 = 4.4;
   const f = new Figure();
   sculptWagon(f, [0, 0, 0], wyaw, { roll: 0.5, backOpen: true, hollow: true });
-  // HIM, sitting cross-legged on the boards, turned a little toward us; his palm up before him under the crystal
+  // HIM, sitting cross-legged on the boards, turned a little toward us; his right palm up before him under the crystal,
+  // its fingers out before him and his thumb to the outside
   const myaw = Math.atan2(c, -sn) + 0.35;
-  const { r: palmL, at: mAt } = Cast.place(f, WL([0.4, -0.5, Z0]), myaw, () => {
+  const { r: palmL, at: mAt } = Cast.place(f, WL([0.6, -0.3, Z0]), myaw, () => {
     const b = Cast.mystic(f, {
       pelvis: [0, 0, 1.9],
       lean: 0.06,
       nod: 0.12,
-      turn: -0.3,
-      hands: [[-4.5, -1.3, 6.2], [1.7, -2.6, 2.9]],
-      elbows: [[-1, 0.4, -1], [1, 0.4, -0.3]],
-      palms: [[0.15, -0.55, 0.82], [0, 0, -1]],
-      fingers: [[-0.85, -0.35, 0.25], [0.2, -1, -0.3]],
+      turn: -0.2,
+      hands: [[-3.2, -3.6, 6.4], [1.7, -2.6, 2.9]],
+      elbows: [[-1, 0.2, -1], [1, 0.4, -0.3]],
+      palms: [[0, 0, 1], [0, 0, -1]],
+      fingers: [[-0.3, -1, 0.15], [0.2, -1, -0.3]],
       feet: [[0.7, -2.4, 0.7], [-0.7, -2.0, 0.85]],
       knees: [[-1, -0.6, -0.4], [1, -0.6, -0.4]],
     }, ['open', 'flat'], { seated: true });
@@ -1491,34 +1641,10 @@ export function paintMystic(p: Px, t: number): void {
   }, 0.5);
   const C3 = mAt(add3(palmL, [0, 0, 1.6 + bob0]));
   const C3t = mAt(add3(palmL, [0, 0, 1.6 + bob]));
-  // HIS WARES: sacks of burlap against the bed's sides, full and sagging, tied at their necks; a chest
-  const burlap = f.stuff({ tones: [INK, '#16120e', '#2a2018', '#40301e', '#5a4428', '#76603a'], crease: 0.7, hatch: 4 });
-  for (const [x, y, sz, tilt] of [[-3.2, 2.1, 1.0, 0.2], [-1.4, 2.35, 0.8, -0.15], [-4.6, -2.0, 0.95, -0.25], [2.6, 2.2, 0.75, 0.1]] as const) {
-    const q = WL([x, y, Z0 + 1.15 * sz]);
-    f.egg(burlap, q, [1.25 * sz, 1.05 * sz, 1.2 * sz], axes(wyaw + tilt, 0, tilt * 0.4), 0.3);
-    f.egg(burlap, WL([x + 0.1, y - 0.05, Z0 + 0.45 * sz]), [1.35 * sz, 1.15 * sz, 0.55 * sz], axes(wyaw), 0.5);
-    const neck = WL([x + tilt, y, Z0 + 2.35 * sz]);
-    f.egg(burlap, neck, [0.42 * sz, 0.4 * sz, 0.5 * sz], axes(wyaw + tilt, tilt, 0), 0.35);
-    f.rod(burlap, WL([x + tilt * 1.2, y, Z0 + 2.8 * sz]), WL([x + tilt * 1.6, y + 0.15, Z0 + 3.25 * sz]), 0.3 * sz, 0.12 * sz, 0.2);
-    f.line([WL([x + tilt - 0.4 * sz, y - 0.38 * sz, Z0 + 2.2 * sz]), WL([x + tilt + 0.4 * sz, y - 0.38 * sz, Z0 + 2.25 * sz])], '#0c0806', 1);
-    for (const u of [-0.5, 0.1, 0.6]) f.line([WL([x + tilt + u * 0.3 * sz, y - 0.45 * sz, Z0 + 2.0 * sz]), WL([x + u * 1.1 * sz, y - 1.0 * sz, Z0 + 0.9 * sz])], '#120c08', 1);
-  }
-  const oak = f.stuff({ tones: OAK, crease: 0.6 });
-  const brass = f.stuff({ tones: [INK, '#3a2a10', '#6a4c18', '#a07a28', '#d0a840', '#f0d070'], shine: 0.4, crease: 0.4 });
-  f.block(oak, WL([-5.6, 0.9, Z0 + 0.75]), [0.9, 1.3, 0.75], 0.12, [WL([1, 0, 0]), WL([0, 1, 0]), [0, 0, 1]], 0.05);
-  f.rod(oak, WL([-5.6, -0.4, Z0 + 1.5]), WL([-5.6, 2.2, Z0 + 1.5]), 0.9, 0.9, 0.05);
-  for (const y of [0.0, 1.8]) f.block(brass, WL([-5.6, y, Z0 + 1.05]), [0.95, 0.08, 0.8], 0.04, [WL([1, 0, 0]), WL([0, 1, 0]), [0, 0, 1]], 0.02);
-  // (charms hung on cords from the bow over him: an amulet of gold round a stone, a bundle of herbs)
-  for (const [x, y, len, kind] of [[0, 1.4, 2.2, 0], [0, -1.1, 1.6, 1], [-3.45, 0.6, 2.6, 0]] as const) {
-    const top = WL([x, y, 11.9 - Math.abs(y) * 0.35]);
-    const end = WL([x, y, 11.9 - Math.abs(y) * 0.35 - len]);
-    f.line([top, end], '#3a3448', 1);
-    if (kind === 0) f.egg(brass, end, [0.32, 0.12, 0.32], axes(wyaw + 0.4), 0.05);
-    else f.rod(burlap, end, add3(end, [0, 0, -0.9]), 0.22, 0.32, 0.1);
-  }
+  wagonWares(f, WL, wyaw, Z0);
   // THE CAMERA: in the front of the bed, low, behind the driver's bench, looking back down the wagon at him and out of its
   // open back; the land, and its sky, seen through that
-  const eyeL: V3 = [6.4, 1.0, 9.0];
+  const eyeL: V3 = [6.6, 0.7, 9.6];
   const toL: V3 = [-6, -0.7, 7.6];
   const eye = WL(eyeL);
   const tw = WL([toL[0] - eyeL[0], toL[1] - eyeL[1], 0]);
@@ -1528,7 +1654,7 @@ export function paintMystic(p: Px, t: number): void {
   if (still()) land.focus(pos[0], pos[1], 80);
   paintValley(p, t, cam, {});
   const fc = figCam(cam, r.q, 0.2);
-  if (still()) f.draw(p, fc, { at: add3(C3, fc.shift), hard: 1, fill: [0.6, -0.4, 0.5], fillK: 0.12, rim: CYANS[2], rimFrom: [0, -1] });
+  if (still()) f.draw(p, fc, { at: add3(C3, fc.shift), reach: 4.5, hard: 1, fill: [0.6, -0.4, 0.5], fillK: 0.12, rim: CYANS[2], rimFrom: [0, -1] });
   // THE CRYSTAL, turning over his palm, and its light
   if (moving()) {
     const ct = seen(fc, C3t);
