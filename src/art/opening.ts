@@ -1856,50 +1856,81 @@ function wordsmithFigure(pose: 'palm' | 'bar', into?: Figure, o: V3 = [0, 0, 0],
 export function paintCompany(p: Px, t: number): void {
   const W = p.w;
   const H = p.h;
-  const P = grid(W, H);
   const k = W / 192;
   const flick = 0.85 + 0.15 * Math.sin(t * 5.3);
-  // (their walk: each rising and falling with his step, out of step with each other)
+  // YOUR HERO AND YOUR WORDSMITH walking up the road beside the armourer's wagon, close: from the road ahead of them, low,
+  // looking back down it at them; the wagon at their shoulder, its horse's head nodding by them, its lantern lit; the road
+  // behind them going down to the foothills in the dusk. The wordsmith turned to the knight, his palm up with a rune over
+  // it; the knight with his sword up on his shoulder, glancing to the light (art/cast.ts, at their true size; the wagon
+  // sculpted; the land at its own)
+  const land = theLand();
   const t0 = T0(t);
-  const bobA = Math.abs(Math.sin(t0 * 2.4)) * 0.08;
-  const bobB = Math.abs(Math.sin(t0 * 2.4 + 1.3)) * 0.1;
-  const flap = Math.sin(t0 * 3.1) * 0.25;
-  // THE CAMERA: low, before them on the road, looking a little up at them; a tenth of a metre to a unit, up is z
-  const cam = { look: unit([0.04, 1, 0.06]), up: [0, 0, 1] as V3, scale: 8.6 * k, ox: P(44, 0)[0], oy: P(0, 212)[1], persp: 50 };
-  // THE TWO OF THEM (art/cast.ts), walking up the road toward us: the wordsmith turned to the knight beside him, his left
-  // palm up with a rune over it; the knight, his sword up on his shoulder, glancing to the light
-  const f = new Figure();
   const ph = t0 * 2.4;
-  const A = Cast.place(f, [0, 0, 0], 0.32, () => Cast.townWordsmith(f, {
-    pelvis: [0, 0, 9.15 + bobA],
+  const sW = (land.index.near(300, 477)?.s ?? 0) + 17;
+  const R = land.along(sW);
+  const d: V3 = [R.dir[0], R.dir[1], 0];
+  const n: V3 = [d[1], -d[0], 0];
+  const onRoad = (s: number, off: number): V3 => {
+    const r = land.along(s);
+    const x = r.q[0] + r.dir[1] * off;
+    const y = r.q[1] - r.dir[0] * off;
+    return [x, y, land.exact(x, y)];
+  };
+  // (the wagon on the road's middle; the two of them walking beside its horse, on its right; we are ahead, low)
+  const wsAt = onRoad(sW + 5.0, 1.7);
+  const knAt = onRoad(sW + 4.4, 2.75);
+  const cpos0 = onRoad(sW + 8.9, 2.7);
+  const cpos: V3 = [cpos0[0], cpos0[1], cpos0[2] + 1.15];
+  const mid: V3 = [(wsAt[0] + knAt[0]) / 2, (wsAt[1] + knAt[1]) / 2, 0];
+  const lk = unit([mid[0] - cpos[0] + n[0] * 0.2, mid[1] - cpos[1] + n[1] * 0.2, 0]);
+  if (still()) land.focus(cpos[0], cpos[1], 90);
+  const cam: LandCam = { pos: cpos, yaw: Math.atan2(-lk[0], lk[1]), pitch: 0.08, F: W * 1.2, cx: W * 0.5, hy: H * 0.48 };
+  paintValley(p, t, cam, { wagons: [{ s: sW, seed: 1, driver: 'armourer' }] });
+  const yawUp = Math.atan2(d[0], -d[1]);
+  const wf = new Figure();
+  // (turned to the knight walking at his right, his right palm up toward him with the rune over it)
+  const A = Cast.place(wf, [0, 0, 0], yawUp + 0.45, () => Cast.townWordsmith(wf, {
+    pelvis: [0, 0, 9.15 + Math.abs(Math.sin(ph)) * 0.08],
     lean: 0.05,
-    turn: 0.35,
+    turn: -0.35,
     nod: -0.05,
-    hands: [[-2.1, -0.2 + Math.sin(ph) * 0.6, 8.6], [3.4, -1.7, 11.4]],
-    palms: [[0, 1, 0], [0, 0, 1]],
-    fingers: [[0, 0, -1], [0.1, -1, 0.15]],
-    elbows: [[-1, 0.3, -0.5], [1, 0.4, -1]],
+    hands: [[-3.4, -1.7, 11.4], [2.1, -0.2 + Math.sin(ph) * 0.6, 8.6]],
+    palms: [[0, 0, 1], [0, 1, 0]],
+    fingers: [[-0.1, -1, 0.15], [0, 0, -1]],
+    elbows: [[-1, 0.4, -1], [1, 0.3, -0.5]],
     feet: [[-0.85, -1.2 - Math.sin(ph) * 0.8, 0.75], [0.85, 1.0 + Math.sin(ph) * 0.8, 0.95]],
   }, { palm: true }));
-  Cast.place(f, [8.0, -1.2, 0], -0.8, () => Cast.knight(f, {
-    pelvis: [0, 0, 9.4 + bobB],
+  const kf = new Figure();
+  Cast.place(kf, [0, 0, 0], yawUp + 0.1, () => Cast.knight(kf, {
+    pelvis: [0, 0, 9.4 + Math.abs(Math.sin(ph + 1.3)) * 0.1],
     lean: 0.06,
-    turn: -0.15,
+    turn: 0.3,
     nod: 0.05,
     hands: [[-2.3, 0.4 + Math.sin(ph + 1.3) * 0.6, 8.9], [1.45, -1.4, 11.9]],
     elbows: [[-1, 0.3, -0.5], [1, 0, -1]],
     fingers: [[0, 0, -1], [-0.2, -0.6, 0.75]],
     palms: [[1, 0, 0], [-1, 0, 0]],
     feet: [[-0.9, 1.1 + Math.sin(ph + 1.3) * 0.8, 1.0], [0.9, -1.2 - Math.sin(ph + 1.3) * 0.8, 0.75]],
-  }, { hand: 1, tip: [2.4, 5.0, 20.6] }, flap));
-  const R3 = A.at([3.75, -2.0, 12.6]);
-  const rr = seen(cam, R3);
-  // THE DUSK behind them, the peaks under it, the slope they climb
+  }, { hand: 1, tip: [2.4, 5.0, 20.6] }, Math.sin(t0 * 3.1) * 0.25));
+  const wc = figCam(cam, wsAt, 0.1);
+  const kc = figCam(cam, knAt, 0.1);
+  const R3 = A.at([-3.75, -2.0, 12.6]);
+  const rr = seen(wc, R3);
   if (still()) {
-  // (the land behind them: the road they have come up, the foothills and the valley under the evening; we stand on the
-  // road before them, looking back down it at them)
-  valleyBehind(p, t, footOfFace() - 120, Math.PI, 1.3, 0.55, 0.6, 0.02);
-  f.draw(p, cam, { cel: COMIC, at: R3, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [-1, -0.3] });
+    // (the nearer drawn last)
+    const wD = Math.hypot(wsAt[0] - cpos[0], wsAt[1] - cpos[1]);
+    const kD = Math.hypot(knAt[0] - cpos[0], knAt[1] - cpos[1]);
+    const drawW = (): void => void wf.draw(p, wc, { cel: COMIC, at: add3(R3, wc.shift), reach: 22, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: '#f0a070', rimFrom: [1, -0.3] });
+    const kLight = add3(scale3(sub3(add3(R3, wc.shift), scale3(wc.shift, 1)), 1), kc.shift);
+    const drawK = (): void => void kf.draw(p, kc, { cel: COMIC, at: add3(add3(R3, [ (wsAt[0] - knAt[0]) * 10, (wsAt[1] - knAt[1]) * 10, 0 ]), kc.shift), reach: 22, hard: 1, fill: [0.1, -1, 0.15], fillK: 0.3, rim: CYANS[2], rimFrom: [-1, -0.3] });
+    void kLight;
+    if (wD > kD) {
+      drawW();
+      drawK();
+    } else {
+      drawK();
+      drawW();
+    }
   }
   if (!moving()) return;
   shine(p, rr[0], rr[1] - 1, 30 * k * flick, CYANS[2], 0, 0.26);
@@ -1910,8 +1941,6 @@ export function paintCompany(p: Px, t: number): void {
     const r1 = r0 + (j % 2 ? 2 : 4) * k * flick;
     for (let r = r0; r <= r1; r += 0.7) p.set(Math.round(rr[0] + Math.cos(an) * r), Math.round(rr[1] - 1 + Math.sin(an) * r), r > r1 - 1.2 ? CYANS[2] : CYANS[1]);
   }
-  // (a rune of the wordsmiths' own: a stave with two branches up from it and a hook at its foot, its strokes two pixels
-  // thick, white-hot in the middle, its light round it)
   const glyph = ['...##.....', '...##..##.', '...##.##..', '...####...', '...###....', '..####....', '.##.##....', '...##.....', '...##.....', '...###....', '....###...'];
   const gx = Math.round(rr[0] - 5);
   const gy = Math.round(rr[1] - 8);
@@ -1922,7 +1951,6 @@ export function paintCompany(p: Px, t: number): void {
     }
   }
   for (let r = 0; r < glyph.length; r++) for (let c = 0; c < glyph[r].length; c++) if (glyph[r][c] === '#') p.set(gx + c, gy + r, (r + c) % 3 ? CYANS[0] : CYANS[1]);
-  // (its caption runs across the foot of the page: PAGE_CAPTIONS)
 }
 
 /**

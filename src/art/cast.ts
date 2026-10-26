@@ -462,10 +462,11 @@ export function townWordsmith(f: Figure, P: Pose, o: { palm?: boolean; sway?: nu
   }
   sculptBody(f, skin, b, {
     eyes: CYAN_EYES, nose: 'long', hands: o.palm ? ['open', 'open'] : ['open', 'open'],
-    as: { trunk: { stuff: robe, grow: 1.08 }, arms: { stuff: robe, grow: 1.1 }, legs: { stuff: robe }, shins: { stuff: robe } },
+    as: { trunk: { stuff: robe, grow: 1.18 }, arms: { stuff: robe, grow: 1.22 }, legs: { stuff: robe }, shins: { stuff: robe } },
     forearms: false, feet: false,
   });
-  skirt(f, robe, b, { hem: 0.25, flare: 2.0, folds: 7 });
+  // (his robe loose and full, its skirt swinging wide as he walks)
+  skirt(f, robe, b, { hem: 0.25, flare: 2.55, folds: 10 });
   sleeves(f, robe, b, 'bell');
   for (const j of [0, 1] as const) f.rod(skin, lerp(b.elbows[j], b.wrists[j], 0.5), b.wrists[j], 0.34 * k, 0.28 * k, 0.2);
   const shoe = f.stuff({ tones: T.leather });
