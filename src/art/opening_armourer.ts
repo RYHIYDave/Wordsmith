@@ -16,9 +16,10 @@
 import type { Figure } from './sdf';
 import type { V3 } from './comic';
 import { INK } from './comic';
-import { ear, forearm, frameAt, hand, onChest, pose } from './anatomy';
+import { ear, forearm, frameAt, onChest, pose } from './anatomy';
 import type { Body, Build, Pose } from './anatomy';
 import { T } from './cast';
+import { HANDS, wireHand } from './opening_hand';
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -110,6 +111,7 @@ export function armourer4(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' |
   const pale = f.stuff({ tones: [INK, '#5a5450', '#8e8780', '#bdb6aa', '#ded8cc', '#f2eee6', '#fffcf6'], meld: true, crease: 0.6, grain: 0.08, folds: 2.8 });
   const legs = f.stuff({ tones: INDIGO, crease: 0.85, grain: 0.1, folds: 0.9 });
   const boot = f.stuff({ tones: PLUM_BOOT, crease: 0.7, grain: 0.14 });
+  const nail = f.stuff({ tones: [INK, '#8a6a72', '#c8a8a8', '#ecd2d0', '#fff0f0'], crease: 0.2, grain: 0, shine: 0.3 });
   const eye = f.stuff({ tones: ['#0a0806', '#120c08', '#2a1c14', '#3e2a1e'], crease: 0, grain: 0 });
 
   // THE TRUNK in his teal shirt: a barrel of a chest, his belly before it, shoulders like a yoke; the shirt open at his neck
@@ -141,7 +143,7 @@ export function armourer4(f: Figure, P: Pose, hands: readonly ['fist' | 'grip' |
     // (the bare arm below the roll, into the elbow)
     f.rod(skin, lerp(sh, el, 0.86), el, 0.64 * k * h ** 0.3, 0.56 * k * h ** 0.3, 0.3);
     forearm(f, skin, el, wr, 0.62 * k * h ** 0.3, mul(b.across, s));
-    hand(f, skin, b.handFrames[j], 1.24 * k, hands[j]);
+    wireHand(f, skin, b.handFrames[j], 1.24 * k, HANDS[hands[j] === 'open' ? 'relaxed' : hands[j]], { nails: nail });
     void ua;
   }
 

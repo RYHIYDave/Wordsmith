@@ -15,10 +15,12 @@
 import type { Figure } from './sdf';
 import type { V3 } from './comic';
 import { INK } from './comic';
-import { at, forearm, frameAt, hand, onChest, onHead, pose, sculptFoot } from './anatomy';
+import { at, forearm, frameAt, onChest, onHead, pose, sculptFoot } from './anatomy';
 import type { Body, Build, Frame, Pose } from './anatomy';
 import { T } from './cast';
 import { RUNES7 } from './smith3';
+import { HANDS, wireHand } from './opening_hand';
+import type { HandPose } from './opening_hand';
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -103,7 +105,7 @@ export const WORDSMITH_BUILD: Build = { tall: 20.2, broad: 1.12, heavy: 1.08 };
  * YOUR WORDSMITH sculpted into `f`, posed `P` (art/anatomy.ts). `palm`: his right hand held out, its palm up (a rune burns
  * over it, painted by the shot); `sway` how his beard swings. The same as art/cast.ts's `townWordsmith`, for the opening.
  */
-export function wordsmith4(f: Figure, P: Pose, o: { palm?: boolean; sway?: number } = {}): Body {
+export function wordsmith4(f: Figure, P: Pose, o: { palm?: boolean; sway?: number; hands?: readonly [HandPose, HandPose] } = {}): Body {
   const b = pose(WORDSMITH_BUILD, P);
   const k = b.k;
   const TA = ax3(b.across, mul(b.fwd, -1), b.up);
@@ -196,6 +198,7 @@ export function wordsmith4(f: Figure, P: Pose, o: { palm?: boolean; sway?: numbe
   const white = f.stuff({ tones: T.white, meld: true, crease: 0.55, grain: 0.08, folds: 2.6 });
   const boot = f.stuff({ tones: [INK, '#1a0c20', '#2a1430', '#3a1e40', '#4a2850', '#5e3460'], crease: 0.6, grain: 0.1 });
   const sash = f.stuff({ tones: T.plum, crease: 0.8, grain: 0.12 });
+  const nail = f.stuff({ tones: [INK, '#8a6a72', '#c8a8a8', '#ecd2d0', '#fff0f0'], crease: 0.2, grain: 0, shine: 0.3 });
   const fire = f.stuff({ tones: ['#8af6f0', '#c8fff8', '#e6ffff'], crease: 0, grain: 0 });
   const eyeFire = f.stuff({ tones: ['#22d0e0', '#5ae6ea', '#8af6f0', '#c8fff8'], crease: 0, grain: 0 });
   const hemZ = Math.min(b.ankles[0][2], b.ankles[1][2]) - 0.5 * k;
@@ -268,7 +271,8 @@ export function wordsmith4(f: Figure, P: Pose, o: { palm?: boolean; sway?: numbe
     forearm(f, skin, lerp(el, wr, 0.1), wr, 0.46 * k, mul(b.across, s));
     const F = b.handFrames[j];
     handBack.push({ F, s: 1.18 * k });
-    hand(f, skin, F, 1.18 * k, 'open');
+    // (his hand on the hand's wire, art/opening_hand.ts: palm up and easy if it is held out, else hanging relaxed)
+    wireHand(f, skin, F, 1.18 * k, o.hands?.[j] ?? (o.palm && j === 0 ? HANDS.cup : HANDS.relaxed), { nails: nail });
   }
 
   // THE MANTLE over his shoulders: the wordsmiths' teal, falling from his neck over his shoulders in folds, to the middle of

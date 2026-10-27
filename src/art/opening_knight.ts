@@ -18,9 +18,10 @@
 import type { Figure } from './sdf';
 import type { V3 } from './comic';
 import { INK } from './comic';
-import { at, frameAt, hand, onChest, onHead, pose } from './anatomy';
+import { at, frameAt, onChest, onHead, pose } from './anatomy';
 import type { Body, Build, Frame, Pose } from './anatomy';
 import { T } from './cast';
+import { HANDS, wireHand } from './opening_hand';
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -282,7 +283,8 @@ export function knight4(f: Figure, P: Pose, sword: KnightSword | null, flap = 0,
     // (the glove, plum leather, its cuff flared over the end of the steel)
     f.rod(plum, lerp(b.elbows[j], b.wrists[j], 0.8), b.wrists[j], 0.7 * k * hb, 0.44 * k, 0.1);
     const holds = !!sword && (sword.hand === j || !!sword.two);
-    hand(f, plum, frames[j], GLOVE * k, holds ? 'grip' : kinds[j]);
+    // (his glove on the hand's wire: art/opening_hand.ts)
+    wireHand(f, plum, frames[j], GLOVE * k, HANDS[holds ? 'grip' : kinds[j]]);
 
     // THE LEG: the thigh in mail, thick; the knee's cop and its fan; the greave down the shin, its ridge, the calf in it; the
     // foot in plates
