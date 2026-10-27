@@ -46,7 +46,7 @@ for (const m of demonMoves()) {
     assert.deepEqual([...new Set(found)], []);
   });
 
-  test(`${m.name}: slick (nothing of it leaps, stalls, turns straight back at speed${m.loops ? ', nor jumps from its end round to its start' : ', nor starts or stops at its fastest'}); a claw or hoof on the floor stays where it is`, () => {
+  test(`${m.name}: slick (nothing of it leaps, stalls, turns straight back at speed${m.loops ? ', nor jumps from its end round to its start' : ', nor starts or stops at its fastest'}${m.strike ? ', but for the strike itself' : ''}); a claw or hoof on the floor stays where it is`, () => {
     const found: string[] = [];
     const sk = times.map((t) => solve(DEMON_B, demonPose(m.motion, t)));
     const stand = solve(DEMON_B, DEMON_STANCE as Posed);
@@ -62,6 +62,9 @@ for (const m of demonMoves()) {
         const N = sp.length;
         if (N < 3 || Math.max(...sp) < 2) continue;
         for (let i = 0; i < N; i++) {
+          // (THE STRIKE ITSELF, a flash smeared by what it leaves, and the freeze as it lands, are not judged frame by frame:
+          // his rulebook's Movement 9, big wind-up, lightning strike; its wind-up and its wind-down are)
+          if (m.strike && times[i] >= m.strike[0] - 1e-6 && times[i] <= m.strike[1] + 1e-6) continue;
           const a = sp[(i - 1 + N) % N];
           const b = sp[i];
           const c = sp[(i + 1) % N];

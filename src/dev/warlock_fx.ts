@@ -54,7 +54,7 @@ const hash = (i: number): number => {
 };
 
 /** Pixels of light gathered before they are laid on: the hottest wins at each; none is left alone. */
-class Light {
+export class Light {
   private px = new Map<number, number>();
   put(x: number, y: number, k: number): void {
     const q = (Math.round(y) + 1024) * 4096 + (Math.round(x) + 1024);
@@ -106,7 +106,7 @@ function bolt(l: Light, cx: number, cy: number, wx: number, wy: number, size: nu
 }
 
 /** A ring of flame flecks bursting out from (`cx`, `cy`), `r` across, fading as `u` goes 0 to 1 (two pixels each, none alone). */
-function burst(l: Light, cx: number, cy: number, r: number, u: number, seed: number): void {
+export function burst(l: Light, cx: number, cy: number, r: number, u: number, seed: number): void {
   const n = Math.max(10, Math.round(r * 2.2));
   for (let i = 0; i < n; i++) {
     if (hash(seed * 31 + i) < u * 0.9) continue;
@@ -314,7 +314,7 @@ function chain(l: Light, sm: Light, ax: number, ay: number, bx: number, by: numb
  * it and rising, swelling and thinning as they go, and a few cyan embers rising in them; `heat` 0 none to 1, more as each
  * bite of the curse flares it.
  */
-function smolder(l: Light, sm: Light, gx: number, gy: number, w: number, h: number, t: number, heat: number, seed: number): void {
+export function smolder(l: Light, sm: Light, gx: number, gy: number, w: number, h: number, t: number, heat: number, seed: number): void {
   if (heat <= 0) return;
   // (WISPS OF IT rising off its shoulders and crown and sides: each a column of smoke that winds up off it, widening and
   // thinning as it rises, torn by the air)

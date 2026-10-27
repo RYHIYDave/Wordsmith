@@ -152,6 +152,10 @@ export interface DemonLook {
   face?: 'was' | 'beast' | 'brute' | 'bat' | 'skull';
   /** Its tail swung to its left (radians at its root; more along it, a whip), as it moves. */
   tail?: number;
+  /** Its claws its feet, as it runs on all fours: however high one swings, never the raised claw cupping the fire. */
+  paws?: boolean;
+  /** A claw raking (1 its left, -1 its right): open, its talons hooked the way it sweeps (`way`), burning on them. */
+  rake?: { side: 1 | -1; way: V3 };
 }
 /**
  * HOW FAR GROWN each part of it is (1 grown; less, smaller, and nearer the bone it grows from; 0 not there): for its
@@ -356,7 +360,8 @@ export function batWing(sc: Sculpt, m: { hide: number; horn: number; bone: numbe
  * A HAND OF CLAWS, hanging or reaching (not raised with the fire, not planted): a broad palm, four long fingers bent at
  * each knuckle and curling in toward its front, each ending in a hooked claw, a thumb; `S` how big.
  */
-export function clawHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, F: V3, S: number): void {
+export function clawHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, F: V3, S: number): V3[] {
+  const tips: V3[] = [];
   const U: V3 = [0, 0, 1];
   const fd = norm(sub(ha, el));
   const side0 = norm(cross(fd, Math.abs(dot(fd, U)) > 0.95 ? F : U));
@@ -377,11 +382,14 @@ export function clawHand(sc: Sculpt, hide: number, bone: number, piece: string, 
     sc.cone(hide, piece, base, k1, 1.05 * S, 0.9 * S, 0.5 * S, { tag: 'finger' });
     sc.cone(hide, piece, k1, k2, 0.9 * S, 0.75 * S, 0.4 * S, { tag: 'finger' });
     sc.cone(bone, piece, k2, tip, 0.72 * S, 0.06, 0.12, { tag: 'claw' });
+    tips.push(tip);
   }
   const tb = add(palm, mul(side0, 2.8 * S));
   const t1 = add(tb, add(mul(side0, 1.6 * S), add(mul(fd, 1.6 * S), mul(n, 1.2 * S))));
   sc.cone(hide, piece, tb, t1, 1.1 * S, 0.85 * S, 0.5 * S, { tag: 'thumb' });
   sc.cone(bone, piece, t1, add(t1, add(mul(n, 2.2 * S), mul(fd, 1.0 * S))), 0.7 * S, 0.06, 0.12, { tag: 'claw' });
+  // (its four talons' tips, for what burns on them and what they leave in the air)
+  return tips;
 }
 
 /** What the demon's sculpture needs drawn with it: where the fire in its raised claw is, and where its smoke pours from. */
@@ -389,12 +397,16 @@ export interface DemonBuilt {
   seat: V3;
   /** The claws flat on the floor, each burning (its hellfire). */
   fires: V3[];
-  aura: { from: V3[]; horns: V3[]; jaw: V3; claws: V3[]; feet: V3[]; behind: boolean; time?: number };
+  /** The tips of a raking claw's talons, each burning. */
+  talons: V3[];
+  aura: { from: V3[]; horns: V3[]; jaw: V3; claws: V3[]; feet: V3[]; behind: boolean; time?: number; trail?: readonly [number, number] };
 }
 
 /** THE DEMON on its bones, in a pose, from in front or behind (behind as the camera truly sees it, as the warlock), turned `turn` on the spot. */
 /** Its picture: room for it, its wings, its smoke, and its claws before it. */
 export const RIG_CANVAS = { w: 360, h: 320, ax: 180, ay: 276 };
+/** How much of the way it is carried its smoke is left behind as it runs (the rest dragged along in its wake). */
+const SMOKE_LEFT = 0.25;
 /** How high its wrist is over the floor when its claw stands flat on it (DEMON_FOURS). */
 const PLANT_Z = 7;
 export function sculptDemonRig(view: GameView, pose: Bones = DEMON_REST, turn = 0, look: DemonLook = {}, wings: DemonWings = WINGS_REST): Drawn {
@@ -405,7 +417,7 @@ export function sculptDemonRig(view: GameView, pose: Bones = DEMON_REST, turn = 
  * (seconds), each `fireK` as big as it burns at rest (a claw's five fires in turn: the left's first, if both are down); its
  * smoke rising as at `t` (none given: the still's fire and smoke).
  */
-export function demonFrame(view: GameView, pose: Bones = DEMON_REST, turn = 0, look: DemonLook = {}, wings: DemonWings = WINGS_REST, t?: number, fireK: (i: number) => number = () => 1): Drawn {
+export function demonFrame(view: GameView, pose: Bones = DEMON_REST, turn = 0, look: DemonLook = {}, wings: DemonWings = WINGS_REST, t?: number, fireK: (i: number) => number = () => 1, carry = 0): Drawn {
   const pv: PaintView = view === 'back' ? 'rear' : view;
   const s = solve(DEMON_B, pose as Posed);
   const sc = new Sculpt();
@@ -415,7 +427,17 @@ export function demonFrame(view: GameView, pose: Bones = DEMON_REST, turn = 0, l
     if (!built.fires.length) handFire(st, sc.at(built.seat), 4.0, t ?? 2);
   }, FRIEND_RIM);
   built.fires.forEach((p, i) => fireBehind(d, p, (3.7 - (i % 2) * 0.7) * fireK(i), (t ?? 2) + i * 0.41, 12));
-  demonAura(d, t === undefined ? built : { ...built, aura: { ...built.aura, time: t } }, look.aura ?? 'smoke');
+  // (a raking claw's talons burning: little fires on their tips)
+  built.talons.forEach((p, i) => fireBehind(d, p, 2.4 * fireK(10 + i), (t ?? 2) + 0.2 + i * 0.37, 6));
+  // (running: its smoke streaming off behind it, left in the air it passes through, and no pall at its hooves, which would
+  // be left behind; his word of the first lopsided run, 27 Oct, “The rear leg smoke clips through the arms”)
+  let aura = t === undefined ? built.aura : { ...built.aura, time: t };
+  if (carry > 0) {
+    const a = d.st.at(sc.at([0, 0, 0]));
+    const b = d.st.at(sc.at([-carry * SMOKE_LEFT, 0, 0]));
+    aura = { ...aura, feet: [], trail: [b[0] - a[0], b[1] - a[1]] as const };
+  }
+  demonAura(d, { ...built, aura }, look.aura ?? 'smoke');
   return d;
 }
 
@@ -805,12 +827,14 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
   // trunks, spines and plates down them; a broken shackle at each wrist; hands like shovels; long hooked claws
   let fireAt: V3 | null = null;
   const floorFires: V3[] = [];
+  const talons: V3[] = [];
   const back = C.way('upper', mul(F0, -1) as V3);
   for (const side of [1, -1] as const) {
     const piece = side > 0 ? 'armL' : 'armR';
     // (its fire in its LEFT claw, raised, as his is; its right planted: his word, 26 Oct, “Also I think we want the plant
     // are to be the right arm.  That keeps the flame in the left for both transformations”)
-    const raised = side > 0 && (side > 0 ? s.handL : s.handR)[2] >= 14;
+    const raking = look.rake?.side === side;
+    const raised = !raking && !look.paws && side > 0 && (side > 0 ? s.handL : s.handR)[2] >= 14;
     const sh = side > 0 ? s.shoulderL : s.shoulderR;
     const el = side > 0 ? s.elbowL : s.elbowR;
     const ha = side > 0 ? s.handL : s.handR;
@@ -896,11 +920,17 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
     // THE HAND, BUILT AS A HAND (dev/sculpt_demon.ts demonHand)
     G = grow.hands;
     // (a hand off the floor, not raised with the fire: a hand of claws, open; one on the floor planted, its claws spread on it)
-    const planted = !raised && ha[2] < 14;
+    const planted = !raised && !raking && (look.paws || ha[2] < 14);
     const fh = norm([s.hips[0][0], s.hips[0][1], 0], F0);
     // (a claw lifted off the floor as it goes, low: its claws spread as on the floor, lifted with it; its fire with it)
     const up = planted ? Math.max(0, ha[2] - PLANT_Z) : 0;
-    const fire = K() > 0.05 ? (raised || ha[2] < 14 ? demonHand(sc, hide, bone, piece, ha, el, raised, K(), planted ? fh : undefined, planted && side < 0, up) : (clawHand(sc, hide, bone, piece, ha, el, C.way('upper', F0), K() * 2.7), null)) : null;
+    let fire: V3 | null = null;
+    if (K() > 0.05) {
+      if (raised || planted) fire = demonHand(sc, hide, bone, piece, ha, el, raised, K(), planted ? fh : undefined, planted && side < 0, up);
+      // (raking: its talons hooked the way it sweeps, burning)
+      else if (raking && look.rake) talons.push(...clawHand(sc, hide, bone, piece, ha, el, look.rake.way, K() * 2.7));
+      else clawHand(sc, hide, bone, piece, ha, el, C.way('upper', F0), K() * 2.7);
+    }
     if (fire) fireAt = fire;
     // (a claw flat on the floor burns with its hellfire)
     // (its hellfire burning UNDER its palm and licking out between its fingers along the floor: his word, 27 Oct, “Can we get
@@ -978,8 +1008,10 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
   G = grow.wings;
   if (K() > 0.02) {
     // (its wings stand up off its back however far it is bowed over, as on all fours: held in the frame of the way it
-    // faces, upright, not tipped forward with the top of its back)
-    const f0 = C.way('upper', F0);
+    // faces, upright, not tipped forward with the top of its back; that way taken from the top of its back's forward and its
+    // up together, so that bowed past straight down, as it gallops, its wings do not flip round to face behind it: his word
+    // of the lopsided run, 27 Oct, “The wings are clipping together.”)
+    const f0 = add(C.way('upper', F0), C.way('upper', U));
     const fh = norm([f0[0], f0[1], 0], F0);
     const way: readonly [V3, V3, V3] = [fh, norm(cross(U, fh)), U];
     for (const side of [1, -1] as const) {
@@ -997,6 +1029,7 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
   return {
     seat,
     fires: floorFires.map(ups),
+    talons: talons.map(ups),
     aura: {
       from: [at('upper', P(-6, 0, 88)), at('upper', P(0, 20, 86)), at('upper', P(0, -20, 86)), at('upper', P(-12, 12, 82)), at('upper', P(-12, -12, 82)), lerp3(s.elbowR, s.handR, 0.4), lerp3(s.elbowL, s.handL, 0.6), at('upper', P(-2, 0, 70)), ...floorFires.filter((_, i) => i % 5 === 2)].map(ups),
       horns: [P(51, 19, 84), P(51, -19, 84), P(43, 23, 88), P(43, -23, 88)].map((p) => ups(at('head', p))),

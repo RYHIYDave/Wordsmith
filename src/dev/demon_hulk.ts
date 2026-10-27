@@ -461,6 +461,8 @@ export interface AuraAt {
   behind: boolean;
   /** The moment (seconds), for a figure that moves: its smoke rising off it as time goes, each puff on its own way up. */
   time?: number;
+  /** For a figure running: how far its smoke is left behind it in a second (pixels across and down the picture). */
+  trail?: readonly [number, number];
 }
 /** How fast its smoke rises: puffs a second (each 3.6 pixels above the last). */
 const SMOKE_RISE = 2.6;
@@ -508,13 +510,18 @@ export function drawAura(st0: Stage, out: Px, kind: Aura, at: AuraAt): void {
         // (the puff's own number, kept as it rises; how far up it has come)
         const id = i - step;
         const u = at.time === undefined ? i : i + frac;
-        if (u > 15.5) continue;
+        if (u > (at.trail ? 7.5 : 15.5)) continue;
         const t = u / 15;
-        const x = sx + Math.round(Math.sin(u * 0.55 + n * 1.7) * 4 * t + drift * t * 16);
-        const y = sy - Math.round(u * 3.6 + hash(id, n, 4) * 2);
+        // (left behind as it runs: streaming off it the way it came)
+        const age = u / SMOKE_RISE;
+        const bx = at.trail ? at.trail[0] * age : 0;
+        const by = at.trail ? at.trail[1] * age : 0;
+        const x = sx + Math.round(Math.sin(u * 0.55 + n * 1.7) * 4 * t + drift * t * 16 + bx);
+        const y = sy - Math.round(u * 3.6 + hash(id, n, 4) * 2 - by);
         const r = Math.round(2 + t * 4 + hash(id, n, 5) * 1.5);
         // (thinner as it rises: solid low down, every other pixel higher, every third at the top)
-        puff(i < 3 && !at.behind ? 'over' : 'under', x, y, r, SMOKE, t < 0.4 ? 1 : t < 0.75 ? 2 : 3);
+        // (left behind as it runs, none over it)
+        puff(i < 3 && !at.behind && !at.trail ? 'over' : 'under', x, y, r, SMOKE, t < 0.4 ? 1 : t < 0.75 ? 2 : 3);
       }
     });
     for (const h of at.horns.map(pix)) for (let i = 0; i < 5; i++) puff('under', h[0] + i * 2, h[1] - 2 - i * 4, 1 + Math.round(i * 0.7), SMOKE, i < 2 ? 1 : 2);

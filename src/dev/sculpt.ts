@@ -193,7 +193,7 @@ function dist(r: Ready, q: V3): number {
     const dx = pa[0] - ba[0] * h;
     const dy = pa[1] - ba[1] * h;
     const dz = pa[2] - ba[2] * h;
-    d = Math.hypot(dx, dy, dz) - (p.ra + (p.rb - p.ra) * h);
+    d = Math.sqrt(dx * dx + dy * dy + dz * dz) - (p.ra + (p.rb - p.ra) * h);
   } else {
     const ua = r.ua as readonly [V3, V3, V3];
     const ul = r.ul as V3;
@@ -202,15 +202,24 @@ function dist(r: Ready, q: V3): number {
     const y = dot(v, ua[1]);
     const z = dot(v, ua[2]);
     if (p.k === 'ell') {
-      const k0 = Math.hypot(x / ul[0], y / ul[1], z / ul[2]);
-      const k1 = Math.hypot(x / (ul[0] * ul[0]), y / (ul[1] * ul[1]), z / (ul[2] * ul[2]));
+      const x0 = x / ul[0];
+      const y0 = y / ul[1];
+      const z0 = z / ul[2];
+      const k0 = Math.sqrt(x0 * x0 + y0 * y0 + z0 * z0);
+      const x1 = x0 / ul[0];
+      const y1 = y0 / ul[1];
+      const z1 = z0 / ul[2];
+      const k1 = Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
       d = k1 > 1e-9 ? (k0 * (k0 - 1)) / k1 : -Math.min(ul[0], ul[1], ul[2]);
     } else {
       const rr = Math.min(p.round, ul[0], ul[1], ul[2]);
       const qx = Math.abs(x) - ul[0] + rr;
       const qy = Math.abs(y) - ul[1] + rr;
       const qz = Math.abs(z) - ul[2] + rr;
-      d = Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - rr;
+      const mx = Math.max(qx, 0);
+      const my = Math.max(qy, 0);
+      const mz = Math.max(qz, 0);
+      d = Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, qy, qz), 0) - rr;
     }
   }
   if (p.cuts) for (const c of p.cuts) d = Math.max(d, dot(q, c.n) - c.o);
@@ -218,6 +227,15 @@ function dist(r: Ready, q: V3): number {
 }
 
 /** How far a point is from a triangle (Inigo Quilez's way). */
+const triCr = (x: V3, y: V3): V3 => [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]];
+const triSg = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0);
+const triSeg = (e: V3, w: V3): number => {
+  const t = Math.max(0, Math.min(1, dot(e, w) / (dot(e, e) || 1e-9)));
+  const x = e[0] * t - w[0];
+  const y = e[1] * t - w[1];
+  const z = e[2] * t - w[2];
+  return Math.sqrt(x * x + y * y + z * z);
+};
 function triDist(p: V3, a: V3, b: V3, c: V3): number {
   const ba = sub(b, a);
   const pa = sub(p, a);
@@ -225,19 +243,13 @@ function triDist(p: V3, a: V3, b: V3, c: V3): number {
   const pb = sub(p, b);
   const ac = sub(a, c);
   const pc = sub(p, c);
-  const cr = (x: V3, y: V3): V3 => [x[1] * y[2] - x[2] * y[1], x[2] * y[0] - x[0] * y[2], x[0] * y[1] - x[1] * y[0]];
-  const nor = cr(ba, ac);
-  const sg = (v: number): number => (v > 0 ? 1 : v < 0 ? -1 : 0);
-  const inside = sg(dot(cr(ba, nor), pa)) + sg(dot(cr(cb, nor), pb)) + sg(dot(cr(ac, nor), pc)) >= 2;
+  const nor = triCr(ba, ac);
+  const inside = triSg(dot(triCr(ba, nor), pa)) + triSg(dot(triCr(cb, nor), pb)) + triSg(dot(triCr(ac, nor), pc)) >= 2;
   if (inside) {
     const nn = dot(nor, nor) || 1e-9;
     return Math.abs(dot(nor, pa)) / Math.sqrt(nn);
   }
-  const seg = (e: V3, w: V3): number => {
-    const t = Math.max(0, Math.min(1, dot(e, w) / (dot(e, e) || 1e-9)));
-    return Math.hypot(e[0] * t - w[0], e[1] * t - w[1], e[2] * t - w[2]);
-  };
-  return Math.min(seg(ba, pa), seg(cb, pb), seg(ac, pc));
+  return Math.min(triSeg(ba, pa), triSeg(cb, pb), triSeg(ac, pc));
 }
 
 /** How far a point is from one solid's skin (for a check: is an arm inside the trunk?). */
@@ -275,14 +287,22 @@ export class Field {
   ofMat(m: number, q: V3, cap = Infinity): number {
     let d = Infinity;
     for (const r of this.byMat[m]) {
-      const lb = Math.hypot(q[0] - r.bc[0], q[1] - r.bc[1], q[2] - r.bc[2]) - r.br;
-      if (lb > Math.min(d, cap) + r.p.blend) continue;
+      // (too far to matter: its bounding ball further than what is already found, squared to spare a root)
+      const far = Math.min(d, cap) + r.p.blend + r.br;
+      if (far < 0) continue;
+      const ex = q[0] - r.bc[0];
+      const ey = q[1] - r.bc[1];
+      const ez = q[2] - r.bc[2];
+      if (ex * ex + ey * ey + ez * ez > far * far) continue;
       d = d === Infinity ? dist(r, q) : smin(d, dist(r, q), r.p.blend);
     }
     if (d === Infinity) return cap === Infinity ? 1e6 : cap + 1;
     for (const r of this.carves[m]) {
-      const lb = Math.hypot(q[0] - r.bc[0], q[1] - r.bc[1], q[2] - r.bc[2]) - r.br;
-      if (lb > r.p.blend + 0.01) continue;
+      const far = r.p.blend + 0.01 + r.br;
+      const ex = q[0] - r.bc[0];
+      const ey = q[1] - r.bc[1];
+      const ez = q[2] - r.bc[2];
+      if (ex * ex + ey * ey + ez * ez > far * far) continue;
       const c = -dist(r, q);
       // a smooth max: the carve taken out of the material, its edge eased over its blend
       const k = r.p.blend;
