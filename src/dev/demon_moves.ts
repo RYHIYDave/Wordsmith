@@ -35,8 +35,12 @@ export interface DemonMove {
   fire?: (t: number, i: number) => number;
   /** Its tail swung at a moment (radians: loose things follow, Movement 4). */
   tail?: (t: number) => number;
-  /** A claw raking: which (1 its left, -1 its right), from when to when it is up off the floor, the way it sweeps at a moment. */
-  rake?: { side: 1 | -1; up: [number, number]; way: (t: number) => V3 };
+  /**
+   * A claw raking: which (1 its left, -1 its right), from when to when it is up off the floor, the way it sweeps at a moment;
+   * open as a raking claw only while its wrist is this high (lower, its claws spread as on the floor, so that they never go
+   * down through it as it lifts and comes down).
+   */
+  rake?: { side: 1 | -1; up: [number, number]; way: (t: number) => V3; minZ: number };
   /** The strike itself, from the frame before it to the last frame of the freeze after it lands: a flash, not judged frame by frame (Movement 9). */
   strike?: [number, number];
   /** The moment its blow lands. */
@@ -59,13 +63,28 @@ const hump = (t: number, at: number, long: number): number => (t > at && t < at 
 const span = (t: number, a: number, b: number): number => ease((t - a) / (b - a));
 const clampN = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
-/** Its elbows, turned back as a gorilla's (as DEMON_FOURS), for wherever its claws are: back along its own body, as it twists and rolls. */
-function elbowsOf(q: Bones): Bones {
+/**
+ * Its elbows, turned back as a gorilla's (as DEMON_FOURS), for wherever its claws are: back along its own body, as it twists
+ * and rolls; but a raking arm's (`raking`, 1 its left, -1 its right) out from its side and up, so that as the claw sweeps
+ * across before it the arm swings round in front of its chest, not through it.
+ */
+function elbowsOf(q: Bones, raking = 0, outK = 1): Bones {
   const o = { ...q };
-  const [f, l] = solve(DEMON_B, o as Posed).hips;
+  const [f, l, u] = solve(DEMON_B, o as Posed).hips;
   const back = (side: number): V3 => [-12 * f[0] + side * l[0], -12 * f[1] + side * l[1], -12 * f[2] + side * l[2]];
-  o.le = elbowFor(DEMON_B, o as Posed, true, back(1));
-  o.re = elbowFor(DEMON_B, o as Posed, false, back(-1));
+  const out = (side: number): V3 => [side * 12 * l[0] + 6 * u[0] - 2 * f[0], side * 12 * l[1] + 6 * u[1] - 2 * f[1], side * 12 * l[2] + 6 * u[2] - 2 * f[2]];
+  // (swung round from back to out as the claw lifts, `outK` of the way)
+  const turned = (side: 1 | -1, left: boolean): number => {
+    const b = elbowFor(DEMON_B, o as Posed, left, back(side));
+    if (raking !== side || outK <= 0) return b;
+    const w = elbowFor(DEMON_B, o as Posed, left, out(side));
+    let d = w - b;
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    return b + d * outK;
+  };
+  o.le = turned(1, true);
+  o.re = turned(-1, false);
   return o;
 }
 const S0 = DEMON_STANCE;
@@ -296,10 +315,11 @@ const RAKE_HAND: Record<string, [number, number, number]> = {
   [RK.held]: [-14, 39, 37],
   [RK.swung]: [20, 31, 33],
   [RK.swung2]: [42, -1, 25],
-  [RK.hit]: [34, -35, 17],
-  [RK.freeze]: [34, -35, 17],
-  [RK.through]: [16, -52, 8],
-  [RK.back]: [8, -25, 6],
+  [RK.hit]: [44, -30, 18],
+  [RK.freeze]: [44, -30, 18],
+  // (after the blow, back the way it came, not on round: his word of the rakes, 27 Oct, “Now they do a full 360, what is that?”)
+  [RK.through]: [30, -16, 15],
+  [RK.back]: [14, -5, 9],
   [RK.down - 3]: [0.2, -0.4, 3],
   [RK.down]: [0, 0, 0],
 };
@@ -340,13 +360,16 @@ function rakeMotion(side: 1 | -1): Motion {
       faceTurn: body([0, 3, 6, 6, 2, -3, -6, -6, -3, 0, 0], t) * sgn,
       ...(sgn > 0 ? { lhIn: 2, lhx: own.x + hx, lhy: own.y + hy, lhz: 7 + hz } : { rhIn: 2, rhx: own.x + hx, rhy: own.y + hy, rhz: 7 + hz }),
     };
-    keys.push({ at: t, ease: 'lin', pose: elbowsOf(pose) });
+    // (the raking arm's elbow swung out and up as it lifts off the floor, and back as it comes down again)
+    // (and kept out while the claw is across before it, so that the arm stays round in front of its chest)
+    keys.push({ at: t, ease: 'lin', pose: elbowsOf(pose, sgn, track([[0, 0], [RK.drawn * FR, 1], [RK.freeze * FR, 1], [RK.down * FR, 0]], t)) });
   }
   return { keys, hit: RAKE_HIT };
 }
 /** The way the raking claw's talons hook at a moment: at what it is about to rake as it winds up; the way it sweeps as it rakes. */
 const rakeWay = (side: 1 | -1) => (t: number): V3 => {
-  const a = track([[0, 0.3], [RK.drawn * FR, -0.4], [RK.held * FR, -0.6], [RK.swung * FR, -1.0], [RK.swung2 * FR, -1.35], [RK.hit * FR, -1.8], [RK.through * FR, -2.0], [RK.back * FR, -1.0], [RK.down * FR, 0]], t);
+  // (and held so as it comes back, not turned round in its hand)
+  const a = track([[0, 0.3], [RK.drawn * FR, -0.4], [RK.held * FR, -0.6], [RK.swung * FR, -1.0], [RK.swung2 * FR, -1.35], [RK.hit * FR, -1.8], [RK.back * FR, -1.8], [RK.down * FR, -1.4]], t);
   return [Math.cos(a), Math.sin(a) * side, -0.2];
 };
 const rakeWings = wingsFrom((t) => {
@@ -357,7 +380,7 @@ const rakeWings = wingsFrom((t) => {
 const rakeFire = (t: number, i: number): number => {
   if (i < 10) return 1;
   // (its talons' fire: kindling as it winds up, roaring as it rakes, dying back)
-  return track([[0, 0.6], [RK.held * FR, 1.3], [RK.hit * FR, 1.9], [RK.through * FR, 1.2], [RK.down * FR, 0.7]], t);
+  return track([[0, 0.7], [RK.held * FR, 1.1], [RK.hit * FR, 1.4], [RK.through * FR, 1.0], [RK.down * FR, 0.7]], t);
 };
 function rakeMove(side: 1 | -1): DemonMove {
   return {
@@ -368,7 +391,7 @@ function rakeMove(side: 1 | -1): DemonMove {
     wings: rakeWings,
     fire: rakeFire,
     tail: (t) => 0.2 * Math.sin((t / RAKE_LONG) * Math.PI * 2) * side,
-    rake: { side, up: [RK.lift * FR, (RK.down - 2) * FR], way: rakeWay(side) },
+    rake: { side, up: [RK.lift * FR, (RK.down - 2) * FR], way: rakeWay(side), minZ: 20 },
     strike: [(RK.held - 1) * FR, (RK.freeze + 1) * FR],
     hit: RAKE_HIT,
   };
@@ -395,6 +418,9 @@ export function demonPose(m: Motion, t: number): Posed {
 export function drawDemonAt(view: GameView, m: DemonMove, t: number, turn = 0): Drawn {
   const tt = m.loops ? ((t % m.long) + m.long) % m.long : t;
   const fires = (i: number): number => (m.fire ? m.fire(tt, i) : 1);
-  const raking = m.rake && tt >= m.rake.up[0] && tt <= m.rake.up[1] ? { side: m.rake.side, way: m.rake.way(tt) } : undefined;
-  return demonFrame(view, demonPose(m.motion, tt) as Bones, turn, { tail: m.tail?.(tt), paws: !!m.carry, rake: raking }, m.wings(tt), t, fires, m.carry ?? 0);
+  const pose = demonPose(m.motion, tt);
+  const wrist = m.rake ? (m.rake.side > 0 ? pose.lhz : pose.rhz) : 0;
+  const raking = m.rake && tt >= m.rake.up[0] && tt <= m.rake.up[1] && wrist >= m.rake.minZ ? { side: m.rake.side, way: m.rake.way(tt) } : undefined;
+  // (a raking claw below the height it rakes at is drawn as a claw on the floor, lifted: its claws spread, clear of it)
+  return demonFrame(view, pose as Bones, turn, { tail: m.tail?.(tt), paws: !!m.carry || !!m.rake, rake: raking }, m.wings(tt), t, fires, m.carry ?? 0);
 }

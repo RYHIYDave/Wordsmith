@@ -360,13 +360,37 @@ export function batWing(sc: Sculpt, m: { hide: number; horn: number; bone: numbe
  * A HAND OF CLAWS, hanging or reaching (not raised with the fire, not planted): a broad palm, four long fingers bent at
  * each knuckle and curling in toward its front, each ending in a hooked claw, a thumb; `S` how big.
  */
-export function clawHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, F: V3, S: number): V3[] {
+export function clawHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, F: V3, S: number, right?: boolean): V3[] {
   const tips: V3[] = [];
   const U: V3 = [0, 0, 1];
-  const fd = norm(sub(ha, el));
-  const side0 = norm(cross(fd, Math.abs(dot(fd, U)) > 0.95 ? F : U));
-  let n = norm(cross(fd, side0));
-  if (dot(n, F) < 0) n = mul(n, -1) as V3;
+  let fd = norm(sub(ha, el));
+  // (a hand that knows which it is, low over the floor: bent up at the wrist as far as it must be for its talons to keep
+  // clear of the floor, not driven down through it)
+  if (right !== undefined) {
+    const reach = 12.5 * S;
+    // (and the talons' curl below the line of the hand beside)
+    const least = (2 + 3.5 * S - ha[2]) / reach;
+    if (fd[2] < least) {
+      const flat = Math.hypot(fd[0], fd[1]) > 1e-3 ? norm([fd[0], fd[1], 0]) : norm([F[0], F[1], 0], [1, 0, 0]);
+      const up = Math.max(-1, Math.min(1, least));
+      fd = norm(add(mul(flat, Math.sqrt(1 - up * up)), mul(U, up)));
+    }
+  }
+  let side0: V3;
+  let n: V3;
+  if (right === undefined) {
+    side0 = norm(cross(fd, Math.abs(dot(fd, U)) > 0.95 ? F : U));
+    n = norm(cross(fd, side0));
+    if (dot(n, F) < 0) n = mul(n, -1) as V3;
+  } else {
+    // A HAND THAT KNOWS WHICH HAND IT IS (his word of the rakes, 27 Oct, “The hands flip around and the thumbs end up in the
+    // wrong place”): its palm, which its talons curl toward, faces `F`; its thumb on its inside of that, a left hand's
+    // always a left hand's, however the arm turns
+    let palm = sub(F, mul(fd, dot(F, fd)));
+    if (Math.hypot(palm[0], palm[1], palm[2]) < 0.15) palm = sub(U, mul(fd, dot(U, fd)));
+    n = norm(palm);
+    side0 = norm(right ? cross(fd, n) : cross(n, fd));
+  }
   const palm = add(ha, mul(fd, 2.2 * S));
   sc.ell(hide, piece, palm, [mul(fd, 3.6 * S), mul(side0, 3.4 * S), mul(n, 1.7 * S)], 1.0 * S, { tag: 'palm' });
   const bend = (v: V3, a: number): V3 => norm(add(mul(v, Math.cos(a)), mul(n, Math.sin(a))));
@@ -428,7 +452,7 @@ export function demonFrame(view: GameView, pose: Bones = DEMON_REST, turn = 0, l
   }, FRIEND_RIM);
   built.fires.forEach((p, i) => fireBehind(d, p, (3.7 - (i % 2) * 0.7) * fireK(i), (t ?? 2) + i * 0.41, 12));
   // (a raking claw's talons burning: little fires on their tips)
-  built.talons.forEach((p, i) => fireBehind(d, p, 2.4 * fireK(10 + i), (t ?? 2) + 0.2 + i * 0.37, 6));
+  built.talons.forEach((p, i) => fireBehind(d, p, 1.5 * fireK(10 + i), (t ?? 2) + 0.2 + i * 0.37, 6));
   // (running: its smoke streaming off behind it, left in the air it passes through, and no pall at its hooves, which would
   // be left behind; his word of the first lopsided run, 27 Oct, “The rear leg smoke clips through the arms”)
   let aura = t === undefined ? built.aura : { ...built.aura, time: t };
@@ -928,7 +952,7 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
     if (K() > 0.05) {
       if (raised || planted) fire = demonHand(sc, hide, bone, piece, ha, el, raised, K(), planted ? fh : undefined, planted && side < 0, up);
       // (raking: its talons hooked the way it sweeps, burning)
-      else if (raking && look.rake) talons.push(...clawHand(sc, hide, bone, piece, ha, el, look.rake.way, K() * 2.7));
+      else if (raking && look.rake) talons.push(...clawHand(sc, hide, bone, piece, ha, el, look.rake.way, K() * 2.7, side < 0));
       else clawHand(sc, hide, bone, piece, ha, el, C.way('upper', F0), K() * 2.7);
     }
     if (fire) fireAt = fire;
