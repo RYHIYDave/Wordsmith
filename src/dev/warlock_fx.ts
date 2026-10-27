@@ -75,7 +75,7 @@ export class Light {
 }
 
 /** A fire of `size` at (`cx`, `cy`), its heart there, leaning `lean`, at moment `t`. */
-function fire(l: Light, cx: number, cy: number, size: number, t: number, lean = 0): void {
+export function fire(l: Light, cx: number, cy: number, size: number, t: number, lean = 0): void {
   const H = Math.round(size * 3.3);
   const reach = Math.ceil(size * 1.5 * 1.6 + Math.abs(lean) * H * 1.3);
   for (let yy = -Math.round(H * 1.25); yy <= Math.ceil(fireFoot(size)); yy++) {
@@ -133,7 +133,7 @@ export const TARGET_BOX = { w: 36, h: 62 };
  * off it all over, each its own: born low on it, swelling, licking up and tearing free and burning out as the next is born
  * under it, the figure seen between them. `heat` 0 none to 1 burning, more as a bite of the burn flares it.
  */
-function burn(l: Light, gx: number, gy: number, w: number, h: number, t: number, heat: number): void {
+export function burn(l: Light, gx: number, gy: number, w: number, h: number, t: number, heat: number): void {
   if (heat <= 0) return;
   for (let i = 0; i < BURN.tongues; i++) {
     // (where on it this one burns: spread over it, more on its upper half, as fire climbs)

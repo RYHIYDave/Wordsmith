@@ -154,8 +154,8 @@ export interface DemonLook {
   tail?: number;
   /** Its claws its feet, as it runs on all fours: however high one swings, never the raised claw cupping the fire. */
   paws?: boolean;
-  /** A claw raking (1 its left, -1 its right): open, its talons hooked the way it sweeps (`way`), burning on them. */
-  rake?: { side: 1 | -1; way: V3 };
+  /** A claw raking (1 its left, -1 its right; 0 both, raised to slam down): open, its palm leading the way it sweeps, its talons burning. */
+  rake?: { side: 1 | -1 | 0 };
 }
 /**
  * HOW FAR GROWN each part of it is (1 grown; less, smaller, and nearer the bone it grows from; 0 not there): for its
@@ -857,7 +857,7 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
     const piece = side > 0 ? 'armL' : 'armR';
     // (its fire in its LEFT claw, raised, as his is; its right planted: his word, 26 Oct, “Also I think we want the plant
     // are to be the right arm.  That keeps the flame in the left for both transformations”)
-    const raking = look.rake?.side === side;
+    const raking = look.rake !== undefined && (look.rake.side === side || look.rake.side === 0);
     const raised = !raking && !look.paws && side > 0 && (side > 0 ? s.handL : s.handR)[2] >= 14;
     const sh = side > 0 ? s.shoulderL : s.shoulderR;
     const el = side > 0 ? s.elbowL : s.elbowR;
@@ -952,7 +952,14 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
     if (K() > 0.05) {
       if (raised || planted) fire = demonHand(sc, hide, bone, piece, ha, el, raised, K(), planted ? fh : undefined, planted && side < 0, up);
       // (raking: its talons hooked the way it sweeps, burning)
-      else if (raking && look.rake) talons.push(...clawHand(sc, hide, bone, piece, ha, el, look.rake.way, K() * 2.7, side < 0));
+      else if (raking) {
+        // (ITS HAND HELD FAST TO ITS FOREARM, as a wrist holds it, its palm leading the sweep: across the bend of its elbow,
+        // the way the arm swings round its shoulder; never turned to face a way of its own while the arm swings under it,
+        // which spun it round on the end of the arm: his word of the rakes, 27 Oct, “No the left hand rotates completely
+        // around during the slash animation”)
+        const bn = norm(cross(sub(ha, el), sub(sh, el)));
+        talons.push(...clawHand(sc, hide, bone, piece, ha, el, mul(bn, -side) as V3, K() * 2.7, side < 0));
+      }
       else clawHand(sc, hide, bone, piece, ha, el, C.way('upper', F0), K() * 2.7);
     }
     if (fire) fireAt = fire;
@@ -1032,10 +1039,10 @@ export function demonInto(sc: Sculpt, s: Skeleton, pv: PaintView, turn: number, 
   G = grow.wings;
   if (K() > 0.02) {
     // (its wings stand up off its back however far it is bowed over, as on all fours: held in the frame of the way it
-    // faces, upright, not tipped forward with the top of its back; that way taken from the top of its back's forward and its
-    // up together, so that bowed past straight down, as it gallops, its wings do not flip round to face behind it: his word
-    // of the lopsided run, 27 Oct, “The wings are clipping together.”)
-    const f0 = add(C.way('upper', F0), C.way('upper', U));
+    // faces, upright, not tipped forward with the top of its back; that way taken from its chest, which is never bowed past
+    // straight down nor thrown back past straight up, so that its wings never flip round to face behind it, as the top of its
+    // back would turn them when it gallops or rears: his word of the lopsided run, 27 Oct, “The wings are clipping together.”)
+    const f0 = C.way('chest', F0);
     const fh = norm([f0[0], f0[1], 0], F0);
     const way: readonly [V3, V3, V3] = [fh, norm(cross(U, fh)), U];
     for (const side of [1, -1] as const) {
