@@ -13,7 +13,7 @@ import { HEAD_B } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import type { GameView, PaintView, Stage } from '../art/skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from '../art/skeleton';
-import type { Bones, Build, Posed, V3 } from '../art/skeleton';
+import type { Bones, Build, Posed, Skeleton, V3 } from '../art/skeleton';
 import { Sculpt, draw, onBall, onCone } from './sculpt';
 import type { Cone, Drawn, Ell } from './sculpt';
 import { BRASS, HIDE, SKIN_W, farSide, limbFrame, manBody, manHead, onHead, shadeOf, tailorFor } from './sculpt_classes';
@@ -224,8 +224,44 @@ function panelClear(at: V3, ft: V3, half: number, legs: [V3, V3, number, number]
 
 /** The warlock sculpted, standing as he stands, in one of the game's views. */
 export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
-  const B = WARLOCK_SCULPT_BODY;
-  const q = (pose ?? warlockStance(B)) as Posed;
+  const m = warlockSculpt(view, pose, turn);
+  return drawWarlockSculpt(m);
+}
+/** The warlock as a sculpture not yet drawn: what is needed to draw it (and to add to it: the change into the demon). */
+export interface WarlockSculpt {
+  sc: Sculpt;
+  s: Skeleton;
+  pv: PaintView;
+}
+/** Draw the warlock's sculpture, with the fire in the demon's claws (and the arm blazing, as ARM_FIRE says); `more` light drawn with it. */
+export function drawWarlockSculpt(m: WarlockSculpt, more?: (st: Stage) => void, canvas: { w: number; h: number; ax: number; ay: number } = CANVAS3): Drawn {
+  const { sc, s, pv } = m;
+  let fireNear = Infinity;
+  return draw(sc, pv, canvas.ax, canvas.ay, canvas, (st) => {
+    // (THE FIRE IN THE CLAWS, the claws curled round in front of it hiding it where they are: his pick, “Big claws round the
+    // fire (Recommended)”)
+    const seat = sc.at(fireSeat(s, ARM_FIRE.size));
+    // (his claws hide only his own fire: with none in them, and none on his arm, nothing drawn over him is hidden, as the
+    // demon's fire in his change, dev/warlock_change.ts)
+    fireNear = ARM_FIRE.size > 0.2 || ARM_FIRE.blaze > 0 ? st.near(seat) + FIRE_DEEP : Infinity;
+    if (ARM_FIRE.size > 0.2) handFire(st, seat, ARM_FIRE.size, ARM_FIRE.t, ARM_FIRE.lean);
+    // (THE ARM BLAZING, his pact meter full: cyan fire licking up all along it, shoulder to claws, pulsing)
+    if (ARM_FIRE.blaze > 0) {
+      const pulse = 0.8 + 0.25 * Math.sin(ARM_FIRE.t * 9);
+      const along: V3[] = [];
+      for (let i = 0; i < 6; i++) along.push(i < 3 ? lerp3(s.shoulderL, s.elbowL, 0.2 + i * 0.32) : lerp3(s.elbowL, s.handL, (i - 3) * 0.33 + 0.1));
+      along.forEach((p, i) => {
+        const size = ARM_FIRE.blaze * pulse * (1.9 + 0.5 * Math.sin(ARM_FIRE.t * 7 + i * 1.9));
+        if (size > 0.9) handFire(st, sc.at(add(p, [0, 0, 2.2])), size, ARM_FIRE.t + i * 0.37, ARM_FIRE.lean);
+      });
+    }
+    if (more) more(st);
+  }, FRIEND_RIM, () => fireNear);
+}
+/** The warlock's sculpture, on his own bones, or on others (`rig`: a build and a pose of the bones' own, as in his change). */
+export function warlockSculpt(view: GameView, pose?: Bones, turn = 0, rig?: { B: Build; q: Posed }): WarlockSculpt {
+  const B = rig?.B ?? WARLOCK_SCULPT_BODY;
+  const q = rig?.q ?? ((pose ?? warlockStance(B)) as Posed);
   const s = solve(B, q);
   // FROM BEHIND AS THE CAMERA TRULY SEES HIM (skin.ts PaintView 'rear'), not in a mirror as the heroes are: the demon arm is
   // his left, and stays on his left from behind (his word, 25 Oct, of a picture of him from behind: “Isn’t from behind the
@@ -513,22 +549,5 @@ export function sculptWarlock(view: GameView, pose?: Bones, turn = 0): Drawn {
   void cross;
   void sub;
   void BRASS;
-  let fireNear = Infinity;
-  return draw(sc, pv, CANVAS3.ax, CANVAS3.ay, CANVAS3, (st) => {
-    // (THE FIRE IN THE CLAWS, the claws curled round in front of it hiding it where they are: his pick, “Big claws round the
-    // fire (Recommended)”)
-    const seat = sc.at(fireSeat(s, ARM_FIRE.size));
-    fireNear = st.near(seat) + FIRE_DEEP;
-    handFire(st, seat, ARM_FIRE.size, ARM_FIRE.t, ARM_FIRE.lean);
-    // (THE ARM BLAZING, his pact meter full: cyan fire licking up all along it, shoulder to claws, pulsing)
-    if (ARM_FIRE.blaze > 0) {
-      const pulse = 0.8 + 0.25 * Math.sin(ARM_FIRE.t * 9);
-      const along: V3[] = [];
-      for (let i = 0; i < 6; i++) along.push(i < 3 ? lerp3(s.shoulderL, s.elbowL, 0.2 + i * 0.32) : lerp3(s.elbowL, s.handL, (i - 3) * 0.33 + 0.1));
-      along.forEach((p, i) => {
-        const size = ARM_FIRE.blaze * pulse * (1.9 + 0.5 * Math.sin(ARM_FIRE.t * 7 + i * 1.9));
-        if (size > 0.9) handFire(st, sc.at(add(p, [0, 0, 2.2])), size, ARM_FIRE.t + i * 0.37, ARM_FIRE.lean);
-      });
-    }
-  }, FRIEND_RIM, () => fireNear);
+  return { sc, s, pv };
 }

@@ -758,3 +758,92 @@ export function changeLight(burst: number, t: number, view: GameView): Px {
   l.lay(out);
   return out;
 }
+
+// THE CHANGE SEEN HAPPENING (his word of the first change, 26 Oct: “I’d like a little bit of an actual transition from one to
+// the other.  Not just a smoke cloud obscuring the change.”; dev/warlock_change.ts): no cloud over him. Only where a piece of
+// him tears away, a puff of smoke and a spark or two where it was, gone in a moment; cyan embers whirling up round him as he
+// changes; and when it has come, its ROAR: a shockwave running out over the floor.
+
+/** A piece of him torn away in the change: where it was (his own space, turned as he is) and the moment (seconds) it went. */
+export interface TornAt {
+  at: V3;
+  t: number;
+}
+/** How long a torn piece's puff of smoke lasts (seconds). */
+export const PUFF_LIFE = 0.45;
+/** How long the roar's shockwave runs (seconds). */
+export const ROAR_LIFE = 0.55;
+
+/** Where a point of the changing figure (its own space, already turned) is in the change's scene. */
+function onChange(p: V3, view: GameView): [number, number] {
+  const s = project(p, view === 'back' ? 'rear' : view);
+  return [CHANGE_SCENE.ax + s[0], CHANGE_SCENE.ay + s[1]];
+}
+
+/**
+ * THE CHANGE'S SMOKE AND LIGHT AT A MOMENT (`t`, seconds from his being tapped): the puffs where the pieces `torn` from him
+ * went; the embers whirling round `heart` (his chest, his own space, turned) as strong as `whirl` (0 to 1); and from `roar`
+ * (seconds) the shockwave. On the change's scene (CHANGE_SCENE).
+ */
+export function morphLight(torn: readonly TornAt[], t: number, whirl: number, heart: V3, roar: number, view: GameView): Px {
+  const out = new Px(CHANGE_SCENE.w, CHANGE_SCENE.h);
+  const l = new Light();
+  const sm = new Light();
+  // (THE PUFFS: each where its piece was, swelling, rising and thinning away; a spark flung from some)
+  torn.forEach((p, i) => {
+    const age = t - p.t;
+    if (age < 0 || age >= PUFF_LIFE) return;
+    const u = age / PUFF_LIFE;
+    const [x, y] = onChange(p.at, view);
+    const side = (hash(i * 5 + 1) - 0.5) * 10;
+    cloud(sm, x + side * u, y + 5 - 14 * u, 7 + 9 * u, 7 + 9 * u, t, 0.12 + 0.88 * u * u, 50 + i);
+    // (a spark from one in three)
+    if (hash(i * 5 + 9) < 0.34) {
+      const a = hash(i * 5 + 2) * Math.PI * 2;
+      const r = 4 + 22 * u;
+      const k = u < 0.35 ? 3 : u < 0.7 ? 2 : 1;
+      const ex = x + Math.cos(a) * r;
+      const ey = y + Math.sin(a) * r * 0.6 - 10 * u;
+      l.put(ex, ey, k);
+      l.put(ex, ey - 1, Math.max(0, k - 1));
+    }
+  });
+  // (THE EMBERS whirling up round him as he changes: each on its own ring round him, rising as it goes round, two pixels long)
+  if (whirl > 0.05) {
+    const [cx, cy] = onChange(heart, view);
+    for (let e = 0; e < 16; e++) {
+      if (hash(e * 7 + 3) > whirl) continue;
+      const ph = (t * (0.55 + 0.3 * hash(e * 7)) + hash(e * 7 + 1)) % 1;
+      const a = ph * Math.PI * 4 + e;
+      const r = 26 + 22 * hash(e * 7 + 2);
+      const x = cx + Math.cos(a) * r;
+      const y = cy + 30 - ph * 80 + Math.sin(a) * r * 0.3;
+      const k = ph < 0.5 ? 3 : 2;
+      l.put(x, y, k);
+      l.put(x, y + 1, k - 1);
+    }
+  }
+  // (THE ROAR'S SHOCKWAVE: a ring running out over the floor, flat as the floor lies, light on its leading edge, smoke boiling
+  // up behind it)
+  const since = t - roar;
+  if (since >= 0 && since < ROAR_LIFE) {
+    const { ax, ay } = CHANGE_SCENE;
+    const u = since / ROAR_LIFE;
+    const r = 14 + u * 130;
+    const ring = 7 + 8 * u;
+    for (let y = Math.floor(ay - r * 0.5 - 12); y <= Math.ceil(ay + r * 0.5 + 4); y++) {
+      for (let x = Math.floor(ax - r - 6); x <= Math.ceil(ax + r + 6); x++) {
+        const d = Math.hypot(x - ax, (y - ay) * 2);
+        const off = r - d;
+        if (off < 0 || off > ring) continue;
+        const n = noise2(x * 0.3, y * 0.3 + since * 9);
+        if (n < 0.15 + u * 0.55) continue;
+        if (off < 2.4 && u < 0.75) l.put(x, y, u < 0.3 ? 3 : off < 1.2 ? 2 : 1);
+        else sm.put(x, y - Math.round((off / ring) * 4), off > ring * 0.6 ? 2 : 1);
+      }
+    }
+  }
+  sm.lay(out, SMOKE);
+  l.lay(out);
+  return out;
+}

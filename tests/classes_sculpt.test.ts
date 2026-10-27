@@ -29,6 +29,8 @@ import { LAST } from '../src/dev/sculpt';
 import type { Drawn, Sculpt } from '../src/dev/sculpt';
 import { BRAWLER_BUILD, BRAWLER_LOOKS, COATS, OUTFITS_2, boxerStance, sculptBrawler } from '../src/dev/sculpt_classes';
 import { DEMON_LOOKS, sculptDemon } from '../src/dev/sculpt_demon';
+import { DEMON_FOURS, sculptDemonRig } from '../src/dev/sculpt_demon_rig';
+import { sculptWarrior } from '../src/dev/sculpt_warrior';
 import { GIANT_BODIES, GOLEM_BUILDS, GOLEM_BUILDS_2, GOLEM_BUILDS_3, sculptGolemBuild } from '../src/dev/sculpt_golem';
 import { TINKERER_BODY, TINKER_KITS, sculptContraption, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
 import { WARLOCK_SCULPT_BODY, sculptWarlock, warlockStance } from '../src/dev/sculpt_warlock';
@@ -94,6 +96,24 @@ for (const fig of FIGS) {
 test("the demon in every word's look passes the picture's checks too (its flames, frost, lightning and stink drawn round it)", () => {
   const found: string[] = [];
   for (const look of DEMON_LOOKS) for (const view of VIEWS) for (const f of pictureFindings(sculptDemon(view, look.aura, look.hide).px)) found.push(`${look.name}, ${view}: ${f}`);
+  assert.deepEqual(found, []);
+});
+
+// THE DEMON ON ITS BONES, ON ALL FOURS (dev/sculpt_demon_rig.ts; his word, 27 Oct: “Give me an all fours stance, gorilla like
+// arms, claws flat on the floor burning with cyan flame and black smoke”), its curved wings at rest and flung open: the
+// picture's checks, from in front and behind
+test('the demon on its bones, on all fours, its claws burning, its wings at rest and flung open: crisp, no pixel alone, nothing pink, nothing cut off', () => {
+  const found: string[] = [];
+  const open = { spread: 1.3, beat: 0.35, sweep: 0.05, tip: 0, flex: 1, wind: 0.15, phase: 0.3 };
+  for (const view of VIEWS) for (const [n, w] of [['at rest', undefined], ['flung open', open]] as const) for (const f of pictureFindings(sculptDemonRig(view, DEMON_FOURS, 0, {}, w).px)) found.push(`${n}, ${view}: ${f}`);
+  assert.deepEqual(found, []);
+});
+
+// THE WARRIOR, A NEW RENDERING (dev/sculpt_warrior.ts; his word, 26 Oct: “Can you not just refine the old look but rebuild it
+// uniquely with the new rules in mind.  I want the same style, but a new rendering”)
+test('the warrior, new rendering: crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off', () => {
+  const found: string[] = [];
+  for (const view of VIEWS) for (const f of pictureFindings(sculptWarrior(view).px)) found.push(`${view}: ${f}`);
   assert.deepEqual(found, []);
 });
 

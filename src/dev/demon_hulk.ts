@@ -459,7 +459,11 @@ export interface AuraAt {
   claws: V3[];
   feet: V3[];
   behind: boolean;
+  /** The moment (seconds), for a figure that moves: its smoke rising off it as time goes, each puff on its own way up. */
+  time?: number;
 }
+/** How fast its smoke rises: puffs a second (each 3.6 pixels above the last). */
+const SMOKE_RISE = 2.6;
 const SMOKE = ['#0e0b14', '#17121f', '#221c2c', '#302940', '#403856'];
 const FIRE = ['#a8300c', '#e05018', '#ff8a2a', '#ffc24a', '#fff0a0', '#ffffff'];
 const FROST = ['#1c4a9a', '#2e6cc8', '#58a8f0', '#b0e0ff', '#ffffff'];
@@ -494,13 +498,21 @@ export function drawAura(st0: Stage, out: Px, kind: Aura, at: AuraAt): void {
   const sources = at.from.map(pix);
   if (kind === 'smoke') {
     // black smoke pouring up off it, curling and thinning as it rises, mostly behind it; wisps across it; a pall at its hooves
+    // (as time goes, each puff rises on its own way, swelling and thinning, a new one welling up under it: `at.time`)
+    const climbed = at.time === undefined ? 0 : at.time * SMOKE_RISE;
+    const step = Math.floor(climbed);
+    const frac = climbed - step;
     sources.forEach(([sx, sy], n) => {
       const drift = (n % 2 ? 1 : -1) * (0.6 + hash(n, 3, 4));
       for (let i = 0; i < 16; i++) {
-        const t = i / 15;
-        const x = sx + Math.round(Math.sin(i * 0.55 + n * 1.7) * 4 * t + drift * t * 16);
-        const y = sy - Math.round(i * 3.6 + hash(i, n, 4) * 2);
-        const r = Math.round(2 + t * 4 + hash(i, n, 5) * 1.5);
+        // (the puff's own number, kept as it rises; how far up it has come)
+        const id = i - step;
+        const u = at.time === undefined ? i : i + frac;
+        if (u > 15.5) continue;
+        const t = u / 15;
+        const x = sx + Math.round(Math.sin(u * 0.55 + n * 1.7) * 4 * t + drift * t * 16);
+        const y = sy - Math.round(u * 3.6 + hash(id, n, 4) * 2);
+        const r = Math.round(2 + t * 4 + hash(id, n, 5) * 1.5);
         // (thinner as it rises: solid low down, every other pixel higher, every third at the top)
         puff(i < 3 && !at.behind ? 'over' : 'under', x, y, r, SMOKE, t < 0.4 ? 1 : t < 0.75 ? 2 : 3);
       }

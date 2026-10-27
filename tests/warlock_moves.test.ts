@@ -24,9 +24,8 @@ import { FR, STANCE, WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from 
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { strikes, struck } from '../src/dev/brawler_punches';
 import { warlockSpells } from '../src/dev/warlock_spells';
-import { boltLight, changeGone, changeLight, curseLight, demonSmoke, dissolve, spreadLight, stepGone, stepLight } from '../src/dev/warlock_fx';
-import { CHANGE_BURST } from '../src/dev/warlock_spells';
-import { sculptDemon } from '../src/dev/sculpt_demon';
+import { boltLight, curseLight, dissolve, morphLight, spreadLight, stepGone, stepLight } from '../src/dev/warlock_fx';
+import { CHANGE_ALL, MORPH_AT, MORPH_LONG, ROAR_AT, changeFrame, changeRig } from '../src/dev/warlock_change';
 
 /** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step). */
 const ALL = [...warlockMoves(), ...warlockSpells()];
@@ -219,20 +218,57 @@ for (const m of ALL.filter((mv) => mv.name.includes('smoke step'))) {
   });
 }
 
-// THE CHANGE (dev/warlock_fx.ts): him bursting into smoke, the blast and the shockwave, and the demon forming out of the smoke,
-// every frame, from in front and behind: crisp, no pixel alone, nothing pink, nothing cut off
-for (const m of ALL.filter((mv) => mv.name.startsWith('Tapped'))) {
-  test(`${m.name}: him bursting into smoke, the blast and the shockwave, the demon forming out of it, every frame: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+// THE CHANGE SEEN HAPPENING (dev/warlock_change.ts; his word of the first change, 26 Oct: “I’d like a little bit of an actual
+// transition from one to the other.  Not just a smoke cloud obscuring the change.”): his bones growing into the demon's,
+// slick as any move (nothing of it leaps, stalls or turns straight back at speed); and the pictures of it, the man and the
+// demon in one sculpture, and its puffs, embers and shockwave (dev/warlock_fx.ts morphLight): crisp, the friend's edge, no
+// pixel alone, nothing pink, nothing cut off. Every frame of it from in front, at its turns from behind (each picture of
+// it is slow to paint: the demon's).
+{
+  const change = ALL.find((mv) => mv.name.startsWith('Tapped'));
+  if (!change) throw new Error('no change');
+  const times = Array.from({ length: Math.round(CHANGE_ALL * FPS) + 1 }, (_, i) => Math.min(CHANGE_ALL, i / FPS));
+  test('The change: his bones growing into the demon\'s, slick (nothing of him leaps, stalls, turns straight back at speed, nor starts or stops at its fastest)', () => {
     const found: string[] = [];
+    const sk = times.map((t) => {
+      const { B, q } = changeRig(change, t);
+      return solve(B, q);
+    });
+    for (const j of JOINTS) {
+      for (const view of ['front', 'back'] as const) {
+        const xy = sk.map((k) => project(k[j] as V3, view));
+        const st = xy.slice(1).map((p, i) => [p[0] - xy[i][0], p[1] - xy[i][1]] as const);
+        const sp = st.map(([x, y]) => Math.hypot(x, y));
+        const n = sp.length;
+        for (let i = 1; i < n - 1; i++) {
+          const a = sp[i - 1];
+          const b = sp[i];
+          const c = sp[i + 1];
+          const at = `${times[i].toFixed(2)} s (${view})`;
+          if (b > 4 && b > 2.2 * Math.max(a, c)) found.push(`${j} leaps ${b.toFixed(1)} at ${at}`);
+          if (a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) {
+            const sa = st[i - 1];
+            const sc = st[i + 1];
+            if ((sa[0] * sc[0] + sa[1] * sc[1]) / (Math.hypot(...sa) * Math.hypot(...sc) || 1) > 0.5) found.push(`${j} stalls at ${at}`);
+          }
+          const sa = st[i - 1];
+          const sb = st[i];
+          if ((sa[0] * sb[0] + sa[1] * sb[1]) / (Math.hypot(...sa) * Math.hypot(...sb) || 1) < -0.5 && a > 3 && b > 3) found.push(`${j} turns straight back at speed at ${at}`);
+        }
+        if (sp[0] > 3 && sp[0] >= 0.95 * Math.max(...sp.slice(0, 4))) found.push(`${j} starts at its fastest (${view})`);
+        if (sp[n - 1] > 3 && sp[n - 1] >= 0.95 * Math.max(...sp.slice(-4))) found.push(`${j} stops dead from its fastest (${view})`);
+      }
+    }
+    assert.deepEqual(found, []);
+  });
+  test('The change: every frame of him becoming it, and its smoke and light: crisp, the friend\'s edge, no pixel alone, nothing pink, nothing cut off', () => {
+    const found: string[] = [];
+    const turns = [MORPH_AT + 0.1, MORPH_AT + MORPH_LONG * 0.4, MORPH_AT + MORPH_LONG * 0.7, ROAR_AT + 0.1];
     for (const view of ['front', 'back'] as const) {
-      const demon = sculptDemon(view).px;
-      for (let i = 0; i <= (m.long + 2.0) * FPS; i++) {
-        const t = i / FPS;
-        const g = changeGone(CHANGE_BURST, t);
-        if (g > 0 && g < 1) for (const f of pictureFindings(dissolve(drawWarlockAt(view, m, Math.min(t, m.long)).px, g, t))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s, him: ${f}`);
-        const d = demonSmoke(CHANGE_BURST, t);
-        if (d > 0 && d < 1) for (const f of pictureFindings(dissolve(demon, d, t))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s, the demon: ${f}`);
-        for (const f of pictureFindings(changeLight(CHANGE_BURST, t, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+      for (const t of view === 'front' ? times.filter((tt) => tt >= MORPH_AT - FR) : turns) {
+        const r = changeFrame(view, t);
+        for (const f of pictureFindings(r.d.px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+        for (const f of pictureFindings(morphLight(r.torn, t, Math.sin(Math.PI * r.k), r.heart, ROAR_AT, view))) if (f !== 'nothing painted') found.push(`${view}, ${t.toFixed(2)} s, its smoke and light: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);

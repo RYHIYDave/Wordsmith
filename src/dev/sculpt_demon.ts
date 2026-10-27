@@ -308,16 +308,20 @@ export function sculptDemon(view: GameView, aura: Aura = 'smoke', hideAt = 0, ya
  * (right) hand holds the fire in its palm, its fingers spread round it, talons hooked over it; the other is planted on the
  * floor, spread, its talons arched and dug in. Returns where the fire sits (in the raised hand's palm), else null.
  */
-export function demonHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, raised: boolean): V3 | null {
+export function demonHand(sc: Sculpt, hide: number, bone: number, piece: string, ha: V3, el: V3, raised: boolean, scale = 1, face?: V3, right = false, up = 0): V3 | null {
   const U: V3 = [0, 0, 1];
   /** (a demon's hand is big: a shovel, broader than its forearm) */
-  const S = 1.45;
+  const S = 1.45 * scale;
   const m = (v: V3, k: number): V3 => mul(v, k * S);
   const fore = norm(sub(ha, el));
-  const fwd = norm([fore[0], fore[1], 0]);
+  // (its fingers the way its forearm runs, or the way given: a claw planted on the floor facing the way it faces, his word,
+  // 27 Oct, of its claws on all fours, “the hands are both facing in”)
+  const fwd = face ? norm([face[0], face[1], 0]) : norm([fore[0], fore[1], 0]);
   const across = norm(cross(U, fwd));
-  const thumbWay: V3 = [-across[0], -across[1], -across[2]];
-  const lift = (p: V3, z: number): V3 => [p[0], p[1], z];
+  // (its thumb on the inside of the hand: a right hand's on its left)
+  const thumbWay: V3 = right ? across : [-across[0], -across[1], -across[2]];
+  // (a claw off the floor, lifted `up` from where it stands on it, as it goes: its claws spread as they were on the floor)
+  const lift = (p: V3, z: number): V3 => [p[0], p[1], z + up];
   const fan = (deg: number): V3 => norm(add(mul(fwd, Math.cos((deg * Math.PI) / 180)), mul(thumbWay, Math.sin((deg * Math.PI) / 180))));
   /** A talon along `pts`, thick at its root and drawn to a point. */
   const talon = (pts: V3[]): void => {

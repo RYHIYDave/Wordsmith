@@ -105,6 +105,8 @@ export interface Build {
   headFwd: number;
   /** Half the head's depth (face to back), width and height. */
   headR: V3;
+  /** How far its neck lets the face look up from the top of its back, if not as a man's (a beast's on all fours, its face lifted to look ahead). */
+  neckUp?: number;
   /** Shoulder to elbow; elbow to the middle of the grip. */
   upperArm: number;
   foreArm: number;
@@ -544,7 +546,7 @@ const SHRUG_UP = 0.12;
 
 /** How far a neck lets the face turn from the chest, and look up and down from it. */
 const NECK_TURN = 88;
-const NECK_UP = 65;
+export const NECK_UP = 65;
 const NECK_DOWN = 55;
 
 /** A body's own frame, as far as an arm needs it. */
@@ -662,9 +664,10 @@ export function solve(b: Build, q: Posed): Skeleton {
   const turned = Math.atan2(fc[1], fc[0]) / D;
   const up = Math.asin(Math.max(-1, Math.min(1, fc[2]))) / D;
   let face: Rot = want;
-  if (Math.abs(turned) > NECK_TURN || up > NECK_UP || up < -NECK_DOWN) {
+  const neckUp = b.neckUp ?? NECK_UP;
+  if (Math.abs(turned) > NECK_TURN || up > neckUp || up < -NECK_DOWN) {
     const t2 = Math.max(-NECK_TURN, Math.min(NECK_TURN, turned));
-    const u2 = Math.max(-NECK_DOWN, Math.min(NECK_UP, up));
+    const u2 = Math.max(-NECK_DOWN, Math.min(neckUp, up));
     const fwd = along(upper, heading(t2, u2));
     const top = norm(sub(want[2], mul(fwd, dot(want[2], fwd))), upper[2]);
     face = [fwd, cross(top, fwd), top];

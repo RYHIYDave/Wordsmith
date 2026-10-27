@@ -266,6 +266,10 @@ function trackAt(f: [number, number][], t: number): number {
  */
 const LAG = 0.14;
 export function drawWarlockAt(view: GameView, m: WarlockMove, t: number, turn = 0): Drawn {
+  return withWarlockAt(m, t, turn, () => sculptWarlock(view, warlockPose(m.motion, t) as unknown as Bones, turn));
+}
+/** Whatever `f` draws of him drawn with his skirts and his fire as they are at a moment of a move (as drawWarlockAt; for his change, dev/warlock_change.ts). */
+export function withWarlockAt<T>(m: WarlockMove, t: number, turn: number, f: () => T): T {
   const pose = warlockPose(m.motion, t);
   const before = warlockPose(m.motion, m.loops ? (((t - LAG) % m.long) + m.long) % m.long : Math.max(0, t - LAG));
   const a = solve(WARLOCK_B, pose);
@@ -297,7 +301,7 @@ export function drawWarlockAt(view: GameView, m: WarlockMove, t: number, turn = 
   }
   SKIRT_OPEN.on = !!m.carry;
   try {
-    return sculptWarlock(view, pose as unknown as Bones, turn);
+    return f();
   } finally {
     SKIRT_SWING.v = [0, 0, 0];
     ARM_FIRE.size = 4.0;
