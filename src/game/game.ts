@@ -4356,7 +4356,7 @@ export class Game {
       const old = standing.shift() as Contraption;
       this.breakContraption(old);
     }
-    const c: Contraption = { id: this.nextThing++, x0: ox, y0: oy, x: p.x, y: p.y, t: 0, next: C.set + C.first, shotAge: 9, fx: this.hero.fx, fy: this.hero.fy, broke: -1, skill: i, frac };
+    const c: Contraption = { id: this.nextThing++, x0: ox, y0: oy, x: p.x, y: p.y, t: 0, next: C.first, shotAge: 9, fx: this.hero.fx, fy: this.hero.fy, broke: -1, echo: 0, woke: false, skill: i, frac };
     this.contraptions.push(c);
     this.emit({ t: 'contraption', id: c.id, x0: ox, y0: oy, x: p.x, y: p.y });
     this.sfx('trapSet', 0.6);
@@ -4384,9 +4384,10 @@ export class Game {
       const lead = m.speed > 0 && m.state === 'chase' ? 0.35 : 0;
       const x1 = m.x + m.fx * lead;
       const y1 = m.y + m.fy * lead;
-      const v: Vial = { x0: c.x, y0: c.y, x1, y1, t: 0, flight: C.flight, skill: c.skill, frac: echo ? frac * (s?.r.echo ?? 0.5) : frac };
+      const v: Vial = { x0: c.x, y0: c.y, x1, y1, t: 0, flight: C.flight, skill: c.skill, frac, wake: !c.woke && !echo && n === 0 };
+      if (v.wake) c.woke = true;
       this.vials.push(v);
-      this.emit({ t: 'vial', id: c.id, x0: c.x, y0: c.y, x1, y1, flight: C.flight });
+      this.emit({ t: 'vial', id: c.id, x0: c.x, y0: c.y, x1, y1, flight: C.flight, n, echo: echo || undefined });
       const far = Math.hypot(x1 - c.x, y1 - c.y) || 1;
       c.fx = (x1 - c.x) / far;
       c.fy = (y1 - c.y) / far;
@@ -4429,7 +4430,7 @@ export class Game {
     const s = this.hero.skills[i];
     if (!s) return;
     const rad = SKILLS[s.id].radius * s.r.size;
-    this.emit({ t: 'golemPound', x, y, r: rad });
+    this.emit({ t: 'golemPound', x, y, r: rad, n, echo: echo || undefined });
     this.emit({ t: 'shake', amount: n > 0 || echo ? 2.5 : 5 });
     this.sfx('slam', n > 0 || echo ? 0.6 : 1);
     this.blast(i, x, y, rad, frac, 'pound', n, echo, n === 0 && !echo);
@@ -4457,11 +4458,16 @@ export class Game {
         continue;
       }
       if (c.t < C.set) continue;
-      // (set up: what its words behind it leave, it leaves once, where it stands)
-      if (c.t - dt < C.set) this.wake(c.skill, c.x, c.y, SKILLS[s.id].radius * s.r.size, c.frac);
       c.next -= dt;
       if (c.next > 0) continue;
-      c.next = this.lobVial(c, c.frac) ? C.every : 0.2;
+      const shot = this.lobVial(c, c.frac);
+      if (shot && c.echo > 0) {
+        // ("of Echoes": with its first shot, a weaker vial after it)
+        const share = c.echo;
+        c.echo = 0;
+        this.after(0.2, () => c.broke < 0 && this.lobVial(c, share, true));
+      }
+      c.next = shot ? C.every : 0.2;
     }
     // (HER VIALS: each bursts where it comes down)
     for (let k = this.vials.length - 1; k >= 0; k--) {
@@ -4474,7 +4480,8 @@ export class Game {
       const rad = SKILLS[s.id].radius * s.r.size;
       this.emit({ t: 'vialBurst', x: v.x1, y: v.y1, r: rad });
       this.sfx('shatter', 0.35);
-      this.blast(v.skill, v.x1, v.y1, rad, v.frac, 'vial', 0, false, false);
+      // (its first vial leaves, where it bursts, what the words behind it leave: once a Contraption)
+      this.blast(v.skill, v.x1, v.y1, rad, v.frac, 'vial', 0, false, v.wake);
     }
     // (HER GOLEM)
     const g = this.golem;
@@ -5111,10 +5118,10 @@ export class Game {
       }
     } else if (def.kind === 'contraption') {
       // (THE TINKERER, game/tinkerer.ts: a Contraption thrown down where she aimed, no further than its range; "of Echoes",
-      // the newest one lobs a weaker vial at once)
+      // the newest one lobs a weaker vial with its first shot)
       if (echo) {
         const c = this.contraptions.filter((q) => q.broke < 0).pop();
-        if (c) this.lobVial(c, each, true);
+        if (c) c.echo = each;
       } else this.throwContraption(i, ox, oy, tx, ty, each);
     } else if (def.kind === 'golem') {
       // (THE TINKERER: the first whistle brings her Golem out; each after sets it on to ground pound. Twin, a second pound

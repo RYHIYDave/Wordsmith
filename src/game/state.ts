@@ -767,6 +767,10 @@ export interface Contraption {
   fy: number;
   /** Seconds since it was put out of action (-1: it stands). */
   broke: number;
+  /** "of Echoes": a weaker vial it lobs with its first shot (its share of the hit; 0, none). */
+  echo: number;
+  /** Whether its first vial has been lobbed (that one leaves, where it bursts, what the words behind it leave). */
+  woke: boolean;
   skill: number;
   frac: number;
 }
@@ -780,6 +784,8 @@ export interface Vial {
   flight: number;
   skill: number;
   frac: number;
+  /** The first of its Contraption's: it leaves what the words behind it leave. */
+  wake: boolean;
 }
 /**
  * THE TINKERER'S GOLEM (game/tinkerer.ts): always with her once whistled out. `act`, what it is doing and for how long it
@@ -1253,13 +1259,13 @@ export type GameEvent =
   // (THE TINKERER, game/tinkerer.ts: her Contraption thrown, a vial lobbed out of it and bursting, a Contraption put out
   // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
   | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }
-  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number }
+  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean }
   | { t: 'vialBurst'; x: number; y: number; r: number }
   | { t: 'contraptionEnd'; id: number; x: number; y: number }
   | { t: 'golemArrive'; x: number; y: number }
   | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
   | { t: 'golemShot'; x0: number; y0: number; x1: number; y1: number; flight: number }
-  | { t: 'golemPound'; x: number; y: number; r: number }
+  | { t: 'golemPound'; x: number; y: number; r: number; n?: number; echo?: boolean }
   | { t: 'golemDown'; x: number; y: number }
   | { t: 'blastJump'; x0: number; y0: number; x1: number; y1: number; r: number }
   | { t: 'blastLand'; x: number; y: number }

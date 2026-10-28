@@ -31,6 +31,7 @@ import { resolveSkill, skillName, socketProblem } from '../src/game/words';
 import { land } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
 import { WARLOCK_TUNE } from '../src/game/warlock';
+import { TINKER_TUNE } from '../src/game/tinkerer';
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;
@@ -222,6 +223,11 @@ function layout(kind: SkillDef['kind']): { spots: [number, number][]; aim: [numb
     case 'curse': return { spots: [[1.5, 0], [-1.2, 1.0], [0.4, -2.0]], aim: [1.5, 0] };
     case 'damning': return { spots: [[1.5, 0], [-1.2, 1.0], [0.4, -2.0]], aim: [1.5, 0] };
     case 'smoke': return { spots: [[0.6, 0.4], [2.6, 0.3], [4.4, -0.3]], aim: [5.0, 0] };
+    // (THE TINKERER: her Contraption is thrown down by them and lobs its vials at them; her Golem, out beside her already,
+    // pounds round its fist; her bomb goes off among them as she jumps away)
+    case 'contraption': return { spots: [[3.2, 0], [3.8, 0.6], [3.8, -0.6]], aim: [3, 0] };
+    case 'golem': return { spots: [[0.9, 1.2], [0.2, 2.2], [1.6, 0.6]], aim: [1.2, 1.2] };
+    case 'blastjump': return { spots: [[0.8, 0.3], [-0.6, 0.7], [0.2, -0.9]], aim: [-4, 0] };
     default: return { spots: [[2.5, 0], [3.1, 0.5], [3.1, -0.5]], aim: [2.5, 0] };
   }
 }
@@ -298,6 +304,15 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
       m.curseT = 6;
       m.curseDps = 0;
     }
+  }
+  // (THE TINKERER: her Golem out beside her already, so that her tap and hold is its ground pound; its own punches and shots
+  // held back, so that what is seen is the pound's alone)
+  if (def.kind === 'golem') {
+    (g as unknown as { whistle: (i: number, tx: number, ty: number, frac: number, count: number) => void }).whistle(skill, h.x + 1, h.y, 1, 1);
+    const gm = g.golem!;
+    gm.act = 'stand';
+    gm.punchCd = 1e9;
+    gm.cannonCd = 1e9;
   }
   g.events.length = 0;
   h.mana = h.d.maxMana;
@@ -378,7 +393,9 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
   // (long enough for everything it set going to be over: an orb's time and its last wave; a
   // familiar's time, the one "of Echoes" calls after it, its last bolt and what that bolt leaves)
   // (a volley: the arrows in the air, the rain, and the same again for the one "of Echoes" looses)
-  const until = def.kind === 'orb' ? TUNE.orbLife + 1.8 : def.kind === 'summon' ? TUNE.familiarLife + 3.2 : def.kind === 'volley' ? (TUNE.volleyDelay + TUNE.volleyLife) * 2 + 3 : 3.6;
+  // (a Contraption: set up, its time (short here: see contraptionLife), its falling apart and its last vial's flight; the Golem: its pound, a second for Twin, a weaker one for of Echoes)
+  const CT = TINKER_TUNE.contraption;
+  const until = def.kind === 'orb' ? TUNE.orbLife + 1.8 : def.kind === 'summon' ? TUNE.familiarLife + 3.2 : def.kind === 'volley' ? (TUNE.volleyDelay + TUNE.volleyLife) * 2 + 3 : def.kind === 'contraption' ? CT.set + CT.life + CT.broke + CT.flight + 1.2 : def.kind === 'golem' ? 6 : 3.6;
   for (let step = 1; step * DT < until; step++) {
     g.update(DT, c);
     look();
@@ -392,6 +409,7 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
   assert.equal(g.projectiles.length, 0, `${name}: no shot is still flying`);
   assert.ok(!g.zones.some((z) => z.kind === 'rune'), `${name}: no rune is still waiting`);
   assert.equal(g.orbs.length + g.familiars.length + g.volleys.length, 0, `${name}: no orb, no familiar and no volley is still about`);
+  assert.equal(g.contraptions.length + g.vials.length, 0, `${name}: no Contraption and no vial is still about`);
   return seen;
 }
 
@@ -423,6 +441,10 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     else if (def.kind === 'damning') assert.ok(any((e) => e.t === 'damning' && !e.echo && (e.n ?? 0) === 0) && any((e) => e.t === 'damning' && !e.echo && e.n === 1), `${name}: Twin erupts twice`);
     // (what died at a touch the first time is not there to be struck again)
     else if (def.kind === 'smoke') assert.ok(weak || any((e) => e.t === 'smokeHit' && !e.echo && e.n === 1), `${name}: Twin strikes each it passes twice`);
+    // (THE TINKERER: every shot of her Contraption lobs two vials; her Golem pounds twice; her bomb goes off twice)
+    else if (def.kind === 'contraption') assert.ok(any((e) => e.t === 'vial' && !e.echo && e.n === 1), `${name}: Twin lobs two vials a shot`);
+    else if (def.kind === 'golem') assert.ok(any((e) => e.t === 'golemPound' && !e.echo && (e.n ?? 0) === 0) && any((e) => e.t === 'golemPound' && !e.echo && e.n === 1), `${name}: Twin pounds twice`);
+    else if (def.kind === 'blastjump') assert.ok(any((e) => e.t === 'burst' && e.style === 'bomb' && !e.echo && e.n === 0) && any((e) => e.t === 'burst' && e.style === 'bomb' && !e.echo && e.n === 1), `${name}: Twin's bomb goes off twice`);
     else if (def.kind === 'melee') assert.ok(any((e) => e.t === 'swing' && !e.echo && e.n === 0) && any((e) => e.t === 'swing' && !e.echo && e.n === 1), `${name}: Twin cuts twice`);
     else if (def.kind === 'burst' || def.kind === 'orb' || def.kind === 'whirl' || def.kind === 'leap' || def.kind === 'warp') assert.ok(any((e) => e.t === 'burst' && !e.echo && e.n === 0) && any((e) => e.t === 'burst' && !e.echo && e.n === 1), `${name}: Twin bursts twice`);
     else if (def.kind === 'volley') assert.ok(any((e) => e.t === 'volleyFall' && !e.echo && e.n === 0) && any((e) => e.t === 'volleyFall' && !e.echo && e.n === 1) && count((e) => e.t === 'volleyUp' && !e.echo) === 1, `${name}: Twin brings the arrows down in pairs`);
@@ -440,6 +462,9 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   else if (def.kind === 'curse') assert.ok(count((e) => e.t === 'curse' && !e.echo) === 1, `${name}: one curse`);
   else if (def.kind === 'damning') assert.ok(count((e) => e.t === 'damning' && !e.echo) === 1, `${name}: one eruption`);
   else if (def.kind === 'smoke') assert.ok(!any((e) => e.t === 'smokeHit' && e.n > 0), `${name}: each struck once`);
+  else if (def.kind === 'contraption') assert.ok(!any((e) => e.t === 'vial' && e.n > 0), `${name}: one vial a shot`);
+  else if (def.kind === 'golem') assert.ok(count((e) => e.t === 'golemPound' && !e.echo) === 1, `${name}: one pound`);
+  else if (def.kind === 'blastjump') assert.ok(!any((e) => e.t === 'burst' && e.style === 'bomb' && (e.n ?? 0) > 0), `${name}: one bomb`);
   if (def.kind === 'orb') assert.equal(count((e) => e.t === 'orbSet'), 1, `${name}: one orb is set`);
   if (def.channel) {
     assert.deepEqual([count((e) => e.t === 'channel'), count((e) => e.t === 'channelEnd')], [1, 1], `${name}: it began once and ended once`);
@@ -475,6 +500,10 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     if (def.kind === 'damning') assert.ok(any((e) => e.t === 'damning' && e.echo === true), `${name}: the echo erupts again`);
     // (what died at a touch the first time is not there for the echo to strike)
     if (def.kind === 'smoke') assert.ok(any((e) => e.t === 'smoke' && e.echo === true) && (weak || any((e) => e.t === 'smokeHit' && e.echo)), `${name}: the echo streaks along again`);
+    // (THE TINKERER: a weaker vial with its first shot, if anything is left to lob it at; a weaker pound; a weaker bomb)
+    if (def.kind === 'contraption') assert.ok(weak || any((e) => e.t === 'vial' && e.echo === true), `${name}: the echo lobs one more vial`);
+    if (def.kind === 'golem') assert.ok(any((e) => e.t === 'golemPound' && e.echo === true), `${name}: the echo pounds again`);
+    if (def.kind === 'blastjump') assert.ok(any((e) => e.t === 'burst' && e.style === 'bomb' && e.echo === true), `${name}: the echo's bomb goes off`);
     // (haste is given by the use, once: the echo is not a use. Might is given by every blow that
     // lands, and the echo's blow is one: see tests/power.test.ts.)
     assert.equal(count((e) => e.t === 'buff' && e.kind === 'haste'), behind.includes('swift') ? 1 : 0, `${name}: the echo does not give haste again`);
@@ -486,7 +515,8 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   }
   if (behind.includes('poison')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'venom'), `${name}: of Venom leaves its cloud`);
   else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'venom'), `${name}: no cloud without of Venom`);
-  if (behind.includes('poison') && !weak) assert.ok(seen.poisoned, `${name}: ...and what stands in the cloud is poisoned`);
+  // (THE TINKERER's bomb throws what stood by her out of the cloud it leaves: they walk back into it in play, not here)
+  if (behind.includes('poison') && !weak && def.kind !== 'blastjump') assert.ok(seen.poisoned, `${name}: ...and what stands in the cloud is poisoned`);
   if (behind.includes('leech')) {
     assert.ok(any((e) => e.t === 'mark'), `${name}: of Leeching marks what it hits`);
     if (weak) assert.ok(any((e) => e.t === 'orb') && seen.orbDrops > 0, `${name}: of Leeching tears a life orb out of a kill`);
@@ -591,6 +621,10 @@ const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demo
   { cls: 'warlock', weapon: 'wand', skill: 0, demon: true },
   { cls: 'warlock', weapon: 'wand', skill: 1, demon: true },
   { cls: 'warlock', weapon: 'wand', skill: 2, demon: true },
+  // (THE TINKERER, game/tinkerer.ts: her three)
+  { cls: 'tinkerer', weapon: 'wand', skill: 0 },
+  { cls: 'tinkerer', weapon: 'wand', skill: 1 },
+  { cls: 'tinkerer', weapon: 'wand', skill: 2 },
 ];
 
 test('between them the cases use every ability that takes words, once each', () => {
@@ -603,6 +637,9 @@ for (const { cls, weapon, skill, demon } of CASES) {
   const def = SKILLS[practice(cls, weapon, 5, demon).hero.skills[skill].id];
   test(`every loadout of ${def.name} (a ${cls}${demon ? ' as the demon' : ''} with a ${weapon}): each word acts, the numbers add up, nothing goes wrong`, () => {
     checkWordAlone(def, cls, practice(cls, weapon, 5, demon).hero.d);
+    // (THE TINKERER's Contraption stands a short while here, not its twelve seconds: what the words do is seen in its first shots)
+    const life0 = TINKER_TUNE.contraption.life;
+    if (def.kind === 'contraption') TINKER_TUNE.contraption.life = 2.5;
     let used = 0;
     let uses = 0;
     for (const [front, behind] of loadouts()) {
@@ -619,6 +656,7 @@ for (const { cls, weapon, skill, demon } of CASES) {
     }
     // (the first nine's 36 x 36, and the newer words' sides against the empty side and every single word)
     assert.equal(used, LOADOUTS);
+    TINKER_TUNE.contraption.life = life0;
     console.log(`${cls} ${def.name}: ${used} loadouts, ${uses} uses, all in order`);
   });
 }
