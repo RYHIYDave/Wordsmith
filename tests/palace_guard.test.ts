@@ -316,3 +316,22 @@ test('9. HIS PICKS: two blows, the long thrust reaching far before them and the 
     assert.ok(d.kneeL[2] < 8 && d.kneeR[2] < 8 && d.head[2] < 20, `${mob.name}: down at the end (knees ${d.kneeL[2].toFixed(1)}, ${d.kneeR[2].toFixed(1)}, head ${d.head[2].toFixed(1)})`);
   }
 });
+
+test('10. NOTHING FOLDS FLAT: in every frame of every move, both of them, no round thing they wear (a puffed sleeve, the breeches) collapses into a flat sheet that spins (his “what’s the thing that flips around like crazy on the death animation?”)', () => {
+  const faults: string[] = [];
+  for (const mob of ALL) {
+    const st = stageOf(mob);
+    for (const move of [...LIVING(mob), 'dying']) {
+      for (const t of framesOf(mob, move)) {
+        for (const b of mob.bits(st, at(mob, move, t))) {
+          if (b.shape.k !== 'ball') continue;
+          const [x, y, z] = b.shape.ax;
+          const det = x[0] * (y[1] * z[2] - y[2] * z[1]) - x[1] * (y[0] * z[2] - y[2] * z[0]) + x[2] * (y[0] * z[1] - y[1] * z[0]);
+          const lens = Math.hypot(...x) * Math.hypot(...y) * Math.hypot(...z);
+          if (lens > 0 && Math.abs(det) / lens < 0.5) faults.push(`${mob.name} ${move} @${t.toFixed(2)}: ${b.piece} ${(Math.abs(det) / lens).toFixed(2)} square`);
+        }
+      }
+    }
+  }
+  assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
+});

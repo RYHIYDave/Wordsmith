@@ -48,13 +48,16 @@ export const GUARD_ON = { on: false };
 const fr = (t: number): number => t - Math.floor(t);
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 const D = Math.PI / 180;
+const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
 
 // =============================================================================================
 // THEIR COLOURS: polished steel; the royal wine and white, dulled by the dawn
 
-const STEEL: Ramp = ['#1a1d24', '#1a1d24', '#575d69', '#868c98', '#b0b6c0'];
+const STEEL: Ramp = ['#20232b', '#20232b', '#646b78', '#98a0ac', '#c8ced6'];
 const EDGE: Ramp = ['#2a2c32', '#2a2c32', '#7a808a', '#aab0b8', '#c6cad0'];
 const ROYAL: Ramp = ['#22101a', '#22101a', '#562a3a', '#74404e', '#74404e'];
+/** The tabard's wine, a step brighter: the guard's colours, worn proud. */
+const TABARD: Ramp = ['#2e1622', '#44202e', '#7a3a4e', '#9c5468', '#b8708a'];
 const WHITE: Ramp = ['#46424e', '#46424e', '#9e98a6', '#c6c0ca', '#dcd6dc'];
 const LEATHER: Ramp = ['#1a120e', '#1a120e', '#3e2c20', '#56402e', '#56402e'];
 const BOOT: Ramp = ['#0c0b0c', '#0c0b0c', '#26201e', '#3a322e', '#3a322e'];
@@ -241,9 +244,12 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, curl: number): void
   const hand = side === 'L' ? s.handL : s.handR;
   const [r0, r1, r2] = GB.armR;
   const fore = norm(sub(hand, el), [0, 0, -1]);
-  const puff = (u: V3, tone: number): string => (Math.abs(fr(Math.atan2(u[1], u[0]) / (Math.PI / 3)) - 0.5) < 0.12 ? WHITE[Math.max(1, tone - 1)] : ROYAL[tone]);
+  // (striped wine and white, the stripes running down the arm)
+  const puff = (u: V3, tone: number): string => (Math.floor((Math.atan2(u[2], u[1]) + Math.PI) / (Math.PI / 4)) % 2 ? WHITE[Math.max(3, Math.min(4, tone + 1))] : TABARD[Math.max(1, Math.min(4, tone + 1))]);
   const upper = norm(sub(el, sh), [0, 0, -1]);
-  const across = norm(cross(upper, s.chest[0]), s.chest[1]);
+  // (its round made about the arm's own line, from whichever of the chest's ways lies least along it, so that it never folds flat)
+  const ref = Math.abs(dot(upper, s.chest[0])) > 0.7 ? s.chest[2] : s.chest[0];
+  const across = norm(cross(upper, ref), s.chest[1]);
   const across2 = norm(cross(across, upper), s.chest[0]);
   put(`arm${side}`, `arm${side}`, { k: 'ball', c: lerp3(sh, el, 0.38), ax: [mul(upper, Math.hypot(...sub(el, sh)) * 0.42), mul(across, r0 * 1.36), mul(across2, r0 * 1.36)], skin: puff, far: true });
   put(`arm${side}`, `arm${side}`, { k: 'rod', a: sh, b: el, ra: r0 * 1.18, rb: r1 * 1.12, ramp: ROYAL, far: true });
@@ -274,9 +280,13 @@ function leg(put: Put, s: Skeleton, side: 'L' | 'R'): void {
   const toe = side === 'L' ? s.toeL : s.toeR;
   const [rH, rK, rA] = GB.legR;
   const thigh = norm(sub(knee, hip), [0, 0, -1]);
-  const slash = (u: V3, tone: number): string => (Math.abs(fr(Math.atan2(u[1], u[0]) / (Math.PI / 3)) - 0.5) < 0.12 ? WHITE[Math.max(1, tone - 1)] : ROYAL[tone]);
+  // (striped wine and white down the thigh, as the sleeves)
+  const slash = (u: V3, tone: number): string => (Math.floor((Math.atan2(u[2], u[1]) + Math.PI) / (Math.PI / 4)) % 2 ? WHITE[Math.max(3, Math.min(4, tone + 1))] : TABARD[Math.max(1, Math.min(4, tone + 1))]);
+  // (the thigh's own ways: out before it, and across it, about the hips' left, which a thigh swings round: never folding flat)
+  const before = norm(cross(thigh, s.hips[1]), s.hips[0]);
+  const lat = norm(cross(before, thigh), s.hips[1]);
   put(`leg${side}`, `leg${side}`, { k: 'rod', a: hip, b: knee, ra: rH * 1.1, rb: rK * 1.08, ramp: ROYAL, far: true });
-  put(`leg${side}`, `breech${side}`, { k: 'ball', c: lerp3(hip, knee, 0.42), ax: [mul(thigh, rH * 2.5), mul(s.hips[0], rH * 1.38), mul(norm(cross(thigh, s.hips[0]), [0, 1, 0]), rH * 1.38)], skin: slash, far: true });
+  put(`leg${side}`, `breech${side}`, { k: 'ball', c: lerp3(hip, knee, 0.42), ax: [mul(thigh, rH * 2.5), mul(before, rH * 1.38), mul(lat, rH * 1.38)], skin: slash, far: true });
   put(`leg${side}`, `leg${side}`, { k: 'ball', c: knee, ax: sphere(rK * 1.1), skin: ROYAL, far: true });
   const shin = norm(sub(ankle, knee), [0, 0, -1]);
   put(`shin${side}`, `shin${side}`, { k: 'rod', a: add(knee, mul(shin, 0.6)), b: ankle, ra: rK * 1.2, rb: rA * 1.22, ramp: BOOT, far: true });
@@ -286,9 +296,9 @@ function leg(put: Put, s: Skeleton, side: 'L' | 'R'): void {
   const up3 = norm(cross(fwd, side3), [0, 0, 1]);
   put(`foot${side}`, `foot${side}`, { k: 'ball', c: add(lerp3(heel, toe, 0.5), mul(up3, 1.7)), ax: [mul(fwd, 5.0), mul(side3, 2.2), mul(up3, 1.8)], skin: BOOT, far: true });
   // (the tasset: a steel plate hung from the breastplate's skirt over the front of the thigh)
-  const top = add(lerp3(hip, knee, 0.08), mul(s.hips[0], rH * 1.25 + 1.4));
-  const low = add(lerp3(hip, knee, 0.5), mul(norm(cross(thigh, cross(s.hips[0], thigh)), s.hips[0]), rH * 1.3 + 1.6));
-  put(`leg${side}`, `tasset${side}`, { k: 'panel', c: lerp3(top, low, 0.5), u: mul(norm(cross(sub(low, top), s.hips[2]), s.hips[1]), rH * 1.25), v: mul(sub(low, top), -0.5), skin: (a, b, front, tone) => (front ? STEEL[Math.abs(b) > 0 && fr((b + 10) / 2.6) < 0.18 ? Math.max(1, tone - 1) : Math.max(2, tone)] : STEEL[1]) });
+  const top = add(lerp3(hip, knee, 0.08), mul(before, rH * 1.25 + 1.4));
+  const low = add(lerp3(hip, knee, 0.5), mul(before, rH * 1.3 + 1.6));
+  put(`leg${side}`, `tasset${side}`, { k: 'panel', c: lerp3(top, low, 0.5), u: mul(lat, rH * 1.25), v: mul(sub(low, top), -0.5), skin: (a, b, front, tone) => (front ? STEEL[Math.abs(b) > 0 && fr((b + 10) / 2.6) < 0.18 ? Math.max(1, tone - 1) : Math.max(2, tone)] : STEEL[1]) });
 }
 
 /** The torso: the doublet from the throat to below the hips. */
@@ -315,6 +325,74 @@ function cuirassRings(s: Skeleton): Ring[] {
     { c: s.ribs, u: mul(cf, GB.ribDeep + 2.9), v: mul(cl, GB.ribHalf + 2.6) },
     { c: lerp3(s.ribs, s.neck, 0.62), u: mul(cf, GB.ribDeep + 2.0), v: mul(cl, GB.shoulderHalf + 0.9) },
   ];
+}
+
+/** A ring round both thighs `down` of the way from the hips to the knees, hanging back as they go (the tabard's hem). */
+function thighRing(s: Skeleton, down: number, pad: number, lag: V3): Ring {
+  const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+  const l: V3 = [-f[1], f[0], 0];
+  const a = lerp3(s.hipL, s.kneeL, down);
+  const b = lerp3(s.hipR, s.kneeR, down);
+  const c = lerp3(a, b, 0.5);
+  const spanF = Math.abs(dot(sub(a, b), f));
+  const spanL = Math.abs(dot(sub(a, b), l));
+  const rT = GB.legR[0] * 1.38;
+  return { c: add(c, mul(lag, 0.7)), u: mul(f, Math.max(GB.pelvisDeep + 2.4, spanF / 2 + rT + 1.2) + pad), v: mul(l, Math.max(GB.pelvisHalf + 2.2, spanL / 2 + rT + 1.0) + pad) };
+}
+/** THE TABARD: its front and its back, from the shoulders to the thighs, over the breastplate; its sides open, the steel showing. */
+function tabardRings(s: Skeleton, lag: V3): Ring[] {
+  const [cf, cl, cu] = s.chest;
+  const be = s.belly;
+  const waistC = add(s.pelvis, mul(s.hips[2], GB.waist * 0.5));
+  return [
+    thighRing(s, 0.42, 1.0, lag),
+    { c: add(add(s.pelvis, mul(s.hips[2], -1.6)), mul(lag, 0.4)), u: mul(s.hips[0], GB.pelvisDeep + 3.2), v: mul(s.hips[1], GB.pelvisHalf + 3.0) },
+    { c: waistC, u: mul(be[0], GB.waistDeep + 3.2), v: mul(be[1], GB.waistHalf + 2.9) },
+    { c: s.ribs, u: mul(cf, GB.ribDeep + 3.3), v: mul(cl, GB.ribHalf + 2.9) },
+    { c: lerp3(s.ribs, s.neck, 0.7), u: mul(cf, GB.ribDeep + 2.4), v: mul(cl, GB.shoulderHalf + 1.0) },
+    { c: add(s.neck, mul(cu, -0.6)), u: mul(cf, 4.6), v: mul(cl, 5.2) },
+  ];
+}
+/**
+ * THE ROYAL CREST (an original mark): a white swan, its wings raised, its neck in its S, its head turned to its left;
+ * `a` across the crest and `b` up it, from -1 to 1. Inside it: true.
+ */
+function swanCrest(a: number, b: number): boolean {
+  const e = (x: number, y: number, cx: number, cy: number, rx: number, ry: number): boolean => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  // its body, low, a boat with its tail tipped up behind
+  if (e(a, b, 0.12, -0.5, 0.62, 0.26)) return true;
+  if (e(a, b, 0.68, -0.32, 0.16, 0.12)) return true;
+  // its wing raised over its back, its top edge notched into feathers
+  if (b > -0.5 && e(a, b, 0.28, -0.12, 0.42, 0.42)) {
+    const notch = b > 0.12 && Math.abs(((a - 0.28) * 4 + 8) % 1 - 0.5) < 0.12;
+    if (!notch) return true;
+  }
+  // its neck: up from the breast in an S
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const x = -0.36 - 0.16 * Math.sin(Math.PI * 1.6 * t) + 0.06 * t;
+    const y = -0.38 + 0.98 * t;
+    if (Math.hypot(a - x, b - y) < 0.1 - 0.02 * t) return true;
+  }
+  // its head, and its bill to the left
+  if (e(a, b, -0.28, 0.62, 0.14, 0.11)) return true;
+  if (b < 0.64 && b > 0.52 && a < -0.38 && a > -0.62 + (0.64 - b) * 0.6) return true;
+  return false;
+}
+/** The crest on the tabard's breast, and on its back (turned about so that it reads the right way from behind): painted on a thin shell just proud of the cloth. */
+function crests(put: Put, s: Skeleton): void {
+  const [cf, cl, cu] = s.chest;
+  const W = 7.0;
+  const H = 7.4;
+  for (const k of [1, -1]) {
+    const c = add(lerp3(s.ribs, s.neck, 0.3), mul(cf, k * (GB.ribDeep + 3.6)));
+    put('crest', 'crest', {
+      k: 'ball',
+      c,
+      ax: [mul(cf, k * 1.4), mul(cl, -k * W), mul(cu, H)],
+      skin: (u, tone) => (u[0] > 0.15 && swanCrest(u[1], u[2]) ? WHITE[tone >= 2 ? 4 : 3] : null),
+    });
+  }
 }
 
 /**
@@ -363,7 +441,7 @@ function head(put: Put, st: Stage, s: Skeleton, lit: number, lag: V3, sway: numb
   }
   for (let i = 0; i <= 5; i++) {
     const k = i / 5;
-    const r = 2.1 * Math.sin(Math.PI * (0.25 + 0.6 * k)) + 0.6;
+    const r = 2.8 * Math.sin(Math.PI * (0.25 + 0.6 * k)) + 0.7;
     put('plume', 'plume', { k: 'ball', c: pts[i], ax: sphere(r), skin: (u, tone) => WHITE[hash(Math.round(u[0] * 5 + i * 3), Math.round(u[2] * 5), 7432) < 0.25 ? Math.max(1, tone - 1) : tone] });
   }
   const slit = add(hc, add(mul(ff, hr[0] * 1.02), mul(fu, hr[2] * SLIT)));
@@ -412,7 +490,21 @@ function guardBits(who: GuardWho, st: Stage, m: Moment, say: GuardSay): Bit[] {
   // THE DOUBLET of the royal wine, to below the hips; THE BREASTPLATE over it; the gorget; the belt
   put('body', 'doublet', { k: 'cloth', rings: torsoRings(s, 0.4, 3.0, lag), ramp: ROYAL, look: { folds: [0, 30, -30, 70, -70, 120, -120, 160, -160], lift: 0.05 } });
   put('body', 'cuirass', { k: 'cloth', rings: cuirassRings(s), ramp: STEEL, look: { folds: [0], lift: 0.02 } });
-  put('body', 'ridge', { k: 'rod', a: add(add(s.pelvis, mul(s.hips[2], GB.waist * 0.55)), mul(s.belly[0], GB.waistDeep + 2.9)), b: add(lerp3(s.ribs, s.neck, 0.55), mul(cf, GB.ribDeep + 2.4)), ra: 0.45, rb: 0.45, ramp: STEEL });
+  // THE TABARD of the royal wine over it, front and back, edged white; the royal crest on its breast and its back
+  const tab = tabardRings(s, lag);
+  for (const [a0, a1] of [[318, 402], [138, 222]] as const) {
+    put('tabard', 'tabard', { k: 'cloth', rings: tab, ramp: TABARD, look: { folds: [0, 180], lift: 0.05, arc: [a0, a1] } });
+    // its edges piped in white: down each side, and along its hem
+    const at = (r: Ring, deg: number, out: number): V3 => {
+      const t = deg * D;
+      return add(r.c, add(mul(r.u, Math.cos(t) * (1 + out / len3(r.u))), mul(r.v, Math.sin(t) * (1 + out / len3(r.v)))));
+    };
+    for (const deg of [a0 + 1.5, a1 - 1.5]) {
+      for (let i = 0; i + 1 < tab.length - 1; i++) put('tabard', 'piping', { k: 'rod', a: at(tab[i], deg, 0.35), b: at(tab[i + 1], deg, 0.35), ra: 0.7, rb: 0.7, ramp: WHITE });
+    }
+    for (let d = a0 + 1.5; d < a1 - 1.5; d += 10) put('tabard', 'piping', { k: 'rod', a: at(tab[0], d, 0.35), b: at(tab[0], Math.min(a1 - 1.5, d + 10), 0.35), ra: 0.75, rb: 0.75, ramp: WHITE });
+  }
+  crests(put, s);
   put('neck', 'gorget', { k: 'band', ring: { c: add(s.neck, mul(cu, -0.6)), u: mul(cf, 4.4), v: mul(cl, 5.0) }, ramp: STEEL, rows: 2 });
   const waistC = add(s.pelvis, mul(s.hips[2], GB.waist * 0.45));
   put('body', 'belt', { k: 'band', ring: { c: waistC, u: mul(s.belly[0], GB.waistDeep + 2.8), v: mul(s.belly[1], GB.waistHalf + 2.7) }, ramp: LEATHER, rows: 1 });

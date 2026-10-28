@@ -49,6 +49,14 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   colours, grander than the watch; a head taller, fewer, two attacks each (a quick long thrust; a wide sweep wound up
   high); marching stiffly in step; closed visors, grey breath from the slits, dull pink eyes behind; the Hush leaves them
   in a gasp, the weapon drops, to one knee, then a clatter; clanking armour and stamping boots, a ring of steel, no voices.
+- The guard's sheet and film, asked "is this your palace guard?": “Kinda bland aren’t they?”. Asked what to add: “Bold
+  tabard and crest (Recommended)” (offered as: a wine tabard over the breastplate with a big white swan crest on the
+  chest, sleeves striped wine and white, and brighter polished steel), and “Also, what’s the thing that flips around like
+  crazy on the death animation?”. Told him: the puffed breeches, which folded flat into a sheet and spun round the thigh
+  as he went down on one knee (a drawing fault; the sleeves and thigh plates had the same weak spot). Done: the tabard,
+  front and back, its edges piped white; the royal crest (an original white swan, wings raised) on its breast and back;
+  sleeves and breeches striped wine and white; brighter steel, a fuller plume; and every round thing they wear built
+  about its own limb so that it cannot fold flat (and a check for it).
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -148,8 +156,10 @@ check the bosses have (art/boss_checks.ts). `PALACE_GARDENER`, `PALACE_GROOM`; `
 The city watch's body (a head taller than the knight), held to every check the bosses have, both blows. `GUARD_PARTISAN`,
 `GUARD_SWORD`; `makeGuardArt3(mob)` gives `{ front, back }`; the second blow is `more.sweep`.
 
-- THEIR LOOK: a doublet of the royal wine, puffed sleeves and breeches slashed white; a polished breastplate (back and
-  breast), pauldrons, a gorget, steel tassets; tall black boots; leather gloves; a closed helmet, its visor down, a dark
+- THEIR LOOK: a doublet of the royal wine; puffed sleeves and breeches striped wine and white; a polished breastplate
+  (back and breast) under A TABARD of the royal wine, front and back, its edges piped white, THE ROYAL CREST on its
+  breast and its back (an original mark: a white swan, its wings raised, its neck in its S); pauldrons, a gorget, steel
+  tassets; tall black boots; leather gloves; a closed helmet, its visor down, a dark
   slit across the eyes with the dull pink behind it, breaths pierced on the cheek, a tall white plume that flops over
   once they lie down. The Hush curls up out of the visor and seeps from the slit's ends, harder as they wind up a blow.
 - THE PARTISAN (`PARTISAN`, `partisanOf`): an ash shaft, a broad leaf blade with two curled flukes, a wine-and-white
@@ -194,5 +204,6 @@ The city watch's body (a head taller than the knight), held to every check the b
   boss check, from in front and behind, and every handover; no cyan, the pink edge while they live; nothing cut off;
   nothing in the floor; the Hush leaking and leaving; the pink eyes; the tool lying clear; the rush, the shears' warning
   and snap, the fork's warning and jab.
-- `tests/palace_guard.test.ts` (9): as the gardeners' and grooms', both blows; and his picks: the thrust's reach, the
-  sweep crossing from their right to their left, the march, to one knee (the right knee down, the left up), then down.
+- `tests/palace_guard.test.ts` (10): as the gardeners' and grooms', both blows; and his picks: the thrust's reach, the
+  sweep crossing from their right to their left, the march, to one knee (the right knee down, the left up), then down;
+  and nothing they wear folds flat (his “thing that flips around like crazy”).

@@ -230,7 +230,7 @@ const both2 = (body: P, hand: V3, az: number, el: number, edge: V3): P => ({ ...
 /** The sweep's keys for the partisan (as the watch's halberd sweep, art/hushed_watch_moves.ts). */
 function partisanSweepKeys(): [number, P, Key3['ease']][] {
   const e = (body: P, hand: V3, az: number, el: number, edge: V3, wl: V3, wr: V3): P => elbowsTo(R, both2(body, hand, az, el, edge), wl, wr);
-  const TAKE = e({ px: -0.6, pz: R.pz, yaw: -4, twist: -4, pitch: 2, bend: 3, side: 0, roll: 0, faceUp: 4, faceTilt: -2, faceTurn: 4, lk: 9, rk: -9 }, [11, -11, 46], -140, 86, [-0.6, -0.8, 0], [-0.1, 0.9, -0.5], [-0.4, -0.7, -0.7]);
+  const TAKE = e({ px: -0.6, pz: R.pz, yaw: -4, twist: -4, pitch: 2, bend: 3, side: 0, roll: 0, faceUp: 4, faceTilt: -2, faceTurn: 4, lk: 9, rk: -9 }, [13, -7.5, 46], -140, 86, [-0.6, -0.8, 0], [0.1, 1, -0.4], [-0.4, -0.7, -0.7]);
   const HEAVE = e({ px: -1.2, pz: R.pz + 0.2, yaw: -10, twist: -10, pitch: -1, bend: 0, side: 1, roll: -1, faceUp: 10, faceTilt: -2, faceTurn: 8, lk: 10, rk: -12 }, [11, -12, 60], -140, 55, [0, 0, 1], [-0.1, 0.8, -0.8], [-0.3, -0.8, -0.6]);
   const RAISED = e({ px: -2.4, pz: R.pz + 0.8, yaw: -16, twist: -18, pitch: -6, bend: -6, side: 3, roll: -2, faceUp: 18, faceTilt: 0, faceTurn: 14, lk: 12, rk: -14 }, [9, -4, 72], -140, 15, [0, 0, 1], [0.1, 0.9, -0.3], [0.1, -0.9, -0.3]);
   const shaking = (k: number): P => ({ ...RAISED, rhz: (RAISED.rhz as number) + (k % 2 ? 0.9 : -0.5), rhy: (RAISED.rhy as number) + (k % 2 ? -0.4 : 0.3), px: (RAISED.px as number) - 0.25 * (k % 2), rhx: (RAISED.rhx as number) - 0.25 * (k % 2) });
@@ -444,9 +444,9 @@ export function guardSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.6));
   const lumps: CheckLump[] = [
     { name: 'head', c: add(s.head, mul(s.face[2], 0.2)), rot: s.face, h: [B.headR[0] * 1.1, B.headR[1] * 1.12, B.headR[2] * 1.06] },
-    { name: 'chest', c: lerp3(s.ribs, s.neck, 0.3), rot: s.chest, h: [B.ribDeep + 2.6, B.ribHalf + 2.4, len3(sub(s.neck, s.ribs)) * 0.55] },
-    { name: 'belly', c: lerp3(waistC, s.ribs, 0.45), rot: s.belly, h: [B.waistDeep + 2.6, B.waistHalf + 2.4, Math.max(3, len3(sub(s.ribs, waistC)) * 0.6)] },
-    { name: 'hips', c: add(s.pelvis, mul(s.hips[2], B.waist * 0.2)), rot: s.hips, h: [B.pelvisDeep + 2.2, B.pelvisHalf + 2.4, B.waist * 0.75] },
+    { name: 'chest', c: lerp3(s.ribs, s.neck, 0.3), rot: s.chest, h: [B.ribDeep + 3.2, B.ribHalf + 2.6, len3(sub(s.neck, s.ribs)) * 0.55] },
+    { name: 'belly', c: lerp3(waistC, s.ribs, 0.45), rot: s.belly, h: [B.waistDeep + 3.1, B.waistHalf + 2.6, Math.max(3, len3(sub(s.ribs, waistC)) * 0.6)] },
+    { name: 'hips', c: add(s.pelvis, mul(s.hips[2], B.waist * 0.2)), rot: s.hips, h: [B.pelvisDeep + 3.0, B.pelvisHalf + 2.6, B.waist * 0.75] },
   ];
   return { limbs, lumps };
 }
