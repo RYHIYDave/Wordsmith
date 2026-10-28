@@ -43,6 +43,8 @@ import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, R
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
+import { BRAWL_TUNE, COMBO_GAP, PUNCHES, punchFor } from './brawler';
+import type { PunchName } from './brawler';
 import { TINKER_TUNE } from './tinkerer';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 
@@ -248,6 +250,8 @@ export class Game {
   contraptions: Contraption[] = [];
   vials: Vial[] = [];
   golem: Golem | null = null;
+  /** THE BRAWLER (game/brawler.ts): what his haymaker has launched, flying down the line (the monster's id, its way, how far it has left to go, whom it has bowled over). */
+  cannonballs: { id: number; dx: number; dy: number; left: number; skill: number; frac: number; hit: number[] }[] = [];
   drops: Drop[] = [];
   events: GameEvent[] = [];
   boss: Monster | null = null;
@@ -1169,6 +1173,7 @@ export class Game {
     this.familiars = [];
     this.contraptions = [];
     this.vials = [];
+    this.cannonballs = [];
     this.drops = [];
     this.later = [];
     // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
@@ -1801,6 +1806,7 @@ export class Game {
     this.updateOrbs(dt);
     this.updateFamiliars(dt);
     if (this.hero.cls === 'tinkerer' || this.golem || this.contraptions.length || this.vials.length) this.updateTinkerer(dt);
+    if (this.cannonballs.length) this.updateCannonballs(dt);
     this.updateZones(dt);
     if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
@@ -3610,6 +3616,7 @@ export class Game {
         if (mv.kind === 'leap') this.land();
         else if (mv.kind === 'smoke' && mv.demon) this.demonLands();
         else if (mv.kind === 'blast') this.emit({ t: 'blastLand', x: h.x, y: h.y });
+        else if (mv.kind === 'slip') this.brawlerComesUp();
       }
       return;
     }
@@ -3826,10 +3833,26 @@ export class Game {
       h.combo = 0;
       h.comboT = 0;
     }
+    // (THE BRAWLER, game/brawler.ts: the punch this press makes, by its place in his combo; its own wind-up and follow-through)
+    let follow = SKILLS[h.skills[i].id].follow;
+    if (h.cls === 'brawler' && i < 2 && SKILLS[h.skills[i].id].kind === 'punch') {
+      const p = h.punch;
+      const goOn = !!p && p.run.length < 3 && this.time - p.at <= PUNCHES[p.name].follow + COMBO_GAP;
+      const run = (goOn && p ? p.run : '') + (i === 0 ? 'T' : 'H');
+      const holds = [...run.slice(0, -1)].filter((c) => c === 'H').length;
+      const name = punchFor(run.length - 1, i === 1, holds);
+      const P = PUNCHES[name];
+      // (Swiftness and the frenzy quicken his punches as they quicken any quick attack)
+      const pace = i === 0 ? Math.max(0.5, Math.min(2, h.skills[0].r.rate / Math.max(0.3, this.weaponRate()))) * this.frenzyPace() : 1;
+      wind = P.windup / pace;
+      follow = P.follow / pace;
+      h.punch = { run, name, at: this.time + wind };
+      if (i === 0) h.swingT = wind + follow * 0.55;
+    }
     h.attackSkill = i;
     h.attackAge = 0;
     h.attackWind = wind;
-    h.attackT = wind + SKILLS[h.skills[i].id].follow;
+    h.attackT = wind + follow;
     h.animT = 0;
     h.windup = { skill: i, tx, ty, t: wind };
     if (wind <= 0) this.release();
@@ -4159,7 +4182,7 @@ export class Game {
     // Warp and Leap go to a point. Straight into a wall there is nowhere to go: refuse, rather
     // than spend the ability on standing still.
     let land: { x: number; y: number } | null = null;
-    if (def.kind === 'warp' || def.kind === 'leap' || def.kind === 'smoke' || def.kind === 'blastjump') {
+    if (def.kind === 'warp' || def.kind === 'leap' || def.kind === 'smoke' || def.kind === 'blastjump' || def.kind === 'slip') {
       land = this.reachPoint(tx, ty, def.range);
       if (Math.hypot(land.x - h.x, land.y - h.y) < 0.5) {
         if (this.denyT <= 0) {
@@ -4229,6 +4252,16 @@ export class Game {
     if (def.kind === 'leap' && land) {
       const dist = Math.hypot(land.x - h.x, land.y - h.y);
       h.move = { kind: 'leap', t: 0, dur: 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      return;
+    }
+    // (THE BRAWLER, game/brawler.ts: the slip. He weaves to the spot, nothing hurting him, and comes up with a counter hook:
+    // brawlerComesUp. Behind: what its words leave, it leaves where he set off.)
+    if (def.kind === 'slip' && land) {
+      h.move = { kind: 'slip', t: 0, dur: BRAWL_TUNE.slip.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      h.invuln = Math.max(h.invuln, BRAWL_TUNE.slip.secs + 0.15);
+      h.punch = null;
+      this.emit({ t: 'slip', x0: h.x, y0: h.y, x1: land.x, y1: land.y });
+      this.wake(2, x0, y0, def.radius * r.size, r.countDmg);
       return;
     }
     // (THE TINKERER, game/tinkerer.ts: the blast jump. The bomb goes off at her feet: what is by her is hurt and blown away
@@ -4344,6 +4377,139 @@ export class Game {
   }
 
   /** THE CURSE: every enemy within `rad` of (x, y) that he can see is struck and cursed; its chains go out to each. */
+  // ---- THE BRAWLER (game/brawler.ts) -----------------------------------------------------------
+
+  /** The pace of the hero's weapon's quick attack, as the weapon gives it (his punches' Swiftness is read against it). */
+  private weaponRate(): number {
+    const w = this.hero.gear.mainhand;
+    return w && w.aps ? w.aps : 1;
+  }
+
+  /**
+   * A punch of his landing: the one in front within its reach (the body blow, all round him), struck for its share of the
+   * hit; the uppercut stuns it, the holds knock it back, the haymaker launches it down the line. Its name floats over him.
+   */
+  private landPunch(i: number, name: PunchName, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false): void {
+    const h = this.hero;
+    const P = PUNCHES[name];
+    const r = h.skills[i].r;
+    const reach = P.reach * r.size;
+    const hits: Monster[] = [];
+    if (P.round) {
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m)) continue;
+        if (Math.hypot(m.x - ox, m.y - oy) <= P.round * r.size + m.r) hits.push(m);
+      }
+    } else {
+      let best: Monster | null = null;
+      let score = 1e9;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m)) continue;
+        const mx = m.x - ox;
+        const my = m.y - oy;
+        const dist = Math.hypot(mx, my);
+        if (dist > reach + m.r) continue;
+        const dot = dist > 0.01 ? (mx * dx + my * dy) / dist : 1;
+        if (dot < 0.35 && dist > 0.9 + m.r) continue;
+        const sc = dist - dot * 0.5;
+        if (sc < score) {
+          score = sc;
+          best = m;
+        }
+      }
+      if (best) hits.push(best);
+    }
+    this.emit({ t: 'punch', name, x: ox, y: oy, dx, dy, big: P.big, n, echo: echo || undefined, hit: hits.length > 0 });
+    this.sfx(P.big ? 'slam' : 'hit', P.big ? 0.8 : 0.6);
+    if (P.big) this.emit({ t: 'shake', amount: P.big === 2 ? 5 : 2.5 });
+    let k = 0;
+    for (const m of hits) {
+      this.hitMonster(m, i, frac * P.share, k++ >= 3);
+      if (m.dead) continue;
+      if (P.stun) m.stunT = Math.max(m.stunT, P.stun);
+      if (P.stagger) m.staggerT = Math.max(m.staggerT, P.stagger);
+      if (P.launch && !m.boss && n === 0 && !echo) {
+        const far = Math.hypot(m.x - ox, m.y - oy) || 1;
+        const lx = far > 0.05 ? (m.x - ox) / far : dx;
+        const ly = far > 0.05 ? (m.y - oy) / far : dy;
+        this.cannonballs.push({ id: m.id, dx: lx, dy: ly, left: BRAWL_TUNE.cannonball.far, skill: i, frac: frac * P.share * BRAWL_TUNE.cannonball.share, hit: [m.id] });
+        this.emit({ t: 'cannonball', id: m.id, x: m.x, y: m.y, dx: lx, dy: ly });
+      } else if (P.throw) this.throwMonster(m, ox, oy, P.throw, 0.18);
+    }
+    if (hits.length) {
+      this.landed(i);
+      if (r.pull > 0) this.pullIn(i, ox + dx, oy + dy, reach, false);
+    }
+    this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
+    // (what the words behind it leave, a punch leaves where it lands, once a press)
+    if (n === 0 && !echo) this.wake(i, hits.length ? hits[0].x : ox + dx * reach * 0.7, hits.length ? hits[0].y : oy + dy * reach * 0.7, Math.max(1, P.round ?? reach * 0.6), frac);
+  }
+
+  /** What his haymaker launched flies down the line; each it meets is bowled over and struck. Stopped by a wall, it stops. */
+  private updateCannonballs(dt: number): void {
+    const C = BRAWL_TUNE.cannonball;
+    for (let k = this.cannonballs.length - 1; k >= 0; k--) {
+      const b = this.cannonballs[k];
+      const m = this.monsters.find((q) => q.id === b.id);
+      if (!m || m.dead || b.left <= 0) {
+        this.cannonballs.splice(k, 1);
+        continue;
+      }
+      const step = Math.min(b.left, C.speed * dt);
+      const x0 = m.x;
+      const y0 = m.y;
+      this.slide(m, Math.min(m.r, 0.42), b.dx * step, b.dy * step, this.level.walk);
+      const went = Math.hypot(m.x - x0, m.y - y0);
+      b.left -= step;
+      if (went < step * 0.3) b.left = 0;
+      for (const o of this.monsters) {
+        if (o.dead || b.hit.includes(o.id) || this.shutIn(o)) continue;
+        if (Math.hypot(o.x - m.x, o.y - m.y) > C.near + o.r) continue;
+        b.hit.push(o.id);
+        this.emit({ t: 'bowled', x: o.x, y: o.y });
+        this.hitMonster(o, b.skill, b.frac, false);
+        // (bowled over: thrown aside, off the line)
+        if (!o.dead) this.throwMonster(o, m.x - b.dy * 0.3, m.y + b.dx * 0.3, 1.2, 0.2);
+      }
+    }
+  }
+
+  /** His slip over: he comes up with a counter hook into whatever is there (the nearest within its reach); Twin, a second; "of Echoes", a weaker one after. */
+  private brawlerComesUp(): void {
+    const h = this.hero;
+    const s = h.skills[2];
+    if (!s) return;
+    const r = s.r;
+    const hook = (k: number, frac: number, echo: boolean): void => {
+      let best: Monster | null = null;
+      let bd = 1e9;
+      for (const m of this.monsters) {
+        if (m.dead || this.shutIn(m)) continue;
+        const d = Math.hypot(m.x - h.x, m.y - h.y) - m.r;
+        if (d <= BRAWL_TUNE.slip.reach && d < bd) {
+          bd = d;
+          best = m;
+        }
+      }
+      const dx = best ? best.x - h.x : h.fx;
+      const dy = best ? best.y - h.y : h.fy;
+      const len = Math.hypot(dx, dy) || 1;
+      if (best) this.face(best.x, best.y);
+      this.emit({ t: 'punch', name: 'counter', x: h.x, y: h.y, dx: dx / len, dy: dy / len, big: 0, n: k, echo: echo || undefined, hit: !!best });
+      this.sfx('hit', 0.8);
+      if (best) {
+        this.hitMonster(best, 2, frac * BRAWL_TUNE.slip.share, false);
+        this.landed(2);
+        if (!best.dead) this.throwMonster(best, h.x, h.y, 0.6, 0.15);
+      }
+    };
+    for (let k = 0; k < r.count; k++) {
+      if (k === 0) hook(0, r.countDmg, false);
+      else this.after(0.12 * k, () => hook(k, r.countDmg, false));
+    }
+    if (r.echo > 0) this.echoOf(2, h.x, h.y, h.fx, h.fy, () => hook(0, r.countDmg * r.echo, true));
+  }
+
   // ---- THE TINKERER (game/tinkerer.ts) ---------------------------------------------------------
 
   /** Her Contraption thrown from (ox, oy) toward (tx, ty): where it comes to rest; a fourth puts the oldest out of action. */
@@ -5115,6 +5281,13 @@ export class Game {
       for (let k = 0; k < r.count; k++) {
         if (k === 0) this.curseAll(i, ox, oy, rad, each, 0, echo);
         else this.after(0.28 * k, () => this.curseAll(i, this.hero.x, this.hero.y, rad, each, k, echo));
+      }
+    } else if (def.kind === 'punch') {
+      // (THE BRAWLER: the punch his combo has come to; Twin, a second blow of it at once; "of Echoes", a weaker one after)
+      const name = h.punch ? h.punch.name : i === 0 ? 'jab' : 'cross';
+      for (let k = 0; k < r.count; k++) {
+        if (k === 0) this.landPunch(i, name, ox, oy, dx, dy, each, 0, echo);
+        else this.after(0.12 * k, () => this.landPunch(i, name, this.hero.x, this.hero.y, dx, dy, each, k, echo));
       }
     } else if (def.kind === 'contraption') {
       // (THE TINKERER, game/tinkerer.ts: a Contraption thrown down where she aimed, no further than its range; "of Echoes",

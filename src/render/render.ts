@@ -2252,6 +2252,7 @@ export class Renderer {
     fx.arcane = arcane;
     // (THE WARLOCK's effects read the burning and the cursed off the monsters: render/warlock_fx.ts)
     fx.warlock.game = game;
+    fx.brawler.game = game;
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
     if (WORDS3.on) tick3(pace / 60, game, fx);
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts)
@@ -2776,7 +2777,7 @@ export class Renderer {
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
       // (THE WARLOCK's smoke step is laid out over the step as a leap is: art/warlock_art.ts)
-      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast') ? Math.min(1, h.move.t / h.move.dur) : -1;
+      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast' || h.move.kind === 'slip') ? Math.min(1, h.move.t / h.move.dur) : -1;
       const changeK = h.change ? Math.min(1, h.change.t / Math.max(1e-6, h.change.dur)) : -1;
       const rollK = h.move && h.move.kind === 'roll' ? Math.min(1, h.move.t / h.move.dur) : -1;
       // (a figure with a tumble of its own is seen making it; one without is drawn faint, to read as a blur)
@@ -2837,7 +2838,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them

@@ -23,7 +23,7 @@ const PLAN = [
 const PARTS = [
   [0.0, 'THE TINKERER', 'Bombs, gadgets and a Golem. Mostly bombs.'],
   [0.7, 'TAP: CONTRAPTION', 'A little mortar. It sets itself up and lobs her vials.'],
-  [4.0, 'THREE AT ONCE', 'A fourth puts the oldest out of action.'],
+  [4.0, 'THREE AT ONCE', 'Up to three stand at once; a fourth puts the oldest away.'],
   [6.3, 'TAP AND HOLD: GOLEM', 'She whistles it out. It stays with her.'],
   [8.0, 'IT FIGHTS BESIDE HER', 'It punches up close and fires its cannon further off.'],
   [12.7, 'TAP AND HOLD AGAIN', 'Ground pound.'],

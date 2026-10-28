@@ -30,6 +30,7 @@ import type { SkillId } from './defs';
 import type { ClassId } from './types';
 import { CLASS_IDS } from './types';
 import { TINKERER } from './tinkerer';
+import { BRAWLER } from './brawler';
 
 /** A page built to try him out says so (esbuild's define): the warlock offered from the start. */
 declare const __WARLOCK__: boolean | undefined;
@@ -41,6 +42,7 @@ export function playableClasses(): readonly ClassId[] {
   const out: ClassId[] = [...CLASS_IDS];
   if (WARLOCK.on) out.push('warlock');
   if (TINKERER.on) out.push('tinkerer');
+  if (BRAWLER.on) out.push('brawler');
   return out;
 }
 

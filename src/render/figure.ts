@@ -45,6 +45,8 @@ export interface FigureState {
   rollK?: number;
   /** THE WARLOCK: how far through changing out of the form the figure is of, 0..1, or absent or -1 when not (`clips.change`). */
   changeK?: number;
+  /** THE BRAWLER: the run of presses his combo has come to (T a tap, H a hold), while he punches: its punch (`clips.punches`). */
+  punch?: string;
   /**
    * How long ago the hero's life ran out, in seconds, or absent or less than 0 while they live. A
    * figure with a fall of its own (`clips.fall`) is shown falling, and then as its last frame
@@ -564,7 +566,7 @@ export class Figure {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];
     } else if (anim === 'attack') {
-      let c = (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? set.clips?.attack;
+      let c = (st.punch !== undefined ? set.clips?.punches?.[st.punch] : undefined) ?? (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? set.clips?.attack;
       // MADE WALKING (clips.attackWalk, heavyWalk): the one for the way the hero goes as they face
       // their mark, as the picture has them (the view from behind is a mirror, and so is a figure
       // turned to screen-left: what is the figure's left in the picture is the world's right in each)

@@ -143,6 +143,8 @@ export interface AnimSet {
      * burning out into the man. Laid over the rules' time for it, shown by how far through it he is (FigureState.changeK).
      */
     change?: Clip;
+    /** THE BRAWLER (art/brawler_art.ts): the punch each run of presses of a combo ends in, by its letters (T a tap, H a hold). */
+    punches?: Record<string, Clip>;
     /** ... and thrown forward a step by one that comes from behind them. */
     lurch?: Clip;
     /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */

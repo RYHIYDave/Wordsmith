@@ -1,6 +1,7 @@
 // Data shapes for a running game: the hero, monsters, projectiles and everything else in a level.
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
+import type { PunchName } from './brawler';
 import type { Sfx } from '../engine/audio';
 import type { Limit, SkillId, SkillKind } from './defs';
 import type { DoorInst } from './doors';
@@ -265,7 +266,7 @@ export interface Hero {
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
   /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once. THE TINKERER, game/tinkerer.ts: 'blast', her blast jump, flying.) */
-  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
+  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast' | 'slip'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
   /**
    * THE WARLOCK (game/warlock.ts): which he is, a man or the demon (absent: a man); his pact (0 to WARLOCK_TUNE.pact.full;
    * full, a tap on him changes him); and the change he is in the middle of, to the demon or back to a man (nothing harms
@@ -274,6 +275,8 @@ export interface Hero {
   form?: 'man' | 'demon';
   pact?: number;
   change?: { to: 'demon' | 'man'; t: number; dur: number } | null;
+  /** THE BRAWLER (game/brawler.ts): the combo so far (its presses, T a tap, H a hold), the punch it last made, and when it landed (the game's clock). */
+  punch?: { run: string; name: PunchName; at: number } | null;
   /**
    * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): whether the wordsmith's ring is lit for this hero,
    * so that he can wordsmith (always, with the switch off and for a hero saved before it); and the
@@ -1269,6 +1272,12 @@ export type GameEvent =
   | { t: 'golemDown'; x: number; y: number }
   | { t: 'blastJump'; x0: number; y0: number; x1: number; y1: number; r: number }
   | { t: 'blastLand'; x: number; y: number }
+  // (THE BRAWLER, game/brawler.ts: a punch of his landing, its name floating over him (`big`, how big); one he has launched
+  // flying down the line, bowling over each it meets; his slip, and the counter as he comes up)
+  | { t: 'punch'; name: PunchName | 'counter'; x: number; y: number; dx: number; dy: number; big: 0 | 1 | 2; n: number; echo?: boolean; hit: boolean }
+  | { t: 'cannonball'; id: number; x: number; y: number; dx: number; dy: number }
+  | { t: 'bowled'; x: number; y: number }
+  | { t: 'slip'; x0: number; y0: number; x1: number; y1: number }
   /** (THE WARLOCK: one struck by a smoke step passing through it; `n` 1 for Twin's second, `echo` the echo's) */
   | { t: 'smokeHit'; id: number; x: number; y: number; n: number; echo: boolean }
   | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }

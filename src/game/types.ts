@@ -11,11 +11,11 @@ export interface Vec {
 /** The first three classes, painted over the bones (art/heroes3.ts). */
 export type FirstClass = 'warrior' | 'ranger' | 'mage';
 /** Every class: the first three, and the new ones as they come (THE WARLOCK: game/warlock.ts, behind WARLOCK; THE TINKERER: game/tinkerer.ts, behind TINKERER). */
-export type ClassId = FirstClass | 'warlock' | 'tinkerer';
+export type ClassId = FirstClass | 'warlock' | 'tinkerer' | 'brawler';
 /** The classes a new hero may be made as, always (the warlock is offered beside them while WARLOCK is on: game/warlock.ts, playableClasses). */
 export const CLASS_IDS: readonly FirstClass[] = ['warrior', 'ranger', 'mage'];
 /** Every class there is (a save of any of them is read back). */
-export const ALL_CLASS_IDS: readonly ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer'];
+export const ALL_CLASS_IDS: readonly ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 
 /** The three attributes. Every class uses all three. */
 export type Attr = 'str' | 'dex' | 'int';
@@ -26,7 +26,9 @@ export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley'
   // (THE WARLOCK, game/warlock.ts: his three as a man and the demon's three)
   | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
   // (THE TINKERER, game/tinkerer.ts: her Contraption, her Golem and her blast jump)
-  | 'contraption' | 'golem' | 'blastjump';
+  | 'contraption' | 'golem' | 'blastjump'
+  // (THE BRAWLER, game/brawler.ts: his tap, his tap and hold, his slip and counter)
+  | 'jab' | 'cross' | 'slip';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
 export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding';

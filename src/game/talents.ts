@@ -236,8 +236,11 @@ const WARLOCK_TREE: TalentTree = { cls: 'warlock', shape: 'to come', paths: [], 
 // (THE TINKERER's tree, to be drawn with the owner: his idea of 28 Oct, “For future reference I’d like some of her skill tree
 // to be gold based like increased % damage based on 1% gold stash amount or something like that”)
 const TINKERER_TREE: TalentTree = { cls: 'tinkerer', shape: 'to come', paths: [], talents: [] };
+// (THE BRAWLER's tree, to be drawn with the owner: his ideas of 24 Oct, “once we build his skill tree, it will have increased
+// uppercut or body blows always bleed, something like that”)
+const BRAWLER_TREE: TalentTree = { cls: 'brawler', shape: 'to come', paths: [], talents: [] };
 
-export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE, warlock: WARLOCK_TREE, tinkerer: TINKERER_TREE };
+export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE, warlock: WARLOCK_TREE, tinkerer: TINKERER_TREE, brawler: BRAWLER_TREE };
 
 /** What the talents do, in numbers: starting numbers, as their words on the cards say them (his to change). */
 export const TALENT_TUNE = {

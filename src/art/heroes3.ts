@@ -27,6 +27,7 @@ import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
 import { makeTinkererArt } from './tinkerer_art';
+import { makeBrawlerArt } from './brawler_art';
 import { makeWarlockArt } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
@@ -381,6 +382,15 @@ export function makeHeroArt3(): HeroArt {
         made.set(wkey, wart);
       }
       return wart;
+    }
+    // (THE BRAWLER: sculpted, art/brawler_art.ts; one set of him for every place, as yet)
+    if (cls === 'brawler') {
+      let bart = made.get('brawler');
+      if (!bart) {
+        bart = makeBrawlerArt();
+        made.set('brawler', bart);
+      }
+      return bart;
     }
     // (THE TINKERER: sculpted, art/tinkerer_art.ts; one set of her for every place, as yet)
     if (cls === 'tinkerer') {

@@ -29,7 +29,9 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
   // its Smoke Step)
   | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
   // (THE TINKERER, game/tinkerer.ts: her Contraption, her Golem, her Blast Jump)
-  | 'contraption' | 'golem' | 'blastjump';
+  | 'contraption' | 'golem' | 'blastjump'
+  // (THE BRAWLER, game/brawler.ts: his taps, his holds, his slip and counter)
+  | 'jab' | 'cross' | 'slip';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -51,7 +53,10 @@ export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 
   // (THE TINKERER, game/tinkerer.ts: `contraption`, a little mortar thrown down that lobs her vials at what comes near;
   // `golem`, her clockwork Golem whistled out, and then set on to ground pound; `blastjump`, a bomb at her feet that throws
   // her to a spot and blows away what is by her)
-  | 'contraption' | 'golem' | 'blastjump';
+  | 'contraption' | 'golem' | 'blastjump'
+  // (THE BRAWLER, game/brawler.ts: `punch`, the punch of a combo its place makes; `slip`, a weaving dash, untouchable, and a
+  // counter hook where he comes up)
+  | 'punch' | 'slip';
 
 export interface SkillDef {
   id: SkillId;
@@ -181,6 +186,13 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   contraption: { id: 'contraption', name: 'Contraption', kind: 'contraption', icon: 'contraption', dmg: 0.55, cooldown: 0, mana: 0, range: 6, radius: 1.1, speed: 0, sockets: true, desc: 'Throw down a little mortar. It sets itself up and lobs your vials at whatever comes near. Up to three at once.', verb: 'THROW A CONTRAPTION', windup: 0.22, follow: 0.34 },
   golem: { id: 'golem', name: 'Golem', kind: 'golem', icon: 'golem', dmg: 1.6, cooldown: 5.0, mana: 16, range: 0, radius: 2.4, speed: 0, sockets: true, desc: 'Whistle your Golem out: it follows you, punches what is near and shoots its cannon at what is far. Whistle again, and it ground pounds.', verb: 'WHISTLE', windup: 0.28, follow: 0.5 },
   blastjump: { id: 'blastjump', name: 'Blast Jump', kind: 'blastjump', icon: 'blastjump', dmg: 0.8, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Slap a bomb down at your feet and ride the blast to a spot. Whatever is by you is blown away.', verb: 'BLAST JUMP', windup: 0, follow: 0 },
+  // THE BRAWLER (game/brawler.ts, behind BRAWLER; his design, the owner's, 24 Oct 2026, in the art chat: “I want him to have
+  // combos using his tap and tap+hold.  So maybe tap is jab and tap+hold is cross.”, and all three hit combos, “By position
+  // (Recommended)”). What a press makes, and each punch's numbers: brawler.ts PUNCHES; his swipe, “Slip and counter
+  // (Recommended)”, “Weaving dash, same reach (Recommended)”.
+  jab: { id: 'jab', name: 'Jab', kind: 'punch', icon: 'jab', dmg: 1.0, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'Quick and light: a jab, then a hook, then an uppercut that pops it up stunned. Mix in holds for other combos.', verb: 'JAB', windup: 4 / 30, follow: 8 / 30 },
+  cross: { id: 'cross', name: 'Cross', kind: 'punch', icon: 'cross', dmg: 1.0, cooldown: 0, mana: 0, range: 1.9, radius: 1.9, speed: 0, sockets: true, desc: 'Slow and heavy, every blow knocking back: a cross, a body blow that staggers all round you, and after two holds a haymaker that fires one down the line.', verb: 'CROSS', windup: 10 / 30, follow: 14 / 30 },
+  slip: { id: 'slip', name: 'Slip and Counter', kind: 'slip', icon: 'slip', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.9, speed: 0, sockets: true, desc: 'Bob and weave to a spot, untouchable, and come up with a counter hook into whatever is there.', verb: 'SLIP', windup: 0, follow: 0 },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -243,6 +255,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   // (Recommended)”. Her attributes and what her abilities grow with are a proposal (Dexterity and Intelligence: quick hands
   // and a head for machines), the owner's to change.
   tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Bombs, gadgets and a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', starts: 'wand', tap: 'contraption', hold: 'golem' },
+  // THE BRAWLER (game/brawler.ts, behind BRAWLER): his brief, “Bare-knuckle boxer”, “Light and bouncy”, “Bone-crunching
+  // (Recommended)”. His attributes and what his punches grow with are a proposal (Strength and Dexterity: a boxer's
+  // weight and his speed), the owner's to change.
+  brawler: { id: 'brawler', name: 'Brawler', blurb: 'Bare knuckles. Bad attitude.', primary: 'str', grows: ['str', 'dex'], own: true, attrs: { str: 11, dex: 11, int: 6 }, evade: 'slip', starts: 'sword', tap: 'jab', hold: 'cross' },
 };
 
 /**
@@ -1320,6 +1336,8 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
   warlock: { word: 'leech', skill: 0 },
   // (THE TINKERER: Volatile on her Contraption, a bomber's word; a proposal, his to change)
   tinkerer: { word: 'volatile', skill: 0 },
+  // (THE BRAWLER: Power on his jab; a proposal, his to change)
+  brawler: { word: 'power', skill: 0 },
 };
 
 /**
@@ -1962,6 +1980,8 @@ export const ARRIVAL_LINES: Record<ClassId, readonly string[]> = {
   warlock: ['It can smell them. So can I.', 'Quiet. It wants to come out.'],
   // (THE TINKERER, a proposal in her voice, a gleeful mad bomber: his to change)
   tinkerer: ['Ooh, a crowd. Perfect.', 'Stand back. Further. Bit further.'],
+  // (THE BRAWLER, a proposal in his voice, a cocky old-time prizefighter: his to change)
+  brawler: ['Who wants a go?', 'Come on then. All of you.'],
 };
 
 export const QUIPS: {
@@ -2049,6 +2069,10 @@ export const QUIPS: {
     contraption: ['Some assembly required.', 'Fully automated.'],
     golem: ['Good boy.', 'Wind him up, let him go.'],
     blastjump: ['Wheee!', 'Explosive exit.'],
+    // (THE BRAWLER's, proposals)
+    jab: ['Sharp.', 'One-two.'],
+    cross: ['Lights out.', 'Down for the count.'],
+    slip: ['Too slow.', 'Missed me.'],
   },
   /** By the weapon in hand. */
   weapon: {
@@ -2077,6 +2101,8 @@ export const QUIPS: {
     warlock: ['It liked that.', 'Feed it.', 'Not yet.', 'Burn.', 'Hungry, are we?'],
     // (THE TINKERER, a proposal: gleeful, a bit reckless)
     tinkerer: ['Ha! Again!', 'Boom.', 'Oops. Not sorry.', 'That one works.', 'Needs more bang.'],
+    // (THE BRAWLER, a proposal: cocky, a prizefighter)
+    brawler: ['Next!', 'Stay down.', 'Is that all?', 'Glass jaw.', 'Ding ding.'],
   },
   /** For any kill. The library is never far away: the hero is a child dreaming in detention. */
   any: ['Overdue.', 'Shh. This is a library.', 'Next.', 'Is that all?', 'Back on the shelf.', 'Closed book.', 'Quiet, please.', 'Read it and weep.'],
