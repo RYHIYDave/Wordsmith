@@ -39,6 +39,9 @@ phone screen, `... 1014 468 "phone:<look>"`.
 
 ## Made game-ready (his “Make it game-ready (Recommended)”)
 
+Shown it built from these pieces beside the picture he picked (and one phone screen), asked whether to hand it to the main
+chat to put in the game, behind a switch that stays off until he has seen it in play: “Yes, hand it over (Recommended)”.
+
 `src/art/yard.ts`, `makeYardArt()`, every picture in the game's measures (picture pixels, two to a game pixel):
 
 - `floor(tx, ty)`: the cobbles, laid on the world so the stones run on across tiles (sixteen pictures, repeating every
