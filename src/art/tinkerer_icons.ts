@@ -1,5 +1,5 @@
-// THE TINKERER'S THREE ICONS (the main chat, 28 Oct 2026; game/tinkerer.ts, behind TINKERER). A FIRST PASS, TO BE SHOWN TO
-// THE OWNER BEFORE IT GOES LIVE. On the buttons' canvas (art/ability_icons.ts: thirty-two picture pixels, two to a game
+// THE TINKERER'S THREE ICONS (the main chat, 28 Oct 2026; game/tinkerer.ts, behind TINKERER). Shown to the owner
+// (tinkerer_icons.png), his pick by 15:45: “Yes, keep them (Recommended)”. On the buttons' canvas (art/ability_icons.ts: thirty-two picture pixels, two to a game
 // pixel), made of the art chat's own pieces of her (src/dev/contraption_fx.ts, golem_pound_fx.ts, blast_fx.ts, demon_fx.ts):
 // her cyan brew and its vials, the Golem's brass and its steam, the floor's cracks. What glows is the friend's cyan.
 //   contraption   her little tripod mortar, a vial lobbed high out of its mouth, bursting where it comes down
