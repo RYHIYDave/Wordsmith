@@ -14,7 +14,7 @@ import { project } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { LAST, primDist } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
-import { GOLEM_FIST, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../src/dev/sculpt_golem';
+import { GOLEM_FIST, GOLEM_GUN, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../src/dev/sculpt_golem';
 import { GDOWN, GDOWN_STRIKE, GP, GPUNCH, GPUNCH_STRIKE, GP_STRIKE, GWALK, golemDown, golemPunch, golemWalk, groundPound } from '../src/dev/golem_moves';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { paintWithoutCanvas } from './helpers';
@@ -45,7 +45,7 @@ test('the Golem’s ground pound: every frame crisp, the friend’s edge, no pix
       for (const turn of TURNS) {
         for (const f of FRAMES) {
           Object.assign(GOLEM_POSE, groundPound(f));
-          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, 'pincer');
+          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, GOLEM_GUN.gun);
           const at = `${view}, turned ${turn}, frame ${f}`;
           for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
           const sc = LAST.sc as Sculpt;
@@ -67,7 +67,7 @@ test('the Golem’s ground pound: slick (its fist and its head never leap, stall
   try {
     for (const f of FRAMES) {
       Object.assign(GOLEM_POSE, groundPound(f));
-      sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, 'pincer');
+      sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, GOLEM_GUN.gun);
       fist.push([...GOLEM_FIST.c] as V3);
       const eye = (LAST.sc as Sculpt).prims.find((p) => p.tag === 'lens');
       head.push(eye && eye.k !== 'cone' && eye.k !== 'tri' ? ([...eye.c] as V3) : [0, 0, 0]);
@@ -99,7 +99,7 @@ test('the Golem’s ground pound: slick (its fist and its head never leap, stall
 test('standing, it is the Golem he picked, to the pixel (its picture before it could move, 28 Oct)', () => {
   Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0 });
   for (const view of ['front', 'back'] as const) {
-    const d = sculptGolemBuild(view, GOLEM_PICK.build, 0, -14, true).px.d;
+    const d = sculptGolemBuild(view, GOLEM_PICK.build, 0, -14, true, 'pincer').px.d;
     assert.ok(createHash('sha256').update(d).digest('hex').slice(0, 16) === PICKED[view], view);
   }
 });
@@ -114,7 +114,7 @@ test('the Golem’s walk: every frame crisp, the friend’s edge, no pixel alone
       for (const turn of TURNS) {
         for (let f = 0; f < GWALK.round; f++) {
           Object.assign(GOLEM_POSE, golemWalk(f));
-          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, 'pincer');
+          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, GOLEM_GUN.gun);
           const at = `${view}, turned ${turn}, frame ${f}`;
           for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
           const sc = LAST.sc as Sculpt;
@@ -138,7 +138,7 @@ test('the Golem’s walk: its fist and its feet stay where they are on the floor
   try {
     for (let f = 0; f < GWALK.round; f++) {
       Object.assign(GOLEM_POSE, golemWalk(f));
-      sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, 'pincer');
+      sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, GOLEM_GUN.gun);
       const sc = LAST.sc as Sculpt;
       fist.push([...GOLEM_FIST.c] as V3);
       const e = sc.prims.find((p) => p.tag === 'lens');
@@ -188,7 +188,7 @@ test('the Golem’s punch: every frame crisp, the friend’s edge, no pixel alon
       for (const turn of TURNS) {
         for (let f = 0; f <= GPUNCH.end; f++) {
           Object.assign(GOLEM_POSE, golemPunch(f));
-          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, 'pincer');
+          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, GOLEM_GUN.gun);
           const at = `${view}, turned ${turn}, frame ${f}`;
           for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
           const sc = LAST.sc as Sculpt;
@@ -217,9 +217,10 @@ test('the Golem’s punch: every frame crisp, the friend’s edge, no pixel alon
   assert.deepEqual([...new Set(found)], []);
 });
 
-// ITS END, WINDING DOWN (dev/golem_moves.ts golemDown): every frame, as above, turned eight ways; its fist and its eye slick
-// but for the blow's jolt and the slump's landing (each a flash); its light going out (its eye and heart dark at the end)
-test('the Golem winding down: every frame crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off; nothing sunk, on its feet; its giant arm clear of the rest of it: from in front and behind, turned eight ways; slick but for the blow and the slump’s landing', () => {
+// ITS END, WINDING DOWN AND CRASHING (dev/golem_moves.ts golemDown): every frame, as above, turned eight ways (turned 135, truly
+// from behind as the film shows it); its fist and its eye slick
+// but for the blow's jolt and its crash (each a flash); its light going out (its eye and heart dark at the end)
+test('the Golem winding down and crashing: every frame crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off; nothing sunk, on its feet; its giant arm clear of the rest of it: from in front and behind, turned eight ways; slick but for the blow and its crash', () => {
   const found: string[] = [];
   const fist: V3[] = [];
   const eye: V3[] = [];
@@ -228,7 +229,7 @@ test('the Golem winding down: every frame crisp, the friend’s edge, no pixel a
       for (const turn of TURNS) {
         for (let f = 0; f <= GDOWN.end; f++) {
           Object.assign(GOLEM_POSE, golemDown(f));
-          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, 'pincer');
+          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, GOLEM_GUN.gun);
           const at = `${view}, turned ${turn}, frame ${f}`;
           for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
           const sc = LAST.sc as Sculpt;
@@ -245,7 +246,7 @@ test('the Golem winding down: every frame crisp, the friend’s edge, no pixel a
       }
     }
   } finally {
-    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0 });
+    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0, crumple: 0 });
   }
   for (const [name, pts] of [['its fist', fist], ['its eye', eye]] as const) {
     for (const view of ['front', 'back'] as const) {
@@ -267,9 +268,9 @@ test('the Golem winding down: every frame crisp, the friend’s edge, no pixel a
   // (and its light out at the end: its eye and its heart, every pixel of them that its light would paint, dark glass)
   try {
     Object.assign(GOLEM_POSE, { ...golemDown(GDOWN.end), dim: 0 });
-    const lit = sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, 'pincer').px.d.slice();
+    const lit = sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, GOLEM_GUN.gun).px.d.slice();
     Object.assign(GOLEM_POSE, golemDown(GDOWN.end));
-    const out = sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, 'pincer').px.d;
+    const out = sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, GOLEM_GUN.gun).px.d;
     const hex = (d: Uint8ClampedArray, i: number): string => '#' + [0, 1, 2].map((c) => d[i + c].toString(16).padStart(2, '0')).join('');
     let changed = 0;
     let bright = 0;
@@ -281,7 +282,7 @@ test('the Golem winding down: every frame crisp, the friend’s edge, no pixel a
     if (!changed) found.push('its light never goes out');
     if (bright) found.push(`${bright} pixels of its light not gone dark at its end`);
   } finally {
-    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0 });
+    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0, crumple: 0 });
   }
   assert.deepEqual([...new Set(found)], []);
 });

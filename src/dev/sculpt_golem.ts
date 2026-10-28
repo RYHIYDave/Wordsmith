@@ -260,6 +260,19 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
       // (its feet where they stand; or, as it walks, each set forward or back and lifted (GOLEM_POSE.feet), its knee bent
       // forward between its hip and its ankle as a knee bends)
       const [df, dz] = side > 0 ? [GOLEM_POSE.feet[0], GOLEM_POSE.feet[1]] : [GOLEM_POSE.feet[2], GOLEM_POSE.feet[3]];
+      if (GOLEM_POSE.crumple > 0) {
+        // (ITS LEGS GIVING OUT under it, GOLEM_POSE.crumple, 0 to 1: each hip going where its leaning, sinking body takes
+        // it, its foot where it stands, its knee buckled forward between them; from its legs as they stand)
+        const c = Math.min(1, GOLEM_POSE.crumple);
+        const la = (GOLEM_POSE.lean * Math.PI) / 180;
+        const hf = -12 + (-7 - 5 * Math.cos(la) + 12) * c;
+        const hu = 28 + (5 * Math.sin(la) + GOLEM_POSE.bob) * c;
+        const [kf0, ku0] = kneeFor([hf, hu], [-13, 5], 13.9, 11.2);
+        const kf = -8 + (kf0 + 8) * c;
+        const ku = 15 + (ku0 - 15) * c;
+        legOf(side > 0 ? 'legL' : 'legR', P(hf, side * 9, hu), P(kf, side * 12, ku), P(-13, side * 12, 5), 4.4, 6.5);
+        continue;
+      }
       if (!df && !dz) {
         legOf(side > 0 ? 'legL' : 'legR', P(-12, side * 9, 28), P(-8, side * 12, 15), P(-13, side * 12, 5), 4.4, 6.5);
         continue;
@@ -977,7 +990,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
  * (degrees), its forearm folded in at the elbow (degrees), its body leaning forward about its hips (degrees) and bobbed up.
  * All naught as it stands, as he picked it.
  */
-export const GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0] as [number, number, number, number], level: 0, dim: 0 };
+export const GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0] as [number, number, number, number], level: 0, dim: 0, crumple: 0 };
 /**
  * Its eye and its heart as its light goes out (`dim` 0 lit, as it stands, to 1 out): a step down the friend's cyan, two,
  * and dark glass; `hot` 1 for the brightest of it (the heart of its eye, its furnace), 0 for the rest.
@@ -1009,8 +1022,8 @@ function aboutAxis(v: V3, k: V3, a: number): V3 {
 
 /** Its other arm: the little pincer arm it was picked with, or a gun (his “Maybe put a cannon or a tesla coil on his other arm”, 28 Oct). */
 export type GolemGun = 'pincer' | 'cannon' | 'tesla';
-/** THE SWITCH: the pincer arm, as picked, until he says which gun (pictures first). */
-export const GOLEM_GUN: { gun: GolemGun } = { gun: 'pincer' };
+/** HIS PICK, 28 Oct, shown both firing: “Cannon” (the pincer arm, as first picked, kept for its pictures). */
+export const GOLEM_GUN: { gun: GolemGun } = { gun: 'cannon' };
 /** The guns he is shown. */
 export const GOLEM_GUNS: { id: GolemGun; name: string }[] = [
   { id: 'cannon', name: 'Cannon arm' },

@@ -156,53 +156,66 @@ export function golemPunch(f: number): { swing: number; fold: number; lean: numb
   };
 }
 
-// ---- ITS END: IT WINDS DOWN (28 Oct, overnight at his word, “keep working on her and the constructs”). By his rulebook's
-// “deaths are true to what died” and “big things die heavy”: a clockwork thing struck its last does not fall like a man,
-// it RUNS DOWN. The blow jolts it back, steam and sparks bursting out of it; it staggers, its eye flickering; it slows,
-// leaning forward onto its giant fist as its spring gives out, its knees giving; a last shudder, a great burst of steam out
-// of its stacks, gears and springs popping out of it; it slumps forward onto its fist, heavy, and its eye and its furnace
-// heart go dark. It stays where it slumped.
-export const GDOWN = { hit: 3, jolted: 5, staggered: 12, planted: 28, shudder: 30, slump: 36, down: 46, dark: 44, end: 70 };
-/** The jolt of the blow, a flash (his rulebook's Movement 9), and its slump's landing: not judged frame by frame. */
+// ---- ITS END: IT WINDS DOWN, AND CRASHES (28 Oct, overnight at his word, “keep working on her and the constructs”; then,
+// shown it slumping onto its fist: “Not heavy enough,The flip from behind”). By his rulebook's “deaths are true to what died”
+// and “big things die heavy”: a clockwork thing struck its last RUNS DOWN, and then it falls like the great weight it is.
+// The blow jolts it back, steam and sparks bursting out of it; it staggers, its eye flickering; it slows, leaning onto its
+// giant fist as its spring gives out; a last shudder, a great burst of steam out of its stacks, gears and springs popping
+// out of it; and its stumpy legs give out under it: it pitches forward and CRASHES down onto its front, its fist flung out
+// along the floor, the floor's dust bursting out from under it, the picture kicked hard; its eye and its furnace heart go
+// dark. It lies where it fell.
+export const GDOWN = { hit: 3, jolted: 5, staggered: 12, planted: 28, shudder: 30, slump: 36, down: 45, dark: 44, end: 72 };
+/** The jolt of the blow, a flash (his rulebook's Movement 9), and its crash onto the floor: not judged frame by frame. */
 export const GDOWN_STRIKE: [number, number][] = [[GDOWN.hit - 1, GDOWN.jolted + 1], [GDOWN.down - 1, GDOWN.down + 1]];
-/** Where its fist comes to rest on the floor before it as it runs down (forward, up, as it was built). */
+/** Where its fist comes to rest on the floor before it as it runs down (forward, up, as it was built); and where it is flung as it crashes. */
 const REST_FIST: [number, number] = [24, FI[1]];
+const FLUNG_FIST: [number, number] = [41, FI[1]];
+/** How far it leans and sinks, lying on its front on the floor (its front on the floor, its legs given out). */
+const FALLEN = { lean: 50, bob: -14.9 };
 /** Its pose at frame `f` of its end. */
-export function golemDown(f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; dim: number } {
-  // (its body: jolted back, staggering forward, leaning slowly onto its fist, a shudder, and the slump)
+export function golemDown(f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; dim: number; crumple: number } {
+  // (its body: jolted back, staggering forward, leaning slowly onto its fist, a shudder)
   const quiver = f > GDOWN.planted && f < GDOWN.slump ? 1.4 * Math.sin(((f - GDOWN.planted) / (GDOWN.slump - GDOWN.planted)) * Math.PI * 3) : 0;
   let lean = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, -8], [GDOWN.staggered, 7], [20, 10], [GDOWN.planted, 15], [GDOWN.slump, 17], [GDOWN.end, 17]], f) + quiver;
   let bob = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, 0.8], [GDOWN.staggered, -0.6], [GDOWN.planted, -1.6], [GDOWN.slump, -1.8], [GDOWN.end, -1.8]], f);
-  // (the slump: all at once, gathering speed as it goes, heavy)
-  if (f > GDOWN.slump) {
-    const u = Math.min(1, (f - GDOWN.slump) / (GDOWN.down - GDOWN.slump));
-    lean += 15 * u * u;
-    bob -= 2.2 * u * u;
+  let crumple = 0;
+  // (THE CRASH: its legs giving out and it pitching forward onto its front, all at once, gathering speed as it falls)
+  const u = f > GDOWN.slump ? Math.min(1, (f - GDOWN.slump) / (GDOWN.down - GDOWN.slump)) : 0;
+  if (u > 0) {
+    const g = u * u;
+    lean = 17 + (FALLEN.lean - 17) * g;
+    bob = -1.8 + (FALLEN.bob + 1.8) * g;
+    crumple = Math.min(1, u * 1.6);
     if (f > GDOWN.down) {
-      // (settling: a little bounce off its fist)
+      // (the weight of it landing: a jolt down and a little bounce, settling)
       const k = f - GDOWN.down;
-      lean -= 1.2 * Math.sin(Math.min(1, k / 6) * Math.PI) * Math.exp(-k / 8);
+      lean -= 2.2 * Math.sin(Math.min(1, k / 5) * Math.PI) * Math.exp(-k / 6);
     }
   }
-  // (its giant arm: flung back by the blow, swinging loose as it staggers; then reached down to rest its fist on the floor
-  // before it, and kept there as it slumps onto it)
+  // (its giant arm: flung back by the blow, swinging loose as it staggers; reached down to rest its fist on the floor before
+  // it; and flung out along the floor ahead of it as it crashes, landing as it lands)
   let arm: { swing: number; fold: number };
   let level = 0;
   if (f <= GDOWN.staggered) {
     arm = { swing: track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, -10], [GDOWN.staggered, 12]], f), fold: track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, 6], [GDOWN.staggered, 4]], f) };
-  } else {
+  } else if (u <= 0) {
     // (its fist carried from where it swung to, over and down to the floor before it, clear of the floor all the way)
-    const u = Math.min(1, (f - GDOWN.staggered) / (GDOWN.planted - GDOWN.staggered));
-    const e = u * u * (3 - 2 * u);
+    const v = Math.min(1, (f - GDOWN.staggered) / (GDOWN.planted - GDOWN.staggered));
+    const e = v * v * (3 - 2 * v);
     const lean0 = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, -8], [GDOWN.staggered, 7]], GDOWN.staggered);
     const bob0 = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, 0.8], [GDOWN.staggered, -0.6]], GDOWN.staggered);
     const from = fistOf(12, 4, lean0, bob0);
     const to: [number, number] = [from[0] + (REST_FIST[0] - from[0]) * e, from[1] + (REST_FIST[1] - from[1]) * e + 7 * Math.sin(Math.PI * e)];
     arm = reachFist(to, lean, bob);
     level = e;
+  } else {
+    const e = u * u * (3 - 2 * u);
+    const to: [number, number] = [REST_FIST[0] + (FLUNG_FIST[0] - REST_FIST[0]) * e, REST_FIST[1] + 8 * Math.sin(Math.PI * Math.min(1, u * 1.05))];
+    arm = reachFist(to, lean, bob);
+    level = 1;
   }
-  // (its eye flickering as it staggers; going out as it slumps)
+  // (its eye flickering as it staggers; going out as it falls)
   const flick = [8, 10, 18, 23, 32].some((k) => Math.abs(f - k) < 0.5) ? 0.5 : 0;
   const dim = Math.max(flick, f < GDOWN.slump ? 0 : Math.min(1, (f - GDOWN.slump) / (GDOWN.dark - GDOWN.slump)));
-  return { ...arm, lean, bob, feet: [0, 0, 0, 0], level, dim };
+  return { ...arm, lean, bob, feet: [0, 0, 0, 0], level, dim, crumple };
 }
