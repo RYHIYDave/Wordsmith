@@ -1,5 +1,5 @@
-// THE BRAWLER'S THREE ICONS (the main chat, 28 Oct 2026; game/brawler.ts, behind BRAWLER). A FIRST PASS, TO BE SHOWN TO THE
-// OWNER BEFORE IT GOES LIVE. On the buttons' canvas (art/ability_icons.ts: thirty-two picture pixels), his wrapped fist and
+// THE BRAWLER'S THREE ICONS (the main chat, 28 Oct 2026; game/brawler.ts, behind BRAWLER). Shown to the owner in the main chat
+// (brawler_icons.png), his pick by 16:15 (Eastern): “Yes, keep them (Recommended)”. On the buttons' canvas (art/ability_icons.ts: thirty-two picture pixels), his wrapped fist and
 // what bursts off his blows (dev/brawler_fx.ts: a ring of air, a crack of light, a streak behind the fist going in). What
 // glows is the friend's cyan.
 //   jab      his wrapped fist snapped out to the right, a streak behind it, a ring of air off its knuckles

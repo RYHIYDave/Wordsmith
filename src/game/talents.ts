@@ -97,10 +97,17 @@ export interface TalentPath {
   label: { node: string; side: 'left' | 'right' | 'above' | 'below' };
 }
 
-/** A faint picture behind a tree, so that its shape reads: a patch filled between talents, or a sword drawn through them. */
+/**
+ * A faint picture behind a tree, so that its shape reads: a patch filled between talents, or a sword drawn through them; (the
+ * new classes' trees, 28 Oct 2026) a talon drawn along talents to a hooked point past the last; a gear's ring and teeth through
+ * talents round a hub talent; a rounded block round talents (the fist's fingers, its back, its thumb).
+ */
 export type TalentFigure =
   | { kind: 'fill'; path: string; ids: readonly string[] }
-  | { kind: 'sword'; path: string; pommel: string; guard: string; tip: string; quillons: readonly [string, string] };
+  | { kind: 'sword'; path: string; pommel: string; guard: string; tip: string; quillons: readonly [string, string] }
+  | { kind: 'talon'; path: string; ids: readonly string[]; width: number; hook: number }
+  | { kind: 'gear'; path: string; hub: string; ring: readonly string[]; spokes: number }
+  | { kind: 'round'; path: string; ids: readonly string[]; pad: number /* in the shape's own units */ };
 
 export interface TalentTree {
   cls: ClassId;
@@ -112,6 +119,12 @@ export interface TalentTree {
   root?: readonly [number, number];
   /** The faint pictures behind it (the arrow's feathers and head, the two swords). */
   figures?: readonly TalentFigure[];
+  /** Laid out as round as it is drawn (the gear, the fist), not stretched to the page's room. */
+  square?: boolean;
+  /** The box its shape is laid out in (left, top, right, bottom, in its own units), where that is more than its talents span (room for the claw's points). */
+  room?: readonly [number, number, number, number];
+  /** Its talents' cards say what they will do, but none of them does it yet (a tree drafted, shown to the owner first). */
+  draft?: boolean;
 }
 
 // ---- the mage: three paths ---------------------------------------------------------------------
@@ -231,14 +244,171 @@ const WARRIOR: TalentTree = {
   ],
 };
 
-/** THE WARLOCK's tree is to come, drafted with the owner (behind WARLOCK): until then, no talents. */
-const WARLOCK_TREE: TalentTree = { cls: 'warlock', shape: 'to come', paths: [], talents: [] };
-// (THE TINKERER's tree, to be drawn with the owner: his idea of 28 Oct, “For future reference I’d like some of her skill tree
-// to be gold based like increased % damage based on 1% gold stash amount or something like that”)
-const TINKERER_TREE: TalentTree = { cls: 'tinkerer', shape: 'to come', paths: [], talents: [] };
-// (THE BRAWLER's tree, to be drawn with the owner: his ideas of 24 Oct, “once we build his skill tree, it will have increased
-// uppercut or body blows always bleed, something like that”)
-const BRAWLER_TREE: TalentTree = { cls: 'brawler', shape: 'to come', paths: [], talents: [] };
+// ---- THE NEW CLASSES' TREES (the main chat, 28 Oct 2026; `draft`: none of their talents does anything yet, each to be made
+// to work and filmed for him). Shown to him as a page, “Three New Skill Trees” (https://claude.ai/artifact/GhWB8vecSeRyHxDGQQWKHA,
+// its source docs/talents/new_classes/index.html), his answers by 17:47 (Eastern): the Warlock's, “Yes, keep it
+// (Recommended)”; the Tinkerer's, “Yes, keep it (Recommended)”; the Brawler's, “Keep it, except change the names of “one
+// target” and “crowd””, then “Speed and Power”.
+// His words to the main chat that day, asked what next with the three in the game: “Skill trees first”; the
+// paths, the Warlock's, “Man and Demon”; the Tinkerer's, “I think for her I’d like her to start with golem and a vial toss.
+// Then in the skill tree you can swap the vial toss to a contraption that throws the vials”, then, of her paths, “Vials and
+// Golem” (offered as: two paths, with the gold talents mixed into both); the Brawler's, “One target and Crowd”; their shapes,
+// “Claw, gear, fist (Recommended)”. His ideas from before, each in: the Tinkerer's gold (28 Oct, by 00:07: “For future
+// reference I’d like some of her skill tree to be gold based like increased % damage based on 1% gold stash amount or
+// something like that”: FORTUNE); her Golem's tesla coil (by 00:50: “Maybe put a cannon or a tesla coil on his other arm or
+// whatever”: the cannon picked, the coil here); the Brawler's (24 Oct, 20:42: “once we build his skill tree, it will have
+// increased uppercut or body blows always bleed, something like that”: BIG UPPERCUT, BLEEDERS; 25 Oct, 06:57: “Then let’s
+// have a spot on the skill tree that after a successful counter you’re next attack is the final hit in the combo, either
+// uppercut or haymaker”: SET-UP).
+
+// ---- the warlock: a demon's claw ---------------------------------------------------------------------
+//   Reaching right from the wrist: the DEMON from the back of the hand (its spur up off it), the MAN from the heel of it (the
+//   thumb down off it); they meet at the knuckle, the pact's, where the three talons come out: the demon's on top, the pact's
+//   in the middle, the man's below, each hooking down at its point.
+const MAN = '#b49cff';
+const DEMON = '#ff5a3c';
+const PACT = '#9a78c8';
+
+const WARLOCK_TREE: TalentTree = {
+  cls: 'warlock',
+  shape: 'a demon’s claw',
+  draft: true,
+  room: [0, 0, 5.6, 4.2],
+  paths: [
+    { id: 'demon', name: 'DEMON', color: DEMON, label: { node: 'hunger', side: 'above' } },
+    { id: 'man', name: 'MAN', color: MAN, label: { node: 'branded', side: 'below' } },
+    { id: 'pact', name: '', color: PACT, label: { node: 'blazingarm', side: 'above' } },
+  ],
+  talents: [
+    // THE DEMON: the back of the hand, its spur, the top talon
+    { id: 'hunger', name: 'Hunger', big: false, path: 'demon', at: [0, 0.6], from: [], text: 'Every kill the demon makes puts two seconds back on its pact.' },
+    { id: 'terribleroar', name: 'Terrible Roar', big: false, path: 'demon', at: [1.1, 1.0], from: ['hunger'], text: 'The change’s roar curses everything it throws back, and they run from him for two seconds.' },
+    { id: 'feast', name: 'Feast', big: false, path: 'demon', at: [1.65, 0.0], from: ['terribleroar'], text: 'Every kill the demon makes heals him a tenth of his life.' },
+    { id: 'bloodlust', name: 'Bloodlust', big: false, path: 'demon', at: [3.2, 0.95], from: ['blazingarm'], text: 'Every kill makes the demon’s rakes quicker, up to twice as quick, until it burns out.' },
+    { id: 'hellwave', name: 'Hellwave', big: false, path: 'demon', at: [4.2, 0.8], from: ['bloodlust'], text: 'Every third rake throws a wave of hellfire on ahead, through everything in its way.' },
+    { id: 'damnedsouls', name: 'Damned Souls', big: true, path: 'demon', at: [5.1, 1.35], from: ['hellwave'], text: 'Every enemy the demon kills rises as a burning soul that flies into the nearest enemy, cursing it and setting it alight.' },
+    // THE MAN: the heel of the hand, the thumb, the bottom talon
+    { id: 'branded', name: 'Branded', big: false, path: 'man', at: [0, 3.4], from: [], text: 'Every Hellfire Bolt curses what it hits.' },
+    { id: 'hexchain', name: 'Hex Chain', big: false, path: 'man', at: [1.1, 3.0], from: ['branded'], text: 'A bolt that hits a cursed enemy leaps on to the next cursed one near it, up to three times, burning each.' },
+    { id: 'phantomstep', name: 'Phantom Step', big: true, path: 'man', at: [1.65, 4.0], from: ['hexchain'], text: 'His Smoke Step leaves his shadow where he stood: for two seconds, the enemies go after it instead of him.' },
+    { id: 'withering', name: 'Withering', big: false, path: 'man', at: [3.2, 3.05], from: ['blazingarm'], text: 'Cursed enemies move and strike at half speed.' },
+    { id: 'pyre', name: 'Pyre', big: false, path: 'man', at: [4.2, 3.25], from: ['withering'], text: 'A cursed enemy that dies bursts in hellfire, striking everything near it.' },
+    { id: 'bounddemon', name: 'Bound Demon', big: true, path: 'man', at: [5.0, 3.95], from: ['pyre'], text: 'The demon no longer takes him over: it tears out and fights at his side until the pact runs dry, while he fights on as a man.' },
+    // THE PACT: the knuckle, both the demon's and the man's, and the middle talon
+    { id: 'blazingarm', name: 'Blazing Arm', big: true, path: 'pact', at: [2.2, 2.0], from: ['terribleroar', 'hexchain'], text: 'While his pact is full and he has not changed, his arm blazes: every Hellfire Bolt bursts, cursing and burning all near it.' },
+    { id: 'souldebt', name: 'Soul Debt', big: false, path: 'pact', at: [3.4, 2.0], from: ['blazingarm'], text: 'Every cursed enemy that dies fills a tenth of his pact.' },
+    { id: 'lastrites', name: 'Last Rites', big: true, path: 'pact', at: [4.4, 2.4], from: ['souldebt'], text: 'As the demon burns out, Damning goes off by itself: every cursed or burning enemy near him pays all its burns at once.' },
+  ],
+  figures: [
+    { kind: 'fill', path: 'pact', ids: ['hunger', 'terribleroar', 'blazingarm', 'hexchain', 'branded'] },
+    { kind: 'talon', path: 'demon', ids: ['terribleroar', 'feast'], width: 3, hook: 0 },
+    { kind: 'talon', path: 'man', ids: ['hexchain', 'phantomstep'], width: 3, hook: 0 },
+    { kind: 'talon', path: 'demon', ids: ['blazingarm', 'bloodlust', 'hellwave', 'damnedsouls'], width: 6, hook: 0.9 },
+    { kind: 'talon', path: 'pact', ids: ['blazingarm', 'souldebt', 'lastrites'], width: 6, hook: 0.9 },
+    { kind: 'talon', path: 'man', ids: ['blazingarm', 'withering', 'pyre', 'bounddemon'], width: 6, hook: 0.9 },
+  ],
+};
+
+// ---- the tinkerer: a gear -------------------------------------------------------------------------------
+//   Twelve teeth round a hub. From the left tooth (her blast jump's, both paths') the VIALS go round over the top and the
+//   GOLEM round under the bottom, to meet at the right tooth; the hub is her gold (FORTUNE, off the left tooth); the spoke
+//   down from the top tooth is the swap to the CONTRAPTION (reached from the top tooth or the hub); the spoke up from the
+//   bottom tooth, her second Golem.
+const VIALS = '#7ae0c0';
+const GOLEMS = '#e8a858';
+const WORKS = '#b8c0d0';
+const GOLD = '#ffd448';
+const R3 = Math.sqrt(3);
+
+const TINKERER_TREE: TalentTree = {
+  cls: 'tinkerer',
+  shape: 'a gear',
+  draft: true,
+  square: true,
+  paths: [
+    { id: 'vials', name: 'VIALS', color: VIALS, label: { node: 'tar', side: 'left' } },
+    { id: 'golem', name: 'GOLEM', color: GOLEMS, label: { node: 'shrapnel', side: 'left' } },
+    { id: 'works', name: '', color: WORKS, label: { node: 'bombsaway', side: 'left' } },
+    { id: 'gold', name: '', color: GOLD, label: { node: 'fortune', side: 'below' } },
+  ],
+  talents: [
+    // the left tooth: both paths'
+    { id: 'bombsaway', name: 'Bombs Away', big: false, path: 'works', at: [-2, 0], from: [], text: 'As she comes down from her Blast Jump, a second bomb goes off where she lands.' },
+    // the hub: her gold (his idea)
+    { id: 'fortune', name: 'Fortune', big: false, path: 'gold', at: [0, 0], from: ['bombsaway'], text: 'She hits harder the more gold she carries: 1% of her gold, as a percent. 1,000 gold, 10% more.' },
+    // THE VIALS, round over the top
+    { id: 'clustervials', name: 'Cluster Vials', big: false, path: 'vials', at: [-R3, -1], from: ['bombsaway'], text: 'Every vial bursts into three little ones that bounce out and burst again.' },
+    { id: 'tar', name: 'Tar', big: false, path: 'vials', at: [-1, -R3], from: ['clustervials'], text: 'Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.' },
+    { id: 'madmixture', name: 'Mad Mixture', big: true, path: 'vials', at: [0, -2], from: ['tar'], text: 'Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.' },
+    { id: 'contraptions', name: 'Contraption', big: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss: it lobs her vials for her, three at once.' },
+    { id: 'alchemy', name: 'Alchemy', big: false, path: 'vials', at: [1, -R3], from: ['madmixture'], text: 'An enemy her vials kill always drops gold.' },
+    { id: 'thebigone', name: 'The Big One', big: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
+    // THE GOLEM, round under the bottom
+    { id: 'lightningrod', name: 'Lightning Rod', big: false, path: 'golem', at: [-R3, 1], from: ['bombsaway'], text: 'For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.' },
+    { id: 'shrapnel', name: 'Shrapnel', big: false, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s cannon shot bursts where it lands, striking everything near.' },
+    { id: 'teslacoil', name: 'Tesla Coil', big: false, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'A coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more.' },
+    { id: 'markii', name: 'Mark II', big: true, path: 'golem', at: [0, 1], from: ['teslacoil'], text: 'She can whistle out a second Golem: two at once.' },
+    { id: 'prospector', name: 'Prospector', big: false, path: 'golem', at: [1, R3], from: ['teslacoil'], text: 'Every ground pound digs up a handful of gold.' },
+    { id: 'overdrive', name: 'Overdrive', big: true, path: 'golem', at: [R3, 1], from: ['prospector'], text: 'Her whistle sends the Golem into overdrive for five seconds: it moves and strikes twice as fast.' },
+    // the right tooth: both paths'
+    { id: 'growthserum', name: 'Growth Serum', big: true, path: 'works', at: [2, 0], from: ['thebigone', 'overdrive'], text: 'A vial of hers that bursts by her Golem makes it grow: twice as big and twice as strong for five seconds.' },
+  ],
+  figures: [
+    { kind: 'gear', path: 'works', hub: 'fortune', ring: ['bombsaway', 'clustervials', 'tar', 'madmixture', 'alchemy', 'thebigone', 'growthserum', 'overdrive', 'prospector', 'teslacoil', 'shrapnel', 'lightningrod'], spokes: 4 },
+  ],
+};
+
+// ---- the brawler: a fist ----------------------------------------------------------------------------------
+//   Punching right, seen from the side: the wrist on the left (SPEED's start above, POWER's below), the back of the hand, the
+//   four fingers curled into a column of knuckles at the front (SPEED's two on top, POWER's two below), and across the middle
+//   of them the thumb, both paths' (his slip and counter), from its root where the two meet. The paths were drafted as ONE
+//   TARGET and CROWD, his words; shown the tree, 28 Oct 2026, by 17:47 (Eastern): “Keep it, except change the names of “one
+//   target” and “crowd””, and asked which, “Speed and Power”.
+const SPEED = '#ff7a50';
+const POWER = '#5ab0ff';
+const COUNTER = '#e8d090';
+
+const BRAWLER_TREE: TalentTree = {
+  cls: 'brawler',
+  shape: 'a fist',
+  draft: true,
+  square: true,
+  room: [-0.35, -0.5, 4.0, 4.5],
+  paths: [
+    { id: 'speed', name: 'SPEED', color: SPEED, label: { node: 'doublejab', side: 'left' } },
+    { id: 'power', name: 'POWER', color: POWER, label: { node: 'widecross', side: 'left' } },
+    { id: 'counter', name: '', color: COUNTER, label: { node: 'bobweave', side: 'above' } },
+  ],
+  talents: [
+    // SPEED (the taps, for one enemy): the wrist's top, the back of the hand, the top two fingers
+    { id: 'doublejab', name: 'Double Jab', big: false, path: 'speed', at: [0, 1.0], from: [], text: 'His jab is two quick jabs.' },
+    { id: 'tenderize', name: 'Tenderize', big: false, path: 'speed', at: [1.0, 0.7], from: ['doublejab'], text: 'Every punch he lands on the same enemy makes it take 5% more from him, up to 50%, until he hits another.' },
+    { id: 'heavyhands', name: 'Heavy Hands', big: false, path: 'speed', at: [2.3, 0], from: ['tenderize'], text: 'Heavy no longer slows his taps.', word: 'heavy' },
+    { id: 'biguppercut', name: 'Big Uppercut', big: true, path: 'speed', at: [3.4, 0], from: ['heavyhands'], text: 'His uppercut hits twice as hard and throws the enemy up: it comes down stunned for two seconds.' },
+    { id: 'flurry', name: 'Flurry', big: false, path: 'speed', at: [2.45, 1.0], from: ['tenderize'], text: 'After the uppercut lands, his next tap is a hook again: hook, uppercut, hook, uppercut, without a break.' },
+    { id: 'knockout', name: 'Knockout', big: true, path: 'speed', at: [3.55, 1.0], from: ['flurry'], text: 'His uppercut knocks out any enemy below a fifth of its life (a boss is stunned three seconds).' },
+    // POWER (the holds, for a crowd): the wrist's bottom, the back of the hand, the bottom two fingers
+    { id: 'widecross', name: 'Wide Cross', big: false, path: 'power', at: [0, 3.0], from: [], text: 'His cross strikes every enemy in front of him, not only the first.' },
+    { id: 'bleeders', name: 'Bleeders', big: false, path: 'power', at: [1.0, 3.3], from: ['widecross'], text: 'Body blows always make them bleed: each one it hits loses half the blow again over three seconds.' },
+    { id: 'ironchin', name: 'Iron Chin', big: false, path: 'power', at: [2.45, 3.0], from: ['bleeders'], text: 'Winding up a hold, nothing can knock him back or stagger him, and he takes a third less harm.' },
+    { id: 'tenpins', name: 'Ten Pins', big: true, path: 'power', at: [3.55, 3.0], from: ['ironchin'], text: 'Every enemy the haymaker’s cannonball bowls over is launched too, and bowls over more down the line.' },
+    { id: 'pinball', name: 'Pinball', big: false, path: 'power', at: [2.3, 4.0], from: ['bleeders'], text: 'An enemy he knocks back hurts what it is knocked into, and knocks that back too.' },
+    { id: 'shockwave', name: 'Shockwave', big: true, path: 'power', at: [3.4, 4.0], from: ['pinball'], text: 'His holds send a wave of air on ahead: it strikes everything in a line three tiles long.' },
+    // the thumb, from its root: both paths', his slip and counter
+    { id: 'bobweave', name: 'Bob and Weave', big: false, path: 'counter', at: [1.45, 2.0], from: ['tenderize', 'bleeders'], text: 'When his counter lands, his slip is ready again at once.' },
+    { id: 'slipreflex', name: 'Slip Reflex', big: false, path: 'counter', at: [2.4, 2.0], from: ['bobweave'], text: 'Once every six seconds, a blow that would hit him is slipped by itself, and he counters.' },
+    { id: 'setup', name: 'Set-Up', big: true, path: 'counter', at: [3.45, 2.05], from: ['slipreflex'], text: 'After a counter lands, his next press is the combo’s last punch: a tap the uppercut, a hold the haymaker.' },
+  ],
+  figures: [
+    { kind: 'round', path: 'counter', ids: ['doublejab', 'widecross'], pad: 0.32 },
+    { kind: 'round', path: 'counter', ids: ['tenderize', 'bobweave', 'bleeders'], pad: 0.55 },
+    { kind: 'round', path: 'speed', ids: ['heavyhands', 'biguppercut'], pad: 0.44 },
+    { kind: 'round', path: 'speed', ids: ['flurry', 'knockout'], pad: 0.44 },
+    { kind: 'round', path: 'counter', ids: ['slipreflex', 'setup'], pad: 0.4 },
+    { kind: 'round', path: 'power', ids: ['ironchin', 'tenpins'], pad: 0.44 },
+    { kind: 'round', path: 'power', ids: ['pinball', 'shockwave'], pad: 0.44 },
+  ],
+};
 
 export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE, warlock: WARLOCK_TREE, tinkerer: TINKERER_TREE, brawler: BRAWLER_TREE };
 

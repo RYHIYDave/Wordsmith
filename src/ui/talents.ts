@@ -49,6 +49,18 @@ const ARROW: readonly string[] = ['....X..', '.....X.', 'XXXXXXo', '.....X.', '.
 const JAWS: readonly string[] = ['X.X.X.X', 'XXXXXXX', 'X.....X', '.X.o.X.', '..XXX..'];
 const SPLIT: readonly string[] = ['.....X', '....X.', 'XXXo..', '....X.', '.....X'];
 const BLADE: readonly string[] = ['.X.....', '.X.....', 'XXXXXXo', '.X.....', '.X.....'];
+// (the new classes' paths, 28 Oct 2026: the man's sigil, the demon's horned head, the pact's claw; a vial, the Golem's head, a
+// gear, a coin; speed's chevrons, power's impact, a fist thrown back)
+const SIGIL: readonly string[] = ['..XXX..', '.X...X.', 'X..o..X', '.X...X.', '..XXX..'];
+const HORNS: readonly string[] = ['X.....X', 'XX...XX', '.XXXXX.', '.XoXoX.', '..XXX..'];
+const CLAW: readonly string[] = ['X.X.X..', 'X.X.X..', 'XXXXX.X', '.XXXXo.', '..XXX..'];
+const VIAL: readonly string[] = ['..XXX..', '...X...', '..XoX..', '.XoooX.', '.XXXXX.'];
+const GOLEM: readonly string[] = ['.XXXXX.', 'XoX.XoX', 'XXXXXXX', 'X.XXX.X', 'X.X.X.X'];
+const GEAR: readonly string[] = ['.X.X.X.', 'XXXXXXX', '.XXoXX.', 'XXXXXXX', '.X.X.X.'];
+const COIN: readonly string[] = ['..XXX..', '.XoooX.', '.XoXoX.', '.XoooX.', '..XXX..'];
+const QUICK: readonly string[] = ['X..X...', '.X..X..', '..X..Xo', '.X..X..', 'X..X...'];
+const IMPACT: readonly string[] = ['X..X..X', '.X.X.X.', '..XoX..', '.X.X.X.', 'X..X..X'];
+const KNUCKLE: readonly string[] = ['..X....', '.XX....', 'XXXXXXo', '.XX...X', '..X..X.'];
 /** A rune and its two colours. */
 interface Rune {
   rows: readonly string[];
@@ -71,6 +83,16 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   technique: (c) => ({ rows: BLADE, color: c, glow: P.white }),
   iron: () => wordRune('guarding'),
   cross: () => wordRune('heavy'),
+  man: (c) => ({ rows: SIGIL, color: c, glow: P.white }),
+  demon: (c) => ({ rows: HORNS, color: c, glow: P.white }),
+  pact: (c) => ({ rows: CLAW, color: c, glow: P.white }),
+  vials: (c) => ({ rows: VIAL, color: c, glow: P.white }),
+  golem: (c) => ({ rows: GOLEM, color: c, glow: P.white }),
+  works: (c) => ({ rows: GEAR, color: c, glow: P.white }),
+  gold: (c) => ({ rows: COIN, color: c, glow: P.white }),
+  speed: (c) => ({ rows: QUICK, color: c, glow: P.white }),
+  power: (c) => ({ rows: IMPACT, color: c, glow: P.white }),
+  counter: (c) => ({ rows: KNUCKLE, color: c, glow: P.white }),
 };
 /** The rune a talent's stone carries: its word's, if it works with one; else its path's. */
 function runeOf(tree: TalentTree, t: TalentDef): Rune {
@@ -127,6 +149,147 @@ function line(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y
   g.globalAlpha = 1;
 }
 
+// ---- the new classes' figures (28 Oct 2026) ---------------------------------------------------------
+/**
+ * A TALON along talents `ns`: wide at the first, narrowing to a point past the last, hooking down by `hook` (radians, over
+ * the length past the last); filled faint, its edges a little less so.
+ */
+function drawTalon(g: CanvasRenderingContext2D, ns: readonly TalentAt[], width: number, hook: number, color: string): void {
+  if (ns.length < 2) return;
+  const pts = ns.map((n) => [n.cx, n.cy] as [number, number]);
+  // (past the last: on the way it was going, turning down, a few steps)
+  const a = pts[pts.length - 2];
+  const b = pts[pts.length - 1];
+  let ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  const step = Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.12;
+  let [x, y] = b;
+  for (let i = 0; i < 4; i++) {
+    ang += hook / 4;
+    x += Math.cos(ang) * step;
+    y += Math.sin(ang) * step;
+    pts.push([x, y]);
+  }
+  // (its length so far at each point: its width goes down along it to nothing at the point)
+  const along: number[] = [0];
+  for (let i = 1; i < pts.length; i++) along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = along[along.length - 1] || 1;
+  const left: [number, number][] = [];
+  const right: [number, number][] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[Math.max(0, i - 1)];
+    const q = pts[Math.min(pts.length - 1, i + 1)];
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+    const nx = -(q[1] - p[1]) / l;
+    const ny = (q[0] - p[0]) / l;
+    const w = width * Math.pow(1 - along[i] / total, 0.8);
+    left.push([pts[i][0] + nx * w, pts[i][1] + ny * w]);
+    right.push([pts[i][0] - nx * w, pts[i][1] - ny * w]);
+  }
+  g.globalAlpha = 0.1;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(left[0][0] + 0.5, left[0][1] + 0.5);
+  for (const p of left.slice(1)) g.lineTo(p[0] + 0.5, p[1] + 0.5);
+  for (const p of right.slice().reverse()) g.lineTo(p[0] + 0.5, p[1] + 0.5);
+  g.closePath();
+  g.fill();
+  g.globalAlpha = 1;
+  for (const side of [left, right]) for (let i = 1; i < side.length; i++) line(g, side[i - 1][0], side[i - 1][1], side[i][0], side[i][1], color, 0.3);
+}
+
+/** A GEAR: its ring through the talents `ring` round the hub talent, a tooth out at each, `spokes` spokes, the hub's boss. */
+function drawGear(g: CanvasRenderingContext2D, hub: TalentAt, ring: readonly TalentAt[], spokes: number, color: string): void {
+  const r = ring.reduce((s, n) => s + Math.hypot(n.cx - hub.cx, n.cy - hub.cy), 0) / ring.length;
+  const band = Math.max(4, Math.round(r * 0.13));
+  // (the ring: a band either side of the talents' circle)
+  g.globalAlpha = 0.09;
+  g.fillStyle = color;
+  g.beginPath();
+  g.arc(hub.cx + 0.5, hub.cy + 0.5, r + band, 0, Math.PI * 2);
+  g.arc(hub.cx + 0.5, hub.cy + 0.5, r - band, 0, Math.PI * 2, true);
+  g.fill();
+  // (a tooth out at each talent of the ring)
+  for (const n of ring) {
+    const a = Math.atan2(n.cy - hub.cy, n.cx - hub.cx);
+    const ux = Math.cos(a);
+    const uy = Math.sin(a);
+    const half = band * 0.9;
+    const r0 = r + band;
+    const r1 = r + band * 2.1;
+    g.beginPath();
+    g.moveTo(hub.cx + ux * r0 - uy * half * 1.2 + 0.5, hub.cy + uy * r0 + ux * half * 1.2 + 0.5);
+    g.lineTo(hub.cx + ux * r1 - uy * half * 0.8 + 0.5, hub.cy + uy * r1 + ux * half * 0.8 + 0.5);
+    g.lineTo(hub.cx + ux * r1 + uy * half * 0.8 + 0.5, hub.cy + uy * r1 - ux * half * 0.8 + 0.5);
+    g.lineTo(hub.cx + ux * r0 + uy * half * 1.2 + 0.5, hub.cy + uy * r0 - ux * half * 1.2 + 0.5);
+    g.closePath();
+    g.fill();
+  }
+  // (the boss round the hub)
+  g.beginPath();
+  g.arc(hub.cx + 0.5, hub.cy + 0.5, band * 1.8, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+  // (its edges, and the spokes: straight up, down, left and right for four)
+  const edge = (rad: number, alpha: number): void => {
+    let px = hub.cx + rad;
+    let py = hub.cy;
+    for (let i = 1; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      const qx = hub.cx + Math.cos(a) * rad;
+      const qy = hub.cy + Math.sin(a) * rad;
+      line(g, px, py, qx, qy, color, alpha);
+      px = qx;
+      py = qy;
+    }
+  };
+  edge(r + band, 0.3);
+  edge(r - band, 0.22);
+  for (let i = 0; i < spokes; i++) {
+    const a = (i / spokes) * Math.PI * 2;
+    for (const o of [-1.5, 1.5]) {
+      const nx = -Math.sin(a) * o;
+      const ny = Math.cos(a) * o;
+      line(g, hub.cx + Math.cos(a) * band * 1.8 + nx, hub.cy + Math.sin(a) * band * 1.8 + ny, hub.cx + Math.cos(a) * (r - band) + nx, hub.cy + Math.sin(a) * (r - band) + ny, color, 0.22);
+    }
+  }
+}
+
+/** A ROUNDED BLOCK round the talents `ns`, `pad` pixels out from their middles (the fist's fingers, its back, its thumb). */
+function drawRound(g: CanvasRenderingContext2D, ns: readonly TalentAt[], pad: number, color: string): void {
+  const x0 = Math.min(...ns.map((n) => n.cx)) - pad;
+  const x1 = Math.max(...ns.map((n) => n.cx)) + pad;
+  const y0 = Math.min(...ns.map((n) => n.cy)) - pad;
+  const y1 = Math.max(...ns.map((n) => n.cy)) + pad;
+  const rad = Math.min(pad, (x1 - x0) / 2, (y1 - y0) / 2);
+  g.globalAlpha = 0.1;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x0 + rad, y0);
+  g.lineTo(x1 - rad, y0);
+  g.arc(x1 - rad, y0 + rad, rad, -Math.PI / 2, 0);
+  g.lineTo(x1, y1 - rad);
+  g.arc(x1 - rad, y1 - rad, rad, 0, Math.PI / 2);
+  g.lineTo(x0 + rad, y1);
+  g.arc(x0 + rad, y1 - rad, rad, Math.PI / 2, Math.PI);
+  g.lineTo(x0, y0 + rad);
+  g.arc(x0 + rad, y0 + rad, rad, Math.PI, Math.PI * 1.5);
+  g.closePath();
+  g.fill();
+  g.globalAlpha = 1;
+  // (its edges: the straight runs, and the corners stepped round)
+  line(g, x0 + rad, y0, x1 - rad, y0, color, 0.3);
+  line(g, x0 + rad, y1, x1 - rad, y1, color, 0.3);
+  line(g, x0, y0 + rad, x0, y1 - rad, color, 0.3);
+  line(g, x1, y0 + rad, x1, y1 - rad, color, 0.3);
+  for (const [cx, cy, a0] of [[x1 - rad, y0 + rad, -Math.PI / 2], [x1 - rad, y1 - rad, 0], [x0 + rad, y1 - rad, Math.PI / 2], [x0 + rad, y0 + rad, Math.PI]] as const) {
+    for (let i = 0; i < 6; i++) {
+      const a = a0 + (i / 6) * (Math.PI / 2);
+      const b = a0 + ((i + 1) / 6) * (Math.PI / 2);
+      line(g, cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, cx + Math.cos(b) * rad, cy + Math.sin(b) * rad, color, 0.3);
+    }
+  }
+}
+
 // ---- where everything goes ------------------------------------------------------------------------
 export interface TalentAt {
   def: TalentDef;
@@ -142,6 +305,8 @@ export interface TalentLayout {
   labels: { text: string; x: number; y: number; color: string }[];
   /** The line over the tree: what it is and the points. */
   headY: number;
+  /** Pixels to one of the shape's own units (across: the smaller, where it is stretched). */
+  unit: number;
 }
 
 /** The tree laid into the page's room `r`, its shape stretched to fill it. */
@@ -149,16 +314,24 @@ export function layTalents(game: Game, r: Rect): TalentLayout {
   const tree = TREES[game.hero.cls];
   const pts: (readonly [number, number])[] = tree.talents.map((t) => t.at);
   if (tree.root) pts.push(tree.root);
-  const minX = Math.min(...pts.map((p) => p[0]));
-  const maxX = Math.max(...pts.map((p) => p[0]));
-  const minY = Math.min(...pts.map((p) => p[1]));
-  const maxY = Math.max(...pts.map((p) => p[1]));
+  // (the box its shape is laid in: where its talents go, or the room it says it needs)
+  const [minX, minY, maxX, maxY] = tree.room ?? [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
   const headY = r.y + 1;
   // (room for half a big stone round the edge, and for the captions of the paths above and below)
   const area: Rect = { x: r.x + 9, y: r.y + 19, w: r.w - 18, h: r.h - 29 };
-  const sx = area.w / Math.max(0.01, maxX - minX);
-  const sy = area.h / Math.max(0.01, maxY - minY);
-  const map = (x: number, y: number): [number, number] => [Math.round(area.x + (x - minX) * sx), Math.round(area.y + (y - minY) * sy)];
+  let sx = area.w / Math.max(0.01, maxX - minX);
+  let sy = area.h / Math.max(0.01, maxY - minY);
+  // (a round shape, the gear, laid as round as it is: the smaller of the two, in the middle of the room)
+  let ox = 0;
+  let oy = 0;
+  if (tree.square) {
+    const s = Math.min(sx, sy);
+    ox = (area.w - s * (maxX - minX)) / 2;
+    oy = (area.h - s * (maxY - minY)) / 2;
+    sx = s;
+    sy = s;
+  }
+  const map = (x: number, y: number): [number, number] => [Math.round(area.x + ox + (x - minX) * sx), Math.round(area.y + oy + (y - minY) * sy)];
   const nodes = tree.talents.map((def): TalentAt => {
     const [cx, cy] = map(def.at[0], def.at[1]);
     const s = def.big ? BIG_STONE : STONE;
@@ -182,7 +355,7 @@ export function layTalents(game: Game, r: Rect): TalentLayout {
       }
       return { text: p.name, x: Math.max(r.x, Math.min(r.x + r.w - w, x)), y: Math.max(r.y + 10, Math.min(r.y + r.h - 6, y)), color: p.color };
     });
-  return { tree, nodes, root, labels, headY };
+  return { tree, nodes, root, labels, headY, unit: Math.min(sx, sy) };
 }
 
 /** The card of the talent being read: where it goes, over the game's half against the panel. */
@@ -207,6 +380,8 @@ function cardLines(game: Game, t: TalentDef, tree: TalentTree): { text: string; 
   for (const l of wrapText(talentText(t), CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
   const word = talentWord(t);
   if (word) out.push({ text: `WORKS WITH ${WORDS[word].name.toUpperCase()}`, color: WORD_COLOR[word], small: true });
+  // (a tree drafted, to be shown to the owner: its talents do nothing yet, and the card says so)
+  if (tree.draft) out.push({ text: 'A DRAFT: NOT IN PLAY YET', color: THEME.dim, small: true });
   return out;
 }
 
@@ -263,7 +438,15 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
 
   const at = new Map(lay.nodes.map((n) => [n.def.id, n]));
   const isTaken = (id: string): boolean => taken.includes(id);
-  // the faint pictures behind the tree, so that its shape reads (the arrow's feathers and head, the swords)
+  // the faint pictures behind the tree, so that its shape reads (the arrow's feathers and head, the swords); the new classes'
+  // (a claw's talons, a gear, a fist) kept to the page
+  const keep = (tree.figures ?? []).some((f) => f.kind === 'talon' || f.kind === 'gear' || f.kind === 'round');
+  g.save();
+  if (keep) {
+    g.beginPath();
+    g.rect(r.x - 4, r.y + 10, r.w + 8, r.h - 10);
+    g.clip();
+  }
   for (const f of tree.figures ?? []) {
     const path = tree.paths.find((p) => p.id === f.path);
     const color = path ? path.color : THEME.dim;
@@ -278,6 +461,14 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
       g.closePath();
       g.fill();
       g.globalAlpha = 1;
+    } else if (f.kind === 'talon') drawTalon(g, f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n), f.width, f.hook, color);
+    else if (f.kind === 'gear') {
+      const hub = at.get(f.hub);
+      const ring = f.ring.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
+      if (hub && ring.length >= 3) drawGear(g, hub, ring, f.spokes, color);
+    } else if (f.kind === 'round') {
+      const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
+      if (ns.length) drawRound(g, ns, f.pad * lay.unit, color);
     } else {
       const P0 = at.get(f.pommel);
       const G = at.get(f.guard);
@@ -316,6 +507,7 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
       }
     }
   }
+  g.restore();
   // the lines: between each talent and the ones that lead to it; and from the mage's rune
   if (lay.root) {
     for (const n of lay.nodes) {

@@ -1,0 +1,162 @@
+<title>Three New Skill Trees</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column; a tree a section: the game's own picture of it, then its fifteen cards by path. One dark look, the game's deep-blue menus, as the earlier trees page. */
+:root {
+  --bg: #0d1030;
+  --panel: #161a44;
+  --panel-2: #1d2256;
+  --line: #2c3274;
+  --fg: #e9ecff;
+  --muted: #a3abd8;
+  --friend: #28dcf0;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 15px; line-height: 1.5; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 820px; margin: 0 auto; padding-block: 22px 56px; display: grid; gap: 28px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--friend); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 7vw, 40px); line-height: 1.05; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 64ch; }
+.lead q, .change q, .idea q { color: var(--fg); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.facts li { font-family: var(--mono); font-size: 12.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; }
+nav.jump { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+nav.jump a { font-family: var(--display); font-weight: 600; letter-spacing: .04em; font-size: 14px; text-decoration: none; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 13px; background: var(--panel); }
+nav.jump a:focus-visible { outline: 2px solid var(--friend); outline-offset: 2px; }
+nav.jump a span { color: var(--muted); font-family: var(--mono); font-weight: 400; font-size: 12px; margin-left: 6px; }
+.change { border: 1px solid var(--friend); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; background: var(--panel); }
+.change h2 { font-size: 18px; }
+.change p { margin: 0; }
+section.tree { display: grid; gap: 14px; scroll-margin-top: 64px; }
+.tree-head { display: grid; gap: 4px; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 26px; letter-spacing: .03em; margin: 0; }
+.shape { margin: 0; color: var(--muted); max-width: 66ch; }
+figure { margin: 0; display: grid; gap: 6px; }
+figure img { display: block; width: 100%; max-width: 702px; height: auto; image-rendering: pixelated; border: 1px solid var(--line); border-radius: 8px; background: #0b0d26; }
+figcaption { font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+.paths { display: grid; gap: 18px; }
+.path { display: grid; gap: 8px; }
+.path h3 { font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: .1em; margin: 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 11px 13px 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.card .top { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.card .name { font-family: var(--display); font-weight: 700; font-size: 16.5px; letter-spacing: .02em; }
+.chip { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; border: 1px solid var(--line); color: var(--muted); }
+.chip.big { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+.chip.yours { color: var(--friend); border-color: var(--friend); }
+.chip.word { color: var(--fg); }
+.card p { margin: 0; }
+.card .where { font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+.idea { font-size: 13px; color: var(--muted); border-left: 2px solid var(--friend); padding-left: 8px; }
+footer { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px; color: var(--muted); max-width: 66ch; }
+footer p { margin: 0; }
+footer strong, footer q { color: var(--fg); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wordsmith · kept, 28 Oct · not in the game yet</div>
+    <h1>Three New Skill Trees</h1>
+    <p class="lead">Your words: <q>Skill trees first</q>. Here are the Warlock's, the Tinkerer's and the Brawler's, each in the shape you picked (<q>Claw, gear, fist (Recommended)</q>) and with the paths you named. They work like the other three trees. Each talent changes how you play rather than just raising a number.</p>
+    <ul class="facts">
+      <li>10 points, one every 5 levels</li>
+      <li>15 talents a tree</li>
+      <li>a talent opens once one before it is taken</li>
+      <li>undone in town, 10 gold a level</li>
+    </ul>
+  </header>
+
+  <nav class="jump" aria-label="The three trees" id="jump"></nav>
+
+  <div class="change">
+    <h2>The Tinkerer starts differently</h2>
+    <p>Your words: <q>I think for her I’d like her to start with golem and a vial toss.  Then in the skill tree you can swap the vial toss to a contraption that throws the vials</q>.</p>
+    <p>So her tap is now a <strong>Vial Toss</strong>: she lobs one vial from her belt, and it bursts where it lands. Her tap and hold is still her <strong>Golem</strong>, and her swipe is still the <strong>Blast Jump</strong>. The <strong>Contraption</strong> becomes a talent on her Vials path that swaps the Vial Toss out. Her throw is the same overhand lob she uses for the Contraption now, with a vial in her hand. I'll send you a picture of it before it goes in.</p>
+  </div>
+
+  <div id="trees" style="display:grid;gap:34px"></div>
+
+  <footer>
+    <p><strong>Big</strong> ones change a move the most and are drawn larger on the tree. <strong>Your idea</strong> marks the ones that come from your own words, quoted under them.</p>
+    <p>Your answers, 28 Oct: the Warlock’s and the Tinkerer’s, <q>Yes, keep it (Recommended)</q>; the Brawler’s, <q>Keep it, except change the names of “one target” and “crowd”</q>, then <q>Speed and Power</q>. None of this does anything in the game yet; each class’s talents come to you as a film first. The numbers on the cards are first guesses, to be tried in play.</p>
+  </footer>
+</div>
+
+<script>
+const TREES = [{"cls":"warlock","shape":"a demon’s claw","paths":[{"id":"demon","name":"DEMON","color":"#ff5a3c"},{"id":"man","name":"MAN","color":"#b49cff"},{"id":"pact","name":"","color":"#9a78c8"}],"talents":[{"id":"hunger","name":"Hunger","big":false,"path":"demon","text":"Every kill the demon makes puts two seconds back on its pact.","word":null,"after":[]},{"id":"terribleroar","name":"Terrible Roar","big":false,"path":"demon","text":"The change’s roar curses everything it throws back, and they run from him for two seconds.","word":null,"after":["Hunger"]},{"id":"feast","name":"Feast","big":false,"path":"demon","text":"Every kill the demon makes heals him a tenth of his life.","word":null,"after":["Terrible Roar"]},{"id":"bloodlust","name":"Bloodlust","big":false,"path":"demon","text":"Every kill makes the demon’s rakes quicker, up to twice as quick, until it burns out.","word":null,"after":["Blazing Arm"]},{"id":"hellwave","name":"Hellwave","big":false,"path":"demon","text":"Every third rake throws a wave of hellfire on ahead, through everything in its way.","word":null,"after":["Bloodlust"]},{"id":"damnedsouls","name":"Damned Souls","big":true,"path":"demon","text":"Every enemy the demon kills rises as a burning soul that flies into the nearest enemy, cursing it and setting it alight.","word":null,"after":["Hellwave"]},{"id":"branded","name":"Branded","big":false,"path":"man","text":"Every Hellfire Bolt curses what it hits.","word":null,"after":[]},{"id":"hexchain","name":"Hex Chain","big":false,"path":"man","text":"A bolt that hits a cursed enemy leaps on to the next cursed one near it, up to three times, burning each.","word":null,"after":["Branded"]},{"id":"phantomstep","name":"Phantom Step","big":true,"path":"man","text":"His Smoke Step leaves his shadow where he stood: for two seconds, the enemies go after it instead of him.","word":null,"after":["Hex Chain"]},{"id":"withering","name":"Withering","big":false,"path":"man","text":"Cursed enemies move and strike at half speed.","word":null,"after":["Blazing Arm"]},{"id":"pyre","name":"Pyre","big":false,"path":"man","text":"A cursed enemy that dies bursts in hellfire, striking everything near it.","word":null,"after":["Withering"]},{"id":"bounddemon","name":"Bound Demon","big":true,"path":"man","text":"The demon no longer takes him over: it tears out and fights at his side until the pact runs dry, while he fights on as a man.","word":null,"after":["Pyre"]},{"id":"blazingarm","name":"Blazing Arm","big":true,"path":"pact","text":"While his pact is full and he has not changed, his arm blazes: every Hellfire Bolt bursts, cursing and burning all near it.","word":null,"after":["Terrible Roar","Hex Chain"]},{"id":"souldebt","name":"Soul Debt","big":false,"path":"pact","text":"Every cursed enemy that dies fills a tenth of his pact.","word":null,"after":["Blazing Arm"]},{"id":"lastrites","name":"Last Rites","big":true,"path":"pact","text":"As the demon burns out, Damning goes off by itself: every cursed or burning enemy near him pays all its burns at once.","word":null,"after":["Soul Debt"]}]},{"cls":"tinkerer","shape":"a gear","paths":[{"id":"vials","name":"VIALS","color":"#7ae0c0"},{"id":"golem","name":"GOLEM","color":"#e8a858"},{"id":"works","name":"","color":"#b8c0d0"},{"id":"gold","name":"","color":"#ffd448"}],"talents":[{"id":"bombsaway","name":"Bombs Away","big":false,"path":"works","text":"As she comes down from her Blast Jump, a second bomb goes off where she lands.","word":null,"after":[]},{"id":"fortune","name":"Fortune","big":false,"path":"gold","text":"She hits harder the more gold she carries: 1% of her gold, as a percent. 1,000 gold, 10% more.","word":null,"after":["Bombs Away"]},{"id":"clustervials","name":"Cluster Vials","big":false,"path":"vials","text":"Every vial bursts into three little ones that bounce out and burst again.","word":null,"after":["Bombs Away"]},{"id":"tar","name":"Tar","big":false,"path":"vials","text":"Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.","word":null,"after":["Cluster Vials"]},{"id":"madmixture","name":"Mad Mixture","big":true,"path":"vials","text":"Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.","word":null,"after":["Tar"]},{"id":"contraptions","name":"Contraption","big":true,"path":"vials","text":"Her tap sets down a Contraption in place of the Vial Toss: it lobs her vials for her, three at once.","word":null,"after":["Mad Mixture","Fortune"]},{"id":"alchemy","name":"Alchemy","big":false,"path":"vials","text":"An enemy her vials kill always drops gold.","word":null,"after":["Mad Mixture"]},{"id":"thebigone","name":"The Big One","big":true,"path":"vials","text":"Every fifth vial is a big one: it bursts three times as wide and knocks everything down.","word":null,"after":["Alchemy"]},{"id":"lightningrod","name":"Lightning Rod","big":false,"path":"golem","text":"For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.","word":null,"after":["Bombs Away"]},{"id":"shrapnel","name":"Shrapnel","big":false,"path":"golem","text":"The Golem’s cannon shot bursts where it lands, striking everything near.","word":null,"after":["Lightning Rod"]},{"id":"teslacoil","name":"Tesla Coil","big":false,"path":"golem","text":"A coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more.","word":null,"after":["Shrapnel"]},{"id":"markii","name":"Mark II","big":true,"path":"golem","text":"She can whistle out a second Golem: two at once.","word":null,"after":["Tesla Coil"]},{"id":"prospector","name":"Prospector","big":false,"path":"golem","text":"Every ground pound digs up a handful of gold.","word":null,"after":["Tesla Coil"]},{"id":"overdrive","name":"Overdrive","big":true,"path":"golem","text":"Her whistle sends the Golem into overdrive for five seconds: it moves and strikes twice as fast.","word":null,"after":["Prospector"]},{"id":"growthserum","name":"Growth Serum","big":true,"path":"works","text":"A vial of hers that bursts by her Golem makes it grow: twice as big and twice as strong for five seconds.","word":null,"after":["The Big One","Overdrive"]}]},{"cls":"brawler","shape":"a fist","paths":[{"id":"speed","name":"SPEED","color":"#ff7a50"},{"id":"power","name":"POWER","color":"#5ab0ff"},{"id":"counter","name":"","color":"#e8d090"}],"talents":[{"id":"doublejab","name":"Double Jab","big":false,"path":"speed","text":"His jab is two quick jabs.","word":null,"after":[]},{"id":"tenderize","name":"Tenderize","big":false,"path":"speed","text":"Every punch he lands on the same enemy makes it take 5% more from him, up to 50%, until he hits another.","word":null,"after":["Double Jab"]},{"id":"heavyhands","name":"Heavy Hands","big":false,"path":"speed","text":"Heavy no longer slows his taps.","word":"Heavy","after":["Tenderize"]},{"id":"biguppercut","name":"Big Uppercut","big":true,"path":"speed","text":"His uppercut hits twice as hard and throws the enemy up: it comes down stunned for two seconds.","word":null,"after":["Heavy Hands"]},{"id":"flurry","name":"Flurry","big":false,"path":"speed","text":"After the uppercut lands, his next tap is a hook again: hook, uppercut, hook, uppercut, without a break.","word":null,"after":["Tenderize"]},{"id":"knockout","name":"Knockout","big":true,"path":"speed","text":"His uppercut knocks out any enemy below a fifth of its life (a boss is stunned three seconds).","word":null,"after":["Flurry"]},{"id":"widecross","name":"Wide Cross","big":false,"path":"power","text":"His cross strikes every enemy in front of him, not only the first.","word":null,"after":[]},{"id":"bleeders","name":"Bleeders","big":false,"path":"power","text":"Body blows always make them bleed: each one it hits loses half the blow again over three seconds.","word":null,"after":["Wide Cross"]},{"id":"ironchin","name":"Iron Chin","big":false,"path":"power","text":"Winding up a hold, nothing can knock him back or stagger him, and he takes a third less harm.","word":null,"after":["Bleeders"]},{"id":"tenpins","name":"Ten Pins","big":true,"path":"power","text":"Every enemy the haymaker’s cannonball bowls over is launched too, and bowls over more down the line.","word":null,"after":["Iron Chin"]},{"id":"pinball","name":"Pinball","big":false,"path":"power","text":"An enemy he knocks back hurts what it is knocked into, and knocks that back too.","word":null,"after":["Bleeders"]},{"id":"shockwave","name":"Shockwave","big":true,"path":"power","text":"His holds send a wave of air on ahead: it strikes everything in a line three tiles long.","word":null,"after":["Pinball"]},{"id":"bobweave","name":"Bob and Weave","big":false,"path":"counter","text":"When his counter lands, his slip is ready again at once.","word":null,"after":["Tenderize","Bleeders"]},{"id":"slipreflex","name":"Slip Reflex","big":false,"path":"counter","text":"Once every six seconds, a blow that would hit him is slipped by itself, and he counters.","word":null,"after":["Bob and Weave"]},{"id":"setup","name":"Set-Up","big":true,"path":"counter","text":"After a counter lands, his next press is the combo’s last punch: a tap the uppercut, a hold the haymaker.","word":null,"after":["Slip Reflex"]}]}];
+const NAMES = { warlock: 'Warlock', tinkerer: 'Tinkerer', brawler: 'Brawler' };
+const SHAPES = {
+  warlock: 'A demon’s claw. Demon starts at the top of the hand and Man at the bottom. They meet at the knuckle, where three talons come out: the demon’s on top, the pact’s in the middle and the man’s below.',
+  tinkerer: 'A gear. Both paths start at the left tooth. Vials go round the top and Golem round the bottom, and they meet at the right tooth. Her gold is the hub. The spoke down from the top tooth is the swap to the Contraption, which you can also reach from the hub.',
+  brawler: 'A fist, punching to the right. Speed (his taps, for one enemy) starts at the top of the wrist and Power (his holds, for a crowd) at the bottom. Each path ends in two of the knuckles at the front. The thumb across the middle is his slip and counter, open from either side.',
+};
+const SHARED = { pact: 'WHERE THEY MEET: THE PACT', works: 'BOTH PATHS: THE FIRST AND LAST TEETH', gold: 'THE HUB: HER GOLD', counter: 'BOTH PATHS: THE THUMB, HIS SLIP AND COUNTER' };
+const IDEAS = {
+  contraptions: ['28 Oct', 'Then in the skill tree you can swap the vial toss to a contraption that throws the vials'],
+  fortune: ['28 Oct', 'For future reference I’d like some of her skill tree to be gold based like increased % damage based on 1% gold stash amount or something like that'],
+  alchemy: ['28 Oct', 'For future reference I’d like some of her skill tree to be gold based like increased % damage based on 1% gold stash amount or something like that'],
+  prospector: ['28 Oct', 'For future reference I’d like some of her skill tree to be gold based like increased % damage based on 1% gold stash amount or something like that'],
+  teslacoil: ['28 Oct, of the Golem’s other arm (you picked the cannon)', 'Maybe put a cannon or a tesla coil on his other arm or whatever'],
+  biguppercut: ['24 Oct', 'once we build his skill tree, it will have increased uppercut or body blows always bleed, something like that'],
+  bleeders: ['24 Oct', 'once we build his skill tree, it will have increased uppercut or body blows always bleed, something like that'],
+  setup: ['25 Oct', 'Then let’s have a spot on the skill tree that after a successful counter you’re next attack is the final hit in the combo, either uppercut or haymaker'],
+};
+const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const nav = document.getElementById('jump');
+const root = document.getElementById('trees');
+for (const t of TREES) {
+  const a = h('a'); a.href = '#' + t.cls; a.textContent = NAMES[t.cls]; a.appendChild(h('span', '', t.shape.replace('a demon’s ', ''))); nav.appendChild(a);
+  const s = h('section', 'tree'); s.id = t.cls;
+  const head = h('div', 'tree-head');
+  head.appendChild(h('h2', '', NAMES[t.cls]));
+  head.appendChild(h('p', 'shape', SHAPES[t.cls]));
+  s.appendChild(head);
+  const fig = h('figure');
+  const img = h('img'); img.src = t.cls + '.png'; img.width = 702; img.height = 400; img.alt = `The ${NAMES[t.cls]}'s tree on the game's talents page, shaped as ${t.shape}, with nothing taken yet.`;
+  fig.appendChild(img);
+  fig.appendChild(h('figcaption', '', 'From the game itself, on a test build: the talents page, nothing taken yet.'));
+  s.appendChild(fig);
+  const paths = h('div', 'paths');
+  for (const p of t.paths) {
+    const ts = t.talents.filter((x) => x.path === p.id);
+    if (!ts.length) continue;
+    const box = h('div', 'path');
+    const title = h('h3', '', p.name || SHARED[p.id] || p.id.toUpperCase());
+    title.style.color = p.color;
+    box.appendChild(title);
+    const cards = h('div', 'cards');
+    for (const x of ts) {
+      const c = h('div', 'card');
+      c.style.borderTop = `2px solid ${p.color}`;
+      const top = h('div', 'top');
+      top.appendChild(h('span', 'name', x.name));
+      if (x.big) top.appendChild(h('span', 'chip big', 'Big'));
+      if (IDEAS[x.id]) top.appendChild(h('span', 'chip yours', 'Your idea'));
+      if (x.word) top.appendChild(h('span', 'chip word', 'Works with ' + x.word));
+      c.appendChild(top);
+      c.appendChild(h('p', '', x.text));
+      c.appendChild(h('p', 'where', x.after.length ? 'After ' + x.after.join(' or ') : 'A place to start'));
+      if (IDEAS[x.id]) {
+        const i = h('p', 'idea');
+        i.appendChild(document.createTextNode(`Your words, ${IDEAS[x.id][0]}: `));
+        i.appendChild(h('q', '', IDEAS[x.id][1]));
+        c.appendChild(i);
+      }
+      cards.appendChild(c);
+    }
+    box.appendChild(cards);
+    paths.appendChild(box);
+  }
+  s.appendChild(paths);
+  root.appendChild(s);
+}
+</script>

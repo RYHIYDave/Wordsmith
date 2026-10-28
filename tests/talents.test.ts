@@ -10,8 +10,8 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import type { RunSave } from '../src/game/game';
 import { TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, TREES, cleanTalents, nextTalentLevel, takeProblem, talentMods, talentName, talentOpen, talentPoints, talentText, talentWord, unlearnProblem } from '../src/game/talents';
-import type { TalentDef } from '../src/game/talents';
-import { CLASS_IDS, WORD_IDS } from '../src/game/types';
+import type { TalentDef, TalentFigure } from '../src/game/talents';
+import { ALL_CLASS_IDS, CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
 import { seasoned } from './helpers';
@@ -84,11 +84,65 @@ test('each class has fifteen talents in a shape of its own, every one reachable,
     assert.ok(worded >= 2 && worded <= 4, `${cls}: ${worded} talents that work with words ("a few")`);
     // the figures and the paths' names stand by talents of the tree
     for (const p of tree.paths) assert.ok(ids.includes(p.label.node), `${cls}: ${p.id}'s name by ${p.label.node}`);
-    for (const f of tree.figures ?? []) {
-      const need = f.kind === 'fill' ? [...f.ids] : [f.pommel, f.guard, f.tip, ...f.quillons];
-      for (const id of need) assert.ok(ids.includes(id), `${cls}: a figure through ${id}`);
-    }
+    for (const f of tree.figures ?? []) for (const id of figureIds(f)) assert.ok(ids.includes(id), `${cls}: a figure through ${id}`);
   }
+});
+
+/** The talents a figure is drawn through. */
+function figureIds(f: TalentFigure): string[] {
+  if (f.kind === 'sword') return [f.pommel, f.guard, f.tip, ...f.quillons];
+  if (f.kind === 'gear') return [f.hub, ...f.ring];
+  return [...f.ids];
+}
+
+test('THE NEW CLASSES\' TREES (drafts, 28 Oct 2026): fifteen each in his shapes, every one reachable, his paths, his ideas in', () => {
+  const NEW: readonly ClassId[] = ['warlock', 'tinkerer', 'brawler'];
+  for (const cls of NEW) {
+    const tree = TREES[cls];
+    assert.equal(tree.cls, cls);
+    assert.equal(tree.draft, true, `${cls}: a draft, to be shown to him`);
+    assert.equal(tree.talents.length, 15, cls);
+    const ids = tree.talents.map((t) => t.id);
+    assert.equal(new Set(ids).size, 15, `${cls}: each id once`);
+    // (no id another class's tree has: the game asks after a talent by its id alone)
+    for (const other of ALL_CLASS_IDS) if (other !== cls) for (const id of ids) assert.ok(!TREES[other].talents.some((t) => t.id === id), `${cls}: ${id} is not ${other}'s too`);
+    for (const t of tree.talents) {
+      for (const f of t.from) assert.ok(ids.includes(f), `${cls}: ${t.id} comes from ${f}`);
+      assert.ok(tree.paths.some((p) => p.id === t.path), `${cls}: ${t.id} on a path`);
+      if (t.word) assert.ok(WORD_IDS.includes(t.word));
+      assert.ok(wrapText(t.text, 136 - 10).length <= 6, `${cls}: ${t.id}'s card takes ${wrapText(t.text, 136 - 10).length} lines`);
+      assert.ok(t.name.length <= 14, `${cls}: ${t.name} is short`);
+    }
+    const reach = new Set(tree.talents.filter((t) => !t.from.length).map((t) => t.id));
+    for (let n = 0; n < 20; n++) for (const t of tree.talents) if (t.from.some((f) => reach.has(f))) reach.add(t.id);
+    assert.equal(reach.size, 15, `${cls}: every talent reachable`);
+    const big = tree.talents.filter((t) => t.big).length;
+    assert.ok(big >= 4 && big <= 6, `${cls}: ${big} big talents`);
+    for (const p of tree.paths) assert.ok(ids.includes(p.label.node));
+    for (const f of tree.figures ?? []) for (const id of figureIds(f)) assert.ok(ids.includes(id), `${cls}: a figure through ${id}`);
+  }
+  const named = (cls: ClassId): string[] => TREES[cls].paths.filter((p) => p.name).map((p) => p.name);
+  // his paths: “Man and Demon”; “Vials and Golem”; “One target and Crowd”, renamed at his word (“Speed and Power”)
+  assert.deepEqual(named('warlock').sort(), ['DEMON', 'MAN']);
+  assert.deepEqual(named('tinkerer').sort(), ['GOLEM', 'VIALS']);
+  assert.deepEqual(named('brawler').sort(), ['POWER', 'SPEED']);
+  // his shapes: “Claw, gear, fist (Recommended)”
+  assert.equal(TREES.warlock.shape, 'a demon’s claw');
+  assert.equal(TREES.tinkerer.shape, 'a gear');
+  assert.equal(TREES.brawler.shape, 'a fist');
+  assert.equal(TREES.tinkerer.square, true, 'the gear laid round');
+  // his ideas: the swap to the Contraption; her gold in both paths and the hub; the bigger uppercut, the bleeding body blows, the counter's set-up
+  const by = (cls: ClassId, id: string): TalentDef => TREES[cls].talents.find((t) => t.id === id) as TalentDef;
+  assert.equal(by('tinkerer', 'contraptions').path, 'vials');
+  assert.equal(by('tinkerer', 'fortune').path, 'gold');
+  assert.equal(by('tinkerer', 'alchemy').path, 'vials');
+  assert.equal(by('tinkerer', 'prospector').path, 'golem');
+  assert.ok(by('brawler', 'biguppercut') && by('brawler', 'bleeders') && by('brawler', 'setup'));
+  // (the Warlock's two paths and the Brawler's meet in the middle, either way in; the Tinkerer's start from one tooth)
+  assert.deepEqual([...by('warlock', 'blazingarm').from].sort(), ['hexchain', 'terribleroar']);
+  assert.deepEqual([...by('brawler', 'bobweave').from].sort(), ['bleeders', 'tenderize']);
+  assert.deepEqual(TREES.tinkerer.talents.filter((t) => !t.from.length).map((t) => t.id), ['bombsaway']);
+  assert.deepEqual([...by('tinkerer', 'growthserum').from].sort(), ['overdrive', 'thebigone']);
 });
 
 test('the shapes: the mage three paths of five from her rune; the arrow two feathers to start from; the swords two pommels and a crossing that is both', () => {
