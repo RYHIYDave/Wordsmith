@@ -344,6 +344,1266 @@ export class Field {
   }
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE FIELD, FAST (the main chat, 28 Oct 2026). The game paints every hero frame at load time, and the plain `Field` above
+// takes a sixth of a second and more for one frame (seconds, for the demon), on a phone four times that. `Fast` works
+// out THE VERY SAME NUMBERS, to the last bit, so every picture is the same to the pixel. It is quicker because:
+//  1. its sums are done on numbers laid out flat, with nothing made and thrown away for each point it is asked of;
+//  2. it asks of each point only the solids that can matter there. Space is cut into small cells (a few pixels square, a
+//     few lengths deep), and each cell keeps a list of its solids: every solid but those that `Field` itself, at every
+//     point of that cell, would pass over (its bounding ball further from the point than what is already found, by the
+//     solid's blend). Which those are is PROVED, never guessed: what `Field` has already found when it comes to a solid is
+//     never more than the most that some solid it looked at before could have left found anywhere in the cell (one looked
+//     at and passed over leaves it less than its ball's reach; one taken in leaves it no more than its own distance). A
+//     carve takes away and may raise what is found, so a material carved in a cell lends nothing to the proof for the
+//     materials after it there. A cell's list is drawn from the list of the bigger cell it lies in;
+//  3. it skips the sums whose answer is known without them, again only where that is proved for the whole cell: a solid
+//     whose skin is further than what is found by its blend leaves it as it was, to the bit; a material that can give
+//     nothing nearer than the nearest skin already found (in `at`) changes nothing; and where a solid nearer than all
+//     before it by its blend is taken in, what went before it is forgotten (what is found becomes its distance), so those
+//     before it need not be asked at all. How far a solid can be anywhere in a cell is bounded from its distance at the
+//     cell's middle (a rod, a block and a sheet are no further, nor nearer, than the point has gone; a ball, as `dist` has
+//     it, is bounded through how far out of it the point is, as measured along its own half-lengths);
+//  4. a column of pixels that no skin of any material comes near enough to (by its blends) to be met is not marched.
+// What is left is looked at in the same order and with the same sums as `Field` looks at every solid, so what it finds is
+// the same. `SCULPT_SPEED.fast = false` draws with the plain field.
+
+/** Draw with the fast field (the same pictures, to the pixel), or the plain one. */
+export const SCULPT_SPEED = { fast: true };
+/** The cells' size: pixels square, lengths deep (as `Stage.near` measures), and how many of them a side a bigger cell is. */
+export const CELL = { ts: 4, dt: 4, big: 4 };
+
+/** (counting the work, for measuring: off) */
+const COUNT = false;
+export const COUNTS: Record<string, number> = {};
+const cnt = (k: string, v = 1): void => {
+  COUNTS[k] = (COUNTS[k] ?? 0) + v;
+};
+
+const KC = 0;
+const KE = 1;
+const KB = 2;
+const KT = 3;
+/** Numbers kept for each solid (`Fast.g`). */
+const GS = 40;
+/** What a bound may be out by in its last bits, and more (lengths of a figure are tens, not millions). */
+const SLACK = 1e-6;
+/**
+ * Numbers kept for each solid of a list (`Arena.F`): the least its distance can be where the list holds; the least what
+ * is found can come to from it on, if it was no less before; its blend; its ball's reach, and its middle; the most its
+ * distance can be where the list holds; and the least its distance can be AT A POINT of where the list holds, as a flat
+ * sum of the point (v = a + gx x + gy y + gz z, the least being v times one number where v is not less than nothing, and
+ * times another where it is).
+ */
+const FS = 14;
+/** A material of no fewer solids than this is first looked over solid by solid, at the point, for how near each can be. */
+const OVER = 5;
+let LQ = new Float64Array(256);
+let PB = new Float64Array(256);
+/**
+ * Numbers kept for each material of a list (`Arena.S`): its number; its first solid, after its last solid, after its last
+ * carve; the solid to begin at; a later solid that may be begun at, if it proves so at the point.
+ */
+const SS = 6;
+/** And (`Arena.SF`): the least it can give where the list holds; the least `Field` can have found when it comes to the solid to begin at, and to the later one. */
+const SFS = 3;
+
+/**
+ * THE LISTS OF ONE DRAWING, kept flat: a list is a run of materials (`T`: its first and how many), each material a run of
+ * its solids and carves (`S`, `SF`), each solid its number (`I`) and what is known of it where the list holds (`F`). Kept
+ * for the next drawing (a pool, should one drawing be made inside another).
+ */
+class Arena {
+  I = new Int32Array(1 << 14);
+  F = new Float64Array(FS << 14);
+  S = new Int32Array(SS << 12);
+  SF = new Float64Array(SFS << 12);
+  T = new Int32Array(2 << 12);
+  ni = 0;
+  ns = 0;
+  nl = 1;
+  reset(): void {
+    this.ni = 0;
+    this.ns = 0;
+    this.nl = 1;
+  }
+  /** Room for this many more solids and materials. */
+  room(items: number, segs: number): void {
+    if (this.ni + items > this.I.length) {
+      const n = Math.max(this.I.length * 2, this.ni + items);
+      const I = new Int32Array(n);
+      I.set(this.I.subarray(0, this.ni));
+      this.I = I;
+      const F = new Float64Array(n * FS);
+      F.set(this.F.subarray(0, this.ni * FS));
+      this.F = F;
+    }
+    if (this.ns + segs > this.S.length / SS) {
+      const n = Math.max((this.S.length / SS) * 2, this.ns + segs);
+      const S = new Int32Array(n * SS);
+      S.set(this.S.subarray(0, this.ns * SS));
+      this.S = S;
+      const SF = new Float64Array(n * SFS);
+      SF.set(this.SF.subarray(0, this.ns * SFS));
+      this.SF = SF;
+    }
+  }
+  /** A new list of the materials from `s0`, `n` of them. */
+  list(s0: number, n: number): number {
+    if (this.nl * 2 + 2 > this.T.length) {
+      const T = new Int32Array(this.T.length * 2);
+      T.set(this.T);
+      this.T = T;
+    }
+    this.T[this.nl * 2] = s0;
+    this.T[this.nl * 2 + 1] = n;
+    return this.nl++;
+  }
+}
+const ARENAS: Arena[] = [];
+
+/** The smooth union, as `smin` has it (a bound kept by it: never more than either, and no less for either being more). */
+function sminOf(a: number, b: number, k: number): number {
+  if (k <= 0) return Math.min(a, b);
+  const h = Math.max(k - Math.abs(a - b), 0) / k;
+  return Math.min(a, b) - h * h * k * 0.25;
+}
+
+class Fast {
+  readonly n: number;
+  readonly nm: number;
+  readonly kind: Uint8Array;
+  readonly matOf: Int32Array;
+  readonly carve: Uint8Array;
+  readonly blend: Float64Array;
+  readonly br: Float64Array;
+  readonly bc: Float64Array;
+  readonly g: Float64Array;
+  readonly cut0: Int32Array;
+  readonly cut1: Int32Array;
+  readonly cutv: Float64Array;
+  /** A carve's reach (as `Field.ofMat` works it out). */
+  readonly farC: Float64Array;
+  /** The first of the materials, when the first ones have no solids (they give 1e6 at once), or -1. */
+  readonly lead: number;
+  /** For each material, the solid `Field.nearest` starts from. */
+  readonly first: Int32Array;
+  /** Every solid but the carves, in `Field`'s order. */
+  readonly order: Int32Array;
+  /** The list of every solid, and each material's own. */
+  readonly full: number;
+  readonly fullMat: Int32Array;
+  /** The material `at` found nearest. */
+  m = -1;
+  constructor(
+    readonly f: Field,
+    readonly A: Arena,
+  ) {
+    const rs = f.rs;
+    const n = (this.n = rs.length);
+    this.nm = f.byMat.length;
+    this.kind = new Uint8Array(n);
+    this.matOf = new Int32Array(n);
+    this.carve = new Uint8Array(n);
+    this.blend = new Float64Array(n);
+    this.br = new Float64Array(n);
+    this.bc = new Float64Array(n * 3);
+    this.g = new Float64Array(n * GS);
+    this.cut0 = new Int32Array(n);
+    this.cut1 = new Int32Array(n);
+    this.farC = new Float64Array(n);
+    const cuts: number[] = [];
+    const g = this.g;
+    rs.forEach((r, i) => {
+      const p = r.p;
+      this.kind[i] = p.k === 'cone' ? KC : p.k === 'ell' ? KE : p.k === 'box' ? KB : KT;
+      this.matOf[i] = p.mat;
+      this.carve[i] = p.carve ? 1 : 0;
+      this.blend[i] = p.blend;
+      this.br[i] = r.br;
+      this.bc[i * 3] = r.bc[0];
+      this.bc[i * 3 + 1] = r.bc[1];
+      this.bc[i * 3 + 2] = r.bc[2];
+      this.farC[i] = p.blend + 0.01 + r.br;
+      const o = i * GS;
+      if (p.k === 'cone') {
+        const ba = r.ba as V3;
+        g.set([p.a[0], p.a[1], p.a[2], ba[0], ba[1], ba[2], r.bb as number, p.ra, p.rb - p.ra, Math.min(p.ra, p.rb), Math.max(p.ra, p.rb), p.b[0], p.b[1], p.b[2]], o);
+      } else if (p.k === 'tri') {
+        const ba = sub(p.b, p.a);
+        const cb = sub(p.c, p.b);
+        const ac = sub(p.a, p.c);
+        const nor = triCr(ba, ac);
+        const c1 = triCr(ba, nor);
+        const c2 = triCr(cb, nor);
+        const c3 = triCr(ac, nor);
+        g.set([...p.a, ...p.b, ...p.c, ...ba, ...cb, ...ac, ...nor, ...c1, ...c2, ...c3, Math.sqrt(dot(nor, nor) || 1e-9), dot(ba, ba) || 1e-9, dot(cb, cb) || 1e-9, dot(ac, ac) || 1e-9, p.thick], o);
+      } else {
+        const ua = r.ua as readonly [V3, V3, V3];
+        const ul = r.ul as V3;
+        // (how much its three lines, when not square to each other, stretch a length, at most and at least)
+        let most = 0;
+        let least = Infinity;
+        for (let a = 0; a < 3; a++) {
+          let off = 0;
+          for (let b = 0; b < 3; b++) if (b !== a) off += Math.abs(dot(ua[a], ua[b]));
+          const own = dot(ua[a], ua[a]);
+          most = Math.max(most, own + off);
+          least = Math.min(least, own - off);
+        }
+        const sig = Math.sqrt(most) * (1 + 1e-9);
+        const sigMin = Math.sqrt(Math.max(0, least)) * (1 - 1e-9);
+        const rr = Math.min(p.k === 'box' ? p.round : 0, ul[0], ul[1], ul[2]);
+        g.set([p.c[0], p.c[1], p.c[2], ...ua[0], ...ua[1], ...ua[2], ul[0], ul[1], ul[2], p.k === 'box' ? rr : Math.min(ul[0], ul[1], ul[2]), sig, Math.max(ul[0], ul[1], ul[2]), sigMin, p.k === 'box' && rr >= 0 ? Math.hypot(ul[0], ul[1], ul[2]) : -1], o);
+      }
+      this.cut0[i] = cuts.length / 4;
+      if (p.cuts) for (const c of p.cuts) cuts.push(c.n[0], c.n[1], c.n[2], c.o);
+      this.cut1[i] = cuts.length / 4;
+    });
+    this.cutv = new Float64Array(cuts);
+    let lead = -1;
+    for (let m = 0; m < this.nm && !f.byMat[m].length; m++) lead = 0;
+    this.lead = f.byMat.some((b) => b.length) ? lead : -1;
+    const index = new Map<Ready, number>();
+    rs.forEach((r, i) => index.set(r, i));
+    this.first = new Int32Array(this.nm).map((_, m) => (f.byMat[m].length ? (index.get(f.byMat[m][0]) as number) : 0));
+    this.order = Int32Array.from(f.byMat.flatMap((b) => b.map((r) => index.get(r) as number)));
+    // (the lists that know nothing of where they hold: every solid asked)
+    A.room(n * 2, this.nm * 2);
+    const plain = (ids: number[]): void => {
+      for (const i of ids) {
+        const o = A.ni * FS;
+        A.I[A.ni++] = i;
+        A.F.set([-Infinity, -Infinity, this.blend[i], this.br[i], this.bc[i * 3], this.bc[i * 3 + 1], this.bc[i * 3 + 2], Infinity, -Infinity, 0, 0, 0, 1, 1], o);
+      }
+    };
+    const seg = (m: number, prims: number[], carves: number[]): void => {
+      const s = A.ns++;
+      const i0 = A.ni;
+      plain(prims);
+      plain(carves);
+      A.S.set([m, i0, i0 + prims.length, A.ni, i0, i0], s * SS);
+      A.SF[s * SFS] = -Infinity;
+      A.SF[s * SFS + 1] = Infinity;
+      A.SF[s * SFS + 2] = Infinity;
+    };
+    const ids = (rr: Ready[]): number[] => rr.map((r) => index.get(r) as number);
+    const s0 = A.ns;
+    for (let m = 0; m < this.nm; m++) if (f.byMat[m].length) seg(m, ids(f.byMat[m]), ids(f.carves[m]));
+    this.full = A.list(s0, A.ns - s0);
+    this.fullMat = new Int32Array(this.nm);
+    for (let m = 0; m < this.nm; m++) {
+      const s = A.ns;
+      seg(m, ids(f.byMat[m]), ids(f.carves[m]));
+      this.fullMat[m] = A.list(s, 1);
+    }
+  }
+  /** Can it be trusted with this figure (every number of it a number)? */
+  sound(): boolean {
+    for (const a of [this.g, this.bc, this.br, this.blend, this.cutv]) for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) return false;
+    return true;
+  }
+
+  /** `dist`: how far a point is from one solid's skin. The same sums in the same order. */
+  dist(i: number, x: number, y: number, z: number): number {
+    const g = this.g;
+    const o = i * GS;
+    let d: number;
+    const k = this.kind[i];
+    if (k === KC) {
+      const pa0 = x - g[o];
+      const pa1 = y - g[o + 1];
+      const pa2 = z - g[o + 2];
+      const ba0 = g[o + 3];
+      const ba1 = g[o + 4];
+      const ba2 = g[o + 5];
+      const bb = g[o + 6];
+      const h = bb > 0 ? Math.max(0, Math.min(1, (pa0 * ba0 + pa1 * ba1 + pa2 * ba2) / bb)) : 0;
+      const dx = pa0 - ba0 * h;
+      const dy = pa1 - ba1 * h;
+      const dz = pa2 - ba2 * h;
+      d = Math.sqrt(dx * dx + dy * dy + dz * dz) - (g[o + 7] + g[o + 8] * h);
+    } else if (k === KT) {
+      d = this.tri(o, x, y, z) - g[o + 34];
+    } else {
+      const v0 = x - g[o];
+      const v1 = y - g[o + 1];
+      const v2 = z - g[o + 2];
+      const px = v0 * g[o + 3] + v1 * g[o + 4] + v2 * g[o + 5];
+      const py = v0 * g[o + 6] + v1 * g[o + 7] + v2 * g[o + 8];
+      const pz = v0 * g[o + 9] + v1 * g[o + 10] + v2 * g[o + 11];
+      const u0 = g[o + 12];
+      const u1 = g[o + 13];
+      const u2 = g[o + 14];
+      if (k === KE) {
+        const x0 = px / u0;
+        const y0 = py / u1;
+        const z0 = pz / u2;
+        const k0 = Math.sqrt(x0 * x0 + y0 * y0 + z0 * z0);
+        const x1 = x0 / u0;
+        const y1 = y0 / u1;
+        const z1 = z0 / u2;
+        const k1 = Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+        d = k1 > 1e-9 ? (k0 * (k0 - 1)) / k1 : -g[o + 15];
+      } else {
+        const rr = g[o + 15];
+        const qx = Math.abs(px) - u0 + rr;
+        const qy = Math.abs(py) - u1 + rr;
+        const qz = Math.abs(pz) - u2 + rr;
+        const mx = Math.max(qx, 0);
+        const my = Math.max(qy, 0);
+        const mz = Math.max(qz, 0);
+        d = Math.sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, qy, qz), 0) - rr;
+      }
+    }
+    const c1 = this.cut1[i];
+    if (c1 > 0) {
+      const cv = this.cutv;
+      for (let c = this.cut0[i] * 4; c < c1 * 4; c += 4) d = Math.max(d, x * cv[c] + y * cv[c + 1] + z * cv[c + 2] - cv[c + 3]);
+    }
+    return d;
+  }
+  /** `triDist`, the same sums. */
+  tri(o: number, x: number, y: number, z: number): number {
+    const g = this.g;
+    const pa0 = x - g[o];
+    const pa1 = y - g[o + 1];
+    const pa2 = z - g[o + 2];
+    const pb0 = x - g[o + 3];
+    const pb1 = y - g[o + 4];
+    const pb2 = z - g[o + 5];
+    const pc0 = x - g[o + 6];
+    const pc1 = y - g[o + 7];
+    const pc2 = z - g[o + 8];
+    const s1 = triSg(g[o + 21] * pa0 + g[o + 22] * pa1 + g[o + 23] * pa2);
+    const s2 = triSg(g[o + 24] * pb0 + g[o + 25] * pb1 + g[o + 26] * pb2);
+    const s3 = triSg(g[o + 27] * pc0 + g[o + 28] * pc1 + g[o + 29] * pc2);
+    if (s1 + s2 + s3 >= 2) return Math.abs(g[o + 18] * pa0 + g[o + 19] * pa1 + g[o + 20] * pa2) / g[o + 30];
+    // (the least of the three edges' distances: the root of the least of their squares, the very same number, as a root
+    // never takes a bigger number to a smaller one)
+    return Math.sqrt(Math.min(seg2(g[o + 9], g[o + 10], g[o + 11], g[o + 31], pa0, pa1, pa2), seg2(g[o + 12], g[o + 13], g[o + 14], g[o + 32], pb0, pb1, pb2), seg2(g[o + 15], g[o + 16], g[o + 17], g[o + 33], pc0, pc1, pc2)));
+  }
+
+  /** `Field.ofMat` for one material (`s`, its place in the arena), as far as `cap`; anything not less than `cap` where it cannot be less. */
+  ofSeg(s: number, x: number, y: number, z: number, cap: number): number {
+    const A = this.A;
+    const I = A.I;
+    const F = A.F;
+    const S = A.S;
+    const sb = s * SS;
+    const first = S[sb + 1];
+    const p1 = S[sb + 2];
+    let j = S[sb + 4];
+    let d = Infinity;
+    if (COUNT) {
+      cnt('ofSeg');
+      cnt('ofItems', p1 - first);
+      if (j !== first) cnt('resetCand');
+    }
+    // (BEGUN AT A SOLID THAT SETS WHAT IS FOUND TO ITS OWN DISTANCE, whatever went before it, if `Field` takes it in:
+    // that it does, here; that it sets it so, proved for the cell)
+    if (j !== first) {
+      const o = j * FS;
+      const far = Math.min(A.SF[s * SFS + 1], cap) + F[o + 2] + F[o + 3];
+      const ex = x - F[o + 4];
+      const ey = y - F[o + 5];
+      const ez = z - F[o + 6];
+      if (!(far >= 0 && ex * ex + ey * ey + ez * ez <= far * far)) j = first;
+      else if (COUNT) cnt('resetSkipped', j - first);
+    }
+    const j0 = j;
+    // LOOKED OVER FIRST, AT THE POINT, where there are enough solids to be worth it: how near each can be here
+    const over = p1 - j0 >= OVER && F[j0 * FS + 8] !== -Infinity;
+    if (over) {
+      if (LQ.length < p1 - j0) {
+        LQ = new Float64Array(2 * (p1 - j0));
+        PB = new Float64Array(2 * (p1 - j0));
+      }
+      let P = Infinity;
+      for (let jj = j0; jj < p1; jj++) {
+        const o = jj * FS;
+        const v = F[o + 8] + F[o + 9] * x + F[o + 10] * y + F[o + 11] * z;
+        let lq = v >= 0 ? v * F[o + 12] : v * F[o + 13];
+        if (F[o] > lq) lq = F[o];
+        LQ[jj - j0] = lq;
+        PB[jj - j0] = P;
+        // (a smooth union is never less than the lesser by more than a quarter of what its blend outruns their gap by)
+        if (P === Infinity) P = lq;
+        else {
+          const gap = P > lq ? P - lq : lq - P;
+          const k = F[o + 2];
+          P = (P < lq ? P : lq) - (gap < k ? (k - gap) * 0.25 : 0);
+          P -= SLACK * (1 + (P < 0 ? -P : P));
+        }
+      }
+      // (the least the material can give here: the smooth union of the least of each, all taken in; if that is not nearer
+      // than what is found, it cannot win)
+      if (P >= cap) {
+        if (COUNT) cnt('floorQ');
+        return Infinity;
+      }
+      // (the last solid that may, here, set what is found to its own distance whatever went before it: the least what is
+      // found can be when it comes to it, further than its own distance by its blend; and taken in)
+      let tries = 0;
+      for (let r = p1 - 1; r > j0 && tries < 2; r--) {
+        const pb = PB[r - j0];
+        const o = r * FS;
+        const k = F[o + 2];
+        if (!(pb >= LQ[r - j0] + k)) continue;
+        const far = Math.min(pb, cap) + k + F[o + 3];
+        const ex = x - F[o + 4];
+        const ey = y - F[o + 5];
+        const ez = z - F[o + 6];
+        if (!(far >= 0 && ex * ex + ey * ey + ez * ez <= far * far)) continue;
+        tries++;
+        const b = this.dist(I[r], x, y, z);
+        if (COUNT) cnt(cap === Infinity ? 'distInf' : 'distCap');
+        if (pb >= b + k + SLACK * (1 + Math.abs(pb) + Math.abs(b) + k)) {
+          if (COUNT) cnt('resetQ', r - j0);
+          d = b;
+          j = r + 1;
+          break;
+        } else if (COUNT) cnt('resetQLost');
+      }
+    }
+    for (; j < p1; j++) {
+      const o = j * FS;
+      const k = F[o + 2];
+      // (its skin further off than what is found, by its blend: the smooth union would keep what it has, to the bit)
+      if ((over ? LQ[j - j0] : F[o]) >= d + k) continue;
+      // (what is found, and all that is left, no nearer than the nearest skin of another material: it cannot win)
+      if (d >= cap && F[o + 1] >= cap) {
+        if (COUNT) cnt('bail');
+        return Infinity;
+      }
+      const far = Math.min(d, cap) + k + F[o + 3];
+      if (far < 0) continue;
+      const ex = x - F[o + 4];
+      const ey = y - F[o + 5];
+      const ez = z - F[o + 6];
+      if (ex * ex + ey * ey + ez * ez > far * far) continue;
+      const b = this.dist(I[j], x, y, z);
+      if (COUNT) cnt(cap === Infinity ? 'distInf' : 'distCap');
+      if (d === Infinity) d = b;
+      else if (k <= 0) d = Math.min(d, b);
+      else {
+        // (smin)
+        const h = Math.max(k - Math.abs(d - b), 0) / k;
+        d = Math.min(d, b) - h * h * k * 0.25;
+      }
+    }
+    if (d === Infinity) return cap === Infinity ? 1e6 : cap + 1;
+    const c1 = S[sb + 3];
+    for (j = p1; j < c1; j++) {
+      const o = j * FS;
+      const i = I[j];
+      const far = this.farC[i];
+      const ex = x - F[o + 4];
+      const ey = y - F[o + 5];
+      const ez = z - F[o + 6];
+      if (ex * ex + ey * ey + ez * ez > far * far) continue;
+      const c = -this.dist(i, x, y, z);
+      const k = F[o + 2];
+      if (k <= 0) d = Math.max(d, c);
+      else {
+        const h = Math.max(k - Math.abs(d - c), 0) / k;
+        d = Math.max(d, c) + h * h * k * 0.25;
+      }
+    }
+    return d;
+  }
+  /** `Field.at` from a list: the nearest skin of any material (and whose, in `m`). */
+  at(L: number, x: number, y: number, z: number): number {
+    if (COUNT) cnt('at');
+    let d = Infinity;
+    let m = -1;
+    if (this.lead >= 0) {
+      d = 1e6;
+      m = this.lead;
+    }
+    const A = this.A;
+    const s0 = A.T[L * 2];
+    const s1 = s0 + A.T[L * 2 + 1];
+    for (let s = s0; s < s1; s++) {
+      // (a material that can give nothing nearer than what is found changes nothing)
+      if (A.SF[s * SFS] >= d) {
+        if (COUNT) cnt('floorSkip');
+        continue;
+      }
+      const di = this.ofSeg(s, x, y, z, d);
+      if (di < d) {
+        d = di;
+        m = A.S[s * SS];
+      }
+    }
+    this.m = m;
+    return d;
+  }
+  /** `Field.ofMat` with no cap, from a material's own list. */
+  ofMat(L: number, x: number, y: number, z: number): number {
+    return this.ofSeg(this.A.T[L * 2], x, y, z, Infinity);
+  }
+  /** `Field.nearest`, from a material's own list. */
+  nearest(L: number, m: number, x: number, y: number, z: number): number {
+    let best = Infinity;
+    let p = this.first[m];
+    const A = this.A;
+    const I = A.I;
+    const F = A.F;
+    const sb = A.T[L * 2] * SS;
+    const p1 = A.S[sb + 2];
+    for (let j = A.S[sb + 1]; j < p1; j++) {
+      const o = j * FS;
+      // (no nearer than the best: it would not be taken)
+      if (F[o] >= best) continue;
+      const lb = Math.hypot(x - F[o + 4], y - F[o + 5], z - F[o + 6]) - F[o + 3];
+      if (lb > best) continue;
+      const i = I[j];
+      const d = this.dist(i, x, y, z);
+      if (d < best) {
+        best = d;
+        p = i;
+      }
+    }
+    return p;
+  }
+
+  /** What `bounds` found: the most a solid's distance can be, the most it leaves found once `Field` has looked at it, the least its distance can be; and the least at a point, as `FS` has it. */
+  hiD = 0.5;
+  hi = 0.5;
+  lo = 0.5;
+  la = 0.5;
+  lx = 0.5;
+  ly = 0.5;
+  lz = 0.5;
+  lp = 0.5;
+  ln = 0.5;
+  /** (the way out of a sheet at a point, from `triNear`) */
+  tx = 0.5;
+  ty = 0.5;
+  tz = 0.5;
+  /**
+   * Bounds on a solid anywhere within `rho` of (cx, cy, cz) (`e` from its bounding ball's middle): `hiD`, the most its own
+   * distance could be there; `hi`, that or what `Field` has already found when it passes over it there, whichever is more
+   * (so the most it leaves found once it has looked at it); `lo`, the least its distance could be there. And the least at
+   * each point there, flat in the point (`la`, `lx`, `ly`, `lz`, `lp`, `ln`): a rod's line, a block and a sheet are each
+   * a skin round a solid that bulges nowhere inward, whose distance never falls below the flat that touches it at the
+   * middle (its own slope there); a ball's k0 the same, and its distance (k0 - 1) times a number bounded over the cell.
+   */
+  bounds(i: number, cx: number, cy: number, cz: number, rho: number, e: number): void {
+    const g = this.g;
+    const o = i * GS;
+    const k = this.kind[i];
+    let A: number;
+    let B: number;
+    // (the flat: the least at a point is v = a + gx x + gy y + gz z, times lp where v is not below nothing, else ln)
+    let la = -Infinity;
+    let gx = 0;
+    let gy = 0;
+    let gz = 0;
+    let lp = 1;
+    let ln = 1;
+    if (k === KC) {
+      // (a rod: as far as its line is, less its thicker end, or its thinner)
+      const pa0 = cx - g[o];
+      const pa1 = cy - g[o + 1];
+      const pa2 = cz - g[o + 2];
+      const bb = g[o + 6];
+      const hl = bb > 0 ? (pa0 * g[o + 3] + pa1 * g[o + 4] + pa2 * g[o + 5]) / bb : 0;
+      const h = bb > 0 ? Math.max(0, Math.min(1, hl)) : 0;
+      const dx = pa0 - g[o + 3] * h;
+      const dy = pa1 - g[o + 4] * h;
+      const dz = pa2 - g[o + 5] * h;
+      const s = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      A = s + rho - g[o + 9];
+      B = s - rho - g[o + 10];
+      // (its line's distance: the flat touching it at the middle; its radius there, at most, over the cell, or along the
+      // line where the cell is all beside it)
+      if (s > 1e-9) {
+        gx = dx / s;
+        gy = dy / s;
+        gz = dz / s;
+      }
+      const ra = g[o + 7];
+      const dr = g[o + 8];
+      const L = Math.sqrt(bb);
+      if (bb > 0 && hl - rho / L > 0 && hl + rho / L < 1) {
+        const f = dr / bb;
+        gx -= f * g[o + 3];
+        gy -= f * g[o + 4];
+        gz -= f * g[o + 5];
+        la = s - ra - dr * hl;
+      } else {
+        const hh = bb > 0 ? (dr > 0 ? Math.min(1, Math.max(0, hl + rho / L)) : Math.max(0, Math.min(1, hl - rho / L))) : 0;
+        la = s - (ra + dr * hh);
+      }
+    } else if (k === KT) {
+      // (a sheet: its distance from the point grows no faster than the point goes)
+      const s = this.triNear(o, cx, cy, cz);
+      A = s + rho - g[o + 34];
+      B = s - rho - g[o + 34];
+      la = s - g[o + 34];
+      gx = this.tx;
+      gy = this.ty;
+      gz = this.tz;
+    } else {
+      const v0 = cx - g[o];
+      const v1 = cy - g[o + 1];
+      const v2 = cz - g[o + 2];
+      const px = v0 * g[o + 3] + v1 * g[o + 4] + v2 * g[o + 5];
+      const py = v0 * g[o + 6] + v1 * g[o + 7] + v2 * g[o + 8];
+      const pz = v0 * g[o + 9] + v1 * g[o + 10] + v2 * g[o + 11];
+      const u0 = g[o + 12];
+      const u1 = g[o + 13];
+      const u2 = g[o + 14];
+      const sig = g[o + 16];
+      if (k === KE) {
+        // (a ball's distance, as `dist` has it, k0 (k0 - 1) / k1, is never more than the way out to its skin along the
+        // line from its middle, nor than the point's distance from its middle less its least half-length; never less than
+        // (k0 - 1) times its least half-length, out of it, or (k0 - 1) times its most, in it; and k0 changes no faster than
+        // the point goes over its least half-length)
+        const w = Math.sqrt(px * px + py * py + pz * pz);
+        const x0 = px / u0;
+        const y0 = py / u1;
+        const z0 = pz / u2;
+        const k0 = Math.sqrt(x0 * x0 + y0 * y0 + z0 * z0);
+        const amin = g[o + 15];
+        const amax = g[o + 17];
+        const wMax = w + sig * rho;
+        const kMax = k0 + (sig * rho) / amin;
+        A = Math.min(kMax > 1 ? wMax * (1 - 1 / kMax) : 0, wMax - amin);
+        const kMin = k0 - (sig * rho) / amin;
+        B = kMin >= 1 ? (kMin - 1) * amin : -(1 - Math.max(0, kMin)) * amax;
+        // (k0 is the length of a flat sum of the point: no less than the flat touching it at the middle; k0 / k1 lies
+        // between bounds over the cell, from how far k0 and k1 can go there)
+        if (k0 > 1e-6) {
+          const x1 = x0 / u0;
+          const y1 = y0 / u1;
+          const z1 = z0 / u2;
+          const k1 = Math.sqrt(x1 * x1 + y1 * y1 + z1 * z1);
+          const d0 = (sig * rho) / amin;
+          const d1 = (sig * rho) / (amin * amin);
+          lp = k0 - d0 > 0 ? Math.max(amin, (k0 - d0) / (k1 + d1)) : amin;
+          ln = k1 - d1 > 0 ? Math.min(amax, (k0 + d0) / (k1 - d1)) : amax;
+          const w0 = x1 / k0;
+          const w1 = y1 / k0;
+          const w2 = z1 / k0;
+          gx = w0 * g[o + 3] + w1 * g[o + 6] + w2 * g[o + 9];
+          gy = w0 * g[o + 4] + w1 * g[o + 7] + w2 * g[o + 10];
+          gz = w0 * g[o + 5] + w1 * g[o + 8] + w2 * g[o + 11];
+          la = k0 - 1;
+        }
+      } else {
+        // (a block: its distance grows no faster than its stretch)
+        const rr = g[o + 15];
+        const qx = Math.abs(px) - u0 + rr;
+        const qy = Math.abs(py) - u1 + rr;
+        const qz = Math.abs(pz) - u2 + rr;
+        const mx = Math.max(qx, 0);
+        const my = Math.max(qy, 0);
+        const mz = Math.max(qz, 0);
+        const ml = Math.sqrt(mx * mx + my * my + mz * mz);
+        const s = ml + Math.min(Math.max(qx, qy, qz), 0) - rr;
+        A = s + sig * rho;
+        B = s - sig * rho;
+        if (ml > 1e-9) {
+          const w0 = (px > 0 ? mx : -mx) / ml;
+          const w1 = (py > 0 ? my : -my) / ml;
+          const w2 = (pz > 0 ? mz : -mz) / ml;
+          gx = w0 * g[o + 3] + w1 * g[o + 6] + w2 * g[o + 9];
+          gy = w0 * g[o + 4] + w1 * g[o + 7] + w2 * g[o + 10];
+          gz = w0 * g[o + 5] + w1 * g[o + 8] + w2 * g[o + 11];
+          la = s;
+        }
+      }
+    }
+    const c1 = this.cut1[i];
+    if (c1 > 0) {
+      // (its cuts can only take it further off)
+      const cv = this.cutv;
+      for (let c = this.cut0[i] * 4; c < c1 * 4; c += 4) A = Math.max(A, cx * cv[c] + cy * cv[c + 1] + cz * cv[c + 2] - cv[c + 3] + rho * Math.hypot(cv[c], cv[c + 1], cv[c + 2]));
+    }
+    this.hiD = A + SLACK * (1 + Math.abs(A));
+    // (passed over: what is found is less than its ball's reach)
+    A = Math.max(A, e + rho - this.br[i]);
+    this.hi = A + SLACK * (1 + Math.abs(A));
+    this.lo = B - SLACK * (1 + Math.abs(B));
+    // (the flat, as a sum of the point itself: the value at the middle less the slope times the middle)
+    if (la === -Infinity) {
+      this.la = this.lo;
+      this.lx = this.ly = this.lz = 0;
+      this.lp = this.ln = 1;
+    } else {
+      const a0 = la - (gx * cx + gy * cy + gz * cz);
+      this.la = a0 - SLACK * (1 + Math.abs(la) + Math.abs(a0));
+      this.lx = gx;
+      this.ly = gy;
+      this.lz = gz;
+      this.lp = lp;
+      this.ln = ln;
+    }
+  }
+  /** `tri`, and the way out of the sheet to the point (in `tx`, `ty`, `tz`; nothing where the point is on it). */
+  triNear(o: number, x: number, y: number, z: number): number {
+    const g = this.g;
+    const pa0 = x - g[o];
+    const pa1 = y - g[o + 1];
+    const pa2 = z - g[o + 2];
+    const pb0 = x - g[o + 3];
+    const pb1 = y - g[o + 4];
+    const pb2 = z - g[o + 5];
+    const pc0 = x - g[o + 6];
+    const pc1 = y - g[o + 7];
+    const pc2 = z - g[o + 8];
+    const s1 = triSg(g[o + 21] * pa0 + g[o + 22] * pa1 + g[o + 23] * pa2);
+    const s2 = triSg(g[o + 24] * pb0 + g[o + 25] * pb1 + g[o + 26] * pb2);
+    const s3 = triSg(g[o + 27] * pc0 + g[o + 28] * pc1 + g[o + 29] * pc2);
+    this.tx = this.ty = this.tz = 0;
+    if (s1 + s2 + s3 >= 2) {
+      const sd = g[o + 18] * pa0 + g[o + 19] * pa1 + g[o + 20] * pa2;
+      const d = Math.abs(sd) / g[o + 30];
+      if (d > 1e-9) {
+        const f = (sd > 0 ? 1 : -1) / g[o + 30];
+        this.tx = g[o + 18] * f;
+        this.ty = g[o + 19] * f;
+        this.tz = g[o + 20] * f;
+      }
+      return d;
+    }
+    let best = Infinity;
+    for (let c = 0; c < 3; c++) {
+      const e0 = g[o + 9 + c * 3];
+      const e1 = g[o + 10 + c * 3];
+      const e2 = g[o + 11 + c * 3];
+      const w0 = c === 0 ? pa0 : c === 1 ? pb0 : pc0;
+      const w1 = c === 0 ? pa1 : c === 1 ? pb1 : pc1;
+      const w2 = c === 0 ? pa2 : c === 1 ? pb2 : pc2;
+      const t = Math.max(0, Math.min(1, (e0 * w0 + e1 * w1 + e2 * w2) / g[o + 31 + c]));
+      const vx = w0 - e0 * t;
+      const vy = w1 - e1 * t;
+      const vz = w2 - e2 * t;
+      const q = vx * vx + vy * vy + vz * vz;
+      if (q < best) {
+        best = q;
+        const l = Math.sqrt(q);
+        if (l > 1e-9) {
+          this.tx = vx / l;
+          this.ty = vy / l;
+          this.tz = vz / l;
+        } else this.tx = this.ty = this.tz = 0;
+      }
+    }
+    return Math.sqrt(best);
+  }
+
+  /**
+   * The list for the cell within `rho` of (cx, cy, cz), from the list `P` of a cell round it: `across` true for `at` (what
+   * one material's solids prove holds for the materials after it), false for one material's own list (`ofMat` with no
+   * cap, and `nearest`); `withLo` to work out how near each solid can be, and what follows from it (else a list only to
+   * draw others from).
+   */
+  cull(P: number, cx: number, cy: number, cz: number, rho: number, across: boolean, withLo: boolean): number {
+    const A = this.A;
+    const ps0 = A.T[P * 2];
+    const ps1 = ps0 + A.T[P * 2 + 1];
+    if (COUNT) cnt('cull');
+    A.room(A.S[(ps1 - 1) * SS + 3] - A.S[ps0 * SS + 1], ps1 - ps0);
+    const I = A.I;
+    const F = A.F;
+    const S = A.S;
+    const SF = A.SF;
+    const bc = this.bc;
+    const br = this.br;
+    const blend = this.blend;
+    const s0 = A.ns;
+    let n = A.ni;
+    let G = Infinity;
+    for (let ps = ps0; ps < ps1; ps++) {
+      const start = n;
+      let L = Infinity;
+      const p1 = S[ps * SS + 2];
+      for (let j = S[ps * SS + 1]; j < p1; j++) {
+        const i = I[j];
+        const ex = cx - bc[i * 3];
+        const ey = cy - bc[i * 3 + 1];
+        const ez = cz - bc[i * 3 + 2];
+        const e = Math.sqrt(ex * ex + ey * ey + ez * ez);
+        const anc = G < L ? G : L;
+        // (passed over by `Field` at every point of the cell: its ball, swollen by its blend, further than anything
+        // already found can be)
+        const gone = e - rho - br[i] - blend[i] > anc + SLACK * (1 + Math.abs(anc) + e);
+        // (what it leaves found is at least its ball's reach less its size: no use working it out if that is no better)
+        const lends = e + rho - br[i] < L;
+        if (lends || (!gone && withLo)) {
+          this.bounds(i, cx, cy, cz, rho, e);
+          if (lends && this.hi < L) L = this.hi;
+        }
+        if (!gone) {
+          const o = n * FS;
+          I[n++] = i;
+          F[o] = withLo ? this.lo : -Infinity;
+          F[o + 2] = blend[i];
+          F[o + 3] = br[i];
+          F[o + 4] = bc[i * 3];
+          F[o + 5] = bc[i * 3 + 1];
+          F[o + 6] = bc[i * 3 + 2];
+          F[o + 7] = withLo ? this.hiD : Infinity;
+          F[o + 8] = withLo ? this.la : -Infinity;
+          F[o + 9] = withLo ? this.lx : 0;
+          F[o + 10] = withLo ? this.ly : 0;
+          F[o + 11] = withLo ? this.lz : 0;
+          F[o + 12] = withLo ? this.lp : 1;
+          F[o + 13] = withLo ? this.ln : 1;
+        }
+      }
+      const pEnd = n;
+      let clean = true;
+      const c1 = S[ps * SS + 3];
+      for (let j = p1; j < c1; j++) {
+        const i = I[j];
+        const ex = cx - bc[i * 3];
+        const ey = cy - bc[i * 3 + 1];
+        const ez = cz - bc[i * 3 + 2];
+        const e = Math.sqrt(ex * ex + ey * ey + ez * ez);
+        if (e - rho > this.farC[i] + SLACK * (1 + e)) continue;
+        const o = n * FS;
+        I[n++] = i;
+        F[o] = -Infinity;
+        F[o + 1] = -Infinity;
+        F[o + 2] = blend[i];
+        F[o + 3] = br[i];
+        F[o + 4] = bc[i * 3];
+        F[o + 5] = bc[i * 3 + 1];
+        F[o + 6] = bc[i * 3 + 2];
+        F[o + 7] = Infinity;
+        F[o + 8] = -Infinity;
+        F[o + 9] = 0;
+        F[o + 10] = 0;
+        F[o + 11] = 0;
+        F[o + 12] = 1;
+        F[o + 13] = 1;
+        clean = false;
+      }
+      if (pEnd > start) {
+        const s = A.ns++;
+        S[s * SS] = S[ps * SS];
+        S[s * SS + 1] = start;
+        S[s * SS + 2] = pEnd;
+        S[s * SS + 3] = n;
+        if (withLo) this.settle(start, pEnd, s);
+        else {
+          for (let j = start; j < pEnd; j++) F[j * FS + 1] = -Infinity;
+          S[s * SS + 4] = start;
+          S[s * SS + 5] = start;
+          SF[s * SFS] = -Infinity;
+          SF[s * SFS + 1] = Infinity;
+          SF[s * SFS + 2] = Infinity;
+        }
+      } else n = start;
+      if (across && clean && L < G) G = L;
+    }
+    A.ni = n;
+    return A.list(s0, A.ns - s0);
+  }
+  /**
+   * What follows, for a material of a list (its solids `start` to `end`, its place `s`), from how near each solid can be:
+   * from each solid on, the least what is found can come to if it was no less before; the least the material can give;
+   * and the solid to begin at.
+   */
+  private settle(start: number, end: number, s: number): void {
+    const A = this.A;
+    const I = A.I;
+    const F = A.F;
+    const blend = this.blend;
+    // (from each solid on: the nearest skin left, less the biggest blend left)
+    let least = Infinity;
+    let K = 0;
+    for (let j = end - 1; j >= start; j--) {
+      const lo = F[j * FS];
+      if (lo < least) least = lo;
+      const k = blend[I[j]];
+      if (k > K) K = k;
+      F[j * FS + 1] = least - K - SLACK * (1 + Math.abs(least) + K);
+    }
+    // (the least what is found can be, at each solid: the smooth union of the least of each before it, all taken in;
+    // where that is further than the most the solid can be by its blend, the solid sets what is found to its own
+    // distance: the last such is where to begin)
+    let at = start;
+    let atP = Infinity;
+    let mb = start;
+    let mbP = Infinity;
+    let U = Infinity;
+    for (let j = start; j < end; j++) {
+      const k = blend[I[j]];
+      if (j > start && U >= F[j * FS + 7] + k + SLACK * (1 + Math.abs(U) + k)) {
+        at = j;
+        atP = U;
+      }
+      const lo = F[j * FS];
+      U = U === Infinity ? lo : sminOf(U, lo, k);
+      U -= SLACK * (1 + Math.abs(U));
+    }
+    A.S[s * SS + 4] = at;
+    A.S[s * SS + 5] = mb > at ? mb : at;
+    // (the least the material can give: the smooth union of the least of each, all taken in; its carves only take it
+    // further off)
+    A.SF[s * SFS] = U;
+    A.SF[s * SFS + 1] = atP;
+    A.SF[s * SFS + 2] = mb > at ? mbP : Infinity;
+  }
+
+  /** The least a solid's distance can be anywhere within `r` of the line through `p` along `u` (a unit). */
+  lineLow(i: number, px: number, py: number, pz: number, ux: number, uy: number, uz: number, r: number): number {
+    const g = this.g;
+    const o = i * GS;
+    const k = this.kind[i];
+    let B: number;
+    if (k === KC) {
+      // (a rod: no nearer than its line comes to the line, less its thicker end)
+      B = segLine(g[o], g[o + 1], g[o + 2], g[o + 11], g[o + 12], g[o + 13], px, py, pz, ux, uy, uz) - r - g[o + 10];
+    } else {
+      const c0 = this.bc[i * 3];
+      const c1 = this.bc[i * 3 + 1];
+      const c2 = this.bc[i * 3 + 2];
+      const v = Math.max(0, segLine(c0, c1, c2, c0, c1, c2, px, py, pz, ux, uy, uz) - r);
+      // (a sheet lies in its ball; a block's skin is no nearer its middle than its corners are, nor a ball's than
+      // (k0 - 1) times its least half-length, k0 at least the point's distance over its most; each stretched no more
+      // than its three lines stretch a length)
+      if (k === KT) B = v - this.br[i];
+      else if (k === KB) B = g[o + 19] < 0 ? -Infinity : g[o + 18] * v - g[o + 19];
+      else {
+        const k0 = (g[o + 18] * v) / g[o + 17];
+        B = k0 >= 1 ? (k0 - 1) * g[o + 15] : -(1 - k0) * g[o + 17];
+      }
+    }
+    return B - SLACK * (1 + Math.abs(B));
+  }
+  /**
+   * The least any material can give where each solid of `order` (all solids but carves, in `Field`'s order) is no nearer
+   * than `low` has it: for each material, the smooth union of those, all taken in (its carves only take it further off).
+   */
+  leastOf(low: Float64Array): number {
+    const order = this.order;
+    let least = Infinity;
+    let m = -1;
+    let U = Infinity;
+    for (let j = 0; j < order.length; j++) {
+      const i = order[j];
+      if (this.matOf[i] !== m) {
+        if (U < least) least = U;
+        U = Infinity;
+        m = this.matOf[i];
+      }
+      U = U === Infinity ? low[j] : sminOf(U, low[j], this.blend[i]);
+      U -= SLACK * (1 + Math.abs(U));
+    }
+    return Math.min(least, U);
+  }
+}
+/** `triSeg`'s square, the same sums. */
+function seg2(e0: number, e1: number, e2: number, ee: number, w0: number, w1: number, w2: number): number {
+  const t = Math.max(0, Math.min(1, (e0 * w0 + e1 * w1 + e2 * w2) / ee));
+  const x = e0 * t - w0;
+  const y = e1 * t - w1;
+  const z = e2 * t - w2;
+  return x * x + y * y + z * z;
+}
+/**
+ * How near the segment from a to b comes to the line through p along u (a unit), or a little nearer (never further):
+ * the least of a quadratic, its sums' slips allowed for.
+ */
+function segLine(a0: number, a1: number, a2: number, b0: number, b1: number, b2: number, p0: number, p1: number, p2: number, u0: number, u1: number, u2: number): number {
+  // (each end's offset from the line, square to it)
+  let w0 = a0 - p0;
+  let w1 = a1 - p1;
+  let w2 = a2 - p2;
+  let t = w0 * u0 + w1 * u1 + w2 * u2;
+  w0 -= u0 * t;
+  w1 -= u1 * t;
+  w2 -= u2 * t;
+  let v0 = b0 - a0;
+  let v1 = b1 - a1;
+  let v2 = b2 - a2;
+  t = v0 * u0 + v1 * u1 + v2 * u2;
+  v0 -= u0 * t;
+  v1 -= u1 * t;
+  v2 -= u2 * t;
+  const ww = w0 * w0 + w1 * w1 + w2 * w2;
+  const wv = w0 * v0 + w1 * v1 + w2 * v2;
+  const vv = v0 * v0 + v1 * v1 + v2 * v2;
+  // (|w + s v|^2 at its least for s from 0 to 1)
+  let q: number;
+  if (vv <= 0 || wv >= 0) q = ww;
+  else if (-wv >= vv) q = ww + 2 * wv + vv;
+  else q = ww - (wv * wv) / vv;
+  const big = ww + Math.abs(2 * wv) + vv;
+  return Math.sqrt(Math.max(0, q - 1e-9 * (1 + big))) - 1e-6;
+}
+
+/**
+ * SPACE CUT INTO CELLS round a figure, as the picture sees it: `ts` pixels square, `dt` deep (as `Stage.near` measures);
+ * each a list of the solids that can matter in it, worked out when first asked for, from the list of the bigger cell of
+ * `F` by `F` by `F` of them it lies in. A point outside them all is asked of every solid.
+ */
+class Cells {
+  readonly nx: number;
+  readonly ny: number;
+  readonly nz: number;
+  /** The reach of a cell from its middle, and of a bigger one. */
+  readonly rho: number;
+  readonly rhoBig: number;
+  readonly at: Int32Array;
+  readonly atBig: Int32Array;
+  readonly mats = new Map<number, number>();
+  readonly matsBig = new Map<number, number>();
+  readonly NX: number;
+  readonly NY: number;
+  constructor(
+    readonly fa: Fast,
+    readonly sx0: number,
+    readonly sy0: number,
+    readonly t0: number,
+    sx1: number,
+    sy1: number,
+    t1: number,
+    readonly ts: number,
+    readonly dt: number,
+    readonly F: number,
+    readonly CX: V3,
+    readonly CY: V3,
+    readonly CZ: V3,
+    readonly rows: readonly [V3, V3, V3],
+    /** How far round a point of a cell a material's own list holds (the normal's little steps). */
+    readonly pad: number,
+  ) {
+    this.nx = Math.max(1, Math.ceil((sx1 - sx0) / ts));
+    this.ny = Math.max(1, Math.ceil((sy1 - sy0) / ts));
+    this.nz = Math.max(1, Math.ceil((t1 - t0) / dt));
+    this.NX = Math.ceil(this.nx / F);
+    this.NY = Math.ceil(this.ny / F);
+    this.rho = this.reach(ts / 2, ts / 2, dt / 2);
+    this.rhoBig = this.reach((ts * F) / 2, (ts * F) / 2, (dt * F) / 2);
+    this.at = new Int32Array(this.nx * this.ny * this.nz);
+    this.atBig = new Int32Array(this.NX * this.NY * Math.ceil(this.nz / F));
+  }
+  /** How far a corner of a box of these half-sizes (across, down, deep) is from its middle. */
+  reach(hx: number, hy: number, hz: number): number {
+    const { CX, CY, CZ } = this;
+    let r = 0;
+    for (const a of [-1, 1]) for (const b of [-1, 1]) {
+      const v0 = hx * CX[0] + a * hy * CY[0] + b * hz * CZ[0];
+      const v1 = hx * CX[1] + a * hy * CY[1] + b * hz * CZ[1];
+      const v2 = hx * CX[2] + a * hy * CY[2] + b * hz * CZ[2];
+      r = Math.max(r, Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2));
+    }
+    return r * (1 + 1e-9) + SLACK;
+  }
+  /** The cell a point of the picture is in (x and y as `sx`, `sy` of the march, and how near), or -1 outside them all. */
+  cell(sx: number, sy: number, t: number): number {
+    const ix = Math.floor((sx - this.sx0) / this.ts);
+    const iy = Math.floor((sy - this.sy0) / this.ts);
+    const iz = Math.floor((t - this.t0) / this.dt);
+    if (ix < 0 || iy < 0 || iz < 0 || ix >= this.nx || iy >= this.ny || iz >= this.nz) return -1;
+    return (iz * this.ny + iy) * this.nx + ix;
+  }
+  /** The cell a point of the figure is in. */
+  cellOf(x: number, y: number, z: number): number {
+    const r = this.rows;
+    return this.cell(r[0][0] * x + r[0][1] * y + r[0][2] * z, r[1][0] * x + r[1][1] * y + r[1][2] * z, r[2][0] * x + r[2][1] * y + r[2][2] * z);
+  }
+  /** The middle of a cell (of `size` cells a side), in the figure's space. */
+  private mid(ix: number, iy: number, iz: number, size: number): V3 {
+    const sx = this.sx0 + (ix + 0.5) * this.ts * size;
+    const sy = this.sy0 + (iy + 0.5) * this.ts * size;
+    const t = this.t0 + (iz + 0.5) * this.dt * size;
+    const { CX, CY, CZ } = this;
+    return [CX[0] * sx + CY[0] * sy + CZ[0] * t, CX[1] * sx + CY[1] * sy + CZ[1] * t, CX[2] * sx + CY[2] * sy + CZ[2] * t];
+  }
+  /** The list `at` is to look at in a cell (-1: every solid). */
+  atList(k: number): number {
+    if (k < 0) return this.fa.full;
+    const have = this.at[k];
+    if (have) return have;
+    const ix = k % this.nx;
+    const r = (k - ix) / this.nx;
+    const iy = r % this.ny;
+    const iz = (r - iy) / this.ny;
+    const F = this.F;
+    const bx = Math.floor(ix / F);
+    const by = Math.floor(iy / F);
+    const bz = Math.floor(iz / F);
+    const bk = (bz * this.NY + by) * this.NX + bx;
+    let big = this.atBig[bk];
+    if (!big) {
+      const c = this.mid(bx, by, bz, F);
+      big = this.atBig[bk] = this.fa.cull(this.fa.full, c[0], c[1], c[2], this.rhoBig, true, false);
+    }
+    const c = this.mid(ix, iy, iz, 1);
+    return (this.at[k] = this.fa.cull(big, c[0], c[1], c[2], this.rho, true, true));
+  }
+  /** One material's own list in a cell, for `ofMat` with no cap and `nearest`, good within `pad` of the cell (-1: every solid). */
+  matList(k: number, m: number): number {
+    if (k < 0) return this.fa.fullMat[m];
+    const key = k * this.fa.nm + m;
+    const have = this.mats.get(key);
+    if (have) return have;
+    const ix = k % this.nx;
+    const r = (k - ix) / this.nx;
+    const iy = r % this.ny;
+    const iz = (r - iy) / this.ny;
+    const F = this.F;
+    const bx = Math.floor(ix / F);
+    const by = Math.floor(iy / F);
+    const bz = Math.floor(iz / F);
+    const bkey = ((bz * this.NY + by) * this.NX + bx) * this.fa.nm + m;
+    let big = this.matsBig.get(bkey);
+    if (!big) {
+      const c = this.mid(bx, by, bz, F);
+      big = this.fa.cull(this.fa.fullMat[m], c[0], c[1], c[2], this.rhoBig + this.pad, false, false);
+      this.matsBig.set(bkey, big);
+    }
+    const c = this.mid(ix, iy, iz, 1);
+    const out = this.fa.cull(big, c[0], c[1], c[2], this.rho + this.pad, false, true);
+    this.mats.set(key, out);
+    return out;
+  }
+}
+
+/**
+ * THE MARCH, FAST: what `draw` does for each pixel, with `Fast` (the same sums, so the same picture), into `zb`, `stuff`,
+ * `piece` and `colour`; `shade` paints a pixel once its point, the way it faces and its material are known.
+ */
+function marchFast(
+  fa: Fast,
+  st: Stage,
+  ax: number,
+  ay: number,
+  box: { xs: number; xe: number; ys: number; ye: number; zNear: number; zFar: number },
+  CX: V3,
+  CY: V3,
+  CZ: V3,
+  L2: number,
+  E: number,
+  shade: (x: number, y: number, t: number, q: V3, n: V3, m: number, open: number, prim: number) => void,
+): void {
+  const { xs, xe, ys, ye, zNear, zFar } = box;
+  const r0 = st.seen([1, 0, 0]);
+  const r1 = st.seen([0, 1, 0]);
+  const r2 = st.seen([0, 0, 1]);
+  const rows: [V3, V3, V3] = [[r0[0], r1[0], r2[0]], [r0[1], r1[1], r2[1]], [r0[2], r1[2], r2[2]]];
+  // (the cells reach past the march as far as a crease is looked for off the skin)
+  const padS = 2.6 * Math.max(lenOf(rows[0]), lenOf(rows[1])) + 2;
+  const padT = 2.6 * lenOf(rows[2]) + 2;
+  const cells = new Cells(fa, xs + 0.5 - ax - padS, ys + 0.5 - ay - padS, zFar - padT, xe + 0.5 - ax + padS, ye + 0.5 - ay + padS, zNear + padT, CELL.ts, CELL.dt, CELL.big, CX, CY, CZ, rows, E * (1 + 1e-9) + SLACK);
+  // COLUMNS NO SKIN COMES NEAR ENOUGH TO BE MET are not marched: tiles of pixels, each looked at from the bigger tile it is
+  // in (what each solid can be anywhere along a column round the tile's middle ray, wide enough for its corners)
+  const TS = CELL.ts;
+  const TB = TS * CELL.big;
+  const ntx = Math.ceil((xe - xs + 1) / TS);
+  const nty = Math.ceil((ye - ys + 1) / TS);
+  const clear = new Uint8Array(ntx * nty);
+  {
+    const u0 = CZ[0] / L2;
+    const u1 = CZ[1] / L2;
+    const u2 = CZ[2] / L2;
+    const order = fa.order;
+    const lowBig = new Float64Array(order.length);
+    const low = new Float64Array(order.length);
+    const near = 2 * cells.reach(TB / 2, TB / 2, 0) + 4;
+    const column = (xa: number, xb: number, ya: number, yb: number, out: Float64Array, from: Float64Array | null): void => {
+      const sx = (xa + xb) / 2 + 0.5 - ax;
+      const sy = (ya + yb) / 2 + 0.5 - ay;
+      const r = cells.reach((xb - xa) / 2, (yb - ya) / 2, 0);
+      const p0 = CX[0] * sx + CY[0] * sy;
+      const p1 = CX[1] * sx + CY[1] * sy;
+      const p2 = CX[2] * sx + CY[2] * sy;
+      for (let j = 0; j < order.length; j++) {
+        if (from && from[j] >= near) out[j] = from[j];
+        else out[j] = Math.max(from ? from[j] : -Infinity, fa.lineLow(order[j], p0, p1, p2, u0, u1, u2, r));
+      }
+    };
+    for (let by = 0; by * TB <= ye - ys; by++) {
+      for (let bx = 0; bx * TB <= xe - xs; bx++) {
+        const xa = xs + bx * TB;
+        const ya = ys + by * TB;
+        const xb = Math.min(xe, xa + TB - 1);
+        const yb = Math.min(ye, ya + TB - 1);
+        column(xa, xb, ya, yb, lowBig, null);
+        const all = fa.leastOf(lowBig) > 0.02;
+        for (let ty = (ya - ys) / TS; ty * TS + ys <= yb; ty++) {
+          for (let tx = (xa - xs) / TS; tx * TS + xs <= xb; tx++) {
+            if (all) {
+              clear[ty * ntx + tx] = 1;
+              continue;
+            }
+            const fx = xs + tx * TS;
+            const fy = ys + ty * TS;
+            column(fx, Math.min(xe, fx + TS - 1), fy, Math.min(ye, fy + TS - 1), low, lowBig);
+            if (fa.leastOf(low) > 0.02) clear[ty * ntx + tx] = 1;
+          }
+        }
+      }
+    }
+  }
+  for (let y = ys; y <= ye; y++) {
+    for (let x = xs; x <= xe; x++) {
+      if (COUNT) cnt('pixels');
+      if (clear[Math.floor((y - ys) / TS) * ntx + Math.floor((x - xs) / TS)]) continue;
+      if (COUNT) cnt('marched');
+      const sx = x + 0.5 - ax;
+      const sy = y + 0.5 - ay;
+      const b0 = CX[0] * sx + CY[0] * sy;
+      const b1 = CX[1] * sx + CY[1] * sy;
+      const b2 = CX[2] * sx + CY[2] * sy;
+      let t = zNear;
+      let hit = false;
+      let q0 = b0;
+      let q1 = b1;
+      let q2 = b2;
+      let m = -1;
+      let cell = -2;
+      let L = fa.full;
+      for (let i = 0; i < 160 && t > zFar; i++) {
+        q0 = b0 + CZ[0] * t;
+        q1 = b1 + CZ[1] * t;
+        q2 = b2 + CZ[2] * t;
+        const k = cells.cell(sx, sy, t);
+        if (k !== cell) {
+          cell = k;
+          L = cells.atList(k);
+        }
+        const d = fa.at(L, q0, q1, q2);
+        if (COUNT) cnt('steps');
+        if (d < 0.02) {
+          hit = true;
+          m = fa.m;
+          break;
+        }
+        t -= Math.max(0.02, (d * 0.8) / L2);
+      }
+      if (!hit) continue;
+      if (COUNT) cnt('hits');
+      // the way the skin faces, its creases, whose it is: as `draw` has them
+      const ML = cells.matList(cell, m);
+      const nx = fa.ofMat(ML, q0 + E, q1 + 0, q2 + 0) - fa.ofMat(ML, q0 + -E, q1 + 0, q2 + 0);
+      const ny = fa.ofMat(ML, q0 + 0, q1 + E, q2 + 0) - fa.ofMat(ML, q0 + 0, q1 + -E, q2 + 0);
+      const nz = fa.ofMat(ML, q0 + 0, q1 + 0, q2 + E) - fa.ofMat(ML, q0 + 0, q1 + 0, q2 + -E);
+      const nn = Math.hypot(nx, ny, nz) || 1;
+      const n: V3 = [nx / nn, ny / nn, nz / nn];
+      const a0 = q0 + n[0] * 1.2;
+      const a1 = q1 + n[1] * 1.2;
+      const a2 = q2 + n[2] * 1.2;
+      const o1 = fa.at(cells.atList(cells.cellOf(a0, a1, a2)), a0, a1, a2) / 1.2;
+      const c0 = q0 + n[0] * 2.6;
+      const c1 = q1 + n[1] * 2.6;
+      const c2 = q2 + n[2] * 2.6;
+      const o2 = fa.at(cells.atList(cells.cellOf(c0, c1, c2)), c0, c1, c2) / 2.6;
+      const open = Math.max(0, Math.min(1, (o1 + o2) / 2));
+      shade(x, y, t, [q0, q1, q2], n, m, open, fa.nearest(ML, m, q0, q1, q2));
+    }
+  }
+}
+
 /** What else is painted with a sculpted figure: parts of the old kind (a vial, a flame), on the same stage. */
 export type Extras = (st: Stage) => void;
 
@@ -396,6 +1656,8 @@ export function graft(into: Sculpt, from: Sculpt, turn: (v: V3) => V3, by: V3): 
 }
 
 export const LAST: { sc: Sculpt | null } = { sc: null };
+/** (for timing and checking the drawing: every call of `draw` kept here while `calls` is a list) */
+export const SCULPT_RECORD: { calls: Parameters<typeof draw>[] | null } = { calls: null };
 
 /**
  * A sculpture drawn on a canvas, `extras` painted with it, and its crisp edge (`rim`). `overNear`, if given, how near the eye
@@ -403,6 +1665,7 @@ export const LAST: { sc: Sculpt | null } = { sc: null };
  * the light (a claw curled round in front of a fire held in it); without it, the light is over everything.
  */
 export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size: { readonly w: number; readonly h: number }, extras?: Extras, rim: string | null = null, overNear?: () => number): Drawn {
+  if (SCULPT_RECORD.calls) SCULPT_RECORD.calls.push([sc0, view, ax, ay, size, extras, rim, overNear]);
   const sc = spun(sc0);
   const W = size.w;
   const H = size.h;
@@ -462,7 +1725,32 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
     return ((v[0] << 24) | (v[1] << 16) | (v[2] << 8) | 255) >>> 0;
   };
   const E = 0.18;
-  for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(H - 1, Math.ceil(y1)); y++) {
+  const arena = SCULPT_SPEED.fast && x0 <= x1 && y0 <= y1 ? (ARENAS.pop() ?? new Arena()) : null;
+  arena?.reset();
+  const fa = arena ? new Fast(f, arena) : null;
+  if (fa && fa.sound()) {
+    // THE SAME MARCH, ASKING EACH POINT ONLY WHAT CAN MATTER THERE (see `Fast`)
+    try {
+      const box = { xs: Math.max(0, Math.floor(x0)), xe: Math.min(W - 1, Math.ceil(x1)), ys: Math.max(0, Math.floor(y0)), ye: Math.min(H - 1, Math.ceil(y1)), zNear, zFar };
+      marchFast(fa, st, ax, ay, box, CX, CY, CZ, L2, E, (x, y, t, q, n, m, open, pi) => {
+        const seenN = st.seen(n);
+        const sl = Math.hypot(seenN[0], seenN[1], seenN[2]) || 1;
+        const nl = (seenN[0] * LX + seenN[1] * LY + seenN[2] * LZ) / sl;
+        const mat = sc.mats[m];
+        const tone = toneOf(nl - (1 - open) * (mat.crease ?? CREASE) - (mat.shade ?? 0));
+        const prim = f.rs[pi].p;
+        const h: Hit = { p: q, n, nl, tone, prim, x, y };
+        const c = (mat.paint && mat.paint(h)) || mat.ramp[tone];
+        const k = y * W + x;
+        zb[k] = t;
+        stuff[k] = m;
+        piece[k] = pieceOf(m, prim.piece);
+        colour[k] = pack(c);
+      });
+    } finally {
+      ARENAS.push(arena as Arena);
+    }
+  } else for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(H - 1, Math.ceil(y1)); y++) {
     for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(W - 1, Math.ceil(x1)); x++) {
       const sx = x + 0.5 - ax;
       const sy = y + 0.5 - ay;
