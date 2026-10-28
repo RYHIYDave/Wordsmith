@@ -24,7 +24,7 @@
 
 import { bonesAt, project, solve } from '../art/skeleton';
 import type { Posed, V3 } from '../art/skeleton';
-import type { Bones, Key3, Motion } from '../art/skeleton';
+import type { Bones, Build, Key3, Motion } from '../art/skeleton';
 import { BRAWLER_B, FR, GUARD, T, onBall } from './brawler_moves';
 import type { BlowAt, BrawlerMove } from './brawler_moves';
 
@@ -417,18 +417,23 @@ export function bake(m: Motion, long: number, fps = 60, soften = 2, quiet: [numb
   return { keys: steadied(keys, fps, quiet), hit: m.hit };
 }
 
+/** Whose bones a move's keys are of: the build, and the pose a key's unnamed numbers come from (his, unless another's is given). */
+export interface Who {
+  b: Build;
+  rest: Bones;
+}
 /**
  * A move's keys (one for every `fps`th of a second) with its elbows steadied (steadyElbows), each of six ways, keeping
  * whichever leaves the elbows smoothest: the most any one changes its pace or way from one frame to the next, at thirty a
  * second, the least. Every other number of each pose is kept as it is.
  */
-export function steadied(keys: Key3[], fps: number, quiet: [number, number][] = []): Key3[] {
+export function steadied(keys: Key3[], fps: number, quiet: [number, number][] = [], who: Who = { b: BRAWLER_B, rest: GUARD }): Key3[] {
   let best: Key3[] = keys;
   let bestRough = Infinity;
   for (const goOn of [0, 0.2, 0.35, 0.5, 0.7, 0.85]) {
     const tried = keys.map((k) => ({ ...k, pose: { ...k.pose } }));
-    steadyElbows(tried, goOn);
-    const rough = 1000 * jerks(tried, fps, quiet) + roughness(tried, fps);
+    steadyElbows(tried, goOn, who);
+    const rough = 1000 * jerks(tried, fps, quiet, who) + roughness(tried, fps, who);
     if (rough < bestRough) {
       bestRough = rough;
       best = tried;
@@ -442,12 +447,12 @@ export function steadied(keys: Key3[], fps: number, quiet: [number, number][] = 
  * far as the frames either side), stalls and goes on, or turns straight back at speed: the boss checks' JERK, as
  * tests/brawler_moves.test.ts has them.
  */
-function jerks(keys: Key3[], fps: number, quiet: [number, number][] = []): number {
+function jerks(keys: Key3[], fps: number, quiet: [number, number][] = [], who: Who = { b: BRAWLER_B, rest: GUARD }): number {
   const every = Math.max(1, Math.round(fps / 30));
   let count = 0;
   for (const joint of ['elbowL', 'elbowR'] as const) {
     const at: V3[] = [];
-    for (let i = 0; i < keys.length; i += every) at.push(solve(BRAWLER_B, { ...GUARD, ...keys[i].pose } as Posed)[joint]);
+    for (let i = 0; i < keys.length; i += every) at.push(solve(who.b, { ...who.rest, ...keys[i].pose } as Posed)[joint]);
     for (const view of ['front', 'back'] as const) {
       const xy = at.map((p) => project(p, view));
       const st = xy.slice(1).map((p, i) => [p[0] - xy[i][0], p[1] - xy[i][1]] as const);
@@ -475,12 +480,12 @@ export function strikes(blows: BlowAt[]): [number, number][] {
 }
 
 /** How rough the elbows' going is: the most either changes its step from one frame to the next, at thirty a second. */
-function roughness(keys: Key3[], fps: number): number {
+function roughness(keys: Key3[], fps: number, who: Who = { b: BRAWLER_B, rest: GUARD }): number {
   const every = Math.max(1, Math.round(fps / 30));
   let worst = 0;
   for (const joint of ['elbowL', 'elbowR'] as const) {
     const at: V3[] = [];
-    for (let i = 0; i < keys.length; i += every) at.push(solve(BRAWLER_B, { ...GUARD, ...keys[i].pose } as Posed)[joint]);
+    for (let i = 0; i < keys.length; i += every) at.push(solve(who.b, { ...who.rest, ...keys[i].pose } as Posed)[joint]);
     for (let i = 2; i < at.length; i++) {
       const d = Math.hypot(at[i][0] - 2 * at[i - 1][0] + at[i - 2][0], at[i][1] - 2 * at[i - 1][1] + at[i - 2][1], at[i][2] - 2 * at[i - 1][2] + at[i - 2][2]);
       worst = Math.max(worst, d);
@@ -498,7 +503,7 @@ function roughness(keys: Key3[], fps: number): number {
  */
 const STEADY_REACH = 150;
 const STEADY_COST = 0.003;
-function steadyElbows(keys: Key3[], goOn: number): void {
+function steadyElbows(keys: Key3[], goOn: number, who: Who = { b: BRAWLER_B, rest: GUARD }): void {
   for (const side of ['le', 're'] as const) {
     const joint = side === 'le' ? 'elbowL' : 'elbowR';
     let was: V3 | null = null;
@@ -506,13 +511,13 @@ function steadyElbows(keys: Key3[], goOn: number): void {
     for (const k of keys) {
       // (where it would be if it went on as it was going, a little slowed)
       const goes: V3 | null = was && before ? [was[0] + (was[0] - before[0]) * goOn, was[1] + (was[1] - before[1]) * goOn, was[2] + (was[2] - before[2]) * goOn] : was;
-      const q = { ...GUARD, ...k.pose } as Posed;
+      const q = { ...who.rest, ...k.pose } as Posed;
       const want = q[side];
       let best = want;
       let bestCost = Infinity;
       let bestAt: V3 | null = null;
       for (let d = -STEADY_REACH; d <= STEADY_REACH; d += 3) {
-        const e = solve(BRAWLER_B, { ...q, [side]: want + d } as Posed)[joint];
+        const e = solve(who.b, { ...q, [side]: want + d } as Posed)[joint];
         const moved = goes ? (e[0] - goes[0]) ** 2 + (e[1] - goes[1]) ** 2 + (e[2] - goes[2]) ** 2 : 0;
         const cost = moved + STEADY_COST * d * d;
         if (cost < bestCost) {

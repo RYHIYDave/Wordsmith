@@ -14,6 +14,7 @@ import type { Sculpt } from '../src/dev/sculpt';
 import { TINK_B, TSTANCE, drawTinkerAt, tinkerMoves, tinkerPose } from '../src/dev/tinkerer_moves';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { drawTinkerFallAt, tinkerFall } from '../src/dev/tinkerer_fall';
+import { drawTinkerHoldAt, tinkerHold } from '../src/dev/tinkerer_hold';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -51,8 +52,8 @@ function heldThrough(sc: Sculpt): string[] {
   return [...new Set(out)];
 }
 
-/** Every move of hers, and her fall (dev/tinkerer_fall.ts). */
-const ALL = [...tinkerMoves(), tinkerFall()];
+/** Every move of hers, her tap and hold (dev/tinkerer_hold.ts) and her fall (dev/tinkerer_fall.ts). */
+const ALL = [...tinkerMoves(), tinkerHold(), tinkerFall()];
 for (const m of ALL) {
   const fps = m.carry ? RUN_FPS : FPS;
   const n = Math.round(m.long * fps);
@@ -149,6 +150,21 @@ test('Her fall: what flies off her, in every frame: crisp, no pixel alone, nothi
     for (let i = 0; i <= n; i++) {
       const t = Math.min(m.long, i / FPS);
       for (const f of pictureFindings(drawTinkerFallAt(view, m, t).px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+    }
+  }
+  assert.deepEqual([...new Set(found)], []);
+});
+
+// HER WHISTLE (dev/tinkerer_hold.ts drawTinkerHoldAt): every frame, from in front and behind: crisp, no pixel alone, nothing
+// pink, nothing cut off
+test('Tap and hold: her whistle, in every frame: crisp, no pixel alone, nothing pink, nothing cut off', () => {
+  const m = ALL.find((mv) => mv.name.startsWith('Tap and hold'))!;
+  const found: string[] = [];
+  const n = Math.round(m.long * FPS);
+  for (const view of ['front', 'back'] as const) {
+    for (let i = 0; i <= n; i++) {
+      const t = Math.min(m.long, i / FPS);
+      for (const f of pictureFindings(drawTinkerHoldAt(view, m, t).px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
     }
   }
   assert.deepEqual([...new Set(found)], []);

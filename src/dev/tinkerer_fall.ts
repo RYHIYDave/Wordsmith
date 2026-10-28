@@ -56,7 +56,7 @@ const LEGS_SIT: Partial<Bones> = { lfx: 6, lfy: 2, lfz: 0, lfp: -18, lft: 22, lk
 const LEGS_0: Partial<Bones> = { lfx: S0.lfx, lfy: S0.lfy, lfz: S0.lfz, lfp: S0.lfp, lft: S0.lft, lk: S0.lk, lkUp: S0.lkUp, rfx: S0.rfx, rfy: S0.rfy, rfz: S0.rfz, rfp: S0.rfp, rft: S0.rft, rk: S0.rk, rkUp: S0.rkUp };
 
 /** A hand at a point of her chest's own space (from its shoulder: forward, to her left, up), as her own space has it, for the body `q`. */
-function handAt(q: Partial<Bones>, left: boolean, fw: number, lf: number, up: number): V3 {
+export function handAt(q: Partial<Bones>, left: boolean, fw: number, lf: number, up: number): V3 {
   const s = solve(B, { ...S0, ...q } as Posed);
   const [cf, cl, cu] = s.chest;
   const sh = left ? s.shoulderL : s.shoulderR;
@@ -73,7 +73,7 @@ function toChest(q: Partial<Bones>, left: boolean): V3 {
   return [d(cf), d(cl), d(cu)];
 }
 /** Both hands, each where it is put (her own space), as a pose's numbers: each measured from the floor under her. */
-function hands(l: V3, r: V3, le: number, re: number): Partial<Bones> {
+export function hands(l: V3, r: V3, le: number, re: number): Partial<Bones> {
   return { lhIn: 2, lhx: l[0], lhy: l[1], lhz: l[2], le, rhIn: 2, rhx: r[0], rhy: r[1], rhz: r[2], re };
 }
 
