@@ -19,28 +19,29 @@ const PACK = [[3.0, 0.0], [3.7, 1.0], [3.9, -0.9], [4.7, 0.3], [3.2, -2.2]];
 // What he does, by the game's clock (seconds from the start of the film), and what the film says of it.
 //   [at, what, ...args]
 //     tap x y         his tap at that tile (from where he stood at the start)
+//     tapM i          his tap at the skeleton i, where it is now (the curse pulls them in)
 //     hold x y        his tap and hold
 //     swipe x y       his swipe toward that tile
 //     tapHim          a tap on him (his pact full: the change)
 //     pact n          his pact set to n
 //     weak i          the skeleton i made easy to kill
 const PLAN = [
-  [1.0, 'tap', 3.0, 0.0],
-  [2.0, 'tap', 3.7, 1.0],
+  [1.0, 'tapM', 0],
+  [2.0, 'tapM', 1],
   [3.4, 'hold', 3.6, 0.0],
   [5.4, 'weak', 0],
-  [5.5, 'tap', 3.0, 0.0],
+  [5.5, 'tapM', 0],
   [7.6, 'swipe', 6.0, 0.0],
   [9.6, 'pact', 25],
-  [9.7, 'tap', 4.7, 0.3],
-  [10.5, 'tap', 3.9, -0.9],
-  [11.3, 'tap', 3.7, 1.0],
-  [12.1, 'tap', 4.7, 0.3],
-  [12.9, 'tap', 3.9, -0.9],
+  [9.7, 'tapM', 3],
+  [10.5, 'tapM', 2],
+  [11.3, 'tapM', 1],
+  [12.1, 'tapM', 3],
+  [12.9, 'tapM', 2],
   [14.6, 'tapHim'],
-  [18.6, 'tap', 4.7, 0.3],
-  [19.2, 'tap', 4.7, 0.3],
-  [19.8, 'tap', 4.7, 0.3],
+  [18.6, 'tapM', 3],
+  [19.2, 'tapM', 3],
+  [19.8, 'tapM', 3],
   [21.2, 'hold', 4.0, 0.0],
   [23.4, 'swipe', 0.5, 0.0],
   [25.2, 'pact', 0.01],
@@ -94,15 +95,19 @@ export default async function (page, snap) {
         const [at, what, a, b] = f.plan.shift();
         h.mana = h.d.maxMana;
         for (const s of h.skills) if (s) s.cd = 0;
+        const mon = (i) => g.monsters.find((q) => q.id === ids[i] && !q.dead) || g.monsters.find((q) => !q.dead);
         if (what === 'tap') { c.fire = true; c.aimX = x0 + a; c.aimY = y0 + b; }
+        else if (what === 'tapM') { const m = mon(a); if (m) { c.fire = true; c.aimX = m.x; c.aimY = m.y; } }
         else if (what === 'hold') { c.cast = true; c.castX = x0 + a; c.castY = y0 + b; }
         else if (what === 'swipe') { c.evade = true; c.evadeX = x0 + a; c.evadeY = y0 + b; }
         else if (what === 'tapHim') c.change = true;
         else if (what === 'pact') h.pact = a;
-        else if (what === 'weak') { const m = g.monsters.find((q) => q.id === ids[a]); if (m) m.life = 1; }
+        else if (what === 'weak') { const m = mon(a); if (m) { m.life = 1; m.shield = 0; } f.log.push(`weak: ${m ? m.id + ' life ' + m.life + ' dead ' + m.dead : 'none'}`); }
         f.log.push(`${f.t.toFixed(2)} ${what} form=${h.form} pact=${(h.pact ?? 0).toFixed(1)}`);
       }
-      return run(dt, c);
+      const out = run(dt, c);
+      for (const id of ids) { const m = g.monsters.find((q) => q.id === id); if ((!m || m.dead) && !f.gone?.includes(id)) { (f.gone ??= []).push(id); f.log.push(`${f.t.toFixed(2)} skeleton ${id} gone`); } }
+      return out;
     };
   }, [PLAN, ids]);
   const where = await page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; return window.__dbg.at(h.x, h.y); });
