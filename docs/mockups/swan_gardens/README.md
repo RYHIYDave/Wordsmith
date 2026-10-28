@@ -40,6 +40,15 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   a gasp at the end.
 - Their sheet and film, asked "are these your Hushed gardeners and grooms?": “Yes, they're right (Recommended)”, offered
   as: next, the palace guard.
+- The palace guard's brief, his answers: who and what they carry, “1 and 2” (of “Royal guards, partisans (Recommended)”
+  and “Royal guards, sword and shield”); size, “A head taller, fewer (Recommended)”; how they move, “March in step
+  (Recommended)”; their two attacks, “Long thrust, wide sweep (Recommended)”; what marks them, “Grey breath through visors
+  (Recommended)”; their death, “To one knee, then a crash (Recommended)”; never, “Not the city watch (Recommended)”;
+  their sound, “Clank and stamp (Recommended)”. Read as (told him so): two kinds of royal guard mixed in a squad, one
+  with a partisan and one with a sword and a tall crested shield; polished breastplates, tall plumed helmets, the royal
+  colours, grander than the watch; a head taller, fewer, two attacks each (a quick long thrust; a wide sweep wound up
+  high); marching stiffly in step; closed visors, grey breath from the slits, dull pink eyes behind; the Hush leaves them
+  in a gasp, the weapon drops, to one knee, then a clatter; clanking armour and stamping boots, a ring of steel, no voices.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -134,6 +143,29 @@ check the bosses have (art/boss_checks.ts). `PALACE_GARDENER`, `PALACE_GROOM`; `
 - STRUCK; and THE HUSH LEAVES THEM (`PH_DIES`): a gasp, the Hush pouring out in one great grey breath, the tool dropping
   clear of them, the knees giving, slumped forward on the floor.
 
+## The palace guard, a medium mob (src/art/palace_guard.ts, palace_guard_moves.ts; behind `GUARD_ON`, off)
+
+The city watch's body (a head taller than the knight), held to every check the bosses have, both blows. `GUARD_PARTISAN`,
+`GUARD_SWORD`; `makeGuardArt3(mob)` gives `{ front, back }`; the second blow is `more.sweep`.
+
+- THEIR LOOK: a doublet of the royal wine, puffed sleeves and breeches slashed white; a polished breastplate (back and
+  breast), pauldrons, a gorget, steel tassets; tall black boots; leather gloves; a closed helmet, its visor down, a dark
+  slit across the eyes with the dull pink behind it, breaths pierced on the cheek, a tall white plume that flops over
+  once they lie down. The Hush curls up out of the visor and seeps from the slit's ends, harder as they wind up a blow.
+- THE PARTISAN (`PARTISAN`, `partisanOf`): an ash shaft, a broad leaf blade with two curled flukes, a wine-and-white
+  tassel. THE SWORD AND SHIELD (`SWORD`, `swordOf`; `SHIELD`, `shieldOf`): an arming sword; a heater shield quartered wine
+  and white, rimmed in steel, a boss at its middle.
+- STANDING at attention; THE MARCH (`GD_PACE` 0.8, stiff and upright, the knees brought up, the boots stamped down).
+- THE LONG THRUST (`GD_THRUST`, its blow at 0.67 s): brought down level and drawn back, the point glinting pink, held
+  shaking; hips first, a lunge, thrust out; carried on; drawn back and stood again (the sword guard's past his shield's
+  edge, the shield swung aside).
+- THE WIDE SWEEP (`GD_SWEEP`, its blow at 0.8 s): heaved up high over the right shoulder, wound round, held shaking, the
+  blade glinting pink; hips first, a step in, swept round low before them from their right to their left; carried on;
+  brought back up (the partisan's as the city watch's halberd sweep; the sword guard's shield held out of its way).
+- TO ONE KNEE, THEN A CRASH (`GD_DIES`): a gasp, the Hush pouring out of the slit; the weapon drops; the right foot steps
+  back and that knee goes down, the left foot planted before him, held a moment, swaying; then the left leg folds under
+  him and he crashes forward and lies still.
+
 ## The dev pages
 
 - `src/dev/preview_garden.ts` (the painting): `overview`, `phone`, `close:X:Y`.
@@ -142,6 +174,7 @@ check the bosses have (art/boss_checks.ts). `PALACE_GARDENER`, `PALACE_GROOM`; `
 - `src/dev/preview_floor16.ts` (the pieces): `all`, `range=A-B@K`, `look=<name>@K`, `show`.
 - `src/dev/preview_palace_hands.ts` (the gardeners and grooms): `sheet` (both, from in front and behind beside the knight,
   three times as big; a crowd at the game's size), `big:<gardener|groom>:<move>:<t>`.
+- `src/dev/preview_palace_guard.ts` (the palace guard): `sheet`, `big:<partisan|sword>:<move>:<t>`.
 - `src/dev/preview_swans.ts` (the swans): `sheet` (from in front and behind beside the knight, three times as big; a flock at
   the game's size), `big:<move>:<t>`, `strip:<move>:<view>:<n>`.
 
@@ -161,3 +194,5 @@ check the bosses have (art/boss_checks.ts). `PALACE_GARDENER`, `PALACE_GROOM`; `
   boss check, from in front and behind, and every handover; no cyan, the pink edge while they live; nothing cut off;
   nothing in the floor; the Hush leaking and leaving; the pink eyes; the tool lying clear; the rush, the shears' warning
   and snap, the fork's warning and jab.
+- `tests/palace_guard.test.ts` (9): as the gardeners' and grooms', both blows; and his picks: the thrust's reach, the
+  sweep crossing from their right to their left, the march, to one knee (the right knee down, the left up), then down.
