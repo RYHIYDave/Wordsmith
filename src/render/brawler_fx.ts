@@ -82,19 +82,21 @@ export class BrawlerFx {
 
   /** What is over everything: rings of air off his fists, the launched one's streak, the bowled, his after-images, the names. */
   drawAir(g: CanvasRenderingContext2D, c: Cam): void {
-    // (his slip: after-images of him weaving low along the way he went, thinning)
+    // (his slip: a streak of the friend's cyan low along the way he weaved, thinning; his after-images are the renderer's)
     for (const tr of this.trails) {
       const k = tr.t / LIFE.trail;
-      g.globalAlpha = Math.max(0, 0.7 * (1 - k));
-      for (let i = 0; i <= 4; i++) {
-        const u = i / 4;
-        const x = Math.round(wx(c, tr.x0 + (tr.x1 - tr.x0) * u, tr.y0 + (tr.y1 - tr.y0) * u));
-        const y = Math.round(wy(c, tr.x0 + (tr.x1 - tr.x0) * u, tr.y0 + (tr.y1 - tr.y0) * u) + Math.sin(u * Math.PI * 2) * 3);
-        g.fillStyle = CYAN[i === 4 ? 2 : 1];
-        g.fillRect(x - 3, y - 22, 6, 7);
-        g.fillRect(x - 2, y - 26, 4, 4);
-        g.fillRect(x - 4, y - 15, 8, 9);
+      g.globalAlpha = Math.max(0, 0.6 * (1 - k));
+      g.strokeStyle = CYAN[1];
+      g.lineWidth = 1;
+      g.beginPath();
+      for (let i = 0; i <= 12; i++) {
+        const u = i / 12;
+        const x = wx(c, tr.x0 + (tr.x1 - tr.x0) * u, tr.y0 + (tr.y1 - tr.y0) * u);
+        const y = wy(c, tr.x0 + (tr.x1 - tr.x0) * u, tr.y0 + (tr.y1 - tr.y0) * u) - 6 + Math.sin(u * Math.PI * 3) * 3;
+        if (i === 0) g.moveTo(Math.round(x), Math.round(y));
+        else g.lineTo(Math.round(x), Math.round(y));
       }
+      g.stroke();
       g.globalAlpha = 1;
     }
     // (a ring of air off the fist as it lands, opening the way it went; a crack of light at its heart for a hold's)

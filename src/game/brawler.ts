@@ -32,7 +32,7 @@ export const BRAWLER = { on: typeof __BRAWLER__ !== 'undefined' && __BRAWLER__ =
 export const isBrawler = (cls: ClassId): boolean => cls === 'brawler';
 
 /** His punches. */
-export type PunchName = 'jab' | 'hook' | 'uppercut' | 'cross' | 'body blow' | 'overhand' | 'haymaker';
+export type PunchName = 'jab' | 'hook' | 'uppercut' | 'cross' | 'body blow' | 'overhand' | 'haymaker' | 'counter';
 
 /**
  * Each punch: its wind-up and its follow-through (seconds: the art's, dev/brawler_punches.ts, a frame a thirtieth); its share
@@ -48,6 +48,8 @@ export const PUNCHES: Record<PunchName, { windup: number; follow: number; share:
   'body blow': { windup: 10 / 30, follow: 14 / 30, share: 0.9, reach: 1.9, round: 1.9, stagger: 0.6, throw: 0.4, big: 1 },
   overhand: { windup: 12 / 30, follow: 17 / 30, share: 1.7, reach: 1.9, throw: 1.1, big: 1 },
   haymaker: { windup: 16 / 30, follow: 24 / 30, share: 2.6, reach: 2.0, launch: true, big: 2 },
+  // (his slip's counter hook, as he comes up: game.ts brawlerComesUp)
+  counter: { windup: 0, follow: 0, share: 1, reach: 1.9, throw: 0.6, big: 0 },
 };
 
 /** Seconds after a punch has been seen out in which a press is still the next of its combo. */

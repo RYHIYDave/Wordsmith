@@ -3616,7 +3616,7 @@ export class Game {
         if (mv.kind === 'leap') this.land();
         else if (mv.kind === 'smoke' && mv.demon) this.demonLands();
         else if (mv.kind === 'blast') this.emit({ t: 'blastLand', x: h.x, y: h.y });
-        else if (mv.kind === 'slip') this.brawlerComesUp();
+        else if (mv.kind === 'slip') this.brawlerComesUp(mv.x0, mv.y0);
       }
       return;
     }
@@ -4255,13 +4255,12 @@ export class Game {
       return;
     }
     // (THE BRAWLER, game/brawler.ts: the slip. He weaves to the spot, nothing hurting him, and comes up with a counter hook:
-    // brawlerComesUp. Behind: what its words leave, it leaves where he set off.)
+    // brawlerComesUp. Behind: what its words leave, it leaves where he set off, as he comes up.)
     if (def.kind === 'slip' && land) {
       h.move = { kind: 'slip', t: 0, dur: BRAWL_TUNE.slip.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
       h.invuln = Math.max(h.invuln, BRAWL_TUNE.slip.secs + 0.15);
       h.punch = null;
       this.emit({ t: 'slip', x0: h.x, y0: h.y, x1: land.x, y1: land.y });
-      this.wake(2, x0, y0, def.radius * r.size, r.countDmg);
       return;
     }
     // (THE TINKERER, game/tinkerer.ts: the blast jump. The bomb goes off at her feet: what is by her is hurt and blown away
@@ -4389,7 +4388,7 @@ export class Game {
    * A punch of his landing: the one in front within its reach (the body blow, all round him), struck for its share of the
    * hit; the uppercut stuns it, the holds knock it back, the haymaker launches it down the line. Its name floats over him.
    */
-  private landPunch(i: number, name: PunchName, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false): void {
+  private landPunch(i: number, name: PunchName, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false, wakes = true): void {
     const h = this.hero;
     const P = PUNCHES[name];
     const r = h.skills[i].r;
@@ -4454,7 +4453,7 @@ export class Game {
     }
     this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
     // (what the words behind it leave, a punch leaves where it lands, once a press)
-    if (n === 0 && !echo) this.wake(i, hits.length ? hits[0].x : ox + dx * reach * 0.7, hits.length ? hits[0].y : oy + dy * reach * 0.7, Math.max(1, P.round ?? reach * 0.6), frac);
+    if (wakes && n === 0 && !echo) this.wake(i, hits.length ? hits[0].x : ox + dx * reach * 0.7, hits.length ? hits[0].y : oy + dy * reach * 0.7, Math.max(1, P.round ?? reach * 0.6), frac);
   }
 
   /** What his haymaker launched flies down the line; each it meets is bowled over and struck. Stopped by a wall, it stops. */
@@ -4486,39 +4485,32 @@ export class Game {
     }
   }
 
-  /** His slip over: he comes up with a counter hook into whatever is there (the nearest within its reach); Twin, a second; "of Echoes", a weaker one after. */
-  private brawlerComesUp(): void {
+  /** His slip over: he comes up with a counter hook into whatever is there (the nearest within its reach); Twin, a second; "of Echoes", a weaker one after. What its words behind it leave, it leaves where he set off, (x0, y0). */
+  private brawlerComesUp(x0: number, y0: number): void {
     const h = this.hero;
     const s = h.skills[2];
     if (!s) return;
     const r = s.r;
     const hook = (k: number, frac: number, echo: boolean): void => {
+      // (turned to the nearest within its reach, and the hook thrown at it, as a punch of his: landPunch)
       let best: Monster | null = null;
       let bd = 1e9;
       for (const m of this.monsters) {
         if (m.dead || this.shutIn(m)) continue;
         const d = Math.hypot(m.x - h.x, m.y - h.y) - m.r;
-        if (d <= BRAWL_TUNE.slip.reach && d < bd) {
+        if (d <= PUNCHES.counter.reach * r.size && d < bd) {
           bd = d;
           best = m;
         }
       }
-      const dx = best ? best.x - h.x : h.fx;
-      const dy = best ? best.y - h.y : h.fy;
-      const len = Math.hypot(dx, dy) || 1;
       if (best) this.face(best.x, best.y);
-      this.emit({ t: 'punch', name: 'counter', x: h.x, y: h.y, dx: dx / len, dy: dy / len, big: 0, n: k, echo: echo || undefined, hit: !!best });
-      this.sfx('hit', 0.8);
-      if (best) {
-        this.hitMonster(best, 2, frac * BRAWL_TUNE.slip.share, false);
-        this.landed(2);
-        if (!best.dead) this.throwMonster(best, h.x, h.y, 0.6, 0.15);
-      }
+      this.landPunch(2, 'counter', h.x, h.y, h.fx, h.fy, frac * BRAWL_TUNE.slip.share, k, echo, false);
     };
     for (let k = 0; k < r.count; k++) {
       if (k === 0) hook(0, r.countDmg, false);
       else this.after(0.12 * k, () => hook(k, r.countDmg, false));
     }
+    this.wake(2, x0, y0, SKILLS[s.id].radius * r.size, r.countDmg);
     if (r.echo > 0) this.echoOf(2, h.x, h.y, h.fx, h.fy, () => hook(0, r.countDmg * r.echo, true));
   }
 

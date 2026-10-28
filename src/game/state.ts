@@ -1274,7 +1274,7 @@ export type GameEvent =
   | { t: 'blastLand'; x: number; y: number }
   // (THE BRAWLER, game/brawler.ts: a punch of his landing, its name floating over him (`big`, how big); one he has launched
   // flying down the line, bowling over each it meets; his slip, and the counter as he comes up)
-  | { t: 'punch'; name: PunchName | 'counter'; x: number; y: number; dx: number; dy: number; big: 0 | 1 | 2; n: number; echo?: boolean; hit: boolean }
+  | { t: 'punch'; name: PunchName; x: number; y: number; dx: number; dy: number; big: 0 | 1 | 2; n: number; echo?: boolean; hit: boolean }
   | { t: 'cannonball'; id: number; x: number; y: number; dx: number; dy: number }
   | { t: 'bowled'; x: number; y: number }
   | { t: 'slip'; x0: number; y0: number; x1: number; y1: number }

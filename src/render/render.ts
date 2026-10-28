@@ -1131,6 +1131,9 @@ export class Renderer {
     return v.cv;
   }
 
+  /** THE BRAWLER's slip: his after-images where he has weaved (the picture, where, and how long ago), in the friend's cyan, fading. */
+  private slipGhosts: { s: Sprite; x: number; y: number; t: number }[] = [];
+
   /** THE TINKERER's minions' pictures, made the first time one is seen. */
   private tinkerArt: { golem: ActorArt; con: { front: ContraptionArt; back: ContraptionArt } } | null = null;
 
@@ -2869,6 +2872,11 @@ export class Renderer {
       this.heroLit = null;
       // (THE FIRST FIVE FLOORS: riding up the mine shaft in its cage, lifted with it and taken into the dark: render/dress.ts)
       const ride = this.dress.rider(game, sp);
+      // (THE BRAWLER weaving: after-images of him left along the way, fading: render/brawler_fx.ts has the rest)
+      for (const gh of this.slipGhosts) gh.t += pace / 60;
+      this.slipGhosts = this.slipGhosts.filter((gh) => gh.t < 0.3);
+      if (h.move && h.move.kind === 'slip' && (this.slipGhosts.length === 0 || this.slipGhosts[this.slipGhosts.length - 1].t > 0.03)) this.slipGhosts.push({ s: sp, x: h.x, y: h.y, t: 0 });
+      for (const gh of this.slipGhosts) this.stand(gh.x + gh.y - 0.02, silhouette(gh.s, '#22d0e0'), wx(cam, gh.x, gh.y), wy(cam, gh.x, gh.y), null, 0, 1, 0.55 * (1 - gh.t / 0.3));
       if (ride) this.stand(ride.d, ride.sp, sx, sy - ride.up);
       else if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
         // (WORDMELDING's looks, behind a switch that is off: standing in Scald's steam, the hero is hidden, seen faint through it)
