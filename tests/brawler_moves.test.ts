@@ -24,9 +24,10 @@ import { BRAWLER_B, FR, GUARD, brawlerMoves, brawlerPose, drawBrawlerAt } from '
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { drawPunchAt } from '../src/dev/brawler_fx';
 import { brawlerFights, strikes, struck } from '../src/dev/brawler_punches';
+import { brawlerFall, drawFallAt } from '../src/dev/brawler_fall';
 
-/** Every move of his: standing, running, each punch from his guard, each of his eight combos and his swipe, the slip and counter (dev/brawler_punches.ts). */
-const ALL = [...brawlerMoves(), ...brawlerFights()];
+/** Every move of his: standing, running, each punch from his guard, each of his eight combos and his swipe, the slip and counter (dev/brawler_punches.ts); and his fall, down on his knees (dev/brawler_fall.ts). */
+const ALL = [...brawlerMoves(), ...brawlerFights(), brawlerFall()];
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -77,7 +78,8 @@ for (const m of ALL) {
     // is not judged frame by frame, its wind-up and wind-down are)
     // (AND HIS SWIPE'S WEAVE, a flash the game carries him through, smeared with his after-images: his pick, “Weaving dash,
     // same reach (Recommended)”, under the same rule: its slip in and its landing are judged, the weave itself is not)
-    const quiet = [...strikes(m.blows ?? []), ...(m.dash ? [[m.dash[0] - FR, m.dash[1] + FR] as [number, number]] : [])];
+    // (AND A BLOW THAT LANDS ON HIM, his fall's first: it snaps him round in a flash, as every blow goes; what follows is judged)
+    const quiet = [...strikes(m.blows ?? []), ...(m.dash ? [[m.dash[0] - FR, m.dash[1] + FR] as [number, number]] : []), ...(m.jolt ? [m.jolt] : [])];
     for (const j of JOINTS) {
       for (const view of ['front', 'back'] as const) {
         const xy = sk.map((k) => project(k[j] as V3, view));
@@ -146,3 +148,19 @@ for (const m of ALL.filter((mv) => mv.blows)) {
     assert.deepEqual([...new Set(found)], []);
   });
 }
+
+// WHAT FLIES OFF HIM AS HE FALLS (dev/brawler_fall.ts drawFallBits): the blow's flash and a little blood, the dust of his
+// feet and knees, his haymaker's streak; every frame, from in front and behind: crisp, no pixel alone, nothing pink, nothing
+// cut off
+test('His fall: what flies off him, in every frame: crisp, no pixel alone, nothing pink, nothing cut off', () => {
+  const m = ALL.find((mv) => mv.name.startsWith('His fall'))!;
+  const found: string[] = [];
+  const n = Math.round(m.long * FPS);
+  for (const view of ['front', 'back'] as const) {
+    for (let i = 0; i <= n; i++) {
+      const t = Math.min(m.long, i / FPS);
+      for (const f of pictureFindings(drawFallAt(view, m, t).px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+    }
+  }
+  assert.deepEqual([...new Set(found)], []);
+});

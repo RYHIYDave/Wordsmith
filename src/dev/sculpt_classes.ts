@@ -536,6 +536,12 @@ export const COATS: CoatSpec[] = [
  * (dev/brawler_moves.ts), from where his hips were a moment before; none while he is drawn standing still.
  */
 export const COAT_SWING: { v: V3 } = { v: [0, 0, 0] };
+/**
+ * HIS COAT'S TAILS COME TO REST ON THE FLOOR, or on his legs, when he is down on his knees (dev/brawler_fall.ts): on, each
+ * tail hangs to where it meets them and is laid out from there; off (as he is drawn standing and in every other move), it
+ * hangs its whole length, as it always has.
+ */
+export const COAT_FLOOR: { on: boolean } = { on: false };
 
 function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
   const coat = COATS.find((c) => c.id === outfit);
@@ -564,11 +570,53 @@ function dressAnew(sc: Sculpt, w: Who, bulk: number, outfit: Outfit): boolean {
       const top = add(beltC, add(mul(fw0, Math.cos(a) * rx), mul(sd0, Math.sin(a) * ry)));
       // (its foot trails where his body has been, as cloth does: COAT_SWING, set while he moves)
       const foot = add(add(top, add(mul(down, len), mul(dir, flare))), mul(COAT_SWING.v, len / 26));
-      const along = norm(sub(foot, top));
       const tg = norm(cross([0, 0, 1], dir));
-      const nn = norm(cross(along, tg));
-      sc.box(mat, i % 2 ? 'skirt' : 'skirt2', lerp3(top, foot, 0.5), [mul(along, len * 0.5), mul(tg, wide * 0.5), mul(nn, 0.45)], 0.3, melt, { tag: 'panel' });
+      const hang = (a: V3, b: V3, half: number, across = wide): void => {
+        const along = norm(sub(b, a));
+        const nn = norm(cross(along, tg));
+        sc.box(mat, i % 2 ? 'skirt' : 'skirt2', lerp3(a, b, 0.5), [mul(along, half), mul(tg, across * 0.5), mul(nn, 0.45)], 0.3, melt, { tag: 'panel' });
+      };
+      const rest = COAT_FLOOR.on ? restOn(top, foot) : null;
+      if (!rest) {
+        hang(top, foot, len * 0.5);
+        continue;
+      }
+      // (DOWN ON HIS KNEES: it hangs to where it comes to rest, on the floor or on his legs, and the rest of it is laid out
+      // from there, away from him, falling to the floor; what is left of its length pooled under that)
+      const out = norm([dir[0], dir[1], 0]);
+      // (laid out wider than it hangs, as cloth spreads when it comes to rest: the tails side by side lie in one heap)
+      const left = Math.min(len - Math.hypot(...sub(rest, top)), 3.5);
+      const end: V3 = add(rest, add(mul(out, Math.max(0, left)), [0, 0, Math.max(LAID - rest[2], -2.5)]));
+      if (Math.hypot(...sub(rest, top)) > 1) hang(top, rest, Math.hypot(...sub(rest, top)) * 0.5);
+      if (left > 1) hang(rest, end, Math.hypot(...sub(end, rest)) * 0.5, wide * 1.7);
     }
+  };
+  /**
+   * Where a coat's tail hanging from `top` to `foot` first comes to rest (COAT_FLOOR on): the floor, or the top of his
+   * thigh or shin under it (each taken round as his trousers are); null if it hangs clear to its foot.
+   */
+  const LAID = 0.9;
+  const restOn = (top: V3, foot: V3): V3 | null => {
+    // (a thigh from a third of the way down it: where it leaves his hips, under his belt, the coat hangs from it)
+    const bones: [V3, V3, number, number][] = [
+      [s.hipL, s.kneeL, B.legR[0] + 1.2, 0.35], [s.kneeL, s.ankleL, B.legR[1] + 1.2, 0],
+      [s.hipR, s.kneeR, B.legR[0] + 1.2, 0.35], [s.kneeR, s.ankleR, B.legR[1] + 1.2, 0],
+    ];
+    const off = (p: V3, a: V3, b: V3, from: number): number => {
+      const ab = sub(b, a);
+      const k = Math.max(from, Math.min(1, dot3(sub(p, a), ab) / (dot3(ab, ab) || 1)));
+      return Math.hypot(...sub(p, add(a, mul(ab, k))));
+    };
+    const n = 40;
+    for (let j = 1; j <= n; j++) {
+      const p = lerp3(top, foot, j / n);
+      if (p[2] <= LAID || bones.some(([a, b, r, from]) => off(p, a, b, from) < r)) {
+        // (it comes to rest a little above where it meets them)
+        const q = lerp3(top, foot, (j - 1) / n);
+        return [q[0], q[1], Math.max(LAID, q[2])];
+      }
+    }
+    return null;
   };
   const sh3 = (side: 'L' | 'R') => ({
     sh: side === 'L' ? s.shoulderL : s.shoulderR,

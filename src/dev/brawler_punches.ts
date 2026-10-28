@@ -414,8 +414,15 @@ export function bake(m: Motion, long: number, fps = 60, soften = 2, quiet: [numb
     for (const f of FIELDS) (pose as Record<string, number>)[f] = vals[f][i];
     return { at: t, pose, ease: 'lin' };
   });
-  // (steadied each of three ways, keeping whichever leaves the elbows smoothest: the most any one changes its pace or way
-  // from one frame to the next, at thirty a second, the least)
+  return { keys: steadied(keys, fps, quiet), hit: m.hit };
+}
+
+/**
+ * A move's keys (one for every `fps`th of a second) with its elbows steadied (steadyElbows), each of six ways, keeping
+ * whichever leaves the elbows smoothest: the most any one changes its pace or way from one frame to the next, at thirty a
+ * second, the least. Every other number of each pose is kept as it is.
+ */
+export function steadied(keys: Key3[], fps: number, quiet: [number, number][] = []): Key3[] {
   let best: Key3[] = keys;
   let bestRough = Infinity;
   for (const goOn of [0, 0.2, 0.35, 0.5, 0.7, 0.85]) {
@@ -427,7 +434,7 @@ export function bake(m: Motion, long: number, fps = 60, soften = 2, quiet: [numb
       best = tried;
     }
   }
-  return { keys: best, hit: m.hit };
+  return best;
 }
 
 /**

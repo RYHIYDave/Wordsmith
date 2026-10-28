@@ -30,7 +30,7 @@ export interface Blow {
 /** How long what bursts off a blow lasts, seconds. */
 export const BLOW_LIFE = 0.3;
 
-const DUST = ['#8a7a66', '#b8a88e', '#5e5246'];
+export const DUST = ['#8a7a66', '#b8a88e', '#5e5246'];
 
 const norm = (v: V3): V3 => {
   const n = Math.hypot(v[0], v[1], v[2]) || 1;
@@ -44,7 +44,7 @@ const hash = (i: number): number => {
 };
 
 /** A pixel of what bursts off a blow, two wide (a picture pixel is half of one of the game's: none is left alone). */
-function dot(d: Drawn, x: number, y: number, col: string): void {
+export function dot(d: Drawn, x: number, y: number, col: string): void {
   // (whole or not at all, and kept two pixels in from the picture's edge: what bursts off a blow is never cut off by it)
   x = Math.floor(x);
   y = Math.floor(y);
@@ -75,7 +75,7 @@ function ring(d: Drawn, c: V3, way: V3, r: number, u: number, seed: number): voi
 }
 
 /** A line of pixels from one point of the picture to another (`behind`: only where nothing of him is). */
-function line(d: Drawn, x0: number, y0: number, x1: number, y1: number, col: string, behind = false): void {
+export function line(d: Drawn, x0: number, y0: number, x1: number, y1: number, col: string, behind = false): void {
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
   for (let i = 0; i <= n; i++) {
     const x = Math.floor(x0 + ((x1 - x0) * i) / n);

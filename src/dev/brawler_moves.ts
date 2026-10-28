@@ -14,7 +14,7 @@
 import { GRIP_SPEED, HEAD_B, UNITS_PER_TILE } from '../art/moves3';
 import { bonesAt, buildOf, solve } from '../art/skeleton';
 import type { Bones, Build, Key3, Motion, Posed, V3 } from '../art/skeleton';
-import { BRAWLER_BUILD, BRAWLER_LOOKS, COAT_SWING, boxerStance, sculptBrawler } from './sculpt_classes';
+import { BRAWLER_BUILD, BRAWLER_LOOKS, COAT_FLOOR, COAT_SWING, boxerStance, sculptBrawler } from './sculpt_classes';
 import type { Drawn } from './sculpt';
 import type { GameView } from '../art/skin';
 
@@ -262,6 +262,13 @@ export interface BrawlerMove {
    * stays where he is; the game moves him (as far as the swipe reaches) between the two, easing in and out.
    */
   dash?: [number, number];
+  /**
+   * A BLOW THAT LANDS ON HIM (from and to, seconds): it snaps him round in a flash, as a blow does (his rulebook's Movement 9:
+   * the strike a flash; Hits 3, a heavy blow rocks him); the flash itself is not judged frame by frame, what follows is.
+   */
+  jolt?: [number, number];
+  /** When he is down on his knees (from and to, seconds): his coat's tails come to rest on the floor, or on his legs (dev/sculpt_classes.ts COAT_FLOOR). */
+  kneels?: [number, number];
 }
 /**
  * A blow as it lands: the moment, the fist, how big what bursts off it grows (pixels); whether it shakes the floor (a ring
@@ -314,10 +321,12 @@ export function drawBrawlerAt(view: GameView, m: Move, t: number, turn = 0): Dra
   const cap = 4.5;
   const n = Math.hypot(v[0], v[1], v[2]);
   COAT_SWING.v = n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : v;
+  COAT_FLOOR.on = !!m.kneels && t >= m.kneels[0] && t <= m.kneels[1];
   try {
     return sculptBrawler(view, pose, BRAWLER_BUILD, undefined, turn);
   } finally {
     COAT_SWING.v = [0, 0, 0];
+    COAT_FLOOR.on = false;
   }
 }
 type Move = BrawlerMove;
