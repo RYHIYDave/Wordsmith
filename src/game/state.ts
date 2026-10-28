@@ -1279,6 +1279,17 @@ export type GameEvent =
   | { t: 'cannonball'; id: number; x: number; y: number; dx: number; dy: number }
   | { t: 'bowled'; x: number; y: number }
   | { t: 'slip'; x0: number; y0: number; x1: number; y1: number }
+  // (THE BRAWLER'S TREE, game/talents.ts BRAWLER_TREE: Big Uppercut's throw up and its coming down, stunned `secs`; Knockout's;
+  // Pinball's knock into another; Shockwave's wave of air, `far` tiles on ahead at `speed`; Bob and Weave's slip ready again;
+  // Slip Reflex's slip; Set-Up's next press made ready)
+  | { t: 'popUp'; id: number; x: number; y: number }
+  | { t: 'comeDown'; id: number; x: number; y: number; secs: number }
+  | { t: 'knockout'; id: number; x: number; y: number; boss: boolean }
+  | { t: 'pinball'; x: number; y: number }
+  | { t: 'shockwave'; x: number; y: number; dx: number; dy: number; far: number; speed: number }
+  | { t: 'slipReady'; x: number; y: number }
+  | { t: 'slipReflex'; x: number; y: number }
+  | { t: 'setUp'; x: number; y: number }
   /** (THE WARLOCK: one struck by a smoke step passing through it; `n` 1 for Twin's second, `echo` the echo's) */
   | { t: 'smokeHit'; id: number; x: number; y: number; n: number; echo: boolean }
   | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }

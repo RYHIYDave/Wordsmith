@@ -69,4 +69,46 @@ export const BRAWL_TUNE = {
   cannonball: { far: 6, speed: 14, share: 0.6, near: 0.9 },
   /** THE SLIP AND COUNTER: seconds the dash takes; the counter hook's reach from where he comes up, and its share of the swipe's hit. */
   slip: { secs: 0.22, reach: 1.9, share: 1 },
+  /** HIS SKILL TREE (game/talents.ts BRAWLER_TREE; its rules in game.ts, "THE BRAWLER'S TREE"): starting numbers, his to try and change. */
+  talents: {
+    /** Double Jab: seconds between the first jab landing and the second. */
+    doubleJab: { gap: 0.12 },
+    /** Tenderize: how much more an enemy takes from him for each punch he has landed on it in a row, and the most. */
+    tenderize: { each: 0.05, most: 0.5 },
+    /** Big Uppercut: how much harder; seconds up in the air, and how high it goes (pixels, the picture's); seconds stunned as it comes down. */
+    bigUppercut: { mult: 2, up: 0.55, high: 26, stun: 2 },
+    /** Knockout: below this share of its life his uppercut knocks it out; a boss is stunned this many seconds instead. */
+    knockout: { below: 0.2, boss: 3 },
+    /** Bleeders: the share of a body blow that each one it hits bleeds again, and over how many seconds. */
+    bleeders: { share: 0.5, secs: 3 },
+    /** Iron Chin: how much less harm while he winds up a hold. */
+    ironChin: { less: 1 / 3 },
+    /** Ten Pins: how far each one the cannonball bowls over is launched (tiles), and how far it veers off the line, away from it (0: straight on). */
+    tenPins: { far: 4, veer: 0.5 },
+    /** Pinball: the share of the blow that knocked it back that what it is knocked into takes; how far that is knocked back (tiles); how near is knocked into (tiles between their edges). */
+    pinball: { share: 0.5, far: 1.1, touch: 0.1 },
+    /** Shockwave: how far the wave goes on ahead (tiles), how wide it is either side of its line, how fast (tiles a second); the share of the hold's blow it strikes for. */
+    shockwave: { far: 3, wide: 0.45, speed: 14, share: 0.5 },
+    /** Slip Reflex: seconds between one slipped blow and the next; how far aside he slips (tiles). */
+    slipReflex: { every: 6, far: 1.1 },
+  },
 };
+
+/** What his talents keep going in the game (game.ts `brawl`); a level begins with none of it. */
+export interface BrawlState {
+  /** Tenderize: the enemy his punches are on, and how many he has landed on it in a row. */
+  tender: { id: number; n: number } | null;
+  /** Big Uppercut: those thrown up, and the seconds each has been up. */
+  up: { id: number; t: number }[];
+  /** Pinball: those he has knocked back, while they fly: what knocked them (the ability, the blow's share), and whom the knocks have struck (one list for the knocks that began with one blow). */
+  pins: { id: number; skill: number; frac: number; hit: number[] }[];
+  /** Shockwave: the waves of air going on ahead of his holds: where from, which way, how far they have gone and may go, and whom they have struck. */
+  waves: { x: number; y: number; dx: number; dy: number; gone: number; far: number; skill: number; frac: number; hit: number[] }[];
+  /** Set-Up: a counter has landed, and his next press is the combo's last punch. */
+  setUp: boolean;
+  /** Slip Reflex: when it last slipped a blow by itself (the level's clock). */
+  reflexAt: number;
+}
+
+/** His talents' state at the start of a level. */
+export const newBrawl = (): BrawlState => ({ tender: null, up: [], pins: [], waves: [], setUp: false, reflexAt: -1e9 });
