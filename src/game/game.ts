@@ -7457,6 +7457,7 @@ export class Game {
 
   private updateMonsters(dt: number): void {
     const h = this.hero;
+    // (DECOYS: each runs out; one that goes with a Golem of the Tinkerer's is where it is)
     if (this.decoys.length) this.updateDecoys(dt);
     const L = this.level;
     const f = L.floor;
