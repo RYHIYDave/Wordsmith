@@ -14,6 +14,8 @@
 // its shoulder, its forearm folded at its elbow, its body leaning about its hips and bobbing; its legs stand where they
 // stand.
 
+import { SHOT, gunAim, gunKick } from './golem_gun_fx';
+
 /** Its ground pound through time, in frames (30 a second). */
 export const GP = { rear: 2, raised: 16, hold: 22, slam: 23, hit: 25, rock: 29, settle: 40, end: 50 };
 /** The strike itself: the hammer coming down, a flash (his rulebook's Movement 9): not judged frame by frame. */
@@ -218,4 +220,46 @@ export function golemDown(f: number): { swing: number; fold: number; lean: numbe
   const flick = [8, 10, 18, 23, 32].some((k) => Math.abs(f - k) < 0.5) ? 0.5 : 0;
   const dim = Math.max(flick, f < GDOWN.slump ? 0 : Math.min(1, (f - GDOWN.slump) / (GDOWN.dark - GDOWN.slump)));
   return { ...arm, lean, bob, feet: [0, 0, 0, 0], level, dim, crumple };
+}
+
+// ---- ITS CANNON ATTACK (his pick, 28 Oct: “Cannon”; asked what next: “Golem's cannon attack (Recommended)”). Its ranged
+// attack as a move of its whole body, by his rulebook's Movement 9 (a big wind-up, the shot a flash, a big wind-down) and
+// “I want things to have weight”: it braces, heaving its giant fist up and slamming it down on the floor close before it to
+// take the blow, leaning back onto its stumpy legs and sinking a little; it swings the cannon down level to aim
+// (dev/golem_gun_fx.ts gunAim), holds a beat, trembling; FIRES, and the recoil rocks its whole body back in a flash, the
+// cannon kicked up its arm, its fist and its feet gripping the floor; it rocks forward again and settles, raising the cannon
+// back to rest and its fist back to where it rests. In time with SHOT (its fire at SHOT.fire, the ball on them at SHOT.hit).
+export const GCANNON = { brace: SHOT.aim, planted: 9, aimed: SHOT.aimed, fire: SHOT.fire, rocked: SHOT.fire + 2, settle: 28, lift: 32, rest: SHOT.rest, end: SHOT.long };
+/** Its fist slammed down as it braces, and the shot's recoil: each a flash, not judged frame by frame. */
+export const GCANNON_STRIKE: [number, number][] = [[GCANNON.planted - 1, GCANNON.planted + 1], [GCANNON.fire - 1, GCANNON.rocked + 1]];
+/** Where its giant fist is braced on the floor (forward, up, as it was built): closer in than where it rests, within its reach as it rocks back. */
+const BRACED: [number, number] = [18, FI[1]];
+/** Its pose at frame `f` of its cannon attack (its gun's aim and kick with it). */
+export function golemCannon(f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; aim: number; kick: number } {
+  const tremble = f > GCANNON.aimed && f < GCANNON.fire ? 0.5 * Math.sin((f - GCANNON.aimed) * 2.6) : 0;
+  let lean = track([[0, 0], [GCANNON.brace, 0], [GCANNON.planted, -3], [GCANNON.aimed, -5], [GCANNON.fire, -6], [GCANNON.rocked, -12], [22, -3], [GCANNON.settle, -4.5], [GCANNON.rest, 0], [GCANNON.end, 0]], f) + tremble;
+  let bob = track([[0, 0], [GCANNON.brace, 0.4], [GCANNON.planted, -1.6], [GCANNON.aimed, -1.4], [GCANNON.fire, -1.6], [GCANNON.rocked, -1.0], [22, -1.8], [GCANNON.settle, -1.2], [GCANNON.rest, 0], [GCANNON.end, 0]], f);
+  // (the recoil itself: all at once, at its fastest as it fires)
+  if (f > GCANNON.fire && f < GCANNON.rocked) {
+    const u = (f - GCANNON.fire) / (GCANNON.rocked - GCANNON.fire);
+    const k = 1 - (1 - u) * (1 - u);
+    lean = -6 + (-12 + 6) * k;
+    bob = -1.6 + 0.6 * k;
+  }
+  // (its giant fist: heaved up and slammed down close before it, a brace, gathering speed as it comes down; kept there
+  // through the shot; and heaved back to where it rests)
+  let to: [number, number];
+  if (f <= GCANNON.brace) to = [FI[0], FI[1]];
+  else if (f < GCANNON.planted) {
+    const u = (f - GCANNON.brace) / (GCANNON.planted - GCANNON.brace);
+    const g = u * u * (3 - 2 * u);
+    to = [FI[0] + (BRACED[0] - FI[0]) * g, FI[1] + 9 * Math.sin(Math.PI * u)];
+  } else if (f <= GCANNON.lift) to = [BRACED[0], BRACED[1]];
+  else if (f < GCANNON.rest) {
+    const u = (f - GCANNON.lift) / (GCANNON.rest - GCANNON.lift);
+    const g = u * u * (3 - 2 * u);
+    to = [BRACED[0] + (FI[0] - BRACED[0]) * g, FI[1] + 5 * Math.sin(Math.PI * u)];
+  } else to = [FI[0], FI[1]];
+  const arm = reachFist(to, lean, bob);
+  return { ...arm, lean, bob, feet: [0, 0, 0, 0], level: 1, aim: gunAim(f), kick: gunKick(f) };
 }
