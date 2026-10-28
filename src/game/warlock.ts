@@ -92,6 +92,8 @@ export const WARLOCK_TUNE = {
     pyre: { r: 1.6, share: 0.6 },
     /** Blazing Arm: his bolt bursts `r` across, cursing and burning all in it, striking each at `share` of the bolt. */
     blazing: { r: 1.6, share: 0.5 },
+    /** Phantom Step: his shadow stands `secs` where he stepped from, drawing what is within `reach` of it. */
+    phantom: { secs: 2, reach: 5 },
     /** Soul Debt: each cursed one dying fills this share of his pact. */
     soulDebt: { share: 0.1 },
     /**

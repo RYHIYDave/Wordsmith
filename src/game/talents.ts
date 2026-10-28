@@ -264,6 +264,7 @@ const WARRIOR: TalentTree = {
 // uppercut or haymaker”: SET-UP).
 
 // ---- the warlock: a demon's claw ---------------------------------------------------------------------
+//   His talents at work filmed in the game for him (warlock_tree_film.mp4), his word by 19:03 (Eastern): “Looks good”.
 //   Reaching right from the wrist: the DEMON from the back of the hand (its spur up off it), the MAN from the heel of it (the
 //   thumb down off it); they meet at the knuckle, the pact's, where the three talons come out: the demon's on top, the pact's
 //   in the middle, the man's below, each hooking down at its point.
@@ -292,7 +293,7 @@ const WARLOCK_TREE: TalentTree = {
     // THE MAN: the heel of the hand, the thumb, the bottom talon
     { id: 'branded', name: 'Branded', big: false, works: true, path: 'man', at: [0, 3.4], from: [], text: 'Every Hellfire Bolt curses what it hits.' },
     { id: 'hexchain', name: 'Hex Chain', big: false, works: true, path: 'man', at: [1.1, 3.0], from: ['branded'], text: 'A bolt that hits a cursed enemy leaps on to the next cursed one near it, up to three times, burning each.' },
-    { id: 'phantomstep', name: 'Phantom Step', big: true, path: 'man', at: [1.65, 4.0], from: ['hexchain'], text: 'His Smoke Step leaves his shadow where he stood: for two seconds, the enemies go after it instead of him.' },
+    { id: 'phantomstep', name: 'Phantom Step', big: true, works: true, path: 'man', at: [1.65, 4.0], from: ['hexchain'], text: 'His Smoke Step leaves his shadow where he stood: for two seconds, the enemies go after it instead of him.' },
     { id: 'withering', name: 'Withering', big: false, works: true, path: 'man', at: [3.2, 3.05], from: ['blazingarm'], text: 'Cursed enemies move and strike at half speed.' },
     { id: 'pyre', name: 'Pyre', big: false, works: true, path: 'man', at: [4.2, 3.25], from: ['withering'], text: 'A cursed enemy that dies bursts in hellfire, striking everything near it.' },
     { id: 'bounddemon', name: 'Bound Demon', big: true, works: true, path: 'man', at: [5.0, 3.95], from: ['pyre'], text: 'The demon no longer takes him over: it tears out and fights at his side until the pact runs dry, while he fights on as a man.' },

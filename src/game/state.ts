@@ -1326,6 +1326,8 @@ export type GameEvent =
   | { t: 'bound'; x: number; y: number }
   | { t: 'boundRake'; x: number; y: number; dx: number; dy: number }
   | { t: 'boundOut'; x: number; y: number }
+  /** (HIS TREE: Phantom Step) his shadow left where he stood, for `secs`. */
+  | { t: 'phantom'; x: number; y: number; secs: number }
   // (THE TINKERER, game/tinkerer.ts: her Contraption thrown, a vial lobbed out of it and bursting, a Contraption put out
   // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
   | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }

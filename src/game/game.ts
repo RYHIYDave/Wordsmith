@@ -4339,6 +4339,12 @@ export class Game {
       this.sfx(demon ? 'slam' : 'dodge', 0.6);
       // behind: left where he went up in smoke (the demon's, where it bursts out: demonLands)
       if (!demon) this.wake(2, x0, y0, def.radius * r.size, r.countDmg);
+      // (HIS TREE: Phantom Step, his shadow left where he stood: the enemies near go after it, not him, a while: the decoys)
+      if (!demon && this.has('phantomstep')) {
+        const P = WARLOCK_TUNE.talents.phantom;
+        this.decoys.push({ x: x0, y: y0, t: P.secs, r: P.reach, size: TUNE.heroRadius });
+        this.emit({ t: 'phantom', x: x0, y: y0, secs: P.secs });
+      }
       // "of Echoes": a moment later the smoke streaks along the same way again, weaker
       if (r.echo > 0) {
         const x1 = land.x;

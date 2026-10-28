@@ -1208,6 +1208,34 @@ export class Renderer {
     }
   }
 
+  /** The hero as he was last drawn, before this frame (his shadow, Phantom Step). */
+  private heroBefore: Sprite | null = null;
+  /** (THE WARLOCK's tree: Phantom Step) each shadow's picture: him as he was the moment he stepped away. */
+  private readonly shadows = new WeakMap<object, Sprite>();
+  /**
+   * THE WARLOCK'S SHADOWS (his tree, game/talents.ts: Phantom Step): where he stepped from, him as he stood, gone dark as his
+   * smoke, an edge of the friend's cyan either side; flickering, and fading as its time runs out. A FIRST PASS, TO BE SHOWN TO
+   * THE OWNER.
+   */
+  private drawShadows(game: Game, cam: Cam, t: number): void {
+    for (const d of game.decoys) {
+      if (d.golem) continue;
+      let s = this.shadows.get(d);
+      if (!s) {
+        if (!this.heroBefore) continue;
+        s = this.heroBefore;
+        this.shadows.set(d, s);
+      }
+      const fade = Math.min(1, d.t / 0.4) * (0.85 + 0.15 * Math.sin(t * 23 + d.x));
+      const sx = wx(cam, d.x, d.y);
+      const sy = wy(cam, d.x, d.y);
+      const edge = silhouette(s, '#22d0e0');
+      this.stand(d.x + d.y - 0.002, edge, sx - 1, sy, null, 0, 1, 0.45 * fade);
+      this.stand(d.x + d.y - 0.001, edge, sx + 1, sy, null, 0, 1, 0.45 * fade);
+      this.stand(d.x + d.y, silhouette(s, '#0c0e22'), sx, sy, null, 0, 1, 0.9 * fade);
+    }
+  }
+
   /** (THE WARLOCK's tree) The Bound Demon's figure: the demon's own pictures, played as a figure of its own. */
   private readonly boundFig = new Figure();
   /**
@@ -2279,6 +2307,8 @@ export class Renderer {
   }
 
   private drawWorld(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
+    // (the hero as he was last drawn, before this frame: THE WARLOCK's Phantom Step leaves him so as his shadow)
+    this.heroBefore = this.heroWas;
     this.bossFx.begin();
     // (THE FIRST FIVE FLOORS: this level's own pieces, and a step of its moments)
     this.dressed = this.pieces.begin(game);
@@ -3018,8 +3048,9 @@ export class Renderer {
 
     // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
     if (game.golems.length || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
-    // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side
+    // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side; his shadows where he stepped from (Phantom Step)
     if (game.bound) this.drawBound(game, cam, W, H, pace / 60);
+    if (game.decoys.length) this.drawShadows(game, cam, t);
 
     for (const p of game.projectiles) {
       const sx = wx(cam, p.x, p.y);

@@ -123,9 +123,32 @@ function bolt(g: Game, dx: number, dy: number, after = 0.8): GameEvent[] {
 const T = WARLOCK_TUNE.talents;
 const P = WARLOCK_TUNE.pact;
 
-test('his tree: fifteen talents, every one made to work but Phantom Step (to come with the decoy of the Tinkerer\'s Lightning Rod)', () => {
-  const left = TREES.warlock.talents.filter((t) => !t.works).map((t) => t.id);
-  assert.deepEqual(left, ['phantomstep']);
+test('his tree: all fifteen talents made to work', () => {
+  assert.deepEqual(TREES.warlock.talents.filter((t) => !t.works).map((t) => t.id), []);
+});
+
+test('PHANTOM STEP: his Smoke Step leaves his shadow where he stood: for two seconds the enemies go after it instead of him', () => {
+  const g = take(room(), 'phantomstep');
+  const m = dummy(g, 2.5, 1.5);
+  m.speed = 2;
+  m.cd = 0.4;
+  m.state = 'chase';
+  const x0 = g.hero.x;
+  const y0 = g.hero.y;
+  const ev = swipe(g, -5, 0);
+  assert.ok(ev.some((e) => e.t === 'phantom'), 'his shadow');
+  assert.equal(g.decoys.length, 1);
+  const life = g.hero.life;
+  const ev2 = wait(g, 1.2);
+  assert.ok(Math.hypot(m.x - x0, m.y - y0) < Math.hypot(m.x - g.hero.x, m.y - g.hero.y), 'it goes to the shadow, not to him');
+  assert.equal(g.hero.life, life, 'nothing reaches him');
+  assert.ok(ev2.some((e) => e.t === 'decoyStruck'), 'it swings at the shadow');
+  wait(g, 1);
+  assert.equal(g.decoys.length, 0, 'two seconds, and it is gone');
+  // (without it: no shadow)
+  const n = room();
+  dummy(n, 2.5, 1.5);
+  assert.ok(!swipe(n, -5, 0).some((e) => e.t === 'phantom'));
 });
 
 test('HUNGER: every kill the demon makes puts two seconds back on its pact', () => {
