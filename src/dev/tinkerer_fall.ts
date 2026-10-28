@@ -63,7 +63,7 @@ export function handAt(q: Partial<Bones>, left: boolean, fw: number, lf: number,
   return [0, 1, 2].map((i) => sh[i] + cf[i] * fw + cl[i] * lf + cu[i] * up) as unknown as V3;
 }
 /** Where a pose's hand is (it is measured from the floor under her) as its chest has it: from its shoulder, forward, to her left, up. */
-function toChest(q: Partial<Bones>, left: boolean): V3 {
+export function toChest(q: Partial<Bones>, left: boolean): V3 {
   const s = solve(B, { ...S0, ...q } as Posed);
   const [cf, cl, cu] = s.chest;
   const sh = left ? s.shoulderL : s.shoulderR;

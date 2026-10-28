@@ -16,6 +16,7 @@ import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { drawTinkerFallAt, tinkerFall } from '../src/dev/tinkerer_fall';
 import { drawTinkerHoldAt, tinkerHold } from '../src/dev/tinkerer_hold';
 import { PACK_AT } from '../src/dev/sculpt_tinkerer';
+import { drawTinkerStruckAt, tinkerLurch, tinkerReel } from '../src/dev/tinkerer_hits';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -68,8 +69,8 @@ function packThrough(sc: Sculpt): string[] {
   return [...new Set(out)];
 }
 
-/** Every move of hers, her tap and hold (dev/tinkerer_hold.ts) and her fall (dev/tinkerer_fall.ts). */
-const ALL = [...tinkerMoves(), tinkerHold(), tinkerFall()];
+/** Every move of hers, her tap and hold (dev/tinkerer_hold.ts), her fall (dev/tinkerer_fall.ts), and struck, hard and from behind (dev/tinkerer_hits.ts). */
+const ALL = [...tinkerMoves(), tinkerHold(), tinkerFall(), tinkerReel(), tinkerLurch()];
 for (const m of ALL) {
   const fps = m.carry ? RUN_FPS : FPS;
   const n = Math.round(m.long * fps);
@@ -203,3 +204,21 @@ test('Running, truly from behind: every frame crisp, the friend’s edge, no pix
   }
   assert.deepEqual([...new Set(found)], []);
 });
+
+// STRUCK, HARD AND FROM BEHIND (dev/tinkerer_hits.ts drawTinkerStruckAt): the blow's flash on her, the glint off her rack and
+// the puff of dust as the foot that caught her is set down; every frame, from in front, behind and truly from behind: crisp,
+// no pixel alone, nothing pink, nothing cut off
+for (const m of [tinkerReel(), tinkerLurch()]) {
+  test(`${m.name}: the blow's flash and the puff of her foot, in every frame: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+    const found: string[] = [];
+    const n = Math.round(m.long * FPS);
+    for (const [view, turn] of [['front', 0], ['back', 0], ['front', 90]] as const) {
+      for (let i = 0; i <= n; i++) {
+        const t = Math.min(m.long, i / FPS);
+        const d = drawTinkerStruckAt(view, m, t, turn);
+        for (const f of pictureFindings(d.px)) found.push(`${view} ${turn}, ${t.toFixed(2)} s: ${f}`);
+      }
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}
