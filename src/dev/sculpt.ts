@@ -371,6 +371,30 @@ const CREASE = 0.32;
  * colour of the crisp edge of light round it (the friend's cyan), or none.
  */
 /** (for looking into a fault: the last figure drawn) */
+/**
+ * ONE FIGURE HELD IN ANOTHER (a thing in a hand, drawn as one picture with the hand so each hides the other truly): every
+ * solid and material of `from` laid into `into`, each point of it moved by `turn` (a rotation, about its own floor point)
+ * and then by `by`. Its stuffs stay its own (none melts into the other's).
+ */
+export function graft(into: Sculpt, from: Sculpt, turn: (v: V3) => V3, by: V3): void {
+  const off = into.mats.length;
+  into.mats.push(...from.mats);
+  const m = (q: V3): V3 => {
+    const r = turn(q);
+    return [r[0] + by[0], r[1] + by[1], r[2] + by[2]];
+  };
+  for (const p of from.prims) {
+    const cuts = p.cuts?.map((c) => {
+      const n = turn(c.n);
+      return { n, o: c.o + dot(n, by) };
+    });
+    const mat = p.mat + off;
+    if (p.k === 'cone') into.prims.push({ ...p, mat, a: m(p.a), b: m(p.b), cuts });
+    else if (p.k === 'tri') into.prims.push({ ...p, mat, a: m(p.a), b: m(p.b), c: m(p.c), cuts });
+    else into.prims.push({ ...p, mat, c: m(p.c), axes: [turn(p.axes[0]), turn(p.axes[1]), turn(p.axes[2])], cuts } as Prim);
+  }
+}
+
 export const LAST: { sc: Sculpt | null } = { sc: null };
 
 /**

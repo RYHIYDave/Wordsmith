@@ -36,6 +36,20 @@ function wrenchThrough(sc: Sculpt): string[] {
   return [...new Set(out)];
 }
 
+/** Where what she holds (a Contraption, shut, gripped in her left) goes through her: its solids against all of her but that fist. */
+const HELD_PIECES = ['legs', 'body', 'barrel', 'magazine', 'gear'];
+function heldThrough(sc: Sculpt): string[] {
+  const prims = sc.prims.filter((p) => !p.carve);
+  const held = prims.filter((p) => HELD_PIECES.includes(p.piece));
+  const her = prims.filter((p) => !HELD_PIECES.includes(p.piece) && !(p.piece === 'armL' && ['fist', 'thumb', 'cuff'].includes(p.tag ?? '')));
+  const out: string[] = [];
+  for (const h of held) {
+    const pts: V3[] = h.k === 'cone' ? [0, 0.5, 1].map((k) => [h.a[0] + (h.b[0] - h.a[0]) * k, h.a[1] + (h.b[1] - h.a[1]) * k, h.a[2] + (h.b[2] - h.a[2]) * k] as V3) : h.k === 'tri' ? [] : [h.c];
+    for (const q of pts) for (const b of her) if (primDist(b, q) < -0.5) out.push(`what she holds (${h.piece} ${h.tag ?? h.k}) through her ${b.piece} (${b.tag ?? b.k})`);
+  }
+  return [...new Set(out)];
+}
+
 for (const m of tinkerMoves()) {
   const fps = m.carry ? RUN_FPS : FPS;
   const n = Math.round(m.long * fps);
@@ -53,6 +67,7 @@ for (const m of tinkerMoves()) {
         // HER WRENCH CLEAR OF HER (his word, 27 Oct, “the wrench is clipping”): no point along it inside her head, her
         // hair, her body or her arms (but the fist that holds it)
         for (const f of wrenchThrough(LAST.sc as Sculpt)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+        for (const f of heldThrough(LAST.sc as Sculpt)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);

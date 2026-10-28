@@ -12,7 +12,9 @@ import { GRIP_SPEED, UNITS_PER_TILE } from '../art/moves3';
 import { bonesAt, elbowFor, solve } from '../art/skeleton';
 import type { Bones, Key3, Motion, Posed, V3 } from '../art/skeleton';
 import type { GameView } from '../art/skin';
-import type { Drawn } from './sculpt';
+import { LAST } from './sculpt';
+import type { Drawn, Sculpt } from './sculpt';
+import { CONTRAPTION_PICK, CONTRAPTION_POSE, sculptContraptionBuild } from './sculpt_contraption';
 import { TINKERER_BODY, TINK_SWAY, sculptTinkerer, tinkererStance } from './sculpt_tinkerer';
 
 export const FR = 1 / 30;
@@ -31,7 +33,7 @@ export interface TinkMove {
   travel?: number;
   carry?: number;
   /** What she holds at a moment: the wrench off her shoulder (0 to 1), twirled, spun round; a vial out (dev/sculpt_tinkerer.ts TINK_SWAY). */
-  hold?: (t: number) => { wrench: number; twirl: boolean; spin: number; vial: number };
+  hold?: (t: number) => { wrench: number; twirl: boolean; spin: number; vial: number; held?: Sculpt | null };
   /** When she is off the floor altogether (a hop): from and to, seconds. */
   air?: [number, number][];
 }
@@ -210,6 +212,61 @@ export function tinkerRun(): Motion {
   return { keys, loop: 0 };
 }
 
+// ---- HER TAP: A CONTRAPTION THROWN DOWN (his brief, 23 Oct: “I think she’ll set turrets on the ground that fire something.
+// Not an arrow or a bolt.  That’s the tap.  We’ll call those “Contraption”.”). A gleeful bomber's way of setting a turret:
+// she plucks it off her belt, shut (a squat brass bell, its legs drawn up in it), coils back with it up behind her shoulder,
+// and in a flash LOBS it overhand (his art rulebook's Movement 9: a big wind-up, the throw itself a frame or two, a big
+// wind-down), following through low across her body; it flies, bounces and springs open where it lands
+// (dev/contraption_fx.ts). The wrench stays on her shoulder.
+export const TAP_LONG = 1.2;
+/** When the Contraption leaves her hand (s), and when she has it in hand from (s). */
+export const TAP_LET_GO = 15 / 30;
+export const TAP_GRAB = 0.18;
+export function tinkerTap(): Motion {
+  const keys: Key3[] = [];
+  const k = (at: number, pose: Partial<Bones>, e: Key3['ease'] = 'io'): void => {
+    keys.push({ at, ease: e, pose });
+  };
+  const hand0 = { ...rightTo({}, HAND_R0, S0.re) };
+  const lhStance = { lhIn: 2 as const, lhx: S0.lhx, lhy: S0.lhy, lhz: S0.lhz, le: S0.le };
+  const L = (q: Partial<Bones>, want: V3, elbow: V3): Partial<Bones> => ({ ...q, ...leftTo(q, want, elbow) });
+  const belt: V3 = from(STANCE_S.pelvis, 4.5, 4.5, 3);
+  // (her body through the throw: coiled back and down, her left shoulder drawn back; then whipped round and forward)
+  const coil = (c: number): Partial<Bones> => ({ ...hand0, twist: (S0.twist ?? 0) + 26 * c, yaw: S0.yaw + 8 * c, bend: S0.bend - 11 * c, side: S0.side + 3 * c, px: -1.6 * T * c, pz: S0.pz - 1.1 * T * c, faceTurn: S0.faceTurn - 10 * c, faceUp: S0.faceUp + 4 * c });
+  const fling = (c: number): Partial<Bones> => ({ ...hand0, twist: (S0.twist ?? 0) - 18 * c, yaw: S0.yaw - 6 * c, bend: S0.bend + 12 * c, side: S0.side - 1 * c, px: 1.4 * T * c, pz: S0.pz - 0.5 * T * c, faceTurn: S0.faceTurn - 4 * c, faceUp: S0.faceUp + 5 * c });
+  k(0, { ...bob(0), ...cocky(1), ...hand0, ...lhStance });
+  // (down to her belt for it)
+  k(0.12, L({ ...bob(-0.8), ...cocky(0.6), ...hand0, faceUp: S0.faceUp - 6 }, belt, [-6, 9, -2]));
+  k(TAP_GRAB, L({ ...bob(-0.9), ...cocky(0.5), ...hand0, faceUp: S0.faceUp - 5 }, plus(belt, times(CU, 0.6 * T)), [-6, 9, -2]));
+  // (swung out from her side, clear of her, as she brings it up)
+  k(0.26, L({ ...coil(0.4) }, from(STANCE_S.pelvis, 0.5, 9.5, 12.5), [-5, 8, 2]), 'in');
+  // (THE WIND-UP: up and back behind her shoulder, coiling, her eyes on where it goes)
+  k(0.34, L(coil(0.85), from(STANCE_S.shoulderL, -5.0, 3.8, 5.4), [-4, 7, 5]), 'out');
+  k(13 / 30, L(coil(1), from(STANCE_S.shoulderL, -6.6, 4.2, 6.4), [-4, 7, 5]), 'in');
+  // (THE THROW: a flash, overhand, let go out ahead of her and up)
+  k(TAP_LET_GO, L(fling(0.75), from(STANCE_S.shoulderL, 8.8, 2.8, 4.2), [-3, 8, -2]), 'lin');
+  // (THE WIND-DOWN: following through low across her body, weight on her front foot; up again, cocky)
+  k(0.56, L(fling(0.92), from(STANCE_S.shoulderL, 10.2, 1.6, -0.6), [2, 6, -6]), 'lin');
+  k(0.7, L(fling(1), from(STANCE_S.pelvis, 7.0, -1.0, 9.5), [4, 4, -4]), 'out');
+  k(0.86, L({ ...bob(0.5), ...cocky(0.4), ...hand0, faceUp: S0.faceUp + 6, faceTurn: S0.faceTurn - 6 }, from(STANCE_S.pelvis, 5.0, 4.5, 6.5), [-6, 9, -2]));
+  k(TAP_LONG, { ...bob(0), ...cocky(1), ...hand0, ...lhStance });
+  return { keys, loop: 0 };
+}
+let SHUT: Sculpt | null = null;
+/** The Contraption shut, as she grips it (built once). */
+export function shutContraption(): Sculpt {
+  if (SHUT) return SHUT;
+  const was = { ...CONTRAPTION_POSE };
+  Object.assign(CONTRAPTION_POSE, { open: 0, kick: 0, lit: 0 });
+  try {
+    sculptContraptionBuild('front', CONTRAPTION_PICK);
+    SHUT = LAST.sc as Sculpt;
+  } finally {
+    Object.assign(CONTRAPTION_POSE, was);
+  }
+  return SHUT;
+}
+
 export function tinkerMoves(): TinkMove[] {
   return [
     {
@@ -217,6 +274,10 @@ export function tinkerMoves(): TinkMove[] {
       hold: (t) => ({ wrench: track(STAND_WRENCH, t), twirl: true, spin: track(STAND_SPIN, t) % (Math.PI * 2), vial: track(STAND_VIAL, t) > 0.5 ? 1 : 0 }),
     },
     { name: 'Running: a skipping run', motion: tinkerRun(), long: TRUN_ROUND, loops: true, travel: GRIP_SPEED, carry: TRUN_CARRY },
+    {
+      name: 'Tap: a Contraption thrown down', motion: tinkerTap(), long: TAP_LONG, loops: false,
+      hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: 0, held: t >= TAP_GRAB && t < TAP_LET_GO ? shutContraption() : null }),
+    },
   ];
 }
 /** A number through keys (seconds, value), eased between. */
@@ -267,10 +328,10 @@ export function drawTinkerAt(view: GameView, m: TinkMove, t: number, turn = 0): 
   const n = Math.hypot(v[0], v[1], v[2]);
   TINK_SWAY.pony = n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : [v[0], v[1], v[2]];
   const h = m.hold ? m.hold(at(t)) : { wrench: 0, twirl: false, spin: 0, vial: 0 };
-  Object.assign(TINK_SWAY, h);
+  Object.assign(TINK_SWAY, { held: null }, h);
   try {
     return sculptTinkerer(view, tinkerPose(m.motion, at(t)) as unknown as Bones, turn);
   } finally {
-    Object.assign(TINK_SWAY, { pony: [0, 0, 0], wrench: 0, twirl: false, spin: 0, vial: 0 });
+    Object.assign(TINK_SWAY, { pony: [0, 0, 0], wrench: 0, twirl: false, spin: 0, vial: 0, held: null });
   }
 }

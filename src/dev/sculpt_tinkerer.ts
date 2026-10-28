@@ -21,7 +21,7 @@ import { CANVAS3 } from '../art/skin';
 import type { GameView } from '../art/skin';
 import { add, buildOf, cross, elbowFor, lerp3, mul, norm, solve, standing, sub, trunkOf } from '../art/skeleton';
 import type { Bones, Build, Posed, V3 } from '../art/skeleton';
-import { Sculpt, draw, onBall, onCone, primDist } from './sculpt';
+import { Sculpt, draw, graft, onBall, onCone, primDist } from './sculpt';
 import type { Cone, Drawn, Ell } from './sculpt';
 import { BRASS, HIDE, farSide, limbFrame, onHead, shadeOf, tailorFor } from './sculpt_classes';
 import type { Who } from './sculpt_classes';
@@ -130,7 +130,7 @@ export const HER_FACE = { turn: -24, up: 4, gog: 0.84, gogF: 0.55, glint: 4 };
  * at its tip: loose things follow, Movement 4); `wrench`, how far the wrench is brought off her shoulder to hold out before
  * her (0 over her shoulder, 1 held out, its head down before her).
  */
-export const TINK_SWAY = { pony: [0, 0, 0] as V3, wrench: 0, twirl: false, spin: 0, vial: 0 };
+export const TINK_SWAY = { pony: [0, 0, 0] as V3, wrench: 0, twirl: false, spin: 0, vial: 0, held: null as Sculpt | null };
 /** (and: `twirl`, the wrench brought off her shoulder to stand straight up in her fist, not held out before her; `spin`, how
  * far it is spun round in her fist (radians, about her left-to-right: a baton's twirl at her side); `vial`, a vial out of
  * her belt in her left fist) */
@@ -159,6 +159,10 @@ const PONY_SOFT = 0.8;
 let OFF_STEEL = 0;
 /** (how often her ponytail has had to be pushed off her wrench: a check that the easing keeps it clear on its own) */
 export const offSteelCount = (): number => OFF_STEEL;
+/** How far out past the middle of her fist the middle of what she grips sits (a Contraption, shut, held by its bell). */
+export const HELD_OUT = 3.4;
+/** Where the last thing she held was laid (its middle), and by how much it was moved from where it was built. */
+export const TINK_HELD: { at: V3; by: V3 } = { at: [0, 0, 0], by: [0, 0, 0] };
 /** How much bigger her hands are than at first: a fist over half her head across (his “check her hands for scale”, 27 Oct). */
 export const HAND_K = 1.45;
 
@@ -401,6 +405,23 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
     // (bigger: his word, 27 Oct, “let’s make the wrench bigger”)
     wrenchIn(r, way, 15, 1.55);
     const lh = handOf('L');
+    if (TINK_SWAY.held) {
+      // (a Contraption, shut, gripped in her left by its bell as she throws it: the very one she throws (dev/contraption_fx.ts),
+      // laid into her picture so that her fingers and it hide each other truly)
+      const held = TINK_SWAY.held;
+      let lo: V3 = [Infinity, Infinity, Infinity];
+      let hi: V3 = [-Infinity, -Infinity, -Infinity];
+      for (const pr of held.prims) {
+        const c = pr.k === 'cone' ? lerp3(pr.a, pr.b, 0.5) : pr.c;
+        lo = [Math.min(lo[0], c[0]), Math.min(lo[1], c[1]), Math.min(lo[2], c[2])];
+        hi = [Math.max(hi[0], c[0]), Math.max(hi[1], c[1]), Math.max(hi[2], c[2])];
+      }
+      const mid = lerp3(lo, hi, 0.5);
+      const at = add(lh.c, mul(lh.d, HELD_OUT));
+      graft(sc, held, (v) => v, sub(at, mid));
+      TINK_HELD.at = at;
+      TINK_HELD.by = sub(at, mid);
+    }
     if (TINK_SWAY.vial > 0) {
       // (a vial out of her belt in her left fist, its cyan fizzing)
       const g = toward(lh.g, u);
