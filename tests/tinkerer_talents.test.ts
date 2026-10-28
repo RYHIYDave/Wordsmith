@@ -538,3 +538,20 @@ test('GROWTH SERUM: a vial of hers that bursts by her Golem makes it grow: twice
   ev = use(g, 0, gm.x - g.hero.x + 5, gm.y - g.hero.y + 3).concat(wait(g, TINKER_TUNE.toss.flight + 0.05));
   assert.equal(of(ev, 'golemGrow').length, 0);
 });
+
+test('DECOYS (Lightning Rod’s way, for any): a spot in Game.decoys draws the enemies within its reach off her for its time, their blows on it doing nothing', () => {
+  const g = take(room());
+  const m = dummy(g, 4, 0);
+  m.speed = 1.8;
+  m.cd = 0;
+  const life0 = g.hero.life;
+  g.decoys.push({ x: g.hero.x + 4, y: g.hero.y + 2.5, t: 2, r: 4, size: 0.4 });
+  const ev = wait(g, 1.9);
+  assert.ok(of(ev, 'decoyStruck').some((e) => !e.golem), 'it goes to the spot and swings at it');
+  assert.ok(Math.hypot(m.x - g.hero.x - 4, m.y - g.hero.y - 2.5) < 1.6, 'there');
+  assert.equal(g.hero.life, life0, 'not at her');
+  wait(g, 0.2);
+  assert.equal(g.decoys.length, 0, 'its time up, it is gone');
+  wait(g, 4);
+  assert.ok(g.hero.life < life0, 'and she is the one it goes after');
+});

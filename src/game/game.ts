@@ -4664,7 +4664,7 @@ export class Game {
     }
     // (GROWTH SERUM: bursting by her Golem, it makes it grow)
     if (this.has('growthserum')) {
-      for (const g of this.golemsUp()) if (g.act !== 'arrive' && Math.hypot(g.x - x, g.y - y) <= rad + this.golemBody(g) + T.growth.near) this.growGolem(g);
+      for (const g of this.golemsUp()) if (Math.hypot(g.x - x, g.y - y) <= rad + this.golemBody(g) + T.growth.near) this.growGolem(g);
     }
     // (CLUSTER VIALS: it bursts into three little ones that bounce out and burst again)
     if (!v.little && this.has('clustervials')) this.clusterOf(v);
@@ -5132,8 +5132,17 @@ export class Game {
     g.zapT = Z.every;
     this.emit({ t: 'teslaZap', x: g.x, y: g.y, to: hit.map((m) => ({ x: m.x, y: m.y })), ...(g.growT > 0 ? { grown: true } : {}) });
     this.sfx('zap', 0.4);
+    // (a zap of lightning, her hit as the Golem's punches share it, and as her talents make it; not her words, which are its
+    // punches', shots' and pounds')
+    const h = this.hero;
+    const st = h.d.stats;
+    const s = h.skills[g.skill];
     const frac = this.golemFrac(g) * this.golemMight(g) * Z.share;
-    for (const m of hit) this.hitMonster(m, g.skill, frac, true);
+    for (const m of hit) {
+      let dmg = this.rng.range(h.d.dmgMin, h.d.dmgMax) * (s ? s.r.dmgMult : 1) * frac * (1 + (st.dmgPct + st.lightPct + h.might) / 100);
+      if (TALENTS.on) dmg *= this.talentHitMult(m);
+      this.damageMonster(m, Math.max(1, Math.round(dmg)), 'lightning', false, g.skill);
+    }
   }
 
   /** The Golem back to standing, ready for its next act. */
