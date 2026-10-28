@@ -250,7 +250,7 @@ type Field = (typeof BODY)[number];
  * pace it has there, slowing to a stop only where it turns back (so that nothing of him stops dead and goes on); and never
  * beyond where the poses either side have it.
  */
-function through(xs: number[], ys: number[], x: number): number {
+export function through(xs: number[], ys: number[], x: number): number {
   const n = xs.length;
   if (x <= xs[0]) return ys[0];
   if (x >= xs[n - 1]) return ys[n - 1];
@@ -354,7 +354,7 @@ function flight(p: V3, v: V3, s: number): { at: V3; down: number } {
  * rolling out along the floor `wide` and rising a little, growing, then shrinking away to nothing in `life` frames; laid
  * round him, never over him.
  */
-function billow(d: Drawn, c: V3, s: number, wide: number, life: number, n: number, seed: number, turn: number): void {
+export function billow(d: Drawn, c: V3, s: number, wide: number, life: number, n: number, seed: number, turn: number): void {
   if (s < 0 || s > life) return;
   const u = s / life;
   const go = 1 - (1 - u) * (1 - u);

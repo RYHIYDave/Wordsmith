@@ -13,6 +13,7 @@ import { LAST, primDist } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
 import { TINK_B, TSTANCE, drawTinkerAt, tinkerMoves, tinkerPose } from '../src/dev/tinkerer_moves';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
+import { drawTinkerFallAt, tinkerFall } from '../src/dev/tinkerer_fall';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -50,7 +51,9 @@ function heldThrough(sc: Sculpt): string[] {
   return [...new Set(out)];
 }
 
-for (const m of tinkerMoves()) {
+/** Every move of hers, and her fall (dev/tinkerer_fall.ts). */
+const ALL = [...tinkerMoves(), tinkerFall()];
+for (const m of ALL) {
   const fps = m.carry ? RUN_FPS : FPS;
   const n = Math.round(m.long * fps);
   const times = Array.from({ length: n + (m.loops ? 0 : 1) }, (_, i) => Math.min(m.long, i / fps));
@@ -134,3 +137,19 @@ for (const m of tinkerMoves()) {
     assert.deepEqual(found, []);
   });
 }
+
+// WHAT FLIES OFF HER AS SHE FALLS (dev/tinkerer_fall.ts drawTinkerFallAt): the blow's flash and a little blood, the floor's
+// dust as she comes down, the wrench's sparks; every frame, from in front and behind: crisp, no pixel alone, nothing pink,
+// nothing cut off
+test('Her fall: what flies off her, in every frame: crisp, no pixel alone, nothing pink, nothing cut off', () => {
+  const m = ALL.find((mv) => mv.name.startsWith('Her fall'))!;
+  const found: string[] = [];
+  const n = Math.round(m.long * FPS);
+  for (const view of ['front', 'back'] as const) {
+    for (let i = 0; i <= n; i++) {
+      const t = Math.min(m.long, i / FPS);
+      for (const f of pictureFindings(drawTinkerFallAt(view, m, t).px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+    }
+  }
+  assert.deepEqual([...new Set(found)], []);
+});

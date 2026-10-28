@@ -130,10 +130,12 @@ export const HER_FACE = { turn: -24, up: 4, gog: 0.84, gogF: 0.55, glint: 4 };
  * at its tip: loose things follow, Movement 4); `wrench`, how far the wrench is brought off her shoulder to hold out before
  * her (0 over her shoulder, 1 held out, its head down before her).
  */
-export const TINK_SWAY = { pony: [0, 0, 0] as V3, wrench: 0, twirl: false, spin: 0, vial: 0, held: null as Sculpt | null, tall: 0 };
+export const TINK_SWAY = { pony: [0, 0, 0] as V3, wrench: 0, twirl: false, spin: 0, vial: 0, held: null as Sculpt | null, tall: 0, lay: 0, layWay: [0, -1, 0] as V3, droop: [0, 0, 0] as V3 };
 /** (and: `twirl`, the wrench brought off her shoulder to stand straight up in her fist, not held out before her; `spin`, how
  * far it is spun round in her fist (radians, about her left-to-right: a baton's twirl at her side); `vial`, a vial out of
- * her belt in her left fist) */
+ * her belt in her left fist; `lay`, how far the wrench is let down from where it is to lie the way `layWay` (her own space)
+ * from her fist: as it comes to lie on the floor by her, still in her hand, as she falls; `droop`, how far her ponytail
+ * falls toward the floor (her own space), as it does when her head hangs) */
 
 /**
  * HER BACKPACK (his word, 28 Oct, 00:08: “Maybe we give her a backpack now?”, after “And a unique chest armor that gives
@@ -402,6 +404,7 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
       const kd = l[0] * way[0] + l[1] * way[1] + l[2] * way[2];
       way = norm(add(add(mul(way, Math.cos(a)), mul(kv, Math.sin(a))), mul(l, kd * (1 - Math.cos(a)))));
     }
+    if (TINK_SWAY.lay > 0) way = norm(lerp3(way, norm(TINK_SWAY.layWay), Math.min(1, TINK_SWAY.lay)));
     // (bigger: his word, 27 Oct, “let’s make the wrench bigger”)
     wrenchIn(r, way, 15, 1.55);
     const lh = handOf('L');
@@ -575,6 +578,7 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
     const c = pony[0] * toJaw[0] + pony[1] * toJaw[1] + pony[2] * toJaw[2];
     if (c > PONY_TO_JAW) pony = add(pony, mul(toJaw, PONY_TO_JAW + PONY_SOFT * Math.tanh((c - PONY_TO_JAW) / PONY_SOFT) - c));
   }
+  pony = add(pony, TINK_SWAY.droop);
   for (let i = 0; i < path.length; i++) {
     const dir = add(path[i], mul(pony, ((i + 1) / path.length) * 0.35));
     const b = offSteel(add(a, mul(norm(dir), 2.8)), r * 0.86 + 0.5);

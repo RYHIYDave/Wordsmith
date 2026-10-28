@@ -33,7 +33,7 @@ export interface TinkMove {
   travel?: number;
   carry?: number;
   /** What she holds at a moment: the wrench off her shoulder (0 to 1), twirled, spun round; a vial out (dev/sculpt_tinkerer.ts TINK_SWAY). */
-  hold?: (t: number) => { wrench: number; twirl: boolean; spin: number; vial: number; held?: Sculpt | null };
+  hold?: (t: number) => { wrench: number; twirl: boolean; spin: number; vial: number; held?: Sculpt | null; lay?: number; layWay?: V3; droop?: V3 };
   /** When she is off the floor altogether (a hop): from and to, seconds. */
   air?: [number, number][];
   /** How far the move has carried her along the floor (her own measure, forward) at a moment: a swipe's way. */
@@ -475,10 +475,10 @@ export function drawTinkerAt(view: GameView, m: TinkMove, t: number, turn = 0): 
   const n = Math.hypot(v[0], v[1], v[2]);
   TINK_SWAY.pony = n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : [v[0], v[1], v[2]];
   const h = m.hold ? m.hold(at(t)) : { wrench: 0, twirl: false, spin: 0, vial: 0 };
-  Object.assign(TINK_SWAY, { held: null, tall: m.tall ?? 0 }, h);
+  Object.assign(TINK_SWAY, { held: null, tall: m.tall ?? 0, lay: 0, droop: [0, 0, 0] }, h);
   try {
     return sculptTinkerer(view, tinkerPose(m.motion, at(t)) as unknown as Bones, turn);
   } finally {
-    Object.assign(TINK_SWAY, { pony: [0, 0, 0], wrench: 0, twirl: false, spin: 0, vial: 0, held: null, tall: 0 });
+    Object.assign(TINK_SWAY, { pony: [0, 0, 0], wrench: 0, twirl: false, spin: 0, vial: 0, held: null, tall: 0, lay: 0, droop: [0, 0, 0] });
   }
 }
