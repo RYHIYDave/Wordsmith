@@ -573,7 +573,7 @@ export function dissolve(px: Px, gone: number, t: number): Px {
 }
 
 /** A mass of black smoke, its foot at (`cx`, `cy`), `w` across and `h` high, rolling (`t`), torn ragged at its edges by noise; `thin` 0 dense to 1 gone. */
-function cloud(sm: Light, cx: number, cy: number, w: number, h: number, t: number, thin: number, seed: number, light = 0): void {
+export function cloud(sm: Light, cx: number, cy: number, w: number, h: number, t: number, thin: number, seed: number, light = 0): void {
   if (thin >= 1) return;
   for (let y = Math.floor(cy - h - 3); y <= Math.ceil(cy + 2); y++) {
     for (let x = Math.floor(cx - w / 2 - 4); x <= Math.ceil(cx + w / 2 + 4); x++) {

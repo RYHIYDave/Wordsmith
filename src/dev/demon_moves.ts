@@ -45,6 +45,12 @@ export interface DemonMove {
   strike?: [number, number];
   /** The moment its blow lands. */
   hit?: number;
+  /** A move that takes it across the floor (its swipe): how far forward it has gone at a moment (its own measure). */
+  along?: (t: number) => number;
+  /** When it is off the floor altogether (a leap; or gone into smoke): from when to when. */
+  air?: [number, number];
+  /** A move in which it goes into smoke: how far it is gone at a moment (0 all there, 1 all smoke). */
+  gone?: (t: number) => number;
 }
 
 /** Eased both ways, 0 to 1. */
@@ -86,6 +92,35 @@ function elbowsOf(q: Bones, raking = 0, outK = 1): Bones {
   return o;
 }
 const S0 = DEMON_STANCE;
+/**
+ * Its face kept where its neck can tell which way it is turned (found making its swipes, 27 Oct): short of as far up off its
+ * back as its neck lets it look (DEMON_B.neckUp), and never behind its back's own forward, as it is when that back is curled
+ * over far, its head down between its shoulders. Past either the solver can no longer tell, and the head swings round from
+ * one side to the other. Its face lowered as far as it must be to keep there; no further.
+ */
+const NECK_SAFE = 81;
+const NECK_AHEAD = 0.2;
+function neckSafe(q: Bones): Bones {
+  const s = solve(DEMON_B, q as Posed);
+  const D = Math.PI / 180;
+  const t = (q.faceTurn ?? 0) * D;
+  // (where its face looks, `fu` up and turned `t`, against its upper back's forward and its up: a cos(fu - phase))
+  const wave = (ax: V3): { r: number; ph: number } => {
+    const A = ax[0] * Math.cos(t) + ax[1] * Math.sin(t);
+    const B = ax[2];
+    return { r: Math.hypot(A, B), ph: Math.atan2(B, A) };
+  };
+  const f = wave(s.upper[0]);
+  const u = wave(s.upper[2]);
+  let most = Infinity;
+  // (ahead of its back's forward: r cos(fu - ph) at least NECK_AHEAD)
+  if (f.r > NECK_AHEAD) most = Math.min(most, f.ph + Math.acos(NECK_AHEAD / f.r));
+  // (short of its back's up: r cos(fu - ph) no more than sin NECK_SAFE, coming up to it from below)
+  const sn = Math.sin(NECK_SAFE * D);
+  if (u.r > sn) most = Math.min(most, u.ph - Math.acos(sn / u.r));
+  const fu = q.faceUp * D;
+  return fu > most ? { ...q, faceUp: most / D } : q;
+}
 
 /** Its wings from a stroke over time: each hand trailing the stroke, the skin billowing against it. */
 function wingsFrom(stroke: (t: number) => { spread: number; beat: number; sweep: number; wind?: number }): (t: number) => DemonWings {
@@ -481,6 +516,222 @@ function damningMove(): DemonMove {
   };
 }
 
+// ---- SWIPE: ITS ESCAPE, SIX TILES THE WAY YOU SWIPE (as far as the other heroes' swipes). His word, 25 Oct: “I think smoke
+// step but it’s much more violent.  But maybe pounce.  Let’s see both.”; of Damning, 27 Oct, “Good, on to the swipe
+// (Recommended)”. Both here, each its own move.
+export const SWIPE_REACH = 6 * UNITS_PER_TILE;
+/** Keys of a body channel over frames, through `track`. */
+const keyed = (at: readonly number[], holds: ReadonlySet<number>) => (vals: readonly number[], f: number): number => track(at.map((g, i) => [g, vals[i]] as const), f, holds);
+
+// THE POUNCE. Big wind-up (Movement 9): it sinks down low on its haunches, its claws drawn in under it, its head down, its
+// wings mantled tight, its haunches wriggling as a cat's do before it springs; still a beat. Then it springs: its legs
+// fling it off the floor and it flies, stretched out long from its claws flung out ahead to its hooves kicked out behind,
+// its wings snapped wide and beating down once, six tiles in a third of a second; its claws come down first and slam into
+// the floor (its blow: the floor breaks under them), its weight drives down onto them, its hooves land behind; it skids a
+// little on, crouched low over its claws, and rises roaring, its wings settling.
+export const PN = { load: 6, coiled: 11, spring: 12, off: 14, apex: 19, reach: 23, land: 24, hold: 26, low: 28, roar: 33, up: 38, settled: 44 };
+export const POUNCE_LONG = 46 * FR;
+/** How high its leap takes it (its own measure), and how far it skids on as it lands. */
+const POUNCE_HIGH = 64;
+const SKID = 12;
+/** When its hooves leave the floor and when it lands (frames). */
+const LEAVE = 13;
+/** How high it is off the floor in its leap at a frame. */
+function pounceAir(f: number): number {
+  const u = (f - LEAVE) / (PN.land - LEAVE);
+  return u > 0 && u < 1 ? 4 * POUNCE_HIGH * u * (1 - u) : 0;
+}
+/** How far forward it has gone at a frame: pushed off over two frames, flying at one pace, skidding to a stop as it lands. */
+export function pounceAlong(f: number): number {
+  const v = (SWIPE_REACH - SKID) / (PN.land - PN.off + 1);
+  if (f <= PN.spring) return 0;
+  if (f <= PN.off) {
+    const s = f - PN.spring;
+    return (v / 4) * s * s;
+  }
+  if (f <= PN.land) return v + v * (f - PN.off);
+  const u = Math.min(1, (f - PN.land) / 8);
+  return SWIPE_REACH - SKID + SKID * (1 - (1 - u) * (1 - u));
+}
+function pounceMotion(): Motion {
+  const at = [0, PN.load, PN.coiled, PN.spring, PN.off, PN.apex, PN.reach, PN.land, PN.hold, PN.low, PN.roar, PN.up, PN.settled];
+  const k = keyed(at, new Set([2, 3, 7, 8, 9]));
+  /** A claw: down where it stands until it springs; flung out ahead through the air; down on the floor ahead (where it then stays, as it skids on over it). */
+  const claw = (side: 1 | -1, f: number): V3 => {
+    const own = side > 0 ? { x: S0.lhx, y: S0.lhy } : { x: S0.rhx, y: S0.rhy };
+    const down = side > 0 ? PN.land : PN.land + 1;
+    // (where on the floor it comes down: where, once it has skidded on, it stands)
+    const lands = SWIPE_REACH + own.x;
+    if (f <= PN.spring + 0.5) return [own.x, own.y, 7];
+    if (f >= down) return [lands - pounceAlong(f), own.y, 7];
+    // (over where it comes down a frame before it does, and straight down onto it: never sliding as it lands)
+    const over = down - 1;
+    if (f >= over) return [lands - pounceAlong(f), own.y, 7 + (down - f) * 5];
+    const x = track([[PN.spring + 0.5, own.x], [PN.off + 0.5, own.x + 12], [PN.apex, own.x + 32], [over, lands - pounceAlong(over)]], f);
+    const y = own.y + side * track([[PN.spring + 0.5, 0], [PN.apex, -2], [over, 0]], f);
+    const rel = track([[PN.spring + 0.5, 7], [PN.off + 0.5, 16], [PN.apex, 14], [over, 12 - pounceAir(over)]], f);
+    return [x, y, Math.max(8, pounceAir(f) + rel)];
+  };
+  /** A hoof: down where it stands until it springs (its push); kicked out behind through the air; down again behind its claws. */
+  const hoof = (side: 1 | -1, f: number): { x: number; z: number; p: number } => {
+    const rest = side > 0 ? S0.lfx : S0.rfx;
+    const down = side > 0 ? PN.hold : PN.hold + 1;
+    const off = LEAVE + 0.5;
+    if (f <= off) return { x: rest - pounceAlong(f), z: 0, p: 0 };
+    if (f >= down) return { x: SWIPE_REACH + rest - pounceAlong(f), z: 0, p: 0 };
+    // (over where it comes down a frame and a half before it does, flat, and straight down onto it)
+    const over = down - 1.5;
+    if (f >= over) return { x: SWIPE_REACH + rest - pounceAlong(f), z: 5 * ((down - f) / 1.5), p: 0 };
+    const x = track([[off, rest - pounceAlong(off)], [PN.off + 2, rest - 26], [PN.apex + 1, rest - 18], [over, SWIPE_REACH + rest - pounceAlong(over)]], f);
+    const rel = track([[off, 0], [PN.off + 2, 16], [PN.apex + 1, 12], [over, 5 - pounceAir(over)]], f);
+    // (tipped down as it kicks back, only once it is up off the floor, and flat again before it comes down)
+    const v = (f - off) / (over - off);
+    return { x, z: Math.max(0, pounceAir(f) + rel), p: 30 * Math.sin(Math.PI * Math.min(1, v / 0.85)) * ease(v / 0.25) };
+  };
+  // (its haunches wriggling before it springs, as a cat's do: twice, side to side, dying away into the coil)
+  const wriggle = (f: number): number => (f > 3 && f < PN.coiled ? Math.sin(((f - 3) / (PN.coiled - 3)) * Math.PI * 2) * Math.sin(((f - 3) / (PN.coiled - 3)) * Math.PI) : 0);
+  const keys: Key3[] = [];
+  for (let i = 0; i <= 46 * 2; i++) {
+    const f = i / 2;
+    const L = claw(1, f);
+    const R = claw(-1, f);
+    const lf = hoof(1, f);
+    const rf = hoof(-1, f);
+    const pose: Bones = {
+      ...S0,
+      px: S0.px + k([0, -5, -9, -9, 6, 10, 8, 6, 3, 3, 0, 0, 0], f),
+      py: 2 * wriggle(f),
+      pz: S0.pz + k([0, -8, -15, -15, 2, 4, 0, -8, -14, -14, -3, -1, 0], f) + pounceAir(f),
+      // (sunk back on its haunches as it coils, its chest up, its eyes on where it will land)
+      pitch: S0.pitch + k([0, -3, -6, -6, 0, 3, 4, 0, -2, -2, -6, -2, 0], f),
+      roll: 4 * wriggle(f),
+      twist: -3 * wriggle(f),
+      bend: S0.bend + k([0, 3, 6, 6, -26, -24, -10, 4, 10, 10, 2, 0, 0], f),
+      hunch: (S0.hunch ?? 0) + k([0, 1, 2, 2, -16, -14, -4, 4, 6, 6, -6, -2, 0], f),
+      shrug: (S0.shrug ?? 0) + k([0, 0.1, 0.16, 0.16, 0.3, 0.25, 0.1, -0.05, 0.1, 0.1, 0.05, 0, 0], f),
+      // (its eyes on where it will land as it sinks down, a cat's before it springs)
+      faceUp: S0.faceUp + k([0, 1, 2, 2, 8, 6, 2, -2, -3, -3, 16, 4, 0], f),
+      lhIn: 2, lhx: L[0], lhy: L[1], lhz: L[2],
+      rhIn: 2, rhx: R[0], rhy: R[1], rhz: R[2],
+      lfx: lf.x, lfz: lf.z, lfp: lf.p,
+      rfx: rf.x, rfz: rf.z, rfp: rf.p,
+    };
+    keys.push({ at: f * FR, ease: 'lin', pose: elbowsOf(neckSafe(pose)) });
+  }
+  return { keys, hit: PN.land * FR };
+}
+const pounceWings = wingsFrom((t) => {
+  const f = t / FR;
+  const k = keyed([0, 6, 11, 12, 14, 17, 21, 24, 26, 33, 44], new Set([2, 3]));
+  return {
+    spread: k([1, 0.85, 0.75, 0.75, 1.55, 1.6, 1.35, 1.45, 1.4, 1.15, 1], f),
+    beat: k([0, -0.05, -0.1, -0.1, 0.55, -0.25, 0.15, 0.4, 0.35, 0.1, 0], f),
+    sweep: k([0, -0.15, -0.25, -0.25, 0.1, 0.25, 0.05, 0.3, 0.25, 0.05, 0], f),
+    wind: f > PN.off && f < PN.land ? 0.3 : 0,
+  };
+});
+function pounceMove(): DemonMove {
+  return {
+    name: 'Swipe: the pounce',
+    motion: pounceMotion(),
+    long: POUNCE_LONG,
+    loops: false,
+    wings: pounceWings,
+    fire: (t, i) => (i >= 10 ? 1 : track([[0, 1], [PN.coiled * FR, 1.3], [PN.off * FR, 0.8], [PN.reach * FR, 0.9], [PN.land * FR, 2.2], [(PN.land + 6) * FR, 1.3], [PN.settled * FR, 1]], t)),
+    tail: (t) => track([[0, 0], [6 * FR, 0.3], [9 * FR, -0.3], [11 * FR, 0.25], [14 * FR, -0.1], [24 * FR, 0], [26 * FR, 0.35], [32 * FR, -0.15], [44 * FR, 0]], t),
+    // (the leap itself, from its spring to its landing, is the flash: Movement 9)
+    strike: [(PN.coiled) * FR, (PN.hold + 1) * FR],
+    hit: PN.land * FR,
+    along: (t) => pounceAlong(t / FR),
+    air: [LEAVE * FR, PN.land * FR],
+  };
+}
+
+// THE SMOKE STEP, VIOLENT. Big wind-up: it hunkers down, its claws gouging the floor, its fire roaring up and its smoke boiling
+// thick off its back, its shoulders rolling; then it BURSTS into smoke (in two frames, not melting away as the man does: a
+// blast of smoke and fire where it stood), and a storm of black smoke and hellfire tears six tiles along the floor, raking
+// and cursing whatever it passes through (dev/demon_swipe_fx.ts); at the far end it bursts out of the smoke, slamming its
+// claws down, its wings snapped open, crouched low; and rises roaring, its wings settling.
+export const SS = { coil: 5, coiled: 9, burst: 10, gone: 12, out: 20, slam: 22, hold: 24, low: 27, roar: 32, up: 37, settled: 44 };
+export const STEP_LONG = 46 * FR;
+/** How far along it has gone at a frame: across in the smoke, eased in and out. */
+export function stepAlongAt(f: number): number {
+  return SWIPE_REACH * ease((f - SS.burst) / (SS.slam - 0.5 - SS.burst));
+}
+/** How far it is gone into smoke at a frame. */
+export function stepGoneAt(f: number): number {
+  if (f < SS.coiled) return 0;
+  if (f < SS.gone) return ease((f - SS.coiled) / (SS.gone - SS.coiled));
+  if (f < SS.out) return 1;
+  return 1 - ease((f - SS.out) / (SS.slam + 0.5 - SS.out));
+}
+function smokeStepMotion(): Motion {
+  const at = [0, SS.coil, SS.coiled, SS.burst, SS.gone, SS.out, SS.slam, SS.hold, SS.low, SS.roar, SS.up, SS.settled];
+  const k = keyed(at, new Set([2, 6, 7]));
+  // (its shoulders rolling as it hunkers down: a menace)
+  const prowl = (f: number): number => (f < SS.burst ? Math.sin((f / SS.burst) * Math.PI * 2) * Math.sin((f / SS.burst) * Math.PI) : 0);
+  /** A claw: down where it stands as it coils; gone with it (lifted, in the smoke); raised as it bursts out, slammed down where it stands. */
+  const claw = (side: 1 | -1, f: number): V3 => {
+    const own = side > 0 ? { x: S0.lhx, y: S0.lhy } : { x: S0.rhx, y: S0.rhy };
+    const slam = side > 0 ? SS.slam : SS.slam + 0.5;
+    if (f <= SS.coiled + 0.5 || f >= slam) return [own.x, own.y, 7];
+    const x = own.x + track([[SS.coiled + 0.5, 0], [SS.gone + 1, 6], [SS.out, 9], [slam, 0]], f);
+    const z = track([[SS.coiled + 0.5, 7], [SS.gone + 1, 16], [SS.out, 22], [slam, 7]], f);
+    return [x, own.y, z];
+  };
+  const hoofUp = (f: number): number => track([[SS.coiled + 0.5, 0], [SS.gone + 1, 6], [SS.out, 5], [SS.slam + 1.5, 0]], f, new Set([3]));
+  const keys: Key3[] = [];
+  for (let i = 0; i <= 46 * 2; i++) {
+    const f = i / 2;
+    const L = claw(1, f);
+    const R = claw(-1, f);
+    const pose: Bones = {
+      ...S0,
+      px: S0.px + k([0, -2, -4, -4, 0, 4, 4, 4, 2, 0, 0, 0], f),
+      pz: S0.pz + k([0, -6, -10, -10, -4, 0, -6, -6, -11, -3, -1, 0], f),
+      pitch: S0.pitch + k([0, -1, -2, -2, 0, 0, 0, 0, -2, -6, -2, 0], f),
+      roll: 4 * prowl(f),
+      twist: 6 * prowl(f),
+      bend: S0.bend + k([0, 8, 14, 14, 0, -10, 4, 4, 10, 2, 0, 0], f),
+      hunch: (S0.hunch ?? 0) + k([0, 8, 14, 14, 0, -6, 6, 6, 12, -6, -2, 0], f),
+      shrug: (S0.shrug ?? 0) + k([0, 0.12, 0.2, 0.2, 0.1, 0.1, -0.05, -0.05, 0.1, 0.05, 0, 0], f) + 0.08 * Math.abs(prowl(f)),
+      faceUp: S0.faceUp + k([0, -5, -9, -9, 0, 4, -4, -4, -6, 16, 4, 0], f),
+      faceTurn: 8 * prowl(f),
+      lhIn: 2, lhx: L[0], lhy: L[1], lhz: L[2],
+      rhIn: 2, rhx: R[0], rhy: R[1], rhz: R[2],
+      lfz: hoofUp(f), rfz: hoofUp(f - 0.5),
+    };
+    keys.push({ at: f * FR, ease: 'lin', pose: elbowsOf(neckSafe(pose)) });
+  }
+  return { keys, hit: SS.slam * FR };
+}
+const stepWings = wingsFrom((t) => {
+  const f = t / FR;
+  const k = keyed([0, 5, 9, 12, 20, 22, 24, 32, 44], new Set([2, 5, 6]));
+  return {
+    spread: k([1, 0.85, 0.75, 0.9, 1.4, 1.55, 1.5, 1.15, 1], f),
+    beat: k([0, -0.05, -0.12, 0.1, 0.4, 0.5, 0.45, 0.1, 0], f),
+    sweep: k([0, -0.2, -0.3, 0, 0.2, 0.3, 0.25, 0.05, 0], f),
+  };
+});
+function smokeStepMove(): DemonMove {
+  return {
+    name: 'Swipe: the smoke step',
+    motion: smokeStepMotion(),
+    long: STEP_LONG,
+    loops: false,
+    wings: stepWings,
+    fire: (t, i) => (i >= 10 ? 1 : track([[0, 1], [SS.coiled * FR, 1.8], [SS.burst * FR, 2.2], [SS.slam * FR, 2.2], [(SS.slam + 6) * FR, 1.3], [SS.settled * FR, 1]], t)),
+    tail: (t) => track([[0, 0], [4 * FR, 0.3], [8 * FR, -0.3], [SS.burst * FR, 0], [SS.slam * FR, 0.3], [30 * FR, -0.12], [44 * FR, 0]], t),
+    // (its bursting into smoke, the storm across and its bursting out of it are the flash: Movement 9)
+    strike: [(SS.coiled - 1) * FR, (SS.hold + 1) * FR],
+    hit: SS.slam * FR,
+    along: (t) => stepAlongAt(t / FR),
+    air: [(SS.coiled + 1) * FR, (SS.slam - 0.5) * FR],
+    gone: (t) => stepGoneAt(t / FR),
+  };
+}
+
 // (its tail: a slow swish as it stands, lashing as its claw slams down; swung after its body as it runs)
 const standTail = (t: number): number => 0.22 * Math.sin((t / 2.4) * Math.PI * 2) + 0.18 * hump(t, SLAM, 0.6);
 const runTail = (t: number): number => 0.24 * Math.sin((t / RUN_ROUND - 0.3) * Math.PI * 2);
@@ -492,6 +743,8 @@ export function demonMoves(): DemonMove[] {
     rakeMove(1),
     rakeMove(-1),
     damningMove(),
+    pounceMove(),
+    smokeStepMove(),
   ];
 }
 
@@ -507,5 +760,8 @@ export function drawDemonAt(view: GameView, m: DemonMove, t: number, turn = 0): 
   const wrist = m.rake ? (m.rake.side > 0 ? pose.lhz : m.rake.side < 0 ? pose.rhz : Math.min(pose.lhz, pose.rhz)) : 0;
   const raking = m.rake && tt >= m.rake.up[0] && tt <= m.rake.up[1] && wrist >= m.rake.minZ ? { side: m.rake.side } : undefined;
   // (a raking claw below the height it rakes at is drawn as a claw on the floor, lifted: its claws spread, clear of it)
-  return demonFrame(view, pose as Bones, turn, { tail: m.tail?.(tt), paws: !!m.carry || !!m.rake, rake: raking }, m.wings(tt), t, fires, m.carry ?? 0);
+  // (carried across the floor: its smoke streaming off behind it as it goes, as fast as it goes, but no further back than a run's: kept
+  // inside its picture)
+  const speed = m.along ? Math.min(RUN_CARRY, Math.abs(m.along(tt + FR / 2) - m.along(tt - FR / 2)) / FR) : 0;
+  return demonFrame(view, pose as Bones, turn, { tail: m.tail?.(tt), paws: !!m.carry || !!m.rake || !!m.along, rake: raking }, m.wings(tt), t, fires, m.carry ?? speed);
 }

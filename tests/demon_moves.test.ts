@@ -2,7 +2,7 @@
 // own checks (crisp, the friend's edge, no pixel alone, nothing pink, nothing cut off), its body clean and on the floor; and
 // slick (his art rulebook's Movement: nothing leaps, stalls or turns straight back at speed, nor jumps from a loop's end round
 // to its start), every claw and hoof down on the floor staying where it is (Movement 8, feet grip the floor: its claws too,
-// on all fours).
+// on all fours), as far as the game has carried it (a run; a swipe).
 
 // @ts-ignore
 import nodeTest from 'node:test';
@@ -40,7 +40,9 @@ for (const m of demonMoves()) {
         for (const f of pictureFindings(d.px)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
         // (a gallop has its moment in the air, between its legs pushing off and its claws landing: Movement 8 asks only that
         // a claw or hoof down stays where it is)
-        for (const f of bodyFindings(LAST.sc as Sculpt, true)) if (!(m.carry && f.startsWith('standing on nothing'))) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+        // (nor, while it leaps or is gone into smoke, as long as it is off the floor altogether)
+        const aloft = !!m.carry || (!!m.air && t > m.air[0] - 1e-6 && t < m.air[1] + 1e-6);
+        for (const f of bodyFindings(LAST.sc as Sculpt, true)) if (!(aloft && f.startsWith('standing on nothing'))) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);
@@ -88,12 +90,13 @@ for (const m of demonMoves()) {
     }
     for (const [a, b] of pairs) {
       const at = `${times[a].toFixed(2)} to ${times[b].toFixed(2)} s`;
-      const carry = m.carry ?? 0;
+      // (how far the game has carried it across the floor: a run at its pace; a swipe as far as it has gone)
+      const go = (t: number): number => (m.along ? m.along(t) : (m.carry ?? 0) * t);
       const ta = times[a];
       const tb = b > a ? times[b] : m.long;
       for (const pt of ['toeL', 'toeR', 'handL', 'handR'] as const) {
-        const p: V3 = [sk[a][pt][0] + carry * ta, sk[a][pt][1], sk[a][pt][2]];
-        const q: V3 = [sk[b][pt][0] + carry * tb, sk[b][pt][1], sk[b][pt][2]];
+        const p: V3 = [sk[a][pt][0] + go(ta), sk[a][pt][1], sk[a][pt][2]];
+        const q: V3 = [sk[b][pt][0] + go(tb), sk[b][pt][1], sk[b][pt][2]];
         const floor = (stand[pt] as V3)[2] + ON_FLOOR;
         if (p[2] < floor && q[2] < floor) {
           const slide = Math.hypot(p[0] - q[0], p[1] - q[1]);

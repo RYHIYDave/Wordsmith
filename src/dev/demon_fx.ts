@@ -186,15 +186,17 @@ export const DAMN_TARGETS: readonly { x: number; y: number; burning: boolean; di
  */
 export const KNOCK = { from: 2, flight: 10, back: 13, skid: 3, skidFor: 4, high: 26, tilt: 22 };
 /** How fast what is flung falls (its own measure, a frame, a frame). */
-const FALL = 1.1;
+export const FALL = 1.1;
 /** The colours of what is not light: the dark of a pit or a crack; the floor's stone (art/mkit.ts RIM_STONE), dark to lit; the cultist's robe; its blood, darker than the game's (art/mkit.ts BLOOD), clear of the pink that is the enemy's glow. */
-const STUFF = ['#07050a', '#2a2331', '#3a3040', '#655868', '#857888', '#1c0c34', '#3a1a5c', '#643a8c', '#4a0c24', '#8a1020', '#b8202c'];
-const PIT = 0;
-const STONE = 1;
-const ROBE = 5;
-const BLOOD = 8;
+export const STUFF = ['#07050a', '#2a2331', '#3a3040', '#655868', '#857888', '#1c0c34', '#3a1a5c', '#643a8c', '#4a0c24', '#8a1020', '#b8202c'];
+export const PIT = 0;
+export const STONE = 1;
+export const ROBE = 5;
+export const BLOOD = 8;
+/** Where a point (its own measure, `z` up) is on a scene's picture. */
+export type ToScene = (p: V3) => [number, number];
 /** What it lays down: its claws' cracks and holes, and the ground broken under the ones it damned. */
-type Crack = { pts: [number, number][]; u0: number; wide: boolean };
+export type Crack = { pts: [number, number][]; u0: number; wide: boolean };
 
 const turned = (p: V3, turn: number): V3 => {
   const a = (turn * Math.PI) / 180;
@@ -223,7 +225,7 @@ export function digSpots(m: DemonMove): V3[] {
 }
 
 /** A star of jagged cracks split out from round (`cx`, `cy`) on the floor (its own measure): `n` of them, about `len` long, from `r0` out; and forks off them. */
-function crackStar(cx: number, cy: number, n: number, len: number, r0: number, seed: number): Crack[] {
+export function crackStar(cx: number, cy: number, n: number, len: number, r0: number, seed: number): Crack[] {
   const out: Crack[] = [];
   for (let i = 0; i < n; i++) {
     let a = ((i + 0.6 * hash(seed + i * 7)) / n) * Math.PI * 2;
@@ -265,15 +267,15 @@ function crackStar(cx: number, cy: number, n: number, len: number, r0: number, s
  * A crack drawn on the floor (`dark`), run out as far as `g` (0 to 1) of its star's reach, glowing (`glow`) as hot as
  * `heat` (its fire's heat, 0 dim to 3 white; less out along it; none below 0): wider at its root, the dark of it under the glow.
  */
-function drawCrack(dark: Light, glow: Light, c: Crack, g: number, heat: number, view: GameView, turn: number): void {
+export function drawCrack(dark: Light, glow: Light, c: Crack, g: number, heat: number, S: ToScene): void {
   const v = (g - c.u0) / (1 - c.u0);
   if (v <= 0) return;
   const n = c.pts.length - 1;
   const upto = Math.min(1, v) * n;
   for (let i = 0; i < Math.ceil(upto - 1e-9); i++) {
     const f = Math.min(1, upto - i);
-    const a = inScene([c.pts[i][0], c.pts[i][1], 0], view, turn);
-    const e = inScene([c.pts[i + 1][0], c.pts[i + 1][1], 0], view, turn);
+    const a = S([c.pts[i][0], c.pts[i][1], 0]);
+    const e = S([c.pts[i + 1][0], c.pts[i + 1][1], 0]);
     const b: [number, number] = [a[0] + (e[0] - a[0]) * f, a[1] + (e[1] - a[1]) * f];
     // (how far out along it, as a share of its star's reach: hottest and widest at its root)
     const u = c.u0 + (1 - c.u0) * ((i + f * 0.5) / n);
@@ -312,8 +314,8 @@ const inside = (x: number, y: number, poly: [number, number][]): boolean => {
   return c;
 };
 /** A hole torn in the floor: its pit, its broken lip of stone, its rim glowing as hot as `heat` (none below 0). */
-function drawHole(dark: Light, glow: Light, cx: number, cy: number, r: number, heat: number, seed: number, view: GameView, turn: number): void {
-  const poly = holeShape(cx, cy, r, seed).map(([x, y]) => inScene([x, y, 0], view, turn));
+export function drawHole(dark: Light, glow: Light, cx: number, cy: number, r: number, heat: number, seed: number, S: ToScene): void {
+  const poly = holeShape(cx, cy, r, seed).map(([x, y]) => S([x, y, 0]));
   const xs = poly.map((p) => p[0]);
   const ys = poly.map((p) => p[1]);
   for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
@@ -331,7 +333,7 @@ function drawHole(dark: Light, glow: Light, cx: number, cy: number, r: number, h
 }
 
 /** A JET of its hellfire, out of a hole at (`gx`, `gy`) on the picture: its own fire's shape, nothing of it below the hole's near lip (`lip`). */
-function jet(l: Light, gx: number, gy: number, size: number, t: number, lean: number, lip: number): void {
+export function jet(l: Light, gx: number, gy: number, size: number, t: number, lean: number, lip: number): void {
   if (size < 0.8) return;
   const H = Math.round(size * 3.3);
   const reach = Math.ceil(size * 1.5 * 1.6 + Math.abs(lean) * H * 1.3);
@@ -345,7 +347,7 @@ function jet(l: Light, gx: number, gy: number, size: number, t: number, lean: nu
 }
 
 /** A thing flung: from `p` (its own measure) going `v` a frame; where it is `s` frames on, falling (FALL), and lying where it lands. */
-function flung(p: V3, v: V3, s: number): { at: V3; landed: boolean } {
+export function flung(p: V3, v: V3, s: number): { at: V3; landed: boolean } {
   // (when it lands: when it comes down to the floor)
   const tl = (v[2] + Math.sqrt(v[2] * v[2] + 2 * FALL * p[2])) / FALL;
   const u = Math.min(s, tl);
@@ -355,7 +357,7 @@ function flung(p: V3, v: V3, s: number): { at: V3; landed: boolean } {
  * A CHUNK OF FLAGSTONE at (`cx`, `cy`) on the picture, about `r` across, turned `a`: broken, its faces lit from above and
  * shadowed below, its dark edge; its underside lit cyan by the fire under it as hot as `lit` (none below 1).
  */
-function chunk(st: Light, l: Light, cx: number, cy: number, r: number, a: number, seed: number, lit: number): void {
+export function chunk(st: Light, l: Light, cx: number, cy: number, r: number, a: number, seed: number, lit: number): void {
   const n = 6;
   const poly: [number, number][] = Array.from({ length: n }, (_, i) => {
     const b = a + (i / n) * Math.PI * 2 + (hash(seed + i) - 0.5) * 0.5;
@@ -379,7 +381,7 @@ function chunk(st: Light, l: Light, cx: number, cy: number, r: number, a: number
 }
 
 /** Embers off a crack or a hole: cyan sparks rising, each two pixels long, `heat` 0 none to 1. */
-function embers(l: Light, pts: [number, number][], t: number, heat: number, seed: number): void {
+export function embers(l: Light, pts: [number, number][], t: number, heat: number, seed: number): void {
   if (heat <= 0) return;
   pts.forEach(([x0, y0], i) => {
     const k = seed * 31 + i * 7;
@@ -394,7 +396,7 @@ function embers(l: Light, pts: [number, number][], t: number, heat: number, seed
 }
 
 /** A dust of the floor kicked up along it, from (`cx`, `cy`) on the picture, `s` frames on: puffs rolling out to either side and thinning. */
-function dust(sm: Light, cx: number, cy: number, s: number, seed: number): void {
+export function dust(sm: Light, cx: number, cy: number, s: number, seed: number): void {
   if (s < 0 || s > 9) return;
   for (let i = 0; i < 6; i++) {
     const side = i % 2 ? 1 : -1;
@@ -499,9 +501,9 @@ export function damningLight(m: DemonMove, t: number, view: GameView, turn = 0):
     : 3 - (f - 2) / 6;
   digs.forEach((d, c) => {
     const stars = crackStar(d[0], d[1], 7, 40, 3, 40 + c * 17);
-    for (const k of stars) drawCrack(fd, fl, k, runOut, clawHeat, view, turn);
+    for (const k of stars) drawCrack(fd, fl, k, runOut, clawHeat, S);
     // (the holes it tears as it rips its claws up)
-    if (f >= 0) drawHole(fd, fl, d[0] + 1, d[1], 7, f < 3 ? 3.4 : 3 - (f - 3) / 7, 70 + c, view, turn);
+    if (f >= 0) drawHole(fd, fl, d[0] + 1, d[1], 7, f < 3 ? 3.4 : 3 - (f - 3) / 7, 70 + c, S);
     // (embers rising off the cracks as it strains)
     if (f < 0 && dug > 2) embers(fl, stars.slice(0, 6).map((k) => S([...k.pts[Math.floor(k.pts.length * 0.5)], 0] as V3)), t, 0.3 + 0.7 * strain, 90 + c);
   });
@@ -510,8 +512,8 @@ export function damningLight(m: DemonMove, t: number, view: GameView, turn = 0):
     if (f < 0) return;
     const g = Math.min(1, 0.5 + f * 0.25);
     const heat = f < KNOCK.from ? 3.4 : 3 - (f - KNOCK.from) / 9;
-    for (const k of crackStar(p.x, p.y, 8, 30, 9, 300 + i * 23)) drawCrack(fd, fl, k, g, heat, view, turn);
-    drawHole(fd, fl, p.x, p.y, 12, f < 3 ? 3.4 : 3 - (f - 3) / 8, 200 + i, view, turn);
+    for (const k of crackStar(p.x, p.y, 8, 30, 9, 300 + i * 23)) drawCrack(fd, fl, k, g, heat, S);
+    drawHole(fd, fl, p.x, p.y, 12, f < 3 ? 3.4 : 3 - (f - 3) / 8, 200 + i, S);
   });
 
   // ---- AT ITS CLAWS: chips kicked up as they bite; as it rips them up, stone flung up and its fire bursting out of the holes
@@ -656,10 +658,10 @@ export function damningLight(m: DemonMove, t: number, view: GameView, turn = 0):
 }
 
 /** When a thing flung up from `z` at `vz` lands (frames). */
-const landedAt = (p: V3, vz: number): number => (vz + Math.sqrt(vz * vz + 2 * FALL * p[2])) / FALL;
+export const landedAt = (p: V3, vz: number): number => (vz + Math.sqrt(vz * vz + 2 * FALL * p[2])) / FALL;
 
 /** A scrap of robe torn off: thrown, then fluttering down slowly, swaying and turning over as it falls; lying where it lands. */
-function scrap(p: V3, v: V3, s: number, seed: number): { at: V3; a: number; landed: boolean } {
+export function scrap(p: V3, v: V3, s: number, seed: number): { at: V3; a: number; landed: boolean } {
   let x = p[0];
   let y = p[1];
   let z = p[2];
@@ -681,7 +683,7 @@ function scrap(p: V3, v: V3, s: number, seed: number): { at: V3; a: number; land
   return { at: [x, y, z], a: s * 0.45 + seed, landed: false };
 }
 /** A scrap of the cultist's robe on the picture at (`cx`, `cy`), turned `a`: a torn rag of its cloth, its folds; flat where it lies. */
-function rag(st: Light, cx: number, cy: number, a: number, lying: boolean): void {
+export function rag(st: Light, cx: number, cy: number, a: number, lying: boolean): void {
   const c = Math.cos(a);
   const sn = Math.sin(a);
   // (a ragged strip of cloth: longer than it is wide, its torn end jagged)
@@ -696,7 +698,7 @@ function rag(st: Light, cx: number, cy: number, a: number, lying: boolean): void
 }
 
 /** Lights laid on a picture of their own: the smoke, then what is solid, then the light. */
-function laid(w: number, h: number, sm: Light, st: Light, l: Light): Px {
+export function laid(w: number, h: number, sm: Light, st: Light, l: Light): Px {
   const out = new Px(w, h);
   sm.lay(out, SMOKE);
   st.lay(out, STUFF);
