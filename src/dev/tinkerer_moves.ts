@@ -152,68 +152,60 @@ export function tinkerStand(): Motion {
   return { keys, loop: 0 };
 }
 
-// ---- RUNNING: HER OWN, A SKIPPING RUN (his “She needs a unique run and stand”): quick and nimble and gleeful, she skips:
-// a step and a little hop on the one foot, a long bound onto the other, a step and a hop on that; her knees flung high, her
-// free arm flung up and out with each bound, the wrench on her shoulder, her ponytail bouncing. A round of 0.6 s at a hero's
-// speed; each foot down flat on the floor stays where it is (Movement 8).
-export const TRUN_ROUND = 0.6;
+// ---- RUNNING: HER OWN, A QUICK LIGHT SPRINT. His word, 27 Oct, of the other heroes' run on her: “She needs a unique run
+// and stand”; shown a skipping run, 28 Oct: “The skipping run,Her non wrench arm is going crazy”. Read as (told him so): the
+// skip goes; a quick, light sprint, low and fast, her free arm pumping close to her body, the wrench on her shoulder. Two
+// quick steps a round (0.4 s at a hero's speed), each foot down only a short while and both off the floor between, her
+// heels flicked up behind her; leaning into it, her head up; her free fist pumping from behind her hip to before her
+// chest, close in, against her legs; her ponytail streaming back. Each foot down on the floor stays where it is
+// (Movement 8: the game carries her at a hero's speed and a foot down goes back under her just as fast).
+export const TRUN_ROUND = 0.4;
 export const TRUN_CARRY = GRIP_SPEED * UNITS_PER_TILE;
-/** Where her hips are along the floor as she runs (each foot down sets down a little before them and goes back past under them). */
-const RUN_HIP_X = 1.0;
-/**
- * A foot through her skip: down at `land` (its step) and again at `land` + 0.22 (its hop), each for 0.12 of the round; each
- * time down a little ahead of her hips and gone back a little behind them, where her leg reaches with its knee bent (a foot
- * set down further on than her leg reaches never gets to the floor, and slides as it does).
- */
-function skipFoot(ph: number, land: number, S: number): { x: number; z: number; p: number } {
-  const q = (((ph - land) % 1) + 1) % 1;
-  const ON = 0.12;
-  const AHEAD_A = RUN_HIP_X + S * ON * 0.5 + 0.5;
-  const AHEAD_B = RUN_HIP_X + S * ON * 0.5 - 0.5;
-  if (q < ON) return { x: AHEAD_A - S * q, z: 0, p: 0 };
-  if (q < 0.22) {
-    // (its little hop: up off the floor and down again a little on)
-    const v = (q - ON) / (0.22 - ON);
-    return { x: AHEAD_A - S * ON + (AHEAD_B - (AHEAD_A - S * ON)) * ease(v), z: 2.2 * T * Math.sin(Math.PI * v), p: 6 * Math.sin(Math.PI * v) };
-  }
-  if (q < 0.22 + ON) return { x: AHEAD_B - S * (q - 0.22), z: 0, p: 0 };
-  // (swung through, its knee flung high, and set down ahead for its next step)
-  const v = (q - 0.22 - ON) / (1 - 0.22 - ON);
-  const x0 = AHEAD_B - S * ON;
-  const go = ease((v - 0.1) / 0.8);
-  return { x: x0 + (AHEAD_A - x0) * go, z: 8.5 * T * Math.pow(Math.sin(Math.PI * v), 0.8), p: 34 * Math.pow(Math.sin(Math.PI * Math.min(1, v * 1.3)), 1.5) };
-}
+/** How much of a round each foot is down: short, light. */
+const RUN_ON = 0.25;
+/** Where her feet come down along the floor, about her hips (a little ahead of them: her leg reaching, its knee bent). */
+const RUN_C = 0.5;
 export function tinkerRun(): Motion {
   const P = TRUN_ROUND;
   const S = TRUN_CARRY * P;
+  const A = (S * RUN_ON) / 2;
+  const KICK = 7 * T;
+  const DWELL = 0.1;
+  /** A foot, `phase` of a round from when it came down: down and going back under her; then flicked up behind and brought through to land ahead. */
+  const foot = (phase: number): { x: number; z: number; p: number } => {
+    const q = ((phase % 1) + 1) % 1;
+    if (q < RUN_ON) return { x: RUN_C + A - S * q, z: 0, p: 0 };
+    const v = (q - RUN_ON) / (1 - RUN_ON);
+    const u = Math.max(0, Math.min(1, (v - DWELL) / (1 - 2 * DWELL)));
+    const go = u * u * (3 - 2 * u);
+    // (lifted smoothly, its heel flicked up behind her, then brought through flat to land)
+    const z = KICK * Math.sin(Math.PI * v);
+    const p = v < 0.3 ? 46 * Math.sin((Math.PI / 2) * (v / 0.3)) : v < 0.85 ? 46 - 52 * ((v - 0.3) / 0.55) : -6 * (1 - (v - 0.85) / 0.15);
+    return { x: RUN_C + A + S * go - S * q, z, p };
+  };
   const keys: Key3[] = [];
-  const n = 36;
+  const n = Math.round(P * 60);
   for (let i = 0; i <= n; i++) {
     const ph = i / n;
-    const l = skipFoot(ph, 0, S);
-    const r = skipFoot(ph, 0.5, S);
-    // (up in each bound and each little hop; down as she lands)
-    const bound = bump(ph, 0.3, 0.26) + bump(ph, 0.8, 0.26);
-    const hop = bump(ph, 0.1, 0.14) + bump(ph, 0.6, 0.14);
-    const land = bump(ph, 0.96, 0.12) + bump(ph, 0.46, 0.12);
-    // (her free arm flung up and out with each bound: once a round, with her right foot's)
-    const fling = Math.sin((ph - 0.05) * Math.PI * 2);
+    const l = foot(ph);
+    const r = foot(ph + 0.5);
+    // (her hips swing with her legs, a little: her left leg forward as `turn` goes to 1)
+    const turn = Math.cos((ph + 0.5 - RUN_ON / 2 - 0.25) * Math.PI * 2);
+    // (her free fist pumping against her legs: forward as her right leg is, back as her left is; close in by her side)
+    const k = (1 - turn) / 2;
     const pose: Partial<Bones> = {
-      px: 1.5 * T, pz: S0.pz + 0.4 * T + 3.2 * T * bound + 1.0 * T * hop - 1.2 * T * land,
-      pitch: 6, yaw: -12 + 3 * fling, twist: -6 + 5 * fling, side: 2 - 2 * fling,
-      bend: S0.bend + 2 + 3 * land, hunch: (S0.hunch ?? 0),
-      faceUp: S0.faceUp + 7 + 2 * bound, faceTurn: S0.faceTurn + 10, faceTilt: S0.faceTilt - 4 * fling,
-      // (her knees pointing forward and up as they are flung high, so neither flips over as its leg swings out before her)
-      lfx: l.x, lfy: 1.8 * T, lfz: l.z, lfp: l.p, lft: 8, lk: 14, lkUp: 35,
-      rfx: r.x, rfy: -1.8 * T, rfz: r.z, rfp: r.p, rft: -8, rk: -14, rkUp: 35,
+      px: 1.5 * T, py: 0,
+      pz: S0.pz - 1.2 * T - 0.9 * T * Math.cos((ph - RUN_ON / 2) * Math.PI * 4),
+      yaw: -4 + 5 * turn, pitch: 10, roll: 1.5 * Math.cos((ph - RUN_ON / 2) * Math.PI * 2),
+      twist: -4 - 3 * turn, bend: S0.bend + 2, side: 0, hunch: 0,
+      faceTurn: -4, faceUp: S0.faceUp + 8, faceTilt: 0,
+      lfx: l.x, lfy: 1.0 * T, lfz: l.z, lfp: l.p, lft: 6, lk: 6, lkUp: 0,
+      rfx: r.x, rfy: -1.0 * T, rfz: r.z, rfp: r.p, rft: -6, rk: -6, rkUp: 0,
+      // (the wrench on her shoulder, her fist where it is in her stance, against her shoulder)
+      rhIn: 0, rhx: S0.rhx, rhy: S0.rhy, rhz: S0.rhz, re: S0.re,
+      lhIn: 0, lhx: (-5 + 11 * k) * T, lhy: (2.4 - 0.6 * k) * T, lhz: (-13 + 8 * k) * T, le: 18,
     };
-    // (the wrench on her shoulder: her fist held where it is on her stance, against her shoulder, riding with her as she
-    // leans and twists, bounced a little as she lands)
-    const hand0: Partial<Bones> = { rhIn: 0, rhx: S0.rhx, rhy: S0.rhy, rhz: (S0.rhz ?? 0) - 0.35 * T * land + 0.2 * T * bound, re: S0.re };
-    const flung = from(STANCE_S.shoulderL, 2 + 2 * fling, 5 + 4 * Math.max(0, fling), -6 + 20 * Math.max(0, fling) - 3 * Math.max(0, -fling));
-    const lhand = plus(flung, [pose.px ?? 0, 0, (pose.pz ?? 0) - S0.pz]);
-    const q = { ...pose, ...hand0 };
-    keys.push({ at: ph * P, ease: 'lin', pose: { ...q, ...leftTo(q, lhand, [-3, 10, -3]) } });
+    keys.push({ at: ph * P, ease: 'lin', pose });
   }
   return { keys, loop: 0 };
 }
@@ -405,7 +397,7 @@ export function tinkerMoves(): TinkMove[] {
       name: 'Standing: cocky and gleeful', motion: tinkerStand(), long: TSTAND_LONG, loops: true, air: [HOP],
       hold: (t) => ({ wrench: track(STAND_WRENCH, t), twirl: true, spin: track(STAND_SPIN, t) % (Math.PI * 2), vial: track(STAND_VIAL, t) > 0.5 ? 1 : 0 }),
     },
-    { name: 'Running: a skipping run', motion: tinkerRun(), long: TRUN_ROUND, loops: true, travel: GRIP_SPEED, carry: TRUN_CARRY },
+    { name: 'Running: a quick light sprint', motion: tinkerRun(), long: TRUN_ROUND, loops: true, travel: GRIP_SPEED, carry: TRUN_CARRY },
     {
       name: 'Swipe: a blast jump', motion: blastJump(), long: BJ.end * FR, loops: false, tall: 80,
       along: (t) => blastAlong(t / FR),

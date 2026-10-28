@@ -169,3 +169,20 @@ test('Tap and hold: her whistle, in every frame: crisp, no pixel alone, nothing 
   }
   assert.deepEqual([...new Set(found)], []);
 });
+
+// TRULY FROM BEHIND (his pick, 28 Oct: “Draw them true (Recommended)”, no mirror): her picture in front, turned a quarter
+// round to her left, is the camera over her right shoulder. Her run, every frame, so drawn: the picture's checks, her body
+// clean and on the floor, her wrench clear of her.
+test('Running, truly from behind: every frame crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off; her body clean, her wrench clear of her', () => {
+  const m = ALL.find((mv) => mv.name.startsWith('Running'))!;
+  const found: string[] = [];
+  const n = Math.round(m.long * RUN_FPS);
+  for (let i = 0; i < n; i++) {
+    const t = i / RUN_FPS;
+    const d = drawTinkerAt('front', m, t, 90);
+    for (const f of pictureFindings(d.px)) found.push(`${t.toFixed(2)} s: ${f}`);
+    for (const f of bodyFindings(LAST.sc as Sculpt, true)) if (!f.startsWith('standing on nothing')) found.push(`${t.toFixed(2)} s: ${f}`);
+    for (const f of wrenchThrough(LAST.sc as Sculpt)) found.push(`${t.toFixed(2)} s: ${f}`);
+  }
+  assert.deepEqual([...new Set(found)], []);
+});
