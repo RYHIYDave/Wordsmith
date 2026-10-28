@@ -11,6 +11,8 @@ Branch `mockup/headsman-yard`, from `v23` at 441ee0b. Pictures only: `src/dev/ya
   prison yard under the sky, walled round, the gallows and the chopping block where he fights; who draws it, “The art chat
   (Recommended)”.
 - To the art chat, asked whether to start on it now: “Headsman's yard (Recommended)”.
+- Shown the three looks (the whole yard, and one phone screen of each), asked which light: “B, night (Recommended)”
+  (offered as: moon and stars, torches and braziers; reads as outdoors and keeps the crypt's dark).
 
 ## What is drawn
 
