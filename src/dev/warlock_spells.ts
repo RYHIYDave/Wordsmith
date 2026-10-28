@@ -181,6 +181,51 @@ export function theChange(): Motion {
 }
 export const CHANGE_FIRE: [number, number][] = [[0, 4.6], [3 * FR, 6.0], [6 * FR, 3.4], [18 * FR, 4.4], [20 * FR, 8.5], [CHANGE_LONG, 9.0]];
 
+// THE DEMON BURNT OUT: HE COMES BACK (his picks, 27 Oct: how it turns back, “Burns out (Recommended)”; what ends it, “Meter
+// runs dry (Recommended)”). As the pact meter runs dry the demon's fire gutters and dies and it crumbles into smoke and ash
+// from its edges in (dev/demon_return.ts), and there he is where it crumbled away round him: ON ONE KNEE, his back knee down
+// on the floor, doubled over, his head hanging, his right hand clutching the demon arm, which hangs heavy and smoking, its
+// fire out; heaving for breath, twice; then he braces over his front foot and pushes himself up, his weight onto it, his
+// back foot brought up under him and set down, and straightens into his stance, his head coming up to glare at the arm as
+// its fire licks back up. A foot or knee down stays where it is (Movement 8).
+export const BACK_LONG = 90 * FR;
+/** His frames: heaving on his knee; braced; pushing up, his back foot lifted, swung under him, set down; straightened; standing. */
+export const BK = { breath: 22, braced: 46, push: 52, lift: 55, swung: 66, set: 69, up: 74, stood: 86 };
+export function comeBack(): Motion {
+  const keys: Key3[] = [];
+  const held = (f: number, pose: Partial<Bones>, ease: Key3['ease'] = 'io'): void => {
+    keys.push({ at: f * FR, ease, pose: { ...pose, ...clamp(pose) } });
+  };
+  const claws = (x: number, y: number, z: number, e: number): Partial<Bones> => ({ lhIn: 1, lhx: x * T, lhy: y * T, lhz: z * T, le: e });
+  // (on his knee: his front foot where it stands, his back knee down behind it, his back foot's toes on the floor behind that)
+  const knee = (k: number): Partial<Bones> => ({
+    px: -8 * T, pz: STANCE.pz - (12.8 - 0.6 * k) * T, pitch: 4, ...curl(34 - 4 * k), faceUp: STANCE.faceUp - 18 + 3 * k,
+    lfx: STANCE.lfx, lfz: 0, lfp: 0, rfx: -20 * T, rfy: STANCE.rfy, rfz: 3.5 * T, rfp: 70, rk: 0,
+    ...claws(4, 5, -14 + 1.5 * k, 26),
+  });
+  // (heaving: breath in, his back lifting; out, sagging)
+  held(0, knee(-0.4));
+  held(11, knee(1));
+  held(BK.breath, knee(-1));
+  held(33, knee(1));
+  held(BK.braced - 4, knee(-0.6));
+  // (braced over his front foot, his head still down)
+  held(BK.braced, { ...knee(0), px: -5 * T, pz: STANCE.pz - 12.5 * T, ...curl(36), pitch: 6, faceUp: STANCE.faceUp - 20 });
+  // (PUSHING UP: his weight onto his front foot, rising; his back foot lifted off the floor, swung under him, set down)
+  held(BK.push, { ...knee(0), px: -4 * T, pz: STANCE.pz - 10 * T, ...curl(30), pitch: 5, faceUp: STANCE.faceUp - 16, rfz: 4.6 * T }, 'in');
+  held(BK.lift, { ...knee(0), px: -3 * T, pz: STANCE.pz - 8 * T, ...curl(26), pitch: 4, faceUp: STANCE.faceUp - 14, rfx: -19 * T, rfz: 5 * T, rfp: 55 });
+  held(60, { ...knee(0), px: -1.8 * T, pz: STANCE.pz - 5 * T, ...curl(20), pitch: 3, faceUp: STANCE.faceUp - 11, rfx: -12 * T, rfz: 4.5 * T, rfp: 30, rk: STANCE.rk * 0.5, ...claws(5, 6, -18, 30) });
+  held(BK.swung, { ...knee(0), px: -0.8 * T, pz: STANCE.pz - 2.5 * T, ...curl(14), pitch: 2, faceUp: STANCE.faceUp - 8, rfx: STANCE.rfx, rfz: 1.4 * T, rfp: 8, rk: STANCE.rk, ...claws(6, 6, -12, 34) });
+  held(BK.set, { px: -0.4 * T, pz: STANCE.pz - 1.6 * T, ...curl(10), pitch: 1, faceUp: STANCE.faceUp - 6, rfx: STANCE.rfx, rfz: 0, rfp: STANCE.rfp, rk: STANCE.rk, lfx: STANCE.lfx, lfz: 0, ...claws(6.5, 6, -9, 36) });
+  // (straightened, his head coming up to glare at the arm as its fire licks back up)
+  held(BK.up, { px: 0, pz: STANCE.pz - 0.6 * T, ...curl(4), faceUp: STANCE.faceUp - 6, faceTurn: STANCE.faceTurn - 14, faceTilt: STANCE.faceTilt - 6 });
+  held(BK.stood, { faceTurn: STANCE.faceTurn - 16, faceTilt: STANCE.faceTilt - 7 });
+  held(90, {});
+  return { keys };
+}
+/** The fire in his claws: out as the demon burns out of him, and licking back up as he stands. */
+export const BACK_FIRE: [number, number][] = [[0, 0.9], [BK.swung * FR, 1.2], [BK.up * FR, 2.6], [BACK_LONG, 3.8]];
+
 export function warlockSpells(): WarlockMove[] {
   return [
     { name: 'Tap: hellfire bolt', motion: hellfireBolt(), long: BOLT_LONG, loops: false, fire: BOLT_FIRE, open: BOLT_OPEN, blows: [{ at: BOLT_HIT, hand: 'left', size: 18, strike: 2 * FR }] },
@@ -188,6 +233,7 @@ export function warlockSpells(): WarlockMove[] {
     { name: 'Swipe: the smoke step', motion: smokeStep(), long: STEP_LONG, loops: false, fire: STEP_FIRE, open: STEP_OPEN, dash: STEP_GONE },
     { name: 'Pact meter full: the arm blazes', motion: warlockStand(), long: STAND_LONG, loops: true, fire: STAND_FIRE, blaze: [[0, 1], [STAND_LONG, 1]] },
     // (torn upright in a flash as he bursts: the strike of it, Movement 9, not judged frame by frame)
+    { name: 'Meter dry: he comes back', motion: comeBack(), long: BACK_LONG, loops: false, fire: BACK_FIRE },
     { name: 'Tapped: the change', motion: theChange(), long: CHANGE_LONG, loops: false, fire: CHANGE_FIRE, blows: [{ at: 20 * FR, hand: 'left', size: 0, strike: 2 * FR }], blaze: [[0, 1], [18 * FR, 1], [CHANGE_LONG, 1.4]], open: [[0, 0], [18 * FR, 0.2], [20 * FR, 1], [CHANGE_LONG, 1]] },
   ];
 }

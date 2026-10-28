@@ -732,6 +732,53 @@ function smokeStepMove(): DemonMove {
   };
 }
 
+// ---- THE METER RUNS DRY: IT BURNS OUT (his picks, 27 Oct: “Burns out (Recommended)”, “Meter runs dry (Recommended)”). Its
+// fire gutters, flaring once and dying; it sags, its head dropping, its shoulders slumping, its wings drooping and folding,
+// as its fire goes out; and it crumbles into smoke and ash from its edges in (dev/demon_return.ts), the warlock left on one
+// knee where it was (dev/warlock_spells.ts comeBack).
+export const BURN_OUT_LONG = 52 * FR;
+function burnOutMotion(): Motion {
+  const at = [0, 10, 18, 30, 40, 52];
+  const k = keyed(at, new Set([5]));
+  const keys: Key3[] = [];
+  for (let i = 0; i <= 52; i++) {
+    const f = i;
+    // (a last heavy breath before it goes)
+    const br = f < 16 ? Math.sin((f / 16) * Math.PI) : 0;
+    const pose: Bones = {
+      ...S0,
+      pz: S0.pz + k([0, 0.5, -2, -6, -8, -8], f) + 1.2 * br,
+      pitch: S0.pitch + k([0, 0, -1, -2, -3, -3], f),
+      bend: S0.bend + k([0, 0, 3, 8, 10, 10], f) - 2 * br,
+      hunch: (S0.hunch ?? 0) + k([0, 0, 3, 8, 10, 10], f) - 3 * br,
+      shrug: (S0.shrug ?? 0) + k([0, 0, -0.1, -0.25, -0.3, -0.3], f) + 0.08 * br,
+      faceUp: S0.faceUp + k([0, 1, -4, -10, -12, -12], f) + 3 * br,
+    };
+    keys.push({ at: f * FR, ease: 'lin', pose: elbowsOf(neckSafe(pose)) });
+  }
+  return { keys };
+}
+const burnOutWings = wingsFrom((t) => {
+  const f = t / FR;
+  const k = keyed([0, 10, 18, 30, 40, 52], new Set([5]));
+  return { spread: k([1, 1, 0.9, 0.75, 0.65, 0.65], f), beat: k([0, 0.05, -0.05, -0.2, -0.25, -0.25], f), sweep: k([0, 0, -0.05, -0.1, -0.12, -0.12], f) };
+});
+function burnOutMove(): DemonMove {
+  return {
+    name: 'Meter dry: it burns out',
+    motion: burnOutMotion(),
+    long: BURN_OUT_LONG,
+    loops: false,
+    wings: burnOutWings,
+    // (its fire guttering: flaring once, and dying)
+    fire: (t) => {
+      const f = t / FR;
+      return Math.max(0.12, track([[0, 1], [10 * FR, 0.8], [14 * FR, 1.0], [20 * FR, 0.5], [30 * FR, 0.25], [40 * FR, 0.12]], t) * (1 + 0.15 * Math.sin(f * 2.3)));
+    },
+    tail: (t) => 0.1 * Math.sin((t / BURN_OUT_LONG) * Math.PI * 2) * (1 - t / BURN_OUT_LONG),
+  };
+}
+
 // (its tail: a slow swish as it stands, lashing as its claw slams down; swung after its body as it runs)
 const standTail = (t: number): number => 0.22 * Math.sin((t / 2.4) * Math.PI * 2) + 0.18 * hump(t, SLAM, 0.6);
 const runTail = (t: number): number => 0.24 * Math.sin((t / RUN_ROUND - 0.3) * Math.PI * 2);
@@ -745,6 +792,7 @@ export function demonMoves(): DemonMove[] {
     damningMove(),
     pounceMove(),
     smokeStepMove(),
+    burnOutMove(),
   ];
 }
 
