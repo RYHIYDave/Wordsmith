@@ -21,6 +21,7 @@ const OWN: Record<ClassId, [SkillId, SkillId, SkillId]> = {
   ranger: ['shot', 'volley', 'trap'],
   mage: ['wave', 'orb', 'warp'],
   warlock: ['hellbolt', 'curse', 'smokestep'],
+  tinkerer: ['contraption', 'golem', 'blastjump'],
 };
 
 function wear(g: Game, weapon: WeaponKind): void {

@@ -3849,8 +3849,10 @@ export class Game {
       if (def.kind === 'melee') this.sfx('swing', 0.8);
       else if (def.kind === 'projectile') this.sfx('shot', 0.8);
       else if (def.kind === 'wave') this.sfx('wave', 0.8);
-      // (the quick attack goes the way the hero faces, from wherever they have got to)
-      this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
+      // (the quick attack goes the way the hero faces, from wherever they have got to; THE TINKERER's Contraption, thrown, to
+      // where it was aimed)
+      if (def.kind === 'contraption') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
+      else this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
       return;
     }
     // (what it needs may have gone in the meantime: then nothing happens, and nothing is paid)
