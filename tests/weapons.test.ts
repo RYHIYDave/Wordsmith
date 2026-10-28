@@ -124,7 +124,7 @@ function ready(g: Game, skill: 0 | 1): void {
 const TAP: Record<WeaponKind, SkillId> = { sword: 'strike', greatsword: 'strike', bow: 'shot', staff: 'wave', wand: 'familiar' };
 const HOLD: Record<WeaponKind, SkillId> = { sword: 'slam', greatsword: 'whirlwind', bow: 'volley', staff: 'orb', wand: 'beam' };
 const GROWS: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
-const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp', warlock: 'smokestep', tinkerer: 'blastjump' };
+const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp', warlock: 'smokestep', tinkerer: 'blastjump', brawler: 'slip' };
 
 // =============================================================================================
 // The table
@@ -155,7 +155,7 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
 });
 
 test('each class begins with its own weapon: the warrior the two-handed sword, the mage the staff with Wave and Orb', () => {
-  const begins: Record<Exclude<ClassId, 'warlock' | 'tinkerer'>, [WeaponKind, SkillId[]]> = {
+  const begins: Record<Exclude<ClassId, 'warlock' | 'tinkerer' | 'brawler'>, [WeaponKind, SkillId[]]> = {
     warrior: ['greatsword', ['strike', 'whirlwind', 'leap']],
     ranger: ['bow', ['shot', 'volley', 'trap']],
     mage: ['staff', ['wave', 'orb', 'warp']],

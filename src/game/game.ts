@@ -4420,8 +4420,11 @@ export class Game {
       if (best) hits.push(best);
     }
     this.emit({ t: 'punch', name, x: ox, y: oy, dx, dy, big: P.big, n, echo: echo || undefined, hit: hits.length > 0 });
-    this.sfx(P.big ? 'slam' : 'hit', P.big ? 0.8 : 0.6);
+    const words = this.fronts(i);
+    this.sfx(words.includes('power') ? 'power' : P.big ? 'slam' : 'hit', P.big ? 0.8 : 0.6);
     if (P.big) this.emit({ t: 'shake', amount: P.big === 2 ? 5 : 2.5 });
+    const first = hits[0];
+    if (first && words.includes('heavy')) this.emit({ t: 'heavy', x: first.x, y: first.y, r: P.round ? P.round * r.size : 1.1, big: !!P.round });
     let k = 0;
     for (const m of hits) {
       this.hitMonster(m, i, frac * P.share, k++ >= 3);
@@ -4436,9 +4439,18 @@ export class Game {
         this.emit({ t: 'cannonball', id: m.id, x: m.x, y: m.y, dx: lx, dy: ly });
       } else if (P.throw) this.throwMonster(m, ox, oy, P.throw, 0.18);
     }
-    if (hits.length) {
+    if (first) {
       this.landed(i);
-      if (r.pull > 0) this.pullIn(i, ox + dx, oy + dy, reach, false);
+      // (a splash off the one it struck, as a sword's: Flame's explosion, Power's shock through the ground)
+      if (r.splash > 0) {
+        const rad = r.splash * r.size;
+        this.emit({ t: 'burst', x: first.x, y: first.y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo });
+        for (const o of this.monsters) {
+          if (o.dead || hits.includes(o) || this.shutIn(o)) continue;
+          if (Math.hypot(o.x - first.x, o.y - first.y) <= rad + o.r) this.hitMonster(o, i, frac * P.share * r.splashDmg, true);
+        }
+      }
+      if (r.pull > 0) this.pullIn(i, first.x, first.y, r.splash > 0 ? r.splash * r.size : 0, true);
     }
     this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
     // (what the words behind it leave, a punch leaves where it lands, once a press)

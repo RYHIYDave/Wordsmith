@@ -51,9 +51,9 @@ const DUNGEON: HeroLook = { twoHanded: true };
 const TOWN: HeroLook = { twoHanded: true, town: true };
 const VIEWS = ['front', 'back'] as const;
 /** What flies from each: the tails every one of their frames must name. */
-const TAILS: Record<Exclude<ClassId, 'warlock' | 'tinkerer'>, string[]> = { warrior: ['w-scarf-a', 'w-scarf-b'], ranger: ['r-feather'], mage: ['m-braid-a', 'm-braid-b'] };
+const TAILS: Record<Exclude<ClassId, 'warlock' | 'tinkerer' | 'brawler'>, string[]> = { warrior: ['w-scarf-a', 'w-scarf-b'], ranger: ['r-feather'], mage: ['m-braid-a', 'm-braid-b'] };
 /** The moves each stands in and runs with, in a dungeon and in town, and the two attacks. */
-const MOVES: Record<Exclude<ClassId, 'warlock' | 'tinkerer'>, { stand: [string, string]; run: [string, string]; attack: string; heavy: string; ready: string }> = {
+const MOVES: Record<Exclude<ClassId, 'warlock' | 'tinkerer' | 'brawler'>, { stand: [string, string]; run: [string, string]; attack: string; heavy: string; ready: string }> = {
   warrior: { stand: ['rear', 'ktown'], run: ['krun', 'ktownrun'], attack: 'strike', heavy: 'slam', ready: 'kdraw' },
   ranger: { stand: ['rstand', 'rtown'], run: ['rrun', 'rtownrun'], attack: 'shot', heavy: 'volley', ready: 'rdraw' },
   mage: { stand: ['mstand', 'mstand'], run: ['mrun', 'mrun'], attack: 'wave', heavy: 'orb', ready: 'mready' },

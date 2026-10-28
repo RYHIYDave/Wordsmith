@@ -22,6 +22,7 @@ const OWN: Record<ClassId, [SkillId, SkillId, SkillId]> = {
   mage: ['wave', 'orb', 'warp'],
   warlock: ['hellbolt', 'curse', 'smokestep'],
   tinkerer: ['contraption', 'golem', 'blastjump'],
+  brawler: ['jab', 'cross', 'slip'],
 };
 
 function wear(g: Game, weapon: WeaponKind): void {

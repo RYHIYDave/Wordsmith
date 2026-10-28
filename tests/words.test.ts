@@ -228,6 +228,10 @@ function layout(kind: SkillDef['kind']): { spots: [number, number][]; aim: [numb
     case 'contraption': return { spots: [[3.2, 0], [3.8, 0.6], [3.8, -0.6]], aim: [3, 0] };
     case 'golem': return { spots: [[0.9, 1.2], [0.2, 2.2], [1.6, 0.6]], aim: [1.2, 1.2] };
     case 'blastjump': return { spots: [[0.8, 0.3], [-0.6, 0.7], [0.2, -0.9]], aim: [-4, 0] };
+    // (THE BRAWLER: his punch lands on the one in front; his slip comes up by one, and what its words behind it leave, it
+    // leaves where he set off, by another)
+    case 'punch': return { spots: [[1.2, 0], [1.8, 0.6], [1.8, -0.6]], aim: [1.2, 0] };
+    case 'slip': return { spots: [[-5.2, 0], [0.6, 0.5], [-4.8, 1.0]], aim: [-4, 0] };
     default: return { spots: [[2.5, 0], [3.1, 0.5], [3.1, -0.5]], aim: [2.5, 0] };
   }
 }
@@ -445,6 +449,8 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     else if (def.kind === 'contraption') assert.ok(any((e) => e.t === 'vial' && !e.echo && e.n === 1), `${name}: Twin lobs two vials a shot`);
     else if (def.kind === 'golem') assert.ok(any((e) => e.t === 'golemPound' && !e.echo && (e.n ?? 0) === 0) && any((e) => e.t === 'golemPound' && !e.echo && e.n === 1), `${name}: Twin pounds twice`);
     else if (def.kind === 'blastjump') assert.ok(any((e) => e.t === 'burst' && e.style === 'bomb' && !e.echo && e.n === 0) && any((e) => e.t === 'burst' && e.style === 'bomb' && !e.echo && e.n === 1), `${name}: Twin's bomb goes off twice`);
+    // (THE BRAWLER: Twin, his punch lands twice; his counter hook too)
+    else if (def.kind === 'punch' || def.kind === 'slip') assert.ok(any((e) => e.t === 'punch' && !e.echo && e.n === 0) && any((e) => e.t === 'punch' && !e.echo && e.n === 1), `${name}: Twin lands twice`);
     else if (def.kind === 'melee') assert.ok(any((e) => e.t === 'swing' && !e.echo && e.n === 0) && any((e) => e.t === 'swing' && !e.echo && e.n === 1), `${name}: Twin cuts twice`);
     else if (def.kind === 'burst' || def.kind === 'orb' || def.kind === 'whirl' || def.kind === 'leap' || def.kind === 'warp') assert.ok(any((e) => e.t === 'burst' && !e.echo && e.n === 0) && any((e) => e.t === 'burst' && !e.echo && e.n === 1), `${name}: Twin bursts twice`);
     else if (def.kind === 'volley') assert.ok(any((e) => e.t === 'volleyFall' && !e.echo && e.n === 0) && any((e) => e.t === 'volleyFall' && !e.echo && e.n === 1) && count((e) => e.t === 'volleyUp' && !e.echo) === 1, `${name}: Twin brings the arrows down in pairs`);
@@ -465,6 +471,7 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   else if (def.kind === 'contraption') assert.ok(!any((e) => e.t === 'vial' && e.n > 0), `${name}: one vial a shot`);
   else if (def.kind === 'golem') assert.ok(count((e) => e.t === 'golemPound' && !e.echo) === 1, `${name}: one pound`);
   else if (def.kind === 'blastjump') assert.ok(!any((e) => e.t === 'burst' && e.style === 'bomb' && (e.n ?? 0) > 0), `${name}: one bomb`);
+  else if (def.kind === 'punch' || def.kind === 'slip') assert.ok(!any((e) => e.t === 'punch' && e.n > 0), `${name}: one blow`);
   if (def.kind === 'orb') assert.equal(count((e) => e.t === 'orbSet'), 1, `${name}: one orb is set`);
   if (def.channel) {
     assert.deepEqual([count((e) => e.t === 'channel'), count((e) => e.t === 'channelEnd')], [1, 1], `${name}: it began once and ended once`);
@@ -504,6 +511,7 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     if (def.kind === 'contraption') assert.ok(weak || any((e) => e.t === 'vial' && e.echo === true), `${name}: the echo lobs one more vial`);
     if (def.kind === 'golem') assert.ok(any((e) => e.t === 'golemPound' && e.echo === true), `${name}: the echo pounds again`);
     if (def.kind === 'blastjump') assert.ok(any((e) => e.t === 'burst' && e.style === 'bomb' && e.echo === true), `${name}: the echo's bomb goes off`);
+    if (def.kind === 'punch' || def.kind === 'slip') assert.ok(any((e) => e.t === 'punch' && e.echo === true), `${name}: the echo lands again`);
     // (haste is given by the use, once: the echo is not a use. Might is given by every blow that
     // lands, and the echo's blow is one: see tests/power.test.ts.)
     assert.equal(count((e) => e.t === 'buff' && e.kind === 'haste'), behind.includes('swift') ? 1 : 0, `${name}: the echo does not give haste again`);
@@ -625,6 +633,10 @@ const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demo
   { cls: 'tinkerer', weapon: 'wand', skill: 0 },
   { cls: 'tinkerer', weapon: 'wand', skill: 1 },
   { cls: 'tinkerer', weapon: 'wand', skill: 2 },
+  // (THE BRAWLER, game/brawler.ts: his three; a press of each alone, the first of a combo: the jab, the cross)
+  { cls: 'brawler', weapon: 'sword', skill: 0 },
+  { cls: 'brawler', weapon: 'sword', skill: 1 },
+  { cls: 'brawler', weapon: 'sword', skill: 2 },
 ];
 
 test('between them the cases use every ability that takes words, once each', () => {
