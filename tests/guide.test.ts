@@ -341,7 +341,8 @@ test("half way through a character's first dungeon lies a fallen wordsmith, and 
   }
   // the three first words, as the owner chose them
   // (the ranger's Poison goes on Trap, and Trap has been the swipe since Version 12.2: "Let's move the trap on ranger to the tumble")
-  assert.deepEqual(FIRST_WORD, { warrior: { word: 'power', skill: 0 }, ranger: { word: 'poison', skill: 2 }, mage: { word: 'fire', skill: 0 } });
+  // (and the warlock's, the main chat's proposal behind WARLOCK: Leeching on his bolt)
+  assert.deepEqual(FIRST_WORD, { warrior: { word: 'power', skill: 0 }, ranger: { word: 'poison', skill: 2 }, mage: { word: 'fire', skill: 0 }, warlock: { word: 'leech', skill: 0 } });
 });
 
 test('before the body there is no word, so what stands before it hits softer; it is no softer to kill', () => {

@@ -264,7 +264,16 @@ export interface Hero {
   /** A leap or a roll in progress. */
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
-  move: null | { kind: 'leap' | 'roll'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[] };
+  /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once.) */
+  move: null | { kind: 'leap' | 'roll' | 'smoke'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
+  /**
+   * THE WARLOCK (game/warlock.ts): which he is, a man or the demon (absent: a man); his pact (0 to WARLOCK_TUNE.pact.full;
+   * full, a tap on him changes him); and the change he is in the middle of, to the demon or back to a man (nothing harms
+   * him and he does nothing else meanwhile), or null.
+   */
+  form?: 'man' | 'demon';
+  pact?: number;
+  change?: { to: 'demon' | 'man'; t: number; dur: number } | null;
   /**
    * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): whether the wordsmith's ring is lit for this hero,
    * so that he can wordsmith (always, with the switch off and for a hero saved before it); and the
@@ -443,6 +452,14 @@ export interface Monster {
    */
   bleedT?: number;
   bleedDps?: number;
+  /**
+   * THE WARLOCK (game/warlock.ts): burning in his hellfire (the Hellfire Bolt's), and cursed (the Curse's smoulder): each its
+   * seconds left and its harm a second. A cursed one dying spreads every burn on it to those near it.
+   */
+  hellT?: number;
+  hellDps?: number;
+  curseT?: number;
+  curseDps?: number;
   cracks?: number;
   thrown?: { vx: number; vy: number; t: number; ice?: boolean };
 }
@@ -470,7 +487,7 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great';
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt';
   pierce: boolean;
   /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
   pierceN?: number;
@@ -1164,6 +1181,20 @@ export type GameEvent =
   | { t: 'heal'; amount: number }
   /** A monster catches fire / freezes solid / its ice breaks. */
   | { t: 'ignite'; x: number; y: number }
+  /**
+   * THE WARLOCK (game/warlock.ts). `hellOn`: one set burning in his hellfire. `curse`: the Curse cast from him, its chains
+   * to each it cursed. `spread`: a cursed one died and its burns leapt to those near it. `damning`: the ground erupting
+   * under each it struck. `smoke`: a smoke step from one place to another (the demon's: `demon`). `change`: he begins to
+   * change into the demon or back. `roar`: the demon formed, roaring. `pactFull`: his pact is full (his arm blazes).
+   */
+  | { t: 'hellOn'; id: number; x: number; y: number }
+  | { t: 'curse'; x: number; y: number; r: number; to: readonly { id: number; x: number; y: number }[] }
+  | { t: 'spread'; x: number; y: number; to: readonly { id: number; x: number; y: number }[] }
+  | { t: 'damning'; x: number; y: number; at: readonly { id: number; x: number; y: number }[] }
+  | { t: 'smoke'; x0: number; y0: number; x1: number; y1: number; demon: boolean }
+  | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }
+  | { t: 'roar'; x: number; y: number; r: number }
+  | { t: 'pactFull'; x: number; y: number }
   | { t: 'freeze'; x: number; y: number }
   | { t: 'shatter'; x: number; y: number }
   /** A monster has been killed. (`fx`, `fy`: the way it was facing: its fall is played, and its body lies, that way round.) */
@@ -1235,6 +1266,8 @@ export interface Controls {
   evadeY: number;
   potion: boolean;
   interact: boolean;
+  /** THE WARLOCK (game/warlock.ts): he was tapped (clicked) on: with his pact full, he changes into the demon. */
+  change?: boolean;
 }
 
 export function emptyControls(): Controls {

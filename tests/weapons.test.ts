@@ -35,6 +35,7 @@ import { attacksGrownBy, listed, resolveSkill, weaponLines } from '../src/game/w
 import { attackClip } from '../src/render/figure';
 import { seasoned, land } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
+import { DEMON_KIT } from '../src/game/warlock';
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;
@@ -141,7 +142,8 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
   assert.equal(holdSkill(null), 'slam');
   assert.equal(weaponAttr(null), 'str');
   // every attack there is is brought by a weapon or a class
-  const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade)]);
+  // (and since 28 Oct 2026 the classes' own, OWN_MOVES: the warlock's, and his demon's: game/warlock.ts)
+  const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade), ...Object.values(CLASSES).flatMap((c) => [c.tap, c.hold, c.evade]), ...DEMON_KIT]);
   assert.deepEqual([...brought].sort(), Object.keys(SKILLS).sort(), 'no attack is left that nothing gives');
   // the staff and the wand share neither attack (the owner: "Let's get a different skill for staff on Tap")
   assert.equal(new Set([...WEAPON_SKILLS.staff, ...WEAPON_SKILLS.wand]).size, 4);

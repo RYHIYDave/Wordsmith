@@ -164,7 +164,7 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // The demon (his picks: “Claw rakes (Recommended)”, cursing what they hit; Damning, “I want it to be called DAMN or DAMNING”,
   // the cash-in: “Cash-in eruption (Recommended)”; its swipe “Smoke step (Recommended)”, the violent one).
   rake: { id: 'rake', name: 'Claw Rake', kind: 'melee', icon: 'rake', dmg: 1.3, cooldown: 0, mana: 0, range: 2.0, radius: 0, speed: 0, sockets: true, desc: 'Rake with one claw, then the other. What it tears is cursed.', verb: 'RAKE', windup: 0.16, follow: 0.34 },
-  damning: { id: 'damning', name: 'Damning', kind: 'damning', icon: 'damning', dmg: 0.8, cooldown: 6.0, mana: 16, range: 0, radius: 6, speed: 0, sockets: true, desc: 'Tear up the floor: the ground erupts under every enemy near you that is cursed or burning, and every burn on it goes off at once.', verb: 'DAMN THEM', windup: 0.4, follow: 0.5 },
+  damning: { id: 'damning', name: 'Damning', kind: 'damning', icon: 'damning', dmg: 0.8, cooldown: 6.0, mana: 16, range: 0, radius: 6, speed: 0, sockets: true, desc: 'Tear up the floor: the ground erupts under every enemy near you that is cursed or burning, and every burn on it goes off at once.', verb: 'DAMN THEM', windup: 0.3, follow: 0.5 },
   demonstep: { id: 'demonstep', name: 'Smoke Step', kind: 'smoke', icon: 'demonstep', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.2, speed: 0, sockets: true, desc: 'Tear along the floor as smoke, raking and cursing whoever you pass through, and burst out where you stop.', verb: 'SMOKE STEP', windup: 0, follow: 0 },
 };
 
@@ -2016,7 +2016,7 @@ export const QUIPS: {
     // (THE WARLOCK's, proposals)
     hellbolt: ['Hot off the press.', 'Burn slowly.'],
     curse: ['Cursed reading.', 'A bad omen.'],
-    smokestep: ['Up in smoke.', 'Gone.'],
+    smokestep: ['Vanished.', 'Gone.'],
     rake: ['Dog-eared.', 'Torn out.'],
     damning: ['Damning evidence.', 'Damned.'],
     demonstep: ['Ripped through.', 'Smoke and mirrors.'],

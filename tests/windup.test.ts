@@ -217,7 +217,7 @@ test('the wind-ups are short: about a quarter of a second at the most, and the e
   // beam's: its wind-up is the ghost line the owner asked for ("Maybe half a second animation":
   // three tenths of ghost line, two of beam).
   // (the evasive moves take words too since Version 12.2, and still have no wind-up: see above)
-  const evasive = new Set<SkillKind>(['leap', 'roll', 'warp']);
+  const evasive = new Set<SkillKind>(['leap', 'roll', 'warp', 'smoke']);
   for (const d of Object.values(SKILLS)) {
     if (!d.sockets || evasive.has(d.kind)) continue;
     assert.ok(d.windup > 0 && d.windup <= 0.3, `${d.name}: a wind-up, and a short one (${d.windup} s)`);
