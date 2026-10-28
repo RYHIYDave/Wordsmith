@@ -25,9 +25,10 @@ import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { drawPunchAt } from '../src/dev/brawler_fx';
 import { brawlerFights, strikes, struck } from '../src/dev/brawler_punches';
 import { brawlerFall, drawFallAt } from '../src/dev/brawler_fall';
+import { brawlerLurch, brawlerReel, drawStruckAt } from '../src/dev/brawler_hits';
 
-/** Every move of his: standing, running, each punch from his guard, each of his eight combos and his swipe, the slip and counter (dev/brawler_punches.ts); and his fall, down on his knees (dev/brawler_fall.ts). */
-const ALL = [...brawlerMoves(), ...brawlerFights(), brawlerFall()];
+/** Every move of his: standing, running, each punch from his guard, each of his eight combos and his swipe, the slip and counter (dev/brawler_punches.ts); and his fall, down on his knees (dev/brawler_fall.ts); and struck, hard and from behind (dev/brawler_hits.ts). */
+const ALL = [...brawlerMoves(), ...brawlerFights(), brawlerFall(), brawlerReel(), brawlerLurch()];
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -164,3 +165,22 @@ test('His fall: what flies off him, in every frame: crisp, no pixel alone, nothi
   }
   assert.deepEqual([...new Set(found)], []);
 });
+
+// STRUCK, HARD AND FROM BEHIND (dev/brawler_hits.ts): the blow's flash on him and the scuff of dust as the foot that caught
+// him is set down, every frame, from in front and behind: crisp, no pixel alone, nothing pink, nothing cut off
+for (const m of [brawlerReel(), brawlerLurch()]) {
+  test(`${m.name}: the blow's flash and the scuff of his foot, in every frame: crisp, no pixel alone, nothing pink, nothing cut off`, () => {
+    const found: string[] = [];
+    const n = Math.round(m.long * FPS);
+    for (const view of ['front', 'back'] as const) {
+      for (const turn of [0, 90]) {
+        for (let i = 0; i <= n; i++) {
+          const t = Math.min(m.long, i / FPS);
+          const d = drawStruckAt(view, m, t, turn);
+          for (const f of pictureFindings(d.px)) found.push(`${view} ${turn}, ${t.toFixed(2)} s: ${f}`);
+        }
+      }
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}

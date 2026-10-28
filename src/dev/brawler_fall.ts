@@ -58,8 +58,8 @@ const TIPPED = 70;
 const R1 = { x: -11, y: -5.6, turn: -10 };
 const L1 = { x: -11, y: 5.6, turn: 10 };
 /** Where his ankles stand in his guard. */
-const R0 = { x: GUARD.rfx, y: GUARD.rfy - B.stance, turn: GUARD.rft };
-const L0 = { x: GUARD.lfx, y: GUARD.lfy + B.stance, turn: GUARD.lft };
+export const R0 = { x: GUARD.rfx, y: GUARD.rfy - B.stance, turn: GUARD.rft };
+export const L0 = { x: GUARD.lfx, y: GUARD.lfy + B.stance, turn: GUARD.lft };
 
 /** A foot's toe from its ankle, tipped `p` and turned `turn` (as art/skeleton.ts legOf has it). */
 function toeOff(p: number, turn: number): V3 {
@@ -156,7 +156,7 @@ export const KNEEL = (() => {
 })();
 
 /** A leg's numbers of a pose (art/skeleton.ts Bones) for its ankle at `a`, tipped `p` and turned `turn`, its knee bending the way (az, el). */
-function legBones(right: boolean, a: V3, p: number, turn: number, az: number, el: number): Partial<Bones> {
+export function legBones(right: boolean, a: V3, p: number, turn: number, az: number, el: number): Partial<Bones> {
   return right
     ? { rfx: a[0], rfy: a[1] + B.stance, rfz: a[2] - B.ankle, rfp: p, rft: turn, rk: az, rkUp: el }
     : { lfx: a[0], lfy: a[1] - B.stance, lfz: a[2] - B.ankle, lfp: p, lft: turn, lk: az, lkUp: el };
@@ -165,7 +165,7 @@ function legBones(right: boolean, a: V3, p: number, turn: number, az: number, el
  * A STEP BACK: the foot from `a` to `b` over frames `span`, lifted `high` at its height: up off the floor before it goes,
  * and set down where it goes before it stops (Movement 8: a foot on the floor stays where it is).
  */
-function stepped(a: { x: number; y: number; turn: number }, b: { x: number; y: number; turn: number }, span: [number, number], high: number, f: number): { at: V3; turn: number } {
+export function stepped(a: { x: number; y: number; turn: number }, b: { x: number; y: number; turn: number }, span: [number, number], high: number, f: number): { at: V3; turn: number } {
   const u = Math.max(0, Math.min(1, (f - span[0]) / (span[1] - span[0])));
   const e = ease(u);
   const g = ease((u - 0.12) / 0.76);
