@@ -30,6 +30,7 @@ import type { Art } from '../render/render';
 import { QUEST3 } from '../art/quest3';
 import { MELD_DROPS } from '../art/meld_drops';
 import { pressName } from './guide';
+import { WARLOCK_TUNE } from '../game/warlock';
 import type { Banner } from './guide';
 import { THEME } from './ui';
 import type { Ui } from './ui';
@@ -892,6 +893,19 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   globe(g, lifeX, lifeY, 14, h.life / d.maxLife, THEME.life, THEME.lifeHi, lifeRim);
   drawText(g, `${Math.ceil(h.life)}`, lifeX, lifeY - 3, P.white, { align: 'center', font: 'small', shadow: P.ink });
   ui.mark('life', lifeX - 15, lifeY - 15, 31, 31);
+  // THE WARLOCK'S PACT (game/warlock.ts): a small globe of black filling with his cyan hellfire, under the life globe with
+  // fingers and over it with a mouse; full, it blazes, and says how he is changed (a tap on him; R). As the demon it drains.
+  // (A PROPOSAL, to be shown to the owner before it goes live.)
+  if (h.cls === 'warlock') {
+    const full = WARLOCK_TUNE.pact.full;
+    const k = Math.max(0, Math.min(1, (h.pact ?? 0) / full));
+    const blaze = h.form !== 'demon' && k >= 1;
+    const pyy = touch ? lifeY + 27 : lifeY - 27;
+    const hot = blaze && pulse;
+    globe(g, lifeX, pyy, 9, k, hot ? '#b8fff8' : '#22d0e0', '#b8fff8', hot ? P.white : h.form === 'demon' ? '#22d0e0' : THEME.edgeHi);
+    ui.mark('pact', lifeX - 10, pyy - 10, 21, 21);
+    if (blaze) drawText(g, touch ? 'TAP HIM' : 'R: CHANGE', lifeX + 13, pyy - 3, hot ? '#b8fff8' : '#22d0e0', { font: 'small', shadow: P.ink });
+  }
   // (mana is only there to be seen when it is what limits the slow abilities)
   if (byMana) {
     globe(g, W - 20, gy, 14, h.mana / d.maxMana, THEME.mana, THEME.manaHi, THEME.edgeHi);

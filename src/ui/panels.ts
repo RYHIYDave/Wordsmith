@@ -19,7 +19,8 @@ import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
 import type { TitleArt } from '../art/title';
 import { TITLE_MARKS, titleRound } from '../art/title';
 import type { Smith2Title } from '../art/title_smith2';
-import { ATTRS, CLASS_IDS, RARITY_NAMES, WORD_IDS } from '../game/types';
+import { ATTRS, RARITY_NAMES, WORD_IDS } from '../game/types';
+import { playableClasses } from '../game/warlock';
 import type { Attr, ClassId, EquipSlot, Item, VoiceId, WordId } from '../game/types';
 import { attacksGrownBy, listed, skillName, weaponLines } from '../game/words';
 import { Figure } from '../render/figure';
@@ -779,16 +780,18 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   }
 
   // ---- the class cards ---------------------------------------------------------------------------
-  const cw = Math.min(104, Math.floor((W - 20) / 3));
+  // (THE WARLOCK beside the three while game/warlock.ts WARLOCK is on: as many cards as there are classes to pick)
+  const ids = playableClasses();
+  const cw = Math.min(104, Math.floor((W - 20) / ids.length));
   const ch = Math.min(137, H - 62);
   /** The room at the top of a card for the figure, drawn at twice its size in the game. */
   const figH = 80;
-  const total = cw * 3 + 8;
+  const total = cw * ids.length + 4 * (ids.length - 1);
   const x0 = Math.floor((W - total) / 2);
   const y0 = 44;
   // (a hero who has been picked is making ready: nothing here listens until they have gone)
   const entering = opt.entering ?? null;
-  CLASS_IDS.forEach((id, i) => {
+  ids.forEach((id, i) => {
     if (!entering && ui.pressIn(x0 + i * (cw + 4), y0, cw, ch)) out.pick = id;
   });
   const backW = ui.width('BACK') + 20;
@@ -814,7 +817,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   const dt = t - cardsSeen > 0.5 || t < cardsSeen ? 0 : t - cardsSeen;
   const fresh = dt === 0;
   cardsSeen = t;
-  CLASS_IDS.forEach((id, i) => {
+  ids.forEach((id, i) => {
     const c = CLASSES[id];
     const x = x0 + i * (cw + 4);
     // (the one who has been picked: see below. The other two stand back.)

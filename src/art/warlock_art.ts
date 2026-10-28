@@ -35,6 +35,7 @@ import { RIG_CANVAS } from '../dev/sculpt_demon_rig';
 import { CHANGE_ALL, changeFrame } from '../dev/warlock_change';
 import { CHANGE_SCENE } from '../dev/warlock_fx';
 import { crumble } from '../dev/demon_return';
+import { warlockFall } from './warlock_fall';
 
 /** Which of his pictures: a man or the demon, where (in a fight, in town, on his class card), and a man with his pact full (his arm blazing). */
 export interface WarlockLook {
@@ -108,8 +109,9 @@ function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean): An
   const land = clip(STEP_GONE[1] + 1 * FR, STEP_LONG, CLIP_FPS, (t) => manAt(step, t, view));
   const struck = clip(0, reel.long, CLIP_FPS, (t) => manAt(reel, t, view));
   const struckBehind = clip(0, lurch.long, CLIP_FPS, (t) => manAt(lurch, t, view));
-  // (HIS FALL, to be made and shown to him: till then, struck hard and held there)
-  const fall = clip(0, reel.long * 0.5, CLIP_FPS, (t) => manAt(reel, t, view));
+  // (HIS FALL: art/warlock_fall.ts, the main chat's first pass, to be shown to him)
+  const down = warlockFall();
+  const fall = clip(0, down.long, CLIP_FPS, (t) => manAt(down, t, view));
   const three = (c: Clip): Sprite[] => [c.frames[0], c.frames[Math.min(c.frames.length - 1, Math.round((c.hit ?? 0) * c.fps))], c.frames[c.frames.length - 1]];
   const set: AnimSet = {
     idle,

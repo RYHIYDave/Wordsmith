@@ -47,7 +47,7 @@ import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
 import { LEDGE_H, screenDirToWorld, sx as isoSX, sy as isoSY, toWorldX, toWorldY } from './engine/iso';
-import { WARLOCK_TUNE } from './game/warlock';
+import { WARLOCK, WARLOCK_TUNE, playableClasses } from './game/warlock';
 import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
@@ -1601,16 +1601,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         muted: isMuted(),
         voice: meta.voice,
         mode: MODES.on && !titleUi.practice ? meta.mode : null,
-        speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
+        speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? playableClasses()[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
         tryout: TRYOUT,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'ring' ? makeRingTitle() : titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;
       if (voiceTry && clock >= voiceTry.at) {
-        if (voiceTry.i >= CLASS_IDS.length) voiceTry = null;
+        if (voiceTry.i >= playableClasses().length) voiceTry = null;
         else {
-          const who = CLASS_IDS[voiceTry.i];
+          const who = playableClasses()[voiceTry.i];
           speak(who, meta.voice, VOICE_SAMPLE[who], 1.4);
           voiceTry = { i: voiceTry.i + 1, at: clock + 1.25 };
         }
@@ -1658,7 +1658,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         else if (entering) {
           // (a hero is making ready: the keys that pick a class or leave the cards wait until they have gone)
         } else if (titleUi.page === 'class') {
-          for (let i = 0; i < CLASS_IDS.length; i++) if (input.pressed(`Digit${i + 1}`)) pickClass(CLASS_IDS[i]);
+          for (let i = 0; i < playableClasses().length; i++) if (input.pressed(`Digit${i + 1}`)) pickClass(playableClasses()[i]);
           if (input.pressed('Escape')) titleUi.page = titleUi.practice && titleUi.trial ? 'floors' : titleUi.practice ? 'options' : 'menu';
         } else if (titleUi.page === 'options' && input.pressed('Escape')) titleUi.page = 'menu';
         else if (titleUi.page === 'floors' && input.pressed('Escape')) titleUi.page = 'options';

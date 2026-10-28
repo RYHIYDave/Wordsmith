@@ -2180,6 +2180,8 @@ export class Renderer {
     const held = game.weapon();
     const arcane = h.cls === 'mage' || (!OWN_MOVES.on && (held === 'staff' || held === 'wand'));
     fx.arcane = arcane;
+    // (THE WARLOCK's effects read the burning and the cursed off the monsters: render/warlock_fx.ts)
+    fx.warlock.game = game;
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
     if (WORDS3.on) tick3(pace / 60, game, fx);
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts)
@@ -3075,6 +3077,11 @@ export class Renderer {
     }
     // arrows are drawn as short lines so they can point any way; a Swift orb gets its tail here too
     for (const p of game.projectiles) {
+      // (THE WARLOCK's bolt: his fire on its side, render/warlock_fx.ts)
+      if (p.look === 'hellbolt') {
+        if (onScreen(p.x, p.y)) fx.warlock.drawBolt(g, cam, p);
+        continue;
+      }
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
       if (p.look === 'spear') {
         const v = Math.hypot(p.vx, p.vy) || 1;
