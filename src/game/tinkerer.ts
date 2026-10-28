@@ -86,4 +86,33 @@ export const TINKER_TUNE = {
     secs: 18 / 30,
     throw: 2.0,
   },
+  /** HER SKILL TREE'S TALENTS (game/talents.ts TINKERER_TREE, as their cards say them): starting numbers, his to try and change. */
+  talents: {
+    /** Bombs Away: the second bomb where she lands, its size and its hit as shares of her blast jump's. */
+    bombsAway: { size: 1, share: 1 },
+    /** Fortune: how much harder she hits for each gold she carries (1% of her gold, as a percent: 1,000 gold, 10% more). */
+    fortune: 0.0001,
+    /** Cluster Vials: how many little ones; how far they bounce out (tiles) and how long they are in the air; their bursts' size and hit, as shares of the vial's. */
+    cluster: { n: 3, far: 1.5, flight: 12 / 30, size: 0.5, share: 0.35 },
+    /** Tar: how long a puddle lasts; its size, a share of the burst's; what walks in it moves at this share of its speed (“slowed to a crawl”). */
+    tar: { secs: 3, size: 0.9, crawl: 0.2 },
+    /** Mad Mixture: its burn and its poison, each this share of the vial's hit over their time; its freezing, a chill this strong (a second freezes, as frost does). */
+    mixture: { burn: 0.6, poison: 0.6, chill: 0.5 },
+    /** The Big One: every `every`th vial of hers; `wide` times as wide; what it catches knocked down (stunned) `down` seconds, and thrown `far` tiles. */
+    bigOne: { every: 5, wide: 3, down: 1.2, far: 0.8 },
+    /** Lightning Rod: how long after its ground pound; how near the Golem (from its middle) an enemy goes after it. */
+    rod: { secs: 3, near: 4 },
+    /** Shrapnel: how far its burst reaches where the shot lands, and its hit, a share of the shot's. */
+    shrapnel: { r: 1.4, share: 0.6 },
+    /** Tesla Coil: a zap every `every` seconds at the enemy nearest the Golem within `reach`, leaping on to `leaps` more, each within `jump` of the last; each zap this share of the Golem's hit. */
+    tesla: { every: 1, reach: 5, leaps: 2, jump: 3.5, share: 0.35 },
+    /** Mark II: how many Golems she may have out at once. */
+    markII: 2,
+    /** Prospector: how many little piles of gold each ground pound digs up (between them about one ordinary gold drop of the floor). */
+    prospector: { n: 4 },
+    /** Overdrive: how long, and how many times as fast it moves and strikes. */
+    overdrive: { secs: 5, fast: 2 },
+    /** Growth Serum: a vial bursting within this of the Golem's edge (beyond the burst's own); how long; how many times as big and as strong. */
+    growth: { near: 0.6, secs: 5, big: 2, strong: 2 },
+  },
 };
