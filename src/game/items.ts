@@ -482,7 +482,7 @@ const SCORE_PER_DPS = 10;
 const SCORE_ASSUMED_APS = 1.2;
 /** itemScore: a class's own attribute counts this many times as much as the other two. */
 const CLASS_ATTRIBUTE_BONUS = 2;
-const CLASS_ATTRIBUTE: Record<ClassId, StatKey> = { warrior: 'str', ranger: 'dex', mage: 'int', warlock: 'int' };
+const CLASS_ATTRIBUTE: Record<ClassId, StatKey> = { warrior: 'str', ranger: 'dex', mage: 'int', warlock: 'int', tinkerer: 'int' };
 
 /** itemScore: points per point of each stat. Roughly, one average affix of any kind is worth about the same. */
 const SCORE_PER_POINT: Record<StatKey, number> = {

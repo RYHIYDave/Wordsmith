@@ -264,8 +264,8 @@ export interface Hero {
   /** A leap or a roll in progress. */
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
-  /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once.) */
-  move: null | { kind: 'leap' | 'roll' | 'smoke'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
+  /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once. THE TINKERER, game/tinkerer.ts: 'blast', her blast jump, flying.) */
+  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
   /**
    * THE WARLOCK (game/warlock.ts): which he is, a man or the demon (absent: a man); his pact (0 to WARLOCK_TUNE.pact.full;
    * full, a tap on him changes him); and the change he is in the middle of, to the demon or back to a man (nothing harms
@@ -748,6 +748,64 @@ export interface OrbInst {
 }
 
 /**
+ * THE TINKERER'S CONTRAPTION (game/tinkerer.ts): a little mortar thrown down. `t` from leaving her hand: in the air and
+ * springing open until TINKER_TUNE.contraption.set, then set up, lobbing a vial every so often; `broke` from when it is put
+ * out of action (a fourth thrown, or its time up), until it has fallen apart.
+ */
+export interface Contraption {
+  id: number;
+  /** Where it was thrown from (her hand), and where it comes to rest. */
+  x0: number;
+  y0: number;
+  x: number;
+  y: number;
+  t: number;
+  /** Seconds until its next shot; how long ago its last; which way it last lobbed. */
+  next: number;
+  shotAge: number;
+  fx: number;
+  fy: number;
+  /** Seconds since it was put out of action (-1: it stands). */
+  broke: number;
+  skill: number;
+  frac: number;
+}
+/** A VIAL of hers in the air, from a Contraption's mouth to where it bursts. */
+export interface Vial {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  t: number;
+  flight: number;
+  skill: number;
+  frac: number;
+}
+/**
+ * THE TINKERER'S GOLEM (game/tinkerer.ts): always with her once whistled out. `act`, what it is doing and for how long it
+ * has; `did`, whether that act's blow has landed.
+ */
+export interface Golem {
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  act: 'arrive' | 'stand' | 'walk' | 'punch' | 'cannon' | 'pound' | 'down';
+  actT: number;
+  did: boolean;
+  /** The enemy it goes for (its id), and where the blow of its act is aimed. */
+  target: number;
+  ax: number;
+  ay: number;
+  /** Seconds until it may punch again, and fire again. */
+  punchCd: number;
+  cannonCd: number;
+  /** How far it has walked (its frames go by it, as a hero's run does). */
+  walked: number;
+  skill: number;
+}
+
+/**
  * A familiar, the mage's slow attack (the owner: "a small energy sprite for a few seconds that
  * shoots small projectiles"). It keeps a place beside the hero and shoots at the nearest enemy
  * that is awake and in its sight.
@@ -1040,7 +1098,7 @@ export type GameEvent =
    * 'shock' is the knock of a Power hit on the enemies around its target; 'ruin' is a rune going off.
    * `words`, `n`, `echo` as for a swing.
    */
-  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId }
+  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId }
   /** An ability leaves the hero: where from, which way, the words in front of it and behind it. */
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */
@@ -1192,6 +1250,19 @@ export type GameEvent =
   | { t: 'spread'; x: number; y: number; to: readonly { id: number; x: number; y: number }[] }
   | { t: 'damning'; x: number; y: number; at: readonly { id: number; x: number; y: number }[]; n?: number; echo?: boolean }
   | { t: 'smoke'; x0: number; y0: number; x1: number; y1: number; demon: boolean; echo?: boolean }
+  // (THE TINKERER, game/tinkerer.ts: her Contraption thrown, a vial lobbed out of it and bursting, a Contraption put out
+  // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
+  | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }
+  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number }
+  | { t: 'vialBurst'; x: number; y: number; r: number }
+  | { t: 'contraptionEnd'; id: number; x: number; y: number }
+  | { t: 'golemArrive'; x: number; y: number }
+  | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
+  | { t: 'golemShot'; x0: number; y0: number; x1: number; y1: number; flight: number }
+  | { t: 'golemPound'; x: number; y: number; r: number }
+  | { t: 'golemDown'; x: number; y: number }
+  | { t: 'blastJump'; x0: number; y0: number; x1: number; y1: number; r: number }
+  | { t: 'blastLand'; x: number; y: number }
   /** (THE WARLOCK: one struck by a smoke step passing through it; `n` 1 for Twin's second, `echo` the echo's) */
   | { t: 'smokeHit'; id: number; x: number; y: number; n: number; echo: boolean }
   | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }

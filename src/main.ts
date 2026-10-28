@@ -136,7 +136,7 @@ const TITLE = 'WORDSMITH';
  */
 const FALL_SEEN = 2;
 /** What each hero says when their voice is tried out on the class cards. */
-const VOICE_SAMPLE: Record<ClassId, string> = { warrior: 'Was that it?', ranger: 'Quiet now.', mage: 'Jolly good.', warlock: 'Feed it.' };
+const VOICE_SAMPLE: Record<ClassId, string> = { warrior: 'Was that it?', ranger: 'Quiet now.', mage: 'Jolly good.', warlock: 'Feed it.', tinkerer: 'Boom.' };
 /** Where everything is kept between visits (this browser only): the run in progress, the Lexicon and the stash. */
 const SAVE_KEY = 'arpg.save';
 /** Build 1 kept only the run, under this name. Still read, so an old run carries over. */

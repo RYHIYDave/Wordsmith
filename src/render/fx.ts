@@ -25,6 +25,7 @@
 //                         numbers keep coming.   Behind: a cloud of it hangs over the floor.
 
 import { WarlockFx } from './warlock_fx';
+import { TinkererFx } from './tinkerer_fx';
 import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
@@ -486,6 +487,8 @@ const has = (w: Words | undefined, id: WordId): boolean => !!w && w.includes(id)
 export class Fx {
   /** THE WARLOCK's (render/warlock_fx.ts): told of every event, moved on and drawn with the rest. */
   readonly warlock = new WarlockFx();
+  /** THE TINKERER's (render/tinkerer_fx.ts): told of every event, moved on and drawn with the rest. */
+  readonly tinkerer = new TinkererFx();
   particles: Particle[] = [];
   floaters: Floater[] = [];
   /** The line that last told of might gained ("MIGHT 2"): it is counted up in place while it is fresh. */
@@ -593,6 +596,7 @@ export class Fx {
 
   clear(): void {
     this.warlock.clear();
+    this.tinkerer.clear();
     this.particles = [];
     this.floaters = [];
     this.mightNote = null;
@@ -1091,6 +1095,7 @@ export class Fx {
   handle(events: GameEvent[], play: (name: Sfx, vol?: number) => void): void {
     for (const e of events) {
       this.warlock.handle(e);
+      this.tinkerer.handle(e);
       // (WORDMELDING's looks, behind MELD3, off: a melded word's own bolts, blasts and patches are drawn by render/melds3.ts)
       if (meldOwnsEvent(e)) continue;
       // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
@@ -1309,6 +1314,8 @@ export class Fx {
           break;
         }
         case 'burst': {
+          // (THE TINKERER's vials, her Golem's pound and her bomb: drawn by render/tinkerer_fx.ts)
+          if (e.style === 'vial' || e.style === 'pound' || e.style === 'bomb') break;
           // (WORDMELDING's looks, behind MELD3, off: as for a hit)
           const w = meldLookWords(e.words);
           const ramp = this.ramp(e.el);
@@ -1910,6 +1917,7 @@ export class Fx {
   /** `real` is the true frame time: `dt` is shorter while the game is holding still. */
   update(dt: number, real: number = dt): void {
     this.warlock.update(dt);
+    this.tinkerer.update(dt);
     this.clock += dt;
     this.sinceHold += real;
     // Nothing here may pile up without limit, whatever is slotted and however fast it is used:
@@ -2070,6 +2078,7 @@ export class Fx {
   /** Flat effects on the floor: scorch and frost, cracks, ice, shockwave rings. Drawn under the characters. */
   drawGround(g: CanvasRenderingContext2D, c: Cam): void {
     this.warlock.drawGround(g, c);
+    this.tinkerer.drawGround(g, c);
     // arrows of a volley standing in the floor: a short shaft leaning back the way it fell, its
     // fletching at the top; they fade out where they stand
     for (const a of this.stuck) {
@@ -2300,6 +2309,7 @@ export class Fx {
   /** Effects in the air, drawn over the characters and over the darkness so they glow. */
   drawAir(g: CanvasRenderingContext2D, c: Cam): void {
     this.warlock.drawAir(g, c);
+    this.tinkerer.drawAir(g, c);
     for (const q of this.whirls) {
       // A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is
       // thin at its tail and thick at its leading edge, which is white. They go round with the

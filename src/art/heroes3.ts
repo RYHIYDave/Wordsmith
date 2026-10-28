@@ -26,6 +26,7 @@ import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
+import { makeTinkererArt } from './tinkerer_art';
 import { makeWarlockArt } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
@@ -380,6 +381,15 @@ export function makeHeroArt3(): HeroArt {
         made.set(wkey, wart);
       }
       return wart;
+    }
+    // (THE TINKERER: sculpted, art/tinkerer_art.ts; one set of her for every place, as yet)
+    if (cls === 'tinkerer') {
+      let tart = made.get('tinkerer');
+      if (!tart) {
+        tart = makeTinkererArt();
+        made.set('tinkerer', tart);
+      }
+      return tart;
     }
     const key = `${cls}:${place}`;
     let art = made.get(key);

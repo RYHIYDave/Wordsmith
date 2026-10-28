@@ -95,6 +95,10 @@ import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
+import { makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
+import type { ContraptionArt } from '../art/tinkerer_art';
+import type { Clip } from '../art/actor_types';
+import { TINKER_TUNE } from '../game/tinkerer';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -1125,6 +1129,68 @@ export class Renderer {
       v = this.vig = { cv, w: W, h: H, a: strength };
     }
     return v.cv;
+  }
+
+  /** THE TINKERER's minions' pictures, made the first time one is seen. */
+  private tinkerArt: { golem: ActorArt; con: { front: ContraptionArt; back: ContraptionArt } } | null = null;
+
+  /** Her Contraptions (in the air, springing open, set up, kicked by a shot, broken) and her Golem, stood among the rest. */
+  private drawTinkerers(game: Game, cam: Cam, t: number, W: number, H: number): void {
+    const art = (this.tinkerArt ??= { golem: makeGolemArt(), con: makeContraptionArt() });
+    const C = TINKER_TUNE.contraption;
+    const at = (c: Clip, k: number): Sprite => c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(k * c.fps + 1e-6)))];
+    const turned = (fx: number, fy: number, s: Sprite): Sprite => (fx - fy < 0 ? flipSprite(s) : s);
+    // (the art's moments, from her letting go: it comes down, bounces, springs open: dev/contraption_fx.ts CT)
+    const LAND = 12 / 30;
+    const SETTLE = 22 / 30;
+    const OPEN0 = 24 / 30;
+    for (const c of game.contraptions) {
+      let x = c.x;
+      let y = c.y;
+      let lift = 0;
+      const set = c.fx + c.fy < -0.2 ? art.con.back : art.con.front;
+      let sp: Sprite;
+      if (c.broke >= 0) sp = at(set.broke, c.broke);
+      else if (c.t < LAND) {
+        const u = c.t / LAND;
+        x = c.x0 + (c.x - c.x0) * u;
+        y = c.y0 + (c.y - c.y0) * u;
+        lift = 14 + 26 * 4 * u * (1 - u) - 14 * u;
+        sp = set.tumble[Math.floor(c.t * 24) % set.tumble.length];
+      } else if (c.t < SETTLE) {
+        const u = (c.t - LAND) / (SETTLE - LAND);
+        lift = 9 * 4 * u * (1 - u);
+        sp = set.tumble[(Math.floor(c.t * 18) % 2) * 4];
+      } else if (c.t < OPEN0) sp = set.tumble[0];
+      else if (c.t < C.set) sp = at(set.open, c.t - OPEN0);
+      else if (c.shotAge < set.shot.frames.length / set.shot.fps) sp = at(set.shot, c.shotAge);
+      else sp = set.stand[0];
+      const sx = wx(cam, x, y);
+      const sy = wy(cam, x, y);
+      if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 60) continue;
+      this.stand(x + y + 0.01, turned(c.fx, c.fy, sp), sx, sy - lift);
+    }
+    const g = game.golem;
+    if (g) {
+      const sx = wx(cam, g.x, g.y);
+      const sy = wy(cam, g.x, g.y);
+      if (sx > -80 && sx < W + 80 && sy > -40 && sy < H + 120) {
+        const set = g.fx + g.fy < -0.2 ? art.golem.back : art.golem.front;
+        const clips = set.clips ?? {};
+        let sp: Sprite;
+        if (g.act === 'walk') {
+          const stride = set.walkStride ?? 1;
+          sp = set.walk[Math.floor((g.walked / stride) * set.walk.length) % set.walk.length];
+        } else if (g.act === 'punch' && clips.attack) sp = at(clips.attack, g.actT);
+        else if (g.act === 'cannon' && clips.attack2) sp = at(clips.attack2, g.actT);
+        else if (g.act === 'pound' && clips.heavy && g.actT >= 0) sp = at(clips.heavy, g.actT);
+        else if (g.act === 'down' && clips.fall) sp = at(clips.fall, g.actT);
+        else sp = set.idle[0];
+        // (whistled out: it drops in, landing heavy)
+        const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : 0;
+        this.stand(g.x + g.y + 0.02, turned(g.fx, g.fy, sp), sx, sy - drop);
+      }
+    }
   }
 
   private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0): void {
@@ -2710,7 +2776,7 @@ export class Renderer {
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
       // (THE WARLOCK's smoke step is laid out over the step as a leap is: art/warlock_art.ts)
-      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke') ? Math.min(1, h.move.t / h.move.dur) : -1;
+      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast') ? Math.min(1, h.move.t / h.move.dur) : -1;
       const changeK = h.change ? Math.min(1, h.change.t / Math.max(1e-6, h.change.dur)) : -1;
       const rollK = h.move && h.move.kind === 'roll' ? Math.min(1, h.move.t / h.move.dur) : -1;
       // (a figure with a tumble of its own is seen making it; one without is drawn faint, to read as a blur)
@@ -2895,6 +2961,9 @@ export class Renderer {
       }
       this.stand(q.x + q.y + 0.02, sp, sx, sy - FAMILIAR_HOVER + bob, tint ? silhouette(sp, tint) : null, tintA, (0.4 + 0.6 * born) * (flare ? 1.25 : 1));
     }
+
+    // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
+    if (game.golem || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
 
     for (const p of game.projectiles) {
       const sx = wx(cam, p.x, p.y);

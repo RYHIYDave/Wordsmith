@@ -692,10 +692,10 @@ function animSet(rig: Rig, back: boolean, rest: Partial<Pose>, attack: ReadonlyA
 export function makeHeroArtV1(): Record<ClassId, ActorArt> {
   const three = makeThreeV1();
   // (THE WARLOCK was never drawn the first way: these pictures are for comparison sheets only, and he stands in as the mage)
-  return { ...three, warlock: three.mage };
+  return { ...three, warlock: three.mage, tinkerer: three.ranger };
 }
 
-function makeThreeV1(): Record<Exclude<ClassId, 'warlock'>, ActorArt> {
+function makeThreeV1(): Record<Exclude<ClassId, 'warlock' | 'tinkerer'>, ActorArt> {
   return {
     // A big forward slash: sword raised behind the head, swung fully forward, then low.
     warrior: {

@@ -38,11 +38,12 @@ import { AIM_MODES, emptyControls } from './state';
 import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, takesTiles, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
-import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
+import { TINKER_TUNE } from './tinkerer';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -243,6 +244,10 @@ export class Game {
   /** The orb set down by the staff's quick attack (one at a time), and the mage's familiars. */
   orbs: OrbInst[] = [];
   familiars: Familiar[] = [];
+  /** THE TINKERER (game/tinkerer.ts): her Contraptions standing, her vials in the air, her Golem once whistled out. */
+  contraptions: Contraption[] = [];
+  vials: Vial[] = [];
+  golem: Golem | null = null;
   drops: Drop[] = [];
   events: GameEvent[] = [];
   boss: Monster | null = null;
@@ -1162,6 +1167,8 @@ export class Game {
     this.spears = [];
     this.orbs = [];
     this.familiars = [];
+    this.contraptions = [];
+    this.vials = [];
     this.drops = [];
     this.later = [];
     // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
@@ -1793,6 +1800,7 @@ export class Game {
     this.updateVolleys(dt);
     this.updateOrbs(dt);
     this.updateFamiliars(dt);
+    if (this.hero.cls === 'tinkerer' || this.golem || this.contraptions.length || this.vials.length) this.updateTinkerer(dt);
     this.updateZones(dt);
     if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
@@ -3601,6 +3609,7 @@ export class Game {
         h.move = null;
         if (mv.kind === 'leap') this.land();
         else if (mv.kind === 'smoke' && mv.demon) this.demonLands();
+        else if (mv.kind === 'blast') this.emit({ t: 'blastLand', x: h.x, y: h.y });
       }
       return;
     }
@@ -4148,7 +4157,7 @@ export class Game {
     // Warp and Leap go to a point. Straight into a wall there is nowhere to go: refuse, rather
     // than spend the ability on standing still.
     let land: { x: number; y: number } | null = null;
-    if (def.kind === 'warp' || def.kind === 'leap' || def.kind === 'smoke') {
+    if (def.kind === 'warp' || def.kind === 'leap' || def.kind === 'smoke' || def.kind === 'blastjump') {
       land = this.reachPoint(tx, ty, def.range);
       if (Math.hypot(land.x - h.x, land.y - h.y) < 0.5) {
         if (this.denyT <= 0) {
@@ -4218,6 +4227,26 @@ export class Game {
     if (def.kind === 'leap' && land) {
       const dist = Math.hypot(land.x - h.x, land.y - h.y);
       h.move = { kind: 'leap', t: 0, dur: 0.26 + dist * 0.03, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      return;
+    }
+    // (THE TINKERER, game/tinkerer.ts: the blast jump. The bomb goes off at her feet: what is by her is hurt and blown away
+    // (Twin, a second bomb a moment later where she was); she rides it to the spot, nothing hurting her in the air.)
+    if (def.kind === 'blastjump' && land) {
+      const rad = def.radius * r.size;
+      this.emit({ t: 'blastJump', x0, y0, x1: land.x, y1: land.y, r: rad });
+      this.emit({ t: 'shake', amount: 3 });
+      this.sfx('slam', 0.9);
+      const bomb = (k: number, share: number, echoed: boolean): void => {
+        this.blast(2, x0, y0, rad, share, 'bomb', k, echoed, k === 0 && !echoed);
+        for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - x0, m.y - y0) <= rad + m.r) this.throwMonster(m, x0, y0, TINKER_TUNE.blast.throw, 0.25);
+      };
+      for (let k = 0; k < r.count; k++) {
+        if (k === 0) bomb(0, r.countDmg, false);
+        else this.after(0.22 * k, () => bomb(k, r.countDmg, false));
+      }
+      if (r.echo > 0) this.echoOf(2, x0, y0, dx, dy, () => bomb(0, r.countDmg * r.echo, true));
+      h.move = { kind: 'blast', t: 0, dur: TINKER_TUNE.blast.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+      h.invuln = Math.max(h.invuln, TINKER_TUNE.blast.secs + 0.1);
       return;
     }
     // (THE WARLOCK, game/warlock.ts: the smoke step, his or the demon's)
@@ -4313,6 +4342,307 @@ export class Game {
   }
 
   /** THE CURSE: every enemy within `rad` of (x, y) that he can see is struck and cursed; its chains go out to each. */
+  // ---- THE TINKERER (game/tinkerer.ts) ---------------------------------------------------------
+
+  /** Her Contraption thrown from (ox, oy) toward (tx, ty): where it comes to rest; a fourth puts the oldest out of action. */
+  private throwContraption(i: number, ox: number, oy: number, tx: number, ty: number, frac: number): void {
+    const C = TINKER_TUNE.contraption;
+    const def = SKILLS[this.hero.skills[i].id];
+    const p = Math.hypot(tx - ox, ty - oy) < 0.6 ? this.reachPoint(ox + this.hero.fx * 2, oy + this.hero.fy * 2, def.range) : this.reachPoint(tx, ty, def.range);
+    const standing = this.contraptions.filter((q) => q.broke < 0);
+    while (standing.length >= C.most) {
+      const old = standing.shift() as Contraption;
+      this.breakContraption(old);
+    }
+    const c: Contraption = { id: this.nextThing++, x0: ox, y0: oy, x: p.x, y: p.y, t: 0, next: C.set + C.first, shotAge: 9, fx: this.hero.fx, fy: this.hero.fy, broke: -1, skill: i, frac };
+    this.contraptions.push(c);
+    this.emit({ t: 'contraption', id: c.id, x0: ox, y0: oy, x: p.x, y: p.y });
+    this.sfx('trapSet', 0.6);
+  }
+
+  /** A Contraption put out of action: it falls apart where it stands. */
+  private breakContraption(c: Contraption): void {
+    if (c.broke >= 0) return;
+    c.broke = 0;
+    this.emit({ t: 'contraptionEnd', id: c.id, x: c.x, y: c.y });
+  }
+
+  /** A vial lobbed out of a Contraption at the nearest enemy awake within its reach (as many as Twin says, at as many). */
+  private lobVial(c: Contraption, frac: number, echo = false): boolean {
+    const C = TINKER_TUNE.contraption;
+    const s = this.hero.skills[c.skill];
+    const count = s ? s.r.count : 1;
+    const near = this.monsters
+      .filter((m) => !m.dead && m.seen && m.state !== 'sleep' && !this.shutIn(m) && Math.hypot(m.x - c.x, m.y - c.y) <= C.reach && this.sees(c.x, c.y, m.x, m.y))
+      .sort((a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y));
+    if (!near.length) return false;
+    for (let n = 0; n < (echo ? 1 : count); n++) {
+      const m = near[Math.min(n, near.length - 1)];
+      // (aimed where it is going, as a player soon learns to lob)
+      const lead = m.speed > 0 && m.state === 'chase' ? 0.35 : 0;
+      const x1 = m.x + m.fx * lead;
+      const y1 = m.y + m.fy * lead;
+      const v: Vial = { x0: c.x, y0: c.y, x1, y1, t: 0, flight: C.flight, skill: c.skill, frac: echo ? frac * (s?.r.echo ?? 0.5) : frac };
+      this.vials.push(v);
+      this.emit({ t: 'vial', id: c.id, x0: c.x, y0: c.y, x1, y1, flight: C.flight });
+      const far = Math.hypot(x1 - c.x, y1 - c.y) || 1;
+      c.fx = (x1 - c.x) / far;
+      c.fy = (y1 - c.y) / far;
+    }
+    c.shotAge = 0;
+    this.sfx('trapSet', echo ? 0.3 : 0.5);
+    return true;
+  }
+
+  /** Her tap and hold: the Golem whistled out beside her, or, out already, set on to ground pound where it stands. */
+  private whistle(i: number, tx: number, ty: number, frac: number, count: number): void {
+    const h = this.hero;
+    const G = TINKER_TUNE.golem;
+    const g = this.golem;
+    if (!g || g.act === 'down') {
+      const sx = h.x - h.fy * 1.2 - h.fx * 0.6;
+      const sy = h.y + h.fx * 1.2 - h.fy * 0.6;
+      const p = this.isOpen(sx, sy) ? { x: sx, y: sy } : { x: h.x, y: h.y };
+      this.golem = { x: p.x, y: p.y, fx: h.fx, fy: h.fy, act: 'arrive', actT: 0, did: false, target: -1, ax: p.x, ay: p.y, punchCd: 0, cannonCd: 0, walked: 0, skill: i };
+      this.emit({ t: 'golemArrive', x: p.x, y: p.y });
+      this.emit({ t: 'shake', amount: 2 });
+      this.sfx('slam', 0.6);
+      return;
+    }
+    // (it turns to where she pointed and pounds the floor before it; Twin, a second pound after)
+    const d = Math.hypot(tx - g.x, ty - g.y);
+    if (d > 0.3) {
+      g.fx = (tx - g.x) / d;
+      g.fy = (ty - g.y) / d;
+    }
+    g.act = 'pound';
+    g.actT = -G.pound.lead;
+    g.did = false;
+    g.skill = i;
+    for (let k = 1; k < count; k++) this.after(G.pound.long * k, () => this.golem && this.golem.act !== 'down' && this.golemPounds(i, this.golem.x, this.golem.y, frac, k, false));
+  }
+
+  /** The Golem's ground pound landing at (x, y): everything within the ability's radius struck and thrown. */
+  private golemPounds(i: number, x: number, y: number, frac: number, n: number, echo: boolean): void {
+    const s = this.hero.skills[i];
+    if (!s) return;
+    const rad = SKILLS[s.id].radius * s.r.size;
+    this.emit({ t: 'golemPound', x, y, r: rad });
+    this.emit({ t: 'shake', amount: n > 0 || echo ? 2.5 : 5 });
+    this.sfx('slam', n > 0 || echo ? 0.6 : 1);
+    this.blast(i, x, y, rad, frac, 'pound', n, echo, n === 0 && !echo);
+    for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - x, m.y - y) <= rad + m.r) this.throwMonster(m, x, y, 1.2, 0.2);
+  }
+
+  /** Her Contraptions, her vials and her Golem, each step. */
+  private updateTinkerer(dt: number): void {
+    const h = this.hero;
+    const C = TINKER_TUNE.contraption;
+    const G = TINKER_TUNE.golem;
+    // (HER CONTRAPTIONS: set up, they lob; their time up, they fall apart)
+    for (let k = this.contraptions.length - 1; k >= 0; k--) {
+      const c = this.contraptions[k];
+      c.t += dt;
+      c.shotAge += dt;
+      if (c.broke >= 0) {
+        c.broke += dt;
+        if (c.broke >= C.broke) this.contraptions.splice(k, 1);
+        continue;
+      }
+      const s = h.skills[c.skill];
+      if (!s || SKILLS[s.id].kind !== 'contraption' || c.t >= C.set + C.life || this.over) {
+        this.breakContraption(c);
+        continue;
+      }
+      if (c.t < C.set) continue;
+      // (set up: what its words behind it leave, it leaves once, where it stands)
+      if (c.t - dt < C.set) this.wake(c.skill, c.x, c.y, SKILLS[s.id].radius * s.r.size, c.frac);
+      c.next -= dt;
+      if (c.next > 0) continue;
+      c.next = this.lobVial(c, c.frac) ? C.every : 0.2;
+    }
+    // (HER VIALS: each bursts where it comes down)
+    for (let k = this.vials.length - 1; k >= 0; k--) {
+      const v = this.vials[k];
+      v.t += dt;
+      if (v.t < v.flight) continue;
+      this.vials.splice(k, 1);
+      const s = h.skills[v.skill];
+      if (!s) continue;
+      const rad = SKILLS[s.id].radius * s.r.size;
+      this.emit({ t: 'vialBurst', x: v.x1, y: v.y1, r: rad });
+      this.sfx('shatter', 0.35);
+      this.blast(v.skill, v.x1, v.y1, rad, v.frac, 'vial', 0, false, false);
+    }
+    // (HER GOLEM)
+    const g = this.golem;
+    if (!g) return;
+    g.actT += dt;
+    g.punchCd = Math.max(0, g.punchCd - dt);
+    g.cannonCd = Math.max(0, g.cannonCd - dt);
+    if (g.act === 'down') {
+      if (g.actT >= G.down && !this.over) this.golem = null;
+      return;
+    }
+    if (h.cls !== 'tinkerer') {
+      this.golem = null;
+      return;
+    }
+    // (left far behind, or in another place: whistled up beside her again)
+    if (Math.hypot(g.x - h.x, g.y - h.y) > G.lost || !this.isOpen(g.x, g.y)) {
+      g.x = h.x - h.fy * 1.2;
+      g.y = h.y + h.fx * 1.2;
+      if (!this.isOpen(g.x, g.y)) {
+        g.x = h.x;
+        g.y = h.y;
+      }
+      g.act = 'arrive';
+      g.actT = 0;
+      this.emit({ t: 'golemArrive', x: g.x, y: g.y });
+      return;
+    }
+    if (g.act === 'arrive') {
+      if (g.actT >= G.arrive) this.golemIdle(g);
+      return;
+    }
+    if (g.act === 'punch') {
+      if (!g.did && g.actT >= G.punch.hit) {
+        g.did = true;
+        const m = this.monsters.find((q) => q.id === g.target && !q.dead);
+        if (m && Math.hypot(m.x - g.x, m.y - g.y) <= G.punch.reach + m.r + 0.6) {
+          const s = h.skills[g.skill];
+          this.emit({ t: 'golemPunch', x: m.x, y: m.y, dx: g.fx, dy: g.fy });
+          this.sfx('hit', 0.8);
+          this.hitMonster(m, g.skill, (s ? this.golemFrac() : 1) * G.punch.share, false);
+          if (!m.dead) this.throwMonster(m, g.x, g.y, 0.8, 0.15);
+        }
+      }
+      if (g.actT >= G.punch.long) {
+        g.punchCd = G.punch.wait;
+        this.golemIdle(g);
+      }
+      return;
+    }
+    if (g.act === 'cannon') {
+      if (!g.did && g.actT >= G.cannon.hit) {
+        g.did = true;
+        const m = this.monsters.find((q) => q.id === g.target && !q.dead);
+        const x1 = m ? m.x : g.ax;
+        const y1 = m ? m.y : g.ay;
+        const flight = Math.hypot(x1 - g.x, y1 - g.y) / G.cannon.speed;
+        this.emit({ t: 'golemShot', x0: g.x, y0: g.y, x1, y1, flight });
+        this.emit({ t: 'shake', amount: 1.5 });
+        this.sfx('slam', 0.5);
+        const id = g.target;
+        const frac = this.golemFrac() * G.cannon.share;
+        const skill = g.skill;
+        this.after(flight, () => {
+          const t = this.monsters.find((q) => q.id === id && !q.dead);
+          if (t) this.hitMonster(t, skill, frac, false);
+        });
+      }
+      if (g.actT >= G.cannon.long) {
+        g.cannonCd = G.cannon.wait;
+        this.golemIdle(g);
+      }
+      return;
+    }
+    if (g.act === 'pound') {
+      if (!g.did && g.actT >= G.pound.hit) {
+        g.did = true;
+        // (the fist comes down a pace before it)
+        this.golemPounds(g.skill, g.x + g.fx * 0.9, g.y + g.fy * 0.9, this.golemFrac(), 0, false);
+      }
+      if (g.actT >= G.pound.long) this.golemIdle(g);
+      return;
+    }
+    // STANDING OR WALKING: what to go for, if anything (awake, near her, seen by it)
+    let best: Monster | null = null;
+    let bd = 1e9;
+    for (const m of this.monsters) {
+      if (m.dead || !m.seen || m.state === 'sleep' || this.shutIn(m)) continue;
+      if (Math.hypot(m.x - h.x, m.y - h.y) > G.leash) continue;
+      const d = Math.hypot(m.x - g.x, m.y - g.y) - m.r;
+      if (d < bd && this.sees(g.x, g.y, m.x, m.y)) {
+        bd = d;
+        best = m;
+      }
+    }
+    const face = (x: number, y: number): void => {
+      const d = Math.hypot(x - g.x, y - g.y);
+      if (d > 0.05) {
+        g.fx = (x - g.x) / d;
+        g.fy = (y - g.y) / d;
+      }
+    };
+    if (best && bd <= G.punch.reach && g.punchCd <= 0) {
+      face(best.x, best.y);
+      g.act = 'punch';
+      g.actT = 0;
+      g.did = false;
+      g.target = best.id;
+      return;
+    }
+    if (best && bd >= G.cannon.near && bd <= G.cannon.far && g.cannonCd <= 0) {
+      face(best.x, best.y);
+      g.act = 'cannon';
+      g.actT = 0;
+      g.did = false;
+      g.target = best.id;
+      g.ax = best.x;
+      g.ay = best.y;
+      return;
+    }
+    // (where it goes: up to what it fights; else to her side, a little behind her)
+    let gx: number;
+    let gy: number;
+    let stop: number;
+    if (best && bd > G.punch.reach * 0.8) {
+      gx = best.x;
+      gy = best.y;
+      stop = G.punch.reach * 0.7 + best.r;
+    } else if (best) {
+      face(best.x, best.y);
+      gx = g.x;
+      gy = g.y;
+      stop = 1;
+    } else {
+      gx = h.x - h.fx * 0.8 - h.fy * G.near;
+      gy = h.y - h.fy * 0.8 + h.fx * G.near;
+      stop = 0.5;
+    }
+    const d = Math.hypot(gx - g.x, gy - g.y);
+    if (d > stop) {
+      const step = Math.min(d - stop, G.speed * dt);
+      const was = { x: g.x, y: g.y };
+      this.slide(g, 0.45, ((gx - g.x) / d) * step, ((gy - g.y) / d) * step, this.level.walk);
+      const went = Math.hypot(g.x - was.x, g.y - was.y);
+      g.walked += went;
+      if (went > 1e-4) face(gx, gy);
+      if (g.act !== 'walk') {
+        g.act = 'walk';
+        g.actT = 0;
+      }
+    } else if (g.act !== 'stand') {
+      g.act = 'stand';
+      g.actT = 0;
+    }
+  }
+
+  /** The Golem back to standing, ready for its next act. */
+  private golemIdle(g: Golem): void {
+    g.act = 'stand';
+    g.actT = 0;
+    g.did = false;
+  }
+
+  /** What the Golem's hits come to: her tap and hold's hit, as its punches and shots share it (resolveSkill's, with its words). */
+  private golemFrac(): number {
+    const g = this.golem;
+    const s = g ? this.hero.skills[g.skill] : null;
+    return s ? s.r.countDmg : 1;
+  }
+
   private curseAll(i: number, x: number, y: number, rad: number, frac: number, n = 0, echo = false): void {
     const to: { id: number; x: number; y: number }[] = [];
     for (const m of this.monsters) {
@@ -4777,6 +5107,21 @@ export class Game {
         if (k === 0) this.curseAll(i, ox, oy, rad, each, 0, echo);
         else this.after(0.28 * k, () => this.curseAll(i, this.hero.x, this.hero.y, rad, each, k, echo));
       }
+    } else if (def.kind === 'contraption') {
+      // (THE TINKERER, game/tinkerer.ts: a Contraption thrown down where she aimed, no further than its range; "of Echoes",
+      // the newest one lobs a weaker vial at once)
+      if (echo) {
+        const c = this.contraptions.filter((q) => q.broke < 0).pop();
+        if (c) this.lobVial(c, each, true);
+      } else this.throwContraption(i, ox, oy, tx, ty, each);
+    } else if (def.kind === 'golem') {
+      // (THE TINKERER: the first whistle brings her Golem out; each after sets it on to ground pound. Twin, a second pound
+      // after the first; "of Echoes", a weaker one after that)
+      if (!echo) this.whistle(i, tx, ty, each, r.count);
+      else if (this.golem && this.golem.act !== 'down') {
+        const g0 = this.golem;
+        this.after(TINKER_TUNE.golem.pound.long, () => this.golemPounds(i, g0.x, g0.y, each, 0, true));
+      }
     } else if (def.kind === 'damning') {
       // (THE WARLOCK's demon: every cursed or burning enemy near it struck, and all its burns paid out at once; Twin, a
       // second eruption a moment later under every one still burning)
@@ -4891,7 +5236,7 @@ export class Game {
 
   /** An area hit: everything within `rad` of (cx, cy). */
   /** `leaves`: false for a blast that leaves nothing behind it (an orb's later waves: what the orb leaves, it left as it landed). */
-  private blast(i: number, cx: number, cy: number, rad: number, frac: number, style: 'slam' | 'nova' | 'blast' | 'land' | 'whirl', n = 0, echo = false, leaves = true): void {
+  private blast(i: number, cx: number, cy: number, rad: number, frac: number, style: 'slam' | 'nova' | 'blast' | 'land' | 'whirl' | 'vial' | 'pound' | 'bomb', n = 0, echo = false, leaves = true): void {
     const r = this.hero.skills[i].r;
     const words = this.fronts(i);
     this.emit({ t: 'burst', x: cx, y: cy, r: rad, el: r.element, style, words, n, echo });
@@ -6299,6 +6644,12 @@ export class Game {
       this.hero.pact = 0;
       this.refresh();
       this.hero.life = 0;
+    }
+    // (THE TINKERER: her Golem winds down where it stands)
+    if (this.golem && this.golem.act !== 'down') {
+      this.golem.act = 'down';
+      this.golem.actT = 0;
+      this.emit({ t: 'golemDown', x: this.golem.x, y: this.golem.y });
     }
     // (ACT 2, THE HUSH: a word the Physician holds is the fallen hero's again)
     giveBackAll(this);

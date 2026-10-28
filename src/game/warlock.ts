@@ -29,15 +29,19 @@
 import type { SkillId } from './defs';
 import type { ClassId } from './types';
 import { CLASS_IDS } from './types';
+import { TINKERER } from './tinkerer';
 
 /** A page built to try him out says so (esbuild's define): the warlock offered from the start. */
 declare const __WARLOCK__: boolean | undefined;
 /** THE WARLOCK OFFERED: on, a new hero may be made as him (the class cards). Off until the owner has played him and said yes. */
 export const WARLOCK = { on: typeof __WARLOCK__ !== 'undefined' && __WARLOCK__ === true };
 
-/** The classes a new hero may be made as. */
+/** The classes a new hero may be made as (the new ones each while its switch is on: WARLOCK here, TINKERER in game/tinkerer.ts). */
 export function playableClasses(): readonly ClassId[] {
-  return WARLOCK.on ? [...CLASS_IDS, 'warlock'] : CLASS_IDS;
+  const out: ClassId[] = [...CLASS_IDS];
+  if (WARLOCK.on) out.push('warlock');
+  if (TINKERER.on) out.push('tinkerer');
+  return out;
 }
 
 /** The demon's three, in the places of his (its words are his: they belong to the place, not to the move). */

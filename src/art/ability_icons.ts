@@ -17,6 +17,7 @@ import type { Sprite } from '../engine/px';
 import type { AbilityId } from '../game/types';
 import { BLADE, BROWN, CYAN, INK, LEAF, MAIL, PLUM, ROBE, STEEL } from './kit';
 import { curseIcon, damningIcon, demonstepIcon, hellboltIcon, rakeIcon, smokestepIcon } from './warlock_icons';
+import { blastjumpIcon, contraptionIcon, golemIcon } from './tinkerer_icons';
 
 /** An icon's canvas, in picture pixels: two to a game pixel, so the sixteen game pixels the slots are made for. */
 const N = 32;
@@ -662,7 +663,7 @@ function warp(): Px {
 // ---------------------------------------------------------------------------------------------
 
 // (THE WARLOCK, behind WARLOCK: his six, art/warlock_icons.ts, a first pass to show him)
-const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp, hellbolt: hellboltIcon, curse: curseIcon, smokestep: smokestepIcon, rake: rakeIcon, damning: damningIcon, demonstep: demonstepIcon };
+const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp, hellbolt: hellboltIcon, curse: curseIcon, smokestep: smokestepIcon, rake: rakeIcon, damning: damningIcon, demonstep: demonstepIcon, contraption: contraptionIcon, golem: golemIcon, blastjump: blastjumpIcon };
 
 /** Every attack's icon: sixteen game pixels square, anchor in the middle, painted two picture pixels to a game pixel. */
 export function makeAbilityIcons(): Record<AbilityId, Sprite> {

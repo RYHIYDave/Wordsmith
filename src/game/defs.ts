@@ -27,7 +27,9 @@ export type { Limit } from './types';
 export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp'
   // (THE WARLOCK, game/warlock.ts: the Hellfire Bolt, the Curse and the Smoke Step; and the demon's Claw Rake, Damning and
   // its Smoke Step)
-  | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep';
+  | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
+  // (THE TINKERER, game/tinkerer.ts: her Contraption, her Golem, her Blast Jump)
+  | 'contraption' | 'golem' | 'blastjump';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -45,7 +47,11 @@ export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 
   // (THE WARLOCK, game/warlock.ts: `curse`, every enemy near him struck and cursed; `smoke`, a streak of smoke to a spot
   // that nothing can hit, cursing what it passes through; `damning`, every cursed or burning enemy near him struck and
   // every burn on it going off at once)
-  | 'curse' | 'smoke' | 'damning';
+  | 'curse' | 'smoke' | 'damning'
+  // (THE TINKERER, game/tinkerer.ts: `contraption`, a little mortar thrown down that lobs her vials at what comes near;
+  // `golem`, her clockwork Golem whistled out, and then set on to ground pound; `blastjump`, a bomb at her feet that throws
+  // her to a spot and blows away what is by her)
+  | 'contraption' | 'golem' | 'blastjump';
 
 export interface SkillDef {
   id: SkillId;
@@ -166,6 +172,15 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   rake: { id: 'rake', name: 'Claw Rake', kind: 'melee', icon: 'rake', dmg: 1.3, cooldown: 0, mana: 0, range: 2.0, radius: 0, speed: 0, sockets: true, desc: 'Rake with one claw, then the other. What it tears is cursed.', verb: 'RAKE', windup: 0.16, follow: 0.34 },
   damning: { id: 'damning', name: 'Damning', kind: 'damning', icon: 'damning', dmg: 0.8, cooldown: 6.0, mana: 16, range: 0, radius: 6, speed: 0, sockets: true, desc: 'Tear up the floor: the ground erupts under every enemy near you that is cursed or burning, and every burn on it goes off at once.', verb: 'DAMN THEM', windup: 0.3, follow: 0.5 },
   demonstep: { id: 'demonstep', name: 'Smoke Step', kind: 'smoke', icon: 'demonstep', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.2, speed: 0, sockets: true, desc: 'Tear along the floor as smoke, raking and cursing whoever you pass through, and burst out where you stop.', verb: 'SMOKE STEP', windup: 0, follow: 0 },
+  // THE TINKERER (game/tinkerer.ts, behind TINKERER; her brief, the owner's, 23 Oct 2026, in the art chat: “She’s going to
+  // have minions.  I think she’ll set turrets on the ground that fire something.  Not an arrow or a bolt.  That’s the tap.
+  // We’ll call those “Contraption”.  Tap and hold will be “Golem”.  And this is gonna be clockwork Automaton that follows her
+  // around and attacks.  It will just go around and I guess punch things or whatever but tap+hold will have him do a bigger
+  // move.”; her swipe, “Blast jump (Recommended)”; and to the main chat, 28 Oct: “Three at once (Recommended)”, “Always with
+  // her (Recommended)”). What each vial, punch, shot and pound comes to: TINKER_TUNE.
+  contraption: { id: 'contraption', name: 'Contraption', kind: 'contraption', icon: 'contraption', dmg: 0.55, cooldown: 0, mana: 0, range: 6, radius: 1.1, speed: 0, sockets: true, desc: 'Throw down a little mortar. It sets itself up and lobs your vials at whatever comes near. Up to three at once.', verb: 'THROW A CONTRAPTION', windup: 0.22, follow: 0.34 },
+  golem: { id: 'golem', name: 'Golem', kind: 'golem', icon: 'golem', dmg: 1.6, cooldown: 5.0, mana: 16, range: 0, radius: 2.4, speed: 0, sockets: true, desc: 'Whistle your Golem out: it follows you, punches what is near and shoots its cannon at what is far. Whistle again, and it ground pounds.', verb: 'WHISTLE', windup: 0.28, follow: 0.5 },
+  blastjump: { id: 'blastjump', name: 'Blast Jump', kind: 'blastjump', icon: 'blastjump', dmg: 0.8, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Slap a bomb down at your feet and ride the blast to a spot. Whatever is by you is blown away.', verb: 'BLAST JUMP', windup: 0, follow: 0 },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -224,6 +239,10 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   // THE WARLOCK (game/warlock.ts, behind WARLOCK): “Warlock is str/int, will transform into a demon so keep that in mind”
   // (the owner, 23 Oct 2026, in the art chat). His attacks grow with both (`grows`); as the demon, the demon's three.
   warlock: { id: 'warlock', name: 'Warlock', blurb: 'A pact with a demon. It wants out.', primary: 'int', grows: ['str', 'int'], own: true, attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', starts: 'wand', tap: 'hellbolt', hold: 'curse' },
+  // THE TINKERER (game/tinkerer.ts, behind TINKERER): her brief, “Gleeful mad bomber (Recommended)”, “Quick and nimble
+  // (Recommended)”. Her attributes and what her abilities grow with are a proposal (Dexterity and Intelligence: quick hands
+  // and a head for machines), the owner's to change.
+  tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Bombs, gadgets and a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', starts: 'wand', tap: 'contraption', hold: 'golem' },
 };
 
 /**
@@ -1299,6 +1318,8 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
   mage: { word: 'fire', skill: 0 },
   // (THE WARLOCK: Leeching on his bolt, the pact's hunger; a proposal, his to change)
   warlock: { word: 'leech', skill: 0 },
+  // (THE TINKERER: Volatile on her Contraption, a bomber's word; a proposal, his to change)
+  tinkerer: { word: 'volatile', skill: 0 },
 };
 
 /**
@@ -1939,6 +1960,8 @@ export const ARRIVAL_LINES: Record<ClassId, readonly string[]> = {
   mage: ['I smell foul magics.', 'Someone has been meddling down here.'],
   // (THE WARLOCK, a proposal in his voice, pact-bound and pained: his to change)
   warlock: ['It can smell them. So can I.', 'Quiet. It wants to come out.'],
+  // (THE TINKERER, a proposal in her voice, a gleeful mad bomber: his to change)
+  tinkerer: ['Ooh, a crowd. Perfect.', 'Stand back. Further. Bit further.'],
 };
 
 export const QUIPS: {
@@ -2022,6 +2045,10 @@ export const QUIPS: {
     rake: ['Dog-eared.', 'Torn out.'],
     damning: ['Damning evidence.', 'Damned.'],
     demonstep: ['Ripped through.', 'Smoke and mirrors.'],
+    // (THE TINKERER's, proposals)
+    contraption: ['Some assembly required.', 'Fully automated.'],
+    golem: ['Good boy.', 'Wind him up, let him go.'],
+    blastjump: ['Wheee!', 'Explosive exit.'],
   },
   /** By the weapon in hand. */
   weapon: {
@@ -2048,6 +2075,8 @@ export const QUIPS: {
     mage: ['Elementary.', 'Quite.', 'Jolly good.', 'Tut, tut.', 'How dreadfully dull.', 'Class dismissed.', 'A footnote, at best.'],
     // (THE WARLOCK, a proposal: hoarse, pained, the thing in him enjoying it)
     warlock: ['It liked that.', 'Feed it.', 'Not yet.', 'Burn.', 'Hungry, are we?'],
+    // (THE TINKERER, a proposal: gleeful, a bit reckless)
+    tinkerer: ['Ha! Again!', 'Boom.', 'Oops. Not sorry.', 'That one works.', 'Needs more bang.'],
   },
   /** For any kill. The library is never far away: the hero is a child dreaming in detention. */
   any: ['Overdue.', 'Shh. This is a library.', 'Next.', 'Is that all?', 'Back on the shelf.', 'Closed book.', 'Quiet, please.', 'Read it and weep.'],

@@ -749,7 +749,7 @@ export function sfx(name: Sfx, opts?: { vol?: number; pitch?: number }): void {
 // an accent in: the mage's Britishness is in the mage's own lines (QUIPS.cls), and this is only
 // its manner.
 
-export type Speaker = 'warrior' | 'ranger' | 'mage' | 'warlock';
+export type Speaker = 'warrior' | 'ranger' | 'mage' | 'warlock' | 'tinkerer';
 export type SpeakerVoice = 'male' | 'female';
 
 interface VoiceKind {
@@ -790,6 +790,11 @@ const VOICES: Record<Speaker, Record<SpeakerVoice, VoiceKind>> = {
   warlock: {
     male: { pitch: 92, wave: 'sawtooth', over: 0.5, overWave: 'sawtooth', syllable: 0.16, step: 0.19, vol: 0.2, lilt: 0.06, breath: [0.7, 900, 1.1], grit: [0.5, 300] },
     female: { pitch: 170, wave: 'sawtooth', over: 0.5, overWave: 'sawtooth', syllable: 0.15, step: 0.18, vol: 0.18, lilt: 0.07, breath: [0.7, 1300, 1.1], grit: [0.4, 450] },
+  },
+  // (THE TINKERER, a proposal for the sound chat and him: quick and bright, gleeful, a giggle in it)
+  tinkerer: {
+    male: { pitch: 150, wave: 'square', over: 2, overWave: 'triangle', syllable: 0.08, step: 0.11, vol: 0.14, lilt: 0.18, vib: [9, 18] },
+    female: { pitch: 262, wave: 'square', over: 2, overWave: 'triangle', syllable: 0.08, step: 0.11, vol: 0.13, lilt: 0.2, vib: [9, 24] },
   },
 };
 
