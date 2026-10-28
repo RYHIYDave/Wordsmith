@@ -389,15 +389,17 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
     // (HOW FAR OPEN, for the tripod as she throws it down (dev/contraption_fx.ts): shut, a squat brass bell with its legs
     // folded up round it and its mortar sunk into its dome; it springs open, its legs swinging down and out to plant their
     // claws, its body rising on them, its mortar sliding up out of its dome and tipping over to its aim, its lamp lit)
-    const pose = build === 'tripod' ? CONTRAPTION_POSE : { open: 1, kick: 0, lit: 1 };
+    const pose = build === 'tripod' ? CONTRAPTION_POSE : { open: 1, kick: 0, lit: 1, broke: 0 };
     const o = ease3(pose.open);
     const legOut = ease3((pose.open - 0.1) / 0.7);
-    const hub = P(0, 0, 0.9 + (7 - 0.9) * legOut);
+    // (BROKEN, `broke`: its legs giving way, splayed out flat under it, its body sunk down between them)
+    const bk = ease3(pose.broke);
+    const hub = P(0, 0, 0.9 + (7 - 0.9) * legOut - 4.2 * bk);
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2 + 0.6;
       const dir: V3 = [Math.cos(a), Math.sin(a), 0];
-      const kneeOpen = P(Math.cos(a) * 4.6, Math.sin(a) * 4.6, 4.6);
-      const ankleOpen: V3 = [Math.cos(a) * 6.6 * K, Math.sin(a) * 6.6 * K, 1.4];
+      const kneeOpen = P(Math.cos(a) * (4.6 + 2.2 * bk), Math.sin(a) * (4.6 + 2.2 * bk), 4.6 - 2.6 * bk);
+      const ankleOpen: V3 = [Math.cos(a) * (6.6 + 2.6 * bk) * K, Math.sin(a) * (6.6 + 2.6 * bk) * K, 1.4];
       if (legOut >= 1) {
         sc.cone(steel, 'legs', add(hub, [0, 0, -1]), kneeOpen, 0.9 * K, 0.75 * K, 0.4, { tag: 'leg' });
         sc.cone(steel, 'legs', kneeOpen, ankleOpen, 0.75 * K, 0.6 * K, 0.4, { tag: 'leg' });
@@ -424,7 +426,8 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
       for (const k of [-1, 0, 1]) sc.cone(brass, 'legs', ankle, add(add(ankle, [0, 0, -0.4 * legOut]), add(mul(dir, 0.5 + 0.8 * legOut), mul(s2, k * 0.75 * legOut))), 0.42, 0.24, 0.3, { tag: 'toe' });
     }
     const pot = add(hub, P(0, 0, 2.2));
-    const aim = norm(lerp3([0, 0, 1], norm([0.35, 1, 1.05]), ease3((pose.open - 0.55) / 0.4)));
+    // (its mortar drooping over to one side as it breaks)
+    const aim = norm(lerp3(norm(lerp3([0, 0, 1], norm([0.35, 1, 1.05]), ease3((pose.open - 0.55) / 0.4))), norm([0.9, 0.9, -0.1]), 0.75 * bk));
     const u = perp(aim);
     const v = norm(cross(aim, u));
     if (build === 'tripod') {
@@ -536,7 +539,28 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
     lamp('block', F(3.2, 2.0, 4.8), 0.55);
   }
   // (shut or opening, it rests on whatever of it is lowest: its bell, then its legs pushing it up as they reach the floor)
-  if (build === 'tripod' && CONTRAPTION_POSE.open < 1) {
+  if (build === 'tripod' && (CONTRAPTION_POSE.open < 1 || CONTRAPTION_POSE.broke > 0)) {
+    // (broken, it tips over a little onto its weakest side)
+    const tip = (16 * Math.PI / 180) * ease3(CONTRAPTION_POSE.broke);
+    if (tip > 0) {
+      const ax = norm([-0.7, 0.7, 0] as V3);
+      const rot = (q: V3): V3 => {
+        const c = Math.cos(tip);
+        const sn = Math.sin(tip);
+        const d = ax[0] * q[0] + ax[1] * q[1] + ax[2] * q[2];
+        const x = cross(ax, q);
+        return [q[0] * c + x[0] * sn + ax[0] * d * (1 - c), q[1] * c + x[1] * sn + ax[1] * d * (1 - c), q[2] * c + x[2] * sn + ax[2] * d * (1 - c)];
+      };
+      for (let i = 0; i < sc.prims.length; i++) {
+        const pr = sc.prims[i];
+        const cuts = pr.cuts?.map((c) => ({ n: rot(c.n), o: c.o }));
+        if (pr.k === 'cone') sc.prims[i] = { ...pr, a: rot(pr.a), b: rot(pr.b), cuts };
+        else if (pr.k === 'tri') sc.prims[i] = { ...pr, a: rot(pr.a), b: rot(pr.b), c: rot(pr.c), cuts };
+        else sc.prims[i] = { ...pr, c: rot(pr.c), axes: [rot(pr.axes[0]), rot(pr.axes[1]), rot(pr.axes[2])], cuts } as typeof pr;
+      }
+      CONTRAPTION_MOUTH.p = rot(CONTRAPTION_MOUTH.p);
+      CONTRAPTION_MOUTH.way = rot(CONTRAPTION_MOUTH.way);
+    }
     let low = Infinity;
     for (const pr of sc.prims) if (!pr.carve) low = Math.min(low, primLow(pr));
     const up = 0.35 - low;
@@ -557,8 +581,8 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }
 
-/** THE TRIPOD AS SHE THROWS IT DOWN: how far open (0 shut, 1 set up), how far its mortar is kicked back by a shot, its lamp lit. Set up, as it stands, when nothing says otherwise. */
-export const CONTRAPTION_POSE = { open: 1, kick: 0, lit: 1 };
+/** THE TRIPOD AS SHE THROWS IT DOWN: how far open (0 shut, 1 set up), how far its mortar is kicked back by a shot, its lamp lit; and how far broken (0 whole, 1 its legs given way: dev/contraption_fx.ts its end). Set up, as it stands, when nothing says otherwise. */
+export const CONTRAPTION_POSE = { open: 1, kick: 0, lit: 1, broke: 0 };
 /** Where the last drawn tripod's mortar's mouth is (as it was built, before it is turned), and which way it throws. */
 export const CONTRAPTION_MOUTH: { p: V3; way: V3 } = { p: [0, 0, 0], way: [0, 0, 1] };
 const ease3 = (u: number): number => {

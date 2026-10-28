@@ -42,12 +42,13 @@ export function sparks(l: Light, x: number, y: number, k: number, seed: number):
 
 /**
  * ITS GEARS AND SPRINGS POPPING OUT of it at (x, y) on the picture, `k` frames after its shudder: flung up and out, tumbling,
- * falling to the floor `floor` pixels below where they started and lying there. Each a little brass gear, its middle dark.
+ * falling to the floor `floor` pixels below where they started and lying there. Each a little brass gear, its middle dark;
+ * `size` smaller for a smaller thing (her Contraption's).
  */
-export function gears(st: Light, x: number, y: number, floor: number, k: number, seed: number): void {
+export function gears(st: Light, x: number, y: number, floor: number, k: number, seed: number, size = 1): void {
   if (k < 0) return;
-  for (let i = 0; i < 6; i++) {
-    const vx = (hash(seed + i) - 0.5) * 5.2;
+  for (let i = 0; i < (size < 1 ? 4 : 6); i++) {
+    const vx = (hash(seed + i) - 0.5) * 5.2 * size;
     const vy = -2.6 - 2.2 * hash(seed * 3 + i);
     const g = 0.42;
     const born = i * 1.5;
@@ -59,7 +60,7 @@ export function gears(st: Light, x: number, y: number, floor: number, k: number,
     const u = Math.min(t, tl);
     const gx = Math.round(x + vx * u);
     const gy = Math.round(y + vy * u + (g * u * u) / 2);
-    const r = i % 3 === 0 ? 2 : 1.6;
+    const r = (i % 3 === 0 ? 2 : 1.6) * size;
     const spin = t * 0.7 + i;
     for (let yy = -3; yy <= 3; yy++) {
       for (let xx = -3; xx <= 3; xx++) {

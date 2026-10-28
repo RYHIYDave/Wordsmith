@@ -270,3 +270,40 @@ export function layTap(w: number, h: number, sm: Light, va: Light, cap: Light, l
   l.lay(out, BREW);
   return out;
 }
+
+// ---- ITS END: STRUCK AND BROKEN (28 Oct, overnight at his word, “keep working on her and the constructs”). By “deaths are
+// true to what died”: a little brass mortar does not fall, it BREAKS. The blow slams its mortar back, yellow sparks off
+// its brass; it sputters, its lamp flickering, and coughs a last shot that is only a puff of black smoke; its legs give way
+// under it, slowly and then all at once, splaying flat, its body dropping between them and tipping over, its mortar
+// drooping; a spring and its gears pop out of it; its lamp goes out, and black smoke curls up out of its mouth.
+export const CDOWN = { hit: 3, cough: 10, give: 14, down: 24, end: 56 };
+/** Its pose at frame `f` of its end (dev/sculpt_contraption.ts CONTRAPTION_POSE). */
+export function contraptionDown(f: number): { open: number; kick: number; lit: number; broke: number } {
+  // (its mortar slammed back by the blow and springing back; kicked a little by its cough)
+  const k1 = f - CDOWN.hit;
+  const k2 = f - CDOWN.cough;
+  const kick = (k1 >= 0 ? 0.9 * Math.exp(-k1 / 3) : 0) + (k2 >= 0 ? 0.35 * Math.exp(-k2 / 3) * (k2 < 1 ? k2 : 1) : 0);
+  // (its lamp flickering as it sputters, out once its legs go)
+  const lit = f < CDOWN.hit ? 1 : f >= CDOWN.give + 2 ? 0 : [5, 6, 9, 12, 13].includes(Math.round(f)) ? 0 : 1;
+  // (its legs giving way: slowly, and then all at once)
+  const u = Math.max(0, Math.min(1, (f - CDOWN.give) / (CDOWN.down - CDOWN.give)));
+  return { open: 1, kick: Math.min(1, kick), lit, broke: u * u * u };
+}
+/** Its cough: black smoke out of its mouth at (x, y), the way (dx, dy), `k` frames on, rolling up and thinning. */
+export function cough(sm: Light, x: number, y: number, dx: number, dy: number, k: number, t: number, seed: number): void {
+  if (k < 0 || k > 24) return;
+  for (let i = 0; i < 4; i++) {
+    const go = (1 - Math.exp(-k / 3)) * (3 + 3 * i);
+    const r = 1.6 + k * 0.22 + i * 0.4;
+    cloud(sm, x + dx * go, y + dy * go - k * 0.5, 2 * r, 1.6 * r, t + i, Math.min(1, 0.1 + k / 26), 1300 + seed + i);
+  }
+}
+/** Black smoke curling up out of its mouth at (x, y) once it is broken, `k` frames on: a thin wisp, rising and thinning. */
+export function curl(sm: Light, x: number, y: number, k: number, t: number, seed: number): void {
+  if (k < 0) return;
+  for (let i = 0; i < 4; i++) {
+    const age = (k + i * 4) % 16;
+    const r = 1.2 + age * 0.18;
+    cloud(sm, x + Math.sin(t * 3 + i + seed) * 1.5 + age * 0.3, y - age * 1.6, 2 * r, 1.6 * r, t + i * 0.3, Math.min(1, 0.25 + age / 18), 1500 + seed + i);
+  }
+}

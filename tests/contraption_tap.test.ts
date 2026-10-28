@@ -12,6 +12,7 @@ import { createHash } from 'node:crypto';
 import { LAST } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
 import { CONTRAPTION_PICK, CONTRAPTION_POSE, sculptContraptionBuild } from '../src/dev/sculpt_contraption';
+import { CDOWN, contraptionDown } from '../src/dev/contraption_fx';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { paintWithoutCanvas } from './helpers';
 
@@ -37,16 +38,38 @@ test('the Contraption shut, springing open and set up, kicked by its shot: crisp
       }
     }
   } finally {
-    Object.assign(CONTRAPTION_POSE, { open: 1, kick: 0, lit: 1 });
+    Object.assign(CONTRAPTION_POSE, { open: 1, kick: 0, lit: 1, broke: 0 });
   }
   assert.deepEqual([...new Set(found)], []);
 });
 
 test('set up, as it always stood: the very picture he picked, to the pixel (its picture before it could be thrown, 28 Oct)', () => {
-  Object.assign(CONTRAPTION_POSE, { open: 1, kick: 0, lit: 1 });
+  Object.assign(CONTRAPTION_POSE, { open: 1, kick: 0, lit: 1, broke: 0 });
   const PICKED = { front: '7f0ab17b6659e571', back: 'e906d02b07897ecb' };
   for (const view of ['front', 'back'] as const) {
     const d = sculptContraptionBuild(view, CONTRAPTION_PICK).px.d;
     assert.ok(createHash('sha256').update(d).digest('hex').slice(0, 16) === PICKED[view], view);
   }
+});
+
+// ITS END, BROKEN (dev/contraption_fx.ts contraptionDown): every frame of it, as above, turned eight ways; and broken, its
+// legs splayed flat under it and its body down between them, still standing on the floor, nothing of it sunk into it
+test('broken: struck, sputtering, its legs giving way: every frame crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off; nothing sunk, on the floor: from in front and behind, turned eight ways', () => {
+  const found: string[] = [];
+  try {
+    for (const view of ['front', 'back'] as const) {
+      for (const turn of TURNS) {
+        for (let f = 0; f <= CDOWN.end; f++) {
+          Object.assign(CONTRAPTION_POSE, contraptionDown(f));
+          const d = sculptContraptionBuild(view, CONTRAPTION_PICK, turn);
+          const at = `${view}, turned ${turn}, frame ${f}`;
+          for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
+          for (const x of bodyFindings(LAST.sc as Sculpt, false)) found.push(`${at}: ${x}`);
+        }
+      }
+    }
+  } finally {
+    Object.assign(CONTRAPTION_POSE, { open: 1, kick: 0, lit: 1, broke: 0 });
+  }
+  assert.deepEqual([...new Set(found)], []);
 });
