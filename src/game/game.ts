@@ -38,7 +38,7 @@ import { AIM_MODES, emptyControls } from './state';
 import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, takesTiles, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
-import type { AimMode, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
+import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
@@ -250,6 +250,12 @@ export class Game {
   contraptions: Contraption[] = [];
   vials: Vial[] = [];
   golem: Golem | null = null;
+  /** THE WARLOCK's tree (game/talents.ts): Hellwave's waves going on ahead, Damned Souls' souls in the air, the Bound Demon at his side. */
+  hellwaves: HellWave[] = [];
+  souls: Soul[] = [];
+  bound: BoundDemon | null = null;
+  /** (THE WARLOCK's tree: whose hit of his is being struck now: the Bound Demon's rake, a Hellwave's, a Hex Chain's leap, a Blazing Arm's burst.) */
+  private warlockBy: null | 'bound' | 'wave' | 'chain' | 'blaze' = null;
   /** THE BRAWLER (game/brawler.ts): what his haymaker has launched, flying down the line (the monster's id, its way, how far it has left to go, whom it has bowled over). */
   cannonballs: { id: number; dx: number; dy: number; left: number; skill: number; frac: number; hit: number[] }[] = [];
   drops: Drop[] = [];
@@ -1176,6 +1182,8 @@ export class Game {
     this.contraptions = [];
     this.vials = [];
     this.cannonballs = [];
+    this.hellwaves = [];
+    this.souls = [];
     this.drops = [];
     this.later = [];
     // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
@@ -1809,6 +1817,7 @@ export class Game {
     this.updateFamiliars(dt);
     if (this.hero.cls === 'tinkerer' || this.golem || this.contraptions.length || this.vials.length) this.updateTinkerer(dt);
     if (this.cannonballs.length) this.updateCannonballs(dt);
+    if (this.hellwaves.length || this.souls.length || this.bound) this.updateWarlockTree(dt);
     this.updateZones(dt);
     if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
@@ -3776,6 +3785,8 @@ export class Game {
     // (Frenzied: the frenzy makes the quick attack faster)
     let rate = Math.max(0.3, s.r.rate) * this.frenzyPace();
     if (h.chillT > 0) rate *= 1 - h.chill * 0.5;
+    // (THE WARLOCK's tree: Bloodlust, every kill the demon makes its rakes the quicker, up to twice as quick)
+    if (h.form === 'demon' && this.has('bloodlust')) rate *= Math.min(WARLOCK_TUNE.talents.bloodlust.most, 1 + (h.lust ?? 0) * WARLOCK_TUNE.talents.bloodlust.each);
     h.swingT = 1 / rate;
     this.face(tx, ty);
     // (a fast weapon's wind-up is never more than two fifths of the time between its blows)
@@ -3878,6 +3889,8 @@ export class Game {
       // thrown, to where it was aimed)
       if (def.kind === 'contraption' || def.kind === 'vialtoss') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
       else this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
+      // (THE WARLOCK's tree: the demon's rakes counted, every third a Hellwave)
+      if (s.id === 'rake') this.rakeDone(h.x, h.y, h.fx, h.fy, 1);
       return;
     }
     // (what it needs may have gone in the meantime: then nothing happens, and nothing is paid)
@@ -4349,18 +4362,22 @@ export class Game {
     const h = this.hero;
     const id = h.skills[i]?.id;
     const W = WARLOCK_TUNE;
-    if (!m.dead && id === 'hellbolt') {
-      const dps = dmg * W.hell.share;
-      if ((m.hellT ?? 0) <= 0) this.emit({ t: 'hellOn', id: m.id, x: m.x, y: m.y });
-      if ((m.hellT ?? 0) <= 0 || dps > (m.hellDps ?? 0)) m.hellDps = dps;
-      m.hellT = W.hell.secs;
-    }
-    if (!m.dead && (id === 'curse' || id === 'smokestep' || id === 'rake' || id === 'demonstep')) this.curseOne(m, dmg);
-    // the pact: filled by his hits as a man, a little put back by the demon's
+    // (HIS TREE: the Bound Demon's rakes are struck as the hits of his first place, and curse as the demon's do; a Hellwave burns)
+    const by = this.warlockBy;
+    const bolt = id === 'hellbolt' && by !== 'bound';
+    const wasCursed = (m.curseT ?? 0) > 0;
+    if (!m.dead && (bolt || by === 'wave')) this.hellOnIt(m, dmg);
+    if (!m.dead && (by === 'bound' || id === 'curse' || id === 'smokestep' || id === 'rake' || id === 'demonstep')) this.curseOne(m, dmg);
+    // (HIS TREE: Branded, every Hellfire Bolt curses what it hits)
+    if (!m.dead && bolt && this.has('branded')) this.curseOne(m, dmg);
+    // (HIS TREE: Hex Chain, a bolt on one cursed leaps on to the next; Blazing Arm, with his pact full his bolt bursts)
+    if (bolt && by === null && wasCursed && this.has('hexchain')) this.hexChain(m, i);
+    if (bolt && (by === null || by === 'chain') && h.form !== 'demon' && !this.bound && (h.pact ?? 0) >= W.pact.full && this.has('blazingarm')) this.blaze(m, i, dmg);
+    // the pact: filled by his hits as a man, a little put back by the demon's (and, out beside him, by the Bound Demon's)
     const full = W.pact.full;
     const was = h.pact ?? 0;
-    if (h.form === 'demon') h.pact = Math.min(full, was + W.pact.demonHit);
-    else if (!h.change) {
+    if (h.form === 'demon' || by === 'bound') h.pact = Math.min(full, was + W.pact.demonHit);
+    else if (!h.change && !this.bound) {
       h.pact = Math.min(full, was + W.pact.hit);
       if (was < full && h.pact >= full) {
         this.emit({ t: 'pactFull', x: h.x, y: h.y });
@@ -4377,7 +4394,404 @@ export class Game {
     m.curseT = W.secs;
   }
 
-  /** THE CURSE: every enemy within `rad` of (x, y) that he can see is struck and cursed; its chains go out to each. */
+  /** His hellfire on one: it burns, hard (a share of the hit that set it, each second); a stronger burn takes the place of a weaker. */
+  private hellOnIt(m: Monster, dmg: number): void {
+    const W = WARLOCK_TUNE.hell;
+    const dps = dmg * W.share;
+    if ((m.hellT ?? 0) <= 0) this.emit({ t: 'hellOn', id: m.id, x: m.x, y: m.y });
+    if ((m.hellT ?? 0) <= 0 || dps > (m.hellDps ?? 0)) m.hellDps = dps;
+    m.hellT = W.secs;
+  }
+
+  // ---- HIS TREE (game/talents.ts, the claw: the owner's “Yes, keep it (Recommended)”, 28 Oct 2026) -------------------------
+
+  /** Some of his pact filled (Soul Debt): as a man, full, his arm blazes; the demon's, or the Bound Demon's, it lasts the longer. */
+  private fillPact(n: number): void {
+    const h = this.hero;
+    const full = WARLOCK_TUNE.pact.full;
+    const was = h.pact ?? 0;
+    if (h.change) return;
+    h.pact = Math.min(full, was + n);
+    if (h.form !== 'demon' && !this.bound && was < full && h.pact >= full) {
+      this.emit({ t: 'pactFull', x: h.x, y: h.y });
+      this.sfx('power', 0.8);
+    }
+  }
+
+  /** HEX CHAIN: his bolt, having struck one cursed, leaps on to the next cursed one near the last, each a moment after, up to three times. */
+  private hexChain(from: Monster, i: number): void {
+    const T = WARLOCK_TUNE.talents.hexChain;
+    const hit: number[] = [from.id];
+    const leap = (m: Monster, k: number): void => {
+      if (k >= T.leaps) return;
+      let best: Monster | null = null;
+      let bd: number = T.reach;
+      for (const q of this.monsters) {
+        if (q.dead || hit.includes(q.id) || (q.curseT ?? 0) <= 0 || this.shutIn(q)) continue;
+        const d = Math.hypot(q.x - m.x, q.y - m.y) - q.r;
+        if (d < bd) {
+          bd = d;
+          best = q;
+        }
+      }
+      if (!best) return;
+      const to = best;
+      hit.push(to.id);
+      const x0 = m.x;
+      const y0 = m.y;
+      this.after(T.gap, () => {
+        if (to.dead || this.hero.skills[i]?.id !== 'hellbolt') return;
+        this.emit({ t: 'hexLeap', x0, y0, x1: to.x, y1: to.y });
+        this.sfx('fire', 0.4);
+        this.warlockBy = 'chain';
+        try {
+          this.hitMonster(to, i, T.share, true);
+        } finally {
+          this.warlockBy = null;
+        }
+        leap(to, k + 1);
+      });
+    };
+    leap(from, 0);
+  }
+
+  /** BLAZING ARM: his bolt, his pact full and he not changed, bursts where it bites: all near it struck, cursed and set burning. */
+  private blaze(m: Monster, i: number, dmg: number): void {
+    const T = WARLOCK_TUNE.talents.blazing;
+    this.emit({ t: 'blaze', x: m.x, y: m.y, r: T.r });
+    this.sfx('fire', 0.7);
+    const was = this.warlockBy;
+    this.warlockBy = 'blaze';
+    try {
+      let n = 0;
+      for (const o of this.monsters) {
+        if (o === m || o.dead || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > T.r + o.r) continue;
+        this.hitMonster(o, i, T.share, n++ >= 3);
+        if (!o.dead) this.curseOne(o, dmg);
+      }
+    } finally {
+      this.warlockBy = was;
+    }
+  }
+
+  /** What a kill of his sets going (his tree): the demon's (Hunger, Feast, Bloodlust, Damned Souls); a cursed one's (Soul Debt, Pyre). */
+  private warlockKill(m: Monster, cursed: boolean): void {
+    const h = this.hero;
+    const W = WARLOCK_TUNE;
+    const T = W.talents;
+    const P = W.pact;
+    // (the demon's kills: everything that dies while he is the demon, and what the Bound Demon's own rakes kill)
+    if (h.form === 'demon' || this.warlockBy === 'bound') {
+      if (this.has('hunger')) h.pact = Math.min(P.full, (h.pact ?? 0) + T.hunger.secs * (P.full / P.demonSecs));
+      if (this.has('feast')) {
+        const n = h.d.maxLife * T.feast.share;
+        this.healHero(n);
+        this.emit({ t: 'heal', amount: Math.round(n) });
+      }
+      if (this.has('bloodlust')) h.lust = (h.lust ?? 0) + 1;
+      if (this.has('damnedsouls')) this.raiseSoul(m);
+    }
+    if (cursed) {
+      if (this.has('souldebt')) this.fillPact(P.full * T.soulDebt.share);
+      if (this.has('pyre')) {
+        const x = m.x;
+        const y = m.y;
+        this.after(0.05, () => this.pyre(x, y));
+      }
+    }
+  }
+
+  /** PYRE: a cursed one bursts in his hellfire as it dies: everything near struck, as his Curse strikes (the demon's: Damning's place). */
+  private pyre(x: number, y: number): void {
+    const h = this.hero;
+    if (h.cls !== 'warlock') return;
+    const T = WARLOCK_TUNE.talents.pyre;
+    this.emit({ t: 'pyre', x, y, r: T.r });
+    this.sfx('fire', 0.6);
+    let n = 0;
+    for (const o of this.monsters) {
+      if (o.dead || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > T.r + o.r) continue;
+      this.hitMonster(o, 1, T.share, n++ >= 3);
+    }
+  }
+
+  /** DAMNED SOULS: one the demon killed rises as a burning soul, and goes for the nearest enemy left. */
+  private raiseSoul(d: Monster): void {
+    const T = WARLOCK_TUNE.talents.souls;
+    const to = this.nearestTo(d.x, d.y, T.reach, d);
+    if (!to) return;
+    // (its burns made of the demon's rake: as the demon, his first place's hit; the Bound Demon's, his first place's made a rake)
+    const h = this.hero;
+    const rake = h.form === 'demon' ? 1 : SKILLS.rake.dmg / SKILLS[h.skills[0].id].dmg;
+    this.souls.push({ x: d.x, y: d.y, id: to.id, t: 0, dmg: this.avgHit(0, rake * T.share) });
+    this.emit({ t: 'soul', x: d.x, y: d.y, id: to.id });
+  }
+
+  /** The nearest enemy to (x, y) within `reach` (to its edge), alive and not shut in; not `not`. */
+  private nearestTo(x: number, y: number, reach: number, not: Monster | null = null): Monster | null {
+    let best: Monster | null = null;
+    let bd = reach;
+    for (const q of this.monsters) {
+      if (q === not || q.dead || this.shutIn(q)) continue;
+      const d = Math.hypot(q.x - x, q.y - y) - q.r;
+      if (d < bd) {
+        bd = d;
+        best = q;
+      }
+    }
+    return best;
+  }
+
+  /** TERRIBLE ROAR: the demon's roar (or the Bound Demon's, torn out) curses all it throws back, and they run from him. */
+  private terribleRoar(x: number, y: number, r: number): void {
+    if (!this.has('terribleroar')) return;
+    const h = this.hero;
+    const dmg = this.avgHit(0, h.form === 'demon' ? 1 : SKILLS.rake.dmg / SKILLS[h.skills[0].id].dmg);
+    for (const m of this.monsters) {
+      if (m.dead || this.shutIn(m) || Math.hypot(m.x - x, m.y - y) > r + m.r) continue;
+      this.curseOne(m, dmg);
+      if (!m.boss) m.fleeT = WARLOCK_TUNE.talents.roar.flee;
+    }
+  }
+
+  /** (TERRIBLE ROAR) One running from him: straight away from him at its own pace, as far as the floor lets it; what it was winding up is broken off. */
+  private runFrom(m: Monster, dt: number): void {
+    const h = this.hero;
+    this.breakOff(m);
+    const dx = m.x - h.x;
+    const dy = m.y - h.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const sp = m.speed * dt;
+    this.slide(m, Math.min(m.r, 0.42), (dx / d) * sp, (dy / d) * sp, m.kind === 'bat' ? this.level.open : this.level.walk, true);
+    m.fx = dx / d;
+    m.fy = dy / d;
+    m.anim = sp > 0 ? 'walk' : 'idle';
+  }
+
+  /** LAST RITES: Damning goes off by itself at (x, y), as the demon burns out (its place `i`; `k`, its hit made Damning's). */
+  private lastRites(x: number, y: number, i: number, k: number): void {
+    const s = this.hero.skills[i];
+    if (!s) return;
+    this.damningAll(i, x, y, SKILLS.damning.radius * s.r.size, s.r.countDmg * k);
+  }
+
+  /** A rake of the demon's (or the Bound Demon's): every third, with Hellwave, throws a wave of hellfire on ahead. */
+  private rakeDone(x: number, y: number, fx: number, fy: number, frac: number): void {
+    const h = this.hero;
+    h.rakes = (h.rakes ?? 0) + 1;
+    const T = WARLOCK_TUNE.talents.hellwave;
+    if (!this.has('hellwave') || h.rakes % T.every !== 0) return;
+    this.hellwaves.push({ x: x + fx * 0.6, y: y + fy * 0.6, dx: fx, dy: fy, left: T.far, hit: [], frac: frac * T.share });
+    this.emit({ t: 'hellwave', x: x + fx * 0.6, y: y + fy * 0.6, dx: fx, dy: fy, far: T.far, speed: T.speed });
+    this.sfx('fire', 0.8);
+  }
+
+  /** BOUND DEMON: with his pact full, a tap on him tears the demon out beside him, roaring; he stays a man. */
+  private tearOut(): void {
+    const h = this.hero;
+    const T = WARLOCK_TUNE.talents.bound;
+    const sx = h.x + h.fy * 1.3 + h.fx * 0.4;
+    const sy = h.y - h.fx * 1.3 + h.fy * 0.4;
+    const p = this.isOpen(sx, sy) ? { x: sx, y: sy } : { x: h.x, y: h.y };
+    this.bound = { x: p.x, y: p.y, fx: h.fx, fy: h.fy, act: 'arrive', actT: 0, target: -1, did: false, walked: 0, rakeCd: T.arrive };
+    h.lust = 0;
+    h.rakes = 0;
+    this.emit({ t: 'bound', x: p.x, y: p.y });
+    const R = WARLOCK_TUNE.change.roar;
+    this.emit({ t: 'roar', x: p.x, y: p.y, r: R });
+    this.emit({ t: 'shake', amount: 4 });
+    this.sfx('explode', 0.7);
+    for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - p.x, m.y - p.y) <= R + m.r) this.throwMonster(m, p.x, p.y, 1.5, 0.25);
+    this.terribleRoar(p.x, p.y, R);
+  }
+
+  /** The Bound Demon's pact run dry: it burns out where it stands (Last Rites: Damning goes off round it). */
+  private boundBurnsOut(): void {
+    const b = this.bound;
+    const h = this.hero;
+    if (!b || b.act === 'out') return;
+    b.act = 'out';
+    b.actT = 0;
+    h.pact = 0;
+    this.emit({ t: 'boundOut', x: b.x, y: b.y });
+    this.sfx('deny', 0.8);
+    // (Damning's hit, from his second place: as a man that is the Curse's, made Damning's)
+    if (this.has('lastrites')) this.lastRites(b.x, b.y, 1, SKILLS.damning.dmg / SKILLS[h.skills[1].id].dmg);
+    h.lust = 0;
+    h.rakes = 0;
+  }
+
+  /** His tree's things that go on by themselves: Hellwave's waves, Damned Souls' souls, the Bound Demon. */
+  private updateWarlockTree(dt: number): void {
+    const h = this.hero;
+    const T = WARLOCK_TUNE.talents;
+    // (HELLWAVE: each wave's front goes on, striking and setting burning what it comes to, each once, till a wall or its end)
+    for (let k = this.hellwaves.length - 1; k >= 0; k--) {
+      const w = this.hellwaves[k];
+      const step = Math.min(w.left, T.hellwave.speed * dt);
+      w.x += w.dx * step;
+      w.y += w.dy * step;
+      w.left -= step;
+      this.warlockBy = 'wave';
+      try {
+        for (const m of this.monsters) {
+          if (m.dead || w.hit.includes(m.id) || this.shutIn(m)) continue;
+          if (Math.hypot(m.x - w.x, m.y - w.y) > T.hellwave.width + m.r) continue;
+          w.hit.push(m.id);
+          this.hitMonster(m, 0, w.frac, w.hit.length > 3);
+        }
+      } finally {
+        this.warlockBy = null;
+      }
+      if (w.left <= 0 || !this.isOpen(w.x, w.y)) this.hellwaves.splice(k, 1);
+    }
+    // (DAMNED SOULS: each flies to the one it goes for; if that one is gone, to the nearest left; in, it curses it and sets it burning)
+    for (let k = this.souls.length - 1; k >= 0; k--) {
+      const s = this.souls[k];
+      s.t += dt;
+      let to = this.monsters.find((q) => q.id === s.id && !q.dead) ?? null;
+      if (!to) {
+        to = this.nearestTo(s.x, s.y, T.souls.reach);
+        if (!to || s.t > 4) {
+          this.souls.splice(k, 1);
+          continue;
+        }
+        s.id = to.id;
+      }
+      const d = Math.hypot(to.x - s.x, to.y - s.y);
+      const step = T.souls.speed * dt;
+      if (d <= step + to.r * 0.5) {
+        this.souls.splice(k, 1);
+        this.emit({ t: 'soulIn', x: to.x, y: to.y });
+        this.sfx('fire', 0.5);
+        this.curseOne(to, s.dmg);
+        this.hellOnIt(to, s.dmg);
+        continue;
+      }
+      s.x += ((to.x - s.x) / d) * step;
+      s.y += ((to.y - s.y) / d) * step;
+    }
+    // (THE BOUND DEMON)
+    const b = this.bound;
+    if (!b) return;
+    const B = T.bound;
+    b.actT += dt;
+    const lust = this.has('bloodlust') ? Math.min(T.bloodlust.most, 1 + (h.lust ?? 0) * T.bloodlust.each) : 1;
+    b.rakeCd -= dt * lust;
+    if (h.cls !== 'warlock' || this.over) {
+      this.bound = null;
+      return;
+    }
+    if (b.act === 'out') {
+      if (b.actT >= B.out) this.bound = null;
+      return;
+    }
+    if (b.act === 'arrive') {
+      if (b.actT >= B.arrive) {
+        b.act = 'stand';
+        b.actT = 0;
+      }
+      return;
+    }
+    // (left far behind, or in another place: torn out beside him again)
+    if (Math.hypot(b.x - h.x, b.y - h.y) > 12 || !this.isOpen(b.x, b.y)) {
+      b.x = h.x + h.fy * 1.3;
+      b.y = h.y - h.fx * 1.3;
+      if (!this.isOpen(b.x, b.y)) {
+        b.x = h.x;
+        b.y = h.y;
+      }
+      b.act = 'arrive';
+      b.actT = B.arrive * 0.5;
+      this.emit({ t: 'bound', x: b.x, y: b.y });
+      return;
+    }
+    const face = (x: number, y: number): void => {
+      const d = Math.hypot(x - b.x, y - b.y);
+      if (d > 0.05) {
+        b.fx = (x - b.x) / d;
+        b.fy = (y - b.y) / d;
+      }
+    };
+    if (b.act === 'rake') {
+      if (!b.did && b.actT >= B.hit / lust) {
+        b.did = true;
+        const m = this.monsters.find((q) => q.id === b.target && !q.dead);
+        if (m && Math.hypot(m.x - b.x, m.y - b.y) <= B.reach + m.r + 0.6) {
+          const frac = SKILLS.rake.dmg / SKILLS[h.skills[0].id].dmg;
+          this.emit({ t: 'boundRake', x: m.x, y: m.y, dx: b.fx, dy: b.fy });
+          this.sfx('swing', 0.8);
+          this.warlockBy = 'bound';
+          try {
+            this.hitMonster(m, 0, frac, false);
+          } finally {
+            this.warlockBy = null;
+          }
+          this.rakeDone(b.x, b.y, b.fx, b.fy, frac);
+        }
+      }
+      if (b.actT >= (B.hit + 0.35) / lust) {
+        b.act = 'stand';
+        b.actT = 0;
+      }
+      return;
+    }
+    // (what to go for: the nearest awake enemy near him that it can see)
+    let best: Monster | null = null;
+    let bd = 1e9;
+    for (const m of this.monsters) {
+      if (m.dead || !m.seen || m.state === 'sleep' || this.shutIn(m)) continue;
+      if (Math.hypot(m.x - h.x, m.y - h.y) > B.hunt) continue;
+      const d = Math.hypot(m.x - b.x, m.y - b.y) - m.r;
+      if (d < bd && this.sees(b.x, b.y, m.x, m.y)) {
+        bd = d;
+        best = m;
+      }
+    }
+    if (best && bd <= B.reach && b.rakeCd <= 0) {
+      face(best.x, best.y);
+      b.act = 'rake';
+      b.actT = 0;
+      b.did = false;
+      b.target = best.id;
+      b.rakeCd = B.every;
+      return;
+    }
+    let gx: number;
+    let gy: number;
+    let stop: number;
+    if (best && bd > B.reach * 0.8) {
+      gx = best.x;
+      gy = best.y;
+      stop = B.reach * 0.7 + best.r;
+    } else if (best) {
+      face(best.x, best.y);
+      gx = b.x;
+      gy = b.y;
+      stop = 1;
+    } else {
+      gx = h.x + h.fy * B.near - h.fx * 0.4;
+      gy = h.y - h.fx * B.near - h.fy * 0.4;
+      stop = 0.5;
+    }
+    const d = Math.hypot(gx - b.x, gy - b.y);
+    if (d > stop) {
+      const step = Math.min(d - stop, B.speed * dt);
+      const was = { x: b.x, y: b.y };
+      this.slide(b, 0.45, ((gx - b.x) / d) * step, ((gy - b.y) / d) * step, this.level.walk);
+      const went = Math.hypot(b.x - was.x, b.y - was.y);
+      b.walked += went;
+      if (went > 1e-4) face(gx, gy);
+      if (b.act !== 'walk') {
+        b.act = 'walk';
+        b.actT = 0;
+      }
+    } else if (b.act !== 'stand') {
+      b.act = 'stand';
+      b.actT = 0;
+    }
+  }
+
   // ---- THE BRAWLER (game/brawler.ts) -----------------------------------------------------------
 
   /** The pace of the hero's weapon's quick attack, as the weapon gives it (his punches' Swiftness is read against it). */
@@ -5015,7 +5429,18 @@ export class Game {
       if ((h.pact ?? 0) <= 0) this.beginChange('man');
       return;
     }
-    if (c.change && (h.pact ?? 0) >= P.full && !h.move) this.beginChange('demon');
+    // (HIS TREE: Bound Demon: while it is out, the pact runs dry as the demon's would; empty, it burns out)
+    if (this.bound) {
+      if (this.bound.act !== 'out') {
+        h.pact = Math.max(0, (h.pact ?? 0) - (P.full / P.demonSecs) * dt);
+        if ((h.pact ?? 0) <= 0) this.boundBurnsOut();
+      }
+      return;
+    }
+    if (c.change && (h.pact ?? 0) >= P.full && !h.move) {
+      if (this.has('bounddemon')) this.tearOut();
+      else this.beginChange('demon');
+    }
   }
 
   /** He begins to change, into the demon or back: whatever he was doing is broken off. */
@@ -5031,6 +5456,10 @@ export class Game {
     h.combo = 0;
     h.comboT = 0;
     const dur = to === 'demon' ? WARLOCK_TUNE.change.secs : WARLOCK_TUNE.burnOut.secs;
+    // (HIS TREE: Last Rites, as the demon burns out Damning goes off by itself; Bloodlust's kills begun again with each demon)
+    if (to === 'man' && h.form === 'demon' && this.has('lastrites')) this.lastRites(h.x, h.y, 1, 1);
+    h.lust = 0;
+    h.rakes = 0;
     h.change = { to, t: 0, dur };
     h.invuln = Math.max(h.invuln, dur);
     h.animT = 0;
@@ -5059,6 +5488,7 @@ export class Game {
       this.emit({ t: 'shake', amount: 5 });
       this.sfx('explode', 0.8);
       for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - h.x, m.y - h.y) <= R + m.r) this.throwMonster(m, h.x, h.y, 1.5, 0.25);
+      this.terribleRoar(h.x, h.y, R);
     } else {
       h.form = 'man';
       h.pact = 0;
@@ -6494,8 +6924,10 @@ export class Game {
       this.sfx('shatter', 0.8);
     }
     if (TALENTS.on) this.talentKill(m);
-    // (THE WARLOCK, game/warlock.ts: a cursed one dying spreads every burn on it to those near it)
-    if ((m.curseT ?? 0) > 0) this.spreadBurns(m);
+    // (THE WARLOCK, game/warlock.ts: a cursed one dying spreads every burn on it to those near it; and what his tree makes of a kill)
+    const cursed = (m.curseT ?? 0) > 0;
+    if (cursed) this.spreadBurns(m);
+    if (h.cls === 'warlock' && TALENTS.on) this.warlockKill(m, cursed);
     this.sfx(m.boss || m.champion ? 'explode' : 'monsterDie', m.boss ? 1 : 0.7);
     if (m.champion) this.emit({ t: 'shake', amount: 4 });
     const st = h.d.stats;
@@ -7138,6 +7570,12 @@ export class Game {
         }
         continue;
       }
+      // (THE WARLOCK's tree: Terrible Roar, it runs from him, and does nothing else)
+      if ((m.fleeT ?? 0) > 0) {
+        m.fleeT = Math.max(0, (m.fleeT ?? 0) - dt);
+        this.runFrom(m, mdt);
+        continue;
+      }
       // HEAVY: stunned or staggered, it does nothing (what it was winding up was broken off then)
       if (m.stunT > 0 || m.staggerT > 0) {
         m.stunT = Math.max(0, m.stunT - dt);
@@ -7147,9 +7585,11 @@ export class Game {
       }
       // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
       const rage = 1 + FRENZY.monster * wordShare(m, 'frenzied') * (1 - Math.max(0, m.life) / m.maxLife);
-      m.cd -= mdt * rage;
+      // (THE WARLOCK's tree: Withering, cursed it moves and strikes at half speed)
+      const wither = (m.curseT ?? 0) > 0 && h.cls === 'warlock' && this.has('withering') ? WARLOCK_TUNE.talents.withering.pace : 1;
+      m.cd -= mdt * rage * wither;
       const def = MONSTERS[m.kind];
-      const slow = m.chillT > 0 ? 1 - m.chill : 1;
+      const slow = (m.chillT > 0 ? 1 - m.chill : 1) * wither;
       // (THE FIRST FIVE FLOORS: one with a gait and acts of its own, a boss of floors 2 to 5, a bone beast, a mini fleshmancer, is run by game/bosses.ts)
       if (gaitOf(m.kind)) {
         this.bosses.step(m, def, mdt, slow, rage, dx, dy, dist);
@@ -9646,7 +10086,7 @@ export class Game {
       if (this.stormT <= 0) {
         const T = TALENT_TUNE.stormcaller;
         let best: Monster | null = null;
-        let bd = T.reach;
+        let bd: number = T.reach;
         for (const m of this.monsters) {
           if (m.dead || m.state === 'sleep' || this.shutIn(m)) continue;
           const dd = Math.hypot(m.x - h.x, m.y - h.y);

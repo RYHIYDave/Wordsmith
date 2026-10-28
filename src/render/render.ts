@@ -1199,6 +1199,27 @@ export class Renderer {
     }
   }
 
+  /** (THE WARLOCK's tree) The Bound Demon's figure: the demon's own pictures, played as a figure of its own. */
+  private readonly boundFig = new Figure();
+  /**
+   * THE WARLOCK'S BOUND DEMON (his tree, game/talents.ts: Bound Demon), at his side: the demon's own pictures (art/warlock_art.ts,
+   * the same as his when he changes), standing, walking, raking; torn out of him, it comes together out of nothing; burning
+   * out, it fades. A FIRST PASS, TO BE SHOWN TO THE OWNER.
+   */
+  private drawBound(game: Game, cam: Cam, W: number, H: number, dt: number): void {
+    const b = game.bound;
+    if (!b) return;
+    const sx = wx(cam, b.x, b.y);
+    const sy = wy(cam, b.x, b.y);
+    if (sx < -100 || sx > W + 100 || sy < -40 || sy > H + 160) return;
+    const art = this.art.heroes.of('warlock', { twoHanded: false, town: false, demon: true });
+    const B = WARLOCK_TUNE.talents.bound;
+    const anim = b.act === 'rake' ? 'attack' : b.act === 'walk' ? 'walk' : 'idle';
+    const sp = this.boundFig.frame(art, { anim, animT: b.actT, fx: b.fx, fy: b.fy, attackSkill: 0, attackAge: b.act === 'rake' ? b.actT : 0, attackWind: B.hit, leapK: -1, walked: b.walked }, dt, (b.x - b.y) * 16, (b.x + b.y) * 8);
+    const alpha = b.act === 'arrive' ? Math.min(1, b.actT / B.arrive) : b.act === 'out' ? Math.max(0, 1 - b.actT / B.out) : 1;
+    this.stand(b.x + b.y + 0.02, sp, sx, sy, null, 0, 1, alpha);
+  }
+
   private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0): void {
     this.stands.push({ d, q: this.stands.length, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase });
   }
@@ -2986,6 +3007,8 @@ export class Renderer {
 
     // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
     if (game.golem || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
+    // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side
+    if (game.bound) this.drawBound(game, cam, W, H, pace / 60);
 
     for (const p of game.projectiles) {
       const sx = wx(cam, p.x, p.y);

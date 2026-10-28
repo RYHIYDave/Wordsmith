@@ -18,6 +18,12 @@
 //   damning                under each it strikes: the floor cracking open, a hole torn in it, a jet of its fire
 //   roar                   the demon formed: a ring thrown out over the floor
 //   change                 embers whirling up round him
+// HIS TREE (game/talents.ts; A FIRST PASS, TO BE SHOWN TO THE OWNER), made of the same pieces:
+//   hexLeap                his bolt leaping from one cursed to the next, a ball of his fire in an arc (as a burn spreading)
+//   blaze, pyre            a ring thrown out over the floor and bursts of his fire round it
+//   hellwave               a row of his fires running on ahead along the floor, the way the rake went
+//   souls                  a burning soul, a ball of his fire trailing embers, flying to the one it goes for; a burst going in
+//   bound, boundOut        embers whirling up where the Bound Demon is torn out, and where it burns out; a burst where it rakes
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -94,6 +100,7 @@ interface River { x0: number; y0: number; x1: number; y1: number; t: number; dem
 interface Leap { x0: number; y0: number; x1: number; y1: number; t: number }
 interface Spot { x: number; y: number; t: number }
 interface Ring { x: number; y: number; r: number; t: number }
+interface Wave { x: number; y: number; dx: number; dy: number; far: number; speed: number; t: number }
 
 /** How long each lasts (seconds). */
 const CHAIN = { reach: 0.33, hold: 0.6, gone: 0.87 };
@@ -102,6 +109,8 @@ const LEAP = 0.42;
 const BURST = 0.3;
 const RING = 0.55;
 const EMBERS = 1.6;
+/** A Hellwave's fires, a moment after its run is done. */
+const WAVE_AFTER = 0.25;
 
 export class WarlockFx {
   /** The game being drawn (the burning and the cursed are read off its monsters; a chain leaves the hero's claw). */
@@ -114,6 +123,7 @@ export class WarlockFx {
   private erupts: Spot[] = [];
   private rings: Ring[] = [];
   private embers: Spot[] = [];
+  private waves: Wave[] = [];
 
   handle(e: GameEvent): void {
     switch (e.t) {
@@ -138,6 +148,30 @@ export class WarlockFx {
       case 'change':
         this.embers.push({ x: e.x, y: e.y, t: 0 });
         break;
+      // (HIS TREE)
+      case 'hexLeap':
+        this.leaps.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0 });
+        break;
+      case 'blaze':
+      case 'pyre':
+        this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0 });
+        this.bursts.push({ x: e.x, y: e.y, t: 0 });
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + (e.t === 'pyre' ? 0.5 : 0);
+          this.bursts.push({ x: e.x + Math.cos(a) * e.r * 0.6, y: e.y + Math.sin(a) * e.r * 0.6, t: 0 });
+        }
+        break;
+      case 'hellwave':
+        this.waves.push({ x: e.x, y: e.y, dx: e.dx, dy: e.dy, far: e.far, speed: e.speed, t: 0 });
+        break;
+      case 'soulIn':
+      case 'boundRake':
+        this.bursts.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'bound':
+      case 'boundOut':
+        this.embers.push({ x: e.x, y: e.y, t: 0 });
+        break;
       default:
         break;
     }
@@ -156,6 +190,8 @@ export class WarlockFx {
     this.erupts = age(this.erupts, ERUPT);
     this.rings = age(this.rings, RING);
     this.embers = age(this.embers, EMBERS);
+    for (const w of this.waves) w.t += dt;
+    this.waves = this.waves.filter((w) => w.t < w.far / w.speed + WAVE_AFTER);
   }
 
   clear(): void {
@@ -166,6 +202,7 @@ export class WarlockFx {
     this.erupts = [];
     this.rings = [];
     this.embers = [];
+    this.waves = [];
   }
 
   /** What lies on the floor: the smoke steps' rivers, the ground torn open. */
@@ -265,6 +302,37 @@ export class WarlockFx {
       const y = l.y0 + (l.y1 - l.y0) * k;
       const up = Math.sin(Math.PI * k) * 26 + 14;
       drawSprite(g, ball[Math.floor(this.t * 20) % ball.length], Math.round(wx(c, x, y)), Math.round(wy(c, x, y) - up));
+    }
+    // (HIS TREE: Hellwave, a row of his fires running on ahead along the floor, guttering at its end)
+    for (const w of this.waves) {
+      const run = w.far / w.speed;
+      const d = Math.min(w.far, w.speed * w.t);
+      const fade = w.t > run ? 1 - (w.t - run) / WAVE_AFTER : 1;
+      g.globalAlpha = Math.max(0, fade);
+      for (let i = -2; i <= 2; i++) {
+        for (const back of [0, 0.45]) {
+          const along = Math.max(0, d - back - Math.abs(i) * 0.12);
+          const x = w.x + w.dx * along - w.dy * i * 0.38;
+          const y = w.y + w.dy * along + w.dx * i * 0.38;
+          if (back > 0 && hash(i + 7) < 0.4) continue;
+          drawSprite(g, ball[Math.floor(this.t * 20 + i * 2 + back * 10) % ball.length], Math.round(wx(c, x, y)), Math.round(wy(c, x, y) - (back > 0 ? 4 : 8)));
+        }
+      }
+      g.globalAlpha = 1;
+    }
+    // (HIS TREE: Damned Souls, each a ball of his fire flying low, trailing embers)
+    if (game) {
+      for (const s of game.souls) {
+        const x = Math.round(wx(c, s.x, s.y));
+        const y = Math.round(wy(c, s.x, s.y) - 22 - Math.sin(s.t * 9) * 3);
+        for (let i = 1; i <= 5; i++) {
+          g.globalAlpha = 0.8 - i * 0.14;
+          g.fillStyle = HELL[i < 3 ? 2 : 1];
+          g.fillRect(x - Math.round(Math.sin(s.t * 7 + i) * 2), y + i * 2, 1, 1);
+        }
+        g.globalAlpha = 1;
+        drawSprite(g, ball[Math.floor(this.t * 20) % ball.length], x, y + 8);
+      }
     }
     // embers whirling up round him as he changes
     for (const e of this.embers) {

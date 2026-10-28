@@ -275,6 +275,9 @@ export interface Hero {
   form?: 'man' | 'demon';
   pact?: number;
   change?: { to: 'demon' | 'man'; t: number; dur: number } | null;
+  /** (HIS TREE, game/talents.ts) Bloodlust: the kills the demon has made since it came out (its rakes the quicker); Hellwave: its rakes so far, every third a wave. */
+  lust?: number;
+  rakes?: number;
   /** THE BRAWLER (game/brawler.ts): the combo so far (its presses, T a tap, H a hold), the punch it last made, and when it landed (the game's clock). */
   punch?: { run: string; name: PunchName; at: number } | null;
   /**
@@ -463,6 +466,8 @@ export interface Monster {
   hellDps?: number;
   curseT?: number;
   curseDps?: number;
+  /** (HIS TREE: Terrible Roar) seconds it runs from him yet. */
+  fleeT?: number;
   cracks?: number;
   thrown?: { vx: number; vy: number; t: number; ice?: boolean };
 }
@@ -794,6 +799,17 @@ export interface Vial {
  * THE TINKERER'S GOLEM (game/tinkerer.ts): always with her once whistled out. `act`, what it is doing and for how long it
  * has; `did`, whether that act's blow has landed.
  */
+/** (THE WARLOCK's tree: a wave of Hellwave going on ahead: where its front is, which way, how far it has yet to go, whom it has struck, its share of the rake's hit.) */
+export interface HellWave { x: number; y: number; dx: number; dy: number; left: number; hit: number[]; frac: number }
+/** (THE WARLOCK's tree: a soul of Damned Souls, flying from where one died to the one it goes for (`id`), the hit its burns are made from.) */
+export interface Soul { x: number; y: number; id: number; t: number; dmg: number }
+/**
+ * (THE WARLOCK's tree: BOUND DEMON, torn out of him to fight at his side till the pact runs dry.) Where it is and faces; what
+ * it is doing (`arrive` torn out, `stand`, `walk`, `rake`, `out` burning out) and for how long; the one it is after; whether
+ * its rake has landed; how far it has walked (its stride); the time before it may rake again.
+ */
+export interface BoundDemon { x: number; y: number; fx: number; fy: number; act: 'arrive' | 'stand' | 'walk' | 'rake' | 'out'; actT: number; target: number; did: boolean; walked: number; rakeCd: number }
+
 export interface Golem {
   x: number;
   y: number;
@@ -1259,6 +1275,22 @@ export type GameEvent =
   | { t: 'spread'; x: number; y: number; to: readonly { id: number; x: number; y: number }[] }
   | { t: 'damning'; x: number; y: number; at: readonly { id: number; x: number; y: number }[]; n?: number; echo?: boolean }
   | { t: 'smoke'; x0: number; y0: number; x1: number; y1: number; demon: boolean; echo?: boolean }
+  /**
+   * (HIS TREE, game/talents.ts) `hexLeap`: Hex Chain's bolt leaping from one cursed to the next. `blaze`: Blazing Arm's bolt
+   * bursting. `pyre`: a cursed one bursting in his hellfire as it dies. `hellwave`: a wave of hellfire thrown on ahead off a
+   * rake, from (x, y) along (dx, dy) for `far` tiles at `speed`. `soul`: Damned Souls', a burning soul rising out of one the
+   * demon killed and flying to the one it goes for (`id`); `soulIn`, it goes into it. `bound`: the Bound Demon torn out of
+   * him beside him; `boundRake`, its claws raked; `boundOut`, it burns out.
+   */
+  | { t: 'hexLeap'; x0: number; y0: number; x1: number; y1: number }
+  | { t: 'blaze'; x: number; y: number; r: number }
+  | { t: 'pyre'; x: number; y: number; r: number }
+  | { t: 'hellwave'; x: number; y: number; dx: number; dy: number; far: number; speed: number }
+  | { t: 'soul'; x: number; y: number; id: number }
+  | { t: 'soulIn'; x: number; y: number }
+  | { t: 'bound'; x: number; y: number }
+  | { t: 'boundRake'; x: number; y: number; dx: number; dy: number }
+  | { t: 'boundOut'; x: number; y: number }
   // (THE TINKERER, game/tinkerer.ts: her Contraption thrown, a vial lobbed out of it and bursting, a Contraption put out
   // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
   | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }

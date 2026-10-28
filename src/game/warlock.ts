@@ -66,4 +66,38 @@ export const WARLOCK_TUNE = {
   damning: { pay: 1, throw: 1.6 },
   /** The smoke steps: seconds to go their length; the demon's knocks aside what it passes and bursts at the end in this radius, at this share of its hit. */
   step: { secs: 0.28, demonSecs: 0.3, aside: 1.2, burst: 1.6, burstShare: 0.6 },
+  /**
+   * HIS TREE (game/talents.ts, the claw; the owner's “Yes, keep it (Recommended)”, 28 Oct): what its talents come to, as
+   * their cards say them (starting numbers, his to try and change). Distances in tiles, times in seconds; a `share`, of the
+   * hit of the ability it goes with.
+   */
+  talents: {
+    /** Hunger: each kill of the demon's puts back this many seconds of its pact. */
+    hunger: { secs: 2 },
+    /** Terrible Roar: what it throws back runs from him this long. */
+    roar: { flee: 2 },
+    /** Feast: each kill of the demon's heals him this share of his life. */
+    feast: { share: 0.1 },
+    /** Bloodlust: each kill of the demon's makes its rakes this much quicker, up to `most` times as quick. */
+    bloodlust: { each: 0.1, most: 2 },
+    /** Hellwave: every `every`th rake throws a wave `far` tiles on ahead, `speed` tiles a second, `width` across, at `share` of the rake, setting what it strikes burning. */
+    hellwave: { every: 3, far: 5, speed: 10, width: 0.9, share: 0.8 },
+    /** Damned Souls: a soul goes for the nearest enemy within `reach` of where one died, `speed` tiles a second; its burns made of `share` of the demon's rake. */
+    souls: { reach: 6, speed: 8, share: 1 },
+    /** Hex Chain: up to `leaps` leaps, each to a cursed one within `reach` of the last, `gap` seconds apart, each at `share` of the bolt. */
+    hexChain: { leaps: 3, reach: 4, gap: 0.08, share: 0.7 },
+    /** Withering: cursed, they move and strike at this pace. */
+    withering: { pace: 0.5 },
+    /** Pyre: a cursed one dying bursts `r` across, at `share` of his Curse's hit. */
+    pyre: { r: 1.6, share: 0.6 },
+    /** Blazing Arm: his bolt bursts `r` across, cursing and burning all in it, striking each at `share` of the bolt. */
+    blazing: { r: 1.6, share: 0.5 },
+    /** Soul Debt: each cursed one dying fills this share of his pact. */
+    soulDebt: { share: 0.1 },
+    /**
+     * Bound Demon: torn out beside him (`arrive` seconds); it keeps within `near` of him with nothing to fight, goes for what
+     * is within `hunt` of him, rakes from within `reach` every `every` seconds, walks `speed` tiles a second; burns out in `out`.
+     */
+    bound: { arrive: 0.6, near: 1.8, hunt: 6, reach: 1.8, every: 0.75, speed: 4.2, out: 1.0, hit: 10 / 30 },
+  },
 } as const;
