@@ -95,12 +95,13 @@ function figureIds(f: TalentFigure): string[] {
   return [...f.ids];
 }
 
-test('THE NEW CLASSES\' TREES (drafts, 28 Oct 2026): fifteen each in his shapes, every one reachable, his paths, his ideas in', () => {
+test('THE NEW CLASSES\' TREES (28 Oct 2026): fifteen each in his shapes, every one reachable, his paths, his ideas in', () => {
   const NEW: readonly ClassId[] = ['warlock', 'tinkerer', 'brawler'];
   for (const cls of NEW) {
     const tree = TREES[cls];
     assert.equal(tree.cls, cls);
-    assert.equal(tree.draft, true, `${cls}: a draft, to be shown to him`);
+    assert.ok(!tree.draft, `${cls}: no longer a draft: every talent made to work, his yes to each in play`);
+    assert.deepEqual(tree.talents.filter((t) => !t.works).map((t) => t.id), [], `${cls}: every talent at work`);
     assert.equal(tree.talents.length, 15, cls);
     const ids = tree.talents.map((t) => t.id);
     assert.equal(new Set(ids).size, 15, `${cls}: each id once`);

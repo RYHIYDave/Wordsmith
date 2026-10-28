@@ -246,8 +246,8 @@ const WARRIOR: TalentTree = {
   ],
 };
 
-// ---- THE NEW CLASSES' TREES (the main chat, 28 Oct 2026; `draft`: none of their talents does anything yet, each to be made
-// to work and filmed for him). Shown to him as a page, “Three New Skill Trees” (https://claude.ai/artifact/GhWB8vecSeRyHxDGQQWKHA,
+// ---- THE NEW CLASSES' TREES (the main chat, 28 Oct 2026; drafted, then every talent made to work and filmed for him, his
+// yes to each tree in play by 19:43: the Tinkerer's, “Good, keep going (Recommended)”). Shown to him as a page, “Three New Skill Trees” (https://claude.ai/artifact/GhWB8vecSeRyHxDGQQWKHA,
 // its source docs/talents/new_classes/index.html), his answers by 17:47 (Eastern): the Warlock's, “Yes, keep it
 // (Recommended)”; the Tinkerer's, “Yes, keep it (Recommended)”; the Brawler's, “Keep it, except change the names of “one
 // target” and “crowd””, then “Speed and Power”.
@@ -276,7 +276,6 @@ const PACT = '#9a78c8';
 const WARLOCK_TREE: TalentTree = {
   cls: 'warlock',
   shape: 'a demon’s claw',
-  draft: true,
   room: [0, 0, 5.6, 4.2],
   paths: [
     { id: 'demon', name: 'DEMON', color: DEMON, label: { node: 'hunger', side: 'above' } },
@@ -317,7 +316,8 @@ const WARLOCK_TREE: TalentTree = {
 //   Twelve teeth round a hub. From the left tooth (her blast jump's, both paths') the VIALS go round over the top and the
 //   GOLEM round under the bottom, to meet at the right tooth; the hub is her gold (FORTUNE, off the left tooth); the spoke
 //   down from the top tooth is the swap to the CONTRAPTION (reached from the top tooth or the hub); the spoke up from the
-//   bottom tooth, her second Golem.
+//   bottom tooth, her second Golem. Her talents at work filmed for him (tinkerer_tree_film.mp4), by 19:43: “Good, keep going
+//   (Recommended)”.
 const VIALS = '#7ae0c0';
 const GOLEMS = '#e8a858';
 const WORKS = '#b8c0d0';
@@ -327,7 +327,6 @@ const R3 = Math.sqrt(3);
 const TINKERER_TREE: TalentTree = {
   cls: 'tinkerer',
   shape: 'a gear',
-  draft: true,
   square: true,
   paths: [
     { id: 'vials', name: 'VIALS', color: VIALS, label: { node: 'tar', side: 'left' } },
@@ -376,7 +375,6 @@ const COUNTER = '#e8d090';
 const BRAWLER_TREE: TalentTree = {
   cls: 'brawler',
   shape: 'a fist',
-  draft: true,
   square: true,
   room: [-0.35, -0.5, 4.0, 4.5],
   paths: [
