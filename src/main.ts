@@ -325,8 +325,6 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let last = performance.now();
   let clock = 0;
   let wantInteract = false;
-  /** THE WARLOCK: his full pact globe was pressed (ui/hud.ts): he changes on the next reading of the controls. */
-  let wantChange = false;
   let calm = 0;
   let saveT = 0;
   let wasPaused = false;
@@ -975,8 +973,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     c.hold = false;
     c.evade = false;
     c.potion = false;
-    c.change = wantChange;
-    wantChange = false;
+    c.change = false;
     c.interact = wantInteract;
     renderer.lockId = null;
     wantInteract = false;
@@ -1854,6 +1851,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (ACT 1: what its kinds throw and leave, painted ahead: render/act1_fx/, `films`)
         for (const kind of new Set(g.monsters.map((m) => m.kind))) for (const key of act1Fx(kind)?.films ?? []) painter.film(key, true);
       }
+      renderer.pactHint = GAMEPAD.on && PAD_USE.live ? 'RB: CHANGE' : input.touchMode ? 'TAP HIM' : 'R: CHANGE';
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
       for (const k of renderer.kicks()) {
@@ -1957,7 +1955,6 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (hud.inventory >= 0) openInventory(hud.inventory < 3 ? hud.inventory : -1);
       if (hud.potion) g.usePotion();
       if (hud.interact) wantInteract = true;
-      if (hud.change) wantChange = true;
       if (hud.level) panels.open = 'level';
       // (THE SKILL TREES: a talent point waiting: the inventory opens on TALENTS)
       if (hud.talents) {

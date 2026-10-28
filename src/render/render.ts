@@ -1019,6 +1019,8 @@ export class Renderer {
   goal: Station | null = null;
   /** Touch: the monster the hero is locked onto (its id): a ring is drawn round its feet. Set every frame by the controls. */
   lockId: number | null = null;
+  /** THE WARLOCK: what his full pact bar says to do, by what is played with (main.ts sets it each frame). */
+  pactHint = 'TAP HIM';
   /**
    * For measuring only (`__dbg.renderer.skip.add('ground')` in a playtest): parts of the picture to
    * leave out, to find what a slow frame is spending its time on. 'ground' = the hero's ground
@@ -4066,6 +4068,48 @@ export class Renderer {
         g.fillRect(x, y + hgt + 1, barPixels(h.mana / Math.max(1, h.d.maxMana), w), 1);
       }
       g.globalAlpha = 1;
+    }
+    // THE WARLOCK'S PACT (game/warlock.ts), his pick of 28 Oct: “Bar over his head” (offered as: a thin cyan bar just under
+    // the red life bar over his head; when it's full it blazes). Filling with his hellfire as he hits; full, it blazes and
+    // says how he changes; as the demon, it runs down. There while the life bar is, and always while it is full or he is
+    // the demon.
+    {
+      const h = game.hero;
+      if (h.cls === 'warlock' && !game.over) {
+        const full = WARLOCK_TUNE.pact.full;
+        const k = Math.max(0, Math.min(1, (h.pact ?? 0) / full));
+        const demon = h.form === 'demon';
+        const blaze = !demon && k >= 1;
+        const a = Math.max(lb.alpha, blaze || demon ? 1 : 0);
+        if (a > 0.01) {
+          const w = LIFE_BAR.w;
+          const mana = game.meta.limit === 'mana';
+          const x = this.heroAt.x - Math.floor(w / 2);
+          const y = this.heroAt.y - this.heroAt.top - LIFE_BAR.lift + LIFE_BAR.h + 2 + (mana ? 2 : 0);
+          const hot = blaze && Math.floor(t * 6) % 2 === 0;
+          g.globalAlpha = a;
+          g.fillStyle = blaze ? (hot ? P.white : '#22d0e0') : P.ink;
+          g.fillRect(x - 1, y - 1, w + 2, 4);
+          g.fillStyle = '#0a2630';
+          g.fillRect(x, y, w, 2);
+          g.fillStyle = blaze ? (hot ? '#e8ffff' : '#b8fff8') : '#22d0e0';
+          g.fillRect(x, y, barPixels(k, w), 2);
+          g.fillStyle = '#b8fff8';
+          g.fillRect(x, y, barPixels(k, w), 1);
+          if (blaze) {
+            // (its fire licking up off it, and what to do)
+            for (let i = 0; i < 4; i++) {
+              const fx0 = x + 2 + ((i * 7 + Math.floor(t * 11)) % (w - 3));
+              const up = 1 + ((i + Math.floor(t * 9)) % 3);
+              g.fillStyle = up > 2 ? '#e8ffff' : '#22d0e0';
+              g.fillRect(fx0, y - 1 - up, 1, up);
+            }
+            // (over the life bar, clear of his head)
+            drawText(g, this.pactHint, this.heroAt.x, y - LIFE_BAR.h - 2 - (mana ? 2 : 0) - 9, hot ? '#e8ffff' : '#22d0e0', { align: 'center', font: 'small', shadow: P.ink });
+          }
+          g.globalAlpha = 1;
+        }
+      }
     }
     // The word a monster carries hangs over its head as its rune stone: what you see is what its
     // death will leave on the floor.

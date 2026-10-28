@@ -30,7 +30,6 @@ import type { Art } from '../render/render';
 import { QUEST3 } from '../art/quest3';
 import { MELD_DROPS } from '../art/meld_drops';
 import { pressName } from './guide';
-import { WARLOCK_TUNE } from '../game/warlock';
 import type { Banner } from './guide';
 import { THEME } from './ui';
 import type { Ui } from './ui';
@@ -47,8 +46,6 @@ export interface HudOut {
   pause: boolean;
   /** The small map was pressed: show or hide the large one. */
   map: boolean;
-  /** THE WARLOCK (game/warlock.ts): his pact globe was pressed while it is full: he changes, as a tap on him does. */
-  change?: boolean;
 }
 
 export interface HudIn {
@@ -895,24 +892,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   globe(g, lifeX, lifeY, 14, h.life / d.maxLife, THEME.life, THEME.lifeHi, lifeRim);
   drawText(g, `${Math.ceil(h.life)}`, lifeX, lifeY - 3, P.white, { align: 'center', font: 'small', shadow: P.ink });
   ui.mark('life', lifeX - 15, lifeY - 15, 31, 31);
-  // THE WARLOCK'S PACT (game/warlock.ts): a small globe of black filling with his cyan hellfire, under the INVENTORY button
-  // with fingers and over the life globe with a mouse; full, it blazes, and says how he is changed (a tap on him; R). As the demon it drains.
-  // (A PROPOSAL, to be shown to the owner before it goes live.)
-  if (h.cls === 'warlock') {
-    const full = WARLOCK_TUNE.pact.full;
-    const k = Math.max(0, Math.min(1, (h.pact ?? 0) / full));
-    const blaze = h.form !== 'demon' && k >= 1;
-    // (with fingers, under the INVENTORY button, which is under the life globe: TOP_GLOBE_Y + 19, 18 high; with a mouse, over the life globe)
-    const pyy = touch ? TOP_GLOBE_Y + 19 + 18 + 13 : lifeY - 27;
-    const hot = blaze && pulse;
-    globe(g, lifeX, pyy, 9, k, hot ? '#b8fff8' : '#22d0e0', '#b8fff8', hot ? P.white : h.form === 'demon' ? '#22d0e0' : THEME.edgeHi);
-    ui.mark('pact', lifeX - 10, pyy - 10, 21, 21);
-    if (blaze) {
-      if (ui.pressIn(lifeX - 10, pyy - 10, 21, 21)) out.change = true;
-      ui.claim(lifeX - 10, pyy - 10, 21, 21);
-    }
-    if (blaze) drawText(g, pd ? 'RB: CHANGE' : touch ? 'TAP HIM' : 'R: CHANGE', lifeX + 13, pyy - 3, hot ? '#b8fff8' : '#22d0e0', { font: 'small', shadow: P.ink });
-  }
+  // (THE WARLOCK'S PACT is a bar over his head, at his pick: render/render.ts)
   // (mana is only there to be seen when it is what limits the slow abilities)
   if (byMana) {
     globe(g, W - 20, gy, 14, h.mana / d.maxMana, THEME.mana, THEME.manaHi, THEME.edgeHi);
@@ -1314,14 +1294,12 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
 
   // ---- messages -----------------------------------------------------------------------------
   const msgW = Math.max(120, Math.floor(W / 2) - 62);
-  // (THE WARLOCK: room left for his pact globe, under the INVENTORY button with fingers, over the life globe with a mouse)
-  const pactRoom = h.cls === 'warlock' ? 22 : 0;
   if (touch) {
     // With fingers: top left, under the inventory button, the newest first and the older below it.
     // (They were in the bottom left, above the flask, where the left thumb is. The owner, asked
     // whether they were hidden as the life globe had been: "Yes they are also being hidden".)
     const narrow = W < 380;
-    let my = btnY + btnH + 4 + pactRoom;
+    let my = btnY + btnH + 4;
     if (narrow && noticeEnd > 0) my = Math.max(my, noticeEnd + 4);
     for (let i = fx.messages.length - 1; i >= 0 && i >= fx.messages.length - 4; i--) {
       const m = fx.messages[i];
@@ -1337,7 +1315,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   } else {
     // With a mouse: above the flask, the newest lowest (when the attacks are stacked they reach
     // across the screen, so above them).
-    let my = (stacked ? barTop - pbh - 26 : H - ps - 26) - pactRoom;
+    let my = stacked ? barTop - pbh - 26 : H - ps - 26;
     for (let i = fx.messages.length - 1; i >= 0 && i >= fx.messages.length - 4; i--) {
       const m = fx.messages[i];
       const parts = wrapText(m.text, msgW, 'normal');
