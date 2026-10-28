@@ -2057,7 +2057,9 @@ export class Renderer {
     // is a frame's whole time and more to paint here, so the game painting one a frame ran late every frame until all
     // were done. Until the worker is up, or where there is none, the game paints them ahead as before.)
     const pw = this.painter && this.art.heroes.give ? this.painter : null;
-    const byWorker = !!pw && pw.hero(h.cls, look.town ? 'town' : 'dungeon') && (!look.town || pw.hero(h.cls, 'dungeon'));
+    // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
+    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? 'town' : 'dungeon';
+    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, 'dungeon')) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
     // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the

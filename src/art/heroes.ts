@@ -34,6 +34,16 @@ export interface HeroLook {
   blaze?: boolean;
 }
 
+/**
+ * WHICH OF A HERO'S PICTURES the side painter paints ahead (render/painter.ts): in town, in a dungeon; and the warlock's
+ * others (art/warlock_art.ts): the demon's, and his with his arm blazing.
+ */
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze';
+/** The look each of those is. */
+export function lookOfPlace(place: HeroPlace): HeroLook {
+  return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };
+}
+
 export interface HeroArt {
   /** The pictures of a hero of this class, carrying what `look` says. */
   of(cls: ClassId, look: HeroLook): ActorArt;
@@ -46,7 +56,7 @@ export interface HeroArt {
    */
   warm(cls: ClassId, look: HeroLook): boolean;
   /** (The heroes painted over the bones: a frame painted by the painter's worker, taken in: art/heroes3.ts.) */
-  give?(cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite): boolean;
+  give?(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite): boolean;
 }
 
 export const PLAIN: HeroLook = { twoHanded: false };

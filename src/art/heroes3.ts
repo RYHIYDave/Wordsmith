@@ -27,7 +27,8 @@ import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
 import { makeWarlockArt } from './warlock_art';
-import type { HeroArt, HeroLook } from './heroes';
+import type { HeroArt, HeroLook, HeroPlace } from './heroes';
+import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
 import { COMBO_MENDS, GREAT_BLADE, MOVES3, SETTLES, SLASH3, STAFF_UP, STRIKE3, WALKS, holdStartOf, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
@@ -349,7 +350,9 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
  * a list of frames of one side of the hero.
  */
 const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
-          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? [])];
+          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? []),
+          // (THE WARLOCK's changing, art/warlock_art.ts; and every hero's fall, last)
+          (a) => a.clips?.change?.frames ?? [], (a) => a.clips?.fall?.frames ?? []];
 
 /** A hero's lists of frames, in the order they are painted ahead (the painter's worker and the page agree on them by this). */
 export function heroLists(set: AnimSet): Sprite[][] {
@@ -393,8 +396,8 @@ export function makeHeroArt3(): HeroArt {
      * THE PAINTER (render/painter.ts): a frame of a hero painted beside the game, taken in where the game has not painted
      * it yet (`v` the side, `l` its list as heroLists has them, `i` the frame). False: not wanted (the game had painted it).
      */
-    give(cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite): boolean {
-      const art = of(cls, { twoHanded: true, town: place === 'town' });
+    give(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite): boolean {
+      const art = of(cls, lookOfPlace(place));
       const frames = heroLists(v === 0 ? art.front : art.back)[l];
       if (!frames || i < 0 || i >= frames.length) return false;
       const d = Object.getOwnPropertyDescriptor(frames, i);

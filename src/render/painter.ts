@@ -33,6 +33,8 @@ import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { ActorArt } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
+import { lookOfPlace } from '../art/heroes';
+import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 import type { ClassId } from '../game/types';
@@ -91,7 +93,7 @@ type Ask =
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
   | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
-  | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
+  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number };
 /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
 interface WallBitMsg {
   d: number;
@@ -109,7 +111,7 @@ type Tell =
   | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[]; flow?: FlowBits<ImageBitmap> | null }
   // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
   | { t: 'shell'; id: number; n: number; x0: number; y0: number; w: number; h: number; bmp: ImageBitmap | null; ms: number; last: boolean }
-  | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
+  | { t: 'heroFrames'; cls: ClassId; place: HeroPlace; list: Given[]; left: number }
   | { t: 'fail'; what: string; why: string };
 
 const isSprite = (v: unknown): v is Sprite => !!v && typeof v === 'object' && 'img' in v && 'ax' in v && 'ay' in v;
@@ -170,7 +172,7 @@ export class Painter {
    * THE HERO'S PICTURES, painted ahead by the same worker (the ground's: it is kept for the whole game). `toHero` takes in
    * each frame as it comes (render/render.ts): true if it was wanted. `heroAsked`: what has been asked of it.
    */
-  toHero: ((cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
+  toHero: ((cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
   private heroAsked = new Set<string>();
   /** The hero's frames taken in from the worker, for measuring. */
   heroFrames = 0;
@@ -328,13 +330,13 @@ export class Painter {
    * The hero's pictures in that place to be painted ahead by the worker. True: the worker is up and has them in hand (the
    * game need not paint them ahead itself); false: the game goes on painting them ahead as before.
    */
-  hero(cls: ClassId, place: 'town' | 'dungeon'): boolean {
+  hero(cls: ClassId, place: HeroPlace): boolean {
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
     const key = `${cls}:${place}`;
     if (!this.heroAsked.has(key)) {
       this.heroAsked.add(key);
       this.groundLane.open++;
-      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'town' ? 30 : 31 } satisfies Ask);
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'blaze' ? 32 : 33 } satisfies Ask);
     }
     return true;
   }
@@ -787,9 +789,9 @@ export function paintWorkerMain(): void {
   let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
 
   /** A hero's frames in a place, painted and handed over a few at a time, in the order the page paints them ahead. */
-  function* hero(cls: ClassId, place: 'town' | 'dungeon'): Generator<void, void, void> {
+  function* hero(cls: ClassId, place: HeroPlace): Generator<void, void, void> {
     heroArt ??= makeHeroArt3();
-    const art = heroArt.of(cls, { twoHanded: true, town: place === 'town' });
+    const art = heroArt.of(cls, lookOfPlace(place));
     const lists = [heroLists(art.front), heroLists(art.back)];
     const order: [number, number, number][] = [];
     for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
