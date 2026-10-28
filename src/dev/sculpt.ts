@@ -395,7 +395,10 @@ const SLACK = 1e-6;
  * distance can be where the list holds; one over its blend. (Sixteen places, the first eight what a solid is looked over
  * by.)
  */
-const FS = 16;
+const FS = 8;
+/** And the cold ones, kept apart (`Arena.C`): the least what is found can come to from it on, if it was no less before; its ball's reach, and its middle; the most its distance can be where the list holds; one over its blend. */
+const CS = 8;
+// (FS and CS the same, so one offset serves both)
 /** (how near each solid of the material being asked can be, at the point it is asked of) */
 let LQ = new Float64Array(256);
 /** Numbers kept for each material of a list (`Arena.S`): its number; its first solid, after its last solid, after its last carve; the solid to begin at. */
@@ -411,6 +414,7 @@ const SFS = 2;
 class Arena {
   I = new Int32Array(1 << 14);
   F = new Float64Array(FS << 14);
+  C = new Float64Array(CS << 14);
   S = new Int32Array(SS << 12);
   SF = new Float64Array(SFS << 12);
   T = new Int32Array(2 << 12);
@@ -432,6 +436,9 @@ class Arena {
       const F = new Float64Array(n * FS);
       F.set(this.F.subarray(0, this.ni * FS));
       this.F = F;
+      const C = new Float64Array(n * CS);
+      C.set(this.C.subarray(0, this.ni * CS));
+      this.C = C;
     }
     if (this.ns + segs > this.S.length / SS) {
       const n = Math.max((this.S.length / SS) * 2, this.ns + segs);
@@ -576,7 +583,8 @@ class Fast {
       for (const i of ids) {
         const o = A.ni * FS;
         A.I[A.ni++] = i;
-        A.F.set([-Infinity, this.blend[i], -Infinity, 0, 0, 0, 1, 1, -Infinity, this.br[i], this.bc[i * 3], this.bc[i * 3 + 1], this.bc[i * 3 + 2], Infinity, this.inv[i]], o);
+        A.F.set([-Infinity, this.blend[i], -Infinity, 0, 0, 0, 1, 1], o);
+        A.C.set([-Infinity, this.br[i], this.bc[i * 3], this.bc[i * 3 + 1], this.bc[i * 3 + 2], Infinity, this.inv[i], 0], (o / FS) * CS);
       }
     };
     const seg = (m: number, prims: number[], carves: number[]): void => {
@@ -699,6 +707,7 @@ class Fast {
    */
   look(s: number, j0: number, x: number, y: number, z: number, widen: number): number {
     const F = this.A.F;
+    const C = this.A.C;
     const p1 = this.A.S[s * SS + 2];
     if (LQ.length < p1 - j0) LQ = new Float64Array(2 * (p1 - j0));
     const lq_ = LQ;
@@ -736,7 +745,7 @@ class Fast {
         }
         const gap = P > lq ? P - lq : lq - P;
         if (gap < k) {
-          const h = (k - gap) * F[o + 14];
+          const h = (k - gap) * C[o + 6];
           P = (P < lq ? P : lq) - h * h * k * 0.25;
         } else if (lq < P) P = lq;
       }
@@ -754,14 +763,15 @@ class Fast {
   start(s: number, x: number, y: number, z: number, cap: number): number {
     const A = this.A;
     const F = A.F;
+    const C = A.C;
     const j = A.S[s * SS + 4];
     const first = A.S[s * SS + 1];
     if (j === first) return j;
     const o = j * FS;
-    const far = Math.min(A.SF[s * SFS + 1], cap) + F[o + 1] + F[o + 9];
-    const ex = x - F[o + 10];
-    const ey = y - F[o + 11];
-    const ez = z - F[o + 12];
+    const far = Math.min(A.SF[s * SFS + 1], cap) + F[o + 1] + C[o + 1];
+    const ex = x - C[o + 2];
+    const ey = y - C[o + 3];
+    const ez = z - C[o + 4];
     return far >= 0 && ex * ex + ey * ey + ez * ez <= far * far ? j : first;
   }
   /** `Field.ofMat` for one material (`s`, its place in the arena), as far as `cap`; anything not less than `cap` where it cannot be less. */
@@ -780,6 +790,7 @@ class Fast {
     const A = this.A;
     const I = A.I;
     const F = A.F;
+    const C = A.C;
     const S = A.S;
     const sb = s * SS;
     const p1 = S[sb + 2];
@@ -798,10 +809,10 @@ class Fast {
         const o = r * FS;
         const k = F[o + 1];
         if (!(pb >= lq_[r - j0] + k)) continue;
-        const far = Math.min(pb, cap) + k + F[o + 9];
-        const ex = x - F[o + 10];
-        const ey = y - F[o + 11];
-        const ez = z - F[o + 12];
+        const far = Math.min(pb, cap) + k + C[o + 1];
+        const ex = x - C[o + 2];
+        const ey = y - C[o + 3];
+        const ez = z - C[o + 4];
         if (!(far >= 0 && ex * ex + ey * ey + ez * ez <= far * far)) continue;
         tries++;
         const b = this.dist(I[r], x, y, z);
@@ -826,12 +837,12 @@ class Fast {
         if (lo >= d + k) continue;
       }
       // (what is found, and all that is left, no nearer than the nearest skin of another material: it cannot win)
-      if (d >= cap && F[o + 8] >= cap) return Infinity;
-      const far = Math.min(d, cap) + k + F[o + 9];
+      if (d >= cap && C[o] >= cap) return Infinity;
+      const far = Math.min(d, cap) + k + C[o + 1];
       if (far < 0) continue;
-      const ex = x - F[o + 10];
-      const ey = y - F[o + 11];
-      const ez = z - F[o + 12];
+      const ex = x - C[o + 2];
+      const ey = y - C[o + 3];
+      const ez = z - C[o + 4];
       if (ex * ex + ey * ey + ez * ez > far * far) continue;
       const b = this.dist(I[j], x, y, z);
       if (d === Infinity) d = b;
@@ -848,9 +859,9 @@ class Fast {
       const o = j * FS;
       const i = I[j];
       const far = this.farC[i];
-      const ex = x - F[o + 10];
-      const ey = y - F[o + 11];
-      const ez = z - F[o + 12];
+      const ex = x - C[o + 2];
+      const ey = y - C[o + 3];
+      const ez = z - C[o + 4];
       if (ex * ex + ey * ey + ez * ez > far * far) continue;
       const c = -this.dist(i, x, y, z);
       const k = F[o + 1];
@@ -908,6 +919,7 @@ class Fast {
     const A = this.A;
     const I = A.I;
     const F = A.F;
+    const C = A.C;
     const sb = A.T[L * 2] * SS;
     const p1 = A.S[sb + 2];
     for (let j = A.S[sb + 1]; j < p1; j++) {
@@ -917,13 +929,13 @@ class Fast {
       const v = F[o + 2] + F[o + 3] * x + F[o + 4] * y + F[o + 5] * z;
       if ((v >= 0 ? v * F[o + 6] : v * F[o + 7]) >= best) continue;
       // (`Field.nearest`'s own test, its root worked out the slow way only where the quick one is too near to tell)
-      const ex = x - F[o + 10];
-      const ey = y - F[o + 11];
-      const ez = z - F[o + 12];
-      const e = Math.sqrt(ex * ex + ey * ey + ez * ez) - F[o + 9];
-      const tol = 1e-9 * (1 + Math.abs(e) + F[o + 9]);
+      const ex = x - C[o + 2];
+      const ey = y - C[o + 3];
+      const ez = z - C[o + 4];
+      const e = Math.sqrt(ex * ex + ey * ey + ez * ez) - C[o + 1];
+      const tol = 1e-9 * (1 + Math.abs(e) + C[o + 1]);
       if (e > best + tol) continue;
-      if (e >= best - tol && Math.hypot(ex, ey, ez) - F[o + 9] > best) continue;
+      if (e >= best - tol && Math.hypot(ex, ey, ez) - C[o + 1] > best) continue;
       const i = I[j];
       const d = this.dist(i, x, y, z);
       if (d < best) {
@@ -1175,6 +1187,7 @@ class Fast {
     A.room(A.S[(ps1 - 1) * SS + 3] - A.S[ps0 * SS + 1], ps1 - ps0);
     const I = A.I;
     const F = A.F;
+    const C = A.C;
     const S = A.S;
     const SF = A.SF;
     const bc = this.bc;
@@ -1206,20 +1219,22 @@ class Fast {
         if (!gone) {
           const o = n * FS;
           I[n++] = i;
-          F[o] = withLo ? this.lo : -Infinity;
+          // (a list only to draw others from needs only its solids)
+          if (!withLo) continue;
+          F[o] = this.lo;
           F[o + 1] = blend[i];
-          F[o + 14] = this.inv[i];
-          F[o + 9] = br[i];
-          F[o + 10] = bc[i * 3];
-          F[o + 11] = bc[i * 3 + 1];
-          F[o + 12] = bc[i * 3 + 2];
-          F[o + 13] = withLo ? this.hiD : Infinity;
-          F[o + 2] = withLo ? this.la : -Infinity;
-          F[o + 3] = withLo ? this.lx : 0;
-          F[o + 4] = withLo ? this.ly : 0;
-          F[o + 5] = withLo ? this.lz : 0;
-          F[o + 6] = withLo ? this.lp : 1;
-          F[o + 7] = withLo ? this.ln : 1;
+          C[o + 6] = this.inv[i];
+          C[o + 1] = br[i];
+          C[o + 2] = bc[i * 3];
+          C[o + 3] = bc[i * 3 + 1];
+          C[o + 4] = bc[i * 3 + 2];
+          C[o + 5] = this.hiD;
+          F[o + 2] = this.la;
+          F[o + 3] = this.lx;
+          F[o + 4] = this.ly;
+          F[o + 5] = this.lz;
+          F[o + 6] = this.lp;
+          F[o + 7] = this.ln;
         }
       }
       const pEnd = n;
@@ -1234,22 +1249,23 @@ class Fast {
         if (e - rho > this.farC[i] + SLACK * (1 + e)) continue;
         const o = n * FS;
         I[n++] = i;
+        clean = false;
+        if (!withLo) continue;
         F[o] = -Infinity;
-        F[o + 8] = -Infinity;
+        C[o] = -Infinity;
         F[o + 1] = blend[i];
-        F[o + 14] = this.inv[i];
-        F[o + 9] = br[i];
-        F[o + 10] = bc[i * 3];
-        F[o + 11] = bc[i * 3 + 1];
-        F[o + 12] = bc[i * 3 + 2];
-        F[o + 13] = Infinity;
+        C[o + 6] = this.inv[i];
+        C[o + 1] = br[i];
+        C[o + 2] = bc[i * 3];
+        C[o + 3] = bc[i * 3 + 1];
+        C[o + 4] = bc[i * 3 + 2];
+        C[o + 5] = Infinity;
         F[o + 2] = -Infinity;
         F[o + 3] = 0;
         F[o + 4] = 0;
         F[o + 5] = 0;
         F[o + 6] = 1;
         F[o + 7] = 1;
-        clean = false;
       }
       if (pEnd > start) {
         const s = A.ns++;
@@ -1259,7 +1275,6 @@ class Fast {
         S[s * SS + 3] = n;
         if (withLo) this.settle(start, pEnd, s);
         else {
-          for (let j = start; j < pEnd; j++) F[j * FS + 8] = -Infinity;
           S[s * SS + 4] = start;
           SF[s * SFS] = -Infinity;
           SF[s * SFS + 1] = Infinity;
@@ -1279,6 +1294,7 @@ class Fast {
     const A = this.A;
     const I = A.I;
     const F = A.F;
+    const C = A.C;
     const blend = this.blend;
     // (from each solid on: the nearest skin left, less the biggest blend left)
     let least = Infinity;
@@ -1288,7 +1304,7 @@ class Fast {
       if (lo < least) least = lo;
       const k = blend[I[j]];
       if (k > K) K = k;
-      F[j * FS + 8] = least - K - SLACK * (1 + Math.abs(least) + K);
+      C[j * CS] = least - K - SLACK * (1 + Math.abs(least) + K);
     }
     // (the least what is found can be, at each solid: the smooth union of the least of each before it, all taken in;
     // where that is further than the most the solid can be by its blend, the solid sets what is found to its own
@@ -1298,7 +1314,7 @@ class Fast {
     let U = Infinity;
     for (let j = start; j < end; j++) {
       const k = blend[I[j]];
-      if (j > start && U >= F[j * FS + 13] + k + SLACK * (1 + Math.abs(U) + k)) {
+      if (j > start && U >= C[j * CS + 5] + k + SLACK * (1 + Math.abs(U) + k)) {
         at = j;
         atP = U;
       }
