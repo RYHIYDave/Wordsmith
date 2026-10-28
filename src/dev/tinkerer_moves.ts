@@ -15,7 +15,7 @@ import type { GameView } from '../art/skin';
 import { LAST } from './sculpt';
 import type { Drawn, Sculpt } from './sculpt';
 import { CONTRAPTION_PICK, CONTRAPTION_POSE, sculptContraptionBuild } from './sculpt_contraption';
-import { TINKERER_BODY, TINK_SWAY, sculptTinkerer, tinkererStance } from './sculpt_tinkerer';
+import { TINKERER_BODY, TINK_SWAY, bombSculpt, sculptTinkerer, tinkererStance } from './sculpt_tinkerer';
 
 export const FR = 1 / 30;
 export const TINK_B = TINKERER_BODY;
@@ -36,6 +36,12 @@ export interface TinkMove {
   hold?: (t: number) => { wrench: number; twirl: boolean; spin: number; vial: number; held?: Sculpt | null };
   /** When she is off the floor altogether (a hop): from and to, seconds. */
   air?: [number, number][];
+  /** How far the move has carried her along the floor (her own measure, forward) at a moment: a swipe's way. */
+  along?: (t: number) => number;
+  /** How much taller than a hero's her picture is drawn, its floor point as far down it (a move that throws her high). */
+  tall?: number;
+  /** The strike itself, a flash (his rulebook's Movement 9), and the jolt of a landing: from and to, seconds; not judged frame by frame. */
+  strike?: [number, number][];
 }
 
 const ease = (u: number): number => {
@@ -267,6 +273,132 @@ export function shutContraption(): Sculpt {
   return SHUT;
 }
 
+// ---- HER SWIPE: THE BLAST JUMP (her pick of it, 27 Oct: “Blast jump (Recommended)”). A gleeful, reckless bomber's way
+// out: she yanks a bomb off her bandolier, drops into a deep crouch and slaps it down at her feet, grinning as its fuse
+// spits; it goes off under her (the strike, a flash) and she RIDES THE BLAST six tiles the way you swipe (as the other
+// heroes' swipes go), whooping, her knees tucked, her free fist flung up and the wrench raised high; she comes down in a
+// three-point landing, her left hand slapped to the floor, skidding, and rises cocky. Her feet grip the floor while down.
+export const BJ = { grab: 5, crouch: 12, drop: 13, boom: 17, off: 19, apex: 26, reach: 32, land: 35, low: 38, up: 48, end: 57 };
+export const BLAST_REACH = 6 * UNITS_PER_TILE;
+export const BLAST_HIGH = 62;
+const BLAST_SKID = 6;
+/** How far she has gone at a frame: blown off over two frames, flying at one pace, skidding to a stop as she lands. */
+export function blastAlong(f: number): number {
+  const v = (BLAST_REACH - BLAST_SKID) / (BJ.land - BJ.off + 1);
+  if (f <= BJ.boom) return 0;
+  if (f <= BJ.off) {
+    const k = f - BJ.boom;
+    return (v / 4) * k * k;
+  }
+  if (f <= BJ.land) return v + v * (f - BJ.off);
+  const u = Math.min(1, (f - BJ.land) / 6);
+  return BLAST_REACH - BLAST_SKID + BLAST_SKID * (1 - (1 - u) * (1 - u));
+}
+/** How high she is off the floor at a frame (her own measure). */
+export function blastAir(f: number): number {
+  const u = (f - (BJ.boom + 0.5)) / (BJ.land - (BJ.boom + 0.5));
+  return u > 0 && u < 1 ? 4 * BLAST_HIGH * u * (1 - u) : 0;
+}
+function blastJump(): Motion {
+  /** A number through keys (frames, value), eased between. */
+  const tr = (f: number, ks: [number, number][]): number => track(ks.map(([a, b]) => [a * FR, b] as [number, number]), f * FR);
+  /** A foot: down where she stands until the blast; tucked up under her as she flies; down where she lands (and there it stays as she skids on over it). */
+  const foot = (side: 1 | -1, f: number): { x: number; z: number; p: number } => {
+    const rest = side > 0 ? { x: S0.lfx ?? 0 } : { x: S0.rfx ?? 0 };
+    const down = side > 0 ? BJ.land : BJ.land + 1;
+    const lands = BLAST_REACH + rest.x + (side > 0 ? 2.5 * T : -1.5 * T);
+    const off = BJ.boom + 0.5;
+    if (f <= off) return { x: rest.x - blastAlong(f), z: 0, p: 0 };
+    if (f >= down) return { x: lands - blastAlong(f), z: 0, p: 0 };
+    // (reached out ahead to land on, and straight down onto where it comes down the last moment before it does)
+    const over = down - 0.5;
+    if (f >= over) return { x: lands - blastAlong(f), z: 4 * T * ((down - f) / 0.5), p: 0 };
+    const x = tr(f, [[off, rest.x - blastAlong(off)], [BJ.off + 2, rest.x - 1 * T], [BJ.apex, rest.x + 1.5 * T], [over, lands - blastAlong(over)]]);
+    const rel = tr(f, [[off, 0], [BJ.off + 2, 10 * T], [BJ.apex, 11 * T], [over, 4 * T - blastAir(over)]]);
+    const v = (f - off) / (over - off);
+    return { x, z: Math.max(0, blastAir(f) + rel), p: 34 * Math.sin(Math.PI * Math.min(1, v / 0.85)) * Math.min(1, v / 0.2) };
+  };
+  const hand0 = { ...rightTo({}, HAND_R0, S0.re) };
+  const lhStance = { lhIn: 2 as const, lhx: S0.lhx, lhy: S0.lhy, lhz: S0.lhz, le: S0.le };
+  const keys: Key3[] = [];
+  for (let i = 0; i <= BJ.end * 2; i++) {
+    const f = i / 2;
+    const L = foot(1, f);
+    const Rf = foot(-1, f);
+    const air = blastAir(f);
+    // (her body: down into a deep crouch for the bomb, grinning; flung up and arched by the blast; tucked in the air; sunk
+    // deep into her landing, leaning on over her feet as she skids; up again, cocky)
+    const pose: Partial<Bones> = {
+      px: tr(f, [[0, 0], [BJ.crouch, 1.0 * T], [BJ.boom, 1.2 * T], [BJ.off, 0], [BJ.apex, 0], [BJ.land, 1.0 * T], [BJ.low, 3.0 * T], [BJ.up, 0.5 * T], [BJ.end, 0]]),
+      pz: (S0.pz ?? 0) + tr(f, [[0, 0], [BJ.grab, -0.6 * T], [BJ.crouch, -6.5 * T], [BJ.boom, -7.2 * T], [BJ.off, 1.5 * T], [BJ.apex, 0.5 * T], [BJ.reach, 0], [BJ.land, -3 * T], [BJ.low, -10.5 * T], [BJ.up, 0.3 * T], [BJ.end, 0]]) + air,
+      bend: (S0.bend ?? 0) + tr(f, [[0, 0], [BJ.grab, 4], [BJ.crouch, 20], [BJ.boom, 22], [BJ.off, -10], [BJ.apex, 4], [BJ.reach, 6], [BJ.land, 18], [BJ.low, 36], [BJ.up, 2], [BJ.end, 0]]),
+      side: (S0.side ?? 0) + tr(f, [[0, 0], [BJ.crouch, 2], [BJ.off, -2], [BJ.apex, 0], [BJ.low, 4], [BJ.up, 3], [BJ.end, 0]]),
+      hunch: (S0.hunch ?? 0) + tr(f, [[0, 0], [BJ.crouch, 6], [BJ.boom, 7], [BJ.off, -4], [BJ.apex, 2], [BJ.low, 10], [BJ.up, 0], [BJ.end, 0]]),
+      faceUp: S0.faceUp + tr(f, [[0, 0], [BJ.grab, -4], [BJ.crouch, 14], [BJ.boom, 16], [BJ.off, 18], [BJ.apex, 10], [BJ.land, 6], [BJ.low, 18], [BJ.up, 6], [BJ.end, 0]]),
+      faceTilt: S0.faceTilt + tr(f, [[0, 0], [BJ.crouch, 6], [BJ.apex, -6], [BJ.low, 8], [BJ.end, 0]]),
+      lfx: L.x, lfy: S0.lfy, lfz: L.z, lfp: L.p,
+      rfx: Rf.x, rfy: S0.rfy, rfz: Rf.z, rfp: Rf.p,
+    };
+    // HER RIGHT (the wrench's): on her shoulder; raised high in the air as she flies, whooping; held up as she lands; swung
+    // down and out to her side and slung back up onto her shoulder (as she twirls it standing), never through her
+    const lift: V3 = [pose.px ?? 0, 0, (pose.pz ?? 0) - (S0.pz ?? 0)];
+    const high = plus(from(STANCE_S.shoulderR, 2.5, -4.5, 10.5), lift);
+    const out = plus(from(STANCE_S.shoulderR, 3, -9, -2), lift);
+    const home = plus(HAND_R0, lift);
+    const seg = (p: V3, q: V3, a: number, b: number): V3 => plus(times(p, 1 - ease((f - a) / (b - a))), times(q, ease((f - a) / (b - a))));
+    const q = { ...pose };
+    let right: Partial<Bones>;
+    if (f <= BJ.boom) right = hand0;
+    else {
+      const want = f <= BJ.off + 1 ? seg(home, high, BJ.boom, BJ.off + 1) : f <= BJ.low ? high : f <= BJ.up - 4 ? seg(high, out, BJ.low, BJ.up - 4) : seg(out, home, BJ.up - 4, BJ.end - 3);
+      const e = tr(f, [[BJ.boom, S0.re ?? 0], [BJ.off + 1, (S0.re ?? 0) + 30], [BJ.low, (S0.re ?? 0) + 30], [BJ.up - 4, 10], [BJ.end - 3, S0.re ?? 0]]);
+      right = f >= BJ.end - 3 ? hand0 : rightTo(q, want, e);
+    }
+    // HER LEFT: to her bandolier for the bomb; down to the floor with it; flung up and out as she flies; slapped to the
+    // floor as she lands; back to her hip
+    const at = (p: V3): V3 => plus(p, [pose.px ?? 0, 0, (pose.pz ?? 0) - (S0.pz ?? 0)]);
+    const chest = at(from(STANCE_S.shoulderL, 2.6, -3.2, -6.5));
+    const floorFront: V3 = [10 * T, 2.0 * T, 2.6 * T];
+    const flung = at(from(STANCE_S.shoulderL, 1.5, 7, 9));
+    const landHand: V3 = [BLAST_REACH + 7 * T - blastAlong(f), 4.5 * T, 2.8 * T];
+    const hip = at(from(STANCE_S.pelvis, 3, 6, 5));
+    let lh: V3;
+    let le: V3 = [-6, 9, -2];
+    if (f <= BJ.grab) lh = plus(times([S0.lhx ?? 0, S0.lhy ?? 0, S0.lhz ?? 0], 1 - ease(f / BJ.grab)), times(chest, ease(f / BJ.grab)));
+    else if (f <= BJ.crouch) lh = plus(times(chest, 1 - ease((f - BJ.grab) / (BJ.crouch - BJ.grab))), times(floorFront, ease((f - BJ.grab) / (BJ.crouch - BJ.grab))));
+    else if (f <= BJ.boom) {
+      // (lifted off the floor slowly, then faster as the blast takes her: easing in, never stopping before it)
+      const u = Math.pow((f - BJ.crouch) / (BJ.boom - BJ.crouch), 2);
+      lh = plus(times(floorFront, 1 - u), times(at(from(STANCE_S.pelvis, 2, 7, 6)), u));
+    }
+    else if (f <= BJ.reach) {
+      lh = plus(times(at(from(STANCE_S.pelvis, 2, 7, 6)), 1 - ease((f - BJ.boom) / 4)), times(flung, ease((f - BJ.boom) / 4)));
+      le = [-3, 8, 3];
+    } else if (f <= BJ.low) {
+      const u = ease((f - BJ.reach) / (BJ.land - BJ.reach));
+      lh = plus(times(flung, 1 - u), times(landHand, u));
+    } else {
+      const u = ease((f - BJ.low) / (BJ.end - BJ.low));
+      lh = plus(times(landHand, 1 - u), times([S0.lhx ?? 0, S0.lhy ?? 0, S0.lhz ?? 0], u));
+    }
+    const left = leftTo({ ...q, ...right }, lh, le);
+    // (back on her hip at the end, her elbow turning back out as it was, not snapping to it)
+    if (f > BJ.low) {
+      const u = ease((f - BJ.low) / (BJ.end - BJ.low));
+      left.le = (left.le ?? 0) * (1 - u) + (S0.le ?? 0) * u;
+    }
+    void lhStance; void hip;
+    keys.push({ at: f * FR, ease: 'lin', pose: { ...q, ...right, ...left } });
+  }
+  return { keys, loop: 0 };
+}
+let BOMB: Sculpt | null = null;
+/** Her bomb, as she holds it (built once). */
+export function heldBomb(): Sculpt {
+  if (!BOMB) BOMB = bombSculpt();
+  return BOMB;
+}
+
 export function tinkerMoves(): TinkMove[] {
   return [
     {
@@ -274,6 +406,19 @@ export function tinkerMoves(): TinkMove[] {
       hold: (t) => ({ wrench: track(STAND_WRENCH, t), twirl: true, spin: track(STAND_SPIN, t) % (Math.PI * 2), vial: track(STAND_VIAL, t) > 0.5 ? 1 : 0 }),
     },
     { name: 'Running: a skipping run', motion: tinkerRun(), long: TRUN_ROUND, loops: true, travel: GRIP_SPEED, carry: TRUN_CARRY },
+    {
+      name: 'Swipe: a blast jump', motion: blastJump(), long: BJ.end * FR, loops: false, tall: 80,
+      along: (t) => blastAlong(t / FR),
+      air: [[(BJ.boom + 0.5) * FR, BJ.land * FR]],
+      // (the blast that throws her up, a flash: the frames it takes to fling her off the floor)
+      strike: [[BJ.boom * FR, (BJ.off + 1) * FR], [(BJ.land - 1) * FR, (BJ.land + 1) * FR]],
+      hold: (t) => {
+        const f = t / FR;
+        // (raised as she flies; held up as she lands and her fist comes back to her shoulder; slung back over it once it is there)
+        const up = track([[0, 0], [BJ.boom * FR, 0], [(BJ.off + 1) * FR, 1], [(BJ.up - 2) * FR, 1], [(BJ.end - 3) * FR, 0]], t);
+        return { wrench: up, twirl: true, spin: 0, vial: 0, held: f >= BJ.grab && f < BJ.drop ? heldBomb() : null };
+      },
+    },
     {
       name: 'Tap: a Contraption thrown down', motion: tinkerTap(), long: TAP_LONG, loops: false,
       hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: 0, held: t >= TAP_GRAB && t < TAP_LET_GO ? shutContraption() : null }),
@@ -308,7 +453,9 @@ const PONY_EASE_N = 16;
 export function drawTinkerAt(view: GameView, m: TinkMove, t: number, turn = 0): Drawn {
   const at = (u: number): number => (m.loops ? (((u % m.long) + m.long) % m.long) : Math.max(0, Math.min(m.long, u)));
   const headAt = (u: number): V3 => solve(TINK_B, tinkerPose(m.motion, at(u))).head;
-  const blown = (m.carry ?? 0) * LAG;
+  // (the wind of her going: the game's pace as she runs; as fast as a swipe carries her, as it does)
+  const pace = m.along ? Math.abs(m.along(at(t) + FR / 2) - m.along(Math.max(0, at(t) - FR / 2))) / FR : 0;
+  const blown = (m.carry ?? Math.min(TRUN_CARRY * 1.5, pace)) * LAG;
   // (where her head was against where it is, over the last moments, the nearest the most: so her ponytail eases after a
   // sudden stop, as hair does, and never whips from one side to the other between two frames)
   const v = [0, 0, 0];
@@ -324,14 +471,14 @@ export function drawTinkerAt(view: GameView, m: TinkMove, t: number, turn = 0): 
   for (let c = 0; c < 3; c++) v[c] /= all;
   v[0] -= blown * 0.35;
   v[2] -= blown > 0 ? -1.5 : 0;
-  const cap = m.carry ? 9 : 5;
+  const cap = m.carry || pace > 20 ? 9 : 5;
   const n = Math.hypot(v[0], v[1], v[2]);
   TINK_SWAY.pony = n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : [v[0], v[1], v[2]];
   const h = m.hold ? m.hold(at(t)) : { wrench: 0, twirl: false, spin: 0, vial: 0 };
-  Object.assign(TINK_SWAY, { held: null }, h);
+  Object.assign(TINK_SWAY, { held: null, tall: m.tall ?? 0 }, h);
   try {
     return sculptTinkerer(view, tinkerPose(m.motion, at(t)) as unknown as Bones, turn);
   } finally {
-    Object.assign(TINK_SWAY, { pony: [0, 0, 0], wrench: 0, twirl: false, spin: 0, vial: 0, held: null });
+    Object.assign(TINK_SWAY, { pony: [0, 0, 0], wrench: 0, twirl: false, spin: 0, vial: 0, held: null, tall: 0 });
   }
 }

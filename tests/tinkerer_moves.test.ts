@@ -37,7 +37,7 @@ function wrenchThrough(sc: Sculpt): string[] {
 }
 
 /** Where what she holds (a Contraption, shut, gripped in her left) goes through her: its solids against all of her but that fist. */
-const HELD_PIECES = ['legs', 'body', 'barrel', 'magazine', 'gear'];
+const HELD_PIECES = ['legs', 'body', 'barrel', 'magazine', 'gear', 'bomb'];
 function heldThrough(sc: Sculpt): string[] {
   const prims = sc.prims.filter((p) => !p.carve);
   const held = prims.filter((p) => HELD_PIECES.includes(p.piece));
@@ -89,6 +89,9 @@ for (const m of tinkerMoves()) {
         const N = sp.length;
         if (N < 3 || Math.max(...sp) < 2) continue;
         for (let i = 0; i < N; i++) {
+          // (THE STRIKE ITSELF, a flash, and the jolt of a landing, are not judged frame by frame: his rulebook's Movement 9;
+          // the wind-up and the wind-down are)
+          if ((m.strike ?? []).some(([s0, s1]) => times[i] >= s0 - 1e-6 && times[i] <= s1 + 1e-6)) continue;
           const a = sp[(i - 1 + N) % N];
           const b = sp[i];
           const c = sp[(i + 1) % N];
@@ -112,14 +115,15 @@ for (const m of tinkerMoves()) {
     }
     for (const [a, b] of pairs) {
       const at = `${times[a].toFixed(2)} to ${times[b].toFixed(2)} s`;
-      const carry = m.carry ?? 0;
+      // (how far the game has carried her across the floor: a run at its pace; a swipe as far as it has gone)
+      const go = (t: number): number => (m.along ? m.along(t) : (m.carry ?? 0) * t);
       const ta = times[a];
       const tb = b > a ? times[b] : m.long;
       // (her toes, against where they are on the floor as she stands; and her ankles, against the floor's own height, as a
       // foot set down flat has its toe a little higher than her pointed toes do as she stands: either way down, it may not slide)
       for (const toe of ['toeL', 'toeR', 'ankleL', 'ankleR'] as const) {
-        const p: V3 = [sk[a][toe][0] + carry * ta, sk[a][toe][1], sk[a][toe][2]];
-        const q: V3 = [sk[b][toe][0] + carry * tb, sk[b][toe][1], sk[b][toe][2]];
+        const p: V3 = [sk[a][toe][0] + go(ta), sk[a][toe][1], sk[a][toe][2]];
+        const q: V3 = [sk[b][toe][0] + go(tb), sk[b][toe][1], sk[b][toe][2]];
         const floor = (toe.startsWith('toe') ? stand[toe][2] : TINK_B.ankle) + ON_FLOOR;
         if (p[2] < floor && q[2] < floor) {
           const slide = Math.hypot(p[0] - q[0], p[1] - q[1]);

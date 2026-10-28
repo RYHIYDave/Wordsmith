@@ -191,7 +191,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.box(steel, piece, add(c, mul(d, -R * 0.95)), [mul(d, R * 0.24), mul(s1, R * 0.98), mul(s2, R * 1.04)], R * 0.18, 0.2, { tag: 'cuff' });
   };
   /** AN ARM of pistons: a steel ball at its root, a steel rod with a copper piston along it, a steel elbow, a flaring brass gauntlet. */
-  const armOf = (piece: string, root: V3, el: V3, wrist: V3, r: number): void => {
+  const armOf = (piece: string, root: V3, el: V3, wrist: V3, r: number, side?: V3): void => {
     if (giant && !piece.startsWith('giant')) {
       roots[piece] ??= root;
       return;
@@ -199,19 +199,20 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.ell(steel, piece, root, X(r * 1.45, r * 1.45, r * 1.45), 0.5, { tag: 'ball' });
     sc.cone(steel, piece, root, el, r, r * 0.85, 0.5, { tag: 'upper' });
     const d = norm(sub(el, root));
-    const o = norm(cross(d, F));
+    // (its piston along the outer side of its upper arm: or along `side`, the side it is fixed to as the arm swings)
+    const o = side ?? norm(cross(d, F));
     sc.cone(copper, piece, add(lerp3(root, el, 0.2), mul(o, r * 0.95)), add(lerp3(root, el, 0.92), mul(o, r * 0.95)), r * 0.3, r * 0.3, 0.2, { tag: 'piston' });
     sc.ell(steel, piece, el, X(r * 1.1, r * 1.1, r * 1.1), 0.4, { tag: 'joint' });
     sc.cone(brass, piece, el, wrist, r * 1.05, r * 1.5, 0.4, { tag: 'gauntlet' });
   };
   /** A LEG: a steel thigh, a brass knee, a greave flaring to a great flat steel foot on the floor. */
-  const legOf = (piece: string, hip: V3, knee: V3, ankle0: V3, r: number, footLen: number): void => {
-    // (the ankle kept high enough that its greave stands on the foot, not through the floor)
-    const ankle: V3 = [ankle0[0], ankle0[1], Math.max(ankle0[2], r * 1.2 + 0.3)];
+  const legOf = (piece: string, hip: V3, knee: V3, ankle0: V3, r: number, footLen: number, lift = 0): void => {
+    // (the ankle kept high enough that its greave stands on the foot, not through the floor; the foot lifted with it as it steps)
+    const ankle: V3 = [ankle0[0], ankle0[1], Math.max(ankle0[2], r * 1.2 + 0.3 + lift)];
     sc.cone(steel, piece, hip, knee, r, r * 0.85, 0.5, { tag: 'thigh' });
     sc.ell(brass, piece, knee, X(r * 0.95, r * 0.95, r * 0.95), 0.3, { tag: 'kneecap' });
     sc.cone(brass, piece, knee, ankle, r * 0.95, r * 1.2, 0.4, { tag: 'greave' });
-    const foot: V3 = [ankle[0], ankle[1], 0];
+    const foot: V3 = [ankle[0], ankle[1], lift];
     const fd = norm([F[0], F[1], 0]);
     const fs = norm(cross(U, fd));
     sc.box(steel, piece, add(add(foot, mul(fd, footLen * 0.35)), [0, 0, r * 0.5]), [mul(fd, footLen), mul(fs, r * 1.25), mul(U, r * 0.5)], r * 0.35, 0.5, { tag: 'foot' });
@@ -252,7 +253,17 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
       armOf(piece, P(6, side * 21, 56), P(16, side * 28, 36), P(24, side * 25, 15), 3.6);
       fistAt(piece, P(25, side * 24.5, 7.4), mul(U, -1), mul(L, -side), 7.4);
     }
-    for (const side of [1, -1]) legOf(side > 0 ? 'legL' : 'legR', P(-12, side * 9, 28), P(-8, side * 12, 15), P(-13, side * 12, 5), 4.4, 6.5);
+    for (const side of [1, -1]) {
+      // (its feet where they stand; or, as it walks, each set forward or back and lifted (GOLEM_POSE.feet), its knee bent
+      // forward between its hip and its ankle as a knee bends)
+      const [df, dz] = side > 0 ? [GOLEM_POSE.feet[0], GOLEM_POSE.feet[1]] : [GOLEM_POSE.feet[2], GOLEM_POSE.feet[3]];
+      if (!df && !dz) {
+        legOf(side > 0 ? 'legL' : 'legR', P(-12, side * 9, 28), P(-8, side * 12, 15), P(-13, side * 12, 5), 4.4, 6.5);
+        continue;
+      }
+      const [kf, ku] = kneeFor([-12, 28], [-13 + df, 5 + dz], 13.9, 11.2);
+      legOf(side > 0 ? 'legL' : 'legR', P(-12, side * 9, 28), P(kf, side * 12, ku), P(-13 + df, side * 12, 5 + dz), 4.4, 6.5, dz);
+    }
     for (const side of [1, -1]) stackAt('stacks', P(-6, side * 7, 60), P(-9, side * 8, 80), 2.4);
   } else if (build === 'tank') {
     // THE TREAD TANK: no legs, a pair of tracks under a deck; on it a boiler drum standing up, a dome over it with one great
@@ -838,8 +849,27 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     const [rf, rl, ru] = at(r0);
     const reach = Math.max(rf, 0);
     sc.ell(brass, 'giantR', P(rf, rl - 1, ru + 3.5), X(9, 7, 7.5), 0.6, { tag: 'plate' });
-    armOf('giantR', P(rf, rl, ru), P(reach + 10, rl - 10, ru * 0.62 + 6), P(reach + 18, rl - 10, 21), 4.8);
-    fistAt('giantR', P(reach + 21, rl - 10, 12.8), norm(add(mul(U, -1), mul(F, 0.25))), mul(L, 1), 10.5);
+    // (swung up and back about its shoulder as it moves, GOLEM_POSE.swing degrees; its elbow bent in as it is raised, `fold`)
+    const sh = P(rf, rl, ru);
+    const sw = (GOLEM_POSE.swing * Math.PI) / 180;
+    const fold = (GOLEM_POSE.fold * Math.PI) / 180;
+    const elbow0 = P(reach + 10, rl - 10, ru * 0.62 + 6);
+    const turnS = (p: V3): V3 => add(sh, aboutAxis(sub(p, sh), L, -sw));
+    // (the forearm folded about the elbow first, then the whole arm swung about the shoulder)
+    const turnE = (p: V3): V3 => turnS(add(elbow0, aboutAxis(sub(p, elbow0), L, -fold)));
+    const dirE = (v: V3): V3 => aboutAxis(aboutAxis(v, L, -fold), L, -sw);
+    // (its piston fixed to the outer side of its upper arm, swung with it: never round through its body as the arm goes up)
+    const pistonSide = aboutAxis(norm(cross(norm(sub(elbow0, sh)), F)), L, -sw);
+    armOf('giantR', sh, turnS(elbow0), turnE(P(reach + 18, rl - 10, 21)), 4.8, pistonSide);
+    const fistC = turnE(P(reach + 21, rl - 10, 12.8));
+    // (its fist turned with its arm; or, as it walks on it, kept knuckles down on the floor however its arm and body turn:
+    // GOLEM_POSE.level)
+    const knuckles0 = norm(add(mul(U, -1), mul(F, 0.25)));
+    const lv = GOLEM_POSE.level;
+    const flat = (v: V3): V3 => aboutAxis(v, L, -(GOLEM_POSE.lean * Math.PI) / 180);
+    const fistDir = lv ? norm(lerp3(dirE(knuckles0), flat(knuckles0), lv)) : dirE(knuckles0);
+    fistAt('giantR', fistC, fistDir, lv ? mul(L, 1) : dirE(mul(L, 1)), 10.5);
+    GOLEM_FIST.c = fistC;
     const l0 = roots.armL ?? P(0, 14, 44);
     const [lf, ll, lu] = at(l0);
     if (gun === 'pincer') {
@@ -908,10 +938,61 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     }
   }
   // (built at a size easy to think in, then made the size it stands at: a head over the knight, as his brief asked)
+  // (ITS BODY LEANING AND BOBBING as it moves, GOLEM_POSE.lean degrees forward about its hips and `bob` up: all of it but
+  // its legs, which stand where they stand)
+  if (giant && (GOLEM_POSE.lean || GOLEM_POSE.bob)) {
+    const pivot = P(-7, 0, 28);
+    const a = (GOLEM_POSE.lean * Math.PI) / 180;
+    const mv = (q: V3): V3 => add(add(pivot, aboutAxis(sub(q, pivot), L, a)), [0, 0, GOLEM_POSE.bob]);
+    const tv = (v: V3): V3 => aboutAxis(v, L, a);
+    for (let i = 0; i < sc.prims.length; i++) {
+      const pr = sc.prims[i];
+      if (pr.piece === 'legL' || pr.piece === 'legR') continue;
+      const cuts = pr.cuts?.map((c) => {
+        const n = tv(c.n);
+        // (a cut keeps where n.p <= o; moved by a turn about the pivot and a lift, its offset moves with it)
+        const o = c.o - dot3(c.n, pivot) + dot3(n, pivot) + n[2] * GOLEM_POSE.bob;
+        return { n, o };
+      });
+      if (pr.k === 'cone') sc.prims[i] = { ...pr, a: mv(pr.a), b: mv(pr.b), cuts };
+      else if (pr.k === 'tri') sc.prims[i] = { ...pr, a: mv(pr.a), b: mv(pr.b), c: mv(pr.c), cuts };
+      else sc.prims[i] = { ...pr, c: mv(pr.c), axes: [tv(pr.axes[0]), tv(pr.axes[1]), tv(pr.axes[2])], cuts } as typeof pr;
+    }
+    GOLEM_FIST.c = mv(GOLEM_FIST.c);
+    GOLEM_MUZZLE.p = mv(GOLEM_MUZZLE.p);
+    GOLEM_MUZZLE.way = tv(GOLEM_MUZZLE.way);
+  }
   const k = GOLEM_SIZE[build] ?? GOLEM_TOP / topOf(sc);
   scaleBy(sc, k);
   GOLEM_MUZZLE.p = mul(GOLEM_MUZZLE.p, k);
+  GOLEM_FIST.c = mul(GOLEM_FIST.c, k);
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
+}
+
+/**
+ * THE GOLEM MOVING (its giant arm and its body; dev/golem_moves.ts): its giant arm swung up and back about its shoulder
+ * (degrees), its forearm folded in at the elbow (degrees), its body leaning forward about its hips (degrees) and bobbed up.
+ * All naught as it stands, as he picked it.
+ */
+export const GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0] as [number, number, number, number], level: 0 };
+/** A knee between a hip and an ankle (each forward and up, in its own measure), `a` and `b` its thigh and shin: bent forward. */
+export function kneeFor(hip: [number, number], ankle: [number, number], a: number, b: number): [number, number] {
+  const dx = ankle[0] - hip[0];
+  const dy = ankle[1] - hip[1];
+  const d = Math.min(a + b - 0.01, Math.max(Math.abs(a - b) + 0.01, Math.hypot(dx, dy)));
+  const al = Math.acos(Math.max(-1, Math.min(1, (a * a + d * d - b * b) / (2 * a * d))));
+  const th = Math.atan2(dy, dx) + al;
+  return [hip[0] + a * Math.cos(th), hip[1] + a * Math.sin(th)];
+}
+/** Where the last drawn Golem's giant fist is (its middle, as it was built, before it is turned). */
+export const GOLEM_FIST: { c: V3 } = { c: [0, 0, 0] };
+/** `v` turned about the unit `k` by `a` (radians). */
+function aboutAxis(v: V3, k: V3, a: number): V3 {
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const d = k[0] * v[0] + k[1] * v[1] + k[2] * v[2];
+  const x = cross(k, v);
+  return [v[0] * c + x[0] * s + k[0] * d * (1 - c), v[1] * c + x[1] * s + k[1] * d * (1 - c), v[2] * c + x[2] * s + k[2] * d * (1 - c)];
 }
 
 /** Its other arm: the little pincer arm it was picked with, or a gun (his “Maybe put a cannon or a tesla coil on his other arm”, 28 Oct). */

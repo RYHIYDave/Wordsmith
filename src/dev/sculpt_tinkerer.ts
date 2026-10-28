@@ -130,7 +130,7 @@ export const HER_FACE = { turn: -24, up: 4, gog: 0.84, gogF: 0.55, glint: 4 };
  * at its tip: loose things follow, Movement 4); `wrench`, how far the wrench is brought off her shoulder to hold out before
  * her (0 over her shoulder, 1 held out, its head down before her).
  */
-export const TINK_SWAY = { pony: [0, 0, 0] as V3, wrench: 0, twirl: false, spin: 0, vial: 0, held: null as Sculpt | null };
+export const TINK_SWAY = { pony: [0, 0, 0] as V3, wrench: 0, twirl: false, spin: 0, vial: 0, held: null as Sculpt | null, tall: 0 };
 /** (and: `twirl`, the wrench brought off her shoulder to stand straight up in her fist, not held out before her; `spin`, how
  * far it is spun round in her fist (radians, about her left-to-right: a baton's twirl at her side); `vial`, a vial out of
  * her belt in her left fist) */
@@ -592,6 +592,37 @@ export function sculptTinkerer(view: GameView, pose?: Bones, turn = 0, kit: Tink
     sc.ell(lens, 'goggles', add(c, mul(hf, 0.5)), [mul(hf, 0.45), mul(hl, 1.0), mul(hu, 0.9)], 0.1, { tag: 'lens' });
   }
   void TEAL;
+  // (a picture taller than a hero's, its floor point as far down it, when she is thrown that high: TINK_SWAY.tall)
+  const tall = TINK_SWAY.tall;
+  return draw(sc, view, CANVAS3.ax, CANVAS3.ay + tall, { w: CANVAS3.w, h: CANVAS3.h + tall }, undefined, FRIEND_RIM);
+}
+
+// ---------------------------------------------------------------------------------------------
+// HER BOMB (her swipe, the blast jump: dev/tinkerer_moves.ts, dev/blast_fx.ts): a ball of black iron banded in brass, a
+// copper cap, a short fuse with a cyan spark at its end. Built as she holds it (its middle at its floor point's height).
+
+/** Her bomb, built: its solids, to be held (graft) or drawn on the floor (drawBomb). */
+export function bombSculpt(): Sculpt {
+  const sc = new Sculpt();
+  const iron = sc.mat({ ramp: ['#08070c', '#16141e', '#28263a', '#46445e', '#6e6c8c'] });
+  const brass = sc.mat({ ramp: BRASS });
+  const copper = sc.mat({ ramp: COPPER });
+  const spark = sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) });
+  const R = BOMB_R;
+  const c: V3 = [0, 0, R + 0.35];
+  sc.ell(iron, 'bomb', c, [[R, 0, 0], [0, R, 0], [0, 0, R]], 0.2, { tag: 'iron' });
+  sc.ell(brass, 'bomb', c, [[R * 1.06, 0, 0], [0, R * 1.06, 0], [0, 0, R * 0.22]], 0.1, { tag: 'band' });
+  sc.cone(copper, 'bomb', [0, 0, c[2] + R * 0.8], [0, 0, c[2] + R * 1.15], R * 0.42, R * 0.38, 0.2, { tag: 'cap' });
+  sc.cone(sc.mat({ ramp: HIDE }), 'bomb', [0, 0, c[2] + R * 1.1], [R * 0.25, 0, c[2] + R * 1.55], 0.32, 0.28, 0.1, { tag: 'fuse' });
+  sc.ell(spark, 'bomb', [R * 0.32, 0, c[2] + R * 1.66], [[0.5, 0, 0], [0, 0.5, 0], [0, 0, 0.5]], 0.05, { tag: 'spark' });
+  return sc;
+}
+/** How big her bomb is (its half across). */
+export const BOMB_R = 2.3;
+/** Her bomb set down on the floor, in one of the game's views. */
+export function drawBomb(view: GameView, turn = 0): Drawn {
+  const sc = bombSculpt();
+  sc.spin = turn;
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }
 
