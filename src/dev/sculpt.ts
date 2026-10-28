@@ -345,9 +345,9 @@ export class Field {
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE FIELD, FAST (the main chat, 28 Oct 2026). The game paints every hero frame at load time, and the plain `Field` above
-// takes a sixth of a second and more for one frame (seconds, for the demon), on a phone four times that. `Fast` works
-// out THE VERY SAME NUMBERS, to the last bit, so every picture is the same to the pixel. It is quicker because:
+// THE FIELD, FAST (28 Oct 2026). The game is to paint every hero frame at load time, and the plain `Field` above takes a
+// sixth of a second and more for one frame (seconds, for the demon), on a phone some times that. `Fast` works out THE
+// VERY SAME NUMBERS, to the last bit, so every picture is the same to the pixel. It is quicker because:
 //  1. its sums are done on numbers laid out flat, with nothing made and thrown away for each point it is asked of;
 //  2. it asks of each point only the solids that can matter there. Space is cut into small cells (a few pixels square, a
 //     few lengths deep), and each cell keeps a list of its solids: every solid but those that `Field` itself, at every
@@ -357,31 +357,27 @@ export class Field {
 //     at and passed over leaves it less than its ball's reach; one taken in leaves it no more than its own distance). A
 //     carve takes away and may raise what is found, so a material carved in a cell lends nothing to the proof for the
 //     materials after it there. A cell's list is drawn from the list of the bigger cell it lies in;
-//  3. it skips the sums whose answer is known without them, again only where that is proved for the whole cell: a solid
-//     whose skin is further than what is found by its blend leaves it as it was, to the bit; a material that can give
-//     nothing nearer than the nearest skin already found (in `at`) changes nothing; and where a solid nearer than all
-//     before it by its blend is taken in, what went before it is forgotten (what is found becomes its distance), so those
-//     before it need not be asked at all. How far a solid can be anywhere in a cell is bounded from its distance at the
-//     cell's middle (a rod, a block and a sheet are no further, nor nearer, than the point has gone; a ball, as `dist` has
-//     it, is bounded through how far out of it the point is, as measured along its own half-lengths);
-//  4. a column of pixels that no skin of any material comes near enough to (by its blends) to be met is not marched.
+//  3. it skips the sums whose answer is known without them, again only where that is proved: a solid whose skin is
+//     further than what is found by its blend leaves it as it was, to the bit; a material that can give nothing nearer
+//     than the nearest skin already found (in `at`) changes nothing; and where a solid nearer than what went before it by
+//     its blend is taken in, what went before it is forgotten (what is found becomes its distance), so those before it
+//     need not be asked at all. How near a solid can be is bounded for its whole cell from its distance at the cell's
+//     middle, and at each point from the flat that touches its distance there (a rod's line, a block and a sheet bulge
+//     nowhere inward, so their distance never falls below that flat; a ball's, as `dist` has it, is bounded through how
+//     far out of it the point is, measured along its own half-lengths);
+//  4. a pixel whose ray no skin of any material comes near enough to (by its blends) to be met is not marched.
 // What is left is looked at in the same order and with the same sums as `Field` looks at every solid, so what it finds is
-// the same. `SCULPT_SPEED.fast = false` draws with the plain field.
+// the same. `SCULPT_SPEED.fast = false` draws with the plain field (to check one against the other).
 
 /** Draw with the fast field (the same pictures, to the pixel), or the plain one. */
 export const SCULPT_SPEED = { fast: true };
 /**
  * The cells' size: pixels square, lengths deep (as `Stage.near` measures), and how many of them a side the bigger cells
- * their lists are drawn from are, the smallest first; for a figure of more than `many` solids, `manyCell`.
+ * their lists are drawn from are, the smallest first; for a figure of more than `many` solids, `manyCell`. A material of
+ * at least `over` solids in a list is looked over at the point first (`Fast.ofSeg`); a point of the march further than
+ * `far` times the next size's reach from every skin is asked from that size's list.
  */
-export const CELL = { ts: 4, dt: 4, sizes: [4], over: 5, many: 250, manyCell: { ts: 6, dt: 6, sizes: [2, 4] } };
-
-/** (counting the work, for measuring: off) */
-const COUNT = false;
-export const COUNTS: Record<string, number> = {};
-const cnt = (k: string, v = 1): void => {
-  COUNTS[k] = (COUNTS[k] ?? 0) + v;
-};
+export const CELL = { ts: 4, dt: 4, sizes: [4], over: 5, far: 2, many: 250, manyCell: { ts: 6, dt: 6, sizes: [2, 4] } };
 
 const KC = 0;
 const KE = 1;
@@ -399,16 +395,12 @@ const SLACK = 1e-6;
  * distance can be where the list holds. (Sixteen places, the first eight what a solid is looked over by.)
  */
 const FS = 16;
-/** A material of no fewer solids than this is first looked over solid by solid, at the point, for how near each can be. */
-const OVER = 5;
+/** (how near each solid of the material being asked can be, at the point it is asked of) */
 let LQ = new Float64Array(256);
-/**
- * Numbers kept for each material of a list (`Arena.S`): its number; its first solid, after its last solid, after its last
- * carve; the solid to begin at; a later solid that may be begun at, if it proves so at the point.
- */
-const SS = 6;
-/** And (`Arena.SF`): the least it can give where the list holds; the least `Field` can have found when it comes to the solid to begin at, and to the later one. */
-const SFS = 3;
+/** Numbers kept for each material of a list (`Arena.S`): its number; its first solid, after its last solid, after its last carve; the solid to begin at. */
+const SS = 5;
+/** And (`Arena.SF`): the least the material can give where the list holds; the least `Field` can have found when it comes to the solid to begin at. */
+const SFS = 2;
 
 /**
  * THE LISTS OF ONE DRAWING, kept flat: a list is a run of materials (`T`: its first and how many), each material a run of
@@ -584,10 +576,9 @@ class Fast {
       const i0 = A.ni;
       plain(prims);
       plain(carves);
-      A.S.set([m, i0, i0 + prims.length, A.ni, i0, i0], s * SS);
+      A.S.set([m, i0, i0 + prims.length, A.ni, i0], s * SS);
       A.SF[s * SFS] = -Infinity;
       A.SF[s * SFS + 1] = Infinity;
-      A.SF[s * SFS + 2] = Infinity;
     };
     const ids = (rr: Ready[]): number[] => rr.map((r) => index.get(r) as number);
     const s0 = A.ns;
@@ -697,11 +688,6 @@ class Fast {
     const p1 = S[sb + 2];
     let j = S[sb + 4];
     let d = Infinity;
-    if (COUNT) {
-      cnt('ofSeg');
-      cnt('ofItems', p1 - first);
-      if (j !== first) cnt('resetCand');
-    }
     // (BEGUN AT A SOLID THAT SETS WHAT IS FOUND TO ITS OWN DISTANCE, whatever went before it, if `Field` takes it in:
     // that it does, here; that it sets it so, proved for the cell)
     if (j !== first) {
@@ -711,7 +697,6 @@ class Fast {
       const ey = y - F[o + 11];
       const ez = z - F[o + 12];
       if (!(far >= 0 && ex * ex + ey * ey + ez * ez <= far * far)) j = first;
-      else if (COUNT) cnt('resetSkipped', j - first);
     }
     const j0 = j;
     // LOOKED OVER FIRST, AT THE POINT, where there are enough solids to be worth it: how near each can be here
@@ -753,10 +738,7 @@ class Fast {
       P -= SLACK * (1 + Math.abs(P));
       // (the least the material can give here: the smooth union of the least of each, all taken in; if that is not nearer
       // than what is found, it cannot win)
-      if (P >= cap) {
-        if (COUNT) cnt('floorQ');
-        return Infinity;
-      }
+      if (P >= cap) return Infinity;
       // (the last solid that may, here, set what is found to its own distance whatever went before it: the least what is
       // found can be when it comes to it, further than its own distance by its blend; and taken in)
       let tries = 0;
@@ -775,13 +757,11 @@ class Fast {
         if (!(far >= 0 && ex * ex + ey * ey + ez * ez <= far * far)) continue;
         tries++;
         const b = this.dist(I[r], x, y, z);
-        if (COUNT) cnt(cap === Infinity ? 'distInf' : 'distCap');
         if (pb >= b + k + SLACK * (1 + Math.abs(pb) + Math.abs(b) + k)) {
-          if (COUNT) cnt('resetQ', r - j0);
           d = b;
           j = r + 1;
           break;
-        } else if (COUNT) cnt('resetQLost');
+        }
       }
     }
     for (; j < p1; j++) {
@@ -790,10 +770,7 @@ class Fast {
       // (its skin further off than what is found, by its blend: the smooth union would keep what it has, to the bit)
       if ((over ? lq_[j - j0] : F[o]) >= d + k) continue;
       // (what is found, and all that is left, no nearer than the nearest skin of another material: it cannot win)
-      if (d >= cap && F[o + 8] >= cap) {
-        if (COUNT) cnt('bail');
-        return Infinity;
-      }
+      if (d >= cap && F[o + 8] >= cap) return Infinity;
       const far = Math.min(d, cap) + k + F[o + 9];
       if (far < 0) continue;
       const ex = x - F[o + 10];
@@ -801,7 +778,6 @@ class Fast {
       const ez = z - F[o + 12];
       if (ex * ex + ey * ey + ez * ez > far * far) continue;
       const b = this.dist(I[j], x, y, z);
-      if (COUNT) cnt(cap === Infinity ? 'distInf' : 'distCap');
       if (d === Infinity) d = b;
       else if (k <= 0) d = Math.min(d, b);
       else {
@@ -832,7 +808,6 @@ class Fast {
   }
   /** `Field.at` from a list: the nearest skin of any material (and whose, in `m`). */
   at(L: number, x: number, y: number, z: number): number {
-    if (COUNT) cnt('at');
     let d = Infinity;
     let m = -1;
     if (this.lead >= 0) {
@@ -844,10 +819,7 @@ class Fast {
     const s1 = s0 + A.T[L * 2 + 1];
     for (let s = s0; s < s1; s++) {
       // (a material that can give nothing nearer than what is found changes nothing)
-      if (A.SF[s * SFS] >= d) {
-        if (COUNT) cnt('floorSkip');
-        continue;
-      }
+      if (A.SF[s * SFS] >= d) continue;
       const di = this.ofSeg(s, x, y, z, d);
       if (di < d) {
         d = di;
@@ -1124,7 +1096,6 @@ class Fast {
     const A = this.A;
     const ps0 = A.T[P * 2];
     const ps1 = ps0 + A.T[P * 2 + 1];
-    if (COUNT) cnt('cull');
     A.room(A.S[(ps1 - 1) * SS + 3] - A.S[ps0 * SS + 1], ps1 - ps0);
     const I = A.I;
     const F = A.F;
@@ -1212,10 +1183,8 @@ class Fast {
         else {
           for (let j = start; j < pEnd; j++) F[j * FS + 8] = -Infinity;
           S[s * SS + 4] = start;
-          S[s * SS + 5] = start;
           SF[s * SFS] = -Infinity;
           SF[s * SFS + 1] = Infinity;
-          SF[s * SFS + 2] = Infinity;
         }
       } else n = start;
       if (across && clean && L < G) G = L;
@@ -1248,8 +1217,6 @@ class Fast {
     // distance: the last such is where to begin)
     let at = start;
     let atP = Infinity;
-    let mb = start;
-    let mbP = Infinity;
     let U = Infinity;
     for (let j = start; j < end; j++) {
       const k = blend[I[j]];
@@ -1262,12 +1229,10 @@ class Fast {
       U -= SLACK * (1 + Math.abs(U));
     }
     A.S[s * SS + 4] = at;
-    A.S[s * SS + 5] = mb > at ? mb : at;
     // (the least the material can give: the smooth union of the least of each, all taken in; its carves only take it
     // further off)
     A.SF[s * SFS] = U;
     A.SF[s * SFS + 1] = atP;
-    A.SF[s * SFS + 2] = mb > at ? mbP : Infinity;
   }
 
   /** The least a solid's distance can be anywhere within `r` of the line through `p` along `u` (a unit). */
@@ -1443,6 +1408,14 @@ class Cells {
     const iy = r % this.ny;
     return this.listAt(0, ix, iy, (r - iy) / this.ny);
   }
+  /** The list of the bigger cell (the next size) a cell lies in, for a point far from every skin. */
+  farList(k: number): number {
+    if (k < 0 || this.lv.length < 2) return this.atList(k);
+    const ix = k % this.nx;
+    const r = (k - ix) / this.nx;
+    const iy = r % this.ny;
+    return this.listAt(1, ix, iy, (r - iy) / this.ny);
+  }
   /** The list `at` is to look at in the cell of size `L` that the cell (ix, iy, iz) lies in. */
   private listAt(L: number, ix: number, iy: number, iz: number): number {
     const lv = this.lv[L];
@@ -1454,7 +1427,7 @@ class Cells {
     if (have) return have;
     const parent = L + 1 < this.lv.length ? this.listAt(L + 1, ix, iy, iz) : this.fa.full;
     const c = this.mid(bx, by, bz, lv.f);
-    return (lv.at[key] = this.fa.cull(parent, c[0], c[1], c[2], lv.rho, true, L === 0));
+    return (lv.at[key] = this.fa.cull(parent, c[0], c[1], c[2], lv.rho, true, L <= 1));
   }
   /** One material's own list in a cell, for `ofMat` with no cap and `nearest`, good within `pad` of the cell (-1: every solid). */
   matList(k: number, m: number): number {
@@ -1574,11 +1547,10 @@ function marchFast(
       }
     }
   }
+  const farD = cs.sizes.length ? CELL.far * cells.lv[1].rho : Infinity;
   for (let y = ys; y <= ye; y++) {
     for (let x = xs; x <= xe; x++) {
-      if (COUNT) cnt('pixels');
       if (clear[(y - ys) * NX + (x - xs)]) continue;
-      if (COUNT) cnt('marched');
       const sx = x + 0.5 - ax;
       const sy = y + 0.5 - ay;
       const b0 = CX[0] * sx + CY[0] * sy;
@@ -1592,17 +1564,19 @@ function marchFast(
       let m = -1;
       let cell = -2;
       let L = fa.full;
+      // (far from every skin, the list of a bigger cell does as well: fewer lists to work out)
+      let far = true;
       for (let i = 0; i < 160 && t > zFar; i++) {
         q0 = b0 + CZ[0] * t;
         q1 = b1 + CZ[1] * t;
         q2 = b2 + CZ[2] * t;
         const k = cells.cell(sx, sy, t);
-        if (k !== cell) {
+        if (k !== cell || far) {
           cell = k;
-          L = cells.atList(k);
+          L = far ? cells.farList(k) : cells.atList(k);
         }
         const d = fa.at(L, q0, q1, q2);
-        if (COUNT) cnt('steps');
+        far = d > farD;
         if (d < 0.02) {
           hit = true;
           m = fa.m;
@@ -1611,7 +1585,6 @@ function marchFast(
         t -= Math.max(0.02, (d * 0.8) / L2);
       }
       if (!hit) continue;
-      if (COUNT) cnt('hits');
       // the way the skin faces, its creases, whose it is: as `draw` has them
       const ML = cells.matList(cell, m);
       const nx = fa.ofMat(ML, q0 + E, q1 + 0, q2 + 0) - fa.ofMat(ML, q0 + -E, q1 + 0, q2 + 0);
@@ -1685,8 +1658,6 @@ export function graft(into: Sculpt, from: Sculpt, turn: (v: V3) => V3, by: V3): 
 }
 
 export const LAST: { sc: Sculpt | null } = { sc: null };
-/** (for timing and checking the drawing: every call of `draw` kept here while `calls` is a list) */
-export const SCULPT_RECORD: { calls: Parameters<typeof draw>[] | null } = { calls: null };
 
 /**
  * A sculpture drawn on a canvas, `extras` painted with it, and its crisp edge (`rim`). `overNear`, if given, how near the eye
@@ -1694,7 +1665,6 @@ export const SCULPT_RECORD: { calls: Parameters<typeof draw>[] | null } = { call
  * the light (a claw curled round in front of a fire held in it); without it, the light is over everything.
  */
 export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size: { readonly w: number; readonly h: number }, extras?: Extras, rim: string | null = null, overNear?: () => number): Drawn {
-  if (SCULPT_RECORD.calls) SCULPT_RECORD.calls.push([sc0, view, ax, ay, size, extras, rim, overNear]);
   const sc = spun(sc0);
   const W = size.w;
   const H = size.h;
@@ -1757,10 +1727,13 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
   const arena = SCULPT_SPEED.fast && x0 <= x1 && y0 <= y1 ? (ARENAS.pop() ?? new Arena()) : null;
   arena?.reset();
   const fa = arena ? new Fast(f, arena) : null;
-  if (fa && fa.sound()) {
+  if (arena && !fa?.sound()) ARENAS.push(arena);
+  if (arena && fa && fa.sound()) {
     // THE SAME MARCH, ASKING EACH POINT ONLY WHAT CAN MATTER THERE (see `Fast`)
     try {
       const box = { xs: Math.max(0, Math.floor(x0)), xe: Math.min(W - 1, Math.ceil(x1)), ys: Math.max(0, Math.floor(y0)), ye: Math.min(H - 1, Math.ceil(y1)), zNear, zFar };
+      // (each solid's part's number, as `pieceOf` gives it the first time it is asked)
+      const pieceAt = new Int32Array(fa.n).fill(-1);
       marchFast(fa, st, ax, ay, box, CX, CY, CZ, L2, E, (x, y, t, q, n, m, open, pi) => {
         const seenN = st.seen(n);
         const sl = Math.hypot(seenN[0], seenN[1], seenN[2]) || 1;
@@ -1773,11 +1746,11 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
         const k = y * W + x;
         zb[k] = t;
         stuff[k] = m;
-        piece[k] = pieceOf(m, prim.piece);
+        piece[k] = pieceAt[pi] >= 0 ? pieceAt[pi] : (pieceAt[pi] = pieceOf(m, prim.piece));
         colour[k] = pack(c);
       });
     } finally {
-      ARENAS.push(arena as Arena);
+      ARENAS.push(arena);
     }
   } else for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(H - 1, Math.ceil(y1)); y++) {
     for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(W - 1, Math.ceil(x1)); x++) {
@@ -1848,7 +1821,8 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
         let same = -1;
         let all = true;
         let n = 0;
-        for (const j of [k - 1, k + 1, k - W, k + W]) {
+        for (let side = 0; side < 4; side++) {
+          const j = side === 0 ? k - 1 : side === 1 ? k + 1 : side === 2 ? k - W : k + W;
           if (stuff[j] !== stuff[k]) continue;
           n++;
           if (same < 0) same = j;
