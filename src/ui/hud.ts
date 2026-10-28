@@ -1314,12 +1314,14 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
 
   // ---- messages -----------------------------------------------------------------------------
   const msgW = Math.max(120, Math.floor(W / 2) - 62);
+  // (THE WARLOCK: room left for his pact globe, under the INVENTORY button with fingers, over the life globe with a mouse)
+  const pactRoom = h.cls === 'warlock' ? 22 : 0;
   if (touch) {
     // With fingers: top left, under the inventory button, the newest first and the older below it.
     // (They were in the bottom left, above the flask, where the left thumb is. The owner, asked
     // whether they were hidden as the life globe had been: "Yes they are also being hidden".)
     const narrow = W < 380;
-    let my = btnY + btnH + 4;
+    let my = btnY + btnH + 4 + pactRoom;
     if (narrow && noticeEnd > 0) my = Math.max(my, noticeEnd + 4);
     for (let i = fx.messages.length - 1; i >= 0 && i >= fx.messages.length - 4; i--) {
       const m = fx.messages[i];
@@ -1335,7 +1337,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   } else {
     // With a mouse: above the flask, the newest lowest (when the attacks are stacked they reach
     // across the screen, so above them).
-    let my = stacked ? barTop - pbh - 26 : H - ps - 26;
+    let my = (stacked ? barTop - pbh - 26 : H - ps - 26) - pactRoom;
     for (let i = fx.messages.length - 1; i >= 0 && i >= fx.messages.length - 4; i--) {
       const m = fx.messages[i];
       const parts = wrapText(m.text, msgW, 'normal');
