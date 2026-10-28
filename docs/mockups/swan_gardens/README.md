@@ -28,6 +28,8 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   looking, like they’re in two separate pieces?”. Read as: each wing looked broken into chunks (three lumps and a bar of
   flight feathers under them); so each wing is now one curved sail of feathers from its root on the body up over the back,
   its rows of feathers running unbroken along it, and the pair raised higher.
+- The new wings (before and now, the sheet, the film), asked "are these your swans now?": “Yes, they're the swans
+  (Recommended)”, offered as: next, the Hushed gardeners and grooms.
 
 ## The first look (src/dev/garden_paint.ts)
 
