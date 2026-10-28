@@ -111,3 +111,6 @@ clear of it (the warlock's coat, her wrench and her rack). The test files: `braw
 `contraption_tap`, `golem_moves`, `golem_gun`, `warlock_moves`, `demon_moves`, `classes_sculpt`, `spine_upper_back`.
 The demon's file is very slow here (a demon picture takes many seconds on this machine): the full file did not finish
 inside two hours; its new moves were run on their own and pass.
+
+THE WHOLE UNIT SUITE ON THE BRANCH AS HANDED BACK (each file on its own): every test file but the demon's, 222 of 222
+clean, 2578 tests passed, none failed; the type check clean.
