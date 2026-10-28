@@ -335,25 +335,25 @@ const TINKERER_TREE: TalentTree = {
   ],
   talents: [
     // the left tooth: both paths'
-    { id: 'bombsaway', name: 'Bombs Away', big: false, path: 'works', at: [-2, 0], from: [], text: 'As she comes down from her Blast Jump, a second bomb goes off where she lands.' },
+    { id: 'bombsaway', name: 'Bombs Away', big: false, works: true, path: 'works', at: [-2, 0], from: [], text: 'As she comes down from her Blast Jump, a second bomb goes off where she lands.' },
     // the hub: her gold (his idea)
-    { id: 'fortune', name: 'Fortune', big: false, path: 'gold', at: [0, 0], from: ['bombsaway'], text: 'She hits harder the more gold she carries: 1% of her gold, as a percent. 1,000 gold, 10% more.' },
+    { id: 'fortune', name: 'Fortune', big: false, works: true, path: 'gold', at: [0, 0], from: ['bombsaway'], text: 'She hits harder the more gold she carries: 1% of her gold, as a percent. 1,000 gold, 10% more.' },
     // THE VIALS, round over the top
-    { id: 'clustervials', name: 'Cluster Vials', big: false, path: 'vials', at: [-R3, -1], from: ['bombsaway'], text: 'Every vial bursts into three little ones that bounce out and burst again.' },
-    { id: 'tar', name: 'Tar', big: false, path: 'vials', at: [-1, -R3], from: ['clustervials'], text: 'Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.' },
-    { id: 'madmixture', name: 'Mad Mixture', big: true, path: 'vials', at: [0, -2], from: ['tar'], text: 'Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.' },
+    { id: 'clustervials', name: 'Cluster Vials', big: false, works: true, path: 'vials', at: [-R3, -1], from: ['bombsaway'], text: 'Every vial bursts into three little ones that bounce out and burst again.' },
+    { id: 'tar', name: 'Tar', big: false, works: true, path: 'vials', at: [-1, -R3], from: ['clustervials'], text: 'Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.' },
+    { id: 'madmixture', name: 'Mad Mixture', big: true, works: true, path: 'vials', at: [0, -2], from: ['tar'], text: 'Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.' },
     { id: 'contraptions', name: 'Contraption', big: true, works: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss: it lobs her vials for her, three at once.' },
-    { id: 'alchemy', name: 'Alchemy', big: false, path: 'vials', at: [1, -R3], from: ['madmixture'], text: 'An enemy her vials kill always drops gold.' },
-    { id: 'thebigone', name: 'The Big One', big: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
+    { id: 'alchemy', name: 'Alchemy', big: false, works: true, path: 'vials', at: [1, -R3], from: ['madmixture'], text: 'An enemy her vials kill always drops gold.' },
+    { id: 'thebigone', name: 'The Big One', big: true, works: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
     // THE GOLEM, round under the bottom
-    { id: 'lightningrod', name: 'Lightning Rod', big: false, path: 'golem', at: [-R3, 1], from: ['bombsaway'], text: 'For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.' },
-    { id: 'shrapnel', name: 'Shrapnel', big: false, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s cannon shot bursts where it lands, striking everything near.' },
-    { id: 'teslacoil', name: 'Tesla Coil', big: false, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'A coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more.' },
-    { id: 'markii', name: 'Mark II', big: true, path: 'golem', at: [0, 1], from: ['teslacoil'], text: 'She can whistle out a second Golem: two at once.' },
-    { id: 'prospector', name: 'Prospector', big: false, path: 'golem', at: [1, R3], from: ['teslacoil'], text: 'Every ground pound digs up a handful of gold.' },
-    { id: 'overdrive', name: 'Overdrive', big: true, path: 'golem', at: [R3, 1], from: ['prospector'], text: 'Her whistle sends the Golem into overdrive for five seconds: it moves and strikes twice as fast.' },
+    { id: 'lightningrod', name: 'Lightning Rod', big: false, works: true, path: 'golem', at: [-R3, 1], from: ['bombsaway'], text: 'For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.' },
+    { id: 'shrapnel', name: 'Shrapnel', big: false, works: true, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s cannon shot bursts where it lands, striking everything near.' },
+    { id: 'teslacoil', name: 'Tesla Coil', big: false, works: true, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'A coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more.' },
+    { id: 'markii', name: 'Mark II', big: true, works: true, path: 'golem', at: [0, 1], from: ['teslacoil'], text: 'She can whistle out a second Golem: two at once.' },
+    { id: 'prospector', name: 'Prospector', big: false, works: true, path: 'golem', at: [1, R3], from: ['teslacoil'], text: 'Every ground pound digs up a handful of gold.' },
+    { id: 'overdrive', name: 'Overdrive', big: true, works: true, path: 'golem', at: [R3, 1], from: ['prospector'], text: 'Her whistle sends the Golem into overdrive for five seconds: it moves and strikes twice as fast.' },
     // the right tooth: both paths'
-    { id: 'growthserum', name: 'Growth Serum', big: true, path: 'works', at: [2, 0], from: ['thebigone', 'overdrive'], text: 'A vial of hers that bursts by her Golem makes it grow: twice as big and twice as strong for five seconds.' },
+    { id: 'growthserum', name: 'Growth Serum', big: true, works: true, path: 'works', at: [2, 0], from: ['thebigone', 'overdrive'], text: 'A vial of hers that bursts by her Golem makes it grow: twice as big and twice as strong for five seconds.' },
   ],
   figures: [
     { kind: 'gear', path: 'works', hub: 'fortune', ring: ['bombsaway', 'clustervials', 'tar', 'madmixture', 'alchemy', 'thebigone', 'growthserum', 'overdrive', 'prospector', 'teslacoil', 'shrapnel', 'lightningrod'], spokes: 4 },

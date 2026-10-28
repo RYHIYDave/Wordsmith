@@ -1142,6 +1142,8 @@ export class Renderer {
 
   /** Her Contraptions (in the air, springing open, set up, kicked by a shot, broken) and her Golem, stood among the rest. */
   private drawTinkerers(game: Game, cam: Cam, t: number, W: number, H: number): void {
+    /** Her brew's cyan (dev/contraption_fx.ts BREW): what glows on a friend. */
+    const BREW_CYAN = '#22d0e0';
     const art = (this.tinkerArt ??= { golem: makeGolemArt(), con: makeContraptionArt() });
     const C = TINKER_TUNE.contraption;
     const at = (c: Clip, k: number): Sprite => c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(k * c.fps + 1e-6)))];
@@ -1176,11 +1178,12 @@ export class Renderer {
       if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 60) continue;
       this.stand(x + y + 0.01, turned(c.fx, c.fy, sp), sx, sy - lift);
     }
-    const g = game.golem;
-    if (g) {
+    // (her Golems: one; two with her tree's Mark II)
+    const GS = TINKER_TUNE.talents.growth;
+    for (const g of game.golems) {
       const sx = wx(cam, g.x, g.y);
       const sy = wy(cam, g.x, g.y);
-      if (sx > -80 && sx < W + 80 && sy > -40 && sy < H + 120) {
+      if (sx > -80 && sx < W + 80 && sy > -40 && sy < H + 200) {
         const set = g.fx + g.fy < -0.2 ? art.golem.back : art.golem.front;
         const clips = set.clips ?? {};
         let sp: Sprite;
@@ -1194,7 +1197,13 @@ export class Renderer {
         else sp = set.idle[0];
         // (whistled out: it drops in, landing heavy)
         const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : 0;
-        this.stand(g.x + g.y + 0.02, turned(g.fx, g.fy, sp), sx, sy - drop);
+        // (her tree: GROWTH SERUM, twice as big, growing and shrinking back over a quarter of a second; OVERDRIVE, her cyan
+        // pulsing over it; LIGHTNING ROD, her cyan flickering over it while the enemies go after it)
+        const grow = g.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - g.growT) / 0.25, g.growT / 0.25)) : 1;
+        let glow = g.overT > 0 && g.act !== 'down' ? 0.22 + 0.14 * Math.sin(t * 12) : 0;
+        if (game.decoys.some((d) => d.golem === g) && Math.floor(t * 15) % 4 === 0) glow = Math.max(glow, 0.55);
+        const pic = turned(g.fx, g.fy, sp);
+        this.stand(g.x + g.y + 0.02, pic, sx, sy - drop, glow > 0 ? silhouette(pic, BREW_CYAN) : null, glow, grow);
       }
     }
   }
@@ -3008,7 +3017,7 @@ export class Renderer {
     }
 
     // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
-    if (game.golem || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
+    if (game.golems.length || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
     // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side
     if (game.bound) this.drawBound(game, cam, W, H, pace / 60);
 

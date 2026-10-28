@@ -21,6 +21,19 @@
 //   blastJump         her bomb going off: its flash and fireball, chips flung, a scorch left glowing and cooling; puffs of
 //                     its smoke along the way she flew
 //   blastLand         a thud of dust where she comes down
+//
+// HER SKILL TREE'S (game/talents.ts TINKERER_TREE), as modest as can be, from the same pieces:
+//   vial little/big   Cluster Vials' little ones hopping out low and small; The Big One's vial thrown twice the size
+//   vialBurst         little ones small; The Big One's twice the size, with a ring of her cyan racing out to its edge and
+//                     a thud of dust; Mad Mixture's brew in the colours of its burning, freezing or poisoning
+//   bombsAway         a second bomb going off where she lands, and its scorch (as her blast jump's)
+//   tar               a puddle of tar, black and glossy, until it dries up
+//   shrapnel          the cannon's hit bursting bigger, a thud of dust under it
+//   teslaZap          a jag of her cyan lightning from the coil on the Golem's back to the nearest, and on (the art chat's
+//                     bolt, golem_gun_fx.ts, from the tesla coil he was offered for its arm), what it hits crackling
+//   golemGrow         steam and dust as it grows (its picture grown: render.ts drawTinkerers)
+//   overdrive         a burst of steam off it (its cyan pulsing: drawTinkerers)
+//   decoyStruck       an enemy's blow on the Golem a lightning rod: cyan shards off its iron
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -30,7 +43,9 @@ import { Light, SMOKE, cloud } from '../dev/warlock_fx';
 import { BREW, CAP, VAPOUR, lampRing, thud, vialBurst, vialSprite } from '../dev/contraption_fx';
 import { CHIP, SCORCH, blast, chips, scorch } from '../dev/blast_fx';
 import { HEART, STEAM, burstSteam, shock } from '../dev/golem_pound_fx';
-import { GUN_GLOW, IRON, impactBurst, muzzleFlash } from '../dev/golem_gun_fx';
+import { GUN_GLOW, IRON, bolt, crackle, impactBurst, muzzleFlash } from '../dev/golem_gun_fx';
+import { P } from '../art/palette';
+import type { Brew } from '../game/state';
 import { GEARS, SPARKS, gears, sparks } from '../dev/golem_down_fx';
 import { STUFF, crackStar, drawCrack } from '../dev/demon_fx';
 import type { Cam } from './fx';
@@ -64,6 +79,36 @@ const vialFrames = (): Sprite[] => loop('vial', 8, (i) => piece(16, 16, 8, 8, 2,
 /** A VIAL BURSTING, frame by frame (30 a second). */
 const BURST_N = 18;
 const burstFrames = (): Sprite[] => loop('vburst', BURST_N, (k) => piece(84, 64, 42, 46, 2, [VAPOUR, BREW], ([va, l]) => vialBurst(l, va, 42, 40, 46, k, k / 30, 5)));
+/** (her tree's MAD MIXTURE) a brew's colours, its vapour's and its splash's: burning, freezing, poisoning (the game's fire, frost and venom). */
+const BREWS: Record<Brew, readonly [readonly string[], readonly string[]]> = {
+  burn: [[P.fr1, P.fr2, P.fr3, P.fr4], [P.fr2, P.fr3, P.fr4, P.fr6]],
+  freeze: [[P.bu1, P.bu2, P.bu3, P.bu4], [P.bu2, P.bu3, P.bu4, P.bu5]],
+  poison: [[P.vn1, P.vn2, P.vn2, P.vn3], [P.vn2, P.vn3, P.vn4, P.vn5]],
+};
+const brewBurstFrames = (b: Brew): Sprite[] => loop(`vburst-${b}`, BURST_N, (k) => piece(84, 64, 42, 46, 2, BREWS[b], ([va, l]) => vialBurst(l, va, 42, 40, 46, k, k / 30, 5)));
+/** (her tree's TAR) a puddle `r` tiles across its middle: black and glossy, its edge uneven. */
+const TAR = ['#08060a', '#120d18', '#1e1626', '#3a3448'];
+const tarPuddle = (r: number): Sprite => loop(`tar${Math.round(r * 10)}`, 1, () => {
+  // (a circle on the floor, seen as the floor is: twice as wide as it is deep; 45 picture pixels a tile across it)
+  const rx = r * 45;
+  const ry = r * 22.6;
+  const w = Math.ceil(rx * 2.4) + 6;
+  const h = Math.ceil(ry * 2.4) + 6;
+  return piece(w, h, w / 2, h / 2, 1, [TAR], ([l]) => {
+    for (let yy = -Math.ceil(ry * 1.2); yy <= Math.ceil(ry * 1.2); yy++) {
+      for (let xx = -Math.ceil(rx * 1.2); xx <= Math.ceil(rx * 1.2); xx++) {
+        // (its edge uneven, as a splash runs)
+        const a = Math.atan2(yy / ry, xx / rx);
+        const d = Math.hypot(xx / rx, yy / ry) / (1 + 0.1 * Math.sin(a * 3 + r * 7) + 0.07 * Math.sin(a * 5 + 1.3));
+        if (d > 1) continue;
+        // (black at its heart, its rim a little lighter; its gloss a thin crescent of light toward the top left)
+        const sheen = Math.hypot(xx / rx + 0.28, yy / ry + 0.32);
+        const k = sheen > 0.42 && sheen < 0.5 && xx < 0 && yy < 0 ? 3 : d > 0.9 ? 2 : d > 0.6 ? 1 : 0;
+        l.put(Math.round(w / 2 + xx), Math.round(h / 2 + yy), k);
+      }
+    }
+  });
+})[0];
 /** A THUD of dust. */
 const thudFrames = (): Sprite[] => loop('thud', 14, (k) => piece(60, 30, 30, 22, 1, [SMOKE], ([sm]) => thud(sm, 30, 22, k, 3, 1)));
 /** ITS LAMP LIT: a ring of cyan. */
@@ -106,15 +151,48 @@ const sparkFrames = (size: number): Sprite[] => loop(`sparks${size}`, SPARK_N, (
   sparks(l, 45, 40, k, 7);
   if (size > 0) gears(st, 45, 40, 60, k, 7, size);
 }));
+/** A TESLA COIL'S ZAP (her tree's), frame by frame. */
+const ZAP_N = 4;
+/** Where the coil sits on the Golem's back, and where the spark strikes what it hits (game pixels up from their feet). */
+const COIL_UP = 40;
+const STRUCK_UP = 14;
+/**
+ * The zap's frames: a bolt from the coil on the back of the Golem at (x, y) (`up` high) to each it leaps to in turn, what it
+ * strikes crackling. Painted once, as it comes, its anchor the Golem's foot.
+ */
+function zapFrames(x: number, y: number, up: number, to: readonly { x: number; y: number }[]): Sprite[] {
+  // (each point in picture pixels from the Golem's foot: the floor seen as it is, 16 and 8 game pixels a tile)
+  const at = (px: number, py: number, z: number): [number, number] => [((px - py) - (x - y)) * 16 * G, (((px + py) - (x + y)) * 8 - z) * G];
+  const pts = [at(x, y, up), ...to.map((p) => at(p.x, p.y, STRUCK_UP))];
+  const pad = 40;
+  const x0 = Math.min(...pts.map((p) => p[0])) - pad;
+  const y0 = Math.min(...pts.map((p) => p[1])) - pad;
+  const w = Math.ceil(Math.max(...pts.map((p) => p[0])) + pad - x0);
+  const h = Math.ceil(Math.max(...pts.map((p) => p[1])) + pad - y0);
+  const seed = Math.floor(Math.abs(x * 7 + y * 13) * 10);
+  return Array.from({ length: ZAP_N }, (_, k) => piece(w, h, -x0, -y0, 1, [GUN_GLOW], ([l]) => {
+    for (let i = 1; i < pts.length; i++) {
+      if (k < 3) bolt(l, pts[i - 1][0] - x0, pts[i - 1][1] - y0, pts[i][0] - x0, pts[i][1] - y0, seed + k * 31 + i, k);
+      crackle(l, pts[i][0] - x0, pts[i][1] - y0, 12, k < 2 ? 5 : 3, seed + k * 17 + i * 5);
+    }
+    crackle(l, pts[0][0] - x0, pts[0][1] - y0, 8, 3, seed + k * 23);
+  }));
+}
 /** A PUFF of her bomb's smoke. */
 const puffFrames = (): Sprite[] => loop('puff', 6, (i) => piece(40, 34, 20, 28, 1, [SMOKE], ([sm]) => cloud(sm, 20, 28, 18, 15, i * 0.17, 0.2, 31 + i)));
 
 interface Spot { x: number; y: number; t: number }
-interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number; hand?: boolean }
+/** A vial's burst: `k` its size (her tree's little ones and big ones), its brew. */
+interface Burst extends Spot { k: number; brew?: Brew; r: number; big?: boolean }
+/** A puddle of tar, `life` seconds long. */
+interface Puddle extends Spot { r: number; life: number }
+/** A Tesla Coil's zap: its frames painted as it came, laid at the Golem's foot. */
+interface Zap extends Spot { frames: Sprite[] }
+interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number; hand?: boolean; little?: boolean; big?: boolean }
 interface Path { x0: number; y0: number; x1: number; y1: number; t: number }
 
 /** How long each lasts (seconds). */
-const LIFE = { burst: BURST_N / 30, thud: 14 / 30, lamp: 5 / 30, blast: BLAST_N / 30, scorch: SCORCH_N / 30 * 2, pound: POUND_N / 30, arrive: ARRIVE_N / 30, impact: IMPACT_N / 30, flash: FLASH_N / 30, sparks: SPARK_N / 30, trail: 0.9 };
+const LIFE = { burst: BURST_N / 30, thud: 14 / 30, lamp: 5 / 30, blast: BLAST_N / 30, scorch: SCORCH_N / 30 * 2, pound: POUND_N / 30, arrive: ARRIVE_N / 30, impact: IMPACT_N / 30, flash: FLASH_N / 30, sparks: SPARK_N / 30, trail: 0.9, zap: ZAP_N / 30, ring: 0.3 };
 /** From her letting go, its coming down and its being lit (dev/contraption_fx.ts CT: land 27 and open1 53, from letGo 15). */
 const CON_LAND = 12 / 30;
 const CON_LIT = 38 / 30;
@@ -123,7 +201,7 @@ export class TinkererFx {
   private t = 0;
   private lobs: Lob[] = [];
   private shots: (Lob & { way: number })[] = [];
-  private bursts: Spot[] = [];
+  private bursts: Burst[] = [];
   private thuds: Spot[] = [];
   private lamps: Spot[] = [];
   private blasts: Spot[] = [];
@@ -134,6 +212,11 @@ export class TinkererFx {
   private flashes: (Spot & { way: number })[] = [];
   private sparks: (Spot & { size: number })[] = [];
   private trails: Path[] = [];
+  /** (her tree's) puddles of tar; Tesla Coil zaps; The Big One's rings racing out; steam off a Golem growing or in overdrive. */
+  private tars: Puddle[] = [];
+  private zaps: Zap[] = [];
+  private rings: Burst[] = [];
+  private vents: Spot[] = [];
   /** Things to come: a Contraption coming down, being lit (seconds until). */
   private later: { at: number; e: () => void }[] = [];
 
@@ -148,11 +231,42 @@ export class TinkererFx {
       }
       case 'vial':
         // (out of a Contraption's mortar, with its flash; or, her Vial Toss, from her hand up by her shoulder)
-        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight, hand: e.id < 0 });
+        // (her tree's: Cluster Vials' little ones hopping out of a burst; The Big One's, big)
+        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight, hand: e.id < 0, little: e.little, big: e.big });
         if (e.id >= 0) this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
         break;
       case 'vialBurst':
-        this.bursts.push({ x: e.x, y: e.y, t: 0 });
+        this.bursts.push({ x: e.x, y: e.y, t: 0, k: e.little ? 0.6 : e.big ? 2 : 1, brew: e.brew, r: e.r, big: e.big });
+        if (e.big) {
+          this.rings.push({ x: e.x, y: e.y, t: 0, k: 1, r: e.r });
+          this.thuds.push({ x: e.x, y: e.y, t: 0 });
+        }
+        break;
+      case 'bombsAway':
+        this.blasts.push({ x: e.x, y: e.y, t: 0 });
+        this.scorches.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'tar':
+        this.tars.push({ x: e.x, y: e.y, t: 0, r: e.r, life: e.secs });
+        break;
+      case 'shrapnel': {
+        const x = e.x;
+        const y = e.y;
+        this.impacts.push({ x, y, t: 0, big: 2.2 });
+        this.thuds.push({ x, y, t: 0 });
+        break;
+      }
+      case 'teslaZap':
+        this.zaps.push({ x: e.x, y: e.y, t: 0, frames: zapFrames(e.x, e.y, COIL_UP * (e.grown ? 2 : 1), e.to) });
+        break;
+      case 'golemGrow':
+        this.arrives.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'overdrive':
+        this.vents.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'decoyStruck':
+        if (e.golem) this.impacts.push({ x: e.x, y: e.y, t: 0, big: 0.8 });
         break;
       case 'contraptionEnd':
         this.sparks.push({ x: e.x, y: e.y, t: 0, size: 0 });
@@ -213,6 +327,11 @@ export class TinkererFx {
     this.flashes = age(this.flashes, LIFE.flash);
     this.sparks = age(this.sparks, LIFE.sparks);
     this.trails = age(this.trails, LIFE.trail);
+    for (const p of this.tars) p.t += dt;
+    this.tars = this.tars.filter((p) => p.t < p.life);
+    this.zaps = age(this.zaps, LIFE.zap);
+    this.rings = age(this.rings, LIFE.ring);
+    this.vents = age(this.vents, LIFE.pound);
   }
 
   clear(): void {
@@ -229,6 +348,10 @@ export class TinkererFx {
     this.flashes = [];
     this.sparks = [];
     this.trails = [];
+    this.tars = [];
+    this.zaps = [];
+    this.rings = [];
+    this.vents = [];
     this.later = [];
   }
 
@@ -236,6 +359,24 @@ export class TinkererFx {
   drawGround(g: CanvasRenderingContext2D, c: Cam): void {
     const at = (list: Sprite[], k: number): Sprite => list[Math.max(0, Math.min(list.length - 1, Math.floor(k * list.length)))];
     const put = (s: Sprite, x: number, y: number, up = 0): void => drawSprite(g, s, Math.round(wx(c, x, y)), Math.round(wy(c, x, y) - up));
+    // (her tree's TAR: its puddles, coming in a moment and drying up over the last half second)
+    for (const p of this.tars) {
+      g.globalAlpha = Math.max(0, Math.min(1, p.t / 0.12, (p.life - p.t) / 0.5)) * 0.92;
+      put(tarPuddle(p.r), p.x, p.y);
+      g.globalAlpha = 1;
+    }
+    // (THE BIG ONE: a ring of her cyan racing out to its burst's edge)
+    for (const p of this.rings) {
+      const k = p.t / LIFE.ring;
+      const u = 1 - Math.pow(1 - k, 2);
+      g.globalAlpha = Math.max(0, 1 - k);
+      g.strokeStyle = BREW[k < 0.4 ? 2 : 1];
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(Math.round(wx(c, p.x, p.y)), Math.round(wy(c, p.x, p.y)), Math.max(1, p.r * 22.6 * u), Math.max(1, p.r * 11.3 * u), 0, 0, Math.PI * 2);
+      g.stroke();
+      g.globalAlpha = 1;
+    }
     const sc = scorchFrames();
     for (const s of this.scorches) {
       g.globalAlpha = Math.max(0, Math.min(1, 1.5 - (s.t / LIFE.scorch) * 1.5));
@@ -272,17 +413,23 @@ export class TinkererFx {
     }
     const bl = blastFrames();
     for (const p of this.blasts) put(at(bl, p.t / LIFE.blast), p.x, p.y);
-    // (her vials, lobbed high, tumbling)
+    /** A piece `k` times its size (her tree's little vials and big ones). */
+    const putK = (s: Sprite, x: number, y: number, up: number, k: number): void => {
+      if (k === 1) return put(s, x, y, up);
+      const X = Math.round(wx(c, x, y));
+      const Y = Math.round(wy(c, x, y) - up);
+      g.drawImage(s.img, Math.round(X - s.ax * k), Math.round(Y - s.ay * k), Math.round(s.w * k), Math.round(s.h * k));
+    };
+    // (her vials, lobbed high, tumbling; Cluster Vials' little ones hopping out low)
     const vf = vialFrames();
     for (const l of this.lobs) {
       const u = l.t / l.flight;
       const x = l.x0 + (l.x1 - l.x0) * u;
       const y = l.y0 + (l.y1 - l.y0) * u;
-      const up = (l.hand ? 30 : 10) * (1 - u) + 4 * 30 * u * (1 - u);
-      put(vf[Math.floor(l.t * 18) % vf.length], x, y, up);
+      const up = l.little ? 4 + 4 * 14 * u * (1 - u) : (l.hand ? 30 : 10) * (1 - u) + 4 * 30 * u * (1 - u);
+      putK(vf[Math.floor(l.t * 18) % vf.length], x, y, up, l.little ? 0.6 : l.big ? 1.8 : 1);
     }
-    const bu = burstFrames();
-    for (const p of this.bursts) put(at(bu, p.t / LIFE.burst), p.x, p.y);
+    for (const p of this.bursts) putK(at(p.brew ? brewBurstFrames(p.brew) : burstFrames(), p.t / LIFE.burst), p.x, p.y, 0, p.k);
     const pa = poundAir();
     for (const p of this.pounds) put(at(pa, p.t / LIFE.pound), p.x, p.y);
     const ar = arriveFrames();
@@ -320,6 +467,9 @@ export class TinkererFx {
       } else put(at(flashFrames(f.way), f.t / LIFE.flash), f.x, f.y, 34);
     }
     for (const p of this.impacts) put(at(impactFrames(p.big), p.t / LIFE.impact), p.x, p.y, 12);
+    // (her tree's: the Tesla Coil's zaps; steam off a Golem sent into overdrive)
+    for (const p of this.zaps) put(at(p.frames, p.t / LIFE.zap), p.x, p.y);
+    for (const p of this.vents) put(at(pa, p.t / LIFE.pound), p.x, p.y);
     for (const p of this.sparks) put(at(sparkFrames(p.size), p.t / LIFE.sparks), p.x, p.y, 0);
   }
 }

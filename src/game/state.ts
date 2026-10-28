@@ -794,6 +794,19 @@ export interface Vial {
   frac: number;
   /** The first of its Contraption's: it leaves what the words behind it leave. */
   wake: boolean;
+  /** (HER SKILL TREE) Cluster Vials: one of the little ones a vial bursts into. The Big One: every fifth vial, a big one. Mad Mixture: the brew it carries. */
+  little?: boolean;
+  big?: boolean;
+  brew?: Brew;
+}
+/** (HER SKILL TREE: Mad Mixture) a brew a vial of hers carries, on top of its own words. */
+export type Brew = 'burn' | 'freeze' | 'poison';
+/** (HER SKILL TREE: Tar) a puddle of tar her vial left, `t` seconds old: whatever walks in it is slowed to a crawl. */
+export interface Tar {
+  x: number;
+  y: number;
+  r: number;
+  t: number;
 }
 /**
  * THE TINKERER'S GOLEM (game/tinkerer.ts): always with her once whistled out. `act`, what it is doing and for how long it
@@ -828,6 +841,28 @@ export interface Golem {
   /** How far it has walked (its frames go by it, as a hero's run does). */
   walked: number;
   skill: number;
+  /**
+   * (HER SKILL TREE) Which of her Golems it is (0, the first; 1, Mark II's second), the side of her it keeps; seconds left
+   * in Overdrive and grown by Growth Serum; seconds until its Tesla Coil zaps again.
+   */
+  seat: number;
+  overT: number;
+  growT: number;
+  zapT: number;
+}
+
+/**
+ * A DECOY: what the enemies within `r` of it go after in place of the hero, for `t` seconds more. They walk to it and swing
+ * at it; their blows on it do nothing. `size`, how far its body reaches from its middle. `golem`: a Golem of the
+ * Tinkerer's it goes with while that stands (her tree's Lightning Rod); else it keeps its spot (Game.decoys, Game.decoyFor).
+ */
+export interface Decoy {
+  x: number;
+  y: number;
+  t: number;
+  r: number;
+  size: number;
+  golem?: Golem;
 }
 
 /**
@@ -1295,8 +1330,8 @@ export type GameEvent =
   // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
   | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }
   /** (a vial lobbed: `id` the Contraption's that lobbed it, or -1 thrown from her hand, her Vial Toss) */
-  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean }
-  | { t: 'vialBurst'; x: number; y: number; r: number }
+  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean; little?: boolean; big?: boolean }
+  | { t: 'vialBurst'; x: number; y: number; r: number; little?: boolean; big?: boolean; brew?: Brew }
   | { t: 'contraptionEnd'; id: number; x: number; y: number }
   | { t: 'golemArrive'; x: number; y: number }
   | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
@@ -1305,6 +1340,17 @@ export type GameEvent =
   | { t: 'golemDown'; x: number; y: number }
   | { t: 'blastJump'; x0: number; y0: number; x1: number; y1: number; r: number }
   | { t: 'blastLand'; x: number; y: number }
+  // (HER SKILL TREE: Bombs Away's second bomb where she lands; a puddle of Tar; Shrapnel bursting where the Golem's shot
+  // lands; the Tesla Coil's spark leaping from the Golem's back from one to the next; a Golem grown by Growth Serum; a Golem
+  // in Overdrive)
+  | { t: 'bombsAway'; x: number; y: number; r: number }
+  | { t: 'tar'; x: number; y: number; r: number; secs: number }
+  | { t: 'shrapnel'; x: number; y: number; r: number }
+  | { t: 'teslaZap'; x: number; y: number; to: readonly { x: number; y: number }[]; grown?: boolean }
+  | { t: 'golemGrow'; x: number; y: number }
+  | { t: 'overdrive'; x: number; y: number }
+  /** (a DECOY struck: an enemy's blow on it, doing nothing; `golem`, it is a Golem of the Tinkerer's) */
+  | { t: 'decoyStruck'; x: number; y: number; golem: boolean }
   // (THE BRAWLER, game/brawler.ts: a punch of his landing, its name floating over him (`big`, how big); one he has launched
   // flying down the line, bowling over each it meets; his slip, and the counter as he comes up)
   | { t: 'punch'; name: PunchName; x: number; y: number; dx: number; dy: number; big: 0 | 1 | 2; n: number; echo?: boolean; hit: boolean }
