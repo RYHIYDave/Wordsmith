@@ -1188,10 +1188,12 @@ export type GameEvent =
    * change into the demon or back. `roar`: the demon formed, roaring. `pactFull`: his pact is full (his arm blazes).
    */
   | { t: 'hellOn'; id: number; x: number; y: number }
-  | { t: 'curse'; x: number; y: number; r: number; to: readonly { id: number; x: number; y: number }[] }
+  | { t: 'curse'; x: number; y: number; r: number; to: readonly { id: number; x: number; y: number }[]; n?: number; echo?: boolean }
   | { t: 'spread'; x: number; y: number; to: readonly { id: number; x: number; y: number }[] }
-  | { t: 'damning'; x: number; y: number; at: readonly { id: number; x: number; y: number }[] }
-  | { t: 'smoke'; x0: number; y0: number; x1: number; y1: number; demon: boolean }
+  | { t: 'damning'; x: number; y: number; at: readonly { id: number; x: number; y: number }[]; n?: number; echo?: boolean }
+  | { t: 'smoke'; x0: number; y0: number; x1: number; y1: number; demon: boolean; echo?: boolean }
+  /** (THE WARLOCK: one struck by a smoke step passing through it; `n` 1 for Twin's second, `echo` the echo's) */
+  | { t: 'smokeHit'; id: number; x: number; y: number; n: number; echo: boolean }
   | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }
   | { t: 'roar'; x: number; y: number; r: number }
   | { t: 'pactFull'; x: number; y: number }

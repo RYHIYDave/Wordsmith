@@ -138,6 +138,11 @@ export interface AnimSet {
     ready?: Clip;
     /** A HERO rocked back by a heavy blow, and upright again: a quarter of a second, shown while they stand or walk. */
     reel?: Clip;
+    /**
+     * THE WARLOCK (art/warlock_art.ts) CHANGING out of the form these pictures are of: the man into the demon, the demon
+     * burning out into the man. Laid over the rules' time for it, shown by how far through it he is (FigureState.changeK).
+     */
+    change?: Clip;
     /** ... and thrown forward a step by one that comes from behind them. */
     lurch?: Clip;
     /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */

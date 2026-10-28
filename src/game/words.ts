@@ -442,8 +442,8 @@ export function attacksGrownBy(a: Attr, cls: ClassId, weapon: WeaponKind | null)
   const out: string[] = [];
   const c = CLASSES[cls];
   // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: the class's own two, with the class's attribute)
-  if (OWN_MOVES.on) {
-    if (c.primary === a) out.push(SKILLS[c.tap].name, SKILLS[c.hold].name);
+  if (OWN_MOVES.on || c.own) {
+    if (c.primary === a || (c.grows && c.grows.includes(a))) out.push(SKILLS[c.tap].name, SKILLS[c.hold].name);
   } else if (weaponAttr(weapon) === a) out.push(SKILLS[tapSkill(weapon)].name, SKILLS[holdSkill(weapon)].name);
   if (c.primary === a && SKILLS[c.evade].dmg > 0) out.push(SKILLS[c.evade].name);
   return out;

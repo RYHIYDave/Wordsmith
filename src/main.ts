@@ -46,7 +46,8 @@ import { initAudio, isMuted, setMuted, sfx, speak } from './engine/audio';
 import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
-import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
+import { LEDGE_H, screenDirToWorld, sx as isoSX, sy as isoSY, toWorldX, toWorldY } from './engine/iso';
+import { WARLOCK_TUNE } from './game/warlock';
 import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
@@ -970,6 +971,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     c.hold = false;
     c.evade = false;
     c.potion = false;
+    c.change = false;
     c.interact = wantInteract;
     renderer.lockId = null;
     wantInteract = false;
@@ -1026,6 +1028,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       order = null;
       sfx('click');
     } else if (poke) errand = null;
+    // THE WARLOCK (game/warlock.ts): a touch or a click on him himself, his pact full, changes him (the owner: “then you tap on
+    // the warlock and he transforms”); on a keyboard, R as well. (A touch on him with it short of full is no attack.)
+    let onHim = false;
+    if (h.cls === 'warlock' && poke && !spot) {
+      const hx = isoSX(h.x, h.y) + cam.ox;
+      const hy = isoSY(h.x, h.y) + cam.oy;
+      onHim = Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y);
+      if (onHim && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full && h.form !== 'demon') c.change = true;
+    }
+    if (h.cls === 'warlock' && input.pressed('KeyR')) c.change = true;
 
     if (!input.touchMode) {
       // aim a little below the cursor: characters and shots are drawn above the floor

@@ -26,6 +26,7 @@ import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
+import { makeWarlockArt } from './warlock_art';
 import type { HeroArt, HeroLook } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
@@ -365,11 +366,22 @@ export function makeHeroArt3(): HeroArt {
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
+    // (THE WARLOCK: sculpted, art/warlock_art.ts; a man or the demon, his arm blazing or not)
+    if (cls === 'warlock') {
+      const form = look.demon ? 'demon' : 'man';
+      const blaze = form === 'man' && !!look.blaze;
+      const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}`;
+      let wart = made.get(wkey);
+      if (!wart) {
+        wart = makeWarlockArt({ form, place, blaze });
+        made.set(wkey, wart);
+      }
+      return wart;
+    }
     const key = `${cls}:${place}`;
     let art = made.get(key);
     if (!art) {
-      // (THE WARLOCK, until his sculpted pictures are put in: the mage's figure stands in for him, behind WARLOCK, off)
-      const plan = PLANS[cls === 'warlock' ? 'mage' : cls][place];
+      const plan = PLANS[cls][place];
       art = { front: animSet3(plan, 'front', place === 'dungeon'), back: animSet3(plan, 'back', place === 'dungeon') };
       made.set(key, art);
     }

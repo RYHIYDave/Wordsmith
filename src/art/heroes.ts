@@ -29,6 +29,9 @@ export interface HeroLook {
    * during the character select screen.  that way its something different when you select them").
    */
   card?: boolean;
+  /** THE WARLOCK (art/warlock_art.ts): he is the demon; his pact is full (his arm blazes). */
+  demon?: boolean;
+  blaze?: boolean;
 }
 
 export interface HeroArt {

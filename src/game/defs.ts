@@ -198,6 +198,8 @@ export interface ClassDef {
    * it grows as much as the others do from theirs).
    */
   grows?: readonly [Attr, Attr];
+  /** A class that was never Version 12's (the new ones, the warlock first): its own two attacks whatever OWN_MOVES says. */
+  own?: true;
 }
 
 /** A class of two attributes grows with their sum less this (11 + 11 - 8 = 14, as a class of one's first attribute at level one). */
@@ -221,7 +223,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   mage: { id: 'mage', name: 'Mage', blurb: 'Raw power. Handle with care.', primary: 'int', attrs: { str: 6, dex: 8, int: 14 }, evade: 'warp', starts: 'staff', tap: 'wave', hold: 'orb' },
   // THE WARLOCK (game/warlock.ts, behind WARLOCK): “Warlock is str/int, will transform into a demon so keep that in mind”
   // (the owner, 23 Oct 2026, in the art chat). His attacks grow with both (`grows`); as the demon, the demon's three.
-  warlock: { id: 'warlock', name: 'Warlock', blurb: 'A pact with a demon. It wants out.', primary: 'int', grows: ['str', 'int'], attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', starts: 'wand', tap: 'hellbolt', hold: 'curse' },
+  warlock: { id: 'warlock', name: 'Warlock', blurb: 'A pact with a demon. It wants out.', primary: 'int', grows: ['str', 'int'], own: true, attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', starts: 'wand', tap: 'hellbolt', hold: 'curse' },
 };
 
 /**
@@ -269,18 +271,18 @@ export function weaponAttr(weapon: WeaponKind | null): Attr {
 /** A character's three abilities: quick and slow (the class's own, OWN_MOVES; with it off, the weapon's), evasive (the class's). */
 export function skillsFor(cls: ClassId, weapon: WeaponKind | null): [SkillId, SkillId, SkillId] {
   const c = CLASSES[cls];
-  if (OWN_MOVES.on) return [c.tap, c.hold, c.evade];
+  if (OWN_MOVES.on || c.own) return [c.tap, c.hold, c.evade];
   return [tapSkill(weapon), holdSkill(weapon), c.evade];
 }
 
 /** What a character's two attacks grow with: the class's own (OWN_MOVES; a class's id, resolveSkill reads it), or with it off the weapon's attribute. */
 export function attackGrows(cls: ClassId, weapon: WeaponKind | null): Attr | ClassId {
-  return OWN_MOVES.on ? cls : weaponAttr(weapon);
+  return OWN_MOVES.on || CLASSES[cls].own ? cls : weaponAttr(weapon);
 }
 
 /** The attribute a character's attacks grow with, as one (a class that grows with two: its first). */
 export function attackAttr(cls: ClassId, weapon: WeaponKind | null): Attr {
-  return OWN_MOVES.on ? CLASSES[cls].primary : weaponAttr(weapon);
+  return OWN_MOVES.on || CLASSES[cls].own ? CLASSES[cls].primary : weaponAttr(weapon);
 }
 
 export const ATTR_NAME: Record<Attr, string> = { str: 'Strength', dex: 'Dexterity', int: 'Intelligence' };

@@ -4226,6 +4226,14 @@ export class Game {
       h.move = { kind: 'smoke', t: 0, dur: demon ? WARLOCK_TUNE.step.demonSecs : WARLOCK_TUNE.step.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y, hit: [], demon };
       this.emit({ t: 'smoke', x0: h.x, y0: h.y, x1: land.x, y1: land.y, demon });
       this.sfx(demon ? 'slam' : 'dodge', 0.6);
+      // behind: left where he went up in smoke (the demon's, where it bursts out: demonLands)
+      if (!demon) this.wake(2, x0, y0, def.radius * r.size, r.countDmg);
+      // "of Echoes": a moment later the smoke streaks along the same way again, weaker
+      if (r.echo > 0) {
+        const x1 = land.x;
+        const y1 = land.y;
+        this.echoOf(2, x0, y0, dx, dy, () => this.smokeEcho(x0, y0, x1, y1, r.countDmg * r.echo));
+      }
       return;
     }
     // roll: travel along the floor, stopping at the first obstacle (THE SKILL TREES: Light Step, further)
@@ -4305,25 +4313,34 @@ export class Game {
   }
 
   /** THE CURSE: every enemy within `rad` of (x, y) that he can see is struck and cursed; its chains go out to each. */
-  private curseAll(i: number, x: number, y: number, rad: number, frac: number): void {
+  private curseAll(i: number, x: number, y: number, rad: number, frac: number, n = 0, echo = false): void {
     const to: { id: number; x: number; y: number }[] = [];
     for (const m of this.monsters) {
       if (m.dead || this.shutIn(m) || Math.hypot(m.x - x, m.y - y) > rad + m.r || !this.sees(x, y, m.x, m.y)) continue;
       to.push({ id: m.id, x: m.x, y: m.y });
     }
-    this.emit({ t: 'curse', x, y, r: rad, to });
-    this.sfx('rune', 0.8);
-    let n = 0;
+    this.emit({ t: 'curse', x, y, r: rad, to, n, echo });
+    this.sfx('rune', n > 0 || echo ? 0.5 : 0.8);
+    const words = this.fronts(i);
+    if (words.includes('power')) this.sfx('power', 0.9);
+    // (Heavy lands out to the curse's edge, as a slam's)
+    if (words.includes('heavy')) this.emit({ t: 'heavy', x, y, r: rad, big: true });
+    let hits = 0;
     for (const t of to) {
       const m = this.monsters.find((q) => q.id === t.id);
-      if (m) this.hitMonster(m, i, frac, n++ >= 3);
+      if (m) this.hitMonster(m, i, frac, hits++ >= 3);
     }
-    if (n > 0) this.landed(i);
-    this.wake(i, x, y, rad, frac);
+    if (hits > 0) {
+      this.landed(i);
+      // (THE CITY'S WORDS: Pulling in front drags what it cursed in to him)
+      if (this.hero.skills[i].r.pull > 0) this.pullIn(i, x, y, rad, false);
+    }
+    // (what the words behind it leave, it leaves once a use, where it was cast)
+    if (n === 0) this.wake(i, x, y, rad, frac);
   }
 
   /** DAMNING: every enemy within `rad` that is cursed or burning: the ground erupts under it, it is struck, every burn on it is paid out at once, and it is thrown. */
-  private damningAll(i: number, x: number, y: number, rad: number, frac: number): void {
+  private damningAll(i: number, x: number, y: number, rad: number, frac: number, n = 0, echo = false): void {
     const W = WARLOCK_TUNE.damning;
     const at: { id: number; x: number; y: number }[] = [];
     for (const m of this.monsters) {
@@ -4331,10 +4348,11 @@ export class Game {
       const burning = (m.curseT ?? 0) > 0 || (m.hellT ?? 0) > 0 || m.burnT > 0;
       if (burning) at.push({ id: m.id, x: m.x, y: m.y });
     }
-    this.emit({ t: 'damning', x, y, at });
-    this.emit({ t: 'shake', amount: 4 });
-    this.sfx('slam', 1);
-    let n = 0;
+    this.emit({ t: 'damning', x, y, at, n, echo });
+    if (this.fronts(i).includes('heavy')) this.emit({ t: 'heavy', x, y, r: rad, big: true });
+    this.emit({ t: 'shake', amount: n > 0 || echo ? 2 : 4 });
+    this.sfx('slam', n > 0 || echo ? 0.6 : 1);
+    let hits = 0;
     for (const a of at) {
       const m = this.monsters.find((q) => q.id === a.id);
       if (!m || m.dead) continue;
@@ -4345,11 +4363,15 @@ export class Game {
       m.burnT = 0;
       m.poisonT = 0;
       m.bleedT = 0;
-      this.hitMonster(m, i, frac, n++ >= 3);
+      this.hitMonster(m, i, frac, hits++ >= 3);
       if (!m.dead && owed * W.pay >= 1) this.damageMonster(m, Math.round(owed * W.pay), 'fire', false, i, true);
       if (!m.dead) this.throwMonster(m, x, y, W.throw, 0.25);
     }
-    if (n > 0) this.landed(i);
+    if (hits > 0) {
+      this.landed(i);
+      if (this.hero.skills[i].r.pull > 0) this.pullIn(i, x, y, rad, false);
+    }
+    if (n === 0) this.wake(i, x, y, rad, frac);
   }
 
   /** A cursed one has died: every burn on it leaps to each enemy within reach, and burns there as on it (a stronger one taking the place of a weaker). */
@@ -4388,7 +4410,24 @@ export class Game {
       if (m.dead || hit.includes(m.id) || this.shutIn(m)) continue;
       if (Math.hypot(m.x - h.x, m.y - h.y) > def.radius * s.r.size + m.r) continue;
       hit.push(m.id);
+      this.emit({ t: 'smokeHit', id: m.id, x: m.x, y: m.y, n: 0, echo: false });
       this.hitMonster(m, 2, s.r.countDmg, hit.length > 3);
+      // (the step's blow has landed, once a use, as a leap's landing does: of Power's might; Heavy's weight where it first strikes)
+      if (hit.length === 1) {
+        this.landed(2);
+        if (this.fronts(2).includes('heavy')) this.emit({ t: 'heavy', x: m.x, y: m.y, r: def.radius * s.r.size, big: false });
+        // (Pulling in front: what is near the first it strikes is dragged in to it)
+        if (s.r.pull > 0) this.pullIn(2, m.x, m.y, def.radius * s.r.size * 2, false);
+      }
+      // (Twin: each struck again a moment later)
+      for (let k = 1; k < s.r.count; k++) {
+        const id = s.id;
+        this.after(0.13 * k, () => {
+          if (m.dead || this.hero.skills[2]?.id !== id) return;
+          this.emit({ t: 'smokeHit', id: m.id, x: m.x, y: m.y, n: k, echo: false });
+          this.hitMonster(m, 2, this.hero.skills[2].r.countDmg, true);
+        });
+      }
       if (mv.demon && !m.dead) {
         // knocked aside, off its line
         const lx = mv.x1 - mv.x0;
@@ -4400,6 +4439,29 @@ export class Game {
     }
   }
 
+  /** "of Echoes" on a smoke step: the smoke streaks along its way again, striking and cursing whoever it passes through. */
+  private smokeEcho(x0: number, y0: number, x1: number, y1: number, frac: number): void {
+    const h = this.hero;
+    const s = h.skills[2];
+    if (!s) return;
+    const def = SKILLS[s.id];
+    this.emit({ t: 'smoke', x0, y0, x1, y1, demon: s.id === 'demonstep', echo: true });
+    const lx = x1 - x0;
+    const ly = y1 - y0;
+    const L2 = lx * lx + ly * ly || 1;
+    let hits = 0;
+    for (const m of this.monsters) {
+      if (m.dead || this.shutIn(m)) continue;
+      const k = Math.max(0, Math.min(1, ((m.x - x0) * lx + (m.y - y0) * ly) / L2));
+      // (the demon's knocked aside what it passed through: the echo reaches as far)
+      const reach = def.radius * s.r.size + (s.id === 'demonstep' ? WARLOCK_TUNE.step.aside : 0);
+      if (Math.hypot(m.x - (x0 + lx * k), m.y - (y0 + ly * k)) > reach + m.r) continue;
+      this.emit({ t: 'smokeHit', id: m.id, x: m.x, y: m.y, n: 0, echo: true });
+      this.hitMonster(m, 2, frac, hits++ >= 3);
+    }
+    if (hits > 0) this.landed(2);
+  }
+
   /** The demon's smoke step ends: it bursts out of the smoke, its claws slammed down, knocking back whoever is there. */
   private demonLands(): void {
     const h = this.hero;
@@ -4409,6 +4471,8 @@ export class Game {
     this.emit({ t: 'shake', amount: 3 });
     this.blast(2, h.x + h.fx * 0.6, h.y + h.fy * 0.6, W.burst * s.r.size, s.r.countDmg * W.burstShare, 'land', 0, false, false);
     for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - h.x, m.y - h.y) <= W.burst + m.r) this.throwMonster(m, h.x, h.y, 1.2, 0.2);
+    // behind: left where it bursts out, as far as it throws them
+    this.wake(2, h.x, h.y, W.burst * s.r.size + 1.2, s.r.countDmg);
   }
 
   /** His pact: tapped with it full, he begins to change; as the demon it runs dry, and empty, the demon burns out. */
@@ -4710,13 +4774,17 @@ export class Game {
       // (THE WARLOCK, game/warlock.ts: every enemy near him struck and cursed; Twin, a second a moment later)
       const rad = def.radius * r.size;
       for (let k = 0; k < r.count; k++) {
-        if (k === 0) this.curseAll(i, ox, oy, rad, each);
-        else this.after(0.28 * k, () => this.curseAll(i, this.hero.x, this.hero.y, rad, each));
+        if (k === 0) this.curseAll(i, ox, oy, rad, each, 0, echo);
+        else this.after(0.28 * k, () => this.curseAll(i, this.hero.x, this.hero.y, rad, each, k, echo));
       }
     } else if (def.kind === 'damning') {
-      // (THE WARLOCK's demon: every cursed or burning enemy near it struck, and all its burns paid out at once)
+      // (THE WARLOCK's demon: every cursed or burning enemy near it struck, and all its burns paid out at once; Twin, a
+      // second eruption a moment later under every one still burning)
       const rad = def.radius * r.size;
-      this.damningAll(i, ox, oy, rad, each);
+      for (let k = 0; k < r.count; k++) {
+        if (k === 0) this.damningAll(i, ox, oy, rad, each, 0, echo);
+        else this.after(0.28 * k, () => this.damningAll(i, this.hero.x, this.hero.y, rad, each, k, echo));
+      }
     } else if (def.kind === 'volley') {
       // The arrows go up from the bow, and a moment later begin to come down round the spot that
       // was aimed at: as near to there as the hero can see, within the bow's reach. (The echo is a

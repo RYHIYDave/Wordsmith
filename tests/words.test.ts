@@ -30,6 +30,7 @@ import type { ClassId, Element, WeaponKind, WordId } from '../src/game/types';
 import { resolveSkill, skillName, socketProblem } from '../src/game/words';
 import { land } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
+import { WARLOCK_TUNE } from '../src/game/warlock';
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;
@@ -217,6 +218,10 @@ function layout(kind: SkillDef['kind']): { spots: [number, number][]; aim: [numb
     case 'leap': return { spots: [[4.9, 0], [4.2, 0.9], [4.2, -0.9]], aim: [4, 0] };
     case 'roll': return { spots: [[0.9, 0.3], [-0.5, 0.8], [0.1, -1.0]], aim: [-4, 0] };
     case 'warp': return { spots: [[4.9, 0], [4.2, 0.9], [0.7, 0.6]], aim: [4, 0] };
+    // (THE WARLOCK: the Curse and Damning reach all round him; a smoke step passes through them on its way)
+    case 'curse': return { spots: [[1.5, 0], [-1.2, 1.0], [0.4, -2.0]], aim: [1.5, 0] };
+    case 'damning': return { spots: [[1.5, 0], [-1.2, 1.0], [0.4, -2.0]], aim: [1.5, 0] };
+    case 'smoke': return { spots: [[0.6, 0.4], [2.6, 0.3], [4.4, -0.3]], aim: [5.0, 0] };
     default: return { spots: [[2.5, 0], [3.1, 0.5], [3.1, -0.5]], aim: [2.5, 0] };
   }
 }
@@ -244,8 +249,14 @@ interface Seen {
 }
 
 /** A practice character of a class, carrying a weapon of that kind (their own, or one out of the practice bag: any character can use any weapon). */
-function practice(cls: ClassId, weapon: WeaponKind, seed = 5): Game {
+function practice(cls: ClassId, weapon: WeaponKind, seed = 5, demon = false): Game {
   const g = Game.forPractice(cls, seed);
+  // (THE WARLOCK as the demon: its three in the places of his, game/warlock.ts)
+  if (demon) {
+    g.hero.form = 'demon';
+    g.hero.pact = WARLOCK_TUNE.pact.full;
+    g.refresh();
+  }
   if (g.weapon() !== weapon) {
     const i = g.hero.bag.findIndex((it) => it !== null && it.weapon === weapon);
     assert.ok(i >= 0, `the practice bag holds a ${weapon}`);
@@ -256,8 +267,8 @@ function practice(cls: ClassId, weapon: WeaponKind, seed = 5): Game {
 }
 
 /** A practice room with three monsters that stand still and never strike; the hero uses ability `skill` once. */
-function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonly WordId[], behind: readonly WordId[], weak: boolean, name: string): Seen {
-  const g = practice(cls, weapon);
+function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonly WordId[], behind: readonly WordId[], weak: boolean, name: string, demon = false): Seen {
+  const g = practice(cls, weapon, 5, demon);
   const a = g as unknown as { waveT: number; rng: RNG; later: unknown[]; spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: RNG) => Monster; wakeUp: (m: Monster) => void };
   a.waveT = 1e9; // no packs of its own
   g.monsters.length = 0;
@@ -282,6 +293,11 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
     m.cd = 1e9;
     if (weak) m.life = 1;
     else m.life = m.maxLife = 1e7;
+    // (Damning strikes only the cursed or burning: these are cursed, with nothing yet to smoulder, so that its own blow is the first)
+    if (def.kind === 'damning') {
+      m.curseT = 6;
+      m.curseDps = 0;
+    }
   }
   g.events.length = 0;
   h.mana = h.d.maxMana;
@@ -402,7 +418,12 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   // ---- in front: the hit
   if (front.includes('power')) assert.ok(any((e) => e.t === 'hit' && !e.onHero && e.heavy === true), `${name}: Power lands heavily`);
   if (front.includes('twin')) {
-    if (def.kind === 'melee') assert.ok(any((e) => e.t === 'swing' && !e.echo && e.n === 0) && any((e) => e.t === 'swing' && !e.echo && e.n === 1), `${name}: Twin cuts twice`);
+    // (THE WARLOCK: the Curse and Damning go off twice; a smoke step strikes each it passes through twice)
+    if (def.kind === 'curse') assert.ok(any((e) => e.t === 'curse' && !e.echo && (e.n ?? 0) === 0) && any((e) => e.t === 'curse' && !e.echo && e.n === 1), `${name}: Twin curses twice`);
+    else if (def.kind === 'damning') assert.ok(any((e) => e.t === 'damning' && !e.echo && (e.n ?? 0) === 0) && any((e) => e.t === 'damning' && !e.echo && e.n === 1), `${name}: Twin erupts twice`);
+    // (what died at a touch the first time is not there to be struck again)
+    else if (def.kind === 'smoke') assert.ok(weak || any((e) => e.t === 'smokeHit' && !e.echo && e.n === 1), `${name}: Twin strikes each it passes twice`);
+    else if (def.kind === 'melee') assert.ok(any((e) => e.t === 'swing' && !e.echo && e.n === 0) && any((e) => e.t === 'swing' && !e.echo && e.n === 1), `${name}: Twin cuts twice`);
     else if (def.kind === 'burst' || def.kind === 'orb' || def.kind === 'whirl' || def.kind === 'leap' || def.kind === 'warp') assert.ok(any((e) => e.t === 'burst' && !e.echo && e.n === 0) && any((e) => e.t === 'burst' && !e.echo && e.n === 1), `${name}: Twin bursts twice`);
     else if (def.kind === 'volley') assert.ok(any((e) => e.t === 'volleyFall' && !e.echo && e.n === 0) && any((e) => e.t === 'volleyFall' && !e.echo && e.n === 1) && count((e) => e.t === 'volleyUp' && !e.echo) === 1, `${name}: Twin brings the arrows down in pairs`);
     else if (def.kind === 'projectile') assert.ok(seen.shots === 2 && seen.shotTwins === 1, `${name}: Twin looses two shots, one of them the mirror's`);
@@ -416,6 +437,9 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   else if (def.kind === 'volley') assert.ok(count((e) => e.t === 'volleyUp' && !e.echo) === 1 && !any((e) => e.t === 'volleyFall' && e.n > 0), `${name}: one volley, its arrows one at a time`);
   else if (def.kind === 'beam') assert.ok(any((e) => e.t === 'beamBite' && e.n === 0) && !any((e) => e.t === 'beamBite' && e.n > 0), `${name}: one beam`);
   else if (def.kind === 'summon') assert.ok(!seen.twinSeen, `${name}: one bolt at a time`);
+  else if (def.kind === 'curse') assert.ok(count((e) => e.t === 'curse' && !e.echo) === 1, `${name}: one curse`);
+  else if (def.kind === 'damning') assert.ok(count((e) => e.t === 'damning' && !e.echo) === 1, `${name}: one eruption`);
+  else if (def.kind === 'smoke') assert.ok(!any((e) => e.t === 'smokeHit' && e.n > 0), `${name}: each struck once`);
   if (def.kind === 'orb') assert.equal(count((e) => e.t === 'orbSet'), 1, `${name}: one orb is set`);
   if (def.channel) {
     assert.deepEqual([count((e) => e.t === 'channel'), count((e) => e.t === 'channelEnd')], [1, 1], `${name}: it began once and ended once`);
@@ -447,6 +471,10 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     if (def.kind === 'beam') assert.ok(any((e) => e.t === 'beam' && e.echo === true), `${name}: the echo is a second beam`);
     if (def.kind === 'wave') assert.ok(any((e) => e.t === 'wave' && e.echo === true), `${name}: the echo is a second wave`);
     if (def.kind === 'summon') assert.ok(any((e) => e.t === 'familiar' && e.echo === true), `${name}: the echo is a second familiar`);
+    if (def.kind === 'curse') assert.ok(any((e) => e.t === 'curse' && e.echo === true), `${name}: the echo curses again`);
+    if (def.kind === 'damning') assert.ok(any((e) => e.t === 'damning' && e.echo === true), `${name}: the echo erupts again`);
+    // (what died at a touch the first time is not there for the echo to strike)
+    if (def.kind === 'smoke') assert.ok(any((e) => e.t === 'smoke' && e.echo === true) && (weak || any((e) => e.t === 'smokeHit' && e.echo)), `${name}: the echo streaks along again`);
     // (haste is given by the use, once: the echo is not a use. Might is given by every blow that
     // lands, and the echo's blow is one: see tests/power.test.ts.)
     assert.equal(count((e) => e.t === 'buff' && e.kind === 'haste'), behind.includes('swift') ? 1 : 0, `${name}: the echo does not give haste again`);
@@ -543,7 +571,7 @@ test('the rule of the sockets: any word or any two different words to a side, bu
  * begins with (its quick attack, its slow one and, since Version 12.2, its evasive move), the
  * warrior with the one-handed sword for Slam, and the mage with a wand for Familiar and Beam.
  */
-const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2 }[] = [
+const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demon?: boolean }[] = [
   { cls: 'warrior', weapon: 'greatsword', skill: 0 },
   { cls: 'warrior', weapon: 'greatsword', skill: 1 },
   { cls: 'warrior', weapon: 'sword', skill: 1 },
@@ -556,29 +584,36 @@ const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2 }[] =
   { cls: 'warrior', weapon: 'greatsword', skill: 2 },
   { cls: 'ranger', weapon: 'bow', skill: 2 },
   { cls: 'mage', weapon: 'staff', skill: 2 },
+  // (THE WARLOCK, game/warlock.ts: his three, and the demon's)
+  { cls: 'warlock', weapon: 'wand', skill: 0 },
+  { cls: 'warlock', weapon: 'wand', skill: 1 },
+  { cls: 'warlock', weapon: 'wand', skill: 2 },
+  { cls: 'warlock', weapon: 'wand', skill: 0, demon: true },
+  { cls: 'warlock', weapon: 'wand', skill: 1, demon: true },
+  { cls: 'warlock', weapon: 'wand', skill: 2, demon: true },
 ];
 
 test('between them the cases use every ability that takes words, once each', () => {
-  const used = CASES.map((k) => practice(k.cls, k.weapon).hero.skills[k.skill].id).sort();
+  const used = CASES.map((k) => practice(k.cls, k.weapon, 5, k.demon).hero.skills[k.skill].id).sort();
   const all = Object.values(SKILLS).filter((d) => d.sockets).map((d) => d.id).sort();
   assert.deepEqual(used, all);
 });
 
-for (const { cls, weapon, skill } of CASES) {
-  const def = SKILLS[practice(cls, weapon).hero.skills[skill].id];
-  test(`every loadout of ${def.name} (a ${cls} with a ${weapon}): each word acts, the numbers add up, nothing goes wrong`, () => {
-    checkWordAlone(def, cls, practice(cls, weapon).hero.d);
+for (const { cls, weapon, skill, demon } of CASES) {
+  const def = SKILLS[practice(cls, weapon, 5, demon).hero.skills[skill].id];
+  test(`every loadout of ${def.name} (a ${cls}${demon ? ' as the demon' : ''} with a ${weapon}): each word acts, the numbers add up, nothing goes wrong`, () => {
+    checkWordAlone(def, cls, practice(cls, weapon, 5, demon).hero.d);
     let used = 0;
     let uses = 0;
     for (const [front, behind] of loadouts()) {
       const name = tag(cls, def, front, behind);
       used++;
       // against monsters that can take it: every word that acts on a hit must act
-      checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, false, name), false, name);
+      checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, false, name, demon), false, name);
       uses++;
       // against monsters that die at a touch: the words that act on a kill
       if (front.includes('volatile') || behind.includes('leech') || behind.includes('frenzied')) {
-        checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, true, `${name} (kills)`), true, `${name} (kills)`);
+        checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, true, `${name} (kills)`, demon), true, `${name} (kills)`);
         uses++;
       }
     }
