@@ -43,8 +43,8 @@ import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, R
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
-import { BRAWL_TUNE, COMBO_GAP, PUNCHES, punchFor } from './brawler';
-import type { PunchName } from './brawler';
+import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
+import type { BrawlState, PunchName } from './brawler';
 import { TINKER_TUNE } from './tinkerer';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 
@@ -258,6 +258,8 @@ export class Game {
   private warlockBy: null | 'bound' | 'wave' | 'chain' | 'blaze' = null;
   /** THE BRAWLER (game/brawler.ts): what his haymaker has launched, flying down the line (the monster's id, its way, how far it has left to go, whom it has bowled over). */
   cannonballs: { id: number; dx: number; dy: number; left: number; skill: number; frac: number; hit: number[] }[] = [];
+  /** THE BRAWLER'S TREE (game/talents.ts BRAWLER_TREE): what his talents keep going. */
+  brawl: BrawlState = newBrawl();
   drops: Drop[] = [];
   events: GameEvent[] = [];
   boss: Monster | null = null;
@@ -1184,6 +1186,7 @@ export class Game {
     this.cannonballs = [];
     this.hellwaves = [];
     this.souls = [];
+    this.brawl = newBrawl();
     this.drops = [];
     this.later = [];
     // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
@@ -1818,6 +1821,7 @@ export class Game {
     if (this.hero.cls === 'tinkerer' || this.golem || this.contraptions.length || this.vials.length) this.updateTinkerer(dt);
     if (this.cannonballs.length) this.updateCannonballs(dt);
     if (this.hellwaves.length || this.souls.length || this.bound) this.updateWarlockTree(dt);
+    if (this.hero.cls === 'brawler') this.updateBrawl(dt);
     this.updateZones(dt);
     if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
@@ -3850,17 +3854,27 @@ export class Game {
     let follow = SKILLS[h.skills[i].id].follow;
     if (h.cls === 'brawler' && i < 2 && SKILLS[h.skills[i].id].kind === 'punch') {
       const p = h.punch;
-      const goOn = !!p && p.run.length < 3 && this.time - p.at <= PUNCHES[p.name].follow + COMBO_GAP;
-      const run = (goOn && p ? p.run : '') + (i === 0 ? 'T' : 'H');
+      const soon = !!p && this.time - p.at <= PUNCHES[p.name].follow + COMBO_GAP;
+      const goOn = soon && !!p && p.run.length < 3;
+      // (THE BRAWLER'S TREE: Flurry, a tap soon after the uppercut is a hook again, as the second of a combo; Set-Up, after a
+      // counter has landed, his next press is the combo's last punch, a tap the uppercut and a hold the haymaker)
+      const flurry = i === 0 && soon && !!p && p.name === 'uppercut' && this.has('flurry');
+      const setUp = this.brawl.setUp;
+      this.brawl.setUp = false;
+      const run = setUp ? (i === 0 ? 'TTT' : 'HHH') : flurry ? 'TT' : (goOn && p ? p.run : '') + (i === 0 ? 'T' : 'H');
       const holds = [...run.slice(0, -1)].filter((c) => c === 'H').length;
       const name = punchFor(run.length - 1, i === 1, holds);
       const P = PUNCHES[name];
-      // (Swiftness and the frenzy quicken his punches as they quicken any quick attack)
-      const pace = i === 0 ? Math.max(0.5, Math.min(2, h.skills[0].r.rate / Math.max(0.3, this.weaponRate()))) * this.frenzyPace() : 1;
+      // (Swiftness and the frenzy quicken his punches as they quicken any quick attack; THE BRAWLER'S TREE: Heavy Hands, Heavy
+      // in front of his taps no longer slows them)
+      const unslowed = i === 0 && this.has('heavyhands') && this.hushT <= 0 && this.fronts(0).includes('heavy') ? HEAVY.slower : 1;
+      const pace = i === 0 ? Math.max(0.5, Math.min(2, (h.skills[0].r.rate * unslowed) / Math.max(0.3, this.weaponRate()))) * this.frenzyPace() : 1;
       wind = P.windup / pace;
       follow = P.follow / pace;
-      h.punch = { run, name, at: this.time + wind };
-      if (i === 0) h.swingT = wind + follow * 0.55;
+      // (THE BRAWLER'S TREE: Double Jab, the jab is two: the second lands a moment after the first, and the combo goes on from it)
+      const two = name === 'jab' && this.has('doublejab') ? BRAWL_TUNE.talents.doubleJab.gap : 0;
+      h.punch = { run, name, at: this.time + wind + two };
+      if (i === 0) h.swingT = wind + two + follow * 0.55;
     }
     h.attackSkill = i;
     h.attackAge = 0;
@@ -4803,8 +4817,9 @@ export class Game {
   /**
    * A punch of his landing: the one in front within its reach (the body blow, all round him), struck for its share of the
    * hit; the uppercut stuns it, the holds knock it back, the haymaker launches it down the line. Its name floats over him.
+   * How many it struck. (THE BRAWLER'S TREE: what his talents make of it, each where it happens.)
    */
-  private landPunch(i: number, name: PunchName, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false, wakes = true): void {
+  private landPunch(i: number, name: PunchName, ox: number, oy: number, dx: number, dy: number, frac: number, n = 0, echo = false, wakes = true): number {
     const h = this.hero;
     const P = PUNCHES[name];
     const r = h.skills[i].r;
@@ -4816,8 +4831,9 @@ export class Game {
         if (Math.hypot(m.x - ox, m.y - oy) <= P.round * r.size + m.r) hits.push(m);
       }
     } else {
-      let best: Monster | null = null;
-      let score = 1e9;
+      // (the one in front: the nearest the way he punches. THE BRAWLER'S TREE: Wide Cross, the cross strikes every enemy in
+      // front of him, not only the first)
+      const front: { m: Monster; sc: number }[] = [];
       for (const m of this.monsters) {
         if (m.dead || this.shutIn(m)) continue;
         const mx = m.x - ox;
@@ -4826,13 +4842,11 @@ export class Game {
         if (dist > reach + m.r) continue;
         const dot = dist > 0.01 ? (mx * dx + my * dy) / dist : 1;
         if (dot < 0.35 && dist > 0.9 + m.r) continue;
-        const sc = dist - dot * 0.5;
-        if (sc < score) {
-          score = sc;
-          best = m;
-        }
+        front.push({ m, sc: dist - dot * 0.5 });
       }
-      if (best) hits.push(best);
+      front.sort((a, b) => a.sc - b.sc);
+      const wide = name === 'cross' && this.has('widecross');
+      for (const f of wide ? front : front.slice(0, 1)) hits.push(f.m);
     }
     this.emit({ t: 'punch', name, x: ox, y: oy, dx, dy, big: P.big, n, echo: echo || undefined, hit: hits.length > 0 });
     const words = this.fronts(i);
@@ -4840,11 +4854,23 @@ export class Game {
     if (P.big) this.emit({ t: 'shake', amount: P.big === 2 ? 5 : 2.5 });
     const first = hits[0];
     if (first && words.includes('heavy')) this.emit({ t: 'heavy', x: first.x, y: first.y, r: P.round ? P.round * r.size : 1.1, big: !!P.round });
+    // (THE BRAWLER'S TREE: Big Uppercut, his uppercut twice as hard)
+    const big = name === 'uppercut' && this.has('biguppercut');
+    const share = P.share * (big ? BRAWL_TUNE.talents.bigUppercut.mult : 1);
+    // (Pinball: whom the knocks this blow begins have struck, one list for them all: those it struck itself to begin with)
+    const knocked = hits.map((m) => m.id);
     let k = 0;
     for (const m of hits) {
-      this.hitMonster(m, i, frac * P.share, k++ >= 3);
+      // (Tenderize: the one his punches have been on takes more)
+      const before = m.life + m.shield;
+      this.hitMonster(m, i, frac * share * this.tenderOf(m), k++ >= 3);
       if (m.dead) continue;
-      if (P.stun) m.stunT = Math.max(m.stunT, P.stun);
+      // (Bleeders: a body blow makes each it hits bleed half the blow again)
+      if (name === 'body blow' && this.has('bleeders')) this.bleed(m, before - (m.life + m.shield));
+      // (Knockout: his uppercut knocks out one below a fifth of its life; a boss, stunned)
+      if (name === 'uppercut' && this.has('knockout') && this.knockOut(m, i)) continue;
+      // (Big Uppercut: thrown up, it comes down stunned)
+      if (P.stun && !(big && this.popUp(m))) m.stunT = Math.max(m.stunT, P.stun);
       if (P.stagger) m.staggerT = Math.max(m.staggerT, P.stagger);
       if (P.launch && !m.boss && n === 0 && !echo) {
         const far = Math.hypot(m.x - ox, m.y - oy) || 1;
@@ -4852,8 +4878,13 @@ export class Game {
         const ly = far > 0.05 ? (m.y - oy) / far : dy;
         this.cannonballs.push({ id: m.id, dx: lx, dy: ly, left: BRAWL_TUNE.cannonball.far, skill: i, frac: frac * P.share * BRAWL_TUNE.cannonball.share, hit: [m.id] });
         this.emit({ t: 'cannonball', id: m.id, x: m.x, y: m.y, dx: lx, dy: ly });
-      } else if (P.throw) this.throwMonster(m, ox, oy, P.throw, 0.18);
+      } else if (P.throw) {
+        this.throwMonster(m, ox, oy, P.throw, 0.18);
+        // (Pinball: knocked back, it hurts what it is knocked into)
+        if (this.has('pinball')) this.pinball(m, i, frac * share, knocked);
+      }
     }
+    this.tenderized(hits);
     if (first) {
       this.landed(i);
       // (a splash off the one it struck, as a sword's: Flame's explosion, Power's shock through the ground)
@@ -4870,6 +4901,9 @@ export class Game {
     this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
     // (what the words behind it leave, a punch leaves where it lands, once a press)
     if (wakes && n === 0 && !echo) this.wake(i, hits.length ? hits[0].x : ox + dx * reach * 0.7, hits.length ? hits[0].y : oy + dy * reach * 0.7, Math.max(1, P.round ?? reach * 0.6), frac);
+    // (THE BRAWLER'S TREE: Shockwave, a hold of his sends a wave of air on ahead, once a press)
+    if (i === 1 && n === 0 && !echo && this.has('shockwave')) this.sendWave(i, ox, oy, dx, dy, frac * share);
+    return hits.length;
   }
 
   /** What his haymaker launched flies down the line; each it meets is bowled over and struck. Stopped by a wall, it stops. */
@@ -4894,9 +4928,13 @@ export class Game {
         if (Math.hypot(o.x - m.x, o.y - m.y) > C.near + o.r) continue;
         b.hit.push(o.id);
         this.emit({ t: 'bowled', x: o.x, y: o.y });
-        this.hitMonster(o, b.skill, b.frac, false);
-        // (bowled over: thrown aside, off the line)
-        if (!o.dead) this.throwMonster(o, m.x - b.dy * 0.3, m.y + b.dx * 0.3, 1.2, 0.2);
+        this.hitMonster(o, b.skill, b.frac * this.tenderOf(o), false);
+        if (o.dead) continue;
+        // (THE BRAWLER'S TREE: Ten Pins, one bowled over is launched too, on down the line, and bowls over more)
+        if (this.has('tenpins') && this.launchPin(o, m, b)) continue;
+        // (bowled over: thrown aside, off the line; THE BRAWLER'S TREE: Pinball, it hurts what it is knocked into)
+        this.throwMonster(o, m.x - b.dy * 0.3, m.y + b.dx * 0.3, 1.2, 0.2);
+        if (this.has('pinball')) this.pinball(o, b.skill, b.frac, b.hit);
       }
     }
   }
@@ -4920,7 +4958,8 @@ export class Game {
         }
       }
       if (best) this.face(best.x, best.y);
-      this.landPunch(2, 'counter', h.x, h.y, h.fx, h.fy, frac * BRAWL_TUNE.slip.share, k, echo, false);
+      // (THE BRAWLER'S TREE: a counter that lands, for Bob and Weave and Set-Up)
+      if (this.landPunch(2, 'counter', h.x, h.y, h.fx, h.fy, frac * BRAWL_TUNE.slip.share, k, echo, false) > 0) this.counterLanded();
     };
     for (let k = 0; k < r.count; k++) {
       if (k === 0) hook(0, r.countDmg, false);
@@ -4928,6 +4967,272 @@ export class Game {
     }
     this.wake(2, x0, y0, SKILLS[s.id].radius * r.size, r.countDmg);
     if (r.echo > 0) this.echoOf(2, h.x, h.y, h.fx, h.fy, () => hook(0, r.countDmg * r.echo, true));
+  }
+
+  // ---- THE BRAWLER'S TREE (game/talents.ts BRAWLER_TREE; its numbers, BRAWL_TUNE.talents) --------------------------
+  // The owner approved the tree as drawn (28 Oct 2026); each card's words are what its talent does here. Each is asked after
+  // where it happens: Double Jab, Flurry, Set-Up and Heavy Hands in `begin` and `deliver`; Tenderize, Big Uppercut, Knockout,
+  // Wide Cross, Bleeders, Pinball and Shockwave in `landPunch`; Ten Pins in `updateCannonballs`; Bob and Weave and Set-Up as
+  // his counter lands; Iron Chin and Slip Reflex in `hurtHero` (and `knockHero`, `pullHero`).
+
+  /** His talents' doings, each step: what his uppercut threw up comes down; what he knocked back hurts what it is knocked into; his waves of air go on ahead. */
+  private updateBrawl(dt: number): void {
+    const B = this.brawl;
+    if (B.up.length) this.comeDown(dt);
+    if (B.pins.length) this.updatePins();
+    if (B.waves.length) this.updateWaves(dt);
+  }
+
+  /** (Double Jab) The jab's second, a moment after the first, thrown from where he is then the way the first went (Twin, two again), and his picture throws the jab again. Not if he has slipped or begun another punch meanwhile. */
+  private secondJab(i: number, dx: number, dy: number, each: number, count: number): void {
+    const h = this.hero;
+    const gap = BRAWL_TUNE.talents.doubleJab.gap;
+    const p = h.punch;
+    h.attackAge = 0;
+    h.attackWind = gap;
+    h.attackT += gap;
+    this.after(gap, () => {
+      const hh = this.hero;
+      if (!p || hh.punch !== p || hh.move || this.over) return;
+      for (let k = 0; k < count; k++) {
+        if (k === 0) this.landPunch(i, 'jab', hh.x, hh.y, dx, dy, each, 0, false, false);
+        else this.after(0.12 * k, () => this.landPunch(i, 'jab', this.hero.x, this.hero.y, dx, dy, each, k, false, false));
+      }
+    });
+  }
+
+  /** (Tenderize) How much more `m` takes from him: 5% for every punch he has landed on it in a row, up to 50%. */
+  private tenderOf(m: Monster): number {
+    const t = this.brawl.tender;
+    if (!t || t.id !== m.id || !this.has('tenderize')) return 1;
+    const T = BRAWL_TUNE.talents.tenderize;
+    return 1 + Math.min(T.most, T.each * t.n);
+  }
+
+  /** (Tenderize) A punch of his has landed on `hits`: on the one his punches were on, one more; on another, they begin again on it. */
+  private tenderized(hits: readonly Monster[]): void {
+    if (!hits.length || !this.has('tenderize')) return;
+    const t = this.brawl.tender;
+    if (t && hits.some((m) => m.id === t.id)) t.n++;
+    else this.brawl.tender = { id: hits[0].id, n: 1 };
+  }
+
+  /** (Bleeders) `m` bleeds the blow it has just taken again, half of it, over three seconds, on top of what it bleeds still. */
+  private bleed(m: Monster, blow: number): void {
+    if (m.dead || blow <= 0) return;
+    const B = BRAWL_TUNE.talents.bleeders;
+    const owed = ((m.bleedT ?? 0) > 0 ? (m.bleedDps ?? 0) * (m.bleedT ?? 0) : 0) + blow * B.share;
+    m.bleedT = B.secs;
+    m.bleedDps = owed / B.secs;
+  }
+
+  /** (Knockout) His uppercut has landed on `m`: below a fifth of its life, it is knocked out (all its life struck off); a boss is stunned three seconds instead. Whether it was. */
+  private knockOut(m: Monster, i: number): boolean {
+    const K = BRAWL_TUNE.talents.knockout;
+    if (m.dead || m.life >= m.maxLife * K.below) return false;
+    if (m.boss) {
+      m.stunT = Math.max(m.stunT, K.boss);
+      this.breakOff(m);
+      this.emit({ t: 'knockout', id: m.id, x: m.x, y: m.y, boss: true });
+      return true;
+    }
+    const x = m.x;
+    const y = m.y;
+    this.damageMonster(m, Math.ceil(m.life + m.shield), 'phys', true, i, true);
+    // (one its own rules hold up, as a boss's are, is not knocked out: it is stunned by the uppercut as ever)
+    if (!m.dead) return false;
+    this.emit({ t: 'knockout', id: m.id, x, y, boss: false });
+    this.emit({ t: 'shake', amount: 4 });
+    return true;
+  }
+
+  /** (Big Uppercut) `m` thrown up: up for a moment, it then comes down stunned for two seconds (stunned all the while). A boss stands his ground. Whether it was thrown. */
+  private popUp(m: Monster): boolean {
+    if (m.dead || m.boss || m.state === 'act' || this.shutIn(m)) return false;
+    const B = BRAWL_TUNE.talents.bigUppercut;
+    const was = this.brawl.up.find((u) => u.id === m.id);
+    if (was) was.t = 0;
+    else this.brawl.up.push({ id: m.id, t: 0 });
+    m.thrown = undefined;
+    m.stunT = Math.max(m.stunT, B.up + B.stun);
+    this.breakOff(m);
+    this.emit({ t: 'popUp', id: m.id, x: m.x, y: m.y });
+    return true;
+  }
+
+  /** (Big Uppercut) What is up comes down, stunned two seconds from then. */
+  private comeDown(dt: number): void {
+    const B = BRAWL_TUNE.talents.bigUppercut;
+    const up = this.brawl.up;
+    for (let k = up.length - 1; k >= 0; k--) {
+      const u = up[k];
+      const m = this.monsters.find((q) => q.id === u.id);
+      u.t += dt;
+      if (!m || m.dead) {
+        up.splice(k, 1);
+        continue;
+      }
+      if (u.t < B.up) continue;
+      up.splice(k, 1);
+      m.stunT = Math.max(m.stunT, B.stun);
+      this.emit({ t: 'comeDown', id: m.id, x: m.x, y: m.y, secs: B.stun });
+      this.emit({ t: 'shake', amount: 1.5 });
+    }
+  }
+
+  /** (Big Uppercut) How far up `m` is, 0 to 1 of the way to the top (0 on the floor): for its picture. */
+  upOf(m: Monster): number {
+    const u = this.brawl.up.length ? this.brawl.up.find((q) => q.id === m.id) : undefined;
+    if (!u) return 0;
+    const k = Math.min(1, u.t / BRAWL_TUNE.talents.bigUppercut.up);
+    return 4 * k * (1 - k);
+  }
+
+  /** (Pinball) `m`, knocked back by a blow of his (ability `skill`, the blow's share `frac`), will hurt what it is knocked into; `hit`: whom the knocks that blow began have struck. */
+  private pinball(m: Monster, skill: number, frac: number, hit: number[]): void {
+    if (m.dead || !m.thrown) return;
+    const pins = this.brawl.pins;
+    const pin = { id: m.id, skill, frac, hit };
+    const k = pins.findIndex((q) => q.id === m.id);
+    if (k >= 0) pins[k] = pin;
+    else pins.push(pin);
+  }
+
+  /** (Pinball) What he knocked back, as it flies: what it is knocked into (ahead of it) is hurt and knocked back in its turn. */
+  private updatePins(): void {
+    const P = BRAWL_TUNE.talents.pinball;
+    const pins = this.brawl.pins;
+    for (const q of [...pins]) {
+      const m = this.monsters.find((o) => o.id === q.id);
+      const T = m ? m.thrown : undefined;
+      if (m && !m.dead && T) {
+        for (const o of this.monsters) {
+          if (o === m || o.dead || q.hit.includes(o.id) || this.shutIn(o)) continue;
+          const ox = o.x - m.x;
+          const oy = o.y - m.y;
+          if (Math.hypot(ox, oy) > o.r + m.r + P.touch || ox * T.vx + oy * T.vy <= 0) continue;
+          q.hit.push(o.id);
+          this.emit({ t: 'pinball', x: (o.x + m.x) / 2, y: (o.y + m.y) / 2 });
+          this.hitMonster(o, q.skill, q.frac * P.share * this.tenderOf(o), true);
+          if (o.dead) continue;
+          this.throwMonster(o, m.x, m.y, P.far);
+          this.pinball(o, q.skill, q.frac, q.hit);
+        }
+      }
+      if (!m || m.dead || !m.thrown) {
+        const at = pins.indexOf(q);
+        if (at >= 0) pins.splice(at, 1);
+      }
+    }
+  }
+
+  /** (Ten Pins) `o`, bowled over by the cannonball `b` (the monster `m`), is launched in its turn: on down the line, veering off it to its own side. A boss, or one in an act of its own, is not. Whether it was. */
+  private launchPin(o: Monster, m: Monster, b: { dx: number; dy: number; skill: number; frac: number; hit: number[] }): boolean {
+    if (o.boss || o.state === 'act') return false;
+    const T = BRAWL_TUNE.talents.tenPins;
+    const side = (o.x - m.x) * -b.dy + (o.y - m.y) * b.dx >= 0 ? 1 : -1;
+    let lx = b.dx - b.dy * side * T.veer;
+    let ly = b.dy + b.dx * side * T.veer;
+    const l = Math.hypot(lx, ly) || 1;
+    lx /= l;
+    ly /= l;
+    o.thrown = undefined;
+    this.cannonballs.push({ id: o.id, dx: lx, dy: ly, left: T.far, skill: b.skill, frac: b.frac, hit: b.hit });
+    this.emit({ t: 'cannonball', id: o.id, x: o.x, y: o.y, dx: lx, dy: ly });
+    return true;
+  }
+
+  /** (Shockwave) A wave of air sent on ahead from (ox, oy), the way (dx, dy), three tiles or to a wall, striking for its share of the blow (`frac`). */
+  private sendWave(i: number, ox: number, oy: number, dx: number, dy: number, frac: number): void {
+    const S = BRAWL_TUNE.talents.shockwave;
+    let far = 0;
+    while (far < S.far && this.isOpen(ox + dx * Math.min(S.far, far + 0.1), oy + dy * Math.min(S.far, far + 0.1))) far = Math.min(S.far, far + 0.1);
+    this.brawl.waves.push({ x: ox, y: oy, dx, dy, gone: 0, far, skill: i, frac: frac * S.share, hit: [] });
+    this.emit({ t: 'shockwave', x: ox, y: oy, dx, dy, far, speed: S.speed });
+  }
+
+  /** (Shockwave) The waves go on: what the line they have swept takes in (its width either side) is struck, each once. */
+  private updateWaves(dt: number): void {
+    const S = BRAWL_TUNE.talents.shockwave;
+    const waves = this.brawl.waves;
+    for (let k = waves.length - 1; k >= 0; k--) {
+      const w = waves[k];
+      w.gone = Math.min(w.far, w.gone + S.speed * dt);
+      for (const m of this.monsters) {
+        if (m.dead || w.hit.includes(m.id) || this.shutIn(m)) continue;
+        const along = (m.x - w.x) * w.dx + (m.y - w.y) * w.dy;
+        const off = Math.abs((m.y - w.y) * w.dx - (m.x - w.x) * w.dy);
+        if (along < -m.r || along > w.gone + m.r || off > S.wide + m.r) continue;
+        w.hit.push(m.id);
+        this.hitMonster(m, w.skill, w.frac * this.tenderOf(m), true);
+      }
+      if (w.gone >= w.far) waves.splice(k, 1);
+    }
+  }
+
+  /** (Bob and Weave, Set-Up) A counter of his has landed: his slip is ready again at once; his next press is the combo's last punch. */
+  private counterLanded(): void {
+    const h = this.hero;
+    const s = h.skills[2];
+    if (this.has('bobweave') && s && s.charges < s.maxCharges) {
+      s.charges = s.maxCharges;
+      s.cd = 0;
+      this.emit({ t: 'slipReady', x: h.x, y: h.y });
+    }
+    if (this.has('setup') && !this.brawl.setUp) {
+      this.brawl.setUp = true;
+      this.emit({ t: 'setUp', x: h.x, y: h.y });
+    }
+  }
+
+  /** (Iron Chin) He is winding up a hold. */
+  private ironChin(): boolean {
+    const w = this.hero.windup;
+    return !!w && w.skill === 1 && this.has('ironchin');
+  }
+
+  /**
+   * (Slip Reflex) A blow from (fromX, fromY) would hit him: once every six seconds it is slipped by itself. He weaves a step
+   * aside (the side there is room on; none, where he stands), whatever he was making broken off as his slip breaks it off, and
+   * comes up with his counter (brawlerComesUp). His slip's own wait is not touched. Whether it was slipped.
+   */
+  private slipReflex(fromX: number, fromY: number): boolean {
+    const R = BRAWL_TUNE.talents.slipReflex;
+    const h = this.hero;
+    if (!this.has('slipreflex') || this.time - this.brawl.reflexAt < R.every) return false;
+    this.brawl.reflexAt = this.time;
+    let ax = h.x - fromX;
+    let ay = h.y - fromY;
+    const len = Math.hypot(ax, ay);
+    if (len < 0.01) {
+      ax = -h.fx;
+      ay = -h.fy;
+    } else {
+      ax /= len;
+      ay /= len;
+    }
+    let land = { x: h.x, y: h.y };
+    for (const side of [1, -1]) {
+      const at = this.reachPoint(h.x - ay * side * R.far, h.y + ax * side * R.far, R.far);
+      if (Math.hypot(at.x - h.x, at.y - h.y) >= 0.5) {
+        land = at;
+        break;
+      }
+    }
+    if (h.channel) this.endChannel(true);
+    if (h.windup && h.windup.skill === 0) h.swingT = 0;
+    h.windup = null;
+    h.channel = null;
+    h.queued = null;
+    h.attackT = 0;
+    h.step = null;
+    h.punch = null;
+    h.move = { kind: 'slip', t: 0, dur: BRAWL_TUNE.slip.secs, x0: h.x, y0: h.y, x1: land.x, y1: land.y };
+    h.invuln = Math.max(h.invuln, BRAWL_TUNE.slip.secs + 0.15);
+    this.sfx('dodge');
+    this.emit({ t: 'slip', x0: h.x, y0: h.y, x1: land.x, y1: land.y });
+    this.emit({ t: 'slipReflex', x: h.x, y: h.y });
+    return true;
   }
 
   // ---- THE TINKERER (game/tinkerer.ts) ---------------------------------------------------------
@@ -5745,6 +6050,8 @@ export class Game {
         if (k === 0) this.landPunch(i, name, ox, oy, dx, dy, each, 0, echo);
         else this.after(0.12 * k, () => this.landPunch(i, name, this.hero.x, this.hero.y, dx, dy, each, k, echo));
       }
+      // (THE BRAWLER'S TREE: Double Jab, his jab is two quick jabs)
+      if (name === 'jab' && primary && this.has('doublejab')) this.secondJab(i, dx, dy, each, r.count);
     } else if (def.kind === 'vialtoss') {
       // (THE TINKERER, game/tinkerer.ts: her vial lobbed where she aimed, no further than its range; Twin, a second beside it;
       // "of Echoes", a weaker one after)
@@ -6764,6 +7071,8 @@ export class Game {
     const h = this.hero;
     // (THE SKILL TREES REMADE: Resolute, nothing knocks him back)
     if (this.now('resolute')) return;
+    // (THE BRAWLER'S TREE: Iron Chin, nothing knocks him back while he winds up a hold)
+    if (this.ironChin()) return;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
     const len = Math.hypot(dx, dy);
@@ -6821,6 +7130,8 @@ export class Game {
   pullHero(fromX: number, fromY: number, share = 1): void {
     const h = this.hero;
     if (this.now('resolute')) return;
+    // (THE BRAWLER'S TREE: Iron Chin, nor drags him off his feet while he winds up a hold)
+    if (this.ironChin()) return;
     const dx = fromX - h.x;
     const dy = fromY - h.y;
     const len = Math.hypot(dx, dy);
@@ -7124,6 +7435,8 @@ export class Game {
     const d = h.d;
     const fromX = src ? src.x : ox ?? h.x + h.fx;
     const fromY = src ? src.y : oy ?? h.y + h.fy;
+    // (THE BRAWLER'S TREE: Slip Reflex, once every six seconds a blow that would hit him is slipped by itself, and he counters)
+    if (this.slipReflex(fromX, fromY)) return;
     // MONSTER PACKS: how much of each word's power the blow has (a minion's, of its leader's words,
     // half); and when the word that made it Flame, Frost or Lightning is one of those, only half of
     // the blow is of that element, the rest of the minion's own
@@ -7166,6 +7479,8 @@ export class Game {
       dmg *= 1 - Math.min(B.most, B.each * n);
     }
     if (this.now('thickskin') && h.life < h.d.maxLife * TALENT_TUNE.thickSkin2.below) dmg *= 1 - TALENT_TUNE.thickSkin2.less;
+    // (THE BRAWLER'S TREE: Iron Chin, winding up a hold he takes a third less)
+    if (this.ironChin()) dmg *= 1 - BRAWL_TUNE.talents.ironChin.less;
     dmg = Math.max(1, Math.round(dmg));
     // (Bitter Cold: what strikes him is chilled)
     if (src && !src.dead && this.now('bittercold')) {

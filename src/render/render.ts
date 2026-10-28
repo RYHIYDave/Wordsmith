@@ -2733,6 +2733,8 @@ export class Renderer {
       // (ACT 1: up in the air, as its kind has it; and drawn over what it is latched on to)
       const a1 = act1Fx(m.kind);
       if (a1 && a1.lift) sy -= Math.round(a1.lift(m));
+      // (THE BRAWLER'S TREE: Big Uppercut, one he has thrown up is up in the air: render/brawler_fx.ts)
+      if (game.brawl.up.length) sy -= fx.brawler.liftOf(m);
       const depthBy = a1 && a1.over ? a1.over(m) : 0;
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
