@@ -28,8 +28,8 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
   // (THE WARLOCK, game/warlock.ts: the Hellfire Bolt, the Curse and the Smoke Step; and the demon's Claw Rake, Damning and
   // its Smoke Step)
   | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
-  // (THE TINKERER, game/tinkerer.ts: her Contraption, her Golem, her Blast Jump)
-  | 'contraption' | 'golem' | 'blastjump'
+  // (THE TINKERER, game/tinkerer.ts: her Vial Toss, her Contraption (a talent's swap for it), her Golem, her Blast Jump)
+  | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
   // (THE BRAWLER, game/brawler.ts: his taps, his holds, his slip and counter)
   | 'jab' | 'cross' | 'slip';
 
@@ -50,10 +50,11 @@ export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 
   // that nothing can hit, cursing what it passes through; `damning`, every cursed or burning enemy near him struck and
   // every burn on it going off at once)
   | 'curse' | 'smoke' | 'damning'
-  // (THE TINKERER, game/tinkerer.ts: `contraption`, a little mortar thrown down that lobs her vials at what comes near;
+  // (THE TINKERER, game/tinkerer.ts: `vialtoss`, a vial lobbed from her hand, bursting where it lands; `contraption`, a
+  // little mortar thrown down that lobs her vials at what comes near;
   // `golem`, her clockwork Golem whistled out, and then set on to ground pound; `blastjump`, a bomb at her feet that throws
   // her to a spot and blows away what is by her)
-  | 'contraption' | 'golem' | 'blastjump'
+  | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
   // (THE BRAWLER, game/brawler.ts: `punch`, the punch of a combo its place makes; `slip`, a weaving dash, untouchable, and a
   // counter hook where he comes up)
   | 'punch' | 'slip';
@@ -183,6 +184,9 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // around and attacks.  It will just go around and I guess punch things or whatever but tap+hold will have him do a bigger
   // move.”; her swipe, “Blast jump (Recommended)”; and to the main chat, 28 Oct: “Three at once (Recommended)”, “Always with
   // her (Recommended)”). What each vial, punch, shot and pound comes to: TINKER_TUNE.
+  // (her tap since the owner’s words of 28 Oct 2026, by 16:31: “I think for her I’d like her to start with golem and a vial
+  // toss.  Then in the skill tree you can swap the vial toss to a contraption that throws the vials”)
+  vialtoss: { id: 'vialtoss', name: 'Vial Toss', kind: 'vialtoss', icon: 'vialtoss', dmg: 0.75, cooldown: 0, mana: 0, range: 6.5, radius: 1.1, speed: 0, sockets: true, desc: 'Lob a vial off your belt. It bursts where it lands, hurting everything near.', verb: 'TOSS A VIAL', windup: 0.22, follow: 0.34 },
   contraption: { id: 'contraption', name: 'Contraption', kind: 'contraption', icon: 'contraption', dmg: 0.55, cooldown: 0, mana: 0, range: 6, radius: 1.1, speed: 0, sockets: true, desc: 'Throw down a little mortar. It sets itself up and lobs your vials at whatever comes near. Up to three at once.', verb: 'THROW A CONTRAPTION', windup: 0.22, follow: 0.34 },
   golem: { id: 'golem', name: 'Golem', kind: 'golem', icon: 'golem', dmg: 1.6, cooldown: 5.0, mana: 16, range: 0, radius: 2.4, speed: 0, sockets: true, desc: 'Whistle your Golem out: it follows you, punches what is near and shoots its cannon at what is far. Whistle again, and it ground pounds.', verb: 'WHISTLE', windup: 0.28, follow: 0.5 },
   blastjump: { id: 'blastjump', name: 'Blast Jump', kind: 'blastjump', icon: 'blastjump', dmg: 0.8, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Slap a bomb down at your feet and ride the blast to a spot. Whatever is by you is blown away.', verb: 'BLAST JUMP', windup: 0, follow: 0 },
@@ -254,7 +258,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   // THE TINKERER (game/tinkerer.ts, behind TINKERER): her brief, “Gleeful mad bomber (Recommended)”, “Quick and nimble
   // (Recommended)”. Her attributes and what her abilities grow with are a proposal (Dexterity and Intelligence: quick hands
   // and a head for machines), the owner's to change.
-  tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Bombs, gadgets and a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', starts: 'wand', tap: 'contraption', hold: 'golem' },
+  tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Bombs, gadgets and a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', starts: 'wand', tap: 'vialtoss', hold: 'golem' },
   // THE BRAWLER (game/brawler.ts, behind BRAWLER): his brief, “Bare-knuckle boxer”, “Light and bouncy”, “Bone-crunching
   // (Recommended)”. His attributes and what his punches grow with are a proposal (Strength and Dexterity: a boxer's
   // weight and his speed), the owner's to change.
@@ -2066,6 +2070,7 @@ export const QUIPS: {
     damning: ['Damning evidence.', 'Damned.'],
     demonstep: ['Ripped through.', 'Smoke and mirrors.'],
     // (THE TINKERER's, proposals)
+    vialtoss: ['Shake well before use.', 'Handle with care.'],
     contraption: ['Some assembly required.', 'Fully automated.'],
     golem: ['Good boy.', 'Wind him up, let him go.'],
     blastjump: ['Wheee!', 'Explosive exit.'],

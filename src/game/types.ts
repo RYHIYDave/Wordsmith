@@ -25,8 +25,8 @@ export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp'
   // (THE WARLOCK, game/warlock.ts: his three as a man and the demon's three)
   | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
-  // (THE TINKERER, game/tinkerer.ts: her Contraption, her Golem and her blast jump)
-  | 'contraption' | 'golem' | 'blastjump'
+  // (THE TINKERER, game/tinkerer.ts: her Vial Toss, her Contraption, her Golem and her blast jump)
+  | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
   // (THE BRAWLER, game/brawler.ts: his tap, his tap and hold, his slip and counter)
   | 'jab' | 'cross' | 'slip';
 

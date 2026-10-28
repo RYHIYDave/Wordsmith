@@ -79,6 +79,8 @@ export interface AnimSet {
    */
   clips?: {
     attack?: Clip;
+    /** (THE TINKERER) the tap as another ability, by that ability's id, where it has a move of its own (her Contraption's throw, the talent's swap for her Vial Toss). */
+    tapAs?: Partial<Record<string, Clip>>;
     /** (Strike's combo) the second swing: the downward slash. Absent: the second swing looks like the first. */
     attack2?: Clip;
     /**

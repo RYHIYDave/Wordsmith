@@ -199,7 +199,7 @@ test('a held beam: the mage stands braced in a loop for as long as it burns, and
  * Shot and her draw at the sky for Volley; the mage's thrust for Wave and the staff brought down
  * for Orb.
  */
-const DRAWN_FOR: Record<ClassId, readonly [SkillId, SkillId]> = { warrior: ['strike', 'slam'], ranger: ['shot', 'volley'], mage: ['wave', 'orb'], warlock: ['hellbolt', 'curse'], tinkerer: ['contraption', 'golem'], brawler: ['jab', 'cross'] };
+const DRAWN_FOR: Record<ClassId, readonly [SkillId, SkillId]> = { warrior: ['strike', 'slam'], ranger: ['shot', 'volley'], mage: ['wave', 'orb'], warlock: ['hellbolt', 'curse'], tinkerer: ['vialtoss', 'golem'], brawler: ['jab', 'cross'] };
 
 // From Version 15.1 (the owner, 6 Oct 2026: heroes are to be "very stylized and cool. Proud and
 // daring", and "I want things to have weight"). Up to 15.0 a hero whose life ran out stood as they

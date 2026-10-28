@@ -1262,6 +1262,7 @@ export type GameEvent =
   // (THE TINKERER, game/tinkerer.ts: her Contraption thrown, a vial lobbed out of it and bursting, a Contraption put out
   // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
   | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }
+  /** (a vial lobbed: `id` the Contraption's that lobbed it, or -1 thrown from her hand, her Vial Toss) */
   | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean }
   | { t: 'vialBurst'; x: number; y: number; r: number }
   | { t: 'contraptionEnd'; id: number; x: number; y: number }

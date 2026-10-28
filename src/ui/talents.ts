@@ -381,7 +381,7 @@ function cardLines(game: Game, t: TalentDef, tree: TalentTree): { text: string; 
   const word = talentWord(t);
   if (word) out.push({ text: `WORKS WITH ${WORDS[word].name.toUpperCase()}`, color: WORD_COLOR[word], small: true });
   // (a tree drafted, to be shown to the owner: its talents do nothing yet, and the card says so)
-  if (tree.draft) out.push({ text: 'A DRAFT: NOT IN PLAY YET', color: THEME.dim, small: true });
+  if (tree.draft && !t.works) out.push({ text: 'A DRAFT: NOT IN PLAY YET', color: THEME.dim, small: true });
   return out;
 }
 

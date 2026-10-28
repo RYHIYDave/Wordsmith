@@ -15,7 +15,10 @@
 //
 // HER MOMENTS:
 //   standing, running              her stand (6 s, cocky, gleeful) and her quick light sprint
-//   her tap                        a Contraption thrown down (it leaves her hand at TAP_LET_GO)
+//   her tap (with CONTRAPTION)     the art chat's own: a Contraption thrown down (clips.tapAs)
+//   her tap                        her VIAL TOSS (her tap since the owner's words of 28 Oct, by 16:31: “I think for her I’d like
+//                                  her to start with golem and a vial toss”): the art chat's Contraption throw, her vial off her
+//                                  belt in her fist in its place (it leaves her hand at TAP_LET_GO; the game draws its flight)
 //   her tap and hold               she points the wrench, whistles her Golem on, hops for joy as its fist comes down
 //   her swipe                      the blast jump: the moments she is flung laid over the swipe's time (as a leap's are),
 //                                  her coming down and rising after (`land`)
@@ -29,7 +32,7 @@ import { lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
 import type { Drawn } from '../dev/sculpt';
-import { BJ, FR, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
+import { BJ, FR, TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
 import type { TinkMove } from '../dev/tinkerer_moves';
 import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
 import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
@@ -107,7 +110,11 @@ function herSet(view: GameView): AnimSet {
   const at = (m: TinkMove, draw = drawTinkerAt) => (t: number): Sprite => asSprite(draw('front', m, t, turn), AURA, m.tall ?? 0);
   const idle = round(TSTAND_LONG, IDLE_FPS, at(stand));
   const walk = round(TRUN_ROUND, RUN_FPS, at(run));
-  const attack = clip(0, tap.long, CLIP_FPS, at(tap), TAP_LET_GO, true);
+  // (her Vial Toss: the throw with a vial of hers in her fist, from when she has it off her belt to when she lets it go)
+  const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
+  const attack = clip(0, tap.long, CLIP_FPS, at(toss), TAP_LET_GO, true);
+  // (her Contraption thrown down, the art chat's own tap: her tap with the talent that swaps it in, CONTRAPTION on her tree)
+  const throwDown = clip(0, tap.long, CLIP_FPS, at(tap), TAP_LET_GO, true);
   const heavy = clip(0, hold.long, CLIP_FPS, at(hold, drawTinkerHoldAt), HOLD.blow * FR, true);
   // (the blast jump: from the blast to her coming down, over the swipe; her crouch and rising after)
   const leap = spread(BJ.boom * FR, BJ.land * FR, FLY_FRAMES, at(jump));
@@ -123,7 +130,7 @@ function herSet(view: GameView): AnimSet {
     idleFps: IDLE_FPS,
     walkFps: RUN_FPS,
     walkStride: TRUN_ROUND * (run.travel ?? 0),
-    clips: { attack, heavy, leap, land, reel: struck, lurch: struckBehind, fall: down },
+    clips: { attack, tapAs: { contraption: throwDown }, heavy, leap, land, reel: struck, lurch: struckBehind, fall: down },
   };
 }
 

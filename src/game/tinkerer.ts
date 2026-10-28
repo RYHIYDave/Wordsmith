@@ -12,7 +12,12 @@
 // “Always with her (Recommended)” (offered as: the first hold brings it out; it follows her, punches up close and fires its
 // cannon at range; each hold after has it ground pound; it winds down only when she falls).
 //
-//   HER CONTRAPTION (defs.ts SKILLS.contraption, kind 'contraption'): she throws a little mortar down where she taps (no
+//   HER VIAL TOSS (defs.ts SKILLS.vialtoss, kind 'vialtoss'), her tap since his words of 28 Oct, by 16:31: “I think for her
+//     I’d like her to start with golem and a vial toss.  Then in the skill tree you can swap the vial toss to a contraption
+//     that throws the vials”: she lobs a vial off her belt where she taps (no further than its range); it bursts where it
+//     comes down, hurting all within the ability's radius. Her throw is the Contraption's, a vial in her hand in its place.
+//     Filmed in the game for him (vialtoss_film.mp4), his pick by 18:15: “Yes, keep it (Recommended)”.
+//   HER CONTRAPTION (defs.ts SKILLS.contraption, kind 'contraption'), a swap for the Vial Toss on her skill tree: she throws a little mortar down where she taps (no
 //     further than its range); it comes down, bounces, springs open and is lit (TINKER_TUNE.contraption.set); then every
 //     `every` seconds it lobs a vial of her brew at the nearest enemy awake within `reach`, which bursts where it comes
 //     down, hurting all within the ability's radius. It stands `life` seconds; three at once, a fourth putting the oldest
@@ -74,6 +79,8 @@ export const TINKER_TUNE = {
     /** Winding down when she falls (GDOWN.end). */
     down: 72 / 30,
   },
+  /** HER VIAL TOSS: how long a vial she throws flies, and how far to one side Twin's second lands from the first. */
+  toss: { flight: 18 / 30, twin: 0.9 },
   blast: {
     /** Seconds in the air for her six tiles (the art: BJ.boom to BJ.land, 18 frames), and how far the blast throws what is by her. */
     secs: 18 / 30,

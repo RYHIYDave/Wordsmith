@@ -3,7 +3,9 @@
 // call those “Contraption”.  Tap and hold will be “Golem”.  And this is gonna be clockwork Automaton that follows her around
 // and attacks.  It will just go around and I guess punch things or whatever but tap+hold will have him do a bigger move.”;
 // “Lobbed vials (Recommended)”, “Ground pound (Recommended)”, “Cannon”, “Blast jump (Recommended)”; and to the main chat,
-// 28 Oct: “Three at once (Recommended)”, “Always with her (Recommended)”.
+// 28 Oct: “Three at once (Recommended)”, “Always with her (Recommended)”; and by 16:31: “I think for her I’d like her to start
+// with golem and a vial toss.  Then in the skill tree you can swap the vial toss to a contraption that throws the vials” (her
+// tap the VIAL TOSS; the Contraption her tree's swap for it, CONTRAPTION, its tests here with it taken).
 //   run: tsx --test tests/tinkerer.test.ts
 
 // @ts-ignore - node typings are not part of this project
@@ -46,6 +48,12 @@ function dummy(g: Game, dx: number, dy: number, life = 1e7, awake = true): Monst
   return m;
 }
 const hurt = (m: Monster): number => m.maxLife - m.life;
+/** Her tree's CONTRAPTION taken: her tap the Contraption, in place of the Vial Toss. */
+function withContraption(g: Game): Game {
+  g.hero.talents = ['bombsaway', 'fortune', 'contraptions'];
+  g.refresh();
+  return g;
+}
 function wait(g: Game, seconds: number, c: Controls = emptyControls()): GameEvent[] {
   const ev: GameEvent[] = [];
   for (let t = 0; t < seconds - 1e-9; t += DT) {
@@ -94,11 +102,45 @@ test('she is not offered yet: the class cards hold the others until her switch i
   TINKERER.on = false;
 });
 
-test('a new Tinkerer: the Contraption, the Golem and the Blast Jump; no Golem out yet', () => {
+test('a new Tinkerer: the Vial Toss, the Golem and the Blast Jump; no Golem out yet', () => {
   const g = room();
-  assert.deepEqual(g.hero.skills.map((s) => s.id), ['contraption', 'golem', 'blastjump']);
+  assert.deepEqual(g.hero.skills.map((s) => s.id), ['vialtoss', 'golem', 'blastjump']);
   assert.equal(g.golem, null);
   assert.equal(g.contraptions.length, 0);
+});
+
+test('her Vial Toss: a vial lobbed from her hand to where she aimed, no further than its throw, bursting where it comes down on all near it', () => {
+  const g = room();
+  const m = dummy(g, 4, 0);
+  const side = dummy(g, 4, 0.8);
+  const far = dummy(g, 4, 3);
+  let ev = use(g, 0, 4, 0);
+  const v = ev.find((e) => e.t === 'vial');
+  assert.ok(v && v.t === 'vial' && v.id === -1, 'a vial, from her hand');
+  assert.equal(g.contraptions.length, 0, 'no Contraption');
+  ev = ev.concat(wait(g, TINKER_TUNE.toss.flight + 0.2));
+  const b = ev.find((e) => e.t === 'vialBurst');
+  assert.ok(b && b.t === 'vialBurst' && Math.abs(b.x - (g.hero.x + 4)) < 0.6 && Math.abs(b.y - g.hero.y) < 0.6, 'it bursts where she aimed');
+  assert.ok(hurt(m) > 0 && hurt(side) > 0, 'on the one it lands on and the one beside');
+  assert.equal(hurt(far), 0, 'not on one three tiles off');
+  // (aimed far off, it stops at its range)
+  ready(g);
+  ev = use(g, 0, 20, 0);
+  const v2 = ev.find((e) => e.t === 'vial');
+  assert.ok(v2 && v2.t === 'vial' && Math.hypot(v2.x1 - v2.x0, v2.y1 - v2.y0) <= SKILLS.vialtoss.range + 0.01, 'no further than its throw');
+});
+
+test("her tree's CONTRAPTION swaps the Vial Toss for the Contraption; undone, she tosses vials again and her Contraptions fall apart", () => {
+  const g = withContraption(room());
+  assert.deepEqual(g.hero.skills.map((s) => s.id), ['contraption', 'golem', 'blastjump']);
+  dummy(g, 6, 0);
+  use(g, 0, 3, 0);
+  assert.equal(g.contraptions.length, 1, 'her tap throws a Contraption');
+  g.hero.talents = ['bombsaway', 'fortune'];
+  g.refresh();
+  assert.equal(g.hero.skills[0].id, 'vialtoss');
+  const ev = wait(g, 0.2);
+  assert.ok(ev.some((e) => e.t === 'contraptionEnd'), 'the one standing falls apart');
 });
 
 test('her abilities grow with Dexterity and Intelligence alike', () => {
@@ -115,7 +157,7 @@ test('her abilities grow with Dexterity and Intelligence alike', () => {
 });
 
 test('her Contraption comes to rest where she aimed it, no further than its throw; set up, it lobs vials at the enemies awake within its reach, which burst on them', () => {
-  const g = room();
+  const g = withContraption(room());
   const m = dummy(g, 6, 0);
   const sleeper = dummy(g, -3, 0, 1e7, false);
   use(g, 0, 3, 0);
@@ -138,7 +180,7 @@ test('her Contraption comes to rest where she aimed it, no further than its thro
 });
 
 test('three Contraptions at once: a fourth puts the oldest out of action, and each falls apart when its time is up', () => {
-  const g = room();
+  const g = withContraption(room());
   dummy(g, 8, 0);
   for (let i = 0; i < 3; i++) use(g, 0, 2, i - 1);
   assert.equal(standing(g), 3);

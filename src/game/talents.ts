@@ -87,6 +87,8 @@ export interface TalentDef {
    * switch off.
    */
   now?: { text: string; name?: string; word?: WordId | null };
+  /** (on a drafted tree, `draft`) this one is made to work already. */
+  works?: boolean;
 }
 
 export interface TalentPath {
@@ -340,7 +342,7 @@ const TINKERER_TREE: TalentTree = {
     { id: 'clustervials', name: 'Cluster Vials', big: false, path: 'vials', at: [-R3, -1], from: ['bombsaway'], text: 'Every vial bursts into three little ones that bounce out and burst again.' },
     { id: 'tar', name: 'Tar', big: false, path: 'vials', at: [-1, -R3], from: ['clustervials'], text: 'Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.' },
     { id: 'madmixture', name: 'Mad Mixture', big: true, path: 'vials', at: [0, -2], from: ['tar'], text: 'Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.' },
-    { id: 'contraptions', name: 'Contraption', big: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss: it lobs her vials for her, three at once.' },
+    { id: 'contraptions', name: 'Contraption', big: true, works: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss: it lobs her vials for her, three at once.' },
     { id: 'alchemy', name: 'Alchemy', big: false, path: 'vials', at: [1, -R3], from: ['madmixture'], text: 'An enemy her vials kill always drops gold.' },
     { id: 'thebigone', name: 'The Big One', big: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
     // THE GOLEM, round under the bottom

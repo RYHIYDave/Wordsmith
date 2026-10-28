@@ -2,6 +2,8 @@
 // (tinkerer_icons.png), his pick by 15:45: “Yes, keep them (Recommended)”. On the buttons' canvas (art/ability_icons.ts: thirty-two picture pixels, two to a game
 // pixel), made of the art chat's own pieces of her (src/dev/contraption_fx.ts, golem_pound_fx.ts, blast_fx.ts, demon_fx.ts):
 // her cyan brew and its vials, the Golem's brass and its steam, the floor's cracks. What glows is the friend's cyan.
+//   vialtoss      (her tap since 28 Oct; shown him, vialtoss_icons.png, his pick by 18:15: “Yes, keep it (Recommended)”) a vial
+//                 tumbling high over in an arc, a dashed line of its brew the way it goes, bursting where it comes down
 //   contraption   her little tripod mortar, a vial lobbed high out of its mouth, bursting where it comes down
 //   golem         the Golem's giant brass fist hammered down, the floor cracked in a star round it, steam bursting out
 //   blastjump     the bomb going off under her, a ball of her cyan fire, and the trail of her flung up and away
@@ -51,6 +53,32 @@ function rod(l: Light, x0: number, y0: number, x1: number, y1: number, w: number
     const y = y0 + ((y1 - y0) * i) / n;
     for (let dy = -w / 2; dy <= w / 2; dy += 0.5) for (let dx = -w / 2; dx <= w / 2; dx += 0.5) l.put(x + dx, y + dy, dx + dy < -w / 3 ? Math.min(3, k + 1) : k);
   }
+}
+
+export function vialtossIcon(): Px {
+  return lay((l) => {
+    // (the way it came, up from the bottom left in an arc, a dashed line of its brew; and on down to the right)
+    const arc = (u: number): [number, number] => [3 + u * 22, 27 - 4 * 24 * u * (1 - u) - u * 3];
+    for (let i = 0; i <= 80; i++) {
+      const u = i / 80;
+      if (u > 0.42 && u < 0.58) continue;
+      if (i % 9 < 5) {
+        const [x, y] = arc(u);
+        l.brew.put(x, y, u > 0.58 ? 2 : 1);
+        l.brew.put(x, y + 1, 1);
+      }
+    }
+    // (the vial at the top of its flight, tumbling)
+    vialSprite(l.brew, l.cap, 14, 5, 1.1);
+    // (bursting where it comes down: points of its brew flung out, white at the heart)
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const r = i % 2 ? 3.8 : 6.6;
+      rod(l.brew, 25, 25, 25 + Math.cos(a) * r, 25 + Math.sin(a) * r * 0.75, 1.5, i % 2 ? 1 : 2);
+    }
+    blob(l.brew, 25, 25, 3.4, 2.6);
+    blob(l.brew, 25, 24.5, 1.8, 1.3);
+  });
 }
 
 export function contraptionIcon(): Px {

@@ -21,7 +21,7 @@ const OWN: Record<ClassId, [SkillId, SkillId, SkillId]> = {
   ranger: ['shot', 'volley', 'trap'],
   mage: ['wave', 'orb', 'warp'],
   warlock: ['hellbolt', 'curse', 'smokestep'],
-  tinkerer: ['contraption', 'golem', 'blastjump'],
+  tinkerer: ['vialtoss', 'golem', 'blastjump'],
   brawler: ['jab', 'cross', 'slip'],
 };
 

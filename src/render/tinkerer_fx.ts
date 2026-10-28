@@ -110,7 +110,7 @@ const sparkFrames = (size: number): Sprite[] => loop(`sparks${size}`, SPARK_N, (
 const puffFrames = (): Sprite[] => loop('puff', 6, (i) => piece(40, 34, 20, 28, 1, [SMOKE], ([sm]) => cloud(sm, 20, 28, 18, 15, i * 0.17, 0.2, 31 + i)));
 
 interface Spot { x: number; y: number; t: number }
-interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number }
+interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number; hand?: boolean }
 interface Path { x0: number; y0: number; x1: number; y1: number; t: number }
 
 /** How long each lasts (seconds). */
@@ -147,8 +147,9 @@ export class TinkererFx {
         break;
       }
       case 'vial':
-        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight });
-        this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
+        // (out of a Contraption's mortar, with its flash; or, her Vial Toss, from her hand up by her shoulder)
+        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight, hand: e.id < 0 });
+        if (e.id >= 0) this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
         break;
       case 'vialBurst':
         this.bursts.push({ x: e.x, y: e.y, t: 0 });
@@ -277,7 +278,7 @@ export class TinkererFx {
       const u = l.t / l.flight;
       const x = l.x0 + (l.x1 - l.x0) * u;
       const y = l.y0 + (l.y1 - l.y0) * u;
-      const up = 10 * (1 - u) + 4 * 30 * u * (1 - u);
+      const up = (l.hand ? 30 : 10) * (1 - u) + 4 * 30 * u * (1 - u);
       put(vf[Math.floor(l.t * 18) % vf.length], x, y, up);
     }
     const bu = burstFrames();

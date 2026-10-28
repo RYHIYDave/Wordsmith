@@ -4,7 +4,7 @@
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
-import type { Limit, MonsterDef, MonsterMove } from './defs';
+import type { Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
@@ -1070,7 +1070,9 @@ export class Game {
     // its wait on to the one that takes its place: changing weapon is no way round a cooldown.
     const weapon = this.weapon();
     // (THE WARLOCK, game/warlock.ts: as the demon, the demon's three in the places of his)
-    const want = h.cls === 'warlock' && h.form === 'demon' ? DEMON_KIT : skillsFor(h.cls, weapon);
+    const want: SkillId[] = [...(h.cls === 'warlock' && h.form === 'demon' ? DEMON_KIT : skillsFor(h.cls, weapon))];
+    // (THE TINKERER's tree: CONTRAPTION, his idea, swaps her Vial Toss for the Contraption)
+    if (h.cls === 'tinkerer' && this.has('contraptions')) want[0] = 'contraption';
     const waiting = [false, false, false];
     const changed = [false, false, false];
     for (let i = 0; i < 3; i++) {
@@ -3872,9 +3874,9 @@ export class Game {
       if (def.kind === 'melee') this.sfx('swing', 0.8);
       else if (def.kind === 'projectile') this.sfx('shot', 0.8);
       else if (def.kind === 'wave') this.sfx('wave', 0.8);
-      // (the quick attack goes the way the hero faces, from wherever they have got to; THE TINKERER's Contraption, thrown, to
-      // where it was aimed)
-      if (def.kind === 'contraption') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
+      // (the quick attack goes the way the hero faces, from wherever they have got to; THE TINKERER's vial and Contraption,
+      // thrown, to where it was aimed)
+      if (def.kind === 'contraption' || def.kind === 'vialtoss') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
       else this.deliver(0, h.x, h.y, h.x + h.fx, h.y + h.fy, 1, true);
       return;
     }
@@ -4530,6 +4532,26 @@ export class Game {
     this.contraptions.push(c);
     this.emit({ t: 'contraption', id: c.id, x0: ox, y0: oy, x: p.x, y: p.y });
     this.sfx('trapSet', 0.6);
+  }
+
+  /**
+   * HER VIAL TOSS: a vial lobbed from her hand at (ox, oy) to where she aimed (`n` the how-manyth of Twin's, each further to
+   * one side); it bursts where it comes down (the vials' step, updateTinkerer). Aimed at her feet, it goes a little ahead.
+   */
+  private tossVial(i: number, ox: number, oy: number, tx: number, ty: number, frac: number, n: number, echo: boolean): void {
+    const h = this.hero;
+    const T = TINKER_TUNE.toss;
+    const def = SKILLS[h.skills[i].id];
+    const p = Math.hypot(tx - ox, ty - oy) < 0.6 ? this.reachPoint(ox + h.fx * 3, oy + h.fy * 3, def.range) : this.reachPoint(tx, ty, def.range);
+    // (Twin's: the second lands beside the first, across the way she threw)
+    const far = Math.hypot(p.x - ox, p.y - oy) || 1;
+    const side = n === 0 ? 0 : (n % 2 ? 1 : -1) * Math.ceil(n / 2) * T.twin;
+    const x1 = p.x - ((p.y - oy) / far) * side;
+    const y1 = p.y + ((p.x - ox) / far) * side;
+    const v: Vial = { x0: ox, y0: oy, x1, y1, t: 0, flight: T.flight, skill: i, frac, wake: n === 0 && !echo };
+    this.vials.push(v);
+    this.emit({ t: 'vial', id: -1, x0: ox, y0: oy, x1, y1, flight: T.flight, n, echo: echo || undefined });
+    if (n === 0) this.sfx('shot', echo ? 0.3 : 0.5);
   }
 
   /** A Contraption put out of action: it falls apart where it stands. */
@@ -5293,6 +5315,10 @@ export class Game {
         if (k === 0) this.landPunch(i, name, ox, oy, dx, dy, each, 0, echo);
         else this.after(0.12 * k, () => this.landPunch(i, name, this.hero.x, this.hero.y, dx, dy, each, k, echo));
       }
+    } else if (def.kind === 'vialtoss') {
+      // (THE TINKERER, game/tinkerer.ts: her vial lobbed where she aimed, no further than its range; Twin, a second beside it;
+      // "of Echoes", a weaker one after)
+      for (let k = 0; k < (echo ? 1 : r.count); k++) this.tossVial(i, ox, oy, tx, ty, each, k, echo);
     } else if (def.kind === 'contraption') {
       // (THE TINKERER, game/tinkerer.ts: a Contraption thrown down where she aimed, no further than its range; "of Echoes",
       // the newest one lobs a weaker vial with its first shot)
