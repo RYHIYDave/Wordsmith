@@ -904,7 +904,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     const hot = blaze && pulse;
     globe(g, lifeX, pyy, 9, k, hot ? '#b8fff8' : '#22d0e0', '#b8fff8', hot ? P.white : h.form === 'demon' ? '#22d0e0' : THEME.edgeHi);
     ui.mark('pact', lifeX - 10, pyy - 10, 21, 21);
-    if (blaze) drawText(g, touch ? 'TAP HIM' : 'R: CHANGE', lifeX + 13, pyy - 3, hot ? '#b8fff8' : '#22d0e0', { font: 'small', shadow: P.ink });
+    if (blaze) drawText(g, pd ? 'RB: CHANGE' : touch ? 'TAP HIM' : 'R: CHANGE', lifeX + 13, pyy - 3, hot ? '#b8fff8' : '#22d0e0', { font: 'small', shadow: P.ink });
   }
   // (mana is only there to be seen when it is what limits the slow abilities)
   if (byMana) {

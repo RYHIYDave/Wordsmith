@@ -956,6 +956,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     if (pad.pressed(BTN.X)) c.potion = true;
     if (pad.pressed(BTN.B)) c.interact = true;
+    // (THE WARLOCK: his pact full, the right bumper changes him, as a tap on him does: game/warlock.ts)
+    if (pad.pressed(BTN.RB)) c.change = true;
   };
 
   const readControls = (g: Game, dt: number): void => {
