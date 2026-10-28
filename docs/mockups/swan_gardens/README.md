@@ -30,6 +30,14 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   its rows of feathers running unbroken along it, and the pair raised higher.
 - The new wings (before and now, the sheet, the film), asked "are these your swans now?": “Yes, they're the swans
   (Recommended)”, offered as: next, the Hushed gardeners and grooms.
+- The Hushed gardeners and grooms' brief, his answers: who, “A gardener and a groom (Recommended)”; size, “Knight's size, in
+  crowds (Recommended)”; how they move, “Rush at you”; their attack, “Shears snap, fork jab (Recommended)”; what marks them,
+  “Grey breath leaking out (Recommended)”; their death, “The Hush leaves them (Recommended)”; never, “Not undead or gory
+  (Recommended)”; their sound, “Silent but their tools (Recommended)”. Read as: two kinds mixed in a crowd, a gardener in a
+  leather apron with hedge shears and a stable groom in palace livery with a pitchfork; small, one attack each; they run
+  at you rather than shuffle; the gardener snaps his shears shut on you, the groom jabs with his fork; grey breath as all
+  the Hushed; the Hush leaves them and they slump down, people again; no voices, only their tools, their running feet and
+  a gasp at the end.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -102,12 +110,36 @@ on the floor about knee-high to the knight with its neck up.
   turned to the back, a step into shade.
 - NO GLOW: white plumage greyed to the dawn, an orange bill with its black knob, black legs; the enemy's rim.
 
+## The Hushed gardeners and grooms, a small mob (src/art/palace_hands.ts, palace_hands_moves.ts; behind `PALACE_HANDS_ON`, off)
+
+Floor 11's Hushed (art/hushed.ts), whose body, skin and breath they share, built as floor 13's fieldhands are; held to every
+check the bosses have (art/boss_checks.ts). `PALACE_GARDENER`, `PALACE_GROOM`; `makePalaceArt3(mob)` gives `{ front, back }`.
+
+- THE GARDENER: a broad-brimmed felt hat, grey side-whiskers, shirtsleeves rolled, a waistcoat of hedge green, a long bib
+  apron of leather, cord breeches, leather gaiters; HEDGE SHEARS in both fists (`shearsOf`: the pivot a handle's length
+  from each fist, each blade on past it, so as the fists part the blades open and as they meet the blades snap shut).
+- THE GROOM: the palace's livery, a short coat of faded madder with buff collar and cuffs and dull brass buttons, buff
+  breeches, tall black boots with tan tops, his hair tied back in a queue; a PITCHFORK (`forkOf`, three tines).
+- STANDING, at their work till they see you: the gardener snipping at a hedge that is not there; the groom leaning on his
+  fork stood at his side. Both breathe and shift their weight; their mouths work.
+- THE RUSH (`PH_PACE` 1.6 tiles a second, the city's Hushed shuffle 0.9): leaning into it, the shears held shut before
+  him, the fork carried upright.
+- THE SHEARS SNAP (`PH_BLOW`, its blow at 0.6 s): lifted before his face, raised high over his head and opened wide, the
+  blades glinting pink, held shaking (the warning); hips first, a step in, driven down and out and snapped shut; carried
+  through low; back to his work.
+- THE FORK JAB (the same timing): brought down level in both hands and drawn back, the tines glinting pink, held shaking
+  (the warning); hips first, a lunge, jabbed out its whole length; carried through; drawn back and stood again.
+- STRUCK; and THE HUSH LEAVES THEM (`PH_DIES`): a gasp, the Hush pouring out in one great grey breath, the tool dropping
+  clear of them, the knees giving, slumped forward on the floor.
+
 ## The dev pages
 
 - `src/dev/preview_garden.ts` (the painting): `overview`, `phone`, `close:X:Y`.
 - `src/dev/preview_swangardens.ts` (built from the game-ready ground and pieces, the knight on the lake walk; the swans the
   painting's, not yet enemies): `overview`, `phone`, `tiles`, `close:X:Y`.
 - `src/dev/preview_floor16.ts` (the pieces): `all`, `range=A-B@K`, `look=<name>@K`, `show`.
+- `src/dev/preview_palace_hands.ts` (the gardeners and grooms): `sheet` (both, from in front and behind beside the knight,
+  three times as big; a crowd at the game's size), `big:<gardener|groom>:<move>:<t>`.
 - `src/dev/preview_swans.ts` (the swans): `sheet` (from in front and behind beside the knight, three times as big; a flock at
   the game's size), `big:<move>:<t>`, `strip:<move>:<view>:<n>`.
 
@@ -123,3 +155,7 @@ on the floor about knee-high to the knight with its neck up.
 - `tests/garden_swans.test.ts` (13): nothing of the game imports it, its switch off; crisp, the enemy's rim; no cyan, no
   pink, no light, nothing cut off; its size; FLOOR (nothing under it in any frame); FEET GRIP; nothing THROUGH its body;
   JERK and JUMP; ALIVE; its bite; its death; its pictures.
+- `tests/palace_hands.test.ts` (9): nothing of the game imports them, their switch off; every move of both through every
+  boss check, from in front and behind, and every handover; no cyan, the pink edge while they live; nothing cut off;
+  nothing in the floor; the Hush leaking and leaving; the pink eyes; the tool lying clear; the rush, the shears' warning
+  and snap, the fork's warning and jab.
