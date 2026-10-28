@@ -35,6 +35,10 @@ import type { Controls, Monster } from '../src/game/state';
 import { Figure, attackClip, attackFrame } from '../src/render/figure';
 import { paintWithoutCanvas } from './helpers';
 import { MAGE_STANCES, WILD, useMageStances, useWild } from '../src/art/moves3';
+import { OWN_MOVES } from '../src/game/defs';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 // (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
 // MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,

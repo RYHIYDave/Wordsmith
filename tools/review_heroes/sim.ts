@@ -16,7 +16,7 @@ import { Game } from '../../src/game/game';
 import { emptyControls } from '../../src/game/state';
 import type { GameEvent } from '../../src/game/state';
 import type { Controls } from '../../src/game/state';
-import type { ClassId } from '../../src/game/types';
+import type { ClassId, FirstClass } from '../../src/game/types';
 import { Figure, attackClip } from '../../src/render/figure';
 import type { FigureState } from '../../src/render/figure';
 import { at, endOf, pointsOf, seen } from './lib';
@@ -155,7 +155,7 @@ function animSet(plan: Plan, view: View): AnimSet {
   }
   return set;
 }
-export const artOf = (cls: ClassId, place: 'dungeon' | 'town'): ActorArt => ({ front: animSet(PLANS[cls][place], 'front'), back: animSet(PLANS[cls][place], 'back') });
+export const artOf = (cls: ClassId, place: 'dungeon' | 'town'): ActorArt => ({ front: animSet(PLANS[cls as FirstClass][place], 'front'), back: animSet(PLANS[cls as FirstClass][place], 'back') });
 
 // ---------------------------------------------------------------------------------------------
 // Scenarios: the hero in the practice room, with nothing else in it, and a script of what the

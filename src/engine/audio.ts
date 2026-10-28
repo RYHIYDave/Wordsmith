@@ -749,7 +749,7 @@ export function sfx(name: Sfx, opts?: { vol?: number; pitch?: number }): void {
 // an accent in: the mage's Britishness is in the mage's own lines (QUIPS.cls), and this is only
 // its manner.
 
-export type Speaker = 'warrior' | 'ranger' | 'mage';
+export type Speaker = 'warrior' | 'ranger' | 'mage' | 'warlock';
 export type SpeakerVoice = 'male' | 'female';
 
 interface VoiceKind {
@@ -785,6 +785,11 @@ const VOICES: Record<Speaker, Record<SpeakerVoice, VoiceKind>> = {
   mage: {
     male: { pitch: 154, wave: 'sine', over: 2, overWave: 'triangle', syllable: 0.15, step: 0.128, vol: 0.32, lilt: 0.2, vib: [6, 30] },
     female: { pitch: 296, wave: 'sine', over: 2, overWave: 'triangle', syllable: 0.15, step: 0.128, vol: 0.3, lilt: 0.2, vib: [6, 30] },
+  },
+  // (THE WARLOCK, a proposal for the sound chat and him: hoarse and strained, the demon an octave under him)
+  warlock: {
+    male: { pitch: 92, wave: 'sawtooth', over: 0.5, overWave: 'sawtooth', syllable: 0.16, step: 0.19, vol: 0.2, lilt: 0.06, breath: [0.7, 900, 1.1], grit: [0.5, 300] },
+    female: { pitch: 170, wave: 'sawtooth', over: 0.5, overWave: 'sawtooth', syllable: 0.15, step: 0.18, vol: 0.18, lilt: 0.07, breath: [0.7, 1300, 1.1], grit: [0.4, 450] },
   },
 };
 

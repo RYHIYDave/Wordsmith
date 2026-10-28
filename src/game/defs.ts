@@ -24,7 +24,10 @@ export type { Limit } from './types';
 // Version 12.2: the bow's slow attack is VOLLEY; the ranger's evasive move is named TRAP (the same
 // roll, and it lays a trap); and the three evasive moves take power words as the attacks do.
 
-export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
+export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp'
+  // (THE WARLOCK, game/warlock.ts: the Hellfire Bolt, the Curse and the Smoke Step; and the demon's Claw Rake, Damning and
+  // its Smoke Step)
+  | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -38,7 +41,11 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
  *   leap, roll, warp   the evasive moves. A leap lands with a shock; a roll with any `dmg` leaves a
  *           trap where it began (the ranger's); a warp bursts where it arrives.
  */
-export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 'wave' | 'orb' | 'beam' | 'summon' | 'leap' | 'roll' | 'warp';
+export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 'wave' | 'orb' | 'beam' | 'summon' | 'leap' | 'roll' | 'warp'
+  // (THE WARLOCK, game/warlock.ts: `curse`, every enemy near him struck and cursed; `smoke`, a streak of smoke to a spot
+  // that nothing can hit, cursing what it passes through; `damning`, every cursed or burning enemy near him struck and
+  // every burn on it going off at once)
+  | 'curse' | 'smoke' | 'damning';
 
 export interface SkillDef {
   id: SkillId;
@@ -146,6 +153,19 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // have: read back to the owner at 18:37, "Warp burst where the mage arrives", and not objected
   // to. A word that could be set there and do nothing would break his first rule for words.)
   warp: { id: 'warp', name: 'Warp', kind: 'warp', icon: 'warp', dmg: 0.5, cooldown: 5.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Vanish and reappear at a spot, instantly, in a burst that hurts what stands there.', verb: 'WARP', windup: 0, follow: 0 },
+  // THE WARLOCK (game/warlock.ts, behind WARLOCK; his design in the art chat, 25 Oct 2026). As a man: his tap, “Hellfire
+  // bolt (Recommended)”; his tap and hold and swipe, “I was thinking tap does a single target shot that hits an enemy and
+  // does a relatively strong DOT.  The tap and hold is an AOE that curses all enemies with a smaller DOT.  If a cursed enemy
+  // dies, it spreads all DOTs to other enemies in range.  So the play pattern is: try to get the tap DOT to spread via the
+  // curse.”, and “I like smoke step, and we can have that apply the curse as well”. What each burns for: WARLOCK_TUNE.
+  hellbolt: { id: 'hellbolt', name: 'Hellfire Bolt', kind: 'projectile', icon: 'hellbolt', dmg: 0.8, cooldown: 0, mana: 0, range: 9, radius: 0.3, speed: 14, sockets: true, desc: 'Hurl a bolt of hellfire at one enemy. It burns, hard.', verb: 'HURL HELLFIRE', windup: 0.24, follow: 0.4 },
+  curse: { id: 'curse', name: 'Curse', kind: 'curse', icon: 'curse', dmg: 0.3, cooldown: 5.0, mana: 14, range: 0, radius: 4.5, speed: 0, sockets: true, desc: 'Chains of smoke curse every enemy near you. The cursed smoulder, and when one dies every burn on it spreads to those near it.', verb: 'CURSE', windup: 0.3, follow: 0.45 },
+  smokestep: { id: 'smokestep', name: 'Smoke Step', kind: 'smoke', icon: 'smokestep', dmg: 0.4, cooldown: 4.0, mana: 0, range: 6, radius: 1.0, speed: 0, sockets: true, desc: 'Break into smoke and streak to a spot. Nothing can hit you, and whoever you pass through is cursed.', verb: 'SMOKE STEP', windup: 0, follow: 0 },
+  // The demon (his picks: “Claw rakes (Recommended)”, cursing what they hit; Damning, “I want it to be called DAMN or DAMNING”,
+  // the cash-in: “Cash-in eruption (Recommended)”; its swipe “Smoke step (Recommended)”, the violent one).
+  rake: { id: 'rake', name: 'Claw Rake', kind: 'melee', icon: 'rake', dmg: 1.3, cooldown: 0, mana: 0, range: 2.0, radius: 0, speed: 0, sockets: true, desc: 'Rake with one claw, then the other. What it tears is cursed.', verb: 'RAKE', windup: 0.16, follow: 0.34 },
+  damning: { id: 'damning', name: 'Damning', kind: 'damning', icon: 'damning', dmg: 0.8, cooldown: 6.0, mana: 16, range: 0, radius: 6, speed: 0, sockets: true, desc: 'Tear up the floor: the ground erupts under every enemy near you that is cursed or burning, and every burn on it goes off at once.', verb: 'DAMN THEM', windup: 0.4, follow: 0.5 },
+  demonstep: { id: 'demonstep', name: 'Smoke Step', kind: 'smoke', icon: 'demonstep', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.2, speed: 0, sockets: true, desc: 'Tear along the floor as smoke, raking and cursing whoever you pass through, and burst out where you stop.', verb: 'SMOKE STEP', windup: 0, follow: 0 },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -166,13 +186,42 @@ export interface ClassDef {
   evade: SkillId;
   /** The weapon a new character of this class starts with. */
   starts: WeaponKind;
+  /**
+   * EVERYONE FIGHTS WITH THEIR OWN MOVES (OWN_MOVES): the quick attack (tap) and the slow one (tap and hold) that are
+   * this class's own, whatever is in the hand.
+   */
+  tap: SkillId;
+  hold: SkillId;
+  /**
+   * A class of two attributes (the warlock, Strength and Intelligence): what its abilities grow with is both, a point of
+   * either as much as a point of the one a class of one has (resolveSkill: their sum less HYBRID_LESS, so that at level one
+   * it grows as much as the others do from theirs).
+   */
+  grows?: readonly [Attr, Attr];
 }
+
+/** A class of two attributes grows with their sum less this (11 + 11 - 8 = 14, as a class of one's first attribute at level one). */
+export const HYBRID_LESS = 8;
+
+/**
+ * EVERYONE FIGHTS WITH THEIR OWN MOVES (the owner, 28 Oct 2026, to the main chat; asked how weapons should work for the
+ * three new classes, whose tap and tap and hold are their own, his pick: “Everyone own moves”, offered as “All six
+ * classes, the old three too, fight with their own moves; weapons only give stats”; and of the old three's moves,
+ * “Starting weapon's (Recommended)”: the warrior Strike and Whirlwind, the ranger Shot and Volley, the mage Wave and Orb,
+ * each always drawn with his own weapon; Slam, Familiar and Beam kept to come back later as skill-tree swaps).
+ * On: a hero's two attacks are his class's (ClassDef.tap, .hold) and grow with his class's attribute; the weapon in hand
+ * gives its damage, its speed and what is on it, nothing more. Off: Version 12's rule, both attacks the weapon's.
+ */
+export const OWN_MOVES = { on: true };
 
 export const CLASSES: Record<ClassId, ClassDef> = {
   // (the warrior: "lets have the warrior start with the two handed sword")
-  warrior: { id: 'warrior', name: 'Warrior', blurb: 'Up close and hard to kill.', primary: 'str', attrs: { str: 14, dex: 8, int: 6 }, evade: 'leap', starts: 'greatsword' },
-  ranger: { id: 'ranger', name: 'Ranger', blurb: 'Fast, sharp and far away.', primary: 'dex', attrs: { str: 8, dex: 14, int: 6 }, evade: 'trap', starts: 'bow' },
-  mage: { id: 'mage', name: 'Mage', blurb: 'Raw power. Handle with care.', primary: 'int', attrs: { str: 6, dex: 8, int: 14 }, evade: 'warp', starts: 'staff' },
+  warrior: { id: 'warrior', name: 'Warrior', blurb: 'Up close and hard to kill.', primary: 'str', attrs: { str: 14, dex: 8, int: 6 }, evade: 'leap', starts: 'greatsword', tap: 'strike', hold: 'whirlwind' },
+  ranger: { id: 'ranger', name: 'Ranger', blurb: 'Fast, sharp and far away.', primary: 'dex', attrs: { str: 8, dex: 14, int: 6 }, evade: 'trap', starts: 'bow', tap: 'shot', hold: 'volley' },
+  mage: { id: 'mage', name: 'Mage', blurb: 'Raw power. Handle with care.', primary: 'int', attrs: { str: 6, dex: 8, int: 14 }, evade: 'warp', starts: 'staff', tap: 'wave', hold: 'orb' },
+  // THE WARLOCK (game/warlock.ts, behind WARLOCK): “Warlock is str/int, will transform into a demon so keep that in mind”
+  // (the owner, 23 Oct 2026, in the art chat). His attacks grow with both (`grows`); as the demon, the demon's three.
+  warlock: { id: 'warlock', name: 'Warlock', blurb: 'A pact with a demon. It wants out.', primary: 'int', grows: ['str', 'int'], attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', starts: 'wand', tap: 'hellbolt', hold: 'curse' },
 };
 
 /**
@@ -217,9 +266,21 @@ export function weaponAttr(weapon: WeaponKind | null): Attr {
   return weapon ? WEAPON_ATTR[weapon] : 'str';
 }
 
-/** A character's three abilities: quick and slow (the weapon's), evasive (the class's). */
+/** A character's three abilities: quick and slow (the class's own, OWN_MOVES; with it off, the weapon's), evasive (the class's). */
 export function skillsFor(cls: ClassId, weapon: WeaponKind | null): [SkillId, SkillId, SkillId] {
-  return [tapSkill(weapon), holdSkill(weapon), CLASSES[cls].evade];
+  const c = CLASSES[cls];
+  if (OWN_MOVES.on) return [c.tap, c.hold, c.evade];
+  return [tapSkill(weapon), holdSkill(weapon), c.evade];
+}
+
+/** What a character's two attacks grow with: the class's own (OWN_MOVES; a class's id, resolveSkill reads it), or with it off the weapon's attribute. */
+export function attackGrows(cls: ClassId, weapon: WeaponKind | null): Attr | ClassId {
+  return OWN_MOVES.on ? cls : weaponAttr(weapon);
+}
+
+/** The attribute a character's attacks grow with, as one (a class that grows with two: its first). */
+export function attackAttr(cls: ClassId, weapon: WeaponKind | null): Attr {
+  return OWN_MOVES.on ? CLASSES[cls].primary : weaponAttr(weapon);
 }
 
 export const ATTR_NAME: Record<Attr, string> = { str: 'Strength', dex: 'Dexterity', int: 'Intelligence' };
@@ -1234,6 +1295,8 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
   warrior: { word: 'power', skill: 0 },
   ranger: { word: 'poison', skill: 2 },
   mage: { word: 'fire', skill: 0 },
+  // (THE WARLOCK: Leeching on his bolt, the pact's hunger; a proposal, his to change)
+  warlock: { word: 'leech', skill: 0 },
 };
 
 /**
@@ -1872,6 +1935,8 @@ export const ARRIVAL_LINES: Record<ClassId, readonly string[]> = {
   warrior: ['I must purge the evil of this place.', 'Something down here needs killing.'],
   ranger: ['Fresh tracks. Something hunts here.', "Quiet now. It's close."],
   mage: ['I smell foul magics.', 'Someone has been meddling down here.'],
+  // (THE WARLOCK, a proposal in his voice, pact-bound and pained: his to change)
+  warlock: ['It can smell them. So can I.', 'Quiet. It wants to come out.'],
 };
 
 export const QUIPS: {
@@ -1948,6 +2013,13 @@ export const QUIPS: {
     beam: ['Underlined.', 'Crossed out.', 'Read between the lines.'],
     familiar: ["Teacher's pet.", 'Good help is hard to find.'],
     warp: ['Surprise.', 'Now you see me.'],
+    // (THE WARLOCK's, proposals)
+    hellbolt: ['Hot off the press.', 'Burn slowly.'],
+    curse: ['Cursed reading.', 'A bad omen.'],
+    smokestep: ['Up in smoke.', 'Gone.'],
+    rake: ['Dog-eared.', 'Torn out.'],
+    damning: ['Damning evidence.', 'Damned.'],
+    demonstep: ['Ripped through.', 'Smoke and mirrors.'],
   },
   /** By the weapon in hand. */
   weapon: {
@@ -1972,6 +2044,8 @@ export const QUIPS: {
     warrior: ['Hmph.', 'Done.', 'Was that it?', 'Stay dead.', 'Weak.'],
     ranger: ['Clean.', 'One less.', 'Quiet now.', 'Easy.', 'Hush.'],
     mage: ['Elementary.', 'Quite.', 'Jolly good.', 'Tut, tut.', 'How dreadfully dull.', 'Class dismissed.', 'A footnote, at best.'],
+    // (THE WARLOCK, a proposal: hoarse, pained, the thing in him enjoying it)
+    warlock: ['It liked that.', 'Feed it.', 'Not yet.', 'Burn.', 'Hungry, are we?'],
   },
   /** For any kill. The library is never far away: the hero is a child dreaming in detention. */
   any: ['Overdue.', 'Shh. This is a library.', 'Next.', 'Is that all?', 'Back on the shelf.', 'Closed book.', 'Quiet, please.', 'Read it and weep.'],

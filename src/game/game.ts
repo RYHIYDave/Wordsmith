@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -39,7 +39,7 @@ import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -696,7 +696,7 @@ export class Game {
   /** The average hit of the character's quick attack with no word on it: what the guide's soft monsters are measured against. */
   private bareHit(): number {
     const h = this.hero;
-    const r = resolveSkill(SKILLS[h.skills[0].id], [], [], weaponAttr(this.weapon()), h.d, this.meta.limit);
+    const r = resolveSkill(SKILLS[h.skills[0].id], [], [], attackGrows(h.cls, this.weapon()), h.d, this.meta.limit);
     const st = h.d.stats;
     return ((h.d.dmgMin + h.d.dmgMax) / 2) * r.dmgMult * (1 + (st.dmgPct + st.physPct) / 100);
   }
@@ -833,7 +833,7 @@ export class Game {
 
   /** Rebuild a run from a save. Throws if the save is not one this version understands. */
   static restore(s: RunSave, meta?: Meta): Game {
-    if (!s || s.v !== 1 || !CLASS_IDS.includes(s.cls)) throw new Error('unreadable save');
+    if (!s || s.v !== 1 || !ALL_CLASS_IDS.includes(s.cls)) throw new Error('unreadable save');
     const g = new Game(s.cls, s.seed, meta);
     const h = g.hero;
     const num = (v: unknown, d: number): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -935,11 +935,11 @@ export class Game {
     for (const w of wordIds()) words[w] = 0;
     const attrs: Record<Attr, number> = { ...c.attrs };
     const d = derive(cls, 1, attrs, gear, this.meta.limit);
-    // both attacks are the weapon's; the evasive move is the character's own
+    // both attacks are the class's own (defs.ts OWN_MOVES; with it off, the weapon's); the evasive move is the character's own
     const weapon = gear.mainhand ? gear.mainhand.weapon : null;
     const skills = skillsFor(cls, weapon).map((id, i): SkillState => ({
       id, front: [], behind: [], cd: 0, charges: 1, maxCharges: 1, uses: 0,
-      r: resolveSkill(SKILLS[id], [], [], i < 2 ? weaponAttr(weapon) : c.primary, d),
+      r: resolveSkill(SKILLS[id], [], [], i < 2 ? attackGrows(cls, weapon) : c.primary, d),
     }));
     const bag: (Item | null)[] = [];
     for (let i = 0; i < TUNE.bagSize; i++) bag.push(null);
@@ -1051,7 +1051,8 @@ export class Game {
     h.d = derive(h.cls, h.level, h.attrs, h.gear, this.meta.limit, talentMods(h.cls, h.talents));
     // (THE SKILL TREES: Thick Skin)
     if (this.was('thickskin')) h.d.maxLife = Math.round(h.d.maxLife * TALENT_TUNE.thickSkin);
-    // The weapon in hand decides both attacks. Their words stay where they are: they belong to the
+    // The weapon in hand decides both attacks (with defs.ts OWN_MOVES off; on, they are the class's own and this changes
+    // nothing). Their words stay where they are: they belong to the
     // place, not to the attack ("Power Strike becomes Power Shot when a bow is equipped"). What
     // the old attack had set going is gone with it. An attack that was waiting to be ready hands
     // its wait on to the one that takes its place: changing weapon is no way round a cooldown.
@@ -1111,7 +1112,7 @@ export class Game {
       }
       // (ACT 2, THE HUSH: hushed, as if no word were in it)
       const dark = this.hushT > 0;
-      s.r = resolveSkill(def, dark ? s.front.map(() => null) : s.front, dark ? s.behind.map(() => null) : s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
+      s.r = resolveSkill(def, dark ? s.front.map(() => null) : s.front, dark ? s.behind.map(() => null) : s.behind, i < 2 ? attackGrows(h.cls, weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
       // (THE SKILL TREES: Battle Rush, the leap ready sooner)
       if (def.kind === 'leap' && this.was('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)

@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, CLASSES, FRENZY, GUARD, HEAVY, HEX, MANA_MODE, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, CLASSES, FRENZY, GUARD, HEAVY, HEX, HYBRID_LESS, MANA_MODE, OWN_MOVES, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
@@ -65,7 +65,10 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   }
 
   const attr: Attr = grows === 'str' || grows === 'dex' || grows === 'int' ? grows : CLASSES[grows].primary;
-  const prim = attr === 'str' ? d.str : attr === 'dex' ? d.dex : d.int;
+  const val = (a: Attr): number => (a === 'str' ? d.str : a === 'dex' ? d.dex : d.int);
+  // (a class of two attributes, the warlock: their sum less HYBRID_LESS, defs.ts ClassDef.grows)
+  const two = grows === 'str' || grows === 'dex' || grows === 'int' ? undefined : CLASSES[grows].grows;
+  const prim = two ? Math.max(0, val(two[0]) + val(two[1]) - HYBRID_LESS) : val(attr);
   // HOW MUCH A WORD HERE GROWS (ATTR_SPLIT, defs.ts; his "Yeah that’s a good split", 17 Oct 2026): by the attribute of the
   // melded word it is a part of, on that side; fire, frost and lightning set alone, by this ability's own (its weapon's,
   // or the class's on the evasive move); any other word, by its own. (Off: every word by its own, as before.)
@@ -437,8 +440,11 @@ export function resolveBare(id: keyof typeof SKILLS, grows: Attr | ClassId, d: D
  */
 export function attacksGrownBy(a: Attr, cls: ClassId, weapon: WeaponKind | null): string[] {
   const out: string[] = [];
-  if (weaponAttr(weapon) === a) out.push(SKILLS[tapSkill(weapon)].name, SKILLS[holdSkill(weapon)].name);
   const c = CLASSES[cls];
+  // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: the class's own two, with the class's attribute)
+  if (OWN_MOVES.on) {
+    if (c.primary === a) out.push(SKILLS[c.tap].name, SKILLS[c.hold].name);
+  } else if (weaponAttr(weapon) === a) out.push(SKILLS[tapSkill(weapon)].name, SKILLS[holdSkill(weapon)].name);
   if (c.primary === a && SKILLS[c.evade].dmg > 0) out.push(SKILLS[c.evade].name);
   return out;
 }

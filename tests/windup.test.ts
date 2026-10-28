@@ -24,6 +24,10 @@ import { CLASS_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { land, seasoned } from './helpers';
 import { WAYS, topStep, STAIR_OPENING } from '../src/game/ways';
+import { OWN_MOVES } from '../src/game/defs';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 /** The game as it was before THE WAYS (game/ways.ts, on since Version 20.2): the portal home from a dungeon. */
 function waysOff<T>(run: () => T): T {

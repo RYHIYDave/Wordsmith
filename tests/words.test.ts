@@ -29,6 +29,10 @@ import { CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId, Element, WeaponKind, WordId } from '../src/game/types';
 import { resolveSkill, skillName, socketProblem } from '../src/game/words';
 import { land } from './helpers';
+import { OWN_MOVES } from '../src/game/defs';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 const ELEMENTS: readonly WordId[] = ['fire', 'frost', 'lightning'];
 const isElement = (w: WordId): boolean => ELEMENTS.includes(w);

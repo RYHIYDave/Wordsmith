@@ -20,6 +20,10 @@ import { resolveSkill } from '../src/game/words';
 import { guideAttack, guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
 import { PAD_USE } from '../src/engine/gamepad';
 import { land, toFirstFloor, withoutExits } from './helpers';
+import { OWN_MOVES } from '../src/game/defs';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 // THE FIRST LEVELS (game/defs.ts, on since Version 19.5) changed the lesson: the abilities open by
 // level, the fallen wordsmith's satchel holds the master rune-stone, the first word is given in town and the

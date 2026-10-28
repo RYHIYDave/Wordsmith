@@ -75,7 +75,7 @@ import { flowDir, flowField, lineOfSight } from './game/nav';
 import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
-import { CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
+import { ALL_CLASS_IDS, CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
@@ -135,7 +135,7 @@ const TITLE = 'WORDSMITH';
  */
 const FALL_SEEN = 2;
 /** What each hero says when their voice is tried out on the class cards. */
-const VOICE_SAMPLE: Record<ClassId, string> = { warrior: 'Was that it?', ranger: 'Quiet now.', mage: 'Jolly good.' };
+const VOICE_SAMPLE: Record<ClassId, string> = { warrior: 'Was that it?', ranger: 'Quiet now.', mage: 'Jolly good.', warlock: 'Feed it.' };
 /** Where everything is kept between visits (this browser only): the run in progress, the Lexicon and the stash. */
 const SAVE_KEY = 'arpg.save';
 /** Build 1 kept only the run, under this name. Still read, so an old run carries over. */
@@ -445,7 +445,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // it) and the Lexicon and stash, which outlast any one character. Automated tests switch
   // saving off.
   let saving = true;
-  const validRun = (s: RunSave | null | undefined): RunSave | null => (s && s.v === 1 && CLASS_IDS.includes(s.cls) ? s : null);
+  const validRun = (s: RunSave | null | undefined): RunSave | null => (s && s.v === 1 && ALL_CLASS_IDS.includes(s.cls) ? s : null);
   const readSave = (): { run: RunSave | null; meta: Meta } => {
     try {
       const text = localStorage.getItem(SAVE_KEY);
@@ -2056,7 +2056,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // Test hooks: automated playtests drive the game through these. Not used in normal play.
   const hash = new URLSearchParams(location.hash.slice(1));
   const auto = hash.get('bot') as ClassId | null;
-  if (auto && CLASS_IDS.includes(auto)) {
+  if (auto && ALL_CLASS_IDS.includes(auto)) {
     saving = false;
     saved = null;
     newRun(auto, Number(hash.get('seed') ?? 1234), false);

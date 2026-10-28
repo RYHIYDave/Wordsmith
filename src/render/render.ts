@@ -40,7 +40,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { AIM, BODIES, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
+import { AIM, BODIES, MONSTERS, OWN_MOVES, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { MELD_DUST_COLOR, withParts } from '../game/melds';
@@ -1997,7 +1997,8 @@ export class Renderer {
     // holding their own. The warrior has two figures: with the great sword in both hands when that
     // is what he carries, with sword and shield otherwise.)
     // (and whether they are in town: the heroes painted over the bones have their weapons on their backs there, art/heroes3.ts)
-    const look = { twoHanded: h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword', town: !!game.level.town };
+    // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: each always drawn with his own weapon, the warrior's the great sword)
+    const look = { twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword', town: !!game.level.town };
     // Frames are painted ahead of need each time the world is drawn: the hero's, and those of the
     // monsters in this dungeon, turn and turn about. At least one each time, and more for as long
     // as it has cost less than WARM_MS (a fast machine has them all in a second or two; a slow
@@ -2171,7 +2172,7 @@ export class Renderer {
     // (magic with no element word on it is violet, where a blade's blow is steel: a mage's, and
     // anyone's who carries a staff or a wand)
     const held = game.weapon();
-    const arcane = h.cls === 'mage' || held === 'staff' || held === 'wand';
+    const arcane = h.cls === 'mage' || (!OWN_MOVES.on && (held === 'staff' || held === 'wand'));
     fx.arcane = arcane;
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
     if (WORDS3.on) tick3(pace / 60, game, fx);

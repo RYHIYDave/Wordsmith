@@ -660,7 +660,8 @@ function warp(): Px {
 
 // ---------------------------------------------------------------------------------------------
 
-const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp };
+// (THE WARLOCK, behind WARLOCK: his six stand in on the nearest of the others' until his own are drawn and he has seen them)
+const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp, hellbolt: shot, curse: orb, smokestep: warp, rake: strike, damning: slam, demonstep: leap };
 
 /** Every attack's icon: sixteen game pixels square, anchor in the middle, painted two picture pixels to a game pixel. */
 export function makeAbilityIcons(): Record<AbilityId, Sprite> {

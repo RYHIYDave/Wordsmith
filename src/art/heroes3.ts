@@ -18,7 +18,7 @@
 // moves have it (moves3.ts: ktown, rtown and the rest).
 
 import type { Light, Sprite } from '../engine/px';
-import type { ClassId } from '../game/types';
+import type { ClassId, FirstClass } from '../game/types';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { onBack } from './carried';
 import { paintKnight3 } from './hero3_knight';
@@ -204,7 +204,9 @@ const RANGER_TOWN: Plan = { ...RANGER, idle: 'rtown', walk: 'rtownrun', idleA: '
 // moves3.ts MAGE_STANCES off, so that with it on she can stand and run otherwise in a fight)
 const MAGE_TOWN: Plan = { ...MAGE, idle: 'mtown', walk: 'mtownrun', idleA: 'tmlight', idleB: 'treading', ready: 'mready' };
 /** `card`: ON A CLASS CARD they are as in town (since 18.8 they pass the time there as in town as well). */
-export const PLANS: Record<ClassId, { dungeon: Plan; town: Plan; card: Plan }> = {
+/** The classes painted over the bones by this file (the warlock is sculpted: art/warlock_art.ts). */
+export type BoneClass = FirstClass;
+export const PLANS: Record<BoneClass, { dungeon: Plan; town: Plan; card: Plan }> = {
   warrior: { dungeon: KNIGHT, town: KNIGHT_TOWN, card: { ...KNIGHT_TOWN } },
   ranger: { dungeon: RANGER, town: RANGER_TOWN, card: { ...RANGER_TOWN } },
   mage: { dungeon: MAGE, town: MAGE_TOWN, card: { ...MAGE_TOWN } },
@@ -366,7 +368,8 @@ export function makeHeroArt3(): HeroArt {
     const key = `${cls}:${place}`;
     let art = made.get(key);
     if (!art) {
-      const plan = PLANS[cls][place];
+      // (THE WARLOCK, until his sculpted pictures are put in: the mage's figure stands in for him, behind WARLOCK, off)
+      const plan = PLANS[cls === 'warlock' ? 'mage' : cls][place];
       art = { front: animSet3(plan, 'front', place === 'dungeon'), back: animSet3(plan, 'back', place === 'dungeon') };
       made.set(key, art);
     }

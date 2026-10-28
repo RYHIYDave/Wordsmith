@@ -63,7 +63,7 @@ const assert: Assert = nodeAssert;
 // "I need all weapons to be able to be equipped on all characters"; "boil the melee weapons down to
 // just sword"; "slower harder hitting variants is good"; "just a regular bow with a quiver off hand
 // works fine"; "lets have the warrior start with the two handed sword".
-const STARTS: Record<ClassId, WeaponKind> = { warrior: 'greatsword', ranger: 'bow', mage: 'staff' };
+const STARTS: Record<ClassId, WeaponKind> = { warrior: 'greatsword', ranger: 'bow', mage: 'staff', warlock: 'wand' };
 const WEAPON_KINDS: WeaponKind[] = ['sword', 'greatsword', 'bow', 'wand', 'staff'];
 const APS: Record<WeaponKind, number> = { sword: 1.3, greatsword: 1.05, bow: 1.4, wand: 1.5, staff: 1.0 };
 const HANDS: Record<WeaponKind, 1 | 2> = { sword: 1, wand: 1, greatsword: 2, bow: 2, staff: 2 };
@@ -1356,7 +1356,7 @@ test('itemMods lists implicit, then affixes, then the words burned in, in the or
 test('itemScore: weights the class attribute, ignores weapons and off-hands the class cannot use, rewards better gear', () => {
   const rng = new RNG(808);
   // the same amulet is worth most to the class whose attribute it carries
-  const attribute: Record<ClassId, StatKey> = { warrior: 'str', ranger: 'dex', mage: 'int' };
+  const attribute: Record<ClassId, StatKey> = { warrior: 'str', ranger: 'dex', mage: 'int', warlock: 'int' };
   for (const cls of CLASS_IDS) {
     let found = 0;
     while (found < 20) {

@@ -34,6 +34,10 @@ import type { Attr, ClassId, Item, WeaponKind } from '../src/game/types';
 import { attacksGrownBy, listed, resolveSkill, weaponLines } from '../src/game/words';
 import { attackClip } from '../src/render/figure';
 import { seasoned, land } from './helpers';
+import { OWN_MOVES } from '../src/game/defs';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 const DT = 1 / 60;
 
@@ -119,7 +123,7 @@ function ready(g: Game, skill: 0 | 1): void {
 const TAP: Record<WeaponKind, SkillId> = { sword: 'strike', greatsword: 'strike', bow: 'shot', staff: 'wave', wand: 'familiar' };
 const HOLD: Record<WeaponKind, SkillId> = { sword: 'slam', greatsword: 'whirlwind', bow: 'volley', staff: 'orb', wand: 'beam' };
 const GROWS: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
-const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp' };
+const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp', warlock: 'smokestep' };
 
 // =============================================================================================
 // The table
@@ -149,7 +153,7 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
 });
 
 test('each class begins with its own weapon: the warrior the two-handed sword, the mage the staff with Wave and Orb', () => {
-  const begins: Record<ClassId, [WeaponKind, SkillId[]]> = {
+  const begins: Record<Exclude<ClassId, 'warlock'>, [WeaponKind, SkillId[]]> = {
     warrior: ['greatsword', ['strike', 'whirlwind', 'leap']],
     ranger: ['bow', ['shot', 'volley', 'trap']],
     mage: ['staff', ['wave', 'orb', 'warp']],

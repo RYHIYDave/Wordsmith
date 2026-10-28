@@ -231,7 +231,10 @@ const WARRIOR: TalentTree = {
   ],
 };
 
-export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE };
+/** THE WARLOCK's tree is to come, drafted with the owner (behind WARLOCK): until then, no talents. */
+const WARLOCK_TREE: TalentTree = { cls: 'warlock', shape: 'to come', paths: [], talents: [] };
+
+export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE, warlock: WARLOCK_TREE };
 
 /** What the talents do, in numbers: starting numbers, as their words on the cards say them (his to change). */
 export const TALENT_TUNE = {

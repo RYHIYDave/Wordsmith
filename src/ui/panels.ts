@@ -7,7 +7,7 @@ import { P, RARITY_COLOR } from '../art/palette';
 import { drawText, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Sprite } from '../engine/px';
-import { ATTR_GIVES, ATTR_NAME, CLASSES, LEVEL_SELECT, SKILLS, TUNE, WORDS, floorTitle, growsWith, holdSkill, skillsFor, tapSkill, weaponAttr, wordAttr } from '../game/defs';
+import { ATTR_GIVES, ATTR_NAME, CLASSES, LEVEL_SELECT, OWN_MOVES, SKILLS, TUNE, WORDS, attackAttr, floorTitle, growsWith, holdSkill, skillsFor, tapSkill, wordAttr } from '../game/defs';
 import { lastFloor } from '../game/act1';
 import type { Limit } from '../game/defs';
 import type { Game } from '../game/game';
@@ -106,7 +106,8 @@ export function itemCard(game: Game, it: Item, touch = false): Line[] {
   lines.push({ text: room > 0 ? `Room for ${room} ${room === 1 ? 'word' : 'words'}` : 'No room for words', color: room > 0 ? THEME.dim : THEME.faint, small: true });
   // what the weapon gives whoever holds it: its two attacks, and the attribute they grow with
   // (gold when they are not the attacks in hand: this weapon would change them)
-  if (it.weapon) {
+  // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: a weapon changes no attack, so nothing is said of them)
+  if (it.weapon && !OWN_MOVES.on) {
     const same = tapSkill(it.weapon) === h.skills[0].id && holdSkill(it.weapon) === h.skills[1].id;
     for (const text of weaponLines(it.weapon, touch)) lines.push({ text, color: same ? THEME.dim : THEME.accent, small: true });
   }
@@ -225,7 +226,7 @@ export function drawLevelUp(ui: Ui, game: Game, pressedKey: (code: string) => bo
     const grown = attacksGrownBy(a, h.cls, game.weapon());
     if (grown.length) lines.push(`+${n * ATTR_GIVES.primaryDmg}% ${listed(grown)} damage`);
     // (ATTR_SPLIT: fire, frost and lightning by the weapon in hand)
-    const words = WORD_IDS.filter((w) => (wordAttr(w) ?? weaponAttr(game.weapon())) === a).map((w) => WORDS[w].name);
+    const words = WORD_IDS.filter((w) => (wordAttr(w) ?? attackAttr(h.cls, game.weapon())) === a).map((w) => WORDS[w].name);
     lines.push(`Strengthens ${words.join(', ')}`);
     let y = y0 + 28;
     for (const l of lines) {
