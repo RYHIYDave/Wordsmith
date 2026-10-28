@@ -16,6 +16,14 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
 - 28 Oct, to the art chat, asked where to start the High City: “Level 16 in full”.
 - The first look, painted (`src/dev/garden_paint.ts`, `src/dev/preview_garden.ts`), asked "is this the place?": “Yes, go on
   (Recommended)”, offered as: next, make the ground and its pieces game-ready, then the swans as enemies.
+- The ground and its 25 pieces, game-ready, built into a corner of the gardens (`src/dev/preview_swangardens.ts`): “Good, on
+  to the swans (Recommended)”.
+- The swans' brief (his art rulebook, "A new character", and sound rule 7), his answers: what they are, “Plain swans gone
+  wild”; their size, “Knee-high, in flocks”; how they move, “Waddle and charge”; the one thing to know them by, “Wings raised
+  in threat”; their attack, “Hissing lunge, a bite”; their death, “Bursts into feathers (Recommended)”; what they must never
+  look like, “Not a goose or duck”; their sound, “Hiss and honk”. Read as: plain wild swans, the court's own, no crowns and
+  nothing of the story (so the eleven on the lake lose their crowns too); knee-high, in flocks, fun to smash; on foot,
+  waddling, charging heavily, the neck forward, the wings always arched over the back; small, so one attack.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -68,12 +76,31 @@ waist, and on the picture its head lands one tile toward -x (a climb in this cam
 wall's row is open from tx - 1 to tx + 1, `a stair's pier` on (tx - 2, R) and (tx + 2, R), and the walk off it on (tx - 1,
 R - 1) and (tx, R - 1). `src/dev/swan_lay.ts` lays it so; `src/dev/swan_level.ts` is a corner of the gardens laid by hand.
 
+## The swans, floor 16's small mob (src/art/garden_swans.ts; behind `SWAN_ON`, off)
+
+Built on the creature rig as the fog wolves are: its own pose and solids, painted from in front and from behind
+(`makeSwanArt()` gives `{ front, back }`: idle, walk, attack, clips attack, die, reel). `SWAN_SIZE` 1.15 of its own measures;
+on the floor about knee-high to the knight with its neck up.
+
+- STANDING: its neck up in its S, its wings arched over its back; it breathes, its wings ruffle, it glances aside, now and
+  then it hisses, the bill open.
+- THE CHARGE (`SWAN_PACE` tiles a second): a heavy waddle, rocking foot to foot, its neck forward and its wings up; its
+  feet carried back under it at its pace, so on the floor they grip.
+- ITS BITE (`SWAN_BITE`): the warning (to `lunge`, 0.36 s) a crouch, the neck drawn back, the bill open, a hiss; the lunge,
+  the neck thrown out and the bill shut at `hit` (0.5 s), its near foot stepping in; back on its stand by its end (1.05 s).
+- STRUCK (`SWAN_REEL`): knocked back on its heels, its wings flung up, a few feathers torn off.
+- ITS DEATH (`SWAN_DIE`): struck, then knocked over onto its side, the wing under it laid flat, its neck along the floor;
+  its feathers burst from it and drift down to the floor.
+- NO GLOW: white plumage greyed to the dawn, an orange bill with its black knob, black legs; the enemy's rim.
+
 ## The dev pages
 
 - `src/dev/preview_garden.ts` (the painting): `overview`, `phone`, `close:X:Y`.
 - `src/dev/preview_swangardens.ts` (built from the game-ready ground and pieces, the knight on the lake walk; the swans the
   painting's, not yet enemies): `overview`, `phone`, `tiles`, `close:X:Y`.
 - `src/dev/preview_floor16.ts` (the pieces): `all`, `range=A-B@K`, `look=<name>@K`, `show`.
+- `src/dev/preview_swans.ts` (the swans): `sheet` (from in front and behind beside the knight, three times as big; a flock at
+  the game's size), `big:<move>:<t>`, `strip:<move>:<view>:<n>`.
 
 ## The checks
 
@@ -84,3 +111,6 @@ R - 1) and (tx, R - 1). `src/dev/swan_lay.ts` lays it so; `src/dev/swan_level.ts
 - `tests/floor16.test.ts` (8): nothing of the game imports them; 25, each its own name; pictures as many as each says; only
   the lantern and the quest give light; crisp; no cyan, no pink, under the dullest word's; each stands on its foot; nothing
   cut off; a terrace wall's face fills its row.
+- `tests/garden_swans.test.ts` (13): nothing of the game imports it, its switch off; crisp, the enemy's rim; no cyan, no
+  pink, no light, nothing cut off; its size; FLOOR (nothing under it in any frame); FEET GRIP; nothing THROUGH its body;
+  JERK and JUMP; ALIVE; its bite; its death; its pictures.
