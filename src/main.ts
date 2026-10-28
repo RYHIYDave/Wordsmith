@@ -325,6 +325,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let last = performance.now();
   let clock = 0;
   let wantInteract = false;
+  /** THE WARLOCK: his full pact globe was pressed (ui/hud.ts): he changes on the next reading of the controls. */
+  let wantChange = false;
   let calm = 0;
   let saveT = 0;
   let wasPaused = false;
@@ -973,7 +975,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     c.hold = false;
     c.evade = false;
     c.potion = false;
-    c.change = false;
+    c.change = wantChange;
+    wantChange = false;
     c.interact = wantInteract;
     renderer.lockId = null;
     wantInteract = false;
@@ -1954,6 +1957,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (hud.inventory >= 0) openInventory(hud.inventory < 3 ? hud.inventory : -1);
       if (hud.potion) g.usePotion();
       if (hud.interact) wantInteract = true;
+      if (hud.change) wantChange = true;
       if (hud.level) panels.open = 'level';
       // (THE SKILL TREES: a talent point waiting: the inventory opens on TALENTS)
       if (hud.talents) {
