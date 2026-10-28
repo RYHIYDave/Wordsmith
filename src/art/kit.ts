@@ -864,17 +864,50 @@ export function toSprite(f: Painted, aura: Light | null = AURA, ax = KAX, ay = K
 export const PAINTING: { frames: number; ms: number; trace: Map<string, { n: number; ms: number }> | null } = { frames: 0, ms: 0, trace: null };
 
 /**
+ * HEAVY FRAMES NOT PAINTED WHERE THE GAME IS PLAYED (the Warlock's demon: about half a second a frame). While `defer` is
+ * on (render/render.ts, as the world is drawn), a frame of a heavy list (lazyFrames `heavy`) that is not painted yet is
+ * shown as the nearest of its list that is, and left for the side painter (render/painter.ts) to paint and hand over; only
+ * a list with none painted yet paints the one asked for. Off (the tests, the painter itself), every frame is painted when
+ * first asked for, as any.
+ */
+export const HEAVY = { defer: false, deferred: 0 };
+
+/** The nearest frame of `list` to `i` that is painted already (the earlier first), or null if none is. */
+function paintedOf(list: readonly Sprite[], i: number): Sprite | null {
+  const n = list.length;
+  const got = (k: number): Sprite | null => {
+    if (k < 0 || k >= n) return null;
+    const d = Object.getOwnPropertyDescriptor(list, k);
+    return d && 'value' in d && d.value ? (d.value as Sprite) : null;
+  };
+  for (let d = 1; d < n; d++) {
+    const a = got(i - d) ?? got(((i - d) % n + n) % n);
+    if (a) return a;
+    const b = got(i + d) ?? got((i + d) % n);
+    if (b) return b;
+  }
+  return null;
+}
+
+/**
  * A list of frames, each painted the first time it is asked for. (Painting a frame takes a few
  * thousandths of a second; painting every frame of every hero at start-up would be a pause you
- * could feel on a phone.)
+ * could feel on a phone.) `heavy`: see HEAVY.
  */
-export function lazyFrames(n: number, make: (i: number) => Sprite): Sprite[] {
+export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false): Sprite[] {
   const out: Sprite[] = new Array<Sprite>(n);
   for (let i = 0; i < n; i++) {
     Object.defineProperty(out, i, {
       configurable: true,
       enumerable: true,
       get(): Sprite {
+        if (heavy && HEAVY.defer) {
+          const near = paintedOf(out, i);
+          if (near) {
+            HEAVY.deferred++;
+            return near;
+          }
+        }
         const t0 = performance.now();
         const s = make(i);
         PAINTING.frames++;

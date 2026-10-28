@@ -63,22 +63,24 @@ const manAt = (m: WarlockMove, t: number, view: GameView): Sprite => asSprite(dr
 const demonAt = (m: DemonMove, t: number, view: GameView): Sprite => asSprite(drawDemonAt(view, m, t).px, AURA_DEMON, RIG_CANVAS.ax, RIG_CANVAS.ay);
 
 /** A move that goes round, as a list of frames, `fps` to a second of it. */
-function round(long: number, fps: number, at: (t: number) => Sprite): Sprite[] {
+function round(long: number, fps: number, at: (t: number) => Sprite, heavy = false): Sprite[] {
   const n = Math.max(1, Math.round(long * fps));
-  return lazyFrames(n, (i) => at(i / fps));
+  return lazyFrames(n, (i) => at(i / fps), heavy);
 }
 /** A move played once by the clock, from `t0` to `t1` of it. */
-function clip(t0: number, t1: number, fps: number, at: (t: number) => Sprite, hit?: number, tail = false): Clip {
+function clip(t0: number, t1: number, fps: number, at: (t: number) => Sprite, hit?: number, tail = false, heavy = false): Clip {
   const n = Math.max(1, Math.ceil((t1 - t0) * fps - 1e-6) + 1);
-  const c: Clip = { frames: lazyFrames(n, (i) => at(Math.min(t1, t0 + i / fps))), fps };
+  const c: Clip = { frames: lazyFrames(n, (i) => at(Math.min(t1, t0 + i / fps)), heavy), fps };
   if (hit !== undefined) c.hit = hit - t0;
   if (tail) c.tail = true;
   return c;
 }
 /** A piece of a move laid out in `n` pictures, first to last, shown by how far through it he is. */
-function spread(t0: number, t1: number, n: number, at: (t: number) => Sprite): Clip {
-  return { frames: lazyFrames(n, (i) => at(t0 + ((t1 - t0) * i) / (n - 1))), fps: n / Math.max(1e-6, t1 - t0) };
+function spread(t0: number, t1: number, n: number, at: (t: number) => Sprite, heavy = false): Clip {
+  return { frames: lazyFrames(n, (i) => at(t0 + ((t1 - t0) * i) / (n - 1)), heavy), fps: n / Math.max(1e-6, t1 - t0) };
 }
+/** THE DEMON'S FRAMES AND THE CHANGE'S ARE HEAVY (about half a second each to paint): left to the side painter while the game is played (art/kit.ts HEAVY). */
+const HEAVY_ART = true;
 
 /** Its first frame, the blow's and its last, each painted only when asked for (as every hero's: art/heroes3.ts). */
 function three(c: Clip): Sprite[] {
@@ -135,7 +137,7 @@ function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean): An
     return set;
   }
   // (CHANGING INTO THE DEMON: the change laid over the rules' time for it)
-  set.clips!.change = spread(0, CHANGE_ALL, CHANGE_FRAMES, (t) => asSprite(changeFrame(view, t).d.px, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay));
+  set.clips!.change = spread(0, CHANGE_ALL, CHANGE_FRAMES, (t) => asSprite(changeFrame(view, t).d.px, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay), HEAVY_ART);
   return set;
 }
 
@@ -150,15 +152,15 @@ function demonSet(view: GameView): AnimSet {
   const burn = moves.find((m) => m.name.startsWith('Meter dry')) as DemonMove;
   const reel = demonReel();
   const lurch = demonLurch();
-  const idle = round(DEMON_STAND, IDLE_FPS, (t) => demonAt(stand, t, view));
-  const walk = round(DEMON_RUN, RUN_FPS, (t) => demonAt(run, t, view));
-  const rakeL = clip(0, rakes[0].long, CLIP_FPS, (t) => demonAt(rakes[0], t, view), RAKE_HIT, true);
-  const rakeR = clip(0, rakes[1].long, CLIP_FPS, (t) => demonAt(rakes[1], t, view), RAKE_HIT, true);
-  const heavy = clip(0, damning.long, CLIP_FPS, (t) => demonAt(damning, t, view), DAMN_HIT, true);
-  const leap = spread(SS.burst * FR, SS.out * FR, STEP_FRAMES, (t) => demonAt(step, t, view));
-  const land = clip(SS.out * FR, DEMON_STEP, CLIP_FPS, (t) => demonAt(step, t, view));
-  const struck = clip(0, reel.long, CLIP_FPS, (t) => demonAt(reel, t, view));
-  const struckBehind = clip(0, lurch.long, CLIP_FPS, (t) => demonAt(lurch, t, view));
+  const idle = round(DEMON_STAND, IDLE_FPS, (t) => demonAt(stand, t, view), HEAVY_ART);
+  const walk = round(DEMON_RUN, RUN_FPS, (t) => demonAt(run, t, view), HEAVY_ART);
+  const rakeL = clip(0, rakes[0].long, CLIP_FPS, (t) => demonAt(rakes[0], t, view), RAKE_HIT, true, HEAVY_ART);
+  const rakeR = clip(0, rakes[1].long, CLIP_FPS, (t) => demonAt(rakes[1], t, view), RAKE_HIT, true, HEAVY_ART);
+  const heavy = clip(0, damning.long, CLIP_FPS, (t) => demonAt(damning, t, view), DAMN_HIT, true, HEAVY_ART);
+  const leap = spread(SS.burst * FR, SS.out * FR, STEP_FRAMES, (t) => demonAt(step, t, view), HEAVY_ART);
+  const land = clip(SS.out * FR, DEMON_STEP, CLIP_FPS, (t) => demonAt(step, t, view), undefined, false, HEAVY_ART);
+  const struck = clip(0, reel.long, CLIP_FPS, (t) => demonAt(reel, t, view), undefined, false, HEAVY_ART);
+  const struckBehind = clip(0, lurch.long, CLIP_FPS, (t) => demonAt(lurch, t, view), undefined, false, HEAVY_ART);
   // BURNING OUT (demon_return.ts): it sags as its fire gutters; it crumbles from its edges in, him on one knee where it was
   // seen as it goes; and he gets up. On the change's scene, both drawn at its floor point.
   const back = byName(warlockSpells(), 'Meter dry: he comes back');
@@ -192,7 +194,7 @@ function demonSet(view: GameView): AnimSet {
       put(t > SAG ? crumble(d, (t - SAG) / CRUMBLE) : d, RIG_CANVAS.ax, RIG_CANVAS.ay);
     } else put(drawWarlockAt(view, back, t - SAG - CRUMBLE).px, CANVAS3.ax, CANVAS3.ay);
     return asSprite(scene, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay);
-  });
+  }, HEAVY_ART);
   return {
     idle,
     walk,

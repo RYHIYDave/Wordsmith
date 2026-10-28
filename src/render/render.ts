@@ -2,6 +2,9 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { HEAVY } from '../art/kit';
+/** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
+export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
@@ -2236,6 +2239,16 @@ export class Renderer {
    * looks the same on a fast screen and a slow one. It also thins out when the air is full.
    */
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
+    // (heavy frames not yet painted are shown as their nearest painted ones, for the side painter to paint: art/kit.ts HEAVY)
+    HEAVY.defer = PAINT_DEFER.on;
+    try {
+      return this.drawWorld(g, W, H, game, fx, t, pace);
+    } finally {
+      HEAVY.defer = false;
+    }
+  }
+
+  private drawWorld(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
     this.bossFx.begin();
     // (THE FIRST FIVE FLOORS: this level's own pieces, and a step of its moments)
     this.dressed = this.pieces.begin(game);

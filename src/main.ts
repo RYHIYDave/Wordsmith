@@ -79,7 +79,7 @@ import { RNG } from './engine/rng';
 import { ALL_CLASS_IDS, CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
-import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
+import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
@@ -2293,6 +2293,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
     slowmo: 1,
+    /** Heavy frames left to the side painter while the world is drawn (art/kit.ts HEAVY): a film made frame by frame turns it off, so every frame is painted when shown. */
+    paintDefer: PAINT_DEFER,
     /** The world's painter (its `skip` set leaves parts of the picture out, for measuring). */
     renderer,
     /** How many frames of art have been painted so far, and how long that took in all (art/kit.ts). */
