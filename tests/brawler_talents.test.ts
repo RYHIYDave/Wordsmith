@@ -110,11 +110,11 @@ function throwPunch(g: Game, name: PunchName): number[] {
 }
 const near = (a: number, b: number, within: number): boolean => Math.abs(a - b) <= within;
 
-test('every talent of his tree is made to work; the tree is still a draft', () => {
+test('every talent of his tree is made to work; no longer a draft (his yes in play)', () => {
   const tree = TREES.brawler;
   assert.equal(tree.talents.length, 15);
   for (const t of tree.talents) assert.equal(t.works, true, `${t.name} works`);
-  assert.equal(tree.draft, true);
+  assert.ok(!tree.draft);
 });
 
 // ---- SPEED ----------------------------------------------------------------------------------------------------------

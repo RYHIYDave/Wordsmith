@@ -118,9 +118,9 @@ function golemOut(g: Game, still = false): void {
 const of = <K extends GameEvent['t']>(ev: GameEvent[], t: K): Extract<GameEvent, { t: K }>[] => ev.filter((e) => e.t === t) as Extract<GameEvent, { t: K }>[];
 const goldDrops = (g: Game): number => g.drops.filter((d) => d.kind === 'gold').length;
 
-test('her tree: every talent made to work, the tree still a draft', () => {
+test('her tree: every talent made to work, no longer a draft (his yes in play)', () => {
   const tree = TREES.tinkerer;
-  assert.equal(tree.draft, true);
+  assert.ok(!tree.draft);
   assert.deepEqual(tree.talents.filter((t) => !t.works).map((t) => t.id), []);
 });
 

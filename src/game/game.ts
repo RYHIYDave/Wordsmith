@@ -5280,13 +5280,14 @@ export class Game {
 
   /**
    * HER VIAL TOSS: a vial lobbed from her hand at (ox, oy) to where she aimed (`n` the how-manyth of Twin's, each further to
-   * one side); it bursts where it comes down (the vials' step, updateTinkerer). Aimed at her feet, it goes a little ahead.
+   * one side); it bursts where it comes down (the vials' step, updateTinkerer). Aimed at her feet (one at her very side), it
+   * comes down at her feet: it bursts on what is on her, and never on her.
    */
   private tossVial(i: number, ox: number, oy: number, tx: number, ty: number, frac: number, n: number, echo: boolean): void {
     const h = this.hero;
     const T = TINKER_TUNE.toss;
     const def = SKILLS[h.skills[i].id];
-    const p = Math.hypot(tx - ox, ty - oy) < 0.6 ? this.reachPoint(ox + h.fx * 3, oy + h.fy * 3, def.range) : this.reachPoint(tx, ty, def.range);
+    const p = this.reachPoint(tx, ty, def.range);
     // (Twin's: the second lands beside the first, across the way she threw)
     const far = Math.hypot(p.x - ox, p.y - oy) || 1;
     const side = n === 0 ? 0 : (n % 2 ? 1 : -1) * Math.ceil(n / 2) * T.twin;
