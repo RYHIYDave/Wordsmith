@@ -142,7 +142,9 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     },
   });
   const dark = sc.mat({ ramp: DARK, paint: (h) => (h.prim.tag === 'grille' && h.x % 2 === 0 ? STEEL5[2] : null) });
-  const glow = sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) });
+  // (ITS LIGHT GOING OUT, GOLEM_POSE.dim: none as it stands; a step down, two, and dark glass, as it winds down)
+  const dimK = GOLEM_POSE.dim;
+  const glow = sc.mat({ ramp: CYAN, paint: (h) => (dimK > 0 ? dimmed(h.tone >= 2 ? 1 : 0, dimK) : h.tone >= 2 ? '#e8ffff' : CYAN[2]) });
   // (a coil's copper wound tight: a dark line between each turn)
   const coil = sc.mat({
     ramp: COPPER,
@@ -161,6 +163,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
       const r = Math.hypot(b[1], b[2]);
       if (r > 0.42 && r < 0.74 && Math.floor(((ang + Math.PI) * 10) / Math.PI) % 2 === 0) return BRASS[1];
       if (r < 0.2) return BRASS[1];
+      if (dimK > 0) return dimmed(r < 0.42 ? 1 : 0, dimK);
       return r < 0.42 ? '#e8ffff' : CYAN[3];
     },
   });
@@ -974,7 +977,16 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
  * (degrees), its forearm folded in at the elbow (degrees), its body leaning forward about its hips (degrees) and bobbed up.
  * All naught as it stands, as he picked it.
  */
-export const GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0] as [number, number, number, number], level: 0 };
+export const GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0] as [number, number, number, number], level: 0, dim: 0 };
+/**
+ * Its eye and its heart as its light goes out (`dim` 0 lit, as it stands, to 1 out): a step down the friend's cyan, two,
+ * and dark glass; `hot` 1 for the brightest of it (the heart of its eye, its furnace), 0 for the rest.
+ */
+const DIMMED = [['#22d0e0', '#b8fff8'], ['#0c6a80', '#22d0e0'], ['#0c3a48', '#0c6a80'], ['#141a24', '#26303e']];
+function dimmed(hot: number, dim: number): string {
+  const step = dim >= 1 ? 3 : dim > 0.66 ? 2 : dim > 0.33 ? 1 : 0;
+  return DIMMED[step][hot];
+}
 /** A knee between a hip and an ankle (each forward and up, in its own measure), `a` and `b` its thigh and shin: bent forward. */
 export function kneeFor(hip: [number, number], ankle: [number, number], a: number, b: number): [number, number] {
   const dx = ankle[0] - hip[0];

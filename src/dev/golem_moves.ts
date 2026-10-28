@@ -96,6 +96,16 @@ export function reachFist(t: [number, number], lean: number, bob: number): { swi
   const swing = (Math.atan2(T[1] - SH[1], T[0] - SH[0]) - Math.atan2(v[1], v[0])) / D;
   return { swing, fold };
 }
+/** Where its fist's middle is (forward, up) for its giant arm swung `swing` and folded `fold`, its body leaning `lean` and bobbed `bob`: reachFist undone. */
+export function fistOf(swing: number, fold: number, lean: number, bob: number): [number, number] {
+  const D = Math.PI / 180;
+  const e = rot2(FI[0] - EL[0], FI[1] - EL[1], fold * D);
+  const v = rot2(EL[0] + e[0] - SH[0], EL[1] + e[1] - SH[1], swing * D);
+  const T: [number, number] = [SH[0] + v[0], SH[1] + v[1]];
+  const pv: [number, number] = [-7, 28];
+  const r = rot2(T[0] - pv[0], T[1] - pv[1], -lean * D);
+  return [pv[0] + r[0], pv[1] + r[1] + bob];
+}
 /** Its pose at frame `f` of its walk (a round; the game carries it GWALK.speed a second). */
 export function golemWalk(f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number } {
   const P = GWALK.round;
@@ -144,4 +154,55 @@ export function golemPunch(f: number): { swing: number; fold: number; lean: numb
     lean: track([[0, 0], [GPUNCH.cock, -11], [GPUNCH.hold, -12], [GPUNCH.hit, 12], [GPUNCH.stay, 11], [GPUNCH.back, 0], [GPUNCH.end, 0]], f),
     bob: track([[0, 0], [GPUNCH.cock, 1.6], [GPUNCH.hold, 2], [GPUNCH.hit, -1], [GPUNCH.stay, -1], [GPUNCH.back, 0], [GPUNCH.end, 0]], f),
   };
+}
+
+// ---- ITS END: IT WINDS DOWN (28 Oct, overnight at his word, “keep working on her and the constructs”). By his rulebook's
+// “deaths are true to what died” and “big things die heavy”: a clockwork thing struck its last does not fall like a man,
+// it RUNS DOWN. The blow jolts it back, steam and sparks bursting out of it; it staggers, its eye flickering; it slows,
+// leaning forward onto its giant fist as its spring gives out, its knees giving; a last shudder, a great burst of steam out
+// of its stacks, gears and springs popping out of it; it slumps forward onto its fist, heavy, and its eye and its furnace
+// heart go dark. It stays where it slumped.
+export const GDOWN = { hit: 3, jolted: 5, staggered: 12, planted: 28, shudder: 30, slump: 36, down: 46, dark: 44, end: 70 };
+/** The jolt of the blow, a flash (his rulebook's Movement 9), and its slump's landing: not judged frame by frame. */
+export const GDOWN_STRIKE: [number, number][] = [[GDOWN.hit - 1, GDOWN.jolted + 1], [GDOWN.down - 1, GDOWN.down + 1]];
+/** Where its fist comes to rest on the floor before it as it runs down (forward, up, as it was built). */
+const REST_FIST: [number, number] = [24, FI[1]];
+/** Its pose at frame `f` of its end. */
+export function golemDown(f: number): { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; dim: number } {
+  // (its body: jolted back, staggering forward, leaning slowly onto its fist, a shudder, and the slump)
+  const quiver = f > GDOWN.planted && f < GDOWN.slump ? 1.4 * Math.sin(((f - GDOWN.planted) / (GDOWN.slump - GDOWN.planted)) * Math.PI * 3) : 0;
+  let lean = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, -8], [GDOWN.staggered, 7], [20, 10], [GDOWN.planted, 15], [GDOWN.slump, 17], [GDOWN.end, 17]], f) + quiver;
+  let bob = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, 0.8], [GDOWN.staggered, -0.6], [GDOWN.planted, -1.6], [GDOWN.slump, -1.8], [GDOWN.end, -1.8]], f);
+  // (the slump: all at once, gathering speed as it goes, heavy)
+  if (f > GDOWN.slump) {
+    const u = Math.min(1, (f - GDOWN.slump) / (GDOWN.down - GDOWN.slump));
+    lean += 15 * u * u;
+    bob -= 2.2 * u * u;
+    if (f > GDOWN.down) {
+      // (settling: a little bounce off its fist)
+      const k = f - GDOWN.down;
+      lean -= 1.2 * Math.sin(Math.min(1, k / 6) * Math.PI) * Math.exp(-k / 8);
+    }
+  }
+  // (its giant arm: flung back by the blow, swinging loose as it staggers; then reached down to rest its fist on the floor
+  // before it, and kept there as it slumps onto it)
+  let arm: { swing: number; fold: number };
+  let level = 0;
+  if (f <= GDOWN.staggered) {
+    arm = { swing: track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, -10], [GDOWN.staggered, 12]], f), fold: track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, 6], [GDOWN.staggered, 4]], f) };
+  } else {
+    // (its fist carried from where it swung to, over and down to the floor before it, clear of the floor all the way)
+    const u = Math.min(1, (f - GDOWN.staggered) / (GDOWN.planted - GDOWN.staggered));
+    const e = u * u * (3 - 2 * u);
+    const lean0 = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, -8], [GDOWN.staggered, 7]], GDOWN.staggered);
+    const bob0 = track([[0, 0], [GDOWN.hit, 0], [GDOWN.jolted, 0.8], [GDOWN.staggered, -0.6]], GDOWN.staggered);
+    const from = fistOf(12, 4, lean0, bob0);
+    const to: [number, number] = [from[0] + (REST_FIST[0] - from[0]) * e, from[1] + (REST_FIST[1] - from[1]) * e + 7 * Math.sin(Math.PI * e)];
+    arm = reachFist(to, lean, bob);
+    level = e;
+  }
+  // (its eye flickering as it staggers; going out as it slumps)
+  const flick = [8, 10, 18, 23, 32].some((k) => Math.abs(f - k) < 0.5) ? 0.5 : 0;
+  const dim = Math.max(flick, f < GDOWN.slump ? 0 : Math.min(1, (f - GDOWN.slump) / (GDOWN.dark - GDOWN.slump)));
+  return { ...arm, lean, bob, feet: [0, 0, 0, 0], level, dim };
 }

@@ -15,7 +15,7 @@ import type { V3 } from '../src/art/skeleton';
 import { LAST, primDist } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
 import { GOLEM_FIST, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../src/dev/sculpt_golem';
-import { GP, GPUNCH, GPUNCH_STRIKE, GP_STRIKE, GWALK, golemPunch, golemWalk, groundPound } from '../src/dev/golem_moves';
+import { GDOWN, GDOWN_STRIKE, GP, GPUNCH, GPUNCH_STRIKE, GP_STRIKE, GWALK, golemDown, golemPunch, golemWalk, groundPound } from '../src/dev/golem_moves';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { paintWithoutCanvas } from './helpers';
 
@@ -213,6 +213,75 @@ test('the Golem’s punch: every frame crisp, the friend’s edge, no pixel alon
       if (b > 4 && b > 2.2 * Math.max(a, c)) found.push(`its fist leaps ${b.toFixed(1)} at frame ${i} (${view})`);
       if (a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) found.push(`its fist stalls at frame ${i} (${view})`);
     }
+  }
+  assert.deepEqual([...new Set(found)], []);
+});
+
+// ITS END, WINDING DOWN (dev/golem_moves.ts golemDown): every frame, as above, turned eight ways; its fist and its eye slick
+// but for the blow's jolt and the slump's landing (each a flash); its light going out (its eye and heart dark at the end)
+test('the Golem winding down: every frame crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off; nothing sunk, on its feet; its giant arm clear of the rest of it: from in front and behind, turned eight ways; slick but for the blow and the slump’s landing', () => {
+  const found: string[] = [];
+  const fist: V3[] = [];
+  const eye: V3[] = [];
+  try {
+    for (const view of ['front', 'back'] as const) {
+      for (const turn of TURNS) {
+        for (let f = 0; f <= GDOWN.end; f++) {
+          Object.assign(GOLEM_POSE, golemDown(f));
+          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, 'pincer');
+          const at = `${view}, turned ${turn}, frame ${f}`;
+          for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
+          const sc = LAST.sc as Sculpt;
+          for (const x of bodyFindings(sc, true)) found.push(`${at}: ${x}`);
+          if (turn === 0) {
+            for (const x of armThrough(sc)) found.push(`${at}: ${x}`);
+            if (view === 'front') {
+              fist.push([...GOLEM_FIST.c] as V3);
+              const lens = sc.prims.find((p) => p.tag === 'lens');
+              eye.push(lens && lens.k !== 'cone' && lens.k !== 'tri' ? ([...lens.c] as V3) : [0, 0, 0]);
+            }
+          }
+        }
+      }
+    }
+  } finally {
+    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0 });
+  }
+  for (const [name, pts] of [['its fist', fist], ['its eye', eye]] as const) {
+    for (const view of ['front', 'back'] as const) {
+      const xy = pts.map((p) => project(p, view));
+      const st = xy.slice(1).map((p, i) => [p[0] - xy[i][0], p[1] - xy[i][1]] as const);
+      const sp = st.map(([x, y]) => Math.hypot(x, y));
+      for (let i = 1; i < sp.length - 1; i++) {
+        if (GDOWN_STRIKE.some(([a, b]) => i >= a - 1 && i <= b + 1)) continue;
+        const a = sp[i - 1], b = sp[i], c = sp[i + 1];
+        if (b > 4 && b > 2.2 * Math.max(a, c)) found.push(`${name} leaps ${b.toFixed(1)} at frame ${i} (${view})`);
+        if (a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) found.push(`${name} stalls at frame ${i} (${view})`);
+        const sa = st[i - 1], sb = st[i];
+        if ((sa[0] * sb[0] + sa[1] * sb[1]) / (Math.hypot(...sa) * Math.hypot(...sb) || 1) < -0.5 && a > 3 && b > 3) found.push(`${name} turns straight back at speed at frame ${i} (${view})`);
+      }
+      if (sp[0] > 3 && sp[0] >= 0.95 * Math.max(...sp.slice(0, 4))) found.push(`${name} starts at its fastest (${view})`);
+      if (sp[sp.length - 1] > 3) found.push(`${name} still moving at its end (${view})`);
+    }
+  }
+  // (and its light out at the end: its eye and its heart, every pixel of them that its light would paint, dark glass)
+  try {
+    Object.assign(GOLEM_POSE, { ...golemDown(GDOWN.end), dim: 0 });
+    const lit = sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, 'pincer').px.d.slice();
+    Object.assign(GOLEM_POSE, golemDown(GDOWN.end));
+    const out = sculptGolemBuild('front', GOLEM_PICK.build, 0, -14, true, 'pincer').px.d;
+    const hex = (d: Uint8ClampedArray, i: number): string => '#' + [0, 1, 2].map((c) => d[i + c].toString(16).padStart(2, '0')).join('');
+    let changed = 0;
+    let bright = 0;
+    for (let i = 0; i < out.length; i += 4) {
+      if (hex(lit, i) === hex(out, i)) continue;
+      changed++;
+      if (!['#141a24', '#26303e'].includes(hex(out, i))) bright++;
+    }
+    if (!changed) found.push('its light never goes out');
+    if (bright) found.push(`${bright} pixels of its light not gone dark at its end`);
+  } finally {
+    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0 });
   }
   assert.deepEqual([...new Set(found)], []);
 });
