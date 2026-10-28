@@ -112,7 +112,8 @@ function keysOf(): [number, Partial<Bones>][] {
     [8.5, at(rock, { ...liftQ, ...hands(handAt(liftQ, true, 8, 9, -2), handAt(liftQ, false, 3, -5, -1), 28, 55), lfz: 1.6, rfz: 1.8, lfp: 0, rfp: 6 })],
     [11, fly],
     // (her hands flung back and down to catch her)
-    [12.5, at(fly, { ...hands(handAt(flyQ, true, -5, 5, -11), handAt(flyQ, false, -1, -6, -11), 15, 20) })],
+    // (out to her sides, clear of her backpack)
+    [12.5, at(fly, { ...hands(handAt(flyQ, true, -4, 7.5, -11), handAt(flyQ, false, -1, -6, -11), 15, 20) })],
     [TFALL.sits, at(sit, { lfz: 2.2, rfz: 1.6, bend: 8, faceUp: 2, ...hands(HAND_L, HAND_R, 0, 0) })],
     // (the weight of her landing: down and forward a moment, her head bobbing down)
     [17, at(sit, { bend: 20, pitch: -20, faceUp: -18 })],

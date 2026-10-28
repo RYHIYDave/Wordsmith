@@ -15,6 +15,7 @@ import { TINK_B, TSTANCE, drawTinkerAt, tinkerMoves, tinkerPose } from '../src/d
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { drawTinkerFallAt, tinkerFall } from '../src/dev/tinkerer_fall';
 import { drawTinkerHoldAt, tinkerHold } from '../src/dev/tinkerer_hold';
+import { PACK_AT } from '../src/dev/sculpt_tinkerer';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -52,6 +53,21 @@ function heldThrough(sc: Sculpt): string[] {
   return [...new Set(out)];
 }
 
+/** HER BACKPACK CLEAR OF HER (his pick, 28 Oct, “C, the vial rack (Recommended)”): no point along her head, her hair, her arms,
+ * her legs, her wrench or what she holds inside her pack; nor any of its own points inside them. (Its straps lie on her.) */
+const HERS = ['head', 'pony', 'armL', 'armR', 'legL', 'legR', 'wrench', ...HELD_PIECES];
+function packThrough(sc: Sculpt): string[] {
+  const out: string[] = [];
+  const pack = sc.prims.slice(PACK_AT.from, PACK_AT.to).filter((p) => !p.carve);
+  if (!pack.length) return ['no backpack on her'];
+  const hers = sc.prims.filter((p, i) => !p.carve && (i < PACK_AT.from || i >= PACK_AT.to) && HERS.includes(p.piece));
+  const along = (p: (typeof pack)[number]): [V3, number][] =>
+    p.k === 'cone' ? [0, 0.2, 0.4, 0.6, 0.8, 1].map((k) => [[0, 1, 2].map((i) => p.a[i] + (p.b[i] - p.a[i]) * k) as unknown as V3, p.ra + (p.rb - p.ra) * k]) : p.k === 'tri' ? [] : [[p.c, 0.3]];
+  for (const o of hers) for (const [q, r] of along(o)) for (const p of pack) if (primDist(p, q) - r < -0.4) out.push(`her ${o.piece} (${o.tag ?? o.k}) into her pack's ${p.tag ?? p.k}`);
+  for (const p of pack) for (const [q] of along(p)) for (const o of hers) if (primDist(o, q) < -0.4) out.push(`her pack's ${p.tag ?? p.k} inside her ${o.piece} (${o.tag ?? o.k})`);
+  return [...new Set(out)];
+}
+
 /** Every move of hers, her tap and hold (dev/tinkerer_hold.ts) and her fall (dev/tinkerer_fall.ts). */
 const ALL = [...tinkerMoves(), tinkerHold(), tinkerFall()];
 for (const m of ALL) {
@@ -59,7 +75,7 @@ for (const m of ALL) {
   const n = Math.round(m.long * fps);
   const times = Array.from({ length: n + (m.loops ? 0 : 1) }, (_, i) => Math.min(m.long, i / fps));
 
-  test(`${m.name}: every frame crisp, the friend's edge, no pixel alone, nothing pink, nothing cut off; her body clean, her feet on the floor, her wrench clear of her: from in front and behind`, () => {
+  test(`${m.name}: every frame crisp, the friend's edge, no pixel alone, nothing pink, nothing cut off; her body clean, her feet on the floor, her wrench and her backpack clear of her: from in front and behind`, () => {
     const found: string[] = [];
     for (const view of ['front', 'back'] as const) {
       for (const t of times) {
@@ -72,6 +88,7 @@ for (const m of ALL) {
         // hair, her body or her arms (but the fist that holds it)
         for (const f of wrenchThrough(LAST.sc as Sculpt)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
         for (const f of heldThrough(LAST.sc as Sculpt)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
+        for (const f of packThrough(LAST.sc as Sculpt)) found.push(`${view}, ${t.toFixed(2)} s: ${f}`);
       }
     }
     assert.deepEqual([...new Set(found)], []);
