@@ -24,11 +24,12 @@ import { FR, STANCE, WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from 
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { strikes, struck } from '../src/dev/brawler_punches';
 import { warlockSpells } from '../src/dev/warlock_spells';
+import { demonLurch, demonReel, warlockLurch, warlockReel } from '../src/dev/warlock_hits';
 import { boltLight, curseLight, dissolve, morphLight, spreadLight, stepGone, stepLight } from '../src/dev/warlock_fx';
 import { CHANGE_ALL, MORPH_AT, MORPH_LONG, ROAR_AT, changeFrame, changeRig } from '../src/dev/warlock_change';
 
-/** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step). */
-const ALL = [...warlockMoves(), ...warlockSpells()];
+/** Every move of his: standing, running, his hellfire bolt, his Curse (and, as it comes, his smoke step); and struck, hard and from behind (dev/warlock_hits.ts). */
+const ALL = [...warlockMoves(), ...warlockSpells(), warlockReel(), warlockLurch()];
 
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: { deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
@@ -79,7 +80,8 @@ for (const m of ALL) {
     // is not judged frame by frame, its wind-up and wind-down are)
     // (AND HIS SWIPE'S WEAVE, a flash the game carries him through, smeared with his after-images: his pick, “Weaving dash,
     // same reach (Recommended)”, under the same rule: its slip in and its landing are judged, the weave itself is not)
-    const quiet = [...strikes(m.blows ?? []), ...(m.dash ? [[m.dash[0] - FR, m.dash[1] + FR] as [number, number]] : [])];
+    // (AND A BLOW THAT LANDS ON HIM: it snaps him in a flash, as every blow goes; what follows is judged)
+    const quiet = [...strikes(m.blows ?? []), ...(m.dash ? [[m.dash[0] - FR, m.dash[1] + FR] as [number, number]] : []), ...(m.jolt ? [m.jolt] : [])];
     for (const j of JOINTS) {
       for (const view of ['front', 'back'] as const) {
         const xy = sk.map((k) => project(k[j] as V3, view));

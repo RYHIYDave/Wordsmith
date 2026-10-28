@@ -74,7 +74,7 @@ const clampN = (v: number, lo: number, hi: number): number => Math.max(lo, Math.
  * and rolls; but a raking arm's (`raking`, 1 its left, -1 its right, 2 both) out from its side and up, so that as the claw sweeps
  * across before it the arm swings round in front of its chest, not through it.
  */
-function elbowsOf(q: Bones, raking = 0, outK = 1): Bones {
+export function elbowsOf(q: Bones, raking = 0, outK = 1): Bones {
   const o = { ...q };
   const [f, l, u] = solve(DEMON_B, o as Posed).hips;
   const back = (side: number): V3 => [-12 * f[0] + side * l[0], -12 * f[1] + side * l[1], -12 * f[2] + side * l[2]];
@@ -123,7 +123,7 @@ function neckSafe(q: Bones): Bones {
 }
 
 /** Its wings from a stroke over time: each hand trailing the stroke, the skin billowing against it. */
-function wingsFrom(stroke: (t: number) => { spread: number; beat: number; sweep: number; wind?: number }): (t: number) => DemonWings {
+export function wingsFrom(stroke: (t: number) => { spread: number; beat: number; sweep: number; wind?: number }): (t: number) => DemonWings {
   return (t) => {
     const now = stroke(t);
     const was = stroke(t - 0.09);
@@ -311,7 +311,7 @@ const runFire = (t: number, i: number): number => {
 // behind it and lunging in, its wings flung; a freeze as it lands (Movement 6, heavy blows freeze); then it follows
 // through, draws the claw back and sets it down where it stood, flat and still on the floor.
 /** A frame-by-frame track through keys (seconds, value), smooth through each (its pace carried through), still at a hold. */
-function track(keys: readonly (readonly [number, number])[], t: number, holds: ReadonlySet<number> = new Set()): number {
+export function track(keys: readonly (readonly [number, number])[], t: number, holds: ReadonlySet<number> = new Set()): number {
   if (t <= keys[0][0]) return keys[0][1];
   const last = keys[keys.length - 1];
   if (t >= last[0]) return last[1];

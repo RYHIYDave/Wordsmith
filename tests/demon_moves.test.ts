@@ -14,6 +14,7 @@ import { LAST } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
 import { DEMON_B } from '../src/dev/sculpt_demon_rig';
 import { DEMON_STANCE, demonMoves, demonPose, drawDemonAt } from '../src/dev/demon_moves';
+import { demonLurch, demonReel } from '../src/dev/warlock_hits';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
@@ -27,7 +28,7 @@ const ON_FLOOR = 0.7;
 const GIVE = 0.55;
 const JOINTS: (keyof Skeleton)[] = ['pelvis', 'neck', 'head', 'shoulderL', 'shoulderR', 'elbowL', 'elbowR', 'handL', 'handR', 'kneeL', 'kneeR', 'ankleL', 'ankleR', 'toeL', 'toeR'];
 
-for (const m of demonMoves()) {
+for (const m of [...demonMoves(), demonReel(), demonLurch()]) {
   const fps = m.carry ? RUN_FPS : FPS;
   const n = Math.round(m.long * fps);
   const times = Array.from({ length: n + (m.loops ? 0 : 1) }, (_, i) => Math.min(m.long, i / fps));
