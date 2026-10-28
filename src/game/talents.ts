@@ -264,7 +264,8 @@ const WARRIOR: TalentTree = {
 // uppercut or haymaker”: SET-UP).
 
 // ---- the warlock: a demon's claw ---------------------------------------------------------------------
-//   His talents at work filmed in the game for him (warlock_tree_film.mp4), his word by 19:03 (Eastern): “Looks good”.
+//   His talents at work filmed in the game for him (warlock_tree_film.mp4), his word by 19:03 (Eastern): “Looks good”; Phantom
+//   Step filmed (phantom_film.mp4), by 19:41: “Yes, keep it (Recommended)”.
 //   Reaching right from the wrist: the DEMON from the back of the hand (its spur up off it), the MAN from the heel of it (the
 //   thumb down off it); they meet at the knuckle, the pact's, where the three talons come out: the demon's on top, the pact's
 //   in the middle, the man's below, each hooking down at its point.
@@ -366,7 +367,8 @@ const TINKERER_TREE: TalentTree = {
 //   four fingers curled into a column of knuckles at the front (SPEED's two on top, POWER's two below), and across the middle
 //   of them the thumb, both paths' (his slip and counter), from its root where the two meet. The paths were drafted as ONE
 //   TARGET and CROWD, his words; shown the tree, 28 Oct 2026, by 17:47 (Eastern): “Keep it, except change the names of “one
-//   target” and “crowd””, and asked which, “Speed and Power”.
+//   target” and “crowd””, and asked which, “Speed and Power”. His talents at work filmed for him (brawler_tree_film.mp4), by
+//   19:41: “Good, keep going (Recommended)”.
 const SPEED = '#ff7a50';
 const POWER = '#5ab0ff';
 const COUNTER = '#e8d090';
