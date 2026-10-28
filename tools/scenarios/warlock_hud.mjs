@@ -24,6 +24,9 @@ export default async function (page, snap) {
   snap.note('hero', await page.evaluate(() => { const h = window.__dbg.game().hero; return window.__dbg.at(h.x, h.y); }));
   await page.evaluate(() => { window.__dbg.game().hero.pact = 30; });
   await page.keyboard.press('KeyR');
-  await page.waitForTimeout(6000);
+  await page.waitForTimeout(500);
+  await snap('changing');
+  await page.waitForFunction(() => { const h = window.__dbg.game().hero; return h.form === 'demon' && !h.change; }, null, { timeout: 300000, polling: 500 });
+  await page.waitForTimeout(3000);
   await snap('demon');
 }

@@ -4079,8 +4079,9 @@ export class Renderer {
         const full = WARLOCK_TUNE.pact.full;
         const k = Math.max(0, Math.min(1, (h.pact ?? 0) / full));
         const demon = h.form === 'demon';
-        const blaze = !demon && k >= 1;
-        const a = Math.max(lb.alpha, blaze || demon ? 1 : 0);
+        // (not while he changes: the demon is tearing out of him)
+        const blaze = !demon && k >= 1 && !h.change;
+        const a = Math.max(lb.alpha, blaze || demon || h.change ? 1 : 0);
         if (a > 0.01) {
           const w = LIFE_BAR.w;
           const mana = game.meta.limit === 'mana';
