@@ -1,6 +1,7 @@
 // A crude automatic player, used only for testing: it lets the game be played end to end without
 // a person, in the headless tests and in browser screenshots. It is not part of the game.
 
+import { WARLOCK_TUNE } from '../game/warlock';
 import { FIRST_WORD, SKILLS, TUNE, firstWordSkill } from '../game/defs';
 import type { Game } from '../game/game';
 import { placedAim } from '../game/lock';
@@ -155,6 +156,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   c.cast = false;
   c.hold = false;
   c.evade = false;
+  c.change = false;
   c.potion = false;
   c.interact = false;
   c.approach = false;
@@ -237,6 +239,8 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
       c.my = -(target.y - h.y) / best;
     }
     if (sees && (melee ? best < 2 + target.r : true)) c.fire = true;
+    // (THE WARLOCK: his pact full, a tap on him, and the demon tears out: game/warlock.ts)
+    if (h.cls === 'warlock' && h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full) c.change = true;
     // (a slam must be beside its enemies; a trap is tossed, an orb set down, a beam fired from where the hero stands)
     const areaReach = area.kind === 'burst' || area.kind === 'whirl' ? 2.6 : 7;
     if (sees && best < areaReach) {
