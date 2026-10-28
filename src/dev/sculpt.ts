@@ -365,7 +365,10 @@ export class Field {
 //     middle, and at each point from the flat that touches its distance there (a rod's line, a block and a sheet bulge
 //     nowhere inward, so their distance never falls below that flat; a ball's, as `dist` has it, is bounded through how
 //     far out of it the point is, measured along its own half-lengths);
-//  4. a pixel whose ray no skin of any material comes near enough to (by its blends) to be met is not marched.
+//  4. a pixel whose ray no skin of any material comes near enough to (by its blends) to be met is not marched;
+//  5. what a material was found to be at the last point it was looked over at, in a cell, holds at the next point there,
+//     less how far the point has gone times how fast any of its bounds can change: how near it can come, and the solid
+//     to begin at (`Fast.ofSeg`); so mostly it is not looked over again.
 // What is left is looked at in the same order and with the same sums as `Field` looks at every solid, so what it finds is
 // the same. `SCULPT_SPEED.fast = false` draws with the plain field (to check one against the other).
 
@@ -405,6 +408,13 @@ let LQ = new Float64Array(256);
 const SS = 5;
 /** And (`Arena.SF`): the least the material can give where the list holds; the least `Field` can have found when it comes to the solid to begin at. */
 const SFS = 2;
+/**
+ * And (`Arena.W`), what was found when the material was last looked over at a point (`Fast.ofSeg`): the point; the least
+ * the material could give there; the solid that set what is found to its own distance there, and the least what is found
+ * could be when it came to it (-1: none); the solid looked over from (-1: never looked over); and how fast anything
+ * looked over can change from point to point.
+ */
+const WS = 8;
 
 /**
  * THE LISTS OF ONE DRAWING, kept flat: a list is a run of materials (`T`: its first and how many), each material a run of
@@ -417,6 +427,7 @@ class Arena {
   C = new Float64Array(CS << 14);
   S = new Int32Array(SS << 12);
   SF = new Float64Array(SFS << 12);
+  W = new Float64Array(WS << 12);
   T = new Int32Array(2 << 12);
   ni = 0;
   ns = 0;
@@ -448,6 +459,9 @@ class Arena {
       const SF = new Float64Array(n * SFS);
       SF.set(this.SF.subarray(0, this.ns * SFS));
       this.SF = SF;
+      const W = new Float64Array(n * WS);
+      W.set(this.W.subarray(0, this.ns * WS));
+      this.W = W;
     }
   }
   /** A new list of the materials from `s0`, `n` of them. */
@@ -595,6 +609,8 @@ class Fast {
       A.S.set([m, i0, i0 + prims.length, A.ni, i0], s * SS);
       A.SF[s * SFS] = -Infinity;
       A.SF[s * SFS + 1] = Infinity;
+      A.W[s * WS + 6] = -1;
+      A.W[s * WS + 7] = -1;
     };
     const ids = (rr: Ready[]): number[] => rr.map((r) => index.get(r) as number);
     const s0 = A.ns;
@@ -781,12 +797,67 @@ class Fast {
     const j0 = this.start(s, x, y, z, cap);
     // LOOKED OVER FIRST, AT THE POINT, where there are enough solids to be worth it: how near each can be here; if the
     // material can give nothing nearer than what is found, it cannot win
-    const over = this.A.S[s * SS + 2] - j0 >= CELL.over && this.A.F[j0 * FS + 2] !== -Infinity;
-    if (over && this.look(s, j0, x, y, z, 0) >= cap) return Infinity;
-    return this.finish(s, j0, over, x, y, z, cap);
+    const A = this.A;
+    const over = A.S[s * SS + 2] - j0 >= CELL.over && A.F[j0 * FS + 2] !== -Infinity;
+    if (!over) return this.finish(s, j0, 0, x, y, z, cap);
+    // (LOOKED OVER LATELY, NEAR HERE, from the same solid: nothing looked over can have come nearer than by how far the
+    // point has gone, times how fast it can change; so the least the material could give then, and where to begin then,
+    // less that, hold here)
+    const W = A.W;
+    const w = s * WS;
+    if (W[w + 6] === j0) {
+      const dx = x - W[w];
+      const dy = y - W[w + 1];
+      const dz = z - W[w + 2];
+      const fall = W[w + 7] * Math.sqrt(dx * dx + dy * dy + dz * dz) * (1 + 1e-9) + SLACK;
+      if (W[w + 3] - fall >= cap) return Infinity;
+      if (W[w + 5] >= 0) {
+        const r = W[w + 5];
+        const pb = W[w + 4] - fall;
+        const F = A.F;
+        const o = r * FS;
+        const k = F[o + 1];
+        const v = F[o + 2] + F[o + 3] * x + F[o + 4] * y + F[o + 5] * z;
+        const lq = Math.max(F[o], v >= 0 ? v * F[o + 6] : v * F[o + 7]);
+        const C = A.C;
+        const far = Math.min(pb, cap) + k + C[o + 1];
+        const ex = x - C[o + 2];
+        const ey = y - C[o + 3];
+        const ez = z - C[o + 4];
+        if (pb >= lq + k && far >= 0 && ex * ex + ey * ey + ez * ez <= far * far) {
+          const b = this.dist(A.I[r], x, y, z);
+          if (pb >= b + k + SLACK * (1 + Math.abs(pb) + Math.abs(b) + k)) return this.tail(s, j0, r + 1, b, false, x, y, z, cap);
+        }
+      }
+    }
+    const P = this.look(s, j0, x, y, z, 0);
+    if (W[w + 7] < 0) W[w + 7] = this.steepest(s);
+    W[w] = x;
+    W[w + 1] = y;
+    W[w + 2] = z;
+    W[w + 3] = P;
+    W[w + 5] = -1;
+    W[w + 6] = j0;
+    if (P >= cap) return Infinity;
+    return this.finish(s, j0, 2, x, y, z, cap);
   }
-  /** The rest of `ofSeg`, from the solid `j0` (`over`: looked over at the point first, by `look`, from `j0`). */
-  finish(s: number, j0: number, over: boolean, x: number, y: number, z: number, cap: number): number {
+  /** How fast anything looked over of a material of a list can change from point to point: the steepest of its flats. */
+  steepest(s: number): number {
+    const F = this.A.F;
+    let g2 = 0;
+    for (let j = this.A.S[s * SS + 1], p1 = this.A.S[s * SS + 2]; j < p1; j++) {
+      const o = j * FS;
+      const a = Math.max(Math.abs(F[o + 6]), Math.abs(F[o + 7]));
+      const g = (F[o + 3] * F[o + 3] + F[o + 4] * F[o + 4] + F[o + 5] * F[o + 5]) * a * a;
+      if (g > g2) g2 = g;
+    }
+    return Math.sqrt(g2) * (1 + 1e-9);
+  }
+  /**
+   * The rest of `ofSeg`, from the solid `j0` (`over`: 0, not looked over at the point first; 1, looked over, by `look`,
+   * from `j0`; 2, and where it began kept for the next point, as `ofSeg` has it).
+   */
+  finish(s: number, j0: number, over: number, x: number, y: number, z: number, cap: number): number {
     const A = this.A;
     const I = A.I;
     const F = A.F;
@@ -819,10 +890,26 @@ class Fast {
         if (pb >= b + k + SLACK * (1 + Math.abs(pb) + Math.abs(b) + k)) {
           d = b;
           j = r + 1;
+          if (over === 2) {
+            A.W[s * WS + 5] = r;
+            A.W[s * WS + 4] = pb;
+          }
           break;
         }
       }
     }
+    return this.tail(s, j0, j, d, over !== 0, x, y, z, cap);
+  }
+  /** The rest of `finish`, from the solid `j`, what is found so far `d` (`over`: each solid's least at the point worked out from `j0` on, by `look`). */
+  tail(s: number, j0: number, j: number, d: number, over: boolean, x: number, y: number, z: number, cap: number): number {
+    const A = this.A;
+    const I = A.I;
+    const F = A.F;
+    const C = A.C;
+    const S = A.S;
+    const sb = s * SS;
+    const p1 = S[sb + 2];
+    const lq_ = LQ;
     for (; j < p1; j++) {
       const o = j * FS;
       const k = F[o + 1];
@@ -830,7 +917,7 @@ class Fast {
       // near it can be at the point worked out here, if it was not above)
       let lo = over ? lq_[j - j0] : F[o];
       if (lo >= d + k) continue;
-      if (over && lo === F[o]) {
+      if (lo === F[o]) {
         const v = F[o + 2] + F[o + 3] * x + F[o + 4] * y + F[o + 5] * z;
         const lq = v >= 0 ? v * F[o + 6] : v * F[o + 7];
         if (lq > lo) lo = lq;
@@ -882,12 +969,12 @@ class Fast {
     const first = this.A.S[s * SS + 1];
     const over = this.A.S[s * SS + 2] - first >= CELL.over && this.A.F[first * FS + 2] !== -Infinity;
     if (over) this.look(s, first, x, y, z, e * (1 + 1e-9) + SLACK);
-    out[0] = this.finish(s, first, over, x + e, y + 0, z + 0, Infinity);
-    out[1] = this.finish(s, first, over, x + -e, y + 0, z + 0, Infinity);
-    out[2] = this.finish(s, first, over, x + 0, y + e, z + 0, Infinity);
-    out[3] = this.finish(s, first, over, x + 0, y + -e, z + 0, Infinity);
-    out[4] = this.finish(s, first, over, x + 0, y + 0, z + e, Infinity);
-    out[5] = this.finish(s, first, over, x + 0, y + 0, z + -e, Infinity);
+    out[0] = this.finish(s, first, over ? 1 : 0, x + e, y + 0, z + 0, Infinity);
+    out[1] = this.finish(s, first, over ? 1 : 0, x + -e, y + 0, z + 0, Infinity);
+    out[2] = this.finish(s, first, over ? 1 : 0, x + 0, y + e, z + 0, Infinity);
+    out[3] = this.finish(s, first, over ? 1 : 0, x + 0, y + -e, z + 0, Infinity);
+    out[4] = this.finish(s, first, over ? 1 : 0, x + 0, y + 0, z + e, Infinity);
+    out[5] = this.finish(s, first, over ? 1 : 0, x + 0, y + 0, z + -e, Infinity);
   }
   /** `Field.at` from a list: the nearest skin of any material (and whose, in `m`). */
   at(L: number, x: number, y: number, z: number): number {
@@ -1273,6 +1360,8 @@ class Fast {
         S[s * SS + 1] = start;
         S[s * SS + 2] = pEnd;
         S[s * SS + 3] = n;
+        A.W[s * WS + 6] = -1;
+        A.W[s * WS + 7] = -1;
         if (withLo) this.settle(start, pEnd, s);
         else {
           S[s * SS + 4] = start;
