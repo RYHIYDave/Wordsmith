@@ -38,6 +38,8 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   at you rather than shuffle; the gardener snaps his shears shut on you, the groom jabs with his fork; grey breath as all
   the Hushed; the Hush leaves them and they slump down, people again; no voices, only their tools, their running feet and
   a gasp at the end.
+- Their sheet and film, asked "are these your Hushed gardeners and grooms?": “Yes, they're right (Recommended)”, offered
+  as: next, the palace guard.
 
 ## The first look (src/dev/garden_paint.ts)
 
