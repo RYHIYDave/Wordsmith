@@ -24,6 +24,10 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   look like, “Not a goose or duck”; their sound, “Hiss and honk”. Read as: plain wild swans, the court's own, no crowns and
   nothing of the story (so the eleven on the lake lose their crowns too); knee-high, in flocks, fun to smash; on foot,
   waddling, charging heavily, the neck forward, the wings always arched over the back; small, so one attack.
+- The swans' sheet and film, asked "are these your swans?": “Close, change something”; then, asked what: “The wings are weird
+  looking, like they’re in two separate pieces?”. Read as: each wing looked broken into chunks (three lumps and a bar of
+  flight feathers under them); so each wing is now one curved sail of feathers from its root on the body up over the back,
+  its rows of feathers running unbroken along it, and the pair raised higher.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -91,6 +95,9 @@ on the floor about knee-high to the knight with its neck up.
 - STRUCK (`SWAN_REEL`): knocked back on its heels, its wings flung up, a few feathers torn off.
 - ITS DEATH (`SWAN_DIE`): struck, then knocked over onto its side, the wing under it laid flat, its neck along the floor;
   its feathers burst from it and drift down to the floor.
+- ITS WINGS: each one sail, laid as eleven slices side by side from the shoulder back to the tail, each from the wing's
+  root on the body up to its arched top edge; its two rows of feathers' ends scalloped and unbroken along it; the inside,
+  turned to the back, a step into shade.
 - NO GLOW: white plumage greyed to the dawn, an orange bill with its black knob, black legs; the enemy's rim.
 
 ## The dev pages

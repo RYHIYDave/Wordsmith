@@ -333,10 +333,20 @@ function plumage(rows: number, seed: number): Painter {
   };
 }
 const BODY_SKIN = plumage(0, 1);
-/** A raised wing: its outside white, rows of its feathers' ends; its inside, turned to the back, a step into shade. */
-function wingSkin(seed: number): Skin {
-  const out = plumage(1, seed);
-  return (u, tone, x, y) => out(u, u[1] < -0.15 ? Math.max(0, tone - 1) : tone, x, y);
+/**
+ * A raised wing, one sail of feathers: each slice of it (`a0` how far along the wing, `da` how much of it the slice spans)
+ * painted so that its rows of feathers' ends run on unbroken from one slice to the next, scalloped, along the whole wing;
+ * its inside, turned in to the back, a step into shade.
+ */
+function wingSkin(a0: number, da: number): Painter {
+  return (u, tone) => {
+    const A = a0 + u[0] * da;
+    let k = u[1] < -0.2 ? Math.max(0, tone - 1) : tone;
+    // (u[2] from the wing's root on the body, -1, to its top edge, 1: two rows of the feathers' ends, scalloped)
+    const sc = 0.16 * Math.abs(Math.sin(Math.PI * A * 7));
+    for (const row of [-0.05, 0.45]) if (Math.abs(u[2] - row - sc) < 0.1 && k > 1) k -= 1;
+    return SWAN[Math.max(0, Math.min(4, k))];
+  };
 }
 
 /** THE SWAN, AS SOLIDS. */
@@ -387,22 +397,34 @@ function swanBits(P: SwanPose, put: Put, st: Stage): void {
     // (fallen on its right side, that wing laid flat under it)
     const keep = s < 0 ? 1 - P.lie : 1;
     const fl = P.flap * keep;
-    // (the sail: three broad, thin masses along an arch from the shoulder up and back, the middle the biggest)
-    const H2 = (5.8 * P.wings + 3 * fl) * keep;
-    const arch = (a: number): V3 => [3.6 - 11.4 * a, s * (4.4 - 0.5 * a + (0.9 * P.wings * keep + 5 * fl) * Math.sin(Math.PI * a)), 11.4 + H2 * Math.sin(Math.PI * a) - 0.8 * a];
-    ([[0.18, 3.4, 3.0], [0.5, 4.6, 4.0], [0.8, 3.8, 3.2]] as const).forEach(([a, along2, up2], k) => {
-      const c = arch(a);
-      const tang = norm(turned(P, sub(arch(a + 0.05), arch(a - 0.05))));
-      const side = turned(P, [0, s, 0]);
-      const upw = norm(cross(tang, side));
-      // (its thickness along the way out from the body, so that the side of it turned in, to the back, is in its own shade)
-      let thick = norm(cross(upw, tang));
-      if (thick[0] * side[0] + thick[1] * side[1] + thick[2] * side[2] < 0) thick = mul(thick, -1);
-      put(part, `wing${s}_${k}`, { k: 'ball', c: W(c), ax: [mul(tang, along2), mul(thick, 1.25), mul(upw, up2)], skin: wingSkin(5 + k), far });
-    });
     // (the down side's tucked in under it as it lies)
     const tuck = s < 0 ? 1 - 0.4 * P.lie : 1;
-    put(part, `primaries${s}`, { k: 'rod', a: W([1.5, s * 5.6 * tuck, 8.8 + 1.5 * (1 - tuck)]), b: W([-11.8, s * 3.0 * tuck, 11.6]), ra: 1.7, rb: 0.7, ramp: SWAN, far });
+    // (the sail: from its root along the body's back, at the shoulder and on back to the tail, up to its top edge arched over
+    // the back; one piece, laid as slices side by side along it, each from the root up to the edge)
+    const H2 = (7.4 * P.wings + 3 * fl) * keep;
+    const spread = 0.9 * P.wings * keep + 5 * fl;
+    const root = (a: number): V3 => [4.2 - 13.4 * a, s * (4.5 - 1.4 * a) * tuck, 10.2 + 1.2 * a];
+    const edge = (a: number): V3 => {
+      const b = Math.sin(Math.PI * Math.pow(a, 0.8));
+      return [4.2 - 14.2 * a, s * (4.6 - 0.8 * a + spread * b) * tuck, 11.4 + H2 * b + 0.4 * a];
+    };
+    const N = 11;
+    const da = 0.5 / (N - 1);
+    for (let i = 0; i < N; i++) {
+      const a = 0.04 + (0.92 * i) / (N - 1);
+      const r0 = root(a);
+      const e0 = edge(a);
+      const m = mul(add(r0, e0), 0.5);
+      // (cupped: its middle bowed out from the body)
+      const c: V3 = [m[0], m[1] + s * 0.5 * Math.sin(Math.PI * a) * keep, m[2]];
+      const span = Math.hypot(e0[0] - r0[0], e0[1] - r0[1], e0[2] - r0[2]);
+      const upw = norm(turned(P, sub(e0, r0)), [0, 0, 1]);
+      const tang = norm(turned(P, sub(add(root(a + 0.05), edge(a + 0.05)), add(root(a - 0.05), edge(a - 0.05)))));
+      const side = turned(P, [0, s, 0]);
+      let thick = norm(cross(upw, tang));
+      if (thick[0] * side[0] + thick[1] * side[1] + thick[2] * side[2] < 0) thick = mul(thick, -1);
+      put(part, `wing${s}_${i}`, { k: 'ball', c: W(c), ax: [mul(tang, 1.25 + 0.55 * Math.sin(Math.PI * a)), mul(thick, 1.15), mul(upw, span / 2 + 0.7)], skin: wingSkin(a, da * 1.6), far });
+    }
   }
   // ITS LEGS: short, black, the knees hidden in its belly; its webbed feet flat on the floor (or lifted, stepping)
   for (const [i, s] of [[0, 1], [1, -1]] as const) {
