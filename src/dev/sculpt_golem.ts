@@ -78,7 +78,7 @@ const WOOD: Ramp = ['#140806', '#2a120c', '#4a2216', '#6e3a22', '#965834'];
 const DIAL: Ramp = ['#4a4038', '#7a6e60', '#b8ac98', '#e6dcc4', '#fff8e8'];
 
 /** A Golem, sculpted, standing ready, in one of the game's views; `turn`: truly turned (Sculpt.spin) this many degrees. */
-export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, yaw0 = -14, giant = false): Drawn {
+export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, yaw0 = -14, giant = false, gun: GolemGun = GOLEM_GUN.gun, aim = 0, kick = 0): Drawn {
   const sc = new Sculpt();
   // (a few are best seen from the side: the ram charging)
   const yaw = yaw0 + (YAW_OF[build] ?? 0);
@@ -143,6 +143,15 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
   });
   const dark = sc.mat({ ramp: DARK, paint: (h) => (h.prim.tag === 'grille' && h.x % 2 === 0 ? STEEL5[2] : null) });
   const glow = sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) });
+  // (a coil's copper wound tight: a dark line between each turn)
+  const coil = sc.mat({
+    ramp: COPPER,
+    paint: (h) => {
+      if (h.prim.k !== 'cone') return null;
+      const t = onCone(h.prim, h.p, U).t;
+      return Math.floor(t * 9) % 2 === 0 ? shadeOf(COPPER, h.tone - 2) : shadeOf(COPPER, h.tone + (far(h.prim.piece) ? -1 : 0));
+    },
+  });
   // ITS HEART: a round furnace window, the friend's cyan behind it, the spokes of a gear turning in the light
   const heart = sc.mat({
     ramp: CYAN,
@@ -831,16 +840,93 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.ell(brass, 'giantR', P(rf, rl - 1, ru + 3.5), X(9, 7, 7.5), 0.6, { tag: 'plate' });
     armOf('giantR', P(rf, rl, ru), P(reach + 10, rl - 10, ru * 0.62 + 6), P(reach + 18, rl - 10, 21), 4.8);
     fistAt('giantR', P(reach + 21, rl - 10, 12.8), norm(add(mul(U, -1), mul(F, 0.25))), mul(L, 1), 10.5);
-    // the tool arm: thin, a pincer, held up
     const l0 = roots.armL ?? P(0, 14, 44);
     const [lf, ll, lu] = at(l0);
-    armOf('giantL', P(lf, ll, lu), P(lf + 6, ll + 4, lu - 6), P(lf + 12, ll + 3, lu - 4), 1.6);
-    for (const sd of [1, -1]) sc.cone(steel, 'giantL', P(lf + 13, ll + 3, lu - 4), add(P(lf + 17, ll + 3, lu - 4), mul(U, sd * 1.6)), 0.8, 0.4, 0.2, { tag: 'jaw' });
+    if (gun === 'pincer') {
+      // the tool arm: thin, a pincer, held up
+      armOf('giantL', P(lf, ll, lu), P(lf + 6, ll + 4, lu - 6), P(lf + 12, ll + 3, lu - 4), 1.6);
+      for (const sd of [1, -1]) sc.cone(steel, 'giantL', P(lf + 13, ll + 3, lu - 4), add(P(lf + 17, ll + 3, lu - 4), mul(U, sd * 1.6)), 0.8, 0.4, 0.2, { tag: 'jaw' });
+    } else {
+      // ITS GUN ARM, ITS RANGED ATTACK (his word, 28 Oct, by 00:50: “I’d like the big construct to have a ranged attack as
+      // well.  Maybe put a cannon or a tesla coil on his other arm or whatever.”): in place of the little tool arm, an arm
+      // of its own size: a shoulder plate, a steel upper arm out from its side with its piston, its elbow bent, and its
+      // forearm the gun: AT REST held up at its side, its muzzle to the sky, clear of its body from in front and from
+      // behind (`aim` 0); brought down level to fire (`aim` 1)
+      // (as big as its giant arm's fist is: a gun to be seen at the game's size, not a toy)
+      const g = GUN_SIZE;
+      const root = P(lf, ll, lu);
+      const el = lerp3(P(lf + 2, ll + 13, lu - 16), P(lf + 5, ll + 12, lu - 10), aim);
+      const wayOf = (rest: V3, fire: V3): V3 => norm(lerp3(norm(rest), norm(fire), aim));
+      sc.ell(brass, 'gunL', P(lf - 0.5, ll + 2.5, lu + 3.5), X(8.8, 7.2, 7.2), 0.6, { tag: 'plate' });
+      sc.ell(steel, 'gunL', root, X(5.0, 5.0, 5.0), 0.5, { tag: 'ball' });
+      sc.cone(steel, 'gunL', root, el, 3.9, 3.4, 0.5, { tag: 'upper' });
+      const ud = norm(sub(el, root));
+      const uo = norm(cross(ud, F));
+      sc.cone(copper, 'gunL', add(lerp3(root, el, 0.2), mul(uo, 3.8)), add(lerp3(root, el, 0.9), mul(uo, 3.8)), 1.15, 1.15, 0.2, { tag: 'piston' });
+      sc.ell(steel, 'gunL', el, X(4.3, 4.3, 4.3), 0.4, { tag: 'joint' });
+      if (gun === 'cannon') {
+        // A CANNON: a short fat barrel of copper, hooped in brass, out along its forearm from a brass breech at its elbow,
+        // its muzzle flared and black; a drum of shot on the breech feeding it; a lamp of the friend's cyan lit on the
+        // breech while it is loaded. It kicks back along itself as it fires (`kick`).
+        const way = wayOf(add(mul(U, 0.92), add(mul(L, 0.3), mul(F, -0.08))), add(mul(F, 0.85), add(mul(L, 0.45), mul(U, 0.08))));
+        const s1 = norm(cross(way, U));
+        const s2 = norm(cross(s1, way));
+        const e = add(el, mul(way, -2.6 * g * kick));
+        const along = (k: number): V3 => add(e, mul(way, k * g));
+        sc.ell(brass, 'gunL', along(1.4), [mul(way, 5.0 * g), mul(s1, 4.9 * g), mul(s2, 4.9 * g)], 0.8, { tag: 'breech' });
+        sc.ell(steel, 'gunL', along(-4.0), [mul(way, 1.7 * g), mul(s1, 1.7 * g), mul(s2, 1.7 * g)], 0.3, { tag: 'knob' });
+        sc.cone(copper, 'gunL', along(2.4), along(18.5), 4.1 * g, 3.4 * g, 0.5, { tag: 'barrel' });
+        for (const [k, r] of [[5.2, 4.7], [11.6, 4.2]] as const) sc.box(brass, 'gunL', along(k), [mul(way, 0.7 * g), mul(s1, r * g), mul(s2, r * g)], r * 0.85 * g, 0.2, { tag: 'hoop' });
+        sc.box(brass, 'gunL', along(19.2), [mul(way, 1.0 * g), mul(s1, 4.8 * g), mul(s2, 4.8 * g)], 4.0 * g, 0.2, { tag: 'muzzle' });
+        sc.box(dark, 'gunL', along(19.75), [mul(way, 0.6 * g), mul(s1, 2.9 * g), mul(s2, 2.9 * g)], 2.5 * g, 0, { tag: 'bore' });
+        // (the drum of shot: a brass drum lying across the breech, its end caps steel; a pipe from it down into the breech)
+        const drum = add(along(4.0), mul(s2, 6.2 * g));
+        sc.cone(brass, 'gunL', add(drum, mul(s1, -2.5 * g)), add(drum, mul(s1, 2.5 * g)), 3.2 * g, 3.2 * g, 0.4, { tag: 'drum' });
+        for (const sd of [1, -1]) sc.cone(steel, 'gunL', add(drum, mul(s1, sd * 2.6 * g)), add(drum, mul(s1, sd * 3.2 * g)), 2.5 * g, 2.5 * g, 0.2, { tag: 'cap' });
+        sc.cone(steel, 'gunL', add(drum, mul(s2, -2.0 * g)), add(along(3.6), mul(s2, 3.4 * g)), 1.1 * g, 1.1 * g, 0.2, { tag: 'feed' });
+        sc.ell(glow, 'gunL', add(along(0.6), add(mul(s2, 4.4 * g), mul(s1, -2.8 * g))), [mul(way, 1.1 * g), mul(s1, 1.1 * g), mul(s2, 1.1 * g)], 0.1, { tag: 'lamp' });
+        GOLEM_MUZZLE.p = along(20.4);
+        GOLEM_MUZZLE.way = way;
+      } else {
+        // A TESLA COIL: a brass housing along its forearm from its elbow, held up beside it like a torch; out of it a coil
+        // of copper wound tight, collared in steel; at its tip a steel ring round a ball of the friend's cyan, crackling.
+        const way = wayOf(add(mul(U, 0.94), add(mul(L, 0.26), mul(F, -0.06))), add(mul(F, 0.75), add(mul(L, 0.4), mul(U, 0.5))));
+        const s1 = norm(cross(way, U));
+        const s2 = norm(cross(s1, way));
+        const e = add(el, mul(way, -1.6 * g * kick));
+        const along = (k: number): V3 => add(e, mul(way, k * g));
+        sc.cone(brass, 'gunL', along(0.5), along(8.0), 3.6 * g, 4.2 * g, 0.5, { tag: 'housing' });
+        sc.box(steel, 'gunL', along(8.5), [mul(way, 0.6 * g), mul(s1, 4.7 * g), mul(s2, 4.7 * g)], 4.1 * g, 0.2, { tag: 'collar' });
+        sc.cone(coil, 'gunL', along(8.8), along(18.4), 2.9 * g, 2.3 * g, 0.3, { tag: 'coil' });
+        for (const k of [12.0, 15.2]) sc.box(steel, 'gunL', along(k), [mul(way, 0.35 * g), mul(s1, 3.3 * g), mul(s2, 3.3 * g)], 2.9 * g, 0.1, { tag: 'collar' });
+        ringOf(steel, 'gunL', along(19.8), s1, s2, 4.2 * g, 1.15 * g, 16, 'torus');
+        sc.cone(steel, 'gunL', along(18.2), along(19.6), 1.3 * g, 1.1 * g, 0.2, { tag: 'post' });
+        sc.ell(glow, 'gunL', along(20.0), [mul(way, 2.4 * g), mul(s1, 2.4 * g), mul(s2, 2.4 * g)], 0.1, { tag: 'terminal' });
+        GOLEM_MUZZLE.p = along(20.0);
+        GOLEM_MUZZLE.way = way;
+      }
+    }
   }
   // (built at a size easy to think in, then made the size it stands at: a head over the knight, as his brief asked)
-  scaleBy(sc, GOLEM_SIZE[build] ?? GOLEM_TOP / topOf(sc));
+  const k = GOLEM_SIZE[build] ?? GOLEM_TOP / topOf(sc);
+  scaleBy(sc, k);
+  GOLEM_MUZZLE.p = mul(GOLEM_MUZZLE.p, k);
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }
+
+/** Its other arm: the little pincer arm it was picked with, or a gun (his “Maybe put a cannon or a tesla coil on his other arm”, 28 Oct). */
+export type GolemGun = 'pincer' | 'cannon' | 'tesla';
+/** THE SWITCH: the pincer arm, as picked, until he says which gun (pictures first). */
+export const GOLEM_GUN: { gun: GolemGun } = { gun: 'pincer' };
+/** The guns he is shown. */
+export const GOLEM_GUNS: { id: GolemGun; name: string }[] = [
+  { id: 'cannon', name: 'Cannon arm' },
+  { id: 'tesla', name: 'Tesla coil arm' },
+];
+/** How big its gun is, against the size it was first drawn. */
+const GUN_SIZE = 1.5;
+/** Where the last drawn Golem's gun fires from (its muzzle, or its coil's ball), as it was built (before it is turned), and which way. */
+export const GOLEM_MUZZLE: { p: V3; way: V3 } = { p: [0, 0, 0], way: [1, 0, 0] };
 
 /** HIS PICK, 24 Oct, by 09:30: “Boiler ape”, with one giant arm. */
 export const GOLEM_PICK = { build: 'ape' as GolemBuild, giant: true };
