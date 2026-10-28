@@ -1,5 +1,5 @@
-// THE WARLOCK'S PACT ON THE SCREEN (ui/hud.ts; a page built with him on): his pact globe half full, then full (his arm
-// blazing, the globe saying how he changes), and as the demon, draining. Run with --touch for a phone, without for a mouse.
+// THE WARLOCK'S PACT ON THE SCREEN (render/render.ts, a bar over his head; a page built with him on): half full, then full
+// (his arm blazing, the bar saying how he changes), and as the demon, running down. Each with a note of where he stands. Run with --touch for a phone, without for a mouse.
 //   node tools/playtest.mjs --file dist/warlock.html --touch --size 844x390 --scenario tools/scenarios/warlock_hud.mjs --out shots/whud/t
 export default async function (page, snap) {
   await page.evaluate(() => {
@@ -21,4 +21,9 @@ export default async function (page, snap) {
   await snap('full');
   await page.waitForTimeout(400);
   await snap('full2');
+  snap.note('hero', await page.evaluate(() => { const h = window.__dbg.game().hero; return window.__dbg.at(h.x, h.y); }));
+  await page.evaluate(() => { window.__dbg.game().hero.pact = 30; });
+  await page.keyboard.press('KeyR');
+  await page.waitForTimeout(6000);
+  await snap('demon');
 }
