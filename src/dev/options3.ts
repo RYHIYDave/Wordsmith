@@ -1406,3 +1406,7 @@ export function paintHeadOption(move: Move3, k: number, who: 'knight' | 'ranger'
 
 // (kept for the sheets that follow)
 export const _kit = { LEAF, dim, GLINT };
+
+// (the parts above, for the sketches of the new classes: dev/options_classes.ts)
+export { legs, bodice, seam, skirt, belt, arms, onFace, dotOn, head, hairline, fringe, drawnBack, curtain, locks, tresses, rope, bun, pony, braid, worn, brimHat, pointHat, hood, mantle, collar, cloak, satchel, gem, orb, EYES, lit, streak, hairBall, NIGHT as NIGHT3, WINE, BLONDE, BROWN as BROWN3, WHITE };
+export type { HeadLook, ArmLook, SkirtLook };

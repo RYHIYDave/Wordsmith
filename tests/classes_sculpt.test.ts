@@ -1,0 +1,133 @@
+// THE NEW CLASSES, SCULPTED: EVERY CHECK A CHARACTER GOES THROUGH (dev/sculpt_*.ts; mock-ups, nothing of the game imports
+// them). His word, 23 Oct 2026, by 22:07 Pacific: “I’d like to run all the checks for characters and have you ask some
+// questions like you are a game developer to nail down the style and feel of each”. The checks are his art rulebook's, as
+// the heroes had them on 8 Oct and every boss since (How art is made and approved 6 and 7):
+//   Pixels 1    crisp: every pixel all there or not at all, but the friend's edge of light; no pixel alone;
+//   Pixels 5    the friend's crisp edge round every one of them, and nothing else in its colour at its strength;
+//   Colour 3    nothing on them glows the enemy's pink;
+//   Heroes 6    clean bodies: no arm passes through the trunk, no leg through the other;
+//   Movement 8  feet on the floor: something of each of them stands on the floor, nothing of them sinks into it;
+//   Heroes 7    truly turned, eight ways: each, turned round in eight steps and seen from in front and from behind, passes all
+//               of the above, and nothing of it is cut off at its picture's edge;
+//   Rule 6      at phone size: each as tall as it should be beside the knight (a hero about his height, the Golem a head
+//               over him, the Contraption knee high).
+// On 24 Oct (his “The Golem,Her hands are tiny too.  The golem is suffering from the same issue as the demon was at first.
+// It’s too humanoid”, “I still don’t like his outfit”), every Golem build and every new outfit he is offered is checked too.
+//   run: tsx --test tests/classes_sculpt.test.ts
+
+// @ts-ignore
+import nodeTest from 'node:test';
+// @ts-ignore
+import nodeAssert from 'node:assert/strict';
+
+import { paintMove3 } from '../src/art/heroes3';
+import { HEAD_B, MOVES3 } from '../src/art/moves3';
+import { buildOf } from '../src/art/skeleton';
+import type { Build } from '../src/art/skeleton';
+import type { GameView } from '../src/art/skin';
+import { LAST } from '../src/dev/sculpt';
+import type { Drawn, Sculpt } from '../src/dev/sculpt';
+import { BRAWLER_BUILD, BRAWLER_LOOKS, COATS, OUTFITS_2, boxerStance, sculptBrawler } from '../src/dev/sculpt_classes';
+import { DEMON_LOOKS, sculptDemon } from '../src/dev/sculpt_demon';
+import { DEMON_FOURS, sculptDemonRig } from '../src/dev/sculpt_demon_rig';
+import { sculptWarrior } from '../src/dev/sculpt_warrior';
+import { GIANT_BODIES, GOLEM_BUILDS, GOLEM_BUILDS_2, GOLEM_BUILDS_3, sculptGolemBuild } from '../src/dev/sculpt_golem';
+import { TINKERER_BODY, TINKER_KITS, sculptContraption, sculptTinkerer, tinkererStance } from '../src/dev/sculpt_tinkerer';
+import { WARLOCK_SCULPT_BODY, sculptWarlock, warlockStance } from '../src/dev/sculpt_warlock';
+import { CONTRAPTION_BUILDS, CONTRAPTION_TWO, sculptContraptionBuild } from '../src/dev/sculpt_contraption';
+import { HEIGHT, bodyFindings, pictureFindings } from './sculpt_checks';
+
+const test: (name: string, fn: () => void) => void = nodeTest;
+const assert: { ok(v: unknown, m?: string): void; deepEqual(a: unknown, b: unknown, m?: string): void } = nodeAssert;
+
+const VIEWS: GameView[] = ['front', 'back'];
+const TURNS = [0, 45, 90, 135, 180, 225, 270, 315];
+
+interface Fig {
+  name: string;
+  /** Draw it turned `turn` degrees from its stance, in a view. */
+  make: (view: GameView, turn: number) => Drawn;
+  /** It has arms and legs to keep clean. */
+  body: boolean;
+  /** It turns (the Contraption is set down as it is). */
+  turns: boolean;
+}
+const brawlerB: Build = (() => {
+  const L = BRAWLER_LOOKS[BRAWLER_BUILD];
+  return buildOf(L.tall, HEAD_B * L.head, L.shape);
+})();
+// (truly turned: the whole figure turned round the floor point under it, Sculpt.spin; never its picture flipped)
+const FIGS: Fig[] = [
+  { name: 'the brawler', make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, undefined, t), body: true, turns: true },
+  { name: 'the warlock', make: (v, t) => sculptWarlock(v, warlockStance(WARLOCK_SCULPT_BODY), t), body: true, turns: true },
+  { name: 'the Tinkerer', make: (v, t) => sculptTinkerer(v, tinkererStance(TINKERER_BODY), t), body: true, turns: true },
+  // (and with each of the four kits of tools he is offered, 24 Oct)
+  ...TINKER_KITS.map((k): Fig => ({ name: `the Tinkerer, ${k.name}`, make: (v, t) => sculptTinkerer(v, tinkererStance(TINKERER_BODY, k.id), t, k.id), body: true, turns: true })),
+  // (the Golem freed from the human frame, 24 Oct: each build still in the running (his “The crab is cool but too
+  // messy”: the crab is out), and the twenty after them)
+  ...[...GOLEM_BUILDS.filter((g) => g.id !== 'crab'), ...GOLEM_BUILDS_2, ...GOLEM_BUILDS_3].map((g): Fig => ({ name: `the Golem, ${g.name}`, make: (v, t) => sculptGolemBuild(v, g.id, t), body: true, turns: true })),
+  // (and with one giant arm, his “Can I get the one big arm on a bunch of golems”, 24 Oct)
+  ...GIANT_BODIES.map((g): Fig => ({ name: `the Golem, ${g.name}, one giant arm`, make: (v, t) => sculptGolemBuild(v, g.id, t, -14, true), body: true, turns: true })),
+  { name: 'the Contraption', make: (v, t) => sculptContraption(v, t), body: false, turns: true },
+  // (and the eight he is offered in its place, his “Look at the Contraption”, 24 Oct)
+  ...CONTRAPTION_BUILDS.map((b): Fig => ({ name: `the Contraption, ${b.name}`, make: (v, t) => sculptContraptionBuild(v, b.id, t), body: false, turns: true })),
+  // (his two, made again: his “Either the current one or the revolver drum”, 24 Oct)
+  ...CONTRAPTION_TWO.filter((b) => b.id === 'tripod').map((b): Fig => ({ name: `the Contraption, ${b.name}`, make: (v, t) => sculptContraptionBuild(v, b.id, t), body: false, turns: true })),
+  { name: "the warlock's demon", make: (v, t) => sculptDemon(v, 'smoke', 0, -16 + t), body: true, turns: true },
+  // (and the brawler in each of the four new outfits he is offered, 24 Oct)
+  ...[...OUTFITS_2, ...COATS].map((o): Fig => ({ name: `the brawler as ${o.name}`, make: (v, t) => sculptBrawler(v, boxerStance(brawlerB), BRAWLER_BUILD, o.id, t), body: true, turns: true })),
+];
+
+for (const fig of FIGS) {
+  test(`${fig.name}: crisp, the friend's edge round it, no pixel alone, nothing pink, nothing cut off; its body clean and its feet on the floor: from in front and behind, turned eight ways`, () => {
+    const found: string[] = [];
+    for (const view of VIEWS) {
+      for (const turn of fig.turns ? TURNS : [0]) {
+        const d = fig.make(view, turn);
+        for (const f of pictureFindings(d.px)) found.push(`${view}, turned ${turn}: ${f}`);
+        const sc = LAST.sc as Sculpt;
+        for (const f of bodyFindings(sc, fig.body)) found.push(`${view}, turned ${turn}: ${f}`);
+      }
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}
+
+test("the demon in every word's look passes the picture's checks too (its flames, frost, lightning and stink drawn round it)", () => {
+  const found: string[] = [];
+  for (const look of DEMON_LOOKS) for (const view of VIEWS) for (const f of pictureFindings(sculptDemon(view, look.aura, look.hide).px)) found.push(`${look.name}, ${view}: ${f}`);
+  assert.deepEqual(found, []);
+});
+
+// THE DEMON ON ITS BONES, ON ALL FOURS (dev/sculpt_demon_rig.ts; his word, 27 Oct: “Give me an all fours stance, gorilla like
+// arms, claws flat on the floor burning with cyan flame and black smoke”), its curved wings at rest and flung open: the
+// picture's checks, from in front and behind
+test('the demon on its bones, on all fours, its claws burning, its wings at rest and flung open: crisp, no pixel alone, nothing pink, nothing cut off', () => {
+  const found: string[] = [];
+  const open = { spread: 1.3, beat: 0.35, sweep: 0.05, tip: 0, flex: 1, wind: 0.15, phase: 0.3 };
+  for (const view of VIEWS) for (const [n, w] of [['at rest', undefined], ['flung open', open]] as const) for (const f of pictureFindings(sculptDemonRig(view, DEMON_FOURS, 0, {}, w).px)) found.push(`${n}, ${view}: ${f}`);
+  assert.deepEqual(found, []);
+});
+
+// THE WARRIOR, A NEW RENDERING (dev/sculpt_warrior.ts; his word, 26 Oct: “Can you not just refine the old look but rebuild it
+// uniquely with the new rules in mind.  I want the same style, but a new rendering”)
+test('the warrior, new rendering: crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off', () => {
+  const found: string[] = [];
+  for (const view of VIEWS) for (const f of pictureFindings(sculptWarrior(view).px)) found.push(`${view}: ${f}`);
+  assert.deepEqual(found, []);
+});
+
+test('at phone size: a hero about the knight’s height, the Golem a head over him, the Contraption knee high', () => {
+  const knight = HEIGHT(paintMove3(MOVES3.ktown, 0, 'front').px);
+  const h = (fig: string): number => HEIGHT((FIGS.find((f) => f.name === fig) as Fig).make('front', 0).px);
+  for (const hero of ['the brawler', 'the warlock', 'the Tinkerer']) {
+    const r = h(hero) / knight;
+    assert.ok(r > 0.82 && r < 1.3, `${hero} ${h(hero)} high, the knight ${knight}`);
+  }
+  for (const g of [...GOLEM_BUILDS.filter((b) => b.id !== 'crab'), ...GOLEM_BUILDS_2, ...GOLEM_BUILDS_3, ...GIANT_BODIES.map((b) => ({ ...b, name: `${b.name}, one giant arm` }))]) {
+    const name = `the Golem, ${g.name}`;
+    assert.ok(h(name) > knight * 1.12, `${name} ${h(name)} high, the knight ${knight}`);
+  }
+  for (const c of ['the Contraption', ...CONTRAPTION_BUILDS.map((b) => `the Contraption, ${b.name}`), 'the Contraption, The tripod mortar, made again']) assert.ok(h(c) < knight * 0.6, `${c} ${h(c)} high, the knight ${knight}`);
+  assert.ok(h("the warlock's demon") > h('the warlock') * 1.3, `the demon ${h("the warlock's demon")} high, the warlock ${h('the warlock')}`);
+});
