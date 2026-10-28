@@ -80,6 +80,13 @@ function spread(t0: number, t1: number, n: number, at: (t: number) => Sprite): C
   return { frames: lazyFrames(n, (i) => at(t0 + ((t1 - t0) * i) / (n - 1))), fps: n / Math.max(1e-6, t1 - t0) };
 }
 
+/** Its first frame, the blow's and its last, each painted only when asked for (as every hero's: art/heroes3.ts). */
+function three(c: Clip): Sprite[] {
+  const n = c.frames.length;
+  const picks = [0, Math.min(n - 1, Math.round((c.hit ?? 0) * c.fps)), n - 1];
+  return lazyFrames(3, (i) => c.frames[picks[i]]);
+}
+
 const byName = <M extends { name: string }>(list: readonly M[], start: string): M => {
   const m = list.find((x) => x.name.startsWith(start));
   if (!m) throw new Error(`warlock_art: no move "${start}"`);
@@ -112,7 +119,6 @@ function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean): An
   // (HIS FALL: art/warlock_fall.ts, the main chat's first pass, to be shown to him)
   const down = warlockFall();
   const fall = clip(0, down.long, CLIP_FPS, (t) => manAt(down, t, view));
-  const three = (c: Clip): Sprite[] => [c.frames[0], c.frames[Math.min(c.frames.length - 1, Math.round((c.hit ?? 0) * c.fps))], c.frames[c.frames.length - 1]];
   const set: AnimSet = {
     idle,
     walk,
@@ -187,7 +193,6 @@ function demonSet(view: GameView): AnimSet {
     } else put(drawWarlockAt(view, back, t - SAG - CRUMBLE).px, CANVAS3.ax, CANVAS3.ay);
     return asSprite(scene, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay);
   });
-  const three = (c: Clip): Sprite[] => [c.frames[0], c.frames[Math.min(c.frames.length - 1, Math.round((c.hit ?? 0) * c.fps))], c.frames[c.frames.length - 1]];
   return {
     idle,
     walk,
