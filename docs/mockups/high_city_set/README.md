@@ -2,7 +2,8 @@
 
 A helper's branch for the art chat, from `origin/mockup/swan-gardens` (55945b3; its later hand-back commits merged in at
 e723ada). Nothing here is in the game until the main chat puts it there. Nothing of the game imports any of it (its test
-proves it). NOT YET SHOWN TO HIM: these are the pictures the art chat brings him for his yes.
+proves it). NOT YET SHOWN TO HIM: these are the pictures the art chat brings him for his yes. (Per the art chat: he has since said
+yes to all five floors' places and every character, and picked the royal swan for the royals' mark.)
 
 ## The measure
 
@@ -39,7 +40,7 @@ candelabrum, a grand vase, a carpet down the hall), the party it went on having 
 cloaks never collected, invitations never sent, a fan dropped), what has gone silent (the heralds' trumpets stopped, the
 court's notice gone blank, the songbird's cage empty), and the Silent Order's mark on it all (its blank mask nailed over the
 royal crest, tied to the railings, over a sealed door, and a black band across the stone king's mouth). And his event: the
-four royals' banners and the cards their touched enemies drop.
+four royals' banners and the cards their touched enemies drop, each with the royal swan in that royal's colours.
 
 Built in the Act 2 kit (`src/art/act2_kit.ts`) as floors 11 to 16's pieces are: in depth in floor 4's Scene, lit from the
 upper left, seams of ink where one thing ends before another, every colour a step quieter than any word
@@ -50,8 +51,8 @@ upper left, seams of ink where one thing ends before another, every colour a ste
 ON THE WALLS (each on both faces, at three spots: see "Hung on a wall"):
 
 1. `a royal's banner` (on the wall; four: the Princess's, the Prince's, the Queen's, the King's): hung from a gilt rod on
-   two brackets, the cloth in that royal's field and trim, its foot cut in a swallowtail and fringed in gold, the royal's
-   mark on it.
+   two brackets, the cloth in that royal's field and trim, its foot cut in a swallowtail and fringed in gold, the royal
+   swan on it.
 2. `a court portrait, faces painted out` (on the wall): the King and the Queen half-length in a heavy gilt frame with a
    crown on its crest, he crowned in ermine and royal blue, she in violet with a coronet; over both their faces a smear of
    the Hush's grey, brushed on thick and run down.
@@ -59,8 +60,8 @@ ON THE WALLS (each on both faces, at three spots: see "Hung on a wall"):
    honest flame.
 4. `a court notice, gone blank` (on the wall): a board in a gilt frame under a crown, its sheet with nothing left on it but
    the ruled lines the words stood on, the royal seal in wine wax on its ribbons.
-5. `the Order's mask over the crest` (on the wall): the royal crest carved in the palace's pale stone (a shield, the crown
-   on it, a carved crown over it), and nailed over it the Silent Order's blank white mask with no mouth, two streamers of
+5. `the Order's mask over the crest` (on the wall): the royal crest carved in the palace's pale stone (a shield, the royal
+   swan on it, a carved crown over it), and nailed over it the Silent Order's blank white mask with no mouth, two streamers of
    black crape.
 6. `a palace door` (a door; shut, open, sealed): tall double doors painted ivory, panels moulded in gilt, the crown over
    them, between pilasters of the palace's stone; open on the dark; or sealed by the Order, a chain through its handles, a
@@ -71,16 +72,16 @@ OUT ON THE HILL:
 7. `a gilt lamp post` (an obstacle; two frames): a stepped stone foot, a fluted post painted black-green with gilt collars,
    a lantern of four tapering panes under a roof with a small crown, its honest flame within.
 8. `palace railings` (an obstacle; along x, along y; and the same with the Order's mask on them): a tile of them, a stone
-   plinth, iron bars to gilt spear-heads, the King's crown on a gilt medallion; the Order's mask tied on with black ribbon,
+   plinth, iron bars to gilt spear-heads, the royal swan on a gilt medallion; the Order's mask tied on with black ribbon,
    a black rag knotted by it.
 9. `a sentry box` (an obstacle; its opening to +y, to +x): its guard gone, boards in broad stripes of the royal wine and
-   ivory running up it, its front open on the dark, the crown painted over the opening, a slate pyramid roof with a gilt
+   ivory running up it, its front open on the dark, the royal swan painted over the opening, a slate pyramid roof with a gilt
    finial, a halberd left leaning by it.
 10. `a marble statue of a royal` (an obstacle): a king of the house larger than life on a plinth whose plaque is blank,
     crowned and bearded, robed and belted, in an ermine cape with a cloak behind, his sceptre raised high, his left hand on
     a sword grounded before him; and tied across his mouth by the Order, a band of black cloth.
 11. `the fountain of the four royals` (an obstacle; two tiles across; seen from before and from behind): a basin of four
-    lobes in white marble, its water still; a pedestal with a royal's mark inlaid on each face in that royal's colours (the
+    lobes in white marble, its water still; a pedestal with the royal swan inlaid on each face in a royal's colours (the
     Princess's and the Prince's toward the eye in the first frame, the Queen's and the King's in the second); a bowl, the
     crown on its cushion over all.
 12. `a royal coach, abandoned` (an obstacle; its pole to +y, to +x): the state coach left in the forecourt when the gates
@@ -100,11 +101,11 @@ IN THE PALACE'S ROOMS:
     cups and saucers of white porcelain banded in blue and gold, a stand of cakes gone stale; broken, the table over, the
     teapot on its side, the cups smashed, the cakes across the floor.
 17. `a grand vase` (breakable; whole, broken): a baluster vase of royal blue porcelain, a white reserve on its belly with the
-    crown in gilt, gilt bands, its lid knobbed, on a marble pedestal; broken, smashed across the floor, the pedestal bare.
+    royal swan in gilt, gilt bands, its lid knobbed, on a marble pedestal; broken, smashed across the floor, the pedestal bare.
 18. `a hat stand, cloaks left on it` (an obstacle): a turned walnut stand, a velvet cloak of the royal wine, a broad hat
     with a swan-white plume, a gilt mask for the masque hung by its ribbon: the guests never came back for them.
 19. `the heralds' trumpets, stopped` (an obstacle): a walnut rack with two long brass trumpets, their bells flaring toward
-    the eye, a banner of the royal wine with the crown hanging from the nearer; both bells stopped by the Order with black
+    the eye, a banner of the royal wine with the royal swan hanging from the nearer; both bells stopped by the Order with black
     wax, the blank mask pressed in it.
 20. `a standing candelabrum` (an obstacle; lit, two frames; out): a girandole as tall as a man, three scrolled feet, a
     turned stem, five branches, five candles with honest flames.
@@ -120,27 +121,23 @@ ON THE FLOOR:
 24. `a dropped fan and a rose` (on the floor): a lady's folding fan lying open, its pleats light and shade by turns, a band
     of roses painted near its edge, its guards gilt; a rose dropped by it.
 25. `a royal card` (a quest; four: the Princess's, the Prince's, the Queen's, the King's): THE CARD A TOUCHED ENEMY DROPS,
-    lying face up and square to the eye: a white border, the royal's field, its mark large in the middle and small in two
-    corners.
+    lying face up and square to the eye: a white border, the royal's field, the royal swan large in the middle and small in
+    two corners.
 
-## The four royals' marks (his Royal Cards): THIS HELPER'S PROPOSAL, FOR HIS YES
+## The royal swan (his Royal Cards): HIS PICK, “Keep the royal swan”
 
-"(that royal's crest over them)", "each drops its royal's playing card": the four royals' marks are drawn once
-(`markTone(royal, x, y, e)`, each a real shape with its own lit and shaded edges, readable from 14 pixels across), each in
-colours of its own (`ROYAL_LOOK`), and used on their banners, their cards and the fountain of the four royals. The crest the
-game draws over a touched enemy can be the same mark (the main chat's).
+"(that royal's crest over them)", "each drops its royal's playing card": asked what the royals' mark should be, his pick
+was “Keep the royal swan”: one crest for the whole family, the white swan with its wings raised (the palace guard's of floor
+16). It is drawn once (`swanTone`, a real shape with its own lit and shaded edges and its row of feathers, readable from 14
+pixels across) and set on each royal's banner, card and face of the fountain of the four royals in that royal's own colours
+(`ROYAL_LOOK`), which is how the four tell apart: the Princess's deep hedge green trimmed in dusty rose, the Prince's black
+velvet trimmed in gold, the Queen's dark violet trimmed in silver, the King's royal blue trimmed in gold. The same swan is the
+crest on all the court shares: the railings' medallion, the coach's sides, over the sentry box's opening, the vase's
+reserve, the trumpets' banner, and carved on the stone shield the Order's mask is nailed over. The crest the game draws over
+a touched enemy can be the same swan, in that royal's colours (the main chat's).
 
-- THE PRINCESS: a swan, wings raised, its neck in its S, swan white on deep hedge green, trimmed in dusty rose (floor 16's
-  palette; the palace guard of her floor wears a swan).
-- THE PRINCE: a smiling mask of gilt, tied at the temples, on black velvet (his doc's "smiling gilt mask"; never the
-  Order's mask, which is white and has no mouth).
-- THE QUEEN: a hand mirror, its glass catching the light, silver on dark violet (her mirror, floor 18's palette).
-- THE KING: a crown, five points pearled, jewels in its band, old gold on royal blue (floor 19's palette). The house's own
-  crest, on what all the court shares (the railings, the coach, the sentry box, the vase, the trumpets' banner, the fountain's
-  top), is the King's crown.
-
-On a banner and on the fountain's pedestal the mark is drawn square to the eye (the wall's slant taken out of it), and on a
-card upright (not shortened as the card lying flat is): slanted, the Prince's mask stopped reading as a face.
+On a banner and on the fountain's pedestal the swan is drawn square to the eye (the wall's slant taken out of it), and on a
+card upright (not shortened as the card lying flat is), so that it reads.
 
 ## What glows (Colour 3)
 
@@ -178,7 +175,7 @@ The floors 17 to 20's walls are not drawn yet: these are measured to the game's 
 ## The dev page (src/dev/preview_high_city_set.ts)
 
 `sheet:1`, `sheet:2`, `sheet:3` (the sheets), `look=<name>@K` (every picture of one piece, K times as big: a wall piece's
-both faces at every spot), `marks` (the four marks alone at 14, 20, 28 and 56 pixels across), `royals`, `garden`,
+both faces at every spot), `marks` (the swan alone, in each royal's colours, at 14, 20, 28 and 56 pixels across), `royals`, `garden`,
 `garden:2`, `room`, `room:2`. For example:
 `PREVIEW_TIMEOUT=300000 node tools/preview.mjs src/dev/preview_high_city_set.ts shots/hc/sheet1.png 1200 2400 "sheet:1"`
 (the sheets are taller than the window: the pictures here were cut to what is drawn).

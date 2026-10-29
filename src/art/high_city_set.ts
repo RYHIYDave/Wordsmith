@@ -14,11 +14,11 @@
 //
 // HIS EVENT, THE ROYAL CARDS ("on these levels some enemies are touched by one of the four royals, the Princess, the
 // Prince, the Queen or the King, and show it (that royal's crest over them). They drop cards: each drops its royal's
-// playing card."): the four royals' marks are drawn here once (`markTone`), each royal in colours of its own, and used
-// on their banners, their cards and the fountain of the four royals. The marks are this chat's proposal, for his yes:
-// the Princess a swan, wings raised (the palace guard's crest on her floor); the Prince a smiling gilt mask (his, at the
-// Masque: never the Order's, which is white and has no mouth); the Queen a hand mirror; the King a crown. The house's
-// own crest, on what all the court shares (the coach, the railings, the sentry box), is the King's crown.
+// playing card."): the family's one crest, his pick “Keep the royal swan” (a white swan, its wings raised), drawn here
+// once (`swanTone`) and set on each royal's banner, card and face of the fountain of the four royals in that royal's own
+// colours (`ROYAL_LOOK`): the Princess's hedge green, the Prince's black velvet, the Queen's violet, the King's royal blue.
+// The same swan is the crest on all the court shares (the railings, the coach, the sentry box, the vase, the trumpets'
+// banner, the stone crest the Order's mask is nailed over).
 //
 // THE RULES THEY KEEP: as art/act2_kit.ts says (built in depth in floor 4's Scene, a step quieter than any word through
 // art/act2_quiet.ts, seams of ink where one thing ends before another). Nothing glows but honest flame: the gilt lamp
@@ -258,16 +258,16 @@ function onWall(frames: ReadonlyArray<{ make: WallMake; lights?: (w: WallAt) => 
 const HUNG: readonly (readonly [number, number])[] = [[0, 0], [-10, 0], [0, 34]];
 
 // =================================================================================================
-// THE FOUR ROYALS' MARKS (his Royal Cards: "that royal's crest over them"; "each drops its royal's playing card")
+// THE ROYAL SWAN AND THE FOUR ROYALS' COLOURS (his Royal Cards: "that royal's crest over them"; "each drops its royal's playing card")
 
 export type Royal = 'princess' | 'prince' | 'queen' | 'king';
 export const ROYALS: readonly Royal[] = ['princess', 'prince', 'queen', 'king'];
-/** Each royal's colours: the field a mark is set on, the mark, the trim round it. */
+/** Each royal's colours: the field the royal swan is set on, the swan (white for all), the trim round it. */
 export const ROYAL_LOOK: Readonly<Record<Royal, { field: Ramp; mark: Ramp; trim: Ramp }>> = {
   princess: { field: HEDGE, mark: SWANW, trim: ROSEDUST },
-  prince: { field: VELVET, mark: GILT, trim: GILT },
-  queen: { field: VIOLET, mark: SILVER, trim: SILVER },
-  king: { field: ROYALBLUE, mark: GILT, trim: GILT },
+  prince: { field: VELVET, mark: SWANW, trim: GILT },
+  queen: { field: VIOLET, mark: SWANW, trim: SILVER },
+  king: { field: ROYALBLUE, mark: SWANW, trim: GILT },
 };
 
 type Pt = readonly [number, number];
@@ -316,94 +316,22 @@ function swanDetail(x: number, y: number): number {
   return -1;
 }
 
-// THE PRINCE'S: a smiling mask of gilt, tied at its temples (never the Order's: theirs is white and has no mouth)
-function maskHW(y: number): number {
-  if (y > 0.8 || y < -0.9) return 0;
-  if (y >= 0.1) return 0.74 * Math.sqrt(Math.max(0, 1 - ((y - 0.1) / 0.7) ** 2));
-  return 0.74 * (1 - 0.7 * ((0.1 - y) / 1.0) ** 1.6);
-}
-function maskHole(x: number, y: number): boolean {
-  // its eyes: almonds, their outer corners up; its mouth: a wide smile, its corners up
-  for (const s of [-1, 1]) {
-    const dx = x - s * 0.3;
-    if (Math.abs(dx) < 0.22 && Math.abs(y - 0.2 - 0.14 * dx * s) < 0.11 * Math.sqrt(1 - (dx / 0.22) ** 2)) return true;
-  }
-  if (Math.abs(x) < 0.44) {
-    const cy = -0.44 + 0.9 * x * x;
-    if (Math.abs(y - cy) < 0.075 + 0.04 * (1 - (x / 0.44) ** 2)) return true;
-  }
-  return false;
-}
-function princeIn(x: number, y: number): boolean {
-  for (const s of [-1, 1]) if (lineD(x * s, y, [[0.66, 0.26], [0.84, 0.12], [0.88, -0.14], [0.94, -0.36]]) < 0.065) return true;
-  return Math.abs(x) < maskHW(y) && !maskHole(x, y);
-}
-function princeDetail(x: number, y: number): number {
-  // its brows over its eyes
-  for (const s of [-1, 1]) if (lineD(x * s, y, [[0.1, 0.4], [0.3, 0.48], [0.52, 0.42]]) < 0.04) return 2;
-  return -1;
-}
-
-// THE QUEEN'S: a hand mirror, its oval glass catching the light
-function queenIn(x: number, y: number): boolean {
-  if (inEll(x, y, 0, 0.28, 0.56, 0.66)) return true;
-  if (inEll(x, y, 0, 0.98, 0.13, 0.1)) return true;
-  if (inEll(x, y, 0, -0.42, 0.2, 0.11)) return true;
-  if (y < -0.42 && y > -0.96 && Math.abs(x) < 0.11 + 0.04 * Math.cos((y + 0.42) * 11)) return true;
-  return inEll(x, y, 0, -0.93, 0.15, 0.1);
-}
-function queenDetail(x: number, y: number): number {
-  if (inEll(x, y, 0, 0.28, 0.38, 0.47)) {
-    // the glass, darker than its frame: its glint across it from the upper left
-    const g = x + (y - 0.28) * 0.6;
-    if (Math.abs(g + 0.08) < 0.08) return 4;
-    return 1;
-  }
-  return -1;
-}
-
-// THE KING'S: a crown, five points pearled, jewels in its band
-const CROWN_TIPS: readonly Pt[] = [[-0.76, 0.14], [-0.38, 0.42], [0, 0.64], [0.38, 0.42], [0.76, 0.14]];
-function crownTop(x: number): number {
-  const pts: Pt[] = [];
-  CROWN_TIPS.forEach(([tx, ty], i) => {
-    pts.push([tx, ty]);
-    if (i + 1 < CROWN_TIPS.length) pts.push([(tx + CROWN_TIPS[i + 1][0]) / 2, -0.04]);
-  });
-  for (let i = 0; i + 1 < pts.length; i++) {
-    const [ax, ay] = pts[i];
-    const [bx, by] = pts[i + 1];
-    if (x >= ax && x <= bx) return ay + ((x - ax) / (bx - ax)) * (by - ay);
-  }
-  return -1;
-}
-function kingIn(x: number, y: number): boolean {
-  const base = -0.24 + 0.06 * x * x;
-  if (Math.abs(x) <= 0.78 && y > -0.68 + 0.06 * x * x && y < base) return true;
-  if (Math.abs(x) <= 0.78 && y >= base && y < crownTop(x)) return true;
-  for (const [tx, ty] of CROWN_TIPS) if (inEll(x, y, tx, ty + 0.06, 0.13, 0.13)) return true;
-  return false;
-}
-function kingDetail(x: number, y: number): number {
-  for (const jx of [-0.42, 0, 0.42]) if (inEll(x, y, jx, -0.46, jx ? 0.12 : 0.14, 0.1)) return 0;
-  return -1;
-}
-
-const MARK_IN: Record<Royal, (x: number, y: number) => boolean> = { princess: swanIn, prince: princeIn, queen: queenIn, king: kingIn };
-const MARK_DETAIL: Record<Royal, (x: number, y: number) => number> = { princess: swanDetail, prince: princeDetail, queen: queenDetail, king: kingDetail };
 /**
- * A ROYAL'S MARK at (x, y) of its square (-1 to 1, y up), as it is painted or inlaid: -1 where it is not; else the tone of
- * its ramp (0 to 4): lit along its upper left edges, in shade along its lower right, its own lines. `e`: a pixel's size in
- * the square (how broad its edges are).
+ * THE ROYAL SWAN, the family's one crest (his pick: “Keep the royal swan”), at (x, y) of its square (-1 to 1, y up), as it
+ * is painted, inlaid or carved: -1 where it is not; else the tone of its ramp (0 to 4): lit along its upper left edges, in
+ * shade along its lower right, its own lines. `e`: a pixel's size in the square (how broad its edges are).
  */
-export function markTone(r: Royal, x: number, y: number, e: number): number {
-  const In = MARK_IN[r];
-  if (!In(x, y)) return -1;
-  const d = MARK_DETAIL[r](x, y);
+export function swanTone(x: number, y: number, e: number): number {
+  if (!swanIn(x, y)) return -1;
+  const d = swanDetail(x, y);
   if (d >= 0) return d;
-  if (!In(x - e, y + e)) return 4;
-  if (!In(x + e, y - e)) return 1;
+  if (!swanIn(x - e, y + e)) return 4;
+  if (!swanIn(x + e, y - e)) return 1;
   return 3;
+}
+/** A royal's mark: the royal swan for every one of the four (their colours tell them apart: ROYAL_LOOK). */
+export function markTone(_r: Royal, x: number, y: number, e: number): number {
+  return swanTone(x, y, e);
 }
 
 // =================================================================================================
@@ -570,8 +498,8 @@ function courtNotice(): WallMake {
 }
 
 /**
- * THE ORDER'S MASK OVER THE CREST: the royal crest carved in the palace's pale stone (a shield with the crown on it in
- * relief, a carved crown over it), and nailed over its foot the Silent Order's blank white mask with no mouth, on a black
+ * THE ORDER'S MASK OVER THE CREST: the royal crest carved in the palace's pale stone (a shield with the royal swan on it
+ * in relief, a carved crown over it), and nailed over its foot the Silent Order's blank white mask with no mouth, on a black
  * ribbon, two streamers of black crape hanging from the nail: the Order that opened the High City to the Hush.
  */
 function maskOverCrest(): WallMake {
@@ -585,13 +513,13 @@ function maskOverCrest(): WallMake {
       if (t < 0 || t > 1) return false;
       return Math.abs(a) < 11 * (t < 0.42 ? 1 : Math.sqrt(Math.max(0, 1 - ((t - 0.42) / 0.58) ** 2)));
     };
-    // the shield, standing out of the face: its rim lit on its upper left, in shade on its lower right; the crown on it in relief
+    // the shield, standing out of the face: its rim lit on its upper left, in shade on its lower right; the royal swan on it in relief
     panel(S, w, -11.5, 11.5, TOP - 29, TOP + 0.5, 2.4, (a, z) => {
       if (!shield(a, z)) return null;
       if (!shield(a - 1.3, z + 1.3)) return PALACE[4];
       if (!shield(a + 1.3, z - 1.3)) return PALACE[1];
       if (!shield(a - 2.6, z + 2.6) || !shield(a + 2.6, z - 2.6)) return PALACE[2];
-      const t = markTone('king', a / 6.4, (z - (TOP - 9)) / 6.4, 0.2);
+      const t = swanTone(a / 6.4, (z - (TOP - 9)) / 6.4, 0.2);
       if (t >= 0) return PALACE[t === 0 ? 1 : t === 4 ? 4 : t === 1 ? 1 : 3];
       return PALACE[2];
     }, 1);
@@ -770,7 +698,7 @@ function lampPost(f: number): Sprite {
 
 /**
  * PALACE RAILINGS, a tile of them: a plinth of the palace's stone, iron bars painted black-green rising to gilt spear-heads,
- * rails top and foot, the King's crown in gilt on a medallion at the middle. With `mask`: the Silent Order's blank mask tied
+ * rails top and foot, the royal swan in gilt on a medallion at the middle. With `mask`: the Silent Order's blank mask tied
  * on the bars by its black ribbon, a black rag knotted under it. Along x (`k` 0) or along y (1). 100 x 110 at (50, 80).
  */
 function railings(k: number, mask: boolean): Sprite {
@@ -794,13 +722,13 @@ function railings(k: number, mask: boolean): Sprite {
       S.ball([x + Math.cos(t) * 1.4 * (1 - j / 14), 0, 13 + Math.sin(t) * 1.6 * (1 - j / 14)], 0.35, PAINTED, 5);
     }
   }
-  // the medallion: a gilt ring with the crown in it, on the middle bars
+  // the medallion: a gilt ring with the royal swan in it, on the middle bars
   const mz = 27;
   S.egg([0, 0.4, mz], AX3, [5.6, 0.7, 5.6], (n, w) => {
     const p = local(S, w);
     const r = Math.hypot(p[0], p[2] - mz);
     if (r > 4.4) return toneAt(n, GILT, 0.2);
-    const t = markTone('king', p[0] / 3.6, (p[2] - mz) / 3.6, 0.8 / 3.6);
+    const t = swanTone(p[0] / 3.6, (p[2] - mz) / 3.6, 0.8 / 3.6);
     return t >= 0 ? GILT[t] : PAINTED[1];
   }, 6);
   if (mask) {
@@ -821,7 +749,7 @@ function railings(k: number, mask: boolean): Sprite {
 
 /**
  * A SENTRY BOX at the palace's gates, its guard gone: a narrow box of boards painted in the royal wine and ivory in broad
- * stripes, its front open on the dark inside, the King's crown painted over the opening, a pyramid roof of slate with a
+ * stripes, its front open on the dark inside, the royal swan painted over the opening, a pyramid roof of slate with a
  * gilt finial; a halberd left leaning by it. Its opening to +y (`k` 0) or to +x (1). 100 x 150 at (50, 110).
  */
 function sentryBox(k: number): Sprite {
@@ -839,7 +767,7 @@ function sentryBox(k: number): Sprite {
     const R = stripe(along) ? WINE : IVORY;
     return toneAt(n, R, fr((along + 11) / 5.5) < 0.06 || Math.abs(fr((along + 11) / 5.5) - 0.5) < 0.06 ? -0.3 : 0.05);
   }, 2);
-  // the opening on its front: the dark inside, a sill, the crown over it
+  // the opening on its front: the dark inside, a sill, the royal swan over it
   S.quad([[-6.5, 11.05, 4], [6.5, 11.05, 4], [6.5, 11.05, 50], [-6.5, 11.05, 50]], (u, v) => {
     // the inside: dark, its back wall a little lit at its top
     const top = v > 0.92;
@@ -849,7 +777,7 @@ function sentryBox(k: number): Sprite {
   }, 3);
   S.quad([[-6.5, 11.1, 4], [6.5, 11.1, 4], [6.5, 13, 4], [-6.5, 13, 4]], () => PALACE[3], 3);
   S.quad([[-5.5, 11.15, 52], [5.5, 11.15, 52], [5.5, 11.15, 61], [-5.5, 11.15, 61]], (u, v) => {
-    const t = markTone('king', (u - 0.5) * 2.2, (v - 0.5) * 2.2, 0.28);
+    const t = swanTone((u - 0.5) * 2.2, (v - 0.5) * 2.2, 0.28);
     if (t >= 0) return GILT[t];
     return u < 0.06 || u > 0.94 || v < 0.08 || v > 0.92 ? GILT[2] : ROYALBLUE[2];
   }, 4);
@@ -938,7 +866,7 @@ function statue(): Sprite {
 
 /**
  * THE FOUNTAIN OF THE FOUR ROYALS: a basin of four lobes in white marble, its water still (it no longer plays); in it a
- * pedestal, on each of its four faces a royal's mark inlaid in that royal's colours; on it a shallow bowl, the crown on a
+ * pedestal, on each of its four faces the royal swan inlaid in that royal's colours; on it a shallow bowl, the crown on a
  * cushion over all. Two tiles across. Seen from before (the Princess's and the Prince's faces: `k` 0) or from behind (the
  * Queen's and the King's: 2). 180 x 180 at (90, 128).
  */
@@ -1015,8 +943,8 @@ function wheel(S: Scene, c: V3, face: V3, R: number, id: number): void {
 
 /**
  * A ROYAL COACH, ABANDONED: the state coach left in the forecourt when the gates shut, its horses gone: a body painted the
- * royal wine, its upper half boxed with great windows framed in gilt, its lower half bowed under like a boat, the crown on
- * its door panels, hung on its springs between great wheels; its near door hanging open on the dark inside; a gilt rail
+ * royal wine, its upper half boxed with great windows framed in gilt, its lower half bowed under like a boat, the royal swan on
+ * its sides, hung on its springs between great wheels; its near door hanging open on the dark inside; a gilt rail
  * round its roof and the crown on it; the coachman's seat up in front; its lamps; its pole down on the ground. Its pole to
  * +y (`k` 0) or to +x (1). 220 x 200 at (110, 140).
  */
@@ -1037,13 +965,13 @@ function coach(k: number): Sprite {
   const YM = (Y0 + Y1) / 2;
   const HL = (Y1 - Y0) / 2;
   const ZW = 32;
-  // the lower body: bowed under like a boat's hull, its waist moulded in gilt, the crown on its side
+  // the lower body: bowed under like a boat's hull, its waist moulded in gilt, the royal swan on its side
   S.egg([0, YM, ZW], AX3, [10, HL, 9.5], (n, w0) => {
     const w = local(S, w0);
     const z = w[2] - ZW;
     if (z > -1.4) return toneAt(n, GILT, 0.25);
     if (Math.abs(w[0]) > 5 && Math.abs(w[1] - YM + 3) < 4 && z > -8.5 && z < -2) {
-      const t = markTone('king', (w[1] - YM + 3) / 3.4, (z + 5.2) / 3.4, 0.3);
+      const t = swanTone((w[1] - YM + 3) / 3.4, (z + 5.2) / 3.4, 0.3);
       if (t >= 0) return GILT[t];
     }
     return toneAt(n, WINE, fr((w[1] - YM) * 0.16) < 0.05 ? -0.35 : 0);
@@ -1302,7 +1230,7 @@ function teaService(broken: boolean): Sprite {
 }
 
 /**
- * A GRAND VASE on its pedestal: a baluster vase of porcelain, royal blue, a white reserve on its belly with the crown in gilt,
+ * A GRAND VASE on its pedestal: a baluster vase of porcelain, royal blue, a white reserve on its belly with the royal swan in gilt,
  * gilt bands at its foot, its shoulder and its lip, its lid knobbed; on a square pedestal of marble. Broken: knocked from it
  * and smashed, its shards across the floor, its lid rolled away, the pedestal standing bare. 70 x 130 at (35, 104).
  */
@@ -1336,7 +1264,7 @@ function grandVase(broken: boolean): Sprite {
         const ez = (t - 11.5) / 5.5;
         if (ex * ex + ez * ez < 1) {
           if (ex * ex + ez * ez > 0.8) return GILT[3];
-          const m = markTone('king', -ex * 1.25, ez * 1.25, 0.2);
+          const m = swanTone(-ex * 1.25, ez * 1.25, 0.2);
           return m >= 0 ? GILT[clamp4(m)] : toneAt(n, PORCELAIN, 0.15);
         }
       }
@@ -1415,7 +1343,7 @@ function hatStand(): Sprite {
 
 /**
  * THE HERALDS' TRUMPETS, STOPPED: a rack of walnut, and on its pegs two long straight trumpets of brass, their bells flaring
- * toward the eye; a banner of the royal wine hanging from the nearer with the crown on it; and both bells stopped by the
+ * toward the eye; a banner of the royal wine hanging from the nearer with the royal swan on it; and both bells stopped by the
  * Order with a plug of black wax, the blank mask pressed in it. 120 x 110 at (60, 82).
  */
 function heraldsTrumpets(): Sprite {
@@ -1462,7 +1390,7 @@ function heraldsTrumpets(): Sprite {
       if (zz < cut) return null;
       if (zz - cut < 1.8) return Math.floor((a + 20) * 1.25) % 2 ? GILT[3] : GILT[1];
       if (Math.min(9 - Math.abs(a), 18.3 - zz) < 1.3) return GILT[2];
-      const t = markTone('king', a / 6, (zz - 11.2) / 6, 0.22);
+      const t = swanTone(a / 6, (zz - 11.2) / 6, 0.22);
       if (t >= 0) return GILT[t];
       const fold = Math.sin(u * 14);
       return WINE[fold > 0.55 ? 3 : fold < -0.55 ? 1 : 2];
