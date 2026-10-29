@@ -33,9 +33,12 @@ import { TOWARD } from './floor2';
 import { hash } from './kit';
 import type { Ramp } from './kit';
 import { EMBER } from './props';
-import { IRON, OAK, checker, cylinder, done, lying, scene, turned } from './act2_kit';
+import { IRON, OAK, checker, cylinder, done, local, lying, scene, turned } from './act2_kit';
 import { bright } from './act2_quiet';
 import { lakeWater } from './swangardens';
+import { VINE_LEAF, VINE_THORN, VINE_WOOD_PALE, herVine, leafFace, leafShape } from './princess_vine';
+import type { VineBrush } from './princess_vine';
+import { norm, sub } from './skeleton';
 
 const fr = (t: number): number => t - Math.floor(t);
 const AXES: readonly [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -121,6 +124,10 @@ function coursed(n: V3, z: number, a: number, seed: number): string {
  */
 function terraceWall(k: number, pier = false): Sprite {
   const S = turned(scene(110, 140, 55, 100), k);
+  terraceWallIn(S, pier);
+  return done(S, 55, 100);
+}
+function terraceWallIn(S: Scene, pier: boolean): void {
   // the face (its +y side the one seen), the coping
   S.box([0, 16, 16], AXES, [20, 4, 16], (f, u, v, n) => (f === 2 ? coursed(n, u * 32, v * 32, 7101) : f === 0 ? coursed(n, v * 32, u * 6, 7101) : toneAt(n, LIMESTONE, 0)), 1);
   S.box([0, 15.75, 34], AXES, [20, 5.25, 2], (f, _u, v, n) => (f === 4 && v > 0.88 ? LIMESTONE[4] : toneAt(n, LIMESTONE, f === 4 ? 0.1 : 0)), 2);
@@ -139,7 +146,6 @@ function terraceWall(k: number, pier = false): Sprite {
     S.box([0, 14, 63.5], AXES, [12, 9, 1.5], (f, _u, v, n) => (f === 4 && v > 0.85 ? LIMESTONE[4] : toneAt(n, LIMESTONE, 0.1)), 4);
     urn(S, [0, 14, 65], 5);
   }
-  return done(S, 55, 100);
 }
 /** A stone urn standing at `at`: a foot, a full belly, a neck and lip; a ball of clipped box in it. */
 function urn(S: Scene, at: V3, id: number, roses = false): void {
@@ -182,21 +188,27 @@ function terraceStair(k: number): Sprite {
 /** A YEW CONE, clipped close, taller than a man. 56 x 104 at (28, 86). */
 function yewCone(): Sprite {
   const S = scene(56, 104, 28, 86);
+  yewConeIn(S);
+  return done(S, 28, 86);
+}
+function yewConeIn(S: Scene): void {
   cylinder(S, 0, 0, (z) => Math.max(0.4, 17 * (1 - z / 66)), 0, 66, (n, a, z) => {
     const c = hash(Math.floor(a * 5), Math.floor(z / 4), 7131);
     return toneAt(n, YEW, (c < 0.25 ? -0.28 : c > 0.85 ? 0.22 : 0) + (z < 4 ? -0.3 : 0));
   }, 1);
-  return done(S, 28, 86);
 }
 /** BOX EDGING, a tile of it: a low clipped hedge of box along the tile's middle. Along x (`k` 0) or along y (1). 84 x 56 at (42, 36). */
 function boxEdging(k: number): Sprite {
   const S = turned(scene(84, 56, 42, 36), k);
+  boxEdgingIn(S);
+  return done(S, 42, 36);
+}
+function boxEdgingIn(S: Scene): void {
   S.box([0, 0, 6], AXES, [20, 4, 6], (f, _u, v, n) => {
     const w: V3 = [v * 40, 0, 0];
     if (f === 4 && v > 0.85) return BOX[4];
     return clumpy(n, BOX, w, 7141 + f, f === 4 ? 0.1 : 0);
   }, 1);
-  return done(S, 42, 36);
 }
 /** A TOPIARY SWAN: yew clipped into a swan on a low mound, its neck in an S, looking to the screen's left. 90 x 100 at (45, 86). */
 function topiarySwan(): Sprite {
@@ -756,6 +768,10 @@ function gardenGate(open: boolean, k: number): Sprite {
 /** A LANTERN ON A POST: a post of stone, an iron lantern on it, its candle still burning on into the dawn (an honest flame). 50 x 100 at (25, 86). */
 function lantern(): Sprite {
   const S = scene(50, 100, 25, 86);
+  return done(S, 25, 86, lanternIn(S));
+}
+/** (its light, a world point) */
+function lanternIn(S: Scene): { at: V3; r: number; color: string; a: number }[] {
   S.box([0, 0, 18], AXES, [4.5, 4.5, 18], (f, u, v, n) => (f === 4 ? LIMESTONE[3] : f === 2 ? coursed(n, u * 36, v * 7, 7261) : coursed(n, v * 36, u * 7, 7261)), 1);
   S.box([0, 0, 37], AXES, [5.5, 5.5, 1], (_f, _u, _v, n) => toneAt(n, LIMESTONE, 0.15), 1);
   // the lantern: a frame of iron, panes of glass with the candle in them, a little roof, a ring
@@ -772,7 +788,7 @@ function lantern(): Sprite {
     return [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a), p[2]] as V3;
   }) as unknown as [V3, V3, V3, V3], (_u, _v, w) => toneAt([w[0] / 8, w[1] / 8, 0.8], IRON, 0.1), 6);
   S.ball([0, 0, 59], 1.4, IRON, 6);
-  return done(S, 25, 86, [{ at: [0, 0, 47], r: 16, color: EMBER[2], a: 0.32 }]);
+  return [{ at: [0, 0, 47], r: 16, color: EMBER[2], a: 0.32 }];
 }
 /**
  * A BOAT AT THE LANDING: a landing stage of planks on posts out over the lake's edge, a little rowing boat moored at it,
@@ -871,6 +887,127 @@ function swanFeathers(): Sprite {
 }
 
 // =================================================================================================
+// HER VINES IN THE GARDENS (his, to the art chat, 28 Oct: “Can you put some of these vines into the map as well?  Around
+// where the hushed gardeners are at.  So you’re like “huh those vines are weird” then the boss has the big vine”; “Once
+// we lock in the look.  So they match”; the look locked: “Yes, lock it (Recommended)”). Her vine as her whip and
+// her cage are drawn (art/princess_vine.ts, one recipe), grown through the gardeners' corner: over a terrace wall, through the
+// box edging, up a lantern's post, across the walk, and out of a yew, reaching, that draws back into it as you pass. Its thorns are
+// pale and untipped: the dull pink is hers alone, on her (his rulebook, Colour 3: no pink in a place). Beyond the
+// Princess's twenty-five: his ask.
+
+const TONES: Ramp = ['0', '1', '2', '3', '4'];
+const v3 = (p: readonly number[]): V3 => [p[0], p[1], p[2]];
+/** A smooth line through `ctrl` (a curve through each), a point every `step` units along it. */
+function through(ctrl: readonly V3[], step: number): V3[] {
+  const dense: V3[] = [];
+  for (let i = 0; i < ctrl.length - 1; i++) {
+    const p0 = ctrl[Math.max(0, i - 1)];
+    const p1 = ctrl[i];
+    const p2 = ctrl[i + 1];
+    const p3 = ctrl[Math.min(ctrl.length - 1, i + 2)];
+    for (let k = 0; k < 24; k++) {
+      const t = k / 24;
+      dense.push([0, 1, 2].map((j) => 0.5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t * t + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t * t * t)) as V3);
+    }
+  }
+  dense.push(ctrl[ctrl.length - 1]);
+  const out: V3[] = [dense[0]];
+  let acc = 0;
+  for (let i = 1; i < dense.length; i++) {
+    acc += Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1], dense[i][2] - dense[i - 1][2]);
+    if (acc >= step) {
+      out.push(dense[i]);
+      acc = 0;
+    }
+  }
+  if (acc > step * 0.4) out.push(dense[dense.length - 1]);
+  else out[out.length - 1] = dense[dense.length - 1];
+  return out;
+}
+/** HER VINE through `pts`, `ra` thick at its root, built in the scene; what of it is below the floor is in the floor (its leaves too). */
+function herVineIn(S: Scene, pts: readonly V3[], ra: number, seed: number, id: number): void {
+  const keep = (w: V3): boolean => w[2] >= 0;
+  const brush: VineBrush = {
+    wood: (a, b, r, ramp) => S.rod(v3(a), v3(b), r, r, ramp, id, keep),
+    knot: (c, r) => S.ball(v3(c), r, VINE_WOOD_PALE, id, keep),
+    leaf: (at, out, size, sd) => {
+      if (at[2] < 0.5) return;
+      const { c, A, r } = leafShape(at, out, [0, 0, -1], size, 0, sd);
+      S.egg(v3(c), [v3(A[0]), v3(A[1]), v3(A[2])], v3(r), (n, w) => {
+        const q = sub(local(S, w), c);
+        return leafFace([dot(q, A[0]) / r[0], dot(q, A[1]) / r[1], dot(q, A[2]) / r[2]], Number(toneAt(n, TONES)), sd, VINE_LEAF);
+      }, id + 1, keep);
+    },
+    tendril: (a, b, r0, r1) => S.rod(v3(a), v3(b), r0, r1, VINE_LEAF, id, keep),
+    thorn: (a, b) => S.rod(v3(a), v3(b), 0.75, 0.15, VINE_THORN, id, keep),
+  };
+  // (the way across the picture, in the piece's own frame: a tendril curls across it)
+  const acr = local(S, [Math.SQRT1_2, -Math.SQRT1_2, 0]);
+  herVine(pts, ra, seed, brush, norm(acr, [1, 0, 0]));
+}
+
+/** BOX EDGING, HER VINE THROUGH IT: up out of the lawn on its near side, over its top and along it, and down into the lawn behind. Along x (`k` 0) or along y (1). 124 x 92 at (62, 58). */
+function boxVined(k: number): Sprite {
+  const S = turned(scene(124, 92, 62, 58), k);
+  boxEdgingIn(S);
+  herVineIn(S, through([[-30, 16, -3], [-26, 12, 4], [-20, 7, 9], [-14, 3, 13.5], [-8, -1, 14.5], [-1, 1, 15], [6, -2, 14.5], [12, 0, 15.5], [18, -4, 12], [22, -8, 6], [27, -13, 2], [32, -17, -3]], 9), 2.3, 7801, 11);
+  // (a second, younger runner off it, along the hedge's near foot)
+  herVineIn(S, through([[-14, 8, -2], [-9, 7, 3], [-2, 7, 4.5], [5, 7, 3], [11, 8, -2]], 9), 1.3, 7802, 13);
+  return done(S, 62, 58);
+}
+/**
+ * A TERRACE WALL, HER VINE OVER IT: up out of the lawn at its foot, up its face, over the coping, round a baluster and along
+ * the rail, and hanging back down its face. Along x (`k` 0) or along y (1). 110 x 140 at (55, 100), as the wall.
+ */
+function wallVined(k: number): Sprite {
+  const S = turned(scene(110, 140, 55, 100), k);
+  terraceWallIn(S, false);
+  herVineIn(S, through([[-17, 27, -3], [-16, 23, 6], [-14, 21.6, 14], [-11, 21.6, 23], [-8, 21.8, 31], [-6, 19, 37.5], [-5, 17.5, 41], [-5.5, 18.5, 48], [-4, 18, 56], [0, 16, 60.5], [7, 16, 61], [13, 17, 60], [16, 20, 55], [17, 21.8, 46], [17.5, 22, 36], [18.5, 22.2, 27]], 8), 2.3, 7841, 11);
+  return done(S, 55, 100);
+}
+/** A LANTERN ON A POST, HER VINE UP IT: wound twice round its post up out of the lawn, under its cap, and over the lip, hanging. 76 x 108 at (38, 92). */
+function lanternVined(): Sprite {
+  const S = scene(76, 108, 38, 92);
+  const lights = lanternIn(S);
+  const coil: V3[] = [];
+  for (let i = 0; i <= 28; i++) {
+    const u = i / 28;
+    const a = Math.PI / 4 + u * Math.PI * 2 * 1.75;
+    coil.push([Math.cos(a) * 6.5, Math.sin(a) * 6.5, -3 + u * 37]);
+  }
+  const top = coil[coil.length - 1];
+  const out = norm([top[0], top[1], 0], [1, 0, 0]);
+  coil.push([top[0] + out[0] * 3, top[1] + out[1] * 3, 37.5], [top[0] + out[0] * 6.5, top[1] + out[1] * 6.5, 35], [top[0] + out[0] * 8, top[1] + out[1] * 8, 29], [top[0] + out[0] * 8.5, top[1] + out[1] * 8.5, 22]);
+  herVineIn(S, through(coil, 8), 2.0, 7811, 11);
+  return done(S, 38, 92, lights);
+}
+/** HER VINE ACROSS THE WALK: up out of the gravel two tiles apart, low across the walk in humps, and down; a young one beside it. Lying on the floor. Along x (`k` 0) or along y (1). 150 x 80 at (75, 44). */
+function walkVined(k: number): Sprite {
+  const S = turned(scene(150, 80, 75, 44), k);
+  herVineIn(S, through([[-40, 6, -4], [-34, 5, 5], [-25, 3, 10], [-16, 1, 4], [-8, -1, 6], [1, -2, 11], [10, -1, 7], [18, 1, 3], [27, 3, 9], [35, 5, 5], [40, 6, -4]], 10), 2.3, 7821, 11);
+  herVineIn(S, through([[-18, 13, -3], [-12, 12, 3], [-4, 11, 5], [4, 12.5, -3]], 10), 1.2, 7822, 13);
+  return done(S, 75, 44);
+}
+/**
+ * A YEW CONE, HER VINE REACHING OUT OF IT: out of the yew at a man's knee, down to the lawn and along it toward the walk,
+ * its tip lifted, feeling the air. Its frames: reaching (still); its tip twitching up and curling; drawn back half into
+ * the yew; gone into it, a few leaves left at its foot. The game shows the first, and as someone comes near plays the
+ * rest once and keeps the last (as the nettles stir). 150 x 140 at (94, 100).
+ */
+function yewVined(f: number): Sprite {
+  const S = scene(150, 140, 94, 100);
+  yewConeIn(S);
+  // (its whole length, from deep in the yew to its tip; each frame shows it from its root out to as far as it reaches)
+  const lift = f === 1 ? 1 : 0;
+  const path = through([[0, 2, 26], [1, 10, 23], [2, 16, 17], [1, 22, 9], [-1, 30, 4], [-5, 40, 4], [-7, 51, 5], [-5, 62, 5], [-1, 71 - 3 * lift, 10 + 8 * lift], [3, 74 - 6 * lift, 16 + 13 * lift], [6, 70 - 5 * lift, 18 + 14 * lift]], 9);
+  const reach = [1, 1, 0.55, 0.3][f];
+  const n = Math.max(4, Math.round(path.length * reach));
+  // (drawn back, it slides back along its own length into the yew: what is still out is the part nearest its root)
+  herVineIn(S, path.slice(0, n), 2.3, 7831, 11);
+  return done(S, 94, 100);
+}
+
+// =================================================================================================
 // THE SET
 
 let made: Piece[] | null = null;
@@ -910,6 +1047,22 @@ export function swanGardensPieces(): Piece[] {
     { name: 'swan feathers', kind: 'on the floor', frames: [swanFeathers()] },
   ];
   return made;
+}
+
+let vined: Piece[] | null = null;
+/** HER VINES IN THE GARDENS, beyond the twenty-five (his ask, 28 Oct): made the first time they are asked for and kept. */
+export function herVinesPieces(): Piece[] {
+  if (vined) return vined;
+  vined = [
+    // (frames: along x, along y)
+    { name: 'a terrace wall, her vine over it', kind: 'obstacle', frames: [wallVined(0), wallVined(1)], shadow: 0 },
+    { name: 'box edging, her vine through it', kind: 'obstacle', frames: [boxVined(0), boxVined(1)], shadow: 0.3 },
+    { name: 'a lantern on a post, her vine up it', kind: 'obstacle', frames: [lanternVined()], shadow: 0.25 },
+    { name: 'her vine across the walk', kind: 'on the floor', frames: [walkVined(0), walkVined(1)] },
+    // (frames: reaching, twitching, drawing back, gone back into the yew)
+    { name: 'a yew cone, her vine reaching out of it', kind: 'obstacle', frames: [0, 1, 2, 3].map(yewVined), shadow: 0.45 },
+  ];
+  return vined;
 }
 
 /** The water a piece stands in, at a picture pixel of the world (for the dev pages: the lake under the pavilion). */

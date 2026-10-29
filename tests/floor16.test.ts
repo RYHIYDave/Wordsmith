@@ -9,6 +9,9 @@
 //   Places 4 (what stands stands on its foot: the Swan Pavilion's likeness in the water before it aside); nothing of a
 //   piece cut off at its picture's edge;
 //   Places 7 (twenty-five a boss).
+// And HER VINES IN THE GARDENS (herVinesPieces), his ask beyond the twenty-five (28 Oct: “Can you put some of these vines
+// into the map as well?  Around where the hushed gardeners are at.”, “Once we lock in the look.  So they match”), held to
+// all the same; drawn by her whip's own recipe (src/art/princess_vine.ts); the yew's draws back into it.
 //   run: tsx --test tests/floor16.test.ts
 
 // @ts-ignore
@@ -19,7 +22,7 @@ import nodeAssert from 'node:assert/strict';
 import * as nodeFs from 'node:fs';
 
 import { BRIGHT } from '../src/art/act2_quiet';
-import { swanGardensPieces } from '../src/art/floor16';
+import { herVinesPieces, swanGardensPieces } from '../src/art/floor16';
 import type { Piece } from '../src/art/floorkit';
 import { WORD_COLOR } from '../src/art/icons';
 import { EMBER } from '../src/art/props';
@@ -33,8 +36,9 @@ const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string
 paintWithoutCanvas();
 
 const OWN = swanGardensPieces();
-const ALL: [string, Piece][] = OWN.map((p) => ['floor 16', p] as [string, Piece]);
-const HONEST = new Set(['a lantern on a post']);
+const VINES = herVinesPieces();
+const ALL: [string, Piece][] = [...OWN.map((p) => ['floor 16', p] as [string, Piece]), ...VINES.map((p) => ['her vines', p] as [string, Piece])];
+const HONEST = new Set(['a lantern on a post', 'a lantern on a post, her vine up it']);
 const QUEST = new Set(['a nettle shirt, half woven']);
 const FIRES = new Set([...EMBER, '#ffc860', '#fff3b0'].map((c) => c.toLowerCase()));
 
@@ -64,7 +68,7 @@ test('his twenty-five (Places 7): the Princess\'s floor 25 pieces of its own; ev
 });
 
 test('every piece has its pictures, as many as it says; only the lantern and the quest give light, each in its own colour (Colour 3)', () => {
-  const want: Record<string, number> = { 'a terrace wall': 2, "a stair's pier": 2, 'the terrace stair': 2, 'box edging': 2, 'a rose bush': 2, 'a stone bench': 2, 'an urn of roses': 2, 'a rose arbour': 4, nettles: 2, 'a garden gate': 4, "a gardener's barrow": 2 };
+  const want: Record<string, number> = { 'a terrace wall': 2, "a stair's pier": 2, 'the terrace stair': 2, 'box edging': 2, 'a rose bush': 2, 'a stone bench': 2, 'an urn of roses': 2, 'a rose arbour': 4, nettles: 2, 'a garden gate': 4, "a gardener's barrow": 2, 'a terrace wall, her vine over it': 2, 'box edging, her vine through it': 2, 'her vine across the walk': 2, 'a yew cone, her vine reaching out of it': 4 };
   for (const [set, p] of ALL) {
     const all = sprites(p);
     assert.equal(all.length, want[p.name] ?? 1, `${set}: ${p.name}: ${all.length} pictures`);
@@ -163,4 +167,19 @@ test('a terrace wall\'s face fills its row: 32 picture pixels of stone straight 
   let solid = 0;
   for (let y = Math.round(ay + 8) - 32; y < Math.round(ay + 8); y++) if (q.has(x, y)) solid++;
   assert.ok(solid >= 31, `the face at its middle: ${solid} of 32`);
+});
+
+test('her vines in the gardens: her whip\'s own recipe, and the yew\'s vine draws back into it, frame by frame', () => {
+  const src = fs.readFileSync('src/art/floor16.ts', 'utf8');
+  assert.ok(/from '\.\/princess_vine'/.test(src) && /herVine\(/.test(src), 'floor 16 draws her vines with art/princess_vine.ts');
+  const whip = fs.readFileSync('src/art/princess.ts', 'utf8');
+  assert.ok(/from '\.\/princess_vine'/.test(whip) && /herVine\(/.test(whip), 'her whip is drawn with art/princess_vine.ts');
+  const yew = VINES.find((p) => p.name === 'a yew cone, her vine reaching out of it')!;
+  const left = (s: Sprite): number => {
+    const q = paintingOf(s);
+    for (let x = 0; x < q.w; x++) for (let y = 0; y < q.h; y++) if (q.has(x, y)) return x;
+    return q.w;
+  };
+  const reach = yew.frames!.map(left);
+  assert.ok(reach[2] > reach[0] + 8 && reach[3] > reach[2] + 8, `her vine out of the yew reaches to ${reach.join(', ')} from its picture's left`);
 });

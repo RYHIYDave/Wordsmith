@@ -4,6 +4,8 @@
 //   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_swangardens.ts shots/swans/game.png 1200 840 "overview"
 //   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_swangardens.ts shots/swans/game_phone.png 1014 468 "phone"
 //   ... "tiles" (the tiles drawn over it), "close:X:Y" (four times as big round picture pixel X, Y of the overview)
+//   ... "gardeners" (the gardeners' corner, her vines grown through it, three Hushed gardeners at work there; "gardeners:2" twice as big)
+//   ... "novines" (as the overview, without her vines)
 import type { Sprite } from '../engine/px';
 import { makeHeroArt3 } from '../art/heroes3';
 import { paintSwanGardens, swanGardensTerrain } from '../art/swangardens';
@@ -13,16 +15,19 @@ import { L_HERO, L_SWANS, swanFloor, swanLand } from './swan_level';
 import { swanSprite } from './garden_paint';
 import { LAKE_DOWN } from '../art/swangardens';
 import { laySwanPieces } from './swan_lay';
+import { toSprite } from '../art/kit';
+import { canvasOf, paintMob } from '../art/new_mobs3';
+import { PALACE_GARDENER } from '../art/palace_hands_moves';
 
 const [mode = 'overview', cxArg = '600', cyArg = '400'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const W = 1200;
 const H = 840;
 const floor = swanFloor();
 const T = swanGardensTerrain(floor, swanLand());
-const [hx, hy] = pictureOf(L_HERO[0], L_HERO[1]);
-/** The picture's top left in the world's picture: the hero a little below the middle. */
+const [hx, hy] = mode === 'gardeners' ? pictureOf(22.5, 16.5) : pictureOf(L_HERO[0], L_HERO[1]);
+/** The picture's top left in the world's picture: the hero a little below the middle (or the gardeners' corner). */
 const VX = Math.round(hx - W / 2);
-const VY = Math.round(hy - H / 2 - 40);
+const VY = Math.round(hy - H / 2 - (mode === 'gardeners' ? 0 : 40));
 
 const cv = document.createElement('canvas');
 cv.width = W;
@@ -79,7 +84,12 @@ const blot = ((): HTMLCanvasElement => {
   return c;
 })();
 interface Stand { d: number; s: Sprite; x: number; y: number; shadow: number; under?: boolean; flip?: boolean; name?: string }
-const stands: Stand[] = laySwanPieces();
+const stands: Stand[] = laySwanPieces(mode !== 'novines');
+// (the gardeners' corner: three of the Hushed gardeners at work among her vines)
+if (mode === 'gardeners') {
+  const sp = (t: number): Sprite => toSprite(paintMob(PALACE_GARDENER, 'stand', t, 'front'), PALACE_GARDENER.aura, canvasOf(PALACE_GARDENER).ax, canvasOf(PALACE_GARDENER).ay);
+  for (const [x, y, t] of [[19.9, 15.2, 0], [22.3, 14.9, 0.7], [21.4, 21.4, 1.3]] as const) stands.push({ d: x + y, s: sp(t), x, y, shadow: 0.36, name: 'gardener' });
+}
 // THE SWANS (the first look's, not yet made enemies): on the lake, each with its likeness under it
 for (const [x, y, f] of L_SWANS) {
   const sw = swanSprite(f);
@@ -135,5 +145,6 @@ const crop = (cx: number, cy: number, sw: number, sh: number, k: number): void =
   g2.drawImage(src, Math.round(cx - sw / k / 2), Math.round(cy - sh / k / 2), sw / k, sh / k, 0, 0, sw, sh);
 };
 if (mode === 'phone') crop(W / 2, H / 2 + 20, 1014, 468, 1);
+else if (mode === 'gardeners' && cxArg === '2') crop(W / 2, H / 2, 1200, 840, 2);
 else if (mode === 'close') crop(Number(cxArg), Number(cyArg), 1014, 468, 4);
 (window as unknown as { __ready: boolean }).__ready = true;

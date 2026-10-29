@@ -1,22 +1,29 @@
 // Where the Swan Gardens' pieces (art/floor16.ts) stand on the level laid by hand (dev/swan_level.ts), for the dev pages,
 // laid as art/floor16.ts says the game may lay them. Nothing of the game imports it.
 import type { Sprite } from '../engine/px';
-import { swanGardensPieces } from '../art/floor16';
+import { herVinesPieces, swanGardensPieces } from '../art/floor16';
 import type { Piece } from '../art/floorkit';
 import { FTN, L_BEDS, L_ISLAND, L_LEFT, L_NETTLE_BED, LW, SX0, WALL1, WALL2 } from './swan_level';
 
 export interface Laid { d: number; s: Sprite; x: number; y: number; shadow: number; under?: boolean; name: string }
 
-/** Every piece laid on the level. */
-export function laySwanPieces(): Laid[] {
-  const P = swanGardensPieces();
+/**
+ * Every piece laid on the level; with `vines`, her vines grown through the gardeners' corner (art/floor16.ts, herVinesPieces:
+ * his ask, 28 Oct): across the top walk by their barrow, over the wall below it, through the near bed's box, over the
+ * lower wall, and by the lake walk, up the lantern at the stair's foot and out of a yew, reaching across the walk.
+ */
+export function laySwanPieces(vines = true): Laid[] {
+  const P = [...swanGardensPieces(), ...(vines ? herVinesPieces() : [])];
   const of = (n: string): Piece => {
     const p = P.find((q) => q.name === n);
     if (!p) throw new Error(`no piece named ${n}`);
     return p;
   };
   const out: Laid[] = [];
-  const put = (n: string, x: number, y: number, f = 0, under = false, d = x + y): void => {
+  // (her vines: where a piece of the gardens' stands with her vine grown through it instead)
+  const VINED: Record<string, string> = vines ? { 'a yew cone@21.5,27.5': 'a yew cone, her vine reaching out of it', 'box edging@18.5,18.5': 'box edging, her vine through it', 'box edging@20.5,20.5': 'box edging, her vine through it', 'a lantern on a post@23.5,27.5': 'a lantern on a post, her vine up it', 'a terrace wall@20.5,16.5': 'a terrace wall, her vine over it', 'a terrace wall@17.5,26.5': 'a terrace wall, her vine over it' } : {};
+  const put = (n0: string, x: number, y: number, f = 0, under = false, d = x + y): void => {
+    const n = VINED[`${n0}@${x},${y}`] ?? n0;
     const p = of(n);
     out.push({ d, s: p.frames![f], x, y, shadow: p.shadow ?? 0, under, name: n });
   };
@@ -68,6 +75,11 @@ export function laySwanPieces(): Laid[] {
   put('a garden gate', 26.0, 13.5, 1);
   put("a gardener's barrow", 20.5, 14.6);
   put('clippings and shears', 19.0, 14.5, 0, true);
+  // her vines across the top walk, either side of the gardeners' barrow
+  if (vines) {
+    put('her vine across the walk', 17.5, 14.5, 1, true);
+    put('her vine across the walk', 23.5, 14.6, 1, true);
+  }
   // by the lake: lanterns at the stair's foot, the nettles, the bench and the shirt she left, the landing, the nest
   put('a lantern on a post', 23.5, 27.5);
   put('a lantern on a post', 28.5, 27.5);

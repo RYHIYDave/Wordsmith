@@ -122,6 +122,11 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   was a long green snake.  Didn’t really read as vine”. Read as (told him so): a vine, not a snake: woody strands twisted
   round each other and knotted, big leaves in pairs all down it, curling tendrils, fewer and sharper thorns; held back it
   hangs and sways with its weight instead of slithering; the cage the same vine.
+- That film, asked whether the whip read as a vine now (if so, its look locked and her vines into the gardens next,
+  pictures first): “Yes, lock it (Recommended)”. Read as (told him so): the whip's look is locked; her vines drawn by its
+  own recipe through the gardeners' corner, pictures first.
+- The pictures of her vines in the gardens (the gardeners' corner, the lake walk, each piece up close and the yew's four
+  frames), asked whether they were right, so floor 16 could go back to the main chat: “Yes, that's it (Recommended)”.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -303,11 +308,37 @@ For the main chat: her blows' areas are bigger than the old enemies' (his “And
 time the player gets to evade”); the art is drawn to that (the lash's long line, the snare's cage round you, the Vow's
 ring as big as the game makes it, the steed's landing).
 
+## Her vines in the gardens (src/art/floor16.ts `herVinesPieces()`, beyond the twenty-five)
+
+His ask, 28 Oct, 23:22: “Can you put some of these vines into the map as well?  Around where the hushed gardeners are at.
+So you’re like “huh those vines are weird” then the boss has the big vine”; 23:23: “Once we lock in the look.  So they
+match”. The look locked (“Yes, lock it (Recommended)”), they are drawn by HER VINE'S ONE RECIPE, `src/art/princess_vine.ts`
+(`herVine`), the same code that draws her whip and her cage (every frame of her lash and her snare, from in front and
+behind, the same pixel for pixel after it was moved there): the twisted olive-brown wood and its paler strand, the
+knots, the big leaves in pairs, the curling tendrils, the hooked pale thorns. One difference: in the gardens the thorns
+are untipped, the dull pink hers alone (his rulebook, Colour 3: no pink in a place). Five pieces:
+
+- `a terrace wall, her vine over it` (along x, along y): up out of the lawn at its foot, up its face, over the coping,
+  round a baluster, along the rail, and hanging back down.
+- `box edging, her vine through it` (along x, along y): up out of the lawn, over the hedge and along its top, and down;
+  a younger runner along its foot.
+- `a lantern on a post, her vine up it`: wound twice round the post, over the cap's lip, hanging; the candle still lit.
+- `her vine across the walk` (along x, along y; on the floor): two tiles of it in humps across the gravel, up out of it and
+  back down into it; a young one beside it.
+- `a yew cone, her vine reaching out of it` (four frames): reaching out of the yew and along the ground, its tip lifted;
+  twitching up and curling; drawn half back; gone in, a few leaves left. FOR THE MAIN CHAT: show the first; as the hero
+  comes near, play the rest once and keep the last (as the nettles stir).
+
+Laid on the dev level (`src/dev/swan_lay.ts`) in the gardeners' corner: across the top walk either side of their barrow,
+over the wall below it, through the near bed's box, over the lower wall, and by the lake walk up the lantern at the
+stair's foot and out of a yew, reaching across the walk. `preview_swangardens.ts`: `gardeners` (the corner with three
+Hushed gardeners at work in it), `gardeners:2` (twice as big), `novines` (as before).
+
 ## The dev pages
 
 - `src/dev/preview_garden.ts` (the painting): `overview`, `phone`, `close:X:Y`.
 - `src/dev/preview_swangardens.ts` (built from the game-ready ground and pieces, the knight on the lake walk; the swans the
-  painting's, not yet enemies): `overview`, `phone`, `tiles`, `close:X:Y`.
+  painting's, not yet enemies): `overview`, `phone`, `tiles`, `close:X:Y`, `gardeners`, `gardeners:2`, `novines`.
 - `src/dev/preview_floor16.ts` (the pieces): `all`, `range=A-B@K`, `look=<name>@K`, `show`.
 - `src/dev/preview_palace_hands.ts` (the gardeners and grooms): `sheet` (both, from in front and behind beside the knight,
   three times as big; a crowd at the game's size), `big:<gardener|groom>:<move>:<t>`.
@@ -324,9 +355,10 @@ ring as big as the game makes it, the steed's landing).
   yew; pieces side by side one picture; every pixel opaque; no cyan, no pink, every colour under the dullest word's; green
   the most of what is walked on, the dawn's lavender in the lake; the yew's shadow falls away from the sun; the nettles show,
   the kerb's stone.
-- `tests/floor16.test.ts` (8): nothing of the game imports them; 25, each its own name; pictures as many as each says; only
+- `tests/floor16.test.ts` (9): nothing of the game imports them; 25, each its own name; pictures as many as each says; only
   the lantern and the quest give light; crisp; no cyan, no pink, under the dullest word's; each stands on its foot; nothing
-  cut off; a terrace wall's face fills its row.
+  cut off; a terrace wall's face fills its row. Her vines in the gardens held to all the same; drawn with her whip's own
+  recipe (and her whip with it); the yew's vine draws back into it, frame by frame.
 - `tests/garden_swans.test.ts` (13): nothing of the game imports it, its switch off; crisp, the enemy's rim; no cyan, no
   pink, no light, nothing cut off; its size; FLOOR (nothing under it in any frame); FEET GRIP; nothing THROUGH its body;
   JERK and JUMP; ALIVE; its bite; its death; its pictures.
