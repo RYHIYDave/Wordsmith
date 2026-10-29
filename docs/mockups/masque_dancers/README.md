@@ -142,3 +142,8 @@ Each is a mob as the game holds a monster (`Mob`, art/new_mobs3.ts): `stand`, `w
 - `tools/masque_dancers_film.ts` (`sheet`, `crowd`, `film`) paints them in node as the game would, on the stand-in floor with
   the knight; `tools/masque_dancers_film.py` captions the frames and makes the film; `tools/masque_canvas.ts` is its canvas.
 - `src/dev/preview_masque_dancers.ts`: the dev page (`sheet`, `big:<lady|gent>:<move>:<t>`, `pair:<waltz|chime>:<t>`).
+
+## His word on the pictures
+
+The crowd, the sheet and the film (`crowd.png`, `sheet.png`, `film.mp4`), asked “Floor 17's masked dancers (crowd.png,
+sheet.png and the film): are these right? With them, floor 17 is complete.”: “Yes, that's them (Recommended)”.
