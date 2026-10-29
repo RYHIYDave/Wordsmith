@@ -222,7 +222,7 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
 - THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s): she turns away and raises the vine back over
   her shoulder, her left hand pointing, the thorns glinting pink (held 0.4 to 0.7 s); hips first; the vine whips over
   and cracks out its whole length along the floor at you (two frames, smeared); it slides on; she draws it back. It
-  reaches about 60 of her lengths before her: a long line to dodge.
+  reaches 70 of her lengths before her as it lands (about her own height, nearly two tiles): a long line to dodge.
 - THE VINE SNARE (`PR_SNARE`, the blow at 0.83 s): hands lifted high, held; slammed down (two frames). Where you stand
   (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, a cage of nettle vines bursts up round you in two frames,
   holds writhing, then withers and sinks.
