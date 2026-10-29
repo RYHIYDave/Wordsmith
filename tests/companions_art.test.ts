@@ -219,7 +219,7 @@ test('7. their pictures as the game holds them (stand, moving, attack with its b
         painted++;
       }
     }
-    assert.ok(painted > 200 && edge > 30, `${k}'s icon: ${painted} painted, ${edge} edge`);
+    assert.ok(painted > 150 && edge > 30, `${k}'s icon: ${painted} painted, ${edge} edge`);
   }
 });
 void COMP_CANVAS;

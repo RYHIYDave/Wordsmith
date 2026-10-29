@@ -822,9 +822,9 @@ function wingStand(k: 'hawk' | 'bat', t0: number): WingPose {
     const work = Math.sin(a * 3);
     return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.2 * Math.sin(a) + 0.3 * Math.sin(a * 4)], pitch: -10 + 3 * Math.sin(a), roll: 4 * Math.sin(a + 0.6), yaw: 0, lift: [20 + 6 * work, 20 + 6 * work], sweep: -4 + 3 * Math.sin(a * 2), fold: 0.05 + 0.05 * Math.sin(a * 3 + 1), droop: 8 + 3 * work, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
   }
-  const b0 = beat(fr(t / 0.4 + 0.225), 42, 18);
+  const b0 = beat(fr(t / 0.4 + 0.225), 4, -22);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: -24 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
+  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: -8 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
 }
 /** THE HAWK FLYING: level and fast, two deep beats and a glide in each turn, its tail closed, its head steady. THE BAT FLYING: quick beats, pitched into its flight, jinking from side to side. */
 function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
@@ -839,9 +839,9 @@ function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
     const b = flap ? beat(ph / 0.6, 44, 6) : { lift: g, fold: 0.05, sweep: 0 };
     return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: -4, roll: 2 * Math.sin(a), yaw: 0, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
   }
-  const b0 = beat(fr(ph + 0.225), 42, 18);
+  const b0 = beat(fr(ph + 0.225), 4, -22);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: -20, roll: 4 * Math.sin(a), yaw: 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
+  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: -4, roll: 4 * Math.sin(a), yaw: 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
 }
 /**
  * THE HAWK'S STOOP (its gift, Precise: it marks its prey, his next hit on it a sure critical). It climbs and rears back,

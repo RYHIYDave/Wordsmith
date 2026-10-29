@@ -836,6 +836,8 @@ const HAWK_HOOK: Ramp = ['#14141c', '#14141c', '#3a3a4a', '#646478', '#646478'];
 const JESS: Ramp = ['#0c2a34', '#0c2a34', '#16525e', '#2a7a84', '#2a7a84'];
 const BAT_FUR: Ramp = ['#1c1210', '#1c1210', '#4e3024', '#7a4e36', '#7a4e36'];
 const BAT_MANTLE: Ramp = ['#3a2410', '#3a2410', '#a06a2a', '#d09a48', '#d09a48'];
+/** Its face: a lighter fur than its body, the fruit bat's fox-like face. */
+const BAT_HEAD: Ramp = ['#2a1a10', '#2a1a10', '#7a4e2a', '#a8743e', '#a8743e'];
 const MEMBRANE: Ramp = ['#120c10', '#120c10', '#3c2a2e', '#5c4446', '#5c4446'];
 const WING_BONE: Ramp = ['#2a1e1e', '#2a1e1e', '#6a5048', '#8e7262', '#8e7262'];
 
@@ -983,8 +985,8 @@ function batLook(P: WP): Look {
   const hl = norm(cross(UPB, hf), B([0, 1, 0]));
   const hu = norm(cross(hf, hl));
   const Hp = (v: V3): V3 => add(hc, add(add(mul(hf, v[0]), mul(hl, v[1])), mul(hu, v[2])));
-  put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 1.75), mul(hl, 1.55), mul(hu, 1.55)], skin: BAT_FUR });
-  put('head', 'snout', { k: 'rod', a: Hp([0.9, 0, -0.2]), b: Hp([2.5, 0, -0.7]), ra: 0.95, rb: 0.55, ramp: BAT_FUR });
+  put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 1.75), mul(hl, 1.55), mul(hu, 1.55)], skin: BAT_HEAD });
+  put('head', 'snout', { k: 'rod', a: Hp([0.9, 0, -0.2]), b: Hp([2.5, 0, -0.7]), ra: 0.95, rb: 0.55, ramp: BAT_HEAD });
   put('head', 'nose', { k: 'ball', c: Hp([2.6, 0, -0.55]), ax: [mul(hf, 0.45), mul(hl, 0.55), mul(hu, 0.45)], skin: NOSE });
   const ga = P.gape * 40;
   const hinge = Hp([0.6, 0, -0.9]);
@@ -1009,7 +1011,7 @@ function batLook(P: WP): Look {
     const plane = norm(cross(fore, B([-1, 0, 0])));
     const n = dot(plane, UPB) < 0 ? mul(plane, -1) : plane;
     const spread = 1 - 0.7 * P.fold;
-    const tips = [[4, 8.2], [50, 7.2], [100, 6.2]].map(([ang, L]) => add(Wr, mul(norm(rotIn(fore, n, -s * ang * spread)), L * (1 - 0.25 * P.fold))));
+    const tips = [[4, 8.2], [50, 7.2], [100, 6.2]].map(([ang, L]) => add(Wr, mul(norm(rotIn(fore, n, s * ang * spread)), L * (1 - 0.25 * P.fold))));
     const hip = W([-2.0, s * 1.1, -0.6]);
     const scallop = (al: number, be: number): boolean => {
       const sum = al + be;
@@ -1161,11 +1163,11 @@ export function companionReview(k: Kind): { mob: Mob; shape: BossShape; moves: s
 
 import { Px } from '../engine/px';
 /** The pose each is drawn in for its icon, how much bigger than in the game, and where its floor point sits on the icon. */
-const ICON_POSE: Record<Kind, { which: string; t: number; k: number; x: number; y: number }> = {
-  hawk: { which: 'attack', t: COMP_ATTACK.coiled + 0.05, k: 0.82, x: 17, y: 51 },
+const ICON_POSE: Record<Kind, { which: string; t: number; k: number; x: number; y: number; view?: GameView }> = {
+  hawk: { which: 'stand', t: 0.3, k: 0.92, x: 16, y: 44, view: 'back' },
   snake: { which: 'stand', t: 0.3, k: 1.5, x: 11, y: 29 },
   wolf: { which: 'stand', t: 0.9, k: 0.95, x: 11, y: 29 },
-  bat: { which: 'attack', t: COMP_ATTACK.coiled + 0.05, k: 1.15, x: 15, y: 54 },
+  bat: { which: 'stand', t: 0.3, k: 0.8, x: 16, y: 38, view: 'front' },
   fox: { which: 'stand', t: 0.6, k: 1.25, x: 14, y: 29 },
   tortoise: { which: 'stand', t: 0, k: 1.05, x: 15, y: 27 },
 };
@@ -1191,7 +1193,7 @@ function bigger(sh: Shape, f: number): Shape {
 export function companionIcon(k: Kind): Px {
   const I = ICON_POSE[k];
   const L = companionLook(k, I.which, I.t);
-  const st = stage('front', I.x, I.y, { w: 32, h: 32 });
+  const st = stage(I.view ?? 'front', I.x, I.y, { w: 32, h: 32 });
   paintBits(st, L.bits.map((b) => ({ ...b, shape: bigger(b.shape, I.k) })), mul(L.ref, I.k));
   return st.whole(FRIEND_RIM);
 }
