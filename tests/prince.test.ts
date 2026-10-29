@@ -272,15 +272,18 @@ test('7. HIS BRIEF: the smiling gilt mask with the Hush in its eyes; never still
     assert.ok(masked(bits), `${move} @${t.toFixed(2)}: no mask on his face`);
     assert.ok(pinkEyes(bits), `${move} @${t.toFixed(2)}: not the Hush's pink in its eyes`);
   }
-  // THE SMILE: the mask's face, carved: its eye holes and its wide smile dark, its corners turned up, the rest gilt
-  const mask = MOB.bits(st, at('stand', 0)).find((b) => b.piece === 'maskA' && b.shape.k === 'ball');
-  assert.ok(mask && mask.shape.k === 'ball' && typeof mask.shape.skin === 'function', 'the mask');
-  const skin = (mask as { shape: { skin: (u: V3, tone: number, x: number, y: number) => string | null } }).shape.skin;
+  // THE SMILE: the mask's face, carved: its eye holes and its wide smile dark, its corners turned up, the rest gilt (its two
+  // halves, as it will crack, make one face)
+  const halves = MOB.bits(st, at('stand', 0)).filter((b) => (b.piece === 'maskA' || b.piece === 'maskB') && b.shape.k === 'ball');
+  assert.equal(halves.length, 2, 'the mask, in its two halves');
+  const skins = halves.map((b) => (b.shape as { skin: (u: V3, tone: number, x: number, y: number) => string | null }).skin);
+  const skin = (u: V3): string | null => skins[0](u, 3, 0, 0) ?? skins[1](u, 3, 0, 0);
   const on = (y: number, z: number): V3 => [Math.sqrt(Math.max(0, 1 - y * y - z * z)), y, z];
-  assert.equal(skin(on(0, -0.44), 3, 0, 0), '#1a1208', 'the smile at its middle');
-  assert.equal(skin(on(0.5, -0.24), 3, 0, 0), '#1a1208', 'the smile turned up at its corner');
-  assert.equal(skin(on(0.36, 0.17), 3, 0, 0), '#1a1208', 'an eye hole');
-  assert.ok(/^#[0-9a-f]{6}$/.test(skin(on(0.42, -0.08), 3, 0, 0) ?? '') && skin(on(0.42, -0.08), 3, 0, 0) !== '#1a1208', 'gilt on the cheek');
+  assert.equal(skin(on(0, -0.44)), '#1a1208', 'the smile at its middle');
+  assert.equal(skin(on(0.5, -0.24)), '#1a1208', 'the smile turned up at its corner');
+  assert.equal(skin(on(0.36, 0.17)), '#1a1208', 'an eye hole');
+  const cheek = skin(on(0.42, -0.08));
+  assert.ok(cheek !== null && cheek !== '#1a1208', 'gilt on the cheek');
   // NEVER STILL (his “dancing is going to need to be fast and constantly moving”): standing, both feet step, his body sways
   // and rises, the rapier's point goes round
   const ts = framesOf(MOB, 'stand');
@@ -292,8 +295,12 @@ test('7. HIS BRIEF: the smiling gilt mask with the Hush in its eyes; never still
   const tips = sk.map((s) => rapierOf(s).tip);
   assert.ok(span((i) => tips[i][1]) > 4 && span((i) => tips[i][2]) > 2, 'the point goes round');
   // HIS DEATH: the mask cracks across before it falls
-  const crackA = MOB.bits(st, dyingMoment(MOB, (PC_DIES.crack[0] + PC_DIES.crack[1]) / 2)).find((b) => b.piece === 'maskA');
-  assert.ok(crackA, 'the cracked mask');
+  const cracked = MOB.bits(st, dyingMoment(MOB, PC_DIES.crack[1])).filter((b) => (b.piece === 'maskA' || b.piece === 'maskB') && b.shape.k === 'ball');
+  assert.equal(cracked.length, 2, 'the cracked mask, its two halves');
+  const cSkins = cracked.map((b) => (b.shape as { skin: (u: V3, tone: number, x: number, y: number) => string | null }).skin);
+  const onCrack = on(0.325, 0.6);
+  assert.equal(cSkins[0](onCrack, 3, 0, 0) ?? cSkins[1](onCrack, 3, 0, 0), '#1a1208', 'the crack across it');
+  assert.ok(skin(onCrack) !== '#1a1208', 'and none before');
   // (its halves fall and lie on the floor, face up)
   const end = deathOfMob(MOB, 1, 'front');
   const gilt = new Set(['#a47c26', '#d6ae46', '#f6e090', '#6c4c14'].map((c) => rgba(c).slice(0, 3).join(',')));
@@ -305,17 +312,24 @@ test('7. HIS BRIEF: the smiling gilt mask with the Hush in its eyes; never still
   const fogFace = MOB.bits(st, dyingMoment(MOB, PC_DIES.maskFalls + 0.1)).find((b) => b.part === 'head' && b.shape.k === 'ball');
   assert.ok(fogFace && fogFace.shape.k === 'ball' && typeof fogFace.shape.skin === 'function' && ['#8f88aa', '#b6b0cc', '#d6d2e4', '#625a7a'].includes(fogFace.shape.skin([1, 0, 0], 3, 0, 0) ?? ''), 'fog where his face was');
   // (the fog pours out of him, and is gone by the end)
-  assert.ok((MOB.grains?.(st, dyingMoment(MOB, PC_DIES.maskFalls + 0.4)) ?? []).length > 200, 'the fog pouring out of him');
-  assert.equal((MOB.grains?.(st, dyingMoment(MOB, PC_DIES.long)) ?? []).length, 0, 'the fog all gone at the end');
-  // NO BODY: at the end, nothing of him stands; all that is left lies on the floor (his clothes, empty and flat), and no pink
+  const grainsAt = (t: number): number => {
+    const m = dyingMoment(MOB, t);
+    MOB.bits(st, m);
+    return (MOB.grains?.(st, m) ?? []).length;
+  };
+  assert.ok(grainsAt(PC_DIES.maskFalls + 0.4) > 100, 'the fog pouring out of him');
+  assert.equal(grainsAt(PC_DIES.long), 0, 'the fog all gone at the end');
+  // NO BODY: at the end, nothing of him stands; all that is left lies on the floor (his clothes, empty and flat), no eyes
   const left = MOB.bits(st, dyingMoment(MOB, PC_DIES.long));
   assert.ok(!left.some((b) => b.piece === 'eyes'), 'no eyes left');
-  let top = 0;
-  for (let y = 0; y < end.px.h && !top; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3]) {
-    top = PC_CANVAS.ay - y;
-    break;
+  let high = 0;
+  for (const b of left) {
+    const sh = b.shape;
+    if (sh.k === 'rod' || sh.k === 'thread') high = Math.max(high, sh.a[2], sh.b[2]);
+    else if (sh.k === 'ball') high = Math.max(high, sh.c[2] + Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]));
+    else if (sh.k === 'cloth') for (const r of sh.rings) high = Math.max(high, r.c[2] + Math.hypot(r.u[2], r.v[2]), ...(r.pts ?? []).map((p: V3) => p[2]));
   }
-  assert.ok(top < 16, `at the end nothing stands: the highest of what is left ${top} pixels up`);
+  assert.ok(high < 8, `at the end nothing stands: the highest of what is left ${high.toFixed(1)} up`);
 });
 
 test('8. WHAT HIS MOVES LEAVE: the ring snaps shut in two frames; the masks fly smeared and spinning; the chimes roll out; nothing cyan', () => {

@@ -366,15 +366,15 @@ export function chimePainted(t: number, view: GameView = 'front', phase: 0 | 1 |
     const ca = Math.cos(a);
     const sa = Math.sin(a);
     // the wave: from its crest back, a band of the black room's crimson, dithered thinner toward its back
-    for (let j = 0; j <= 8; j++) {
-      const back = (j / 8) * band;
+    for (let j = 0; j <= 12; j++) {
+      const back = (j / 12) * band;
       const rr = r - back;
       if (rr < 0) continue;
-      const k = j / 8;
-      if (k > 0.25 && hash(i, j, 7771) > (1 - k) * 1.3 * left) continue;
+      const k = j / 12;
+      if (k > 0.2 && hash(i, j, 7771) > (1.15 - k) * 1.4 * left) continue;
       const lift = 3.2 * Math.sin(Math.PI * Math.min(1, k * 1.6)) * (1 - k * 0.6) + 0.4;
       const [x, y] = st.at([ca * rr, sa * rr, lift]);
-      const c = j === 0 ? (i % 3 ? FLAME[4] : GILT[4]) : j === 1 ? FLAME[3] : j <= 3 ? '#a4161c' : j <= 5 ? '#6e0e14' : '#3c080c';
+      const c = j === 0 ? (i % 3 ? FLAME[4] : GILT[4]) : j === 1 ? FLAME[3] : j <= 4 ? '#a4161c' : j <= 8 ? '#6e0e14' : '#3c080c';
       lay(px, x, y, c, j <= 1 ? 2 : 1);
     }
     // the dust thrown up behind it, drifting

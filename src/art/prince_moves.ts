@@ -167,28 +167,31 @@ function standPlan(): Plan {
   for (let i = 0; i <= N; i++) {
     const t = (i / N) * T;
     const a = (t / T) * TAU;
-    const s1 = Math.sin(a);
-    const s2 = Math.sin(2 * a);
+    // (his weight from foot to foot twice round, rising onto his toes at each step; his body turning a little with it)
+    const sway = Math.sin(2 * a);
+    const rise = Math.sin(2 * a) ** 2;
     keys.push([t, {
-      pz: R.pz + 1.6 * Math.sin(2 * a) * Math.sin(2 * a),
-      py: 1.7 * s1,
-      roll: R.roll - 1.6 * s1,
-      side: R.side + 1.4 * s1,
-      yaw: R.yaw + 5 * Math.sin(a + 0.0) * Math.cos(a * 0.0),
-      twist: R.twist - 3 * s1,
-      bend: R.bend - 1.2 * Math.sin(2 * a),
-      pitch: R.pitch + 0.8 * Math.sin(2 * a),
-      faceTurn: R.faceTurn + 9 * Math.sin(a),
-      faceTilt: R.faceTilt + 5 * s2,
-      faceUp: R.faceUp + 2 * Math.sin(2 * a),
-      ...hands([R.lhx + 2.2 * Math.sin(a), R.lhy + 1.6 * (1 - Math.cos(a)), R.lhz + 3.2 * Math.sin(2 * a)], [R.rhx + 0.8 * Math.sin(2 * a), R.rhy + 0.6 * (1 - Math.cos(2 * a)), R.rhz + 0.8 * Math.sin(a)], R.le - 6 * Math.sin(a), R.re),
-      ...blade(R.wAz + 5.5 * Math.sin(2 * a), R.wEl + 3 * (1 - Math.cos(2 * a)), R.wRoll),
+      pz: R.pz + 2.0 * rise,
+      py: 2.2 * sway,
+      roll: R.roll - 2.2 * sway,
+      side: R.side + 2.0 * sway,
+      yaw: R.yaw + 6 * Math.sin(a),
+      twist: R.twist - 5 * Math.sin(a) + 3 * sway,
+      bend: R.bend - 1.6 * rise,
+      pitch: R.pitch + 1.2 * rise,
+      faceTurn: R.faceTurn + 10 * Math.sin(a),
+      faceTilt: R.faceTilt + 6 * sway,
+      faceUp: R.faceUp + 2.5 * rise,
+      // (his left hand turning in the air as a dancer's; the rapier's point going round before him, and a flick of it)
+      ...hands([R.lhx + 3.0 * Math.sin(a), R.lhy + 2.2 * (1 - Math.cos(a)), R.lhz + 4.0 * Math.sin(2 * a)], [R.rhx + 1.2 * Math.sin(2 * a), R.rhy + 0.8 * (1 - Math.cos(2 * a)), R.rhz + 1.2 * Math.sin(a)], R.le - 8 * Math.sin(a), R.re),
+      ...blade(R.wAz + 6 * Math.sin(a) + 2 * Math.sin(3 * a), R.wEl + 4 * (1 - Math.cos(a)) + 2 * Math.sin(2 * a) ** 2, R.wRoll),
     }]);
   }
-  // (his feet: the right taps once as his weight is on his left, the left once as it is on his right; both up on their balls as he rises)
+  // (his feet: a light step from one to the other, four to a round: each lifts, steps a little out or back, and is down again
+  // where it stood by the round's end; up on their balls as he rises)
   const feet = footwork(B, {
-    R: { start: R0, moves: [{ t0: 0.32, t1: 0.52, to: plantBy(R0, 0.6, 0, -4, { pitch: 16 }), lift: 3.0 }, { t0: 0.62, t1: 0.82, to: R0, lift: 2.2 }] },
-    L: { start: L0, moves: [{ t0: 1.52, t1: 1.72, to: plantBy(L0, -0.6, 0, 4, { pitch: 16 }), lift: 3.0 }, { t0: 1.82, t1: 2.02, to: L0, lift: 2.2 }] },
+    R: { start: R0, moves: [{ t0: 0.08, t1: 0.3, to: plantBy(R0, 1.6, -1.2, -6, { pitch: 26 }), lift: 4.5 }, { t0: 1.28, t1: 1.5, to: R0, lift: 4.5 }] },
+    L: { start: L0, moves: [{ t0: 0.68, t1: 0.9, to: plantBy(L0, -1.4, 1.2, 6, { pitch: 18 }), lift: 4.5 }, { t0: 1.88, t1: 2.1, to: L0, lift: 4.5 }] },
   });
   return { long: T, keys, feet, loop: true };
 }
@@ -196,7 +199,8 @@ function standPlan(): Plan {
 // =============================================================================================
 // THE DANCE-STEP (his walk): quick gliding steps on the balls of his feet, leaning into his way, his coat streaming
 
-/** His speed dancing across the floor, tiles a second (the Princess glides at 4; the knight walks 2.5). */
+/** His speed dancing across the floor, tiles a second (the Princess glides at 4; the knight runs at 4.6, `TUNE.heroSpeed`:
+ * the game may show the same frames faster, `walkFpsAt`, to have him outpace the knight). */
 export const PC_PACE = 4.5;
 export const PC_WALK = { frames: 12, fps: 30 } as const;
 const WALK_LONG = PC_WALK.frames / PC_WALK.fps;

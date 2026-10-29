@@ -89,7 +89,7 @@ export const PRINCE_REST: Bones = {
   pz: -1.2, px: -1.5, py: 0.8, pitch: 0, bend: -4, roll: -2, side: 2, yaw: -10, twist: 8, faceUp: 4, faceTilt: -5, faceTurn: 6,
   lk: 22, rk: -10,
   ...footOn(B, 'L', { at: [2.0, 6.4], turn: 30, pitch: 8 }), ...footOn(B, 'R', { at: [13.5, -4.6], turn: -8, pitch: 34 }),
-  lhIn: 0, lhx: 3, lhy: 19, lhz: -9, le: -20,
+  lhIn: 0, lhx: 1, lhy: 18, lhz: -3, le: -30,
   rhIn: 0, rhx: 11, rhy: -4.5, rhz: -18, re: 20,
   wAz: 0, wEl: -18, wRoll: 0,
   out: 0,
@@ -191,7 +191,10 @@ function rapier(put: Put, s: Skeleton, ramp: Ramp = STEEL): void {
 }
 
 /** THE MASK'S FACE, in its own lines (forward out of the face, to its left, up), on a shell over the front of his head: the smile, the eye holes, the brows, the cheeks, the ridge of the nose. `half`: which half of it, once cracked (null: whole). */
-function maskSkin(half: 'A' | 'B' | null, crack: number): Skin {
+/** A skin drawn point by point (the mask's carving). */
+type Carved = (u: V3, tone: number, x: number, y: number) => string | null;
+
+function maskSkin(half: 'A' | 'B' | null, crack: number): Carved {
   return (u, tone) => {
     if (u[0] < 0.2) return null;
     const y = u[1] / 0.98;
@@ -269,19 +272,30 @@ function princeBits(st: Stage, m: Moment, say: PrinceSay): Bit[] {
   const mid0: V3 = [s.pelvis[0], s.pelvis[1], 0];
   // (as he empties, all he wears sinks flat to the floor: every solid's points flattened)
   const F = (p: V3): V3 => flatten(p, empty, mid0);
+  // (and nothing sinks into the floor as it goes down: what would, lies on it)
+  const onFloor = (p: V3, deep: number): V3 => [p[0], p[1], Math.max(p[2], deep)];
   const put: Put = (part, piece, shape) => {
     if (empty <= 0) {
       bits.push({ part, piece, shape });
       return;
     }
     const sh = shape;
-    if (sh.k === 'rod') bits.push({ part, piece, shape: { ...sh, a: F(sh.a), b: F(sh.b), ra: sh.ra * (1 - 0.35 * empty), rb: sh.rb * (1 - 0.35 * empty) } });
+    if (sh.k === 'rod') {
+      const ra = sh.ra * (1 - 0.35 * empty);
+      const rb = sh.rb * (1 - 0.35 * empty);
+      bits.push({ part, piece, shape: { ...sh, a: onFloor(F(sh.a), ra), b: onFloor(F(sh.b), rb), ra, rb } });
+    }
     else if (sh.k === 'ball') {
       const sq = (v: V3): V3 => [v[0], v[1], v[2] * (1 - 0.6 * empty)];
-      bits.push({ part, piece, shape: { ...sh, c: F(sh.c), ax: [sq(sh.ax[0]), sq(sh.ax[1]), sq(sh.ax[2])] } });
+      const ax: [V3, V3, V3] = [sq(sh.ax[0]), sq(sh.ax[1]), sq(sh.ax[2])];
+      bits.push({ part, piece, shape: { ...sh, c: onFloor(F(sh.c), Math.hypot(ax[0][2], ax[1][2], ax[2][2])), ax } });
     }
-    else if (sh.k === 'cloth') bits.push({ part, piece, shape: { ...sh, rings: sh.rings.map((r) => ({ c: F(r.c), u: [r.u[0], r.u[1], r.u[2] * (1 - empty)] as V3, v: [r.v[0], r.v[1], r.v[2] * (1 - empty)] as V3, pts: r.pts?.map(F) })) } });
-    else if (sh.k === 'band') bits.push({ part, piece, shape: { ...sh, ring: { c: F(sh.ring.c), u: sh.ring.u, v: sh.ring.v } } });
+    else if (sh.k === 'cloth') bits.push({ part, piece, shape: { ...sh, rings: sh.rings.map((r) => {
+      const u: V3 = [r.u[0], r.u[1], r.u[2] * (1 - empty)];
+      const v: V3 = [r.v[0], r.v[1], r.v[2] * (1 - empty)];
+      return { c: onFloor(F(r.c), Math.hypot(u[2], v[2])), u, v, pts: r.pts?.map((p) => onFloor(F(p), 0)) };
+    }) } });
+    else if (sh.k === 'band') bits.push({ part, piece, shape: { ...sh, ring: { c: onFloor(F(sh.ring.c), Math.hypot(sh.ring.u[2], sh.ring.v[2])), u: sh.ring.u, v: sh.ring.v } } });
     else if (sh.k === 'dot' || sh.k === 'mote') bits.push({ part, piece, shape: { ...sh, p: F(sh.p) } });
     else if (sh.k === 'thread') bits.push({ part, piece, shape: { ...sh, a: F(sh.a), b: F(sh.b) } });
     else bits.push({ part, piece, shape });
@@ -308,10 +322,7 @@ function princeBits(st: Stage, m: Moment, say: PrinceSay): Bit[] {
     put(`boot${side}`, `boot${side}`, { k: 'rod', a: top, b: ankle, ra: rK * 1.18, rb: rA * 1.15, ramp: BOOT, far: true });
     // the turned-down top: a wider band of the boot's lining just under the knee
     const shin = norm(sub(ankle, knee), [0, 0, -1]);
-    const e1 = norm(cross(shin, [0, 0, 1]), fH);
-    const e2 = norm(cross(e1, shin), lH);
     put(`boot${side}`, `boot${side}`, { k: 'rod', a: add(top, mul(shin, -0.4)), b: add(top, mul(shin, 3.2)), ra: rK * 1.42, rb: rK * 1.32, ramp: BOOT, far: true });
-    void e2;
     const fwd = norm(sub(toe, heel), [1, 0, 0]);
     const side3 = norm([-fwd[1], fwd[0], 0], [0, 1, 0]);
     // the foot: slim, pointed, on a heel
@@ -576,6 +587,6 @@ export function princePainter(say: PrinceSay): { bits: (st: Stage, m: Moment) =>
 }
 
 /** A smiling gilt mask by itself (his Masks, flung; the masks his partners wear): its shell's skin, for art/prince_fx.ts. */
-export function maskFace(): Skin {
+export function maskFace(): Carved {
   return maskSkin(null, 0);
 }
