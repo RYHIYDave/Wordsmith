@@ -880,7 +880,11 @@ export function masqueLook(land: MasqueLand): TerrainLook {
           // in steps, a checker where one gives onto the next
           const black = z === MQ_ZONE.Black;
           const k = over(L, 0.55, px, py, 0.06) ? 3 : over(L, 0.3, px, py, 0.06) ? 2 : over(L, 0.08, px, py, 0.05) ? 1 : 0;
-          if (k) c = mixc(c, col, k * (black ? 0.1 : 0.09));
+          // (light only lightens: never darker than the floor was, channel by channel)
+          if (k) {
+            const m = mixc(c, col, k * (black ? 0.1 : 0.09));
+            c = [Math.max(c[0], m[0]), Math.max(c[1], m[1]), Math.max(c[2], m[2])];
+          }
         }
       }
       return c;

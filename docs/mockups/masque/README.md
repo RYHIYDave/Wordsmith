@@ -29,7 +29,9 @@ abbey's wall that "had gates of iron. The courtiers, having entered, brought fur
 
 ## What he has said of it
 
-Nothing yet: none of this has been shown him. Every word of his quoted here is his doc's, as above.
+- The first look (`pictures/first_look.png`), asked “masque_first_look.png: is this the Masque (floor 17)?”: “Yes, that's the
+  place (Recommended)”.
+- Nothing else of it has been shown him yet: the ground and the pieces game-ready, and the corner laid from them, are next.
 
 ## The first look (src/dev/masque_paint.ts, src/dev/preview_masque_paint.ts)
 
@@ -174,12 +176,18 @@ and the card room's; the braziers stand in the passage.
   FAR_DARK over all, the hero's pool and each light's taken out of it, the vignette), the pieces' lights and the windows' over
   it: `pictures/game_phone.png`.
 - `overview`: the whole corner as built, no dark: `pictures/game_overview.png`.
-- `black`: a phone screen of the black room, its clock at its chime: `pictures/game_black.png`.
-- also `phone-bare`, `ground`, `tiles`, `close:X:Y`.
+- `seven`: the ground of all seven rooms side by side, in the tale's order, each named: `pictures/ground_seven_rooms.png`.
+- also `black` (a phone screen of the black room, its clock at its chime), `phone-bare`, `ground`, `tiles`, `close:X:Y`.
 
 ## The pictures (docs/mockups/masque/pictures/)
 
-PICTURES_LIST
+- `first_look.png`: the first look, painted: the violet, black and white rooms, a card room, the gallery and the passage, the
+  knight in the violet room (his yes: “Yes, that's the place (Recommended)”).
+- `first_look_close.png`: the same twice as big: the knight at the black room's doorway, the ebony clock, the scarlet windows.
+- `game_phone.png`: the corner built from the game-ready parts, one phone screen on the knight, the game's dark over it.
+- `game_overview.png`: the whole corner built from the game-ready parts, no dark.
+- `ground_seven_rooms.png`: the game-ready ground of all seven rooms side by side, in the tale's order, each named.
+- `pieces.png`: the Prince's 25 pieces, each once (its first picture), twice the game's size, on the violet room's floor.
 
 ## Bringing it in (the main chat's)
 
@@ -195,7 +203,17 @@ PICTURES_LIST
 
 ## The checks
 
-TEST_COUNTS
+- `tests/masque.test.ts` (8): nothing of the game imports it; walkable tiles floor, every other not; two pieces side by side
+  one picture, the same every time; every pixel opaque, floor, wall and top to see; nothing cyan, no pink, every colour under
+  the dullest word's but the fire through the glass, the scarlet only in the black room's windows; each of the seven rooms' silk
+  and marble its own colour (the white pale, the black dark; the blue, the violet and the purple told apart); one window in the
+  middle of each room's far wall, its glass its room's and the fire at its heart, none on a wall cut away; a window's light on
+  the floor before it in its room's colour, only lightening (the same floor painted without it), none beside it.
+- `tests/floor17.test.ts` (9): nothing of the game imports them; 25, each its own name; pictures as many as each says; only the
+  honest flames, the window lit red and the quest give light; crisp; no cyan, no pink, under the dullest word's; each stands on
+  its foot, what hangs from the roof clear of the floor; nothing cut off; the clock near three times the knight's height, its
+  pendulum swinging frame by frame, its chime two frames more; the royal crest the same drawing as the palace guard's.
+- Run with them, unchanged and passing: `tests/floor16.test.ts` (9), `tests/swangardens.test.ts` (7). No shared test touched.
 
 ## For him to decide (or the art chat to ask)
 
