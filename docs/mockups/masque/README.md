@@ -232,3 +232,10 @@ and the card room's; the braziers stand in the passage.
 - THE ROYAL CREST: the house's own white swan, as the palace guard wears it, since the Prince is of the same royal house.
 - THE QUEST: "the prince's bargain with the Order", made from his doc's story thread; whether it is the floor's quest is his.
 - THE GATE: the iron gates with their bolts welded are the tale's (the abbey's outer wall); here they are the floor's gate.
+
+## His word on the game-ready Masque
+
+The laid corner and the Prince's 25 pieces (`game_phone.png`, `pieces.png`), asked “The Masque made game-ready
+(game_phone.png and the Prince's 25 pieces): is this right?”: “Yes, that's the Masque (Recommended)”. Asked whether the
+seven rooms should stay without candles, lit through their windows as in Poe's story, the candles only in the galleries
+and card rooms: “As drawn, true to the book (Recommended)”.
