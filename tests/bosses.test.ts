@@ -350,8 +350,9 @@ test('12. nothing of the game imports the chains or the checks either', () => {
     // and floor 14's boss, the Physician: tests/physician.test.ts; and its Hushed patients: tests/patients.test.ts; and its orderlies:
     // tests/orderlies.test.ts; and floor 15's boss, the Censor: tests/censor.test.ts; and its inklings: tests/inklings.test.ts;
     // and its Bookwardens: tests/bookwardens.test.ts; and floor 16's mobs and its boss, the Princess: tests/palace_hands.test.ts,
-    // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed/.test(f)) continue;
+    // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts; and floor 20's shapes of the Hush:
+    // tests/hush_shapes.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|hush_shapes/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
