@@ -181,3 +181,9 @@ list of the art chat's mock-ups): `tests/bosses.test.ts` (two checks), `tests/cr
   fire fan burning (three tiles, a third of a turn).
 - `footmen_film.mp4` (30 s): standing; the march; the tray flung; the candelabrum; struck; his death; each from in front and
   from behind, at room scale with the knight (stand, struck and death closer), captioned; each strike again at half speed.
+
+## His word on the pictures
+
+The sheet and the film (`footmen_sheet.png`, `footmen_film.mp4`), asked “Floor 17's footmen (footmen_sheet.png and the
+film): are these right? The tray flies out and comes back to his hand like a boomerang.”: “Yes, that's them
+(Recommended)”.
