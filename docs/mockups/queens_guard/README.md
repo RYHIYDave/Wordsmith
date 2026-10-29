@@ -110,3 +110,8 @@ Frames at 30 a second but the stand (10) and the two loops (20). Tiles are the f
   staff it swung through his own body. Read as the brief; his to change.
 - The numbers: the march 1 tile a second, the charge 6; the chop's line 6.5 tiles long and 1.6 wide; the shield charge's
   burst 3 tiles and its ring 3.2 across. His to change.
+
+## His word on the pictures
+
+The sheet and the film (`queens_guard_sheet.png`, `queens_guard_moves.mp4`), asked “The Queen's guard
+(queens_guard_sheet.png and the film): are these right?”: “Yes, that's them (Recommended)”.
