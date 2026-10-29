@@ -107,8 +107,15 @@ export const RIDE_LEAP = {
   hit: 26 / FPS,
   /** From when to when it is off the floor: the game carries her this while, as far as it likes (about 4.5 tiles). */
   air: [0.36, 26 / FPS] as const,
-  /** How far the game carries her each leap, tiles (two laps of a boss arena in fifteen leaps). */
+  /** How far the game carries her each leap, tiles: round the arena, about this; at you, as far as you are. */
   carry: 4.5,
+  /**
+   * HIS PATTERN (28 Oct: “Every other one”, then at 23:01, “How about the first half go around and the second half go for
+   * the player”): of the fifteen, the first eight go once round the arena, the last seven at you, each landing where you
+   * stood as it sprang. The game's to play; the art is the same leap.
+   */
+  laps: 8,
+  atYou: 7,
 };
 export const RIDE_END = { long: 1.4, fade: [0.25, 1.15] as const };
 export const RIDE_LONG: Readonly<Record<RideMove, number>> = { rideForm: RIDE_FORM.long, rideLeap: RIDE_LEAP.long, rideEnd: RIDE_END.long };

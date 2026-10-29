@@ -101,6 +101,15 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   arena's whole length; the snare 5 tiles across, the Vow's ring 10 (his to change); the steed 15 leaps in 15 seconds,
   two laps, about 4.5 tiles a leap; the wind-ups kept big and held, but her glide four times as fast (4 tiles a second);
   and from now on bosses made fast and big from their first pass, a nimble one (the Prince) fast and never still.
+  At 22:43: “Put in a rule, enemies and bosses movement style is a question asked during creation”: in his art rulebook
+  (his doc at rev 87, and the project's copy), A new character's question 4 now asks it.
+- The arena-sized film, asked "are those her moves now?": “Close, change something”; what, “The lash sweep”, “The steed's
+  laps”, and: “The vine lash is weirdly connected to the ground.  Just have it be a long whip so it doesn’t ride along the
+  ground.  I like the steed but we also want the steed to attack the player so have a few actually aim at the player.
+  Or maybe all of them?”; asked how many, “Every other one”; then at 23:01: “How about the first half go around and the
+  second half go for the player”. Read as (told him so): the lash a long whip flying through the air at knee to waist
+  height, never on the floor; the steed's first 8 leaps one lap of the arena, its last 7 straight at you, each landing
+  where you stood as it sprang.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -234,12 +243,12 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
   is the game's to fly round her (art/garden_swans.ts `fly`).
 - HOVERING (her stand, `PR_STAND_LONG` 2.8 s) and THE GLIDE (her walk, `PR_PACE` 4 tiles a second, 12 frames at 20): her
   feet never down; she darts about the arena leaning hard into her way, skimming the floor, her gown and vine streaming.
-- THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s), A SWEEP: she turns away to her right, her arm
-  swung back low, and the vine grows out its whole length along the floor to her right (`LASH_REACH`, 7.5 tiles), its
-  thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where it will come from; hips
-  first; the strike: in two frames the vine sweeps a quarter turn round her front along the floor, from 45 degrees to
-  her right to 45 to her left (a sixth of a boss arena), the whole wedge it crosses smeared; it carries on a little; it
-  is pulled back in along its line and round to her right.
+- THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s), A WHIP'S SWEEP: she turns away to her right,
+  her arm swung back low, and the vine grows out its whole length in the air to her right (`LASH_REACH`, 7.5 tiles),
+  writhing, its thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where it will come
+  from; hips first; the strike: in two frames the whip lashes a quarter turn round her front through the air at knee to
+  waist height (`WHIP_H`), from 45 degrees to her right to 45 to her left (a sixth of a boss arena), the whole wedge it
+  crosses smeared; it carries on a little; it recoils into her hand. It never touches the floor.
 - THE VINE SNARE (`PR_SNARE`, the blow at 0.83 s): hands lifted high, held; slammed down (two frames). Where you stand
   (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, and a thicket of nettle vines 5 tiles across bursts up
   round you in two frames, tall ones arching in from its edge and a tangle all through it; it holds writhing, then
@@ -257,7 +266,9 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
   folded (held 0.17 to 0.27 s); springs; at the top of the leap its hind legs kick out, she whirling her vine; it comes
   down in a flash onto its forehooves (two frames, smeared, the blow at 0.87 s), the fog bursting out over the floor
   round them; it settles square, ready for the next. THE GAME CARRIES HER while it is in the air (`RIDE_LEAP.air`, 0.36
-  to 0.87 s), about 4.5 tiles a leap (`RIDE_LEAP.carry`); where it lands the blow falls. THE STEED FADES (`rideEnd`,
+  to 0.87 s), about 4.5 tiles a leap (`RIDE_LEAP.carry`); where it lands the blow falls. HIS PATTERN (the game's to
+  play): the first 8 leaps one lap of the arena, the last 7 each at you, landing where you stood as it sprang (so you
+  have its half second in the air to get out). THE STEED FADES (`rideEnd`,
   1.4 s): it sinks back into the floor, thinning to nothing, and sets her down.
 - STRUCK (`PR_REEL` 0.4 s): jolted back, arms flung out, head thrown back.
 - HER DEATH (his pick, “Steed fades, vines wither (Recommended)”; “Not a child, not a corpse (Recommended)”; `PR_DIES`,

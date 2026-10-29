@@ -335,6 +335,15 @@ test('10. HIS SIZES AND SPEEDS: a quarter-turn sweep seven tiles out; four tiles
   assert.ok(deg(tipAt(s1)) >= 45, `and lands at ${deg(tipAt(s1)).toFixed(0)} degrees`);
   for (const t of [s0, s1]) assert.ok(Math.hypot(tipAt(t)[0], tipAt(t)[1]) >= 7 * TILE3, `the vine reaches ${(Math.hypot(tipAt(t)[0], tipAt(t)[1]) / TILE3).toFixed(1)} tiles`);
   assert.ok(LASH_REACH >= 7 * TILE3);
+  // (a whip in the air, never riding the floor: his “Just have it be a long whip so it doesn’t ride along the ground”)
+  for (const t of framesOf(MOB, 'attack')) {
+    const v = PR_SHAPE.things?.('attack', t, skeletonAt(MOB, 'attack', t), posedOfMob(MOB, 'attack', t))[0].pts ?? [];
+    let long = 0;
+    for (let i = 1; i < v.length; i++) long += Math.hypot(v[i][0] - v[i - 1][0], v[i][1] - v[i - 1][1]);
+    if (long < 3 * TILE3) continue;
+    for (const p of v.slice(Math.floor(v.length * 0.2))) assert.ok(p[2] >= 6, `@${t.toFixed(2)}: the whip down at ${p[2].toFixed(1)}, on the floor`);
+  }
+  assert.equal(RIDE_LEAP.laps + RIDE_LEAP.atYou, 15, 'fifteen leaps: the first half round, the second at you');
   assert.ok(PR_PACE >= 4, `she glides at ${PR_PACE} tiles a second`);
   assert.equal(MOB.walk.ground, PR_PACE * TILE3, 'her glide painted for her pace');
   assert.equal(RIDE_LEAP.long, 1, 'a leap a second');

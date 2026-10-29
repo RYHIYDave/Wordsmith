@@ -125,7 +125,7 @@ function glidePlan(): Plan {
 }
 
 // =============================================================================================
-// THE NETTLE VINE LASH (her attack): A SWEEP. His words, 28 Oct, by 22:23: “The swipe of the vine should cover a 90 degree
+// THE NETTLE VINE LASH (her attack): A WHIP'S SWEEP. His words, 28 Oct, by 22:23: “The swipe of the vine should cover a 90 degree
 // swing and cover maybe 1/6 of the entire arena”, and of its first length, “Triple that at least”.
 
 /** Her vine's reach as it sweeps (her own lengths): seven and a half tiles, so that its quarter turn covers a sixth of a boss arena (about 17 by 20 tiles). */
@@ -174,56 +174,43 @@ function resampled(pts: ReadonlyArray<V3>, n: number): V3[] {
   }
   return out;
 }
-/** The vine laid out along the floor from her right hand: down to the floor a little way out, then `long` out along the way `deg` round from her front, its far end trailing `trail` degrees behind the way it is swept. */
-function laidVine(s: Skeleton, deg: number, long: number, trail: number): V3[] {
+/** How high her whip flies as it sweeps: about the knee to the waist of whoever stands before her (his, 28 Oct: “Just have it be a long whip so it doesn’t ride along the ground”). */
+const WHIP_H = 17;
+/** The vine as a long whip in the air from her right hand: `long` out along the way `deg` round from her front, at `WHIP_H`, its far end trailing `trail` degrees behind the way it is swept; coiling and writhing `writhe` of the most it does (0 straight), `t` seconds in. */
+function whipVine(s: Skeleton, deg: number, long: number, trail: number, writhe: number, t: number): V3[] {
   const hand = s.handR;
   const D = Math.PI / 180;
-  const way = (a: number): V3 => [Math.cos(a * D), Math.sin(a * D), 0];
-  const near = Math.min(long, 15);
-  const base = add([s.pelvis[0], s.pelvis[1], 0], mul(way(deg), near));
   const out: V3[] = [];
-  // (on the floor its middle is as high as it is thick there: it lies on the floor, not in it)
-  const lie = (k: number): number => 0.5 + 1.25 * 1.6 * (1 - 0.35 * k);
   for (let i = 0; i <= N_VINE; i++) {
-    const k = i / N_VINE;
-    if (k <= 0.12) {
-      const u = k / 0.12;
-      const p = lerp3(hand, [base[0], base[1], lie(k)], u);
-      out.push([p[0], p[1], p[2] + 3 * Math.sin(Math.PI * u) * (1 - u)]);
-      continue;
-    }
-    const u = (k - 0.12) / 0.88;
-    const a = deg - trail * u * u;
-    const d = near + (long - near) * u;
-    const w = [s.pelvis[0], s.pelvis[1], 0] as V3;
-    const p = add(w, mul(way(a), d));
-    out.push([p[0], p[1], lie(k)]);
+    const u = i / N_VINE;
+    const a = (deg - trail * u * u + writhe * 5 * Math.sin(u * Math.PI * 3 - t * 3) * u) * D;
+    const far: V3 = [s.pelvis[0] + Math.cos(a) * long, s.pelvis[1] + Math.sin(a) * long, 0];
+    const h = WHIP_H + writhe * 5 * Math.sin(u * Math.PI * 2.5 - t * 4) * u - 3 * u * u;
+    const z = hand[2] + (Math.max(4, h) - hand[2]) * smooth(0, 0.14, u);
+    out.push([hand[0] + (far[0] - hand[0]) * u, hand[1] + (far[1] - hand[1]) * u, z]);
   }
   return out;
 }
-/** THE VINE THROUGH THE LASH (the bones' `draw`): 0 trailing at rest; 0 to 1 growing out its whole length along the floor to her right; 1 to 2 swept round its quarter turn; 2 to 2.2 carried on; 2.2 to 3 drawn back in to trailing again. */
+/** THE WHIP THROUGH THE LASH (the bones' `draw`): 0 trailing at rest; 0 to 1 growing out its whole length in the air to her right, writhing; 1 to 2 lashed round its quarter turn, straight; 2 to 2.2 carried on; 2.2 to 3 recoiling back into her hand, trailing again. */
 export function lashVine(s: Skeleton, draw: number, t: number): V3[] {
   const rest = resampled(restAt(s, t), N_VINE);
   const mix = (a: V3[], b: V3[], k: number): V3[] => a.map((p, i) => lerp3(p, b[i], k));
-  const [a0, a1] = PR_LASH.area;
+  const a1 = PR_LASH.area[1];
   const from = PR_LASH.from;
   if (draw <= 1) {
     const k = clamp01(draw);
-    const grown = laidVine(s, from, 18 + (LASH_REACH - 18) * smooth(0.15, 1, k), 0);
+    const grown = whipVine(s, from, 18 + (LASH_REACH - 18) * smooth(0.15, 1, k), 0, 1, t);
     return mix(rest, grown, smooth(0, 0.35, k));
   }
   if (draw <= 2) {
-    // (swept: from where it lay, through the quarter turn it strikes; its far end trailing behind as it goes)
+    // (lashed: from where it was held, through the quarter turn it strikes; its far end trailing behind as it goes)
     const u = draw - 1;
-    const deg = from + (a1 - from) * u;
-    return laidVine(s, deg, LASH_REACH, 26 * Math.sin(Math.PI * u));
+    return whipVine(s, from + (a1 - from) * u, LASH_REACH, 26 * Math.sin(Math.PI * u), 1 - u, t);
   }
-  if (draw <= 2.2) return laidVine(s, a1 + (PR_LASH.to - a1) * ((draw - 2) / 0.2), LASH_REACH, 0);
-  // (drawn back in: shortening along the floor, then lifting into her hand)
-  // (round in front of her, back to her right side as it comes in, so that it never crosses her)
+  if (draw <= 2.2) return whipVine(s, a1 + (PR_LASH.to - a1) * ((draw - 2) / 0.2), LASH_REACH, 0, 0, t);
+  // (recoiling: pulled back in along its own line, coiling as it comes, then round to her right side and down to trailing)
   const k = clamp01((draw - 2.2) / 0.8);
-  // (first pulled in along its own line, then, short, round to her right)
-  const short = laidVine(s, PR_LASH.to + (-75 - PR_LASH.to) * smooth(0.3, 1, k), LASH_REACH + (16 - LASH_REACH) * smooth(0, 0.75, k), 0);
+  const short = whipVine(s, PR_LASH.to + (-75 - PR_LASH.to) * smooth(0.3, 1, k), LASH_REACH + (16 - LASH_REACH) * smooth(0, 0.75, k), 0, smooth(0, 0.5, k), t);
   return mix(short, rest, smooth(0.6, 1, k));
 }
 /** The vine trailing as she hovers, from a moment's bones alone (its sway by `t`; it does not lag). */
@@ -405,7 +392,7 @@ function smearOf(move: string, t: number): V3[][] | null {
       const steps = Math.max(2, Math.ceil(((now - from) * D * r) / 10));
       for (let j = 0; j <= steps; j++) {
         const a = (from + ((now - from) * j) / steps) * D;
-        arc.push([s.pelvis[0] + Math.cos(a) * r, s.pelvis[1] + Math.sin(a) * r, 0.8]);
+        arc.push([s.pelvis[0] + Math.cos(a) * r, s.pelvis[1] + Math.sin(a) * r, WHIP_H - 1]);
       }
       out.push(arc);
     }
