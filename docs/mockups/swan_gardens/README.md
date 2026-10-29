@@ -81,6 +81,11 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   her ultimate, a spectral steed of the palace stables forming under her, long dressage leaps all over the arena; dying,
   the steed fading to mist, the vines withering, her swans flying off over the wall, she sinking to her knees; silent but
   for vines, wings, ghostly hooves and one whisper when she falls. No nettle shirt anywhere.
+- Her first pictures, 28 Oct (by 21:10): her standing beside the knight, front and back, and at the game's size with her
+  swans circling; and her on the steed mid-leap. Changed from the brief as read, and told him why: her gown a royal violet
+  faded by the Hush, trimmed silver-white (grey, she was lost against her white swans and her pale steed); the steed
+  rebuilt as a true horse (the first looked like a goat). Asked "is that the Princess?": “Yes, that's her
+  (Recommended)”; "is that her spectral steed?": “Yes, that's the steed (Recommended)”.
 
 ## The first look (src/dev/garden_paint.ts)
 
