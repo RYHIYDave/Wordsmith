@@ -36,41 +36,56 @@ const lay = (px: Painted['px'], x: number, y: number, c: string, size = 1): void
 // =============================================================================================
 // THE VINE SNARE
 
-export const SNARE_CANVAS = { w: 150, h: 120, ax: 75, ay: 82 } as const;
-/** Its times (seconds from her blow landing): the floor heaving (the last warning), the burst (two frames), held, withering and sinking; and how far round you it closes (the figure's own lengths). */
-export const SNARE_FX = { long: 1.8, heave: [0, 0.1] as const, burst: [0.1, 0.1667] as const, sink: [1.25, 1.8] as const, r: 17, high: 32 } as const;
+export const SNARE_CANVAS = { w: 280, h: 200, ax: 140, ay: 120 } as const;
+/**
+ * Its times (seconds from her blow landing): the floor heaving (the last warning), the burst (two frames), held, withering
+ * and sinking; and how far across it is (the figure's own lengths: five tiles across, his “too narrow and too small”).
+ */
+export const SNARE_FX = { long: 1.9, heave: [0, 0.1] as const, burst: [0.1, 0.1667] as const, sink: [1.3, 1.9] as const, r: 2.5 * (32 / Math.sqrt(2 / 3)), high: 40 } as const;
 const SOIL = ['#1e1a16', '#2e2620', '#3e342a'];
-/** The cage's vines, each from the floor round you up and in over you; risen `up` of the way out of the floor (0 under it, 1 all out), writhing at `t`. */
+/** The thicket's vines: a ring of tall ones round its edge arching in, and a tangle of lower ones all through it; risen `up` of the way out of the floor (0 under it, 1 all out), writhing at `t`. */
 function snareVines(t: number, up: number): { pts: V3[]; ra: number; seed: number }[] {
   const out: { pts: V3[]; ra: number; seed: number }[] = [];
-  const n = 9;
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * TAU + 0.3;
-    const r = SNARE_FX.r * (0.9 + 0.2 * hash(i, 1, 7541));
-    const h = SNARE_FX.high * (0.8 + 0.3 * hash(i, 2, 7541));
+  const R = SNARE_FX.r;
+  const grow = (base: V3, lean: V3, h: number, curl: number, i: number, ra: number): void => {
     const pts: V3[] = [];
     for (let j = 0; j <= 10; j++) {
       const k = j / 10;
-      const wr = Math.sin(t * 4 + i * 1.7 + k * 3) * 0.9 * k;
-      // (up out of the floor, then arching in over the middle)
-      const rr = r * (1 - 0.75 * k * k) + wr;
-      const aa = a + 0.35 * k + 0.08 * Math.sin(t * 3 + i);
-      pts.push([Math.cos(aa) * rr, Math.sin(aa) * rr, h * Math.sin(k * Math.PI * 0.6) - (1 - up) * (h + 4)]);
+      const wr = Math.sin(t * 4 + i * 1.7 + k * 3) * 1.2 * k;
+      const c = Math.sin(k * Math.PI * curl);
+      pts.push([base[0] + lean[0] * k * k + wr * 0.6, base[1] + lean[1] * k * k + wr * 0.4 + c * 2, h * Math.sin(k * Math.PI * 0.55) - (1 - up) * (h + 6)]);
     }
     // (only what is out of the floor is seen: cut where it comes up through it)
     const seen: V3[] = [];
     for (let j = 0; j < pts.length; j++) {
       const p = pts[j];
-      if (p[2] >= 0) {
-        if (j > 0 && pts[j - 1][2] < 0) {
-          const q = pts[j - 1];
-          const u = -q[2] / (p[2] - q[2]);
-          seen.push([q[0] + (p[0] - q[0]) * u, q[1] + (p[1] - q[1]) * u, 0]);
-        }
-        seen.push(p);
+      if (p[2] < 0) continue;
+      if (j > 0 && pts[j - 1][2] < 0) {
+        const q = pts[j - 1];
+        const u = -q[2] / (p[2] - q[2]);
+        seen.push([q[0] + (p[0] - q[0]) * u, q[1] + (p[1] - q[1]) * u, 0]);
       }
+      seen.push(p);
     }
-    if (seen.length > 1) out.push({ pts: seen, ra: 1.7 - 0.3 * (i % 2), seed: 200 + i * 13 });
+    if (seen.length > 1) out.push({ pts: seen, ra, seed: 200 + i * 13 });
+  };
+  // its edge: tall vines arching in over it
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU + 0.2 * hash(i, 0, 7541);
+    const r = R * (0.92 + 0.12 * hash(i, 1, 7541));
+    const h = SNARE_FX.high * (0.75 + 0.35 * hash(i, 2, 7541));
+    grow([Math.cos(a) * r, Math.sin(a) * r, 0], [-Math.cos(a + 0.3) * r * 0.55, -Math.sin(a + 0.3) * r * 0.55, 0], h, 1.2, i, 1.9);
+  }
+  // all through it: a tangle of lower ones, each curling
+  const m = 26;
+  for (let i = 0; i < m; i++) {
+    const a = hash(i, 3, 7541) * TAU;
+    const r = R * Math.sqrt(hash(i, 4, 7541)) * 0.82;
+    const h = 12 + 16 * hash(i, 5, 7541);
+    const l = 6 + 8 * hash(i, 6, 7541);
+    const b = hash(i, 7, 7541) * TAU;
+    grow([Math.cos(a) * r, Math.sin(a) * r, 0], [Math.cos(b) * l, Math.sin(b) * l, 0], h, 2, n + i, 1.4);
   }
   return out;
 }
@@ -83,11 +98,12 @@ export function snarePainted(t: number, view: GameView = 'front'): Painted {
   const { bits, fallen } = nettleBits(snareVines(t, up), t, wither);
   const lights = paintBits(st, bits, [0, 0, 0]);
   const px = st.whole(ENEMY_RIM);
-  // the floor heaved and broken round where they come up: dark soil kicked up, clods
+  const R = SNARE_FX.r;
+  // the floor heaved and broken all over it: dark soil kicked up, clods
   const heave = t < SNARE_FX.burst[0] ? smooth(0, SNARE_FX.heave[1], t) : 1 - smooth(SNARE_FX.sink[0], SNARE_FX.long, t);
-  for (let i = 0; i < 48; i++) {
-    const a = (i / 48) * TAU;
-    const r = SNARE_FX.r * (0.75 + 0.5 * hash(i, 3, 7542));
+  for (let i = 0; i < 160; i++) {
+    const a = hash(i, 8, 7542) * TAU;
+    const r = R * Math.sqrt(hash(i, 3, 7542)) * 1.05;
     if (hash(i, 4, 7542) > heave) continue;
     const [x, y] = st.at([Math.cos(a) * r, Math.sin(a) * r, 0]);
     lay(px, x, y, SOIL[i % 3], i % 4 === 0 ? 2 : 1);
@@ -95,10 +111,10 @@ export function snarePainted(t: number, view: GameView = 'front'): Painted {
   // the burst: clods flung up as they come out of the floor
   if (t >= SNARE_FX.burst[0] && t < SNARE_FX.burst[1] + 0.25) {
     const k = (t - SNARE_FX.burst[0]) / 0.33;
-    for (let i = 0; i < 18; i++) {
-      const a = (i / 18) * TAU + hash(i, 5, 7542);
-      const r = SNARE_FX.r * (0.9 + 0.5 * k);
-      const z = 10 * Math.sin(Math.PI * Math.min(1, k)) * (0.5 + hash(i, 6, 7542));
+    for (let i = 0; i < 48; i++) {
+      const a = (i / 48) * TAU + hash(i, 5, 7542);
+      const r = R * Math.sqrt(hash(i, 9, 7542)) * (1 + 0.2 * k);
+      const z = 16 * Math.sin(Math.PI * Math.min(1, k)) * (0.5 + hash(i, 6, 7542));
       const [x, y] = st.at([Math.cos(a) * r, Math.sin(a) * r, z]);
       lay(px, x, y, SOIL[(i + 1) % 3], 2);
     }
@@ -107,7 +123,7 @@ export function snarePainted(t: number, view: GameView = 'front'): Painted {
   if (up > 0.95 && wither < 0.2) {
     const tick = Math.floor(t * 15);
     snareVines(t, 1).forEach((v, i) => v.pts.forEach((p, j) => {
-      if ((i + j + tick) % 5 === 0) {
+      if ((i + j + tick) % 6 === 0) {
         const [x, y] = st.at(p);
         lay(px, x, y - 1, (i + j) % 2 ? FLAME[3] : FLAME[4]);
       }
@@ -123,9 +139,9 @@ export function snarePainted(t: number, view: GameView = 'front'): Painted {
 // =============================================================================================
 // THE VOW: the ring of silence
 
-export const VOW_CANVAS = { w: 280, h: 160, ax: 140, ay: 80 } as const;
-/** Its times (seconds from her blow landing): bursting out (two frames), held, thinning away; and how far out it holds (the figure's own lengths: the game's own size for it, drawn to). */
-export const VOW_FX = { burst: [0, 0.0667] as const, hold: 3.0, fade: 0.6, r: 64 } as const;
+export const VOW_CANVAS = { w: 500, h: 280, ax: 250, ay: 140 } as const;
+/** Its times (seconds from her blow landing): bursting out (two frames), held, thinning away; and how far out it holds (the figure's own lengths: five tiles, ten across; the game's own size for it is drawn to). */
+export const VOW_FX = { burst: [0, 0.0667] as const, hold: 3.0, fade: 0.6, r: 5 * (32 / Math.sqrt(2 / 3)) } as const;
 const HUSH_DARK = ['#14121e', '#262234', '#3e3852', '#625a7a', '#9890b4', '#b6b0cc'];
 /** THE RING `t` seconds after her blow lands (`r`: how far out it holds), round the floor point under her. */
 export function vowPainted(t: number, view: GameView = 'front', r: number = VOW_FX.r): Painted {

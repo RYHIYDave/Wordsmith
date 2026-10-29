@@ -86,6 +86,21 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   faded by the Hush, trimmed silver-white (grey, she was lost against her white swans and her pale steed); the steed
   rebuilt as a true horse (the first looked like a goat). Asked "is that the Princess?": “Yes, that's her
   (Recommended)”; "is that her spectral steed?": “Yes, that's the steed (Recommended)”.
+- Her moves, the first film, asked "are those her moves?": “Close, change something”; what, his picks “The lash”,
+  “Snare, Eleven or Vow”, “The steed's leaps”, and his words: “The size of these hits needs to be so much bigger.  Like
+  imagine the size of the boss arena.  The swipe of the vine should cover a 90 degree swing and cover maybe 1/6 of the
+  entire arena.  The swans should go the full length of the arena.  When I say the horse should run around the arena I
+  meant do two full laps jumping maybe 15 times in 15 seconds.  It’s all too slow and too narrow and too small.  I could
+  dodge anything you’ve put in these moves with my eyes closed”. Then at 22:23, of the lash's first reach (told him
+  “almost two tiles”): “Two tiles long?  For the vine swing?  Triple that at least”; at 22:27: “Not faster for the wind
+  up, like faster moving.  Her move speed is shit, the horse moved like what, 3 tiles?  That’s all I have to dodge?
+  Everything is always so plodding when you first animate them.  I could tell you I want a cheetah boss and it would walk
+  around like an old dog.”; and at 22:34: “There are big bosses that can be slow.  But like the prince with a rapier,
+  dancing is going to need to be fast and constantly moving”. Read as (told him so): on the scale of a boss arena
+  (about 17 by 20 tiles), the lash a quarter-turn sweep 7.5 tiles long (a sixth of the arena); eleven swans each the
+  arena's whole length; the snare 5 tiles across, the Vow's ring 10 (his to change); the steed 15 leaps in 15 seconds,
+  two laps, about 4.5 tiles a leap; the wind-ups kept big and held, but her glide four times as fast (4 tiles a second);
+  and from now on bosses made fast and big from their first pass, a nimble one (the Prince) fast and never still.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -217,33 +232,39 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
   wound round her (a nettle crown on a thin silver circlet, vines up her arms and her skirt, one knotted at her waist);
   a long nettle vine in her right hand, her lash. No nettle shirt anywhere. Her mark, the garden's swans circling her,
   is the game's to fly round her (art/garden_swans.ts `fly`).
-- HOVERING (her stand, `PR_STAND_LONG` 2.8 s) and THE GLIDE (her walk, `PR_PACE` 1 tile a second, 12 frames at 12): her
-  feet never down; she leans into her way, bobbing on the air, her gown and vine streaming back.
-- THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s): she turns away and raises the vine back over
-  her shoulder, her left hand pointing, the thorns glinting pink (held 0.4 to 0.7 s); hips first; the vine whips over
-  and cracks out its whole length along the floor at you (two frames, smeared); it slides on; she draws it back. It
-  reaches 70 of her lengths before her as it lands (about her own height, nearly two tiles): a long line to dodge.
+- HOVERING (her stand, `PR_STAND_LONG` 2.8 s) and THE GLIDE (her walk, `PR_PACE` 4 tiles a second, 12 frames at 20): her
+  feet never down; she darts about the arena leaning hard into her way, skimming the floor, her gown and vine streaming.
+- THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s), A SWEEP: she turns away to her right, her arm
+  swung back low, and the vine grows out its whole length along the floor to her right (`LASH_REACH`, 7.5 tiles), its
+  thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where it will come from; hips
+  first; the strike: in two frames the vine sweeps a quarter turn round her front along the floor, from 45 degrees to
+  her right to 45 to her left (a sixth of a boss arena), the whole wedge it crosses smeared; it carries on a little; it
+  is pulled back in along its line and round to her right.
 - THE VINE SNARE (`PR_SNARE`, the blow at 0.83 s): hands lifted high, held; slammed down (two frames). Where you stand
-  (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, a cage of nettle vines bursts up round you in two frames,
-  holds writhing, then withers and sinks.
-- THE ELEVEN (`PR_ELEVEN`, the blow at 0.97 s): arms spread like wings, held; flung forward (two frames). Each line
-  across the floor is first marked by falling white feathers through her warning (`featherLine`), then a swan swoops
-  along it low and fast (art/garden_swans.ts `dive`), the feathers scattering behind it.
+  (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, and a thicket of nettle vines 5 tiles across bursts up
+  round you in two frames, tall ones arching in from its edge and a tangle all through it; it holds writhing, then
+  withers and sinks.
+- THE ELEVEN (`PR_ELEVEN`, the blow at 0.97 s): arms spread like wings, held; flung forward (two frames). Eleven lines
+  across the whole arena, a tile and a half apart, are first marked by falling white feathers through her warning
+  (`featherLine`), then a swan swoops along each, the length of the arena in under a second (art/garden_swans.ts `dive`),
+  the feathers scattering behind it: you stand between the lines.
 - THE VOW (`PR_VOW`, the blow at 1.0 s): a finger to her lips, a hand on her heart, her head bowed, held; then her arms
-  thrown wide (two frames) and the ring of silence bursts out round her (`vowPainted`, `VOW_FX`: out in two frames,
-  held 3 s, its edge breathing grey, the floor inside it dimmed; drawn to the size the game gives it).
+  thrown wide (two frames) and the ring of silence bursts out round her (`vowPainted`, `VOW_FX`: 10 tiles across, out in
+  two frames, held 3 s, its edge breathing grey, the floor inside it dimmed; drawn to the size the game gives it).
 - HER STEED (her ultimate): THE STEED FORMS (`rideForm`, 1.4 s): she spreads her arms (the warning), the grey breath
   gathers on the floor, and a horse of it surges up out of the floor beneath her and lifts her, side-saddle. A LEAP
-  (`rideLeap`, 1.5 s, as many as the game likes, `RIDE_LEAP`): it gathers onto its haunches, forelegs folded (held
-  0.4 to 0.55 s); springs; a capriole at the top, she whirling her vine; then comes down in a flash onto its forehooves
-  (two frames, smeared, the blow at 1.13 s), the fog bursting out over the floor round them; it settles square. THE GAME
-  CARRIES HER while it is in the air (`RIDE_LEAP.air`, 0.64 to 1.13 s), as far as it likes; where it lands the blow
-  falls. THE STEED FADES (`rideEnd`, 1.4 s): it sinks back into the floor, thinning to nothing, and sets her down.
+  (`rideLeap`, one second, `RIDE_LEAP`; fifteen of them, two laps of the arena): it gathers onto its haunches, forelegs
+  folded (held 0.17 to 0.27 s); springs; at the top of the leap its hind legs kick out, she whirling her vine; it comes
+  down in a flash onto its forehooves (two frames, smeared, the blow at 0.87 s), the fog bursting out over the floor
+  round them; it settles square, ready for the next. THE GAME CARRIES HER while it is in the air (`RIDE_LEAP.air`, 0.36
+  to 0.87 s), about 4.5 tiles a leap (`RIDE_LEAP.carry`); where it lands the blow falls. THE STEED FADES (`rideEnd`,
+  1.4 s): it sinks back into the floor, thinning to nothing, and sets her down.
 - STRUCK (`PR_REEL` 0.4 s): jolted back, arms flung out, head thrown back.
 - HER DEATH (his pick, “Steed fades, vines wither (Recommended)”; “Not a child, not a corpse (Recommended)”; `PR_DIES`,
   3.2 s): she clutches her breast and the Hush leaves her in a grey breath; she drops her vine and sinks out of the air
   to her knees while every nettle on her browns and falls; she sits back on her heels, head bowed, the pink gone from
   her eyes: alive, freed, still. (If she dies on her steed, the game plays `rideEnd` first: the steed fades.)
+- Her picture (`PR_CANVAS`) is 500 by 500, for the sweep's whole reach; the game cuts each frame to what is in it.
 
 For the main chat: her blows' areas are bigger than the old enemies' (his “And bigger AOE to compensate for the extra
 time the player gets to evade”); the art is drawn to that (the lash's long line, the snare's cage round you, the Vow's
@@ -283,12 +304,13 @@ ring as big as the game makes it, the steed's landing).
 - `tests/palace_guard.test.ts` (10): as the gardeners' and grooms', both blows; and his picks: the thrust's reach, the
   sweep crossing from their right to their left, the march, to one knee (the right knee down, the left up), then down;
   and nothing they wear folds flat (his “thing that flips around like crazy”).
-- `tests/princess.test.ts` (9): nothing of the game imports her, her switch off; every move through every boss check,
+- `tests/princess.test.ts` (10): nothing of the game imports her, her switch off; every move through every boss check,
   from in front and behind, and every handover (her steed's three moves into each other); HIS LIGHTNING STRIKES (each
   blow two frames, landing on the second, smeared then and only then); no cyan, the pink edge while she lives; nothing cut
   off; nothing of her in the floor; his brief (no shirt, she glides, pink eyes, withered, on her knees and not lying);
   her steed (forms and fades, she sits its back, off the floor while carried, square once it lands); what her casting
-  leaves (the snare and the ring out in two frames, nothing cyan).
+  leaves (the snare and the ring out in two frames, nothing cyan); his sizes and speeds (the quarter-turn sweep 7 tiles
+  and more out, the glide 4 tiles a second, a leap a second carrying her 4.5 tiles, the snare 5 tiles across, the ring 10).
 - `src/art/boss_checks.ts` knows his Movement 9 now, for a boss that says where it strikes (`strikes`, `smeared`): the
   strike one or two frames, far faster than its wind-up and wind-down, smeared, and not held to JERK. Every boss
   reviewed before is reviewed as before.

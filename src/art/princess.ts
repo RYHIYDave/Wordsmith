@@ -79,8 +79,8 @@ const SILVER: Ramp = ['#2a2a32', '#4a4a56', '#767682', '#a2a2ae', '#cacad4'];
 /** A grown young woman, a head taller than the knight (58): slender, long in the limb. */
 export const PRINCESS_BODY: Build = buildOf(66, 1.12, { shoulders: 0.84, chest: 0.86, depth: 0.86, waist: 0.7, hips: 0.96, legs: 1.04, arms: 0.92, trunk: 1.02, limbs: 0.76 });
 const B = PRINCESS_BODY;
-/** Her picture: room for her vine lashed out at its full length, and for her on her steed at the top of its leap. */
-export const PR_CANVAS: MobCanvas = { w: 460, h: 380, ax: 220, ay: 300 };
+/** Her picture: room for her vine swept out its whole seven and a half tiles, and for her on her steed at the top of its leap. */
+export const PR_CANVAS: MobCanvas = { w: 500, h: 500, ax: 130, ay: 305 };
 /** How far above the floor she glides (her feet, under the gown). */
 export const PR_HOVER = 2.2;
 
@@ -215,7 +215,7 @@ function gownRings(s: Skeleton, m: Moment, seated: number): { bodice: Ring[]; sk
   const ph = m.wind * Math.PI * 2;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
-  const lag = lagOf(m, 1.6, 4);
+  const lag = lagOf(m, 1.6, 7);
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.62));
   const be = s.belly;
   const footMid = lerp3(lerp3(s.heelL, s.toeL, 0.5), lerp3(s.heelR, s.toeR, 0.5), 0.5);
@@ -349,7 +349,7 @@ export interface PrincessSay {
 /** The trailing vine at rest: from her right hand down to the floor and along it behind her, coiling. */
 export function restVine(s: Skeleton, m: Moment): V3[] {
   const hand = s.handR;
-  const lag = lagOf(m, 1.6, 4);
+  const lag = lagOf(m, 1.6, 7);
   const pts: V3[] = [hand];
   const side = norm(sub(s.handR, s.pelvis), [0, -1, 0]);
   const out: V3 = norm([side[0], side[1], 0], [0, -1, 0]);
@@ -379,7 +379,7 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
   }
   const [cf, cl, cu] = s.chest;
   const lit = 1 - clamp01(q.out);
-  const lag = lagOf(m, 1.6, 4);
+  const lag = lagOf(m, 1.6, 7);
   const t = m.t;
   // (her feet, under the gown, never seen: small slippers in case a step shows)
   for (const side of ['L', 'R'] as const) {
@@ -451,7 +451,13 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
   const hd = head(put, st, s, lit, lag, t);
   // THE VINE in her right hand: its lash, or trailing to the floor
   const v = say.vine?.(m) ?? restVine(s, m);
-  if (v && v.length > 1) vine(put, 'lash', v, 0.9, t, 100, 2);
+  if (v && v.length > 1) {
+    // (swept out its whole length, thicker, and leafed all along it)
+    let long = 0;
+    for (let i = 1; i < v.length; i++) long += Math.hypot(v[i][0] - v[i - 1][0], v[i][1] - v[i - 1][1], v[i][2] - v[i - 1][2]);
+    const k = clamp01((long - 40) / 120);
+    vine(put, 'lash', v, 0.9 + 0.5 * k, t, 100, k > 0.5 ? 1 : 2, 1 + 0.4 * k);
+  }
   // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point
   const sm = say.smear?.(m);
   if (sm) {

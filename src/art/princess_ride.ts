@@ -87,19 +87,28 @@ const TUCK_FORE: LegPose = [78, -150, -40];
 const FOLD_FORE: LegPose = [58, -112, -30];
 const REACH_FORE: LegPose = [22, -14, 22];
 const PUSH_HIND: LegPose = [-46, 30, 30];
-const KICK_HIND: LegPose = [-82, 6, 20];
 const TRAIL_HIND: LegPose = [-40, 30, 30];
+/** Its kick at the top of a quick leap: less than a capriole's, there being less time. */
+const LEAP_KICK: LegPose = [-64, 16, 22];
 
 export const RIDE_FORM = { long: 1.4, warn: [0.3, 0.5] as const, rise: [0.5, 1.1] as const };
-/** A leap: its warning (gathered, held), its spring, the strike (its forehooves coming down, two frames), and when the game carries her (in the air). */
+/**
+ * A LEAP, ONE OF FIFTEEN IN FIFTEEN SECONDS (his words, 28 Oct, by 22:23: “When I say the horse should run around the arena I
+ * meant do two full laps jumping maybe 15 times in 15 seconds”; and 22:27, “the horse moved like what, 3 tiles?  That’s
+ * all I have to dodge?”): its warning (gathered on its haunches, held), its spring, the strike (its forehooves slammed
+ * down, two frames), and when the game carries her (in the air: about four and a half tiles a leap, two laps of a boss
+ * arena in fifteen).
+ */
 export const RIDE_LEAP = {
-  long: 1.5,
-  warn: [0.4, 0.55] as const,
-  spring: 0.55,
-  strike: [32 / FPS, 34 / FPS] as const,
-  hit: 34 / FPS,
-  /** From when to when it is off the floor (all four hooves up): the game carries her this while, as far as it likes. */
-  air: [0.64, 34 / FPS] as const,
+  long: 1.0,
+  warn: [0.17, 0.27] as const,
+  spring: 0.27,
+  strike: [24 / FPS, 26 / FPS] as const,
+  hit: 26 / FPS,
+  /** From when to when it is off the floor: the game carries her this while, as far as it likes (about 4.5 tiles). */
+  air: [0.36, 26 / FPS] as const,
+  /** How far the game carries her each leap, tiles (two laps of a boss arena in fifteen leaps). */
+  carry: 4.5,
 };
 export const RIDE_END = { long: 1.4, fade: [0.25, 1.15] as const };
 export const RIDE_LONG: Readonly<Record<RideMove, number>> = { rideForm: RIDE_FORM.long, rideLeap: RIDE_LEAP.long, rideEnd: RIDE_END.long };
@@ -109,17 +118,17 @@ const formFormed = track([[0, 0], [0.3, 0.12], [0.5, 0.28], [0.85, 0.85], [1.1, 
 const formArch = track([[0, 1], [1.05, 1], [1.2, 0.62], [1.4, 1]]);
 const formPitch = track([[0, 0], [0.7, 6], [1.1, 3], [1.25, -2], [1.4, 0]]);
 
-const S0 = 32 / FPS;
-const S1 = 34 / FPS;
-const leapZ = track([[0, 0], [0.15, 0], [0.4, -3.2], [0.55, -3.4], [0.64, 4], [0.74, 15], [0.84, 20.5], [0.94, 21], [1.0, 19], [S0, 15.5], [S1, 0], [1.21, -6], [1.34, -1.2], [1.5, 0]]);
-const leapPitch = track([[0, 0], [0.15, 1], [0.4, 15], [0.55, 16], [0.64, 13], [0.76, 6], [0.9, 0], [S0, -5], [S1, -9], [1.2, -11], [1.36, -2], [1.5, 0]]);
-const leapX = track([[0, 0], [0.4, -4], [0.55, -4.4], [0.7, -1], [0.9, 0], [1.5, 0]]);
-const leapArch = track([[0, 1], [0.4, 0.86], [0.55, 0.84], [0.8, 0.7], [1.06, 0.78], [1.3, 1], [1.5, 1]]);
-const leapTail = track([[0, 10], [0.4, 0], [0.7, 50], [0.9, 70], [S1, 40], [1.5, 10]]);
-const foreLegs = legTrack([[0, STAND_LEGS[0]], [0.2, STAND_LEGS[0]], [0.4, FOLD_FORE], [0.55, FOLD_FORE], [0.72, TUCK_FORE], [0.95, TUCK_FORE], [S0, REACH_FORE], [S1, STAND_LEGS[0]], [1.5, STAND_LEGS[0]]]);
-const hindLegs = legTrack([[0, STAND_LEGS[2]], [0.55, STAND_LEGS[2]], [0.64, PUSH_HIND], [0.72, TRAIL_HIND], [0.88, KICK_HIND], [1.04, TRAIL_HIND], [S1, TRAIL_HIND], [1.24, STAND_LEGS[2]], [1.5, STAND_LEGS[2]]]);
-const gripFore = track([[0, 1], [0.2, 1], [0.32, 0], [S0, 0], [S1, 1], [1.5, 1]]);
-const gripHind = track([[0, 1], [0.58, 1], [0.66, 0], [1.06, 0], [1.3, 1], [1.5, 1]]);
+const S0 = RIDE_LEAP.strike[0];
+const S1 = RIDE_LEAP.strike[1];
+const leapZ = track([[0, 0], [0.08, -1.5], [0.17, -4], [0.27, -4], [0.36, 9], [0.46, 24], [0.56, 30], [0.66, 28], [S0, 20], [S1, 0], [0.93, -5.5], [1.0, 0]]);
+const leapPitch = track([[0, 0], [0.17, 12], [0.27, 12], [0.36, 6], [0.5, 0], [0.66, -3], [S0, -5], [S1, -9], [0.93, -6], [1.0, 0]]);
+const leapX = track([[0, 0], [0.17, -3], [0.27, -3], [0.4, 0], [1.0, 0]]);
+const leapArch = track([[0, 1], [0.17, 0.86], [0.27, 0.86], [0.5, 0.7], [S0, 0.78], [0.93, 0.9], [1.0, 1]]);
+const leapTail = track([[0, 10], [0.17, 0], [0.4, 50], [0.56, 70], [S1, 40], [1.0, 10]]);
+const foreLegs = legTrack([[0, STAND_LEGS[0]], [0.04, STAND_LEGS[0]], [0.17, FOLD_FORE], [0.27, FOLD_FORE], [0.4, TUCK_FORE], [0.6, TUCK_FORE], [S0, REACH_FORE], [S1, STAND_LEGS[0]], [1.0, STAND_LEGS[0]]]);
+const hindLegs = legTrack([[0, STAND_LEGS[2]], [0.27, STAND_LEGS[2]], [0.38, PUSH_HIND], [0.47, TRAIL_HIND], [0.58, LEAP_KICK], [0.71, TRAIL_HIND], [S1, TRAIL_HIND], [0.95, STAND_LEGS[2]], [1.0, STAND_LEGS[2]]]);
+const gripFore = track([[0, 1], [0.04, 1], [0.14, 0], [S0, 0], [S1, 1], [1.0, 1]]);
+const gripHind = track([[0, 1], [0.27, 1], [0.4, 0], [0.8, 0], [0.98, 1], [1.0, 1]]);
 
 const endZ = track([[0, 0], [0.25, 0], [0.7, -10], [1.15, -40], [1.4, -40]]);
 const endFormed = track([[0, 1], [0.25, 1], [0.7, 0.6], [1.15, 0], [1.4, 0]]);

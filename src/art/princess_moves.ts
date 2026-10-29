@@ -102,10 +102,13 @@ const L0: V3 = [R.lhx, R.lhy, R.lhz];
 const R0: V3 = [R.rhx, R.rhy, R.rhz];
 
 // =============================================================================================
-// THE GLIDE (her walk): no steps; leaning into her way, bobbing on the air
+// THE GLIDE (her walk): no steps; fast, leaning hard into her way, skimming the floor, her gown and hair and vine
+// streaming back. His words, 28 Oct, 22:27: “Her move speed is shit”; “Everything is always so plodding when you first
+// animate them.  I could tell you I want a cheetah boss and it would walk around like an old dog.”
 
-export const PR_GLIDE = { frames: 12, fps: 12 };
-export const PR_PACE = 1.0;
+export const PR_GLIDE = { frames: 12, fps: 20 };
+/** Her speed gliding, tiles a second: she darts about the arena (the knight walks 2.5). */
+export const PR_PACE = 4.0;
 function glidePlan(): Plan {
   const T = PR_GLIDE.frames / PR_GLIDE.fps;
   const keys: [number, P][] = [];
@@ -113,25 +116,32 @@ function glidePlan(): Plan {
     const t = (i / 12) * T;
     const a = (t / T) * Math.PI * 2;
     keys.push([t, {
-      pz: R.pz + 0.8 + 0.9 * Math.sin(a), pitch: 6, bend: 3 + 0.8 * Math.sin(a + 0.8), roll: 1.2 * Math.sin(a), side: 0.8 * Math.sin(a), faceUp: -2, faceTurn: -6, faceTilt: 4,
-      ...hands([3 - 1.4 * Math.cos(a), 3.5, -17.5 + 0.6 * Math.sin(a)], [1.5 + 0.8 * Math.sin(a), -5, -21.2], -12, 12),
-      lfz: R.lfz + 0.8 + 0.9 * Math.sin(a), rfz: R.rfz + 0.8 + 0.9 * Math.sin(a), lfx: R.lfx - 1.6, rfx: R.rfx - 1.6,
+      pz: R.pz + 1.2 + 0.6 * Math.sin(a), pitch: 10, bend: 5 + 0.6 * Math.sin(a + 0.8), roll: 1.0 * Math.sin(a), side: 0.6 * Math.sin(a), faceUp: 2, faceTurn: -4, faceTilt: 3,
+      ...hands([-0.5 - 0.8 * Math.cos(a), 6, -17 + 0.5 * Math.sin(a)], [-0.5 + 0.6 * Math.sin(a), -7, -19.5], -18, 18),
+      lfz: R.lfz + 1.2 + 0.6 * Math.sin(a), rfz: R.rfz + 1.2 + 0.6 * Math.sin(a), lfx: R.lfx - 3, rfx: R.rfx - 3,
     }]);
   }
   return { long: T, keys };
 }
 
 // =============================================================================================
-// THE NETTLE VINE LASH (her attack)
+// THE NETTLE VINE LASH (her attack): A SWEEP. His words, 28 Oct, by 22:23: “The swipe of the vine should cover a 90 degree
+// swing and cover maybe 1/6 of the entire arena”, and of its first length, “Triple that at least”.
 
-export const PR_LASH = { long: 1.6, warn: [0.4, 0.7] as const, strike: [22 / FPS, 24 / FPS] as const, hit: 24 / FPS };
-/** Turned away, her right arm raised high behind her, the vine drawn back over her shoulder; her left hand pointing at you. */
-const RAISED: P = { yaw: -16, twist: -12, bend: -7, pitch: -5, faceTurn: 22, faceUp: 2, faceTilt: 0, pz: R.pz + 1.5, ...hands([15, 3, 1], [-6.5, -7.5, 14], -30, 46), draw: 1 };
+/** Her vine's reach as it sweeps (her own lengths): seven and a half tiles, so that its quarter turn covers a sixth of a boss arena (about 17 by 20 tiles). */
+export const LASH_REACH = 7.5 * TILE3;
+/**
+ * The lash's times, and the sweep's ways (degrees round from her front, to her left; her front the way the move faces):
+ * drawn back along the floor to her right (`from`), swept through the quarter turn it strikes (`area`), carried on (`to`).
+ */
+export const PR_LASH = { long: 1.6, warn: [0.4, 0.7] as const, strike: [22 / FPS, 24 / FPS] as const, hit: 24 / FPS, from: -62, area: [-45, 45] as const, to: 60 };
+/** Wound up: turned away to her right, her right arm swung back low behind her, the vine grown out its whole length along the floor to her right; her left hand pointing at you. */
+const COCKED: P = { yaw: -30, twist: -14, bend: -4, pitch: -3, faceTurn: 34, faceUp: -2, faceTilt: 2, pz: R.pz + 1.2, ...hands([15, 4, 0], [-7, -12, -12], -30, 40), draw: 1 };
 /** Her hips turned first, her chest still back. */
-const HIPS_FIRST: P = { ...RAISED, yaw: -7, twist: -21, pitch: -3 };
-/** Struck: the arm whipped down before her, the vine out its whole length along the floor. */
-const LASHED: P = { yaw: 10, twist: 8, bend: 9, pitch: 5, faceTurn: -4, faceUp: -6, faceTilt: 4, pz: R.pz, ...hands([2, 9, -14], [17, -4, -12], -20, 16), draw: 2 };
-const LASH_ON: P = { ...LASHED, yaw: 14, twist: 12, bend: 11, pitch: 6, ...hands([1, 9, -16], [14, 2, -17], -20, 8), draw: 2.2 };
+const HIPS_FIRST: P = { ...COCKED, yaw: -17, twist: -27, pitch: -1 };
+/** Struck: her arm whipped across before her to her left, the vine swept round its quarter turn along the floor. */
+const SWEPT: P = { yaw: 18, twist: 12, bend: 8, pitch: 4, faceTurn: -6, faceUp: -6, faceTilt: 4, pz: R.pz, ...hands([-3, 9, -14], [12, 10, -13], -30, -10), draw: 2 };
+const SWEPT_ON: P = { ...SWEPT, yaw: 23, twist: 16, bend: 10, pitch: 5, ...hands([-4, 9, -15], [8, 14, -15], -30, -16), draw: 2.2 };
 function lashPlan(): Plan {
   const [w0, w1] = PR_LASH.warn;
   const [s0, s1] = PR_LASH.strike;
@@ -141,43 +151,80 @@ function lashPlan(): Plan {
     hit: PR_LASH.hit,
     keys: [
       [0, { draw: 0 }],
-      [0.2, { yaw: -9, twist: -6, bend: -4, pitch: -3, faceTurn: 10, pz: R.pz + 0.8, ...hands([11, 2, -6], [1, -9, -2], -24, 34), draw: 0.55 }],
-      [w0, RAISED],
-      [0.55, { ...RAISED, ...hands([15, 3, 1.3], [-6.7, -7.6, 14.3], -30, 46), draw: 1 }],
-      [w1, RAISED],
+      [0.2, { yaw: -15, twist: -7, bend: -2, pitch: -2, faceTurn: 16, pz: R.pz + 0.6, ...hands([11, 3, -7], [-1, -11, -16], -26, 30), draw: 0.45 }],
+      [w0, COCKED],
+      [0.55, { ...COCKED, ...hands([15, 4, 0.3], [-7.2, -12.1, -12.2], -30, 40), draw: 1 }],
+      [w1, COCKED],
       [s0, HIPS_FIRST],
-      [s1, LASHED],
-      [1.0, LASH_ON],
-      [1.28, { yaw: 5, twist: 4, bend: 4, pitch: 1, faceTurn: -6, ...hands([5, 2, -15], [8, -4, -20], -16, 12), draw: 2.65 }],
+      [s1, SWEPT],
+      [1.0, SWEPT_ON],
+      [1.3, { yaw: 9, twist: 6, bend: 4, pitch: 1, faceTurn: -6, ...hands([4, 5, -16], [7, 1, -19], -20, 0), draw: 2.62 }],
       [PR_LASH.long, { draw: 3 }],
     ],
   };
 }
-/** THE VINE THROUGH THE LASH (the bones' `draw`): 0 trailing at rest; 1 drawn back over her shoulder; 1.5 whipping over; 2 cast out along the floor (2.2 slid on); 3 trailing again. */
-export function lashVine(s: Skeleton, draw: number, t: number): V3[] {
-  const f0 = s.hips[0];
-  const f = norm([f0[0], f0[1], 0], [1, 0, 0]);
-  const r: V3 = [f[1], -f[0], 0];
-  const hand = s.handR;
-  const N = 12;
-  const rest = restAt(s, t);
-  const raised: V3[] = [];
-  const over: V3[] = [];
-  const cast: V3[] = [];
-  const slide = Math.max(0, Math.min(0.2, draw - 2)) * 25;
-  for (let i = 0; i <= N; i++) {
-    const k = i / N;
-    raised.push(add(hand, add(mul(f, -26 * k), add(mul(r, (3 + 3 * k) * k), [0, 0, 10 * Math.sin(Math.PI * k) - 12 * k * k]))));
-    over.push(add(hand, add(mul(f, 30 * k), add(mul(r, 6 * k), [0, 0, 14 * Math.sin(Math.PI * k * 0.9) - 6 * k]))));
-    const z = (0.9 - hand[2]) * smooth(0, 0.35, k);
-    cast.push(add(hand, add(mul(f, (48 + slide) * k), add(mul(r, Math.sin(3 * Math.PI * k) * 1.4 * k + 2 * k), [0, 0, z]))));
+const N_VINE = 24;
+/** A line of points resampled to `n` (by its points' order). */
+function resampled(pts: ReadonlyArray<V3>, n: number): V3[] {
+  const out: V3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const u = (i / n) * (pts.length - 1);
+    const j = Math.min(pts.length - 2, Math.floor(u));
+    out.push(lerp3(pts[j], pts[j + 1], u - j));
   }
+  return out;
+}
+/** The vine laid out along the floor from her right hand: down to the floor a little way out, then `long` out along the way `deg` round from her front, its far end trailing `trail` degrees behind the way it is swept. */
+function laidVine(s: Skeleton, deg: number, long: number, trail: number): V3[] {
+  const hand = s.handR;
+  const D = Math.PI / 180;
+  const way = (a: number): V3 => [Math.cos(a * D), Math.sin(a * D), 0];
+  const near = Math.min(long, 15);
+  const base = add([s.pelvis[0], s.pelvis[1], 0], mul(way(deg), near));
+  const out: V3[] = [];
+  // (on the floor its middle is as high as it is thick there: it lies on the floor, not in it)
+  const lie = (k: number): number => 0.5 + 1.25 * 1.6 * (1 - 0.35 * k);
+  for (let i = 0; i <= N_VINE; i++) {
+    const k = i / N_VINE;
+    if (k <= 0.12) {
+      const u = k / 0.12;
+      const p = lerp3(hand, [base[0], base[1], lie(k)], u);
+      out.push([p[0], p[1], p[2] + 3 * Math.sin(Math.PI * u) * (1 - u)]);
+      continue;
+    }
+    const u = (k - 0.12) / 0.88;
+    const a = deg - trail * u * u;
+    const d = near + (long - near) * u;
+    const w = [s.pelvis[0], s.pelvis[1], 0] as V3;
+    const p = add(w, mul(way(a), d));
+    out.push([p[0], p[1], lie(k)]);
+  }
+  return out;
+}
+/** THE VINE THROUGH THE LASH (the bones' `draw`): 0 trailing at rest; 0 to 1 growing out its whole length along the floor to her right; 1 to 2 swept round its quarter turn; 2 to 2.2 carried on; 2.2 to 3 drawn back in to trailing again. */
+export function lashVine(s: Skeleton, draw: number, t: number): V3[] {
+  const rest = resampled(restAt(s, t), N_VINE);
   const mix = (a: V3[], b: V3[], k: number): V3[] => a.map((p, i) => lerp3(p, b[i], k));
-  if (draw <= 1) return mix(rest, raised, clamp01(draw));
-  if (draw <= 1.5) return mix(raised, over, (draw - 1) / 0.5);
-  if (draw <= 2) return mix(over, cast, (draw - 1.5) / 0.5);
-  if (draw <= 2.2) return cast;
-  return mix(cast, rest, clamp01((draw - 2.2) / 0.8));
+  const [a0, a1] = PR_LASH.area;
+  const from = PR_LASH.from;
+  if (draw <= 1) {
+    const k = clamp01(draw);
+    const grown = laidVine(s, from, 18 + (LASH_REACH - 18) * smooth(0.15, 1, k), 0);
+    return mix(rest, grown, smooth(0, 0.35, k));
+  }
+  if (draw <= 2) {
+    // (swept: from where it lay, through the quarter turn it strikes; its far end trailing behind as it goes)
+    const u = draw - 1;
+    const deg = from + (a1 - from) * u;
+    return laidVine(s, deg, LASH_REACH, 26 * Math.sin(Math.PI * u));
+  }
+  if (draw <= 2.2) return laidVine(s, a1 + (PR_LASH.to - a1) * ((draw - 2) / 0.2), LASH_REACH, 0);
+  // (drawn back in: shortening along the floor, then lifting into her hand)
+  // (round in front of her, back to her right side as it comes in, so that it never crosses her)
+  const k = clamp01((draw - 2.2) / 0.8);
+  // (first pulled in along its own line, then, short, round to her right)
+  const short = laidVine(s, PR_LASH.to + (-75 - PR_LASH.to) * smooth(0.3, 1, k), LASH_REACH + (16 - LASH_REACH) * smooth(0, 0.75, k), 0);
+  return mix(short, rest, smooth(0.6, 1, k));
 }
 /** The vine trailing as she hovers, from a moment's bones alone (its sway by `t`; it does not lag). */
 function restAt(s: Skeleton, t: number): V3[] {
@@ -347,7 +394,23 @@ function smearOf(move: string, t: number): V3[][] | null {
   const [s0, s1] = PR_STRIKES[move];
   const to = Math.min(t, s1);
   const out: V3[][] = [];
-  const n = 4;
+  if (move === 'attack') {
+    // (the sweep's own streaks first, dimmest: arcs across the quarter turn it has swept so far, all the way out)
+    const from = PR_LASH.from;
+    const now = from + (PR_LASH.area[1] - from) * clamp01(((POSES.attack(to).draw as number) ?? 1) - 1);
+    const D = Math.PI / 180;
+    const s = bonesOf('attack', to);
+    for (let r = 24; r <= LASH_REACH; r += 22) {
+      const arc: V3[] = [];
+      const steps = Math.max(2, Math.ceil(((now - from) * D * r) / 10));
+      for (let j = 0; j <= steps; j++) {
+        const a = (from + ((now - from) * j) / steps) * D;
+        arc.push([s.pelvis[0] + Math.cos(a) * r, s.pelvis[1] + Math.sin(a) * r, 0.8]);
+      }
+      out.push(arc);
+    }
+  }
+  const n = move === 'attack' ? 8 : 4;
   for (let i = 0; i <= n; i++) {
     const u = s0 - FR * 0.5 + ((to - (s0 - FR * 0.5)) * i) / n;
     if (move === 'rideLeap') {

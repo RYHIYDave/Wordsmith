@@ -18,7 +18,12 @@
 //   8. HER STEED forms under her and fades; she sits its back through every leap; all four hooves off the floor while the
 //      game carries her, all four down where they started once it lands and settles;
 //   9. WHAT HER CASTING LEAVES: the snare's cage bursts out of the floor in two frames, the Vow's ring in two; neither,
-//      nor the Eleven's feathers, nor her diving swans, has anything cyan.
+//      nor the Eleven's feathers, nor her diving swans, has anything cyan;
+//  10. HIS SIZES AND SPEEDS (28 Oct, by 22:23 to 22:27: “The swipe of the vine should cover a 90 degree swing and cover maybe
+//      1/6 of the entire arena”, “Triple that at least”, “The swans should go the full length of the arena”, “do two full
+//      laps jumping maybe 15 times in 15 seconds”, “Her move speed is shit”): the lash sweeps a quarter turn and more,
+//      seven tiles and more out; she glides at four tiles a second; a leap a second, each carrying her four and a half
+//      tiles; the snare five tiles across, the Vow's ring ten.
 //   run: tsx --test tests/princess.test.ts
 
 // @ts-ignore
@@ -32,7 +37,7 @@ import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { PRINCESS_ON, PR_CANVAS } from '../src/art/princess';
-import { PRINCESS, PR_DIES, PR_SHAPE, PR_STRIKES, smearedAt } from '../src/art/princess_moves';
+import { LASH_REACH, PRINCESS, PR_DIES, PR_LASH, PR_PACE, PR_SHAPE, PR_STRIKES, smearedAt } from '../src/art/princess_moves';
 import { RIDE_LEAP, steedPoseAt } from '../src/art/princess_ride';
 import { SNARE_FX, VOW_FX, featherLine, snarePainted, vowPainted } from '../src/art/princess_fx';
 import { seatOf, solesOf } from '../src/art/spectral_steed';
@@ -41,6 +46,7 @@ import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import type { Bit, Mob, Moment, Shape } from '../src/art/new_mobs3';
+import { TILE3, posedOfMob } from '../src/art/new_mobs3';
 import { canvasOf, deathOfMob, dyingMoment, momentOf, paintMob, paintViewOf, skeletonAt } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
 import type { Stage } from '../src/art/skin';
@@ -319,4 +325,20 @@ test('9. WHAT HER CASTING LEAVES: the snare bursts out in two frames, the Vow in
     const grey = r === g && g === b;
     assert.ok((grey || !FRIEND.has(`${r},${g},${b}`)) && !cyanGlow(r, g, b), `a feather in cyan, ${c}`);
   }
+});
+
+test('10. HIS SIZES AND SPEEDS: a quarter-turn sweep seven tiles out; four tiles a second gliding; fifteen leaps in fifteen seconds, four and a half tiles each; the snare five tiles across, the ring ten', () => {
+  const tipAt = (t: number): V3 => PR_SHAPE.tip?.('attack', t, skeletonAt(MOB, 'attack', t), posedOfMob(MOB, 'attack', t)) as V3;
+  const deg = (p: V3): number => (Math.atan2(p[1], p[0]) * 180) / Math.PI;
+  const [s0, s1] = PR_LASH.strike;
+  assert.ok(deg(tipAt(s0)) <= -45, `the sweep starts from ${deg(tipAt(s0)).toFixed(0)} degrees`);
+  assert.ok(deg(tipAt(s1)) >= 45, `and lands at ${deg(tipAt(s1)).toFixed(0)} degrees`);
+  for (const t of [s0, s1]) assert.ok(Math.hypot(tipAt(t)[0], tipAt(t)[1]) >= 7 * TILE3, `the vine reaches ${(Math.hypot(tipAt(t)[0], tipAt(t)[1]) / TILE3).toFixed(1)} tiles`);
+  assert.ok(LASH_REACH >= 7 * TILE3);
+  assert.ok(PR_PACE >= 4, `she glides at ${PR_PACE} tiles a second`);
+  assert.equal(MOB.walk.ground, PR_PACE * TILE3, 'her glide painted for her pace');
+  assert.equal(RIDE_LEAP.long, 1, 'a leap a second');
+  assert.ok(RIDE_LEAP.carry >= 4.5, `each leap carries her ${RIDE_LEAP.carry} tiles`);
+  assert.ok(2 * SNARE_FX.r >= 5 * TILE3 - 1e-6, `the snare ${((2 * SNARE_FX.r) / TILE3).toFixed(1)} tiles across`);
+  assert.ok(2 * VOW_FX.r >= 10 * TILE3 - 1e-6, `the ring ${((2 * VOW_FX.r) / TILE3).toFixed(1)} tiles across`);
 });
