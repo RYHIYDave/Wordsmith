@@ -29,6 +29,12 @@
 //   HIPS     (Movement 1, "A blow plants the feet, turns the hips and carries through"): the hips get
 //            going first, then the chest, then the end he strikes with.
 //   ALIVE    (Movement 6, "breathes, shifts its weight"): standing, his chest rises and his hips sway.
+//   STRIKE   (his Movement 9, 24 Oct, "Big wind-up, lightning strike"; and his answer of 28 Oct for the enemies, “Start
+//            from now on, but every enemy is going to need that change eventually.  And bigger AOE to compensate for
+//            the extra time the player gets to evade”): for a boss whose shape says where a move strikes (`strikes`),
+//            the strike itself is one frame or two, far faster than anything of its wind-up or wind-down, and smeared;
+//            its steps (and the one as it lands) are not held to JERK, which holds for the wind-up and the wind-down.
+//            A boss that says nothing of its strikes is reviewed as before.
 //
 // (What is painted, the colour of every light, the pink edge, and crisp pixels, is asked of every frame in
 // tests/bosses.test.ts.) Each boss says what he is (`BossShape`): his outside and what he wears, as
@@ -100,6 +106,14 @@ export interface BossShape {
   follow?: (move: string, t: number, s: Skeleton, q: Posed) => Readonly<Record<string, V3>>;
   /** His solids that rest in the floor as he is made (a heap slumped on it, a tail trailing off into it): not held out of it. */
   floorFree?: ReadonlyArray<string>;
+  /**
+   * HIS LIGHTNING STRIKES (his rulebook's Movement 9): for each move that strikes so, the strike itself, from the last
+   * frame of its wind-up to the frame it lands on (seconds, on the game's frames). Its steps are one or two; they, and
+   * the step as it lands, are not held to "nothing jerky".
+   */
+  strikes?: Readonly<Record<string, readonly [number, number]>>;
+  /** Whether a frame of a move is painted with its smear (the after-images of what strikes, along the way it came), for the strikes above. */
+  smeared?: (move: string, t: number) => boolean;
   /** Moves that are only pictures for the owner, never played (stills of how he holds his weapon): not reviewed. */
   pictures?: ReadonlyArray<string>;
   /** How far above the floor each of these must stay (the figure's own lengths): his knees, elbows and hands are round, and as thick as they are; what grips the floor (`grip`), where it is put down. */
@@ -115,7 +129,7 @@ export interface BossShape {
 export interface Finding {
   move: string;
   t: number;
-  kind: 'slide' | 'floor' | 'arm' | 'through' | 'jerk' | 'jump' | 'blow' | 'hips' | 'alive';
+  kind: 'slide' | 'floor' | 'arm' | 'through' | 'jerk' | 'jump' | 'blow' | 'hips' | 'alive' | 'strike';
   what: string;
   by: number;
 }
@@ -337,6 +351,9 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
       ? [['tip', (i) => tips[i]], ...Object.keys(fol[0] ?? {}).map((k): [string, (i: number) => V3 | null] => [k, (i) => fol[i][k] ?? null])]
       : [['tip', (i) => tips[i]], ['handR', (i) => sk[i].handR], ['handL', (i) => sk[i].handL], ['head', (i) => sk[i].head], ['pelvis', (i) => sk[i].pelvis]];
     const jerks = new Set<string>();
+    // (the strike itself, and the step as it lands: a flash, not a motion to follow frame by frame)
+    const strike = shape.strikes?.[which];
+    const struck = (i: number): boolean => !!strike && ts[i] !== undefined && ts[i] >= strike[0] - 1e-6 && ts[i] <= strike[1] + 1e-6;
     for (const [name, at] of followed) {
       for (const view of VIEWS) {
         const pts = ts.map((_, i) => at(i));
@@ -359,22 +376,47 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
           const b = sp[i];
           const c = sp[(i + 1) % n];
           const edge = !round && (i === 0 || i === n - 1);
-          if (!edge && b > 4 && b > 2.2 * Math.max(a, c)) say('leaps', i, b);
-          if (!edge && a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) {
+          const flash = !round && (struck(i) || struck((i - 1 + n) % n) || struck((i + 1) % n));
+          if (!edge && !struck(i) && b > 4 && b > 2.2 * Math.max(round || !struck((i - 1 + n) % n) ? a : 0, round || !struck((i + 1) % n) ? c : 0)) say('leaps', i, b);
+          if (!edge && !flash && a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) {
             const sa = st[(i - 1 + n) % n];
             const sc = st[(i + 1) % n];
             if ((sa[0] * sc[0] + sa[1] * sc[1]) / (Math.hypot(...sa) * Math.hypot(...sc) || 1) > 0.5) say('stalls', i, Math.min(a, c) - b);
           }
-          if (i > 0 || round) {
+          if ((i > 0 || round) && !(struck(i) || struck((i - 1 + n) % n))) {
             const sa = st[(i - 1 + n) % n];
             const sb = st[i];
             if ((sa[0] * sb[0] + sa[1] * sb[1]) / (Math.hypot(...sa) * Math.hypot(...sb) || 1) < -0.5 && a > 3 && b > 3) say('turns straight back at speed', i, Math.min(a, b));
           }
         }
         // (but struck, or struck down: the blow throws him at once, as a blow does)
-        if (!round && which !== 'reel' && which !== 'dying' && sp[0] > 3 && sp[0] >= 0.95 * Math.max(...sp.slice(0, 4))) say('starts at its fastest', 0, sp[0]);
-        if (!round && sp[n - 1] > 3 && sp[n - 1] >= 0.95 * Math.max(...sp.slice(-4))) say('stops dead from its fastest', n - 1, sp[n - 1]);
+        const plain = sp.map((v, i) => (struck(i) ? 0 : v));
+        if (!round && which !== 'reel' && which !== 'dying' && !struck(0) && sp[0] > 3 && sp[0] >= 0.95 * Math.max(...plain.slice(0, 4))) say('starts at its fastest', 0, sp[0]);
+        if (!round && !struck(n - 1) && sp[n - 1] > 3 && sp[n - 1] >= 0.95 * Math.max(...plain.slice(-4))) say('stops dead from its fastest', n - 1, sp[n - 1]);
       }
+    }
+    // --- STRIKE: one frame or two, far faster than its wind-up and its wind-down, and smeared ---
+    if (strike) {
+      const [t0, t1] = strike;
+      const steps = Math.round((t1 - t0) * CLIP_FPS);
+      if (steps < 1 || steps > 2) found.push({ move: which, t: t0, kind: 'strike', what: `the strike takes ${steps} frames (one or two)`, by: steps });
+      const hit = mv.motion.hit;
+      if (hit !== undefined && (hit < t0 - 1e-6 || hit > t1 + 1e-6)) found.push({ move: which, t: hit, kind: 'strike', what: 'the blow lands outside its strike', by: Math.max(t0 - hit, hit - t1) * CLIP_FPS });
+      const i0 = ts.findIndex((t) => Math.abs(t - t0) < 1e-6);
+      const i1 = ts.findIndex((t) => Math.abs(t - t1) < 1e-6);
+      if (i0 < 0 || i1 < 0) found.push({ move: which, t: t0, kind: 'strike', what: 'its strike is not on the game\'s frames', by: 1 });
+      else if (tips.every((p, i) => p || i < i0 - 9 || i > i1 + 9)) {
+        for (const view of VIEWS) {
+          const at = (i: number): [number, number] => seen(tips[i] as V3, view);
+          const step = (i: number): number => Math.hypot(at(i + 1)[0] - at(i)[0], at(i + 1)[1] - at(i)[1]);
+          const flash = Math.min(...Array.from({ length: i1 - i0 }, (_, k) => step(i0 + k)));
+          // (its wind-up and its wind-down, a third of a second either side: the strike at least twice as fast as any frame of them)
+          let slow = 0;
+          for (let i = Math.max(0, i0 - 10); i < Math.min(ts.length - 1, i1 + 11); i++) if (i < i0 || i > i1) slow = Math.max(slow, step(i));
+          if (flash < 2 * slow) found.push({ move: which, t: t0, kind: 'strike', what: `not a flash (${view}): its slowest step ${flash.toFixed(1)}, its wind-up or wind-down's fastest ${slow.toFixed(1)}`, by: 2 * slow - flash });
+        }
+      }
+      for (const t of ts) if (t > t0 + 1e-6 && t <= t1 + 1e-6 && !shape.smeared?.(which, t)) found.push({ move: which, t, kind: 'strike', what: 'not smeared', by: 1 });
     }
     // --- BLOW and HIPS: a blow drawn back, held, and carried through; the hips first ---
     const hit = mv.motion.hit;

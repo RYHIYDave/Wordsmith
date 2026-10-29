@@ -100,8 +100,9 @@ test('1. the switch is off, and nothing of the game imports him but his figure a
     // (and the city's mobs, mock-ups of their own that take the Hush's colours from him: art/hushed.ts and the rest;
     // floor 13's Hushed in the fields, art/fieldhands.ts: tests/fieldhands.test.ts; floor 14's pieces, art/floor14.ts,
     // whose spilled tonic lets the Hush out: tests/floor14.test.ts; and its Hushed patients, art/patients.ts, the Hush
-    // leaking out of them: tests/patients.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || HIS_OWN.includes(f) || /^art\/(crier(_moves|_shots)?|hushed(_moves)?|hushed_watch(_moves)?|hounds|fieldhands|floor14|patients)\.ts$/.test(f)) continue;
+    // leaking out of them: tests/patients.test.ts; and floor 16's palace guard and its boss, the Princess, the Hush's
+    // colours theirs: tests/palace_guard.test.ts and tests/princess.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || HIS_OWN.includes(f) || /^art\/(crier(_moves|_shots)?|hushed(_moves)?|hushed_watch(_moves)?|hounds|fieldhands|floor14|patients|palace_guard(_moves)?|palace_hands(_moves)?|princess(_moves|_ride)?)\.ts$/.test(f)) continue;
     // (by where each import leads, not by its name: game/act1_rules/crier.ts, his rules, is a "crier" too)
     const dir = f.split('/').slice(0, -1);
     for (const [, spec] of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
