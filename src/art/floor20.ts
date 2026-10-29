@@ -31,7 +31,7 @@ import type { Piece } from './floorkit';
 import { CANDLE } from './floor11';
 import { hash } from './kit';
 import type { Ramp } from './kit';
-import { HOLE, IRON, MASK, SOFT_ID, checker, cylinder, done, facing, frontPiece, local, lying, scene, turned } from './act2_kit';
+import { HOLE, MASK, SOFT_ID, checker, cylinder, done, facing, frontPiece, local, lying, scene, turned } from './act2_kit';
 import { QT_BOARD, boards } from './quiettower';
 
 const fr = (t: number): number => t - Math.floor(t);
@@ -65,6 +65,8 @@ export const PAPER: Ramp = ['#5e5a52', '#827d72', '#a39d90', '#c2bcae', '#dad4c6
 export const WAX: Ramp = ['#6a6556', '#8e8874', '#ada692', '#c8c1aa', '#ddd6c0'];
 /** Grey ash, cold. */
 export const ASH: Ramp = ['#29292d', '#3d3d41', '#545458', '#6d6d6f', '#888786'];
+/** Iron, grey: the tower's straps, hinges, the beacon, the clapper (the city's iron with its blue taken out). */
+export const GIRON: Ramp = ['#1c1c20', '#2e2e34', '#46464c', '#64646a', '#88888c'];
 /** The Moth's silk. */
 export const SILK: Ramp = ['#56575d', '#74767b', '#939599', '#b2b3b5', '#cdcdcb'];
 /** The Moth's wing: its scales grey, a little warm. */
@@ -402,7 +404,7 @@ export function chestIn(S: Scene, broken: boolean): void {
   if (!broken) {
     S.box([0, 0, 7], AX, [12, 7.5, 7], (f, u, v, n) => {
       if (f === 4) return null;
-      if (band(f, u, v)) return toneAt(n, IRON, 0.1);
+      if (band(f, u, v)) return toneAt(n, GIRON, 0.1);
       return fr((f === 2 || f === 3 ? v : u) * 3) < 0.06 ? GREYOAK[0] : toneAt(n, GREYOAK, 0);
     }, 1);
     S.quad([[-11.5, -7, 13], [11.5, -7, 13], [11.5, 7, 13], [-11.5, 7, 13]], () => '#141218', 1);
@@ -418,18 +420,18 @@ export function chestIn(S: Scene, broken: boolean): void {
     const ang = 1.95;
     const hinge: V3 = [0, -7.5, 14];
     const d: V3 = [0, Math.cos(ang), Math.sin(ang)];
-    S.box(add(hinge, mul(d, 7.5)), [[1, 0, 0], d, unit(cross([1, 0, 0], d))], [12.5, 7.5, 1.4], (f, u, v, n) => (band(f, u, v) && f !== 4 && f !== 5 ? toneAt(n, IRON, 0.1) : toneAt(n, GREYOAK, f === 5 ? -0.2 : 0.05)), 3);
+    S.box(add(hinge, mul(d, 7.5)), [[1, 0, 0], d, unit(cross([1, 0, 0], d))], [12.5, 7.5, 1.4], (f, u, v, n) => (band(f, u, v) && f !== 4 && f !== 5 ? toneAt(n, GIRON, 0.1) : toneAt(n, GREYOAK, f === 5 ? -0.2 : 0.05)), 3);
     return;
   }
   // broken open: its body split down one corner, the lid lying off it, the quires spilled
   S.box([-1, 0, 6], AX, [11, 7.5, 6], (f, u, v, n) => {
     if (f === 4) return null;
     if (f === 2 && u > 0.6) return null;
-    if (band(f, u, v)) return toneAt(n, IRON, 0.1);
+    if (band(f, u, v)) return toneAt(n, GIRON, 0.1);
     return toneAt(n, GREYOAK, 0);
   }, 1);
   S.quad([[-10.5, -7, 11], [10, -7, 11], [10, 7, 11], [-10.5, 7, 11]], () => '#141218', 1);
-  S.box([16, 6, 1.5], [[0.9, 0.44, 0], [-0.44, 0.9, 0], [0, 0, 1]], [12, 7.5, 1.4], (f, u, v, n) => (band(f, u, v) ? toneAt(n, IRON, 0.1) : toneAt(n, GREYOAK, 0.05)), 3);
+  S.box([16, 6, 1.5], [[0.9, 0.44, 0], [-0.44, 0.9, 0], [0, 0, 1]], [12, 7.5, 1.4], (f, u, v, n) => (band(f, u, v) ? toneAt(n, GIRON, 0.1) : toneAt(n, GREYOAK, 0.05)), 3);
   S.rod([7, 8, 1], [4, 18, 1], 1.1, 1.1, GREYOAK, 4);
   for (let k = 0; k < 7; k++) {
     const x = -14 + hash(k, 1, 6342) * 26;
@@ -498,11 +500,11 @@ export function bellFrameIn(S: Scene): void {
     beam(S, [x, -6, 105], [x, 6, 105], T, BELLOAK, 4, 0.1);
     beam(S, [x, -12, 44], [x, 12, 44], T * 0.7, BELLOAK, 5);
     // the iron bearing on its cap
-    S.box([x, 0, 109.5], AX, [3.6, 3, 1.6], (_f, _u, _v, n) => toneAt(n, IRON, 0.1), 6);
+    S.box([x, 0, 109.5], AX, [3.6, 3, 1.6], (_f, _u, _v, n) => toneAt(n, GIRON, 0.1), 6);
   }
   // the headstock across, square, banded; the axle's stubs in the bearings
   beam(S, [-38, 0, 114], [38, 0, 114], 4.2, BELLOAK, 7, 0.05);
-  for (const x of [-26, -10, 10, 26]) S.box([x, 0, 114], AX, [1, 4.5, 4.5], (_f, _u, _v, n) => toneAt(n, IRON, 0.1), 8);
+  for (const x of [-26, -10, 10, 26]) S.box([x, 0, 114], AX, [1, 4.5, 4.5], (_f, _u, _v, n) => toneAt(n, GIRON, 0.1), 8);
   // the wheel at its end: a rim of oak on spokes, the rope's groove; past the frame on -x
   const wc: V3 = [-46, 0, 114];
   const R = 26;
@@ -515,12 +517,12 @@ export function bellFrameIn(S: Scene): void {
     const a = (k / 6) * Math.PI * 2 + 0.3;
     S.rod(wc, add(wc, [0, Math.cos(a) * R, Math.sin(a) * R]), 1.1, 0.9, BELLOAK, 10);
   }
-  S.box(wc, AX, [2.4, 3, 3], (_f, _u, _v, n) => toneAt(n, IRON, 0), 11);
+  S.box(wc, AX, [2.4, 3, 3], (_f, _u, _v, n) => toneAt(n, GIRON, 0), 11);
   // WHERE THE BELL HUNG: its crown straps hanging empty from the headstock, one snapped; a link of chain
   for (const [x, len, bent] of [[-5, 22, 0], [5, 15, 1]] as const) {
-    S.box([x, 0, 109.8 - len / 2], AX, [1.2, 0.7, len / 2], (_f, _u, _v, n) => toneAt(n, IRON, 0.05), 12);
-    if (bent) S.box([x + 1.2, 1.2, 109.8 - len - 1.5], [[0.7, 0, -0.7], [0, 1, 0], [0.7, 0, 0.7]], [2.5, 0.7, 1.2], (_f, _u, _v, n) => toneAt(n, IRON, 0.05), 12);
-    else S.box([x, 0, 109.8 - len + 1], AX, [3.5, 1.2, 1], (_f, _u, _v, n) => toneAt(n, IRON, 0.1), 12);
+    S.box([x, 0, 109.8 - len / 2], AX, [1.2, 0.7, len / 2], (_f, _u, _v, n) => toneAt(n, GIRON, 0.05), 12);
+    if (bent) S.box([x + 1.2, 1.2, 109.8 - len - 1.5], [[0.7, 0, -0.7], [0, 1, 0], [0.7, 0, 0.7]], [2.5, 0.7, 1.2], (_f, _u, _v, n) => toneAt(n, GIRON, 0.05), 12);
+    else S.box([x, 0, 109.8 - len + 1], AX, [3.5, 1.2, 1], (_f, _u, _v, n) => toneAt(n, GIRON, 0.1), 12);
   }
 }
 function bellFrame(): Sprite {
@@ -533,12 +535,14 @@ function bellFrame(): Sprite {
 export function bellRopeIn(S: Scene): void {
   const x = 0;
   const y = 0;
-  // the rope from high above to the sally, swaying a little
+  // the rope down out of the dark above to the sally, swaying a little (its top lost in the dark, as the walls' are)
   let prev: V3 = [x - 2, y, 176];
   for (let k = 1; k <= 18; k++) {
     const z = 176 - k * 7;
     const p: V3 = [x - 2 + Math.sin(k * 0.25) * 1.2, y, z];
-    S.rod(prev, p, 0.9, 0.9, HEMP, 1);
+    const dark = Math.min(1, Math.max(0, (z - 96) / 70));
+    const ramp = HEMP.map((c) => mixHex(c, '#07080c', dark > 0.8 ? 0.92 : dark > 0.5 ? 0.7 : dark > 0.2 ? 0.45 : dark > 0 ? 0.2 : 0)) as unknown as Ramp;
+    S.rod(prev, p, 0.9, 0.9, ramp, 1);
     prev = p;
   }
   // the sally: thicker, wool, in grey and bone bands
@@ -565,17 +569,17 @@ function bellRope(): Sprite {
 export function clapperIn(S: Scene): void {
   const a: V3 = [-20, -8, 2.2];
   const b: V3 = [16, 6, 2.2];
-  S.rod(a, b, 1.8, 2.3, IRON, 1);
+  S.rod(a, b, 1.8, 2.3, GIRON, 1);
   // the ball, a long egg; and its flight beyond it
   const A = axesAlong(a, b);
-  S.egg(add(b, mul(A[0], 3)), A, [6.5, 4.8, 4.8], (n) => toneAt(n, IRON, 0.05), 2);
-  S.rod(add(b, mul(A[0], 9)), add(b, mul(A[0], 16)), 2.4, 1.4, IRON, 3);
+  S.egg(add(b, mul(A[0], 3)), A, [6.5, 4.8, 4.8], (n) => toneAt(n, GIRON, 0.05), 2);
+  S.rod(add(b, mul(A[0], 9)), add(b, mul(A[0], 16)), 2.4, 1.4, GIRON, 3);
   // the ring it hung by, lying
   for (let k = 0; k < 12; k++) {
     const t0 = (k / 12) * Math.PI * 2;
     const t1 = ((k + 1) / 12) * Math.PI * 2;
     const P = (t: number): V3 => add(a, add(mul(A[0], -4 - Math.cos(t) * 3.5), mul(A[1], Math.sin(t) * 3.5)));
-    S.rod(P(t0), P(t1), 1.1, 1.1, IRON, 4);
+    S.rod(P(t0), P(t1), 1.1, 1.1, GIRON, 4);
   }
 }
 function clapper(): Sprite {
@@ -634,7 +638,7 @@ export function stairIn(S: Scene): void {
     S.quad([P(a0, 5, z - 9), P(a0, R, z - 9), P(a0, R, z), P(a0, 5, z)], (_u, v) => fade(toneAt(facing(S, [Math.cos(a0 - Math.PI / 2), Math.sin(a0 - Math.PI / 2), 0]), TSTONE, v > 0.85 ? 0.3 : -0.1), z), 2 + (i % 2));
     S.quad([P(a0, R, z - 9), P(a1 + 0.04, R, z - 4), P(a1 + 0.04, R, z), P(a0, R, z)], () => fade(toneAt(facing(S, [Math.cos((a0 + a1) / 2), Math.sin((a0 + a1) / 2), 0]), TSTONE, -0.05), z), 2 + (i % 2));
     // an iron eye on every third step, the rope through them
-    if (i % 3 === 0) S.rod(P(a0 + 0.1, R - 1, z), P(a0 + 0.1, R - 1, z + 22), 0.6, 0.6, IRON, 6);
+    if (i % 3 === 0) S.rod(P(a0 + 0.1, R - 1, z), P(a0 + 0.1, R - 1, z + 22), 0.6, 0.6, GIRON, 6);
   }
   let prev: V3 | null = null;
   for (let i = 0; i <= N; i += 3) {
@@ -683,8 +687,8 @@ export function doorMake(open: boolean) {
       const z = v * HEAD;
       if (!inArch(a, z, 0)) return null;
       // the long strap hinges, the ring
-      if ((Math.abs(z - 12) < 1.4 || Math.abs(z - 36) < 1.4) && a < 8 - (Math.abs(z - 12) < 1.4 ? 0 : 3)) return a > 5 ? IRON[2] : IRON[3];
-      if (Math.abs(Math.hypot(a - 8, z - 26) - 2.4) < 0.8) return IRON[4];
+      if ((Math.abs(z - 12) < 1.4 || Math.abs(z - 36) < 1.4) && a < 8 - (Math.abs(z - 12) < 1.4 ? 0 : 3)) return a > 5 ? GIRON[2] : GIRON[3];
+      if (Math.abs(Math.hypot(a - 8, z - 26) - 2.4) < 0.8) return GIRON[4];
       return fr((a + HW) / 5.6) < 0.1 ? GREYOAK[0] : GREYOAK[hash(Math.floor((a + HW) / 5.6), 1, 6381) > 0.5 ? 2 : 3];
     }, 3);
   };
@@ -699,8 +703,8 @@ export function trapdoorIn(S: Scene, open: boolean): void {
     S.box([(x0 + x1) / 2, (y0 + y1) / 2, 1.2], AX, [(x1 - x0) / 2, (y1 - y0) / 2, 1.2], (f, _u, v, n) => (f === 4 && v > 0.85 ? BONE[2] : toneAt(n, TSTONE, f === 4 ? 0.05 : 0)), 1);
   }
   const leafShade = (u: number, v: number, back: boolean): string => {
-    if (Math.abs(u - 0.22) < 0.05 || Math.abs(u - 0.78) < 0.05) return back ? IRON[1] : v < 0.85 ? IRON[3] : IRON[2];
-    if (!back && Math.abs(v - 0.88) < 0.06 && Math.abs(u - 0.5) < 0.12) return IRON[4];
+    if (Math.abs(u - 0.22) < 0.05 || Math.abs(u - 0.78) < 0.05) return back ? GIRON[1] : v < 0.85 ? GIRON[3] : GIRON[2];
+    if (!back && Math.abs(v - 0.88) < 0.06 && Math.abs(u - 0.5) < 0.12) return GIRON[4];
     return fr(v * 5) < 0.07 ? GREYOAK[0] : GREYOAK[back ? 2 : 3];
   };
   if (!open) {
@@ -721,7 +725,7 @@ export function trapdoorIn(S: Scene, open: boolean): void {
   const d: V3 = [0, -Math.cos(Math.PI - ang), Math.sin(Math.PI - ang)];
   const hinge = -16;
   S.quad([[-20, hinge, 1.8], [20, hinge, 1.8], add([20, hinge, 1.8], mul(d, 32)), add([-20, hinge, 1.8], mul(d, 32))], (u, v) => leafShade(u, v, true), 4);
-  S.rod([17, hinge - 1, 1.8], [17, hinge - 9, 14], 0.6, 0.6, IRON, 5);
+  S.rod([17, hinge - 1, 1.8], [17, hinge - 9, 14], 0.6, 0.6, GIRON, 5);
 }
 function trapdoor(open: boolean): Sprite {
   const S = scene(110, 120, 55, 70);
@@ -737,13 +741,13 @@ function trapdoor(open: boolean): Sprite {
 export function candlesIn(S: Scene, f: number): PieceLight[] {
   for (let k = 0; k < 3; k++) {
     const a = (k / 3) * Math.PI * 2 + 0.5;
-    S.rod([0, 0, 8], [Math.cos(a) * 9, Math.sin(a) * 9, 0], 0.9, 0.8, IRON, 1);
-    S.rod([Math.cos(a) * 9, Math.sin(a) * 9, 0], [Math.cos(a) * 10.5, Math.sin(a) * 10.5, 0], 1.1, 1.1, IRON, 1);
+    S.rod([0, 0, 8], [Math.cos(a) * 9, Math.sin(a) * 9, 0], 0.9, 0.8, GIRON, 1);
+    S.rod([Math.cos(a) * 9, Math.sin(a) * 9, 0], [Math.cos(a) * 10.5, Math.sin(a) * 10.5, 0], 1.1, 1.1, GIRON, 1);
   }
-  S.rod([0, 0, 8], [0, 0, 40], 1.2, 1.0, IRON, 2);
-  S.ball([0, 0, 22], 1.8, IRON, 2);
+  S.rod([0, 0, 8], [0, 0, 40], 1.2, 1.0, GIRON, 2);
+  S.ball([0, 0, 22], 1.8, GIRON, 2);
   // the dish, brimming with wax, a long drip run down over its rim
-  cylinder(S, 0, 0, (z) => 6 + (z - 40) * 2.2, 40, 42, (n) => toneAt(n, IRON, 0.1), 3, (_a, rr) => (rr > 0.86 ? IRON[3] : rr > 0.7 ? WAX[2] : WAX[3]));
+  cylinder(S, 0, 0, (z) => 6 + (z - 40) * 2.2, 40, 42, (n) => toneAt(n, GIRON, 0.1), 3, (_a, rr) => (rr > 0.86 ? GIRON[3] : rr > 0.7 ? WAX[2] : WAX[3]));
   for (const [x, y, n] of [[5.2, 3, 4], [-2, 6.5, 6], [6, -2.5, 3]] as const) drips(S, x, y, 41.4, n, 4);
   const lights: PieceLight[] = [];
   const t1 = candle(S, -1.5, -1, 42, 9, true, 5, 1.7, f);
@@ -763,8 +767,8 @@ function candles(f: number): Sprite {
 
 /** A COCOON ON THE WALL: the Moth's, long as a man, spun of grey silk in winding bands and stuck to the stone by threads; split open down its foot, the flaps curled back, empty. */
 export function cocoonMake(S: Scene, w: (a: number, b: number, z: number) => V3): void {
-  const Z0 = 26;
-  const Z1 = 92;
+  const Z0 = 20;
+  const Z1 = 82;
   const R = 9.5;
   const C = w(0, R + 1.5, 0);
   const out = sub(w(0, 1, 0), w(0, 0, 0));
@@ -795,10 +799,10 @@ export function cocoonMake(S: Scene, w: (a: number, b: number, z: number) => V3)
   }
   // the threads that hold it to the wall, and a few loose ones trailing
   // (fine threads fanning from its point up to the stone, and a few from its foot down to it)
-  for (const [a0, z0, zr, r] of [[-7, Z1 + 12, Z1 - 3, 2], [4, Z1 + 15, Z1 - 2, 1.5], [10, Z1 + 6, Z1 - 6, 2.5], [-13, Z1 - 2, Z1 - 10, 3.5], [-5, Z0 - 10, Z0 + 4, 3], [8, Z0 - 6, Z0 + 6, 4]] as const) {
+  for (const [a0, z0, zr, r] of [[-7, Z1 + 9, Z1 - 3, 2], [4, Z1 + 11, Z1 - 2, 1.5], [10, Z1 + 5, Z1 - 6, 2.5], [-13, Z1 - 2, Z1 - 10, 3.5], [-5, Z0 - 8, Z0 + 4, 3], [8, Z0 - 5, Z0 + 6, 4]] as const) {
     S.rod(w(a0, 0.4, z0), w(a0 * 0.15, R + 1 - r * 0.3, zr), 0.3, 0.28, SILK, 3);
   }
-  S.rod(w(0, 0.4, Z1 + 8), w(0, R + 1, Z1 - 1), 0.5, 0.4, SILK, 3);
+  S.rod(w(0, 0.4, Z1 + 7), w(0, R + 1, Z1 - 1), 0.5, 0.4, SILK, 3);
 }
 
 /** A MOTH-EATEN TAPESTRY: a hanging on a pole, its weave faded to greys (a border, a tall tower under stars, a crescent), riddled with moth holes, its foot eaten to tatters. */
@@ -839,8 +843,8 @@ export function tapestryMake(S: Scene, w: (a: number, b: number, z: number) => V
 /** THE SILENT ORDER'S BANNER, GONE GREY: its black faded to grey, moth holes all through it, its tails eaten ragged; the blank mask on it, no mouth. */
 export function bannerMake(S: Scene, w: (a: number, b: number, z: number) => V3): void {
   const TOPZ = 92;
-  S.rod(w(-14, 2, TOPZ), w(14, 2, TOPZ), 0.8, 0.8, IRON, 1);
-  for (const a of [-14, 14]) S.ball(w(a, 2, TOPZ), 1.3, IRON, 1);
+  S.rod(w(-14, 2, TOPZ), w(14, 2, TOPZ), 0.8, 0.8, GIRON, 1);
+  for (const a of [-14, 14]) S.ball(w(a, 2, TOPZ), 1.3, GIRON, 1);
   S.quad([w(-12, 2.6, TOPZ - 1), w(12, 2.6, TOPZ - 1), w(12, 2.6, 26), w(-12, 2.6, 26)], (u, v) => {
     const x = (u - 0.5) * 2;
     const z = 1 - v;
@@ -885,7 +889,7 @@ export function windowMake(S: Scene, w: (a: number, b: number, z: number) => V3)
     const d1 = fr((a + z) / 6);
     const d2 = fr((a - z) / 6);
     const left = hash(Math.floor((a + z) / 6), Math.floor((a - z) / 6), 6411) < 0.18 || z > HEAD - 6;
-    if ((d1 < 0.12 || d2 < 0.12) && (left || hash(Math.floor((a + z) / 6), Math.floor((a - z) / 6), 6412) < 0.5 || z > SP)) return IRON[1];
+    if ((d1 < 0.12 || d2 < 0.12) && (left || hash(Math.floor((a + z) / 6), Math.floor((a - z) / 6), 6412) < 0.5 || z > SP)) return GIRON[1];
     if (left) return d1 < 0.5 ? '#5d6066' : '#4b4e55';
     // the day outside: the fog's grey, paler up toward the head
     const f = hash(Math.floor(a), Math.floor(z / 3), 6413);
@@ -1161,24 +1165,24 @@ function merlon(): Sprite {
 export function beaconIn(S: Scene): void {
   for (let k = 0; k < 3; k++) {
     const a = (k / 3) * Math.PI * 2 + 0.3;
-    S.rod([0, 0, 22], [Math.cos(a) * 14, Math.sin(a) * 14, 0], 1.4, 1.2, IRON, 1);
-    S.rod([Math.cos(a) * 14, Math.sin(a) * 14, 0], [Math.cos(a) * 16, Math.sin(a) * 16, 0], 1.6, 1.6, IRON, 1);
+    S.rod([0, 0, 22], [Math.cos(a) * 14, Math.sin(a) * 14, 0], 1.4, 1.2, GIRON, 1);
+    S.rod([Math.cos(a) * 14, Math.sin(a) * 14, 0], [Math.cos(a) * 16, Math.sin(a) * 16, 0], 1.6, 1.6, GIRON, 1);
   }
-  S.rod([0, 0, 0], [0, 0, 66], 1.8, 1.6, IRON, 2);
-  S.ball([0, 0, 22], 2.6, IRON, 2);
+  S.rod([0, 0, 0], [0, 0, 66], 1.8, 1.6, GIRON, 2);
+  S.ball([0, 0, 22], 2.6, GIRON, 2);
   // the basket: bars flaring up from a ring, a ring at its lip, curled finials
   const R0 = 6;
   const R1 = 13;
   for (let k = 0; k < 10; k++) {
     const a = (k / 10) * Math.PI * 2;
-    S.rod([Math.cos(a) * R0, Math.sin(a) * R0, 66], [Math.cos(a) * R1, Math.sin(a) * R1, 84], 0.8, 0.8, IRON, 3);
-    S.rod([Math.cos(a) * R1, Math.sin(a) * R1, 84], [Math.cos(a) * (R1 + 2.4), Math.sin(a) * (R1 + 2.4), 87], 0.7, 0.4, IRON, 3);
+    S.rod([Math.cos(a) * R0, Math.sin(a) * R0, 66], [Math.cos(a) * R1, Math.sin(a) * R1, 84], 0.8, 0.8, GIRON, 3);
+    S.rod([Math.cos(a) * R1, Math.sin(a) * R1, 84], [Math.cos(a) * (R1 + 2.4), Math.sin(a) * (R1 + 2.4), 87], 0.7, 0.4, GIRON, 3);
   }
   for (const [r, z] of [[R0, 66], [R1, 84], [(R0 + R1) / 2, 75]] as const) {
     for (let k = 0; k < 20; k++) {
       const a0 = (k / 20) * Math.PI * 2;
       const a1 = ((k + 1) / 20) * Math.PI * 2;
-      S.rod([Math.cos(a0) * r, Math.sin(a0) * r, z], [Math.cos(a1) * r, Math.sin(a1) * r, z], 0.7, 0.7, IRON, 4);
+      S.rod([Math.cos(a0) * r, Math.sin(a0) * r, z], [Math.cos(a1) * r, Math.sin(a1) * r, z], 0.7, 0.7, GIRON, 4);
     }
   }
   // the grey ash heaped in it, charred ends sticking out
