@@ -110,6 +110,14 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   second half go for the player”. Read as (told him so): the lash a long whip flying through the air at knee to waist
   height, never on the floor; the steed's first 8 leaps one lap of the arena, its last 7 straight at you, each landing
   where you stood as it sprang.
+- That film, asked how to decide: “The whip is better but still needs work.  The cage could have a HP bar and you can
+  destroy it but it stays longer if you don’t destroy it.  The horse is perfect”; what of the whip, “Too stiff”, “Hard to
+  see”. At 23:22: “Can you put some of these vines into the map as well?  Around where the hushed gardeners are at.  So
+  you’re like “huh those vines are weird” then the boss has the big vine”; at 23:23: “Once we lock in the look.  So they
+  match”. Read as (told him so): the whip ripples to a crack at its tip, writhes while held, thicker and a brighter
+  green with pink-tipped thorns; the cage breakable in stages, lasting longer left alone; the horse as it is; and, once
+  he says yes to the whip's look, a few of her vines as pieces of the gardens round the gardeners, one twitching back
+  into a hedge as you pass.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -245,14 +253,21 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
   feet never down; she darts about the arena leaning hard into her way, skimming the floor, her gown and vine streaming.
 - THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s), A WHIP'S SWEEP: she turns away to her right,
   her arm swung back low, and the vine grows out its whole length in the air to her right (`LASH_REACH`, 7.5 tiles),
-  writhing, its thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where it will come
-  from; hips first; the strike: in two frames the whip lashes a quarter turn round her front through the air at knee to
-  waist height (`WHIP_H`), from 45 degrees to her right to 45 to her left (a sixth of a boss arena), the whole wedge it
-  crosses smeared; it carries on a little; it recoils into her hand. It never touches the floor.
+  writhing like a snake, its thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where
+  it will come from; hips first; the strike: in two frames the whip lashes a quarter turn round her front through the
+  air at knee to waist height (`WHIP_H`), from 45 degrees to her right to 45 to her left (a sixth of a boss arena), the
+  whole wedge it crosses smeared; it carries on a little while a ripple runs down it from her hand and ends in a crack of
+  thorns and pink sparks at its tip; it recoils into her hand. It never touches the floor. HER WHIP'S LOOK (his “Too
+  stiff”, “Hard to see”): thick, a bright hard green (`WHIP`), leafed all along, pale thorns tipped pink; her snare's
+  vines are the same, and the gardens' own will be, once he has said yes to it (his: “Once we lock in the look.  So they
+  match”).
 - THE VINE SNARE (`PR_SNARE`, the blow at 0.83 s): hands lifted high, held; slammed down (two frames). Where you stand
-  (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, and a thicket of nettle vines 5 tiles across bursts up
-  round you in two frames, tall ones arching in from its edge and a tangle all through it; it holds writhing, then
-  withers and sinks.
+  (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, and a thicket of her whip's vines 5 tiles across bursts
+  up round you in two frames, tall ones arching in from its edge and a tangle all through it. THE CAGE CAN BE BROKEN
+  (his, by 23:22: “The cage could have a HP bar and you can destroy it but it stays longer if you don’t destroy it”;
+  `SnareState`): struck, it shudders and sheds thorns and leaves; worn down, its vines snap one by one to stumps, the
+  tall edge last; destroyed, it bursts apart, its vines snapped in three and flung out, gone in under a second. Left
+  alone it holds 6 seconds, writhing, then withers and sinks. Its HP bar, and how many blows, are the game's.
 - THE ELEVEN (`PR_ELEVEN`, the blow at 0.97 s): arms spread like wings, held; flung forward (two frames). Eleven lines
   across the whole arena, a tile and a half apart, are first marked by falling white feathers through her warning
   (`featherLine`), then a swan swoops along each, the length of the arena in under a second (art/garden_swans.ts `dive`),
@@ -275,7 +290,7 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
   3.2 s): she clutches her breast and the Hush leaves her in a grey breath; she drops her vine and sinks out of the air
   to her knees while every nettle on her browns and falls; she sits back on her heels, head bowed, the pink gone from
   her eyes: alive, freed, still. (If she dies on her steed, the game plays `rideEnd` first: the steed fades.)
-- Her picture (`PR_CANVAS`) is 500 by 500, for the sweep's whole reach; the game cuts each frame to what is in it.
+- Her picture (`PR_CANVAS`) is 570 by 510, for the sweep's whole reach; the game cuts each frame to what is in it.
 
 For the main chat: her blows' areas are bigger than the old enemies' (his “And bigger AOE to compensate for the extra
 time the player gets to evade”); the art is drawn to that (the lash's long line, the snare's cage round you, the Vow's

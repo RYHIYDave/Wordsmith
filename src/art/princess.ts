@@ -64,6 +64,11 @@ const HAIR_DARK: Ramp = ['#0e0b0d', '#181216', '#261d22', '#382a30', '#4a3840'];
 export const NETTLE: Ramp = ['#122014', '#1f361e', '#30552b', '#4a773a', '#72984f'];
 const STEM: Ramp = ['#1e141a', '#2e1e28', '#3a2b37', '#4e3a48', '#5e4858'];
 const HAIRS = '#b6b4a2';
+/** Her whip: the nettle's stem a bright, hard green, so that it reads against the lawn; its thorns pale. */
+const WHIP: Ramp = ['#162414', '#26401f', '#3c6230', '#5a8a44', '#86b464'];
+const THORN: Ramp = ['#3a3a30', '#6a6a58', '#a8a890', '#d8d6c0', '#f0eee0'];
+/** (a vine's stem in another ramp than its own, while it is set) */
+let vineRamp: Ramp | null = null;
 /** The nettles withered as she falls (his pick, “Steed fades, vines wither (Recommended)”): brown, then grey. */
 const NETTLE_DEAD: Ramp = ['#1e1814', '#30261e', '#46382a', '#5e4c38', '#76644c'];
 const STEM_DEAD: Ramp = ['#1a1614', '#2a221e', '#3a302a', '#4a3e36', '#5a4c42'];
@@ -80,7 +85,7 @@ const SILVER: Ramp = ['#2a2a32', '#4a4a56', '#767682', '#a2a2ae', '#cacad4'];
 export const PRINCESS_BODY: Build = buildOf(66, 1.12, { shoulders: 0.84, chest: 0.86, depth: 0.86, waist: 0.7, hips: 0.96, legs: 1.04, arms: 0.92, trunk: 1.02, limbs: 0.76 });
 const B = PRINCESS_BODY;
 /** Her picture: room for her vine swept out its whole seven and a half tiles, and for her on her steed at the top of its leap. */
-export const PR_CANVAS: MobCanvas = { w: 500, h: 500, ax: 130, ay: 305 };
+export const PR_CANVAS: MobCanvas = { w: 570, h: 510, ax: 180, ay: 305 };
 /** How far above the floor she glides (her feet, under the gown). */
 export const PR_HOVER = 2.2;
 
@@ -187,7 +192,7 @@ function leaf(put: Put, part: string, piece: string, at: V3, out: V3, down: V3, 
 /** A nettle vine through points, its leaves along it. */
 function vine(put: Put, part: string, pts: ReadonlyArray<V3>, ra: number, t: number, seed: number, every = 3, leafK = 1): void {
   for (let i = 1; i < pts.length; i++) {
-    put(part, 'vine', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.25 * ra * (1 - 0.35 * (i / pts.length)) * (1 - 0.3 * WITHER), rb: 1.25 * ra * (1 - 0.35 * ((i + 1) / pts.length)) * (1 - 0.3 * WITHER), ramp: WITHER > 0.45 ? STEM_DEAD : STEM, far: true });
+    put(part, 'vine', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.25 * ra * (1 - 0.35 * (i / pts.length)) * (1 - 0.3 * WITHER), rb: 1.25 * ra * (1 - 0.35 * ((i + 1) / pts.length)) * (1 - 0.3 * WITHER), ramp: vineRamp ?? (WITHER > 0.45 ? STEM_DEAD : STEM), far: true });
     if (i % every === 0) {
       const dir = norm(sub(pts[i], pts[i - 1]), [1, 0, 0]);
       const out = norm(cross(dir, i % 2 ? [0, 0, 1] : [0, 0, -1]), [0, 1, 0]);
@@ -196,14 +201,32 @@ function vine(put: Put, part: string, pts: ReadonlyArray<V3>, ra: number, t: num
   }
 }
 
+/** HER WHIP'S VINE (her lash, her snare, and the gardens' own: art/princess_fx.ts): a nettle vine through points in the whip's bright green, leafed all along, its thorns pale and tipped pink. */
+function whip(put: Put, part: string, v: ReadonlyArray<V3>, ra: number, t: number, seed: number): void {
+  vineRamp = WITHER > 0.45 ? null : WHIP;
+  vine(put, part, v, ra, t, seed, 1, 1.7);
+  vineRamp = null;
+  if (WITHER > 0.45) return;
+  for (let i = 1; i < v.length; i++) {
+    const dir = norm(sub(v[i], v[i - 1]), [1, 0, 0]);
+    const side = norm(cross(dir, [0, 0, 1]), [0, 1, 0]);
+    for (const sgn of [1, -1]) {
+      const base = lerp3(v[i - 1], v[i], sgn > 0 ? 0.3 : 0.75);
+      const out = norm(add(mul(side, sgn), [0, 0, 0.7]));
+      const tipP = add(base, mul(out, 1.4 + 1.6 * Math.min(1, ra / 1.5)));
+      put(part, 'thorn', { k: 'rod', a: base, b: tipP, ra: 0.6, rb: 0.14, ramp: THORN, far: true });
+      if ((i + (sgn > 0 ? 0 : 1)) % 2 === 0) put(part, 'thorn', { k: 'dot', p: tipP, c: FLAME[3], facing: [0, 0, 1] });
+    }
+  }
+}
 /** NETTLE VINES ON THEIR OWN (her snare's, art/princess_fx.ts): each through its points, its leaves along it, withered `wither` of the way. */
-export function nettleBits(vines: ReadonlyArray<{ pts: ReadonlyArray<V3>; ra: number; seed: number }>, t: number, wither: number): { bits: Bit[]; fallen: [V3, string, number][] } {
+export function nettleBits(vines: ReadonlyArray<{ pts: ReadonlyArray<V3>; ra: number; seed: number }>, t: number, wither: number, asWhip = false): { bits: Bit[]; fallen: [V3, string, number][] } {
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
   const was = WITHER;
   WITHER = clamp01(wither);
   FALLEN = [];
-  vines.forEach((v, i) => vine(put, `snare${i}`, v.pts, v.ra, t, v.seed, 1, 1.5));
+  vines.forEach((v, i) => (asWhip ? whip(put, `snare${i}`, v.pts, v.ra, t, v.seed) : vine(put, `snare${i}`, v.pts, v.ra, t, v.seed, 1, 1.5)));
   const fallen = FALLEN;
   WITHER = was;
   FALLEN = [];
@@ -456,7 +479,10 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
     let long = 0;
     for (let i = 1; i < v.length; i++) long += Math.hypot(v[i][0] - v[i - 1][0], v[i][1] - v[i - 1][1], v[i][2] - v[i - 1][2]);
     const k = clamp01((long - 40) / 120);
-    vine(put, 'lash', v, 0.9 + 0.5 * k, t, 100, k > 0.5 ? 1 : 2, 1 + 0.4 * k);
+    // (her whip, out long: a brighter green than her other vines, thick, its thorns pale and tipped pink all along it)
+    if (k > 0.5) {
+      whip(put, 'lash', v, 0.9 + 1.7 * k, t, 100);
+    } else vine(put, 'lash', v, 0.9 + 0.5 * k, t, 100, 2, 1 + 0.4 * k);
   }
   // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point
   const sm = say.smear?.(m);

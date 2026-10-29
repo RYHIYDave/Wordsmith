@@ -176,16 +176,24 @@ function resampled(pts: ReadonlyArray<V3>, n: number): V3[] {
 }
 /** How high her whip flies as it sweeps: about the knee to the waist of whoever stands before her (his, 28 Oct: “Just have it be a long whip so it doesn’t ride along the ground”). */
 const WHIP_H = 17;
-/** The vine as a long whip in the air from her right hand: `long` out along the way `deg` round from her front, at `WHIP_H`, its far end trailing `trail` degrees behind the way it is swept; coiling and writhing `writhe` of the most it does (0 straight), `t` seconds in. */
-function whipVine(s: Skeleton, deg: number, long: number, trail: number, writhe: number, t: number): V3[] {
+/**
+ * The vine as a long whip in the air from her right hand: `long` out along the way `deg` round from her front, at
+ * `WHIP_H`, its far end trailing `trail` degrees behind the way it is swept; writhing like a snake `writhe` of the most it
+ * does (0 straight), `t` seconds in; and a wave running down it (`wave`: where its crest is, 0 at her hand to 1 at the
+ * tip, and how big), the whip's ripple that ends in its crack.
+ */
+function whipVine(s: Skeleton, deg: number, long: number, trail: number, writhe: number, t: number, wave: { at: number; big: number } | null = null): V3[] {
   const hand = s.handR;
   const D = Math.PI / 180;
   const out: V3[] = [];
   for (let i = 0; i <= N_VINE; i++) {
     const u = i / N_VINE;
-    const a = (deg - trail * u * u + writhe * 5 * Math.sin(u * Math.PI * 3 - t * 3) * u) * D;
+    // (a snake's writhe: waves running out along it; and the ripple's crest, out to one side and up)
+    const snake = writhe * Math.sin(u * Math.PI * 4 - t * 6) * u;
+    const crest = wave ? wave.big * Math.exp(-(((u - wave.at) / 0.1) ** 2)) : 0;
+    const a = (deg - trail * u * u + 7 * snake + crest * 9 * u) * D;
     const far: V3 = [s.pelvis[0] + Math.cos(a) * long, s.pelvis[1] + Math.sin(a) * long, 0];
-    const h = WHIP_H + writhe * 5 * Math.sin(u * Math.PI * 2.5 - t * 4) * u - 3 * u * u;
+    const h = WHIP_H + 6 * snake + crest * 7 - 3 * u * u;
     const z = hand[2] + (Math.max(4, h) - hand[2]) * smooth(0, 0.14, u);
     out.push([hand[0] + (far[0] - hand[0]) * u, hand[1] + (far[1] - hand[1]) * u, z]);
   }
@@ -207,7 +215,12 @@ export function lashVine(s: Skeleton, draw: number, t: number): V3[] {
     const u = draw - 1;
     return whipVine(s, from + (a1 - from) * u, LASH_REACH, 26 * Math.sin(Math.PI * u), 1 - u, t);
   }
-  if (draw <= 2.2) return whipVine(s, a1 + (PR_LASH.to - a1) * ((draw - 2) / 0.2), LASH_REACH, 0, 0, t);
+  // (carried on, and the ripple running down it from her hand to its tip, where it cracks)
+  if (draw <= 2.2) {
+    const u = (draw - 2) / 0.2;
+    // (the crest dying away as it reaches the tip: the crack itself is its burst of thorns and sparks)
+    return whipVine(s, a1 + (PR_LASH.to - a1) * u, LASH_REACH, 0, 0, t, { at: 0.08 + 0.95 * u, big: (1 - 0.4 * u) * (1 - smooth(0.55, 0.95, u)) });
+  }
   // (recoiling: pulled back in along its own line, coiling as it comes, then round to her right side and down to trailing)
   const k = clamp01((draw - 2.2) / 0.8);
   const short = whipVine(s, PR_LASH.to + (-75 - PR_LASH.to) * smooth(0.3, 1, k), LASH_REACH + (16 - LASH_REACH) * smooth(0, 0.75, k), 0, smooth(0, 0.5, k), t);
@@ -426,6 +439,22 @@ function moreOf(move: string, m: Moment): [V3, string, number][] {
     pts.forEach((p, i) => {
       if ((i + tick) % 3 === 0) out.push([add(p, [0, 0, 0.8]), (i + tick) % 2 ? FLAME[3] : FLAME[4], 1]);
     });
+  }
+  if (move === 'attack') {
+    // THE CRACK: as the ripple reaches its tip, thorns and pink sparks burst off it
+    const draw = (m.q.draw as number) ?? 0;
+    if (draw >= 2.14 && draw <= 2.42) {
+      const v = lashVine(m.s, draw, t);
+      const tip = v[v.length - 1];
+      const k = (draw - 2.14) / 0.28;
+      for (let i = 0; i < 30; i++) {
+        const a = (i / 30) * Math.PI * 2;
+        const r = 3 + 22 * k * (0.6 + 0.6 * hashOf(i, 11));
+        const p: V3 = [tip[0] + Math.cos(a) * r, tip[1] + Math.sin(a) * r * 0.8, tip[2] + Math.sin(a * 2 + i) * r * 0.5];
+        if (hashOf(i, 12) < k * 0.8) continue;
+        out.push([p, i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? FLAME[4] : FLAME[3], k < 0.5 ? 3 : 2]);
+      }
+    }
   }
   if (move === 'rideLeap' && t >= RIDE_LEAP.hit - 1e-6 && t < RIDE_LEAP.hit + 0.42) {
     // THE FOG BURSTING OUT where its hooves come down: puffs rolling out over the floor all round, thinning as they go
