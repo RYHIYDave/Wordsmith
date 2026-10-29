@@ -7,6 +7,7 @@ import { P, RARITY_COLOR } from '../art/palette';
 import { drawText, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Sprite } from '../engine/px';
+import { LEFT_TO_PAINTER } from '../art/kit';
 import { ATTR_GIVES, ATTR_NAME, CLASSES, LEVEL_SELECT, OWN_MOVES, SKILLS, TUNE, WORDS, attackAttr, floorTitle, growsWith, holdSkill, skillsFor, tapSkill, wordAttr } from '../game/defs';
 import { lastFloor } from '../game/act1';
 import type { Limit } from '../game/defs';
@@ -339,6 +340,8 @@ export interface TitleIn {
   entering?: { cls: ClassId; t: number } | null;
   /** THE TRY-OUT PAGE ONLY: its options offer a seasoned hero, straight to a floor of the first five. */
   tryout?: boolean;
+  /** The classes whose card pictures the side painter is painting (render/painter.ts, place 'card'): their frames not painted yet are shown as the nearest that are (art/kit.ts LEFT_TO_PAINTER). */
+  byPainter?: readonly ClassId[];
 }
 
 /** How long a hero who has made ready on their card takes to warp away from it, in seconds. */
@@ -849,7 +852,13 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
       gone = entering.t > long ? Math.min(1, (entering.t - long) / ENTER_OUT) : 0;
     } else {
       // (while one of them makes ready the other two only stand: nothing of their own is begun, to draw the eye from the one who was picked)
-      sp = fig.frame(heroArt, { anim: (hot || talks) && !mine ? 'walk' : 'idle', animT: t, fx: 0.7071, fy: 0.7071, attackSkill: 0, attackAge: 0, attackWind: 0, leapK: -1 }, dt, 0, 0, !entering);
+      // (a new class's frames, sculpted, are too heavy to paint here as they are shown: where the painter is painting them, the nearest painted is shown)
+      LEFT_TO_PAINTER.on = !!opt.byPainter && opt.byPainter.includes(id);
+      try {
+        sp = fig.frame(heroArt, { anim: (hot || talks) && !mine ? 'walk' : 'idle', animT: t, fx: 0.7071, fy: 0.7071, attackSkill: 0, attackAge: 0, attackWind: 0, leapK: -1 }, dt, 0, 0, !entering);
+      } finally {
+        LEFT_TO_PAINTER.on = false;
+      }
     }
     // the figure stands on the floor of its box; whatever flies wide of the card (a scarf) is cut off at its edge
     const fx = x + Math.floor(cw / 2);

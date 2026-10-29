@@ -254,11 +254,11 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   mage: { id: 'mage', name: 'Mage', blurb: 'Raw power. Handle with care.', primary: 'int', attrs: { str: 6, dex: 8, int: 14 }, evade: 'warp', starts: 'staff', tap: 'wave', hold: 'orb' },
   // THE WARLOCK (game/warlock.ts, behind WARLOCK): “Warlock is str/int, will transform into a demon so keep that in mind”
   // (the owner, 23 Oct 2026, in the art chat). His attacks grow with both (`grows`); as the demon, the demon's three.
-  warlock: { id: 'warlock', name: 'Warlock', blurb: 'A pact with a demon. It wants out.', primary: 'int', grows: ['str', 'int'], own: true, attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', starts: 'wand', tap: 'hellbolt', hold: 'curse' },
+  warlock: { id: 'warlock', name: 'Warlock', blurb: 'A demon inside. It wants out.', primary: 'int', grows: ['str', 'int'], own: true, attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', starts: 'wand', tap: 'hellbolt', hold: 'curse' },
   // THE TINKERER (game/tinkerer.ts, behind TINKERER): her brief, “Gleeful mad bomber (Recommended)”, “Quick and nimble
   // (Recommended)”. Her attributes and what her abilities grow with are a proposal (Dexterity and Intelligence: quick hands
   // and a head for machines), the owner's to change.
-  tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Bombs, gadgets and a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', starts: 'wand', tap: 'vialtoss', hold: 'golem' },
+  tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Gadgets, a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', starts: 'wand', tap: 'vialtoss', hold: 'golem' },
   // THE BRAWLER (game/brawler.ts, behind BRAWLER): his brief, “Bare-knuckle boxer”, “Light and bouncy”, “Bone-crunching
   // (Recommended)”. His attributes and what his punches grow with are a proposal (Strength and Dexterity: a boxer's
   // weight and his speed), the owner's to change.

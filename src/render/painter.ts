@@ -337,7 +337,7 @@ export class Painter {
       this.heroAsked.add(key);
       this.groundLane.open++;
       // (the Warlock's demon before his arm blazing: it is the heavier by far, and its frames are not painted in the game: art/kit.ts HEAVY)
-      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'demon' ? 31.5 : 32 } satisfies Ask);
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'demon' ? 31.5 : 32 } satisfies Ask);
     }
     return true;
   }

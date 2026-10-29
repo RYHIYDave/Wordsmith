@@ -1593,6 +1593,17 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (while the Lexicon lies open over the menu, the menu does not listen)
       const press = ui.press;
       if (titleLex) ui.press = null;
+      // (THE NEW CLASSES on their cards, sculpted, too heavy to paint here as they are shown: the side painter paints them,
+      // and until it has, the nearest frame of theirs painted is shown: art/kit.ts LEFT_TO_PAINTER)
+      // (its worker started on the start screen, ahead: it takes seconds; while it starts, its frames are waited for too)
+      const byPainter: ClassId[] = [];
+      if (painter.warmGround()) {
+        for (const k of playableClasses()) {
+          if (k !== 'warlock' && k !== 'tinkerer' && k !== 'brawler') continue;
+          if (titleUi.page === 'class') painter.hero(k, 'card');
+          byPainter.push(k);
+        }
+      }
       const res = drawTitle(ui, art, titleArt, clock, TITLE, titleUi, {
         turn: turnLabel(),
         resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, ${ENDLESS.on && (saved.endless ?? 0) > 0 ? endlessName(saved.endless ?? 1) : `dungeon ${saved.depth}`}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
@@ -1606,6 +1617,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? playableClasses()[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
         tryout: TRYOUT,
+        byPainter,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'ring' ? makeRingTitle() : titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;

@@ -871,6 +871,12 @@ export const PAINTING: { frames: number; ms: number; trace: Map<string, { n: num
  * first asked for, as any.
  */
 export const HEAVY = { defer: false, deferred: 0 };
+/**
+ * EVERY FRAME LEFT TO THE PAINTER, while `on` (ui/panels.ts, as the new classes are drawn on their class cards, the side
+ * painter painting them: render/painter.ts, place 'card'): a frame of any list not painted yet is shown as the nearest of
+ * its list that is, as a heavy one is (HEAVY); a list with none painted yet paints the one asked for.
+ */
+export const LEFT_TO_PAINTER = { on: false };
 
 /** The nearest frame of `list` to `i` that is painted already (the earlier first), or null if none is. */
 function paintedOf(list: readonly Sprite[], i: number): Sprite | null {
@@ -901,7 +907,7 @@ export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false
       configurable: true,
       enumerable: true,
       get(): Sprite {
-        if (heavy && HEAVY.defer) {
+        if ((heavy && HEAVY.defer) || LEFT_TO_PAINTER.on) {
           const near = paintedOf(out, i);
           if (near) {
             HEAVY.deferred++;
