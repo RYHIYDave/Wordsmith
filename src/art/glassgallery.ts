@@ -146,11 +146,11 @@ export interface GlassLand {
 }
 
 /**
- * How tall the walls stand over the floor (picture pixels: as the House of Quiet's, a palace's a little taller); where
+ * How tall the walls stand over the floor (picture pixels: a palace's, taller than the House of Quiet's, so the gallery's tall mirrors hang under the cornice); where
  * they begin to fade into the dark above; the dado's rail.
  */
-export const GG_RISE = 100;
-export const GG_FADE = 70;
+export const GG_RISE = 132;
+export const GG_FADE = 116;
 export const GG_RAIL = 24;
 /** How far under the floor the hall below lies, through a skylight broken through (picture pixels); the floor's thickness. */
 export const GG_BELOW = 112;

@@ -1,15 +1,17 @@
 // Dev page: FLOOR 18, THE GLASS GALLERY, BUILT FROM ITS GAME-READY PARTS: its ground painted by the game's painter in the
-// gallery's look (art/glassgallery.ts) from a level laid by hand (dev/glass_level.ts), with the knight in the gallery.
-// Nothing of the game imports it.
+// gallery's look (art/glassgallery.ts) from a level laid by hand (dev/glass_level.ts), its pieces (art/floor18.ts) set on it
+// as the game sets them (dev/glass_lay.ts), far to near, with the knight in the gallery. Nothing of the game imports it.
 //   PREVIEW_TIMEOUT=400000 node tools/preview.mjs src/dev/preview_glassgallery.ts shots/glass/game.png 1200 840 "overview"
-//   ... "phone" (one phone screen, the camera on the hero: 1014 x 468), "bare" (the ground alone, no pieces), "tiles" (the
-//   tiles drawn over it), "whole" (the whole level, 2400 x 1500), "close:X:Y" (twice as big round picture pixel X, Y)
+//   ... "phone" (one phone screen, the camera on the hero, the dungeon's dark as the game lays it and the candles' light:
+//   1014 x 468), "bare" (the ground alone, no pieces), "tiles" (the tiles drawn over it), "whole" (the whole level, 2400 x
+//   1500), "close:X:Y" (twice as big round picture pixel X, Y of the overview)
 import type { Sprite } from '../engine/px';
 import { makeHeroArt3 } from '../art/heroes3';
 import { glassGalleryTerrain, paintGlassGallery } from '../art/glassgallery';
 import { pictureOf } from '../art/terrain';
 import { T_FLOOR } from '../game/types';
 import { L_HERO, LH, LW, glassFloor, glassLand, isSkyHole } from './glass_level';
+import { layGlassPieces } from './glass_lay';
 
 const [mode = 'overview', cxArg = '600', cyArg = '400'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const whole = mode === 'whole';
@@ -17,10 +19,11 @@ const W = whole ? 2400 : 1200;
 const H = whole ? 1500 : 840;
 const floor = glassFloor();
 const T = glassGalleryTerrain(glassLand(floor));
-const [hx, hy] = whole ? pictureOf(LW / 2, LH / 2) : pictureOf(L_HERO[0], L_HERO[1]);
-/** The picture's top left in the world's picture: the hero a little below the middle. */
+const phone = mode === 'phone';
+const [hx, hy] = whole ? pictureOf(LW / 2, LH / 2) : phone ? pictureOf(L_HERO[0], L_HERO[1]) : pictureOf(20, 10.5);
+/** The picture's top left in the world's picture (the overview on the gallery and the rooms behind it; the phone on the hero). */
 const VX = Math.round(hx - W / 2);
-const VY = Math.round(hy - H / 2 - (whole ? 0 : 60));
+const VY = Math.round(hy - H / 2 - (phone ? 60 : 0));
 
 const cv = document.createElement('canvas');
 cv.width = W;
@@ -74,7 +77,7 @@ const blot = ((): HTMLCanvasElement => {
   return c;
 })();
 export interface Stand { d: number; s: Sprite; x: number; y: number; shadow: number; under?: boolean; name?: string }
-const stands: Stand[] = [];
+const stands: Stand[] = mode === 'bare' || mode === 'tiles' ? [] : layGlassPieces();
 const hero = makeHeroArt3().of('warrior', { twoHanded: false });
 stands.push({ d: L_HERO[0] + L_HERO[1], s: hero.front.idle[0], x: L_HERO[0], y: L_HERO[1], shadow: 0.36, name: 'hero' });
 stands.sort((a, b) => (a.under === b.under ? a.d - b.d : a.under ? -1 : 1));
@@ -95,6 +98,66 @@ for (const st of stands) {
   g.drawImage(st.s.img, Math.round(sx) - st.s.ax, Math.round(sy) - st.s.ay, st.s.w, st.s.h);
   g.setTransform(1, 0, 0, 1, 0, 0);
 }
+
+/** Where each light of what is laid is on the picture, its reach and strength. */
+function lightsOf(laid: readonly Stand[]): { x: number; y: number; r: number; a: number; color: string }[] {
+  const out: { x: number; y: number; r: number; a: number; color: string }[] = [];
+  for (const l of laid) {
+    const sp = l.s;
+    if (!sp.lights) continue;
+    const [sx0, sy0] = pictureOf(l.x, l.y);
+    const d = sp.density ?? 1;
+    for (const L of sp.lights) out.push({ x: sx0 - VX - sp.ax * d + L.x * d, y: sy0 - VY - sp.ay * d + L.y * d, r: L.r * d, a: L.a ?? 0.5, color: L.color });
+  }
+  return out;
+}
+/**
+ * THE DUNGEON'S DARK as the game lays it (render.ts: FAR_DARK 0.88 over all, the hero's wide gentle pool and his bright
+ * one taken out of it, the vignette), and taken away round each candle as round a brazier; then the candles' light.
+ */
+function dark(ls: ReturnType<typeof lightsOf>): void {
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const d = c.getContext('2d') as CanvasRenderingContext2D;
+  d.fillStyle = 'rgba(6,4,14,0.88)';
+  d.fillRect(0, 0, W, H);
+  d.globalCompositeOperation = 'destination-out';
+  const [hx0, hy0] = pictureOf(L_HERO[0], L_HERO[1]);
+  const pool = (x: number, y: number, r: number, strength: number): void => {
+    d.save();
+    d.translate(x, y);
+    d.scale(1, 0.62);
+    const grd = d.createRadialGradient(0, 0, 0, 0, 0, r);
+    grd.addColorStop(0, `rgba(0,0,0,${strength})`);
+    grd.addColorStop(0.5, `rgba(0,0,0,${0.7 * strength})`);
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    d.fillStyle = grd;
+    d.fillRect(-r, -r, 2 * r, 2 * r);
+    d.restore();
+  };
+  pool(hx0 - VX, hy0 - VY - 16, 380 * 2, 0.36);
+  pool(hx0 - VX, hy0 - VY - 16, 165 * 2, 1);
+  for (const L of ls) pool(L.x, L.y, L.r * 1.3, Math.min(0.9, L.a * 1.4));
+  g.drawImage(c, 0, 0);
+  const grd = g.createRadialGradient(W / 2, H / 2, 0.5 * Math.hypot(W, H) / 2 / Math.SQRT2, W / 2, H / 2, Math.hypot(W, H) / 2);
+  grd.addColorStop(0, 'rgba(6,4,14,0)');
+  grd.addColorStop(1, 'rgba(6,4,14,0.62)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, W, H);
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  for (const L of ls) {
+    const gg = g.createRadialGradient(L.x, L.y, 0, L.x, L.y, L.r);
+    gg.addColorStop(0, L.color);
+    gg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = L.a * 0.5;
+    g.fillStyle = gg;
+    g.fillRect(L.x - L.r, L.y - L.r, 2 * L.r, 2 * L.r);
+  }
+  g.restore();
+}
+if (phone) dark(lightsOf(stands));
 
 const crop = (cx: number, cy: number, sw: number, sh: number, k: number): void => {
   const src = document.createElement('canvas');
