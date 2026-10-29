@@ -79,6 +79,12 @@ export interface Handover {
   toAt: number;
   mob?: Mob;
   shift?: readonly [number, number];
+  /**
+   * IN STEP (the Moth's, art/moth_moves.ts): the game hands over only at this moment of the move it leaves, even from his
+   * stand, and not from whatever frame of it the game has come to: for one whose stand is a great slow wingbeat, the game
+   * begins each move as the beat comes round to it. Not said, from his stand at every frame, as before.
+   */
+  phase?: boolean;
 }
 /** One of his arms at a moment: where it comes out of him, its elbow and its hand. */
 export interface CheckArm {
@@ -504,7 +510,7 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
   const pointsAt = (who: Mob, move: string, t: number, s: Skeleton): Record<string, V3> => (shape.follow ? { ...shape.follow(move, t, s, posedOfMob(who, move, t)) } : pointsOf(s));
   for (const h of hand) {
     if (!moves.includes(h.from) && !moves.includes(h.to)) continue;
-    const froms = h.from === 'stand' ? stands : [h.at === 'end' ? longOf(mob, h.from) : h.at];
+    const froms = h.from === 'stand' && !h.phase ? stands : [h.at === 'end' ? longOf(mob, h.from) : h.at];
     const b = skeletonAt(h.mob ?? mob, h.to, h.toAt);
     // (where the game has moved him to, if it has, as the one hands over to the next)
     const by: V3 = h.shift ? [h.shift[0], h.shift[1], 0] : [0, 0, 0];
