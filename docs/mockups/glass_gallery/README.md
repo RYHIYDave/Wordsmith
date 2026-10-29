@@ -182,3 +182,9 @@ glass; the glasshouse's benches of dead orchids; the Mirror Hall's mirrors, the 
   out of the mirrors" are enemies, another helper's).
 - For him: whether the glass coffin (it is in the 1812 text) belongs in the queen's chapel; whether the stained glass
   should keep to the book's first page (the snow, the ebony, the three drops) or show the mirror too.
+
+## His word on the game-ready Gallery
+
+The laid corner and the Queen's 25 pieces (`corner_phone.png`, `pieces.png`), asked “The Glass Gallery made game-ready
+(corner_phone.png and the Queen's 25 pieces): is this right?”: “Yes, that's the Gallery (Recommended)”. Asked whether to
+keep Snow White's glass coffin (in the 1812 text) as a piece in the chapel: “Keep it (Recommended)”.
