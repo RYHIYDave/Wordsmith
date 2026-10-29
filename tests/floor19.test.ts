@@ -238,7 +238,7 @@ test('what hangs on a wall has its spots, no two the same, and a picture on each
     const sp = p.spots ?? [];
     assert.ok(sp.length >= 1, `${p.name}: no spots`);
     assert.equal(new Set(sp.map((s) => `${s.du},${s.dv}`)).size, sp.length, `${p.name}: two spots the same`);
-    for (const s of sp) assert.ok(s.left.length === p.left.length && s.right.length === p.right.length, `${p.name}: a spot without all its frames`);
+    for (const s of sp) assert.ok(s.left.length === p.left!.length && s.right.length === p.right!.length, `${p.name}: a spot without all its frames`);
   }
 });
 
