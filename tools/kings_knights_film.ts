@@ -41,18 +41,28 @@ const HERO_PACE = 4.6;
 // --- the picture being made ---
 const frame = new Uint8ClampedArray(W * H * 4);
 const floors: Record<string, Uint8ClampedArray> = {};
-/** Where the world's origin (his starting floor point) is on the screen, by view, and the flags under it. */
+/** Where the world's origin is on the screen, by view: set for each shot so that what it shows (`aim`) is in the frame. */
 const ORIGIN: Record<GameView, [number, number]> = { front: [200, BAR + 150], back: [200, H - 110] };
+/** Frame a shot: the stretch of his way from `u0` to `u1` tiles in the middle of the picture, room above it for the figures. */
+function aim(view: GameView, u0: number, u1: number): void {
+  const mid = (u0 + u1) / 2;
+  const span = Math.abs(u1 - u0) * 16 * Z;
+  const yMid = Math.min(H - 24 - span / 2, BAR + 8 + 170 + span / 2 + Math.max(0, (H - BAR - 8 - 170 - 24 - 2 * span) / 2));
+  const ox = Math.round(W / 2 - 32 * Z * mid);
+  ORIGIN[view] = view === 'front' ? [ox, Math.round(yMid - 16 * Z * mid)] : [ox, Math.round(yMid + 16 * Z * mid)];
+}
 function floorOf(view: GameView): Uint8ClampedArray {
-  if (floors[view]) return floors[view];
+  const [ox, oy] = ORIGIN[view];
+  const key = `${view}:${ox}:${oy}`;
+  if (floors[key]) return floors[key];
   const w = Math.ceil(W / Z);
   const h = Math.ceil((H - BAR) / Z);
-  const [ox, oy] = ORIGIN[view];
   // (a flag's top corner on the world's origin: his floor point is a flag's middle)
-  floors[view] = keepFloor(w, h, Math.round(ox / Z), Math.round((oy - BAR) / Z) - 16);
-  return floors[view];
+  floors[key] = keepFloor(w, h, Math.round(ox / Z), Math.round((oy - BAR) / Z) - 16);
+  return floors[key];
 }
-function clear(view: GameView): void {
+function clear(view: GameView, u0?: number, u1?: number): void {
+  if (u0 !== undefined && u1 !== undefined) aim(view, u0, u1);
   const f = floorOf(view);
   const w = Math.ceil(W / Z);
   for (let y = 0; y < H; y++) {
@@ -162,7 +172,7 @@ function partOf(view: GameView, label: string): void {
     say: 'Sword planted point down, both gauntlets on its hilt, the shield on his back. Breathing; the Hush leaks from the sight.',
     frames: 72,
     paint: (i) => {
-      clear(view);
+      clear(view, START, HERO);
       heroAt(view, HERO, 0, null);
       knightAt(view, 'stand', (i / FPS) % 3.2, START);
     },
@@ -175,7 +185,7 @@ function partOf(view: GameView, label: string): void {
     say: `He plucks up his sword and drives off; runs ${KN_PACE} tiles a second (the hero runs ${HERO_PACE}); stops in three hard steps.`,
     frames: nRun,
     paint: (i) => {
-      clear(view);
+      clear(view, START, HERO);
       heroAt(view, HERO, 0, null);
       const t = i / FPS;
       if (t < KN_SETOFF) knightAt(view, 'setOff', t, START + KN_PACE * t);
@@ -186,7 +196,7 @@ function partOf(view: GameView, label: string): void {
   });
   // THE CHOP, and its strike at half speed
   const chopFrame = (t: number): void => {
-    clear(view);
+    clear(view, STOP - 1, HERO + 1.5);
     if (t >= KN_CHOP.hit) fxAt(view, crackPainted(t - KN_CHOP.hit, view), CRACK_CANVAS, STOP);
     heroAt(view, HERO, 0, null);
     knightAt(view, 'attack', Math.min(t, KN_CHOP.long), STOP);
@@ -205,7 +215,7 @@ function partOf(view: GameView, label: string): void {
   });
   // THE RUSH, and its strike at half speed
   const rushFrame = (t: number): void => {
-    clear(view);
+    clear(view, STOP - 1, HERO + 1.5);
     const at = STOP + rushCarried(t);
     if (t >= KN_RUSH.hit) fxAt(view, knockPainted(t - KN_RUSH.hit, view), KNOCK_CANVAS, at);
     // (the hero knocked back as the shield slams in)
@@ -231,8 +241,8 @@ function partOf(view: GameView, label: string): void {
     say: 'Jolted back on his sword, the helm rocked back, the Hush coughed out of the sight.',
     frames: 36,
     paint: (i) => {
-      clear(view);
-      heroAt(view, HERO - 3.5, 0, null);
+      clear(view, STOP - 1, HERO + 1.5);
+      heroAt(view, HERO - 2.0, 0, null);
       const t = (i % 18) / FPS;
       knightAt(view, t < KN_REEL ? 'reel' : 'stand', t < KN_REEL ? t : 0, STOP);
     },
@@ -243,8 +253,8 @@ function partOf(view: GameView, label: string): void {
     say: 'To his knee behind his planted sword, head bowed; the Hush leaves him in a grey breath; the sword falls; he topples.',
     frames: Math.round((KN_DIES.long + 0.7) * FPS),
     paint: hold(Math.round(KN_DIES.long * FPS) + 1, (i) => {
-      clear(view);
-      heroAt(view, HERO - 3.5, 0, null);
+      clear(view, STOP - 1, HERO + 1.5);
+      heroAt(view, HERO - 2.0, 0, null);
       knightAt(view, 'dying', i / FPS, STOP);
     }),
   });
@@ -256,7 +266,7 @@ shots.push({
   say: 'His pick: “Quick for their armour”. A head taller than the knight; crowned great helms, royal blue and old gold.',
   frames: 54,
   paint: (i) => {
-    clear('front');
+    clear('front', -1, 3);
     heroAt('front', 1.2, 2.2, null, true);
     knightAt('front', 'stand', i / FPS, 1.2, 0);
   },
@@ -269,7 +279,7 @@ shots.push({
   say: `From one line: the hero runs ${HERO_PACE} tiles a second, the king’s knight ${KN_PACE}.`,
   frames: 78,
   paint: (i) => {
-    clear('front');
+    clear('front', -6.5, -6.5 + KN_PACE * 2.6);
     const t = i / FPS;
     heroAt('front', -6.5 + HERO_PACE * t, 2.0, t, true);
     knightAt('front', 'walk', t, -6.5 + KN_PACE * t, -0.6);

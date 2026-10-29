@@ -14,7 +14,7 @@ const LIT: readonly [number, number, number] = [74, 77, 90];
  * The floor `w` by `h` picture pixels, the world's tile (0, 0)'s top corner at (`ox`, `oy`): RGBA. A tile's diamond:
  * tile (i, j) has its top corner at (ox + (i - j) * 32, oy + (i + j) * 16).
  */
-export function keepFloor(w: number, h: number, ox: number, oy: number): Uint8ClampedArray {
+export function keepFloor(w: number, h: number, ox: number, oy: number): Uint8ClampedArray<ArrayBuffer> {
   const d = new Uint8ClampedArray(w * h * 4);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {

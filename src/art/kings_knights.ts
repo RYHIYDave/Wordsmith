@@ -22,8 +22,8 @@
 // pink of the Hushed in the dark of the sight, and on its crown A SMALL CIRCLET OF OLD GOLD (the king's own crown, “his
 // golden crown”, the book's); great layered pauldrons edged in gold, couters and poleyns with their fans, gauntlets,
 // greaves, pointed sabatons. Over the plate A SURCOAT OF ROYAL BLUE to the knee, split before and behind for the saddle,
-// bordered in old gold, the king's crown in gold on its breast; a sword belt with a gold buckle. A KITE SHIELD of royal
-// blue, rimmed and crowned in old gold, hung on its strap across his back until he takes it up to rush you; A LONGSWORD,
+// bordered in old gold, the royal swan in gold on its breast; a sword belt with a gold buckle. A KITE SHIELD of royal
+// blue, rimmed in old gold, the royal swan on it in old gold (his pick for the King's mark, “Keep the royal swan”), hung on its strap across his back until he takes it up to rush you; A LONGSWORD,
 // a hand and a half, its pommel a wheel of old gold. Cold steel, royal blue, old gold: nothing glows but the Hush's dull
 // pink; the royal blue is well clear of the friend's cyan (its hue 226 to 228 degrees; cyan is 160 to 205).
 
@@ -122,19 +122,28 @@ export function kiteIn(a: number, b: number): number {
   if (b >= 0.5) return Math.sqrt(Math.max(0, 1 - ((b - 0.5) / 0.5) ** 2)) - x;
   return Math.pow((b + 1) / 1.5, 0.72) - x;
 }
-/** THE KING'S CROWN, his arms (an original mark; the book's “golden crown”): a band, three points standing up off it each with its pearl, a jewel in the band. `a` across, `b` up, from -1 to 1. */
-export function crownIn(a: number, b: number): 'gold' | 'jewel' | null {
-  const x = Math.abs(a);
-  if (b > -0.62 && b < -0.2 && x < 0.86) return Math.hypot(a, b + 0.41) < 0.13 ? 'jewel' : 'gold';
-  // the three points, from the band up, each narrowing to its pearl
-  for (const c of [-0.62, 0, 0.62]) {
-    const k = (b + 0.2) / 0.75;
-    if (k >= 0 && k <= 1 && Math.abs(a - c) < 0.22 * (1 - k) + 0.04) return 'gold';
-    if (Math.hypot(a - c, b - 0.68) < 0.14) return 'gold';
+/**
+ * THE ROYAL CREST: the royal swan, its wings raised, its neck in its S, its head turned to its left (the crest floor 16's
+ * palace guard wear, art/palace_guard.ts `swanCrest`, the same mark: his pick for the King's own, “Keep the royal swan”),
+ * here in old gold on the king's royal blue. `a` across the crest and `b` up it, from -1 to 1. Inside it: true.
+ */
+export function swanIn(a: number, b: number): boolean {
+  const e = (x: number, y: number, cx: number, cy: number, rx: number, ry: number): boolean => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  if (e(a, b, 0.12, -0.5, 0.62, 0.26)) return true;
+  if (e(a, b, 0.68, -0.32, 0.16, 0.12)) return true;
+  if (b > -0.5 && e(a, b, 0.28, -0.12, 0.42, 0.42)) {
+    const notch = b > 0.12 && Math.abs(((a - 0.28) * 4 + 8) % 1 - 0.5) < 0.12;
+    if (!notch) return true;
   }
-  // the band's lower rim, a step wider
-  if (b > -0.74 && b <= -0.62 && x < 0.94) return 'gold';
-  return null;
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const x = -0.36 - 0.16 * Math.sin(Math.PI * 1.6 * t) + 0.06 * t;
+    const y = -0.38 + 0.98 * t;
+    if (Math.hypot(a - x, b - y) < 0.1 - 0.02 * t) return true;
+  }
+  if (e(a, b, -0.28, 0.62, 0.14, 0.11)) return true;
+  if (b < 0.64 && b > 0.52 && a < -0.38 && a > -0.62 + (0.64 - b) * 0.6) return true;
+  return false;
 }
 /** The shield at a moment: its middle, the way its face looks, its up and across, and its outline (for the checks). `q.pt`: 0 on its strap across his back, 1 on his left arm, faced by `q.pAz`, `q.pEl`. */
 export function shieldOf(s: Skeleton, q: Pick<Posed, 'pt' | 'pAz' | 'pEl'>): { c: V3; n: V3; up: V3; across: V3; rim: V3[] } {
@@ -181,7 +190,7 @@ export function shieldOf(s: Skeleton, q: Pick<Posed, 'pt' | 'pAz' | 'pEl'>): { c
   for (const [a, b] of [[0, 1], [0.7, 0.86], [1, 0.5], [0.86, 0], [0.5, -0.5], [0, -1], [-0.5, -0.5], [-0.86, 0], [-1, 0.5], [-0.7, 0.86]] as const) rim.push(add(c, add(mul(across, a * KITE.w), mul(up, b * KITE.h))));
   return { c, n, up, across, rim };
 }
-/** THE SHIELD: royal blue, rimmed in old gold, the king's crown in gold on it; its back plain wood and leather straps. */
+/** THE SHIELD: royal blue, rimmed in old gold, the royal swan in old gold on it; its back plain wood and leather straps. */
 function shield(put: Put, s: Skeleton, q: Pick<Posed, 'pt' | 'pAz' | 'pEl'>, glint: number): void {
   const sh = shieldOf(s, q);
   put('shield', 'shield', {
@@ -203,11 +212,8 @@ function shield(put: Put, s: Skeleton, q: Pick<Posed, 'pt' | 'pAz' | 'pEl'>, gli
       const tone = Math.max(2, Math.min(4, tone0 + 1));
       // (its rim of old gold, and a pink glint running round it as he holds the rush)
       if (inside < 0.11) return glint > 0.05 && hash(Math.round(x * 9), Math.round(y * 14), 7701) < 0.35 * glint ? FLAME[2] : GOLD[tone];
-      // (the king's crown, high on it)
-      const cr = crownIn(x / 0.56, (y - 0.3) / 0.3);
-      if (cr) return cr === 'jewel' ? BLUE[1] : GOLD[Math.min(4, tone)];
-      // (a band of gold down it from the crown to its point)
-      if (Math.abs(x) < 0.07 && y < -0.05) return GOLD[Math.max(2, tone - 1)];
+      // (the royal swan in old gold, big across its upper half)
+      if (swanIn(x / 0.72, (y - 0.12) / 0.5)) return GOLD[Math.min(4, tone)];
       return BLUE[Math.max(2, tone - (Math.abs(x) > 0.6 ? 1 : 0))];
     },
   });
@@ -362,11 +368,11 @@ function onRing(r: Ring, deg: number, out: number): V3 {
   const t = deg * D;
   return add(r.c, add(mul(r.u, Math.cos(t) * (1 + out / len3(r.u))), mul(r.v, Math.sin(t) * (1 + out / len3(r.v)))));
 }
-/** The king's crown in gold on the surcoat's breast: painted on a thin shell just proud of the cloth. */
+/** The royal swan in old gold on the surcoat's breast: painted on a thin shell just proud of the cloth. */
 function charge(put: Put, s: Skeleton): void {
   const [cf, cl, cu] = s.chest;
   const c = add(lerp3(s.ribs, s.neck, 0.18), mul(cf, KB.ribDeep + 3.75));
-  put('charge', 'charge', { k: 'ball', c, ax: [mul(cf, 1.4), mul(cl, -5.2), mul(cu, 4.6)], skin: (u, tone) => (u[0] > 0.15 && crownIn(u[1], u[2]) ? (crownIn(u[1], u[2]) === 'jewel' ? BLUE[1] : GOLD[tone >= 2 ? 4 : 3]) : null) });
+  put('charge', 'charge', { k: 'ball', c, ax: [mul(cf, 1.4), mul(cl, -6.4), mul(cu, 6.4)], skin: (u, tone) => (u[0] > 0.15 && swanIn(u[1], u[2]) ? GOLD[tone >= 2 ? 4 : 3] : null) });
 }
 
 /**

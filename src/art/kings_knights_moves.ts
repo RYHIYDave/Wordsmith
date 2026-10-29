@@ -536,8 +536,8 @@ const bothKnees = (lean: number, body: P): P => ({ ...kneelHips(B, R, { L: DOWN_
 /** His arms flung out on the floor as he falls: each hand `back` behind its shoulder (before it, if less than nothing) and `out` to its side (from the floor's axes). */
 function limp(body: P, back: number, out: number): P {
   const s = solve(B, { ...R, ...body, lhIn: 0, rhIn: 0 } as Posed);
-  const Lh: V3 = [s.shoulderL[0] - back, s.shoulderL[1] + out, 3.2];
-  const Rh: V3 = [s.shoulderR[0] - back, s.shoulderR[1] - out, 3.2];
+  const Lh: V3 = [s.shoulderL[0] - back, s.shoulderL[1] + out, 4.6];
+  const Rh: V3 = [s.shoulderR[0] - back, s.shoulderR[1] - out, 4.6];
   const q = { ...R, ...body, lhIn: 2, lhx: Lh[0], lhy: Lh[1], lhz: Lh[2], rhIn: 2, rhx: Rh[0], rhy: Rh[1], rhz: Rh[2] } as Posed;
   const le = elbowFor(B, q, true, norm([0, 1, -0.4]));
   const re = elbowFor(B, { ...q, le } as Posed, false, norm([0, -1, -0.4]));
@@ -745,7 +745,7 @@ function knightMob(): Mob {
     grains: paint.grains,
     // (his sword falls from his hands as they slip and topples to the floor at his right)
     fall(piece) {
-      if (piece === 'sword') return { from: KN_DIES.drop, to: [2, -21], spin: 70, lay: 'axis', hop: 1.4 };
+      if (piece === 'sword') return { from: KN_DIES.drop, to: [-6, -40], spin: -8, lay: 'axis', hop: 1.4 };
       return null;
     },
   };
