@@ -15,7 +15,7 @@ import { Px } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { GRIP_CANVAS, HS_CANVAS, gripPainted } from '../src/art/hush_shapes';
-import { HS_DART, HS_DIES, HS_GRIP, HS_PACE, HS_REEL, HS_STAND_LONG, HUSH_SHAPE, gripAt } from '../src/art/hush_shapes_moves';
+import { HS_DART, HS_DIES, HS_GRIP, HS_PACE, HS_REEL, HS_STAND_LONG, HUSH_SHAPE, dartCarry, gripAt } from '../src/art/hush_shapes_moves';
 import { TILE3, deathOfMob, dyingMoment, momentOf, paintBits, paintMob } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
 import type { Painted } from '../src/art/kit';
@@ -251,7 +251,8 @@ interface Card {
   title: string;
   note: string;
 }
-function film(out: string): void {
+function film(out: string, only?: string): void {
+  const want = (name: string): boolean => !only || only.split(',').includes(name);
   const W = 360;
   const H = 240;
   const frames: Card[] = [];
@@ -275,7 +276,7 @@ function film(out: string): void {
     for (let i = 0; i < k; i++) f();
   };
   // HOVERING
-  for (const view of ['front', 'back'] as const) {
+  for (const view of want('stand') ? (['front', 'back'] as const) : []) {
     const base = bg(view);
     const mx = view === 'front' ? 150 : 190;
     const my = view === 'front' ? 150 : 175;
@@ -289,7 +290,7 @@ function film(out: string): void {
     }
   }
   // THE DRIFT
-  for (const view of ['front', 'back'] as const) {
+  for (const view of want('drift') ? (['front', 'back'] as const) : []) {
     const base = bg(view);
     const mx0 = view === 'front' ? 70 : 90;
     const my0 = view === 'front' ? 110 : 205;
@@ -308,7 +309,7 @@ function film(out: string): void {
     }
   }
   // THE DART, and its strike again at half speed
-  for (const view of ['front', 'back'] as const) {
+  for (const view of want('dart') ? (['front', 'back'] as const) : []) {
     const base = bg(view);
     const mx0 = view === 'front' ? 62 : 70;
     const my0 = view === 'front' ? 92 : 214;
@@ -318,7 +319,12 @@ function film(out: string): void {
       const pic = clone(base);
       const draws = [
         { y: my0 + kAt[1], f: () => layKnight(pic, view === 'front' ? 'back' : 'front', mx0 + kAt[0], my0 + kAt[1], 1, true, 0) },
-        { y: my0 + dy, f: () => layShape(pic, shapeAt('dart', t, view), Math.round(mx0 + dx), Math.round(my0 + dy), 1) },
+        { y: my0 + dy, f: () => {
+          // (its shadow goes with it as it darts: dartCarry)
+          const [cx, cy] = onScreen(view, dartCarry(t), 0);
+          pic.shadow(Math.round(mx0 + cx), Math.round(my0 + cy), MOB.shadow, 0.5);
+          layShape(pic, shapeAt('dart', t, view), Math.round(mx0 + dx), Math.round(my0 + dy), 1, false, false);
+        } },
       ];
       draws.sort((a, b) => a.y - b.y).forEach((d) => d.f());
       const note = t < HS_DART.warn[0] ? 'It draws in on itself' : t <= HS_DART.strike[0] + 1e-6 ? 'Drawn in, held: the warning' : t <= HS_DART.strike[1] + 1e-6 ? 'FOUR TILES IN TWO FRAMES, smeared' : 'It rears back as it brakes, and settles';
@@ -334,7 +340,7 @@ function film(out: string): void {
   }
   // THE GRIP, and its strike again at half speed
   const G = gripAt();
-  for (const view of ['front', 'back'] as const) {
+  for (const view of want('grip') ? (['front', 'back'] as const) : []) {
     const base = bg(view);
     const mx = view === 'front' ? 120 : 140;
     const my = view === 'front' ? 120 : 196;
@@ -375,7 +381,7 @@ function film(out: string): void {
     holds(6, () => frame(1.0, true));
   }
   // STRUCK
-  for (const view of ['front', 'back'] as const) {
+  for (const view of want('reel') ? (['front', 'back'] as const) : []) {
     const base = bg(view);
     const mx = view === 'front' ? 160 : 180;
     const my = view === 'front' ? 150 : 175;
@@ -394,11 +400,11 @@ function film(out: string): void {
     }
   }
   // ITS DEATH
-  for (const view of ['front', 'back'] as const) {
+  for (const view of want('death') ? (['front', 'back'] as const) : []) {
     const base = bg(view);
     const mx = view === 'front' ? 150 : 175;
     const my = view === 'front' ? 196 : 205;
-    const [kx, ky] = onScreen(view, 1.4 * TILE3, -1.0 * TILE3);
+    const [kx, ky] = onScreen(view, 1.7 * TILE3, -2.1 * TILE3);
     for (let i = 0; i <= Math.round(HS_DIES.long * 30) + 15; i++) {
       const t = Math.min(HS_DIES.long, Math.floor((i / 30) * 20) / 20);
       const pic = clone(base);
@@ -463,7 +469,7 @@ if (mode === 'look') look(out, only);
 else if (mode === 'big') bigOf(out, only ?? 'stand:0');
 else if (mode === 'close') close(out, only ?? 'stand:0');
 else if (mode === 'sheet') sheet(out);
-else if (mode === 'film') film(out);
+else if (mode === 'film') film(out, only);
 else {
   console.log('modes: look, sheet, film');
   process.exit(1);

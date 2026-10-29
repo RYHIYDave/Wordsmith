@@ -32,7 +32,9 @@ function floor(k: number): void {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
-  (c.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(towerFloor(w, h, 7, 3), w, h), 0, 0);
+  const data = new Uint8ClampedArray(w * h * 4);
+  data.set(towerFloor(w, h, 7, 3));
+  (c.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(data, w, h), 0, 0);
   g.drawImage(c, 0, 0, w * k, h * k);
 }
 function draw(s: Sprite, x: number, y: number, k: number, flip = false): void {

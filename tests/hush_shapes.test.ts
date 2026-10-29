@@ -15,7 +15,8 @@
 //      picture with room to spare;
 //   6. NOTHING OF IT IN THE FLOOR: nothing it is made of is below the floor in any frame;
 //   7. ITS MARK: the one open mouth, its gape and the Hush's dull pink in it, seen from in front; no face from behind;
-//      its fog thinned to mist below, and streaming off it, in every frame it lives;
+//      its fog thinned to mist below (every frame it hovers and drifts, and all but a few as it darts and grips, when its
+//      tail swings in under it), and streaming off it in every frame it lives;
 //   8. STRUCK, the fog tearing and closing; ITS DEATH, unravelling to nothing, the word it swallowed coming out in the
 //      Hush's pink and flying away in its own colour, gone by the end;
 //   9. LOOSE THINGS FOLLOW: its tail trails as it drifts, is left behind as it darts and swings on past as it stops;
@@ -34,7 +35,7 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
-import { GRIP_FX, HS_CANVAS, HS_FOG, HS_MIST, HS_PALE, HS_SMEAR, HS_THROAT, HS_WORD, HUSHSHAPES_ON, gripCoils, gripPainted, hushPainter } from '../src/art/hush_shapes';
+import { GRIP_FX, HS_CANVAS, HS_FOG, HS_MIST, HS_PALE, HS_SMEAR, HS_THROAT, HS_WORD, HUSHSHAPES_ON, gripCoils, gripPainted, hushPainter, hushWord } from '../src/art/hush_shapes';
 import { HS_DART, HS_DIES, HS_GRIP, HS_PACE, HS_REEL, HS_SAY, HS_SHAPE, HS_STRIKES, HUSH_SHAPE, gripAt, lagAt, smearedAt } from '../src/art/hush_shapes_moves';
 import { WORD_COLOR } from '../src/art/icons';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
@@ -241,6 +242,8 @@ test('7. ITS MARK: its one open mouth, gaping dark with the Hush\'s dull pink in
   let front = 0;
   let mouthBack = 0;
   let back = 0;
+  let mist = 0;
+  let all = 0;
   for (const { move, view, t, p } of PAINTED) {
     if (move === 'dying') continue;
     const gape = countOf(p, [HS_THROAT]);
@@ -252,8 +255,13 @@ test('7. ITS MARK: its one open mouth, gaping dark with the Hush\'s dull pink in
       back++;
       if (gape > 0) mouthBack++;
     }
-    if (countOf(p, [HS_MIST]) < 4) faults.push(`${said(move, view, t)}: no mist at its tail`);
+    // (its tail always comes apart into mist as it hovers and drifts; as it darts and grips its tail may swing in under it, out of sight)
+    const misty = countOf(p, [HS_MIST]) >= 4;
+    if (!misty && (move === 'stand' || move === 'walk')) faults.push(`${said(move, view, t)}: no mist at its tail`);
+    if (misty) mist++;
+    all++;
   }
+  assert.ok(mist >= 0.95 * all, `mist at its tail in ${mist} of ${all} frames it lives`);
   assert.ok(mouthFront >= 0.9 * front, `its gape and the pink in it, from in front, in ${mouthFront} of ${front} frames`);
   assert.ok(mouthBack <= 0.1 * back, `its gape seen from behind in ${mouthBack} of ${back} frames`);
   // (faceless: its only marks on its head are its gape and the pink in its throat; no eyes)
@@ -292,6 +300,13 @@ test('8. STRUCK, its fog torn and closing; ITS DEATH, unravelling to nothing, th
     assert.ok(countOf(k(0.4), [FLAME[1]]) >= 8, `${view}: the word coming out in the Hush's pink`);
     assert.ok(countOf(k(1.25), [own]) >= 8, `${view}: the word in its own colour as it flies`);
     assert.equal(countOf(k(HS_DIES.word[4] + 0.05), [own]), 0, `${view}: the word gone home`);
+  }
+  // (never the twin or frost words, whose colours read as the hero's cyan: as from the Moth)
+  for (const id of ['twin', 'frost', 'frost2'] as const) {
+    const was = HS_WORD.id;
+    HS_WORD.id = id;
+    assert.ok(hushWord() !== id, `asked for ${id}, it lets go ${hushWord()}`);
+    HS_WORD.id = was;
   }
 });
 

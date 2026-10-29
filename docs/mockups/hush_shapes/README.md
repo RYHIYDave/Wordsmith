@@ -34,7 +34,8 @@ the dart and the grip are as fast and as big as the brief says, in tiles (TILE3 
   steed is thinned). Its colours `HS_FOG` (the Hush's grey, dark in its hollows, bone white where the light takes it).
 - LONG THIN ARMS (the build's arms 1.4 times a man's): a knob of fog at each shoulder, the elbow's knob, the forearm
   narrowing to the wrist; a narrow hand and four long bone-white fingers (`HS_PALE`), hanging, splayed, or closed round.
-- A FACELESS HEAD under a brow of fog: no eyes, no nose; ONE OPEN MOUTH, a dark gape taller than it is wide, sagging,
+- A FACELESS HEAD under a brow of fog: no eyes, no nose (so the Hush's dull pink, which is in the eyes of the Hushed, is
+  here deep in its throat); ONE OPEN MOUTH, a dark gape taller than it is wide, sagging,
   its upper lip bone white, the Hush's dull pink deep in its throat (`FLAME[1]`; hotter, `FLAME[2]`, through its
   warnings). The gape is drawn round toward whoever looks while its face is toward them (as the eyes of every face are,
   art/skin.ts `eyesToward`), so it is never lost on the edge of the head. From behind, no face at all.
@@ -75,15 +76,18 @@ the dart and the grip are as fast and as big as the brief says, in tiles (TILE3 
 THE WORD: the game's own rune of the word (art/icons.ts `GLYPH`), a cell to a game pixel, in the word's own colour
 (`WORD_COLOR`) with its glow (`WORD_GLOW`), as the Physician's freed word flies home in (art/physician_shots.ts
 `drawWordFreed`: the enemy's pink going out of it, its own colour coming back). Not cyan: the floating words of the game
-are in their own colours. In the pictures it is one of the city's words, "pulling" (`HS_WORD`); which word, the game's.
+are in their own colours. In the pictures it is one of the city's words, "pulling" (`HS_WORD`); which word, the game's, but never the twin or
+frost words, whose colours read as the hero's cyan (as with the Moth's words, on his yes to floor 20's boss): asked for
+one of them, it lets go "pulling" instead (`hushWord`, `HS_WORD_NOT`).
 
 ## How to bring it in (the main chat's)
 
 - `makeHushShapeArt3()` gives `{ front, back }` as the game holds a monster (`stand`, `walk`, the attack's clip with its
   `hit`, `dart` among its other moves, `reel`, `die`). Its picture `HS_CANVAS` is 280 by 256 (room for its dart); the game
   cuts each frame to what is in it.
-- THE DART: play `more.dart`; at its end move it `HS_DART.carry` (four tiles) along the way it faces, then stand or grip.
-  The game chooses when it darts (at you, from a drift) and when it grips.
+- THE DART: play `more.dart`; its picture goes the four tiles within itself, so draw its shadow (and its pool of light)
+  `dartCarry(t)` along the way it faces from where it is; at the dart's end move it `HS_DART.carry` (four tiles) that way,
+  then stand or grip. The game chooses when it darts (at you, from a drift) and when it grips.
 - THE GRIP: its area, the game's (drawn to: 1.5 tiles before it, 0.85 tiles round that); from its `hit`, draw
   `gripPainted(t, view, 'far')` under whoever it holds and `'near'` over them, at the point `gripAt()` gives. "Darkens your
   words" is the game's to do with the word bar while it holds.

@@ -61,6 +61,14 @@ const WISP = [BREATH_PALE, HUSH[4], HUSH[3], HUSH[2]] as const;
 
 /** THE WORD IT SWALLOWED, which flies home as it dies: whichever word the game says (one of the city's words, in the pictures). */
 export const HS_WORD: { id: WordId } = { id: 'pulling' };
+/**
+ * The words whose colours read as the hero's cyan, left out of what flies out of it (as from the Moth, his yes to floor 20's
+ * boss): the twin and frost words. Asked for one of them, the word it lets go is one of the city's own instead.
+ */
+export const HS_WORD_NOT: ReadonlyArray<string> = ['twin', 'frost', 'frost2'];
+export function hushWord(): WordId {
+  return HS_WORD_NOT.includes(HS_WORD.id) ? 'pulling' : HS_WORD.id;
+}
 
 // =============================================================================================
 // ITS BODY: built on the heroes' bones (art/skeleton.ts), so every check the bosses have holds for it
@@ -112,7 +120,7 @@ export interface HushSay {
   stream: (m: Moment) => number;
   /** THE SMEAR OF A LIGHTNING STRIKE: after-images of it along the way it has just come, each a line of points, the oldest first. */
   smear: (m: Moment) => V3[][] | null;
-  /** THE WORD IT SWALLOWED, as it dies: where it is, how far it has its own colour again (0 the Hush's pink, 1 its own), how big a cell of its rune is (picture pixels), how much of it is still there (0 to 1). */
+  /** THE WORD IT SWALLOWED, as it dies: where it is, how far it has its own colour again (0 the Hush's pink, 1 its own), how big a cell of its rune is (picture pixels: two, a game pixel), how much of it is still there (0 to 1). */
   word: (m: Moment) => { p: V3; own: number; cell: number; left: number } | null;
 }
 
@@ -132,7 +140,7 @@ function noise2(x: number, y: number, seed: number): number {
   return a + (b - a) * s(fy);
 }
 /** Its fog on a round part: pale streaks drawn back along it as it churns, and hollows where it is thin. */
-function fogSkin(seed: number, churn: number, ramp: Ramp = HS_FOG): Skin {
+function fogSkin(seed: number, churn: number, ramp: Ramp = HS_FOG): (u: V3, tone: number, x?: number, y?: number) => string {
   return (u, tone) => {
     const streak = fr(u[2] * 1.1 + u[0] * 0.5 + churn + 0.25 * Math.sin(u[1] * 3 + seed));
     const hollow = noise2(u[0] * 2.2 + seed + churn * 2, u[2] * 2.2 + u[1] * 1.4, 7911) > 0.78;
@@ -281,30 +289,6 @@ export function humpOf(s: Skeleton): { c: V3; ax: [V3, V3, V3] } {
   return { c: add(add(lerp3(s.ribs, s.neck, 0.78), mul(cf, -(B.ribDeep * 0.7))), mul(cu, 2.0)), ax: [mul(cf, B.ribDeep + 1.6), mul(cl, B.shoulderHalf * 0.82), mul(cu, 5.6)] };
 }
 
-/** Its spine down its back, from the root of its neck to its hips: each knob, how big, and the way out of its back there. */
-export function spineOf(s: Skeleton): [V3, number, V3][] {
-  const out: [V3, number, V3][] = [];
-  const back = (k: number): { p: V3; out: V3; deep: number } => {
-    // (up its back: over the hips, the waist, the ribs, to the neck)
-    if (k < 0.33) {
-      const u = k / 0.33;
-      return { p: lerp3(add(s.pelvis, mul(s.hips[2], 0.8)), s.waist, u), out: norm(lerp3(mul(s.hips[0], -1), mul(s.belly[0], -1), u)), deep: B.pelvisDeep + 3.4 + (B.waistDeep + 2.4 - B.pelvisDeep - 3.4) * u };
-    }
-    if (k < 0.6) {
-      const u = (k - 0.33) / 0.27;
-      return { p: lerp3(s.waist, s.ribs, u), out: norm(lerp3(mul(s.belly[0], -1), mul(s.chest[0], -1), u)), deep: B.waistDeep + 2.4 + 0.1 * u };
-    }
-    const u = (k - 0.6) / 0.4;
-    return { p: lerp3(s.ribs, lerp3(s.ribs, s.neck, 0.95), u), out: mul(s.chest[0], -1), deep: B.ribDeep + 2.6 };
-  };
-  for (let i = 0; i < 9; i++) {
-    const k = 0.1 + (i / 8) * 0.85;
-    const b = back(k);
-    out.push([add(b.p, mul(b.out, b.deep - 0.6)), 1.2 + 0.35 * Math.sin(Math.PI * k), b.out]);
-  }
-  return out;
-}
-
 /** What a moment paints over and above its solids, kept for its grains and its thinning. */
 const MORE = new WeakMap<Moment, { grains: [V3, string, number][]; tailTip: V3; ribs: V3; pelvis: V3 }>();
 
@@ -354,7 +338,7 @@ function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
   const { mouth, facing } = head(put, st, s, jaw, glint, churn);
   // THE WORD IT SWALLOWED: its light
   const w = say.word(m);
-  if (w && w.left > 0.05) put('word', 'word', { k: 'glow', p: w.p, c: WORD_GLOW[HS_WORD.id], r: 10 + 8 * w.left, a: 0.4 * w.left });
+  if (w && w.left > 0.05) put('word', 'word', { k: 'glow', p: w.p, c: WORD_GLOW[hushWord()], r: 10 + 8 * w.left, a: 0.4 * w.left });
   // ITS FOG STREAMING OFF IT (laid after its edge)
   const grains: [V3, string, number][] = [];
   const formed = clamp01(say.formed(m));
@@ -411,13 +395,15 @@ function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
   }
   // THE WORD IT SWALLOWED, flying out of it, home: its rune cell by cell, the Hush's dull pink going out of it and its own colour coming back, a dark seam under it
   if (w && w.left > 0.02) {
-    const rows = GLYPH[HS_WORD.id];
+    const id = hushWord();
+    const rows = GLYPH[id];
     const H = rows.length;
     const W = rows[0].length;
-    const own = WORD_COLOR[HS_WORD.id];
-    const glow = WORD_GLOW[HS_WORD.id];
+    const own = WORD_COLOR[id];
+    const glow = WORD_GLOW[id];
     const [cx, cy] = st.at(w.p);
-    const C = Math.max(2, Math.round(w.cell / 2) * 2) / 2;
+    // (a cell of its rune to a game pixel, on the game's grain)
+    const C = Math.max(2, Math.round(w.cell / 2) * 2);
     const x0 = Math.round((cx - (W * C) / 2) / 2) * 2;
     const y0 = Math.round((cy - (H * C) / 2) / 2) * 2;
     const back3 = st.back;
@@ -492,7 +478,7 @@ function thinHush(px: Px, st: Stage, m: Moment, partAt: (k: number) => string | 
   const ir = parseInt(INK.slice(1, 3), 16);
   const ig = parseInt(INK.slice(3, 5), 16);
   const ib = parseInt(INK.slice(5, 7), 16);
-  const ours = (part: string | null): boolean => part === 'body' || part === 'head' || part === 'armL' || part === 'armR' || part === 'spine';
+  const ours = (part: string | null): boolean => part === 'body' || part === 'head' || part === 'armL' || part === 'armR';
   const edgeAt = (i: number): boolean => px.d[i + 3] === RIM_ALPHA || (px.d[i] === ir && px.d[i + 1] === ig && px.d[i + 2] === ib);
   const cut = new Uint8Array(W * H);
   // (the gash: across its chest, slanting, opened `tear` wide)

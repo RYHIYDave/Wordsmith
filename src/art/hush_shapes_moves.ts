@@ -413,24 +413,16 @@ function smearOf(move: string, t: number): V3[][] | null {
   const out: V3[][] = [];
   const n = move === 'dart' ? 10 : 5;
   const here = carriedAt(move, t);
-  const paths: V3[][] = [[], [], [], [], [], [], [], []];
+  const paths: V3[][] = Array.from({ length: 12 }, () => []);
   for (let i = 0; i <= n; i++) {
     const u = s0 - FR * 0.5 + ((to - (s0 - FR * 0.5)) * i) / n;
     const s = bonesOf(move, u);
     const by: V3 = [carriedAt(move, u) - here, 0, 0];
     const o = (p: V3): V3 => add(p, by);
     if (move === 'dart') {
-      // (its back again and again along the way, every other step; and the streaks of its crown, its hump, its shoulders, its hands and its tail)
+      // (streaks along the way it came: of its crown, its hump, its shoulders, its elbows, its hands, its ribs, its hips and its plume)
       const tip = tailOf(s, [0, 0, 0], u);
-      if (i % 2 === 0) out.push([o(tip[4].c), o(tip[2].c), o(s.pelvis), o(s.ribs), o(humpOf(s).c), o(s.head)]);
-      paths[0].push(o(s.head));
-      paths[1].push(o(s.handL));
-      paths[2].push(o(s.handR));
-      paths[3].push(o(tip[4].c));
-      paths[4].push(o(humpOf(s).c));
-      paths[5].push(o(s.shoulderL));
-      paths[6].push(o(s.shoulderR));
-      paths[7].push(o(tip[2].c));
+      [s.head, humpOf(s).c, s.shoulderL, s.shoulderR, s.elbowL, s.elbowR, s.handL, s.handR, s.ribs, s.pelvis, tip[2].c, tip[4].c].forEach((p, j) => paths[j].push(o(p)));
     } else {
       const h = handsAt(move, u);
       const fl = fingersOf(s, 'L', h.splay, h.curl);
@@ -438,7 +430,8 @@ function smearOf(move: string, t: number): V3[][] | null {
       out.push([s.shoulderL, s.elbowL, s.handL, fl.tips[1]], [s.shoulderR, s.elbowR, s.handR, frr.tips[1]]);
     }
   }
-  if (move === 'dart') out.unshift(...paths);
+  // (the dart's streaks laid as their pieces, oldest first: dimmest at the start of the way, brightest where it now is)
+  if (move === 'dart') for (let i = 0; i < n; i++) for (const path of paths) out.push([path[i], path[i + 1]]);
   return t > s1 + 1e-6 ? out.slice(Math.floor(out.length / 2)) : out;
 }
 /** THE WORD IT SWALLOWED, as it dies: out of its mouth and up, its own colour coming back; held; then away, home, and gone. */
@@ -451,7 +444,7 @@ function wordOf(t: number): { p: V3; own: number; cell: number; left: number } |
   const bob = t > w1 ? 1.2 * Math.sin((t - w1) * 9) : 0;
   const away = smooth(w2, w4, t);
   const p = add(mouth, [3 * smooth(w0, w1, t) + 24 * away, 4 * away, rise + bob + 40 * away * away]);
-  return { p, own: smooth(w0 + 0.15, w2, t), cell: t < w0 + 0.12 ? 2 : 4 - 2 * smooth(w3, w4, t), left: 1 - smooth(w3, w4, t) };
+  return { p, own: smooth(w0 + 0.15, w2, t), cell: 2, left: 1 - smooth(w3, w4, t) };
 }
 /** What every moment of its moves says over and above its bones (for its painter). */
 export const HS_SAY: HushSay = {
