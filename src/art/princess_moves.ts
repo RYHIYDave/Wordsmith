@@ -178,8 +178,8 @@ function resampled(pts: ReadonlyArray<V3>, n: number): V3[] {
 const WHIP_H = 17;
 /**
  * The vine as a long whip in the air from her right hand: `long` out along the way `deg` round from her front, at
- * `WHIP_H`, its far end trailing `trail` degrees behind the way it is swept; writhing like a snake `writhe` of the most it
- * does (0 straight), `t` seconds in; and a wave running down it (`wave`: where its crest is, 0 at her hand to 1 at the
+ * `WHIP_H`, its far end trailing `trail` degrees behind the way it is swept; hanging with its weight and swaying `writhe`
+ * of the most it does (0 straight), `t` seconds in; and a wave running down it (`wave`: where its crest is, 0 at her hand to 1 at the
  * tip, and how big), the whip's ripple that ends in its crack.
  */
 function whipVine(s: Skeleton, deg: number, long: number, trail: number, writhe: number, t: number, wave: { at: number; big: number } | null = null): V3[] {
@@ -188,12 +188,12 @@ function whipVine(s: Skeleton, deg: number, long: number, trail: number, writhe:
   const out: V3[] = [];
   for (let i = 0; i <= N_VINE; i++) {
     const u = i / N_VINE;
-    // (a snake's writhe: waves running out along it; and the ripple's crest, out to one side and up)
-    const snake = writhe * Math.sin(u * Math.PI * 4 - t * 6) * u;
+    // (held back, it hangs with its weight and sways, not a snake's writhe; and the ripple's crest, out to one side and up)
+    const sway = writhe * Math.sin(u * Math.PI * 1.2 - t * 2.2) * u;
     const crest = wave ? wave.big * Math.exp(-(((u - wave.at) / 0.1) ** 2)) : 0;
-    const a = (deg - trail * u * u + 7 * snake + crest * 9 * u) * D;
+    const a = (deg - trail * u * u + 4 * sway + crest * 9 * u) * D;
     const far: V3 = [s.pelvis[0] + Math.cos(a) * long, s.pelvis[1] + Math.sin(a) * long, 0];
-    const h = WHIP_H + 6 * snake + crest * 7 - 3 * u * u;
+    const h = WHIP_H + 3 * sway - 7 * writhe * Math.sin(Math.PI * u) * (1 - u * 0.5) + crest * 7 - 3 * u * u;
     const z = hand[2] + (Math.max(4, h) - hand[2]) * smooth(0, 0.14, u);
     out.push([hand[0] + (far[0] - hand[0]) * u, hand[1] + (far[1] - hand[1]) * u, z]);
   }

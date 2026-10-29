@@ -66,6 +66,12 @@ const STEM: Ramp = ['#1e141a', '#2e1e28', '#3a2b37', '#4e3a48', '#5e4858'];
 const HAIRS = '#b6b4a2';
 /** Her whip: the nettle's stem a bright, hard green, so that it reads against the lawn; its thorns pale. */
 const WHIP: Ramp = ['#162414', '#26401f', '#3c6230', '#5a8a44', '#86b464'];
+/** Its wood, a dark green going brown; its leaves, bright. */
+const WOOD: Ramp = ['#17150c', '#2a2618', '#403a24', '#5a5232', '#766c44'];
+const WOOD_PALE: Ramp = ['#2a2618', '#403a24', '#5e5636', '#80784e', '#a49c6c'];
+const LEAFY: Ramp = ['#1d3818', '#2d5824', '#468034', '#68a448', '#92c866'];
+/** (a leaf in another ramp than the nettles' own, while it is set) */
+let leafRamp: Ramp | null = null;
 const THORN: Ramp = ['#3a3a30', '#6a6a58', '#a8a890', '#d8d6c0', '#f0eee0'];
 /** (a vine's stem in another ramp than its own, while it is set) */
 let vineRamp: Ramp | null = null;
@@ -164,7 +170,7 @@ function leaf(put: Put, part: string, piece: string, at: V3, out: V3, down: V3, 
     FALLEN.push([p, NETTLE_DEAD[(seed % 3) + 1], 2]);
     return;
   }
-  const LEAF = dead > 0.5 ? NETTLE_DEAD : NETTLE;
+  const LEAF = dead > 0.5 ? NETTLE_DEAD : (leafRamp ?? NETTLE);
   const o = norm(out, [0, 0, 1]);
   const d = norm(sub(down, mul(o, dot(down, o))), [0, 0, -1]);
   const flutter = 0.25 * Math.sin(t * 5 + seed);
@@ -201,22 +207,87 @@ function vine(put: Put, part: string, pts: ReadonlyArray<V3>, ra: number, t: num
   }
 }
 
-/** HER WHIP'S VINE (her lash, her snare, and the gardens' own: art/princess_fx.ts): a nettle vine through points in the whip's bright green, leafed all along, its thorns pale and tipped pink. */
+/**
+ * HER WHIP'S VINE (her lash, her snare, and the gardens' own: art/princess_fx.ts): A VINE, NOT A SNAKE (his, 28 Oct: “I
+ * thought it was a long green snake.  Didn’t really read as vine”): three woody strands twisted round each other, knotted
+ * along it; big serrated nettle leaves in pairs all down it, a brighter green than its wood; curling tendrils between
+ * them; a few hooked thorns, pale, some tipped pink.
+ */
 function whip(put: Put, part: string, v: ReadonlyArray<V3>, ra: number, t: number, seed: number): void {
-  vineRamp = WITHER > 0.45 ? null : WHIP;
-  vine(put, part, v, ra, t, seed, 1, 1.7);
-  vineRamp = null;
-  if (WITHER > 0.45) return;
-  for (let i = 1; i < v.length; i++) {
-    const dir = norm(sub(v[i], v[i - 1]), [1, 0, 0]);
+  const dead = WITHER > 0.45;
+  const n = v.length;
+  // (its line, four times as fine, for the twist)
+  const fine: V3[] = [];
+  for (let i = 0; i < n - 1; i++) for (let j = 0; j < 4; j++) fine.push(lerp3(v[i], v[i + 1], j / 4));
+  fine.push(v[n - 1]);
+  const frameAt = (pts: ReadonlyArray<V3>, i: number): { dir: V3; side: V3; up: V3 } => {
+    const dir = norm(sub(pts[Math.min(pts.length - 1, i + 1)], pts[Math.max(0, i - 1)]), [1, 0, 0]);
     const side = norm(cross(dir, [0, 0, 1]), [0, 1, 0]);
-    for (const sgn of [1, -1]) {
-      const base = lerp3(v[i - 1], v[i], sgn > 0 ? 0.3 : 0.75);
-      const out = norm(add(mul(side, sgn), [0, 0, 0.7]));
-      const tipP = add(base, mul(out, 1.4 + 1.6 * Math.min(1, ra / 1.5)));
-      put(part, 'thorn', { k: 'rod', a: base, b: tipP, ra: 0.6, rb: 0.14, ramp: THORN, far: true });
-      if ((i + (sgn > 0 ? 0 : 1)) % 2 === 0) put(part, 'thorn', { k: 'dot', p: tipP, c: FLAME[3], facing: [0, 0, 1] });
+    return { dir, side, up: norm(cross(side, dir), [0, 0, 1]) };
+  };
+  let long = 0;
+  for (let i = 1; i < n; i++) long += Math.hypot(...sub(v[i], v[i - 1]));
+  const turns = Math.max(2, long / 22);
+  // THE WOOD: a dark core, and two strands twisted round it, one paler, so the twist shows
+  for (let i = 1; i < fine.length; i++) {
+    const u = i / (fine.length - 1);
+    const w = ra * (1 - 0.4 * u);
+    put(part, 'vine', { k: 'rod', a: fine[i - 1], b: fine[i], ra: w * 0.8, rb: w * 0.8, ramp: dead ? STEM_DEAD : WOOD, far: true });
+  }
+  for (let j = 0; j < 2; j++) {
+    let prev: V3 | null = null;
+    for (let i = 0; i < fine.length; i++) {
+      const u = i / (fine.length - 1);
+      const f = frameAt(fine, i);
+      const w = ra * (1 - 0.4 * u);
+      const ph = j * Math.PI + u * Math.PI * 2 * turns + seed;
+      const p = add(fine[i], add(mul(f.side, Math.cos(ph) * w * 0.55), mul(f.up, Math.sin(ph) * w * 0.55)));
+      if (prev) put(part, 'vine', { k: 'rod', a: prev, b: p, ra: w * 0.5, rb: w * 0.5, ramp: dead ? STEM_DEAD : j ? WOOD_PALE : WOOD, far: true });
+      prev = p;
     }
+  }
+  // its knots
+  for (let i = 3; i < n - 1; i += 4) {
+    const u = i / (n - 1);
+    put(part, 'vine', { k: 'ball', c: v[i], ax: sphere(ra * 1.3 * (1 - 0.4 * u)), skin: dead ? STEM_DEAD : WOOD_PALE, far: true });
+  }
+  // ITS LEAVES, in pairs all down it, each pair turned from the last; bright, big, hanging with their weight
+  leafRamp = dead ? null : LEAFY;
+  for (let i = 1; i < n; i++) {
+    const u = i / (n - 1);
+    const f = frameAt(v, i);
+    const turn = (i % 2) * 1.1;
+    for (const sgn of [1, -1]) {
+      const out = norm(add(mul(f.side, sgn * Math.cos(turn)), add(mul(f.up, 0.35 + 0.5 * Math.sin(turn) * sgn), mul(f.dir, 0.45))));
+      leaf(put, part, 'vineleaf', v[i], out, [0, 0, -1], (4.2 + 1.6 * Math.min(1, ra / 2)) * (1 - 0.3 * u), t, seed + i * 2 + (sgn > 0 ? 0 : 1));
+    }
+  }
+  leafRamp = null;
+  if (dead) return;
+  // its tendrils: a stalk up off it, then a curl of a turn and a half (curled across the view, so the curl shows)
+  const across: V3 = [Math.SQRT1_2, Math.SQRT1_2, 0];
+  for (let i = 2; i < n - 1; i += 3) {
+    const f = frameAt(v, i);
+    const sgn = i % 2 ? 1 : -1;
+    const top = add(v[i], add(mul(f.side, sgn * 1.5), mul(f.up, 6)));
+    put(part, 'tendril', { k: 'rod', a: v[i], b: top, ra: 0.6, rb: 0.5, ramp: LEAFY, far: true });
+    let prev = top;
+    for (let k = 1; k <= 12; k++) {
+      const a = k * 0.8;
+      const r = 3.6 * (1 - k / 16);
+      const p = add(top, add(mul(across, sgn * (r - r * Math.cos(a))), mul(f.up, r * Math.sin(a))));
+      put(part, 'tendril', { k: 'rod', a: prev, b: p, ra: 0.5, rb: 0.45, ramp: LEAFY, far: true });
+      prev = p;
+    }
+  }
+  // a few hooked thorns, pale, some tipped pink
+  for (let i = 1; i < n; i += 2) {
+    const f = frameAt(v, i);
+    const sgn = i % 4 === 1 ? -1 : 1;
+    const base = add(v[i], add(mul(f.up, -ra * 0.5), mul(f.side, sgn * ra * 0.5)));
+    const tipP = add(base, add(mul(f.side, sgn * 2.4), add(mul(f.up, -2.2), mul(f.dir, -1.4))));
+    put(part, 'thorn', { k: 'rod', a: base, b: tipP, ra: 0.75, rb: 0.15, ramp: THORN, far: true });
+    if (i % 4 === 1) put(part, 'thorn', { k: 'dot', p: tipP, c: FLAME[3], facing: [0, 0, 1] });
   }
 }
 /** NETTLE VINES ON THEIR OWN (her snare's, art/princess_fx.ts): each through its points, its leaves along it, withered `wither` of the way. */

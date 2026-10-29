@@ -118,6 +118,10 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   green with pink-tipped thorns; the cage breakable in stages, lasting longer left alone; the horse as it is; and, once
   he says yes to the whip's look, a few of her vines as pieces of the gardens round the gardeners, one twitching back
   into a hedge as you pass.
+- The next film, asked whether that was the whip and the cage: “Close, change something”; what, “The whip,I thought it
+  was a long green snake.  Didn’t really read as vine”. Read as (told him so): a vine, not a snake: woody strands twisted
+  round each other and knotted, big leaves in pairs all down it, curling tendrils, fewer and sharper thorns; held back it
+  hangs and sways with its weight instead of slithering; the cage the same vine.
 
 ## The first look (src/dev/garden_paint.ts)
 
@@ -253,12 +257,15 @@ wind-up held, a strike of two frames smeared with its after-images, big wind-dow
   feet never down; she darts about the arena leaning hard into her way, skimming the floor, her gown and vine streaming.
 - THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s), A WHIP'S SWEEP: she turns away to her right,
   her arm swung back low, and the vine grows out its whole length in the air to her right (`LASH_REACH`, 7.5 tiles),
-  writhing like a snake, its thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where
+  hanging and swaying with its weight, its thorns glinting pink, her left hand pointing (held 0.4 to 0.7 s): the warning shows where
   it will come from; hips first; the strike: in two frames the whip lashes a quarter turn round her front through the
   air at knee to waist height (`WHIP_H`), from 45 degrees to her right to 45 to her left (a sixth of a boss arena), the
   whole wedge it crosses smeared; it carries on a little while a ripple runs down it from her hand and ends in a crack of
   thorns and pink sparks at its tip; it recoils into her hand. It never touches the floor. HER WHIP'S LOOK (his “Too
-  stiff”, “Hard to see”): thick, a bright hard green (`WHIP`), leafed all along, pale thorns tipped pink; her snare's
+  stiff”, “Hard to see”, then “I thought it was a long green snake.  Didn’t really read as vine”): a vine, thick: a dark
+  olive-brown wood (`WOOD`) with a paler strand (`WOOD_PALE`) twisted round it so the twist shows, knotted every few
+  lengths; big bright leaves (`LEAFY`) in pairs all down it, each pair turned from the last, hanging; curling tendrils on
+  stalks; a few hooked pale thorns under it, some tipped pink; her snare's
   vines are the same, and the gardens' own will be, once he has said yes to it (his: “Once we lock in the look.  So they
   match”).
 - THE VINE SNARE (`PR_SNARE`, the blow at 0.83 s): hands lifted high, held; slammed down (two frames). Where you stand
