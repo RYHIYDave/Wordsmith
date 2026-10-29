@@ -21,7 +21,8 @@ word of his in order, is in `README.md` next to this file; every word of his quo
   - `src/art/new_mobs3.ts`: `Mob.finish`, a figure may thin its own finished frame (her steed's mist), and `partOrder`.
     Nothing else uses it; every other figure paints as before.
   - `src/art/skin.ts`: `whole(rim, seen)`, telling `Mob.finish` which part won each pixel.
-  - The import checks of `tests/bosses.test.ts`, `crier`, `dredgers`, `hushed` and `hushed_watch` told of these mock-ups.
+  - The import checks of seven tests told of these mock-ups: `tests/bosses.test.ts`, `crier`, `dredgers`, `hushed`,
+    `hushed_watch`, `floor11` and `new_mobs3`.
 
 ## Bringing it in
 
