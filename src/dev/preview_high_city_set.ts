@@ -252,7 +252,7 @@ if (HASH.startsWith('sheet:')) {
   // the twenty-five over three sheets, in the set's order, each piece's every frame (a wall piece's on its left face)
   const k = Number(HASH.slice(6)) || 1;
   // (what hangs on the wall three times the game's size; the rest twice)
-  const parts: [number, number, number, string][] = [[0, 6, 3, 'on the walls'], [6, 12, 2, 'out on the hill'], [12, 25, 2, "in the palace's rooms, and on the floor"]];
+  const parts: [number, number, number, string][] = [[0, 6, 3, 'on the walls'], [6, 12, 2, 'out on the hill'], [12, 25, 3, "in the palace's rooms, and on the floor"]];
   const [a, b, K, what] = parts[k - 1] ?? parts[0];
   sheet(ALL.slice(a, b).map((p) => ({ p, pics: pictures(p) })), 1200, K, `The High City's 25 (${k} of 3), ${what}: ${K} times the game's size`);
 } else if (HASH.startsWith('look=')) {
@@ -432,7 +432,7 @@ if (HASH.startsWith('garden')) {
     put(OWN, 'box edging', x, BED.y1 + 0.2, 0);
   }
   // floor 16's own yews round the edges
-  for (const [x, y] of [[8, 8.5], [8, 12.5], [8, 23.4], [13.5, 23.6], [25.8, 9.5], [25.8, 12.5], [20.8, 23.8]] as const) put(OWN, 'a yew cone', x, y);
+  for (const [x, y] of [[8, 8.5], [8, 12.5], [8, 23.4], [12.2, 23.9], [25.8, 9.5], [25.8, 12.5], [20.8, 23.8]] as const) put(OWN, 'a yew cone', x, y);
   // the knight on the drive
   stands.push({ d: 17 + 21.6, s: knight(), x: 17, y: 21.6, shadow: 0.36, hero: true });
   drawStands(stands, VX, VY);
@@ -520,8 +520,8 @@ if (HASH.startsWith('garden')) {
   set('a royal card table', X0 + 9.4, Y0 + 6.4);
   set('a gilt chair', X0 + 9.4, Y0 + 5.3);
   set('a gilt chair', X0 + 10.8, Y0 + 7.6, 1);
-  set('a silver tea service, left out', X0 + 2.6, Y0 + 6.2, 1);
-  set('a hat stand, cloaks left on it', X0 + 1.1, Y0 + 6.2);
+  set('a silver tea service, left out', X0 + 3.4, Y0 + 5.2, 1);
+  set('a hat stand, cloaks left on it', X0 + 2.2, Y0 + 7.6);
   set("a songbird's cage, silent", X0 + 12, Y0 + 3.4);
   set('a heap of invitations', X0 + 7.6, Y0 + 9.2, 0, true);
   set('a dropped fan and a rose', X0 + 3.6, Y0 + 9.8, 0, true);

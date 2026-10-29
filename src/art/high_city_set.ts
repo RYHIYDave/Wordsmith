@@ -415,7 +415,7 @@ export function markTone(r: Royal, x: number, y: number, e: number): number {
  */
 function royalBanner(r: Royal): WallMake {
   const L = ROYAL_LOOK[r];
-  return (S, w) => {
+  return (S, w, alongX) => {
     const Z = 82;
     const LEN = 62;
     const HW = 16;
@@ -439,7 +439,8 @@ function royalBanner(r: Royal): WallMake {
       if (z > Z - 2) return L.field[clamp4(1 + sh)];
       const ed = Math.min(HW - Math.abs(a), up - 3.2, Z - 2 - z);
       if (ed < 2.2) return L.trim[clamp4((ed < 0.9 ? 2 : 3) + sh)];
-      const t = markTone(r, a / 13, (z - (Z - 26)) / 13, 1.3 / 13);
+      // (the mark set square to the eye, not slanted with the wall, so that it reads: the face's slant taken out of it)
+      const t = markTone(r, a / 13, (z - (Z - 26) - (alongX ? 0.4 : -0.4) * a) / 13, 1.3 / 13);
       if (t >= 0) return L.mark[clamp4(t + (sh < 0 ? -1 : 0))];
       return L.field[clamp4(2 + sh)];
     }, 2);
@@ -966,7 +967,8 @@ function fountain(k: number): Sprite {
     const zz = up * 28 - 15;
     if (Math.abs(zz) < 10.5 && Math.abs(a) < 6.6) {
       if (Math.abs(zz) > 9.6 || Math.abs(a) > 5.8) return toneAt(n, MARBLE, -0.5);
-      const t = markTone(r, (READS[f] * a) / 5.4, zz / 6.4, 0.2);
+      // (square to the eye: the side's slant taken out of the mark)
+      const t = markTone(r, (READS[f] * a) / 5.4, (zz - 0.4 * a * (f === 0 || f === 2 ? 1 : -1)) / 6.4, 0.2);
       if (t >= 0) return L.mark[t];
       return L.field[2];
     }
@@ -1646,9 +1648,10 @@ function royalCard(r: Royal): Sprite {
         p.set(px, py, bx < 1 || by < 1 ? IVORY[3] : IVORY[4]);
         continue;
       }
-      // the mark: in the middle, large; small in the top left and bottom right corners
-      const mx = (x + 0.5 - W / 2) / 7.6;
-      const my = -(y + 0.5 - H / 2) / 4.6;
+      // the mark: in the middle, large, drawn upright to the eye (not shortened with the card) so that it reads; small in
+      // the top left and bottom right corners
+      const mx = (x + 0.5 - W / 2) / 6.2;
+      const my = -(y + 0.5 - H / 2) / 6.6;
       const t = markTone(r, mx, my, 0.15);
       if (t >= 0) {
         p.set(px, py, L.mark[t]);
