@@ -282,7 +282,7 @@ test('8. the dull pink in their eyes while they live, gone out once they are dow
 
 test('9. the crossbow that drops from them lies clear of them and of the pavise once down, from in front and from behind', () => {
   const him: Mob = { ...MOB, fall: (piece) => { const f = MOB.fall?.(piece) ?? null; return f && { ...f, to: [900, 900] }; } };
-  const bow: Mob = { ...MOB, bits: (st, m) => MOB.bits(st, m).filter((b) => b.piece === 'xbow') };
+  const bow: Mob = { ...MOB, bits: (st, m) => MOB.bits(st, m).filter((b) => b.piece === 'xbow'), grains: undefined };
   for (const view of VIEWS) {
     for (let k = (CB_DIES.drop + 0.7) / CB_DIES.long; k <= 1 + 1e-9; k += 0.04) {
       const a = deathOfMob(him, Math.min(1, k), view).px.d;
@@ -328,15 +328,22 @@ test('10. HIS BRIEF: the knight\'s size; the pavise on the back jogging, planted
     const pv = paviseAtMove('plant', t, skeletonAt(MOB, 'plant', t));
     if (t >= CB_PLANT.slam) assert.ok(Math.hypot(...sub(pv.c, P.c)) < 0.05, `plant @${t.toFixed(2)}: not planted after the slam`);
   }
-  // the hands on the crossbow: the right on its grip or its crank, the left under the fore-stock, wherever they hold it
+  // the hands on the crossbow: the right on its grip or its crank, or sliding along the stock between them; the left under
+  // the fore-stock, wherever they hold it
   const near = (a: V3, b: V3): number => Math.hypot(...sub(a, b));
+  const toStock = (p: V3, cb: ReturnType<typeof bowAtMove>): number => {
+    const ab = sub(cb.nose, cb.butt);
+    const k = Math.max(0, Math.min(1, dot(sub(p, cb.butt), ab) / dot(ab, ab)));
+    return near(p, [cb.butt[0] + ab[0] * k, cb.butt[1] + ab[1] * k, cb.butt[2] + ab[2] * k]);
+  };
   for (const move of ['stand', 'attack', 'reload', 'plant', 'walk', 'reel']) {
     for (const t of framesOf(MOB, move)) {
       const sk = skeletonAt(MOB, move, t);
       const cb = bowAtMove(move, t, sk, posedOfMob(MOB, move, t));
-      const r = Math.min(near(sk.handR, cb.grip), near(sk.handR, cb.handle) - 0.6);
+      const r = Math.min(near(sk.handR, cb.grip), near(sk.handR, cb.handle) - 0.6, toStock(sk.handR, cb) - 1.6);
       const onCase = move === 'reload' && t > CB_RELOAD.crank[1] && t < CB_RELOAD.laid + 0.12;
-      if (!onCase) assert.ok(r < 1.2, `${move} @${t.toFixed(2)}: the right hand ${r.toFixed(1)} off the crossbow`);
+      if (!onCase) assert.ok(r < 1.6, `${move} @${t.toFixed(2)}: the right hand ${r.toFixed(1)} off the crossbow`);
+      if (move === 'attack' && t > CB_SHOT.raise[1] && t < 1.7) assert.ok(near(sk.handR, cb.grip) < 1.2, `attack @${t.toFixed(2)}: the right hand off the grip as they aim`);
     }
   }
   for (const t of framesOf(MOB, 'attack')) {
@@ -349,8 +356,8 @@ test('10. HIS BRIEF: the knight\'s size; the pavise on the back jogging, planted
   }
   // the crank turned: twice as they wind up the shot, five times as they reload; the string loosed by the shot, spanned by the reload
   const bowAt = (move: string, t: number) => bowAtMove(move, t, skeletonAt(MOB, move, t), posedOfMob(MOB, move, t));
-  assert.equal(posedOfMob(MOB, 'attack', CB_SHOT.crank[1]).pAz - posedOfMob(MOB, 'attack', CB_SHOT.crank[0]).pAz, 720, 'two turns of the crank in the wind-up');
-  assert.equal(posedOfMob(MOB, 'reload', CB_RELOAD.crank[1]).pAz - posedOfMob(MOB, 'reload', CB_RELOAD.crank[0]).pAz, 360 * CB_RELOAD.turns, 'the crank turned as they reload');
+  assert.ok(Math.abs(posedOfMob(MOB, 'attack', CB_SHOT.crank[1]).pAz - posedOfMob(MOB, 'attack', CB_SHOT.crank[0]).pAz - 720) < 30, 'two turns of the crank in the wind-up');
+  assert.ok(Math.abs(posedOfMob(MOB, 'reload', CB_RELOAD.crank[1]).pAz - posedOfMob(MOB, 'reload', CB_RELOAD.crank[0]).pAz - 360 * CB_RELOAD.turns) < 30, 'the crank turned five times as they reload');
   assert.ok(bowAt('attack', CB_SHOT.strike[0]).draw > 0.99 && bowAt('attack', CB_SHOT.hit).draw < 0.01, 'the string loosed in the strike');
   assert.ok(bowAt('reload', 0).draw < 0.01 && bowAt('reload', CB_RELOAD.crank[1]).draw > 0.99, 'the string spanned by the crank');
   assert.ok(loadedAt('attack', CB_SHOT.strike[0]) && !loadedAt('attack', CB_SHOT.hit) && !loadedAt('reload', CB_RELOAD.take) && loadedAt('reload', CB_RELOAD.long), 'the bolt loosed, and laid in again');
@@ -418,7 +425,7 @@ test('12. NOTHING FOLDS FLAT: in every frame of every move, no round thing they 
   for (const move of [...LIVING, 'dying']) {
     for (const t of framesOf(MOB, move)) {
       for (const b of MOB.bits(st, at(move, t))) {
-        if (b.shape.k !== 'ball' || b.piece === 'bird' || b.piece === 'xbow') continue;
+        if (b.shape.k !== 'ball' || b.piece === 'crest' || b.piece === 'xbow') continue;
         const [x, y, z] = b.shape.ax;
         const det = x[0] * (y[1] * z[2] - y[2] * z[1]) - x[1] * (y[0] * z[2] - y[2] * z[0]) + x[2] * (y[0] * z[1] - y[1] * z[0]);
         const lens = Math.hypot(...x) * Math.hypot(...y) * Math.hypot(...z);

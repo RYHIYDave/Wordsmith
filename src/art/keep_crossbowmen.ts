@@ -17,13 +17,12 @@
 // WHO THEY ARE: the old king's own crossbowmen, their words stolen like the city's: grown men, the knight's height, stocky
 // soldiers, nothing of a ranger about them (no hood, no cloak, no longbow, no lightness). A PADDED JACK of undyed linen,
 // quilted in long channels, its sleeves quilted fat; over it A TABARD of the royal blue, front and back, edged old gold, the
-// king's bird on its breast; dark hose, short boots, a belt with a BOLT CASE at the right hip; leather gloves; A KETTLE HELM
+// royal swan on its breast; dark hose, short boots, a belt with a BOLT CASE at the right hip; leather gloves; A KETTLE HELM
 // of cold steel, its round crown combed, its brim broad and turned down all round, a strap under the chin. Their faces
 // drained grey under the brim, the dull pink in their eyes, the Hush leaking from their mouths. THE HEAVY CROSSBOW: a
 // walnut stock, a steel prod, a hemp string, a long trigger lever, an iron stirrup at its nose and a CRANEQUIN at its butt,
 // a geared drum whose crank spans it. THE PAVISE: tall as his chest, of planks under painted canvas, royal blue with a
-// border of old gold and THE KING'S BIRD in old gold on it (an original mark from the book: the emperor's jewelled singing
-// bird, gold, its tail raised, the key it is wound by in its back, the king's crown over it), a raised spine down its
+// border of old gold and THE ROYAL SWAN in old gold on it (his pick for the royal mark, “Keep the royal swan”), a raised spine down its
 // middle, iron feet; its back bare planks, a carrying strap, a prop. Nothing cyan.
 
 import { BREATH_PALE, SKIN, hushLeaves, lagOf } from './hushed';
@@ -241,41 +240,30 @@ export function paviseOutline(p: Pavise, step = 3): V3[] {
   return out;
 }
 /**
- * THE KING'S BIRD (an original mark, from the book: the emperor's jewelled singing bird of gold, its tail raised, the key it
- * was wound by standing from its back; the king's crown over it): `x` across and `y` up its field, each from -1 to 1;
- * inside it: 1 (gold), 2 (its line, the dark of the gold), 0 none.
+ * THE ROYAL SWAN (his pick for the royal mark, “Keep the royal swan”: floor 16's royal crest, art/palace_guard.ts `swanCrest`,
+ * here in old gold on the royal blue): a swan, its wings raised, its neck in its S, its head turned to its left; `x` across
+ * and `y` up its field, each from -1 to 1. Inside it: 1, else 0.
  */
-export function kingsBird(x: number, y: number): number {
-  const e = (cx: number, cy: number, rx: number, ry: number): number => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-  // the crown over it: a band and three points
-  if (y > 0.6 && y < 0.72 && Math.abs(x) < 0.38) return 1;
-  if (y >= 0.72 && y < 1.0) {
-    for (const px of [-0.3, 0, 0.3]) if (Math.abs(x - px) < 0.12 * (1 - (y - 0.72) / 0.28) + 0.03) return 1;
+export function royalSwan(x: number, y: number): number {
+  const e = (cx: number, cy: number, rx: number, ry: number): boolean => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  if (e(0.12, -0.5, 0.62, 0.26)) return 1;
+  if (e(0.68, -0.32, 0.16, 0.12)) return 1;
+  if (y > -0.5 && e(0.28, -0.12, 0.42, 0.42)) {
+    const notch = y > 0.12 && Math.abs((((x - 0.28) * 4 + 8) % 1) - 0.5) < 0.12;
+    if (!notch) return 1;
   }
-  // its eye, dark in the gold; its wing a dark line along its body
-  if (e(-0.45, 0.2, 0.07, 0.07) < 1) return 2;
-  const body = e(0.02, -0.16, 0.52, 0.32);
-  if (body < 1 && body > 0.55 && y > -0.16 && x > -0.18 && x < 0.42) return 2;
-  // its body, a plump egg, breast to the left; its round head; its beak
-  if (body < 1) return 1;
-  if (e(-0.42, 0.18, 0.24, 0.22) < 1) return 1;
-  if (x < -0.6 && x > -0.92 && Math.abs(y - 0.14) < 0.075 - (-0.6 - x) * 0.2) return 1;
-  // its tail, a fan raised up behind it
-  const tx = x - 0.36;
-  const ty = y + 0.04;
-  const ang = Math.atan2(ty, tx);
-  const r = Math.hypot(tx, ty);
-  if (r < 0.68 && ang > 0.35 && ang < 1.25) return Math.abs(ang - 0.8) < 0.05 && r > 0.25 ? 2 : 1;
-  // the key it is wound by, standing from its back
-  if (Math.abs(x - 0.06) < 0.06 && y > 0.12 && y < 0.34) return 1;
-  if (Math.abs(Math.sqrt(e(0.06, 0.43, 0.14, 0.1)) - 1) < 0.42) return 1;
-  // the branch it stands on, and its legs
-  if (Math.abs(y + 0.64) < 0.06 && Math.abs(x) < 0.7) return 1;
-  if ((Math.abs(x + 0.06) < 0.05 || Math.abs(x - 0.14) < 0.05) && y < -0.42 && y > -0.62) return 1;
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const cx = -0.36 - 0.16 * Math.sin(Math.PI * 1.6 * t) + 0.06 * t;
+    const cy = -0.38 + 0.98 * t;
+    if (Math.hypot(x - cx, y - cy) < 0.11 - 0.02 * t) return 1;
+  }
+  if (e(-0.28, 0.62, 0.15, 0.12)) return 1;
+  if (y < 0.66 && y > 0.52 && x < -0.38 && x > -0.64 + (0.66 - y) * 0.6) return 1;
   return 0;
 }
 /**
- * THE PAVISE: its painted face (the royal blue, an old gold border, the king's bird, the paint chipped to the planks here
+ * THE PAVISE: its painted face (the royal blue, an old gold border, the royal swan, the paint chipped to the planks here
  * and there), a raised spine down its middle, its back of bare planks, iron feet at its foot, its carrying strap and its
  * prop behind (the prop down to the floor once planted, folded up against it while carried).
  */
@@ -298,12 +286,8 @@ function pavise(put: Put, p: Pavise, held: boolean, standingOn: boolean): void {
       if (edge < 1.1) return OLD_GOLD[Math.min(4, tone)];
       if (edge < 2.0) return ROYAL_BLUE[Math.max(0, tone - 1)];
       if (hash(Math.floor(a * 1.6 + 40), Math.floor(b * 1.2 + 40), 9311) > 0.965) return PLANK[Math.min(3, tone)];
-      // the king's bird, in the field's upper middle
-      const bx = a / (W - 2.6);
-      const by = (b - 2.4) / (W - 1.2);
-      const g = kingsBird(bx, by);
-      if (g === 1) return OLD_GOLD[Math.min(4, tone + 1)];
-      if (g === 2) return OLD_GOLD[Math.max(1, tone - 1)];
+      // the royal swan, in the field's upper middle
+      if (royalSwan(-a / (W - 2.4), (b - 3.0) / (W - 1.0))) return OLD_GOLD[Math.min(4, tone + 1)];
       return ROYAL_BLUE[tone];
     },
   });
@@ -424,12 +408,12 @@ function tabardRings(s: Skeleton, lag: V3): Ring[] {
     { c: add(s.neck, mul(cu, -0.5)), u: mul(cf, 4.4), v: mul(cl, 5.0) },
   ];
 }
-/** The king's bird on the tabard's breast and back, on a thin shell just proud of it. */
+/** The royal swan on the tabard's breast and back, on a thin shell just proud of it. */
 function breastBird(put: Put, s: Skeleton): void {
   const [cf, cl, cu] = s.chest;
   for (const k of [1, -1]) {
     const c = add(lerp3(s.ribs, s.neck, 0.22), mul(cf, k * (B.ribDeep + 3.2)));
-    put('tabard', 'bird', { k: 'ball', c, ax: [mul(cf, k * 1.2), mul(cl, -k * 5.0), mul(cu, 5.4)], skin: (u, tone) => (u[0] > 0.2 && kingsBird(u[1], u[2]) ? OLD_GOLD[tone >= 2 ? 4 : 3] : null) });
+    put('tabard', 'crest', { k: 'ball', c, ax: [mul(cf, k * 1.2), mul(cl, -k * 5.4), mul(cu, 5.6)], skin: (u, tone) => (u[0] > 0.2 && royalSwan(u[1], u[2]) ? OLD_GOLD[tone >= 2 ? 4 : 3] : null) });
   }
 }
 
@@ -459,7 +443,7 @@ function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number): { mou
   const hc = add(s.head, mul(fu, -0.3));
   const skin: Skin = (u, tone0) => {
     // (in the brim's shade: a step darker, the brow darker still)
-    const tone = Math.max(0, tone0 - (u[2] > 0.3 ? 1 : 0));
+    const tone = Math.max(1, tone0);
     const fwd = u[0];
     const side = Math.abs(u[1]);
     const open = 0.08 + 0.2 * jaw;
@@ -483,12 +467,12 @@ function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number): { mou
   }
   // THE KETTLE HELM: its round crown, a comb over it front to back, a band where the brim joins, the brim turned down,
   // worn pushed back a little so that the brim clears the eyes in front
-  const base = add(hc, mul(fu, hr[2] * 0.5));
+  const base = add(hc, mul(fu, hr[2] * 0.64));
   put('helm', 'helm', { k: 'ball', c: base, ax: [mul(ff, hr[0] * 1.12), mul(fl, hr[1] * 1.12), mul(fu, hr[2] * 1.0)], skin: (u, tone) => (u[2] < -0.04 ? null : COLD_STEEL[Math.abs(u[1]) < 0.12 && u[2] > 0.2 ? Math.min(4, tone + 1) : tone]) });
   const crown = add(base, mul(fu, hr[2] * 1.0));
   put('helm', 'comb', { k: 'rod', a: add(base, add(mul(ff, hr[0] * 0.95), mul(fu, hr[2] * 0.5))), b: add(crown, mul(fu, 0.5)), ra: 0.65, rb: 0.8, ramp: COLD_STEEL });
   put('helm', 'comb', { k: 'rod', a: add(crown, mul(fu, 0.5)), b: add(base, add(mul(ff, -hr[0] * 0.95), mul(fu, hr[2] * 0.5))), ra: 0.8, rb: 0.65, ramp: COLD_STEEL });
-  const rim = (k: number, drop: number): Ring => ({ c: add(add(base, mul(fu, -drop)), mul(ff, -(k - 1.1) * 0.9)), u: add(mul(ff, hr[0] * (1.1 + (k - 1.1) * 0.95)), mul(fu, (k - 1.1) * 1.3)), v: mul(fl, hr[1] * k * 1.04) });
+  const rim = (k: number, drop: number): Ring => ({ c: add(add(base, mul(fu, -drop)), mul(ff, -(k - 1.1) * 0.9)), u: add(mul(ff, hr[0] * (1.1 + (k - 1.1) * 0.62)), mul(fu, (k - 1.1) * 1.6)), v: mul(fl, hr[1] * k * 1.04) });
   put('helm', 'brim', { k: 'cloth', rings: [rim(2.0, 1.7), rim(1.55, 0.8), rim(1.12, 0.02)], ramp: COLD_STEEL, look: { lift: 0.3, folds: [] }, rigid: true });
   put('helm', 'band', { k: 'band', ring: rim(1.13, 0.02), ramp: COLD_STEEL_DARK, rows: 1 });
   const mouth = add(hc, add(mul(ff, hr[0] * 1.02), mul(fu, -hr[2] * 0.4)));
@@ -542,7 +526,7 @@ function crossbowBits(st: Stage, m: Moment, say: CrossbowSay): Bit[] {
   for (const side of ['L', 'R'] as const) leg(put, s, side);
   // THE PADDED JACK, quilted in long channels
   put('body', 'jack', { k: 'cloth', rings: jackRings(s, lag), ramp: JACK, look: { folds: [0, 20, -20, 40, -40, 60, -60, 80, -80, 100, -100, 120, -120, 140, -140, 160, -160, 180], lift: 0.04 } });
-  // THE TABARD of the royal blue, front and back, edged old gold; the king's bird on its breast and its back
+  // THE TABARD of the royal blue, front and back, edged old gold; the royal swan on its breast and its back
   const tab = tabardRings(s, lag);
   for (const [a0, a1] of [[316, 404], [136, 224]] as const) {
     put('tabard', 'tabard', { k: 'cloth', rings: tab, ramp: ROYAL_BLUE, look: { folds: [0, 180], lift: 0.05, arc: [a0, a1] } });

@@ -436,7 +436,7 @@ function plantPlan(): Plan {
     bow: [[0, carried], [0.42, carried], [0.66, upright], [CB_PLANT.long, onShoulder]],
     right: [[0, gripOf]],
     left: [[0, strap], [CB_PLANT.grab, onPavise], [0.56, onPavise], [CB_PLANT.long, belt]],
-    elbows: [[0, ...ELB_CARRY], [0.12, [0.5, 0.5, 0.4], [-0.1, -1, -0.5]], [0.3, [0.5, 0.3, -0.5], [-0.1, -1, -0.5]], [0.47, [0.2, 1, -0.6], [0, -1, -0.6]], [CB_PLANT.long, ...ELB_REST]],
+    elbows: [[0, ...ELB_CARRY], [0.12, [0.5, 0.5, 0.4], [-0.1, -1, -0.5]], [0.3, [0.5, 0.3, -0.5], [-0.1, -1, -0.5]], [0.47, [-0.1, 1, 0.25], [0, -1, -0.6]], [0.6, [0, 1, -0.2], [0, -1, -0.6]], [CB_PLANT.long, ...ELB_REST]],
     draw: [[0, 1]],
     crank: [[0, 0]],
     pavise: [[0, 0], [CB_PLANT.grab, 0], [0.27, 0.42], [0.4, 0.74], [S - 1 / 60, 0.985], [S, 1], [CB_PLANT.long, 1]],
@@ -591,17 +591,17 @@ const KNEE_DOWN = B.legR[1] * 1.3;
 const kneeling = (lean: number, body: P): P => kneelSettle(B, R0, { ...kneelHips(B, R0, DIE_FEET, TUCK, KNEE_DOWN, lean), ...body }, DIE_FEET, TUCK, KNEE_DOWN);
 function diesPlan(): Plan {
   const D0 = CB_DIES;
-  const ON_KNEES = kneeling(4, { yaw: 0, pitch: 2, roll: 2, twist: 0, bend: 6, side: 1, faceTurn: 0, faceUp: 0, faceTilt: 8 });
-  const SAT = kneeling(-38, { yaw: 4, pitch: -2, roll: 3, twist: 2, bend: 24, side: 2, faceTurn: 8, faceUp: -42, faceTilt: 16 });
+  const ON_KNEES = kneeling(4, { out: 1, yaw: 0, pitch: 2, roll: 2, twist: 0, bend: 6, side: 1, faceTurn: 0, faceUp: 0, faceTilt: 8 });
+  const SAT = kneeling(-38, { out: 1, yaw: 4, pitch: -2, roll: 3, twist: 2, bend: 24, side: 2, faceTurn: 8, faceUp: -42, faceTilt: 16 });
   const SAT2 = { ...SAT, bend: 26, faceUp: -46, roll: 4 };
   return {
     long: D0.long,
     body: [
       [0, {}],
       [0.08, { px: -2.4, pz: R0.pz, pitch: -3, bend: -5, faceUp: R0.faceUp + 20 }],
-      [D0.gasp, { px: -2.0, pz: R0.pz + 0.8, pitch: -8, bend: -14, faceUp: 40, faceTilt: 0, faceTurn: 0 }],
-      [0.55, { px: -1.6, pz: R0.pz + 0.2, pitch: -6, bend: -10, faceUp: 32, faceTilt: 4 }],
-      [0.72, { px: -0.4, pz: R0.pz - 6, pitch: 3, bend: 4, faceUp: 10, lk: 26, rk: -26 }],
+      [D0.gasp, { px: -2.0, pz: R0.pz + 0.8, pitch: -8, bend: -14, faceUp: 40, faceTilt: 0, faceTurn: 0, out: 0.45 }],
+      [0.55, { px: -1.6, pz: R0.pz + 0.2, pitch: -6, bend: -10, faceUp: 32, faceTilt: 4, out: 0.85 }],
+      [0.72, { px: -0.4, pz: R0.pz - 6, pitch: 3, bend: 4, faceUp: 10, lk: 26, rk: -26, out: 1 }],
       [D0.knees, ON_KNEES],
       [1.15, { ...ON_KNEES, pz: (ON_KNEES.pz as number) + 0.5, pitch: -1, faceUp: 6 }],
       [D0.sit, SAT],
@@ -683,7 +683,7 @@ function puffAt(move: string, t: number): number {
   if (move === 'attack') {
     if (t < CB_SHOT.raise[1]) return 1.0 - 0.6 * smooth(0.3, CB_SHOT.raise[1], t);
     if (t < CB_SHOT.hit) return 0.4;
-    return 0.4 + 1.6 * smooth(CB_SHOT.hit, CB_SHOT.hit + 0.08, t) - 0.9 * smooth(1.6, CB_SHOT.long, t);
+    return 0.4 + 1.0 * smooth(CB_SHOT.hit, CB_SHOT.hit + 0.08, t) - 0.6 * smooth(1.6, CB_SHOT.long, t);
   }
   if (move === 'dying') return Math.max(0, 2.0 * (1 - smooth(0.25, 1.2, t)));
   if (move === 'walk') return 1.2;
@@ -797,7 +797,7 @@ function crossbowMob(): Mob {
     grains: paint.grains,
     // (the crossbow drops from the shoulder and falls clear to their right)
     fall(piece) {
-      if (piece === 'xbow') return { from: CB_DIES.drop, to: [-3, -15], spin: 50, lay: 'axis', hop: 1.4 };
+      if (piece === 'xbow') return { from: CB_DIES.drop, to: [-13, -24], spin: 50, lay: 'axis', hop: 1.4 };
       return null;
     },
   };

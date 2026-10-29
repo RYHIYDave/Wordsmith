@@ -35,7 +35,7 @@ of a ranger about them (no hood, no cloak, no longbow, nothing light) and nothin
 no closed helm, not a head taller).
 
 - A PADDED JACK of undyed linen, quilted in long channels, its sleeves quilted fat in rolls; over it A TABARD of the royal
-  blue, front and back, edged old gold, THE KING'S BIRD in old gold on its breast and its back; dark hose; short boots
+  blue, front and back, edged old gold, THE ROYAL SWAN in old gold on its breast and its back; dark hose; short boots
   with turned-down tops; a belt, and A BOLT CASE at the right hip, its bolts' fletching out of its top; leather gloves.
 - A KETTLE HELM of cold steel: a round crown with a comb over it, a broad brim turned down all round, worn pushed back so
   that it clears the eyes in front; a strap under the chin. Under it their faces drained grey, a few days' stubble, the
@@ -49,9 +49,8 @@ no closed helm, not a head taller).
   its own (it has its own place at every moment), and the hands go to it: the right to its grip or its crank, the left
   under its fore-stock.
 - THE PAVISE (`PAVISE`, `planted`, `onBack`): as tall as his chest (42), 22 across, its top corners cut; planks under
-  painted canvas: the royal blue, a border of old gold, and THE KING'S BIRD in old gold (an original mark, from the book:
-  the emperor's jewelled singing bird of gold, its tail raised, the key it was wound by standing from its back, on a
-  branch, the king's crown over it); the paint chipped to the planks here and there; a raised spine down its middle; iron
+  painted canvas: the royal blue, a border of old gold, and THE ROYAL SWAN in old gold (his pick for the royal mark, “Keep the royal
+  swan”: floor 16's royal crest, a swan, its wings raised, its neck in its S; `royalSwan`); the paint chipped to the planks here and there; a raised spine down its middle; iron
   feet; behind, bare planks, a carrying strap and a prop. Planted 24 before their feet (`PLANTED_AT`, most of a tile),
   leaning back 6 degrees onto its prop; on the back while jogging, slung by its strap over the left shoulder, its painted
   face out behind them.
@@ -158,4 +157,11 @@ breath from art/hushed.ts) each name `keep_crossbowmen`.
 
 ## The pictures (pictures/)
 
-To come.
+- `crossbowmen_sheet.png`: standing, from in front and from behind, beside the knight, three times as big; and a group of
+  them planted along the walls at the game's size, the knight before them.
+- `crossbowmen_shot.png`: the aimed shot at the arena's scale, from in front: the red lane and the sight held across 12
+  tiles, the knight standing in it 8 tiles off.
+- `crossbowmen_film.mp4` (1200 by 680, 30 a second): every move, from in front and from behind, captioned, the knight for
+  size: standing; the jog; the plant (half speed); the aimed shot and the reload after it at the arena's scale from in front
+  (the knight steps out of the lane during the warning), and from behind (the knight stands at the line's end); the strike
+  again at half speed, from in front and from behind; the reload; struck; the Hush leaving him.
