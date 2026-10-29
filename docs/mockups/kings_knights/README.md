@@ -161,3 +161,9 @@ knockback's flash and gone, nothing cyan.
 
 The models' own checks run as before (tests/palace_guard.test.ts). Three shared import checks are told of these files
 (tests/bosses.test.ts, tests/hushed.test.ts, tests/crier.test.ts: one word each). No shared engine file is changed.
+
+## His word on the pictures
+
+The sheet and the film (`kings_knights_sheet.png`, `kings_knights_film.mp4`), asked “Floor 19's knights
+(kings_knights_sheet.png and the film): are these right? They carry the shield on their back for the two-handed chop and
+swing it onto the arm to rush.”: “Yes, that's them (Recommended)”.
