@@ -21,7 +21,8 @@ word of his in order, is in `README.md` next to this file; every word of his quo
   - `src/art/new_mobs3.ts`: `Mob.finish`, a figure may thin its own finished frame (her steed's mist), and `partOrder`.
     Nothing else uses it; every other figure paints as before.
   - `src/art/skin.ts`: `whole(rim, seen)`, telling `Mob.finish` which part won each pixel.
-  - The import checks of `tests/bosses.test.ts`, `crier`, `dredgers`, `hushed` and `hushed_watch` told of these mock-ups.
+  - The import checks of seven tests told of these mock-ups: `tests/bosses.test.ts`, `crier`, `dredgers`, `hushed`,
+    `hushed_watch`, `floor11` and `new_mobs3`.
 
 ## Bringing it in
 
@@ -68,4 +69,11 @@ Movement 9: the entry to add is in the project copy.
 
 ## The checks
 
-TEST_COUNTS
+- The whole unit suite on the branch, every test file on its own: 235 files, 2493 tests, all passing. Two failed at first,
+  both import checks not yet told of floor 16's mock-ups (`tests/floor11.test.ts`: floor 16's ground and pieces are
+  built in Act 2's kit; `tests/new_mobs3.test.ts`: floor 16's figures are built on the new monsters' painter): told, and
+  passing (15 of 15).
+- `npx tsc --noEmit -p tsconfig.json`: clean.
+- Floor 16's own: `tests/swangardens.test.ts` (7), `tests/floor16.test.ts` (9), `tests/garden_swans.test.ts` (13),
+  `tests/palace_hands.test.ts` (9), `tests/palace_guard.test.ts` (10), `tests/princess.test.ts` (10); every figure's every move
+  through every boss check, from in front and behind (README, "The checks").
