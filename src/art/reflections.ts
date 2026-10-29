@@ -274,9 +274,9 @@ export interface Silvered extends Painted {
 
 /** The sheen at a moment: where the middle of its broad band is, along the slant (x + y from the feet), or null while it is off the figure. */
 export function sheenAt(phase: number): number | null {
-  const SWEEP = 0.6;
+  const SWEEP = 0.55;
   if (phase > SWEEP) return null;
-  return -128 + (phase / SWEEP) * 196;
+  return -132 + (phase / SWEEP) * 204;
 }
 
 /**
@@ -384,7 +384,7 @@ export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: Gam
     }
   }
   for (const k of cracked) tone[k] = TOP;
-  // THE SHEEN: a broad band two tones up, a thin one three up behind it, on the slant (x + y, from its feet)
+  // THE SHEEN: a broad band three tones up, a thin one four up behind it, on the slant (x + y, from its feet)
   const at = sheenAt(sheen);
   if (at !== null) {
     for (let y = 0; y < H; y++) {
@@ -392,8 +392,8 @@ export function silver(f: Painted, move: Move3, s: Skeleton, B: Build, view: Gam
         const k = y * W + x;
         if (glass[k] < 0) continue;
         const u = x - CANVAS3.ax + (y - CANVAS3.ay);
-        if (Math.abs(u - at) <= 3) tone[k] = Math.min(TOP, tone[k] + 2);
-        else if (Math.abs(u - (at - 9)) <= 0.5) tone[k] = Math.min(TOP, tone[k] + 3);
+        if (Math.abs(u - at) <= 4) tone[k] = Math.min(TOP, tone[k] + 3);
+        else if (Math.abs(u - (at - 11)) <= 1) tone[k] = Math.min(TOP, tone[k] + 4);
       }
     }
   }

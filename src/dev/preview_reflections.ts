@@ -5,6 +5,7 @@
 //   ... "big:<warrior|ranger|mage>:<move>:<t>" (the hero and his reflection at that moment, front and behind, 4x)
 //   ... "step:<cls>:<t>" (stepping out of the mirror at t seconds, 4x), "shatter:<cls>:<front|back>:<k>" (4x),
 //   ... "strip:<cls>:<move>:<front|back>:<n>" (n moments of a move, the hero above, his reflection below, 3x)
+//   ... "stepgrid:<cls>", "shattergrid:<cls>:<front|back>" (six moments of either, 2x, captioned)
 //   ... "film" (the film, frame by frame: window.__frames, window.__frame(k) gives frame k as a PNG, as tools/page_gif.mjs
 //       takes them; 1080 x 1080 at 30 a second)
 import type { Sprite } from '../engine/px';
@@ -15,6 +16,7 @@ import type { ClassId } from '../game/types';
 import { HERO_TAILS } from '../art/heroes';
 import { PLANS, makeHeroArt3, spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
+import { makeSpellArt } from '../art/spells';
 import { GLASS_TAILS, REFLECTION_POOL, asEnemy, makeReflectionArt, reflectionPainted, reflectionSprite } from '../art/reflections';
 import { GALLERY_MIRROR, SHATTER, SHATTER_CANVAS, STEP_CANVAS, STEP_MIRROR, STEP_OUT, chipsPainted, mirrorPainted, reflectionEffects, shatterFrom, shatterPainted, steppingAt, stepOutPainted } from '../art/reflections_fx';
 import { hash, toSprite } from '../art/kit';
@@ -189,17 +191,18 @@ if (mode === 'sheet') {
   const W = 1200;
   const CELL = W / 4;
   const ROW = 250;
+  const GAP = 56;
   const HEAD = 96;
   const GAME = 330;
   cv.width = W;
-  cv.height = HEAD + CLASSES.length * (ROW + 40) + GAME;
+  cv.height = HEAD + CLASSES.length * (ROW + GAP) + GAME;
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#0d0b1a';
   g.fillRect(0, 0, cv.width, cv.height);
   text('Your reflections: floor 18, the Glass Gallery', 20, 30, 28, '#ffd866', 700);
   text('Each hero (left and right) beside his glassy copy (middle), from in front and from behind. Mock-up: not in the game.', 20, 68, 17, '#cfc8ff', 500);
   CLASSES.forEach(({ cls, name }, r) => {
-    const top = HEAD + r * (ROW + 40);
+    const top = HEAD + r * (ROW + GAP);
     text(name, 20, top + 14, 19, '#ffd866', 700);
     const hero = heroes.of(cls, { twoHanded: true });
     const refl = reflections.of(cls);
@@ -225,7 +228,7 @@ if (mode === 'sheet') {
     });
   });
   // AT THE GAME'S SIZE
-  const top = HEAD + CLASSES.length * (ROW + 40) + 6;
+  const top = HEAD + CLASSES.length * (ROW + GAP) + 6;
   text("At the game's size: each hero (in colour) with two of his reflections", 20, top + 12, 19, '#ffd866', 700);
   floor(0, top + 30, W, GAME - 40, 1, W / 2, top + 200);
   CLASSES.forEach(({ cls }, i) => {
@@ -302,24 +305,67 @@ if (mode === 'sheet') {
   floor(0, 0, cv.width, cv.height, K, SHATTER_CANVAS.ax * K, SHATTER_CANVAS.ay * K);
   paint(shatterPainted(shatterFrom(cls, view), k), SHATTER_CANVAS.ax, SHATTER_CANVAS.ay, SHATTER_CANVAS.ax * K, SHATTER_CANVAS.ay * K, K);
   text(`${cls} shattering, ${view}, k ${k.toFixed(2)}`, 12, 20, 16);
+} else if (mode === 'stepgrid' || mode === 'shattergrid') {
+  // `stepgrid:<cls>` / `shattergrid:<cls>:<view>`: six moments of its stepping out of a mirror, or of its shattering,
+  // twice as big, captioned, about 1200 across
+  const K = 2;
+  const cls = a1 as ClassId;
+  const step = mode === 'stepgrid';
+  const view = (a2 === 'back' ? 'back' : 'front') as GameView;
+  const moments = step ? [0.3, 0.6, 0.8, 0.92, 1.12, 1.5] : [0.04, 0.1, 0.2, 0.36, 0.62, 0.85];
+  const words = step
+    ? ['the glass stirs: it forms in the dark', 'bright as glass, its eyes kindled', 'thrown out through the glass', 'the glass clings to it', 'the surface bursts', 'it stands; the rings die away']
+    : ['struck: cracks race over it', 'it bursts', 'shards and glitter fly', 'they fall, turning, flashing', 'they lie and fade', 'nearly gone; then nothing']
+  const CW = 390;
+  const CH = step ? 340 : 300;
+  const HEAD = 70;
+  cv.width = CW * 3 + 40;
+  cv.height = HEAD + 2 * (CH + 40);
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#0d0b1a';
+  g.fillRect(0, 0, cv.width, cv.height);
+  const name = CLASSES.find((c) => c.cls === cls)?.name ?? cls;
+  text(step ? `${name}'S REFLECTION steps out of a mirror` : `${name}'S REFLECTION shatters`, 20, 26, 24, '#ffd866', 700);
+  text(step ? `1.6 seconds, from in front; the mirror's frame is a stand-in. Mock-up: not in the game.` : `1.4 seconds, ${view === 'front' ? 'from in front' : 'from behind'}; at the end nothing is left. Mock-up: not in the game.`, 20, 54, 15, '#cfc8ff', 500);
+  const mirror = step ? mirrorPainted(STEP_CANVAS.w, STEP_CANVAS.h, STEP_MIRROR[0], STEP_MIRROR[1]).toCanvas() : null;
+  moments.forEach((t, i) => {
+    const x = 20 + (i % 3) * CW;
+    const y = HEAD + Math.floor(i / 3) * (CH + 40);
+    // (the feet's place in the cell)
+    const fx = x + (step ? 250 : CW / 2);
+    const fy = y + (step ? 300 : 200);
+    floor(x + 4, y, CW - 8, CH, K, fx, fy);
+    g.save();
+    g.beginPath();
+    g.rect(x + 4, y, CW - 8, CH);
+    g.clip();
+    if (step && mirror) {
+      g.drawImage(mirror, fx - STEP_CANVAS.ax * K, fy - STEP_CANVAS.ay * K, STEP_CANVAS.w * K, STEP_CANVAS.h * K);
+      const at = steppingAt(cls, t);
+      if (t >= STEP_OUT.until) shadow(fx + (at.x - STEP_CANVAS.ax) * K, fy + (at.y - STEP_CANVAS.ay) * K, K);
+      paint(stepOutPainted(cls, t), STEP_CANVAS.ax, STEP_CANVAS.ay, fx, fy, K);
+    } else paint(shatterPainted(shatterFrom(cls, view), t), SHATTER_CANVAS.ax, SHATTER_CANVAS.ay, fx, fy, K);
+    g.restore();
+    text(`${step ? t.toFixed(2) + ' s' : (t * SHATTER.time).toFixed(2) + ' s'}: ${words[i]}`, x + 10, y + CH + 18, 15, '#ffb0cc', 600);
+  });
 } else if (mode === 'film') {
   setUpFilm();
 }
 
 // =============================================================================================
 // THE FILM: for each class, its reflection stepping out of a mirror, standing, running, its attacks, struck, shattering;
-// from in front, then from behind; captioned. 1080 x 1080, 30 frames a second, four page pixels to a picture pixel.
+// from in front, then from behind; captioned. 1080 x 1080, 30 frames a second, five page pixels to a picture pixel.
 
 function setUpFilm(): void {
   const FPS = 30;
   const SIZE = 1080;
-  const K = 4;
+  const K = 5;
   const CAP = 150;
   cv.width = SIZE;
   cv.height = SIZE;
   /** Where the reflection's feet are on the page. */
-  const FX = 600;
-  const FY = 860;
+  const FX = 580;
+  const FY = 880;
   /** One shot of the film: how long, its words, and what to draw `t` seconds into it. */
   interface Shot {
     long: number;
@@ -387,38 +433,51 @@ function setUpFilm(): void {
       fx.set(Math.round(x - ux * i), Math.round(y - uy * i), c);
     }
   };
-  /** A wave of pink force running out along the floor. */
-  const wave = (x: number, y: number, ux: number, uy: number, r: number, age: number): void => {
-    for (let a = -1; a <= 1; a += 0.02) {
+  /** A wave of pink force running out along the floor, `r` tiles out from (x, y) the way the figure faces: a crest standing on a wall of its own light, its body streaming back behind it. */
+  const wave = (x: number, y: number, view: GameView, r: number, SPAN = 0.6): void => {
+    // (the way it faces, on the floor: its x from in front, its -y from behind; a tile on the picture is 32 across and 16 down per step of x)
+    const [fx0, fy0] = view === 'front' ? [1, 0] : [0, -1];
+    for (let a = -SPAN; a <= SPAN; a += 0.01) {
       const ca = Math.cos(a);
       const sa = Math.sin(a);
-      const wx = ux * ca - uy * sa;
-      const wy = (uy * ca + ux * sa) * 0.6;
-      for (let b = 0; b < 6; b++) {
-        const rr = r - b * 2;
-        if (rr <= 0) continue;
-        const px = Math.round(x + wx * rr);
-        const py = Math.round(y + wy * rr);
-        const up = b === 0 ? 4 + Math.round(6 * (1 - Math.abs(a))) : 2;
-        for (let h = 0; h < up; h++) fx.set(px, py - h, b === 0 ? (h === up - 1 ? PINK[5] : PINK[3]) : b < 3 ? PINK[2] : PINK[1]);
+      const wx = fx0 * ca - fy0 * sa;
+      const wy = fy0 * ca + fx0 * sa;
+      const mid = SPAN > 3 ? 0.6 : 1 - Math.abs(a) / SPAN;
+      for (let b = 0; b < 7; b++) {
+        const rr = r - b * 0.07;
+        if (rr <= 0.1) continue;
+        const px = Math.round(x + (wx - wy) * 32 * rr);
+        const py = Math.round(y + (wx + wy) * 16 * rr);
+        const up = b === 0 ? 3 + Math.round(9 * mid) : b === 1 ? 2 + Math.round(4 * mid) : 1;
+        for (let h = 0; h < up; h++) fx.set(px, py - h, b === 0 ? (h >= up - 1 ? PINK[5] : h > up * 0.6 ? PINK[4] : PINK[3]) : b < 3 ? PINK[2] : b < 5 ? PINK[1] : PINK[0]);
       }
     }
-    void age;
   };
-  /** An orb of pink force set down, rings pulsing out of it. */
-  const orb = (x: number, y: number, t: number): void => {
-    const R = 8;
-    for (let j = -R; j <= R; j++) {
-      for (let i = -R; i <= R; i++) {
-        const dd = Math.hypot(i, j);
-        if (dd > R) continue;
-        const lit = (-i - j) / (R * 1.4);
-        fx.set(x + i, y - R - 2 + j, dd > R - 1 ? PINK[1] : lit > 0.45 ? PINK[4] : lit > 0 ? PINK[3] : lit > -0.45 ? PINK[2] : PINK[1]);
-      }
+  /** THE GAME'S OWN ORB (art/spells.ts, the mage's untyped one), its violet turned to the enemy's pink, turning. */
+  const ORB_TO: Record<string, string> = { '#3a1a7a': '#7a1058', '#7a3ae0': '#e0287a', '#b890ff': '#ff8ab4', '#ffffff': '#ffffff' };
+  const orbs = makeSpellArt().orb.phys.map((sp) => {
+    const c = document.createElement('canvas');
+    c.width = sp.img.width;
+    c.height = sp.img.height;
+    const cg = c.getContext('2d') as CanvasRenderingContext2D;
+    cg.drawImage(sp.img, 0, 0);
+    const im = cg.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < im.data.length; i += 4) {
+      if (im.data[i + 3] === 0) continue;
+      const hex = '#' + [0, 1, 2].map((j) => im.data[i + j].toString(16).padStart(2, '0')).join('');
+      const to = ORB_TO[hex] ?? asEnemy(hex);
+      const [r, gg, b] = [1, 3, 5].map((j) => parseInt(to.slice(j, j + 2), 16));
+      im.data[i] = r;
+      im.data[i + 1] = gg;
+      im.data[i + 2] = b;
     }
-    fx.set(x - 3, y - R - 5, PINK[5]);
-    const ring = (t * 40) % 30;
-    for (let a = 0; a < Math.PI * 2; a += 0.03) fx.set(Math.round(x + Math.cos(a) * (ring + 4)), Math.round(y + Math.sin(a) * (ring + 4) * 0.5), ring < 18 ? PINK[3] : PINK[1]);
+    cg.putImageData(im, 0, 0);
+    return { c, ax: sp.ax * (sp.density ?? 1), ay: sp.ay * (sp.density ?? 1) };
+  });
+  /** It set down `t` seconds ago at (x, y) on the stage (picture pixels), floating a little over the floor. */
+  const orb = (x: number, y: number, t: number): void => {
+    const o = orbs[Math.floor(t * 12) % orbs.length];
+    g.drawImage(o.c, Math.round((x - o.ax) * K), Math.round((y - 16 - o.ay) * K), o.c.width * K, o.c.height * K);
   };
   /** A beam of pink force from (x, y) along (ux, uy). */
   const beam = (x: number, y: number, ux: number, uy: number, t: number): void => {
@@ -477,10 +536,10 @@ function setUpFilm(): void {
       view: null,
       draw: () => {
         ground('front', 0);
-        figure(hero.front.idle[0], 330, 860, K, false);
-        glassAt(`${cls}:card`, reflections.of(cls).front.idle[2], 760, 860);
-        text('you', 330, 900, 30, '#a8f0ff', 700, 'center');
-        text('your reflection', 760, 900, 30, '#ffb0cc', 700, 'center');
+        figure(hero.front.idle[0], 300, 820, K, false);
+        glassAt(`${cls}:card`, reflections.of(cls).front.idle[2], 780, 820);
+        text('you', 300, 880, 34, '#a8f0ff', 700, 'center');
+        text('your reflection', 780, 880, 34, '#ffb0cc', 700, 'center');
       },
     });
     for (const view of ['front', 'back'] as GameView[]) {
@@ -501,8 +560,8 @@ function setUpFilm(): void {
             g.beginPath();
             g.rect(0, CAP, SIZE, SIZE - CAP);
             g.clip();
-            figure(hero.front.idle[Math.floor(t * 10) % hero.front.idle.length], 250, 960, K, false, tailsOf(hero.front.idle[0], false));
             g.drawImage(mirror, ox, oy, STEP_CANVAS.w * K, STEP_CANVAS.h * K);
+            figure(hero.front.idle[Math.floor(t * 10) % hero.front.idle.length], 160, 1025, K, false, tailsOf(hero.front.idle[0], false));
             const at = steppingAt(cls, t);
             if (t >= STEP_OUT.until) shadow(FX + (at.x - STEP_CANVAS.ax) * K, FY + (at.y - STEP_CANVAS.ay) * K, K);
             paint(stepOutPainted(cls, t), STEP_CANVAS.ax, STEP_CANVAS.ay, FX, FY, K);
@@ -536,9 +595,7 @@ function setUpFilm(): void {
       if (cls === 'warrior') {
         clipShot(who, 'Strike, your attack', view, key, MOVES3.strike, MOVES3.strike.motion.keys[MOVES3.strike.motion.keys.length - 1].at);
         clipShot(who, 'Strike, the second swing', view, key, MOVES3.kslash, 0.47);
-        clipShot(who, 'Slam', view, key, MOVES3.slam, 0.6, (t) => {
-          if (t > 0.233 && t < 0.5) wave(...P(ux * 22, uy * 22 * 0.5), ux, uy, (t - 0.233) * 120, t);
-        });
+        clipShot(who, 'Slam', view, key, MOVES3.slam, 0.6);
         if (view === 'front') {
           clipShot(who, 'Whirlwind', view, key, MOVES3.whirl, 0.8, undefined, { loop: true });
           const th = MOVES3.kthrust;
@@ -572,13 +629,13 @@ function setUpFilm(): void {
         const whit = wv.motion.hit ?? 0.17;
         clipShot(who, 'Wave, your attack', view, key, wv, 0.75, (t) => {
           if (t < whit) return;
-          wave(...P(ux * 10, uy * 10 * 0.5), ux, uy, 10 + (t - whit) * 9 * 35.8 * 0.5, t);
+          wave(...P(0, 0), view, 0.5 + (t - whit) * 9);
         });
         const ob = MOVES3.orb;
         const ohit = ob.motion.hit ?? 0.27;
         clipShot(who, 'Orb', view, key, ob, 1.0, (t) => {
           if (t < ohit) return;
-          orb(...P(ux * 46, uy * 46 * 0.5), t - ohit);
+          orb(...P(64, view === 'front' ? 32 : -32), t - ohit);
         });
         if (view === 'front') {
           const bm = MOVES3.beam;
@@ -636,6 +693,8 @@ function setUpFilm(): void {
     caption(s, t);
     return cv.toDataURL('image/png');
   };
+  // (`film:<k>`: that frame, drawn at once, to look at)
+  if (a1 !== '' && !Number.isNaN(Number(a1)) && mode === 'film' && location.hash.includes(':')) w.__frame(Number(a1));
   void slide;
 }
 void PLANS;
