@@ -21,6 +21,13 @@ look?”, his pick: “Glassy copy of you (Recommended)”, with the brief as of
 - NEVER: never cyan (the friend's colour), so you always know which one is you.
 - SOUND: the ring of glass.
 
+## His word on the pictures
+
+The sheet and the film (`reflections_sheet.png`, `reflections_film.mp4`), asked “Floor 18's reflections
+(reflections_sheet.png and the film): are these your glass copies?”: “Yes, that's them (Recommended)”. Asked whether
+everything that glows cyan on the hero should turn the enemy's pink on a reflection (its blade, the mage's crystal, the
+bowstring), or be silver glass: “Pink, like enemies (Recommended)”.
+
 ## How it works (src/art/reflections.ts)
 
 A REFLECTION IS MADE FROM THE HERO'S OWN FINISHED FRAMES. Each frame is the hero's, painted by the very function the
