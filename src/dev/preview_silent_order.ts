@@ -42,9 +42,10 @@ if (mode === 'sheet') {
     [null, 'front', 'the knight'], [ORDER_GUEST, 'front', 'the guest (17)'], [ORDER_GUEST, 'back', ''], [ORDER_ARMED, 'front', 'the armed last (19)'], [ORDER_ARMED, 'back', ''],
     [ORDER_MASK, 'front', 'the masks (20)'], [ORDER_MASK, 'back', ''], [null, 'back', 'the knight'],
   ];
-  const cw = cv.width / row.length;
+  const margin = 70;
+  const cw = (cv.width - 2 * margin) / row.length;
   row.forEach(([mob, view, name], i) => {
-    const x = cw * (i + 0.5);
+    const x = margin + cw * (i + 0.5);
     shadow(g, x, y, mob ? 12 : 11, K);
     if (mob) draw(g, spOf(mob, 'stand', 0, view), x, y, K);
     else draw(g, view === 'front' ? hero.front.idle[0] : hero.back.idle[0], x, y, K);

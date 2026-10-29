@@ -302,7 +302,7 @@ export const PALM = { long: 2.0, warn: [0.44, 26 / FPS] as const, strike: [26 / 
 function palmPlan(B: Build): Plan {
   const hs = B.shoulderHalf;
   const R = restOf(B);
-  const cock: P = { yaw: -30, twist: -8, pitch: -5, bend: -6, px: -2.2, pz: -2.6, side: 3, faceUp: 6, faceTurn: 4, faceTilt: -4, ...hands([10, -hs + 1.0, 5.5], [-6.5, -8.5, 5.5], -40, 70) };
+  const cock: P = { yaw: -30, twist: -8, pitch: -5, bend: -6, px: -2.2, pz: -2.6, side: 3, faceUp: 6, faceTurn: 4, faceTilt: -4, ...hands([10, -hs + 1.0, 5.5], [-4.0, -12.5, 5.0], -40, 70) };
   const shaking = (k: number): P => ({ ...cock, rhz: (cock.rhz as number) + (k % 2 ? 0.45 : -0.25), rhx: (cock.rhx as number) - 0.2 * (k % 2), faceTilt: (cock.faceTilt as number) + (k % 2 ? 0.8 : -0.6) });
   const hipsFirst: P = { ...cock, yaw: -14, twist: -24, px: -1.6 };
   const struck: P = { yaw: 14, twist: 8, pitch: 12, bend: 8, px: 7.4, pz: -3.6, side: -1, faceUp: 10, faceTurn: -2, faceTilt: 0, ...hands([-6, 6, -16], [20.2, 3.6, -3.2], -30, -10) };
@@ -542,12 +542,12 @@ function moreOf(who: OrderWho, move: string, m: Moment, B: Build, at: (move: str
   const out: [V3, string, number][] = [];
   const t = m.t;
   const s = m.s;
-  if (move === 'attack' && t > 0.24 && t < PALM.hit) {
-    // gathering: grains drawn in round the palm, faster and closer as the warning goes on
-    const k = smooth(0.24, PALM.warn[1], t);
+  if (move === 'attack' && t > 0.36 && t < PALM.hit) {
+    // gathering: grains drawn in round the palm (once it is up beside the head, clear of them), faster and closer as the warning goes on
+    const k = smooth(0.36, PALM.warn[1], t);
     for (let i = 0; i < 44; i++) {
       const ph = (t * (1.3 + 0.9 * k) + i / 44) % 1;
-      const r = (18 - 15 * ph) * (0.6 + 0.4 * hash(i, 1, 9031));
+      const r = (11 - 9 * ph) * (0.6 + 0.4 * hash(i, 1, 9031));
       const a = i * 2.39 + t * 5;
       const p = add(s.handR, [Math.cos(a) * r * 0.7 - 1.5, Math.sin(a) * r, Math.sin(a * 1.7) * r * 0.6 + 1.5]);
       if (hash(i, Math.floor(t * 20), 9032) > 0.35 + 0.65 * k) continue;
@@ -775,9 +775,9 @@ function orderMob(who: OrderWho): Mob {
     grains: paint.grains,
     // (the mask's two halves fall from the face, clear before the heap of the cloak, face up)
     fall(piece) {
-      const near = who === 'mask' ? 0.45 : 1;
-      if (piece === 'maskL') return { from: ORDER_DIES.maskL, to: [17 * near, 8 * near], spin: 70, lay: 'flat', up: [1, 0, 0.35], hop: 1.4 };
-      if (piece === 'maskR') return { from: ORDER_DIES.maskR, to: [19 * near, -7 * near], spin: -95, lay: 'flat', up: [1, 0, 0.35], hop: 1.2 };
+      const near = who === 'mask' ? 0.5 : 1;
+      if (piece === 'maskL') return { from: ORDER_DIES.maskL, to: [16 * near, 24 * near], spin: 40, lay: 'flat', up: [1, 0, 0.2], hop: 1.4 };
+      if (piece === 'maskR') return { from: ORDER_DIES.maskR, to: [28 * near, -16 * near], spin: -50, lay: 'flat', up: [1, 0, 0.2], hop: 1.2 };
       return null;
     },
   };

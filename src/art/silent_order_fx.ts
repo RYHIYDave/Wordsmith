@@ -78,7 +78,9 @@ export function wavePainted(t: number, view: GameView = 'front', reach: number =
       const yi = Math.round(y);
       if ((xi + yi) % 2 !== 0) continue;
       if (hash(xi, yi, 9101) > 0.85 * left) continue;
-      lay(px, xi, yi, r > R - 10 ? DARK[2] : (xi * 3 + yi) % 4 === 0 ? DARK[1] : DARK[0]);
+      // (a dark veil, and through it a grey murk, thicker toward its front)
+      const murk = hash(xi, yi, 9107) < 0.16 + 0.3 * ((r - PALM_WAVE.from) / Math.max(1, R - PALM_WAVE.from)) ** 2;
+      lay(px, xi, yi, murk ? (r > R - 14 ? FOG[2] : FOG[1]) : r > R - 10 ? DARK[2] : (xi * 3 + yi) % 4 === 0 ? DARK[1] : DARK[0]);
     }
   }
   // its sides: a broken line of grey, so you can see where it ends
@@ -104,10 +106,10 @@ export function wavePainted(t: number, view: GameView = 'front', reach: number =
   const arc = Math.ceil(R * 2 * H * 1.4);
   for (let i = 0; i <= arc; i++) {
     const a = -H + (2 * H * i) / arc;
-    for (let k = 0; k < 4; k++) {
-      if (hash(i, k, 9105) > (k === 0 ? 0.95 : 0.6) * left) continue;
-      const rr = R - k * 2.2 - 1.2 * Math.sin(a * 9 + t * 6 + k);
-      const z = 1 + k * 2.4 + 2.2 * Math.abs(Math.sin(a * 13 + t * 4 + k * 1.7)) * (t < PALM_WAVE.burst[1] ? 1.6 : 1);
+    for (let k = 0; k < 7; k++) {
+      if (hash(i, k, 9105) > (k === 0 ? 0.95 : 0.75 - 0.07 * k) * left) continue;
+      const rr = R - k * 1.8 - 1.4 * Math.sin(a * 9 + t * 6 + k);
+      const z = 1 + k * 2.2 + 3 * Math.abs(Math.sin(a * 13 + t * 4 + k * 1.7)) * (t < PALM_WAVE.burst[1] ? 1.6 : 1);
       const [x, y] = st.at([Math.cos(a) * rr, Math.sin(a) * rr, z]);
       const c = t < PALM_WAVE.burst[1] + 0.05 ? (k < 2 ? FOG[6] : FOG[5]) : t < 0.3 ? (k === 0 ? FOG[5] : FOG[3]) : k === 0 ? FOG[3] : k === 1 ? FOG[2] : FOG[1];
       lay(px, x, y, c, k === 0 && i % 2 === 0 ? 2 : 1);
@@ -136,11 +138,13 @@ export function knifeAt(t: number, z0 = 40): { x: number; z: number; turn: numbe
   return { x: KNIFE_FLIGHT.speed * tt + (flying ? 0 : 1.2 * Math.min(1, (t - T) * 6)), z, turn: KNIFE_FLIGHT.spin * Math.min(t, T + 0.08), flying };
 }
 /** The knife spun `turn` turns round, its middle at `c`: its grip, the way it points and the way its edge bows. */
+/** In flight it is drawn a third as big again, to be seen spinning across the floor at the game's size. */
+export const FLIGHT_BIG = 1.35;
 function spun(c: V3, turn: number): { hand: V3; point: V3; across: V3 } {
   const a = turn * TAU;
   const point: V3 = [Math.cos(a), 0, Math.sin(a)];
   const across: V3 = [-Math.sin(a), 0, Math.cos(a)];
-  const mid = (KNIFE.blade + 1.2 - KNIFE.handle) / 2;
+  const mid = ((KNIFE.blade + 1.2 - KNIFE.handle) / 2) * FLIGHT_BIG;
   return { hand: [c[0] - point[0] * mid, 0, c[2] - point[2] * mid], point, across };
 }
 /** THE KNIFE `t` seconds after it left the hand (`z0`: how high it left it): spinning and smeared in flight, then lying on the floor. Its floor point is the canvas's anchor; the game moves it along by `knifeAt(t).x` tiles. */
@@ -154,7 +158,7 @@ export function knifePainted(t: number, view: GameView = 'front', z0 = 40): Pain
   const k = knifeAt(t, z0);
   if (k.flying || k.z > 1.3) {
     const s = spun([0, 0, k.z], k.turn);
-    knifeBits(put, 'knife', 'knife', s.hand, s.point, s.across, 0);
+    knifeBits(put, 'knife', 'knife', s.hand, s.point, s.across, 0, FLIGHT_BIG);
   } else {
     // (lying on its side on the floor, its edge up)
     knifeBits(put, 'knife', 'knife', [-4.5, 0, 1.1], [1, 0.15, 0], [0, 0, 1], 0);
@@ -168,11 +172,19 @@ export function knifePainted(t: number, view: GameView = 'front', z0 = 40): Pain
     for (let j = 1; j <= 3; j++) {
       const back = (per * j) / 3;
       const s = spun([-back, 0, k.z + (9 / 30) * (j / 3)], k.turn - (KNIFE_FLIGHT.spin / 30) * (j / 3));
-      const kk = knifeOf(s.hand, s.point, s.across);
+      const kk = knifeOf(s.hand, s.point, s.across, FLIGHT_BIG);
       for (const p of [...kk.edge, kk.pommel]) {
         const [x, y] = st.at(p);
         lay(px, x, y, j === 1 ? SMEAR[2] : j === 2 ? SMEAR[1] : SMEAR[0]);
       }
+    }
+    // (the blur of its spin: the circle its point and its pommel sweep, broken, pale)
+    const rr = (KNIFE.blade * 0.55 + 2) * FLIGHT_BIG;
+    for (let i = 0; i < 28; i++) {
+      const a = (i / 28) * TAU;
+      if (hash(i, Math.floor(t * 30), 9112) > 0.55) continue;
+      const [x, y] = st.at([Math.cos(a) * rr, 0, k.z + Math.sin(a) * rr]);
+      lay(px, x, y, i % 3 ? SMEAR[1] : SMEAR[2]);
     }
     for (let i = 0; i < 40; i++) {
       const u = i / 40;

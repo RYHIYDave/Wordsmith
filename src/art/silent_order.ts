@@ -57,6 +57,8 @@ const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
 export const VELVET: Ramp = ['#08070c', '#110f18', '#24212f', '#3a3549', '#5a5470'];
 /** The cloak's lining: a dull grey silk, seen where it turns or flies open. */
 export const LINING: Ramp = ['#1c1b22', '#26252d', '#3f3d49', '#5a5763', '#77747f'];
+/** The masks' (20) mask, to a face's: a little bigger, all there is of them. */
+export const MASKS_SCALE = 1.25;
 /** The Order's mask: bone white (the banners' and the lanterns' own, art/act2_set.ts). */
 export const BONE: Ramp = ['#55514a', '#7a766e', '#bab4a6', '#d4cebe', '#ebe5d6'];
 /** The guest's gloves and lace: a softer bone white. */
@@ -100,23 +102,23 @@ export const ORDER_CANVAS: MobCanvas = { w: 340, h: 260, ax: 176, ay: 200 };
 /** The knife: its bone handle behind the fist, its curved blade before it (the figure's own lengths), how far the blade bows. */
 export const KNIFE = { handle: 5.2, blade: 12.5, bow: 3.4 } as const;
 /** The knife as it lies at a moment: the pommel, the guard, points along the blade's back from the guard to its point, and the way its edge faces. */
-export function knifeOf(hand: V3, point: V3, across: V3): { pommel: V3; guard: V3; spine: V3[]; edge: V3[]; tip: V3 } {
+export function knifeOf(hand: V3, point: V3, across: V3, big = 1): { pommel: V3; guard: V3; spine: V3[]; edge: V3[]; tip: V3 } {
   const way = norm(point, [1, 0, 0]);
   const up = norm(sub(across, mul(way, dot(across, way))), [0, 0, 1]);
-  const guard = add(hand, mul(way, 1.2));
+  const guard = add(hand, mul(way, 1.2 * big));
   const spine: V3[] = [];
   const edge: V3[] = [];
   const n = 8;
   for (let i = 0; i <= n; i++) {
     const k = i / n;
     // (it bows up, its back a curve, its point swept up: a crescent)
-    const bow = KNIFE.bow * Math.sin(Math.PI * 0.9 * k) + 1.2 * k * k;
-    const w = 1.5 * (1 - 0.85 * k * k);
-    const p = add(guard, add(mul(way, KNIFE.blade * k), mul(up, bow)));
+    const bow = (KNIFE.bow * Math.sin(Math.PI * 0.9 * k) + 1.2 * k * k) * big;
+    const w = 1.5 * (1 - 0.85 * k * k) * big;
+    const p = add(guard, add(mul(way, KNIFE.blade * k * big), mul(up, bow)));
     spine.push(p);
     edge.push(add(p, mul(up, -w)));
   }
-  return { pommel: add(hand, mul(way, -KNIFE.handle)), guard, spine, edge, tip: spine[n] };
+  return { pommel: add(hand, mul(way, -KNIFE.handle * big)), guard, spine, edge, tip: spine[n] };
 }
 /** A KNIFE SHEATHED at a belt or a sash: its bone handle up out of it (`up`), its sheath of black leather down along the body, bowed as the blade is (`out`: away from the body). */
 export function sheathedKnife(put: Put, part: string, at: V3, up: V3, out: V3): void {
@@ -131,15 +133,15 @@ export function sheathedKnife(put: Put, part: string, at: V3, up: V3, out: V3): 
   put(part, 'knives', { k: 'rod', a: tipA, b: tipB, ra: 1.05, rb: 0.45, ramp: LEATHER });
 }
 /** THE KNIFE in a fist (or lying, or flying): bone handle and pommel, a dark guard, the crescent blade with its bright edge; a pink glint along it in the warning. */
-export function knifeBits(put: Put, part: string, piece: string, hand: V3, point: V3, across: V3, glint: number): void {
-  const k = knifeOf(hand, point, across);
-  put(part, piece, { k: 'rod', a: k.pommel, b: add(hand, mul(norm(point), 0.9)), ra: 0.85, rb: 0.75, ramp: BONE });
-  put(part, piece, { k: 'ball', c: k.pommel, ax: sphere(1.05), skin: BONE });
-  put(part, piece, { k: 'ball', c: k.guard, ax: sphere(1.0), skin: LEATHER });
+export function knifeBits(put: Put, part: string, piece: string, hand: V3, point: V3, across: V3, glint: number, big = 1): void {
+  const k = knifeOf(hand, point, across, big);
+  put(part, piece, { k: 'rod', a: k.pommel, b: add(hand, mul(norm(point), 0.9 * big)), ra: 0.85 * big, rb: 0.75 * big, ramp: BONE });
+  put(part, piece, { k: 'ball', c: k.pommel, ax: sphere(1.05 * big), skin: BONE });
+  put(part, piece, { k: 'ball', c: k.guard, ax: sphere(1.0 * big), skin: LEATHER });
   for (let i = 0; i + 1 < k.spine.length; i++) {
-    const r = 0.95 * (1 - 0.6 * (i / (k.spine.length - 1)));
+    const r = 0.95 * big * (1 - 0.6 * (i / (k.spine.length - 1)));
     put(part, piece, { k: 'rod', a: lerp3(k.spine[i], k.edge[i], 0.35), b: lerp3(k.spine[i + 1], k.edge[i + 1], 0.35), ra: r, rb: r * 0.86, ramp: BLADE });
-    put(part, piece, { k: 'rod', a: k.edge[i], b: k.edge[i + 1], ra: 0.42, rb: 0.36, ramp: EDGE });
+    put(part, piece, { k: 'rod', a: k.edge[i], b: k.edge[i + 1], ra: 0.42 * big, rb: 0.36 * big, ramp: EDGE });
   }
   if (glint > 0.05) {
     put(part, 'glint', { k: 'glow', p: k.spine[5], c: FLAME[2], r: 5 + 6 * glint, a: 0.45 * glint });
@@ -199,9 +201,9 @@ function maskSkin(crack: number, half: number, shift: number): Skin {
   };
 }
 /** Where the mask is on a head, and its three ways. */
-export function maskOn(st: Stage, s: Skeleton, B: Build): { c: V3; ax: [V3, V3, V3]; ff: V3; fl: V3; fu: V3; eyes: V3[]; shift: number } {
+export function maskOn(st: Stage, s: Skeleton, B: Build, scale = 1): { c: V3; ax: [V3, V3, V3]; ff: V3; fl: V3; fu: V3; eyes: V3[]; shift: number } {
   const [ff, fl, fu] = wornOn(st, s, 10);
-  const hr = B.headR;
+  const hr: V3 = [B.headR[0] * scale, B.headR[1] * scale, B.headR[2] * scale];
   const c = add(s.head, add(mul(ff, hr[0] * 0.5), mul(fu, -0.3)));
   const ax: [V3, V3, V3] = [mul(ff, hr[0] * 0.9), mul(fl, hr[1] * 1.32), mul(fu, hr[2] * 1.24)];
   // (its eye holes drawn a little toward whoever looks, as the heroes' eyes are (art/skin.ts, eyesToward): seen three
@@ -217,8 +219,8 @@ export function maskOn(st: Stage, s: Skeleton, B: Build): { c: V3; ax: [V3, V3, 
   return { c, ax, ff, fl, fu, eyes, shift };
 }
 /** THE MASK on a head: whole, or cracked (`crack` 0..1; past 0, in two halves, each a piece of its own to fall); the dull pink in its eye holes (`lit`), flaring (`flare`). */
-function mask(put: Put, st: Stage, s: Skeleton, B: Build, crack: number, lit: number, flare: number): ReturnType<typeof maskOn> {
-  const m = maskOn(st, s, B);
+function mask(put: Put, st: Stage, s: Skeleton, B: Build, crack: number, lit: number, flare: number, scale = 1): ReturnType<typeof maskOn> {
+  const m = maskOn(st, s, B, scale);
   if (crack <= 0) put('mask', 'mask', { k: 'ball', c: m.c, ax: m.ax, skin: maskSkin(0, 0, m.shift) });
   else for (const half of [1, -1]) put(half > 0 ? 'maskL' : 'maskR', half > 0 ? 'maskL' : 'maskR', { k: 'ball', c: m.c, ax: m.ax, skin: maskSkin(crack, half, m.shift) });
   // the dull pink in the dark of each eye hole (guttering out as they die)
@@ -693,8 +695,9 @@ function orderBits(who: OrderWho, st: Stage, m: Moment, say: OrderSay): Bit[] {
     }
   } else {
     // THE MASKS: only the mask, held up by fog; the knife, real, in a fog hand
-    if (emptied < 0 || crack < 1) mask(put, st, s, B, crack, lit, say.flare(m));
-    else mask(put, st, s, B, crack, 0, 0);
+    // (theirs a little bigger than a face: the last of the masks, all there is of them)
+    if (emptied < 0 || crack < 1) mask(put, st, s, B, crack, lit, say.flare(m), MASKS_SCALE);
+    else mask(put, st, s, B, crack, 0, 0, MASKS_SCALE);
     if (knifeIn && emptied < 0) knifeBits(put, 'knife', 'knife', s.handR, s.point, s.across, glint);
     fog(grains, st, s, B, m, sway, say.fogArms(m), emptied);
   }
@@ -738,26 +741,38 @@ function fog(out: [V3, string, number][], st: Stage, s: Skeleton, B: Build, m: M
     if (hash(i, 77, 9013) < k * 1.5) return null;
     return add(p, add(mul(d, 34 * Math.sqrt(k) * (0.6 + 0.6 * hash(i, 78, 9013))), [0, 0, 8 * k]));
   };
+  // (the fog is behind the mask: none of it laid over its face)
+  const mk = maskOn(st, s, B, MASKS_SCALE);
+  const [mx, my] = st.at(mk.c);
+  const sa = st.seen(mk.ax[1]);
+  const sb = st.seen(mk.ax[2]);
+  const mr = Math.max(Math.hypot(sa[0], sa[1]), Math.hypot(sb[0], sb[1])) + 1.5;
+  const mz = st.near(mk.c);
   const lay = (p0: V3, i: number, c: string, size: number): void => {
     const p = blow(p0, i);
-    if (p && p[2] > 0.3) out.push([p, c, size]);
+    if (!p || p[2] <= 0.3) return;
+    if (scatter < 0) {
+      const [x, y] = st.at(p);
+      if (Math.hypot(x - mx, y - my) < mr && st.near(p) < mz + 2) return;
+    }
+    out.push([p, c, size]);
   };
   const flick = (i: number, p: number): boolean => hash(i, tick + (i % 5), 9012) < p;
   // round the mask: the hood's shape in fog, densest at the mask's edge
   const [ff, fl, fu] = wornOn(st, s, 6);
-  const hr = B.headR;
+  const hr: V3 = [B.headR[0] * 1.15, B.headR[1] * 1.15, B.headR[2] * 1.15];
   const hc = add(s.head, add(mul(fu, 0.9), mul(ff, -1.1)));
   let idx = 0;
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 170; i++) {
     idx++;
     const a = hash(i, 1, 9011) * Math.PI * 2;
     const e = (hash(i, 2, 9011) - 0.4) * Math.PI * 0.95;
     const r = 0.8 + 0.45 * hash(i, 3, 9011) + 0.06 * Math.sin(t * 2.4 + i);
     const u: V3 = [Math.cos(a) * Math.cos(e), Math.sin(a) * Math.cos(e), Math.sin(e)];
     if (u[0] > 0.4 && Math.abs(u[1]) < 0.7 && u[2] < 0.55) continue;
-    if (!flick(idx, 0.6 - 0.4 * (r - 0.8))) continue;
+    if (!flick(idx, 0.75 - 0.4 * (r - 0.8))) continue;
     const p = add(hc, add(mul(ff, u[0] * hr[0] * 1.5 * r), add(mul(fl, u[1] * hr[1] * 1.65 * r), mul(fu, u[2] * hr[2] * 1.4 * r + 0.5 * Math.sin(t * 2 + i)))));
-    lay(p, idx, r < 0.95 ? FOG[3] : r < 1.1 ? FOG[2] : FOG[1], r < 0.92 && i % 3 === 0 ? 2 : 1);
+    lay(p, idx, r < 0.95 ? FOG[4] : r < 1.1 ? FOG[3] : FOG[2], r < 0.95 && i % 2 === 0 ? 2 : 1);
   }
   // the neck of it, under the mask, down into the shoulders
   for (let i = 0; i < 40; i++) {
@@ -791,10 +806,10 @@ function fog(out: [V3, string, number][], st: Stage, s: Skeleton, B: Build, m: M
         // (how edge-on to the eye the cloak is there: its outline)
         const out3 = norm(sub(p0, lerp3(rings[r].c, rings[r + 1].c, (h + 0.5) / 3)), [1, 0, 0]);
         const edgeOn = 1 - Math.abs(st.near(out3) - st.near([0, 0, 0]));
-        const dens = (inArc ? 0.2 : 0.06) * (1 - 0.85 * low) + (edgeOn > 0.8 ? 0.2 * (1 - low) : 0);
+        const dens = (inArc ? 0.3 : 0.08) * (1 - 0.85 * low) + (edgeOn > 0.8 ? 0.3 * (1 - low) : 0);
         if (!flick(idx, dens)) continue;
         const p = add(p0, [0.7 * Math.sin(t * 1.9 + j + h), 0.7 * Math.cos(t * 1.6 + j), 1.0 * Math.sin(t * 1.2 + j + r)]);
-        lay(p, idx, edgeOn > 0.8 && low < 0.6 ? FOG[2] : low < 0.4 ? FOG[1] : FOG[0], 1);
+        lay(p, idx, edgeOn > 0.8 && low < 0.6 ? FOG[3] : low < 0.4 ? FOG[2] : FOG[1], 1);
       }
     }
   }

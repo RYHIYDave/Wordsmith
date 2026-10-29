@@ -34,8 +34,8 @@ function plan(who: OrderWho | 'all'): Shot[] {
   const set = (w: OrderWho, full: boolean): void => {
     const name = w === 'guest' ? 'THE GUEST (floor 17)' : w === 'armed' ? 'THE ARMED LAST (floor 19)' : 'THE MASKS (floor 20)';
     out.push({ who: w, move: 'stand', long: 2.2, at: 0, knight: 4, caption: `${name}: standing, utterly still`, loop: 3.2 });
-    out.push({ who: w, move: 'rush', long: 1.4, at: -2, knight: 3.4, caption: `${name}: THE RUSH, still, then sudden: ${RUSH.carry} tiles in a fifth of a second` });
-    if (full) out.push({ who: w, move: 'rush', long: 1.4, speed: 0.5, from: 0.12, at: -2, knight: 3.4, caption: 'The rush at half speed' });
+    out.push({ who: w, move: 'rush', long: 1.4, at: -2.4, knight: 3.6, caption: `${name}: THE RUSH, still, then sudden: ${RUSH.carry} tiles in a fifth of a second` });
+    if (full) out.push({ who: w, move: 'rush', long: 1.4, speed: 0.5, from: 0.12, at: -2.4, knight: 3.6, caption: 'The rush at half speed' });
     out.push({ who: w, move: 'walk', long: 1.6, at: -3.5, knight: 6.5, caption: `${name}: the run, ${ORDER_PACE} tiles a second (the knight walks 2.5)`, loop: 10 / 30 });
     out.push({ who: w, move: 'attack', long: 2.5, at: -2.5, knight: 1.5, caption: `${name}: THE HUSHING PALM, the grey wave ${5.5} tiles out, 100 degrees wide` });
     if (full) out.push({ who: w, move: 'attack', long: 1.8, speed: 0.5, from: 0.55, at: -2.5, knight: 1.5, caption: 'The palm at half speed: held, then two frames' });
