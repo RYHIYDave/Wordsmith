@@ -137,8 +137,8 @@ export function cloudPainted(t: number, view: GameView = 'front'): Painted {
 
 /** The arena (her own lengths): an ellipse 20 tiles along the hall (its x) and 17 across it (its y), as a boss arena is. */
 export const ARENA = { a: 10 * TILE3, b: 8.5 * TILE3 } as const;
-/** A hall mirror's glass: as wide as a lane, a tile and a half; as tall as two of her. */
-export const HALL_GLASS = { half: 0.75 * TILE3, tall: 118 } as const;
+/** A hall mirror's glass: floor 18's tall wall mirror's, 58 across (a lane's width, about a tile and a half), 84 to its arch, the arch 22 higher. */
+export const HALL_GLASS = { half: 29, tall: 106, rise: 22 } as const;
 /** How high a mirror on the hall's near side is shown (her own lengths): cut away above, as the game cuts what stands between the eye and the fight. */
 export const HALL_CUT = 34;
 /** Where the hall's mirrors stand along the hall (tiles from its middle), on both its long sides: a lane before each. */
@@ -166,7 +166,7 @@ export const SHATTER_FX = { tremble: [0.3, 1.367] as const, burst: [41 / 30, 43 
 
 /** A hall mirror's glass as its moment of Shatter has it: still; trembling and crazing; burst out; growing back. */
 function hallGlassAt(m: HallMirror, t: number | null, awake: boolean, i: number): Glass {
-  const g: Glass = { at: [0, 0], half: HALL_GLASS.half, tall: HALL_GLASS.tall, form: 1, gone: 0, ripples: [], t: t ?? 0, cut: m.side === -1 ? HALL_CUT : undefined, keepFrame: true };
+  const g: Glass = { at: [0, 0], half: HALL_GLASS.half, tall: HALL_GLASS.tall, rise: HALL_GLASS.rise, form: 1, gone: 0, ripples: [], t: t ?? 0, cut: m.side === -1 ? HALL_CUT : undefined, keepFrame: true };
   if (awake) g.ripples = [[0, 70, ((t ?? 0) * 0.5 + i * 0.37) % 2.4]];
   if (t === null) return g;
   const [b0, b1] = SHATTER_FX.burst;
@@ -386,8 +386,9 @@ export function emergePainted(t: number, view: GameView = 'front'): Painted {
   if (t < 0 || t >= EMERGE_FX.long) return { px: st.whole(null), lights: [] };
   const g: Glass = {
     at: [0, 0],
-    half: 21,
-    tall: 96,
+    half: 29,
+    tall: 106,
+    rise: 22,
     form: smooth(EMERGE_FX.form[0], EMERGE_FX.form[1], t),
     gone: smooth(EMERGE_FX.gone[0], EMERGE_FX.gone[1], t),
     ripples: [[0, 50, t - 0.3], [0, 50, t - 0.42], [0, 46, t - EMERGE_FX.out], [0, 40, t - EMERGE_FX.out - 0.12], [0, 34, t - EMERGE_FX.out - 0.24]],

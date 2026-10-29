@@ -216,8 +216,8 @@ function combPlan(): Plan {
 // glass facing her: from in front and from behind alike, she goes away from the eye into it, and it hides what of her
 // has gone through.
 
-/** Where her looking-glass stands (her own lengths): its glass this far to her left, facing her; its half-width; its glass's height. */
-export const QN_GLASS_AT = { y: 19, half: 21, tall: 96 } as const;
+/** Where her looking-glass stands (her own lengths): its glass this far to her left, facing her; as floor 18's tall wall mirror, its glass 58 across, 84 to its arch, the arch 22 higher. */
+export const QN_GLASS_AT = { y: 19, half: 29, tall: 106, rise: 22 } as const;
 export const QN_IN = { long: 1.4, form: [0, 0.42] as const, warn: [0.46, 0.767] as const, strike: [24 / FPS, 26 / FPS] as const, hit: 26 / FPS, gone: [1.02, 1.38] as const } as const;
 export const QN_OUT = { long: 1.5, form: [0, 0.36] as const, warn: [0.38, 0.6] as const, strike: [18 / FPS, 20 / FPS] as const, hit: 20 / FPS, gone: [0.95, 1.34] as const } as const;
 /** How far through the glass she goes (her own lengths, along her left): through it, and on out of sight. */
@@ -272,7 +272,7 @@ export function awayAt(move: string, t: number): boolean {
 /** HER LOOKING-GLASS through the move: gathered out of its shards, rippling as she touches it and as she goes through, burst back into shards. */
 export function glassOf(move: string, t: number): Glass | null {
   const at: [number, number] = [0, QN_GLASS_AT.y];
-  const base = { at, half: QN_GLASS_AT.half, tall: QN_GLASS_AT.tall, t };
+  const base = { at, half: QN_GLASS_AT.half, tall: QN_GLASS_AT.tall, rise: QN_GLASS_AT.rise, t };
   if (move === 'glassIn') {
     const s1 = QN_IN.strike[1];
     if (t >= QN_IN.long - 1e-6) return null;

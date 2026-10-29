@@ -412,6 +412,8 @@ export interface Glass {
   shake?: number;
   /** Cracks across it (0 none, 1 crazed all over). */
   crazed?: number;
+  /** How high its arch rises over its sides (her own lengths; a round arch, half its width, if not said): floor 18's tall wall mirror's, 22 over 84. */
+  rise?: number;
   /** Its frame stays when its glass has burst (a mirror of the hall); if not, the frame goes with it (her looking-glass). */
   keepFrame?: boolean;
   /** Cut away above this height (a mirror on the hall's near side, cut away as the game cuts what stands between the eye and the fight). */
@@ -429,8 +431,11 @@ export function glassBits(put: Put, g: Glass, part = 'glass'): { shards: [V3, st
   const jx = shake * Math.sin(g.t * 71) * 0.9;
   const jz = shake * Math.cos(g.t * 53) * 0.5;
   const c: V3 = [g.at[0] + jx, g.at[1], foot + Hh + jz];
-  const arch = W;
-  const inGlass = (a: number, b: number): boolean => b <= Hh - arch || a * a + (b - (Hh - arch)) ** 2 <= arch * arch;
+  // (its arch: a part of a circle through its two sides' tops and its crown, `rise` over them)
+  const arch = Math.min(W, g.rise ?? W);
+  const archR = (W * W + arch * arch) / (2 * arch);
+  const archZ = Hh - archR;
+  const inGlass = (a: number, b: number): boolean => b <= Hh - arch || a * a + (b - archZ) ** 2 <= archR * archR;
   // (its panes: each a cell of the glass, come in its own time as it forms, gone in its own as it bursts)
   const PANE = 5.5;
   const paneOf = (a: number, b: number): [number, number] => {
@@ -484,8 +489,12 @@ export function glassBits(put: Put, g: Glass, part = 'glass'): { shards: [V3, st
   outline.push([c[0] - W - F * 0.6, y, foot]);
   outline.push([c[0] - W - F * 0.6, y, c[2] + Hh - arch]);
   for (let i = 1; i <= 8; i++) {
-    const a = Math.PI - (i / 8) * Math.PI;
-    outline.push([c[0] + Math.cos(a) * (arch + F * 0.6), y, c[2] + Hh - arch + Math.sin(a) * (arch + F * 0.6)]);
+    const sx = -1 + (2 * i) / 8;
+    const ax = sx * W;
+    const az = archZ + Math.sqrt(Math.max(0, archR * archR - ax * ax));
+    // (out from the arch's middle by the frame's half-width)
+    const out = Math.hypot(ax, az - archZ) || 1;
+    outline.push([c[0] + ax + (ax / out) * F * 0.6, y, c[2] + az + ((az - archZ) / out) * F * 0.6]);
   }
   outline.push([c[0] + W + F * 0.6, y, foot]);
   const drawn = g.keepFrame ? 1 : clamp01((g.form - 0.05) / 0.75) * (1 - smooth(0.2, 0.9, g.gone));
@@ -526,7 +535,7 @@ export function glassBits(put: Put, g: Glass, part = 'glass'): { shards: [V3, st
       if (k <= 0 || k >= 1) continue;
       const ang = hash(n, 3, 7714) * Math.PI * 2;
       const far = 26 + 22 * hash(n, 4, 7714);
-      const from: V3 = [c[0] + a + Math.cos(ang) * far, g.at[1] - 8 - Math.abs(Math.sin(ang)) * far * 0.6, c[2] + b + Math.sin(ang) * far * 0.7];
+      const from: V3 = [c[0] + a + Math.cos(ang) * far, g.at[1] - 8 - Math.abs(Math.sin(ang)) * far * 0.6, Math.max(2, c[2] + b + Math.sin(ang) * far * 0.7)];
       const to: V3 = [c[0] + a, g.at[1] - 0.5, c[2] + b];
       const e = k * k;
       const p = lerp3(from, to, e);

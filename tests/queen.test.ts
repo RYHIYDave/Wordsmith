@@ -243,12 +243,14 @@ test('6. NOTHING OF HER IN THE FLOOR: all she wears and holds, her comb where it
   const faults: string[] = [];
   for (const move of [...LIVING, 'dying']) {
     for (const t of framesOf(MOB, move)) {
-      for (const b of MOB.bits(st, at(move, t))) {
+      // (her grains are what painting her bits laid down: asked of the same moment)
+      const m = at(move, t);
+      for (const b of MOB.bits(st, m)) {
         if (b.shape.k === 'mote' || b.shape.k === 'glow' || b.shape.k === 'dot') continue;
         const by = under(b.shape);
         if (by > 0.6) faults.push(`${move} @${t.toFixed(2)}: ${b.part} ${b.piece} ${by.toFixed(1)} into the floor`);
       }
-      for (const [p] of MOB.grains?.(st, at(move, t)) ?? []) if (p[2] < -0.5) faults.push(`${move} @${t.toFixed(2)}: a grain ${(-p[2]).toFixed(1)} under the floor`);
+      for (const [p] of MOB.grains?.(st, m) ?? []) if (p[2] < -0.5) faults.push(`${move} @${t.toFixed(2)}: a grain ${(-p[2]).toFixed(1)} under the floor`);
     }
   }
   assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
@@ -288,7 +290,9 @@ test('7. HIS BRIEF: a head and a half taller; she glides; her crown of glass and
   const tall = (bits: Bit[]): number => bits.filter((b) => b.piece === 'crown' && b.shape.k === 'rod' && b.shape.ramp === QN_GLASS && b.shape.rb < 0.3 && b.shape.ra > 1).length;
   assert.ok(tall(MOB.bits(st, dyingMoment(MOB, 0))) >= 5, 'her crown whole as she is struck');
   assert.equal(tall(MOB.bits(st, dyingMoment(MOB, QN_DIES.long))), 0, 'a tall spike of her crown left whole at the end');
-  const fallen = (MOB.grains?.(st, dyingMoment(MOB, QN_DIES.long)) ?? []).filter(([p, col]) => p[2] < 1.5 && rgba(col)[2] > 150);
+  const last = dyingMoment(MOB, QN_DIES.long);
+  MOB.bits(st, last);
+  const fallen = (MOB.grains?.(st, last) ?? []).filter(([p, col]) => p[2] < 1.5 && rgba(col)[2] > 150);
   assert.ok(fallen.length >= 9, `its shards on the floor: ${fallen.length}`);
   // her comb fallen from her hand, lying on the floor
   const end = MOB.bits(st, dyingMoment(MOB, QN_DIES.long));
