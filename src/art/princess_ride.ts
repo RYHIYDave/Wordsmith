@@ -22,19 +22,19 @@ export const RIDE_CANVAS = { w: 440, h: 380, ax: 210, ay: 300 } as const;
 /** Her pelvis's height standing, as the bones have it (her seat is set from it). */
 const PELVIS0 = solve(B, { ...standing(B) } as never).pelvis[2];
 
-/** HER SEATED SIDE-SADDLE on the steed: her hips on its back, facing its way, her body turned a little to its left; both her legs down its left flank, the knees bent; her left hand on her vine reins at its withers; her right hand raised high with her lash. */
+/** HER SEATED SIDE-SADDLE on the steed: her hips on its back, facing its way, her body turned a little to its right; both her legs down its right flank (toward the eye as it comes at you), the knees bent; her left hand on her vine reins at its withers; her right hand raised high with her lash. */
 export function riderPose(P: SteedPose, lift = 0): Partial<Bones> {
   const seat = seatOf(P);
   const at = add(seat.at, mul(seat.u, 3.2 + lift));
   const foot = (fwd: number, out: number, down: number): V3 => add(add(add(seat.at, mul(seat.f, fwd)), mul(seat.l, out)), [0, 0, -down]);
-  const fl = foot(7, 12.5, 18);
-  const frt = foot(4.5, 11, 20);
-  const rein = add(add(add(seat.at, mul(seat.f, 11)), mul(seat.l, 2.5)), mul(seat.u, 7));
+  const fl = foot(9, -13.5, 22);
+  const frt = foot(6, -12.5, 24);
+  const rein = add(add(add(seat.at, mul(seat.f, 12)), mul(seat.l, 1.0)), mul(seat.u, 8));
   return {
     ...PRINCESS_REST,
     px: at[0], py: at[1], pz: at[2] - PELVIS0,
-    yaw: P.yaw + 6, pitch: -P.pitch * 0.6 - 4, roll: 0, twist: 10, bend: 2, side: -2,
-    faceTurn: P.yaw + 8, faceUp: 4, faceTilt: 4,
+    yaw: P.yaw - 6, pitch: -P.pitch * 0.6 - 4, roll: 0, twist: -10, bend: 2, side: 2,
+    faceTurn: -10, faceUp: 4, faceTilt: 4,
     lfx: fl[0], lfy: fl[1] - B.stance, lfz: fl[2] - B.ankle, lfp: 30, lft: 30, lk: 40, lkUp: 20,
     rfx: frt[0], rfy: frt[1] + B.stance, rfz: frt[2] - B.ankle, rfp: 34, rft: 40, rk: 50, rkUp: 20,
     lhIn: 2, lhx: rein[0], lhy: rein[1], lhz: rein[2], le: -20,

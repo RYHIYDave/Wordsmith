@@ -1,7 +1,8 @@
 // Dev page: FLOOR 16'S BOSS, THE PRINCESS (art/princess.ts, art/princess_moves.ts), standing, from in front and from
 // behind, beside the knight for size, on the gardens' lawn, her swans circling her; and a move close up. Nothing of the
 // game imports it.
-//   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_princess.ts shots/princess/sheet.png 1300 560 "sheet"
+//   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_princess.ts shots/princess/sheet.png 1500 600 "sheet"
+//   ... "ride:leap:30" (on her steed, mid-leap), "side" (the steed side on, to judge its shape)
 //   ... "big:<move>:<t>" (front and behind, four times as big)
 import type { Sprite } from '../engine/px';
 import { makeHeroArt3 } from '../art/heroes3';
@@ -77,35 +78,53 @@ function swans(x: number, y: number, k: number, n: number, r: number, h: number,
 }
 const rideSprite = (P: typeof STEED_LEAP, t: number, view: 'front' | 'back'): Sprite => toSprite(ridePainted(P, t, view), null, RIDE_CANVAS.ax, RIDE_CANVAS.ay);
 if (mode === 'sheet') {
-  // THE SHEET: the Princess from in front and from behind beside the knight, three times as big, her swans circling her;
-  // and at the game's size
+  // THE SHEET: the Princess from in front and from behind beside the knight, three times as big; and at the game's
+  // size, her swans circling her (her mark)
   const K = 3;
   const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));
   g.drawImage(L, 0, 0, L.width * K, L.height * K);
   const y = cv.height - 40;
-  draw(hero.front.idle[0], 110, y, K);
-  for (const [x, view] of [[380, 'front'], [700, 'back']] as const) {
-    swans(x, y, K, 4, 30, 52, 0.08, false, view);
-    draw(spOf(PRINCESS, 'stand', 0, view), x, y, K);
-    swans(x, y, K, 4, 30, 52, 0.08, true, view);
+  draw(hero.front.idle[0], 100, y, K);
+  draw(spOf(PRINCESS, 'stand', 0, 'front'), 330, y, K);
+  draw(spOf(PRINCESS, 'stand', 0, 'back'), 590, y, K);
+  draw(hero.back.idle[0], 800, y, K);
+  for (const [x, yy, k] of [[1260, y - 30, 2]] as const) {
+    draw(hero.front.idle[0], x - 230, yy, k);
+    swans(x, yy, k, 3, 50, 66, 0, false, 'front');
+    draw(spOf(PRINCESS, 'stand', 0, 'front'), x, yy, k);
+    swans(x, yy, k, 3, 50, 66, 0, true, 'front');
   }
-  draw(hero.back.idle[0], 940, y, K);
-  draw(hero.front.idle[0], 1090, y - 80, 1);
-  swans(1200, y - 70, 1, 4, 30, 52, 0.08, false, 'front');
-  draw(spOf(PRINCESS, 'stand', 0, 'front'), 1200, y - 70, 1);
-  swans(1200, y - 70, 1, 4, 30, 52, 0.08, true, 'front');
 } else if (mode === 'ride') {
-  // HER ULTIMATE: on her spectral steed, mid-leap, from in front and from behind, three times as big; standing; and at the game's size
+  // HER ULTIMATE: on her spectral steed (mid-leap, or standing), from in front and from behind, three times as big, its
+  // shadow on the lawn; and at the game's size
   const K = 3;
   const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));
   g.drawImage(L, 0, 0, L.width * K, L.height * K);
-  const y = cv.height - 30;
-  const P = a1 === 'stand' ? STEED_STAND : STEED_LEAP;
-  draw(hero.front.idle[0], 90, y, K);
-  draw(rideSprite(P, 0.3, 'front'), 420, y, K);
-  draw(rideSprite(P, 0.3, 'back'), 880, y, K);
-  draw(hero.front.idle[0], 1110, y - 60, 1);
-  draw(rideSprite(P, 0.3, 'front'), 1210, y - 40, 1);
+  const y = cv.height - 40;
+  const P = { ...(a1 === 'stand' ? STEED_STAND : STEED_LEAP), yaw: Number(a2) || 0 };
+  const shadow = (x: number, yy: number, k: number): void => {
+    g.save();
+    g.fillStyle = 'rgba(10,14,12,0.38)';
+    g.beginPath();
+    g.ellipse(x, yy, 34 * k, 15 * k, 0, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  };
+  draw(hero.front.idle[0], 80, y, K);
+  for (const [x, view] of [[430, 'front'], [900, 'back']] as const) {
+    shadow(x, y, K);
+    draw(rideSprite(view === 'back' ? { ...P, yaw: -P.yaw } : P, 0.3, view), x, y, K);
+  }
+  draw(hero.front.idle[0], 1120, y - 60, 1);
+  shadow(1210, y - 50, 1);
+  draw(rideSprite(P, 0.3, 'front'), 1210, y - 50, 1);
+} else if (mode === 'side') {
+  // the steed side on, to judge its shape (not a game view)
+  const K = 3;
+  const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));
+  g.drawImage(L, 0, 0, L.width * K, L.height * K);
+  const y = cv.height - 40;
+  for (const [x, P] of [[340, STEED_STAND], [900, STEED_LEAP]] as const) draw(rideSprite({ ...P, yaw: -135 }, 0.3, 'front'), x, y, K);
 } else if (mode === 'big') {
   const K = 4;
   const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));

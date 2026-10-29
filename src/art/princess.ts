@@ -18,11 +18,12 @@
 //   sound, “Silent, but vines and hooves (Recommended)”; and “And remember this is a boss so follow the rules and run the
 //   checks”.
 //
-// HER LOOK: a pale young woman, grown, a head taller than the knight, slender; a court gown gone grey (a fitted bodice,
-// long sleeves, a full skirt to the floor with a short train), its hem a faded rose; the gardens' stinging nettles wound
-// round her: a crown of nettle leaves on her loose ash-pale hair, vines spiralling up her forearms, a vine knotted at
-// her waist and others climbing her skirt from the hem; a long vine trailing from her right hand to the floor (her
-// lash). Her eyes the cult's dull pink; her lips shut (she never makes a sound); the Hush curling off her in faint
+// HER LOOK: a pale young woman, grown, a head taller than the knight, slender; a court gown of royal violet faded toward
+// the Hush's grey (a fitted bodice, long sleeves with long hanging over-sleeves, a full skirt to the floor with a short
+// train), its hem and cuffs trimmed silver-white, the swans' own colour; the gardens' stinging nettles wound round her: a
+// crown of nettle leaves on a thin silver circlet in her long dark hair, vines spiralling up her forearms, a vine
+// knotted at her waist and others climbing her skirt from the hem; a long vine trailing from her right hand to the floor
+// (her lash). Her eyes the cult's dull pink; her lips shut (she never makes a sound); the Hush curling off her in faint
 // wisps. She glides: her feet never touch the floor under the gown (a flier, by his rule of 14 Oct). Nothing cyan; no
 // nettle shirt anywhere.
 
@@ -45,19 +46,19 @@ const fr = (t: number): number => t - Math.floor(t);
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 // =============================================================================================
-// HER COLOURS: a court gown gone grey at dawn; pale skin; ash hair; the gardens' nettles
+// HER COLOURS: a royal gown faded toward grey; pale skin; dark hair; the gardens' nettles
 
-/** The gown: grey, a breath of the dawn's mauve in it. */
-const GOWN: Ramp = ['#26222c', '#3a3440', '#5c5462', '#827888', '#a49aa8'];
-/** Its hem and its cuffs, a faded rose. */
-const ROSE: Ramp = ['#2e1a22', '#4a2a34', '#74444e', '#966068', '#b07e82'];
+/** The gown: a royal violet, faded by the Hush toward its grey. */
+const GOWN: Ramp = ['#221a2c', '#382a46', '#544066', '#745a86', '#9a80a8'];
+/** Its hem, its cuffs and its trim: silver-white, the swans' own. */
+const ROSE: Ramp = ['#3a3640', '#5e5a64', '#8e8a92', '#bcb8bc', '#dedad8'];
 /** Her skin, pale. */
 const SKIN: Ramp = ['#6a5a5c', '#948282', '#b8a6a2', '#d4c2ba', '#e6d6ce'];
 /** Her hair, dark, loose: a frame for her pale face. */
 const HAIR: Ramp = ['#141012', '#221a1e', '#342830', '#4c3a42', '#644e54'];
 const HAIR_DARK: Ramp = ['#0e0b0d', '#181216', '#261d22', '#382a30', '#4a3840'];
 /** The nettles: the gardens' own (art/floor16.ts), their stems a dark wine, their stinging hairs pale. */
-export const NETTLE: Ramp = ['#142016', '#22341f', '#33502c', '#4c6e3a', '#6e8c4e'];
+export const NETTLE: Ramp = ['#122014', '#1f361e', '#30552b', '#4a773a', '#72984f'];
 const STEM: Ramp = ['#1e141a', '#2e1e28', '#3a2b37', '#4e3a48', '#5e4858'];
 const HAIRS = '#b6b4a2';
 /** A thin silver circlet under the nettles: she is a princess. */
@@ -77,7 +78,7 @@ export const PR_HOVER = 2.2;
 /** Her rest: upright, proud, her head a little bowed and tilted; her left hand lifted before her, its fingers loose; her right low at her side, the vine trailing from it. */
 export const PRINCESS_REST: Bones = {
   ...standing(B),
-  pz: PR_HOVER, pitch: -2, bend: -1, roll: 0, side: 0, faceUp: -6, faceTilt: 6, faceTurn: 4,
+  pz: PR_HOVER, pitch: -2, bend: -1, roll: 0, side: 0, faceUp: -4, faceTilt: 6, faceTurn: -10,
   lfx: 1.0, lfy: 0.8, lfz: PR_HOVER, lfp: 24, lft: 8, lk: 8, rfx: -1.2, rfy: -0.8, rfz: PR_HOVER + 0.6, rfp: 30, rft: -8, rk: -8,
   lhIn: 1, lhx: 7.0, lhy: -1.0, lhz: -17, le: -14,
   rhIn: 1, rhx: 3.5, rhy: -4.5, rhz: -22, re: 12,
@@ -88,7 +89,7 @@ export const PRINCESS_REST: Bones = {
 // HER AS SOLIDS
 
 /** A sleeve to the wrist, its cuff flared in rose; a slender pale hand, its fingers loose or closed on the vine; a vine spiralling up the forearm. */
-function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, t: number): void {
+function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, t: number, sleeveM: Moment): void {
   const sh = side === 'L' ? s.shoulderL : s.shoulderR;
   const el = side === 'L' ? s.elbowL : s.elbowR;
   const hand = side === 'L' ? s.handL : s.handR;
@@ -99,8 +100,20 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, t: nu
   put(`fore${side}`, `fore${side}`, { k: 'ball', c: el, ax: sphere(r1 * 1.12), skin: GOWN, far: true });
   const wrist = add(hand, mul(fore, -1.1));
   put(`fore${side}`, `fore${side}`, { k: 'rod', a: el, b: wrist, ra: r1 * 1.08, rb: r2 * 1.1, ramp: GOWN, far: true });
-  // the cuff, flared, rose
-  put(`fore${side}`, `cuff${side}`, { k: 'rod', a: lerp3(el, wrist, 0.72), b: add(wrist, mul(fore, 0.4)), ra: r2 * 1.2, rb: r2 * 1.75, ramp: ROSE, far: true });
+  // the cuff, a narrow band of rose
+  put(`fore${side}`, `cuff${side}`, { k: 'rod', a: lerp3(el, wrist, 0.86), b: add(wrist, mul(fore, 0.2)), ra: r2 * 1.18, rb: r2 * 1.3, ramp: ROSE, far: true });
+  // THE HANGING SLEEVE: from her forearm, long and wide, lined with rose, hanging down whatever her arm does and trailing
+  // as she glides
+  {
+    const top = lerp3(el, wrist, 0.25);
+    const lagS = lagOf(sleeveM, 1.4, 4);
+    const sway = Math.sin(t * 1.5 + (side === 'L' ? 0 : 1.7)) * 0.6;
+    const mid = add(top, [lagS[0] * 0.6 + sway * 0.3 - 0.4, lagS[1] * 0.6 + sway, -8]);
+    const end = add(mid, [lagS[0] * 1.2 - 1.0, lagS[1] * 1.2 + sway * 0.5, -9]);
+    // (wide in the middle, narrowing to a point: a dagged sleeve, not a sack)
+    put(`fore${side}`, `sleeve${side}`, { k: 'rod', a: top, b: mid, ra: r1 * 1.25, rb: r1 * 1.7, ramp: GOWN, far: true });
+    put(`fore${side}`, `sleeve${side}`, { k: 'rod', a: mid, b: end, ra: r1 * 1.7, rb: r1 * 0.35, ramp: GOWN, far: true });
+  }
   // the hand, long-fingered
   const e1 = norm(sub(cu, mul(fore, dot(cu, fore))), [0, 0, 1]);
   const e2 = norm(cross(fore, e1), [0, 1, 0]);
@@ -151,11 +164,11 @@ function leaf(put: Put, part: string, piece: string, at: V3, out: V3, down: V3, 
 /** A nettle vine through points, its leaves along it. */
 function vine(put: Put, part: string, pts: ReadonlyArray<V3>, ra: number, t: number, seed: number, every = 3): void {
   for (let i = 1; i < pts.length; i++) {
-    put(part, 'vine', { k: 'rod', a: pts[i - 1], b: pts[i], ra: ra * (1 - 0.35 * (i / pts.length)), rb: ra * (1 - 0.35 * ((i + 1) / pts.length)), ramp: STEM, far: true });
+    put(part, 'vine', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.25 * ra * (1 - 0.35 * (i / pts.length)), rb: 1.25 * ra * (1 - 0.35 * ((i + 1) / pts.length)), ramp: STEM, far: true });
     if (i % every === 0) {
       const dir = norm(sub(pts[i], pts[i - 1]), [1, 0, 0]);
       const out = norm(cross(dir, i % 2 ? [0, 0, 1] : [0, 0, -1]), [0, 1, 0]);
-      leaf(put, part, 'vineleaf', pts[i], out, [0, 0, -1], 1.9 - 0.4 * (i / pts.length), t, seed + i);
+      leaf(put, part, 'vineleaf', pts[i], out, [0, 0, -1], 2.3 - 0.5 * (i / pts.length), t, seed + i);
     }
   }
 }
@@ -174,8 +187,10 @@ function gownRings(s: Skeleton, m: Moment): { bodice: Ring[]; skirt: Ring[]; hem
   // (to the floor as she glides; to her feet, seated on her steed)
   const hemZ = Math.max(0.9, Math.min(s.ankleL[2], s.ankleR[2]) - 1.2);
   const hemC: V3 = [footMid[0] + lag[0] * 1.2 - 1.0, footMid[1] + lag[1] * 1.2, hemZ];
-  const hemDeep = B.pelvisDeep + 7.5;
-  const hemWide = B.pelvisHalf + 7.0;
+  // (seated on her steed, her skirt falls from her knees down its flank, narrower)
+  const seated = clamp01((s.pelvis[2] - hemZ - 30) / -10);
+  const hemDeep = B.pelvisDeep + 7.5 - 4.5 * seated;
+  const hemWide = B.pelvisHalf + 7.0 - 4.0 * seated;
   const hemPts: V3[] = [];
   for (let i = 0; i < 24; i++) {
     const a = (i / 24) * Math.PI * 2;
@@ -214,8 +229,8 @@ function head(put: Put, st: Stage, s: Skeleton, lit: number, lag: V3, t: number)
     if (fwd > 0.45 && fwd < 0.75 && side > 0.45 && side < 0.7 && u[2] < -0.12 && u[2] > -0.5) return SKIN[Math.max(0, tone - 1)];
     if (fwd > 0.9 && side < 0.12 && u[2] > -0.3 && u[2] < 0.05) return SKIN[Math.min(4, tone + 1)];
     // her hair over her brow and round the back and sides
-    if (fwd < 0.2 || u[2] > 0.5) return HAIR[tone];
-    if (side > 0.72 && u[2] > -0.3) return HAIR[tone];
+    if (fwd < -0.05 || u[2] > 0.55) return HAIR[tone];
+    if (side > 0.84 && u[2] > -0.2) return HAIR[tone];
     return SKIN[tone];
   };
   put('head', 'head', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin });
@@ -246,7 +261,7 @@ function head(put: Put, st: Stage, s: Skeleton, lit: number, lag: V3, t: number)
   }
   // two locks before her shoulders, over the gown
   for (const k of [-1, 1]) {
-    const top = add(hc, add(mul(fl, k * hr[1] * 0.85), mul(fu, -hr[2] * 0.1)));
+    const top = add(hc, add(mul(fl, k * hr[1] * 0.9), add(mul(ff, -hr[0] * 0.45), mul(fu, -hr[2] * 0.15))));
     const mid = add(top, add([0, 0, -6], add(mul(ff, 0.6), mul(lag, 0.6))));
     const end = add(mid, add([0, 0, -6], add(mul(ff, 0.9), mul(lag, 1.0))));
     put('head', 'locks', { k: 'rod', a: top, b: mid, ra: 1.0, rb: 0.9, ramp: HAIR });
@@ -258,8 +273,8 @@ function head(put: Put, st: Stage, s: Skeleton, lit: number, lag: V3, t: number)
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + 0.2;
     const p = add(ring.c, add(mul(ring.u, Math.cos(a)), mul(ring.v, Math.sin(a))));
-    const out = norm(add(add(mul(ff, Math.cos(a) * 0.6), mul(fl, Math.sin(a) * 0.6)), fu));
-    leaf(put, 'head', 'crownleaf', p, out, mul(fu, -1), 1.05 + (i % 2) * 0.3, t, 40 + i);
+    const out = norm(add(add(mul(ff, Math.cos(a) * 0.3), mul(fl, Math.sin(a) * 0.3)), fu));
+    leaf(put, 'head', 'crownleaf', p, out, mul(fu, -1), 1.35 + (i % 2) * 0.45, t, 40 + i);
   }
   return { ff, fl, fu, hc };
 }
@@ -369,8 +384,8 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
     vine(put, 'body', pts, 0.6, t, 110, 2);
   }
   // THE ARMS: the left hand loose, the right closed on the vine
-  arm(put, s, 'L', cu, 0.3, t);
-  arm(put, s, 'R', cu, 1, t);
+  arm(put, s, 'L', cu, 0.3, t, m);
+  arm(put, s, 'R', cu, 1, t, m);
   const hd = head(put, st, s, lit, lag, t);
   // THE VINE in her right hand: its lash, or trailing to the floor
   const v = say.vine?.(m) ?? restVine(s, m);

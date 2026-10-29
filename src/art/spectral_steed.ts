@@ -19,7 +19,7 @@ import { INK, RIM_ALPHA, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import type { Bit, Put } from './new_mobs3';
-import type { Skin, Stage } from './skin';
+import type { Ring, Skin, Stage } from './skin';
 import type { V3 } from './skeleton';
 
 const D = Math.PI / 180;
@@ -35,18 +35,24 @@ const norm = (a: V3, or: V3 = [0, 0, 1]): V3 => {
 };
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
-/** Its fog: the Hush's own grey with the dawn's mauve in it, paler than the wolves'. */
-const FOG: Ramp = ['#46424f', '#625e6e', '#86808f', '#aaa4b2', '#ccc6d2'];
-const HOOF: Ramp = ['#5a5664', '#7a7686', '#9e98a8', '#c0bac8', '#dcd6e0'];
+/** Its fog: the Hush's own grey-violet (the grey breath that leaks from the grooms), pale where it is thick. */
+const FOG: Ramp = ['#3c3852', '#56506e', '#767090', '#9a94b6', '#bfbad4'];
+const HOOF: Ramp = ['#4a4660', '#68647e', '#8c88a2', '#b2aec6', '#d6d2e2'];
 /** The mist it thins to. */
-const MIST = '#c6c0cc';
-const WISP = ['#dcd8e2', '#cac6d0', '#b4b0bc', '#a6a2b0', '#8e8a9a'];
+const MIST = '#b6b0cc';
+/** Its mane and tail, smoke paler than its body. */
+const MANE: Ramp = ['#6c668c', '#8c86aa', '#aca6c6', '#c8c4da', '#e0dcee'];
+const WISP = ['#dcd8ea', '#c8c2dc', '#b0aacb', '#9890b4', '#7e7898'];
+
+/** ITS SIZE: a tall horse, its withers about as high as her head standing. */
+export const STEED_SIZE = 1.15;
+const S = STEED_SIZE;
 
 // =============================================================================================
 // ITS POSE
 
-/** One leg: its upper bone's swing from hanging straight down (degrees, + forward), and its lower bone's bend from the upper's line (+ forward). */
-export type LegPose = readonly [number, number];
+/** One leg: its upper bone's swing from hanging straight down (degrees, + forward), its lower bone's bend from the upper's line (+ forward), and its pastern's from the lower's (+ forward; 35 standing). */
+export type LegPose = readonly [number, number] | readonly [number, number, number];
 export interface SteedPose {
   /** Where its middle is over the floor (forward, left, up), and its turn: yaw, pitch nose up, roll onto its right. */
   x: number;
@@ -65,19 +71,20 @@ export interface SteedPose {
   churn: number;
   formed: number;
 }
-const LEG_TOP: readonly V3[] = [[13, 5.6, 34], [13, -5.6, 34], [-15, 5.8, 35], [-15, -5.8, 35]];
-const LEG_LONG: readonly [number, number][] = [[16, 17.5], [16, 17.5], [15.5, 18.5], [15.5, 18.5]];
-/** Standing square: its fore legs straight down, its hind legs a little back at the hock. */
+/** (its own lengths, before its size: a horse 50 at the withers) */
+const LEG_TOP: readonly V3[] = [[14, 5.0, 33], [14, -5.0, 33], [-15, 5.4, 36], [-15, -5.4, 36]];
+const LEG_LONG: readonly (readonly [number, number, number])[] = [[15, 11.5, 4.6], [15, 11.5, 4.6], [17.5, 13.6, 4.6], [17.5, 13.6, 4.6]];
+/** Standing square: its fore legs straight down, its hind legs angled back to the hock and straight down from it. */
 export const STEED_STAND: SteedPose = {
   x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, arch: 1, look: 0,
-  legs: [[0, 0], [0, 0], [-18, 22], [-18, 22]],
-  tail: 10, churn: 0, formed: 1,
+  legs: [[-2, -1, 30], [-2, -1, 30], [-20, 24], [-20, 24]],
+  tail: 0, churn: 0, formed: 1,
 };
-/** IN THE AIR, A LEAP (a capriole): its fore legs folded up under its chest, its hind legs kicked out behind; its body lifted and tipped up a little. */
+/** IN THE AIR, A LEAP (a capriole): its fore legs folded up tight under its chest, its hind legs kicked straight out behind; its body lifted, level. */
 export const STEED_LEAP: SteedPose = {
-  x: 0, y: 0, z: 16, yaw: 0, pitch: 6, roll: 0, arch: 1, look: 0,
-  legs: [[62, -130], [56, -122], [-58, -18], [-52, -24]],
-  tail: 34, churn: 0, formed: 1,
+  x: 0, y: 0, z: 18, yaw: 0, pitch: 4, roll: 0, arch: 0.8, look: 0,
+  legs: [[78, -150, -40], [70, -142, -40], [-78, 8, 20], [-70, 4, 20]],
+  tail: 70, churn: 0, formed: 1,
 };
 
 function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
@@ -92,41 +99,41 @@ function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
   const cy = Math.cos(yaw * D), sy = Math.sin(yaw * D);
   return [x2 * cy - y1 * sy, x2 * sy + y1 * cy, z2];
 }
-/** A point of its body (its own lengths, about its middle 40 up) where it is now. */
+/** A point of its body (its own lengths, before its size, about its middle 40 up) where it is now. */
 const PIVOT: V3 = [0, 0, 40];
 export function steedAt(P: SteedPose, p: V3): V3 {
-  return add(add(turn(sub(p, PIVOT), P.yaw, P.pitch, P.roll), PIVOT), [P.x, P.y, P.z]);
+  return add(add(turn(mul(sub(p, PIVOT), S), P.yaw, P.pitch, P.roll), mul(PIVOT, S)), [P.x, P.y, P.z]);
 }
 const turned = (P: SteedPose, v: V3): V3 => turn(v, P.yaw, P.pitch, P.roll);
 /** Where a rider sits on it: the middle of its back, just behind its withers, and its own forward, left and up there. */
 export function seatOf(P: SteedPose): { at: V3; f: V3; l: V3; u: V3 } {
-  return { at: steedAt(P, [2, 0, 51]), f: turned(P, [1, 0, 0]), l: turned(P, [0, 1, 0]), u: turned(P, [0, 0, 1]) };
+  return { at: steedAt(P, [3, 0, 49.5]), f: turned(P, [1, 0, 0]), l: turned(P, [0, 1, 0]), u: turned(P, [0, 0, 1]) };
 }
-/** Each leg's joints: its top, its middle joint, the end (the hoof). */
-function legOf(P: SteedPose, i: number): [V3, V3, V3] {
-  const [a1, a2] = P.legs[i];
-  const [l1, l2] = LEG_LONG[i];
+/** Each leg's joints: its top, its knee or hock, its fetlock, the hoof. */
+function legOf(P: SteedPose, i: number): [V3, V3, V3, V3] {
+  const [a1, a2, a3 = 35] = P.legs[i];
+  const [l1, l2, l3] = LEG_LONG[i];
   const top = steedAt(P, LEG_TOP[i]);
-  const d1 = turned(P, turn([0, 0, -1], 0, -a1, 0));
-  const mid = add(top, mul(d1, l1));
-  const d2 = turned(P, turn([0, 0, -1], 0, -(a1 + a2), 0));
-  return [top, mid, add(mid, mul(d2, l2))];
+  const dir = (a: number): V3 => turned(P, turn([0, 0, -1], 0, a, 0));
+  const knee = add(top, mul(dir(a1), l1 * S));
+  const fet = add(knee, mul(dir(a1 + a2), l2 * S));
+  return [top, knee, fet, add(fet, mul(dir(a1 + a2 + a3), l3 * S))];
 }
-/** Its neck and head: points along its crest from the withers to the poll, and its head's way (poll to muzzle). */
-function neckOf(P: SteedPose): { pts: V3[]; poll: V3; muzzle: V3 } {
+/** Its neck: its crest (top line) and its throat (under line), from the withers to the poll; its poll; its head's way (poll to muzzle). */
+function neckOf(P: SteedPose): { crest: V3[]; throat: V3[]; poll: V3; hd: V3 } {
   const a = P.arch;
-  const raw: V3[] = [
-    [16, 0, 46],
-    [21, 0, 52 + 3 * a],
-    [25 + 2 * (1 - a), 0, 58 + 4 * a],
-    [28 + 4 * (1 - a), 0, 63 + 3 * a],
-    [30 + 6 * (1 - a), 0, 66 + 1 * a],
-  ];
-  const pts = raw.map((p) => steedAt(P, p));
-  const poll = pts[pts.length - 1];
-  // (its head: drawn in near upright, a dressage horse's; stretched out, level)
-  const hd = turned(P, turn(norm([0.25 + 0.75 * (1 - a), 0, -0.95 * a - 0.2 * (1 - a)]), P.look, 0, 0));
-  return { pts, poll, muzzle: add(poll, mul(hd, 15)) };
+  const mix = (p: V3, q: V3): V3 => [p[0] * a + q[0] * (1 - a), p[1] * a + q[1] * (1 - a), p[2] * a + q[2] * (1 - a)];
+  // (arched: a dressage horse's carriage, its poll the highest point; stretched: reaching forward)
+  const crestA: V3[] = [[12, 0, 50], [19, 0, 55.5], [24.5, 0, 60], [29, 0, 63.2], [32.5, 0, 64.8]];
+  const crestS: V3[] = [[12, 0, 50], [20, 0, 54.5], [27, 0, 57.5], [33, 0, 59.5], [37.5, 0, 60.5]];
+  const throatA: V3[] = [[23, 0, 37], [26.5, 0, 44.5], [29.5, 0, 50.5], [31.5, 0, 55], [33.5, 0, 58]];
+  const throatS: V3[] = [[23, 0, 37], [28, 0, 43], [32.5, 0, 47.5], [36.5, 0, 51], [39.5, 0, 53]];
+  const crest = crestA.map((p, i) => steedAt(P, mix(p, crestS[i])));
+  const throat = throatA.map((p, i) => steedAt(P, mix(p, throatS[i])));
+  const poll = crest[crest.length - 1];
+  // (its head: drawn in near upright, a dressage horse's; stretched out, reaching)
+  const hd = turned(P, turn(norm([0.3 * a + 0.75 * (1 - a), 0, -0.95 * a - 0.66 * (1 - a)]), P.look, 0, 0));
+  return { crest, throat, poll, hd };
 }
 
 /** Its fog: pale streaks streaming back along it, churning, and darker hollows where it is thin. */
@@ -145,7 +152,7 @@ function fogSkin(seed: number, churn: number, thin: number): Skin {
   return (u, tone) => {
     const streak = fr(u[0] * 0.9 + churn + 0.3 * Math.sin(u[2] * 2.6 + u[1] * 2 + seed));
     const hollow = thin > 0 && patch([u[0] + 0.35 * wob, u[1], u[2] - 0.25 * wob], 1.6, seed) > 1 - thin;
-    const t = tone + (streak < 0.3 ? 1 : 0) - (hollow ? 1 : 0);
+    const t = tone + (streak < 0.25 ? 1 : 0) - (hollow ? 1 : 0);
     return FOG[Math.max(0, Math.min(4, t))];
   };
 }
@@ -157,78 +164,127 @@ const EYE_SKIN: Skin = (u) => {
 /** THE STEED AS SOLIDS (`part` names are its own, prefixed `steed`). */
 export function steedBits(P: SteedPose, put: Put, near: number): void {
   const W = (p: V3): V3 => steedAt(P, p);
-  const ax = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, a), turned(P, b), turned(P, c)];
+  const ax = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, mul(a, S)), turned(P, mul(b, S)), turned(P, mul(c, S))];
   const c = P.churn;
-  // ITS BODY: its barrel, its deep chest, its round haunch; its withers
-  put('steedBody', 'barrel', { k: 'ball', c: W([0, 0, 40.5]), ax: ax([17, 0, 0], [0, 9.2, 0], [0, 0, 10.2]), skin: fogSkin(1, c, 0.22) });
-  put('steedBody', 'chest', { k: 'ball', c: W([14, 0, 42]), ax: ax([8.5, 0, 0], [0, 9.0, 0], [0, 0, 11]), skin: fogSkin(2, c, 0.08) });
-  put('steedBody', 'haunch', { k: 'ball', c: W([-15, 0, 43]), ax: ax([10, 0, 0], [0, 9.8, 0], [0, 0, 10.6]), skin: fogSkin(3, c, 0.3) });
-  put('steedBody', 'withers', { k: 'ball', c: W([9, 0, 49]), ax: ax([7, 0, 0], [0, 6, 0], [0, 0, 4]), skin: fogSkin(4, c, 0.1) });
-  // ITS NECK, arched high, thick at its root; ITS HEAD, drawn in
+  const ball = (part: string, piece: string, at: V3, a: V3, b: V3, cc: V3, seed: number, thin: number): void =>
+    put(part, piece, { k: 'ball', c: W(at), ax: ax(a, b, cc), skin: fogSkin(seed, c, thin) });
+  // ITS BODY: its barrel; its deep chest and the point of its shoulder; its withers; its round haunch, its croup and its
+  // buttock
+  ball('steedBody', 'barrel', [-1, 0, 40], [18, 0, 0], [0, 8.6, 0], [0, 0, 9.4], 1, 0.22);
+  ball('steedBody', 'chest', [15, 0, 41], [9.5, 0, 0], [0, 8.4, 0], [0, 0, 10.6], 2, 0.06);
+  ball('steedBody', 'breast', [22, 0, 41.5], [4.6, 0, 0], [0, 7.0, 0], [0, 0, 7.4], 3, 0.04);
+  ball('steedBody', 'withers', [10, 0, 47.5], [8, 0, 0], [0, 5.4, 0], [0, 0, 4.4], 4, 0.08);
+  ball('steedBody', 'haunch', [-17, 0, 42], [10.5, 0, 0], [0, 9.2, 0], [0, 0, 10.8], 5, 0.28);
+  ball('steedBody', 'croup', [-14, 0, 48], [9.5, 0, 0], [0, 7.2, 0], [0, 0, 4.4], 6, 0.24);
+  ball('steedBody', 'buttock', [-24, 0, 42], [4.8, 0, 0], [0, 7.4, 0], [0, 0, 8.4], 7, 0.3);
+  // ITS NECK, arched high, deep at its root (from its withers down to its breast), slender at its throat
   const N = neckOf(P);
-  const neckR = [7.2, 6.2, 5.2, 4.4, 3.8];
-  for (let i = 0; i < N.pts.length; i++) {
-    const r = neckR[i];
-    put('steedNeck', 'neck', { k: 'ball', c: add(N.pts[i], turned(P, [-1.2, 0, -2.2])), ax: [turned(P, [r * 1.1, 0, 0]), turned(P, [0, r * 0.7, 0]), turned(P, [0, 0, r])], skin: fogSkin(5 + i, c, 0.05) });
-  }
-  const hd = norm(sub(N.muzzle, N.poll), [1, 0, 0]);
+  const wide = [6.4, 5.6, 4.8, 4.2, 3.7];
   const side = turned(P, [0, 1, 0]);
-  const hup = norm(cross(side, hd), [0, 0, 1]);
-  const hc = add(N.poll, mul(hd, 6.5));
-  put('steedHead', 'head', { k: 'ball', c: hc, ax: [mul(hd, 8.2), mul(side, 3.2), mul(hup, 4.2)], skin: fogSkin(11, c, 0.02) });
-  put('steedHead', 'muzzle', { k: 'ball', c: add(N.poll, mul(hd, 12.5)), ax: [mul(hd, 3.4), mul(side, 2.6), mul(hup, 3.0)], skin: fogSkin(12, c, 0) });
-  for (const k of [-1, 1]) {
-    // its ears, pricked
-    const base = add(add(N.poll, mul(side, k * 1.6)), mul(hup, 1.6));
-    put('steedHead', 'ears', { k: 'rod', a: base, b: add(add(base, mul(hup, 4.2)), mul(hd, -0.8)), ra: 1.0, rb: 0.3, ramp: FOG });
-    // its eyes, the enemy's pink, burning
-    put('steedHead', 'eyes', { k: 'ball', c: add(add(add(N.poll, mul(hd, 4.2)), mul(side, k * 3.0)), mul(hup, 1.6)), ax: [mul(hd, 0.9), mul(side, 0.6), mul(hup, 0.7)], skin: EYE_SKIN });
+  // (one smooth tube through rings from its root, buried in its chest, to its poll, buried in its head)
+  const rings: Ring[] = [];
+  for (let i = 0; i < N.crest.length; i++) {
+    const cc = lerp(N.crest[i], N.throat[i], 0.5);
+    rings.push({ c: cc, u: mul(sub(N.crest[i], N.throat[i]), 0.5), v: mul(side, wide[i] * S) });
   }
-  // ITS LEGS: fog, thinning toward its pale hooves
+  put('steedBody', 'neck', { k: 'cloth', rings, ramp: FOG, look: { folds: [], lift: 0.04 }, rigid: true });
+  // ITS HEAD, long and fine: its broad cheek and jaw under its poll, its long face, its muzzle; its ears pricked; its
+  // eyes the enemy's pink
+  const hd = N.hd;
+  const face = norm(cross(hd, side), [1, 0, 0]);
+  const at = (along: number, fwd: number, out: number): V3 => add(N.poll, add(mul(hd, along * S), add(mul(face, fwd * S), mul(side, out * S))));
+  put('steedBody', 'head', { k: 'ball', c: at(5.2, -1.0, 0), ax: [mul(hd, 5.6 * S), mul(side, 3.4 * S), mul(face, 4.6 * S)], skin: fogSkin(16, c, 0) });
+  put('steedBody', 'head', { k: 'ball', c: at(10.5, 0.6, 0), ax: [mul(hd, 6.2 * S), mul(side, 2.7 * S), mul(face, 3.2 * S)], skin: fogSkin(17, c, 0) });
+  put('steedBody', 'muzzle', { k: 'ball', c: at(16.2, 0.8, 0), ax: [mul(hd, 2.8 * S), mul(side, 2.6 * S), mul(face, 2.9 * S)], skin: fogSkin(18, c, 0) });
+  put('steedBody', 'nostrils', { k: 'dot', p: at(17.4, 2.6, 0), c: FOG[0], facing: face });
+  for (const k of [-1, 1]) {
+    // its ears, pricked forward
+    const base = at(0.6, 0.6, k * 1.6);
+    const up = norm(add(mul(hd, -0.85), add(mul(face, 0.45), mul(side, k * 0.15))));
+    put('steedBody', 'ears', { k: 'rod', a: base, b: add(base, mul(up, 3.4 * S)), ra: 0.95 * S, rb: 0.2 * S, ramp: FOG });
+    // its eyes, burning
+    put('steedBody', 'eyes', { k: 'ball', c: at(4.2, 1.2, k * 3.1), ax: [mul(hd, 0.9 * S), mul(side, 0.5 * S), mul(face, 0.7 * S)], skin: EYE_SKIN });
+  }
+  // ITS LEGS: strong at the forearm and the gaskin, fine below the knee and the hock; fog, thinning toward its pale hooves
   for (let i = 0; i < 4; i++) {
-    const [top, mid, end] = legOf(P, i);
+    const [top, knee, fet, end] = legOf(P, i);
     const part = `steedLeg${i}`;
     const far = (i % 2 === 0 ? 1 : -1) !== near;
-    put(part, 'leg', { k: 'rod', a: top, b: mid, ra: i < 2 ? 3.6 : 4.4, rb: 2.4, ramp: FOG, far });
-    put(part, 'leg', { k: 'ball', c: mid, ax: [[2.4, 0, 0], [0, 2.4, 0], [0, 0, 2.4]], skin: FOG, far });
-    put(part, 'leg', { k: 'rod', a: mid, b: end, ra: 2.0, rb: 1.6, ramp: FOG, far });
-    const d2 = norm(sub(end, mid), [0, 0, -1]);
-    put(part, 'hoof', { k: 'rod', a: add(end, mul(d2, -1.2)), b: add(end, mul(d2, 1.3)), ra: 1.9, rb: 2.3, ramp: HOOF, far });
+    const hind = i >= 2;
+    // (the muscle at its top, blending into its body: its forearm's, its thigh's)
+    const mass = hind ? lerp(top, knee, 0.22) : lerp(top, knee, 0.2);
+    const md = norm(sub(knee, top), [0, 0, -1]);
+    const mf = norm(cross(side, md), [1, 0, 0]);
+    put(part, 'leg', { k: 'ball', c: mass, ax: [mul(md, (hind ? 6.4 : 5.2) * S), mul(side, (hind ? 3.4 : 2.9) * S), mul(mf, (hind ? 4.4 : 3.4) * S)], skin: fogSkin(30 + i, c, 0.2), far });
+    put(part, 'leg', { k: 'rod', a: top, b: knee, ra: (hind ? 3.4 : 2.9) * S, rb: 1.55 * S, ramp: FOG, far });
+    put(part, 'leg', { k: 'ball', c: knee, ax: [[1.75 * S, 0, 0], [0, 1.65 * S, 0], [0, 0, 1.9 * S]], skin: FOG, far });
+    put(part, 'leg', { k: 'rod', a: knee, b: fet, ra: 1.35 * S, rb: 1.25 * S, ramp: FOG, far });
+    put(part, 'leg', { k: 'ball', c: fet, ax: [[1.55 * S, 0, 0], [0, 1.45 * S, 0], [0, 0, 1.55 * S]], skin: FOG, far });
+    put(part, 'leg', { k: 'rod', a: fet, b: end, ra: 1.2 * S, rb: 1.15 * S, ramp: FOG, far });
+    const d3 = norm(sub(end, fet), [0, 0, -1]);
+    // (the hoof: a short cone, its sole flat to the floor standing)
+    const hdn = norm(lerp(d3, turned(P, [0, 0, -1]), 0.6), [0, 0, -1]);
+    put(part, 'hoof', { k: 'rod', a: add(end, mul(hdn, -0.6 * S)), b: add(end, mul(hdn, 2.0 * S)), ra: 1.3 * S, rb: 1.8 * S, ramp: HOOF, far });
+  }
+  // ITS TAIL: a plume of smoke from its dock, set high on its croup; strands falling and streaming, waving
+  const ph = TAU * P.churn;
+  const dock = W([-25, 0, 47]);
+  const tdir = norm(turned(P, turn([-1, 0, 0], 0, 62 - P.tail, 0)), [-1, 0, -1]);
+  const tdown = norm(turned(P, turn([-1, 0, 0], 0, 84 - P.tail, 0)), [-1, 0, -1]);
+  for (let j = 0; j < 5; j++) {
+    const spread = (j - 2) * 0.55;
+    let prev = dock;
+    for (let i = 1; i <= 6; i++) {
+      const k = i / 6;
+      const dir = norm(lerp(tdir, tdown, k * k));
+      const wave = Math.sin(ph + k * 4 + j * 1.1) * 1.4 * k;
+      const p = add(add(dock, mul(dir, (3 + 22 * k - Math.abs(spread) * 3 * k) * S)), mul(side, (spread * (1 + 4 * k) + wave) * S));
+      put('steedTail', 'tail', { k: 'rod', a: prev, b: p, ra: (2.0 - 1.3 * (k - 1 / 6)) * S, rb: (2.0 - 1.3 * k) * S, ramp: MANE });
+      prev = p;
+    }
+  }
+  // ITS MANE: a ridge of smoke along its crest, a few long locks streaming back off it
+  const back = turned(P, norm([-1, 0, 0.3]));
+  for (let i = 0; i + 1 < N.crest.length; i++) {
+    const up = mul(norm(sub(N.crest[i], N.throat[i])), 0.7 * S);
+    put('steedMane', 'mane', { k: 'rod', a: add(N.crest[i], up), b: add(N.crest[i + 1], up), ra: 1.9 * S, rb: 1.7 * S, ramp: MANE });
+  }
+  for (let i = 0; i < 4; i++) {
+    const f = (i + 0.6) / 4.2;
+    const seg = Math.min(N.crest.length - 2, Math.floor(f * (N.crest.length - 1)));
+    const ff = f * (N.crest.length - 1) - seg;
+    const base = lerp(N.crest[seg], N.crest[seg + 1], ff);
+    const up = norm(sub(N.crest[seg], N.throat[seg]));
+    const wave = Math.sin(ph * 1.3 + i * 1.9);
+    const a = add(base, mul(up, 1.2 * S));
+    const b = add(a, add(mul(back, (6.5 + 1.2 * wave) * S), add(mul(up, 1.4 * S), mul(side, (i % 2 ? 1 : -1) * 0.8 * S))));
+    put('steedMane', 'mane', { k: 'rod', a, b, ra: 1.8 * S, rb: 0.35 * S, ramp: MANE });
   }
 }
 
-/** ITS LOOSE FOG: its mane streaming back off its crest, its tail off its haunch, mist curling off its legs. As grains: [where, colour, size]. */
+/** ITS LOOSE FOG: its mane streaming back off its crest, its tail off its croup, mist curling off its legs. As grains: [where, colour, size]. */
 export function steedGrains(P: SteedPose, t: number, wind: V3): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   const N = neckOf(P);
-  const back = norm(add(turned(P, [-1, 0, 0.15]), mul(wind, 0.6)), [-1, 0, 0]);
-  // the mane: along the crest, streaming back and up off it
-  for (let i = 0; i < 26; i++) {
-    const k = (i % 13) / 12;
-    const life = fr(t * 0.9 + i * 0.137);
-    const base = N.pts[Math.min(N.pts.length - 1, Math.floor(k * (N.pts.length - 1) + 0.5))];
-    const p = add(add(base, turned(P, [-1.5, (i % 2 ? 1 : -1) * 1.2, 3.2])), mul(back, 2 + life * 8));
-    if (life > 0.85) continue;
-    out.push([add(p, [0, 0, Math.sin(life * 6 + i) * 0.8]), WISP[Math.min(4, Math.floor(life * 5))], life < 0.4 ? 3 : 2]);
-  }
-  // the tail: a plume of smoke streaming from its haunch
-  const root = steedAt(P, [-24, 0, 47]);
-  const tdir = norm(add(turned(P, turn([-1, 0, 0], 0, P.tail - 20, 0)), mul(wind, 0.5)), [-1, 0, 0]);
-  for (let i = 0; i < 30; i++) {
-    const life = fr(t * 0.8 + i * 0.0333 + 0.17 * hash(i, 3, 7601));
-    const along2 = 2 + life * 22;
-    const sway = Math.sin(t * 3 + life * 6) * 2.2 * life;
-    const p = add(add(root, mul(tdir, along2)), add(turned(P, [0, sway, 0]), [0, 0, -life * life * 10]));
-    if (life > 0.9) continue;
-    out.push([p, WISP[Math.min(4, Math.floor(life * 5))], life < 0.5 ? 3 : 2]);
+  const back = norm(add(turned(P, [-1, 0, 0.2]), mul(wind, 0.6)), [-1, 0, 0]);
+  const side = turned(P, [0, 1, 0]);
+  // (its tail's end, wisping off)
+  const dock = steedAt(P, [-25, 0, 47]);
+  const tdown = norm(add(turned(P, turn([-1, 0, 0], 0, 84 - P.tail, 0)), mul(wind, 0.5)), [-1, 0, -1]);
+  for (let i = 0; i < 14; i++) {
+    const life = fr(t * 0.8 + i / 14 + 0.17 * hash(i, 3, 7601));
+    const p = add(add(dock, mul(tdown, (22 + life * 8) * S)), add(mul(side, (hash(i, 5, 7602) - 0.5) * 9 * S), [0, 0, life * 3]));
+    if (life > 0.8) continue;
+    out.push([p, WISP[Math.min(4, 1 + Math.floor(life * 4))], 2]);
   }
   // mist curling off its legs
   for (let i = 0; i < 4; i++) {
-    const [, mid, end] = legOf(P, i);
-    for (let j = 0; j < 4; j++) {
-      const life = fr(t * 0.7 + j * 0.25 + i * 0.13);
-      const p = add(lerp(mid, end, 0.3 + 0.2 * j), add(mul(back, life * 5), [0, 0, life * 3]));
-      out.push([p, WISP[2 + (j % 3)], 2]);
+    const [, knee, fet, end] = legOf(P, i);
+    for (let j = 0; j < 5; j++) {
+      const life = fr(t * 0.7 + j * 0.2 + i * 0.13);
+      if (life > 0.6 || j % 2) continue;
+      const p = add(j < 3 ? lerp(knee, fet, 0.3 + 0.3 * j) : lerp(fet, end, j - 3), add(mul(back, life * 6 * S), [0, 0, life * 3]));
+      out.push([p, WISP[1 + (j % 4)], 2]);
     }
   }
   return out;
@@ -250,8 +306,8 @@ function noise2(x: number, y: number, seed: number): number {
  * rider's are left alone). `formed`: 1 whole; less, thinner, to nothing (forming under her; fading as she dies).
  */
 export function thinSteed(px: Px, st: Stage, P: SteedPose, isSteed: (i: number) => boolean): void {
-  const [cx, cy] = st.at(steedAt(P, [6, 0, 46]));
-  const [, by] = st.at(steedAt(P, [0, 0, 30]));
+  const [cx, cy] = st.at(steedAt(P, [8, 0, 47]));
+  const [, by] = st.at(steedAt(P, [0, 0, 38]));
   const ang = Math.PI * P.churn;
   const ox = 1.6 * Math.cos(ang), oy = 1.6 * Math.sin(ang);
   const keep = new Set(FLAME.map((c) => c.toLowerCase()));
@@ -267,11 +323,11 @@ export function thinSteed(px: Px, st: Stage, P: SteedPose, isSteed: (i: number) 
       const hex = '#' + [px.d[i], px.d[i + 1], px.d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
       if (keep.has(hex) && P.formed > 0.5) continue;
       // (lower is thinner: its legs mostly mist)
-      const low = Math.max(0, Math.min(1.6, (y - by) / 14));
-      const far = Math.min(1, Math.hypot(x - cx, y - cy) / 60);
-      const thr = 0.82 - 0.28 * low - 0.1 * far - 1.2 * (1 - P.formed);
-      const n = 0.78 * noise2(x * 0.24 + ox, y * 0.34 + oy, 71) + 0.22 * noise2(x * 0.6 - oy, y * 0.7 + ox, 73);
-      cut[k] = n > thr + 0.08 ? 2 : n > thr ? 1 : 0;
+      const low = Math.max(0, Math.min(1.6, (y - by) / (14 * S)));
+      const far = Math.min(1, Math.hypot(x - cx, y - cy) / (60 * S));
+      const thr = 1.05 - 0.5 * low - 0.04 * far - 1.2 * (1 - P.formed);
+      const n = 0.78 * noise2(x * 0.17 + ox, y * 0.24 + oy, 71) + 0.22 * noise2(x * 0.5 - oy, y * 0.6 + ox, 73);
+      cut[k] = n > thr + 0.1 ? 2 : n > thr - 0.12 ? 1 : 0;
     }
   }
   for (let pass = 0; pass < 2; pass++) {
