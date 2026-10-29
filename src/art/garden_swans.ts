@@ -326,8 +326,30 @@ function flyPose(t: number): SwanPose {
     feet: [[-7.5, 1.8, 6.5], [-7.5, -1.8, 6.5]],
   };
 }
+/**
+ * DIVING (the Princess's Eleven: her swan brothers diving across the floor in lines, his doc): swooping in low and fast,
+ * its wings swept half up and held, trembling, its neck and bill stretched out before it and tipped down, its feet tucked.
+ */
+export const SWAN_DIVE = { period: 0.4 } as const;
+function divePose(t: number): SwanPose {
+  const ph = (t / SWAN_DIVE.period) * TAU;
+  return {
+    ...REST,
+    z: 0.4 * Math.sin(ph),
+    pitch: 12,
+    neck: [0.04, 0, 0.96],
+    reach: 1.6,
+    nod: 6,
+    wings: 1,
+    fly: 0.72,
+    beat: 14 + 2.5 * Math.sin(ph),
+    tail: 0,
+    feet: [[-8, 1.6, 7], [-8, -1.6, 7]],
+  };
+}
 function poseOf(which: string, t: number): SwanPose {
   if (which === 'fly') return flyPose(t);
+  if (which === 'dive') return divePose(t);
   if (which === 'walk') return walkPose(t);
   if (which === 'attack') return bitePose(t);
   if (which === 'reel') return reelPose(t);
@@ -336,7 +358,7 @@ function poseOf(which: string, t: number): SwanPose {
 }
 /** How long a move lasts (seconds). */
 export function swanLong(which: string): number {
-  return which === 'fly' ? SWAN_FLY.period : which === 'walk' ? SWAN_WALK.period : which === 'attack' ? SWAN_BITE.long : which === 'reel' ? SWAN_REEL.long : which === 'dying' ? SWAN_DIE.long : SWAN_STAND.period;
+  return which === 'fly' ? SWAN_FLY.period : which === 'dive' ? SWAN_DIVE.period : which === 'walk' ? SWAN_WALK.period : which === 'attack' ? SWAN_BITE.long : which === 'reel' ? SWAN_REEL.long : which === 'dying' ? SWAN_DIE.long : SWAN_STAND.period;
 }
 
 // ---------------------------------------------------------------------------------------------

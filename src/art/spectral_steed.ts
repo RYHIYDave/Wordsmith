@@ -70,6 +70,13 @@ export interface SteedPose {
   tail: number;
   churn: number;
   formed: number;
+  /**
+   * WHERE ITS HOOVES ARE PLANTED (each leg's sole on the floor, where it is: so that a hoof that is down stays where it came
+   * down), and how far each leg is held to it (1 planted, 0 its own swing as `legs` says; between, on its way off the
+   * floor or down onto it).
+   */
+  plant?: readonly [V3, V3, V3, V3];
+  grip?: readonly [number, number, number, number];
 }
 /** (its own lengths, before its size: a horse 50 at the withers) */
 const LEG_TOP: readonly V3[] = [[14, 5.0, 33], [14, -5.0, 33], [-15, 5.4, 36], [-15, -5.4, 36]];
@@ -109,15 +116,69 @@ const turned = (P: SteedPose, v: V3): V3 => turn(v, P.yaw, P.pitch, P.roll);
 export function seatOf(P: SteedPose): { at: V3; f: V3; l: V3; u: V3 } {
   return { at: steedAt(P, [3, 0, 49.5]), f: turned(P, [1, 0, 0]), l: turned(P, [0, 1, 0]), u: turned(P, [0, 0, 1]) };
 }
-/** Each leg's joints: its top, its knee or hock, its fetlock, the hoof. */
-function legOf(P: SteedPose, i: number): [V3, V3, V3, V3] {
+/** Its hoof: how far it reaches down from the end of its pastern, and how thick it is at its sole. */
+const HOOF_LONG = 1.0 * S;
+const HOOF_R = 1.65 * S;
+/** How high the end of a pastern is over the sole of a hoof planted flat. */
+const HOOF_UP = HOOF_LONG + HOOF_R;
+/** Each leg's joints: its top, its knee or hock, its fetlock, the end of its pastern; and the way its hoof points (down its middle). */
+function legOf(P: SteedPose, i: number): { top: V3; knee: V3; fet: V3; end: V3; down: V3 } {
   const [a1, a2, a3 = 35] = P.legs[i];
   const [l1, l2, l3] = LEG_LONG[i];
   const top = steedAt(P, LEG_TOP[i]);
   const dir = (a: number): V3 => turned(P, turn([0, 0, -1], 0, a, 0));
   const knee = add(top, mul(dir(a1), l1 * S));
   const fet = add(knee, mul(dir(a1 + a2), l2 * S));
-  return [top, knee, fet, add(fet, mul(dir(a1 + a2 + a3), l3 * S))];
+  const end = add(fet, mul(dir(a1 + a2 + a3), l3 * S));
+  const down = norm(lerp(dir(a1 + a2 + a3), turned(P, [0, 0, -1]), 0.6), [0, 0, -1]);
+  const g = P.plant && P.grip ? P.grip[i] : 0;
+  if (g <= 0 || !P.plant) return { top, knee, fet, end, down };
+  // (planted: the hoof flat on the floor where it is, the pastern sloping up and back from it, the knee or hock bent to
+  // reach; on its way off the floor or down onto it, lifted straight up off its spot or set straight down onto it before
+  // its own swing takes it, so that it never goes along the floor)
+  const sole: V3 = [P.plant[i][0], P.plant[i][1], P.plant[i][2] + (1 - g) * 9];
+  const gw = Math.min(1, g / 0.7);
+  const w = gw * gw * (3 - 2 * gw);
+  const fw0 = turned(P, [1, 0, 0]);
+  const fw = norm([fw0[0], fw0[1], 0], [1, 0, 0]);
+  const pEnd: V3 = [sole[0], sole[1], sole[2] + HOOF_UP];
+  const pFet = add(pEnd, add(mul(fw, -Math.sin(35 * D) * l3 * S), [0, 0, Math.cos(35 * D) * l3 * S]));
+  const L1 = l1 * S;
+  const L2 = l2 * S;
+  const v = sub(pFet, top);
+  const d = Math.max(Math.abs(L1 - L2) + 0.01, Math.min(L1 + L2 - 0.01, len(v)));
+  const u = norm(v, [0, 0, -1]);
+  // (a fore knee bends forward, a hind hock back)
+  const want = mul(fw, i < 2 ? 1 : -1);
+  const n = norm(sub(want, mul(u, want[0] * u[0] + want[1] * u[1] + want[2] * u[2])), want);
+  const ca = (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d);
+  const sa = Math.sqrt(Math.max(0, 1 - ca * ca));
+  const pKnee = add(top, add(mul(u, L1 * ca), mul(n, L1 * sa)));
+  const fetIK = add(top, mul(u, d));
+  const endIK = add(fetIK, sub(pEnd, pFet));
+  return { top, knee: lerp(knee, pKnee, w), fet: lerp(fet, fetIK, w), end: lerp(end, endIK, w), down: norm(lerp(down, [0, 0, -1], w), [0, 0, -1]) };
+}
+/** WHERE EACH HOOF'S SOLE IS (near fore, off fore, near hind, off hind): its lowest point. */
+export function solesOf(P: SteedPose): V3[] {
+  return [0, 1, 2, 3].map((i) => {
+    const L = legOf(P, i);
+    return add(add(L.end, mul(L.down, HOOF_LONG)), [0, 0, -HOOF_R]);
+  });
+}
+/** The points of it the checks follow from frame to frame: its muzzle, its poll, its chest, its croup, its hooves. */
+export function steedPoints(P: SteedPose): Record<string, V3> {
+  const N = neckOf(P);
+  const out: Record<string, V3> = { muzzle: add(N.poll, mul(N.hd, 16 * S)), poll: N.poll, chest: steedAt(P, [20, 0, 40]), croup: steedAt(P, [-20, 0, 48]) };
+  solesOf(P).forEach((p, i) => (out[`hoof${i}`] = p));
+  return out;
+}
+/** Where a planted hoof stands under it as it stands square (each leg's own spot on the floor), it standing as `P` says (its place and its turn). */
+export function squareSoles(P: Pick<SteedPose, 'x' | 'y' | 'yaw'>): [V3, V3, V3, V3] {
+  const at = (fx: number, ly: number): V3 => {
+    const c = Math.cos(P.yaw * D), sn = Math.sin(P.yaw * D);
+    return [P.x + (fx * c - ly * sn) * S, P.y + (fx * sn + ly * c) * S, 0];
+  };
+  return [at(15, 5.6), at(15, -5.6), at(-17, 6.0), at(-17, -6.0)];
 }
 /** Its neck: its crest (top line) and its throat (under line), from the withers to the poll; its poll; its head's way (poll to muzzle). */
 function neckOf(P: SteedPose): { crest: V3[]; throat: V3[]; poll: V3; hd: V3 } {
@@ -207,7 +268,7 @@ export function steedBits(P: SteedPose, put: Put, near: number): void {
   }
   // ITS LEGS: strong at the forearm and the gaskin, fine below the knee and the hock; fog, thinning toward its pale hooves
   for (let i = 0; i < 4; i++) {
-    const [top, knee, fet, end] = legOf(P, i);
+    const { top, knee, fet, end, down } = legOf(P, i);
     const part = `steedLeg${i}`;
     const far = (i % 2 === 0 ? 1 : -1) !== near;
     const hind = i >= 2;
@@ -221,10 +282,8 @@ export function steedBits(P: SteedPose, put: Put, near: number): void {
     put(part, 'leg', { k: 'rod', a: knee, b: fet, ra: 1.35 * S, rb: 1.25 * S, ramp: FOG, far });
     put(part, 'leg', { k: 'ball', c: fet, ax: [[1.55 * S, 0, 0], [0, 1.45 * S, 0], [0, 0, 1.55 * S]], skin: FOG, far });
     put(part, 'leg', { k: 'rod', a: fet, b: end, ra: 1.2 * S, rb: 1.15 * S, ramp: FOG, far });
-    const d3 = norm(sub(end, fet), [0, 0, -1]);
-    // (the hoof: a short cone, its sole flat to the floor standing)
-    const hdn = norm(lerp(d3, turned(P, [0, 0, -1]), 0.6), [0, 0, -1]);
-    put(part, 'hoof', { k: 'rod', a: add(end, mul(hdn, -0.6 * S)), b: add(end, mul(hdn, 2.0 * S)), ra: 1.3 * S, rb: 1.8 * S, ramp: HOOF, far });
+    // (the hoof: a short cone, its sole flat to the floor when it is down)
+    put(part, 'hoof', { k: 'rod', a: add(end, mul(down, -0.4 * S)), b: add(end, mul(down, HOOF_LONG)), ra: 1.3 * S, rb: HOOF_R, ramp: HOOF, far });
   }
   // ITS TAIL: a plume of smoke from its dock, set high on its croup; strands falling and streaming, waving
   const ph = TAU * P.churn;
@@ -279,7 +338,7 @@ export function steedGrains(P: SteedPose, t: number, wind: V3): [V3, string, num
   }
   // mist curling off its legs
   for (let i = 0; i < 4; i++) {
-    const [, knee, fet, end] = legOf(P, i);
+    const { knee, fet, end } = legOf(P, i);
     for (let j = 0; j < 5; j++) {
       const life = fr(t * 0.7 + j * 0.2 + i * 0.13);
       if (life > 0.6 || j % 2) continue;
@@ -305,7 +364,7 @@ function noise2(x: number, y: number, seed: number): number {
  * belly and its haunch, most at its legs; its eyes stay whole. `isSteed(i)`: whether a pixel of the picture is its (a
  * rider's are left alone). `formed`: 1 whole; less, thinner, to nothing (forming under her; fading as she dies).
  */
-export function thinSteed(px: Px, st: Stage, P: SteedPose, isSteed: (i: number) => boolean): void {
+export function thinSteed(px: Px, st: Stage, P: SteedPose, isSteed: (i: number) => boolean | null): void {
   const [cx, cy] = st.at(steedAt(P, [8, 0, 47]));
   const [, by] = st.at(steedAt(P, [0, 0, 38]));
   const ang = Math.PI * P.churn;
@@ -319,7 +378,7 @@ export function thinSteed(px: Px, st: Stage, P: SteedPose, isSteed: (i: number) 
     for (let x = 0; x < W; x++) {
       const k = y * W + x;
       const i = k * 4;
-      if (px.d[i + 3] === 0 || !isSteed(k) || (edgeAt(i) && P.formed >= 1)) continue;
+      if (px.d[i + 3] === 0 || isSteed(k) !== true || (edgeAt(i) && P.formed >= 1)) continue;
       const hex = '#' + [px.d[i], px.d[i + 1], px.d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
       if (keep.has(hex) && P.formed > 0.5) continue;
       // (lower is thinner: its legs mostly mist)
@@ -336,7 +395,8 @@ export function thinSteed(px: Px, st: Stage, P: SteedPose, isSteed: (i: number) 
       for (let x = 0; x < W; x++) {
         const k = y * W + x;
         const i = k * 4;
-        if (cut[k] || px.d[i + 3] === 0 || !edgeAt(i) || !isSteed(k)) continue;
+        // (its edge goes with it: the dark seam on it, and the pink rim round it that is no part's own)
+        if (cut[k] || px.d[i + 3] === 0 || !edgeAt(i) || isSteed(k) === false) continue;
         let gone = 0;
         for (const [ax2, ay2] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const xx = x + ax2, yy = y + ay2;

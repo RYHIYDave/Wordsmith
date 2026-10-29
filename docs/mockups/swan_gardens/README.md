@@ -205,6 +205,50 @@ The city watch's body (a head taller than the knight), held to every check the b
   back and that knee goes down, the left foot planted before him, held a moment, swaying; then the left leg folds under
   him and he crashes forward and lies still.
 
+## The Princess, floor 16's boss (src/art/princess.ts, princess_moves.ts, princess_ride.ts, spectral_steed.ts, princess_fx.ts; behind `PRINCESS_ON`, off)
+
+On the heroes' bones, a head taller than the knight. `PRINCESS`; `makePrincessArt3(mob)` gives `{ front, back }`; her
+other moves are `more.snare`, `more.eleven`, `more.vow`, and her ultimate's three, `more.rideForm`, `more.rideLeap` and
+`more.rideEnd`. Her review: `PR_SHAPE` (art/boss_checks.ts). Every blow of hers strikes as his Movement 9 asks (big
+wind-up held, a strike of two frames smeared with its after-images, big wind-down): `PR_STRIKES` says where.
+
+- HER LOOK (his yes): a pale young woman, long dark hair, the dull pink in her eyes; a court gown of royal violet faded
+  by the Hush, its hem, cuffs and trim silver-white (the swans' colour), long hanging over-sleeves; the gardens' nettles
+  wound round her (a nettle crown on a thin silver circlet, vines up her arms and her skirt, one knotted at her waist);
+  a long nettle vine in her right hand, her lash. No nettle shirt anywhere. Her mark, the garden's swans circling her,
+  is the game's to fly round her (art/garden_swans.ts `fly`).
+- HOVERING (her stand, `PR_STAND_LONG` 2.8 s) and THE GLIDE (her walk, `PR_PACE` 1 tile a second, 12 frames at 12): her
+  feet never down; she leans into her way, bobbing on the air, her gown and vine streaming back.
+- THE NETTLE VINE LASH (her attack, `PR_LASH`, 1.6 s, the blow at 0.8 s): she turns away and raises the vine back over
+  her shoulder, her left hand pointing, the thorns glinting pink (held 0.4 to 0.7 s); hips first; the vine whips over
+  and cracks out its whole length along the floor at you (two frames, smeared); it slides on; she draws it back. It
+  reaches about 60 of her lengths before her: a long line to dodge.
+- THE VINE SNARE (`PR_SNARE`, the blow at 0.83 s): hands lifted high, held; slammed down (two frames). Where you stand
+  (`snarePainted`, `SNARE_FX`, from her blow): the floor heaves, a cage of nettle vines bursts up round you in two frames,
+  holds writhing, then withers and sinks.
+- THE ELEVEN (`PR_ELEVEN`, the blow at 0.97 s): arms spread like wings, held; flung forward (two frames). Each line
+  across the floor is first marked by falling white feathers through her warning (`featherLine`), then a swan swoops
+  along it low and fast (art/garden_swans.ts `dive`), the feathers scattering behind it.
+- THE VOW (`PR_VOW`, the blow at 1.0 s): a finger to her lips, a hand on her heart, her head bowed, held; then her arms
+  thrown wide (two frames) and the ring of silence bursts out round her (`vowPainted`, `VOW_FX`: out in two frames,
+  held 3 s, its edge breathing grey, the floor inside it dimmed; drawn to the size the game gives it).
+- HER STEED (her ultimate): THE STEED FORMS (`rideForm`, 1.4 s): she spreads her arms (the warning), the grey breath
+  gathers on the floor, and a horse of it surges up out of the floor beneath her and lifts her, side-saddle. A LEAP
+  (`rideLeap`, 1.5 s, as many as the game likes, `RIDE_LEAP`): it gathers onto its haunches, forelegs folded (held
+  0.4 to 0.55 s); springs; a capriole at the top, she whirling her vine; then comes down in a flash onto its forehooves
+  (two frames, smeared, the blow at 1.13 s), the fog bursting out over the floor round them; it settles square. THE GAME
+  CARRIES HER while it is in the air (`RIDE_LEAP.air`, 0.64 to 1.13 s), as far as it likes; where it lands the blow
+  falls. THE STEED FADES (`rideEnd`, 1.4 s): it sinks back into the floor, thinning to nothing, and sets her down.
+- STRUCK (`PR_REEL` 0.4 s): jolted back, arms flung out, head thrown back.
+- HER DEATH (his pick, “Steed fades, vines wither (Recommended)”; “Not a child, not a corpse (Recommended)”; `PR_DIES`,
+  3.2 s): she clutches her breast and the Hush leaves her in a grey breath; she drops her vine and sinks out of the air
+  to her knees while every nettle on her browns and falls; she sits back on her heels, head bowed, the pink gone from
+  her eyes: alive, freed, still. (If she dies on her steed, the game plays `rideEnd` first: the steed fades.)
+
+For the main chat: her blows' areas are bigger than the old enemies' (his “And bigger AOE to compensate for the extra
+time the player gets to evade”); the art is drawn to that (the lash's long line, the snare's cage round you, the Vow's
+ring as big as the game makes it, the steed's landing).
+
 ## The dev pages
 
 - `src/dev/preview_garden.ts` (the painting): `overview`, `phone`, `close:X:Y`.
@@ -214,6 +258,9 @@ The city watch's body (a head taller than the knight), held to every check the b
 - `src/dev/preview_palace_hands.ts` (the gardeners and grooms): `sheet` (both, from in front and behind beside the knight,
   three times as big; a crowd at the game's size), `big:<gardener|groom>:<move>:<t>`.
 - `src/dev/preview_palace_guard.ts` (the palace guard): `sheet`, `big:<partisan|sword>:<move>:<t>`.
+- `src/dev/preview_princess.ts` (the Princess): `sheet` (front and back beside the knight, three times as big; at the
+  game's size with her swans circling), `ride:<rideForm|rideLeap|rideEnd>:<t>` (on her steed), `grid:<move>:<t>,<t>,...`
+  (a move at several moments, both ways round), `big:<move>:<t>`.
 - `src/dev/preview_swans.ts` (the swans): `sheet` (from in front and behind beside the knight, three times as big; a flock at
   the game's size), `big:<move>:<t>`, `strip:<move>:<view>:<n>`.
 
@@ -236,3 +283,12 @@ The city watch's body (a head taller than the knight), held to every check the b
 - `tests/palace_guard.test.ts` (10): as the gardeners' and grooms', both blows; and his picks: the thrust's reach, the
   sweep crossing from their right to their left, the march, to one knee (the right knee down, the left up), then down;
   and nothing they wear folds flat (his “thing that flips around like crazy”).
+- `tests/princess.test.ts` (9): nothing of the game imports her, her switch off; every move through every boss check,
+  from in front and behind, and every handover (her steed's three moves into each other); HIS LIGHTNING STRIKES (each
+  blow two frames, landing on the second, smeared then and only then); no cyan, the pink edge while she lives; nothing cut
+  off; nothing of her in the floor; his brief (no shirt, she glides, pink eyes, withered, on her knees and not lying);
+  her steed (forms and fades, she sits its back, off the floor while carried, square once it lands); what her casting
+  leaves (the snare and the ring out in two frames, nothing cyan).
+- `src/art/boss_checks.ts` knows his Movement 9 now, for a boss that says where it strikes (`strikes`, `smeared`): the
+  strike one or two frames, far faster than its wind-up and wind-down, smeared, and not held to JERK. Every boss
+  reviewed before is reviewed as before.

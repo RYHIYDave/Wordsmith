@@ -33,6 +33,9 @@ import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { sphere } from './new_mobs3';
+import { steedBits, steedGrains, thinSteed } from './spectral_steed';
+import type { SteedPose } from './spectral_steed';
+import type { Px } from '../engine/px';
 import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
@@ -61,6 +64,12 @@ const HAIR_DARK: Ramp = ['#0e0b0d', '#181216', '#261d22', '#382a30', '#4a3840'];
 export const NETTLE: Ramp = ['#122014', '#1f361e', '#30552b', '#4a773a', '#72984f'];
 const STEM: Ramp = ['#1e141a', '#2e1e28', '#3a2b37', '#4e3a48', '#5e4858'];
 const HAIRS = '#b6b4a2';
+/** The nettles withered as she falls (his pick, “Steed fades, vines wither (Recommended)”): brown, then grey. */
+const NETTLE_DEAD: Ramp = ['#1e1814', '#30261e', '#46382a', '#5e4c38', '#76644c'];
+const STEM_DEAD: Ramp = ['#1a1614', '#2a221e', '#3a302a', '#4a3e36', '#5a4c42'];
+/** (how far her nettles have withered as this frame is painted, 0 green to 1 dead and fallen; and the leaves fallen from them) */
+let WITHER = 0;
+let FALLEN: [V3, string, number][] = [];
 /** A thin silver circlet under the nettles: she is a princess. */
 const SILVER: Ramp = ['#2a2a32', '#4a4a56', '#767682', '#a2a2ae', '#cacad4'];
 
@@ -70,8 +79,8 @@ const SILVER: Ramp = ['#2a2a32', '#4a4a56', '#767682', '#a2a2ae', '#cacad4'];
 /** A grown young woman, a head taller than the knight (58): slender, long in the limb. */
 export const PRINCESS_BODY: Build = buildOf(66, 1.12, { shoulders: 0.84, chest: 0.86, depth: 0.86, waist: 0.7, hips: 0.96, legs: 1.04, arms: 0.92, trunk: 1.02, limbs: 0.76 });
 const B = PRINCESS_BODY;
-/** Her picture: room for her vine lashed out at its full length, her hair and her train. */
-export const PR_CANVAS: MobCanvas = { w: 360, h: 300, ax: 170, ay: 224 };
+/** Her picture: room for her vine lashed out at its full length, and for her on her steed at the top of its leap. */
+export const PR_CANVAS: MobCanvas = { w: 460, h: 380, ax: 220, ay: 300 };
 /** How far above the floor she glides (her feet, under the gown). */
 export const PR_HOVER = 2.2;
 
@@ -79,7 +88,7 @@ export const PR_HOVER = 2.2;
 export const PRINCESS_REST: Bones = {
   ...standing(B),
   pz: PR_HOVER, pitch: -2, bend: -1, roll: 0, side: 0, faceUp: -4, faceTilt: 6, faceTurn: -10,
-  lfx: 1.0, lfy: 0.8, lfz: PR_HOVER, lfp: 24, lft: 8, lk: 8, rfx: -1.2, rfy: -0.8, rfz: PR_HOVER + 0.6, rfp: 30, rft: -8, rk: -8,
+  lfx: 1.0, lfy: 0.8, lfz: PR_HOVER + 2.4, lfp: 10, lft: 8, lk: 8, rfx: -1.2, rfy: -0.8, rfz: PR_HOVER + 2.8, rfp: 14, rft: -8, rk: -8,
   lhIn: 1, lhx: 7.0, lhy: -1.0, lhz: -17, le: -14,
   rhIn: 1, rhx: 3.5, rhy: -4.5, rhz: -22, re: 12,
   out: 0,
@@ -134,47 +143,74 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number, t: nu
     const k = i / 10;
     const ang = k * Math.PI * 4 + (side === 'L' ? 0 : 1.3);
     const p = add(lerp3(wrist, el, k * 0.92), add(mul(e1, Math.cos(ang) * R), mul(ax1, Math.sin(ang) * R)));
-    if (prev) put(`fore${side}`, `vine${side}`, { k: 'rod', a: prev, b: p, ra: 0.42, rb: 0.42, ramp: STEM, far: true });
+    if (prev) put(`fore${side}`, `vine${side}`, { k: 'rod', a: prev, b: p, ra: 0.42, rb: 0.42, ramp: WITHER > 0.45 ? STEM_DEAD : STEM, far: true });
     if (i % 3 === 1) leaf(put, `fore${side}`, `leaf${side}`, p, add(mul(e1, Math.cos(ang)), mul(ax1, Math.sin(ang))), fore, 1.5, t, i + (side === 'L' ? 0 : 20));
     prev = p;
   }
 }
 /** A nettle leaf: a toothed, pointed oval of dark green out from `at` along `out`, its tip drooping along `down`; its stinging hairs pale. */
 function leaf(put: Put, part: string, piece: string, at: V3, out: V3, down: V3, size: number, t: number, seed: number): void {
+  // (withering: each leaf browns in its own time, and falls)
+  const own = hash(seed, 3, 7502);
+  const dead = clamp01(WITHER * 1.6 - own * 0.6);
+  if (dead >= 1) {
+    const fall = clamp01((WITHER * 1.6 - own * 0.6 - 1) * 2.5);
+    const p = add(at, [Math.sin(seed) * 3 * fall, Math.cos(seed) * 3 * fall, -Math.max(0, at[2] - 0.6) * fall]);
+    FALLEN.push([p, NETTLE_DEAD[(seed % 3) + 1], 2]);
+    return;
+  }
+  const LEAF = dead > 0.5 ? NETTLE_DEAD : NETTLE;
   const o = norm(out, [0, 0, 1]);
   const d = norm(sub(down, mul(o, dot(down, o))), [0, 0, -1]);
   const flutter = 0.25 * Math.sin(t * 5 + seed);
   const along = norm(add(o, mul(d, 0.6 + flutter)));
-  const c = add(at, mul(along, size * 0.9));
+  const c0 = add(at, mul(along, size * 0.9));
   const across = norm(cross(along, d), [1, 0, 0]);
+  const ax: [V3, V3, V3] = [mul(along, size), mul(across, size * 0.55), mul(norm(cross(along, across), [0, 0, 1]), 0.35)];
+  // (a leaf on a vine lying along the floor lies on the floor, not in it)
+  const low = c0[2] - Math.hypot(ax[0][2], ax[1][2], ax[2][2]);
+  const c: V3 = low < 0.2 ? [c0[0], c0[1], c0[2] + 0.2 - low] : c0;
   put(part, piece, {
     k: 'ball',
     c,
-    ax: [mul(along, size), mul(across, size * 0.55), mul(norm(cross(along, across), [0, 0, 1]), 0.35)],
+    ax,
     skin: (u, tone) => {
       // (its toothed edge, its pale veins)
       const r = Math.hypot(u[0], u[1]);
       if (r > 0.82 && hash(Math.round(Math.atan2(u[1], u[0]) * 4), seed, 7501) < 0.4) return null;
-      if (Math.abs(u[1]) < 0.08 && u[0] > -0.6) return NETTLE[Math.min(4, tone + 1)];
-      return NETTLE[Math.max(1, tone)];
+      if (Math.abs(u[1]) < 0.08 && u[0] > -0.6) return LEAF[Math.min(4, tone + 1)];
+      return LEAF[Math.max(1, tone)];
     },
     far: true,
   });
 }
 /** A nettle vine through points, its leaves along it. */
-function vine(put: Put, part: string, pts: ReadonlyArray<V3>, ra: number, t: number, seed: number, every = 3): void {
+function vine(put: Put, part: string, pts: ReadonlyArray<V3>, ra: number, t: number, seed: number, every = 3, leafK = 1): void {
   for (let i = 1; i < pts.length; i++) {
-    put(part, 'vine', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.25 * ra * (1 - 0.35 * (i / pts.length)), rb: 1.25 * ra * (1 - 0.35 * ((i + 1) / pts.length)), ramp: STEM, far: true });
+    put(part, 'vine', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.25 * ra * (1 - 0.35 * (i / pts.length)) * (1 - 0.3 * WITHER), rb: 1.25 * ra * (1 - 0.35 * ((i + 1) / pts.length)) * (1 - 0.3 * WITHER), ramp: WITHER > 0.45 ? STEM_DEAD : STEM, far: true });
     if (i % every === 0) {
       const dir = norm(sub(pts[i], pts[i - 1]), [1, 0, 0]);
       const out = norm(cross(dir, i % 2 ? [0, 0, 1] : [0, 0, -1]), [0, 1, 0]);
-      leaf(put, part, 'vineleaf', pts[i], out, [0, 0, -1], 2.3 - 0.5 * (i / pts.length), t, seed + i);
+      leaf(put, part, 'vineleaf', pts[i], out, [0, 0, -1], (2.3 - 0.5 * (i / pts.length)) * leafK, t, seed + i);
     }
   }
 }
 
+/** NETTLE VINES ON THEIR OWN (her snare's, art/princess_fx.ts): each through its points, its leaves along it, withered `wither` of the way. */
+export function nettleBits(vines: ReadonlyArray<{ pts: ReadonlyArray<V3>; ra: number; seed: number }>, t: number, wither: number): { bits: Bit[]; fallen: [V3, string, number][] } {
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const was = WITHER;
+  WITHER = clamp01(wither);
+  FALLEN = [];
+  vines.forEach((v, i) => vine(put, `snare${i}`, v.pts, v.ra, t, v.seed, 1, 1.5));
+  const fallen = FALLEN;
+  WITHER = was;
+  FALLEN = [];
+  return { bits, fallen };
+}
 /** THE GOWN: the bodice from the shoulders (a square neckline, the skin of her throat above it) to the waist; the skirt from the waist to the floor, full, a short train behind; it drifts back as she glides. */
-function gownRings(s: Skeleton, m: Moment): { bodice: Ring[]; skirt: Ring[]; hemC: V3; f: V3; l: V3 } {
+function gownRings(s: Skeleton, m: Moment, seated: number): { bodice: Ring[]; skirt: Ring[]; hemC: V3; f: V3; l: V3 } {
   const [cf, cl] = s.chest;
   const ph = m.wind * Math.PI * 2;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
@@ -185,12 +221,14 @@ function gownRings(s: Skeleton, m: Moment): { bodice: Ring[]; skirt: Ring[]; hem
   const footMid = lerp3(lerp3(s.heelL, s.toeL, 0.5), lerp3(s.heelR, s.toeR, 0.5), 0.5);
   const kneeMid = lerp3(s.kneeL, s.kneeR, 0.5);
   // (to the floor as she glides; to her feet, seated on her steed)
-  const hemZ = Math.max(0.9, Math.min(s.ankleL[2], s.ankleR[2]) - 1.2);
-  const hemC: V3 = [footMid[0] + lag[0] * 1.2 - 1.0, footMid[1] + lag[1] * 1.2, hemZ];
+  const hemZ = Math.max(0.9, Math.min(s.toeL[2], s.toeR[2], s.heelL[2], s.heelR[2]) - 0.6);
+  // (on her knees, her skirt pooled round her on the floor, round her knees and not off behind her at her feet)
+  const knelt = seated ? 0 : clamp01((14 - kneeMid[2]) / 10);
+  const under: V3 = lerp3(footMid, [kneeMid[0] * 0.5 + s.pelvis[0] * 0.5, kneeMid[1] * 0.5 + s.pelvis[1] * 0.5, 0], knelt);
+  const hemC: V3 = [under[0] + lag[0] * 1.2 - 1.0, under[1] + lag[1] * 1.2, hemZ];
   // (seated on her steed, her skirt falls from her knees down its flank, narrower)
-  const seated = clamp01((s.pelvis[2] - hemZ - 30) / -10);
-  const hemDeep = B.pelvisDeep + 7.5 - 4.5 * seated;
-  const hemWide = B.pelvisHalf + 7.0 - 4.0 * seated;
+  const hemDeep = B.pelvisDeep + 7.5 - 4.5 * seated + 3.5 * knelt;
+  const hemWide = B.pelvisHalf + 7.0 - 4.0 * seated + 3.0 * knelt;
   const hemPts: V3[] = [];
   for (let i = 0; i < 24; i++) {
     const a = (i / 24) * Math.PI * 2;
@@ -297,6 +335,16 @@ function wisps(out: [V3, string, number][], s: Skeleton, t: number, n: number, s
 export interface PrincessSay {
   /** The vine in her right hand, laid along these points from the hand (its lash; or trailing to the floor). */
   vine?: (m: Moment) => V3[] | null;
+  /** Her steed under her (her ultimate), as it is now (null: none). */
+  steed?: (m: Moment) => SteedPose | null;
+  /** How far her nettles have withered (her death: 0 green, 1 dead and fallen). */
+  wither?: (m: Moment) => number;
+  /** THE SMEAR OF A LIGHTNING STRIKE (his Movement 9): after-images of what strikes along the way it has just come, each a line of points, the oldest first. */
+  smear?: (m: Moment) => V3[][] | null;
+  /** Grains of her own move laid after her edge (the fog bursting from the steed's hooves, the vines' thorns glinting). */
+  more?: (m: Moment) => [V3, string, number][];
+  /** Whether she is seated on her steed (her skirt falls down its flank, narrower). */
+  seated?: (m: Moment) => boolean;
 }
 /** The trailing vine at rest: from her right hand down to the floor and along it behind her, coiling. */
 export function restVine(s: Skeleton, m: Moment): V3[] {
@@ -319,6 +367,16 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
   const grains: [V3, string, number][] = [];
   WISPS.set(m, grains);
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  WITHER = clamp01(say.wither?.(m) ?? 0);
+  FALLEN = [];
+  // HER STEED, under her (its parts its own, named `steed...`)
+  const P = say.steed?.(m) ?? null;
+  if (P && P.formed > 0.01) {
+    const seat = s.pelvis;
+    const near = st.near(add(seat, [0, -3, 0])) > st.near(add(seat, [0, 3, 0])) ? -1 : 1;
+    steedBits(P, put, near);
+    grains.push(...steedGrains(P, m.t, [-1, 0, 0]).filter((g) => g[0][2] > 0 && hash(Math.round(g[0][0] * 7), Math.round(g[0][2] * 7), 7521) < P.formed));
+  }
   const [cf, cl, cu] = s.chest;
   const lit = 1 - clamp01(q.out);
   const lag = lagOf(m, 1.6, 4);
@@ -330,7 +388,7 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
     put(`foot${side}`, `foot${side}`, { k: 'rod', a: add(heel, [0, 0, 1.0]), b: add(toe, [0, 0, 0.8]), ra: 1.1, rb: 0.9, ramp: GOWN, far: true });
   }
   // THE GOWN
-  const g = gownRings(s, m);
+  const g = gownRings(s, m, say.seated?.(m) ? 1 : 0);
   put('skirt', 'skirt', { k: 'cloth', rings: g.skirt, ramp: GOWN, look: { folds: [15, -15, 45, -45, 80, -80, 120, -120, 160, -160, 180], lift: 0.06, hem: ROSE, ragged: true } });
   // a tangle of nettle vines along the hem, all round
   {
@@ -349,10 +407,14 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
   put('neck', 'collar', { k: 'ball', c: add(lerp3(s.ribs, s.neck, 0.62), mul(cf, 0.6)), ax: [mul(cf, B.ribDeep * 0.75), mul(cl, B.shoulderHalf * 0.8), mul(cu, 2.2)], skin: SKIN });
   // a vine knotted round her waist, its ends hanging down the front of the skirt
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.62));
-  put('body', 'girdle', { k: 'band', ring: { c: waistC, u: mul(s.belly[0], B.waistDeep + 1.6), v: mul(s.belly[1], B.waistHalf + 1.5) }, ramp: STEM, rows: 1 });
+  put('body', 'girdle', { k: 'band', ring: { c: waistC, u: mul(s.belly[0], B.waistDeep + 1.6), v: mul(s.belly[1], B.waistHalf + 1.5) }, ramp: WITHER > 0.45 ? STEM_DEAD : STEM, rows: 1 });
   const knot = add(add(waistC, mul(s.belly[0], B.waistDeep + 1.8)), mul(s.belly[1], 1.5));
   const hang: V3[] = [knot];
-  for (let i = 1; i <= 6; i++) hang.push(add(knot, [lag[0] * 0.5 * i / 6 + 0.6 * i * s.hips[0][0], lag[1] * 0.5 * i / 6 + 0.6 * i * s.hips[0][1], -3.2 * i]));
+  for (let i = 1; i <= 6; i++) {
+    const p = add(knot, [lag[0] * 0.5 * i / 6 + 0.6 * i * s.hips[0][0], lag[1] * 0.5 * i / 6 + 0.6 * i * s.hips[0][1], -3.2 * i]);
+    // (on her knees, its ends lie on the floor before her)
+    hang.push(p[2] < 1.4 ? [p[0] + (1.4 - p[2]) * 0.6 * s.hips[0][0], p[1] + (1.4 - p[2]) * 0.6 * s.hips[0][1], 1.4] : p);
+  }
   vine(put, 'skirt', hang, 0.5, t, 60, 2);
   // vines climbing the skirt from the hem, round its front and sides
   for (const [a0, seed, turn] of [[20, 70, 60], [-60, 80, -50], [150, 90, 40], [80, 95, -40], [-140, 99, 50]] as const) {
@@ -390,9 +452,38 @@ function princessBits(st: Stage, m: Moment, say: PrincessSay): Bit[] {
   // THE VINE in her right hand: its lash, or trailing to the floor
   const v = say.vine?.(m) ?? restVine(s, m);
   if (v && v.length > 1) vine(put, 'lash', v, 0.9, t, 100, 2);
+  // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point
+  const sm = say.smear?.(m);
+  if (sm) {
+    sm.forEach((line, j) => {
+      const k = j / Math.max(1, sm.length - 1);
+      for (let i = 1; i < line.length; i++) {
+        const [x0, y0] = st.at(line[i - 1]);
+        const [x1, y1] = st.at(line[i]);
+        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+        for (let e = 0; e < n; e++) {
+          if (k < 0.5 && (e + i) % 2) continue;
+          put('smear', 'smear', { k: 'mote', p: lerp3(line[i - 1], line[i], e / n), c: k > 0.7 ? SMEAR[2] : k > 0.35 ? SMEAR[1] : SMEAR[0], size: k > 0.7 ? 2 : 1 });
+        }
+      }
+    });
+  }
+  grains.push(...FALLEN, ...(say.more?.(m) ?? []));
   void hd;
   void wisps;
   return bits;
+}
+/** The smear's after-images: the oldest a dull violet, the newest near white with the thorns' pink in it. */
+const SMEAR = ['#8a7aa4', '#cdbfdc', '#f4e8f0'];
+/** HER STEED THINNED TO MIST (Mob.finish): more fog than horse below, gaps through it you see the floor by; formed and fading. */
+export function princessFinish(say: PrincessSay): (px: Px, st: Stage, m: Moment, partAt: (k: number) => string | null) => void {
+  return (px, st, m, partAt) => {
+    const P = say.steed?.(m) ?? null;
+    if (P) thinSteed(px, st, P, (k) => {
+      const part = partAt(k);
+      return part === null ? null : part.startsWith('steed');
+    });
+  };
 }
 
 /** HER STAND: 2.8 s round. Hovering, never still: she rises and sinks a little on the air, her gown stirring; she turns her head slowly, her left hand drifting as if it felt for something; the vine in her right hand swaying. */
@@ -426,7 +517,7 @@ export function princessStand(): Motion {
 }
 
 /** HER AS THE PAINTER TAKES HER. */
-export function princessPainter(say: PrincessSay): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
-  return { bits: (st, m) => princessBits(st, m, say), grains: (_st, m) => WISPS.get(m) ?? [] };
+export function princessPainter(say: PrincessSay): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]>; finish: ReturnType<typeof princessFinish> } {
+  return { bits: (st, m) => princessBits(st, m, say), grains: (_st, m) => WISPS.get(m) ?? [], finish: princessFinish(say) };
 }
 void INK;

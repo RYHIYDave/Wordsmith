@@ -10,8 +10,6 @@ import { toSprite } from '../art/kit';
 import { canvasOf, deathOfMob, paintMob } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
 import { PRINCESS } from '../art/princess_moves';
-import { RIDE_CANVAS, ridePainted } from '../art/princess_ride';
-import { STEED_LEAP, STEED_STAND } from '../art/spectral_steed';
 import { swanFrame } from '../art/garden_swans';
 import { paintSwanGardens, swanGardensTerrain } from '../art/swangardens';
 import { pictureOf } from '../art/terrain';
@@ -76,7 +74,6 @@ function swans(x: number, y: number, k: number, n: number, r: number, h: number,
     g.restore();
   }
 }
-const rideSprite = (P: typeof STEED_LEAP, t: number, view: 'front' | 'back'): Sprite => toSprite(ridePainted(P, t, view), null, RIDE_CANVAS.ax, RIDE_CANVAS.ay);
 if (mode === 'sheet') {
   // THE SHEET: the Princess from in front and from behind beside the knight, three times as big; and at the game's
   // size, her swans circling her (her mark)
@@ -95,36 +92,35 @@ if (mode === 'sheet') {
     swans(x, yy, k, 3, 50, 66, 0, true, 'front');
   }
 } else if (mode === 'ride') {
-  // HER ULTIMATE: on her spectral steed (mid-leap, or standing), from in front and from behind, three times as big, its
-  // shadow on the lawn; and at the game's size
+  // HER ULTIMATE: on her spectral steed at a moment of one of its three moves (`ride:<rideForm|rideLeap|rideEnd>:<t>`), from
+  // in front and from behind, three times as big; and at the game's size
   const K = 3;
   const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));
   g.drawImage(L, 0, 0, L.width * K, L.height * K);
   const y = cv.height - 40;
-  const P = { ...(a1 === 'stand' ? STEED_STAND : STEED_LEAP), yaw: Number(a2) || 0 };
-  const shadow = (x: number, yy: number, k: number): void => {
-    g.save();
-    g.fillStyle = 'rgba(10,14,12,0.38)';
-    g.beginPath();
-    g.ellipse(x, yy, 34 * k, 15 * k, 0, 0, Math.PI * 2);
-    g.fill();
-    g.restore();
-  };
+  const move = a1 === 'stand' || a1 === 'leap' ? 'rideLeap' : a1;
+  const t = a1 === 'leap' ? 0.86 : Number(a2) || 0;
   draw(hero.front.idle[0], 80, y, K);
-  for (const [x, view] of [[430, 'front'], [900, 'back']] as const) {
-    shadow(x, y, K);
-    draw(rideSprite(view === 'back' ? { ...P, yaw: -P.yaw } : P, 0.3, view), x, y, K);
-  }
+  draw(spOf(PRINCESS, move, t, 'front'), 430, y, K);
+  draw(spOf(PRINCESS, move, t, 'back'), 900, y, K);
   draw(hero.front.idle[0], 1120, y - 60, 1);
-  shadow(1210, y - 50, 1);
-  draw(rideSprite(P, 0.3, 'front'), 1210, y - 50, 1);
-} else if (mode === 'side') {
-  // the steed side on, to judge its shape (not a game view)
-  const K = 3;
+  draw(spOf(PRINCESS, move, t, 'front'), 1210, y - 50, 1);
+} else if (mode === 'grid') {
+  // A MOVE AT SEVERAL MOMENTS (`grid:<move>:<t>,<t>,...`), twice as big: from in front along the top, from behind below
+  const K = 2;
   const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));
   g.drawImage(L, 0, 0, L.width * K, L.height * K);
-  const y = cv.height - 40;
-  for (const [x, P] of [[340, STEED_STAND], [900, STEED_LEAP]] as const) draw(rideSprite({ ...P, yaw: -135 }, 0.3, 'front'), x, y, K);
+  const ts = a2.split(',').map(Number);
+  const w = cv.width / ts.length;
+  ts.forEach((t, i) => {
+    for (const [row, view] of [[0, 'front'], [1, 'back']] as const) {
+      const y = (cv.height / 2) * (row + 1) - 24;
+      draw(spOf(PRINCESS, a1, t, view), w * (i + 0.5), y, K);
+      g.fillStyle = '#ffffff';
+      g.font = '14px monospace';
+      g.fillText(`${t.toFixed(3)} s`, w * i + 6, y + 18);
+    }
+  });
 } else if (mode === 'big') {
   const K = 4;
   const L = lawn(Math.ceil(cv.width / K), Math.ceil(cv.height / K));
