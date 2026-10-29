@@ -103,8 +103,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
     // (and Act 2's town hub, the camp's people, the same three with their voices back, art/hub2_folk.ts, behind HUB2, off:
     // tests/hub2.test.ts)
     // (and floor 16's gardeners and grooms, its palace guard and its boss, the Princess, their breath and its lag from
-    // them: tests/palace_hands.test.ts, tests/palace_guard.test.ts, tests/princess.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients|hub2_folk|palace_hands(_moves)?|palace_guard(_moves)?|princess(_moves|_ride)?)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
+    // them: tests/palace_hands.test.ts, tests/palace_guard.test.ts, tests/princess.test.ts; and floor 17's footmen, their
+    // skin and breath: tests/masque_footmen.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients|hub2_folk|palace_hands(_moves)?|palace_guard(_moves)?|princess(_moves|_ride)?|masque_footmen(_moves|_fx)?)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
     // (each import followed to the file it names: the game's own files named for the kind, game/act1_rules/hushed.ts and
     // render/act1_fx/hushed.ts, and the registers that import them, are not these)
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
