@@ -86,7 +86,7 @@ OUT ON THE HILL:
     crown on its cushion over all.
 12. `a royal coach, abandoned` (an obstacle; its pole to +y, to +x): the state coach left in the forecourt when the gates
     shut: the royal wine moulded in gilt, its upper half boxed with great windows, its lower half bowed under like a
-    boat's hull with the crown on it, hung on its springs between great wheels; its right-hand door hanging open on the
+    boat's hull with the royal swan on it, hung on its springs between great wheels; its right-hand door hanging open on the
     dark; a gilt rail round its roof and the crown on it; the coachman's seat, its lamps, its pole down on the ground.
     Built half as big again as it is measured (a state coach stands well over a man's head; beside the knight it did not).
 
