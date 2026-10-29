@@ -1079,7 +1079,11 @@ function mothBits(st: Stage, m: Moment, say: MothSay): Bit[] {
     const cs = norm(cross(last, [0, 0, 1]), L);
     // (down on the stones, they lie along them gripping; in the air, hooked down)
     const down = tip[2] < 3 ? 0 : -2;
-    for (const sd of [1, -1]) put(part, 'claw', { k: 'rod', a: tip, b: add(tip, add(mul(last, 4), add(mul(cs, sd * 2.5), [0, 0, down]))), ra: 1.2, rb: 0.4, ramp: HORN, far: true });
+    for (const sd of [1, -1]) {
+      const b = add(tip, add(mul(last, 4), add(mul(cs, sd * 2.5), [0, 0, down])));
+      // (never into the stones)
+      put(part, 'claw', { k: 'rod', a: tip, b: [b[0], b[1], Math.max(1, b[2])], ra: 1.2, rb: 0.4, ramp: HORN, far: true });
+    }
   });
 
   // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point

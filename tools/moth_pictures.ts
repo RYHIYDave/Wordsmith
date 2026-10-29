@@ -109,14 +109,14 @@ interface Shot {
   at: V3;
   knight: V3 | null;
   knightView: View;
-  /** Its effects: under the figures (on the top) and over them, each a painting on the effects' canvas, anchored on the Moth. */
-  under: Painted[];
-  over: Painted[];
+  /** Whose effects are laid with it (a move and a moment of it: painted only as the shot is laid, under the figures and over them). */
+  fx: readonly [string, number] | null;
   book: number | null;
 }
 /** Lay a shot on `f` (the top's middle at (ox, oy)): the top, the shadows, what lies on it, the figures far to near, what flies over. */
 function layShot(f: Frame, top: Frame, ox: number, oy: number, s: Shot): void {
   f.d.set(top.d);
+  const { under, over } = s.fx ? effectsOf(s.fx[0], s.fx[1], s.view) : { under: [] as Painted[], over: [] as Painted[] };
   const [mx, my] = seenAt(s.at, ox, oy);
   const mp = mothPainted(s.move, s.t, s.view);
   const G = mothGeomAt(s.move, s.t);
@@ -124,7 +124,7 @@ function layShot(f: Frame, top: Frame, ox: number, oy: number, s: Shot): void {
   const lowBody = G.TC[2];
   const [sx, sy] = seenAt([s.at[0] + toWorld(s.view, G.TC[0], G.TC[1])[0], s.at[1] + toWorld(s.view, G.TC[0], G.TC[1])[1], 0], ox, oy);
   layShadow(f, sx, sy, 150 + 0.6 * Math.max(0, 200 - lowBody), 0.42 + 0.2 * Math.max(0, 1 - lowBody / 260));
-  for (const u of s.under) layPx(f, u.px, FX_CANVAS.ax, FX_CANVAS.ay, mx, my);
+  for (const u of under) layPx(f, u.px, FX_CANVAS.ax, FX_CANVAS.ay, mx, my);
   if (s.book !== null) {
     const b = chapterPainted(paintViewOf(MOTH, s.view), s.book, s.t);
     layPx(f, b.px, CHAPTER_CANVAS.ax, CHAPTER_CANVAS.ay, mx, my);
@@ -140,8 +140,8 @@ function layShot(f: Frame, top: Frame, ox: number, oy: number, s: Shot): void {
     figs.push({ y: ky, draw: () => layPx(f, k.px, k.ax, k.ay, kx, ky) });
   }
   figs.sort((a, b) => a.y - b.y).forEach((g) => g.draw());
-  for (const o of s.over) layPx(f, o.px, FX_CANVAS.ax, FX_CANVAS.ay, mx, my);
-  const lights: [Light, number, number][] = [...mp.lights.map((l): [Light, number, number] => [l, MOTH_CANVAS.ax, MOTH_CANVAS.ay]), ...s.over.flatMap((o) => o.lights.map((l): [Light, number, number] => [l, FX_CANVAS.ax, FX_CANVAS.ay]))];
+  for (const o of over) layPx(f, o.px, FX_CANVAS.ax, FX_CANVAS.ay, mx, my);
+  const lights: [Light, number, number][] = [...mp.lights.map((l): [Light, number, number] => [l, MOTH_CANVAS.ax, MOTH_CANVAS.ay]), ...over.flatMap((o) => o.lights.map((l): [Light, number, number] => [l, FX_CANVAS.ax, FX_CANVAS.ay]))];
   for (const [l, ax, ay] of lights) layLight(f, mx - ax + l.x, my - ay + l.y, l.r, l.color, l.a ?? 0.15);
 }
 
@@ -207,16 +207,15 @@ const PLACE: Record<View, { at: V3; knight: V3 }> = {
 };
 if (cmd === 'top') {
   const f = frameOf(FW, FH);
-  layShot(f, topFrame(), OX, OY, { move: 'stand', t: 0.8, view: 'front', at: PLACE.front.at, knight: PLACE.front.knight, knightView: 'back', under: [], over: [], book: null });
+  layShot(f, topFrame(), OX, OY, { move: 'stand', t: 0.8, view: 'front', at: PLACE.front.at, knight: PLACE.front.knight, knightView: 'back', fx: null, book: null });
   savePng(args[0], f);
   console.log('saved', args[0]);
 }
 /** A moment of a move on the top, what it leaves with it. */
 function still(move: string, t: number, v: View, out: string): void {
   const f = frameOf(FW, FH);
-  const fx = effectsOf(move, t, v);
   const onBook = ['perch', 'beat', 'perchReel', 'dying', 'land'].includes(move);
-  layShot(f, topFrame(), OX, OY, { move, t, view: v, at: PLACE[v].at, knight: PLACE[v].knight, knightView: v === 'front' ? 'back' : 'front', ...fx, book: onBook ? 0.3 : null });
+  layShot(f, topFrame(), OX, OY, { move, t, view: v, at: PLACE[v].at, knight: PLACE[v].knight, knightView: v === 'front' ? 'back' : 'front', fx: [move, t], book: onBook ? 0.3 : null });
   savePng(out, f);
   console.log('saved', out);
 }
@@ -297,10 +296,9 @@ const NAMES: Record<string, [string, string]> = {
   dying: ['IT DIES SCREAMING', 'The first sound it ever makes; every word it swallowed flies home; it crumbles to dust'],
 };
 const shotAt = (move: string, t: number, view: View, extra: Partial<Shot> = {}): Shot => {
-  const fx = effectsOf(move, t, view);
   const onBook = ['perch', 'beat', 'perchReel', 'dying', 'land'].includes(move);
   const wind = move === 'beat' ? Math.max(0, 1 - Math.abs(t - MOTH_BEAT_BLOW.hit - 0.15) / 0.5) : move === 'land' ? Math.max(0, 1 - Math.abs(t - 0.9) / 0.4) : move === 'perch' ? 0.25 : 0.1;
-  return { move, t, view, at: PLACE[view].at, knight: PLACE[view].knight, knightView: view === 'front' ? 'back' : 'front', ...fx, book: onBook ? wind : null, ...extra };
+  return { move, t, view, at: PLACE[view].at, knight: PLACE[view].knight, knightView: view === 'front' ? 'back' : 'front', fx: [move, t], book: onBook ? wind : null, ...extra };
 };
 /** A move played at the game's speed (its loop at its own frames a second), `after` more seconds of what it leaves with its stand going on after it. */
 function play(move: string, view: View, after = 0, then = 'stand'): Shot[] {
@@ -317,12 +315,12 @@ function play(move: string, view: View, after = 0, then = 'stand'): Shot[] {
       // (after it: its stand going on, what it left still at work)
       const u = t - long;
       const tt = then === 'dying' ? MOTH.dieTime : Math.floor(u * MOTH_BEAT.fps) / MOTH_BEAT.fps;
-      const fx = effectsOf(move, t, view);
-      out.push({ ...shotAt(then, tt, view), ...fx, move: then, t: tt });
+      out.push({ ...shotAt(then, tt, view), fx: [move, t] });
     }
   }
   return out;
 }
+const ENCODER = cmd === 'film' ? spawn('python3', ['tools/moth_film.py', String(FW), String(FH), args[0]], { stdio: ['pipe', 'inherit', 'inherit'] }) : null;
 if (cmd === 'film') {
   for (const view of ['front', 'back'] as const) {
     const tag = view === 'front' ? 'FROM IN FRONT' : 'FROM BEHIND';
@@ -364,7 +362,8 @@ if (cmd === 'film') {
   const total = cuts.reduce((n, c) => n + c.frames.length, 0);
   console.error(`film: ${cuts.length} cuts, ${total} frames, ${(total / FPS).toFixed(1)} s`);
   const out = args[0];
-  const py = spawn('python3', ['tools/moth_film.py', String(FW), String(FH), out], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const py = ENCODER as NonNullable<typeof ENCODER>;
+  void out;
   const f = frameOf(FW, FH);
   const rgb = Buffer.alloc(FW * FH * 3);
   let n = 0;

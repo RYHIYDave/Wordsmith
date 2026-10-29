@@ -145,6 +145,21 @@ leaves beside it, its pages lifting in the wind of the wings. No word on it can 
 - Its sound (his rulebook's sound): silence; the wing-beats, heavy, on each downstroke; then the scream as it dies, the first
   sound it makes.
 
+## What is his, or the main chat's, to decide
+
+- THE LECTERN. Floor 20's place, approved since this was made (branch `mockup/quiet-tower`), puts the last chapter on a
+  lectern on a dais in the middle of the top. Here the Moth comes down on the chapter lying open on the stones, its body low
+  over it and its six feet round it. To settle on the lectern instead, its perch must stand higher (its feet on the dais,
+  its body over the lectern's top). That is a change of its landing and its last phase's poses, and of the checks' numbers.
+  Not done here.
+- ITS MOVES BEGIN IN STEP WITH ITS BEAT (see above): the game waits for the top of the beat, at most 2.4 s.
+- Two words are left out of those that pour out of it: twin (teal) and frost (sky blue), because they would read as the
+  hero's cyan on an enemy.
+- The little moths of the swarm have a dark seam round each but no pink edge, because a pink edge on a hundred and fifty of
+  them would read as pink confetti. They are part of its blow, as the Princess's diving swans are of hers.
+- From in front, the iso camera looks along its body, so in the middle of each beat one wing is seen near edge-on, cupped
+  but thin. From behind it shows all four eyes at once. The sheet shows both.
+
 ## Its pictures and film (docs/mockups/moth/pictures/)
 
 Made by `tools/moth_pictures.ts` (no browser; `tools/moth_film.py` captions them and makes the film with ffmpeg) on a stand-in
@@ -183,4 +198,4 @@ The dev page `src/dev/preview_moth.ts` shows the same in a browser: `top:<move>:
      the Hush.
   9. Its sizes: wings spread 18.5 tiles and more; hovering 15 and more; bigger than the Carrion Queen; the cone, the cloud,
      the beams, the swarm, the beat's wind; its drift.
-- Its review found nothing to fix in its last run: 0 findings.
+- Its review: 0 findings, every move, both ways round, every handover.
