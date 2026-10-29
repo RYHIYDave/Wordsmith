@@ -31,7 +31,7 @@ import { beside, fromFigure, handOf } from './facing';
 import type { Game } from './game';
 import type { ActId, Monster, Peril, PerilKind } from './state';
 import type { Element, MonsterKind } from './types';
-import { ACT1, ACT1_FLOORS, act2Floor } from './act1';
+import { ACT1, ACT1_FLOORS, act2Floor, highFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
 import { PAIR } from './act1_rules/pair';
 
@@ -53,6 +53,11 @@ export function bossKind(depth: number): MonsterKind {
   if (act2Floor(depth)) {
     // (floor 13: its double boss in place of the Palimpsest, the Scraper the floor's boss and the Quill beside it: act1_rules/pair.ts)
     const k = Math.floor(depth) === 13 && PAIR.on ? 'scraper' : ACT1_FLOORS[Math.floor(depth)].boss;
+    return act1Rules(k) ? k : 'warden';
+  }
+  // (ACT 2, PART TWO, THE HIGH CITY: each floor's royal, once built: game/act1.ts ACT1_FLOORS)
+  if (highFloor(depth)) {
+    const k = ACT1_FLOORS[Math.floor(depth)].boss;
     return act1Rules(k) ? k : 'warden';
   }
   return depth === 2 ? 'headsman' : depth === 3 ? 'chained' : depth === 4 ? 'amalgam' : depth === 5 ? 'fleshmancer' : 'warden';

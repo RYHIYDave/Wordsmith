@@ -44,6 +44,11 @@ import { RULES as physician } from './physician';
 import { RULES as censor } from './censor';
 import { RULES as scraper } from './scraper';
 import { RULES as quill } from './quill';
+import { RULES as swan } from './swan';
+import { RULES as gardener } from './gardener';
+import { RULES as groom } from './groom';
+import { RULES as pguard } from './pguard';
+import { RULES as princess } from './princess';
 
 export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>> = {
   chanter,
@@ -83,6 +88,12 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   censor,
   scraper,
   quill,
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's)
+  swan,
+  gardener,
+  groom,
+  pguard,
+  princess,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

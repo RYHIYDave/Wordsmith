@@ -11,7 +11,7 @@
 // the cult's; a yellow pack of the cult's dagger cultists is led by a mini fleshmancer as on floor 5.
 
 import type { RNG } from '../engine/rng';
-import { act1Floor, act2Floor } from './act1';
+import { act1Floor, cityFloor } from './act1';
 import { act2Pack, act2Ready } from './act2_mobs';
 // (the pack sizes of the descent's kinds are his rulebook's, by size: tiny 6 to 10, small 4 to 7, medium 3 to 5)
 import { PACK_BY_SIZE, sizeOf } from './defs';
@@ -74,7 +74,7 @@ function standIn(k: MonsterKind): MonsterKind {
 /** A pack for a floor of the descent: its kind, and how many. A lair's is a guardian's: one big one and its own (the floor's medium creature as the guardian). */
 export function act1Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'champion'): { kind: MonsterKind; size: number } {
   // (ACT 2, THE HUSH: its own, game/act2_mobs.ts)
-  if (act2Floor(depth)) return act2Pack(depth, rng, tier);
+  if (cityFloor(depth)) return act2Pack(depth, rng, tier);
   const n = act1Floor(depth) || 6;
   const own = ACT1_OWN[n];
   const pool: Act1Mob[] = [...own.map((m) => ({ ...m })), ...ACT1_CULT];

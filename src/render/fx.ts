@@ -363,6 +363,12 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   // (floor 13's pair: the Scraper's sodden grey pages and ink-black claws; the Quill's white pages and its ink; art/pair_skins.ts)
   scraper: ['#d2c9b0', '#a29a86', '#827c6c', '#14121a'],
   quill: ['#f2ecdc', '#d4ccb8', '#9a9384', '#14121a'],
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's, from the art chat's colours)
+  swan: ['#ece6df', '#d5cfd1', '#aca4b3', '#c8742c'],
+  gardener: ['#2e3e30', '#5a4632', '#8a7a5a', '#c8c0b0'],
+  groom: ['#7a3a32', '#c8b080', '#2a2622', '#d8d4cc'],
+  pguard: ['#6a1e30', '#d8d8e0', '#9aa0b0', '#f0e8e0'],
+  princess: ['#4a3a6a', '#8a7aa8', '#4a773a', '#ece6df'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };

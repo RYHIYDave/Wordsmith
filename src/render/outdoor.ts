@@ -30,6 +30,7 @@ import { UC_DEEP, undercityLook } from '../art/undercity';
 import { millraceLook } from '../art/millrace';
 import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
+import { SG_WATER, swanGardensLook } from '../art/swangardens';
 // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 // (FLOOR 15'S STACKS A BLOCK HIGH, the art chat's, behind LOW_STACKS: art/low_stacks.ts)
@@ -251,6 +252,9 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
     case 'library':
       return greatLibraryLook({ floor, zone: zoneOf(land, W, H), rows: lowRowsOf(land, floor) ?? undefined });
+    // (ACT 2, PART TWO, THE HIGH CITY: the Swan Gardens, the art chat's look; given what its map-maker lays once it is built)
+    case 'swangardens':
+      return swanGardensLook({});
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -430,7 +434,7 @@ export class OutdoorGround {
     this.town = null;
     const hex = (c: readonly number[]): string => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
     // (ACT 2: each ground's own deep colour, the art chat's)
-    this.deep = land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
+    this.deep = land.kind === 'swangardens' ? hex(SG_WATER[0]) : land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
     return true;
   }
 

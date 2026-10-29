@@ -127,7 +127,10 @@ export type MonsterKind =
   | 'rat' | 'dredger' | 'fieldhand' | 'carter' | 'patient' | 'orderly' | 'inkling' | 'bookwarden'
   | 'crier' | 'ratking' | 'palimpsest' | 'physician' | 'censor'
   // ACT 2, THE HUSH: floor 13's double boss in place of the Palimpsest, the Scraper and the Quill (game/act1_rules/pair.ts)
-  | 'scraper' | 'quill';
+  | 'scraper' | 'quill'
+  // ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): floor 16's own (the swans, the Hushed gardeners and grooms, the
+  // palace guard) and its boss, the Princess; the art chat's
+  | 'swan' | 'gardener' | 'groom' | 'pguard' | 'princess';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -144,6 +147,10 @@ export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem
 export const ACT2_MOBS: readonly MonsterKind[] = ['hushed', 'watch', 'scribe', 'hound', 'rat', 'dredger', 'fieldhand', 'carter', 'patient', 'orderly', 'inkling', 'bookwarden'];
 export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor', 'scraper', 'quill'];
 export const ACT2_KINDS: readonly MonsterKind[] = [...ACT2_MOBS, ...ACT2_BOSSES];
+/** ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): its floors' own mobs and their bosses, the art chat's (mockup/high-city-all). */
+export const HIGH_MOBS: readonly MonsterKind[] = ['swan', 'gardener', 'groom', 'pguard'];
+export const HIGH_BOSSES: readonly MonsterKind[] = ['princess'];
+export const HIGH_KINDS: readonly MonsterKind[] = [...HIGH_MOBS, ...HIGH_BOSSES];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers

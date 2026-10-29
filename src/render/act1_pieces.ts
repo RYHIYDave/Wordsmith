@@ -33,6 +33,8 @@ import { undercityPieces } from '../art/floor12';
 import { WHEEL_STEPS, WHEEL_TURN, millracePieces } from '../art/floor13';
 import { houseOfQuietPieces } from '../art/floor14';
 import { greatLibraryPieces } from '../art/floor15';
+import { herVinesPieces, swanGardensPieces } from '../art/floor16';
+import { highCitySetPieces } from '../art/high_city_set';
 import { hubPieces } from '../art/hub2';
 import { CAMP_ANIM, CAMP_DRESS, CAMP_TOPS } from '../game/camp';
 import { GRAIN, clearOfFloor, fbm, pictureOf, worldOf } from '../art/terrain';
@@ -66,6 +68,12 @@ export function act1Pieces(n: number): Map<string, Piece> {
   // (THE CAMP INSIDE VELLUM'S GATE, game/camp.ts: the Gate Ward's pieces, the Hush's set and the hub's own, art/hub2.ts)
   if (n === CAMP_DRESS) {
     m = new Map<string, Piece>([...hushSetPieces(), ...gateWardPieces(), ...(hubPieces() as unknown as Piece[])].map((p) => [p.name, p]));
+    MAPS.set(n, m);
+    return m;
+  }
+  // (ACT 2, PART TWO, THE HIGH CITY: each floor's own 25 and the High City's 25, the art chat's; floor 16 her vines in its gardens too)
+  if (n >= 16) {
+    m = new Map([...highCitySetPieces(), ...swanGardensPieces(), ...herVinesPieces()].map((p) => [p.name, p]));
     MAPS.set(n, m);
     return m;
   }

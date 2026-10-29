@@ -41,6 +41,11 @@ import { FX as physician } from './physician';
 import { FX as censor } from './censor';
 import { FX as scraper } from './scraper';
 import { FX as quill } from './quill';
+import { FX as swan } from './swan';
+import { FX as gardener } from './gardener';
+import { FX as groom } from './groom';
+import { FX as pguard } from './pguard';
+import { FX as princess } from './princess';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   chanter,
@@ -80,6 +85,12 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   censor,
   scraper,
   quill,
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's)
+  swan,
+  gardener,
+  groom,
+  pguard,
+  princess,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {

@@ -21,7 +21,7 @@
 // it on the cliffs: his rule) is for the eye alone: render/act1_pieces.ts lays it from the painted ground.
 
 import { RNG } from '../engine/rng';
-import { act1Floor, act2Floor } from './act1';
+import { act1Floor, cityFloor } from './act1';
 import { dressAct2 } from './act2_dress';
 import { blobDist, laneDist } from './act1_layout';
 import type { Land } from './act1_layout';
@@ -241,7 +241,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   const land = L.land;
   if (!n || !land) return null;
   // (ACT 2, THE HUSH: a floor with a dresser of its own is dressed by it: game/act2_dress.ts)
-  if (act2Floor(depth)) {
+  if (cityFloor(depth)) {
     const own = dressAct2(L, depth, seed);
     if (own) return own;
   }
@@ -423,7 +423,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
 
   // ---- THE CULT'S CAMP: in one of the main way's areas (not the first two), its tents, fire and crates
   // (ACT 2: no camp of the cult in the Hush: the descent's cult is not there)
-  const campArea = act2Floor(depth) ? [] : land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
+  const campArea = cityFloor(depth) ? [] : land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
   const camp = campArea.length ? rng.pick(campArea) : null;
   // (DRESS_EDGES: a camp round its watchfire: the fire near the middle of one of those areas that has the room for it, its
   // tents and things in a ring round it, its crates and bedrolls just inside the ring; where none has, as before)

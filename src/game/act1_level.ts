@@ -4,7 +4,7 @@
 // of the boss's ground, asleep until the boss dies (game/ways.ts, `Ways.onward`); no stairwell, no gate. Then the
 // floor laid with its own pieces, last, by dice of its own (game/act1_dress.ts).
 
-import { act2Floor } from './act1';
+import { cityFloor } from './act1';
 import { generateAct1 } from './act1_layout';
 import { generateAct2 } from './act2_layout';
 import { dressAct1 } from './act1_dress';
@@ -15,7 +15,8 @@ import { LEAP_WATER, markWater } from './water';
 
 export function makeAct1Level(depth: number, seed: number): Level {
   // (ACT 2, THE HUSH: floors 11 to 15 by map-makers of their own, game/act2/)
-  const { floor, land } = act2Floor(depth) ? generateAct2(depth, seed) : generateAct1(depth, seed);
+  // (ACT 2: the Hush's floors and the High City's each laid by a map-maker of its own: game/act2_layout.ts)
+  const { floor, land } = cityFloor(depth) ? generateAct2(depth, seed) : generateAct1(depth, seed);
   // (EXITS, floors 6 to 15: where the way on and the start stand, the doorways of those in a wall cut through, before the level
   // is made of the floor: game/ways.ts, `placeOnward`)
   const placed = EXITS.on ? placeOnward(floor, land) : null;

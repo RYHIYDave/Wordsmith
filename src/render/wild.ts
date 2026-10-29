@@ -134,6 +134,12 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   palimpsest: { bits: ['#cbc1a6', '#a59b82', '#6d6556'], sparks: false, blood: false, dust: true },
   scraper: { bits: ['#d2c9b0', '#a29a86', '#827c6c'], sparks: false, blood: false, dust: true },
   quill: { bits: ['#f2ecdc', '#d4ccb8', '#9a9384'], sparks: false, blood: false, dust: true },
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's; nothing gory, the Hush leaves them; the swans burst into feathers)
+  swan: { bits: ['#ece6df', '#d5cfd1', '#aca4b3'], sparks: false, blood: false, dust: true },
+  gardener: { bits: ['#2e3e30', '#5a4632', '#8a7a5a'], sparks: false, blood: false, dust: true },
+  groom: { bits: ['#7a3a32', '#c8b080', '#2a2622'], sparks: false, blood: false, dust: true },
+  pguard: { bits: ['#6a1e30', '#d8d8e0', '#9aa0b0'], sparks: true, blood: false, dust: true },
+  princess: { bits: ['#4a3a6a', '#8a7aa8', '#4a773a'], sparks: false, blood: false, dust: true },
   physician: { bits: ['#1e1a22', '#3a3440', '#929f84'], sparks: false, blood: false, dust: true },
   censor: { bits: ['#141218', '#24202b', '#3a3440'], sparks: false, blood: false, dust: true },
 };

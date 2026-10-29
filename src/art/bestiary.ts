@@ -39,7 +39,7 @@ import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
-import { ACT1_KINDS, ACT2_KINDS } from '../game/types';
+import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../game/types';
 import { ACT1_FIGS, act1Fig, act1Look, act1Looks } from './act1_figs/index';
 
 /**
@@ -127,9 +127,9 @@ export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'gole
 
 /** THE FIRST FIVE FLOORS' figures: the bosses of floors 2 to 5 (the Chained One in each of his three states), the bone beast, and the cult's two. */
 // (ACT 2, THE HUSH: its kinds as the descent's, once built, and their other looks: art/act1_figs/types.ts `looks`)
-export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...[...ACT1_KINDS, ...ACT2_KINDS].filter((k) => act1Fig(k) !== null), ...(act1Looks() as MonsterFigure[])];
+export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].filter((k) => act1Fig(k) !== null), ...(act1Looks() as MonsterFigure[])];
 /** Those of them that are heavy to paint and to hold (art/bosses3.ts: seconds of painting, tens of megabytes): made for the floor they are on, and let go of after it (Bestiary.forget). */
-export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...[...ACT1_KINDS, ...ACT2_KINDS].filter((k) => act1Fig(k)?.heavy), ...(act1Looks() as MonsterFigure[]).filter((f) => act1Fig(f)?.heavy)];
+export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].filter((k) => act1Fig(k)?.heavy), ...(act1Looks() as MonsterFigure[]).filter((f) => act1Fig(f)?.heavy)];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
@@ -139,7 +139,7 @@ export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: numbe
   if (look) return look as MonsterFigure;
   // (ACT 2, THE HUSH: a lair's guardian there is one of the floor's own, game/act2_mobs.ts ACT2_GUARD, and is shown as its
   // kind: nothing of the old floors fights on the new, his "let’s keep the acts separate")
-  return m.kind === 'warden' ? 'warden' : m.champion && !ACT2_KINDS.includes(m.kind) ? 'guardian' : m.kind;
+  return m.kind === 'warden' ? 'warden' : m.champion && !ACT2_KINDS.includes(m.kind) && !HIGH_KINDS.includes(m.kind) ? 'guardian' : m.kind;
 }
 
 /**
@@ -216,8 +216,14 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   censor: { top: 41, half: 16 },
   scraper: { top: 22, half: 40 },
   quill: { top: 52, half: 14 },
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's, from the art chat's notes until FIG.size says)
+  swan: { top: 18, half: 9 },
+  gardener: { top: 27, half: 9 },
+  groom: { top: 27, half: 9 },
+  pguard: { top: 33, half: 11 },
+  princess: { top: 42, half: 14 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
-  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
+  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)
   ...Object.fromEntries(act1Looks().map((k) => [k, act1Fig(k)!.size])),
 };

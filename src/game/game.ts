@@ -23,7 +23,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
-import { ACT1, act2Floor, lastFloor } from './act1';
+import { ACT1, HIGH_CITY, act2Floor, cityFloor, lastFloor } from './act1';
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
@@ -1544,7 +1544,7 @@ export class Game {
       // (a lair gives up a word as one guardian did: only the first of them may carry one; words are scarce)
       // (ACT 2, THE HUSH: nothing of the old floors fights there, his "let’s keep the acts separate": a lair's guardians are the
       // floor's own medium kind, game/act2_mobs.ts ACT2_GUARD, as the pack's kind says)
-      const guard: MonsterKind = act2Floor(this.depth) ? kind : 'brute';
+      const guard: MonsterKind = cityFloor(this.depth) ? kind : 'brute';
       spots.forEach((s, i) => this.spawn(guard, s.x, s.y, pi, 2, false, rng, i === 0 ? lot : null));
       return;
     }
@@ -2102,11 +2102,12 @@ export class Game {
       // (ACT 1, THE DESCENT: on down the mountain to the next floor; from the tenth, the Fen, home to town: the siege broken)
       this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
       this.cleared++;
-      if (this.depth === 10 || this.depth >= lastFloor()) {
+      // (ACT 2, PART TWO, THE HIGH CITY: from the fifteenth home too, its payoff as it was; the waypoint on up the hill, floor 16)
+      if (this.depth === 10 || (this.depth === 15 && HIGH_CITY.on) || this.depth >= lastFloor()) {
         const from = this.depth;
         // (ACT 2, THE HUSH: the siege broken, the town's waypoint takes him on into the city, floor 11; from the fifteenth, the
         // library, home: his doc's payoff, the words flying home and the High City's gates shut)
-        if (act2Floor(from + 1)) this.wayDepth = Math.max(this.wayDepth, from + 1);
+        if (cityFloor(from + 1)) this.wayDepth = Math.max(this.wayDepth, from + 1);
         // (ENDLESS MODE: the last floor built beaten, the endless levels are open to him: the town's waypoint takes him on into the first)
         const opens = ENDLESS.on && from >= lastFloor() && this.endless === 0;
         if (opens) {
@@ -2117,7 +2118,7 @@ export class Game {
         this.enterTown(EXITS.on && from === 10 ? 'gate' : null);
         this.cameT = 0;
         this.sfx('portal');
-        this.msg(from === 10 ? `${floorTitle(from).level} cleared. The siege is broken.` : `${floorTitle(from).level} cleared. The stolen words fly home. High above, the gates of the High City swing shut.`, MSG.good);
+        this.msg(from === 10 ? `${floorTitle(from).level} cleared. The siege is broken.` : from === 15 ? `${floorTitle(from).level} cleared. The stolen words fly home. High above, the gates of the High City swing shut.` : `${floorTitle(from).level} cleared.`, MSG.good);
         if (opens) this.msg(ENDLESS_OPENS, MSG.word);
         return;
       }

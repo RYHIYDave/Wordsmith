@@ -34,23 +34,47 @@ export const ACT1 = { on: true };
  */
 export const ACT2 = { on: true };
 
-/** The kinds of ground of the descent, in its order; then the Hush's five (ACT2). */
+/**
+ * ACT 2, PART TWO, THE HIGH CITY (floors 16 to 20), behind this switch: OFF until the owner has seen each floor in play and said
+ * yes. His plan, his doc "Wordsmith Act 2, Part Two: The High City (Levels 16–20)" (https://claude.ai/artifact/Vk5k8RPTdwyMhdpSUd4fuX),
+ * planned with him in the main chat, 28 Oct 2026; the art the art chat's (its branch mockup/high-city-all, every part with his
+ * yes: docs/mockups/high_city/HANDBACK.md); his word to the main chat, 29 Oct, 18:09: “Levels are ready to add”, and his picks
+ * then: the floors built “One floor at a time”; the camp inside Vellum's gate the town still, “The camp stays the town
+ * (Recommended)”; his event, the Royal Cards, “With floor 16 (Recommended)”. Built as the Hush's floors were (docs/act2_build.md,
+ * its frame): each floor a LandKind of its own with its own map-maker and dresser (game/act2/), its own kinds (the empty files
+ * registered for them, filled as each is built). `built` is how many of its five are in so far: floor 16, the Swan Gardens, first.
+ * The Hush's own event, THE BELLS, is floors 11 to 15's (act2Floor); these floors have the Royal Cards (game/royal_cards.ts).
+ */
+export const HIGH_CITY = { on: false, built: 1 };
+
+/** The kinds of ground of the descent, in its order; then the Hush's five (ACT2); then the High City's (HIGH_CITY). */
 export type Act1LandKind = 'quarry' | 'ledge' | 'canyon' | 'pine' | 'fen';
-export type Act2LandKind = 'gateward' | 'undercity' | 'millrace' | 'housequiet' | 'library';
+export type Act2LandKind = 'gateward' | 'undercity' | 'millrace' | 'housequiet' | 'library' | HighLandKind;
+export type HighLandKind = 'swangardens';
 export type LandKind = Act1LandKind | Act2LandKind;
-export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library'];
+export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens'];
 /** The Hush's five grounds. */
 export const ACT2_LANDS: readonly Act2LandKind[] = ['gateward', 'undercity', 'millrace', 'housequiet', 'library'];
 export function isAct2Land(k: LandKind): k is Act2LandKind {
   return (ACT2_LANDS as readonly string[]).includes(k);
 }
 
-/** Which floor laid as open ground a depth is: 6 to 10 (the descent), and 11 to 15 (the Hush) with ACT2 on; 0 for any other. */
+/** Which floor laid as open ground a depth is: 6 to 10 (the descent), and 11 to 15 (the Hush) with ACT2 on, and the High City's built with HIGH_CITY on; 0 for any other. */
 export function act1Floor(depth: number): number {
   const d = Math.floor(depth);
   if (!ACT1.on) return 0;
   if (d >= 6 && d <= 10) return d;
+  if (highFloor(d)) return d;
   return ACT2.on && d >= 11 && d <= 15 ? d : 0;
+}
+/** Which floor of the High City a depth is (16 on, as many as are built, with HIGH_CITY on), 0 for any other. */
+export function highFloor(depth: number): number {
+  const d = Math.floor(depth);
+  return ACT1.on && ACT2.on && HIGH_CITY.on && d >= 16 && d < 16 + HIGH_CITY.built ? d : 0;
+}
+/** A floor of the city with a map-maker, a dresser and kinds of its own: the Hush's (11 to 15) and the High City's; 0 for any other. */
+export function cityFloor(depth: number): number {
+  return act2Floor(depth) || highFloor(depth);
 }
 /** Which floor of the Hush a depth is (11 to 15, with ACT2 on), 0 for any other. */
 export function act2Floor(depth: number): number {
@@ -62,8 +86,9 @@ export function descentFloor(depth: number): number {
   const d = Math.floor(depth);
   return ACT1.on && d >= 6 && d <= 10 ? d : 0;
 }
-/** The last floor there is: the Hush's fifth with it on, else the descent's. */
+/** The last floor there is: the High City's last built with it on, else the Hush's fifth with it on, else the descent's. */
 export function lastFloor(): number {
+  if (ACT1.on && ACT2.on && HIGH_CITY.on) return 15 + HIGH_CITY.built;
   return ACT1.on && ACT2.on ? 15 : 10;
 }
 /** The ground of a floor laid as open ground (null for any other floor). */
@@ -103,6 +128,9 @@ export const ACT1_FLOORS: Readonly<Record<number, Act1FloorDef>> = {
   13: { depth: 13, land: 'millrace', place: 'The Millrace', name: 'The Pulping Floor', boss: 'palimpsest', light: { dark: 0.34, tint: [16, 22, 44], vignette: 0.3, pool: 0.14 } },
   14: { depth: 14, land: 'housequiet', place: 'The House of Quiet', name: "The Physician's Theatre", boss: 'physician', light: { dark: 0.72, tint: [10, 16, 12], vignette: 0.32, pool: 0.42 } },
   15: { depth: 15, land: 'library', place: 'The Great Library', name: 'The Reading Room', boss: 'censor', light: { dark: 0.8, tint: [12, 8, 6], vignette: 0.34, pool: 0.46 } },
+  // ACT 2, PART TWO, THE HIGH CITY (HIGH_CITY): his doc's places and each boss's floor; the Swan Gardens at dawn (his doc's palette
+  // "Dawn rose, swan white, deep hedge green"; the art chat's ground painted for a low sun from the upper left)
+  16: { depth: 16, land: 'swangardens', place: 'The Swan Gardens', name: 'The Swan Pavilion', boss: 'princess', light: { dark: 0.06, tint: [58, 32, 52], vignette: 0.28, pool: 0 } },
 };
 
 /** The floor of the descent at a depth, or null. */

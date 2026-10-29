@@ -741,6 +741,15 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   scraper: { kind: 'scraper', name: 'The Scraper', life: 340, dmgMin: 22, dmgMax: 30, speed: 1.0, radius: 1.1, range: 3.6, windup: 0.5, cooldown: 2.0, xp: 260, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   // (the Quill quick, his word of 21 Oct 2026: “a heron should be quick”: twice the pace its wade was painted for, game/act1_rules/pair.ts)
   quill: { kind: 'quill', name: 'The Quill', life: 250, dmgMin: 18, dmgMax: 26, speed: 2.2, radius: 0.55, range: 2.6, windup: 0.6, cooldown: 2.0, xp: 200, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): floor 16's, the main chat's first picks beside the Hush's likenesses
+  // (the swans as the city's hounds, small and in flocks; the gardeners and grooms as the Hushed, faster: the art's rush,
+  // PH_PACE; the palace guard as the watch, a head taller; the Princess as the Censor, fast: her glide, PR_PACE). Their moves'
+  // moments and reaches are the art chat's (docs/mockups/swan_gardens/README.md); their rules game/act1_rules/<kind>.ts.
+  swan: { kind: 'swan', name: 'Wild Swan', life: 14, dmgMin: 5, dmgMax: 8, speed: 1.4, radius: 0.3, range: 1.1, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  gardener: { kind: 'gardener', name: 'Hushed Gardener', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.3, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  groom: { kind: 'groom', name: 'Hushed Groom', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.6, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  pguard: { kind: 'pguard', name: 'Palace Guard', life: 52, dmgMin: 13, dmgMax: 19, speed: 0.8, radius: 0.45, range: 2.4, windup: 20 / 30, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  princess: { kind: 'princess', name: 'The Princess', life: 640, dmgMin: 22, dmgMax: 31, speed: 4.0, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.0, xp: 1000, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -1195,6 +1204,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   physician: ['Say ah.', "Hold still. This won't hurt.", 'Your last words, please.'],
   // (ACT 2, THE HUSH: the Censor, his mouth a bar of ink, says nothing: a silence over him as his name comes up, game/act1_rules/censor.ts)
   censor: ['...'],
+  // (THE HIGH CITY: the Princess makes no sound but her vines and hooves, his pick; her one whisper is as she falls: game/act1_rules/princess.ts)
+  princess: ['...'],
 };
 
 /**
@@ -1441,7 +1452,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];
