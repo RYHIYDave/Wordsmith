@@ -93,3 +93,15 @@ stories and bosses are his plan doc's, "Wordsmith Act 2, Part Two: The High City
 Floor 17's ground and the Prince's 25 pieces (`mockup/masque`); floor 18's and the Queen's (`mockup/glass-gallery`); floor
 19's and the King's (`mockup/keep`); floor 20's and the Moth's (`mockup/quiet-tower`); the High City's own 25, shared by
 16 to 20 (`mockup/high-city-set`). Each paints a first look for his yes before anything else is judged.
+
+## His word on what came back
+
+- Your reflections (`mockup/reflections`): “Yes, that's them (Recommended)”; their weapons, “Pink, like enemies
+  (Recommended)”.
+- The Silent Order (`mockup/silent-order`): “Yes, that's the Order (Recommended)”; asked whether the armed Order on 19
+  should throw a fan of three, “A fan of three on 19 (Recommended)” (made).
+- The first looks, each asked “is this the <place>?”: the Masque, the Glass Gallery and the Keep, each “Yes, that's the
+  place (Recommended)”.
+- His usage, 29 Oct, 11:19: “Well you managed to use almost all of it in about two hours.  You may need to cut those
+  helpers, I’m up to 93% usage”; 13:00: “From 60% when I said go crazy”. Every helper had stopped (the usage limit); asked
+  how to go on, “Finish a few, one at a time”: one helper at a time, on the work nearest done.
