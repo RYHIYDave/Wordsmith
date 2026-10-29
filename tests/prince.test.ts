@@ -177,7 +177,8 @@ test('1. the switch is off, and nothing of the game imports him', () => {
   const users: string[] = [];
   const his = /^art\/prince(_moves|_fx)?$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || his.test(f.replace(/\.ts$/, ''))) continue;
+    // (floor 20's shadows of the four royals, art/royal_shadows.ts and art/royal_shadows_fx.ts, a mock-up of their own made from the royals' moves, which nothing of the game imports either: tests/royal_shadows.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || his.test(f.replace(/\.ts$/, '')) || /^art\/royal_shadows/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];

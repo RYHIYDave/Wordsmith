@@ -380,7 +380,7 @@ export function blowsPicture(): Px {
     const f = fx === 'sweep' ? sweepPainted(since) : fx === 'crown' ? crownPainted(since) : fx === 'decree' ? decreePainted(since, 'front', { from: -6, to: 12, half: 11 }) : curtainsPainted(since, 'front', [(tx - kx0) / TILE3, (ty - ky0) / TILE3], from);
     if (fx !== 'decree' && fx !== 'curtains') lay(px, laidOf(f.px, FX_CANVAS.ax, FX_CANVAS.ay), cx, cy + H * i, 1, clip);
     shadow(px, cx, cy + H * i, 24);
-    lay(px, frameOf(KING, move, Math.min(hit + since, move === 'decree' ? KING.more?.decree?.motion.keys.at(-1)?.at ?? 0 : 9), 'front'), cx, cy + H * i);
+    lay(px, frameOf(KING, move, Math.min(hit + since, move === 'decree' ? KING.more?.decree?.motion.keys.slice(-1)[0]?.at ?? 0 : 9), 'front'), cx, cy + H * i);
     shadow(px, nx, ny, 9);
     lay(px, knight('back'), nx, ny, 1, undefined, true);
     if (fx === 'decree' || fx === 'curtains') lay(px, laidOf(f.px, FX_CANVAS.ax, FX_CANVAS.ay), cx, cy + H * i, 1, fx === 'decree' ? clip : undefined);

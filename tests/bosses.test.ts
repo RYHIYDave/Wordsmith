@@ -157,7 +157,7 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     // tests/princess.test.ts; and floor 18's boss, the Queen, art/queen.ts, art/queen_moves.ts and art/queen_fx.ts:
     // tests/queen.test.ts)
     // tests/princess.test.ts; and floor 19's boss, the King, art/king*.ts: tests/king.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|prince|garden_swans|spectral_steed|^art\/queen(_moves|_fx)?\.ts$|art\/king/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|prince|garden_swans|spectral_steed|^art\/queen(_moves|_fx)?\.ts$|art\/king|royal_shadows/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
@@ -358,7 +358,7 @@ test('12. nothing of the game imports the chains or the checks either', () => {
     // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts; and floor 18's boss, the Queen:
     // tests/queen.test.ts)
     // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts; and floor 19's boss, the King: tests/king.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|prince|garden_swans|spectral_steed|^art\/queen(_moves|_fx)?\.ts$|art\/king/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|prince|garden_swans|spectral_steed|^art\/queen(_moves|_fx)?\.ts$|art\/king|royal_shadows/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
