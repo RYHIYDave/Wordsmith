@@ -221,3 +221,10 @@ it with the game's painter and the game's dark, the fires' light taken out of it
   main chat may prefer it otherwise.
 - THE PORTCULLIS. Laid a tile at a time under a lintel, it hangs from nothing when the wall it is in is a near wall cut
   away; laid in a far wall's doorway or across a hall it reads (09_corner_overview.png). The trap's timing is the game's.
+
+## His word on the game-ready Keep
+
+The laid corner and the King's 25 pieces (`08_corner_phone.png`, `07_pieces_kings_25.png`), asked “The Keep made
+game-ready (08_corner_phone.png and the King's 25 pieces): is this right?”: “Yes, that's the Keep (Recommended)”. Asked
+whether the King should have a mark of his own (a gold songbird) or keep the royal swan crest of floor 16's guard on his
+banners, throne and bed: “Keep the royal swan”.
