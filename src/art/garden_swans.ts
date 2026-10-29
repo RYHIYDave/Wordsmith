@@ -128,10 +128,13 @@ export interface SwanPose {
   alive: boolean;
   /** Fallen over onto its right side: that wing laid flat under it (0 standing, 1 lying). */
   lie: number;
+  /** In the air (0 on the ground, 1 flying): its wings spread out wide to either side, beating `beat` up (or down). */
+  fly: number;
+  beat: number;
 }
 const FOOT_X = 1.2;
 const FOOT_Y = 3.4;
-const REST: SwanPose = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, neck: [1, 0, 0], reach: 0, look: 0, nod: 0, gape: 0, wings: 1, flap: 0, tail: 0, feet: [[FOOT_X, FOOT_Y, 0], [FOOT_X, -FOOT_Y, 0]], alive: true, lie: 0 };
+const REST: SwanPose = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, neck: [1, 0, 0], reach: 0, look: 0, nod: 0, gape: 0, wings: 1, flap: 0, tail: 0, feet: [[FOOT_X, FOOT_Y, 0], [FOOT_X, -FOOT_Y, 0]], alive: true, lie: 0, fly: 0, beat: 0 };
 
 /** A turn of a direction by yaw (about z), then pitch (about the body's side, nose down), then roll (about its length). */
 function turnV(v: V3, yaw: number, pitch: number, roll: number): V3 {
@@ -305,7 +308,26 @@ function deathPose(t: number): SwanPose {
     lie: k,
   };
 }
+/** IN THE AIR (the Princess's swans, circling her): its wings spread wide and beating, its neck stretched out straight before it, its feet tucked back under its tail. One wingbeat a round. */
+export const SWAN_FLY = { period: 0.6 } as const;
+function flyPose(t: number): SwanPose {
+  const ph = (t / SWAN_FLY.period) * TAU;
+  return {
+    ...REST,
+    z: 1.2 * Math.sin(ph),
+    pitch: -3 + 2 * Math.sin(ph),
+    neck: [0.12, 0, 0.88],
+    reach: 1,
+    nod: -6,
+    wings: 1,
+    fly: 1,
+    beat: 12 * Math.cos(ph),
+    tail: 0,
+    feet: [[-7.5, 1.8, 6.5], [-7.5, -1.8, 6.5]],
+  };
+}
 function poseOf(which: string, t: number): SwanPose {
+  if (which === 'fly') return flyPose(t);
   if (which === 'walk') return walkPose(t);
   if (which === 'attack') return bitePose(t);
   if (which === 'reel') return reelPose(t);
@@ -314,7 +336,7 @@ function poseOf(which: string, t: number): SwanPose {
 }
 /** How long a move lasts (seconds). */
 export function swanLong(which: string): number {
-  return which === 'walk' ? SWAN_WALK.period : which === 'attack' ? SWAN_BITE.long : which === 'reel' ? SWAN_REEL.long : which === 'dying' ? SWAN_DIE.long : SWAN_STAND.period;
+  return which === 'fly' ? SWAN_FLY.period : which === 'walk' ? SWAN_WALK.period : which === 'attack' ? SWAN_BITE.long : which === 'reel' ? SWAN_REEL.long : which === 'dying' ? SWAN_DIE.long : SWAN_STAND.period;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -406,9 +428,14 @@ function swanBits(P: SwanPose, put: Put, st: Stage): void {
     const root = (a: number): V3 => [4.2 - 13.4 * a, s * (4.5 - 1.4 * a) * tuck, 10.2 + 1.2 * a];
     const edge = (a: number): V3 => {
       const b = Math.sin(Math.PI * Math.pow(a, 0.8));
-      return [4.2 - 14.2 * a, s * (4.6 - 0.8 * a + spread * b) * tuck, 11.4 + H2 * b + 0.4 * a];
+      const ground: V3 = [4.2 - 14.2 * a, s * (4.6 - 0.8 * a + spread * b) * tuck, 11.4 + H2 * b + 0.4 * a];
+      if (P.fly <= 0) return ground;
+      // (in the air: the wing reaching far out to the side, broad at its root, its tip swept back, beating up and down)
+      const bf = Math.sin(Math.PI * Math.pow(a, 0.7));
+      const air: V3 = [3.0 - 12 * a - 4 * bf * bf, s * (4.6 + 20 * bf), 10.6 + P.beat * bf];
+      return [ground[0] + (air[0] - ground[0]) * P.fly, ground[1] + (air[1] - ground[1]) * P.fly, ground[2] + (air[2] - ground[2]) * P.fly];
     };
-    const N = 11;
+    const N = P.fly > 0 ? 17 : 11;
     const da = 0.5 / (N - 1);
     for (let i = 0; i < N; i++) {
       const a = 0.04 + (0.92 * i) / (N - 1);
@@ -423,7 +450,7 @@ function swanBits(P: SwanPose, put: Put, st: Stage): void {
       const side = turned(P, [0, s, 0]);
       let thick = norm(cross(upw, tang));
       if (thick[0] * side[0] + thick[1] * side[1] + thick[2] * side[2] < 0) thick = mul(thick, -1);
-      put(part, `wing${s}_${i}`, { k: 'ball', c: W(c), ax: [mul(tang, 1.25 + 0.55 * Math.sin(Math.PI * a)), mul(thick, 1.15), mul(upw, span / 2 + 0.7)], skin: wingSkin(a, da * 1.6), far });
+      put(part, `wing${s}_${i}`, { k: 'ball', c: W(c), ax: [mul(tang, 1.25 + 0.55 * Math.sin(Math.PI * a) + 0.5 * P.fly), mul(thick, 1.15), mul(upw, span / 2 + 0.7)], skin: wingSkin(a, da * 1.6), far });
     }
   }
   // ITS LEGS: short, black, the knees hidden in its belly; its webbed feet flat on the floor (or lifted, stepping)
