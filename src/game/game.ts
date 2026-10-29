@@ -15,7 +15,9 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
+import { COMPANIONS, TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
+import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, pickedIn } from './companions';
+import type { CompanionGroup, CompanionKind } from './companions';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -38,7 +40,7 @@ import { AIM_MODES, emptyControls } from './state';
 import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, takesTiles, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
-import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
+import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
@@ -108,6 +110,8 @@ export interface RunSave {
   quest?: 'heart' | null;
   /** THE SKILL TREES (game/talents.ts): the talents taken, in the order taken (absent when none). */
   talents?: string[];
+  /** THE RANGER'S COMPANIONS (game/companions.ts): the animal picked for each of his companion talents (absent while COMPANIONS is off, or none picked). */
+  pets?: Partial<Record<CompanionGroup, CompanionKind>>;
   /** WORDMELDING (game/melds.ts): the runedust carried, and melding at the wordsmith (absent while MELD is off). */
   dust?: number;
   meld?: 'stone' | 'open' | null;
@@ -254,6 +258,8 @@ export class Game {
   contraptions: Contraption[] = [];
   vials: Vial[] = [];
   golems: Golem[] = [];
+  /** THE RANGER'S COMPANIONS (game/companions.ts): his animals out, one for each companion talent taken (COMPANIONS). */
+  pets: Pet[] = [];
   tars: Tar[] = [];
   /** Her first Golem, null until it is whistled out. */
   get golem(): Golem | null {
@@ -852,6 +858,8 @@ export class Game {
       ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
       // (THE SKILL TREES: none can be taken while their switch is off, so nothing is written then)
       ...(h.talents.length ? { talents: [...h.talents] } : {}),
+      // (THE RANGER'S COMPANIONS: nor the picks while theirs is off)
+      ...(COMPANIONS.on && h.pets && Object.keys(h.pets).length ? { pets: { ...h.pets } } : {}),
       // (THE WAYS: nor the waypoint reached while theirs is off)
       ...(WAYS.on ? { way: this.wayDepth } : {}),
       // (ENDLESS MODE: nor the endless level reached, until it is open to him)
@@ -918,6 +926,8 @@ export class Game {
     h.meld = s.meld === 'stone' || s.meld === 'open' ? s.meld : null;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     h.talents = cleanTalents(h.cls, h.level, s.talents);
+    // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
+    if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -1837,6 +1847,8 @@ export class Game {
     this.updateVolleys(dt);
     this.updateOrbs(dt);
     this.updateFamiliars(dt);
+    // (THE RANGER'S COMPANIONS: game/companions.ts)
+    if (COMPANIONS.on && (this.hero.cls === 'ranger' || this.pets.length)) this.updatePets(dt);
     if (this.hero.cls === 'tinkerer' || this.golems.length || this.contraptions.length || this.vials.length || this.tars.length) this.updateTinkerer(dt);
     if (this.cannonballs.length) this.updateCannonballs(dt);
     if (this.hellwaves.length || this.souls.length || this.bound) this.updateWarlockTree(dt);
@@ -5884,6 +5896,201 @@ export class Game {
   private golemFrac(g: Golem | null = this.golem): number {
     const s = g ? this.hero.skills[g.skill] : null;
     return s ? s.r.countDmg : 1;
+  }
+
+  // ---- THE RANGER'S COMPANIONS (game/companions.ts) ------------------------------------------------------------------------
+  //   One for each of his companion talents taken: the one picked of its three (in town: pickCompanion). It keeps by him, bites
+  //   an enemy awake near him, and its bite does what one of his words does. Nothing fights it.
+
+  /** The kinds he should have out now: one for each companion talent taken. */
+  private petsWanted(): { group: CompanionGroup; kind: CompanionKind }[] {
+    if (!COMPANIONS.on || this.hero.cls !== 'ranger') return [];
+    return COMPANION_GROUP_IDS.filter((g) => this.has(COMPANION_GROUPS[g].talent)).map((g) => ({ group: g, kind: pickedIn(this.hero.pets, g) }));
+  }
+
+  /** Where companion `seat` keeps by him, `back` behind him: the hunting one at his right hand, the wild one at his left. */
+  private petSpot(seat: number, back: number): { x: number; y: number } {
+    const h = this.hero;
+    const side = (seat === 0 ? 1 : -1) * COMPANION_TUNE.near;
+    return { x: h.x - h.fy * side - h.fx * back, y: h.y + h.fx * side - h.fy * back };
+  }
+
+  /** A companion at his side (where it may stand; else at his feet). */
+  private petBeside(kind: CompanionKind, group: CompanionGroup): Pet {
+    const h = this.hero;
+    const seat = group === 'hunt' ? 0 : 1;
+    const s = this.petSpot(seat, 0.4);
+    const p = this.isOpen(s.x, s.y) ? s : { x: h.x, y: h.y };
+    this.emit({ t: 'petArrive', kind, x: p.x, y: p.y });
+    return { kind, group, x: p.x, y: p.y, fx: h.fx, fy: h.fy, act: 'arrive', actT: 0, did: false, target: -1, cd: 0, walked: 0, seat };
+  }
+
+  /**
+   * THE RANGER'S COMPANIONS: pick `kind` for its group (in town only, the talent that brings that group taken). The one out
+   * of that group goes, and the one picked is at his side. True if it was picked.
+   */
+  pickCompanion(kind: CompanionKind): boolean {
+    const h = this.hero;
+    if (!COMPANIONS.on || h.cls !== 'ranger' || !this.level.town) return false;
+    const group = COMPANION_GROUP_IDS.find((g) => COMPANION_GROUPS[g].kinds.includes(kind));
+    if (!group || !this.has(COMPANION_GROUPS[group].talent)) return false;
+    h.pets = { ...(h.pets ?? {}), [group]: kind };
+    this.pets = this.pets.filter((p) => p.group !== group);
+    this.pets.push(this.petBeside(kind, group));
+    this.sfx('trapSet', 0.4);
+    return true;
+  }
+
+  /** His companions, each step: out as his talents and picks say, and each about its business. */
+  private updatePets(dt: number): void {
+    const want = this.petsWanted();
+    this.pets = this.pets.filter((p) => want.some((w) => w.group === p.group && w.kind === p.kind));
+    for (const w of want) if (!this.pets.some((p) => p.group === w.group)) this.pets.push(this.petBeside(w.kind, w.group));
+    for (const p of this.pets) this.stepPet(p, dt);
+  }
+
+  /** Companion `p`, each step. */
+  private stepPet(p: Pet, dt: number): void {
+    const h = this.hero;
+    const C = COMPANION_TUNE;
+    const K = C.kinds[p.kind];
+    p.actT += dt;
+    p.cd = Math.max(0, p.cd - dt);
+    // (left far behind, or somewhere it may not stand: at his side again)
+    if (Math.hypot(p.x - h.x, p.y - h.y) > C.lost || !this.isOpen(p.x, p.y)) {
+      const q = this.petBeside(p.kind, p.group);
+      p.x = q.x;
+      p.y = q.y;
+      p.act = 'arrive';
+      p.actT = 0;
+      return;
+    }
+    if (p.act === 'arrive') {
+      if (p.actT >= 0.3) p.act = 'stand';
+      return;
+    }
+    if (p.act === 'bite') {
+      if (!p.did && p.actT >= C.bite.hit) {
+        p.did = true;
+        const m = this.monsters.find((q) => q.id === p.target && !q.dead);
+        if (m && Math.hypot(m.x - p.x, m.y - p.y) <= K.reach + m.r + 0.6) this.petBite(p, m);
+      }
+      if (p.actT >= C.bite.long) {
+        p.act = 'stand';
+        p.actT = 0;
+        p.cd = K.every;
+      }
+      return;
+    }
+    // STANDING OR GOING: what to go for, if anything (awake, near him, seen by it; the tortoise only what is near him)
+    const leash = p.kind === 'tortoise' ? C.tortoiseLeash : C.leash;
+    let best: Monster | null = null;
+    let bd = 1e9;
+    for (const m of this.monsters) {
+      if (m.dead || !m.seen || m.state === 'sleep' || this.shutIn(m)) continue;
+      if (Math.hypot(m.x - h.x, m.y - h.y) > leash) continue;
+      const d = Math.hypot(m.x - p.x, m.y - p.y) - m.r;
+      if (d < bd && this.sees(p.x, p.y, m.x, m.y)) {
+        bd = d;
+        best = m;
+      }
+    }
+    const face = (x: number, y: number): void => {
+      const d = Math.hypot(x - p.x, y - p.y);
+      if (d > 0.05) {
+        p.fx = (x - p.x) / d;
+        p.fy = (y - p.y) / d;
+      }
+    };
+    if (best && bd <= K.reach && p.cd <= 0) {
+      face(best.x, best.y);
+      p.act = 'bite';
+      p.actT = 0;
+      p.did = false;
+      p.target = best.id;
+      return;
+    }
+    // (where it goes: up to what it bites; else to his side, a little behind him)
+    let gx: number;
+    let gy: number;
+    let stop: number;
+    if (best && bd > K.reach * 0.8) {
+      gx = best.x;
+      gy = best.y;
+      stop = K.reach * 0.6 + best.r;
+    } else if (best) {
+      face(best.x, best.y);
+      gx = p.x;
+      gy = p.y;
+      stop = 1;
+    } else {
+      const s = this.petSpot(p.seat, 0.5);
+      gx = s.x;
+      gy = s.y;
+      stop = 0.35;
+    }
+    const d = Math.hypot(gx - p.x, gy - p.y);
+    if (d > stop) {
+      const step = Math.min(d - stop, C.speed * dt);
+      const was = { x: p.x, y: p.y };
+      this.slide(p, 0.25, ((gx - p.x) / d) * step, ((gy - p.y) / d) * step, this.level.walk);
+      const moved = Math.hypot(p.x - was.x, p.y - was.y);
+      p.walked += moved;
+      if (moved > 0.001) {
+        p.fx = (p.x - was.x) / moved;
+        p.fy = (p.y - was.y) / moved;
+      }
+      p.act = moved > 0.001 ? 'walk' : 'stand';
+    } else {
+      p.act = 'stand';
+      if (!best) {
+        p.fx = h.fx;
+        p.fy = h.fy;
+      }
+    }
+  }
+
+  /**
+   * A companion's bite landing on `m`: a share of his own hit (none of his words), and what its kind's word does: the hawk's
+   * mark (Precise behind), the snake's poison (Poison in front), the wolf's hold (Binding in front), the bat's healing
+   * (Leeching), the fox's burst of speed (Swift behind), the tortoise's shield (Guarding in front).
+   */
+  private petBite(p: Pet, m: Monster): void {
+    const h = this.hero;
+    const d = h.d;
+    const st = d.stats;
+    const K = COMPANION_TUNE.kinds;
+    const share = K[p.kind].share;
+    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * share * (1 + (st.dmgPct + st.physPct + h.might) / 100);
+    const crit = this.rng.chance(d.critChance / 100);
+    if (crit) dmg *= 1 + d.critMult / 100;
+    dmg = Math.max(1, Math.round(dmg));
+    this.emit({ t: 'petBite', kind: p.kind, id: m.id, x: m.x, y: m.y, dx: p.fx, dy: p.fy });
+    this.sfx('hit', 0.45);
+    this.damageMonster(m, dmg, 'phys', crit, 0);
+    if (p.kind === 'hawk') {
+      if (!m.dead) {
+        m.markT = PRECISE.markTime;
+        this.emit({ t: 'markOn', id: m.id, x: m.x, y: m.y, secs: PRECISE.markTime });
+      }
+    } else if (p.kind === 'snake') {
+      this.poisonMonster(m, dmg * K.snake.dose, 0);
+    } else if (p.kind === 'wolf') {
+      const held = this.bindMonster(m, K.wolf.hold);
+      if (held > 0) this.emit({ t: 'bind', id: m.id, secs: held });
+    } else if (p.kind === 'bat') {
+      const n = dmg * K.bat.heal;
+      this.healHero(n);
+      this.emit({ t: 'leech', x: m.x, y: m.y, n });
+    } else if (p.kind === 'fox') {
+      h.haste = Math.max(h.hasteT > 0 ? h.haste : 0, K.fox.haste);
+      h.hasteT = Math.max(h.hasteT, K.fox.secs);
+      this.emit({ t: 'buff', kind: 'haste', x: h.x, y: h.y, stacks: 1 });
+    } else {
+      h.shield = Math.max(h.shield, Math.round(d.maxLife * K.tortoise.shield));
+      h.shieldT = Math.max(h.shieldT, GUARD.shieldTime);
+      this.emit({ t: 'shield', x: h.x, y: h.y, secs: GUARD.shieldTime });
+    }
   }
 
   // ---- DECOYS (THE TINKERER's Lightning Rod; for anything else that would draw the enemies off the hero) ----------------

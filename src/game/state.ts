@@ -1,6 +1,7 @@
 // Data shapes for a running game: the hero, monsters, projectiles and everything else in a level.
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
+import type { CompanionGroup, CompanionKind } from './companions';
 import type { PunchName } from './brawler';
 import type { Sfx } from '../engine/audio';
 import type { Limit, SkillId, SkillKind } from './defs';
@@ -296,6 +297,8 @@ export interface Hero {
   meld: 'stone' | 'open' | null;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
+  /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
+  pets?: Partial<Record<CompanionGroup, CompanionKind>>;
   d: Derived;
 }
 
@@ -823,6 +826,27 @@ export interface Soul { x: number; y: number; id: number; t: number; dmg: number
  */
 export interface BoundDemon { x: number; y: number; fx: number; fy: number; act: 'arrive' | 'stand' | 'walk' | 'rake' | 'out'; actT: number; target: number; did: boolean; walked: number; rakeCd: number }
 
+/**
+ * THE RANGER'S COMPANION (game/companions.ts): one of his animals at his side. `act`: standing, going, or biting (its blow at
+ * COMPANION_TUNE.bite.hit); `target` the enemy it bites (its id); `cd` seconds until it may bite again; `walked` how far it has
+ * gone (its frames go by it); `seat` the side of him it keeps (the hunting one at his right hand, the wild one at his left).
+ */
+export interface Pet {
+  kind: CompanionKind;
+  group: CompanionGroup;
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  act: 'arrive' | 'stand' | 'walk' | 'bite';
+  actT: number;
+  did: boolean;
+  target: number;
+  cd: number;
+  walked: number;
+  seat: number;
+}
+
 export interface Golem {
   x: number;
   y: number;
@@ -1336,6 +1360,9 @@ export type GameEvent =
   | { t: 'vialBurst'; x: number; y: number; r: number; little?: boolean; big?: boolean; brew?: Brew }
   | { t: 'contraptionEnd'; id: number; x: number; y: number }
   | { t: 'golemArrive'; x: number; y: number }
+  // (THE RANGER'S COMPANIONS, game/companions.ts: one at his side, and its bite landing on `id`)
+  | { t: 'petArrive'; kind: CompanionKind; x: number; y: number }
+  | { t: 'petBite'; kind: CompanionKind; id: number; x: number; y: number; dx: number; dy: number }
   | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
   | { t: 'golemShot'; x0: number; y0: number; x1: number; y1: number; flight: number }
   | { t: 'golemPound'; x: number; y: number; r: number; n?: number; echo?: boolean }

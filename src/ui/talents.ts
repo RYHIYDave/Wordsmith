@@ -15,7 +15,9 @@ import { P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { WORDS } from '../game/defs';
 import type { Game } from '../game/game';
-import { TREES, nextTalentLevel, talentName, talentOpen, talentText, talentWord } from '../game/talents';
+import { COMPANIONS, TREES, nextTalentLevel, talentName, talentOpen, talentText, talentWord } from '../game/talents';
+import { COMPANION_GROUPS, COMPANION_INFO, groupOfTalent, pickedIn } from '../game/companions';
+import type { CompanionKind } from '../game/companions';
 import type { TalentDef, TalentTree } from '../game/talents';
 import type { WordId } from '../game/types';
 import { THEME, inside } from './ui';
@@ -26,7 +28,7 @@ export interface TalentUi {
   /** The talent being read. */
   sel: string | null;
   /** The card as it was drawn last frame, and its TAKE or UNDO (a press on it is answered next frame). */
-  card: { r: Rect; take: Rect | null; undo?: Rect | null } | null;
+  card: { r: Rect; take: Rect | null; undo?: Rect | null; picks?: { r: Rect; kind: CompanionKind }[] } | null;
   /** A talent just taken, and how long ago: it flares. */
   flash: { id: string; t: number } | null;
 }
@@ -61,6 +63,8 @@ const COIN: readonly string[] = ['..XXX..', '.XoooX.', '.XoXoX.', '.XoooX.', '..
 const QUICK: readonly string[] = ['X..X...', '.X..X..', '..X..Xo', '.X..X..', 'X..X...'];
 const IMPACT: readonly string[] = ['X..X..X', '.X.X.X.', '..XoX..', '.X.X.X.', 'X..X..X'];
 const KNUCKLE: readonly string[] = ['..X....', '.XX....', 'XXXXXXo', '.XX...X', '..X..X.'];
+// (the Ranger's companions, 28 Oct 2026: a paw)
+const PAW: readonly string[] = ['..X.X..', 'X.....X', '..XXX..', '.XXoXX.', '..XXX..'];
 /** A rune and its two colours. */
 interface Rune {
   rows: readonly string[];
@@ -100,6 +104,8 @@ function runeOf(tree: TalentTree, t: TalentDef): Rune {
   if (word) return wordRune(word);
   const path = tree.paths.find((p) => p.id === t.path);
   const color = path ? path.color : THEME.text;
+  // (the Ranger's companions carry a paw)
+  if (t.id === 'huntcompanion' || t.id === 'wildcompanion') return { rows: PAW, color, glow: P.white };
   return (PATH_RUNE[t.path] ?? ((c: string) => ({ rows: ARROW, color: c, glow: P.white })))(color);
 }
 function drawRune(g: CanvasRenderingContext2D, rune: Rune, cx: number, cy: number, alpha: number): void {
@@ -376,12 +382,19 @@ function cardLines(game: Game, t: TalentDef, tree: TalentTree): { text: string; 
   const out: { text: string; color: string; small: boolean }[] = [];
   out.push({ text: talentName(t).toUpperCase(), color: P.white, small: false });
   out.push({ text: `${t.big ? 'BIG ' : ''}${path && path.name ? `${path.name} ` : ''}TALENT`, color: path ? path.color : THEME.dim, small: true });
+  // (THE RANGER'S COMPANIONS, taken: in place of its words, the one at his side and what it does; in town he picks another of its three below)
+  const group = COMPANIONS.on ? groupOfTalent(t.id) : null;
+  const pet = group && game.hero.talents.includes(t.id) ? pickedIn(game.hero.pets, group) : null;
   // (TALENTS2: a remade talent's new words, name and word)
-  for (const l of wrapText(talentText(t), CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
+  if (!pet) for (const l of wrapText(talentText(t), CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
   const word = talentWord(t);
   if (word) out.push({ text: `WORKS WITH ${WORDS[word].name.toUpperCase()}`, color: WORD_COLOR[word], small: true });
   // (a tree drafted, to be shown to the owner: its talents do nothing yet, and the card says so)
   if (tree.draft && !t.works) out.push({ text: 'A DRAFT: NOT IN PLAY YET', color: THEME.dim, small: true });
+  if (pet) {
+    for (const l of wrapText(`${COMPANION_INFO[pet].name.toUpperCase()}: ${COMPANION_INFO[pet].short}`, CARD - 10)) out.push({ text: l, color: THEME.accent, small: false });
+    if (!game.level.town) out.push({ text: 'PICK ANOTHER IN TOWN', color: THEME.dim, small: true });
+  }
   return out;
 }
 
@@ -402,6 +415,8 @@ export function talentPresses(ui: Ui, game: Game, st: TalentUi, lay: TalentLayou
     const why = game.unlearnTalent(st.sel);
     if (why) say = why;
   }
+  // (THE RANGER'S COMPANIONS: in town, one of its three picked)
+  for (const p of card?.picks ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCompanion(p.kind);
   // (a press anywhere else on the card is the card's: it does not close the inventory)
   if (card && ui.press && !ui.used && inside(card.r, ui.press.x, ui.press.y)) ui.used = true;
   const pad = ui.touch ? 3 : 1;
@@ -598,8 +613,13 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   const why = game.talentProblem(def.id);
   const bh = ui.touch ? 18 : 13;
   const textH = lines.reduce((a, l) => a + LINE_H[l.small ? 'small' : 'normal'] + (l.small ? 2 : 1), 0);
-  const ch = 5 + textH + 3 + bh + 5;
+  // (THE RANGER'S COMPANIONS, taken, in town: a row of its three to pick from)
+  const group = COMPANIONS.on ? groupOfTalent(def.id) : null;
+  const picking = !!group && took && game.level.town;
+  const ch = 5 + textH + 3 + (picking ? bh + 3 : 0) + bh + 5;
   const cr = cardRect(panel, sel, ch, ui.w, ui.h);
+  // (a companion's card with its picker, beside the page: it stands up from its stone, clear of what is under it on a phone)
+  if (picking && panel.y <= 0) cr.y = Math.max(2, Math.min(cr.y, sel.cy + 16 - cr.h));
   ui.box(cr.x, cr.y, cr.w, cr.h, THEME.bg, THEME.edgeHi);
   g.fillStyle = THEME.accentLo;
   g.fillRect(cr.x + 1, cr.y + 1, cr.w - 2, 0.5);
@@ -626,6 +646,20 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
     ui.drawButton(take.x, take.y, take.w, take.h, 'TAKE  (1 POINT)', { primary: true });
     ui.mark('button:TAKE', take.x, take.y, take.w, take.h);
   } else drawText(g, why.toUpperCase(), cr.x + 5, by + Math.floor((bh - 6) / 2) + 1, THEME.dim, { font: 'small' });
+  const picks: { r: Rect; kind: CompanionKind }[] = [];
+  if (picking && group) {
+    const kinds = COMPANION_GROUPS[group].kinds;
+    const now = pickedIn(game.hero.pets, group);
+    const gap = 3;
+    const w = Math.floor((cr.w - 10 - gap * (kinds.length - 1)) / kinds.length);
+    kinds.forEach((k, j) => {
+      const pr = { x: cr.x + 5 + j * (w + gap), y: by - bh - 3, w, h: bh };
+      const label = COMPANION_INFO[k].name.toUpperCase();
+      // (a name too long for its button in the game's letters, in the small ones)
+      ui.drawButton(pr.x, pr.y, pr.w, pr.h, label, { lit: k === now, primary: k === now, small: textWidth(label) > pr.w - 4 });
+      picks.push({ r: pr, kind: k });
+    });
+  }
   ui.mark('talent-card', cr.x, cr.y, cr.w, cr.h);
-  st.card = { r: cr, take, undo };
+  st.card = { r: cr, take, undo, picks };
 }

@@ -169,6 +169,25 @@ const SHAFT = '#c8a070';
 const TRAPS = '#b0e05a';
 const ARROWS = '#9cc8ff';
 
+/** A page built to show the Ranger's companions says so (esbuild's define). */
+declare const __COMPANIONS__: boolean | undefined;
+/**
+ * THE RANGER'S COMPANIONS (the main chat, from 28 Oct 2026, 23:09): the owner's words, “I’d like the ranger to have a passive
+ * that summons a hawk companion that applies PRECISE on hit, a snake companion, that applies “of POISON”, and a third
+ * something I need help with”; 23:10, “And that should be an Or for those companions.  You pick one, not all three”; his
+ * picks, the hawk “It marks its prey (Recommended)”, “One at a time, I pick”, “Any time in town (Recommended)”; and to the
+ * third, offered the wolf, the bat, the fox and the tortoise: “Okay maybe we have two separate passive with three each cause I
+ * love all of these.  Let’s put them opposite each other on the tree so if you want one companion that’s fine but if you want
+ * two it’s going to take some investment.  So we need 6 total”. So two talents on his tree, one on each feather, opposite
+ * each other: the HUNTING COMPANION (the hawk, the snake or the wolf) and the WILD COMPANION (the bat, the fox or the
+ * tortoise), each three points from where the tree begins, both six. Off until he has seen them and said yes.
+ */
+export const COMPANIONS = { on: typeof __COMPANIONS__ !== 'undefined' && __COMPANIONS__ === true };
+const COMPANION_TALENTS: TalentDef[] = [
+  { id: 'wildcompanion', name: 'Wild Companion', big: true, path: 'wind', at: [1.6, 0.3], from: ['windrunner'], text: 'A bat, a fox or a tortoise fights at your side. Pick it in town.' },
+  { id: 'huntcompanion', name: 'Hunting Companion', big: true, path: 'eye', at: [1.6, 3.7], from: ['venom'], text: 'A hawk, a snake or a wolf fights at your side. Pick it in town.' },
+];
+
 const RANGER: TalentTree = {
   cls: 'ranger',
   shape: 'an arrow',
@@ -199,10 +218,12 @@ const RANGER: TalentTree = {
     { id: 'farsight', name: 'Far Sight', big: true, path: 'shaft', at: [7.8, 2], from: ['minefield', 'hail', 'piercing'], text: 'The further the enemy, the harder you hit: up to +50% at eight tiles.', now: { text: 'An arrow that has flown past eight tiles is a certain critical.' } },
     // the nock, between the feathers: a third way onto the shaft
     { id: 'steadyaim', name: 'Steady Aim', big: false, path: 'shaft', at: [0.15, 2], from: ['fleet', 'keeneye'], text: 'Standing still, your attacks hit 15% harder.', now: { text: 'Stand still for a second, and your next arrow goes through every enemy in its line.' } },
+    // (THE RANGER'S COMPANIONS: one on each feather, opposite each other; off until his yes)
+    ...(COMPANIONS.on ? COMPANION_TALENTS : []),
   ],
   figures: [
-    { kind: 'fill', path: 'wind', ids: ['fleet', 'windrunner', 'quickdraw', 'steadyaim'] },
-    { kind: 'fill', path: 'eye', ids: ['keeneye', 'venom', 'quickdraw', 'steadyaim'] },
+    { kind: 'fill', path: 'wind', ids: COMPANIONS.on ? ['fleet', 'wildcompanion', 'quickdraw', 'steadyaim'] : ['fleet', 'windrunner', 'quickdraw', 'steadyaim'] },
+    { kind: 'fill', path: 'eye', ids: COMPANIONS.on ? ['keeneye', 'huntcompanion', 'quickdraw', 'steadyaim'] : ['keeneye', 'venom', 'quickdraw', 'steadyaim'] },
     { kind: 'fill', path: 'shaft', ids: ['huntersmark', 'widetraps', 'minefield', 'farsight', 'hail', 'splitshot'] },
   ],
 };
