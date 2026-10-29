@@ -41,7 +41,6 @@ import { hash } from './kit';
 import { FLAME } from './mkit';
 import { DANCER_CANVAS, GENT_BODY, LADY_BODY, ROOMS, bodyOf, dancerPainter } from './masque_dancers';
 import type { DancerSay, DancerWho, Room, RoomName } from './masque_dancers';
-import { HUSH } from './crier';
 import { TILE3, canvasOf, mobSet, momentOf, paintViewOf, partOrder, paintBits } from './new_mobs3';
 import type { Bit, Mob, MobMove, Moment } from './new_mobs3';
 import { ENEMY_RIM } from './mkit';
@@ -228,10 +227,10 @@ function mixP(a: P, b: P, k: number, rest: Bones): P {
 
 /** Where their hands are held, posed and whirling: out low and wide to the sides, a little forward (from the shoulder, along the chest), the arms rounded, the elbows lifted out and back. */
 const OPEN0 = {
-  // (hers: the left arm curved up over her head, the right out low to her side)
-  lady: { l: [3.5, -3.0, 14.5] as V3, r: [3.5, -15.0, -11.5] as V3, el: [0.1, 1, 0.35] as V3, er: [-0.15, -1, -0.15] as V3 },
-  // (his: both out wide and low, rounded)
-  gent: { l: [3.0, 15.5, -11.0] as V3, r: [3.0, -15.5, -11.0] as V3, el: [-0.15, 1, -0.15] as V3, er: [-0.15, -1, -0.15] as V3 },
+  // (hers: her hands at her sides holding her skirt out a little, as she will hold it whirling)
+  lady: { l: [3.0, 4.6, -18.0] as V3, r: [3.0, -4.6, -18.0] as V3, el: [-0.25, 1, -0.35] as V3, er: [-0.25, -1, -0.35] as V3 },
+  // (his: the left hand behind his back, at his waist; the right held out low before him, as if to offer it)
+  gent: { l: [-7.8, -3.2, -17.0] as V3, r: [7.5, -8.5, -12.5] as V3, el: [-0.7, 1, -0.1] as V3, er: [-0.05, -1, -0.6] as V3 },
 };
 function openOf(who: DancerWho): { l: V3; r: V3; le: number; re: number } {
   const B = bodyOf(who);
@@ -312,7 +311,7 @@ function whirlPose(who: DancerWho): (t: number) => P {
     return {
       px: 0, py: 0, pz: R.pz - 1.6 + 1.0 * Math.cos(step), yaw, twist, pitch: 9, roll: 0, bend: 3, side: 0,
       faceTurn: spotted(yaw + twist), faceUp: 4, faceTilt: 0,
-      ...handsC([o.l[0] - 1, o.l[1] + 1, o.l[2] + 2.5], [o.r[0] - 1, o.r[1] - 1, o.r[2] + 2.5], o.le, o.re),
+      ...handsC(o.l, o.r, o.le, o.re),
     };
   };
 }
@@ -354,47 +353,56 @@ function inPair(who: DancerWho, turn: number): { at: [number, number]; yaw: numb
 }
 /**
  * THE HOLD, in the pair's own place (forward: the way he faces; left: his left): his left hand and her right joined high
- * out to his left; his right hand on her back below her left shoulder blade; her left hand on his right shoulder.
+ * out to his left; his right hand on her back below her left shoulder blade; her left hand on his right shoulder (these two
+ * laid on the other's own body as it is at the moment: `holdAt`). And which way each elbow points.
  */
-function holdHands(who: DancerWho): { l: V3; r: V3; elL: V3; elR: V3 } {
-  const A = HOLD.apart;
-  const S = HOLD.aside;
-  if (who === 'gent') {
-    return {
-      l: [0.4, S + 15.5, 45.5],
-      r: [A + 3.6, -S - 4.6, 37.5],
-      elL: [0.2, 0.7, -0.6],
-      elR: [0.2, -0.9, 0.1],
-    };
-  }
-  return {
-    l: [-A + 1.6, S - 8.6, 47.6],
-    r: [0.6, S + 15.2, 45.0],
-    elL: [0.3, -0.9, 0.2],
-    elR: [0.1, 0.8, -0.6],
-  };
-}
-/** One of the pair at the pair's turn `turn`, the pair's middle at `mid` on the floor (the figure's own place). */
-function waltzBody(who: DancerWho, turn: number, mid: readonly [number, number], beat: number): P {
-  const B = bodyOf(who);
+const JOINED: V3 = [0.4, HOLD.aside + 15.4, 45.4];
+const HOLD_EL = { gent: { l: [0.2, 0.7, -0.6] as V3, r: [0.2, -0.9, 0.1] as V3 }, lady: { l: [0.3, -0.9, 0.2] as V3, r: [0.1, 0.8, -0.6] as V3 } };
+/** One of the pair, all but the hands, at the pair's turn `turn`, the pair's middle at `mid` on the floor (the figure's own place). */
+function waltzSpine(who: DancerWho, turn: number, mid: readonly [number, number], beat: number): P {
   const R = restFor(who);
   const me = inPair(who, turn);
-  const h = holdHands(who);
-  const place = (v: V3): V3 => {
-    const r = rot([v[0], v[1]], turn);
-    return [r[0] + mid[0], r[1] + mid[1], v[2]];
-  };
-  const way = (v: V3): V3 => rot3(v, turn);
   // (the rise and fall of the waltz: down on the first beat of each bar, up on the second and third)
   const rise = -1.2 + 1.4 * smooth(0, 0.5, beat) * (1 - smooth(0.85, 1, beat));
-  const pose: P = {
+  return {
     px: me.at[0] + mid[0], py: me.at[1] + mid[1], pz: R.pz + rise - 0.6,
     yaw: me.yaw, twist: who === 'lady' ? 6 : -4, pitch: who === 'lady' ? -3 : 1, bend: who === 'lady' ? -7 : -2, roll: 0, side: who === 'lady' ? -3 : 0,
     // (she looks away over her left shoulder, her head back; he looks over her right shoulder)
     faceTurn: me.yaw + (who === 'lady' ? 38 : 16), faceUp: who === 'lady' ? 10 : 4, faceTilt: who === 'lady' ? -8 : 2,
-    ...handsF(place(h.l), place(h.r)),
   };
-  return elbowsTo(B, R, pose, way(h.elL), way(h.elR));
+}
+const other = (who: DancerWho): DancerWho => (who === 'lady' ? 'gent' : 'lady');
+/** Their hands in hold on their partner as the partner is (`them`, the partner's bones), the pair turned `turn`, its middle at `mid`. */
+function holdAt(who: DancerWho, spine: P, them: Skeleton, turn: number, mid: readonly [number, number]): P {
+  const B = bodyOf(who);
+  const R = restFor(who);
+  const r = rot([JOINED[0], JOINED[1]], turn);
+  const joined: V3 = [r[0] + mid[0], r[1] + mid[1], JOINED[2]];
+  let onThem: V3;
+  if (who === 'gent') {
+    // (his right hand on her back, below her left shoulder blade: on the skin of her, a glove's thickness out)
+    const T = bodyOf('lady');
+    const c = lerp3(them.ribs, them.neck, 0.22);
+    const [cf, cl, cu] = them.chest;
+    const d: V3 = [-0.8, 0.55, -0.12];
+    const h: V3 = [T.ribDeep + 1.4, T.ribHalf + 1.4, 6];
+    const k = 1 / Math.hypot(d[0] / h[0], d[1] / h[1], d[2] / h[2]);
+    const dirW = norm(add(add(mul(cf, d[0]), mul(cl, d[1])), mul(cu, d[2])));
+    onThem = add(c, mul(dirW, k * Math.hypot(d[0], d[1], d[2]) + 1.1));
+  } else {
+    // (her left hand on the top of his right shoulder)
+    const T = bodyOf('gent');
+    onThem = add(add(them.shoulderR, mul(them.chest[2], T.armR[0] * 1.25 + 1.3)), mul(them.chest[0], 0.4));
+  }
+  const pose: P = { ...spine, ...handsF(who === 'gent' ? joined : onThem, who === 'gent' ? onThem : joined) };
+  const el = HOLD_EL[who];
+  return elbowsTo(B, R, pose, rot3(el.l, turn), rot3(el.r, turn));
+}
+/** One of the pair at the pair's turn `turn`, the pair's middle at `mid`, a beat into its bar: in hold on the other. */
+function waltzBody(who: DancerWho, turn: number, mid: readonly [number, number], beat: number): P {
+  const o = other(who);
+  const them = solve(bodyOf(o), { ...restFor(o), ...waltzSpine(o, turn, mid, beat) } as Posed);
+  return holdAt(who, waltzSpine(who, turn, mid, beat), them, turn, mid);
 }
 /** Their steps waltzing: six in the turn, each on the ball of the foot, turning on it as the pair turns, the feet landing about where they will be as the body comes over them. */
 function waltzStances(who: DancerWho, from: number, to: number): Stance[] {
@@ -449,17 +457,17 @@ function chimePose(who: DancerWho): (t: number) => P {
   const ready = whirlPose(who)(0);
   const at = chimeSplit(who);
   const readyS = solve(B, { ...R, ...ready, px: at[0], py: at[1] } as Posed);
-  return (t) => {
+  /** Stopped dead, all but the hands: the masks snapped round to you, the body still; she, turned away, twists to look over her shoulder. */
+  const stillSpine = (w: DancerWho, t: number): P => {
     const k = tau(t);
-    const held = waltzBody(who, pairTurn(k), [0, 0], ((k / WALTZ_LONG) * 2) % 1);
-    // (their masks snapped round to you, the body still; she, turned away, twists to look over her shoulder)
+    const held = waltzSpine(w, pairTurn(k), [0, 0], ((k / WALTZ_LONG) * 2) % 1);
     const look = smooth(DN_CHIME.stop, DN_CHIME.look, t);
-    const me = inPair(who, pairTurn(k));
+    const me = inPair(w, pairTurn(k));
     let rel = 0 - me.yaw;
     rel -= 360 * Math.round(rel / 360);
-    const twist = who === 'lady' ? Math.max(-40, Math.min(40, rel * 0.4)) : Math.max(-25, Math.min(25, rel * 0.3));
+    const twist = w === 'lady' ? Math.max(-40, Math.min(40, rel * 0.4)) : Math.max(-25, Math.min(25, rel * 0.3));
     const breath = 0.5 * Math.sin(((t - DN_CHIME.look) / 1.0) * Math.PI * 2) * smooth(DN_CHIME.look, DN_CHIME.look + 0.2, t);
-    const still: P = {
+    return {
       ...held,
       twist: (held.twist as number) + twist * look,
       faceTurn: (held.faceTurn as number) + (me.yaw + rel - (held.faceTurn as number)) * look,
@@ -468,6 +476,13 @@ function chimePose(who: DancerWho): (t: number) => P {
       pz: (held.pz as number) + breath * 0.6,
       bend: (held.bend as number) - breath,
     };
+  };
+  const o = other(who);
+  return (t) => {
+    const k = tau(Math.min(t, DN_CHIME.go));
+    const tt = Math.min(t, DN_CHIME.go);
+    const them = solve(bodyOf(o), { ...restFor(o), ...stillSpine(o, tt) } as Posed);
+    const still = holdAt(who, stillSpine(who, tt), them, pairTurn(k), [0, 0]);
     if (t <= DN_CHIME.go) return still;
     // THE HOLD BREAKS: they let go and turn to you, gathering to whirl: hands to where the whirl holds them, the body round to you
     // (the hands lead: let go and carried out round them, clear of the head, to where the whirl holds them; the body after)
@@ -485,11 +500,11 @@ function chimePose(who: DancerWho): (t: number) => P {
     // (the mask kept on you all the while)
     const p: P = { ...body, yaw, twist: (still.twist as number) * (1 - u) + (ready.twist as number) * u, faceTurn: still.faceTurn as number, faceUp: (still.faceUp as number) * (1 - u) + (ready.faceUp as number) * u, ...handsF(hl, hr) };
     // (the elbows from where the hold had them to where the whirl does, turned with them)
-    const h = holdHands(who);
+    const h = HOLD_EL[who];
     const k0 = pairTurn(DN_CHIME.stop / 2);
-    const o = OPEN0[who];
-    const wantL = norm(lerp3(rot3(h.elL, k0), rot3(o.el, yaw), uh));
-    const wantR = norm(lerp3(rot3(h.elR, k0), rot3(o.er, yaw), uh));
+    const op = OPEN0[who];
+    const wantL = norm(lerp3(rot3(h.l, k0), rot3(op.el, yaw), uh));
+    const wantR = norm(lerp3(rot3(h.r, k0), rot3(op.er, yaw), uh));
     return elbowsTo(B, R, p, wantL, wantR);
   };
 }
@@ -564,13 +579,14 @@ function spinPlan(who: DancerWho): { pose: (t: number) => P; feet: (t: number) =
   const pxB = track([[s1, LUNGE], [s1 + 0.25, LUNGE + 5.5], [0.62 + s1, LUNGE + 6.5], [DN_SPIN.long, LUNGE + 6.5]]);
   const px = (t: number): number => (t <= s0 ? pxA(t) : t >= s1 ? pxB(t) : -2.6 + (LUNGE + 2.6) * ((t - s0) / (s1 - s0)));
   // HOW LOW: crouched in the wind-up; up off the floor in the strike; down into the flourish; back up
-  const pzA = track([[0, R.pz], [0.2, R.pz - 3.5], [w0, R.pz - 6.0], [w1, R.pz - 6.2], [s0, R.pz - 5.5]]);
+  const pzA = track([[0, R.pz], [0.2, R.pz - 5.0], [w0, R.pz - 8.5], [w1, R.pz - 8.8], [s0, R.pz - 8.0]]);
   const pzB = track([[s1, R.pz - 1.0], [s1 + 0.1, R.pz - 2.4], [s1 + 0.3, R.pz - 1.2], [1.25, R.pz - 2.0], [1.4, R.pz - 6.5], [1.55, R.pz - 6.0], [DN_SPIN.long, R.pz]]);
-  const pz = (t: number): number => (t <= s0 ? pzA(t) : t >= s1 ? pzB(t) : R.pz - 5.5 + 8 * Math.sin(Math.PI * ((t - s0) / (s1 - s0))) + 4.5 * ((t - s0) / (s1 - s0)));
+  const pz = (t: number): number => (t <= s0 ? pzA(t) : t >= s1 ? pzB(t) : R.pz - 8.0 + 8 * Math.sin(Math.PI * ((t - s0) / (s1 - s0))) + 7 * ((t - s0) / (s1 - s0)));
   // THE CHEST over the hips: wound further round still in the wind-up (the coil), leading out of it
-  const twA = track([[0, 0], [0.18, 18], [w0, 34], [w1, 35], [s0 - 0.001, 38]]);
+  // (at the last frame of the wind-up the hips have begun to come round and the chest has not: it is held where it was)
+  const twA = track([[0, 0], [0.18, 18], [w0, 34], [w1, 35], [s0 - 0.001, 46]]);
   const twB = track([[s1, -18], [s1 + 0.15, -12], [1.2, -4], [DN_SPIN.long, 0]]);
-  const tw = (t: number): number => (t < s0 ? twA(t) : t >= s1 ? twB(t) : 38 - 56 * ((t - s0) / (s1 - s0)));
+  const tw = (t: number): number => (t < s0 ? twA(t) : t === s0 ? 46 : t >= s1 ? twB(t) : 46 - 64 * ((t - s0) / (s1 - s0)));
   // THE ARMS: coiled across the body in the wind-up (the left high over the head, the right low across the waist); flung wide in the strike; wide as it slows; a flourish
   const coilE = elbowsTo(B, R, { yaw: WOUND, twist: 34, ...handsC([-3.5, 9.5, 12.5], [9, 8.5, -11], 0, 0) }, rot3([-0.3, 0.8, 0.5], WOUND + 34), rot3([0.1, -0.9, -0.3], WOUND + 34));
   const armsCoil = handsC([-3.5, 9.5, 12.5], [9, 8.5, -11], coilE.le as number, coilE.re as number);
@@ -597,9 +613,9 @@ function spinPlan(who: DancerWho): { pose: (t: number) => P; feet: (t: number) =
     const bow = smooth(1.2, 1.4, t) * (1 - smooth(1.55, DN_SPIN.long, t));
     return {
       px: px(t), py: 0, pz: pz(t), yaw: y, twist,
-      pitch: t < s0 ? 6 * smooth(0, 0.3, t) : t < s1 ? 4 : 6 * (1 - smooth(s1, 1.2, t)) + 10 * bow,
-      bend: t < s0 ? 10 * smooth(0, w0, t) : t < s1 ? 2 : 4 * (1 - smooth(s1, 1.2, t)) + 12 * bow - 3 * (1 - bow) * smooth(1.2, 1.3, t),
-      roll: 0, side: t < s0 ? -6 * smooth(0, w0, t) : 0,
+      pitch: t <= s0 ? 9 * smooth(0, 0.3, t) : t < s1 ? 5 : 6 * (1 - smooth(s1, 1.2, t)) + 10 * bow,
+      bend: t <= s0 ? 14 * smooth(0, w0, t) : t < s1 ? 3 : 4 * (1 - smooth(s1, 1.2, t)) + 12 * bow - 3 * (1 - bow) * smooth(1.2, 1.3, t),
+      roll: t <= s0 ? -4 * smooth(0, w0, t) : 0, side: t <= s0 ? -12 * smooth(0, w0, t) : 0,
       faceTurn: face, faceUp: t < s1 ? 2 : 4 - 18 * bow, faceTilt: t < s1 ? -4 : 6 * bow,
       ...armsAt(t),
     };
@@ -694,6 +710,8 @@ function diesPlan(who: DancerWho): { pose: (t: number) => P; feet: (t: number) =
   };
   return { pose, feet };
 }
+/** The Hush's own greys (art/crier.ts HUSH, its lighter two). */
+const HUSH_GREY = ['#625a7a', '#9890b4'] as const;
 const pick = (p: P, keys: ReadonlyArray<keyof Bones>): P => Object.fromEntries(keys.filter((k) => p[k] !== undefined).map((k) => [k, p[k]])) as P;
 
 // =============================================================================================
@@ -821,7 +839,7 @@ function moreOf(who: DancerWho, move: string, m: Moment): [V3, string, number][]
         if (own < k * 0.9) continue;
         const a = (i / 36) * Math.PI * 2 + k * 4;
         const r = (10 + 40 * k) * (0.7 + 0.5 * hash(i, 4, 7711));
-        out.push([[LUNGE + Math.cos(a) * r, Math.sin(a) * r, 6 + 22 * hash(i, 5, 7711) * (1 - k * 0.5)], own > 0.6 ? HUSH[4] : HUSH[3], k < 0.5 ? 2 : 1]);
+        out.push([[LUNGE + Math.cos(a) * r, Math.sin(a) * r, 6 + 22 * hash(i, 5, 7711) * (1 - k * 0.5)], own > 0.6 ? HUSH_GREY[1] : HUSH_GREY[0], k < 0.5 ? 2 : 1]);
       }
     }
   }
@@ -882,7 +900,7 @@ function dancerMob(who: DancerWho, roomName: RoomName): Mob {
     fall(piece) {
       if (piece !== 'mask') return null;
       const s = bonesOf(who, 'dying', DN_DIES.mask);
-      return { from: DN_DIES.mask, to: [13, who === 'lady' ? 5 : -5], spin: 30, lay: 'flat', up: s.face[0], hop: 1.2 };
+      return { from: DN_DIES.mask, to: [who === 'lady' ? 31 : 27, who === 'lady' ? 9 : -12], spin: 30, lay: 'flat', up: s.face[0], hop: 1.2 };
     },
   };
 }

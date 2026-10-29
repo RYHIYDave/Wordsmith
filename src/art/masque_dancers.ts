@@ -25,7 +25,6 @@
 // people, the knight's height. Their clothes in the colours of the seven rooms (`ROOMS`), every one clear of the enemy's
 // pink and the friend's cyan. Nothing cyan.
 
-import { HUSH } from './crier';
 import { BREATH_PALE, SKIN, hushBreath, hushLeaves, lagOf } from './hushed';
 import { INK, hash } from './kit';
 import type { Ramp } from './kit';
@@ -298,7 +297,7 @@ function coatSkirtRings(s: Skeleton, B: Build, m: Moment, flare: number, turnDir
 }
 
 /** THE MASK: white porcelain, a whole face, its brows painted in the room's colour, the eyes dark (the dull pink of the Hushed in them), the lips a dark slit; tied on with a ribbon of the room. Returns its mouth. */
-function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn: number): V3 {
+function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn: number, freed: boolean): V3 {
   const skin: Skin = (u, tone) => {
     if (u[0] < 0.05) return null;
     const side = Math.abs(u[1]);
@@ -320,8 +319,8 @@ function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn
   };
   const c = add(hc, mul(ff, 0.35));
   put('mask', 'mask', { k: 'ball', c, ax: [mul(ff, hr[0] * 1.04), mul(fl, hr[1] * 1.1), mul(fu, hr[2] * 1.07)], skin });
-  // the dull pink in the dark behind its eyes (hot, through the warning)
-  for (const k of [-1, 1]) {
+  // the dull pink in the dark behind its eyes (hot, through the warning); none once the Hush has gone and the mask has dropped
+  for (const k of freed ? [] : [-1, 1]) {
     const e = add(c, add(mul(ff, hr[0] * 0.95), add(mul(fl, k * hr[1] * 0.38), mul(fu, hr[2] * 0.08))));
     put('mask', 'mask', { k: 'dot', p: e, c: burn > 0.5 ? FLAME[2] : FLAME[1], facing: ff });
     if (burn > 0.05) put('mask', 'glint', { k: 'glow', p: e, c: FLAME[2], r: 4 + 5 * burn, a: 0.4 * burn });
@@ -382,14 +381,15 @@ function hisHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, lag: V3): voi
 
 /** The ribbon that ties the mask on: round the head over the ears, its two ends hanging from the knot behind and streaming. */
 function maskRibbon(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, lag: V3, t: number): void {
-  put('hair', 'maskband', { k: 'band', ring: { c: add(hc, mul(fu, hr[2] * 0.12)), u: mul(ff, hr[0] * 1.08), v: mul(fl, hr[1] * 1.1) }, ramp: room.ribbon, rows: 1 });
+  // (round the sides and back of the head only: at the front it is under the mask)
+  put('hair', 'mask', { k: 'band', ring: { c: add(hc, add(mul(fu, hr[2] * 0.12), mul(ff, -0.6))), u: mul(ff, hr[0] * 0.92), v: mul(fl, hr[1] * 1.08) }, ramp: room.ribbon, rows: 1 });
   const knot = add(hc, add(mul(ff, -hr[0] * 1.06), mul(fu, hr[2] * 0.12)));
   for (const k of [-1, 1]) {
     let prev = knot;
     for (let i = 1; i <= 3; i++) {
       const sway = Math.sin(t * 3 + k + i) * 0.5;
       const p = add(knot, add(mul(ff, -0.8 * i), add(mul(fl, k * 0.7 * i + sway), add([0, 0, -2.2 * i], mul(lag, 0.6 * i)))));
-      put('hair', 'ribbonends', { k: 'rod', a: prev, b: p, ra: 0.55, rb: 0.5, ramp: room.ribbon });
+      put('hair', 'mask', { k: 'rod', a: prev, b: p, ra: 0.55, rb: 0.5, ramp: room.ribbon });
       prev = p;
     }
   }
@@ -492,7 +492,7 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
   const hr: V3 = [B.headR[0], B.headR[1] * 1.04, B.headR[2]];
   const hc = add(s.head, mul(fu, -0.2));
   face(put, hc, ff, fl, fu, hr, freed);
-  const mouth = mask(put, hc, ff, fl, fu, hr, room, g);
+  const mouth = mask(put, hc, ff, fl, fu, hr, room, g, freed);
   if (who === 'lady') herHair(put, hc, ff, fl, fu, hr, room, lag, m.t);
   else hisHair(put, hc, ff, fl, fu, hr, lag);
   maskRibbon(put, hc, ff, fl, fu, hr, room, lag, m.t);
@@ -509,7 +509,7 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
   if (sm) {
     sm.forEach((line, j) => {
       const k = j / Math.max(1, sm.length - 1);
-      const cols = [room.cloth[3], room.cloth[4], SMEAR_PALE];
+      const cols = smearColours(room);
       for (let i = 1; i < line.length; i++) {
         const [x0, y0] = st.at(line[i - 1]);
         const [x1, y1] = st.at(line[i]);
@@ -524,11 +524,19 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
   grains.push(...(say.more?.(m) ?? []));
   void hash;
   void D;
-  void HUSH;
   return bits;
 }
 /** The smear's newest after-image: near white. */
 export const SMEAR_PALE = '#f2eef6';
+/** THE SMEAR'S COLOURS in a room's clothes: its brightest tone washed a third and two thirds toward white, the oldest first, and near white (none of them anywhere else on them). */
+export function smearColours(room: Room): [string, string, string] {
+  const wash = (c: string, k: number): string => {
+    const n = parseInt(c.slice(1), 16);
+    const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (250 - v) * k) | 1);
+    return `#${ch.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  };
+  return [wash(room.cloth[4], 0.3), wash(room.cloth[4], 0.62), SMEAR_PALE];
+}
 
 /** THEM AS THE PAINTER TAKES THEM. */
 export function dancerPainter(who: DancerWho, say: DancerSay): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
