@@ -108,7 +108,7 @@ function lightsOf(s: Sprite, x: number, y: number, k: number): void {
     const cy = y + (l.y - s.ay) * d * k;
     const r = l.r * d * k;
     const gr = g.createRadialGradient(cx, cy, 0, cx, cy, r);
-    gr.addColorStop(0, hexA(l.color, l.a * 0.55));
+    gr.addColorStop(0, hexA(l.color, (l.a ?? 0.4) * 0.55));
     gr.addColorStop(1, hexA(l.color, 0));
     g.fillStyle = gr;
     g.fillRect(cx - r, cy - r, r * 2, r * 2);
