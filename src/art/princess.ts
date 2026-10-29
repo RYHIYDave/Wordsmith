@@ -64,9 +64,8 @@ const HAIR_DARK: Ramp = ['#0e0b0d', '#181216', '#261d22', '#382a30', '#4a3840'];
 export const NETTLE: Ramp = ['#122014', '#1f361e', '#30552b', '#4a773a', '#72984f'];
 const STEM: Ramp = ['#1e141a', '#2e1e28', '#3a2b37', '#4e3a48', '#5e4858'];
 const HAIRS = '#b6b4a2';
-/** Her whip: the nettle's stem a bright, hard green, so that it reads against the lawn; its thorns pale. */
-const WHIP: Ramp = ['#162414', '#26401f', '#3c6230', '#5a8a44', '#86b464'];
-/** Its wood, a dark green going brown; its leaves, bright. */
+/** Her whip: its wood a dark olive going brown, a paler strand twisted round it; its leaves a bright green, so it reads
+ * against the lawn as a vine. */
 const WOOD: Ramp = ['#17150c', '#2a2618', '#403a24', '#5a5232', '#766c44'];
 const WOOD_PALE: Ramp = ['#2a2618', '#403a24', '#5e5636', '#80784e', '#a49c6c'];
 const LEAFY: Ramp = ['#1d3818', '#2d5824', '#468034', '#68a448', '#92c866'];

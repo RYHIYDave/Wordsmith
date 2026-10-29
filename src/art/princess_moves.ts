@@ -199,7 +199,7 @@ function whipVine(s: Skeleton, deg: number, long: number, trail: number, writhe:
   }
   return out;
 }
-/** THE WHIP THROUGH THE LASH (the bones' `draw`): 0 trailing at rest; 0 to 1 growing out its whole length in the air to her right, writhing; 1 to 2 lashed round its quarter turn, straight; 2 to 2.2 carried on; 2.2 to 3 recoiling back into her hand, trailing again. */
+/** THE WHIP THROUGH THE LASH (the bones' `draw`): 0 trailing at rest; 0 to 1 growing out its whole length in the air to her right, swaying; 1 to 2 lashed round its quarter turn, straight; 2 to 2.2 carried on; 2.2 to 3 recoiling back into her hand, trailing again. */
 export function lashVine(s: Skeleton, draw: number, t: number): V3[] {
   const rest = resampled(restAt(s, t), N_VINE);
   const mix = (a: V3[], b: V3[], k: number): V3[] => a.map((p, i) => lerp3(p, b[i], k));
