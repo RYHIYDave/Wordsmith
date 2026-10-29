@@ -613,7 +613,7 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   const why = game.talentProblem(def.id);
   const bh = ui.touch ? 18 : 13;
   const textH = lines.reduce((a, l) => a + LINE_H[l.small ? 'small' : 'normal'] + (l.small ? 2 : 1), 0);
-  // (THE RANGER'S COMPANIONS, taken, in town: a row of its three to pick from)
+  // (THE RANGER'S COMPANIONS, taken, in town: a row of its three to pick from; shown him, by 23:37, 28 Oct, “Yes, like this (Recommended)”)
   const group = COMPANIONS.on ? groupOfTalent(def.id) : null;
   const picking = !!group && took && game.level.town;
   const ch = 5 + textH + 3 + (picking ? bh + 3 : 0) + bh + 5;
