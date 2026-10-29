@@ -287,9 +287,11 @@ test('its ground pound comes down quickly: its blow under half a second after he
   assert.ok(SKILLS.golem.windup + G.pound.lead + G.pound.hit <= 0.75, 'and under three quarters of a second from her hold');
 });
 
-// The owner, 28 Oct 2026, 20:26: “And his normal punch doesn’t really look very good” (its uppercut, off until he says yes).
-test('switched to its uppercut, its blow up close lands at the uppercut’s own moment and still strikes; switched off, its punch as before', () => {
-  assert.equal(GOLEM_LOOK.uppercut, false, 'off until he has seen it and said yes');
+// The owner, 28 Oct 2026, 20:26: “And his normal punch doesn’t really look very good”; to the film, by 21:41, “Yes, use the
+// uppercut (Recommended)”.
+test('its uppercut: its blow up close lands at the uppercut’s own moment and strikes; switched off, its old punch', () => {
+  assert.equal(GOLEM_LOOK.uppercut, true, 'on, at his yes');
+  GOLEM_LOOK.uppercut = false;
   assert.deepEqual(golemBlow(), { long: G.punch.long, hit: G.punch.hit });
   GOLEM_LOOK.uppercut = true;
   try {
@@ -310,7 +312,7 @@ test('switched to its uppercut, its blow up close lands at the uppercut’s own 
     assert.ok(landed > 0 && hurt(near) > 0, 'it strikes');
     assert.ok(Math.abs(landed - begun - G.upper.hit) < 0.05, `its blow ${(landed - begun).toFixed(2)} s into it`);
   } finally {
-    GOLEM_LOOK.uppercut = false;
+    GOLEM_LOOK.uppercut = true;
   }
 });
 

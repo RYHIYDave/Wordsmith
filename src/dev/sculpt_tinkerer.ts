@@ -1,6 +1,6 @@
 // THE TINKERER, HER CONTRAPTION AND HER GOLEM, SCULPTED (the art chat, 23 Oct 2026). MOCK-UPS; NOTHING OF THE GAME IMPORTS IT.
 //
-// His words, 23 Oct (Pacific): by 21:55, “She’s a new character so she’ll have her own.  I’m going change her to
+// His words, 23 Oct (Pacific): by 21:41, “She’s a new character so she’ll have her own.  I’m going change her to
 // Tinkerer.”; her brief by 22:21: “Gleeful mad bomber (Recommended)”, “Quick and nimble (Recommended)”, and her fighting:
 // “K this is where the tinkering is changing the character.  She’s going to have minions.  I think she’ll set turrets on the
 // ground that fire something.  Not an arrow or a bolt.  That’s the tap.  We’ll call those “Contraption”.  Tap and hold will

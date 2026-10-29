@@ -4,7 +4,7 @@
 // Make it menacing”; at 21:07, “Have the demon effuse black smoke.  I’d like the demon form to change based on the damage
 // word type attached to it.  So the black smoke can turn to flames or frost, or crackling lightning, or green stink lines or
 // whatever”; “More detail,Wings back,Let’s see him in different colors.  I think he’ll be better as a darker less saturated
-// color but let’s see a few.  Especially the colors of the damage types, green for poison, blue for frost, etc”; by 21:55,
+// color but let’s see a few.  Especially the colors of the damage types, green for poison, blue for frost, etc”; by 21:41,
 // “Yes, ash black (Recommended)”; his brief by 22:11: “Feral and fast” (drops to all fours, bounds and leaps), “Claw
 // rakes”, “Mostly for show (Recommended)” (the wings folded as he goes, flung wide when he roars or rakes), “Collapses into
 // smoke (Recommended)”.

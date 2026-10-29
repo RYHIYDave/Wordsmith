@@ -39,14 +39,13 @@ declare const __TINKERER__: boolean | undefined;
 /** THE TINKERER OFFERED: on, a new hero may be made as her (the class cards). Off until the owner has played her and said yes. */
 export const TINKERER = { on: typeof __TINKERER__ !== 'undefined' && __TINKERER__ === true };
 
-/** A page built to show the Golem's uppercut says so (esbuild's define). */
-declare const __GOLEM_UPPERCUT__: boolean | undefined;
 /**
  * HER GOLEM'S UPPERCUT in place of its punch (the main chat, at the owner's word of 28 Oct 2026, 20:26: “And his normal
  * punch doesn’t really look very good”): dev/golem_moves.ts golemUppercut, its fist dragged back along the floor and
- * scooped up through them. Off until he has seen it and said yes (his rule: pictures first).
+ * scooped up through them. Filmed in the game beside the old punch (golem_film.mjs); his pick, 28 Oct, by 21:41: “Yes, use
+ * the uppercut (Recommended)”. Off, the old punch (dev/golem_moves.ts golemPunch).
  */
-export const GOLEM_LOOK = { uppercut: typeof __GOLEM_UPPERCUT__ !== 'undefined' && __GOLEM_UPPERCUT__ === true };
+export const GOLEM_LOOK = { uppercut: true };
 
 /** Is this hero the Tinkerer. */
 export const isTinkerer = (cls: ClassId): boolean => cls === 'tinkerer';

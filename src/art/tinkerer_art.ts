@@ -164,7 +164,7 @@ function golemClip(view: GameView, end: number, pose: (f: number) => GolemPose &
 
 function golemSet(view: GameView): AnimSet {
   const walk = lazyFrames(GWALK.round, (i) => golemAt(view, golemWalk(i)));
-  // (its punch; or its uppercut, GOLEM_LOOK, the main chat's at his word of 28 Oct, 20:26, while he has not said yes to it)
+  // (its uppercut, GOLEM_LOOK, the main chat's at his word of 28 Oct, 20:26, his yes by 21:41; off, its old punch)
   const punch = GOLEM_LOOK.uppercut ? golemClip(view, GUPPER.end, golemUppercut, GUPPER.hit) : golemClip(view, GPUNCH.end, golemPunch, GPUNCH.hit);
   const pound = golemClip(view, GP.end, groundPound, GP.hit);
   const cannon = golemClip(view, GCANNON.end, golemCannon, GCANNON.fire);
