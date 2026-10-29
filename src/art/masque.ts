@@ -207,6 +207,8 @@ export interface MasqueLand {
   floor: Floor;
   /** What a walkable tile is (MQ_ZONE); a passage where not said. */
   zone?: (tx: number, ty: number) => number;
+  /** Whether the windows' light lies on the floor before them (where not said, it does; the checks paint it without, to see it). */
+  windowLight?: boolean;
 }
 
 /** A WINDOW of the seven rooms: the middle of its foot on the wall's line (world), which face it is in (0: a wall along x, its face turned to the screen's left; 1: along y, to the right), its room, the middle of it across the picture. */
@@ -406,8 +408,8 @@ function marble(R: RoomColours, zone: number, x: number, y: number, px: number, 
 function velvetCarpet(x: number, y: number, px: number, py: number, wall: number): RGB {
   const V = MQ_ROOMS[MQ_ZONE.Black].silk;
   // the nap brushed in long soft strokes, a sheen along them; the pile's grain, fine
-  const stroke = vnoise(x * 0.9 + y * 0.25, y * 2.6 - x * 0.4, 1733);
-  let k = over(stroke, 0.6, px, py, 0.04) ? 3 : 2;
+  const stroke = vnoise(x * 0.45, y * 3.4, 1733) + 0.25 * vnoise(x * 1.1, y * 7, 1734);
+  let k = over(stroke, 0.78, px, py, 0.04) ? 3 : 2;
   if (hash(px >> 1, py, 1731) < 0.22) k -= 1;
   // where the hangings fall onto it from the walls, darker
   if (wall < 0.24) k = Math.max(0, k - 2);
@@ -863,7 +865,7 @@ export function masqueLook(land: MasqueLand): TerrainLook {
         else c = flags(x, y, px, py, wd);
       }
       // THE WINDOWS' LIGHT lying on the floor before them, in the room's colour (the black room's red), in steps
-      const ws = B.reach.get(ty * W + tx);
+      const ws = land.windowLight === false ? undefined : B.reach.get(ty * W + tx);
       if (ws) {
         let L = 0;
         let col: RGB = MQ_ROOMS[0].light;

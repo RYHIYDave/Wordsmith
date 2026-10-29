@@ -251,7 +251,7 @@ function clockIn(S: Scene, swing: number, chime: number): void {
   const TZ0 = 19;
   const TZ1 = 101;
   const piv: [number, number] = [0, TZ1 - 4];
-  const LEN = 50;
+  const LEN = 40;
   const bob: [number, number] = [piv[0] + Math.sin(swing) * LEN, piv[1] - Math.cos(swing) * LEN];
   blk(S, [0, 0, (TZ0 + TZ1) / 2], [10, 7, (TZ1 - TZ0) / 2], (k, a, b, n) => {
     if (k === 'top') return toneAt(n, E, 0.1);
@@ -261,10 +261,10 @@ function clockIn(S: Scene, swing: number, chime: number): void {
       return toneAt(n, E, 0);
     }
     // the door: its frame lit along the top and left, a fillet of brass; the glass
-    const inDoor = Math.abs(a) < 8 && b > TZ0 + 5 && b < TZ1 - 3;
+    const inDoor = Math.abs(a) < 9 && b > TZ0 + 5 && b < TZ1 - 3;
     if (!inDoor) return toneAt(n, E, 0);
-    const inGlass = Math.abs(a) < 6 && b > TZ0 + 9 && b < TZ1 - 6;
-    if (!inGlass) return Math.abs(Math.abs(a) - 6.6) < 0.6 || Math.abs(b - (TZ0 + 8.4)) < 0.6 || Math.abs(b - (TZ1 - 5.4)) < 0.6 ? toneAt(n, BRASS, 0) : toneAt(n, E, a < 0 ? 0.25 : 0);
+    const inGlass = Math.abs(a) < 7.6 && b > TZ0 + 9 && b < TZ1 - 6;
+    if (!inGlass) return Math.abs(Math.abs(a) - 8.2) < 0.6 || Math.abs(b - (TZ0 + 8.4)) < 0.6 || Math.abs(b - (TZ1 - 5.4)) < 0.6 ? toneAt(n, BRASS, 0) : toneAt(n, E, a < 0 ? 0.25 : 0);
     // behind the glass: the pendulum (its rod, its bob, lens-shaped), and the two weights on their lines
     const dx = a - piv[0];
     const dz = b - piv[1];
@@ -357,8 +357,8 @@ function clockIn(S: Scene, swing: number, chime: number): void {
     const [cx, cy] = S.at([0, 0, CZ + 11]);
     for (const [R, k] of [[14, 4], [19, 3], [24, 3]] as const) {
       for (const side of [-1, 1]) {
-        for (let i = -6; i <= 6; i++) {
-          const a = (i / 6) * 0.55;
+        for (let i = -24; i <= 24; i++) {
+          const a = (i / 24) * 0.55;
           const x = Math.round(cx + side * Math.cos(a) * R);
           const y = Math.round(cy + Math.sin(a) * R * 0.9);
           S.put(x, y, 1e5, BRASS[k], 17);
@@ -706,7 +706,7 @@ function tapestry(torn: boolean): { left: Sprite; right: Sprite } {
       // a loose strip hanging from the rent
       S.quad([w(7.5, 3.4, Z0 + 18), w(9.5, 3.8, Z0 + 18), w(10.6, 4.2, Z0 - 6), w(8.6, 3.8, Z0 - 5)], (u) => (u < 0.4 ? WINE[2] : INDIGO[2]), 42);
     }
-  }, 90, 130, undefined, 30);
+  }, 90, 160, undefined, 30);
 }
 
 /**
@@ -1596,7 +1596,7 @@ function bargain(): Sprite {
 // THE SET
 
 /** The pendulum's swing in its four frames (radians): out to one side, through the middle, out to the other, back. */
-export const CLOCK_SWING = [0.16, 0, -0.16, 0] as const;
+export const CLOCK_SWING = [0.18, 0, -0.18, 0] as const;
 /**
  * THE CLOCK'S FRAMES, for each way it may stand: its pendulum (CLOCK_SWING, four frames, played over and over at its own
  * slow beat); then its chime (two frames: the hammer drawn back, the bell struck), which the game plays when it chimes (his

@@ -76,3 +76,33 @@ export function masqueLand(): MasqueLand {
   const { floor, zone } = masqueFloor();
   return { floor, zone: (tx, ty) => zone[ty * MW + tx] };
 }
+
+/**
+ * THE SEVEN ROOMS SIDE BY SIDE, for a picture of the ground in all seven colours (the corner has three): each five tiles
+ * square, in the tale's order, three to a row, the rows stepping down the picture; a doorway out of each to a strip of
+ * gallery before it. Returns the land and the middle of each room.
+ */
+export function sevenRoomsLand(): { land: MasqueLand; middles: [number, number][] } {
+  const w = 40;
+  const h = 40;
+  const tiles = new Uint8Array(w * h).fill(T_WALL);
+  const zone = new Uint8Array(w * h).fill(MQ_ZONE.Gallery);
+  const SEVEN = [MQ_ZONE.Blue, MQ_ZONE.Purple, MQ_ZONE.Green, MQ_ZONE.Orange, MQ_ZONE.White, MQ_ZONE.Violet, MQ_ZONE.Black];
+  const middles: [number, number][] = [];
+  SEVEN.forEach((z, i) => {
+    const row = Math.floor(i / 3);
+    const col = i % 3;
+    const x0 = 6 + col * 6 + row * 8;
+    const y0 = 14 - col * 6 + row * 8;
+    middles.push([x0 + 2.5, y0 + 2.5]);
+    for (let y = y0; y < y0 + 5; y++) for (let x = x0; x < x0 + 5; x++) {
+      tiles[y * w + x] = T_FLOOR;
+      zone[y * w + x] = z;
+    }
+    // a doorway out of its near wall to a strip of gallery before it
+    for (let x = x0 + 2; x < x0 + 4; x++) tiles[(y0 + 5) * w + x] = T_FLOOR;
+    for (let x = x0; x < x0 + 5; x++) tiles[(y0 + 6) * w + x] = T_FLOOR;
+  });
+  const floor = { depth: 17, seed: 17, w, h, tiles, cut: new Uint8Array(w * h), variant: new Uint8Array(w * h), rooms: [], start: { x: 0, y: 0 } } as unknown as Floor;
+  return { land: { floor, zone: (tx, ty) => zone[ty * w + tx] }, middles };
+}
