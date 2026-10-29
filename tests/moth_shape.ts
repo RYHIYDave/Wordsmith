@@ -90,7 +90,8 @@ export const MOTH_SHAPE: BossShape = {
   body: (s, q) => mothSolids(geom(s, q)),
   things: (_move, _t, s, q) => wingThings(geom(s, q)),
   tip: (move, _t, s, q) => (STRIKERS.has(move) ? followed(geom(s, q)).apexR : null),
-  grips: (_move, _t, s, q) => geom(s, q).legs.map((lg, i) => ({ name: `foot${i}`, p: lg.tarsus[5] })),
+  // (each foot's sole: under the middle of its last joint, by as much as that joint is thick)
+  grips: (_move, _t, s, q) => geom(s, q).legs.map((lg, i) => ({ name: `foot${i}`, p: [lg.tarsus[5][0], lg.tarsus[5][1], lg.tarsus[5][2] - 1.5] as V3 })),
   arms: (_move, _t, s, q) => legsOf(geom(s, q)),
   follow: (_move, _t, s, q) => followed(geom(s, q)),
   strikes: MOTH_STRIKES,

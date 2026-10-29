@@ -24,8 +24,9 @@
 // cape over each wing's root; a head set low, with two great dark compound eyes, faceted, a dull pink shine deep in them;
 // two feathered antennae, combed on both sides; furred palps; a coiled tongue; an abdomen of eight segments, each with a
 // pale fringe and side tufts, a tuft at its tip; six legs, jointed (a furred femur, a spurred tibia, a tarsus of five
-// joints and a claw). FOUR WINGS: each a flat sail of scales cut to its own outline (the forewing long, its apex
-// hooked; the hindwing a broad fan, its margin scalloped and torn), its veins running out from its root, its cross-lines
+// joints and a claw). FOUR WINGS: each a sail of scales cut to its own outline (the forewing long, its apex hooked; the
+// hindwing a broad fan, its margin scalloped and torn), cupped along a vein so that it is never a flat board edge on (its
+// trailing part bent up, and further as it lags behind a stroke), its veins running out from its root, its cross-lines
 // wavering across it in bone white, a fringe of chequered scales along its edge, the hair thick at its root. AN EYE ON
 // EACH WING (four: a great one on each hindwing, a lesser on each forewing), set in an eyespot's rings: a REAL EYE,
 // lidded, the lids furred; its white veined; its iris the Hush's dull pink; it opens, it shuts, and its pupil follows
@@ -189,8 +190,8 @@ export interface MothExtra {
   m_sh: number;
 }
 const EXTRA_KEYS: readonly (keyof MothExtra)[] = ['m_hb', 'm_hs', 'm_sx', 'm_sy', 'm_sz', 'm_ax', 'm_ay', 'm_az', 'm_plant', 'm_pf', 'm_lx', 'm_ly', 'm_lz', 'm_cr', 'm_sh'];
-/** Where its six feet are put down round the book (left fore, mid, hind; right fore, mid, hind): the figure's floor, its own lengths. */
-export const FEET_DOWN: readonly V3[] = [[136, 96, 0.3], [44, 140, 0.3], [-62, 122, 0.3], [136, -96, 0.3], [44, -140, 0.3], [-62, -122, 0.3]];
+/** Where its six feet are put down round the book (left fore, mid, hind; right fore, mid, hind): the figure's floor, its own lengths (the middle of its last joint, as thick as it is over the stones). */
+export const FEET_DOWN: readonly V3[] = [[136, 96, 1.8], [44, 140, 1.8], [-62, 122, 1.8], [136, -96, 1.8], [44, -140, 1.8], [-62, -122, 1.8]];
 /** Its pose from a moment's bones and pose (what of it is its own is carried on the pose: MothExtra). */
 export function poseOf(q: Posed): MothPose {
   // (between two keys, each of its own numbers from the one to the other, as the bones' are: art/skeleton.ts bonesAt)
@@ -424,11 +425,16 @@ export function mothGeom(s: Skeleton, P: MothPose): MothGeom {
         }
         // (coming down: from where it hangs to where it is put down)
         if (down) {
+          // (over its spot first, then down onto it: so that once its claw is on the stones it does not move)
           const dn = down;
           const w = sm(plant);
+          const wxy = sm(Math.min(1, plant * 1.6));
           knee = lerp3(knee, dn.knee, w);
           ankle = lerp3(ankle, dn.ankle, w);
-          tarsus = tarsus.map((p2, j) => lerp3(p2, dn.tarsus[j], w));
+          tarsus = tarsus.map((p2, j) => {
+            const q = dn.tarsus[j];
+            return [p2[0] + (q[0] - p2[0]) * wxy, p2[1] + (q[1] - p2[1]) * wxy, p2[2] + (q[2] - p2[2]) * w] as V3;
+          });
         }
       }
       legs.push({ coxa, knee, ankle, tarsus });
@@ -986,7 +992,7 @@ function mothBits(st: Stage, m: Moment, say: MothSay): Bit[] {
   for (const side of [1, -1] as const) {
     if (gone(400 + side)) continue;
     const root = add(HC, add(mul(hF, HEAD[0] * 0.72), add(mul(hU, -HEAD[2] * 0.42), mul(hL, side * 8))));
-    const dir = norm(add(mul(hF, 0.85), add(mul(hU, -0.5 + 0.95 * P.scream), mul(hL, side * (0.14 + 0.8 * P.scream)))));
+    const dir = norm(add(mul(hF, 0.85 - 0.3 * P.scream), add(mul(hU, -0.5 + 0.8 * P.scream), mul(hL, side * (0.14 + 1.2 * P.scream)))));
     const mid = add(root, mul(dir, 13));
     const end = add(mid, mul(norm(add(dir, mul(hU, 0.35))), 12));
     put('head', 'palp', { k: 'rod', a: root, b: mid, ra: 6.5, rb: 5.6, ramp: FUR });
@@ -1012,8 +1018,8 @@ function mothBits(st: Stage, m: Moment, say: MothSay): Bit[] {
   }
   // its mouth, as it screams: its face split between the palps, dark, the Hush's dull pink deep in it
   if (P.scream > 0.08) {
-    const c = add(HC, add(mul(hF, HEAD[0] * 0.78), mul(hU, -5)));
-    const ax: [V3, V3, V3] = [mul(hF, 5), mul(hL, 3 + 8 * P.scream), mul(hU, 2 + 11 * P.scream)];
+    const c = add(HC, add(mul(hF, HEAD[0] * 0.84), mul(hU, -7)));
+    const ax: [V3, V3, V3] = [mul(hF, 6 + 3 * P.scream), mul(hL, 3 + 12 * P.scream), mul(hU, 2 + 15 * P.scream)];
     put('head', 'mouth', {
       k: 'ball', c, ax, skin: (u, tone) => {
         const r = Math.hypot(u[1], u[2]);
@@ -1071,7 +1077,9 @@ function mothBits(st: Stage, m: Moment, say: MothSay): Bit[] {
     const tip = lg.tarsus[lg.tarsus.length - 1];
     const last = norm(sub(tip, lg.tarsus[lg.tarsus.length - 2]));
     const cs = norm(cross(last, [0, 0, 1]), L);
-    for (const sd of [1, -1]) put(part, 'claw', { k: 'rod', a: tip, b: add(tip, add(mul(last, 4), add(mul(cs, sd * 2.5), [0, 0, -2]))), ra: 1.2, rb: 0.4, ramp: HORN, far: true });
+    // (down on the stones, they lie along them gripping; in the air, hooked down)
+    const down = tip[2] < 3 ? 0 : -2;
+    for (const sd of [1, -1]) put(part, 'claw', { k: 'rod', a: tip, b: add(tip, add(mul(last, 4), add(mul(cs, sd * 2.5), [0, 0, down]))), ra: 1.2, rb: 0.4, ramp: HORN, far: true });
   });
 
   // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point

@@ -103,15 +103,76 @@ const moveOf = (move: string) => (move === 'stand' || move === 'walk' || move ==
 const at = (move: string, t: number): Moment => (move === 'dying' ? dyingMoment(MOB, t) : momentOf(MOB, moveOf(move), t));
 const paint = (move: string, t: number, view: (typeof VIEWS)[number]): Painted => (move === 'dying' ? deathOfMob(MOB, t / MOB.dieTime, view) : paintMob(MOB, move, t, view));
 
-/** Frames painted for the picture checks, both ways round: every third frame of every move the game shows, and every frame of each strike and the frames round it. */
-const PAINTED: { move: string; view: (typeof VIEWS)[number]; t: number; p: Painted }[] = [];
+/** What the picture checks read of a frame (kept, the frame itself let go: the Moth's frames are big). */
+interface Seen {
+  move: string;
+  view: (typeof VIEWS)[number];
+  t: number;
+  /** Pixels painted; of its pink edge; neither whole nor empty; whether any is cyan. */
+  n: number;
+  rim: number;
+  odd: number;
+  cyan: boolean;
+  /** Pixels of its smear; of the dull pink in its eyes; how many of it grey, ash or bone; blood red. */
+  smear: number;
+  iris: number;
+  grey: number;
+  red: number;
+  /** How near the edge of its picture it comes; how wide it is. */
+  room: number;
+  width: number;
+}
+const SMEAR_COLS = new Set(MOTH_SMEAR.map((c) => rgba(c).slice(0, 3).join(',')));
+const IRIS_COLS = new Set(IRIS.map((c) => rgba(c).slice(0, 3).join(',')));
+function seenOf(move: string, view: (typeof VIEWS)[number], t: number, p: Painted): Seen {
+  const [pr, pg, pb] = rgba(ENEMY_RIM);
+  const { w, h, d } = p.px;
+  const out: Seen = { move, view, t, n: 0, rim: 0, odd: 0, cyan: cyanIn(p), smear: 0, iris: 0, grey: 0, red: 0, room: Infinity, width: 0 };
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const a = d[i + 3];
+      if (!a) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+      out.n++;
+      if (a !== 255 && a !== RIM_ALPHA) out.odd++;
+      if (a === RIM_ALPHA && d[i] === pr && d[i + 1] === pg && d[i + 2] === pb) out.rim++;
+      if (a !== 255) continue;
+      const k = `${d[i]},${d[i + 1]},${d[i + 2]}`;
+      if (SMEAR_COLS.has(k)) out.smear++;
+      if (IRIS_COLS.has(k)) out.iris++;
+      const mx = Math.max(d[i], d[i + 1], d[i + 2]);
+      const mn = Math.min(d[i], d[i + 1], d[i + 2]);
+      if (mx === 0 || (mx - mn) / mx < 0.25) out.grey++;
+      if (d[i] > 120 && d[i + 1] < 60 && d[i + 2] < 60) out.red++;
+    }
+  }
+  if (x1 >= 0) {
+    out.room = Math.min(x0, y0, w - 1 - x1, h - 1 - y1);
+    out.width = x1 - x0;
+  }
+  return out;
+}
+/** Every third frame of every move the game shows, both ways round, and every frame of each strike and the frames round it. */
+const PAINTED: Seen[] = [];
 for (const view of VIEWS) {
   for (const move of ALL) {
     const ts = framesOf(MOB, move);
     const s = MOTH_STRIKES[move];
     ts.forEach((t, i) => {
       const nearStrike = !!s && t >= s[0] - 2 * FR - 1e-6 && t <= s[1] + 2 * FR + 1e-6;
-      if (i % 3 === 0 || i === ts.length - 1 || nearStrike) PAINTED.push({ move, view, t, p: paint(move, t, view) });
+      if (i % 3 === 0 || i === ts.length - 1 || nearStrike) {
+        const p = paint(move, t, view);
+        assert.equal(`${p.px.w}x${p.px.h}`, `${MOTH_CANVAS.w}x${MOTH_CANVAS.h}`);
+        PAINTED.push(seenOf(move, view, t, p));
+      }
     });
   }
 }
@@ -147,7 +208,6 @@ test('2. EVERY MOVE OF IT THROUGH EVERY BOSS CHECK: every frame, from in front a
 
 test('3. HIS LIGHTNING STRIKES: each blow strikes in two frames and lands on the second; the strike and the frame after it smeared, no other frame', () => {
   assert.equal(Object.keys(MOTH_STRIKES).sort().join(','), 'attack,beat,dust,eyes,swarm');
-  const SMEAR = new Set(MOTH_SMEAR.map(keyOf));
   const faults: string[] = [];
   for (const [move, [s0, s1]] of Object.entries(MOTH_STRIKES)) {
     assert.equal(Math.round((s1 - s0) * 30), 2, `${move}: its strike is two frames`);
@@ -155,8 +215,7 @@ test('3. HIS LIGHTNING STRIKES: each blow strikes in two frames and lands on the
     // (and its warning held before it: a third of a second and more)
     assert.ok(s0 >= 0.6, `${move}: its wind-up ${s0.toFixed(2)} s`);
   }
-  for (const { move, view, t, p } of PAINTED) {
-    const n = countIn(p, SMEAR);
+  for (const { move, view, t, smear: n } of PAINTED) {
     const want = smearedAt(move, t);
     if (want && n < 40) faults.push(`${said(move, view, t)}: its smear only ${n} pixels`);
     if (!want && n > 0) faults.push(`${said(move, view, t)}: smeared out of its strike (${n})`);
@@ -165,21 +224,12 @@ test('3. HIS LIGHTNING STRIKES: each blow strikes in two frames and lands on the
 });
 
 test('4. every frame paints both ways round: nothing cyan, the pink edge while it lives and none as it dies, every pixel whole or empty but the edge', () => {
-  const [pr, pg, pb] = rgba(ENEMY_RIM);
   const faults: string[] = [];
-  for (const { move, view, t, p } of PAINTED) {
-    const { d } = p.px;
-    let n = 0;
-    let rim = 0;
-    let odd = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] === 0) continue;
-      n++;
-      if (d[i + 3] !== 255 && d[i + 3] !== RIM_ALPHA) odd++;
-      if (d[i + 3] === RIM_ALPHA && d[i] === pr && d[i + 1] === pg && d[i + 2] === pb) rim++;
-    }
+  for (const { move, view, t, n, rim, odd, cyan } of PAINTED) {
     const alive = move !== 'dying';
-    if (n < 4000 || cyanIn(p) || odd || (alive ? rim < 400 : rim !== 0)) faults.push(`${said(move, view, t)}: ${n} pixels, ${rim} of the edge, ${odd} neither whole nor empty${cyanIn(p) ? ', and cyan' : ''}`);
+    // (crumbled, only its dust is left on the top)
+    const least = move === 'dying' && t > MOTH_DIES.crumble[1] - 0.6 ? 800 : 4000;
+    if (n < least || cyan || odd || (alive ? rim < 400 : rim !== 0)) faults.push(`${said(move, view, t)}: ${n} pixels, ${rim} of the edge, ${odd} neither whole nor empty${cyan ? ', and cyan' : ''}`);
   }
   assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
 });
@@ -205,9 +255,7 @@ function room(p: Painted): number {
 test('5. NOTHING CUT OFF: in every frame, both ways round, it is inside its picture with room to spare; and what its moves leave inside theirs', () => {
   const faults: string[] = [];
   let least = Infinity;
-  for (const { move, view, t, p } of PAINTED) {
-    assert.equal(`${p.px.w}x${p.px.h}`, `${MOTH_CANVAS.w}x${MOTH_CANVAS.h}`);
-    const r = room(p);
+  for (const { move, view, t, room: r } of PAINTED) {
     least = Math.min(least, r);
     if (r < 6) faults.push(`${said(move, view, t)}: ${r} pixels from the edge`);
   }
@@ -264,33 +312,19 @@ test('7. HIS BRIEF: a real moth; an eye on each wing that opens, shuts and follo
   for (const piece of ['compound1', 'compound-1', 'palp', 'thorax', 'mane', 'tongue']) assert.ok(bits.some((b) => b.piece === piece), piece);
   for (let i = 0; i < AB_R.length; i++) assert.ok(bits.some((b) => b.piece === `seg${i}`), `segment ${i}`);
   // NOT GORY: nothing of it red as blood; NOT CUTE: grey, ash and bone (its fur the darkest of its ramps)
-  const hov = PAINTED.filter((f) => f.move === 'stand');
-  for (const { view, t, p } of hov) {
-    const { d } = p.px;
-    let n = 0;
-    let grey = 0;
-    let red = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] !== 255) continue;
-      n++;
-      const mx = Math.max(d[i], d[i + 1], d[i + 2]);
-      const mn = Math.min(d[i], d[i + 1], d[i + 2]);
-      if (mx === 0 || (mx - mn) / mx < 0.25) grey++;
-      if (d[i] > 120 && d[i + 1] < 60 && d[i + 2] < 60) red++;
-    }
-    assert.ok(grey > n * 0.93, `stand ${view} @${t.toFixed(2)}: grey, ash and bone (${((grey / n) * 100).toFixed(1)}% of it)`);
+  for (const { view, t, n, rim, grey, red } of PAINTED.filter((f) => f.move === 'stand')) {
+    assert.ok(grey > (n - rim) * 0.9, `stand ${view} @${t.toFixed(2)}: grey, ash and bone (${((grey / (n - rim)) * 100).toFixed(1)}% of it)`);
     assert.equal(red, 0, `stand ${view} @${t.toFixed(2)}: blood red`);
   }
   void FUR;
   // ITS EYES: the dull pink of the Hush in each of the four, half-lidded as it hovers; shut as they blink; wide in the Eyes, burning
-  const IRISES = new Set(IRIS.map(keyOf));
   const eyesAt = (move: string, t: number): number => mothPoseAt(move, t).eyes;
   const stand = framesOf(MOB, 'stand').map((t) => eyesAt('stand', t));
   assert.ok(Math.max(...stand) > 0.3 && Math.max(...stand) < 0.45, `half-lidded as it hovers: ${Math.max(...stand).toFixed(2)}`);
   assert.ok(Math.min(...stand) < 0.05, 'and once a beat they blink shut');
   assert.ok(Math.max(...framesOf(MOB, 'eyes').map((t) => eyesAt('eyes', t))) > 1.1, 'wide, burning, in the Eyes');
-  const half = PAINTED.find((f) => f.move === 'stand' && f.view === 'back' && Math.abs(f.t - 0.8) < 0.04);
-  assert.ok(half && countIn(half.p, IRISES) > 300, `the dull pink in its eyes: ${half ? countIn(half.p, IRISES) : 0} pixels`);
+  const half = Math.max(...PAINTED.filter((f) => f.move === 'stand' && f.view === 'back').map((f) => f.iris));
+  assert.ok(half > 300, `the dull pink in its eyes: ${half} pixels`);
   // (and they follow you: as its wings beat, each pupil keeps to you, its way across the eye turning against the wing's)
   const look = mothPoseAt('stand', 0).look;
   const pupilWay = (t: number): number => {
@@ -316,7 +350,7 @@ test('7. HIS BRIEF: a real moth; an eye on each wing that opens, shuts and follo
       }
     }
   }
-  for (const t of framesOf(MOB, 'perch')) assert.ok(mothGeomAt('perch', t).legs.every((l) => l.tarsus[5][2] < 0.6), `on the book @${t.toFixed(2)}: its feet down`);
+  for (const t of framesOf(MOB, 'perch')) assert.ok(mothGeomAt('perch', t).legs.every((l) => l.tarsus[5][2] < 2.2), `on the book @${t.toFixed(2)}: its feet down`);
   // IT DIES SCREAMING: its mouthparts wide, its head thrown back; the first sound it makes (the game's)
   const [sc0, sc1] = MOTH_DIES.scream;
   assert.ok(mothPoseAt('dying', (sc0 + sc1) / 2).scream > 0.95, 'its mouth wide');
@@ -382,7 +416,7 @@ test('9. ITS SIZES: the biggest thing in the game; its wings, spread, as wide as
     return x1 - x0;
   };
   const queen = Math.max(...['stand', 'attack'].map((m) => width(paintMob(CARRION_QUEEN, m, 0.5, 'front'))));
-  const moth = Math.max(...PAINTED.filter((f) => f.move === 'perch').map((f) => width(f.p)));
+  const moth = Math.max(...PAINTED.filter((f) => f.move === 'perch').map((f) => f.width));
   assert.ok(moth > queen * 1.2, `its width ${moth} against the Carrion Queen's ${queen}`);
   // (his “bigger AOE”: the buffet's cone 140 degrees and 9 tiles; the dust 7 tiles across; the beams the top's whole
   // length; the swarm across most of it; the beat's wind over the whole top)

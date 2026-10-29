@@ -613,13 +613,18 @@ function crumbleGrains(t: number, G: MothGeom): [V3, string, number][] {
     const settled = p[2] <= 1.6;
     out.push([p, settled ? (i % 3 ? HUSH_DUST[1] : '#8a847c') : HUSH_DUST[i % 2 ? 2 : 3], settled ? 2 : hash(i, 4, 9951) < 0.4 ? 2 : 1]);
   }
-  // (the heap: its dust lying on the top where it fell)
-  const heap = Math.round(140 * k);
+  // (the heap: its dust lying on the top where it fell, deepest under where its body was, its wings' dust in drifts out
+  // either side where they lay, a few flakes of them whole)
+  const heap = Math.round(620 * k);
   for (let i = 0; i < heap; i++) {
     const a = hash(i, 5, 9951) * Math.PI * 2;
-    const r = Math.sqrt(hash(i, 6, 9951));
-    const p: V3 = [BOOK.at[0] - 30 + Math.cos(a) * r * 120, Math.sin(a) * r * 160, 1.2 + 6 * (1 - r) * hash(i, 7, 9951)];
-    out.push([p, i % 4 === 0 ? '#a49c90' : i % 4 === 1 ? HUSH_DUST[2] : i % 4 === 2 ? HUSH_DUST[1] : '#6e6862', 2]);
+    const wing = i % 3 !== 0;
+    const r = wing ? Math.sqrt(hash(i, 6, 9951)) : Math.pow(hash(i, 6, 9951), 0.8);
+    const x = BOOK.at[0] - 20 + Math.cos(a) * r * (wing ? 110 : 70);
+    const y = Math.sin(a) * r * (wing ? 330 : 80);
+    const p: V3 = [x, y, 1.2 + (wing ? 2 : 12) * (1 - r) * hash(i, 7, 9951)];
+    const c = hash(i, 8, 9951);
+    out.push([p, c < 0.25 ? '#a49c90' : c < 0.45 ? HUSH_DUST[2] : c < 0.65 ? HUSH_DUST[3] : c < 0.85 ? '#7a746c' : HUSH_DUST[1], 2]);
   }
   return out;
 }

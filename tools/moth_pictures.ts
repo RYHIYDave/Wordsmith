@@ -93,7 +93,7 @@ function mothPainted(move: string, t: number, view: View): Painted {
   let p = MOTH_CACHE.get(key);
   if (!p) {
     p = move === 'dying' ? deathOfMob(MOTH, Math.min(1, t / MOTH.dieTime), view) : paintMob(MOTH, move, t, view);
-    if (MOTH_CACHE.size > 60) MOTH_CACHE.delete(MOTH_CACHE.keys().next().value as string);
+    if (MOTH_CACHE.size > 6) MOTH_CACHE.delete(MOTH_CACHE.keys().next().value as string);
     MOTH_CACHE.set(key, p);
   }
   return p;
@@ -167,7 +167,7 @@ const BG: readonly [number, number, number] = [22, 21, 26];
 if (cmd === 'sheet') {
   const W = 1200;
   const rows: { view: View; t: number; label: string }[] = [
-    { view: 'front', t: 0.8, label: 'from in front' },
+    { view: 'front', t: 1.3, label: 'from in front' },
     { view: 'back', t: 0.8, label: 'from behind' },
   ];
   const H = 920 * 2;
@@ -211,16 +211,20 @@ if (cmd === 'top') {
   savePng(args[0], f);
   console.log('saved', args[0]);
 }
-if (cmd === 'still') {
-  const [move, ts, view, out] = args;
-  const t = Number(ts);
-  const v = view as View;
+/** A moment of a move on the top, what it leaves with it. */
+function still(move: string, t: number, v: View, out: string): void {
   const f = frameOf(FW, FH);
   const fx = effectsOf(move, t, v);
   const onBook = ['perch', 'beat', 'perchReel', 'dying', 'land'].includes(move);
   layShot(f, topFrame(), OX, OY, { move, t, view: v, at: PLACE[v].at, knight: PLACE[v].knight, knightView: v === 'front' ? 'back' : 'front', ...fx, book: onBook ? 0.3 : null });
   savePng(out, f);
   console.log('saved', out);
+}
+if (cmd === 'still') still(args[0], Number(args[1]), args[2] as View, args[3]);
+// (`stills <dir> <move:t:view> ...`: many at once)
+if (cmd === 'stills') for (const spec of args.slice(1)) {
+  const [move, t, v] = spec.split(':');
+  still(move, Number(t), v as View, `${args[0]}/st_${move}_${t}_${v}.png`);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -240,31 +244,29 @@ function zoomInto(f: Frame, p: Px, sx: number, sy: number, w: number, h: number,
     }
   }
 }
+/** Where a point of the Moth is on its picture, seen this way round. */
+function onPicture(p: V3, view: View): [number, number] {
+  const G = 0.8165;
+  return view === 'front' ? [MOTH_CANVAS.ax + G * (p[0] + p[1]), MOTH_CANVAS.ay + G * 0.5 * (p[0] - p[1]) - p[2]] : [MOTH_CANVAS.ax + G * (p[0] - p[1]), MOTH_CANVAS.ay + G * 0.5 * (-p[0] - p[1]) - p[2]];
+}
 if (cmd === 'close') {
-  const f = frameOf(1200, 1240);
+  const f = frameOf(1200, 1250);
   fill(f, BG);
-  // (the right hindwing's great eye, from behind, at four moments: shut in its blink, half-lidded, wide, burning)
-  const shots: [string, number, number][] = [['stand', 1.8 + 0.0, 0], ['stand', 0.8, 1], ['eyes', 1.0, 2], ['eyes', 1.3, 3]];
-  shots.forEach(([move, t, i]) => {
-    const view: View = move === 'eyes' ? 'front' : 'back';
+  // ITS GREAT EYE, on a hindwing, four times as big at four moments: shut as it blinks, half-lidded as it hovers, opening
+  // wide in the Eyes' warning, burning as the beams fire
+  const shots: [string, number, View, number][] = [['stand', 1.8, 'back', 1], ['stand', 0.8, 'back', 1], ['eyes', 1.0, 'front', 3], ['eyes', 1.4, 'back', 1]];
+  shots.forEach(([move, t, view, wi], i) => {
     const p = mothPainted(move, t, view);
-    const G = mothGeomAt(move, t);
-    const w = G.wings[move === 'eyes' ? 3 : 1];
-    const e = onWing(w, 0.5 * w.len, 0.4 * w.len);
-    const st = { x: 0, y: 0 };
-    // (where its eye is on the picture)
-    const D = view === 'front' ? [e[0] + e[1], 0.5 * (e[0] - e[1])] : [e[0] - e[1], 0.5 * (-e[0] - e[1])];
-    st.x = Math.round(MOTH_CANVAS.ax + 0.8165 * D[0]);
-    st.y = Math.round(MOTH_CANVAS.ay + 0.8165 * D[1] - e[2]);
-    zoomInto(f, p.px, st.x - 72, st.y - 54, 144, 108, 12 + (i % 2) * 594, 12 + Math.floor(i / 2) * 444, 4);
+    const w = mothGeomAt(move, t).wings[wi];
+    const [x, y] = onPicture(onWing(w, 0.5 * w.len, 0.4 * w.len), view);
+    zoomInto(f, p.px, Math.round(x) - 72, Math.round(y) - 54, 144, 108, 12 + (i % 2) * 594, 12 + Math.floor(i / 2) * 444, 4);
   });
-  // its head and thorax from in front, four times as big
-  const p = mothPainted('stand', 0.8, 'front');
-  const G = mothGeomAt('stand', 0.8);
-  const h = G.HC;
-  const hx = Math.round(MOTH_CANVAS.ax + 0.8165 * (h[0] + h[1]));
-  const hy = Math.round(MOTH_CANVAS.ay + 0.8165 * 0.5 * (h[0] - h[1]) - h[2]);
-  zoomInto(f, p.px, hx - 170, hy - 60, 294, 84, 12, 900, 4);
+  // ITS HEAD, three times as big: as it hovers; and as it screams, dying
+  ([['stand', 0.8], ['dying', 1.05]] as const).forEach(([move, t], i) => {
+    const p = mothPainted(move, t, 'front');
+    const [x, y] = onPicture(mothGeomAt(move, t).HC, 'front');
+    zoomInto(f, p.px, Math.round(x) - 95, Math.round(y) - 70, 190, 120, 12 + i * 594, 900, 3);
+  });
   savePng(args[0], f);
   console.log('saved', args[0]);
 }

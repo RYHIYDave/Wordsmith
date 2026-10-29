@@ -29,7 +29,7 @@ import { add, lerp3, mul, norm, sub } from './skeleton';
 import type { V3 } from './skeleton';
 
 /** Each effect's canvas: room for the top's whole length out from the Moth both ways round. */
-export const FX_CANVAS = { w: 2000, h: 1160, ax: 1000, ay: 580 } as const;
+export const FX_CANVAS = { w: 2240, h: 1400, ax: 1120, ay: 700 } as const;
 
 const D2R = Math.PI / 180;
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
@@ -177,13 +177,15 @@ export function cloudPainted(t: number, view: PaintView): Painted {
 
 /** The beams `t` seconds after the strike lands (the strike's first frame, at less than nothing, half out): held, flickering, then thinning to nothing. */
 export const BEAM_FX = { hold: 0.45, fade: 0.3, down: 2 } as const;
-/** Where each beam goes: from its eye, down to the top `down` tiles out along its line, and on along it the top's whole length. */
+/** Where each beam goes: from its eye, down to the top `down` tiles before the point under the eye, and on from there along the line it stares, out across the top: its own side's, so that the four fan out and never cross. */
 export function beamPaths(G: MothGeom): { eye: V3; touch: V3; far: V3; name: string }[] {
   return G.wings.map((w) => {
     const name = `${w.hind ? 'hind' : 'fore'}${w.side === 1 ? 'L' : 'R'}`;
     const deg = (EYE_BEAMS.fan as Record<string, number>)[name] * D2R;
     const way: V3 = [Math.cos(deg), Math.sin(deg), 0];
-    return { eye: eyeOf(w), touch: mul(way, BEAM_FX.down * TILE3), far: mul(way, EYE_BEAMS.tiles * TILE3), name };
+    const eye = eyeOf(w);
+    const touch: V3 = [eye[0] + BEAM_FX.down * TILE3, eye[1], 0];
+    return { eye, touch, far: add(touch, mul(way, (EYE_BEAMS.tiles - BEAM_FX.down) * TILE3)), name };
   });
 }
 export function beamsPainted(t: number, view: PaintView, G: MothGeom): Painted {
@@ -203,22 +205,25 @@ export function beamsPainted(t: number, view: PaintView, G: MothGeom): Painted {
     // DOWN FROM THE EYE to the top: a shaft of light, its core the dull pink, its sides bone white
     const air = (col: string, size: number, gap: number, off: number): void => streak(px, st, add(b.eye, mul(side, off)), add(b.touch, mul(side, off)), col, size, gap, b.name.length);
     if (thin < 0.95) {
-      air(BONE[3], 1, thin, -5);
-      air(BONE[3], 1, thin, 5);
-      air(SCLERA[4], 2, thin, -2.5);
-      air(SCLERA[4], 2, thin, 2.5);
-      air(flick ? FLAME[1] : FLAME[2], 2, thin, 0);
+      for (const off of [-7, 7]) air(BONE[3], 1, thin, off);
+      for (const off of [-4.5, 4.5]) air(SCLERA[3], 2, thin, off);
+      for (const off of [-2, 2]) air(SCLERA[4], 2, thin, off);
+      air(flick ? FLAME[1] : FLAME[0], 1, thin, 0);
     }
-    // ALONG THE TOP, the line it stares: a band of light the beam's width, burning, its core the dull pink
-    for (const [off, col, size] of [[-wide, BONE[2], 1], [wide, BONE[2], 1], [-wide * 0.55, SCLERA[3], 1], [wide * 0.55, SCLERA[3], 1], [-wide * 0.22, SCLERA[4], 2], [wide * 0.22, SCLERA[4], 2], [0, flick ? FLAME[1] : FLAME[2], 2]] as const) {
-      streak(px, st, add(b.touch, mul(side, off)), add(end, mul(side, off)), col, size, Math.min(0.9, thin + (Math.abs(off) > wide * 0.9 ? 0.35 : 0)), Math.round(off));
+    // ALONG THE TOP, the line it stares: a band of light the beam's width, bone white, burning brightest at its middle,
+    // its edges broken, its core the dull pink
+    for (let off = -wide; off <= wide + 1e-6; off += 2.4) {
+      const k = Math.abs(off) / wide;
+      const col = k > 0.85 ? BONE[2] : k > 0.6 ? SCLERA[2] : k > 0.3 ? SCLERA[3] : SCLERA[4];
+      streak(px, st, add(b.touch, mul(side, off)), add(end, mul(side, off)), col, 1, Math.min(0.92, thin + (k > 0.85 ? 0.45 : k > 0.6 ? 0.15 : 0)), Math.round(off * 3));
     }
+    streak(px, st, b.touch, end, flick ? FLAME[1] : FLAME[0], 1, thin * 0.8, 3);
     // sparks off the stones along it
     for (let i = 0; i < 40; i++) {
       if (hash(i, flick, 8831) < thin) continue;
       const k = hash(i, 1 + flick, 8832);
       const p = lerp3(b.touch, end, k);
-      lay(px, st, add(p, add(mul(side, (hash(i, 3, 8833) - 0.5) * wide * 2.2), [0, 0, 2 + 14 * hash(i, 4, 8833)])), i % 3 ? SCLERA[4] : FLAME[2], 1);
+      lay(px, st, add(p, add(mul(side, (hash(i, 3, 8833) - 0.5) * wide * 2.2), [0, 0, 2 + 14 * hash(i, 4, 8833)])), i % 4 ? SCLERA[4] : FLAME[1], 1);
     }
     for (let k = 0; k <= 4; k++) {
       const [x, y] = st.at(lerp3(b.touch, end, k / 4));
@@ -382,7 +387,7 @@ export function wordsPainted(t: number, view: PaintView, from: (t: number) => V3
 // THE LAST CHAPTER: open on the stones, where the Moth comes down
 
 /** Its colours: old paper, bone white; the ink faded; its binding. */
-const PAPER: readonly [string, string, string, string, string] = ['#6a645a', '#948d80', '#b8b0a2', '#d6cfc1', '#ebe5d8'];
+const PAPER: readonly [string, string, string, string, string] = ['#59544b', '#777064', '#958d7e', '#aea595', '#c2baa8'];
 const BINDING: readonly [string, string, string, string, string] = ['#141216', '#221f24', '#332f36', '#48434b', '#5e5962'];
 /**
  * THE LAST CHAPTER, torn out of its book and lying open on the stones, a few loose leaves beside it; its pages lifting in
@@ -404,11 +409,13 @@ export function chapterPainted(view: PaintView, wind = 0, t = 0): Painted {
     if (lines && row && hash(Math.round(a / 2), Math.round(b), 8872) < 0.7) return PAPER[Math.max(0, tone - 2)];
     return PAPER[Math.max(0, Math.min(4, tone))];
   };
-  // its two leaves open on the stones, sagging to the spine
+  // its two leaves open on the stones, each sagging to the spine and curling up at its outer edge; the stack of its pages
+  // under each, its edge dark
   for (const s of [1, -1]) {
     const lift = 4 + 9 * wind * (0.5 + 0.5 * Math.sin(t * 13 + s));
-    const c: V3 = [BOOK.at[0], BOOK.at[1] + s * W * 0.5, 3 + lift * 0.4];
-    put('pages', `leaf${s}`, { k: 'panel', c, u: [0, s * W * 0.5, lift * 0.35], v: [Dp, 0, 0], skin: pageSkin(true) });
+    put('stack', `stack${s}`, { k: 'panel', c: [BOOK.at[0], BOOK.at[1] + s * W * 0.5, 1.6], u: [0, s * W * 0.48, 0], v: [Dp * 0.98, 0, 0], skin: (_a, _b, _f, tone) => PAPER[Math.max(0, tone - 2)] });
+    put('pages', `leaf${s}`, { k: 'panel', c: [BOOK.at[0], BOOK.at[1] + s * W * 0.25, 3.4], u: [0, s * W * 0.25, 0.6], v: [Dp, 0, 0], skin: pageSkin(true) });
+    put('pages', `curl${s}`, { k: 'panel', c: [BOOK.at[0], BOOK.at[1] + s * W * 0.74, 4.6 + lift * 0.3], u: [0, s * W * 0.24, 1.6 + lift * 0.3], v: [Dp, 0, 0], skin: pageSkin(true) });
   }
   // a leaf lifting in the wind, turning over
   if (wind > 0.05) {
