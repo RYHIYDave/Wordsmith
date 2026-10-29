@@ -45,7 +45,7 @@ import { hash } from './kit';
 import { FLAME } from './mkit';
 import { TILE3, mobSet, skeletonAt } from './new_mobs3';
 import type { Mob, MobMove, Moment } from './new_mobs3';
-import { FOG, KNIFE, ORDER_CANVAS, bodyOf, cloakRings, knifeOf, maskOn, orderPainter } from './silent_order';
+import { FOG, KNIFE, ORDER_CANVAS, bodyOf, cloakRings, fannedOf, knifeOf, maskOn, orderPainter } from './silent_order';
 import type { HandHold, OrderSay, OrderWho } from './silent_order';
 import { stage } from './skin';
 import type { Ring } from './skin';
@@ -634,7 +634,7 @@ function maskOf(B: Build, s: Skeleton): V3 {
 }
 
 /** THE SMEAR: after-images of what strikes along the way it came since its wind-up ended (the arm and the hand; the arm and the knife); in the rush, the whole of them, streaked back along the floor they crossed. */
-function smearOf(move: string, t: number, at: (move: string, t: number) => Skeleton, B: Build): V3[][] | null {
+function smearOf(who: OrderWho, move: string, t: number, at: (move: string, t: number) => Skeleton, B: Build): V3[][] | null {
   if (!smearedAt(move, t)) return null;
   const out: V3[][] = [];
   if (move === 'rush') {
@@ -668,8 +668,10 @@ function smearOf(move: string, t: number, at: (move: string, t: number) => Skele
     const s = at(move, u);
     out.push([s.shoulderR, s.elbowR, s.handR]);
     if (move === 'knife') {
-      const k = knifeOf(s.handR, s.point, s.across);
-      out.push([k.pommel, k.guard, k.tip]);
+      for (const f of fannedOf(who, s.point, s.across)) {
+        const k = knifeOf(s.handR, f.point, f.across);
+        out.push([k.pommel, k.guard, k.tip]);
+      }
     } else out.push([s.handR, add(s.handR, mul(norm(sub(s.handR, s.elbowR)), 3.2)), add(s.handR, [0, 0, 3.5])]);
   }
   return t > s1 + 1e-6 ? out.slice(Math.floor(out.length / 2)) : out;
@@ -717,6 +719,7 @@ function orderMob(who: OrderWho): Mob {
       const move = byName[m.move ?? ''] ?? '';
       return move === 'knife' && m.t >= THROW.draw[1] - 0.04 && m.t < THROW.hit;
     },
+    drawn: (m) => (byName[m.move ?? ''] ?? '') === 'knife' && m.t >= THROW.draw[1] - 0.04 && m.t < THROW.long - 0.06,
     flare: (m) => flareAt(byName[m.move ?? ''] ?? '', m.t),
     crack: (m) => smooth(ORDER_DIES.crack[0], ORDER_DIES.crack[1], m.t) * (m.t >= ORDER_DIES.crack[0] ? 1 : 0) + (m.t >= ORDER_DIES.crack[1] ? 0 : 0),
     emptied: (m) => (m.dying && m.t >= ORDER_DIES.empty ? m.t - ORDER_DIES.empty : -1),
@@ -729,7 +732,7 @@ function orderMob(who: OrderWho): Mob {
       }
       return r;
     },
-    smear: (m) => smearOf(byName[m.move ?? ''] ?? '', m.t, at, B),
+    smear: (m) => smearOf(who, byName[m.move ?? ''] ?? '', m.t, at, B),
     more: (m) => moreOf(who, byName[m.move ?? ''] ?? '', m, B, at, swayAt),
     fogArms: (m) => {
       const move = byName[m.move ?? ''] ?? '';
@@ -838,11 +841,13 @@ export function orderShape(who: OrderWho): BossShape {
     tip: (move, _t, s) => (move === 'attack' || move === 'knife' ? s.handR : null),
     things: (move, t, s) => {
       if (move !== 'knife' || t < THROW.draw[1] - 0.04 || t >= THROW.hit) return [];
-      const k = knifeOf(s.handR, s.point, s.across);
-      return [
-        { name: 'knife handle', pts: [k.pommel, lerp3(k.pommel, s.handR, 0.5)], r: 0.8, may: ['foreR'] },
-        { name: 'knife', pts: [...k.spine.slice(1), ...k.edge.slice(2)], r: 0.8, may: [] },
-      ] as CheckThing[];
+      return fannedOf(who, s.point, s.across).flatMap((f, i) => {
+        const k = knifeOf(s.handR, f.point, f.across);
+        return [
+          { name: `knife ${i} handle`, pts: [k.pommel, lerp3(k.pommel, s.handR, 0.5)], r: 0.8, may: ['foreR'] },
+          { name: `knife ${i}`, pts: [...k.spine.slice(1), ...k.edge.slice(2)], r: 0.8, may: [] },
+        ] as CheckThing[];
+      });
     },
     strikes: ORDER_STRIKES,
     smeared: smearedAt,

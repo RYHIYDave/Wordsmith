@@ -127,7 +127,7 @@ export function wavePainted(t: number, view: GameView = 'front', reach: number =
 // THE CURVED KNIFE IN FLIGHT
 
 /** Where the knife in flight is painted: its floor point under it at (ax, ay); it flies at its height over it, the way they face. */
-export const KNIFE_CANVAS = { w: 170, h: 130, ax: 105, ay: 100 } as const;
+export const KNIFE_CANVAS = { w: 190, h: 140, ax: 95, ay: 105 } as const;
 /** How high the knife flies (the figure's own lengths: about where it left the hand, a little lower by the end), how far along it has gone (tiles), and how far round it has spun (turns), `t` seconds after it left the hand. */
 export function knifeAt(t: number, z0 = 40): { x: number; z: number; turn: number; flying: boolean } {
   const T = KNIFE_FLIGHT.reach / KNIFE_FLIGHT.speed;
@@ -140,15 +140,21 @@ export function knifeAt(t: number, z0 = 40): { x: number; z: number; turn: numbe
 /** The knife spun `turn` turns round, its middle at `c`: its grip, the way it points and the way its edge bows. */
 /** In flight it is drawn a third as big again, to be seen spinning across the floor at the game's size. */
 export const FLIGHT_BIG = 1.35;
-function spun(c: V3, turn: number): { hand: V3; point: V3; across: V3 } {
+function spun(c: V3, turn: number, way = 0): { hand: V3; point: V3; across: V3 } {
   const a = turn * TAU;
-  const point: V3 = [Math.cos(a), 0, Math.sin(a)];
-  const across: V3 = [-Math.sin(a), 0, Math.cos(a)];
+  const h = way * D;
+  // (end over end, in the upright plane of its flight: `way` degrees to the left of the way they face)
+  const point: V3 = [Math.cos(a) * Math.cos(h), Math.cos(a) * Math.sin(h), Math.sin(a)];
+  const across: V3 = [-Math.sin(a) * Math.cos(h), -Math.sin(a) * Math.sin(h), Math.cos(a)];
   const mid = ((KNIFE.blade + 1.2 - KNIFE.handle) / 2) * FLIGHT_BIG;
-  return { hand: [c[0] - point[0] * mid, 0, c[2] - point[2] * mid], point, across };
+  return { hand: [c[0] - point[0] * mid, c[1] - point[1] * mid, c[2] - point[2] * mid], point, across };
 }
-/** THE KNIFE `t` seconds after it left the hand (`z0`: how high it left it): spinning and smeared in flight, then lying on the floor. Its floor point is the canvas's anchor; the game moves it along by `knifeAt(t).x` tiles. */
-export function knifePainted(t: number, view: GameView = 'front', z0 = 40): Painted {
+/**
+ * THE KNIFE `t` seconds after it left the hand (`z0`: how high it left it), flying `way` degrees to the left of the way they
+ * face (the armed last's fan: `fanOf`): spinning and smeared in flight, then lying on the floor. Its floor point is the
+ * canvas's anchor; the game moves it along that way by `knifeAt(t).x` tiles.
+ */
+export function knifePainted(t: number, view: GameView = 'front', z0 = 40, way = 0): Painted {
   const can = KNIFE_CANVAS;
   const st = stage(view === 'back' ? 'rear' : view, can.ax, can.ay, can);
   const bits: Bit[] = [];
@@ -156,12 +162,16 @@ export function knifePainted(t: number, view: GameView = 'front', z0 = 40): Pain
     bits.push({ part, piece, shape });
   };
   const k = knifeAt(t, z0);
+  const h = way * D;
+  const fw: V3 = [Math.cos(h), Math.sin(h), 0];
+  const along = (d: number, z: number): V3 => [fw[0] * d, fw[1] * d, z];
   if (k.flying || k.z > 1.3) {
-    const s = spun([0, 0, k.z], k.turn);
+    const s = spun([0, 0, k.z], k.turn, way);
     knifeBits(put, 'knife', 'knife', s.hand, s.point, s.across, 0, FLIGHT_BIG);
   } else {
     // (lying on its side on the floor, its edge up)
-    knifeBits(put, 'knife', 'knife', [-4.5, 0, 1.1], [1, 0.15, 0], [0, 0, 1], 0);
+    const lie = (way + 8) * D;
+    knifeBits(put, 'knife', 'knife', along(-4.5, 1.1), [Math.cos(lie), Math.sin(lie), 0], [0, 0, 1], 0);
   }
   const lights = paintBits(st, bits, [0, 0, k.z]);
   const px = st.whole(ENEMY_RIM);
@@ -171,7 +181,7 @@ export function knifePainted(t: number, view: GameView = 'front', z0 = 40): Pain
     const per = KNIFE_FLIGHT.speed * TILE3 / 30;
     for (let j = 1; j <= 3; j++) {
       const back = (per * j) / 3;
-      const s = spun([-back, 0, k.z + (9 / 30) * (j / 3)], k.turn - (KNIFE_FLIGHT.spin / 30) * (j / 3));
+      const s = spun(along(-back, k.z + (9 / 30) * (j / 3)), k.turn - (KNIFE_FLIGHT.spin / 30) * (j / 3), way);
       const kk = knifeOf(s.hand, s.point, s.across, FLIGHT_BIG);
       for (const p of [...kk.edge, kk.pommel]) {
         const [x, y] = st.at(p);
@@ -183,13 +193,13 @@ export function knifePainted(t: number, view: GameView = 'front', z0 = 40): Pain
     for (let i = 0; i < 28; i++) {
       const a = (i / 28) * TAU;
       if (hash(i, Math.floor(t * 30), 9112) > 0.55) continue;
-      const [x, y] = st.at([Math.cos(a) * rr, 0, k.z + Math.sin(a) * rr]);
+      const [x, y] = st.at(along(Math.cos(a) * rr, k.z + Math.sin(a) * rr));
       lay(px, x, y, i % 3 ? SMEAR[1] : SMEAR[2]);
     }
     for (let i = 0; i < 40; i++) {
       const u = i / 40;
       const z = k.z + Math.sin(i * 1.7 + k.turn * 9) * 3;
-      const [x, y] = st.at([-per * 1.2 * u, 0, z]);
+      const [x, y] = st.at(along(-per * 1.2 * u, z));
       if (hash(i, Math.floor(t * 30), 9111) > 1 - u * 0.7) continue;
       lay(px, x, y, u < 0.3 ? SMEAR[1] : SMEAR[0]);
     }

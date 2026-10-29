@@ -36,7 +36,7 @@ import { sphere } from './new_mobs3';
 import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
 import { skirtOf, wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
-import { add, buildOf, cross, dot, len, lerp3, mul, norm, sub } from './skeleton';
+import { about, add, buildOf, cross, dot, len, lerp3, mul, norm, sub } from './skeleton';
 import type { Build, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file. */
@@ -119,6 +119,25 @@ export function knifeOf(hand: V3, point: V3, across: V3, big = 1): { pommel: V3;
     edge.push(add(p, mul(up, -w)));
   }
   return { pommel: add(hand, mul(way, -KNIFE.handle * big)), guard, spine, edge, tip: spine[n] };
+}
+/**
+ * HOW MANY KNIVES THEY THROW, and which ways (degrees to the left of the way they face): the guest and the masks one;
+ * THE ARMED LAST A FAN OF THREE from their belt (his pick, 29 Oct: “A fan of three on 19 (Recommended)”), `spread`
+ * degrees between each two, every one flying as the one does (art/silent_order_moves.ts `KNIFE_FLIGHT`).
+ */
+export const KNIFE_FAN = { armed: 3, spread: 35, inHand: 17 } as const;
+export function fanOf(who: OrderWho): number[] {
+  if (who !== 'armed') return [0];
+  return [-KNIFE_FAN.spread, 0, KNIFE_FAN.spread];
+}
+/** The knives in a fist, fanned as cards are (the armed last's three): each one's way and the way its edge faces. */
+export function fannedOf(who: OrderWho, point: V3, across: V3): { point: V3; across: V3 }[] {
+  const n = norm(cross(point, across), [0, 1, 0]);
+  const ways = fanOf(who);
+  return ways.map((_, i) => {
+    const deg = ways.length > 1 ? (i - (ways.length - 1) / 2) * KNIFE_FAN.inHand : 0;
+    return { point: about(point, n, deg), across: about(across, n, deg) };
+  });
 }
 /** A KNIFE SHEATHED at a belt or a sash: its bone handle up out of it (`up`), its sheath of black leather down along the body, bowed as the blade is (`out`: away from the body). */
 export function sheathedKnife(put: Put, part: string, at: V3, up: V3, out: V3): void {
@@ -569,6 +588,7 @@ function courtClothes(put: Put, s: Skeleton, B: Build, sheathed: boolean): void 
 }
 /** THE ARMED LAST'S MAIL AND KNIVES: the hauberk to the knee, the broad belt of curved knives at the waist, the baldric of more across the chest (each still sheathed but the one in the hand). */
 function mailAndKnives(put: Put, s: Skeleton, B: Build, drawn: boolean): void {
+  // (drawn: all three from the belt, for the fan)
   const [cf, cl, cu] = s.chest;
   // the hauberk: links over the trunk, and its skirt to the knee round the legs
   const rings = trunkRings(s, B, 0.7, 2.0);
@@ -584,7 +604,8 @@ function mailAndKnives(put: Put, s: Skeleton, B: Build, drawn: boolean): void {
   put('body', 'belt', { k: 'band', ring: w, ramp: LEATHER, rows: 3 });
   put('body', 'belt', { k: 'ball', c: onRing(w, 0, 0.4), ax: [mul(s.belly[0], 0.7), mul(s.belly[1], 1.6), mul(s.belly[2], 1.4)], skin: SILVER });
   for (const [deg, i] of [[34, 0], [58, 1], [-40, 2]] as const) {
-    if (drawn && i === 1) continue;
+    if (drawn) continue;
+    void i;
     const at = onRing(w, deg, 1.2);
     const out = norm(sub(at, w.c));
     sheathedKnife(put, 'belt', at, norm(add(mul(out, 0.3), [0, 0, 1])), out);
@@ -619,8 +640,9 @@ export interface OrderSay {
   sway: (m: Moment) => V3;
   /** How each hand is held. */
   hands: (m: Moment) => readonly [HandHold, HandHold];
-  /** Whether the knife is in the right hand, and how bright the glint on it is. */
+  /** Whether the knife (the armed last's three) is in the right hand; whether it is out of its belt or its sash (from the draw to the end of the move). */
   knife: (m: Moment) => boolean;
+  drawn: (m: Moment) => boolean;
   /** How bright the dull pink in the eye holes burns (0 dull, 1 flaring). */
   flare: (m: Moment) => number;
   /** As they die: how far the mask has cracked (0..1); seconds since the body went out of the cloak (below 0: not yet); the cloak's rings as it emptied. */
@@ -656,13 +678,17 @@ function orderBits(who: OrderWho, st: Stage, m: Moment, say: OrderSay): Bit[] {
   const emptied = m.dying ? say.emptied(m) : -1;
   const [hl, hr] = say.hands(m);
   const knifeIn = say.knife(m);
+  const drawn = say.drawn(m);
+  const knives = (glint0: number): void => {
+    fannedOf(who, s.point, s.across).forEach((k, i) => knifeBits(put, 'knife', `knife${i}`, s.handR, k.point, k.across, glint0));
+  };
   const glint = clamp01(m.glint);
   if (who !== 'mask') {
     if (emptied < 0) {
       // A FIGURE IN ITS CLOAK
       for (const side of ['L', 'R'] as const) leg(put, who, s, B, side);
-      if (who === 'guest') courtClothes(put, s, B, !knifeIn);
-      else mailAndKnives(put, s, B, knifeIn);
+      if (who === 'guest') courtClothes(put, s, B, !drawn);
+      else mailAndKnives(put, s, B, drawn);
       arm(put, who, s, B, 'L', hl);
       arm(put, who, s, B, 'R', hr);
       const rings = cloakRings(s, B, sway, wind);
@@ -670,7 +696,7 @@ function orderBits(who: OrderWho, st: Stage, m: Moment, say: OrderSay): Bit[] {
       put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(s.chest[2], -1.0)), b: lerp3(s.neck, s.head, 0.5), ra: 2.4, rb: 2.2, ramp: VELVET });
       hood(put, st, s, B, sway, 0);
       mask(put, st, s, B, crack, lit, say.flare(m));
-      if (knifeIn) knifeBits(put, 'knife', 'knife', s.handR, s.point, s.across, glint);
+      if (knifeIn) knives(glint);
     } else {
       // THE CLOAK FALLS EMPTY: the rings it had as it emptied, dropping to the floor and spreading; the hood collapsing onto it; the belt of knives with it
       // (the mask's halves, fallen from it: the painter of a death lays them where they fall, Mob.fall)
@@ -698,7 +724,7 @@ function orderBits(who: OrderWho, st: Stage, m: Moment, say: OrderSay): Bit[] {
     // (theirs a little bigger than a face: the last of the masks, all there is of them)
     if (emptied < 0 || crack < 1) mask(put, st, s, B, crack, lit, say.flare(m), MASKS_SCALE);
     else mask(put, st, s, B, crack, 0, 0, MASKS_SCALE);
-    if (knifeIn && emptied < 0) knifeBits(put, 'knife', 'knife', s.handR, s.point, s.across, glint);
+    if (knifeIn && emptied < 0) knives(glint);
     fog(grains, st, s, B, m, sway, say.fogArms(m), emptied);
   }
   // THE SMEAR of a lightning strike, or of the rush: after-images, the oldest thinned to every other point (laid after their

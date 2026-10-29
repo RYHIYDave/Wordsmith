@@ -34,7 +34,7 @@ import type { Painted } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
 import type { Bit, Mob, Moment, Shape } from '../src/art/new_mobs3';
 import { TILE3, canvasOf, deathOfMob, dyingMoment, momentOf, paintMob, paintViewOf, skeletonAt } from '../src/art/new_mobs3';
-import { ORDER_BODY, ORDER_ARMED_BODY, ORDER_CANVAS, ORDER_ON, SMEAR } from '../src/art/silent_order';
+import { KNIFE_FAN, ORDER_BODY, ORDER_ARMED_BODY, ORDER_CANVAS, ORDER_ON, SMEAR, fanOf } from '../src/art/silent_order';
 import type { OrderWho } from '../src/art/silent_order';
 import { KNIFE_FLIGHT, ORDER_ALL, ORDER_DIES, ORDER_PACE, ORDER_SHAPES, ORDER_STRIKES, PALM, RUSH, THROW, rushCarry, smearedAt } from '../src/art/silent_order_moves';
 import { PALM_WAVE, knifeAt, knifePainted, waveFront, wavePainted } from '../src/art/silent_order_fx';
@@ -371,4 +371,33 @@ test('10. NOTHING FOLDS FLAT; and what their blows leave (the wave, the knife) h
     }
   }
   assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
+});
+
+test('11. HIS FAN OF THREE (“A fan of three on 19 (Recommended)”): the armed last throws three curved knives, 30 to 40 degrees apart, each its 8 tiles; the guest and the masks one', () => {
+  assert.equal(fanOf('armed').length, 3, 'the armed last: three');
+  assert.equal(fanOf('guest').length, 1, 'the guest: one');
+  assert.equal(fanOf('mask').length, 1, 'the masks: one');
+  const ways = fanOf('armed');
+  for (let i = 1; i < ways.length; i++) assert.ok(ways[i] - ways[i - 1] >= 30 && ways[i] - ways[i - 1] <= 40, `${ways[i] - ways[i - 1]} degrees apart`);
+  assert.ok(KNIFE_FAN.spread >= 30 && KNIFE_FAN.spread <= 40);
+  // (held in the fist through the warning: three knives for the armed last, one for the guest)
+  for (const mob of ORDER_ALL) {
+    const st = stageOf(mob);
+    const held = new Set(mob.bits(st, at(mob, 'knife', 0.6)).filter((b) => /^knife\d$/.test(b.piece)).map((b) => b.piece));
+    assert.equal(held.size, fanOf(whoOf(mob)).length, `${mob.name}: ${held.size} knives in the fist`);
+  }
+  // (each of the three painted flying its own way, and lying where it comes down: nothing cyan)
+  for (const way of ways) {
+    for (const view of VIEWS) {
+      for (const t of [0.1, 0.3, 0.6]) {
+        const { d } = knifePainted(t, view, 40, way).px;
+        let n = 0;
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3]) {
+          n++;
+          assert.ok(!cyanGlow(d[i], d[i + 1], d[i + 2]), `knife ${way} @${t} ${view}: cyan`);
+        }
+        assert.ok(n > 20, `knife ${way} @${t} ${view}: ${n} pixels`);
+      }
+    }
+  }
 });

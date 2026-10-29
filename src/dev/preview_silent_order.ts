@@ -6,12 +6,13 @@
 //   ... "crowd" (at the game's size, and twice it)
 //   ... "big:<guest|armed|mask>:<move>:<t>" (front and behind, four times as big)
 //   ... "grid:<who>:<move>:<t>,<t>,..." (a move at several moments, both ways round, three times as big)
+//   ... "fan" (the armed last's fan of three, 1200 by 1100)
 //   node tools/order_film.mjs (THE FILM: window.__frames, window.__frame(k))
 import type { Mob } from '../art/new_mobs3';
 import { draw, floor, hero, shadow, spOf } from './order_kit';
 import { ORDER_ALL, ORDER_ARMED, ORDER_GUEST, ORDER_MASK, orderOf } from '../art/silent_order_moves';
 import type { OrderWho } from '../art/silent_order';
-import { filmFrames } from './order_film_plan';
+import { fanPicture, filmFrames } from './order_film_plan';
 import type { GameView } from '../art/skin';
 
 const [mode = 'sheet', a1 = 'guest', a2 = 'stand', a3 = '0'] = decodeURIComponent(location.hash.slice(1)).split(':');
@@ -103,6 +104,9 @@ if (mode === 'sheet') {
     label(t.toFixed(2), cw * i + 8, 22, 16);
   });
   label(`${a1} ${a2}`, 8, cv.height - 10, 16);
+} else if (mode === 'fan') {
+  // the armed last's fan of three
+  fanPicture(g, cv.width, cv.height);
 } else if (mode === 'filmframe') {
   // (one frame of the film, to look at)
   const frames = filmFrames(g, cv.width, cv.height, (a1 as OrderWho | 'all') ?? 'all');

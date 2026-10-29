@@ -25,6 +25,17 @@ narrow and too small.  I could dodge anything you’ve put in these moves with m
 wind-up, a strike of two frames smeared with its after-images, and a big wind-down; the rush is the same, still and then
 two frames; and their pace and their reach are measured in tiles (`TILE3`).
 
+## His words on it
+
+- Asked “The Silent Order (sheet.png, crowd.png and the film): is this the cult? The floor 20 masks are meant to be faint in
+  their fog.”: “Yes, that's the Order (Recommended)”.
+- Asked “The armed Order on floor 19 throws one curved knife. Should it throw a fan of three instead?” (offered as: a wider
+  area for the armed ones; the guests keep one): “A fan of three on 19 (Recommended)”. Done: the armed last draws three
+  knives from the belt in the same wind-up, holds them fanned in the fist, and throws all three in the same two frames,
+  `KNIFE_FAN.spread` = 35 degrees apart (`fanOf('armed')`: -35, 0, 35), each flying 8 tiles at 20 tiles a second,
+  spinning, smeared, and lying where it comes down. The guest and the masks keep one. Picture: `pictures/fan_of_three.png`
+  (the film was made before it, and shows the armed last throwing one).
+
 ## One design, three dressings (src/art/silent_order.ts)
 
 On the heroes' bones, the knight's size (58 tall; the armed last 59 and broader). `ORDER_GUEST`, `ORDER_ARMED`,
@@ -84,6 +95,8 @@ Frames are the game's thirty a second unless said.
   levelled at you, leaning back, its edge glinting pink (THE WARNING, held 0.46 to 0.867 s, shaking); hips first; THE
   THROW in two frames (26 to 28), smeared: the arm whips over and the knife leaves the hand at the blow (`knifeLeaves(mob)`:
   where, from their floor point); carried right through and down to the left knee; drawn back up; at rest by 2.0 s.
+- THE ARMED LAST'S FAN OF THREE (his pick): three knives drawn from the belt, fanned in the fist (`fannedOf`), thrown
+  together; in flight each goes its own way (`fanOf('armed')`, 35 degrees apart), drawn by `knifePainted(t, view, z0, way)`.
 - THE KNIFE IN FLIGHT (`KNIFE_FLIGHT`: 20 tiles a second, 8 tiles, spinning 6 turns a second; `knifeAt(t, z0)`,
   `knifePainted(t, view, z0)`): spinning end over end, smeared (its edge where it was a third and two thirds of a frame ago,
   and a streak behind it), dropping a little; at 8 tiles (0.4 s) it falls to the floor and lies there. The game moves it
@@ -112,7 +125,7 @@ Frames are the game's thirty a second unless said.
   thrust out, the cloak flung and the rush's streak behind.
 - Sound (his sound rulebook's, the brief as offered): none at all, only cloth.
 
-## The checks (tests/silent_order.test.ts, 10; all 10 pass)
+## The checks (tests/silent_order.test.ts, 11; all 11 pass)
 
 1. The switch is off, and nothing of the game imports them.
 2. EVERY MOVE OF ALL THREE THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts, `checkBoss`): every frame, from in front and
@@ -130,6 +143,8 @@ Frames are the game's thirty a second unless said.
    in 0.2 s, both feet off the floor while carried, still before it; the wave 5.5 tiles and 100 degrees, out in four frames;
    the knife 8 tiles at 20 a second, then lying; the warnings held a third of a second and more.
 10. Nothing they wear folds flat; the wave and the knife hold nothing cyan, the wave no pink.
+11. His fan of three: the armed last throws three, 30 to 40 degrees apart, three in the fist through the warning; the guest
+    and the masks one; each of the three painted flying its own way, nothing cyan.
 
 Floor 16's models still pass with it (tests/palace_hands.test.ts, tests/princess.test.ts, tests/palace_guard.test.ts: 29
 of 29), and tests/bosses.test.ts (14 of 14); `tsc --noEmit` is clean. `src/art/boss_checks.ts` is unchanged. `tests/bosses.test.ts`'s two lists of mock-up files that may use the bosses' helpers
@@ -152,7 +167,9 @@ from behind below, three times as big.
 - `close_guest.png`, `close_armed.png`, `close_masks.png`: each standing, four times as big, from in front and from behind
   (the mask, the court clothes, the mail and the knives, the fog).
 - `moves_palm.png`: the guest's hushing palm (the held warning, the two-frame strike smeared, held out, drawn back).
-- `moves_knife.png`: the armed last's curved knife (drawn, raised and held, the two-frame throw smeared, carried through).
+- `fan_of_three.png`: the armed last's fan of three: held fanned and thrown (three times as big, in front and behind), then
+  in flight and lying where they came down (at the game's size, the knight in it), in front and behind.
+- `moves_knife.png`: the armed last's curved knife (made before the fan: one knife) (drawn, raised and held, the two-frame throw smeared, carried through).
 - `moves_rush.png`: the guest's rush (still, the crouch, the launch, in the air smeared, landed, still).
 - `moves_run.png`: the armed last's run, one stride.
 - `moves_death.png`: the guest's death (the crack, the halves falling, the cloak empty and falling, the heap).
@@ -166,6 +183,4 @@ from behind below, three times as big.
 
 - The masks (20) are a mask held up by fog, the cloak's shape barely there; on a dark floor they are faint by design, and
   the Quiet Tower's own grey fog will change how they read: worth seeing them on that floor once it is painted.
-- The thrown knife is one knife, as the brief offered; the armed last could throw a fan of three from their belt (a bigger
-  area, his “bigger AOE”), if he wants it.
 - The wave darkens words: how dark, and for how long after you leave it, is the game's.
