@@ -933,7 +933,14 @@ function fallApart(mob: Mob, k: number, view: GameView): Painted {
   }
   const under = mob.under?.(now) ?? false;
   const lights = paintSwallowed(st, bits, ref, can, under);
-  const px = st.whole(null);
+  // (a figure that thins its own finished frame thins it as it dies too: a fog figure unravelling, art/hush_shapes.ts)
+  let ids: Int16Array | null = null;
+  const px = st.whole(null, mob.finish ? (x) => (ids = x.slice()) : undefined);
+  if (mob.finish && ids) {
+    const names = partOrder(bits);
+    const won = ids as Int16Array;
+    mob.finish(px, st, now, (k) => (won[k] >= 0 ? (names[won[k]] ?? null) : null));
+  }
   layGrains(px, st, mob.grains?.(st, now) ?? [], under);
   return { px, lights };
 }
