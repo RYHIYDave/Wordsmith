@@ -23,7 +23,7 @@ import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
 import { TILE3, paintBits, sphere } from './new_mobs3';
 import type { Bit, Put } from './new_mobs3';
-import { GOLD, SAPPHIRE } from './king';
+import { GOLD, SAPPHIRE, royalSwan } from './king';
 import { stage } from './skin';
 import type { GameView, Stage } from './skin';
 import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
@@ -291,7 +291,7 @@ export function knightPainted(j: number, view: GameView): Px {
     skin: (u, tone) => (u[0] > 0.45 && Math.abs(u[2] - 0.12) < 0.1 && Math.abs(u[1]) < 0.7 ? INK : u[2] > 0.82 ? GHOST[Math.min(4, tone + 1)] : GHOST[tone]),
   });
   for (const k of [-1, 1]) put('helm', 'eyes', { k: 'dot', p: add(hc, add(mul(ff, B.headR[0] * 1.02), add(mul(fl, k * B.headR[1] * 0.32), mul(fu, B.headR[2] * 0.13)))), c: FLAME[1], facing: ff });
-  // the kite shield before him, his crown on it faded grey
+  // the kite shield before him, the royal swan on it faded grey
   const n = norm(add(cf, mul(cl, 0.15)));
   const up = norm(sub(cu, mul(n, 0.2)));
   const across = norm(cross(up, n));
@@ -305,8 +305,8 @@ export function knightPainted(j: number, view: GameView): Px {
       if (x > w || y > 1) return null;
       if (!frontF) return GHOST[1];
       if (x > w - 0.14 || y > 0.88) return GHOST[4];
-      // (a crown on it, faded)
-      if (y > 0.05 && y < 0.5 && x < 0.45 && (y < 0.22 || (fr(a * 0.45 + 0.5) < 0.3 && y < 0.5))) return GHOST[4];
+      // (the royal swan on it, his crest, faded to the fog's own pale)
+      if (royalSwan(a / (7.5 * 0.62), (y - 0.18) / 0.6)) return GHOST[4];
       return GHOST[Math.max(1, Math.min(3, tone))];
     },
   });

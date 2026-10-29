@@ -50,6 +50,11 @@ his back, the top of its head is twice the knight's height.
 - A ROYAL BLUE MANTLE of velvet down his back to the stones, trailing; its collar ermine with its black tails. It falls the
   way his thighs go: to the floor behind him standing, hanging below him in his leap, along his legs as he lies. (Nothing
   of him goes into the stones: as he lies, what would (his mantle, his beard, his plate's edge) lies pressed flat on them.)
+- HIS CREST, THE ROYAL SWAN, in old gold, nothing else: his pick, asked whether the King should have a mark of his own or
+  keep the royal swan crest (white swan, wings raised, as floor 16's palace guard wears), “Keep the royal swan”. It is the
+  palace guard's own swan (`royalSwan`, copied from `swanCrest`), a big one on the back of his mantle between the
+  shoulders, seen from behind (`swanOn`); his knights in the Decree bear it faded on their kite shields. (A second on his
+  breastplate was tried and dropped: under his beard and at three-quarters it read only as gold specks.)
 - HIS CROWN: a gold band set high on his head, eight fleurons standing up off it (tall and short by turns, each with two
   leaves and a sapphire at its foot); the Hush's grey fog curling up through it from inside, rising and thinning.
 - HIS GREAT SWORD (`SWORD`), 77 long, taller than the knight: a gold pommel set with a sapphire, a long grip bound in royal
@@ -86,7 +91,7 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
   point to the sky, his face lifted to it; held 0.72 to 1.24 s (the warning); then in two frames drives it point-down into
   the stones before him, smeared; the stones crack; he leans on it, wrenches it out and lets it down. HIS KNIGHTS
   (`decreePainted`, `DECREE_FX`, `DECREE_GAPS`): three lines of them, grey-blue fog in old armour (great helms with the dull
-  pink in the slit, kite shields with his crown faded on them, spears levelled), their legs thinning to fog below the knee,
+  pink in the slit, kite shields with the royal swan faded on them, spears levelled), their legs thinning to fog below the knee,
   rise out of the floor at the far side of the hall and march across it at 2.4 tiles a second, one line every 3.2 tiles; a
   knight every 1.25 tiles across the hall's whole width, each line with two gaps two knights wide (2.5 tiles) in different
   places, to slip through; each line fades at the near wall.
@@ -141,7 +146,22 @@ pictures the game lays at his floor point (each from its blow's `hit`): `sweepPa
 
 ## The pictures (docs/mockups/king/pictures/)
 
-(listed at the end of the work)
+- `king_sheet.png` (1200 wide): him standing, from in front and from behind, beside the knight, three times as big; the
+  Hush on his back.
+- `king_game_size.png`: in his hall at the game's size (the floor a stand-in), the knight before him; behind, his last
+  phase from behind, the Hush at his side.
+- `king_hush.png`: his last phase, the Hush climbed off him and standing at his left, from in front and from behind, three
+  times as big.
+- `king_songbird.png`: the clockwork songbird broken, winding itself up, and singing, from in front and from behind, four
+  times as big.
+- `king_blows.png`: his four blows across the hall at the game's size: the sweep's wave, the Decree's knights marching,
+  the Crown's ring, the faces streaming from the hangings at the knight.
+- `king_film.mp4` (about 76 s, 1920 by 1080): every move from in front, then from behind, in his hall with the knight,
+  captioned; each of the four strikes again at half speed, close; his death with the songbird winding up and singing (close,
+  in the corner).
+
+Made with `tools/king_pictures.ts sheet <dir>` and `python3 tools/king_captions.py <dir> docs/mockups/king/pictures`;
+the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4`.
 
 ## The dev pages
 

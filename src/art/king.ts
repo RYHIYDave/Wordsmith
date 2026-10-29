@@ -107,6 +107,38 @@ export const KING_REST: Bones = {
   wAz: -152, wEl: -40, wRoll: 0, draw: 0, out: 0,
 } as Bones;
 
+
+/**
+ * THE ROYAL SWAN (his pick, asked whether the King should have a mark of his own: “Keep the royal swan”): the High City's
+ * crest, as floor 16's palace guard wear it (art/palace_guard.ts, `swanCrest`, drawn the same here): a white swan, its
+ * wings raised, its neck in its S, its head to its left; on him in old gold. `a` across it and `b` up it, -1 to 1.
+ */
+export function royalSwan(a: number, b: number): boolean {
+  const e = (x: number, y: number, cx: number, cy: number, rx: number, ry: number): boolean => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+  if (e(a, b, 0.12, -0.5, 0.62, 0.26)) return true;
+  if (e(a, b, 0.68, -0.32, 0.16, 0.12)) return true;
+  if (b > -0.5 && e(a, b, 0.28, -0.12, 0.42, 0.42)) {
+    const notch = b > 0.12 && Math.abs(((a - 0.28) * 4 + 8) % 1 - 0.5) < 0.12;
+    if (!notch) return true;
+  }
+  for (let i = 0; i <= 12; i++) {
+    const t = i / 12;
+    const x = -0.36 - 0.16 * Math.sin(Math.PI * 1.6 * t) + 0.06 * t;
+    const y = -0.38 + 0.98 * t;
+    if (Math.hypot(a - x, b - y) < 0.1 - 0.02 * t) return true;
+  }
+  if (e(a, b, -0.28, 0.62, 0.14, 0.11)) return true;
+  if (b < 0.64 && b > 0.52 && a < -0.38 && a > -0.62 + (0.64 - b) * 0.6) return true;
+  return false;
+}
+/** The royal swan in old gold on a thin shell just proud of what it is on: at `c`, its face out along `out`, `up` its up, `w` and `h` its half-sizes (`mirror` for one on his back, so that it reads the right way from behind). */
+function swanOn(put: Put, part: string, c: V3, out: V3, side: V3, up: V3, w: number, h: number, mirror: boolean): void {
+  put(part, 'crest', {
+    k: 'ball', c, ax: [mul(out, 1.2), mul(side, mirror ? w : -w), mul(up, h)],
+    skin: (u, tone) => (u[0] > 0.15 && royalSwan(u[1], u[2]) ? GOLD[tone >= 2 ? 4 : 3] : null),
+  });
+}
+
 // =============================================================================================
 // HIM AS SOLIDS
 
@@ -703,6 +735,8 @@ function kingBits(st: Stage, m: Moment, say: KingSay): Bit[] {
   put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(cu, -1)), b: lerp3(s.neck, s.head, 0.5), ra: 3.4, rb: 3.0, ramp: SKIN });
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.5));
   put('body', 'belt', { k: 'band', ring: { c: waistC, u: mul(s.belly[0], B.waistDeep + 3.1), v: mul(s.belly[1], B.waistHalf + 3.1) }, ramp: GOLD, rows: 2 });
+  // THE ROYAL SWAN in old gold: on the fauld before him, under his beard; and large on his mantle's back (hidden while the Hush rides him)
+  swanOn(put, 'mantle', add(add(s.ribs, mul(cf, -(B.ribDeep + 7.6))), mul(cu, -4)), mul(cf, -1), cl, cu, 8.5, 9.0, true);
   // THE ERMINE COLLAR of the mantle over his shoulders, its black tails
   const col: Ring[] = [
     { c: add(lerp3(s.ribs, s.neck, 0.78), mul(cf, -1)), u: mul(cf, B.ribDeep + 3.6), v: mul(cl, B.shoulderHalf + 2.2) },

@@ -284,7 +284,7 @@ export function gameSizePicture(t = 0): Px {
   lay(px, frameOf(KING, 'stand', t, 'front'), kx, ky);
   const [nx, ny] = at(3.5, 2.5);
   shadow(px, nx, ny, 9);
-  lay(px, knight('back'), nx, ny);
+  lay(px, knight('back'), nx, ny, 1, undefined, true);
   // (and, at the right, the King from behind with the Hush at his side: his last phase)
   const [bx, by] = at(4.5, -4.5);
   shadow(px, bx, by, 22);
