@@ -197,7 +197,7 @@ function shots(): Shot[] {
     const dC = dM + QG_CHARGE * (ci + c) * T;
     const dO = dC + QG_CHARGE_OUT.shift;
     const dB = dO + QG_BASH.carry * T + QG_BASH.end;
-    const knight: [number, number] = along(start, view, dO + QG_BASH.carry * T + 1.3 * T);
+    const knight: [number, number] = along(start, view, dO + QG_BASH.carry * T + 2.8 * T);
     out.push({
       say: `March (${QG_MARCH} tile/s), then a sudden charge (${QG_CHARGE} tiles/s), skid, shield charge — ${view === 'front' ? 'from in front' : 'from behind'}`,
       long: m + ci + c + co + bash + 0.4,

@@ -61,7 +61,7 @@ const ARMING: Ramp = ['#130b1c', '#130b1c', '#2a1c3c', '#3d2a54', '#3d2a54'];
 /** The halberd's staff: lacquered near black-violet. */
 const LACQUER: Ramp = ['#100a16', '#140d1c', '#2a2036', '#41344f', '#5a4a6a'];
 /** The glass of the crown's spikes: lavender and cold blue (hue 230 to 250: never the friend's cyan). */
-export const GLASS: Ramp = ['#24213f', '#343060', '#7c82c6', '#bcbcec', '#f3f1ff'];
+export const GLASS: Ramp = ['#1d1b45', '#2c2c6c', '#6670d2', '#a9b1f6', '#f0f1ff'];
 /** The shield's strapping and the gauntlets' palms. */
 const LEATHER: Ramp = ['#140e14', '#140e14', '#30222c', '#46333e', '#46333e'];
 /** THE MIRROR: what its face shows of the gallery round it, by the way it reflects (the glasshouse's light, the lit vault, the dark walls, the bright line of the far windows, the floor). */
@@ -316,7 +316,7 @@ function shield(put: Put, st: Stage, s: Skeleton, q: { pAz: number; pEl: number 
       const r = sub(mul(nn, 2 * dot(nn, eye)), eye);
       // (askew where it is cracked: each shard reflects a little apart)
       const tilt = lines.length ? (hash(Math.floor((u[1] + 1) * 3), Math.floor((u[2] + 1) * 3), 8122) - 0.5) * 0.5 * crack : 0;
-      const h = r[2] + tilt + 0.33;
+      const h = r[2] + tilt + 0.24;
       if (dot(r, sun) > 0.95) return MIRROR.sun;
       // (a pink glint wheeling over it in the warning)
       if (glint > 0.05) {
@@ -461,16 +461,16 @@ function cloak(put: Put, s: Skeleton, lag: V3, wind: number, flare: number): voi
   const [cf, cl, cu] = s.chest;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
-  const top: Ring = { c: add(add(s.neck, mul(cu, -1.2)), mul(cf, -0.8)), u: mul(cf, GB.ribDeep + 2.4), v: mul(cl, GB.shoulderHalf + 3.0) };
+  const top: Ring = { c: add(add(s.neck, mul(cu, -1.2)), mul(cf, -0.8)), u: mul(cf, GB.ribDeep + 2.6), v: mul(cl, GB.shoulderHalf + 3.8) };
   const midC = add(add(lerp3(s.waist, s.ribs, 0.35), mul(f, -1.0)), mul(lag, 0.5));
-  const midR: Ring = { c: midC, u: mul(f, GB.ribDeep + 3.6 + 1.5 * flare), v: mul(l, GB.ribHalf + 4.4) };
+  const midR: Ring = { c: midC, u: mul(f, GB.ribDeep + 3.8 + 1.5 * flare), v: mul(l, GB.ribHalf + 5.6) };
   // (its hem: on down the line from the shoulders through the hips, to the calves; never into the floor)
   const down = norm(sub(s.pelvis, s.neck), [0, 0, -1]);
   const drop = GB.thigh + 6;
   const h0 = add(s.pelvis, mul(down, drop));
   const hz = Math.max(3.2, h0[2]) + 6 * flare;
   const hc: V3 = [h0[0] - 2.6 * f[0] + lag[0] * 2.4 - 9 * flare * f[0], h0[1] - 2.6 * f[1] + lag[1] * 2.4 - 9 * flare * f[1], hz];
-  const wide = (GB.ribHalf + 5.6) * (1 + 0.25 * flare);
+  const wide = (GB.ribHalf + 7.0) * (1 + 0.2 * flare);
   const deep = (GB.ribDeep + 4.2) * (1 + 0.3 * flare);
   const pts: V3[] = [];
   for (let i = 0; i < 16; i++) {
@@ -481,7 +481,7 @@ function cloak(put: Put, s: Skeleton, lag: V3, wind: number, flare: number): voi
     pts.push(add(p0, add(mul(f, -rear * (1.2 + 3 * flare)), [0, 0, Math.max(-p0[2] + 2.4, ripple + rear * 0.8)])));
   }
   const hem: Ring = { c: hc, u: mul(f, deep), v: mul(l, wide), pts };
-  put('cloak', 'cloak', { k: 'cloth', rings: [top, midR, hem], ramp: VIOLET, look: { arc: [66, 294], folds: [110, 145, 180, 215, 250], lift: 0.1, hem: EDGE, lining: 0.4 } });
+  put('cloak', 'cloak', { k: 'cloth', rings: [top, midR, hem], ramp: VIOLET, look: { arc: [58, 302], folds: [110, 145, 180, 215, 250], lift: 0.1, hem: EDGE, lining: 0.35 } });
   // the clasps at the front of each pauldron, and the silver chain between them across the gorget
   for (const k of [1, -1]) {
     const at = add(add(s.neck, mul(cl, k * (GB.shoulderHalf - 0.5))), add(mul(cf, GB.ribDeep * 0.5), mul(cu, -1.2)));
@@ -522,7 +522,9 @@ function head(put: Put, st: Stage, s: Skeleton, lit: number): { slit: V3; ff: V3
     ax: [mul(ff, vr[0]), mul(fl, vr[1]), mul(fu, vr[2])],
     skin: (u, tone) => {
       if (u[0] < 0.05) return null;
-      if (Math.abs(u[2] - SLIT * 1.6) < 0.11 && Math.abs(u[1]) < 0.72) return INK;
+      if (Math.abs(u[2] - SLIT * 1.6) < 0.17 && Math.abs(u[1]) < 0.76) return INK;
+      // (the brow over the slit, a bright lip)
+      if (Math.abs(u[2] - SLIT * 1.6 - 0.24) < 0.08 && Math.abs(u[1]) < 0.8) return EDGE[Math.min(4, tone + 1)];
       if (Math.abs(u[1]) < 0.08 && u[2] < SLIT * 1.6 - 0.1) return EDGE[Math.min(4, tone + 1)];
       if (u[1] < -0.2 && u[1] > -0.62 && u[2] < -0.12 && u[2] > -0.6 && hash(Math.round(u[1] * 12), Math.round(u[2] * 12), 8141) < 0.4) return INK;
       return SILVER[tone];
@@ -536,7 +538,7 @@ function head(put: Put, st: Stage, s: Skeleton, lit: number): { slit: V3; ff: V3
   // THE CIRCLET round the crown, and its GLASS SPIKES
   const cc = add(hc, mul(fu, hr[2] * 0.42));
   const cr: [number, number] = [hr[0] * 0.98, hr[1] * 0.98];
-  put('helm', 'circlet', { k: 'band', ring: { c: cc, u: mul(ff, cr[0]), v: mul(fl, cr[1]) }, ramp: EDGE, rows: 1 });
+  put('helm', 'circlet', { k: 'band', ring: { c: cc, u: mul(ff, cr[0]), v: mul(fl, cr[1]) }, ramp: VIOLET, rows: 2 });
   for (const [deg, tall] of QG_SPIKES) {
     const a = deg * D;
     const out = norm(add(mul(ff, Math.cos(a)), mul(fl, Math.sin(a))));
@@ -593,7 +595,7 @@ function guardBits(st: Stage, m: Moment, say: QGuardSay): Bit[] {
   for (const side of ['L', 'R'] as const) leg(put, s, side);
   // THE ARMING SKIRT of dark violet, pleated, to the middle of the thighs
   const skirt: Ring[] = [
-    thighRing(s, 0.5, 0.6, lag),
+    thighRing(s, 0.68, 0.9, lag),
     { c: add(add(s.pelvis, mul(s.hips[2], -1.4)), mul(lag, 0.4)), u: mul(s.hips[0], GB.pelvisDeep + 2.3), v: mul(s.hips[1], GB.pelvisHalf + 2.2) },
     { c: add(s.pelvis, mul(s.hips[2], GB.waist * 0.3)), u: mul(s.hips[0], GB.pelvisDeep + 1.9), v: mul(s.hips[1], GB.pelvisHalf + 1.9) },
   ];
