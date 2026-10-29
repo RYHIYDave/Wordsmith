@@ -19,7 +19,7 @@
 // - THE TOWER TOP (`towerTopTerrain`, the Moth's floor), open under the sky: a round platform of pale flags laid in rings
 //   round its middle; round it, a PARAPET, crenellated (merlons and embrasures, the fog seen through each embrasure; the
 //   near parapet cut down to its coping as the game cuts near walls); past it, the ground's DROP, and painted into it
-//   (`paintQuietTower`) the FOG SEA far below, the tops of the High City's lesser spires standing out of it; under the
+//   (`paintQuietTower`) the FOG SEA far below, heaps of it lit from the upper left; under the
 //   near parapet the tower's outer wall falling away, a corbel table under its lip, its stone lost in the fog.
 //
 // HIS RULES IT KEEPS (his art rulebook): light from the upper left, three tones or so a material (Pixels 4); its own palette
@@ -35,7 +35,7 @@
 
 import type { Floor } from '../game/types';
 import { T_FLOOR } from '../game/types';
-import { TK, fbm, paintTerrain, terrainOf, vnoise, worldOf } from './terrain';
+import { TK, fbm, paintTerrain, terrainOf, vnoise } from './terrain';
 import type { RGB, Terrain, TerrainLook, TerrainPiece } from './terrain';
 import { hash } from './kit';
 import { quietRGB, quietTerrain } from './act2_quiet';
@@ -44,7 +44,7 @@ const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3
 const mixc = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const mod = (a: number, m: number): number => ((a % m) + m) % m;
 const cl01 = (v: number): number => Math.max(0, Math.min(1, v));
-const ck = (k: number, n = 4): number => Math.max(0, Math.min(n, Math.round(k)));
+const fr2 = (t: number): number => t - Math.floor(t);
 
 /** Above a threshold, with a checkered pixel or two where it is near it (crisp, never a smear). */
 function over(t: number, thr: number, px: number, py: number, band = 0.02): boolean {
@@ -283,10 +283,13 @@ function dust(x: number, y: number, px: number, py: number, wall: number, much: 
 export function fogOver(c: RGB, x: number, y: number, px: number, py: number, thick: number): RGB {
   if (thick <= 0) return c;
   const w = fbm(x * 0.45 + y * 0.25, y * 0.9 - x * 0.2, 6151) + 0.18 * (vnoise(px / 30, py / 9, 6152) - 0.5);
-  const t = 0.78 - 0.34 * thick;
-  if (over(w, t + 0.1, px, py, 0.02)) return QT_FOG[thick > 0.6 ? 4 : 3];
-  if (over(w, t, px, py, 0.02)) return QT_FOG[thick > 0.6 ? 3 : 2];
-  if (over(w, t - 0.06, px, py, 0.01)) return mixc(c, QT_FOG[2], 0.5);
+  const t = 0.78 - 0.3 * thick;
+  // (drawn out in wisps: a band of it lies along the floor, the floor seen between)
+  const band = Math.abs(fr2((x + y) * 0.9 + 0.35 * fbm(x * 0.6, y * 0.6, 6153)) - 0.5) * 2;
+  const ww = w - 0.1 * band;
+  if (over(ww, t + 0.1, px, py, 0.02)) return QT_FOG[3];
+  if (over(ww, t, px, py, 0.02)) return QT_FOG[2];
+  if (over(ww, t - 0.06, px, py, 0.01)) return mixc(c, QT_FOG[2], 0.45);
   return c;
 }
 
@@ -541,13 +544,17 @@ export function embrasure(px: number): boolean {
   return mod(px, CRENEL) >= MERLON;
 }
 
-/** THE PARAPET'S INNER FACE: small courses of the stone; in an embrasure, the sill's lit top over its face. */
+/** What the parapet's face gives where the fog is seen through an embrasure: `paintQuietTower` paints the fog sea there (a colour of its own, nowhere else in the ground). */
+const SEE_THROUGH: RGB = [3, 3, 3];
+/** THE PARAPET'S INNER FACE: small courses of the stone; in an embrasure, the sill's lit top over its face, and the fog seen through it. */
 function parapetFace(shade: number, v: number, px: number): RGB {
   const row = rowOf(shade);
   const S = QT_STONE[row];
   if (v < 2) return S[3];
   if (embrasure(px)) {
-    if (v >= SILL_H) return v < SILL_H + 2 ? QT_BONE[1] : v > PARAPET_H - 3 ? QT_BONE[0] : QT_BONE[mod(px, CRENEL) === MERLON ? 2 : 1];
+    // (the sill's top, seen from above a parapet's thickness deep; past it, through the gap, the fog: `paintQuietTower` paints it)
+    if (v >= SILL_H + 9) return SEE_THROUGH;
+    if (v >= SILL_H) return v < SILL_H + 2 ? QT_BONE[2] : QT_BONE[mod(px, CRENEL) === MERLON ? 2 : 1];
     if (v >= SILL_H - 2) return S[0];
   } else {
     const m = mod(px, CRENEL);
@@ -563,9 +570,9 @@ function parapetFace(shade: number, v: number, px: number): RGB {
 function coping(px: number, py: number, back: number): RGB {
   const m = mod(px, CRENEL);
   const merlon = m < MERLON;
-  if (back > 0.92) return QT_STONE[2][3];
+  void back;
   if (merlon) {
-    if (m < 2 || back < 0.12) return QT_BONE[2];
+    if (m < 2) return QT_BONE[2];
     if (m >= MERLON - 2) return QT_STONE[1][3];
     return hash(px >> 1, py, 6231) < 0.12 ? QT_BONE[0] : QT_BONE[1];
   }
@@ -592,8 +599,8 @@ function outerWall(v: number, px: number, py: number, shade: number): RGB {
     c = d < half ? (d < 1 || k % 4 === 0 ? S[0] : m < 10 ? S[1] : S[2]) : QT_STONE[2][3];
   } else if (v < 18) c = v === 15 ? S[3] : S[0];
   else c = ashlar(v - 18, px, row, 14);
-  // (lost in the fog as it goes down: the fog's own colour taking it, in bands, crisp)
-  const t = cl01((v - 50) / (OUTER_H - 50));
+  // (lost in the fog as it goes down: the fog's own colour taking it, in bands, crisp; sooner where the wall is seen edge on)
+  const t = cl01((v - 50) / (OUTER_H - 50) + Math.max(0, Math.abs(shade) - 0.6) * 2.5 * cl01((v - 18) / 20));
   if (t > 0) {
     const f = fogSea(px, py);
     const k = t + 0.18 * (vnoise(px / 14, py / 6, 6241) - 0.5);
@@ -605,55 +612,19 @@ function outerWall(v: number, px: number, py: number, shade: number): RGB {
 }
 
 /**
- * THE FOG SEA, far below the tower's top, at a picture pixel: banks of fog drawn out along the picture in its tones, and
- * out of it the tops of the High City's lesser spires and roofs, dark against it, lost in it at their feet.
+ * THE FOG SEA, far below the tower's top, at a picture pixel: heaps of fog drawn out along the picture, lit on their
+ * slopes to the upper left, in shade on the others, here and there a darker trough.
  */
 export function fogSea(px: number, py: number): RGB {
   const R = QT_FOG;
-  const f = fbm(px / 150, py / 46, 6251) + 0.22 * (vnoise(px / 40, py / 12, 6252) - 0.5);
-  let k = f > 0.66 ? 3 : f > 0.5 ? 2 : f > 0.36 ? 1 : 0;
-  // (the banks' crests catching the light: a pale line along their tops)
-  const up = fbm(px / 150, (py + 5) / 46, 6251) + 0.22 * (vnoise(px / 40, (py + 5) / 12, 6252) - 0.5);
-  if ((f > 0.66) !== (up > 0.66) || (f > 0.5) !== (up > 0.5)) k = Math.min(4, k + 1);
-  let c = R[k];
-  // A SPIRE OR A ROOF out of the fog, one to a cell of the picture or none
-  const CW = 300;
-  const CH = 230;
-  const ci = Math.floor(px / CW);
-  const cj = Math.floor(py / CH);
-  for (let di = -1; di <= 0; di++) {
-    const i = ci + di;
-    const h = hash(i, cj, 6253);
-    if (h > 0.5) continue;
-    const bx = i * CW + 40 + hash(i, cj, 6254) * (CW - 80);
-    const by = cj * CH + 120 + hash(i, cj, 6255) * (CH - 140);
-    const tall = 60 + hash(i, cj, 6256) * 70;
-    const half = 7 + Math.floor(hash(i, cj, 6257) * 4) * 2;
-    const dx = px - bx;
-    const up2 = by - py;
-    if (up2 < 0 || up2 > tall + half * 3.2) continue;
-    const roof = tall;
-    let inSil = false;
-    let tone = 0;
-    if (up2 < roof && Math.abs(dx) <= half) {
-      inSil = true;
-      // the shaft: lit on its left, dark on its right; a window slit; its course lines
-      tone = dx < -half + 3 ? 2 : dx > half - 3 ? 0 : 1;
-      if (Math.abs(dx) < 1.5 && up2 > roof - 26 && up2 < roof - 14) tone = 0;
-      if (mod(up2, 14) < 1) tone = Math.max(0, tone - 1);
-    } else if (up2 >= roof && Math.abs(dx) <= half + 2 - (up2 - roof) / 3.2) {
-      // the cone of its roof, its lit side to the left
-      inSil = true;
-      tone = dx < 0 ? 2 : 0;
-    }
-    if (inSil) {
-      const sp = [hex('#24262c'), hex('#33363d'), hex('#4b4e55')][tone];
-      // lost in the fog at its foot
-      const lost = cl01(1 - up2 / 40) + 0.2 * (vnoise(px / 8, py / 4, 6258) - 0.5);
-      c = over(lost, 0.55, px, py, 0.04) ? c : over(lost, 0.25, px, py, 0.04) ? mixc(sp, c, 0.5) : sp;
-      break;
-    }
-  }
+  // (the fog's height: rolling heaps, drawn out along the picture)
+  const hAt = (x: number, y: number): number => fbm(x / 170 + 40, y / 52, 6251) + 0.2 * (vnoise(x / 46, y / 16, 6252) - 0.5);
+  const h = hAt(px, py);
+  const lit = (hAt(px + 1.5, py) - hAt(px - 1.5, py)) * 0.8 + (hAt(px, py + 1.5) - hAt(px, py - 1.5)) * 1.4;
+  const v = (h - 0.32) * 2.6 + lit * 22;
+  let c: RGB;
+  if (h < 0.24) c = R[0];
+  else c = R[over(v, 1.6, px, py, 0.12) ? 4 : over(v, 0.75, px, py, 0.12) ? 3 : over(v, -0.1, px, py, 0.12) ? 2 : 1];
   return c;
 }
 
@@ -719,10 +690,9 @@ export function paintQuietTower(T: Terrain, x0: number, y0: number, w: number, h
       const py = y0 + r;
       let col: RGB | null = null;
       if (k === TK.Drop) col = fogSea(px, py);
-      else if (top && k === TK.Top && embrasure(px)) {
-        // (through an embrasure, past its sill: the fog sea; the sill's own top a few pixels over the face)
-        const [x, y] = worldOf(px, py + PARAPET_H);
-        if (!T.ground(x, y)) col = fogSea(px, py);
+      else if (top && ((k === TK.Top && embrasure(px)) || (k === TK.Face && p.rgba[i * 4] === SEE_THROUGH[0] && p.rgba[i * 4 + 1] === SEE_THROUGH[1] && p.rgba[i * 4 + 2] === SEE_THROUGH[2]))) {
+        // (through an embrasure, past its sill: the fog sea)
+        col = fogSea(px, py);
       }
       if (!col) continue;
       const q = quietRGB(col);
