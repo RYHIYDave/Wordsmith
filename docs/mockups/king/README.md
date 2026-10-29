@@ -195,3 +195,9 @@ the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4`.
 
 `tests/bosses.test.ts`: its two import checks (1 and 12) now pass over `art/king*` as they pass over the Princess's and
 the other mock-ups' files (his files import the bosses' footwork and the checks, as theirs do).
+
+## His word on the pictures
+
+The sheet, his blows across the hall and the film (`king_sheet.png`, `king_blows.png`, `king_film.mp4`), asked “The King
+(king_sheet.png, king_blows.png and the film): is this him? He walks slowly but his blows reach across the hall.”: “Yes,
+that's the King (Recommended)”.
