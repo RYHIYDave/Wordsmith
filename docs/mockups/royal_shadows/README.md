@@ -146,3 +146,9 @@ The boss tests' lists of mock-up files that the game must not import now include
   <dir>`).
 - One line of `src/dev/king_scene.ts` (from `mockup/king`) changed from `Array.at` to `slice(-1)[0]`, so that `tsc`
   passes on the game's ES2020 library.
+
+## His word on the pictures
+
+The sheet and the film (`royal_shadows_sheet.png`, `royal_shadows_film.mp4`), asked “The royal shadows
+(royal_shadows_sheet.png and the film): are these right? With them, every character of floors 17 to 20 is drawn.”: “Yes,
+that's them (Recommended)”.
