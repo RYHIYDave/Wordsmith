@@ -248,14 +248,14 @@ if (mode === 'sheet') {
     shadow(sx, sy, 7, K, 0.4);
     ls.push(...lay(trayShotPainted(at, 'front', [trayFlight(Math.max(0, t - 1 / 30)).c, trayFlight(Math.max(0, t - 0.5 / 30)).c]), TRAY_SHOT_CANVAS.ax, TRAY_SHOT_CANVAS.ay, A.x, A.y, K));
   }
-  label('the tray: six tiles out and back, its loop two tiles across, under a second', 330, cv.height - 60);
+  label('the tray: six tiles out and back, in under a second', 300, cv.height - 60);
   // (right: the fire fan, burning)
   const B2 = { x: 700, y: 330 };
   ls.push(...lay(firePainted(0.3, 'front'), FIRE_CANVAS.ax, FIRE_CANVAS.ay, B2.x, B2.y, K));
   ls.push(...footman('candelabrum', FM_SWING.hit + 0.3, 'front', B2.x, B2.y, K));
   const kf = onScreen([2.2 * TILE3, 0, 0], 'front', B2.x, B2.y, K);
   knight('back', kf[0], kf[1], K, true);
-  label('the candelabrum: fire three tiles out, a third of a turn across', 900, cv.height - 60);
+  label('the fire: three tiles out, a third of a turn across', 900, cv.height - 60);
   lights(ls);
   caption('How far the footman\u2019s blows reach (the knight for size)', 'his rule of 28 Oct: bigger areas for the longer warnings');
 } else if (mode === 'film') {

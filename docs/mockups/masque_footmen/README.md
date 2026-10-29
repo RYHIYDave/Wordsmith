@@ -176,7 +176,8 @@ list of the art chat's mock-ups): `tests/bosses.test.ts` (two checks), `tests/cr
 
 - `footmen_sheet.png`: him standing from in front and from behind beside the knight, three times as big; three of them at the
   game's size marching on the knight.
-- `footmen_closeup.png`: from in front and from behind, four times as big.
-- `footmen_moves.png`: each blow at its key moments (coiled, the strike, flung; raised, the strike, landed) and his death.
-- `footmen_film.mp4`: every move from in front and from behind, at room scale with the knight, captioned; each strike again
-  at half speed.
+- `footmen_closeup.png`: from in front and from behind, four times as big (the livery, the wig, the tray, the candles).
+- `footmen_reach.png`: how far his blows reach, the knight for size: the tray's whole loop (six tiles out and back) and the
+  fire fan burning (three tiles, a third of a turn).
+- `footmen_film.mp4` (30 s): standing; the march; the tray flung; the candelabrum; struck; his death; each from in front and
+  from behind, at room scale with the knight (stand, struck and death closer), captioned; each strike again at half speed.
