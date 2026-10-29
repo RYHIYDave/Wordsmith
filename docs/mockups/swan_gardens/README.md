@@ -59,6 +59,28 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   about its own limb so that it cannot fold flat (and a check for it).
 - The new guard (before and now, and the film), asked "is this your palace guard?": “Yes, that's the guard
   (Recommended)”, offered as: that finishes the garden's enemies; next, the Princess, the boss of the Swan Pavilion.
+- His question, 28 Oct, 20:01: “Are the enemies under the same rules for long wind ups and lightning hits?”. Told him:
+  yes, his rule of 24 Oct (Movement 9, “All attacks, melee most (Recommended)”) covers them, but today's garden enemies
+  have big held wind-ups and strikes of 3 to 5 frames (the boss review's jerk check, written before his rule, slowed
+  them). Asked what to bring under it: “Start from now on, but every enemy is going to need that change eventually.
+  And bigger AOE to compensate for the extra time the player gets to evade”. Read as: every new enemy and boss from the
+  Princess on is made with a 1-2 frame strike; every older one needs it later; the area each attack hits is bigger (the
+  main chat's), and the art drawn to match.
+- THE PRINCESS's brief, his answers: her look, “The shirt is dumb, but I like the nettle, viney vibe from the gardeners,
+  and maybe a spectral”, and at 20:29, “I was gonna say a spectral steed from the guys with pitchforks to kinda tie it
+  all together.  Maybe one of her moves a spectral steed forms under her and she does like dressage jumps all over the
+  arena that you have to dodge”; her size, “A head taller than the knight (Recommended)”; how she moves, “Glides without
+  a sound (Recommended)”; her mark, “Swans circling her”; her basic attack, “Nettle vine lash (Recommended)”; in place of
+  his doc's Shirt, “Vine snare (Recommended)”; her swans, “The garden's swans”; the steed, “It’s her ultimate ability so
+  it can slot into whatever that might have been.  I want it to last a while and you have to really dodge around a bit
+  to not get hit.”; her death, “Steed fades, vines wither (Recommended)”; never, “Not a child, not a corpse
+  (Recommended)”; her sound, “Silent, but vines and hooves (Recommended)”. And at 20:34: “And remember this is a boss so
+  follow the rules and run the checks”. Read as (told him so): a pale young woman a head taller than the knight, in a
+  court gown gone grey, wound with the gardens' stinging nettle vines; alive, never a child or a corpse; gliding without a
+  sound, the garden's wild swans always circling her; a nettle vine lash; a vine snare bursting from the floor round you;
+  her ultimate, a spectral steed of the palace stables forming under her, long dressage leaps all over the arena; dying,
+  the steed fading to mist, the vines withering, her swans flying off over the wall, she sinking to her knees; silent but
+  for vines, wings, ghostly hooves and one whisper when she falls. No nettle shirt anywhere.
 
 ## The first look (src/dev/garden_paint.ts)
 
