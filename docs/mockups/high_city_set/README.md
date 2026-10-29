@@ -190,3 +190,9 @@ both faces at every spot), `marks` (the swan alone, in each royal's colours, at 
   another's.
 - `tests/floor11.test.ts`: its import check (nothing else imports Act 2's kit) told of this mock-up, as the swan gardens'
   branch told it of floor 16. Nothing else in it changed.
+
+## His word on the pictures
+
+The gardens laid with the set, the royals' banners and cards, and the three sheets (`gardens_close.png`, `royals.png`,
+`sheet_1_walls.png`, `sheet_2_outside.png`, `sheet_3_rooms_and_floor.png`), asked “The High City's shared 25 pieces
+(gardens_close.png, royals.png and the three sheets): are these right?”: “Yes, that's the set (Recommended)”.
