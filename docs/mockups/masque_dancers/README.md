@@ -36,7 +36,7 @@ and a quarter into you, striking a tile and a half round.
 - `film.mp4`: every move, from in front and from behind, the knight in it for size, on a floor laid in tiles so speeds and
   sizes read in tiles; the spin's strike again at half speed; and at the end the whole ballroom at the game's own size (an
   arena of about 17 by 20 tiles): the pairs waltz, the clock strikes, they stop dead and look at you, then they all come at once.
-- `film_sheet.png`: every tenth frame of the film, for a look without playing it.
+- `film_sheet.png`: every thirtieth frame of the film (one a second), for a look without playing it.
 
 The floor in them is a stand-in (polished stone in the blue room's colours): the Masque's own floor is not drawn yet.
 

@@ -341,7 +341,7 @@ export const WALTZ_PACE = 1.2;
 /** The waltz: a loop of a second (the whirl's own frames: 24 at 24 a second), one whole turn of the pair, six steps. */
 const WALTZ_LONG = WHIRL_LONG;
 /** The pair at the waltz's first frame: the way he faces (degrees to the left of the way they drift; she faces him). */
-export const WALTZ_FROM = 60;
+export const WALTZ_FROM = 100;
 /** Each of them from the pair's middle: half the way between them, along his facing; and each to their own left. */
 const HOLD = { apart: 6.6, aside: 2.4 } as const;
 /** The pair's turn `t` seconds in (degrees: the way he faces). */
@@ -357,7 +357,7 @@ function inPair(who: DancerWho, turn: number): { at: [number, number]; yaw: numb
  * laid on the other's own body as it is at the moment: `holdAt`). And which way each elbow points.
  */
 const JOINED: V3 = [0.4, HOLD.aside + 15.4, 45.4];
-const HOLD_EL = { gent: { l: [0.2, 0.7, -0.6] as V3, r: [0.2, -0.9, 0.1] as V3 }, lady: { l: [0.3, -0.9, 0.2] as V3, r: [0.1, 0.8, -0.6] as V3 } };
+const HOLD_EL = { gent: { l: [0.2, 0.7, -0.6] as V3, r: [0.05, -1, 0.1] as V3 }, lady: { l: [0.3, -0.9, 0.2] as V3, r: [0.1, 0.8, -0.6] as V3 } };
 /** One of the pair, all but the hands, at the pair's turn `turn`, the pair's middle at `mid` on the floor (the figure's own place). */
 function waltzSpine(who: DancerWho, turn: number, mid: readonly [number, number], beat: number): P {
   const R = restFor(who);
@@ -384,11 +384,11 @@ function holdAt(who: DancerWho, spine: P, them: Skeleton, turn: number, mid: rea
     const T = bodyOf('lady');
     const c = lerp3(them.ribs, them.neck, 0.22);
     const [cf, cl, cu] = them.chest;
-    const d: V3 = [-0.8, 0.55, -0.12];
+    const d: V3 = [-0.45, 0.9, -0.1];
     const h: V3 = [T.ribDeep + 1.4, T.ribHalf + 1.4, 6];
     const k = 1 / Math.hypot(d[0] / h[0], d[1] / h[1], d[2] / h[2]);
     const dirW = norm(add(add(mul(cf, d[0]), mul(cl, d[1])), mul(cu, d[2])));
-    onThem = add(c, mul(dirW, k * Math.hypot(d[0], d[1], d[2]) + 1.1));
+    onThem = add(c, mul(dirW, k * Math.hypot(d[0], d[1], d[2]) + 1.4));
   } else {
     // (her left hand on the top of his right shoulder)
     const T = bodyOf('gent');
@@ -465,7 +465,7 @@ function chimePose(who: DancerWho): (t: number) => P {
     const me = inPair(w, pairTurn(k));
     let rel = 0 - me.yaw;
     rel -= 360 * Math.round(rel / 360);
-    const twist = w === 'lady' ? Math.max(-40, Math.min(40, rel * 0.4)) : Math.max(-25, Math.min(25, rel * 0.3));
+    const twist = Math.max(-12, Math.min(12, rel * 0.3));
     const breath = 0.5 * Math.sin(((t - DN_CHIME.look) / 1.0) * Math.PI * 2) * smooth(DN_CHIME.look, DN_CHIME.look + 0.2, t);
     return {
       ...held,
@@ -900,7 +900,7 @@ function dancerMob(who: DancerWho, roomName: RoomName): Mob {
     fall(piece) {
       if (piece !== 'mask') return null;
       const s = bonesOf(who, 'dying', DN_DIES.mask);
-      return { from: DN_DIES.mask, to: [who === 'lady' ? 31 : 27, who === 'lady' ? 9 : -12], spin: 30, lay: 'flat', up: s.face[0], hop: 1.2 };
+      return { from: DN_DIES.mask, to: [30, -44], spin: 30, lay: 'flat', up: s.face[0], hop: 1.2 };
     },
   };
 }
