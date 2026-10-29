@@ -64,8 +64,10 @@ test('in the game only through its own (ACT 2, THE HUSH: render/act1_pieces.ts);
     return out.join('/');
   };
   own.add('art/low_stacks.ts'); // the stacks' rows one block high (mockup/low-stacks): Act 2's quiet colours
+  // (floor 16, the Swan Gardens (mockup/swan-gardens), its ground and its pieces, built in Act 2's kit and quiet colours: art/swangardens.ts, art/floor16.ts, skipped above)
+  // (the High City's own 25 for floors 16 to 20 (mockup/high-city-set), built in Act 2's kit: art/high_city_set.ts, skipped above)
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor11|floor11_moments|act2_set|act2_kit|act2_quiet|gateward|crier|crier_moves|crier_shots|hushed|hushed_moves|hushed_watch|hushed_watch_moves|scribes|scribes_moves|scribe_shots|hounds|undercity|floor12|floor13|millrace|floor14|housequiet|floor15|floor15_moments|library|hub2)\.ts$/.test(f) || own.has(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor11|floor11_moments|act2_set|act2_kit|act2_quiet|gateward|crier|crier_moves|crier_shots|hushed|hushed_moves|hushed_watch|hushed_watch_moves|scribes|scribes_moves|scribe_shots|hounds|undercity|floor12|floor13|millrace|floor14|housequiet|floor15|floor15_moments|library|hub2|swangardens|floor16|masque|floor17|glassgallery|floor18|keep|floor19|quiettower|floor20|high_city_set)\.ts$/.test(f) || own.has(f)) continue;
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
     for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       assert.ok(!art.has(at(dir, spec)), `src/${f} imports floor 11's pieces`);

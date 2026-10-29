@@ -1,0 +1,10 @@
+import { checkBoss, findingsSaid } from '../src/art/boss_checks';
+import { HS_SHAPE, HUSH, KG_ALONE_SHAPE, KG_SHAPE, KING, KING_ALONE } from '../src/art/king_moves';
+const which = process.argv[2] ?? 'king';
+const moves = process.argv[3]?.split(',');
+const [mob, shape] = which === 'alone' ? [KING_ALONE, KG_ALONE_SHAPE] : which === 'hush' ? [HUSH, HS_SHAPE] : [KING, KG_SHAPE];
+const t0 = Date.now();
+const f = moves ? checkBoss(mob, shape, moves) : checkBoss(mob, shape);
+const said = findingsSaid(f);
+console.log(said.length, 'kinds,', f.length, 'findings', ((Date.now() - t0) / 1000).toFixed(1), 's');
+for (const l of said.slice(0, 80)) console.log(l);

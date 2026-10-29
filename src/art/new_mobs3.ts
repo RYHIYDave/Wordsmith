@@ -574,6 +574,11 @@ export interface Mob {
   /** How a piece of it falls when it comes apart (null: it does not fall by itself). */
   fall?(piece: string): Fall | null;
   /**
+   * WHAT IT DOES TO ITS FINISHED FRAME, before its grains are laid (a fog steed thinned to mist below, art/spectral_steed.ts):
+   * given which of its parts (by name) won each pixel (null where none did). Nothing, if not said.
+   */
+  finish?(px: Px, st: Stage, m: Moment, partAt: (k: number) => string | null): void;
+  /**
    * ITS OTHER MOVES (9 Oct: by its size, the owner's rules in the main chat), by name: the Golem's
    * `swing` and `throw`; the Boneward's `throw`, `bash`, `pickUp`, and `standBare` and `walkBare`
    * for while its spear is thrown. Each is played once, or goes round (a loop) if its motion loops.
@@ -663,9 +668,27 @@ export function paintMob(mob: Mob, which: MobAct | string, t: number, view: Game
   const bits = mob.bits(st, m);
   const under = mob.under?.(m) ?? false;
   const lights = paintSwallowed(st, bits, m.s.pelvis, can, under);
-  const px = st.whole(rim);
+  let ids: Int16Array | null = null;
+  const px = st.whole(rim, mob.finish ? (x) => (ids = x.slice()) : undefined);
+  if (mob.finish && ids) {
+    const names = partOrder(bits);
+    const won = ids as Int16Array;
+    mob.finish(px, st, m, (k) => (won[k] >= 0 ? (names[won[k]] ?? null) : null));
+  }
   layGrains(px, st, mob.grains?.(st, m) ?? [], under);
   return { px, lights };
+}
+/** Its parts' names in the order the painter makes them (paintBits): each at its first bit that is painted on a part of its own. */
+export function partOrder(bits: ReadonlyArray<Bit>): string[] {
+  const out: string[] = [];
+  const had = new Set<string>();
+  for (const b of bits) {
+    const k = b.shape.k;
+    if (k === 'dot' || k === 'mote' || k === 'glow' || k === 'teeth' || had.has(b.part)) continue;
+    had.add(b.part);
+    out.push(b.part);
+  }
+  return out;
 }
 /** Grains laid on a finished frame (Mob.grains), on whole pixels. */
 function layGrains(px: Px, st: Stage, grains: ReadonlyArray<readonly [V3, string, number]>, under: boolean): void {
@@ -910,7 +933,14 @@ function fallApart(mob: Mob, k: number, view: GameView): Painted {
   }
   const under = mob.under?.(now) ?? false;
   const lights = paintSwallowed(st, bits, ref, can, under);
-  const px = st.whole(null);
+  // (a figure that thins its own finished frame thins it as it dies too: a fog figure unravelling, art/hush_shapes.ts)
+  let ids: Int16Array | null = null;
+  const px = st.whole(null, mob.finish ? (x) => (ids = x.slice()) : undefined);
+  if (mob.finish && ids) {
+    const names = partOrder(bits);
+    const won = ids as Int16Array;
+    mob.finish(px, st, now, (k) => (won[k] >= 0 ? (names[won[k]] ?? null) : null));
+  }
   layGrains(px, st, mob.grains?.(st, now) ?? [], under);
   return { px, lights };
 }

@@ -150,8 +150,13 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     // patients, art/patients*.ts and art/patient_shots.ts: tests/patients.test.ts; and its orderlies, art/orderlies*.ts
     // and art/orderly_shots.ts: tests/orderlies.test.ts; and floor 15's boss, the Censor, art/censor*.ts:
     // tests/censor.test.ts; and its inklings, art/inkling*.ts: tests/inklings.test.ts; and its Bookwardens, art/bookwarden*.ts:
-    // tests/bookwardens.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden/.test(f)) continue;
+    // tests/bookwardens.test.ts; and floor 16's gardeners and grooms, art/palace_hands*.ts, its palace guard,
+    // art/palace_guard*.ts, its swans, art/garden_swans.ts, and its boss, the Princess and her steed, art/princess*.ts and
+    // art/spectral_steed.ts: tests/palace_hands.test.ts, tests/palace_guard.test.ts, tests/garden_swans.test.ts and
+    // tests/princess.test.ts; and the High City's mock-ups, floors 17 to 20 (the Silent Order, the Prince, the footmen, the masked dancers, the Queen, the queen's guard, the ladies-in-waiting, the King, the king's knights, the crossbowmen, the Hush's shapes, the Moth, the royal shadows): each its own test)
+    // (and floor 18's boss, the Queen, art/queen*.ts: tests/queen.test.ts; floor 19's boss, the King, art/king*.ts:
+    // tests/king.test.ts; floor 20's royal shadows, art/royal_shadows*.ts: tests/royal_shadows.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|silent_order|prince|masque_footmen|masque_dancers|queens_guard|gallery_ladies|kings_knights|keep_crossbowmen|^art\/queen(_moves|_fx)?\.ts$|art\/king|royal_shadows/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
@@ -346,8 +351,11 @@ test('12. nothing of the game imports the chains or the checks either', () => {
     // 13's boss, the Palimpsest: tests/palimpsest.test.ts; and its mobs: tests/fieldhands.test.ts and tests/carters.test.ts;
     // and floor 14's boss, the Physician: tests/physician.test.ts; and its Hushed patients: tests/patients.test.ts; and its orderlies:
     // tests/orderlies.test.ts; and floor 15's boss, the Censor: tests/censor.test.ts; and its inklings: tests/inklings.test.ts;
-    // and its Bookwardens: tests/bookwardens.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden/.test(f)) continue;
+    // and its Bookwardens: tests/bookwardens.test.ts; and floor 16's mobs and its boss, the Princess: tests/palace_hands.test.ts,
+    // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts; and the High City's mock-ups, floors 17 to 20 (the Silent Order, the Prince, the footmen, the masked dancers, the Queen, the queen's guard, the ladies-in-waiting, the King, the king's knights, the crossbowmen, the Hush's shapes, the Moth, the royal shadows): each its own test)
+    // (and floor 18's boss, the Queen, art/queen*.ts: tests/queen.test.ts; floor 19's boss, the King, art/king*.ts:
+    // tests/king.test.ts; floor 20's royal shadows, art/royal_shadows*.ts: tests/royal_shadows.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|silent_order|prince|masque_footmen|masque_dancers|queens_guard|gallery_ladies|kings_knights|keep_crossbowmen|hush_shapes|^art\/queen(_moves|_fx)?\.ts$|art\/king|royal_shadows/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
