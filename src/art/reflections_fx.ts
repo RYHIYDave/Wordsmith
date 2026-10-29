@@ -20,7 +20,7 @@
 
 import { Px, rgba } from '../engine/px';
 import type { Light } from '../engine/px';
-import type { ClassId } from '../game/types';
+import type { ClassId, FirstClass } from '../game/types';
 import type { AnimSet, Clip } from './actor_types';
 import { PLANS } from './heroes3';
 import { INK, hash, lazyFrames, toSprite } from './kit';
@@ -207,7 +207,7 @@ function toneAt(d: Uint8ClampedArray, i: number): { glass: 0 | 1; tone: number }
 
 /** What a class stands in and stumbles forward in, in a dungeon (art/heroes3.ts PLANS). */
 function movesOfClass(cls: ClassId): { stand: Move3; lurch: Move3 } {
-  const plan = PLANS[cls].dungeon;
+  const plan = PLANS[cls as FirstClass].dungeon;
   return { stand: MOVES3[plan.idle], lurch: MOVES3[plan.lurch ?? plan.reel ?? plan.idle] };
 }
 
@@ -723,7 +723,7 @@ export function chipsPainted(p: Px, x: number, y: number, t: number, way: 1 | -1
 
 /** Where the blow falls on a reflection's picture as it shatters: the middle of its breast, as it reels. */
 export function shatterFrom(cls: ClassId, view: GameView): Painted {
-  const plan = PLANS[cls].dungeon;
+  const plan = PLANS[cls as FirstClass].dungeon;
   return reflectionPainted(MOVES3[plan.reel ?? plan.idle], 0.1, view);
 }
 

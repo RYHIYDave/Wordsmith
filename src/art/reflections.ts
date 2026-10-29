@@ -41,7 +41,7 @@
 import type { Light, Sprite } from '../engine/px';
 import { rgba } from '../engine/px';
 import type { TailDef } from '../engine/tails';
-import type { ClassId } from '../game/types';
+import type { ClassId, FirstClass } from '../game/types';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { PLANS, THRUST, heroOf, paintMove3, windAt } from './heroes3';
 import type { Plan } from './heroes3';
@@ -472,7 +472,7 @@ const ROLL_FRAMES3 = 14;
  * shatters: `clips.die`, art/reflections_fx.ts) and making ready on a class card.
  */
 export function reflectionSet(cls: ClassId, view: GameView, extra: Extra = () => {}): AnimSet {
-  const plan: Plan = PLANS[cls].dungeon;
+  const plan: Plan = PLANS[cls as FirstClass].dungeon;
   const of = (key: string): Move3 => {
     const m = MOVES3[key];
     if (!m) throw new Error(`reflections: no move called ${key}`);
@@ -565,7 +565,7 @@ export function reflectionSet(cls: ClassId, view: GameView, extra: Extra = () =>
 
 /** The moves a reflection of a class makes, by their names in moves3.ts MOVES3 (his plan in a dungeon, his fall left out). */
 export function reflectionMoves(cls: ClassId): string[] {
-  const plan = PLANS[cls].dungeon as unknown as Record<string, string | undefined>;
+  const plan = PLANS[cls as FirstClass].dungeon as unknown as Record<string, string | undefined>;
   const names = Object.entries(plan)
     .filter(([k, v]) => v && k !== 'fall' && k !== 'ready')
     .map(([, v]) => v as string);

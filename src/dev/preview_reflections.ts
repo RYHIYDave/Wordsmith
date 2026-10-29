@@ -12,7 +12,7 @@ import type { Sprite } from '../engine/px';
 import { Px } from '../engine/px';
 import { Tails } from '../engine/tails';
 import type { TailRoot } from '../engine/tails';
-import type { ClassId } from '../game/types';
+import type { ClassId, FirstClass } from '../game/types';
 import { HERO_TAILS } from '../art/heroes';
 import { PLANS, makeHeroArt3, spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -523,7 +523,7 @@ function setUpFilm(): void {
 
   for (const { cls, name } of CLASSES) {
     const who = `${name}'S REFLECTION`;
-    const plan = PLANS[cls].dungeon;
+    const plan = PLANS[cls as FirstClass].dungeon;
     const stand = MOVES3[plan.idle];
     const run = MOVES3[plan.walk];
     const reel = MOVES3[plan.reel ?? plan.idle];
