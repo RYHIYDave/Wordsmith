@@ -199,3 +199,12 @@ The dev page `src/dev/preview_moth.ts` shows the same in a browser: `top:<move>:
   9. Its sizes: wings spread 18.5 tiles and more; hovering 15 and more; bigger than the Carrion Queen; the cone, the cloud,
      the beams, the swarm, the beat's wind; its drift.
 - Its review: 0 findings, every move, both ways round, every handover.
+
+## His word on the pictures
+
+The three pictures and the film (`moth_top_behind.png`, `moth_top_front.png`, `moth_close.png`, `moth_film.mp4`), asked
+“The Moth (the three pictures and the film): is this the last boss of Act 2?”: “Yes, that's the Moth (Recommended)”.
+Asked whether, in its last phase, it should land on the last chapter on the stones (the book knocked off the Tower's
+lectern as it lands) or be redrawn landing on the lectern: “Book knocked to the stones (Recommended)”. FOR THE MAIN
+CHAT: as the last phase begins, the chapter falls from its lectern (floor 20's quest piece) to the stones where the Moth
+lands.
