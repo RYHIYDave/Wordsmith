@@ -137,7 +137,7 @@ if (mode === 'sheet') {
   const K = 3;
   const F = floorCanvas(Math.ceil(cv.width / K), Math.ceil(cv.height / K), 40, 60);
   g.drawImage(F, 0, 0, F.width * K, F.height * K);
-  const y = cv.height - 70;
+  const y = cv.height - 36;
   draw(hero.front.idle[0], 140, y, K);
   draw(sp('stand', 0, 'front'), 430, y, K);
   draw(sp('stand', 0, 'back'), 720, y, K);
@@ -156,14 +156,13 @@ if (mode === 'sheet') {
   const figs: { x: number; y: number; s: Sprite; flip?: boolean; light?: Sprite }[] = [];
   // the knight, facing them
   {
-    const [x, y] = at(9.5, 0.5);
+    const [x, y] = at(9.0, 1.0);
     figs.push({ x, y, s: hero.back.idle[0], flip: true });
   }
   // the line, gliding at him (down the screen to the right: in front)
   for (let i = 0; i < 5; i++) {
-    const [x, y] = at(1.5 + i * 0.0, -2.2 + i * 1.25);
-    void i;
-    figs.push({ x: x + 0, y, s: sp('walk', ((i * 3) % LD_GLIDE.frames) / LD_GLIDE.fps, 'front') });
+    const [x, y] = at(1.5, -2.2 + i * 1.25);
+    figs.push({ x, y, s: sp('walk', ((i * 3) % LD_GLIDE.frames) / LD_GLIDE.fps, 'front') });
   }
   // three at their mirrors, further off
   for (const [wx, wy, t] of [[3.8, 5.6, 0.3], [5.2, 6.8, 1.2], [2.6, 7.4, 2.0]] as const) {
@@ -172,7 +171,7 @@ if (mode === 'sheet') {
   }
   // and one throwing her light at him
   {
-    const [x, y] = at(5.0, -3.4);
+    const [x, y] = at(5.0, 1.0);
     const t = LD_FLASH.hit + 2 / 30;
     figs.push({ x, y, s: sp('attack', t, 'front'), light: floorLight(t - LD_FLASH.hit, 'front') ?? undefined });
   }
@@ -194,7 +193,7 @@ if (mode === 'sheet') {
   const K = 2;
   const PW = cv.width / 2;
   const PH = cv.height / 2;
-  const moments: [number, string][] = [[0.5, 'the warning, held: the glint building'], [LD_FLASH.strike[0] + 1 / 30, 'the strike: two frames, smeared'], [LD_FLASH.hit, 'the blow: the beam thrown'], [LD_FLASH.hit + 0.2, 'the beam breaking up']];
+  const moments: [number, string][] = [[0.5, 'the warning, held: the glint building'], [LD_FLASH.strike[0] + 1 / 30, 'the strike: two frames, smeared'], [LD_FLASH.hit, 'the blow: the beam thrown'], [LD_FLASH.hit + 0.3, 'the beam breaking up']];
   moments.forEach(([t, label], i) => {
     const x0 = (i % 2) * PW;
     const y0 = Math.floor(i / 2) * PH;
@@ -203,7 +202,7 @@ if (mode === 'sheet') {
     g.rect(x0, y0, PW, PH);
     g.clip();
     const ox = x0 + (view === 'front' ? 150 : 140);
-    const oy = y0 + (view === 'front' ? 150 : 300);
+    const oy = y0 + (view === 'front' ? 196 : 336);
     const F = floorCanvas(Math.ceil(PW / K), Math.ceil(PH / K), (ox - x0) / K, (oy - y0) / K);
     g.drawImage(F, x0, y0, F.width * K, F.height * K);
     const L = floorLight(t - LD_FLASH.hit, view);

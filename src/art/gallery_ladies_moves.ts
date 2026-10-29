@@ -70,8 +70,8 @@ const REST0: Bones = {
   pz: 0, pitch: -2, bend: -2, roll: 0, side: 0, faceUp: -2, faceTilt: 6, faceTurn: -30,
   lfx: 1.4, lfy: 0.6, lft: 16, lk: 12, rfx: -1.0, rfy: -0.4, rft: -18, rk: -12,
   ...leftAt(6.2, -4.6, -18.5),
-  ...rightAt(3.8, -6.2, 0.4),
-  ...holding([0.05, -0.15, 1], [0.1, 1, 0.05]),
+  ...rightAt(3.2, -7.6, 0.4),
+  ...holding([0.05, -0.15, 1], [-0.35, 0.94, 0.05]),
   le: 0, re: 0, out: 0,
 } as Bones;
 function elbowsTo(pose: P, wantL: V3 | null, wantR: V3 | null, rest: Bones = REST0): P {
@@ -177,8 +177,8 @@ function standMotion(): Motion {
         bend: R.bend - 1.4 * Math.sin(a),
         faceTurn: R.faceTurn + 6 * Math.sin(a + 0.4), faceTilt: R.faceTilt + 4 * Math.sin(a * 2 + 0.3), faceUp: R.faceUp + 2 * Math.sin(a + 1),
         ...leftAt(l[0] + 0.4 * Math.sin(a), l[1], l[2] + 0.4 * Math.sin(a + 1)),
-        ...rightAt(3.8 + 0.5 * Math.sin(a + 0.9), -6.2 + 0.4 * Math.sin(a + 0.2), 0.4 + 0.5 * Math.sin(a)),
-        ...holding([0.05 + 0.06 * Math.sin(a + 0.9), -0.15 + 0.05 * Math.sin(a), 1], [0.1 + 0.12 * Math.sin(a + 0.4), 1, 0.05 + 0.04 * Math.sin(a * 2)]),
+        ...rightAt(3.2 + 0.5 * Math.sin(a + 0.9), -7.6 + 0.4 * Math.sin(a + 0.2), 0.4 + 0.5 * Math.sin(a)),
+        ...holding([0.05 + 0.06 * Math.sin(a + 0.9), -0.15 + 0.05 * Math.sin(a), 1], [-0.35 + 0.1 * Math.sin(a + 0.4), 0.94, 0.05 + 0.04 * Math.sin(a * 2)]),
       }, lerp3(ELBOW_L, [0.2, 1, -0.4], tuck), ELBOW_R),
     });
   }
@@ -224,8 +224,8 @@ function glideMotion(): Motion {
         lfx: lx + 0.6, lfz: lz, lfp: lp, lfy: 0.3, lft: 8, lk: 6,
         rfx: rx - 0.6, rfz: rz, rfp: rp, rfy: -0.3, rft: -8, rk: -6,
         ...leftAt(6.0 + 0.4 * Math.sin(a), -4.4, -18.8 + 0.3 * bob),
-        ...rightAt(4.4, -6.0, -0.2 + 0.3 * bob),
-        ...holding([0.14, -0.15, 1], [0.1, 1, 0.05]),
+        ...rightAt(3.8, -7.4, -0.2 + 0.3 * bob),
+        ...holding([0.14, -0.15, 1], [-0.35, 0.94, 0.05]),
       }, ELBOW_L, ELBOW_R),
     });
   }
@@ -253,8 +253,8 @@ function dartPlan(): Plan {
       [0.25, { px: at(0.25), pz: -4.2, pitch: 18, bend: 8, faceUp: 14, faceTurn: 0, faceTilt: 0, roll: -2, ...leftAt(7.4, 1.6, -25), ...rightAt(5.8, 3.2, -10), ...holding([0.6, 0.2, 1], [-0.6, 0.6, 0.4]) }],
       [0.4, { px: at(0.4), pz: -3.4, pitch: 12, bend: 6, faceUp: 10, faceTurn: 0, faceTilt: 2, roll: 2, ...leftAt(7.0, 1.2, -25), ...rightAt(6.2, 3.2, -9.5), ...holding([0.5, 0.2, 1], [-0.65, 0.6, 0.35]) }],
       // (she checks: rocked back, the skirt swinging on past her)
-      [0.52, { px: at(0.52), pz: -1.6, pitch: -6, bend: -5, faceUp: 0, faceTurn: -6, faceTilt: 6, roll: 0, ...leftAt(7.4, -2.2, -18.5), ...rightAt(4.0, -5.6, -1.2), ...holding([0.12, -0.12, 1], [0.05, 1, 0.1]) }],
-      [0.66, { px: at(0.66), pz: -0.4, pitch: -3, bend: -2.5, faceUp: -2, faceTurn: -12, faceTilt: 8, ...leftAt(6.2, -4.5, -18.6), ...rightAt(3.8, -6.2, 0.3) }],
+      [0.52, { px: at(0.52), pz: -1.6, pitch: -6, bend: -5, faceUp: 0, faceTurn: -6, faceTilt: 6, roll: 0, ...leftAt(7.4, -2.2, -18.5), ...rightAt(3.4, -7.0, -1.2), ...holding([0.12, -0.12, 1], [-0.3, 0.94, 0.1]) }],
+      [0.66, { px: at(0.66), pz: -0.4, pitch: -3, bend: -2.5, faceUp: -2, faceTurn: -12, faceTilt: 8, ...leftAt(6.2, -4.5, -18.6), ...rightAt(3.2, -7.6, 0.3) }],
       [LD_DART.long, { px: DART }],
     ],
   };
@@ -327,7 +327,7 @@ const flashJaw = (t: number): number => (t < 0.15 ? 0.4 + 2 * t : t < H + 0.15 ?
 export const LD_REEL = 0.4;
 const JOLT: P = { px: -4.6, pitch: -13, bend: -16, side: -4, roll: 3, faceUp: 26, faceTilt: 18, faceTurn: -4, pz: 0.2, ...rightAt(3.0, -7.0, 8.0), ...leftAt(7.0, 3.0, -9), ...holding([-0.4, -0.3, 1], [-0.5, 0.8, 0.4]), out: 0.1 };
 function reelPlan(): Plan {
-  return { long: LD_REEL, keys: [[0, {}], [0.08, JOLT], [0.2, { px: -3.2, pitch: -5, bend: -6, side: -1, faceUp: 10, faceTilt: 10, ...rightAt(3.6, -6.0, 3.0), ...leftAt(6.6, -2.0, -15) }], [LD_REEL, {}]] };
+  return { long: LD_REEL, keys: [[0, {}], [0.08, JOLT], [0.2, { px: -3.2, pitch: -5, bend: -6, side: -1, faceUp: 10, faceTilt: 10, ...rightAt(3.2, -7.2, 3.0), ...leftAt(6.6, -2.0, -15) }], [LD_REEL, {}]] };
 }
 /** Struck, knocked back a step: her left foot back under her as she is jolted, and in again. */
 function reelFeet(): (t: number) => P {

@@ -97,18 +97,18 @@ function mirror(put: Put, s: Skeleton, glint: number, crack: number, t: number):
   // (the oval: its frame a band of silver round its edge; inside, on the glass side, the glass; on the back, engraved silver)
   const glass: Skin = (u, tone) => {
     const r = Math.hypot(u[0], u[1]);
-    if (r > 0.74) {
-      // (the frame, beaded every few steps round it)
+    if (r > 0.72) {
+      // (the frame, bright silver beaded every few steps round it, a dark lip at its very edge)
       const a = Math.atan2(u[1], u[0]);
-      const bead = Math.cos(a * 10) > 0.5;
-      return r > 0.95 ? SILVER[Math.max(0, tone - 2)] : SILVER[Math.max(2, Math.min(4, tone + (bead ? 2 : 1)))];
+      const bead = Math.cos(a * 10) > 0.4;
+      return r > 0.95 ? SILVER[Math.max(0, tone - 2)] : SILVER[bead ? 4 : 3];
     }
     if (u[2] < 0) {
-      // the back: engraved, a scroll round a middle boss
-      // the back: a field of blued silver engraved with a scroll, a bright boss at its middle
-      if (r < 0.18) return SILVER[4];
+      // the back: a field of blued steel, an engraved star of silver across it, a bright boss at its middle
+      if (r < 0.2) return SILVER[4];
       const a = Math.atan2(u[1], u[0]);
-      return Math.sin(a * 3 + r * 9) > 0.5 ? GLASS[Math.max(1, tone - 1)] : SILVER[Math.max(1, Math.min(3, tone))];
+      const ray = Math.abs(Math.sin(a * 2)) < 0.2 * (1 - r) + 0.06;
+      return ray ? SILVER[3] : GLASS[Math.max(1, Math.min(2, tone - 1))];
     }
     // the glass: cold, with a streak of light across it
     if (crack > 0) {

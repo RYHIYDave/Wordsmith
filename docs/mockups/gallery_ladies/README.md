@@ -29,7 +29,8 @@ always so plodding when you first animate them.”), so every speed and size bel
 - `ladies_sheet.png`: a lady from in front and from behind, beside the knight, three times the game's size.
 - `ladies_crowd.png`: at the game's size, a phone's whole view of the game (480 by 270 game pixels): a neat line of five
   gliding at the knight, three at their mirrors, one throwing her light at him.
-- `ladies_flash.png`: her flash, both ways round, twice the game's size: up, the warning held, the strike, the beam, after.
+- `ladies_flash_front.png`, `ladies_flash_back.png`: her flash at four moments, twice the game's size, the knight in its
+  way: the warning held (the glint, the spot of light on the floor), the strike smeared, the beam thrown, the beam breaking up.
 - `ladies_film.mp4`: every move, from in front and from behind, at the scale of a boss arena with the knight in it, captioned;
   the strike again at half speed; three of them gliding, darting and flashing as the game would play them.
 
