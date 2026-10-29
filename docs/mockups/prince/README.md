@@ -187,3 +187,9 @@ Each begins as his blow lands (its `hit`), where the game puts it.
 
 `src/dev/preview_prince.ts`: `sheet` (front and back beside the knight, three times as big), `grid:<move>:<t>,<t>,...` (a move
 at several moments, both ways round), `big:<move>:<t>`, `fx:<dance|mask|chime>:<t>`.
+
+## His word on the pictures
+
+The sheet and the film (`prince_sheet_big.png`, `prince_film.mp4`), asked “The Prince (prince_sheet_big.png and the film):
+is this him?”: “Yes, that's the Prince (Recommended)”. Asked whether his everyday dance-step (about as fast as the
+knight's run; his darts twice that) should be faster than the knight: “Keep it as it is”.
