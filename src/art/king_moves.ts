@@ -269,7 +269,7 @@ export const KG_WALK_STOPS = [5 / KG_WALK.fps, 13 / KG_WALK.fps] as const;
 /** The sweep's times: its warning held; the strike, two frames; the hit; and the way the blade swings round (degrees from his front, to his left: from behind his right to his left). */
 export const KG_SWEEP = { long: 2.6, warn: [0.62, 1.2] as const, strike: [37 / FPS, 39 / FPS] as const, hit: 39 / FPS, from: -165, to: 62, bite: 100 };
 const SW_GATHER: KP = { yaw: -14, twist: -10, pz: R.pz - 3, pitch: 6, bend: 12, faceTurn: 0, ...hands([16, -18, -24], [12, -12, -30], -50, 16), wAz: -158, grip: 1, floor: 1 };
-const SW_WOUND: KP = rightTo({ yaw: -36, twist: -40, pitch: 7, bend: 9, roll: -3, side: -2, pz: R.pz - 9, faceTurn: -4, faceUp: 8, le: -50, re: 30, wAz: SW_GATHER.wAz, wRoll: 50, grip: 1, floor: 1, lk: 18, rk: -22 }, [-6, -32, 40]);
+const SW_WOUND: KP = rightTo({ yaw: -36, twist: -40, pitch: 7, bend: 9, roll: -3, side: -2, pz: R.pz - 9, faceTurn: -4, faceUp: 8, le: -50, re: 30, wAz: -165, wEl: -12, wRoll: 50, grip: 1, floor: 0, lk: 18, rk: -22 }, [-6, -32, 40]);
 const SW_HIPS: KP = { ...SW_WOUND, yaw: -20, twist: -56 };
 const SW_SWEPT: KP = rightTo({ yaw: 34, twist: 30, pitch: 9, bend: 12, roll: 2, side: 2, pz: R.pz - 11, faceTurn: 8, faceUp: 0, le: -10, re: 10, wAz: 62, wEl: -16, wRoll: 50, grip: 1, floor: 0, lk: 16, rk: -20 }, [26, 20, 52]);
 const SW_ON: KP = rightTo({ ...SW_SWEPT, yaw: 40, twist: 36, pitch: 11, bend: 14, pz: R.pz - 13, wAz: KG_SWEEP.bite, floor: 1 }, [22, 28, 44]);
@@ -471,14 +471,14 @@ function diesPlan(): Plan {
   const ON_KNEES = kneeling(6, { yaw: -4, pitch: 6, roll: 2, twist: 0, bend: 14, side: 2, faceTurn: 0, faceUp: -12, faceTilt: 6, ...HANGING, floor: 0 });
   const FOLD = kneeling(12, { yaw: -4, pitch: 30, roll: 2, twist: 0, bend: 26, side: 1, faceTurn: 0, faceUp: -44, faceTilt: 4, lhx: 6, lhy: 3, lhz: -40, le: -10, rhx: 6, rhy: -3, rhz: -40, re: 10, floor: 0 });
   const SLUMP = limp(kneeling(26, { yaw: -4, pitch: 66, roll: 0, twist: 0, bend: 30, side: 0, faceTurn: 16, faceUp: -60, faceTilt: 12, floor: 0 }), 12, 14);
-  const DOWN = { ...limp(kneeling(72, { yaw: -4, pitch: 84, roll: 0, twist: 0, bend: 8, side: 0, faceTurn: 30, faceUp: -36, faceTilt: 18, floor: 0 }), 34, 12), out: 1 };
+  const DOWN = { ...limp(kneeling(80, { yaw: -4, pitch: 88, roll: 0, twist: 0, bend: 6, side: 0, faceTurn: 50, faceUp: -24, faceTilt: 30, floor: 0 }), 36, 12), out: 1 };
   const f0 = feetDown(0);
   return {
     long: KG_DIES.long,
     keys: [
       [0, { floor: 1 }],
       [0.12, { px: -2.6, pitch: R.pitch - 6, bend: R.bend - 6, faceUp: R.faceUp + 14, pz: R.pz + 0.8, floor: 1 }],
-      [KG_DIES.drop, { px: -1.4, pitch: R.pitch, bend: R.bend + 2, faceUp: R.faceUp + 4, pz: R.pz - 2, ...HANGING, rhx: 8, rhy: -12, rhz: -34, floor: 0, out: 0.2 }],
+      [KG_DIES.drop, { px: -1.4, pitch: R.pitch, bend: R.bend + 2, faceUp: R.faceUp + 4, pz: R.pz - 2, ...HANGING, rhx: 8, rhy: -12, rhz: -34, floor: 1, out: 0.2 }],
       [0.75, { ...f0, px: -0.8, pitch: R.pitch + 3, bend: R.bend + 4, pz: R.pz - 9, faceUp: 0, ...HANGING, lk: 24, rk: -24, floor: 0, out: 0.3 }],
       [KG_DIES.knees[1], { ...ON_KNEES, out: 0.45 }],
       [1.35, { ...ON_KNEES, pitch: 3, side: -2, roll: -2, faceTilt: -4, out: 0.55 }],

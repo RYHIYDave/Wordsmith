@@ -48,7 +48,8 @@ his back, the top of its head is twice the knight's height.
   vambraces, gold couters; gold gauntlets; royal cuisses and greaves with a gold ridge, gold knee cops, pointed gold
   sabatons. The gold is old and dull: it never glows.
 - A ROYAL BLUE MANTLE of velvet down his back to the stones, trailing; its collar ermine with its black tails. It falls the
-  way his thighs go: to the floor behind him standing, hanging below him in his leap, along his legs as he lies.
+  way his thighs go: to the floor behind him standing, hanging below him in his leap, along his legs as he lies. (Nothing
+  of him goes into the stones: as he lies, what would (his mantle, his beard, his plate's edge) lies pressed flat on them.)
 - HIS CROWN: a gold band set high on his head, eight fleurons standing up off it (tall and short by turns, each with two
   leaves and a sapphire at its foot); the Hush's grey fog curling up through it from inside, rising and thinning.
 - HIS GREAT SWORD (`SWORD`), 77 long, taller than the knight: a gold pommel set with a sapphire, a long grip bound in royal
@@ -73,9 +74,10 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
   down with his whole weight (down 10 frames of 18), lurching side to side; the sword dragged behind, its point grinding the
   stones, sparks off it. The game starts and stops his walk at a frame where his feet pass (`KG_WALK_STOPS`, 0.5 s and 1.3 s).
 - THE SWEEP, his basic blow (`KG_SWEEP`, 2.6 s; the blow at 1.3 s): both hands on the grip, he hauls the great sword round
-  behind him to his right, low, its point grinding, crouched and twisted far round; held 0.62 to 1.2 s, the blade's edges
-  glinting pink (THE WARNING); his hips go first; in two frames the blade sweeps round in front of him from 165 degrees
-  behind his right to 62 degrees to his left (the blade itself 2.5 tiles out), smeared; it bites the stones at his left;
+  behind him to his right, its point grinding the stones, and draws it back level and low behind him, crouched and twisted
+  far round; held 0.62 to 1.2 s, the blade's edges glinting pink (THE WARNING); his hips go first; in two frames the blade
+  sweeps round in front of him from behind his right (about 145 degrees round from his front) to 54 degrees to his left
+  (the blade itself 2.1 to 2.4 tiles out), smeared in a great fan; it bites the stones at his left;
   he drags it back round in front of him, grinding, and lets it down behind him. ITS WAVE (`sweepPainted`, `SWEEP_FX`): the
   wind and grit off its edge roll out across the floor over the whole wedge it swept (235 degrees, from behind his right to
   his left) out to 10 tiles (`KG_REACH.sweep`) in half a second, a bright edge in front, dust and chips churned up behind;

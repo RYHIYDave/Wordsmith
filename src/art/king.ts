@@ -30,7 +30,7 @@ import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { sphere } from './new_mobs3';
-import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
+import type { Bit, MobCanvas, Moment, Put, Shape } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
 import { add, buildOf, cross, dot, len, lerp3, mul, norm, standing, sub } from './skeleton';
@@ -669,7 +669,9 @@ function kingBits(st: Stage, m: Moment, say: KingSay): Bit[] {
   const bits: Bit[] = [];
   const fog: [V3, string, number][] = [];
   FOGGED.set(m, fog);
-  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  // (nothing of him into the stones: what he wears and holds lies on them, pressed flat where it would go in, as his
+  // mantle, his beard and his plate do as he lies down)
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape: onTheStones(shape) });
   const lag = lagOf(m, 1.6, 6);
   const t = m.t;
   const [cf, cl, cu] = s.chest;
@@ -756,6 +758,37 @@ function kingBits(st: Stage, m: Moment, say: KingSay): Bit[] {
   fog.push(...(say.more?.(m) ?? []));
   void INK;
   return bits;
+}
+
+/** A solid kept out of the stones (its lowest just on them): a rod's ends lifted, a ball or a ring lifted or pressed flat. */
+const ABOVE = 0.4;
+function onTheStones(sh: Shape): Shape {
+  const up = (p: V3, r: number): V3 => (p[2] - r < ABOVE ? [p[0], p[1], r + ABOVE] : p);
+  const flat = (r: Ring): Ring => {
+    const down = Math.hypot(r.u[2], r.v[2]);
+    if (r.c[2] - down >= ABOVE) return r;
+    const k = Math.max(0, Math.min(1, (r.c[2] - ABOVE) / Math.max(1e-6, down)));
+    const c: V3 = r.c[2] < ABOVE ? [r.c[0], r.c[1], ABOVE] : r.c;
+    return { ...r, c, u: [r.u[0], r.u[1], r.u[2] * k], v: [r.v[0], r.v[1], r.v[2] * k] };
+  };
+  switch (sh.k) {
+    case 'rod':
+      return sh.a[2] - sh.ra < ABOVE || sh.b[2] - sh.rb < ABOVE ? { ...sh, a: up(sh.a, sh.ra), b: up(sh.b, sh.rb) } : sh;
+    case 'ball': {
+      const down = Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]);
+      return sh.c[2] - down < ABOVE ? { ...sh, c: [sh.c[0], sh.c[1], down + ABOVE] } : sh;
+    }
+    case 'band':
+      return { ...sh, ring: flat(sh.ring) };
+    case 'cloth':
+      return { ...sh, rings: sh.rings.map(flat) };
+    case 'panel': {
+      const down = Math.abs(sh.u[2]) + Math.abs(sh.v[2]);
+      return sh.c[2] - down < ABOVE ? { ...sh, c: [sh.c[0], sh.c[1], down + ABOVE] } : sh;
+    }
+    default:
+      return sh;
+  }
 }
 
 /** HIM AS THE PAINTER TAKES HIM. */
