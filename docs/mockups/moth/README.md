@@ -172,7 +172,7 @@ bone white stone with its merlons, the grey fog below. It is not floor 20's own 
   screams.
 - `moth_moves.png`: a moment of each move at a glance, from in front.
 - `moth_film.mp4`: every move from in front and from behind at the scale of the arena with the knight in it, captioned, then
-  each strike again at half speed (FILM_LENGTH).
+  each strike again at half speed (73 s, 1200 by 1172, 30 frames a second).
 
 The dev page `src/dev/preview_moth.ts` shows the same in a browser: `top:<move>:<t>:<front|back>`, `big:<move>:<t>`,
 `grid:<move>:<t>,<t>,...:<front|back>` (`node tools/preview.mjs src/dev/preview_moth.ts <out.png> 1200 1080 "<mode>"`).
