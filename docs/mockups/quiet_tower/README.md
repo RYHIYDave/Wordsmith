@@ -177,3 +177,9 @@ A corner of it laid from the game-ready parts, with the knight (`src/dev/preview
   the game-ready parapet is whole, the merlon fallen inward as a piece.
 - NOT MADE HERE: the floor's enemies (the Hush in its own shapes, the Silent Order's last masks, the shadows of the four
   royals), the Moth, and the floor's moments around the hero: other helpers', after his briefs.
+
+## His word on the pictures
+
+The two first looks, the Tower Top laid from the game-ready parts and the Moth's 25 pieces (`first_look_top.png`,
+`first_look_scriptorium.png`, `corner_top_phone.png`, `pieces_all.png`), asked “The Quiet Tower (the two first looks,
+corner_top_phone.png and the Moth's 25 pieces): is this floor 20?”: “Yes, that's the Tower (Recommended)”.
