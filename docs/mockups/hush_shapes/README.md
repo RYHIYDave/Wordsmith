@@ -134,3 +134,8 @@ one of them, it lets go "pulling" instead (`hushWord`, `HS_WORD_NOT`).
   tools/hush_shapes_film.py <dir> <out.mp4>` puts the film together.
 - `src/dev/preview_hush_shapes.ts` (in a browser, tools/preview.mjs): `sheet`, `big:<move>:<t>`, `grid:<move>:<t>,...`,
   `grip:<t>`.
+
+## His word on the pictures
+
+The swarm, the sheet and the film (`swarm.png`, `sheet.png`, `film.mp4`), asked “The Hush's shapes (swarm.png, sheet.png
+and the film): are these right?”: “Yes, that's them (Recommended)”.
