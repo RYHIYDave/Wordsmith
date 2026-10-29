@@ -37,7 +37,8 @@ import type { TinkMove } from '../dev/tinkerer_moves';
 import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
 import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
 import { drawTinkerFallAt, tinkerFall } from '../dev/tinkerer_fall';
-import { GCANNON, GDOWN, GP, GPUNCH, GWALK, golemCannon, golemDown, golemPunch, golemWalk, groundPound } from '../dev/golem_moves';
+import { GCANNON, GDOWN, GP, GPUNCH, GUPPER, GWALK, golemCannon, golemDown, golemPunch, golemUppercut, golemWalk, groundPound } from '../dev/golem_moves';
+import { GOLEM_LOOK, TINKER_TUNE } from '../game/tinkerer';
 import { GOLEM_GUN, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../dev/sculpt_golem';
 import { CONTRAPTION_PICK, CONTRAPTION_POSE, sculptContraptionBuild } from '../dev/sculpt_contraption';
 import { CDOWN, CT, contraptionDown } from '../dev/contraption_fx';
@@ -115,7 +116,10 @@ function herSet(view: GameView): AnimSet {
   const attack = clip(0, tap.long, CLIP_FPS, at(toss), TAP_LET_GO, true);
   // (her Contraption thrown down, the art chat's own tap: her tap with the talent that swaps it in, CONTRAPTION on her tree)
   const throwDown = clip(0, tap.long, CLIP_FPS, at(tap), TAP_LET_GO, true);
-  const heavy = clip(0, hold.long, CLIP_FPS, at(hold, drawTinkerHoldAt), HOLD.blow * FR, true);
+  // (her whistle: the game shows her picture's wind-up as her own, up to her whistle; and from then on at its own pace, so
+  // that she springs for joy as her Golem's blow lands, TINKER_TUNE.golem.pound's lead and hit after her whistle)
+  const P = TINKER_TUNE.golem.pound;
+  const heavy = clip(0, hold.long, CLIP_FPS, at(hold, drawTinkerHoldAt), (HOLD.blow - Math.round((P.lead + P.hit) * 30)) * FR, true);
   // (the blast jump: from the blast to her coming down, over the swipe; her crouch and rising after)
   const leap = spread(BJ.boom * FR, BJ.land * FR, FLY_FRAMES, at(jump));
   const land = clip(BJ.land * FR, jump.long, CLIP_FPS, at(jump));
@@ -160,7 +164,8 @@ function golemClip(view: GameView, end: number, pose: (f: number) => GolemPose &
 
 function golemSet(view: GameView): AnimSet {
   const walk = lazyFrames(GWALK.round, (i) => golemAt(view, golemWalk(i)));
-  const punch = golemClip(view, GPUNCH.end, golemPunch, GPUNCH.hit);
+  // (its punch; or its uppercut, GOLEM_LOOK, the main chat's at his word of 28 Oct, 20:26, while he has not said yes to it)
+  const punch = GOLEM_LOOK.uppercut ? golemClip(view, GUPPER.end, golemUppercut, GUPPER.hit) : golemClip(view, GPUNCH.end, golemPunch, GPUNCH.hit);
   const pound = golemClip(view, GP.end, groundPound, GP.hit);
   const cannon = golemClip(view, GCANNON.end, golemCannon, GCANNON.fire);
   const down = golemClip(view, GDOWN.end, golemDown);

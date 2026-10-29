@@ -1338,7 +1338,7 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
   mage: { word: 'fire', skill: 0 },
   // (THE WARLOCK: Leeching on his bolt, the pact's hunger; a proposal, his to change)
   warlock: { word: 'leech', skill: 0 },
-  // (THE TINKERER: Volatile on her Contraption, a bomber's word; a proposal, his to change)
+  // (THE TINKERER: Volatile on her Vial Toss, a bomber's word; a proposal, his to change)
   tinkerer: { word: 'volatile', skill: 0 },
   // (THE BRAWLER: Power on his jab; a proposal, his to change)
   brawler: { word: 'power', skill: 0 },
@@ -2070,14 +2070,14 @@ export const QUIPS: {
     damning: ['Damning evidence.', 'Damned.'],
     demonstep: ['Ripped through.', 'Smoke and mirrors.'],
     // (THE TINKERER's, proposals)
-    vialtoss: ['Shake well before use.', 'Handle with care.'],
+    vialtoss: ['Shake well before use.', 'Contents under pressure.'],
     contraption: ['Some assembly required.', 'Fully automated.'],
     golem: ['Good boy.', 'Wind him up, let him go.'],
     blastjump: ['Wheee!', 'Explosive exit.'],
     // (THE BRAWLER's, proposals)
     jab: ['Sharp.', 'One-two.'],
-    cross: ['Lights out.', 'Down for the count.'],
-    slip: ['Too slow.', 'Missed me.'],
+    cross: ['Right down the middle.', 'Down for the count.'],
+    slip: ['Saw that coming.', 'Not even close.'],
   },
   /** By the weapon in hand. */
   weapon: {
@@ -2105,9 +2105,9 @@ export const QUIPS: {
     // (THE WARLOCK, a proposal: hoarse, pained, the thing in him enjoying it)
     warlock: ['It liked that.', 'Feed it.', 'Not yet.', 'Burn.', 'Hungry, are we?'],
     // (THE TINKERER, a proposal: gleeful, a bit reckless)
-    tinkerer: ['Ha! Again!', 'Boom.', 'Oops. Not sorry.', 'That one works.', 'Needs more bang.'],
+    tinkerer: ['Ha! Again!', 'Kaboom!', 'Oops. Not sorry.', 'That one works.', 'Needs more bang.'],
     // (THE BRAWLER, a proposal: cocky, a prizefighter)
-    brawler: ['Next!', 'Stay down.', 'Is that all?', 'Glass jaw.', 'Ding ding.'],
+    brawler: ['Next!', 'And stay there.', 'Who else?', 'Glass jaw.', 'Ding ding.'],
   },
   /** For any kill. The library is never far away: the hero is a child dreaming in detention. */
   any: ['Overdue.', 'Shh. This is a library.', 'Next.', 'Is that all?', 'Back on the shelf.', 'Closed book.', 'Quiet, please.', 'Read it and weep.'],

@@ -17,7 +17,8 @@ import { SKILLS } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster } from '../src/game/state';
-import { TINKERER, TINKER_TUNE } from '../src/game/tinkerer';
+import { GOLEM_LOOK, TINKERER, TINKER_TUNE, golemBlow } from '../src/game/tinkerer';
+import { placedAim } from '../src/game/lock';
 import { playableClasses } from '../src/game/warlock';
 import { land } from './helpers';
 
@@ -238,6 +239,79 @@ test('each tap and hold after sets it on to ground pound, striking everything ro
   const more = wait(g, G.pound.lead + G.pound.long);
   assert.ok(ev.concat(more).some((e) => e.t === 'golemPound'), 'it pounds');
   for (const m of round) assert.ok(hurt(m) > 0, 'what is round it is struck');
+});
+
+// The owner, 28 Oct 2026, 20:25: “She needs the same auto aim targeting that the ranger gets on his hold so the vials land
+// where the enemies are going” (game/lock.ts placedAim: what auto aim, the lock and the gamepad aim her tap at).
+test('aimed for her (auto aim), her vial is put where the enemy is going: one running at her runs into it, as into the ranger’s volley', () => {
+  const run = (lead: boolean): { hurt: number; ahead: number } => {
+    const g = room(7);
+    const a = inner(g);
+    const m = a.spawn('skeleton', g.hero.x + 6, g.hero.y, 1, 0, false, a.rng);
+    a.wakeUp(m);
+    m.cd = 1e9;
+    m.life = m.maxLife = 1e7;
+    const x0 = m.x;
+    wait(g, 0.6);
+    assert.ok(m.x < x0 - 0.5, 'it is running at her');
+    const p = lead ? placedAim(g, m, 'vialtoss') : { x: m.x, y: m.y };
+    const ahead = m.x - p.x;
+    use(g, 0, p.x - g.hero.x, p.y - g.hero.y);
+    wait(g, TINKER_TUNE.toss.flight + 0.1);
+    return { hurt: hurt(m), ahead };
+  };
+  const led = run(true);
+  assert.ok(led.ahead > 1.5, `put well ahead of it (${led.ahead.toFixed(2)} tiles)`);
+  assert.ok(led.hurt > 0, 'aimed where it is going, the vial bursts on it');
+  assert.equal(run(false).hurt, 0, 'aimed where it was, it has run on out of the burst');
+  // (one standing still, or asleep, is aimed at where it stands)
+  const g = room();
+  const still = dummy(g, 4, 0);
+  assert.deepEqual(placedAim(g, still, 'vialtoss'), { x: still.x, y: still.y });
+});
+
+// The owner, 28 Oct 2026, 20:25: “The golem’s slam is too slow to really plan a good hit”.
+test('its ground pound comes down quickly: its blow under half a second after her whistle (it was 1.1 seconds)', () => {
+  const g = room();
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  use(g, 1, 3, 0);
+  let t = 0;
+  let pounded = false;
+  while (!pounded && t < 2) {
+    pounded = wait(g, DT).some((e) => e.t === 'golemPound');
+    t += DT;
+  }
+  assert.ok(pounded, 'it pounds');
+  assert.ok(t < 0.5, `its blow ${t.toFixed(2)} s after her whistle`);
+  assert.ok(SKILLS.golem.windup + G.pound.lead + G.pound.hit <= 0.75, 'and under three quarters of a second from her hold');
+});
+
+// The owner, 28 Oct 2026, 20:26: “And his normal punch doesn’t really look very good” (its uppercut, off until he says yes).
+test('switched to its uppercut, its blow up close lands at the uppercut’s own moment and still strikes; switched off, its punch as before', () => {
+  assert.equal(GOLEM_LOOK.uppercut, false, 'off until he has seen it and said yes');
+  assert.deepEqual(golemBlow(), { long: G.punch.long, hit: G.punch.hit });
+  GOLEM_LOOK.uppercut = true;
+  try {
+    assert.deepEqual(golemBlow(), G.upper);
+    const g = room();
+    use(g, 1, 3, 0);
+    wait(g, G.arrive + 0.1);
+    const near = dummy(g, 1.5, 1.6);
+    let t = 0;
+    let begun = -1;
+    let landed = -1;
+    while (landed < 0 && t < 3) {
+      const ev = wait(g, DT);
+      t += DT;
+      if (begun < 0 && g.golem!.act === 'punch') begun = t - DT;
+      if (ev.some((e) => e.t === 'golemPunch')) landed = t;
+    }
+    assert.ok(landed > 0 && hurt(near) > 0, 'it strikes');
+    assert.ok(Math.abs(landed - begun - G.upper.hit) < 0.05, `its blow ${(landed - begun).toFixed(2)} s into it`);
+  } finally {
+    GOLEM_LOOK.uppercut = false;
+  }
 });
 
 test('left far behind, her Golem is whistled up beside her again; when she falls, it winds down where it stands and is gone', () => {

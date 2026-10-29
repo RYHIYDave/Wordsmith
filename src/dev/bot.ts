@@ -228,8 +228,10 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     const area = SKILLS[h.skills[1].id];
     const melee = basic.kind === 'melee';
     const sees = lineOfSight(L.open, f.w, f.h, h.x, h.y, target.x, target.y, f.cut ?? null);
-    c.aimX = target.x;
-    c.aimY = target.y;
+    // (her vial put where the enemy is going, as auto aim puts it: placedAim)
+    const tapAt = placedAim(g, target, basic.kind);
+    c.aimX = tapAt.x;
+    c.aimY = tapAt.y;
     // (near enough for the quick attack to get there: a wave fades after a short way)
     const want = melee ? 1.1 + target.r : Math.min(5.5, basic.range * 0.7);
     // (BOSS_INTRO: a boss who waits for his gate to fall is not to be shot at from its doorway: walk in to him)

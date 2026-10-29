@@ -23,6 +23,7 @@
 
 import { MONSTERS, SKILLS, TUNE } from './defs';
 import type { SkillKind } from './defs';
+import { TINKER_TUNE } from './tinkerer';
 import type { Game } from './game';
 import type { Monster } from './state';
 
@@ -165,8 +166,12 @@ export function leadPoint(g: Game, m: Monster, seconds: number): { x: number; y:
  * lock, the test bot): on it, but for a volley, whose arrows are a moment in the air and then
  * rain for a while: that is put where the monster is going, so that it walks into the rain and
  * not out of it. (Version 12.2. A player aiming by hand learns the same thing in two volleys.)
+ * And THE TINKERER'S VIAL TOSS, her vial a moment in her hand and then in the air: put where the
+ * monster will be when it comes down. The owner, 28 Oct 2026, 20:25: "She needs the same auto aim
+ * targeting that the ranger gets on his hold so the vials land where the enemies are going".
  */
 export function placedAim(g: Game, m: Monster, kind: SkillKind): { x: number; y: number } {
-  if (kind !== 'volley') return { x: m.x, y: m.y };
-  return leadPoint(g, m, SKILLS.volley.windup + TUNE.volleyDelay + TUNE.volleyLead);
+  if (kind === 'volley') return leadPoint(g, m, SKILLS.volley.windup + TUNE.volleyDelay + TUNE.volleyLead);
+  if (kind === 'vialtoss') return leadPoint(g, m, SKILLS.vialtoss.windup + TINKER_TUNE.toss.flight);
+  return { x: m.x, y: m.y };
 }

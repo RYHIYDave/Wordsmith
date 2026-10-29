@@ -39,6 +39,15 @@ declare const __TINKERER__: boolean | undefined;
 /** THE TINKERER OFFERED: on, a new hero may be made as her (the class cards). Off until the owner has played her and said yes. */
 export const TINKERER = { on: typeof __TINKERER__ !== 'undefined' && __TINKERER__ === true };
 
+/** A page built to show the Golem's uppercut says so (esbuild's define). */
+declare const __GOLEM_UPPERCUT__: boolean | undefined;
+/**
+ * HER GOLEM'S UPPERCUT in place of its punch (the main chat, at the owner's word of 28 Oct 2026, 20:26: “And his normal
+ * punch doesn’t really look very good”): dev/golem_moves.ts golemUppercut, its fist dragged back along the floor and
+ * scooped up through them. Off until he has seen it and said yes (his rule: pictures first).
+ */
+export const GOLEM_LOOK = { uppercut: typeof __GOLEM_UPPERCUT__ !== 'undefined' && __GOLEM_UPPERCUT__ === true };
+
 /** Is this hero the Tinkerer. */
 export const isTinkerer = (cls: ClassId): boolean => cls === 'tinkerer';
 
@@ -70,10 +79,16 @@ export const TINKER_TUNE = {
     leash: 8,
     /** ITS PUNCH: reach (from its middle to the enemy's edge); the punch's time (GPUNCH.end), its blow landing at GPUNCH.hit; its share of the Golem's hit; the wait after. */
     punch: { reach: 1.7, long: 40 / 30, hit: 17 / 30, share: 0.7, wait: 0.5 },
+    /** ITS UPPERCUT, when it throws that in place of its punch (GOLEM_LOOK): its time (GUPPER.end), its blow landing at GUPPER.hit. */
+    upper: { long: 36 / 30, hit: 15 / 30 },
     /** ITS CANNON: from `near` to `far` away, seen; its time (GCANNON.end), the shot at GCANNON.fire; its share of the Golem's hit; the wait after. */
     cannon: { near: 2.6, far: 8, long: 50 / 30, hit: 15 / 30, share: 0.9, wait: 3.0, speed: 16 },
-    /** ITS GROUND POUND, on her tap and hold: its time (GP.end), the blow at GP.hit (after HOLD.lead, her whistle first); all within the ability's radius. */
-    pound: { lead: 8 / 30, long: 50 / 30, hit: 25 / 30 },
+    /**
+     * ITS GROUND POUND, on her tap and hold: a moment after her whistle (`lead`), its time (GP.end), the blow at GP.hit; all
+     * within the ability's radius. Quicker since his word of 28 Oct, 20:25: “The golem’s slam is too slow to really plan a
+     * good hit” (it was lead 8, long 50, hit 25 frames: its blow 1.1 seconds after her whistle; now 13 frames, 0.43).
+     */
+    pound: { lead: 2 / 30, long: 33 / 30, hit: 11 / 30 },
     /** Whistled out: it drops in beside her in a burst of steam, ready after this long. */
     arrive: 0.6,
     /** Winding down when she falls (GDOWN.end). */
@@ -116,3 +131,9 @@ export const TINKER_TUNE = {
     growth: { near: 0.6, secs: 5, big: 2, strong: 2 },
   },
 };
+
+/** How long the Golem's blow up close takes, and when it lands: its punch's, or its uppercut's (GOLEM_LOOK). */
+export function golemBlow(): { long: number; hit: number } {
+  const G = TINKER_TUNE.golem;
+  return GOLEM_LOOK.uppercut ? G.upper : { long: G.punch.long, hit: G.punch.hit };
+}

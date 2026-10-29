@@ -15,9 +15,15 @@
 // stand.
 
 import { SHOT, gunAim, gunKick } from './golem_gun_fx';
+import { through } from './brawler_fall';
 
-/** Its ground pound through time, in frames (30 a second). */
-export const GP = { rear: 2, raised: 16, hold: 22, slam: 23, hit: 25, rock: 29, settle: 40, end: 50 };
+/**
+ * Its ground pound through time, in frames (30 a second). Quicker since the owner's word to the main chat, 28 Oct 2026,
+ * 20:25: “The golem’s slam is too slow to really plan a good hit”: its fist up in 7 frames (was 14), held 1 (was 6), down
+ * on the floor 11 frames after it begins (was 25); the rest of it as it was, a little shorter. (Its fist up any quicker,
+ * seen from behind, it would turn straight back at speed over its head: its checks, tests/golem_moves.test.ts.)
+ */
+export const GP = { rear: 1, raised: 8, hold: 9, slam: 10, hit: 11, rock: 15, settle: 25, end: 33 };
 /** The strike itself: the hammer coming down, a flash (his rulebook's Movement 9): not judged frame by frame. */
 export const GP_STRIKE: [number, number] = [GP.hold, GP.hit + 1];
 
@@ -156,6 +162,46 @@ export function golemPunch(f: number): { swing: number; fold: number; lean: numb
     lean: track([[0, 0], [GPUNCH.cock, -11], [GPUNCH.hold, -12], [GPUNCH.hit, 12], [GPUNCH.stay, 11], [GPUNCH.back, 0], [GPUNCH.end, 0]], f),
     bob: track([[0, 0], [GPUNCH.cock, 1.6], [GPUNCH.hold, 2], [GPUNCH.hit, -1], [GPUNCH.stay, -1], [GPUNCH.back, 0], [GPUNCH.end, 0]], f),
   };
+}
+
+// ---- ITS UPPERCUT (the main chat, 28 Oct 2026, at the owner's word on the punch above, 20:26: “And his normal punch
+// doesn’t really look very good”). The punch above drives its fist out at whoever is before it; seen as the game shows it,
+// that is mostly toward the eye or away from it, and the fist hardly seems to move. So, A BLOW THAT GOES UP: by his rulebook's
+// Movement 9 (a big wind-up, the strike a flash, a big wind-down), it hunches over and drags its giant fist back along the
+// floor behind it; holds it there, straining; then in a flash SCOOPS it forward along the floor and up through whoever is
+// before it, its boiler body heaving up and back after the blow, the fist flung up high over its head; it hangs there a
+// beat, and brings the fist down before it to the floor again with its weight, rocking on it, and settles. Its fist is put
+// where it is to be each frame (reachFist), through the poses smoothly (`through`, as her whistle is), as its walk is.
+export const GUPPER = { drag: 9, hold: 12, hit: 15, top: 17, stay: 21, down: 25, planted: 28, rock: 31, end: 36 };
+/** The strike itself: the scoop up through them, a flash (his rulebook's Movement 9): not judged frame by frame. */
+export const GUPPER_STRIKE: [number, number] = [GUPPER.hold, GUPPER.top + 1];
+/** Its poses through the uppercut: frame, where its fist's middle is (forward, up), its body's lean and bob. */
+const UPPER_KEYS: [number, number, number, number, number][] = [
+  [0, FI[0], FI[1], 0, 0],
+  [2, 21, 15.6, 1.5, -0.3],
+  [5, 8, 16.5, 4.5, -0.9],
+  [GUPPER.drag, -13, 17, 8, -1.6],
+  [GUPPER.hold, -16, 18.5, 9, -2],
+  [13, 2, 14.5, 6, -1.4],
+  [14, 24, 19, 1, -0.2],
+  [GUPPER.hit, 42, 40, -4, 1],
+  [16, 40, 74, -9, 2.2],
+  [GUPPER.top, 20, 101, -12, 2.8],
+  [GUPPER.stay, 15, 104, -13, 3],
+  [GUPPER.down, 56, 52, -4, 1],
+  [GUPPER.planted, 30, 14.6, 4, -1.2],
+  [GUPPER.rock, 27.5, 15, -1, 0.4],
+  [GUPPER.end, FI[0], FI[1], 0, 0],
+];
+/** Its pose at frame `f` of its uppercut. */
+export function golemUppercut(f: number): { swing: number; fold: number; lean: number; bob: number } {
+  const xs = UPPER_KEYS.map((k) => k[0]);
+  const ch = (i: number): number => through(xs, UPPER_KEYS.map((k) => k[i]), f);
+  // (straining as it holds the fist back)
+  const strain = f > GUPPER.drag && f < GUPPER.hold ? Math.sin(((f - GUPPER.drag) / (GUPPER.hold - GUPPER.drag)) * Math.PI * 2) * 0.8 : 0;
+  const lean = ch(3);
+  const bob = ch(4);
+  return { ...reachFist([ch(1) + strain, ch(2)], lean, bob), lean, bob };
 }
 
 // ---- ITS END: IT WINDS DOWN, AND CRASHES (28 Oct, overnight at his word, “keep working on her and the constructs”; then,

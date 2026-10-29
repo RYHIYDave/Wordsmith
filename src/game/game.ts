@@ -45,7 +45,7 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
-import { TINKER_TUNE } from './tinkerer';
+import { TINKER_TUNE, golemBlow } from './tinkerer';
 import type { Brew, Decoy, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 
@@ -5683,7 +5683,9 @@ export class Game {
     // (GROWTH SERUM: grown, its fist reaches twice as far)
     const reach = G.punch.reach * (g.growT > 0 ? TINKER_TUNE.talents.growth.big : 1);
     if (g.act === 'punch') {
-      if (!g.did && g.actT >= G.punch.hit) {
+      // (its punch, or its uppercut: golemBlow)
+      const blow = golemBlow();
+      if (!g.did && g.actT >= blow.hit) {
         g.did = true;
         const m = this.monsters.find((q) => q.id === g.target && !q.dead);
         if (m && Math.hypot(m.x - g.x, m.y - g.y) <= reach + m.r + 0.6) {
@@ -5694,7 +5696,7 @@ export class Game {
           if (!m.dead) this.throwMonster(m, g.x, g.y, 0.8, 0.15);
         }
       }
-      if (g.actT >= G.punch.long) {
+      if (g.actT >= blow.long) {
         g.punchCd = G.punch.wait;
         this.golemIdle(g);
       }
@@ -8258,7 +8260,7 @@ export class Game {
       if (m.burnT > 0) m.burnT -= dt;
       if (m.chillT > 0) m.chillT -= dt;
       if (m.freezeImmune > 0) m.freezeImmune -= dt;
-      if (m.markT > 0) m.markT -= dt;
+      if (m.markT > 0) m.markT = Math.max(0, m.markT - dt);
       if (m.shockT > 0) m.shockT -= dt;
       if (m.staggerCd > 0) m.staggerCd -= dt;
       // (THE SKILL TREES REMADE: Honed Edge's bleeding runs out; thrown across the floor by a talent, frozen or not)

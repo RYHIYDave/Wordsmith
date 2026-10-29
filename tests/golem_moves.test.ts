@@ -15,7 +15,7 @@ import type { V3 } from '../src/art/skeleton';
 import { LAST, primDist } from '../src/dev/sculpt';
 import type { Sculpt } from '../src/dev/sculpt';
 import { GOLEM_FIST, GOLEM_GUN, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../src/dev/sculpt_golem';
-import { GCANNON, GCANNON_STRIKE, GDOWN, GDOWN_STRIKE, GP, GPUNCH, GPUNCH_STRIKE, GP_STRIKE, GWALK, golemCannon, golemDown, golemPunch, golemWalk, groundPound } from '../src/dev/golem_moves';
+import { GCANNON, GCANNON_STRIKE, GDOWN, GDOWN_STRIKE, GP, GPUNCH, GPUNCH_STRIKE, GP_STRIKE, GUPPER, GUPPER_STRIKE, GWALK, golemCannon, golemDown, golemPunch, golemUppercut, golemWalk, groundPound } from '../src/dev/golem_moves';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { paintWithoutCanvas } from './helpers';
 
@@ -213,6 +213,49 @@ test('the Golem’s punch: every frame crisp, the friend’s edge, no pixel alon
       if (b > 4 && b > 2.2 * Math.max(a, c)) found.push(`its fist leaps ${b.toFixed(1)} at frame ${i} (${view})`);
       if (a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) found.push(`its fist stalls at frame ${i} (${view})`);
     }
+  }
+  assert.deepEqual([...new Set(found)], []);
+});
+
+// ITS UPPERCUT (dev/golem_moves.ts golemUppercut, the main chat's, at his word on the punch, 28 Oct): every frame, as its punch;
+// and its fist slick but for the scoop itself, nor turning straight back at speed.
+test('the Golem’s uppercut: every frame crisp, the friend’s edge, no pixel alone, nothing pink, nothing cut off; nothing sunk, on its feet; its giant arm clear of the rest of it: from in front and behind, turned eight ways; and slick but for the scoop itself', () => {
+  const found: string[] = [];
+  const fist: V3[] = [];
+  try {
+    for (const view of ['front', 'back'] as const) {
+      for (const turn of TURNS) {
+        for (let f = 0; f <= GUPPER.end; f++) {
+          Object.assign(GOLEM_POSE, golemUppercut(f));
+          const d = sculptGolemBuild(view, GOLEM_PICK.build, turn, -14, true, GOLEM_GUN.gun);
+          const at = `${view}, turned ${turn}, frame ${f}`;
+          for (const x of pictureFindings(d.px)) found.push(`${at}: ${x}`);
+          const sc = LAST.sc as Sculpt;
+          for (const x of bodyFindings(sc, true)) found.push(`${at}: ${x}`);
+          if (turn === 0) {
+            for (const x of armThrough(sc)) found.push(`${at}: ${x}`);
+            if (view === 'front') fist.push([...GOLEM_FIST.c] as V3);
+          }
+        }
+      }
+    }
+  } finally {
+    Object.assign(GOLEM_POSE, { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0 });
+  }
+  for (const view of ['front', 'back'] as const) {
+    const xy = fist.map((p) => project(p, view));
+    const st = xy.slice(1).map((p, i) => [p[0] - xy[i][0], p[1] - xy[i][1]] as const);
+    const sp = st.map(([x, y]) => Math.hypot(x, y));
+    for (let i = 1; i < sp.length - 1; i++) {
+      if (i >= GUPPER_STRIKE[0] - 1 && i <= GUPPER_STRIKE[1] + 1) continue;
+      const a = sp[i - 1], b = sp[i], c = sp[i + 1];
+      if (b > 4 && b > 2.2 * Math.max(a, c)) found.push(`its fist leaps ${b.toFixed(1)} at frame ${i} (${view})`);
+      if (a > 2.5 && c > 2.5 && b < 0.6 * Math.min(a, c)) found.push(`its fist stalls at frame ${i} (${view})`);
+      const sa = st[i - 1], sb = st[i];
+      if ((sa[0] * sb[0] + sa[1] * sb[1]) / (Math.hypot(...sa) * Math.hypot(...sb) || 1) < -0.5 && a > 3 && b > 3) found.push(`its fist turns straight back at speed at frame ${i} (${view})`);
+    }
+    if (sp[0] > 3) found.push(`its fist starts at speed (${view})`);
+    if (sp[sp.length - 1] > 3) found.push(`its fist stops dead (${view})`);
   }
   assert.deepEqual([...new Set(found)], []);
 });

@@ -914,7 +914,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const vx = v.x / l;
       const vy = v.y / l;
       const m = coneTarget(g, vx, vy, 10);
-      quickAt = m ? { x: m.x, y: m.y } : { x: h.x + vx * 4, y: h.y + vy * 4 };
+      quickAt = m ? placedAim(g, m, SKILLS[h.skills[0].id].kind) : { x: h.x + vx * 4, y: h.y + vy * 4 };
       slowAt = m ? placedAim(g, m, slowDef.kind) : { x: h.x + vx * reach, y: h.y + vy * reach };
       renderer.lockId = m ? m.id : null;
       // (he turns to where it points, walking or not)
@@ -922,7 +922,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     } else {
       const aims = autoTargets(g, lock.update(g, dt), fought);
       if (aims.quick) {
-        quickAt = { x: aims.quick.x, y: aims.quick.y };
+        quickAt = placedAim(g, aims.quick, SKILLS[h.skills[0].id].kind);
         renderer.lockId = aims.quick.id;
       }
       if (aims.slow) slowAt = placedAim(g, aims.slow, slowDef.kind);
@@ -1149,7 +1149,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
         if (quick.uses > o.uses || o.t > 3 || (o.id !== null && !target)) order = null;
         else {
-          const a = target ?? { x: h.x + h.fx * 3, y: h.y + h.fy * 3 };
+          // (her vial is put where the enemy is going, as the ranger's volley: see placedAim)
+          const a = target ? placedAim(g, target, SKILLS[quick.id].kind) : { x: h.x + h.fx * 3, y: h.y + h.fy * 3 };
           c.aimX = a.x;
           c.aimY = a.y;
           c.fire = !(melee && target && moving && !g.quickReaches(target));
@@ -1230,6 +1231,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           if (ahead) {
             c.aimX = ahead.x;
             c.aimY = ahead.y;
+          }
+          // (her vial is put where the enemy is going, as the ranger's volley: see placedAim)
+          const at = target ?? ahead?.m ?? null;
+          if (at) {
+            const p = placedAim(g, at, SKILLS[h.skills[0].id].kind);
+            c.aimX = p.x;
+            c.aimY = p.y;
           }
           c.fire = true;
         }

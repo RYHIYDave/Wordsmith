@@ -21,7 +21,6 @@ import { through } from './brawler_fall';
 import { dot } from './brawler_fx';
 import { steadied } from './brawler_punches';
 import { handAt, hands } from './tinkerer_fall';
-import { GP } from './golem_moves';
 
 const B = TINK_B;
 const S0 = TSTANCE;
@@ -33,12 +32,13 @@ export const HOLD = {
   whistle: 12,
   whistled: 21,
   crouch: 30,
-  /** Its blow lands (its GP.hit), and she springs. */
-  blow: 8 + GP.hit,
+  /** Its blow lands, and she springs. (Was 8 + GP.hit, its pound's own blow, 25 frames in; the pound quicker since 28 Oct,
+   * 20:25, her move keeps its own frames, and the game shows her springing as its blow lands: art/tinkerer_art.ts.) */
+  blow: 33,
   apex: 37,
   landed: 41,
   shoulder: 52,
-  end: 8 + GP.end,
+  end: 58,
 };
 
 /** The way the wrench points from her fist (her own space): at them; and brandished up as she cheers. */
