@@ -153,8 +153,8 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     // tests/bookwardens.test.ts; and floor 16's gardeners and grooms, art/palace_hands*.ts, its palace guard,
     // art/palace_guard*.ts, its swans, art/garden_swans.ts, and its boss, the Princess and her steed, art/princess*.ts and
     // art/spectral_steed.ts: tests/palace_hands.test.ts, tests/palace_guard.test.ts, tests/garden_swans.test.ts and
-    // tests/princess.test.ts; and the High City's Silent Order, art/silent_order*.ts: tests/silent_order.test.ts, princess.test.ts; and floor 17's boss, the Prince, art/prince*.ts: tests/prince.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|silent_order|prince/.test(f)) continue;
+    // tests/princess.test.ts; and the High City's Silent Order, art/silent_order*.ts: tests/silent_order.test.ts, princess.test.ts; and floor 17's boss, the Prince, art/prince*.ts: tests/prince.test.ts, princess.test.ts; and floor 17's footmen, art/masque_footmen*.ts: tests/masque_footmen.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|silent_order|prince|masque_footmen/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
@@ -350,9 +350,9 @@ test('12. nothing of the game imports the chains or the checks either', () => {
     // and floor 14's boss, the Physician: tests/physician.test.ts; and its Hushed patients: tests/patients.test.ts; and its orderlies:
     // tests/orderlies.test.ts; and floor 15's boss, the Censor: tests/censor.test.ts; and its inklings: tests/inklings.test.ts;
     // and its Bookwardens: tests/bookwardens.test.ts; and floor 16's mobs and its boss, the Princess: tests/palace_hands.test.ts,
-    // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts; and the Silent Order:, princess.test.ts; and floor 17's boss, the Prince:
-    // tests/silent_order.test.ts, prince.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|silent_order|prince/.test(f)) continue;
+    // tests/palace_guard.test.ts, tests/garden_swans.test.ts and tests/princess.test.ts; and the Silent Order:, princess.test.ts; and floor 17's boss, the Prince:, princess.test.ts; and floor 17's footmen:
+    // tests/silent_order.test.ts, prince.test.ts, masque_footmen.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient|orderl|censor|inkling|bookwarden|palace_hands|palace_guard|princess|garden_swans|spectral_steed|silent_order|prince|masque_footmen/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
