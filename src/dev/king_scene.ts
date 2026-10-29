@@ -67,7 +67,7 @@ export function hallFloor(w: number, h: number, cx: number, cy: number, hangings
       const own = hash(col, row, 7801);
       let tone = 2 + Math.floor(own * 2.4);
       // (lit from the upper left: the far, left of the hall a step lighter)
-      if (x + y < -6 * T) tone++;
+      if ((col * 2 - (row % 2)) * T + (row + 0.5) * T < -6 * T) tone++;
       // (worn: pale patches; cracks across some flags)
       if (hash(Math.floor(fx * 9), Math.floor(fy * 5) + col * 31, 7802 + row) < 0.05) tone = Math.max(0, tone - 1);
       const crack = own > 0.9 && fx > 0.2 + 0.3 * own && fx < 0.75 && Math.abs(fy - 0.3 - 0.4 * fx - 0.08 * Math.sin(fx * 31 + own * 20)) < 0.025;
@@ -289,6 +289,13 @@ export function gameSizePicture(t = 0): Px {
   const [bx, by] = at(4.5, -4.5);
   shadow(px, bx, by, 22);
   lay(px, frameOf(KING_ALONE, 'stand', t, 'back'), bx, by);
+  // (the Hush at his left, as its own figure: from behind, his left is up and to the left of him on the picture)
+  const hx = bx + 0.8165 * (HUSH_BESIDE[0] - HUSH_BESIDE[1]);
+  const hy = by + 0.408 * (-HUSH_BESIDE[0] - HUSH_BESIDE[1]);
+  shadow(px, hx, hy, 10);
+  lay(px, frameOf(HUSH, 'stand', t, 'back'), hx, hy);
+  // (and so the King, nearer, over it)
+  lay(px, frameOf(KING_ALONE, 'stand', t, 'back'), bx, by);
   return px;
 }
 /** HIS LAST PHASE: the Hush climbed off him, standing at his left, from in front and behind, the knight for size, three times as big. */
@@ -331,7 +338,7 @@ export function hushPicture(t = 0): Px {
 }
 /** THE CLOCKWORK SONGBIRD: broken; winding itself up; singing; from in front and behind, six times as big. */
 export function birdPicture(): Px {
-  const states: [BirdState, number][] = [['broken', 0], ['winding', 0.5], ['winding', 1.1], ['winding', 1.6], ['singing', 0.1], ['singing', 0.45]];
+  const states: [BirdState, number][] = [['broken', 0], ['winding', 1.1], ['singing', 0.45]];
   const K = 4;
   const cw = BIRD_CANVAS.w * K;
   const W = cw * states.length;
@@ -345,3 +352,39 @@ export function birdPicture(): Px {
   return px;
 }
 void FX_CANVAS;
+
+/** HIS BLOWS ACROSS THE HALL: the sweep's wave, the Decree's knights, the Crown's ring, the faces from the curtains, each at a moment, him where it begins, the knight before him (1000 wide). */
+export function blowsPicture(): Px {
+  const W = FX_CANVAS.w;
+  const H = 470;
+  const top = 70;
+  const panels: [string, number, string][] = [['attack', 0.3, 'sweep'], ['decree', 3.2, 'decree'], ['crown', 0.4, 'crown'], ['curtains', 0.32, 'curtains']];
+  const px = new Px(W, H * panels.length);
+  panels.forEach(([move, since, fx], i) => {
+    const cx = FX_CANVAS.ax;
+    const cy = FX_CANVAS.ay - top;
+    // (the hall's middle a little before him, so that the most of what his blow covers is in the picture)
+    const floor = hallFloor(W, H, cx + 70, cy + 40, true);
+    lay(px, laidOf(floor, 0, 0), 0, H * i);
+    const clip = (X: number, Y: number): boolean => {
+      const [x, y] = floorAt(X + 0.5, Y - H * i + 0.5, cx + 70, cy + 40);
+      return arenaOut(x, y) <= 1.0;
+    };
+    const hit = move === 'attack' ? KING.hit : (KING.more?.[move]?.motion.hit ?? 0);
+    const [nx, ny] = [cx + 230, cy + H * i + 115];
+    // (the faces come out of the hall's hangings, aimed at the knight: both as his own, in tiles from him)
+    const [kx0, ky0] = floorAt(cx, cy, cx + 70, cy + 40);
+    const [tx, ty] = floorAt(nx, ny - H * i, cx + 70, cy + 40);
+    const hangs = hangingsAt(cx + 70, cy + 40).map(([, , hx, hy]) => [(hx - kx0) / TILE3, (hy - ky0) / TILE3] as [number, number]);
+    const from = [hangs[0], hangs[Math.floor(hangs.length / 2)], hangs[hangs.length - 1]];
+    const f = fx === 'sweep' ? sweepPainted(since) : fx === 'crown' ? crownPainted(since) : fx === 'decree' ? decreePainted(since, 'front', { from: -6, to: 12, half: 11 }) : curtainsPainted(since, 'front', [(tx - kx0) / TILE3, (ty - ky0) / TILE3], from);
+    if (fx !== 'decree' && fx !== 'curtains') lay(px, laidOf(f.px, FX_CANVAS.ax, FX_CANVAS.ay), cx, cy + H * i, 1, clip);
+    shadow(px, cx, cy + H * i, 24);
+    lay(px, frameOf(KING, move, Math.min(hit + since, move === 'decree' ? KING.more?.decree?.motion.keys.at(-1)?.at ?? 0 : 9), 'front'), cx, cy + H * i);
+    shadow(px, nx, ny, 9);
+    lay(px, knight('back'), nx, ny, 1, undefined, true);
+    if (fx === 'decree' || fx === 'curtains') lay(px, laidOf(f.px, FX_CANVAS.ax, FX_CANVAS.ay), cx, cy + H * i, 1, fx === 'decree' ? clip : undefined);
+  });
+  return px;
+}
+import { crownPainted, curtainsPainted, decreePainted, sweepPainted } from '../art/king_fx';

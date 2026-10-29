@@ -10,7 +10,7 @@ import { canvasOf } from '../src/art/new_mobs3';
 import { HUSH, KING, KING_ALONE } from '../src/art/king_moves';
 import { BIRD_CANVAS, FX_CANVAS, birdPainted, crownPainted, curtainsPainted, decreePainted, sweepPainted } from '../src/art/king_fx';
 import type { BirdState } from '../src/art/king_fx';
-import { birdPicture, frameOf, gameSizePicture, hallFloor, hushPicture, lay, laidOf, shadow, sheetPicture } from '../src/dev/king_scene';
+import { birdPicture, blowsPicture, frameOf, gameSizePicture, hallFloor, hushPicture, lay, laidOf, shadow, sheetPicture } from '../src/dev/king_scene';
 
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
   return this;
@@ -77,7 +77,7 @@ void mkdirSync;
 if (mode === 'sheet') {
   mkdirSync(a1, { recursive: true });
   const t = Number(a2) || 0;
-  for (const [name, make] of [['sheet', () => sheetPicture(t)], ['game_size', () => gameSizePicture(t)], ['hush', () => hushPicture(t)], ['songbird', () => birdPicture()]] as const) {
+  for (const [name, make] of [['sheet', () => sheetPicture(t)], ['game_size', () => gameSizePicture(t)], ['hush', () => hushPicture(t)], ['songbird', () => birdPicture()], ['blows', () => blowsPicture()]] as const) {
     writeFileSync(`${a1}/raw_${name}.png`, png(make()));
     console.log('wrote', name);
   }

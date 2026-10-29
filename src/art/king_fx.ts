@@ -510,7 +510,9 @@ export function curtainsPainted(t: number, view: GameView = 'front', at: readonl
 // THE CLOCKWORK SONGBIRD
 
 /** Its own little picture; and its three: lying broken; winding itself up (`wind` s); singing (going round every `song` s). */
-export const BIRD_CANVAS = { w: 72, h: 64, ax: 36, ay: 46 } as const;
+export const BIRD_CANVAS = { w: 96, h: 84, ax: 46, ay: 62 } as const;
+/** How big it is: a little bigger than a real one, so that it reads (its body about a sixth of the knight's height long). */
+const BS = 1.5;
 export const BIRD = { wind: 1.8, song: 1.2 } as const;
 export type BirdState = 'broken' | 'winding' | 'singing';
 const SILVER: Ramp = ['#3a3c4a', '#626474', '#8e90a2', '#bcbecc', '#e2e4ec'];
@@ -547,85 +549,91 @@ export function birdPainted(state: BirdState, t: number, view: GameView = 'front
   const P = birdPose(state, t);
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const K = BS;
   // its own ways: forward, left, up; laid over on its right side as far as `over`
   const roll = -82 * P.over * D;
   const f: V3 = [1, 0, 0];
   const l: V3 = [0, Math.cos(roll), Math.sin(roll)];
   const u: V3 = [0, -Math.sin(roll), Math.cos(roll)];
-  const at = (x: number, y: number, z: number): V3 => add([0, 0, 3.4 * (1 - P.over) + 2.4 * P.over + P.hop], add(mul(f, x), add(mul(l, y), mul(u, z))));
-  // its legs and feet, on the stones (tucked as it lies)
+  const at = (x: number, y: number, z: number): V3 => mul(add([0, 0, 3.0 * (1 - P.over) + 2.6 * P.over + P.hop], add(mul(f, x), add(mul(l, y), mul(u, z)))), K);
+  // its legs and its feet gripping the stones (tucked under it as it lies)
   if (P.over < 0.5) {
     for (const k of [-1, 1]) {
-      put('legs', 'legs', { k: 'rod', a: at(0.5, k * 1.2, 0.5), b: [0.8, k * 1.4, P.hop + 0.3], ra: 0.45, rb: 0.4, ramp: GOLD });
-      put('legs', 'legs', { k: 'rod', a: [0.8, k * 1.4, P.hop + 0.3], b: [2.6, k * 1.6, P.hop + 0.3], ra: 0.35, rb: 0.3, ramp: GOLD });
+      const foot: V3 = mul([0.9, k * 1.1, 0.25 + P.hop], K);
+      put('legs', 'legs', { k: 'rod', a: at(0.3, k * 1.0, 1.2), b: foot, ra: 0.5, rb: 0.45, ramp: GOLD });
+      for (const d of [-25, 0, 25]) put('legs', 'legs', { k: 'rod', a: foot, b: add(foot, mul([Math.cos(d * D), Math.sin(d * D), 0], 2.2 * K)), ra: 0.4, rb: 0.3, ramp: GOLD });
     }
   }
-  // its body: a plump teardrop of gold, its breast set with jewels
-  const body = at(0, 0, 3.4);
+  // its body: a plump breast of gold, set with rubies and sapphires, its back plated
+  const body = at(0, 0, 3.6);
   put('body', 'body', {
-    k: 'ball', c: body, ax: [mul(f, 4.4), mul(l, 2.8), mul(u, 2.9 + 0.3 * P.throat)],
+    k: 'ball', c: body, ax: [mul(f, 3.9 * K), mul(l, 2.7 * K), mul(u, (3.0 + 0.3 * P.throat) * K)],
     skin: (q, tone) => {
-      if (q[0] > 0.45 && q[2] < 0.2 && hash(Math.round(q[1] * 6), Math.round(q[2] * 6), 7841) < 0.3) return hash(Math.round(q[1] * 6), 1, 7842) < 0.5 ? RUBY : SAPPHIRE[3];
-      if (Math.abs(fr(q[0] * 3 + q[2] * 2) - 0.5) < 0.08) return GOLD[Math.max(0, tone - 1)];
+      if (q[0] > 0.35 && q[2] < 0.3 && hash(Math.round(q[1] * 5), Math.round(q[2] * 5), 7841) < 0.32) return hash(Math.round(q[1] * 5), Math.round(q[2] * 5), 7842) < 0.5 ? RUBY : SAPPHIRE[3];
+      if (q[2] > 0.2 && Math.abs(fr(q[0] * 2.5 + q[2]) - 0.5) < 0.1) return GOLD[Math.max(1, tone - 1)];
       return GOLD[Math.min(4, tone + 1)];
     },
   });
-  // its head and beak; a diamond eye
-  const hd = add(at(4.2, 0, 5.6), mul(u, 0.4));
-  const hu = norm(add(mul(f, Math.sin(P.head * D)), mul(u, Math.cos(P.head * D))));
-  const hf = norm(sub(add(mul(f, Math.cos(P.head * D)), mul(u, -Math.sin(P.head * D))), [0, 0, 0]));
-  put('head', 'head', { k: 'ball', c: hd, ax: [mul(hf, 2.3), mul(l, 2.0), mul(hu, 2.2)], skin: SILVER });
-  const tip = add(hd, mul(hf, 5));
-  put('head', 'beak', { k: 'rod', a: add(hd, add(mul(hf, 1.8), mul(hu, 0.4 + 0.5 * P.beak))), b: add(tip, mul(hu, 0.4 + 1.2 * P.beak)), ra: 0.7, rb: 0.2, ramp: GOLD });
-  put('head', 'beak', { k: 'rod', a: add(hd, add(mul(hf, 1.8), mul(hu, -0.2))), b: add(tip, mul(hu, -0.4 - 0.6 * P.beak)), ra: 0.6, rb: 0.2, ramp: GOLD });
-  for (const k of [-1, 1]) put('head', 'eye', { k: 'dot', p: add(hd, add(mul(hf, 1.3), add(mul(l, k * 1.75), mul(hu, 0.5)))), c: DIAMOND, facing: mul(l, k) });
-  // its wings: plates of silver feathers edged in gold, half spread or folded
+  // its head: silver, a diamond eye either side, a long fine gold beak that opens as it sings
+  const ha = P.head * D;
+  const hu = norm(add(mul(f, Math.sin(ha) * -0.2), mul(u, 1)));
+  const hf = norm(add(mul(f, Math.cos(ha)), mul(u, Math.sin(ha))));
+  const hd = at(3.6, 0, 6.0);
+  put('head', 'head', { k: 'ball', c: hd, ax: [mul(hf, 2.3 * K), mul(l, 2.0 * K), mul(hu, 2.2 * K)], skin: (q, tone) => (q[2] < -0.3 && q[0] > 0 ? SILVER[Math.min(4, tone + 1)] : SILVER[tone]) });
+  put('head', 'head', { k: 'rod', a: lerp3(body, hd, 0.4), b: hd, ra: 1.8 * K, rb: 1.5 * K, ramp: SILVER });
+  const tip = add(hd, mul(hf, 5.2 * K));
+  const open = 0.15 + 1.1 * P.beak;
+  put('head', 'beak', { k: 'rod', a: add(hd, add(mul(hf, 1.9 * K), mul(hu, 0.3 * K))), b: add(tip, mul(hu, open * 0.6 * K)), ra: 0.6 * K, rb: 0.15 * K, ramp: GOLD });
+  put('head', 'beak', { k: 'rod', a: add(hd, add(mul(hf, 1.9 * K), mul(hu, -0.3 * K))), b: add(tip, mul(hu, -open * 0.5 * K)), ra: 0.5 * K, rb: 0.15 * K, ramp: GOLD });
+  for (const k of [-1, 1]) put('head', 'eye', { k: 'dot', p: add(hd, add(mul(hf, 1.1 * K), add(mul(l, k * 1.85 * K), mul(hu, 0.5 * K)))), c: DIAMOND, facing: mul(l, k) });
+  // its wings: silver feathers edged in gold, folded along its sides or half spread
   for (const k of [-1, 1]) {
-    const root = at(0.4, k * 2.2, 4.4);
-    const out = norm(add(mul(f, -0.7), add(mul(l, k * (0.3 + 0.9 * P.wings)), mul(u, 0.2 + 0.6 * P.wings))));
+    const root = at(0.6, k * 2.3, 4.6);
+    const out = norm(add(mul(f, -0.75), add(mul(l, k * (0.25 + 0.9 * P.wings)), mul(u, 0.15 + 0.6 * P.wings))));
     put('wings', 'wings', {
-      k: 'panel', c: add(root, mul(out, 3.2)), u: mul(out, 3.6), v: mul(norm(cross(out, mul(l, k))), 2.0),
+      k: 'panel', c: add(root, mul(out, 3.4 * K)), u: mul(out, 3.8 * K), v: mul(norm(cross(out, mul(l, k))), 2.0 * K),
       skin: (a, b, front, tone) => {
-        const x = (a + 3.6) / 7.2;
-        const y = b / 2.0;
-        if (Math.abs(y) > 1 - 0.6 * x * x) return null;
-        if (fr(x * 4) < 0.15) return GOLD[3];
+        const x = (a / K + 3.8) / 7.6;
+        const y = b / (2.0 * K);
+        if (Math.abs(y) > 1 - 0.55 * x * x || (x > 0.55 && fr(x * 6) < 0.25 && y < -0.2)) return null;
+        if (fr(x * 4) < 0.14) return GOLD[3];
         return SILVER[Math.max(1, Math.min(4, front ? tone : tone - 1))];
       },
     });
   }
-  // its tail, fanned
+  // its tail: long gold and silver feathers, fanned
   for (let i = -2; i <= 2; i++) {
-    const a = (i * (8 + 14 * P.tail)) * D;
-    const dir = norm(add(mul(f, -Math.cos(a)), add(mul(l, Math.sin(a)), mul(u, 0.3))));
-    put('tail', 'tail', { k: 'rod', a: at(-3.2, 0, 3.6), b: add(at(-3.2, 0, 3.6), mul(dir, 5.4)), ra: 0.7, rb: 0.9, ramp: i % 2 ? GOLD : SILVER });
+    const a = i * (7 + 12 * P.tail) * D;
+    const dir = norm(add(mul(f, -Math.cos(a)), add(mul(l, Math.sin(a)), mul(u, 0.35))));
+    const root = at(-3.0, 0, 3.8);
+    put('tail', 'tail', { k: 'rod', a: root, b: add(root, mul(dir, 6.6 * K)), ra: 0.6 * K, rb: 0.95 * K, ramp: i % 2 ? GOLD : SILVER });
   }
   // its winding key in its back, turning
   const kb = at(-0.6, 0, 6.2);
-  const kt = add(kb, mul(u, 2.6));
-  put('key', 'key', { k: 'rod', a: kb, b: kt, ra: 0.4, rb: 0.4, ramp: SILVER });
+  const kt = add(kb, mul(u, 2.4 * K));
+  put('key', 'key', { k: 'rod', a: kb, b: kt, ra: 0.45 * K, rb: 0.45 * K, ramp: SILVER });
   const ka = P.key * D;
   const kw = add(mul(f, Math.cos(ka)), mul(l, Math.sin(ka)));
-  for (const k of [-1, 1]) put('key', 'key', { k: 'ball', c: add(kt, add(mul(kw, k * 1.3), mul(u, 0.6))), ax: [mul(kw, 1.0), mul(norm(cross(u, kw)), 0.35), mul(u, 0.9)], skin: GOLD });
+  for (const k of [-1, 1]) put('key', 'key', { k: 'ball', c: add(kt, add(mul(kw, k * 1.2 * K), mul(u, 0.5 * K))), ax: [mul(kw, 1.0 * K), mul(norm(cross(u, kw)), 0.35 * K), mul(u, 0.85 * K)], skin: GOLD });
   // its spring, sprung out of its breast as it lies broken (a coil of silver wire), coiling back in as it winds
   if (P.spring > 0.02) {
-    const base = at(2.2, -1.5, 2.2);
+    const base = at(2.0, -1.4, 2.4);
     let prev: V3 | null = null;
-    for (let i = 0; i <= 18; i++) {
-      const k = i / 18;
-      const a = k * TAU * 3;
-      const p = add(base, add(mul(f, 4 * k * P.spring), add(mul(l, (-1.4 - 2.4 * k * P.spring) + Math.cos(a) * 1.0), mul(u, Math.sin(a) * 1.0))));
-      if (prev) put('spring', 'spring', { k: 'rod', a: prev, b: p, ra: 0.3, rb: 0.3, ramp: SILVER });
+    for (let i = 0; i <= 24; i++) {
+      const k = i / 24;
+      const a = k * TAU * 3.5;
+      const p = add(base, mul(add(mul(f, 4.5 * k * P.spring), add(mul(l, (-1.2 - 2.6 * k * P.spring) + Math.cos(a) * 1.0), mul(u, Math.sin(a) * 1.0))), K));
+      if (prev) put('spring', 'spring', { k: 'rod', a: prev, b: p, ra: 0.32, rb: 0.32, ramp: SILVER });
       prev = p;
     }
   }
   paintBits(st, bits, body);
   const px = st.whole(null);
-  // ITS SONG: little notes of silver light going up from its open beak and drifting away (no glow: only grains)
+  // ITS SONG: little notes of silver going up from its open beak and drifting away (grains: no glow)
   if (state === 'singing') {
-    for (let i = 0; i < 10; i++) {
-      const life = fr(t / BIRD.song * 1.5 + i / 10);
-      const p = add(tip, [life * 6 + Math.sin(life * 9 + i) * 2, Math.cos(life * 7 + i) * 3, 2 + life * 18]);
+    for (let i = 0; i < 12; i++) {
+      const life = fr((t / BIRD.song) * 1.5 + i / 12);
+      const p = add(tip, [life * 8 + Math.sin(life * 9 + i) * 3, Math.cos(life * 7 + i) * 4, 2 + life * 24]);
       const [x, y] = st.at(p);
       if (life < 0.85) lay(px, x, y, life < 0.3 ? DIAMOND : life < 0.6 ? SILVER[3] : SILVER[2], i % 3 === 0 && life < 0.5 ? 2 : 1);
     }

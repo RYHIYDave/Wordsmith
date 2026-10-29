@@ -776,7 +776,7 @@ export const HUSH_REST: Bones = {
   ...standing(HUSH_BODY),
   pz: HUSH_HOVER, pitch: 3, bend: 9, faceUp: 2, faceTurn: 0, faceTilt: 4,
   lfx: 0, lfy: 0, lfz: HUSH_HOVER, rfx: 0, rfy: 0, rfz: HUSH_HOVER, lk: 10, rk: -10,
-  lhIn: 0, lhx: 10, lhy: 6, lhz: -44, le: -16, rhIn: 0, rhx: 10, rhy: -6, rhz: -44, re: 16,
+  lhIn: 0, lhx: 9, lhy: 5, lhz: -51, le: -8, rhIn: 0, rhx: 9, rhy: -5, rhz: -51, re: 8,
 } as Bones;
 
 const HUSH_FOG = new WeakMap<Moment, [V3, string, number][]>();
