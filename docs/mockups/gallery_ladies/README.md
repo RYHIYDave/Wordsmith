@@ -141,3 +141,9 @@ without making a GIF of them.
     beam in her own picture on the blow's frame, and none before it or after her move.
 11. His sizes and speeds: the glide 3.2 tiles a second; the dart 2.5 tiles, nine tenths of it in under half a second; the
     beam 4.5 tiles long and 2.5 wide, its light on the floor reaching that far.
+
+## His word on the pictures
+
+The sheet, the crowd and the film (`ladies_sheet.png`, `ladies_crowd.png`, `ladies_film.mp4`), asked “Floor 18's
+ladies-in-waiting (ladies_sheet.png, ladies_crowd.png and the film): are these right? With them, floor 18 is complete.”:
+“Yes, that's them (Recommended)”.
