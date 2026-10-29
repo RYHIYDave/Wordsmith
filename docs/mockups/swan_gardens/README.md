@@ -57,6 +57,8 @@ rose, swan white, deep hedge green"; its boss the Princess, on the Swan Pavilion
   front and back, its edges piped white; the royal crest (an original white swan, wings raised) on its breast and back;
   sleeves and breeches striped wine and white; brighter steel, a fuller plume; and every round thing they wear built
   about its own limb so that it cannot fold flat (and a check for it).
+- The new guard (before and now, and the film), asked "is this your palace guard?": “Yes, that's the guard
+  (Recommended)”, offered as: that finishes the garden's enemies; next, the Princess, the boss of the Swan Pavilion.
 
 ## The first look (src/dev/garden_paint.ts)
 
