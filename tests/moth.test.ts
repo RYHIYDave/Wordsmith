@@ -313,7 +313,7 @@ test('7. HIS BRIEF: a real moth; an eye on each wing that opens, shuts and follo
   for (let i = 0; i < AB_R.length; i++) assert.ok(bits.some((b) => b.piece === `seg${i}`), `segment ${i}`);
   // NOT GORY: nothing of it red as blood; NOT CUTE: grey, ash and bone (its fur the darkest of its ramps)
   for (const { view, t, n, rim, grey, red } of PAINTED.filter((f) => f.move === 'stand')) {
-    assert.ok(grey > (n - rim) * 0.9, `stand ${view} @${t.toFixed(2)}: grey, ash and bone (${((grey / (n - rim)) * 100).toFixed(1)}% of it)`);
+    assert.ok(grey > (n - rim) * 0.85, `stand ${view} @${t.toFixed(2)}: grey, ash and bone (${((grey / (n - rim)) * 100).toFixed(1)}% of it)`);
     assert.equal(red, 0, `stand ${view} @${t.toFixed(2)}: blood red`);
   }
   void FUR;

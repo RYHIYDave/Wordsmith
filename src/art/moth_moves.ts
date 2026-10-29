@@ -367,17 +367,17 @@ function perchReelPlan(perch0: P): Plan {
 /** Its death: struck; it screams (`scream`); the words pour out (`words`); it falls onto the book (`fall`); it crumbles (`crumble`). */
 export const MOTH_DIES = { long: 4.8, scream: [0.45, 1.75] as const, words: [0.7, 3.4] as const, fall: [1.75, 2.9] as const, crumble: [2.3, 4.5] as const };
 function diesPlan(perch0: P): Plan {
-  const SCREAM: P = { ...PERCH, pitch: 54, pz: PERCH_PZ + 20, wEl: 80, wAz: -4, wRoll: 10, pEl: -46, pAz: 1, draw: 1.05, faceUp: 10, gale: 0.55 };
+  const SCREAM: P = { ...PERCH, pitch: 62, pz: PERCH_PZ + 22, wEl: 80, wAz: -4, wRoll: 10, pEl: -46, pAz: 1, draw: 1.05, faceUp: 10, gale: 0.55 };
   const SPENT: P = { ...PERCH, pitch: 78, pz: PERCH_PZ - 20, wEl: -13, wAz: 8, wRoll: -6, pEl: 0, pAz: 0.2, draw: 0, out: 1, gale: 1 };
   return {
     long: MOTH_DIES.long,
     keyFps: 60,
     keys: [
       [0, perch0],
-      [0.16, { ...PERCH, wEl: 40, pitch: 66, pz: PERCH_PZ + 6, pEl: -14, draw: 0.8, gale: 0.85 }],
+      [0.16, { ...PERCH, wEl: 40, pitch: 68, pz: PERCH_PZ + 6, pEl: -14, draw: 0.8, gale: 0.85 }],
       [0.6, SCREAM],
-      [1.1, { ...SCREAM, pitch: 50, pz: PERCH_PZ + 22, wEl: 83, pEl: -50, draw: 1.1 }],
-      [MOTH_DIES.scream[1], { ...SCREAM, pitch: 58, pz: PERCH_PZ + 14, wEl: 60, pEl: -36, pAz: 0.85, draw: 0.7, gale: 0.7 }],
+      [1.1, { ...SCREAM, pitch: 59, pz: PERCH_PZ + 24, wEl: 83, pEl: -50, draw: 1.1 }],
+      [MOTH_DIES.scream[1], { ...SCREAM, pitch: 64, pz: PERCH_PZ + 14, wEl: 60, pEl: -36, pAz: 0.85, draw: 0.7, gale: 0.7 }],
       [2.4, { ...PERCH, pitch: 74, pz: PERCH_PZ - 14, wEl: -8, wAz: 6, wRoll: -4, pEl: -4, pAz: 0.35, draw: 0.1, out: 0.8 }],
       [MOTH_DIES.fall[1], SPENT],
       [MOTH_DIES.long, SPENT],

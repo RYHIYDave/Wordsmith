@@ -203,7 +203,7 @@ const topFrame = (): Frame => {
 /** Where the Moth hovers and the knight stands, each way round: the knight five and a half tiles before it. */
 const PLACE: Record<View, { at: V3; knight: V3 }> = {
   front: { at: [-4.2 * T, 0.6 * T, 0], knight: [1.5 * T, 0.9 * T, 0] },
-  back: { at: [-0.6 * T, -4.2 * T, 0], knight: [-0.9 * T, 1.5 * T, 0] },
+  back: { at: [-0.6 * T, -4.2 * T, 0], knight: [2.2 * T, 5.4 * T, 0] },
 };
 if (cmd === 'top') {
   const f = frameOf(FW, FH);
