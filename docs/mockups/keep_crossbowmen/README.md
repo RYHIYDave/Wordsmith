@@ -165,3 +165,9 @@ breath from art/hushed.ts) each name `keep_crossbowmen`.
   size: standing; the jog; the plant (half speed); the aimed shot and the reload after it at the arena's scale from in front
   (the knight steps out of the lane during the warning), and from behind (the knight stands at the line's end); the strike
   again at half speed, from in front and from behind; the reload; struck; the Hush leaving him.
+
+## His word on the pictures
+
+The sheet, the shot and the film (`crossbowmen_sheet.png`, `crossbowmen_shot.png`, `crossbowmen_film.mp4`), asked
+“Floor 19's crossbowmen (crossbowmen_sheet.png, crossbowmen_shot.png and the film): are these right? With them, floor 19
+is complete.”: “Yes, that's them (Recommended)”.
