@@ -202,3 +202,9 @@ files, as they were told of the Princess's (`^art\/queen(_moves|_fx)?\.ts$`, her
 All her mirrors (her looking-glass, the hall's, where the reflections step out) have the glass of floor 18's tall wall
 mirror (`mockup/glass-gallery`, his yes): 58 across, 84 to the arch, the arch 22 higher. Her own mirror at the hall's end
 is grander: its glass 60 across and 136 tall.
+
+## His word on the pictures
+
+The sheet, Shatter and the film (`queen_sheet.png`, `queen_shatter.png`, `queen_moves.mp4`), asked “The Queen
+(queen_sheet.png, queen_shatter.png and the film): is this her? She glides slower than you walk; the sudden part is the
+mirrors.”: “Yes, that's the Queen (Recommended)”.
