@@ -3,7 +3,8 @@
 //   node tools/preview.mjs src/dev/preview_companions_art.ts shots/comp_strip.png 1600 900 strip:<kind>:<move>[:<scale>[:<every>]]
 //   node tools/preview.mjs src/dev/preview_companions_art.ts shots/comp_close.png 1200 700 close:<kind>:<move>:<seconds>[:<scale>]
 
-import { COMP_CANVAS, KINDS, companionFrame, moveFps, moveLong } from '../art/companions_art';
+import { COMP_CANVAS, KINDS, companionFrame, companionIcon, moveFps, moveLong } from '../art/companions_art';
+import { COMP_ATTACK, moveFrames } from '../art/companions_art_moves';
 import type { Kind } from '../art/companions_art';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -111,6 +112,41 @@ if (mode === 'strip') {
     KINDS.forEach((k, i) => figure(companionFrame(k, which, t, view), 20 + cellW * (i + 1.5), fy, S, 7));
   }
   label(`all six, ${which} at ${t}, ${S} times`, 10, 8);
+  show();
+}
+else if (mode === 'contact') {
+  // every one of them: its stand, its moving, the beats of its attack, from in front and behind; and its icon
+  const S = Number(parts[1]) || 3;
+  const A = COMP_ATTACK;
+  const cols: [string, number, GameView][] = [
+    ['stand', 0, 'front'], ['stand', 0, 'back'], ['walk', 0.25, 'front'], ['walk', 0.6, 'back'],
+    ['attack', 0.27, 'front'], ['attack', A.strike + 1 / 30, 'front'], ['attack', A.hit, 'front'], ['attack', 0.5, 'front'], ['attack', A.hit, 'back'],
+  ];
+  const cellW = 50 * S;
+  const cellH = 62 * S;
+  cv.width = 20 + cellW * cols.length + 40 * S;
+  cv.height = 40 + cellH * KINDS.length;
+  g.fillStyle = '#1a1830';
+  g.fillRect(0, 0, cv.width, cv.height);
+  KINDS.forEach((k, r) => {
+    cols.forEach(([which, t0, view], c) => {
+      const t = which === 'walk' ? t0 * moveFrames(k) / 30 : t0;
+      g.fillStyle = (r + c) % 2 ? '#22203a' : '#26243e';
+      g.fillRect(10 + c * cellW, 30 + r * cellH, cellW - 2, cellH - 2);
+      figure(companionFrame(k, which, t, view), 10 + c * cellW + cellW * 0.42, 30 + r * cellH + cellH * 0.86, S, 6);
+      label(`${k} ${which} ${t.toFixed(2)} ${view}`, 12 + c * cellW, 32 + r * cellH, 1);
+    });
+    const ic = companionIcon(k);
+    const icv = document.createElement('canvas');
+    icv.width = 32;
+    icv.height = 32;
+    (icv.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(new Uint8ClampedArray(ic.d), 32, 32), 0, 0);
+    g.fillStyle = '#14122a';
+    g.fillRect(16 + cols.length * cellW, 40 + r * cellH, 32 * S, 32 * S);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(icv, 16 + cols.length * cellW, 40 + r * cellH, 32 * S, 32 * S);
+  });
+  label(`the six: stand, moving, attack (held, striking, the blow, through), front and back; icons (${S} times)`, 10, 8);
   show();
 }
 void COMP_CANVAS;
