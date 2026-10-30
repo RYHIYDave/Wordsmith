@@ -56,7 +56,7 @@ import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
-import { Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
+import { Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, paintedNear, PHASE_APART } from './figure';
 import { drawChargeLane } from '../art/charge_lane';
 import { drawAimLine, drawBurningSmoke, drawGreatArrow, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
 import { skullAt, spearHeight } from './mob_world';
@@ -2911,7 +2911,10 @@ export class Renderer {
       // The bar of life over the hero's head (and the line they speak, in fx.ts) stands clear of the
       // figure at rest, whatever it is doing now: a raised sword passes in front of the bar and does
       // not push it about. With mana to show as well the bar is two pixels taller.
-      const top = heroArt.front.idle[0].ay + (game.meta.limit === 'mana' ? 2 : 0);
+      // (read from a frame painted already, or as it last was: reading one not painted paints it, and the demon's first standing
+      // frame painted here, to be read, was the half of a second's stop as the Warlock changed: his lag, 30 Oct 2026)
+      const stand = paintedNear(heroArt.front.idle, 0, true);
+      const top = stand ? stand.ay + (game.meta.limit === 'mana' ? 2 : 0) : this.heroAt.top;
       this.heroAt = { x: Math.round(sx), y: Math.round(sy), top };
       fx.headroom = top;
       // A hero whose life has run out FALLS (their art's `fall`): the world has stopped, and they go
