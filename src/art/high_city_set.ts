@@ -1549,7 +1549,7 @@ function droppedFan(): Sprite {
  * square to the eye: a white border, the royal's field, its mark large in the middle, the mark small in two corners. One
  * for each of the four: the Princess, the Prince, the Queen, the King. On the floor. 52 x 34 at (26, 17).
  */
-function royalCard(r: Royal): Sprite {
+export function royalCard(r: Royal): Sprite {
   const L = ROYAL_LOOK[r];
   const p = new Px(52, 34);
   // (its face, flat on the floor and square to the eye: 30 across, 21 up the picture; the floor shortens it by half)

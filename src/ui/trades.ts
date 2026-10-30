@@ -35,6 +35,7 @@ import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { drawWordTile } from './words';
 import { meldOpen, meldTab } from './meld';
+import { cardsOpen, cardsTab } from './royal_cards';
 
 /** The one place on the wordsmith's half a word of the hero's goes to: sold. */
 const SELL = 'sell';
@@ -230,9 +231,16 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
   };
   /** Why a throw for kind `k` cannot be made just now, if it cannot. */
   const problem = (k: number): string | null => (h.gold < game.gamblePrice(k) ? 'Not enough gold' : h.bag.indexOf(null) < 0 ? 'Bag is full' : null);
+  // (THE HIGH CITY, THE ROYAL CARDS: once he holds a royal's card, a tab turns the stranger's half to his cards: ui/royal_cards.ts)
+  const tab = cardsOpen(game) ? cardsTab(ui, r, 'CARDS') : null;
 
   return {
     press(say): void {
+      if (tab && ui.pressIn(tab.x, tab.y, tab.w, tab.h)) {
+        st.cardPage = true;
+        st.pick = null;
+        return;
+      }
       const p = picked();
       if (p) {
         const b = button(`THROW: ${game.gamblePrice(p.k)} GOLD`);
@@ -255,6 +263,7 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
 
     draw(): void {
       sideFrame(ui, r, 'THE STRANGER');
+      if (tab) ui.drawButton(tab.x, tab.y, tab.w, tab.h, 'CARDS', { small: true, lit: true });
       intro.forEach((l, k) => drawText(g, l, x0, bodyY + 1 + k * 6, THEME.text, { font: 'small' }));
       drawText(g, 'A THROW FOR', x0, capY, THEME.dim, { font: 'small' });
       const p = picked();

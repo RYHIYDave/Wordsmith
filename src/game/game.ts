@@ -17,6 +17,8 @@ import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
 import { COMPANIONS, TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
 import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, pickedIn } from './companions';
+import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPays, royalFloor } from './royal_cards';
+import type { Hand, Royal } from './royal_cards';
 import type { CompanionGroup, CompanionKind } from './companions';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
@@ -112,6 +114,8 @@ export interface RunSave {
   talents?: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts): the animal picked for each of his companion talents (absent while COMPANIONS is off, or none picked). */
   pets?: Partial<Record<CompanionGroup, CompanionKind>>;
+  /** THE ROYAL CARDS (game/royal_cards.ts): the royals' cards he holds (absent when none). */
+  cards?: Partial<Record<Royal, number>>;
   /** WORDMELDING (game/melds.ts): the runedust carried, and melding at the wordsmith (absent while MELD is off). */
   dust?: number;
   meld?: 'stone' | 'open' | null;
@@ -860,6 +864,8 @@ export class Game {
       ...(h.talents.length ? { talents: [...h.talents] } : {}),
       // (THE RANGER'S COMPANIONS: nor the picks while theirs is off)
       ...(COMPANIONS.on && h.pets && Object.keys(h.pets).length ? { pets: { ...h.pets } } : {}),
+      // (THE ROYAL CARDS: the cards he holds, once he has any)
+      ...(h.cards && Object.keys(h.cards).length ? { cards: { ...h.cards } } : {}),
       // (THE WAYS: nor the waypoint reached while theirs is off)
       ...(WAYS.on ? { way: this.wayDepth } : {}),
       // (ENDLESS MODE: nor the endless level reached, until it is open to him)
@@ -928,6 +934,8 @@ export class Game {
     h.talents = cleanTalents(h.cls, h.level, s.talents);
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
+    // (THE ROYAL CARDS: the cards he held)
+    if (s.cards) h.cards = cleanCards(s.cards);
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -1454,9 +1462,16 @@ export class Game {
     const tiers = new RNG((seed ^ 0x7f4a7c15) >>> 0);
     // (PACKS GROW WITH THE LEVELS: which way a pack's growth rounds, from a lot of its own, so that the rest of the floor is drawn as it was)
     const grow = new RNG((seed ^ 0x1b873593) >>> 0);
+    // (THE ROYAL CARDS, the High City's: which packs a royal touches, and which royal, from a lot of its own)
+    const royals = new RNG((seed ^ 0x3c6ef372) >>> 0);
     f.packs.forEach((p, pi) => {
       if (MONSTER_PACKS.on && p.kind) {
+        const from = this.monsters.length;
         this.fillPack(p.kind, p.x, p.y, p.size, p.tier, pi, rng, lot, tiers, grow);
+        if (royalFloor(this.depth) && p.tier !== 'champion' && royals.next() < ROYAL_TUNE.touched) {
+          const r = royals.weighted(ROYALS, (k) => ROYAL_TUNE.weight[k]);
+          for (let i = from; i < this.monsters.length; i++) this.monsters[i].royal = r;
+        }
         return;
       }
       const main = rng.weighted(kinds, (k) => k.weight);
@@ -9917,6 +9932,11 @@ export class Game {
     }
     // whatever else it leaves, a monster that carried a word gives it up
     for (const w of m.carries) this.addDrop('word', m.x, m.y, 0, null, w);
+    // (THE ROYAL CARDS: one a royal touched drops that royal's card: game/royal_cards.ts)
+    if (m.royal && royalFloor(this.depth)) {
+      this.addDrop('card', m.x, m.y, 0, null, null);
+      this.drops[this.drops.length - 1].royal = m.royal;
+    }
     // (the dead that rise for a new player's first word leave nothing: they are there to be felled)
     if (m.packId === RISEN_PACK) return;
     const bonus = 1 + 0.3 * this.dungeonWords.length;
@@ -10062,6 +10082,12 @@ export class Game {
         this.emit({ t: 'dustGot', x: dr.x, y: dr.y, n: dr.gold });
         this.sfx('word', 0.7);
         this.emit({ t: 'text', x: h.x, y: h.y, text: `+${dr.gold} RUNEDUST`, color: MELD_DUST_COLOR });
+      } else if (dr.kind === 'card' && dr.royal) {
+        // (THE ROYAL CARDS) a royal's card, his for good, for the stranger's hands
+        h.cards = { ...(h.cards ?? {}), [dr.royal]: (h.cards?.[dr.royal] ?? 0) + 1 };
+        this.emit({ t: 'cardGot', royal: dr.royal, x: dr.x, y: dr.y });
+        this.sfx('word', 0.6);
+        this.emit({ t: 'text', x: h.x, y: h.y, text: `THE ${ROYAL_NAMES[dr.royal].one.toUpperCase()}'S CARD`, color: '#e8dcc0' });
       } else if (dr.kind === 'stone') {
         // (WORDMELDING) the Meldstone, to be brought to the wordsmith
         if (h.meld === null) h.meld = 'stone';
@@ -10602,6 +10628,36 @@ export class Game {
     h.bag[free] = it;
     this.won = free;
     this.sfx(rarity >= 2 ? 'rare' : 'buy');
+    return null;
+  }
+
+  /** THE ROYAL CARDS: where in the bag the pieces the last hand handed in brought lie (for the stranger's page). */
+  wonHand: number[] = [];
+
+  /**
+   * THE ROYAL CARDS (game/royal_cards.ts): hand `hand` in to the stranger, in town: its cards are his no more, and what it pays
+   * (handPays) is in his bag: so many pieces of that rarity, so many levels over what the stranger throws for. Null if it was
+   * handed in; else why not.
+   */
+  handInCards(hand: Hand): string | null {
+    const h = this.hero;
+    if (!this.level.town) return 'Only in town';
+    if (!canMake(h.cards, hand)) return 'You do not hold that hand';
+    const pays = handPays(hand);
+    const free = h.bag.map((it, i) => (it ? -1 : i)).filter((i) => i >= 0);
+    if (free.length < pays.n) return pays.n === 1 ? 'Bag is full' : `Bag needs ${pays.n} free places`;
+    const cards = { ...(h.cards ?? {}) };
+    for (const r of handCards(hand)) cards[r] = (cards[r] ?? 0) - 1;
+    for (const r of ROYALS) if ((cards[r] ?? 0) <= 0) delete cards[r];
+    h.cards = cards;
+    this.wonHand = [];
+    for (let k = 0; k < pays.n; k++) {
+      const it = rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity });
+      h.bag[free[k]] = it;
+      this.wonHand.push(free[k]);
+    }
+    this.won = -1;
+    this.sfx(pays.rarity >= 2 ? 'rare' : 'buy');
     return null;
   }
 

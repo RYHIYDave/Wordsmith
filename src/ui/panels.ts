@@ -49,10 +49,12 @@ export interface Panels {
   /** (WORDMELDING, behind MELD) The wordsmith's half shows melding, not his trade; and the two words laid in to be melded. */
   meldPage: boolean;
   meldIn: (WordId | null)[];
+  /** (THE HIGH CITY, THE ROYAL CARDS: ui/royal_cards.ts) The stranger's half shows his cards page, not his gamble. */
+  cardPage: boolean;
 }
 
 export function newPanels(): Panels {
-  return { open: 'none', altar: -1, sel: null, pick: null, pick2: null, carry: null, note: '', noteT: 0, meldPage: false, meldIn: [null, null] };
+  return { open: 'none', altar: -1, sel: null, pick: null, pick2: null, carry: null, note: '', noteT: 0, meldPage: false, meldIn: [null, null], cardPage: false };
 }
 
 export interface Line {

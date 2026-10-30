@@ -2,6 +2,7 @@
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
 import type { CompanionGroup, CompanionKind } from './companions';
+import type { Royal } from './royal_cards';
 import type { PunchName } from './brawler';
 import type { Sfx } from '../engine/audio';
 import type { Limit, SkillId, SkillKind } from './defs';
@@ -299,6 +300,8 @@ export interface Hero {
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
   pets?: Partial<Record<CompanionGroup, CompanionKind>>;
+  /** THE ROYAL CARDS (game/royal_cards.ts, the High City's): the royals' cards he holds, kept for good (absent: none). */
+  cards?: Partial<Record<Royal, number>>;
   d: Derived;
 }
 
@@ -340,6 +343,8 @@ export interface Monster {
   half?: WordId[];
   /** The words it will give up when it dies: the rune stones over its head. Most monsters have none. */
   carries: WordId[];
+  /** THE ROYAL CARDS (game/royal_cards.ts): the royal who touched its pack, whose crest it wears and whose card it drops (absent: none). */
+  royal?: Royal;
   state: MonsterState;
   /** Time left in the current state. */
   t: number;
@@ -921,11 +926,13 @@ export interface Drop {
   x: number;
   y: number;
   /** (WORDMELDING: 'dust', runedust, as much as `gold` says; 'stone', the Meldstone) */
-  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone';
+  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card';
   gold: number;
   item: Item | null;
   word: WordId | null;
   age: number;
+  /** (THE ROYAL CARDS: 'card', a royal's card, game/royal_cards.ts) Whose card it is. */
+  royal?: Royal;
 }
 
 /**
@@ -1363,6 +1370,8 @@ export type GameEvent =
   // (THE RANGER'S COMPANIONS, game/companions.ts: one at his side, and its bite landing on `id`)
   | { t: 'petArrive'; kind: CompanionKind; x: number; y: number }
   | { t: 'petBite'; kind: CompanionKind; id: number; x: number; y: number; dx: number; dy: number }
+  // (THE ROYAL CARDS, game/royal_cards.ts: a royal's card taken off the floor)
+  | { t: 'cardGot'; royal: Royal; x: number; y: number }
   | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
   | { t: 'golemShot'; x0: number; y0: number; x1: number; y1: number; flight: number }
   | { t: 'golemPound'; x: number; y: number; r: number; n?: number; echo?: boolean }
