@@ -207,3 +207,51 @@ test('6. each royal’s crest and card in its own colours: its field’s, none o
     }
   }
 });
+
+test('on floor 16, laid: a share of its packs touched, each pack by one royal, all of it; none a lair’s or the boss; one dying drops its card', () => {
+  HIGH_CITY.on = true;
+  try {
+    let packs = 0;
+    let touched = 0;
+    const by: Record<string, number> = {};
+    for (const seed of [3, 4, 9, 11, 17, 23]) {
+      const g = new Game('warrior', seed);
+      g.depth = 16;
+      g.cleared = 15;
+      g.wayDepth = 16;
+      g.enterDungeon();
+      assert.equal(g.level.land?.kind, 'swangardens');
+      const of = new Map<number, Set<string>>();
+      for (const m of g.monsters) {
+        if (m.boss) assert.equal(m.royal, undefined, 'never the boss');
+        if (m.boss) continue;
+        const s = of.get(m.packId) ?? new Set<string>();
+        s.add(m.royal ?? '-');
+        of.set(m.packId, s);
+      }
+      for (const [, s] of of) {
+        packs++;
+        assert.equal(s.size, 1, 'a pack touched all of it, by one royal, or none of it');
+        const r = [...s][0];
+        if (r !== '-') {
+          touched++;
+          by[r] = (by[r] ?? 0) + 1;
+        }
+      }
+      // (one touched dying: its card on the floor)
+      const m = g.monsters.find((q) => q.royal && !q.boss);
+      if (m) {
+        const was = g.drops.filter((d) => d.kind === 'card').length;
+        g.kill(m);
+        const cards = g.drops.filter((d) => d.kind === 'card');
+        assert.equal(cards.length, was + 1, 'its card dropped');
+        assert.equal(cards[cards.length - 1].royal, m.royal);
+      }
+    }
+    const share = touched / packs;
+    assert.ok(share > ROYAL_TUNE.touched * 0.5 && share < ROYAL_TUNE.touched * 1.6, `${touched} of ${packs} packs touched`);
+    assert.ok((by.princess ?? 0) > (by.king ?? 0), `the Princess's more often than the King's: ${JSON.stringify(by)}`);
+  } finally {
+    HIGH_CITY.on = false;
+  }
+});
