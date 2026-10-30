@@ -54,12 +54,33 @@ export default async function (page, snap) {
   const from = Number(process.env.FROM || 0);
   const stills = process.env.STILLS === '1';
   const cls = process.env.CLS || 'warrior';
-  await page.evaluate((cls) => {
+  // (WHERE=floor16, the main chat's: on her own ground on floor 16 itself, at dawn, the rest of the floor's packs gone)
+  const onFloor = process.env.WHERE === 'floor16';
+  if (onFloor) {
+    await page.evaluate((cls) => {
+      const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
+      d.run(cls, 7); d.seasoned(22); d.autoLevel = false; d.autoWords = false; d.god = true;
+      d.high(true, 16);
+    }, cls);
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => {
+      const d = window.__dbg; const g = d.game(); const h = g.hero;
+      const m = g.monsters.find((q) => q.kind === 'princess');
+      for (const q of g.monsters) if (q !== m) q.dead = true;
+      g.projectiles.length = 0;
+      h.x = m.x - 5; h.y = m.y; h.fx = 1; h.fy = 0;
+      g.wakeUp(m);
+      m.life = m.maxLife = 1e7; m.words = []; m.shield = 0;
+      g.boss = m; g.bossMet = true;
+      g.level.explored.fill(1);
+    });
+  }
+  if (!onFloor) await page.evaluate((cls) => {
     const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false; d.practice(cls, 7); d.autoLevel = false; d.autoWords = false; d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
   }, cls);
   await page.waitForTimeout(500);
-  await page.evaluate(() => {
+  if (!onFloor) await page.evaluate(() => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;
     // (the hero west of the room's middle, she east of him, five tiles off)
     h.x = 11.5; h.y = 15.5; h.fx = 1; h.fy = 0;

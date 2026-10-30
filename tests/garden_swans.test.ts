@@ -123,7 +123,7 @@ test('the switch is off by itself, and of the game only their figure and the Pri
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/garden_swans.ts') continue;
     if (/from ['"][^'"]*garden_swans['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'art/act1_figs/princess.ts art/act1_figs/swan.ts render/act1_fx/princess.ts', 'game files that import the swans');
+  assert.equal(users.sort().join(' '), 'art/act1_figs/princess.ts art/act1_figs/swan.ts', 'game files that import the swans');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge while it lives, none dead', () => {

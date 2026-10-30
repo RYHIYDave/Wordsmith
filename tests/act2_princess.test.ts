@@ -108,7 +108,9 @@ fakeDocument();
 test("1. she is built, heavy; floor 16's boss with HIGH_CITY on, the Warden with it off, nothing of her on; her line a silence; her size", () => {
   assert.ok(RULES && FIG && FX, 'her rules, her pictures and what she casts');
   assert.equal(PRINCESS_ON.on, false, "the art chat's switch left off");
-  assert.equal(SWAN_ON.on, false, "and its swans'");
+  // (the swans' own switch, SWAN_ON, is the swan kind's figure's since floor 16's kinds were merged, art/act1_figs/swan.ts: the game
+  // turns it on with the descent's figures, art/bestiary.ts useAct1Figs; so it is not hers to hold off here)
+  void SWAN_ON;
   assert.equal(sizeOf('princess'), 'boss');
   const chosen = RULES!.acts.filter((a) => !a.forced);
   assert.equal(chosen.length, 4, "her four: the lash, the snare, the Eleven, the Vow (his doc's four, the Shirt his snare)");
