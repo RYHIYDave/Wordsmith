@@ -801,6 +801,15 @@ export interface WingPose {
 }
 /** How high each flies, standing (its body's middle). */
 export const FLY_HIGH = { hawk: 31, bat: 27 } as const;
+/**
+ * THE TWO THAT FLY ARE TURNED TOWARD YOU (his pick, 30 Oct: “Fix the hawk and bat (Recommended)”, offered as: wings
+ * spread wide toward you from in front): in every move they keep their body turned this far to their right (degrees),
+ * three-quarters to the eye rather than flying across it, so that from in front both wings are spread broadside, the
+ * face, beak and tail fan to be seen, and from behind the whole back and both wings. Their bodies are held level, a
+ * little nose-down (a hawk hanging on the wind looking down at its prey), so that the eye in front looks onto the tops
+ * of their wings, as the eye behind does. Each turns to face its prey as it winds up its attack, and back as it winds down.
+ */
+export const FLY_FACE = { hawk: -38, bat: -38 } as const;
 
 /** A wing beat: its downstroke quick and strong, its upstroke lighter, the wrist folding a little on the way up. `ph` 0 to 1. */
 function beat(ph: number, top: number, bottom: number): { lift: number; fold: number; sweep: number } {
@@ -822,11 +831,11 @@ function wingStand(k: 'hawk' | 'bat', t0: number): WingPose {
     // and twisting to hold it there; it rises and sinks on the air; its head dead still, then turned to look at him)
     const look = bump(t, 1.0, 1.7);
     const work = Math.sin(a * 3);
-    return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.2 * Math.sin(a) + 0.3 * Math.sin(a * 4)], pitch: -12 + 3 * Math.sin(a), roll: 4 * Math.sin(a + 0.6), yaw: 0, lift: [-6 + 5 * work, -6 + 5 * work], sweep: -4 + 3 * Math.sin(a * 2), fold: 0.05 + 0.05 * Math.sin(a * 3 + 1), droop: 8 + 3 * work, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
+    return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.2 * Math.sin(a) + 0.3 * Math.sin(a * 4)], pitch: 7 + 3 * Math.sin(a), roll: 4 * Math.sin(a + 0.6), yaw: FLY_FACE.hawk, lift: [12 + 5 * work, 12 + 5 * work], sweep: -4 + 3 * Math.sin(a * 2), fold: 0.05 + 0.05 * Math.sin(a * 3 + 1), droop: 8 + 3 * work, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
   }
-  const b0 = beat(fr(t / 0.4 + 0.225), 4, -22);
+  const b0 = beat(fr(t / 0.4 + 0.225), 22, -4);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: -15 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
+  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: 6 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: FLY_FACE.bat + 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
 }
 /** THE HAWK FLYING: level and fast, two deep beats and a glide in each turn, its tail closed, its head steady. THE BAT FLYING: quick beats, pitched into its flight, jinking from side to side. */
 function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
@@ -837,13 +846,13 @@ function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
     // (two beats in 0.4 of the turn... and a glide, its wings held a little up)
     const flap = ph < 0.6;
     // (the glide: its wings let down level from the top of the beat, held, and lifted again for the next)
-    const g = ph < 0.75 ? mix(18, -6, sm((ph - 0.6) / 0.15)) : ph < 0.86 ? -6 : mix(-6, 18, sm((ph - 0.86) / 0.14));
-    const b = flap ? beat(ph / 0.6, 18, -20) : { lift: g, fold: 0.05, sweep: 0 };
-    return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: -8, roll: 2 * Math.sin(a), yaw: 0, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
+    const g = ph < 0.75 ? mix(36, 12, sm((ph - 0.6) / 0.15)) : ph < 0.86 ? 12 : mix(12, 36, sm((ph - 0.86) / 0.14));
+    const b = flap ? beat(ph / 0.6, 36, -2) : { lift: g, fold: 0.05, sweep: 0 };
+    return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: 5, roll: 2 * Math.sin(a), yaw: FLY_FACE.hawk, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
   }
-  const b0 = beat(fr(ph + 0.225), 4, -22);
+  const b0 = beat(fr(ph + 0.225), 22, -4);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: -10, roll: 4 * Math.sin(a), yaw: 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
+  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: 5, roll: 4 * Math.sin(a), yaw: FLY_FACE.bat + 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
 }
 /**
  * THE HAWK'S STOOP (its gift, Precise: it marks its prey, his next hit on it a sure critical). It climbs and rears back,
@@ -875,8 +884,8 @@ function wingAttack(k: 'hawk' | 'bat', t: number): WingPose {
       [A.strike + 1 / 30, DROP, easeIn],
       [A.hit, STRIKE, (v) => v],
       [A.through, BRAKE, easeOut],
-      [0.67, RISE, sm],
-      [A.long, K0, sm],
+      [0.67, RISE, (v) => v],
+      [A.long, K0, easeOut],
     ];
   } else {
     const HANG: K = { x: -3, z: H + 5, pitch: -40, lift: 70, sweep: -10, fold: 0, legs: 0.3, open: 0.6, hp: 28, gape: 1, fan: 0.6, tailDown: 0 };
@@ -907,7 +916,8 @@ function wingAttack(k: 'hawk' | 'bat', t: number): WingPose {
     const b = beat(fr((t - 0.58) / 0.2), hawk ? 58 : 46, hawk ? 0 : 14);
     kk = { ...kk, lift: mix(kk.lift, b.lift, (hawk ? 0.5 : 0.3) * w) };
   }
-  return { ...S0, at: [kk.x, 0, kk.z], pitch: kk.pitch, roll: 0, yaw: 0, lift: [kk.lift, kk.lift], sweep: kk.sweep, fold: kk.fold, legs: kk.legs, open: kk.open, hp: kk.hp, hy: 0, gape: kk.gape, fan: kk.fan, tailDown: kk.tailDown };
+  const toPrey = t < 0.4 ? sm(t / A.coiled) : 1 - sm((t - 0.6) / (A.long - 0.6));
+  return { ...S0, at: [kk.x, 0, kk.z], pitch: kk.pitch, roll: 0, yaw: S0.yaw * (1 - toPrey), lift: [kk.lift, kk.lift], sweep: kk.sweep, fold: kk.fold, legs: kk.legs, open: kk.open, hp: kk.hp, hy: 0, gape: kk.gape, fan: kk.fan, tailDown: kk.tailDown };
 }
 export function wingPose(k: 'hawk' | 'bat', which: string, t: number): WingPose {
   return which === 'stand' ? wingStand(k, t) : which === 'walk' ? wingMove(k, t) : wingAttack(k, t);

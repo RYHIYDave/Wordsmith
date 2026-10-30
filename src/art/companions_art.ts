@@ -510,7 +510,7 @@ export function companionLook(k: Kind, which: string, t: number): Look {
 }
 
 /** The two that fly, drawn a little bigger about their middles than their bones are made (their wings are thin things, and must read on a phone). */
-export const FLIER_SCALE = { hawk: 1.2, bat: 1.4 } as const;
+export const FLIER_SCALE = { hawk: 1.05, bat: 1.4 } as const;
 /** A moment of one of them made `f` times bigger about `c`: its solids and all the review reads. */
 function scaleLook(L: Look, f: number, c: V3): Look {
   const P = (p: V3): V3 => add(c, mul(sub(p, c), f));
@@ -976,7 +976,7 @@ function hawkLook(P: WP): Look {
     const back1 = norm(sub(B([-1, 0, 0]), mul(arm, dot(B([-1, 0, 0]), arm))), B([-1, 0, 0]));
     const back2 = norm(sub(B([-1, 0, 0]), mul(hand, dot(B([-1, 0, 0]), hand))), B([-1, 0, 0]));
     // (the secondaries: their tips scalloped, brown above with paler edges, cream barred beneath)
-    sheetPanel(put, part, `sec${side}`, S, Wr, add(S, mul(back1, 8.2)), UPB, (al, be) => be <= (0.86 + 0.14 * Math.abs(Math.sin(al * Math.PI * 5.5))) * (1 - 0.18 * al), (al, be, top, tone) => {
+    sheetPanel(put, part, `sec${side}`, S, Wr, add(S, mul(back1, 10)), UPB, (al, be) => be <= (0.86 + 0.14 * Math.abs(Math.sin(al * Math.PI * 5.5))) * (1 - 0.18 * al), (al, be, top, tone) => {
       if (top) return be < 0.42 ? (fr(be * 6) < 0.22 ? HAWK_BACK[Math.min(4, tone + 1)] : HAWK_BACK[tone]) : fr(al * 5.5) < 0.1 ? HAWK_FLIGHT[Math.min(4, tone + 1)] : HAWK_FLIGHT[tone];
       return be > 0.82 ? HAWK_FLIGHT[tone] : be > 0.4 && fr(be * 5) < 0.3 ? HAWK_STREAK[tone] : HAWK_CREAM[Math.max(1, tone - 1)];
     });
@@ -986,7 +986,7 @@ function hawkLook(P: WP): Look {
       const root = lerpV(Wr, T, 0.08 + 0.14 * q);
       const dir = norm(lerpV(hand, back2, (4 - q) * 0.17 * (1 - 0.6 * P.fold) + 0.06));
       const L = (6.5 + 0.9 * q) * (1 - 0.25 * P.fold);
-      const wd = mul(back2, 0.95);
+      const wd = mul(back2, 1.25);
       const a = sub(root, wd);
       sheetPanel(put, part, `prim${q}${side}`, a, add(root, wd), add(a, mul(dir, L)), UPB, (al, be) => Math.abs(al - 0.5) <= 0.5 * (1 - Math.pow(be, 5)), (al, be, top, tone) => {
         if (top) return Math.abs(al - 0.5) > 0.36 ? HAWK_BACK[Math.min(4, tone + 1)] : be > 0.75 ? HAWK_FLIGHT[Math.max(0, tone - 1)] : HAWK_FLIGHT[tone];
@@ -995,7 +995,7 @@ function hawkLook(P: WP): Look {
       prim.push(add(root, mul(dir, L)));
     }
     // (the coverts of the hand, over the primaries' roots, and the leading edge, thick with small feathers)
-    sheetPanel(put, part, `cov${side}`, sub(Wr, mul(back2, 0.5)), add(Wr, mul(sub(T, Wr), 0.55)), add(sub(Wr, mul(back2, 0.5)), mul(back2, 4.2)), UPB, (al, be) => be <= 1 - 0.55 * al, (_al, be, top, tone) => (top ? (fr(be * 3) < 0.25 ? HAWK_BACK[Math.min(4, tone + 1)] : HAWK_BACK[tone]) : HAWK_CREAM[Math.max(1, tone - 1)]));
+    sheetPanel(put, part, `cov${side}`, sub(Wr, mul(back2, 0.5)), add(Wr, mul(sub(T, Wr), 0.6)), add(sub(Wr, mul(back2, 0.5)), mul(back2, 6.5)), UPB, (al, be) => be <= 1 - 0.55 * al, (_al, be, top, tone) => (top ? (fr(be * 3) < 0.25 ? HAWK_BACK[Math.min(4, tone + 1)] : HAWK_BACK[tone]) : HAWK_CREAM[Math.max(1, tone - 1)]));
     put(part, `edge${side}`, { k: 'rod', a: S, b: Wr, ra: 1.1, rb: 0.75, ramp: HAWK_BACK });
     put(part, `edge2${side}`, { k: 'rod', a: Wr, b: lerpV(Wr, T, 0.5), ra: 0.75, rb: 0.45, ramp: HAWK_BACK });
     wingBones.push([side, S, Wr, T]);

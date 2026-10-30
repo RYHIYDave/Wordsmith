@@ -29,6 +29,28 @@ simple shapes stuck together, not as sculpted animals. So all six were sculpted 
 
 Everything else is as it was: the cyan friend's edge, the attacks' beats, every check.
 
+## What he said of the sculpted pictures (30 Oct 2026, by the art chat)
+
+Asked “The re-sculpted companions (companions_sheet.png and the film). The four on the ground came out better. Seen
+from in front, the hawk and the bat still look like thin diagonal strips, because their near wing is edge-on. What
+now?”, his pick: “Fix the hawk and bat (Recommended)” (offered as: wings spread wide toward you from in front; the
+other four locked).
+
+So THE WOLF, THE FOX, THE TORTOISE AND THE SNAKE ARE LOCKED, as they are. The hawk and the bat were changed only so:
+
+- turned toward you in every move (`FLY_FACE`, 38 degrees to their right: three-quarters to the eye rather than flying
+  across it), so that from in front both wings are spread broadside, and from behind the whole back and both wings;
+  each turns to face its prey as it winds up its attack, and back as it winds down, so that nothing leaps where one
+  move hands over to the next;
+- their bodies held level, a little nose-down (a hawk hanging on the wind looking down at its prey), not nose-up: the
+  eye in front then looks onto the tops of their wings, as the eye behind does;
+- their wings raised in a shallow V; the hawk's broader (its secondaries, primaries and coverts), and drawn at 1.05
+  times its built size where it was 1.2 (spread broadside, it no longer needs it).
+
+From in front the hawk shows its head and hooked beak between both wings spread wide; the bat its face and ears
+between both membranes, their finger bones and scalloped edges. From behind, the hawk's back and rufous tail fan, the
+bat's back and ears, both wings each.
+
 ## His words (the main chat's record, `docs/NEXT_VERSION.md` on `v23`, 28 Oct 2026)
 
 - 23:09: “I’d like the ranger to have a passive that summons a hawk companion that applies PRECISE on hit, a snake
@@ -70,7 +92,7 @@ pixels (the Ranger is 57 tall).
 
 Sizes, standing (picture pixels across, as measured by the test against the mage's familiar): each between the
 familiar's length and 2.1 times it; the wolf and the tortoise more than the other four by at least 15% in painted size.
-The two fliers are drawn 1.2 (hawk) and 1.4 (bat) times their built size about their middles, so their wings read on a
+The two fliers are drawn 1.05 (hawk) and 1.4 (bat) times their built size about their middles, so their wings read on a
 phone (`FLIER_SCALE`).
 
 ## Their numbers (`src/art/companions_art_moves.ts`)
@@ -122,8 +144,6 @@ frame, as `tools/page_gif.mjs` reads a page).
 
 ## Still open
 
-- THE HAWK HANGS ON THE AIR rather than beating its wings when he stands still (kiting, as hawks do on the wind): its
-  spread wings read best, and a beating hover leapt where it hands over to its flight or its stoop. THE BAT'S WINGS
-  BEAT SHALLOW, for the same reason.
-- From in front, the two fliers are seen three-quarters on, their nearer wing foreshortened: the hawk reads as a bird
-  of prey, the bat best from behind.
+- THE HAWK HANGS ON THE AIR rather than beating its wings when he stands still (kiting, as hawks do on the wind), and
+  THE BAT'S WINGS BEAT SHALLOW: a deeper beat leapt where one move hands over to the next; it would need a way into and
+  out of it in the game.
