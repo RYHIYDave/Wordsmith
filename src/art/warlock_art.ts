@@ -21,7 +21,7 @@
 import type { Light, Sprite } from '../engine/px';
 import { Px } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
-import { lazyFrames, toSprite } from './kit';
+import { HEAVY, lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
 import { GRIP_SPEED } from './moves3';
@@ -81,12 +81,28 @@ function spread(t0: number, t1: number, n: number, at: (t: number) => Sprite, he
 }
 /** THE DEMON'S FRAMES AND THE CHANGE'S ARE HEAVY (about half a second each to paint): left to the side painter while the game is played (art/kit.ts HEAVY). */
 const HEAVY_ART = true;
+/**
+ * AND HIS OWN AS A MAN (his lag, 30 Oct 2026: worst "Changing into the demon,Casting spells"): a frame of him is the best part
+ * of a tenth of a second to paint, and his bolt and his curse painted where the game is played as they were first cast was
+ * the stutter. Left to the side painter too (render/painter.ts, his frames in the order he needs them), the nearest painted
+ * frame shown until it is.
+ */
+const HEAVY_MAN = true;
 
 /** Its first frame, the blow's and its last, each painted only when asked for (as every hero's: art/heroes3.ts). */
 function three(c: Clip): Sprite[] {
   const n = c.frames.length;
   const picks = [0, Math.min(n - 1, Math.round((c.hit ?? 0) * c.fps)), n - 1];
-  return lazyFrames(3, (i) => c.frames[picks[i]]);
+  // (the very frame, never a nearer one standing in for it: a heavy list's frame read while the world is drawn may be one)
+  return lazyFrames(3, (i) => {
+    const was = HEAVY.defer;
+    HEAVY.defer = false;
+    try {
+      return c.frames[picks[i]];
+    } finally {
+      HEAVY.defer = was;
+    }
+  });
 }
 
 const byName = <M extends { name: string }>(list: readonly M[], start: string): M => {
@@ -109,18 +125,18 @@ function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean): An
   const step = byName(spells, 'Swipe: the smoke step');
   const reel = warlockReel();
   const lurch = warlockLurch();
-  const idle = round(STAND_LONG, IDLE_FPS, (t) => manAt(stand, t, view));
-  const walk = round(RUN_ROUND, RUN_FPS, (t) => manAt(run, t, view));
-  const attack = clip(0, bolt.long, CLIP_FPS, (t) => manAt(bolt, t, view), BOLT_HIT, true);
-  const heavy = clip(0, curse.long, CLIP_FPS, (t) => manAt(curse, t, view), CURSE_HIT, true);
+  const idle = round(STAND_LONG, IDLE_FPS, (t) => manAt(stand, t, view), HEAVY_MAN);
+  const walk = round(RUN_ROUND, RUN_FPS, (t) => manAt(run, t, view), HEAVY_MAN);
+  const attack = clip(0, bolt.long, CLIP_FPS, (t) => manAt(bolt, t, view), BOLT_HIT, true, HEAVY_MAN);
+  const heavy = clip(0, curse.long, CLIP_FPS, (t) => manAt(curse, t, view), CURSE_HIT, true, HEAVY_MAN);
   // (the smoke step: from bursting into smoke to the first of his forming, over the step; his forming after)
-  const leap = spread(STEP_GONE[0] - 1 * FR, STEP_GONE[1] + 1 * FR, STEP_FRAMES, (t) => manAt(step, t, view));
-  const land = clip(STEP_GONE[1] + 1 * FR, STEP_LONG, CLIP_FPS, (t) => manAt(step, t, view));
-  const struck = clip(0, reel.long, CLIP_FPS, (t) => manAt(reel, t, view));
-  const struckBehind = clip(0, lurch.long, CLIP_FPS, (t) => manAt(lurch, t, view));
+  const leap = spread(STEP_GONE[0] - 1 * FR, STEP_GONE[1] + 1 * FR, STEP_FRAMES, (t) => manAt(step, t, view), HEAVY_MAN);
+  const land = clip(STEP_GONE[1] + 1 * FR, STEP_LONG, CLIP_FPS, (t) => manAt(step, t, view), undefined, false, HEAVY_MAN);
+  const struck = clip(0, reel.long, CLIP_FPS, (t) => manAt(reel, t, view), undefined, false, HEAVY_MAN);
+  const struckBehind = clip(0, lurch.long, CLIP_FPS, (t) => manAt(lurch, t, view), undefined, false, HEAVY_MAN);
   // (HIS FALL: art/warlock_fall.ts, the main chat's first pass, to be shown to him)
   const down = warlockFall();
-  const fall = clip(0, down.long, CLIP_FPS, (t) => manAt(down, t, view));
+  const fall = clip(0, down.long, CLIP_FPS, (t) => manAt(down, t, view), undefined, false, HEAVY_MAN);
   const set: AnimSet = {
     idle,
     walk,

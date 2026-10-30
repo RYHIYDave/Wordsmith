@@ -23,7 +23,10 @@ const evalJs = opt('eval', '');
 
 const { chromium } = load('playwright');
 const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
-const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: Number(opt('dpr', '1')), hasTouch: flag('touch'), isMobile: flag('touch') });
+// --video DIR: the page filmed as it plays, in real time (a scenario can say when its film begins: snap.videoAt())
+const videoDir = opt('video', '');
+const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: Number(opt('dpr', '1')), hasTouch: flag('touch'), isMobile: flag('touch'), ...(videoDir ? { recordVideo: { dir: path.resolve(ROOT, videoDir), size: { width: w, height: h } } } : {}) });
+const videoT0 = Date.now();
 // --init FILE: a script run in the page before the game's own (for measuring: tools/canvas_room.js counts the canvases)
 if (opt('init', '')) await ctx.addInitScript({ path: path.resolve(ROOT, opt('init', '')) });
 const page = await ctx.newPage();
@@ -52,7 +55,11 @@ if (scenario) {
     fs.mkdirSync(path.dirname(p), { recursive: true });
     fs.writeFileSync(p, JSON.stringify(obj));
   };
+  /** Seconds since the video began (--video). */
+  snap.videoAt = () => (Date.now() - videoT0) / 1000;
   await mod.default(page, snap);
+  await ctx.close();
+  if (videoDir) console.log('video', path.relative(ROOT, await page.video().path()));
   await browser.close();
   console.log(errors ? `FINISHED WITH ${errors} ERROR(S)` : 'finished clean');
   process.exit(errors ? 1 : 0);
