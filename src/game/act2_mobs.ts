@@ -60,9 +60,16 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'groom', weight: 4 },
     { kind: 'pguard', weight: 3 },
   ],
+  // floor 17, the Masque (his doc: "masked dancers who waltz until they notice you, footmen, and the Silent Order among the
+  // guests"): the dancers the most, in crowds
+  17: [
+    { kind: 'dancer', weight: 6 },
+    { kind: 'footman', weight: 3 },
+    { kind: 'order', weight: 3 },
+  ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
-export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard' };
+export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman' };
 /** The tiny ones, never a yellow pack (they are not led). */
 const TINY = new Set<MonsterKind>(['rat']);
 

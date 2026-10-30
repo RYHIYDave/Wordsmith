@@ -49,6 +49,10 @@ import { RULES as gardener } from './gardener';
 import { RULES as groom } from './groom';
 import { RULES as pguard } from './pguard';
 import { RULES as princess } from './princess';
+import { RULES as footman } from './footman';
+import { RULES as dancer } from './dancer';
+import { RULES as order } from './order';
+import { RULES as prince } from './prince';
 
 export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>> = {
   chanter,
@@ -94,6 +98,11 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   groom,
   pguard,
   princess,
+  // (floor 17's)
+  footman,
+  dancer,
+  order,
+  prince,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

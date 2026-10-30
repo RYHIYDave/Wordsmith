@@ -50,9 +50,9 @@ export const HIGH_CITY = { on: false, built: 1 };
 /** The kinds of ground of the descent, in its order; then the Hush's five (ACT2); then the High City's (HIGH_CITY). */
 export type Act1LandKind = 'quarry' | 'ledge' | 'canyon' | 'pine' | 'fen';
 export type Act2LandKind = 'gateward' | 'undercity' | 'millrace' | 'housequiet' | 'library' | HighLandKind;
-export type HighLandKind = 'swangardens';
+export type HighLandKind = 'swangardens' | 'masque';
 export type LandKind = Act1LandKind | Act2LandKind;
-export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens'];
+export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens', 'masque'];
 /** The Hush's five grounds. */
 export const ACT2_LANDS: readonly Act2LandKind[] = ['gateward', 'undercity', 'millrace', 'housequiet', 'library'];
 export function isAct2Land(k: LandKind): k is Act2LandKind {
@@ -131,6 +131,9 @@ export const ACT1_FLOORS: Readonly<Record<number, Act1FloorDef>> = {
   // ACT 2, PART TWO, THE HIGH CITY (HIGH_CITY): his doc's places and each boss's floor; the Swan Gardens at dawn (his doc's palette
   // "Dawn rose, swan white, deep hedge green"; the art chat's ground painted for a low sun from the upper left)
   16: { depth: 16, land: 'swangardens', place: 'The Swan Gardens', name: 'The Swan Pavilion', boss: 'princess', light: { dark: 0.06, tint: [58, 32, 52], vignette: 0.28, pool: 0 } },
+  // (floor 17, the Masque: indoors, the seven rooms lit only through their windows, as in Poe, his pick by the art chat, “As
+  // drawn, true to the book (Recommended)”: dark as the House of Quiet, a little warmer; the Prince's floor the Black Room)
+  17: { depth: 17, land: 'masque', place: 'The Masque', name: 'The Black Room', boss: 'prince', light: { dark: 0.7, tint: [20, 12, 22], vignette: 0.32, pool: 0.42 } },
 };
 
 /** The floor of the descent at a depth, or null. */

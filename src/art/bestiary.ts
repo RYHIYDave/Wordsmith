@@ -222,6 +222,11 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   groom: { top: 27, half: 9 },
   pguard: { top: 33, half: 11 },
   princess: { top: 42, half: 14 },
+  // (floor 17's, from the art chat's notes until FIG.size says: the footman 63 tall, the dancers the knight's size, the Order the knight's, the Prince a head taller)
+  footman: { top: 32, half: 10 },
+  dancer: { top: 29, half: 9 },
+  order: { top: 29, half: 9 },
+  prince: { top: 36, half: 12 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

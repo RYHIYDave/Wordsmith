@@ -46,6 +46,10 @@ import { FX as gardener } from './gardener';
 import { FX as groom } from './groom';
 import { FX as pguard } from './pguard';
 import { FX as princess } from './princess';
+import { FX as footman } from './footman';
+import { FX as dancer } from './dancer';
+import { FX as order } from './order';
+import { FX as prince } from './prince';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   chanter,
@@ -91,6 +95,11 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   groom,
   pguard,
   princess,
+  // (floor 17's)
+  footman,
+  dancer,
+  order,
+  prince,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {

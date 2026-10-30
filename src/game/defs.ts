@@ -753,6 +753,12 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   groom: { kind: 'groom', name: 'Hushed Groom', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.9, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   pguard: { kind: 'pguard', name: 'Palace Guard', life: 52, dmgMin: 13, dmgMax: 19, speed: 0.8, radius: 0.45, range: 2.7, windup: 20 / 30, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   princess: { kind: 'princess', name: 'The Princess', life: 640, dmgMin: 22, dmgMax: 31, speed: 4.0, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.0, xp: 1000, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 17, the Masque: the main chat's first picks, a floor up from 16's; their paces the art chat's: the dancers' whirl
+  // DN_PACE 3.4, the footmen's march FM_PACE 2.8, the Order's run ORDER_PACE 5.5, the Prince's dance-step PC_PACE 4.5)
+  footman: { kind: 'footman', name: 'Footman', life: 56, dmgMin: 14, dmgMax: 20, speed: 2.8, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.3, xp: 19, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  dancer: { kind: 'dancer', name: 'Masked Dancer', life: 23, dmgMin: 7, dmgMax: 11, speed: 3.4, radius: 0.3, range: 1.3, windup: 0.5, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  order: { kind: 'order', name: 'The Silent Order', life: 27, dmgMin: 9, dmgMax: 13, speed: 5.5, radius: 0.3, range: 1.4, windup: 0.5, cooldown: 2.1, xp: 10, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  prince: { kind: 'prince', name: 'The Prince', life: 660, dmgMin: 23, dmgMax: 32, speed: 4.5, radius: 0.6, range: 2.6, windup: 0.6, cooldown: 1.8, xp: 1050, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -1209,6 +1215,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   censor: ['...'],
   // (THE HIGH CITY: the Princess makes no sound but her vines and hooves, his pick; her one whisper is as she falls: game/act1_rules/princess.ts)
   princess: ['...'],
+  // (floor 17: the Prince's lines his own, once he is built: game/act1_rules/prince.ts)
+  prince: ['...'],
 };
 
 /**
@@ -1455,7 +1463,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];
