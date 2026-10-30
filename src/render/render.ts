@@ -100,6 +100,10 @@ import { THRUST } from '../art/heroes3';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
 import { makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
 import type { ContraptionArt } from '../art/tinkerer_art';
+// (THE RANGER'S COMPANIONS: their pictures, the art chat's, behind COMPANIONS_ART_ON)
+import { COMP_SHADOW, makeCompanionArt } from '../art/companions_art';
+import { strideOf } from '../art/companions_art_moves';
+import type { CompanionKind } from '../game/companions';
 import type { Clip } from '../art/actor_types';
 import { TINKER_TUNE } from '../game/tinkerer';
 
@@ -1205,6 +1209,36 @@ export class Renderer {
         const pic = turned(g.fx, g.fy, sp);
         this.stand(g.x + g.y + 0.02, pic, sx, sy - drop, glow > 0 ? silhouette(pic, BREW_CYAN) : null, glow, grow);
       }
+    }
+  }
+
+  /** THE RANGER'S COMPANIONS: each kind's pictures, made the first time one is seen. */
+  private readonly petArt: Partial<Record<CompanionKind, ActorArt>> = {};
+
+  /**
+   * THE RANGER'S COMPANIONS (game/companions.ts, behind COMPANIONS; their pictures the art chat's, art/companions_art.ts, his yes
+   * to all six by 30 Oct 2026): each as a figure, from in front or behind as it faces, mirrored for
+   * the screen's left; standing, going (its frames by the ground it covers, so its feet grip), its bite (the art's clip, its
+   * blow at the game's own: COMPANION_TUNE.bite), its gift painted in it; a soft shadow under it (the fliers' on the floor).
+   * Called for, it comes in over a third of a second.
+   */
+  private drawPets(g: CanvasRenderingContext2D, game: Game, cam: Cam, t: number, W: number, H: number): void {
+    for (const p of game.pets) {
+      const sx = wx(cam, p.x, p.y);
+      const sy = wy(cam, p.x, p.y);
+      if (sx < -80 || sx > W + 80 || sy < -60 || sy > H + 120) continue;
+      const art = (this.petArt[p.kind] ??= makeCompanionArt(p.kind));
+      const set = p.fx + p.fy < -0.2 ? art.back : art.front;
+      const clip = set.clips?.attack;
+      let sp: Sprite;
+      if (p.act === 'bite' && clip) sp = clip.frames[Math.max(0, Math.min(clip.frames.length - 1, Math.floor(p.actT * clip.fps + 1e-6)))];
+      else if (p.act === 'walk') {
+        const n = set.walk.length;
+        sp = set.walk[Math.floor((p.walked / strideOf(p.kind)) * n) % n];
+      } else sp = set.idle[Math.floor(t * (set.idleFps ?? 15)) % set.idle.length];
+      const come = p.act === 'arrive' ? Math.max(0, Math.min(1, p.actT / 0.3)) : 1;
+      ellipse(g, sx, sy, COMP_SHADOW[p.kind] / 45, '#000000', 0.26 * come);
+      this.stand(p.x + p.y + 0.015, p.fx - p.fy < 0 ? flipSprite(sp) : sp, sx, sy, null, 0, 1, come);
     }
   }
 
@@ -3048,6 +3082,9 @@ export class Renderer {
 
     // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
     if (game.golems.length || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
+    // THE RANGER'S COMPANIONS (game/companions.ts), at his side; their pictures the art chat's (art/companions_art.ts): only with
+    // COMPANIONS on (game/talents.ts) are there any, so the pictures go on with them, as the art chat's README asks
+    if (game.pets.length) this.drawPets(g, game, cam, t, W, H);
     // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side; his shadows where he stepped from (Phantom Step)
     if (game.bound) this.drawBound(game, cam, W, H, pace / 60);
     if (game.decoys.length) this.drawShadows(game, cam, t);

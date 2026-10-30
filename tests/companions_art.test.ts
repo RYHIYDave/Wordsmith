@@ -64,7 +64,9 @@ function enemyPixel(r: number, g: number, b: number): boolean {
   return sat > 0.4 && Math.max(r, g, b) > 140 && h >= 300 && h <= 352;
 }
 
-test('1. the switch is off, and nothing of the game imports them (only their dev page)', () => {
+// (Brought into the game by the main chat, 30 Oct 2026, behind the companions' own switch, COMPANIONS, off: the game draws them
+// (render/render.ts), and only while COMPANIONS is on are there any to draw; its own switch, COMPANIONS_ART_ON, left as it was.)
+test('1. the switch is off, and of the game only the renderer imports them (and their dev page)', () => {
   assert.equal(COMPANIONS_ART_ON.on, false, 'COMPANIONS_ART_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -72,7 +74,7 @@ test('1. the switch is off, and nothing of the game imports them (only their dev
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*companions_art(_moves|_fx)?['"]/.test(text)) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'dev/preview_companions_art.ts', 'what imports them');
+  assert.equal(users.sort().join(' '), 'dev/preview_companions_art.ts render/render.ts', 'what imports them');
 });
 
 for (const k of KINDS) {

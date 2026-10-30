@@ -56,7 +56,8 @@ export const COMPANION_TUNE = {
   leash: 7,
   tortoiseLeash: 2.5,
   /** A bite: its blow lands this long after it begins, and it is over after `long`. */
-  bite: { hit: 8 / 30, long: 18 / 30 },
+  // (the art chat's bite, his yes to all six by 30 Oct 2026: its strike lands at 12/30 and it is over at 24/30, art/companions_art_moves.ts COMP_ATTACK)
+  bite: { hit: 12 / 30, long: 24 / 30 },
   /** Each: how near it must be to bite (from its middle to the enemy's edge), how often it may, and its share of his hit. */
   kinds: {
     hawk: { reach: 1.1, every: 2.4, share: 0.3 },
