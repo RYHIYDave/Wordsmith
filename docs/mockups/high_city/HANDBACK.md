@@ -74,4 +74,7 @@ THE HIGH CITY'S OWN 25, shared by floors 16 to 20 (`mockup/high-city-set`: `high
 
 ## The checks
 
-ALL_CHECKS
+- The whole unit suite on `mockup/high-city-all`, every test file on its own: 258 files, 2717 tests, all passing.
+- `npx tsc --noEmit -p tsconfig.json`: clean.
+- Every figure's every move through every boss check (`checkBoss`), from in front and from behind, with every handover:
+  each part's own test file, named in its README.
