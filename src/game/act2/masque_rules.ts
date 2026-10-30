@@ -41,6 +41,12 @@ export function stepClock(L: Level, hero: { x: number; y: number }, monsters: re
   return monsters.filter((m) => !m.dead && m.kind === 'dancer' && Math.hypot(m.x - hero.x, m.y - hero.y) <= CHIME.reach);
 }
 
+/** (For the playtests and films) make the clock chime at its next step. */
+export function chimeNow(L: Level): void {
+  const s = STATE.get(L);
+  if (s) s.next = s.t;
+}
+
 /** The clock's prop on this floor. */
 export function clockOf(L: Level): PropInst | undefined {
   return L.props.find((p) => p.kind === 'piece' && p.name === 'the great ebony clock');

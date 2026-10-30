@@ -66,6 +66,7 @@ import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
 import { ACT2, HIGH_CITY } from './game/act1';
+import { chimeNow } from './game/act2/masque_rules';
 import { MELD, RANK2, STONE_RISE, VOLT_MELDS, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -2107,6 +2108,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     levelSelect: LEVEL_SELECT,
     /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
     highCity: HIGH_CITY,
+    /** (THE HIGH CITY, FLOOR 17) the ebony clock made to chime now, for the films: game/act2/masque_rules.ts. */
+    masqueChime: () => game && chimeNow(game.level),
     /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
     act2: (on: boolean, depth = 0) => {
       ACT2.on = on;
