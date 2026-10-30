@@ -25,6 +25,7 @@ import type { Piece } from '../src/art/floorkit';
 import { WORD_COLOR } from '../src/art/icons';
 import { EMBER } from '../src/art/props';
 import type { Sprite } from '../src/engine/px';
+import { HIGH_CITY } from '../src/game/act1';
 import { anchor, count, each, hex, hsv, rgb, sprites } from './floor_checks';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
@@ -69,23 +70,10 @@ const SPOTS: Record<string, number> = { 'a palace door': 1 };
 /** Which frames of a piece that gives light are lit (the rest are out). */
 const LIT: Record<string, number[]> = { 'a gilt lamp post': [0, 1], 'a gilt sconce': [0, 1], 'a standing candelabrum': [0, 1] };
 
-test('nothing of the game imports the High City\'s set', () => {
-  const art = new Set(['art/high_city_set']);
-  const at = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/high_city_set\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(at(dir, spec)), `src/${f} imports the High City's set`);
-    }
-  }
+// (Since his “Levels are ready to add”, 29 Oct 2026, 18:09, the game takes the High City's set in, on floors 16 to 20 behind
+// HIGH_CITY (game/act1.ts, docs/high_city_build.md); nothing of it is seen until he has played the floors and said yes.)
+test('the High City\'s set is in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
 
 test('his twenty-five (Places 7): the set for floors 16 to 20, every one its own name, and none of floor 16\'s own', () => {

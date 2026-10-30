@@ -166,7 +166,8 @@ test("2. A REFLECTION HAS THE HERO'S PICTURES: every list as long, every clip at
     const hero = heroes.of(cls, { twoHanded: true });
     const refl = reflections.of(cls);
     for (const view of VIEWS) {
-      const h = heroLists(hero[view]);
+      // (a hero's fall, the side painter's since 28 Oct, is not a reflection's: it shatters instead, `clips.die`)
+      const h = heroLists({ ...hero[view], clips: hero[view].clips ? { ...hero[view].clips, fall: undefined } : hero[view].clips });
       const r = reflectionLists(refl[view]);
       assert.equal(r.map((l) => l.length).join(','), h.map((l) => l.length).join(','), `${cls} ${view}: its lists`);
       const hc = clipsOf(hero[view]);

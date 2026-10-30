@@ -24,6 +24,7 @@ import { TK, pictureOf } from '../src/art/terrain';
 import type { RGB } from '../src/art/terrain';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
+import { HIGH_CITY } from '../src/game/act1';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void; deepEqual(a: unknown, b: unknown, msg?: string): void };
@@ -61,24 +62,10 @@ const colAt = (c: number, r: number): RGB => {
 };
 const key = (c: readonly number[]): string => c.join(',');
 
-test('nothing of the game imports the Swan Gardens\' ground', () => {
-  const art = new Set(['art/swangardens']);
-  const atp = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (its own pieces, art/floor16.ts, take the lake's water from it: they too are a mock-up nothing of the game imports)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(swangardens|floor16)\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(atp(dir, spec)), `src/${f} imports the Swan Gardens' ground`);
-    }
-  }
+// (Since his “Levels are ready to add”, 29 Oct 2026, 18:09, the game takes the Swan Gardens' ground in, on floors 16 to 20 behind
+// HIGH_CITY (game/act1.ts, docs/high_city_build.md); nothing of it is seen until he has played the floors and said yes.)
+test('the Swan Gardens\' ground is in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
 
 test('every walkable tile\'s middle is floor; every tile of the lake\'s is the drop; every other tile\'s middle is yew', () => {

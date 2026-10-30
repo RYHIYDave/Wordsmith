@@ -27,6 +27,7 @@ import type { Piece } from '../src/art/floorkit';
 import { WORD_COLOR } from '../src/art/icons';
 import { EMBER } from '../src/art/props';
 import type { Sprite } from '../src/engine/px';
+import { HIGH_CITY } from '../src/game/act1';
 import { anchor, count, each, hex, hsv, rgb, sprites } from './floor_checks';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
@@ -42,23 +43,10 @@ const HONEST = new Set(['a lantern on a post', 'a lantern on a post, her vine up
 const QUEST = new Set(['a nettle shirt, half woven']);
 const FIRES = new Set([...EMBER, '#ffc860', '#fff3b0'].map((c) => c.toLowerCase()));
 
-test('nothing of the game imports floor 16\'s pieces', () => {
-  const art = new Set(['art/floor16']);
-  const at = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/floor16\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(at(dir, spec)), `src/${f} imports floor 16's pieces`);
-    }
-  }
+// (Since his “Levels are ready to add”, 29 Oct 2026, 18:09, the game takes floor 16's pieces in, on floors 16 to 20 behind
+// HIGH_CITY (game/act1.ts, docs/high_city_build.md); nothing of it is seen until he has played the floors and said yes.)
+test('floor 16\'s pieces are in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
 
 test('his twenty-five (Places 7): the Princess\'s floor 25 pieces of its own; every one its own name', () => {
