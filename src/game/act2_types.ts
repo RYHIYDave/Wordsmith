@@ -30,6 +30,43 @@ export interface BellsPlan {
   hush: { x: number; y: number; r: number };
 }
 
+/** A rectangle of tiles: x0, y0, x1, y1 (world; x1 and y1 not in it). */
+export type Rect = [number, number, number, number];
+
+/**
+ * (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS, game/act2/swangardens.ts) HOW ITS GARDENS ARE LAID, for its dresser, its painter
+ * (render/outdoor.ts landLook: the art chat's SwanLand, art/swangardens.ts) and its rules (game/act2/garden_rules.ts): plain
+ * numbers and arrays, as the rest of the Land.
+ */
+export interface GardenPlan {
+  /** The terraces up the hill, the lowest first (where he comes in) to the top (the lake): each its floor (Rect), what it is, and its room. */
+  terraces: { r: Rect; role: 'forecourt' | 'parterre' | 'maze' | 'roses' | 'lake'; room: number }[];
+  /** THE TERRACES' WALLS, each a row of tiles along x (floor, `a terrace wall` on each, its face toward +y): its row, from x0 to x1 (x1 not in it), and its stair (`tx`: the stair's feet on (tx, y + 1) and (tx + 1, y + 1), the row open from tx - 1 to tx + 1). */
+  walls: { y: number; x0: number; x1: number; tx: number }[];
+  /** THE HEDGE MAZE: its corner (the hedge's), its cells across and deep, their pitch (a corridor pitch - 1 wide, a hedge one), where it is gone into and come out of (a tile each, in its hedge), and its dead ends' cells (tile middles). */
+  maze: { x0: number; y0: number; nx: number; ny: number; pitch: number; gin: [number, number]; gout: [number, number]; ends: [number, number][] };
+  /** THE LAKE (its tiles: Land.lake), its rectangle; the Swan Pavilion's middle on its island in it. */
+  lake: Rect;
+  pavilion: { x: number; y: number };
+  /** The still fountains (their middles, a tile's; three tiles across), and the fountain of the four royals (its middle, a tile's corner; two across). */
+  fountains: { x: number; y: number }[];
+  royals: { x: number; y: number } | null;
+  /** The parterre's beds of roses (each edged in box), and the beds gone over to nettles (Rects). */
+  roses: Rect[];
+  nettles: Rect[];
+  /** The side gardens off the terraces, each its floor (Rect), its room, and its gap in the hedge (three tiles of a column along y: x, y0). */
+  sides: { r: Rect; role: 'gardeners' | 'lair' | 'treasure'; room: number; gap: [number, number] }[];
+  /** The garden gates: the one he came in by (its tile in the hedge, and the way back through it), and the way on (its tile in the hedge, and the way on through it). */
+  gates: { start: { x: number; y: number; dir: 'x+' | 'x-' | 'y+' | 'y-' }; on: { x: number; y: number; dir: 'x+' | 'x-' | 'y+' | 'y-' } };
+  /** THE DRIVE through the forecourt (Rects), the gravel walks, the flags, the beds of bare earth (Rects); paving round a fountain (x, y, r). */
+  walks: Rect[];
+  paved: Rect[];
+  rounds: [number, number, number][];
+  beds: Rect[];
+  /** Where the garden party was left out (its card table's tile), on the rose terrace. */
+  party: { x: number; y: number } | null;
+}
+
 export interface Act2Land {
   /** What each walkable tile is, a tile each (its floor's own zones: GW_ZONE, UC_ZONE, HQ_ZONE, LB_ZONE); 0 where not said. */
   zones?: Uint8Array;
@@ -48,4 +85,9 @@ export interface Act2Land {
   shelves?: Uint8Array;
   /** (THE CAMP, game/camp.ts: the Gate Ward's ground as the city's people keep it, art/gateward.ts GateWardLand.swept) */
   swept?: boolean;
+  /** (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS) 1 for each tile of the lake (not floor: its deep water, the ground's drop); and how its gardens are laid. */
+  lake?: Uint8Array;
+  garden?: GardenPlan;
+  /** (THE HIGH CITY, FLOOR 16: where the way on leads and the way back is, as its map-maker laid its gates: game/ways.ts placeOnward; else from where the boss stands) */
+  wayDirs?: { on: 'x+' | 'x-' | 'y+' | 'y-'; back: 'x+' | 'x-' | 'y+' | 'y-' };
 }

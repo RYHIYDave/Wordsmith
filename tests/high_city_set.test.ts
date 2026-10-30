@@ -70,6 +70,8 @@ const SPOTS: Record<string, number> = { 'a palace door': 1 };
 const LIT: Record<string, number[]> = { 'a gilt lamp post': [0, 1], 'a gilt sconce': [0, 1], 'a standing candelabrum': [0, 1] };
 
 test('nothing of the game imports the High City\'s set', () => {
+  // (THE HIGH CITY in the game: only through its own, as the Hush's set: render/act1_pieces.ts)
+  const own = new Set(['render/act1_pieces.ts']);
   const art = new Set(['art/high_city_set']);
   const at = (dir: string, spec: string): string => {
     const out = dir ? dir.split('/') : [];
@@ -80,7 +82,7 @@ test('nothing of the game imports the High City\'s set', () => {
     return out.join('/');
   };
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/high_city_set\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/high_city_set\.ts$/.test(f) || own.has(f)) continue;
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
     for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       assert.ok(!art.has(at(dir, spec)), `src/${f} imports the High City's set`);

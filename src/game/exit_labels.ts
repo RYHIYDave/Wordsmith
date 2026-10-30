@@ -19,7 +19,8 @@ import { EXITS, ONWARD, stairMiddle, STAIR_OPENING } from './ways';
 export const EXIT_LABELS = { on: true };
 
 /** Floors 6 to 10's ways on, what each is. */
-export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY', 11: 'GRATE', 12: 'OUTFALL', 13: 'POSTERN', 14: 'DOOR', 15: 'GREAT DOORS' };
+// (THE HIGH CITY, FLOOR 16: the Swan Gardens' gate on up the hill, GATE)
+export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY', 11: 'GRATE', 12: 'OUTFALL', 13: 'POSTERN', 14: 'DOOR', 15: 'GREAT DOORS', 16: 'GATE' };
 
 /** An open exit's name: where its foot is (tiles), the name, and how high over its foot it stands (game pixels). */
 export interface ExitLabel {

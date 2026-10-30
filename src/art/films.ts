@@ -53,6 +53,10 @@ import { canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoo
 import { gateWardStart, gateWardWay, houseOfQuietStart, houseOfQuietWay, libraryStart, libraryWay, millraceStart, millraceWay, undercityStart, undercityWay } from './act2_ways';
 import type { StartArt, WayArt, WayDir } from './ways_kit';
 export type { StartArt, WayArt };
+// (THE HIGH CITY, FLOOR 16: its garden gates, the art's own piece: art/floor16.ts)
+import { swanGardensPieces } from './floor16';
+import { Px } from '../engine/px';
+import { GARDEN_GATE } from '../game/ways';
 
 /** Where a piece in a wall stands (tiles), and the room's zone before it. */
 type At = { x: number; y: number } | undefined;
@@ -68,7 +72,31 @@ const ONWARD_ART: Record<number, { way: (d: WayDir, at: At, zone: number | undef
   13: { way: (d) => millraceWay(d), start: (d) => millraceStart(d) },
   14: { way: (d, at, zone) => houseOfQuietWay(d, at, zone), start: (d, at, zone) => houseOfQuietStart(d, at, zone) },
   15: { way: (d, at, zone) => libraryWay(d, at, zone), start: (d, at, zone) => libraryStart(d, at, zone) },
+  // (THE HIGH CITY, FLOOR 16: the art chat drew no film for its ways; its own `a garden gate` stands in the hedge at each)
+  16: { way: (d) => gardenGateWay(d), start: (d) => gardenGateStart(d) },
 };
+
+/**
+ * (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS' GATES, game/act2/swangardens.ts) The art's `a garden gate` (art/floor16.ts: its
+ * frames shut and open across x, shut and open across y), standing in the yew at the way on and where he came in: across
+ * the way through it (a way along x is crossed by a gate across y). THE WAY ON: shut while the Princess lives; as she falls,
+ * GARDEN_GATE.shut frames shut and then open, its leaves swinging back with a jolt (game/ways.ts ONWARD[16]); open after.
+ * WHERE HE CAME IN: shut behind him. Nothing of either lies on the floor (its `under` an empty picture).
+ */
+function gardenGate(d: WayDir): { shut: Sprite; open: Sprite; none: Sprite } {
+  const fr = swanGardensPieces().find((p) => p.name === 'a garden gate')!.frames!;
+  const k = d === 'x+' || d === 'x-' ? 1 : 0;
+  return { shut: fr[2 * k], open: fr[2 * k + 1], none: new Px(2, 2).sprite(1, 1, 2) };
+}
+function gardenGateWay(d: WayDir): WayArt {
+  const g = gardenGate(d);
+  const frames = [...new Array<Sprite>(GARDEN_GATE.shut).fill(g.shut), ...new Array<Sprite>(GARDEN_GATE.open).fill(g.open)];
+  return { shut: { under: g.none, over: g.shut }, film: { frames, fps: 30, jolts: [GARDEN_GATE.shut], kicks: [2] }, open: { under: g.none, over: g.open }, back: 0 };
+}
+function gardenGateStart(d: WayDir): StartArt {
+  const g = gardenGate(d);
+  return { under: g.none, over: g.shut, back: 2 };
+}
 const asDir = (d: string | undefined): WayDir => (d === 'x-' || d === 'y+' || d === 'y-' ? d : 'x+');
 
 /** One of a floor's moments, as the game plays it. */

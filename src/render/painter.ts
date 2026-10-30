@@ -41,7 +41,7 @@ import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
-import { PIECE, flowOfLand, gateWardLand, landTerrain, lowRowsOf, paintFlows, withLow } from './outdoor';
+import { PIECE, flowOfLand, gateWardLand, groundPainter, landTerrain, lowRowsOf, paintFlows, withLow } from './outdoor';
 import type { FlowBits } from './outdoor';
 import type { FlowLayer } from '../art/flowing';
 import type { Rows } from '../art/low_stacks';
@@ -759,7 +759,8 @@ export function paintWorkerMain(): void {
   let seq = 0;
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
-  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null; flow: FlowLayer | null } | null = null;
+  // (THE HIGH CITY, FLOOR 16: `paint`, how its pieces are painted: render/outdoor.ts groundPainter)
+  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null; flow: FlowLayer | null; paint: typeof paintTerrain } | null = null;
   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
 
   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
@@ -880,7 +881,7 @@ export function paintWorkerMain(): void {
           const t0 = performance.now();
           // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, painted with it: art/standing.ts)
           const both = ground.stands && ground.near ? paintWithStanding(ground.T, ground.stands, ground.near, a.i * PIECE, a.j * PIECE, PIECE, PIECE) : null;
-          const p = both ? both.ground : paintTerrain(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
+          const p = both ? both.ground : ground.paint(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
           const cv = new OffscreenCanvas(PIECE, PIECE);
           (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
           const bmp = cv.transferToImageBitmap();
@@ -938,7 +939,7 @@ export function paintWorkerMain(): void {
         const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
         const near = ask.walls > 0 ? nearOf(T, ask.walls) : null;
         const stands = near ? (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
-        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor), flow: flowOfLand(ask.land) };
+        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor), flow: flowOfLand(ask.land), paint: groundPainter(ask.land) };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }

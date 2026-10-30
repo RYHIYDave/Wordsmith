@@ -53,7 +53,8 @@ test('the switch is on (since 24.0, his yes); off, the options have no button of
 test('the test hero, on every floor and in every class: there, levelled, his points spent, geared for it, with its words', () => {
   const last = lastFloor();
   assert.equal(last, 15);
-  assert.equal(LEVEL_SELECT.level.length, last);
+  // (THE HIGH CITY: its floors' levels may be in ahead of its switch)
+  assert.ok(LEVEL_SELECT.level.length >= last);
   for (const cls of CLASS_IDS) {
     for (let d = 1; d <= last; d++) {
       const what = `${cls}, floor ${d}`;
@@ -169,7 +170,8 @@ test('eight options: on the screen, none overlapping, each big enough for a thum
 
 test('the page of floors: every floor built, in its rows of five', () => {
   const all: number[] = [];
-  for (const r of FLOOR_ROWS) for (let d = r.from; d <= r.to; d++) all.push(d);
+  // (THE HIGH CITY: its row shown only once its first floor is built, and only as far as they are: ui/panels.ts drawFloors)
+  for (const r of FLOOR_ROWS.filter((q) => q.from <= lastFloor())) for (let d = r.from; d <= Math.min(r.to, lastFloor()); d++) all.push(d);
   assert.deepEqual(all, Array.from({ length: lastFloor() }, (_, i) => i + 1));
   for (const r of FLOOR_ROWS) assert.equal(r.to - r.from + 1, 5);
 });

@@ -43,6 +43,9 @@ const QUEST = new Set(['a nettle shirt, half woven']);
 const FIRES = new Set([...EMBER, '#ffc860', '#fff3b0'].map((c) => c.toLowerCase()));
 
 test('nothing of the game imports floor 16\'s pieces', () => {
+  // (THE HIGH CITY, FLOOR 16 in the game: only through its own, as floor 13's: render/act1_pieces.ts; and its garden gates at its
+  // ways, art/films.ts)
+  const own = new Set(['render/act1_pieces.ts', 'art/films.ts']);
   const art = new Set(['art/floor16']);
   const at = (dir: string, spec: string): string => {
     const out = dir ? dir.split('/') : [];
@@ -53,7 +56,7 @@ test('nothing of the game imports floor 16\'s pieces', () => {
     return out.join('/');
   };
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/floor16\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/floor16\.ts$/.test(f) || own.has(f)) continue;
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
     for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       assert.ok(!art.has(at(dir, spec)), `src/${f} imports floor 16's pieces`);

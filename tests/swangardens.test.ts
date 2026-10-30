@@ -62,6 +62,8 @@ const colAt = (c: number, r: number): RGB => {
 const key = (c: readonly number[]): string => c.join(',');
 
 test('nothing of the game imports the Swan Gardens\' ground', () => {
+  // (THE HIGH CITY, FLOOR 16 in the game: only through its own, as the Millrace's: render/outdoor.ts)
+  const own = new Set(['render/outdoor.ts']);
   const art = new Set(['art/swangardens']);
   const atp = (dir: string, spec: string): string => {
     const out = dir ? dir.split('/') : [];
@@ -73,7 +75,7 @@ test('nothing of the game imports the Swan Gardens\' ground', () => {
   };
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (its own pieces, art/floor16.ts, take the lake's water from it: they too are a mock-up nothing of the game imports)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(swangardens|floor16)\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(swangardens|floor16)\.ts$/.test(f) || own.has(f)) continue;
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
     for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       assert.ok(!art.has(atp(dir, spec)), `src/${f} imports the Swan Gardens' ground`);

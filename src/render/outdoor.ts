@@ -22,7 +22,7 @@ import { paintTown } from '../art/ledge_town';
 import { pinewoodLook } from '../art/pinewood';
 import { QUARRY_LOOK } from '../art/quarry';
 import { GRAIN, paintTerrain, terrainOf } from '../art/terrain';
-import type { Terrain, TerrainLook } from '../art/terrain';
+import type { Terrain, TerrainLook, TerrainPiece } from '../art/terrain';
 // ACT 2, THE HUSH: the art chat's five grounds (each its own look, painted by the same painter)
 import { GW_DEEP, gateWardLook, gateWardPaintFloor } from '../art/gateward';
 import type { GateWardLand } from '../art/gateward';
@@ -30,7 +30,8 @@ import { UC_DEEP, undercityLook } from '../art/undercity';
 import { millraceLook } from '../art/millrace';
 import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
-import { SG_WATER, swanGardensLook } from '../art/swangardens';
+import { SG_WATER, paintSwanGardens, swanGardensLook, swanGardensTerrain } from '../art/swangardens';
+import type { SwanLand } from '../art/swangardens';
 // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 // (FLOOR 15'S STACKS A BLOCK HIGH, the art chat's, behind LOW_STACKS: art/low_stacks.ts)
@@ -184,6 +185,8 @@ function flowOf(pts: readonly [number, number][]): (x: number, y: number) => [nu
  * them, faded as he goes in, are render's.)
  */
 export function landTerrain(land: Land, floor: Floor, fresh = false): Terrain {
+  // (THE HIGH CITY, FLOOR 16: the Swan Gardens' ground, the yew throwing its shadows across it: art/swangardens.ts)
+  if (land.kind === 'swangardens') return swanGardensTerrain(floor, swanLandOf(land, floor));
   if (land.kind === 'gateward') {
     const gl = gateWardLand(land, floor, fresh);
     return terrainOf(gateWardPaintFloor(gl, 'open'), gateWardLook(gl, 'open'));
@@ -252,9 +255,9 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
     case 'library':
       return greatLibraryLook({ floor, zone: zoneOf(land, W, H), rows: lowRowsOf(land, floor) ?? undefined });
-    // (ACT 2, PART TWO, THE HIGH CITY: the Swan Gardens, the art chat's look; given what its map-maker lays once it is built)
+    // (ACT 2, PART TWO, THE HIGH CITY: the Swan Gardens, the art chat's look, given what its map-maker laid: swanLandOf)
     case 'swangardens':
-      return swanGardensLook({});
+      return swanGardensLook(swanLandOf(land, floor));
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -320,6 +323,64 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
 // keep the imports the shapes need, for the fields above
 void blobDist;
 void segDist;
+
+/**
+ * (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS) WHAT ONLY THE LEVEL KNOWS, as the art chat's ground asks it (art/swangardens.ts
+ * SwanLand), from what its map-maker laid (game/act2/swangardens.ts: Land.lake and Land.garden): the lake's tiles; its gravel
+ * walks, its flags (the walls' rows, the fountains' paving), its beds of bare earth, each a field held as a grid four to a tile;
+ * how far into a bed of nettles a place is (the painter rags its edge), the same.
+ */
+export function swanLandOf(land: Land, floor: Floor): SwanLand {
+  const W = floor.w;
+  const H = floor.h;
+  const lake = land.lake;
+  const G = land.garden;
+  if (!G) return { lake: lake ? (tx, ty) => tx >= 0 && ty >= 0 && tx < W && ty < H && lake[ty * W + tx] === 1 : undefined };
+  const K = 4;
+  const GW = W * K;
+  const code = new Uint8Array(GW * H * K);
+  const lay = (r: readonly number[], c: number): void => {
+    for (let j = Math.max(0, r[1] * K); j < Math.min(H * K, r[3] * K); j++) for (let i = Math.max(0, r[0] * K); i < Math.min(GW, r[2] * K); i++) if (code[j * GW + i] < c) code[j * GW + i] = c;
+  };
+  // (the stronger over the weaker: flags over earth over gravel)
+  for (const r of G.walks) lay(r, 1);
+  for (const r of G.beds) lay(r, 2);
+  for (const r of G.paved) lay(r, 3);
+  for (const [x, y, rr] of G.rounds) {
+    for (let j = Math.max(0, Math.floor((y - rr) * K)); j < Math.min(H * K, Math.ceil((y + rr) * K)); j++) {
+      for (let i = Math.max(0, Math.floor((x - rr) * K)); i < Math.min(GW, Math.ceil((x + rr) * K)); i++) if (Math.hypot((i + 0.5) / K - x, (j + 0.5) / K - y) < rr) code[j * GW + i] = 3;
+    }
+  }
+  const at = (x: number, y: number): number => {
+    const i = Math.floor(x * K);
+    const j = Math.floor(y * K);
+    return i >= 0 && j >= 0 && i < GW && j < H * K ? code[j * GW + i] : 0;
+  };
+  const beds = G.nettles;
+  const nettle = gridField(W, H, K, (x, y) => {
+    let best = -9;
+    for (const r of beds) {
+      const inside = Math.min(x - r[0], r[2] - x, y - r[1], r[3] - y);
+      if (inside > best) best = inside;
+    }
+    return best;
+  });
+  return {
+    lake: lake ? (tx, ty) => tx >= 0 && ty >= 0 && tx < W && ty < H && lake[ty * W + tx] === 1 : undefined,
+    walk: (x, y) => at(x, y) === 1,
+    bed: (x, y) => at(x, y) === 2,
+    paved: (x, y) => at(x, y) === 3,
+    nettles: beds.length ? (x, y) => nettle(x, y) : undefined,
+  };
+}
+
+/**
+ * (THE HIGH CITY, FLOOR 16) How a piece of a floor's ground is painted: the Swan Gardens' lake painted into its drop
+ * (art/swangardens.ts paintSwanGardens, in place of paintTerrain: here and in the painter's worker, render/painter.ts).
+ */
+export function groundPainter(land: Land | null): (T: Terrain, x0: number, y0: number, w: number, h: number) => TerrainPiece {
+  return land?.kind === 'swangardens' ? paintSwanGardens : paintTerrain;
+}
 
 // ---------------------------------------------------------------------------------------------------
 // THE GROUND, IN PIECES
@@ -492,7 +553,8 @@ export class OutdoorGround {
     const t0 = performance.now();
     // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, painted with it)
     const both = this.stands && this.near ? paintWithStanding(T, this.stands, this.near, i * PIECE, j * PIECE, PIECE, PIECE) : null;
-    const p = both ? both.ground : paintTerrain(T, i * PIECE, j * PIECE, PIECE, PIECE);
+    // (THE HIGH CITY, FLOOR 16: the Swan Gardens' lake painted into its drop: groundPainter)
+    const p = both ? both.ground : groundPainter(this.land)(T, i * PIECE, j * PIECE, PIECE, PIECE);
     this.stats.pieces++;
     this.stats.ms += performance.now() - t0;
     const cvs = document.createElement('canvas');

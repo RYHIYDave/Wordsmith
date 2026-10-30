@@ -281,6 +281,9 @@ export class Act1Pieces {
   /** (ACT 2, THE HUSH) A piece's own picture for being seen through (SEEN_FRAME), or null: drawn whole in place of it while someone is behind it. */
   seenOf(p: PropInst): Sprite | null {
     if (p.kind !== 'piece' || !p.name) return null;
+    // (THE HIGH CITY, FLOOR 16: a rose arbour half there while someone is under it or behind it, the art's own picture of it:
+    // its frames whole and half along x, whole and half along y, art/floor16.ts)
+    if (p.name === 'a rose arbour') return this.piece(p.name)?.frames?.[(p.variant & 2) + 1] ?? null;
     const k = SEEN_FRAME[p.name];
     return k === undefined ? null : this.piece(p.name)?.frames?.[k] ?? null;
   }

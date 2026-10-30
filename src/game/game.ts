@@ -26,6 +26,8 @@ import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, ga
 import { ACT1, HIGH_CITY, act2Floor, cityFloor, lastFloor } from './act1';
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
+// (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
+import { nettleSlow, stepGardens } from './act2/garden_rules';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
 import { act1Rules, act1Ward } from './act1_rules/index';
@@ -1832,6 +1834,8 @@ export class Game {
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
     this.updateHazards(dt);
+    // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds sting and slow whoever walks through them: game/act2/garden_rules.ts)
+    if (this.level.land?.garden) this.updateGardens(dt);
     this.updateFlow(dt);
     // (BINDING: what is held stands where it stood, whatever its own steps, a charge or a leap would have done; it strikes still)
     const pins = this.monsters.filter((m) => !m.dead && (m.bindT ?? 0) > 0).map((m) => [m, m.x, m.y] as const);
@@ -2337,6 +2341,15 @@ export class Game {
     for (const z of L.hazards) {
       if (z.spot.kind === 'spikes') this.stepSpikes(z, h);
       else this.stepDarts(z, h, dt);
+    }
+  }
+
+  /** (THE HIGH CITY, FLOOR 16) THE SWAN GARDENS' STEP: the nettles' stings dealt (the hero's as the spike floor's, before armour), their stirring and her vine in the yew: game/act2/garden_rules.ts. */
+  private updateGardens(dt: number): void {
+    if (this.over) return;
+    for (const s of stepGardens(this.level, this.hero, this.monsters, this.time, dt)) {
+      if (s.m) this.damageMonster(s.m, s.dmg, 'phys', false, -1);
+      else this.hurtHero(s.dmg, 'phys', [], null, 'nettles');
     }
   }
 
@@ -3728,6 +3741,8 @@ export class Game {
     if (len > 0.01) {
       let sp = d.moveSpeed * (1 + h.haste / 100) * (1 + this.talentSpeed() / 100);
       if (h.chillT > 0) sp *= 1 - h.chill;
+      // (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: game/act2/garden_rules.ts)
+      if (this.level.land?.garden) sp *= nettleSlow(h);
       // (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
       if ((h.rootT ?? 0) > 0) sp = 0;
       // (an attack slows the hero for a moment from when it is begun, as it always has; one that is
@@ -8525,7 +8540,8 @@ export class Game {
       m.cd -= mdt * rage * wither;
       const def = MONSTERS[m.kind];
       // (THE TINKERER's tree: Tar, what walks in her tar is slowed to a crawl)
-      const slow = (m.chillT > 0 ? 1 - m.chill : 1) * wither * (this.tars.length ? this.inTar(m) : 1);
+      // (THE HIGH CITY, FLOOR 16: and in the Swan Gardens' nettles, game/act2/garden_rules.ts)
+      const slow = (m.chillT > 0 ? 1 - m.chill : 1) * wither * (this.tars.length ? this.inTar(m) : 1) * (this.level.land?.garden ? nettleSlow(m) : 1);
       // (THE FIRST FIVE FLOORS: one with a gait and acts of its own, a boss of floors 2 to 5, a bone beast, a mini fleshmancer, is run by game/bosses.ts)
       if (gaitOf(m.kind)) {
         this.bosses.step(m, def, mdt, slow, rage, dx, dy, dist);
