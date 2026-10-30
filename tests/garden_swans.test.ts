@@ -110,10 +110,12 @@ function segGap(p1: number[], q1: number[], p2: number[], q2: number[]): number 
   return best;
 }
 
-test('nothing of the game imports the swans; its switch is off', () => {
+// (THE HIGH CITY, FLOOR 16: the Princess's swans, circling her and her Eleven, are drawn from them by her pictures and what she
+// casts for the game, behind HIGH_CITY (off): art/act1_figs/princess.ts, render/act1_fx/princess.ts; nothing else)
+test('nothing of the game imports the swans but the Princess’s (behind HIGH_CITY); its switch is off', () => {
   assert.equal(SWAN_ON.on, false);
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/garden_swans.ts') continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/garden_swans.ts' || f === 'art/act1_figs/princess.ts' || f === 'render/act1_fx/princess.ts') continue;
     assert.ok(!/from ['"][^'"]*garden_swans['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the swans`);
   }
 });

@@ -119,7 +119,10 @@ const smearIn = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports her', () => {
+// (THE HIGH CITY, FLOOR 16, behind HIGH_CITY (off) since her fight is built, 30 Oct 2026: through her pictures for the game,
+// art/act1_figs/princess.ts, and what she casts, render/act1_fx/princess.ts, alone; her switch still off, as nothing of the game
+// draws her while HIGH_CITY is off)
+test('1. the switch is off, and only her pictures and what she casts for the game (behind HIGH_CITY) import her', () => {
   assert.equal(PRINCESS_ON.on, false, 'PRINCESS_ON is off');
   const users: string[] = [];
   const hers = /^art\/(princess(_moves|_ride|_fx)?|spectral_steed)$/;
@@ -133,7 +136,7 @@ test('1. the switch is off, and nothing of the game imports her', () => {
       if (hers.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import her');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/princess.ts render/act1_fx/princess.ts', 'game files that import her');
 });
 
 test('2. EVERY MOVE OF HERS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
