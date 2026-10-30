@@ -30,6 +30,9 @@ import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, end
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
 import { nettleSlow, stepGardens } from './act2/garden_rules';
+// (THE HIGH CITY, FLOOR 17: the Masque's clock and its chime, the dancers called to it)
+import { stepClock } from './act2/masque_rules';
+import { callToChime } from './act1_rules/dancer';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
 import { act1Rules, act1Ward } from './act1_rules/index';
@@ -1851,6 +1854,15 @@ export class Game {
     this.updateHazards(dt);
     // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds sting and slow whoever walks through them: game/act2/garden_rules.ts)
     if (this.level.land?.garden) this.updateGardens(dt);
+    // (THE HIGH CITY, FLOOR 17: the great ebony clock chimes now and then; every dancer near him stops dead and looks, then all come: game/act2/masque_rules.ts)
+    if (this.level.land?.masque && !this.over) {
+      const called = stepClock(this.level, this.hero, this.monsters, dt);
+      if (called) {
+        this.sfx('echo', 0.9);
+        this.msg('The ebony clock chimes.', MSG.omen);
+        for (const m of called) callToChime(m);
+      }
+    }
     this.updateFlow(dt);
     // (BINDING: what is held stands where it stood, whatever its own steps, a charge or a leap would have done; it strikes still)
     const pins = this.monsters.filter((m) => !m.dead && (m.bindT ?? 0) > 0).map((m) => [m, m.x, m.y] as const);
