@@ -119,3 +119,8 @@ double slash), `reel`, `dying`, and `more.stepIn`, `more.stepOut`, `more.fan`. T
 
 The first design's sheet and film, asked “The Queen's guard (queens_guard_sheet.png and the film): are these right?”: “Yes,
 that's them (Recommended)”. The mirror duellists' sheet and film: not yet shown.
+
+## His word on the mirror duellists
+
+The sheet and the film (`queens_guard_sheet.png`, `queens_guard_moves.mp4`), asked “The queen's guard as mirror
+duellists (queens_guard_sheet.png and the film): is this right?”: “Yes, that's them (Recommended)”.
