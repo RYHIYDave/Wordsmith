@@ -44,6 +44,12 @@
   `render/act1_pieces.ts` `act1Pieces(16)`: the High City's 25, the Swan Gardens' 25 and her vines.
 - tests/high_city.test.ts.
 
+## His word on helpers
+
+- 30 Oct 2026, 15:02: “Don’t go too crazy with helpers.  I just got my usage, I don’t want to blow through it”; the two at
+  work then (floor 16's ground, the Princess) finish, “Let them finish (Recommended)”; after them, NO NEW HELPERS: the main
+  chat builds the rest itself.
+
 ## How a helper works (every helper: read this)
 
 - YOUR OWN WORKING COPY AND BRANCH: you are given a folder (a git worktree of the repo) on a branch of your own from
