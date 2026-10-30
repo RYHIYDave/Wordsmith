@@ -114,8 +114,9 @@ export const COMP_ATTACK = { coiled: 0.2, strike: 10 / 30, hit: 12 / 30, through
  * HOW FAST EACH IS PAINTED TO GO (tiles a second; the Ranger runs at 4.6, the game's companions at 5.4: COMPANION_TUNE.speed)
  * and how long one turn of its going is (seconds). A foot that is down stays on its spot of the floor at that pace; at
  * another the same frames go faster or slower (`moveFpsAt`), or are chosen by the ground covered (`strideOf`: the game's
- * AnimSet.walkStride), so that they still grip. THE TORTOISE IS PAINTED SLOW AND STEADY: at the companions' 5.4 its
- * steps go four and a half times as fast (see the README: his to decide).
+ * AnimSet.walkStride), so that they still grip. THE TORTOISE KEEPS UP WITH HIM (his pick, 30 Oct: “Keep up with me”):
+ * a determined trundle at the companions' pace, long reaching strides by diagonal pairs, its shell rocking, its head
+ * out low and steady before it.
  */
 export const COMP_GAIT = {
   hawk: { pace: 5.4, period: 16 / 30 },
@@ -123,7 +124,7 @@ export const COMP_GAIT = {
   wolf: { pace: 5.4, period: 10 / 30 },
   bat: { pace: 5.4, period: 12 / 30 },
   fox: { pace: 5.4, period: 7 / 30 },
-  tortoise: { pace: 1.2, period: 12 / 30 },
+  tortoise: { pace: 5.4, period: 6 / 30 },
 } as const;
 export type Kind = keyof typeof COMP_GAIT;
 export const KINDS: readonly Kind[] = ['hawk', 'snake', 'wolf', 'bat', 'fox', 'tortoise'];
@@ -511,10 +512,10 @@ export interface TortPose {
   eyes: number;
 }
 export const TORT_FEET: readonly V3[] = [
-  [9.6, -9.4, 0],
-  [9.6, 9.4, 0],
-  [-9.4, -9.0, 0],
-  [-9.4, 9.0, 0],
+  [11, -9.4, 0],
+  [11, 9.4, 0],
+  [-11, -9.0, 0],
+  [-11, 9.0, 0],
 ];
 const TREST: TortPose = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, neck: 0.85, head: [0, 0, 0], gape: 0, feet: TORT_FEET.map((f) => f), fold: [0, 0, 0, 0], eyes: 1 };
 
@@ -535,13 +536,14 @@ function tortStand(t0: number): TortPose {
     eyes: 1 - bump(t, 1.75, 1.95),
   };
 }
-/** THE TORTOISE'S TRUNDLE: slow and steady: its legs by diagonal pairs, always three or two of them down, its shell rocking a little from side to side, its head out before it, nodding with each step. */
+/** THE TORTOISE'S TRUNDLE, KEEPING UP WITH HIM (his pick): determined: long reaching strides by diagonal pairs, two feet always down, each foot lifted high and planted; its shell rocking from side to side and bobbing; its head out low and steady before it. */
 function tortMove(t: number): TortPose {
   const P = COMP_GAIT.tortoise.period;
   const ph = fr(t / P);
   const a = TAU * ph;
   const span = groundOf('tortoise') * P;
-  const duty = 0.68;
+  // (each pair down a little over a third of the turn, so that each foot has time to be lifted and swung through)
+  const duty = 0.38;
   const downAt = [0, 0.5, 0.5, 0];
   const feet: V3[] = [];
   const fold: number[] = [];
@@ -554,11 +556,11 @@ function tortMove(t: number): TortPose {
       fold.push(0);
     } else {
       const v = (u - duty) / (1 - duty);
-      feet.push([r[0] - half + 2 * half * sm(v), r[1], 2.6 * Math.sin(Math.PI * v)]);
-      fold.push(30 * Math.sin(Math.PI * v));
+      feet.push([r[0] - half + 2 * half * sm(v), r[1], 4 * Math.sin(Math.PI * v)]);
+      fold.push(40 * Math.sin(Math.PI * v));
     }
   }
-  return { ...TREST, z: 0.35 * Math.sin(2 * a), roll: 2.4 * Math.sin(a), yaw: 1.5 * Math.sin(a), pitch: 0.8 * Math.sin(2 * a + 1), neck: 1.0 + 0.06 * Math.sin(2 * a + 0.5), head: [-3 * Math.sin(a), 4 + 3 * Math.sin(2 * a + 1), 0], feet, fold };
+  return { ...TREST, z: 0.7 * Math.sin(2 * a) + 0.3, roll: 4.5 * Math.sin(a), yaw: 2 * Math.sin(a), pitch: 1.2 * Math.sin(2 * a + 1), neck: 1.05, head: [-2 * Math.sin(a), 8, 0], feet, fold };
 }
 /**
  * THE TORTOISE'S SHELL-RAM (its gift, Guarding: each hit it lands gives him a brief shield). Slow to start, quick to
@@ -820,11 +822,11 @@ function wingStand(k: 'hawk' | 'bat', t0: number): WingPose {
     // and twisting to hold it there; it rises and sinks on the air; its head dead still, then turned to look at him)
     const look = bump(t, 1.0, 1.7);
     const work = Math.sin(a * 3);
-    return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.2 * Math.sin(a) + 0.3 * Math.sin(a * 4)], pitch: -10 + 3 * Math.sin(a), roll: 4 * Math.sin(a + 0.6), yaw: 0, lift: [20 + 6 * work, 20 + 6 * work], sweep: -4 + 3 * Math.sin(a * 2), fold: 0.05 + 0.05 * Math.sin(a * 3 + 1), droop: 8 + 3 * work, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
+    return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.2 * Math.sin(a) + 0.3 * Math.sin(a * 4)], pitch: -12 + 3 * Math.sin(a), roll: 4 * Math.sin(a + 0.6), yaw: 0, lift: [-6 + 5 * work, -6 + 5 * work], sweep: -4 + 3 * Math.sin(a * 2), fold: 0.05 + 0.05 * Math.sin(a * 3 + 1), droop: 8 + 3 * work, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
   }
   const b0 = beat(fr(t / 0.4 + 0.225), 4, -22);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: -8 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
+  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: -15 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
 }
 /** THE HAWK FLYING: level and fast, two deep beats and a glide in each turn, its tail closed, its head steady. THE BAT FLYING: quick beats, pitched into its flight, jinking from side to side. */
 function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
@@ -835,13 +837,13 @@ function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
     // (two beats in 0.4 of the turn... and a glide, its wings held a little up)
     const flap = ph < 0.6;
     // (the glide: its wings let down level from the top of the beat, held, and lifted again for the next)
-    const g = ph < 0.75 ? mix(44, 20, sm((ph - 0.6) / 0.15)) : ph < 0.86 ? 20 : mix(20, 44, sm((ph - 0.86) / 0.14));
-    const b = flap ? beat(ph / 0.6, 44, 6) : { lift: g, fold: 0.05, sweep: 0 };
-    return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: -4, roll: 2 * Math.sin(a), yaw: 0, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
+    const g = ph < 0.75 ? mix(18, -6, sm((ph - 0.6) / 0.15)) : ph < 0.86 ? -6 : mix(-6, 18, sm((ph - 0.86) / 0.14));
+    const b = flap ? beat(ph / 0.6, 18, -20) : { lift: g, fold: 0.05, sweep: 0 };
+    return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: -8, roll: 2 * Math.sin(a), yaw: 0, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
   }
   const b0 = beat(fr(ph + 0.225), 4, -22);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: -4, roll: 4 * Math.sin(a), yaw: 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
+  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: -10, roll: 4 * Math.sin(a), yaw: 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
 }
 /**
  * THE HAWK'S STOOP (its gift, Precise: it marks its prey, his next hit on it a sure critical). It climbs and rears back,

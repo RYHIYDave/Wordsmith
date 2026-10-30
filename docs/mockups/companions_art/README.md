@@ -1,8 +1,33 @@
 # The Ranger's six companions: their pictures (a mock-up, not in the game)
 
-Branch `mockup/companions-art` (from `companions`), made by a helper of the art chat, 29 Oct 2026. Behind
-`COMPANIONS_ART_ON` in `src/art/companions_art.ts`, off. Nothing of the game imports these files (a test proves it). The
-owner has not seen them yet: they go to him from the art chat, pictures first.
+Branch `mockup/companions-art` (from `companions`), made by a helper of the art chat, 29 and 30 Oct 2026. Behind
+`COMPANIONS_ART_ON` in `src/art/companions_art.ts`, off. Nothing of the game imports these files (a test proves it).
+
+## What he said of the first pictures (30 Oct 2026, by the art chat)
+
+Asked “The Ranger's six companions (companions_sheet.png and the film): are these right? The bat reads best from
+behind.”, his pick: “Close, change something”, and his words: “They’re a little shapey”. Asked whether the tortoise
+should keep its own slow pace and catch up, or keep up, his pick: “Keep up with me”.
+
+Read as (his art rulebook, How art is made 9, real shapes, not circles and squares): at three times size they read as
+simple shapes stuck together, not as sculpted animals. So all six were sculpted again as one body each:
+
+- the wolf: a deeper chest and a narrow waist, a ruff of long fur in tufts at the throat and neck, upper legs as
+  muscles growing out of the body, lower legs tapering through the elbow, wrist and hock knobs to paws with toes, ears
+  as flat triangles (a dark hollow, pale-edged), a bushy tail, and fur over all of it (short strokes of the next tone,
+  laid on the body's own skin so that they stay put as it moves);
+- the fox: the same, slender, black socks, a white bib and a white-tipped brush, black-backed ears;
+- the hawk: a deep rounded breast, cream streaked in drops; a back of feathers in rows, each edged paler; wings of
+  layered feathers (scalloped secondaries, coverts over them, five primaries splayed like fingers at the tip); a tail
+  of six feathers that fans, banded near the tip; it hangs on the air with its wings bowed a little, never a flat V;
+- the bat: a bigger furry body and head, big pointed leaf ears, its finger bones light against the wing skin, the
+  skin paler along the bones and darker toward its scalloped edge;
+- the tortoise: each plate of its shell raised, in growth rings round a gold heart; its legs longer and scaled, the
+  fore legs flattened and armoured; a wrinkled neck; and it KEEPS UP WITH HIM (his pick): a determined trundle at the
+  companions' pace, long strides by diagonal pairs, each foot lifted high, its shell rocking, its head out low;
+- the snake: its back a checker of scales, its belly in plates.
+
+Everything else is as it was: the cyan friend's edge, the attacks' beats, every check.
 
 ## His words (the main chat's record, `docs/NEXT_VERSION.md` on `v23`, 28 Oct 2026)
 
@@ -21,9 +46,9 @@ attack, from in front and from behind; an icon each.
 
 ## The pictures (`pictures/`)
 
-- `companions_sheet.png` (1200 wide): all six standing, from in front and behind, beside the Ranger, three times as
+- `companions_sheet.png` (1200 wide, sculpted again 30 Oct): all six standing, from in front and behind, beside the Ranger, three times as
   big; the Ranger with all six about him at the game's size, and three going with him; their six icons.
-- `companions_film.mp4` (36.8 s, 1200×676, 30 a second): each in turn, from in front and from behind with the Ranger
+- `companions_film.mp4` (36.8 s, 1200×676, 30 a second, again 30 Oct): each in turn, from in front and from behind with the Ranger
   beside it: standing, moving (the floor going by under it, the Ranger running), its attack, and its attack again at
   half speed; each captioned with what its bite does.
 
@@ -41,7 +66,7 @@ pixels (the Ranger is 57 tall).
 | Wolf | warm grey, darker saddle, cream mask, throat and belly, tawny legs, amber eyes, tail up | panting, tongue out, weight shifting, tail wagging, looks up at him, ear flick, blink | a long lope, back flexing | crouches, ears flat, lips off its fangs, holds; lunges, jaws snap shut (two frames); holds on and wrenches its head; jaws of cyan fangs close on the prey (Binding) |
 | Bat | a fruit bat: brown fur, golden mantle, fox-like face, amber eyes, pointed ears, dark wings on three long fingers, scalloped | fluttering in place, wings cupped | flying | flits up and hangs, wings wide, jaws open, holds; drops and bites (two frames); clings; cyan drops drawn up out of the bite into it (Leeching) |
 | Fox | red-gold, white chin, chest and brush tip, black stockings and ear backs | brush sweeping, ears swivelling, the listening head tilt, a glance back | darting bounds | rears up on its hind legs, ears at its prey, holds; the pounce, nose first (two frames); darts back with gusts of cyan wind streaming off it (Swift) |
-| Tortoise | high dome of plates with gold hearts, flared rim, pale under-shell, stout scaly legs, beaked head | head out, looking about and up at him, shell rising with its breath, slow blink | trundling, slow and steady, legs by diagonal pairs | draws its head in and rocks back, holds; throws itself forward, head shooting out to snap (two frames); cyan plates of its shell flash up over it as a ward (Guarding) |
+| Tortoise | high dome of raised plates in growth rings round gold hearts, flared rim, pale under-shell, long scaled legs (the fore flattened), a wrinkled neck, beaked head | head out, looking about and up at him, shell rising with its breath, slow blink | keeping up with him (his pick): a determined trundle, long strides by diagonal pairs, shell rocking | draws its head in and rocks back, holds; throws itself forward, head shooting out to snap (two frames); cyan plates of its shell flash up over it as a ward (Guarding) |
 
 Sizes, standing (picture pixels across, as measured by the test against the mage's familiar): each between the
 familiar's length and 2.1 times it; the wolf and the tortoise more than the other four by at least 15% in painted size.
@@ -52,7 +77,8 @@ phone (`FLIER_SCALE`).
 
 - Standing: 15 frames a second (the fliers 30), a loop of 2.4 s.
 - Moving: 30 a second; each painted for a pace (`COMP_GAIT`: 5.4 tiles a second, the game's `COMPANION_TUNE.speed`,
-  but the tortoise 1.2), one turn of: hawk 16/30 s, snake 6/30, wolf 10/30, bat 12/30, fox 7/30, tortoise 12/30.
+  the tortoise too, at his pick), one turn of: hawk 16/30 s, snake 6/30, wolf 10/30, bat 12/30, fox 7/30, tortoise
+  6/30.
 - The attack, the same beats for all six (`COMP_ATTACK`, 30 a second): wind-up 0 to 0.2 s; held to 10/30; THE STRIKE,
   two frames, landing at 12/30 (0.4 s); carried through to 0.53; wind-down to 0.8 s. His rule (Movement 9, 24 Oct):
   “Like the wind up and wind down are big but the actual punch is lightning quick”. The strike's two frames are
@@ -94,13 +120,10 @@ Run: `tsx --test tests/companions_art.test.ts`. Pictures: `node tools/preview.mj
 <out.png> 1200 1060 sheet` (also `contact`, `strip:<kind>:<move>`, `close:<kind>:<move>:<t>`, and `film`, frame by
 frame, as `tools/page_gif.mjs` reads a page).
 
-## For him to decide
+## Still open
 
-- THE TORTOISE'S PACE. Slow and steady as asked, it is painted for 1.2 tiles a second; the companions go at 5.4 to keep
-  up with him (he runs at 4.6), and at that its steps would go four and a half times as fast, a scurry. Recommended:
-  let it keep its own slower pace in the game and be at his side again when left behind (the rule the companions
-  already have).
 - THE HAWK HANGS ON THE AIR rather than beating its wings when he stands still (kiting, as hawks do on the wind): its
-  spread wings read best, and a beating hover leapt where it hands over to its flight or its stoop.
-- THE BAT'S WINGS BEAT SHALLOW, for the same reason. Both are as the checks allow; a deeper beat would need a way into
-  and out of it in the game.
+  spread wings read best, and a beating hover leapt where it hands over to its flight or its stoop. THE BAT'S WINGS
+  BEAT SHALLOW, for the same reason.
+- From in front, the two fliers are seen three-quarters on, their nearer wing foreshortened: the hawk reads as a bird
+  of prey, the bat best from behind.

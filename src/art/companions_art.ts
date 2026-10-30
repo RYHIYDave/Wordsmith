@@ -120,14 +120,27 @@ function along(a: V3, b: V3, k0: number, k1: number, n: number): V3[] {
 // THEIR COLOURS: each its own animal's; three tones a material (dark, middle, light), the light from the upper left
 
 /** The wolf: a warm grey coat, a darker saddle down its back, cream at its throat, belly and mask, tawny legs; amber eyes. */
-const WOLF_COAT: Ramp = ['#2a2430', '#2a2430', '#6c6168', '#a69990', '#a69990'];
-const WOLF_SADDLE: Ramp = ['#1c1820', '#1c1820', '#463d44', '#6e6366', '#6e6366'];
-const WOLF_CREAM: Ramp = ['#4a4240', '#4a4240', '#b2a492', '#e4d8c4', '#e4d8c4'];
-const WOLF_TAWNY: Ramp = ['#38281e', '#38281e', '#88664a', '#b98f66', '#b98f66'];
+const WOLF_COAT: Ramp = ['#1e1a22', '#3a3238', '#6c6168', '#a69990', '#c4b8ac'];
+const WOLF_SADDLE: Ramp = ['#141118', '#241f28', '#463d44', '#6e6366', '#8a7e7e'];
+const WOLF_CREAM: Ramp = ['#3a3230', '#5e544e', '#b2a492', '#e4d8c4', '#f4ecdc'];
+const WOLF_TAWNY: Ramp = ['#24180e', '#4a3424', '#88664a', '#b98f66', '#d0a87c'];
 /** The fox: red-gold, white at its chin, chest and the tip of its brush, black stockings and the backs of its ears. */
-const FOX_COAT: Ramp = ['#4a1a0e', '#4a1a0e', '#b24a1a', '#e88232', '#e88232'];
-const FOX_WHITE: Ramp = ['#5a4e4c', '#5a4e4c', '#cfc4bc', '#f4eee6', '#f4eee6'];
-const FOX_BLACK: Ramp = ['#0e0a0e', '#0e0a0e', '#2a2024', '#46383c', '#46383c'];
+const FOX_COAT: Ramp = ['#2e0e06', '#6a2610', '#b24a1a', '#e88232', '#f8a454'];
+const FOX_WHITE: Ramp = ['#3e3434', '#7a6e6a', '#cfc4bc', '#f4eee6', '#ffffff'];
+const FOX_BLACK: Ramp = ['#08060a', '#140e12', '#2a2024', '#46383c', '#5a4a4e'];
+
+/**
+ * FUR (the owner, by the art chat, 29 Oct: “They’re a little shapey”): a coat's tones broken by short strokes of the
+ * tone below (and a few of the one above), laid on the body's own skin so that they stay where they are as it moves: a
+ * coat, not a flat block. `pick` says which coat a place of the skin is (saddle, coat, the pale under it).
+ */
+function fur(pick: (u: V3) => Ramp, seed: number, along = 7): Skin {
+  return (u, tone) => {
+    const r = pick(u);
+    const n = hash(Math.floor((u[0] + 1) * along), Math.floor((u[1] + 1) * 4 + (u[2] + 1) * 8), seed);
+    return r[n < 0.24 ? Math.max(0, tone - 1) : n > 0.9 ? Math.min(4, tone + 1) : tone];
+  };
+}
 const NOSE: Ramp = ['#0a080e', '#0a080e', '#1c1820', '#3a3440', '#3a3440'];
 /** A tongue and the inside of a mouth: a warm red, never the enemy's pink. */
 const TONGUE: Ramp = ['#4e1a1a', '#4e1a1a', '#a03a2a', '#d0603e', '#d0603e'];
@@ -190,15 +203,15 @@ const WOLF_BODY: QuadBody = {
   neckRest: [8, 0, 5.5],
   skullPitch: 12,
   trunk: [
-    ['chest', [7.2, 0, 14.4], [5.8, 4.5, 5.6], 'f'],
-    ['ruff', [11, 0, 17.2], [4.2, 4.7, 5.3], 'f'],
-    ['withers', [6.2, 0, 18.4], [4.8, 3.5, 2.6], 'f'],
-    ['barrel', [-1.2, 0, 15.3], [8.4, 3.9, 4.2], 'm'],
-    ['haunch', [-9.4, 0, 15.6], [5.3, 4.1, 5.0], 'r'],
-    ['rump', [-8.4, 0, 18.4], [4.6, 3.3, 2.2], 'r'],
+    ['chest', [7.0, 0, 13.6], [6.2, 4.4, 6.2], 'f'],
+    ['ruff', [11.2, 0, 17.0], [4.6, 5.0, 5.8], 'f'],
+    ['withers', [5.8, 0, 18.6], [5.0, 3.6, 2.6], 'f'],
+    ['barrel', [-1.4, 0, 16.0], [7.6, 3.3, 3.4], 'm'],
+    ['haunch', [-9.4, 0, 15.8], [5.4, 4.0, 4.8], 'r'],
+    ['rump', [-8.6, 0, 18.4], [4.8, 3.3, 2.2], 'r'],
   ],
   tailRoot: [-13.8, 0, 17.6],
-  tail: [1.5, 2.15, 2.3, 1.85, 0.9],
+  tail: [1.6, 2.4, 2.6, 2.3, 1.2],
   tailSeg: 3.3,
   cranium: [3.6, 3.3, 3.1],
   muzzle: [[2.0, 0, -0.9], [6.7, 0, -1.55], 1.9, 1.2],
@@ -225,15 +238,15 @@ const FOX_BODY: QuadBody = {
   neckRest: [7, 0, 6],
   skullPitch: 10,
   trunk: [
-    ['chest', [5.0, 0, 10.2], [4.0, 3.0, 3.6], 'f'],
-    ['ruff', [7.8, 0, 12.0], [3.0, 3.1, 3.5], 'f'],
-    ['withers', [4.4, 0, 12.6], [3.4, 2.4, 1.7], 'f'],
-    ['barrel', [-0.8, 0, 10.8], [6.2, 2.8, 3.0], 'm'],
-    ['haunch', [-6.4, 0, 11.0], [3.8, 3.0, 3.5], 'r'],
-    ['rump', [-5.8, 0, 13.0], [3.3, 2.4, 1.6], 'r'],
+    ['chest', [5.0, 0, 9.8], [4.2, 2.9, 4.0], 'f'],
+    ['ruff', [7.8, 0, 12.0], [3.2, 3.2, 3.8], 'f'],
+    ['withers', [4.2, 0, 12.8], [3.6, 2.4, 1.7], 'f'],
+    ['barrel', [-1.0, 0, 11.2], [5.6, 2.3, 2.4], 'm'],
+    ['haunch', [-6.4, 0, 11.0], [3.9, 2.9, 3.5], 'r'],
+    ['rump', [-5.8, 0, 13.0], [3.4, 2.4, 1.6], 'r'],
   ],
   tailRoot: [-9.6, 0, 12.6],
-  tail: [1.2, 2.2, 2.9, 2.8, 2.2, 1.0],
+  tail: [1.3, 2.4, 3.1, 3.0, 2.4, 1.1],
   tailSeg: 3.0,
   cranium: [2.7, 2.5, 2.35],
   muzzle: [[1.5, 0, -0.6], [6.0, 0, -1.25], 1.3, 0.6],
@@ -269,14 +282,12 @@ function quadHead(B: QuadBody, P: QuadPose): { root: V3; at: V3; f: V3; l: V3; u
   return { root, at, f: sk([1, 0, 0]), l: sk([0, 1, 0]), u: sk([0, 0, 1]), p: (v) => add(at, sk(v)) };
 }
 
-/** A coat that is darker down the back and pale beneath: `top` over `mid` over `under`, by how far up the skin faces. */
-function coatSkin(top: Ramp, midR: Ramp, under: Ramp, upAt: number, downAt: number, up: V3): Skin {
-  return (u, tone) => {
+/** A coat that is darker down the back and pale beneath: `top` over `mid` over `under`, by how far up the skin faces; furred. */
+function coatSkin(top: Ramp, midR: Ramp, under: Ramp, upAt: number, downAt: number, up: V3, seed = 1): Skin {
+  return fur((u) => {
     const h = u[0] * up[0] + u[1] * up[1] + u[2] * up[2];
-    if (h < downAt) return under[tone];
-    if (h > upAt) return top[tone];
-    return midR[tone];
-  };
+    return h < downAt ? under : h > upAt ? top : midR;
+  }, seed);
 }
 
 /** THE WOLF OR THE FOX, AS SOLIDS. */
@@ -298,13 +309,19 @@ function quadLook(B: QuadBody, P: QuadPose, which: string, t: number): Look {
     const P3 = half === 'f' ? Q.front : half === 'r' ? Q.rear : Q.midP;
     const V = half === 'f' ? Q.fv : half === 'r' ? Q.rv : Q.mv;
     const chesty = name === 'chest' || name === 'ruff';
-    const skin = wolf
-      ? coatSkin(TOP, COAT, PALE, name === 'barrel' || name === 'withers' || name === 'rump' ? 0.3 : 0.62, chesty ? 0.05 : -0.42, [0, 0, 1])
-      : coatSkin(COAT, COAT, PALE, 2, chesty ? -0.15 : -0.55, [0, 0, 1]);
-    const sw = name === 'chest' || name === 'barrel' ? breathe : 1;
+    const upAt = wolf ? (name === 'barrel' || name === 'withers' || name === 'rump' ? 0.3 : 0.62) : 2;
+    const downAt = chesty ? (wolf ? 0.05 : -0.15) : wolf ? -0.42 : -0.55;
+    const seed = name.length * 7;
     // (the fox's white bib runs up the front of its chest and throat: pale where the skin faces forward and down)
-    const bib: Skin | null = !wolf && chesty ? (u, tone) => (u[0] > 0.25 && u[2] < 0.35 ? PALE[tone] : (skin as (u: V3, tone: number, x: number, y: number) => string | null)(u, tone, 0, 0)) : null;
-    put(half === 'r' ? 'haunch' : 'body', name, { k: 'ball', c: P3(c), ax: [V([h[0], 0, 0]), V([0, h[1] * sw, 0]), V([0, 0, h[2] * sw])], skin: bib ?? skin });
+    const skin = fur((u) => (!wolf && chesty && u[0] > 0.25 && u[2] < 0.35 ? PALE : u[2] < downAt ? PALE : u[2] > upAt ? TOP : COAT), seed);
+    const sw = name === 'chest' || name === 'barrel' ? breathe : 1;
+    put(half === 'r' ? 'haunch' : 'body', name, { k: 'ball', c: P3(c), ax: [V([h[0], 0, 0]), V([0, h[1] * sw, 0]), V([0, 0, h[2] * sw])], skin });
+  }
+  // (the ruff's long fur, hanging at the throat and either side of the neck in tufts that break its outline)
+  const R0 = B.trunk[1][1];
+  const rk = wolf ? 1 : 0.7;
+  for (const [i, o, a] of [[0, [1.6, 0, -4.4], [2.4, 2.4, 2.8]], [1, [-0.4, 3.9, -2.4], [2.2, 1.6, 2.6]], [2, [-0.4, -3.9, -2.4], [2.2, 1.6, 2.6]], [3, [-2.6, 0, -4.8], [2.2, 2.6, 2.2]]] as [number, V3, V3][]) {
+    put('body', `tuft${i}`, { k: 'ball', c: Q.front(add(R0, mul(o, rk))), ax: [Q.fv([a[0] * rk, 0, 0]), Q.fv([0, a[1] * rk, 0]), Q.fv([0, 0, a[2] * rk])], skin: fur(() => PALE, 30 + i) });
   }
 
   // ITS NECK, and its head on it
@@ -323,9 +340,10 @@ function quadLook(B: QuadBody, P: QuadPose, which: string, t: number): Look {
     if (wolf && u[2] > 0.55) return WOLF_SADDLE[tone];
     return COAT[tone];
   };
-  put('head', 'cranium', { k: 'ball', c: H.p([0, 0, 0.3]), ax: [mul(H.f, cx), mul(H.l, cy), mul(H.u, cz)], skin: headSkin });
+  put('head', 'cranium', { k: 'ball', c: H.p([0, 0, 0.3]), ax: [mul(H.f, cx), mul(H.l, cy), mul(H.u, cz)], skin: fur((u) => (u[2] < -0.25 && u[0] > -0.2 ? PALE : wolf && u[2] > 0.55 ? WOLF_SADDLE : COAT), 41, 5) });
+  void headSkin;
   // (the cheek ruff: the fur swept back and out behind the jaw)
-  put('head', 'cheeks', { k: 'ball', c: H.p([-0.7, 0, -0.9]), ax: [mul(H.f, cx * 0.72), mul(H.l, cy * 1.12), mul(H.u, cz * 0.82)], skin: (u, tone) => (u[2] < 0.1 ? PALE[tone] : COAT[tone]) });
+  put('head', 'cheeks', { k: 'ball', c: H.p([-0.8, 0, -1.0]), ax: [mul(H.f, cx * 0.75), mul(H.l, cy * 1.22), mul(H.u, cz * 0.85)], skin: fur((u) => (u[2] < 0.1 ? PALE : COAT), 43, 5) });
   const [m0, m1, mr0, mr1] = B.muzzle;
   const muzA = H.p(m0);
   const muzB = H.p(m1);
@@ -361,7 +379,7 @@ function quadLook(B: QuadBody, P: QuadPose, which: string, t: number): Look {
   for (const s of [1, -1]) {
     const e = H.p([B.eye[0], s * B.eye[1], B.eye[2]]);
     const facing = norm(add(mul(H.l, s * 0.75), H.f));
-    put('head', `eye${s}`, { k: 'dot', p: e, c: P.eyes > 0.5 ? AMBER : COAT[1], c2: P.eyes > 0.5 ? (s > 0 ? undefined : undefined) : undefined, facing });
+    put('head', `eye${s}`, { k: 'dot', p: e, c: P.eyes > 0.5 ? AMBER : COAT[1], c2: P.eyes > 0.5 ? '#140c08' : undefined, facing });
   }
   // the ears: tall triangles, pricked forward, laid back flat, or swivelled
   const [eb, el, er0, er1] = B.ear;
@@ -370,9 +388,18 @@ function quadLook(B: QuadBody, P: QuadPose, which: string, t: number): Look {
     const fwd = P.ears;
     const way = norm(add(add(mul(H.f, 0.15 + 0.45 * fwd - (fwd < 0 ? 0.6 * -fwd : 0)), mul(H.l, s * (0.32 + (fwd < 0 ? 0.25 * -fwd : 0)))), mul(H.u, 1 + (fwd < 0 ? -0.55 * -fwd : 0))));
     const tip = add(base, mul(way, el));
-    // (the ear's back, the coat's colour, and its front, a dark hollow lined with pale fur; the fox's backs black)
-    put(`ear${s}`, `ear${s}`, { k: 'rod', a: base, b: tip, ra: er0, rb: er1, ramp: wolf ? COAT : FOX_BLACK });
-    put(`ear${s}`, `earin${s}`, { k: 'rod', a: add(add(base, mul(way, 0.5)), mul(H.f, 0.45)), b: add(add(tip, mul(way, -1.2)), mul(H.f, 0.3)), ra: er0 * 0.55, rb: er1, ramp: wolf ? WOLF_SADDLE : ['#2a1a14', '#2a1a14', '#5a3a2a', '#7a5040', '#7a5040'] });
+    // (a flat triangle: its front a dark hollow lined with pale fur at its edges, its back the coat's colour; the fox's backs black)
+    const side = norm(cross(way, H.f), H.l);
+    const w = er0 * 1.25;
+    const face = norm(cross(side, way));
+    sheetPanel(put, `ear${s}`, `ear${s}`, add(base, mul(side, -w)), add(base, mul(side, w)), add(tip, mul(side, -w)), face, (al, be) => be <= 1 - al * 0.98 + 0.02 && al + be >= 0.02 && be <= 1, (al, be, front, tone) => {
+      const edge = al < 0.16 || be < 0.1 || al + be > 0.82;
+      if (front) return edge ? PALE[Math.min(4, tone + 1)] : wolf ? WOLF_SADDLE[Math.max(0, tone - 1)] : '#3a1a10';
+      return wolf ? COAT[tone] : FOX_BLACK[tone];
+    });
+    // (a rod along its base, so that it stands out of the skull and is not lost edge-on)
+    put(`ear${s}`, `earbase${s}`, { k: 'rod', a: base, b: add(base, mul(way, el * 0.45)), ra: er0 * 0.7, rb: er0 * 0.35, ramp: wolf ? COAT : FOX_BLACK });
+    void er1;
   }
 
   // ITS LEGS: the fore straight, the hind angled at the hock; stockings (the fox's black, the wolf's tawny); round paws
@@ -389,16 +416,25 @@ function quadLook(B: QuadBody, P: QuadPose, which: string, t: number): Look {
     const mid = joint(top, low, l1, l2, hint);
     const part = `leg${i}`;
     const [ru, rl] = front ? [B.legR[0], B.legR[1]] : [B.legR[2], B.legR[3]];
-    const upperRamp = COAT;
-    put(part, `${part}u`, { k: 'rod', a: top, b: mid, ra: ru, rb: rl * 1.25, ramp: upperRamp, far: true });
-    put(part, `${part}l`, { k: 'rod', a: mid, b: low, ra: rl * 1.15, rb: rl, ramp: wolf && front ? WOLF_CREAM : LEG, far: true });
+    // (the upper leg, a muscle that grows out of the body (the shoulder and upper arm, the thigh), in the body's own part)
+    const ua = norm(sub(mid, top));
+    const us = norm(cross(ua, Q.rv([0, 0, 1])), Q.rv([0, 1, 0]));
+    const ud = norm(cross(us, ua));
+    const ul = len3(sub(mid, top));
+    put(front ? 'body' : 'haunch', `${part}u`, { k: 'ball', c: lerpV(top, mid, 0.42), ax: [mul(ua, ul * 0.62), mul(us, ru * 0.82), mul(ud, ru * (front ? 1.1 : 1.35))], skin: fur((u) => (u[2] < -0.5 && front ? PALE : COAT), 50 + i), far: true });
+    // (the lower leg, tapering to the wrist or the hock; the joint's knob; the pastern; the paw and its toes)
+    const legSkin = fur(() => (front && wolf ? WOLF_TAWNY : LEG), 60 + i, 4);
+    put(part, `${part}el`, { k: 'ball', c: mid, ax: sphere(rl * 1.25), skin: front ? fur(() => COAT, 70 + i) : legSkin, far: true });
+    put(part, `${part}l`, { k: 'rod', a: mid, b: low, ra: rl * 1.2, rb: rl * 0.78, ramp: front && wolf ? WOLF_TAWNY : LEG, far: true });
+    const knob = front ? low : add(low, Q.rv([-0.55, 0, 0.2]));
+    put(part, `${part}hk`, { k: 'ball', c: knob, ax: sphere(rl * (front ? 0.9 : 1.0)), skin: legSkin, far: true });
     const pawUp = add(foot, turn([0.45, 0, B.paw[2] * 1.4], 0, fold, 0));
-    put(part, `${part}p`, { k: 'rod', a: low, b: pawUp, ra: rl, rb: rl * 0.95, ramp: LEG, far: true });
+    put(part, `${part}p`, { k: 'rod', a: low, b: pawUp, ra: rl * 0.78, rb: rl * 0.82, ramp: LEG, far: true });
     const pc = add(foot, turn([B.paw[0] * 0.55, 0, B.paw[2]], 0, fold, 0));
-    put(part, `${part}paw`, { k: 'ball', c: pc, ax: [turn([B.paw[0], 0, 0], 0, fold, 0), [0, B.paw[1], 0], turn([0, 0, B.paw[2]], 0, fold, 0)], skin: LEG, far: true });
+    put(part, `${part}paw`, { k: 'ball', c: pc, ax: [turn([B.paw[0], 0, 0], 0, fold, 0), [0, B.paw[1], 0], turn([0, 0, B.paw[2]], 0, fold, 0)], skin: (u, tone) => (u[0] > 0.55 && Math.abs(Math.sin(u[1] * 4.7)) < 0.3 ? NOSE[1] : LEG[tone]), far: true });
     paws.push(foot);
-    // (what of a leg may not pass through the rest of it: from half way down its upper part to its paw)
-    things.push({ name: part, pts: [...along(top, mid, 0.55, 1, 2), ...along(mid, low, 0, 1, 3), pc], r: rl * 0.8, may: [`${part}u`, `${part}l`, `${part}p`, `${part}paw`, ...(front ? ['chest', 'ruff', 'barrel'] : ['haunch', 'rump', 'barrel'])] });
+    // (what of a leg may not pass through the rest of it: from its elbow or knee to its paw)
+    things.push({ name: part, pts: [...along(top, mid, 0.55, 1, 2), ...along(mid, low, 0.25, 1, 3), pc], r: rl * 0.8, may: [`${part}u`, `${part}el`, `${part}l`, `${part}hk`, `${part}p`, `${part}paw`, ...(front ? ['chest', 'ruff', 'barrel', 'tuft0', 'tuft1', 'tuft2', 'tuft3'] : ['haunch', 'rump', 'barrel'])] });
     void s;
   });
 
@@ -415,8 +451,12 @@ function quadLook(B: QuadBody, P: QuadPose, which: string, t: number): Look {
     const nx = add(tp, mul(td, B.tailSeg));
     const tip = j === n - 1;
     const tailRamp: Ramp = tip ? (wolf ? WOLF_SADDLE : FOX_WHITE) : j === 0 && wolf ? WOLF_COAT : COAT;
-    put('tail', `tail${j}`, { k: 'rod', a: tp, b: nx, ra: B.tail[j], rb: B.tail[j + 1], ramp: tailRamp });
-    put('tail', `tailb${j}`, { k: 'ball', c: lerpV(tp, nx, 0.5), ax: sphere((B.tail[j] + B.tail[j + 1]) * 0.55), skin: tailRamp });
+    const ta = norm(sub(nx, tp));
+    const tsd = norm(cross(ta, [0, 0, 1]), [0, 1, 0]);
+    const tud = norm(cross(tsd, ta));
+    const tr0 = (B.tail[j] + B.tail[j + 1]) * 0.56;
+    put('tail', `tail${j}`, { k: 'rod', a: tp, b: nx, ra: B.tail[j] * 0.6, rb: B.tail[j + 1] * 0.6, ramp: tailRamp });
+    put('tail', `tailb${j}`, { k: 'ball', c: lerpV(tp, nx, 0.5), ax: [mul(ta, B.tailSeg * 0.75), mul(tsd, tr0), mul(tud, tr0 * 1.08)], skin: fur((u) => (tip || (wolf && u[2] > 0.45 && j > 0) ? (wolf ? WOLF_SADDLE : tip ? FOX_WHITE : COAT) : tailRamp), 80 + j, 4) });
     tp = nx;
     tailPts.push(nx);
   }
@@ -629,10 +669,10 @@ void lazyFrames;
 // =============================================================================================
 // THE TORTOISE: its body
 
-const SHELL: Ramp = ['#1c1a10', '#1c1a10', '#5a4a24', '#86703a', '#86703a'];
+const SHELL: Ramp = ['#14120a', '#2c2614', '#5a4a24', '#86703a', '#a48a4a'];
 /** The middle of each plate of its shell: its growth rings, gold. */
 const SHELL_GOLD: Ramp = ['#2a2010', '#2a2010', '#8c6c2a', '#c49c46', '#c49c46'];
-const TSKIN: Ramp = ['#1e1c18', '#1e1c18', '#5a5446', '#8a8270', '#8a8270'];
+const TSKIN: Ramp = ['#14120e', '#2e2a22', '#5a5446', '#8a8270', '#a49c88'];
 const TPALE: Ramp = ['#3a3020', '#3a3020', '#a08c56', '#d0bc7c', '#d0bc7c'];
 const BEAK: Ramp = ['#2a2418', '#2a2418', '#8a7a52', '#c0ae78', '#c0ae78'];
 const TORT_PIVOT: V3 = [0, 0, 7];
@@ -669,9 +709,14 @@ function scuteSkin(u: V3, tone: number): string | null {
     fa = q - Math.floor(q);
     fb = el / 0.42;
   }
-  if (fa < 0.12 || fa > 0.92 || fb < 0.08 || fb > 0.94) return seam;
-  if (fa > 0.32 && fa < 0.68 && fb > 0.32 && fb < 0.7) return SHELL_GOLD[tone];
-  return SHELL[tone];
+  if (fa < 0.1 || fa > 0.93 || fb < 0.07 || fb > 0.95) return seam;
+  // (each plate raised, its growth rings round its gold heart: a ring of light toward its edge, a dark ring inside it)
+  const r = Math.max(Math.abs(fa - 0.51) / 0.42, Math.abs(fb - 0.51) / 0.44);
+  if (r < 0.34) return SHELL_GOLD[tone];
+  if (r < 0.52) return SHELL_GOLD[Math.max(0, tone - 1)];
+  if (r < 0.7) return SHELL[tone];
+  if (r < 0.82) return SHELL[Math.max(0, tone - 1)];
+  return SHELL[Math.min(4, tone + 1)];
 }
 
 /** THE TORTOISE, AS SOLIDS: a high dome of plates over a pale under-shell, a flared rim; four stout scaly legs; a beaked head on a wrinkled neck that draws back into the shell. */
@@ -693,7 +738,11 @@ function tortLook(P: import('./companions_art_moves').TortPose): Look {
   const hl = norm(cross([0, 0, 1], hf), [0, 1, 0]);
   const hu = norm(cross(hf, hl));
   const Hp = (v: V3): V3 => add(hc, add(add(mul(hf, v[0]), mul(hl, v[1])), mul(hu, v[2])));
-  put('neck', 'neck', { k: 'rod', a: sub(root, mul(nd, 2.5)), b: hc, ra: 1.8, rb: 1.6, ramp: TSKIN });
+  // (its neck: loose and wrinkled, in folds)
+  const n0 = sub(root, mul(nd, 2.5));
+  const nlen = len3(sub(hc, n0));
+  const nside = norm(cross(nd, [0, 0, 1]), [0, 1, 0]);
+  put('neck', 'neck', { k: 'ball', c: lerpV(n0, hc, 0.5), ax: [mul(norm(sub(hc, n0)), nlen * 0.55), mul(nside, 1.8), mul(norm(cross(nside, nd)), 1.75)], skin: (u, tone) => (fr((u[0] + 1) * 2.6) < 0.22 ? TSKIN[Math.max(0, tone - 1)] : u[2] < -0.4 ? TPALE[tone] : TSKIN[tone]) });
   put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 2.9), mul(hl, 2.15), mul(hu, 2.05)], skin: (u, tone) => (u[2] < -0.35 ? TPALE[tone] : TSKIN[tone]) });
   const ga = P.gape * 34;
   put('head', 'beak', { k: 'rod', a: Hp([1.6, 0, 0.1]), b: Hp([3.3, 0, -0.5]), ra: 1.15, rb: 0.5, ramp: BEAK });
@@ -709,15 +758,25 @@ function tortLook(P: import('./companions_art_moves').TortPose): Look {
     const s = i % 2 === 0 ? -1 : 1;
     const top = W(TORT_LEGTOP[i]);
     const ankle = add(foot, [0, 0, 1.6 + P.fold[i] * 0.02]);
-    const knee = joint(top, ankle, 4.0, 4.3, V([front ? -0.25 : 0.25, s * 1, 0.7]));
+    const knee = joint(top, ankle, 5.6, 6.0, V([front ? -0.25 : 0.25, s * 1, 0.7]));
     const part = `leg${i}`;
-    put(part, `${part}u`, { k: 'rod', a: top, b: knee, ra: 2.3, rb: 2.0, ramp: TSKIN, far: true });
-    put(part, `${part}l`, { k: 'rod', a: knee, b: ankle, ra: 2.0, rb: 2.1, ramp: TSKIN, far: true });
+    // (stout and scaled: the fore legs flattened and armoured in big scales, the hind round as an elephant's)
+    const scales: Skin = (u, tone) => {
+      const cell = (Math.floor((u[0] + 1) * (front ? 2.5 : 3.5)) + Math.floor((Math.atan2(u[1], u[2]) + Math.PI) * (front ? 1.3 : 1.8))) % 2;
+      return cell ? TSKIN[tone] : TSKIN[Math.min(4, tone + 1)];
+    };
+    const legBall = (piece: string, a: V3, b: V3, r: number, flat: number): void => {
+      const ax = norm(sub(b, a));
+      const sd = norm(cross(ax, [0, 0, 1]), [1, 0, 0]);
+      put(part, piece, { k: 'ball', c: lerpV(a, b, 0.5), ax: [mul(ax, len3(sub(b, a)) * 0.5 + r * 0.6), mul(sd, r * flat), mul(norm(cross(sd, ax)), r)], skin: scales, far: true });
+    };
+    legBall(`${part}u`, top, knee, front ? 2.5 : 2.3, front ? 1.15 : 1);
+    legBall(`${part}l`, knee, ankle, front ? 2.4 : 2.2, front ? 1.25 : 1);
     const fc = add(foot, [front ? 0.4 : -0.2, 0, 1.0]);
     put(part, `${part}foot`, { k: 'ball', c: fc, ax: [[2.2, 0, 0], [0, 2.0, 0], [0, 0, 1.0]], skin: TSKIN, far: true });
     for (const c of [-0.9, 0, 0.9]) put(part, `${part}claw`, { k: 'dot', p: add(foot, [front ? 2.3 : 1.6, c, 0.7]), c: BEAK[3], facing: [1, 0, 0.4] });
     paws.push(foot);
-    things.push({ name: part, pts: [knee, ...along(knee, ankle, 0.3, 1, 2)], r: 1.2, may: [`${part}u`, `${part}l`, `${part}foot`, 'rim', 'plastron', 'dome'] });
+    things.push({ name: part, pts: [...along(top, knee, 0.5, 1, 2), ...along(knee, ankle, 0.3, 1, 2)], r: 1.2, may: [`${part}u`, `${part}l`, `${part}foot`, 'rim', 'plastron', 'dome'] });
   });
   put('shell', 'tail', { k: 'rod', a: W([-11.4, 0, 4.8]), b: W([-13.6, 0, 3.4]), ra: 1.0, rb: 0.3, ramp: TSKIN });
   const tip = Hp([3.4, 0, -0.6]);
@@ -745,8 +804,8 @@ function tortLook(P: import('./companions_art_moves').TortPose): Look {
 // =============================================================================================
 // THE SNAKE: its body
 
-const SCALE: Ramp = ['#14200e', '#14200e', '#3e6a22', '#6e9a36', '#6e9a36'];
-const BAND: Ramp = ['#0a1008', '#0a1008', '#22341a', '#3a5226', '#3a5226'];
+const SCALE: Ramp = ['#0c1408', '#1e3212', '#3e6a22', '#6e9a36', '#88b44a'];
+const BAND: Ramp = ['#060a04', '#121c0c', '#22341a', '#3a5226', '#4a6630'];
 const BELLY: Ramp = ['#3a3418', '#3a3418', '#b0a050', '#e0d084', '#e0d084'];
 const SNAKE_MOUTH: Ramp = ['#5a4a40', '#5a4a40', '#c8b4a0', '#ecdcc8', '#ecdcc8'];
 const SNAKE_TONGUE = '#d0442a';
@@ -766,7 +825,12 @@ function snakeLook(P: import('./companions_art_moves').SnakePose): Look {
     const up = norm(cross(tan, side));
     const banded = (i - 3) % 5 < 2;
     const ramp = banded ? BAND : SCALE;
-    put(i < 12 ? 'fore' : 'rear', `seg${i}`, { k: 'ball', c: sp[i], ax: [mul(tan, SNAKE_DS * 0.95), mul(side, r), mul(up, r * 0.92)], skin: (u, tone) => (u[2] < -0.45 ? BELLY[tone] : ramp[tone]) });
+    put(i < 12 ? 'fore' : 'rear', `seg${i}`, { k: 'ball', c: sp[i], ax: [mul(tan, SNAKE_DS * 0.95), mul(side, r), mul(up, r * 0.92)], skin: (u, tone) => {
+      if (u[2] < -0.45) return fr((u[0] + 1) * 1.5 + i * 0.5) < 0.25 ? BELLY[Math.max(0, tone - 1)] : BELLY[tone];
+      // (its scales: a checker of them across its back, each catching the light a little differently)
+      const cell = (Math.floor((u[0] + 1) * 1.6 + i * 0.8) + Math.floor((Math.atan2(u[1], u[2]) + Math.PI) * 2.2)) % 2;
+      return cell ? ramp[tone] : ramp[Math.min(4, tone + 1)];
+    } });
     if (i % 2 === 0) things.push({ name: `seg${i}`, pts: [sp[i]], r: r * 0.5, may: Array.from({ length: 11 }, (_, j) => `seg${i - 5 + j}`) });
   }
   // THE HEAD: its jaws open as it strikes, the head tipped up and the lower jaw down, its fangs swung forward
@@ -834,12 +898,12 @@ const HAWK_YELLOW: Ramp = ['#5a4010', '#5a4010', '#d4a020', '#f6cc4c', '#f6cc4c'
 const HAWK_HOOK: Ramp = ['#14141c', '#14141c', '#3a3a4a', '#646478', '#646478'];
 /** His falconer's jesses on its legs: the leather of his own gear, a dark teal. */
 const JESS: Ramp = ['#0c2a34', '#0c2a34', '#16525e', '#2a7a84', '#2a7a84'];
-const BAT_FUR: Ramp = ['#1c1210', '#1c1210', '#4e3024', '#7a4e36', '#7a4e36'];
-const BAT_MANTLE: Ramp = ['#3a2410', '#3a2410', '#a06a2a', '#d09a48', '#d09a48'];
+const BAT_FUR: Ramp = ['#140c0a', '#2a1a14', '#4e3024', '#7a4e36', '#946042'];
+const BAT_MANTLE: Ramp = ['#2a180a', '#5a3a18', '#a06a2a', '#d09a48', '#e8b866'];
 /** Its face: a lighter fur than its body, the fruit bat's fox-like face. */
-const BAT_HEAD: Ramp = ['#2a1a10', '#2a1a10', '#7a4e2a', '#a8743e', '#a8743e'];
-const MEMBRANE: Ramp = ['#120c10', '#120c10', '#3c2a2e', '#5c4446', '#5c4446'];
-const WING_BONE: Ramp = ['#2a1e1e', '#2a1e1e', '#6a5048', '#8e7262', '#8e7262'];
+const BAT_HEAD: Ramp = ['#1e120a', '#4a301a', '#7a4e2a', '#a8743e', '#c08c52'];
+const MEMBRANE: Ramp = ['#0e080a', '#22161a', '#3c2a2e', '#5c4446', '#76585a'];
+const WING_BONE: Ramp = ['#3a2a24', '#3a2a24', '#8e6e5a', '#b8957a', '#b8957a'];
 
 type WP = import('./companions_art_moves').WingPose;
 /** Out from the body along its left (s 1) or right (s -1), raised `lift` and swept back `sweep` (degrees), in the body's own frame. */
@@ -869,38 +933,41 @@ function sheetPanel(put: Put, part: string, piece: string, a: V3, b: V3, c: V3, 
   });
 }
 
-/** THE HAWK, AS SOLIDS: a lean, deep-chested body; a fierce head under a heavy brow, a hooked beak on a yellow cere; broad wings, brown above with pale-barred coverts, cream barred beneath, their tips fingered; a rufous tail that fans; yellow legs and black talons; his jesses on them. */
+/** THE HAWK, AS SOLIDS: one bird of prey: a deep, rounded breast, cream and streaked; a brown back of feathers in rows, each edged paler; a fierce head under a heavy brow, a hooked beak on a yellow cere; broad wings of layered feathers (coverts over a row of secondaries, five primaries splayed like fingers at the tip), brown above and cream barred beneath; a rufous tail of six feathers that fans, banded near its pale tip; feathered thighs, yellow legs, black talons; his jesses on them. */
 function hawkLook(P: WP): Look {
   const { put, bits, lumps, limbs } = recorder();
   const B = (v: V3): V3 => turn(v, P.yaw, P.pitch, P.roll);
   const W = (p: V3): V3 => add(P.at, B(p));
   const UPB = B([0, 0, 1]);
   const things: CheckThing[] = [];
-  const bodySkin: Skin = (u, tone) => {
-    if (u[2] > 0.2) return HAWK_BACK[tone];
-    // (its breast cream, streaked down with brown)
-    return Math.abs(Math.sin(u[1] * 9 + u[0] * 2)) < 0.28 && u[0] > -0.6 ? HAWK_STREAK[tone] : HAWK_CREAM[tone];
-  };
-  put('body', 'torso', { k: 'ball', c: W([0, 0, 0]), ax: [B([4.3, 0, 0]), B([0, 2.7, 0]), B([0, 0, 2.6])], skin: bodySkin });
-  put('body', 'breast', { k: 'ball', c: W([2.0, 0, -0.5]), ax: [B([2.8, 0, 0]), B([0, 2.6, 0]), B([0, 0, 2.6])], skin: bodySkin });
+  /** Its back's feathers: rows of them, each row's edge a step paler. */
+  const back = (u: V3, tone: number): string => (fr((u[0] + 1) * 3.5 + Math.abs(u[1]) * 1.5) < 0.24 ? HAWK_BACK[Math.min(4, tone + 1)] : HAWK_BACK[tone]);
+  /** Its breast: cream, streaked down with brown drops. */
+  const breast = (u: V3, tone: number): string => (fr((u[0] + 1) * 3) < 0.45 && hash(Math.floor((u[1] + 1) * 4.5), Math.floor((u[0] + 1) * 3), 7) < 0.45 ? HAWK_STREAK[tone] : HAWK_CREAM[tone]);
+  const body: Skin = (u, tone) => (u[2] > 0.2 ? back(u, tone) : breast(u, tone));
+  put('body', 'breast', { k: 'ball', c: W([1.6, 0, -0.5]), ax: [B([3.4, 0, 0]), B([0, 3.0, 0]), B([0, 0, 3.3])], skin: body });
+  put('body', 'torso', { k: 'ball', c: W([-0.3, 0, 0.6]), ax: [B([4.4, 0, 0]), B([0, 2.8, 0]), B([0, 0, 2.3])], skin: body });
+  put('body', 'vent', { k: 'ball', c: W([-2.9, 0, -0.4]), ax: [B([2.6, 0, 0]), B([0, 2.0, 0]), B([0, 0, 1.8])], skin: (u, tone) => (u[2] > 0.3 ? back(u, tone) : HAWK_CREAM[tone]) });
   // THE HEAD
-  const hc = W([4.5, 0, 1.6]);
-  const hf = B(turn([1, 0, 0], P.hy, P.hp + (P.pitch < 0 ? 0 : 0), 0));
+  const hc = W([4.6, 0, 1.9]);
+  const hf = B(turn([1, 0, 0], P.hy, P.hp, 0));
   const hl = norm(cross(UPB, hf), B([0, 1, 0]));
   const hu = norm(cross(hf, hl));
   const Hp = (v: V3): V3 => add(hc, add(add(mul(hf, v[0]), mul(hl, v[1])), mul(hu, v[2])));
-  put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 2.3), mul(hl, 1.95), mul(hu, 2.0)], skin: (u, tone) => (u[2] < -0.3 ? HAWK_CREAM[tone] : u[2] > 0.25 ? HAWK_BACK[tone] : Math.abs(u[1]) > 0.55 && u[2] < 0.1 ? HAWK_STREAK[tone] : HAWK_CREAM[tone]) });
-  put('head', 'brow', { k: 'ball', c: Hp([1.0, 0, 1.0]), ax: [mul(hf, 1.3), mul(hl, 1.75), mul(hu, 0.6)], skin: HAWK_BACK });
-  put('head', 'cere', { k: 'rod', a: Hp([1.6, 0, 0.25]), b: Hp([2.3, 0, 0.05]), ra: 0.85, rb: 0.75, ramp: HAWK_YELLOW });
-  put('beak', 'hook', { k: 'rod', a: Hp([2.2, 0, 0.05]), b: Hp([3.3, 0, -0.45]), ra: 0.75, rb: 0.4, ramp: HAWK_HOOK });
-  put('beak', 'hooktip', { k: 'rod', a: Hp([3.2, 0, -0.4]), b: Hp([3.3, 0, -1.1]), ra: 0.38, rb: 0.15, ramp: HAWK_HOOK });
+  put('body', 'nape', { k: 'ball', c: lerpV(hc, W([2.6, 0, 1.0]), 0.5), ax: [B([1.8, 0, 0]), B([0, 2.2, 0]), B([0, 0, 2.0])], skin: body });
+  put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 2.4), mul(hl, 2.1), mul(hu, 2.2)], skin: (u, tone) => (u[2] < -0.3 ? HAWK_CREAM[tone] : u[2] > 0.3 ? HAWK_BACK[tone] : Math.abs(u[1]) > 0.5 && u[0] > -0.2 && u[2] < 0.15 ? HAWK_STREAK[tone] : HAWK_CREAM[tone]) });
+  put('head', 'brow', { k: 'ball', c: Hp([1.0, 0, 1.05]), ax: [mul(hf, 1.3), mul(hl, 1.85), mul(hu, 0.65)], skin: HAWK_BACK });
+  put('head', 'cere', { k: 'rod', a: Hp([1.6, 0, 0.3]), b: Hp([2.3, 0, 0.1]), ra: 0.9, rb: 0.8, ramp: HAWK_YELLOW });
+  put('beak', 'hook', { k: 'rod', a: Hp([2.2, 0, 0.1]), b: Hp([3.3, 0, -0.45]), ra: 0.8, rb: 0.42, ramp: HAWK_HOOK });
+  put('beak', 'hooktip', { k: 'rod', a: Hp([3.2, 0, -0.4]), b: Hp([3.25, 0, -1.2]), ra: 0.4, rb: 0.15, ramp: HAWK_HOOK });
   if (P.gape > 0.1) put('beak', 'lower', { k: 'rod', a: Hp([1.9, 0, -0.5]), b: add(Hp([1.9, 0, -0.5]), mul(norm(add(mul(hf, 1), mul(hu, -0.6 * P.gape))), 1.3)), ra: 0.45, rb: 0.25, ramp: HAWK_YELLOW });
-  for (const s of [1, -1]) put('head', `eye${s}`, { k: 'dot', p: Hp([1.25, s * 1.3, 0.55]), c: '#140c06', c2: '#f0c040', facing: norm(add(mul(hl, s), mul(hf, 0.5))) });
-  // THE WINGS
+  for (const s of [1, -1]) put('head', `eye${s}`, { k: 'dot', p: Hp([1.3, s * 1.35, 0.55]), c: '#140c06', c2: '#f0c040', facing: norm(add(mul(hl, s), mul(hf, 0.5))) });
+  // THE WINGS: a row of secondaries along the arm, coverts over them, five primaries splayed from the hand
   const wingBones: [string, V3, V3, V3][] = [];
   for (const s of [1, -1]) {
     const side = s > 0 ? 'L' : 'R';
-    const S = W([1.3, s * 2.2, 1.2]);
+    const part = `wing${side}`;
+    const S = W([1.0, s * 2.3, 1.2]);
     const lift = P.lift[s > 0 ? 0 : 1];
     const arm = B(outWay(s, lift, P.sweep));
     const Wr = add(S, mul(arm, 7));
@@ -908,44 +975,56 @@ function hawkLook(P: WP): Look {
     const T = add(Wr, mul(hand, 10 * (1 - 0.25 * P.fold)));
     const back1 = norm(sub(B([-1, 0, 0]), mul(arm, dot(B([-1, 0, 0]), arm))), B([-1, 0, 0]));
     const back2 = norm(sub(B([-1, 0, 0]), mul(hand, dot(B([-1, 0, 0]), hand))), B([-1, 0, 0]));
-    const look = (al: number, be: number, top: boolean, tone: number, outer: boolean): string => {
-      if (top) {
-        if (be < 0.42 && !outer) return Math.abs(be - 0.36) < 0.05 ? HAWK_CREAM[Math.min(tone, 2)] : HAWK_BACK[tone];
-        return (al * 7 + be * 2) % 1 < 0.18 ? HAWK_BACK[tone] : HAWK_FLIGHT[tone];
-      }
-      if (outer && al > 0.78) return HAWK_FLIGHT[tone];
-      return be > 0.45 && (al * (outer ? 8 : 6) + be * 1.5) % 1 < 0.25 ? HAWK_STREAK[tone] : HAWK_CREAM[Math.max(1, tone - 1)];
-    };
-    // (the inner wing, from the body to the wrist, broad; the hand, tapering to its fingered tip)
-    sheetPanel(put, `wing${side}`, `inner${side}`, S, Wr, add(S, mul(back1, 7.6)), UPB, (al, be) => be <= 1 - 0.3 * al * al, (al, be, top, tone) => look(al, be, top, tone, false));
-    sheetPanel(put, `wing${side}`, `outer${side}`, Wr, T, add(Wr, mul(back2, 6.4)), UPB, (al, be) => {
-      if (be > 1 - 0.78 * Math.pow(al, 1.4) || be < 0.3 * al * al) return false;
-      return !(al > 0.62 && (be * 5) % 1 > 0.72);
-    }, (al, be, top, tone) => look(al, be, top, tone, true));
+    // (the secondaries: their tips scalloped, brown above with paler edges, cream barred beneath)
+    sheetPanel(put, part, `sec${side}`, S, Wr, add(S, mul(back1, 8.2)), UPB, (al, be) => be <= (0.86 + 0.14 * Math.abs(Math.sin(al * Math.PI * 5.5))) * (1 - 0.18 * al), (al, be, top, tone) => {
+      if (top) return be < 0.42 ? (fr(be * 6) < 0.22 ? HAWK_BACK[Math.min(4, tone + 1)] : HAWK_BACK[tone]) : fr(al * 5.5) < 0.1 ? HAWK_FLIGHT[Math.min(4, tone + 1)] : HAWK_FLIGHT[tone];
+      return be > 0.82 ? HAWK_FLIGHT[tone] : be > 0.4 && fr(be * 5) < 0.3 ? HAWK_STREAK[tone] : HAWK_CREAM[Math.max(1, tone - 1)];
+    });
+    // (the primaries, five, from the hand: splayed like fingers, the outer ones longest)
+    const prim: V3[] = [];
+    for (let q = 0; q < 5; q++) {
+      const root = lerpV(Wr, T, 0.08 + 0.14 * q);
+      const dir = norm(lerpV(hand, back2, (4 - q) * 0.17 * (1 - 0.6 * P.fold) + 0.06));
+      const L = (6.5 + 0.9 * q) * (1 - 0.25 * P.fold);
+      const wd = mul(back2, 0.95);
+      const a = sub(root, wd);
+      sheetPanel(put, part, `prim${q}${side}`, a, add(root, wd), add(a, mul(dir, L)), UPB, (al, be) => Math.abs(al - 0.5) <= 0.5 * (1 - Math.pow(be, 5)), (al, be, top, tone) => {
+        if (top) return Math.abs(al - 0.5) > 0.36 ? HAWK_BACK[Math.min(4, tone + 1)] : be > 0.75 ? HAWK_FLIGHT[Math.max(0, tone - 1)] : HAWK_FLIGHT[tone];
+        return be > 0.72 ? HAWK_FLIGHT[tone] : fr(be * 4.5) < 0.32 ? HAWK_STREAK[tone] : HAWK_CREAM[Math.max(1, tone - 1)];
+      });
+      prim.push(add(root, mul(dir, L)));
+    }
+    // (the coverts of the hand, over the primaries' roots, and the leading edge, thick with small feathers)
+    sheetPanel(put, part, `cov${side}`, sub(Wr, mul(back2, 0.5)), add(Wr, mul(sub(T, Wr), 0.55)), add(sub(Wr, mul(back2, 0.5)), mul(back2, 4.2)), UPB, (al, be) => be <= 1 - 0.55 * al, (_al, be, top, tone) => (top ? (fr(be * 3) < 0.25 ? HAWK_BACK[Math.min(4, tone + 1)] : HAWK_BACK[tone]) : HAWK_CREAM[Math.max(1, tone - 1)]));
+    put(part, `edge${side}`, { k: 'rod', a: S, b: Wr, ra: 1.1, rb: 0.75, ramp: HAWK_BACK });
+    put(part, `edge2${side}`, { k: 'rod', a: Wr, b: lerpV(Wr, T, 0.5), ra: 0.75, rb: 0.45, ramp: HAWK_BACK });
     wingBones.push([side, S, Wr, T]);
+    void prim;
     limbs.push({ name: `arm${side}`, a: S, b: Wr, r: 0.8 }, { name: `hand${side}`, a: Wr, b: T, r: 0.6 });
   }
-  for (const [side, S, Wr, T] of wingBones) things.push({ name: `wing${side}`, pts: [...along(S, Wr, 0.45, 1, 3), ...along(Wr, T, 0.25, 1, 4)], r: 0.6, may: [`arm${side}`, `hand${side}`, 'torso', 'breast'] });
-  // THE TAIL: a fan, rufous, a dark band near its pale tip
-  const tr = W([-4.0, 0, 0.3]);
+  for (const [side, S, Wr, T] of wingBones) things.push({ name: `wing${side}`, pts: [...along(S, Wr, 0.45, 1, 3), ...along(Wr, T, 0.25, 1, 4)], r: 0.6, may: [`arm${side}`, `hand${side}`, `edge${side}`, `edge2${side}`, 'torso', 'breast', 'vent', 'nape'] });
+  // THE TAIL: six feathers, fanned; rufous, a dark band near the pale tip of each
+  const tr = W([-4.4, 0, 0.2]);
   const td = B(turn([-1, 0, 0], 0, -P.tailDown, 0));
-  const tw = 1.7 + 2.4 * P.fan;
-  const tl = B([0, 1, 0]);
-  sheetPanel(put, 'tail', 'tail', add(tr, mul(tl, -tw)), add(tr, mul(tl, tw)), add(add(tr, mul(tl, -tw)), mul(td, 9)), UPB, (al, be) => {
-    const half = 0.18 + 0.32 * be;
-    return Math.abs(al - 0.5) <= half && !(be > 0.88 && Math.abs(al - 0.5) > half * 0.75);
-  }, (_al, be, _top, tone) => (be > 0.9 ? HAWK_CREAM[tone] : be > 0.74 ? HAWK_FLIGHT[tone] : HAWK_RUFOUS[tone]));
+  let tailEnd = tr;
+  for (let q = 0; q < 6; q++) {
+    const dir = norm(rotIn(td, UPB, (q - 2.5) * (3 + 8 * P.fan)));
+    const sd = norm(cross(UPB, dir), B([0, 1, 0]));
+    const a = add(tr, mul(sd, -0.85));
+    sheetPanel(put, 'tail', `tail${q}`, a, add(tr, mul(sd, 0.85)), add(a, mul(dir, 9)), UPB, (al, be) => Math.abs(al - 0.5) <= 0.5 * (1 - Math.pow(be, 6)), (al, be, _top, tone) => (be > 0.88 ? HAWK_CREAM[tone] : be > 0.72 ? HAWK_FLIGHT[tone] : Math.abs(al - 0.5) > 0.38 ? HAWK_RUFOUS[Math.max(0, tone - 1)] : HAWK_RUFOUS[tone]));
+    if (q === 2) tailEnd = add(tr, mul(dir, 8));
+  }
   // ITS LEGS: feathered thighs, yellow legs, black talons; tucked under its tail in flight, flung forward to strike
   const feet: V3[] = [];
   for (const s of [1, -1]) {
-    const thigh = W([0.4, s * 1.3, -1.8]);
-    put('legs', `thigh${s}`, { k: 'ball', c: thigh, ax: [B([1.3, 0, 0]), B([0, 1.0, 0]), B([0, 0, 1.5])], skin: HAWK_CREAM });
-    const foot = W([mix3(-2.6, 5.2, P.legs), s * 1.2, mix3(-3.0, -5.6, P.legs)]);
-    put('legs', `leg${s}`, { k: 'rod', a: thigh, b: foot, ra: 0.6, rb: 0.5, ramp: HAWK_YELLOW });
+    const thigh = W([0.4, s * 1.4, -2.0]);
+    put('legs', `thigh${s}`, { k: 'ball', c: thigh, ax: [B([1.5, 0, 0]), B([0, 1.2, 0]), B([0, 0, 1.8])], skin: (u, tone) => (fr((u[2] + 1) * 2.5) < 0.3 ? HAWK_STREAK[tone] : HAWK_CREAM[tone]) });
+    const foot = W([mix3(-2.6, 5.2, P.legs), s * 1.2, mix3(-3.2, -5.8, P.legs)]);
+    put('legs', `leg${s}`, { k: 'rod', a: thigh, b: foot, ra: 0.65, rb: 0.5, ramp: HAWK_YELLOW });
     for (const [dx, dy] of [[1, 0], [0.7, 0.7], [0.7, -0.7], [-1, 0]] as const) {
       const spread = 0.6 + 0.9 * P.open;
       const way = add(B([dx * 0.8, dy * spread * 0.9, -0.6]), mul(B([1, 0, 0]), 0.3 * P.legs));
-      put('legs', `talon${s}`, { k: 'rod', a: foot, b: add(foot, mul(norm(way), 1.3)), ra: 0.35, rb: 0.15, ramp: HAWK_HOOK });
+      put('legs', `talon${s}`, { k: 'rod', a: foot, b: add(foot, mul(norm(way), 1.4)), ra: 0.38, rb: 0.15, ramp: HAWK_HOOK });
     }
     // (his jesses: two straps of leather off the leg, streaming behind)
     const j0 = lerpV(thigh, foot, 0.75);
@@ -964,7 +1043,7 @@ function hawkLook(P: WP): Look {
       grips: [],
       things,
       tip,
-      follow: { head: hc, body: P.at, tail: add(tr, mul(td, 8)), wristL: wingBones[0][2], wristR: wingBones[1][2], tipL: wingBones[0][3], tipR: wingBones[1][3], feet: tip },
+      follow: { head: hc, body: P.at, tail: tailEnd, wristL: wingBones[0][2], wristR: wingBones[1][2], tipL: wingBones[0][3], tipR: wingBones[1][3], feet: tip },
       proxy: { at: P.at, yaw: P.yaw, pitch: P.pitch, roll: P.roll, twist: 0, bend: 0, faceTurn: P.hy, faceUp: -P.hp },
     },
   };
@@ -978,25 +1057,30 @@ function batLook(P: WP): Look {
   const W = (p: V3): V3 => add(P.at, B(p));
   const UPB = B([0, 0, 1]);
   const things: CheckThing[] = [];
-  put('body', 'torso', { k: 'ball', c: W([0, 0, 0]), ax: [B([2.6, 0, 0]), B([0, 1.9, 0]), B([0, 0, 2.0])], skin: BAT_FUR });
-  put('body', 'mantle', { k: 'ball', c: W([1.5, 0, 0.5]), ax: [B([1.6, 0, 0]), B([0, 2.05, 0]), B([0, 0, 1.9])], skin: BAT_MANTLE });
-  const hc = W([3.3, 0, 1.0]);
+  put('body', 'torso', { k: 'ball', c: W([0, 0, 0]), ax: [B([2.9, 0, 0]), B([0, 2.2, 0]), B([0, 0, 2.4])], skin: fur(() => BAT_FUR, 91, 5) });
+  put('body', 'mantle', { k: 'ball', c: W([1.6, 0, 0.6]), ax: [B([1.9, 0, 0]), B([0, 2.4, 0]), B([0, 0, 2.2])], skin: fur(() => BAT_MANTLE, 92, 5) });
+  const hc = W([3.6, 0, 1.2]);
   const hf = B(turn([1, 0, 0], P.hy, P.hp, 0));
   const hl = norm(cross(UPB, hf), B([0, 1, 0]));
   const hu = norm(cross(hf, hl));
   const Hp = (v: V3): V3 => add(hc, add(add(mul(hf, v[0]), mul(hl, v[1])), mul(hu, v[2])));
-  put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 1.75), mul(hl, 1.55), mul(hu, 1.55)], skin: BAT_HEAD });
-  put('head', 'snout', { k: 'rod', a: Hp([0.9, 0, -0.2]), b: Hp([2.5, 0, -0.7]), ra: 0.95, rb: 0.55, ramp: BAT_HEAD });
-  put('head', 'nose', { k: 'ball', c: Hp([2.6, 0, -0.55]), ax: [mul(hf, 0.45), mul(hl, 0.55), mul(hu, 0.45)], skin: NOSE });
+  put('head', 'skull', { k: 'ball', c: hc, ax: [mul(hf, 2.0), mul(hl, 1.8), mul(hu, 1.8)], skin: fur(() => BAT_HEAD, 93, 5) });
+  put('head', 'snout', { k: 'rod', a: Hp([1.0, 0, -0.25]), b: Hp([2.8, 0, -0.75]), ra: 1.05, rb: 0.6, ramp: BAT_HEAD });
+  put('head', 'nose', { k: 'ball', c: Hp([2.9, 0, -0.6]), ax: [mul(hf, 0.5), mul(hl, 0.6), mul(hu, 0.5)], skin: NOSE });
   const ga = P.gape * 40;
   const hinge = Hp([0.6, 0, -0.9]);
   const jaw = add(hinge, mul(norm(add(mul(hf, Math.cos(ga * D)), mul(hu, -Math.sin(ga * D)))), 1.9));
   put('jaw', 'jaw', { k: 'rod', a: hinge, b: jaw, ra: 0.6, rb: 0.4, ramp: BAT_FUR });
   if (P.gape > 0.3) for (const s of [1, -1]) put('jaw', `fang${s}`, { k: 'rod', a: Hp([2.1, s * 0.35, -0.85]), b: Hp([2.1, s * 0.35, -1.7]), ra: 0.3, rb: 0.12, ramp: ['#7a7064', '#7a7064', TOOTH, TOOTH, TOOTH] });
   for (const s of [1, -1]) {
-    put('head', `eye${s}`, { k: 'dot', p: Hp([1.05, s * 0.9, 0.45]), c: AMBER, facing: norm(add(mul(hl, s), mul(hf, 0.6))) });
-    const eb = Hp([-0.3, s * 0.95, 1.0]);
-    put(`ear${s}`, `ear${s}`, { k: 'rod', a: eb, b: add(eb, mul(norm(add(add(mul(hu, 1), mul(hl, s * 0.45)), mul(hf, -0.2 - 0.6 * P.ears))), 2.3)), ra: 0.65, rb: 0.12, ramp: NOSE });
+    put('head', `eye${s}`, { k: 'dot', p: Hp([1.2, s * 1.05, 0.5]), c: AMBER, c2: '#1a0e08', facing: norm(add(mul(hl, s), mul(hf, 0.6))) });
+    // (its ears: big, pointed, a flat leaf of skin each, dark, paler inside)
+    const eb = Hp([-0.4, s * 1.1, 1.2]);
+    const eway = norm(add(add(mul(hu, 1), mul(hl, s * 0.5)), mul(hf, -0.2 - 0.6 * P.ears)));
+    const eside = norm(cross(eway, hf), hl);
+    const eface = norm(cross(eside, eway));
+    put(`ear${s}`, `earb${s}`, { k: 'rod', a: eb, b: add(eb, mul(eway, 1.3)), ra: 0.8, rb: 0.5, ramp: NOSE });
+    sheetPanel(put, `ear${s}`, `ear${s}`, add(eb, mul(eside, -1.0)), add(eb, mul(eside, 1.0)), add(add(eb, mul(eway, 3.6)), mul(eside, -1.0)), eface, (al, be) => be <= 1 - al && al + be >= 0, (al, be, front, tone) => (front && al > 0.18 && be > 0.12 && al + be < 0.8 ? '#4a2c22' : NOSE[Math.min(4, tone + 1)]));
   }
   // THE WINGS: arm, forearm, three fingers; the skin between them
   const wing: [string, V3, V3, V3, V3[]][] = [];
@@ -1011,7 +1095,7 @@ function batLook(P: WP): Look {
     const plane = norm(cross(fore, B([-1, 0, 0])));
     const n = dot(plane, UPB) < 0 ? mul(plane, -1) : plane;
     const spread = 1 - 0.7 * P.fold;
-    const tips = [[4, 8.2], [50, 7.2], [100, 6.2]].map(([ang, L]) => add(Wr, mul(norm(rotIn(fore, n, s * ang * spread)), L * (1 - 0.25 * P.fold))));
+    const tips = [[4, 8.2], [52, 8.2], [112, 7.0]].map(([ang, L]) => add(Wr, mul(norm(rotIn(fore, n, s * ang * spread)), L * (1 - 0.25 * P.fold))));
     const hip = W([-2.0, s * 1.1, -0.6]);
     const scallop = (al: number, be: number): boolean => {
       const sum = al + be;
@@ -1019,20 +1103,25 @@ function batLook(P: WP): Look {
       const g = sum > 1e-6 ? be / sum : 0;
       return sum <= 1 - 0.22 * 4 * g * (1 - g);
     };
-    const skin = (_al: number, _be: number, top: boolean, tone: number): string => MEMBRANE[top ? tone : Math.max(0, tone - 1)];
+    // (the skin a step paler along the bones it is stretched from, darker toward its trailing edge)
+    const skin = (al: number, be: number, top: boolean, tone: number): string => {
+      const t0 = top ? tone : Math.max(0, tone - 1);
+      return al < 0.07 || be < 0.07 ? MEMBRANE[Math.min(4, t0 + 1)] : al + be > 0.78 ? MEMBRANE[Math.max(0, t0 - 1)] : MEMBRANE[t0];
+    };
     const part = `wing${side}`;
     sheetPanel(put, part, `m1${side}`, Wr, tips[0], tips[1], UPB, scallop, skin);
     sheetPanel(put, part, `m2${side}`, Wr, tips[1], tips[2], UPB, scallop, skin);
     sheetPanel(put, part, `m3${side}`, Wr, tips[2], hip, UPB, scallop, skin);
     sheetPanel(put, part, `m4${side}`, E, Wr, hip, UPB, (al, be) => al + be <= 1, skin);
     sheetPanel(put, part, `m5${side}`, S, E, hip, UPB, (al, be) => al + be <= 1, skin);
-    put(part, `armb${side}`, { k: 'rod', a: S, b: E, ra: 0.6, rb: 0.45, ramp: WING_BONE });
-    put(part, `foreb${side}`, { k: 'rod', a: E, b: Wr, ra: 0.45, rb: 0.38, ramp: WING_BONE });
-    for (const [i, tp] of tips.entries()) put(part, `finger${i}${side}`, { k: 'rod', a: Wr, b: tp, ra: 0.3, rb: 0.18, ramp: WING_BONE });
+    put(part, `armb${side}`, { k: 'rod', a: S, b: E, ra: 0.75, rb: 0.5, ramp: BAT_FUR });
+    put(part, `foreb${side}`, { k: 'rod', a: E, b: Wr, ra: 0.5, rb: 0.42, ramp: WING_BONE });
+    put(part, `wrist${side}`, { k: 'ball', c: Wr, ax: sphere(0.55), skin: WING_BONE });
+    for (const [i, tp] of tips.entries()) put(part, `finger${i}${side}`, { k: 'rod', a: Wr, b: tp, ra: 0.36, rb: 0.2, ramp: WING_BONE });
     put(part, `thumb${side}`, { k: 'rod', a: Wr, b: add(Wr, mul(norm(add(fore, mul(B([1, 0, 0]), 1.2))), 1.0)), ra: 0.32, rb: 0.15, ramp: WING_BONE });
     wing.push([side, S, E, Wr, tips]);
   }
-  for (const [side, , E, Wr, tips] of wing) things.push({ name: `wing${side}`, pts: [E, Wr, ...tips], r: 0.4, may: [`armb${side}`, `foreb${side}`, `finger0${side}`, `finger1${side}`, `finger2${side}`, `thumb${side}`, 'torso', 'mantle'] });
+  for (const [side, , E, Wr, tips] of wing) things.push({ name: `wing${side}`, pts: [E, Wr, ...tips], r: 0.4, may: [`armb${side}`, `foreb${side}`, `wrist${side}`, `finger0${side}`, `finger1${side}`, `finger2${side}`, `thumb${side}`, 'torso', 'mantle'] });
   // its feet: small, hooked, drawn up under it; reaching as it clings
   const feet: V3[] = [];
   for (const s of [1, -1]) {
