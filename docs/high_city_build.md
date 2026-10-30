@@ -73,3 +73,29 @@
   `npx --no-install tsc --noEmit -p tsconfig.json` clean (under heavy.sh).
 - WHEN DONE: commit, push, and end with a short report: what is built, the numbers you chose, what is NOT done or not sure,
   every file outside your own you changed and why, the tests you ran and their counts.
+
+## Floor 16: done (30 Oct 2026)
+
+Merged on `high-city`: the place (hc/f16-place), the kinds (hc/f16-kinds), the Princess (hc/f16-princess), the Royal Cards
+(hc/royal-cards); filmed (tools/scenarios/floor16_film.mjs, princess_film.mjs WHERE=floor16); his yes by 17:52, “Yes, on to
+17 (Recommended)”. The companions' pictures merged too (`companions`), his “Yes, they're good (Recommended)”.
+
+## Floor 17, the Masque: the main chat's plan (no helpers: his word of 30 Oct, 15:02)
+
+The art: docs/mockups/masque/README.md (the place: art/masque.ts `masqueLook`, `MQ_ZONE`, `masqueWindows`; art/floor17.ts
+`masquePieces()`, `CLOCK_FRAMES`), docs/mockups/prince, masque_footmen, masque_dancers, silent_order (each README has its
+numbers and what the game must pick). His doc's level 17: seven rooms in colour order (blue, purple, green, orange, white,
+violet, black), galleries, card rooms and servants' passages between; the hazard, the ebony clock's chime (every dancer stops
+and turns to look at him, then all come at once); the masked dancers (waltz until they notice him), footmen, the Silent Order
+among the guests; the Prince in the Black Room, dancing the whole fight.
+
+In order, each committed on `high-city` as it is done:
+1. THE FRAME: LandKind 'masque' (act1.ts, ACT1_FLOORS[17]: The Masque, The Black Room, boss 'prince'); kinds 'footman',
+   'dancer', 'order', 'prince' (types, defs, empty rules/figs/fx); MAKERS, DRESSERS, ACT2_OWN[17], ACT2_GUARD[17]; landLook.
+   HIGH_CITY.built stays 1 until the map-maker lays the floor.
+2. THE PLACE: game/act2/masque.ts (from housequiet.ts's way of laying rooms): the seven in order, each a turn; galleries,
+   card rooms, the servants' passage with the braziers behind the windows; the Black Room last (the clock on its west wall);
+   the windows' light; the dresser; the clock's chime (the hazard). Then built: 2.
+3. THE KINDS: the footmen, the dancers, the Order (their READMEs' numbers).
+4. THE PRINCE.
+5. Films to him; his yes; then floor 18.
