@@ -170,3 +170,8 @@ THE WOLF, THE FOX AND THE TORTOISE STAY LOCKED, as they are. What changed:
 
 - A deeper beat for the two fliers would leap where one move hands over to the next. Their beats are as deep as the
   checks allow. Going deeper would need a way in the game into a beat and out of it.
+
+## His yes
+
+The curving wings and the big fang bite (`companions_film.mp4`), asked “Curving wings and the big fang bite
+(companions_film.mp4): are all six companions right now?”: “Yes, lock all six (Recommended)”.
