@@ -619,6 +619,8 @@ export const FLOOR_ROWS: readonly { name: string; from: number; to: number }[] =
   { name: 'THE PRISON', from: 1, to: 5 },
   { name: 'DOWN THE MOUNTAIN', from: 6, to: 10 },
   { name: 'THE CITY OF VELLUM', from: 11, to: 15 },
+  // (THE HIGH CITY, behind HIGH_CITY in game/act1.ts: its floors as they are built, lastFloor() saying how far)
+  { name: 'THE HIGH CITY', from: 16, to: 20 },
 ];
 function drawFloors(ui: Ui, title: string, big: number, st: TitleUi): void {
   const g = ui.g;

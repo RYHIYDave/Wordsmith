@@ -1595,7 +1595,8 @@ export const LEVEL_SELECT = {
    * 22 Oct 2026). Seeds 11, 22 and 33 gave 1,2,5,6,8,9,11,11,12,15,16,17,18,19,20; 1,2,4,6,8,10,11,11,13,14,16,17,18,19,20;
    * and 1,3,5,7,8,10,11,12,13,15,16,17,18,19,21.
    */
-  level: [1, 2, 5, 6, 8, 10, 11, 11, 13, 15, 16, 17, 18, 19, 20] as readonly number[],
+  // (THE HIGH CITY, FLOOR 16: a level on from the fifteenth's, as each of the Hush's is from the last, until the floors' own dice are counted)
+  level: [1, 2, 5, 6, 8, 10, 11, 11, 13, 15, 16, 17, 18, 19, 20, 21] as readonly number[],
   /** Of every three points his levels give, how many go to his class's own attribute (the rest to the other two in turn). */
   ownOfThree: 2,
 };

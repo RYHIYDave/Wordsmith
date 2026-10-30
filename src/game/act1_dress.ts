@@ -201,6 +201,18 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: [],
   },
+  // (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS, dressed by its own dresser, game/act2/swangardens.ts; named here for the game's
+  // barrels and urns, drawn as its two breakables, the art's: a gardener's barrow, an urn of roses, each whole and broken)
+  16: {
+    things: ['a yew cone', 'a topiary swan', 'a stone swan on its plinth', 'a sundial', 'a bay tree in its tub', 'a lantern on a post'],
+    big: ['the still fountain'],
+    lying: ['swan feathers', 'clippings and shears'],
+    wallFoot: [],
+    breakables: ["a gardener's barrow", 'an urn of roses'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */

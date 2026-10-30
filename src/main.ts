@@ -65,7 +65,7 @@ import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } fr
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
-import { ACT2 } from './game/act1';
+import { ACT2, HIGH_CITY } from './game/act1';
 import { MELD, RANK2, STONE_RISE, VOLT_MELDS, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -2104,6 +2104,20 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
     act2: (on: boolean, depth = 0) => {
       ACT2.on = on;
+      if (game && depth) {
+        game.depth = depth;
+        game.cleared = Math.max(game.cleared, depth - 1);
+        game.wayDepth = Math.max(game.wayDepth, depth);
+        game.enterDungeon();
+      }
+    },
+    /**
+     * (THE HIGH CITY, FLOOR 16: behind HIGH_CITY, game/act1.ts: off until his yes) Its switch (the Hush's with it), for the playtests
+     * and pictures; with `depth`, the hero taken there at once (16 on, as many as are built).
+     */
+    high: (on: boolean, depth = 0) => {
+      HIGH_CITY.on = on;
+      if (on) ACT2.on = true;
       if (game && depth) {
         game.depth = depth;
         game.cleared = Math.max(game.cleared, depth - 1);
