@@ -30,3 +30,12 @@ His picks, each offered as a pop-up with the whole proposal in its preview:
   - THE ORDER'S GUEST, “Pale court dress, short cape (Recommended)”: the hood down, a short black velvet shoulder cape over
     pale court dress (a silver-grey doublet and a white ruff), the blank white mask: light with a dark cape and a white
     face, where the Bookwarden is dark all over.
+
+## Also: the warlock's lag (his, 30 Oct)
+
+His words, 18:05: “And the warlock was having some serious performance issues when I was playing him”; asked when it was
+worst: “Changing into the demon,Casting spells”. Found (on the main chat's `heroes6`): he and his demon are painted by the
+classes' sculpting painter (src/dev/sculpt.ts), each picture the first time the game asks for it. One picture: the knight
+about 13 ms; the warlock standing or casting 70 to 85 ms (a spell's 45 pictures, about 3.5 s the first time it is cast);
+the change 394 ms (48 pictures, about 19 s); the demon about 620 ms. Asked whether to fix it by making that painter faster
+(the pictures the same, pixel for pixel) and by the main chat painting his pictures ahead of time: “Yes, after the guards”.
