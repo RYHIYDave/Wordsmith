@@ -244,11 +244,13 @@ function sheetOrFilm(): void {
   const S = 3;
   cv.width = W;
   cv.height = H;
-  type Seg = { k: Kind; what: 'stand' | 'walk' | 'attack' | 'slow' | 'title'; from: number; long: number };
+  type Seg = { k: Kind; what: 'stand' | 'walk' | 'wings' | 'attack' | 'slow' | 'title'; from: number; long: number };
   const segs: Seg[] = [{ k: 'hawk', what: 'title', from: 0, long: 2 }];
   let at = 2;
   for (const k of KINDS) {
-    for (const [what, long] of [['stand', 0.9], ['walk', 1.6], ['attack', COMP_ATTACK.long + 0.5], ['slow', COMP_ATTACK.long * 2 + 0.4]] as const) {
+    for (const [what, long] of [['stand', 0.9], ['walk', 1.6], ['wings', 2.2], ['attack', COMP_ATTACK.long + 0.5], ['slow', COMP_ATTACK.long * 2 + 0.4]] as const) {
+      // (the wings close up, for the two that fly only: his words, 30 Oct, “They curve while flapping”)
+      if (what === 'wings' && k !== 'hawk' && k !== 'bat') continue;
       segs.push({ k, what, from: at, long });
       at += long;
     }
@@ -267,7 +269,7 @@ function sheetOrFilm(): void {
       return;
     }
     const k = seg.k;
-    const head = seg.what === 'stand' ? 'standing' : seg.what === 'walk' ? GOING[k] : seg.what === 'attack' ? 'its attack' : 'its attack again, at half speed';
+    const head = seg.what === 'stand' ? 'standing' : seg.what === 'walk' ? GOING[k] : seg.what === 'wings' ? 'its wings in flight, close up, at half speed' : seg.what === 'attack' ? 'its attack' : k === 'snake' ? 'its bite again, close up, at half speed' : 'its attack again, at half speed';
     label(`THE ${NAME[k].toUpperCase()}  (the ${GROUP[k]} Companion): ${head}`, 16, 12, 2.5);
     label(GIFT[k], 16, 52, 2);
     for (const [vi, view] of (['front', 'back'] as const).entries()) {
@@ -279,6 +281,19 @@ function sheetOrFilm(): void {
       const ax = px + 300;
       let sp: Sprite;
       let rs: Sprite;
+      if (seg.what === 'wings') {
+        // (close up: six times as big, its body in the middle of the pane, no Ranger)
+        const n = moveFrames(k);
+        const fi = Math.floor(t * FPS * 0.5) % n;
+        figure(companionFrame(k, 'walk', fi / FPS, view), px + 294, 88 + 300 + (k === 'hawk' ? 31 : 27) * 6, 6, 0);
+        continue;
+      }
+      if (seg.what === 'slow' && k === 'snake') {
+        // (close up: five times as big, room for its strike)
+        const tt = Math.min(COMP_ATTACK.long, Math.max(0, (t - 0.15) * 0.5));
+        figure(companionFrame(k, 'attack', Math.round(tt * 30) / 30, view), px + 150, 88 + 400, 5, 9);
+        continue;
+      }
       if (seg.what === 'walk') {
         const n = moveFrames(k);
         const fi = Math.floor(t * FPS) % n;

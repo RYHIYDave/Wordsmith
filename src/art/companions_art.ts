@@ -510,7 +510,7 @@ export function companionLook(k: Kind, which: string, t: number): Look {
 }
 
 /** The two that fly, drawn a little bigger about their middles than their bones are made (their wings are thin things, and must read on a phone). */
-export const FLIER_SCALE = { hawk: 1.05, bat: 1.4 } as const;
+export const FLIER_SCALE = { hawk: 1.05, bat: 1.3 } as const;
 /** A moment of one of them made `f` times bigger about `c`: its solids and all the review reads. */
 function scaleLook(L: Look, f: number, c: V3): Look {
   const P = (p: V3): V3 => add(c, mul(sub(p, c), f));
@@ -809,6 +809,8 @@ const BAND: Ramp = ['#060a04', '#121c0c', '#22341a', '#3a5226', '#4a6630'];
 const BELLY: Ramp = ['#3a3418', '#3a3418', '#b0a050', '#e0d084', '#e0d084'];
 const SNAKE_MOUTH: Ramp = ['#5a4a40', '#5a4a40', '#c8b4a0', '#ecdcc8', '#ecdcc8'];
 const SNAKE_TONGUE = '#d0442a';
+/** Its venom: green-cyan, the friend's side's (art/companions_art_fx.ts throws it). */
+const VENOM = ['#3ce0b4', '#c4fff0'] as const;
 
 /** THE SNAKE, AS SOLIDS: a body tapering to its tail, moss-green banded with black, its belly yellow; an arrow-shaped head, broad at the jaws; amber eyes with a slit; a forked tongue that flickers. */
 function snakeLook(P: import('./companions_art_moves').SnakePose): Look {
@@ -831,14 +833,15 @@ function snakeLook(P: import('./companions_art_moves').SnakePose): Look {
       const cell = (Math.floor((u[0] + 1) * 1.6 + i * 0.8) + Math.floor((Math.atan2(u[1], u[2]) + Math.PI) * 2.2)) % 2;
       return cell ? ramp[tone] : ramp[Math.min(4, tone + 1)];
     } });
-    if (i % 2 === 0) things.push({ name: `seg${i}`, pts: [sp[i]], r: r * 0.5, may: Array.from({ length: 11 }, (_, j) => `seg${i - 5 + j}`) });
+    if (i % 2 === 0) things.push({ name: `seg${i}`, pts: [sp[i]], r: r * 0.5, may: [...Array.from({ length: 11 }, (_, j) => `seg${i - 5 + j}`), ...(i < 6 ? ['skull', 'jowls', 'neck', 'mouth', 'jaw'] : [])] });
   }
   // THE HEAD: its jaws open as it strikes, the head tipped up and the lower jaw down, its fangs swung forward
   const f = P.look;
   const l = norm(cross(UP, f), [0, 1, 0]);
   const u = norm(cross(f, l));
   const hc = sp[0];
-  const up = P.gape * 30;
+  // (its jaws thrown wide as it rears to strike: a snake's open nearly flat)
+  const up = P.gape * 44;
   const hf = norm(add(mul(f, Math.cos(up * D)), mul(u, Math.sin(up * D))));
   const hu = norm(cross(hf, l));
   const Hp = (v: V3): V3 => add(hc, add(add(mul(hf, v[0]), mul(l, v[1])), mul(hu, v[2])));
@@ -848,13 +851,17 @@ function snakeLook(P: import('./companions_art_moves').SnakePose): Look {
   put('head', 'neck', { k: 'ball', c: lerpV(hc, sp[2], 0.5), ax: [mul(f, 1.4), mul(l, snakeR(0.05)), mul(u, snakeR(0.05) * 0.9)], skin: (q, tone) => (q[2] < -0.4 ? BELLY[tone] : SCALE[tone]) });
   const jw = norm(add(mul(f, Math.cos(up * D)), mul(u, -Math.sin(up * D))));
   const hinge = Hp([-1.2, 0, -0.7]);
-  const jawTip = add(hinge, mul(jw, 4.0));
+  const jawTip = add(hinge, mul(jw, 4.0 + 0.8 * Math.min(1, P.gape)));
+  const fangTips: V3[] = [];
   if (P.gape > 0.08) {
     put('jaw', 'jaw', { k: 'rod', a: hinge, b: jawTip, ra: 0.9, rb: 0.55, ramp: BELLY });
     put('jaw', 'mouth', { k: 'ball', c: lerpV(Hp([1.2, 0, -1.0]), lerpV(hinge, jawTip, 0.6), 0.5), ax: [mul(hf, 1.6), mul(l, 1.0), mul(hu, 0.6 + P.gape)], skin: SNAKE_MOUTH });
     for (const s of [1, -1]) {
       const fb = Hp([2.6, s * 0.6, -0.9]);
-      put('jaw', `fang${s}`, { k: 'rod', a: fb, b: add(fb, mul(norm(add(mul(hu, -1), mul(hf, 0.35 * P.gape))), 1.5)), ra: 0.35, rb: 0.15, ramp: ['#7a7064', '#7a7064', TOOTH, TOOTH, TOOTH] });
+      const fl = 1.6 + 2.2 * Math.min(1, P.gape);
+      const ft = add(fb, mul(norm(add(mul(hu, -1), mul(hf, 0.35 * P.gape))), fl));
+      put('jaw', `fang${s}`, { k: 'rod', a: fb, b: ft, ra: 0.5, rb: 0.18, ramp: ['#7a7064', '#7a7064', TOOTH, TOOTH, TOOTH] });
+      fangTips.push(ft);
     }
   }
   for (const s of [1, -1]) put('head', `eye${s}`, { k: 'dot', p: Hp([1.2, s * 1.3, 0.45]), c: '#e8b030', c2: '#140c06', facing: norm(add(mul(l, s), mul(hf, 0.5))) });
@@ -867,6 +874,8 @@ function snakeLook(P: import('./companions_art_moves').SnakePose): Look {
     const end = add(snout, mul(f, 0.9 * n));
     for (const s of [1, -1]) grains.push([add(add(end, mul(f, 0.8)), add(mul(l, s * 0.7), mul(u, -0.3 * s))), SNAKE_TONGUE, 1]);
   }
+  // (its venom: a bead of it at each fang's tip while its jaws gape)
+  if (P.gape > 0.6) for (const ft of fangTips) grains.push([add(ft, [0, 0, -0.6]), VENOM[0], 2], [add(ft, [0, 0, -0.4]), VENOM[1], 1]);
   const tip = P.gape > 0.08 ? lerpV(snout, jawTip, 0.5) : snout;
   return {
     bits,
@@ -971,7 +980,7 @@ function hawkLook(P: WP): Look {
     const lift = P.lift[s > 0 ? 0 : 1];
     const arm = B(outWay(s, lift, P.sweep));
     const Wr = add(S, mul(arm, 7));
-    const hand = B(outWay(s, lift - P.droop, P.sweep + 15 + 75 * P.fold));
+    const hand = B(outWay(s, lift - P.droop + 0.55 * P.curl, P.sweep + 15 + 75 * P.fold));
     const T = add(Wr, mul(hand, 10 * (1 - 0.25 * P.fold)));
     const back1 = norm(sub(B([-1, 0, 0]), mul(arm, dot(B([-1, 0, 0]), arm))), B([-1, 0, 0]));
     const back2 = norm(sub(B([-1, 0, 0]), mul(hand, dot(B([-1, 0, 0]), hand))), B([-1, 0, 0]));
@@ -984,7 +993,8 @@ function hawkLook(P: WP): Look {
     const prim: V3[] = [];
     for (let q = 0; q < 5; q++) {
       const root = lerpV(Wr, T, 0.08 + 0.14 * q);
-      const dir = norm(lerpV(hand, back2, (4 - q) * 0.17 * (1 - 0.6 * P.fold) + 0.06));
+      // (each bowed by the air further than the hand it grows from, the outermost most: the wing curves as it beats)
+      const dir = norm(rotIn(norm(lerpV(hand, back2, (4 - q) * 0.17 * (1 - 0.6 * P.fold) + 0.06)), back2, -s * P.curl * (0.25 + 0.12 * q)));
       const L = (6.5 + 0.9 * q) * (1 - 0.25 * P.fold);
       const wd = mul(back2, 1.25);
       const a = sub(root, wd);
@@ -1090,12 +1100,15 @@ function batLook(P: WP): Look {
     const lift = P.lift[s > 0 ? 0 : 1];
     const arm = B(outWay(s, lift, P.sweep - 25));
     const E = add(S, mul(arm, 3.0));
-    const fore = B(outWay(s, lift - P.droop * 0.5, P.sweep + 18 + 40 * P.fold));
+    const fore = B(outWay(s, lift - P.droop * 0.5 + 0.35 * P.curl, P.sweep + 18 + 40 * P.fold));
     const Wr = add(E, mul(fore, 5.0));
     const plane = norm(cross(fore, B([-1, 0, 0])));
     const n = dot(plane, UPB) < 0 ? mul(plane, -1) : plane;
     const spread = 1 - 0.7 * P.fold;
-    const tips = [[4, 8.2], [52, 8.2], [112, 7.0]].map(([ang, L]) => add(Wr, mul(norm(rotIn(fore, n, s * ang * spread)), L * (1 - 0.25 * P.fold))));
+    // (the fingers bent by the air, each further than the last toward the trailing edge, so the skin between them cups on the
+    // way down and hangs slack on the way up)
+    const chord = B([-1, 0, 0]);
+    const tips = [[4, 8.2], [52, 8.2], [112, 7.0]].map(([ang, L], i) => add(Wr, mul(norm(rotIn(norm(rotIn(fore, n, s * ang * spread)), chord, -s * P.curl * (0.45 + 0.3 * i))), L * (1 - 0.25 * P.fold))));
     const hip = W([-2.0, s * 1.1, -0.6]);
     const scallop = (al: number, be: number): boolean => {
       const sum = al + be;

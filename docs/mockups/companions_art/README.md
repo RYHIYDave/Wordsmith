@@ -92,7 +92,7 @@ pixels (the Ranger is 57 tall).
 
 Sizes, standing (picture pixels across, as measured by the test against the mage's familiar): each between the
 familiar's length and 2.1 times it; the wolf and the tortoise more than the other four by at least 15% in painted size.
-The two fliers are drawn 1.05 (hawk) and 1.4 (bat) times their built size about their middles, so their wings read on a
+The two fliers are drawn 1.05 (hawk) and 1.3 (bat) times their built size about their middles, so their wings read on a
 phone (`FLIER_SCALE`).
 
 ## Their numbers (`src/art/companions_art_moves.ts`)
@@ -142,8 +142,31 @@ Run: `tsx --test tests/companions_art.test.ts`. Pictures: `node tools/preview.mj
 <out.png> 1200 1060 sheet` (also `contact`, `strip:<kind>:<move>`, `close:<kind>:<move>:<t>`, and `film`, frame by
 frame, as `tools/page_gif.mjs` reads a page).
 
+## What he said of the hawk and bat redrawn (30 Oct 2026, by the art chat)
+
+Asked “The hawk and bat redrawn (companions_sheet.png and the film): are all six companions right now?”, his pick:
+“Close, change something”; asked what, his picks “The hawk”, “The bat”, and his words: “Bird wings and bat wings are
+not stiff.  They curve while flapping.  And I’d like the snake bite animation to be a bit bigger.  Like a big fang bite
+to really show off the poison”.
+
+THE WOLF, THE FOX AND THE TORTOISE STAY LOCKED, as they are. What changed:
+
+- THE HAWK'S AND THE BAT'S WINGS BEND AS THEY BEAT (`curl` in each wing beat): the outer wing trails the inner. On the
+  way down the tips are bowed up by the air; on the way up the wing folds at the wrist and its tips hang down, then it
+  opens again. The hawk's five primaries bend further than its hand, the outermost most. The bat's fingers bend
+  further toward the trailing edge, so the skin between them cups on the way down and goes slack on the way up.
+- THEY FLAP. The hawk no longer hangs still-winged: it hovers on slow, deep beats (one every 0.48 s), and flies on a
+  fuller beat and a glide. The bat flutters on a fuller beat. Each hover begins half way down a stroke, as each flight
+  does, and the two keep the same beat, so nothing leaps where one hands over to the other. The bat is drawn at 1.3
+  times its built size (it was 1.4).
+- THE SNAKE'S BITE IS A BIG FANG BITE. Held: it rears high and draws back, its head turned side-on, its jaws thrown
+  wide, its long fangs bared and a bead of venom at each tip. The strike: it lunges further than before (23 of its own
+  lengths out, where it was 18.5) and its jaws snap shut on the prey, its body driving on after. Then venom splashes
+  out of the bite, green-cyan and falling, and a cyan poison mark blooms on the prey, six petals opening round it.
+- THE FILM shows the hawk's and the bat's wings in flight close up (six times as big) at half speed, so that the bend
+  shows, and the snake's bite again close up (five times as big) at half speed. It is 41.2 s long.
+
 ## Still open
 
-- THE HAWK HANGS ON THE AIR rather than beating its wings when he stands still (kiting, as hawks do on the wind), and
-  THE BAT'S WINGS BEAT SHALLOW: a deeper beat leapt where one move hands over to the next; it would need a way into and
-  out of it in the game.
+- A deeper beat for the two fliers would leap where one move hands over to the next. Their beats are as deep as the
+  checks allow. Going deeper would need a way in the game into a beat and out of it.

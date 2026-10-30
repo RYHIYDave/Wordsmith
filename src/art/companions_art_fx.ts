@@ -22,6 +22,8 @@ export function smearColours(): readonly [string, string, string] {
 }
 /** The friend's cyan, dark to white-hot (art/kit.ts CYAN and SPARK). */
 export const GIFT = ['#0c6a80', '#22d0e0', '#8af6f0', '#b8fff8'] as const;
+/** The snake's venom: green-cyan. */
+const VENOM_FX = ['#3ce0b4', '#9af6dc'] as const;
 type Grain = [V3, string, number];
 
 /** How long a gift shows after the blow (seconds). */
@@ -65,20 +67,24 @@ export function giftOf(k: Kind, t: number, tipAt: (t: number) => V3 | null): Gra
     // the rakes of its talons, three, across the struck place, gone first
     if (since < 0.22) for (const o of [-1.6, 0, 1.6]) line(out, add(at, [-2.5, o - 1.5, 3]), add(at, [2.5, o + 1.5, -2]), since < 0.1 ? GIFT[3] : GIFT[2]);
   } else if (k === 'snake') {
-    // venom off its fangs: drops thrown forward and down, falling; and beads of it rising off the bite
-    for (let i = 0; i < 9; i++) {
-      const a = (hash01(i, 1) - 0.5) * 2.2;
-      const sp = 9 + 8 * hash01(i, 2);
-      const v: V3 = [Math.cos(a) * sp, Math.sin(a) * sp, 4 + 6 * hash01(i, 3)];
-      const s = since;
-      const p: V3 = [at[0] + v[0] * s, at[1] + v[1] * s, Math.max(0.5, at[2] - 0.5 + v[2] * s - 45 * s * s)];
-      out.push([p, i % 3 === 0 ? GIFT[3] : GIFT[1], since < 0.12 && i % 2 === 0 ? 2 : 1]);
+    // a big fang bite: venom splashing out of the bite, wide and green-cyan, falling; and a poison mark blooming on the
+    // prey, six petals of the friend's cyan opening round the bite and holding there
+    for (let i = 0; i < 18; i++) {
+      const a = (hash01(i, 1) - 0.5) * 3.4;
+      const sp = 10 + 14 * hash01(i, 2);
+      const v: V3 = [Math.cos(a) * sp * 0.7, Math.sin(a) * sp, 6 + 12 * hash01(i, 3)];
+      const s2 = since;
+      const p: V3 = [at[0] + v[0] * s2, at[1] + v[1] * s2, Math.max(0.5, at[2] + v[2] * s2 - 50 * s2 * s2)];
+      out.push([p, i % 3 === 0 ? VENOM_FX[1] : VENOM_FX[0], since < 0.2 ? 2 : 1]);
     }
-    for (let i = 0; i < 3; i++) {
-      const s = since - i * 0.08;
-      if (s < 0) continue;
-      out.push([add(at, [0.6 * Math.sin(i * 2.1 + s * 9), 0.6 * Math.cos(i * 1.7), 1 + 14 * s]), GIFT[2], s < 0.15 ? 2 : 1]);
+    const r = 1.5 + 6 * pop;
+    for (let i = 0; i < 6; i++) {
+      const a = (TAU * i) / 6 + 0.3;
+      const o: V3 = [0, Math.cos(a), Math.sin(a)];
+      line(out, add(at, mul(o, r * 0.35)), add(at, mul(o, r)), i % 2 ? GIFT[1] : GIFT[2], since < 0.12 ? 2 : 1);
+      out.push([add(at, mul(o, r + 0.8)), GIFT[3], 2]);
     }
+    out.push([at, GIFT[3], 3]);
   } else if (k === 'wolf') {
     // jaws of light: an upper and a lower row of fangs, closing on the bite and holding it
     const r = 8 - 4 * pop;

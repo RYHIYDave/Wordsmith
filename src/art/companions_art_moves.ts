@@ -744,14 +744,14 @@ function snakeMove(t: number): SnakePose {
 function snakeAttack(t: number): SnakePose {
   const A = COMP_ATTACK;
   const S0 = snakeStand(0);
-  type K = { hx: number; hy: number; hz: number; bend: number; x0: number; gape: number; lp: number };
+  type K = { hx: number; hy: number; hz: number; bend: number; x0: number; gape: number; lp: number; ly: number };
   const H0 = S0.spine[0];
-  const K0: K = { hx: H0[0], hy: H0[1], hz: H0[2], bend: 4.5, x0: 1.5, gape: 0, lp: -S0.hp };
-  const COIL: K = { hx: 0.5, hy: 0.4, hz: 8.2, bend: -5.5, x0: -0.5, gape: 0, lp: 10 };
-  const BITE: K = { hx: 18.5, hy: 0, hz: 4.2, bend: 6, x0: 5, gape: 0.55, lp: 14 };
-  const OPEN: K = { ...mixK(COIL, BITE, 0.62), gape: 1 };
-  const HOLD: K = { hx: 24.5, hy: 0, hz: 3.4, bend: 6.5, x0: 9.5, gape: 0.5, lp: 16 };
-  const BACK: K = { hx: 9.5, hy: 0.3, hz: 8.5, bend: 4.5, x0: 2.2, gape: 0, lp: 0 };
+  const K0: K = { hx: H0[0], hy: H0[1], hz: H0[2], bend: 4.5, x0: 1.5, gape: 0, lp: -S0.hp, ly: S0.hy };
+  const COIL: K = { hx: -1.5, hy: 0.4, hz: 13.5, bend: -6, x0: -0.5, gape: 1, lp: -12, ly: 45 };
+  const BITE: K = { hx: 23, hy: 0, hz: 5, bend: 6, x0: 8, gape: 0.06, lp: 12, ly: 0 };
+  const OPEN: K = { ...mixK(COIL, BITE, 0.66), gape: 1.15 };
+  const HOLD: K = { hx: 29, hy: 0, hz: 4.2, bend: 6.5, x0: 13, gape: 0.06, lp: 14, ly: 0 };
+  const BACK: K = { hx: 9.5, hy: 0.3, hz: 8.5, bend: 4.5, x0: 2.2, gape: 0, lp: 0, ly: 0 };
   let k = keyed(t, [
     [0, K0, sm],
     [A.coiled, COIL, sm],
@@ -766,9 +766,10 @@ function snakeAttack(t: number): SnakePose {
     const w = sm((t - (A.coiled - 0.04)) / 0.05);
     k = { ...k, hx: k.hx + 0.2 * shiver(t, 7) * w, hz: k.hz + 0.15 * shiver(t, 8) * w };
   }
-  const look = norm(turn([1, 0, 0], 0, k.lp, 0));
+  // (its head turned to its left as it rears, its gaping jaws and long fangs seen side on from either side; square again as it strikes)
+  const look = norm(turn([1, 0, 0], k.ly, k.lp, 0));
   const H: V3 = [k.hx, k.hy, k.hz];
-  return { spine: snakeLine(H, look, k.x0, 0, k.bend), look, gape: k.gape, tongue: 0, slide: 0, hy: 0, hp: -k.lp };
+  return { spine: snakeLine(H, look, k.x0, 0, k.bend), look, gape: k.gape, tongue: 0, slide: 0, hy: k.ly, hp: -k.lp };
 }
 export function snakePose(which: string, t: number): SnakePose {
   return which === 'stand' ? snakeStand(t) : which === 'walk' ? snakeMove(t) : snakeAttack(t);
@@ -788,6 +789,8 @@ export interface WingPose {
   sweep: number;
   fold: number;
   droop: number;
+  /** How far its wings bend (degrees, the outer wing against the inner; more than 0: the tips curled up). */
+  curl: number;
   /** Its tail fanned (0 to 1) and tipped down (degrees); its legs thrown forward (0 tucked to 1), its talons or claws open (0 to 1). */
   fan: number;
   tailDown: number;
@@ -812,13 +815,16 @@ export const FLY_HIGH = { hawk: 31, bat: 27 } as const;
 export const FLY_FACE = { hawk: -38, bat: -38 } as const;
 
 /** A wing beat: its downstroke quick and strong, its upstroke lighter, the wrist folding a little on the way up. `ph` 0 to 1. */
-function beat(ph: number, top: number, bottom: number): { lift: number; fold: number; sweep: number } {
+function beat(ph: number, top: number, bottom: number): { lift: number; fold: number; sweep: number; curl: number } {
   const a = TAU * ph;
   // (down from 0 to 0.45 of the beat, up from there)
   const s = ph < 0.45 ? Math.cos((Math.PI * ph) / 0.45) : -Math.cos((Math.PI * (ph - 0.45)) / 0.55);
   const lift = mix(bottom, top, (s + 1) / 2);
   const fold = ph < 0.45 ? 0.05 : 0.35 * Math.sin((Math.PI * (ph - 0.45)) / 0.55);
-  return { lift, fold, sweep: 6 * Math.sin(a) };
+  // (the wing is not stiff: its outer part trails the beat, its tips bowed up by the air on the way down, and hanging
+  // down as the wing is drawn up folded at the wrist: -1 to 1, the owner's words, 30 Oct: “They curve while flapping”)
+  const curl = ph < 0.45 ? Math.sin((Math.PI * ph) / 0.45) : -Math.sin((Math.PI * (ph - 0.45)) / 0.55);
+  return { lift, fold, sweep: 6 * Math.sin(a), curl };
 }
 
 /** THE HAWK HOVERING by him: its body tipped up, quick beats holding it on the air, its tail fanned and working, its head dead still and looking; now and then it looks round at him. THE BAT FLUTTERING: never still: quick deep beats, its body bobbing and drifting in a small loop. */
@@ -829,30 +835,34 @@ function wingStand(k: 'hawk' | 'bat', t0: number): WingPose {
   if (k === 'hawk') {
     // (kiting: hung on the wind by him, its wings spread wide and all but still, working a little; its tail fanned
     // and twisting to hold it there; it rises and sinks on the air; its head dead still, then turned to look at him)
+    // (hovering by him on slow, deep beats, its wings bending as they go; begun half way down a stroke, so that
+    // whichever beat it is in when it sets off or strikes, its wings are never far from where those begin)
     const look = bump(t, 1.0, 1.7);
-    const work = Math.sin(a * 3);
-    return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.2 * Math.sin(a) + 0.3 * Math.sin(a * 4)], pitch: 7 + 3 * Math.sin(a), roll: 4 * Math.sin(a + 0.6), yaw: FLY_FACE.hawk, lift: [12 + 5 * work, 12 + 5 * work], sweep: -4 + 3 * Math.sin(a * 2), fold: 0.05 + 0.05 * Math.sin(a * 3 + 1), droop: 8 + 3 * work, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
+    const ph = fr(t / 0.48 + 0.225);
+    const b = beat(ph, 30, -6);
+    return { at: [0.7 * Math.sin(a), 0.5 * Math.sin(a * 2), FLY_HIGH.hawk + 1.0 * Math.sin(a) + 0.6 * Math.sin(TAU * ph + 1)], pitch: 7 + 3 * Math.sin(a), roll: 3 * Math.sin(a + 0.6), yaw: FLY_FACE.hawk, lift: [b.lift, b.lift], sweep: -4 + b.sweep * 0.5, fold: b.fold * 0.7, droop: 6, curl: 18 * b.curl, fan: 0.9, tailDown: 16 + 6 * Math.sin(a * 3), legs: 0.1, open: 0.2, hy: 30 * look, hp: 30 - 10 * look, gape: 0, ears: 0 };
   }
-  const b0 = beat(fr(t / 0.4 + 0.225), 22, -4);
+  const b0 = beat(fr(t / 0.4 + 0.225), 24, -2);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0.7 * Math.sin(a), 0.6 * Math.sin(a * 2), FLY_HIGH.bat + 1.0 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4) + 1)], pitch: 6 + 3 * Math.sin(a * 2), roll: 3 * Math.sin(a), yaw: FLY_FACE.bat + 3 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
+  return { at: [0.8 * Math.sin(a), 0.3 * Math.sin(a * 2), FLY_HIGH.bat + 0.6 * Math.sin(a * 2 + 1) + 0.6 * Math.sin(TAU * fr(t / 0.4 + 0.225) + 1)], pitch: 6 + 2 * Math.sin(a * 2), roll: 1.5 * Math.sin(a), yaw: FLY_FACE.bat + 2 * Math.sin(a + 1), lift: [b.lift, b.lift], sweep: b.sweep, fold: b.fold, droop: 5, curl: 16 * b.curl, fan: 0.5, tailDown: 0, legs: 0.2, open: 0, hy: 14 * Math.sin(a * 2), hp: 10, gape: 0, ears: 0.2 * Math.sin(a * 4) };
 }
 /** THE HAWK FLYING: level and fast, two deep beats and a glide in each turn, its tail closed, its head steady. THE BAT FLYING: quick beats, pitched into its flight, jinking from side to side. */
 function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
   const P = COMP_GAIT[k].period;
-  const ph = fr(t / P);
+  // (the hawk's turn begins half way down its first stroke, as its hover does: so that the one hands over to the other smoothly)
+  const ph = fr(t / P + (k === 'hawk' ? 0.135 : 0));
   const a = TAU * ph;
   if (k === 'hawk') {
     // (two beats in 0.4 of the turn... and a glide, its wings held a little up)
     const flap = ph < 0.6;
     // (the glide: its wings let down level from the top of the beat, held, and lifted again for the next)
-    const g = ph < 0.75 ? mix(36, 12, sm((ph - 0.6) / 0.15)) : ph < 0.86 ? 12 : mix(12, 36, sm((ph - 0.86) / 0.14));
-    const b = flap ? beat(ph / 0.6, 36, -2) : { lift: g, fold: 0.05, sweep: 0 };
-    return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: 5, roll: 2 * Math.sin(a), yaw: FLY_FACE.hawk, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
+    const g = ph < 0.75 ? mix(40, 12, sm((ph - 0.6) / 0.15)) : ph < 0.86 ? 12 : mix(12, 40, sm((ph - 0.86) / 0.14));
+    const b = flap ? beat(ph / 0.6, 40, -12) : { lift: g, fold: 0.05, sweep: 0, curl: ph < 0.86 ? 0.25 * sm((ph - 0.6) / 0.15) : 0.25 - 0.25 * sm((ph - 0.86) / 0.14) };
+    return { at: [0, 0, FLY_HIGH.hawk - 1 + (flap ? 0.8 * Math.sin(TAU * ph / 0.6) : 0.8 * Math.sin(TAU * (ph - 0.6) / 0.8))], pitch: 5, roll: 2 * Math.sin(a), yaw: FLY_FACE.hawk, lift: [b.lift, b.lift], sweep: b.sweep + 2, fold: b.fold, droop: 4, curl: 24 * b.curl, fan: 0.15, tailDown: 4, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0 };
   }
-  const b0 = beat(fr(ph + 0.225), 22, -4);
+  const b0 = beat(fr(ph + 0.225), 24, -2);
   const b = { ...b0, fold: b0.fold * 0.3, sweep: b0.sweep * 0.4 };
-  return { at: [0, 0.8 * Math.sin(a), FLY_HIGH.bat - 1 + 1.0 * Math.sin(a + 1)], pitch: 5, roll: 4 * Math.sin(a), yaw: FLY_FACE.bat + 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
+  return { at: [0, 0.6 * Math.sin(a), FLY_HIGH.bat + 0.5 + 0.6 * Math.sin(TAU * fr(ph + 0.225) + 1)], pitch: 5, roll: 2 * Math.sin(a), yaw: FLY_FACE.bat + 4 * Math.sin(a), lift: [b.lift, b.lift], sweep: b.sweep + 4, fold: b.fold, droop: 4, curl: 16 * b.curl, fan: 0.3, tailDown: 0, legs: 0, open: 0, hy: 0, hp: 18, gape: 0, ears: 0.6 };
 }
 /**
  * THE HAWK'S STOOP (its gift, Precise: it marks its prey, his next hit on it a sure critical). It climbs and rears back,
@@ -866,17 +876,17 @@ function wingMove(k: 'hawk' | 'bat', t: number): WingPose {
 function wingAttack(k: 'hawk' | 'bat', t: number): WingPose {
   const A = COMP_ATTACK;
   const S0 = wingStand(k, 0);
-  type K = { x: number; z: number; pitch: number; lift: number; sweep: number; fold: number; legs: number; open: number; hp: number; gape: number; fan: number; tailDown: number };
-  const K0: K = { x: S0.at[0], z: S0.at[2], pitch: S0.pitch, lift: S0.lift[0], sweep: S0.sweep, fold: S0.fold, legs: S0.legs, open: S0.open, hp: S0.hp, gape: S0.gape, fan: S0.fan, tailDown: S0.tailDown };
+  type K = { x: number; z: number; pitch: number; lift: number; sweep: number; fold: number; legs: number; open: number; hp: number; gape: number; fan: number; tailDown: number; curl: number };
+  const K0: K = { x: S0.at[0], z: S0.at[2], pitch: S0.pitch, lift: S0.lift[0], sweep: S0.sweep, fold: S0.fold, legs: S0.legs, open: S0.open, hp: S0.hp, gape: S0.gape, fan: S0.fan, tailDown: S0.tailDown, curl: S0.curl };
   const hawk = k === 'hawk';
   const H = FLY_HIGH[k];
   let keys: [number, K, Ease][];
   if (hawk) {
-    const MANTLE: K = { x: -4, z: H + 6, pitch: -58, lift: 72, sweep: -4, fold: 0.15, legs: 0.15, open: 0.4, hp: 62, gape: 0.4, fan: 1, tailDown: 30 };
-    const STRIKE: K = { x: 14, z: H - 19, pitch: 8, lift: 30, sweep: 40, fold: 0.6, legs: 1, open: 0.05, hp: 30, gape: 0.6, fan: 0.6, tailDown: 25 };
+    const MANTLE: K = { x: -4, z: H + 6, pitch: -58, lift: 72, sweep: -4, fold: 0.15, legs: 0.15, open: 0.4, hp: 62, gape: 0.4, fan: 1, tailDown: 30, curl: -14 };
+    const STRIKE: K = { x: 14, z: H - 19, pitch: 8, lift: 30, sweep: 40, fold: 0.6, legs: 1, open: 0.05, hp: 30, gape: 0.6, fan: 0.6, tailDown: 25, curl: 12 };
     const DROP: K = { ...midK(MANTLE, STRIKE), fold: 0.7, sweep: 45 };
-    const BRAKE: K = { x: 20.5, z: H - 22.5, pitch: -30, lift: 40, sweep: -22, fold: 0, legs: 1, open: 0, hp: 40, gape: 0.5, fan: 1, tailDown: 40 };
-    const RISE: K = { x: 6, z: H - 6, pitch: -40, lift: 10, sweep: -6, fold: 0.1, legs: 0.3, open: 0.2, hp: 40, gape: 0, fan: 0.9, tailDown: 25 };
+    const BRAKE: K = { x: 20.5, z: H - 22.5, pitch: -30, lift: 40, sweep: -22, fold: 0, legs: 1, open: 0, hp: 40, gape: 0.5, fan: 1, tailDown: 40, curl: 28 };
+    const RISE: K = { x: 6, z: H - 6, pitch: -40, lift: 10, sweep: -6, fold: 0.1, legs: 0.3, open: 0.2, hp: 40, gape: 0, fan: 0.9, tailDown: 25, curl: 0 };
     keys = [
       [0, K0, sm],
       [A.coiled, MANTLE, sm],
@@ -888,11 +898,11 @@ function wingAttack(k: 'hawk' | 'bat', t: number): WingPose {
       [A.long, K0, easeOut],
     ];
   } else {
-    const HANG: K = { x: -3, z: H + 5, pitch: -40, lift: 70, sweep: -10, fold: 0, legs: 0.3, open: 0.6, hp: 28, gape: 1, fan: 0.6, tailDown: 0 };
-    const BITE: K = { x: 13.5, z: H - 15, pitch: 22, lift: 18, sweep: 35, fold: 0.45, legs: 0.6, open: 0.6, hp: 22, gape: 0.1, fan: 0.4, tailDown: 0 };
+    const HANG: K = { x: -3, z: H + 5, pitch: -40, lift: 70, sweep: -10, fold: 0, legs: 0.3, open: 0.6, hp: 28, gape: 1, fan: 0.6, tailDown: 0, curl: -12 };
+    const BITE: K = { x: 13.5, z: H - 15, pitch: 22, lift: 18, sweep: 35, fold: 0.45, legs: 0.6, open: 0.6, hp: 22, gape: 0.1, fan: 0.4, tailDown: 0, curl: 10 };
     const DIVE: K = { ...midK(HANG, BITE), gape: 0.9 };
-    const CLING: K = { x: 19.5, z: H - 17.5, pitch: 18, lift: 4, sweep: -24, fold: 0.2, legs: 0.8, open: 0.2, hp: 26, gape: 0.1, fan: 0.4, tailDown: 0 };
-    const UP: K = { x: 5, z: H - 4, pitch: -30, lift: 50, sweep: 0, fold: 0.1, legs: 0.3, open: 0, hp: 12, gape: 0, fan: 0.5, tailDown: 0 };
+    const CLING: K = { x: 19.5, z: H - 17.5, pitch: 18, lift: 14, sweep: 22, fold: 0.2, legs: 0.8, open: 0.2, hp: 26, gape: 0.1, fan: 0.4, tailDown: 0, curl: 10 };
+    const UP: K = { x: 5, z: H - 4, pitch: -30, lift: 50, sweep: 0, fold: 0.1, legs: 0.3, open: 0, hp: 12, gape: 0, fan: 0.5, tailDown: 0, curl: 0 };
     keys = [
       [0, K0, sm],
       [A.coiled, HANG, sm],
@@ -914,10 +924,10 @@ function wingAttack(k: 'hawk' | 'bat', t: number): WingPose {
   if (t > 0.58 && t < 0.78) {
     const w = bump(t, 0.58, 0.78);
     const b = beat(fr((t - 0.58) / 0.2), hawk ? 58 : 46, hawk ? 0 : 14);
-    kk = { ...kk, lift: mix(kk.lift, b.lift, (hawk ? 0.5 : 0.3) * w) };
+    kk = { ...kk, lift: mix(kk.lift, b.lift, (hawk ? 0.5 : 0.3) * w), curl: kk.curl + 20 * b.curl * (hawk ? 0.5 : 0.3) * w };
   }
   const toPrey = t < 0.4 ? sm(t / A.coiled) : 1 - sm((t - 0.6) / (A.long - 0.6));
-  return { ...S0, at: [kk.x, 0, kk.z], pitch: kk.pitch, roll: 0, yaw: S0.yaw * (1 - toPrey), lift: [kk.lift, kk.lift], sweep: kk.sweep, fold: kk.fold, legs: kk.legs, open: kk.open, hp: kk.hp, hy: 0, gape: kk.gape, fan: kk.fan, tailDown: kk.tailDown };
+  return { ...S0, at: [kk.x, 0, kk.z], pitch: kk.pitch, roll: 0, yaw: S0.yaw * (1 - toPrey), lift: [kk.lift, kk.lift], sweep: kk.sweep, fold: kk.fold, curl: kk.curl, legs: kk.legs, open: kk.open, hp: kk.hp, hy: 0, gape: kk.gape, fan: kk.fan, tailDown: kk.tailDown };
 }
 export function wingPose(k: 'hawk' | 'bat', which: string, t: number): WingPose {
   return which === 'stand' ? wingStand(k, t) : which === 'walk' ? wingMove(k, t) : wingAttack(k, t);
