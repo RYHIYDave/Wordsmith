@@ -1297,7 +1297,7 @@ export class Fx {
           break;
         // (THE HIGH CITY, FLOOR 16: a boss's line with no name coming up, the Princess's whisper as she falls: game/act1_rules/princess.ts)
         case 'bossSay':
-          this.bossSay = { text: e.text, t: 0, x: e.x, y: e.y, lift: BOSS_SAY_LIFT, secs: e.secs };
+          this.bossSay = { text: e.text, t: 0, x: e.x, y: e.y, lift: e.lift ?? BOSS_SAY_LIFT, secs: e.secs };
           break;
         case 'bells': {
           // (ACT 2, THE BELLS, game/bells.ts: the Hush pouring out of the Muffled Bell; a bell's ring (the friend's cyan: his to

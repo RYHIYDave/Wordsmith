@@ -115,9 +115,9 @@ export const PRINCESS = {
    * floor point: tests hold it to the art) is struck; a leap at the hero no further than `most` tiles.
    */
   ride: { form: 1.4, formWarn: [0.3, 0.5] as const, leap: 1.0, leapWarn: [0.17, 0.27] as const, spring: 0.27, air: [0.36, 26 / 30] as const, hit: 26 / 30, end: 1.4, carry: 4.5, laps: 8, atYou: 7, r: 1.6, hoof: 0.4, most: 14 },
-  /** Struck (PR_REEL), her death (PR_DIES), as she sinks out of the air (`sink`). */
+  /** Struck (PR_REEL), her death (PR_DIES), as she sinks out of the air (`sink`); her whisper then, how long it is shown and how far over her (game pixels: she is on her knees). */
   reel: 0.4,
-  dies: { long: 3.2, sink: 0.9 },
+  dies: { long: 3.2, sink: 0.9, say: 3.2, lift: 50 },
   /** Her ground where the floor does not say (tiles round where she stood), and its open area's blob (as the Censor's). */
   ground: { blob: 1.08, far: 12 },
 };
@@ -916,7 +916,7 @@ export const RULES: Act1Rules | null = {
         // AS SHE FALLS: her one whisper
         if (!(p.done & 1) && p.t >= PRINCESS.dies.sink) {
           p.done |= 1;
-          g.emit({ t: 'bossSay', text: PRINCESS_WHISPER, x: p.x, y: p.y, secs: 3.2 });
+          g.emit({ t: 'bossSay', text: PRINCESS_WHISPER, x: p.x, y: p.y, secs: PRINCESS.dies.say, lift: PRINCESS.dies.lift });
         }
         return;
       }
