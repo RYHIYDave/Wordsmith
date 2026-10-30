@@ -27,6 +27,7 @@ import { TK, paintTerrain, pictureOf, terrainOf } from '../src/art/terrain';
 import type { RGB, Terrain } from '../src/art/terrain';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
+import { HIGH_CITY } from '../src/game/act1';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void; deepEqual(a: unknown, b: unknown, msg?: string): void };
@@ -120,24 +121,10 @@ function meanOf(px: [number, number][]): { c: RGB; h: number; s: number; v: numb
 }
 const hueOff = (a: number, b: number): number => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
 
-test('nothing of the game imports the Masque\'s ground', () => {
-  const art = new Set(['art/masque']);
-  const atp = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (its own pieces, art/floor17.ts, take its window and its scarlet from it: they too are a mock-up nothing of the game imports)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(masque|floor17)\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(atp(dir, spec)), `src/${f} imports the Masque's ground`);
-    }
-  }
+// (Since his “Yes, on to 17 (Recommended)”, 30 Oct 2026, the game takes the Masque's ground in, on floor 17 behind HIGH_CITY
+// (game/act1.ts, docs/high_city_build.md); nothing of it is seen until he has played the floor and said yes.)
+test('the Masque\'s ground is in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
 
 test('every walkable tile\'s middle is painted floor, and every other tile\'s middle is not', () => {

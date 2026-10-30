@@ -213,6 +213,18 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: [],
   },
+  // (THE HIGH CITY, FLOOR 17: THE MASQUE, until its own dresser lays it room by room: game/act2/masque.ts; the game's barrels
+  // and urns drawn as its two breakables, the art's: a gilt chair, a footman's tray)
+  17: {
+    things: ['a gilt candelabrum', 'a fainting couch', 'a harpsichord', 'a viol and its stand', 'a folding screen of arabesques'],
+    big: ['a buffet of a feast gone cold'],
+    lying: ['masks dropped on the floor', 'gilt ornaments, scattered', 'royal cards, scattered', 'wine spilled'],
+    wallFoot: [],
+    breakables: ['a gilt chair', "a footman's tray"],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */

@@ -29,6 +29,7 @@ import { WORD_COLOR } from '../src/art/icons';
 import { EMBER } from '../src/art/props';
 import { MQ_SCARLET } from '../src/art/masque';
 import type { Sprite } from '../src/engine/px';
+import { HIGH_CITY } from '../src/game/act1';
 import { anchor, count, each, hex, hsv, rgb, sprites } from './floor_checks';
 import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
 
@@ -47,23 +48,10 @@ const SCARLET = new Set([...MQ_SCARLET, ...EMBER].map((c) => c.toLowerCase()));
 /** What hangs from the roof: nothing of it on the floor. */
 const HANGS = new Set(['a crystal chandelier', 'gilt ornaments hanging from the roof']);
 
-test('nothing of the game imports floor 17\'s pieces', () => {
-  const art = new Set(['art/floor17']);
-  const at = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/floor17\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(at(dir, spec)), `src/${f} imports floor 17's pieces`);
-    }
-  }
+// (Since his “Yes, on to 17 (Recommended)”, 30 Oct 2026, the game takes floor 17's pieces in, on floor 17 behind HIGH_CITY
+// (game/act1.ts, docs/high_city_build.md); nothing of it is seen until he has played the floor and said yes.)
+test('floor 17\'s pieces are in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
 
 test('his twenty-five (Places 7): the Prince\'s floor 25 pieces of its own; every one its own name', () => {

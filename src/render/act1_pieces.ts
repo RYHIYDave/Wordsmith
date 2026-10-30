@@ -98,7 +98,7 @@ export function forgetAct1(keep: number): void {
 }
 
 /** The pieces that move (their frames a loop), at LOOP_FPS; every other's frames are its looks, one a place. */
-const MOVING = new Set(["the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse"]);
+const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse"]);
 const LOOP_FPS = 8;
 /**
  * ACT 2, THE BELLS (game/bells.ts): THE BELLS' PICTURES BY THEIR STATE. A small bell's frames are the art's: quiet, awake (ready
@@ -260,6 +260,10 @@ export class Act1Pieces {
     if (bell !== null) return fr[bell % fr.length] ?? fr[0];
     if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
+    // (THE HIGH CITY, FLOOR 17: THE GREAT EBONY CLOCK, its six frames for the way it stands (its variant the first): its pendulum's
+    // four over and over at its slow beat, a swing each 0.6 s; at its chime (its state 1: game/act2/masque_rules.ts) the hammer
+    // drawn back and the bell struck, turn about)
+    if (p.name === 'the great ebony clock') return fr[p.variant + (p.state === 1 ? 4 + (Math.floor(t * 3) % 2) : Math.floor(t / 0.6) % 4)] ?? fr[0];
     if (MOVING.has(p.name)) return fr[(Math.floor(t * LOOP_FPS) + p.variant) % fr.length];
     // (THE CAMP, game/camp.ts: what moves there, at the art chat's own frames a second: the cooking fire, the field forge, the lamps)
     const fps = this.dress.floor === CAMP_DRESS ? CAMP_ANIM.get(p.name) : undefined;
