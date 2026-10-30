@@ -67,11 +67,20 @@ FLOOR 20, THE QUIET TOWER
 THE HIGH CITY'S OWN 25, shared by floors 16 to 20 (`mockup/high-city-set`: `high_city_set.ts`, `highCitySetPieces()`):
 “Yes, that's the set (Recommended)”. The royal cards (the Royal Cards event's drops) are among them.
 
-## Not yet made
+## Also handed back: the Ranger's six companions
 
-- The Ranger's six companions (the main chat's ask of 28 Oct, 23:26): started on `mockup/companions-art` (not pushed);
-  stopped with his usage, to be finished later.
+On a branch of their own, from the main chat's `companions` (they merge with it with no conflicts): `mockup/companions-art`
+(`src/art/companions_art.ts`, `COMPANIONS_ART_ON` off; `makeCompanionArt(kind)`, `companionIcon(kind)`). The hawk, snake
+and wolf; the bat, fox and tortoise; standing, moving and attacking, front and behind, through every boss check; their
+icons. His words on the way (`docs/mockups/companions_art/README.md` has them all): “They’re a little shapey”; the
+tortoise, “Keep up with me”; the fliers, “Fix the hawk and bat (Recommended)”; then “Bird wings and bat wings are not
+stiff.  They curve while flapping.  And I’d like the snake bite animation to be a bit bigger.  Like a big fang bite to
+really show off the poison”; and at the last, “Yes, lock all six (Recommended)”. FOR THE MAIN CHAT: set
+`COMPANION_TUNE.bite` to hit at 12/30 and last 24/30 to match the art.
 
 ## The checks
 
-ALL_CHECKS
+- The whole unit suite on `mockup/high-city-all`, every test file on its own: 258 files, 2717 tests, all passing.
+- `npx tsc --noEmit -p tsconfig.json`: clean.
+- Every figure's every move through every boss check (`checkBoss`), from in front and from behind, with every handover:
+  each part's own test file, named in its README.
