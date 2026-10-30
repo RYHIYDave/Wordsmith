@@ -102,6 +102,9 @@ import { makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
 import type { ContraptionArt } from '../art/tinkerer_art';
 import type { Clip } from '../art/actor_types';
 import { TINKER_TUNE } from '../game/tinkerer';
+// (THE HIGH CITY, THE ROYAL CARDS: the crests over touched enemies, and the cards they drop)
+import { drawRoyalCrest, royalCardSprite, royalLabelColor } from './royal_cards';
+import { ROYAL_NAMES } from '../game/royal_cards';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -2659,6 +2662,13 @@ export class Renderer {
         hid?.(dr.x, dr.y);
         continue;
       }
+      // (THE HIGH CITY, THE ROYAL CARDS: a royal's card lying face up, named in its royal's colour: render/royal_cards.ts)
+      if (dr.kind === 'card' && dr.royal) {
+        this.stand(dr.x + dr.y - 0.2, royalCardSprite(dr.royal), sx, sy - pop);
+        hid?.(dr.x, dr.y);
+        this.labels.push({ x: sx, y: sy - 14, text: `The ${ROYAL_NAMES[dr.royal].one}'s card`, color: royalLabelColor(dr.royal) });
+        continue;
+      }
       let sp: Sprite;
       if (dr.kind === 'gold') sp = art.icons.gold[dr.gold >= 30 ? 2 : dr.gold >= 8 ? 1 : 0];
       else if (dr.kind === 'orb') sp = art.icons.lifeOrb;
@@ -4287,6 +4297,14 @@ export class Renderer {
         g.fillRect(x - 1, y + 13, 14, 1);
         g.drawImage(icon.img, x, y);
       });
+    }
+    // (THE HIGH CITY, THE ROYAL CARDS: one a royal touched wears that royal's crest over its head, above the word it carries)
+    for (const m of game.monsters) {
+      if (m.dead || !m.seen || !m.royal || unseen(m)) continue;
+      const sx = Math.round(wx(cam, m.x, m.y));
+      const top = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top;
+      const words = (m.elite || m.boss) && game.wordsCarried(m).length > 0;
+      drawRoyalCrest(g, m.royal, sx, top - (words ? (m.boss ? 6 : 15) + 16 : 5), t, m.id);
     }
   }
 

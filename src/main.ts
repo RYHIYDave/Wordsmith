@@ -98,6 +98,7 @@ import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, n
 import type { SmithPicture } from './ui/panels';
 import { altarSide, gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
+import { cardsOpen, cardsSide } from './ui/royal_cards';
 import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
@@ -2046,7 +2047,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
                       ? meldSide(ui, g, art, meta, panels, invUi, half)
                       : wordsmithSide(ui, g, art, meta, panels, invUi, half)
                     : at === 'stranger'
-                      ? gambleSide(ui, g, art, panels, invUi, half)
+                      ? // (THE HIGH CITY, THE ROYAL CARDS: his half's second page, ui/royal_cards.ts)
+                        cardsOpen(g) && panels.cardPage
+                        ? cardsSide(ui, g, art, panels, invUi, half)
+                        : gambleSide(ui, g, art, panels, invUi, half)
                       : at === 'altar'
                         ? altarSide(ui, g, art, invUi, half, panels.altar, input.pressed('Enter'), altar)
                         : null;
@@ -2101,6 +2105,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,
+    /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
+    highCity: HIGH_CITY,
     /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
     act2: (on: boolean, depth = 0) => {
       ACT2.on = on;
