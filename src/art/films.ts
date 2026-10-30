@@ -26,6 +26,8 @@
 //   things:unfinished          ACT 1: what floor 6's boss throws and leaves (its hurled block tumbling and lying, its
 //                              rockslide's boulders rolling, the terrace cracked under its stomp), painted ahead so
 //                              that none of it is painted in its fight (17 Oct: his "serious slowdown" in the rock throw)
+//   things:princess            (THE HIGH CITY, FLOOR 16) what the Princess casts and sends (her snare's cage, her Vow's
+//                              ring, her swans circling and diving: art/act1_figs/princess.ts princessThings)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
 // the page.
 
@@ -46,6 +48,8 @@ import { LAIR } from './lair';
 import { cageDown, cageUp } from './shaft';
 import { stairwellKicks, stairwellOpens } from './stairwell_open';
 import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
+// (THE HIGH CITY, FLOOR 16: the Princess's things)
+import { princessThings } from './act1_figs/princess';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -206,6 +210,8 @@ export function filmRoom(key: string): number {
   // (and floors 11 to 15's: 8.3, 27.6, 18.4, 9.3, 14.8)
   if (kind === 'onward') return [28, 70, 46, 27, 23, 9, 28, 19, 10, 15][Number(a) - 6] ?? 70;
   if (kind === 'start') return 2;
+  // (THE HIGH CITY, FLOOR 16: the Princess's things, measured 30 Oct 2026 as the others are: 20.8, art/act1_figs/princess.ts THINGS_COST)
+  if (kind === 'things' && a === 'princess') return 22;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -273,6 +279,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     // (its block's four tumbling frames and the one lying; its boulder's eight; its stomp's four cracks: as render/act1_fx/unfinished.ts asks for them)
     return { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };
   }
+  // (THE HIGH CITY, FLOOR 16: what the Princess casts and sends, as render/act1_fx/princess.ts asks for it)
+  if (kind === 'things' && a === 'princess') return princessThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();
