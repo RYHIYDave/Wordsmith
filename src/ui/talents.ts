@@ -358,16 +358,24 @@ export function layTalents(game: Game, r: Rect): TalentLayout {
   return { tree, nodes, root, labels, headY, unit: Math.min(sx, sy) };
 }
 
-/** The card of the talent being read: where it goes, over the game's half against the panel. */
-function cardRect(panel: Rect, at: TalentAt, h: number, W: number, H: number): Rect {
+/**
+ * The card of the talent being read: where it goes, over the game's half against the panel; and above `words`, the words'
+ * own panel over the game's half (WORD_HALF), never on it. His words, 30 Oct 2026, 08:31: “The rune pouch covers the talent
+ * tree descriptions and allocation button”.
+ */
+function cardRect(panel: Rect, at: TalentAt, h: number, W: number, H: number, words: Rect | null): Rect {
+  let r: Rect;
   if (panel.y > 0) {
     // (the panel is the bottom half: the card stands over it)
     const x = Math.max(2, Math.min(W - CARD - 2, at.cx - Math.floor(CARD / 2)));
-    return { x, y: Math.max(2, panel.y - h - 3), w: CARD, h };
+    r = { x, y: Math.max(2, panel.y - h - 3), w: CARD, h };
+  } else {
+    const x = Math.max(2, panel.x - CARD - 3);
+    const y = Math.max(2, Math.min(H - h - 2, at.cy - 12));
+    r = { x, y, w: CARD, h };
   }
-  const x = Math.max(2, panel.x - CARD - 3);
-  const y = Math.max(2, Math.min(H - h - 2, at.cy - 12));
-  return { x, y, w: CARD, h };
+  if (words && r.x < words.x + words.w && r.x + r.w > words.x && r.y + r.h > words.y - 3) r.y = Math.max(2, words.y - 3 - r.h);
+  return r;
 }
 
 /** What the card says, line by line, and how tall it is. */
@@ -587,19 +595,26 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
     }
     ui.mark(`talent:${def.id}`, x, y, w, w);
   }
+}
 
-  // the card of the talent being read
+/**
+ * The card of the talent being read: drawn after everything else on the inventory (the words' own panel over the game's
+ * half, `words`, among it), so that nothing lies on it; and placed above that panel (cardRect).
+ */
+export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout, panel: Rect, words: Rect | null): void {
+  const g = ui.g;
+  const tree = lay.tree;
   st.card = null;
-  const sel = st.sel ? at.get(st.sel) : undefined;
+  const sel = st.sel ? lay.nodes.find((n) => n.def.id === st.sel) : undefined;
   if (!sel) return;
   const def = sel.def;
   const lines = cardLines(game, def, tree);
-  const took = isTaken(def.id);
+  const took = game.hero.talents.includes(def.id);
   const why = game.talentProblem(def.id);
   const bh = ui.touch ? 18 : 13;
   const textH = lines.reduce((a, l) => a + LINE_H[l.small ? 'small' : 'normal'] + (l.small ? 2 : 1), 0);
   const ch = 5 + textH + 3 + bh + 5;
-  const cr = cardRect(panel, sel, ch, ui.w, ui.h);
+  const cr = cardRect(panel, sel, ch, ui.w, ui.h, words);
   ui.box(cr.x, cr.y, cr.w, cr.h, THEME.bg, THEME.edgeHi);
   g.fillStyle = THEME.accentLo;
   g.fillRect(cr.x + 1, cr.y + 1, cr.w - 2, 0.5);

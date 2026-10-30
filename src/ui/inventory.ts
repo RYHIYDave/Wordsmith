@@ -82,7 +82,7 @@ import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { arrow, drawName, drawNameLines, drawWordTile, nameLines, nameParts, namePartsWidth, tileWidth } from './words';
 import { TALENTS } from '../game/talents';
-import { drawTalents, layTalents, newTalentUi, talentPresses } from './talents';
+import { drawTalentCard, drawTalents, layTalents, newTalentUi, talentPresses } from './talents';
 import type { TalentUi } from './talents';
 
 export type InvPage = 'gear' | 'attacks' | 'stats' | 'talents';
@@ -1291,6 +1291,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     drawText(g, allWords ? 'BAG' : 'ALL', mid, swapR.y + 3, allWords ? THEME.text : lay.hidden > 0 ? THEME.accent : THEME.text, { align: 'center', font: 'small' });
     drawText(g, allWords ? `${inBag}/${h.bag.length}` : `${held}`, mid, swapR.y + 11, THEME.dim, { align: 'center', font: 'small' });
   }
+  // (the card of the talent being read, over all of that: above the words' own panel, never under it; his words, 30 Oct 2026,
+  // 08:31: “The rune pouch covers the talent tree descriptions and allocation button”)
+  if (tlay) drawTalentCard(ui, game, st.talents, tlay, R, halfR);
 
   // ---- draw: what is being read -----------------------------------------------------------------------
   // (a word that is being looked at in its socket and has been taken out since: nothing to look at)
