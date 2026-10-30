@@ -25,7 +25,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
-import { ACT1, HIGH_CITY, act2Floor, cityFloor, lastFloor } from './act1';
+import { ACT1, HIGH_CITY, act2Floor, cityFloor, highFloor, lastFloor } from './act1';
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds)
@@ -2005,7 +2005,7 @@ export class Game {
         for (const i of thrownTiles(L.floor, a1)) if (!taken.has(i)) L.walk[i] = 0;
         // (a door, a grille: its way in walked into once it is open)
         if (ONWARD[a1.floor]?.shutTakes) for (const i of takesTiles(L.floor, a1)) if (!L.props.some((p) => p.solid && p.ty * L.floor.w + p.tx === i)) L.walk[i] = 1;
-        this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+        this.msg(this.wayOpenLine(), MSG.good);
       }
       if (a1.open && onTakes(L.floor, a1, h.x, h.y)) {
         this.leave('on');
@@ -7948,7 +7948,7 @@ export class Game {
         // (EXITS, floors 6 to 10: its film plays, and the line comes as it is open: updateWays)
         if (!W.a1) {
           this.sfx('power', 0.8);
-          this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+          this.msg(this.wayOpenLine(), MSG.good);
         }
       } else if (W && W.shaft) {
         // (THE FIRST FIVE FLOORS: on the fifth floor the cage comes crashing down the mine shaft at the back of his hall)
@@ -10645,6 +10645,16 @@ export class Game {
     this.won = free;
     this.sfx(rarity >= 2 ? 'rare' : 'buy');
     return null;
+  }
+
+  /**
+   * The line as a floor's way on opens: from floor 10 to 15 the siege's (its magic falters, the way home); in the High City
+   * (THE HIGH CITY, the main chat's: there is no siege in the palace's gardens) home from the last floor built, else on.
+   */
+  private wayOpenLine(): string {
+    if (ENDLESS.on && this.inEndless) return 'The way on is open.';
+    if (highFloor(this.depth)) return Math.floor(this.depth) >= lastFloor() ? 'The way home is open.' : 'The way on is open.';
+    return this.depth >= 10 ? 'The siege magic falters. The way home is open.' : 'The way on is open.';
   }
 
   /** THE ROYAL CARDS: where in the bag the pieces the last hand handed in brought lie (for the stranger's page). */

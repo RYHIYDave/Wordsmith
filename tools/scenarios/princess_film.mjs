@@ -61,6 +61,7 @@ export default async function (page, snap) {
       const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
       d.run(cls, 7); d.seasoned(22); d.autoLevel = false; d.autoWords = false; d.god = true;
       d.high(true, 16);
+      if (d.fx && d.fx.messages) d.fx.messages.length = 0;
     }, cls);
     await page.waitForTimeout(1500);
     await page.evaluate(() => {
