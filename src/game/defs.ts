@@ -745,10 +745,13 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // (the swans as the city's hounds, small and in flocks; the gardeners and grooms as the Hushed, faster: the art's rush,
   // PH_PACE; the palace guard as the watch, a head taller; the Princess as the Censor, fast: her glide, PR_PACE). Their moves'
   // moments and reaches are the art chat's (docs/mockups/swan_gardens/README.md); their rules game/act1_rules/<kind>.ts.
-  swan: { kind: 'swan', name: 'Wild Swan', life: 14, dmgMin: 5, dmgMax: 8, speed: 1.4, radius: 0.3, range: 1.1, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  gardener: { kind: 'gardener', name: 'Hushed Gardener', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.3, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  groom: { kind: 'groom', name: 'Hushed Groom', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.6, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  pguard: { kind: 'pguard', name: 'Palace Guard', life: 52, dmgMin: 13, dmgMax: 19, speed: 0.8, radius: 0.45, range: 2.4, windup: 20 / 30, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (THE HIGH CITY, FLOOR 16: THE FOUR KINDS, as built: each at the pace its walk is painted for, SWAN_PACE, PH_PACE, GD_PACE, its
+  // feet not sliding; each wind-up its blow's moment, SWAN_BITE.hit, PH_BLOW.hit, GD_THRUST.hit; each `range` how far off its
+  // basic blow is made from, its rules' `far`: the swan's bite, the gardener's shears, the groom's fork, the partisan's thrust)
+  swan: { kind: 'swan', name: 'Wild Swan', life: 14, dmgMin: 5, dmgMax: 8, speed: 1.4, radius: 0.3, range: 1.4, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  gardener: { kind: 'gardener', name: 'Hushed Gardener', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.5, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  groom: { kind: 'groom', name: 'Hushed Groom', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.9, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  pguard: { kind: 'pguard', name: 'Palace Guard', life: 52, dmgMin: 13, dmgMax: 19, speed: 0.8, radius: 0.45, range: 2.7, windup: 20 / 30, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   princess: { kind: 'princess', name: 'The Princess', life: 640, dmgMin: 22, dmgMax: 31, speed: 4.0, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.0, xp: 1000, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };

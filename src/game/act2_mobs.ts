@@ -12,6 +12,7 @@
 import type { RNG } from '../engine/rng';
 import { cityFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
+import { SWAN } from './act1_rules/swan';
 import { PACK_BY_SIZE, sizeOf } from './defs';
 import type { MonsterKind } from './types';
 
@@ -80,6 +81,8 @@ export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'ch
   const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)));
   const pick = rng.weighted(list, (m) => m.weight);
   const kind = standIn(pick.kind);
-  const [lo, hi] = PACK_BY_SIZE[sizeOf(kind)];
+  // (THE HIGH CITY, FLOOR 16: the swans come in flocks, his “Knee-high, in flocks”: a pack of them bigger than another small
+  // kind's, SWAN.flock, game/act1_rules/swan.ts)
+  const [lo, hi] = kind === 'swan' ? SWAN.flock : PACK_BY_SIZE[sizeOf(kind)];
   return { kind, size: rng.int(lo, hi) };
 }

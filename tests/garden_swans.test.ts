@@ -110,12 +110,18 @@ function segGap(p1: number[], q1: number[], p2: number[], q2: number[]): number 
   return best;
 }
 
-test('nothing of the game imports the swans; its switch is off', () => {
+// (IN THE GAME WITH THE HIGH CITY (game/act1.ts HIGH_CITY, off until his yes), since the main chat's helper built floor 16's
+// kinds, 29 Oct 2026: through art/act1_figs/swan.ts alone, their pictures as the game holds a monster; its switch goes on with
+// the descent's figures there, art/bestiary.ts useAct1Figs; until then a mock-up nothing of the game imported, its switch off.
+// Off by itself here, where nothing of the game is loaded.)
+test('the switch is off by itself, and of the game only their figure imports the swans', () => {
   assert.equal(SWAN_ON.on, false);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/garden_swans.ts') continue;
-    assert.ok(!/from ['"][^'"]*garden_swans['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the swans`);
+    if (/from ['"][^'"]*garden_swans['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
+  assert.equal(users.join(' '), 'art/act1_figs/swan.ts', 'game files that import the swans');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge while it lives, none dead', () => {

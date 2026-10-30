@@ -95,7 +95,11 @@ for (const mob of ALL) {
 }
 const said = (_mob: Mob, move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+// (IN THE GAME WITH THE HIGH CITY (game/act1.ts HIGH_CITY, off until his yes), since the main chat's helper built floor 16's
+// kinds, 29 Oct 2026: through art/act1_figs/pguard.ts alone, their pictures as the game holds a monster; its switch goes on
+// with the descent's figures there, art/bestiary.ts useAct1Figs; until then a mock-up nothing of the game imported, its switch
+// off. Off by itself here, where nothing of the game is loaded.)
+test('1. the switch is off by itself, and of the game only their figures import them', () => {
   assert.equal(GUARD_ON.on, false, 'GUARD_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -107,7 +111,7 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (/^art\/palace_guard(_moves)?$/.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/pguard.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {
