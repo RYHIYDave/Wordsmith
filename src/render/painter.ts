@@ -30,7 +30,7 @@
 
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
-import type { ActorArt } from '../art/actor_types';
+import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
@@ -93,7 +93,7 @@ type Ask =
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
   | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
-  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number };
+  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: 'soon' | 'rest' };
 /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
 interface WallBitMsg {
   d: number;
@@ -332,6 +332,19 @@ export class Painter {
    */
   hero(cls: ClassId, place: HeroPlace): boolean {
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
+    // (THE WARLOCK, as a man in a dungeon, his arm blazing, or the demon: all three in one order, the order he needs them in
+    // (his lag, 30 Oct 2026): the first frame of each of his lists soon, before the floor's monsters (a frame of theirs is a
+    // few thousandths of a second to paint, of his a tenth to half a second), so that none is painted where the game is
+    // played; then the rest. The worker: warlock().)
+    if (cls === 'warlock' && place !== 'card' && place !== 'town') {
+      if (!this.heroAsked.has('warlock:all')) {
+        this.heroAsked.add('warlock:all');
+        this.groundLane.open += 2;
+        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, warlock: 'soon' } satisfies Ask);
+        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 30.5, warlock: 'rest' } satisfies Ask);
+      }
+      return true;
+    }
     const key = `${cls}:${place}`;
     if (!this.heroAsked.has(key)) {
       this.heroAsked.add(key);
@@ -820,6 +833,78 @@ export function paintWorkerMain(): void {
     }
   }
 
+  /**
+   * THE WARLOCK'S FRAMES, his three places in one order (his lag, 30 Oct 2026: "Changing into the demon,Casting spells"; every
+   * frame of his is left to this worker while the game is played, art/warlock_art.ts HEAVY_MAN). 'soon': the first frame of
+   * every list of him as a man, in a dungeon and with his arm blazing, and of the demon (a list with none painted is painted
+   * where the game is played, the frame asked for: the demon's, half a second each, were the stop as he changed). 'rest':
+   * what he does first, standing, running, his bolt and his curse, as a man and blazing; the change; the demon standing, running, raking
+   * and Damning; then all the rest. A frame already handed over is not painted again.
+   */
+  function* warlock(part: 'soon' | 'rest'): Generator<void, void, void> {
+    heroArt ??= makeHeroArt3();
+    const art = heroArt;
+    const places: HeroPlace[] = ['dungeon', 'blaze', 'demon'];
+    const sets = places.map((p) => {
+      const a = art.of('warlock', lookOfPlace(p));
+      return [a.front, a.back] as const;
+    });
+    const lists = sets.map(([f, b]) => [heroLists(f), heroLists(b)]);
+    const order: [number, number, number, number][] = [];
+    const seen = new Set<string>();
+    const add = (p: number, l: number, upTo: number): void => {
+      if (l < 0) return;
+      for (let v = 0; v < 2; v++) {
+        const L = lists[p][v][l];
+        for (let i = 0; i < Math.min(upTo, L.length); i++) {
+          const k = `${p}:${v}:${l}:${i}`;
+          if (!seen.has(k)) {
+            seen.add(k);
+            order.push([p, v, l, i]);
+          }
+        }
+      }
+    };
+    const firsts = (p: number): void => {
+      for (let l = 0; l < lists[p][0].length; l++) add(p, l, 1);
+    };
+    const at = (p: number, pick: (a: AnimSet) => Sprite[] | undefined): number => {
+      const L = pick(sets[p][0]);
+      return L && L.length ? lists[p][0].indexOf(L) : -1;
+    };
+    if (part === 'soon') {
+      firsts(0);
+      firsts(1);
+      firsts(2);
+    } else {
+      const man: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.idle, (a) => a.walk, (a) => a.clips?.attack?.frames, (a) => a.clips?.heavy?.frames];
+      for (const p of [0, 1]) for (const pick of man) add(p, at(p, pick), Infinity);
+      add(0, at(0, (a) => a.clips?.change?.frames), Infinity);
+      for (const pick of [...man, (a: AnimSet) => a.clips?.attack2?.frames]) add(2, at(2, pick), Infinity);
+      for (let p = 0; p < 3; p++) for (let l = 0; l < lists[p][0].length; l++) add(p, l, Infinity);
+    }
+    const out = new Map<number, { list: Given[]; transfer: Transferable[] }>();
+    let t0 = performance.now();
+    for (let n = 0; n < order.length; n++) {
+      const [p, v, l, i] = order[n];
+      const s = lists[p][v][l][i];
+      if (!emptied(s)) {
+        let o = out.get(p);
+        if (!o) out.set(p, (o = { list: [], transfer: [] }));
+        o.list.push({ v, l, i, s: shipped(s, o.transfer) });
+      }
+      const last = n === order.length - 1;
+      if (last || performance.now() - t0 >= CHUNK_MS) {
+        for (const [q, o] of out) scope.postMessage({ t: 'heroFrames', cls: 'warlock', place: places[q], list: o.list, left: 1 }, o.transfer);
+        out.clear();
+        if (!last) yield;
+        t0 = performance.now();
+      }
+    }
+    // (the one word that the job is done)
+    scope.postMessage({ t: 'heroFrames', cls: 'warlock', place: 'dungeon', list: [], left: 0 });
+  }
+
   /** A figure's frames, painted and handed over a few at a time. */
   function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
@@ -904,7 +989,7 @@ export function paintWorkerMain(): void {
           scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls, flow }, [bmp, ...walls.map((b) => b.img), ...(flow ? flow.frames : [])]);
         }
       } else if (job.ask.t === 'hero') {
-        job.run ??= hero(job.ask.cls, job.ask.place);
+        job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place);
         if (job.run.next().done) done();
       } else if (job.ask.t === 'shells') {
         job.run ??= shells(job.ask);
