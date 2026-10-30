@@ -9,8 +9,8 @@ import { DANCERS, makeDancerArt3 } from '../masque_dancers_moves';
 import type { Act1Fig } from './types';
 
 const ROOMS = ['blue', 'purple', 'green', 'orange', 'white', 'violet'] as const;
-// (the knight's size: the lady 56 tall, the gentleman 59, the knight 58)
-const look = (who: 'lady' | 'gent', room: (typeof ROOMS)[number]): Act1Fig => ({ make: () => makeDancerArt3(DANCERS[who][room]), size: { top: who === 'lady' ? 28 : 30, half: 9 } });
+// (the knight's size: the lady 56 tall, the gentleman 59, the knight 58; their heads as tests/first5_bosses.test.ts measures them, the hair piled up)
+const look = (who: 'lady' | 'gent', room: (typeof ROOMS)[number]): Act1Fig => ({ make: () => makeDancerArt3(DANCERS[who][room]), size: { top: who === 'lady' ? 33 : 34, half: 9 } });
 const ALL: Act1Fig[] = ROOMS.flatMap((r) => [look('lady', r), look('gent', r)]);
 
 export const FIG: Act1Fig | null = { ...ALL[0], switches: [DANCERS_ON], looks: ALL.slice(1) };

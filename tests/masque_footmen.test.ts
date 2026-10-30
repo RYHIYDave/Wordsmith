@@ -133,7 +133,7 @@ const smearIn = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and of the game only floor 17\'s own files import them', () => {
   assert.equal(FOOTMEN_ON.on, false, 'FOOTMEN_ON is off');
   const users: string[] = [];
   const theirs = /^art\/masque_footmen(_moves|_fx)?$/;
@@ -146,7 +146,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (Brought into the game by the main chat, 30 Oct 2026, on floor 17 behind HIGH_CITY (off): their figure, rules and effects
+  // files import them, and nothing else of the game)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/footman.ts game/act1_rules/footman.ts render/act1_fx/footman.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both blows', () => {

@@ -108,7 +108,7 @@ OTHERS.forEach((mob, k) => {
 });
 const said = (mob: Mob, move: string, view: string, t: number): string => `${mob.id} ${move} ${view} @${t.toFixed(3)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and of the game only floor 17\'s own files import them', () => {
   assert.equal(DANCERS_ON.on, false, 'DANCERS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -120,7 +120,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (/^art\/masque_dancers(_moves)?$/.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (Brought into the game by the main chat, 30 Oct 2026, on floor 17 behind HIGH_CITY (off): their figure, rules and effects
+  // files import them, and nothing else of the game)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/dancer.ts game/act1_rules/dancer.ts render/act1_fx/dancer.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF BOTH THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
