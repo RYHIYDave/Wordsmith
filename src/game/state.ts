@@ -254,6 +254,9 @@ export interface Hero {
   stillK?: number;
   /** BINDING on monsters: seconds left rooted (he walks nowhere), and before a monster's Binding may root him again. */
   rootT?: number;
+  /** (THE HIGH CITY, FLOOR 19) Slowed by an enemy's ground (the King's Hush's grey fog): by this share of his pace while slowT lasts. */
+  slowT?: number;
+  slowBy?: number;
   rootAgain?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
@@ -1422,7 +1425,7 @@ export type GameEvent =
   /** (BOSS_INTRO) the boss's gate has fallen: he says his line (or none) and his name comes up, for `secs` */
   | { t: 'bossIntro'; name: string; line: string | null; x: number; y: number; secs: number }
   /** (THE HIGH CITY, FLOOR 16: the Princess's one whisper as she falls, game/act1_rules/princess.ts) a boss says a line, over her as BOSS_INTRO's line is shown, for `secs`, without her name coming up; `lift`: how far over her floor point (game pixels: one on her knees is low) */
-  | { t: 'bossSay'; text: string; x: number; y: number; secs: number; lift?: number }
+  | { t: 'bossSay'; text: string; x: number; y: number; secs: number; lift?: number; /** (game/boss_calls.ts) said in this boss's own voice */ voice?: MonsterKind }
   /** (FLOOR_NAMES) the hero has come into a floor: its name, and its level under it */
   /** THE FIRST FIVE FLOORS: the stairwell has begun to break open, its middle here (its film is the renderer's to play: render/dress.ts). */
   | { t: 'stairOpens'; x: number; y: number }

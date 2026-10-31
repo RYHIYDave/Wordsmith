@@ -42,7 +42,7 @@ import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { TITLE_RING, makeRingTitle } from './art/title_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { initAudio, isMuted, setMuted, sfx, speak } from './engine/audio';
+import { initAudio, isMuted, setMuted, sfx, speak, speakBoss } from './engine/audio';
 import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
@@ -1466,6 +1466,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       } else if (e.t === 'quip') {
         // the hero has something to say about a big kill: heard in their own voice (it is drawn by the effects)
         speak(g.hero.cls, g.voice, e.text);
+      } else if (e.t === 'bossSay' && e.voice) {
+        // (THE BOSSES CALL OUT THEIR BIG MOVES: heard in his own voice; the words are drawn by the effects. game/boss_calls.ts)
+        speakBoss(e.voice, e.text);
       } else if (e.t === 'bossIntro') {
         bossCard = { name: e.name, t: 0, secs: e.secs };
         floorCard = null;

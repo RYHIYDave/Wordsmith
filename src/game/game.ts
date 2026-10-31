@@ -59,6 +59,7 @@ import type { BrawlState, PunchName } from './brawler';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import type { Brew, Decoy, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
+import { BOSS_CALLS, bossCall } from './boss_calls';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
 /** Seconds before "of Echoes" repeats an ability. */
@@ -3716,6 +3717,7 @@ export class Game {
     if (h.stillT) h.stillT = Math.max(0, h.stillT - dt);
     // (BINDING, on monsters: rooted, and the time before he may be rooted again)
     if (h.rootT) h.rootT = Math.max(0, h.rootT - dt);
+    if (h.slowT) h.slowT = Math.max(0, h.slowT - dt);
     if (h.rootAgain) h.rootAgain = Math.max(0, h.rootAgain - dt);
     // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
     const pace = this.frenzyPace() * ((h.stillT ?? 0) > 0 ? 1 - (h.stillK ?? 0) : 1);
@@ -3825,6 +3827,8 @@ export class Game {
     if (len > 0.01) {
       let sp = d.moveSpeed * (1 + h.haste / 100) * (1 + this.talentSpeed() / 100);
       if (h.chillT > 0) sp *= 1 - h.chill;
+      // (THE HIGH CITY, FLOOR 19: slowed in the King's Hush's grey fog: game/act1_rules/gking.ts)
+      if ((h.slowT ?? 0) > 0) sp *= 1 - (h.slowBy ?? 0);
       // (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: game/act2/garden_rules.ts)
       if (this.level.land?.garden) sp *= nettleSlow(h);
       // (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
@@ -7892,6 +7896,15 @@ export class Game {
       }
       return;
     }
+    // (THE HIGH CITY, FLOOR 19: nor one with another wrapped round it, which takes the blow instead: the King's Hush, struck off
+    // by enough of them. game/act1_rules/gking.ts)
+    if (r1 && r1.absorbs && r1.absorbs(this.bosses, m)) {
+      if (this.time - this.waitTold > 0.4) {
+        this.waitTold = this.time;
+        this.emit({ t: 'text', x: m.x, y: m.y, text: 'Shielded', color: '#ffd27a' });
+      }
+      return;
+    }
     // (ACT 1: one shielded by another standing by it takes less: the chanter's ward over the cult near it, game/act1_rules/)
     if (ACT1.on) {
       const ward = act1Ward(this.bosses, m);
@@ -8959,6 +8972,9 @@ export class Game {
     const dist = Math.hypot(dx, dy) || 1;
     m.fx = dx / dist;
     m.fy = dy / dist;
+    // (THE BOSSES CALL OUT THEIR BIG MOVES: the Warden's, the line over him in his own voice. game/boss_calls.ts)
+    const call = bossCall(m, mv.id, this.time, i === 0);
+    if (call) this.emit({ t: 'bossSay', text: call, x: m.x, y: m.y, secs: BOSS_CALLS.sayFor, voice: m.kind });
     if (mv.id === 'slam') {
       // the red circle where it will land, as it has always been
       const reach = Math.min(dist, def.range);

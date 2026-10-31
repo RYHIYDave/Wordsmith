@@ -1,11 +1,13 @@
 // ACT 2, PART TWO, THE HIGH CITY: FLOOR 19'S BOSS: THE KING: what his blows leave across the hall and send at him, drawn
 // (render/act1_fx/types.ts), where his rules (game/act1_rules/gking.ts) have it. His moves themselves are his own pictures'
 // (art/act1_figs/gking.ts). From the art chat's (art/king_fx.ts):
-//   ON THE FLOOR: through the sweep's warning, the wedge its wave will roll over marked in the enemy's pink (out to 10 tiles; behind
-//     his left is clear); through the Crown's, where he will come down, a ring in the enemy's pink; THE SWEEP'S WAVE (the art's
-//     sweepPainted, drawn in the game's own pixels: a bright edge of wind rolling out over the wedge, the pale air off his blade
-//     streaked behind it, grit churned up behind that); THE CROWN'S RING (crownPainted so: the stones cracked out from under him,
-//     the ring rolling out across the hall, its edge ringing pale, the flags heaved up along it and dust behind it).
+//   ON THE FLOOR: through his charge's warning, the lane he will run marked in the enemy's pink; THE LINE OF SPARKS his blade
+//     cuts in the stones as he runs, glowing hotter until it bursts; under THE CROWN'S WEIGHT its shadow, darkening, its edge
+//     the enemy's pink, and the stones cracked where it slams; THE HUSH'S GREY FOG lying in patches (marked where they will fall
+//     as it breathes in); through its grab's warning, the line its arms will shoot along.
+//   IN THE AIR: THE CROWN hanging over the hero, slamming down, flying home; THE HUSH'S ARMS shooting out, and dragging him.
+//   (HIS WORD OF 31 OCT: the charge, the crown's weight and the Hush's three moves are drawn here in the game's own pixels by the
+//   main chat, standing in until the art chat's pictures of them come: game/act1_rules/gking.ts.)
 //   AMONG WHAT STANDS: THE DECREE's knights of fog (the art's knightPainted, each where decreeKnights has it, marching, faded in as
 //     they rise and out at the far wall); THE CURTAINS' faces of his deeds (the art's facePainted, each where curtainFaces has
 //     it, at its height, a tail of fog behind it); THE HUSH at his side in his last phase (his pictures' third look, its stand;
@@ -13,18 +15,17 @@
 // Nothing cyan: the enemy's pink, the Hush's grey and fog, steel and stone, the bird's gold and silver.
 
 import { toSprite } from '../../art/kit';
-import { BIRD, BIRD_CANVAS, CROWN_FX, DECREE_FX, FACE_CANVAS, KN_CANVAS, SWEEP_FX, birdPainted, facePainted, knightPainted } from '../../art/king_fx';
+import { BIRD, BIRD_CANVAS, DECREE_FX, FACE_CANVAS, KN_CANVAS, birdPainted, facePainted, knightPainted } from '../../art/king_fx';
 import type { BirdState } from '../../art/king_fx';
-import { KG_CROWN, KG_SWEEP } from '../../art/king_moves';
 import { hash } from '../../art/kit';
 import type { GameView } from '../../art/skin';
 import { stage } from '../../art/skin';
 import { flipSprite } from '../../engine/px';
 import type { Px, Sprite } from '../../engine/px';
-import { KING_TUNE, decreeNow, facesNow, ringFront, sweepFront } from '../../game/act1_rules/gking';
+import { HUSH_MOVE, KING_TUNE, armsOut, decreeNow, facesNow } from '../../game/act1_rules/gking';
 import { backView, beside, flipped } from '../../game/facing';
 import type { Monster, Peril } from '../../game/state';
-import { drawFanWarn, warnK } from './garden_warn';
+import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const D = Math.PI / 180;
@@ -33,10 +34,10 @@ const smooth = (a: number, b: number, t: number): number => {
   const u = clamp01((t - a) / (b - a));
   return u * u * (3 - 2 * u);
 };
-/** The art's colours for the wave and the ring (art/king_fx.ts): steel and wind, grit, the stones heaved up, the cracks. */
-const STEEL_W = ['#5c5874', '#8a86a2', '#c2bfd2', '#eceaf2'];
-const GRIT = ['#2c2a38', '#45424f', '#646070'];
-const STONE_UP = ['#262a3e', '#3a4058', '#565e7a', '#7a82a0'];
+/** Colours: the sparks off his blade (white-hot to the enemy's gold to ember), the crown's gold, the Hush's grey fog, the cracks. */
+const SPARK = ['#fff4d6', '#ffd27a', '#ff9a3c', '#a8401a'];
+const GOLD = ['#5a3c12', '#9a6a1e', '#d9a441', '#ffe08a'];
+const FOG = ['#2e2c36', '#47454f', '#666370', '#8c8996', '#b3b0bc'];
 const CRACK = '#100e18';
 
 function dot(g: CanvasRenderingContext2D, x: number, y: number, c: string, w = 1, h = 1): void {
@@ -85,97 +86,159 @@ function upOf(c: Act1FxCtx, x: number, y: number): number {
 // ---------------------------------------------------------------------------------------------
 // ON THE FLOOR
 
-/** THE SWEEP'S WAVE, `t` seconds after the blow, from a peril laid where he stood. */
-function wave(c: Act1FxCtx, p: Peril): void {
+const C = KING_TUNE.charge;
+const W = KING_TUNE.weight;
+const HF = KING_TUNE.hush.fog;
+
+/** THE LINE OF SPARKS cut by his blade from where he set off (p.x, p.y) to where he is (p.a, p.b): glowing hotter until it bursts. */
+function sparks(c: Act1FxCtx, p: Peril): void {
   const g = c.g!;
-  const t = p.t;
-  if (t > SWEEP_FX.long) return;
-  const front = sweepFront(t);
-  const fade = 1 - smooth(SWEEP_FX.out - 0.12, SWEEP_FX.long, t);
-  const deep = 1.3 * (0.8 + 0.9 * clamp01(t / SWEEP_FX.out));
-  const a0 = KING_TUNE.sweep.from * D;
-  const a1 = KING_TUNE.sweep.to * D;
-  const steps = Math.ceil(((a1 - a0) * front) / 0.07);
+  const dx = p.a - p.x;
+  const dy = p.b - p.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 0.05) return;
+  const burstAt = p.d ? p.d + C.burst : Infinity;
   const was = g.globalAlpha;
-  for (let i = 0; i <= steps; i++) {
-    const a = a0 + ((a1 - a0) * i) / steps;
-    const end = Math.min(1, Math.min(i, steps - i) / (steps * 0.07));
-    const streak = Math.floor(i / 3) % 5;
-    for (let r = front - deep * end; r <= front; r += 0.09) {
-      const u = (front - r) / Math.max(0.05, deep);
-      const h = hash(i, Math.round(r * 20), 7801);
-      let col: string | null = null;
-      let up = 0;
-      if (u < 0.06) col = h < fade * 1.2 ? STEEL_W[3] : null;
-      else if (u < 0.12) col = h < fade ? STEEL_W[2] : null;
-      else if (u < 0.42) {
-        const dens = (streak === 0 ? 0.9 : streak === 2 ? 0.6 : 0.3) * (1 - u) * fade * end;
-        if (h < dens) col = streak === 0 ? STEEL_W[2] : STEEL_W[1];
-        up = 2 * (0.42 - u);
-      } else {
-        const dens = 0.45 * (1 - u) * fade * end;
-        if (h < dens) col = h < dens * 0.4 ? STEEL_W[0] : GRIT[(i + Math.round(r * 3)) % 3];
-        up = 6 * (u - 0.42) * hash(i, 3, 7802);
-      }
-      if (!col) continue;
-      const q = beside(p.x, p.y, p.fx, p.fy, p.hand, Math.cos(a) * r, Math.sin(a) * r);
-      const [sx, sy] = c.at(q.x, q.y);
-      g.globalAlpha = was * Math.max(0.35, fade);
-      dot(g, sx, sy - up, col);
+  const heat = p.d ? clamp01((p.t - p.d) / C.burst) : 0.2;
+  const after = p.t - burstAt;
+  const fade = after > 0 ? 1 - clamp01(after / 0.45) : 1;
+  if (fade <= 0) return;
+  const n = Math.ceil(len / 0.05);
+  for (let i = 0; i <= n; i++) {
+    const u = i / n;
+    const x = p.x + dx * u;
+    const y = p.y + dy * u;
+    // (the cut itself, a dark groove with a hot edge)
+    const [sx, sy] = c.at(x, y);
+    g.globalAlpha = was * fade;
+    dot(g, sx, sy + 1, CRACK, 2);
+    const hot = hash(i, Math.floor(c.t * 12), 7901);
+    dot(g, sx, sy, hot < 0.3 + 0.5 * heat ? SPARK[1] : SPARK[2]);
+    if (after > 0) {
+      // (it bursts: a row of flares thrown up along it)
+      const up = 3 + 14 * hash(i, 1, 7902) * (1 - fade * 0.3);
+      if (hash(i, 2, 7903) < 0.6) dot(g, sx, sy - up * (1 - fade) - 2, SPARK[hash(i, 3, 7904) < 0.4 ? 0 : 1], 2, 2);
+    } else if (hash(i, Math.floor(c.t * 20), 7905) < 0.05 + 0.25 * heat) {
+      // (sparks spitting up off it, more as it nears the burst)
+      dot(g, sx + (hash(i, 4, 7906) - 0.5) * 4, sy - 2 - 6 * hash(i, Math.floor(c.t * 20), 7907), SPARK[0]);
     }
   }
   g.globalAlpha = was;
 }
 
-/** THE CROWN'S RING, `t` seconds after he lands, round where he landed. */
-function ring(c: Act1FxCtx, p: Peril): void {
+/** Where the crown's weight hangs, its shadow under it (darkening as it stops), and the cracks where it slammed. */
+function weightGround(c: Act1FxCtx, p: Peril): void {
   const g = c.g!;
-  const t = p.t;
-  if (t > CROWN_FX.long) return;
-  const front = ringFront(t);
-  const fade = 1 - smooth(CROWN_FX.out, CROWN_FX.long, t);
+  const slam = W.follow + W.hold;
+  if (p.t < slam) {
+    const k = clamp01(p.t / slam);
+    drawFanWarn(g, c.at, { x: p.x, y: p.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, W.r, 0.15 + 0.85 * k, c.t);
+    return;
+  }
+  const cf = 1 - smooth(slam + 0.3, slam + W.home, p.t);
   const was = g.globalAlpha;
-  // (the cracks out from under him, ragged and forking, fading last)
-  const cf = 1 - smooth(CROWN_FX.long - 0.5, CROWN_FX.long, t);
-  for (let j = 0; j < 14; j++) {
-    let a = (j / 14) * Math.PI * 2 + hash(j, 1, 7811);
-    const long = KING_TUNE.crown.slam * (0.55 + 0.6 * hash(j, 2, 7811)) * smooth(0, 0.1, t);
-    for (let r = 0.15; r < long; r += 0.05) {
-      if (hash(j, Math.round(r * 20), 7812) > cf) continue;
+  for (let j = 0; j < 10; j++) {
+    let a = (j / 10) * Math.PI * 2 + hash(j, 1, 7911);
+    const long = W.r * (0.5 + 0.5 * hash(j, 2, 7911));
+    for (let r = 0.1; r < long; r += 0.05) {
+      if (hash(j, Math.round(r * 20), 7912) > cf) continue;
       const [sx, sy] = c.at(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
       g.globalAlpha = was;
-      dot(g, sx, sy, CRACK, r < long * 0.45 ? 2 : 1);
-      a += (hash(j, Math.round(r * 20), 7813) - 0.5) * 0.12;
-    }
-  }
-  if (t <= CROWN_FX.out + 0.25) {
-    // (the ring: its edge ringing pale; the flags heaved up along it; dust behind)
-    const n = Math.ceil((Math.PI * 2 * front) / 0.06);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const ca = Math.cos(a);
-      const sa = Math.sin(a);
-      for (let r = front - 0.9; r <= front; r += 0.1) {
-        const u = (front - r) / 0.9;
-        const h = hash(i, Math.round(r * 10), 7814);
-        let col: string | null = null;
-        let up = 0;
-        if (u < 0.12) col = h < 0.9 * fade + 0.1 ? STEEL_W[3] : null;
-        else if (u < 0.45) {
-          if (h < 0.55 * fade) col = STONE_UP[(i >> 2) % 4];
-          up = 3 * Math.sin(u * Math.PI);
-        } else if (h < 0.3 * fade) {
-          col = GRIT[i % 3];
-          up = 5 * (u - 0.45) * hash(i, 4, 7815);
-        }
-        if (!col) continue;
-        const [sx, sy] = c.at(p.x + ca * r, p.y + sa * r);
-        g.globalAlpha = was * Math.max(0.3, fade);
-        dot(g, sx, sy - up, col);
-      }
+      dot(g, sx, sy, CRACK, r < long * 0.4 ? 2 : 1);
+      a += (hash(j, Math.round(r * 20), 7913) - 0.5) * 0.14;
     }
   }
   g.globalAlpha = was;
+}
+
+/** A crown in the game's pixels (a stand-in until the art chat's), its foot at (sx, sy). */
+function crownAt(g: CanvasRenderingContext2D, sx: number, sy: number, alpha: number): void {
+  const was = g.globalAlpha;
+  g.globalAlpha = was * alpha;
+  const x0 = Math.round(sx) - 6;
+  const y0 = Math.round(sy) - 8;
+  // (its three points, its band, a stone set in the band)
+  const rows = ['  3   3   3  ', ' 232 232 232 ', ' 2222222222 2', '1222222222221', '1333333333331', '1222202222221', ' 1111111111 '];
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x];
+      if (ch === ' ') continue;
+      g.fillStyle = ch === '0' ? '#8a1c3a' : GOLD[Number(ch)];
+      g.fillRect(x0 + x, y0 + y, 1, 1);
+    }
+  });
+  g.globalAlpha = was;
+}
+
+/** THE CROWN in the air: hanging over the hero and bobbing; still as it stops; slamming down; then flying home to him. */
+function weightAir(c: Act1FxCtx, p: Peril): void {
+  const g = c.g!;
+  const slam = W.follow + W.hold;
+  const [sx, sy] = c.at(p.x, p.y);
+  if (p.t < W.follow) {
+    crownAt(g, sx, sy - 34 - 2 * Math.sin(c.t * 5), clamp01(p.t / 0.25));
+  } else if (p.t < slam) {
+    crownAt(g, sx, sy - 36 + 2 * smooth(W.follow, slam, p.t), 1);
+  } else if (p.t < slam + 0.08) {
+    crownAt(g, sx, sy - 34 * (1 - (p.t - slam) / 0.08), 1);
+  } else {
+    // (flying home: up and away, fading)
+    const u = clamp01((p.t - slam - 0.15) / Math.max(0.05, W.home - 0.15));
+    crownAt(g, sx, sy - 40 * u, 1 - u);
+  }
+}
+
+/** THE HUSH'S GREY FOG, a patch where it lies (its clock below 0: where it will fall, marked as the Hush breathes in). */
+function fog(c: Act1FxCtx, p: Peril): void {
+  const g = c.g!;
+  if (p.t < 0) {
+    const k = clamp01(1 + p.t / HF.warn);
+    drawFanWarn(g, c.at, { x: p.x, y: p.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, HF.r, k, c.t);
+    return;
+  }
+  const a = smooth(0, 0.3, p.t) * (1 - smooth(p.dur - 1, p.dur, p.t));
+  const was = g.globalAlpha;
+  const n = 260;
+  for (let i = 0; i < n; i++) {
+    // (wisps drifting round in it, thicker in the middle)
+    const r = HF.r * Math.sqrt(hash(i, 1, 7921));
+    const ang = hash(i, 2, 7922) * Math.PI * 2 + c.t * (0.3 + 0.4 * hash(i, 3, 7923)) * (i % 2 ? 1 : -1);
+    const [sx, sy] = c.at(p.x + Math.cos(ang) * r, p.y + Math.sin(ang) * r);
+    const up = 1 + 5 * hash(i, 4, 7924);
+    g.globalAlpha = was * a * (0.35 + 0.4 * (1 - r / HF.r));
+    dot(g, sx, sy - up, FOG[1 + Math.floor(hash(i, 5, 7925) * 4)], 2, 1);
+  }
+  g.globalAlpha = was;
+}
+
+/** THE HUSH'S ARMS: shooting out along its line, or holding the hero as it drags him; through its warning, that line marked. */
+function arms(c: Act1FxCtx, p: Peril, ground: boolean): void {
+  const g = c.g!;
+  const G = KING_TUNE.hush.grab;
+  const fx = Math.cos(p.a);
+  const fy = Math.sin(p.a);
+  if (ground) {
+    const k = warnK(p.d, 0, G.warn);
+    if (k >= 0 && !p.done) drawStripWarn(g, c.at, { x: p.x, y: p.y, fx, fy, hand: 1 }, 0.3, G.reach, -0.45, 0.45, k, c.t);
+    return;
+  }
+  const h = c.game.hero;
+  const out = armsOut(p.d);
+  if (!p.done && out <= 0) return;
+  const tip = p.done ? { x: h.x, y: h.y } : { x: p.x + fx * out, y: p.y + fy * out };
+  const [x0, y0] = c.at(p.x, p.y);
+  const [x1, y1] = c.at(tip.x, tip.y);
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  const n = Math.max(2, Math.ceil(len / 1.5));
+  for (const side of [-1.5, 1.5]) {
+    for (let i = 0; i <= n; i++) {
+      const u = i / n;
+      const wob = Math.sin(u * 9 + c.t * 14 + side) * 1.2;
+      dot(g, x0 + (x1 - x0) * u + side, y0 - 26 + (y1 - 8 - (y0 - 26)) * u + wob, FOG[u < 0.85 ? 2 : 4]);
+    }
+  }
+  // (its long fingers at the end)
+  for (let f = 0; f < 4; f++) dot(g, x1 - 3 + f * 2, y1 - 8 + (f % 2), FOG[4], 1, 3);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -221,7 +284,9 @@ function hush(c: Act1FxCtx, p: Peril): void {
   }
   if (!s) return;
   const [sx, sy] = c.at(p.x, p.y);
-  c.stand(p.x + p.y, flipped(p.fx, p.fy) ? flipSprite(s) : s, sx, sy);
+  // (wrapped round him, shielding him: drawn over him, a little in front)
+  const over = !p.c && p.b === HUSH_MOVE.shield;
+  c.stand(p.x + p.y + (over ? 0.3 : 0), flipped(p.fx, p.fy) ? flipSprite(s) : s, sx, sy, over ? 0.85 : 1);
 }
 
 /** THE SONGBIRD as he dies: winding itself up, then singing. */
@@ -239,20 +304,10 @@ function songbird(c: Act1FxCtx, p: Peril): void {
 function warnings(c: Act1FxCtx, m: Monster): void {
   const act = m.act!;
   const w = { x: m.x, y: m.y, fx: m.fx, fy: m.fy, hand: act.hand };
-  if (act.id === 'gking:sweep') {
-    // (the wedge the wave will roll over, out to its reach: behind his left is clear)
-    const k = warnK(act.t, KG_SWEEP.warn[0] - 0.15, KG_SWEEP.hit);
-    if (k >= 0) drawFanWarn(c.g!, c.at, w, KING_TUNE.sweep.from * D, KING_TUNE.sweep.to * D, KING_TUNE.sweep.reach, k, c.t);
-  } else if (act.id === 'gking:crown') {
-    // (where he will come down: carried at where the hero stood, so far as he goes)
-    const k = warnK(act.t, KG_CROWN.warn[0], KG_CROWN.hit);
-    if (k < 0) return;
-    const dx = act.x - m.x;
-    const dy = act.y - m.y;
-    const d = Math.hypot(dx, dy);
-    const left = act.t < KG_CROWN.air[0] ? Math.min(KING_TUNE.crown.carry, Math.max(0, d - 0.6)) : Math.max(0, Math.min(d - 0.6, KING_TUNE.crown.carry - (m.a1?.carried ?? 0)));
-    const at = d > 0.01 ? { x: m.x + (dx / d) * left, y: m.y + (dy / d) * left } : { x: m.x, y: m.y };
-    drawFanWarn(c.g!, c.at, { ...w, x: at.x, y: at.y }, -Math.PI, Math.PI, KING_TUNE.crown.slam, k, c.t);
+  if (act.id === 'gking:charge') {
+    // (the lane he will run, as far as he will go)
+    const k = warnK(act.t, 0, C.warn);
+    if (k >= 0) drawStripWarn(c.g!, c.at, w, 0.4, Math.max(0.6, act.a), -0.65, 0.65, k, c.t);
   }
 }
 
@@ -260,8 +315,17 @@ export const FX: Act1Fx | null = {
   ground(c, m, p) {
     if (!c.g) return;
     if (m && m.act) warnings(c, m);
-    if (p && p.a1 === 'gking:wave') wave(c, p);
-    if (p && p.a1 === 'gking:ring') ring(c, p);
+    if (!p) return;
+    if (p.a1 === 'gking:sparks') sparks(c, p);
+    else if (p.a1 === 'gking:weight') weightGround(c, p);
+    else if (p.a1 === 'gking:fog') fog(c, p);
+    else if (p.a1 === 'gking:hush' && !p.c && p.b === HUSH_MOVE.grab) arms(c, p, true);
+  },
+  air(c, m, p) {
+    void m;
+    if (!c.g || !p) return;
+    if (p.a1 === 'gking:weight') weightAir(c, p);
+    else if (p.a1 === 'gking:hush' && !p.c && p.b === HUSH_MOVE.grab) arms(c, p, false);
   },
   standing(c, m, p) {
     void m;

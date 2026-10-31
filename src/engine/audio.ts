@@ -182,6 +182,11 @@ export function setMuted(m: boolean): void {
   applyVolume();
 }
 
+/** Whether the sound is running yet ('running'), asleep until a tap ('suspended'), or not made at all ('none'). */
+export function audioState(): string {
+  return ctx ? ctx.state : 'none';
+}
+
 export function isMuted(): boolean {
   return muted;
 }
@@ -851,15 +856,60 @@ export function speechPlan(text: string): { at: number; pitch: number; bend: num
 
 /** Say a line in a hero's voice. Does nothing before initAudio, when muted, or where Web Audio is missing. Never throws. */
 export function speak(who: Speaker, voice: SpeakerVoice, text: string, vol = 1): void {
+  const kinds = Object.prototype.hasOwnProperty.call(VOICES, who) ? VOICES[who] : undefined;
+  const k = kinds ? (voice === 'female' ? kinds.female : kinds.male) : undefined;
+  if (k) sayIn(k, `voice:${who}`, text, vol);
+}
+
+// THE BOSSES CALL OUT THEIR BIG MOVES (the owner, 31 Oct 2026, 07:28: “Id like to try the bosses announcing their moves.  Like
+// “heavy is the crown” as he’s throwing his crown or whatever.”; the speech program's voices he heard and turned down: “It’s going
+// to sound like it’s a voice program and I don’t really want that”; then his pick, “Words + his own sound (Recommended)”). So, as
+// the heroes speak (Voices, rule 1): the words on the screen over him (game/boss_calls.ts), and heard as a mumble in a voice of his
+// own, true to what he is (Monsters, rule 1). A proposal for his ears, behind BOSS_CALLS (off) until he has heard them and said yes.
+//   the Warden       a jailer's bark: rough and clipped
+//   the Headsman     headless under his hood: low, flat and cold, breath in it
+//   the Chained One  muzzled and completely insane (his words, 07:38: “Like the unchained is gonna have to sound completely
+//                    insane”): quick, the tune lurching wildly, shaking, a growl under it
+//   the Amalgamation all its dead at once: slow, a second voice a fifth over it, wavering
+//   the Fleshmancer  smooth and pleased with himself, a hiss in it
+//   the Unfinished   stone: very low, very slow, gravel
+//   the Cantor       sung: long notes that rise and fall, a singer's vibrato
+//   the Drowned Eye  under water: low, bubbling
+//   the Rat King     a hundred stolen voices: high, quick, squeaking every way at once
+//   the Physician    behind his beak: muffled and nasal, precise
+//   the Prince       smooth, sure of himself, a lilt
+//   the Queen        cold and high, slow, a little vibrato
+//   the King         dying: very deep, very slow, a tremble, a rasp
+export type BossSpeaker = 'warden' | 'headsman' | 'chained' | 'amalgam' | 'fleshmancer' | 'unfinished' | 'cantor' | 'eye' | 'ratking' | 'physician' | 'prince' | 'gqueen' | 'gking';
+export const BOSS_VOICES: Record<BossSpeaker, VoiceKind> = {
+  warden: { pitch: 76, wave: 'sawtooth', over: 2, overWave: 'triangle', syllable: 0.13, step: 0.16, vol: 0.26, lilt: 0.05, grit: [0.6, 280] },
+  headsman: { pitch: 60, wave: 'triangle', over: 0.5, overWave: 'sawtooth', syllable: 0.2, step: 0.27, vol: 0.23, lilt: 0.015, breath: [0.55, 650, 1.0], grit: [0.45, 200] },
+  chained: { pitch: 86, wave: 'sawtooth', over: 1.5, overWave: 'square', syllable: 0.11, step: 0.13, vol: 0.4, lilt: 0.5, trem: [17, 0.7], vib: [7, 70], grit: [0.8, 320] },
+  amalgam: { pitch: 78, wave: 'sawtooth', over: 1.5, overWave: 'sawtooth', syllable: 0.22, step: 0.24, vol: 0.25, lilt: 0.08, vib: [3, 45], breath: [0.5, 600, 1.0] },
+  fleshmancer: { pitch: 104, wave: 'triangle', over: 2, overWave: 'sine', syllable: 0.16, step: 0.19, vol: 0.22, lilt: 0.14, vib: [5, 20], breath: [0.45, 1400, 1.4] },
+  unfinished: { pitch: 48, wave: 'square', over: 0.5, overWave: 'square', syllable: 0.26, step: 0.32, vol: 0.16, lilt: 0.03, grit: [0.95, 170] },
+  cantor: { pitch: 150, wave: 'sine', over: 2, overWave: 'triangle', syllable: 0.3, step: 0.26, vol: 0.18, lilt: 0.35, vib: [5.5, 45] },
+  eye: { pitch: 66, wave: 'sine', over: 3, overWave: 'sine', syllable: 0.22, step: 0.27, vol: 0.29, lilt: 0.1, trem: [11, 0.8], breath: [0.6, 380, 0.8] },
+  ratking: { pitch: 390, wave: 'square', over: 1.5, overWave: 'sawtooth', syllable: 0.055, step: 0.08, vol: 0.2, lilt: 0.5, vib: [13, 60] },
+  physician: { pitch: 118, wave: 'triangle', over: 3, overWave: 'square', syllable: 0.11, step: 0.15, vol: 0.22, lilt: 0.06, breath: [0.5, 1800, 2.0] },
+  prince: { pitch: 128, wave: 'sawtooth', over: 2, overWave: 'triangle', syllable: 0.13, step: 0.15, vol: 0.25, lilt: 0.16, vib: [6, 15] },
+  gqueen: { pitch: 236, wave: 'sine', over: 2, overWave: 'triangle', syllable: 0.18, step: 0.19, vol: 0.2, lilt: 0.12, vib: [5, 25] },
+  gking: { pitch: 56, wave: 'sawtooth', over: 2, overWave: 'triangle', syllable: 0.24, step: 0.3, vol: 0.26, lilt: 0.05, trem: [5, 0.35], breath: [0.5, 500, 1.0], grit: [0.55, 220] },
+};
+/** Say a boss's line in his own voice (a mumble, as the heroes'). Does nothing for a boss with no voice, before initAudio, when muted, or where Web Audio is missing. Never throws. */
+export function speakBoss(kind: string, text: string, vol = 1): void {
+  const k = Object.prototype.hasOwnProperty.call(BOSS_VOICES, kind) ? BOSS_VOICES[kind as BossSpeaker] : undefined;
+  if (k) sayIn(k, `voice:${kind}`, text, vol);
+}
+
+/** A line said in a voice: a note a syllable, as speechPlan has them. */
+function sayIn(k: VoiceKind, key: string, text: string, vol: number): void {
   try {
     const c = ctx;
     if (!c || !bus || !noiseBuf || muted || c.state !== 'running' || !(vol > 0)) return;
-    const kinds = Object.prototype.hasOwnProperty.call(VOICES, who) ? VOICES[who] : undefined;
-    const k = kinds ? (voice === 'female' ? kinds.female : kinds.male) : undefined;
-    if (!k) return;
     const plan = speechPlan(text).slice(0, 14);
     if (!plan.length) return;
-    start(c, bus, noiseBuf, `voice:${who}`, nowMs(), vol, undefined, (v) => {
+    start(c, bus, noiseBuf, key, nowMs(), vol, undefined, (v) => {
       for (const p of plan) {
         const f = k.pitch * (1 + p.pitch * k.lilt);
         const to = f * (1 + p.bend);
@@ -872,6 +922,6 @@ export function speak(who: Speaker, voice: SpeakerVoice, text: string, vol = 1):
       }
     });
   } catch (err) {
-    report(`speak '${who}'`, err);
+    report(`speak '${key}'`, err);
   }
 }

@@ -34,6 +34,7 @@ import type { Element, MonsterKind } from './types';
 import { ACT1, ACT1_FLOORS, act2Floor, highFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
 import { PAIR } from './act1_rules/pair';
+import { BOSS_CALLS, bossCall } from './boss_calls';
 
 /**
  * THE BOSSES OF FLOORS 2 TO 5 (and the bone beasts): in the game, behind this switch. Off, every
@@ -677,6 +678,9 @@ export class BossRules {
     } else if (a.id === 'sentence' || a.id === 'devour' || a.id === 'fire') g.sfx('bossRoar', 0.5);
     const r1 = ACT1.on ? act1Rules(m.kind) : null;
     if (r1 && r1.start) r1.start(this, m, a);
+    // (THE BOSSES CALL OUT THEIR BIG MOVES: the line over him, in his own voice. game/boss_calls.ts)
+    const call = bossCall(m, a.id, g.time, i === 0);
+    if (call) g.emit({ t: 'bossSay', text: call, x: m.x, y: m.y, secs: BOSS_CALLS.sayFor, voice: m.kind });
   }
 
   /** A step of the act it is making: its clock runs (slowed by a chill until its blow), and what it does at each moment is done. */
