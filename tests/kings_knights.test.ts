@@ -1,10 +1,11 @@
 // FLOOR 19'S KING'S KNIGHTS (src/art/kings_knights.ts, their look; src/art/kings_knights_moves.ts, their moves;
 // src/art/kings_knights_fx.ts, what their blows leave on the floor). A MOCK-UP: NOT IN THE GAME, behind KNIGHTS_ON, off.
-// His pick for them, offered as "Same brief, but surprisingly quick for men in full plate.": “Quick for their armour”;
-// his rules for every new enemy (Movement 9, 24 Oct: “Like the wind up and wind down are big but the actual punch is
-// lightning quick”; 28 Oct: “Start from now on, but every enemy is going to need that change eventually.  And bigger AOE
-// to compensate for the extra time the player gets to evade”). Held as floor 16's palace guard and Princess are
-// (tests/palace_guard.test.ts, tests/princess.test.ts):
+// His pick for them of 30 Oct, offered as "Fewer and much bigger: one or two at a time, a head and a half taller than you,
+// a huge two-handed sword, slow, wide sweeping blows.": “Huge and slow, one each” (in place of his first, “Quick for
+// their armour”); his rules for every new enemy (Movement 9, 24 Oct: “Like the wind up and wind down are big but the
+// actual punch is lightning quick”; 28 Oct: “Start from now on, but every enemy is going to need that change eventually.
+// And bigger AOE to compensate for the extra time the player gets to evade”). Held as floor 16's palace guard and
+// Princess are (tests/palace_guard.test.ts, tests/princess.test.ts):
 //   1. the switch is off, and nothing of the game imports them;
 //   2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), both blows, their setting off and stopping:
 //      every frame, from in front and from behind, and every handover;
@@ -18,12 +19,12 @@
 //      still; the dull pink in the sight while they live, gone out by the end; and down they lie, low on the floor;
 //   8. the sword falls clear of him;
 //   9. NOTHING FOLDS FLAT;
-//  10. HIS PICK, QUICK FOR THEIR ARMOUR, AND HIS SIZES: a head taller than the knight; they run faster than the hero
-//      (4.6 tiles a second), a flight between the strides; the chop raised high over the helm in both hands, held, its
-//      point into the floor as it lands, and the crack running out six tiles; the rush crouched behind the shield, held,
-//      carried three and a half tiles in its two frames, the knockback bursting out nearly two; dying, to his knee behind
-//      his planted sword, his head bowed, then down;
-//  11. WHAT THEIR BLOWS LEAVE: the crack out in two frames and gone; the knockback's flash in two and gone; nothing cyan.
+//  10. HIS PICK, HUGE AND SLOW, AND HIS SIZES: a head and a half taller than the knight, far broader, smaller than the
+//      King; no shield, a greatsword as long as the knight is tall; walking slowly, never off the floor, his weight
+//      dropping onto each foot; the sweep hauled round behind him, held, and across the half-circle before him in its two
+//      frames, three tiles out; the cleave raised high over the helm, held, its point into the floor as it lands, the
+//      crack running out five tiles; dying, to his knee behind his planted sword, his head bowed, then down;
+//  11. WHAT THEIR BLOWS LEAVE: the crack out in two frames and gone; the sweep out in two and gone; nothing cyan.
 //   run: tsx --test tests/kings_knights.test.ts
 
 // @ts-ignore
@@ -36,9 +37,12 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
-import { BLUE, GOLD, KNIGHTS_ON, KN_CANVAS, KN_EXHALE, SMEAR, shieldOf, swordOf } from '../src/art/kings_knights';
-import { CHOP_AT, KINGS_KNIGHT, KN_CHOP, KN_DIES, KN_PACE, KN_RUSH, KN_SHAPE, KN_STRIKES, smearedAt } from '../src/art/kings_knights_moves';
-import { CRACK, KNOCK, crackPainted, knockPainted } from '../src/art/kings_knights_fx';
+import { BLUE, GOLD, KNIGHTS_ON, KNIGHT_BODY, KN_CANVAS, KN_EXHALE, SMEAR, swordOf } from '../src/art/kings_knights';
+import { CHOP_AT, KINGS_KNIGHT, KNEE_DOWN, KN_CLEAVE, KN_DIES, KN_PACE, KN_SHAPE, KN_STRIKES, KN_SWEEP, KN_WALK, smearedAt } from '../src/art/kings_knights_moves';
+import { CRACK, SWEEP, crackPainted, sweepPainted } from '../src/art/kings_knights_fx';
+import { KNIGHT_BODY as HERO_BODY } from '../src/art/moves3';
+import { solve, standing } from '../src/art/skeleton';
+import type { Posed } from '../src/art/skeleton';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
@@ -137,13 +141,13 @@ test('1. the switch is off, and nothing of the game imports them', () => {
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
-  assert.equal(movesOf(MOB).join(','), 'stand,walk,attack,reel,dying,rush,setOff,halt');
+  assert.equal(movesOf(MOB).join(','), 'stand,walk,attack,reel,dying,cleave,setOff,halt');
   const found = checkBoss(MOB, KN_SHAPE);
   assert.equal(found.length, 0, findingsSaid(found).slice(0, 12).join('; '));
 });
 
 test('3. HIS LIGHTNING STRIKES: each blow strikes in two frames and lands on the second; the strike and the frame after it smeared, no other frame', () => {
-  assert.equal(Object.keys(KN_STRIKES).sort().join(','), 'attack,rush');
+  assert.equal(Object.keys(KN_STRIKES).sort().join(','), 'attack,cleave');
   const faults: string[] = [];
   for (const [move, [s0, s1]] of Object.entries(KN_STRIKES)) {
     assert.equal(Math.round((s1 - s0) * 30), 2, `${move}: its strike is two frames`);
@@ -284,8 +288,8 @@ test('7. THE HUSH leaking out of the sight while he lives; a great breath of it 
     const him: Mob = { ...MOB, fall: (piece) => { const f = MOB.fall?.(piece) ?? null; return f && { ...f, to: [900, 900] }; } };
     const up = height(paintMob(MOB, 'stand', 0, view));
     const down = height(deathOfMob(him, 1, view));
-    // (his shield on his back stands up off him as he lies: a little taller than the palace guard lying down)
-    assert.ok(down < 0.7 * up, `${view}: ${down} pixels tall lying down, ${up} standing`);
+    // (from behind, the length of him lying on his face runs up the picture: he is long)
+    assert.ok(down < (view === 'back' ? 0.75 : 0.7) * up, `${view}: ${down} pixels tall lying down, ${up} standing`);
   }
 });
 
@@ -329,48 +333,64 @@ test('9. NOTHING FOLDS FLAT: no round thing he wears collapses into a flat sheet
   assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
 });
 
-test('10. HIS PICK, QUICK FOR THEIR ARMOUR, AND HIS SIZES: taller than the knight; faster than the hero runs, a flight in the stride; the chop high and into the floor, its crack six tiles out; the rush crouched, carried three and a half tiles in two frames; to his knee, then down', () => {
-  // a head taller than the knight (58 tall): the top of his helm's circlet
+test('10. HIS PICK, HUGE AND SLOW, AND HIS SIZES: a head and a half taller than the knight and far broader, smaller than the King; no shield, a greatsword the knight\'s height; a slow heavy walk; the sweep across the half-circle three tiles out; the cleave into the floor, its crack five tiles out; to his knee, then down', () => {
+  // A HEAD AND A HALF TALLER THAN THE KNIGHT: the top of his helm over the top of the knight's head, in the knight's heads
   const s0 = skeletonAt(MOB, 'stand', 0);
-  assert.ok(s0.head[2] + 10 > 58 + 7, `his helm's top ${(s0.head[2] + 10).toFixed(1)} up (the knight 58)`);
-  // quick: faster than the hero runs, his walk painted for that pace, and a flight between his strides
-  assert.ok(KN_PACE >= TUNE.heroSpeed, `he runs ${KN_PACE} tiles a second, the hero ${TUNE.heroSpeed}`);
-  assert.equal(MOB.walk.ground, KN_PACE * TILE3, 'his run painted for his pace');
-  let flights = 0;
-  for (const t of framesOf(MOB, 'walk')) {
-    const s = skeletonAt(MOB, 'walk', t);
-    if (Math.min(s.toeL[2], s.heelL[2], s.toeR[2], s.heelR[2]) > 0.6) flights++;
+  const hero = solve(HERO_BODY, standing(HERO_BODY) as Posed);
+  const head = 2 * HERO_BODY.headR[2];
+  const over = (s0.head[2] + 0.1 + KNIGHT_BODY.headR[2] * 1.12 - (hero.head[2] + HERO_BODY.headR[2])) / head;
+  assert.ok(over >= 1.35 && over <= 1.75, `his helm's top ${over.toFixed(2)} of the knight's heads over the knight's`);
+  // (and smaller than the King, who is twice the knight's height)
+  assert.ok(s0.head[2] < 0.75 * 2 * 58, `his head ${s0.head[2].toFixed(1)} up`);
+  // FAR BROADER: shoulders, chest and legs half as big again as the knight's, near enough
+  const wide = (s: typeof s0): number => Math.hypot(s.shoulderL[0] - s.shoulderR[0], s.shoulderL[1] - s.shoulderR[1], s.shoulderL[2] - s.shoulderR[2]);
+  assert.ok(wide(s0) >= 1.45 * wide(hero), `his shoulders ${wide(s0).toFixed(1)} across, the knight's ${wide(hero).toFixed(1)}`);
+  assert.ok(KNIGHT_BODY.ribDeep >= 1.4 * HERO_BODY.ribDeep && KNIGHT_BODY.legR[0] >= 1.3 * HERO_BODY.legR[0], 'his chest and legs');
+  // NO SHIELD; A GREATSWORD as long as the knight is tall
+  const st = stageOf();
+  for (const move of [...LIVING, 'dying']) for (const t of framesOf(MOB, move)) assert.ok(!MOB.bits(st, at(move, t)).some((b) => /shield/.test(b.piece)), `${move} @${t.toFixed(2)}: a shield`);
+  const sw0 = swordOf(s0);
+  const long = Math.hypot(sw0.tip[0] - sw0.pommel[0], sw0.tip[1] - sw0.pommel[1], sw0.tip[2] - sw0.pommel[2]);
+  assert.ok(long >= 57 && long <= 62, `his sword ${long.toFixed(1)} long (the knight 58 tall)`);
+  // SLOW: a walk of 1 to 1.5 tiles a second, painted for its pace; a foot always on the floor; his weight dropping onto
+  // each foot as it comes down (his hips lowest within a few frames of it)
+  assert.ok(KN_PACE >= 1 && KN_PACE <= 1.5 && KN_PACE < TUNE.heroSpeed / 3, `he walks ${KN_PACE} tiles a second, the hero runs ${TUNE.heroSpeed}`);
+  assert.equal(MOB.walk.ground, KN_PACE * TILE3, 'his walk painted for his pace');
+  const walk = framesOf(MOB, 'walk').map((t) => skeletonAt(MOB, 'walk', t));
+  for (const [i, s] of walk.entries()) assert.ok(Math.min(s.heelL[2], s.toeL[2]) < 0.6 || Math.min(s.heelR[2], s.toeR[2]) < 0.6, `walk frame ${i}: both feet off the floor`);
+  const half = KN_WALK.frames / 2;
+  for (const land of [0, half]) {
+    const zs = walk.slice(land, land + half).map((s) => s.pelvis[2]);
+    const low = zs.indexOf(Math.min(...zs));
+    assert.ok(low >= 1 && low <= 6 && Math.max(...zs) - Math.min(...zs) > 1.5, `his weight onto the foot down at frame ${land}: lowest ${low} frames after, ${(Math.max(...zs) - Math.min(...zs)).toFixed(1)} down`);
   }
-  assert.ok(flights >= 4, `${flights} frames of his run with both feet off the floor`);
-  // THE CHOP: in the warning, both fists high over his helm; as it lands, its point down on the floor well before him
-  const sw = skeletonAt(MOB, 'attack', (KN_CHOP.warn[0] + KN_CHOP.warn[1]) / 2);
-  assert.ok(sw.handR[2] > sw.head[2] + 8 && sw.handL[2] > sw.head[2] + 8, `his fists ${sw.handR[2].toFixed(1)}, ${sw.handL[2].toFixed(1)} up, his head ${sw.head[2].toFixed(1)}`);
-  const hitTip = swordOf(skeletonAt(MOB, 'attack', KN_CHOP.hit)).tip;
+  // THE WIDE SWEEP: in the warning, the blade hauled round behind him to his right; in its two frames, from there across
+  // before him to his left; its sweep over the whole half-circle before him, three tiles out
+  const sh = skeletonAt(MOB, 'attack', (KN_SWEEP.warn[0] + KN_SWEEP.warn[1]) / 2);
+  const shTip = swordOf(sh).tip;
+  assert.ok(shTip[0] < sh.pelvis[0] - 15 && shTip[1] < -20, `wound: the point behind him to his right (${shTip.map((v) => v.toFixed(1)).join(', ')})`);
+  const [a0, a1] = KN_SWEEP.strike;
+  const tips = [a0, (a0 + a1) / 2, a1].map((t) => swordOf(skeletonAt(MOB, 'attack', t)).tip);
+  assert.ok(tips[0][1] < -20 && tips[1][0] > 35 && tips[2][1] > 40, `the sweep from his right, before him, to his left: ${tips.map((p) => p.map((v) => v.toFixed(0)).join(',')).join(' / ')}`);
+  assert.ok(SWEEP.r >= 3 && SWEEP.arc >= 90, `the sweep ${SWEEP.r} tiles out, ${2 * SWEEP.arc} degrees round`);
+  // THE OVERHEAD CLEAVE: in the warning, both fists high over his helm; as it lands, its point down on the floor well before him
+  const sc = skeletonAt(MOB, 'cleave', (KN_CLEAVE.warn[0] + KN_CLEAVE.warn[1]) / 2);
+  assert.ok(sc.handR[2] > sc.head[2] + 8 && sc.handL[2] > sc.head[2] + 8, `his fists ${sc.handR[2].toFixed(1)}, ${sc.handL[2].toFixed(1)} up, his head ${sc.head[2].toFixed(1)}`);
+  const hitTip = swordOf(skeletonAt(MOB, 'cleave', KN_CLEAVE.hit)).tip;
   assert.ok(hitTip[2] < 1.6 && hitTip[0] > TILE3, `the point lands at ${hitTip.map((v) => v.toFixed(1)).join(', ')}`);
   assert.ok(Math.abs(hitTip[0] - CHOP_AT) < 1.5, `the crack begins where the point bites (${CHOP_AT.toFixed(1)}, the point ${hitTip[0].toFixed(1)})`);
-  assert.ok(CRACK.reach >= 6 && CRACK.wide >= 1, `the crack ${CRACK.reach} tiles out, ${CRACK.wide} across`);
-  // THE RUSH: in the warning, crouched behind the shield on his arm; carried three and a half tiles in its two frames
-  const tw = (KN_RUSH.warn[0] + KN_RUSH.warn[1]) / 2;
-  const sr = skeletonAt(MOB, 'rush', tw);
-  const qr = posedOfMob(MOB, 'rush', tw);
-  const sh = shieldOf(sr, qr);
-  assert.ok(qr.pt >= 0.999 && sh.c[0] > sr.ribs[0] + 6 && sh.n[0] > 0.8, `the shield before him (${sh.c.map((v) => v.toFixed(1)).join(', ')}, facing ${sh.n.map((v) => v.toFixed(2)).join(', ')})`);
-  assert.ok(sr.pelvis[2] < skeletonAt(MOB, 'stand', 0).pelvis[2] - 6, `crouched: his hips ${sr.pelvis[2].toFixed(1)} up`);
-  assert.ok(KN_RUSH.carry >= 3.5 && Math.round((KN_RUSH.strike[1] - KN_RUSH.strike[0]) * 30) === 2, `carried ${KN_RUSH.carry} tiles in its strike`);
-  assert.ok(KNOCK.r >= 1.5, `the knockback ${KNOCK.r} tiles`);
-  // (and on his back while he stands and runs)
-  assert.ok(posedOfMob(MOB, 'stand', 0).pt === 0 && posedOfMob(MOB, 'walk', 0).pt === 0, 'the shield on his back as he stands and runs');
+  assert.ok(CRACK.reach >= 5 && CRACK.wide >= 1, `the crack ${CRACK.reach} tiles out, ${CRACK.wide} across`);
   // HIS DEATH: on his right knee behind his planted sword, its point on the floor, his head bowed; then down
   const k = skeletonAt(MOB, 'dying', (KN_DIES.bow[1] + KN_DIES.out[1]) / 2);
-  assert.ok(k.kneeR[2] < 6.5 && k.kneeL[2] > 12, `to his right knee (knees ${k.kneeR[2].toFixed(1)}, ${k.kneeL[2].toFixed(1)} up)`);
+  assert.ok(k.kneeR[2] < KNEE_DOWN + 0.6 && k.kneeL[2] > 12, `to his right knee (knees ${k.kneeR[2].toFixed(1)}, ${k.kneeL[2].toFixed(1)} up)`);
   assert.ok(swordOf(k).tip[2] < 1.6 && swordOf(k).tip[0] > k.pelvis[0] + 10, 'his sword planted before him');
   assert.ok(posedOfMob(MOB, 'dying', (KN_DIES.bow[1] + KN_DIES.out[1]) / 2).faceUp < -20, 'his head bowed');
   const d = skeletonAt(MOB, 'dying', KN_DIES.long);
-  // (his knee cops are thick: lying on them, his knees stand that much off the floor)
-  assert.ok(d.kneeL[2] < 11.5 && d.kneeR[2] < 11.5 && d.head[2] < 20, `down at the end (knees ${d.kneeL[2].toFixed(1)}, ${d.kneeR[2].toFixed(1)}, head ${d.head[2].toFixed(1)})`);
+  // (his knee cops and his chest are thick: lying on them, his knees and head stand that much off the floor)
+  assert.ok(d.kneeL[2] < 14 && d.kneeR[2] < 14 && d.head[2] < 25, `down at the end (knees ${d.kneeL[2].toFixed(1)}, ${d.kneeR[2].toFixed(1)}, head ${d.head[2].toFixed(1)})`);
 });
 
-test('11. WHAT THEIR BLOWS LEAVE: the crack out in two frames and gone; the knockback flash in two and gone; nothing cyan', () => {
+test('11. WHAT THEIR BLOWS LEAVE: the crack out in two frames and gone; the sweep out in two and gone; nothing cyan', () => {
   const pixels = (p: Painted): number => {
     let n = 0;
     for (let i = 3; i < p.px.d.length; i += 4) if (p.px.d[i]) n++;
@@ -383,8 +403,11 @@ test('11. WHAT THEIR BLOWS LEAVE: the crack out in two frames and gone; the knoc
     assert.ok(open > 2.5 * Math.max(40, first), `${view}: the crack out at once (${first} then ${open})`);
     for (let t = 0; t <= CRACK.long; t += 1 / 30) assert.ok(!cyanIn(crackPainted(t, view)), `the crack ${view} @${t.toFixed(2)}: cyan`);
     assert.equal(pixels(crackPainted(CRACK.long + 0.05, view)), 0, `${view}: the crack gone`);
-    for (let t = 0; t <= Math.max(KNOCK.long, KNOCK.dust); t += 1 / 30) assert.ok(!cyanIn(knockPainted(t, view)), `the knockback ${view} @${t.toFixed(2)}: cyan`);
-    assert.ok(pixels(knockPainted(KNOCK.flash, view)) > 200, `${view}: the knockback's flash`);
-    assert.equal(pixels(knockPainted(Math.max(KNOCK.long, KNOCK.dust) + 0.05, view)), 0, `${view}: the knockback gone`);
+    assert.equal(Math.round((SWEEP.open[1] - SWEEP.open[0]) * 30), 2, 'the sweep out in two frames');
+    const s0 = pixels(sweepPainted(0, view));
+    const s1 = pixels(sweepPainted(SWEEP.open[1], view));
+    assert.ok(s0 > 300 && s1 > s0, `${view}: the sweep out (${s0} then ${s1})`);
+    for (let t = 0; t <= Math.max(SWEEP.long, SWEEP.dust); t += 1 / 30) assert.ok(!cyanIn(sweepPainted(t, view)), `the sweep ${view} @${t.toFixed(2)}: cyan`);
+    assert.equal(pixels(sweepPainted(Math.max(SWEEP.long, SWEEP.dust) + 0.05, view)), 0, `${view}: the sweep gone`);
   }
 });

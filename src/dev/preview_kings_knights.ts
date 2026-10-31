@@ -1,11 +1,11 @@
 // Dev page: FLOOR 19'S KING'S KNIGHTS (art/kings_knights.ts, art/kings_knights_moves.ts, art/kings_knights_fx.ts),
 // standing, from in front and from behind, beside the knight for size, on cold stone flags (not the Keep's own ground,
-// which is not made yet); a few of them at the game's size, running at the knight; and a move close up. Nothing of the
+// which is not made yet); two of them at the game's size, one walking at the knight; and a move close up. Nothing of the
 // game imports it.
 //   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_kings_knights.ts shots/knights/sheet.png 1200 600 "sheet"
 //   ... "big:<move>:<t>" (front and behind, four times as big), "grid:<move>:<t>,<t>,..." (a move at several moments,
 //   both ways round, twice as big)
-// The film is src/dev/film_kings_knights.ts (run in node: it paints its frames without a browser).
+// The film is tools/kings_knights_film.ts (run in node: it paints its frames without a browser).
 import type { Sprite } from '../engine/px';
 import { makeHeroArt3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
@@ -46,19 +46,19 @@ const K_ = KINGS_KNIGHT;
 
 if (mode === 'sheet') {
   // THE SHEET: the king's knight from in front and from behind beside the knight, three times as big; and at the game's
-  // size, three of them running at the knight
+  // size, two of them (one walking, one standing guard) and the knight
   const K = 3;
   floor(K);
-  const y = cv.height - 150;
-  draw(hero.front.idle[0], 100, y, K);
-  draw(spOf(K_, 'stand', 0, 'front'), 330, y, K);
-  draw(spOf(K_, 'stand', 0, 'back'), 590, y, K);
-  draw(hero.back.idle[0], 800, y, K);
-  const x0 = 960;
+  const y = cv.height - 140;
+  draw(hero.front.idle[0], 110, y, K);
+  draw(spOf(K_, 'stand', 0, 'front'), 370, y, K);
+  draw(spOf(K_, 'stand', 0, 'back'), 660, y, K);
+  draw(hero.back.idle[0], 890, y, K);
+  const x0 = 1040;
   const y0 = cv.height - 70;
-  draw(hero.front.idle[0], x0 + 170, y0 + 30, 1);
-  for (const [dx, dy, t] of [[0, -40, 0.0], [40, 0, 0.2], [-10, 30, 0.37]] as const) draw(spOf(K_, 'walk', t, 'front'), x0 + dx, y0 + dy, 1);
-  draw(spOf(K_, 'stand', 0.6, 'front'), x0 + 110, y0 - 60, 1);
+  draw(hero.front.idle[0], x0 + 110, y0 + 30, 1);
+  draw(spOf(K_, 'walk', 0.2, 'front'), x0 - 20, y0 - 10, 1);
+  draw(spOf(K_, 'stand', 0.6, 'front'), x0 + 60, y0 - 70, 1);
 } else if (mode === 'grid') {
   const K = 2;
   floor(K);

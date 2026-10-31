@@ -1,7 +1,7 @@
 // FLOOR 19'S KING'S KNIGHTS: THE FILM for the owner's phone (a mock-up behind KNIGHTS_ON, off: not in the game). Every
 // move of theirs, from in front and then from behind, at the scale of a boss arena with the knight in it for size, on
 // cold stone flags (a tile 64 by 32 picture pixels, shown twice as big), each captioned; each strike again at half speed;
-// and the king's knight running beside the hero. Painted in node (no browser): every frame of his is the game's own
+// and the king's knight walking beside the hero running. Painted in node (no browser): every frame of his is the game's own
 // (paintMob, deathOfMob), and what his blows leave on the floor (art/kings_knights_fx.ts).
 //   tsx tools/kings_knights_film.ts <out.mp4> [stills dir]
 // (needs ffmpeg with drawtext; the captions are drawn by it in DejaVu Sans)
@@ -20,8 +20,8 @@ import { toSprite } from '../src/art/kit';
 import { canvasOf, deathOfMob, paintMob } from '../src/art/new_mobs3';
 import type { GameView } from '../src/art/skin';
 import { KN_CANVAS } from '../src/art/kings_knights';
-import { KINGS_KNIGHT, KN_CHOP, KN_HALT, KN_HALT_PACE, KN_PACE, KN_REEL, KN_RUSH, KN_RUN, KN_SETOFF, KN_DIES, RUSH_SHIELD_AT, rushCarried } from '../src/art/kings_knights_moves';
-import { CRACK, CRACK_CANVAS, KNOCK, KNOCK_CANVAS, crackPainted, knockPainted } from '../src/art/kings_knights_fx';
+import { KINGS_KNIGHT, KN_CLEAVE, KN_HALT, KN_PACE, KN_REEL, KN_SWEEP, KN_WALK, KN_SETOFF, KN_DIES } from '../src/art/kings_knights_moves';
+import { CRACK, CRACK_CANVAS, SWEEP, SWEEP_CANVAS, crackPainted, sweepPainted } from '../src/art/kings_knights_fx';
 import { TILE3 } from '../src/art/new_mobs3';
 import { keepFloor } from '../src/dev/kings_knights_floor';
 
@@ -131,7 +131,7 @@ const can = canvasOf(MOB);
 function knightAt(view: GameView, move: string, t: number, u: number, v = 0): void {
   const p = move === 'dying' ? deathOfMob(MOB, Math.min(1, t / MOB.dieTime), view) : paintMob(MOB, move, t, view);
   const [X, Y] = screen(view, u, v);
-  if (move !== 'dying' || t < KN_DIES.fold) shadow(X, Y, 16 * Z);
+  if (move !== 'dying' || t < KN_DIES.fold) shadow(X, Y, 21 * Z);
   lay(p.px, can.ax, can.ay, X, Y);
 }
 const hero = makeHeroArt3().of('warrior', { twoHanded: false });
@@ -162,88 +162,86 @@ const hold = (n: number, f: (i: number) => void): ((i: number) => void) => (i) =
 
 /** The moves of one view, with the knight in the arena for size. */
 function partOf(view: GameView, label: string): void {
-  // where things stand (tiles along his way): he starts back at -6.2; runs 7.6 tiles to stop at 1.4; the hero at 6.9
-  const START = -6.2;
-  const STOP = START + KN_PACE * KN_SETOFF + KN_PACE * 2 * (KN_RUN.frames / KN_RUN.fps) + KN_HALT_PACE * KN_HALT;
-  const HERO = STOP + 5.5;
+  // where things stand (tiles along his way): he sets off, walks two strides and stops at STOP; the hero within his sweep
+  const walkLong = 2 * (KN_WALK.frames / KN_WALK.fps);
+  const START = -1.8;
+  const STOP = START + KN_PACE * (KN_SETOFF + walkLong + KN_HALT);
+  const HERO = STOP + 2.4;
   // STANDING
   shots.push({
     title: `${label} · STANDING GUARD`,
-    say: 'Sword planted point down, both gauntlets on its hilt, the shield on his back. Breathing; the Hush leaks from the sight.',
-    frames: 72,
+    say: 'His greatsword planted point down, both gauntlets on its grip. Breathing; the Hush leaks from the sight.',
+    frames: 48,
     paint: (i) => {
       clear(view, START, HERO);
       heroAt(view, HERO, 0, null);
       knightAt(view, 'stand', (i / FPS) % 3.2, START);
     },
   });
-  // SETTING OFF, RUNNING, STOPPING
-  const runLong = 2 * (KN_RUN.frames / KN_RUN.fps);
-  const nRun = Math.round((KN_SETOFF + runLong + KN_HALT) * FPS) + 12;
+  // SETTING OFF, WALKING, STOPPING
+  const nWalk = Math.round((KN_SETOFF + walkLong + KN_HALT) * FPS) + 9;
   shots.push({
-    title: `${label} · QUICK FOR HIS ARMOUR: THE RUN`,
-    say: `He plucks up his sword and drives off; runs ${KN_PACE} tiles a second (the hero runs ${HERO_PACE}); stops in three hard steps.`,
-    frames: nRun,
+    title: `${label} · HUGE AND SLOW: THE WALK`,
+    say: `He plucks up the greatsword and lets it trail; walks ${KN_PACE} tiles a second (the hero runs ${HERO_PACE}), each step landing with his weight; plants it again.`,
+    frames: nWalk,
     paint: (i) => {
       clear(view, START, HERO);
       heroAt(view, HERO, 0, null);
       const t = i / FPS;
-      if (t < KN_SETOFF) knightAt(view, 'setOff', t, START + KN_PACE * t);
-      else if (t < KN_SETOFF + runLong) knightAt(view, 'walk', t - KN_SETOFF, START + KN_PACE * t);
-      else if (t < KN_SETOFF + runLong + KN_HALT) knightAt(view, 'halt', t - KN_SETOFF - runLong, START + KN_PACE * (KN_SETOFF + runLong) + KN_HALT_PACE * (t - KN_SETOFF - runLong));
-      else knightAt(view, 'stand', t - KN_SETOFF - runLong - KN_HALT, STOP);
+      const u = START + KN_PACE * Math.min(t, KN_SETOFF + walkLong + KN_HALT);
+      if (t < KN_SETOFF) knightAt(view, 'setOff', t, u);
+      else if (t < KN_SETOFF + walkLong) knightAt(view, 'walk', t - KN_SETOFF, u);
+      else if (t < KN_SETOFF + walkLong + KN_HALT) knightAt(view, 'halt', t - KN_SETOFF - walkLong, u);
+      else knightAt(view, 'stand', t - KN_SETOFF - walkLong - KN_HALT, STOP);
     },
   });
-  // THE CHOP, and its strike at half speed
-  const chopFrame = (t: number): void => {
-    clear(view, STOP - 1, HERO + 1.5);
-    if (t >= KN_CHOP.hit) fxAt(view, crackPainted(t - KN_CHOP.hit, view), CRACK_CANVAS, STOP);
+  // THE WIDE SWEEP, and its strike at half speed
+  const sweepFrame = (t: number): void => {
+    clear(view, STOP - 1.5, HERO + 1.2);
+    if (t >= KN_SWEEP.hit) fxAt(view, sweepPainted(t - KN_SWEEP.hit, view), SWEEP_CANVAS, STOP);
     heroAt(view, HERO, 0, null);
-    knightAt(view, 'attack', Math.min(t, KN_CHOP.long), STOP);
+    knightAt(view, 'attack', Math.min(t, KN_SWEEP.long), STOP);
   };
   shots.push({
-    title: `${label} · THE OVERHEAD CHOP`,
-    say: `Heaved high in both hands and held, glinting (the warning); down in two frames; the floor cracks ${CRACK.reach} tiles out.`,
-    frames: Math.round((KN_CHOP.long + 0.4) * FPS),
-    paint: (i) => chopFrame(i / FPS),
+    title: `${label} · THE WIDE SWEEP`,
+    say: `Hauled round behind him and held, glinting (the warning); across the half-circle before him in two frames, ${SWEEP.r} tiles out.`,
+    frames: Math.round((KN_SWEEP.long + 0.3) * FPS),
+    paint: (i) => sweepFrame(i / FPS),
   });
   shots.push({
-    title: `${label} · THE CHOP'S STRIKE AT HALF SPEED`,
+    title: `${label} · THE SWEEP'S STRIKE AT HALF SPEED`,
+    say: 'Big wind-up held; the blade round from his right to his left in two frames, smeared; carried on round.',
+    frames: 2 * Math.round(0.6 * FPS),
+    paint: (i) => sweepFrame(KN_SWEEP.hit - 0.3 + i / (2 * FPS)),
+  });
+  // THE OVERHEAD CLEAVE, and its strike at half speed
+  const cleaveFrame = (t: number): void => {
+    clear(view, STOP - 1, STOP + CRACK.reach + 0.4);
+    if (t >= KN_CLEAVE.hit) fxAt(view, crackPainted(t - KN_CLEAVE.hit, view), CRACK_CANVAS, STOP);
+    heroAt(view, HERO, 0, null);
+    knightAt(view, 'cleave', Math.min(t, KN_CLEAVE.long), STOP);
+  };
+  shots.push({
+    title: `${label} · THE OVERHEAD CLEAVE`,
+    say: `Raised high in both hands and held, glinting (the warning); down in two frames; the floor cracks ${CRACK.reach} tiles out.`,
+    frames: Math.round((KN_CLEAVE.long + 0.4) * FPS),
+    paint: (i) => cleaveFrame(i / FPS),
+  });
+  shots.push({
+    title: `${label} · THE CLEAVE'S STRIKE AT HALF SPEED`,
     say: 'Big wind-up held; the blade over and into the floor in two frames, smeared; held a moment in the floor.',
     frames: 2 * Math.round(0.6 * FPS),
-    paint: (i) => chopFrame(KN_CHOP.hit - 0.3 + i / (2 * FPS)),
-  });
-  // THE RUSH, and its strike at half speed
-  const rushFrame = (t: number): void => {
-    clear(view, STOP - 1, HERO + 1.5);
-    const at = STOP + rushCarried(t);
-    if (t >= KN_RUSH.hit) fxAt(view, knockPainted(t - KN_RUSH.hit, view), KNOCK_CANVAS, at);
-    // (the hero knocked back as the shield slams in)
-    const k = t < KN_RUSH.hit ? 0 : Math.min(1, (t - KN_RUSH.hit) / 0.3);
-    heroAt(view, HERO + 1.5 * (1 - (1 - k) * (1 - k)), 0, null);
-    knightAt(view, 'rush', Math.min(t, KN_RUSH.long), at);
-  };
-  shots.push({
-    title: `${label} · THE SHIELD RUSH`,
-    say: `Shield swung onto his arm, crouched behind it, held (the warning); a two-frame burst of ${KN_RUSH.carry} tiles; you are knocked back.`,
-    frames: Math.round((KN_RUSH.long + 0.4) * FPS),
-    paint: (i) => rushFrame(i / FPS),
-  });
-  shots.push({
-    title: `${label} · THE RUSH'S STRIKE AT HALF SPEED`,
-    say: `Held crouched; the burst in two frames, smeared; the shield slams in, the knockback bursting ${KNOCK.r} tiles out.`,
-    frames: 2 * Math.round(0.6 * FPS),
-    paint: (i) => rushFrame(KN_RUSH.hit - 0.3 + i / (2 * FPS)),
+    paint: (i) => cleaveFrame(KN_CLEAVE.hit - 0.3 + i / (2 * FPS)),
   });
   // STRUCK, twice
   shots.push({
     title: `${label} · STRUCK`,
     say: 'Jolted back on his sword, the helm rocked back, the Hush coughed out of the sight.',
-    frames: 36,
+    frames: 30,
     paint: (i) => {
-      clear(view, STOP - 1, HERO + 1.5);
-      heroAt(view, HERO - 2.0, 0, null);
-      const t = (i % 18) / FPS;
+      clear(view, STOP - 1, STOP + 4.0);
+      heroAt(view, STOP + 2.9, 0, null);
+      const t = (i % 15) / FPS;
       knightAt(view, t < KN_REEL ? 'reel' : 'stand', t < KN_REEL ? t : 0, STOP);
     },
   });
@@ -251,10 +249,10 @@ function partOf(view: GameView, label: string): void {
   shots.push({
     title: `${label} · THE HUSH LEAVES HIM`,
     say: 'To his knee behind his planted sword, head bowed; the Hush leaves him in a grey breath; the sword falls; he topples.',
-    frames: Math.round((KN_DIES.long + 0.7) * FPS),
+    frames: Math.round((KN_DIES.long + 0.5) * FPS),
     paint: hold(Math.round(KN_DIES.long * FPS) + 1, (i) => {
-      clear(view, STOP - 1, HERO + 1.5);
-      heroAt(view, HERO - 2.0, 0, null);
+      clear(view, STOP - 1, STOP + 4.0);
+      heroAt(view, STOP + 2.9, 0, null);
       knightAt(view, 'dying', i / FPS, STOP);
     }),
   });
@@ -262,27 +260,27 @@ function partOf(view: GameView, label: string): void {
 
 // the title
 shots.push({
-  title: 'FLOOR 19, THE KEEP · THE KING’S KNIGHTS (medium: two blows)',
-  say: 'His pick: “Quick for their armour”. A head taller than the knight; crowned great helms, royal blue and old gold.',
+  title: 'FLOOR 19, THE KEEP · THE KING’S KNIGHTS (one at a time, two blows)',
+  say: 'His pick: “Huge and slow, one each”. A head and a half taller than the knight; a greatsword; royal blue and old gold.',
   frames: 54,
   paint: (i) => {
     clear('front', -1, 3);
-    heroAt('front', 1.2, 2.2, null, true);
+    heroAt('front', 1.2, 2.4, null, true);
     knightAt('front', 'stand', i / FPS, 1.2, 0);
   },
 });
 partOf('front', 'FROM IN FRONT');
 partOf('back', 'FROM BEHIND');
-// beside the hero: both running from one line
+// beside the hero: from one line, the hero running, the king's knight walking
 shots.push({
-  title: 'QUICK FOR HIS ARMOUR · BESIDE THE HERO',
-  say: `From one line: the hero runs ${HERO_PACE} tiles a second, the king’s knight ${KN_PACE}.`,
-  frames: 78,
+  title: 'HUGE AND SLOW · BESIDE THE HERO',
+  say: `From one line: the hero runs ${HERO_PACE} tiles a second, the king’s knight walks ${KN_PACE}.`,
+  frames: 66,
   paint: (i) => {
-    clear('front', -6.5, -6.5 + KN_PACE * 2.6);
+    clear('front', -3.5, 3.5);
     const t = i / FPS;
-    heroAt('front', -6.5 + HERO_PACE * t, 2.0, t, true);
-    knightAt('front', 'walk', t, -6.5 + KN_PACE * t, -0.6);
+    heroAt('front', -3.5 + HERO_PACE * t, 2.4, t, true);
+    knightAt('front', 'walk', t, -3.5 + KN_PACE * t, -0.6);
   },
 });
 
@@ -342,5 +340,4 @@ function png(file: string): void {
   console.log(`${out}: ${n} frames, ${(n / FPS).toFixed(1)} s (${total})`);
 })();
 void KN_CANVAS;
-void RUSH_SHIELD_AT;
 void TILE3;
