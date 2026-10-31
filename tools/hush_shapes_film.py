@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """THE SHAPES OF THE HUSH, THE FILM, for the owner's phone (art/hush_shapes*.ts; a mock-up, not in the game): the frames
 tools/hush_shapes_pics.ts painted (`film <dir>`), three times as big, every pixel square, each with its caption over it,
-at the game's thirty frames a second.
+at the game's thirty frames a second. (The spiral film of 30 Oct, tools/hush_shapes_pics.ts `spiral`, is made at its size.)
    python3 tools/hush_shapes_film.py <frames dir> <out.mp4>"""
 import json, os, subprocess, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -9,8 +9,9 @@ from PIL import Image, ImageDraw, ImageFont
 src, out = sys.argv[1], sys.argv[2]
 B = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 R = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-K = 3
 spec = json.load(open(os.path.join(src, 'film.json')))
+# (three times as big; or as they are, when the frames are made at their size: the spiral film, `k` 1)
+K = spec.get('k', 3)
 W, H = spec['w'] * K, spec['h'] * K
 TOP = 112
 BG, PALE, GREY, PINK = (20, 19, 26), (236, 232, 240), (176, 172, 188), (255, 79, 138)
