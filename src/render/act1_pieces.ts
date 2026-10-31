@@ -100,7 +100,9 @@ export function forgetAct1(keep: number): void {
 }
 
 /** The pieces that move (their frames a loop), at LOOP_FPS; every other's frames are its looks, one a place. */
-const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse"]);
+const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse",
+  // (THE HIGH CITY, FLOOR 19, THE KEEP: its honest fire, its frames over and over: the braziers, the pitch heating, the torches on the walls)
+  'a brazier', 'a cauldron of pitch', 'a torch in its sconce']);
 const LOOP_FPS = 8;
 /**
  * ACT 2, THE BELLS (game/bells.ts): THE BELLS' PICTURES BY THEIR STATE. A small bell's frames are the art's: quiet, awake (ready
@@ -257,6 +259,8 @@ export class Act1Pieces {
       // a wall along y, the floor on its greater-x side), `variant` >> 1 its frame; a bell on the wall its state's frame)
       const side = p.variant & 1 ? pc?.right : pc?.left;
       if (!side || side.length === 0) return null;
+      // (a wall piece that moves (MOVING: floor 19's torches): its frames over and over, from its own)
+      if (bell === null && MOVING.has(p.name)) return side[(Math.floor(t * LOOP_FPS) + (p.variant >> 1)) % side.length] ?? null;
       return side[(bell ?? p.variant >> 1) % side.length] ?? null;
     }
     if (bell !== null) return fr[bell % fr.length] ?? fr[0];

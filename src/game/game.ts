@@ -33,6 +33,7 @@ import { nettleSlow, stepGardens } from './act2/garden_rules';
 // (THE HIGH CITY, FLOOR 17: the Masque's clock and its chime, the dancers called to it)
 import { stepClock } from './act2/masque_rules';
 import { MIRROR, shardsHit, stepMirrors, strikeMirrors } from './act2/gallery_rules';
+import { PORTCULLIS, clearOf, stepPortcullises, underPort } from './act2/keep_rules';
 import { callToChime } from './act1_rules/dancer';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
@@ -1857,6 +1858,8 @@ export class Game {
     if (this.level.land?.garden) this.updateGardens(dt);
     // (THE HIGH CITY, FLOOR 18: the Glass Gallery's tall mirrors, cracked by blows near them, burst: game/act2/gallery_rules.ts)
     if (this.level.land?.gallery) this.updateMirrors(dt);
+    // (THE HIGH CITY, FLOOR 19: the Keep's portcullises slam down to cut a hall in two: game/act2/keep_rules.ts)
+    if (this.level.land?.keep) this.updatePortcullises(dt);
     // (THE HIGH CITY, FLOOR 17: the great ebony clock chimes now and then; every dancer near him stops dead and looks, then all come: game/act2/masque_rules.ts)
     if (this.level.land?.masque && !this.over) {
       const called = stepClock(this.level, this.hero, this.monsters, dt);
@@ -2388,6 +2391,33 @@ export class Game {
       if (hit.hero) this.hurtHero(this.hero.d.maxLife * MIRROR.hero, 'phys', [], null, "a mirror's shards");
       for (const q of hit.mobs) this.damageMonster(q, Math.max(1, Math.round(q.maxLife * MIRROR.mob)), 'phys', false, -1);
       this.mirrorsStruck(fx, fy, MIRROR.chain - MIRROR.near);
+    }
+  }
+
+  /** (THE HIGH CITY, FLOOR 19) A portcullis slams down: whatever is under it is struck (a share of its life; a boss only thrown) and thrown clear to the nearer side. */
+  private updatePortcullises(dt: number): void {
+    for (const s of stepPortcullises(this.level, this.hero, dt)) {
+      const at = s.at;
+      const mx = at.alongX ? at.x + at.n / 2 : at.x + 0.5;
+      const my = at.alongX ? at.y + 0.5 : at.y + at.n / 2;
+      this.sfx('slam', 0.8);
+      this.emit({ t: 'spark', x: mx, y: my, el: 'phys', n: 10 });
+      if (Math.hypot(this.hero.x - mx, this.hero.y - my) < 12) this.emit({ t: 'shake', amount: 3 });
+      if (this.over) continue;
+      const h = this.hero;
+      if (underPort(at, h.x, h.y)) {
+        const c = clearOf(at, h.x, h.y);
+        h.x = c.x;
+        h.y = c.y;
+        this.hurtHero(h.d.maxLife * PORTCULLIS.hero, 'phys', [], null, 'a portcullis');
+      }
+      for (const m of this.monsters) {
+        if (m.dead || !underPort(at, m.x, m.y)) continue;
+        const c = clearOf(at, m.x, m.y);
+        m.x = c.x;
+        m.y = c.y;
+        if (!m.boss) this.damageMonster(m, Math.max(1, Math.round(m.maxLife * PORTCULLIS.mob)), 'phys', false, -1);
+      }
     }
   }
 

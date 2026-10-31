@@ -45,7 +45,7 @@ export const ACT2 = { on: true };
  * registered for them, filled as each is built). `built` is how many of its five are in so far: floor 16, the Swan Gardens, first.
  * The Hush's own event, THE BELLS, is floors 11 to 15's (act2Floor); these floors have the Royal Cards (game/royal_cards.ts).
  */
-export const HIGH_CITY = { on: false, built: 3 };
+export const HIGH_CITY = { on: false, built: 4 };
 
 /** The kinds of ground of the descent, in its order; then the Hush's five (ACT2); then the High City's (HIGH_CITY). */
 export type Act1LandKind = 'quarry' | 'ledge' | 'canyon' | 'pine' | 'fen';
