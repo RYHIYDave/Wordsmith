@@ -146,7 +146,7 @@ for (const cls of CLASSES) {
 }
 const said = (s: Seen): string => `${s.cls} ${s.view} ${s.list} #${s.i}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and of the game only floor 18\'s own figure imports them', () => {
   assert.equal(REFLECTIONS_ON.on, false, 'REFLECTIONS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -158,7 +158,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (/^art\/reflections(_fx)?$/.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (Brought into the game by the main chat, 30 Oct 2026, on floor 18 behind HIGH_CITY (off): the reflections' figure imports them,
+  // and nothing else of the game)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/reflection.ts', 'game files that import them');
 });
 
 test("2. A REFLECTION HAS THE HERO'S PICTURES: every list as long, every clip at the same pace, its blow and its loop at the same moments", () => {
