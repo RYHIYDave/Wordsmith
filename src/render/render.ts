@@ -2854,7 +2854,8 @@ export class Renderer {
       let overA = 0;
       if (m.flash > 0) {
         over = silhouette(sp, P.white);
-        overA = 1;
+        // (a body as big as the Moth's flashes fainter: the whole screen would go white: its kind's own, Act1Fx.flash)
+        overA = a1?.flash ?? 1;
       } else if (m.frozenT > 0) {
         // frozen solid: a block of pale ice
         over = silhouette(sp, P.bu5);

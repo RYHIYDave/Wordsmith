@@ -40,6 +40,8 @@ export interface Act1Fx {
   air?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   /** Its picture this frame in place of the one its gait and acts give (`set`: its pictures seen the way it faces); null: as they give. Turned over as every monster's is, after. */
   sprite?(m: Monster, art: ActorArt, set: AnimSet): Sprite | null;
+  /** How strongly it flashes white as a blow lands (0 to 1; 1 if not said): a body that fills the screen, fainter. */
+  flash?: number;
   /** How far up off the floor it is drawn (game pixels): up in the air. */
   lift?(m: Monster): number;
   /** Drawn later than its depth would have it (over the hero it has latched on to): how much is added to its depth. */

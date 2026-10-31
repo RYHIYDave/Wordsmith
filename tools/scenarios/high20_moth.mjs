@@ -46,7 +46,7 @@ export default async function (page, snap) {
     else if (what === 'hover') { d.bot(false); h.x = T.top.cx + 1; h.y = T.top.cy + 4; only('none'); }
     else if (what === 'buffet') { d.bot(false); only('moth:buffet'); }
     else if (what === 'dust') { d.bot(false); only('moth:dust'); }
-    else if (what === 'eyes') { d.bot(false); h.x = m.x + 4; h.y = m.y + 4; if (!g.isOpen(h.x, h.y)) { h.x = T.top.cx + 3; h.y = T.top.cy + 4; } only('moth:eyes'); }
+    else if (what === 'eyes') { d.bot(false); const ws = [[4, 0], [0, 4], [-4, 0], [0, -4], [3, 3], [-3, 3]]; for (const [ax, ay] of ws) { if (g.isOpen(m.x + ax, m.y + ay)) { h.x = m.x + ax; h.y = m.y + ay; break; } } only('moth:eyes'); }
     else if (what === 'swarm') { d.bot(false); h.x = T.top.cx - 3; h.y = T.top.cy + 4; only('moth:swarm'); }
     else if (what === 'phase2') { m.life = m.maxLife * 0.6; d.bot(true); }
     else if (what === 'last') { m.life = m.maxLife * 0.3; d.bot(false); h.x = T.top.cx + 3; h.y = T.top.cy + 4.5; }

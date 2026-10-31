@@ -46,6 +46,8 @@ const mouthAt = (t: number): V3 => {
 };
 
 export const FX: Act1Fx | null = {
+  // (its body fills the screen: struck, it flashes faintly, not the whole screen white)
+  flash: 0.28,
   sprite(m, _art, set) {
     if (m.dead || m.act) return null;
     const moves = set.clips?.moves ?? {};
