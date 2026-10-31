@@ -7,6 +7,9 @@
 //     2.75), and short: it holds 1.4 s (hers 6 s) and sinks.
 //   THE PRINCE'S MASKS (art/prince_fx.ts `maskPainted`): three masks (his five, the middle three), flown 6 tiles (his 12)
 //     at his speed (15 tiles a second), each bursting into fog at its end.
+//   THE KING'S CHARGE'S LINE OF SPARKS (art/king_fx.ts `chargeSparks`, `chargeSparkAt`, `chargeShardAt`, as his
+//     `sparksPainted`): cut behind the shadow as the game carries it, its sparks shooting off and popping in shrapnel, at
+//     0.64 of his, in fog and the dull pink (`SHADOW_CHARGE`, `sparksFx`).
 //   THE KING'S CROWN'S WEIGHT (art/king_fx.ts `weightAt`, the King's crown `crownAt`): a shadow crown sent up off its head,
 //     following you, slamming down and flying home, at 0.64 of his (`SHADOW_WEIGHT`, `weightFx`). (Its old big move, the
 //     Crown's leap and slam, `crownFx` below, is kept in the code, out of its set.)
@@ -17,9 +20,9 @@ import { hash } from './kit';
 import { TILE3, canvasOf, paintViewOf } from './new_mobs3';
 import { snarePainted, SNARE_CANVAS, SNARE_FX } from './princess_fx';
 import { MASKS_FX, MASK_CANVAS, flungMask, maskPainted } from './prince_fx';
-import { CROWN_FX, FX_CANVAS, WEIGHT_FX, crownPainted, weightAt, weightHead } from './king_fx';
+import { CHARGE_FX, CROWN_FX, FX_CANVAS, WEIGHT_FX, chargeShardAt, chargeSparkAt, chargeSparks, crownPainted, weightAt, weightHead } from './king_fx';
 import { CROWN_HEAD, crownAt, smearParts } from './king';
-import { KG_WEIGHT } from './king_moves';
+import { KG_CHARGE, KG_WEIGHT } from './king_moves';
 import { paintBits } from './new_mobs3';
 import type { Bit, Put } from './new_mobs3';
 import { stage } from './skin';
@@ -94,6 +97,184 @@ export function crownFx(t: number, view: GameView): Frame {
   if (t < 0 || t > CROWN_FX.long) return { px: new Px(1, 1), ax: 0, ay: 0, lights: [] };
   return fxSmaller(crownPainted(t, view).px, FX_CANVAS.ax, FX_CANVAS.ay, SHADOW_CROWN.k);
 }
+
+// =============================================================================================
+// THE KING'S SHADOW'S CHARGE: the line of sparks it cuts behind it, its sparks shooting off and popping in shrapnel
+
+/**
+ * ITS NUMBERS. Its times are the King's own (`KG_CHARGE`): the warning held 0.3 to 0.7 s, the strike in two frames (0.767
+ * to 0.833 s), the run 0.8 to 1.55 s, the rip 2.0 to 2.15 s, the line's sparks going 0.6 s after it stops (2.15 s), popping
+ * 0.28 to 0.4 s after, the shrapnel gone 0.25 s after each pop, all of it gone 1.0 s after they go (`CHARGE_FX`). Its
+ * lengths are 0.64 of his (`k`, as the shadow is drawn): the game carries it at `pace` tiles a second (his 12 times 0.64,
+ * so that its feet, drawn at 0.64, grip the floor as his do), `most` tiles in the run (his 9); the line cut `tail` tiles
+ * behind its floor point (his 1.75); its sparks one every `every` tiles of the line, popping up to `high` tiles up and
+ * `out` off it, their shrapnel `r` round each pop; THE HIT, everything within `reach` tiles of the line (his 2.6), 0.28 to
+ * 0.65 s after its sparks go.
+ */
+export const SHADOW_CHARGE = (() => {
+  const k = 0.64;
+  return { k, pace: KG_CHARGE.pace * k, most: KG_CHARGE.most * k, tail: KG_CHARGE.tail * k, every: CHARGE_FX.every * k, high: CHARGE_FX.high * k, out: CHARGE_FX.out * k, r: CHARGE_FX.r * k, reach: CHARGE_FX.reach * k } as const;
+})();
+/** How far the game has carried the shadow (tiles along its forward) `t` seconds into its charge. */
+export const chargeCarriedTiles = (t: number): number => SHADOW_CHARGE.pace * (Math.max(KG_CHARGE.run[0], Math.min(KG_CHARGE.run[1], t)) - KG_CHARGE.run[0]);
+/** Its picture (the shadow's size), laid where it set off: room for the whole line and its sparks either side. */
+export const SPARKS_CANVAS = { w: 480, h: 330, ax: 200, ay: 185 } as const;
+/** Its colours: the cut bone white where the point is, cooling to the dull pink along it, its scar dark; the sparks bone white, pale fog, the pinks; the shrapnel cooling from bone white to the dull pink. */
+const S_CUT = [FOG_RGB[10], FOG_RGB[8], EYE_LIT_RGB, EYE_RGB, FOG_RGB[2]];
+const S_SPARK = [FOG_RGB[10], FOG_RGB[8], EYE_LIT_RGB, EYE_RGB];
+const S_SHARD = [FOG_RGB[10], FOG_RGB[8], EYE_LIT_RGB, EYE_LIT_RGB, EYE_RGB];
+const S_GRIT = [FOG_RGB[3], FOG_RGB[4], FOG_RGB[5]];
+/**
+ * THE SHADOW'S LINE OF SPARKS `t` seconds after it sets off (its charge's `run[0]`), laid where it set off: the King's line
+ * (art/king_fx.ts `sparksPainted`), its sparks and their flights his (`chargeSparks`, `chargeSparkAt`, `chargeShardAt`),
+ * at 0.64 of his, in fog and the dull pink. `lane`: how far it ran (tiles; at most `SHADOW_CHARGE.most`).
+ */
+export function sparksFx(t: number, view: GameView = 'front', lane: number = SHADOW_CHARGE.most): Frame {
+  const S = SHADOW_CHARGE;
+  const k = S.k;
+  const can = SPARKS_CANVAS;
+  const px = new Px(can.w, can.h);
+  const out: Frame = { px, ax: can.ax, ay: can.ay, lights: [] };
+  const ran = lane / S.pace;
+  const tb = ran + KG_CHARGE.burstAfter;
+  if (t < 0 || t >= tb + CHARGE_FX.long) return out;
+  const st = wbStage(view, can);
+  const T = TILE3;
+  const x0 = -S.tail * T;
+  const x1 = Math.min(t, ran) * S.pace * T - S.tail * T;
+  const since = t - tb;
+  // (the cut wavering as the blade bounced along: his, at its size)
+  const wob = (x: number): number => k * (2.2 * Math.sin((x / k) * 0.11) + 1.2 * Math.sin((x / k) * 0.37 + 1));
+  const sm = (p: V3): V3 => [p[0] * k, p[1] * k, p[2] * k];
+  const his = chargeSparks(lane / k);
+  const sparks = his.map((q) => ({ ...q, x: q.x * k, y: q.y * k, pop: sm(q.pop) }));
+  const sparkAt = (i: number, s: number): V3 => sm(chargeSparkAt(his[i], s));
+  const dot = (p: V3, c: readonly number[], size = 1): void => {
+    const [X, Y] = st.at(p);
+    dotOn(px, X, Y, c, 255, size);
+  };
+  const held = since < 0 ? smooth(-CHARGE_FX.hold, -0.04, since) : 0;
+  const pulse = held * (0.6 + 0.4 * Math.sin(t * 46));
+  const scar = since < 0 ? 1 : 1 - smooth(0.12, CHARGE_FX.long - 0.05, since);
+  // THE CUT: a groove scored along the stones, glowing
+  for (let x = x0; x <= x1; x += 0.6) {
+    const age = (x1 - x) / (S.pace * T) + Math.max(0, t - ran);
+    const y = wob(x);
+    let c: readonly number[] | null;
+    if (since >= 0) c = since < 0.08 ? S_CUT[0] : hash(Math.round(x), 3, 9501) < scar ? (since < 0.25 ? S_CUT[2] : since < 0.5 ? S_CUT[3] : S_CUT[4]) : null;
+    else if (age < 0.05) c = S_CUT[0];
+    else if (age < 0.15) c = S_CUT[1];
+    else if (held > 0.7 && hash(Math.round(x), Math.floor(t * 20), 9502) < held - 0.25) c = S_CUT[0];
+    else if (pulse > 0.4 && hash(Math.round(x), Math.floor(t * 20) + 1, 9502) < pulse) c = S_CUT[1];
+    else c = age < 0.4 ? S_CUT[2] : S_CUT[3];
+    if (!c) continue;
+    // (a groove two pixels wide: its hot core, its glowing lips, the stone cut dark at its edge)
+    dot([x, y, 0.2], c, 2);
+    if (since < 0) {
+      const lip = age < 0.15 ? S_CUT[1] : pulse > 0.4 ? S_CUT[2] : S_CUT[3];
+      dot([x, y - 2.2, 0.2], lip);
+      dot([x, y + 2.2, 0.2], hash(Math.round(x * 2), 1, 9503) < 0.5 ? FOG_RGB[0] : lip);
+    }
+  }
+  if (since < 0) {
+    // (sparks fizzing up off it all along)
+    const n = Math.round((x1 - x0) / 2.5);
+    for (let i = 0; i < n; i++) {
+      const x = x0 + (x1 - x0) * hash(i, 1, 9504);
+      const age = (x1 - x) / (S.pace * T) + Math.max(0, t - ran);
+      const life = fr(t * (2.2 + hash(i, 2, 9504)) + hash(i, 3, 9504));
+      if (hash(i, 4, 9504) > 0.45 + 0.4 * held + (age < 0.25 ? 0.5 : 0)) continue;
+      dot([x + (hash(i, 5, 9504) - 0.5) * 4, wob(x) + (hash(i, 6, 9504) - 0.5) * 8 * life, 0.5 + 17 * life * (1 - life) * (1 - 0.6 * held)], S_SPARK[i % 4], life < 0.35 ? 2 : 1);
+    }
+    // (THE HELD BEAT: the sparks that will go, gathered on the line as beads of light, swelling, trembling)
+    if (held > 0) {
+      sparks.forEach((q, i) => {
+        if (q.x > x1) return;
+        const shake = held > 0.3 ? (hash(i, Math.floor(t * 30), 9505) - 0.5) * 1.6 : 0;
+        const [X, Y] = st.at([q.x, q.y, 1.3 + 2.6 * held + shake]);
+        const hot = (Math.floor(t * 30) + i) % 3 !== 0;
+        if (held > 0.45) {
+          dotOn(px, X - 2, Y, S_SPARK[1], 255);
+          dotOn(px, X + 2, Y, S_SPARK[1], 255);
+          dotOn(px, X, Y + 2, EYE_LIT_RGB, 255);
+        }
+        dotOn(px, X, Y, held > 0.5 && hot ? S_SPARK[0] : S_SPARK[1], 255, 2);
+      });
+    }
+    return out;
+  }
+  // THE RELEASE: a flash along the line as they tear off it, and stone chips kicked up out of it
+  if (since < 0.1) {
+    const H = 0.35 * T * k;
+    for (let x = x0; x <= x1; x += 1.1) {
+      for (let y = -H; y <= H; y += 2.2) {
+        if (hash(Math.round(x), Math.round(y * 3), 9506) > 0.6 * (1 - since / 0.1) * (1 - Math.abs(y) / H)) continue;
+        dot([x, wob(x) + y, 0.6], Math.abs(y) < H * 0.4 ? S_SPARK[0] : EYE_LIT_RGB);
+      }
+    }
+  }
+  const nc = Math.round((x1 - x0) / 4);
+  for (let i = 0; i < nc; i++) {
+    const u = since / (0.22 + 0.12 * hash(i, 16, 9507));
+    if (u >= 1) continue;
+    const x = x0 + (x1 - x0) * hash(i, 17, 9507);
+    const side = (hash(i, 18, 9507) - 0.5) * 2;
+    dot([x, wob(x) + side * 0.45 * T * k * u, Math.max(0.5, 0.45 * T * k * (2.6 * u - 2.6 * u * u))], S_GRIT[i % 3], 1 + (i % 2));
+  }
+  sparks.forEach((q, i) => {
+    // THE SPARK SHOT OFF: its head bone white, its streak back along the way it came
+    if (since < q.at) {
+      const [X, Y] = st.at(sparkAt(i, since));
+      const [Xt, Yt] = st.at(sparkAt(i, Math.max(0, since - 0.07)));
+      const steps = Math.max(1, Math.ceil(Math.hypot(X - Xt, Y - Yt)));
+      for (let j = 0; j < steps; j++) {
+        const f = j / steps;
+        dotOn(px, Xt + (X - Xt) * f, Yt + (Y - Yt) * f, f < 0.4 ? S_SPARK[3] : f < 0.75 ? S_SPARK[2] : S_SPARK[1], 255);
+      }
+      dotOn(px, X - 2, Y, S_SPARK[1], 255);
+      dotOn(px, X + 2, Y, S_SPARK[1], 255);
+      dotOn(px, X, Y - 2, S_SPARK[1], 255);
+      dotOn(px, X, Y, S_SPARK[0], 255, 2);
+      return;
+    }
+    const a = since - q.at;
+    const [PX, PY] = st.at(q.pop);
+    // ITS POP: a star of light, for a moment
+    if (a < 0.06) {
+      dotOn(px, PX, PY, S_SPARK[0], 255, 2);
+      const L = a < 0.03 ? 4 : 3;
+      for (let r = 2; r <= L; r++) {
+        const c = r < 3 ? S_SPARK[0] : EYE_LIT_RGB;
+        dotOn(px, PX + r, PY, c, 255);
+        dotOn(px, PX - r, PY, c, 255);
+        dotOn(px, PX, PY + r, c, 255);
+        dotOn(px, PX, PY - r, c, 255);
+        if (r <= L - 1) for (const [dx, dy] of [[r, r], [-r, r], [r, -r], [-r, -r]]) dotOn(px, PX + dx, PY + dy, S_SPARK[1], 255);
+      }
+    }
+    // ITS SHRAPNEL: fragments flung out every way, streaked, cooling to the dull pink, gone
+    const u = a / CHARGE_FX.shards;
+    if (u < 1) {
+      const c = S_SHARD[Math.min(4, Math.floor(u * 5))];
+      const k0 = his[i];
+      for (let j = 0; j < 12; j++) {
+        const [Xb, Yb] = st.at(sm(chargeShardAt(k0, i, j, Math.max(0, u - 0.16))));
+        const [X, Y] = st.at(sm(chargeShardAt(k0, i, j, u)));
+        const steps = Math.max(1, Math.ceil(Math.hypot(X - Xb, Y - Yb)));
+        for (let m = 0; m < steps; m++) dotOn(px, Xb + ((X - Xb) * m) / steps, Yb + ((Y - Yb) * m) / steps, u < 0.5 ? S_SHARD[Math.min(4, Math.floor(u * 5) + 1)] : c, 255);
+        dotOn(px, X, Y, c, 255, u < 0.3 ? 2 : 1);
+      }
+    }
+    // (its smoke, a few puffs of fog drifting up off where it popped)
+    for (let m = 0; m < 3; m++) {
+      const life = clamp01((a - 0.05 - 0.05 * m) / (CHARGE_FX.long - 0.08 - q.at - 0.05 * m));
+      if (life <= 0 || life >= 1) continue;
+      dot([q.pop[0] + (hash(i, 20 + m, 9508) - 0.5) * 8 - 3 * life, q.pop[1] + (hash(i, 23 + m, 9508) - 0.5) * 8, q.pop[2] + 10 * life], life < 0.4 ? FOG_RGB[7] : FOG_RGB[5], life < 0.5 ? 2 : 1);
+    }
+  });
+  return out;
+}
+const fr = (x: number): number => x - Math.floor(x);
 
 // =============================================================================================
 // THE KING'S SHADOW'S CROWN'S WEIGHT: a shadow crown sent up off its head, following you, slamming down, flying home

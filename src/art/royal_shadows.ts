@@ -38,8 +38,7 @@ import type { Skeleton, V3 } from './skeleton';
 import { PRINCESS, PR_LASH, PR_SNARE } from './princess_moves';
 import { PC_MASKS, PC_THRUST, PRINCE } from './prince_moves';
 import { QN_COMB, QN_REFLECT, QUEEN } from './queen_moves';
-import { KG_ALONE_SHAPE, KG_SWEEP, KG_SWEEP_MOVE, KG_WEIGHT, KING_ALONE, smearedAt } from './king_moves';
-import type { BossShape } from './boss_checks';
+import { KG_CHARGE, KG_WEIGHT, KING_ALONE } from './king_moves';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file. */
 export const SHADOWS_ON = { on: false };
@@ -136,19 +135,11 @@ const royal = (id: RoyalId, name: string, boss: Mob, k: number, big: string, big
   id, name, boss, mob: shadowMobOf(boss, `shadow_${id}`, name, drop), k, pace: Math.round(boss.pace * k * 100) / 100, basic: 'attack', big, bigName, strikes,
 });
 /**
- * THE KING AS HIS SHADOW ECHOES HIM: alone (the Hush not on his back), his basic blow still his old sweep (art/king_moves.ts
- * KG_SWEEP_MOVE, painted as it was: the King's own basic is now his charge), his big move the Crown's Weight (his `weight`,
- * in place of the Crown's leap, which is kept in the code, out of its set: KG_RETIRED.leap). The shadow crown it sends up:
- * art/royal_shadows_fx.ts `weightFx`.
+ * THE KING AS HIS SHADOW ECHOES HIM: alone (the Hush not on his back), with his own moves as they are now: his basic blow
+ * his charge, its blade dragged (his `attack`; the line of sparks it cuts, small: art/royal_shadows_fx.ts `sparksFx`), his big
+ * move the Crown's Weight (his `weight`; the shadow crown: `weightFx`). Out of its set, kept in the code: his old sweep
+ * (art/king_moves.ts KG_SWEEP_MOVE) and the Crown's leap (KG_RETIRED.leap; `crownFx`). Checked as he is (KG_ALONE_SHAPE).
  */
-const KING_SHADOWED: Mob = { ...KING_ALONE, attack: KG_SWEEP_MOVE, hit: KG_SWEEP.hit, warn: KG_SWEEP.warn[1] - KG_SWEEP.warn[0] };
-/** The King's shadow as the boss checks see it: the King alone, its basic blow his old sweep (its strike, its smear, not carried), its big move his Crown's Weight. */
-export const KING_SHADOW_SHAPE: BossShape = {
-  ...KG_ALONE_SHAPE,
-  strikes: { ...KG_ALONE_SHAPE.strikes, attack: KG_SWEEP.strike },
-  carried: () => 0,
-  smeared: (move, t) => smearedAt(move === 'attack' ? 'sweep' : move, t),
-};
 /** The Queen's ring of glass round her lifted hand (her Reflections') is not her shadow's: its hand mirror is. */
 const QUEEN_GLASS = (b: Bit): boolean => /glass|shard|ring|whirl/i.test(b.part) || /glass|shard|whirl/i.test(b.piece);
 
@@ -156,7 +147,7 @@ export const ROYALS: Readonly<Record<RoyalId, Royal>> = {
   princess: royal('princess', 'Shadow of the Princess', PRINCESS, 0.8, 'snare', 'The vine snare, a small cage', { attack: PR_LASH.strike, snare: PR_SNARE.strike }),
   prince: royal('prince', 'Shadow of the Prince', PRINCE, 0.76, 'masks', 'Masks, three and short', { attack: PC_THRUST.strike, masks: PC_MASKS.strike }),
   queen: royal('queen', 'Shadow of the Queen', QUEEN, 0.72, 'blink', 'Looking Glass: a blink through her hand mirror', { attack: QN_COMB.strike, blinkIn: BLINK.strikeIn, blinkOut: BLINK.strikeOut }, QUEEN_GLASS),
-  king: royal('king', 'Shadow of the King', KING_SHADOWED, 0.64, 'weight', 'The Crown’s Weight, a shadow crown', { attack: KG_SWEEP.strike, weight: KG_WEIGHT.strike }),
+  king: royal('king', 'Shadow of the King', KING_ALONE, 0.64, 'weight', 'The Crown’s Weight, a shadow crown', { attack: KG_CHARGE.strike, weight: KG_WEIGHT.strike }),
 };
 export const ROYAL_IDS: readonly RoyalId[] = ['princess', 'prince', 'queen', 'king'];
 

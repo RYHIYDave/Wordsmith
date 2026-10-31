@@ -16,11 +16,11 @@ import { ENEMY_RIM } from '../src/art/mkit';
 import { PR_SHAPE } from '../src/art/princess_moves';
 import { PC_SHAPE } from '../src/art/prince_moves';
 import { QN_SHAPE } from '../src/art/queen_moves';
-import { KG_RETIRED, KG_SWEEP, KG_SWEEP_MOVE, KG_WEIGHT, KING_ALONE } from '../src/art/king_moves';
-import { WEIGHT_FX, weightHead, weightPainted } from '../src/art/king_fx';
-import { BLINK, EYE, EYE_LIT, KING_SHADOW_SHAPE, ROYALS, ROYAL_IDS, SHADOWS_ON, longOf, shadowFrame } from '../src/art/royal_shadows';
+import { KG_ALONE_SHAPE, KG_CHARGE, KG_SWEEP_MOVE, KG_WEIGHT, KING_ALONE } from '../src/art/king_moves';
+import { CHARGE_FX, WEIGHT_FX, sparksPainted, weightHead, weightPainted } from '../src/art/king_fx';
+import { BLINK, EYE, EYE_LIT, ROYALS, ROYAL_IDS, SHADOWS_ON, longOf, shadowFrame } from '../src/art/royal_shadows';
 import type { Frame, RoyalId } from '../src/art/royal_shadows';
-import { CARD, DEATH, MASKS_SHADOW_FLIGHT, SHADOW_SNARE, SHADOW_WEIGHT, blinkFrame, cardPx, crownFx, deathFrame, masksFx, shadowCrownAt, snareFx, weightFx } from '../src/art/royal_shadows_fx';
+import { CARD, DEATH, MASKS_SHADOW_FLIGHT, SHADOW_CHARGE, SHADOW_SNARE, SHADOW_WEIGHT, blinkFrame, cardPx, chargeCarriedTiles, crownFx, deathFrame, masksFx, shadowCrownAt, snareFx, sparksFx, weightFx } from '../src/art/royal_shadows_fx';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { equal(a: unknown, b: unknown, m?: string): void; ok(v: unknown, m?: string): void; deepEqual(a: unknown, b: unknown, m?: string): void };
@@ -52,7 +52,7 @@ const CHECKS: Readonly<Record<RoyalId, [BossShape, string[]]>> = {
   princess: [PR_SHAPE, ['stand', 'walk', 'attack', 'snare', 'reel']],
   prince: [PC_SHAPE, ['stand', 'walk', 'attack', 'masks', 'reel']],
   queen: [QN_SHAPE, ['stand', 'walk', 'attack', 'reflect', 'reel']],
-  king: [KING_SHADOW_SHAPE, ['stand', 'walk', 'attack', 'weight', 'reel']],
+  king: [KG_ALONE_SHAPE, ['stand', 'walk', 'attack', 'weight', 'reel']],
 };
 test('2. EVERY MOVE THEY PLAY THROUGH EVERY BOSS CHECK, ON THEIR BOSS’S BONES (from in front and from behind)', () => {
   for (const id of ROYAL_IDS) {
@@ -117,6 +117,11 @@ test('4. NO COLOUR ON THEM BUT THE PINKS, AND NOTHING CUT OFF: every move, from 
     for (const t of at(SHADOW_SNARE.long)) faults(snareFx(t, view), `snare ${t.toFixed(2)} ${view}`, out);
     for (const t of at(MASKS_SHADOW_FLIGHT + 0.3)) faults(masksFx(t, view), `masks ${t.toFixed(2)} ${view}`, out);
     for (const t of at(1.6)) faults(crownFx(t, view), `the leap's ring (out of its set) ${t.toFixed(2)} ${view}`, out);
+    // the King's shadow's charge, every frame, and its line of sparks through its whole life
+    for (let f = 0; f <= Math.round(KG_CHARGE.long * 30); f += 2) faults(shadowFrame(ROYALS.king, 'attack', f / 30, view), `king charge ${(f / 30).toFixed(2)} ${view}`, out);
+    const lineLong = SHADOW_CHARGE.most / SHADOW_CHARGE.pace + KG_CHARGE.burstAfter + CHARGE_FX.long;
+    for (const t of [...at(lineLong - 0.01, 21), 1.35 + 0.29, 1.35 + 0.34, 1.35 + 0.4]) faults(sparksFx(t, view), `the charge's line ${t.toFixed(2)} ${view}`, out);
+    for (const t of at(1.2, 5)) faults(sparksFx(t, view, 2), `the charge's short line ${t.toFixed(2)} ${view}`, out);
     // the shadow crown and its floor, through its whole flight and its slam's two frames and after
     for (const t of [...at(WEIGHT_FX.long - 0.01, 13), WEIGHT_FX.drop[0] + 1 / 30, WEIGHT_FX.drop[1], WEIGHT_FX.drop[1] + 0.05, WEIGHT_FX.drop[1] + 0.2]) {
       for (const part of ['crown', 'floor'] as const) faults(weightFx(t, view, part), `crown's weight ${part} ${t.toFixed(2)} ${view}`, out);
@@ -159,13 +164,13 @@ function extent(f: { px: Px }, keep: (d: Uint8ClampedArray, i: number) => boolea
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (keep(d, (y * w + x) * 4)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   return x1 < 0 ? null : [x0, x1, y0, y1];
 }
-test('6. THE KING’S SHADOW: its basic still his old sweep; its big move the Crown’s Weight, a shadow crown at its size, following you, slamming in two frames, flying home', () => {
+test('6. THE KING’S SHADOW: its basic his charge (the old sweep out of its set); its big move the Crown’s Weight, a shadow crown at its size, following you, slamming in two frames, flying home', () => {
   const r = ROYALS.king;
-  // its basic: the King's old sweep, kept (his own basic is now his charge); the leap out of its set
-  assert.equal(r.mob.attack.name, KG_SWEEP_MOVE.name);
-  assert.deepEqual(r.mob.attack.motion.keys.map((k) => k.at), KG_RETIRED.sweep().keys.map((k) => k.at));
-  assert.deepEqual(r.strikes.attack, KG_SWEEP.strike);
-  assert.ok(KING_ALONE.attack.name !== KG_SWEEP_MOVE.name, 'the King’s own basic is his charge');
+  // its basic: the King's charge, as his own now is; the old sweep and the leap out of its set
+  assert.equal(r.mob.attack.name, KING_ALONE.attack.name);
+  assert.equal(r.mob.attack.motion, KING_ALONE.attack.motion);
+  assert.deepEqual(r.strikes.attack, KG_CHARGE.strike);
+  assert.ok(r.mob.attack.name !== KG_SWEEP_MOVE.name && !Object.values(r.mob.more ?? {}).some((m) => m.name === KG_SWEEP_MOVE.name), 'the sweep is not in its set');
   assert.equal(r.big, 'weight');
   assert.ok(!('crown' in (r.mob.more ?? {})), 'the leap is not in its set');
   // its times: the King's own; the drop in two frames
@@ -207,5 +212,36 @@ test('6. THE KING’S SHADOW: its basic still his old sweep; its big move the Cr
     // none of it before it is sent or after it is home
     assert.equal(weightFx(-0.01, view, 'crown').px.w, 1);
     assert.equal(weightFx(WEIGHT_FX.long, view, 'floor').px.w, 1);
+  }
+});
+
+test('7. THE KING’S SHADOW’S CHARGE: his times; carried at 0.64 of his pace (so its feet, at 0.64, grip), 0.64 of his run; its line of sparks 0.64 of his', () => {
+  const S = SHADOW_CHARGE;
+  assert.ok(Math.abs(S.pace - KG_CHARGE.pace * ROYALS.king.k) < 1e-9 && Math.abs(S.most - KG_CHARGE.most * ROYALS.king.k) < 1e-9);
+  assert.equal(longOf(ROYALS.king, 'attack'), KG_CHARGE.long);
+  assert.equal(Math.round((KG_CHARGE.strike[1] - KG_CHARGE.strike[0]) * 30), 2);
+  assert.ok(Math.abs(chargeCarriedTiles(KG_CHARGE.run[1]) - S.most) < 1e-9 && chargeCarriedTiles(KG_CHARGE.run[0]) === 0 && chargeCarriedTiles(KG_CHARGE.long) === S.most);
+  const ran = S.most / S.pace;
+  assert.ok(Math.abs(ran - (KG_CHARGE.run[1] - KG_CHARGE.run[0])) < 1e-9, 'its line cut in the run');
+  const pinks = [EYE, EYE_LIT].map((c) => rgba(c).slice(0, 3).join());
+  for (const view of VIEWS) {
+    // the line as it stops, held: 0.64 of his, end to end
+    const t = ran + KG_CHARGE.burstAfter - 0.1;
+    const mine = extent(sparksFx(t, view))!;
+    const his = extent({ px: sparksPainted(t, view).px })!;
+    const kw = (mine[1] - mine[0]) / (his[1] - his[0]);
+    assert.ok(Math.abs(kw - S.k) < 0.06, `${view}: its line ${kw.toFixed(2)} of his`);
+    // its sparks popped and their shrapnel: within its reach of the line, and some of the dull pink in it
+    const f = sparksFx(ran + KG_CHARGE.burstAfter + 0.36, view);
+    const all = extent(f)!;
+    const hisAll = extent({ px: sparksPainted(ran + KG_CHARGE.burstAfter + 0.36, view).px })!;
+    const ks = (all[3] - all[2]) / (hisAll[3] - hisAll[2]);
+    assert.ok(Math.abs(ks - S.k) < 0.1, `${view}: its sparks' spread ${ks.toFixed(2)} of his`);
+    let pink = 0;
+    for (let i = 0; i < f.px.d.length; i += 4) if (f.px.d[i + 3] && pinks.includes(`${f.px.d[i]},${f.px.d[i + 1]},${f.px.d[i + 2]}`)) pink++;
+    assert.ok(pink > 20, `${view}: ${pink} pixels of the dull pink`);
+    // nothing before it sets off or after it is gone
+    assert.equal(extent(sparksFx(-0.01, view)), null);
+    assert.equal(extent(sparksFx(ran + KG_CHARGE.burstAfter + CHARGE_FX.long, view)), null);
   }
 });
