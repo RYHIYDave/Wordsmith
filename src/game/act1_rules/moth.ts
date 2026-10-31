@@ -383,5 +383,7 @@ export const RULES: Act1Rules | null = {
     R.g.emit({ t: 'shake', amount: 8 });
     const w = pictureWay(m.fx, m.fy);
     R.peril(m, 'act1', m.x, m.y, { a1: 'moth:words', fx: w.fx, fy: w.fy, dur: 6, hit: 0 });
+    // (its dust, its swarm and its wind harm nothing more once it is dead: they are left to fade)
+    for (const p of R.g.perils) if (p.a1 === 'moth:dust' || p.a1 === 'moth:shed' || p.a1 === 'moth:swarm' || p.a1 === 'moth:wave') p.done = 1;
   },
 };
