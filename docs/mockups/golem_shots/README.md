@@ -125,3 +125,73 @@ Everything is drawn from in front and truly from behind (turned 45 and 135, as t
 - Whether the charged shot should fire early if she lets go before it is full (here it must reach frame 30, 1.0 s).
 - The skid: 1 tile for the shell, half a tile for the beam.
 - The blast's 2.5 tiles and the beam's 8 by 1 tile: numbers for the main chat to try in the game.
+
+## Game-ready pieces (`src/art/golem_shots_fx.ts`, the art chat's helper, 31 Oct 2026)
+
+Asked for by the main chat (its words: “If you would make game-ready pieces of them (sprites a frame, a shell's blast at
+its place, the beam along a line of any length), I lay them in.”). THE SAME PICTURES AS THE FILMS, nothing redesigned: each
+piece is painted by the art's own strokes (`dev/golem_charge_fx.ts`, `dev/contraption_shots.ts`; four of the former's
+painters, `charging`, `bigBurst`, `shellFlightFx` and `beamFx`, are now exported, nothing in them changed), on a canvas of
+its own at the game's grain (2 picture pixels a game pixel, as `render/tinkerer_fx.ts` lays her effects), its anchor a point
+of the floor the game already knows. Every list is `lazyFrames` (painted when first asked for), frame `k` = the k-th
+thirtieth of a second. Lay each with `drawSprite(g, s, Math.round(wx(c, x, y)), Math.round(wy(c, x, y)))` at its anchor.
+`floor` lists go under what stands (drawGround), the rest over it (drawAir).
+
+`view` is the Golem's picture's (`'back'` when `g.fx + g.fy < -0.2`, as render.ts picks it) and `flip` is render.ts's
+`turned` (`g.fx - g.fy < 0`); for the Contraption the same with its own `c.fx, c.fy`. Tiles are the game's; `up` is game
+pixels.
+
+| Function | Arguments | Anchor | Frames |
+|---|---|---|---|
+| `golemChargeFx(view, gun)` → `{ floor, air }` | `gun` `'cannon'` or `'tesla'` | THE GOLEM'S OWN FLOOR POINT, as its picture (`golemCharge(view, gun)`); flip it with `turned(g.fx, g.fy, s)` as its picture is | index = `chargeFrame`'s frame `f` (the same number render.ts already shows the Golem at), 0 to `CHARGE_FX_LAST[gun]` (82; past the move's end, 76 or 78, only the last wisps of smoke). Nothing before frame 12 (aimed). The loop's frames 30–35 are the same each round. |
+| `golemShellFlightFx(view, flip, dx, dy, frames?)` → `{ frames, n }` | landing `dx = e.x1 - e.x0`, `dy = e.y1 - e.y0` (the `golemCharged` event); `frames` = `Math.round(e.flight * 30)` so it lands as the game's blast goes off (left out: the art's 20 tiles a second from the mouth) | the Golem's floor point AS IT FIRED (`e.x0, e.y0`) | `n + 4`: k = 0 the frame it fires; it lands at k = n − 1; its trail gone by n + 3. Out of the cannon's mouth (its point at the shot baked in), turned to its heading, smeared, its cyan trail. |
+| `golemShellBlastFx(r?)` → `{ floor, air }` | `r` tiles (2.5 as approved; the game's weaker shots' `e.r` painted to the half tile, 0.5 to 2.5) | where it lands (`e.x1, e.y1`) | `SHELL_FX.long` = 40 from landing: flash, dome, the ring out to `r` in 5 frames, tongues of fire, stone, smoke column; `floor` its scorch and glowing cracks, cooling. |
+| `golemBeamFx(view, flip, dx, dy, up?)` → `Sprite[]` | its end `dx = e.x1 - e.x0`, `dy = e.y1 - e.y0` (any heading, any length, up to 8 tiles from the coil's ball); `up` its end's height (11 game px, as the film) | THE GOLEM'S FLOOR POINT AS IT IS DRAWN THAT FRAME (it skids back half a tile as the beam pours, and the beam with it, as in the film; with only the event's point, add `golemSkid('tesla', k)` tiles back along `-g.fx, -g.fy`) | `BEAM_FRAMES` = 18 from the shot: two-thirds out at k = 0, all of it at k = 1, at its full to k = 10, thinning to threads, gone at k = 18. Drawn 0.55 tiles thick, from the coil's ball (its point each frame baked in). |
+| `contraptionBombBlastFx(r?)` → `{ floor, air }` | `r` tiles (2.0 as approved) | where the bomb goes off | `BOMB_FX.long` = 36. |
+| `contraptionBoltFx(view, flip, dx, dy, up?)` → `{ frames, n }` | what it hits, `dx = e.x1 - e.x0`, `dy = e.y1 - e.y0` (`contraptionBolt`); `up` 12 game px (a chest, as the film) | the Contraption's floor point (`e.x0, e.y0`) | from its firing: the flash at its ball, the bolt (30 tiles a second) at what it hits at k = n, crackling 14 frames, its ball spitting and smoking; `frames.length` all of it. |
+
+Also: `golemMuzzle(view, gun, f, flip)` (its gun's mouth from its floor point: `x`, `y` tiles, `up` game pixels, at any
+frame), `golemSkid(gun, k)`, and `paintAhead(lists, ms)` (paints frames not yet painted, within `ms`).
+
+LAYING THEM AS THE FILM DOES: floors first; the Golem; its `air`; the shell's flight over it, but for the shot's first two
+frames (k 0 and 1, the shell still inside the great burst at its mouth: lay the flight under the Golem's air then); the
+blast's air last. The beam over the Golem's air.
+
+PAINTING COST (node, one CPU): everything at the Golem about 10 ms a frame; the shell's blast about 60 ms a frame (some
+2.5 s for its 40 frames), the bomb's about 33 ms (1.2 s for 36): the art's own blast is that heavy. Each is kept once
+painted (the blast per half tile of radius). Paint the blast ahead, e.g. `paintAhead([b.floor, b.air], 6)` each frame
+while the Golem charges or once her pick is made, so that none is painted as it is shown. The flight, the beam and the
+bolt are painted per shot (their line is the shot's own), a few ms a frame.
+
+WHERE THE POINTS COME FROM: the Golem's gun's mouth and way, its coil's foot and tip, its stacks, its feet and fist at
+every frame from 12 to its end, and the energy Contraption's ball as it fires, are baked into
+`src/art/golem_shots_points.ts` by `tools/bake_golem_shots.ts` (from the sculpture, as the films measured them:
+`tests/golem_shots_measure.ts`), so the game does not sculpt the Golem twice. The test sculpts them again and checks every
+number; if its moves change, run `npx tsx tools/bake_golem_shots.ts`.
+
+WHAT IS NOT QUITE THE FILM:
+- The grain of the steam, the smoke, the blast's dome and tongues of fire and its scorch: the art draws them from where on
+  the picture (and the floor) they are, so a piece painted on its own canvas has its own grain (the same size, shape,
+  colours and timing). Every light of every piece is the art's own, light for light (checked against `chargeFx` at every
+  frame).
+- Where two pieces cross, the later laid is on top; in the film all was one picture, its light over all its smoke (the
+  shot's two frames are handled by the order above; the shell's trail running into its blast's smoke is the one left).
+- The energy bolt's ball: its smoke and spitting come from the ball as it fired (in the film from the ball as drawn each
+  frame, a pixel or two as the mortar kicks). The game draws the Contraption without its shot pose; the ball is the art's.
+- The gun's own vents' steam is off by his word (`GUN_STEAM`); none is drawn (the test fails if it is turned on).
+
+THE CHECKS (`tests/golem_shots_fx.test.ts`, all passing): the baked points the sculpture's own; everything at the Golem,
+every frame of both guns from in front and behind, crisp (no pixel half there, none alone), only the friend's cyan glowing
+(no pink, no gold), nothing cut off, nothing before it aims, gone after its last, a great flash at its full and at the
+shot, the loop's frames the same each round (and as the art paints them ten rounds on); from the shot on, its pieces with
+the shell's flight and blast or the beam are `chargeFx` light for light at every frame; laid as the game lays them, the
+pictures are the film's at the same moment (the cyan where the film's is, as many pixels); the beam, the shell and the bolt
+at 16 headings and every length from 1 to 8 tiles, in front and behind, every frame crisp, cyan, not cut off, gone when
+done, turned over the mirror of itself, the beam out to its end, the shell landing where aimed, the bolt crackling on what
+it hits; the blasts (2.5, 1.5 and the bomb's 2.0) every frame, their ring as wide as their tiles, the shell's pixel for
+pixel the art's; the numbers the game's (`TINKER_TUNE`: shell 20 tiles/s and 2.5, beam 8 by 1, bolt 30 tiles/s) and the
+Golem and Contraption turned as the game turns them. `tests/golem_charge.test.ts` and `tests/contraption_shots.test.ts`
+list `src/art/golem_shots_fx.ts` among the game's files that may take them.
+
+`pictures/golem_shots_gameready_sheet.png`: each piece's key moments, the film's picture beside the game-ready pieces laid
+as the game lays them; and the pieces at other headings (the Golem turned over, from behind, the bolt up and to the left).
