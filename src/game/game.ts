@@ -32,6 +32,7 @@ import { ACT2_GUARD, act2Pack } from './act2_mobs';
 import { nettleSlow, stepGardens } from './act2/garden_rules';
 // (THE HIGH CITY, FLOOR 17: the Masque's clock and its chime, the dancers called to it)
 import { stepClock } from './act2/masque_rules';
+import { MIRROR, shardsHit, stepMirrors, strikeMirrors } from './act2/gallery_rules';
 import { callToChime } from './act1_rules/dancer';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
@@ -1854,6 +1855,8 @@ export class Game {
     this.updateHazards(dt);
     // (THE HIGH CITY, FLOOR 16: the Swan Gardens' nettle beds sting and slow whoever walks through them: game/act2/garden_rules.ts)
     if (this.level.land?.garden) this.updateGardens(dt);
+    // (THE HIGH CITY, FLOOR 18: the Glass Gallery's tall mirrors, cracked by blows near them, burst: game/act2/gallery_rules.ts)
+    if (this.level.land?.gallery) this.updateMirrors(dt);
     // (THE HIGH CITY, FLOOR 17: the great ebony clock chimes now and then; every dancer near him stops dead and looks, then all come: game/act2/masque_rules.ts)
     if (this.level.land?.masque && !this.over) {
       const called = stepClock(this.level, this.hero, this.monsters, dt);
@@ -2372,6 +2375,30 @@ export class Game {
   }
 
   /** (THE HIGH CITY, FLOOR 16) THE SWAN GARDENS' STEP: the nettles' stings dealt (the hero's as the spike floor's, before armour), their stirring and her vine in the yew: game/act2/garden_rules.ts. */
+  /** (THE HIGH CITY, FLOOR 18) A mirror struck again bursts: its shards across the floor before it, hurting all in them; it cracks those beside it. */
+  private updateMirrors(dt: number): void {
+    for (const m of stepMirrors(this.level, dt)) {
+      const fx = m.x + m.fx * 0.6;
+      const fy = m.y + m.fy * 0.6;
+      this.sfx('shatter', 0.8);
+      this.emit({ t: 'spark', x: fx, y: fy, el: 'phys', n: 16 });
+      this.emit({ t: 'spark', x: fx + m.fx * 1.2, y: fy + m.fy * 1.2, el: 'phys', n: 10 });
+      if (this.over) continue;
+      const hit = shardsHit(m, this.hero, this.monsters);
+      if (hit.hero) this.hurtHero(this.hero.d.maxLife * MIRROR.hero, 'phys', [], null, "a mirror's shards");
+      for (const q of hit.mobs) this.damageMonster(q, Math.max(1, Math.round(q.maxLife * MIRROR.mob)), 'phys', false, -1);
+      this.mirrorsStruck(fx, fy, MIRROR.chain - MIRROR.near);
+    }
+  }
+
+  /** (THE HIGH CITY, FLOOR 18) A blow lands near (x, y): the Glass Gallery's mirrors near it crack, or, cracked, are set to burst. */
+  private mirrorsStruck(x: number, y: number, rad: number): void {
+    const cracked = strikeMirrors(this.level, x, y, rad);
+    if (!cracked.length) return;
+    this.sfx('shatter', 0.3);
+    for (const m of cracked) this.emit({ t: 'spark', x: m.x + m.fx * 0.4, y: m.y + m.fy * 0.4, el: 'phys', n: 5 });
+  }
+
   private updateGardens(dt: number): void {
     if (this.over) return;
     for (const s of stepGardens(this.level, this.hero, this.monsters, this.time, dt)) {
@@ -8095,6 +8122,8 @@ export class Game {
   hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number, half?: HalfWords): void {
     const h = this.hero;
     if (this.over || h.invuln > 0 || h.move) return;
+    // (THE HIGH CITY, FLOOR 18: a monster's blow landing on him by a tall mirror cracks it too: game/act2/gallery_rules.ts)
+    if (src && this.level.land?.gallery) this.mirrorsStruck(h.x, h.y, 0.3);
     this.slainBy = src ? src.name : from;
     const d = h.d;
     const fromX = src ? src.x : ox ?? h.x + h.fx;
@@ -10160,6 +10189,8 @@ export class Game {
   /** `skill`: the ability whose hit it is (THE TRAPS: a sealed door in reach opens to one that carries its word: `unseal`). */
   private breakProps(x: number, y: number, rad: number, skill = -1): void {
     this.unseal(skill, x, y, rad);
+    // (THE HIGH CITY, FLOOR 18: a blow near a tall mirror cracks it, or bursts one cracked: game/act2/gallery_rules.ts)
+    if (this.level.land?.gallery) this.mirrorsStruck(x, y, rad);
     // (ACT 2, THE BELLS: a hit at a bell rings it; at the Muffled Bell, it starts the Hush)
     if (this.level.bells) this.bellsStruck(x, y, rad);
     // (ACT 2, THE HUSH: what a kind of its own has lying on the floor there takes his blow too: the Palimpsest's pages
