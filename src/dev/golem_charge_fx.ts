@@ -129,6 +129,13 @@ function onPicture(S: (p: V3) => [number, number], p: V3, w: V3): [number, numbe
 
 /** Where a frame of the charge falls in its round (0 to 1): the same each round, the build-up in step with the loop. */
 const phaseOf = (f: number): number => ((((f - GCHARGE.loop) % GCHARGE.round) + GCHARGE.round) % GCHARGE.round) / GCHARGE.round;
+/**
+ * STEAM OUT OF ITS GUN'S VENTS: off, at his word on the first pictures, 31 Oct:
+ * “I don’t like the steam coming from the gun.  I like it from the stove pipes that’s nice”. Its stacks (the stove pipes on its back) still hiss as it charges and burst as
+ * it fires; its gun's vents are quiet.
+ */
+export const GUN_STEAM = { on: false };
+
 /** The time the charge's smoke and steam are drawn at: its round's own, so each round of the loop is the same. */
 const roundT = (f: number): number => (f < GCHARGE.aimed ? f / 30 : phaseOf(f) * (GCHARGE.round / 30));
 
@@ -269,7 +276,7 @@ function charging(kind: 'shell' | 'beam', ly: ChargeLayers, at: ChargeAt, f: num
   }
   // (its vents jetting steam, its stacks hissing, harder and harder)
   const hard = f < C.aimed ? 0 : Math.min(1, 0.25 + 0.75 * c);
-  for (let i = 0; i < Math.min(2, at.vents.length); i++) {
+  for (let i = 0; i < (GUN_STEAM.on ? Math.min(2, at.vents.length) : 0); i++) {
     const v = at.S(at.vents[i]);
     const [vx, vy] = onPicture(at.S, at.vents[i], at.ventWays[i]);
     jet(ly.st, v[0], v[1], vx, vy, hard, f, 31 * (i + 1));
@@ -599,7 +606,7 @@ export function chargeFx(kind: 'shell' | 'beam', ly: ChargeLayers, at: ChargeAt,
     }
   });
   const cool = Math.max(0, 1 - k / 26);
-  for (let i = 0; i < Math.min(2, at.vents.length); i++) {
+  for (let i = 0; i < (GUN_STEAM.on ? Math.min(2, at.vents.length) : 0); i++) {
     const v = at.S(at.vents[i]);
     const [vx, vy] = onPicture(at.S, at.vents[i], at.ventWays[i]);
     jet(ly.st, v[0], v[1], vx, vy, cool * 0.7, f, 31 * (i + 1));
