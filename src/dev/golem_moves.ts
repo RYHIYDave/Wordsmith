@@ -309,3 +309,169 @@ export function golemCannon(f: number): { swing: number; fold: number; lean: num
   const arm = reachFist(to, lean, bob);
   return { ...arm, lean, bob, feet: [0, 0, 0, 0], level: 1, aim: gunAim(f), kick: gunKick(f) };
 }
+
+// ---- ITS CHARGED SHOTS (the art chat, 31 Oct 2026, at his words of 30 and 31 Oct: “Maybe scrap the ranged shot for now, but
+// hold onto it because maybe we want a passive that makes him ranged where his hold becomes a big charged shot.”; “Also draw a
+// hold for the big charged shot.”; and offered the braced huge shell or the charged beam, “Damn I want both.” So a talent on her
+// tree makes the Golem ranged, its arm the CANNON (solid shot) or the TESLA COIL (energy), and her hold its charged shot).
+// A MOCK-UP: nothing of the game draws these till the main chat brings them in (game/tinkerer.ts GOLEM_CANNON is off).
+//
+// By his rulebook's Movement 9 (a big wind-up held and readable, the strike a flash, a big wind-down). THE WIND-UP, the same for
+// both: it heaves its giant fist up and slams it down on the floor before it, a brace; steps its feet apart and digs them in,
+// its boiler body sunk low and hunched into the shot; brings its gun arm down DEAD LEVEL at what it fires at; and CHARGES, the
+// gun lit in the friend's cyan bit by bit (the cannon's hoops one by one, breech to muzzle; the coil's windings base to tip),
+// steam jetting from its vents, the whole of it shuddering harder and harder, until a flash at its full. HELD: at its full it
+// shudders on, white-hot, a loop of GCHARGE.round frames the game plays as long as her hold lasts (pose and effects alike, each
+// round the same). RELEASED, THE STRIKE, a flash of two frames: the cannon's one huge shell out in a great cyan burst, the
+// recoil throwing its whole body back and SKIDDING it back along the floor (the game moves it: chargeSkid); or the coil's thick
+// beam blazing out, its body rocked back and pushed back as it pours. THE WIND-DOWN: rocked back, it rocks forward again; the
+// gun cools, the light going out of it the way it came, the barrel smoking or the coil spitting and smoking; it lifts its fist,
+// steps its feet back under it, raises its gun and stands as it was.
+
+/** Its charged shots' wind-up, the same for both, in frames (30 a second): its fist slammed down by `planted`; its gun level at `aimed`; charging to its full at `full` (a flash); THE LOOP held from `loop`, `round` frames a round; released, it fires at `fire` (= loop + round). */
+export const GCHARGE = { brace: 1, planted: 8, aimed: 12, full: 27, loop: 30, round: 6, fire: 36 };
+/** THE CANNON'S CHARGED SHOT after it is released: its recoil thrown back by `rocked`, skidded back till `skidded`; rocking forward, settling; its feet stepped back under it from `stand`, its fist lifted at `lift`, standing as it was at `rest`; done at `end`. */
+export const GCHARGE_SHELL = { ...GCHARGE, rocked: 38, skidded: 48, forward: 53, settle: 58, stand: 58, lift: 62, rest: 72, end: 76 };
+/** THE TESLA COIL'S CHARGED BEAM after it is released: blazing out at `fire`, its body rocked back by `rocked`; the beam at its full till `held`, thinning out till `gone`; rocking forward, settling; its feet stepped back under it from `stand`, its fist lifted at `lift`, standing as it was at `rest`; done at `end`. */
+export const GCHARGE_BEAM = { ...GCHARGE, rocked: 38, held: 46, gone: 54, forward: 58, settle: 62, stand: 60, lift: 64, rest: 74, end: 78 };
+/** How far each is thrown back along the floor by its own shot, in tiles (the game moves it; its picture stands where it stands). */
+export const CHARGE_SKID = { shell: 1.0, beam: 0.5 };
+/** Its fist slammed down as it braces, and the strike itself (the recoil): each a flash, not judged frame by frame. */
+export const GCHARGE_STRIKE: [number, number][] = [[GCHARGE.planted - 1, GCHARGE.planted + 1], [GCHARGE.fire - 1, GCHARGE_SHELL.rocked + 1]];
+
+/** How far back along the floor (tiles, away from what it fires at) its shot has thrown it at frame `f`: all at once as it fires, easing to a stop. */
+export function chargeSkid(kind: 'shell' | 'beam', f: number): number {
+  const k = f - GCHARGE.fire;
+  if (k <= 0) return 0;
+  const long = kind === 'shell' ? GCHARGE_SHELL.skidded - GCHARGE.fire : GCHARGE_BEAM.gone - GCHARGE.fire;
+  const u = Math.min(1, k / long);
+  // (the shell's a blow, all at once, easing out; the beam's a push, steady as it pours, easing out as it thins)
+  const e = kind === 'shell' ? 1 - (1 - u) ** 3 : 1 - (1 - u) ** 2;
+  return CHARGE_SKID[kind] * e;
+}
+/** How far charged its gun is at frame `f` (0 to 1; 1 white-hot): charging from `aimed` to `full`; at its full it pulses (white, white, a breath less); after the shot it cools. */
+export function chargeOf(kind: 'shell' | 'beam', f: number): number {
+  const C = GCHARGE;
+  if (f < C.aimed) return 0;
+  if (f < C.full) {
+    const u = (f - C.aimed) / (C.full - C.aimed);
+    return Math.min(0.995, u * (0.6 + 0.4 * u));
+  }
+  if (f < C.fire) return (f - C.loop + C.round * 10) % 3 === 2 ? 0.97 : 1;
+  // (cooling: the cannon's at once, from its muzzle back; the coil's drained as its beam pours, then out)
+  const keys: [number, number][] = kind === 'shell' ? [[C.fire, 0.97], [44, 0.86], [GCHARGE_SHELL.lift + 4, 0]] : [[C.fire, 1], [GCHARGE_BEAM.held, 0.93], [GCHARGE_BEAM.gone, 0.4], [GCHARGE_BEAM.lift + 2, 0]];
+  return Math.max(0, track(keys, f));
+}
+/** How hard it shudders at frame `f` (0 to 1): from nothing as it starts to charge to all it has at its full, held so through the loop. */
+function shudderOf(f: number): number {
+  const C = GCHARGE;
+  if (f <= C.aimed) return 0;
+  if (f >= C.full) return 1;
+  const u = (f - C.aimed) / (C.full - C.aimed);
+  return u * u;
+}
+/** Its shudder at frame `f`, a round of GCHARGE.round frames, the same each round: a heave and a rattle (lean, bob, the gun's rattle). */
+function shudder(f: number): [number, number, number] {
+  const C = GCHARGE;
+  const ph = ((((f - C.loop) % C.round) + C.round) % C.round) / C.round;
+  const s = shudderOf(f);
+  const heave = Math.sin(ph * Math.PI * 2);
+  const rattle = Math.sin(ph * Math.PI * 6);
+  return [s * (1.6 * heave + 0.7 * rattle), s * (0.35 * Math.cos(ph * Math.PI * 2) - 0.35 + 0.25 * rattle), s * (0.1 + 0.1 * rattle)];
+}
+/** Where its giant fist is braced on the floor for its charged shots (forward, up, as it was built). */
+const CHARGE_BRACED: [number, number] = [19, FI[1]];
+/** Its feet dug in: its gun side's a little forward, its giant arm's set back (forward, in its own measure), each stepped there. */
+const DUG: [number, number] = [2.5, -5];
+
+type ChargePose = { swing: number; fold: number; lean: number; bob: number; feet: [number, number, number, number]; level: number; aim: number; kick: number; charge: number; gunLevel: number };
+/** A foot stepped from `a` to `b` (forward) between frames `f0` and `f1`, lifted `lift` on the way: where it is at frame `f`, and how high. */
+function stepped(f: number, f0: number, f1: number, a: number, b: number, lift: number): [number, number] {
+  if (f <= f0) return [a, 0];
+  if (f >= f1) return [b, 0];
+  const u = (f - f0) / (f1 - f0);
+  return [a + (b - a) * u * u * (3 - 2 * u), lift * Math.sin(Math.PI * u)];
+}
+/** The pose of a charged shot at frame `f`: its body (lean, bob) and its recoil given by `body`, the rest of it the same for both. */
+function chargePose(kind: 'shell' | 'beam', f: number): ChargePose {
+  const C = GCHARGE;
+  const R = kind === 'shell' ? GCHARGE_SHELL : GCHARGE_BEAM;
+  const [sl, sb, sk] = f < C.fire ? shudder(f) : [0, 0, 0];
+  // (its body: over its fist as it slams it down, sunk low and hunched into the shot as it charges; then the strike)
+  const lead: [number, number][] = [[0, 0], [C.brace, 0.3], [C.planted, 2], [C.aimed, 3], [C.full, 4.5], [C.fire, 4.5]];
+  const leadBob: [number, number][] = [[0, 0], [C.brace, 0.4], [C.planted, -1.7], [C.aimed, -2.1], [C.full, -2.7], [C.fire, -2.7]];
+  const after: [number, number][] =
+    kind === 'shell'
+      ? [[GCHARGE_SHELL.rocked, -13], [44, -9], [GCHARGE_SHELL.skidded, -5], [GCHARGE_SHELL.forward, 2.5], [GCHARGE_SHELL.settle, -0.8], [GCHARGE_SHELL.rest, 0], [GCHARGE_SHELL.end, 0]]
+      : [[GCHARGE_BEAM.rocked, -11], [42, -9.5], [GCHARGE_BEAM.held, -9], [GCHARGE_BEAM.gone, -3], [GCHARGE_BEAM.forward, 2], [GCHARGE_BEAM.settle, -0.6], [GCHARGE_BEAM.rest, 0], [GCHARGE_BEAM.end, 0]];
+  const afterBob: [number, number][] =
+    kind === 'shell'
+      ? [[GCHARGE_SHELL.rocked, -1.0], [GCHARGE_SHELL.skidded, -1.6], [GCHARGE_SHELL.forward, -2.0], [GCHARGE_SHELL.settle, -1.4], [GCHARGE_SHELL.rest, 0], [GCHARGE_SHELL.end, 0]]
+      : [[GCHARGE_BEAM.rocked, -1.2], [GCHARGE_BEAM.held, -1.5], [GCHARGE_BEAM.gone, -1.8], [GCHARGE_BEAM.forward, -1.9], [GCHARGE_BEAM.settle, -1.3], [GCHARGE_BEAM.rest, 0], [GCHARGE_BEAM.end, 0]];
+  let lean: number;
+  let bob: number;
+  if (f <= C.fire) {
+    lean = track(lead, f) + sl;
+    bob = track(leadBob, f) + sb;
+  } else if (f < R.rocked) {
+    // (THE STRIKE: thrown back all at once, at its fastest as it fires)
+    const u = (f - C.fire) / (R.rocked - C.fire);
+    const k = 1 - (1 - u) * (1 - u);
+    lean = 4.5 + (after[0][1] - 4.5) * k;
+    bob = -2.7 + (afterBob[0][1] + 2.7) * k;
+  } else {
+    lean = track(after, f);
+    bob = track(afterBob, f);
+    // (the beam pouring out of it: it shudders against it as it holds)
+    if (kind === 'beam' && f < GCHARGE_BEAM.gone) {
+      const s = f < GCHARGE_BEAM.held ? 1 : 1 - (f - GCHARGE_BEAM.held) / (GCHARGE_BEAM.gone - GCHARGE_BEAM.held);
+      lean += s * 1.1 * Math.sin((f - C.fire) * Math.PI * 0.67);
+      bob += s * 0.3 * Math.sin((f - C.fire) * Math.PI * 1.33);
+    }
+  }
+  // (its giant fist: heaved up and slammed down before it, kept braced there through the shot and the skid, heaved back)
+  let to: [number, number];
+  if (f <= C.brace) to = [FI[0], FI[1]];
+  else if (f < C.planted) {
+    const u = (f - C.brace) / (C.planted - C.brace);
+    const g = u * u * (3 - 2 * u);
+    to = [FI[0] + (CHARGE_BRACED[0] - FI[0]) * g, FI[1] + 11 * Math.sin(Math.PI * u)];
+  } else if (f <= R.lift) to = [CHARGE_BRACED[0], CHARGE_BRACED[1]];
+  else if (f < R.rest) {
+    const u = (f - R.lift) / (R.rest - R.lift);
+    const g = u * u * (3 - 2 * u);
+    to = [CHARGE_BRACED[0] + (FI[0] - CHARGE_BRACED[0]) * g, FI[1] + 5 * Math.sin(Math.PI * u)];
+  } else to = [FI[0], FI[1]];
+  const arm = reachFist(to, lean, bob);
+  // (its feet: stepped apart and dug in as it braces; stepped back under it as it stands again)
+  // (one at a time, the other foot or its fist always on the floor: its giant arm's foot back as it heaves its fist up, its
+  // gun side's forward once the fist is down; and back under it the same way round as it stands again)
+  const [rf, rz] = f < R.stand ? stepped(f, 2, 7, 0, DUG[1], 4) : stepped(f, R.stand, R.stand + 5, DUG[1], 0, 4);
+  const [lf, lz] = f < R.stand ? stepped(f, 7, C.aimed, 0, DUG[0], 3) : stepped(f, R.stand + 6, R.stand + 11, DUG[0], 0, 3);
+  // (its gun: swung down and brought dead level as it braces; kicked back up its arm by the shot; raised again as it stands)
+  const aim = f < C.aimed ? ease01((f - 2) / (C.aimed - 2)) : f < R.lift ? 1 : 1 - ease01((f - R.lift) / (R.rest - R.lift));
+  const gunLevel = f < C.aimed ? ease01((f - 4) / (C.aimed - 4)) : f < R.lift ? 1 : 1 - ease01((f - R.lift) / (R.rest - 2 - R.lift));
+  const kf = f - C.fire;
+  const kick = kf >= 0 ? (kind === 'shell' ? 1.25 * Math.exp(-kf / 4.5) : 0.7 * Math.exp(-kf / 6) + 0.15 * Math.max(0, Math.min(1, 1 - (f - GCHARGE_BEAM.held) / 8))) : sk;
+  return { ...arm, lean, bob, feet: [lf, lz, rf, rz], level: 1, aim, kick, charge: chargeOf(kind, f), gunLevel };
+}
+const ease01 = (u: number): number => {
+  const c = Math.max(0, Math.min(1, u));
+  return c * c * (3 - 2 * c);
+};
+/** Its pose at frame `f` of the cannon's charged shot (GCHARGE_SHELL): its body, its gun's aim, kick, charge and level (sculptGolemBuild's aim, kick, charge, level). */
+export function golemChargeShell(f: number): ChargePose {
+  return chargePose('shell', f);
+}
+/** Its pose at frame `f` of the tesla coil's charged beam (GCHARGE_BEAM). */
+export function golemChargeBeam(f: number): ChargePose {
+  return chargePose('beam', f);
+}
+/** The frame of a charged shot to show `t` frames after her hold began, her hold let go after `held` frames (at least GCHARGE.loop): the wind-up, the loop round and round while she holds, then on from the shot. */
+export function chargeFrame(t: number, held: number): number {
+  const C = GCHARGE;
+  const h = Math.max(C.loop, held);
+  if (t < C.loop) return t;
+  if (t < h) return C.loop + ((t - C.loop) % C.round);
+  return C.fire + (t - h);
+}

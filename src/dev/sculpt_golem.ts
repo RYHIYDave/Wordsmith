@@ -78,8 +78,16 @@ const WOOD: Ramp = ['#140806', '#2a120c', '#4a2216', '#6e3a22', '#965834'];
 const DIAL: Ramp = ['#4a4038', '#7a6e60', '#b8ac98', '#e6dcc4', '#fff8e8'];
 
 /** A Golem, sculpted, standing ready, in one of the game's views; `turn`: truly turned (Sculpt.spin) this many degrees. */
-export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, yaw0 = -14, giant = false, gun: GolemGun = GOLEM_GUN.gun, aim = 0, kick = 0): Drawn {
+/**
+ * `charge` and `level` (its CHARGED SHOTS, dev/golem_moves.ts GCHARGE_SHELL and GCHARGE_BEAM; naught as the game draws it, and
+ * then it is drawn as it always was): `charge` 0 to 1, how far its gun is charged (the cannon's hoops lit one by one in the
+ * friend's cyan, from the breech to the muzzle; the coil's windings lit from its base to its tip), and cooling back down
+ * through the same; `level` 0 to 1, how far its gun is brought down from its firing line to dead level at what it fires at.
+ */
+export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, yaw0 = -14, giant = false, gun: GolemGun = GOLEM_GUN.gun, aim = 0, kick = 0, charge = 0, level = 0): Drawn {
   const sc = new Sculpt();
+  GOLEM_VENTS.pts = [];
+  GOLEM_VENTS.ways = [];
   // (a few are best seen from the side: the ram charging)
   const yaw = yaw0 + (YAW_OF[build] ?? 0);
   sc.spin = turn;
@@ -151,9 +159,19 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     paint: (h) => {
       if (h.prim.k !== 'cone') return null;
       const t = onCone(h.prim, h.p, U).t;
-      return Math.floor(t * 9) % 2 === 0 ? shadeOf(COPPER, h.tone - 2) : shadeOf(COPPER, h.tone + (far(h.prim.piece) ? -1 : 0));
+      const gap = Math.floor(t * 9) % 2 === 0;
+      // (CHARGING, `charge`: the light between its windings lit from its base up, cyan, white-hot at its full)
+      if (charge > 0 && gap) {
+        const lit = litOf(charge, (Math.floor(t * 9) + 0.5) / 9);
+        if (lit > 0) return LIT[Math.min(3, lit + (h.tone >= 3 ? 1 : 0))];
+      }
+      return gap ? shadeOf(COPPER, h.tone - 2) : shadeOf(COPPER, h.tone + (far(h.prim.piece) ? -1 : 0));
     },
   });
+  // (a hoop of its cannon lit as it charges: the friend's cyan, shaded as brass is, white-hot at its full)
+  const hot = sc.mat({ ramp: CYAN, paint: (h) => LIT[Math.max(1, Math.min(3, h.tone - 1))] });
+  const warm = sc.mat({ ramp: CYAN, paint: (h) => LIT[h.tone >= 3 ? 1 : 0] });
+  const white = sc.mat({ ramp: CYAN, paint: (h) => LIT[Math.max(2, Math.min(3, h.tone))] });
   // ITS HEART: a round furnace window, the friend's cyan behind it, the spokes of a gear turning in the light
   const heart = sc.mat({
     ramp: CYAN,
@@ -914,7 +932,7 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
         // A CANNON: a short fat barrel of copper, hooped in brass, out along its forearm from a brass breech at its elbow,
         // its muzzle flared and black; a drum of shot on the breech feeding it; a lamp of the friend's cyan lit on the
         // breech while it is loaded. It kicks back along itself as it fires (`kick`).
-        const way = wayOf(add(mul(U, 0.92), add(mul(L, 0.3), mul(F, -0.08))), add(mul(F, 0.85), add(mul(L, 0.45), mul(U, 0.08))));
+        const way = levelled(wayOf(add(mul(U, 0.92), add(mul(L, 0.3), mul(F, -0.08))), add(mul(F, 0.85), add(mul(L, 0.45), mul(U, 0.08)))), level);
         const s1 = norm(cross(way, U));
         const s2 = norm(cross(s1, way));
         const e = add(el, mul(way, -2.6 * g * kick));
@@ -922,8 +940,13 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
         sc.ell(brass, 'gunL', along(1.4), [mul(way, 5.0 * g), mul(s1, 4.9 * g), mul(s2, 4.9 * g)], 0.8, { tag: 'breech' });
         sc.ell(steel, 'gunL', along(-4.0), [mul(way, 1.7 * g), mul(s1, 1.7 * g), mul(s2, 1.7 * g)], 0.3, { tag: 'knob' });
         sc.cone(copper, 'gunL', along(2.4), along(18.5), 4.1 * g, 3.4 * g, 0.5, { tag: 'barrel' });
-        for (const [k, r] of [[5.2, 4.7], [11.6, 4.2]] as const) sc.box(brass, 'gunL', along(k), [mul(way, 0.7 * g), mul(s1, r * g), mul(s2, r * g)], r * 0.85 * g, 0.2, { tag: 'hoop' });
-        sc.box(brass, 'gunL', along(19.2), [mul(way, 1.0 * g), mul(s1, 4.8 * g), mul(s2, 4.8 * g)], 4.0 * g, 0.2, { tag: 'muzzle' });
+        // (its hoops and its muzzle's band lit one by one as it charges, `charge`: the breech's first, the muzzle's last)
+        const hoopMat = (i: number): number => {
+          const lit = charge > 0 ? litOf(charge, (i + 0.5) / 3) : 0;
+          return lit >= 3 ? white : lit === 2 ? hot : lit === 1 ? warm : brass;
+        };
+        ([[5.2, 4.7], [11.6, 4.2]] as const).forEach(([k, r], i) => sc.box(hoopMat(i), 'gunL', along(k), [mul(way, 0.7 * g), mul(s1, r * g), mul(s2, r * g)], r * 0.85 * g, 0.2, { tag: 'hoop' }));
+        sc.box(hoopMat(2), 'gunL', along(19.2), [mul(way, 1.0 * g), mul(s1, 4.8 * g), mul(s2, 4.8 * g)], 4.0 * g, 0.2, { tag: 'muzzle' });
         sc.box(dark, 'gunL', along(19.75), [mul(way, 0.6 * g), mul(s1, 2.9 * g), mul(s2, 2.9 * g)], 2.5 * g, 0, { tag: 'bore' });
         // (the drum of shot: a brass drum lying across the breech, its end caps steel; a pipe from it down into the breech)
         const drum = add(along(4.0), mul(s2, 6.2 * g));
@@ -933,10 +956,13 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
         sc.ell(glow, 'gunL', add(along(0.6), add(mul(s2, 4.4 * g), mul(s1, -2.8 * g))), [mul(way, 1.1 * g), mul(s1, 1.1 * g), mul(s2, 1.1 * g)], 0.1, { tag: 'lamp' });
         GOLEM_MUZZLE.p = along(20.4);
         GOLEM_MUZZLE.way = way;
+        // (its vents, for its steam as it charges: either side of its breech, and on top of it)
+        GOLEM_VENTS.pts = [add(along(1.4), mul(s1, 5.2 * g)), add(along(1.4), mul(s1, -5.2 * g)), add(along(8.4), mul(s2, 4.6 * g))];
+        GOLEM_VENTS.ways = [s1, mul(s1, -1), s2];
       } else {
         // A TESLA COIL: a brass housing along its forearm from its elbow, held up beside it like a torch; out of it a coil
         // of copper wound tight, collared in steel; at its tip a steel ring round a ball of the friend's cyan, crackling.
-        const way = wayOf(add(mul(U, 0.94), add(mul(L, 0.26), mul(F, -0.06))), add(mul(F, 0.75), add(mul(L, 0.4), mul(U, 0.5))));
+        const way = levelled(wayOf(add(mul(U, 0.94), add(mul(L, 0.26), mul(F, -0.06))), add(mul(F, 0.75), add(mul(L, 0.4), mul(U, 0.5)))), level);
         const s1 = norm(cross(way, U));
         const s2 = norm(cross(s1, way));
         const e = add(el, mul(way, -1.6 * g * kick));
@@ -950,6 +976,9 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
         sc.ell(glow, 'gunL', along(20.0), [mul(way, 2.4 * g), mul(s1, 2.4 * g), mul(s2, 2.4 * g)], 0.1, { tag: 'terminal' });
         GOLEM_MUZZLE.p = along(20.0);
         GOLEM_MUZZLE.way = way;
+        // (its vents: either side of its housing; and its coil's foot and tip, for the arcs crawling up it)
+        GOLEM_VENTS.pts = [add(along(4.0), mul(s1, 4.4 * g)), add(along(4.0), mul(s1, -4.4 * g)), along(8.8), along(18.4)];
+        GOLEM_VENTS.ways = [s1, mul(s1, -1), s2, s2];
       }
     }
   }
@@ -977,10 +1006,13 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     GOLEM_FIST.c = mv(GOLEM_FIST.c);
     GOLEM_MUZZLE.p = mv(GOLEM_MUZZLE.p);
     GOLEM_MUZZLE.way = tv(GOLEM_MUZZLE.way);
+    GOLEM_VENTS.pts = GOLEM_VENTS.pts.map(mv);
+    GOLEM_VENTS.ways = GOLEM_VENTS.ways.map(tv);
   }
   const k = GOLEM_SIZE[build] ?? GOLEM_TOP / topOf(sc);
   scaleBy(sc, k);
   GOLEM_MUZZLE.p = mul(GOLEM_MUZZLE.p, k);
+  GOLEM_VENTS.pts = GOLEM_VENTS.pts.map((p) => mul(p, k));
   GOLEM_FIST.c = mul(GOLEM_FIST.c, k);
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }
@@ -1033,6 +1065,23 @@ export const GOLEM_GUNS: { id: GolemGun; name: string }[] = [
 const GUN_SIZE = 1.5;
 /** Where the last drawn Golem's gun fires from (its muzzle, or its coil's ball), as it was built (before it is turned), and which way. */
 export const GOLEM_MUZZLE: { p: V3; way: V3 } = { p: [0, 0, 0], way: [1, 0, 0] };
+/** Where the last drawn Golem's gun vents its steam as it charges (and, for the coil, its foot and tip), as it was built, and which way each blows. */
+export const GOLEM_VENTS: { pts: V3[]; ways: V3[] } = { pts: [], ways: [] };
+/** What glows on its gun as it charges: the friend's cyan, darkest to white-hot. */
+const LIT = ['#0c6a80', '#22d0e0', '#b8fff8', '#e8ffff'];
+/** How lit a part of its gun is (0 dark, 1 warming, 2 lit, 3 white-hot), `at` of the way along it (0 its breech, 1 its muzzle), the gun charged `charge`: each part lit as the charge passes it, white-hot at its full. */
+function litOf(charge: number, at: number): number {
+  if (charge >= 0.999) return 3;
+  const u = (charge - at * 0.9) / 0.12;
+  return u >= 1 ? 2 : u > 0 ? 1 : 0;
+}
+/** Its gun's way `w` brought down `level` of the way from its firing line to dead level (a touch below, at their chests). */
+function levelled(w: V3, level: number): V3 {
+  if (level <= 0) return w;
+  const h = Math.hypot(w[0], w[1]) || 1;
+  const flat: V3 = norm([w[0] / h, w[1] / h, -0.07]);
+  return norm(lerp3(w, flat, Math.min(1, level)));
+}
 
 /** HIS PICK, 24 Oct, by 09:30: “Boiler ape”, with one giant arm. */
 export const GOLEM_PICK = { build: 'ape' as GolemBuild, giant: true };
