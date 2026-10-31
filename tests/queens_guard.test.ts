@@ -125,7 +125,7 @@ const pixels = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and only their own files of the game import them (the main chat\'s, built 31 Oct)', () => {
   assert.equal(QGUARD_ON.on, false, 'QGUARD_ON is off');
   const users: string[] = [];
   const theirs = /^art\/queens_guard(_moves|_fx)?$/;
@@ -138,7 +138,7 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/qguard.ts game/act1_rules/qguard.ts render/act1_fx/qguard.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

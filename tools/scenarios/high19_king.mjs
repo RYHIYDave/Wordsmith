@@ -3,15 +3,23 @@
 // off) at 34 s; he falls at 52 s. Stills every half second (STILLS=0: every thirtieth of the game's second, for a film).
 //   node tools/playtest.mjs --file <page> --size 1280x720 --scenario tools/scenarios/high19_king.mjs --out shots/h19k/k
 const FPS = 30;
-const PARTS = [
+const LAST = process.env.LAST === '1';
+const PARTS_LAST = [
+  [0, 'THE KING\'S LAST PHASE', 'At a third of his life the Hush climbs off him.'],
+  [3, 'THE HUSH AT HIS SIDE', 'It grabs you and drags you to him, wraps itself round him (hit it six times to strike it off), breathes grey fog that slows you.'],
+  [34, 'HE FALLS', 'The Hush unwinds; his clockwork songbird winds itself up and sings.'],
+];
+const PARTS_ALL = [
   [0, 'THE KING', 'Slow and heavy: his charge and its line of sparks, the Decree, the crown\'s weight, the Curtains.'],
   [18, 'HIS SECOND PHASE', 'His waits shorter.'],
   [34, 'THE HUSH CLIMBS OFF', 'Then it fights beside him: it grabs you and drags you to him, shields him, breathes grey fog.'],
-  [52, 'HE FALLS', 'The Hush unwinds; his clockwork songbird winds itself up and sings.'],
+  [72, 'HE FALLS', 'The Hush unwinds; his clockwork songbird winds itself up and sings.'],
 ];
+const PARTS = LAST ? PARTS_LAST : PARTS_ALL;
+const AT = LAST ? { mid: -1, last: 0, kill: 34 } : { mid: 18, last: 34, kill: 72 };
 export default async function (page, snap) {
   const stills = process.env.STILLS !== '0';
-  const seconds = Number(process.env.SECONDS || 60);
+  const seconds = Number(process.env.SECONDS || (LAST ? 42 : 80));
   const process_calls = process.env.CALLS !== '0';
   await page.evaluate((process_calls) => {
     const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
@@ -42,11 +50,13 @@ export default async function (page, snap) {
   const total = Math.round(seconds * FPS);
   for (let i = 0; i < total; i++) {
     const s = i / FPS;
-    if (i === 18 * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.6; });
-    if (i === 34 * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.3; });
-    if (i === 52 * FPS) await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'gking'); if (m) g.kill(m); });
+    if (i === AT.mid * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.6; });
+    if (i === AT.last * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.3; });
+    if (i === AT.kill * FPS) await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'gking'); if (m) g.kill(m); });
+    // (the hero's blows on the Hush wrapped round him, every half second, till it is struck off)
+    if (i % 15 === 0) await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'gking' && !q.dead); const p = g.perils.find((q) => q.a1 === 'gking:hush'); if (m && p && !p.c && p.b === 2 && p.d > 0.6) g.damageMonster(m, 40, 'phys', false, 0); });
     // (a moment after he falls, the hero beside his songbird before the throne, to see it wind itself up and sing)
-    if (i === 52 * FPS + 20) await page.evaluate(() => { const g = window.__dbg.game(); const b = g.perils.find((p) => p.a1 === 'gking:bird'); if (b) { g.hero.x = b.x - 1.6; g.hero.y = b.y + 1.6; } });
+    if (i === AT.kill * FPS + 20) await page.evaluate(() => { const g = window.__dbg.game(); const b = g.perils.find((p) => p.a1 === 'gking:bird'); if (b) { g.hero.x = b.x - 1.6; g.hero.y = b.y + 1.6; } });
     await page.evaluate(([slow, s]) => {
       const d = window.__dbg; const g = d.game(); const h = g.hero;
       const m = g.monsters.find((q) => q.kind === 'gking' && !q.dead);
@@ -54,9 +64,11 @@ export default async function (page, snap) {
       if (m && (h.held ?? 0) > 0) { window.__ang = Math.atan2(h.y - m.y, h.x - m.x) - s * 0.35; }
       else if (m) {
         const a = (window.__ang ?? 1.2) + s * 0.35;
-        const x = m.x + Math.cos(a) * 4.6;
-        const y = m.y + Math.sin(a) * 4.6;
-        if (g.isOpen(x, y)) { h.x = x; h.y = y; }
+        // (round him at 4.6 tiles; where a wall is in the way, nearer him; failing that, straight before him)
+        let put = null;
+        for (const r of [4.6, 3.8, 3.0, 2.4]) { const x = m.x + Math.cos(a) * r; const y = m.y + Math.sin(a) * r; if (g.isOpen(x, y)) { put = { x, y }; break; } }
+        if (!put) for (let k = 1; k < 16 && !put; k++) { const b = a + k * 0.4; const x = m.x + Math.cos(b) * 3.4; const y = m.y + Math.sin(b) * 3.4; if (g.isOpen(x, y)) { put = { x, y }; window.__ang = b - s * 0.35; } }
+        if (put) { h.x = put.x; h.y = put.y; }
         const dx = m.x - h.x; const dy = m.y - h.y; const l = Math.hypot(dx, dy) || 1;
         h.fx = dx / l; h.fy = dy / l;
       }

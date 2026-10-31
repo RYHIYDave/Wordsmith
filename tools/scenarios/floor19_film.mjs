@@ -26,10 +26,11 @@ export default async function (page, snap) {
     [10, 'THE PORTCULLISES', 'They slam down to cut a hall in two.', 'portcullis'],
     [18, 'THE CROSSBOWMEN', 'Planted on the walls, they stand and shoot. The red lane is where the bolt flies.', 'xbow'],
     [28, 'THE ORDER’S ARMED LAST', 'Cloaks over mail. They throw a fan of three knives.', 'order'],
-    [36, 'THE WALL WALK', 'Battlements, and the night sky beyond them.', 'walk'],
-    [40, 'THE THRONE HALL', 'His throne, and his clockwork songbird lying broken before it.', 'throne'],
+    [36, 'THE KING\'S KNIGHTS', 'Twice your height, one at a time: a sweep before him, and a cleave that cracks the floor.', 'knight'],
+    [48, 'THE WALL WALK', 'Battlements, and the night sky beyond them.', 'walk'],
+    [52, 'THE THRONE HALL', 'His throne, and his clockwork songbird lying broken before it.', 'throne'],
   ];
-  const seconds = 45;
+  const seconds = 57;
   snap.note('film', { fps: FPS, from: 0, parts: scenes.map(([t, a, b]) => [t, a, b]), size: await page.evaluate(() => [innerWidth, innerHeight]) });
   const go = (what) => page.evaluate((what) => {
     const d = window.__dbg; const g = d.game(); const h = g.hero; const L = g.level; const K = L.land.keep;
@@ -68,6 +69,13 @@ export default async function (page, snap) {
       const q = room('hall', 1) ?? room('hall'); const c = mid(q); const ax = along(q);
       h.x = c.x - (ax ? 4 : 0); h.y = c.y - (ax ? 0 : 4);
       for (const k of [-1, 0, 1]) spawn('order', c.x + (ax ? 3 : k * 1.5), c.y + (ax ? k * 1.5 : 3));
+      d.bot(true);
+    } else if (what === 'knight') {
+      clear();
+      const q = room('barracks') ?? room('hall'); const c = mid(q);
+      h.x = c.x; h.y = c.y + 3;
+      const k = spawn('kknight', c.x, c.y - 1);
+      k.life = k.maxLife = 1e5;
       d.bot(true);
     } else if (what === 'walk') {
       clear();
