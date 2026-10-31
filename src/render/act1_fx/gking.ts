@@ -126,20 +126,53 @@ function sparks(c: Act1FxCtx, p: Peril): void {
   g.globalAlpha = was;
 }
 
-/** Where the crown's weight hangs, its shadow under it (darkening as it stops), and the cracks where it slammed. */
+/** The crown's weight's moments: flying off his head till `fly`; hanging over the hero, following, till `follow`; rising and trembling till `rise`; dropping till `slam`. */
+const CW = { fly: W.fly, follow: W.follow, rise: W.follow + W.hold, slam: W.follow + W.hold + W.drop };
+/** How high the crown hangs over the floor (screen pixels). */
+const CROWN_UP = 40;
+/** Where the crown is on the floor (tiles) at peril time `t`: flying off his head, then over the hero (the peril's own place). */
+function crownFloor(p: Peril): { x: number; y: number } {
+  const u = smooth(0, CW.fly, p.t);
+  return { x: p.a + (p.x - p.a) * u, y: p.b + (p.y - p.b) * u };
+}
+
+/** Where the crown's weight hangs, its shadow under it (darkening as it comes), and where it slammed: a ring of dust and the stones cracked. */
 function weightGround(c: Act1FxCtx, p: Peril): void {
   const g = c.g!;
-  const slam = W.follow + W.hold;
-  if (p.t < slam) {
-    const k = clamp01(p.t / slam);
-    drawFanWarn(g, c.at, { x: p.x, y: p.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, W.r, 0.15 + 0.85 * k, c.t);
+  const was = g.globalAlpha;
+  if (p.t < CW.slam) {
+    // (its shadow on the floor: wider and darker as it nears its drop; the enemy's pink edge round where it will strike)
+    const f = crownFloor(p);
+    const k = clamp01(p.t / CW.rise);
+    const [sx, sy] = c.at(f.x, f.y);
+    const rx = 8 + 10 * k;
+    g.globalAlpha = was * (0.25 + 0.4 * k);
+    g.fillStyle = '#05040a';
+    g.beginPath();
+    g.ellipse(sx, sy, rx, rx * 0.5, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = was;
+    if (p.t >= CW.fly) drawFanWarn(g, c.at, { x: p.x, y: p.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, W.r, 0.2 + 0.8 * k, c.t * (p.t > CW.follow ? 2.5 : 1));
     return;
   }
-  const cf = 1 - smooth(slam + 0.3, slam + W.home, p.t);
-  const was = g.globalAlpha;
-  for (let j = 0; j < 10; j++) {
-    let a = (j / 10) * Math.PI * 2 + hash(j, 1, 7911);
-    const long = W.r * (0.5 + 0.5 * hash(j, 2, 7911));
+  const t = p.t - CW.slam;
+  // (a ring of dust and air thrown out from it, past its reach)
+  if (t < 0.35) {
+    const R = W.r * (0.3 + 1.2 * smooth(0, 0.35, t));
+    const n = Math.ceil(R * 40);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const rr = R * (0.92 + 0.08 * hash(i, 1, 7931));
+      const [sx, sy] = c.at(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+      g.globalAlpha = was * (1 - t / 0.35);
+      dot(g, sx, sy - 2 * hash(i, 2, 7932), i % 3 ? GOLD[3] : '#f4f0ff', 2, 1);
+    }
+  }
+  // (the stones cracked out from under it, fading)
+  const cf = 1 - smooth(1.0, W.home + 0.8, t);
+  for (let j = 0; j < 12; j++) {
+    let a = (j / 12) * Math.PI * 2 + hash(j, 1, 7911);
+    const long = W.r * (0.5 + 0.55 * hash(j, 2, 7911)) * smooth(0, 0.06, t);
     for (let r = 0.1; r < long; r += 0.05) {
       if (hash(j, Math.round(r * 20), 7912) > cf) continue;
       const [sx, sy] = c.at(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
@@ -148,43 +181,121 @@ function weightGround(c: Act1FxCtx, p: Peril): void {
       a += (hash(j, Math.round(r * 20), 7913) - 0.5) * 0.14;
     }
   }
-  g.globalAlpha = was;
-}
-
-/** A crown in the game's pixels (a stand-in until the art chat's), its foot at (sx, sy). */
-function crownAt(g: CanvasRenderingContext2D, sx: number, sy: number, alpha: number): void {
-  const was = g.globalAlpha;
-  g.globalAlpha = was * alpha;
-  const x0 = Math.round(sx) - 6;
-  const y0 = Math.round(sy) - 8;
-  // (its three points, its band, a stone set in the band)
-  const rows = ['  3   3   3  ', ' 232 232 232 ', ' 2222222222 2', '1222222222221', '1333333333331', '1222202222221', ' 1111111111 '];
-  rows.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) {
-      const ch = row[x];
-      if (ch === ' ') continue;
-      g.fillStyle = ch === '0' ? '#8a1c3a' : GOLD[Number(ch)];
-      g.fillRect(x0 + x, y0 + y, 1, 1);
+  // (dust thrown up, settling)
+  if (t < 0.6) {
+    for (let i = 0; i < 40; i++) {
+      const a = hash(i, 3, 7933) * Math.PI * 2;
+      const r = W.r * hash(i, 4, 7934) * smooth(0, 0.3, t);
+      const up = 14 * hash(i, 5, 7935) * Math.sin(Math.min(1, t / 0.6) * Math.PI);
+      const [sx, sy] = c.at(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
+      g.globalAlpha = was * (1 - t / 0.6) * 0.8;
+      dot(g, sx, sy - up, i % 2 ? '#4a4658' : '#6a6678', 2, 2);
     }
-  });
+  }
   g.globalAlpha = was;
 }
 
-/** THE CROWN in the air: hanging over the hero and bobbing; still as it stops; slamming down; then flying home to him. */
+/**
+ * THE CROWN in the game's pixels (a stand-in until the art chat's): a ring of gold, its band set with stones, five points with
+ * pearls on them, turned round `spin` (radians: the points and stones in front bright, those behind dark, as it turns); its foot
+ * at (sx, sy), `size` times its own; a gold glow round it (the enemy's).
+ */
+function crownAt(g: CanvasRenderingContext2D, sx: number, sy: number, alpha: number, spin = 0, size = 1): void {
+  if (alpha <= 0) return;
+  const was = g.globalAlpha;
+  const W2 = 13 * size;
+  const band = 5 * size;
+  const tall = 8 * size;
+  const cx = Math.round(sx);
+  const base = Math.round(sy);
+  // (its glow)
+  g.globalAlpha = was * alpha * 0.08;
+  g.fillStyle = GOLD[3];
+  g.beginPath();
+  g.ellipse(cx, base - band - tall * 0.4, W2 + 5, (band + tall) * 0.8, 0, 0, Math.PI * 2);
+  g.fill();
+  // (the five points and the stones, behind first, then the band, then those in front)
+  const parts = Array.from({ length: 5 }, (_, k) => {
+    const a = spin + (k / 5) * Math.PI * 2;
+    return { x: Math.sin(a) * W2, front: Math.cos(a), k };
+  });
+  const point = (q: { x: number; front: number; k: number }): void => {
+    const lit = q.front > 0;
+    const px = cx + q.x;
+    const top = base - band - tall;
+    const w = Math.max(1.5, 3.2 * size * (0.55 + 0.45 * Math.abs(q.front)));
+    g.globalAlpha = was * alpha;
+    g.fillStyle = lit ? GOLD[2] : GOLD[0];
+    g.beginPath();
+    g.moveTo(px - w, base - band + 1);
+    g.lineTo(px, top + 2 * size);
+    g.lineTo(px + w, base - band + 1);
+    g.fill();
+    if (lit) {
+      g.fillStyle = GOLD[3];
+      g.fillRect(Math.round(px - 1), Math.round(top + 3 * size), 1, Math.round(tall * 0.6));
+    }
+    // (a pearl on its tip)
+    g.fillStyle = lit ? '#f4f0ff' : '#8a86a2';
+    g.fillRect(Math.round(px - size), Math.round(top), Math.max(2, Math.round(2 * size)), Math.max(2, Math.round(2 * size)));
+  };
+  for (const q of parts.filter((q) => q.front <= 0)) point(q);
+  // (the band: gold shaded top to foot, its rim bright)
+  g.globalAlpha = was * alpha;
+  for (let y = 0; y < band; y++) {
+    g.fillStyle = y === 0 ? GOLD[3] : y < band * 0.5 ? GOLD[2] : y < band - 1 ? GOLD[1] : GOLD[0];
+    g.fillRect(cx - W2, base - band + y, W2 * 2 + 1, 1);
+  }
+  // (its stones, set in the band in front: the enemy's red and a blue)
+  for (const q of parts) {
+    if (q.front <= 0.15) continue;
+    const a = spin + ((q.k + 0.5) / 5) * Math.PI * 2;
+    const x = cx + Math.sin(a) * W2 * 0.9;
+    if (Math.cos(a) <= 0) continue;
+    g.fillStyle = q.k % 2 ? '#c0204a' : '#2a3a9a';
+    g.fillRect(Math.round(x - size), Math.round(base - band * 0.7), Math.max(2, Math.round(2 * size)), Math.max(2, Math.round(2 * size)));
+  }
+  for (const q of parts.filter((q) => q.front > 0)) point(q);
+  g.globalAlpha = was;
+}
+
+/** THE CROWN in the air: off his head and out over the hero; hanging, turning slowly, following him; rising and trembling as it stops; dropping, a heavy slam; then flying home to his head. */
 function weightAir(c: Act1FxCtx, p: Peril): void {
   const g = c.g!;
-  const slam = W.follow + W.hold;
+  const size = 1.6;
+  if (p.t < CW.fly) {
+    // (lifted off his head, arcing out over the hero)
+    const f = crownFloor(p);
+    const u = smooth(0, CW.fly, p.t);
+    const [sx, sy] = c.at(f.x, f.y);
+    crownAt(g, sx, sy - (58 + (CROWN_UP - 58) * u) - 22 * Math.sin(u * Math.PI), 1, p.t * 9, size);
+    return;
+  }
   const [sx, sy] = c.at(p.x, p.y);
-  if (p.t < W.follow) {
-    crownAt(g, sx, sy - 34 - 2 * Math.sin(c.t * 5), clamp01(p.t / 0.25));
-  } else if (p.t < slam) {
-    crownAt(g, sx, sy - 36 + 2 * smooth(W.follow, slam, p.t), 1);
-  } else if (p.t < slam + 0.08) {
-    crownAt(g, sx, sy - 34 * (1 - (p.t - slam) / 0.08), 1);
+  if (p.t < CW.follow) {
+    // (hanging, turning slowly, bobbing)
+    crownAt(g, sx, sy - CROWN_UP - 2 * Math.sin(c.t * 4), 1, p.t * 1.6, size);
+  } else if (p.t < CW.rise) {
+    // (it stops, rises, and trembles: the drop is coming)
+    const u = smooth(CW.follow, CW.rise, p.t);
+    const shake = (hash(Math.floor(c.t * 40), 1, 7941) - 0.5) * 3 * u;
+    crownAt(g, sx + shake, sy - CROWN_UP - 12 * u, 1, CW.follow * 1.6, size * (1 + 0.1 * u));
+  } else if (p.t < CW.slam) {
+    // (dropping: fast, stretched with its speed)
+    const u = (p.t - CW.rise) / (CW.slam - CW.rise);
+    crownAt(g, sx, sy - (CROWN_UP + 12) * (1 - u * u), 1, CW.follow * 1.6, size);
   } else {
-    // (flying home: up and away, fading)
-    const u = clamp01((p.t - slam - 0.15) / Math.max(0.05, W.home - 0.15));
-    crownAt(g, sx, sy - 40 * u, 1 - u);
+    // (struck down: a bounce on the stones, then flying home to his head, turning)
+    const t = p.t - CW.slam;
+    const king = c.game.monsters.find((q) => q.kind === 'gking' && !q.dead);
+    const home = king ?? { x: p.a, y: p.b };
+    const u = smooth(0.2, W.home, t);
+    const x = p.x + (home.x - p.x) * u;
+    const y = p.y + (home.y - p.y) * u;
+    const [hx, hy] = c.at(x, y);
+    const bounce = t < 0.2 ? 6 * Math.sin((t / 0.2) * Math.PI) : 0;
+    // (home on his head: gone into his own picture's)
+    crownAt(g, hx, hy - bounce - (58 * u + 26 * Math.sin(u * Math.PI)), (king ? 1 : 1 - u) * (1 - smooth(W.home, W.home + 0.12, t)), t * 10, size);
   }
 }
 

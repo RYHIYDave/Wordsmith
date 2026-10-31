@@ -59,8 +59,8 @@ export const KING_TUNE = {
   charge: { warn: 0.8, run: 0.75, pace: 12, most: 9, past: 1.5, hit: 1.1, burst: 0.6, line: 0.75, sparks: 0.7, long: 2.3 },
   /** The Decree: how near a knight's line (tiles before or behind it) and how near a knight across it he must be to be struck; a knight's share of his blow. */
   decree: { fwd: 0.55, side: 0.85, dmg: 0.8 },
-  /** The crown's weight: when in his move it goes up (s), the whole move (s); how long it follows the hero and how fast (tiles a second), how long it hangs still, how far round it the slam strikes, how long it takes to fly home. */
-  weight: { send: 1.1, long: 1.6, follow: 2.4, pace: 3.2, hold: 0.45, r: 1.7, home: 0.6 },
+  /** The crown's weight: when in his move it goes up (s), the whole move (s); how long it takes to fly off his head to over the hero; how long it follows the hero (from going up) and how fast (tiles a second), how long it hangs still, rising and trembling, before it drops, how long its drop takes, how far round it the slam strikes, how long it takes to fly home. */
+  weight: { send: 1.1, long: 1.6, fly: 0.45, follow: 2.4, pace: 3.2, hold: 0.55, drop: 0.08, r: 1.7, home: 0.7 },
   /** The faces: how near one must pass him to strike him, its share of his blow, no more often than `gap`, and no more than `most` of them a cast. */
   faces: { hit: 0.6, dmg: 0.3, gap: 0.3, most: 4 },
   /** His last phase comes at this share of his life. */
@@ -330,7 +330,7 @@ function weightStep(R: BossRules, p: Peril, dt: number): void {
     }
     return;
   }
-  if (!p.c && p.t >= W.follow + W.hold) {
+  if (!p.c && p.t >= W.follow + W.hold + W.drop) {
     // (it slams down)
     p.c = 1;
     g.sfx('explode', 0.8);
@@ -486,7 +486,8 @@ export const RULES: Act1Rules | null = {
       if (!at(a.hit)) return;
       // (his crown goes up, and hangs over the hero)
       g.sfx('echo', 0.6);
-      R.peril(m, 'act1', h.x, h.y, { a1: 'gking:weight', dur: W.follow + W.hold + W.home, hit: 0, c: 0, dmg: g.rollMonsterDmg(m) * a.dmg });
+      // (from his head (`a`, `b`, where he stood) out over the hero)
+      R.peril(m, 'act1', h.x, h.y, { a1: 'gking:weight', dur: W.follow + W.hold + W.drop + W.home + 0.8, hit: 0, a: m.x, b: m.y, c: 0, dmg: g.rollMonsterDmg(m) * a.dmg });
       return;
     }
     if (a.id === 'gking:curtains') {
