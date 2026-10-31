@@ -188,4 +188,4 @@ OF THE FIRST DESIGN. The sheet and the film (`kings_knights_sheet.png`, `kings_k
 (kings_knights_sheet.png and the film): are these right? They carry the shield on their back for the two-handed chop and
 swing it onto the arm to rush.”: “Yes, that's them (Recommended)”.
 
-OF THIS DESIGN (“Huge and slow, one each”): not yet shown to him.
+OF THIS DESIGN (“Huge and slow, one each”), first pass (134dab4; 74 tall against the hero's 58), shown 30 Oct by 20:15. Asked “Are these the king's knights now: huge and slow, with a wide sweep and an overhead cleave?”: “Bigger still” (offered as: even taller and broader, still well short of the King). Asked whether the royal swan, with the shield gone only on his chest and often hidden by the sword, should go anywhere else: “Also on his back” (offered as: a big swan on the back of his surcoat, so you see it from behind too). Second pass: being made.
