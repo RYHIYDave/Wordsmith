@@ -1,103 +1,107 @@
-# Floor 18, the Glass Gallery: the queen's guard (mock-up; branch `mockup/queens-guard`)
+# Floor 18, the Glass Gallery: the queen's guard, THE MIRROR DUELLISTS (mock-up; branch `mockup/queens-guard`)
 
 From `origin/mockup/swan-gardens` (55945b3). Nothing here is in the game until the main chat puts it there, on his yes.
 Nothing of the game imports any of it (its test proves it); it is behind `QGUARD_ON`, off.
 
 ## The brief
 
-The floor's plan, his yes: “Enemies: ladies-in-waiting, the queen's guard, and your own reflections”. His pick for how they
-move: “Measured, then a sudden charge (Recommended)”, with the brief as offered: the queen's guard, floor 18's medium mob;
-tall halberdiers in silvered armour, violet cloaks, helms crested with spikes of glass like the queen's crown, mirror-polished
-round shields; a head taller than the knight, fewer; their mark the mirror shields and the glass-spiked helms; two attacks,
-a long halberd chop down in front and a shield charge that flashes as it hits; their death, the shield cracks like glass, to
-one knee, the Hush leaves them in a grey breath; never floor 16's palace guard (no tabard, no swan), never undead; their
-sound steel and the ring of glass. From the Grimms' "Snow White" (1812): the queen's own guard, nothing more of the book.
+The floor's plan, his yes: “Enemies: ladies-in-waiting, the queen's guard, and your own reflections”.
+
+HIS PICK, 30 Oct (asked how the queen's guard should change so it is nothing like the king's knights): “Mirror duellists
+(Recommended)”, offered as: "Look: tall and thin, elegant; mirrored plate like liquid silver, a faceless polished helm (you
+see yourself in it), violet cape. No shield, no halberd: a long glass blade in each hand. Move: they don't charge. They step
+into a mirror and step out of another beside you (the Queen's trick, smaller). Attacks: a fast double slash with the glass
+blades; a thrown fan of glass shards (ranged). Death: they shatter like a mirror. Silhouette: the tallest, thinnest guard of
+Act 2."
+
+This REPLACES THE FIRST DESIGN (the halberdiers with round mirror shields and crowns of glass spikes, who marched and then
+charged). The history of that design stays as it was: his pick for how they moved, “Measured, then a sudden charge
+(Recommended)”, and his word on its sheet and film, asked “The Queen's guard (queens_guard_sheet.png and the film): are these
+right?”: “Yes, that's them (Recommended)” (commit 64b8f03). From the Grimms' "Snow White" (1812): the queen's own guard,
+nothing more of the book.
 
 Built to his rules from the first pass: Movement 9 (“Like the wind up and wind down are big but the actual punch is
 lightning quick”; for the enemies, “Start from now on, but every enemy is going to need that change eventually.  And bigger
-AOE to compensate for the extra time the player gets to evade”), and his words on speed and size of 28 Oct.
+AOE to compensate for the extra time the player gets to evade”); his rule 9, a sculpted body with a real outline.
 
 ## The pictures (`pictures/`)
 
-- `queens_guard_sheet.png`: standing, from in front and from behind, beside the knight, three times as big; three of them at
-  the game's size marching on the knight.
-- `queens_guard_moves.mp4`: every move at the scale of a boss arena (an ellipse 17 by 20 tiles) with the knight for size, and
-  close up from in front and from behind; each strike again at half speed.
+- `queens_guard_sheet.png`: on guard, from in front and from behind, beside the knight, three times as big; four of them at
+  the game's size beside the knight (on guard, gliding, drawn back to slash, crossed for the fan).
+- `queens_guard_moves.mp4` (31 s): every move at the scale of a boss arena (an ellipse 17 by 20 tiles) with the knight for
+  size, and close up from in front and from behind; the mirror step, the double slash and the shard fan again at half speed.
 
 The floor in them is a stand-in (dark polished stone in tiles), not floor 18's own.
 
 ## Their look (src/art/queens_guard.ts)
 
-A head taller than the knight (`QG_BODY`, 68 tall to his 58; the helm's top at about 70), long in the leg. Silvered plate,
-cool grey-silver with lavender lights (`SILVER`): a ridged breastplate, a fauld of lames, tassets, great pauldrons in lames,
-couters and poleyns, greaves, sabatons, gauntlets. A short pleated arming skirt and a cloak from the shoulders to the calves,
-both dark royal violet (`VIOLET`), the cloak clasped at the pauldrons, edged silver, streaming in the charge. A closed helm,
-its visor a beak with a bright brow over a dark slit, the dull pink eyes behind it, the Hush leaking out of it; round its
-crown, on a violet circlet, EIGHT GLASS SPIKES (`QG_SPIKES`, the tallest, 16, at the brow), lavender and cold blue glass
-(`GLASS`, hue 230 to 250: never the friend's cyan). THE HALBERD (`QG_HALBERD`, 100 long, two and a half tiles): a staff
-lacquered near black-violet, bound in silver; a broad crescent axe (13 out from the staff), a hooked fluke, a long top spike, a
-violet tassel. THE ROUND MIRROR SHIELD (`QG_SHIELD`, 20 across, domed), strapped to the left forearm: silver rim and studs,
-its face a true mirror of the gallery round it from where the eye stands (the glasshouse's light, the vault, the bright line
-of the far windows, the dark floor), its sheen sliding as it turns; leather straps behind.
+THE TALLEST, THINNEST GUARD OF ACT 2: `QG_BODY` 72 tall, the helm's top at 74.9 (the knight's at 59.7, his head 9.8 tall: a
+head and a half over him; floor 16's palace guard's at 67.9); narrow in the shoulder (8.8 to the palace guard's 9.7), the
+chest and the waist, long in the leg and the arm, the limbs slim. MIRRORED PLATE like liquid silver: the round plates (the
+breastplate, small pauldrons, couters, poleyns, pointed sabatons, the helm) show the gallery by the way they reflect from
+where the eye stands (`MIRROR`: the dark floor, the walls, the bright line of the far windows, the vault, the glasshouse's
+light), the rest polished silver with lavender lights (`SILVER`); long narrow tassets. THE FACELESS HELM: a smooth egg of
+mirror with a faint sheen across it, the Hush's dull pink deep behind its face (two smudges where eyes would be), the Hush
+seeping out under its rim. THE VIOLET CAPE (`VIOLET`) from the shoulders to the ankles, clasped at the pauldrons. A LONG GLASS
+BLADE IN EACH HAND (`QG_BLADE`: 46 long, 1.17 tiles), lavender and cold blue glass (`GLASS`, hue 230 to 250), edges ground
+bright, on silver hilts. Nothing cyan anywhere. No shield, no halberd.
 
 ## Their moves (src/art/queens_guard_moves.ts) and their numbers
 
-Frames at 30 a second but the stand (10) and the two loops (20). Tiles are the floor's (`TILE3`).
+Frames at 30 a second but the stand (10) and the glide (20). Tiles are the floor's (`TILE3`, 39.19 of their lengths).
 
-- STAND (32 frames at 10, 3.2 s): on guard, the shield up before the chest, the halberd stood at the right side; breathing,
-  the weight shifting, the helm turning slowly.
-- THE MARCH (`walk`): `QG_MARCH` 1.0 tile a second (the knight walks 2.5): a loop of 24 frames at 20 (1.2 s), two long
-  heavy steps, each knee brought up and each sabaton set down flat, the body sinking onto it; shield up, halberd upright.
-- THE CHARGE: `QG_CHARGE` 6.0 tiles a second, six times the march: the same 24 frames, six bounding strides a round (it
-  repeats every 0.4 s, `QG_CHARGE_EVERY`), low behind the shield, the halberd slanted back over the shoulder, the cloak
-  streaming. INTO IT (`chargeIn`, 0.2 s): the game carries them at the full 6 tiles a second from its first frame (sudden:
-  no run-up) while they drop behind the shield and drive off. OUT OF IT (`chargeOut`, 0.4 s): the right foot thrown down,
-  a skid, up onto guard 24 figure lengths (0.6 tile) on (`QG_CHARGE_OUT.shift`).
-- THE HALBERD CHOP (`attack`, `QG_CHOP`, 2.0 s): heaved up high over the right shoulder in the right fist, the body leaning
-  back and wound round, a step in, the shield held out before them; HELD shaking 0.52 to 0.90 s, the axe glinting pink (the
-  warning); hips first; THE STRIKE frames 27 to 29 (0.90 to 0.967 s, the blow landing on the second), the halberd swept
-  over the top through more than 120 degrees, smeared (a fan of after-images and the arcs of its point, edge and horns);
-  the axe bites the floor 2.0 tiles out; held bent over it to 1.36 s; heaved up and stood again. WHAT IT LEAVES
-  (`chopPainted`, src/art/queens_guard_fx.ts, 1.5 s): the floor splits along a line from 1.2 to 6.5 tiles out, 1.6 wide, run
-  out in two frames, both its edges flashing pale; glass leaps up all along it and falls ringing; it dulls to a scar.
-- THE SHIELD CHARGE (`bash`, `QG_BASH`, 1.85 s): down into a crouch behind the shield, left shoulder forward, the halberd
-  slanted back; HELD shaking 0.34 to 0.80 s, the mirror glinting pink; hips first; THE STRIKE frames 24 to 26 (0.80 to
-  0.867 s): a burst off the floor, both feet up, the GAME CARRYING THEM 3 tiles in those two frames (`QG_BASH.carry`,
-  `bashCarried`), speed-lines streaking back the whole way; the shield punched out as it lands: the mirror flashes white
-  (0.3 s), a star of light and glass off it; held; up onto guard 18 figure lengths (0.46 tile) further on (`QG_BASH.end`).
-  WHAT IT LEAVES (`bashPainted`, 0.9 s): a ring of silver-white light 3.2 tiles across before the shield, out in two frames;
-  the lane they burst along, 1.6 tiles wide, scored with light.
-- STRUCK (`reel`, 0.4 s): jolted back, the helm snapped back, the shield rocked, the Hush coughed out.
-- THEIR DEATH (`dying`, `QG_DIES`, 3.4 s): the shield cracks across like a mirror (0.06 to 0.42 s), glass falling from it and
-  lying glinting; the halberd drops (0.36 s); down onto the right knee, the left foot planted (by 1.0 s); the cracked shield
-  slides off the arm and lies flat, mirror up (1.12 s); the gasp, head thrown back, the Hush pouring out of the slit in one
-  great grey breath (1.0 to 2.5 s), the pink gone from the eyes; then the other knee gives and they sink down, sat back on
-  their heels, bowed over, still (2.0 to 2.65 s): people again, alive.
+- ON GUARD (`stand`, 32 frames at 10, 3.2 s): the duellist's guard, the blades crossed low before them, points near the
+  floor; breathing, the weight shifting, the helm turning slowly.
+- THE GLIDE (`walk`): `QG_GLIDE` 1.2 tiles a second (the knight walks 2.5), a loop of 20 frames at 20 (1 s): long level steps,
+  each foot set down toe first, hardly a bob; the blades kept crossed low. They don't charge.
+- THE MIRROR STEP, two moves of 0.6 s each (the game moves them between): INTO THE GLASS (`more.stepIn`): a mirror-ripple
+  opens out of the air at their left (`QG_RIPPLE`: 40 across, 96 tall, 0 to 0.2 s); they gather; THE STRIKE frames 10 to 12
+  (0.333 to 0.4 s): gone into it, smeared (streaks from every point of them into the glass); it ripples hard and closes
+  (0.42 to 0.6 s), throwing off glints. OUT OF THE GLASS (`more.stepOut`): a ripple opens beside where they will stand (0 to
+  0.18 s), something stirs in it; THE STRIKE frames 8 to 10 (0.267 to 0.333 s): out of it in a crouch, smeared; it closes
+  behind them (0.36 to 0.56 s) and they rise on guard.
+- THE DOUBLE SLASH (`attack`, `QG_SLASH`, 1.7 s): both blades drawn back high over the shoulders, a step in; HELD shaking 0.48
+  to 0.9 s, the glass glinting pink (the warning); hips first; THE FIRST SLASH frames 27 to 29 (0.9 to 0.967 s, landing on
+  the second), the right blade down across from high right to low left; THE SECOND at once, frames 30 to 32 (1.0 to 1.067 s),
+  the left blade from high left to low right; each smeared; an X of glass light hangs in the air; held crossed to 1.36 s,
+  back on guard. WHAT IT LEAVES (`xPainted`, src/art/queens_guard_fx.ts, 1 s): an X of glass light over the floor from 0.4 to
+  2 tiles before them, 1.8 across, its first stroke whole as the first slash lands, its second run out with the second.
+- THE SHARD FAN (`more.fan`, `QG_FAN`, 1.75 s): the blades crossed high before the helm, five shards of glass gathering at the
+  cross; HELD shaking 0.36 to 0.8 s, glinting pink; hips first; THE STRIKE frames 24 to 26 (0.8 to 0.867 s): the blades flung
+  apart and the shards thrown, smeared; held wide, back on guard. WHAT IT LEAVES (`fanPainted`, 0.74 s): FIVE SHARDS in a fan
+  SIXTY DEGREES wide (`QG_FAN_WAYS`), each flying from 0.9 tiles out to EIGHT TILES (`QG_FAN.range`) at 16 tiles a second,
+  a streak behind each and its shadow under it; each bursts into glints at the end.
+- STRUCK (`reel`, 0.4 s): jolted back, the helm snapped back, the blades flung out, the Hush coughed out.
+- THEIR DEATH (`dying`, `QG_DIES`, 2.8 s): jolted rigid; CRACKS RACE over every plate of them (0.06 to 0.66 s); the head goes
+  back and the Hush leaves them in one grey breath (0.42 to 1.36 s), the pink going out behind the helm; the cracks blaze
+  white (1.3 to 1.5 s); at 1.5 s THEY SHATTER into mirror shards (64) that fall, lie glinting on the floor, and fade one by
+  one (2.2 to 2.75 s). Nothing gory; nothing left.
 
 ## Bringing it in (the main chat's)
 
-`makeQGuardArt3()` gives `{ front, back }` as the game holds a monster; the moves: `stand`, `walk` (the march), `attack`
-(the chop), `reel`, `dying`, and `more.chargeIn`, `more.charge`, `more.chargeOut`, `more.bash`. The game's part:
+`makeQGuardArt3()` gives `{ front, back }` as the game holds a monster; the moves: `stand`, `walk` (the glide), `attack` (the
+double slash), `reel`, `dying`, and `more.stepIn`, `more.stepOut`, `more.fan`. The game's part:
 
-- THE CHARGE: march, then `chargeIn` and `charge` carried at `QG_CHARGE` tiles a second; end the run at a stride's start
-  (every `QG_CHARGE_EVERY`), play `chargeOut`, move them on `QG_CHARGE_OUT.shift`; then stand, chop or shield charge.
-- THE SHIELD CHARGE: carry them `QG_BASH.carry` tiles through `QG_BASH.strike`; the blow lands on `QG_BASH.hit`; at its end
-  move them on `QG_BASH.end`. Its areas (his “bigger AOE”): the lane it crosses (`QG_BASH.wide` wide) and the ring
-  (`QG_BASH.ring` across); draw `bashPainted(t, view)` from the hit at their place as they land, turned their way.
-- THE CHOP: the blow lands on `QG_CHOP.hit`; its area the line `QG_CHOP.from` to `QG_CHOP.reach` tiles before them,
-  `QG_CHOP.wide` wide; draw `chopPainted(t, view)` from the hit at their place, turned their way.
-- THE DEATH: the halberd and the shield fall as pieces (`fall`), clear of them.
+- THE MIRROR STEP: play `stepIn` where they stand; then put them where they come out (beside the hero) and play `stepOut`;
+  then the stand or a blow. Between the two they are not there (`awayAt`); the ripple is painted in their own frames.
+- THE DOUBLE SLASH: the first blow lands on `QG_SLASH.hit`, the second on `QG_SLASH.second[1]`; its area the X from
+  `QG_SLASH.from` to `QG_SLASH.reach` tiles before them, `QG_SLASH.wide` across; draw `xPainted(t, view)` from the first hit at
+  their place, turned their way.
+- THE SHARD FAN: thrown on `QG_FAN.hit`: five projectiles along `QG_FAN_WAYS`, from `QG_FAN.from` tiles out at
+  `QG_FAN.speed` tiles a second to `QG_FAN.range` tiles (`fanShardAt`); `fanPainted(t, view)` draws them.
+- THE DEATH: nothing falls as a piece; the shards are in their own frames.
 
 ## The checks
 
 - `tests/queens_guard.test.ts` (11): nothing of the game imports them, the switch off; EVERY MOVE THROUGH EVERY BOSS CHECK
-  (src/art/boss_checks.ts), every frame from in front and from behind, and every handover (the stand and every step of the
-  march into the charge, into its loop, out of it at each stride, the skid into the stand and both blows); his lightning
-  strikes (two frames each, landing on the second, smeared then and only then); nothing cyan, the pink edge while they live,
-  every pixel whole or empty; nothing cut off; nothing in the floor; the Hush leaking, leaving, gone, the pink eyes; what
-  falls lying clear; the brief (a head taller, the eight glass spikes, a mirror, no tabard or swan, the crack, to one knee,
-  down); his speeds and sizes in tiles (the march and the charge each painted for its pace, the axe biting two tiles out,
-  the line, the burst, the ring, each out in two frames); nothing folds flat.
+  (src/art/boss_checks.ts), every frame from in front and from behind, and every handover (the stand into the glass, out of
+  it, back on guard; into the glide and out of it at every step; each blow and back); his lightning strikes (two frames each,
+  the second slash two more at once after the first, smeared then and only then); nothing cyan, the pink edge while they
+  are here, every pixel whole or empty; nothing cut off; nothing in the floor; the Hush seeping, leaving, gone, the pink
+  behind the helm; the shatter (cracked all over first, then only shards, lying on the floor, gone at the end); his pick's
+  look (the tallest and thinnest guard of Act 2, mirrored plate, the faceless helm, the violet cape, a glass blade in each
+  hand, no shield, no halberd); his pick's moves in tiles (no charge, the mirror step of 0.6 s each way with a ripple at
+  each end, the X out to two tiles, the fan's five shards, sixty degrees, eight tiles); nothing folds flat.
 - The import checks of `tests/bosses.test.ts`, `tests/crier.test.ts` and `tests/hushed.test.ts` are told of
   `art/queens_guard*.ts` (they take the Hush's colours and breath from art/crier.ts and art/hushed.ts, and the bosses' feet
   from art/bosses3.ts). Nothing else of the game is changed.
@@ -106,12 +110,17 @@ Frames at 30 a second but the stand (10) and the two loops (20). Tiles are the f
 
 ## For him to decide
 
-- The chop is struck ONE-HANDED, the shield kept up: the shield is strapped to the left forearm, and with both hands on the
-  staff it swung through his own body. Read as the brief; his to change.
-- The numbers: the march 1 tile a second, the charge 6; the chop's line 6.5 tiles long and 1.6 wide; the shield charge's
-  burst 3 tiles and its ring 3.2 across. His to change.
+- The numbers: the glide 1.2 tiles a second; the X 0.4 to 2 tiles out and 1.8 across; the shards 16 tiles a second. His to
+  change.
+- The mirror step comes out of a ripple at their left, not of the gallery's wall mirrors (it can be anywhere, as he asked:
+  "beside you"). If he would rather they used the wall mirrors, the game must place them by one.
 
 ## His word on the pictures
 
-The sheet and the film (`queens_guard_sheet.png`, `queens_guard_moves.mp4`), asked “The Queen's guard
-(queens_guard_sheet.png and the film): are these right?”: “Yes, that's them (Recommended)”.
+The first design's sheet and film, asked “The Queen's guard (queens_guard_sheet.png and the film): are these right?”: “Yes,
+that's them (Recommended)”. The mirror duellists' sheet and film: not yet shown.
+
+## His word on the mirror duellists
+
+The sheet and the film (`queens_guard_sheet.png`, `queens_guard_moves.mp4`), asked “The queen's guard as mirror
+duellists (queens_guard_sheet.png and the film): is this right?”: “Yes, that's them (Recommended)”.

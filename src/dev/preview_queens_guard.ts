@@ -1,4 +1,4 @@
-// Dev page: FLOOR 18'S QUEEN'S GUARD (art/queens_guard.ts, art/queens_guard_moves.ts, art/queens_guard_fx.ts), standing,
+// Dev page: FLOOR 18'S QUEEN'S GUARD, THE MIRROR DUELLISTS (art/queens_guard.ts, art/queens_guard_moves.ts, art/queens_guard_fx.ts), standing,
 // from in front and from behind, beside the knight for size; a file of them at the game's size; a move close up; and the
 // film of every move at the scale of a boss arena. Nothing of the game imports it. The floor is a stand-in for the Glass
 // Gallery's (polished dark stone in tiles, silver seams; not the floor's own art, which is not made yet).
@@ -12,8 +12,8 @@ import { toSprite } from '../art/kit';
 import type { Painted } from '../art/kit';
 import { TILE3, canvasOf, deathOfMob, paintMob } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
-import { QG_BASH, QG_CHARGE, QG_CHARGE_EVERY, QG_CHARGE_IN, QG_CHARGE_OUT, QG_CHOP, QG_DIES, QG_MARCH, QG_REEL, QG_STAND, QG_WALK, QUEENS_GUARD, bashCarried } from '../art/queens_guard_moves';
-import { BASH_CANVAS, BASH_FX, CHOP_CANVAS, CHOP_FX, bashPainted, chopPainted } from '../art/queens_guard_fx';
+import { QG_DIES, QG_FAN, QG_GLIDE, QG_REEL, QG_SLASH, QG_STAND, QG_STEP_IN, QG_STEP_OUT, QG_WALK, QUEENS_GUARD } from '../art/queens_guard_moves';
+import { FAN_CANVAS, FAN_FX, X_CANVAS, X_FX, fanPainted, xPainted } from '../art/queens_guard_fx';
 import type { GameView } from '../art/skin';
 
 const [mode = 'sheet', a1 = 'stand', a2 = '0'] = decodeURIComponent(location.hash.slice(1)).split(':');
@@ -114,30 +114,30 @@ function label(text: string, x: number, y: number, size = 15, color = '#e8e4f4')
 }
 
 if (mode === 'sheet') {
-  // THE SHEET: the queen's guard from in front and from behind, beside the knight, three times as big; a file of them at
+  // THE SHEET: the queen's guard from in front and from behind, beside the knight, three times as big; a few of them at
   // the game's size
   const K = 3;
   laidFloor(0, cv.height * 0.55, K);
-  const y = cv.height - 70;
-  draw(hero.front.idle[0], 90, y, K);
-  draw(spOf(G, 'stand', 0, 'front'), 330, y, K);
-  draw(spOf(G, 'stand', 0, 'back'), 620, y, K);
-  draw(hero.back.idle[0], 820, y, K);
-  // (at the game's size, three of them marching on the knight)
-  const x0 = 930;
-  const y0 = y - 120;
+  const y = cv.height - 90;
+  draw(hero.front.idle[0], 80, y, K);
+  draw(spOf(G, 'stand', 0, 'front'), 300, y, K);
+  draw(spOf(G, 'stand', 0, 'back'), 590, y, K);
+  draw(hero.back.idle[0], 790, y, K);
+  // (at the game's size: one on guard, one gliding, one drawn back to slash, one throwing the fan, beside the knight)
+  const x0 = 900;
+  const y0 = y - 150;
   g.fillStyle = 'rgba(8,6,14,0.55)';
-  g.fillRect(x0 - 20, y0 - 150, 290, 230);
-  draw(hero.front.idle[0], x0 + 220, y0 + 50, 1);
-  for (const [dx, dy, t] of [[20, -40, 0.0], [60, -6, 0.35], [10, 20, 0.7]] as const) draw(spOf(G, 'walk', t, 'front'), x0 + dx, y0 + dy, 1);
-  label('The queen’s guard, floor 18 (medium): from in front, from behind, beside the knight (3× size)', 14, 26);
-  label('At the game’s size', x0 - 10, y0 - 128, 13);
+  g.fillRect(x0 - 20, y0 - 180, 300, 300);
+  draw(hero.front.idle[0], x0 + 200, y0 + 90, 1);
+  for (const [dx, dy, mv, t] of [[30, -40, 'stand', 0], [110, -60, 'walk', 0.35], [40, 40, 'attack', 0.7], [140, 30, 'fan', 0.6]] as const) draw(spOf(G, mv, t, 'front'), x0 + dx, y0 + dy, 1);
+  label('The queen’s guard, floor 18 (medium): mirror duellists — from in front, from behind, beside the knight (3× size)', 14, 26);
+  label('At the game’s size', x0 - 10, y0 - 158, 13);
 } else if (mode === 'big') {
   const K = 4;
   laidFloor(0, cv.height * 0.5, K);
   const t = Number(a2) || 0;
-  draw(spOf(G, a1, t, 'front'), cv.width * 0.3, cv.height - 70, K);
-  draw(spOf(G, a1, t, 'back'), cv.width * 0.72, cv.height - 70, K);
+  draw(spOf(G, a1, t, 'front'), cv.width * 0.3, cv.height - 140, K);
+  draw(spOf(G, a1, t, 'back'), cv.width * 0.72, cv.height - 140, K);
 } else if (mode === 'grid') {
   // A MOVE AT SEVERAL MOMENTS (`grid:<move>:<t>,<t>,...`), twice as big: from in front along the top, from behind below
   const K = 2;
@@ -164,99 +164,80 @@ interface Shot {
   long: number;
   /** The move, and its own time at a moment of the film (seconds into the shot). */
   move: (s: number) => { move: string; t: number };
-  /** Where they stand on the floor (figure lengths from the arena's middle, as seen from in front), and the way they face (front: toward the bottom right; back: toward the top right). */
+  /** Where they stand on the floor (figure lengths from the arena's middle, as seen from in front). */
   at: (s: number) => [number, number];
   view: GameView;
-  /** The floor's mark of a blow, if any: which, how long since it began, and where. */
-  fx?: (s: number) => { which: 'chop' | 'bash'; t: number; at: [number, number] } | null;
+  /** What a blow leaves, if any: which, how long since it began, and where. */
+  fx?: (s: number) => { which: 'x' | 'fan'; t: number; at: [number, number] } | null;
   /** Where the knight stands. */
   knight: [number, number];
-  /** Where the camera looks (the middle of the arena's view), if not between them. */
+  /** Where the camera looks, if not between them. */
   cam?: [number, number];
 }
 const T = TILE3;
 const FPS = 30;
-/** The way they face on the floor (figure lengths, as seen from in front): from in front, +x; from behind, +y. */
-const way = (view: GameView): [number, number] => (view === 'front' ? [1, 0] : [0, 1]);
-const along = (o: [number, number], view: GameView, d: number): [number, number] => [o[0] + way(view)[0] * d, o[1] + way(view)[1] * d];
+const half = (s: number, t0: number): number => t0 + Math.floor((s / 2) * FPS) / FPS;
 function shots(): Shot[] {
   const out: Shot[] = [];
   const W = QG_WALK.frames / QG_WALK.fps;
+  const sideOf = (view: GameView): string => (view === 'front' ? 'from in front' : 'from behind');
   // STANDING
-  out.push({ say: 'Standing on guard: shield up, halberd upright, breathing', long: 3.2, move: (s) => ({ move: 'stand', t: s }), at: () => [-2 * T, 0], view: 'front', knight: [2.6 * T, 0.6 * T] });
+  out.push({ say: 'On guard: a glass blade in each hand, crossed low; breathing', long: 2.0, move: (s) => ({ move: 'stand', t: s }), at: () => [-1.6 * T, 0], view: 'front', knight: [1.8 * T, 0.6 * T] });
+  // THE GLIDE, toward the knight
   for (const view of ['front', 'back'] as GameView[]) {
-    // MEASURED, THEN A SUDDEN CHARGE: marching, then all at once flat out (into the charge, its run), skidding to a stop
-    // before the knight, and the shield charge into him
-    const start: [number, number] = view === 'front' ? [-7 * T, -0.5 * T] : [-0.5 * T, -7 * T];
-    const m = 2.4;
-    const ci = QG_CHARGE_IN.long;
-    const c = 2 * QG_CHARGE_EVERY;
-    const co = QG_CHARGE_OUT.long;
-    const bash = QG_BASH.long;
-    const dM = QG_MARCH * m * T;
-    const dC = dM + QG_CHARGE * (ci + c) * T;
-    const dO = dC + QG_CHARGE_OUT.shift;
-    const dB = dO + QG_BASH.carry * T + QG_BASH.end;
-    const knight: [number, number] = along(start, view, dO + QG_BASH.carry * T + 2.8 * T);
+    const start: [number, number] = view === 'front' ? [-3.4 * T, -0.4 * T] : [-0.4 * T, -3.4 * T];
+    const go = (s: number): [number, number] => (view === 'front' ? [start[0] + QG_GLIDE * s * T, start[1]] : [start[0], start[1] + QG_GLIDE * s * T]);
+    out.push({ say: `The glide (${QG_GLIDE} tiles/s) — ${sideOf(view)}`, long: 2.0, move: (s) => ({ move: 'walk', t: s % W }), at: go, view, knight: view === 'front' ? [1.6 * T, 0.6 * T] : [0.6 * T, 1.6 * T] });
+  }
+  // THE MIRROR STEP: into the glass where they stand, gone, and out of another beside the knight
+  for (const view of ['front', 'back'] as GameView[]) {
+    const A: [number, number] = view === 'front' ? [-3.2 * T, 0.6 * T] : [0.6 * T, -3.2 * T];
+    const Bp: [number, number] = view === 'front' ? [0.4 * T, -1.2 * T] : [-1.2 * T, 0.4 * T];
+    const s1 = 0.3;
+    const s2 = s1 + QG_STEP_IN.long;
+    const s3 = s2 + 0.3;
+    const s4 = s3 + QG_STEP_OUT.long;
     out.push({
-      say: `March (${QG_MARCH} tile/s), then a sudden charge (${QG_CHARGE} tiles/s), skid, shield charge — ${view === 'front' ? 'from in front' : 'from behind'}`,
-      long: m + ci + c + co + bash + 0.4,
-      move: (s) => {
-        if (s < m) return { move: 'walk', t: s % W };
-        if (s < m + ci) return { move: 'chargeIn', t: s - m };
-        if (s < m + ci + c) return { move: 'charge', t: (s - m - ci) % W };
-        if (s < m + ci + c + co) return { move: 'chargeOut', t: s - m - ci - c };
-        return { move: 'bash', t: Math.min(bash, s - m - ci - c - co) };
-      },
-      at: (s) => {
-        const tb = s - m - ci - c - co;
-        const d = s < m ? QG_MARCH * s * T : s < m + ci + c ? dM + QG_CHARGE * (s - m) * T : tb < 0 ? dC : tb < bash ? dO + bashCarried(tb) : dB;
-        return along(start, view, d);
-      },
+      say: `The mirror step: into the glass, and out of another beside you — ${sideOf(view)}`,
+      long: s4 + 0.6,
+      move: (s) => (s < s1 ? { move: 'stand', t: s } : s < s2 ? { move: 'stepIn', t: s - s1 } : s < s3 ? { move: 'stepIn', t: QG_STEP_IN.long } : s < s4 ? { move: 'stepOut', t: s - s3 } : { move: 'stand', t: s - s4 }),
+      at: (s) => (s < s2 + 0.15 ? A : Bp),
       view,
-      fx: (s) => {
-        const tb = s - m - ci - c - co;
-        return tb >= QG_BASH.hit ? { which: 'bash', t: tb - QG_BASH.hit, at: along(start, view, dO + QG_BASH.carry * T) } : null;
-      },
-      knight,
-      cam: along(start, view, dB / 2),
+      knight: view === 'front' ? [1.8 * T, 0.2 * T] : [0.2 * T, 1.8 * T],
+      cam: view === 'front' ? [-0.6 * T, 0] : [0, -0.6 * T],
     });
   }
-  // THE HALBERD CHOP, from in front and from behind, then its strike at half speed
+  {
+    const t0 = QG_STEP_IN.strike[0] - 0.1;
+    const u0 = QG_STEP_OUT.strike[0] - 0.1;
+    out.push({ say: 'The mirror step at half speed: into the glass in two frames, out in two, smeared', long: 1.6, move: (s) => (s < 0.8 ? { move: 'stepIn', t: half(s, t0) } : { move: 'stepOut', t: half(s - 0.8, u0) }), at: () => [-1.6 * T, 0], view: 'front', knight: [1.8 * T, 0.6 * T] });
+  }
+  // THE DOUBLE SLASH, both ways, then its strikes at half speed
+  for (const view of ['front', 'back'] as GameView[]) {
+    const at: [number, number] = view === 'front' ? [-2 * T, 0] : [0, -2 * T];
+    out.push({ say: `The double slash — an X of glass light ${QG_SLASH.from}–${QG_SLASH.reach} tiles out — ${sideOf(view)}`, long: QG_SLASH.long + 0.3, move: (s) => ({ move: 'attack', t: Math.min(QG_SLASH.long, s) }), at: () => at, view, fx: (s) => (s >= QG_SLASH.hit ? { which: 'x', t: s - QG_SLASH.hit, at } : null), knight: view === 'front' ? [0.4 * T, 0.9 * T] : [0.9 * T, 0.4 * T] });
+  }
+  {
+    const at: [number, number] = [-2 * T, 0];
+    const t0 = QG_SLASH.warn[1] - 0.16;
+    out.push({ say: 'The double slash at half speed: two slashes of two frames each, smeared', long: 1.2, move: (s) => ({ move: 'attack', t: half(s, t0) }), at: () => at, view: 'front', fx: (s) => (half(s, t0) >= QG_SLASH.hit ? { which: 'x', t: half(s, t0) - QG_SLASH.hit, at } : null), knight: [0.4 * T, 0.9 * T] });
+  }
+  // THE SHARD FAN, both ways, then its strike at half speed
   for (const view of ['front', 'back'] as GameView[]) {
     const at: [number, number] = view === 'front' ? [-4 * T, 0] : [0, -4 * T];
-    out.push({ say: `The halberd chop — its line ${QG_CHOP.from}–${QG_CHOP.reach} tiles out, ${QG_CHOP.wide} wide — ${view === 'front' ? 'from in front' : 'from behind'}`, long: QG_CHOP.long + 0.2, move: (s) => ({ move: 'attack', t: Math.min(QG_CHOP.long, s) }), at: () => at, view, fx: (s) => (s >= QG_CHOP.hit ? { which: 'chop', t: s - QG_CHOP.hit, at } : null), knight: view === 'front' ? [3.4 * T, 2.4 * T] : [2.4 * T, 3.4 * T] });
+    out.push({ say: `The shard fan — ${QG_FAN.count} shards, ${QG_FAN.spread}° wide, ${QG_FAN.range} tiles — ${sideOf(view)}`, long: QG_FAN.long + 0.3, move: (s) => ({ move: 'fan', t: Math.min(QG_FAN.long, s) }), at: () => at, view, fx: (s) => (s >= QG_FAN.hit ? { which: 'fan', t: s - QG_FAN.hit, at } : null), knight: view === 'front' ? [3 * T, 1.2 * T] : [1.2 * T, 3 * T], cam: view === 'front' ? [0, 0] : [0, 0] });
   }
   {
     const at: [number, number] = [-4 * T, 0];
-    const t0 = QG_CHOP.warn[1] - 0.2;
-    out.push({ say: 'The halberd chop’s strike at half speed: two frames, smeared', long: 1.2, move: (s) => ({ move: 'attack', t: t0 + Math.floor((s / 2) * FPS) / FPS }), at: () => at, view: 'front', fx: (s) => { const t = t0 + Math.floor((s / 2) * FPS) / FPS; return t >= QG_CHOP.hit ? { which: 'chop', t: t - QG_CHOP.hit, at } : null; }, knight: [3.4 * T, 2.4 * T] });
-  }
-  // THE SHIELD CHARGE again, close, from in front and from behind, and at half speed
-  for (const view of ['front', 'back'] as GameView[]) {
-    const start: [number, number] = view === 'front' ? [-4 * T, 0] : [0, -4 * T];
-    out.push({
-      say: `The shield charge — carried ${QG_BASH.carry} tiles in two frames, a ring ${QG_BASH.ring} tiles across — ${view === 'front' ? 'from in front' : 'from behind'}`,
-      long: QG_BASH.long + 0.2,
-      move: (s) => ({ move: 'bash', t: Math.min(QG_BASH.long, s) }),
-      at: (s) => along(start, view, bashCarried(s) + (s >= QG_BASH.long ? QG_BASH.end : 0)),
-      view,
-      fx: (s) => (s >= QG_BASH.hit ? { which: 'bash', t: s - QG_BASH.hit, at: along(start, view, QG_BASH.carry * T) } : null),
-      knight: view === 'front' ? [1.6 * T, 2.6 * T] : [2.6 * T, 1.6 * T],
-    });
-  }
-  {
-    const start: [number, number] = [-4 * T, 0];
-    const t0 = QG_BASH.warn[1] - 0.2;
-    const tt = (s: number): number => t0 + Math.floor((s / 2) * FPS) / FPS;
-    out.push({ say: 'The shield charge’s strike at half speed: two frames, smeared, the mirror’s flash', long: 1.2, move: (s) => ({ move: 'bash', t: tt(s) }), at: (s) => along(start, 'front', bashCarried(tt(s))), view: 'front', fx: (s) => (tt(s) >= QG_BASH.hit ? { which: 'bash', t: tt(s) - QG_BASH.hit, at: along(start, 'front', QG_BASH.carry * T) } : null), knight: [1.6 * T, 2.6 * T] });
+    const t0 = QG_FAN.warn[1] - 0.16;
+    out.push({ say: 'The shard fan at half speed: thrown in two frames, smeared', long: 1.2, move: (s) => ({ move: 'fan', t: half(s, t0) }), at: () => at, view: 'front', fx: (s) => (half(s, t0) >= QG_FAN.hit ? { which: 'fan', t: half(s, t0) - QG_FAN.hit, at } : null), knight: [3 * T, 1.2 * T], cam: [0, 0] });
   }
   // STRUCK, both ways
-  out.push({ say: 'Struck', long: 1.2, move: (s) => ({ move: s < 0.6 ? 'reel' : 'reel', t: Math.min(QG_REEL, s % 0.6) }), at: () => [-2 * T, 0], view: 'front', knight: [1 * T, 0.4 * T] });
-  out.push({ say: 'Struck — from behind', long: 0.8, move: (s) => ({ move: 'reel', t: Math.min(QG_REEL, s % 0.6) }), at: () => [0, -2 * T], view: 'back', knight: [0.4 * T, 1 * T] });
+  out.push({ say: 'Struck', long: 0.8, move: (s) => ({ move: 'reel', t: Math.min(QG_REEL, s % 0.6) }), at: () => [-1.6 * T, 0], view: 'front', knight: [0.8 * T, 0.4 * T] });
+  out.push({ say: 'Struck — from behind', long: 0.8, move: (s) => ({ move: 'reel', t: Math.min(QG_REEL, s % 0.6) }), at: () => [0, -1.6 * T], view: 'back', knight: [0.4 * T, 0.8 * T] });
   // THE DEATH, both ways
   for (const view of ['front', 'back'] as GameView[]) {
-    out.push({ say: `The shield cracks like glass; to one knee; the Hush leaves him; down — ${view === 'front' ? 'from in front' : 'from behind'}`, long: QG_DIES.long + 0.6, move: (s) => ({ move: 'dying', t: Math.min(QG_DIES.long, s) }), at: () => (view === 'front' ? [-2 * T, 0] : [0, -2 * T]), view, knight: view === 'front' ? [1.4 * T, 1.0 * T] : [1.0 * T, 1.4 * T] });
+    out.push({ say: `Cracks race over him; the Hush leaves him; he shatters like a mirror — ${sideOf(view)}`, long: QG_DIES.long + 0.4, move: (s) => ({ move: 'dying', t: Math.min(QG_DIES.long, s) }), at: () => (view === 'front' ? [-1.6 * T, 0] : [0, -1.6 * T]), view, knight: view === 'front' ? [1.0 * T, 0.8 * T] : [0.8 * T, 1.0 * T] });
   }
   return out;
 }
@@ -288,11 +269,13 @@ function filmFrame(i: number): void {
     return [ox + x * K, oy + y * K];
   };
   const fx = shot.fx?.(s);
-  if (fx) {
-    const p = fx.which === 'chop' ? chopPainted(fx.t, shot.view) : bashPainted(fx.t, shot.view);
+  const drawFx = (): void => {
+    if (!fx) return;
     const [fxX, fxY] = scr(fx.at);
-    if ((fx.which === 'chop' && fx.t <= CHOP_FX.long) || (fx.which === 'bash' && fx.t <= BASH_FX.long)) draw(fxSprite(p, fx.which === 'chop' ? CHOP_CANVAS : BASH_CANVAS), fxX, fxY, K);
-  }
+    if (fx.which === 'x' && fx.t <= X_FX.long) draw(fxSprite(xPainted(fx.t, shot.view), X_CANVAS), fxX, fxY, K);
+    if (fx.which === 'fan' && fx.t <= FAN_FX.long) draw(fxSprite(fanPainted(fx.t, shot.view), FAN_CANVAS), fxX, fxY, K);
+  };
+  if (fx?.which === 'x') drawFx();
   const [kx, ky] = scr(shot.knight);
   const [gx, gy] = scr(pos);
   const guard = spOf(G, move, t, shot.view);
@@ -304,12 +287,13 @@ function filmFrame(i: number): void {
     draw(guard, gx, gy, K);
     draw(kn, kx, ky, K);
   }
-  // (a tile, for size)
+  // (the shards fly over everything)
+  if (fx?.which === 'fan') drawFx();
   g.restore();
   // CLOSE UP: from in front above, from behind below
   g.fillStyle = '#0c0a14';
   g.fillRect(AW, 0, cv.width - AW, cv.height);
-  const CK = 1.7;
+  const CK = 1.6;
   for (const [row, view] of [[0, 'front'], [1, 'back']] as const) {
     const top = row * (cv.height / 2);
     g.save();
@@ -318,14 +302,13 @@ function filmFrame(i: number): void {
     g.clip();
     laidFloor(AW, top + cv.height / 4, CK);
     const cx = AW + (cv.width - AW) * 0.42;
-    const cy = top + cv.height / 2 - 34;
-    // (the close-ups stand still: the shield charge's carry is shown in the arena)
+    const cy = top + cv.height / 2 - 30;
     draw(spOf(G, move, t, view), cx, cy, CK);
     g.restore();
     label(view === 'front' ? 'in front' : 'behind', AW + 12, top + 24, 13, '#cfc8ec');
   }
   label(shot.say, 12, 26, 16);
-  const NAMES: Record<string, string> = { walk: 'march', attack: 'halberd chop', bash: 'shield charge', reel: 'struck', dying: 'death', chargeIn: 'into the charge', charge: 'charge', chargeOut: 'out of the charge (skid)', stand: 'stand' };
+  const NAMES: Record<string, string> = { walk: 'glide', attack: 'double slash', fan: 'shard fan', reel: 'struck', dying: 'death', stepIn: 'into the glass', stepOut: 'out of the glass', stand: 'on guard' };
   label(`${NAMES[move] ?? move} ${t.toFixed(2)} s`, 12, cv.height - 14, 13, '#b8b2d8');
   label('arena: an ellipse 17 by 20 tiles; a tile is one floor square', AW - 410, cv.height - 14, 12, '#9c96bc');
 }
