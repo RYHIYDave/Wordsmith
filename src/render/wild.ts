@@ -145,6 +145,11 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   dancer: { bits: ['#4a4e8a', '#8a6aa8', '#ece6df'], sparks: false, blood: false, dust: true },
   order: { bits: ['#141218', '#2a2630', '#d8d0c0'], sparks: false, blood: false, dust: true },
   prince: { bits: ['#4a1420', '#c8a84a', '#a82a2a'], sparks: false, blood: false, dust: true },
+  // (floor 18's: glass, no blood)
+  lady: { bits: ['#47306a', '#9898aa', '#ece6df'], sparks: false, blood: false, dust: true },
+  qguard: { bits: ['#3f3253', '#b6b6c6', '#7c7c90'], sparks: true, blood: false, dust: true },
+  reflection: { bits: ['#9ea4bf', '#cdd2e6', '#f5f7ff'], sparks: true, blood: false, dust: false },
+  gqueen: { bits: ['#47306a', '#c2c2da', '#867cb8'], sparks: true, blood: false, dust: true },
   physician: { bits: ['#1e1a22', '#3a3440', '#929f84'], sparks: false, blood: false, dust: true },
   censor: { bits: ['#141218', '#24202b', '#3a3440'], sparks: false, blood: false, dust: true },
 };

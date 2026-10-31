@@ -30,6 +30,7 @@ import { UC_DEEP, undercityLook } from '../art/undercity';
 import { millraceLook } from '../art/millrace';
 import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { MQ_DEEP, masqueLook } from '../art/masque';
+import { GG_DEEP, glassGalleryLook, paintGlassGallery } from '../art/glassgallery';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
 import { SG_WATER, paintSwanGardens, swanGardensLook, swanGardensTerrain } from '../art/swangardens';
 import type { SwanLand } from '../art/swangardens';
@@ -262,6 +263,10 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
     // (floor 17, the Masque: the art chat's seven rooms, galleries, card rooms and passages, given what its map-maker laid, as floor 14's)
     case 'masque':
       return masqueLook({ floor, zone: zoneOf(land, W, H) });
+    // (floor 18, the Glass Gallery: the art chat's galleries, Mirror Hall, dressing rooms, chapel and glasshouse, the runners and
+    // the skylights broken through, given what its map-maker laid)
+    case 'glassgallery':
+      return glassGalleryLook({ floor, zone: zoneOf(land, W, H), runner: runnerOf(land), skylight: holeOf(land, W, H) });
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -383,7 +388,30 @@ export function swanLandOf(land: Land, floor: Floor): SwanLand {
  * (art/swangardens.ts paintSwanGardens, in place of paintTerrain: here and in the painter's worker, render/painter.ts).
  */
 export function groundPainter(land: Land | null): (T: Terrain, x0: number, y0: number, w: number, h: number) => TerrainPiece {
+  // (floor 18, the Glass Gallery: the hall below painted into its skylights' holes, art/glassgallery.ts paintGlassGallery)
+  if (land?.kind === 'glassgallery' && land.gallery) {
+    const W = land.gallery.w;
+    const sky = holeOf(land, W, Math.floor(land.gallery.holes.length / W));
+    return (T, x0, y0, w, h) => paintGlassGallery(T, x0, y0, w, h, sky);
+  }
   return land?.kind === 'swangardens' ? paintSwanGardens : paintTerrain;
+}
+
+/** (floor 18) How far in from a runner's nearer edge a place is (tiles; above 0 on one): the art's GlassLand.runner. */
+function runnerOf(land: Land): ((x: number, y: number) => number) | undefined {
+  const rs = land.gallery?.runners;
+  if (!rs || !rs.length) return undefined;
+  return (x, y) => {
+    let best = -1;
+    for (const r of rs) best = Math.max(best, Math.min(x - r.x, r.x + r.w - x, y - r.y, r.y + r.h - y));
+    return best;
+  };
+}
+/** (floor 18) Whether a tile is a skylight broken through: the art's GlassLand.skylight. */
+function holeOf(land: Land, W: number, H: number): ((tx: number, ty: number) => boolean) | undefined {
+  const holes = land.gallery?.holes;
+  if (!holes) return undefined;
+  return (tx, ty) => tx >= 0 && ty >= 0 && tx < W && ty < H && holes[ty * W + tx] === 1;
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -499,7 +527,7 @@ export class OutdoorGround {
     this.town = null;
     const hex = (c: readonly number[]): string => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
     // (ACT 2: each ground's own deep colour, the art chat's)
-    this.deep = land.kind === 'swangardens' ? hex(SG_WATER[0]) : land.kind === 'masque' ? hex(MQ_DEEP) : land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
+    this.deep = land.kind === 'swangardens' ? hex(SG_WATER[0]) : land.kind === 'masque' ? hex(MQ_DEEP) : land.kind === 'glassgallery' ? hex(GG_DEEP) : land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
     return true;
   }
 

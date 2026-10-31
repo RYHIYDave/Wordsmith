@@ -36,6 +36,7 @@ import { greatLibraryPieces } from '../art/floor15';
 import { herVinesPieces, swanGardensPieces } from '../art/floor16';
 import { highCitySetPieces } from '../art/high_city_set';
 import { masquePieces } from '../art/floor17';
+import { glassGalleryPieces } from '../art/floor18';
 import { hubPieces } from '../art/hub2';
 import { CAMP_ANIM, CAMP_DRESS, CAMP_TOPS } from '../game/camp';
 import { GRAIN, clearOfFloor, fbm, pictureOf, worldOf } from '../art/terrain';
@@ -74,7 +75,7 @@ export function act1Pieces(n: number): Map<string, Piece> {
   }
   // (ACT 2, PART TWO, THE HIGH CITY: each floor's own 25 and the High City's 25, the art chat's; floor 16 her vines in its gardens too)
   if (n >= 16) {
-    m = new Map([...highCitySetPieces(), ...(n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()])].map((p) => [p.name, p]));
+    m = new Map([...highCitySetPieces(), ...(n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()])].map((p) => [p.name, p]));
     MAPS.set(n, m);
     return m;
   }

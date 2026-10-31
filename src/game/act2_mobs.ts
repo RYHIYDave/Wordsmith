@@ -67,9 +67,16 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'footman', weight: 3 },
     { kind: 'order', weight: 3 },
   ],
+  // floor 18, the Glass Gallery (his doc: "ladies-in-waiting, the queen's guard, and your own reflections, which step out of
+  // the mirrors and fight with your class's moves")
+  18: [
+    { kind: 'reflection', weight: 4 },
+    { kind: 'lady', weight: 5 },
+    { kind: 'qguard', weight: 3 },
+  ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
-export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman' };
+export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard' };
 /** The tiny ones, never a yellow pack (they are not led). */
 const TINY = new Set<MonsterKind>(['rat']);
 

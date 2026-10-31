@@ -225,6 +225,18 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: [],
   },
+  // (THE HIGH CITY, FLOOR 18: THE GLASS GALLERY, until its own dresser lays it room by room: game/act2/glassgallery.ts; its
+  // trap the art's skylight (his doc's "skylights to fall through"): whole, cracking under a step, broken through)
+  18: {
+    things: ['a silver candelabrum', 'a velvet banquette', 'a dressing screen', 'a bust on a plinth'],
+    big: ['a wardrobe of gowns'],
+    lying: ["a mirror's shards", 'a jewel box, spilled', 'a hand mirror, dropped', 'a pane fallen from the roof'],
+    wallFoot: [],
+    breakables: ['a console table', 'an orchid in its pot, dead'],
+    trap: { name: 'a skylight', tiles: 1 },
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */

@@ -759,6 +759,12 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   dancer: { kind: 'dancer', name: 'Masked Dancer', life: 23, dmgMin: 7, dmgMax: 11, speed: 3.4, radius: 0.3, range: 1.3, windup: 0.5, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   order: { kind: 'order', name: 'The Silent Order', life: 34, dmgMin: 10, dmgMax: 15, speed: 5.5, radius: 0.32, range: 1.6, windup: 0.6, cooldown: 2.1, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   prince: { kind: 'prince', name: 'The Prince', life: 660, dmgMin: 23, dmgMax: 32, speed: 4.5, radius: 0.6, range: 2.6, windup: 0.6, cooldown: 1.8, xp: 1050, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 18, the Glass Gallery: the main chat's first picks, a floor up from 17's; the Queen's glide QN_PACE 2.0, slower than
+  // the hero walks (her brief: “Cold and slow, then sudden”); a reflection as quick as the hero it copies)
+  lady: { kind: 'lady', name: 'Lady-in-Waiting', life: 25, dmgMin: 8, dmgMax: 12, speed: 3.0, radius: 0.3, range: 1.4, windup: 0.6, cooldown: 2.0, xp: 9, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  qguard: { kind: 'qguard', name: "Queen's Guard", life: 60, dmgMin: 15, dmgMax: 21, speed: 2.6, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.3, xp: 21, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  reflection: { kind: 'reflection', name: 'Your Reflection', life: 40, dmgMin: 12, dmgMax: 17, speed: 4.0, radius: 0.32, range: 1.6, windup: 0.5, cooldown: 2.0, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  gqueen: { kind: 'gqueen', name: 'The Queen', life: 680, dmgMin: 24, dmgMax: 33, speed: 2.0, radius: 0.6, range: 2.6, windup: 0.7, cooldown: 1.9, xp: 1100, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -1217,6 +1223,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   princess: ['...'],
   // (floor 17: the Prince's lines his own, once he is built: game/act1_rules/prince.ts)
   prince: ['...'],
+  // (floor 18: the Queen's lines are her mirror's, once she is built: game/act1_rules/gqueen.ts)
+  gqueen: ['...'],
 };
 
 /**
@@ -1463,7 +1471,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];

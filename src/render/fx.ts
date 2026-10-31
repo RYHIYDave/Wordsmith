@@ -374,6 +374,11 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   dancer: ['#4a4e8a', '#8a6aa8', '#ece6df', '#c8a84a'],
   order: ['#141218', '#2a2630', '#d8d0c0', '#5a5660'],
   prince: ['#4a1420', '#c8a84a', '#a82a2a', '#141218'],
+  // (floor 18's)
+  lady: ['#47306a', '#9898aa', '#ece6df', '#312641'],
+  qguard: ['#3f3253', '#b6b6c6', '#7c7c90', '#14141c'],
+  reflection: ['#525877', '#9ea4bf', '#cdd2e6', '#f5f7ff'],
+  gqueen: ['#47306a', '#c2c2da', '#867cb8', '#2d1d45'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };

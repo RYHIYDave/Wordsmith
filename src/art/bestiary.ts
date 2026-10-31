@@ -227,6 +227,11 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   dancer: { top: 29, half: 9 },
   order: { top: 29, half: 9 },
   prince: { top: 42, half: 12 },
+  // (floor 18's: the ladies and the reflections the knight's size, the guard a little taller, the Queen a head and a half and her crown)
+  lady: { top: 29, half: 9 },
+  qguard: { top: 32, half: 10 },
+  reflection: { top: 29, half: 9 },
+  gqueen: { top: 44, half: 13 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

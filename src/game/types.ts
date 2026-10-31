@@ -132,7 +132,9 @@ export type MonsterKind =
   // palace guard) and its boss, the Princess; the art chat's
   | 'swan' | 'gardener' | 'groom' | 'pguard' | 'princess'
   // (floor 17, the Masque: the footmen, the masked dancers, the Silent Order; the Prince)
-  | 'footman' | 'dancer' | 'order' | 'prince';
+  | 'footman' | 'dancer' | 'order' | 'prince'
+  // (floor 18, the Glass Gallery: the ladies-in-waiting, the queen's guard, your own reflections; the Queen (floor 5's Carrion Queen is 'queen'))
+  | 'lady' | 'qguard' | 'reflection' | 'gqueen';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -150,8 +152,8 @@ export const ACT2_MOBS: readonly MonsterKind[] = ['hushed', 'watch', 'scribe', '
 export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor', 'scraper', 'quill'];
 export const ACT2_KINDS: readonly MonsterKind[] = [...ACT2_MOBS, ...ACT2_BOSSES];
 /** ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): its floors' own mobs and their bosses, the art chat's (mockup/high-city-all). */
-export const HIGH_MOBS: readonly MonsterKind[] = ['swan', 'gardener', 'groom', 'pguard', 'footman', 'dancer', 'order'];
-export const HIGH_BOSSES: readonly MonsterKind[] = ['princess', 'prince'];
+export const HIGH_MOBS: readonly MonsterKind[] = ['swan', 'gardener', 'groom', 'pguard', 'footman', 'dancer', 'order', 'lady', 'qguard', 'reflection'];
+export const HIGH_BOSSES: readonly MonsterKind[] = ['princess', 'prince', 'gqueen'];
 export const HIGH_KINDS: readonly MonsterKind[] = [...HIGH_MOBS, ...HIGH_BOSSES];
 
 // ---------------------------------------------------------------------------------------------

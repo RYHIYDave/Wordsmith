@@ -124,7 +124,10 @@ for (const view of VIEWS) {
 }
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(3)}`;
 
-test('1. the switch is off, and nothing of the game imports her', () => {
+/** The game's files that import her (her figure now; her rules and effects as they are built). */
+const QUEEN_USERS = 'art/act1_figs/gqueen.ts';
+
+test('1. the switch is off, and of the game only floor 18\'s own files import her', () => {
   assert.equal(QUEEN_ON.on, false, 'QUEEN_ON is off');
   const users: string[] = [];
   const hers = /^art\/queen(_moves|_fx)?$/;
@@ -138,7 +141,9 @@ test('1. the switch is off, and nothing of the game imports her', () => {
       if (hers.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import her');
+  // (Brought into the game by the main chat, 30 Oct 2026, on floor 18 behind HIGH_CITY (off): her figure, rules and effects files
+  // import her, and nothing else of the game)
+  assert.equal([...new Set(users)].sort().join(' '), QUEEN_USERS, 'game files that import her');
 });
 
 test('2. EVERY MOVE OF HERS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

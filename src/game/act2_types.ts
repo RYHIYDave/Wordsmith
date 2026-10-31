@@ -70,6 +70,8 @@ export interface GardenPlan {
 export interface Act2Land {
   /** (THE HIGH CITY, FLOOR 17: THE MASQUE, game/act2/masque.ts) its rooms, its clock, its ways: for its dresser and its rules. */
   masque?: import('./act2/masque').MasquePlan;
+  /** (THE HIGH CITY, FLOOR 18: THE GLASS GALLERY, game/act2/glassgallery.ts) its rooms, runners, skylights and hall: for its look, its dresser and its rules. */
+  gallery?: import('./act2/glassgallery').GalleryPlan;
   /** What each walkable tile is, a tile each (its floor's own zones: GW_ZONE, UC_ZONE, HQ_ZONE, LB_ZONE); 0 where not said. */
   zones?: Uint8Array;
   /** THE UNDERCITY: 1 for each tile that is not floor and is water (the channels, the cisterns' pools, the outflow). */

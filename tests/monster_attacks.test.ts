@@ -48,7 +48,7 @@ import type { MonsterMove, MoveId } from '../src/game/defs';
 import { actsOf } from '../src/game/bosses';
 import { PHASE_OF as EYE_PHASE_OF } from '../src/game/act1_rules/eye';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { ACT1_KINDS } from '../src/game/types';
+import { ACT1_KINDS, HIGH_KINDS } from '../src/game/types';
 import { ACT2 } from '../src/game/act1';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -180,6 +180,8 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // ACT 1, each of the descent's own kinds once built, by its rules, game/act1_rules/: actsOf has both. One not
       // built yet is not in the game: the cult stands in for it)
       if (ACT1_KINDS.includes(kind) && !act1Rules(kind)) continue;
+      // (THE HIGH CITY: likewise one of its kinds not built yet: stood in for, behind HIGH_CITY)
+      if (HIGH_KINDS.includes(kind) && !act1Rules(kind)) continue;
       const acts = actsOf({ kind });
       // (the descent's own monsters, not its bosses: a basic blow first, each big move cooling down longer and hitting harder)
       const own = ACT1_KINDS.includes(kind) && size !== 'boss' ? act1Rules(kind) : null;
