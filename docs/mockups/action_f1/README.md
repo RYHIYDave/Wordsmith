@@ -143,3 +143,7 @@ Made by: `tools/action_f1_film.ts` (the film), `tools/action_f1_sheet.ts` and `t
 - The keys come into his hand at his hip (no ring is painted at his belt today; his one belt key stays).
 - Whether the standing bars are walls (no passing between cells for 1.5 s) or only the crash hurts.
 - The ring at 2.0 tiles, or bigger (2.2).
+
+## His word on the pictures
+
+Shown `action_f1.mp4` and `action_f1_sheet.png`, 31 Oct, asked of the arrow rain, the Lockdown, and whether the standing bars block you: “Does the cell wall do damage?  It doesn’t really seem very consequential otherwise”; and of the bars, “You’re caged but you can swipe to move around” (so: the bars cage you while they stand, and the hero's swipe carries him through them into another cell; FOR THE MAIN CHAT). Told the crash hurts whoever stands on a row, a cell is safe, and offered more (his bolts fired into the cage, or cells closing in): “No that’s good.  I was just asking”. Asked again of the arrow rain: “Yes, that's it (Recommended)”.
