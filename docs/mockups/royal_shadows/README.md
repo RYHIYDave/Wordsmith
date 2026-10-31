@@ -152,3 +152,5 @@ The boss tests' lists of mock-up files that the game must not import now include
 The sheet and the film (`royal_shadows_sheet.png`, `royal_shadows_film.mp4`), asked “The royal shadows
 (royal_shadows_sheet.png and the film): are these right? With them, every character of floors 17 to 20 is drawn.”: “Yes,
 that's them (Recommended)”.
+
+THE KING'S SHADOW, 31 Oct: told that on floor 20 the King's shadow still does his old crown leap, which he had just replaced (the King now charges with his blade dragged and sends up the Crown's Weight), and asked whether to give it one of his new moves: “The Crown's Weight” (offered as: a shadow crown follows you and slams). To be drawn.
