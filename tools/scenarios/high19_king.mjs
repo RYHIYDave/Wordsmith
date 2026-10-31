@@ -1,5 +1,5 @@
 // THE KING (floor 19's boss, behind HIGH_CITY, on here alone), in his own hall, the Throne Hall: the hero a few tiles off him,
-// nothing can kill him, the bot fighting for him; his life brought to his second phase at 18 s and below a third (the Hush climbs
+// nothing can kill him, the hero keeping round him at a little over four tiles; his life brought to his second phase at 18 s and below a third (the Hush climbs
 // off) at 34 s; he falls at 52 s. Stills every half second (STILLS=0: every thirtieth of the game's second, for a film).
 //   node tools/playtest.mjs --file <page> --size 1280x720 --scenario tools/scenarios/high19_king.mjs --out shots/h19k/k
 const FPS = 30;
@@ -14,7 +14,7 @@ export default async function (page, snap) {
   const seconds = Number(process.env.SECONDS || 60);
   await page.evaluate(() => {
     const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
-    d.run('warrior', 7); d.seasoned(24); d.autoLevel = false; d.autoWords = false; d.god = true;
+    d.run('warrior', 7); d.seasoned(24); d.autoLevel = false; d.autoWords = false; d.god = true; d.floorNames(false);
     d.high(true, 19);
     if (d.fx && d.fx.messages) d.fx.messages.length = 0;
   });
@@ -30,7 +30,8 @@ export default async function (page, snap) {
     m.life = m.maxLife = 1e7; m.words = []; m.shield = 0;
     g.boss = m; g.bossMet = true;
     g.level.explored.fill(1);
-    d.bot(true);
+    // (the hero keeps round him, out of his blows' way where he can, striking at nothing: his moves seen clear, not flashing white under blows)
+    d.bot(false);
     return { boss: m.kind, at: [m.x.toFixed(1), m.y.toFixed(1)] };
   });
   console.log('  boss', JSON.stringify(info));
@@ -43,7 +44,21 @@ export default async function (page, snap) {
     if (i === 18 * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.6; });
     if (i === 34 * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.3; });
     if (i === 52 * FPS) await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'gking'); if (m) g.kill(m); });
-    await page.evaluate((slow) => { window.__dbg.slowmo = slow; }, slow);
+    // (a moment after he falls, the hero beside his songbird before the throne, to see it wind itself up and sing)
+    if (i === 52 * FPS + 20) await page.evaluate(() => { const g = window.__dbg.game(); const b = g.perils.find((p) => p.a1 === 'gking:bird'); if (b) { g.hero.x = b.x - 1.6; g.hero.y = b.y + 1.6; } });
+    await page.evaluate(([slow, s]) => {
+      const d = window.__dbg; const g = d.game(); const h = g.hero;
+      const m = g.monsters.find((q) => q.kind === 'gking' && !q.dead);
+      if (m) {
+        const a = 1.2 + s * 0.35;
+        const x = m.x + Math.cos(a) * 4.6;
+        const y = m.y + Math.sin(a) * 4.6;
+        if (g.isOpen(x, y)) { h.x = x; h.y = y; }
+        const dx = m.x - h.x; const dy = m.y - h.y; const l = Math.hypot(dx, dy) || 1;
+        h.fx = dx / l; h.fy = dy / l;
+      }
+      d.slowmo = slow;
+    }, [slow, s]);
     await page.waitForFunction((at) => { const d = window.__dbg; if (d.clock() < at) return false; d.slowmo = 1e-6; return true; }, c0 + s, { polling: 'raf', timeout: 120000 });
     if (stills && i % 15 !== 0) continue;
     await snap(`f${String(i).padStart(4, '0')}`);

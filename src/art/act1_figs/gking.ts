@@ -16,6 +16,6 @@ export const FIG: Act1Fig | null = {
     { make: () => makeKingArt3(KING_ALONE), size: { top: 52, half: 16 }, heavy: true, switches: [KING_ON] },
     // (THE HUSH ON ITS OWN, at his side in his last phase: not a monster of its own, but his pictures hold it, 'gking:2', for
     // render/act1_fx/gking.ts to draw where game/act1_rules/gking.ts has it stand: its stand, and its end, unwinding into nothing)
-    { make: () => makeHushArt3(), size: { top: 52, half: 12 }, heavy: true, switches: [KING_ON] },
+    { make: () => makeHushArt3(), size: { top: 60, half: 12 }, heavy: true, switches: [KING_ON] },
   ],
 };
