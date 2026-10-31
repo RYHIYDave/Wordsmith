@@ -366,3 +366,5 @@ The sheet, his blows across the hall and the film (`king_sheet.png`, `king_blows
 that's the King (Recommended)”.
 
 OF THE NEW MOVES (eb9fe0d; `king_new_moves.mp4`, `king_new_moves_sheet.png`), shown 31 Oct: asked whether these were it (the charge and its line of sparks bursting after he stops; the Crown's Weight; the Hush's grab and drag, shield and grey fog): “The sparks should shoot off, then pop in shrapnel”. Read as: the line of sparks his sword cuts does not just burst where it lies; its sparks shoot up and off the line, then each pops in a burst of shrapnel. Asked whether he stands and steers the crown while it flies, or fights on bareheaded: “He stands and steers it (Recommended)”.
+
+OF THE SPARKS MADE NEW (47e92b4; `king_sparks.mp4`, `king_sparks_sheet.png`), asked “The King's line of sparks now holds white-hot for a beat after he stops, then every spark shoots up off it and pops in a little burst of shrapnel. That hits you anywhere within about 2.5 tiles of the line. Is that it? If so, his new moves are done.”: “Yes, that's it (Recommended)”.
