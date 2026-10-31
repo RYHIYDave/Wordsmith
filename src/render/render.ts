@@ -1212,7 +1212,7 @@ export class Renderer {
           let frames = this.chargeArt.get(key);
           if (!frames) this.chargeArt.set(key, (frames = golemCharge(back ? 'back' : 'front', arm === 'tesla' ? 'tesla' : 'cannon')));
           const held = (g.held ?? -1) < 0 ? 1e9 : Math.max(TINKER_TUNE.golem.charge.build, g.held ?? 0) * 30;
-          sp = frames[Math.max(0, Math.min(frames.length - 1, chargeFrame(Math.floor(g.actT * 30), held)))];
+          sp = frames[Math.max(0, Math.min(frames.length - 1, Math.floor(chargeFrame(Math.floor(g.actT * 30), Math.round(held)))))];
         }
         else if (g.act === 'down' && clips.fall) sp = at(clips.fall, g.actT);
         else sp = set.idle[0];
