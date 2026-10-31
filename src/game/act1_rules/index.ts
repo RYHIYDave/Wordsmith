@@ -60,6 +60,9 @@ import { RULES as gqueen } from './gqueen';
 import { RULES as kknight } from './kknight';
 import { RULES as xbow } from './xbow';
 import { RULES as gking } from './gking';
+import { RULES as hshape } from './hshape';
+import { RULES as rshadow } from './rshadow';
+import { RULES as moth } from './moth';
 
 export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>> = {
   chanter,
@@ -119,6 +122,10 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   kknight,
   xbow,
   gking,
+  // (floor 20's)
+  hshape,
+  rshadow,
+  moth,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

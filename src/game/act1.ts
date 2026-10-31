@@ -50,9 +50,9 @@ export const HIGH_CITY = { on: false, built: 4 };
 /** The kinds of ground of the descent, in its order; then the Hush's five (ACT2); then the High City's (HIGH_CITY). */
 export type Act1LandKind = 'quarry' | 'ledge' | 'canyon' | 'pine' | 'fen';
 export type Act2LandKind = 'gateward' | 'undercity' | 'millrace' | 'housequiet' | 'library' | HighLandKind;
-export type HighLandKind = 'swangardens' | 'masque' | 'glassgallery' | 'keep';
+export type HighLandKind = 'swangardens' | 'masque' | 'glassgallery' | 'keep' | 'quiettower';
 export type LandKind = Act1LandKind | Act2LandKind;
-export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens', 'masque', 'glassgallery', 'keep'];
+export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens', 'masque', 'glassgallery', 'keep', 'quiettower'];
 /** The Hush's five grounds. */
 export const ACT2_LANDS: readonly Act2LandKind[] = ['gateward', 'undercity', 'millrace', 'housequiet', 'library'];
 export function isAct2Land(k: LandKind): k is Act2LandKind {
@@ -112,6 +112,8 @@ export interface Act1FloorDef {
    * the screen's darkened corners. A dungeon's is 0.88 with a pool of light round the hero; outdoors the day.
    */
   light: { dark: number; tint: readonly [number, number, number]; vignette: number; pool: number };
+  /** (FLOOR 20, THE QUIET TOWER) the light on its top, under the sky, where the boss's floor is a place of its own (Land.tower). */
+  top?: { dark: number; tint: readonly [number, number, number]; vignette: number; pool: number };
 }
 
 export const ACT1_FLOORS: Readonly<Record<number, Act1FloorDef>> = {
@@ -139,6 +141,10 @@ export const ACT1_FLOORS: Readonly<Record<number, Act1FloorDef>> = {
   // (floor 19, the Keep: at night under the moon, honest fire only (the art chat's look): as dark as the Masque, a cold blue in
   // it; the King's floor the Throne Hall)
   19: { depth: 19, land: 'keep', place: 'The Keep', name: 'The Throne Hall', boss: 'gking', light: { dark: 0.72, tint: [10, 12, 24], vignette: 0.32, pool: 0.42 } },
+  // (floor 20, the Quiet Tower: grey fog, bone white, no colour at all (his doc's palette); inside, as dark as the Keep, the
+  // dark itself grey, the guttering candles the one warm light; the Moth's floor the Tower Top, under the grey sky: its own
+  // light, Act1FloorDef.top)
+  20: { depth: 20, land: 'quiettower', place: 'The Quiet Tower', name: 'The Tower Top', boss: 'moth', light: { dark: 0.72, tint: [14, 14, 18], vignette: 0.32, pool: 0.42 }, top: { dark: 0.22, tint: [40, 40, 46], vignette: 0.26, pool: 0 } },
   18: { depth: 18, land: 'glassgallery', place: 'The Glass Gallery', name: 'The Mirror Hall', boss: 'gqueen', light: { dark: 0.6, tint: [14, 14, 26], vignette: 0.3, pool: 0.42 } },
 };
 

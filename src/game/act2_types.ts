@@ -74,6 +74,8 @@ export interface Act2Land {
   gallery?: import('./act2/glassgallery').GalleryPlan;
   /** (THE HIGH CITY, FLOOR 19: THE KEEP, game/act2/keep.ts) its rooms, its ways, its throne hall: for its dresser and its rules. */
   keep?: import('./act2/keep').KeepPlan;
+  /** (THE HIGH CITY, FLOOR 20: THE QUIET TOWER, game/act2/quiettower.ts) its rooms, its stair up, its top: for its look, its dresser and its rules. */
+  tower?: import('./act2/quiettower').TowerPlan;
   /** What each walkable tile is, a tile each (its floor's own zones: GW_ZONE, UC_ZONE, HQ_ZONE, LB_ZONE); 0 where not said. */
   zones?: Uint8Array;
   /** THE UNDERCITY: 1 for each tile that is not floor and is water (the channels, the cisterns' pools, the outflow). */

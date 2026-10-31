@@ -249,6 +249,18 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: [],
   },
+  // (THE HIGH CITY, FLOOR 20: THE QUIET TOWER, until its own dresser lays it room by room: game/act2/quiettower.ts; its trap the
+  // art's Hush's dust (the Moth's wing-dust, the Hush itself): lying, stirring, sprung in a grey cloud to a man's waist)
+  20: {
+    things: ["a copyist's desk", 'a press of blank books', 'guttering candles', 'moth silk, strung from a fallen beam'],
+    big: ['the empty bell frame'],
+    lying: ['a shed wing', 'grey dust, drifted', 'a fallen mask of the Order', 'a heap of torn pages'],
+    wallFoot: [],
+    breakables: ['a chest of blank quires', "a copyist's stool"],
+    trap: { name: "the Hush's dust", tiles: 1 },
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */

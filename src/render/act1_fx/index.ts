@@ -57,6 +57,9 @@ import { FX as gqueen } from './gqueen';
 import { FX as kknight } from './kknight';
 import { FX as xbow } from './xbow';
 import { FX as gking } from './gking';
+import { FX as hshape } from './hshape';
+import { FX as rshadow } from './rshadow';
+import { FX as moth } from './moth';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   chanter,
@@ -116,6 +119,10 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   kknight,
   xbow,
   gking,
+  // (floor 20's)
+  hshape,
+  rshadow,
+  moth,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {

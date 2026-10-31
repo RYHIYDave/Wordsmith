@@ -152,3 +152,30 @@ from the art's sweepPainted and crownPainted; the knights and the faces as sprit
 art's KN_CANVAS and FACE_CANVAS exported for it); the Hush at his side stands (its moves his to decide). Held: the king's
 knights (stood in for by the Hushed), the crossbowmen's new death. Films: tools/scenarios/floor19_film.mjs,
 high19_king.mjs (STILLS=0).
+
+## Floor 20, the Quiet Tower (the main chat alone; his yes to floor 19, 31 Oct: “No, on to floor 20 (Recommended)”)
+
+The art: docs/mockups/quiet_tower, hush_shapes, royal_shadows, moth, silent_order (READMEs: every number); all four his yes.
+Kinds: `hshape` (the Hush in its own shapes), `rshadow` (the shadows of the four royals: Monster.form 0 to 3, the Princess,
+the Prince, the Queen, the King), the Order `order` (its masks here, form 2: a mask held up by fog), boss `moth`.
+1. THE FRAME: the kinds, stats, the light (inside as dark as the Keep, grey; the top under the grey sky, its own light,
+   Act1FloorDef.top); land 'quiettower' (the art's quietTowerLook with QT_ZONE inside); the Moth's 25 pieces and the High City
+   set; the Hush's dust the floor's trap (ACT1_SETS[20]).
+2. THE PLACE: game/act2/quiettower.ts. THE CLIMB, the tower's floors one above another, climbing away from the eye: the stair's
+   foot where he comes in, the scriptorium, rooms the fog has filled, the bell-less belfry, the stair's landings between them
+   (the tower's stair standing on each), a store or two off the way; the last landing's stair goes on up to THE TOP. THE TOP
+   is a place of its own on the same map, well apart (as the strongholds' halls are): up the stair the screen darkens and he
+   comes up through the trapdoor onto the round platform, 16 tiles across, the parapet round it, the drop past it, the fog
+   sea below; on its dais in the middle the last chapter on its lectern (the quest). Two grounds, as the art made them (the
+   inside's walls 120 high, the top's parapet 44): the map is painted by each where it lies (render/outdoor.ts
+   groundPainter), the fog sea fading to the dark far off so that no seam is ever seen.
+3. THE HAZARDS: the Hush's dust (the trap's beat: lying, stirring, sprung in a grey cloud; in it words go dark: Game.hush);
+   the fogged rooms' fog.
+4. THE KINDS: the Hush's shapes (drift, then the dart four tiles at you in two frames, the grip that darkens your words); the
+   royals' shadows (each its royal's basic and one big move, smaller: the Princess's snare, the Prince's masks, the Queen's
+   glass, the King's crown); the Order's masks (the palm, the rush, one knife).
+5. THE MOTH: hovering, its drift; the buffet (a cone 140 degrees, 9 tiles), Dust (a cloud 7 across, words dark in it), the Eyes
+   (four beams the top's length), the Swarm; each phase faster and more dust; its last phase, the chapter knocked off its
+   lectern to the stones (his pick, “Book knocked to the stones (Recommended)”), it lands on it and its wings beat the whole
+   top; it dies screaming, every word it swallowed pouring out and flying home. No lines (it is silent until its scream).
+6. Films to him; his yes; then each level with him, open, linear or combo (his word, 31 Oct).

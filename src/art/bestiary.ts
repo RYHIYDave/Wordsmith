@@ -236,6 +236,10 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   kknight: { top: 40, half: 14 },
   xbow: { top: 30, half: 9 },
   gking: { top: 58, half: 16 },
+  // (floor 20's: the Hush's shapes and the Order's masks the knight's size, the royals' shadows to a head over it, the Moth vast)
+  hshape: { top: 30, half: 10 },
+  rshadow: { top: 33, half: 10 },
+  moth: { top: 160, half: 70 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

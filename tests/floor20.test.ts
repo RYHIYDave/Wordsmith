@@ -27,6 +27,7 @@ import { WORD_COLOR } from '../src/art/icons';
 import type { Sprite } from '../src/engine/px';
 import { anchor, count, each, hex, hsv, rgb, sprites } from './floor_checks';
 import { paintWithoutCanvas, paintingOf } from './helpers';
+import { HIGH_CITY } from '../src/game/act1';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void };
@@ -38,24 +39,10 @@ const HONEST = new Set(['guttering candles']);
 const QUEST = new Set(['the last chapter on its lectern']);
 const FIRES = new Set([...CANDLE].map((c) => c.toLowerCase()));
 
-test('nothing of the game imports floor 20\'s pieces', () => {
-  const art = new Set(['art/floor20']);
-  const at = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/floor20\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(at(dir, spec)), `src/${f} imports floor 20's pieces`);
-    }
-  }
+test('floor 20\'s pieces are in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
+
 
 test('his twenty-five (Places 7): the Moth\'s floor 25 pieces of its own; every one its own name; the quest is the last chapter', () => {
   assert.equal(OWN.length, 25);

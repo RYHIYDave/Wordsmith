@@ -82,9 +82,16 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'order', weight: 4 },
     { kind: 'kknight', weight: 2 },
   ],
+  // floor 20, the Quiet Tower (his doc: "the Hush in its own shapes, the Silent Order's last masks, and shadows of the four
+  // royals"): the Hush's shapes the most, in swarms (the art's brief: "about the knight's size, in swarms")
+  20: [
+    { kind: 'hshape', weight: 6 },
+    { kind: 'order', weight: 3 },
+    { kind: 'rshadow', weight: 3 },
+  ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
-export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard', 19: 'kknight' };
+export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard', 19: 'kknight', 20: 'rshadow' };
 /** The tiny ones, never a yellow pack (they are not led). */
 const TINY = new Set<MonsterKind>(['rat']);
 

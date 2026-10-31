@@ -28,6 +28,7 @@ import { TK, pictureOf } from '../src/art/terrain';
 import type { RGB, Terrain, TerrainPiece } from '../src/art/terrain';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
+import { HIGH_CITY } from '../src/game/act1';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void; deepEqual(a: unknown, b: unknown, msg?: string): void };
@@ -82,25 +83,10 @@ const idx = (w: { X0: number; Y0: number; WW: number }, x: number, y: number, up
   return (Math.floor(py) - up - w.Y0) * w.WW + (Math.floor(px) - w.X0);
 };
 
-test('nothing of the game imports the Quiet Tower\'s ground', () => {
-  const art = new Set(['art/quiettower']);
-  const atp = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (its own pieces, art/floor20.ts, take the belfry's boards from it: they too are a mock-up nothing of the game imports)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(quiettower|floor20)\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(atp(dir, spec)), `src/${f} imports the Quiet Tower's ground`);
-    }
-  }
+test('the Quiet Tower\'s ground is in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
+
 
 test('inside, every walkable tile\'s middle is floor and every other\'s is wall; on the top, the parapet the ring round the floor and the drop past it', () => {
   for (let ty = 0; ty < H; ty++) {

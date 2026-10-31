@@ -771,6 +771,13 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   kknight: { kind: 'kknight', name: "King's Knight", life: 180, dmgMin: 24, dmgMax: 33, speed: 1.5, radius: 0.85, range: 4.0, windup: 0.8, cooldown: 2.6, xp: 40, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
   xbow: { kind: 'xbow', name: 'Crossbowman', life: 26, dmgMin: 11, dmgMax: 15, speed: 2.6, radius: 0.3, range: 7, windup: 0.6, cooldown: 2.4, xp: 11, ranged: true, projSpeed: 14, keepMax: 6, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   gking: { kind: 'gking', name: 'The King', life: 720, dmgMin: 26, dmgMax: 36, speed: 1.0, radius: 0.7, range: 3.0, windup: 0.8, cooldown: 2.2, xp: 1150, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 20, the Quiet Tower: the main chat's first picks, a floor up from 19's. The Hush's shapes light, in swarms, drifting
+  // slow (HS_PACE 1.5) and darting four tiles at you; the royals' shadows a head over the knight at most, each its royal's pace
+  // made smaller (Monster.form: which royal, game/act1_rules/rshadow.ts); the Moth the biggest thing in the game, its drift
+  // MOTH_PACE 3, its buffet across the top)
+  hshape: { kind: 'hshape', name: 'Hush', life: 30, dmgMin: 11, dmgMax: 16, speed: 1.5, radius: 0.34, range: 1.6, windup: 0.6, cooldown: 2.2, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  rshadow: { kind: 'rshadow', name: 'Royal Shadow', life: 72, dmgMin: 17, dmgMax: 23, speed: 2.5, radius: 0.42, range: 2.0, windup: 0.7, cooldown: 2.3, xp: 26, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  moth: { kind: 'moth', name: 'The Moth', life: 780, dmgMin: 27, dmgMax: 38, speed: 3.0, radius: 1.4, range: 8.0, windup: 0.9, cooldown: 2.2, xp: 1250, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -1234,6 +1241,9 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   gqueen: ['Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?'],
   // (floor 19: the dying emperor's cry in Andersen's "The Nightingale" (1843; H. P. Paull's translation, 1872), out of copyright)
   gking: ['Music! Music!'],
+  // (floor 20: the Moth makes no sound at all until it dies screaming, the first sound it ever makes (his doc): a silence over it
+  // as its name comes up, as the Censor's)
+  moth: ['...'],
 };
 
 /**
@@ -1480,7 +1490,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5, gking: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5, gking: 1.5, moth: 1.5 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];

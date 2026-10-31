@@ -383,6 +383,10 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   kknight: ['#28325a', '#5a6479', '#94794a', '#181b25'],
   xbow: ['#33406e', '#5c6170', '#94794a', '#2a201b'],
   gking: ['#28325a', '#94794a', '#9aa0b6', '#141a33'],
+  // (floor 20's: grey fog, bone white, no colour at all)
+  hshape: ['#5c586c', '#8a8699', '#bab6c6', '#e9e5ed'],
+  rshadow: ['#303034', '#6a6a6d', '#a4a19d', '#e6e0d3'],
+  moth: ['#35313a', '#77717a', '#958c7e', '#e3dccd'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };

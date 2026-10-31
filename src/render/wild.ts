@@ -154,6 +154,10 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   kknight: { bits: ['#28325a', '#5a6479', '#94794a'], sparks: true, blood: false, dust: true },
   xbow: { bits: ['#33406e', '#5c6170', '#94794a'], sparks: true, blood: false, dust: true },
   gking: { bits: ['#28325a', '#94794a', '#9aa0b6'], sparks: true, blood: false, dust: true },
+  // (floor 20's: fog and dust, no blood)
+  hshape: { bits: ['#5c586c', '#8a8699', '#bab6c6'], sparks: false, blood: false, dust: false },
+  rshadow: { bits: ['#303034', '#6a6a6d', '#a4a19d'], sparks: false, blood: false, dust: false },
+  moth: { bits: ['#35313a', '#77717a', '#958c7e'], sparks: false, blood: false, dust: true },
   physician: { bits: ['#1e1a22', '#3a3440', '#929f84'], sparks: false, blood: false, dust: true },
   censor: { bits: ['#141218', '#24202b', '#3a3440'], sparks: false, blood: false, dust: true },
 };
