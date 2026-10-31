@@ -101,7 +101,6 @@ test('3-4. a fight in her hall: every blow; the glasses wake; her mirror speaks;
     const id = m!.act?.id ?? '';
     if (id) seen.add(id);
     if (before !== 'gqueen:out' && id === 'gqueen:out') {
-      if (process.env.DEBUG) console.log('out', (m!.x - h.x).toFixed(2), (m!.y - h.y).toFixed(2), m!.fx.toFixed(2), m!.fy.toFixed(2), 'hero facing', h.fx.toFixed(2), h.fy.toFixed(2));
       // (out of a glass behind him, facing him)
       const d = Math.hypot(m!.x - h.x, m!.y - h.y);
       if (d > 2 && d < 4.5 && (h.x - m!.x) * m!.fx + (h.y - m!.y) * m!.fy > 0) behind++;
