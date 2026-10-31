@@ -33,15 +33,15 @@
 
 import type { ActorArt } from './actor_types';
 import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
-import { footwork, kneelHips, kneelSettle, plantBy, plantOf } from './bosses3';
+import { footwork, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
-import { LADY_BODY, LADY_CANVAS, MIRROR, ladyPainter, mirrorOf } from './gallery_ladies';
+import { LADY_BODY, LADY_CANVAS, MIRROR, ladyPainter, mirrorAt, mirrorOf } from './gallery_ladies';
 import type { LadySay } from './gallery_ladies';
 import { flashBeam, FLASH_FX } from './gallery_ladies_fx';
 import { hash } from './kit';
 import { TILE3, mobSet } from './new_mobs3';
 import type { Mob, MobMove, Moment } from './new_mobs3';
-import { add, aimFor, elbowFor, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import { add, aimFor, cross, dot, elbowFor, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 type P = Partial<Bones>;
@@ -191,49 +191,91 @@ export function ladyJaw(t: number): number {
 }
 
 // =============================================================================================
-// THE GLIDE (his pick, “Gliding in a line, quick (Recommended)”)
+// THE GLIDES (his picks: “Gliding in a line, quick (Recommended)”; and of 30 Oct, “Yes, these (Recommended)”: they never
+// dart, they glide in their neat line and keep their distance, circling to flash at you from range, backing away if you
+// close in). FOUR GLIDES, ALL FACING YOU (the way the picture faces): forward (her walk), backing away, and circling to
+// her left or to her right. No step shows: the steps are tiny and quick (fifteen a second), all under the hem, which skims
+// the floor; the body carried level; the gown trailing after the way she goes.
 
-/** Her pace gliding, tiles a second (the knight walks 2.5; the gardeners rush at 1.6). */
+/** Her pace gliding forward, tiles a second (the knight walks 2.5; the gardeners rush at 1.6). */
 export const LD_PACE = 3.2;
 export const LD_GLIDE = { frames: 8, fps: 30 } as const;
-/** A foot through one round of the glide: down and going back under her for half of it, then up a little and forward (small quick steps under the hem). */
-function stepFoot(k: number, n: number, step: number, lift: number): [number, number, number] {
-  const half = n / 2;
-  if (k <= half) return [step * (half / 2 - k), 0, 0];
+/** EACH GLIDE: the way she goes (her own ways: forward, to her left), and how fast (tiles a second). The game plays each facing you, and carries her that way at that pace. */
+export const LD_GLIDES = {
+  walk: { way: [1, 0] as const, pace: LD_PACE },
+  glideBack: { way: [-1, 0] as const, pace: 2.4 },
+  glideLeft: { way: [0, 1] as const, pace: 2.8 },
+  glideRight: { way: [0, -1] as const, pace: 2.8 },
+} as const;
+export type GlideName = keyof typeof LD_GLIDES;
+/** Her steps: four to a round of the glide; each foot's own round four frames, down for the first two (going back under her as the floor goes by), lifted for two. */
+const STEP_ROUND = 4;
+/** The feet kept back from the way she goes (her own lengths), under the hem's leading edge; and apart, circling, so that the closing foot never meets the other. */
+const FEET_BACK = 3.0;
+/** One foot `k` frames into its own round: how far along the way she goes it is (from its mean) and how high. */
+function glideFoot(k: number, d: number, lift: number): [number, number] {
+  const half = STEP_ROUND / 2;
+  if (k <= half) return [d * (half / 2 - k), 0];
   const u = (k - half) / half;
   const g = u * u * (3 - 2 * u);
-  return [-step * (half / 2) + step * half * g, lift * Math.sin(Math.PI * u), 4 * Math.sin(Math.PI * u) * (1 - u) - 6 * Math.sin(Math.PI * u) * u];
+  return [d * (-half / 2 + half * g), lift * Math.sin(Math.PI * u)];
 }
-function glideMotion(): Motion {
+/** A GLIDE: the way she goes, and how fast. */
+function glideMotion(name: GlideName): Motion {
+  const { way, pace } = LD_GLIDES[name];
+  const [wx, wy] = way;
   const n = LD_GLIDE.frames;
-  const d = (LD_PACE * TILE3) / LD_GLIDE.fps;
+  const d = (pace * TILE3) / LD_GLIDE.fps;
+  const side = wy !== 0;
+  // (circling: her feet wider, so that the one closing in stays a foot's width from the other at its nearest)
+  const wide = side ? 2 * d + 2.8 - 2 * B.stance : 0;
   const keys: Key3[] = [];
   for (let i = 0; i <= n; i++) {
     const j = i % n;
     const a = (j / n) * Math.PI * 2;
-    const [lx, lz, lp] = stepFoot(j, n, d, 2.4);
-    const [rx, rz, rp] = stepFoot((j + n / 2) % n, n, d, 2.4);
-    // (carried level: the least of bobs; her hips swaying from foot to foot, her shoulders a little against them)
-    const bob = Math.abs(Math.cos(a));
+    const [l, lz] = glideFoot(j % STEP_ROUND, d, 1.4);
+    const [r, rz] = glideFoot((j + STEP_ROUND / 2) % STEP_ROUND, d, 1.4);
+    const cx = -FEET_BACK * wx * (wx > 0 ? 1.25 : 1);
+    const cy = -FEET_BACK * 0.8 * wy;
+    // (carried level, no bob to speak of; leaning a little into the way she goes; the mirror held up before her face)
+    const bob = 0.15 * Math.abs(Math.sin(a * 2));
     keys.push({
       at: i / LD_GLIDE.fps,
       ease: 'lin',
       pose: elbowsTo({
-        pz: R.pz - 1.0 - 0.4 * bob, py: 0.6 * Math.sin(a), roll: 2.2 * Math.sin(a), yaw: 3 * Math.cos(a), twist: -3 * Math.cos(a), side: -1.0 * Math.sin(a),
-        pitch: 6, bend: 2, faceUp: R.faceUp + 2, faceTilt: R.faceTilt - 2, faceTurn: R.faceTurn + 6,
-        lfx: lx + 0.6, lfz: lz, lfp: lp, lfy: 0.3, lft: 8, lk: 6,
-        rfx: rx - 0.6, rfz: rz, rfp: rp, rfy: -0.3, rft: -8, rk: -6,
-        ...leftAt(6.0 + 0.4 * Math.sin(a), -4.4, -18.8 + 0.3 * bob),
-        ...rightAt(3.8, -7.4, -0.2 + 0.3 * bob),
+        pz: R.pz - 1.0 - bob, py: 0.4 * Math.sin(a), roll: -2.5 * wy + 0.8 * Math.sin(a), yaw: 1.5 * Math.cos(a), twist: -1.5 * Math.cos(a), side: -0.6 * Math.sin(a) - 1.2 * wy,
+        pitch: wx > 0 ? 5 : wx < 0 ? -3 : 1, bend: wx > 0 ? 2 : wx < 0 ? -2 : 0, faceUp: R.faceUp + 2, faceTilt: R.faceTilt - 2 + 3 * wy, faceTurn: R.faceTurn + 6,
+        lfx: 0.4 + cx + l * wx, lfy: 0.3 + cy + (wide / 2) + l * wy, lfz: lz, lfp: 0, lft: 8, lk: 6,
+        rfx: -0.4 + cx + r * wx, rfy: -0.3 + cy - (wide / 2) + r * wy, rfz: rz, rfp: 0, rft: -8, rk: -6,
+        ...leftAt(6.0 + 0.3 * Math.sin(a) + (wx < 0 ? 0.8 : 0), -4.4 - (wx < 0 ? 0.5 : 0), -18.8 + 0.2 * Math.cos(a * 2)),
+        ...rightAt(3.8, -7.4, -0.2 + 0.2 * Math.cos(a * 2)),
         ...holding([0.14, -0.15, 1], [-0.35, 0.94, 0.05]),
       }, ELBOW_L, ELBOW_R),
     });
   }
   return { keys, loop: 0 };
 }
+/**
+ * Where a foot that is down is ON THE FLOOR, circling (for the checks: the floor goes by under her to her side as the game
+ * carries her, and art/boss_checks.ts counts only a walk's going forward): each heel and toe moved on by as far as the
+ * floor has gone since that foot came down. Forward and back, the checks' own `ground` does it.
+ */
+function gripsOf(move: string, t: number, s: Skeleton): { name: string; p: V3 }[] {
+  const pts = [{ name: 'heelL', p: s.heelL }, { name: 'toeL', p: s.toeL }, { name: 'heelR', p: s.heelR }, { name: 'toeR', p: s.toeR }];
+  const g = (LD_GLIDES as Record<string, { way: readonly [number, number]; pace: number }>)[move];
+  if (!g || g.way[1] === 0) return pts;
+  const P = STEP_ROUND / LD_GLIDE.fps;
+  const since = (land: number): number => {
+    const u = (((t - land) % P) + P) % P;
+    return u > P - 1e-6 ? 0 : u;
+  };
+  const by = { L: g.pace * TILE3 * since(0) * g.way[1], R: g.pace * TILE3 * since(P / 2) * g.way[1] };
+  return pts.map(({ name, p }) => ({ name, p: [p[0], p[1] + by[name.endsWith('L') ? 'L' : 'R'], p[2]] as V3 }));
+}
 
 // =============================================================================================
-// THE DART: a burst at you
+// THE DART: a burst at you. NO LONGER ONE OF HER MOVES (his pick of 30 Oct: “never dart”): its code kept here, out of her
+// move set (`GALLERY_LADY.more` has only her glides); nothing plays it.
 
 /** Its times; how far it takes her (her own lengths: two and a half tiles); its burst. */
 export const LD_DART = { long: 0.8, reach: 2.5 * TILE3, burst: [0.1, 0.44] as const } as const;
@@ -274,7 +316,7 @@ function dartFeet(): (t: number) => P {
  * Its times (seconds): how long; the warning (the mirror up and turned to the light, the glint building), held from and
  * to; the strike, from the last frame of the wind-up to the frame it lands on (two of the game's frames); the blow.
  */
-export const LD_FLASH = { long: 1.4, warn: [0.3, 0.6] as const, strike: [19 / FPS, 21 / FPS] as const, hit: 21 / FPS } as const;
+export const LD_FLASH = { long: 1.6, warn: [0.3, 0.8] as const, strike: [25 / FPS, 27 / FPS] as const, hit: 27 / FPS } as const;
 const H = LD_FLASH.hit;
 /** Up: turned side-on, the mirror swept up over her right shoulder and turned to the light above, her left hand pointing at you. */
 const RAISED: P = { yaw: -32, twist: -16, pitch: -7, bend: -10, side: 3, roll: -2, pz: 1.0, faceUp: 6, faceTurn: 36, faceTilt: -4, ...leftAt(16, -3.0, 1.5), ...rightAt(-6.2, -3.8, 18.4), ...holding([-0.55, -0.3, 1], [0.3, 0.1, 1]) };
@@ -296,13 +338,14 @@ function flashPlan(): Plan {
       [0, {}],
       [0.15, LIFTING],
       [w0, RAISED],
-      [0.45, { ...RAISED, ...rightAt(-6.4, -3.9, 18.8), pz: 1.15 }],
+      // (HELD half a second, for a blow thrown from range: the mirror rising a little and turning to catch the light)
+      [0.55, { ...RAISED, ...rightAt(-6.4, -3.9, 18.8), pz: 1.15 }],
       [w1, RAISED],
       [s0, HIPS_FIRST],
       [s1, FLASHED],
-      [0.8, THROUGH],
-      [0.95, { ...THROUGH, yaw: 12, twist: 6, pitch: 8, bend: 6, pz: -1.4, ...rightAt(15.5, 3.4, -8.2), ...leftAt(1, 1, -18.5) }],
-      [1.18, { yaw: 3, twist: 1, pitch: 1, bend: 0, pz: -0.4, faceTurn: -8, faceUp: -2, ...rightAt(11.5, 3.0, -4.5), ...leftAt(4.5, -3.0, -18.8), ...holding([0.2, 0.02, 1], [-0.6, 0.45, 0.4]) }],
+      [H + 0.1, THROUGH],
+      [H + 0.25, { ...THROUGH, yaw: 12, twist: 6, pitch: 8, bend: 6, pz: -1.4, ...rightAt(15.5, 3.4, -8.2), ...leftAt(1, 1, -18.5) }],
+      [H + 0.48, { yaw: 3, twist: 1, pitch: 1, bend: 0, pz: -0.4, faceTurn: -8, faceUp: -2, ...rightAt(11.5, 3.0, -4.5), ...leftAt(4.5, -3.0, -18.8), ...holding([0.2, 0.02, 1], [-0.6, 0.45, 0.4]) }],
       [LD_FLASH.long, {}],
     ],
   };
@@ -310,8 +353,8 @@ function flashPlan(): Plan {
 function flashFeet(): (t: number) => P {
   return footwork(B, {
     // (the left foot a step in as the hips come round; the right turning on its ball behind; both back after)
-    L: { start: L0, moves: [{ t0: 0.5, t1: 0.63, to: plantBy(L0, 7.5, 0.8, 4), lift: 1.8 }, { t0: 1.06, t1: 1.3, to: L0, lift: 1.6 }] },
-    R: { start: R0, moves: [{ t0: 0.6, t1: 0.74, to: { ...R0, pitch: 22, turn: R0.turn + 10 } }, { t0: 1.08, t1: 1.3, to: R0 }] },
+    L: { start: L0, moves: [{ t0: 0.7, t1: 0.83, to: plantBy(L0, 7.5, 0.8, 4), lift: 1.8 }, { t0: 1.26, t1: 1.5, to: L0, lift: 1.6 }] },
+    R: { start: R0, moves: [{ t0: 0.8, t1: 0.94, to: { ...R0, pitch: 22, turn: R0.turn + 10 } }, { t0: 1.28, t1: 1.5, to: R0 }] },
   });
 }
 /** The glint on the glass through the wind-up: building as it is raised, full through the held warning, and gone as the light is thrown. */
@@ -336,55 +379,241 @@ function reelFeet(): (t: number) => P {
   });
 }
 
-/** Her death's times: the jolt; the mirror cracking; the gasp; the mirror dropped; her knees giving; down; sat back; bowed and still. */
-export const LD_DIES = { long: 2.6, crack: [0.18, 0.42] as const, gasp: 0.45, drop: 0.56, knees: 1.05, sit: 1.55, still: 2.3 } as const;
-const TUCK = 56;
-const KNEE_Z = B.legR[1] * 1.3;
+// HER DEATH, THE SWOON (his pick of 30 Oct, “Yes, these (Recommended)”, to make Act 2's enemies die differently): struck
+// dead, she sways, the back of her left hand lifted to her brow, her eyes closing; the mirror slips from her right hand,
+// falls, lands and cracks (a starred crack across its glass, a glint, a few tiny shards); a slow theatrical swoon, her knees
+// giving, she sinks back and down onto the floor and faints back across it in a heap of silver-grey gown, the gown pooling
+// round her; the Hush leaves her in a grey breath; she lies still, alive.
+
+/**
+ * Her death's times (seconds; the game shows a death at twenty frames a second): struck (`jolt`); the back of her hand at
+ * her brow (`brow`); her eyes closing (`shut`); the mirror slipping from her hand (`slip`) and landing, cracking (`land`);
+ * her knees giving, sinking down (`knees`) to sit on the floor (`sit`); fainting back across it (`lie`); the Hush leaving
+ * her (`breath`); still from `still`.
+ */
+const DIE_T = {
+  long: 3.6,
+  jolt: 0.08,
+  brow: 0.42,
+  shut: [0.26, 0.62] as const,
+  slip: 0.64,
+  knees: [0.74, 1.7] as const,
+  sit: 1.7,
+  lie: [1.74, 2.42] as const,
+  breath: [1.95, 3.05] as const,
+  still: 3.1,
+};
 const DIE_FEET: Record<'L' | 'R', Plant> = { L: plantBy(L0, R0.at[0] - L0.at[0] - 4.5, -0.6), R: R0 };
-const kneeling = (lean: number, body: P): P => kneelSettle(B, R, { ...kneelHips(B, R, DIE_FEET, TUCK, KNEE_Z, lean), ...body }, DIE_FEET, TUCK, KNEE_Z);
-/** On her knees: the pose's hips and legs, with her body over them. */
+/** The face's numbers (as `solve` reads them: turned, then up, then tilted) for a face looking along `f`, its left `l`. */
+function faceNumbers(f: V3, l: V3): P {
+  const up = Math.asin(Math.max(-1, Math.min(1, f[2])));
+  const turn = Math.atan2(f[1], f[0]);
+  const l0: V3 = [-Math.sin(turn), Math.cos(turn), 0];
+  const u0: V3 = [-Math.sin(up) * Math.cos(turn), -Math.sin(up) * Math.sin(turn), Math.cos(up)];
+  const tilt = Math.atan2(dot(l, u0), dot(l, l0));
+  return { faceTurn: (turn * 180) / Math.PI, faceUp: (up * 180) / Math.PI, faceTilt: (tilt * 180) / Math.PI };
+}
+/** A hand put at `to` (the figure's own place), from its shoulder along the figure's ways, as the pose has the shoulder. */
+function handTo(pose: P, side: 'L' | 'R', to: V3): P {
+  const s = solve(B, { ...R, ...pose } as Posed);
+  const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+  return side === 'L' ? leftAt(to[0] - sh[0], to[1] - sh[1], to[2] - sh[2]) : rightAt(to[0] - sh[0], to[1] - sh[1], to[2] - sh[2]);
+}
+/** THE BACK OF HER LEFT HAND AT HER BROW, for a pose: just before her forehead, a little to its left; her elbow out to her side and up. */
+function browHand(pose: P): P {
+  const s = solve(B, { ...R, ...pose } as Posed);
+  const [ff, fl, fu] = s.face;
+  const hc = add(s.head, mul(fu, -0.2));
+  const to = add(hc, add(mul(ff, B.headR[0] + 1.25), add(mul(fu, B.headR[2] * 0.22), mul(fl, 0.4))));
+  return elbowsTo({ ...pose, ...handTo(pose, 'L', to) }, [0.05, 1, 0.75], null);
+}
+/** The lowest of her (her trunk, her head and the coil of her hair) as posed, above the floor: so that she rests on it. */
+function restingZ(pose: P): number {
+  const s = solve(B, { ...R, ...pose, pz: 0 } as Posed);
+  const { lumps } = ladySolids(s);
+  let lo = Infinity;
+  for (const l of lumps) lo = Math.min(lo, l.c[2] - Math.hypot(l.h[0] * l.rot[0][2], l.h[1] * l.rot[1][2], l.h[2] * l.rot[2][2]));
+  const [ff, fl, fu] = s.face;
+  const hr = B.headR;
+  const hc = add(s.head, mul(fu, -0.2));
+  const coilUp = norm(add(fu, mul(ff, -0.25)));
+  const coil = add(hc, add(mul(fu, hr[2] * 0.78), mul(ff, -hr[0] * 0.36)));
+  lo = Math.min(lo, coil[2] - Math.hypot(hr[0] * 0.62 * ff[2], hr[1] * 0.66 * fl[2], hr[2] * 0.5 * coilUp[2]));
+  return -lo + 0.35;
+}
+/** Her legs as she lies: under her gown, the knees fallen out to either side on the floor, the feet together before her. */
+function lyingFeet(px: number): P {
+  const leg = (side: 'L' | 'R'): P => {
+    const L = side === 'L';
+    const ankle: V3 = [px + 17, L ? 1.7 : -1.7, 3.2];
+    const ys = L ? B.stance : -B.stance;
+    return L
+      ? { lfx: ankle[0], lfy: ankle[1] - ys, lfz: ankle[2] - B.ankle, lfp: 10, lft: 40 }
+      : { rfx: ankle[0], rfy: ankle[1] - ys, rfz: ankle[2] - B.ankle, rfp: 10, rft: -40 };
+  };
+  return { ...leg('L'), ...leg('R') };
+}
+const LIE_PX = -12;
+const LIE_FEET = lyingFeet(LIE_PX);
+/** Her feet as she sinks and sits: down where they stood (the left a step back beside the right as she is struck). */
+const standFeet = footwork(B, { L: { start: L0, moves: [{ t0: 0.06, t1: 0.26, to: DIE_FEET.L, lift: 1.8 }] } });
+const FEET_GO: Record<'L' | 'R', readonly [number, number]> = { L: [1.86, 2.26], R: [1.92, 2.32] };
+function diesFeet(t: number): P {
+  const a = { ...R, ...standFeet(Math.min(t, 1.0)) } as Record<string, number>;
+  const b = LIE_FEET as Record<string, number>;
+  const out: P = {};
+  for (const side of ['L', 'R'] as const) {
+    const [t0, t1] = FEET_GO[side];
+    const u = smooth(t0, t1, t);
+    const lift = 3.4 * Math.sin(Math.PI * clamp01((t - t0) / (t1 - t0)));
+    const o = out as Record<string, number>;
+    for (const f of ['fx', 'fy', 'fz', 'fp', 'ft']) {
+      const k = (side === 'L' ? 'l' : 'r') + f;
+      o[k] = a[k] + (b[k] - a[k]) * u + (f === 'fz' ? lift : 0);
+    }
+  }
+  return out;
+}
 function diesPlan(): Plan {
-  const ON_KNEES = kneeling(4, { pitch: 3, bend: 8, roll: 2, faceUp: -18, faceTurn: -4, faceTilt: 10, ...leftAt(7.5, -3.5, -14), ...rightAt(7.0, 3.0, -13), out: 1 });
-  const SAT = kneeling(-48, { pitch: 2, bend: 14, roll: 3, faceUp: -26, faceTurn: -6, faceTilt: 12, ...leftAt(8.5, 0.5, -17), ...rightAt(7.0, 3.5, -16), out: 1 });
-  // (bowed over, sat back on her heels, her left hand on the floor by her knee, her right in her lap)
-  const sb = solve(B, { ...R, ...SAT } as Posed);
-  void sb;
-  const BOWED0 = kneeling(-58, { pitch: 36, bend: 46, roll: 6, side: -8, faceUp: -40, faceTurn: -10, faceTilt: 18, ...rightAt(11, 4.5, -12), out: 1 });
-  const bb = solve(B, { ...R, ...BOWED0, lhIn: 1, lhx: 0, lhy: 0, lhz: -10 } as Posed);
-  const floorHand: V3 = [bb.kneeL[0] + 4.5, bb.kneeL[1] + 5.0, 1.4];
-  const BOWED: P = { ...BOWED0, ...leftAt(floorHand[0] - bb.shoulderL[0], floorHand[1] - bb.shoulderL[1], floorHand[2] - bb.shoulderL[2]) };
-  // (half way down: her knees going forward under her skirts, her hips sinking)
-  const K4 = kneeling(4, { pitch: 1, bend: 2, faceUp: 6, faceTurn: -2, ...leftAt(5.5, -3.0, -15), ...rightAt(7.0, 1.5, -15), out: 0.9 });
-  const HALF_DOWN: P = { ...K4, px: (K4.px as number) * 0.5 - 0.7, pz: (K4.pz as number) * 0.5 };
+  // STRUCK, then SWAYING BACK, the back of her left hand to her brow, her head thrown back; her right arm out at her side,
+  // the mirror hanging loose in her hand
+  const BROW0: P = { px: -2.6, py: -0.8, pz: 0.3, pitch: -7, bend: -12, roll: 3, side: 2, yaw: 4, twist: 4, faceUp: 15, faceTurn: 8, faceTilt: -10, out: 0.3, ...rightAt(2.5, -12.5, -9.5), ...holding([0.25, -0.35, -1], [0.75, -0.2, 0.3]) };
+  const BROW = elbowsTo(browHand(BROW0), null, [0.1, -1, -0.4]);
+  // (swaying the other way, forward and to her left: the mirror gone from her hand, the arm hanging; her knees beginning to go)
+  const SWAY0: P = { px: -1.6, py: 0.6, pz: -1.4, pitch: -4, bend: -9, roll: -2.5, side: -2, yaw: -2, twist: -2, faceUp: 20, faceTurn: 6, faceTilt: -4, out: 0.8, lkUp: 8, rkUp: 8, ...rightAt(3.0, -9.5, -17), ...holding([0.3, -0.4, -1], [0.75, -0.3, 0.3]) };
+  const SWAY = elbowsTo(browHand(SWAY0), null, ELBOW_R);
+  // (sinking: her knees giving under her skirts, her hips going down and back, the hand still at her brow)
+  const SINK0: P = { px: -4.6, py: 0.4, pz: -12, pitch: -10, bend: -6, roll: -3, side: -1, yaw: -1, twist: -1, faceUp: 22, faceTurn: 6, faceTilt: 6, out: 1, lk: 14, rk: -14, lkUp: 34, rkUp: 34, ...rightAt(3.5, -9.0, -16) };
+  const SINK = elbowsTo(browHand(SINK0), null, ELBOW_R);
+  // (down: sat on the floor behind her feet, leaning back, her knees up under the gown)
+  const SIT0: P = { px: -9, py: 0.2, pitch: -24, bend: -8, roll: -3, side: 0, yaw: 0, twist: 0, faceUp: 18, faceTurn: 6, faceTilt: 8, out: 1, lk: 16, rk: -16, lkUp: 62, rkUp: 62 };
+  const sitZ = restingZ(SIT0);
+  const SIT1: P = { ...SIT0, pz: sitZ };
+  const sitS = solve(B, { ...R, ...SIT1 } as Posed);
+  const SIT = elbowsTo(browHand({ ...SIT1, ...handTo(SIT1, 'R', [sitS.pelvis[0] + 1.5, sitS.pelvis[1] - 9.5, 1.9]) }), null, [0.1, -1, 0.2]);
+  // FAINTING BACK ACROSS THE FLOOR: lying back, the face up and turned over to her right; the left arm flung back above her
+  // head onto the floor, the right out at her side on it; the knees fallen out to either side under the gown
+  const face = faceNumbers(norm([0.08, -0.55, 0.83]), norm([0, 0.83, 0.55]));
+  const LIE0: P = { px: LIE_PX, py: 0.4, pitch: -84, bend: -12, roll: 0, side: 0, yaw: 0, twist: 0, ...face, out: 1, lk: 85, rk: -85, lkUp: -12, rkUp: -12, ...LIE_FEET };
+  const lieZ = restingZ(LIE0);
+  const LIE1: P = { ...LIE0, pz: lieZ };
+  const ls = solve(B, { ...R, ...LIE1 } as Posed);
+  const reach = (B.upperArm + B.foreArm) * 0.93;
+  const onFloorFrom = (sh: V3, dx: number, dy: number): V3 => {
+    const flat = Math.sqrt(Math.max(1, reach * reach - (sh[2] - 1.9) ** 2));
+    const k = flat / Math.hypot(dx, dy);
+    return [sh[0] + dx * k, sh[1] + dy * k, 1.9];
+  };
+  const leftLies = onFloorFrom(ls.shoulderL, -1, 0.55);
+  const rightLies = onFloorFrom(ls.shoulderR, 0.25, -1);
+  const LIE = elbowsTo({ ...LIE1, ...handTo(LIE1, 'L', leftLies), ...handTo(LIE1, 'R', rightLies) }, [0.1, 1, 0.3], [0.1, -1, 0.3]);
+  // (between: lying back by degrees, each resting on the floor as it goes; the left hand slipping from her brow and falling back over her head)
+  const between: [number, P][] = [];
+  const [l0, l1] = DIE_T.lie;
+  for (const u of [0.28, 0.5, 0.72, 0.88]) {
+    const e = u * u * (3 - 2 * u);
+    const mix = (a: number, b: number, k = e): number => a + (b - a) * k;
+    const body: P = {
+      px: mix(SIT0.px as number, LIE_PX), py: mix(0.2, 0.4), pitch: mix(-24, -84, Math.min(1, e * 1.08)), bend: mix(-8, -12), roll: mix(-3, 0), side: 0, yaw: 0, twist: 0,
+      faceTurn: mix(SIT0.faceTurn as number, face.faceTurn as number), faceUp: mix(SIT0.faceUp as number, face.faceUp as number), faceTilt: mix(SIT0.faceTilt as number, face.faceTilt as number),
+      out: 1, lk: mix(16, 85), rk: mix(-16, -85), lkUp: mix(62, -12), rkUp: mix(62, -12),
+    };
+    const z = restingZ(body);
+    const posed = { ...body, pz: z };
+    const s = solve(B, { ...R, ...posed } as Posed);
+    const brow = browHand(posed);
+    // (the left hand: off her brow and back over her head)
+    const over = add(s.head, add(mul(s.face[2], 5 + 4 * u), mul(s.face[0], 2 - 2 * u)));
+    const lh = u < 0.4 ? brow : elbowsTo({ ...posed, ...handTo(posed, 'L', u > 0.8 ? lerp3(over, leftLies, (u - 0.8) / 0.2 * 0.6) : over) }, [-0.1, 1, 0.5], null);
+    const rh = handTo(posed, 'R', lerp3([s.pelvis[0] + 1.5, s.pelvis[1] - 9.5, 1.9], rightLies, e));
+    between.push([l0 + (l1 - l0) * u, elbowsTo({ ...lh, ...rh }, null, [0.1, -1, 0.25])]);
+  }
   return {
-    long: LD_DIES.long,
+    long: DIE_T.long,
     keys: [
       [0, {}],
-      [0.08, { ...JOLT }],
-      // (she brings the mirror before her eyes; it cracks across)
-      [0.3, { px: -1.4, pitch: -3, bend: -3, faceUp: 2, faceTurn: -8, faceTilt: 4, pz: 0.3, ...rightAt(10.5, 3.6, -1.0), ...leftAt(5.5, -5.2, -16), ...holding([0.05, 0.05, 1], [-0.95, 0.3, 0]), out: 0.1 }],
-      // (a gasp, her head thrown back, the Hush pouring out of her; the mirror falls from her hand)
-      [LD_DIES.gasp, { px: -1.8, pitch: -8, bend: -13, faceUp: 34, faceTurn: -4, faceTilt: 2, pz: 0.6, ...rightAt(9.0, 2.0, -6.0), ...leftAt(4.5, -4.5, -12), ...holding([0.3, 0.1, 1], [-0.9, 0.3, 0.2]), out: 0.4 }],
-      [0.7, { px: -1.5, pitch: -6, bend: -10, faceUp: 26, faceTurn: -2, faceTilt: 4, pz: 0.2, ...rightAt(7.5, 0.5, -15), ...leftAt(4.5, -3.0, -15), out: 0.75 }],
-      // (her knees give: she sinks down into her skirts)
-      [0.86, HALF_DOWN],
-      [LD_DIES.knees, ON_KNEES],
-      [1.3, { ...ON_KNEES, pz: (ON_KNEES.pz as number) + 0.5, pitch: -1, roll: -2, faceUp: -10 }],
-      [LD_DIES.sit, SAT],
-      [1.9, kneeling(-52, { pitch: 16, bend: 28, roll: 5, side: 3, faceUp: -34, faceTurn: -8, faceTilt: 15, ...leftAt(10, 3, -15), ...rightAt(9.0, 4.2, -15.5), out: 1 })],
-      [LD_DIES.still, BOWED],
-      [LD_DIES.long, { ...BOWED, bend: 47, faceUp: -41 }],
+      [DIE_T.jolt, { ...JOLT, out: 0.1 }],
+      [DIE_T.brow, BROW],
+      [0.7, SWAY],
+      [1.2, SINK],
+      [DIE_T.sit, SIT],
+      ...between,
+      [l1, LIE],
+      // (eased: her head over a little further, her hands loose; then still)
+      [2.75, { ...LIE, faceTilt: (LIE.faceTilt as number) + 4, faceUp: (LIE.faceUp as number) - 3 }],
+      [DIE_T.long, { ...LIE, faceTilt: (LIE.faceTilt as number) + 4, faceUp: (LIE.faceUp as number) - 3 }],
     ],
   };
 }
-function diesFeet(): (t: number) => P {
-  return footwork(B, {
-    // (her left foot a step back beside the right as she is struck; then both up on their toes as she goes down on her knees)
-    L: { start: L0, moves: [{ t0: 0.06, t1: 0.26, to: DIE_FEET.L, lift: 1.8 }, { t0: 0.66, t1: 0.98, to: { ...DIE_FEET.L, pitch: TUCK } }] },
-    R: { start: R0, moves: [{ t0: 0.66, t1: 0.98, to: { ...DIE_FEET.R, pitch: TUCK } }] },
-  });
+/** Her eyes closing (0 open, 1 shut), as she swoons. */
+const dieShut = (t: number): number => smooth(DIE_T.shut[0], DIE_T.shut[1], t);
+/** Her lips: parted in a sigh as she is struck and sways, closing as she lies. */
+const dieJaw = (t: number): number => (t < 0.1 ? 0.6 : t < 1.6 ? 0.9 : 0.9 - 0.6 * smooth(1.6, 2.6, t));
+
+// THE MIRROR LOOSE OF HER HAND: from where it is as it slips, falling (tumbling over to lie face up), landing flat on its
+// back at her right side (`LANDS`, from her floor point), cracking as it lands; a little clatter; still.
+const MIRROR_LIES: V3 = [7, -31, 0.95];
+const G = 400;
+interface LoosePath { c0: V3; frame0: [V3, V3, V3]; fall: number; land: number }
+let LOOSE: LoosePath | null = null;
+/** The mirror's own ways (its handle's way, its glass's, across it), as it lies: face up, its handle toward her. */
+const LIES_UP: V3 = norm([0.35, -1, 0]);
+const LIES_FRAME: [V3, V3, V3] = [LIES_UP, [0, 0, 1], norm(cross([0, 0, 1], LIES_UP))];
+/** Turned by `deg` about `axis`. */
+function about(v: V3, axis: V3, deg: number): V3 {
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const k = norm(axis);
+  const d = dot(k, v);
+  const x = cross(k, v);
+  return [v[0] * c + x[0] * s + k[0] * d * (1 - c), v[1] * c + x[1] * s + k[1] * d * (1 - c), v[2] * c + x[2] * s + k[2] * d * (1 - c)];
 }
-const dieJaw = (t: number): number => (t < 0.1 ? 0.6 : t < 1.2 ? 1 : 1 - 0.7 * smooth(1.2, 1.8, t));
+/** The turn that takes one set of ways onto another, as an axis and its whole angle (degrees). */
+function turnBetween(a: [V3, V3, V3], b: [V3, V3, V3]): { axis: V3; deg: number } {
+  // (R = b·aᵀ; its axis and angle)
+  const m = (i: number, j: number): number => b[0][i] * a[0][j] + b[1][i] * a[1][j] + b[2][i] * a[2][j];
+  const tr = m(0, 0) + m(1, 1) + m(2, 2);
+  const ang = Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2)));
+  if (ang < 1e-4) return { axis: [0, 0, 1], deg: 0 };
+  const ax: V3 = [m(2, 1) - m(1, 2), m(0, 2) - m(2, 0), m(1, 0) - m(0, 1)];
+  return { axis: Math.hypot(...ax) > 1e-6 ? norm(ax) : [1, 0, 0], deg: (ang * 180) / Math.PI };
+}
+/** THE MIRROR AS IT IS, OFF HER HAND (dying, from `slip`): its middle and ways, how far cracked (it cracks as it lands), the glint off the crack, and the shards. */
+export interface LooseMirror { c: V3; up: V3; n: V3; side: V3; crack: number; glint: number; shards: V3[]; t: number }
+export function mirrorLooseAt(t: number): LooseMirror | null {
+  if (!LOOSE || t < DIE_T.slip) return null;
+  const { c0, frame0, fall, land } = LOOSE;
+  const tau = Math.min(t, land + 0.3) - DIE_T.slip;
+  const k = Math.min(1, tau / fall);
+  // (falling as a dropped thing does: slow at first, faster; out from her side as it goes; a hop of a clatter as it lands)
+  let z = c0[2] + (MIRROR_LIES[2] - c0[2]) * k * k;
+  const after = t - land;
+  if (after > 0 && after < 0.12) z = MIRROR_LIES[2] + 0.9 * Math.sin((Math.PI * after) / 0.12);
+  const across = k;
+  const c: V3 = [c0[0] + (MIRROR_LIES[0] - c0[0]) * across, c0[1] + (MIRROR_LIES[1] - c0[1]) * across, z];
+  // (tumbling over onto its back as it falls, turning a little as it goes)
+  const { axis, deg } = turnBetween(frame0, LIES_FRAME);
+  const kk = smooth(0, 1, Math.min(1, k * 1.05));
+  const spin = 40 * (1 - kk);
+  const turn = (v: V3): V3 => about(about(v, axis, deg * kk), [0, 0, 1], spin);
+  const [up, n, side] = [turn(frame0[0]), turn(frame0[1]), turn(frame0[2])];
+  const crack = after >= -1e-6 ? 1 : 0;
+  const glint = after >= -1e-6 ? Math.max(0, 1 - after / 0.4) : 0;
+  // (the shards: flung out from its edge as it lands, a hop each, and lying round it)
+  const shards: V3[] = [];
+  if (after >= -1e-6) {
+    for (let i = 0; i < 6; i++) {
+      const a = -1.1 + i * 0.75 + 0.3 * hash(i, 1, 7861);
+      const far = 6.5 + 4 * hash(i, 2, 7861);
+      const u = Math.min(1, after / (0.1 + 0.08 * hash(i, 3, 7861)));
+      const dir: V3 = [Math.cos(a), Math.sin(a), 0];
+      const at = add(MIRROR_LIES, mul(dir, 3 + (far - 3) * (1 - (1 - u) * (1 - u))));
+      shards.push([at[0], at[1], 0.4 + 3 * u * (1 - u) * 4 * 0.5]);
+    }
+  }
+  return { c, up, n, side, crack, glint, shards, t };
+}
 
 // =============================================================================================
 // WHAT IS LAID AFTER HER EDGE: the glint's star, the strike's smear, the beam, the glass as it cracks
@@ -400,11 +629,19 @@ export function smearedAt(move: string, t: number): boolean {
 export const SMEAR = ['#8a7aa4', '#cdbfdc', '#f4e8f0'] as const;
 const PLANS: Record<string, Plan> = { attack: flashPlan(), dart: dartPlan(), reel: reelPlan(), dying: diesPlan() };
 const POSES: Record<string, (t: number) => P> = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, poseFn(p)]));
-const FEET: Record<string, (t: number) => P> = { attack: flashFeet(), dart: dartFeet(), dying: diesFeet(), reel: reelFeet() };
+const FEET: Record<string, (t: number) => P> = { attack: flashFeet(), dart: dartFeet(), dying: diesFeet, reel: reelFeet() };
 const bonesOf = (move: string, t: number): Skeleton => {
   const tt = Math.max(0, Math.min(PLANS[move].long, t));
   return solve(B, { ...R, ...POSES[move](tt), ...(FEET[move]?.(tt) ?? {}) } as Posed);
 };
+// (the mirror's fall, from where it is in her hand as it slips: how long it falls, and when it lands)
+LOOSE = ((): LoosePath => {
+  const k = mirrorOf(bonesOf('dying', DIE_T.slip));
+  const fall = Math.sqrt((2 * Math.max(1, k.c[2] - MIRROR_LIES[2])) / G);
+  return { c0: k.c, frame0: [k.up, k.n, k.side], fall, land: DIE_T.slip + fall };
+})();
+/** HER DEATH'S TIMES (see DIE_T), and when the mirror lands and cracks (`land`). */
+export const LD_DIES = { ...DIE_T, land: LOOSE.land } as const;
 /** The mirror's oval as a line of points round it (its rim), at a moment's bones. */
 function rimOf(s: Skeleton, n = 14): V3[] {
   const k = mirrorOf(s);
@@ -477,19 +714,24 @@ function moreOf(move: string, m: Moment): [V3, string, number][] {
     // THE BEAM, thrown from the glass as it lands (art/gallery_ladies_fx.ts: its light in the air)
     if (t >= H - 1e-6) out.push(...flashBeam(mirrorOf(bonesOf('attack', H)).face, t - H, (i) => hash(i, Math.round(t * FPS), 7811)));
   }
-  if (move === 'dying' && t >= LD_DIES.crack[0] && t < LD_DIES.crack[1] + 0.12) {
-    // THE MIRROR CRACKS: a spray of glitter off the glass as it goes, falling
-    const k = mirrorOf(s);
-    const age = t - LD_DIES.crack[0];
-    for (let i = 0; i < 16; i++) {
-      const born = 0.1 * hash(i, 1, 7821);
-      const a = age - born;
-      if (a < 0 || a > 0.28) continue;
-      const dir = norm([hash(i, 2, 7821) - 0.5, hash(i, 3, 7821) - 0.5, hash(i, 4, 7821) * 0.6]);
-      const p = add(k.face, add(mul(dir, 2 + 14 * a), [0, 0, -60 * a * a]));
-      out.push([p, i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#c8c2dc' : '#8e98b8', a < 0.12 ? 2 : 1]);
+  if (move === 'dying') {
+    // THE MIRROR CRACKS AS IT LANDS: a glint off the crack, flaring and going; the tiny shards flung off it, lying round it
+    const lm = mirrorLooseAt(t);
+    if (lm && lm.crack > 0) {
+      if (lm.glint > 0.03) {
+        const c = add(lm.c, add(mul(lm.n, MIRROR.thick + 0.5), add(mul(lm.up, 1.2), mul(lm.side, -0.8))));
+        const long = 2 + 10 * lm.glint;
+        for (const [dir, len] of [[[0, 0, 1], long], [norm(add(lm.up, mul(lm.side, -1))), long * 0.8], [norm(add(lm.up, lm.side)), long * 0.45], [lm.side, long * 0.45]] as [V3, number][]) {
+          for (let e = -len; e <= len; e += 0.6) {
+            const far = Math.abs(e) / len;
+            out.push([add(c, mul(dir, e)), far < 0.25 ? '#ffffff' : far < 0.6 ? '#e6e0f4' : '#b6acd2', far < 0.2 && lm.glint > 0.4 ? 2 : 1]);
+          }
+        }
+      }
+      lm.shards.forEach((p, i) => out.push([p, i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#c8c2dc' : '#8e98b8', 1]));
     }
   }
+  void s;
   return out;
 }
 function lightsOf(move: string, m: Moment): { p: V3; c: string; r: number; a: number }[] {
@@ -506,26 +748,39 @@ function lightsOf(move: string, m: Moment): { p: V3; c: string; r: number; a: nu
 export const LD_NAMES = {
   stand: 'A lady-in-waiting gazes into her mirror',
   walk: 'The ladies glide',
+  glideBack: 'She glides back, away from you',
+  glideLeft: 'She glides round you, to her left',
+  glideRight: 'She glides round you, to her right',
   attack: 'The mirror flash',
   dart: 'The dart',
   reel: 'A lady-in-waiting is struck',
-  dying: 'The mirror cracks, the Hush leaves her',
+  dying: 'She swoons; the mirror falls and cracks; the Hush leaves her',
 } as const;
 const byName: Record<string, string> = Object.fromEntries(Object.entries(LD_NAMES).map(([k, v]) => [v, k]));
+const glideOf = (m: Moment): { way: readonly [number, number]; pace: number } | undefined => (LD_GLIDES as Record<string, { way: readonly [number, number]; pace: number }>)[byName[m.move ?? ''] ?? ''];
 const SAY: LadySay = {
-  dropped: (m) => !!m.dying && m.t >= LD_DIES.drop,
-  crack: (m) => (m.dying ? smooth(LD_DIES.crack[0], LD_DIES.crack[1], m.t) : 0),
+  dropped: (m) => !!m.dying && m.t >= LD_DIES.slip,
+  // (the mirror in her hand never cracks now: it cracks as it lands, loose of her)
+  crack: () => 0,
+  loose: (m) => (m.dying ? mirrorLooseAt(m.t) : null),
+  shut: (m) => (m.dying ? dieShut(m.t) : 0),
   more: (m) => moreOf(byName[m.move ?? ''] ?? '', m),
-  puff: (m) => (m.dying ? Math.max(0, 2.2 * (1 - smooth(0.2, 1.4, m.t))) : 0.35 + 0.8 * clamp01(m.glint)),
+  // (as she swoons, only a thread of it, and none as she lies; then it leaves her in one great breath)
+  puff: (m) => (m.dying ? Math.max(0, 0.6 * (1 - smooth(0.05, 0.32, m.t))) + (m.t > DIE_T.breath[0] && m.t < DIE_T.breath[1] ? 1.5 * Math.sin((Math.PI * (m.t - DIE_T.breath[0])) / (DIE_T.breath[1] - DIE_T.breath[0])) : 0) : 0.35 + 0.8 * clamp01(m.glint)),
   lights: (m) => lightsOf(byName[m.move ?? ''] ?? '', m),
+  dies: { breath: DIE_T.breath, still: DIE_T.still, pool: (t) => ({ k: smooth(0.95, DIE_T.sit + 0.05, t), lie: smooth(DIE_T.lie[0], DIE_T.lie[1], t) }) },
+  glide: (m) => (glideOf(m) ? 1 : 0),
+  drift: (m) => {
+    const g = glideOf(m);
+    return g && g.way[1] !== 0 ? [0, g.way[1] * g.pace * TILE3 * FR, 0] : [0, 0, 0];
+  },
 };
 
 function ladyMob(): Mob {
   const paint = ladyPainter(SAY);
   const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: R, ...more });
-  // (the fall of the mirror from her hand: face up on the floor to her right, cracked)
-  const dropAt = bonesOf('dying', LD_DIES.drop);
-  const glassUp = mirrorOf(dropAt).n;
+  // HER GLIDES, all facing you: forward (her walk), back, and round you to her left and to her right; each carried at its own pace
+  const glide = (name: GlideName): MobMove => mv(LD_NAMES[name], glideMotion(name), { period: LD_GLIDE.frames / LD_GLIDE.fps, ground: LD_GLIDES[name].way[0] * LD_GLIDES[name].pace * TILE3, jaw: (t) => 0.4 + 0.25 * Math.max(0, Math.sin(t * 9)) });
   return {
     id: 'gallery-lady',
     name: 'A lady-in-waiting',
@@ -533,12 +788,11 @@ function ladyMob(): Mob {
     build: B,
     stand: mv(LD_NAMES.stand, standMotion(), { jaw: ladyJaw }),
     attack: mv(LD_NAMES.attack, motionOf(PLANS.attack), { feet: FEET.attack, glint: flashGlint, jaw: flashJaw }),
-    more: {
-      dart: mv(LD_NAMES.dart, motionOf(PLANS.dart), { feet: FEET.dart, jaw: () => 0.55 }),
-    },
+    // (the dart is no longer hers: his pick of 30 Oct, “never dart”; its code is kept above, out of her moves)
+    more: { glideBack: glide('glideBack'), glideLeft: glide('glideLeft'), glideRight: glide('glideRight') },
     idleFrames: LD_IDLE.frames,
     idleFps: LD_IDLE.fps,
-    walk: mv(LD_NAMES.walk, glideMotion(), { period: LD_GLIDE.frames / LD_GLIDE.fps, ground: LD_PACE * TILE3, jaw: (t) => 0.4 + 0.25 * Math.max(0, Math.sin(t * 9)) }),
+    walk: glide('walk'),
     walkFrames: LD_GLIDE.frames,
     walkFps: LD_GLIDE.fps,
     pace: LD_PACE,
@@ -554,8 +808,8 @@ function ladyMob(): Mob {
     trueBack: true,
     bits: paint.bits,
     grains: paint.grains,
-    fall(piece) {
-      if (piece === 'mirror') return { from: LD_DIES.drop, to: [9, -21], spin: 50, lay: 'flat', up: glassUp, hop: 1.0 };
+    // (nothing of her falls by itself: the mirror as it falls and lies is in her own frames, art/gallery_ladies.ts)
+    fall() {
       return null;
     },
   };
@@ -568,7 +822,9 @@ export function makeLadyArt3(mob: Mob = GALLERY_LADY): ActorArt {
 // =============================================================================================
 // HER AS THE CHECKS SEE HER (art/boss_checks.ts)
 
-const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
+function len3(v: V3): number {
+  return Math.hypot(v[0], v[1], v[2]);
+}
 export function ladySolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } {
   const [rH, rK, rA] = B.legR;
   const [r0, r1] = B.armR;
@@ -593,30 +849,43 @@ export function ladySolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[
   ];
   return { limbs, lumps };
 }
-function mirrorThings(s: Skeleton): CheckThing[] {
-  const k = mirrorOf(s);
-  const rim = rimOf(s, 8);
+function mirrorThings(k: ReturnType<typeof mirrorOf>, may: string[] = ['foreR']): CheckThing[] {
+  const rim: V3[] = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    rim.push(add(k.c, add(mul(k.up, Math.cos(a) * MIRROR.ry), mul(k.side, Math.sin(a) * MIRROR.rx))));
+  }
   return [
-    { name: 'mirror handle', pts: [k.butt, k.grip, k.neck], r: 0.6, may: ['foreR'] },
-    { name: 'mirror glass', pts: [k.c, ...rim.slice(0, 8)], r: 0.6, may: [] },
+    { name: 'mirror handle', pts: [k.butt, k.grip, k.neck], r: 0.6, may },
+    { name: 'mirror glass', pts: [k.c, ...rim], r: 0.6, may: may.filter((x) => x !== 'foreR') },
   ];
 }
-const ALL_MOVES = ['stand', 'walk', 'attack', 'reel', 'dying', 'dart'];
+/** Her glides, and all her moves. */
+export const LD_GLIDE_MOVES: readonly GlideName[] = ['walk', 'glideBack', 'glideLeft', 'glideRight'];
+const glideFrames = (g: string): number[] => Array.from({ length: LD_GLIDE.frames + 1 }, (_, i) => i / LD_GLIDE.fps);
 export const LD_SHAPE: BossShape = {
   body: ladySolids,
   tip: (move, _t, s) => (move === 'attack' ? mirrorOf(s).face : null),
-  things: (move, t, s) => (move === 'dying' && t >= LD_DIES.drop ? [] : mirrorThings(s)),
+  things: (move, t, s) => {
+    if (move !== 'dying' || t < LD_DIES.slip) return mirrorThings(mirrorOf(s));
+    // (loose of her hand, falling past her arm and lying beside her: through nothing of her)
+    const lm = mirrorLooseAt(t);
+    return lm ? mirrorThings(mirrorAt(lm.c, lm.up, lm.n, lm.side), t < LD_DIES.slip + 0.12 ? ['foreR', 'handR'] : []) : [];
+  },
+  grips: (move, t, s) => gripsOf(move, t, s),
   strikes: LD_STRIKES,
   smeared: smearedAt,
   handovers: [
-    ...ALL_MOVES.filter((m) => m !== 'stand' && m !== 'walk').flatMap((m): Handover[] =>
-      m === 'dying' ? [{ from: 'stand', at: 0, to: m, toAt: 0 }] : [{ from: 'stand', at: 0, to: m, toAt: 0 }, { from: m, at: 'end', to: 'stand', toAt: 0, shift: m === 'dart' ? [DART, 0] : undefined }],
-    ),
-    // (the dart straight into her flash, where it set her down)
-    { from: 'dart', at: 'end', to: 'attack', toAt: 0, shift: [DART, 0] },
-    { from: 'stand', at: 0, to: 'walk', toAt: 0 },
-    ...Array.from({ length: LD_GLIDE.frames + 1 }, (_, i): Handover => ({ from: 'walk', at: i / LD_GLIDE.fps, to: 'stand', toAt: 0 })),
-    ...Array.from({ length: LD_GLIDE.frames + 1 }, (_, i): Handover => ({ from: 'walk', at: i / LD_GLIDE.fps, to: 'dart', toAt: 0 })),
+    // (her stand, from any frame of it, into each move; her flash and struck back into it)
+    ...['attack', 'reel', 'dying', ...LD_GLIDE_MOVES].map((m): Handover => ({ from: 'stand', at: 0, to: m, toAt: 0 })),
+    { from: 'attack', at: 'end', to: 'stand', toAt: 0 },
+    { from: 'reel', at: 'end', to: 'stand', toAt: 0 },
+    // (each glide, from any frame of it: into her stand, into her flash, and into each other glide, as she turns her going)
+    ...LD_GLIDE_MOVES.flatMap((g) => glideFrames(g).flatMap((at): Handover[] => [
+      { from: g, at, to: 'stand', toAt: 0 },
+      { from: g, at, to: 'attack', toAt: 0 },
+      ...LD_GLIDE_MOVES.filter((h) => h !== g).map((h): Handover => ({ from: g, at, to: h, toAt: 0 })),
+    ])),
   ],
 };
 void sub;

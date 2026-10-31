@@ -2,8 +2,9 @@
 // behind LADIES_ON (art/gallery_ladies.ts, off). Their moves are art/gallery_ladies_moves.ts.
 //
 // The brief as offered: “a flash from the hand mirror, a short bright beam of cold light (silver, never cyan)”; his rule
-// for the enemies, 28 Oct: “And bigger AOE to compensate for the extra time the player gets to evade”. So the beam is
-// thrown four and a half tiles, spreading to two and a half tiles wide at its end: a wedge of light on the floor before her.
+// for the enemies, 28 Oct: “And bigger AOE to compensate for the extra time the player gets to evade”; and his pick of
+// 30 Oct (“Yes, these (Recommended)”): they keep their distance, “circling to flash at you from range”. So the beam is
+// thrown SIX AND A HALF TILES, spreading to THREE TILES wide at its end: a long wedge of light on the floor before her.
 //
 //   THE BEAM IN THE AIR (`flashBeam`, laid after her edge in her own picture): from her glass the instant her strike lands,
 //     a burst of light at the glass and a fan of rays down to the floor's far edge, a white core, lavender rays; held a
@@ -33,7 +34,7 @@ const smooth = (a: number, b: number, t: number): number => {
  * on the floor it begins before her; how long it holds at full and how long it takes to break up (seconds from the blow);
  * and how long before the blow the spot of light skitters on the floor (the warning).
  */
-export const FLASH_FX = { reach: 4.5 * TILE3, wide: 2.5 * TILE3, near: 0.45 * TILE3, hold: 0.14, fade: 0.3, warn: 0.5 } as const;
+export const FLASH_FX = { reach: 6.5 * TILE3, wide: 3 * TILE3, near: 0.45 * TILE3, hold: 0.14, fade: 0.3, warn: 0.6 } as const;
 /** Its colours: the white of the core, silver-white, lavender, a dull lavender, the darkest of its wash. */
 export const LIGHT = ['#fbf9ff', '#e6e0f6', '#c9c0e6', '#a69cc8', '#8279a8'] as const;
 
@@ -90,7 +91,7 @@ export function flashBeam(from: V3, age: number, rnd: (i: number) => number): [V
     }
   });
   // A SHEET OF LIGHT filling the cone, thicker near the glass; glitter in it as it breaks up
-  for (let j = 0; j < 900; j++) {
+  for (let j = 0; j < 1500; j++) {
     const a = N + (R - N) * Math.sqrt(hash(j, 1, 7841));
     const b = (hash(j, 2, 7841) * 2 - 1) * wedgeHalf(a);
     const u = Math.pow(hash(j, 5, 7841), 0.7);
@@ -105,7 +106,7 @@ export function flashBeam(from: V3, age: number, rnd: (i: number) => number): [V
 // =============================================================================================
 // THE LIGHT ON THE FLOOR
 
-export const FLASH_CANVAS = { w: 228, h: 228, ax: 18, ay: 114 } as const;
+export const FLASH_CANVAS = { w: 286, h: 272, ax: 18, ay: 136 } as const;
 const lay = (px: Painted['px'], x: number, y: number, c: string, size = 1): void => {
   const xi = Math.round(x - size / 2);
   const yi = Math.round(y - size / 2);
@@ -171,7 +172,7 @@ export function flashPainted(t: number, view: GameView = 'front'): Painted {
     lay(px, x, y, LIGHT[1]);
   }
   // GLITTER over it, winking
-  for (let j = 0; j < 70; j++) {
+  for (let j = 0; j < 110; j++) {
     const a = F.near + (F.reach - F.near) * Math.sqrt(hash(j, 1, 7854));
     const b = (hash(j, 2, 7854) * 2 - 1) * wedgeHalf(a);
     if (hash(j, tick, 7855) > k * 0.6) continue;
