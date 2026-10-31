@@ -8,12 +8,13 @@
 // Voices, rule 7): his big moves, and never two within BOSS_CALLS.gap; the two whose basic blow is a big one (the Fleshmancer's
 // shards, the King's charge) say its line no more than once in BOSS_CALLS.basicGap, or it would be all they said.
 //
-// The lines are the main chat's, for his yes; original, but for the King's crown, which is his. Behind BOSS_CALLS (off) until he
-// has read and heard them.
+// The lines are the main chat's, original, but for the King's crown, which is his: heard on the Boss Voices page, “Yes, they're
+// good”; seen in the King's films, “Yes, switch them on (Recommended)”.
 
 import type { MonsterKind } from './types';
 
-export const BOSS_CALLS = { on: false, /** seconds a line stays up over him */ sayFor: 1.8, /** at least this many seconds from one of his lines to the next (lines stay rare) */ gap: 5, /** and from his basic blow's line to its next */ basicGap: 20 };
+// (ON at his word, 31 Oct 2026, to the films of the King: “Yes, switch them on (Recommended)”)
+export const BOSS_CALLS = { on: true, /** seconds a line stays up over him */ sayFor: 1.8, /** at least this many seconds from one of his lines to the next (lines stay rare) */ gap: 5, /** and from his basic blow's line to its next */ basicGap: 20 };
 
 /** Each talking boss's big moves (by their names in his rules) and what he calls out as he begins each. */
 export const BOSS_CALL_LINES: Partial<Record<MonsterKind, Record<string, string>>> = {

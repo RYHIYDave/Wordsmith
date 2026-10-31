@@ -4,7 +4,7 @@
 //   1. every boss with lines has a voice of his own, and each line is one of his own moves; his basic blow's only for the two
 //      whose basic blow is a big one (the Fleshmancer's shards, the King's charge);
 //   2. those whose silence is their story, and the beasts, have neither;
-//   3. off, nothing is said; on, in a fight his line comes up over him, in his own voice, as he begins a big move, and never two
+//   3. on (his yes); off, nothing is said; on, in a fight his line comes up over him, in his own voice, as he begins a big move, and never two
 //      within BOSS_CALLS.gap; the Warden's too (his moves are the game's own);
 //   4. his voice never throws, with no sound to play it on.
 //   run: tsx --test tests/boss_calls.test.ts
@@ -93,9 +93,14 @@ function fight(depth: number, secs: number): { said: { t: number; text: string; 
 }
 
 test('3. off, nothing is said; on, his line over him in his own voice as a big move begins, never two within the gap', () => {
-  assert.equal(BOSS_CALLS.on, false, 'off until he has seen it in the game');
-  assert.equal(bossCall({ kind: 'chained', boss: true }, 'hook', 0), null);
-  assert.equal(fight(3, 30).said.filter((s) => s.voice).length, 0, 'off: none said');
+  assert.equal(BOSS_CALLS.on, true, 'on, his yes to the King\'s films');
+  BOSS_CALLS.on = false;
+  try {
+    assert.equal(bossCall({ kind: 'chained', boss: true }, 'hook', 0), null);
+    assert.equal(fight(3, 30).said.filter((s) => s.voice).length, 0, 'off: none said');
+  } finally {
+    BOSS_CALLS.on = true;
+  }
   on(() => {
     for (const depth of [1, 3, 5]) {
       const { said, kind } = fight(depth, 60);
