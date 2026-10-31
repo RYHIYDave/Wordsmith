@@ -531,7 +531,12 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const pouchX = X0;
   // (WORD_HALF: every word over the game's half, and the panel's bottom the bag alone)
   const half = WORD_HALF.on && !side;
-  const stripH = (half ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
+  /**
+   * (THE SKILL TREES' page: no bag at its foot; the tree has the panel down to its bottom. His words, 31 Oct 2026, 00:23: "Dude
+   * fix the bag so I can allocate passives in the classes test", and asked what happens: "The bag covers the tree".)
+   */
+  const bare = half && page === 'talents';
+  const stripH = bare ? 0 : (half ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
   const stripY = R.y + R.h - stripH;
   // (WORD_ROOM: the bottom shows the bag, with the line of words over it, or every word in the room both take)
   const sideWants: 'words' | 'bag' | null = side ? (side.pieceDrop || side.bagButton || side.bagQuick ? 'bag' : side.wordDrop ? 'words' : null) : null;
@@ -643,13 +648,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     }
   }
   // (WORD_ROOM: while every word is shown, the bag is not: none of its cells is there to be pressed or dropped on)
-  if (!allWords) {
+  if (!allWords && !bare) {
     h.bag.forEach((it, i) => {
       gear.push({ r: { x: bagX + (i % bagCols) * PITCH, y: bagY + Math.floor(i / bagCols) * PITCH, w: CELL, h: CELL }, sel: { kind: 'bag', i }, item: it });
     });
   }
   const dollR: Rect = { x: dollX - 3, y: dollY - 2, w: DOLL_W + 6, h: dollH + 4 };
-  const bagR: Rect = allWords ? { x: -9999, y: -9999, w: 0, h: 0 } : { x: bagX - 3, y: bagY - 3, w: bagW + 6, h: bagH + 6 };
+  const bagR: Rect = allWords || bare ? { x: -9999, y: -9999, w: 0, h: 0 } : { x: bagX - 3, y: bagY - 3, w: bagW + 6, h: bagH + 6 };
   /** Beside the hero: their numbers at a glance. */
   const glanceR: Rect = { x: dollX + DOLL_W + 8, y: pageY + 1, w: X0 + bodyW - (dollX + DOLL_W + 8), h: pageH - 1 };
 
@@ -1065,11 +1070,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // the panel
   g.fillStyle = THEME.ink;
   g.fillRect(R.x, R.y, R.w, R.h);
-  // (the bottom that never changes stands on a ground of its own)
-  g.fillStyle = THEME.bg;
-  g.fillRect(R.x, stripY - 3, R.w, R.y + R.h - stripY + 3);
-  g.fillStyle = THEME.edge;
-  g.fillRect(R.x, stripY - 3, R.w, 0.5);
+  // (the bottom that never changes stands on a ground of its own: none on the SKILL TREES' page, `bare`)
+  if (!bare) {
+    g.fillStyle = THEME.bg;
+    g.fillRect(R.x, stripY - 3, R.w, R.y + R.h - stripY + 3);
+    g.fillStyle = THEME.edge;
+    g.fillRect(R.x, stripY - 3, R.w, 0.5);
+  }
   // its edge against the game: a line, and a hair of light along it
   g.fillStyle = THEME.edgeHi;
   if (below) g.fillRect(R.x, R.y, R.w, 1);
@@ -1189,7 +1196,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // ---- draw: gear, worn and carried (the worn on the GEAR page only) -----------------------------------
-  if (!allWords) cap('BAG', bagX, bagY - CAP);
+  if (!allWords && !bare) cap('BAG', bagX, bagY - CAP);
   // (while a piece is carried, the place it may go is lit: the hero for a piece from the bag, the bag for a piece worn)
   if (carried && st.carry) {
     const want = st.carry.sel.kind === 'bag' ? (page === 'gear' ? dollR : null) : bagR;
@@ -1240,7 +1247,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // beside the bag: what they have, and who they are
-  if (!allWords) {
+  if (!allWords && !bare) {
     const ix = bagX + bagW + 8;
     const iw = X0 + bodyW - ix;
     if (iw >= 30) {
