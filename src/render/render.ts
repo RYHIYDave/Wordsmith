@@ -91,6 +91,8 @@ import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { onTop } from '../game/act2/quiettower';
+/** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
+const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
 import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
@@ -2266,6 +2268,30 @@ export class Renderer {
     return this.art.bestiary.of(figureOf(m));
   }
 
+  /** (FLOOR 20) How far the picture leans toward the Moth now (screen pixels), gliding there and back. */
+  private lean = { x: 0, y: 0 };
+  /**
+   * (FLOOR 20, THE QUIET TOWER) THE PICTURE LEANS TOWARD THE MOTH while it lives and he is on the top with it: it hovers four
+   * knights' height over its floor point, so with the hero in the middle of a phone's screen its body would be off its top. The
+   * picture glides toward the middle of the two (MOTH_LEAN.share of the way), never further than MOTH_LEAN.most of the screen.
+   */
+  private mothLean(game: Game, W: number, H: number, dt: number): { x: number; y: number } {
+    const L = game.level;
+    const h = game.hero;
+    let tx = 0;
+    let ty = 0;
+    const m = L.land?.tower && onTop(L.land.tower, h.x, h.y) ? game.monsters.find((q) => q.kind === 'moth' && !q.dead && q.state !== 'sleep') : undefined;
+    if (m) {
+      const up = m.a1?.perched ? MOTH_LEAN.perched : MOTH_LEAN.up;
+      tx = Math.max(-W * MOTH_LEAN.most, Math.min(W * MOTH_LEAN.most, ((m.x - m.y - (h.x - h.y)) * 16) * MOTH_LEAN.share));
+      ty = Math.max(-H * MOTH_LEAN.most, Math.min(H * MOTH_LEAN.most, ((m.x + m.y - (h.x + h.y)) * 8 - up) * MOTH_LEAN.share));
+    }
+    const k = 1 - Math.exp(-dt * MOTH_LEAN.glide);
+    this.lean.x += (tx - this.lean.x) * k;
+    this.lean.y += (ty - this.lean.y) * k;
+    return this.lean;
+  }
+
   /**
    * The picture of a monster this frame.
    *
@@ -2393,8 +2419,10 @@ export class Renderer {
     const relief = this.reliefOf(L);
     cam.lift = relief ? relief.lift : null;
     const heroLift = this.heroLift(game);
-    cam.ox = Math.round(va.x - (h.x - h.y) * 16) + fx.shakeX;
-    cam.oy = Math.round(va.y + 12 - (h.x + h.y) * 8 + heroLift) + fx.shakeY;
+    // (FLOOR 20, THE MOTH: the picture leans toward it, so that its body, high over the top, is in sight with him: mothLean)
+    const lean = this.mothLean(game, W, H, vdt);
+    cam.ox = Math.round(va.x - (h.x - h.y) * 16 - lean.x) + fx.shakeX;
+    cam.oy = Math.round(va.y + 12 - (h.x + h.y) * 8 + heroLift - lean.y) + fx.shakeY;
     const stands = this.stands;
     stands.length = 0;
     this.labels.length = 0;

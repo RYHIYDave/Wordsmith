@@ -37,12 +37,14 @@ import type { Level, Monster, Peril } from '../state';
 import type { Act1Rules } from './types';
 
 /**
- * ITS NUMBERS: how near him it keeps; how much faster each phase beats and drifts; each blow's share of its blow, its waits; the
+ * ITS NUMBERS: how near him it keeps, and how near before it drifts back off him; how much faster each phase beats and drifts; each blow's share of its blow, its waits; the
  * gust's throw; the dust's bite and how often, how long his words go dark in it; the beams' strike; the swarm's; the beat's ring;
  * the dust it sheds over him each phase (how often, none in the first); how fast it flies to the book, where the book falls.
  */
 export const MOTH_TUNE = {
   keep: 4.2,
+  /** Nearer than this, it drifts back off him (it looms; it is never at his feet long). */
+  near: 2.6,
   quick: [1, 1.25, 1.4] as const,
   buffet: { dmg: 1, push: 1.6 },
   dust: { bite: 0.18, every: 0.6, hush: 1.2, cd: [9, 7] as const },
@@ -192,6 +194,29 @@ export const RULES: Act1Rules | null = {
         const h = R.g.hero;
         R.peril(m, 'act1', h.x, h.y, { a1: 'moth:shed', t: -MOTH_TUNE.shed.warn, hit: 0, dur: CLOUD_LONG, dmg: R.g.rollMonsterDmg(m) * MOTH_TUNE.dust.bite });
       }
+    }
+    // (too near him, in the air and doing nothing: it drifts back off him, at its pace, so far as the top lets it)
+    const h = R.g.hero;
+    const dh = Math.hypot(m.x - h.x, m.y - h.y);
+    if (ph < 2 && !m.act && !k.toLand && m.state !== 'sleep' && dh < MOTH_TUNE.near) {
+      const ax = dh > 0.01 ? (m.x - h.x) / dh : -m.fx;
+      const ay = dh > 0.01 ? (m.y - h.y) / dh : -m.fy;
+      const step = m.speed * dt;
+      for (const turn of [0, 0.6, -0.6, 1.2, -1.2]) {
+        const wx = ax * Math.cos(turn) - ay * Math.sin(turn);
+        const wy = ax * Math.sin(turn) + ay * Math.cos(turn);
+        if (!R.g.isOpen(m.x + wx * (step + 0.6), m.y + wy * (step + 0.6))) continue;
+        m.x += wx * step;
+        m.y += wy * step;
+        break;
+      }
+      // (facing him all the while)
+      if (dh > 0.01) {
+        m.fx = (h.x - m.x) / dh;
+        m.fy = (h.y - m.y) / dh;
+      }
+      m.anim = 'walk';
+      return true;
     }
     // THE LAST PHASE: to the lectern; the book knocked to the stones; down on it
     if (ph === 2 && !perched(m) && !m.act) {

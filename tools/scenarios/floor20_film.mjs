@@ -27,14 +27,18 @@ export default async function (page, snap) {
     [8, 'A ROOM THE FOG HAS FILLED', 'The Hush’s dust lies on the floor. Step in it and your words go dark.', 'fogged'],
     [14, 'THE HUSH, IN ITS OWN SHAPES', 'In swarms. They drift, then dart four tiles at you. Their grip darkens your words.', 'hush'],
     [26, 'SHADOW OF THE PRINCESS', 'Her vine’s lash, and her snare, small.', 'princess'],
-    [34, 'SHADOW OF THE PRINCE', 'His thrust, and three of his masks.', 'prince'],
-    [42, 'SHADOW OF THE QUEEN', 'Her comb, and into her hand mirror and out behind you.', 'queen'],
-    [50, 'SHADOW OF THE KING', 'His sweep, and his crown: a leap and a slam.', 'king'],
-    [60, 'THE ORDER’S LAST MASKS', 'Only the mask, held up by grey fog.', 'masks'],
-    [68, 'THE BELL-LESS BELFRY', '', 'belfry'],
-    [72, 'THE TOWER’S STAIR', 'Up it, to the top.', 'stair'],
+    [33, 'SHADOW OF THE PRINCESS', 'Struck down, it blows apart like smoke. Her playing card hangs a moment.', 'kill'],
+    [36, 'SHADOW OF THE PRINCE', 'His thrust, and three of his masks.', 'prince'],
+    [43, 'SHADOW OF THE PRINCE', 'Struck down: smoke, and his card.', 'kill'],
+    [46, 'SHADOW OF THE QUEEN', 'Her comb, and into her hand mirror and out behind you.', 'queen'],
+    [53, 'SHADOW OF THE QUEEN', 'Struck down: smoke, and her card.', 'kill'],
+    [56, 'SHADOW OF THE KING', 'His sweep, and his crown: a leap and a slam.', 'king'],
+    [63, 'SHADOW OF THE KING', 'Struck down: smoke, and his card.', 'kill'],
+    [66, 'THE ORDER’S LAST MASKS', 'Only the mask, held up by grey fog.', 'masks'],
+    [74, 'THE BELL-LESS BELFRY', '', 'belfry'],
+    [78, 'THE TOWER’S STAIR', 'Up it, to the top.', 'stair'],
   ];
-  let seconds = 80;
+  let seconds = 86;
   if (only) {
     const i = scenes.findIndex((s) => s[3] === only);
     const t0 = scenes[i][0];
@@ -51,12 +55,13 @@ export default async function (page, snap) {
     const spawn = (kind, x, y, form) => { const m = g.spawn(kind, x, y, 970, 0, false, g.rng); if (form !== undefined) { m.form = form; } m.words = []; m.carries = []; m.shield = 0; m.life = m.maxLife = 400; m.state = 'chase'; return m; };
     const royal = (form) => {
       clear();
-      const q = room('scriptorium', 1) ?? room('fogged', 1) ?? room('belfry'); const c = mid(q);
+      const q = room('scriptorium', 1) ?? room('belfry') ?? room('scriptorium'); const c = mid(q);
       h.x = c.x; h.y = c.y + 2.5;
       const m = spawn('rshadow', c.x, c.y - 2.5, form);
       m.speed = [3.2, 3.42, 1.44, 0.64][form] * 1.1;
       m.life = m.maxLife = 1e5;
-      d.bot(true);
+      // (he stands, and it shows what it does; then he strikes it down)
+      d.bot(false);
     };
     if (what === 'start') {
       clear(); h.x = L.floor.start.x; h.y = L.floor.start.y; d.bot(false);
@@ -73,6 +78,7 @@ export default async function (page, snap) {
     else if (what === 'prince') royal(1);
     else if (what === 'queen') royal(2);
     else if (what === 'king') royal(3);
+    else if (what === 'kill') { for (const m of g.monsters) if (!m.boss && !m.dead) { m.life = 1; } d.bot(true); }
     else if (what === 'masks') {
       clear(); const q = room('landing', 1) ?? room('landing'); const c = mid(q);
       h.x = c.x; h.y = c.y + 2;
