@@ -45,8 +45,8 @@ export const QUEEN_TUNE = {
   shatter: { half: HALL_GLASS.half / TILE3 + 0.15, cross: 0.25 },
   /** Her waits (cooldowns) in each phase, as a share of her first. */
   cd: [1, 0.8, 0.65] as const,
-  /** Her mirror's words: how often it speaks (seconds), how long a line stays, how high over its foot it is said. */
-  talk: { every: 13, first: 4, secs: 3.2, lift: 74 },
+  /** Her mirror's words: how often it speaks (seconds), how long a line stays, how high over its foot it is said; said toward it from him no further than `near` tiles off. */
+  talk: { every: 13, first: 4, secs: 3.2, lift: 74, near: 5 },
 };
 
 /**
@@ -120,15 +120,29 @@ function open(R: BossRules, x: number, y: number): boolean {
   return tx >= 0 && ty >= 0 && tx < L.floor.w && ty < L.floor.h && L.walk[ty * L.floor.w + tx] === 1;
 }
 
+/**
+ * Where her mirror's words are said: over her mirror, or, where it is further off him than the screen holds, toward it from him, so
+ * that he reads them (her mirror speaks on, its face moving, at the hall's end).
+ */
+function sayAt(R: BossRules): { x: number; y: number; lift: number } | null {
+  const H = R.g.level.land?.gallery?.hall;
+  if (!H) return null;
+  const h = R.g.hero;
+  const dx = H.mirror.x - h.x;
+  const dy = H.mirror.y - h.y;
+  const d = Math.hypot(dx, dy);
+  const far = QUEEN_TUNE.talk.near;
+  return d <= far ? { x: H.mirror.x, y: H.mirror.y, lift: QUEEN_TUNE.talk.lift } : { x: h.x + (dx / d) * far, y: h.y + (dy / d) * far, lift: 40 };
+}
 /** Her mirror says a line. */
 function say(R: BossRules, text: string, secs = QUEEN_TUNE.talk.secs): void {
-  const H = R.g.level.land?.gallery?.hall;
   const P = hallPeril(R.g);
   if (P && P.c !== 2) {
     P.c = 1;
     P.d = R.g.time;
   }
-  if (H) R.g.emit({ t: 'bossSay', text, x: H.mirror.x, y: H.mirror.y, secs, lift: QUEEN_TUNE.talk.lift });
+  const at = sayAt(R);
+  if (at) R.g.emit({ t: 'bossSay', text, x: at.x, y: at.y, secs, lift: at.lift });
 }
 
 export const RULES: Act1Rules | null = {
@@ -290,7 +304,7 @@ export const RULES: Act1Rules | null = {
       P.d = R.g.time;
       P.a = 0;
     }
-    const H = R.g.level.land?.gallery?.hall;
-    if (H) R.g.emit({ t: 'bossSay', text: MIRROR_TRUTH, x: H.mirror.x, y: H.mirror.y, secs: 5, lift: QUEEN_TUNE.talk.lift });
+    const at = sayAt(R);
+    if (at) R.g.emit({ t: 'bossSay', text: MIRROR_TRUTH, x: at.x, y: at.y, secs: 5, lift: at.lift });
   },
 };
