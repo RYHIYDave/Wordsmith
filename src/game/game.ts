@@ -24,7 +24,7 @@ import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
-import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
+import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, bossPace, gaitOf } from './bosses';
 import { ACT1, HIGH_CITY, act2Floor, cityFloor, highFloor, lastFloor } from './act1';
 import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
@@ -1794,7 +1794,7 @@ export class Game {
       id: this.nextId++, kind, name, x, y, r: def.radius * (champion ? TUNE.guardianSize : elite ? 1.12 : 1), fx: 0.7071, fy: 0.7071,
       life: Math.round(life), maxLife: Math.round(life), dmgMin: def.dmgMin * dm, dmgMax: def.dmgMax * dm,
       // (THE HEADSMAN MADE NEW: at his pictures' own pace, quick: HEADSMAN2_FIGHT)
-      speed: (kind === 'headsman' && HEADSMAN2_FIGHT.on ? H2_GAIT.pace : def.speed) * (1 + 0.35 * wordShare(has, 'swift')), elite, champion, boss, words, carries,
+      speed: (bossPace(kind) ?? (kind === 'headsman' && HEADSMAN2_FIGHT.on ? H2_GAIT.pace : def.speed)) * (1 + 0.35 * wordShare(has, 'swift')), elite, champion, boss, words, carries,
       state: 'sleep', t: 0, cd: 0, packId, anim: 'idle', animT: rng.range(0, 3), flash: 0,
       burnT: 0, burnDps: 0, chillT: 0, chill: 0, frozenT: 0, freezeImmune: 0, poisonT: 0, poisonDps: 0, poisonN: 0,
       stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shockT: 0, shield: Math.round(Math.round(life) * GUARD.monster * wordShare(has, 'guarding')),
