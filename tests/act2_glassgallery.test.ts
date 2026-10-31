@@ -82,6 +82,10 @@ test('2-4. laid by its own map-maker: galleries, chapel, glasshouse, the Mirror 
     const out = G!.ways.find((w) => w.b === G!.rooms.indexOf(beyond))!;
     const oc = { x: (out.r[0] + out.r[2]) / 2, y: (out.r[1] + out.r[3]) / 2 };
     assert.ok(Math.hypot(oc.x - G!.hall.mirror.x, oc.y - G!.hall.mirror.y) >= 3.5, `${seed}: the way on clear of her mirror`);
+    const inn = G!.ways.find((w) => w.b === G!.rooms.indexOf(hall))!;
+    const ic = { x: (inn.r[0] + inn.r[2]) / 2, y: (inn.r[1] + inn.r[3]) / 2 };
+    assert.ok(Math.hypot(ic.x - G!.hall.mirror.x, ic.y - G!.hall.mirror.y) >= 3.5, `${seed}: the way in beside her mirror, clear of it`);
+    assert.ok(G!.hall.alongX ? G!.hall.mirror.x < G!.hall.x : G!.hall.mirror.y < G!.hall.y, `${seed}: her mirror at the end away from the eye`);
     // (3) reached; packs; holes
     const seen = walkReach(L.walk, f.w, f.h, Math.floor(f.start.y) * f.w + Math.floor(f.start.x));
     for (let i = 0; i < f.w * f.h; i++) if (L.walk[i] === 1) assert.ok(seen[i], `${seed}: tile ${i % f.w},${Math.floor(i / f.w)} reached`);

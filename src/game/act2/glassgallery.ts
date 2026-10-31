@@ -13,8 +13,9 @@
 // WHAT IT LAYS (the main chat's picks, where his doc and the art leave it open):
 //   THE WAY THROUGH: an ANTECHAMBER where he comes in; LONG GALLERIES OF MIRRORS (a runner down each), between them THE CHAPEL
 //     and THE GLASSHOUSE (on one level, as the game walks: the art's "up a stair" is its look); THE MIRROR HALL last, the
-//     Queen's (her arena, 20 tiles along and 17 across, her twelve pier glasses along its long sides, her talking mirror at its
-//     far end: art/queen_fx.ts), entered at its near end; THE WAY ON in a small room off its far end, clear of her mirror.
+//     Queen's (her arena, 20 tiles along and 17 across, her twelve pier glasses along its long sides, her talking mirror in the
+//     middle of its end away from the eye, facing along it, as the art paints it: art/queen_fx.ts), entered by that end beside
+//     her mirror; THE WAY ON in a small room off its other end.
 //   OFF IT: DRESSING ROOMS (three or four; one the guard's LAIR; one or two STORES, the reward's chests).
 //   THE SKYLIGHTS: in the galleries, a skylight broken through here and there (two tiles of pit: the hall below seen down it,
 //     the art's GlassLand.skylight), whole ones beside it and elsewhere (the floor's trap, the art's 'a skylight': it cracks
@@ -123,14 +124,13 @@ type Side = 0 | 1 | 2 | 3;
 const alongXOf = (s: Side): boolean => s < 2;
 
 /** A NEW ROOM `w` by `h` set off `host` on its side `side`, a way `len` long between them (as floor 17's: masque.ts attach). */
-function attach(rng: RNG, plan: Plan, host: number, side: Side, w: number, h: number, len: number, at?: (c: number) => boolean): { room: Rect; join: Rect } | null {
+function attach(rng: RNG, plan: Plan, host: number, side: Side, w: number, h: number, len: number): { room: Rect; join: Rect } | null {
   const H = plan.rooms[host];
   const ax = alongXOf(side);
   const hostLo = ax ? H.y + 1 : H.x + 1;
   const hostHi = ax ? H.y + H.h - CW - 1 : H.x + H.w - CW - 1;
   if (hostHi < hostLo) return null;
   const c = rng.int(hostLo, hostHi);
-  if (at && !at(c)) return null;
   const span = ax ? h : w;
   const lo = c + CW + 1 - span;
   const hi = c - 1;
@@ -205,15 +205,14 @@ function planMain(rng: RNG, A: 'x' | 'y'): Plan | null {
       // (a gallery along the way it is walked; the hall its long side along it)
       const sz = sidesOf(rng, role, side, role === 'gallery' || role === 'hall' || rng.chance(0.5));
       const len = role === 'gallery' || roles[i - 1] === 'gallery' ? rng.int(3, 5) : ROOM_GAP;
-      // (the way on: off the hall's far end, its doorway clear of her mirror in the middle of that end)
-      let at: ((c: number) => boolean) | undefined;
-      if (role === 'beyond') {
-        const Hr = plan.rooms[host];
-        const m = alongXOf(side) ? Hr.y + Hr.h / 2 : Hr.x + Hr.w / 2;
-        at = (c) => Math.abs(c + CW / 2 - m) >= MIRROR_CLEAR;
-      }
-      const got = attach(rng, plan, host, side, sz.w, sz.h, len, at);
+      const got = attach(rng, plan, host, side, sz.w, sz.h, len);
       if (!got) continue;
+      // (the hall entered at its end away from the eye, where her mirror hangs in the middle: its doorway clear of it)
+      if (role === 'hall') {
+        const jm = alongXOf(side) ? got.join.y + CW / 2 : got.join.x + CW / 2;
+        const hm = alongXOf(side) ? got.room.y + got.room.h / 2 : got.room.x + got.room.w / 2;
+        if (Math.abs(jm - hm) < MIRROR_CLEAR) continue;
+      }
       if (Math.abs(mid(got.room) - mid0) > BAND) continue;
       plan.rooms.push({ ...got.room, role, path: i, parent: host });
       plan.joins.push({ ...got.join, a: host, b: plan.rooms.length - 1, alongX: alongXOf(side) });
@@ -257,7 +256,7 @@ export interface GalleryPlan {
   w: number;
   /**
    * THE MIRROR HALL: its middle (world), whether its long side runs along x, and her talking mirror (world: a little in from the
-   * middle of its far end), `into` the way from it into the hall (a unit step along the hall's long side).
+   * middle of its end away from the eye, its least x or y), `into` the way it faces, into the hall (+x or +y).
    */
   hall: { x: number; y: number; alongX: boolean; mirror: { x: number; y: number }; into: { x: number; y: number } };
 }
@@ -386,12 +385,10 @@ export function generate(depth: number, seed: number): Laid | null {
   const hallAlongX = Hr.w >= Hr.h;
   const hx = Hr.x + Hr.w / 2;
   const hy = Hr.y + Hr.h / 2;
-  // (her mirror at the end of the hall away from where he comes in)
-  const inJ = plan.joins.find((J) => J.b === hallI)!;
-  const inMid = hallAlongX ? inJ.x + inJ.w / 2 : inJ.y + inJ.h / 2;
-  const farSign = hallAlongX ? (inMid < hx ? 1 : -1) : inMid < hy ? 1 : -1;
-  const mirror = hallAlongX ? { x: farSign > 0 ? Hr.x + Hr.w - MIRROR_IN : Hr.x + MIRROR_IN, y: hy } : { x: hx, y: farSign > 0 ? Hr.y + Hr.h - MIRROR_IN : Hr.y + MIRROR_IN };
-  const into = hallAlongX ? { x: -farSign, y: 0 } : { x: 0, y: -farSign };
+  // (her mirror in the middle of the hall's end away from the eye (its least x or y), facing along the hall toward the eye, as
+  // the art paints it: the end he comes in by, his doorway to one side of it; the way on off the other end)
+  const mirror = hallAlongX ? { x: Hr.x + MIRROR_IN, y: hy } : { x: hx, y: Hr.y + MIRROR_IN };
+  const into = hallAlongX ? { x: 1, y: 0 } : { x: 0, y: 1 };
   // (the Queen waits in the middle of her hall)
   const boss = { x: Math.floor(hx) + 0.5, y: Math.floor(hy) + 0.5 };
   const beyond = plan.rooms[plan.rooms.findIndex((r) => r.role === 'beyond')];
