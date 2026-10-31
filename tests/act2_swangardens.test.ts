@@ -416,7 +416,9 @@ test('its ways: the gates are the art\'s garden gate (shut; and the way on\'s fi
     g.hero.x = (t % L.floor.w) + 0.5;
     g.hero.y = Math.floor(t / L.floor.w) + 0.5;
     for (let j = 0; j < 4 / DT && !g.level.town; j++) g.update(DT, emptyControls());
-    assert.ok(isCamp(g.level), `seed ${seed}: home to the camp (the last floor built)`);
+    // (on to floor 17 when it is built; home to the camp were floor 16 the last floor built)
+    if (HIGH_CITY.built > 1) assert.ok(!g.level.town && g.depth === 17, `seed ${seed}: on to floor 17 (${g.depth}, ${g.level.town ? 'town' : 'a floor'})`);
+    else assert.ok(isCamp(g.level), `seed ${seed}: home to the camp (the last floor built)`);
   }
 }));
 

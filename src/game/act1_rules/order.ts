@@ -19,8 +19,14 @@
 //   wave bursts over a cone before them, 5.5 tiles out and 100 degrees across (PALM_WAVE, inWave): whoever is in it as it bursts
 //   is struck, 1.2 times their blow, and his words are hushed (Game.hush) for ORDER_TUNE.palm.hush seconds.
 // Their warnings in the enemy's pink, and the knife and the wave drawn: render/act1_fx/order.ts.
+//
+// FLOOR 19, THE KEEP: THE ORDER'S ARMED LAST (his doc: "the Silent Order's last"; the art chat's ORDER_ARMED, cloaks over mail,
+// Monster.form 1 there, art/act1_figs/order.ts): the same rules, but their knife is A FAN OF THREE (his pick, “A fan of three on
+// 19 (Recommended)”): three drawn in the same wind-up and thrown together, KNIFE_FAN.spread (35) degrees apart (fanOf('armed')),
+// each flying its own way; the three of one throw strike him once at most.
 
 import { TILE3 } from '../../art/new_mobs3';
+import { fanOf } from '../../art/silent_order';
 import { PALM_WAVE, knifeAt } from '../../art/silent_order_fx';
 import { KNIFE_FLIGHT, ORDER_PACE, ORDER_RUN, PALM, RUSH, THROW, rushCarry } from '../../art/silent_order_moves';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
@@ -50,6 +56,11 @@ export function inPalm(R: BossRules, m: Monster): boolean {
   return d >= P.from - 0.3 && d <= P.reach + 0.3 && Math.abs(Math.atan2(r.left, r.fwd)) <= P.half;
 }
 
+/** The floor the Order's armed last are on (their look, Monster.form 1, and their fan of three). */
+export const ARMED_FLOOR = 19;
+/** The ways their knives fly (degrees off the way they face): the armed last's three, one for the others. */
+export const knivesOf = (m: Monster): number[] => fanOf(m.form === 1 ? 'armed' : 'guest');
+
 /** Where a thrown knife is, `t` seconds after it left the hand, from where it was thrown along the way it was thrown. */
 export function knifeWhere(p: { x: number; y: number; fx: number; fy: number }, t: number): { x: number; y: number; flying: boolean } {
   const k = knifeAt(t);
@@ -59,6 +70,10 @@ export function knifeWhere(p: { x: number; y: number; fx: number; fy: number }, 
 export const RULES: Act1Rules | null = {
   gait: GAIT,
   acts: ACTS,
+  spawned(R, m) {
+    // (on the Keep, the Order's armed last)
+    if (R.g.depth === ARMED_FLOOR) m.form = 1;
+  },
   tick(_R, m, dt) {
     const k = (m.a1 ??= { rushCd: 1.5 });
     k.rushCd = (k.rushCd ?? 0) - dt;
@@ -98,7 +113,14 @@ export const RULES: Act1Rules | null = {
       return;
     }
     if (a.id === 'order:knife' && at(a.hit)) {
-      R.peril(m, 'act1', m.x + m.fx * 0.4, m.y + m.fy * 0.4, { a1: 'order:knife', hit: 0, dur: KNIFE_FLIGHT.reach / KNIFE_FLIGHT.speed + ORDER_TUNE.knife.lies, dmg: g.rollMonsterDmg(m) * a.dmg });
+      // (one knife; the armed last's three, fanned, each its own way)
+      const dmg = g.rollMonsterDmg(m) * a.dmg;
+      for (const w of knivesOf(m)) {
+        const r = (w * Math.PI) / 180;
+        const fx = m.fx * Math.cos(r) - m.fy * Math.sin(r);
+        const fy = m.fx * Math.sin(r) + m.fy * Math.cos(r);
+        R.peril(m, 'act1', m.x + fx * 0.4, m.y + fy * 0.4, { a1: 'order:knife', hit: 0, dur: KNIFE_FLIGHT.reach / KNIFE_FLIGHT.speed + ORDER_TUNE.knife.lies, dmg, fx, fy, b: w, c: m.act?.n ?? 0 });
+      }
       return;
     }
     if (a.id === 'order:palm' && at(a.hit)) {
@@ -115,6 +137,8 @@ export const RULES: Act1Rules | null = {
     if (!k.flying) return;
     const h = R.g.hero;
     if (Math.hypot(h.x - k.x, h.y - k.y) <= ORDER_TUNE.knife.hit) {
+      // (the knives of one throw strike him once at most: the others of it are spent too)
+      for (const q of R.g.perils) if (q.a1 === 'order:knife' && q.c === p.c) q.done = 1;
       p.done = 1;
       R.g.hurtHero(p.dmg, p.el, p.words, null, p.from, k.x, k.y, p.half);
     }

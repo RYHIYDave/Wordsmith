@@ -3,13 +3,14 @@
 // - THE GREY WAVE from the palm's blow, the art's wavePainted at their floor point turned their way, while the palm lasts;
 // - THE KNIFE in flight and lying where it came down, the art's knifePainted, along the way it was thrown (game/act1_rules/
 //   order.ts knifeWhere);
-// - THEIR WARNINGS through each wind-up, in the enemy's pink: the knife's line (eight tiles, narrow), the wave's cone.
+// - THEIR WARNINGS through each wind-up, in the enemy's pink: the knife's line (eight tiles, narrow; the armed last's three, fanned,
+//   on floor 19), the wave's cone.
 import { toSprite } from '../../art/kit';
 import { KNIFE_CANVAS, PALM_WAVE, WAVE_CANVAS, knifePainted, wavePainted } from '../../art/silent_order_fx';
 import { PALM, THROW } from '../../art/silent_order_moves';
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { ORDER_TUNE, knifeWhere } from '../../game/act1_rules/order';
+import { ORDER_TUNE, knifeWhere, knivesOf } from '../../game/act1_rules/order';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
@@ -33,7 +34,13 @@ export const FX: Act1Fx | null = {
       const w = { x: m.x, y: m.y, fx: m.fx, fy: m.fy, hand: m.act.hand };
       if (m.act.id === 'order:knife') {
         const k = warnK(m.act.t, THROW.warn[0] - 0.2, THROW.hit);
-        if (k >= 0) drawStripWarn(c.g, c.at, w, 0.3, 8, -0.5, 0.5, k, c.t);
+        // (the armed last's fan of three: a line along each knife's way)
+        if (k >= 0) {
+          for (const deg of knivesOf(m)) {
+            const r = (deg * Math.PI) / 180;
+            drawStripWarn(c.g, c.at, { ...w, fx: m.fx * Math.cos(r) - m.fy * Math.sin(r), fy: m.fx * Math.sin(r) + m.fy * Math.cos(r) }, 0.3, 8, -0.5, 0.5, k, c.t);
+          }
+        }
       } else if (m.act.id === 'order:palm') {
         const k = warnK(m.act.t, PALM.warn[0] - 0.2, PALM.hit);
         const P = ORDER_TUNE.palm;

@@ -4,11 +4,14 @@
 // (walk), the hushing palm (attack), the knife and the rush (clips.moves), struck, and the mask cracking and the cloak falling
 // empty (die). The knight's size.
 import { ORDER_ON } from '../silent_order';
-import { ORDER_GUEST, makeOrderArt3 } from '../silent_order_moves';
+import { ORDER_ARMED, ORDER_GUEST, makeOrderArt3 } from '../silent_order_moves';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
   make: () => makeOrderArt3(ORDER_GUEST),
   size: { top: 29, half: 9 },
   switches: [ORDER_ON],
+  // (FLOOR 19, THE KEEP: the Order's armed last, cloaks over mail, a little taller and broader: Monster.form 1 there,
+  // game/act1_rules/order.ts; their knife clip three knives fanned in the fist, his “A fan of three on 19 (Recommended)”)
+  looks: [{ make: () => makeOrderArt3(ORDER_ARMED), size: { top: 30, half: 10 }, switches: [ORDER_ON] }],
 };
