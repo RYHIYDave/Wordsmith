@@ -243,3 +243,5 @@ before and after, measured from her floor point, the picture having grown).
 The sheet, the crowd and the film (`ladies_sheet.png`, `ladies_crowd.png`, `ladies_film.mp4`), asked “Floor 18's
 ladies-in-waiting (ladies_sheet.png, ladies_crowd.png and the film): are these right? With them, floor 18 is complete.”:
 “Yes, that's them (Recommended)”.
+
+OF THE NEW DEATH AND RHYTHM (b42b49a; his picks for them, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`ladies_change_sheet.png`, `ladies_change.mp4`), asked “The ladies-in-waiting, changed. They never dart now: they glide forward, circle and back away from you, always facing you. Their flash reaches 6.5 tiles and is 3 tiles wide at the end, after half a second with the mirror raised. Their death is a swoon: a hand to the brow, sinking into a heap of gown, fainting back, the mirror cracking on the floor. Is that them?”: “Yes, that's them (Recommended)”.
