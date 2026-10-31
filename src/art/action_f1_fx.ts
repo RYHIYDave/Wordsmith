@@ -152,14 +152,15 @@ function fallOf(view: View): [number, number] {
 /**
  * THE RAIN where it comes down, `t` seconds after the loose, in a ring of `radius` tiles. `layer` 'floor' is what lies on the
  * floor (the ring, its fill, the shadows, the dust's foot: drawn under the figures); 'air' what stands up off it (the arrows coming
- * down and stuck, splinters, dust rising: sorted with the figures by the ring's middle, or drawn over them).
+ * down and stuck, splinters, dust rising). The air's arrows can be had by halves (`side`): those further up the screen than the
+ * ring's middle ('behind': drawn before a figure standing at the middle) and the rest ('before': drawn after it).
  */
-export function rainPainted(t: number, view: View = 'front', layer: 'floor' | 'air' = 'floor', radius: number = RAIN.radius): Painted {
+export function rainPainted(t: number, view: View = 'front', layer: 'floor' | 'air' = 'floor', radius: number = RAIN.radius, side: 'all' | 'behind' | 'before' = 'all'): Painted {
   const C = RAIN_CANVAS;
   const px = new Px(C.w, C.h);
   const lights: Light[] = [];
   if (t < 0 || t > RAIN_LONG) return { px, lights };
-  const spots = rainSpots(radius);
+  const spots = rainSpots(radius).filter((s) => layer === 'floor' || side === 'all' || (floorPx(s.x, s.y)[1] < 0) === (side === 'behind'));
   const [vx, vy] = fallOf(view);
   const struck = t >= RAIN.delay - 1e-6;
   const since = t - RAIN.delay;
@@ -206,16 +207,16 @@ export function rainPainted(t: number, view: View = 'front', layer: 'floor' | 'a
         if (t < s.at) continue;
         const g = smooth(s.at, RAIN.delay, t);
         const [cx, cy] = at(s.x, s.y);
-        const long = 2 + Math.round(g * 6);
+        // (a dark blot, bigger and harder as its arrow comes, and the dash of its shaft along the floor the way they fly: down-right
+        // from in front, up-right from behind)
         const dark = g < 0.3 ? DUST[0] : g < 0.65 ? '#1e1a2a' : INK;
-        // (a dash along the floor the way they fly: down-right from in front, up-right from behind)
-        const [wx, wy] = view === 'front' ? [0.894, 0.447] : [0.894, -0.447];
-        for (let k = -long; k <= 1; k++) {
-          const x = Math.round(cx + wx * k);
-          const y = Math.round(cy + wy * k);
-          px.set(x, y, dark);
-          if (g > 0.45) px.set(x, y + 1, dark);
+        const rx = 1.5 + 3 * g;
+        for (let oy = -Math.ceil(rx / 2); oy <= Math.ceil(rx / 2); oy++) {
+          for (let ox = -Math.ceil(rx); ox <= Math.ceil(rx); ox++) if ((ox / rx) ** 2 + (oy / (rx / 2)) ** 2 <= 1) px.set(Math.round(cx) + ox, Math.round(cy) + oy, dark);
         }
+        const long = 3 + Math.round(g * 6);
+        const [wx, wy] = view === 'front' ? [0.894, 0.447] : [0.894, -0.447];
+        for (let k = -long; k <= 0; k++) px.set(Math.round(cx + wx * k), Math.round(cy + wy * k), dark);
         // (in the last moments a point of pink where each will strike)
         if (t > RAIN.delay - 0.3 && Math.floor(t * 20) % 2 === 0) px.set(Math.round(cx), Math.round(cy), ENEMY_RIM);
       }
@@ -322,10 +323,11 @@ function bayer(x: number, y: number): number {
  *   strike   the crash's two frames: the bars a streak in the air, then planted (the hit lands on the second, at 0).
  *   stand    how long they stand after the crash: the cage (walls while they stand).
  *   rise     how long they take to rise away. Then nothing is left.
- *   tall     the bars' height, picture pixels (the knight is 58, the Warden 122): head-high and more on the knight.
- *   pitch    bars to a tile along a row.
+ *   tall     the bars' height to the top rail, picture pixels (the knight is 58, the Warden 122): to the knight's brow, so that
+ *            one standing in a cell is seen over the bars in front of him, and the cells read as cells.
+ *   pitch    bars to a tile along a row (about 11 picture pixels apart: the cage seen through).
  */
-export const LOCKDOWN = { cell: 2.75, band: 0.42, warn: 1.0, strike: [-FR, 0] as const, stand: 1.5, rise: 0.4, tall: 74, pitch: 4 } as const;
+export const LOCKDOWN = { cell: 2.75, band: 0.42, warn: 1.0, strike: [-FR, 0] as const, stand: 1.5, rise: 0.4, tall: 52, pitch: 3 } as const;
 /** How long its picture lasts after the crash: after this it is empty. */
 export const LOCKDOWN_LONG = LOCKDOWN.stand + LOCKDOWN.rise;
 /** A row runs along the floor's x way (down the screen to the right) or its y way (down to the left). */
@@ -361,9 +363,11 @@ export function lockShadowPainted(way: Way, t: number, tiles: number): Painted {
   const before = t < 0;
   const k = before ? smooth(-LOCKDOWN.warn, 0, t) : 0;
   const rising = clamp01((t - LOCKDOWN.stand) / LOCKDOWN.rise);
-  // (how wide the band is, tiles either side of the row's line)
-  const half = before ? 0.62 - 0.4 * k : t < LOCKDOWN.stand ? 0.12 : 0.12 + 0.4 * rising;
+  // (how wide the band is, tiles either side of the row's line: at the crash, just what the bars strike, LOCKDOWN.band)
+  const half = before ? LOCKDOWN.band + 0.38 * (1 - k) : t < LOCKDOWN.stand ? 0.1 : 0.1 + 0.4 * rising;
   const beat = Math.floor(t * (3 + k * 12)) % 2 === 0;
+  // (its pink edges come as the shadow sharpens: at first only a soft dark band)
+  const pinked = k > 0.55;
   for (let Y = 0; Y < C.h; Y++) {
     for (let X = 0; X < C.w; X++) {
       const [u, v] = floorOf(X + 0.5 - C.ax, Y + 0.5 - C.ay);
@@ -372,7 +376,7 @@ export function lockShadowPainted(way: Way, t: number, tiles: number): Painted {
       if (Math.abs(s) > halfL || Math.abs(c) > half) continue;
       const fromEdge = (half - Math.abs(c)) * 22;
       if (before) {
-        if (fromEdge < 1.1) {
+        if (pinked && fromEdge < 1.1) {
           px.set(X, Y, beat ? ENEMY_RIM : PINK[2]);
           continue;
         }
@@ -398,9 +402,9 @@ export function lockShadowPainted(way: Way, t: number, tiles: number): Painted {
 }
 
 /**
- * THE BARS of a row `tiles` long, `t` seconds from the crash: heavy prison bars of the jailer's iron, a rail across their feet,
- * one across their middle and one along their tops, each bar ending in a point over the top rail and a spike in the stone, lit on
- * the upper left, the enemy's pink rim round them. In the crash's first frame they are a streak coming down; on the second, planted,
+ * THE BARS of a row `tiles` long, `t` seconds from the crash: heavy prison bars of the jailer's iron, a rail across their feet and
+ * one along their tops, each bar ending in a point over the top rail and a spike in the stone, lit on the upper left (iron, no
+ * rim: the cage is seen through, and its glints and sparks are the enemy's). In the crash's first frame they are a streak coming down; on the second, planted,
  * the spikes driven in, sparks and stone thrown off every foot and dust rising; they stand (the first frames shuddering); then they
  * rise away, ever faster, and are gone. `seed` varies the wear of one row (or one tile of a row) from the next.
  */
@@ -421,8 +425,9 @@ export function lockBarsPainted(way: Way, t: number, tiles: number, seed = 0): P
   const feet: [number, number][] = [];
   for (let i = 0; i < n; i++) feet.push(rowAt(C, way, -halfL + (i + 0.5) / LOCKDOWN.pitch, 0));
   // (the rows' ends: where the rails stop)
-  const ea = rowAt(C, way, -halfL + 0.06, 0);
-  const eb = rowAt(C, way, halfL - 0.06, 0);
+  // (the rails run the row's whole length: rows laid a tile at a time join up)
+  const ea = rowAt(C, way, -halfL, 0);
+  const eb = rowAt(C, way, halfL, 0);
   const [e0, e1] = ea[0] <= eb[0] ? [ea, eb] : [eb, ea];
   const dy = (e1[1] - e0[1]) / Math.max(1, e1[0] - e0[0]);
   const fade = rising > 0.3 ? (rising - 0.3) / 0.7 : 0;
@@ -470,7 +475,7 @@ export function lockBarsPainted(way: Way, t: number, tiles: number, seed = 0): P
     }
   });
   // the rails across them, along the row: a flat band of iron, lit along its top, riveted at every bar
-  for (const [hy, thick] of [[T - 6, 4], [Math.round(T * 0.52), 3], [10, 3]] as const) {
+  for (const [hy, thick] of [[T - 4, 4], [8, 3]] as const) {
     for (let X = Math.round(e0[0]); X <= Math.round(e1[0]); X++) {
       const fy = e0[1] + (X - e0[0]) * dy;
       const y0 = Math.round(fy) - hy;
@@ -478,28 +483,40 @@ export function lockBarsPainted(way: Way, t: number, tiles: number, seed = 0): P
     }
     for (const [fx, fy] of feet) put(Math.round(fx), Math.round(fy) - hy + 1, BONE[2]);
   }
-  // (the rim while they are whole: not round the last crumbs as they go)
-  if (fade < 0.35) edge(px, ENEMY_RIM, RIM_ALPHA);
   if (!falling && t < 0.5 && rising === 0) {
     // THE CRASH: sparks off every foot, stone thrown up, dust rising and spreading
     feet.forEach(([fx, fy], i) => {
-      const k = t / 0.16;
+      // sparks: thrown up and out off the foot, each a short streak along its flight, falling back
+      const k = t / 0.22;
       if (k < 1) {
-        for (let m = 0; m < 3; m++) {
-          const a = Math.PI + (hash(i, m, 9604) - 0.15) * Math.PI * 1.3;
-          const sp = 8 + hash(i, m + 3, 9605) * 10;
-          const x = Math.round(fx + Math.cos(a) * sp * (0.4 + k));
-          const y = Math.round(fy - 1 + Math.sin(a) * sp * (0.3 + k) * 0.7 + 12 * k * k);
-          if (y <= fy) px.set(x, y, k < 0.5 ? FLAME[4] : FLAME[3]);
+        for (let m = 0; m < 4; m++) {
+          const a = Math.PI + (hash(i, m, 9604) - 0.1) * Math.PI * 1.2;
+          const sp = 10 + hash(i, m + 3, 9605) * 14;
+          const at = (u: number): [number, number] => [fx + Math.cos(a) * sp * (0.3 + u), fy - 1 + Math.sin(a) * sp * (0.3 + u) * 0.8 + 16 * u * u];
+          const [x1, y1] = at(k);
+          const [x0, y0] = at(Math.max(0, k - 0.18));
+          for (let q = 0; q <= 3; q++) {
+            const x = Math.round(x0 + ((x1 - x0) * q) / 3);
+            const y = Math.round(y0 + ((y1 - y0) * q) / 3);
+            if (y <= fy) px.set(x, y, q === 3 ? (k < 0.5 ? FLAME[4] : FLAME[3]) : k < 0.5 ? FLAME[3] : FLAME[2]);
+          }
         }
       }
+      // stone chips, and dust rising off the floor and spreading
+      const kc = t / 0.3;
+      if (kc < 1) for (let m = 0; m < 2; m++) {
+        const a = Math.PI + hash(i, m + 9, 9608) * Math.PI;
+        const x = Math.round(fx + Math.cos(a) * 9 * kc * 1.4);
+        const y = Math.round(fy - 2 + Math.sin(a) * 10 * kc + 26 * kc * kc);
+        if (y <= fy + 1) px.set(x, y, DUST[2]).set(x + 1, y, DUST[1]);
+      }
       const kd = t / 0.5;
-      for (let m = 0; m < 5; m++) {
-        const a = m * 1.26 + hash(i, m, 9606);
-        const r = 2 + kd * 9;
+      for (let m = 0; m < 8; m++) {
+        const a = m * 0.79 + hash(i, m, 9606);
+        const r = 2 + kd * 13;
         const x = Math.round(fx + Math.cos(a) * r);
-        const y = Math.round(fy - 1 - kd * 8 + Math.sin(a) * r * 0.4);
-        if (hash(x, y, 9607) > kd * 0.9) px.set(x, y, DUST[m % 3]);
+        const y = Math.round(fy - 1 - kd * 10 + Math.sin(a) * r * 0.4);
+        if (hash(x, y, 9607) > kd * 0.85) px.set(x, y, DUST[m % 3]).set(x + 1, y, DUST[(m + 1) % 3]);
       }
       if (t < 0.12) lights.push({ x: fx, y: fy - 3, r: 10, color: FLAME[3], a: 0.4 * (1 - t / 0.12) });
     });

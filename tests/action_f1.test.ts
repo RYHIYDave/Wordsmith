@@ -353,7 +353,8 @@ test('8. the Lockdown’s bars: rows 2.5 to 3 tiles apart, cells to stand in; no
         if (t < LOCKDOWN.strike[0] - 1e-6) assert.equal(bars, 0, `${way} ${tiles} @${t.toFixed(2)}: bars before the crash`);
       }
       const sh = (t: number): ReturnType<typeof look> => look(lockShadowPainted(way, t, tiles).px);
-      assert.ok(sh(-0.9).rim > 10 * tiles && sh(-0.1).rim > 10 * tiles, `${way} ${tiles}: the shadow's pink edges`);
+      // (a soft dark band first, its pink edges coming as it sharpens)
+      assert.ok(sh(-0.9).painted > 100 * tiles && sh(-0.9).rim === 0 && sh(-0.3).rim > 10 * tiles && sh(-0.1).rim > 10 * tiles, `${way} ${tiles}: the shadow soft, then pink-edged`);
       // (planted, the bars stand their full height over their feet)
       const p = lockBarsPainted(way, 0, tiles).px;
       let top = p.h;
