@@ -41,6 +41,7 @@ export default async function (page, snap) {
     const d = window.__dbg; const g = d.game(); const h = g.hero; const T = g.level.land.tower;
     const m = g.monsters.find((q) => q.kind === 'moth');
     if (!m) return;
+    const every = () => { if (m.moveCd) m.moveCd = m.moveCd.map(() => 0); m.cd = 0; };
     const only = (id) => { const acts = ['moth:buffet', 'moth:dust', 'moth:swarm', 'moth:eyes', 'moth:beat', 'moth:land']; if (!m.moveCd) return; acts.forEach((a, i) => { if (i < m.moveCd.length && a !== 'moth:land') m.moveCd[i] = a === id ? 0 : 99; }); m.cd = 0; };
     if (what === 'start') { d.bot(false); m.life = m.maxLife = 2e5; }
     else if (what === 'hover') { d.bot(false); h.x = T.top.cx + 1; h.y = T.top.cy + 4; only('none'); }
@@ -48,17 +49,23 @@ export default async function (page, snap) {
     else if (what === 'dust') { d.bot(false); only('moth:dust'); }
     else if (what === 'eyes') { d.bot(false); const ws = [[4, 0], [0, 4], [-4, 0], [0, -4], [3, 3], [-3, 3]]; for (const [ax, ay] of ws) { if (g.isOpen(m.x + ax, m.y + ay)) { h.x = m.x + ax; h.y = m.y + ay; break; } } only('moth:eyes'); }
     else if (what === 'swarm') { d.bot(false); h.x = T.top.cx - 3; h.y = T.top.cy + 4; only('moth:swarm'); }
-    else if (what === 'phase2') { m.life = m.maxLife * 0.6; d.bot(true); }
-    else if (what === 'last') { m.life = m.maxLife * 0.3; d.bot(false); h.x = T.top.cx + 3; h.y = T.top.cy + 4.5; }
-    else if (what === 'beat') { d.bot(true); }
-    else if (what === 'death') { m.life = 1; d.bot(true); }
+    else if (what === 'phase2') { m.life = m.maxLife * 0.6; every(); d.bot(true); }
+    else if (what === 'last') { m.life = m.maxLife * 0.3; every(); d.bot(false); h.x = T.top.cx + 3; h.y = T.top.cy + 4.5; }
+    else if (what === 'beat') { only('moth:beat'); d.bot(true); }
+    else if (what === 'death') { m.life = 1; d.bot(true); window.__deathAt = g.time; }
   }, what);
+  const from = Number(process.env.FROM || 0);
+  if (from > 0) {
+    await page.waitForTimeout(9000);
+    await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'moth'); if (m) m.life = m.maxLife = 2e5; });
+  }
   const slow = 0.05;
-  const c0 = await page.evaluate(() => window.__dbg.clock());
+  const c0 = await page.evaluate((from) => window.__dbg.clock() - from, from);
   const total = Math.round(seconds * FPS);
-  let next = 0;
-  for (let i = 0; i < total; i++) {
+  let next = scenes.findIndex((s) => s[0] >= from);
+  for (let i = Math.round(from * FPS); i < total; i++) {
     while (next < scenes.length && scenes[next][0] * FPS <= i) await go(scenes[next++][3]);
+    await page.evaluate(() => { const d = window.__dbg; const g = d.game(); const h = g.hero; if (window.__deathAt !== undefined && !g.monsters.some((q) => q.kind === 'moth' && !q.dead)) { d.bot(false); window.__stand ??= { x: h.x, y: h.y }; h.x = window.__stand.x; h.y = window.__stand.y; } });
     await page.evaluate((slow) => { window.__dbg.slowmo = slow; }, slow);
     await page.waitForFunction((at) => { const d = window.__dbg; if (d.clock() < at) return false; d.slowmo = 1e-6; return true; }, c0 + i / FPS, { polling: 'raf', timeout: 300000 });
     if (stills && i % 15 !== 0) continue;

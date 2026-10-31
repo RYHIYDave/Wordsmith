@@ -3,13 +3,13 @@
 // at the stairhead the screen darkens and he comes up through THE TRAPDOOR onto the top; standing on the trapdoor takes him back
 // down to the foot of the stair. The main chat's picks, his to try and change: as the Moth wakes to him (he has come up into its
 // sight), the trapdoor slams shut behind him (as a boss's gate drops behind the hero in his hall) and stays shut until the Moth is
-// dead.
+// dead and its death has played out (TOWER.openAfter).
 
 import type { Hero, Level, PropInst } from '../state';
 import type { TowerPlan } from './quiettower';
 
-/** How near the stair's middle takes him up (tiles); how near the trapdoor's middle takes him down; how far off it he must be before it slams. */
-export const TOWER = { up: 1.75, down: 0.6, slamFrom: 1.2 } as const;
+/** How near the stair's middle takes him up (tiles); how near the trapdoor's middle takes him down; how far off it he must be before it slams; how long after the Moth's death it opens again (its death played out, seconds). */
+export const TOWER = { up: 1.75, down: 0.6, slamFrom: 1.2, openAfter: 6 } as const;
 
 /** The trapdoor's frames (art/floor20.ts): shut, open. */
 export const TRAP_FRAME = { shut: 0, open: 1 } as const;
@@ -31,7 +31,7 @@ export function trapOpen(L: Level): boolean {
  * A STEP OF THE WAY UP AND DOWN: 'up' as he walks into the tower's stair, 'down' as he stands on the open trapdoor, 'slam' as it
  * shuts behind him (the Moth alive and awake to him, he off it), 'open' as it opens again (the Moth dead); null otherwise.
  */
-export function stepTower(L: Level, h: Hero, bossAlive: boolean, bossAwake = true): 'up' | 'down' | 'slam' | 'open' | null {
+export function stepTower(L: Level, h: Hero, bossAlive: boolean, bossAwake = true, now = Infinity): 'up' | 'down' | 'slam' | 'open' | null {
   const T: TowerPlan | undefined = L.land?.tower;
   if (!T) return null;
   const trap = trapdoorOf(L);
@@ -42,6 +42,9 @@ export function stepTower(L: Level, h: Hero, bossAlive: boolean, bossAwake = tru
     return 'slam';
   }
   if (trap && !bossAlive && trap.variant === TRAP_FRAME.shut) {
+    // (not till its death has played out: the piece's `state` keeps when it may open)
+    if (!trap.state) trap.state = now === Infinity ? 1 : now + TOWER.openAfter;
+    if (now < trap.state) return null;
     trap.variant = TRAP_FRAME.open;
     return 'open';
   }
