@@ -196,106 +196,124 @@ function weightGround(c: Act1FxCtx, p: Peril): void {
 }
 
 /**
- * THE CROWN in the game's pixels (a stand-in until the art chat's): a ring of gold, its band set with stones, five points with
- * pearls on them, turned round `spin` (radians: the points and stones in front bright, those behind dark, as it turns); its foot
- * at (sx, sy), `size` times its own; a gold glow round it (the enemy's).
+ * THE CROWN in the game's pixels (a stand-in until the art chat's), in the game's own world (his word, 31 Oct 2026: “It’s not
+ * on the plane of the game, like it’s flat to the screen.”): a ring of gold lying level as the floor does, seen from above at
+ * the floor's own angle, its band standing up off it and five points rising from the band with pearls on their tips, turned
+ * round `spin` (radians) as it hangs; the far side of the ring drawn first, darker, seen past the near side; stones set in the
+ * band's near side. (`fx`, `fy`): over which point of the floor (tiles); `lift`: how high it hangs (screen pixels); `size`
+ * times its own.
  */
-function crownAt(g: CanvasRenderingContext2D, sx: number, sy: number, alpha: number, spin = 0, size = 1): void {
+function crownAt(c: Act1FxCtx, fx: number, fy: number, lift: number, alpha: number, spin = 0, size = 1): void {
   if (alpha <= 0) return;
+  const g = c.g!;
   const was = g.globalAlpha;
-  const W2 = 13 * size;
-  const band = 5 * size;
-  const tall = 8 * size;
-  const cx = Math.round(sx);
-  const base = Math.round(sy);
-  // (its glow)
-  g.globalAlpha = was * alpha * 0.08;
+  const R = 0.36 * size;
+  const band = Math.max(3, Math.round(4 * size));
+  const tall = 7 * size;
+  // (a point of the ring at angle `a`: where its foot is on the screen, and how near the eye it is)
+  const ring = (a: number): { x: number; y: number; near: number } => {
+    const [x, y] = c.at(fx + Math.cos(a) * R, fy + Math.sin(a) * R);
+    return { x, y: y - lift, near: Math.cos(a) + Math.sin(a) };
+  };
+  const N = 48;
+  const pts = Array.from({ length: N }, (_, i) => ({ a: (i / N) * Math.PI * 2, ...ring((i / N) * Math.PI * 2) }));
+  // (its glow, faint: the enemy's gold)
+  const [gx, gy] = c.at(fx, fy);
+  g.globalAlpha = was * alpha * 0.07;
   g.fillStyle = GOLD[3];
   g.beginPath();
-  g.ellipse(cx, base - band - tall * 0.4, W2 + 5, (band + tall) * 0.8, 0, 0, Math.PI * 2);
+  g.ellipse(gx, gy - lift - band, 22 * size, 14 * size, 0, 0, Math.PI * 2);
   g.fill();
-  // (the five points and the stones, behind first, then the band, then those in front)
-  const parts = Array.from({ length: 5 }, (_, k) => {
+  g.globalAlpha = was * alpha;
+  const pointAt = (k: number): { a: number; near: number } => {
     const a = spin + (k / 5) * Math.PI * 2;
-    return { x: Math.sin(a) * W2, front: Math.cos(a), k };
-  });
-  const point = (q: { x: number; front: number; k: number }): void => {
-    const lit = q.front > 0;
-    const px = cx + q.x;
-    const top = base - band - tall;
-    const w = Math.max(1.5, 3.2 * size * (0.55 + 0.45 * Math.abs(q.front)));
-    g.globalAlpha = was * alpha;
-    g.fillStyle = lit ? GOLD[2] : GOLD[0];
+    return { a, near: Math.cos(a) + Math.sin(a) };
+  };
+  const drawPoint = (a: number, near: number): void => {
+    const p = ring(a);
+    const l = ring(a - 0.32);
+    const r = ring(a + 0.32);
+    const lit = near > 0;
+    g.fillStyle = lit ? GOLD[2] : GOLD[1];
     g.beginPath();
-    g.moveTo(px - w, base - band + 1);
-    g.lineTo(px, top + 2 * size);
-    g.lineTo(px + w, base - band + 1);
+    g.moveTo(l.x, l.y - band + 1);
+    g.lineTo(p.x, p.y - band - tall);
+    g.lineTo(r.x, r.y - band + 1);
+    g.closePath();
     g.fill();
     if (lit) {
       g.fillStyle = GOLD[3];
-      g.fillRect(Math.round(px - 1), Math.round(top + 3 * size), 1, Math.round(tall * 0.6));
+      g.fillRect(Math.round(p.x - 0.5), Math.round(p.y - band - tall * 0.75), 1, Math.round(tall * 0.6));
     }
-    // (a pearl on its tip)
     g.fillStyle = lit ? '#f4f0ff' : '#8a86a2';
-    g.fillRect(Math.round(px - size), Math.round(top), Math.max(2, Math.round(2 * size)), Math.max(2, Math.round(2 * size)));
+    const pr = Math.max(1, Math.round(1.2 * size));
+    g.fillRect(Math.round(p.x - pr / 2), Math.round(p.y - band - tall - pr), pr + 1, pr + 1);
   };
-  for (const q of parts.filter((q) => q.front <= 0)) point(q);
-  // (the band: gold shaded top to foot, its rim bright)
-  g.globalAlpha = was * alpha;
-  for (let y = 0; y < band; y++) {
-    g.fillStyle = y === 0 ? GOLD[3] : y < band * 0.5 ? GOLD[2] : y < band - 1 ? GOLD[1] : GOLD[0];
-    g.fillRect(cx - W2, base - band + y, W2 * 2 + 1, 1);
+  // (the far side: its points, then the inside of the band, dark)
+  for (let k = 0; k < 5; k++) {
+    const q = pointAt(k);
+    if (q.near <= 0) drawPoint(q.a, q.near);
   }
-  // (its stones, set in the band in front: the enemy's red and a blue)
-  for (const q of parts) {
-    if (q.front <= 0.15) continue;
-    const a = spin + ((q.k + 0.5) / 5) * Math.PI * 2;
-    const x = cx + Math.sin(a) * W2 * 0.9;
-    if (Math.cos(a) <= 0) continue;
-    g.fillStyle = q.k % 2 ? '#c0204a' : '#2a3a9a';
-    g.fillRect(Math.round(x - size), Math.round(base - band * 0.7), Math.max(2, Math.round(2 * size)), Math.max(2, Math.round(2 * size)));
+  for (const p of pts) {
+    if (p.near > 0) continue;
+    g.fillStyle = GOLD[0];
+    g.fillRect(Math.round(p.x), Math.round(p.y - band), 2, band);
   }
-  for (const q of parts.filter((q) => q.front > 0)) point(q);
+  // (the near side of the band, lit from above: its rim bright, shading to its foot)
+  for (const p of pts) {
+    if (p.near <= 0) continue;
+    for (let y = 0; y < band; y++) {
+      g.fillStyle = y === 0 ? GOLD[3] : y < band * 0.5 ? GOLD[2] : y < band - 1 ? GOLD[1] : GOLD[0];
+      g.fillRect(Math.round(p.x), Math.round(p.y - band + y), 2, 1);
+    }
+  }
+  // (stones set in its near side, between the points)
+  for (let k = 0; k < 5; k++) {
+    const a = spin + ((k + 0.5) / 5) * Math.PI * 2;
+    if (Math.cos(a) + Math.sin(a) <= 0.3) continue;
+    const p = ring(a);
+    g.fillStyle = k % 2 ? '#c0204a' : '#2a3a9a';
+    g.fillRect(Math.round(p.x - 1), Math.round(p.y - band * 0.7), 2, 2);
+  }
+  // (the near points over all)
+  for (let k = 0; k < 5; k++) {
+    const q = pointAt(k);
+    if (q.near > 0) drawPoint(q.a, q.near);
+  }
   g.globalAlpha = was;
 }
 
 /** THE CROWN in the air: off his head and out over the hero; hanging, turning slowly, following him; rising and trembling as it stops; dropping, a heavy slam; then flying home to his head. */
 function weightAir(c: Act1FxCtx, p: Peril): void {
-  const g = c.g!;
   const size = 1.6;
   if (p.t < CW.fly) {
     // (lifted off his head, arcing out over the hero)
     const f = crownFloor(p);
     const u = smooth(0, CW.fly, p.t);
-    const [sx, sy] = c.at(f.x, f.y);
-    crownAt(g, sx, sy - (58 + (CROWN_UP - 58) * u) - 22 * Math.sin(u * Math.PI), 1, p.t * 9, size);
+    crownAt(c, f.x, f.y, 58 + (CROWN_UP - 58) * u + 22 * Math.sin(u * Math.PI), 1, p.t * 9, size);
     return;
   }
-  const [sx, sy] = c.at(p.x, p.y);
   if (p.t < CW.follow) {
     // (hanging, turning slowly, bobbing)
-    crownAt(g, sx, sy - CROWN_UP - 2 * Math.sin(c.t * 4), 1, p.t * 1.6, size);
+    crownAt(c, p.x, p.y, CROWN_UP + 2 * Math.sin(c.t * 4), 1, p.t * 1.6, size);
   } else if (p.t < CW.rise) {
     // (it stops, rises, and trembles: the drop is coming)
     const u = smooth(CW.follow, CW.rise, p.t);
-    const shake = (hash(Math.floor(c.t * 40), 1, 7941) - 0.5) * 3 * u;
-    crownAt(g, sx + shake, sy - CROWN_UP - 12 * u, 1, CW.follow * 1.6, size * (1 + 0.1 * u));
+    const shake = (hash(Math.floor(c.t * 40), 1, 7941) - 0.5) * 0.08 * u;
+    crownAt(c, p.x + shake, p.y - shake, CROWN_UP + 12 * u, 1, CW.follow * 1.6, size * (1 + 0.1 * u));
   } else if (p.t < CW.slam) {
-    // (dropping: fast, stretched with its speed)
+    // (dropping, fast)
     const u = (p.t - CW.rise) / (CW.slam - CW.rise);
-    crownAt(g, sx, sy - (CROWN_UP + 12) * (1 - u * u), 1, CW.follow * 1.6, size);
+    crownAt(c, p.x, p.y, (CROWN_UP + 12) * (1 - u * u), 1, CW.follow * 1.6, size);
   } else {
     // (struck down: a bounce on the stones, then flying home to his head, turning)
     const t = p.t - CW.slam;
     const king = c.game.monsters.find((q) => q.kind === 'gking' && !q.dead);
     const home = king ?? { x: p.a, y: p.b };
     const u = smooth(0.2, W.home, t);
-    const x = p.x + (home.x - p.x) * u;
-    const y = p.y + (home.y - p.y) * u;
-    const [hx, hy] = c.at(x, y);
     const bounce = t < 0.2 ? 6 * Math.sin((t / 0.2) * Math.PI) : 0;
     // (home on his head: gone into his own picture's)
-    crownAt(g, hx, hy - bounce - (58 * u + 26 * Math.sin(u * Math.PI)), (king ? 1 : 1 - u) * (1 - smooth(W.home, W.home + 0.12, t)), t * 10, size);
+    crownAt(c, p.x + (home.x - p.x) * u, p.y + (home.y - p.y) * u, bounce + 58 * u + 26 * Math.sin(u * Math.PI), (king ? 1 : 1 - u) * (1 - smooth(W.home, W.home + 0.12, t)), t * 10, size);
   }
 }
 
