@@ -261,7 +261,19 @@ export interface TitleUi {
   trying?: boolean;
   /** THE LEVEL SELECT (game/defs.ts LEVEL_SELECT): the floor picked on its page, the class cards opened for a test hero there (with `practice`); undefined otherwise. */
   trial?: number;
+  /** (CARDS3) The class card chosen, waiting for CONFIRM; null: none yet. */
+  chosen?: ClassId | null;
 }
+
+declare const __CARDS3__: boolean | undefined;
+/**
+ * THE CLASS CARDS THREE ACROSS IN TWO ROWS, AND CONFIRM (the owner, 31 Oct 2026, 01:16: "Can I get the character select screen to
+ * have a confirm? Button when you select a character", and "And can it be 3 across 2 rows for portraits"): a card pressed is
+ * chosen (lit, walking), and CONFIRM under the cards starts the hero. Each card is laid on its side: the portrait on its left,
+ * the name, the words, the three attacks and the numbers beside it. PICTURES FIRST: off but where a page is built with it
+ * (the classes test page), until he has seen it and said yes.
+ */
+export const CARDS3 = { on: typeof __CARDS3__ !== 'undefined' && __CARDS3__ === true };
 
 /** THE TRY-OUT PAGE ONLY: its two options, the floor to try (pressed, the next one) and going there. */
 function tryItems(st: TitleUi, opt: TitleIn): { id: string; label: string; sub: string; lit: boolean }[] {
@@ -311,6 +323,8 @@ export interface TitleOut {
   voice: boolean;
   /** The class cards' switch between Normal and Hardcore was pressed (game/modes.ts). */
   mode: boolean;
+  /** (CARDS3) A class card was chosen (not yet confirmed). */
+  chose?: boolean;
 }
 
 export interface TitleIn {
@@ -785,21 +799,39 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   // ---- the class cards ---------------------------------------------------------------------------
   // (THE WARLOCK beside the three while game/warlock.ts WARLOCK is on: as many cards as there are classes to pick)
   const ids = playableClasses();
-  const cw = Math.min(104, Math.floor((W - 20) / ids.length));
-  const ch = Math.min(137, H - 62);
+  // (CARDS3: three across, in as many rows as they need, each card on its side; else all in one row, each standing)
+  const across = CARDS3.on ? Math.min(3, ids.length) : ids.length;
+  const rows = Math.ceil(ids.length / across);
+  const gap = 4;
+  const y0 = CARDS3.on ? 6 + 9 * big + 11 : 44;
+  const cw = CARDS3.on ? Math.min(168, Math.floor((W - 12 - gap * (across - 1)) / across)) : Math.min(104, Math.floor((W - 20) / ids.length));
+  const ch = CARDS3.on ? Math.min(96, Math.floor((H - 22 - 12 - y0 - gap * (rows - 1)) / rows)) : Math.min(137, H - 62);
   /** The room at the top of a card for the figure, drawn at twice its size in the game. */
   const figH = 80;
-  const total = cw * ids.length + 4 * (ids.length - 1);
+  const total = cw * across + gap * (across - 1);
   const x0 = Math.floor((W - total) / 2);
-  const y0 = 44;
+  /** Where card `i` is. */
+  const cardAt = (i: number): Rect => ({ x: x0 + (i % across) * (cw + gap), y: y0 + Math.floor(i / across) * (ch + gap), w: cw, h: ch });
+  const cardsEnd = y0 + rows * ch + gap * (rows - 1);
   // (a hero who has been picked is making ready: nothing here listens until they have gone)
   const entering = opt.entering ?? null;
+  // (CARDS3: the cards just come on screen, none chosen yet)
+  if (CARDS3.on && (t - cardsSeen > 0.5 || t < cardsSeen)) st.chosen = null;
   ids.forEach((id, i) => {
-    if (!entering && ui.pressIn(x0 + i * (cw + 4), y0, cw, ch)) out.pick = id;
+    const r = cardAt(i);
+    if (entering || !ui.pressIn(r.x, r.y, r.w, r.h)) return;
+    if (!CARDS3.on) out.pick = id;
+    else if (st.chosen !== id) {
+      st.chosen = id;
+      out.chose = true;
+    }
   });
   const backW = ui.width('BACK') + 20;
   const backR: Rect = { x: 4, y: H - 22, w: backW, h: 18 };
-  if (!entering && ui.pressIn(backR.x, backR.y, backR.w, backR.h)) st.page = st.practice && st.trial ? 'floors' : st.practice ? 'options' : 'menu';
+  if (!entering && ui.pressIn(backR.x, backR.y, backR.w, backR.h)) {
+    st.page = st.practice && st.trial ? 'floors' : st.practice ? 'options' : 'menu';
+    st.chosen = null;
+  }
   // the voice the character will speak with: pressing it changes it, and lets each of the three be heard
   const voiceLabel = `VOICE: ${opt.voice === 'female' ? 'FEMALE' : 'MALE'}`;
   const voiceW = Math.max(ui.width('VOICE: FEMALE'), ui.width('VOICE: MALE')) + 16;
@@ -810,9 +842,19 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   const heroMode = opt.mode ?? null;
   const modeLabel = heroMode === 'hardcore' ? 'MODE: HARDCORE' : 'MODE: NORMAL';
   const modeW = Math.max(ui.width('MODE: HARDCORE'), ui.width('MODE: NORMAL')) + 16;
-  const modeBeside = backW + modeW + voiceW + 24 <= W;
-  const modeR: Rect = { x: Math.floor((W - modeW) / 2), y: modeBeside ? H - 22 : H - 44, w: modeW, h: 18 };
+  // (CARDS3: CONFIRM in the middle of the foot, MODE beside BACK; where the four will not fit side by side, MODE above them)
+  const confirmW = ui.width('CONFIRM') + 28;
+  const modeBeside = backW + modeW + voiceW + 24 + (CARDS3.on ? confirmW + 12 : 0) <= W;
+  const modeR: Rect = CARDS3.on && modeBeside ? { x: backR.x + backW + 6, y: H - 22, w: modeW, h: 18 } : { x: Math.floor((W - modeW) / 2), y: modeBeside ? H - 22 : H - 44, w: modeW, h: 18 };
   if (heroMode && !entering && ui.pressIn(modeR.x, modeR.y, modeR.w, modeR.h)) out.mode = true;
+  let confirmR: Rect | null = null;
+  if (CARDS3.on) {
+    const lo = heroMode && modeBeside ? modeR.x + modeR.w + 6 : backR.x + backW + 6;
+    const hi = voiceR.x - 6;
+    const cx = Math.max(lo, Math.min(hi - confirmW, Math.floor((W - confirmW) / 2)));
+    confirmR = { x: cx, y: H - 22, w: confirmW, h: 18 };
+    if (!entering && st.chosen && ui.pressIn(confirmR.x, confirmR.y, confirmR.w, confirmR.h)) out.pick = st.chosen;
+  }
   drawText(g, title, Math.floor(W / 2), 6, THEME.text, { align: 'center', scale: big, shadow: THEME.call });
   const pitch = st.practice && st.trial ? `${floorTitle(st.trial).level}: choose a class` : st.practice ? 'Practice room: choose a class' : 'Choose a class';
   drawText(g, pitch, Math.floor(W / 2), 6 + 9 * big + 1, st.practice ? THEME.accent : THEME.text, { align: 'center', font: ui.width(pitch) <= W - 8 ? 'normal' : 'small' });
@@ -822,14 +864,23 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   cardsSeen = t;
   ids.forEach((id, i) => {
     const c = CLASSES[id];
-    const x = x0 + i * (cw + 4);
+    const cr = cardAt(i);
+    const x = cr.x;
+    const cy = cr.y;
     // (the one who has been picked: see below. The other two stand back.)
     const mine = entering !== null && entering.cls === id;
-    const hot = !entering && ui.hover(x, y0, cw, ch);
-    // (the one whose voice is being tried out stands forward while they speak)
-    const talks = opt.speaking === id || mine;
-    ui.box(x, y0, cw, ch, hot || talks ? THEME.hot : THEME.bg, talks ? P.white : hot ? THEME.accent : ATTR_COLOR[c.primary]);
-    ui.mark(`class:${id}`, x, y0, cw, ch);
+    const hot = !entering && ui.hover(x, cy, cw, ch);
+    // (the one whose voice is being tried out stands forward while they speak; CARDS3: the one chosen, too)
+    const chosen = CARDS3.on && st.chosen === id;
+    const talks = opt.speaking === id || mine || chosen;
+    ui.box(x, cy, cw, ch, hot || talks ? THEME.hot : THEME.bg, talks ? P.white : hot ? THEME.accent : ATTR_COLOR[c.primary]);
+    if (chosen && !entering) {
+      // (chosen: a second line of white inside its edge)
+      g.strokeStyle = P.white;
+      g.lineWidth = 1;
+      g.strokeRect(x + 1.5, cy + 1.5, cw - 3, ch - 3);
+    }
+    ui.mark(`class:${id}`, x, cy, cw, ch);
     let fig = cardFigures.get(id);
     if (!fig) {
       fig = new Figure();
@@ -861,11 +912,14 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
       }
     }
     // the figure stands on the floor of its box; whatever flies wide of the card (a scarf) is cut off at its edge
-    const fx = x + Math.floor(cw / 2);
-    const fy = y0 + 2 + figH;
+    // (CARDS3: the card on its side, the portrait at its left, standing on its foot; the rest beside it)
+    const portW = CARDS3.on ? Math.min(70, Math.floor(cw * 0.42)) : cw;
+    const fx = x + Math.floor(portW / 2);
+    const fy = CARDS3.on ? cy + ch - 4 : cy + 2 + figH;
     g.save();
     g.beginPath();
-    g.rect(x + 1, y0 + 1, cw - 2, figH + 4);
+    if (CARDS3.on) g.rect(x + 1, cy + 1, portW - 1, ch - 2);
+    else g.rect(x + 1, cy + 1, cw - 2, figH + 4);
     g.clip();
     if (gone > 0) fig.drawPhased(g, sp, fx, fy, 2, 0.15 + gone * 0.85, 1 - gone * gone);
     else {
@@ -873,11 +927,13 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
       fig.lights(g, fx, fy, 2);
     }
     g.restore();
-    let y = y0 + 4 + figH + 2;
-    ui.text(c.name, x + Math.floor(cw / 2), y, ATTR_COLOR[c.primary], 'center');
+    const tx = CARDS3.on ? x + portW + Math.floor((cw - portW - 2) / 2) : x + Math.floor(cw / 2);
+    const tw = CARDS3.on ? cw - portW - 6 : cw - 8;
+    let y = CARDS3.on ? cy + 5 : cy + 4 + figH + 2;
+    ui.text(c.name, tx, y, ATTR_COLOR[c.primary], 'center');
     y += 11;
-    for (const part of wrapText(c.blurb, cw - 8, 'small')) {
-      ui.text(part, x + Math.floor(cw / 2), y, THEME.text, 'center', true);
+    for (const part of wrapText(c.blurb, tw, 'small')) {
+      ui.text(part, tx, y, THEME.text, 'center', true);
       y += 6;
     }
     // THEIR THREE ATTACKS, AS ICONS (the owner, 6 Oct 2026, 22:59: "lets replace the names of the
@@ -888,27 +944,29 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
     // whatever the length of each card's own words.
     const kit = skillsFor(id, c.starts);
     const slot = ch >= 135 ? 18 : 16;
-    const attrsY = y0 + ch - 8;
+    const attrsY = cy + ch - 8;
     const iconsY = attrsY - 1 - slot;
-    let ix = x + Math.floor((cw - (kit.length * slot + (kit.length - 1) * 4)) / 2);
+    let ix = tx - Math.floor((kit.length * slot + (kit.length - 1) * 4) / 2);
     for (const sk of kit) {
       ui.slot(ix, iconsY, slot, art.icons.ability[SKILLS[sk].icon], THEME.edgeHi);
       ix += slot + 4;
     }
-    ui.text(`STR ${c.attrs.str} DEX ${c.attrs.dex} INT ${c.attrs.int}`, x + Math.floor(cw / 2), attrsY, THEME.dim, 'center', true);
+    ui.text(`STR ${c.attrs.str} DEX ${c.attrs.dex} INT ${c.attrs.int}`, tx, attrsY, THEME.dim, 'center', true);
     if (entering && !mine) {
       // (they stand back in the dark while the one who was picked makes ready)
       g.globalAlpha = 0.62;
       g.fillStyle = P.black;
-      g.fillRect(x, y0, cw, ch);
+      g.fillRect(x, cy, cw, ch);
       g.globalAlpha = 1;
     }
     // (the card used to name the word the class finds first. The owner: "Remove the line that
     // states the first power word under the characters in character selection". It is found, not told.)
   });
   // (no line about the controls here: the first dungeon shows them, and the pause menu lists them)
-  let hy = y0 + ch + 5;
+  let hy = cardsEnd + 5;
   ui.drawButton(backR.x, backR.y, backR.w, backR.h, 'BACK', {});
+  // (CARDS3: CONFIRM, lit once a card is chosen)
+  if (confirmR) ui.drawButton(confirmR.x, confirmR.y, confirmR.w, confirmR.h, 'CONFIRM', st.chosen && !entering ? { primary: true, lit: true } : { disabled: true });
   ui.drawButton(voiceR.x, voiceR.y, voiceR.w, voiceR.h, voiceLabel, { lit: opt.speaking !== null });
   if (heroMode) {
     // (Hardcore's in the colour of what is lost; and under the cards, what the mode means, unless

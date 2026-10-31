@@ -94,7 +94,7 @@ import { AISLES_CLEAR } from './game/act2/library';
 import { LEAP_WATER } from './game/water';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
-import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
+import { CARDS3, ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
 import { altarSide, gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
@@ -1615,7 +1615,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const res = drawTitle(ui, art, titleArt, clock, TITLE, titleUi, {
         turn: turnLabel(),
         resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, ${ENDLESS.on && (saved.endless ?? 0) > 0 ? endlessName(saved.endless ?? 1) : `dungeon ${saved.depth}`}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
-        note: saved && confirm && !titleUi.practice ? `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : null,
+        note: saved && confirm && !titleUi.practice ? (CARDS3.on ? `Press CONFIRM again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.`) : null,
         guide: guideOn,
         limit: meta.limit,
         aim: scr.touch ? meta.aim : null,
@@ -1677,10 +1677,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           sfx('click');
           continueRun();
         } else if (res.pick) pickClass(res.pick);
+        else if (res.chose) sfx('click');
         else if (entering) {
           // (a hero is making ready: the keys that pick a class or leave the cards wait until they have gone)
         } else if (titleUi.page === 'class') {
-          for (let i = 0; i < playableClasses().length; i++) if (input.pressed(`Digit${i + 1}`)) pickClass(playableClasses()[i]);
+          // (CARDS3: a number chooses a card, and Enter confirms it)
+          for (let i = 0; i < playableClasses().length; i++) {
+            if (!input.pressed(`Digit${i + 1}`)) continue;
+            if (CARDS3.on) {
+              titleUi.chosen = playableClasses()[i];
+              sfx('click');
+            } else pickClass(playableClasses()[i]);
+          }
+          if (CARDS3.on && titleUi.chosen && input.pressed('Enter')) pickClass(titleUi.chosen);
           if (input.pressed('Escape')) titleUi.page = titleUi.practice && titleUi.trial ? 'floors' : titleUi.practice ? 'options' : 'menu';
         } else if (titleUi.page === 'options' && input.pressed('Escape')) titleUi.page = 'menu';
         else if (titleUi.page === 'floors' && input.pressed('Escape')) titleUi.page = 'options';
