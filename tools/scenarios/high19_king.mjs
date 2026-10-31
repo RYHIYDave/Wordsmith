@@ -1,0 +1,53 @@
+// THE KING (floor 19's boss, behind HIGH_CITY, on here alone), in his own hall, the Throne Hall: the hero a few tiles off him,
+// nothing can kill him, the bot fighting for him; his life brought to his second phase at 18 s and below a third (the Hush climbs
+// off) at 34 s; he falls at 52 s. Stills every half second (STILLS=0: every thirtieth of the game's second, for a film).
+//   node tools/playtest.mjs --file <page> --size 1280x720 --scenario tools/scenarios/high19_king.mjs --out shots/h19k/k
+const FPS = 30;
+const PARTS = [
+  [0, 'THE KING', 'Slow and heavy, every blow across the hall: the sweep, the Decree, the Crown, the Curtains.'],
+  [18, 'HIS SECOND PHASE', 'His waits shorter.'],
+  [34, 'THE HUSH CLIMBS OFF', 'At a third of his life it climbs off him and stands at his side.'],
+  [52, 'HE FALLS', 'The Hush unwinds; his clockwork songbird winds itself up and sings.'],
+];
+export default async function (page, snap) {
+  const stills = process.env.STILLS !== '0';
+  const seconds = Number(process.env.SECONDS || 60);
+  await page.evaluate(() => {
+    const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
+    d.run('warrior', 7); d.seasoned(24); d.autoLevel = false; d.autoWords = false; d.god = true;
+    d.high(true, 19);
+    if (d.fx && d.fx.messages) d.fx.messages.length = 0;
+  });
+  await page.waitForTimeout(2500);
+  const info = await page.evaluate(() => {
+    const d = window.__dbg; const g = d.game(); const h = g.hero;
+    const m = g.monsters.find((q) => q.kind === 'gking');
+    if (!m) return { boss: g.boss?.kind ?? null };
+    for (const q of g.monsters) if (q !== m) q.dead = true;
+    g.projectiles.length = 0;
+    h.x = m.x + 1; h.y = m.y + 5;
+    m.state = 'chase'; m.cd = 0.5;
+    m.life = m.maxLife = 1e7; m.words = []; m.shield = 0;
+    g.boss = m; g.bossMet = true;
+    g.level.explored.fill(1);
+    d.bot(true);
+    return { boss: m.kind, at: [m.x.toFixed(1), m.y.toFixed(1)] };
+  });
+  console.log('  boss', JSON.stringify(info));
+  snap.note('film', { fps: FPS, from: 0, parts: PARTS, size: await page.evaluate(() => [innerWidth, innerHeight]) });
+  const slow = 0.05;
+  const c0 = await page.evaluate(() => window.__dbg.clock());
+  const total = Math.round(seconds * FPS);
+  for (let i = 0; i < total; i++) {
+    const s = i / FPS;
+    if (i === 18 * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.6; });
+    if (i === 34 * FPS) await page.evaluate(() => { const m = window.__dbg.game().monsters.find((q) => q.kind === 'gking'); if (m) m.life = m.maxLife * 0.3; });
+    if (i === 52 * FPS) await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'gking'); if (m) g.kill(m); });
+    await page.evaluate((slow) => { window.__dbg.slowmo = slow; }, slow);
+    await page.waitForFunction((at) => { const d = window.__dbg; if (d.clock() < at) return false; d.slowmo = 1e-6; return true; }, c0 + s, { polling: 'raf', timeout: 120000 });
+    if (stills && i % 15 !== 0) continue;
+    await snap(`f${String(i).padStart(4, '0')}`);
+    if (i % 60 === 0) console.log(`  ${s.toFixed(1)} s`, await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.kind === 'gking'); const per = {}; for (const p of g.perils) per[p.a1 ?? p.kind] = (per[p.a1 ?? p.kind] ?? 0) + 1; return `${m ? (m.dead ? 'dead' : (m.act ? m.act.id : m.state + ':' + m.anim)) : 'gone'} perils ${JSON.stringify(per)}`; }));
+  }
+  await page.evaluate(() => { const d = window.__dbg; d.slowmo = 1; d.bot(false); });
+}

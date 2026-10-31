@@ -141,3 +141,14 @@ The Silent Order's armed last on 19 (a fan of three knives: “A fan of three on
    phase, the Hush climbs off and stands at his side (its own moves his to decide); his death, the songbird winds itself up
    and sings, the way on opens.
 6. Films to him; his yes; the knights and the crossbowmen's death when the art chat posts them; then floor 20.
+
+Where it stands (31 Oct 2026, about 03:00 Eastern): 1 to 5 built on `high-city` (8b4a093 the Keep laid and dressed, its
+portcullises; 0ff1721 the crossbowmen, planted turrets at his pick “Stand and shoot”, and the Order's armed last with their
+fan of three; 70e92ae the King). The main chat's picks where the art left them open, for him to see in the films: the way
+through climbs away from the eye; the throne hall entered from the side toward the eye, the throne facing him; the great
+doors hung open over the bailey's way in; armour and barrels the floor's breakables; the songbird lies broken before the
+throne (the bedchamber's cushion empty) so that it can sing as he dies; the wave and the ring drawn in the game's own pixels
+from the art's sweepPainted and crownPainted; the knights and the faces as sprites from knightPainted and facePainted (the
+art's KN_CANVAS and FACE_CANVAS exported for it); the Hush at his side stands (its moves his to decide). Held: the king's
+knights (stood in for by the Hushed), the crossbowmen's new death. Films: tools/scenarios/floor19_film.mjs,
+high19_king.mjs (STILLS=0).
