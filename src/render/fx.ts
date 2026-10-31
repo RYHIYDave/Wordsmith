@@ -501,6 +501,10 @@ const TAG_TIME = 3;
 const TAG_LIFT: Record<TownVoice, number> = { armourer: 66, mystic: 102, wordsmith: 62, stranger: 56 };
 /** (BOSS_INTRO) how far over a boss's feet his line is said: over the Warden's horns */
 const BOSS_SAY_LIFT = 84;
+/** Where a boss's line may go: below the boss's bar across the top (ui/hud.ts: its name and bar, 4 to 24), and left of the small map at the top right (66 wide and 4 from the edge, down to 50) while it is that high. */
+const SAY_TOP = 28;
+const SAY_MAP_W = 74;
+const SAY_MAP_FOOT = 54;
 
 type Words = readonly WordId[];
 const has = (w: Words | undefined, id: WordId): boolean => !!w && w.includes(id);
@@ -2727,8 +2731,11 @@ export class Fx {
       const rows = textWidth(say.text) + 10 > viewW - 4 ? wrapText(say.text, viewW - 16) : [say.text];
       const w = rows.reduce((n, r) => Math.max(n, textWidth(r)), 0) + 10;
       const px = Math.round(wx(c, say.x, say.y));
-      const x = Math.max(Math.ceil(w / 2) + 2, Math.min(viewW - Math.ceil(w / 2) - 2, px));
-      const y = Math.max(4, Math.round(wy(c, say.x, say.y)) - say.lift - Math.round(Math.min(1, say.t / 0.12) * 4) - (rows.length - 1) * 10);
+      // (kept on the screen, and clear of the boss's bar across the top and the small map at the top right: a boss far up the
+      // screen says it under them, not hidden by them)
+      const y = Math.max(SAY_TOP, Math.round(wy(c, say.x, say.y)) - say.lift - Math.round(Math.min(1, say.t / 0.12) * 4) - (rows.length - 1) * 10);
+      const right = y < SAY_MAP_FOOT ? viewW - SAY_MAP_W : viewW;
+      const x = Math.max(Math.ceil(w / 2) + 2, Math.min(right - Math.ceil(w / 2) - 2, px));
       const foot = y + 1 + rows.length * 10;
       g.globalAlpha = 0.8 * a;
       g.fillStyle = P.ink;

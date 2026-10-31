@@ -66,6 +66,7 @@ import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
 import { ACT2, HIGH_CITY } from './game/act1';
+import { BOSS_CALLS } from './game/boss_calls';
 import { chimeNow } from './game/act2/masque_rules';
 import { MELD, RANK2, STONE_RISE, VOLT_MELDS, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
@@ -2131,6 +2132,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         game.wayDepth = Math.max(game.wayDepth, depth);
         game.enterDungeon();
       }
+    },
+    /** (THE BOSSES CALL OUT THEIR BIG MOVES: behind BOSS_CALLS, game/boss_calls.ts, off until his yes) Its switch, for the films. */
+    calls: (on: boolean) => {
+      BOSS_CALLS.on = on;
     },
     /**
      * (THE HIGH CITY, FLOOR 16: behind HIGH_CITY, game/act1.ts: off until his yes) Its switch (the Hush's with it), for the playtests

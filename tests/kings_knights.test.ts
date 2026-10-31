@@ -6,7 +6,8 @@
 // actual punch is lightning quick”; 28 Oct: “Start from now on, but every enemy is going to need that change eventually.
 // And bigger AOE to compensate for the extra time the player gets to evade”). Held as floor 16's palace guard and
 // Princess are (tests/palace_guard.test.ts, tests/princess.test.ts):
-//   1. the switch is off, and nothing of the game imports them;
+//   1. the switch is off, and only the knights' own files of the game import them (game/act1_rules/kknight.ts, their
+//      pictures art/act1_figs/kknight.ts and effects render/act1_fx/kknight.ts: the main chat's, built 31 Oct);
 //   2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), both blows, their setting off and stopping:
 //      every frame, from in front and from behind, and every handover;
 //   3. HIS LIGHTNING STRIKES: each blow strikes in two frames and lands on the second; the strike's frames and the one
@@ -128,7 +129,7 @@ const smearIn = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and only the knights\' own files of the game import them', () => {
   assert.equal(KNIGHTS_ON.on, false, 'KNIGHTS_ON is off');
   const users: string[] = [];
   const theirs = /^art\/kings_knights(_moves|_fx)?$/;
@@ -141,7 +142,7 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/kknight.ts game/act1_rules/kknight.ts render/act1_fx/kknight.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

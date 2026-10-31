@@ -12,6 +12,7 @@
 import type { RNG } from '../engine/rng';
 import { cityFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
+import { KNIGHT_TUNE } from './act1_rules/kknight';
 import { SWAN } from './act1_rules/swan';
 import { PACK_BY_SIZE, sizeOf } from './defs';
 import type { MonsterKind } from './types';
@@ -98,12 +99,16 @@ function standIn(k: MonsterKind): MonsterKind {
 /** A pack for a floor of the Hush: its kind, and how many. A lair's is its guardian's: one big one and its own. */
 export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'champion'): { kind: MonsterKind; size: number } {
   const n = cityFloor(depth) || 11;
-  if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: rng.int(3, 4) };
+  // (THE HIGH CITY, FLOOR 19: the king's knights come one at a time, his pick to the art chat, “Huge and slow, one each”; their
+  // lair, the barracks, two: game/act1_rules/kknight.ts KNIGHT_TUNE)
+  const knight = (k: MonsterKind): boolean => k === 'kknight' && act2Ready('kknight');
+  if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: knight(ACT2_GUARD[n]) ? KNIGHT_TUNE.lair : rng.int(3, 4) };
   const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)));
   const pick = rng.weighted(list, (m) => m.weight);
   const kind = standIn(pick.kind);
   // (THE HIGH CITY, FLOOR 16: the swans come in flocks, his “Knee-high, in flocks”: a pack of them bigger than another small
   // kind's, SWAN.flock, game/act1_rules/swan.ts)
+  if (knight(kind)) return { kind, size: KNIGHT_TUNE.pack };
   const [lo, hi] = kind === 'swan' ? SWAN.flock : PACK_BY_SIZE[sizeOf(kind)];
   return { kind, size: rng.int(lo, hi) };
 }

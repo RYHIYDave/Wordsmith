@@ -418,8 +418,9 @@ export const RULES: Act1Rules | null = {
       h.b = HUSH_MOVE.stand;
       if (h.done) g.hero.held = 0;
     }
-    // (his crown, if it hangs over the hero still, falls away harmless)
-    g.perils = g.perils.filter((q) => q.a1 !== 'gking:weight');
+    // (his crown, if it hangs over the hero still, falls away harmless; the Hush's fog lifts)
+    g.perils = g.perils.filter((q) => q.a1 !== 'gking:weight' && q.a1 !== 'gking:fog');
+    g.hero.slowT = 0;
     // (the clockwork songbird before his throne winds itself up and sings)
     const L = g.level;
     const piece = brokenBird(L);

@@ -814,14 +814,18 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
     const r = q.r;
     hang(KP_PIECE.banner, r, 1);
     hang(KP_PIECE.torch, r, 1, 3);
-    // (the bed against the far wall, toward its middle, where it and the cushion beside it are free)
+    // (the bed against the far wall, toward its middle, where it and the cushion beside it are free: the wall at the room's top
+    // first, then the one at its foot, wherever its doorway leaves room)
     const cx = Math.floor((r[0] + r[2]) / 2);
-    const by = r[1] + 1;
     let bed: [number, number] | null = null;
-    for (const [d, e] of Array.from({ length: r[2] - r[0] }, (_, k) => (k % 2 ? -1 : 1) * Math.ceil(k / 2)).flatMap((d) => [[d, 0], [d, 1]] as [number, number][]).sort((a, b) => a[1] - b[1])) {
-      if (!free(cx + d, by + e) || !free(cx + d + 2, by + e)) continue;
-      bed = [cx + d, by + e];
-      break;
+    const across = Array.from({ length: r[2] - r[0] }, (_, k) => (k % 2 ? -1 : 1) * Math.ceil(k / 2));
+    for (const by of [r[1] + 1, r[1] + 2, r[3] - 2, r[3] - 3]) {
+      for (const d of across) {
+        if (!free(cx + d, by) || !free(cx + d + 2, by)) continue;
+        bed = [cx + d, by];
+        break;
+      }
+      if (bed) break;
     }
     if (bed) {
       put(KP_PIECE.bed, bed[0], bed[1], true);

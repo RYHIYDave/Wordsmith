@@ -4,20 +4,21 @@
 //   node tools/playtest.mjs --file <page> --size 1280x720 --scenario tools/scenarios/high19_king.mjs --out shots/h19k/k
 const FPS = 30;
 const PARTS = [
-  [0, 'THE KING', 'Slow and heavy, every blow across the hall: the sweep, the Decree, the Crown, the Curtains.'],
+  [0, 'THE KING', 'Slow and heavy: his charge and its line of sparks, the Decree, the crown\'s weight, the Curtains.'],
   [18, 'HIS SECOND PHASE', 'His waits shorter.'],
-  [34, 'THE HUSH CLIMBS OFF', 'At a third of his life it climbs off him and stands at his side.'],
+  [34, 'THE HUSH CLIMBS OFF', 'Then it fights beside him: it grabs you and drags you to him, shields him, breathes grey fog.'],
   [52, 'HE FALLS', 'The Hush unwinds; his clockwork songbird winds itself up and sings.'],
 ];
 export default async function (page, snap) {
   const stills = process.env.STILLS !== '0';
   const seconds = Number(process.env.SECONDS || 60);
-  await page.evaluate(() => {
+  const process_calls = process.env.CALLS !== '0';
+  await page.evaluate((process_calls) => {
     const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
-    d.run('warrior', 7); d.seasoned(24); d.autoLevel = false; d.autoWords = false; d.god = true; d.floorNames(false);
+    d.run('warrior', 7); d.seasoned(24); d.autoLevel = false; d.autoWords = false; d.god = true; d.floorNames(false); if (process_calls) d.calls(true);
     d.high(true, 19);
     if (d.fx && d.fx.messages) d.fx.messages.length = 0;
-  });
+  }, process_calls);
   await page.waitForTimeout(2500);
   const info = await page.evaluate(() => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;
@@ -49,8 +50,10 @@ export default async function (page, snap) {
     await page.evaluate(([slow, s]) => {
       const d = window.__dbg; const g = d.game(); const h = g.hero;
       const m = g.monsters.find((q) => q.kind === 'gking' && !q.dead);
-      if (m) {
-        const a = 1.2 + s * 0.35;
+      // (held by the Hush's arms, he goes where he is dragged; after, he takes up his way round the King from where he is)
+      if (m && (h.held ?? 0) > 0) { window.__ang = Math.atan2(h.y - m.y, h.x - m.x) - s * 0.35; }
+      else if (m) {
+        const a = (window.__ang ?? 1.2) + s * 0.35;
         const x = m.x + Math.cos(a) * 4.6;
         const y = m.y + Math.sin(a) * 4.6;
         if (g.isOpen(x, y)) { h.x = x; h.y = y; }
