@@ -17,10 +17,10 @@
 //   THE WIDE SWEEP (his first blow, his attack): the greatsword plucked up in both hands and hauled round behind him to
 //     his right, his body wound right round after it, the blade glinting pink, held shaking (THE WARNING); his hips first,
 //     then in two frames the blade sweeps across the whole half-circle before him, smeared, and its sweep tears across the
-//     floor three tiles out (art/kings_knights_fx.ts); carried on round to his left, held, brought back and planted.
+//     floor three and a half tiles out (art/kings_knights_fx.ts); carried on round to his left, held, brought back and planted.
 //   THE OVERHEAD CLEAVE (his second, `more.cleave`): the greatsword heaved up high over his helm in both hands, stepping
 //     in, arched back, held shaking (THE WARNING); hips first, then in two frames down into the floor before him
-//     (smeared); the floor cracks open in a line five tiles out (art/kings_knights_fx.ts); held; wrenched out; planted.
+//     (smeared); the floor cracks open in a line six tiles out (art/kings_knights_fx.ts); held; wrenched out; planted.
 //   STRUCK: jolted back on his sword, the helm rocked back, the Hush coughed out of the sight.
 //   HIS DEATH (the brief's): struck, he sinks onto his right knee behind his planted sword, both hands on its grip, and
 //     bows his head over them; the Hush leaves him in one great grey breath, the pink going out of the sight; his hands
@@ -35,7 +35,7 @@ import { footwork, kneelHips, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
 import { FLAME } from './mkit';
-import { KNIGHT_BODY, KN_CANVAS, SWORD, knightPainter, swordOf } from './kings_knights';
+import { KNIGHT_BODY, KN_CANVAS, KN_FIRST, KN_GROW, SWORD, firstOf, knightPainter, swordOf } from './kings_knights';
 import type { KnightSay } from './kings_knights';
 import { TILE3, mobSet } from './new_mobs3';
 import type { Mob, MobMove, Moment } from './new_mobs3';
@@ -43,7 +43,20 @@ import { add, dot, elbowFor, heading, lerp3, mul, norm, solve, standing, sub } f
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 type P = Partial<Bones>;
-const B = KNIGHT_BODY;
+// BIGGER STILL (his word on the first pass): every move is drawn in the first pass's lengths, on its body (`KN_FIRST`, 74
+// tall), and grown to his (`KNIGHT_BODY`, 87 tall) as the game is given it (`grownPose`): every length alike, so each
+// pose is the same pose, only bigger. His pace and his blows' reach are in tiles, as the game has them.
+const B = KN_FIRST;
+const G = KN_GROW;
+/** The sword in the first pass's lengths. */
+const SW = { cross: SWORD.cross / G, blade: SWORD.blade / G, lower: SWORD.lower / G } as const;
+const LENGTHS = ['px', 'py', 'pz', 'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'rhz', 'lfx', 'lfy', 'lfz', 'rfx', 'rfy', 'rfz'] as const;
+/** A pose in the first pass's lengths, grown to his: every length in it alike (its angles as they are). */
+function grownPose<T extends P>(q: T): T {
+  const o = { ...q } as Record<string, unknown>;
+  for (const f of LENGTHS) if (typeof o[f] === 'number') o[f] = (o[f] as number) * G;
+  return o as T;
+}
 const FPS = 30;
 const FR = 1 / FPS;
 const D = Math.PI / 180;
@@ -151,7 +164,7 @@ function motionOf(plan: Plan): Motion {
   const f = poseFn(plan);
   const keys: Key3[] = [];
   const n = Math.round(plan.long * FPS);
-  for (let i = 0; i <= n; i++) keys.push({ at: i / FPS, pose: f(i / FPS), ease: 'lin' });
+  for (let i = 0; i <= n; i++) keys.push({ at: i / FPS, pose: grownPose(f(i / FPS)), ease: 'lin' });
   return plan.hit !== undefined ? { keys, hit: plan.hit } : { keys };
 }
 /** Where a hand is, measured from its own shoulder along the figure's axes (`lhIn`, `rhIn` 1), in a pose. */
@@ -172,11 +185,13 @@ const beforeChest = (h: number, x: number, y: number, z: number): V3 => [x * Mat
 // =============================================================================================
 // HIS PACE (his pick, “Huge and slow, one each”): a heavy walk, slower than anything the hero meets on two legs
 
-/** His walking pace, tiles a second (the hero runs 4.6: TUNE.heroSpeed). */
-export const KN_PACE = 1.2;
+/** His walking pace, tiles a second (the hero runs 4.6: TUNE.heroSpeed): a little quicker than the first pass's 1.2, for his longer legs. */
+export const KN_PACE = 1.3;
 export const KN_WALK = { frames: 36, fps: 30 } as const;
+/** How far the floor goes by under him in a second, his own lengths (the game's). */
 const GROUND = KN_PACE * TILE3;
-const STEP = GROUND / KN_WALK.fps;
+/** How far a foot down goes back under him in a frame, in the first pass's lengths (grown, the floor's own: feet grip). */
+const STEP = GROUND / G / KN_WALK.fps;
 /** How many frames each foot is flat on the floor in a stride of 36 (both down four frames of each stride). */
 const DOWN = 20;
 /** Where a foot comes down before him (its ankle: forward of where it stands), set so that he sets off and stops in nine frames from feet side by side. */
@@ -186,23 +201,27 @@ const TURN = 8;
 // =============================================================================================
 // HIS REST: HIS GREATSWORD PLANTED BEFORE HIM, BOTH HANDS ON ITS GRIP
 
-/** Where his sword's point rests on the floor as he stands, and how far from upright it leans (degrees, its hilt toward him). */
-export const SWORD_PLANTED: V3 = [34, -1.0, 0.6];
+/** Where his sword's point rests on the floor as he stands (the first pass's lengths: grown, 0.6 off the floor), and how far from upright it leans (degrees, its hilt toward him). */
+const PLANTED0: V3 = [34, -1.0, 0.6 / G];
+/** Where his sword's point rests on the floor as he stands, his own lengths. */
+export const SWORD_PLANTED: V3 = mul(PLANTED0, G);
 const PLANT_EL = -72;
 const PLANT_WAY = heading(0, PLANT_EL);
 /** His right fist on the grip under the cross, the sword's point on the floor. */
-const PLANT_HAND = sub(SWORD_PLANTED, mul(PLANT_WAY, SWORD.cross + SWORD.blade));
+const PLANT_HAND = sub(PLANTED0, mul(PLANT_WAY, SW.cross + SW.blade));
 const BASE0: Bones = {
   ...standing(B),
   pz: -0.4, pitch: 2, bend: 2, roll: 0, side: 0, faceUp: -2, faceTilt: 0, faceTurn: 0,
   lfx: 0.8, lfy: 2.0, lfz: 0, lfp: 0, lft: TURN, lk: 8, rfx: 0.8, rfy: -2.0, rfz: 0, rfp: 0, rft: -TURN, rk: -8,
   rhIn: 2, rhx: PLANT_HAND[0], rhy: PLANT_HAND[1], rhz: PLANT_HAND[2], wAz: 0, wEl: PLANT_EL, wRoll: 0,
-  lhIn: 3, lhx: SWORD.lower, lhy: 0, lhz: 0,
+  lhIn: 3, lhx: SW.lower, lhy: 0, lhz: 0,
   out: 0,
 } as Bones;
 const LE0 = elbowFor(B, BASE0 as Posed, true, norm([-0.3, 1, -0.6]));
-export const KN_REST: Bones = { ...BASE0, le: LE0, re: elbowFor(B, { ...BASE0, le: LE0 } as Posed, false, norm([-0.3, -1, -0.6])) };
-const R = KN_REST;
+/** His rest in the first pass's lengths. */
+const R: Bones = { ...BASE0, le: LE0, re: elbowFor(B, { ...BASE0, le: LE0 } as Posed, false, norm([-0.3, -1, -0.6])) };
+/** HIS REST, as he is. */
+export const KN_REST: Bones = grownPose(R);
 const L0 = plantOf(B, 'L', {}, R);
 const R0 = plantOf(B, 'R', {}, R);
 /** His rest with his left hand measured from its shoulder (for a move that lets go of the grip). */
@@ -223,7 +242,7 @@ function knightStand(): Motion {
     keys.push({
       at: t,
       ease: 'lin',
-      pose: {
+      pose: grownPose({
         pz: R.pz + 0.9 * breath,
         py: 1.0 * Math.sin(a),
         roll: R.roll + 1.6 * Math.sin(a),
@@ -232,7 +251,7 @@ function knightStand(): Motion {
         faceUp: R.faceUp + 2 * Math.sin(a + 0.4),
         faceTilt: R.faceTilt + 2 * Math.sin(a + 2.0),
         faceTurn: R.faceTurn + 6 * Math.sin(a * 0.5 + 0.8),
-      },
+      }),
     });
   }
   return { loop: 0, keys };
@@ -301,7 +320,7 @@ function walkPose(f: number): Bones {
 const WALK_POSES: Bones[] = Array.from({ length: KN_WALK.frames }, (_, f) => walkPose(f));
 function knightWalk(): Motion {
   const keys: Key3[] = [];
-  for (let i = 0; i <= KN_WALK.frames; i++) keys.push({ at: i / KN_WALK.fps, ease: 'lin', pose: WALK_POSES[i % KN_WALK.frames] });
+  for (let i = 0; i <= KN_WALK.frames; i++) keys.push({ at: i / KN_WALK.fps, ease: 'lin', pose: grownPose(WALK_POSES[i % KN_WALK.frames]) });
   return { keys, loop: 0 };
 }
 const WALK0 = WALK_POSES[0];
@@ -428,11 +447,11 @@ function sweepPlan(): Plan {
 // THE OVERHEAD CLEAVE (his second blow): heaved high in both hands, held; over and down in two frames; the floor cracks
 
 export const KN_CLEAVE = { long: 2.3, warn: [0.6, 1.0] as const, strike: [32 / FPS, 34 / FPS] as const, hit: 34 / FPS } as const;
-/** His fists as the blow lands, and the blade's way then: its point down on the floor before him. */
+/** His fists as the blow lands (the first pass's lengths), and the blade's way then: its point down on the floor before him (grown, 1.4 off it). */
 const CLEAVE_HAND: V3 = [31.0, -1.6, 29.0];
-const CLEAVE_EL = Math.asin((1.4 - CLEAVE_HAND[2]) / (SWORD.cross + SWORD.blade)) / D;
-/** Where the blade bites the floor (its point; the figure's own lengths before him): the crack runs on from here (art/kings_knights_fx.ts). */
-export const CHOP_AT = CLEAVE_HAND[0] + (SWORD.cross + SWORD.blade) * Math.cos(CLEAVE_EL * D);
+const CLEAVE_EL = Math.asin((1.4 / G - CLEAVE_HAND[2]) / (SW.cross + SW.blade)) / D;
+/** Where the blade bites the floor (its point; his own lengths before him): the crack runs on from here (art/kings_knights_fx.ts). */
+export const CHOP_AT = G * (CLEAVE_HAND[0] + (SW.cross + SW.blade) * Math.cos(CLEAVE_EL * D));
 function cleavePlan(): Plan {
   const [w0, w1] = KN_CLEAVE.warn;
   const [s0, s1] = KN_CLEAVE.strike;
@@ -505,16 +524,18 @@ function reelPlan(): Plan {
 
 export const KN_DIES = { long: 3.6, knee: 0.7, planted: 0.62, bow: [1.0, 1.3] as const, out: [1.2, 1.8] as const, slip: 2.5, drop: 2.5, fold: 2.8, down: 3.2 } as const;
 const TUCK = 56;
-/** How high his knee stands off the floor as he kneels on it: its thick cop. */
-export const KNEE_DOWN = B.legR[1] * 1.3 + 2.0;
+/** How high his knee stands off the floor as he kneels on it: its thick cop (the first pass's lengths). */
+const KNEE_DOWN0 = B.legR[1] * 1.3 + 2.0;
+/** How high his knee stands off the floor as he kneels on it, his own lengths. */
+export const KNEE_DOWN = KNEE_DOWN0 * G;
 const KNEEL_R: Plant = plantBy(R0, -23.0, 0.5, 0);
 const KNEEL_L: Plant = plantBy(L0, 2.0, -0.4, 2);
 const DOWN_L: Plant = plantBy(L0, KNEEL_R.at[0] - L0.at[0], -0.5, 0);
 const mirrorR = (p: Plant): Plant => ({ ...p, at: [p.at[0], -p.at[1]], turn: -p.turn });
 function oneKnee(lean: number, body: P): P {
-  return { ...kneelHips(B, R, { L: mirrorR(KNEEL_R), R: KNEEL_R }, TUCK, KNEE_DOWN, lean), lk: 0, lkUp: 70, ...body };
+  return { ...kneelHips(B, R, { L: mirrorR(KNEEL_R), R: KNEEL_R }, TUCK, KNEE_DOWN0, lean), lk: 0, lkUp: 70, ...body };
 }
-const bothKnees = (lean: number, body: P): P => ({ ...kneelHips(B, R, { L: DOWN_L, R: KNEEL_R }, TUCK, KNEE_DOWN, lean), ...body });
+const bothKnees = (lean: number, body: P): P => ({ ...kneelHips(B, R, { L: DOWN_L, R: KNEEL_R }, TUCK, KNEE_DOWN0, lean), ...body });
 /** His arms flung out on the floor as he falls: each hand `back` behind its shoulder (before it, if less than nothing) and `out` to its side (from the floor's axes). */
 function limp(body: P, back: number, out: number): P {
   const s = solve(B, { ...R, ...body, lhIn: 0, rhIn: 0 } as Posed);
@@ -527,9 +548,9 @@ function limp(body: P, back: number, out: number): P {
 }
 const lifted = (p: P, dz: number): P => ({ ...p, pz: (p.pz as number) + dz });
 /** Where he plants his sword as he kneels: further before him than he stands it, leaning to him. */
-const KNEEL_SWORD: V3 = [48, -1.6, 0.6];
+const KNEEL_SWORD: V3 = [48, -1.6, 0.6 / G];
 const KNEEL_EL = -58;
-const KNEEL_HAND = sub(KNEEL_SWORD, mul(heading(0, KNEEL_EL), SWORD.cross + SWORD.blade));
+const KNEEL_HAND = sub(KNEEL_SWORD, mul(heading(0, KNEEL_EL), SW.cross + SW.blade));
 /** His feet through his death: the right back onto its knee, the left a little forward; then the left knee down beside it. */
 const DIE_FEET = footwork(B, {
   L: { start: L0, moves: [{ t0: 0.22, t1: 0.46, to: KNEEL_L, lift: 3.0 }, { t0: KN_DIES.slip + 0.08, t1: KN_DIES.fold, to: { ...DOWN_L, pitch: TUCK }, lift: 2.0 }] },
@@ -594,7 +615,7 @@ function dyingMotion(): Motion {
   const n = Math.round(KN_DIES.long * FPS);
   for (let i = 0; i <= n; i++) {
     const t = i / FPS;
-    keys.push({ at: t, pose: t < KN_DIES.slip - 1e-6 ? a(t) : b(t), ease: 'lin' });
+    keys.push({ at: t, pose: grownPose(t < KN_DIES.slip - 1e-6 ? a(t) : b(t)), ease: 'lin' });
   }
   return { keys };
 }
@@ -622,7 +643,7 @@ export const KN_NAMES = {
 const byName: Record<string, string> = Object.fromEntries(Object.entries(KN_NAMES).map(([k, v]) => [v, k]));
 const PLANS: Record<string, Plan> = { attack: sweepPlan(), cleave: cleavePlan(), setOff: setOffPlan(), halt: haltPlan(), reel: reelPlan() };
 const POSES: Record<string, (t: number) => Bones> = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, poseFn(p)]));
-const bonesOf = (move: string, t: number): Skeleton => solve(B, POSES[move](Math.max(0, Math.min(PLANS[move].long, t))) as Posed);
+const bonesOf = (move: string, t: number): Skeleton => solve(KNIGHT_BODY, grownPose(POSES[move](Math.max(0, Math.min(PLANS[move].long, t)))) as Posed);
 /** THE SMEAR: after-images of the blade, root to point, at moments along the way it has come (the sweep's fanned round the half-circle, the cleave's over the top and down). */
 function smearOf(move: string, t: number): V3[][] | null {
   if (!smearedAt(move, t)) return null;
@@ -664,12 +685,12 @@ const SAY: KnightSay = {
 
 function knightMob(): Mob {
   const paint = knightPainter(SAY);
-  const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: R, ...more });
+  const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: KN_REST, ...more });
   return {
     id: 'kings-knight',
     name: 'A king’s knight',
-    size: 'large: a head and a half taller than the knight, one at a time',
-    build: B,
+    size: 'huge: half as tall again as the knight, one at a time',
+    build: KNIGHT_BODY,
     stand: mv(KN_NAMES.stand, knightStand()),
     attack: mv(KN_NAMES.attack, motionOf(PLANS.attack), { glint: glow(KN_SWEEP.warn) }),
     more: {
@@ -689,15 +710,15 @@ function knightMob(): Mob {
     warn: KN_SWEEP.warn[1] - KN_SWEEP.warn[0],
     dieTime: KN_DIES.long,
     dying: mv(KN_NAMES.dying, dyingMotion()),
-    aura: { x: KN_CANVAS.ax, y: KN_CANVAS.ay - 52, r: 52, color: '#8c90b8', a: 0.06 },
-    shadow: 19,
+    aura: { x: KN_CANVAS.ax, y: KN_CANVAS.ay - Math.round(52 * G), r: Math.round(52 * G), color: '#8c90b8', a: 0.06 },
+    shadow: Math.round(19 * G),
     canvas: KN_CANVAS,
     trueBack: true,
     bits: paint.bits,
     grains: paint.grains,
     // (his sword falls from his hands as they slip and topples to the floor at his right)
     fall(piece) {
-      if (piece === 'sword') return { from: KN_DIES.drop, to: [-6, -50], spin: -8, lay: 'axis', hop: 1.4 };
+      if (piece === 'sword') return { from: KN_DIES.drop, to: [-6 * G, -50 * G], spin: -8, lay: 'axis', hop: 1.4 };
       return null;
     },
   };
@@ -711,7 +732,15 @@ export function makeKnightArt3(mob: Mob = KINGS_KNIGHT, pace = mob.pace): ActorA
 // HIM AS THE CHECKS SEE HIM (art/boss_checks.ts)
 
 const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
-export function knightSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } {
+/** His solids as the checks see them: worked out in the first pass's lengths and grown to his. */
+export function knightSolids(sk: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } {
+  const { limbs, lumps } = firstSolids(firstOf(sk));
+  return {
+    limbs: limbs.map((l) => ({ ...l, a: mul(l.a, G), b: mul(l.b, G), r: l.r * G })),
+    lumps: lumps.map((l) => ({ ...l, c: mul(l.c, G), h: mul(l.h, G) })),
+  };
+}
+function firstSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } {
   const [rH, rK, rA] = B.legR;
   const [r0, r1] = B.armR;
   const limbs: CheckLimb[] = [];
@@ -744,8 +773,8 @@ function knightThings(move: string, t: number, s: Skeleton, q: Posed): CheckThin
     // (the grip is held where a hand is on it: the right fist, and the left on it too)
     const ab = sub(w.cross, w.pommel);
     const kL = clamp01(dot(sub(s.handL, w.pommel), ab) / Math.max(1e-6, dot(ab, ab)));
-    const onHilt = len3(sub(s.handL, add(w.pommel, mul(ab, kL)))) < 1.0 + B.armR[2] * 1.2 + 2.6;
-    out.push({ name: 'sword hilt', pts: [w.pommel, w.cross], r: 1.0, may: q.lhIn === 3 || onHilt ? ['foreR', 'foreL'] : ['foreR'] }, { name: 'sword', pts: blade, r: 0.9, may: [] });
+    const onHilt = len3(sub(s.handL, add(w.pommel, mul(ab, kL)))) < G * (1.0 + B.armR[2] * 1.2 + 2.6);
+    out.push({ name: 'sword hilt', pts: [w.pommel, w.cross], r: 1.0 * G, may: q.lhIn === 3 || onHilt ? ['foreR', 'foreL'] : ['foreR'] }, { name: 'sword', pts: blade, r: 0.9 * G, may: [] });
   }
   return out;
 }

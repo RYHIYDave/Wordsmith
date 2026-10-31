@@ -19,7 +19,7 @@ import { makeHeroArt3 } from '../src/art/heroes3';
 import { toSprite } from '../src/art/kit';
 import { canvasOf, deathOfMob, paintMob } from '../src/art/new_mobs3';
 import type { GameView } from '../src/art/skin';
-import { KN_CANVAS } from '../src/art/kings_knights';
+import { KN_CANVAS, KN_GROW } from '../src/art/kings_knights';
 import { KINGS_KNIGHT, KN_CLEAVE, KN_HALT, KN_PACE, KN_REEL, KN_SWEEP, KN_WALK, KN_SETOFF, KN_DIES } from '../src/art/kings_knights_moves';
 import { CRACK, CRACK_CANVAS, SWEEP, SWEEP_CANVAS, crackPainted, sweepPainted } from '../src/art/kings_knights_fx';
 import { TILE3 } from '../src/art/new_mobs3';
@@ -34,7 +34,8 @@ const [out = 'kings_knights_film.mp4', stills = ''] = process.argv.slice(2);
 const W = 1200;
 const H = 720;
 const BAR = 78;
-const Z = 2;
+/** How many times as big as the game the picture is shown (twice, but for the close look at the swan on his back). */
+let Z = 2;
 const FPS = 30;
 const HERO_PACE = 4.6;
 
@@ -47,13 +48,15 @@ const ORIGIN: Record<GameView, [number, number]> = { front: [200, BAR + 150], ba
 function aim(view: GameView, u0: number, u1: number): void {
   const mid = (u0 + u1) / 2;
   const span = Math.abs(u1 - u0) * 16 * Z;
-  const yMid = Math.min(H - 24 - span / 2, BAR + 8 + 170 + span / 2 + Math.max(0, (H - BAR - 8 - 170 - 24 - 2 * span) / 2));
+  // (room over the way for him, his greatsword raised high over him at the most)
+  const room = 150 * Z;
+  const yMid = Math.min(H - 24 - span / 2, BAR + 8 + room + span / 2 + Math.max(0, (H - BAR - 8 - room - 24 - 2 * span) / 2));
   const ox = Math.round(W / 2 - 32 * Z * mid);
   ORIGIN[view] = view === 'front' ? [ox, Math.round(yMid - 16 * Z * mid)] : [ox, Math.round(yMid + 16 * Z * mid)];
 }
 function floorOf(view: GameView): Uint8ClampedArray {
   const [ox, oy] = ORIGIN[view];
-  const key = `${view}:${ox}:${oy}`;
+  const key = `${view}:${ox}:${oy}:${Z}`;
   if (floors[key]) return floors[key];
   const w = Math.ceil(W / Z);
   const h = Math.ceil((H - BAR) / Z);
@@ -131,7 +134,7 @@ const can = canvasOf(MOB);
 function knightAt(view: GameView, move: string, t: number, u: number, v = 0): void {
   const p = move === 'dying' ? deathOfMob(MOB, Math.min(1, t / MOB.dieTime), view) : paintMob(MOB, move, t, view);
   const [X, Y] = screen(view, u, v);
-  if (move !== 'dying' || t < KN_DIES.fold) shadow(X, Y, 21 * Z);
+  if (move !== 'dying' || t < KN_DIES.fold) shadow(X, Y, Math.round(21 * KN_GROW) * Z);
   lay(p.px, can.ax, can.ay, X, Y);
 }
 const hero = makeHeroArt3().of('warrior', { twoHanded: false });
@@ -156,6 +159,8 @@ interface Shot {
   say: string;
   frames: number;
   paint: (i: number) => void;
+  /** Shown this many times as big as the game (2 if not said). */
+  zoom?: number;
 }
 const shots: Shot[] = [];
 const hold = (n: number, f: (i: number) => void): ((i: number) => void) => (i) => f(Math.min(i, n - 1));
@@ -166,7 +171,26 @@ function partOf(view: GameView, label: string): void {
   const walkLong = 2 * (KN_WALK.frames / KN_WALK.fps);
   const START = -1.8;
   const STOP = START + KN_PACE * (KN_SETOFF + walkLong + KN_HALT);
-  const HERO = STOP + 2.4;
+  const HERO = STOP + 2.8;
+  // THE ROYAL SWAN ON HIS BACK, close (from behind)
+  if (view === 'back') {
+    shots.push({
+      title: `${label} · THE ROYAL SWAN ON HIS BACK`,
+      say: 'The same swan as on his breast, big, in old gold on the back of his surcoat; it turns and sways with the cloth.',
+      frames: 66,
+      zoom: 4,
+      paint: (i) => {
+        // (standing, then setting off away from the eye)
+        const t = i / FPS;
+        clear(view, START - 1.0, START + 1.4);
+        const go = t - 1.0;
+        const u = START + KN_PACE * Math.max(0, go);
+        if (go < 0) knightAt(view, 'stand', t, START);
+        else if (go < KN_SETOFF) knightAt(view, 'setOff', go, u);
+        else knightAt(view, 'walk', go - KN_SETOFF, u);
+      },
+    });
+  }
   // STANDING
   shots.push({
     title: `${label} · STANDING GUARD`,
@@ -182,7 +206,7 @@ function partOf(view: GameView, label: string): void {
   const nWalk = Math.round((KN_SETOFF + walkLong + KN_HALT) * FPS) + 9;
   shots.push({
     title: `${label} · HUGE AND SLOW: THE WALK`,
-    say: `He plucks up the greatsword and lets it trail; walks ${KN_PACE} tiles a second (the hero runs ${HERO_PACE}), each step landing with his weight; plants it again.`,
+    say: `He plucks up the greatsword; walks ${KN_PACE} tiles a second (the hero runs ${HERO_PACE}), each step landing with his weight; plants it again.`,
     frames: nWalk,
     paint: (i) => {
       clear(view, START, HERO);
@@ -239,8 +263,8 @@ function partOf(view: GameView, label: string): void {
     say: 'Jolted back on his sword, the helm rocked back, the Hush coughed out of the sight.',
     frames: 30,
     paint: (i) => {
-      clear(view, STOP - 1, STOP + 4.0);
-      heroAt(view, STOP + 2.9, 0, null);
+      clear(view, STOP - 1, STOP + 4.4);
+      heroAt(view, STOP + 3.4, 0, null);
       const t = (i % 15) / FPS;
       knightAt(view, t < KN_REEL ? 'reel' : 'stand', t < KN_REEL ? t : 0, STOP);
     },
@@ -251,8 +275,8 @@ function partOf(view: GameView, label: string): void {
     say: 'To his knee behind his planted sword, head bowed; the Hush leaves him in a grey breath; the sword falls; he topples.',
     frames: Math.round((KN_DIES.long + 0.5) * FPS),
     paint: hold(Math.round(KN_DIES.long * FPS) + 1, (i) => {
-      clear(view, STOP - 1, STOP + 4.0);
-      heroAt(view, STOP + 2.9, 0, null);
+      clear(view, STOP - 1, STOP + 4.4);
+      heroAt(view, STOP + 3.4, 0, null);
       knightAt(view, 'dying', i / FPS, STOP);
     }),
   });
@@ -261,7 +285,7 @@ function partOf(view: GameView, label: string): void {
 // the title
 shots.push({
   title: 'FLOOR 19, THE KEEP · THE KING’S KNIGHTS (one at a time, two blows)',
-  say: 'His pick: “Huge and slow, one each”. A head and a half taller than the knight; a greatsword; royal blue and old gold.',
+  say: 'His pick: “Huge and slow, one each”. Second pass: half as tall again as the knight, broader alike; the swan on his back too.',
   frames: 54,
   paint: (i) => {
     clear('front', -1, 3);
@@ -327,6 +351,7 @@ function png(file: string): void {
 (async () => {
   let n = 0;
   for (const [si, s] of shots.entries()) {
+    Z = s.zoom ?? 2;
     for (let i = 0; i < s.frames; i++) {
       s.paint(i);
       if (stills && (i === Math.floor(s.frames / 2) || i % 12 === 0)) png(path.join(stills, `s${String(si).padStart(2, '0')}_${String(i).padStart(3, '0')}.png`));

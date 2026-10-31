@@ -13,15 +13,20 @@
 // “Huge and slow, one each”, offered as "Fewer and much bigger: one or two at a time, a head and a half taller than you,
 // a huge two-handed sword, slow, wide sweeping blows." It replaces “Quick for their armour”.
 //
-// WHO THEY ARE NOW: the old king's knights, a head and a half taller than the knight and far broader (massive layered
+// HIS WORD ON THE FIRST PASS (30 Oct): “Bigger still” (offered as "even taller and broader, still well short of the
+// King"), and of the royal swan, “Also on his back” (offered as "a big swan on the back of his surcoat, so you see it
+// from behind too"). So the second pass: every length of him half as big again as the knight's (87 tall to the knight's
+// 58; the first pass 74, grown alike all over: `KN_GROW`), and the swan on his back as well as his breast.
+//
+// WHO THEY ARE NOW: the old king's knights, half as tall again as the knight and far broader (massive layered
 // pauldrons, a deep chest, thick legs), in old heavy plate: a GREAT HELM, a flat-topped barrel of steel with a flat face
 // plate, a cross of old gold over its face (the sight's slits either side of its upright, its brow band across), its
 // breaths pierced on the right cheek, the dull pink of the Hushed in the dark of the sight, and on its crown A SMALL
 // CIRCLET OF OLD GOLD (the king's own crown, “his golden crown”, the book's); couters and poleyns with their fans,
 // gauntlets, greaves, pointed sabatons. Over the plate A SURCOAT OF ROYAL BLUE to the knee, split before and behind,
-// bordered in old gold, the royal swan in gold on its breast (his pick for the King's mark, “Keep the royal swan”); a
-// sword belt with a gold buckle. NO SHIELD: A GREATSWORD in both hands, as long as the knight is tall, its long grip
-// wound in leather, a broad steel cross with gold ends, a pear pommel of old gold. Cold steel, royal blue, old gold:
+// bordered in old gold, the royal swan in gold on its breast (his pick for the King's mark, “Keep the royal swan”) and a
+// big one on its back; a sword belt with a gold buckle. NO SHIELD: A GREATSWORD in both hands, longer than the knight is
+// tall, its long grip wound in leather, a broad steel cross with gold ends, a pear pommel of old gold. Cold steel, royal blue, old gold:
 // nothing glows but the Hush's dull pink; the royal blue is well clear of the friend's cyan (its hue 226 to 228
 // degrees; cyan is 160 to 205). Alive, not undead. Unlike the King himself (floor 19's boss: twice the knight's height,
 // old and gaunt and bearded, a mantle, the Hush riding his back): younger men, faceless in their helms, no mantle, no
@@ -33,7 +38,7 @@ import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { sphere } from './new_mobs3';
-import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
+import type { Bit, MobCanvas, Moment, Put, Shape } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Stage } from './skin';
 import { add, buildOf, cross, dot, heading, lerp3, mul, norm, sub } from './skeleton';
@@ -61,29 +66,79 @@ const LEATHER: Ramp = ['#1a120e', '#1a120e', '#3e2c20', '#56402e', '#56402e'];
 const MAIL: Ramp = ['#14161c', '#14161c', '#353a46', '#4e5462', '#4e5462'];
 
 // =============================================================================================
-// THE BODY: a head and a half taller than the knight (58 tall, his head about 10), and far broader: his shoulders half as
-// wide again as the knight's, a deep chest, thick limbs
+// THE BODY: half as tall again as the knight (58 tall, his head about 10), and far broader: his shoulders nearly twice
+// as wide as the knight's, a deep chest, thick limbs. BIGGER STILL (his word on the first pass): the first pass stood 74
+// tall; he stands 87, and every length of him grows alike (his plate, his helm, his sword, his steps), so he is massive,
+// not stretched. His look and his moves are drawn in the first pass's lengths (`KN_FIRST`) and grown by `KN_GROW`.
 
-export const KNIGHT_BODY: Build = buildOf(74, 1.15, { shoulders: 1.55, chest: 1.45, depth: 1.3, waist: 1.3, hips: 1.25, arms: 1.08, trunk: 1.0, limbs: 1.4, pad: 1.9 });
-const KB = KNIGHT_BODY;
+const SHAPE = { shoulders: 1.55, chest: 1.45, depth: 1.3, waist: 1.3, hips: 1.25, arms: 1.08, trunk: 1.0, limbs: 1.4 } as const;
+/** How tall he stands (the knight 58; the King 100, his rider to 116). */
+export const KN_TALL = 87;
+/** The first pass's body, 74 tall: what his look and his moves are drawn in. */
+export const KN_FIRST: Build = buildOf(74, 1.15, { ...SHAPE, pad: 1.9 });
+/** How much bigger than the first pass he is, every length alike. */
+export const KN_GROW = KN_TALL / KN_FIRST.tall;
+/** HIS BODY AS HE IS: the first pass's grown by `KN_GROW` (all of it, the padding of what he wears too). */
+export const KNIGHT_BODY: Build = buildOf(KN_TALL, 1.15, { ...SHAPE, pad: 1.9 * KN_GROW });
+const KB = KN_FIRST;
+const G = KN_GROW;
 /** His picture: room for the greatsword raised high over him and brought down before him, and swept round him. */
-export const KN_CANVAS: MobCanvas = { w: 400, h: 340, ax: 200, ay: 236 };
+export const KN_CANVAS: MobCanvas = { w: 470, h: 400, ax: 235, ay: 278 };
+
+/** A skeleton of his as he is, in the first pass's lengths (every place shrunk toward his floor point; every way as it is). */
+export function firstOf(s: Skeleton): Skeleton {
+  const k = 1 / G;
+  return {
+    ...s,
+    pelvis: mul(s.pelvis, k), waist: mul(s.waist, k), ribs: mul(s.ribs, k), neck: mul(s.neck, k), skull: mul(s.skull, k), head: mul(s.head, k),
+    shoulderL: mul(s.shoulderL, k), shoulderR: mul(s.shoulderR, k), elbowL: mul(s.elbowL, k), elbowR: mul(s.elbowR, k), handL: mul(s.handL, k), handR: mul(s.handR, k),
+    hipL: mul(s.hipL, k), hipR: mul(s.hipR, k), kneeL: mul(s.kneeL, k), kneeR: mul(s.kneeR, k), ankleL: mul(s.ankleL, k), ankleR: mul(s.ankleR, k),
+    heelL: mul(s.heelL, k), heelR: mul(s.heelR, k), toeL: mul(s.toeL, k), toeR: mul(s.toeR, k),
+  };
+}
+const up = (p: V3): V3 => mul(p, G);
+const ringUp = (r: Ring): Ring => ({ c: up(r.c), u: up(r.u), v: up(r.v), ...(r.pts ? { pts: r.pts.map(up) } : {}) });
+/** A solid drawn in the first pass's lengths, grown to his. */
+function grown(sh: Shape): Shape {
+  switch (sh.k) {
+    case 'rod': return { ...sh, a: up(sh.a), b: up(sh.b), ra: sh.ra * G, rb: sh.rb * G };
+    case 'ball': return { ...sh, c: up(sh.c), ax: [up(sh.ax[0]), up(sh.ax[1]), up(sh.ax[2])] };
+    case 'cloth': return { ...sh, rings: sh.rings.map(ringUp) };
+    case 'band': return { ...sh, ring: ringUp(sh.ring) };
+    case 'panel': {
+      const skin = sh.skin;
+      return { ...sh, c: up(sh.c), u: up(sh.u), v: up(sh.v), skin: (a: number, b: number, front: boolean, tone: number) => skin(a / G, b / G, front, tone) };
+    }
+    case 'thread': return { ...sh, a: up(sh.a), b: up(sh.b) };
+    case 'dot': case 'mote': return { ...sh, p: up(sh.p) };
+    case 'teeth': return { ...sh, pts: sh.pts.map(up) };
+    case 'glow': return { ...sh, p: up(sh.p), r: sh.r * G };
+    case 'greatsword': return { ...sh, grip: up(sh.grip) };
+  }
+}
 
 // =============================================================================================
-// THE GREATSWORD: as long as the knight is tall; the right fist under the cross, the left on the grip behind it
+// THE GREATSWORD: longer than the knight is tall; the right fist under the cross, the left on the grip behind it
 
-/** From the right fist: the cross before it; the blade's length; the pommel behind it; where the left hand holds the grip (along it toward the pommel). Pommel to point, 58.5 (and the pommel itself): the knight is 58 tall. */
-export const SWORD = { cross: 2.0, blade: 46, pommel: 10.5, lower: -5.6 } as const;
-/** The sword as it is at a moment: the pommel, the cross, the point, the way it points and its flat across; the middle of the blade's edge. */
-export function swordOf(s: Skeleton): { pommel: V3; cross: V3; tip: V3; way: V3; across: V3; mid: V3 } {
+/** In the first pass's lengths, from the right fist: the cross before it; the blade's length; the pommel behind it; where the left hand holds the grip (along it toward the pommel). */
+const SWORD0 = { cross: 2.0, blade: 46, pommel: 10.5, lower: -5.6 } as const;
+/** THE SWORD AS HE HOLDS IT (grown with him): pommel to point 68.8 (and the pommel itself); the knight is 58 tall, the King's own 77. */
+export const SWORD = { cross: SWORD0.cross * G, blade: SWORD0.blade * G, pommel: SWORD0.pommel * G, lower: SWORD0.lower * G } as const;
+type Sw = { readonly cross: number; readonly blade: number; readonly pommel: number };
+function swordAt(s: Skeleton, sw: Sw): { pommel: V3; cross: V3; tip: V3; way: V3; across: V3; mid: V3 } {
   const way = s.point;
   const across = norm(sub(s.across, mul(way, dot(s.across, way))), [0, 1, 0]);
-  const crossAt = add(s.handR, mul(way, SWORD.cross));
-  const tip = add(crossAt, mul(way, SWORD.blade));
-  return { pommel: add(s.handR, mul(way, -SWORD.pommel)), cross: crossAt, tip, way, across, mid: add(crossAt, mul(way, SWORD.blade * 0.62)) };
+  const crossAt = add(s.handR, mul(way, sw.cross));
+  const tip = add(crossAt, mul(way, sw.blade));
+  return { pommel: add(s.handR, mul(way, -sw.pommel)), cross: crossAt, tip, way, across, mid: add(crossAt, mul(way, sw.blade * 0.62)) };
+}
+/** The sword as it is at a moment: the pommel, the cross, the point, the way it points and its flat across; the middle of the blade's edge. */
+export function swordOf(s: Skeleton): { pommel: V3; cross: V3; tip: V3; way: V3; across: V3; mid: V3 } {
+  return swordAt(s, SWORD);
 }
 function sword(put: Put, s: Skeleton, glint: number): void {
-  const w = swordOf(s);
+  const w = swordAt(s, SWORD0);
+  const SWORD = SWORD0;
   const side = norm(cross(w.way, w.across), [0, 0, 1]);
   // the long grip, wound in leather, a steel ring between the hands; the pear pommel, old gold
   put('hilt', 'sword', { k: 'rod', a: add(w.pommel, mul(w.way, 1.2)), b: add(w.cross, mul(w.way, -0.5)), ra: 1.0, rb: 0.9, ramp: LEATHER });
@@ -291,6 +346,94 @@ function charge(put: Put, s: Skeleton): void {
   const c = add(lerp3(s.ribs, s.neck, 0.18), mul(cf, KB.ribDeep + 3.75));
   put('charge', 'charge', { k: 'ball', c, ax: [mul(cf, 1.4), mul(cl, -6.4), mul(cu, 6.4)], skin: (u, tone) => (u[0] > 0.15 && swanIn(u[1], u[2]) ? GOLD[tone >= 2 ? 4 : 3] : null) });
 }
+/**
+ * How big the swan on his back is and where: half its height (the first pass's lengths; the one on his breast 6.4); its
+ * middle, up his back from the surcoat's waist, as the game sees it; and the way it is laid on from: degrees round from
+ * straight behind him toward his right and up over the level (the side the game sees him from behind, and its eye's
+ * height: so it is not seen edge on or squashed).
+ */
+export const BACK_SWAN = { half: 10.6, up: 9.25, round: 22, rise: 30 } as const;
+/**
+ * THE ROYAL SWAN ON HIS BACK (his word on the first pass, “Also on his back”): the same swan as on his breast, seen the
+ * same way round, big, in old gold over the back of the surcoat from just above the belt to his shoulder blades. It is
+ * laid ON the surcoat itself, point by point (as the helm's face is laid on the helm), each point on the cloth's own
+ * curve between its rings, as a stencil laid on from behind him (a little round toward his right): so it wraps round
+ * his back, turns and sways with the cloth, and is hidden wherever anything covers the cloth (his arms, his pauldrons,
+ * his sword). Seen only where the cloth faces the eye.
+ */
+function backCharge(put: Put, st: Stage, s: Skeleton, bands: Ring[]): void {
+  const rings = surcoatRings(s);
+  const [cf, cl, cu] = s.chest;
+  // (where the bands painted on the surcoat itself, its belt and its border, lie over the cloth, as the painter lays them
+  // (art/skin.ts `band`, one row, the half toward the eye): the swan is not laid on them)
+  const over = new Set<number>();
+  for (const r of bands) {
+    for (let i = 0; i < 96; i++) {
+      const a = (i / 96) * Math.PI * 2;
+      const out = up(add(mul(r.u, Math.cos(a)), mul(r.v, Math.sin(a))));
+      const sn = st.seen(out);
+      if (sn[2] < -0.02 * Math.hypot(sn[0], sn[1], sn[2])) continue;
+      const at = add(up(r.c), out);
+      const [x, y] = st.at(at);
+      over.add(Math.round(y - 0.5) * 4096 + Math.round(x - 0.5));
+    }
+  }
+  // (the way it is laid on from, out behind him; and across it, to the right as one looks at it)
+  const from = norm(add(mul(cf, -Math.cos(BACK_SWAN.round * D)), mul(cl, -Math.sin(BACK_SWAN.round * D))), mul(cf, -1));
+  const right = norm(cross(cu, from), mul(cl, -1));
+  // (up his back: the waist's ring, the ribs', the shoulder blades', over the top of his shoulders to the neck's; how far
+  // up each is as seen from where it is laid on from, its eye over the level: the top of his shoulders seen from above)
+  const chain = [rings[1], rings[2], rings[3], rings[4]];
+  const rise = BACK_SWAN.rise * D;
+  const backOf = (r: Ring): V3 => add(r.c, add(mul(r.u, -Math.cos(BACK_SWAN.round * D)), mul(r.v, -Math.sin(BACK_SWAN.round * D))));
+  const hs = [0];
+  for (let i = 1; i < chain.length; i++) {
+    const d = sub(backOf(chain[i]), backOf(chain[i - 1]));
+    hs.push(hs[i - 1] + Math.max(0.5, dot(d, cu) * Math.cos(rise) - dot(d, from) * Math.sin(rise)));
+  }
+  const S = BACK_SWAN.half;
+  const STEP = 0.3;
+  for (let h = BACK_SWAN.up - S; h <= BACK_SWAN.up + S; h += STEP) {
+    let i = 0;
+    while (i < chain.length - 2 && h > hs[i + 1]) i++;
+    const k = clamp01((h - hs[i]) / (hs[i + 1] - hs[i]));
+    const A = chain[i];
+    const Bn = chain[i + 1];
+    const r: Ring = { c: lerp3(A.c, Bn.c, k), u: lerp3(A.u, Bn.u, k), v: lerp3(A.v, Bn.v, k) };
+    const ru = len3(r.u);
+    const rv = len3(r.v);
+    // (across the ring as seen from where it is laid on from: its points at `x` along `right` are where cos(th - al) = x / reach)
+    const ca = dot(r.u, right);
+    const sa = dot(r.v, right);
+    const reach = Math.hypot(ca, sa);
+    const al = Math.atan2(sa, ca);
+    for (let x = -S; x <= S; x += STEP) {
+      // (the swan as on his breast, seen from behind the same way round: its `a` toward the left as one looks at it)
+      const a = -x / S + 0.11;
+      const b = (h - BACK_SWAN.up) / S;
+      if (!swanIn(a, b) || Math.abs(x) > 0.97 * reach) continue;
+      // (of the two points of the ring there, the one toward where it is laid on from)
+      const d = Math.acos(x / reach);
+      let p: V3 = r.c;
+      let th = 0;
+      let best = -Infinity;
+      for (const t of [al + d, al - d]) {
+        const q = add(r.c, add(mul(r.u, Math.cos(t)), mul(r.v, Math.sin(t))));
+        const f = dot(sub(q, r.c), from);
+        if (f > best) {
+          best = f;
+          p = q;
+          th = t;
+        }
+      }
+      const nrm = norm(add(mul(r.u, Math.cos(th) / (ru * ru)), mul(r.v, Math.sin(th) / (rv * rv))), from);
+      const [px, py] = st.at(up(p));
+      if (over.has(Math.round(py - 0.5) * 4096 + Math.round(px - 0.5))) continue;
+      const lit = dot(nrm, st.eye);
+      put('surcoat', 'swan', { k: 'dot', p, c: lit > 0.45 ? GOLD[4] : GOLD[3], facing: nrm });
+    }
+  }
+}
 
 /**
  * THE GREAT HELM: a barrel of steel over the whole head, a little narrower at its flat top; its face a flat plate with a
@@ -393,20 +536,22 @@ export interface KnightSay {
 export const SMEAR = ['#4c5680', '#a4accc', '#eceef8'] as const;
 
 function knightBits(st: Stage, m: Moment, say: KnightSay): Bit[] {
-  const { s, q } = m;
+  // (drawn in the first pass's lengths, every solid grown to his as it is put)
+  const { q } = m;
+  const s = firstOf(m.s);
   const bits: Bit[] = [];
   const breath: [V3, string, number][] = [];
   BREATH.set(m, breath);
   const put: Put = (part, piece, shape) => {
     if (shape.k === 'mote' && part === 'hush') {
-      breath.push([shape.p, shape.c, shape.size]);
+      breath.push([up(shape.p), shape.c, shape.size]);
       return;
     }
-    bits.push({ part, piece, shape });
+    bits.push({ part, piece, shape: grown(shape) });
   };
   const [cf, cl, cu] = s.chest;
   const lit = 1 - clamp01(q.out);
-  const lag = lagOf(m, 1.4, 5.0);
+  const lag = lagOf({ ...m, come: mul(m.come, 1 / G) }, 1.4, 5.0);
   const held = !say.dropped(m);
   for (const side of ['L', 'R'] as const) leg(put, s, side);
   // THE BREASTPLATE, and the fauld's lames below it at the hips
@@ -431,6 +576,8 @@ function knightBits(st: Stage, m: Moment, say: KnightSay): Bit[] {
   const belt: Ring = { c: waistC, u: mul(s.belly[0], KB.waistDeep + 3.35), v: mul(s.belly[1], KB.waistHalf + 3.15) };
   put('surcoat', 'belt', { k: 'band', ring: belt, ramp: LEATHER, rows: 1 });
   put('surcoat', 'buckle', { k: 'ball', c: onRing(belt, 0, 0.5), ax: [mul(s.belly[0], 0.7), mul(s.belly[1], 1.5), mul(s.belly[2], 1.2)], skin: GOLD });
+  // the royal swan on his back, under the belt and the border where they lie over it
+  backCharge(put, st, s, [{ c: sc[4].c, u: mul(sc[4].u, 1.04), v: mul(sc[4].v, 1.04) }, belt]);
   // the arms: the right fist closed round the grip; the left round it too, or loose
   arm(put, s, 'L', cu, q.lhIn === 3 ? 1 : 0.6);
   arm(put, s, 'R', cu, held ? 1 : 0.45);
@@ -438,7 +585,7 @@ function knightBits(st: Stage, m: Moment, say: KnightSay): Bit[] {
   const hd = head(put, st, s, lit);
   const glint = held ? clamp01(m.glint) : 0;
   sword(put, s, glint);
-  // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point
+  // THE SMEAR of a lightning strike: its after-images, pale, the oldest thinned to every other point (his own lengths)
   const sm = say.smear?.(m);
   if (sm) {
     sm.forEach((line, j) => {
@@ -449,7 +596,7 @@ function knightBits(st: Stage, m: Moment, say: KnightSay): Bit[] {
         const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
         for (let e = 0; e < n; e++) {
           if (k < 0.5 && (e + i) % 2) continue;
-          put('smear', 'smear', { k: 'mote', p: lerp3(line[i - 1], line[i], e / n), c: k > 0.7 ? SMEAR[2] : k > 0.35 ? SMEAR[1] : SMEAR[0], size: k > 0.7 ? 2 : 1 });
+          bits.push({ part: 'smear', piece: 'smear', shape: { k: 'mote', p: lerp3(line[i - 1], line[i], e / n), c: k > 0.7 ? SMEAR[2] : k > 0.35 ? SMEAR[1] : SMEAR[0], size: k > 0.7 ? 2 : 1 } });
         }
       }
     });

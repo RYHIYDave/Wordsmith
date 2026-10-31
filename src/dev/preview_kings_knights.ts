@@ -1,7 +1,7 @@
 // Dev page: FLOOR 19'S KING'S KNIGHTS (art/kings_knights.ts, art/kings_knights_moves.ts, art/kings_knights_fx.ts),
 // standing, from in front and from behind, beside the knight for size, on cold stone flags (not the Keep's own ground,
-// which is not made yet); two of them at the game's size, one walking at the knight; and a move close up. Nothing of the
-// game imports it.
+// which is not made yet); two of them at the game's size, one walking at the knight, one standing guard seen from
+// behind (the royal swan on his back at the game's size); and a move close up. Nothing of the game imports it.
 //   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_kings_knights.ts shots/knights/sheet.png 1200 600 "sheet"
 //   ... "big:<move>:<t>" (front and behind, four times as big), "grid:<move>:<t>,<t>,..." (a move at several moments,
 //   both ways round, twice as big)
@@ -46,7 +46,7 @@ const K_ = KINGS_KNIGHT;
 
 if (mode === 'sheet') {
   // THE SHEET: the king's knight from in front and from behind beside the knight, three times as big; and at the game's
-  // size, two of them (one walking, one standing guard) and the knight
+  // size, two of them (one walking, one standing guard seen from behind: the swan on his back) and the knight
   const K = 3;
   floor(K);
   const y = cv.height - 140;
@@ -58,7 +58,7 @@ if (mode === 'sheet') {
   const y0 = cv.height - 70;
   draw(hero.front.idle[0], x0 + 110, y0 + 30, 1);
   draw(spOf(K_, 'walk', 0.2, 'front'), x0 - 20, y0 - 10, 1);
-  draw(spOf(K_, 'stand', 0.6, 'front'), x0 + 60, y0 - 70, 1);
+  draw(spOf(K_, 'stand', 0.6, 'back'), x0 + 60, y0 - 70, 1);
 } else if (mode === 'grid') {
   const K = 2;
   floor(K);

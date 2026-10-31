@@ -18,14 +18,16 @@ sword, slow, wide sweeping blows." It REPLACES his first pick, “Quick for thei
 rush), which he had passed (“Yes, that's them (Recommended)”, below). The same files were rebuilt; the first design is
 in this branch's history (e691c48, 8780dbd).
 
-As built: a head and a half taller than the knight and far broader (massive pauldrons, a deep chest, thick legs), the
-same royal blue and old gold plate and surcoat with the royal swan, the crowned great helm (grey breath through the
-slits, the Hush's dull pink behind them; alive, not undead); NO SHIELD; a greatsword as long as the knight is tall. Slow:
-a heavy walk of 1.2 tiles a second, each step landing with weight. Two blows, both a big held wind-up and a two-frame
-smeared strike: THE WIDE SWEEP (hauled round behind him, then across the half-circle before him, three tiles out) and
-THE OVERHEAD CLEAVE (raised high in both hands, brought down, the floor cracking in a line five tiles out). Kept clearly
-unlike the King himself (floor 19's boss, `mockup/king`: twice the knight's height, the Hush riding his back, an old
-gaunt bearded face, a mantle): these are younger men, faceless in great helms, no mantle, no rider, smaller than he.
+As built (second pass, bigger still): HALF AS TALL AGAIN AS THE KNIGHT (87 tall to the knight's 58; the first pass was 74)
+and broader all over alike (massive pauldrons, a deep chest, thick legs, big gauntlets, a big helm), so he is massive,
+not stretched; the same royal blue and old gold plate and surcoat, the royal swan on his breast AND A BIG ONE ON HIS
+BACK; the crowned great helm (grey breath through the slits, the Hush's dull pink behind them; alive, not undead); NO
+SHIELD; a greatsword longer than the knight is tall (68.8; the King's 77). Slow: a heavy walk of 1.3 tiles a second,
+each step landing with weight. Two blows, both a big held wind-up and a two-frame smeared strike: THE WIDE SWEEP (hauled
+round behind him, then across the half-circle before him, three and a half tiles out) and THE OVERHEAD CLEAVE (raised
+high in both hands, brought down, the floor cracking in a line six tiles out). Kept clearly unlike the King himself
+(floor 19's boss, `mockup/king`: 100 tall, the Hush riding his back to 116, an old gaunt bearded face, a crown and a
+mantle): these are younger men, faceless in great helms, no mantle, no rider, well short of him (his helm's top 88).
 
 His rules for every new enemy, built in from the first pass: Movement 9, 24 Oct, “Like the wind up and wind down are
 big but the actual punch is lightning quick” (for “All attacks, melee most (Recommended)”); 28 Oct, “Start from now on,
@@ -51,12 +53,18 @@ nevers, the sound. What his new pick changed: their size, their sword, no shield
 
 ## Who they are (src/art/kings_knights.ts; behind `KNIGHTS_ON`, off)
 
-On the heroes' bones (`KNIGHT_BODY`: 74 tall, the knight 58), broad and massive in old heavy plate. `KINGS_KNIGHT`;
+On the heroes' bones (`KNIGHT_BODY`: 87 tall, the knight 58), broad and massive in old heavy plate. `KINGS_KNIGHT`;
 `makeKnightArt3()` gives `{ front, back }` (true from behind, as the guard). Nothing of the palace guard's.
 
-- SIZE: the top of his helm 1.54 of the knight's heads over the top of the knight's (the knight's head 9.8 tall); his
-  shoulders 29.6 across (the knight's 19.0), his chest 8.9 deep (5.6), his thighs 5.8 thick (4.2). Smaller than the
-  King (116).
+BIGGER STILL, how: the first pass (74 tall, `KN_FIRST`) grown by `KN_GROW` (87/74, 1.18) in every length alike: his
+bones and the padding of what he wears, every plate, the helm, the sword, every pose of every move (each move is drawn
+in the first pass's lengths and grown as the game is given it: `grownPose`; each solid as it is painted: `grown`; the
+checks' solids the same: `knightSolids`). So each pose is the first pass's pose, only bigger; his pace and his blows'
+reach are in tiles, as the game has them.
+
+- SIZE: the top of his helm 88.0 up, the knight's head 59.7: 1.47 times the knight (2.88 of the knight's heads over his);
+  his shoulders 34.8 across (the knight's 19.0), his chest 10.5 deep (5.6), his thighs 6.8 thick (4.2). Well short of
+  the King (100 tall, his rider to 116).
 - THE MARK, A CROWNED GREAT HELM: a flat-topped barrel of cold steel; on its face a cross of old gold, the sight's two
   dark slits either side of its upright, the breaths pierced on his right cheek; the dull pink of the Hushed in the dark
   of the sight; round its top a small circlet of old gold, five points standing up off it (the book's “golden crown”).
@@ -66,10 +74,18 @@ On the heroes' bones (`KNIGHT_BODY`: 74 tall, the knight 58), broad and massive 
 - THE SURCOAT, ROYAL BLUE (`BLUE`, hue 226 to 228 degrees: the friend's cyan is 160 to 205), to the knee, split before and
   behind, bordered in OLD GOLD (`GOLD`, dull, never a light); the royal swan in old gold on its breast (his pick for the
   King's mark, “Keep the royal swan”: the crest floor 16's palace guard wear, `swanIn`); a sword belt with a gold buckle.
+- THE ROYAL SWAN ON HIS BACK (`backCharge`, `BACK_SWAN`): the same swan as on his breast, seen the same way round, in old
+  gold, big (half its height 10.6 of the first pass's lengths, 12.5 of his; the one on his breast 6.4): from just above
+  the belt over his back and up over the top of his shoulders. It is laid ON the surcoat itself point by point (as the
+  helm's face is laid on the helm), each point on the cloth's own curve between its rings, as a stencil laid on from
+  behind him a little round toward his right (22 degrees) and from above (30 degrees: the game's eye), so the game sees
+  it whole and unsquashed from behind: about 22 by 22 of the game's pixels. It turns and sways with the cloth, lies on
+  his back as he lies on his face, and is hidden wherever anything covers the cloth (his arms, his pauldrons, his sword,
+  his belt).
 - NO SHIELD.
-- THE GREATSWORD (`SWORD`), two-handed, 58.5 from pommel to point (the knight is 58 tall): a 46-long blade with a plain
-  ricasso, a dark fuller and bright edges; a broad steel cross with gold ends; a long grip in leather with a steel ring
-  between the hands; a pear pommel of old gold.
+- THE GREATSWORD (`SWORD`), two-handed, 68.8 from pommel to point (the knight is 58 tall, the King's own 77): a 54-long
+  blade with a plain ricasso, a dark fuller and bright edges; a broad steel cross with gold ends; a long grip in leather
+  with a steel ring between the hands; a pear pommel of old gold.
 - THE HUSH: grey breath leaking out before the sight and seeping from its ends, harder in a warning; as he dies it
   leaves him in one great breath (`KN_EXHALE`), and the pink goes out of the sight.
 
@@ -80,16 +96,17 @@ Frames are the game's: 30 a second for every move; his stand 10 a second; his de
 after-images (`KN_STRIKES`, `smearedAt`), a big wind-down.
 
 - STANDING (`stand`, 32 frames at 10, 3.2 s round): his greatsword planted point down before him (`SWORD_PLANTED`, its
-  point 34 before him), both gauntlets on its grip; he breathes (his chest rising and falling, his hips swaying), his
+  point 40 before him), both gauntlets on its grip; he breathes (his chest rising and falling, his hips swaying), his
   helm turning slowly.
 - HUGE AND SLOW, his pick, in three moves the game plays as it plays the bosses' gaits (game/bosses.ts `GaitDef`):
   - SETTING OFF (`setOff`, 9 frames, 0.3 s; carried at his pace from its first frame): he plucks the greatsword from the
     floor and lets it swing down round his right side to trail behind him; his left foot rolls up, swings through and
     comes down before him.
-  - THE WALK (`walk`, 36 frames at 30, 1.2 s a stride pair; `KN_PACE` 1.2 tiles a second, the hero runs 4.6): on bent
-    knees, each foot flat on the floor 20 frames of the 36 (going back under him with the floor), rolled onto its toe 2,
-    swung low through 14; both feet down four frames of each stride, never both off. HIS WEIGHT: each foot comes down
-    flat and he drops onto it, his hips lowest three frames after (2.4 down), the helm nodding, the sword bouncing. The
+  - THE WALK (`walk`, 36 frames at 30, 1.2 s a stride pair; `KN_PACE` 1.3 tiles a second, the first pass's 1.2 a little
+    quickened for his longer legs; the hero runs 4.6): on bent knees, each foot flat on the floor 20 frames of the 36
+    (going back under him with the floor, so it grips), rolled onto its toe 2, swung low through 14; both feet down four
+    frames of each stride, never both off. HIS WEIGHT: each foot comes down flat and he drops onto it, his hips lowest
+    three frames after (2.8 down), the helm nodding, the sword bouncing. The
     greatsword trails behind him in his right fist, its point low; his left arm swings slowly.
   - STOPPING (`halt`, 9 frames, 0.3 s; carried at his pace): his right foot comes through and down beside the left, the
     sword brought round his right side and planted before him again.
@@ -103,18 +120,18 @@ after-images (`KN_STRIKES`, `smearedAt`), a big wind-down.
   planted (2.3 s), his stand (2.7 s).
   THE SWEEP (art/kings_knights_fx.ts `sweepPainted`, `SWEEP`): as the blade lands, its sweep torn across the floor over
   the whole half-circle before him (from his right round to his left, `SWEEP.arc` 90 degrees either side) out to
-  `SWEEP.r` 3 tiles (its harm: from `SWEEP.inner` 0.9 tiles out to 3; the game's to use): a crescent of force, its
+  `SWEEP.r` 3.5 tiles (its harm: from `SWEEP.inner` 1.05 tiles out to 3.5; the game's to use): a crescent of force, its
   newest end brightest, out in two frames; scored streaks behind its edge; sparks off the blade's end; dust thrown up
   all round it; gone by 0.45 s, the dust by 0.7 s.
 - THE OVERHEAD CLEAVE (`more.cleave`; `KN_CLEAVE`: 2.3 s, the warning held 0.6 to 1.0 s, the strike 32 to 34 of 30, the
   blow at 1.133 s): plucked from the floor, swung up point first and stood upright (to 0.2 s); heaved up over his helm as
-  he steps in with his left foot 15 forward (0.2 to 0.46 s); RAISED (0.6 s): both fists high over the crowned helm, the blade
+  he steps in with his left foot 17.6 forward (0.2 to 0.46 s); RAISED (0.6 s): both fists high over the crowned helm, the blade
   back and up behind him, arched back, glinting pink; HELD shaking to 1.0 s (THE WARNING); his hips first (1.067 s); then
-  in two frames the blade comes over the top and down into the floor before him (its point at `CHOP_AT`, 70.3 of his
-  lengths, 1.79 tiles), smeared; held in the floor, his body sinking on after it, to 1.38 s; wrenched out (1.62 s),
+  in two frames the blade comes over the top and down into the floor before him (its point at `CHOP_AT`, 82.4 of his
+  lengths, 2.1 tiles), smeared; held in the floor, his body sinking on after it, to 1.38 s; wrenched out (1.62 s),
   stepped back, planted again (2.1 s), his stand (2.3 s).
   THE CRACK (`crackPainted`, `CRACK`): from where the blade bites, in two frames the floor splits on out before him in a
-  jagged line to `CRACK.reach` 5 tiles from him (its harm `CRACK.wide` 1.4 tiles across), nine side cracks off it; stone
+  jagged line to `CRACK.reach` 6 tiles from him (its harm `CRACK.wide` 1.6 tiles across), nine side cracks off it; stone
   chips and dust (0.45 s); sparks of pink and gold where the blade bit (0.32 s); held open, the Hush's grey breath
   seeping up out of it; gone by 2.1 s.
 - STRUCK (`reel`, 0.4 s): jolted back on his planted sword, the helm rocked back, the Hush coughed out.
@@ -124,25 +141,28 @@ after-images (`KN_STRIKES`, `smearedAt`), a big wind-down.
   out of it (by 1.8 s); his hands slip from the grip and the sword falls away to his right (2.5 s); he topples forward,
   the left knee down (2.8 s), slumps (3.0 s) and lies on his face, arms out (3.2 s): a man again, still.
 
-FOR THE MAIN CHAT: his blows' areas (his “bigger AOE”): the sweep, the half-circle before him from 0.9 to 3 tiles out;
-the cleave's line 5 tiles out before him, 1.4 across. His picture (`KN_CANVAS`) is 400 by 340; the game cuts each frame
-to what is in it. One at a time (his pick): how many come at once is the game's to set.
+FOR THE MAIN CHAT: his blows' areas (his “bigger AOE”, grown with him): the sweep, the half-circle before him from 1.05
+to 3.5 tiles out; the cleave's line 6 tiles out before him, 1.6 across. His picture (`KN_CANVAS`) is 470 by 400; the
+game cuts each frame to what is in it. One at a time (his pick): how many come at once is the game's to set.
 
 ## The pictures (docs/mockups/kings_knights/pictures/)
 
-- `kings_knights_sheet.png` (1200 by 600): the king's knight standing, from in front and from behind, beside the knight,
-  three times as big; and at the game's size, two of them (one walking, one standing guard) and the knight.
-- `kings_knights_film.mp4` (1200 by 720, 30 a second, 40.2 s): every move from in front, then from behind, on cold
+- `kings_knights_sheet.png` (1200 by 600): the king's knight standing, from in front and from behind (the swan on his
+  back), beside the knight, three times as big; and at the game's size, two of them (one walking, one standing guard
+  seen from behind, the swan on his back at the game's size) and the knight.
+- `kings_knights_film.mp4` (1200 by 720, 30 a second, 42.4 s): every move from in front, then from behind, on cold
   stone flags with the knight in it for size (twice as big as the game; a tile 64 by 32 picture pixels): standing; set
   off, walk and stop; the wide sweep and its sweep across the floor, its strike again at half speed; the overhead cleave
-  and its crack, its strike again at half speed; struck; his death; and last, walking beside the hero running, from one
-  line. Each shot captioned. (The first design's sheet and film are in this branch's history, at 8780dbd.)
+  and its crack, its strike again at half speed; struck; his death; from behind it opens on THE ROYAL SWAN ON HIS BACK,
+  close (four times as big as the game), standing and then setting off away; and last, walking beside the hero
+  running, from one line. Each shot captioned. (The first design's sheet and film are in this branch's history, at
+  8780dbd; this design's first pass's, at 134dab4.)
 
 ## How to bring him in
 
 - The switch, `KNIGHTS_ON`; his art, `makeKnightArt3()` (stand, walk, attack (the sweep), `more.cleave`, `more.setOff`,
   `more.halt`, reel, death; `trueBack`).
-- His gait as the bosses' (game/bosses.ts `GaitDef`): `{ pace: 1.2, cycle: 36 / 30, setOff: 0.3, halt: 0.3 }`, carried
+- His gait as the bosses' (game/bosses.ts `GaitDef`): `{ pace: 1.3, cycle: 36 / 30, setOff: 0.3, halt: 0.3 }`, carried
   at his pace through setting off and stopping; his blows from his stand.
 - The sweep: its blow at `KN_SWEEP.hit`; drawn from his floor point, facing his way (`sweepPainted(t - hit)`), its harm
   over the half-circle (`SWEEP`). The cleave: its blow at `KN_CLEAVE.hit`; the crack drawn from his floor point, facing
@@ -160,7 +180,7 @@ to what is in it. One at a time (his pick): how many come at once is the game's 
 
 ## The checks (tests/kings_knights.test.ts)
 
-`tsx --test tests/kings_knights.test.ts` (11): 1. the switch is off and nothing of the game imports them; 2. EVERY MOVE
+`tsx --test tests/kings_knights.test.ts` (12): 1. the switch is off and nothing of the game imports them; 2. EVERY MOVE
 THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts): stand, walk, sweep, struck, death, cleave, setting off and stopping,
 every frame from in front and from behind, and every handover (his stand into each and back; setting off into the walk
 and into stopping; the walk into stopping at its first frame; stopping into his stand); 3. HIS LIGHTNING STRIKES: each
@@ -169,15 +189,19 @@ ways round: no cyan, the pink edge while he lives and none as he dies, every pix
 but the enemy's pink, the royal blue's hue 215 to 240 degrees, the old gold duller than any flame; 5. NOTHING CUT OFF;
 6. NOTHING OF HIM IN THE FLOOR (but his sword's point resting on it where he plants it); 7. THE HUSH leaking while he
 lives, its great breath as it leaves him, none after; the pink in the sight while he lives, gone by the end; lying low at
-the end; 8. his sword falls clear of him; 9. NOTHING FOLDS FLAT; 10. HIS PICK AND HIS SIZES: his helm 1.35 to 1.75 of the
-knight's heads over the knight's, smaller than the King; shoulders half as broad again as the knight's, a deeper chest,
-thicker legs; no shield in any frame; a greatsword 57 to 62 long; walking 1 to 1.5 tiles a second (under a third of the
-hero's run), painted for that pace, never both feet off the floor, his hips lowest a few frames after each foot comes
-down; the sweep wound behind him to his right in its warning, and in its two frames from his right, before him, to his
-left, its sweep 3 tiles out over 180 degrees; the cleave's fists high over his helm in the warning, its point on the
-floor as it lands where the crack begins, the crack 5 tiles out; to his right knee behind his planted sword, his head
-bowed, then down; 11. what his blows leave: the crack out in two frames and gone, the sweep out in two frames and gone,
-nothing cyan.
+the end; 8. his sword falls clear of him; 9. NOTHING FOLDS FLAT; 10. HIS PICK AND HIS SIZES (BIGGER STILL): his helm's
+top 1.42 to 1.58 times the knight's head, and no higher than 90 (the King 100); shoulders at least 1.75 times the
+knight's, a chest at least 1.7 times as deep, legs 1.5 times as thick; no shield in any frame; a greatsword 66 to 71
+long; walking 1 to 1.5 tiles a second (under a third of the hero's run), painted for that pace, never both feet off the
+floor, his hips lowest a few frames after each foot comes down; the sweep wound behind him to his right in its warning,
+and in its two frames from his right, before him, to his left, its sweep 3.5 tiles out over 180 degrees; the cleave's
+fists high over his helm in the warning, its point on the floor as it lands where the crack begins, the crack 6 tiles
+out; to his right knee behind his planted sword, his head bowed, then down (the first pass's measures grown with him);
+11. what his blows leave: the crack out in two frames and gone, the sweep out in two frames and gone, nothing cyan;
+12. THE ROYAL SWAN ON HIS BACK: in every frame of every move, both ways round, every pixel of it was his surcoat's blue
+and is old gold (on the cloth and nowhere else: never off it, never over his arms, sword or belt); none of it from in
+front as he stands; from behind, 220 pixels and more as he stands and in every frame of his walk; half its height at
+least half as big again as the one on his breast. (Test 6 lets the blade's box, as it bites the floor, grow with him.)
 
 The models' own checks run as before (tests/palace_guard.test.ts). Three shared import checks are told of these files
 (tests/bosses.test.ts, tests/hushed.test.ts, tests/crier.test.ts: one word each). No shared engine file is changed.
@@ -188,4 +212,4 @@ OF THE FIRST DESIGN. The sheet and the film (`kings_knights_sheet.png`, `kings_k
 (kings_knights_sheet.png and the film): are these right? They carry the shield on their back for the two-handed chop and
 swing it onto the arm to rush.”: “Yes, that's them (Recommended)”.
 
-OF THIS DESIGN (“Huge and slow, one each”), first pass (134dab4; 74 tall against the hero's 58), shown 30 Oct by 20:15. Asked “Are these the king's knights now: huge and slow, with a wide sweep and an overhead cleave?”: “Bigger still” (offered as: even taller and broader, still well short of the King). Asked whether the royal swan, with the shield gone only on his chest and often hidden by the sword, should go anywhere else: “Also on his back” (offered as: a big swan on the back of his surcoat, so you see it from behind too). Second pass: being made.
+OF THIS DESIGN (“Huge and slow, one each”), first pass (134dab4; 74 tall against the hero's 58), shown 30 Oct by 20:15. Asked “Are these the king's knights now: huge and slow, with a wide sweep and an overhead cleave?”: “Bigger still” (offered as: even taller and broader, still well short of the King). Asked whether the royal swan, with the shield gone only on his chest and often hidden by the sword, should go anywhere else: “Also on his back” (offered as: a big swan on the back of his surcoat, so you see it from behind too). Second pass (this one; c657175 was its start): bigger still, every length of him grown alike from 74 tall to 87 (half as tall again as the knight; shoulders 34.8, a greatsword 68.8, a walk of 1.3 tiles a second; the sweep 3.5 tiles out, the crack 6), and the royal swan, big, on the back of his surcoat as well as his breast; a new sheet and film (42.4 s, with a close shot of the swan on his back).
