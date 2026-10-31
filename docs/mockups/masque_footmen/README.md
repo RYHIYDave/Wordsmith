@@ -251,3 +251,5 @@ list of the art chat's mock-ups): `tests/bosses.test.ts` (two checks), `tests/cr
 The sheet and the film (`footmen_sheet.png`, `footmen_film.mp4`), asked “Floor 17's footmen (footmen_sheet.png and the
 film): are these right? The tray flies out and comes back to his hand like a boomerang.”: “Yes, that's them
 (Recommended)”.
+
+OF THE NEW DEATH (eb30951; his pick for it, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`footmen_death_sheet.png`, `footmen_death.mp4`), asked “The footmen's new death: struck, they freeze rigid with a shiver, then fall straight back like a plank. The tray flies off, rolls round on its rim and settles flat. The Hush leaves them, alive. Is that it?”: “Yes, that's it (Recommended)”.
