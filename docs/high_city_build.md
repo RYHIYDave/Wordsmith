@@ -99,3 +99,24 @@ In order, each committed on `high-city` as it is done:
 3. THE KINDS: the footmen, the dancers, the Order (their READMEs' numbers).
 4. THE PRINCE.
 5. Films to him; his yes; then floor 18.
+
+## Floor 18, the Glass Gallery (the main chat alone; his yes to floor 17, 30 Oct: “Yes, on to 18 (Recommended)”)
+
+The art: docs/mockups/glass_gallery, queen, reflections (READMEs: every number). HELD, the art chat's ask on the board (30 Oct,
+18:26): the queen's guard (being remade as mirror duellists) and the ladies-in-waiting (new deaths, new rhythms), until it posts
+them done; until then they are stood in for. The reflections exist for the first three classes only (art/reflections.ts, made
+from paintMove3's frames): the Warlock's, the Tinkerer's and the Brawler's are the art chat's to make (asked on the board).
+Kinds: `lady`, `qguard`, `reflection`, boss `gqueen` (floor 5's Carrion Queen is `queen`).
+1. THE FRAME: the kinds, their stats, the light; land 'glassgallery' (its look with zones, runners and skylights broken
+   through; the ground painted by paintGlassGallery, the hall below in the holes); the 25 pieces and the High City set; the
+   skylight the floor's trap (ACT1_SETS[18]).
+2. THE PLACE: game/act2/glassgallery.ts: long galleries of mirrors (a runner down each), dressing rooms off them, the chapel,
+   the glasshouse, the Mirror Hall last (the Queen's arena, its twelve pier glasses along its long sides, her talking mirror
+   at its end); silver gates between; skylights broken through (the ground's drop) and whole ones (the trap).
+3. THE HAZARDS: a tall mirror cracks at a blow near it and bursts at the next, its shards hurting what stands before it;
+   a skylight cracks under a step and gives way (the trap's beat).
+4. THE REFLECTIONS: a copy of the hero's own class (its look by the hero's class: Monster.form), its tap and its hold as
+   his (a strike and a whirl; an arrow and a volley; a wave and an orb), stepping out of the mirrors.
+5. THE QUEEN: the comb (lunge, the poison), the looking glass (into one mirror, out of one behind you), reflections, Shatter
+   (six lanes, the gaps safe); each phase another mirror wakes; her mirror at the hall's end, speaking, then the truth.
+6. Films to him; his yes; the guard and the ladies when the art chat posts them; then floor 19.
