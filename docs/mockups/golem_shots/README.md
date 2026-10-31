@@ -23,6 +23,8 @@ So: two holds, one for each arm. Both drawn here.
 
 On the first pictures (4545823), asked “Are those the two?”: “Close, change something”; asked what: “I don’t like the steam coming from the gun.  I like it from the stove pipes that’s nice”. So the steam out of the gun's vents is off (`GUN_STEAM.on` false in `src/dev/golem_charge_fx.ts`): its stove pipes still hiss as it charges and burst as it fires; the smoke out of the cannon's mouth after the shot, and off the coil after the beam, is kept. The pictures made again (and the sheet's close-ups framed to show its braced fist).
 
+On those (75c15cd), asked “Are those the two charged shots?”: “Yes, that's them (Recommended)”.
+
 ## The pictures (`pictures/`)
 
 - `golem_shots.mp4` (1200 wide, captioned): each charged shot at game scale with the Tinkerer beside it and three cultists,
