@@ -348,7 +348,7 @@ const TINKERER_TREE: TalentTree = {
     { id: 'thebigone', name: 'The Big One', big: true, works: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
     // THE GOLEM, round under the bottom
     { id: 'lightningrod', name: 'Lightning Rod', big: false, works: true, path: 'golem', at: [-R3, 1], from: ['bombsaway'], text: 'For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.' },
-    { id: 'shrapnel', name: 'Shrapnel', big: false, works: true, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s cannon shot bursts where it lands, striking everything near.' },
+    { id: 'shrapnel', name: 'Shrapnel', big: false, works: true, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s blows burst where they land, striking everything near.' },
     { id: 'teslacoil', name: 'Tesla Coil', big: false, works: true, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'A coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more.' },
     { id: 'markii', name: 'Mark II', big: true, works: true, path: 'golem', at: [0, 1], from: ['teslacoil'], text: 'She can whistle out a second Golem: two at once.' },
     { id: 'prospector', name: 'Prospector', big: false, works: true, path: 'golem', at: [1, R3], from: ['teslacoil'], text: 'Every ground pound digs up a handful of gold.' },

@@ -12,7 +12,7 @@ import { SKILLS, TUNE } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster } from '../src/game/state';
-import { TINKER_TUNE } from '../src/game/tinkerer';
+import { GOLEM_CANNON, TINKER_TUNE } from '../src/game/tinkerer';
 import { TREES } from '../src/game/talents';
 import { land } from './helpers';
 
@@ -356,7 +356,32 @@ test('LIGHTNING ROD: for three seconds after its ground pound, every enemy near 
   assert.ok(g2.decoyFor(near), 'one near it, after it');
 });
 
-test('SHRAPNEL: the Golem’s cannon shot bursts where it lands, striking everything near', () => {
+test('SHRAPNEL: the Golem’s cannon shot bursts where it lands, striking everything near (its cannon on: kept for a later passive)', () => {
+  GOLEM_CANNON.on = true;
+  try {
+    shrapnelShot();
+  } finally {
+    GOLEM_CANNON.on = false;
+  }
+});
+
+test('SHRAPNEL, its cannon off (his word, 30 Oct 2026): its punches burst where they land, striking everything near', () => {
+  for (const taken of [true, false]) {
+    const g = taken ? take(room(), 'shrapnel') : take(room());
+    golemOut(g);
+    const target = dummy(g, 1.6, 0);
+    const by = [dummy(g, 2.1, 0.9), dummy(g, 2.2, -0.9)];
+    const ev = wait(g, 3);
+    assert.ok(of(ev, 'golemPunch').length >= 1, 'it punches');
+    assert.ok(hurt(target) > 0);
+    if (taken) {
+      assert.equal(of(ev, 'shrapnel').length >= 1, true, 'it bursts');
+      assert.ok(by.some((m) => hurt(m) > 0), 'striking what is near where it lands');
+    } else assert.equal(of(ev, 'shrapnel').length, 0, 'without it, no burst');
+  }
+});
+
+function shrapnelShot(): void {
   for (const taken of [true, false]) {
     const g = taken ? take(room(), 'shrapnel') : take(room());
     golemOut(g);
@@ -374,7 +399,7 @@ test('SHRAPNEL: the Golem’s cannon shot bursts where it lands, striking everyt
       for (const m of by) assert.ok(hurt(m) > 0, 'striking what is near where it lands');
     } else for (const m of by) assert.equal(hurt(m), 0, 'without it, the shot hits only the one');
   }
-});
+}
 
 test('TESLA COIL: a coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more', () => {
   const g = take(room(), 'teslacoil');
