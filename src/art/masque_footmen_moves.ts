@@ -27,10 +27,12 @@
 //     streak of fire; it lands and they splash out across the floor before him in a wide fan of fire
 //     (art/masque_footmen_fx.ts); bent over it, he holds; then straightens, and the tray goes back up.
 //   STRUCK: jolted back, the head snapped back, the tray tipping on his palm, the flames blown about.
-//   HIS DEATH (the brief: “the tray clatters down, they drop to their knees, the Hush leaves them”): a gasp, his head thrown
-//     back, and the Hush pours out of him in one great grey breath; the tray slides off his palm and clatters to the floor,
-//     the candelabrum drops and its candles go out in a breath of smoke; his knees give and he drops onto them; he sways
-//     there, and sinks back toward his heels, his head bowed, his hands loose on his thighs: a man again, alive, still.
+//   HIS DEATH (made new on his pick of 30 Oct, “Yes, these (Recommended)”, so that Act 2's enemies die differently): struck
+//     dead he goes rigid, upright, his arms snapping to his sides, a last stiff shiver; the tray flies from his hand, the
+//     candelabrum drops and its candles go out; then he goes over backwards in one piece like a plank, hinged at his heels,
+//     and comes down flat on his back with a little bounce; the tray comes down on its rim and rolls round and round on it,
+//     rattling flatter until it lies still; the Hush leaves him in a grey breath rising out of him; he lies still, a man
+//     again, alive.
 //
 // By his rulebook: every move through every check the bosses have (art/boss_checks.ts), from in front and behind, and
 // the lightning strikes as his Movement 9 asks.
@@ -38,8 +40,7 @@
 
 import type { ActorArt } from './actor_types';
 import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
-import { footOn, footwork, kneelHips, plantBy, plantOf } from './bosses3';
-import type { Plant } from './bosses3';
+import { footOn, footwork, plantBy, plantOf } from './bosses3';
 import { hash } from './kit';
 import { FLAME } from './mkit';
 import { CANDELABRUM, FOOTMAN_BODY, FOOTMAN_CANVAS, TRAY, candelabrumOf, footmanPainter, trayOf } from './masque_footmen';
@@ -466,68 +467,293 @@ function reelPlan(): Plan {
 }
 
 // =============================================================================================
-// HIS DEATH: the tray clatters down, he drops to his knees, the Hush leaves him
+// HIS DEATH (his pick of 30 Oct, “Yes, these (Recommended)”): struck dead, he goes rigid and upright a moment, a last stiff
+// shiver; then over backwards in one piece like a plank, hinged at his heels, stiff from heels to head, his arms at his
+// sides; flat on his back with a little bounce. The tray flies from his hand as he stiffens, lands on its rim and spins
+// round and round, rattling flatter until it lies still (a coin settling); the candelabrum drops and its candles go out;
+// the Hush leaves him in a grey breath rising out of him; and he lies still, a man again, alive.
 
-export const FM_DIES = { long: 2.9, gasp: 0.4, drop: 0.46, dropC: 0.6, knees: 1.04, sag: [1.62, 2.4] as const } as const;
-const TUCK = 52;
-const KNEE_Z = B.legR[1] * 1.3;
-/** His feet as he kneels: where they stood, up on their toes. */
-const KNEEL: Record<'L' | 'R', Plant> = { L: { ...L0, at: [L0.at[0] - 3, L0.at[1] + 0.6], turn: 6, pitch: TUCK }, R: { ...R0, at: [R0.at[0] - 3, R0.at[1] - 0.6], turn: -6, pitch: TUCK } };
-const kneel = (lean: number, body: P): P => ({ ...kneelHips(B, R, KNEEL, TUCK, KNEE_Z, lean), ...body });
-/** His hands loose on his thighs. */
-const onThighs = (k: P): P => {
-  const s = solve(B, { ...R, ...k } as Posed);
-  const on = (hip: V3, knee: V3, side: number): V3 => add(lerp3(hip, knee, 0.55), [0.5, side * 0.6, 3.4]);
-  return key(k, on(s.hipL, s.kneeL, 1), { rhIn: 2, ...(() => { const p = on(s.hipR, s.kneeR, -1); return { rhx: p[0], rhy: p[1], rhz: p[2] }; })() }, [-0.6, 0.6, -0.5], [-0.6, -0.6, -0.5]);
+/** His hands as the chest has them (HandIn 0: from each shoulder, along the chest's own forward, left and up), so that a body that goes over in one piece takes its arms with it. */
+const handsIn = (s: Skeleton, L: V3, Rt: V3): P => {
+  const c = s.chest;
+  const i = (d: V3): V3 => [dot(d, c[0]), dot(d, c[1]), dot(d, c[2])];
+  const l = i(sub(L, s.shoulderL));
+  const r = i(sub(Rt, s.shoulderR));
+  return { lhIn: 0, lhx: l[0], lhy: l[1], lhz: l[2], rhIn: 0, rhx: r[0], rhy: r[1], rhz: r[2] };
 };
-function diesPlan(): Plan {
-  const JOLT: P = { px: -2.4, pitch: -4, bend: -6, faceUp: 16, out: 0.1 };
-  // THE GASP: the chest arched, the head thrown back, the mouth wide: the Hush pours out; the tray tipping off his palm
-  const GASP: P = { px: -2.0, pz: 0.8, pitch: -6, bend: -12, faceUp: 36, faceTurn: 0, faceTilt: 4, ...trayIs(30, 56, 0), lhIn: 1, lhx: R.lhx + 2, lhy: R.lhy + 2, lhz: R.lhz - 3, rhx: R.rhx - 1, rhz: R.rhz + 1.5, out: 0.4 };
-  // the arms falling, the knees going
-  const GOING: P = { px: -0.6, pz: -2.5, pitch: 2, bend: 2, faceUp: 18, faceTilt: 6, lhIn: 1, lhx: 2.5, lhy: 4.0, lhz: -18, rhIn: 2, rhx: 3.5, rhy: -11, rhz: 26, out: 0.8 };
-  const K_UP = kneel(6, { yaw: 0, pitch: 4, roll: 1, bend: 4, side: 1, faceUp: 10, faceTilt: 8, out: 1 });
-  const K_HIT = { ...K_UP, pz: (K_UP.pz as number) - 0.0, bend: 10, faceUp: -2 };
-  const K_SWAY = kneel(2, { yaw: 2, pitch: 0, roll: -2, bend: -2, side: -1, faceUp: 20, faceTilt: -6, out: 1 });
-  const K_SAG = kneel(-24, { yaw: 2, pitch: 4, roll: 2, bend: 14, side: 2, faceUp: -24, faceTilt: 8, faceTurn: 6, out: 1 });
-  const K_LAST = kneel(-34, { yaw: 3, pitch: 5, roll: 2, bend: 18, side: 2, faceUp: -32, faceTilt: 10, faceTurn: 8, out: 1 });
-  /** His arms hanging at his sides, a little before him. */
-  const hang = (k: P, dx = 0): P => {
-    const s = solve(B, { ...R, ...k } as Posed);
-    const L: V3 = add(s.shoulderL, [2.5 + dx, 4.0, -19.5]);
-    return key(k, L, { rhIn: 2, rhx: s.shoulderR[0] + 2.5 + dx, rhy: s.shoulderR[1] - 4.0, rhz: s.shoulderR[2] - 19.5 }, [-0.5, 0.5, -0.4], [-0.5, -0.5, -0.4]);
-  };
+const S_REST = solve(B, R as Posed);
+/** His rest with his hands said as the chest has them (the same bones). */
+const REST_C: P = { ...handsIn(S_REST, S_REST.handL, S_REST.handR), le: R.le, re: R.re };
+/** HIS ARMS RIGID AT HIS SIDES: straight down, a little out over his coat's skirts, the elbows back. */
+const SIDE_L: V3 = [0.5, 2.6, -23.2];
+const SIDE_R: V3 = [0.5, -2.6, -23.2];
+/** RIGID: bolt upright, his weight back on his heels, legs locked, chin up, arms at his sides (his hands as the chest has them). */
+const RIGID: P = (() => {
+  const body: P = { px: -0.5, py: 0, pz: -0.45, yaw: 0, pitch: -1.5, roll: 0, twist: 0, bend: -1.5, side: 0, faceUp: 4, faceTurn: 0, faceTilt: 0, lhIn: 0, lhx: SIDE_L[0], lhy: SIDE_L[1], lhz: SIDE_L[2], rhIn: 0, rhx: SIDE_R[0], rhy: SIDE_R[1], rhz: SIDE_R[2], out: 0.55 };
+  const q = { ...R, ...body } as Posed;
+  const le = elbowFor(B, q, true, norm([-1, 0.25, -0.1]));
+  const re = elbowFor(B, { ...q, le } as Posed, false, norm([-1, -0.25, -0.1]));
+  return { ...body, le, re };
+})();
+/** The line his heels are on, that he goes over about (forward of his floor point, and up). */
+const S_RIGID = solve(B, { ...R, ...RIGID } as Posed);
+const HINGE: readonly [number, number] = [(S_RIGID.heelL[0] + S_RIGID.heelR[0]) / 2, (S_RIGID.heelL[2] + S_RIGID.heelR[2]) / 2];
+const HEEL_L = plantOf(B, 'L', RIGID, R, 'heel');
+const HEEL_R = plantOf(B, 'R', RIGID, R, 'heel');
+const HIP_H = B.ankle + B.shank + B.thigh;
+/** As far as his legs go over (degrees from upright): where the back of his coat at his hips comes down on the floor; and his trunk on beyond them, his shoulders down too (a body lying flat is a little bent at the hips). */
+const LIE_LEGS = 80.0;
+const LIE_TRUNK = 7.6;
+/** And his head, as it strikes the floor, rocked back onto it (degrees, chin up). */
+const LIE_HEAD = 18;
+/**
+ * HIM GONE OVER IN ONE PIECE: the rigid pose turned back about his heels by `legs` degrees, his trunk `trunk` more about
+ * his hips; his feet rocked back on their heels, each heel where it stood; his knees and his face going with him.
+ */
+function tipped(base: P, legs: number, trunk: number): P {
+  const b = { ...R, ...base } as Bones;
+  const a = (legs * Math.PI) / 180;
+  const rx = b.px - HINGE[0];
+  const rz = HIP_H + b.pz - HINGE[1];
+  const x = rx * Math.cos(a) - rz * Math.sin(a);
+  const z = rx * Math.sin(a) + rz * Math.cos(a);
   return {
-    long: FM_DIES.long,
-    keys: [
-      [0, {}],
-      [0.1, JOLT],
-      [FM_DIES.gasp, GASP],
-      [0.72, GOING],
-      [FM_DIES.knees, hang(K_HIT, 1)],
-      [1.2, hang(K_UP, 0.5)],
-      [FM_DIES.sag[0], hang(K_SWAY, 0)],
-      [2.0, onThighs(K_SAG)],
-      [FM_DIES.sag[1], onThighs(K_LAST)],
-      [FM_DIES.long, onThighs({ ...K_LAST, faceUp: -33, bend: 18.5 })],
-    ],
+    ...base,
+    px: HINGE[0] + x,
+    pz: HINGE[1] + z - HIP_H,
+    pitch: b.pitch - legs - trunk,
+    faceUp: b.faceUp + legs + trunk,
+    ...footOn(B, 'L', { ...HEEL_L, pitch: -legs }),
+    ...footOn(B, 'R', { ...HEEL_R, pitch: -legs }),
+    lkUp: legs,
+    rkUp: legs,
   };
 }
-function diesFeet(): (t: number) => P {
-  // (his feet stay where they stood and turn up onto their toes as his knees go down before them)
-  return footwork(B, {
-    L: { start: L0, moves: [{ t0: 0.66, t1: 0.98, to: KNEEL.L, lift: 1.4 }] },
-    R: { start: R0, moves: [{ t0: 0.62, t1: 0.94, to: KNEEL.R, lift: 1.4 }] },
-  });
+
+/**
+ * THE FALL: how far over he has gone (his legs, degrees from upright) `u` seconds after he begins to tip. A plank on its
+ * end, its weight just past its heels: slow to start, faster and faster (as a body falls, `GO`), till his hips come down.
+ */
+const FALL = ((): { at: (u: number) => number; long: number } => {
+  const GO = 70;
+  const PAST = (1.6 * Math.PI) / 180;
+  const dt = 1 / 1200;
+  const th: number[] = [0];
+  let w = 0;
+  let a = 0;
+  while (a < (LIE_LEGS * Math.PI) / 180) {
+    w += GO * Math.sin(a + PAST) * dt;
+    a += w * dt;
+    th.push(a);
+  }
+  const long = (th.length - 1) * dt;
+  return {
+    long,
+    at: (u) => {
+      if (u <= 0) return 0;
+      if (u >= long) return LIE_LEGS;
+      const k = u / dt;
+      const i = Math.floor(k);
+      return ((th[i] + (th[i + 1] - th[i]) * (k - i)) * 180) / Math.PI;
+    },
+  };
+})();
+
+/** Its times: struck; seized rigid (his arms snap to his sides, the candelabrum let go, the tray flung from his hand); held rigid, the shiver; tipping; down flat on his back; the tray down on its rim, and still; the rigidity going out of him. */
+const TIP = 0.6;
+const LAND = TIP + FALL.long;
+export const FM_DIES = {
+  long: 2.9,
+  jolt: 0.08,
+  dropC: 0.13,
+  drop: 0.15,
+  rigid: 0.3,
+  shiver: [0.32, 0.56] as const,
+  tip: TIP,
+  land: LAND,
+  trayDown: 0.8,
+  trayStill: 2.36,
+  ease: [1.6, 2.3] as const,
+  breath: [LAND + 0.03, LAND + 1.25] as const,
+} as const;
+/** The bounce as he lands (degrees: his legs, his trunk): up off the floor a little, and down; and once more, less. */
+function bounce(t: number): number {
+  const u = t - LAND;
+  if (u <= 0) return 0;
+  if (u < 0.13) return Math.sin((Math.PI * u) / 0.13);
+  if (u < 0.21) return 0.28 * Math.sin((Math.PI * (u - 0.13)) / 0.08);
+  return 0;
+}
+/** The face's numbers (as `solve` reads them: turned, then up, then tilted) for a face turned to its forward `f`, its left `l`. */
+function faceNumbers(f: V3, l: V3): { faceTurn: number; faceUp: number; faceTilt: number } {
+  const up = Math.asin(Math.max(-1, Math.min(1, f[2])));
+  const turn = Math.atan2(f[1], f[0]);
+  const l0: V3 = [-Math.sin(turn), Math.cos(turn), 0];
+  const u0: V3 = [-Math.sin(up) * Math.cos(turn), -Math.sin(up) * Math.sin(turn), Math.cos(up)];
+  const tilt = Math.atan2(dot(l, u0), dot(l, l0));
+  return { faceTurn: turn * D, faceUp: up * D, faceTilt: tilt * D };
+}
+/** A vector turned `deg` degrees about the line `ax` (right-handed). */
+const turnAbout = (v: V3, ax: V3, deg: number): V3 => {
+  const a = (deg * Math.PI) / 180;
+  const k = norm(ax);
+  return add(add(mul(v, Math.cos(a)), mul(cross(k, v), Math.sin(a))), mul(k, dot(k, v) * (1 - Math.cos(a))));
+};
+
+/** HIS BONES AT EVERY MOMENT OF HIS DEATH, all of them (laid over its keys as a mob's feet are: so that his going over is exact on every frame). */
+const deathPose: (t: number) => P = (() => {
+  // STRUCK: jolted back, his head snapped back, his hands thrown
+  const JOLT: P = { ...REST_C, px: -2.0, pitch: -4, bend: -6, faceUp: 18, out: 0.1, lhx: (REST_C.lhx as number) - 1.0, lhz: (REST_C.lhz as number) + 1.2, rhx: (REST_C.rhx as number) - 1.6, rhz: (REST_C.rhz as number) + 0.8 };
+  // SEIZED: his arms snapping straight down to his sides (the tray flung up off his palm as the left goes, the candelabrum
+  // let fall from the right), his body snapping straight and stiff, up onto locked knees, the chin coming up
+  const SEIZE: P = { ...REST_C, px: -1.0, pz: -0.3, pitch: -2, bend: -2, faceUp: 10, out: 0.3, lhIn: 0, lhx: 2.2, lhy: 9.5, lhz: -9.0, rhIn: 0, rhx: 3.0, rhy: -4.4, rhz: -21.0, le: RIGID.le, re: RIGID.re };
+  const plan: Plan = {
+    long: FM_DIES.shiver[1] + 0.04,
+    keys: [
+      [0, REST_C],
+      [FM_DIES.jolt, JOLT],
+      [0.19, SEIZE],
+      [FM_DIES.rigid, RIGID],
+      [FM_DIES.shiver[1] + 0.04, RIGID],
+    ],
+  };
+  const early = poseFn(plan);
+  const trunkAt = (legs: number): number => LIE_TRUNK * smooth(LIE_LEGS * 0.72, LIE_LEGS, legs);
+  // (lying: his hands down on the floor beside him, his arms straight; his head rolled over toward his right)
+  const lie = { ...tipped(RIGID, LIE_LEGS, LIE_TRUNK) };
+  lie.faceUp = (lie.faceUp as number) + LIE_HEAD;
+  const sLie = solve(B, { ...R, ...lie } as Posed);
+  const down = (hand: V3): number => (hand[2] - 2.5) / Math.max(0.3, sLie.chest[0][2]);
+  const dropL = down(sLie.handL);
+  const dropR = down(sLie.handR);
+  const fLie = sLie.face;
+  return (t: number): P => {
+    if (t < TIP) {
+      const p = early(t);
+      // (the last stiff shiver: a quick tremble through him, rigid, dying away)
+      const [a0, a1] = FM_DIES.shiver;
+      if (t > a0 && t < a1) {
+        const k = Math.sin((Math.PI * (t - a0)) / (a1 - a0)) * (1 - 0.5 * (t - a0) / (a1 - a0));
+        const w = (t - a0) * 2 * Math.PI * 9;
+        const shook = { ...p, roll: (p.roll as number) + 1.6 * k * Math.sin(w), faceTilt: (p.faceTilt as number) + 4.0 * k * Math.sin(w * 1.1 + 2), faceTurn: (p.faceTurn as number) + 2.8 * k * Math.sin(w * 0.9), lhy: (p.lhy as number) + 0.7 * k * Math.sin(w + 0.5), rhy: (p.rhy as number) - 0.7 * k * Math.sin(w + 1.5) };
+        // (all of him trembling back on his heels, in one piece)
+        return tipped(shook, 1.1 * k * (0.5 + 0.5 * Math.sin(w * 0.8 + 0.3)), 0);
+      }
+      return p;
+    }
+    // OVER LIKE A PLANK, and down; the little bounce
+    const legs = FALL.at(t - TIP) - 0.9 * bounce(t);
+    const trunk = trunkAt(FALL.at(t - TIP)) - 2.2 * bounce(t);
+    const out = 0.55 + 0.45 * smooth(TIP, LAND, t);
+    const p = tipped({ ...RIGID, out }, legs, trunk);
+    // (as he comes down his arms slap down onto the floor beside him)
+    const slap = smooth(LAND - 0.04, LAND + 0.1, t);
+    p.lhx = (p.lhx as number) - dropL * slap;
+    p.rhx = (p.rhx as number) - dropR * slap;
+    // (and his head, striking the floor, rocks back onto it)
+    p.faceUp = (p.faceUp as number) + LIE_HEAD * smooth(LAND - 0.03, LAND + 0.09, t);
+    // THE RIGIDITY GOING OUT OF HIM: his head rolls over toward his left (his white wig to the eye, his queue on the floor), his hands ease
+    const [e0, e1] = FM_DIES.ease;
+    const ease = smooth(e0, e1, t);
+    if (ease > 0) {
+      const sNow = solve(B, { ...R, ...p } as Posed);
+      const along = sNow.chest[2];
+      const f = turnAbout(fLie[0], along, 34 * ease);
+      const l = turnAbout(fLie[1], along, 34 * ease);
+      // (and a little over toward his chin, the neck easing)
+      const fx = faceNumbers(turnAbout(f, l, 6 * ease), l);
+      Object.assign(p, fx);
+      p.lhy = (p.lhy as number) + 0.8 * ease;
+      p.rhy = (p.rhy as number) - 0.8 * ease;
+    }
+    return p;
+  };
+})();
+function diesMotion(): Motion {
+  const keys: Key3[] = [];
+  const n = Math.round(FM_DIES.long * FPS);
+  for (let i = 0; i <= n; i++) keys.push({ at: i / FPS, pose: deathPose(i / FPS), ease: 'lin' });
+  return { keys };
+}
+
+// =============================================================================================
+// THE TRAY AS HE DIES: flung from his hand as he stiffens; tumbling over once in the air; down on its rim; rolling round
+// and round on it, faster and flatter, a coin settling, until it lies still on its back, its face up
+
+/** Where it comes down (his own lengths, forward and to his left of his floor point), how tipped it is as it does (degrees from flat), and how fast it then goes round on its rim at first and at most (turns a second). */
+export const TRAY_LIES = { at: [11, 27] as const, tilt: 68, round0: 2.3, roundMost: 6.0 } as const;
+/** The lowest of its rim stands this far off the floor. */
+const RIM_UP = 0.05;
+/** Its middle's height when tipped `th` (radians) from flat, its face up: the lowest of its rolled rim on the floor. */
+const trayHigh = (th: number): number => 0.97 * TRAY.r * Math.sin(th) - 0.35 * Math.cos(th) + 0.55 + RIM_UP;
+/** THE TRAY'S WAY, worked out once, finely: from the hand at `FM_DIES.drop` to lying still. */
+const TRAY_PATH = ((): { t0: number; dt: number; c: V3[]; n: V3[]; u: V3[] } => {
+  const G = 400;
+  const t0 = FM_DIES.drop;
+  const dt = 1 / 600;
+  const s = solve(B, { ...R, ...deathPose(t0) } as Posed);
+  const tr0 = trayOf(s, { pAz: R.pAz, pEl: R.pEl, pt: 0 });
+  const tL = FM_DIES.trayDown;
+  const tS = FM_DIES.trayStill;
+  const th0 = (TRAY_LIES.tilt * Math.PI) / 180;
+  // (it tumbles over once, short of a whole turn, about a line square to the way it flies, coming down on its rim)
+  const fly: V3 = norm([TRAY_LIES.at[0] - tr0.c[0], TRAY_LIES.at[1] - tr0.c[1], 0]);
+  const axis = norm(cross([0, 0, 1], fly));
+  const turnBy = 360 - TRAY_LIES.tilt;
+  const land: V3 = [TRAY_LIES.at[0], TRAY_LIES.at[1], trayHigh(th0)];
+  const T = tL - t0;
+  const v: V3 = [(land[0] - tr0.c[0]) / T, (land[1] - tr0.c[1]) / T, (land[2] - tr0.c[2] + 0.5 * G * T * T) / T];
+  const c: V3[] = [];
+  const n: V3[] = [];
+  const u: V3[] = [];
+  let phi = 0;
+  let nn: V3 = tr0.n;
+  let uu: V3 = tr0.u;
+  for (let t = t0; t <= FM_DIES.long + 1e-9; t += dt) {
+    if (t < tL) {
+      const tau = t - t0;
+      const k = tau / T;
+      nn = turnAbout(tr0.n, axis, turnBy * k);
+      uu = turnAbout(turnAbout(tr0.u, tr0.n, 40 * k), axis, turnBy * k);
+      c.push([tr0.c[0] + v[0] * tau, tr0.c[1] + v[1] * tau, tr0.c[2] + v[2] * tau - 0.5 * G * tau * tau]);
+      n.push(nn);
+      u.push(uu);
+      continue;
+    }
+    if (phi === 0) phi = Math.atan2(nn[1], nn[0]);
+    // ROUND ON ITS RIM: tipped less and less (slowly, then all at once, as a coin settles), going round faster and faster
+    const th = t >= tS ? 0 : th0 * Math.pow((tS - t) / (tS - tL), 0.42);
+    const rate = Math.min(TRAY_LIES.roundMost, TRAY_LIES.round0 * Math.sqrt(Math.sin(th0) / Math.max(1e-3, Math.sin(th))));
+    if (th > 0) phi += 2 * Math.PI * rate * dt;
+    const want: V3 = [Math.sin(th) * Math.cos(phi), Math.sin(th) * Math.sin(phi), Math.cos(th)];
+    // (rolling on its rim, not sliding: the way across it carried along with its face, by the least turn each step)
+    const ax = cross(nn, want);
+    const sn = Math.hypot(...ax);
+    if (sn > 1e-9) uu = turnAbout(uu, ax, (Math.atan2(sn, dot(nn, want)) * 180) / Math.PI);
+    uu = norm(sub(uu, mul(want, dot(uu, want))));
+    nn = want;
+    // (as it comes down, the clatter: a little hop off its rim)
+    const hop = t - tL < 0.07 ? 0.9 * Math.sin((Math.PI * (t - tL)) / 0.07) : 0;
+    c.push([land[0], land[1], trayHigh(th) + hop]);
+    n.push(nn);
+    u.push(uu);
+  }
+  return { t0, dt, c, n, u };
+})();
+/** The tray loose of him `t` seconds into his death (null while it is on his hand). */
+export function trayLooseAt(t: number): { c: V3; n: V3; u: V3 } | null {
+  if (t < FM_DIES.drop) return null;
+  const i = Math.min(TRAY_PATH.c.length - 1, Math.round((t - TRAY_PATH.t0) / TRAY_PATH.dt));
+  return { c: TRAY_PATH.c[i], n: TRAY_PATH.n[i], u: TRAY_PATH.u[i] };
 }
 
 // =============================================================================================
 // WHAT THE TRAY DOES IN THE AIR (art/masque_footmen_fx.ts draws it): from his hand as it leaves it to his hand as he catches it
 
-const PLANS = { attack: throwPlan(), candelabrum: swingPlan(), reel: reelPlan(), dying: diesPlan() } as const;
+const PLANS = { attack: throwPlan(), candelabrum: swingPlan(), reel: reelPlan() } as const;
 const POSES: Record<string, (t: number) => P> = Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, poseFn(p)]));
 /** His bones at a moment of one of his moves (by the review's name for it), as the plans and the feet have them. */
-const FEET: Record<string, (t: number) => P> = { attack: throwFeet(), candelabrum: swingFeet(), dying: diesFeet() };
+const FEET: Record<string, (t: number) => P> = { attack: throwFeet(), candelabrum: swingFeet() };
 function bonesOf(move: string, t: number): Skeleton {
   if (move === 'attack' || move === 'candelabrum') return solve(B, { ...R, ...POSES[move](t), ...FEET[move](t) } as Posed);
   return skeletonAt(FOOTMAN, move, t);
@@ -658,6 +884,12 @@ const SAY: FootmanSay = {
     if (mv === 'dying') return m.t < FM_DIES.drop;
     return true;
   },
+  loose: (m) => (byName[m.move ?? ''] === 'dying' ? trayLooseAt(m.t) : null),
+  dies: {
+    // (it leaks hard from him while he stands rigid and goes over; once he is down it leaves him in one great breath)
+    puff: (t) => (t < LAND ? 1.3 + 0.5 * smooth(0.05, 0.3, t) : Math.max(0, 1.8 * (1 - (t - LAND) / 0.6))),
+    breath: FM_DIES.breath,
+  },
   candleHeld: (m) => !(byName[m.move ?? ''] === 'dying' && m.t >= FM_DIES.dropC),
   burn: (m) => burnOf(byName[m.move ?? ''] ?? '', m.t),
   wind: (m) => windOf(byName[m.move ?? ''] ?? '', m.t),
@@ -674,7 +906,7 @@ export const FM_NAMES = {
   attack: 'The tray flung',
   candelabrum: 'The candelabrum',
   reel: 'The footman is struck',
-  dying: 'The tray clatters down, the Hush leaves him',
+  dying: 'Over like a plank, the tray spinning to a stop, the Hush leaves him',
 } as const;
 for (const [k, v] of Object.entries(FM_NAMES)) byName[v] = k;
 
@@ -703,17 +935,18 @@ function footmanMob(): Mob {
     hit: FM_THROW.hit,
     warn: FM_THROW.warn[1] - FM_THROW.warn[0],
     dieTime: FM_DIES.long,
-    dying: mv(FM_NAMES.dying, motionOf(PLANS.dying), { feet: FEET.dying, jaw: (t) => (t < 0.3 ? 0.4 : t < 1.6 ? 1 : 0.5) }),
+    // (his mouth: wide as he seizes, a silent cry; open as the Hush leaves him; slack)
+    dying: mv(FM_NAMES.dying, diesMotion(), { feet: deathPose, jaw: (t) => (t < 0.1 ? 0.4 : t < FM_DIES.breath[1] ? 1 : 0.5) }),
     aura: { x: FOOTMAN_CANVAS.ax, y: FOOTMAN_CANVAS.ay - 46, r: 40, color: CANDLE_LIGHT_AURA, a: 0.06 },
     shadow: 12,
     canvas: FOOTMAN_CANVAS,
     trueBack: true,
     bits: paint.bits,
     grains: paint.grains,
-    // (the tray slides off his palm and clatters down flat to his left; the candelabrum drops to his right, its candles out)
+    // (the candelabrum drops from his right hand to the floor before him, its candles out; the tray is not let fall so but
+    // flies and rolls on its rim, trayLooseAt)
     fall(piece) {
-      if (piece === 'tray') return { from: FM_DIES.drop, to: [16, 20], spin: 150, lay: 'flat', hop: 2.6 };
-      if (piece === 'candelabrum' || piece === 'candles') return { from: FM_DIES.dropC, to: [6, -16], spin: -40, lay: 'axis', hop: 1.2 };
+      if (piece === 'candelabrum') return { from: FM_DIES.dropC, to: [6, -16], spin: 12, lay: 'axis', hop: 1.2 };
       return null;
     },
   };

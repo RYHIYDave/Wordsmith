@@ -11,7 +11,8 @@
 // silver tray. Size: a little taller than the knight, fewer. Move: a brisk, stiff, upright march. Mark: the powdered wig
 // and the silver tray. Attacks (two): the tray flung spinning like a disc; a lit candelabrum swung overhead. Death: the
 // tray clatters down, they drop to their knees, the Hush leaves them. Never: not the palace guard (no armour), not comic
-// butlers. Sound: the tray's clang, the candles' hiss.
+// butlers. Sound: the tray's clang, the candles' hiss. (Their death made new on his pick of 30 Oct, “Yes, these
+// (Recommended)”: rigid a moment, then over backwards like a plank, the tray spinning to a stop on its rim; the moves file.)
 //
 // WHO THEY ARE: the prince's footmen, their words stolen by the Hush, still serving the ball that never ends. A little
 // taller than the knight (63 to his 58), slender and upright. THE MASQUE'S LIVERY, nothing like floor 16's guard or
@@ -113,7 +114,7 @@ export function trayOf(s: Skeleton, q: { pAz: number; pEl: number; pt: number })
  * (lobes catching the light by turns) and rolled up proud of the bed, its underside darker. `spin`: turned this far about
  * its own middle (turns: 0 to 1), so its rosette and lobes go round as it flies. `part`: the part it is painted on.
  */
-export function trayBits(put: Put, part: string, c: V3, n: V3, u0: V3, spin: number, glint = 0): void {
+export function trayBits(put: Put, part: string, c: V3, n: V3, u0: V3, spin: number, glint = 0, deep = false): void {
   const a0 = spin * Math.PI * 2;
   const v0 = norm(cross(n, u0), [0, 1, 0]);
   const u = add(mul(u0, Math.cos(a0)), mul(v0, Math.sin(a0)));
@@ -128,6 +129,17 @@ export function trayBits(put: Put, part: string, c: V3, n: V3, u0: V3, spin: num
       const r = Math.hypot(a, b) / R;
       if (r > 1) return null;
       if (!front) return SILVER[Math.max(0, Math.min(2, tone0 - 1))];
+      // (`deep`: the tray seen full face, lying or rolling on its rim, its bed a step darker so that its rim, its well, its
+      // boss and the band of light across it stand out as they do on a salver, not one white disc)
+      if (deep) {
+        const ang = Math.atan2(b, a);
+        const lit = Math.max(1, Math.min(3, tone0));
+        if (r > 0.8) return Math.floor(((ang / (Math.PI * 2)) * 18 + 18) % 2) ? SILVER[4] : SILVER[Math.max(1, lit - 1)];
+        if (r > 0.7) return SILVER[Math.max(1, lit - 2)];
+        if (r < 0.24 && Math.cos(ang * 3) > 0.2) return SILVER[4];
+        if (r < 0.3) return SILVER[Math.max(1, lit - 1)];
+        return Math.abs(a / R + (b / R) * 0.4) < 0.2 ? SILVER[4] : SILVER[lit];
+      }
       const tone = Math.max(2, Math.min(4, tone0 + 1));
       const ang = Math.atan2(b, a);
       // (the gadrooned rim: lobes bright and dark by turns)
@@ -194,7 +206,7 @@ function candelabrum(put: Put, s: Skeleton, glint: number): void {
   for (const cup of k.cups) {
     put('candelabrum', 'candelabrum', { k: 'ball', c: cup, ax: [mul(k.across, 1.4), mul(side, 1.4), mul(k.way, 0.45)], skin: GILT });
     put('candelabrum', 'candelabrum', { k: 'rod', a: add(cup, mul(k.way, -0.7)), b: add(cup, mul(k.way, 0.3)), ra: 0.75, rb: 0.9, ramp: GILT });
-    put('candelabrum', 'candles', { k: 'rod', a: add(cup, mul(k.way, 0.3)), b: add(cup, mul(k.way, C.candle)), ra: 0.72, rb: 0.68, ramp: WAX });
+    put('candelabrum', 'candelabrum', { k: 'rod', a: add(cup, mul(k.way, 0.3)), b: add(cup, mul(k.way, C.candle)), ra: 0.72, rb: 0.68, ramp: WAX });
   }
   if (glint > 0.05) put('glint', 'candelabrum', { k: 'glow', p: k.mid, c: FLAME[1], r: 6 + 6 * glint, a: 0.5 * glint });
 }
@@ -299,6 +311,9 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, curl: number, under
   put(`hand${side}`, `finger${side}`, { k: 'rod', a: tb, b: tt, ra: 0.56, rb: 0.42, ramp: GLOVE, far: true });
 }
 
+/** A point kept `r` above the floor, if it would be lower (what lies under his head as he lies on his back). Higher, it is as it is. */
+const onFloor = (p: V3, r: number): V3 => (p[2] < r ? [p[0], p[1], r] : p);
+
 /** A ring about the trunk at `c` along its forward `f` and left `l`, so far out each way. */
 const ringAt = (c: V3, f: V3, l: V3, df: number, dl: number): Ring => ({ c, u: mul(f, df), v: mul(l, dl) });
 /** A point on a ring `deg` round from its forward toward its left, `out` beyond it. */
@@ -400,13 +415,13 @@ function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number, lag: V
       put('wig', 'rolls', { k: 'ball', c, ax: [mul(ff, 2.6), mul(fl, r), mul(fu, r * 0.95)], skin: (u, tone) => WIG[Math.abs(u[0]) > 0.82 ? Math.max(1, tone - 1) : Math.cos(u[2] * 3 + u[1]) > 0.7 ? Math.max(1, tone - 1) : tone] });
     }
   }
-  // the queue, from the nape, tied with a black bow, hanging back as he goes
-  const nape = add(hc, add(mul(ff, -hr[0] * 1.12), mul(fu, -hr[2] * 0.42)));
-  const end = add(add(nape, add(mul(ff, -1.8), mul(fu, -6.2))), mul(lag, 0.7));
+  // the queue, from the nape, tied with a black bow, hanging back as he goes (lying on his back: on the floor, not in it)
+  const nape = onFloor(add(hc, add(mul(ff, -hr[0] * 1.12), mul(fu, -hr[2] * 0.42))), 1.3);
+  const end = onFloor(add(add(nape, add(mul(ff, -1.8), mul(fu, -6.2))), mul(lag, 0.7)), 0.8);
   put('wig', 'queue', { k: 'rod', a: nape, b: end, ra: 1.3, rb: 0.8, ramp: WIG });
-  const bow = add(lerp3(nape, end, 0.08), mul(ff, -0.6));
+  const bow = onFloor(add(lerp3(nape, end, 0.08), mul(ff, -0.6)), 1.9);
   for (const k of [-1, 1]) put('wig', 'bow', { k: 'ball', c: add(bow, mul(fl, k * 1.8)), ax: [mul(ff, 0.9), mul(fl, 1.9), mul(fu, 1.45)], skin: RIBBON });
-  put('wig', 'bow', { k: 'rod', a: bow, b: add(add(bow, mul(fu, -2.6)), mul(lag, 0.4)), ra: 0.55, rb: 0.45, ramp: RIBBON });
+  put('wig', 'bow', { k: 'rod', a: bow, b: onFloor(add(add(bow, mul(fu, -2.6)), mul(lag, 0.4)), 0.45), ra: 0.55, rb: 0.45, ramp: RIBBON });
   const mouth = add(hc, add(mul(ff, hr[0] * 1.02), mul(fu, -hr[2] * 0.4)));
   return { mouth, ff, fl, fu };
 }
@@ -424,6 +439,10 @@ export interface FootmanSay {
   smear: (m: Moment) => { lines: V3[][]; fire: V3[][] } | null;
   /** Grains laid after the edge in a move (glints, smoke). */
   more: (m: Moment) => [V3, string, number][];
+  /** THE TRAY LOOSE OF HIM as he dies (flown from his hand, rolling round on its rim, lying still): its middle, its face's way and a way across it; null while it is on his hand. */
+  loose: (m: Moment) => { c: V3; n: V3; u: V3 } | null;
+  /** AS HE DIES: how hard the Hush leaks out of him `t` seconds in, and when it leaves him in one great grey breath (seconds). */
+  dies: { puff: (t: number) => number; breath: readonly [number, number] };
 }
 
 /** The Hush, the flames and the rest laid after their edge at each moment (Mob.grains). */
@@ -488,9 +507,11 @@ function footmanBits(st: Stage, m: Moment, say: FootmanSay): Bit[] {
   arm(put, s, 'R', cu, candleOn ? 1 : 0.45);
   put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(cu, -1.5)), b: lerp3(s.neck, s.head, 0.5), ra: 2.1, rb: 1.9, ramp: SKIN });
   const hd = head(put, st, s, jaw, lit, lag);
-  // WHAT HE CARRIES: the tray (painted even as it falls from him as he dies: it falls as a piece of its own, Mob.fall)
+  // WHAT HE CARRIES: the tray (as he dies, flown from his hand: where it is loose of him)
   const glint = clamp01(m.glint);
-  if (trayOn || m.dying) {
+  const loose = m.dying ? say.loose(m) : null;
+  if (loose) trayBits(put, 'tray', loose.c, loose.n, loose.u, 0, 0, true);
+  else if (trayOn) {
     const tr = trayOf(s, q);
     trayBits(put, 'tray', tr.c, tr.n, tr.u, 0, trayOn && m.move !== undefined && /tray/i.test(m.move) ? glint : 0);
   }
@@ -529,17 +550,15 @@ function footmanBits(st: Stage, m: Moment, say: FootmanSay): Bit[] {
     });
   }
   // THE HUSH LEAKING OUT OF HIM: always a little; harder as he winds up; a great breath of it as it leaves him
-  const puff = m.dying ? Math.max(0, 2.2 * (1 - clamp01((m.t - 0.3) / 1.2))) : 0.6 + 0.7 * glint;
+  const puff = m.dying ? say.dies.puff(m.t) : 0.6 + 0.7 * glint;
   hushBreath(put, hd.mouth, hd.ff, hd.fl, m.t, puff, seed);
-  if (m.dying) hushLeaves(put, hd.mouth, hd.ff, hd.fl, m.t, seed, FOOTMAN_EXHALE[0], FOOTMAN_EXHALE[1]);
+  if (m.dying) hushLeaves(put, hd.mouth, hd.ff, hd.fl, m.t, seed, say.dies.breath[0], say.dies.breath[1]);
   grains.push(...say.more(m));
   void BREATH_PALE;
   void HUSH;
   void fr;
   return bits;
 }
-/** When the Hush pours out of him as he dies (seconds). */
-export const FOOTMAN_EXHALE: readonly [number, number] = [0.32, 1.9];
 
 /** THE FOOTMAN AS THE PAINTER TAKES HIM. */
 export function footmanPainter(say: FootmanSay): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
