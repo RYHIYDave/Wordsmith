@@ -2,13 +2,14 @@
 """THE MASKED DANCERS' FILM AND PICTURES, captioned for the owner's phone (art/masque_dancers.ts; behind DANCERS_ON, off:
 not in the game). The frames are painted by tools/masque_dancers_film.ts; this puts a caption over each and makes the film.
    python3 tools/masque_dancers_film.py film <frames dir> <out.mp4>
-   python3 tools/masque_dancers_film.py label <in.png> <out.png> "<title>" "<line>" """
+   python3 tools/masque_dancers_film.py label <in.png> <out.png> "<title>" "<line>"
+   python3 tools/masque_dancers_film.py sheet <in.png> <out.png> "<title>" "<line>"   (its labels from <in.png>.json) """
 import json, os, subprocess, sys
 from PIL import Image, ImageDraw, ImageFont
 B = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 R = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 BG, GREY, PALE, ROSE = (18, 15, 30), (172, 166, 190), (236, 232, 246), (232, 150, 190)
-big, small, note = ImageFont.truetype(B, 30), ImageFont.truetype(R, 19), ImageFont.truetype(R, 19)
+big, small, note, tiny = ImageFont.truetype(B, 30), ImageFont.truetype(R, 19), ImageFont.truetype(R, 19), ImageFont.truetype(R, 16)
 
 def card(im, title, sub, line):
     W, H = im.size
@@ -38,4 +39,19 @@ if sys.argv[1] == 'film':
     print(mp4, len(caps), 'frames', round(len(caps) / 30, 1), 's', round(os.path.getsize(mp4) / 1e6, 2), 'MB')
 elif sys.argv[1] == 'label':
     im = Image.open(sys.argv[2]).convert('RGB')
+    card(im, sys.argv[4], '', sys.argv[5]).save(sys.argv[3])
+elif sys.argv[1] == 'sheet':
+    # a sheet of frames, each frame's label over it, and a label for each row of them
+    im = Image.open(sys.argv[2]).convert('RGB')
+    d = ImageDraw.Draw(im)
+    for lab in json.load(open(sys.argv[2] + '.json')):
+        if lab['x'] < 0:
+            d.text((10, lab['y'] + 36), lab['text'], font=small, fill=PALE, anchor='lm')
+        else:
+            d.text((lab['x'], lab['y']), lab['text'], font=tiny, fill=GREY, anchor='mm')
+    W = im.size[0]
+    for x in range(1, 4):
+        d.line([(x * W // 4, 0), (x * W // 4, im.size[1])], fill=(6, 5, 12), width=2)
+    for y in range(1, 4):
+        d.line([(0, y * im.size[1] // 4), (W, y * im.size[1] // 4)], fill=(6, 5, 12), width=2 if y != 2 else 4)
     card(im, sys.argv[4], '', sys.argv[5]).save(sys.argv[3])

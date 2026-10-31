@@ -14,7 +14,8 @@
 // break off and whirl at you, fast; at the clock's chime they freeze and turn to look; known by the masks, and dancing in
 // pairs; one attack, a whirling spin into you, skirts and coat-tails flaring; their death, the mask drops, the Hush leaves
 // them, they sink down in a last bow; never clowns, never undead or gory; their sound, a faint waltz around them, silent
-// dancers.
+// dancers. (Their death made new on his pick of 30 Oct, “Yes, these (Recommended)”: a last pirouette spinning out of
+// control, a collapse into a swirl of skirts or coat-tails, the mask rolling away; the moves file.)
 //
 // WHO THEY ARE: two kinds, mixed in a crowd. A LADY in a gown (a fitted bodice; elbow sleeves with white lace falling from
 // them; long white gloves; a full skirt to the floor, open at its front over a petticoat of ivory silk; her hair swept up,
@@ -123,7 +124,7 @@ function hand(put: Put, side: 'L' | 'R', at: V3, fore: V3, cu: V3, grip: number,
  * AN ARM. Hers: a sleeve of the gown to the elbow, lace falling from it in two tiers, a long white glove to the elbow.
  * His: the coat's sleeve to the wrist, a deep turned-back cuff of the trim, lace at the wrist, a white glove.
  */
-function arm(put: Put, s: Skeleton, B: Build, who: DancerWho, side: 'L' | 'R', room: Room, cu: V3, grip: number, spread: number, lag: V3): void {
+function arm(put: Put, s: Skeleton, B: Build, who: DancerWho, side: 'L' | 'R', room: Room, cu: V3, grip: number, spread: number, lag: V3, low = false): void {
   const sh = side === 'L' ? s.shoulderL : s.shoulderR;
   const el = side === 'L' ? s.elbowL : s.elbowR;
   const hd = side === 'L' ? s.handL : s.handR;
@@ -141,7 +142,8 @@ function arm(put: Put, s: Skeleton, B: Build, who: DancerWho, side: 'L' | 'R', r
     const hang = norm(add(add([0, 0, -1], mul(upper, 0.6)), mul(lag, 0.12)), [0, 0, -1]);
     for (const [k, long, w] of [[0, 3.6, 1.25]] as const) {
       const top = add(el, mul(upper, -0.4 - 0.9 * k));
-      put(`arm${side}`, `lace${side}`, { k: 'rod', a: top, b: add(top, mul(hang, long)), ra: r1 * w, rb: r1 * (w + 0.35), ramp: LACE, far: true });
+      const tip = add(top, mul(hang, long));
+      put(`arm${side}`, `lace${side}`, { k: 'rod', a: top, b: low ? onFloor(tip, r1 * (w + 0.35) + 0.2) : tip, ra: r1 * w, rb: r1 * (w + 0.35), ramp: LACE, far: true });
     }
   } else {
     put(`fore${side}`, `fore${side}`, { k: 'ball', c: el, ax: sphere(r1 * 1.16), skin: room.cloth, far: true });
@@ -218,6 +220,21 @@ export interface DancerSay {
   puff?: (m: Moment) => number;
   /** As they die, from when to when the Hush pours out of them. */
   leaving?: readonly [number, number];
+  /** THE MASK LOOSE OF THEM as they die (flung off the face, rolling on its rim, lying still): null while it is on the face. */
+  loose?: (m: Moment) => LooseMask | null;
+  /**
+   * AS THEY DIE: how hard the Hush leaks out of them `t` seconds in, and when it leaves them in one great grey breath; how far
+   * the skirt (or the coat-tails) is laid out on the floor round them (`pool`, 0 not at all to 1 all of it), and how far
+   * round its hem has been carried after them (`swirl`, degrees).
+   */
+  dies?: { puff: (t: number) => number; breath: readonly [number, number]; pool: (t: number) => number; swirl: (t: number) => number };
+}
+/** The mask off the face: its middle, its face's way (`n`), its brow's way (`u`), and how fast it goes. */
+export interface LooseMask {
+  c: V3;
+  n: V3;
+  u: V3;
+  vel: V3;
 }
 
 /**
@@ -296,9 +313,9 @@ function coatSkirtRings(s: Skeleton, B: Build, m: Moment, flare: number, turnDir
   ];
 }
 
-/** THE MASK: white porcelain, a whole face, its brows painted in the room's colour, the eyes dark (the dull pink of the Hushed in them), the lips a dark slit; tied on with a ribbon of the room. Returns its mouth. */
-function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn: number, freed: boolean): V3 {
-  const skin: Skin = (u, tone) => {
+/** The mask's porcelain face: its eyes, its painted brows, its lips, the line of its nose. */
+function maskSkin(room: Room): Skin {
+  return (u, tone) => {
     if (u[0] < 0.05) return null;
     const side = Math.abs(u[1]);
     // the eyes: almond holes, dark, a little up from the middle
@@ -317,6 +334,10 @@ function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn
     if (side > 0.42 && side < 0.66 && u[2] < -0.12 && u[2] > -0.46) return PORCELAIN[Math.max(1, tone - 1)];
     return PORCELAIN[Math.max(1, tone)];
   };
+}
+/** THE MASK: white porcelain, a whole face, its brows painted in the room's colour, the eyes dark (the dull pink of the Hushed in them), the lips a dark slit; tied on with a ribbon of the room. Returns its mouth. */
+function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn: number, freed: boolean): V3 {
+  const skin = maskSkin(room);
   const c = add(hc, mul(ff, 0.35));
   put('mask', 'mask', { k: 'ball', c, ax: [mul(ff, hr[0] * 1.04), mul(fl, hr[1] * 1.1), mul(fu, hr[2] * 1.07)], skin });
   // the dull pink in the dark behind its eyes (hot, through the warning); none once the Hush has gone and the mask has dropped
@@ -327,6 +348,36 @@ function mask(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, burn
   }
   return add(c, add(mul(ff, hr[0] * 1.04), mul(fu, -hr[2] * 0.46)));
 }
+
+/** The inside of the mask, unglazed: what is seen of its hollow back as it rolls and tumbles. */
+const MASK_INSIDE: Ramp = ['#3a3644', '#524e5e', '#6c6878', '#86828f', '#9a96a4'];
+/**
+ * THE MASK LOOSE OF THEM (as they die): its porcelain face, the eyes empty now (no pink: dark holes); its hollow back, seen as
+ * it rolls on its rim; and the two ends of its ribbon trailing from its sides, after the way it goes, never into the floor.
+ */
+function looseMask(put: Put, lm: LooseMask, hr: V3, room: Room): void {
+  const n = lm.n;
+  const u = lm.u;
+  const l = norm(cross(u, n), [0, 1, 0]);
+  const ax: [V3, V3, V3] = [mul(n, hr[0] * 1.04), mul(l, hr[1] * 1.1), mul(u, hr[2] * 1.07)];
+  put('mask', 'mask', { k: 'ball', c: lm.c, ax, skin: maskSkin(room) });
+  put('mask', 'mask', { k: 'ball', c: lm.c, ax: [mul(n, 0.7), ax[1], ax[2]], skin: (q, tone) => (q[0] > 0 ? null : MASK_INSIDE[Math.max(0, Math.min(4, tone + (Math.hypot(q[1], q[2]) > 0.86 ? 1 : -1)))]) });
+  // (its ribbon, come away with it: the two ends from its sides, trailing after it and lying on the floor as it lies)
+  const sp = Math.hypot(lm.vel[0], lm.vel[1], lm.vel[2]);
+  const back: V3 = sp > 4 ? mul(lm.vel, -1 / sp) : mul(u, -1);
+  for (const k of [-1, 1]) {
+    let prev = onFloor(add(lm.c, add(mul(l, k * hr[1] * 1.08), mul(n, -0.3))), 0.8);
+    for (let i = 1; i <= 3; i++) {
+      const sway = Math.sin(i * 1.7 + k) * 0.5;
+      let p = add(prev, add(mul(back, 1.9), add(mul(l, k * (0.7 + sway)), [0, 0, -0.9])));
+      if (p[2] < 0.75) p = [p[0], p[1], 0.75];
+      put('mask', 'ribbon', { k: 'rod', a: prev, b: p, ra: 0.55, rb: 0.5, ramp: room.ribbon });
+      prev = p;
+    }
+  }
+}
+/** A point kept `r` above the floor, if it would be lower (what lies under them as they lie). Higher, it is as it is. */
+const onFloor = (p: V3, r: number): V3 => (p[2] < r ? [p[0], p[1], r] : p);
 
 /** A FACE, theirs, under the mask: drained, the lips parted; the eyes shut once the Hush has left them. */
 function face(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, freed: boolean): void {
@@ -342,16 +393,18 @@ function face(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, freed: boolean):
 }
 
 /** HER HAIR: swept up off the neck into a knot high at the back of the head, curls at her temples; a plume of the room's colour standing from it and streaming back. */
-function herHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, lag: V3, t: number): void {
+function herHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, lag: V3, t: number, low = false): void {
+  // (`low`: as they lie, what of it would go into the floor lies on it)
+  const keep = (p: V3, r: number): V3 => (low ? onFloor(p, r) : p);
   const skin: Skin = (u, tone) => (u[0] > -0.1 && u[2] < 0.45 ? null : HER_HAIR[tone]);
   put('hair', 'hair', { k: 'ball', c: add(hc, add(mul(fu, 0.6), mul(ff, -0.7))), ax: [mul(ff, hr[0] * 1.0), mul(fl, hr[1] * 1.0), mul(fu, hr[2] * 1.0)], skin });
   // the knot, high at the back
-  const knot = add(hc, add(mul(fu, hr[2] * 0.95), mul(ff, -hr[0] * 0.55)));
+  const knot = keep(add(hc, add(mul(fu, hr[2] * 0.95), mul(ff, -hr[0] * 0.55))), 2.8);
   put('hair', 'knot', { k: 'ball', c: knot, ax: [mul(ff, 2.3), mul(fl, 2.6), mul(fu, 2.4)], skin: HER_HAIR });
   // two curls at the nape
   for (const k of [-1, 1]) {
-    const a = add(hc, add(mul(fl, k * hr[1] * 0.7), add(mul(ff, -hr[0] * 0.5), mul(fu, -hr[2] * 0.4))));
-    put('hair', 'curls', { k: 'rod', a, b: add(a, add([0, 0, -3.2], add(mul(fl, k * 0.5), mul(lag, 0.3)))), ra: 0.85, rb: 0.6, ramp: HER_HAIR });
+    const a = keep(add(hc, add(mul(fl, k * hr[1] * 0.7), add(mul(ff, -hr[0] * 0.5), mul(fu, -hr[2] * 0.4)))), 1.0);
+    put('hair', 'curls', { k: 'rod', a, b: keep(add(a, add([0, 0, -3.2], add(mul(fl, k * 0.5), mul(lag, 0.3)))), 0.75), ra: 0.85, rb: 0.6, ramp: HER_HAIR });
   }
   // THE PLUME: three slender feathers from the knot, curving up and back, swaying, streaming as she goes
   for (let j = 0; j < 3; j++) {
@@ -361,8 +414,8 @@ function herHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, l
     for (let i = 1; i <= 6; i++) {
       const k = i / 6;
       const sway = Math.sin(t * 2.2 + j * 1.3 + k * 2) * 0.7 * k;
-      const p = add(base, add(mul(fu, 1.8 * i * long * (1 - 0.5 * k)), add(mul(ff, -(0.8 + 0.3 * (j === 1 ? 1 : 0)) * i * k * long - 0.25 * i), add(mul(fl, (j - 1) * 0.75 * i * k + sway), mul(lag, 0.5 * i * k)))));
       const w = 0.42 + 0.42 * Math.sin(Math.PI * Math.min(1, k * 1.1));
+      const p = keep(add(base, add(mul(fu, 1.8 * i * long * (1 - 0.5 * k)), add(mul(ff, -(0.8 + 0.3 * (j === 1 ? 1 : 0)) * i * k * long - 0.25 * i), add(mul(fl, (j - 1) * 0.75 * i * k + sway), mul(lag, 0.5 * i * k))))), w + 0.3);
       put('plume', 'plume', { k: 'rod', a: prev, b: p, ra: w, rb: Math.max(0.25, w - 0.1), ramp: j === 1 ? room.trim : room.ribbon });
       prev = p;
     }
@@ -370,13 +423,14 @@ function herHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room, l
 }
 
 /** HIS HAIR: dark, drawn back from the brow and tied at the nape in a short queue with a black ribbon. */
-function hisHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, lag: V3): void {
+function hisHair(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, lag: V3, low = false): void {
+  const keep = (p: V3, r: number): V3 => (low ? onFloor(p, r) : p);
   const skin: Skin = (u, tone) => (u[0] > -0.05 && u[2] < 0.5 ? null : HIS_HAIR[tone]);
   put('hair', 'hair', { k: 'ball', c: add(hc, add(mul(fu, 0.45), mul(ff, -0.6))), ax: [mul(ff, hr[0] * 1.0), mul(fl, hr[1] * 1.0), mul(fu, hr[2] * 1.0)], skin });
-  const nape = add(hc, add(mul(ff, -hr[0] * 0.92), mul(fu, -hr[2] * 0.25)));
-  const end = add(add(nape, add(mul(ff, -1.4), mul(fu, -4.6))), mul(lag, 0.6));
+  const nape = keep(add(hc, add(mul(ff, -hr[0] * 0.92), mul(fu, -hr[2] * 0.25))), 1.3);
+  const end = keep(add(add(nape, add(mul(ff, -1.4), mul(fu, -4.6))), mul(lag, 0.6)), 0.8);
   put('hair', 'queue', { k: 'rod', a: nape, b: end, ra: 1.15, rb: 0.6, ramp: HIS_HAIR });
-  put('hair', 'ribbon', { k: 'ball', c: lerp3(nape, end, 0.12), ax: [mul(ff, 0.9), mul(fl, 1.6), mul(fu, 0.9)], skin: RIBBON_BLACK });
+  put('hair', 'ribbon', { k: 'ball', c: keep(lerp3(nape, end, 0.12), 1.7), ax: [mul(ff, 0.9), mul(fl, 1.6), mul(fu, 0.9)], skin: RIBBON_BLACK });
 }
 
 /** The ribbon that ties the mask on: round the head over the ears, its two ends hanging from the knot behind and streaming. */
@@ -393,6 +447,52 @@ function maskRibbon(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, room: Room
       prev = p;
     }
   }
+}
+
+/** A ring turned `deg` degrees about the upright through its middle (its hem's points with it). */
+function turnedRing(r: Ring, deg: number): Ring {
+  const a = deg * D;
+  const t = (v: V3): V3 => [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
+  return { c: r.c, u: t(r.u), v: t(r.v), pts: r.pts?.map((p) => add(r.c, t(sub(p, r.c)))) };
+}
+/** Two rings mixed, `k` of the way from the one to the other (their hems' points too, if both have them). */
+function mixRing(a: Ring, b: Ring, k: number): Ring {
+  const pts = a.pts && b.pts && a.pts.length === b.pts.length ? a.pts.map((p, i) => lerp3(p, (b.pts as V3[])[i], k)) : k < 0.5 ? a.pts : b.pts;
+  return { c: lerp3(a.c, b.c, k), u: lerp3(a.u, b.u, k), v: lerp3(a.v, b.v, k), pts };
+}
+/**
+ * AS THEY DIE, THE SKIRT (OR THE COAT'S SKIRTS) COMES DOWN ROUND THEM: its hem carried on round after them as they stop
+ * turning (`swirl`, so that its gores spiral round), and, as they come down onto the floor, laid out on it in a wide swirl
+ * round their hips and legs (`k`, 0 not yet to 1 all of it): the hem flat on the floor, its waves lying in it; a ring over
+ * their legs; a ring round their hips; the waist as it was. `wide`: how far out on the floor the hem lies.
+ */
+function pooled(rings: ReadonlyArray<Ring>, s: Skeleton, B: Build, k: number, swirl: number, wide: [number, number], coat: boolean): Ring[] {
+  const out = rings.map((r, i) => (i === 0 && swirl ? turnedRing(r, swirl) : r));
+  if (k <= 0) return out;
+  const { f, l } = hipsFlat(s);
+  const kneeMid = lerp3(s.kneeL, s.kneeR, 0.5);
+  const footMid = lerp3(s.ankleL, s.ankleR, 0.5);
+  // (the top of what lies under it: the legs, round them)
+  const legTop = Math.max(s.kneeL[2], s.kneeR[2], footMid[2]) + 2.2;
+  // (the hem's middle: toward the legs from the hips, so that the gown covers them to the feet)
+  const toward = lerp3(kneeMid, footMid, coat ? 0 : 0.5);
+  const mid: V3 = [s.pelvis[0] * 0.45 + toward[0] * 0.55, s.pelvis[1] * 0.45 + toward[1] * 0.55, 0];
+  const N = out[0].pts?.length ?? 28;
+  const hemC: V3 = [mid[0], mid[1], 0.9];
+  const pts: V3[] = [];
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    // (its waves lie in it as it lies, flat: a little in and out, a little up off the floor)
+    const wave = Math.sin(a * (coat ? 4 : 6) + swirl * D * 2 + 0.6);
+    const r = 1 + 0.07 * wave;
+    pts.push(add(hemC, add(mul(f, Math.cos(a) * wide[0] * r), add(mul(l, Math.sin(a) * wide[1] * r), [0, 0, 0.3 + 0.3 * wave]))));
+  }
+  const hem = turnedRing({ c: hemC, u: mul(f, wide[0]), v: mul(l, wide[1]), pts }, swirl);
+  // (a flat brim of it out on the floor; then over the legs, low; then round the hips)
+  const over: Ring = turnedRing({ c: [mid[0] * 0.8 + s.pelvis[0] * 0.2, mid[1] * 0.8 + s.pelvis[1] * 0.2, Math.max(2.4, legTop)], u: mul(f, wide[0] * 0.62), v: mul(l, wide[1] * 0.62) }, swirl * 0.5);
+  const hips: Ring = { c: [s.pelvis[0], s.pelvis[1], Math.max(s.pelvis[2] + 1.2, over.c[2] + 1.0)], u: mul(f, B.pelvisDeep + 4.2), v: mul(l, B.pelvisHalf + 4.0) };
+  const want = coat ? [hem, hips, out[out.length - 1]] : [hem, over, hips, out[out.length - 1]];
+  return out.map((r, i) => mixRing(r, want[i], k));
 }
 
 /**
@@ -435,6 +535,11 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
   const flare = clamp01((Math.abs(spin) - 0.3) / 2.2);
   const turnDir = spin >= 0 ? 1 : -1;
   const freed = say.freed?.(m) ?? false;
+  // (as they die: how far the skirt is laid out round them on the floor, and how far round its hem is carried)
+  const dying = !!m.dying;
+  const pool = dying ? (say.dies?.pool(m.t) ?? 0) : 0;
+  const swirl = dying ? (say.dies?.swirl(m.t) ?? 0) : 0;
+  const lay = (rings: Ring[], wide: [number, number], coat: boolean): Ring[] => (dying ? pooled(rings, s, B, pool, swirl, wide, coat) : rings);
   for (const side of ['L', 'R'] as const) leg(put, s, B, who, side, room);
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.62));
   if (who === 'lady') {
@@ -442,9 +547,9 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
     // stomacher of ivory pointed at the waist; a square neckline
     const ph = -turnDir * m.wind * Math.PI * 4;
     const sk = skirtRings(s, B, m, flare, turnDir, 0);
-    gored(put, 'skirt', 'petticoat', sk.rings, IVORY, { lift: 0.06 + 0.25 * flare, hem: LACE }, -40, 40, 2, flare, ph);
+    gored(put, 'skirt', 'petticoat', lay(sk.rings, [B.pelvisDeep + 19, B.pelvisHalf + 17], false), IVORY, { lift: 0.06 + 0.25 * flare + 0.2 * pool, hem: LACE }, -40, 40, 2, flare * (1 - pool), ph);
     const over = skirtRings(s, B, m, flare, turnDir, 0.7);
-    gored(put, 'skirt', 'skirt', over.rings, room.cloth, { lift: 0.06 + 0.25 * flare, hem: room.trim }, 30, 330, 8, flare, ph);
+    gored(put, 'skirt', 'skirt', lay(over.rings, [B.pelvisDeep + 20, B.pelvisHalf + 18], false), room.cloth, { lift: 0.06 + 0.25 * flare + 0.2 * pool, hem: room.trim }, 30, 330, 8, flare * (1 - pool), ph);
     const bodice = torso(s, B, 0.4, 0.62);
     put('body', 'bodice', { k: 'cloth', rings: bodice.slice(0, 4), ramp: room.cloth, look: { folds: [0, 50, -50], lift: 0.03 } });
     // the stomacher: an ivory point down the front of the bodice
@@ -466,7 +571,7 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
     wcoat.unshift({ c: add(s.pelvis, add(mul(s.hips[2], -0.5), mul(flat.f, 0.6))), u: mul(flat.f, B.pelvisDeep + 1.6), v: mul(flat.l, B.pelvisHalf + 1.5) });
     put('body', 'waistcoat', { k: 'cloth', rings: wcoat, ramp: IVORY, look: { folds: [0], lift: 0.04 } });
     put('body', 'coat', { k: 'cloth', rings: torso(s, B, 1.25, 0.4).slice(0, 5), ramp: room.cloth, look: { folds: [70, -70, 140, -140, 180], lift: 0.04, arc: [26, 334] } });
-    const cs = coatSkirtRings(s, B, m, flare, turnDir);
+    const cs = lay(coatSkirtRings(s, B, m, flare, turnDir), [B.pelvisDeep + 13, B.pelvisHalf + 11], true);
     const ph = -turnDir * m.wind * Math.PI * 4;
     // (its two halves, parted at the vent behind: the coat-tails)
     gored(put, 'coatskirt', 'coatskirt', cs, room.cloth, { lift: 0.05 + 0.3 * flare, hem: room.trim }, 48, 172, 3, flare, ph);
@@ -485,23 +590,27 @@ function dancerBits(who: DancerWho, st: Stage, m: Moment, say: DancerSay): Bit[]
   }
   // THE ARMS
   const g = say.burn?.(m) ?? 0;
-  arm(put, s, B, who, 'L', room, cu, 0.35, 0.3 + 0.7 * g, lag);
-  arm(put, s, B, who, 'R', room, cu, 0.35, 0.3 + 0.7 * g, lag);
+  arm(put, s, B, who, 'L', room, cu, 0.35, 0.3 + 0.7 * g, lag, dying);
+  arm(put, s, B, who, 'R', room, cu, 0.35, 0.3 + 0.7 * g, lag, dying);
   // THE HEAD: the face under, the mask over it (it drops as they die: a piece of its own, Mob.fall), the hair, the ribbon
   const [ff, fl, fu] = wornOn(st, s, 8);
   const hr: V3 = [B.headR[0], B.headR[1] * 1.04, B.headR[2]];
   const hc = add(s.head, mul(fu, -0.2));
   face(put, hc, ff, fl, fu, hr, freed);
-  const mouth = mask(put, hc, ff, fl, fu, hr, room, g, freed);
-  if (who === 'lady') herHair(put, hc, ff, fl, fu, hr, room, lag, m.t);
-  else hisHair(put, hc, ff, fl, fu, hr, lag);
-  maskRibbon(put, hc, ff, fl, fu, hr, room, lag, m.t);
-  // THE HUSH: leaking from the mask's lips; harder through the warning; pouring out as they die
+  // (as they die the mask is flung off and rolls away: where it is loose of them, painted there, its ribbon with it)
+  const loose = dying ? (say.loose?.(m) ?? null) : null;
+  const mouth = loose ? add(add(hc, mul(ff, 0.35)), add(mul(ff, hr[0] * 1.04), mul(fu, -hr[2] * 0.46))) : mask(put, hc, ff, fl, fu, hr, room, g, freed);
+  if (loose) looseMask(put, loose, hr, room);
+  if (who === 'lady') herHair(put, hc, ff, fl, fu, hr, room, lag, m.t, dying);
+  else hisHair(put, hc, ff, fl, fu, hr, lag, dying);
+  if (!loose) maskRibbon(put, hc, ff, fl, fu, hr, room, lag, m.t);
+  // THE HUSH: leaking from the mask's lips; harder through the warning; as they die, leaking hard as they whirl, and leaving
+  // them in one great grey breath once they lie
   const seed = who === 'lady' ? 11 : 12;
   if (!m.dying) hushBreath(put, mouth, ff, fl, m.t, say.puff?.(m) ?? 0.8, seed);
-  else if (say.leaving) {
-    const [a, b] = say.leaving;
-    hushBreath(put, mouth, ff, fl, m.t, Math.max(0, 1.6 * (1 - clamp01((m.t - a * 0.5) / (b - a * 0.5)))), seed);
+  else if (say.dies) {
+    const [a, b] = say.dies.breath;
+    hushBreath(put, mouth, ff, fl, m.t, say.dies.puff(m.t), seed);
     hushLeaves(put, mouth, ff, fl, m.t, seed, a, b);
   }
   // THE SMEAR of a lightning strike: its after-images (the oldest thinned to every other point)

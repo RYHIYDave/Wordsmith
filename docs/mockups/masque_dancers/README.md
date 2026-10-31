@@ -18,7 +18,7 @@ the seven rooms' colours, each in a white porcelain mask; Hushed, grey breath; k
 waltz in pairs round the room until they see you, then break off and whirl at you, fast; at the clock's chime they freeze and
 turn to look; known by the masks, and dancing in pairs; one attack, a whirling spin into you, skirts and coat-tails flaring;
 their death, the mask drops, the Hush leaves them, they sink down in a last bow; never clowns, never undead or gory; their
-sound, a faint waltz around them, silent dancers.
+sound, a faint waltz around them, silent dancers. (Their death was made new on 30 Oct, on his pick: see "Their death" below.)
 
 Built in from the first pass, from his words on the Princess (28 Oct): his Movement 9 (“Like the wind up and wind down are big
 but the actual punch is lightning quick”; for the enemies, “Start from now on, but every enemy is going to need that change
@@ -37,6 +37,13 @@ and a quarter into you, striking a tile and a half round.
   sizes read in tiles; the spin's strike again at half speed; and at the end the whole ballroom at the game's own size (an
   arena of about 17 by 20 tiles): the pairs waltz, the clock strikes, they stop dead and look at you, then they all come at once.
 - `film_sheet.png`: every thirtieth frame of the film (one a second), for a look without playing it.
+- `dancers_death_sheet.png` (their death made new, 30 Oct): sixteen frames, eight key moments each, the lady from in front
+  and the gentleman from behind, twice the game's size: up on one toe; too fast, the mask flies; a lurch; a second lurch;
+  sinking in a spiral; down in a swirl; lying back, the mask wobbling; still, alive, the mask face up.
+- `dancers_death.mp4` (16.4 s): the death on its own: at the game's size, both kinds from in front and from behind, the
+  knight beside them; the lady from in front and the gentleman from behind, three times as big; then at half speed, the
+  last pirouette and the lurches (the gentleman, from in front) and the sinking into the swirl (the lady, from behind).
+  (`film.mp4` and `film_sheet.png` still show their first death, the mask dropping and a last bow: not made again.)
 
 The floor in them is a stand-in (polished stone in the blue room's colours): the Masque's own floor is not drawn yet.
 
@@ -102,11 +109,61 @@ Each is a mob as the game holds a monster (`Mob`, art/new_mobs3.ts): `stand`, `w
     where they began. FOR THE MAIN CHAT: what strikes is the whirl itself, its middle; the area is the main chat's to set (his
     “bigger AOE”), and the art is drawn to the tile and a half; the game moves them on by `SPIN_END` as the spin ends.
 - STRUCK (0.4 s): knocked back and half turned, the head thrown back, the arms flung up.
-- THE MASK DROPS (their death, 2.6 s, `DN_DIES`): jolted, the head snapped back; at 0.3 s the mask (and its ribbon) comes away
-  and falls to lie face up on the floor before them, clear of them; their own face under it, drained, the eyes shut, no pink;
-  the Hush pours out of them in one great grey breath (0.32 to 1.5 s); they sink in a last bow (hers a curtsey, his a courtly
-  bow with his hand on his heart) down to their knees by 1.7 s, and settle back, the head bowed, the hands in the lap: people
-  again, alive, still. Never undead, never gory.
+- THEIR DEATH (`DN_DIES`, 3.2 s): made new on 30 Oct: a last pirouette spinning out of control, down in a swirl of skirts
+  or coat-tails, the mask rolling away. Its own section below, "Their death".
+
+## Their death (made new, 30 Oct)
+
+To make Act 2's enemies die differently (nearly every Hushed kind went to one knee, then down), offered to him as a pop-up:
+"THE DANCERS a last pirouette spinning out of control, then a collapse into a swirl of skirts or coat-tails, the mask
+rolling away ... the Hush leaving them in a grey breath, alive." His pick: “Yes, these (Recommended)”. Only the death
+changed: every other move of theirs is as it was, pixel for pixel (1954 frames, every living frame of the two the checks run
+on both ways round, every fifth of the other twelve, and the pair waltzing and at the chime, painted before and after and
+found the same).
+
+What it is (`diesPlan`, `maskPath` and `maskLooseAt` in `src/art/masque_dancers_moves.ts`; seconds, and frames at the game's
+20 a second for a death; both kinds alike, each in their own clothes):
+
+- STRUCK (0 to 0.10 s, frames 0 to 2): jolted back, the head snapped back, the arms flung, turned a little to their left.
+- UP INTO THE LAST PIROUETTE (0.10 to 0.32 s, frames 2 to 6): up on the ball of the left foot, its heel well up; the right
+  foot drawn up to the left knee, turned out (a pirouette's retiré: his shows, hers is under the gown); the arms rounded
+  before them; turning to their right, faster and faster.
+- TOO FAST (0.32 to 0.80 s, frames 6 to 16): whirling at up to 3.5 turns a second (they whirl at you at 3); the arms flung
+  wide; no spotting now, the head lolling round with them; THE MASK IS FLUNG OFF (0.46 s, frame 9); the wobble grows, the
+  whole of them leaning off their toe further and further, the lean going round (as a top's does before it falls).
+- OUT OF CONTROL, TWO LURCHES (0.80 to 0.95 s, frames 16 to 19; 1.05 to 1.20 s, frames 21 to 24): each time they fall the
+  way they lean and a foot is flung out to catch them, the right then the left, carrying them a fifth of a tile and more
+  each time, still turning, the arms flailing.
+- SINKING IN A SPIRAL (1.20 to 1.90 s, frames 24 to 38): still turning, slower and slower, down on the ball of the left foot,
+  its knee bending right down, the heel coming down toward the floor at the last, the right leg swung round low with them
+  and out before them; the skirt (or the coat-tails) flared by the spin, its hem carried on round after them as they slow.
+  Four whole turns from the blow to the floor.
+- DOWN IN A SWIRL (1.90 s, frame 38), and LYING BACK (1.92 to 2.38 s, frames 38 to 48): sat down in the gown (or the
+  coat-tails) spread round them; then back onto the floor, the right arm flung out beside the head, the left out at the side,
+  the face turned up and over toward their right (so that it is seen from in front and from behind), a tired face, grey
+  from the Hush, not a corpse. Her gown lies flat on the floor round her in a wide swirl (its hem 23 of her own lengths out,
+  over half a tile, carried 110 degrees round after her so that its gores spiral), her legs under it, the knees fallen out;
+  his coat-tails lie spread on the floor about his hips (16 out), open toward his legs, which lie out before him, a little
+  bent, the feet turned out. They lie 0.37 tiles from where they stood.
+- THE HUSH LEAVES THEM (2.00 to 3.05 s, frames 40 to 61): it leaks hard from them all the while they whirl; once they lie,
+  it rises out of them in one great grey breath and thins away. The pink goes from their eyes as it leaves (2.0 s).
+- STILL from 2.75 s (frame 55): people again, alive, lying still.
+
+THE MASK (`MASK_ROLL`; `maskLooseAt(who, t)` gives its middle, its face's way and its brow's way at any moment):
+
+- FLUNG OFF (0.46 s): out of the whirl, up a little above their heads and away, tumbling over once
+  more than it must, its ribbon trailing after it.
+- DOWN ON ITS RIM (1.12 s, frame 22), a little hop off it as it knocks, about a tile from where they stood; ROLLING AWAY ON
+  IT (to 1.72 s), its face up and to one side, curving to the right as a tipped wheel does, tipping more and more, rolling
+  (turning about its own face's line as it goes, not sliding); WOBBLING round on its rim where it is (1.72 to 2.40 s),
+  flatter and flatter, faster and faster, as a coin settles; its hollow back (painted: the inside of the mask, unglazed)
+  and its white face flash by turns; STILL, FACE UP, from 2.40 s (frame 48): 1.35 tiles from where they stood, 1.7 from where
+  they lie, clear of them from in front and from behind. Its eye holes empty and dark: no pink in it once it is off.
+
+For the main chat: nothing of them falls apart as they die (`Mob.fall` is null): the mask, flying and rolling, is painted in
+their own death's frames. The game's soft shadow under them is at their feet; as they lie it should lie under them, and the
+mask could have a small one. Sound (the brief): the waltz faltering as they whirl out of control; the mask's knock on the
+floor (1.12 s), its roll and its quickening rattle to a last ring (2.4 s); the soft fall of silk (1.9 s); a grey breath.
 
 ## Bringing them in (for the main chat)
 
@@ -118,11 +175,13 @@ Each is a mob as the game holds a monster (`Mob`, art/new_mobs3.ts): `stand`, `w
    pair's middle and whirls (`walk`, at `DN_PACE`). Noticing you: `chime` from `DN_CHIME.go`.
 4. Out of the whirl (to stand or to spin) only as it comes round to you: `WHIRL_ROUND`.
 5. The spin's blow at `DN_SPIN.hit`; they are carried `SPIN.lunge` tiles in by its strike and stand `SPIN_END` on at its end.
-6. The death: the mask is a piece that falls by itself (`Mob.fall('mask')`), as the gardeners' tools do.
+6. The death: `dying` as before (`dieTime` 3.2 s); the mask, flying and rolling, is in its own frames (nothing to draw beside
+   them, nothing falls by itself). Into the death from their pose (any frame), from struck, or from the whirl as it comes
+   round to you (`WHIRL_ROUND`): test 13 holds each without a jump.
 
 ## The checks
 
-- `tests/masque_dancers.test.ts` (12): nothing of the game imports them, their switch off; EVERY MOVE OF BOTH THROUGH EVERY BOSS
+- `tests/masque_dancers.test.ts` (13): nothing of the game imports them, their switch off; EVERY MOVE OF BOTH THROUGH EVERY BOSS
   CHECK (art/boss_checks.ts: feet that grip, nothing in the floor, no arm through the body, nothing jerks or jumps, the blow
   wound up, held and carried through, hips first, alive when still, his lightning strike), from in front and from behind, and
   every handover (the waltz into the chime, the chime into the whirl from where each stands, the whirl out as it comes round,
@@ -130,20 +189,32 @@ Each is a mob as the game holds a monster (`Mob`, art/new_mobs3.ts): `stand`, `w
   then and only then); every frame painted both ways round in every room's colours (nothing cyan, the pink edge while they live
   and none as they die, crisp); nothing cut off, a pair of them neither; nothing of them in the floor; the Hush leaking, pouring
   out as the mask drops, gone once they are still; the masks (on the face with the pink in its eyes, burning in the warning,
-  dropped to lie face up clear of them, no pink left); the seven rooms' colours clear of pink and cyan; his sizes and speeds
+  flung off empty, to lie face up clear of them, no pink left once the Hush has gone); the seven rooms' colours clear of pink and cyan; his sizes and speeds
   (the knight's size, the whirl's pace and three turns a second, the spin's tile and a quarter in two frames and its tile and a
   half round, the waltz's turn a second); the pair in hold (their hands on each other, nothing of one through the other); the
-  chime (stopped dead, the masks on you, held still) and the whirl's mask kept on you.
+  chime (stopped dead, the masks on you, held still) and the whirl's mask kept on you; and THEIR DEATH (test 13): up on the
+  ball of the left foot, the right drawn up; round three times and more (four), faster than they whirl; two lurches, a foot
+  down to catch each; lying on their back, still from 2.75 s; the gown or the coat-tails flat on the floor round them, wide,
+  its hem carried round; the mask off the face at 0.46 s, down on its rim, rolling more than 15 of their own lengths, never
+  in the floor (its porcelain face and its hollow back, sampled all over, every 1/120 s), still and face up from 2.40 s, more
+  than a tile from them; and into the death from their pose, from struck and from the whirl as it comes round, without a
+  jump. (Test 6 leaves the loose mask to test 13: it is half a shell, not the whole ball test 6 would measure.)
 - The shared tests' lists of mock-ups, each a line longer for these files (they import the Hushed's breath, the mob engine and
   the bosses' footwork): `tests/hushed.test.ts`, `tests/bosses.test.ts` (both its lists), `tests/new_mobs3.test.ts`.
 
 ## The tools
 
-- `tools/masque_dancers_film.ts` (`sheet`, `crowd`, `film`) paints them in node as the game would, on the stand-in floor with
-  the knight; `tools/masque_dancers_film.py` captions the frames and makes the film; `tools/masque_canvas.ts` is its canvas.
-- `src/dev/preview_masque_dancers.ts`: the dev page (`sheet`, `big:<lady|gent>:<move>:<t>`, `pair:<waltz|chime>:<t>`).
+- `tools/masque_dancers_film.ts` (`sheet`, `crowd`, `film`, and for their death `deathsheet` and `deathfilm`) paints them in
+  node as the game would, on the stand-in floor with the knight; `tools/masque_dancers_film.py` captions the frames and makes
+  the film (`film`), and labels the death sheet (`sheet`); `tools/masque_canvas.ts` is its canvas.
+  `npx tsx tools/masque_dancers_film.ts deathsheet /tmp/ds.png && python3 tools/masque_dancers_film.py sheet /tmp/ds.png docs/mockups/masque_dancers/pictures/dancers_death_sheet.png "Their death, made new" "..."`
+  `npx tsx tools/masque_dancers_film.ts deathfilm /tmp/df && python3 tools/masque_dancers_film.py film /tmp/df docs/mockups/masque_dancers/pictures/dancers_death.mp4`
+- `src/dev/preview_masque_dancers.ts`: the dev page (`sheet`, `big:<lady|gent>:<move>:<t>`, `pair:<waltz|chime>:<t>`; any
+  moment of the death close up: `big:lady:dying:1.9`).
 
 ## His word on the pictures
 
 The crowd, the sheet and the film (`crowd.png`, `sheet.png`, `film.mp4`), asked “Floor 17's masked dancers (crowd.png,
 sheet.png and the film): are these right? With them, floor 17 is complete.”: “Yes, that's them (Recommended)”.
+
+OF THE NEW DEATH (51b0d3e; his pick for it, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`dancers_death_sheet.png`, `dancers_death.mp4`), asked “The dancers' new death: struck, they go up on one toe into a pirouette that spins too fast, lurch twice and sink in a spiral. The gown or coat-tails swirl out on the floor and the mask rolls away to settle face up. The Hush leaves them, alive. Is that it?”: “Yes, that's it (Recommended)”.
