@@ -21,7 +21,9 @@
 // - THE RING OF MIRRORS (her fifth, at his word, 30 Oct 2026: “I think I’d like a circle of mirrors and you can see her in all of
 //   them, and you have to break them to find the right one or any not broken do a big attack.”; asked, “Add as a fifth move”, and
 //   finding her, “She's stunned (Recommended)”): she goes into a glass (QN_IN) and a ring of six mirrors rises round him, her in
-//   every one (TUNE.ring). Each breaks at one blow of his; the one she is in, broken, throws her out stunned (TUNE.ring.stun
+//   every one, nine tiles across (TUNE.ring; his word on its film: “spread it into a big circle maybe 1/2 the arena in diameter
+//   and give each mirror a HP bar”). Each breaks at three blows of his, its bar of life over it; the one she is in, broken, throws
+//   her out stunned (TUNE.ring.stun
 //   seconds, taking more from everything, TUNE.ring.more) and the rest burst harmlessly. If time runs out first, every mirror still
 //   whole hurls its glass at him at once (TUNE.ring.each of her blow for each), and she steps out of hers (QN_OUT). His rulebook
 //   gives a boss four blows: hers are five, at his word.
@@ -55,7 +57,10 @@ export const QUEEN_TUNE = {
    * that (their glass trembling), each one's share of her blow, how long their glass takes to reach him; how near a blow must land to
    * break one; how long she is stunned when found, and how much more she takes then.
    */
-  ring: { n: 6, r: 3.4, long: 6.5, warn: 2.0, each: 0.45, fly: 0.45, hit: 0.8, stun: 3.0, more: 0.5 },
+  // (spread wide and each mirror given a bar of life, at his word on its film, 30 Oct 2026: “It’s good.  But let’s spread it into a
+  // big circle maybe 1/2 the arena in diameter and give each mirror a HP bar”: nine tiles across, half her arena's 17 to 20; three
+  // blows to a mirror, a blow on the same mirror counted no more than once in `gap` seconds; its time longer for it)
+  ring: { n: 6, r: 4.5, long: 11, warn: 2.5, each: 0.45, fly: 0.55, hit: 0.8, stun: 3.0, more: 0.5, life: 3, gap: 0.3 },
   /** Her waits (cooldowns) in each phase, as a share of her first. */
   cd: [1, 0.8, 0.65] as const,
   /** Her mirror's words: how often it speaks (seconds), how long a line stays, how high over its foot it is said; said toward it from him no further than `near` tiles off. */
@@ -161,6 +166,17 @@ export function ringSpots(g: BossRules['g'], p: Peril): { x: number; y: number }
   return out;
 }
 
+/** Each mirror of a ring's life left (blows) and when it was last struck (the ring's clock), kept beside its peril. */
+const LIVES = new WeakMap<Peril, { left: number[]; last: number[] }>();
+export function ringLife(p: Peril): { left: number[]; last: number[] } {
+  let v = LIVES.get(p);
+  if (!v) {
+    v = { left: Array.from({ length: QUEEN_TUNE.ring.n }, () => QUEEN_TUNE.ring.life), last: Array.from({ length: QUEEN_TUNE.ring.n }, () => -9) };
+    LIVES.set(p, v);
+  }
+  return v;
+}
+
 /** Is (x, y) open floor for her (in the level, walkable)? */
 function open(R: BossRules, x: number, y: number): boolean {
   const L = R.g.level;
@@ -241,8 +257,18 @@ export const RULES: Act1Rules | null = {
   floorBlow(R, p, x, y, rad) {
     if (p.a1 !== 'gqueen:ring' || p.c !== 0) return;
     const spots = ringSpots(R.g, p);
+    const life = ringLife(p);
     spots.forEach((q, i) => {
       if (p.b & (1 << i) || Math.hypot(q.x - x, q.y - y) > rad + QUEEN_TUNE.ring.hit) return;
+      // (a blow on it: its life down by one, no more than once in `gap`; at none it breaks)
+      if (p.t - life.last[i] < QUEEN_TUNE.ring.gap) return;
+      life.last[i] = p.t;
+      life.left[i]--;
+      R.g.emit({ t: 'spark', x: q.x, y: q.y, el: 'phys', n: 4 });
+      if (life.left[i] > 0) {
+        R.g.sfx('hit', 0.4);
+        return;
+      }
       p.b |= 1 << i;
       R.g.sfx('shatter', 0.6);
       R.g.emit({ t: 'spark', x: q.x, y: q.y, el: 'phys', n: 10 });

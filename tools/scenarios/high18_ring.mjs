@@ -6,12 +6,12 @@
 const FPS = 30;
 const PARTS = [
   [0, 'THE RING OF MIRRORS', 'She goes into a glass; a ring of mirrors rises round you, her in every one.'],
-  [4, 'FIND HER', 'Break them to find the one she is really in: she falls out, stunned.'],
-  [11, 'TOO SLOW', 'Every mirror still whole when time runs out strikes at once.'],
+  [5, 'FIND HER', 'Three blows break a mirror. Break hers: she falls out, stunned.'],
+  [17, 'TOO SLOW', 'Every mirror still whole when time runs out strikes at once.'],
 ];
 export default async function (page, snap) {
   const stills = process.env.STILLS === '1';
-  const seconds = Number(process.env.SECONDS || 23);
+  const seconds = Number(process.env.SECONDS || 34);
   await page.evaluate(() => {
     const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false;
     d.run('warrior', 7); d.seasoned(24); d.autoLevel = false; d.autoWords = false; d.god = true;
@@ -43,14 +43,14 @@ export default async function (page, snap) {
       const p = any && any.c === 0 ? any : null;
       if (p) {
         // (the mirrors as the rules lay them: round where he stood, turned by the peril's way)
-        const R = 3.4; const n = 6; const a0 = Math.atan2(p.fy, p.fx);
+        const R = 4.5; const n = 6; const a0 = Math.atan2(p.fy, p.fx);
         const spots = Array.from({ length: n }, (_, i) => ({ i, x: p.x + Math.cos(a0 + (i * Math.PI * 2) / n) * R, y: p.y + Math.sin(a0 + (i * Math.PI * 2) / n) * R }));
         const whole = spots.filter((s) => !(p.b & (1 << s.i)));
         const wrong = whole.filter((s) => s.i !== p.a);
         const broken = n - whole.length;
         // (first round: two wrong, then hers; second: two wrong, then he waits)
         const want = broken < 2 ? wrong[0] : f.round === 0 ? whole.find((s) => s.i === p.a) : null;
-        if (want && p.t > 1.2 + broken * 1.1) {
+        if (want && p.t > 1.0) {
           const dx = want.x - h.x; const dy = want.y - h.y; const dist = Math.hypot(dx, dy);
           if (dist > 1.3) { c.mx = dx / dist; c.my = dy / dist; } else { c.fire = true; c.aimX = want.x; c.aimY = want.y; }
         }

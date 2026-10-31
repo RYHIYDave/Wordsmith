@@ -16,7 +16,7 @@ import { ARENA, CLOUD_CANVAS, CLOUD_FX, HALL_AT, HALL_MIRRORS, HALL_MIRROR_CANVA
 import { QN_COMB, QN_OUT, QN_SHATTER } from '../../art/queen_moves';
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { AWAKE_ORDER, QUEEN_TUNE, hallAt, hallFrame, pierGlass, ringSpots } from '../../game/act1_rules/gqueen';
+import { AWAKE_ORDER, QUEEN_TUNE, hallAt, hallFrame, pierGlass, ringLife, ringSpots } from '../../game/act1_rules/gqueen';
 import { figureOf } from '../../art/bestiary';
 import type { Clip } from '../../art/actor_types';
 import type { Peril } from '../../game/state';
@@ -291,6 +291,27 @@ export const FX: Act1Fx | null = {
     standHall(c, F, p.a, p.b >= 0 ? c.game.time - p.b : -1, p.c, p.d);
   },
   air(c, _m, p) {
+    if (p && p.a1 === 'gqueen:ring' && p.c === 0 && c.g && p.t > 0.45) {
+      // (each mirror's bar of life over it, as a monster's: his word, “give each mirror a HP bar”)
+      const g = c.g;
+      const life = ringLife(p);
+      ringSpots(c.game, p).forEach((q, i) => {
+        if (p.b & (1 << i)) return;
+        const [sx, sy] = c.at(q.x, q.y);
+        const w = 20;
+        const x = Math.round(sx - w / 2);
+        const y = Math.round(sy - 62);
+        g.fillStyle = '#100c18';
+        g.fillRect(x - 1, y - 1, w + 2, 5);
+        g.fillStyle = '#3a1428';
+        g.fillRect(x, y, w, 3);
+        g.fillStyle = '#ff3a78';
+        g.fillRect(x, y, Math.round((w * Math.max(0, life.left[i])) / QUEEN_TUNE.ring.life), 3);
+        g.fillStyle = '#ffd0e4';
+        g.fillRect(x, y, Math.round((w * Math.max(0, life.left[i])) / QUEEN_TUNE.ring.life), 1);
+      });
+      return;
+    }
     if (p && p.a1 === 'gqueen:ring' && p.c === 2 && c.g) {
       // (time run out: the glass of every mirror still whole flung at him)
       const k = (p.t - p.d) / QUEEN_TUNE.ring.fly;

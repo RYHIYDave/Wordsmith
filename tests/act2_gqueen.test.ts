@@ -155,13 +155,24 @@ test('5. the ring of mirrors: her in one of six round him; found, she is stunned
     const spots = ringSpots(g, p);
     assert.equal(spots.length, QUEEN_TUNE.ring.n);
     for (const q of spots) assert.ok(Math.hypot(q.x - p.x, q.y - p.y) <= QUEEN_TUNE.ring.r + 0.01, 'round him');
+    assert.ok(QUEEN_TUNE.ring.r * 2 >= 8.5 && QUEEN_TUNE.ring.r * 2 <= 10, 'about half her arena across');
     assert.ok(Math.hypot(m.x - spots[p.a].x, m.y - spots[p.a].y) < 0.01, 'she is in one of them');
     assert.equal(RULES!.reachable!({ ...m, act: { id: 'gqueen:inring', t: 0 } } as never), false, 'nothing reaches her in it');
     const other = (p.a + 1) % spots.length;
-    g.bosses.floorBlow(spots[other].x, spots[other].y, 0.5, 'phys');
+    // (three blows to a mirror, each counted once in its gap: his word, “give each mirror a HP bar”)
+    const strike = (i: number, n: number): void => {
+      for (let k = 0; k < n; k++) {
+        g.bosses.floorBlow(spots[i].x, spots[i].y, 0.5, 'phys');
+        g.bosses.floorBlow(spots[i].x, spots[i].y, 0.5, 'phys');
+        p.t += QUEEN_TUNE.ring.gap + 0.01;
+      }
+    };
+    strike(other, QUEEN_TUNE.ring.life - 1);
+    assert.ok(!(p.b & (1 << other)), 'one blow short: still whole');
+    strike(other, 1);
     assert.ok(p.b & (1 << other), 'a wrong one broken');
     assert.equal(p.c, 0, 'not found yet');
-    g.bosses.floorBlow(spots[p.a].x, spots[p.a].y, 0.5, 'phys');
+    strike(p.a, QUEEN_TUNE.ring.life);
     assert.equal(p.c, 1, 'found');
     let stunned = false;
     for (let k = 0; k < 2 / DT; k++) {
@@ -186,7 +197,10 @@ test('5. the ring of mirrors: her in one of six round him; found, she is stunned
     const p = g.perils.find((q) => q.a1 === 'gqueen:ring')!;
     const spots = ringSpots(g, p);
     const wrong = [0, 1, 2, 3, 4, 5].filter((i) => i !== p.a).slice(0, 2);
-    for (const i of wrong) g.bosses.floorBlow(spots[i].x, spots[i].y, 0.3, 'phys');
+    for (const i of wrong) for (let k = 0; k < QUEEN_TUNE.ring.life; k++) {
+      g.bosses.floorBlow(spots[i].x, spots[i].y, 0.3, 'phys');
+      p.t += QUEEN_TUNE.ring.gap + 0.01;
+    }
     // (what strikes him, counted, not taken: he would not live through it at his level here)
     const hits: number[] = [];
     (g as unknown as { hurtHero(raw: number): void }).hurtHero = (raw: number) => void hits.push(raw);
