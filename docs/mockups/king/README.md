@@ -334,3 +334,5 @@ the other mock-ups' files (his files import the bosses' footwork and the checks,
 The sheet, his blows across the hall and the film (`king_sheet.png`, `king_blows.png`, `king_film.mp4`), asked “The King
 (king_sheet.png, king_blows.png and the film): is this him? He walks slowly but his blows reach across the hall.”: “Yes,
 that's the King (Recommended)”.
+
+OF THE NEW MOVES (eb9fe0d; `king_new_moves.mp4`, `king_new_moves_sheet.png`), shown 31 Oct: asked whether these were it (the charge and its line of sparks bursting after he stops; the Crown's Weight; the Hush's grab and drag, shield and grey fog): “The sparks should shoot off, then pop in shrapnel”. Read as: the line of sparks his sword cuts does not just burst where it lies; its sparks shoot up and off the line, then each pops in a burst of shrapnel. Asked whether he stands and steers the crown while it flies, or fights on bareheaded: “He stands and steers it (Recommended)”.
