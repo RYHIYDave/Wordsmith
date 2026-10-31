@@ -125,7 +125,7 @@ for (const view of VIEWS) {
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(3)}`;
 
 /** The game's files that import her (her figure now; her rules and effects as they are built). */
-const QUEEN_USERS = 'art/act1_figs/gqueen.ts';
+const QUEEN_USERS = 'art/act1_figs/gqueen.ts game/act1_rules/gqueen.ts render/act1_fx/gqueen.ts';
 
 test('1. the switch is off, and of the game only floor 18\'s own files import her', () => {
   assert.equal(QUEEN_ON.on, false, 'QUEEN_ON is off');

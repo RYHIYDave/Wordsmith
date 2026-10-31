@@ -1223,8 +1223,9 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   princess: ['...'],
   // (floor 17: the Prince's lines his own, once he is built: game/act1_rules/prince.ts)
   prince: ['...'],
-  // (floor 18: the Queen's lines are her mirror's, once she is built: game/act1_rules/gqueen.ts)
-  gqueen: ['...'],
+  // (floor 18: the Queen asks her looking-glass, as the Grimms' queen does (Margaret Hunt's translation, 1884); the rest is her
+  // mirror's: game/act1_rules/gqueen.ts)
+  gqueen: ['Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?'],
 };
 
 /**

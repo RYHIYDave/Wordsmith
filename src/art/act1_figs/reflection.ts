@@ -12,8 +12,9 @@ import type { Act1Fig } from './types';
 
 let made: { of(cls: 'warrior' | 'ranger' | 'mage'): ActorArt } | null = null;
 const of = (cls: 'warrior' | 'ranger' | 'mage'): ActorArt => (made ??= makeReflectionArt(reflectionEffects as never) as never).of(cls);
-const SIZE = { top: 29, half: 9 };
-const look = (cls: 'warrior' | 'ranger' | 'mage'): Act1Fig => ({ make: () => of(cls), size: SIZE, switches: [REFLECTIONS_ON] });
+/** How tall each class's copy stands (game pixels to the top of its head: the mage's hat the tallest), and half its width. */
+const SIZE = { warrior: { top: 29, half: 9 }, ranger: { top: 30, half: 9 }, mage: { top: 35, half: 9 } } as const;
+const look = (cls: 'warrior' | 'ranger' | 'mage'): Act1Fig => ({ make: () => of(cls), size: SIZE[cls], switches: [REFLECTIONS_ON] });
 
 export const FIG: Act1Fig | null = {
   ...look('warrior'),
