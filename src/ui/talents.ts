@@ -26,7 +26,7 @@ export interface TalentUi {
   /** The talent being read. */
   sel: string | null;
   /** The card as it was drawn last frame, and its TAKE or UNDO (a press on it is answered next frame). */
-  card: { r: Rect; take: Rect | null; undo?: Rect | null } | null;
+  card: { r: Rect; take: Rect | null; undo?: Rect | null; picks?: { r: Rect; id: string }[] } | null;
   /** A talent just taken, and how long ago: it flares. */
   flash: { id: string; t: number } | null;
 }
@@ -406,6 +406,13 @@ export function talentPresses(ui: Ui, game: Game, st: TalentUi, lay: TalentLayou
     if (why) say = why;
     else st.flash = { id, t: 0 };
   }
+  // (a talent with a pick of two, taken: the other's button switches to it)
+  for (const p of card?.picks ?? []) {
+    if (!st.sel || !ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) continue;
+    const why = game.choosePick(st.sel, p.id);
+    if (why) say = why;
+    else st.flash = { id: st.sel, t: 0 };
+  }
   if (card && card.undo && st.sel && ui.pressIn(card.undo.x, card.undo.y, card.undo.w, card.undo.h)) {
     const why = game.unlearnTalent(st.sel);
     if (why) say = why;
@@ -613,7 +620,9 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   const why = game.talentProblem(def.id);
   const bh = ui.touch ? 18 : 13;
   const textH = lines.reduce((a, l) => a + LINE_H[l.small ? 'small' : 'normal'] + (l.small ? 2 : 1), 0);
-  const ch = 5 + textH + 3 + bh + 5;
+  // (a pick of two, once taken: a row of its two over the TAKEN row, the one picked lit)
+  const pickRow = took && def.pick ? bh + 3 : 0;
+  const ch = 5 + textH + 3 + pickRow + bh + 5;
   const cr = cardRect(panel, sel, ch, ui.w, ui.h, words);
   ui.box(cr.x, cr.y, cr.w, cr.h, THEME.bg, THEME.edgeHi);
   g.fillStyle = THEME.accentLo;
@@ -626,6 +635,17 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   const by = cr.y + cr.h - 5 - bh;
   let take: Rect | null = null;
   let undo: Rect | null = null;
+  const picks: { r: Rect; id: string }[] = [];
+  if (pickRow && def.pick) {
+    const now = game.pickOf(def.id);
+    const pw = Math.floor((cr.w - 10 - 3) / 2);
+    def.pick.ids.forEach((id, k) => {
+      const r = { x: cr.x + 5 + k * (pw + 3), y: by - pickRow, w: pw, h: bh };
+      ui.drawButton(r.x, r.y, r.w, r.h, def.pick!.names[k], { primary: now === id });
+      ui.mark(`button:${def.pick!.names[k]}`, r.x, r.y, r.w, r.h);
+      if (now !== id) picks.push({ r, id });
+    });
+  }
   if (took) {
     // taken: and in town, undone for gold (his rulebook), if nothing taken hangs on it alone
     drawText(g, 'TAKEN', cr.x + 5, by + Math.floor((bh - 8) / 2) + 1, THEME.good);
@@ -642,5 +662,5 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
     ui.mark('button:TAKE', take.x, take.y, take.w, take.h);
   } else drawText(g, why.toUpperCase(), cr.x + 5, by + Math.floor((bh - 6) / 2) + 1, THEME.dim, { font: 'small' });
   ui.mark('talent-card', cr.x, cr.y, cr.w, cr.h);
-  st.card = { r: cr, take, undo };
+  st.card = { r: cr, take, undo, picks };
 }

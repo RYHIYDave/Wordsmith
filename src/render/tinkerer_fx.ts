@@ -47,6 +47,7 @@ import { GUN_GLOW, IRON, bolt, crackle, impactBurst, muzzleFlash } from '../dev/
 import { P } from '../art/palette';
 import type { Brew } from '../game/state';
 import { GEARS, SPARKS, gears, sparks } from '../dev/golem_down_fx';
+import { BOMB_FX, bombSprite, layShotAir, shotLayers } from '../dev/contraption_shots';
 import { STUFF, crackStar, drawCrack } from '../dev/demon_fx';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
@@ -74,6 +75,12 @@ function loop(key: string, n: number, make: (i: number) => Sprite): Sprite[] {
   return list;
 }
 
+/** (her tree's CONTRAPTION, its pick BOMBS) HER LITTLE BOMB, turned in eighths of a turn as it tumbles, its fuse spitting (the art: dev/contraption_shots.ts bombSprite). */
+const bombFrames = (): Sprite[] => loop('bomb', 8, (i) => {
+  const ly = shotLayers();
+  bombSprite(ly, 10, 10, (i / 8) * Math.PI * 2, i % 2 === 0);
+  return layShotAir(20, 20, ly).sprite(10, 10, G);
+});
 /** HER VIAL, turned in eighths of a turn as it tumbles. */
 const vialFrames = (): Sprite[] => loop('vial', 8, (i) => piece(16, 16, 8, 8, 2, [CAP, BREW], ([cap, brew]) => vialSprite(brew, cap, 8, 8, (i / 8) * Math.PI * 2)));
 /** A VIAL BURSTING, frame by frame (30 a second). */
@@ -188,7 +195,8 @@ interface Burst extends Spot { k: number; brew?: Brew; r: number; big?: boolean 
 interface Puddle extends Spot { r: number; life: number }
 /** A Tesla Coil's zap: its frames painted as it came, laid at the Golem's foot. */
 interface Zap extends Spot { frames: Sprite[] }
-interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number; hand?: boolean; little?: boolean; big?: boolean }
+interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number; hand?: boolean; little?: boolean; big?: boolean; fuse?: number }
+interface Bolt { x0: number; y0: number; x1: number; y1: number; t: number; flight: number }
 interface Path { x0: number; y0: number; x1: number; y1: number; t: number }
 
 /** How long each lasts (seconds). */
@@ -200,6 +208,7 @@ const CON_LIT = 38 / 30;
 export class TinkererFx {
   private t = 0;
   private lobs: Lob[] = [];
+  private bolts: Bolt[] = [];
   private shots: (Lob & { way: number })[] = [];
   private bursts: Burst[] = [];
   private thuds: Spot[] = [];
@@ -232,16 +241,31 @@ export class TinkererFx {
       case 'vial':
         // (out of a Contraption's mortar, with its flash; or, her Vial Toss, from her hand up by her shoulder)
         // (her tree's: Cluster Vials' little ones hopping out of a burst; The Big One's, big)
-        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight, hand: e.id < 0, little: e.little, big: e.big });
+        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight, hand: e.id < 0, little: e.little, big: e.big, ...(e.bomb !== undefined ? { fuse: e.bomb } : {}) });
         if (e.id >= 0) this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
         break;
       case 'vialBurst':
+        // (her tree's CONTRAPTION, its pick BOMBS: her bomb going off, as her blast jump's does)
+        if (e.bomb) {
+          this.blasts.push({ x: e.x, y: e.y, t: 0 });
+          this.scorches.push({ x: e.x, y: e.y, t: 0 });
+          break;
+        }
         this.bursts.push({ x: e.x, y: e.y, t: 0, k: e.little ? 0.6 : e.big ? 2 : 1, brew: e.brew, r: e.r, big: e.big });
         if (e.big) {
           this.rings.push({ x: e.x, y: e.y, t: 0, k: 1, r: e.r });
           this.thuds.push({ x: e.x, y: e.y, t: 0 });
         }
         break;
+      // (her tree's CONTRAPTION, its pick ENERGY: a bolt of her cyan streaking at what it strikes, crackling where it lands)
+      case 'contraptionBolt': {
+        this.bolts.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: Math.max(0.05, e.flight) });
+        this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
+        const x = e.x1;
+        const y = e.y1;
+        this.later.push({ at: this.t + e.flight, e: () => this.impacts.push({ x, y, t: 0, big: 0.8 }) });
+        break;
+      }
       case 'bombsAway':
         this.blasts.push({ x: e.x, y: e.y, t: 0 });
         this.scorches.push({ x: e.x, y: e.y, t: 0 });
@@ -289,6 +313,37 @@ export class TinkererFx {
       case 'golemPound':
         this.pounds.push({ x: e.x, y: e.y, t: 0 });
         break;
+      // (her tree's GUN ARM: braced, it begins to charge, steam bursting from its stacks; then its great shot, from its own
+      // effects (golem_gun_fx.ts, blast_fx.ts) until the art chat's charged shots (dev/golem_charge_fx.ts) are laid in)
+      case 'golemCharge':
+        this.vents.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'golemCharged': {
+        const way = e.x1 - e.y1 - (e.x0 - e.y0) >= 0 ? 1 : -1;
+        const x = e.x1;
+        const y = e.y1;
+        if (e.kind === 'shell') {
+          this.shots.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: Math.max(0.05, e.flight), way });
+          this.flashes.push({ x: e.x0, y: e.y0, t: 0, way });
+          this.vents.push({ x: e.x0, y: e.y0, t: 0 });
+          this.later.push({
+            at: this.t + e.flight,
+            e: () => {
+              this.blasts.push({ x, y, t: 0 });
+              this.scorches.push({ x, y, t: 0 });
+              this.impacts.push({ x, y, t: 0, big: 1.2 + e.r });
+            },
+          });
+        } else {
+          // (the beam: lightning along its whole length, three times over as it pours, and a splash where it ends)
+          const n = Math.max(2, Math.round(Math.hypot(e.x1 - e.x0, e.y1 - e.y0) / 1.2));
+          const to = Array.from({ length: n }, (_, k) => ({ x: e.x0 + ((e.x1 - e.x0) * (k + 1)) / n, y: e.y0 + ((e.y1 - e.y0) * (k + 1)) / n }));
+          for (let k = 0; k < 3; k++) this.later.push({ at: this.t + k * 0.1, e: () => this.zaps.push({ x: e.x0, y: e.y0, t: 0, frames: zapFrames(e.x0, e.y0, COIL_UP, to) }) });
+          this.flashes.push({ x: e.x0, y: e.y0, t: 0, way });
+          this.impacts.push({ x, y, t: 0, big: 1.6 });
+        }
+        break;
+      }
       case 'golemDown':
         this.sparks.push({ x: e.x, y: e.y, t: 0, size: 1 });
         break;
@@ -314,7 +369,8 @@ export class TinkererFx {
       for (const x of list) x.t += dt;
       return list.filter((x) => x.t < life);
     };
-    this.lobs = this.lobs.filter((l) => (l.t += dt) < l.flight);
+    this.lobs = this.lobs.filter((l) => (l.t += dt) < l.flight + (l.fuse ?? 0));
+    this.bolts = this.bolts.filter((b) => (b.t += dt) < b.flight);
     this.shots = this.shots.filter((l) => (l.t += dt) < l.flight);
     this.bursts = age(this.bursts, LIFE.burst);
     this.thuds = age(this.thuds, LIFE.thud);
@@ -336,6 +392,7 @@ export class TinkererFx {
 
   clear(): void {
     this.lobs = [];
+    this.bolts = [];
     this.shots = [];
     this.bursts = [];
     this.thuds = [];
@@ -422,7 +479,19 @@ export class TinkererFx {
     };
     // (her vials, lobbed high, tumbling; Cluster Vials' little ones hopping out low)
     const vf = vialFrames();
+    const bf = bombFrames();
     for (const l of this.lobs) {
+      if (l.fuse !== undefined) {
+        // (a little bomb: lobbed, then landed, a hop, and sitting till it goes off, its fuse spitting)
+        const u = Math.min(1, l.t / l.flight);
+        const x = l.x0 + (l.x1 - l.x0) * u;
+        const y = l.y0 + (l.y1 - l.y0) * u;
+        const after = l.t - l.flight;
+        const hopT = BOMB_FX.hop / 30;
+        const up = after < 0 ? 10 * (1 - u) + 4 * 30 * u * (1 - u) : after < hopT ? 6 * Math.sin((after / hopT) * Math.PI) : 0;
+        putK(bf[after < 0 ? Math.floor(l.t * 18) % bf.length : Math.floor(l.t * 10) % 2], x, y, up, 1);
+        continue;
+      }
       const u = l.t / l.flight;
       const x = l.x0 + (l.x1 - l.x0) * u;
       const y = l.y0 + (l.y1 - l.y0) * u;
@@ -434,6 +503,30 @@ export class TinkererFx {
     for (const p of this.pounds) put(at(pa, p.t / LIFE.pound), p.x, p.y);
     const ar = arriveFrames();
     for (const p of this.arrives) put(at(ar, p.t / LIFE.arrive), p.x, p.y);
+    // (her Contraption's bolts of energy, streaking in the friend's cyan)
+    for (const b of this.bolts) {
+      const u = b.t / b.flight;
+      const x0 = wx(c, b.x0, b.y0);
+      const y0 = wy(c, b.x0, b.y0) - 14;
+      const x1 = wx(c, b.x1, b.y1);
+      const y1 = wy(c, b.x1, b.y1) - 10;
+      const hx = x0 + (x1 - x0) * u;
+      const hy = y0 + (y1 - y0) * u;
+      const tx = x0 + (x1 - x0) * Math.max(0, u - 0.25);
+      const ty = y0 + (y1 - y0) * Math.max(0, u - 0.25);
+      g.strokeStyle = GUN_GLOW[1];
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(tx, ty);
+      g.lineTo(hx, hy);
+      g.stroke();
+      g.strokeStyle = GUN_GLOW[3];
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(tx, ty);
+      g.lineTo(hx, hy);
+      g.stroke();
+    }
     // (its cannon's shot, streaking in the friend's cyan, from its muzzle up by its shoulder)
     for (const s of this.shots) {
       const u = s.t / s.flight;

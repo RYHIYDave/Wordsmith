@@ -216,7 +216,7 @@ test('every picture of the Contraption as it was before its new kinds, to the pi
   assert.ok(h.digest('hex') === '11114069cbf2cb073a99aec525d5ea803a16010936e039c51173ea46795879a2');
 });
 
-test('nothing of the game draws the new kinds: no file of the game (src/, but for its mock-ups in src/dev/) imports dev/contraption_shots.ts or asks the Contraption for anything but its vials', () => {
+test('only her Contraption\'s pick draws the new kinds: of the game (src/, but for its mock-ups in src/dev/), only her pictures and her effects take them (the main chat, 31 Oct, at his word: her tree\'s Contraption pick)', () => {
   const found: string[] = [];
   const walk = (dir: string): string[] => readdirSync(dir).flatMap((n: string) => {
     const p = `${dir}/${n}`;
@@ -239,11 +239,11 @@ test('nothing of the game draws the new kinds: no file of the game (src/, but fo
           if (depth === 0) break;
         } else if (c === ',' && depth === 1) args++;
       }
-      if (args > 3) found.push(`${file}: the Contraption asked for more than its vials`);
+      if (args > 4) found.push(`${file}: the Contraption asked for more than what it is loaded with`);
       i = text.indexOf('sculptContraptionBuild(', i + 1);
     }
   }
-  assert.deepEqual(found, []);
+  assert.deepEqual(found.sort(), ['src/art/tinkerer_art.ts', 'src/game/tinkerer.ts', 'src/render/tinkerer_fx.ts']);
 });
 
 // ---- the scene its effects are checked in: the Contraption drawn as the game would (turned 315 from in front, 45 from

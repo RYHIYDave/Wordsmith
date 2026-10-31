@@ -87,6 +87,11 @@ export interface TalentDef {
    * switch off.
    */
   now?: { text: string; name?: string; word?: WordId | null };
+  /**
+   * A pick of two that comes with it (the Tinkerer's Gun Arm and Contraption, his “On the talent itself (Recommended)”, 31 Oct
+   * 2026): the first is hers as she takes it; on its card, the other's button switches to it. Game.pickOf says which.
+   */
+  pick?: { ids: readonly [string, string]; names: readonly [string, string] };
   /** (on a drafted tree, `draft`) this one is made to work already. */
   works?: boolean;
 }
@@ -343,21 +348,28 @@ const TINKERER_TREE: TalentTree = {
     { id: 'clustervials', name: 'Cluster Vials', big: false, works: true, path: 'vials', at: [-R3, -1], from: ['bombsaway'], text: 'Every vial bursts into three little ones that bounce out and burst again.' },
     { id: 'tar', name: 'Tar', big: false, works: true, path: 'vials', at: [-1, -R3], from: ['clustervials'], text: 'Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.' },
     { id: 'madmixture', name: 'Mad Mixture', big: true, works: true, path: 'vials', at: [0, -2], from: ['tar'], text: 'Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.' },
-    { id: 'contraptions', name: 'Contraption', big: true, works: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss: it lobs her vials for her, three at once.' },
+    // (THE CONTRAPTION'S PICK, his word to the art chat, 31 Oct, 00:04: “And have the same option when swapping vial to
+    // contraption”, “Energy bolts, and let’s make the contraption throw little bombs.  She’s marketed as a demolitionist and we
+    // need to fit that in better”; picked on the talent, his “On the talent itself (Recommended)”)
+    { id: 'contraptions', name: 'Contraption', big: true, works: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss, three at once. It fires her pick: little bombs (Dexterity) or energy bolts (Int).', pick: { ids: ['bombs', 'energy'], names: ['BOMBS', 'ENERGY'] } },
     { id: 'alchemy', name: 'Alchemy', big: false, works: true, path: 'vials', at: [1, -R3], from: ['madmixture'], text: 'An enemy her vials kill always drops gold.' },
     { id: 'thebigone', name: 'The Big One', big: true, works: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
     // THE GOLEM, round under the bottom
     { id: 'lightningrod', name: 'Lightning Rod', big: false, works: true, path: 'golem', at: [-R3, 1], from: ['bombsaway'], text: 'For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.' },
     { id: 'shrapnel', name: 'Shrapnel', big: false, works: true, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s blows burst where they land, striking everything near.' },
-    { id: 'teslacoil', name: 'Tesla Coil', big: false, works: true, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'A coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more.' },
-    { id: 'markii', name: 'Mark II', big: true, works: true, path: 'golem', at: [0, 1], from: ['teslacoil'], text: 'She can whistle out a second Golem: two at once.' },
-    { id: 'prospector', name: 'Prospector', big: false, works: true, path: 'golem', at: [1, R3], from: ['teslacoil'], text: 'Every ground pound digs up a handful of gold.' },
+    // (THE GUN ARM in place of the Tesla Coil, his word to the art chat, 30 Oct, 23:55: “maybe we want a passive that makes him
+    // ranged where his hold becomes a big charged shot”, and 31 Oct, 00:00, “I want both”: “Yes, one pick, two arms
+    // (Recommended)”; to the main chat, 31 Oct: where, “Turn Tesla Coil into it (Recommended)”; let go early, “A weaker shot
+    // fires”)
+    { id: 'gunarm', name: 'Gun Arm', big: false, works: true, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'The Golem fights from range with a gun arm, her pick: cannon (Dexterity) or tesla coil (Int). Her hold charges a great shot.', pick: { ids: ['cannon', 'tesla'], names: ['CANNON', 'TESLA COIL'] } },
+    { id: 'markii', name: 'Mark II', big: true, works: true, path: 'golem', at: [0, 1], from: ['gunarm'], text: 'She can whistle out a second Golem: two at once.' },
+    { id: 'prospector', name: 'Prospector', big: false, works: true, path: 'golem', at: [1, R3], from: ['gunarm'], text: 'Every ground pound digs up a handful of gold.' },
     { id: 'overdrive', name: 'Overdrive', big: true, works: true, path: 'golem', at: [R3, 1], from: ['prospector'], text: 'Her whistle sends the Golem into overdrive for five seconds: it moves and strikes twice as fast.' },
     // the right tooth: both paths'
     { id: 'growthserum', name: 'Growth Serum', big: true, works: true, path: 'works', at: [2, 0], from: ['thebigone', 'overdrive'], text: 'A vial of hers that bursts by her Golem makes it grow: twice as big and twice as strong for five seconds.' },
   ],
   figures: [
-    { kind: 'gear', path: 'works', hub: 'fortune', ring: ['bombsaway', 'clustervials', 'tar', 'madmixture', 'alchemy', 'thebigone', 'growthserum', 'overdrive', 'prospector', 'teslacoil', 'shrapnel', 'lightningrod'], spokes: 4 },
+    { kind: 'gear', path: 'works', hub: 'fortune', ring: ['bombsaway', 'clustervials', 'tar', 'madmixture', 'alchemy', 'thebigone', 'growthserum', 'overdrive', 'prospector', 'gunarm', 'shrapnel', 'lightningrod'], spokes: 4 },
   ],
 };
 
@@ -592,6 +604,11 @@ export function talentMods(cls: ClassId, taken: readonly string[]): { stat: Stat
 }
 
 /** A taken list made safe (an old save, a damaged one): only this class's talents, each once, in an order that could have been taken, no more than the level gives. */
+/** A talent of class `cls`'s tree, by its id (undefined: none such). */
+export function talentById(cls: ClassId, id: string): TalentDef | undefined {
+  return TREES[cls]?.talents.find((t) => t.id === id);
+}
+
 export function cleanTalents(cls: ClassId, level: number, list: unknown): string[] {
   if (!Array.isArray(list)) return [];
   const out: string[] = [];

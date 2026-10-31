@@ -98,7 +98,8 @@ import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
-import { makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
+import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
+import { chargeFrame } from '../dev/golem_moves';
 import type { ContraptionArt } from '../art/tinkerer_art';
 import type { Clip } from '../art/actor_types';
 import { TINKER_TUNE } from '../game/tinkerer';
@@ -1139,6 +1140,11 @@ export class Renderer {
 
   /** THE TINKERER's minions' pictures, made the first time one is seen. */
   private tinkerArt: { golem: ActorArt; con: { front: ContraptionArt; back: ContraptionArt } } | null = null;
+  /** (her tree's GUN ARM) Her Golem's pictures with the tesla coil for its arm, and its charged shots' frames, made as they are wanted. */
+  private teslaArt: ActorArt | null = null;
+  private chargeArt = new Map<string, Sprite[]>();
+  /** (her tree's CONTRAPTION) its pictures loaded with what it fires, made as they are wanted. */
+  private conArt = new Map<string, { front: ContraptionArt; back: ContraptionArt }>();
 
   /** Her Contraptions (in the air, springing open, set up, kicked by a shot, broken) and her Golem, stood among the rest. */
   private drawTinkerers(game: Game, cam: Cam, t: number, W: number, H: number): void {
@@ -1156,7 +1162,10 @@ export class Renderer {
       let x = c.x;
       let y = c.y;
       let lift = 0;
-      const set = c.fx + c.fy < -0.2 ? art.con.back : art.con.front;
+      // (her tree's CONTRAPTION: loaded with what it fires, her pick, bombs or energy)
+      const ammo = game.contraptionAmmo();
+      const con = ammo ? (this.conArt.get(ammo) ?? this.conArt.set(ammo, makeContraptionArt(ammo)).get(ammo)!) : art.con;
+      const set = c.fx + c.fy < -0.2 ? con.back : con.front;
       let sp: Sprite;
       if (c.broke >= 0) sp = at(set.broke, c.broke);
       else if (c.t < LAND) {
@@ -1184,7 +1193,11 @@ export class Renderer {
       const sx = wx(cam, g.x, g.y);
       const sy = wy(cam, g.x, g.y);
       if (sx > -80 && sx < W + 80 && sy > -40 && sy < H + 200) {
-        const set = g.fx + g.fy < -0.2 ? art.golem.back : art.golem.front;
+        // (her tree's GUN ARM: the arm she picked, the cannon or the tesla coil)
+        const arm = game.armOf();
+        const golemArt = arm === 'tesla' ? (this.teslaArt ??= makeGolemArt('tesla')) : art.golem;
+        const back = g.fx + g.fy < -0.2;
+        const set = back ? golemArt.back : golemArt.front;
         const clips = set.clips ?? {};
         let sp: Sprite;
         if (g.act === 'walk') {
@@ -1193,6 +1206,14 @@ export class Renderer {
         } else if (g.act === 'punch' && clips.attack) sp = at(clips.attack, g.actT);
         else if (g.act === 'cannon' && clips.attack2) sp = at(clips.attack2, g.actT);
         else if (g.act === 'pound' && clips.heavy && g.actT >= 0) sp = at(clips.heavy, g.actT);
+        else if (g.act === 'charge') {
+          // (its charged shot: the wind-up, the loop round and round while she holds, then on from the shot: chargeFrame)
+          const key = `${arm === 'tesla' ? 'tesla' : 'cannon'}:${back ? 'back' : 'front'}`;
+          let frames = this.chargeArt.get(key);
+          if (!frames) this.chargeArt.set(key, (frames = golemCharge(back ? 'back' : 'front', arm === 'tesla' ? 'tesla' : 'cannon')));
+          const held = (g.held ?? -1) < 0 ? 1e9 : Math.max(TINKER_TUNE.golem.charge.build, g.held ?? 0) * 30;
+          sp = frames[Math.max(0, Math.min(frames.length - 1, chargeFrame(Math.floor(g.actT * 30), held)))];
+        }
         else if (g.act === 'down' && clips.fall) sp = at(clips.fall, g.actT);
         else sp = set.idle[0];
         // (whistled out: it drops in, landing heavy)

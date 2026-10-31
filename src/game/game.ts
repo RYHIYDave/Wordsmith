@@ -15,7 +15,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
+import { TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem } from './talents';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -108,6 +108,8 @@ export interface RunSave {
   quest?: 'heart' | null;
   /** THE SKILL TREES (game/talents.ts): the talents taken, in the order taken (absent when none). */
   talents?: string[];
+  /** (THE SKILL TREES) the picks made on talents that have one (absent when none). */
+  picks?: Record<string, string>;
   /** WORDMELDING (game/melds.ts): the runedust carried, and melding at the wordsmith (absent while MELD is off). */
   dust?: number;
   meld?: 'stone' | 'open' | null;
@@ -254,6 +256,10 @@ export class Game {
   contraptions: Contraption[] = [];
   vials: Vial[] = [];
   golems: Golem[] = [];
+  /** (HER TREE'S GUN ARM) Her hold held down this step, and where she points. */
+  private holdNow = false;
+  private holdX = 0;
+  private holdY = 0;
   tars: Tar[] = [];
   /** Her first Golem, null until it is whistled out. */
   get golem(): Golem | null {
@@ -852,6 +858,7 @@ export class Game {
       ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
       // (THE SKILL TREES: none can be taken while their switch is off, so nothing is written then)
       ...(h.talents.length ? { talents: [...h.talents] } : {}),
+      ...(h.picks && Object.keys(h.picks).length ? { picks: { ...h.picks } } : {}),
       // (THE WAYS: nor the waypoint reached while theirs is off)
       ...(WAYS.on ? { way: this.wayDepth } : {}),
       // (ENDLESS MODE: nor the endless level reached, until it is open to him)
@@ -917,7 +924,10 @@ export class Game {
     h.dust = Math.max(0, Math.floor(num(s.dust, 0)));
     h.meld = s.meld === 'stone' || s.meld === 'open' ? s.meld : null;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
-    h.talents = cleanTalents(h.cls, h.level, s.talents);
+    // (the Tinkerer's Tesla Coil became her Gun Arm, 31 Oct: one taken before is the Gun Arm now)
+    h.talents = cleanTalents(h.cls, h.level, s.talents?.map((t) => (t === 'teslacoil' ? 'gunarm' : t)));
+    h.picks = {};
+    for (const [id, p] of Object.entries(s.picks ?? {})) if (talentById(h.cls, id)?.pick?.ids.includes(p)) h.picks[id] = p;
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -1150,7 +1160,12 @@ export class Game {
       }
       // (ACT 2, THE HUSH: hushed, as if no word were in it)
       const dark = this.hushT > 0;
-      s.r = resolveSkill(def, dark ? s.front.map(() => null) : s.front, dark ? s.behind.map(() => null) : s.behind, i < 2 ? attackGrows(h.cls, weapon) : h.cls, h.d, this.meta.limit);
+      // (THE TINKERER's picks on her tree: her Golem's gun arm and her Contraption's kind grow with Dexterity, the cannon and the
+      // bombs, or with Intelligence, the tesla coil and the energy: his words to the art chat, 31 Oct, 00:00, “a solid shot(more
+      // dex based) or energy weapons(more int based)”)
+      const picked = h.cls !== 'tinkerer' ? null : def.kind === 'golem' && this.has('gunarm') ? this.pickOf('gunarm') : def.kind === 'contraption' && this.has('contraptions') ? this.pickOf('contraptions') : null;
+      const grows = picked === 'cannon' || picked === 'bombs' ? 'dex' : picked === 'tesla' || picked === 'energy' ? 'int' : i < 2 ? attackGrows(h.cls, weapon) : h.cls;
+      s.r = resolveSkill(def, dark ? s.front.map(() => null) : s.front, dark ? s.behind.map(() => null) : s.behind, grows, h.d, this.meta.limit);
       // (THE SKILL TREES: Battle Rush, the leap ready sooner)
       if (def.kind === 'leap' && this.was('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)
@@ -1788,6 +1803,12 @@ export class Game {
   // Frame update
 
   update(dt: number, c: Controls): void {
+    // (HER TREE'S GUN ARM: whether her hold is held down now, and where she points, for its charged shot)
+    this.holdNow = !!c.hold;
+    if (c.hold) {
+      this.holdX = c.castX;
+      this.holdY = c.castY;
+    }
     if (this.over) return;
     dt = Math.min(dt, 0.05);
     this.time += dt;
@@ -5316,6 +5337,39 @@ export class Game {
     this.emit({ t: 'contraptionEnd', id: c.id, x: c.x, y: c.y });
   }
 
+  /** Her tree's CONTRAPTION, if she has it: what it fires, her pick (bombs or energy); null without it (her vials, as the Vial Toss's). */
+  contraptionAmmo(): 'bombs' | 'energy' | null {
+    return this.has('contraptions') ? (this.pickOf('contraptions') === 'energy' ? 'energy' : 'bombs') : null;
+  }
+
+  /** Her tree's CONTRAPTION, its pick ENERGY: a bolt of energy at the nearest enemy awake within its reach (Twin: at as many). */
+  private contraptionBolt(c: Contraption, frac: number, echo = false): boolean {
+    const C = TINKER_TUNE.contraption;
+    const s = this.hero.skills[c.skill];
+    const count = s ? s.r.count : 1;
+    const near = this.monsters
+      .filter((m) => !m.dead && m.seen && m.state !== 'sleep' && !this.shutIn(m) && Math.hypot(m.x - c.x, m.y - c.y) <= C.boltReach && this.sees(c.x, c.y, m.x, m.y))
+      .sort((a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y));
+    if (!near.length) return false;
+    for (let n = 0; n < (echo ? 1 : count); n++) {
+      const m = near[Math.min(n, near.length - 1)];
+      const d = Math.hypot(m.x - c.x, m.y - c.y) || 1;
+      const flight = d / C.boltSpeed;
+      c.fx = (m.x - c.x) / d;
+      c.fy = (m.y - c.y) / d;
+      this.emit({ t: 'contraptionBolt', id: c.id, x0: c.x, y0: c.y, x1: m.x, y1: m.y, flight });
+      const id = m.id;
+      const skill = c.skill;
+      this.after(flight, () => {
+        const t = this.monsters.find((q) => q.id === id && !q.dead);
+        if (t) this.hitMonster(t, skill, frac * C.boltShare, n > 0);
+      });
+    }
+    c.shotAge = 0;
+    this.sfx('zap', echo ? 0.25 : 0.4);
+    return true;
+  }
+
   /** A vial lobbed out of a Contraption at the nearest enemy awake within its reach (as many as Twin says, at as many). */
   private lobVial(c: Contraption, frac: number, echo = false): boolean {
     const C = TINKER_TUNE.contraption;
@@ -5331,11 +5385,14 @@ export class Game {
       const lead = m.speed > 0 && m.state === 'chase' ? 0.35 : 0;
       const x1 = m.x + m.fx * lead;
       const y1 = m.y + m.fy * lead;
-      const v: Vial = { x0: c.x, y0: c.y, x1, y1, t: 0, flight: C.flight, skill: c.skill, frac, wake: !c.woke && !echo && n === 0 };
+      // (her tree's CONTRAPTION, its pick BOMBS: a little bomb in place of the vial, going off a moment after it lands)
+      const bomb = this.contraptionAmmo() === 'bombs';
+      const flight = bomb ? C.bombFlight : C.flight;
+      const v: Vial = { x0: c.x, y0: c.y, x1, y1, t: 0, flight, skill: c.skill, frac, wake: !c.woke && !echo && n === 0, ...(bomb ? { bomb: true, fuse: C.bombFuse } : {}) };
       if (v.wake) c.woke = true;
       this.brewVial(v);
       this.vials.push(v);
-      this.emit({ t: 'vial', id: c.id, x0: c.x, y0: c.y, x1, y1, flight: C.flight, n, echo: echo || undefined, ...(v.big ? { big: true } : {}) });
+      this.emit({ t: 'vial', id: c.id, x0: c.x, y0: c.y, x1, y1, flight, n, echo: echo || undefined, ...(v.big ? { big: true } : {}), ...(bomb ? { bomb: C.bombFuse } : {}) });
       const far = Math.hypot(x1 - c.x, y1 - c.y) || 1;
       c.fx = (x1 - c.x) / far;
       c.fy = (y1 - c.y) / far;
@@ -5359,7 +5416,7 @@ export class Game {
     if (v.big) rad *= T.bigOne.wide;
     const x = v.x1;
     const y = v.y1;
-    this.emit({ t: 'vialBurst', x, y, r: rad, ...(v.little ? { little: true } : {}), ...(v.big ? { big: true } : {}), ...(v.brew ? { brew: v.brew } : {}) });
+    this.emit({ t: 'vialBurst', x, y, r: rad, ...(v.little ? { little: true } : {}), ...(v.big ? { big: true } : {}), ...(v.brew ? { brew: v.brew } : {}), ...(v.bomb ? { bomb: true } : {}) });
     this.sfx('shatter', v.little ? 0.2 : 0.35);
     if (v.big) {
       this.emit({ t: 'shake', amount: 4 });
@@ -5505,6 +5562,31 @@ export class Game {
       this.overdrive();
       return;
     }
+    // (HER TREE'S GUN ARM: each braces and charges its great shot at where she points, firing as she lets go)
+    if (this.armOf()) {
+      for (const g of up) {
+        // (one charging or firing already goes on with it: a held button asks again and again)
+        if (g.act === 'charge') continue;
+        const d = Math.hypot(tx - g.x, ty - g.y);
+        if (d > 0.3) {
+          g.fx = (tx - g.x) / d;
+          g.fy = (ty - g.y) / d;
+        }
+        g.act = 'charge';
+        g.actT = 0;
+        g.did = false;
+        g.skill = i;
+        g.ax = tx;
+        g.ay = ty;
+        g.held = -1;
+        g.chFrac = frac;
+        g.skid = 0;
+        this.emit({ t: 'golemCharge', x: g.x, y: g.y });
+      }
+      this.sfx('slam', 0.4);
+      this.overdrive();
+      return;
+    }
     // (each turns to where she pointed and pounds the floor before it; Twin, a second pound after)
     for (const g of up) {
       const d = Math.hypot(tx - g.x, ty - g.y);
@@ -5609,20 +5691,22 @@ export class Game {
       if (c.t < C.set) continue;
       c.next -= dt;
       if (c.next > 0) continue;
-      const shot = this.lobVial(c, c.frac);
+      // (her tree's CONTRAPTION, its pick ENERGY: a bolt of energy at the nearest, in place of a vial)
+      const energy = this.contraptionAmmo() === 'energy';
+      const shot = energy ? this.contraptionBolt(c, c.frac) : this.lobVial(c, c.frac);
       if (shot && c.echo > 0) {
         // ("of Echoes": with its first shot, a weaker vial after it)
         const share = c.echo;
         c.echo = 0;
-        this.after(0.2, () => c.broke < 0 && this.lobVial(c, share, true));
+        this.after(0.2, () => c.broke < 0 && (energy ? this.contraptionBolt(c, share, true) : this.lobVial(c, share, true)));
       }
-      c.next = shot ? C.every : 0.2;
+      c.next = shot ? (energy ? C.boltEvery : C.every) : 0.2;
     }
     // (HER VIALS: each bursts where it comes down; Cluster Vials' little ones, thrown out as one bursts, come down after)
     for (let k = this.vials.length - 1; k >= 0; k--) {
       const v = this.vials[k];
       v.t += dt;
-      if (v.t < v.flight) continue;
+      if (v.t < v.flight + (v.fuse ?? 0)) continue;
       this.vials.splice(k, 1);
       this.vialBursts(v);
     }
@@ -5678,8 +5762,13 @@ export class Game {
       if (g.actT >= G.arrive) this.golemIdle(g);
       return;
     }
-    // (her tree's TESLA COIL: on its back, zapping the enemy nearest it every second)
-    if (this.has('teslacoil')) this.teslaCoil(g, gdt);
+    // (her tree's GUN ARM: its tesla coil zaps the enemy nearest it every second, from range)
+    const arm = this.armOf();
+    if (arm === 'tesla' && g.act !== 'charge') this.teslaCoil(g, gdt);
+    if (g.act === 'charge') {
+      this.stepCharge(g, gdt);
+      return;
+    }
     // (GROWTH SERUM: grown, its fist reaches twice as far)
     const reach = G.punch.reach * (g.growT > 0 ? TINKER_TUNE.talents.growth.big : 1);
     if (g.act === 'punch') {
@@ -5769,8 +5858,9 @@ export class Game {
       g.target = best.id;
       return;
     }
-    // (its cannon off for now, his word: it closes on what it fights, always: GOLEM_CANNON)
-    if (GOLEM_CANNON.on && best && bd >= G.cannon.near && bd <= G.cannon.far && g.cannonCd <= 0) {
+    // (its cannon off for now, his word: it closes on what it fights, always: GOLEM_CANNON; with her tree's GUN ARM, the
+    // cannon's arm fires it from range)
+    if ((GOLEM_CANNON.on || arm === 'cannon') && best && bd >= G.cannon.near && bd <= G.cannon.far && g.cannonCd <= 0) {
       face(best.x, best.y);
       g.act = 'cannon';
       g.actT = 0;
@@ -5784,7 +5874,18 @@ export class Game {
     let gx: number;
     let gy: number;
     let stop: number;
-    if (best && bd > reach * 0.8) {
+    // (with her tree's GUN ARM it stands off and fires: it goes no nearer what it fights than its arm reaches)
+    const far = arm === 'cannon' ? G.cannon.far - 0.5 : arm === 'tesla' ? G.zapFar - 0.5 : 0;
+    if (best && far > 0 && bd <= far) {
+      face(best.x, best.y);
+      gx = g.x;
+      gy = g.y;
+      stop = 1;
+    } else if (best && far > 0) {
+      gx = best.x;
+      gy = best.y;
+      stop = far * 0.85 + best.r;
+    } else if (best && bd > reach * 0.8) {
       gx = best.x;
       gy = best.y;
       stop = reach * 0.7 + best.r;
@@ -5817,6 +5918,94 @@ export class Game {
     }
   }
 
+  /** Her tree's GUN ARM, if she has it: the arm she picked for her Golem, the cannon or the tesla coil; null without it. */
+  armOf(): 'cannon' | 'tesla' | null {
+    return this.has('gunarm') ? (this.pickOf('gunarm') === 'tesla' ? 'tesla' : 'cannon') : null;
+  }
+
+  /**
+   * Her tree's GUN ARM: Golem `g` charging its great shot, each step. Braced and charging while she holds (its aim on where she
+   * points), held at its full; let go, it fires once braced (the cannon's shell, the tesla coil's beam), as strong as she held
+   * it, thrown back by its own shot; then it winds down.
+   */
+  private stepCharge(g: Golem, gdt: number): void {
+    const C = TINKER_TUNE.golem.charge;
+    const kind = this.armOf() === 'tesla' ? 'beam' : 'shell';
+    if ((g.held ?? -1) < 0) {
+      // (still held: its aim follows her finger)
+      const d = Math.hypot(this.holdX - g.x, this.holdY - g.y);
+      if (this.holdNow && d > 0.3) {
+        g.ax = this.holdX;
+        g.ay = this.holdY;
+        g.fx = (g.ax - g.x) / d;
+        g.fy = (g.ay - g.y) / d;
+      }
+      if (!this.holdNow || g.actT >= C.most) g.held = Math.min(g.actT, C.most);
+      return;
+    }
+    const fireT = Math.max(C.build, g.held ?? 0);
+    const power = Math.min(1, (g.held ?? 0) / C.build);
+    if (!g.did && g.actT >= fireT) {
+      g.did = true;
+      this.chargedShot(g, kind, power);
+    }
+    // (thrown back by its own shot, easing to a stop: the art's chargeSkid)
+    if (g.did) {
+      const k = Math.min(1, (g.actT - fireT) / (kind === 'shell' ? 12 / 30 : 18 / 30));
+      const want = C.skid[kind] * (kind === 'shell' ? 1 - (1 - k) ** 3 : 1 - (1 - k) ** 2);
+      const step = want - (g.skid ?? 0);
+      if (step > 0) {
+        const was = { x: g.x, y: g.y };
+        this.slide(g, 0.45, -g.fx * step, -g.fy * step, this.level.walk);
+        g.skid = (g.skid ?? 0) + Math.hypot(g.x - was.x, g.y - was.y) + (Math.hypot(g.x - was.x, g.y - was.y) < step * 0.5 ? step : 0);
+      }
+    }
+    if (g.actT >= fireT + (kind === 'shell' ? C.shellEnd : C.beamEnd)) {
+      g.held = undefined;
+      g.skid = 0;
+      this.golemIdle(g);
+    }
+  }
+
+  /** Her tree's GUN ARM: Golem `g` fires its great shot (`power` 0 to 1: how long she held it). */
+  private chargedShot(g: Golem, kind: 'shell' | 'beam', power: number): void {
+    const C = TINKER_TUNE.golem.charge;
+    const might = (g.chFrac ?? this.golemFrac(g)) * this.golemMight(g) * (C.least + (1 - C.least) * power);
+    this.emit({ t: 'shake', amount: 3 + 3 * power });
+    if (kind === 'shell') {
+      const x1 = g.ax;
+      const y1 = g.ay;
+      const flight = Math.hypot(x1 - g.x, y1 - g.y) / C.speed;
+      const r = C.blast * (C.blastLeast + (1 - C.blastLeast) * power);
+      this.emit({ t: 'golemCharged', kind, x0: g.x, y0: g.y, x1, y1, flight, r, power });
+      this.sfx('explode', 0.6);
+      const skill = g.skill;
+      this.after(flight, () => {
+        this.sfx('explode', 0.9);
+        this.blast(skill, x1, y1, r, might * C.shell, 'bomb');
+        if (this.has('shrapnel')) this.shrapnel(skill, x1, y1, might * C.shell, -1);
+      });
+      return;
+    }
+    // (the beam: everything along it before it, once, out to its length or the wall)
+    let len = 0.6;
+    for (; len < C.beam; len += 0.1) if (!this.isOpen(g.x + g.fx * len, g.y + g.fy * len)) break;
+    const x1 = g.x + g.fx * len;
+    const y1 = g.y + g.fy * len;
+    this.emit({ t: 'golemCharged', kind, x0: g.x, y0: g.y, x1, y1, flight: 0, r: C.wide / 2, power });
+    this.sfx('zap', 1);
+    let hits = 0;
+    for (const m of this.monsters) {
+      if (m.dead || this.shutIn(m)) continue;
+      const dx = m.x - g.x;
+      const dy = m.y - g.y;
+      const along = dx * g.fx + dy * g.fy;
+      const side = Math.abs(-dx * g.fy + dy * g.fx);
+      if (along < 0 || along > len + m.r || side > C.wide / 2 + m.r) continue;
+      this.hitMonster(m, g.skill, might * C.beamShare, hits++ >= 4);
+    }
+  }
+
   /** Her tree's SHRAPNEL: the Golem's shot bursting at (x, y), striking everything near but the one it hit (`not`). */
   private shrapnel(i: number, x: number, y: number, frac: number, not: number): void {
     const S = TINKER_TUNE.talents.shrapnel;
@@ -5834,7 +6023,7 @@ export class Game {
    * to two more, each the nearest to the last.
    */
   private teslaCoil(g: Golem, gdt: number): void {
-    const Z = TINKER_TUNE.talents.tesla;
+    const Z = { ...TINKER_TUNE.talents.tesla, reach: TINKER_TUNE.golem.zapFar };
     g.zapT -= gdt;
     if (g.zapT > 0) return;
     const hit: Monster[] = [];
@@ -10532,6 +10721,27 @@ export class Game {
     if (why) return why;
     if (!this.level.town) return 'Undone in town only';
     if (this.hero.gold < this.unlearnPrice()) return `Needs ${this.unlearnPrice()} gold`;
+    return null;
+  }
+
+  /** (THE SKILL TREES) The pick made on talent `id`, where it has one: its first until another is picked. */
+  pickOf(id: string): string | null {
+    const def = talentById(this.hero.cls, id);
+    if (!def?.pick) return null;
+    const p = this.hero.picks?.[id];
+    return p && def.pick.ids.includes(p) ? p : def.pick.ids[0];
+  }
+
+  /** (THE SKILL TREES) Pick `which` on talent `id` (taken already): why not, or null when it is picked. */
+  choosePick(id: string, which: string): string | null {
+    const def = talentById(this.hero.cls, id);
+    if (!def?.pick || !def.pick.ids.includes(which)) return 'Nothing to pick';
+    if (!this.hero.talents.includes(id)) return 'Take it first';
+    if (this.pickOf(id) === which) return null;
+    (this.hero.picks ??= {})[id] = which;
+    this.refresh();
+    this.emit({ t: 'talent', id });
+    this.sfx('equip');
     return null;
   }
 

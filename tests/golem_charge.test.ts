@@ -255,7 +255,7 @@ test('its numbers: the shell skids it back exactly CHARGE_SKID.shell tiles and t
   assert.deepEqual(found, []);
 });
 
-test('nothing of the game draws the charged shots: no file of the game (src/, but for its mock-ups in src/dev/) imports dev/golem_charge_fx.ts or the charged moves', () => {
+test('only her Gun Arm draws the charged shots: of the game (src/, but for its mock-ups in src/dev/), only her Golem\'s pictures and the renderer take the charged moves (the main chat, 31 Oct, at his word: her tree\'s Gun Arm)', () => {
   const found: string[] = [];
   const walk = (dir: string): string[] => readdirSync(dir).flatMap((n: string) => {
     const p = `${dir}/${n}`;
@@ -266,7 +266,7 @@ test('nothing of the game draws the charged shots: no file of the game (src/, bu
     const text = readFileSync(file, 'utf8');
     if (/golem_charge_fx|golemChargeShell|golemChargeBeam|GCHARGE/.test(text)) found.push(file);
   }
-  assert.deepEqual(found, []);
+  assert.deepEqual(found.sort(), ['src/art/tinkerer_art.ts', 'src/game/tinkerer.ts', 'src/render/tinkerer_fx.ts']);
 });
 
 // ---- the scene its effects are checked in: the Golem drawn as the game would (turned 45 from in front, 135 truly from behind),

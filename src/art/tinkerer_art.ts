@@ -37,10 +37,12 @@ import type { TinkMove } from '../dev/tinkerer_moves';
 import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
 import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
 import { drawTinkerFallAt, tinkerFall } from '../dev/tinkerer_fall';
-import { GCANNON, GDOWN, GP, GPUNCH, GUPPER, GWALK, golemCannon, golemDown, golemPunch, golemUppercut, golemWalk, groundPound } from '../dev/golem_moves';
+import { GCANNON, GCHARGE_BEAM, GCHARGE_SHELL, GDOWN, GP, GPUNCH, GUPPER, GWALK, golemCannon, golemChargeBeam, golemChargeShell, golemDown, golemPunch, golemUppercut, golemWalk, groundPound } from '../dev/golem_moves';
 import { GOLEM_LOOK, TINKER_TUNE } from '../game/tinkerer';
-import { GOLEM_GUN, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../dev/sculpt_golem';
+import { GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../dev/sculpt_golem';
+import type { GolemGun } from '../dev/sculpt_golem';
 import { CONTRAPTION_PICK, CONTRAPTION_POSE, sculptContraptionBuild } from '../dev/sculpt_contraption';
+import type { ContraptionAmmo } from '../dev/sculpt_contraption';
 import { CDOWN, CT, contraptionDown } from '../dev/contraption_fx';
 import { UNITS_PER_TILE } from './moves3';
 
@@ -148,30 +150,37 @@ export function makeTinkererArt(): ActorArt {
 type GolemPose = Partial<typeof GOLEM_POSE>;
 const REST: typeof GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0, crumple: 0 };
 
-/** The Golem posed so, drawn (its pose put back after). `aim` and `kick`: its cannon's. */
-function golemAt(view: GameView, pose: GolemPose & { aim?: number; kick?: number }): Sprite {
+/** The Golem posed so, drawn (its pose put back after), with arm `gun`. `aim` and `kick`: its cannon's; `charge` and `gunLevel`: its charged shot's (her tree's GUN ARM). */
+function golemAt(view: GameView, pose: GolemPose & { aim?: number; kick?: number; charge?: number; gunLevel?: number }, gun: GolemGun): Sprite {
   Object.assign(GOLEM_POSE, REST, pose);
   try {
-    return asSprite(sculptGolemBuild('front', GOLEM_PICK.build, GOLEM_TURN[view], -14, GOLEM_PICK.giant, GOLEM_GUN.gun, pose.aim ?? 0, pose.kick ?? 0), AURA);
+    return asSprite(sculptGolemBuild('front', GOLEM_PICK.build, GOLEM_TURN[view], -14, GOLEM_PICK.giant, gun, pose.aim ?? 0, pose.kick ?? 0, pose.charge ?? 0, pose.gunLevel ?? 0), AURA);
   } finally {
     Object.assign(GOLEM_POSE, REST);
   }
 }
 /** A move of the Golem's, by its frames (30 a second): `pose(f)` its pose at frame f. */
-function golemClip(view: GameView, end: number, pose: (f: number) => GolemPose & { aim?: number; kick?: number }, hit?: number): Clip {
-  return clip(0, end * FR, CLIP_FPS, (t) => golemAt(view, pose(Math.round(t / FR))), hit === undefined ? undefined : hit * FR, true);
+function golemClip(view: GameView, end: number, pose: (f: number) => GolemPose & { aim?: number; kick?: number }, gun: GolemGun, hit?: number): Clip {
+  return clip(0, end * FR, CLIP_FPS, (t) => golemAt(view, pose(Math.round(t / FR)), gun), hit === undefined ? undefined : hit * FR, true);
 }
 
-function golemSet(view: GameView): AnimSet {
-  const walk = lazyFrames(GWALK.round, (i) => golemAt(view, golemWalk(i)));
+/** (her tree's GUN ARM) Its charged shot, frame by frame (30 a second, made as they are wanted): the cannon's shell or the tesla coil's beam. dev/golem_moves.ts chargeFrame says which frame to show. */
+export function golemCharge(view: GameView, gun: GolemGun): Sprite[] {
+  const tesla = gun === 'tesla';
+  const end = tesla ? GCHARGE_BEAM.end : GCHARGE_SHELL.end;
+  return lazyFrames(end + 1, (f) => golemAt(view, tesla ? golemChargeBeam(f) : golemChargeShell(f), gun));
+}
+
+function golemSet(view: GameView, gun: GolemGun): AnimSet {
+  const walk = lazyFrames(GWALK.round, (i) => golemAt(view, golemWalk(i), gun));
   // (its uppercut, GOLEM_LOOK, the main chat's at his word of 28 Oct, 20:26, his yes by 21:41; off, its old punch)
-  const punch = GOLEM_LOOK.uppercut ? golemClip(view, GUPPER.end, golemUppercut, GUPPER.hit) : golemClip(view, GPUNCH.end, golemPunch, GPUNCH.hit);
-  const pound = golemClip(view, GP.end, groundPound, GP.hit);
-  const cannon = golemClip(view, GCANNON.end, golemCannon, GCANNON.fire);
-  const down = golemClip(view, GDOWN.end, golemDown);
+  const punch = GOLEM_LOOK.uppercut ? golemClip(view, GUPPER.end, golemUppercut, gun, GUPPER.hit) : golemClip(view, GPUNCH.end, golemPunch, gun, GPUNCH.hit);
+  const pound = golemClip(view, GP.end, groundPound, gun, GP.hit);
+  const cannon = golemClip(view, GCANNON.end, golemCannon, gun, GCANNON.fire);
+  const down = golemClip(view, GDOWN.end, golemDown, gun);
   return {
     // (standing: as he picked it, at rest; TO BE MADE ALIVE WHEN STILL by the art chat, as every figure is)
-    idle: lazyFrames(1, () => golemAt(view, {})),
+    idle: lazyFrames(1, () => golemAt(view, {}, gun)),
     walk,
     attack: three(punch),
     heavy: three(pound),
@@ -183,19 +192,19 @@ function golemSet(view: GameView): AnimSet {
   };
 }
 
-/** Her Golem's pictures, both views. */
-export function makeGolemArt(): ActorArt {
-  return { front: golemSet('front'), back: golemSet('back') };
+/** Her Golem's pictures, both views, with arm `gun` (the cannon, as he picked it; with her tree's GUN ARM, the one she picks). */
+export function makeGolemArt(gun: GolemGun = 'cannon'): ActorArt {
+  return { front: golemSet('front', gun), back: golemSet('back', gun) };
 }
 
 // ---- HER CONTRAPTION ---------------------------------------------------------------------------
 
 /** The tripod mortar posed so, drawn (its pose put back after). */
-function contraptionAt(view: GameView, pose: Partial<typeof CONTRAPTION_POSE>, spin = 0): Sprite {
+function contraptionAt(view: GameView, pose: Partial<typeof CONTRAPTION_POSE>, spin = 0, ammo: ContraptionAmmo = 'vials'): Sprite {
   const was = { ...CONTRAPTION_POSE };
   Object.assign(CONTRAPTION_POSE, pose);
   try {
-    return asSprite(sculptContraptionBuild('front', CONTRAPTION_PICK, (CON_TURN[view] + spin) % 360), AURA_SMALL);
+    return asSprite(sculptContraptionBuild('front', CONTRAPTION_PICK, (CON_TURN[view] + spin) % 360, ammo), AURA_SMALL);
   } finally {
     Object.assign(CONTRAPTION_POSE, was);
   }
@@ -215,18 +224,18 @@ export interface ContraptionArt {
   broke: Clip;
 }
 
-function contraptionSet(view: GameView): ContraptionArt {
+function contraptionSet(view: GameView, ammo: ContraptionAmmo): ContraptionArt {
   const KICK = 10;
   return {
-    tumble: lazyFrames(8, (i) => contraptionAt(view, { open: 0, kick: 0, lit: 0, broke: 0 }, i * 45)),
-    open: spread(0, (CT.open1 - CT.open0) * FR, CT.open1 - CT.open0 + 1, (t) => contraptionAt(view, { open: t / ((CT.open1 - CT.open0) * FR), kick: 0, lit: 0, broke: 0 })),
-    stand: lazyFrames(1, () => contraptionAt(view, { open: 1, kick: 0, lit: 1, broke: 0 })),
-    shot: clip(0, KICK * FR, CLIP_FPS, (t) => contraptionAt(view, { open: 1, kick: Math.exp(-t / FR / 2.5), lit: 1, broke: 0 })),
-    broke: clip(0, CDOWN.end * FR, CLIP_FPS, (t) => contraptionAt(view, contraptionDown(Math.round(t / FR)))),
+    tumble: lazyFrames(8, (i) => contraptionAt(view, { open: 0, kick: 0, lit: 0, broke: 0 }, i * 45, ammo)),
+    open: spread(0, (CT.open1 - CT.open0) * FR, CT.open1 - CT.open0 + 1, (t) => contraptionAt(view, { open: t / ((CT.open1 - CT.open0) * FR), kick: 0, lit: 0, broke: 0 }, 0, ammo)),
+    stand: lazyFrames(1, () => contraptionAt(view, { open: 1, kick: 0, lit: 1, broke: 0 }, 0, ammo)),
+    shot: clip(0, KICK * FR, CLIP_FPS, (t) => contraptionAt(view, { open: 1, kick: Math.exp(-t / FR / 2.5), lit: 1, broke: 0 }, 0, ammo)),
+    broke: clip(0, CDOWN.end * FR, CLIP_FPS, (t) => contraptionAt(view, contraptionDown(Math.round(t / FR)), 0, ammo)),
   };
 }
 
-/** Her Contraption's pictures, both views. */
-export function makeContraptionArt(): { front: ContraptionArt; back: ContraptionArt } {
-  return { front: contraptionSet('front'), back: contraptionSet('back') };
+/** Her Contraption's pictures, both views, loaded with `ammo` (her vials; with her tree's Contraption, its pick: bombs or energy). */
+export function makeContraptionArt(ammo: ContraptionAmmo = 'vials'): { front: ContraptionArt; back: ContraptionArt } {
+  return { front: contraptionSet('front', ammo), back: contraptionSet('back', ammo) };
 }
