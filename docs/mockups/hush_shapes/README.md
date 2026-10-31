@@ -245,3 +245,5 @@ painted before is painted the same.
 
 The swarm, the sheet and the film (`swarm.png`, `sheet.png`, `film.mp4`), asked “The Hush's shapes (swarm.png, sheet.png
 and the film): are these right?”: “Yes, that's them (Recommended)”.
+
+OF THE NEW RHYTHM (97717da; his pick for it, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`hush_shapes_spiral_sheet.png`, `hush_shapes_spiral.mp4`), asked “The Hush's shapes now never stand still. They circle you at 5 tiles, closing in and getting faster as they come, from 3 to 6.5 tiles a second. Then one swoops in and wraps you in its grip. Is that them?”: “Yes, that's them (Recommended)”.
