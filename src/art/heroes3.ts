@@ -26,8 +26,8 @@ import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
-import { makeTinkererArt } from './tinkerer_art';
-import { makeBrawlerArt } from './brawler_art';
+import { makeTinkererArt, makeTinkererCardArt } from './tinkerer_art';
+import { makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
 import { makeWarlockArt } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
@@ -384,20 +384,23 @@ export function makeHeroArt3(): HeroArt {
       return wart;
     }
     // (THE BRAWLER: sculpted, art/brawler_art.ts; one set of him for every place, as yet)
+    // (on a class card, only what a card shows, made at once: makeBrawlerCardArt; the same for the Tinkerer)
     if (cls === 'brawler') {
-      let bart = made.get('brawler');
+      const bkey = place === 'card' ? 'brawler:card' : 'brawler';
+      let bart = made.get(bkey);
       if (!bart) {
-        bart = makeBrawlerArt();
-        made.set('brawler', bart);
+        bart = place === 'card' ? makeBrawlerCardArt() : makeBrawlerArt();
+        made.set(bkey, bart);
       }
       return bart;
     }
     // (THE TINKERER: sculpted, art/tinkerer_art.ts; one set of her for every place, as yet)
     if (cls === 'tinkerer') {
-      let tart = made.get('tinkerer');
+      const tkey = place === 'card' ? 'tinkerer:card' : 'tinkerer';
+      let tart = made.get(tkey);
       if (!tart) {
-        tart = makeTinkererArt();
-        made.set('tinkerer', tart);
+        tart = place === 'card' ? makeTinkererCardArt() : makeTinkererArt();
+        made.set(tkey, tart);
       }
       return tart;
     }

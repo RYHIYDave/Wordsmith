@@ -85,12 +85,48 @@ function three(c: Clip): Sprite[] {
   return lazyFrames(3, (i) => c.frames[picks[i]]);
 }
 
-function hisSet(view: GameView): AnimSet {
-  const turn = TURN[view];
-  const at = (m: BrawlerMove) => (t: number): Sprite => toSprite({ px: drawBrawlerAt('front', m, t, turn).px, lights: [] }, AURA, CANVAS3.ax, CANVAS3.ay);
+/** Him at a moment of a move, in a view. */
+const atIn = (view: GameView) => (m: BrawlerMove) => (t: number): Sprite => toSprite({ px: drawBrawlerAt('front', m, t, TURN[view]).px, lights: [] }, AURA, CANVAS3.ax, CANVAS3.ay);
+/**
+ * Him standing and running, in a view (his moves for these made at once: a few thousandths of a second). One list of each for
+ * each view, his class card's and the game's alike: what is painted for the card is not painted again in the game.
+ */
+const standRuns = new Map<GameView, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
+  const had = standRuns.get(view);
+  if (had) return had;
+  const at = atIn(view);
   const [stand, run] = brawlerMoves();
-  const idle = lazyFrames(Math.round(stand.long * IDLE_FPS), (i) => at(stand)(i / IDLE_FPS));
-  const walk = lazyFrames(Math.round(RUN_ROUND * RUN_FPS), (i) => at(run)(i / RUN_FPS));
+  const made = {
+    idle: lazyFrames(Math.round(stand.long * IDLE_FPS), (i) => at(stand)(i / IDLE_FPS)),
+    walk: lazyFrames(Math.round(RUN_ROUND * RUN_FPS), (i) => at(run)(i / RUN_FPS)),
+  };
+  standRuns.set(view, made);
+  return made;
+}
+/** Made the first time it is wanted, and only once (for both views). */
+function once<T>(make: () => T): () => T {
+  let made: T | undefined;
+  return () => (made ??= make());
+}
+/**
+ * HIS MOVES THAT TAKE SECONDS TO MAKE (every key of them steadied: his slip and counter, struck, struck from behind, his fall),
+ * made once for both views (they were made for each: twice the wait), as his whole set is first wanted (in the game; not for
+ * his class card, makeBrawlerCardArt). Made with the set, not when first painted: in the game the page paints many of his
+ * frames itself, and a second's wait the first time he is struck, or seconds as he falls, would be felt in a fight.
+ */
+const slipNumbers = once(slipCounter);
+const slipMove = once((): BrawlerMove => {
+  const s = slipNumbers();
+  return { name: 'Swipe: slip and counter', motion: bake(s.motion, s.long, 60, 1, [...strikes(s.blows), s.dash]), long: s.long, loops: false, blows: s.blows, air: s.air, dash: s.dash };
+});
+const reelMove = once(brawlerReel);
+const lurchMove = once(brawlerLurch);
+const fallMove = once(brawlerFall);
+
+function hisSet(view: GameView): AnimSet {
+  const at = atIn(view);
+  const { idle, walk } = standRun(view);
   // (each run of presses: its last punch, from where the one before it was cut off to his guard)
   const punches: Record<string, Clip> = {};
   for (const key of PRESS_RUNS) {
@@ -112,13 +148,13 @@ function hisSet(view: GameView): AnimSet {
     const t0 = k === 0 ? 0 : c.blows[k - 1].at + (ps[k - 1].cut - ps[k - 1].hit);
     punches[key] = clip(t0, c.long, CLIP_FPS, (t) => at(get().move)(t), c.blows[k].at, true);
   }
-  const s = slipCounter();
-  const slip: BrawlerMove = { name: 'Swipe: slip and counter', motion: bake(s.motion, s.long, 60, 1, [...strikes(s.blows), s.dash]), long: s.long, loops: false, blows: s.blows, air: s.air, dash: s.dash };
+  const s = slipNumbers();
+  const slip = slipMove();
+  const reel = reelMove();
+  const lurch = lurchMove();
+  const fall = fallMove();
   const leap = spread(SLIP_DASH[0], SLIP_DASH[1], DASH_FRAMES, at(slip));
   const land = clip(SLIP_DASH[1], s.long, CLIP_FPS, at(slip), s.blows.length ? s.blows[s.blows.length - 1].at : undefined);
-  const reel = brawlerReel();
-  const lurch = brawlerLurch();
-  const fall = brawlerFall();
   return {
     idle,
     walk,
@@ -143,4 +179,16 @@ function hisSet(view: GameView): AnimSet {
 /** The Brawler's pictures, both views. */
 export function makeBrawlerArt(): ActorArt {
   return { front: hisSet('front'), back: hisSet('back') };
+}
+/**
+ * HIM ON HIS CLASS CARD (ui/panels.ts): standing and running, all a card shows, made at once. (His whole set waits on the moves
+ * that take seconds to make, slipMove and the rest: the start screen stood still while they were, and his card with it. The owner, 31 Oct
+ * 2026, 18:23: "Can you animate the tinkerer and the brawler on the character select screen in the test version".)
+ */
+export function makeBrawlerCardArt(): ActorArt {
+  const set = (view: GameView): AnimSet => {
+    const { idle, walk } = standRun(view);
+    return { idle, walk, attack: idle, idleFps: IDLE_FPS, walkFps: RUN_FPS, walkStride: GRIP_SPEED * RUN_ROUND };
+  };
+  return { front: set('front'), back: set('back') };
 }

@@ -808,7 +808,24 @@ export function paintWorkerMain(): void {
     const art = heroArt.of(cls, lookOfPlace(place));
     const lists = [heroLists(art.front), heroLists(art.back)];
     const order: [number, number, number][] = [];
-    for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+    if (place === 'card') {
+      // ON A CLASS CARD (ui/panels.ts; the owner, 31 Oct 2026, 18:23: "Can you animate the tinkerer and the brawler on the
+      // character select screen in the test version"): only what a card shows, the front, standing and running; every eighth
+      // frame first, then every fourth, and so on, so that each figure moves within a second or two and grows smooth as the
+      // rest come in (a frame not here yet is shown as the nearest that is: art/kit.ts LEFT_TO_PAINTER). Before, every list of
+      // a hero was painted, both ways, one hero after another: the Tinkerer's card waited on the Warlock's 610 frames.
+      const shown = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
+      const seen = new Set<string>();
+      for (const step of [8, 4, 2, 1]) {
+        for (const l of shown) {
+          for (let i = 0; i < lists[0][l].length; i += step) {
+            if (seen.has(`${l}:${i}`)) continue;
+            seen.add(`${l}:${i}`);
+            order.push([0, l, i]);
+          }
+        }
+      }
+    } else for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
     const sent = new Set<Sprite>();
     let list: Given[] = [];
     let transfer: Transferable[] = [];
@@ -991,6 +1008,8 @@ export function paintWorkerMain(): void {
       } else if (job.ask.t === 'hero') {
         job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place);
         if (job.run.next().done) done();
+        // (the heroes on their class cards take turns, a piece of work each, so that all of them move soon)
+        else if (job.ask.place === 'card') job.seq = seq++;
       } else if (job.ask.t === 'shells') {
         job.run ??= shells(job.ask);
         if (job.run.next().done) done();

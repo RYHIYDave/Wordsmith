@@ -99,6 +99,37 @@ const byName = (list: readonly TinkMove[], start: string): TinkMove => {
 
 // ---- HER ---------------------------------------------------------------------------------------
 
+/** Made the first time it is wanted, and only once (for both views). */
+function once<T>(make: () => T): () => T {
+  let made: T | undefined;
+  return () => (made ??= make());
+}
+/**
+ * HER MOVES THAT TAKE A WHILE TO MAKE (every key of her tap and hold steadied: seconds; her fall), made once for both views
+ * (they were made for each: twice the wait), as her whole set is first wanted (in the game; not for her class card,
+ * makeTinkererCardArt). Made with the set, not when first painted: in the game the page paints many of her frames itself, and
+ * seconds' wait the first time she whistles would be felt in a fight.
+ */
+const holdMove = once(tinkerHold);
+const fallMove = once(tinkerFall);
+
+/**
+ * Her standing and running, in a view (her moves for these made at once). One list of each for each view, her class card's and
+ * the game's alike: what is painted for the card is not painted again in the game.
+ */
+const standRuns = new Map<GameView, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
+  const had = standRuns.get(view);
+  if (had) return had;
+  const moves = tinkerMoves();
+  const stand = byName(moves, 'Standing');
+  const run = byName(moves, 'Running');
+  const at = (m: TinkMove) => (t: number): Sprite => asSprite(drawTinkerAt('front', m, t, TURN[view]), AURA, m.tall ?? 0);
+  const made = { idle: round(TSTAND_LONG, IDLE_FPS, at(stand)), walk: round(TRUN_ROUND, RUN_FPS, at(run)) };
+  standRuns.set(view, made);
+  return made;
+}
+
 function herSet(view: GameView): AnimSet {
   const turn = TURN[view];
   const moves = tinkerMoves();
@@ -106,13 +137,12 @@ function herSet(view: GameView): AnimSet {
   const run = byName(moves, 'Running');
   const jump = byName(moves, 'Swipe');
   const tap = byName(moves, 'Tap');
-  const hold = tinkerHold();
+  const hold = holdMove();
+  const fall = fallMove();
   const reel = tinkerReel();
   const lurch = tinkerLurch();
-  const fall = tinkerFall();
   const at = (m: TinkMove, draw = drawTinkerAt) => (t: number): Sprite => asSprite(draw('front', m, t, turn), AURA, m.tall ?? 0);
-  const idle = round(TSTAND_LONG, IDLE_FPS, at(stand));
-  const walk = round(TRUN_ROUND, RUN_FPS, at(run));
+  const { idle, walk } = standRun(view);
   // (her Vial Toss: the throw with a vial of hers in her fist, from when she has it off her belt to when she lets it go)
   const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
   const attack = clip(0, tap.long, CLIP_FPS, at(toss), TAP_LET_GO, true);
@@ -143,6 +173,19 @@ function herSet(view: GameView): AnimSet {
 /** The Tinkerer's pictures, both views. */
 export function makeTinkererArt(): ActorArt {
   return { front: herSet('front'), back: herSet('back') };
+}
+/**
+ * HER ON HER CLASS CARD (ui/panels.ts): standing and running, all a card shows, made at once. (Her whole set waits on her tap and
+ * hold, which takes seconds to make: the start screen stood still while it was, and her card with it. The owner, 31 Oct 2026,
+ * 18:23: "Can you animate the tinkerer and the brawler on the character select screen in the test version".)
+ */
+export function makeTinkererCardArt(): ActorArt {
+  const set = (view: GameView): AnimSet => {
+    const { idle, walk } = standRun(view);
+    const run = byName(tinkerMoves(), 'Running');
+    return { idle, walk, attack: idle, idleFps: IDLE_FPS, walkFps: RUN_FPS, walkStride: TRUN_ROUND * (run.travel ?? 0) };
+  };
+  return { front: set('front'), back: set('back') };
 }
 
 // ---- HER GOLEM ---------------------------------------------------------------------------------
