@@ -765,6 +765,11 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   qguard: { kind: 'qguard', name: "Queen's Guard", life: 60, dmgMin: 15, dmgMax: 21, speed: 2.6, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.3, xp: 21, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   reflection: { kind: 'reflection', name: 'Your Reflection', life: 40, dmgMin: 12, dmgMax: 17, speed: 4.0, radius: 0.32, range: 1.6, windup: 0.5, cooldown: 2.0, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   gqueen: { kind: 'gqueen', name: 'The Queen', life: 680, dmgMin: 24, dmgMax: 33, speed: 2.0, radius: 0.6, range: 2.6, windup: 0.7, cooldown: 1.9, xp: 1100, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 19, the Keep: the main chat's first picks, a floor up from 18's; the knights huge and slow (the art chat's remake to
+  // come, his “huge and slow, one or two at a time”), the King's walk KG_PACE 1.0, slow and heavy, his blows across the hall)
+  kknight: { kind: 'kknight', name: "King's Knight", life: 120, dmgMin: 24, dmgMax: 33, speed: 1.8, radius: 0.55, range: 2.2, windup: 0.8, cooldown: 2.6, xp: 40, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
+  xbow: { kind: 'xbow', name: 'Crossbowman', life: 26, dmgMin: 11, dmgMax: 15, speed: 2.6, radius: 0.3, range: 7, windup: 0.6, cooldown: 2.4, xp: 11, ranged: true, projSpeed: 14, keepMax: 6, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  gking: { kind: 'gking', name: 'The King', life: 720, dmgMin: 26, dmgMax: 36, speed: 1.0, radius: 0.7, range: 3.0, windup: 0.8, cooldown: 2.2, xp: 1150, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -1226,6 +1231,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   // (floor 18: the Queen asks her looking-glass, as the Grimms' queen does (Margaret Hunt's translation, 1884); the rest is her
   // mirror's: game/act1_rules/gqueen.ts)
   gqueen: ['Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?'],
+  // (floor 19: the dying emperor's cry in Andersen's "The Nightingale" (1843; H. P. Paull's translation, 1872), out of copyright)
+  gking: ['Music! Music!'],
 };
 
 /**
@@ -1472,7 +1479,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5, gking: 1.5 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];

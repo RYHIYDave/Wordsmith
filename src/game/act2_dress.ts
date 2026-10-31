@@ -15,8 +15,9 @@ import { dress as library } from './act2/library';
 import { dress as swangardens } from './act2/swangardens';
 import { dress as masque } from './act2/masque';
 import { dress as glassgallery } from './act2/glassgallery';
+import { dress as keep } from './act2/keep';
 
-const DRESSERS: Readonly<Record<Act2LandKind, (L: Level, depth: number, seed: number) => Act1Dress | null>> = { gateward, undercity, millrace, housequiet, library, swangardens, masque, glassgallery };
+const DRESSERS: Readonly<Record<Act2LandKind, (L: Level, depth: number, seed: number) => Act1Dress | null>> = { gateward, undercity, millrace, housequiet, library, swangardens, masque, glassgallery, keep };
 
 export function dressAct2(L: Level, depth: number, seed: number): Act1Dress | null {
   if (!cityFloor(depth)) return null;

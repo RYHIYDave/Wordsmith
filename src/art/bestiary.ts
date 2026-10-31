@@ -232,6 +232,10 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   qguard: { top: 32, half: 10 },
   reflection: { top: 29, half: 9 },
   gqueen: { top: 44, half: 13 },
+  // (floor 19's: the knights huge (their remake to come), the crossbowmen the knight's size, the King twice the knight with the Hush on him)
+  kknight: { top: 40, half: 14 },
+  xbow: { top: 30, half: 9 },
+  gking: { top: 58, half: 16 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

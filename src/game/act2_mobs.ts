@@ -74,9 +74,16 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'lady', weight: 5 },
     { kind: 'qguard', weight: 3 },
   ],
+  // floor 19, the Keep (his doc: "the king's knights, still loyal and silent in their armour, crossbowmen on the walls, and the
+  // Silent Order's last"): the knights few (his word to the art chat: “huge and slow, one or two at a time”)
+  19: [
+    { kind: 'xbow', weight: 5 },
+    { kind: 'order', weight: 4 },
+    { kind: 'kknight', weight: 2 },
+  ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
-export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard' };
+export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard', 19: 'kknight' };
 /** The tiny ones, never a yellow pack (they are not led). */
 const TINY = new Set<MonsterKind>(['rat']);
 

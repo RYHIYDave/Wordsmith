@@ -14,6 +14,7 @@ import { BUILT as libraryBuilt, generate as library } from './act2/library';
 import { BUILT as swangardensBuilt, generate as swangardens } from './act2/swangardens';
 import { BUILT as masqueBuilt, generate as masque } from './act2/masque';
 import { BUILT as glassBuilt, generate as glassgallery } from './act2/glassgallery';
+import { BUILT as keepBuilt, generate as keep } from './act2/keep';
 
 const MAKERS: Readonly<Record<Act2LandKind, { built: boolean; make: (depth: number, seed: number) => Laid | null }>> = {
   gateward: { built: gatewardBuilt, make: gateward },
@@ -25,6 +26,7 @@ const MAKERS: Readonly<Record<Act2LandKind, { built: boolean; make: (depth: numb
   swangardens: { built: swangardensBuilt, make: swangardens },
   masque: { built: masqueBuilt, make: masque },
   glassgallery: { built: glassBuilt, make: glassgallery },
+  keep: { built: keepBuilt, make: keep },
 };
 
 /** Lay floor `depth` (11 to 15) of the Hush, or one of the High City's (16 on, HIGH_CITY). */

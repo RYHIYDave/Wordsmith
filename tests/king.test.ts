@@ -113,7 +113,10 @@ const smearIn = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports him', () => {
+/** The game's files that import him (his figure now; his rules and effects as they are built). */
+const KING_USERS = 'art/act1_figs/gking.ts';
+
+test('1. the switch is off, and of the game only floor 19\'s own files import him', () => {
   assert.equal(KING_ON.on, false, 'KING_ON is off');
   const users: string[] = [];
   const his = /^art\/king(_moves|_fx)?$/;
@@ -127,7 +130,9 @@ test('1. the switch is off, and nothing of the game imports him', () => {
       if (his.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import him');
+  // (Brought into the game by the main chat, 31 Oct 2026, on floor 19 behind HIGH_CITY (off): his figure, rules and effects files
+  // import him, and nothing else of the game)
+  assert.equal([...new Set(users)].sort().join(' '), KING_USERS, 'game files that import him');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover; with the Hush on his back, without it, and the Hush on its own', () => {

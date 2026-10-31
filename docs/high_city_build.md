@@ -120,3 +120,24 @@ Kinds: `lady`, `qguard`, `reflection`, boss `gqueen` (floor 5's Carrion Queen is
 5. THE QUEEN: the comb (lunge, the poison), the looking glass (into one mirror, out of one behind you), reflections, Shatter
    (six lanes, the gaps safe); each phase another mirror wakes; her mirror at the hall's end, speaking, then the truth.
 6. Films to him; his yes; the guard and the ladies when the art chat posts them; then floor 19.
+
+## Floor 19, the Keep (the main chat alone; his yes to floor 18, 30 Oct: “No that looks great”)
+
+The art: docs/mockups/keep, king, keep_crossbowmen, kings_knights, silent_order (READMEs: every number). HELD at the art
+chat's ask (board, 30 Oct 18:26): the king's knights (being remade “huge and slow, one or two at a time”) stood in for until
+it posts them; the crossbowmen built with their pictures as they are, their death to be swapped for the art chat's new one.
+The Silent Order's armed last on 19 (a fan of three knives: “A fan of three on 19 (Recommended)”). Kinds: `kknight`,
+`xbow`, the Order `order` (its armed look here), boss `gking`.
+1. THE FRAME: the kinds, stats, the light (night, the moon, honest fire); land 'keep' (the art's keepLook with KP_ZONE);
+   the King's 25 pieces and the High City set; the murder hole the floor's trap (ACT1_SETS[19]).
+2. THE PLACE: game/act2/keep.ts: the bailey (the great doors where he comes in), the gate passage (its murder holes), halls,
+   the barracks, the armoury, the wall walk (battlements, the sky beyond), the gallery, the throne hall (the King's), the
+   bedchamber at the top (the bed, the songbird's cushion, the broken songbird: the quest), the way on beyond the throne.
+3. THE HAZARDS: the murder holes (the trap's beat: still, warning, pouring, its pool); the portcullises (a row across a hall
+   or a doorway slamming down at a beat, cutting it in two a while, hurting what is under it).
+4. THE CROSSBOWMEN, THE ORDER'S ARMED LAST.
+5. THE KING: the sweep (its wave 235 degrees, 10 tiles), the Decree (three lines of his fog knights across the hall, gaps to
+   slip through), the Crown (a leap 5 tiles at you and a ring 10 tiles out), the Curtains (faces streaming at you); his last
+   phase, the Hush climbs off and stands at his side (its own moves his to decide); his death, the songbird winds itself up
+   and sings, the way on opens.
+6. Films to him; his yes; the knights and the crossbowmen's death when the art chat posts them; then floor 20.

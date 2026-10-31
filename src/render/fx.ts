@@ -379,6 +379,10 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   qguard: ['#3f3253', '#b6b6c6', '#7c7c90', '#14141c'],
   reflection: ['#525877', '#9ea4bf', '#cdd2e6', '#f5f7ff'],
   gqueen: ['#47306a', '#c2c2da', '#867cb8', '#2d1d45'],
+  // (floor 19's)
+  kknight: ['#28325a', '#5a6479', '#94794a', '#181b25'],
+  xbow: ['#33406e', '#5c6170', '#94794a', '#2a201b'],
+  gking: ['#28325a', '#94794a', '#9aa0b6', '#141a33'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };

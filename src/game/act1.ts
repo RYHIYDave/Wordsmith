@@ -50,9 +50,9 @@ export const HIGH_CITY = { on: false, built: 3 };
 /** The kinds of ground of the descent, in its order; then the Hush's five (ACT2); then the High City's (HIGH_CITY). */
 export type Act1LandKind = 'quarry' | 'ledge' | 'canyon' | 'pine' | 'fen';
 export type Act2LandKind = 'gateward' | 'undercity' | 'millrace' | 'housequiet' | 'library' | HighLandKind;
-export type HighLandKind = 'swangardens' | 'masque' | 'glassgallery';
+export type HighLandKind = 'swangardens' | 'masque' | 'glassgallery' | 'keep';
 export type LandKind = Act1LandKind | Act2LandKind;
-export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens', 'masque', 'glassgallery'];
+export const LAND_KINDS: readonly LandKind[] = ['quarry', 'ledge', 'canyon', 'pine', 'fen', 'gateward', 'undercity', 'millrace', 'housequiet', 'library', 'swangardens', 'masque', 'glassgallery', 'keep'];
 /** The Hush's five grounds. */
 export const ACT2_LANDS: readonly Act2LandKind[] = ['gateward', 'undercity', 'millrace', 'housequiet', 'library'];
 export function isAct2Land(k: LandKind): k is Act2LandKind {
@@ -136,6 +136,9 @@ export const ACT1_FLOORS: Readonly<Record<number, Act1FloorDef>> = {
   17: { depth: 17, land: 'masque', place: 'The Masque', name: 'The Black Room', boss: 'prince', light: { dark: 0.7, tint: [20, 12, 22], vignette: 0.32, pool: 0.42 } },
   // (floor 18, the Glass Gallery: the queen's wing by day, the candles lit (the art chat's look): lighter than the Masque, a cold
   // blue in its dark; the Queen's floor the Mirror Hall)
+  // (floor 19, the Keep: at night under the moon, honest fire only (the art chat's look): as dark as the Masque, a cold blue in
+  // it; the King's floor the Throne Hall)
+  19: { depth: 19, land: 'keep', place: 'The Keep', name: 'The Throne Hall', boss: 'gking', light: { dark: 0.72, tint: [10, 12, 24], vignette: 0.32, pool: 0.42 } },
   18: { depth: 18, land: 'glassgallery', place: 'The Glass Gallery', name: 'The Mirror Hall', boss: 'gqueen', light: { dark: 0.6, tint: [14, 14, 26], vignette: 0.3, pool: 0.42 } },
 };
 

@@ -28,6 +28,7 @@ import { TK, pictureOf } from '../src/art/terrain';
 import type { RGB } from '../src/art/terrain';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
+import { HIGH_CITY } from '../src/game/act1';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void; deepEqual(a: unknown, b: unknown, msg?: string): void };
@@ -96,24 +97,8 @@ function hsv([r, g, b]: RGB): [number, number, number] {
 }
 const hexRgb = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
-test('nothing of the game imports the Keep\'s ground', () => {
-  const art = new Set(['art/keep']);
-  const atp = (dir: string, spec: string): string => {
-    const out = dir ? dir.split('/') : [];
-    for (const q of spec.split('/')) {
-      if (q === '..') out.pop();
-      else if (q !== '.') out.push(q);
-    }
-    return out.join('/');
-  };
-  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (its own pieces, art/floor19.ts, may take its colours from it: they too are a mock-up nothing of the game imports)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(keep|floor19)\.ts$/.test(f)) continue;
-    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
-    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
-      assert.ok(!art.has(atp(dir, spec)), `src/${f} imports the Keep's ground`);
-    }
-  }
+test('the Keep\'s ground is in the game only behind HIGH_CITY, off until his yes', () => {
+  assert.equal(HIGH_CITY.on, false);
 });
 
 test('every walkable tile\'s middle is floor; every other tile\'s middle is wall; there is no drop', () => {

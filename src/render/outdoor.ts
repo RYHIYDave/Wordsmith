@@ -31,6 +31,7 @@ import { millraceLook } from '../art/millrace';
 import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { MQ_DEEP, masqueLook } from '../art/masque';
 import { GG_DEEP, glassGalleryLook, paintGlassGallery } from '../art/glassgallery';
+import { KP_DEEP, keepLook } from '../art/keep';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
 import { SG_WATER, paintSwanGardens, swanGardensLook, swanGardensTerrain } from '../art/swangardens';
 import type { SwanLand } from '../art/swangardens';
@@ -267,6 +268,9 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
     // the skylights broken through, given what its map-maker laid)
     case 'glassgallery':
       return glassGalleryLook({ floor, zone: zoneOf(land, W, H), runner: runnerOf(land), skylight: holeOf(land, W, H) });
+    // (floor 19, the Keep: the art chat's bailey, wall walk, gate passage, halls, throne hall, barracks, armoury and bedchamber)
+    case 'keep':
+      return keepLook({ floor, zone: zoneOf(land, W, H) });
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -527,7 +531,7 @@ export class OutdoorGround {
     this.town = null;
     const hex = (c: readonly number[]): string => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
     // (ACT 2: each ground's own deep colour, the art chat's)
-    this.deep = land.kind === 'swangardens' ? hex(SG_WATER[0]) : land.kind === 'masque' ? hex(MQ_DEEP) : land.kind === 'glassgallery' ? hex(GG_DEEP) : land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
+    this.deep = land.kind === 'swangardens' ? hex(SG_WATER[0]) : land.kind === 'masque' ? hex(MQ_DEEP) : land.kind === 'glassgallery' ? hex(GG_DEEP) : land.kind === 'keep' ? hex(KP_DEEP) : land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
     return true;
   }
 

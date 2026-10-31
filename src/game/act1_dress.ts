@@ -237,6 +237,18 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: [],
   },
+  // (THE HIGH CITY, FLOOR 19: THE KEEP, until its own dresser lays it room by room: game/act2/keep.ts; its trap the art's murder
+  // hole (his doc's "murder holes that drop pitch"): still, the warning, pouring, its pool)
+  19: {
+    things: ['a brazier', 'a weapon rack', 'a crossbow rack', 'a long table'],
+    big: ['barracks bunks'],
+    lying: [],
+    wallFoot: [],
+    breakables: ['barrels', 'a suit of armour on its stand'],
+    trap: { name: 'a murder hole', tiles: 1 },
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */
