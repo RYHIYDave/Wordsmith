@@ -34,7 +34,7 @@ import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { hookHigh } from '../src/render/bossfx';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
+import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand, bossPace } from '../src/game/bosses';
 import { HEADSMAN2 } from '../src/art/headsman2';
 
 // (THE HEADSMAN MADE NEW has a fight of his own, held in tests/headsman2_rules.test.ts: this file holds the first Headsman's)
@@ -345,14 +345,16 @@ test('3. a boss sets off, walks and stops as his pictures hand over, carried at 
       const step = Math.hypot(m.x - x0, m.y - y0);
       if (was === 'setOff' || was === 'walk' || was === 'halt') {
         carried += step;
-        near(step, G.pace / 60, 1e-6, `${kind}: carried at his pace while ${was}`);
+        // (at his pace: his own, or as the bosses' paces have it, 31 Oct 2026: game/bosses.ts BOSS_PACE, his walk played faster to match)
+        near(step, (bossPace(kind) ?? G.pace) / 60, 1e-6, `${kind}: carried at his pace while ${was}`);
       } else {
         moved += step;
       }
       if (mode !== was) {
         modes.push(mode);
         // (how it hands over)
-        if (mode === 'halt' && was === 'walk') near(Math.min(wasT % G.cycle, G.cycle - (wasT % G.cycle)), 0, 1 / 60 + 0.005, `${kind}: stopping begins as his walk comes round to its first frame`);
+        // (his walk's clock goes on by as much of its loop as he goes in a frame: more where his pace is quicker than it was painted)
+        if (mode === 'halt' && was === 'walk') near(Math.min(wasT % G.cycle, G.cycle - (wasT % G.cycle)), 0, (bossPace(kind) ?? G.pace) / G.pace / 60 + 0.005, `${kind}: stopping begins as his walk comes round to its first frame`);
         if (mode === 'walk') assert.equal(was, 'setOff', `${kind}: into his walk from setting off`);
         if (mode === 'setOff') assert.ok(was === (G.raise > 0 ? 'carry' : 'stand'), `${kind}: sets off from ${G.raise > 0 ? 'his carry' : 'his stand'} (from ${was})`);
         if (mode === 'raise') assert.equal(was, 'stand', 'the Headsman takes his axe up from where it stands');

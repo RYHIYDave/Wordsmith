@@ -264,6 +264,24 @@ export const HEADSMAN2_FIGHT = {
   shift: { 'h2:dashL': [0, 1.5], 'h2:dashR': [0, -1.5], 'h2:flurry': [2.2963966338592297, 0], 'h2:wheel': [2.5, 0], 'h2:vault': [3.061862178478973, 0] } as Readonly<Record<string, readonly [number, number]>>,
 };
 /** (HEADSMAN2_FIGHT) His prowl: the art's pace and pictures (art/headsman2_moves.ts H2_PACE, its walk, H2_SET_OFF, H2_HALT); no axe to take up. */
+/**
+ * THE BOSSES' PACES, each as fast or as slow as what it is (the owner, 31 Oct 2026, 01:36: “I’d like the speed check to be ruled
+ * on all the bosses”; asked which, “If they should move fast or slow and then fix that”; shown every boss's pace beside his own
+ * 4.6 and the main chat's picks, “Yes, all seven (Recommended)”). Tiles a second each walks at, in place of its own; its walk
+ * is played faster to match (its feet keep their grip: game/bosses.ts step). The others were right as they were: the fast ones
+ * (the Hollow Stag, the Princess, the Prince) and the slow (the Chained One, the Amalgamation, the Unfinished, the Carrion
+ * Queen, the Drowned Eye, the Crier, the Queen, the King, the Warden). The Headsman's only as he is made new (HEADSMAN2_FIGHT).
+ */
+export const BOSS_PACE: { on: boolean; of: Partial<Record<MonsterKind, number>> } = {
+  on: true,
+  of: { headsman: 2.6, ratking: 2.4, scraper: 2.2, physician: 1.8, censor: 1.6, fleshmancer: 1.6, cantor: 1.4 },
+};
+/** The pace a boss of `kind` walks at by BOSS_PACE, or null: its own. */
+export function bossPace(kind: MonsterKind): number | null {
+  if (!BOSS_PACE.on) return null;
+  if (kind === 'headsman' && !(HEADSMAN2_FIGHT.on && BOSSES5.on)) return null;
+  return BOSS_PACE.of[kind] ?? null;
+}
 export const H2_GAIT: GaitDef = { pace: 1.6, cycle: 10 / 15, setOff: 0.34064691833451377, halt: 0.4073135850011804, raise: 0, lower: 0, stopAt: 2.6, slack: 0.6, trueBack: true };
 /** (HEADSMAN2_FIGHT) His acts: the biggest ready one he is in reach of is made (the vault, then the wheel, the flurry, a dash, the lunge). */
 export const H2_ACTS: readonly ActDef[] = [
