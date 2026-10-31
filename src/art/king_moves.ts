@@ -723,12 +723,18 @@ MOTIONS.walk = kingWalk();
  * the crown's weight are in their places. (Their pictures across the hall are kept too: art/king_fx.ts sweepPainted, crownPainted.)
  */
 export const KG_RETIRED: Readonly<Record<'sweep' | 'leap', () => Motion>> = { sweep: () => motionOf(sweepPlan()), leap: () => motionOf(crownPlan()) };
+/**
+ * HIS OLD SWEEP AS A MOVE, painted as it was (its smear, its pink glints, the stone it kicks up): not one of his moves; the
+ * basic blow of floor 20's shadow of him (art/royal_shadows.ts), which keeps it. Its name, the old one, is how his painter knows it.
+ */
+export const KG_SWEEP_MOVE: MobMove = { name: 'The sweep', motion: motionOf(sweepPlan(), FPS), rest: R, glint: (t) => (t >= KG_SWEEP.warn[0] && t <= KG_SWEEP.warn[1] ? 1 : 0) };
+const RETIRED_STRIKES: Readonly<Record<string, readonly [number, number]>> = { sweep: KG_SWEEP.strike };
 /** The strikes, by move: from the last frame of the wind-up to the frame it lands on. */
 export const KG_STRIKES: Readonly<Record<string, readonly [number, number]>> = { attack: KG_CHARGE.strike, decree: KG_DECREE.strike, weight: KG_WEIGHT.strike, curtains: KG_CURTAINS.strike };
 export const KG_WARN: Readonly<Record<string, readonly [number, number]>> = { attack: KG_CHARGE.warn, decree: KG_DECREE.warn, weight: KG_WEIGHT.hold, curtains: KG_CURTAINS.warn };
-const byName: Record<string, string> = Object.fromEntries(Object.entries(KG_NAMES).map(([k, v]) => [v, k]));
+const byName: Record<string, string> = Object.fromEntries([...Object.entries(KG_NAMES), ['sweep', KG_SWEEP_MOVE.name]].map(([k, v]) => [v, k]));
 function bonesOf(mob: Mob, move: string, t: number): Skeleton {
-  const mv = move === 'dying' ? mob.dying : move === 'stand' || move === 'walk' || move === 'attack' || move === 'reel' ? mob[move] : mob.more?.[move];
+  const mv = move === 'dying' ? mob.dying : move === 'stand' || move === 'walk' || move === 'attack' || move === 'reel' ? mob[move] : move === 'sweep' ? KG_SWEEP_MOVE : mob.more?.[move];
   const keys = (mv as MobMove).motion.keys;
   const long = keys[keys.length - 1].at;
   const tt = Math.max(0, Math.min(long, t));
@@ -747,7 +753,7 @@ function bonesOf(mob: Mob, move: string, t: number): Skeleton {
 }
 /** Whether a frame of a move shows its strike's smear: from the frame after its wind-up ends to the frame after it lands. */
 export function smearedAt(move: string, t: number): boolean {
-  const s = KG_STRIKES[move];
+  const s = KG_STRIKES[move] ?? RETIRED_STRIKES[move];
   return !!s && t > s[0] + 1e-6 && t <= s[1] + FR + 1e-6;
 }
 /** His blade as a line of points, from the guard to the point. */
@@ -758,12 +764,12 @@ function bladeLine(s: Skeleton): V3[] {
 /** THE SMEAR: after-images of what strikes, along the way it has come since its wind-up ended. */
 function smearOf(mob: Mob, move: string, t: number): V3[][] | null {
   if (!smearedAt(move, t)) return null;
-  const [s0, s1] = KG_STRIKES[move];
+  const [s0, s1] = KG_STRIKES[move] ?? RETIRED_STRIKES[move];
   const to = Math.min(t, s1);
   const out: V3[][] = [];
   // (the whole way it has swept since its wind-up ended, as after-images close together: a fan for the blade, its
   // newest bright; for his hand flung out, its arm)
-  const n = move === 'attack' ? 18 : 32;
+  const n = move === 'attack' ? 18 : move === 'sweep' ? 64 : 32;
   for (let i = 0; i <= n; i++) {
     const u = s0 - FR * 0.5 + ((to - (s0 - FR * 0.5)) * i) / n;
     const s = bonesOf(mob, move, u);
@@ -832,7 +838,7 @@ function moreOf(move: string, m: Moment): [V3, string, number][] {
       }
     }
   }
-  const warn = KG_WARN[move];
+  const warn = move === 'sweep' ? KG_SWEEP.warn : KG_WARN[move];
   if (warn && t >= warn[0] - 0.08 && t <= warn[1] + 0.04 && move !== 'curtains' && move !== 'weight') {
     // (pink glinting up and down his blade's edges through the warning)
     const tick = Math.floor(t * 15);
@@ -860,6 +866,7 @@ function moreOf(move: string, m: Moment): [V3, string, number][] {
     burst([30, 2, 0], t - 1.62, 22, 18, 7);
   }
   if (move === 'decree') burst(swordOf(bonesOf(KING, 'decree', 1.5)).tip, t - KG_DECREE.hit, 40, 22, 6);
+  if (move === 'sweep') burst(swordOf(bonesOf(KING, 'sweep', 1.55)).tip, t - 1.5, 26, 16, 5);
   if (move === 'dying' && t >= KG_DIES.drop + 0.3 && t < KG_DIES.drop + 0.6) {
     const d = droppedAt(t);
     if (d) burst(add(d.pommel, mul(d.way, 30)), t - KG_DIES.drop - 0.32, 14, 10, 9);

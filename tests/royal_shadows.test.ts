@@ -16,10 +16,11 @@ import { ENEMY_RIM } from '../src/art/mkit';
 import { PR_SHAPE } from '../src/art/princess_moves';
 import { PC_SHAPE } from '../src/art/prince_moves';
 import { QN_SHAPE } from '../src/art/queen_moves';
-import { KG_ALONE_SHAPE } from '../src/art/king_moves';
-import { BLINK, EYE, EYE_LIT, ROYALS, ROYAL_IDS, SHADOWS_ON, longOf, shadowFrame } from '../src/art/royal_shadows';
+import { KG_RETIRED, KG_SWEEP, KG_SWEEP_MOVE, KG_WEIGHT, KING_ALONE } from '../src/art/king_moves';
+import { WEIGHT_FX, weightHead, weightPainted } from '../src/art/king_fx';
+import { BLINK, EYE, EYE_LIT, KING_SHADOW_SHAPE, ROYALS, ROYAL_IDS, SHADOWS_ON, longOf, shadowFrame } from '../src/art/royal_shadows';
 import type { Frame, RoyalId } from '../src/art/royal_shadows';
-import { CARD, DEATH, MASKS_SHADOW_FLIGHT, SHADOW_SNARE, blinkFrame, cardPx, crownFx, deathFrame, masksFx, snareFx } from '../src/art/royal_shadows_fx';
+import { CARD, DEATH, MASKS_SHADOW_FLIGHT, SHADOW_SNARE, SHADOW_WEIGHT, blinkFrame, cardPx, crownFx, deathFrame, masksFx, shadowCrownAt, snareFx, weightFx } from '../src/art/royal_shadows_fx';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { equal(a: unknown, b: unknown, m?: string): void; ok(v: unknown, m?: string): void; deepEqual(a: unknown, b: unknown, m?: string): void };
@@ -51,7 +52,7 @@ const CHECKS: Readonly<Record<RoyalId, [BossShape, string[]]>> = {
   princess: [PR_SHAPE, ['stand', 'walk', 'attack', 'snare', 'reel']],
   prince: [PC_SHAPE, ['stand', 'walk', 'attack', 'masks', 'reel']],
   queen: [QN_SHAPE, ['stand', 'walk', 'attack', 'reflect', 'reel']],
-  king: [KG_ALONE_SHAPE, ['stand', 'walk', 'attack', 'crown', 'reel']],
+  king: [KING_SHADOW_SHAPE, ['stand', 'walk', 'attack', 'weight', 'reel']],
 };
 test('2. EVERY MOVE THEY PLAY THROUGH EVERY BOSS CHECK, ON THEIR BOSS’S BONES (from in front and from behind)', () => {
   for (const id of ROYAL_IDS) {
@@ -115,7 +116,11 @@ test('4. NO COLOUR ON THEM BUT THE PINKS, AND NOTHING CUT OFF: every move, from 
     for (const t of at(BLINK.out, 9)) faults(blinkFrame('out', t, view), `queen blink out ${t.toFixed(2)} ${view}`, out);
     for (const t of at(SHADOW_SNARE.long)) faults(snareFx(t, view), `snare ${t.toFixed(2)} ${view}`, out);
     for (const t of at(MASKS_SHADOW_FLIGHT + 0.3)) faults(masksFx(t, view), `masks ${t.toFixed(2)} ${view}`, out);
-    for (const t of at(1.6)) faults(crownFx(t, view), `crown ${t.toFixed(2)} ${view}`, out);
+    for (const t of at(1.6)) faults(crownFx(t, view), `the leap's ring (out of its set) ${t.toFixed(2)} ${view}`, out);
+    // the shadow crown and its floor, through its whole flight and its slam's two frames and after
+    for (const t of [...at(WEIGHT_FX.long - 0.01, 13), WEIGHT_FX.drop[0] + 1 / 30, WEIGHT_FX.drop[1], WEIGHT_FX.drop[1] + 0.05, WEIGHT_FX.drop[1] + 0.2]) {
+      for (const part of ['crown', 'floor'] as const) faults(weightFx(t, view, part), `crown's weight ${part} ${t.toFixed(2)} ${view}`, out);
+    }
   }
   for (const id of ROYAL_IDS) faults({ px: cardPx(id) }, `${id}'s card`, out, false);
   assert.deepEqual(out.slice(0, 20), []);
@@ -142,4 +147,65 @@ test('5. THEIR SIZE: from the knight’s height (57) to a head over it; the King
   const seen = new Set(ROYAL_IDS.map((id) => Array.from(cardPx(id).d).join(',')));
   assert.equal(seen.size, 4);
   assert.equal(cardPx('king').w, CARD.w);
+});
+
+/** Its opaque pixels' extent: left, right, top, bottom (picture pixels), or null if none. */
+function extent(f: { px: Px }, keep: (d: Uint8ClampedArray, i: number) => boolean = (d, i) => d[i + 3] > 0): [number, number, number, number] | null {
+  const { w, h, d } = f.px;
+  let x0 = w;
+  let x1 = -1;
+  let y0 = h;
+  let y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (keep(d, (y * w + x) * 4)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  return x1 < 0 ? null : [x0, x1, y0, y1];
+}
+test('6. THE KING’S SHADOW: its basic still his old sweep; its big move the Crown’s Weight, a shadow crown at its size, following you, slamming in two frames, flying home', () => {
+  const r = ROYALS.king;
+  // its basic: the King's old sweep, kept (his own basic is now his charge); the leap out of its set
+  assert.equal(r.mob.attack.name, KG_SWEEP_MOVE.name);
+  assert.deepEqual(r.mob.attack.motion.keys.map((k) => k.at), KG_RETIRED.sweep().keys.map((k) => k.at));
+  assert.deepEqual(r.strikes.attack, KG_SWEEP.strike);
+  assert.ok(KING_ALONE.attack.name !== KG_SWEEP_MOVE.name, 'the King’s own basic is his charge');
+  assert.equal(r.big, 'weight');
+  assert.ok(!('crown' in (r.mob.more ?? {})), 'the leap is not in its set');
+  // its times: the King's own; the drop in two frames
+  assert.equal(longOf(r, 'weight'), KG_WEIGHT.long);
+  assert.equal(Math.round((WEIGHT_FX.drop[1] - WEIGHT_FX.drop[0]) * 30), 2);
+  assert.deepEqual(r.strikes.weight, KG_WEIGHT.strike);
+  assert.equal(SHADOW_WEIGHT.pace, KG_WEIGHT.pace);
+  for (const view of VIEWS) {
+    // it goes from the shadow's head and comes home to it, at its size
+    const k = SHADOW_WEIGHT.k;
+    const a = shadowCrownAt(0, view);
+    const b = shadowCrownAt(WEIGHT_FX.long - 1e-4, view);
+    const h0 = weightHead(KG_WEIGHT.send, view).c;
+    const h1 = weightHead(KG_WEIGHT.back, view).c;
+    assert.ok(a.lerp === 0 && Math.hypot(a.c[0] - h0[0] * k, a.c[1] - h0[1] * k, a.c[2] - h0[2] * k) < 0.5, `${view}: sent from its head`);
+    assert.ok(b.lerp > 0.999 && Math.hypot(b.c[0] - h1[0] * k, b.c[1] - h1[1] * k, b.c[2] - h1[2] * k) < 1.5, `${view}: home on its head`);
+    assert.equal(shadowCrownAt(1.0, view).phase, 'follow');
+    // the crown 0.64 of the King's; the pink ring round where it falls 0.64 of his
+    const mine = extent(weightFx(1.0, view, 'crown'))!;
+    const his = extent({ px: weightPainted(1.0, view, 'crown').px })!;
+    const kw = (mine[1] - mine[0]) / (his[1] - his[0]);
+    assert.ok(Math.abs(kw - k) < 0.08, `${view}: the crown ${kw.toFixed(2)} of his`);
+    const pink = (d: Uint8ClampedArray, i: number): boolean => d[i + 3] > 0 && [EYE, EYE_LIT].some((c) => rgba(c).slice(0, 3).join() === `${d[i]},${d[i + 1]},${d[i + 2]}`);
+    const ring = extent(weightFx(1.0, view, 'floor'), pink)!;
+    const hisRing = extent({ px: weightPainted(1.0, view, 'floor').px }, (d, i) => d[i + 3] > 0 && d[i] > 150 && d[i + 2] < 140)!;
+    const kr = (ring[1] - ring[0]) / (hisRing[1] - hisRing[0]);
+    assert.ok(Math.abs(kr - k) < 0.06, `${view}: the ring ${kr.toFixed(2)} of his`);
+    // following, it hangs clear over the knight's head (57 tall): its band's foot 20 over it, and on the screen above it; landed, it lies on the floor
+    const foot = shadowCrownAt(1.0, view).c[2] - WEIGHT_FX.k * k;
+    assert.ok(foot > 57 + 20, `${view}: its band's foot ${foot.toFixed(0)} up`);
+    const f = weightFx(1.0, view, 'crown');
+    const low = f.ay - extent(f)![3];
+    assert.ok(low > 57 + 6, `${view}: its lowest ${low} up on the screen`);
+    const lying = weightFx(WEIGHT_FX.drop[1] + 0.1, view, 'crown');
+    assert.ok(lying.ay - extent(lying)![3] <= 6, `${view}: lying on the floor`);
+    // the drop: high the frame before, between in the first, down in the second
+    const z = [WEIGHT_FX.drop[0], WEIGHT_FX.drop[0] + 1 / 30, WEIGHT_FX.drop[1]].map((t) => shadowCrownAt(t - 1e-4 * (t === WEIGHT_FX.drop[0] ? 1 : 0), view).c[2]);
+    assert.ok(z[0] > 90 && z[1] < z[0] && z[1] > z[2] && z[2] < 10, `${view}: its drop ${z.map((v) => v.toFixed(0)).join(' ')}`);
+    // none of it before it is sent or after it is home
+    assert.equal(weightFx(-0.01, view, 'crown').px.w, 1);
+    assert.equal(weightFx(WEIGHT_FX.long, view, 'floor').px.w, 1);
+  }
 });

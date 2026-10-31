@@ -7,8 +7,9 @@
 //     2.75), and short: it holds 1.4 s (hers 6 s) and sinks.
 //   THE PRINCE'S MASKS (art/prince_fx.ts `maskPainted`): three masks (his five, the middle three), flown 6 tiles (his 12)
 //     at his speed (15 tiles a second), each bursting into fog at its end.
-//   THE KING'S CROWN (art/king_fx.ts `crownPainted`): its ring 0.4 of his (his 10 tiles out, this 4), the game carrying
-//     him 2.5 tiles in the leap (his 5).
+//   THE KING'S CROWN'S WEIGHT (art/king_fx.ts `weightAt`, the King's crown `crownAt`): a shadow crown sent up off its head,
+//     following you, slamming down and flying home, at 0.64 of his (`SHADOW_WEIGHT`, `weightFx`). (Its old big move, the
+//     Crown's leap and slam, `crownFx` below, is kept in the code, out of its set.)
 //   THE QUEEN'S LOOKING GLASS, as a blink through her own hand mirror (no wall mirrors): art/royal_shadows.ts `BLINK`.
 
 import { Px, rgba } from '../engine/px';
@@ -16,11 +17,16 @@ import { hash } from './kit';
 import { TILE3, canvasOf, paintViewOf } from './new_mobs3';
 import { snarePainted, SNARE_CANVAS, SNARE_FX } from './princess_fx';
 import { MASKS_FX, MASK_CANVAS, flungMask, maskPainted } from './prince_fx';
-import { CROWN_FX, FX_CANVAS, crownPainted } from './king_fx';
+import { CROWN_FX, FX_CANVAS, WEIGHT_FX, crownPainted, weightAt, weightHead } from './king_fx';
+import { CROWN_HEAD, crownAt, smearParts } from './king';
+import { KG_WEIGHT } from './king_moves';
+import { paintBits } from './new_mobs3';
+import type { Bit, Put } from './new_mobs3';
 import { stage } from './skin';
 import type { GameView } from './skin';
+import { add, mul } from './skeleton';
 import type { V3 } from './skeleton';
-import { BLINK, EYE, EYE_LIT, FOG, ROYALS, bonesAt, pointOn, shadowFrame, toneOf } from './royal_shadows';
+import { BLINK, EYE, EYE_LIT, FOG, ROYALS, bonesAt, fogOn, foggedBit, pointOn, shadowFrame, smaller, toneOf } from './royal_shadows';
 import type { Frame, Royal, RoyalId } from './royal_shadows';
 
 const FOG_RGB = FOG.map((c) => rgba(c));
@@ -82,11 +88,253 @@ export function snareFx(t: number, view: GameView): Frame {
   return fxSmaller(snarePainted(ft, view).px, SNARE_CANVAS.ax, SNARE_CANVAS.ay, SHADOW_SNARE.k);
 }
 
-/** THE KING'S CROWN, its ring small (`SHADOW_CROWN`): `t` seconds after he lands, round the floor point under him. */
+/** THE KING'S CROWN, its ring small (`SHADOW_CROWN`): `t` seconds after he lands, round the floor point under him. OUT OF THE SHADOW'S SET (its leap, as the King's, is retired: KG_RETIRED.leap); kept in the code. */
 export const SHADOW_CROWN = { k: 0.4, carry: 2.5 } as const;
 export function crownFx(t: number, view: GameView): Frame {
   if (t < 0 || t > CROWN_FX.long) return { px: new Px(1, 1), ax: 0, ay: 0, lights: [] };
   return fxSmaller(crownPainted(t, view).px, FX_CANVAS.ax, FX_CANVAS.ay, SHADOW_CROWN.k);
+}
+
+// =============================================================================================
+// THE KING'S SHADOW'S CROWN'S WEIGHT: a shadow crown sent up off its head, following you, slamming down, flying home
+
+/**
+ * ITS NUMBERS. Its times are the King's own (WEIGHT_FX, seconds from its sending, `KG_WEIGHT.send`, 1.1 s into the shadow's
+ * `weight`, as into his): out over you 0.45 s; following you to 2.4 s; held 0.533 s (THE WARNING); its drop two frames,
+ * landing at 3.0 s (the move's 4.1 s); lying 0.4 s; home 0.7 s, on the shadow's head at 4.1 s (the move's 5.2 s); the move
+ * 5.6 s. Its sizes are the shadow's (`k`, 0.64 of the King's): the crown (grown 5.2 times its size on the shadow's head, as
+ * his), the pink ring where it will fall (`r`, 1.09 tiles; his 1.7), the ring its slam rolls out (to `rolls`, 1.66 tiles;
+ * his 2.6), its drop's height over its hang. It hangs `z` up (its band's middle, picture pixels; the knight is 57): as far
+ * over your head, at its size, as his (24 clear; his 38). It follows you at his pace (`pace`, tiles a second: the game's).
+ */
+export const SHADOW_WEIGHT = { k: 0.64, r: 1.7 * 0.64, rolls: 2.6 * 0.64, z: 84, pace: KG_WEIGHT.pace } as const;
+/** The crown's picture at the King's size, before it is drawn at the shadow's (room for it high over you and coming home). */
+const WB = { w: 250, h: 330, ax: 125, ay: 300 } as const;
+/** Its floor's picture (the shadow's size). */
+export const WEIGHT_FLOOR = { w: 260, h: 150, ax: 130, ay: 75 } as const;
+const wbStage = (view: GameView, can: { w: number; h: number; ax: number; ay: number }) => stage(view === 'back' ? 'rear' : view, can.ax, can.ay, can);
+/**
+ * Where the shadow crown is, `t` seconds after it is sent: as the King's (`weightAt`: its phase, how far the game has moved
+ * the floor point under it, `lerp`, its ways, how much it has grown, `k`), its middle `c` from that floor point at the
+ * shadow's size (picture pixels): off the shadow's head, up over you, held, dropped, lying, home onto its head.
+ */
+export function shadowCrownAt(t: number, view: GameView = 'front'): ReturnType<typeof weightAt> {
+  const w = weightAt(t, view);
+  const F = WEIGHT_FX;
+  const S = SHADOW_WEIGHT;
+  const k = S.k;
+  const from = mul(weightHead(KG_WEIGHT.send, view).c, k);
+  const to = mul(weightHead(KG_WEIGHT.back, view).c, k);
+  const low = F.low * k;
+  const bob = 3 * k * Math.sin(t * 2.2);
+  let c: V3;
+  if (w.phase === 'fly') {
+    const e = w.lerp;
+    c = [from[0] * (1 - e), from[1] * (1 - e), from[2] + (S.z - from[2]) * e + 26 * k * Math.sin(Math.PI * e) + bob * e];
+  } else if (w.phase === 'follow') c = [0, 0, S.z + bob];
+  else if (w.phase === 'hold') {
+    // (stopped: it rises a little, and hangs trembling over you)
+    const u = smooth(F.hold[0], F.hold[0] + 0.25, t);
+    const shake = 1.2 * Math.sin(t * 60) * u;
+    c = [shake, -shake * 0.6, S.z + bob + 14 * k * u];
+  } else if (w.phase === 'drop') {
+    const top = S.z + 3 * k * Math.sin(F.drop[0] * 2.2) + 14 * k;
+    const u = (t - F.drop[0]) / (F.drop[1] - F.drop[0]);
+    c = [0, 0, top + (low - top) * u * u];
+  } else if (w.phase === 'lie') c = [0, 0, low];
+  else if (w.phase === 'home') {
+    const e = w.lerp;
+    c = [to[0] * e, to[1] * e, low + (to[2] - low) * e + 110 * k * Math.sin(Math.PI * e)];
+  } else c = to;
+  return { ...w, c };
+}
+const W_CACHE = new Map<string, Frame>();
+/**
+ * THE SHADOW CROWN `t` seconds after it is sent, laid at the floor point the game has under it (`shadowCrownAt`'s
+ * `lerp`, as the King's): `'crown'`, the crown itself in the air (laid over the figures), and `'floor'`, what it lays on the
+ * floor beneath it (laid under them). The crown is the King's (art/king.ts `crownAt`), painted at his size as fog and drawn
+ * at the shadow's, as the shadow is: no gold, its dark seam and the enemy's pink edge, fog wisping off it. Under it: its
+ * shadow, and THE WARNING, the shadows' dull pink ring round where it will fall, its dashes going round, solid and lit as
+ * it hangs, a second ring closing in; then the slam: a flash, the stones cracked, a ring rolling out, dust.
+ */
+export function weightFx(t: number, view: GameView = 'front', part: 'crown' | 'floor' = 'crown'): Frame {
+  const F = WEIGHT_FX;
+  if (t < 0 || t >= F.long) return { px: new Px(1, 1), ax: 0, ay: 0, lights: [] };
+  return part === 'crown' ? weightCrown(t, view) : weightFloor(t, view);
+}
+function weightCrown(t: number, view: GameView): Frame {
+  const key = `${Math.round(t * 1000)}:${view}`;
+  const have = W_CACHE.get(key);
+  if (have) return have;
+  const F = WEIGHT_FX;
+  const k = SHADOW_WEIGHT.k;
+  const w = shadowCrownAt(t, view);
+  const st = wbStage(view, WB);
+  const bits: Bit[] = [];
+  const put: Put = (pt, piece, shape) => bits.push({ part: pt, piece, shape });
+  // (painted at the King's size: its middle and its height over the floor point the shadow's, over its size)
+  const cB = mul(w.c, 1 / k);
+  crownAt(put, cB, w.ff, w.fl, w.fu, CROWN_HEAD, t, w.k);
+  if (t > F.drop[0] + 1e-6 && t <= F.drop[1] + 1 / 30 + 1e-6) {
+    // its drop: streaks down from where its band and its points were to where they are, the oldest third dull, the newest bright
+    const a = shadowCrownAt(F.drop[0] - 1e-3, view).c[2] / k;
+    const b = Math.min(cB[2], shadowCrownAt(Math.min(t, F.drop[1] - 1e-4), view).c[2] / k);
+    const from = t > F.drop[1] + 1e-6 ? a + (b - a) * 0.5 : a;
+    const lines: V3[][] = [];
+    for (let s = 0; s < 3; s++) {
+      for (let j = 0; j < 12; j++) {
+        const q = (j / 12) * Math.PI * 2;
+        const rim = add(mul(w.ff, Math.cos(q) * CROWN_HEAD[0] * 0.8 * w.k), mul(w.fl, Math.sin(q) * CROWN_HEAD[1] * 0.86 * w.k));
+        const up = j % 2 === 0 ? 8.4 * w.k : 0;
+        lines.push([add(rim, [0, 0, from + ((b - from) * s) / 3 + up]), add(rim, [0, 0, from + ((b - from) * (s + 1)) / 3 + up])]);
+      }
+    }
+    smearParts(put, st, lines);
+  }
+  paintBits(st, bits.map(foggedBit), cB);
+  const big = st.whole(null);
+  const d = big.d;
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    d.set(FOG_RGB[toneOf(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])], i);
+    d[i + 3] = 255;
+  }
+  const s = smaller(big, WB.ax, WB.ay, k);
+  const px = fogOn(s, t, 2015);
+  // as it lies ringing, rings of sound going out off it, pale
+  if (w.phase === 'lie') {
+    const st2 = wbStage(view, { w: px.w, h: px.h, ax: s.ax, ay: s.ay });
+    const s2 = t - F.drop[1];
+    for (let r = 0; r < 3; r++) {
+      if (s2 > 0.3 + 0.08 * r) continue;
+      const R = CROWN_HEAD[1] * w.k * k * (1.1 + 0.5 * r + 2.4 * s2);
+      for (let j = 0; j < 56; j++) {
+        const q = (j / 56) * Math.PI * 2;
+        if (hash(j, r, 9411) > 0.7 - s2) continue;
+        const [X, Y] = st2.at([Math.cos(q) * R, Math.sin(q) * R, w.c[2] + (8 + 6 * r + 20 * s2) * k]);
+        dotOn(px, X, Y, FOG_RGB[r === 0 ? 10 : 8], 255);
+      }
+    }
+  }
+  const out: Frame = { px, ax: s.ax, ay: s.ay, lights: [] };
+  W_CACHE.set(key, out);
+  return out;
+}
+const dotOn = (px: Px, x: number, y: number, c: readonly number[], a: number, size = 1): void => {
+  const xi = Math.round(x - size / 2);
+  const yi = Math.round(y - size / 2);
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const X = xi + i;
+      const Y = yi + j;
+      if (X < 0 || Y < 0 || X >= px.w || Y >= px.h) continue;
+      const di = (Y * px.w + X) * 4;
+      px.d.set(c.slice(0, 3), di);
+      px.d[di + 3] = a;
+    }
+  }
+};
+function weightFloor(t: number, view: GameView): Frame {
+  const F = WEIGHT_FX;
+  const S = SHADOW_WEIGHT;
+  const k = S.k;
+  const can = WEIGHT_FLOOR;
+  const px = new Px(can.w, can.h);
+  const out: Frame = { px, ax: can.ax, ay: can.ay, lights: [] };
+  const w = shadowCrownAt(t, view);
+  const st = wbStage(view, can);
+  const T = TILE3;
+  const R = S.r * T;
+  const at = (x: number, y: number, z: number): readonly [number, number] => st.at([x, y, z]);
+  const there = w.phase === 'fly' ? smooth(0.15, F.fly, t) : w.phase === 'home' ? 1 - smooth(F.home[0], F.home[0] + 0.3, t) : w.phase === 'back' ? 0 : 1;
+  const holding = w.phase === 'hold' ? smooth(F.hold[0], F.drop[0], t) : w.phase === 'drop' ? 1 : 0;
+  const landed = t >= F.drop[1] - 1e-6 ? t - F.drop[1] : -1;
+  const crownR = CROWN_HEAD[1] * w.k * k;
+  if (landed < 0 && there > 0) {
+    // its shadow: as broad as it is, darker and tighter as it hangs and drops
+    const sr = crownR * (1.25 - 0.25 * holding) * (w.phase === 'drop' ? 0.95 : 1);
+    for (let y = -sr; y <= sr; y += 1) {
+      for (let x = -sr; x <= sr; x += 1) {
+        const q = (x * x + y * y) / (sr * sr);
+        if (q > 1 || hash(Math.round(x), Math.round(y), 9412) > there * (0.35 + 0.5 * holding) * (1 - q * 0.7)) continue;
+        const [X, Y] = at(x, y, 0.1);
+        dotOn(px, X, Y, FOG_RGB[0], 255);
+      }
+    }
+    // THE WARNING: the dull pink ring round where it will fall, its dashes going round; as it hangs, solid and lit, and a second ring closing in
+    const n = Math.ceil(Math.PI * 2 * R);
+    for (let i = 0; i < n; i++) {
+      const q = (i / n) * Math.PI * 2;
+      const fq = q * 3 - t * 0.9;
+      const dash = fq - Math.floor(fq) < 0.6;
+      if (!dash && holding < 0.3) continue;
+      if (hash(i, 1, 9413) > there) continue;
+      const [X, Y] = at(Math.cos(q) * R, Math.sin(q) * R, 0.3);
+      dotOn(px, X, Y, holding > 0.4 ? EYE_LIT_RGB : EYE_RGB, 255);
+      if (holding > 0.2) {
+        const [X2, Y2] = at(Math.cos(q) * (R - 1.5), Math.sin(q) * (R - 1.5), 0.3);
+        dotOn(px, X2, Y2, EYE_RGB, 255);
+      }
+    }
+    if (holding > 0) {
+      const Rc = R * (1 + 0.7 * (1 - holding));
+      const m = Math.ceil((Math.PI * 2 * Rc) / 1.4);
+      for (let i = 0; i < m; i += 2) {
+        const q = (i / m) * Math.PI * 2;
+        const [X, Y] = at(Math.cos(q) * Rc, Math.sin(q) * Rc, 0.3);
+        dotOn(px, X, Y, EYE_LIT_RGB, 255);
+      }
+    }
+  }
+  if (landed >= 0) {
+    // THE SLAM: a flash over all it strikes; the stones cracked out from under it; a ring rolling out off it; dust
+    const fade = 1 - smooth(0.3, F.home[1] - F.drop[1], landed);
+    if (landed < 0.12) {
+      for (let y = -R; y <= R; y += 1.6) {
+        for (let x = -R; x <= R; x += 1.6) {
+          const q = (x * x + y * y) / (R * R);
+          if (q > 1 || hash(Math.round(x), Math.round(y), 9414) > 0.5 * (1 - landed / 0.12)) continue;
+          const [X, Y] = at(x, y, 0.3);
+          dotOn(px, X, Y, q < 0.5 ? FOG_RGB[10] : EYE_LIT_RGB, 255);
+        }
+      }
+    }
+    for (let j = 0; j < 12; j++) {
+      let a = (j / 12) * Math.PI * 2 + hash(j, 1, 9415);
+      let r = crownR * 0.8;
+      const long = R * (0.9 + 0.35 * hash(j, 2, 9415)) * smooth(0, 0.08, landed);
+      while (r < long) {
+        if (hash(j, Math.round(r), 9416) < fade) {
+          const [X, Y] = at(Math.cos(a) * r, Math.sin(a) * r, 0.2);
+          dotOn(px, X, Y, FOG_RGB[0], 255, r < long * 0.5 ? 2 : 1);
+        }
+        a += (hash(j, Math.round(r), 9417) - 0.5) * 0.12;
+        r += 1;
+      }
+    }
+    const ringR = R * (0.6 + (S.rolls / S.r - 0.6) * smooth(0, 0.45, landed));
+    const rf = 1 - smooth(0.2, 0.55, landed);
+    if (rf > 0) {
+      const n = Math.ceil(Math.PI * 2 * ringR);
+      for (let i = 0; i < n; i++) {
+        const q = (i / n) * Math.PI * 2;
+        for (const [dr, c, keep] of [[0, FOG_RGB[10], 1], [2, EYE_LIT_RGB, 0.8], [4, FOG_RGB[6], 0.5]] as const) {
+          if (hash(i, dr, 9418) > rf * keep) continue;
+          const [X, Y] = at(Math.cos(q) * (ringR + dr), Math.sin(q) * (ringR + dr), 0.4);
+          dotOn(px, X, Y, c, 255);
+        }
+      }
+      for (let i = 0; i < 60; i++) {
+        if (hash(i, 4, 9419) > rf) continue;
+        const q = hash(i, 1, 9419) * Math.PI * 2;
+        const r = ringR * (0.55 + 0.45 * hash(i, 2, 9419));
+        const z = 2 + 18 * k * smooth(0, 0.4, landed) * hash(i, 3, 9419);
+        const [X, Y] = at(Math.cos(q) * r, Math.sin(q) * r, z);
+        dotOn(px, X, Y, FOG_RGB[i % 4 === 0 ? 4 : 5], 255, i % 5 === 0 ? 2 : 1);
+      }
+    }
+  }
+  return out;
 }
 
 /** THE PRINCE'S MASKS, three and short (`SHADOW_MASKS`): `t` seconds after they leave his hand, round the floor point under him. */
