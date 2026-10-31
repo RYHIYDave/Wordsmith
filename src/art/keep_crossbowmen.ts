@@ -11,8 +11,9 @@
 // heavy crossbow and a tall painted shield (a pavise) planted in front; Hushed, grey breath; knight's size, in groups along
 // the walls; they plant and hold their spot; their mark, the planted tall shield and the crossbow; one attack, a long aimed
 // shot: a red aim line, held, then the bolt in a flash, far and straight; their death, the crossbow drops, the Hush leaves
-// them, they slump behind the shield; never elves or rangers, never undead; their sound, the crank, the thunk, the bolt's
-// hiss.
+// them, they slump behind the shield (made new on his pick of 30 Oct: thrown back over, the last bolt up into the air, the
+// pavise falling flat, the Hush leaving them, alive: art/keep_crossbowmen_moves.ts); never elves or rangers, never undead;
+// their sound, the crank, the thunk, the bolt's hiss.
 //
 // WHO THEY ARE: the old king's own crossbowmen, their words stolen like the city's: grown men, the knight's height, stocky
 // soldiers, nothing of a ranger about them (no hood, no cloak, no longbow, no lightness). A PADDED JACK of undyed linen,
@@ -31,7 +32,7 @@ import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { sphere } from './new_mobs3';
 import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
-import { wornOn } from './skin';
+import { tippedFrom, wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
 import { add, buildOf, cross, dot, heading, lerp3, mul, norm, standing, sub } from './skeleton';
 import type { Bones, Build, Skeleton, V3 } from './skeleton';
@@ -267,7 +268,7 @@ export function royalSwan(x: number, y: number): number {
  * and there), a raised spine down its middle, its back of bare planks, iron feet at its foot, its carrying strap and its
  * prop behind (the prop down to the floor once planted, folded up against it while carried).
  */
-function pavise(put: Put, p: Pavise, held: boolean, standingOn: boolean): void {
+function pavise(put: Put, p: Pavise, held: boolean, standingOn: boolean, propEnd: V3 | null = null): void {
   const { c, n, up, across } = p;
   const W = PAVISE.w;
   const H = PAVISE.h;
@@ -301,7 +302,10 @@ function pavise(put: Put, p: Pavise, held: boolean, standingOn: boolean): void {
   const back = mul(n, -PAVISE.thick - 0.45);
   for (const k of [-1, 1]) put('pavise', 'strap', { k: 'rod', a: add(c, add(back, add(mul(across, k * 3.2), mul(up, H * 0.55)))), b: add(c, add(back, add(mul(across, k * 3.2), mul(up, -H * 0.15)))), ra: 0.5, rb: 0.5, ramp: LEATHER });
   const hinge = add(c, add(back, mul(up, H * 0.35)));
-  if (standingOn) {
+  if (propEnd) {
+    // (the prop kicked from under it and folding up against its back as it falls: where its foot is now, as the moves say)
+    put('pavise', 'prop', { k: 'rod', a: hinge, b: propEnd, ra: 0.6, rb: 0.55, ramp: PLANK });
+  } else if (standingOn) {
     // (the prop down to the floor behind it: its foot well back so it leans onto it)
     const foot: V3 = [hinge[0] - 13, hinge[1] + 1.5, 0.6];
     put('pavise', 'prop', { k: 'rod', a: hinge, b: foot, ra: 0.6, rb: 0.55, ramp: PLANK });
@@ -384,15 +388,20 @@ function jackRings(s: Skeleton, lag: V3): Ring[] {
 }
 /** A ring round both thighs `down` of the way from the hips to the knees, hanging back as they go (the tabard's hem). */
 function thighRing(s: Skeleton, down: number, pad: number, lag: V3): Ring {
-  const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
-  const l: V3 = [-f[1], f[0], 0];
+  // (lying on his back as he dies, the hips' forward to the sky: the hem goes round the thighs as they lie, falling flat on them)
+  const h0 = s.hips[0];
+  const lie = clamp01((Math.abs(h0[2]) - 0.45) / 0.3);
+  const f0 = norm([h0[0], h0[1], 0], [1, 0, 0]);
+  const f = lie > 0 ? norm(lerp3(f0, h0, lie), h0) : f0;
+  const l: V3 = lie > 0 ? norm(lerp3([-f0[1], f0[0], 0], s.hips[1], lie), s.hips[1]) : [-f[1], f[0], 0];
   const a = lerp3(s.hipL, s.kneeL, down);
   const b = lerp3(s.hipR, s.kneeR, down);
   const c = lerp3(a, b, 0.5);
   const spanF = Math.abs(dot(sub(a, b), f));
   const spanL = Math.abs(dot(sub(a, b), l));
   const rT = B.legR[0] * 1.1;
-  return { c: add(c, mul(lag, 0.8)), u: mul(f, Math.max(B.pelvisDeep + 3.0, spanF / 2 + rT + 1.6) + pad), v: mul(l, Math.max(B.pelvisHalf + 2.6, spanL / 2 + rT + 1.2) + pad) };
+  const deep = Math.max(B.pelvisDeep + 3.0, spanF / 2 + rT + 1.6);
+  return { c: add(c, mul(lag, 0.8)), u: mul(f, (lie > 0 ? deep + (spanF / 2 + rT + 0.8 - deep) * lie : deep) + pad), v: mul(l, Math.max(B.pelvisHalf + 2.6, spanL / 2 + rT + 1.2) + pad) };
 }
 /** THE TABARD: front and back, from the shoulders to the thighs, over the jack. */
 function tabardRings(s: Skeleton, lag: V3): Ring[] {
@@ -437,7 +446,7 @@ function boltCase(put: Put, s: Skeleton, lag: V3): V3 {
  * and working; the helm's round crown with its comb; its broad brim turned down all round; a strap under the chin.
  * Returns the mouth and the face's ways.
  */
-function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number): { mouth: V3; ff: V3; fl: V3; fu: V3 } {
+function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number, loose: LooseHelm | null = null): { mouth: V3; ff: V3; fl: V3; fu: V3 } {
   const [ff, fl, fu] = wornOn(st, s, 8);
   const hr: V3 = [B.headR[0] * 1.02, B.headR[1] * 1.08, B.headR[2]];
   const hc = add(s.head, mul(fu, -0.3));
@@ -459,26 +468,90 @@ function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number): { mou
     const e = add(hc, add(mul(ff, hr[0] * 0.92), add(mul(fl, k * hr[1] * 0.34), mul(fu, hr[2] * 0.1))));
     put('head', 'eyes', { k: 'dot', p: e, c: lit > 0.4 ? FLAME[1] : '#3a2a30', facing: ff });
   }
-  // the chin strap: from the brim at each side, under the jaw
-  for (const k of [-1, 1]) {
+  // the chin strap: from the brim at each side, under the jaw (snapped, once the helm is knocked off)
+  for (const k of loose ? [] : [-1, 1]) {
     const a = add(hc, add(mul(fl, k * hr[1] * 0.98), mul(fu, hr[2] * 0.25)));
     const b = add(hc, add(mul(ff, hr[0] * 0.45), add(mul(fl, k * hr[1] * 0.5), mul(fu, -hr[2] * 0.95))));
     put('head', 'strap', { k: 'rod', a, b, ra: 0.4, rb: 0.4, ramp: LEATHER });
   }
   // THE KETTLE HELM: its round crown, a comb over it front to back, a band where the brim joins, the brim turned down,
-  // worn pushed back a little so that the brim clears the eyes in front
-  const base = add(hc, mul(fu, hr[2] * 0.64));
-  put('helm', 'helm', { k: 'ball', c: base, ax: [mul(ff, hr[0] * 1.12), mul(fl, hr[1] * 1.12), mul(fu, hr[2] * 1.0)], skin: (u, tone) => (u[2] < -0.04 ? null : COLD_STEEL[Math.abs(u[1]) < 0.12 && u[2] > 0.2 ? Math.min(4, tone + 1) : tone]) });
-  const crown = add(base, mul(fu, hr[2] * 1.0));
-  put('helm', 'comb', { k: 'rod', a: add(base, add(mul(ff, hr[0] * 0.95), mul(fu, hr[2] * 0.5))), b: add(crown, mul(fu, 0.5)), ra: 0.65, rb: 0.8, ramp: COLD_STEEL });
-  put('helm', 'comb', { k: 'rod', a: add(crown, mul(fu, 0.5)), b: add(base, add(mul(ff, -hr[0] * 0.95), mul(fu, hr[2] * 0.5))), ra: 0.8, rb: 0.65, ramp: COLD_STEEL });
-  const rim = (k: number, drop: number): Ring => ({ c: add(add(base, mul(fu, -drop)), mul(ff, -(k - 1.1) * 0.9)), u: add(mul(ff, hr[0] * (1.1 + (k - 1.1) * 0.62)), mul(fu, (k - 1.1) * 1.6)), v: mul(fl, hr[1] * k * 1.04) });
-  put('helm', 'brim', { k: 'cloth', rings: [rim(2.0, 1.7), rim(1.55, 0.8), rim(1.12, 0.02)], ramp: COLD_STEEL, look: { lift: 0.3, folds: [] }, rigid: true });
-  put('helm', 'band', { k: 'band', ring: rim(1.13, 0.02), ramp: COLD_STEEL_DARK, rows: 1 });
+  // worn pushed back a little so that the brim clears the eyes in front (or knocked off him as he dies: where it has gone)
+  if (loose) {
+    const [hf, hl, hu] = looseFrame(st, loose);
+    kettleHelm(put, loose.c, hf, hl, hu);
+  } else kettleHelm(put, hc, ff, fl, fu);
   const mouth = add(hc, add(mul(ff, hr[0] * 1.02), mul(fu, -hr[2] * 0.4)));
   return { mouth, ff, fl, fu };
 }
 const COLD_STEEL_DARK: Ramp = ['#121418', '#16181e', '#363c46', '#4c5360', '#58606c'];
+/** The head's half-lengths as the helm sits on it. */
+const HELM_HR: V3 = [B.headR[0] * 1.02, B.headR[1] * 1.08, B.headR[2]];
+/** The helm's crown's middle, on a head whose middle is `hc`. */
+const helmBase = (hc: V3, fu: V3): V3 => add(hc, mul(fu, HELM_HR[2] * 0.64));
+/** A ring of the brim (`k` its size, `drop` how far below the crown's middle). */
+function helmRim(base: V3, ff: V3, fl: V3, fu: V3, k: number, drop: number): Ring {
+  const hr = HELM_HR;
+  return { c: add(add(base, mul(fu, -drop)), mul(ff, -(k - 1.1) * 0.9)), u: add(mul(ff, hr[0] * (1.1 + (k - 1.1) * 0.62)), mul(fu, (k - 1.1) * 1.6)), v: mul(fl, hr[1] * k * 1.04) };
+}
+/** THE KETTLE HELM on a head whose middle is `hc`, its own forward, left and up `ff`, `fl`, `fu`. */
+function kettleHelm(put: Put, hc: V3, ff: V3, fl: V3, fu: V3): void {
+  const hr = HELM_HR;
+  const base = helmBase(hc, fu);
+  put('helm', 'helm', { k: 'ball', c: base, ax: [mul(ff, hr[0] * 1.12), mul(fl, hr[1] * 1.12), mul(fu, hr[2] * 1.0)], skin: (u, tone) => (u[2] < -0.04 ? null : COLD_STEEL[Math.abs(u[1]) < 0.12 && u[2] > 0.2 ? Math.min(4, tone + 1) : tone]) });
+  const crown = add(base, mul(fu, hr[2] * 1.0));
+  put('helm', 'comb', { k: 'rod', a: add(base, add(mul(ff, hr[0] * 0.95), mul(fu, hr[2] * 0.5))), b: add(crown, mul(fu, 0.5)), ra: 0.65, rb: 0.8, ramp: COLD_STEEL });
+  put('helm', 'comb', { k: 'rod', a: add(crown, mul(fu, 0.5)), b: add(base, add(mul(ff, -hr[0] * 0.95), mul(fu, hr[2] * 0.5))), ra: 0.8, rb: 0.65, ramp: COLD_STEEL });
+  const rim = (k: number, drop: number): Ring => helmRim(base, ff, fl, fu, k, drop);
+  put('helm', 'brim', { k: 'cloth', rings: [rim(2.0, 1.7), rim(1.55, 0.8), rim(1.12, 0.02)], ramp: COLD_STEEL, look: { lift: 0.3, folds: [] }, rigid: true });
+  put('helm', 'band', { k: 'band', ring: rim(1.13, 0.02), ramp: COLD_STEEL_DARK, rows: 1 });
+}
+/**
+ * A HELM KNOCKED OFF (as he dies): the middle of the head it sat on, as it was when it left it, carried with it; its own
+ * forward, left and up; `tip`: how far it is still painted tipped from the eye as on a head (art/skin.ts TIPPED's cheat,
+ * eight degrees on him, gone as it leaves the head).
+ */
+export interface LooseHelm {
+  c: V3;
+  ff: V3;
+  fl: V3;
+  fu: V3;
+  tip: number;
+}
+function looseFrame(st: Stage, h: LooseHelm): [V3, V3, V3] {
+  if (h.tip <= 0) return [h.ff, h.fl, h.fu];
+  const up = tippedFrom(st, h.fu, h.tip);
+  const fwd = norm(sub(h.ff, mul(up, dot(h.ff, up))), h.ff);
+  return [fwd, cross(up, fwd), up];
+}
+/** THE LOWEST OF A HELM so (its middle `hc`, its own forward, left and up): of its brim's rings and its band, its comb, and its crown, a half shell above the band (the floor under it, for the moves). */
+export function helmLow(hc: V3, ff: V3, fl: V3, fu: V3): number {
+  const hr = HELM_HR;
+  const base = helmBase(hc, fu);
+  let low = Infinity;
+  for (const [k, drop] of [[2.0, 1.7], [1.55, 0.8], [1.12, 0.02], [1.13, 0.02]] as const) {
+    const r = helmRim(base, ff, fl, fu, k, drop);
+    low = Math.min(low, r.c[2] - Math.hypot(r.u[2], r.v[2]));
+  }
+  const crown = add(base, mul(fu, hr[2]));
+  for (const [p, r] of [[add(base, add(mul(ff, hr[0] * 0.95), mul(fu, hr[2] * 0.5))), 0.65], [add(crown, mul(fu, 0.5)), 0.8], [add(base, add(mul(ff, -hr[0] * 0.95), mul(fu, hr[2] * 0.5))), 0.65]] as const) low = Math.min(low, p[2] - r);
+  low = Math.min(low, crownLow(base, ff, fl, fu));
+  return low;
+}
+/** The lowest of the crown's shell (the half of its ball above the band: its skin's own cut, `u[2]` from -0.04). */
+export function crownLow(base: V3, ff: V3, fl: V3, fu: V3): number {
+  const hr = HELM_HR;
+  const ax = [mul(ff, hr[0] * 1.12), mul(fl, hr[1] * 1.12), mul(fu, hr[2] * 1.0)];
+  let low = Infinity;
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2;
+    for (let j = 0; j <= 8; j++) {
+      const e = -0.04 + (j / 8) * (Math.PI / 2 + 0.04);
+      const z = base[2] + ax[0][2] * Math.cos(e) * Math.cos(a) + ax[1][2] * Math.cos(e) * Math.sin(a) + ax[2][2] * Math.sin(e);
+      low = Math.min(low, z);
+    }
+  }
+  return low;
+}
 
 /** The Hush leaking out of them at each moment, laid after their edge (Mob.grains); and the other grains of a move (the kick's smear, the slam's dust). */
 const BREATH = new WeakMap<Moment, [V3, string, number][]>();
@@ -505,6 +578,10 @@ export interface CrossbowSay {
   standing: (m: Moment) => boolean;
   /** Whether the left hand holds the pavise's carrying strap at the chest (it runs up over the left shoulder to the pavise). */
   strap: (m: Moment) => boolean;
+  /** As he dies: his helm, once knocked off him (null while it is on his head); where the pavise's prop's foot is as it folds; when the Hush leaves him (seconds). */
+  helm?: (m: Moment) => LooseHelm | null;
+  propEnd?: (m: Moment) => V3 | null;
+  exhale?: readonly [number, number];
 }
 function crossbowBits(st: Stage, m: Moment, say: CrossbowSay): Bit[] {
   const { s, q } = m;
@@ -546,13 +623,13 @@ function crossbowBits(st: Stage, m: Moment, say: CrossbowSay): Bit[] {
   arm(put, s, 'L', cu, q.lhIn === 3 || q.lhIn === 2 ? 1 : 0.5);
   arm(put, s, 'R', cu, held ? 1 : 0.45);
   put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(cu, -1.5)), b: lerp3(s.neck, s.head, 0.5), ra: 2.3, rb: 2.1, ramp: SKIN });
-  const hd = head(put, st, s, jaw, lit);
+  const hd = head(put, st, s, jaw, lit, say.helm?.(m) ?? null);
   // (painted even once dropped: as they die it falls from them as a piece of its own, Mob.fall)
   crossbow(put, say.bow(m), say.loaded(m), false);
   const bolt = say.inHand(m);
   if (bolt) boltShape(put, 'boltHand', 'boltHand', bolt.nock, bolt.head, cu);
   const pv = say.pavise(m);
-  pavise(put, pv, false, say.standing(m));
+  pavise(put, pv, false, say.standing(m), say.propEnd?.(m) ?? null);
   if (say.strap(m)) {
     // the carrying strap: from the pavise's top, over the left shoulder, down to the left fist at the chest
     const over = add(s.shoulderL, mul(cu, B.armR[0] * 1.32 + 0.7));
@@ -562,7 +639,8 @@ function crossbowBits(st: Stage, m: Moment, say: CrossbowSay): Bit[] {
   }
   const puff = say.puff(m);
   coldBreath(put, hd.mouth, hd.ff, hd.fl, m.t, puff, 31);
-  if (m.dying) hushLeaves(put, hd.mouth, hd.ff, hd.fl, m.t, 31, CB_EXHALE[0], CB_EXHALE[1]);
+  const [e0, e1] = say.exhale ?? CB_EXHALE;
+  if (m.dying) hushLeaves(put, hd.mouth, hd.ff, hd.fl, m.t, 31, e0, e1);
   GRAINS.set(m, say.more?.(m) ?? []);
   void cf;
   void cl;

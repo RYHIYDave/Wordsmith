@@ -88,10 +88,47 @@ falls between them. Frames below are the game's thirty a second.
   until it clicks onto the nut; a bolt drawn from the case at the hip (1.46 s) and laid in the groove (1.64 s); back up
   onto the shoulder.
 - STRUCK (`reel`, 0.4 s): jolted back, the head snapped back, the Hush coughed out; the crossbow stays on the shoulder.
-- THE HUSH LEAVES HIM (`dying`, 2.6 s; `CB_DIES`): jolted; a gasp, the head thrown back, the Hush pouring out in one great
-  grey breath (0.14 to 1.6 s); the crossbow drops from the shoulder (0.32 s) and falls clear to his right; his feet step
-  back under him and his knees give (to 0.95 s); he sinks back onto his heels behind the pavise, slumped, his head bowed
-  (1.6 s), the pink gone from his eyes: a man again, still. The pavise stands.
+- HIS DEATH (`dying`, 2.6 s; `CB_DIES`): made new on 30 Oct; see "Their death" below.
+
+## Their death (made new, 30 Oct)
+
+To make Act 2's enemies differ (nearly every Hushed kind died the same way), offered to him as a pop-up: "THE CROSSBOWMEN
+knocked back over the shield, the last bolt firing into the air, sprawling backwards, the shield falling flat ... the Hush
+leaving them in a grey breath, alive." His pick: “Yes, these (Recommended)”. Only the death changed: every other move is
+as it was, pixel for pixel (all 414 of their living frames, both ways round, painted before and after and found the same).
+
+Read as: struck dead behind his planted pavise, he is thrown back hard and goes over backwards, away from it (it stands
+before him); the trigger jerks and his last bolt goes up into the air; the pavise, nothing behind it now, tips back after
+him and falls flat.
+
+What it is (`deathPose`, `HELM`, `paviseDying` and `lastBolt` in `src/art/keep_crossbowmen_moves.ts`; seconds, and frames at
+the game's 20 a second for a death):
+
+- STRUCK (0 to 0.06 s): jolted back, his chest snapped back, his head thrown back; his right arm jerks the crossbow up off
+  his shoulder, on end.
+- THE LAST BOLT (0.06 s): the trigger jerks, the prod snaps, the string goes slack, and the bolt shoots straight up
+  out of the crossbow: a white-hot streak (the shot's own white heat) climbing away at 19 tiles a second, its wake pale air,
+  gone up into the dark 1.8 tiles above the crossbow by 0.155 s, its wake by 0.26 s (`LAST_BOLT`,
+  `lastBoltAt(t)`). It is painted on his own picture, inside it.
+- THROWN BACK, FAST (0 to 0.42 s): lifted off his feet at once (no foot slides), thrown back 1.25 tiles in under half a
+  second; his feet swept up from under him, he goes over backwards, away from the pavise, his feet up above his hips in
+  the air (0.38 to 0.50 s), his arms flung out wide, the crossbow still in his outflung right hand.
+- THE CROSSBOW FLUNG (0.30 s): out of his right hand, out to his right; it clatters down on the floor beside him,
+  flat, a little hop, and is still by 0.95 s.
+- DOWN FLAT ON HIS BACK (0.42 s), a little bounce; his legs come down after him (0.52 s), spread; his
+  arms slap down flat on the floor out at his sides. He lies 1.4 tiles behind where he stood, sprawled: arms and legs out.
+- HIS HELM KNOCKED OFF (0.40 s) as his head comes down: flung back off his head, turning over, it comes down on the
+  back of its brim behind his head, rocks on its brim, less and less, turning a little, and is still, crown up, by 1.55 s.
+  Its chin strap is snapped.
+- THE PAVISE AFTER HIM (0.13 to 1.04 s): its prop gives as he is thrown (0.11 s) and folds up against its back; it
+  tips back toward him about its feet as a heavy board falls, slow to start and faster and faster (9 degrees back at
+  0.40 s, 18 at 0.60, 38 at 0.80, 54 at 0.90, 77 at 1.00), and SLAPS DOWN FLAT ON ITS BACK at 1.04 s, the royal
+  swan to the sky, its feet kicked forward along the floor, a little bounce; a puff of dust out from under its edges (to
+  1.49 s); still. The heavy beat: 0.62 s after he is down. It lies between where he stood and his boots, clear of him.
+- THE HUSH LEAVES HIM (0.50 to 1.62 s): coughed out of him by the blow; down, it rises out of him in a
+  great grey breath, and thins away. The pink goes out of his eyes (0.45 to 1.1 s).
+- STILL (from 1.2 s): his head lolls over to his right (0.62 to 1.2 s), and he lies still on his back, a man again,
+  alive. Not a corpse, nothing gory.
 
 ## Their aim line and their bolt (src/art/keep_crossbowmen_fx.ts)
 
@@ -114,7 +151,7 @@ lane, not a thread.
 - `CROSSBOWMAN` (a `Mob`), `makeCrossbowArt3()` for the game's pictures (front and back); the moves `stand`, `walk`,
   `attack`, `reel`, `dying`, and `more.plant`, `more.reload`.
 - THE ORDER THE GAME PLAYS THEM IN (the checks' handovers, `CB_SHAPE.handovers`): jog to the spot, then `plant`, then
-  stand; `attack` is always followed by `reload`, then stand; struck and dying from the stand. They are turrets: once
+  stand; `attack` is always followed by `reload`, then stand; struck from the stand; dying from the stand or from struck. They are turrets: once
   planted they do not move again. (Struck or killed while still jogging: not drawn; for the main chat, either let them
   plant first or flash them without the reel.)
 - THE SHOT: the line warns from 0.62 s, is at full length from 0.76 s; the bolt flies at 1.367 s and lands at 1.433 s
@@ -122,6 +159,17 @@ lane, not a thread.
   they stand, turned to where they aim, cut short at a wall.
 - Sounds (his sound rule, as the brief says): the crank (the attack's two turns from 0.16 s, the reload's five), the thunk
   of the prod at 1.367 s, the bolt's hiss down the line; no voices, a gasp as they die.
+- WHAT CHANGED FOR THE GAME WITH THEIR NEW DEATH (30 Oct): only `dying`. Its length is as it was (2.6 s, `dieTime`; 53
+  frames at the game's 20 a second), and the picture is as big as it was (300 by 240, its floor point at 132, 168). The
+  last bolt is painted on his own picture, inside it: there is nothing new for the game to draw. But his death now covers
+  ground behind his spot: he ends lying 1.4 tiles back (his head nearly 2 tiles back, his helm beyond it) and his pavise
+  falls flat between; so let it be drawn whole there, and the game's one shadow under his feet should go back with him as
+  he is thrown. Killed mid-aim or mid-reload, the crossbow is back on his shoulder in the death's first frame (as with the
+  old death: a death starts from his stand); his body is within the handover rule there but for four frames of the shot's
+  wind-down (3.07 against 3), the crossbow is not (a jump of up to 18). Sounds for it: the thunk of the last bolt at 0.06 s
+  and its hiss up into the air; the thud as he lands, 0.42 s; the crossbow's clatter; the pavise's slap, 1.04 s.
+  `CB_DIES`'s fields are new (`fire`, `prop`, `tip`, `drop`, `land`, `heels`, `out`, `breath`, `loll`, `helmOff`,
+  `helmStill`, `slap`; the old `gasp`, `knees`, `sit` are gone); `LAST_BOLT` and `lastBoltAt` are new.
 
 ## The checks (tests/keep_crossbowmen.test.ts)
 
@@ -133,16 +181,23 @@ lane, not a thread.
 3. the shot strikes in two frames and lands on the second, smeared then and only then;
 4. every frame paints both ways round: nothing cyan, the pink edge while they live and none as they die, every pixel
    whole or empty but the edge;
-5. NOTHING CUT OFF; 6. NOTHING IN THE FLOOR (all they wear and carry, the pavise and its prop);
+5. NOTHING CUT OFF; 6. NOTHING IN THE FLOOR (all they wear and carry, the pavise and its prop, lying or fallen; the helm's
+   crown measured as the half shell it is painted);
 7. the Hush leaking while they live, a great breath of it as it leaves them, none once it has;
-8. the dull pink in their eyes while they live, out once down; slumped low, behind the pavise;
-9. the dropped crossbow lies clear of him and of the pavise, both ways round;
-10. his brief: the knight's size; the pavise on the back jogging and planted after (the same spot in every move); the
+8. the dull pink in their eyes while they live, out once down;
+9. the flung crossbow lies clear of him and of the pavise, both ways round;
+10. his brief: the knight's size; the pavise on the back jogging and planted after (the same spot in every move but his
+    death); the
     jog's pace; the hands on the crossbow; two turns of the crank in the wind-up, five in the reload; the string loosed
     and spanned; the bolt loosed and laid in;
 11. the aim line and the bolt: 12 tiles, 0.8 across, held 0.6 s at full length, gone at the strike; the bolt half way,
     then at the end, in two frames; a deep warning red, never pink, never cyan;
-12. nothing folds flat.
+12. nothing folds flat;
+13. HIS DEATH: thrown back more than a tile before he is down (by 0.45 s), off his feet at once; the last bolt loosed at the
+    jerk, straight up, climbing away and gone; flat on his back, sprawled (arms and legs out), all of him behind where the
+    pavise stood and clear of it as it lies, and still; the pavise tipped back after him a heavy beat later (0.4 s or
+    more), flat on its back, face up, and still; the crossbow and his helm (crown up) down and still; his helm never in the
+    floor; his handovers into his death from every frame of his stand and of struck.
 
 Shared tests touched (the smallest change, so that they know these new mock-up files): tests/bosses.test.ts (its two
 lists of mock-ups that may use the bosses' review) and tests/hushed.test.ts (its list of mock-ups that take the Hush's
@@ -152,8 +207,10 @@ breath from art/hushed.ts) each name `keep_crossbowmen`.
 
 - `src/dev/preview_keep_crossbowmen.ts`, on a floor of cold flagstones painted for the pictures only (floor 19's own
   ground is not made here): `sheet`, `big:<move>:<t>`, `zoom:<move>:<t>`, `head:<move>:<t>`, `grid:<move>:<t>,...`,
-  `shot:<front|back>:<t>` (the shot at the arena's scale), `film` (frame by frame, `window.__film`).
-- `tools/crossbow_shots.mjs` (several stills in one browser), `tools/crossbow_film.mjs` (the film, MP4).
+  `shot:<front|back>:<t>` (the shot at the arena's scale), `at:<move>:<t>,<view>,<times>,<x>,<y>` (one of him, placed),
+  `film` (frame by frame, `window.__film`), `deathsheet` and `deathfilm` (his death on its own).
+- `tools/crossbow_shots.mjs` (several stills in one browser), `tools/crossbow_film.mjs` (the film, MP4; its last argument
+  `deathfilm` makes the death's film).
 
 ## The pictures (pictures/)
 
@@ -164,7 +221,14 @@ breath from art/hushed.ts) each name `keep_crossbowmen`.
 - `crossbowmen_film.mp4` (1200 by 680, 30 a second): every move, from in front and from behind, captioned, the knight for
   size: standing; the jog; the plant (half speed); the aimed shot and the reload after it at the arena's scale from in front
   (the knight steps out of the lane during the warning), and from behind (the knight stands at the line's end); the strike
-  again at half speed, from in front and from behind; the reload; struck; the Hush leaving him.
+  again at half speed, from in front and from behind; the reload; struck; the Hush leaving him. (Made before the new death:
+  its last part shows the old one. Not made again: the death has its own film, below.)
+- `crossbowmen_death_sheet.png` (1200 by 820): the new death in eight key frames from in front, twice the game's size: the
+  last bolt up, thrown back, over with his legs up, down with his helm off, the pavise tipping, its slap and dust, the Hush
+  leaving him, still.
+- `crossbowmen_death.mp4` (1200 by 680, 30 a second, 15.5 s): the new death, captioned: at the game's size from in front
+  and from behind, the knight beside him; each three times as big, the knight beside; then its first 1.4 s at half speed,
+  from in front and from behind.
 
 ## His word on the pictures
 

@@ -24,19 +24,19 @@
 //     five hard turns drawing the string back to the nut (the crank, the ratchet), the click; a bolt from the case at the
 //     hip laid in the groove; back onto the shoulder.
 //   STRUCK: jolted back, the head snapped back, the Hush coughed out.
-//   THE HUSH LEAVES THEM (his brief: “the crossbow drops, the Hush leaves them, they slump behind the shield”): a gasp,
-//     the Hush pouring out in one great grey breath; the crossbow drops from the shoulder and falls clear; the knees give;
-//     they sink back onto their heels behind the pavise, slumped, the head bowed: people again.
+//   THEIR DEATH (made new on his pick of 30 Oct; see HIS DEATH below): thrown back over, away from the pavise, the last
+//     bolt shot up into the air; flat on their backs, sprawled, the helm knocked off; the pavise slapping down flat after
+//     them; the Hush leaving them in a grey breath: people again, alive.
 //
 // By his rulebook: every move through every check the bosses have (art/boss_checks.ts), from in front and behind.
 //   test: tsx --test tests/keep_crossbowmen.test.ts
 
-import { footwork, kneelHips, kneelSettle, plantBy, plantOf } from './bosses3';
+import { footwork, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
 import type { ActorArt } from './actor_types';
-import { CB, CB_BODY, CB_CANVAS, CB_REST0, PAVISE, crossbowAt, crossbowPainter, onBack, paviseOutline, planted } from './keep_crossbowmen';
-import type { BowPose, Crossbow, CrossbowSay, Pavise } from './keep_crossbowmen';
+import { CB, CB_BODY, CB_CANVAS, CB_REST0, PAVISE, PLANTED_AT, crossbowAt, crossbowPainter, helmLow, onBack, paviseOutline, planted } from './keep_crossbowmen';
+import type { BowPose, Crossbow, CrossbowSay, LooseHelm, Pavise } from './keep_crossbowmen';
 import { hash } from './kit';
 import { TILE3, mobSet } from './new_mobs3';
 import type { Mob, MobMove, Moment } from './new_mobs3';
@@ -584,51 +584,425 @@ function reelPlan(): Plan {
     crank: [[0, 0]],
   };
 }
-export const CB_DIES = { long: 2.6, gasp: 0.3, drop: 0.32, knees: 0.95, sit: 1.6 } as const;
-const DIE_FEET: Record<'L' | 'R', Plant> = { L: plantBy(L0, -8, -0.5), R: plantBy(RF0, -7, 0.5) };
-const TUCK = 52;
-const KNEE_DOWN = B.legR[1] * 1.3;
-const kneeling = (lean: number, body: P): P => kneelSettle(B, R0, { ...kneelHips(B, R0, DIE_FEET, TUCK, KNEE_DOWN, lean), ...body }, DIE_FEET, TUCK, KNEE_DOWN);
-function diesPlan(): Plan {
-  const D0 = CB_DIES;
-  const ON_KNEES = kneeling(4, { out: 1, yaw: 0, pitch: 2, roll: 2, twist: 0, bend: 6, side: 1, faceTurn: 0, faceUp: 0, faceTilt: 8 });
-  const SAT = kneeling(-38, { out: 1, yaw: 4, pitch: -2, roll: 3, twist: 2, bend: 24, side: 2, faceTurn: 8, faceUp: -42, faceTilt: 16 });
-  const SAT2 = { ...SAT, bend: 26, faceUp: -46, roll: 4 };
+// =============================================================================================
+// HIS DEATH (made new on his pick of 30 Oct, “Yes, these (Recommended)”, so that Act 2's Hushed die differently): struck
+// dead behind his planted pavise he is thrown back hard; his hand jerks on the trigger and the last bolt shoots up into
+// the air, a white streak climbing away and gone; his feet swept from under him, he goes over backwards, away from the
+// pavise, his legs up, his arms flung out, the crossbow flung from his hand; he comes down flat on his back, sprawled,
+// arms and legs out, his kettle helm knocked off and rocking to a stop on its brim behind his head; the pavise, its prop
+// giving as he is thrown, tips back after him, heavy, and slaps down flat on its back in a puff of dust a beat after he
+// lands; the crossbow clatters down beside him; the Hush leaves him in a grey breath; he lies still, a man
+// again, alive. His rulebook's Movement 9: the blow throws him fast; the pavise's fall a heavy beat after.
+
+/** Its times (seconds), but those worked out below from how he and the pavise fall (`CB_DIES`). */
+const DT = {
+  long: 2.6,
+  /** the trigger jerked: the last bolt loosed, straight up */
+  fire: 0.06,
+  /** the pavise's prop gives as he is thrown (and folds up against its back); and it begins to tip */
+  prop: 0.11,
+  tip: 0.13,
+  /** the crossbow flung from his hand, out to his right as he goes over */
+  drop: 0.3,
+  /** his back hits the floor; his legs come down after it */
+  land: 0.42,
+  heels: 0.52,
+  /** the light going out of his eyes; the Hush leaving him in a grey breath */
+  out: [0.45, 1.1] as const,
+  breath: [0.5, 1.62] as const,
+  /** his head lolls over and he lies still */
+  loll: [0.62, 1.2] as const,
+} as const;
+
+/** A vector turned `deg` degrees about the line `ax` (right-handed). */
+const turnAbout = (v: V3, ax: V3, deg: number): V3 => {
+  const a = deg * D;
+  const k = norm(ax);
+  return add(add(mul(v, Math.cos(a)), mul(cross(k, v), Math.sin(a))), mul(k, dot(k, v) * (1 - Math.cos(a))));
+};
+/** The face's numbers (as `solve` reads them: turned, then up, then tilted) for a face turned to its forward `f`, its left `l`. */
+function faceNumbers(f: V3, l: V3): { faceTurn: number; faceUp: number; faceTilt: number } {
+  const up = Math.asin(Math.max(-1, Math.min(1, f[2])));
+  const turn = Math.atan2(f[1], f[0]);
+  const l0: V3 = [-Math.sin(turn), Math.cos(turn), 0];
+  const u0: V3 = [-Math.sin(up) * Math.cos(turn), -Math.sin(up) * Math.sin(turn), Math.cos(up)];
+  const tilt = Math.atan2(dot(l, u0), dot(l, l0));
+  return { faceTurn: turn / D, faceUp: up / D, faceTilt: tilt / D };
+}
+/** A point as the chest has it (from a shoulder, along the chest's forward, left and up), and back. */
+const inChest = (s: Skeleton, d: V3): V3 => [dot(d, s.chest[0]), dot(d, s.chest[1]), dot(d, s.chest[2])];
+const fromChest = (s: Skeleton, c: V3): V3 => add(add(mul(s.chest[0], c[0]), mul(s.chest[1], c[1])), mul(s.chest[2], c[2]));
+
+/** HIM AS HE STANDS when it takes him (his rest, the crossbow on his shoulder, his left thumb in his belt): where it begins. */
+const S0 = solve(B, R0 as Posed);
+const BOW0 = onShoulder(S0, 0);
+const HAND_R0 = inChest(S0, sub(BOW0.grip, S0.shoulderR));
+const HAND_L0 = inChest(S0, sub(belt(S0, crossbowAt(BOW0, 1, 0), planted(), 0), S0.shoulderL));
+const FACE_F0 = inChest(S0, S0.face[0]);
+const FACE_L0 = inChest(S0, S0.face[1]);
+/** The standing pelvis's height (its `pz` 0). */
+const HIP_H = B.ankle + B.shank + B.thigh;
+
+/** THE TRACKS OF HIS FALL: his pelvis on the floor's own lines (forward, up); his hips' tip, spine and turn; his legs swung up from them (degrees: 0 hanging, 90 flat along the floor) and spread; how far his knees bend; his head thrown back and lolling; the light out of him. */
+const tr = (keys: ReadonlyArray<readonly [number, number]>): Track => track(keys);
+const DK = {
+  px: tr([[0, 0], [DT.fire, -4], [0.15, -16], [0.26, -31], [0.36, -43.5], [DT.land, -49], [0.47, -51.6], [0.55, -53], [0.7, -53.5]]),
+  pz: tr([[0, S0.pelvis[2]], [DT.fire, S0.pelvis[2] + 1.4], [0.12, S0.pelvis[2] + 1.8], [0.2, 29.5], [0.3, 22], [0.37, 13.6], [DT.land, 7.6], [0.465, 8.7], [DT.heels, 7.5], [0.6, 7.65]]),
+  pitch: tr([[0, R0.pitch], [DT.fire, -2], [0.15, -22], [0.26, -50], [0.36, -73], [DT.land, -86], [0.47, -82.5], [0.53, -86.5], [0.7, -86]]),
+  bend: tr([[0, R0.bend], [DT.fire, -10], [0.15, -9], [0.3, -5], [DT.land, -2], [0.47, 1.5], [0.53, -1], [0.8, -1.5]]),
+  roll: tr([[0, R0.roll], [0.15, 3], [DT.land, 4], [0.6, 3]]),
+  yaw: tr([[0, 0], [0.2, 6], [DT.land, 9], [0.6, 8]]),
+  twist: tr([[0, 0], [0.2, -5], [DT.land, -7], [0.6, -6]]),
+  side: tr([[0, 0], [DT.land, -3], [0.6, -2.5]]),
+  legs: tr([[0, 0], [DT.fire, 2], [0.15, 16], [0.26, 46], [0.36, 84], [DT.land, 103], [0.47, 99]]),
+  spread: tr([[0, 0], [0.15, 6], [0.36, 15], [DT.heels, 18], [0.6, 18]]),
+  knee: tr([[0, 1], [0.15, 0.95], [0.36, 0.88], [0.47, 0.92], [DT.heels, 0.985], [0.6, 0.985]]),
+  feetOut: tr([[0, 0], [0.3, 10], [DT.heels, 30], [0.7, 34]]),
+  back: tr([[0, 0], [DT.fire, 30], [0.18, 18], [DT.land, 14], [0.5, 34], [0.6, 42], [1.2, 44]]),
+  loll: tr([[0, 0], [DT.loll[0], 0], [DT.loll[1], 30]]),
+  out: tr([[0, 0], [DT.out[0], 0], [DT.out[1], 1]]),
+};
+/** His legs, lying: each swung up this far, so that his calves rest on the floor (worked out below). */
+const LIE_LEGS = { L: 84, R: 84 };
+const legsAt = (t: number, side: 'L' | 'R'): number => (t >= DT.heels ? LIE_LEGS[side] : t <= 0.47 ? DK.legs(t) : DK.legs(0.47) + (LIE_LEGS[side] - DK.legs(0.47)) * smooth(0.47, DT.heels, t));
+
+/** His body at a moment of his fall, but his arms and his head (the bones' fields). */
+function fallBody(t: number): P {
   return {
-    long: D0.long,
-    body: [
-      [0, {}],
-      [0.08, { px: -2.4, pz: R0.pz, pitch: -3, bend: -5, faceUp: R0.faceUp + 20 }],
-      [D0.gasp, { px: -2.0, pz: R0.pz + 0.8, pitch: -8, bend: -14, faceUp: 40, faceTilt: 0, faceTurn: 0, out: 0.45 }],
-      [0.55, { px: -1.6, pz: R0.pz + 0.2, pitch: -6, bend: -10, faceUp: 32, faceTilt: 4, out: 0.85 }],
-      [0.72, { px: -0.4, pz: R0.pz - 6, pitch: 3, bend: 4, faceUp: 10, lk: 26, rk: -26, out: 1 }],
-      [D0.knees, ON_KNEES],
-      [1.15, { ...ON_KNEES, pz: (ON_KNEES.pz as number) + 0.5, pitch: -1, faceUp: 6 }],
-      [D0.sit, SAT],
-      [D0.long, SAT2],
-    ],
-    bow: [[0, onShoulder]],
-    right: [[0, gripOf], [0.2, gripOf], [D0.drop + 0.12, (s) => add(s.shoulderR, add(mul(s.chest[0], 4), mul(s.chest[2], -16)))], [D0.knees, (s) => hangHand(s, 'R')], [D0.long, (s) => hangHand(s, 'R')]],
-    left: [[0, belt], [0.12, belt], [D0.gasp, (s) => add(s.shoulderL, add(mul(s.chest[0], 5), mul(s.chest[2], -14)))], [D0.knees, (s) => hangHand(s, 'L')], [D0.long, (s) => hangHand(s, 'L')]],
-    elbows: [[0, ...ELB_REST], [D0.knees, [0, 1, -1], [0, -1, -1]]],
-    draw: [[0, 1]],
-    crank: [[0, 0]],
+    px: DK.px(t), py: 0, pz: DK.pz(t) - HIP_H, pitch: DK.pitch(t), bend: DK.bend(t), roll: DK.roll(t), yaw: DK.yaw(t), twist: DK.twist(t), side: DK.side(t),
+    out: clamp01(DK.out(t)),
   };
 }
-/** A hand hanging slack beside the thigh, kneeling: down by the knee, on the floor beside it. */
-function hangHand(s: Skeleton, side: 'L' | 'R'): V3 {
-  const k = side === 'L' ? s.kneeL : s.kneeR;
-  const sh = side === 'L' ? s.shoulderL : s.shoulderR;
-  return [lerp3(sh, k, 0.7)[0] + 1.5, sh[1] + (side === 'L' ? 2.2 : -2.2), Math.max(3.4, k[2] + 4)];
+/**
+ * HIS LEGS at a moment of his fall, on a body whose hips are where `s` has them: each leg as it hangs at rest, spread out
+ * from the hips' forward, swung up about their left (`legs` degrees), its knee bent to bring the ankle in (`knee`); the
+ * foot going with the shin as far as it can (then pointing), and falling outward as he lies.
+ */
+function legsOf(s: Skeleton, t: number, legsBy: (side: 'L' | 'R') => number): P {
+  const yaw = DK.yaw(t);
+  const F: V3 = [Math.cos(yaw * D), Math.sin(yaw * D), 0];
+  const L: V3 = [-F[1], F[0], 0];
+  const spread = DK.spread(t);
+  const kk = DK.knee(t);
+  const out: P = {};
+  for (const side of ['L', 'R'] as const) {
+    const k = side === 'L' ? 1 : -1;
+    const legs = legsBy(side);
+    let v = turnAbout(sub(side === 'L' ? S0.ankleL : S0.ankleR, side === 'L' ? S0.hipL : S0.hipR), [0, 0, 1], yaw);
+    v = turnAbout(v, F, k * spread);
+    v = turnAbout(mul(v, kk), L, -legs);
+    const a = add(side === 'L' ? s.hipL : s.hipR, v);
+    const foot = Math.min(legs, 62);
+    const turn = (side === 'L' ? R0.lft : R0.rft) + yaw + k * DK.feetOut(t);
+    const knee = (side === 'L' ? R0.lk : R0.rk) + yaw + k * spread * 0.8;
+    if (side === 'L') Object.assign(out, { lfx: a[0], lfy: a[1] - B.stance, lfz: a[2] - B.ankle, lfp: -foot, lft: turn, lk: knee, lkUp: legs });
+    else Object.assign(out, { rfx: a[0], rfy: a[1] + B.stance, rfz: a[2] - B.ankle, rfp: -foot, rft: turn, rk: knee, rkUp: legs });
+  }
+  return out;
 }
-function dyingFeet(): (t: number) => P {
-  const F = DIE_FEET;
-  return footwork(B, {
-    L: { start: L0, moves: [{ t0: 0.08, t1: 0.3, to: F.L, lift: 2.6 }, { t0: 0.6, t1: 0.9, to: { ...F.L, pitch: TUCK } }] },
-    R: { start: RF0, moves: [{ t0: 0.22, t1: 0.46, to: F.R, lift: 2.6 }, { t0: 0.62, t1: 0.92, to: { ...F.R, pitch: TUCK } }] },
-  });
+// (his calves on the floor as he lies: the ankles this far above it, the heels clear of it)
+const LIE_ANKLE = 4.0;
+{
+  const body = fallBody(0.8);
+  const s = solve(B, { ...R0, ...body } as Posed);
+  for (const side of ['L', 'R'] as const) {
+    let lo = 70;
+    let hi = 100;
+    for (let i = 0; i < 30; i++) {
+      const mid = (lo + hi) / 2;
+      const q = solve(B, { ...R0, ...body, ...legsOf(s, 0.8, () => mid) } as Posed);
+      if ((side === 'L' ? q.ankleL : q.ankleR)[2] > LIE_ANKLE) hi = mid;
+      else lo = mid;
+    }
+    LIE_LEGS[side] = (lo + hi) / 2;
+  }
 }
-const dieJaw = (t: number): number => (t < 0.1 ? 0.6 : t < 1.0 ? 1 : 1 - 0.6 * Math.min(1, (t - 1.0) / 0.6));
+
+/** HIS HANDS through his fall, as the chest has them (from each shoulder): the right on the crossbow, jerking it up; both flung out wide; down flat on the floor beside him. Worked out as he lies. */
+const HANDS_LIE = ((): { L: V3; R: V3 } => {
+  const body = fallBody(0.8);
+  const s0 = solve(B, { ...R0, ...body } as Posed);
+  const s = solve(B, { ...R0, ...body, ...legsOf(s0, 0.8, (side) => LIE_LEGS[side]) } as Posed);
+  const L: V3 = [s.shoulderL[0] - 2.5, s.shoulderL[1] + 18.5, 2.6];
+  const Rt: V3 = [s.shoulderR[0] + 1.5, s.shoulderR[1] - 18, 2.6];
+  return { L: inChest(s, sub(L, s.shoulderL)), R: inChest(s, sub(Rt, s.shoulderR)) };
+})();
+const handTrack = (keys: ReadonlyArray<readonly [number, V3]>): ((t: number) => V3) => {
+  const ts = keys.map(([k]) => k);
+  const vs = keys.map(([, v]) => v);
+  return (t) => trackAt(ts, vs, t);
+};
+const HAND_R = handTrack([
+  [0, HAND_R0],
+  [DT.fire, add(HAND_R0, [0.3, -2.0, 4.5])],
+  [0.16, [4, -9, 13]],
+  [0.28, [7, -15, 10]],
+  [0.5, HANDS_LIE.R],
+  [0.56, add(HANDS_LIE.R, [0.8, 0, 0])],
+  [0.62, HANDS_LIE.R],
+]);
+const HAND_L = handTrack([
+  [0, HAND_L0],
+  [DT.fire, add(HAND_L0, [3, 3, 4])],
+  [0.16, [9, 8, -4]],
+  [0.28, [8, 15, 6]],
+  [0.5, HANDS_LIE.L],
+  [0.56, add(HANDS_LIE.L, [0.8, 0, 0])],
+  [0.62, HANDS_LIE.L],
+]);
+/** The way each elbow points, through his fall. */
+const ELBOWS = ((): ((t: number) => [V3, V3]) => {
+  const keys: [number, V3, V3][] = [[0, ...ELB_REST], [DT.fire, [0.3, 1, -0.4], [0.2, -1, -0.2]], [0.2, [0, 1, 0.2], [0, -1, 0.3]], [DT.land, [0.4, 0.6, 0.6], [0.4, -0.6, 0.6]], [0.5, [1, 0.1, 0.4], [1, -0.1, 0.4]]];
+  const ts = keys.map(([k]) => k);
+  return (t) => [norm(trackAt(ts, keys.map(([, l]) => l), t)), norm(trackAt(ts, keys.map(([, , r]) => r), t))];
+})();
+/** THE CROSSBOW in his right hand till it is flung from it: on his shoulder; jerked up on end as the trigger goes; swung back as he goes over (its way, as `heading` has it). */
+const BOW_AZ = tr([[0, SHOULDER_AZ], [DT.fire, 176], [0.16, 200], [DT.drop, 248]]);
+const BOW_EL = tr([[0, SHOULDER_EL], [DT.fire, 77], [0.16, 62], [DT.drop, 30]]);
+
+/** HIS BONES AT EVERY MOMENT OF HIS DEATH (laid over its keys as a mob's feet are: so that his fall is exact on every frame). */
+function deathPose(t: number): P {
+  const body = fallBody(t);
+  const s0 = solve(B, { ...R0, ...body } as Posed);
+  const legs = legsOf(s0, t, (side) => legsAt(t, side));
+  const s1 = solve(B, { ...R0, ...body, ...legs } as Posed);
+  // his head: thrown back by the blow, back on the floor as he lands, lolling over to his right as he lies still
+  const back = DK.back(t);
+  const loll = DK.loll(t);
+  let f = fromChest(s1, FACE_F0);
+  let l = fromChest(s1, FACE_L0);
+  f = turnAbout(f, s1.chest[1], -back);
+  l = turnAbout(l, s1.chest[1], -back);
+  f = turnAbout(f, s1.chest[2], -loll);
+  l = turnAbout(l, s1.chest[2], -loll);
+  const face = faceNumbers(f, l);
+  const hR = HAND_R(t);
+  const hL = HAND_L(t);
+  const hands: P = { lhIn: 0, lhx: hL[0], lhy: hL[1], lhz: hL[2], rhIn: 0, rhx: hR[0], rhy: hR[1], rhz: hR[2] };
+  const q = { ...R0, ...body, ...legs, ...face, ...hands } as Posed;
+  const [eL, eR] = ELBOWS(t);
+  const le = elbowFor(B, q, true, eL);
+  const re = elbowFor(B, { ...q, le } as Posed, false, eR);
+  return { ...body, ...legs, ...face, ...hands, le, re, draw: t < DT.fire ? 1 : 0, pt: 1, pAz: 0 };
+}
+function diesMotion(): Motion {
+  const keys: Key3[] = [];
+  const n = Math.round(DT.long * SR);
+  for (let i = 0; i <= n; i++) keys.push({ at: i / SR, pose: deathPose(i / SR), ease: 'lin' });
+  return { keys };
+}
+/** The crossbow as he dies, from his bones: in his right hand, its way through its keys; loosed at `fire`. */
+function dyingBow(t: number, s: Skeleton): Crossbow {
+  const way = heading(BOW_AZ(t), BOW_EL(t));
+  return crossbowAt({ grip: s.handR, way, across: leftOf(way) }, t < DT.fire ? 1 : 0, 0);
+}
+
+// THE HELM, KNOCKED OFF HIM as his head comes down to the floor: flung back off it, turning over toward its crown up; down
+// on the back of its brim, tipped; rocking on its brim, less and less, turning a little as it rocks; still, crown up.
+/** When it leaves his head: as his head comes down within this of the floor (worked out below). */
+const HELM_OFF_Z = 9.5;
+/** How far his helm is painted tipped from the eye on his head (art/keep_crossbowmen.ts: wornOn's eight degrees). */
+const HELM_TIPPED = 8;
+const HELM = ((): { off: number; still: number; at: (t: number) => LooseHelm | null } => {
+  let off: number = DT.land;
+  for (let t = 0.25; t <= DT.land; t += 1 / 240) {
+    if (solve(B, { ...R0, ...deathPose(t) } as Posed).head[2] < HELM_OFF_Z) {
+      off = t;
+      break;
+    }
+  }
+  const s0 = solve(B, { ...R0, ...deathPose(off) } as Posed);
+  const s1 = solve(B, { ...R0, ...deathPose(off + 1 / 120) } as Posed);
+  const [F0, L0f, U0] = s0.face;
+  const c0 = add(s0.head, mul(U0, -0.3));
+  // (where it comes down: back beyond his head, and a little to his left)
+  const away = norm([U0[0], U0[1], 0], [-1, 0, 0]);
+  const FLY = 0.2;
+  const ROCK = 0.95;
+  const TIPPED_LAND = 24;
+  const cLand: V3 = add(c0, add(mul(away, 15), [0, 2.5, 0]));
+  // (its crown turned over to the sky about a level line square to where it goes)
+  const ax = norm(cross(U0, [0, 0, 1]), [0, 1, 0]);
+  const A = Math.acos(Math.max(-1, Math.min(1, U0[2]))) / D;
+  const frameAt = (deg: number, spin: number): [V3, V3, V3] => [F0, L0f, U0].map((v) => turnAbout(turnAbout(v, ax, deg), [0, 0, 1], spin)) as [V3, V3, V3];
+  /** How far its crown has turned toward the sky, and turned round, `u` seconds after it leaves him. */
+  const turnOf = (u: number): [number, number] => {
+    if (u <= FLY) return [(A - TIPPED_LAND) * smooth(0, FLY, u) * (0.6 + 0.4 * (u / FLY)), 0];
+    const r = u - FLY;
+    // (rocking on its brim: tipped back, over, back, less and less; turned round a little as it goes)
+    const rock = r >= ROCK ? 0 : TIPPED_LAND * Math.exp(-r / 0.2) * Math.cos((Math.PI * r) / 0.15) * (1 - smooth(ROCK - 0.25, ROCK, r));
+    return [A - rock, 26 * smooth(0, ROCK, r)];
+  };
+  const lowOf = (c: V3, fr: [V3, V3, V3]): number => helmLow(c, fr[0], fr[1], fr[2]) - c[2];
+  const vel = mul(sub(s1.head, s0.head), 120);
+  return {
+    off,
+    still: off + FLY + ROCK,
+    at: (t) => {
+      if (t < off) return null;
+      const u = t - off;
+      const [deg, spin] = turnOf(u);
+      const fr = frameAt(deg, spin);
+      // its middle: carried on from the head as it left it, out to where it comes down, up a little on the way; never in the floor
+      const k = smooth(0, FLY, u);
+      const carried = add(c0, mul(vel, Math.min(u, 0.04) * (1 - k)));
+      const cx = carried[0] + (cLand[0] - carried[0]) * k;
+      const cy = carried[1] + (cLand[1] - carried[1]) * k;
+      const arc = c0[2] + 5 * Math.sin(Math.PI * Math.min(1, u / FLY));
+      const rest = 0.3 - lowOf([cx, cy, 0], fr);
+      const cz = u < FLY ? Math.max(rest, arc * (1 - k) + rest * k) : rest + (u - FLY < 0.06 ? 0.8 * Math.sin((Math.PI * (u - FLY)) / 0.06) : 0);
+      const c: V3 = [cx, cy, cz];
+      return { c, ff: fr[0], fl: fr[1], fu: fr[2], tip: HELM_TIPPED * (1 - smooth(0, 0.12, u)) };
+    },
+  };
+})();
+
+// THE PAVISE AFTER HIM: its prop giving (folding up against its back), it tips back about its feet, heavy,
+// slow to start and faster and faster as a board falls, and slaps down flat on its back, the royal swan to the sky; a
+// little bounce; a puff of dust from under it; still.
+const PV = ((): { long: number; at: (u: number) => number } => {
+  // (a board tipped `a` from upright about its foot: a'' = (3g / 2h) sin a, its height h and the game's fall, 400 a second each second)
+  const GO = (3 * 400) / (2 * 2 * PAVISE.h);
+  const dt = 1 / 1200;
+  const th: number[] = [PLANTED_AT.lean * D];
+  let w = 0;
+  let a = th[0];
+  while (a < Math.PI / 2) {
+    w += GO * Math.sin(a) * dt;
+    a = Math.min(Math.PI / 2, a + w * dt);
+    th.push(a);
+  }
+  const long = (th.length - 1) * dt;
+  return {
+    long,
+    at: (u) => {
+      if (u <= 0) return th[0] / D;
+      if (u >= long) return 90;
+      const k = u / dt;
+      const i = Math.floor(k);
+      return ((th[i] + (th[i + 1] - th[i]) * (k - i)) * 180) / Math.PI;
+    },
+  };
+})();
+const SLAP = DT.tip + PV.long;
+/** How far back from upright the pavise is (degrees) as he dies: leaning on its prop; tipping; flat; the bounce as it slaps down. */
+function paviseTip(t: number): number {
+  const u = t - SLAP;
+  if (u > 0 && u < 0.1) return 90 - 2.6 * Math.sin((Math.PI * u) / 0.1);
+  return PV.at(t - DT.tip);
+}
+const PIVOT: V3 = [PLANTED_AT.x, 0, 0.9];
+/** How far its feet kick forward along the floor as it comes down. */
+const PV_SLIDE = 5;
+const P_HINGE = (pv: Pavise): V3 => add(pv.c, add(mul(pv.n, -PAVISE.thick - 0.45), mul(pv.up, PAVISE.h * 0.35)));
+/** Where the prop's foot stands on the floor while it holds the pavise up (the look's own, art/keep_crossbowmen.ts). */
+const PROP_FOOT: V3 = ((): V3 => {
+  const h = P_HINGE(planted());
+  return [h[0] - 13, h[1] + 1.5, 0.6];
+})();
+/** The pavise as it falls (`deg` back from upright), and its prop's foot: tipped about its feet; lifted onto its back's straps and its folded prop as it lies, never into the floor. */
+function paviseFallen(deg: number, fold: number): { pv: Pavise; prop: V3 } {
+  const P0 = planted();
+  // (back, toward him: about its feet's line, its top going back)
+  const by = PLANTED_AT.lean - deg;
+  const Y: V3 = [0, 1, 0];
+  // (its feet kicked forward along the floor as it comes down, as a falling board's are)
+  const at = add(PIVOT, [PV_SLIDE * smooth(50, 90, deg), 0, 0]);
+  const c = add(at, turnAbout(sub(P0.c, PIVOT), Y, by));
+  const up = norm(turnAbout(P0.up, Y, by));
+  const n = norm(turnAbout(P0.n, Y, by));
+  const pv: Pavise = { c, n, up, across: norm(cross(up, n)) };
+  // (its prop: from where it stood on the floor, folding up flat against its back)
+  const hinge = P_HINGE(pv);
+  const d0 = sub(PROP_FOOT, hinge);
+  const d1 = mul(up, -PAVISE.h * 1.1);
+  const L = Math.hypot(...d0) + (Math.hypot(...d1) - Math.hypot(...d0)) * fold;
+  let prop = add(hinge, mul(norm(lerp3(norm(d0), norm(d1), fold), d1), L));
+  // (the lowest of it: its back, its straps, its prop, its iron feet)
+  const back = mul(n, -PAVISE.thick - 0.45);
+  let low = pv.c[2] - PAVISE.thick * n[2] - PAVISE.w * Math.abs(pv.across[2]) - PAVISE.h * Math.abs(up[2]);
+  for (const k of [-1, 1]) for (const b of [0.55, -0.15]) low = Math.min(low, add(pv.c, add(back, add(mul(pv.across, k * 3.2), mul(up, PAVISE.h * b))))[2] - 0.5);
+  for (const k of [-1, 1]) low = Math.min(low, add(pv.c, add(mul(pv.across, k * (PAVISE.w - 1.0)), mul(up, -PAVISE.h - 0.2)))[2] - 0.6, add(pv.c, add(mul(pv.across, k * (PAVISE.w - 1.2)), mul(up, -PAVISE.h + 1.6)))[2] - 0.8);
+  low = Math.min(low, hinge[2] - 0.6, fold > 0.99 ? prop[2] - 0.55 : Infinity);
+  const lift = Math.max(0, 0.15 - low);
+  if (lift > 0) {
+    pv.c = add(pv.c, [0, 0, lift]);
+    if (fold > 0.99) prop = add(prop, [0, 0, lift]);
+  }
+  return { pv, prop };
+}
+const propFold = (t: number): number => smooth(DT.prop, DT.prop + 0.16, t);
+function paviseDying(t: number): { pv: Pavise; prop: V3 | null } {
+  if (t < DT.prop) return { pv: planted(), prop: null };
+  return paviseFallen(paviseTip(t), propFold(t));
+}
+
+/** Its times: the trigger, the crossbow flung, the prop, his helm knocked off and still, his back down, his heels down, the pavise flat, the Hush and the light out of him. */
+/** Where the crossbow comes to lie, from where it was as it left his hand (`Mob.fall`'s `to`): back, and out to his right. */
+const XBOW_LANDS: readonly [number, number] = [7, -11];
+export const CB_DIES = {
+  ...DT,
+  helmOff: HELM.off,
+  helmStill: HELM.still,
+  slap: SLAP,
+} as const;
+
+/** THE LAST BOLT: loosed up into the air as the trigger jerks, a white streak climbing away out of his crossbow and gone (laid after his edge, on his own picture: nothing for the game to draw apart). The shot's own white heat (art/keep_crossbowmen_fx.ts BOLT_HOT), its wake pale air. */
+export const LAST_BOLT = { speed: 760, reach: 72, tail: 26, wake: 0.2 } as const;
+const LAST_BOLT_HOT = ['#fff4ea', '#ffd8c4', '#ff9a78'] as const;
+const LAST_BOLT_WAKE = '#a49cae';
+const LAST_BOLT_FROM = ((): { head: V3; way: V3 } => {
+  const s = solve(B, { ...R0, ...deathPose(DT.fire) } as Posed);
+  const cb = dyingBow(DT.fire - 1e-6, s);
+  return { head: cb.head, way: cb.way };
+})();
+/** Where the last bolt's head is `t` seconds into his death (null before it is loosed, or once it is gone). */
+export function lastBoltAt(t: number): V3 | null {
+  const d = LAST_BOLT.speed * (t - DT.fire);
+  if (d < 0 || d > LAST_BOLT.reach) return null;
+  return add(LAST_BOLT_FROM.head, mul(LAST_BOLT_FROM.way, d));
+}
+function lastBolt(t: number): [V3, string, number][] {
+  const u = t - DT.fire;
+  if (u < 0 || u > LAST_BOLT.wake) return [];
+  const { head, way } = LAST_BOLT_FROM;
+  const d = LAST_BOLT.speed * u;
+  const out: [V3, string, number][] = [];
+  // (its wake: thin pale air along the way it went, thinning out)
+  const thin = u / LAST_BOLT.wake;
+  for (let x = 1; x <= Math.min(d, LAST_BOLT.reach); x += 1.1) if (hash(Math.round(x * 3), Math.floor(t * 30), 9431) > 0.35 + 0.65 * thin) out.push([add(head, mul(way, x)), LAST_BOLT_WAKE, 1]);
+  // (the streak: white at its head, cooling behind it; gone up into the dark at its reach)
+  const a = Math.max(0, d - LAST_BOLT.tail);
+  const b = Math.min(d, LAST_BOLT.reach);
+  for (let x = a; x <= b; x += 0.7) {
+    const k = (d - x) / LAST_BOLT.tail;
+    out.push([add(head, mul(way, x)), k < 0.25 ? LAST_BOLT_HOT[0] : k < 0.6 ? LAST_BOLT_HOT[1] : LAST_BOLT_HOT[2], k < 0.5 ? 2 : 1]);
+  }
+  return out;
+}
+/** The dust that puffs out from under the pavise as it slaps down flat. */
+function slapDust(t: number): [V3, string, number][] {
+  const u = t - SLAP;
+  if (u < 0 || u > 0.45) return [];
+  const k = u / 0.45;
+  const { pv } = paviseFallen(90, 1);
+  const out: [V3, string, number][] = [];
+  for (let i = 0; i < 64; i++) {
+    const own = hash(i, 5, 9441);
+    if (own < k * 0.95) continue;
+    // (round its edges: along each side, and off its top)
+    const e = hash(i, 6, 9441);
+    const side = i % 3 === 0 ? 0 : i % 3 === 1 ? 1 : -1;
+    const at = side === 0 ? add(pv.c, add(mul(pv.up, PAVISE.h), mul(pv.across, (e - 0.5) * 2 * (PAVISE.w - PAVISE.chamfer)))) : add(pv.c, add(mul(pv.across, side * PAVISE.w), mul(pv.up, (e - 0.5) * 2 * PAVISE.h)));
+    const outward = side === 0 ? pv.up : mul(pv.across, side);
+    const r = (1.5 + 11 * Math.sqrt(k)) * (0.5 + 0.6 * hash(i, 7, 9441));
+    const z = 0.5 + (0.8 + 5 * hash(i, 8, 9441)) * Math.sin(Math.PI * Math.min(1, k * 1.3));
+    const p = add(at, mul(outward, r));
+    out.push([[p[0], p[1], z], k < 0.35 ? '#b0aca2' : own > 0.6 ? '#8a867e' : '#66625a', own > 0.55 && k < 0.6 ? 2 : 1]);
+  }
+  return out;
+}
+const dieJaw = (t: number): number => (t < 0.03 ? 0.4 : t < DT.breath[0] ? 0.75 : t < DT.breath[1] ? 1 : 1 - 0.6 * Math.min(1, (t - DT.breath[1]) / 0.4));
 
 // =============================================================================================
 // THEM, AS THE GAME HOLDS A MONSTER
@@ -640,7 +1014,7 @@ export const CB_NAMES = {
   plant: 'The pavise planted',
   reload: 'The reload',
   reel: 'The crossbowman is struck',
-  dying: 'The Hush leaves him',
+  dying: 'Thrown back over, the Hush leaves him',
 } as const;
 const STAND_REST: Bones = { ...R0 } as Bones;
 const MADE: Record<string, Made> = {
@@ -649,7 +1023,6 @@ const MADE: Record<string, Made> = {
   plant: make(plantPlan(), STAND_REST),
   reload: make(reloadPlan(), STAND_REST),
   reel: make(reelPlan(), STAND_REST),
-  dying: make(diesPlan(), STAND_REST),
 };
 const byName: Record<string, string> = Object.fromEntries(Object.entries(CB_NAMES).map(([k, v]) => [v, k]));
 /** The strikes, by move: from the last frame of the wind-up to the frame it lands on. */
@@ -663,6 +1036,7 @@ export function smearedAt(move: string, t: number): boolean {
 /** THE CROSSBOW at a moment of a move (by its name as the review knows it), from its bones (`s`, `q`). */
 export function bowAtMove(move: string, t: number, s: Skeleton, q: Posed): Crossbow {
   if (move === 'walk') return jogBow(s, q);
+  if (move === 'dying') return dyingBow(Math.max(0, t), s);
   const made = MADE[move];
   return bowOf(made, Math.max(0, t), move === 'stand');
 }
@@ -670,12 +1044,14 @@ export function bowAtMove(move: string, t: number, s: Skeleton, q: Posed): Cross
 export function paviseAtMove(move: string, t: number, s: Skeleton): Pavise {
   if (move === 'walk') return onBack(s);
   if (move === 'plant') return paviseOfMade(MADE.plant, t);
+  if (move === 'dying') return paviseDying(t).pv;
   return planted();
 }
 /** Whether a bolt lies in the groove at a moment of a move. */
 export function loadedAt(move: string, t: number): boolean {
   if (move === 'attack') return t <= CB_SHOT.strike[0] + 1e-6;
   if (move === 'reload') return t >= CB_RELOAD.laid - 1e-6;
+  if (move === 'dying') return t < CB_DIES.fire;
   return true;
 }
 /** How hard the Hush comes out of them: breathing; held in as they aim; bursting out after the shot. */
@@ -685,7 +1061,8 @@ function puffAt(move: string, t: number): number {
     if (t < CB_SHOT.hit) return 0.4;
     return 0.4 + 1.0 * smooth(CB_SHOT.hit, CB_SHOT.hit + 0.08, t) - 0.6 * smooth(1.6, CB_SHOT.long, t);
   }
-  if (move === 'dying') return Math.max(0, 2.0 * (1 - smooth(0.25, 1.2, t)));
+  // (as he dies: coughed out of him by the blow; breathed out of him as he lies, while it leaves him in one great breath, art/hushed.ts hushLeaves)
+  if (move === 'dying') return t < 0.4 ? 1.8 : Math.max(0, 1.6 * (1 - smooth(1.0, 1.5, t)));
   if (move === 'walk') return 1.2;
   if (move === 'reload') return 1.1;
   return 0.8;
@@ -757,10 +1134,14 @@ const SAY: CrossbowSay = {
     const move = byName[m.move ?? ''] ?? '';
     if (move === 'attack') return smearOf(m.t);
     if (move === 'plant') return slamDust(m.t);
+    if (move === 'dying') return [...lastBolt(m.t), ...slapDust(m.t)];
     return [];
   },
   standing: (m) => (byName[m.move ?? ''] ?? '') !== 'walk' && !((byName[m.move ?? ''] ?? '') === 'plant' && m.t < CB_PLANT.slam),
   strap: (m) => (byName[m.move ?? ''] ?? '') === 'walk' || ((byName[m.move ?? ''] ?? '') === 'plant' && m.t < CB_PLANT.grab),
+  helm: (m) => ((byName[m.move ?? ''] ?? '') === 'dying' ? HELM.at(m.t) : null),
+  propEnd: (m) => ((byName[m.move ?? ''] ?? '') === 'dying' ? paviseDying(m.t).prop : null),
+  exhale: CB_DIES.breath,
 };
 
 function crossbowMob(): Mob {
@@ -788,16 +1169,16 @@ function crossbowMob(): Mob {
     hit: CB_SHOT.hit,
     warn: CB_SHOT.warn[1] - CB_SHOT.warn[0],
     dieTime: CB_DIES.long,
-    dying: mv(CB_NAMES.dying, MADE.dying.motion, { feet: dyingFeet(), jaw: dieJaw }),
+    dying: mv(CB_NAMES.dying, diesMotion(), { feet: deathPose, jaw: dieJaw }),
     aura: { x: CB_CANVAS.ax, y: CB_CANVAS.ay - 40, r: 34, color: '#8c90ac', a: 0.06 },
     shadow: 11,
     canvas: CB_CANVAS,
     trueBack: true,
     bits: paint.bits,
     grains: paint.grains,
-    // (the crossbow drops from the shoulder and falls clear to their right)
+    // (the crossbow flung from his hand as he goes over: it clatters down on the floor beside him, to his right)
     fall(piece) {
-      if (piece === 'xbow') return { from: CB_DIES.drop, to: [-13, -24], spin: 50, lay: 'axis', hop: 1.4 };
+      if (piece === 'xbow') return { from: CB_DIES.drop, to: XBOW_LANDS, spin: 30, lay: 'axis', hop: 1.6 };
       return null;
     },
   };
@@ -882,6 +1263,8 @@ export const CB_SHAPE: BossShape = {
     { from: 'stand', at: 0, to: 'reel', toAt: 0 },
     { from: 'reel', at: 'end', to: 'stand', toAt: 0 },
     { from: 'stand', at: 0, to: 'dying', toAt: 0 },
+    { from: 'reel', at: 0, to: 'dying', toAt: 0 },
+    { from: 'reel', at: 'end', to: 'dying', toAt: 0 },
     // his jog, from wherever in it the game stops him, into the plant; the plant into his stand
     ...Array.from({ length: CB_RUN.frames + 1 }, (_, i): Handover => ({ from: 'walk', at: i / CB_RUN.fps, to: 'plant', toAt: 0 })),
     { from: 'plant', at: 'end', to: 'stand', toAt: 0 },

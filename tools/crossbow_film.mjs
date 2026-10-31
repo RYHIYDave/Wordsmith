@@ -1,22 +1,23 @@
 // The crossbowmen's film (art chat mock-up, floor 19): every frame of src/dev/preview_keep_crossbowmen.ts's "film" mode,
 // shot in a headless browser, then put together as an MP4 for a phone.
-//   node tools/crossbow_film.mjs [out.mp4] [width] [height] [from] [to]
+//   node tools/crossbow_film.mjs [out.mp4] [width] [height] [from] [to] [mode]
+// (mode: "film", every move; "deathfilm", his death on its own: crossbowmen_death.mp4)
 import { bundle, page, write, load, ROOT } from './lib.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const [out = 'docs/mockups/keep_crossbowmen/pictures/crossbowmen_film.mp4', w = '1200', h = '680', from = '0', to = ''] = process.argv.slice(2);
+const [out = 'docs/mockups/keep_crossbowmen/pictures/crossbowmen_film.mp4', w = '1200', h = '680', from = '0', to = '', mode = 'film'] = process.argv.slice(2);
 const js = await bundle('src/dev/preview_keep_crossbowmen.ts', { define: { __BUILD__: '"preview"', __DEV__: 'true' } });
 const html = write('dist/preview_keep_crossbowmen.html', page(js, 'crossbowmen film'));
-const dir = path.resolve(ROOT, 'shots/cb/film');
+const dir = path.resolve(ROOT, `shots/cb/${mode}`);
 fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(dir, { recursive: true });
 const { chromium } = load('playwright');
 const browser = await chromium.launch();
 const pg = await browser.newPage({ viewport: { width: +w, height: +h } });
 pg.on('pageerror', (e) => console.log('[pageerror]', e.message));
-await pg.goto('file://' + html + '#film:0');
+await pg.goto('file://' + html + `#${mode}:0`);
 await pg.waitForFunction('window.__ready === true', null, { timeout: 120000 });
 const n = await pg.evaluate('window.__film.n');
 const last = to ? Math.min(n, +to) : n;

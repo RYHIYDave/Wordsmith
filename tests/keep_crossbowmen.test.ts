@@ -10,13 +10,17 @@
 //      whole or empty but the edge;
 //   5. NOTHING CUT OFF; 6. NOTHING IN THE FLOOR, all they wear and carry, the pavise too;
 //   7. THE HUSH leaking out of them while they live; a great breath of it as it leaves them; none once it has;
-//   8. the dull pink in their eyes while they live, gone out once they are down; they slump behind the pavise;
-//   9. the crossbow that drops from them lies clear of them and of the pavise, from in front and from behind;
+//   8. the dull pink in their eyes while they live, gone out once they are down;
+//   9. the crossbow flung from them lies clear of them and of the pavise, from in front and from behind;
 //  10. HIS BRIEF: the knight's size; the pavise on the back jogging, planted before them after; they hold their spot; the
 //      jog's pace; the hands on the crossbow; the crank turned, the string spanned and loosed, the bolt laid in;
 //  11. THE AIM LINE AND THE BOLT: twelve tiles, most of a tile wide; drawn out, held through the warning, gone at the
 //      strike; the bolt down the whole line in two frames; a deep warning red, never the enemy's pink, never cyan;
-//  12. NOTHING FOLDS FLAT: no round thing they wear collapses into a flat sheet that spins.
+//  12. NOTHING FOLDS FLAT: no round thing they wear collapses into a flat sheet that spins;
+//  13. HIS DEATH (made new, his pick of 30 Oct): thrown back hard; the last bolt loosed up into the air; flat on his back,
+//      sprawled, behind where the pavise stood; the pavise tipped back after him, a heavy beat later, flat on its back and
+//      still; the crossbow down beside him and still; his helm knocked off and still, crown up; nothing of it in the floor;
+//      his handovers into it, from his stand and from struck.
 //   run: tsx --test tests/keep_crossbowmen.test.ts
 
 // @ts-ignore
@@ -29,8 +33,9 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
-import { CB_CANVAS, CROSSBOW_ON, PAVISE, breathOf, planted } from '../src/art/keep_crossbowmen';
-import { CB_DIES, CB_LINE, CB_PACE, CB_PLANT, CB_RELOAD, CB_SHAPE, CB_SHOT, CB_SMEAR, CB_STRIKES, CROSSBOWMAN, boltLands, bowAtMove, loadedAt, paviseAtMove, smearedAt } from '../src/art/keep_crossbowmen_moves';
+import type { Handover } from '../src/art/boss_checks';
+import { CB_CANVAS, CROSSBOW_ON, PAVISE, breathOf, crownLow, helmLow, planted } from '../src/art/keep_crossbowmen';
+import { CB_DIES, CB_LINE, CB_PACE, CB_PLANT, CB_RELOAD, CB_SHAPE, CB_SHOT, CB_SMEAR, CB_STRIKES, CROSSBOWMAN, LAST_BOLT, boltLands, bowAtMove, lastBoltAt, loadedAt, paviseAtMove, smearedAt } from '../src/art/keep_crossbowmen_moves';
 import { BOLT_HOT, CB_FX, CB_LANE, LINE_RED, shotPainted } from '../src/art/keep_crossbowmen_fx';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -39,7 +44,7 @@ import type { Bit, Mob, Moment, Shape } from '../src/art/new_mobs3';
 import { TILE3, canvasOf, deathOfMob, dyingMoment, momentOf, paintMob, paintViewOf, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
 import type { Stage } from '../src/art/skin';
-import { dot, sub } from '../src/art/skeleton';
+import { cross, dot, norm, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import { paintWithoutCanvas } from './helpers';
@@ -203,10 +208,11 @@ test('5. NOTHING CUT OFF: in every frame, both ways round, they (the pavise, the
   assert.ok(least >= ROOM, `the nearest they come to the edge: ${least}`);
 });
 
-/** How far below the floor a solid goes (0: not at all). */
-function under(sh: Shape): number {
+/** How far below the floor a solid goes (0: not at all). The kettle helm's crown is a half shell above its band (its ball's own skin, cut at its band): its lowest is its shell's. */
+function under(sh: Shape, piece = ''): number {
   let z = Infinity;
   if (sh.k === 'rod') z = Math.min(sh.a[2] - sh.ra, sh.b[2] - sh.rb);
+  else if (sh.k === 'ball' && piece === 'helm') z = crownLow(sh.c, norm(sh.ax[0]), norm(sh.ax[1]), norm(sh.ax[2]));
   else if (sh.k === 'ball') z = sh.c[2] - Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]);
   else if (sh.k === 'band') z = sh.ring.c[2] - Math.hypot(sh.ring.u[2], sh.ring.v[2]);
   else if (sh.k === 'cloth') for (const r of sh.rings) z = Math.min(z, r.c[2] - Math.hypot(r.u[2], r.v[2]), ...(r.pts ?? []).map((p: V3) => p[2]));
@@ -215,7 +221,7 @@ function under(sh: Shape): number {
   return Math.max(0, -z);
 }
 
-test('6. NOTHING OF THEM IN THE FLOOR: all they wear and carry, the pavise and its prop too', () => {
+test('6. NOTHING OF THEM IN THE FLOOR: all they wear and carry, the pavise and its prop too, lying or fallen', () => {
   const faults: string[] = [];
   const st = stageOf();
   for (const move of [...LIVING, 'dying']) {
@@ -224,7 +230,7 @@ test('6. NOTHING OF THEM IN THE FLOOR: all they wear and carry, the pavise and i
       const bits: Bit[] = MOB.bits(st, at(move, t)).filter((b) => !(move === 'dying' && b.piece === 'xbow' && t >= CB_DIES.drop));
       for (const b of bits) {
         if (b.shape.k === 'mote' || b.shape.k === 'glow' || b.shape.k === 'dot') continue;
-        const by = under(b.shape);
+        const by = under(b.shape, b.piece);
         if (by > 0.6) faults.push(`${move} @${t.toFixed(2)}: ${b.part}/${b.piece} ${by.toFixed(1)} into the floor`);
       }
     }
@@ -266,21 +272,14 @@ test('7. THE HUSH leaking out of them while they live; a great breath of it as i
   }
 });
 
-test('8. the dull pink in their eyes while they live, gone out once they are down; slumped behind the pavise, low', () => {
+test('8. the dull pink in their eyes while they live, gone out once they are down', () => {
   const st = stageOf();
   const pinkEyes = (bits: Bit[]): boolean => bits.some((b) => b.piece === 'eyes' && b.shape.k === 'dot' && b.shape.c === FLAME[1]);
   for (const move of LIVING) for (const t of framesOf(MOB, move)) assert.ok(pinkEyes(MOB.bits(st, at(move, t))), `${move} @${t.toFixed(2)}: no pink in the eyes`);
-  for (let t = CB_DIES.knees; t <= CB_DIES.long + 1e-9; t += 0.05) assert.ok(!pinkEyes(MOB.bits(st, dyingMoment(MOB, t))), `@${t.toFixed(2)}: the pink still in the eyes`);
-  const up = skeletonAt(MOB, 'stand', 0);
-  const down = skeletonAt(MOB, 'dying', CB_DIES.long);
-  assert.ok(down.head[2] < 0.72 * up.head[2], `slumped: his head ${down.head[2].toFixed(1)} up, standing ${up.head[2].toFixed(1)}`);
-  // (behind the pavise: all of him nearer than its back)
-  const pv = planted();
-  const back = sub(pv.c, [pv.n[0] * PAVISE.thick, pv.n[1] * PAVISE.thick, pv.n[2] * PAVISE.thick]);
-  for (const p of [down.head, down.handL, down.handR, down.kneeL, down.kneeR, down.toeL, down.toeR, down.ribs]) assert.ok(dot(sub(p, back), pv.n) < -2, `a part of him at ${p.map((x) => x.toFixed(1))} not behind the pavise`);
+  for (let t = CB_DIES.out[1]; t <= CB_DIES.long + 1e-9; t += 0.05) assert.ok(!pinkEyes(MOB.bits(st, dyingMoment(MOB, t))), `@${t.toFixed(2)}: the pink still in the eyes`);
 });
 
-test('9. the crossbow that drops from them lies clear of them and of the pavise once down, from in front and from behind', () => {
+test('9. the crossbow flung from them lies clear of them and of the pavise once down, from in front and from behind', () => {
   const him: Mob = { ...MOB, fall: (piece) => { const f = MOB.fall?.(piece) ?? null; return f && { ...f, to: [900, 900] }; } };
   const bow: Mob = { ...MOB, bits: (st, m) => MOB.bits(st, m).filter((b) => b.piece === 'xbow'), grains: undefined };
   for (const view of VIEWS) {
@@ -317,7 +316,7 @@ test('10. HIS BRIEF: the knight\'s size; the pavise on the back jogging, planted
     const pv = paviseAtMove('walk', t, sk);
     assert.ok(dot(pv.n, sk.chest[0]) < -0.8 && pv.c[0] < sk.pelvis[0] - 6, `walk @${t.toFixed(2)}: the pavise not on his back`);
   }
-  for (const move of ['stand', 'attack', 'reload', 'reel', 'dying']) {
+  for (const move of ['stand', 'attack', 'reload', 'reel']) {
     for (const t of framesOf(MOB, move)) {
       const pv = paviseAtMove(move, t, skeletonAt(MOB, move, t));
       assert.ok(Math.hypot(...sub(pv.c, P.c)) < 1e-6, `${move} @${t.toFixed(2)}: the pavise moved`);
@@ -434,4 +433,88 @@ test('12. NOTHING FOLDS FLAT: in every frame of every move, no round thing they 
     }
   }
   assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
+});
+
+test('13. HIS DEATH: thrown back hard; the last bolt up into the air; flat on his back behind where the pavise stood; the pavise flat after him and still; the crossbow and his helm down and still; none of it in the floor', () => {
+  const D = CB_DIES;
+  const at = (t: number) => skeletonAt(MOB, 'dying', t);
+  const s0 = at(0);
+  // THROWN BACK HARD, fast (his Movement 9): his hips more than a tile back before his back is down, off his feet at once
+  const thrown = s0.pelvis[0] - at(D.land).pelvis[0];
+  assert.ok(thrown > TILE3, `thrown back ${(thrown / TILE3).toFixed(2)} tiles before he is down`);
+  assert.ok(D.land <= 0.45, `down at ${D.land} s: not fast`);
+  for (const t of [0.05, 0.1, 0.15, 0.2, 0.3]) {
+    const s = at(t);
+    assert.ok(Math.min(s.heelL[2], s.heelR[2], s.toeL[2], s.toeR[2]) > 0.6, `@${t}: his feet still on the floor as he is thrown`);
+  }
+  // THE LAST BOLT: loosed as the trigger jerks, up into the air, climbing away and gone
+  assert.ok(loadedAt('dying', D.fire - 0.01) && !loadedAt('dying', D.fire + 0.01), 'the bolt not loosed at the jerk');
+  assert.equal(lastBoltAt(D.fire - 0.01), null, 'the last bolt out before the jerk');
+  const b0 = lastBoltAt(D.fire + 0.005) as V3;
+  const b1 = lastBoltAt(D.fire + 0.05) as V3;
+  const way = norm(sub(b1, b0));
+  assert.ok(way[2] > 0.9, `the last bolt not up into the air: its way ${way.map((v) => v.toFixed(2))}`);
+  assert.ok(b1[2] > at(0).head[2] + 30, 'the last bolt not climbing away');
+  assert.equal(lastBoltAt(D.fire + LAST_BOLT.reach / LAST_BOLT.speed + 0.01), null, 'the last bolt not gone');
+  // FLAT ON HIS BACK, sprawled, arms and legs out; behind where the pavise stood, clear of it as it lies; still
+  const e = at(D.long);
+  assert.ok(e.chest[0][2] > 0.95 && e.hips[0][2] > 0.95, `not on his back: his chest faces ${e.chest[0].map((v) => v.toFixed(2))}`);
+  assert.ok(Math.max(e.head[2], e.ribs[2], e.pelvis[2], e.kneeL[2], e.kneeR[2]) < 10, 'not lying flat');
+  assert.ok(Math.abs(e.handL[1] - e.shoulderL[1]) > 14 && Math.abs(e.handR[1] - e.shoulderR[1]) > 14, 'his arms not out');
+  assert.ok(e.ankleL[1] - e.ankleR[1] > 20, `his legs not out (${(e.ankleL[1] - e.ankleR[1]).toFixed(1)} apart)`);
+  const lies = paviseAtMove('dying', D.long, e);
+  const pTop = Math.min(...[-1, 1].map((k) => lies.c[0] + lies.up[0] * PAVISE.h + lies.across[0] * k * PAVISE.w));
+  for (const p of [e.head, e.ribs, e.pelvis, e.handL, e.handR, e.kneeL, e.kneeR, e.heelL, e.heelR, e.toeL, e.toeR]) {
+    assert.ok(p[0] < planted().c[0] - 10, `a part of him at ${p.map((x) => x.toFixed(1))} not behind where the pavise stood`);
+    assert.ok(p[0] < pTop - 3, `a part of him at ${p.map((x) => x.toFixed(1))} under the pavise as it lies`);
+  }
+  const still = at(1.3);
+  for (const k of ['head', 'pelvis', 'handL', 'handR', 'toeL', 'toeR'] as const) assert.ok(Math.hypot(...sub(still[k], e[k])) < 0.01, `his ${k} still moving once he is down`);
+  // THE PAVISE: upright at first; tipped back after him, a heavy beat after he is down; flat on its back, its face (the
+  // royal swan) to the sky; still; and none of it in the floor (test 6)
+  assert.ok(Math.hypot(...sub(paviseAtMove('dying', 0, s0).c, planted().c)) < 1e-9, 'the pavise not where it stood as he is struck');
+  assert.ok(D.slap - D.land >= 0.4, `the pavise down ${(D.slap - D.land).toFixed(2)} s after him: not a heavy beat after`);
+  const face = (t: number): V3 => {
+    const pv = paviseAtMove('dying', t, at(t));
+    return norm(cross(pv.across, pv.up));
+  };
+  assert.ok(face(D.slap + 0.15)[2] > 0.99 && Math.abs(lies.up[2]) < 0.01, 'the pavise not flat on its back, its face up');
+  for (let t = D.slap + 0.12; t <= D.long + 1e-9; t += 0.1) assert.ok(Math.hypot(...sub(paviseAtMove('dying', t, at(t)).c, lies.c)) < 1e-9, `@${t.toFixed(2)}: the pavise still moving`);
+  // (back, toward him: its top goes back as it falls)
+  const tipping = paviseAtMove('dying', D.slap - 0.15, at(0.5));
+  assert.ok(tipping.up[0] < -0.5 && tipping.up[2] > 0.1, 'the pavise not tipping back');
+  // THE CROSSBOW: flung from his hand; down beside him and still (him alone and it alone, both ways round)
+  const bow: Mob = { ...MOB, bits: (st, m) => MOB.bits(st, m).filter((b) => b.piece === 'xbow'), grains: undefined };
+  for (const view of VIEWS) {
+    const a = deathOfMob(bow, 1.2 / D.long, view).px.d;
+    const b = deathOfMob(bow, 1, view).px.d;
+    let differ = 0;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) differ++;
+    assert.equal(differ, 0, `${view}: the crossbow still moving from 1.2 s`);
+  }
+  // HIS HELM: on his head till it is knocked off as he comes down; off, then still, crown up; never in the floor
+  const st = stageOf();
+  assert.ok(D.helmOff > D.drop && D.helmOff <= D.land, `his helm off at ${D.helmOff.toFixed(2)} s`);
+  const helmBits = (t: number): Bit[] => MOB.bits(st, dyingMoment(MOB, t)).filter((b) => b.part === 'helm');
+  const crownUp = (t: number): V3 => {
+    const ball = helmBits(t).find((b) => b.piece === 'helm' && b.shape.k === 'ball')?.shape as unknown as { c: V3; ax: [V3, V3, V3] };
+    return norm(ball.ax[2]);
+  };
+  assert.ok(crownUp(D.helmStill + 0.02)[2] > 0.999, 'his helm not crown up');
+  const sameHelm = JSON.stringify(helmBits(D.helmStill + 0.02).map((b) => b.shape));
+  assert.equal(JSON.stringify(helmBits(D.long).map((b) => b.shape)), sameHelm, 'his helm still moving');
+  for (let t = D.helmOff; t <= D.long + 1e-9; t += 1 / 60) {
+    const ball = helmBits(t).find((b) => b.piece === 'helm' && b.shape.k === 'ball')?.shape as unknown as { c: V3; ax: [V3, V3, V3] };
+    const [ff, fl, fu] = ball.ax.map((v) => norm(v));
+    const hc = sub(ball.c, fu.map((v) => v * MOB.build.headR[2] * 0.64) as unknown as V3);
+    const low = helmLow(hc, ff, fl, fu);
+    assert.ok(low > -0.1, `@${t.toFixed(2)}: his helm ${(-low).toFixed(2)} into the floor`);
+  }
+  // HIS HANDOVERS INTO IT: from every frame of his stand, and from every frame of struck
+  const handovers: Handover[] = [
+    ...framesOf(MOB, 'stand').map((t): Handover => ({ from: 'stand', at: t, to: 'dying', toAt: 0 })),
+    ...framesOf(MOB, 'reel').map((t): Handover => ({ from: 'reel', at: t, to: 'dying', toAt: 0 })),
+  ];
+  const jumps = checkBoss(MOB, { ...CB_SHAPE, handovers }, ['dying']);
+  assert.equal(jumps.length, 0, findingsSaid(jumps).slice(0, 8).join('; '));
 });

@@ -3,7 +3,8 @@
 // own ground is not made yet). Nothing of the game imports it.
 //   PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_keep_crossbowmen.ts shots/cb/sheet.png 1200 520 "sheet"
 //   ... "big:<move>:<t>" (front and behind, four times as big), "grid:<move>:<t>,<t>,..." (a move at several moments,
-//   both ways round, twice as big), "film" (the film, frame by frame: window.__film; tools/crossbow_film.mjs)
+//   both ways round, twice as big), "film" (the film, frame by frame: window.__film; tools/crossbow_film.mjs),
+//   "deathsheet" (his death in key frames), "deathfilm" (his death on its own: tools/crossbow_film.mjs ... deathfilm)
 import type { Sprite } from '../engine/px';
 import { makeHeroArt3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
@@ -178,6 +179,12 @@ if (mode === 'sheet') {
   const t = Number(a2) || 0;
   draw(spOf(CB, a1, t, 'front'), cv.width * 0.25, cv.height + 46 * K - 120, K);
   draw(spOf(CB, a1, t, 'back'), cv.width * 0.75, cv.height + 46 * K - 120, K);
+} else if (mode === 'at') {
+  // ONE OF HIM, `at:<move>:<t>,<view>,<times as big>,<x>,<y>` (his floor point at x, y on the screen)
+  const [t, view, k, x, y] = a2.split(',');
+  const K = Number(k) || 4;
+  ground(K);
+  draw(spOf(CB, a1, Number(t) || 0, (view || 'front') as GameView), Number(x) || cv.width / 2, Number(y) || cv.height - 80, K);
 } else if (mode === 'grid') {
   const K = 2;
   ground(K);
@@ -303,7 +310,86 @@ if (mode === 'film') {
   shot('back', 1.1, 1.9, 0.5, 'THE STRIKE AT HALF SPEED, from behind', shotSub, false);
   pair('reload', (i) => Math.min(CB_RELOAD.long, i / F), 'THE RELOAD', 'five turns of the crank, the string to the nut, a bolt laid in, back on the shoulder', sec(CB_RELOAD.long + 0.4));
   pair('reel', (i) => ((i / F) % 0.7 < 0.4 ? (i / F) % 0.7 : 0), 'STRUCK', 'jolted back, the Hush coughed out', sec(2.1));
-  pair('dying', (i) => Math.min(CB_DIES.long, i / F), 'THE HUSH LEAVES HIM', 'the crossbow drops; the Hush pours out; he slumps behind his pavise, a man again', sec(CB_DIES.long + 1.2));
+  pair('dying', (i) => Math.min(CB_DIES.long, i / F), 'HIS DEATH', 'thrown back over, the last bolt into the air, the pavise slapping down after him; the Hush leaves him', sec(CB_DIES.long + 1.2));
+} else if (mode === 'deathsheet') {
+  // HIS DEATH IN KEY FRAMES, from in front, twice as big
+  const K = 2;
+  ground(K);
+  const D = CB_DIES;
+  const keys: [number, string][] = [
+    [0.1, 'the last bolt, up'],
+    [0.22, 'thrown back'],
+    [0.36, 'over, legs up'],
+    [0.47, 'down, helm off'],
+    [0.86, 'the pavise tips'],
+    [D.slap + 0.04, 'slap: dust'],
+    [1.3, 'the Hush leaves'],
+    [D.long, 'still, alive'],
+  ];
+  const cw = cv.width / 4;
+  const ch = (cv.height - 80) / 2;
+  keys.forEach(([t, what], i) => {
+    const x = cw * (i % 4) + cw * 0.64;
+    const y = 80 + ch * Math.floor(i / 4) + ch * 0.8;
+    draw(spOf(CB, 'dying', t, 'front'), x, y, K);
+    label(`${i + 1}. ${what} (${t.toFixed(2)} s)`, cw * (i % 4) + cw / 2, 80 + ch * Math.floor(i / 4) + 26);
+  });
+  g.save();
+  g.strokeStyle = 'rgba(6,5,12,0.85)';
+  g.lineWidth = 2;
+  for (let i = 1; i < 4; i++) {
+    g.beginPath();
+    g.moveTo(cw * i, 74);
+    g.lineTo(cw * i, cv.height);
+    g.stroke();
+  }
+  g.beginPath();
+  g.moveTo(0, 80 + ch);
+  g.lineTo(cv.width, 80 + ch);
+  g.stroke();
+  g.restore();
+  caption('The crossbowman’s death, from in front (twice the game’s size)', 'thrown back over, the last bolt up into the air; his pavise slaps down after him; the Hush leaves him, alive');
+} else if (mode === 'deathfilm') {
+  // HIS DEATH ON ITS OWN: at the game's size beside the knight, both ways round; then each three times as big; then at half speed
+  const T = CB_DIES.long;
+  const HOLD = 0.7;
+  /** Him dying at (x, y), the knight standing `dx` off to the right as the screen has it, facing him. */
+  const withKnight = (view: GameView, t: number, x: number, y: number, k: number, dx: number): void => {
+    draw(spOf(CB, 'dying', t, view), x, y, k);
+    draw(view === 'front' ? hero.front.idle[0] : hero.back.idle[0], x + dx * k, y + 6 * k, k, true);
+  };
+  const shotOf = (text: string, sub: string, frames: number, d: (i: number) => void): void => {
+    segs.push({
+      n: frames,
+      draw: (i) => {
+        d(i);
+        caption(text, sub);
+      },
+    });
+  };
+  shotOf('His death, at the game’s size (the knight beside him)', 'from in front (left) and from behind (right)', sec(T + HOLD), (i) => {
+    const t = Math.min(T, i / F);
+    ground(1);
+    withKnight('front', t, 330, 430, 1, 95);
+    withKnight('back', t, 820, 400, 1, 95);
+  });
+  for (const view of ['front', 'back'] as const) {
+    shotOf(`His death, three times as big ${view === 'front' ? '(from in front)' : '(from behind)'}`, 'thrown back over; the last bolt up into the air; the pavise after him; the Hush leaves him', sec(T + HOLD), (i) => {
+      const t = Math.min(T, i / F);
+      ground(3);
+      withKnight(view, t, 470, view === 'front' ? 530 : 470, 3, 100);
+    });
+  }
+  shotOf('At half speed (from in front)', 'the blow throws him fast; the pavise’s fall a heavy beat after', sec(1.4 / 0.5), (i) => {
+    const t = Math.min(T, (i / F) * 0.5);
+    ground(3);
+    withKnight('front', t, 470, 530, 3, 100);
+  });
+  shotOf('At half speed (from behind)', 'he is thrown back toward you; the pavise falls after him', sec(1.4 / 0.5), (i) => {
+    const t = Math.min(T, (i / F) * 0.5);
+    ground(3);
+    withKnight('back', t, 470, 470, 3, 100);
+  });
 }
 (window as unknown as { __film: { n: number; draw: (i: number) => void } }).__film = {
   n: segs.reduce((a, s) => a + s.n, 0),
@@ -318,5 +404,5 @@ if (mode === 'film') {
     }
   },
 };
-if (mode === 'film') (window as unknown as { __film: { draw: (i: number) => void } }).__film.draw(Number(a1) || 0);
+if (mode === 'film' || mode === 'deathfilm') (window as unknown as { __film: { draw: (i: number) => void } }).__film.draw(Number(a1) || 0);
 (window as unknown as { __ready: boolean }).__ready = true;
