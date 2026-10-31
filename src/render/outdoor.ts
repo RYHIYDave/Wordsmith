@@ -21,7 +21,7 @@ import { SKY_WRAP, cloudBelow, ledgeLook, paintSky } from '../art/ledge';
 import { paintTown } from '../art/ledge_town';
 import { pinewoodLook } from '../art/pinewood';
 import { QUARRY_LOOK } from '../art/quarry';
-import { GRAIN, paintTerrain, terrainOf } from '../art/terrain';
+import { GRAIN, TK, paintTerrain, pictureOf, terrainOf, worldOf } from '../art/terrain';
 import type { Terrain, TerrainLook, TerrainPiece } from '../art/terrain';
 // ACT 2, THE HUSH: the art chat's five grounds (each its own look, painted by the same painter)
 import { GW_DEEP, gateWardLook, gateWardPaintFloor } from '../art/gateward';
@@ -32,7 +32,9 @@ import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { MQ_DEEP, masqueLook } from '../art/masque';
 import { GG_DEEP, glassGalleryLook, paintGlassGallery } from '../art/glassgallery';
 import { KP_DEEP, keepLook } from '../art/keep';
-import { QT_DEEP, quietTowerLook } from '../art/quiettower';
+import { QT_DEEP, paintQuietTower, quietTowerLook, towerTopTerrain } from '../art/quiettower';
+import { TOP } from '../game/act2/quiettower';
+import type { TowerPlan } from '../game/act2/quiettower';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
 import { SG_WATER, paintSwanGardens, swanGardensLook, swanGardensTerrain } from '../art/swangardens';
 import type { SwanLand } from '../art/swangardens';
@@ -52,6 +54,7 @@ import type { WallBit } from './act2_walls';
 import { blobDist, laneDist, segDist } from '../game/act1_layout';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
+import { T_FLOOR, T_WALL } from '../game/types';
 import type { Cam } from './fx';
 import type { Painter } from './painter';
 
@@ -397,6 +400,8 @@ export function swanLandOf(land: Land, floor: Floor): SwanLand {
  * (art/swangardens.ts paintSwanGardens, in place of paintTerrain: here and in the painter's worker, render/painter.ts).
  */
 export function groundPainter(land: Land | null): (T: Terrain, x0: number, y0: number, w: number, h: number) => TerrainPiece {
+  // (floor 20, the Quiet Tower: its inside and its top, each painted by its own ground where it lies: towerPainter)
+  if (land?.kind === 'quiettower' && land.tower) return towerPainter(land.tower);
   // (floor 18, the Glass Gallery: the hall below painted into its skylights' holes, art/glassgallery.ts paintGlassGallery)
   if (land?.kind === 'glassgallery' && land.gallery) {
     const W = land.gallery.w;
@@ -853,4 +858,72 @@ export class OutdoorGround {
       g.fillRect(0, top + SKY_H / GRAIN, W, H - top - SKY_H / GRAIN);
     }
   }
+}
+
+/** A 4 by 4 ordered dither's threshold at a picture pixel, 0 to 1. */
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const bayer = (px: number, py: number): number => (BAYER4[(((py % 4) + 4) % 4) * 4 + (((px % 4) + 4) % 4)] + 0.5) / 16;
+
+/**
+ * (THE HIGH CITY, FLOOR 20) THE QUIET TOWER'S GROUND, its two grounds each where it lies (the art chat's, art/quiettower.ts: one
+ * look has one height of wall, and the inside's stand 120 picture pixels, the top's parapet 44): west of the plan's split the
+ * inside's (the floor's own terrain, `T`), east of it the top's, made once over the top's own square of the map and painted at
+ * its place in the world's picture; the fog sea in its drop fading in a dither into the dark from TOP.dark[0] tiles out of its
+ * middle to TOP.dark[1], so that where the two meet (TOP.own tiles out) both are the dark, and never seen together.
+ */
+export function towerPainter(P: TowerPlan): (T: Terrain, x0: number, y0: number, w: number, h: number) => TerrainPiece {
+  let top: { T: Terrain; dx: number; dy: number } | null = null;
+  const topOf = (T: Terrain): { T: Terrain; dx: number; dy: number } => {
+    if (top) return top;
+    const R = TOP.own;
+    const ox = Math.floor(P.top.cx) - R;
+    const oy = Math.floor(P.top.cy) - R;
+    const n = 2 * R + 1;
+    const tiles = new Uint8Array(n * n).fill(T_WALL);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (Math.hypot(x + ox + 0.5 - P.top.cx, y + oy + 0.5 - P.top.cy) < P.top.r) tiles[y * n + x] = T_FLOOR;
+    const f = T.floor;
+    const sub: Floor = { ...f, w: n, h: n, tiles, cut: new Uint8Array(n * n), variant: new Uint8Array(n * n), rooms: [], start: { x: P.top.arrive.x - ox, y: P.top.arrive.y - oy }, packs: [], props: [] };
+    const [dx, dy] = pictureOf(ox, oy);
+    top = { T: towerTopTerrain(sub, { centre: [P.top.cx - ox, P.top.cy - oy] }), dx, dy };
+    return top;
+  };
+  const deep = QT_DEEP;
+  return (T, x0, y0, w, h) => {
+    const sideOf = (px: number, py: number): boolean => worldOf(px, py)[0] >= P.split;
+    const corners = [sideOf(x0, y0), sideOf(x0 + w - 1, y0), sideOf(x0, y0 + h - 1), sideOf(x0 + w - 1, y0 + h - 1)];
+    if (corners.every((c) => !c)) return paintQuietTower(T, x0, y0, w, h);
+    const t = topOf(T);
+    const p = paintQuietTower(t.T, x0 - t.dx, y0 - t.dy, w, h);
+    p.x0 = x0;
+    p.y0 = y0;
+    // (the fog sea fading into the dark far from the top's middle)
+    const [d0, d1] = TOP.dark;
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) {
+        const i = r * w + c;
+        if (p.kind[i] !== TK.Drop) continue;
+        const [wx, wy] = worldOf(x0 + c, y0 + r);
+        const k = Math.max(0, Math.min(1, (Math.hypot(wx - P.top.cx, wy - P.top.cy) - d0) / (d1 - d0)));
+        if (k <= 0) continue;
+        const b = bayer(x0 + c, y0 + r);
+        const half = b >= k && b < Math.min(1, k * 2);
+        if (b >= k && !half) continue;
+        const m = half ? 0.5 : 1;
+        p.rgba[i * 4] = Math.round(p.rgba[i * 4] + (deep[0] - p.rgba[i * 4]) * m);
+        p.rgba[i * 4 + 1] = Math.round(p.rgba[i * 4 + 1] + (deep[1] - p.rgba[i * 4 + 1]) * m);
+        p.rgba[i * 4 + 2] = Math.round(p.rgba[i * 4 + 2] + (deep[2] - p.rgba[i * 4 + 2]) * m);
+      }
+    }
+    if (corners.every((c) => c)) return p;
+    const q = paintQuietTower(T, x0, y0, w, h);
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) {
+        if (!sideOf(x0 + c, y0 + r)) continue;
+        const i = r * w + c;
+        q.kind[i] = p.kind[i];
+        for (let k = 0; k < 4; k++) q.rgba[i * 4 + k] = p.rgba[i * 4 + k];
+      }
+    }
+    return q;
+  };
 }

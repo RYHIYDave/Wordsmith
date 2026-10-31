@@ -90,6 +90,7 @@ import { act1Fx } from './act1_fx/index';
 import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
+import { onTop } from '../game/act2/quiettower';
 import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
@@ -4099,7 +4100,10 @@ export class Renderer {
     // Version 16, 0.8, and a wide gentle pool round the hero, below, takes it back to what it was near them)
     // (ACT 1, THE DESCENT: out on the open ground the day, thin or none, and the dusk deepening toward the Fen: game/act1.ts, `light`)
     // (THE CAMP, game/camp.ts: dusk, warm, the fires lit: his “Dusk, warm and alive (Recommended)” to the art chat)
-    const day = isCamp(L) ? CAMP_DUSK : this.openGround ? act1Def(f.depth)?.light ?? null : null;
+    // (FLOOR 20, THE QUIET TOWER: on its top, under the grey sky, its own light: game/act2/quiettower.ts onTop)
+    const def = this.openGround ? act1Def(f.depth) : null;
+    const up = !!(def?.top && L.land?.tower && onTop(L.land.tower, game.hero.x, game.hero.y));
+    const day = isCamp(L) ? CAMP_DUSK : def ? (up ? def.top! : def.light) : null;
     dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     dg.globalCompositeOperation = 'destination-out';

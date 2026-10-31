@@ -34,6 +34,7 @@ import { nettleSlow, stepGardens } from './act2/garden_rules';
 import { stepClock } from './act2/masque_rules';
 import { MIRROR, shardsHit, stepMirrors, strikeMirrors } from './act2/gallery_rules';
 import { PORTCULLIS, clearOf, stepPortcullises, underPort } from './act2/keep_rules';
+import { stepTower } from './act2/tower_rules';
 import { callToChime } from './act1_rules/dancer';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
@@ -76,7 +77,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry' | 'towerUp' | 'towerDown';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -1861,6 +1862,8 @@ export class Game {
     if (this.level.land?.gallery) this.updateMirrors(dt);
     // (THE HIGH CITY, FLOOR 19: the Keep's portcullises slam down to cut a hall in two: game/act2/keep_rules.ts)
     if (this.level.land?.keep) this.updatePortcullises(dt);
+    // (THE HIGH CITY, FLOOR 20: the Quiet Tower's stair up to its top, its trapdoor down, shut while the Moth lives: game/act2/tower_rules.ts)
+    if (this.level.land?.tower && this.updateTower()) return;
     // (THE HIGH CITY, FLOOR 17: the great ebony clock chimes now and then; every dancer near him stops dead and looks, then all come: game/act2/masque_rules.ts)
     if (this.level.land?.masque && !this.over) {
       const called = stepClock(this.level, this.hero, this.monsters, dt);
@@ -2102,6 +2105,11 @@ export class Game {
       this.throughHoldDoor(to === 'holdIn');
       return;
     }
+    // (THE HIGH CITY, FLOOR 20: up the tower's stair onto its top, or down through the trapdoor: game/act2/tower_rules.ts)
+    if (to === 'towerUp' || to === 'towerDown') {
+      this.throughTower(to === 'towerUp');
+      return;
+    }
     // (ENDLESS MODE: from an endless level, every way on, the stairwell, the mine shaft and the way on alike, to the next)
     if (ENDLESS.on && this.inEndless && (to === 'up' || to === 'on' || to === 'down')) {
       this.nextEndless();
@@ -2259,7 +2267,7 @@ export class Game {
   /** THE WAYS: how dark the screen is, 0 to 1: darkening as he goes down a stairwell or through a gate, lightening as he comes into the next level. (A warp needs none: its column of light hides him.) */
   curtain(): number {
     const l = this.leaving;
-    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'gateIn' || l.to === 'gateOut' || l.to === 'stairsIn' || l.to === 'quarry')) return Math.min(1, l.t / CURTAIN_SECS);
+    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'towerUp' || l.to === 'towerDown' || l.to === 'gateIn' || l.to === 'gateOut' || l.to === 'stairsIn' || l.to === 'quarry')) return Math.min(1, l.t / CURTAIN_SECS);
     // (up the shaft: the cage goes up into the dark, and over the ride's last moments the screen darkens)
     if (l && l.to === 'up') return Math.max(0, Math.min(1, (l.t - (SHAFT.up - CURTAIN_SECS)) / CURTAIN_SECS));
     return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
@@ -2456,7 +2464,10 @@ export class Game {
     if (!up || this.over) return;
     if (!z.hit.includes(-1) && !h.move && h.invuln <= 0 && onHazard(z.spot, h.x, h.y)) {
       z.hit.push(-1);
-      this.hurtHero(h.d.maxLife * SPIKE.share, 'phys', [], null, 'spikes');
+      // (THE HIGH CITY, FLOOR 20: the Hush's dust, the Moth's wing-dust, the Hush itself: sprung, his words go dark in its cloud)
+      const dust = !!this.level.land?.tower;
+      this.hurtHero(h.d.maxLife * SPIKE.share * (dust ? 0.6 : 1), 'phys', [], null, dust ? "the Hush's dust" : 'spikes');
+      if (dust) this.hush(HUSH_FOR);
     }
     for (const m of this.monsters) {
       if (m.dead || m.kind === 'bat' || m.boss || z.hit.includes(m.id) || !onHazard(z.spot, m.x, m.y)) continue;
@@ -3032,6 +3043,41 @@ export class Game {
   }
 
   /** Through a stronghold's door (the screen dark): into its hall, its last fight met the first time; or out of it, before its door. */
+  /** (THE HIGH CITY, FLOOR 20) A step of the Quiet Tower's way up and down; true when he has set off up or down it. */
+  private updateTower(): boolean {
+    if (this.leaving || this.over) return false;
+    const L = this.level;
+    const T = L.land!.tower!;
+    const step = stepTower(L, this.hero, this.boss !== null && !this.boss.dead);
+    if (step === 'up' || step === 'down') {
+      this.leave(step === 'up' ? 'towerUp' : 'towerDown');
+      this.sfx('door', 0.5);
+      return true;
+    }
+    if (step === 'slam') {
+      this.sfx('slam', 0.7);
+      this.emit({ t: 'shake', amount: 3 });
+      this.emit({ t: 'spark', x: T.top.trap.x + 0.5, y: T.top.trap.y + 0.5, el: 'phys', n: 8 });
+    } else if (step === 'open') this.sfx('door', 0.6);
+    return false;
+  }
+
+  /** (THE HIGH CITY, FLOOR 20) Up the tower's stair: he comes up through the trapdoor onto the top, facing its middle; or back down it, before the stair. */
+  private throughTower(up: boolean): void {
+    const T = this.level.land?.tower;
+    if (!T) return;
+    const h = this.hero;
+    this.cameT = 0;
+    const at = up ? T.top.arrive : T.stair.back;
+    h.x = at.x;
+    h.y = at.y;
+    const to = up ? { x: T.top.cx, y: T.top.cy } : { x: T.stair.back.x * 2 - T.stair.x, y: T.stair.back.y * 2 - T.stair.y };
+    const d = Math.hypot(to.x - h.x, to.y - h.y) || 1;
+    h.fx = (to.x - h.x) / d;
+    h.fy = (to.y - h.y) / d;
+    this.visionT = 0;
+  }
+
   private throughHoldDoor(inward: boolean): void {
     const L = this.level;
     const q = L.land?.holds.find((o) => o.n === this.holdGoing);
