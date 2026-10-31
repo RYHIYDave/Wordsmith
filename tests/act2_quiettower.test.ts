@@ -10,8 +10,8 @@
 //      at the stair's foot, the stairhead or on the top; the Hush's dust (the trap) in the fogged rooms;
 //   4. the tower's stair solid at the stairhead, he reaching it; the last chapter on its lectern in the top's middle, solid;
 //      the trapdoor open where he comes up, and nothing solid round it;
-//   5. up the stair onto the top and down through the trapdoor (game/act2/tower_rules.ts); the trapdoor shut behind him while
-//      the boss lives, open once it is dead.
+//   5. up the stair onto the top and down through the trapdoor (game/act2/tower_rules.ts); the trapdoor shut behind him as the
+//      boss wakes to him and while it lives, open once it is dead.
 //   run: tsx --test tests/act2_quiettower.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -126,13 +126,11 @@ test('5. up the stair and down the trapdoor; shut behind him while the boss live
   h.x = T.stair.x + (T.stair.back.x - T.stair.x) * 0.55;
   h.y = T.stair.y + (T.stair.back.y - T.stair.y) * 0.55;
   assert.equal(stepTower(L, h, true), 'up');
-  // (up there, as he comes: the trapdoor open; off it, shut)
+  // (up there, as he comes: the trapdoor open while the boss has not woken to him; as it wakes, shut behind him)
   h.x = T.top.arrive.x;
   h.y = T.top.arrive.y;
-  assert.equal(stepTower(L, h, true), null, 'where he comes up, nothing');
-  h.x = T.top.cx;
-  h.y = T.top.cy + 2;
-  assert.equal(stepTower(L, h, true), 'slam');
+  assert.equal(stepTower(L, h, true, false), null, 'where he comes up, the boss not yet awake: nothing');
+  assert.equal(stepTower(L, h, true, true), 'slam');
   assert.equal(trapdoorOf(L)!.variant, TRAP_FRAME.shut);
   h.x = T.top.trap.x + 0.5;
   h.y = T.top.trap.y + 0.5;

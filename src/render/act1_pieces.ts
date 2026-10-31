@@ -38,7 +38,8 @@ import { highCitySetPieces } from '../art/high_city_set';
 import { masquePieces } from '../art/floor17';
 import { glassGalleryPieces } from '../art/floor18';
 import { keepPieces } from '../art/floor19';
-import { quietTowerPieces } from '../art/floor20';
+import { lecternIn, quietTowerPieces } from '../art/floor20';
+import { done, scene } from '../art/act2_kit';
 import { hubPieces } from '../art/hub2';
 import { CAMP_ANIM, CAMP_DRESS, CAMP_TOPS } from '../game/camp';
 import { GRAIN, clearOfFloor, fbm, pictureOf, worldOf } from '../art/terrain';
@@ -77,7 +78,7 @@ export function act1Pieces(n: number): Map<string, Piece> {
   }
   // (ACT 2, PART TWO, THE HIGH CITY: each floor's own 25 and the High City's 25, the art chat's; floor 16 her vines in its gardens too)
   if (n >= 16) {
-    m = new Map([...highCitySetPieces(), ...(n === 20 ? quietTowerPieces() : n === 19 ? keepPieces() : n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()])].map((p) => [p.name, p]));
+    m = new Map([...highCitySetPieces(), ...(n === 20 ? withEmptyLectern(quietTowerPieces()) : n === 19 ? keepPieces() : n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()])].map((p) => [p.name, p]));
     MAPS.set(n, m);
     return m;
   }
@@ -719,4 +720,17 @@ function keepClearOf(L: Level): { x: number; y: number }[] {
   const st = START[a1.floor];
   if (st && !a1.start.none) box(st.solid, a1.start.ref.x, a1.start.ref.y, a1.start.dir);
   return out;
+}
+
+/**
+ * (FLOOR 20, THE QUIET TOWER) The Moth's 25 with the lectern's second picture, its chapter gone (knocked to the stones as the Moth
+ * comes down on it, his pick to the art chat, “Book knocked to the stones (Recommended)”: game/act1_rules/moth.ts): the art's
+ * own lectern (art/floor20.ts lecternIn), drawn without the chapter.
+ */
+function withEmptyLectern(list: Piece[]): Piece[] {
+  return list.map((p) => {
+    if (p.kind !== 'quest' || !p.frames) return p;
+    const S = scene(150, 130, 75, 100);
+    return { ...p, frames: [p.frames[0], done(S, 75, 100, lecternIn(S, false))] };
+  });
 }

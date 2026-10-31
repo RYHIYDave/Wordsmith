@@ -178,7 +178,7 @@ for (const view of VIEWS) {
 }
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(3)}`;
 
-test('1. the switch is off, and nothing of the game imports it', () => {
+test('1. the switch is off, and of the game only floor 20\'s own files import it', () => {
   assert.equal(MOTH_ON.on, false, 'MOTH_ON is off');
   const users: string[] = [];
   const its = /^art\/moth(_moves|_fx)?$/;
@@ -191,7 +191,8 @@ test('1. the switch is off, and nothing of the game imports it', () => {
       if (its.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import it');
+  // (Brought into the game by the main chat, 31 Oct 2026, on floor 20 behind HIGH_CITY (off): its figure, rules and effects)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/moth.ts game/act1_rules/moth.ts render/act1_fx/moth.ts', 'game files that import it');
 });
 
 test('2. EVERY MOVE OF IT THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

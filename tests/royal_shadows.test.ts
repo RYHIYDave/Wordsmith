@@ -30,7 +30,7 @@ const path = nodePath as { join(...p: string[]): string };
   return this;
 };
 
-test('1. THE SWITCH IS OFF, AND NOTHING OF THE GAME IMPORTS THEM', () => {
+test('1. THE SWITCH IS OFF, AND OF THE GAME ONLY FLOOR 20\'S OWN FILES IMPORT THEM', () => {
   assert.equal(SHADOWS_ON.on, false);
   const theirs = /^art\/royal_shadows(_fx)?$/;
   const users: string[] = [];
@@ -43,7 +43,8 @@ test('1. THE SWITCH IS OFF, AND NOTHING OF THE GAME IMPORTS THEM', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (Brought into the game by the main chat, 31 Oct 2026, on floor 20 behind HIGH_CITY (off): their figure, rules and effects)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/rshadow.ts game/act1_rules/rshadow.ts render/act1_fx/rshadow.ts', 'game files that import them');
 });
 
 /** Each one's boss's shape, and the moves of the boss's it plays (the Queen's blink is her Reflections' lift and her stand). */

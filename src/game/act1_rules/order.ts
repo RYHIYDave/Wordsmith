@@ -59,7 +59,9 @@ export function inPalm(R: BossRules, m: Monster): boolean {
 /** The floor the Order's armed last are on (their look, Monster.form 1, and their fan of three). */
 export const ARMED_FLOOR = 19;
 /** The ways their knives fly (degrees off the way they face): the armed last's three, one for the others. */
-export const knivesOf = (m: Monster): number[] => fanOf(m.form === 1 ? 'armed' : 'guest');
+export const knivesOf = (m: Monster): number[] => fanOf(m.form === 1 ? 'armed' : m.form === 2 ? 'mask' : 'guest');
+/** (FLOOR 20, THE QUIET TOWER: the Order's last masks, a mask held up by grey fog: Monster.form 2 there, art/act1_figs/order.ts) */
+export const MASK_FLOOR = 20;
 
 /** Where a thrown knife is, `t` seconds after it left the hand, from where it was thrown along the way it was thrown. */
 export function knifeWhere(p: { x: number; y: number; fx: number; fy: number }, t: number): { x: number; y: number; flying: boolean } {
@@ -73,6 +75,8 @@ export const RULES: Act1Rules | null = {
   spawned(R, m) {
     // (on the Keep, the Order's armed last)
     if (R.g.depth === ARMED_FLOOR) m.form = 1;
+    // (on the Quiet Tower, the Order's last masks)
+    else if (R.g.depth === MASK_FLOOR) m.form = 2;
   },
   tick(_R, m, dt) {
     const k = (m.a1 ??= { rushCd: 1.5 });

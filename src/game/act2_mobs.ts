@@ -13,6 +13,7 @@ import type { RNG } from '../engine/rng';
 import { cityFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
 import { KNIGHT_TUNE } from './act1_rules/kknight';
+import { HUSH_TUNE } from './act1_rules/hshape';
 import { SWAN } from './act1_rules/swan';
 import { PACK_BY_SIZE, sizeOf } from './defs';
 import type { MonsterKind } from './types';
@@ -116,6 +117,8 @@ export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'ch
   // (THE HIGH CITY, FLOOR 16: the swans come in flocks, his “Knee-high, in flocks”: a pack of them bigger than another small
   // kind's, SWAN.flock, game/act1_rules/swan.ts)
   if (knight(kind)) return { kind, size: KNIGHT_TUNE.pack };
+  // (FLOOR 20: the Hush's shapes come in swarms, the art's brief: game/act1_rules/hshape.ts HUSH_TUNE)
+  if (kind === 'hshape') return { kind, size: rng.int(HUSH_TUNE.swarm[0], HUSH_TUNE.swarm[1]) };
   const [lo, hi] = kind === 'swan' ? SWAN.flock : PACK_BY_SIZE[sizeOf(kind)];
   return { kind, size: rng.int(lo, hi) };
 }

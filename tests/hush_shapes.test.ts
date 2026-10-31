@@ -119,7 +119,7 @@ for (const view of VIEWS) {
 }
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(3)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and of the game only floor 20\'s own files import them', () => {
   assert.equal(HUSHSHAPES_ON.on, false, 'HUSHSHAPES_ON is off');
   const users: string[] = [];
   const theirs = /^art\/hush_shapes(_moves)?$/;
@@ -132,7 +132,8 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (Brought into the game by the main chat, 31 Oct 2026, on floor 20 behind HIGH_CITY (off): their figure, rules and effects)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/hshape.ts game/act1_rules/hshape.ts render/act1_fx/hshape.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

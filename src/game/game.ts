@@ -3048,7 +3048,7 @@ export class Game {
     if (this.leaving || this.over) return false;
     const L = this.level;
     const T = L.land!.tower!;
-    const step = stepTower(L, this.hero, this.boss !== null && !this.boss.dead);
+    const step = stepTower(L, this.hero, this.boss !== null && !this.boss.dead, this.boss !== null && this.boss.state !== 'sleep');
     if (step === 'up' || step === 'down') {
       this.leave(step === 'up' ? 'towerUp' : 'towerDown');
       this.sfx('door', 0.5);
