@@ -12,14 +12,19 @@
 //      they die, every pixel whole or empty but the edge;
 //   5. NOTHING CUT OFF, they or a pair of them;
 //   6. NOTHING OF THEM IN THE FLOOR;
-//   7. THE HUSH leaking from the mask while they live; pouring out as it drops; gone once they are still;
-//   8. THE MASKS: on the face, the dull pink in their eyes while they live (hot through the warning); dropped as they die,
-//      to lie face up on the floor clear of them; no pink left in their eyes;
+//   7. THE HUSH leaking from the mask while they live; leaving them in a grey breath as they lie; gone once they are still;
+//   8. THE MASKS: on the face, the dull pink in their eyes while they live (hot through the warning); flung off as they die,
+//      empty (no pink in it), to lie face up on the floor clear of them; no pink left in their eyes once the Hush has gone;
 //   9. THEIR COLOURS: the seven rooms', every one clear of the enemy's pink and the friend's cyan; two kinds in each;
 //  10. HIS SIZES AND SPEEDS: the knight's size; the whirl at its pace, three turns a second; the spin carrying them a tile
 //      and a quarter in its two frames, striking a tile and a half round; the waltz a turn a second;
 //  11. THE PAIR in hold: their hands where they hold each other, and nothing of one through the other;
-//  12. THE CHIME: stopped dead, the masks turned to you and held still; and the whirl's mask kept on you.
+//  12. THE CHIME: stopped dead, the masks turned to you and held still; and the whirl's mask kept on you;
+//  13. THEIR DEATH (made new on his pick of 30 Oct, “Yes, these (Recommended)”): a last pirouette, on the ball of one foot,
+//      round at least three times more and faster than they whirl; two lurches out of control, a foot flung out to catch them;
+//      down on the floor, lying, the skirt (or the coat-tails) spread flat round them in a swirl; the mask flung off, down on
+//      its rim, rolling away on it, still at last, face up, never in the floor, well clear of them; still, alive; and the game's
+//      ways into the death (from their pose, from struck, from the whirl as it comes round) without a jump.
 //   run: tsx --test tests/masque_dancers.test.ts
 
 // @ts-ignore
@@ -34,7 +39,8 @@ import nodePath from 'node:path';
 import { SINK_MAX, checkBoss, findingsSaid, framesOf, inLimb, inLump, movesOf } from '../src/art/boss_checks';
 import { DANCERS_ON, DANCER_CANVAS, GENT_BODY, LADY_BODY, ROOMS, ROOM_ORDER, smearColours } from '../src/art/masque_dancers';
 import type { RoomName } from '../src/art/masque_dancers';
-import { DANCERS, DANCER_GENT, DANCER_LADY, DN_CHIME, DN_DIES, DN_PACE, DN_SHAPE_GENT, DN_SHAPE_LADY, DN_SPIN, DN_STRIKES, DN_WHIRL, SPIN, WALTZ_PACE, dancerSolids, pairPainted, smearedAt } from '../src/art/masque_dancers_moves';
+import { DANCERS, DANCER_GENT, DANCER_LADY, DN_CHIME, DN_DIES, DN_PACE, DN_SHAPE_GENT, DN_SHAPE_LADY, DN_SPIN, DN_STRIKES, DN_WHIRL, SPIN, WALTZ_PACE, WHIRL_ROUND, dancerSolids, maskLooseAt, maskSize, pairPainted, smearedAt, spinOf } from '../src/art/masque_dancers_moves';
+import type { Handover } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
@@ -224,6 +230,8 @@ test('6. NOTHING OF THEM IN THE FLOOR: all they wear, both of them, every frame'
       for (const t of framesOf(mob, move)) {
         for (const b of mob.bits(st, at(mob, move, t))) {
           if (b.shape.k === 'mote' || b.shape.k === 'glow' || b.shape.k === 'dot') continue;
+          // (the mask loose of them as they die is half a shell, not a whole ball: test 13 holds it out of the floor exactly)
+          if (move === 'dying' && t >= DN_DIES.mask && b.part === 'mask' && b.piece === 'mask') continue;
           const by = under(b.shape);
           if (by > 0.6) faults.push(`${mob.name} ${move} @${t.toFixed(2)}: ${b.part} ${b.piece} ${by.toFixed(1)} into the floor`);
         }
@@ -240,7 +248,7 @@ function grainsAt(mob: Mob, st: Stage, m: Moment): ReadonlyArray<readonly [V3, s
 }
 const HUSHY = new Set(['#b6b0cc', '#9890b4', '#625a7a', '#3e3852'].map((c) => rgba(c).slice(0, 3).join(',')));
 const hushIn = (g: ReadonlyArray<readonly [V3, string, number]>): number => g.filter(([, c]) => HUSHY.has(rgba(c).slice(0, 3).join(','))).length;
-test('7. THE HUSH leaking from the mask while they live; pouring out of them as it drops; none once they are still', () => {
+test('7. THE HUSH leaking from the mask while they live; leaving them in a grey breath as they lie; none once they are still', () => {
   for (const mob of BOTH) {
     const st = stageOf(mob);
     let most = 0;
@@ -256,17 +264,17 @@ test('7. THE HUSH leaking from the mask while they live; pouring out of them as 
     }
     assert.ok(some > 0.9 * frames, `${mob.name}: the Hush leaking in ${some} of ${frames} living frames`);
     let great = 0;
-    for (let t = DN_DIES.leaves[0]; t <= DN_DIES.leaves[1]; t += 0.05) {
+    for (let t = DN_DIES.breath[0]; t <= DN_DIES.breath[1]; t += 0.05) {
       const g = grainsAt(mob, st, dyingMoment(mob, t));
       great = Math.max(great, hushIn(g));
       for (const [, c] of g) assert.ok(!isCyan(c), `the Hush in cyan, ${c}`);
     }
     assert.ok(great >= 1.5 * most, `${mob.name}: the Hush leaving them, ${great} at most; the most while they live, ${most}`);
-    for (let t = DN_DIES.leaves[1] + 0.02; t <= DN_DIES.long + 1e-9; t += 0.05) assert.equal(hushIn(grainsAt(mob, st, dyingMoment(mob, t))), 0, `${mob.name} @${t.toFixed(2)}: the Hush still coming out`);
+    for (let t = DN_DIES.breath[1] + 0.02; t <= DN_DIES.long + 1e-9; t += 0.05) assert.equal(hushIn(grainsAt(mob, st, dyingMoment(mob, t))), 0, `${mob.name} @${t.toFixed(2)}: the Hush still coming out`);
   }
 });
 
-test('8. THE MASKS: on the face with the dull pink in its eyes while they live, hot through the warning; dropped as they die, face up on the floor clear of them, no pink left in their eyes', () => {
+test('8. THE MASKS: on the face with the dull pink in its eyes while they live, hot through the warning; flung off as they die, empty, to lie face up clear of them; no pink in their eyes once the Hush has gone', () => {
   const pinkEyes = (bits: Bit[]): string[] => bits.filter((b) => b.shape.k === 'dot' && (b.shape.c === FLAME[1] || b.shape.c === FLAME[2])).map((b) => b.shape.k === 'dot' ? b.shape.c : '');
   for (const mob of BOTH) {
     const st = stageOf(mob);
@@ -280,15 +288,25 @@ test('8. THE MASKS: on the face with the dull pink in its eyes while they live, 
     // (hot through the warning: the eyes' light)
     const w = (DN_SPIN.warn[0] + DN_SPIN.warn[1]) / 2;
     assert.ok(mob.bits(st, at(mob, 'attack', w)).some((b) => b.shape.k === 'glow' && b.shape.c === FLAME[2]), `${mob.name}: the eyes not burning in the warning`);
-    for (let t = DN_DIES.mask; t <= DN_DIES.long + 1e-9; t += 0.05) assert.equal(pinkEyes(mob.bits(st, dyingMoment(mob, t))).length, 0, `${mob.name} @${t.toFixed(2)}: pink left in the eyes`);
-    // dropped: what falls is the mask (and its ribbon); it lies clear of them once they are down, from in front and from behind
-    assert.ok(mob.fall?.('mask') && !mob.fall?.('face') && !mob.fall?.('plume'), 'only the mask falls');
-    const them: Mob = { ...mob, fall: (piece) => { const f = mob.fall?.(piece) ?? null; return f && { ...f, to: [900, 900] }; } };
-    const mask: Mob = { ...mob, bits: (s2, m) => mob.bits(s2, m).filter((b) => b.piece === 'mask') };
+    // AS THEY DIE: the mask on the face until it is flung off; empty once it is off (its eyes dark holes); no pink in their own
+    // eyes once the Hush has left them
+    for (const t of framesOf(mob, 'dying')) {
+      const bits = mob.bits(st, dyingMoment(mob, t));
+      const masks = bits.filter((b) => b.part === 'mask');
+      assert.ok(masks.some((b) => b.piece === 'mask' && b.shape.k === 'ball'), `${mob.name} @${t.toFixed(2)}: the mask gone`);
+      if (t >= DN_DIES.mask) assert.equal(pinkEyes(masks).length, 0, `${mob.name} @${t.toFixed(2)}: pink in the loose mask`);
+      if (t >= DN_DIES.freed) assert.equal(pinkEyes(bits).length, 0, `${mob.name} @${t.toFixed(2)}: pink left in their eyes`);
+    }
+    // nothing of them falls apart: the mask is the only thing that leaves them, flung off and rolling (maskLooseAt)
+    for (const piece of ['mask', 'face', 'plume', 'hair', 'skirt', 'coatskirt']) assert.equal(mob.fall?.(piece) ?? null, null, `${mob.name}: ${piece} falls by itself`);
+    // once it lies still it lies clear of them, from in front and from behind
+    const them: Mob = { ...mob, bits: (s2, m) => mob.bits(s2, m).filter((b) => b.part !== 'mask') };
+    // (the mask alone: without the Hush rising out of them, which is laid with their own frame)
+    const mask: Mob = { ...mob, bits: (s2, m) => mob.bits(s2, m).filter((b) => b.part === 'mask'), grains: () => [] };
     for (const view of VIEWS) {
-      for (let k = (DN_DIES.knees + 0.1) / mob.dieTime; k <= 1 + 1e-9; k += 0.05) {
-        const a = deathOfMob(them, Math.min(1, k), view).px.d;
-        const b = deathOfMob(mask, Math.min(1, k), view).px.d;
+      for (let t = DN_DIES.maskStill; t <= DN_DIES.long + 1e-9; t += 0.1) {
+        const a = deathOfMob(them, Math.min(1, t / mob.dieTime), view).px.d;
+        const b = deathOfMob(mask, Math.min(1, t / mob.dieTime), view).px.d;
         let mine = 0;
         let its = 0;
         let both = 0;
@@ -297,8 +315,8 @@ test('8. THE MASKS: on the face with the dull pink in its eyes while they live, 
           if (b[i]) its++;
           if (a[i] && b[i]) both++;
         }
-        assert.ok(mine > 500 && its > 20, `${mob.name} ${view} @${k.toFixed(2)}: ${mine} pixels of them, ${its} of the mask`);
-        assert.equal(both, 0, `${mob.name} ${view} @${k.toFixed(2)}: the mask lies over them or under them by ${both} pixels`);
+        assert.ok(mine > 500 && its > 20, `${mob.name} ${view} @${t.toFixed(2)}: ${mine} pixels of them, ${its} of the mask`);
+        assert.equal(both, 0, `${mob.name} ${view} @${t.toFixed(2)}: the mask lies over them or under them by ${both} pixels`);
       }
     }
   }
@@ -419,5 +437,99 @@ test('12. THE CHIME: stopped dead, the masks turned to you and held still until 
     const ts = framesOf(mob, 'walk').slice(0, -1);
     for (const t of ts) if (skeletonAt(mob, 'walk', t).face[0][0] > 0.2) on++;
     assert.ok(on >= ts.length * 0.5, `${mob.name}: the mask on you in ${on} of ${ts.length} frames of the whirl`);
+  }
+});
+
+test('13. THEIR DEATH: a last pirouette, round and round, too fast; two lurches; down in a swirl of skirts or coat-tails; the mask rolling away on its rim to lie still, face up, clear of them', () => {
+  const D = DN_DIES;
+  const len2 = (a: V3, b: V3): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  for (const mob of BOTH) {
+    const who = mob.id.includes('lady') ? 'lady' : 'gent';
+    const sk = (t: number) => skeletonAt(mob, 'dying', t);
+    // THE LAST PIROUETTE: up on the ball of the left foot, its heel well up, the right foot drawn up off the floor
+    for (let t = D.rise[1]; t <= D.lurch[0][0]; t += 0.02) {
+      const s = sk(t);
+      assert.ok(s.toeL[2] < 0.6 && s.heelL[2] > 3, `${mob.name} @${t.toFixed(2)}: not up on the ball of the left foot (toe ${s.toeL[2].toFixed(1)}, heel ${s.heelL[2].toFixed(1)})`);
+      assert.ok(Math.min(s.toeR[2], s.heelR[2]) > 6, `${mob.name} @${t.toFixed(2)}: the right foot not drawn up`);
+    }
+    // round and round, to their right, three times and more, and at its fastest faster than they whirl
+    const turned = posedOfMob(mob, 'dying', D.sit).yaw - posedOfMob(mob, 'dying', D.jolt).yaw;
+    assert.ok(turned <= -3 * 360, `${mob.name}: it turns ${(turned / 360).toFixed(2)} times`);
+    let most = 0;
+    for (let t = 0; t <= D.sit; t += 0.01) most = Math.max(most, -spinOf(who, 'dying', t));
+    assert.ok(most > DN_WHIRL.turns * (DN_WHIRL.fps / DN_WHIRL.frames) * 1.1, `${mob.name}: at its fastest ${most.toFixed(2)} turns a second`);
+    // TWO LURCHES OUT OF CONTROL: carried across each time, onto a foot flung out to catch them
+    const s0 = sk(D.lurch[0][0]);
+    const s1 = sk(D.lurch[0][1]);
+    const s2 = sk(D.lurch[1][1]);
+    assert.ok(len2(s1.pelvis, s0.pelvis) > 6 && len2(s2.pelvis, s1.pelvis) > 6, `${mob.name}: the lurches carry them ${len2(s1.pelvis, s0.pelvis).toFixed(1)} and ${len2(s2.pelvis, s1.pelvis).toFixed(1)}`);
+    assert.ok(s1.toeR[2] < 0.6 && len2(s1.toeR, s0.toeL) > 8, `${mob.name}: the right foot not down to catch the first lurch`);
+    assert.ok(s2.toeL[2] < 0.6 && len2(s2.toeL, s1.toeR) > 6, `${mob.name}: the left foot not down to catch the second`);
+    // DOWN ON THE FLOOR, LYING BACK, STILL
+    const e = sk(D.long);
+    assert.ok(e.pelvis[2] < 7 && e.ribs[2] < 8 && e.head[2] < 9 && e.chest[0][2] > 0.9, `${mob.name}: not lying on their back (hips ${e.pelvis[2].toFixed(1)}, chest ${e.ribs[2].toFixed(1)}, head ${e.head[2].toFixed(1)} up)`);
+    const still = posedOfMob(mob, 'dying', D.still + 0.01);
+    const last = posedOfMob(mob, 'dying', D.long);
+    for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'faceTurn', 'lhx', 'rhx', 'lfx', 'rfx'] as const) assert.ok(Math.abs(still[k] - last[k]) < 1e-6, `${mob.name}: not still (${k})`);
+    // THE SWIRL: the skirt (or the coat-tails) laid flat on the floor round them, wide, its hem carried round after them
+    const piece = who === 'lady' ? 'skirt' : 'coatskirt';
+    const cloth = mob.bits(stageOf(mob), dyingMoment(mob, D.long)).filter((b) => b.piece === piece && b.shape.k === 'cloth');
+    assert.ok(cloth.length > 0, `${mob.name}: no ${piece}`);
+    for (const b of cloth) {
+      if (b.shape.k !== 'cloth') continue;
+      const hem = b.shape.rings[0];
+      const r = Math.min(Math.hypot(hem.u[0], hem.u[1]), Math.hypot(hem.v[0], hem.v[1]));
+      assert.ok(hem.c[2] < 1.5 && Math.abs(hem.u[2]) < 0.1 && Math.abs(hem.v[2]) < 0.1, `${mob.name}: the ${piece}'s hem not flat on the floor`);
+      assert.ok(r >= (who === 'lady' ? 18 : 12) && len2(hem.c, e.pelvis) < r, `${mob.name}: the ${piece} spread ${r.toFixed(1)} round, its middle ${len2(hem.c, e.pelvis).toFixed(1)} from their hips`);
+      const way = Math.abs((Math.atan2(hem.u[1], hem.u[0]) * 180) / Math.PI - (Math.atan2(e.hips[0][1], e.hips[0][0]) * 180) / Math.PI);
+      assert.ok(Math.min(way, 360 - way) > 60, `${mob.name}: the ${piece}'s hem carried round only ${Math.min(way, 360 - way).toFixed(0)} degrees`);
+    }
+    // THE MASK: on the face until it is flung off; down on its rim; rolling away on it; still at last, face up; never in the floor
+    assert.equal(maskLooseAt(who, D.mask - 0.01), null, `${mob.name}: the mask loose too soon`);
+    const off = maskLooseAt(who, D.mask) as NonNullable<ReturnType<typeof maskLooseAt>>;
+    assert.ok(len2(off.c, sk(D.mask).head) < 2, `${mob.name}: the mask not off the face as it leaves it`);
+    const down = maskLooseAt(who, D.maskDown + 0.02) as NonNullable<ReturnType<typeof maskLooseAt>>;
+    assert.ok(down.n[2] < 0.5, `${mob.name}: it comes down tipped ${((Math.asin(down.n[2]) * 180) / Math.PI).toFixed(0)} degrees from its rim: not on its rim`);
+    const Z = maskSize(who);
+    let rolled = 0;
+    let lowest = Infinity;
+    let prev = down.c;
+    for (let t = D.mask; t <= D.long + 1e-9; t += 1 / 120) {
+      const m = maskLooseAt(who, t) as NonNullable<ReturnType<typeof maskLooseAt>>;
+      if (t > D.maskDown) {
+        rolled += len2(m.c, prev);
+        prev = m.c;
+      }
+      // (the lowest of its porcelain face and of its hollow back)
+      const l: V3 = [m.u[1] * m.n[2] - m.u[2] * m.n[1], m.u[2] * m.n[0] - m.u[0] * m.n[2], m.u[0] * m.n[1] - m.u[1] * m.n[0]];
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j <= 12; j++) {
+          const a = (i / 24) * Math.PI * 2;
+          const b = (j / 12) * Math.PI - Math.PI / 2;
+          const x = Math.sin(b);
+          const front = x >= 0.05;
+          const depth = front ? Z.n : x <= 0 ? Z.back : 0;
+          const z = m.c[2] + x * depth * m.n[2] + Math.cos(b) * (Math.cos(a) * Z.l * l[2] + Math.sin(a) * Z.u * m.u[2]);
+          lowest = Math.min(lowest, z);
+        }
+      }
+    }
+    assert.ok(lowest > -0.1, `${mob.name}: the mask ${(-lowest).toFixed(2)} into the floor`);
+    assert.ok(rolled > 15, `${mob.name}: it rolls ${rolled.toFixed(1)} on the floor`);
+    const lies = maskLooseAt(who, D.maskStill + 0.01) as NonNullable<ReturnType<typeof maskLooseAt>>;
+    const end = maskLooseAt(who, D.long) as NonNullable<ReturnType<typeof maskLooseAt>>;
+    assert.ok(lies.n[2] > 0.9999, `${mob.name}: the mask not lying face up`);
+    assert.ok(len2(lies.c, end.c) < 1e-9 && Math.hypot(lies.u[0] - end.u[0], lies.u[1] - end.u[1], lies.u[2] - end.u[2]) < 1e-9, `${mob.name}: the mask not still`);
+    assert.ok(len2(end.c, e.pelvis) > TILE3, `${mob.name}: the mask lies ${(len2(end.c, e.pelvis) / TILE3).toFixed(2)} tiles from them`);
+    // INTO THE DEATH, as the game may go into it: from their pose (every frame of it: test 2), from struck, from the whirl as
+    // it comes round to face you
+    const handovers: Handover[] = [
+      { from: 'stand', at: 0, to: 'dying', toAt: 0 },
+      { from: 'reel', at: 0, to: 'dying', toAt: 0 },
+      { from: 'reel', at: 'end', to: 'dying', toAt: 0 },
+      ...WHIRL_ROUND.map((t): Handover => ({ from: 'walk', at: t, to: 'dying', toAt: 0 })),
+    ];
+    const jumps = checkBoss(mob, { ...SHAPE(mob), handovers }, ['dying']);
+    assert.equal(jumps.length, 0, `${mob.name}: ${findingsSaid(jumps).slice(0, 8).join('; ')}`);
   }
 });

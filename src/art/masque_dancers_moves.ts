@@ -26,8 +26,10 @@
 //     (the area it strikes, `SPIN.area` tiles round where they land); then a big wind-down: still turning, slowing, the
 //     skirt wrapping round, into a flourish, and back to their pose.
 //   STRUCK: knocked back and half turned, the head thrown back, the arms flung up.
-//   THEIR DEATH (the brief's: the mask drops, the Hush leaves them, they sink down in a last bow): struck; the mask falls
-//     from the face; the Hush pours out of them; they sink down in a last bow, to their knees, the head bowed: alive, still.
+//   THEIR DEATH (made new on his pick of 30 Oct, “Yes, these (Recommended)”): struck, they spin up into one last pirouette
+//     that whirls too fast; the mask is flung off; they lurch twice out of control; they sink down in a spiral, the skirt or
+//     the coat-tails swirling out and settling round them on the floor; they lie back; the mask rolls away on its rim and
+//     wobbles to a stop, face up; the Hush leaves them in a grey breath: alive, still.
 //
 // By his rulebook: every move through every check the bosses have (art/boss_checks.ts), from in front and behind, the
 // lightning strike as his Movement 9 asks.
@@ -35,20 +37,19 @@
 
 import type { ActorArt } from './actor_types';
 import type { BossShape, CheckLimb, CheckLump, Handover } from './boss_checks';
-import { footOn, kneelHips } from './bosses3';
-import type { Plant } from './bosses3';
+import { footOn } from './bosses3';
 import { hash } from './kit';
 import { FLAME } from './mkit';
 import { DANCER_CANVAS, GENT_BODY, LADY_BODY, ROOMS, bodyOf, dancerPainter } from './masque_dancers';
-import type { DancerSay, DancerWho, Room, RoomName } from './masque_dancers';
+import type { DancerSay, DancerWho, LooseMask, Room, RoomName } from './masque_dancers';
 import { TILE3, canvasOf, mobSet, momentOf, paintViewOf, partOrder, paintBits } from './new_mobs3';
 import type { Bit, Mob, MobMove, Moment } from './new_mobs3';
 import { ENEMY_RIM } from './mkit';
 import { stage } from './skin';
 import type { GameView } from './skin';
 import type { Painted } from './kit';
-import { add, elbowFor, lerp3, mul, norm, solve, standing, sub } from './skeleton';
-import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
+import { add, along, cross, dot, elbowFor, lerp3, mul, norm, orient, solve, standing, sub } from './skeleton';
+import type { Bones, Build, Key3, Motion, Posed, Rot, Skeleton, V3 } from './skeleton';
 
 type P = Partial<Bones>;
 const FPS = 30;
@@ -656,63 +657,341 @@ function reelPose(who: DancerWho): (t: number) => P {
   return (t) => mixP(handsC(o.l, o.r, o.le, o.re), jolt, back(t), R);
 }
 
-/** Their death's times: the jolt; the mask drops (`mask`); the Hush pours out (`leaves`); sinking in a bow to the knees (`knees`); still by `still`. */
-export const DN_DIES = { long: 2.6, mask: 0.3, leaves: [0.32, 1.5] as const, knees: 1.7, still: 2.25 } as const;
-function diesPlan(who: DancerWho): { pose: (t: number) => P; feet: (t: number) => P } {
+// THEIR DEATH (made new on his pick of 30 Oct, “Yes, these (Recommended)”, so that Act 2's enemies die differently): struck
+// dead, they spin up into ONE LAST PIROUETTE, up on the ball of the left foot, the right drawn up to the knee; it whirls too
+// fast and the mask is flung off; it wobbles out of control and they LURCH, twice, a foot flung out to catch them; then they
+// SINK DOWN IN A SPIRAL, still turning, slower and slower, onto the floor, the skirt (or the coat-tails) flaring out and
+// settling round them in a swirl; they lie back. The mask comes down on its rim, rolls away on it, wobbles, and lies still,
+// face up, a little way off. The Hush leaves them in a grey breath rising; they lie still, people again, alive.
+
+/**
+ * Their death's times (seconds): struck (`jolt`); up into the pirouette (`rise`); the mask flung off (`mask`); the two lurches
+ * (`lurch`: from when they begin to fall to when the foot that catches them has taken the weight); sinking in a spiral
+ * (`sink`) onto the floor (`sit`); lying back (`lie`); the Hush leaving in a grey breath (`breath`), their eyes their own
+ * from its start (`freed`); still from `still`. The mask: down on its rim (`maskDown`), rolling, wobbling, still (`maskStill`).
+ */
+export const DN_DIES = {
+  long: 3.2,
+  jolt: 0.1,
+  rise: [0.1, 0.32] as const,
+  mask: 0.46,
+  lurch: [[0.8, 0.95], [1.05, 1.2]] as const,
+  sink: [1.2, 1.9] as const,
+  sit: 1.9,
+  lie: [1.92, 2.38] as const,
+  breath: [2.0, 3.05] as const,
+  freed: 2.0,
+  still: 2.75,
+  maskDown: 0.0,
+  maskStill: 0.0,
+};
+/** Which way they face as they come to lie (degrees, to their left of where they faced): their spin ends here. */
+const LIE_YAW = -1440;
+/** HOW FAST THEY TURN at each moment of the death, before it is scaled so that they end facing `LIE_YAW` (turns a second). */
+const spinShape = track([[DN_DIES.rise[0], 0], [0.28, 3.4], [0.48, 3.7], [0.84, 3.7], [1.04, 3.05], [1.22, 2.4], [1.5, 1.3], [1.75, 0.45], [DN_DIES.sit, 0]]);
+/** The jolt of the blow turns them a little to their left first. */
+const JOLT_YAW = 18;
+/** THE YAW THROUGH THE DEATH, worked out once, finely (degrees). */
+const DIE_YAW = ((): { at: (t: number) => number; rate: (t: number) => number; k: number } => {
+  const dt = 1 / 1200;
+  let raw = 0;
+  for (let t = 0; t <= DN_DIES.long; t += dt) raw += spinShape(t) * dt;
+  // (scaled so that they come round to face LIE_YAW: the jolt's turn to the left, then so many whole turns to the right)
+  const k = (JOLT_YAW - LIE_YAW) / 360 / raw;
+  const ys: number[] = [];
+  let y = 0;
+  for (let t = 0; t <= DN_DIES.long + dt; t += dt) {
+    ys.push(y);
+    y += spinShape(t) * k * dt * 360 * TURN;
+  }
+  const jolt = (t: number): number => JOLT_YAW * smooth(0, DN_DIES.jolt, t);
+  return {
+    k,
+    at: (t) => {
+      const i = Math.max(0, Math.min(ys.length - 2, Math.floor(t / dt)));
+      const f = t / dt - i;
+      return jolt(t) + ys[i] + (ys[i + 1] - ys[i]) * f;
+    },
+    rate: (t) => spinShape(t) * k,
+  };
+})();
+
+/** THE SWIRL OF THE SKIRT as they come down: the hem carried on round after the body has stopped turning, and settling (degrees, the way they spun). */
+const DIE_SWIRL = (t: number): number => TURN * (70 * smooth(DN_DIES.sink[0] + 0.3, DN_DIES.sit + 0.1, t) + 40 * smooth(DN_DIES.sit, DN_DIES.lie[1] + 0.1, t));
+/** The face's numbers (as `solve` reads them: turned, then up, then tilted) for a face turned to its forward `f`, its left `l`. */
+function faceNumbers(f: V3, l: V3): { faceTurn: number; faceUp: number; faceTilt: number } {
+  const up = Math.asin(Math.max(-1, Math.min(1, f[2])));
+  const turn = Math.atan2(f[1], f[0]);
+  const l0: V3 = [-Math.sin(turn), Math.cos(turn), 0];
+  const u0: V3 = [-Math.sin(up) * Math.cos(turn), -Math.sin(up) * Math.sin(turn), Math.cos(up)];
+  const tilt = Math.atan2(dot(l, u0), dot(l, l0));
+  return { faceTurn: (turn * 180) / Math.PI, faceUp: (up * 180) / Math.PI, faceTilt: (tilt * 180) / Math.PI };
+}
+/** A foot through the death: on the ball of the foot at a spot (`ball`), or held where the body has it (`body`: the ankle from the pelvis along the hips' own ways), or swung round low (`swing`: the ankle on the floor's own place, by how they are turned), or put down at last (`lie`: the ankle where it lies). */
+type DieFoot =
+  | { k: 'ball'; t0: number; t1: number; at: readonly [number, number]; pitch: (t: number) => number; turn: number; kneeUp?: (t: number) => number }
+  | { k: 'body'; t0: number; t1: number; ankle: (t: number) => V3; pitch: number; turn: number; knee: number; kneeUp: number }
+  | { k: 'swing'; t0: number; t1: number; ankle: (t: number, yaw: number) => V3; pitch: number; turn: number; knee: number; kneeUp: number }
+  | { k: 'lie'; t0: number; t1: number; ankle: V3; pitch: number; turn: number; knee: number; kneeUp: number };
+function diesPlan(who: DancerWho): { pose: (t: number) => P; lies: P } {
   const B = bodyOf(who);
   const R = restFor(who);
   const o = OPEN[who];
-  const TUCK = 52;
-  const KNEE_Z = B.legR[1] * 1.3;
-  // (on their knees at the end: her right foot drawn back behind the left as in a curtsey; his the same, one knee then both)
-  const kneelFeet: Record<'L' | 'R', Plant> = { L: { at: [-9.5, 3.4], turn: 4, pitch: TUCK }, R: { at: [-11.5, -3.6], turn: -6, pitch: TUCK } };
-  const kneel = (lean: number, body: P): P => ({ ...kneelHips(B, R, kneelFeet, TUCK, KNEE_Z, lean), ...body });
-  // THE BOW: hers a curtsey sinking right down, her arms out low; his a courtly bow, his right hand on his heart, his left swept out
-  const bowArms = who === 'lady' ? handsC([5, 13, -14], [5, -13, -14], -20, 20) : handsC([1, 14, -12], [9.5, 6.5, -3.5], -24, -50);
-  const lapArms = handsC([10, -2.5, -16], [10, 2.5, -16], -14, 14);
+  const hipH = B.ankle + B.shank + B.thigh;
+  const legLong = B.thigh + B.shank;
+  const T = DN_DIES;
+  const [l1a, l1b] = T.lurch[0];
+  const [l2a, l2b] = T.lurch[1];
+  const yawAt = DIE_YAW.at;
+  // WHERE THEY STAND ON THE BALL OF A FOOT: the left where it stood; the right flung out to catch the first lurch; the left
+  // out again for the second (forward and to their first left)
+  const S0: [number, number] = [B.ball * 0.95 + 1.2, 2.6];
+  const S1: [number, number] = [S0[0] - 3.2, S0[1] - 10.4];
+  const S2: [number, number] = [S1[0] - 7.6, S1[1] + 5.0];
+  // (the pelvis over the ball of the foot they turn on, a little to that side)
+  const overL: V3 = [0.6, 0.9, 0];
+  const overR: V3 = [0.6, -0.9, 0];
+  /** THE WOBBLE: how far they lean off upright (degrees) and which way (degrees round from their first forward). */
+  const leanA = track([[0, 0], [0.4, 0], [0.62, 3.5], [0.78, 7.5], [0.87, 13], [0.97, 4.5], [1.04, 6], [1.12, 12], [1.24, 5], [1.5, 7], [1.75, 12], [T.sit, 8], [T.lie[0] + 0.05, 0]]);
+  const leanDir = track([[0.3, 90], [0.8, -105], [1.08, -215], [1.8, -530], [T.sit + 0.1, -560]]);
+  /** The ball they turn on at each moment (moving across as the weight goes over in a lurch), and the side it is. */
+  const support = (t: number): { at: [number, number]; over: V3 } => {
+    const a = smooth(l1a + 0.04, l1b, t);
+    const b = smooth(l2a + 0.04, l2b, t);
+    const at: [number, number] = [S0[0] + (S1[0] - S0[0]) * a + (S2[0] - S1[0]) * b, S0[1] + (S1[1] - S0[1]) * a + (S2[1] - S1[1]) * b];
+    return { at, over: lerp3(lerp3(overL, overR, a), overL, b) };
+  };
+  // WHERE THEY COME DOWN, AND LIE: sat down behind the ball of the left foot, then lying back on the floor (the floor's own
+  // lengths: LIE_YAW is a whole number of turns, so their last forward is the floor's own)
+  const SIT: [number, number] = [S2[0] - 7.5, S2[1] - 1.5];
+  const LIE: [number, number] = [SIT[0] - 2.5, SIT[1]];
+  // (lying back: the pelvis tipped right back, the chest flat on the floor beyond it)
+  const LIE_HIPS = -84;
+  const LIE_CHEST = -14;
+  /** THE BODY'S HEIGHT, from the ball it stands on: so high that the leg it stands on is all but straight. */
+  const standHeight = (px: number, py: number, hips: Rot, ankle: V3, side: 'L' | 'R'): number => {
+    const off = along(hips, [0, side === 'L' ? B.hipHalf : -B.hipHalf, 0]);
+    const dx = px + off[0] - ankle[0];
+    const dy = py + off[1] - ankle[1];
+    const L = legLong * 0.975;
+    return ankle[2] + Math.sqrt(Math.max(1, L * L - dx * dx - dy * dy)) - off[2] - hipH;
+  };
+  // THE ARMS: rounded before them as they go up; flung wide as it whirls too fast; flailing as they lurch; floating down as
+  // they sink; out on the floor as they lie (the right flung up beside the head, the left out at the side)
+  const armsJolt = handsC([-1, 15, 4], [1, -15, 2], -40, 40);
+  const armsRound = handsC([7.5, -3.6, -12.5], [7.5, 3.6, -12.5], -30, 30);
+  const armsWide = handsC([1.5, 16.5, -3.5], [1.5, -16.5, -3.5], -16, 16);
+  const armsFlail1 = handsC([-0.5, 15.5, 3], [2.5, -15.5, -7.5], -24, 14);
+  const armsFlail2 = handsC([2.5, 15.5, -7.5], [-0.5, -15.5, 3], -14, 24);
+  const armsSink = handsC([2.5, 14.5, -9.5], [2.5, -14.5, -9.5], -18, 18);
   const open = handsC(o.l, o.r, o.le, o.re);
-  const jolt: P = { px: -2.8, pz: R.pz + 0.4, yaw: 18, twist: 8, pitch: -8, bend: -9, faceUp: R.faceUp + 34, faceTurn: 16, faceTilt: 8, ...handsC([-1, 15, 4], [1, -15, 2], -40, 40) };
-  const up = (t: number, a: number, b: number): number => smooth(a, b, t);
-  const K0 = kneel(6, { pitch: 4, bend: 16, faceUp: -26, faceTurn: 0, faceTilt: 6, yaw: 0, twist: 0, ...bowArms });
-  const K1 = kneel(-30, { pitch: 2, bend: 18, faceUp: -34, faceTurn: 4, faceTilt: 10, yaw: 0, twist: 0, ...lapArms });
+  const armsAt = (t: number): P => {
+    if (t <= T.jolt) return mixP(open, armsJolt, smooth(0, T.jolt, t), R);
+    if (t <= 0.4) return mixP(armsJolt, armsRound, smooth(0.15, 0.32, t), R);
+    if (t <= 0.86) return mixP(armsRound, armsWide, smooth(0.46, 0.86, t), R);
+    if (t <= 1.0) return mixP(armsWide, armsFlail1, smooth(0.8, 1.0, t), R);
+    if (t <= 1.28) return mixP(armsFlail1, armsFlail2, smooth(0.98, 1.28, t), R);
+    return mixP(armsFlail2, armsSink, smooth(1.28, 1.6, t), R);
+  };
+  // THE HEAD: thrown back by the blow; then lolling, carried round with them (no spotting now: out of control)
+  const headAt = (t: number, yaw: number, twist: number): P => {
+    const loll = smooth(0.3, 0.6, t);
+    return {
+      faceTurn: yaw + twist + 16 * (1 - smooth(0, 0.3, t)) + loll * 22 * Math.sin(t * 9),
+      faceUp: R.faceUp + 34 * smooth(0, T.jolt, t) - 14 * smooth(0.2, 0.4, t) + loll * 8 * Math.sin(t * 7 + 1),
+      faceTilt: 8 * smooth(0, T.jolt, t) + loll * 14 * Math.sin(t * 6 + 2),
+    };
+  };
+  // HER FEET (or his): the left on its ball as they go up and turn; the right drawn up to the left knee (the pirouette's
+  // retiré, turned out); the right flung out to catch the first lurch, the left drawn up behind; the left out to catch the
+  // second, the right swept round low as they sink; both down as they lie
+  const knee = R.lk;
+  const passe = (t: number): V3 => [2.6, 0.4, -12.2 + 0.4 * Math.sin(t * 20)];
+  const behind = (t: number): V3 => [-6.5, 4.0, -17 + 0.6 * Math.sin(t * 17)];
+  /** The right leg swung round low as they sink, carried round with them about the ball they turn on, reaching out before them as they sit. */
+  const swing = (t: number, yaw: number): V3 => {
+    const k = smooth(1.35, T.sit, t);
+    const v = along(orient(yaw, 0, 0), [7 + 17 * k, -3.5 - 1.5 * (1 - k), 0]);
+    return [S2[0] + v[0], S2[1] + v[1], 3.8 + 3.5 * (1 - smooth(1.26, 1.8, t))];
+  };
+  const relevé = (t: number): number => 22 + 34 * smooth(T.rise[0], 0.3, t);
+  // (crouching right down on it as they sink, the heel coming down onto the floor as they sit, the knee up)
+  const crouch = (t: number): number => 56 - 36 * smooth(1.4, T.sit, t);
+  const crouchKnee = (t: number): number => 70 * smooth(1.45, T.sit - 0.04, t);
+  // (lying: his legs out before him, a little apart and a little bent, the knees fallen out, the feet turned out on their heels;
+  // hers under her gown, the knees fallen out to either side on the floor, her feet together, so that the gown lies low)
+  const outTo = (dy: number): number => Math.sqrt((legLong * 0.975) ** 2 - dy * dy - 2.2 * 2.2);
+  const LEGS = who === 'gent'
+    ? { L: { ankle: [LIE[0] + outTo(5.5 - B.hipHalf), LIE[1] + 5.5, 3.0] as V3, pitch: -50, turn: 50, knee: 65, kneeUp: 25 }, R: { ankle: [LIE[0] + outTo(6.5 - B.hipHalf), LIE[1] - 6.5, 3.0] as V3, pitch: -50, turn: -50, knee: -65, kneeUp: 25 } }
+    : { L: { ankle: [LIE[0] + 17, LIE[1] + 1.6, 3.2] as V3, pitch: 10, turn: 40, knee: 85, kneeUp: -12 }, R: { ankle: [LIE[0] + 17, LIE[1] - 1.6, 3.2] as V3, pitch: 10, turn: -40, knee: -85, kneeUp: -12 } };
+  const lieL = LEGS.L.ankle;
+  const lieR = LEGS.R.ankle;
+  const feet: Record<'L' | 'R', DieFoot[]> = {
+    L: [
+      { k: 'ball', t0: -1, t1: 0.9, at: S0, pitch: relevé, turn: 6 },
+      { k: 'body', t0: 0.99, t1: l2a + 0.03, ankle: behind, pitch: 40, turn: 10, knee: 60, kneeUp: -10 },
+      { k: 'ball', t0: 1.12, t1: T.sit - 0.02, at: S2, pitch: crouch, turn: 6, kneeUp: crouchKnee },
+      { k: 'lie', t0: T.lie[0] + 0.26, t1: 9, ...LEGS.L },
+    ],
+    R: [
+      { k: 'ball', t0: -1, t1: 0.12, at: [B.ball * 0.95, -2.4], pitch: (t) => 22 + 10 * smooth(0.04, 0.12, t), turn: -4 },
+      { k: 'body', t0: 0.28, t1: l1a, ankle: passe, pitch: 62, turn: -60, knee: -85, kneeUp: 8 },
+      { k: 'ball', t0: 0.88, t1: 1.16, at: S1, pitch: () => 50, turn: -6 },
+      { k: 'swing', t0: 1.26, t1: T.sit + 0.02, ankle: swing, pitch: -30, turn: -10, knee: -20, kneeUp: 40 },
+      { k: 'lie', t0: T.lie[0] + 0.3, t1: 9, ...LEGS.R },
+    ],
+  };
+  void knee;
+  // THE BODY at each moment, all but its feet
+  const body = (t: number): { p: P; hips: Rot } => {
+    const yaw = yawAt(t);
+    const A = leanA(t);
+    const d = (leanDir(t) * Math.PI) / 180;
+    const pitch = A * Math.cos(d);
+    const roll = -A * Math.sin(d);
+    const hips = orient(yaw, pitch, roll);
+    const sp = support(t);
+    // (the pelvis over the ball it turns on; leaning off it with the wobble, as a top does about its point)
+    const over = along(orient(yaw, 0, 0), sp.over);
+    const h = hipH * 0.95;
+    let px = sp.at[0] - over[0] + h * Math.sin((pitch * Math.PI) / 180);
+    let py = sp.at[1] - over[1] - h * Math.sin((roll * Math.PI) / 180);
+    // (struck: from where they stood, onto the ball of the left foot as they go up)
+    const onto = smooth(0.06, 0.28, t);
+    px = -2.8 * smooth(0, T.jolt, t) * (1 - onto) + px * onto;
+    py = py * onto;
+    const twist = 8 * smooth(0, T.jolt, t) * (1 - smooth(T.jolt, 0.3, t)) - 6 * smooth(0.5, 0.8, t) + 4 * Math.sin(t * 8) * smooth(0.5, 0.7, t) * (1 - smooth(1.6, T.sit, t));
+    const bend = -9 * smooth(0, T.jolt, t) * (1 - smooth(T.jolt, 0.3, t)) - 4 * smooth(0.3, 0.6, t) + 10 * smooth(1.3, T.sit, t);
+    return { p: { px, py, yaw, pitch, roll, twist, bend, side: 0, ...headAt(t, yaw, twist), ...armsAt(t) }, hips };
+  };
+  // THEIR FEET at each moment, and how high the body stands on them
+  const fieldsOf = (side: 'L' | 'R', ankle: V3, pitch: number, turn: number, kn: number, knUp: number): P => {
+    const ys = side === 'L' ? B.stance : -B.stance;
+    return side === 'L' ? { lfx: ankle[0], lfy: ankle[1] - ys, lfz: ankle[2] - B.ankle, lfp: pitch, lft: turn, lk: kn, lkUp: knUp } : { rfx: ankle[0], rfy: ankle[1] - ys, rfz: ankle[2] - B.ankle, rfp: pitch, rft: turn, rk: kn, rkUp: knUp };
+  };
+  const ankleOfBall = (side: 'L' | 'R', at: readonly [number, number], turn: number, pitch: number): V3 => {
+    const f = footOn(B, side, { at, turn, pitch, on: 'toe' });
+    const L = side === 'L';
+    return [(L ? f.lfx : f.rfx) as number, ((L ? f.lfy : f.rfy) as number) + (L ? B.stance : -B.stance), ((L ? f.lfz : f.rfz) as number) + B.ankle];
+  };
+  /** One foot at a moment: its ankle, pitch, turn and knee; and whether it is down. */
+  const footAt = (side: 'L' | 'R', t: number, pel: V3, hips: Rot, yaw: number): { ankle: V3; pitch: number; turn: number; kn: number; knUp: number; down: boolean } => {
+    const list = feet[side];
+    const one = (f: DieFoot, at: number): { ankle: V3; pitch: number; turn: number; kn: number; knUp: number; down: boolean } => {
+      if (f.k === 'ball') {
+        const turn = yaw + f.turn;
+        const pitch = f.pitch(at);
+        return { ankle: ankleOfBall(side, f.at, turn, pitch), pitch, turn, kn: turn + (side === 'L' ? 8 : -8), knUp: f.kneeUp ? f.kneeUp(at) : 0, down: true };
+      }
+      if (f.k === 'body') return { ankle: add(pel, along(hips, f.ankle(at))), pitch: f.pitch, turn: yaw + f.turn, kn: yaw + f.knee, knUp: f.kneeUp, down: false };
+      if (f.k === 'swing') return { ankle: f.ankle(at, yaw), pitch: f.pitch, turn: yaw + f.turn, kn: yaw + f.knee, knUp: f.kneeUp, down: false };
+      return { ankle: f.ankle, pitch: f.pitch, turn: LIE_YAW + f.turn, kn: LIE_YAW + f.knee, knUp: f.kneeUp, down: true };
+    };
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i];
+      if (t >= f.t0 && t <= f.t1) return one(f, t);
+      const nx = list[i + 1];
+      if (nx && t > f.t1 && t < nx.t0) {
+        // (between: lifted from the one to the other, up off the floor at once and down at the last, by the shortest way round)
+        const u = (t - f.t1) / (nx.t0 - f.t1);
+        const g = smooth(0, 1, u);
+        const a = one(f, t);
+        const b = one(nx, t);
+        const lift = 3.2 * Math.sin(Math.PI * Math.min(1, u * 1.15)) + (f.k === 'ball' && u < 0.25 ? 0 : 0);
+        let dt = b.turn - a.turn;
+        dt -= 360 * Math.round(dt / 360);
+        let dk = b.kn - a.kn;
+        dk -= 360 * Math.round(dk / 360);
+        const ank = add(lerp3(a.ankle, b.ankle, g), [0, 0, lift * (1 - Math.abs(2 * g - 1) * 0.3)]);
+        return { ankle: ank, pitch: a.pitch + (b.pitch - a.pitch) * g, turn: a.turn + dt * g, kn: a.kn + dk * g, knUp: a.knUp + (b.knUp - a.knUp) * g, down: false };
+      }
+    }
+    return one(list[list.length - 1], t);
+  };
+  // THE KEY POSES OF THE END: sat down in the swirl (upright, the left knee up), and lying back, the face turned up and over
+  // toward their right (to the room, from in front and from behind), the hands out on the floor
+  const sitBody: P = { px: SIT[0], py: SIT[1], yaw: LIE_YAW, pitch: -12, roll: 0, twist: 0, bend: 10, side: 0, faceTurn: LIE_YAW - 20, faceUp: 8, faceTilt: 12, ...armsSink };
+  const lieFace = faceNumbers([0, -0.55, 0.835], [0, 0.835, 0.55]);
+  const lieBody: P = { px: LIE[0], py: LIE[1], yaw: LIE_YAW, pitch: LIE_HIPS, roll: 0, twist: 0, bend: LIE_CHEST, side: 0, faceTurn: LIE_YAW + lieFace.faceTurn, faceUp: lieFace.faceUp, faceTilt: lieFace.faceTilt, ...armsSink };
+  /** How high the pelvis must be, so posed, for the lowest of them (hips, back, head and hair) to be just on the floor. */
+  const restingZ = (body: P): number => {
+    const sk = solve(B, { ...R, ...body, pz: 0, ...fieldsOf('L', lieL, LEGS.L.pitch, LIE_YAW + LEGS.L.turn, LIE_YAW + LEGS.L.knee, LEGS.L.kneeUp), ...fieldsOf('R', lieR, LEGS.R.pitch, LIE_YAW + LEGS.R.turn, LIE_YAW + LEGS.R.knee, LEGS.R.kneeUp) } as Posed);
+    const { lumps } = dancerSolids(who)(sk);
+    let lo = Infinity;
+    for (const l of lumps) lo = Math.min(lo, l.c[2] - Math.hypot(l.h[0] * l.rot[0][2], l.h[1] * l.rot[1][2], l.h[2] * l.rot[2][2]));
+    // (the hair, gathered at the back of the head)
+    const [ff, fl, fu] = sk.face;
+    const hc = add(add(sk.head, mul(fu, 0.4)), mul(ff, -0.7));
+    lo = Math.min(lo, hc[2] - Math.hypot(B.headR[0] * ff[2], B.headR[1] * fl[2], B.headR[2] * fu[2]) - 0.3);
+    return -lo + 0.25;
+  };
+  /** Hands put where they are on the floor, as the chest has them (so that the arm goes as the body goes). */
+  const handsTo = (q: P, wantL: V3, wantR: V3): P => {
+    const sk = solve(B, { ...R, ...q } as Posed);
+    const c = sk.chest;
+    const inC = (d: V3): V3 => [dot(d, c[0]), dot(d, c[1]), dot(d, c[2])];
+    const l = inC(sub(wantL, sk.shoulderL));
+    const r = inC(sub(wantR, sk.shoulderR));
+    return { lhIn: 0, lhx: l[0], lhy: l[1], lhz: l[2], rhIn: 0, rhx: r[0], rhy: r[1], rhz: r[2] };
+  };
+  /** How high the pelvis is sat, and lying (its lowest just on the floor). */
+  const SIT_Z = restingZ(sitBody);
+  const LIE_Z = restingZ(lieBody);
+  /** Where the hands lie at the last, the arms all but straight: the right flung up beside the head, the left out at the side (the floor's own place); the elbows turned up off the floor. */
+  const handsLie = ((): { L: V3; R: V3; le: number; re: number } => {
+    const sk = solve(B, { ...R, ...lieBody, pz: LIE_Z } as Posed);
+    const reach = (B.upperArm + B.foreArm) * 0.94;
+    const to = (sh: V3, dx: number, dy: number): V3 => {
+      const flat = Math.sqrt(Math.max(1, reach * reach - (sh[2] - 1.9) ** 2));
+      const k = flat / Math.hypot(dx, dy);
+      return [sh[0] + dx * k, sh[1] + dy * k, 1.9];
+    };
+    const L = to(sk.shoulderL, 0.4, 1);
+    const Rt = to(sk.shoulderR, -0.8, -0.55);
+    const q = { ...R, ...lieBody, pz: LIE_Z, ...handsTo({ ...lieBody, pz: LIE_Z }, L, Rt) } as Posed;
+    const le = elbowFor(B, q, true, [0.1, 1, 0.25]);
+    return { L, R: Rt, le, re: elbowFor(B, { ...q, le } as Posed, false, [0.1, -1, 0.25]) };
+  })();
   const pose = (t: number): P => {
-    if (t <= 0.1) return mixP(open, jolt, smooth(0, 0.1, t), R);
-    if (t <= 0.5) {
-      // (the head thrown back as the mask comes away; then the Hush leaving: a gasp, the chest lifting)
-      const k = up(t, 0.1, 0.5);
-      return mixP(jolt, { px: -2.0, pz: R.pz + 0.8, yaw: 6, twist: 2, pitch: -6, bend: -12, faceUp: 30, faceTurn: 4, faceTilt: 4, ...handsC([2, 13, -6], [2, -13, -6], -30, 30) }, k, R);
+    const { p, hips } = body(t);
+    const yaw = p.yaw as number;
+    const pel: V3 = [p.px as number, p.py as number, hipH];
+    // (how high on its feet: on the ball of the foot it turns on, the leg all but straight; crouching as it sinks)
+    const fl = footAt('L', t, pel, hips, yaw);
+    const fr = footAt('R', t, pel, hips, yaw);
+    const ups: number[] = [];
+    if (fl.down && t < T.sit) ups.push(standHeight(pel[0], pel[1], hips, fl.ankle, 'L'));
+    if (fr.down && t < T.sit) ups.push(standHeight(pel[0], pel[1], hips, fr.ankle, 'R'));
+    let pz = ups.length ? Math.min(...ups) : R.pz;
+    // (sinking: lower and lower as they turn, the knee they stand on bending right down)
+    const sink = smooth(T.sink[0], T.sit, t);
+    pz = pz * (1 - sink) + (SIT_Z + 6) * sink;
+    let out: P = { ...p, pz };
+    // DOWN ON THE FLOOR, AND LYING BACK
+    const down = smooth(T.sit - 0.22, T.sit, t);
+    if (down > 0) out = mixP(out, { ...sitBody, pz: SIT_Z }, down, R);
+    const lie = smooth(T.lie[0], T.lie[1], t);
+    if (lie > 0) {
+      out = mixP(out, { ...lieBody, pz: LIE_Z }, lie, R);
+      // (the hands going down onto the floor where they will lie, from wherever the arms were)
+      const was = solve(B, { ...R, ...out } as Posed);
+      const k = smooth(T.lie[0], T.lie[1] + 0.1, t);
+      out = { ...out, ...handsTo(out, lerp3(was.handL, handsLie.L, k), lerp3(was.handR, handsLie.R, k)), le: (armsSink.le as number) + (handsLie.le - (armsSink.le as number)) * k, re: (armsSink.re as number) + (handsLie.re - (armsSink.re as number)) * k };
     }
-    if (t <= 1.0) {
-      // (into the bow, still standing: bent forward from the hips, the arms out low)
-      const k = up(t, 0.5, 1.0);
-      return mixP({ px: -2.0, pz: R.pz + 0.8, yaw: 6, twist: 2, pitch: -6, bend: -12, faceUp: 30, faceTurn: 4, faceTilt: 4, ...handsC([2, 13, -6], [2, -13, -6], -30, 30) }, { px: -1.0, pz: R.pz - 4, yaw: 0, twist: 0, pitch: 8, bend: 18, faceUp: -20, faceTurn: 0, faceTilt: 4, ...bowArms }, k, R);
-    }
-    if (t <= DN_DIES.knees) {
-      // (sinking down, the bow held, to the knees)
-      const k = up(t, 1.0, DN_DIES.knees);
-      return mixP({ px: -1.0, pz: R.pz - 4, yaw: 0, twist: 0, pitch: 8, bend: 18, faceUp: -20, faceTurn: 0, faceTilt: 4, ...bowArms }, K0, k, R);
-    }
-    // (and settling back onto the heels, the head bowed, the hands in the lap: still)
-    return mixP(K0, K1, up(t, DN_DIES.knees, DN_DIES.still), R);
+    // (once down, the head settling over a little more, the hands easing)
+    const ease = smooth(T.lie[1], T.still, t);
+    if (ease > 0) out = { ...out, faceTilt: (out.faceTilt as number) + 4 * ease, faceUp: (out.faceUp as number) - 4 * ease };
+    // (the feet: where each is, the knees with them)
+    const pelNow: V3 = [out.px as number, out.py as number, hipH + (out.pz as number)];
+    const hipsNow = orient(out.yaw as number, out.pitch as number, out.roll as number);
+    const gl = footAt('L', t, pelNow, hipsNow, out.yaw as number);
+    const gr = footAt('R', t, pelNow, hipsNow, out.yaw as number);
+    return { ...out, ...fieldsOf('L', gl.ankle, gl.pitch, gl.turn, gl.kn, gl.knUp), ...fieldsOf('R', gr.ankle, gr.pitch, gr.turn, gr.kn, gr.knUp) };
   };
-  const stances: Stance[] = [
-    { side: 'L', t0: -1, t1: 0.95, at: [B.ball * 0.95 + 1.2, 2.6], turn0: 6, turn1: 6, pitch: 22 },
-    { side: 'L', t0: 1.45, t1: 9, at: [kneelFeet.L.at[0], kneelFeet.L.at[1]], turn0: kneelFeet.L.turn, turn1: kneelFeet.L.turn, pitch: TUCK },
-    { side: 'R', t0: -1, t1: 0.55, at: [B.ball * 0.95, -2.4], turn0: -4, turn1: -4, pitch: 22 },
-    { side: 'R', t0: 0.85, t1: 9, at: [kneelFeet.R.at[0], kneelFeet.R.at[1]], turn0: kneelFeet.R.turn, turn1: kneelFeet.R.turn, pitch: TUCK },
-  ];
-  const feetRaw = feetOf(B, stances, { lift: 3 });
-  // (on the knees, the knees as the kneeling has them)
-  const feet = (t: number): P => {
-    const f = feetRaw(t);
-    if (t >= DN_DIES.knees) return { ...f, ...pick(kneel(0, {}), ['lk', 'lkUp', 'rk', 'rkUp']) };
-    return f;
-  };
-  return { pose, feet };
+  return { pose, lies: { ...lieBody, pz: LIE_Z } };
 }
 /** The Hush's own greys (art/crier.ts HUSH, its lighter two). */
 const HUSH_GREY = ['#625a7a', '#9890b4'] as const;
-const pick = (p: P, keys: ReadonlyArray<keyof Bones>): P => Object.fromEntries(keys.filter((k) => p[k] !== undefined).map((k) => [k, p[k]])) as P;
 
 // =============================================================================================
 // THEM, AS THE GAME HOLDS A MONSTER
@@ -722,7 +1001,7 @@ export const DN_NAMES = {
   walk: 'The whirl',
   attack: 'The whirling spin',
   reel: 'The dancer is struck',
-  dying: 'The mask drops',
+  dying: 'A last pirouette, the mask rolls away',
   waltz: 'The waltz',
   chime: 'The chime',
 } as const;
@@ -747,10 +1026,12 @@ function plansOf(who: DancerWho): Plans {
     reel: reelPose(who),
     dying: dies.pose,
   };
-  const feet: Record<string, ((t: number) => P) | undefined> = { walk: whirlFeet(who), waltz: waltzFeet(who), chime: chimeFeet(who), attack: spin.feet, dying: dies.feet };
+  // (their death: every bone at every moment, laid over its keys as the feet are, so that the spin is exact on every frame)
+  const feet: Record<string, ((t: number) => P) | undefined> = { walk: whirlFeet(who), waltz: waltzFeet(who), chime: chimeFeet(who), attack: spin.feet, dying: dies.pose };
   const yaw: Record<string, (t: number) => number> = {};
   for (const k of Object.keys(pose)) yaw[k] = (t) => ((pose[k](t).yaw as number | undefined) ?? 0) + ((pose[k](t).twist as number | undefined) ?? 0) * 0.5;
   yaw.attack = spin.yaw;
+  yaw.dying = DIE_YAW.at;
   return { pose, feet, yaw };
 }
 /** How fast one is turning about themselves at a moment of a move (turns a second, to the left). */
@@ -776,6 +1057,140 @@ const bonesOf = (who: DancerWho, move: string, t: number): Skeleton => {
   const f = PLANS[who].feet[move];
   return solve(bodyOf(who), { ...restFor(who), ...PLANS[who].pose[move](t), ...(f ? f(t) : {}) } as Posed);
 };
+// =============================================================================================
+// THE MASK AS THEY DIE: flung off the face by the whirl; tumbling over once in the air; down on its rim; rolling away on it,
+// curving and tipping more and more; wobbling round on its rim, faster and flatter, as a coin settles; still, face up
+
+/** Where the mask comes down (forward and to the left of where they stood), and when; how far it then rolls (their own lengths); when it lies still. */
+export const MASK_ROLL = { land: [36, 10] as const, down: 1.12, roll: 18, tilt: 14, wobble: 1.72, still: 2.4 } as const;
+DN_DIES.maskDown = MASK_ROLL.down;
+DN_DIES.maskStill = MASK_ROLL.still;
+/** The mask's half-lengths (its depth from the face, across it, up it), as it is painted on them (art/masque_dancers.ts), and the depth of its hollow back. */
+export function maskSize(who: DancerWho): { n: number; l: number; u: number; back: number } {
+  const B = bodyOf(who);
+  return { n: B.headR[0] * 1.04, l: B.headR[1] * 1.04 * 1.1, u: B.headR[2] * 1.07, back: 0.7 };
+}
+/** How high the mask's middle must be, turned so, for the lowest of it (its rim, or its hollow back) to be just on the floor. */
+function maskHigh(who: DancerWho, n: V3, u: V3): number {
+  const z = maskSize(who);
+  const l = cross(u, n);
+  return Math.hypot(z.back * n[2], z.l * l[2], z.u * u[2]) + 0.05;
+}
+/** A vector turned `deg` degrees about the line `ax` (right-handed). */
+const turnAbout = (v: V3, ax: V3, deg: number): V3 => {
+  const a = (deg * Math.PI) / 180;
+  const k = norm(ax);
+  return add(add(mul(v, Math.cos(a)), mul(cross(k, v), Math.sin(a))), mul(k, dot(k, v) * (1 - Math.cos(a))));
+};
+const MASK_PATHS = new Map<DancerWho, { t0: number; dt: number; c: V3[]; n: V3[]; u: V3[] }>();
+function maskPath(who: DancerWho): { t0: number; dt: number; c: V3[]; n: V3[]; u: V3[] } {
+  const had = MASK_PATHS.get(who);
+  if (had) return had;
+  const G = 400;
+  const t0 = DN_DIES.mask;
+  const dt = 1 / 600;
+  const Z = maskSize(who);
+  // (as it is on the face as it comes away)
+  const onFace = (t: number): { c: V3; n: V3; u: V3 } => {
+    const s = bonesOf(who, 'dying', t);
+    return { c: add(add(s.head, mul(s.face[2], -0.2)), mul(s.face[0], 0.35)), n: s.face[0], u: s.face[2] };
+  };
+  const f0 = onFace(t0);
+  const tL = MASK_ROLL.down;
+  const tW = MASK_ROLL.wobble;
+  const tS = MASK_ROLL.still;
+  // HOW IT IS AS IT COMES DOWN: on its rim, tipped a little, its face up and to the left of the way it rolls (so that it
+  // curves to the right, as a coin does, the way they spun)
+  const land: [number, number] = [MASK_ROLL.land[0], MASK_ROLL.land[1]];
+  const fly = norm([land[0] - f0.c[0], land[1] - f0.c[1], 0]);
+  const psi0 = Math.atan2(fly[1], fly[0]);
+  const frame = (psi: number, beta: number, phi: number): { n: V3; u: V3 } => {
+    const d: V3 = [Math.cos(psi), Math.sin(psi), 0];
+    const sL: V3 = [-Math.sin(psi), Math.cos(psi), 0];
+    const n: V3 = add(mul(sL, Math.cos(beta)), [0, 0, Math.sin(beta)]);
+    const e: V3 = add([0, 0, -Math.cos(beta)], mul(sL, Math.sin(beta)));
+    return { n, u: norm(add(mul(e, -Math.cos(phi)), mul(d, Math.sin(phi)))) };
+  };
+  const b0 = (MASK_ROLL.tilt * Math.PI) / 180;
+  const f1 = frame(psi0, b0, 0);
+  const c1: V3 = [land[0], land[1], maskHigh(who, f1.n, f1.u)];
+  // THE FLIGHT: thrown so as to come down there then, tumbling over once more than it must to come down so
+  const TT = tL - t0;
+  const v: V3 = [(c1[0] - f0.c[0]) / TT, (c1[1] - f0.c[1]) / TT, (c1[2] - f0.c[2] + 0.5 * G * TT * TT) / TT];
+  const l0 = cross(f0.u, f0.n);
+  const l1 = cross(f1.u, f1.n);
+  // (the turn from the one frame to the other, as an axis and an angle)
+  const M = (i: number, j: number): number => f1.n[i] * f0.n[j] + f1.u[i] * f0.u[j] + l1[i] * l0[j];
+  const tr = M(0, 0) + M(1, 1) + M(2, 2);
+  const th = Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2)));
+  const axis = norm([M(2, 1) - M(1, 2), M(0, 2) - M(2, 0), M(1, 0) - M(0, 1)], [0, 0, 1]);
+  const turnBy = ((th + 2 * Math.PI) * 180) / Math.PI;
+  const c: V3[] = [];
+  const n: V3[] = [];
+  const u: V3[] = [];
+  // ROLLING: how fast along the floor, from as fast as it came down (a little lost to the knock) to all but still as it wobbles
+  const vRoll0 = (2 * MASK_ROLL.roll) / (tW - tL);
+  let psi = psi0;
+  let phi = 0;
+  let at: [number, number] = [land[0], land[1]];
+  const R = (Z.l + Z.u) / 2;
+  for (let t = t0; t <= DN_DIES.long + 1e-9; t += dt) {
+    if (t < tL) {
+      const tau = t - t0;
+      const k = tau / TT;
+      c.push([f0.c[0] + v[0] * tau, f0.c[1] + v[1] * tau, f0.c[2] + v[2] * tau - 0.5 * G * tau * tau]);
+      n.push(norm(turnAbout(f0.n, axis, turnBy * k)));
+      u.push(norm(turnAbout(f0.u, axis, turnBy * k)));
+      continue;
+    }
+    let beta: number;
+    let speed: number;
+    let pre: number;
+    if (t < tW) {
+      // (rolling away on its rim, slower and slower, curving to the right, tipping over more)
+      const k = (t - tL) / (tW - tL);
+      speed = vRoll0 * (1 - k);
+      beta = b0 + (50 * Math.PI) / 180 * k * k;
+      pre = -speed * 0.03 - 2 * Math.PI * 1.4 * k * k;
+    } else if (t < tS) {
+      // (wobbling round on its rim where it is, flatter and flatter, faster and faster, as a coin settles)
+      const k = (t - tW) / (tS - tW);
+      speed = 0;
+      const bW = b0 + (50 * Math.PI) / 180;
+      beta = Math.PI / 2 - (Math.PI / 2 - bW) * Math.pow(1 - k, 0.42);
+      pre = -2 * Math.PI * Math.min(5.5, 1.4 / Math.max(0.25, Math.cos(beta) / Math.cos(bW)));
+    } else {
+      speed = 0;
+      beta = Math.PI / 2;
+      pre = 0;
+    }
+    psi += pre * dt;
+    // (rolling, not sliding: turned about its face's line by how far it has come; going round on its rim, the other way)
+    phi += (speed / R) * dt - pre * Math.cos(beta) * dt;
+    at = [at[0] + Math.cos(psi) * speed * dt, at[1] + Math.sin(psi) * speed * dt];
+    const f = frame(psi, beta, phi);
+    // (as it comes down, the knock of it: a little hop off its rim)
+    const hop = t - tL < 0.08 ? 1.1 * Math.sin((Math.PI * (t - tL)) / 0.08) : 0;
+    c.push([at[0], at[1], maskHigh(who, f.n, f.u) + hop]);
+    n.push(f.n);
+    u.push(f.u);
+  }
+  // (still: as it last was, flat on its back)
+  const out = { t0, dt, c, n, u };
+  MASK_PATHS.set(who, out);
+  return out;
+}
+/** THE MASK LOOSE OF THEM `t` seconds into their death: its middle, its face's way and its up (its brow's way), and how fast it goes; null while it is on the face. */
+export function maskLooseAt(who: DancerWho, t: number): LooseMask | null {
+  if (t < DN_DIES.mask) return null;
+  const P = maskPath(who);
+  const i = Math.min(P.c.length - 1, Math.max(0, Math.round((t - P.t0) / P.dt)));
+  const j = Math.min(P.c.length - 1, i + 6);
+  const i0 = Math.max(0, j - 12);
+  const vel = mul(sub(P.c[j], P.c[i0]), 1 / ((j - i0) * P.dt || 1));
+  return { c: P.c[i], n: P.n[i], u: P.u[i], vel };
+}
+
 /**
  * THE SMEAR of the whirling spin: after-images of the arms flung round and of the hem of the skirt (or the coat's) along
  * the way they came in the strike; and the whirl of their going round the area it strikes, the wind of it all round.
@@ -855,9 +1270,17 @@ function sayOf(who: DancerWho, room: Room): DancerSay {
     smear: (m) => (name(m) === 'attack' ? smearOf(who, m.t) : null),
     more: (m) => moreOf(who, name(m), m),
     burn: (m) => (name(m) === 'attack' ? smooth(DN_SPIN.warn[0] - 0.12, DN_SPIN.warn[0], m.t) * (1 - smooth(DN_SPIN.hit, DN_SPIN.hit + 0.15, m.t)) : 0),
-    freed: (m) => !!m.dying && m.t >= DN_DIES.mask,
+    freed: (m) => !!m.dying && m.t >= DN_DIES.freed,
     puff: (m) => (name(m) === 'attack' && m.t < DN_SPIN.hit + 0.1 ? 0.8 + 1.0 * smooth(0.1, DN_SPIN.warn[0], m.t) : name(m) === 'walk' ? 1.1 : 0.8),
-    leaving: DN_DIES.leaves,
+    loose: (m) => (m.dying ? maskLooseAt(who, m.t) : null),
+    dies: {
+      // (the Hush leaks hard from them as they whirl, whipped round; once they lie it leaves them in one great grey breath)
+      puff: (t) => (t < DN_DIES.breath[0] ? 1.0 + 0.6 * smooth(0.1, 0.5, t) : Math.max(0, 1.6 * (1 - (t - DN_DIES.breath[0]) / 0.5))),
+      breath: DN_DIES.breath,
+      // (the skirt, or the coat-tails, laid out on the floor round them as they come down; and how far its swirl has been carried round)
+      pool: (t) => smooth(DN_DIES.sit - 0.3, DN_DIES.lie[1], t),
+      swirl: (t) => DIE_SWIRL(t),
+    },
   };
 }
 
@@ -896,11 +1319,9 @@ function dancerMob(who: DancerWho, roomName: RoomName): Mob {
     trueBack: true,
     bits: paint.bits,
     grains: paint.grains,
-    // (the mask, and the ribbon that tied it, drop from the face as they die and fall to the floor before them, face up)
-    fall(piece) {
-      if (piece !== 'mask') return null;
-      const s = bonesOf(who, 'dying', DN_DIES.mask);
-      return { from: DN_DIES.mask, to: [30, -44], spin: 30, lay: 'flat', up: s.face[0], hop: 1.2 };
+    // (nothing of them falls by itself as they die: the mask is flung off and rolls away, maskLooseAt, painted in their own frames)
+    fall() {
+      return null;
     },
   };
 }
@@ -946,7 +1367,9 @@ export function pairPainted(lady: Mob, gent: Mob, move: 'waltz' | 'chime', t: nu
 // =============================================================================================
 // THEM AS THE CHECKS SEE THEM (art/boss_checks.ts)
 
-const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
+function len3(v: V3): number {
+  return Math.hypot(v[0], v[1], v[2]);
+}
 export function dancerSolids(who: DancerWho): (s: Skeleton) => { limbs: CheckLimb[]; lumps: CheckLump[] } {
   const B = bodyOf(who);
   return (s) => {

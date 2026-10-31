@@ -4,6 +4,8 @@
 //   tsx tools/masque_dancers_film.ts sheet <out.png>     (standing, front and behind, beside the knight, three times as big)
 //   tsx tools/masque_dancers_film.ts crowd <out.png>     (a crowd of them in the seven rooms' colours, at the game's size, twice as big)
 //   tsx tools/masque_dancers_film.ts film <frames dir>   (every move, front and behind; and a whole ballroom at the chime: frames and captions.json)
+//   tsx tools/masque_dancers_film.ts deathsheet <out.png> (their death in key frames, the lady from in front, the gentleman from behind; labels in <out.png>.json)
+//   tsx tools/masque_dancers_film.ts deathfilm <frames dir> (their death on its own: at the game's size, three times as big, at half speed)
 import { Px } from '../src/engine/px';
 import type { Light } from '../src/engine/px';
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
@@ -349,4 +351,108 @@ if (mode === 'sheet') {
   console.log(`${n} frames`);
   void WHIRL_ROUND;
   void SPIN_END;
+} else if (mode === 'deathsheet') {
+  // THEIR DEATH IN KEY FRAMES (made new on his pick of 30 Oct): the lady from in front, the gentleman from behind, each
+  // twice the game's size, each frame round the figure and its mask; the captions by masque_dancers_film.py
+  const K = 2;
+  const CW = 300;
+  const CH = 300;
+  const TOP = 30;
+  const keys: [number, string][] = [
+    [0.3, 'up on one toe'],
+    [0.75, 'too fast; the mask flies'],
+    [0.88, 'a lurch'],
+    [1.14, 'a second lurch'],
+    [1.55, 'sinking in a spiral'],
+    [1.95, 'down in a swirl'],
+    [2.2, 'lying back; mask wobbling'],
+    [DN_DIES.long, 'still, alive; mask face up'],
+  ];
+  const rows: [Mob, Facing, string][] = [[L('violet'), FRONT, 'the lady, from in front'], [G('blue'), BACK, 'the gentleman, from behind']];
+  const c = new Canvas(CW * 4, CH * 4);
+  const labels: { x: number; y: number; text: string }[] = [];
+  rows.forEach(([mob, f, who], r) => {
+    keys.forEach(([t, what], i) => {
+      const cx = (i % 4) * CW;
+      const cy = (r * 2 + Math.floor(i / 4)) * CH;
+      // (where the figure and its mask are in its picture, so as to put them in the middle of the frame)
+      const p = deathOfMob(mob, Math.min(1, t / mob.dieTime), f.view).px;
+      const can = canvasOf(mob);
+      let x0 = p.w;
+      let x1 = 0;
+      let y0 = p.h;
+      let y1 = 0;
+      for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (p.d[(y * p.w + x) * 4 + 3]) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+      const cell = new Canvas(CW, CH - TOP);
+      const ox = Math.round(CW / 2 - ((x0 + x1) / 2 - can.ax) * K);
+      const oy = Math.round((CH - TOP) / 2 - ((y0 + y1) / 2 - can.ay) * K);
+      floor(cell, ox, oy, K);
+      dancer(cell, mob, 'dying', t, f, ox, oy, K);
+      for (let y = 0; y < cell.h; y++) for (let x = 0; x < cell.w; x++) {
+        const s = (y * cell.w + x) * 4;
+        const d = ((cy + TOP + y) * c.w + cx + x) * 4;
+        c.d[d] = cell.d[s];
+        c.d[d + 1] = cell.d[s + 1];
+        c.d[d + 2] = cell.d[s + 2];
+      }
+      labels.push({ x: cx + CW / 2, y: cy + TOP / 2, text: `${r === 0 ? i + 1 : i + 9}. ${what} (${t.toFixed(1)} s)` });
+    });
+    labels.push({ x: -1, y: r * 2 * CH, text: who });
+  });
+  c.png(out);
+  fs.writeFileSync(`${out}.json`, JSON.stringify(labels));
+} else if (mode === 'deathfilm') {
+  // THEIR DEATH ON ITS OWN: at the game's size beside the knight, both kinds both ways round; then the lady from in front and
+  // the gentleman from behind, three times as big; then at half speed, the pirouette and the lurches, the sinking and the swirl
+  const W = 1200;
+  const H = 680;
+  const FPS = 30;
+  const caps: { title: string; sub: string; note: string }[] = [];
+  let n = 0;
+  const scene = (secs: number, title: string, sub: string, note: string, draw: (c: Canvas, t: number) => void): void => {
+    const frames = Math.round(secs * FPS);
+    for (let i = 0; i < frames; i++) {
+      const c = new Canvas(W, H);
+      draw(c, i / FPS);
+      c.png(`${out}/f${String(n).padStart(4, '0')}.png`);
+      caps.push({ title, sub, note });
+      n++;
+    }
+  };
+  const T = DN_DIES.long;
+  const HOLD = 0.6;
+  const BACKL: Facing = { view: 'back', flip: true };
+  // 1. AT THE GAME'S SIZE, the knight among them: both kinds, from in front and from behind
+  scene(T + HOLD, 'Their death, at the game’s size', 'the knight for size; from in front (left) and from behind (right)', 'A last pirouette, out of control; down in a swirl; the mask rolls away; the Hush leaves them', (c, t) => {
+    const u = Math.min(T, t);
+    floor(c, 600, 380, 1);
+    knight(c, FRONT, t, 140, 380, 1);
+    dancer(c, L('violet'), 'dying', u, FRONT, 290, 360, 1);
+    dancer(c, G('blue'), 'dying', u, FRONT, 470, 420, 1);
+    dancer(c, L('violet'), 'dying', u, BACK, 760, 360, 1);
+    dancer(c, G('blue'), 'dying', u, BACK, 940, 420, 1);
+    knight(c, BACKL, t, 1090, 380, 1);
+  });
+  // 2. THREE TIMES AS BIG
+  const big = (mob: Mob, f: Facing, x: number, y: number, kx: number) => (c: Canvas, u: number, t: number): void => {
+    floor(c, x, y, 3);
+    knight(c, f.view === 'front' ? FRONT : BACKL, t, kx, y + 20, 3);
+    dancer(c, mob, 'dying', u, f, x, y, 3);
+  };
+  const ladyBig = big(L('violet'), FRONT, 660, 450, 170);
+  const gentBig = big(G('blue'), BACK, 640, 470, 170);
+  scene(T + HOLD, 'The lady’s death, three times as big', 'from in front', 'Up on one toe, whirling too fast; the mask flies; two lurches; she sinks into a swirl of her gown', (c, t) => ladyBig(c, Math.min(T, t), t));
+  scene(T + HOLD, 'The gentleman’s death, three times as big', 'from behind', 'Whirling out of control; the coat-tails flare and settle round him; the mask rolls on its rim', (c, t) => gentBig(c, Math.min(T, t), t));
+  // 3. AT HALF SPEED
+  const gentFront = big(G('blue'), FRONT, 660, 450, 170);
+  const ladyBack = big(L('violet'), BACK, 640, 470, 170);
+  scene(2.5, 'At half speed: the last pirouette', 'the gentleman, from in front', 'Up on one toe, the other drawn up; too fast; the mask flung off; he lurches, a foot flung out', (c, t) => gentFront(c, 0.12 + t / 2, t));
+  scene(2.5, 'At half speed: down in a swirl', 'the lady, from behind', 'Sinking in a spiral, slower and slower; her gown settles round her; the mask wobbles to a stop', (c, t) => ladyBack(c, 1.2 + t / 2, t));
+  fs.writeFileSync(`${out}/captions.json`, JSON.stringify(caps));
+  console.log(`${n} frames, ${(n / FPS).toFixed(1)} s`);
 }
