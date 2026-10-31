@@ -69,8 +69,13 @@ export const TINKER_TUNE = {
     broke: 56 / 30,
   },
   golem: {
-    /** How fast it knuckles along (tiles a second; her run is 4.6), and how near her it keeps when nothing is to be fought. */
-    speed: 3.0,
+    /**
+     * How fast it knuckles along (tiles a second; her run is 4.6), and how near her it keeps when nothing is to be fought. As fast
+     * as she runs since his word, 30 Oct 2026, 23:55 (to the art chat, on the board): “The golem needs work.  It's too slow and
+     * not aggressive enough.  It needs to run at the enemies.”; “No he just needs more movespeed and by run I just mean he's
+     * always trying to be in melee range.” (it was 3.0)
+     */
+    speed: 4.6,
     near: 1.7,
     /** Further from her than this, it is whistled up beside her again. */
     lost: 12,
@@ -130,6 +135,14 @@ export const TINKER_TUNE = {
     growth: { near: 0.6, secs: 5, big: 2, strong: 2 },
   },
 };
+
+/**
+ * THE GOLEM'S CANNON, off for now (his word, 30 Oct 2026, 23:55: “Maybe scrap the ranged shot for now, but hold onto it because
+ * maybe we want a passive that makes him ranged where his hold becomes a big charged shot.”): it no longer stands off and fires;
+ * it closes on what it fights, always (its cannon's rules and tune kept, for that passive). Her tree's Shrapnel, the cannon
+ * shot's burst, bursts from its punches meanwhile.
+ */
+export const GOLEM_CANNON = { on: false };
 
 /** How long the Golem's blow up close takes, and when it lands: its punch's, or its uppercut's (GOLEM_LOOK). */
 export function golemBlow(): { long: number; hit: number } {

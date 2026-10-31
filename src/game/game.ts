@@ -47,7 +47,7 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
-import { TINKER_TUNE, golemBlow } from './tinkerer';
+import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import type { Brew, Decoy, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 
@@ -5704,7 +5704,10 @@ export class Game {
           const s = h.skills[g.skill];
           this.emit({ t: 'golemPunch', x: m.x, y: m.y, dx: g.fx, dy: g.fy });
           this.sfx('hit', 0.8);
-          this.hitMonster(m, g.skill, (s ? this.golemFrac(g) : 1) * this.golemMight(g) * G.punch.share, false);
+          const frac = (s ? this.golemFrac(g) : 1) * this.golemMight(g) * G.punch.share;
+          this.hitMonster(m, g.skill, frac, false);
+          // (her tree's SHRAPNEL, while its cannon is off: its punch bursts where it lands, striking everything near)
+          if (!GOLEM_CANNON.on && this.has('shrapnel')) this.shrapnel(g.skill, m.x, m.y, frac, m.id);
           if (!m.dead) this.throwMonster(m, g.x, g.y, 0.8, 0.15);
         }
       }
@@ -5778,7 +5781,8 @@ export class Game {
       g.target = best.id;
       return;
     }
-    if (best && bd >= G.cannon.near && bd <= G.cannon.far && g.cannonCd <= 0) {
+    // (its cannon off for now, his word: it closes on what it fights, always: GOLEM_CANNON)
+    if (GOLEM_CANNON.on && best && bd >= G.cannon.near && bd <= G.cannon.far && g.cannonCd <= 0) {
       face(best.x, best.y);
       g.act = 'cannon';
       g.actT = 0;
