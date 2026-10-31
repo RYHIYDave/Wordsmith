@@ -41,7 +41,8 @@ const smooth01 = (u: number): number => {
 };
 
 /** A sprite to stand among the figures: where its floor point is on the floor (tiles, for its depth) and on the screen. */
-export type StandFn = (depth: number, s: Sprite, sx: number, sy: number) => void;
+/** What stands among the figures: its depth, its picture, its floor point on the screen; how much of it is seen (1 whole: THE KING's knights of fog rising and fading). */
+export type StandFn = (depth: number, s: Sprite, sx: number, sy: number, alpha?: number) => void;
 /** A light in the dark: where on the screen, how wide, how strong. */
 export type SpotFn = (x: number, y: number, r: number, a: number) => void;
 

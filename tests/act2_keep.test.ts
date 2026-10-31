@@ -10,7 +10,8 @@
 //   3. everything walked is reached from the start; no pack in the bailey, the gate passage, the throne hall or beyond it; each
 //      portcullis a row right across a hall, clear of its doorways; the murder holes (the trap) in the gate passage;
 //   4. the battlements along the walk's far row; the throne's dais solid; nothing solid in the throne hall's floor but its edge;
-//      the great bed, the cushion and the broken songbird in the bedchamber; the great doors open in the bailey's far wall.
+//      the great bed and the cushion in the bedchamber, the broken songbird before the throne; the great doors open in the
+//      bailey's far wall.
 //   run: tsx --test tests/act2_keep.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -114,7 +115,8 @@ test('2-4. laid by its own map-maker: the bailey, the passage, the walk, the thr
     const throne = L.props.find((p) => p.name === KP_PIECE.throne)!;
     assert.ok(throne && throne.solid, `${seed}: the throne on its dais`);
     for (const p of L.props) if (p.solid && inR([hall.r[0] + 2, hall.r[1] + 2, hall.r[2] - 2, hall.r[3] - 2], p.tx, p.ty)) assert.fail(`${seed}: ${p.name ?? p.kind} in the throne hall's floor`);
-    for (const n of [KP_PIECE.bed, KP_PIECE.cushion, KP_PIECE.songbird]) assert.ok(L.props.some((p) => p.name === n && inR(chamber.r, p.tx, p.ty)), `${seed}: ${n} in the bedchamber`);
+    for (const n of [KP_PIECE.bed, KP_PIECE.cushion]) assert.ok(L.props.some((p) => p.name === n && inR(chamber.r, p.tx, p.ty)), `${seed}: ${n} in the bedchamber`);
+    assert.ok(L.props.some((p) => p.name === KP_PIECE.songbird && inR(hall.r, p.tx, p.ty) && p.ty - hall.r[1] <= 5), `${seed}: the broken songbird before his throne`);
     const bailey = K!.rooms.find((q) => q.role === 'bailey')!;
     const doors = L.props.find((p) => p.name === KP_PIECE.doors);
     assert.ok(doors && (doors.variant >> 1) === 1 && (doors.ty === bailey.r[1] || doors.tx === bailey.r[0]), `${seed}: the great doors open in the bailey's far wall`);

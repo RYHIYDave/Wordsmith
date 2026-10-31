@@ -114,7 +114,7 @@ const smearIn = (p: Painted): number => {
 };
 
 /** The game's files that import him (his figure now; his rules and effects as they are built). */
-const KING_USERS = 'art/act1_figs/gking.ts';
+const KING_USERS = 'art/act1_figs/gking.ts game/act1_rules/gking.ts render/act1_fx/gking.ts';
 
 test('1. the switch is off, and of the game only floor 19\'s own files import him', () => {
   assert.equal(KING_ON.on, false, 'KING_ON is off');

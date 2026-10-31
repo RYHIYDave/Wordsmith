@@ -14,8 +14,8 @@
 //     them); the armoury; THE THRONE HALL last, the King's (his arena, 19 by 21, entered from the side toward the eye; the throne
 //     on its dais in the middle of its far wall, under its cloth of estate, facing him as he comes in; a runner down from it); THE
 //     WAY ON beyond it (the door to the Quiet Tower).
-//   OFF IT: THE BARRACKS (the knights' lair), THE KING'S BEDCHAMBER (his great bed, the songbird's cushion, the broken songbird:
-//     the floor's quest) off the hall before the throne, a store.
+//   OFF IT: THE BARRACKS (the knights' lair), THE KING'S BEDCHAMBER (his great bed, the songbird's cushion, empty) off the hall
+//     before the throne, a store. HIS CLOCKWORK SONGBIRD lies broken on the floor before his throne (it sings as he dies).
 //   THE PORTCULLISES: one across a hall here and there (a row of tiles across it, its winch by it), slamming down at a beat to
 //     cut it in two a while (game/act2/keep_rules.ts); THE MURDER HOLES in the gate passage (the floor's trap, game/traps.ts).
 //   ITS PACKS: the floor's own (game/act2_mobs.ts ACT2_OWN[19]); none in the bailey, the gate passage, the throne hall or beyond.
@@ -529,8 +529,8 @@ const HOLES = { most: 3, apart: 2.5, fromStart: 6 };
  * the well, a crossbow rack, braziers; THE GATE PASSAGE its murder holes down its middle (the trap), torches; THE HALLS banners and
  * torches down the walls, suits of armour, the runner down the middle, a portcullis across one and its winch; THE WALL WALK its
  * battlements along its far row (the sky past them), a cauldron of pitch; THE ARMOURY racks of weapons and crossbows, the anvil,
- * armour; THE BARRACKS bunks, a long table, barrels; THE BEDCHAMBER the great bed, the songbird's cushion and the broken
- * songbird (the quest); THE THRONE HALL the throne on its dais under its cloth of estate, braziers either side of it, banners and
+ * armour; THE BARRACKS bunks, a long table, barrels; THE BEDCHAMBER the great bed and the songbird's cushion, empty; THE
+ * THRONE HALL (the broken songbird on the floor before the throne) the throne on its dais under its cloth of estate, braziers either side of it, banners and
  * torches, the runner down from it, empty armour in its far corners, its floor kept clear for him.
  */
 export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
@@ -698,6 +698,13 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       put(KP_PIECE.runner, tx, y, false, 2 + (rng.chance(0.12) ? 1 : 0));
     }
     for (const [x, y] of [[r[0] + 1, r[1] + 1], [r[2] - 2, r[1] + 1]] as [number, number][]) if (free(x, y)) breakable('urn', x, y);
+    // (his clockwork songbird lying broken on the floor before his throne, beside the runner: as he dies it winds itself up and
+    // sings, game/act1_rules/gking.ts)
+    for (const [x, y] of [[tx + 2, r[1] + 3], [tx - 2, r[1] + 3], [tx + 2, r[1] + 4]] as [number, number][]) {
+      if (!floorAt(x, y) || taken[y * W + x]) continue;
+      put(KP_PIECE.songbird, x, y, false);
+      break;
+    }
     for (let ty = r[1] + 2; ty < r[3] - 2; ty++) for (let tx2 = r[0] + 2; tx2 < r[2] - 2; tx2++) keep[ty * W + tx2] = 1;
   }
 
@@ -801,13 +808,13 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
     breakByWall('barrel', r, rng.int(1, 2));
   }
 
-  // THE BEDCHAMBER: his great bed against its far wall, the songbird's cushion by it, the broken songbird on the boards (the quest)
+  // THE BEDCHAMBER: his great bed against its far wall, the songbird's silk cushion by it, empty (the bird lies broken before his
+  // throne)
   for (const q of roomsOf('chamber')) {
     const r = q.r;
     hang(KP_PIECE.banner, r, 1);
     hang(KP_PIECE.torch, r, 1, 3);
-    // (the bed against the far wall, toward its middle, where it and the cushion beside it are free; the songbird on the boards
-    // before them)
+    // (the bed against the far wall, toward its middle, where it and the cushion beside it are free)
     const cx = Math.floor((r[0] + r[2]) / 2);
     const by = r[1] + 1;
     let bed: [number, number] | null = null;
@@ -819,12 +826,6 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
     if (bed) {
       put(KP_PIECE.bed, bed[0], bed[1], true);
       put(KP_PIECE.cushion, bed[0] + 2, bed[1], true);
-    }
-    const [sx, sy] = bed ?? [cx, by];
-    for (const [x, y] of [[sx + 2, sy + 2], [sx + 1, sy + 3], [sx - 2, sy + 2], [sx, sy + 4], [sx + 3, sy + 3]] as [number, number][]) {
-      if (!free(x, y, true)) continue;
-      put(KP_PIECE.songbird, x, y, true);
-      break;
     }
   }
 

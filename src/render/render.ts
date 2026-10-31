@@ -2769,9 +2769,9 @@ export class Renderer {
       this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
     }
     // (THE FIRST FIVE FLOORS: what the bosses send out that stands among the figures: an axe, a hook, a ball in flight, arms and hands out of the floor, skulls on the wing)
-    this.bossFx.standing(this.floorAt, game, (d, sp, x, y) => {
+    this.bossFx.standing(this.floorAt, game, (d, sp, x, y, alpha = 1) => {
       if (sp.lights) this.monsterLit.push({ s: sp, x: Math.round(x), y: Math.round(y) });
-      this.stand(d, sp, x, y);
+      this.stand(d, sp, x, y, null, 0, 1, alpha);
     }, (x, y) => game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     for (const m of game.monsters) {
       if (m.dead || !m.seen || unseen(m)) continue;

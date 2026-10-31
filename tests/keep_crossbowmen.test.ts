@@ -2,7 +2,7 @@
 // moves; src/art/keep_crossbowmen_fx.ts, their aim line and their bolt). A MOCK-UP: NOT IN THE GAME, behind CROSSBOW_ON,
 // off. His pick, “Stand and shoot” (offered as: "Same brief, but they plant and hold their spot."). Held as floor 16's
 // gardeners and grooms and its Princess are (tests/palace_hands.test.ts, tests/princess.test.ts):
-//   1. the switch is off, and nothing of the game imports them;
+//   1. the switch is off, and of the game only their figure, rules and effects files import them;
 //   2. EVERY MOVE THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from behind, and every
 //      handover the game plays (the shot always followed by the reload; the jog into the plant);
 //   3. HIS LIGHTNING STRIKE (his Movement 9): the shot strikes in two frames, landing on the second; smeared then, and only then;
@@ -118,7 +118,7 @@ const pixels = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and of the game only their own files import them', () => {
   assert.equal(CROSSBOW_ON.on, false, 'CROSSBOW_ON is off');
   const theirs = /^art\/keep_crossbowmen(_moves|_fx)?$/;
   const users: string[] = [];
@@ -131,7 +131,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (Brought into the game by the main chat, 31 Oct 2026, on floor 19 behind HIGH_CITY (off): their figure, rules and effects files
+  // import them, and nothing else of the game)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/xbow.ts game/act1_rules/xbow.ts render/act1_fx/xbow.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

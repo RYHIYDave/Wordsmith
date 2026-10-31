@@ -195,7 +195,7 @@ export function crownPainted(t: number, view: GameView = 'front'): Painted {
 
 /** A knight of his, knight-sized: plate, a great helm, a kite shield, a spear. */
 const KN_BODY = buildOf(60, 1.25, { shoulders: 1.12, chest: 1.05, depth: 1.05, waist: 0.95, hips: 1.0, arms: 1.0, limbs: 1.15, pad: 2 });
-const KN_CANVAS = { w: 120, h: 130, ax: 52, ay: 108 } as const;
+export const KN_CANVAS = { w: 120, h: 130, ax: 52, ay: 108 } as const;
 /** Their fog: grey-blue, cold (hue about 225: well clear of the friend's cyan). */
 const GHOST: Ramp = ['#161a2a', '#262e46', '#3e4866', '#5e6a8c', '#8a96b8'];
 const GHOST_PALE = '#b2bad2';
@@ -397,7 +397,7 @@ export function curtainFaces(t: number, at: readonly [number, number] = CURTAINS
   });
   return out;
 }
-const FACE_CANVAS = { w: 44, h: 46, ax: 22, ay: 23 } as const;
+export const FACE_CANVAS = { w: 44, h: 46, ax: 22, ay: 23 } as const;
 const FACE_GREY: Ramp = ['#2a2836', '#46425a', '#68647e', '#8c88a2', '#aca8c0'];
 const FACE_CACHE = new Map<string, Px>();
 /**

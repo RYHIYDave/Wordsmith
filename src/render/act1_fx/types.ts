@@ -25,7 +25,7 @@ export interface Act1FxCtx {
   t: number;
   bestiary: Bestiary;
   /** A picture to stand among the figures: its depth (x + y, tiles), its sprite, where its floor point is on the screen. */
-  stand: (depth: number, s: Sprite, sx: number, sy: number) => void;
+  stand: (depth: number, s: Sprite, sx: number, sy: number, alpha?: number) => void;
   /** A light in the dark, on the screen: where, how wide, how strong. */
   spot: (x: number, y: number, r: number, a: number) => void;
   /** A film the painter has made for this floor (art/films.ts: its key; one of the kind's `films`), or null: not yet, or never (then the kind paints its own). */
