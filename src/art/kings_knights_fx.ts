@@ -45,13 +45,13 @@ const DUST = ['#4e4c56', '#6a6872', '#8a8892'] as const;
 // THE CRACK
 
 /** Its picture: from his floor point out before him (either way round: before him is down the picture from in front, up it from behind). */
-export const CRACK_CANVAS = { w: 340, h: 300, ax: 44, ay: 150 } as const;
+export const CRACK_CANVAS = { w: 454, h: 400, ax: 59, ay: 200 } as const;
 /**
  * Its times (seconds from his blow landing) and its size: it races out in two frames (`open`); chips and dust thrown up
  * (`burst`); held open, seeping; faded by `long`. It runs from where the blade bites (`from`, his own lengths before
  * him) out to `reach` tiles from him, `wide` tiles across where it does harm (the game's to use).
  */
-export const CRACK = { open: [0, 2 / 30] as const, burst: 0.45, hold: 1.5, long: 2.1, from: CHOP_AT, reach: 6.0, wide: 1.6 } as const;
+export const CRACK = { open: [0, 2 / 30] as const, burst: 0.45, hold: 1.5, long: 2.1, from: CHOP_AT, reach: 8.0, wide: 2.1 } as const;
 const REACH = CRACK.reach * TILE3;
 /** The crack's line: points along it from the bite out, each with how wide it is there (jagged, tapering). */
 const LINE: ReadonlyArray<readonly [number, number, number]> = (() => {
@@ -175,13 +175,13 @@ export function crackPainted(t: number, view: GameView = 'front'): Painted {
 // =============================================================================================
 // THE SWEEP
 
-export const SWEEP_CANVAS = { w: 400, h: 280, ax: 180, ay: 140 } as const;
+export const SWEEP_CANVAS = { w: 534, h: 374, ax: 240, ay: 187 } as const;
 /**
  * Its times (seconds from his blow landing) and its size: the crescent torn across the floor before him, from his right
  * (`-arc` degrees) round to his left (`arc`), out to `r` tiles (its harm: the half-circle, the game's to use), as far in
  * as `inner` tiles; out in two frames (`open`), gone by `long`; its dust settling by `dust`.
  */
-export const SWEEP = { open: [0, 2 / 30] as const, long: 0.45, dust: 0.7, r: 3.5, inner: 1.05, arc: 90 } as const;
+export const SWEEP = { open: [0, 2 / 30] as const, long: 0.45, dust: 0.7, r: 4.6, inner: 1.4, arc: 90 } as const;
 /** THE SWEEP `t` seconds after his blade lands, seen from in front or from behind. */
 export function sweepPainted(t: number, view: GameView = 'front'): Painted {
   const can = SWEEP_CANVAS;

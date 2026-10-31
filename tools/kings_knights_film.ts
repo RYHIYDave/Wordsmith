@@ -49,7 +49,7 @@ function aim(view: GameView, u0: number, u1: number): void {
   const mid = (u0 + u1) / 2;
   const span = Math.abs(u1 - u0) * 16 * Z;
   // (room over the way for him, his greatsword raised high over him at the most)
-  const room = 150 * Z;
+  const room = 128 * KN_GROW * Z;
   const yMid = Math.min(H - 24 - span / 2, BAR + 8 + room + span / 2 + Math.max(0, (H - BAR - 8 - room - 24 - 2 * span) / 2));
   const ox = Math.round(W / 2 - 32 * Z * mid);
   ORIGIN[view] = view === 'front' ? [ox, Math.round(yMid - 16 * Z * mid)] : [ox, Math.round(yMid + 16 * Z * mid)];
@@ -264,7 +264,7 @@ function partOf(view: GameView, label: string): void {
     frames: 30,
     paint: (i) => {
       clear(view, STOP - 1, STOP + 4.4);
-      heroAt(view, STOP + 3.4, 0, null);
+      heroAt(view, STOP + 4.6, 0, null);
       const t = (i % 15) / FPS;
       knightAt(view, t < KN_REEL ? 'reel' : 'stand', t < KN_REEL ? t : 0, STOP);
     },
@@ -276,7 +276,7 @@ function partOf(view: GameView, label: string): void {
     frames: Math.round((KN_DIES.long + 0.5) * FPS),
     paint: hold(Math.round(KN_DIES.long * FPS) + 1, (i) => {
       clear(view, STOP - 1, STOP + 4.4);
-      heroAt(view, STOP + 3.4, 0, null);
+      heroAt(view, STOP + 4.6, 0, null);
       knightAt(view, 'dying', i / FPS, STOP);
     }),
   });
@@ -285,7 +285,7 @@ function partOf(view: GameView, label: string): void {
 // the title
 shots.push({
   title: 'FLOOR 19, THE KEEP · THE KING’S KNIGHTS (one at a time, two blows)',
-  say: 'His pick: “Huge and slow, one each”. Second pass: half as tall again as the knight, broader alike; the swan on his back too.',
+  say: 'His pick: “Huge and slow, one each”. Then “Bigger still” and “Really big”: twice the knight’s height, broader alike; the swan on his back too.',
   frames: 54,
   paint: (i) => {
     clear('front', -1, 3);

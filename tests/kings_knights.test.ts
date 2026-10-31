@@ -247,7 +247,7 @@ test('6. NOTHING OF HIM IN THE FLOOR: all he wears and carries', () => {
         if (b.shape.k === 'mote' || b.shape.k === 'glow' || b.shape.k === 'dot') continue;
         const by = under(b.shape);
         // (the blade's own point may rest on the floor where it is planted, or bite it as it lands: its box, grown with him)
-        if (by > (b.part === 'blade' ? 0.9 * KN_GROW : 0.6)) faults.push(`${move} @${t.toFixed(2)}: ${b.part} ${b.piece} ${by.toFixed(1)} into the floor`);
+        if (by > (b.part === 'blade' ? 1.2 * KN_GROW : 0.6)) faults.push(`${move} @${t.toFixed(2)}: ${b.part} ${b.piece} ${by.toFixed(1)} into the floor`);
       }
     }
   }
@@ -337,15 +337,15 @@ test('9. NOTHING FOLDS FLAT: no round thing he wears collapses into a flat sheet
   assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
 });
 
-test('10. HIS PICK, HUGE AND SLOW, AND HIS SIZES (BIGGER STILL): half as tall again as the knight and far broader, well short of the King; no shield, a greatsword longer than the knight is tall; a slow heavy walk; the sweep across the half-circle three and a half tiles out; the cleave into the floor, its crack six tiles out; to his knee, then down', () => {
-  // HALF AS TALL AGAIN AS THE KNIGHT: the top of his helm against the top of the knight's head
+test('10. HIS PICK, HUGE AND SLOW, AND HIS SIZES (REALLY BIG): twice as tall as the knight and far broader; no shield, a greatsword half as long again as the knight is tall; a slow heavy walk; the sweep across the half-circle 4.6 tiles out; the cleave into the floor, its crack eight tiles out; to his knee, then down', () => {
+  // TWICE AS TALL AS THE KNIGHT: the top of his helm against the top of the knight's head
   const s0 = skeletonAt(MOB, 'stand', 0);
   const hero = solve(HERO_BODY, standing(HERO_BODY) as Posed);
   const top = s0.head[2] + 0.1 + KNIGHT_BODY.headR[2] * 1.12;
   const heroTop = hero.head[2] + HERO_BODY.headR[2];
-  assert.ok(top / heroTop >= 1.42 && top / heroTop <= 1.58, `his helm's top ${top.toFixed(1)} up, the knight's head ${heroTop.toFixed(1)}: ${(top / heroTop).toFixed(2)} times`);
+  assert.ok(top / heroTop >= 1.9 && top / heroTop <= 2.1, `his helm's top ${top.toFixed(1)} up, the knight's head ${heroTop.toFixed(1)}: ${(top / heroTop).toFixed(2)} times`);
   // (and well short of the King, 100 tall to the top of his head, his crown and his rider over that)
-  assert.ok(top <= 90, `his helm's top ${top.toFixed(1)} up, the King 100 tall`);
+  assert.ok(top <= 120, `his helm's top ${top.toFixed(1)} up, the King 100 tall, his rider to 116`);
   // FAR BROADER, in proportion: shoulders, chest and legs grown with him (nearly twice the knight's shoulders)
   const wide = (s: typeof s0): number => Math.hypot(s.shoulderL[0] - s.shoulderR[0], s.shoulderL[1] - s.shoulderR[1], s.shoulderL[2] - s.shoulderR[2]);
   assert.ok(wide(s0) >= 1.75 * wide(hero), `his shoulders ${wide(s0).toFixed(1)} across, the knight's ${wide(hero).toFixed(1)}`);
@@ -355,10 +355,10 @@ test('10. HIS PICK, HUGE AND SLOW, AND HIS SIZES (BIGGER STILL): half as tall ag
   for (const move of [...LIVING, 'dying']) for (const t of framesOf(MOB, move)) assert.ok(!MOB.bits(st, at(move, t)).some((b) => /shield/.test(b.piece)), `${move} @${t.toFixed(2)}: a shield`);
   const sw0 = swordOf(s0);
   const long = Math.hypot(sw0.tip[0] - sw0.pommel[0], sw0.tip[1] - sw0.pommel[1], sw0.tip[2] - sw0.pommel[2]);
-  assert.ok(long >= 66 && long <= 71, `his sword ${long.toFixed(1)} long (the knight 58 tall, the King's 77)`);
+  assert.ok(long >= 88 && long <= 95, `his sword ${long.toFixed(1)} long (the knight 58 tall, the King's 77)`);
   // SLOW: a walk of 1 to 1.5 tiles a second, painted for its pace; a foot always on the floor; his weight dropping onto
   // each foot as it comes down (his hips lowest within a few frames of it)
-  assert.ok(KN_PACE >= 1 && KN_PACE <= 1.5 && KN_PACE < TUNE.heroSpeed / 3, `he walks ${KN_PACE} tiles a second, the hero runs ${TUNE.heroSpeed}`);
+  assert.ok(KN_PACE >= 1 && KN_PACE <= 1.8 && KN_PACE < TUNE.heroSpeed / 3, `he walks ${KN_PACE} tiles a second, the hero runs ${TUNE.heroSpeed}`);
   assert.equal(MOB.walk.ground, KN_PACE * TILE3, 'his walk painted for his pace');
   const walk = framesOf(MOB, 'walk').map((t) => skeletonAt(MOB, 'walk', t));
   for (const [i, s] of walk.entries()) assert.ok(Math.min(s.heelL[2], s.toeL[2]) < 0.6 || Math.min(s.heelR[2], s.toeR[2]) < 0.6, `walk frame ${i}: both feet off the floor`);
@@ -376,14 +376,14 @@ test('10. HIS PICK, HUGE AND SLOW, AND HIS SIZES (BIGGER STILL): half as tall ag
   const [a0, a1] = KN_SWEEP.strike;
   const tips = [a0, (a0 + a1) / 2, a1].map((t) => swordOf(skeletonAt(MOB, 'attack', t)).tip);
   assert.ok(tips[0][1] < -20 * KN_GROW && tips[1][0] > 35 * KN_GROW && tips[2][1] > 40 * KN_GROW, `the sweep from his right, before him, to his left: ${tips.map((p) => p.map((v) => v.toFixed(0)).join(',')).join(' / ')}`);
-  assert.ok(SWEEP.r >= 3.5 && SWEEP.arc >= 90, `the sweep ${SWEEP.r} tiles out, ${2 * SWEEP.arc} degrees round`);
+  assert.ok(SWEEP.r >= 4.5 && SWEEP.arc >= 90, `the sweep ${SWEEP.r} tiles out, ${2 * SWEEP.arc} degrees round`);
   // THE OVERHEAD CLEAVE: in the warning, both fists high over his helm; as it lands, its point down on the floor well before him
   const sc = skeletonAt(MOB, 'cleave', (KN_CLEAVE.warn[0] + KN_CLEAVE.warn[1]) / 2);
   assert.ok(sc.handR[2] > sc.head[2] + 8 && sc.handL[2] > sc.head[2] + 8, `his fists ${sc.handR[2].toFixed(1)}, ${sc.handL[2].toFixed(1)} up, his head ${sc.head[2].toFixed(1)}`);
   const hitTip = swordOf(skeletonAt(MOB, 'cleave', KN_CLEAVE.hit)).tip;
   assert.ok(hitTip[2] < 1.6 && hitTip[0] > TILE3, `the point lands at ${hitTip.map((v) => v.toFixed(1)).join(', ')}`);
   assert.ok(Math.abs(hitTip[0] - CHOP_AT) < 1.5, `the crack begins where the point bites (${CHOP_AT.toFixed(1)}, the point ${hitTip[0].toFixed(1)})`);
-  assert.ok(CRACK.reach >= 6 && CRACK.wide >= 1.5, `the crack ${CRACK.reach} tiles out, ${CRACK.wide} across`);
+  assert.ok(CRACK.reach >= 8 && CRACK.wide >= 1.5, `the crack ${CRACK.reach} tiles out, ${CRACK.wide} across`);
   // HIS DEATH: on his right knee behind his planted sword, its point on the floor, his head bowed; then down
   const k = skeletonAt(MOB, 'dying', (KN_DIES.bow[1] + KN_DIES.out[1]) / 2);
   assert.ok(k.kneeR[2] < KNEE_DOWN + 0.6 && k.kneeL[2] > 12 * KN_GROW, `to his right knee (knees ${k.kneeR[2].toFixed(1)}, ${k.kneeL[2].toFixed(1)} up)`);

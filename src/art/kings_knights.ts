@@ -72,8 +72,8 @@ const MAIL: Ramp = ['#14161c', '#14161c', '#353a46', '#4e5462', '#4e5462'];
 // not stretched. His look and his moves are drawn in the first pass's lengths (`KN_FIRST`) and grown by `KN_GROW`.
 
 const SHAPE = { shoulders: 1.55, chest: 1.45, depth: 1.3, waist: 1.3, hips: 1.25, arms: 1.08, trunk: 1.0, limbs: 1.4 } as const;
-/** How tall he stands (the knight 58; the King 100, his rider to 116). */
-export const KN_TALL = 87;
+/** How tall he stands (the knight 58; the King 100, his rider to 116): REALLY BIG, his word on the second pass, twice the knight. */
+export const KN_TALL = 116;
 /** The first pass's body, 74 tall: what his look and his moves are drawn in. */
 export const KN_FIRST: Build = buildOf(74, 1.15, { ...SHAPE, pad: 1.9 });
 /** How much bigger than the first pass he is, every length alike. */
@@ -83,7 +83,7 @@ export const KNIGHT_BODY: Build = buildOf(KN_TALL, 1.15, { ...SHAPE, pad: 1.9 * 
 const KB = KN_FIRST;
 const G = KN_GROW;
 /** His picture: room for the greatsword raised high over him and brought down before him, and swept round him. */
-export const KN_CANVAS: MobCanvas = { w: 470, h: 400, ax: 235, ay: 278 };
+export const KN_CANVAS: MobCanvas = { w: 630, h: 534, ax: 315, ay: 371 };
 
 /** A skeleton of his as he is, in the first pass's lengths (every place shrunk toward his floor point; every way as it is). */
 export function firstOf(s: Skeleton): Skeleton {

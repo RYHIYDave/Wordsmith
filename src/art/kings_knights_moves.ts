@@ -186,7 +186,7 @@ const beforeChest = (h: number, x: number, y: number, z: number): V3 => [x * Mat
 // HIS PACE (his pick, “Huge and slow, one each”): a heavy walk, slower than anything the hero meets on two legs
 
 /** His walking pace, tiles a second (the hero runs 4.6: TUNE.heroSpeed): a little quicker than the first pass's 1.2, for his longer legs. */
-export const KN_PACE = 1.3;
+export const KN_PACE = 1.5;
 export const KN_WALK = { frames: 36, fps: 30 } as const;
 /** How far the floor goes by under him in a second, his own lengths (the game's). */
 const GROUND = KN_PACE * TILE3;
