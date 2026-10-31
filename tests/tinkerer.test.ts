@@ -17,7 +17,7 @@ import { SKILLS } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster } from '../src/game/state';
-import { GOLEM_LOOK, TINKERER, TINKER_TUNE, golemBlow } from '../src/game/tinkerer';
+import { GOLEM_CANNON, GOLEM_LOOK, TINKERER, TINKER_TUNE, golemBlow } from '../src/game/tinkerer';
 import { placedAim } from '../src/game/lock';
 import { playableClasses } from '../src/game/warlock';
 import { land } from './helpers';
@@ -210,7 +210,7 @@ test('her first tap and hold whistles her Golem out beside her; it stays with he
   assert.ok(g.golem, 'always with her');
 });
 
-test('her Golem punches what is near it, and fires its cannon at what is further off', () => {
+test('her Golem punches what is near it, and runs at what is further off to punch it too (its cannon off, his word); on, it fires', () => {
   const g = room();
   use(g, 1, 3, 0);
   wait(g, G.arrive + 0.1);
@@ -218,13 +218,28 @@ test('her Golem punches what is near it, and fires its cannon at what is further
   const ev1 = wait(g, 3);
   assert.ok(ev1.some((e) => e.t === 'golemPunch'), 'it punches');
   assert.ok(hurt(near) > 0);
+  // (his word, 30 Oct 2026: “It needs to run at the enemies.”; “always trying to be in melee range”: as fast as she runs, at it)
+  assert.equal(GOLEM_CANNON.on, false, 'its cannon off for now');
+  assert.equal(G.speed, 4.6, 'as fast as she runs');
   const g2 = room(5);
   use(g2, 1, 3, 0);
   wait(g2, G.arrive + 0.1);
   const far = dummy(g2, 6, 0);
   const ev2 = wait(g2, 3);
-  assert.ok(ev2.some((e) => e.t === 'golemShot'), 'it fires its cannon');
+  assert.ok(!ev2.some((e) => e.t === 'golemShot'), 'no shot');
+  assert.ok(ev2.some((e) => e.t === 'golemPunch'), 'it runs at it and punches it');
   assert.ok(hurt(far) > 0);
+  // (its cannon kept for a later passive: on, it fires at what is further off)
+  GOLEM_CANNON.on = true;
+  try {
+    const g3 = room(5);
+    use(g3, 1, 3, 0);
+    wait(g3, G.arrive + 0.1);
+    dummy(g3, 6, 0);
+    assert.ok(wait(g3, 3).some((e) => e.t === 'golemShot'), 'on, it fires its cannon');
+  } finally {
+    GOLEM_CANNON.on = false;
+  }
 });
 
 test('each tap and hold after sets it on to ground pound, striking everything round its fist', () => {
