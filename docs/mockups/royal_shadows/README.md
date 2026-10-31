@@ -200,3 +200,5 @@ The sheet and the film (`royal_shadows_sheet.png`, `royal_shadows_film.mp4`), as
 that's them (Recommended)”.
 
 THE KING'S SHADOW, 31 Oct: told that on floor 20 the King's shadow still does his old crown leap, which he had just replaced (the King now charges with his blade dragged and sends up the Crown's Weight), and asked whether to give it one of his new moves: “The Crown's Weight” (offered as: a shadow crown follows you and slams). Drawn: `king_shadow_crown_sheet.png` and `king_shadow_crown.mp4`. Its basic is still the King's old sweep: whether it should be his charge is for him to say.
+
+OF THE KING'S SHADOW'S CROWN'S WEIGHT (ea24adb; `king_shadow_crown.mp4`, `king_shadow_crown_sheet.png`), asked “The King's shadow now sends up a grey shadow crown, about two-thirds the size of his, that follows you with a pink ring and slams. Is that it?”: “Yes, that's it (Recommended)”. Told its basic attack is still the King's old sweep, and asked whether it should charge with its blade dragged as the King now does: “Yes, the charge (Recommended)” (offered as: a smaller shadow of his charge and its line of sparks). To be drawn.
