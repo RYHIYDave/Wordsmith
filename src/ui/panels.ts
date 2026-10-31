@@ -270,10 +270,10 @@ declare const __CARDS3__: boolean | undefined;
  * THE CLASS CARDS THREE ACROSS IN TWO ROWS, AND CONFIRM (the owner, 31 Oct 2026, 01:16: "Can I get the character select screen to
  * have a confirm? Button when you select a character", and "And can it be 3 across 2 rows for portraits"): a card pressed is
  * chosen (lit, walking), and CONFIRM under the cards starts the hero. Each card is laid on its side: the portrait on its left,
- * the name, the words, the three attacks and the numbers beside it. PICTURES FIRST: off but where a page is built with it
- * (the classes test page), until he has seen it and said yes.
+ * the name, the words, the three attacks and the numbers beside it. Shown him on the classes test page (version 9) with its
+ * picture: “Yes, keep it (Recommended)”. On (a page built with __CARDS3__ false has the cards as they were).
  */
-export const CARDS3 = { on: typeof __CARDS3__ !== 'undefined' && __CARDS3__ === true };
+export const CARDS3 = { on: typeof __CARDS3__ === 'undefined' || __CARDS3__ === true };
 
 /** THE TRY-OUT PAGE ONLY: its two options, the floor to try (pressed, the next one) and going there. */
 function tryItems(st: TitleUi, opt: TitleIn): { id: string; label: string; sub: string; lit: boolean }[] {
