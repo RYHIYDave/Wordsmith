@@ -33,9 +33,9 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
-import { KING_CANVAS, KING_ON, SWORD_LONG, hushRiding, hushStanding, swordOf } from '../src/art/king';
-import { HS_SHAPE, HUSH, HUSH_BESIDE, KG_ALONE_SHAPE, KG_CLIMB, KG_CROWN, KG_DIES, KG_PACE, KG_SHAPE, KG_STRIKES, KG_SWEEP, KING, KING_ALONE, TIP_Z, smearedAt } from '../src/art/king_moves';
-import { BIRD, CROWN_FX, DECREE_FX, DECREE_GAPS, KG_REACH, SWEEP_FX, birdPainted, crownPainted, curtainFaces, curtainsPainted, decreeKnights, decreePainted, sweepPainted } from '../src/art/king_fx';
+import { KING_CANVAS, KING_ON, SWORD_LONG, crownOnHead, hushRiding, hushStanding, swordOf } from '../src/art/king';
+import { HS_FOG, HS_GRAB, HS_SHAPE, HS_STRIKES, HS_STRUCK, HUSH, HUSH_BESIDE, KG_ALONE_SHAPE, KG_CHARGE, KG_CLIMB, KG_DIES, KG_PACE, KG_RETIRED, KG_SHAPE, KG_SHIELD_SHAPE, KG_STRIKES, KG_WEIGHT, KING, KING_ALONE, KING_SHIELDED, TIP_Z, chargeCarried, grabBare, grabReach, hsSmearedAt, smearedAt } from '../src/art/king_moves';
+import { BIRD, CHARGE_FX, CROWN_FX, DECREE_FX, DECREE_GAPS, FOG_CANVAS, FX_CANVAS, KG_REACH, SWEEP_FX, WEIGHT_CANVAS, WEIGHT_FX, birdPainted, breathPainted, crownPainted, curtainFaces, curtainsPainted, decreeKnights, decreePainted, fogPatchPainted, grabPainted, shieldPainted, sparksPainted, sweepPainted, weightAt, weightHead, weightPainted } from '../src/art/king_fx';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { BLOOD, ENEMY_RIM, FLAME } from '../src/art/mkit';
@@ -98,10 +98,12 @@ const paint = (mob: Mob, move: string, t: number, view: 'front' | 'back'): Paint
 
 /** Every frame of every move of his (the game's frames of each: framesOf), both ways round; of him alone (his last phase), every third frame; of the Hush on its own, its stand and its end. */
 const PAINTED: { mob: Mob; move: string; view: (typeof VIEWS)[number]; t: number; p: Painted }[] = [];
+/** The Hush's moves of its own that are reviewed (its walk and its reel are its stand). */
+const HUSH_MOVES = ['stand', 'attack', 'fog', 'wrap', 'struckOff', 'dying'];
 for (const view of VIEWS) {
   for (const move of movesOf(KING)) for (const t of framesOf(KING, move)) PAINTED.push({ mob: KING, move, view, t, p: paint(KING, move, t, view) });
-  for (const move of movesOf(KING_ALONE)) framesOf(KING_ALONE, move).forEach((t, i) => i % 3 === 0 && PAINTED.push({ mob: KING_ALONE, move, view, t, p: paint(KING_ALONE, move, t, view) }));
-  for (const move of ['stand', 'dying']) for (const t of framesOf(HUSH, move)) PAINTED.push({ mob: HUSH, move, view, t, p: paint(HUSH, move, t, view) });
+  for (const mob of [KING_ALONE, KING_SHIELDED]) for (const move of movesOf(mob)) framesOf(mob, move).forEach((t, i) => (i % 3 === 0 || smearedAt(move, t)) && PAINTED.push({ mob, move, view, t, p: paint(mob, move, t, view) }));
+  for (const move of HUSH_MOVES) for (const t of framesOf(HUSH, move)) PAINTED.push({ mob: HUSH, move, view, t, p: paint(HUSH, move, t, view) });
 }
 const said = (mob: Mob, move: string, view: string, t: number): string => `${mob.id} ${move} ${view} @${t.toFixed(3)}`;
 /** The smear's own colours (art/king.ts SMEAR). */
@@ -130,25 +132,40 @@ test('1. the switch is off, and nothing of the game imports him', () => {
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover; with the Hush on his back, without it, and the Hush on its own', () => {
-  assert.equal(movesOf(KING).join(','), 'stand,walk,attack,reel,dying,decree,crown,curtains,climbOff');
-  assert.equal(movesOf(KING_ALONE).join(','), 'stand,walk,attack,reel,dying,decree,crown,curtains');
-  for (const [mob, shape, moves] of [[KING, KG_SHAPE, undefined], [KING_ALONE, KG_ALONE_SHAPE, undefined], [HUSH, HS_SHAPE, ['stand', 'dying']]] as const) {
+  assert.equal(movesOf(KING).join(','), 'stand,walk,attack,reel,dying,decree,weight,curtains,climbOff');
+  assert.equal(movesOf(KING_ALONE).join(','), 'stand,walk,attack,reel,dying,decree,weight,curtains');
+  assert.equal(movesOf(KING_SHIELDED).join(','), 'stand,walk,attack,reel,dying,decree,weight,curtains');
+  assert.equal(movesOf(HUSH).join(','), 'stand,walk,attack,reel,dying,fog,wrap,struckOff');
+  for (const [mob, shape, moves] of [[KING, KG_SHAPE, undefined], [KING_ALONE, KG_ALONE_SHAPE, undefined], [KING_SHIELDED, KG_SHIELD_SHAPE, undefined], [HUSH, HS_SHAPE, HUSH_MOVES]] as const) {
     const found = checkBoss(mob, shape, moves);
     assert.equal(found.length, 0, `${mob.id}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
   }
+  // (every frame of every move a figure, nothing lost to a bad number)
+  for (const mob of [KING, KING_ALONE, KING_SHIELDED, HUSH]) {
+    for (const move of movesOf(mob)) {
+      for (const t of framesOf(mob, move)) {
+        const sk = skeletonAt(mob, move, t);
+        assert.ok([sk.head, sk.pelvis, sk.handL, sk.handR, sk.toeL, sk.toeR].every((p) => p.every(Number.isFinite)), `${mob.id} ${move} @${t.toFixed(3)}: not a number`);
+      }
+    }
+  }
+  // (his old sweep and his crown's leap are kept in the code, out of his moves)
+  assert.ok(KG_RETIRED.sweep().keys.length > 30 && KG_RETIRED.leap().keys.length > 30);
 });
 
 test('3. HIS LIGHTNING STRIKES: each blow strikes in two frames and lands on the second; the strike and the frame after it smeared, no other frame', () => {
-  assert.equal(Object.keys(KG_STRIKES).sort().join(','), 'attack,crown,curtains,decree');
+  assert.equal(Object.keys(KG_STRIKES).sort().join(','), 'attack,curtains,decree,weight');
+  assert.equal(Object.keys(HS_STRIKES).sort().join(','), 'attack,fog');
   const faults: string[] = [];
-  for (const [move, [s0, s1]] of Object.entries(KG_STRIKES)) {
-    assert.equal(Math.round((s1 - s0) * 30), 2, `${move}: its strike is two frames`);
-    assert.equal(moveOf(KING, move).motion.hit, s1, `${move}: it lands on the strike's last frame`);
+  for (const [mob, strikes] of [[KING, KG_STRIKES], [HUSH, HS_STRIKES]] as const) {
+    for (const [move, [s0, s1]] of Object.entries(strikes)) {
+      assert.equal(Math.round((s1 - s0) * 30), 2, `${mob.id} ${move}: its strike is two frames`);
+      assert.equal(moveOf(mob, move).motion.hit, s1, `${mob.id} ${move}: it lands on the strike's last frame`);
+    }
   }
   for (const { mob, move, view, t, p } of PAINTED) {
-    if (mob === HUSH) continue;
     const n = smearIn(p);
-    const want = smearedAt(move, t);
+    const want = mob === HUSH ? hsSmearedAt(move, t) : smearedAt(move, t);
     if (want && n < 20) faults.push(`${said(mob, move, view, t)}: its smear only ${n} pixels`);
     if (!want && n > 0) faults.push(`${said(mob, move, view, t)}: smeared out of its strike (${n})`);
   }
@@ -222,7 +239,7 @@ function under(sh: Shape): number {
 
 test('6. NOTHING OF HIM IN THE FLOOR: all he wears and holds; his sword\'s point on the stones, not in them', () => {
   const faults: string[] = [];
-  for (const mob of [KING, KING_ALONE]) {
+  for (const mob of [KING, KING_ALONE, KING_SHIELDED]) {
     const st = stageOf(mob);
     for (const move of movesOf(mob)) {
       for (const t of framesOf(mob, move)) {
@@ -249,7 +266,8 @@ test('7. HIS BRIEF: the Hush rides his back with the dull pink eyes, his own eye
       const bits = KING.bits(st, at(KING, move, t));
       assert.ok(pinkEyes(bits, 'hushHead'), `${move} @${t.toFixed(2)}: the Hush on his back, its eyes the dull pink`);
       assert.ok(!pinkEyes(bits, 'head'), `${move} @${t.toFixed(2)}: his own eyes pink`);
-      assert.ok(bits.some((b) => b.part === 'crown'), `${move} @${t.toFixed(2)}: his crown`);
+      const away = move === 'weight' && t >= KG_WEIGHT.send - 1e-6 && t < KG_WEIGHT.back - 1e-6;
+      assert.ok(bits.some((b) => b.part === 'crown') !== away, `${move} @${t.toFixed(2)}: his crown ${away ? 'on his head while it is away' : 'not on him'}`);
       assert.ok(bits.some((b) => b.part === 'hush'), `${move} @${t.toFixed(2)}: the Hush on his back`);
     }
   }
@@ -342,25 +360,182 @@ test('9. WHAT HIS BLOWS LEAVE: across the hall, the Decree\'s lines with gaps, t
   assert.ok(notes(birdPainted('singing', BIRD.song * 0.3)) > notes(birdPainted('broken', 0)), 'its song');
 });
 
-test('10. HIS SIZES AND REACH: the sweep round from behind his right to his left, the wave ten tiles out, the ring ten, the leap five tiles; his pace slow', () => {
-  const tipAt = (t: number): V3 => KG_SHAPE.tip?.('attack', t, skeletonAt(KING, 'attack', t), posedOfMob(KING, 'attack', t)) as V3;
-  const s0 = skeletonAt(KING, 'attack', KG_SWEEP.strike[0]);
-  const deg = (p: V3, c: V3): number => (Math.atan2(p[1] - c[1], p[0] - c[0]) * 180) / Math.PI;
-  const [a, b] = KG_SWEEP.strike;
-  assert.ok(deg(tipAt(a), s0.pelvis) <= -140, `the sweep starts from ${deg(tipAt(a), s0.pelvis).toFixed(0)} degrees (behind his right)`);
-  assert.ok(deg(tipAt(b), s0.pelvis) >= 50, `and lands at ${deg(tipAt(b), s0.pelvis).toFixed(0)} degrees (his left)`);
-  for (const t of [a, b]) assert.ok(Math.hypot(tipAt(t)[0], tipAt(t)[1]) >= 2.0 * TILE3, `the blade itself reaches ${(Math.hypot(tipAt(t)[0], tipAt(t)[1]) / TILE3).toFixed(1)} tiles`);
-  assert.ok(SWEEP_FX.to - SWEEP_FX.from >= 200, `the wave's wedge ${SWEEP_FX.to - SWEEP_FX.from} degrees`);
-  assert.ok(KG_REACH.sweep >= 9.5 && KG_REACH.crown >= 9.5, 'the wave and the ring out across most of the hall (about 17 by 20 tiles)');
-  assert.ok(KG_CROWN.carry >= 5, `his leap carries him ${KG_CROWN.carry} tiles`);
-  assert.ok(KG_CROWN.top >= 50, `his leap ${KG_CROWN.top} high`);
+test('10. HIS SIZES AND REACH: his pace slow, his blows across the hall', () => {
+  assert.ok(KG_REACH.crown >= 9.5, 'the old ring (kept) out across most of the hall');
   assert.ok(KG_PACE <= 1.2, `his pace ${KG_PACE} tiles a second: slow and heavy`);
   assert.equal(KING.walk.ground, KG_PACE * TILE3, 'his walk painted for his pace');
-  // (in the air while the game carries him: both feet off the stones)
-  for (const t of framesOf(KING, 'crown')) {
-    if (t <= KG_CROWN.air[0] + 0.05 || t >= KG_CROWN.air[1] - 0.02) continue;
-    const s = skeletonAt(KING, 'crown', t);
-    assert.ok(Math.min(s.toeL[2], s.toeR[2], s.heelL[2], s.heelR[2]) > 0.6, `the Crown @${t.toFixed(2)}: a foot down while he is in the air`);
-  }
   void KING_CANVAS;
+  void SWEEP_FX;
+});
+
+/** How many pixels of a picture are drawn. */
+const drawn = (p: Painted): number => {
+  let n = 0;
+  for (let i = 3; i < p.px.d.length; i += 4) if (p.px.d[i]) n++;
+  return n;
+};
+/** How many pixels of a picture are this colour. */
+const ofColour = (p: Painted, c: string): number => {
+  const [r, g, b] = rgba(c);
+  let n = 0;
+  for (let i = 0; i < p.px.d.length; i += 4) if (p.px.d[i + 3] && p.px.d[i] === r && p.px.d[i + 1] === g && p.px.d[i + 2] === b) n++;
+  return n;
+};
+/** How near a picture's drawn pixels come to its edge. */
+const room = (p: Painted): number => {
+  const { w, h, d } = p.px;
+  let least = Infinity;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3]) least = Math.min(least, x, y, w - 1 - x, h - 1 - y);
+  return least;
+};
+
+test('11. THE CHARGE: the warning held, the strike two frames, carried nine tiles at twelve a second, his feet gripping as he runs; the line of sparks the length of it, bursting after he stops', () => {
+  const C = KG_CHARGE;
+  assert.ok(C.warn[1] - C.warn[0] >= 0.39, 'its warning held at least 0.4 s');
+  assert.equal(Math.round((C.strike[1] - C.strike[0]) * 30), 2);
+  assert.ok(Math.abs(chargeCarried(C.run[1]) / TILE3 - C.most) < 1e-6 && C.most >= 9 && C.pace >= 12, `carried ${(chargeCarried(C.run[1]) / TILE3).toFixed(2)} tiles at ${C.pace}`);
+  assert.ok(Math.abs(C.burst - C.run[1] - C.burstAfter) < 1e-6, 'the line bursts burstAfter after he stops');
+  // (his feet: each that is down stays where it is on the stones as the game carries him: KG_SHAPE.carried, held to SLIDE in check 2)
+  assert.equal(KG_SHAPE.carried?.('attack', C.run[1]), chargeCarried(C.run[1]));
+  // (running: off the stones between his steps, as a runner is, and leaning hard into it)
+  let flying = 0;
+  for (const t of framesOf(KING, 'attack')) {
+    if (t <= C.hit || t >= C.run[1]) continue;
+    const s = skeletonAt(KING, 'attack', t);
+    if (Math.min(s.toeL[2], s.toeR[2], s.heelL[2], s.heelR[2]) > 0.6) flying++;
+    assert.ok(s.ribs[0] - s.pelvis[0] > 6, `@${t.toFixed(2)}: leaning into his run`);
+  }
+  assert.ok(flying >= 4, `${flying} frames off the stones between his steps`);
+  // (the sword dragged on the stones behind him as he runs)
+  for (const t of [0.9, 1.1, 1.3, 1.5]) {
+    const tip = swordOf(skeletonAt(KING, 'attack', t)).tip;
+    assert.ok(Math.abs(tip[2] - TIP_Z) < 0.5 && tip[0] < -40, `@${t}: his sword's point ${tip.map((v) => v.toFixed(0))}: not dragged behind him`);
+  }
+  // THE LINE: cut the length of his run, glowing; bursting; gone
+  const ran = C.most / C.pace;
+  for (const view of VIEWS) {
+    let far = 0;
+    const mid = sparksPainted(ran, view);
+    const st = stage(view === 'back' ? 'rear' : view, FX_CANVAS.ax, FX_CANVAS.ay, FX_CANVAS);
+    for (let x = -C.tail * TILE3; x < (C.most - C.tail) * TILE3; x += TILE3 * 0.5) {
+      const [X, Y] = st.at([x, 0, 0]);
+      let hit = false;
+      for (let dy = -4; dy <= 4 && !hit; dy++) for (let dx = -4; dx <= 4 && !hit; dx++) if (mid.px.d[((Math.round(Y) + dy) * mid.px.w + Math.round(X) + dx) * 4 + 3]) hit = true;
+      if (hit) far = x;
+    }
+    assert.ok(far / TILE3 >= C.most - C.tail - 1, `${view}: the line cut ${(far / TILE3 + C.tail).toFixed(1)} tiles`);
+    const before = drawn(sparksPainted(ran + C.burstAfter - 0.05, view));
+    const burst = drawn(sparksPainted(ran + C.burstAfter + 0.1, view));
+    assert.ok(burst > 2 * before && burst > 3000, `${view}: its burst ${burst} pixels (${before} before)`);
+    assert.equal(drawn(sparksPainted(ran + C.burstAfter + CHARGE_FX.long + 0.05, view)), 0, 'gone after');
+    for (let t = 0; t < ran + C.burstAfter + CHARGE_FX.long; t += 0.1) {
+      const p = sparksPainted(t, view);
+      assert.ok(!cyanIn(p) && room(p) >= 4, `${view} @${t.toFixed(1)}: cyan, or cut off`);
+    }
+  }
+});
+
+test('12. THE CROWN\'S WEIGHT: sent up off his head, huge, high over you, following; held; slammed in two frames; home onto his head as it was', () => {
+  const W = KG_WEIGHT;
+  const F = WEIGHT_FX;
+  assert.equal(Math.round((W.strike[1] - W.strike[0]) * 30), 2, 'its drop two frames');
+  assert.ok(Math.abs(W.strike[1] - W.send - (F.follow + (F.hold[1] - F.hold[0]) + (F.drop[1] - F.drop[0]))) < 1e-6 && F.follow === 2.4 && W.pace === 3.2, 'its times: following 2.4 s from going up, held, dropped');
+  assert.ok(F.hold[1] - F.hold[0] >= 0.5, 'held at least half a second');
+  for (const view of VIEWS) {
+    // (it leaves his head where it sits on it, and comes back to where it sits on it, as he is then)
+    const a = weightAt(0, view);
+    const h0 = weightHead(W.send, view);
+    assert.ok(Math.hypot(a.c[0] - h0.c[0], a.c[1] - h0.c[1], a.c[2] - h0.c[2]) < 0.01 && Math.abs(a.k - 1) < 1e-6 && a.lerp === 0, `${view}: sent from his head`);
+    const b = weightAt(F.long - 1e-4, view);
+    const h1 = weightHead(W.back, view);
+    assert.ok(Math.hypot(b.c[0] - h1.c[0], b.c[1] - h1.c[1], b.c[2] - h1.c[2]) < 0.5 && Math.abs(b.k - 1) < 0.01 && b.lerp > 0.999, `${view}: home on his head`);
+    const st = stage(view === 'back' ? 'rear' : view, 10, 10, { w: 20, h: 20 });
+    const on = crownOnHead(st, skeletonAt(KING, 'weight', W.back), 0);
+    assert.ok(Math.hypot(on.c[0] - h1.c[0], on.c[1] - h1.c[1], on.c[2] - h1.c[2]) < 0.01, 'as his picture has it');
+    // (huge, and high over the knight while it follows and hangs)
+    for (const t of [0.6, 1.5, 2.4, 2.8]) {
+      const w = weightAt(t, view);
+      assert.ok(w.k >= 4.5 && w.c[2] >= 90 && Math.hypot(w.c[0], w.c[1]) < 2, `${view} @${t}: ${w.k.toFixed(1)} times as big, ${w.c[2].toFixed(0)} up, over its floor point`);
+    }
+    // (down on the stones when it lands, not in them)
+    const l = weightAt(F.drop[1] + 0.01, view);
+    assert.ok(l.c[2] > 0 && l.c[2] < 20, `${view}: on the stones as it lands (${l.c[2].toFixed(1)})`);
+    // (its warning: the enemy's pink ring while it follows; brighter as it hangs; then the slam)
+    const follow = weightPainted(1.4, view, 'floor');
+    const hold = weightPainted(F.drop[0] - 0.02, view, 'floor');
+    assert.ok(ofColour(follow, FLAME[1]) > 40, `${view}: its pink ring as it follows`);
+    assert.ok(ofColour(hold, FLAME[2]) > 150, `${view}: bright as it hangs`);
+    assert.ok(drawn(weightPainted(F.drop[1] + 0.05, view, 'floor')) > 1500, `${view}: the slam drawn big`);
+    for (let t = 0; t < F.long; t += 1 / 15) {
+      for (const part of ['crown', 'floor'] as const) {
+        const p = weightPainted(t, view, part);
+        assert.ok(!cyanIn(p) && room(p) >= 4, `${view} ${part} @${t.toFixed(2)}: cyan, or cut off (${room(p)})`);
+      }
+    }
+    // (its drop smeared)
+    assert.ok(smearIn(weightPainted(F.drop[1], view, 'crown')) > 40, `${view}: its drop smeared`);
+    assert.equal(smearIn(weightPainted(F.drop[0] - 0.05, view, 'crown')), 0, 'no smear before it drops');
+  }
+  void WEIGHT_CANVAS;
+});
+
+test('13. THE HUSH\'S THREE MOVES: its grab shooting 8 tiles; its shield, clinging round him through all his moves, and struck off; its grey fog, lying 7 s and gone; none takes a word', () => {
+  // GRAB AND DRAG
+  assert.ok(Math.abs(grabReach(HS_GRAB.out[1]) - HS_GRAB.reach) < 1e-6 && HS_GRAB.reach >= 8 && HS_GRAB.pace >= 16, `its arms out ${grabReach(HS_GRAB.out[1])} tiles`);
+  assert.equal(grabReach(HS_GRAB.haul[1]), 0, 'and home');
+  assert.ok(!grabBare(HS_GRAB.strike[0]) && grabBare(0.9) && !grabBare(HS_GRAB.haul[1]), 'its forearms the effect\'s only while out');
+  for (const view of VIEWS) {
+    const st = stage(view === 'back' ? 'rear' : view, FX_CANVAS.ax, FX_CANVAS.ay, FX_CANVAS);
+    const out = grabPainted(HS_GRAB.out[1], view);
+    const [X, Y] = st.at([(HS_GRAB.reach + 1) * TILE3, 0, 34]);
+    let near = 0;
+    for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) if (out.px.d[((Math.round(Y) + dy) * out.px.w + Math.round(X) + dx) * 4 + 3]) near++;
+    assert.ok(near > 20, `${view}: its hands out past 8 tiles (${near})`);
+    for (let t = 0; t < HS_GRAB.long; t += 0.05) {
+      const p = grabPainted(t, view);
+      assert.ok(!cyanIn(p) && (drawn(p) === 0 || room(p) >= 4), `${view} @${t.toFixed(2)}: its arms cyan or cut off`);
+    }
+    for (const aim of [-45, 45]) assert.ok(room(grabPainted(HS_GRAB.out[1], view, { aim })) >= 4, `${view}: aimed ${aim}: cut off`);
+  }
+  // SHIELD: clinging round him in every frame of every move, its fog wound round him; wrapping, and struck off
+  const st = stageOf(KING_SHIELDED);
+  for (const move of movesOf(KING_SHIELDED).filter((m) => m !== 'dying')) {
+    for (const t of framesOf(KING_SHIELDED, move).filter((_, i) => i % 4 === 0)) {
+      const bits = KING_SHIELDED.bits(st, at(KING_SHIELDED, move, t));
+      assert.ok(bits.some((b) => b.part === 'hush') && bits.some((b) => b.part === 'shroud') && bits.some((b) => b.part === 'hushHead' && b.piece === 'eyes'), `shielded, ${move} @${t.toFixed(2)}: not wrapped round him`);
+    }
+  }
+  assert.ok(HS_STRUCK.knock[1] <= 0.5 && HS_STRUCK.long >= 1.2, 'flung off, and dazed a while');
+  for (const view of VIEWS) {
+    for (const mode of ['on', 'off'] as const) {
+      const p = shieldPainted(0.2, view, mode);
+      assert.ok(drawn(p) > 100 && !cyanIn(p), `${view} ${mode}: its fog round him`);
+      const b = drawn(shieldPainted(0.2, view, mode, 'behind'));
+      const f = drawn(shieldPainted(0.2, view, mode, 'before'));
+      assert.ok(b > 20 && f > 20 && b + f >= drawn(p), `${view} ${mode}: behind him ${b}, before him ${f}`);
+    }
+  }
+  // GREY FOG: the places marked as it draws breath; lying HS_FOG.r round; thinning; gone at HS_FOG.lies
+  assert.ok(HS_FOG.r >= 1.7 && HS_FOG.lies >= 7);
+  for (const view of VIEWS) {
+    assert.ok(ofColour(fogPatchPainted(-0.2, view), FLAME[1]) > 20, `${view}: the place marked`);
+    const lying = fogPatchPainted(3, view);
+    const st2 = stage(view === 'back' ? 'rear' : view, FOG_CANVAS.ax, FOG_CANVAS.ay, FOG_CANVAS);
+    let wide = 0;
+    for (const a of [0, 90, 180, 270]) {
+      const [X, Y] = st2.at([Math.cos((a * Math.PI) / 180) * HS_FOG.r * TILE3 * 0.75, Math.sin((a * Math.PI) / 180) * HS_FOG.r * TILE3 * 0.75, 0]);
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (lying.px.d[((Math.round(Y) + dy) * lying.px.w + Math.round(X) + dx) * 4 + 3]) wide++;
+    }
+    assert.ok(wide > 60, `${view}: lying ${HS_FOG.r} tiles round (${wide})`);
+    assert.ok(drawn(fogPatchPainted(HS_FOG.lies - 0.3, view)) < 0.6 * drawn(lying), `${view}: thinning at its end`);
+    assert.equal(drawn(fogPatchPainted(HS_FOG.lies, view)), 0, 'gone');
+    for (let t = -0.6; t < HS_FOG.lies; t += 0.25) {
+      const p = fogPatchPainted(t, view);
+      assert.ok(!cyanIn(p) && (drawn(p) === 0 || room(p) >= 2), `${view} @${t.toFixed(2)}: the patch cyan or cut off`);
+    }
+    for (let t = 0; t < 0.9; t += 0.1) assert.ok(!cyanIn(breathPainted(t, view)), 'its breath cyan');
+    assert.ok(drawn(breathPainted(0.15, view)) > 300, `${view}: its breath drawn`);
+  }
+  // NONE OF THEM TAKES OR DARKENS WORDS: they are fog and arms; nothing of the words is in them (the game's rules: gking.ts)
+  void HS_SHAPE;
 });

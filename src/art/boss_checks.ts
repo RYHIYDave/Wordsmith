@@ -120,6 +120,11 @@ export interface BossShape {
   low?: Partial<Record<'knee' | 'elbow' | 'hand' | 'heel' | 'toe' | 'grip', number>>;
   /** Where his moves hand over to each other (if not said: his stand into each move and back, into his walk and out of it at any step). */
   handovers?: ReadonlyArray<Handover>;
+  /**
+   * HOW FAR THE GAME HAS CARRIED HIM along his own forward by `t` seconds into a move that is not a walk (a charge: his own
+   * lengths): a foot that is down goes back under him with the floor, as walking. Not at all, if not said.
+   */
+  carried?: (move: string, t: number) => number;
   /** Who he is after a move that changes him (a chain broken): his stand after it is that one's. */
   after?: Readonly<Record<string, Mob>>;
   /** What he carries as that other one (his chains as they are once one has broken). */
@@ -261,7 +266,7 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
           }
           // (the game carries a walking figure on at its pace: where the foot is on the floor itself)
           const T = ts[i] + lap * (ts[n - 1] - ts[0]);
-          const [x, y] = seen([p[0] + ground * T, p[1], p[2]], view);
+          const [x, y] = seen([p[0] + ground * T + (shape.carried?.(which, ts[i]) ?? 0), p[1], p[2]], view);
           if (!start) {
             start = [x, y];
             from = ts[i];

@@ -78,15 +78,8 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
 - HIS WALK (`KG_WALK`, 18 frames at 10 a second; `KG_PACE` 1.0 tile a second, the knight's 2.5): slow and heavy, each foot set
   down with his whole weight (down 10 frames of 18), lurching side to side; the sword dragged behind, its point grinding the
   stones, sparks off it. The game starts and stops his walk at a frame where his feet pass (`KG_WALK_STOPS`, 0.5 s and 1.3 s).
-- THE SWEEP, his basic blow (`KG_SWEEP`, 2.6 s; the blow at 1.3 s): both hands on the grip, he hauls the great sword round
-  behind him to his right, its point grinding the stones, and draws it back level and low behind him, crouched and twisted
-  far round; held 0.62 to 1.2 s, the blade's edges glinting pink (THE WARNING); his hips go first; in two frames the blade
-  sweeps round in front of him from behind his right (about 145 degrees round from his front) to 54 degrees to his left
-  (the blade itself 2.1 to 2.4 tiles out), smeared in a great fan; it bites the stones at his left;
-  he drags it back round in front of him, grinding, and lets it down behind him. ITS WAVE (`sweepPainted`, `SWEEP_FX`): the
-  wind and grit off its edge roll out across the floor over the whole wedge it swept (235 degrees, from behind his right to
-  his left) out to 10 tiles (`KG_REACH.sweep`) in half a second, a bright edge in front, dust and chips churned up behind;
-  gone by 0.7 s.
+- THE CHARGE, his basic blow in place of the sweep (`KG_CHARGE`, 2.7 s): he sets himself, the sword dragged back behind him
+  on the stones, and charges at you, cutting a line of sparks in the floor that bursts after he stops. Its own section below.
 - THE DECREE (`KG_DECREE`, 2.8 s; the blow at 1.33 s): he takes the sword in both hands and raises it high over his head,
   point to the sky, his face lifted to it; held 0.72 to 1.24 s (the warning); then in two frames drives it point-down into
   the stones before him, smeared; the stones crack; he leans on it, wrenches it out and lets it down. HIS KNIGHTS
@@ -95,12 +88,10 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
   rise out of the floor at the far side of the hall and march across it at 2.4 tiles a second, one line every 3.2 tiles; a
   knight every 1.25 tiles across the hall's whole width, each line with two gaps two knights wide (2.5 tiles) in different
   places, to slip through; each line fades at the near wall.
-- THE CROWN (`KG_CROWN`, 2.8 s; the landing at 1.5 s): he crouches deep, the sword drawn back low in both hands (held 0.45 to
-  0.95 s, the warning); springs up off his toes; in the air (1.02 to 1.45 s, THE GAME CARRIES HIM 5 tiles at you) the sword
-  swung up high to his right, his knees drawn up, 56 above the floor at the top; he comes down and in two frames lands and
-  slams the blade down before him, smeared; the landing sinks; he rises slowly. ITS SHOCKWAVE (`crownPainted`, `CROWN_FX`):
-  the stones crack out from under him (2.6 tiles), and a ring rolls out across the whole hall to 10 tiles in 0.8 s
-  (`KG_REACH.crown`), the flags heaving up along it in blocks and settling, dust rising behind it, its edge ringing pale.
+- THE CROWN'S WEIGHT, in place of the Crown (`KG_WEIGHT`, 5.6 s): he sends his crown up off his head; grown huge, it
+  follows you, hangs, slams down, and flies home onto his head. Its own section below.
+- HIS OLD SWEEP AND HIS CROWN'S LEAP ARE KEPT IN THE CODE BUT OUT OF HIS MOVES (`KG_RETIRED`, `sweepPlan`, `crownPlan`,
+  `KG_SWEEP`, `KG_CROWN`; their pictures across the hall `sweepPainted`, `crownPainted`): his word of 31 Oct, below.
 - THE CURTAINS (`KG_CURTAINS`, 2.5 s; the blow at 1.1 s): he turns to the hangings and stretches out his left hand to them,
   his face turned away; held 0.5 to 0.98 s (the warning), while the faces of his deeds look out of the hangings
   (`curtainsPainted` before its moment); then he flings his hand at you in two frames, smeared: THE FACES (`curtainFaces`,
@@ -114,8 +105,9 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
   `KING_ALONE`: the same moves, nothing on his back.
 - THE HUSH ON ITS OWN (`HUSH`, its own bones `HUSH_BODY`, about his height): hovering (a flier: its fog never touches the
   floor), hunched, its long arms hanging past its knees; standing, it sways, its head turning and tilting, its fingers
-  drifting (3.6 s round). Its own moves are to come (his to decide): until then its stand stands in for them, and the review
-  does not look at them. ITS END (`HS_DIES`, 3.0 s): it rears up, its arms thrown up, and unwinds into nothing.
+  drifting (3.6 s round). ITS THREE MOVES (grab and drag, its shield, grey fog): their own section below. Its walk and its
+  reel are its stand (it glides where the game puts it; struck while it shields him, it is the King who is struck). ITS END
+  (`HS_DIES`, 3.0 s): it rears up, its arms thrown up, and unwinds into nothing.
 - STRUCK (`KG_REEL` 0.4 s): he barely gives: rocked a little, his head knocked up.
 - HIS DEATH (`KG_DIES`, 3.6 s): struck, his sword falls from his hand (0.42 s) and lies on the stones at his right; his knees
   give and he sinks onto them (by 1.1 s), swaying, his head bowing; he folds forward (1.85 to 2.5 s) and goes down, and lies
@@ -128,21 +120,137 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
   going up from it (grains: no glow). FOR THE MAIN CHAT: where it lies in the hall, and the door to the Quiet Tower opening,
   are the game's.
 
+## His new moves (31 Oct)
+
+His word on the films of floor 19, by 07:26: “His sweep and leap are pretty lame.  There are a dozen other enemies that have
+that’s same moves with those same animations.” Offered “The dragged blade (Recommended)” for the sweep: “Dragged blade works
+but I’d like him to charge at the player”; for the leap and slam: “The crown's weight”. Of the Hush at his side: “It needs
+at least a couple moves.  It can’t take words we have so many bosses that do that already”; of four offered: “Grab and drag
+(Recommended),Shields the King,Grey fog”. Each as his Movement 9 asks: a big held wind-up, the strike in two frames
+smeared, a big wind-down. Times in seconds and frames (30 a second), lengths in tiles. None of the Hush's moves takes or
+darkens words.
+
+### THE CHARGE (`KG_CHARGE`; his `attack`; 2.7 s, 81 frames; both looks, `KING` and `KING_ALONE`, and `KING_SHIELDED`)
+
+- 0 to 0.3 s (frames 0 to 9): he drops low and steps his right foot back, hauling the sword back behind him along the stones.
+- THE WARNING, 0.3 to 0.7 s (frames 9 to 21), held: crouched low at you, his weight back on his right foot, his left fist
+  before him, the sword dragged far back behind him, its point grinding the stones (sparks), the blade glinting pink; his
+  hips start at 0.73 s (frame 22).
+- THE STRIKE, 0.767 to 0.833 s (frames 23 to 25; `hit` 0.833): he bursts off his mark, his left foot driving off, smeared:
+  streaks of him (head, shoulders, hands, knees, feet, the blade) left behind where he was.
+- THE RUN, 0.8 to 1.55 s (frames 24 to 46.5): THE GAME CARRIES HIM along his forward at 12 tiles a second, 9 tiles in all
+  (`chargeCarried(t)`, own lengths). Three strides of a quarter second, each foot down 0.08 s and gripping the floor as he
+  is carried (his feet land at 0.97, 1.22, 1.47 s), off the floor between; leaning hard into it (31 degrees), his left
+  arm pumping, his mantle, hair and beard streaming back; the sword dragged behind in his right hand, its point on the
+  stones, a spray of sparks off it; grit kicked up behind his feet.
+- THE STOP, 1.55 s: he plants his left foot far ahead (down at 1.62 s), surges over it (1.68 s) and stands, turning to look
+  back along the line (1.9 s).
+- THE RIP, 2.0 to 2.15 s (frames 60 to 64.5): he wrenches the blade up off the stones behind him, flinging its point up
+  high; at 2.15 s (`burst`, 0.6 s after he stops) THE LINE BURSTS; he lets the sword down and steps back into his stand
+  (right foot 2.16 to 2.34 s, left 2.38 to 2.58 s); 2.7 s, his stand.
+- THE LINE OF SPARKS (`sparksPainted(t, view, lane)`, `t` from when he sets off, laid where he set off, on FX_CANVAS): a
+  groove cut in the stones where his sword's point went, 1.75 tiles (`tail`) behind his floor point the whole way, so from
+  1.75 tiles behind where he set off to 1.75 tiles behind where he stops; white-hot where the point is, cooling to the
+  enemy's pink along it, sparks fizzing off it; in its last 0.35 s before the burst it pulses brighter. ITS BURST
+  (0.6 s after he stops, `burstAfter`): jets of sparks and stone chips up out of it the whole length, up to about 50 high, and a
+  flash, 0.8 tiles either side (`CHARGE_FX.half`); smoke and the scar after; gone 0.9 s after the burst.
+
+### THE CROWN'S WEIGHT (`KG_WEIGHT`; his `weight`, in place of `crown`; 5.6 s, 168 frames; both looks, and shielded)
+
+- 0 to 0.45 s: his left hand sweeps low behind him, he bows; 0.45 to 0.9 s (frames 13.5 to 27) held, the crown trembling up
+  off his hair (a few up); 0.9 to 1.1 s he flings his hand up high.
+- 1.1 s (`send`, frame 33): THE CROWN GOES UP OFF HIS HEAD. From here until 5.2 s (`back`) it is not on his picture
+  (`KingSay.crown` 'away'): it is the game's to lay (`weightPainted`), and he stands steering it, his left hand up over his
+  head and out before him, clawed, his face up to it (his feet stay where they are).
+- THE CROWN (`weightPainted(t, view, 'crown' | 'floor')`, `t` from `send`, on WEIGHT_CANVAS 340 by 360, laid at the floor
+  point under it; `weightAt(t, view)` says where it is: `lerp`, how far the game has moved that floor point, its middle from
+  there, its size, its ways):
+  - FLYING OUT, 0 to 0.45 s (`fly`): from his head (where it sat on it, as each view paints him: `weightHead`) up and out,
+    growing to 5.2 times its size (`k`), the floor point under it moved by the game from him to over you (`lerp` 0 to 1).
+  - FOLLOWING, to 2.4 s (`follow`, from going up): high over you, its band's middle 100 up (`z`: the knight is 58 tall),
+    turning slowly, bobbing, the Hush's fog wisping off it; THE GAME MOVES IT AFTER YOU at 3.2 tiles a second. Under it on
+    the floor: its shadow, and THE WARNING, the enemy's pink ring round where it will fall, 1.7 tiles (`r`), its dashes going
+    round.
+  - HELD, 2.4 to 2.933 s (`hold`; his 3.5 to 4.033 s, frames 105 to 121): it stops, rises 14 more and hangs trembling; the
+    ring solid and bright pink, a second ring closing in on it, the shadow darkening; his hand closes into a fist, raised.
+  - THE SLAM, 2.933 to 3.0 s (his strike, frames 121 to 123; `hit` 4.1): it drops in two frames, streaked, as he yanks his
+    fist down to his thigh (smeared); it lands at 3.0 s (his 4.1 s): a flash over all it strikes (1.7 tiles), the stones
+    cracked out from under it, a ring rolling out to 2.6 tiles, dust.
+  - LYING, 3.0 to 3.4 s (his 4.1 to 4.5 s): on the stones, rocking, rings of sound going off it.
+  - HOME, 3.4 to 4.1 s (`home`; his 4.5 to 5.2 s): it rises and flies back in an arc, shrinking, the game moving the floor
+    point under it from where it slammed back to him (`lerp` 0 to 1), and settles on his head as his picture has it at 5.2 s
+    (his hand raised open to it); three quarters of a turn in all, so it sits as it did.
+- 5.2 to 5.6 s: his hand lowered, his stand.
+
+### THE HUSH'S MOVES (`HUSH`; its own picture, `HUSH_CANVAS`)
+
+- GRAB AND DRAG (`HS_GRAB`; its `attack`; 2.3 s, 69 frames). 0 to 0.3 s it rears back, its arms drawn back behind it; THE
+  WARNING, 0.3 to 0.6 s, held, trembling; THE STRIKE, 0.6 to 0.667 s (frames 18 to 20; `hit` 0.667), its arms flung out,
+  smeared. From 0.667 to 1.9 s ITS FOREARMS AND HANDS ARE THE EFFECT'S (`grabBare`; `grabPainted(t, view, { reach, aim,
+  grip })`, laid at its floor point on FX_CANVAS): out of its elbows, long fog arms, rippling, rags hanging off them, long
+  hands spread (or closed on you, `grip` 1). THEY SHOOT OUT at 16 tiles a second from 0.6 s, 8 tiles past where its hands
+  would be by 1.1 s (`out`; `grabReach(t)`, its own if they catch nothing; `reach` the game's: they stop where they catch
+  you); `aim`, degrees from its forward to its left (drawn to 45 either way). THE HAUL, 1.1 to 1.9 s (`haul`): it leans back,
+  hauling, and they come home, dragging you with them to stand before the King (7.2 tiles in the 0.8 s at 9 a second); at
+  1.9 s its hands are its own again; 2.3 s, its stand.
+- THE SHIELD (`HS_WRAP`, `KING_SHIELDED`, `HS_STRUCK`). WRAPPING (its `wrap`, 0.5 s): it turns to him, its arms flung wide,
+  and THE GAME CARRIES IT from its place to his through the 0.5 s; at its end its own picture is not laid and he is
+  `KING_SHIELDED` (every move of his, the Hush wrapped round him: on his back as it rode him, close, its head down over his
+  crown, its fog wound round him in ribbons from his knees to his shoulders), its fog closing in round him over 0.45 s
+  (`shieldPainted(t, view, 'on', 'behind' | 'before')`, laid at his floor point, him between). STRUCK OFF (its `struckOff`,
+  1.5 s): he is `KING_ALONE` again, its fog bursting off him (`shieldPainted(t, view, 'off', ...)`, 0.6 s); it is flung back
+  off him, tumbling (THE GAME CARRIES IT from him back to its place through 0 to 0.35 s, `knock`), and hangs there sagging,
+  dazed, its head lolling (to 1.5 s), and gathers itself into its stand.
+- GREY FOG (`HS_FOG`; its `fog`; 1.9 s, 57 frames). 0 to 0.35 s it rears up, swelling, its arms flung wide, its head thrown
+  back, drawing breath; THE WARNING, 0.35 to 0.77 s, held (the three places marked on the floor); THE STRIKE, 0.8 to
+  0.867 s (frames 24 to 26; `hit` 0.867): its head thrust down at you, its mouth gaping, smeared; THE BREATH
+  (`breathPainted(t, view, at)`, `t` from the hit, laid at its floor point): a gout of grey fog out of its mouth and three
+  clots flying out to where they lie (0.28 s, `fly`; `at`, own tiles from it: the game's, where you are and 2.5 tiles,
+  `apart`, either side of you). THE PATCH (`fogPatchPainted(t, view)`, `t` from the hit, laid where it lies, FOG_CANVAS):
+  from -0.6 s the place marked (a faint ring of the enemy's pink, fog drifting at it); as the clot lands it billows out
+  (0.35 s) to 1.7 tiles round (`r`), and lies, low and rolling, curls of it lifting off; in its last 1.3 s it breaks up and
+  thins; gone at 7 s (`lies`).
+
+### FOR THE MAIN CHAT: the art's numbers beside `gking.ts` (origin/high-city)
+
+- CHARGE: warn 0.8 and the run 0.75 s at 12 tiles a second, 9 at most: as yours (the game carries him from 0.8 s). His whole
+  move is 2.7 s, not 2.3 (the stop, the rip, the burst at 2.15 s, 0.6 after he stops, as yours, and his step back). HIS
+  FEET GRIP ONLY AT 12 TILES A SECOND FOR THE WHOLE 0.75 s: the art needs him always to run his full 9 tiles (stopped only
+  by a wall), not 1.5 past where you stood; if the floor runs out, stop him and go on from his stop (1.55 s), a small jump.
+  The line lies where his point went: 1.75 tiles behind his floor point (`tail`), so from 1.75 behind where he set off to
+  1.75 behind where he stops (yours runs from his floor point); its burst is drawn 0.8 tiles either side (yours 0.75).
+- CROWN'S WEIGHT: send 1.1, fly 0.45, follow 2.4 at 3.2 tiles a second, slam radius 1.7, home 0.7: as yours. Its hold is
+  0.533 s (16 frames, not 0.55) and its drop two frames (0.067 s, not 0.08), so it lands 3.0 s after it is sent; then it
+  lies 0.4 s before it flies home (yours has none: home 3.4 to 4.1 s after sending). HIS MOVE IS 5.6 s, NOT 1.6: he stands
+  and steers it until it is back on his head (5.2 s). If he is to fight on while it flies, every move of his needs a
+  crownless set: the owner's to say.
+- GRAB: warn 0.6, out at 16 tiles a second to 8: as yours. The haul (whether it caught you or not) is 1.1 to 1.9 s, 0.8 s
+  (yours: 0.4 s back if it misses, and up to 2 s dragging); its move 2.3 s. Its arms are drawn aimed up to 45 degrees off
+  the way it faces: turn it to face you as it rears back.
+- SHIELD: wrap 0.5 s, as yours (carry it from its place to him through it); struck off: carry it back over 0.35 s (yours
+  puts it back at once), dazed 1.5 s as yours. Lay `KING_SHIELDED` while it holds.
+- GREY FOG: its breath out is at 0.8 s (0.867 the end of its two frames; yours 0.8); the patches 1.7 tiles round, 2.5
+  apart, 7 s: as yours. Its move is 1.9 s.
+
 His picture (`KING_CANVAS`) is 340 by 400 (room for the sword at full reach and him at the top of his leap); the Hush's
 own 200 by 220; the hall-sized picture the blows leave is `FX_CANVAS`, 1000 by 580, his floor point at its middle.
 
 FOR THE MAIN CHAT: the areas each blow hits are the game's, as his “And bigger AOE to compensate for the extra time the
-player gets to evade” asks; the art is drawn to these: the sweep's wave a 235-degree wedge 10 tiles out; the Decree's
-lines the hall's whole width with their gaps; the Crown's ring 10 tiles; the faces' streams aimed where you stood as his
-hand was flung (`curtainsPainted`'s `at`, and its hangings, `from`); the Crown's leap carrying him 5 tiles at you.
+player gets to evade” asks; the art is drawn to these: the Decree's lines the hall's whole width with their gaps; the
+faces' streams aimed where you stood as his hand was flung (`curtainsPainted`'s `at`, and its hangings, `from`); the
+charge, the crown's weight and the Hush's moves as in their sections above. (Of the moves out of his set: the sweep's wave
+a 235-degree wedge 10 tiles out; the Crown's ring 10 tiles, its leap 5 tiles.)
 
 ## How to bring him in
 
-As the Princess: `makeKingArt3()` gives `{ front, back }` (his moves are `more.decree`, `more.crown`, `more.curtains`,
-`more.climbOff`); `makeKingArt3(KING_ALONE)` after the climb-off; `makeHushArt3()` the Hush at his side. The effects are
-pictures the game lays at his floor point (each from its blow's `hit`): `sweepPainted`, `decreePainted` (lines behind him,
-`'behind'`, and before him, `'before'`, for laying him between them), `crownPainted`, `curtainsPainted`; the songbird
-`birdPainted`. All behind `KING_ON`.
+As the Princess: `makeKingArt3()` gives `{ front, back }` (his moves are `attack`, the charge, `more.decree`,
+`more.weight`, `more.curtains`, `more.climbOff`); `makeKingArt3(KING_ALONE)` after the climb-off;
+`makeKingArt3(KING_SHIELDED)` while the Hush shields him; `makeHushArt3()` the Hush at his side (its `attack`, the grab,
+`more.fog`, `more.wrap`, `more.struckOff`). The effects are pictures the game lays (each from its move's moment, as its
+section says): `sparksPainted` (where he set off), `decreePainted` (lines behind him, `'behind'`, and before him,
+`'before'`, for laying him between them), `weightPainted` (`'floor'` under the figures, `'crown'` over them, at the floor
+point under it), `curtainsPainted`; the Hush's `grabPainted` and `breathPainted` (at its floor point), `fogPatchPainted`
+(where each lies), `shieldPainted` (at his, `'behind'` and `'before'`); the songbird `birdPainted`. All behind `KING_ON`.
 
 ## The pictures (docs/mockups/king/pictures/)
 
@@ -158,10 +266,19 @@ pictures the game lays at his floor point (each from its blow's `hit`): `sweepPa
   the Crown's ring, the faces streaming from the hangings at the knight.
 - `king_film.mp4` (about 76 s, 1920 by 1080): every move from in front, then from behind, in his hall with the knight,
   captioned; each of the four strikes again at half speed, close; his death with the songbird winding up and singing (close,
-  in the corner).
+  in the corner). (Made 29 Oct, with the sweep and the Crown's leap, now out of his set.)
+- `king_new_moves.mp4` (51 s, 1200 by 676): his new moves, from in front and from behind in his hall with the knight,
+  captioned: the charge and its line of sparks bursting; the crown's weight following the knight round, slamming down as
+  he runs clear, flying home; the Hush's grab and drag, its shield (wrapping, struck off, dazed), its grey fog (marked,
+  breathed out, lying, its last seconds); then each strike at half speed (the charge's burst off his mark, the line
+  bursting, the crown's slam, the grab, the breath).
+- `king_new_moves_sheet.png` (1200 wide): key frames of each of them, captioned.
 
 Made with `tools/king_pictures.ts sheet <dir>` and `python3 tools/king_captions.py <dir> docs/mockups/king/pictures`;
-the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4`.
+the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4` (its sweep and Crown parts are of moves now out
+of his set: it made the film of 29 Oct). The new moves: `npx tsx tools/king_new_moves.ts film
+docs/mockups/king/pictures/king_new_moves.mp4`; the sheet, `npx tsx tools/king_new_moves.ts sheet <dir>` and `python3
+tools/king_new_moves_sheet.py <dir> docs/mockups/king/pictures/king_new_moves_sheet.png`.
 
 ## The dev pages
 
@@ -177,11 +294,13 @@ the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4`.
 1. The switch is off, and nothing of the game imports him.
 2. EVERY MOVE THROUGH EVERY BOSS CHECK (`src/art/boss_checks.ts`, `KG_SHAPE`): every frame, from in front and from behind,
    and every handover (his stand into every move and back, the walk in and out where his feet pass, the climb-off into his
-   last phase); with the Hush on his back (`KING`), without it (`KING_ALONE`, `KG_ALONE_SHAPE`), and the Hush on its own
-   (`HUSH`, `HS_SHAPE`: its stand and its end). SLIDE, FLOOR, ARM, THROUGH (his sword, and the Hush's arms on him), JERK,
-   JUMP, BLOW, HIPS, ALIVE, STRIKE.
-3. His lightning strikes: each of the four blows two frames, landing on the second; the strike's frames and the one after
-   smeared; no other frame.
+   last phase); with the Hush on his back (`KING`), without it (`KING_ALONE`, `KG_ALONE_SHAPE`), with it wrapped round him
+   (`KING_SHIELDED`, `KG_SHIELD_SHAPE`), and the Hush on its own (`HUSH`, `HS_SHAPE`: its stand, its grab, its fog, its
+   wrap, struck off, its end). SLIDE (his charge: a foot down goes back with the floor as the game carries him,
+   `BossShape.carried`), FLOOR, ARM, THROUGH (his sword, and the Hush's arms on him), JERK, JUMP, BLOW, HIPS, ALIVE,
+   STRIKE; and every frame a figure (no number lost).
+3. His lightning strikes (the charge, the Decree, the crown's weight, the Curtains) and the Hush's (its grab, its breath):
+   each two frames, landing on the second; the strike's frames and the one after smeared; no other frame.
 4. Every frame both ways round: nothing cyan, the pink edge while he lives and none as he dies, every pixel whole or empty
    but the edge, nothing red.
 5. Nothing cut off.
@@ -192,6 +311,20 @@ the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4`.
 9. What his blows leave: nothing cyan in any of it; the wave and the ring drawn big; the Decree's lines the hall's width,
    each with its gaps; the faces out 10 tiles and more; the songbird's three, never glowing, its song.
 10. His sizes and reach, and his pace.
+11. The charge: its warning held, its strike two frames, carried 9 tiles at 12 a second, off the floor between his strides,
+    leaning into it, the sword dragged on the stones behind him; the line of sparks cut the length of his run, bursting
+    (more than twice what it was) 0.6 s after he stops, gone after; nothing cyan, nothing cut off.
+12. The crown's weight: away from his head from 1.1 to 5.2 s and on it before and after; sent from where it sits on his
+    head and home to where it sits (each view); huge and 100 up while it follows and hangs; the pink ring as it follows,
+    bright as it hangs; its drop two frames and streaked; the slam drawn big; nothing cyan, nothing cut off.
+13. The Hush's moves: its arms out 8 tiles at 16 a second and drawn there (aimed 45 degrees either way too), home by the
+    haul's end; wrapped round him with its fog in every move of `KING_SHIELDED`; its fog on and off; the patch marked,
+    1.7 tiles round, thinning, gone at 7 s; its breath; nothing cyan, nothing cut off.
+
+`src/art/boss_checks.ts` (shared): `BossShape.carried` (optional), how far the game has carried a boss along his forward
+by a moment of a move that is not a walk (his charge): SLIDE counts it as it counts a walk's floor going by. Nothing else
+changed; the other bosses' tests pass as before (tests/palace_hands.test.ts, tests/princess.test.ts, tests/bosses.test.ts).
+`src/dev/king_scene.ts`: `keys.at(-1)` (not in the compiler's library: `tsc` stopped on it) put plainly.
 
 `tests/bosses.test.ts`: its two import checks (1 and 12) now pass over `art/king*` as they pass over the Princess's and
 the other mock-ups' files (his files import the bosses' footwork and the checks, as theirs do).
