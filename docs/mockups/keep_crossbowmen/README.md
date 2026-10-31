@@ -235,3 +235,5 @@ breath from art/hushed.ts) each name `keep_crossbowmen`.
 The sheet, the shot and the film (`crossbowmen_sheet.png`, `crossbowmen_shot.png`, `crossbowmen_film.mp4`), asked
 “Floor 19's crossbowmen (crossbowmen_sheet.png, crossbowmen_shot.png and the film): are these right? With them, floor 19
 is complete.”: “Yes, that's them (Recommended)”.
+
+OF THE NEW DEATH (90ca47e; his pick for it, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`crossbowmen_death_sheet.png`, `crossbowmen_death.mp4`), asked “The crossbowmen's new death. Struck, his last bolt fires straight up as he's thrown back off his feet. He goes over backwards, away from his tall shield, and lands sprawled on his back with his helm knocked off. A beat later the shield tips back after him and slaps down flat in a puff of dust. The Hush leaves him, alive. Is that it?” (offered also “Over the top instead”): “Yes, that's it (Recommended)”.
