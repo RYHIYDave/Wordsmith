@@ -11,9 +11,9 @@ import type { Sprite } from '../engine/px';
 import type { Painted } from '../art/kit';
 import { makeHeroArt3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
-import { canvasOf, deathOfMob, paintMob } from '../art/new_mobs3';
+import { canvasOf, deathOfMob, paintMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
-import { FOOTMAN, FM_DIES, FM_PACE, FM_SWING, FM_THROW, FM_REEL, FM_STAND_LONG, FM_MARCH, TRAY_FLIGHT, trayFlight } from '../art/masque_footmen_moves';
+import { FOOTMAN, FM_DIES, FM_PACE, FM_SWING, FM_THROW, FM_REEL, FM_STAND_LONG, FM_MARCH, TRAY_FLIGHT, trayFlight, trayLooseAt } from '../art/masque_footmen_moves';
 import { FIRE_CANVAS, FIRE_FX, TRAY_SHOT_CANVAS, firePainted, trayShotPainted } from '../art/masque_footmen_fx';
 import type { GameView } from '../art/skin';
 import { GRID, project } from '../art/skeleton';
@@ -141,6 +141,28 @@ function footman(which: string, t: number, view: GameView, x: number, y: number,
   const p = which === 'dying' ? deathOfMob(FOOTMAN, Math.min(1, t / FOOTMAN.dieTime), view) : paintMob(FOOTMAN, which, t, view);
   shadow(x, y, 13, k);
   return lay(p, can.ax, can.ay, x, y, k);
+}
+/**
+ * HIM DYING, WITH SHADOWS UNDER WHAT LIES ON THE FLOOR (for the pictures; the game's own shadow is one, under his feet):
+ * as he goes over, a soft shadow along him under his hips, his chest and his head; and one under the tray, loose of him,
+ * as under the flung tray.
+ */
+function dyingWithShadows(t: number, view: GameView, x: number, y: number, k: number): { x: number; y: number; r: number; color: string; a: number }[] {
+  const s = skeletonAt(FOOTMAN, 'dying', t);
+  const feet: V3 = [(s.heelL[0] + s.heelR[0]) / 2, 0, 0];
+  for (const p of [s.pelvis, s.ribs, s.head]) {
+    const f: V3 = [p[0], p[1], 0];
+    const w = Math.min(1, Math.hypot(f[0] - feet[0], f[1] - feet[1]) / 20);
+    if (w < 0.05) continue;
+    const [sx, sy] = onScreen(f, view, x, y, k);
+    shadow(sx, sy, 11, k, 0.4 * w);
+  }
+  const tr = trayLooseAt(t);
+  if (tr) {
+    const [sx, sy] = onScreen([tr.c[0], tr.c[1], 0], view, x, y, k);
+    shadow(sx, sy, 7, k, 0.5 * Math.max(0.25, 1 - tr.c[2] / 40));
+  }
+  return footman('dying', t, view, x, y, k);
 }
 const hero = makeHeroArt3().of('warrior', { twoHanded: false });
 function knight(view: GameView, x: number, y: number, k: number, flip = false): void {
@@ -414,15 +436,140 @@ if (mode === 'sheet') {
   for (const view of ['front', 'back'] as const) {
     shots.push({
       caption: `His death ${view === 'front' ? '(from in front)' : '(from behind)'}`,
-      sub: 'the tray clatters down, he drops to his knees, the Hush leaves him: a man again, alive, still',
+      sub: 'rigid, then over backwards like a plank; the tray spins to a stop; the Hush leaves him, alive',
       frames: Math.round(FM_DIES.long * FPS) + 18,
       draw: (i) => {
         const t = Math.min(FM_DIES.long, i / FPS);
         ground(K3);
-        return footman('dying', t, view, 560, 560, K3);
+        return dyingWithShadows(t, view, 560, 560, K3);
       },
     });
   }
+  const total = shots.reduce((n, s) => n + s.frames, 0);
+  (window as unknown as { __film: { count: number; draw: (i: number) => void } }).__film = {
+    count: total,
+    draw: (i: number) => {
+      let k = i;
+      for (const s of shots) {
+        if (k < s.frames) {
+          g.clearRect(0, 0, cv.width, cv.height);
+          const ls = s.draw(k);
+          lights(ls);
+          caption(s.caption, s.sub);
+          return;
+        }
+        k -= s.frames;
+      }
+    },
+  };
+  const first = Number(a1);
+  (window as unknown as { __film: { draw: (i: number) => void } }).__film.draw(Number.isFinite(first) ? first : 0);
+} else if (mode === 'deathsheet') {
+  // HIS DEATH IN KEY FRAMES, from in front, twice as big: rigid, tipping, falling, down, the tray spinning, still
+  const K = 2;
+  const F = floorPic(Math.ceil(cv.width / K), Math.ceil(cv.height / K), 0, 0);
+  g.drawImage(F, 0, 0, F.width * K, F.height * K);
+  const L = FM_DIES.land;
+  const keys: [number, string][] = [
+    [0.2, 'the tray flies'],
+    [0.45, 'rigid, a shiver'],
+    [1.0, 'tipping'],
+    [L - 0.05, 'falling, a plank'],
+    [L + 0.06, 'down, a bounce'],
+    [1.75, 'the tray spins'],
+    [2.26, 'rattling flatter'],
+    [FM_DIES.long, 'still, alive'],
+  ];
+  const cw = cv.width / 4;
+  const ch = (cv.height - 80) / 2;
+  const ls: ReturnType<typeof footman> = [];
+  keys.forEach(([t, what], i) => {
+    const x = cw * (i % 4) + cw * 0.6;
+    const y = 80 + ch * Math.floor(i / 4) + ch * 0.84;
+    ls.push(...dyingWithShadows(t, 'front', x, y, K));
+    label(`${i + 1}. ${what} (${t.toFixed(2)} s)`, cw * (i % 4) + cw / 2, 80 + ch * Math.floor(i / 4) + 8);
+  });
+  lights(ls);
+  g.save();
+  g.strokeStyle = 'rgba(6,5,12,0.8)';
+  g.lineWidth = 2;
+  for (let i = 1; i < 4; i++) {
+    g.beginPath();
+    g.moveTo(cw * i, 74);
+    g.lineTo(cw * i, cv.height);
+    g.stroke();
+  }
+  g.beginPath();
+  g.moveTo(0, 80 + ch);
+  g.lineTo(cv.width, 80 + ch);
+  g.stroke();
+  g.restore();
+  caption('The footman’s death, from in front (twice the game’s size)', 'rigid a moment, then over backwards like a plank; the tray rolls on its rim and settles; the Hush leaves him, alive');
+} else if (mode === 'deathfilm') {
+  // HIS DEATH ON ITS OWN: at the game's size beside the knight, both ways round; then each three times as big; then at half speed
+  const FPS = 30;
+  type Ls = ReturnType<typeof footman>;
+  interface Shot {
+    caption: string;
+    sub: string;
+    frames: number;
+    draw: (i: number) => Ls;
+  }
+  const floors = new Map<number, HTMLCanvasElement>();
+  const ground = (k: number): void => {
+    let f = floors.get(k);
+    if (!f) floors.set(k, (f = floorPic(Math.ceil(cv.width / k), Math.ceil(cv.height / k), 0, 0)));
+    g.drawImage(f, 0, 0, f.width * k, f.height * k);
+  };
+  const HOLD = 0.7;
+  const T = FM_DIES.long;
+  /** Him dying at (x, y), the knight standing `tiles` off to his right as the screen has it, facing him. */
+  const withKnight = (view: GameView, t: number, x: number, y: number, k: number, dx: number): Ls => {
+    knight(view === 'front' ? 'front' : 'back', x + dx * k, y + 4 * k, k, true);
+    return dyingWithShadows(t, view, x, y, k);
+  };
+  const shots: Shot[] = [
+    {
+      caption: 'His death, at the game’s size (the knight beside him)',
+      sub: 'from in front (left) and from behind (right)',
+      frames: Math.round((T + HOLD) * FPS),
+      draw: (i) => {
+        const t = Math.min(T, i / FPS);
+        ground(1);
+        return [...withKnight('front', t, 330, 420, 1, 90), ...withKnight('back', t, 860, 420, 1, 90)];
+      },
+    },
+    ...(['front', 'back'] as const).map((view): Shot => ({
+      caption: `His death, three times as big ${view === 'front' ? '(from in front)' : '(from behind)'}`,
+      sub: 'rigid a moment, a last shiver; over backwards like a plank; the tray spins to a stop; the Hush leaves him',
+      frames: Math.round((T + HOLD) * FPS),
+      draw: (i) => {
+        const t = Math.min(T, i / FPS);
+        ground(3);
+        return withKnight(view, t, 600, view === 'front' ? 610 : 560, 3, 110);
+      },
+    })),
+    {
+      caption: 'At half speed (from in front)',
+      sub: 'the held rigid beat, then the quick fall; down flat with a little bounce; the tray rolls on its rim',
+      frames: Math.round((2.5 / 0.5) * FPS),
+      draw: (i) => {
+        const t = Math.min(T, 0.1 + (i / FPS) * 0.5);
+        ground(3);
+        return withKnight('front', t, 600, 610, 3, 110);
+      },
+    },
+    {
+      caption: 'At half speed (from behind)',
+      sub: 'he goes over toward you',
+      frames: Math.round((1.3 / 0.5) * FPS),
+      draw: (i) => {
+        const t = Math.min(T, 0.45 + (i / FPS) * 0.5);
+        ground(3);
+        return withKnight('back', t, 600, 560, 3, 110);
+      },
+    },
+  ];
   const total = shots.reduce((n, s) => n + s.frames, 0);
   (window as unknown as { __film: { count: number; draw: (i: number) => void } }).__film = {
     count: total,

@@ -15,7 +15,7 @@ as offered: FOOTMEN (floor 17, medium). Who: the palace's liveried footmen: powd
 silver tray. Size: a little taller than the knight, fewer. Move: a brisk, stiff, upright march. Mark: the powdered wig and
 the silver tray. Attacks (two): the tray flung spinning like a disc; a lit candelabrum swung overhead. Death: the tray
 clatters down, they drop to their knees, the Hush leaves them. Never: not the palace guard (no armour), not comic butlers.
-Sound: the tray's clang, the candles' hiss.
+Sound: the tray's clang, the candles' hiss. (Their death was made new on 30 Oct, on his pick: see "His death" below.)
 
 His rules built in from the first pass (floor 16's notes have them in full, `docs/mockups/swan_gardens/README.md`):
 
@@ -68,8 +68,11 @@ how much its flames burn, the air past them, the strike's smear, and the glints 
   their cups, the middle cup on the stem, drip pans, three ivory candles. THE FLAMES (`flamesOf`) are laid after his edge so
   they keep their colour: red at the root, orange, yellow, a white heart; blown back by the air past them (marching, they
   stream back; swung, they streak); their light `CANDLE_LIGHT`, orange.
-- THE HUSH: grey breath from his mouth always, harder as he winds up; one great breath of it as it leaves him
-  (`FOOTMAN_EXHALE`, 0.32 to 1.9 s into his death).
+- THE HUSH: grey breath from his mouth always, harder as he winds up; one great breath of it rising out of him as it leaves
+  him, once he is down on his back (`FM_DIES.breath`; the moves file says when, `FootmanSay.dies`).
+- THE TRAY LOOSE OF HIM as he dies (`FootmanSay.loose`, painted with `trayBits(..., deep)`): seen full face as it rolls and
+  lies, its bed a step darker so that its gadrooned rim, its well, its boss and the band of light across it stand out (a
+  salver, not one white disc); its underside dark, so that it flashes face and back as it goes round on its rim.
 
 ## His moves (src/art/masque_footmen_moves.ts), every number from the code
 
@@ -100,12 +103,54 @@ strike; his feet laid over the keys by `footwork` (each foot down where it lands
   frame 28 (`FM_SWING.hit`), his hand 24 high and 19 before him, bent over it, and the fire fan bursts out. He holds, bent
   over, the flames guttering and catching again; straightens; the tray goes back up.
 - STRUCK (`FM_REEL` 0.4 s): jolted back, his head snapped back, the tray tipping on his palm, the flames blown about.
-- HIS DEATH (`FM_DIES`, 2.9 s): jolted; THE GASP (0.4 s), his chest arched and his head thrown back, the Hush pouring out of
-  him; THE TRAY slides off his palm (0.46 s) and clatters down flat to his left, bouncing (`fall`: hop 2.6, spun 150
-  degrees); THE CANDELABRUM drops (0.6 s) to his right and its candles go out in a breath of smoke; his knees give and he
-  drops onto them (1.04 s), his feet turned up onto their toes where they stood; he sways there, the last of the Hush leaving
-  him; he sinks back toward his heels (to 2.4 s), his head bowed, his hands loose on his thighs, the pink gone from his eyes:
-  a man again, alive, still. Not lying, not a corpse.
+- HIS DEATH (`FM_DIES`, 2.9 s): made new on 30 Oct: rigid a moment, then over backwards like a plank; the tray spinning to a
+  stop on its rim. Its own section below, "His death".
+
+## His death (made new, 30 Oct)
+
+To make Act 2's enemies die differently (nearly every Hushed kind went to one knee, then down), offered to him as a pop-up:
+"THE FOOTMEN stand rigid a moment, then topple straight over backwards like a plank, the tray spinning and rattling to a
+stop ... the Hush leaving them in a grey breath, alive." His pick: “Yes, these (Recommended)”. Only the death changed: every
+other move of his is as it was, pixel for pixel (every frame of them, and the flung tray and the fire, painted before and
+after and found the same).
+
+What it is (`deathPose` and `trayLooseAt` in `src/art/masque_footmen_moves.ts`; seconds, and frames at the game's 20 a
+second for a death):
+
+- STRUCK (0 to 0.08 s, frame 0 to 2): jolted back, his head snapped back, as his death has always begun.
+- SEIZED RIGID (to 0.30 s, frame 6): his arms snap straight down to his sides; the candelabrum is let go from his right hand
+  (0.13 s) and drops to the floor before him, its candles going out in a breath of smoke (it lies there along his forward
+  line, so that it reads as lying from in front and from behind); THE TRAY FLIES FROM HIS LEFT HAND (0.15 s, frame 3), flung
+  up and out to his left, tumbling over once. He comes bolt upright, legs locked, chin up, his weight back on his heels.
+- HELD RIGID (0.30 to 0.60 s, frames 6 to 12), and A LAST STIFF SHIVER through him (0.32 to 0.56 s): all of him trembling in
+  one piece, back on his heels, his head and hands trembling. The held beat, by his Movement 9.
+- OVER LIKE A PLANK (0.60 to 1.16 s, frames 12 to 23): hinged at his heels (they stay on their spots), stiff from heels to
+  head, his arms at his sides. As a body on its end falls: slow to start, then faster and faster (he is 4 degrees over at
+  0.80 s, 22 at 1.00 s, 51 at 1.10 s, 80 at 1.15 s): the quick fall, by Movement 9. In the last of it his trunk comes on a
+  few degrees past his legs, as a body lying flat is a little bent at the hips.
+- DOWN FLAT ON HIS BACK (1.16 s, frame 23), with a little bounce (to 1.37 s, frame 27): his hips, then his shoulders, the
+  back of his head rocked back onto the floor; his arms slap down beside him. Heavy: up off the floor no more than a breath.
+- THE HUSH LEAVES HIM (1.19 to 2.41 s, frames 24 to 48): it has leaked from him hard all the while he stood rigid and went
+  over; down, it rises out of him in one great grey breath, and thins away.
+- THE RIGIDITY GOES OUT OF HIM (1.60 to 2.30 s, frames 32 to 46): his head rolls over toward his left (his white wig to the
+  eye, his queue on the floor), his hands ease. The pink gone from his eyes (by the time he is down). Then still (2.30 to
+  2.90 s): a man again, alive, lying on his back. Not a corpse, nothing gory.
+
+THE TRAY (`TRAY_LIES`; `trayLooseAt(t)` gives its middle, its face's way and a way across it at any moment):
+
+- In the air 0.15 to 0.80 s (frames 3 to 16): up off his palm (from 50 to 55 high) and out to his left, tumbling over once
+  (292 degrees, so that it comes down tipped back toward him), turning a little as it goes.
+- DOWN ON ITS RIM at 0.80 s (frame 16), tipped 68 degrees, 11 forward and 27 to his left of his floor point (clear of where he
+  will lie, from in front and from behind), with a little hop off its rim (the clatter).
+- ROUND AND ROUND ON IT (0.80 to 2.36 s, frames 16 to 47), a coin settling: rolling on its rim, not sliding, tipped less and
+  less (slowly at first, then all at once), going round faster and faster (from 2.3 turns a second to 6), four times round
+  and more; its face and its dark underside flash by turns as it goes. Its middle stays where it came down; the lowest of its
+  rolled rim on the floor, never in it.
+- STILL from 2.36 s (frame 47): flat on its back, face up, beside him.
+
+The pictures lay a soft shadow under the tray as it rolls, as the film always laid one under the flung tray, and along him as
+he goes over (the game's own shadow under him is one, at his feet). For the main chat: his shadow should go with him as he
+goes over, and the tray should have one.
 
 ## What his blows do once they leave him (src/art/masque_footmen_fx.ts), for the main chat
 
@@ -132,8 +177,12 @@ Each begins as his blow lands, at his place on the floor, turned the way he face
 - The tray's flight: draw `trayShotPainted(trayFlight(t), view, ...)` at his floor point from `hit` for `TRAY_FLIGHT.long`;
   his own frames leave the tray off his hand for just that long. The fire: `firePainted(t, view)` at his floor point from the
   candelabrum's `hit` for `FIRE_FX.long`.
-- Sound (the brief): the tray's clang as it leaves him and as he catches it, and as it clatters down when he dies; the
-  candles' hiss as the candelabrum comes down and the fire bursts out; no voices, a gasp as the Hush leaves him.
+- His death: `dying` as before (`dieTime` 2.9 s); the tray as it flies and rolls is in his death's own frames (nothing to
+  draw beside them). Its shadow, and his own as he goes over: see "His death".
+- Sound (the brief): the tray's clang as it leaves him and as he catches it; the candles' hiss as the candelabrum comes down
+  and the fire bursts out; no voices. As he dies: the candelabrum's clatter (about 0.55 s); the tray's clang as it comes
+  down on its rim (0.8 s) and its rattle, quicker and quicker, to a last ring as it lies flat (2.36 s); the thud as he
+  comes down (1.16 s); a grey breath as the Hush leaves him.
 
 ## The dev page and the tools
 
@@ -141,9 +190,13 @@ Each begins as his blow lands, at his place on the floor, turned the way he face
   game's size), `big:<move>:<t>` (four times as big), `grid:<move>:<t>,<t>,...[:<k>]` (a move at several moments, both ways
   round), `film` (the film's frames). On a plain floor of the Masque's first room, blue marble set in diamonds: a mock-up's
   floor, not floor 17's own ground.
-  `PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_masque_footmen.ts shots/fm/sheet.png 1200 900 "sheet"`
-- `tools/footmen_film.mjs`: draws the film's frames in a headless browser and makes the MP4 with ffmpeg.
+  `PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_masque_footmen.ts shots/fm/sheet.png 1200 900 "sheet"`;
+  and `deathsheet` (his death in eight key frames, from in front, twice as big) and `deathfilm` (the death film's frames).
+  `PREVIEW_TIMEOUT=200000 node tools/preview.mjs src/dev/preview_masque_footmen.ts docs/mockups/masque_footmen/pictures/footmen_death_sheet.png 1200 820 "deathsheet"`
+- `tools/footmen_film.mjs`: draws the film's frames in a headless browser and makes the MP4 with ffmpeg (its last argument
+  the page's mode: `film`, the default, or `deathfilm`).
   `node tools/footmen_film.mjs docs/mockups/masque_footmen/pictures/footmen_film.mp4 1200 720`
+  `node tools/footmen_film.mjs docs/mockups/masque_footmen/pictures/footmen_death.mp4 1200 720 "" deathfilm`
 
 ## The checks: `tests/masque_footmen.test.ts` (15)
 
@@ -156,16 +209,22 @@ Each begins as his blow lands, at his place on the floor, turned the way he face
 5. NOTHING CUT OFF (six pixels of room at least);
 6. NOTHING OF HIM IN THE FLOOR;
 7. THE LIVERY: every colour clear of pink and cyan; no pink on him but his eyes;
-8. THE HUSH leaking while he lives, a great breath as it leaves him, none once he is still;
+8. THE HUSH leaking while he lives, a great breath as it leaves him once he is down, none once he is still;
 9. HIS MARKS: wig (its rolls and queue) and tray in every living frame (the tray off his hand only while it flies), white
-   gloves, no armour; pink eyes while he lives, gone once he is down;
+   gloves, no armour; pink eyes while he lives, gone once he is down on his back;
 10. THE CANDLES: an honest flame in every living frame, their light orange, out once fallen; the warning's pink glint on the
     tray and on the candelabrum;
 11. HIS SIZE AND SPEED: a little taller than the knight; marching faster than the knight walks, painted for that pace;
 12. THE TRAY FLUNG: six tiles out, a loop two tiles and more across, spinning, back into his hand inside 1.2 s; in the air the
     enemy's edge, nothing cyan, every pixel whole, both ways round;
 13. THE FIRE: out in two frames, three tiles and 120 degrees; honest fire, no pink, nothing cyan; gone at its end;
-14. HIS DEATH: on his knees at the end, his head well up; the tray and the candelabrum lie clear of him, both ways round;
+14. HIS DEATH: held rigid (his arms at his sides, the shiver seen) from 0.30 to 0.60 s; over like a plank, hinged at his
+    heels (each within 0.8 of its spot), nothing of him (hips, knees, chest, neck) 3.5 off his line from ankle to head
+    as he falls, over 75 degrees in under 0.7 s; flat on his back at the end (his chest's front to the sky), a little bounce,
+    then still; his handover into it from every frame of his stand and his march, and from struck as it starts and ends; the
+    tray flung up off his hand, down on its rim (over 55 degrees), round on it four times and more, tipped less and less,
+    flat and face up and still at the end, never in the floor; the tray and the candelabrum lie clear of him, both ways
+    round;
 15. NOTHING FOLDS FLAT.
 
 Other tests told of these files, as they are of floor 16's (the smallest change: the footmen's files added to each check's
@@ -181,9 +240,16 @@ list of the art chat's mock-ups): `tests/bosses.test.ts` (two checks), `tests/cr
   fire fan burning (three tiles, a third of a turn).
 - `footmen_film.mp4` (30 s): standing; the march; the tray flung; the candelabrum; struck; his death; each from in front and
   from behind, at room scale with the knight (stand, struck and death closer), captioned; each strike again at half speed.
+  (Made again on 30 Oct for the new death; every other shot as before.)
+- `footmen_death.mp4` (18 s): his death on its own: at the game's size beside the knight, from in front and from behind;
+  each again three times as big; then at half speed, from in front and from behind; captioned.
+- `footmen_death_sheet.png`: his death in eight key frames from in front, twice the game's size: the tray flies; rigid, a
+  shiver; tipping; falling, a plank; down, a bounce; the tray spins; rattling flatter; still, alive.
 
 ## His word on the pictures
 
 The sheet and the film (`footmen_sheet.png`, `footmen_film.mp4`), asked “Floor 17's footmen (footmen_sheet.png and the
 film): are these right? The tray flies out and comes back to his hand like a boomerang.”: “Yes, that's them
 (Recommended)”.
+
+OF THE NEW DEATH (eb30951; his pick for it, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`footmen_death_sheet.png`, `footmen_death.mp4`), asked “The footmen's new death: struck, they freeze rigid with a shiver, then fall straight back like a plank. The tray flies off, rolls round on its rim and settles flat. The Hush leaves them, alive. Is that it?”: “Yes, that's it (Recommended)”.

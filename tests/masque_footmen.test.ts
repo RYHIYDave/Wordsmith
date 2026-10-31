@@ -25,7 +25,11 @@
 //      loop two tiles and more across, spinning; in the air it has the enemy's edge, nothing cyan, every pixel whole;
 //  13. THE CANDELABRUM'S FIRE: out in two frames, three tiles and a third of a turn across; honest fire, nothing cyan, no
 //      pink; gone at its end;
-//  14. HIS DEATH: the tray and the candelabrum fall and lie clear of him; he ends on his knees, upright enough, not lying;
+//  14. HIS DEATH (his pick of 30 Oct, “Yes, these (Recommended)”): rigid a moment, then over backwards like a plank, hinged at
+//      his heels, the line from heel to head straight as he falls; flat on his back, a little bounce, then still; his
+//      handover into it from his stand and his march at any frame, and from struck; the tray flies from his hand, comes
+//      down on its rim, rolls round and round on it, flatter and flatter, and lies still, flat, face up, never in the floor;
+//      the tray and the candelabrum lie clear of him, both ways round;
 //  15. NOTHING FOLDS FLAT: no round thing he wears collapses into a sheet that spins.
 //   run: tsx --test tests/masque_footmen.test.ts
 
@@ -39,13 +43,14 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
+import type { Handover } from '../src/art/boss_checks';
 import { HUSH } from '../src/art/crier';
 import { BREATH_PALE } from '../src/art/hushed';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
-import { CANDLE, CANDLE_LIGHT, COAT, CRIMSON, FOOTMAN_BODY, FOOTMAN_CANVAS, FOOTMEN_ON, GILT, GLOVE, LACE, SILK, SILVER, SMEAR, WAX, WIG } from '../src/art/masque_footmen';
+import { CANDLE, CANDLE_LIGHT, COAT, CRIMSON, FOOTMAN_BODY, FOOTMAN_CANVAS, FOOTMEN_ON, GILT, GLOVE, LACE, SILK, SILVER, SMEAR, TRAY, WAX, WIG } from '../src/art/masque_footmen';
 import { FIRE_FX, TRAY_FX, firePainted, trayShotPainted } from '../src/art/masque_footmen_fx';
-import { FM_DIES, FM_PACE, FM_SHAPE, FM_STRIKES, FM_SWING, FM_THROW, FOOTMAN, TRAY_FLIGHT, smearedAt, trayFlight } from '../src/art/masque_footmen_moves';
+import { FM_DIES, FM_PACE, FM_SHAPE, FM_STRIKES, FM_SWING, FM_THROW, FOOTMAN, TRAY_FLIGHT, smearedAt, trayFlight, trayLooseAt } from '../src/art/masque_footmen_moves';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { KNIGHT_BODY } from '../src/art/moves3';
 import type { Bit, Mob, Moment, Shape } from '../src/art/new_mobs3';
@@ -104,6 +109,9 @@ const pinkish = (r: number, g: number, b: number): boolean => {
   const [h, s, v] = hsv(r, g, b);
   return h >= 300 && h <= 350 && s >= 0.4 && v >= 0.35;
 };
+const lerp = (a: V3, b: V3): V3 => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+const sub3 = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross3 = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const pixels = (p: Painted): number => {
   let n = 0;
   for (let i = 3; i < p.px.d.length; i += 4) if (p.px.d[i]) n++;
@@ -233,8 +241,8 @@ function under(sh: Shape): number {
   else if (sh.k === 'panel') z = sh.c[2] - Math.abs(sh.u[2]) - Math.abs(sh.v[2]);
   return Math.max(0, -z);
 }
-/** What falls from him as he dies (it falls as itself, and is held to lying clear of him in 14). */
-const FALLEN = new Set(['tray', 'candelabrum', 'candles']);
+/** What leaves him as he dies (the tray flies, the candelabrum falls: each held to its own way, and to lying clear of him, in 14). */
+const FALLEN = new Set(['tray', 'candelabrum']);
 const fallenAt = (piece: string, t: number): boolean => FALLEN.has(piece) && t >= (piece === 'tray' ? FM_DIES.drop : FM_DIES.dropC);
 
 test('6. NOTHING OF HIM IN THE FLOOR: all he wears and carries', () => {
@@ -295,9 +303,11 @@ test('8. THE HUSH leaking out of him while he lives; a great breath of it as it 
   }
   assert.ok(some > 0.9 * frames, `the Hush leaking in ${some} of ${frames} living frames`);
   let great = 0;
-  for (let t = 0.3; t <= 1.3; t += 0.05) great = Math.max(great, breathAt(st, dyingMoment(MOB, t)));
+  // (the great breath once he is down on his back, rising out of him)
+  for (let t = FM_DIES.breath[0]; t <= FM_DIES.breath[1]; t += 0.05) great = Math.max(great, breathAt(st, dyingMoment(MOB, t)));
+  assert.ok(FM_DIES.breath[0] >= FM_DIES.land, 'the Hush leaves him once he is down');
   assert.ok(great >= 1.5 * most, `the Hush leaving him, ${great} at most; the most while he lives, ${most}`);
-  for (let t = 2.0; t <= FM_DIES.long + 1e-9; t += 0.05) assert.equal(breathAt(st, dyingMoment(MOB, t)), 0, `@${t.toFixed(2)}: the Hush still coming out`);
+  for (let t = FM_DIES.breath[1] + 0.01; t <= FM_DIES.long + 1e-9; t += 0.05) assert.equal(breathAt(st, dyingMoment(MOB, t)), 0, `@${t.toFixed(2)}: the Hush still coming out`);
 });
 
 test('9. HIS MARKS: the powdered wig and the silver tray, white gloves, no armour; the dull pink in his eyes while he lives, gone once he is down', () => {
@@ -316,7 +326,7 @@ test('9. HIS MARKS: the powdered wig and the silver tray, white gloves, no armou
       }
     }
   }
-  for (let t = FM_DIES.knees; t <= FM_DIES.long + 1e-9; t += 0.05) assert.ok(!pinkEyes(MOB.bits(st, dyingMoment(MOB, t))), `@${t.toFixed(2)}: the pink still in his eyes`);
+  for (let t = FM_DIES.land; t <= FM_DIES.long + 1e-9; t += 0.05) assert.ok(!pinkEyes(MOB.bits(st, dyingMoment(MOB, t))), `@${t.toFixed(2)}: the pink still in his eyes`);
 });
 
 test('10. THE CANDLES: an honest flame in every frame while he holds them, their light orange, out once they fall; the warning a pink glint on what he strikes with', () => {
@@ -410,17 +420,105 @@ test('13. THE CANDELABRUM\'S FIRE: out in two frames, three tiles out and a thir
   }
 });
 
-test('14. HIS DEATH: the tray and the candelabrum fall and lie clear of him; he ends on his knees, upright enough, not lying', () => {
-  const s = skeletonAt(MOB, 'dying', FM_DIES.long);
-  assert.ok(Math.max(s.kneeL[2], s.kneeR[2]) < 4.5, `his knees on the floor (${s.kneeL[2].toFixed(1)}, ${s.kneeR[2].toFixed(1)})`);
-  assert.ok(s.pelvis[2] < 24, `on his knees: his hips ${s.pelvis[2].toFixed(1)} up`);
-  assert.ok(s.head[2] > 30, `not lying: his head ${s.head[2].toFixed(1)} up`);
-  assert.ok(MOB.fall?.('tray') && MOB.fall?.('candelabrum'), 'the tray and the candelabrum fall');
-  const him: Mob = { ...MOB, fall: (piece) => { const f = MOB.fall?.(piece) ?? null; return f && { ...f, to: [900, 900] }; } };
-  // (what fell alone: without him, and without the Hush still leaving him, which is his)
-  const pieces: Mob = { ...MOB, bits: (st, m) => MOB.bits(st, m).filter((b) => FALLEN.has(b.piece)), grains: () => [] };
+test('14. HIS DEATH: rigid, then over backwards like a plank, flat on his back; the tray flies, rolls round on its rim and lies still; all clear of him', () => {
+  const D = FM_DIES;
+  const at = (t: number) => skeletonAt(MOB, 'dying', t);
+  const xz = (p: V3): [number, number] => [p[0], p[2]];
+  // RIGID A MOMENT: from when he seizes to when he tips, upright, his head hardly moving (but the shiver), his arms at his sides
+  const r0 = at(D.rigid);
+  for (let t = D.rigid; t <= D.tip + 1e-9; t += 0.02) {
+    const s = at(t);
+    assert.ok(Math.hypot(s.head[0] - r0.head[0], s.head[1] - r0.head[1], s.head[2] - r0.head[2]) < 2.0, `@${t.toFixed(2)}: not held rigid (his head ${Math.hypot(s.head[0] - r0.head[0], s.head[1] - r0.head[1], s.head[2] - r0.head[2]).toFixed(2)} from where it was)`);
+    for (const [h, sh] of [[s.handL, s.shoulderL], [s.handR, s.shoulderR]] as const) assert.ok(sh[2] - h[2] > 20, `@${t.toFixed(2)}: his arms not at his sides`);
+  }
+  assert.ok(D.tip - D.rigid >= 0.25, `held rigid ${(D.tip - D.rigid).toFixed(2)} s`);
+  // (and the last stiff shiver through him, seen: his head trembles a little as he stands rigid)
+  let shiver = 0;
+  for (let t = D.shiver[0]; t <= D.shiver[1]; t += 1 / 60) shiver = Math.max(shiver, Math.hypot(at(t).head[1] - r0.head[1], at(t).head[0] - r0.head[0]));
+  assert.ok(shiver > 0.6, `his shiver ${shiver.toFixed(2)}`);
+  // OVER LIKE A PLANK: hinged at his heels (they stay where they stood); his line from ankle to head straight all the way
+  // down (nothing of him more than a little off it: his hips, his knees, his chest, his neck), and quick
+  const h0 = at(0);
+  let leaned = 0;
+  for (let t = D.tip; t <= D.long + 1e-9; t += 1 / 60) {
+    const s = at(t);
+    for (const [a, b] of [[s.heelL, h0.heelL], [s.heelR, h0.heelR]] as const) assert.ok(Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 0.8, `@${t.toFixed(2)}: a heel off its spot`);
+    if (t > D.land + 1e-9) continue;
+    const [hx, hz] = xz(lerp(s.ankleL, s.ankleR));
+    const [tx, tz] = xz(s.head);
+    const L = Math.hypot(tx - hx, tz - hz);
+    for (const [name, p] of [['hips', s.pelvis], ['knee', lerp(s.kneeL, s.kneeR)], ['chest', s.ribs], ['neck', s.neck]] as const) {
+      const [px, pz] = xz(p);
+      const off = Math.abs((px - hx) * (tz - hz) - (pz - hz) * (tx - hx)) / L;
+      assert.ok(off < 3.5, `@${t.toFixed(2)}: his ${name} ${off.toFixed(1)} off the line from ankle to head: not a plank`);
+    }
+    leaned = Math.max(leaned, (Math.atan2(hx - tx, tz - hz) * 180) / Math.PI);
+  }
+  assert.ok(leaned > 75, `he goes over ${leaned.toFixed(0)} degrees`);
+  assert.ok(D.land - D.tip < 0.7, `his fall ${(D.land - D.tip).toFixed(2)} s: quick`);
+  // FLAT ON HIS BACK, his head toward where his back was, his chest's front to the sky; a little bounce, and still
+  const e = at(D.long);
+  assert.ok(e.head[0] < -50 && e.head[2] < 10 && e.ribs[2] < 9 && e.pelvis[2] < 9 && Math.max(e.kneeL[2], e.kneeR[2]) < 9, `not lying: head ${e.head.map((v) => v.toFixed(1))}, hips ${e.pelvis[2].toFixed(1)} up`);
+  assert.ok(e.chest[0][2] > 0.9, `not on his back: his chest faces ${e.chest[0].map((v) => v.toFixed(2))}`);
+  const lift = Math.max(...[0.04, 0.07, 0.1].map((u) => at(D.land + u).ribs[2] - at(D.land).ribs[2]));
+  assert.ok(lift > 0.3 && lift < 3, `his bounce: up ${lift.toFixed(2)}`);
+  const still = at(D.ease[1] + 0.02);
+  assert.ok(Math.hypot(...sub3(still.head, e.head)) < 1e-6 && Math.hypot(...sub3(still.handL, e.handL)) < 1e-6, 'still once the rigidity has gone out of him');
+  // HIS HANDOVER INTO IT: from every frame of his stand and his march, and from struck as it starts and as it ends
+  const handovers: Handover[] = [
+    ...framesOf(MOB, 'stand').map((t): Handover => ({ from: 'stand', at: t, to: 'dying', toAt: 0 })),
+    ...framesOf(MOB, 'walk').map((t): Handover => ({ from: 'walk', at: t, to: 'dying', toAt: 0 })),
+    { from: 'reel', at: 0, to: 'dying', toAt: 0 },
+    { from: 'reel', at: 'end', to: 'dying', toAt: 0 },
+  ];
+  const jumps = checkBoss(MOB, { ...FM_SHAPE, handovers }, ['dying']);
+  assert.equal(jumps.length, 0, findingsSaid(jumps).slice(0, 8).join('; '));
+  // THE TRAY: on his hand until he seizes; flung up and away; down on its rim; round and round on it, flatter and flatter;
+  // flat on its back, face up, and still; never in the floor
+  assert.equal(trayLooseAt(D.drop - 0.01), null, 'the tray loose before it leaves his hand');
+  const tilt = (t: number): number => (Math.acos(Math.max(-1, Math.min(1, (trayLooseAt(t) as { n: V3 }).n[2]))) * 180) / Math.PI;
+  const flung = trayLooseAt(D.drop + 0.1) as { c: V3 };
+  assert.ok(flung.c[2] > (trayLooseAt(D.drop) as { c: V3 }).c[2], 'the tray not flung up from his hand');
+  assert.ok(tilt(D.trayDown + 0.01) > 55, `it comes down tipped ${tilt(D.trayDown + 0.01).toFixed(0)} degrees: not on its rim`);
+  let rounds = 0;
+  let was = Math.atan2((trayLooseAt(D.trayDown) as { n: V3 }).n[1], (trayLooseAt(D.trayDown) as { n: V3 }).n[0]);
+  let prevTilt = tilt(D.trayDown + 0.08);
+  let lowest = Infinity;
+  for (let t = D.drop; t <= D.long + 1e-9; t += 1 / 120) {
+    const tr = trayLooseAt(t) as { c: V3; n: V3; u: V3 };
+    // (the lowest of it: its rolled rim all round, and the edge of its bed)
+    const v = cross3(tr.n, tr.u);
+    for (let k = 0; k < 48; k++) {
+      const a = (k / 48) * Math.PI * 2;
+      const rim = tr.c[2] + 0.97 * TRAY.r * (tr.u[2] * Math.cos(a) + v[2] * Math.sin(a)) + 0.35 * tr.n[2];
+      const bed = tr.c[2] + TRAY.r * (tr.u[2] * Math.cos(a) + v[2] * Math.sin(a));
+      lowest = Math.min(lowest, rim - 0.55, bed);
+    }
+    if (t > D.trayDown + 0.08 && t < D.trayStill) {
+      const now = Math.atan2(tr.n[1], tr.n[0]);
+      let d = now - was;
+      d -= 2 * Math.PI * Math.round(d / (2 * Math.PI));
+      rounds += d / (2 * Math.PI);
+      was = now;
+      const th = tilt(t);
+      assert.ok(th <= prevTilt + 1e-6, `@${t.toFixed(2)}: the tray tipping up again`);
+      prevTilt = th;
+    }
+  }
+  assert.ok(lowest > -0.1, `the tray ${(-lowest).toFixed(2)} into the floor`);
+  assert.ok(Math.abs(rounds) >= 4, `it goes round on its rim ${rounds.toFixed(1)} times`);
+  const flat = trayLooseAt(D.trayStill + 0.01) as { c: V3; n: V3; u: V3 };
+  const end = trayLooseAt(D.long) as { c: V3; n: V3; u: V3 };
+  assert.ok(flat.n[2] > 0.9999, 'the tray not lying flat, face up');
+  assert.ok(Math.hypot(...sub3(flat.c, end.c)) < 1e-9 && Math.hypot(...sub3(flat.u, end.u)) < 1e-9, 'the tray not still');
+  assert.ok(D.trayStill > D.land + 0.6 && D.trayStill < D.long - 0.3, 'the tray settles after he is down, and lies still a while');
+  // WHAT LEFT HIM LIES CLEAR OF HIM, both ways round: him alone, and the tray and the candelabrum alone, never on the same pixel
+  assert.ok(MOB.fall?.('candelabrum'), 'the candelabrum falls');
+  const him: Mob = { ...MOB, id: 'fm-him', bits: (st, m) => MOB.bits(st, m).filter((b) => !FALLEN.has(b.piece)) };
+  // (what left him alone: without the Hush still leaving him, which is his)
+  const pieces: Mob = { ...MOB, id: 'fm-pieces', bits: (st, m) => MOB.bits(st, m).filter((b) => FALLEN.has(b.piece)), grains: () => [] };
   for (const view of VIEWS) {
-    for (let k = (FM_DIES.knees + 0.3) / MOB.dieTime; k <= 1 + 1e-9; k += 0.04) {
+    for (let k = (D.land + 0.05) / MOB.dieTime; k <= 1 + 1e-9; k += 0.04) {
       const a = deathOfMob(him, Math.min(1, k), view).px.d;
       const b = deathOfMob(pieces, Math.min(1, k), view).px.d;
       let mine = 0;
@@ -431,8 +529,8 @@ test('14. HIS DEATH: the tray and the candelabrum fall and lie clear of him; he 
         if (b[i]) theirs++;
         if (a[i] && b[i]) both++;
       }
-      assert.ok(mine > 500 && theirs > 30, `${view} @${k.toFixed(2)}: ${mine} pixels of him, ${theirs} of what fell`);
-      assert.equal(both, 0, `${view} @${k.toFixed(2)}: what fell from him lies over him or under him by ${both} pixels`);
+      assert.ok(mine > 500 && theirs > 30, `${view} @${k.toFixed(2)}: ${mine} pixels of him, ${theirs} of what left him`);
+      assert.equal(both, 0, `${view} @${k.toFixed(2)}: what left him lies over him or under him by ${both} pixels`);
     }
   }
 });
