@@ -13,7 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HIGH_CITY } from '../src/game/act1';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { AWAKE_ORDER, MIRROR_TRUTH, QUEEN_TUNE, RULES, hallAt, hallFrame, hallPeril, inLane, pierGlass } from '../src/game/act1_rules/gqueen';
+import { AWAKE_ORDER, MIRROR_TRUTH, QUEEN_TUNE, RULES, hallAt, hallFrame, hallPeril, inLane, pierGlass, ringSpots } from '../src/game/act1_rules/gqueen';
 import { act1Fig } from '../src/art/act1_figs/index';
 import { act1Fx } from '../src/render/act1_fx/index';
 import { HALL_AT, HALL_MIRRORS } from '../src/art/queen_fx';
@@ -43,12 +43,13 @@ function onHerFloor(seed: number): Game {
   return g;
 }
 
-test('1. built: the boss of floor 18; her four blows, the comb first, each bigger one waiting longer', () => {
+test('1. built: the boss of floor 18; her five blows (four and the ring, at his word), the comb first, each bigger one waiting longer', () => {
   assert.ok(RULES && act1Rules('gqueen') && act1Fig('gqueen') && act1Fx('gqueen'));
   assert.notEqual(bossKind(18), 'gqueen', 'off: not her floor');
   high(() => assert.equal(bossKind(18), 'gqueen'));
   const chosen = RULES!.acts.filter((a) => !a.forced);
-  assert.deepEqual(chosen.map((a) => a.id), ['gqueen:comb', 'gqueen:glass', 'gqueen:reflect', 'gqueen:shatter']);
+  // (her fifth, the ring of mirrors, at his word: “Add as a fifth move”)
+  assert.deepEqual(chosen.map((a) => a.id), ['gqueen:comb', 'gqueen:glass', 'gqueen:reflect', 'gqueen:shatter', 'gqueen:ring']);
   assert.equal(chosen[0].cooldown, 0);
   for (let i = 1; i < chosen.length; i++) assert.ok(chosen[i].cooldown > chosen[i - 1].cooldown);
   assert.ok(QUEEN_TUNE.cd[0] > QUEEN_TUNE.cd[1] && QUEEN_TUNE.cd[1] > QUEEN_TUNE.cd[2], 'shorter waits each phase');
@@ -125,4 +126,78 @@ test('3-4. a fight in her hall: every blow; the glasses wake; her mirror speaks;
   assert.equal(g.perils.filter((p) => p.a1 === 'gqueen:cloud').length, 0, 'her poison gone');
   assert.equal(hallPeril(g)!.c, 2, 'her mirror tells the truth');
   assert.ok(g.events.some((e) => e.t === 'bossSay' && e.text === MIRROR_TRUTH), 'the truth said');
+}));
+
+/** Her gate fallen and her line said: she fights (game.ts bossWaits). */
+function meet(g: Game, m: { act?: unknown }): void {
+  const waits = (): boolean => (g as unknown as { bossWaits(q: unknown): boolean }).bossWaits(m);
+  for (let k = 0; k < 12 / DT && waits(); k++) g.update(DT, emptyControls());
+  assert.ok(!waits(), 'she fights');
+  for (let k = 0; k < 3 / DT && m.act; k++) g.update(DT, emptyControls());
+}
+
+test('5. the ring of mirrors: her in one of six round him; found, she is stunned and takes more; not found in time, the whole ones strike', () => high(() => {
+  const ringAct = RULES!.acts.find((a) => a.id === 'gqueen:ring')!;
+  // (found)
+  {
+    const g = onHerFloor(3);
+    const m = g.monsters.find((q) => q.kind === 'gqueen')!;
+    for (const q of g.monsters) if (q !== m) q.dead = true;
+    const h = g.hero;
+    h.x = m.x - 3;
+    h.y = m.y;
+    h.invuln = 1e9;
+    m.state = 'chase';
+    meet(g, m);
+    RULES!.end!(g.bosses, m, ringAct);
+    const p = g.perils.find((q) => q.a1 === 'gqueen:ring')!;
+    assert.ok(p, 'the ring risen');
+    const spots = ringSpots(g, p);
+    assert.equal(spots.length, QUEEN_TUNE.ring.n);
+    for (const q of spots) assert.ok(Math.hypot(q.x - p.x, q.y - p.y) <= QUEEN_TUNE.ring.r + 0.01, 'round him');
+    assert.ok(Math.hypot(m.x - spots[p.a].x, m.y - spots[p.a].y) < 0.01, 'she is in one of them');
+    assert.equal(RULES!.reachable!({ ...m, act: { id: 'gqueen:inring', t: 0 } } as never), false, 'nothing reaches her in it');
+    const other = (p.a + 1) % spots.length;
+    g.bosses.floorBlow(spots[other].x, spots[other].y, 0.5, 'phys');
+    assert.ok(p.b & (1 << other), 'a wrong one broken');
+    assert.equal(p.c, 0, 'not found yet');
+    g.bosses.floorBlow(spots[p.a].x, spots[p.a].y, 0.5, 'phys');
+    assert.equal(p.c, 1, 'found');
+    let stunned = false;
+    for (let k = 0; k < 2 / DT; k++) {
+      g.update(DT, emptyControls());
+      if (m.act?.id === 'gqueen:stunned') stunned = true;
+    }
+    assert.ok(stunned, 'stunned');
+    assert.ok((m.hexMore ?? 0) >= QUEEN_TUNE.ring.more && (m.hexT ?? 0) > 0, 'taking more from everything');
+  }
+  // (not found: the whole ones strike him at once)
+  {
+    const g = onHerFloor(3);
+    const m = g.monsters.find((q) => q.kind === 'gqueen')!;
+    for (const q of g.monsters) if (q !== m) q.dead = true;
+    const h = g.hero;
+    h.x = m.x - 3;
+    h.y = m.y;
+    h.invuln = 1e9;
+    m.state = 'chase';
+    meet(g, m);
+    RULES!.end!(g.bosses, m, ringAct);
+    const p = g.perils.find((q) => q.a1 === 'gqueen:ring')!;
+    const spots = ringSpots(g, p);
+    const wrong = [0, 1, 2, 3, 4, 5].filter((i) => i !== p.a).slice(0, 2);
+    for (const i of wrong) g.bosses.floorBlow(spots[i].x, spots[i].y, 0.3, 'phys');
+    // (what strikes him, counted, not taken: he would not live through it at his level here)
+    const hits: number[] = [];
+    (g as unknown as { hurtHero(raw: number): void }).hurtHero = (raw: number) => void hits.push(raw);
+    let out = false;
+    for (let k = 0; k < (QUEEN_TUNE.ring.long + 4) / DT; k++) {
+      g.update(DT, emptyControls());
+      if (m.act?.id === 'gqueen:out') out = true;
+    }
+    assert.equal(p.c, 2, 'its time ran out');
+    const whole = spots.length - wrong.length;
+    assert.ok(hits.some((v) => Math.abs(v - p.dmg * whole) < 1e-6), `the ${whole} whole ones struck him at once (${hits.join(', ')})`);
+    assert.ok(out, 'she steps out of her glass');
+  }
 }));

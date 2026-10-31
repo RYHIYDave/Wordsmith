@@ -16,7 +16,10 @@ import { ARENA, CLOUD_CANVAS, CLOUD_FX, HALL_AT, HALL_MIRRORS, HALL_MIRROR_CANVA
 import { QN_COMB, QN_OUT, QN_SHATTER } from '../../art/queen_moves';
 import { flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { AWAKE_ORDER, QUEEN_TUNE, hallAt, hallFrame, pierGlass } from '../../game/act1_rules/gqueen';
+import { AWAKE_ORDER, QUEEN_TUNE, hallAt, hallFrame, pierGlass, ringSpots } from '../../game/act1_rules/gqueen';
+import { figureOf } from '../../art/bestiary';
+import type { Clip } from '../../art/actor_types';
+import type { Peril } from '../../game/state';
 import type { HallFrame } from '../../game/act1_rules/gqueen';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -131,9 +134,124 @@ function shatterGlass(c: Act1FxCtx, F: HallFrame, since: number): void {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------
+// THE RING OF MIRRORS (his fifth for her, 30 Oct 2026): six of her hall's pier glasses risen round him, her in every one
+
+/** Where a pier glass's glass is on its picture (picture pixels): every pixel of the cold blue of its glass, its foot's middle. */
+const GLASS = new Map<Sprite, { mask: HTMLCanvasElement; x: number; y: number } | null>();
+function glassOf(s: Sprite): { mask: HTMLCanvasElement; x: number; y: number } | null {
+  if (GLASS.has(s)) return GLASS.get(s)!;
+  let out: { mask: HTMLCanvasElement; x: number; y: number } | null = null;
+  const W = s.img.width;
+  const H = s.img.height;
+  const g = typeof document !== 'undefined' ? s.img.getContext('2d') : null;
+  if (g && W > 0 && H > 0) {
+    const d = g.getImageData(0, 0, W, H).data;
+    const mask = document.createElement('canvas');
+    mask.width = W;
+    mask.height = H;
+    const mg = mask.getContext('2d')!;
+    const md = mg.createImageData(W, H);
+    let sx = 0;
+    let n = 0;
+    let low = 0;
+    for (let i = 0; i < W * H; i++) {
+      const r = d[i * 4];
+      const gg = d[i * 4 + 1];
+      const b = d[i * 4 + 2];
+      if (d[i * 4 + 3] < 200 || !(b > r + 12 && b > gg + 6)) continue;
+      md.data[i * 4 + 3] = 255;
+      sx += i % W;
+      n++;
+      low = Math.max(low, Math.floor(i / W));
+    }
+    mg.putImageData(md, 0, 0);
+    if (n > 20) out = { mask, x: sx / n, y: low };
+  }
+  GLASS.set(s, out);
+  return out;
+}
+/** A pier glass with her in it: her picture laid in its glass, cold and faint, nowhere else. */
+const IN_GLASS = new Map<string, Sprite>();
+function herInGlass(key: string, mirror: Sprite, her: Sprite): Sprite {
+  const k = key;
+  const have = IN_GLASS.get(k);
+  if (have) return have;
+  const gl = glassOf(mirror);
+  if (!gl || typeof document === 'undefined') return mirror;
+  const W = mirror.img.width;
+  const H = mirror.img.height;
+  const dens = mirror.img.width / Math.max(1, mirror.w);
+  const her1 = document.createElement('canvas');
+  her1.width = W;
+  her1.height = H;
+  const hg = her1.getContext('2d')!;
+  const hd = her.img.width / Math.max(1, her.w);
+  const sc = dens / hd;
+  hg.drawImage(her.img, gl.x - her.ax * dens, gl.y - her.ay * dens + 2 * dens, her.img.width * sc, her.img.height * sc);
+  hg.globalCompositeOperation = 'source-atop';
+  hg.fillStyle = 'rgba(150, 160, 210, 0.35)';
+  hg.fillRect(0, 0, W, H);
+  hg.globalCompositeOperation = 'destination-in';
+  hg.drawImage(gl.mask, 0, 0);
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const cg = cv.getContext('2d')!;
+  cg.drawImage(mirror.img, 0, 0);
+  cg.globalAlpha = 0.7;
+  cg.drawImage(her1, 0, 0);
+  const s: Sprite = { ...mirror, img: cv };
+  IN_GLASS.set(k, s);
+  return s;
+}
+/** Her standing picture now (the way she faces him from her glass), or null. */
+function herNow(c: Act1FxCtx): Sprite | null {
+  const m = c.game.monsters.find((q) => q.kind === 'gqueen' && !q.dead);
+  if (!m) return null;
+  const art = c.bestiary.of(figureOf(m));
+  const list = art.front.idle;
+  return list.length ? list[Math.floor(c.game.time * 10) % list.length] ?? null : null;
+}
+/** The ring of mirrors standing among the figures: forming, still with her in each, trembling as its time runs out, burst. */
+function standRing(c: Act1FxCtx, p: Peril): void {
+  const R = QUEEN_TUNE.ring;
+  const spots = ringSpots(c.game, p);
+  const her = herNow(c);
+  const herK = her ? Math.floor(c.game.time * 10) : -1;
+  spots.forEach((q, i) => {
+    const broken = (p.b & (1 << i)) !== 0 || p.c !== 0;
+    const glassI = (i * 2) % HALL_MIRRORS.length;
+    let s: Sprite;
+    if (broken) s = glassSprite(glassI, 1.9, false, false);
+    else if (p.t < 0.45) s = glassSprite(glassI, p.t < 0.15 ? 2.7 : p.t < 0.3 ? 3.0 : 3.3, false, false);
+    else if (p.t > R.long - R.warn) s = glassSprite(glassI, [0.8, 1.1, 1.3][Math.floor(c.t * 12) % 3], false, false);
+    else {
+      const still = glassSprite(glassI, null, false, false);
+      s = her ? herInGlass(`${glassI}:${herK % 1000}`, still, her) : still;
+    }
+    const [sx, sy] = c.at(q.x, q.y);
+    c.stand(q.x + q.y, s, sx, sy);
+  });
+}
+
 export const FX: Act1Fx | null = {
+  sprite(m, _art, set) {
+    // (gone into her glass, in the ring: none of her)
+    if (!m.act || m.act.id !== 'gqueen:inring') return null;
+    const clip = set.clips?.moves?.glassIn as Clip | undefined;
+    return clip && clip.frames.length ? clip.frames[clip.frames.length - 1] ?? null : null;
+  },
   ground(c, m, p) {
     if (!c.g) return;
+    if (p && p.a1 === 'gqueen:ring' && p.c === 0) {
+      // (as its time runs out: where his blow will fall, round him)
+      const R = QUEEN_TUNE.ring;
+      const k = warnK(p.t, R.long - R.warn, R.long);
+      const h = c.game.hero;
+      if (k >= 0) drawFanWarn(c.g, c.at, { x: h.x, y: h.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, 1.0, k, c.t);
+      return;
+    }
     const F = hallFrame(c.game);
     if (p && p.a1 === 'gqueen:cloud' && !p.done) {
       const t = Math.min(CLOUD_FX.long - 1 / FPS, Math.floor(p.t * FPS) / FPS);
@@ -159,6 +277,10 @@ export const FX: Act1Fx | null = {
     }
   },
   standing(c, _m, p) {
+    if (p && p.a1 === 'gqueen:ring') {
+      standRing(c, p);
+      return;
+    }
     if (!p || p.a1 !== 'gqueen:hall') return;
     const F = hallFrame(c.game);
     if (!F) return;
@@ -169,6 +291,25 @@ export const FX: Act1Fx | null = {
     standHall(c, F, p.a, p.b >= 0 ? c.game.time - p.b : -1, p.c, p.d);
   },
   air(c, _m, p) {
+    if (p && p.a1 === 'gqueen:ring' && p.c === 2 && c.g) {
+      // (time run out: the glass of every mirror still whole flung at him)
+      const k = (p.t - p.d) / QUEEN_TUNE.ring.fly;
+      if (k > 1.2) return;
+      const h = c.game.hero;
+      const g = c.g;
+      ringSpots(c.game, p).forEach((q, i) => {
+        if (p.b & (1 << i)) return;
+        for (let j = 0; j < 7; j++) {
+          const u = Math.min(1, k + j * 0.04);
+          const x = q.x + (h.x - q.x) * u;
+          const y = q.y + (h.y - q.y) * u;
+          const [sx, sy] = c.at(x, y);
+          g.fillStyle = j === 0 ? '#f5f7ff' : j % 2 ? '#cdd2e6' : '#ff9cc4';
+          g.fillRect(Math.round(sx) - 1, Math.round(sy) - 22 + j, 2, 2);
+        }
+      });
+      return;
+    }
     if (!p || p.a1 !== 'gqueen:hall' || p.b < 0) return;
     const F = hallFrame(c.game);
     if (!F) return;

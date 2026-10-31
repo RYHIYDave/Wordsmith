@@ -18,6 +18,13 @@
 // - SHATTER (QN_SHATTER, 2.5 s): her arms flung up (the warning, 0.5 to 1.37 s: every pier glass trembles and the lane of floor
 //   before it lights), at her blow they all burst at once and their glass flies straight across the hall in its lane: whoever is
 //   in a lane is struck (1.6 times her blow); the gaps between the lanes are safe.
+// - THE RING OF MIRRORS (her fifth, at his word, 30 Oct 2026: “I think I’d like a circle of mirrors and you can see her in all of
+//   them, and you have to break them to find the right one or any not broken do a big attack.”; asked, “Add as a fifth move”, and
+//   finding her, “She's stunned (Recommended)”): she goes into a glass (QN_IN) and a ring of six mirrors rises round him, her in
+//   every one (TUNE.ring). Each breaks at one blow of his; the one she is in, broken, throws her out stunned (TUNE.ring.stun
+//   seconds, taking more from everything, TUNE.ring.more) and the rest burst harmlessly. If time runs out first, every mirror still
+//   whole hurls its glass at him at once (TUNE.ring.each of her blow for each), and she steps out of hers (QN_OUT). His rulebook
+//   gives a boss four blows: hers are five, at his word.
 // - HER PHASES at two thirds and a third of her life: another glass awake, her waits shorter (TUNE.cd).
 // - HER MIRROR at the hall's end speaks to her through the fight, only what she wants to hear (the Grimms' "Snow White", in Margaret
 //   Hunt's translation of 1884, out of copyright); as she dies it cracks across and, for the first time, tells the truth (his doc).
@@ -43,6 +50,12 @@ export const QUEEN_TUNE = {
   reflect: { most: 4 },
   /** Shatter: each lane as wide as its glass (HALL_GLASS, her lengths), and a little for his body; when its glass has crossed. */
   shatter: { half: HALL_GLASS.half / TILE3 + 0.15, cross: 0.25 },
+  /**
+   * The ring of mirrors: how many, how far round him (tiles), how long before those still whole strike (seconds), the warning before
+   * that (their glass trembling), each one's share of her blow, how long their glass takes to reach him; how near a blow must land to
+   * break one; how long she is stunned when found, and how much more she takes then.
+   */
+  ring: { n: 6, r: 3.4, long: 6.5, warn: 2.0, each: 0.45, fly: 0.45, hit: 0.8, stun: 3.0, more: 0.5 },
   /** Her waits (cooldowns) in each phase, as a share of her first. */
   cd: [1, 0.8, 0.65] as const,
   /** Her mirror's words: how often it speaks (seconds), how long a line stays, how high over its foot it is said; said toward it from him no further than `near` tiles off. */
@@ -55,6 +68,8 @@ export const QUEEN_TUNE = {
  */
 export const MIRROR_SAYS = ['Thou, O Queen, art the fairest of all!', 'None in this land is fairer than thou.', 'Fairest of all. Fairest of all.', 'Thou art the fairest. Strike him down.'];
 export const MIRROR_TRUTH = 'The king is dying. Something sits on his chest.';
+/** What her mirror says as the ring rises. */
+export const MIRROR_RING = 'None shall find thee, my Queen.';
 
 /** Which of the hall's pier glasses wake, in order: the far side's (their glass toward the eye), one each phase (art/queen_fx.ts HALL_MIRRORS). */
 export const AWAKE_ORDER = [4, 8, 0] as const;
@@ -102,7 +117,12 @@ const ACTS: readonly ActDef[] = [
   { id: 'gqueen:glass', clip: 'glassIn', long: QN_IN.long, hit: QN_IN.hit, dmg: 1.3, cooldown: 8, first: 5, after: 0, near: 0, far: 14 },
   { id: 'gqueen:reflect', clip: 'reflect', long: QN_REFLECT.long, hit: QN_REFLECT.hit, dmg: 0, cooldown: 12, first: 7, after: 0.4, near: 0, far: 30 },
   { id: 'gqueen:shatter', clip: 'shatter', long: QN_SHATTER.long, hit: QN_SHATTER.hit, dmg: 1.6, cooldown: 15, first: 11, after: 0.6, near: 0, far: 30 },
+  // (his fifth for her: the ring of mirrors)
+  { id: 'gqueen:ring', clip: 'glassIn', long: QN_IN.long, hit: QN_IN.hit, dmg: QUEEN_TUNE.ring.each, cooldown: 22, first: 14, after: 0, near: 0, far: 14 },
   { id: 'gqueen:out', clip: 'glassOut', long: QN_OUT.long, hit: QN_OUT.hit, dmg: 1.3, cooldown: 0, first: 0, after: 0.4, near: 0, far: 999, forced: true },
+  // (in the ring: hidden in her glass until she is found or its time runs out; found, stunned)
+  { id: 'gqueen:inring', clip: 'glassIn', long: QUEEN_TUNE.ring.long + QUEEN_TUNE.ring.fly + 0.2, hit: QUEEN_TUNE.ring.long, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 999, forced: true },
+  { id: 'gqueen:stunned', clip: 'reel', long: QUEEN_TUNE.ring.stun, hit: 0.05, dmg: 0, cooldown: 0, first: 0, after: 0.3, near: 0, far: 999, forced: true },
 ];
 
 type Keep = Record<string, number>;
@@ -110,6 +130,35 @@ const keep = (m: Monster): Keep => (m.a1 ??= {}) as Keep;
 /** Her hall's peril (its glasses and her mirror, drawn by render/act1_fx/gqueen.ts): `a` awake, `b` Shatter's start (game time; -1 none), `c` her mirror's mode (0 still, 1 speaking, 2 truth), `d` since when. */
 export function hallPeril(g: BossRules['g']): Peril | null {
   return g.perils.find((p) => p.a1 === 'gqueen:hall') ?? null;
+}
+
+/**
+ * The ring of mirrors' places (world), round where he stood as it rose (the peril's x, y), turned by its (fx, fy): QUEEN_TUNE.ring.n of
+ * them, each at ring.r, drawn in a little where that is not open floor (and left out where even that is not).
+ */
+export function ringSpots(g: BossRules['g'], p: Peril): { x: number; y: number }[] {
+  const R = QUEEN_TUNE.ring;
+  const L = g.level;
+  const isOpen = (x: number, y: number): boolean => {
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
+    return tx >= 0 && ty >= 0 && tx < L.floor.w && ty < L.floor.h && L.walk[ty * L.floor.w + tx] === 1;
+  };
+  const a0 = Math.atan2(p.fy, p.fx);
+  const out: { x: number; y: number }[] = [];
+  for (let i = 0; i < R.n; i++) {
+    const a = a0 + (i * Math.PI * 2) / R.n;
+    for (const r of [R.r, R.r - 0.8, R.r - 1.5]) {
+      const x = p.x + Math.cos(a) * r;
+      const y = p.y + Math.sin(a) * r;
+      if (isOpen(x, y)) {
+        out.push({ x, y });
+        break;
+      }
+    }
+    if (out.length < i + 1) out.push({ x: p.x + Math.cos(a) * (R.r - 1.5), y: p.y + Math.sin(a) * (R.r - 1.5) });
+  }
+  return out;
 }
 
 /** Is (x, y) open floor for her (in the level, walkable)? */
@@ -181,12 +230,53 @@ export const RULES: Act1Rules | null = {
     return false;
   },
   forced(_R, m, acts) {
-    return keep(m).out === 1 ? acts.findIndex((a) => a.id === 'gqueen:out') : -1;
+    const k = keep(m);
+    const id = k.stun === 1 ? 'gqueen:stunned' : k.inring === 1 ? 'gqueen:inring' : k.out === 1 ? 'gqueen:out' : '';
+    return id ? acts.findIndex((a) => a.id === id) : -1;
+  },
+  reachable(m) {
+    // (gone into her glass: in the ring, nothing reaches her but the blow that breaks her mirror)
+    return !(m.act && ((m.act.id === 'gqueen:ring' && m.act.t >= QN_IN.hit) || m.act.id === 'gqueen:inring'));
+  },
+  floorBlow(R, p, x, y, rad) {
+    if (p.a1 !== 'gqueen:ring' || p.c !== 0) return;
+    const spots = ringSpots(R.g, p);
+    spots.forEach((q, i) => {
+      if (p.b & (1 << i) || Math.hypot(q.x - x, q.y - y) > rad + QUEEN_TUNE.ring.hit) return;
+      p.b |= 1 << i;
+      R.g.sfx('shatter', 0.6);
+      R.g.emit({ t: 'spark', x: q.x, y: q.y, el: 'phys', n: 10 });
+      if (i !== p.a) return;
+      // (found: she is thrown out of it, stunned; the rest burst harmlessly)
+      p.c = 1;
+      p.d = p.t;
+      p.b = (1 << spots.length) - 1;
+      p.dur = p.t + 0.8;
+      const m = R.g.monsters.find((o) => o.kind === 'gqueen' && !o.dead);
+      if (!m) return;
+      const k = keep(m);
+      k.found = 1;
+      k.stun = 1;
+      m.x = q.x;
+      m.y = q.y;
+      const h = R.g.hero;
+      const d = Math.hypot(h.x - q.x, h.y - q.y) || 1;
+      m.fx = (h.x - q.x) / d;
+      m.fy = (h.y - q.y) / d;
+      if (m.act && m.act.id === 'gqueen:inring') m.act.t = ACTS.find((a) => a.id === 'gqueen:inring')!.long;
+      R.g.emit({ t: 'text', x: q.x, y: q.y, text: 'Found!', color: '#7af8f0' });
+    });
   },
   start(R, m, a) {
     const k = keep(m);
     k.struck = 0;
     if (a.id === 'gqueen:out') k.out = 2;
+    if (a.id === 'gqueen:inring') k.inring = 2;
+    if (a.id === 'gqueen:stunned') {
+      k.stun = 2;
+      m.hexT = QUEEN_TUNE.ring.stun;
+      m.hexMore = QUEEN_TUNE.ring.more;
+    }
     if (a.id === 'gqueen:shatter') {
       const P = hallPeril(R.g);
       if (P) P.b = R.g.time;
@@ -226,6 +316,36 @@ export const RULES: Act1Rules | null = {
       k.out = 1;
     }
     if (a.id === 'gqueen:out') k.out = 0;
+    if (a.id === 'gqueen:stunned') k.stun = 0;
+    if (a.id === 'gqueen:ring') {
+      // (the ring rises round him, her in every glass; she is in one of them)
+      const h = R.g.hero;
+      const turn = R.g.rng.range(0, Math.PI * 2);
+      const p = R.peril(m, 'act1', h.x, h.y, { a1: 'gqueen:ring', dur: QUEEN_TUNE.ring.long + QUEEN_TUNE.ring.fly + 0.8, dmg: R.g.rollMonsterDmg(m) * QUEEN_TUNE.ring.each });
+      p.fx = Math.cos(turn);
+      p.fy = Math.sin(turn);
+      p.a = R.g.rng.int(0, QUEEN_TUNE.ring.n - 1);
+      p.b = 0;
+      p.c = 0;
+      p.d = 0;
+      const q = ringSpots(R.g, p)[p.a];
+      m.x = q.x;
+      m.y = q.y;
+      k.found = 0;
+      k.inring = 1;
+      say(R, MIRROR_RING);
+    }
+    if (a.id === 'gqueen:inring') {
+      k.inring = 0;
+      // (not found: she steps out of her glass, facing him)
+      if (!k.found) {
+        const h = R.g.hero;
+        const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
+        m.fx = (h.x - m.x) / d;
+        m.fy = (h.y - m.y) / d;
+        k.out = 1;
+      }
+    }
   },
   acting(R, m, a, t0, t1) {
     const g = R.g;
@@ -285,6 +405,20 @@ export const RULES: Act1Rules | null = {
     }
   },
   peril(R, p) {
+    if (p.a1 === 'gqueen:ring') {
+      // (time run out: every mirror still whole hurls its glass at him at once)
+      if (p.c !== 0 || p.t < QUEEN_TUNE.ring.long) return;
+      const n = ringSpots(R.g, p).length;
+      let whole = 0;
+      for (let i = 0; i < n; i++) if (!(p.b & (1 << i))) whole++;
+      // (`b` kept: the mirrors whole as they struck are those not in it)
+      p.c = 2;
+      p.d = p.t;
+      p.dur = p.t + 0.8;
+      R.g.sfx('shatter', 1);
+      if (whole > 0) R.g.hurtHero(p.dmg * whole, p.el, p.words, null, p.from, p.x, p.y, p.half);
+      return;
+    }
     if (p.a1 !== 'gqueen:cloud') return;
     // (her poison: who stands in it, a little each half second)
     const h = R.g.hero;

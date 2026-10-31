@@ -209,6 +209,11 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // the night carters, the orderlies and the Bookwardens; a second each waits on its picture. Behind ACT2, off, none of them is in the game:
       // with it on, his rule holds them as it holds every other)
       const waiting = !ACT2.on && size === 'medium' && n === 1 && ACT2_ONE_MOVE.has(kind);
+      // (THE HIGH CITY, FLOOR 18: the Queen has five, at his word, 30 Oct 2026: her ring of mirrors “Add as a fifth move”)
+      if (kind === 'gqueen') {
+        assert.equal(n, 5, `${what}: five, at his word`);
+        continue;
+      }
       assert.ok(waiting || (n >= want[size][0] && n <= want[size][1] + leads), `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;
       const first = moves[0];
