@@ -3,13 +3,14 @@
 // as his blow lands (its `hit`), drawn round his floor point, facing his way (the figure's own lengths: a tile is TILE3).
 // His words for every new enemy, 28 Oct: “And bigger AOE to compensate for the extra time the player gets to evade”.
 //
-//   THE CRACK (his overhead chop): where the blade bites the floor before him, the floor splits; in two frames the crack
-//     races on out before him in a jagged line (`CRACK`: from the bite out to `CRACK.reach` tiles from him), side cracks
-//     branching off it; stone chips and dust are flung up all along it and roll out to either side; sparks of the
+//   THE CRACK (his overhead cleave): where the blade bites the floor before him, the floor splits; in two frames the
+//     crack races on out before him in a jagged line (`CRACK`: from the bite out to `CRACK.reach` tiles from him), side
+//     cracks branching off it; stone chips and dust are flung up all along it and roll out to either side; sparks of the
 //     enemy's pink and gold where the blade bit; it holds open, the Hush's grey breath seeping up out of it, and fades.
-//   THE KNOCKBACK (his shield rush): as his shield slams in, a flash at its face and a crescent of force bursting out
-//     before him across the floor (`KNOCK.r` tiles), sparks of pink and gold flung forward; and behind him, the dust of
-//     his burst along the floor the way he came (`KN_RUSH.carry` tiles), settling.
+//   THE SWEEP (his wide sweep): as the blade comes round, its sweep tears across the whole half-circle before him out to
+//     `SWEEP.r` tiles: a crescent of force over the floor from his right round to his left (the newest end brightest),
+//     scored streaks behind its edge, dust thrown up along it, sparks flung off the blade's end; gone in under half a
+//     second.
 //
 // Nothing here glows cyan; what glows is the enemy's pink burning to gold, and only in the flash of a blow.
 
@@ -17,7 +18,7 @@ import { HUSH } from './crier';
 import type { Painted } from './kit';
 import { hash } from './kit';
 import { FLAME } from './mkit';
-import { CHOP_AT, KN_RUSH, RUSH_SHIELD_AT } from './kings_knights_moves';
+import { CHOP_AT } from './kings_knights_moves';
 import { TILE3 } from './new_mobs3';
 import { stage } from './skin';
 import type { GameView } from './skin';
@@ -44,13 +45,13 @@ const DUST = ['#4e4c56', '#6a6872', '#8a8892'] as const;
 // THE CRACK
 
 /** Its picture: from his floor point out before him (either way round: before him is down the picture from in front, up it from behind). */
-export const CRACK_CANVAS = { w: 300, h: 260, ax: 40, ay: 130 } as const;
+export const CRACK_CANVAS = { w: 454, h: 400, ax: 59, ay: 200 } as const;
 /**
  * Its times (seconds from his blow landing) and its size: it races out in two frames (`open`); chips and dust thrown up
  * (`burst`); held open, seeping; faded by `long`. It runs from where the blade bites (`from`, his own lengths before
  * him) out to `reach` tiles from him, `wide` tiles across where it does harm (the game's to use).
  */
-export const CRACK = { open: [0, 2 / 30] as const, burst: 0.45, hold: 1.5, long: 2.1, from: CHOP_AT, reach: 6.0, wide: 1.2 } as const;
+export const CRACK = { open: [0, 2 / 30] as const, burst: 0.45, hold: 1.5, long: 2.1, from: CHOP_AT, reach: 8.0, wide: 2.1 } as const;
 const REACH = CRACK.reach * TILE3;
 /** The crack's line: points along it from the bite out, each with how wide it is there (jagged, tapering). */
 const LINE: ReadonlyArray<readonly [number, number, number]> = (() => {
@@ -172,79 +173,76 @@ export function crackPainted(t: number, view: GameView = 'front'): Painted {
 }
 
 // =============================================================================================
-// THE KNOCKBACK
+// THE SWEEP
 
-export const KNOCK_CANVAS = { w: 340, h: 240, ax: 180, ay: 120 } as const;
+export const SWEEP_CANVAS = { w: 534, h: 374, ax: 240, ay: 187 } as const;
 /**
- * Its times (seconds from his blow landing): the flash at the shield's face (two frames), the crescent of force bursting
- * out over the floor before him to `r` tiles and gone by `long`; the dust of his burst behind him, settling by `dust`.
- * `at`: where his shield's face is as it lands (his own lengths: before him, to his left, up), from his moves.
+ * Its times (seconds from his blow landing) and its size: the crescent torn across the floor before him, from his right
+ * (`-arc` degrees) round to his left (`arc`), out to `r` tiles (its harm: the half-circle, the game's to use), as far in
+ * as `inner` tiles; out in two frames (`open`), gone by `long`; its dust settling by `dust`.
  */
-export const KNOCK = { flash: 2 / 30, long: 0.42, r: 1.8, arc: 70, dust: 0.75, at: RUSH_SHIELD_AT } as const;
-/** THE KNOCKBACK `t` seconds after his shield slams in, seen from in front or from behind. */
-export function knockPainted(t: number, view: GameView = 'front', at: V3 = KNOCK.at): Painted {
-  const can = KNOCK_CANVAS;
+export const SWEEP = { open: [0, 2 / 30] as const, long: 0.45, dust: 0.7, r: 4.6, inner: 1.4, arc: 90 } as const;
+/** THE SWEEP `t` seconds after his blade lands, seen from in front or from behind. */
+export function sweepPainted(t: number, view: GameView = 'front'): Painted {
+  const can = SWEEP_CANVAS;
   const st = stage(view === 'back' ? 'rear' : view, can.ax, can.ay, can);
   const px = st.whole(null);
-  if (t < 0 || t > Math.max(KNOCK.long, KNOCK.dust)) return { px, lights: [] };
-  const R = KNOCK.r * TILE3;
-  // the dust of his burst behind him along the way he came, rolling and settling
-  if (t < KNOCK.dust) {
-    const k = t / KNOCK.dust;
-    const back = KN_RUSH.carry * TILE3;
-    for (let i = 0; i < 110; i++) {
-      const u = hash(i, 1, 7811);
-      if (hash(i, 2, 7811) < k * (0.6 + 0.6 * (1 - u))) continue;
-      const side = (hash(i, 3, 7811) - 0.5) * (10 + 18 * k);
-      const z = 0.6 + (2 + 7 * hash(i, 4, 7811)) * (1 - k) * Math.sin(Math.PI * Math.min(1, 0.3 + k));
-      const [sx, sy] = st.at([-back * u, side, z]);
-      lay(px, sx, sy, DUST[i % 3], k < 0.5 && i % 3 === 0 ? 3 : 2);
-    }
-  }
-  if (t <= KNOCK.long) {
-    const k = t / KNOCK.long;
-    const r = 6 + (R - 6) * Math.sqrt(k);
-    // the crescent of force over the floor before him: a band, its leading edge bright, breaking up as it goes
-    const n = Math.ceil(r * 1.6);
+  if (t < 0 || t > Math.max(SWEEP.long, SWEEP.dust)) return { px, lights: [] };
+  const R = SWEEP.r * TILE3;
+  const R0 = SWEEP.inner * TILE3;
+  const A = (SWEEP.arc * Math.PI) / 180;
+  // (how far round it has come: all of it in two frames, from his right to his left)
+  const round = t >= SWEEP.open[1] ? 1 : 0.55 + 0.45 * (t / SWEEP.open[1]);
+  const k = clamp01(t / SWEEP.long);
+  if (t <= SWEEP.long) {
+    // the crescent's edge at its full reach, bright, breaking up as it goes; the newest end (his left) brightest
+    const n = Math.ceil(R * 3.2);
     for (let i = 0; i <= n; i++) {
-      const a = ((-KNOCK.arc + (2 * KNOCK.arc * i) / n) * Math.PI) / 180;
-      for (const [dr, c, keep] of [[0, k < 0.4 ? '#ffffff' : FLAME[4], 1 - k * 0.7], [-1.4, FLAME[3], 1 - k], [-3.0, FLAME[2], 0.8 - k], [-5.0, DUST[2], 0.9 - k]] as const) {
-        if (hash(i, Math.round(dr * 10) + 40, 7812) > keep) continue;
-        const [sx, sy] = st.at([at[0] + Math.cos(a) * (r + dr), at[1] + Math.sin(a) * (r + dr), 0.5]);
+      const u = i / n;
+      if (u > round) break;
+      const a = -A + 2 * A * u;
+      const fresh = clamp01(1 - (round - u) * 1.6);
+      for (const [dr, c, keep] of [[0, k < 0.35 && fresh > 0.5 ? '#ffffff' : FLAME[4], 1 - k * 0.8], [-1.6, FLAME[3], 0.95 - k], [-3.4, FLAME[2], 0.75 - k], [-6.0, DUST[2], 0.85 - k]] as const) {
+        if (hash(i, Math.round(-dr * 10) + 40, 7822) > keep * (0.55 + 0.45 * fresh)) continue;
+        const [sx, sy] = st.at([Math.cos(a) * (R + dr), Math.sin(a) * (R + dr), 0.5]);
         lay(px, sx, sy, c, dr === 0 ? 2 : 1);
       }
     }
-    // dust thrown up off the floor by it
-    for (let i = 0; i < 50; i++) {
-      const a = ((hash(i, 5, 7813) * 2 - 1) * KNOCK.arc * Math.PI) / 180;
-      const rr = r * (0.55 + 0.45 * hash(i, 6, 7813));
-      if (hash(i, 7, 7813) < k * 0.8) continue;
-      const [sx, sy] = st.at([at[0] + Math.cos(a) * rr, at[1] + Math.sin(a) * rr, 1 + 6 * k * hash(i, 8, 7813)]);
-      lay(px, sx, sy, DUST[i % 3], 2);
+    // streaks scored behind its edge, round the half-circle, thinning toward him
+    for (let j = 0; j < 7; j++) {
+      const rr = R0 + (R - 8 - R0) * (j / 6);
+      const m = Math.ceil(rr * 2.4);
+      for (let i = 0; i <= m; i++) {
+        const u = i / m;
+        if (u > round) break;
+        if (hash(i, j + 60, 7823) > (0.5 - 0.06 * (6 - j)) * (1 - k)) continue;
+        const a = -A + 2 * A * u;
+        const [sx, sy] = st.at([Math.cos(a) * rr, Math.sin(a) * rr, 0.5]);
+        lay(px, sx, sy, j > 3 ? FLAME[3] : DUST[1 + (j % 2)], 1);
+      }
     }
-    // sparks flung forward off the shield's face
+    // sparks flung off the blade's end, out from its path at his left
     for (let i = 0; i < 40; i++) {
-      const a = ((hash(i, 9, 7814) * 2 - 1) * 60 * Math.PI) / 180;
-      const e = (hash(i, 10, 7814) * 2 - 1) * 0.6;
-      const d = 3 + 34 * k * (0.5 + 0.7 * hash(i, 11, 7814));
-      if (hash(i, 12, 7814) < k * 0.9) continue;
-      const [sx, sy] = st.at([at[0] + Math.cos(a) * d, at[1] + Math.sin(a) * d, Math.max(0.6, at[2] + Math.sin(e) * d - 30 * k * k)]);
+      const a = A * (0.55 + 0.5 * hash(i, 9, 7824));
+      const d = R * (0.8 + 0.3 * hash(i, 10, 7824)) + 30 * k * hash(i, 11, 7824);
+      if (hash(i, 12, 7824) < k * 0.95) continue;
+      const [sx, sy] = st.at([Math.cos(a) * d, Math.sin(a) * d, Math.max(0.6, (4 + 14 * hash(i, 13, 7824)) * Math.sin(Math.PI * Math.min(1, k * 1.4 + 0.1)))]);
       lay(px, sx, sy, i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? FLAME[4] : FLAME[3], k < 0.3 ? 2 : 1);
     }
   }
-  // the flash at the shield's face: a burst of white and pink, out in two frames
-  if (t <= KNOCK.flash + 1e-6) {
-    const k = t / KNOCK.flash;
-    const rr = 5 + 9 * k;
-    for (let i = 0; i < 64; i++) {
-      const a = (i / 64) * TAU;
-      for (const [f, c] of [[1, FLAME[3]], [0.7, FLAME[4]], [0.4, '#ffffff']] as const) {
-        const [sx, sy] = st.at([at[0] + 1, at[1] + Math.cos(a) * rr * f, at[2] + Math.sin(a) * rr * f]);
-        lay(px, sx, sy, c, 2);
-      }
+  // dust thrown up off the floor all round the half-circle, rolling out and settling
+  if (t < SWEEP.dust) {
+    const kd = t / SWEEP.dust;
+    for (let i = 0; i < 150; i++) {
+      const u = hash(i, 1, 7825);
+      if (u > round || hash(i, 2, 7825) < kd * 0.95) continue;
+      const a = -A + 2 * A * u;
+      const rr = R0 + (R - R0) * Math.sqrt(hash(i, 3, 7825)) + 10 * kd;
+      const z = 0.6 + (2 + 7 * hash(i, 4, 7825)) * Math.sin(Math.PI * Math.min(1, 0.25 + kd));
+      const [sx, sy] = st.at([Math.cos(a) * rr, Math.sin(a) * rr, z]);
+      lay(px, sx, sy, DUST[i % 3], kd < 0.4 && i % 3 === 0 ? 3 : 2);
     }
   }
-  const [lx, ly] = st.at(at);
-  return { px, lights: t < 0.15 ? [{ x: lx, y: ly, r: 52, color: FLAME[2], a: 0.4 * (1 - t / 0.15) }] : [] };
+  const [lx, ly] = st.at([Math.cos(A * 0.8) * R * 0.7, Math.sin(A * 0.8) * R * 0.7, 2]);
+  return { px, lights: t < 0.15 ? [{ x: lx, y: ly, r: 56, color: FLAME[2], a: 0.35 * (1 - t / 0.15) }] : [] };
 }
-void clamp01;
