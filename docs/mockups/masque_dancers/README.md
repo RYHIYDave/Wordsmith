@@ -216,3 +216,5 @@ floor (1.12 s), its roll and its quickening rattle to a last ring (2.4 s); the s
 
 The crowd, the sheet and the film (`crowd.png`, `sheet.png`, `film.mp4`), asked “Floor 17's masked dancers (crowd.png,
 sheet.png and the film): are these right? With them, floor 17 is complete.”: “Yes, that's them (Recommended)”.
+
+OF THE NEW DEATH (51b0d3e; his pick for it, 30 Oct, “Yes, these (Recommended)”): shown the sheet and the film (`dancers_death_sheet.png`, `dancers_death.mp4`), asked “The dancers' new death: struck, they go up on one toe into a pirouette that spins too fast, lurch twice and sink in a spiral. The gown or coat-tails swirl out on the floor and the mask rolls away to settle face up. The Hush leaves them, alive. Is that it?”: “Yes, that's it (Recommended)”.
