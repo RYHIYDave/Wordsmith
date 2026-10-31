@@ -35,7 +35,7 @@ import nodePath from 'node:path';
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { KING_CANVAS, KING_ON, SWORD_LONG, crownOnHead, hushRiding, hushStanding, swordOf } from '../src/art/king';
 import { HS_FOG, HS_GRAB, HS_SHAPE, HS_STRIKES, HS_STRUCK, HUSH, HUSH_BESIDE, KG_ALONE_SHAPE, KG_CHARGE, KG_CLIMB, KG_DIES, KG_PACE, KG_RETIRED, KG_SHAPE, KG_SHIELD_SHAPE, KG_STRIKES, KG_WEIGHT, KING, KING_ALONE, KING_SHIELDED, TIP_Z, chargeCarried, grabBare, grabReach, hsSmearedAt, smearedAt } from '../src/art/king_moves';
-import { BIRD, CHARGE_FX, CROWN_FX, DECREE_FX, DECREE_GAPS, FOG_CANVAS, FX_CANVAS, KG_REACH, SWEEP_FX, WEIGHT_CANVAS, WEIGHT_FX, birdPainted, breathPainted, crownPainted, curtainFaces, curtainsPainted, decreeKnights, decreePainted, fogPatchPainted, grabPainted, shieldPainted, sparksPainted, sweepPainted, weightAt, weightHead, weightPainted } from '../src/art/king_fx';
+import { BIRD, CHARGE_FX, CROWN_FX, chargeShards, chargeSparkAt, chargeSparks, DECREE_FX, DECREE_GAPS, FOG_CANVAS, FX_CANVAS, KG_REACH, SWEEP_FX, WEIGHT_CANVAS, WEIGHT_FX, birdPainted, breathPainted, crownPainted, curtainFaces, curtainsPainted, decreeKnights, decreePainted, fogPatchPainted, grabPainted, shieldPainted, sparksPainted, sweepPainted, weightAt, weightHead, weightPainted } from '../src/art/king_fx';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { BLOOD, ENEMY_RIM, FLAME } from '../src/art/mkit';
@@ -389,7 +389,7 @@ const room = (p: Painted): number => {
   return least;
 };
 
-test('11. THE CHARGE: the warning held, the strike two frames, carried nine tiles at twelve a second, his feet gripping as he runs; the line of sparks the length of it, bursting after he stops', () => {
+test('11. THE CHARGE: the warning held, the strike two frames, carried nine tiles at twelve a second, his feet gripping as he runs; the line of sparks the length of it; after he stops, held, its sparks shoot off it and pop in shrapnel', () => {
   const C = KG_CHARGE;
   assert.ok(C.warn[1] - C.warn[0] >= 0.39, 'its warning held at least 0.4 s');
   assert.equal(Math.round((C.strike[1] - C.strike[0]) * 30), 2);
@@ -411,26 +411,80 @@ test('11. THE CHARGE: the warning held, the strike two frames, carried nine tile
     const tip = swordOf(skeletonAt(KING, 'attack', t)).tip;
     assert.ok(Math.abs(tip[2] - TIP_Z) < 0.5 && tip[0] < -40, `@${t}: his sword's point ${tip.map((v) => v.toFixed(0))}: not dragged behind him`);
   }
-  // THE LINE: cut the length of his run, glowing; bursting; gone
+  // THE LINE: cut the length of his run, glowing; held; its sparks shooting off and popping; gone
   const ran = C.most / C.pace;
+  const tb = ran + C.burstAfter;
+  const F = CHARGE_FX;
+  // (its numbers: the hit reaches the sparks' farthest out and the shrapnel round them; it lands from the first pop to the last shrapnel gone, all over before it is gone)
+  assert.ok(Math.abs(F.reach - (F.out + F.r)) < 1e-9 && F.reach >= 2.5, `its reach ${F.reach} tiles round the line`);
+  assert.ok(F.hold >= 0.3 && F.fly[0] >= 0.25 && F.fly[1] + F.shards < F.long, 'held, then flying, popping, gone');
+  const sparks = chargeSparks();
+  assert.equal(sparks.length, Math.round(C.most / F.every), 'one spark for every `every` tiles of the line');
+  const x0 = -C.tail * TILE3;
+  const x1 = (C.most - C.tail) * TILE3;
+  let high = 0;
+  let out = 0;
+  const sides = new Set<number>();
+  for (const k of sparks) {
+    assert.ok(k.x >= x0 && k.x <= x1 && k.at >= F.fly[0] && k.at <= F.fly[1], 'each on the line, popping in its time');
+    assert.ok(chargeSparkAt(k, 0)[2] < 1 && Math.abs(chargeSparkAt(k, 0)[1] - k.y) < 1e-9, 'it leaves from the line');
+    const p = chargeSparkAt(k, k.at);
+    assert.ok(Math.hypot(p[0] - k.pop[0], p[1] - k.pop[1], p[2] - k.pop[2]) < 1e-6, 'it pops where it says');
+    // (up and out, never past its numbers; quick: in its first two frames it is well on its way up)
+    assert.ok(k.pop[2] <= F.high * TILE3 + 1e-6 && Math.abs(k.pop[1] - k.y) <= F.out * TILE3 + 1e-6, 'no higher, no farther out');
+    assert.ok(chargeSparkAt(k, 2 / 30)[2] >= 0.4 * k.pop[2], 'shot off: up 40% of its height in two frames');
+    for (let s = 0; s < k.at; s += 0.01) assert.ok(chargeSparkAt(k, s + 0.01)[2] >= chargeSparkAt(k, s)[2] - 1e-9, 'rising until it pops');
+    high = Math.max(high, k.pop[2]);
+    out = Math.max(out, Math.abs(k.pop[1] - k.y));
+    sides.add(Math.sign(k.pop[1] - k.y));
+  }
+  assert.ok(high >= 0.9 * F.high * TILE3 && out >= 0.9 * F.out * TILE3 && sides.size === 2, `up ${(high / TILE3).toFixed(2)} tiles, out ${(out / TILE3).toFixed(2)} tiles, to both sides`);
+  // (its shrapnel: every way round each pop, out to `r`; all of it within `reach` of the line, and reaching it; on the stones, never in them)
+  let most = 0;
+  let wide = 0;
+  for (let s = F.fly[0]; s < F.fly[1] + F.shards; s += 1 / 60) {
+    for (const q of chargeShards(s)) {
+      const r = Math.hypot(q.p[0] - q.from[0], q.p[1] - q.from[1]);
+      const dx = Math.max(x0 - q.p[0], 0, q.p[0] - x1);
+      const far = Math.hypot(dx, Math.abs(q.p[1]) - 4);
+      assert.ok(r <= F.r * TILE3 + 1e-6 && far <= F.reach * TILE3 && q.p[2] >= 0.5, `shrapnel ${(r / TILE3).toFixed(2)} tiles from its pop, ${(far / TILE3).toFixed(2)} from the line`);
+      most = Math.max(most, r);
+      wide = Math.max(wide, far);
+    }
+  }
+  assert.ok(most >= 0.9 * F.r * TILE3 && wide >= 0.9 * F.reach * TILE3, `shrapnel out ${(most / TILE3).toFixed(2)} tiles round its pops, ${(wide / TILE3).toFixed(2)} round the line`);
+  assert.equal(chargeShards(F.fly[1] + F.shards).length, 0, 'the shrapnel gone');
   for (const view of VIEWS) {
     let far = 0;
     const mid = sparksPainted(ran, view);
     const st = stage(view === 'back' ? 'rear' : view, FX_CANVAS.ax, FX_CANVAS.ay, FX_CANVAS);
-    for (let x = -C.tail * TILE3; x < (C.most - C.tail) * TILE3; x += TILE3 * 0.5) {
-      const [X, Y] = st.at([x, 0, 0]);
-      let hit = false;
-      for (let dy = -4; dy <= 4 && !hit; dy++) for (let dx = -4; dx <= 4 && !hit; dx++) if (mid.px.d[((Math.round(Y) + dy) * mid.px.w + Math.round(X) + dx) * 4 + 3]) hit = true;
-      if (hit) far = x;
-    }
+    const near = (p: Painted, v: V3, by: number): boolean => {
+      const [X, Y] = st.at(v);
+      for (let dy = -by; dy <= by; dy++) for (let dx = -by; dx <= by; dx++) if (p.px.d[((Math.round(Y) + dy) * p.px.w + Math.round(X) + dx) * 4 + 3]) return true;
+      return false;
+    };
+    for (let x = x0; x < x1; x += TILE3 * 0.5) if (near(mid, [x, 0, 0], 4)) far = x;
     assert.ok(far / TILE3 >= C.most - C.tail - 1, `${view}: the line cut ${(far / TILE3 + C.tail).toFixed(1)} tiles`);
-    const before = drawn(sparksPainted(ran + C.burstAfter - 0.05, view));
-    const burst = drawn(sparksPainted(ran + C.burstAfter + 0.1, view));
-    assert.ok(burst > 2 * before && burst > 3000, `${view}: its burst ${burst} pixels (${before} before)`);
-    assert.equal(drawn(sparksPainted(ran + C.burstAfter + CHARGE_FX.long + 0.05, view)), 0, 'gone after');
-    for (let t = 0; t < ran + C.burstAfter + CHARGE_FX.long; t += 0.1) {
-      const p = sparksPainted(t, view);
-      assert.ok(!cyanIn(p) && room(p) >= 4, `${view} @${t.toFixed(1)}: cyan, or cut off`);
+    // (the held beat: brighter as its moment comes)
+    const hot = (p: Painted): number => ofColour(p, '#fff4c8');
+    assert.ok(hot(sparksPainted(tb - 0.05, view)) > 2 * hot(sparksPainted(tb - 0.6, view)), `${view}: brighter, held`);
+    // (painted where they are: the sparks in the air; the shrapnel round the pops)
+    const fly = sparksPainted(tb + 0.2, view);
+    assert.ok(sparks.filter((k) => near(fly, chargeSparkAt(k, 0.2), 1)).length >= 0.9 * sparks.length, `${view}: its sparks in the air`);
+    const pops = sparksPainted(tb + 0.48, view);
+    const shards = chargeShards(0.48);
+    assert.ok(shards.length > 100 && shards.filter((q) => near(pops, q.p, 1)).length >= 0.8 * shards.length, `${view}: its shrapnel`);
+    const before = drawn(sparksPainted(tb - 0.05, view));
+    assert.ok(drawn(pops) > 1.5 * before && drawn(pops) > 3000, `${view}: its shrapnel ${drawn(pops)} pixels (${before} before)`);
+    assert.equal(drawn(sparksPainted(tb + F.long, view)), 0, 'gone after');
+    // (every frame of it: nothing cyan, nothing cut off, every pixel crisp; and for a shorter line, stopped by a wall)
+    for (const lane of [C.most, 4]) {
+      for (let t = 0; t < lane / C.pace + C.burstAfter + F.long; t += t < tb - 0.4 ? 0.1 : 1 / 30) {
+        const p = sparksPainted(t, view, lane);
+        let soft = 0;
+        for (let i = 3; i < p.px.d.length; i += 4) if (p.px.d[i] && p.px.d[i] !== 255) soft++;
+        assert.ok(!cyanIn(p) && (drawn(p) === 0 || room(p) >= 4) && soft === 0, `${view} @${t.toFixed(2)}: cyan, or cut off, or soft`);
+      }
     }
   }
 });

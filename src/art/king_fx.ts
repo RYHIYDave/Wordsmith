@@ -645,105 +645,234 @@ export function birdPainted(state: BirdState, t: number, view: GameView = 'front
 }
 
 // =============================================================================================
-// THE CHARGE: THE LINE OF SPARKS cut in the stones behind him, and its burst
+// THE CHARGE: THE LINE OF SPARKS cut in the stones behind him; its sparks shooting off it and popping in shrapnel
 
-/** Its colours: the cut glowing white-hot where the point is, cooling to the enemy's pink along it, the sparks gold. */
+/** Its colours: the cut glowing white-hot where the point is, cooling to the enemy's pink along it, the sparks white-hot and gold. */
 const CUT = ['#fff4c8', '#ffd27a', FLAME[2], FLAME[1], '#4a1838'];
 const SPARKS = ['#fff4c8', '#ffd27a', '#ff9a3a', FLAME[3]];
+/** The shrapnel cooling as it flies: white-hot, gold, orange, the enemy's pink, dark pink. */
+const SHARDS = ['#fff4c8', '#ffd27a', FLAME[3], FLAME[2], FLAME[1]];
+/**
+ * ITS NUMBERS (seconds from its moment, `KG_CHARGE.burstAfter` after he stops; lengths in tiles). THE HELD BEAT, `hold`
+ * before it: the line brightening to white-hot, its sparks gathered on it as beads, trembling. THE RELEASE, at 0: every
+ * spark SHOOTS OFF the line at once, up and out to either side, arcing, streaked; each POPS at the top of its flight,
+ * `fly` after it went (staggered along the line), up to `high` tiles up and `out` tiles off the line (one spark for
+ * every `every` tiles of it); its SHRAPNEL flies out `r` tiles round its pop, every way, in `shards`, and is gone. THE
+ * HIT, for the game: everything within `reach` tiles of the line (`out` + `r`; round its ends too), from the first pop
+ * (`fly[0]`) to the last shrapnel gone (`fly[1]` + `shards`). Smoke and the scar after; all gone at `long`.
+ */
+export const CHARGE_FX = { hold: 0.35, fly: [0.28, 0.4] as const, high: 1.5, out: 1.6, every: 0.33, r: 1.0, shards: 0.25, reach: 2.6, long: 1.0 } as const;
+/** The cut wavering a little as the blade bounced along (own lengths, to his left, at `x` along the line). */
+const cutWob = (x: number): number => 2.2 * Math.sin(x * 0.11) + 1.2 * Math.sin(x * 0.37 + 1);
+/** One of its sparks (own lengths, from where he set off): where it sits on the line, where it pops, and when (seconds after the release). */
+export interface ChargeSpark { x: number; y: number; pop: V3; at: number }
+/** ITS SPARKS, for a line `lane` tiles long: one every `CHARGE_FX.every` tiles, popping to either side in turn. */
+export function chargeSparks(lane: number = KG_CHARGE.most): ChargeSpark[] {
+  const T = TILE3;
+  const x0 = -KG_CHARGE.tail * T;
+  const x1 = (lane - KG_CHARGE.tail) * T;
+  const n = Math.max(2, Math.round(lane / CHARGE_FX.every));
+  const out: ChargeSpark[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + ((x1 - x0) * (i + 0.15 + 0.7 * hash(i, 1, 7910))) / n;
+    const y = cutWob(x);
+    const side = i % 2 ? 1 : -1;
+    const o = CHARGE_FX.out * T * (0.35 + 0.65 * hash(i, 2, 7910));
+    const along = (hash(i, 3, 7910) - 0.5) * 0.6 * T;
+    const z = CHARGE_FX.high * T * (0.55 + 0.45 * hash(i, 4, 7910));
+    const at = CHARGE_FX.fly[0] + (CHARGE_FX.fly[1] - CHARGE_FX.fly[0]) * hash(i, 5, 7910);
+    out.push({ x, y, pop: [x + along, y + side * o, z], at });
+  }
+  return out;
+}
+/** Where a spark is `s` seconds after the release (until it pops): shot off fast, slowing, up and out, arcing over at the top. */
+export function chargeSparkAt(k: ChargeSpark, s: number): V3 {
+  const u = clamp01(s / k.at);
+  const e = 1 - (1 - u) ** 1.4;
+  const z = 1 - (1 - u) ** 3;
+  return [k.x + (k.pop[0] - k.x) * e, k.y + (k.pop[1] - k.y) * e, 0.5 + (k.pop[2] - 0.5) * z];
+}
+/** Its shrapnel: each piece's way out of the pop (a unit, every way round, as much down as up). */
+const SHARD_N = 12;
+function shardWay(i: number, j: number): V3 {
+  const c = 2 * hash(i, 40 + j, 7911) - 1;
+  const a = TAU * (j / SHARD_N + 0.6 * hash(i, 60 + j, 7911));
+  const s = Math.sqrt(1 - c * c);
+  return [s * Math.cos(a), s * Math.sin(a), c];
+}
+/** Where a piece of shrapnel is, `u` of the way through its flight (0 at the pop, 1 gone): flung out fast, slowing, falling a little; never under the stones. */
+export function chargeShardAt(k: ChargeSpark, i: number, j: number, u: number): V3 {
+  const w = shardWay(i, j);
+  const d = CHARGE_FX.r * TILE3 * (1 - (1 - clamp01(u)) ** 2);
+  return [k.pop[0] + w[0] * d, k.pop[1] + w[1] * d, Math.max(0.5, k.pop[2] + w[2] * d - 0.3 * TILE3 * u * u)];
+}
+/** Every piece of shrapnel in the air `s` seconds after the release (own lengths; `u`, how far through its flight). */
+export function chargeShards(s: number, lane: number = KG_CHARGE.most): { p: V3; u: number; from: V3 }[] {
+  const out: { p: V3; u: number; from: V3 }[] = [];
+  chargeSparks(lane).forEach((k, i) => {
+    const u = (s - k.at) / CHARGE_FX.shards;
+    if (u < 0 || u >= 1) return;
+    for (let j = 0; j < SHARD_N; j++) out.push({ p: chargeShardAt(k, i, j, u), u, from: k.pop });
+  });
+  return out;
+}
 /**
  * THE LINE OF SPARKS `t` seconds after he sets off (his charge's `run[0]`), laid where he set off: cut in the stones by
  * his sword's point (`KG_CHARGE.tail` tiles behind him) the whole way he runs (`lane` tiles: at most `KG_CHARGE.most`);
- * glowing and fizzing, brighter and pulsing pink as its moment comes; it BURSTS (`KG_CHARGE.burstAfter` after he stops):
- * a wall of sparks and stone chips the length of it, `CHARGE_FX.half` tiles either side; then smoke, the scar, nothing.
+ * glowing and fizzing; held, white-hot, its sparks beaded on it, trembling (`CHARGE_FX.hold`); then (`KG_CHARGE.burstAfter`
+ * after he stops) its sparks shoot off it, up and out, and pop in shrapnel all round it; then smoke, the scar, nothing.
  */
-export const CHARGE_FX = { half: 0.8, flare: 0.15, long: 0.9 } as const;
 export function sparksPainted(t: number, view: GameView = 'front', lane: number = KG_CHARGE.most): Painted {
   const st = stageOf(view);
   const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
   const ran = lane / KG_CHARGE.pace;
   const tb = ran + KG_CHARGE.burstAfter;
-  if (t < 0 || t > tb + CHARGE_FX.long) return { px, lights: [] };
+  if (t < 0 || t >= tb + CHARGE_FX.long) return { px, lights: [] };
   const T = TILE3;
   const tail = KG_CHARGE.tail * T;
   const cut = Math.min(t, ran) * KG_CHARGE.pace * T;
   const x0 = -tail;
   const x1 = cut - tail;
   const since = t - tb;
-  // THE CUT: a groove scored along the stones, glowing; wavering a little as the blade bounced
-  const wob = (x: number): number => 2.2 * Math.sin(x * 0.11) + 1.2 * Math.sin(x * 0.37 + 1);
-  const pulse = since < 0 ? smooth(-0.35, 0, since) * (0.5 + 0.5 * Math.sin(t * 40)) : 0;
-  const scar = since < 0 ? 1 : 1 - smooth(0.1, CHARGE_FX.long, since);
+  const wob = cutWob;
+  const sparks = chargeSparks(lane);
+  // (the held beat: from `hold` before it goes, brighter and brighter, flickering)
+  const held = since < 0 ? smooth(-CHARGE_FX.hold, -0.04, since) : 0;
+  const pulse = held * (0.6 + 0.4 * Math.sin(t * 46));
+  const scar = since < 0 ? 1 : 1 - smooth(0.12, CHARGE_FX.long - 0.05, since);
+  // THE CUT: a groove scored along the stones, glowing
   for (let x = x0; x <= x1; x += 0.7) {
     const age = (x1 - x) / (KG_CHARGE.pace * T) + Math.max(0, t - ran);
     const y = wob(x);
     let c: string;
-    if (since >= 0) c = since < 0.12 ? CUT[0] : hash(Math.round(x), 3, 7901) < scar ? (since < 0.35 ? CUT[3] : CUT[4]) : '';
-    else c = age < 0.05 ? CUT[0] : age < 0.15 ? CUT[1] : pulse > 0.5 && hash(Math.round(x), Math.floor(t * 20), 7902) < pulse ? CUT[1] : age < 0.4 ? CUT[2] : CUT[3];
+    if (since >= 0) c = since < 0.08 ? CUT[0] : hash(Math.round(x), 3, 7901) < scar ? (since < 0.25 ? CUT[2] : since < 0.5 ? CUT[3] : CUT[4]) : '';
+    else if (age < 0.05) c = CUT[0];
+    else if (age < 0.15) c = CUT[1];
+    else if (held > 0.7 && hash(Math.round(x), Math.floor(t * 20), 7902) < held - 0.25) c = CUT[0];
+    else if (pulse > 0.4 && hash(Math.round(x), Math.floor(t * 20) + 1, 7902) < pulse) c = CUT[1];
+    else c = age < 0.4 ? CUT[2] : CUT[3];
     if (!c) continue;
     const [X, Y] = st.at([x, y, 0.2]);
     // (a groove two pixels wide: its hot core, its glowing lips, the stone cut dark at its edge)
     lay(px, X, Y, c, 2);
     if (since < 0) {
-      const lip = age < 0.15 ? CUT[1] : pulse > 0.5 ? CUT[2] : CUT[3];
+      const lip = age < 0.15 ? CUT[1] : pulse > 0.4 ? CUT[2] : CUT[3];
       const [Xa, Ya] = st.at([x, y - 2.4, 0.2]);
       lay(px, Xa, Ya, lip, 1);
       const [Xb, Yb] = st.at([x, y + 2.4, 0.2]);
       lay(px, Xb, Yb, hash(Math.round(x * 2), 1, 7903) < 0.5 ? INK : lip, 1);
     }
   }
-  // (sparks fizzing up off it all along, more as its moment comes)
   if (since < 0) {
+    // (sparks fizzing up off it all along)
     const n = Math.round((x1 - x0) / 2.5);
     for (let i = 0; i < n; i++) {
       const x = x0 + (x1 - x0) * hash(i, 1, 7904);
       const age = (x1 - x) / (KG_CHARGE.pace * T) + Math.max(0, t - ran);
       const life = fr(t * (2.2 + hash(i, 2, 7904)) + hash(i, 3, 7904));
-      if (hash(i, 4, 7904) > 0.45 + 0.5 * pulse + (age < 0.25 ? 0.5 : 0)) continue;
-      const p: V3 = [x + (hash(i, 5, 7904) - 0.5) * 6, wob(x) + (hash(i, 6, 7904) - 0.5) * 12 * life, 0.5 + 26 * life * (1 - life) * (1 + pulse)];
+      if (hash(i, 4, 7904) > 0.45 + 0.4 * held + (age < 0.25 ? 0.5 : 0)) continue;
+      const p: V3 = [x + (hash(i, 5, 7904) - 0.5) * 6, wob(x) + (hash(i, 6, 7904) - 0.5) * 12 * life, 0.5 + 26 * life * (1 - life) * (1 - 0.6 * held)];
       const [X, Y] = st.at(p);
       lay(px, X, Y, SPARKS[i % 4], life < 0.35 ? 2 : 1);
     }
+    // (THE HELD BEAT: the sparks that will go, gathered on the line as beads of light, swelling, trembling)
+    if (held > 0) {
+      sparks.forEach((k, i) => {
+        if (k.x > x1) return;
+        const shake = held > 0.3 ? (hash(i, Math.floor(t * 30), 7912) - 0.5) * 2.5 : 0;
+        const [X, Y] = st.at([k.x, k.y, 2 + 4 * held + shake]);
+        const hot = (Math.floor(t * 30) + i) % 3 !== 0;
+        if (held > 0.45) {
+          // (a bead: its white-hot heart, a gold rim round it, a pink glint under)
+          lay(px, X - 2, Y, SPARKS[1], 1);
+          lay(px, X + 2, Y, SPARKS[1], 1);
+          lay(px, X, Y - 2, SPARKS[1], 1);
+          lay(px, X, Y + 2, FLAME[2], 1);
+        }
+        lay(px, X, Y, held > 0.5 && hot ? SPARKS[0] : SPARKS[1], held > 0.45 ? 3 : 2);
+      });
+    }
     return { px, lights: [] };
   }
-  // THE BURST: jets of sparks and chips up all along it, the whole width either side, then falling; smoke rising
-  const H = CHARGE_FX.half * T;
-  const n = Math.round((x1 - x0) / 0.45);
-  for (let i = 0; i < n; i++) {
-    const x = x0 + (x1 - x0) * hash(i, 7, 7905);
-    const side = (hash(i, 8, 7905) - 0.5) * 2;
-    const go = since - 0.04 * hash(i, 9, 7905);
-    if (go < 0) continue;
-    const k = go / (0.4 + 0.25 * hash(i, 15, 7905));
-    if (k > 1) continue;
-    // (a jet of sparks and chips up out of the cut: fast up, slowing, falling)
-    const up = 60 * (0.3 + 0.9 * hash(i, 10, 7905) ** 1.5);
-    const z = up * (2.2 * k - 1.6 * k * k) + 0.5;
-    const out = side * H * Math.min(1, k * 2.6) * (0.4 + 0.7 * hash(i, 11, 7905));
-    const [X, Y] = st.at([x, wob(x) + out, Math.max(0.5, z)]);
-    const chip = i % 4 === 0;
-    const c = chip ? GRIT[i % 3] : k < 0.2 ? SPARKS[0] : k < 0.45 ? SPARKS[1] : k < 0.7 ? SPARKS[2] : SPARKS[3];
-    lay(px, X, Y, c, chip || k < 0.35 ? 2 : 1);
-  }
-  // (the flash along it as it goes: a band the width of the blast)
-  if (since < CHARGE_FX.flare) {
+  // THE RELEASE: (a flash along the line as they tear off it, narrow, and stone chips kicked up out of it)
+  if (since < 0.1) {
+    const H = 0.35 * T;
     for (let x = x0; x <= x1; x += 1.1) {
       for (let y = -H; y <= H; y += 2.2) {
-        if (hash(Math.round(x), Math.round(y * 3), 7906) > 0.55 * (1 - since / CHARGE_FX.flare) * (1 - Math.abs(y) / H)) continue;
+        if (hash(Math.round(x), Math.round(y * 3), 7906) > 0.6 * (1 - since / 0.1) * (1 - Math.abs(y) / H)) continue;
         const [X, Y] = st.at([x, wob(x) + y, 0.6]);
-        lay(px, X, Y, Math.abs(y) < H * 0.35 ? SPARKS[0] : FLAME[2], 1);
+        lay(px, X, Y, Math.abs(y) < H * 0.4 ? SPARKS[0] : FLAME[2], 1);
       }
     }
   }
-  // (smoke and dust rising off it after)
-  if (since > 0.08) {
-    for (let i = 0; i < n * 0.6; i++) {
-      const x = x0 + (x1 - x0) * hash(i, 12, 7907);
-      const life = clamp01((since - 0.08 - 0.2 * hash(i, 13, 7907)) / 0.7);
-      if (life <= 0 || life >= 1) continue;
-      const [X, Y] = st.at([x - 6 * life, wob(x) + (hash(i, 14, 7907) - 0.5) * H * 1.6, 2 + 30 * life]);
-      lay(px, X, Y, life < 0.4 ? '#8e8aa0' : '#5c586c', life < 0.3 ? 2 : 1);
-    }
+  const nc = Math.round((x1 - x0) / 4);
+  for (let i = 0; i < nc; i++) {
+    const k = since / (0.22 + 0.12 * hash(i, 16, 7905));
+    if (k >= 1) continue;
+    const x = x0 + (x1 - x0) * hash(i, 17, 7905);
+    const side = (hash(i, 18, 7905) - 0.5) * 2;
+    const [X, Y] = st.at([x, wob(x) + side * 0.45 * T * k, Math.max(0.5, 0.45 * T * (2.6 * k - 2.6 * k * k))]);
+    lay(px, X, Y, GRIT[i % 3], 2);
   }
+  sparks.forEach((k, i) => {
+    // THE SPARK SHOT OFF: its head white-hot, its streak back along the way it came (the first frames, back to the line)
+    if (since < k.at) {
+      const trail = 0.07;
+      const [X, Y] = st.at(chargeSparkAt(k, since));
+      const [Xt, Yt] = st.at(chargeSparkAt(k, Math.max(0, since - trail)));
+      const steps = Math.max(1, Math.ceil(Math.hypot(X - Xt, Y - Yt)));
+      for (let q = 0; q < steps; q++) {
+        const f = q / steps;
+        lay(px, Xt + (X - Xt) * f, Yt + (Y - Yt) * f, f < 0.4 ? SPARKS[2] : f < 0.75 ? SPARKS[1] : SPARKS[0], f > 0.6 ? 2 : 1);
+      }
+      // (its head: a white-hot heart, a gold rim)
+      lay(px, X - 2, Y, SPARKS[1], 1);
+      lay(px, X + 2, Y, SPARKS[1], 1);
+      lay(px, X, Y - 2, SPARKS[1], 1);
+      lay(px, X, Y + 2, SPARKS[1], 1);
+      lay(px, X, Y, SPARKS[0], 3);
+      return;
+    }
+    const a = since - k.at;
+    const [PX, PY] = st.at(k.pop);
+    // ITS POP: a star of light, for a moment
+    if (a < 0.06) {
+      lay(px, PX, PY, SPARKS[0], 3);
+      const L = a < 0.03 ? 6 : 4;
+      for (let r = 2; r <= L; r++) {
+        const c = r < 4 ? SPARKS[0] : SPARKS[1];
+        lay(px, PX + r, PY, c, 1);
+        lay(px, PX - r, PY, c, 1);
+        lay(px, PX, PY + r, c, 1);
+        lay(px, PX, PY - r, c, 1);
+        if (r <= L - 2) {
+          lay(px, PX + r, PY + r, SPARKS[1], 1);
+          lay(px, PX - r, PY + r, SPARKS[1], 1);
+          lay(px, PX + r, PY - r, SPARKS[1], 1);
+          lay(px, PX - r, PY - r, SPARKS[1], 1);
+        }
+      }
+    }
+    // ITS SHRAPNEL: hot fragments flung out every way, streaked, cooling, gone
+    const u = a / CHARGE_FX.shards;
+    if (u < 1) {
+      const c = SHARDS[Math.min(4, Math.floor(u * 5))];
+      for (let j = 0; j < SHARD_N; j++) {
+        const [Xb, Yb] = st.at(chargeShardAt(k, i, j, Math.max(0, u - 0.16)));
+        const [X, Y] = st.at(chargeShardAt(k, i, j, u));
+        const steps = Math.max(1, Math.ceil(Math.hypot(X - Xb, Y - Yb)));
+        for (let q = 0; q < steps; q++) lay(px, Xb + ((X - Xb) * q) / steps, Yb + ((Y - Yb) * q) / steps, u < 0.5 ? SHARDS[Math.min(4, Math.floor(u * 5) + 1)] : c, 1);
+        lay(px, X, Y, c, u < 0.4 ? 2 : 1);
+      }
+    }
+    // (its smoke, a few puffs drifting up off where it popped)
+    for (let q = 0; q < 3; q++) {
+      const life = clamp01((a - 0.05 - 0.05 * q) / (CHARGE_FX.long - 0.08 - k.at - 0.05 * q));
+      if (life <= 0 || life >= 1) continue;
+      const [X, Y] = st.at([k.pop[0] + (hash(i, 20 + q, 7913) - 0.5) * 12 - 5 * life, k.pop[1] + (hash(i, 23 + q, 7913) - 0.5) * 12, k.pop[2] + 16 * life]);
+      lay(px, X, Y, life < 0.4 ? '#8e8aa0' : '#5c586c', life < 0.5 ? 2 : 1);
+    }
+  });
   return { px, lights: [] };
 }
 

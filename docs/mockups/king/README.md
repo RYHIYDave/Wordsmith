@@ -79,7 +79,8 @@ where. Seconds; tiles are the game's (a boss arena about 17 by 20).
   down with his whole weight (down 10 frames of 18), lurching side to side; the sword dragged behind, its point grinding the
   stones, sparks off it. The game starts and stops his walk at a frame where his feet pass (`KG_WALK_STOPS`, 0.5 s and 1.3 s).
 - THE CHARGE, his basic blow in place of the sweep (`KG_CHARGE`, 2.7 s): he sets himself, the sword dragged back behind him
-  on the stones, and charges at you, cutting a line of sparks in the floor that bursts after he stops. Its own section below.
+  on the stones, and charges at you, cutting a line of sparks in the floor; after he stops its sparks shoot off it and pop
+  in shrapnel. Its own section below.
 - THE DECREE (`KG_DECREE`, 2.8 s; the blow at 1.33 s): he takes the sword in both hands and raises it high over his head,
   point to the sky, his face lifted to it; held 0.72 to 1.24 s (the warning); then in two frames drives it point-down into
   the stones before him, smeared; the stones crack; he leans on it, wrenches it out and lets it down. HIS KNIGHTS
@@ -146,14 +147,28 @@ darkens words.
 - THE STOP, 1.55 s: he plants his left foot far ahead (down at 1.62 s), surges over it (1.68 s) and stands, turning to look
   back along the line (1.9 s).
 - THE RIP, 2.0 to 2.15 s (frames 60 to 64.5): he wrenches the blade up off the stones behind him, flinging its point up
-  high; at 2.15 s (`burst`, 0.6 s after he stops) THE LINE BURSTS; he lets the sword down and steps back into his stand
+  high; at 2.15 s (`burst`, 0.6 s after he stops) THE LINE'S SPARKS GO; he lets the sword down and steps back into his stand
   (right foot 2.16 to 2.34 s, left 2.38 to 2.58 s); 2.7 s, his stand.
 - THE LINE OF SPARKS (`sparksPainted(t, view, lane)`, `t` from when he sets off, laid where he set off, on FX_CANVAS): a
   groove cut in the stones where his sword's point went, 1.75 tiles (`tail`) behind his floor point the whole way, so from
   1.75 tiles behind where he set off to 1.75 tiles behind where he stops; white-hot where the point is, cooling to the
-  enemy's pink along it, sparks fizzing off it; in its last 0.35 s before the burst it pulses brighter. ITS BURST
-  (0.6 s after he stops, `burstAfter`): jets of sparks and stone chips up out of it the whole length, up to about 50 high, and a
-  flash, 0.8 tiles either side (`CHARGE_FX.half`); smoke and the scar after; gone 0.9 s after the burst.
+  enemy's pink along it, sparks fizzing off it. Its times below are from ITS MOMENT, 0.6 s after he stops (`burstAfter`;
+  his 2.15 s); lengths in tiles; `CHARGE_FX`:
+  - THE HELD BEAT, the 0.35 s before it (`hold`): the line brightening to white-hot, flickering, its sparks gathered on it
+    as beads of light, swelling and trembling.
+  - THE RELEASE, at 0: every spark SHOOTS OFF the line at once (one for every 0.33 tiles of it, `every`: 27 on a 9-tile
+    line; `chargeSparks(lane)`), up and out to either side in turn, streaked back to the line in its first two frames
+    (40% or more of the way up in them), slowing and arcing over (`chargeSparkAt`); a flash along the line, stone chips
+    kicked up out of it.
+  - THE POPS, 0.28 to 0.4 s (`fly`, staggered along the line): each pops at the top of its flight, up to 1.5 tiles up
+    (`high`; the lowest 0.8) and up to 1.6 tiles off the line (`out`; the nearest 0.56), and 0.3 tiles either way along it:
+    a star of light (0.06 s).
+  - THE SHRAPNEL, 0.25 s from each pop (`shards`; `chargeShards(t, lane)`): twelve hot fragments flung out every way, out
+    to 1 tile round the pop (`r`), slowing and falling a little, streaked, cooling white-hot, gold, the enemy's pink; gone.
+  - THE HIT, for the game: everything within 2.6 tiles of the line (`reach`, `out` + `r`; round its ends too), from the
+    first pop to the last shrapnel gone: 0.28 to 0.65 s after its moment (his 2.43 to 2.8 s; laid by the game, the line
+    lies on after his move ends).
+  - Smoke off each pop and the scar after; all gone 1.0 s after its moment (`long`).
 
 ### THE CROWN'S WEIGHT (`KG_WEIGHT`; his `weight`, in place of `crown`; 5.6 s, 168 frames; both looks, and shielded)
 
@@ -218,7 +233,10 @@ darkens words.
   FEET GRIP ONLY AT 12 TILES A SECOND FOR THE WHOLE 0.75 s: the art needs him always to run his full 9 tiles (stopped only
   by a wall), not 1.5 past where you stood; if the floor runs out, stop him and go on from his stop (1.55 s), a small jump.
   The line lies where his point went: 1.75 tiles behind his floor point (`tail`), so from 1.75 behind where he set off to
-  1.75 behind where he stops (yours runs from his floor point); its burst is drawn 0.8 tiles either side (yours 0.75).
+  1.75 behind where he stops (yours runs from his floor point). ITS BURST IS NOW SPARKS SHOOTING OFF AND POPPING: its
+  sparks leave the line at 2.15 s (0.6 after he stops, as yours) but nothing hurts until they pop, 0.28 to 0.4 s later;
+  the hit is everything within 2.6 tiles of the line (`CHARGE_FX.reach`; yours 0.75 either side) from 0.28 to 0.65 s
+  after they leave (his 2.43 to 2.8 s); its picture lies 1.0 s from 2.15 s.
 - CROWN'S WEIGHT: send 1.1, fly 0.45, follow 2.4 at 3.2 tiles a second, slam radius 1.7, home 0.7: as yours. Its hold is
   0.533 s (16 frames, not 0.55) and its drop two frames (0.067 s, not 0.08), so it lands 3.0 s after it is sent; then it
   lies 0.4 s before it flies home (yours has none: home 3.4 to 4.1 s after sending). HIS MOVE IS 5.6 s, NOT 1.6: he stands
@@ -272,13 +290,21 @@ point under it), `curtainsPainted`; the Hush's `grabPainted` and `breathPainted`
   he runs clear, flying home; the Hush's grab and drag, its shield (wrapping, struck off, dazed), its grey fog (marked,
   breathed out, lying, its last seconds); then each strike at half speed (the charge's burst off his mark, the line
   bursting, the crown's slam, the grab, the breath).
-- `king_new_moves_sheet.png` (1200 wide): key frames of each of them, captioned.
+- `king_new_moves_sheet.png` (1200 wide): key frames of each of them, captioned. (Both made before his word on the sparks:
+  their line of sparks bursts where it lies.)
+- `king_sparks.mp4` (11 s, 1200 by 676): the charge's line of sparks as it is now: the charge from in front and from
+  behind in his hall, the knight standing just clear of the shrapnel; its sparks held, shooting off and popping; then at
+  half speed, and close at half speed, captioned.
+- `king_sparks_sheet.png` (1200 wide): its key frames: the shrapnel round the whole line at the hall's scale; then close,
+  held, shot off (two frames on), flying up and out, each popping, the shrapnel, gone.
 
 Made with `tools/king_pictures.ts sheet <dir>` and `python3 tools/king_captions.py <dir> docs/mockups/king/pictures`;
 the film with `tools/king_film.ts docs/mockups/king/pictures/king_film.mp4` (its sweep and Crown parts are of moves now out
 of his set: it made the film of 29 Oct). The new moves: `npx tsx tools/king_new_moves.ts film
 docs/mockups/king/pictures/king_new_moves.mp4`; the sheet, `npx tsx tools/king_new_moves.ts sheet <dir>` and `python3
-tools/king_new_moves_sheet.py <dir> docs/mockups/king/pictures/king_new_moves_sheet.png`.
+tools/king_new_moves_sheet.py <dir> docs/mockups/king/pictures/king_new_moves_sheet.png`. The sparks: `npx tsx
+tools/king_new_moves.ts sparks docs/mockups/king/pictures/king_sparks.mp4`; its sheet, `npx tsx tools/king_new_moves.ts
+sparks-sheet <dir>` and `python3 tools/king_sparks_sheet.py <dir> docs/mockups/king/pictures/king_sparks_sheet.png`.
 
 ## The dev pages
 
@@ -312,8 +338,12 @@ tools/king_new_moves_sheet.py <dir> docs/mockups/king/pictures/king_new_moves_sh
    each with its gaps; the faces out 10 tiles and more; the songbird's three, never glowing, its song.
 10. His sizes and reach, and his pace.
 11. The charge: its warning held, its strike two frames, carried 9 tiles at 12 a second, off the floor between his strides,
-    leaning into it, the sword dragged on the stones behind him; the line of sparks cut the length of his run, bursting
-    (more than twice what it was) 0.6 s after he stops, gone after; nothing cyan, nothing cut off.
+    leaning into it, the sword dragged on the stones behind him; the line of sparks cut the length of his run; brighter
+    as it is held; its sparks leaving from the line, 40% of the way up in two frames, rising until they pop, popping in
+    their time, no higher than 1.5 tiles and no farther out than 1.6 and reaching both (within a tenth), to both sides;
+    its shrapnel within 1 tile of each pop and 2.6 of the line, and reaching both, never under the stones, gone in time;
+    painted where they are (the sparks in the air, the shrapnel round the pops); all gone at 1.0 s; in every frame, for a
+    full line and a short one: nothing cyan, nothing cut off, every pixel crisp.
 12. The crown's weight: away from his head from 1.1 to 5.2 s and on it before and after; sent from where it sits on his
     head and home to where it sits (each view); huge and 100 up while it follows and hangs; the pink ring as it follows,
     bright as it hangs; its drop two frames and streaked; the slam drawn big; nothing cyan, nothing cut off.

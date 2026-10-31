@@ -5,11 +5,14 @@
 //   npx tsx tools/king_new_moves.ts film <out.mp4>
 //   npx tsx tools/king_new_moves.ts stills <out dir>      (frames of the film, to look at)
 //   npx tsx tools/king_new_moves.ts sheet <out dir>       (the sheet's panels: tools/king_new_moves_sheet.py puts them together)
+//   npx tsx tools/king_new_moves.ts sparks <out.mp4>      (the charge's sparks shooting off and popping: its own short film)
+//   npx tsx tools/king_new_moves.ts sparks-stills <dir>   (frames of it)
+//   npx tsx tools/king_new_moves.ts sparks-sheet <dir>    (its key frames: tools/king_sparks_sheet.py puts them together)
 import { Px } from '../src/engine/px';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { HS_FOG, HS_GRAB, HS_STRUCK, HS_WRAP, HUSH, HUSH_BESIDE, KG_CHARGE, KG_STAND_LONG, KG_WEIGHT, KING, KING_ALONE, KING_SHIELDED, chargeCarried, grabReach } from '../src/art/king_moves';
-import { FOG_CANVAS, FX_CANVAS, SHIELD_FX, WEIGHT_CANVAS, WEIGHT_FX, breathPainted, fogPatchPainted, grabPainted, shieldPainted, sparksPainted, weightAt, weightPainted } from '../src/art/king_fx';
+import { CHARGE_FX, FOG_CANVAS, FX_CANVAS, SHIELD_FX, WEIGHT_CANVAS, WEIGHT_FX, breathPainted, fogPatchPainted, grabPainted, shieldPainted, sparksPainted, weightAt, weightPainted } from '../src/art/king_fx';
 import { TILE3 } from '../src/art/new_mobs3';
 import type { Mob } from '../src/art/new_mobs3';
 import { makeHeroArt3 } from '../src/art/heroes3';
@@ -135,14 +138,14 @@ function close(px: Px, x: number, y: number): Px {
 // THE MOVES AS SCENES (each a function of the time into it)
 
 /** THE CHARGE: he sets himself, bursts away, runs nine tiles down the hall past the knight, stops, wrenches the blade up: the line bursts. */
-function chargeScene(p: Pass, t: number, ft: number): Px {
+function chargeScene(p: Pass, t: number, ft: number, knight: XY = [5.6, 2.6]): Px {
   const start: XY = own(p, [0, 0], -4.6, 0);
   const tt = Math.min(t, KG_CHARGE.long);
   const kAt = own(p, start, chargeCarried(tt) / T, 0);
   const since = t - KG_CHARGE.run[0];
   return shot({
     p, king: { mob: KING, move: t < KG_CHARGE.long ? 'attack' : 'stand', t: t < KG_CHARGE.long ? tt : (t - KG_CHARGE.long) % KG_STAND_LONG, at: kAt },
-    knight: { at: own(p, start, 5.6, 2.6) },
+    knight: { at: own(p, start, knight[0], knight[1]) },
     under: since >= 0 ? [[fx(sparksPainted(since, p.view)), start]] : [],
   }, ft);
 }
@@ -288,6 +291,8 @@ interface Part {
   title: string;
   line: string;
   frame: (t: number) => Px;
+  /** Its line at the foot on the right (where the floor is empty), not the left. */
+  right?: boolean;
 }
 const FRONT_C = passOf('front', 300, 205);
 const BACK_C = passOf('back', 300, 202);
@@ -303,7 +308,7 @@ function parts(): Part[] {
   out.push({ long: 3.0, title: 'THE KING: HIS NEW MOVES', line: 'His word: “His sweep and leap are pretty lame.  There are a dozen other enemies that have that’s same moves with those same animations.”', frame: (t) => chargeScene(FRONT_C, Math.min(0.2, t) * 0, t) });
   for (const [v, pc, pw, ph] of [['FROM IN FRONT', FRONT_C, FRONT_W, FRONT_H], ['FROM BEHIND', BACK_C, BACK_W, BACK_H]] as const) {
     const first = v === 'FROM IN FRONT';
-    out.push({ long: 3.25, title: `THE CHARGE · ${v}`, line: 'He sets himself, sword dragged back; bursts away at 12 tiles a second; the blade cuts a line of sparks; it bursts', frame: (t) => chargeScene(pc, t, t) });
+    out.push({ long: 3.25, title: `THE CHARGE · ${v}`, line: 'He sets himself, sword dragged back; bursts away at 12 tiles a second; the blade cuts a line of sparks; they shoot off and pop', frame: (t) => chargeScene(pc, t, t) });
     out.push({ long: KG_WEIGHT.long + 0.2, title: `THE CROWN’S WEIGHT · ${v}`, line: 'Sent up off his head, it follows the knight; stops, hangs (the pink ring); slams down; flies home', frame: (t) => weightScene(pw, t, t).px });
     out.push({ long: HS_GRAB.long + 0.2, title: `THE HUSH: GRAB AND DRAG · ${v}`, line: 'It rears back; its arms shoot out 8 tiles, catch the knight and drag him back before the King', frame: (t) => grabScene(ph, t, t) });
     const shLong = SH.stand + HS_WRAP.long + SH.held + HS_STRUCK.long + 0.2;
@@ -319,7 +324,7 @@ function parts(): Part[] {
     const [x, y] = at(p, start[0] + chargeCarried(tt) / T, start[1], 0);
     return close(chargeScene(p, tt, t), x + 30, y - 50);
   } });
-  out.push({ long: 1.4, title: 'THE LINE BURSTS · HALF SPEED', line: 'He wrenches the blade up off the stones; the line of sparks bursts its whole length', frame: (t) => {
+  out.push({ long: 1.4, title: 'THE SPARKS · HALF SPEED', line: 'He wrenches the blade up off the stones; the sparks shoot off the line and pop in shrapnel', frame: (t) => {
     const tt = KG_CHARGE.rip[0] - 0.05 + t / 2;
     const start: XY = own(p, [0, 0], -4.6, 0);
     const [x, y] = at(p, start[0] + 5.6, start[1], 0);
@@ -339,6 +344,40 @@ function parts(): Part[] {
   const [fx2, fy2] = at(pf, ...hushHome(pf, kF));
   out.push({ long: 1.2, title: 'THE BREATH · HALF SPEED', line: 'Its breath held; thrust out in two frames: three clots of fog fly out', frame: (t) => close(fogScene(pf, 0.6 + t / 2, t, 99), fx2 + 75, fy2 - 50) });
   return out;
+}
+
+// =============================================================================================
+// THE SPARKS' OWN FILM (31 Oct): the charge from in front and from behind, its sparks shooting off and popping; then at half speed
+
+const BACK_K = passOf('back', 300, 211);
+/** The knight just clear of where the shrapnel reaches, beside the line. */
+const CLEAR: XY = [4.5, -(CHARGE_FX.reach + 0.8)];
+function sparksParts(): Part[] {
+  const out: Part[] = [];
+  const left = KG_CHARGE.run[0] + KG_CHARGE.most / KG_CHARGE.pace + KG_CHARGE.burstAfter;
+  out.push({ long: 3.4, title: 'THE CHARGE · FROM IN FRONT', line: 'Held, white-hot; then its sparks shoot off the line, up and out, and pop in shrapnel', frame: (t) => chargeScene(FRONT_C, t, t, CLEAR) });
+  out.push({ long: 3.4, title: 'THE CHARGE · FROM BEHIND', line: `The shrapnel reaches ${CHARGE_FX.reach} tiles either side of the line; the knight stands clear`, frame: (t) => chargeScene(BACK_K, t, t, CLEAR), right: true });
+  out.push({ long: 2.5, title: 'THE SPARKS · HALF SPEED', line: 'The held beat; they tear off the line in two frames, arc up, and each pops', frame: (t) => chargeScene(FRONT_C, left - 0.45 + t / 2, t, CLEAR) });
+  const start: XY = own(FRONT_C, [0, 0], -4.6, 0);
+  const [x, y] = at(FRONT_C, start[0] + 2.4, start[1], 0);
+  out.push({ long: 1.8, title: 'THE POPS · HALF SPEED, CLOSE', line: 'Each spark bursts in hot fragments, every way, and they are gone', frame: (t) => close(chargeScene(FRONT_C, left - 0.15 + t / 2, t, CLEAR), x, y - 58) });
+  return out;
+}
+function sparksSheet(dir: string): void {
+  mkdirSync(dir, { recursive: true });
+  const left = KG_CHARGE.run[0] + KG_CHARGE.most / KG_CHARGE.pace + KG_CHARGE.burstAfter;
+  const p = FRONT_C;
+  const start: XY = own(p, [0, 0], -4.6, 0);
+  const [x, y] = at(p, start[0] + 2.6, start[1], 0);
+  const w = 300;
+  const h = 200;
+  for (const [i, s] of [[0, -0.06], [1, 2 / 30], [2, 0.2], [3, 0.33], [4, 0.46], [5, 0.75]] as const) {
+    // (close on the line: the knight stood off out of the piece, not cut by its edge; he is in the hall's panel)
+    const px = chargeScene(p, left + s, left + s, [4.5, -7]);
+    writeFileSync(`${dir}/sparks_${i}.png`, png(scaled(cut(px, Math.round(Math.max(0, Math.min(W - w, x - w / 2))), Math.round(Math.max(0, Math.min(H - h, y - 40 - h / 2))), w, h), 2)));
+  }
+  writeFileSync(`${dir}/sparks_hall.png`, png(scaled(cut(chargeScene(p, left + 0.42, left + 0.42, CLEAR), 0, 26, W, 250), 2)));
+  console.log('wrote the sparks panels to', dir);
 }
 
 // =============================================================================================
@@ -379,10 +418,12 @@ function sheet(dir: string): void {
   console.log('wrote the panels to', dir);
 }
 
-const [mode = 'film', out = 'king_new_moves.mp4'] = process.argv.slice(2);
-if (mode === 'sheet') sheet(out);
+const [given = 'film', out = 'king_new_moves.mp4'] = process.argv.slice(2);
+const only_sparks = given.startsWith('sparks');
+const mode = only_sparks ? given.slice(7) || 'film' : given;
+if (mode === 'sheet') (only_sparks ? sparksSheet : sheet)(out);
 else {
-  const ps = parts();
+  const ps = only_sparks ? sparksParts() : parts();
   let total = 0;
   for (const q of ps) total += q.long;
   console.log(ps.length, 'parts,', total.toFixed(1), 's');
@@ -412,7 +453,7 @@ else {
       writeFileSync(`${dir}/l${i}.txt`, rows.join('\n'));
       const en = `:enable='between(t,${t0.toFixed(3)},${(t0 + q.long - 0.001).toFixed(3)})'`;
       filters.push(`drawtext=fontfile=${font}:textfile=${dir}/t${i}.txt:x=16:y=14:fontsize=26:fontcolor=0xf0e8d0:box=1:boxcolor=0x07060c@0.65:boxborderw=8${en}`);
-      filters.push(`drawtext=fontfile=${font2}:textfile=${dir}/l${i}.txt:x=16:y=676-(text_h)-14:fontsize=21:line_spacing=4:fontcolor=0xd8d2e6:box=1:boxcolor=0x07060c@0.65:boxborderw=7${en}`);
+      filters.push(`drawtext=fontfile=${font2}:textfile=${dir}/l${i}.txt:x=${q.right ? '1200-text_w-16' : '16'}:y=676-(text_h)-14:fontsize=21:line_spacing=4:fontcolor=0xd8d2e6:box=1:boxcolor=0x07060c@0.65:boxborderw=7${en}`);
       t0 += q.long;
     });
     const ff = spawn('ffmpeg', ['-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', `${W}x${H}`, '-r', String(FPS), '-i', '-', '-vf', filters.join(','), '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-tune', 'animation', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
