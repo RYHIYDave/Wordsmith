@@ -118,3 +118,7 @@ Everything is drawn from in front and truly from behind (the Contraption turned 
   possible if he would rather.
 - From in front, its coil points at the eye and is seen end on (its ball and its dynamo); from behind it is seen side on.
 - How fast the energy kind fires: drawn to fire every 24 frames at the quickest; the game's Contraption fires every 38.
+
+## His word on the pictures
+
+On the first pictures (706c754: `contraption_shots.mp4`, `contraption_shots_sheet.png`), asked “The Contraption's two kinds. The bomb one squats, cranks and lobs a little black bomb with a lit fuse; it hops, fizzes a beat, then blows up 2 tiles round (bigger than a vial's burst). The energy one charges its little tesla coil and fires a cyan bolt, one at a time, up to 8 tiles. Are those the two?”: “Yes, that's them (Recommended)”. Asked whether the bombs blow up in her cyan fire, like her blast-jump bomb, or orange fire: “Cyan, like her blast jump (Recommended)”.
