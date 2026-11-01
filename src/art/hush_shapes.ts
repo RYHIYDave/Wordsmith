@@ -76,8 +76,8 @@ export function hushWord(): WordId {
 /** Tall and narrow, hunched: long thin arms (well past its knees, if it had knees), a small head; no legs to speak of (they are folded away inside its tail, never painted). */
 export const HS_BODY: Build = buildOf(72, 1.32, { shoulders: 0.9, chest: 0.78, depth: 0.95, waist: 0.58, hips: 0.62, arms: 1.4, limbs: 0.62, pad: 2.6 });
 const B = HS_BODY;
-/** Its picture: room before it for its dart (four tiles), above it for its word flying home. */
-export const HS_CANVAS: MobCanvas = { w: 280, h: 256, ax: 84, ay: 166 };
+/** Its picture: room before it for its dart (four tiles: kept, out of their moves), behind it for its fog streaming as it swoops round you (30 Oct: 24 wider, to the left), above it for its word flying home. */
+export const HS_CANVAS: MobCanvas = { w: 304, h: 256, ax: 108, ay: 166 };
 /** How far its pelvis hangs below where a standing body's would be: no legs, its fog pours down from there. */
 export const HS_SINK = -9;
 /** How far over the floor the end of its tail drifts (the figure's own lengths). */
@@ -122,6 +122,13 @@ export interface HushSay {
   smear: (m: Moment) => V3[][] | null;
   /** THE WORD IT SWALLOWED, as it dies: where it is, how far it has its own colour again (0 the Hush's pink, 1 its own), how big a cell of its rune is (picture pixels: two, a game pixel), how much of it is still there (0 to 1). */
   word: (m: Moment) => { p: V3; own: number; cell: number; left: number } | null;
+  /**
+   * CIRCLING YOU (their rhythm of 30 Oct): the ring it goes round you on (`r`, the figure's own lengths: you are straight
+   * before it, `r` off), how far its fog streams out behind it along the ring (`reach`, times as far as it drifts off it
+   * hovering), and how flat (`flat`, 0 rising as it drifts off, 1 streaming level along the ring). Its tail and its wisps
+   * trail round the curve of the ring, as the way it came does. Nothing (null) when it is not circling.
+   */
+  orbit?: (m: Moment) => { r: number; reach: number; flat: number } | null;
 }
 
 // =============================================================================================
@@ -251,7 +258,7 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', splay: number, curl: number
 }
 
 /** Where its tail runs at a moment: from under its hips down and back to its end, a hand over the floor, trailing as it goes, churning. Each: its middle, and its half-widths across and fore and aft. */
-export function tailOf(s: Skeleton, lag: V3, t: number): { c: V3; across: number; deep: number }[] {
+export function tailOf(s: Skeleton, lag: V3, t: number, ring?: number): { c: V3; across: number; deep: number }[] {
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
   const P = s.pelvis;
@@ -265,7 +272,9 @@ export function tailOf(s: Skeleton, lag: V3, t: number): { c: V3; across: number
     const z = top[2] + (tipZ - top[2]) * (1 - (1 - k) ** 1.4);
     const sway = Math.sin((t * TAU) / 1.2 + k * 3.4) * 2.0 * k;
     const back = mul(f, -(1 + 7 * k ** 1.6));
-    const c = add(add(add([top[0], top[1], z], back), mul(lag, k ** 1.2)), mul(l, sway));
+    const c0 = add(add(add([top[0], top[1], z], back), mul(lag, k ** 1.2)), mul(l, sway));
+    // (circling you on a ring `ring` round: as far as it has trailed out to the side, curved in round the ring toward you)
+    const c: V3 = ring ? [c0[0] + ((c0[1] - top[1]) ** 2) / (2 * ring), c0[1], c0[2]] : c0;
     out.push({ c: [c[0], c[1], Math.max(HS_TAIL_UP - 0.6, c[2])], across: (B.pelvisHalf + 4.6) * (1 - 0.55 * k) + 0.8, deep: (B.pelvisDeep + 3.8) * (1 - 0.55 * k) + 0.8 });
   }
   return out;
@@ -290,7 +299,7 @@ export function humpOf(s: Skeleton): { c: V3; ax: [V3, V3, V3] } {
 }
 
 /** What a moment paints over and above its solids, kept for its grains and its thinning. */
-const MORE = new WeakMap<Moment, { grains: [V3, string, number][]; tailTip: V3; ribs: V3; pelvis: V3 }>();
+const MORE = new WeakMap<Moment, { grains: [V3, string, number][]; tailTip: V3; ribs: V3; pelvis: V3; cull?: Set<number>; mask?: Uint8Array; w?: number }>();
 
 function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
   const { s } = m;
@@ -303,7 +312,8 @@ function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
   const { splay, curl } = say.hands(m);
   // ITS BODY: one length of fog from the end of its tail up through its hips, its narrow waist and ribs, the swell of its
   // shoulders, to its throat; the hump over it; its neck
-  const tail = tailOf(s, lag, t);
+  const orb = say.orbit?.(m) ?? null;
+  const tail = tailOf(s, lag, t, orb?.r);
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
   const rings: Ring[] = [];
@@ -341,10 +351,11 @@ function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
   if (w && w.left > 0.05) put('word', 'word', { k: 'glow', p: w.p, c: WORD_GLOW[hushWord()], r: 10 + 8 * w.left, a: 0.4 * w.left });
   // ITS FOG STREAMING OFF IT (laid after its edge)
   const grains: [V3, string, number][] = [];
+  const cull = new Set<number>();
   const formed = clamp01(say.formed(m));
   const stream = say.stream(m);
   const lagN = len(lag) > 0.5 ? norm(lag) : mul(f, -1);
-  const back = norm(add(mul(lagN, 0.8), [0, 0, 0.55]));
+  const back = orb ? norm(add(mul(lagN, 0.8), [0, 0, 0.55 * (1 - 0.7 * orb.flat)])) : norm(add(mul(lagN, 0.8), [0, 0, 0.55]));
   const tip = tail[tail.length - 1].c;
   const emitters: [V3, number, number][] = [
     [add(s.head, mul(s.face[2], B.headR[2] * 0.8)), 5, 2],
@@ -364,10 +375,44 @@ function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
       if (life > 0.8) continue;
       const a = hash(i, seed, 7922) * TAU;
       const r0 = 1 + 2.5 * hash(i, seed, 7923);
-      const go = (2 + 8 * life) * (0.7 + 0.3 * stream);
+      const go = (2 + 8 * life) * (0.7 + 0.3 * stream) * (orb ? orb.reach : 1);
       const curl = a + life * 4;
-      const p = add(add(at, mul(back, go)), [Math.cos(a) * r0 + Math.cos(curl) * 2 * life, Math.sin(a) * r0 + Math.sin(curl) * 2 * life, life * 3]);
+      const p0 = add(add(at, mul(back, go)), [Math.cos(a) * r0 + Math.cos(curl) * 2 * life, Math.sin(a) * r0 + Math.sin(curl) * 2 * life, life * 3 * (orb ? 1 - 0.6 * orb.flat : 1)]);
+      // (circling: streaming out along the ring behind it, round its curve toward you)
+      const p: V3 = orb ? [p0[0] + ((p0[1] - at[1]) ** 2) / (2 * orb.r), p0[1], p0[2]] : p0;
+      // (circling, what streams off behind it is hidden by it: see `cull`)
+      if (orb && st.near(p) < st.near(at) - 0.5) cull.add(grains.length);
       grains.push([p, WISP[Math.min(3, Math.floor(life * 4))], life < 0.4 ? 2 : 1]);
+    }
+  }
+  // CIRCLING YOU: its fog streaming out behind it in ribbons along the ring, round its curve toward you; torn into wisps
+  // flowing away from it, rippling, thinning to nothing at their ends (from its tail's end, along its tail, off its hump,
+  // its crown and its trailing elbow)
+  if (orb) {
+    const way = norm([lagN[0], lagN[1], 0], mul(f, -1));
+    const across: V3 = [-way[1], way[0], 0];
+    const L = 19 * orb.reach * (0.4 + 0.6 * formed);
+    const trailing = dot(sub(s.elbowL, s.elbowR), way) > 0 ? s.elbowL : s.elbowR;
+    const ribbons: [V3, number, number][] = [
+      [add(tip, mul(way, 2)), 1.0, 21],
+      [tail[3].c, 0.85, 22],
+      [add(hump.c, mul(s.chest[2], 3.5)), 0.8, 23],
+      [add(s.head, mul(s.face[2], B.headR[2] * 0.7)), 0.55, 24],
+      [trailing, 0.5, 25],
+    ];
+    for (const [from, k, seed] of ribbons) {
+      const long = L * k;
+      for (let d = 4; d < long; d += 1.3) {
+        const u = d / long;
+        // (flowing away from it in tufts, fewer further out; a round of the glide's frames brings them round again)
+        if (fr(d / 12 - t * (10 / 3) + 0.37 * seed) > 0.78 - 0.3 * u) continue;
+        if (u > 0.55 && hash(Math.round(d * 3), seed, 7971) < (u - 0.55) * 1.6) continue;
+        const wave = Math.sin(d * 0.2 - t * TAU * 2.5 + seed) * (0.5 + 2.4 * u);
+        const p0 = add(add(from, mul(way, d)), mul(across, wave * 0.7));
+        const p: V3 = [p0[0] + ((p0[1] - from[1]) ** 2) / (2 * orb.r), p0[1], p0[2] + wave * 0.45 + d * 0.16 * (1 - orb.flat) + 1.5 * u];
+        if (st.near(p) < st.near(from) - 0.5) cull.add(grains.length);
+        grains.push([p, WISP[Math.min(3, Math.floor(u * 3.6))], u < 0.4 ? 2 : 1]);
+      }
     }
   }
   // UNRAVELLING: strands of it drawn up off every part of it and away, as much as has come away
@@ -446,7 +491,7 @@ function hushBits(st: Stage, m: Moment, say: HushSay): Bit[] {
       }
     });
   }
-  MORE.set(m, { grains, tailTip: tip, ribs: s.ribs, pelvis: s.pelvis });
+  MORE.set(m, cull.size ? { grains, tailTip: tip, ribs: s.ribs, pelvis: s.pelvis, cull } : { grains, tailTip: tip, ribs: s.ribs, pelvis: s.pelvis });
   return bits;
 }
 
@@ -481,6 +526,7 @@ function thinHush(px: Px, st: Stage, m: Moment, partAt: (k: number) => string | 
   const ours = (part: string | null): boolean => part === 'body' || part === 'head' || part === 'armL' || part === 'armR';
   const edgeAt = (i: number): boolean => px.d[i + 3] === RIM_ALPHA || (px.d[i] === ir && px.d[i + 1] === ig && px.d[i + 2] === ib);
   const cut = new Uint8Array(W * H);
+  const [X0, Y0] = [st.at([0, 0, 0])[0] - 84, st.at([0, 0, 0])[1] - 166];
   // (the gash: across its chest, slanting, opened `tear` wide)
   const ta = -28 * D;
   const tc = Math.cos(ta);
@@ -500,7 +546,10 @@ function thinHush(px: Px, st: Stage, m: Moment, partAt: (k: number) => string | 
         if (along < 16 + 6 * tear) thr -= 1.4 * tear * clamp01(1 - d / (1.5 + 4.5 * tear));
       }
       // (its body comes apart in streaks running down it, as fog does; elsewhere in patches)
-      const n = part === 'body' && low > 0 ? 0.7 * noise2(x * 0.34 + ox, y * 0.075 + oy * 0.5, 7945) + 0.3 * noise2(x * 0.6 - oy, y * 0.3 + ox, 7943) : 0.74 * noise2(x * 0.16 + ox, y * 0.22 + oy, 7941) + 0.26 * noise2(x * 0.5 - oy, y * 0.55 + ox, 7943);
+      // (its fog's churn laid from its floor point, as it was on its first picture, 84 and 166: the same however big its picture)
+      const fx = x - X0;
+      const fy = y - Y0;
+      const n = part === 'body' && low > 0 ? 0.7 * noise2(fx * 0.34 + ox, fy * 0.075 + oy * 0.5, 7945) + 0.3 * noise2(fx * 0.6 - oy, fy * 0.3 + ox, 7943) : 0.74 * noise2(fx * 0.16 + ox, fy * 0.22 + oy, 7941) + 0.26 * noise2(fx * 0.5 - oy, fy * 0.55 + ox, 7943);
       cut[k] = n > thr + 0.1 ? 2 : n > thr - 0.12 ? 1 : 0;
     }
   }
@@ -537,6 +586,13 @@ function thinHush(px: Px, st: Stage, m: Moment, partAt: (k: number) => string | 
       px.d[i + 3] = 255;
     }
   }
+  // (circling: where it is now, for the fog streaming off behind it to be hidden by)
+  if (more.cull) {
+    const mask = new Uint8Array(W * H);
+    for (let k = 0; k < W * H; k++) mask[k] = px.d[k * 4 + 3] ? 1 : 0;
+    more.mask = mask;
+    more.w = W;
+  }
 }
 
 /** IT AS THE PAINTER TAKES IT. */
@@ -547,7 +603,20 @@ export function hushPainter(say: HushSay): {
 } {
   return {
     bits: (st, m) => hushBits(st, m, say),
-    grains: (_st, m) => MORE.get(m)?.grains ?? [],
+    grains: (st, m) => {
+      const more = MORE.get(m);
+      if (!more) return [];
+      const { cull, mask, w } = more;
+      if (!cull || !mask || !w) return more.grains;
+      // (circling: fog streaming off behind it, where it is in front of it, hidden by it)
+      return more.grains.filter(([p], i) => {
+        if (!cull.has(i)) return true;
+        const [x, y] = st.at(p);
+        const xi = Math.round(x);
+        const yi = Math.round(y);
+        return xi < 0 || yi < 0 || xi >= w || yi * w + xi >= mask.length || !mask[yi * w + xi];
+      });
+    },
     finish: (px, st, m, partAt) => thinHush(px, st, m, partAt, say),
   };
 }
