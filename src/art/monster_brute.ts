@@ -33,6 +33,7 @@
 import { Px } from '../engine/px';
 import type { Light } from '../engine/px';
 import type { ActorArt } from './actor_types';
+import { poseAt } from './clip';
 import type { Key, Timeline } from './clip';
 import { fallen, quench } from './death';
 import type { Piece } from './death';
@@ -433,6 +434,21 @@ const FACE_ROAR = [
   '..LLMMMMMMMDD..',
   '...MMMMMMDDD...',
 ];
+// (BRUTE_RAMPAGE, the bull rush: his head thrust down before his chest, brow first: more of his crown, his heavy brow over
+// eyes that are slits under it, his tusks jutting forward under them, his mouth out of sight)
+const FACE_DOWN = [
+  '....LLLLLLM....',
+  '..LLLLLLLLMMM..',
+  '.LLLLLLLLLMMMM.',
+  'LeLLLLLLLMMMMM.',
+  '.LLLLLLLMMMMMD.',
+  '.LLLLDDDDDDDDD.',
+  '.LLLKEKKDKKEKD.',
+  '.LLLTDDDDDDDTD.',
+  '..LTTMMMMMMTTD.',
+  '...tMMMMMMDDt..',
+  '....MMMMMDDD...',
+];
 const NAPE = [
   '.....LLLLLM....',
   '...LLLLLLLMMM..',
@@ -448,12 +464,13 @@ const NAPE = [
 ];
 
 /** The head: tiny. (cx, top) is the middle of its top edge. Returns where its eyes are (to light them), if they show. */
-function head(p: Px, cx: number, top: number, ramp: Ramp, back: boolean, roar: boolean, broken: boolean): V | null {
+function head(p: Px, cx: number, top: number, ramp: Ramp, back: boolean, roar: boolean, broken: boolean, low = false): V | null {
   const x0 = snap(cx - 7.5);
   const y0 = snap(top);
   const shade = dim(ramp);
-  stamp(p, x0, y0, back ? NAPE : roar ? FACE_ROAR : FACE, { L: ramp[3], M: ramp[2], D: ramp[1], e: shade[3], K: INK, E: SOCKET, T: BONE[3], t: BONE[2] });
+  stamp(p, x0, y0, back ? NAPE : low ? FACE_DOWN : roar ? FACE_ROAR : FACE, { L: ramp[3], M: ramp[2], D: ramp[1], e: shade[3], K: INK, E: SOCKET, T: BONE[3], t: BONE[2] });
   if (back) return null;
+  if (low) return [x0 + 8.5, y0 + 6];
   if (broken) {
     // the nearer tusk is snapped off short
     const ty = y0 + (roar ? 9 : 7);
@@ -560,6 +577,65 @@ function swingStreak(front: Px, behind: Px, deg: number, sweep: number, waist: V
 }
 
 /**
+ * THE RAMPAGE'S SWING (BRUTE_RAMPAGE, props 3 and 5): the level swing (`deg` round from straight ahead, as above), and the
+ * club also RAISED OVER THE TOP by `E` degrees: 0 level, 90 more straight up, more than that tipped back over his head, less
+ * than 0 brought down before him to the floor. His fists go up with it on an arc before him (over his head when it is
+ * upright, down by his knees when it is brought down), and the club points the way it is swung and raised. Seen from the
+ * corner, as the level swing is: it is behind him while it points away from the eye.
+ */
+function rampSwing(deg: number, E: number, waist: V, back: boolean, S: number): { at: V; aim: number; long: number; behind: boolean } {
+  const base = levelSwing(deg, waist, back, S);
+  if (Math.abs(E) < 1e-6) return base;
+  const fwd = back ? -1 : 1;
+  const a = (deg * Math.PI) / 180;
+  const vx = Math.cos(a) + Math.sin(a);
+  const vy = 0.5 * fwd * (Math.cos(a) - Math.sin(a));
+  const lift = clamp01((deg - 60) / 40);
+  const after = clamp01((-deg - 70) / 40);
+  const elev = ((-8 + lift * 38 + after * 30 + E) * Math.PI) / 180;
+  // (the fists on their arc: out before him and up over his head, or down before his knees; never further than his arms reach)
+  // (going up they first come in before his belly, between his shoulders, and then rise: never past a shoulder, so that an arm
+  // is never folded flat)
+  const into = clamp01(E / 18);
+  const inward = 14 * S * into * into * (3 - 2 * into);
+  const e = ((E > 0 ? Math.min(125, Math.max(0, E - 10)) : Math.max(-50, E)) * Math.PI) / 180;
+  const R = 13 * S;
+  const rise = (e > 0 ? 33 : 24) * S;
+  const at: V = [base.at[0] + vx * R * (Math.cos(e) - 1) * 0.35 - inward, base.at[1] + vy * R * (Math.cos(e) - 1) * 0.35 - rise * Math.sin(e)];
+  const dx = Math.cos(elev) * vx;
+  const dy = Math.cos(elev) * vy - Math.sin(elev) * 1.225;
+  return { at, aim: (Math.atan2(-dy, dx) * 180) / Math.PI, long: Math.min(1, Math.max(0.42, Math.hypot(dx, dy) / Math.SQRT2)), behind: Math.cos(elev) * vy < -0.12 };
+}
+
+/**
+ * THE RAMPAGE'S STREAK (as swingStreak's, a smear of air: the brute's club gives off no light): behind the club's head along
+ * the way it has just come, round (`over` false: `sweep` degrees of the level swing) or over the top (`over`: `sweep` degrees of
+ * its raising, the slam brought down).
+ */
+function rampStreak(front: Px, behind: Px, deg: number, E: number, over: boolean, sweep: number, waist: V, back: boolean, S: number): void {
+  const n = Math.max(8, Math.round(Math.abs(sweep) / 3));
+  for (let j = n; j >= 0; j--) {
+    const u = j / n;
+    const s = rampSwing(over ? deg : deg + sweep * u, over ? E + sweep * u : E, waist, back, S);
+    const [cx, cy] = dir(s.aim);
+    const L = (GRIP + CLUB * s.long - 5) * S;
+    const x = s.at[0] + cx * L;
+    const y = s.at[1] + cy * L;
+    const r = S * (1 + 5.5 * Math.pow(1 - u, 0.8));
+    const p = s.behind ? behind : front;
+    for (let yy = Math.floor(y - r); yy <= Math.ceil(y + r); yy++) {
+      for (let xx = Math.floor(x - r); xx <= Math.ceil(x + r); xx++) {
+        const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y);
+        if (d > r || !p.inside(xx, yy)) continue;
+        if (u > 0.5 && hash(xx, yy, 13) < (u - 0.5) * 2.2) continue;
+        const edge = d > r - 1.2;
+        p.set(xx, yy, edge ? AIR[u < 0.5 ? 2 : 1] : u < 0.18 ? AIR[4] : u < 0.45 ? AIR[3] : u < 0.75 ? AIR[2] : AIR[1]);
+      }
+    }
+  }
+}
+
+/**
  * Dust KICKED BACK by a foot that scrapes the floor (the charge's warning) or digs in (its stop):
  * puffs thrown from (x, y) away from the way he faces and up, `t` (0..1) of the way through their
  * short life, thinning as they go. The dull violet of the floor's own dust; it gives off no light.
@@ -603,7 +679,30 @@ function kicked(p: Px, x: number, y: number, t: number, back: boolean, S: number
 //   prop 1         (TROLL_MOVES) THE LEVEL SWING: the club in both fists swung round him level; `aim` is
 //                  then how far round from straight ahead (+ his club side), and `sweep` its streak
 //   prop 2         (TROLL_MOVES) THE CHARGE: `sweep` is then the life of the dust a scraping foot kicks
+//   prop 3, 5      (BRUTE_RAMPAGE) THE RAMPAGE: the club in both fists, swung as in prop 1 (`aim` how far
+//                  round from straight ahead) and also raised over the top (`gale`: degrees it is lifted
+//                  above that, 90 straight up, more tipped back over his head, less than 0 brought down
+//                  before him); `sweep` its streak, round (prop 3) or over the top (prop 5); `step` how
+//                  far all of him, feet and all, is off the floor (his leap: picture pixels; below 0,
+//                  crouched: all of him above his feet lowered on his bent legs)
+//   prop 4         (BRUTE_RAMPAGE) THE BULL RUSH: `gale` how far his head is thrust down before his
+//                  chest, brow first (pixels); `ohx`, `ohy` the free fist moved (to the floor, his
+//                  knuckles down); `sweep` the life of the dust a scraping or digging foot kicks
+// (in props 3 to 5 a step goes along the grid exactly, two pixels across for one down: art/action_f3_fx.ts
+// follows his feet on the floor, tile by tile, as the game carries him)
 // and `how`: how he carries the club while his other hand is not on it (Carry).
+
+/** (the rampage) An elbow whose fist goes from below its shoulder to above it: see the rig. `out` is the side it is out to (-1 screen-left). */
+function rampElbow(sh: V, hand: V, out: number, S: number): V {
+  const a = joint(sh, hand, UPPER * S, FORE * S, 1);
+  const b = joint(sh, hand, UPPER * S, FORE * S, -1);
+  // (low, as the rig chooses it otherwise: down, and out)
+  const low = 0.3 * a[1] + out * a[0] >= 0.3 * b[1] + out * b[0] ? a : b;
+  const high = out * a[0] - 0.8 * a[1] >= out * b[0] - 0.8 * b[1] ? a : b;
+  const k = clamp01((sh[1] - hand[1] + 6) / 12);
+  const w = k * k * (3 - 2 * k);
+  return [low[0] + (high[0] - low[0]) * w, low[1] + (high[1] - low[1]) * w];
+}
 
 /** From one angle to another, the short way round, in degrees. */
 function turnTo(a: number, b: number, t: number): number {
@@ -618,10 +717,17 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const floorY = cut ? can.ay - cut.y : can.ay;
   const S = chief ? CHIEF : G ? GUARDIAN : 1;
   const u = (n: number): number => n * S;
+  // (BRUTE_RAMPAGE: the rampage, props 3 and 5; the bull rush, prop 4)
+  const RAMP = q.prop === 3 || q.prop === 5;
+  const RUSH = q.prop === 4;
+  /** (the rampage) How far all of him is off the floor, feet and all: his leap; below 0, crouched on bent legs. */
+  const air = RAMP ? q.step : 0;
+  /** (props 3 to 5) How far down the screen a step goes for each of its pixels across: along the grid exactly. */
+  const SY = RAMP || RUSH ? 1.8 : 1.6;
   // Everything of him above his feet is measured up from `ay`: the floor, while his legs hold him.
   // Dying, his knees let him down (DOWN): all of it comes that much nearer the floor, and his legs,
   // whose feet stay where they stood, are that much shorter under him.
-  const ay = floorY + (DOWN ? u(DOWN.sink) : 0);
+  const ay = floorY + (DOWN ? u(DOWN.sink) : 0) - air;
   const flesh = G ? GORE : FLESH;
   const shade = dim(flesh);
   const lights: Light[] = [];
@@ -663,12 +769,13 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const trail = how === 'high' ? 0 : 1 - k;
   // THE LEVEL SWING (prop 1, TROLL_MOVES): both fists on it at his belly, `aim` degrees round from straight ahead
   const waist: V = [X + u(1.5), ay - u(27) - up + Y * 0.6];
-  const level = q.prop === 1 ? levelSwing(q.aim, waist, back, S) : null;
+  const level = q.prop === 1 ? levelSwing(q.aim, waist, back, S) : RAMP ? rampSwing(q.aim, q.gale, waist, back, S) : null;
   const heldAim = level ? level.aim : q.aim + (shift * 2.5 + walk * 3 * (roll * roll - q.swing * q.swing)) * (1 - trail);
   const held: V = level ? [level.at[0] + u(q.hx), level.at[1] + u(q.hy)] : [X + u(SPREAD + 11.5 + q.hx) + shift * 0.6 * (1 - trail), ay - u(H_SHO + 13.5) - up + handDip + u(q.hy)];
   // each fist where it hangs when it has nothing to do: by the knee, swinging against the stride
   const hang: V = [offSh[0] - u(2.5) - q.swing * u(3.4), offSh[1] + u(25.5) - Math.abs(q.swing) * u(1.4) - q.swing * u(1.4) * fwd];
-  const idle: V = [clubSh[0] + u(2.5) + q.swing * u(3.4), clubSh[1] + u(25.5) - Math.abs(q.swing) * u(1.4) + q.swing * u(1.4) * fwd];
+  // (the bull rush: facing us, it is this fist that is free, and goes to the floor: Pose.ohx, ohy)
+  const idle: V = [clubSh[0] + u(2.5) + q.swing * u(3.4) + (RUSH && !back ? u(q.ohx) : 0), clubSh[1] + u(25.5) - Math.abs(q.swing) * u(1.4) + q.swing * u(1.4) * fwd + (RUSH && !back ? u(q.ohy) : 0)];
   // the fist that trails it is his nearer one: it does not swing, it hauls
   const haul = back ? 1 : -1;
   const carrySh = back ? clubSh : offSh;
@@ -706,7 +813,7 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const streakAt: V[] = [];
   if (level && Math.abs(q.sweep) >= 6) {
     for (const f of [0, 0.25, 0.5, 0.75, 1]) {
-      const s2 = levelSwing(q.aim + q.sweep * f, waist, back, S);
+      const s2 = RAMP ? rampSwing(q.aim + (q.prop === 3 ? q.sweep * f : 0), q.gale + (q.prop === 5 ? q.sweep * f : 0), waist, back, S) : levelSwing(q.aim + q.sweep * f, waist, back, S);
       const [ddx, ddy] = dir(s2.aim);
       const L = u(GRIP + CLUB * s2.long - 5);
       streakAt.push([s2.at[0] + ddx * L, s2.at[1] + ddy * L]);
@@ -720,7 +827,7 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   /** THE CHIEFTAIN'S BANNER, on his back: where its pole stands and its cloth hangs. */
   const flag = chief ? bannerOf(X, shY, back, S, q.wind, Math.min(1.6, q.drag)) : null;
   const scrapeS = back ? q.far : q.near;
-  const scrape: V = [ax + (back ? farSide : -farSide) * u(LEG) + snap(scrapeS * u(3.6)) - u(2), floorY - 2 + (back ? -1 : 1) * snap(u(FOOT_TILT)) + snap(scrapeS * u(1.6) * fwd)];
+  const scrape: V = [ax + (back ? farSide : -farSide) * u(LEG) + snap(scrapeS * u(3.6)) - u(2), floorY - 2 + (back ? -1 : 1) * snap(u(FOOT_TILT)) + snap(scrapeS * u(SY) * fwd)];
   const [cdx, cdy] = dir(aim);
   const grip: V = [at[0] - cdx * u(6.5), at[1] - cdy * u(6.5)];
 
@@ -742,7 +849,7 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const mid: V = [(hang[0] + grip[0]) / 2, (hang[1] + grip[1]) / 2];
   const via: V = [mid[0] + (offSh[0] - u(26) - mid[0]) * high, mid[1] + (offSh[1] - u(3) - mid[1]) * high];
   const offHand: V = laid(!back && how !== 'high'
-    ? [grip[0] + (at[0] - grip[0]) * trail + u(q.ohx), grip[1] + (at[1] - grip[1]) * trail + u(q.ohy)]
+    ? [grip[0] + (at[0] - grip[0]) * trail + (RUSH ? 0 : u(q.ohx)), grip[1] + (at[1] - grip[1]) * trail + (RUSH ? 0 : u(q.ohy))]
     : [
       (1 - k) * (1 - k) * hang[0] + 2 * k * (1 - k) * (2 * via[0] - mid[0]) + k * k * grip[0] + u(q.ohx),
       (1 - k) * (1 - k) * hang[1] + 2 * k * (1 - k) * (2 * via[1] - mid[1]) + k * k * grip[1] + u(q.ohy),
@@ -750,7 +857,10 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
 
   // (the club arm's elbow is always on the same side of the arm: out and down at rest, out and up when the club is overhead)
   const clubEl = joint(clubSh, hand, u(UPPER), u(FORE), 1);
-  const offEl = pick(joint(offSh, offHand, u(UPPER), u(FORE), 1), joint(offSh, offHand, u(UPPER), u(FORE), -1), (v) => 0.3 * v[1] - v[0]);
+  // (the rampage, his fists going up before him from his belly to over his head: the elbow, down under the arm while the fist is
+  // low, swings out and up as it rises, passing over the arm as it comes level with the shoulder, as an elbow seen from the corner
+  // does; never flipped from one side to the other in a frame)
+  const offEl = RAMP ? rampElbow(offSh, offHand, -1, S) : pick(joint(offSh, offHand, u(UPPER), u(FORE), 1), joint(offSh, offHand, u(UPPER), u(FORE), -1), (v) => 0.3 * v[1] - v[0]);
 
   // --- the body: where the hips, the barrel, the hide and the head are ---
   const hipY = ay - u(H_HIP) - up;
@@ -766,16 +876,32 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const rx = u(HALF + (back ? 0.5 : 0)) + swell * u(1.4) + Math.max(0, Y) * 0.2 + walk * (1 - Math.abs(roll)) * u(0.6);
   const hideTop = ay - u(back ? 26 : 24) - up + Y * 0.12;
   // (DOWN on his knees, it does not hang through the floor: its hem stops short of it, by the length of its longest tatter)
-  const hem = snap(DOWN ? Math.min(ay - u(11) - up + Y * 0.12, floorY - u(5.5)) : ay - u(11) - up + Y * 0.12);
+  // (and crouched for his leap, or off the floor in it: it stops short of the floor as on his knees)
+  const hem = snap(DOWN || RAMP ? Math.min(ay - u(11) - up + Y * 0.12, floorY - Math.max(0, air) - u(5.5)) : ay - u(11) - up + Y * 0.12);
   const drift = -q.swing * u(1.2) - Math.min(1.5, q.drag) * u(0.7);
   // (standing, his head turns a little now and then; reared up it is thrown back; folded over it hangs)
   const turn = calm > 0.5 && Math.sin(ph - 3.39) > 0.637 ? 1 : 0;
-  const hx = X + u(back ? 2.5 : 3.5) + fold * u(5) - rear * u(1) + turn;
-  const hy = ay - u(H_HEAD) - (back ? 2.5 : 0) + Y - up - rear * u(1.5) + fold * u(7);
+  // (the bull rush: his head thrust down before his chest, brow first, as a bull's; and, stopped, shaken: `hx`)
+  const hx = X + u(back ? 2.5 : 3.5) + fold * u(5) - rear * u(1) + turn + (RUSH ? u(q.gale * 0.45 + q.hx) : 0);
+  const hy = ay - u(H_HEAD) - (back ? 2.5 : 0) + Y - up - rear * u(1.5) + fold * u(7) + (RUSH ? u(q.gale) : 0);
+
+  // (BRUTE_SEEN: where each foot stands, as the legs below are painted: the middle of its sole)
+  const soleAt = (near: boolean): V => {
+    const side = near ? -farSide : farSide;
+    const s = near ? q.near : q.far;
+    const lf = near ? q.nearLift : q.farLift;
+    return [ax + side * u(LEG) + snap(s * u(3.6)) + u(1.5), floorY - 2 + snap((near ? 1 : -1) * u(FOOT_TILT)) + snap(s * u(SY) * fwd - lf * u(3.2)) - snap(Math.max(0, air))];
+  };
 
   // --- that is where everything is. Now paint it: on sheets cut down to the box that holds it ---
   if (!cut) {
+    if (BRUTE_SEEN.see) {
+      const cl = u(CLUB * long - choke * trail);
+      BRUTE_SEEN.see({ head: [hx, hy + 7], hips: [hipX, hipY], hand, offHand, clubEl, offEl, soles: [soleAt(true), soleAt(false)], lifts: [q.nearLift, q.farLift], air, tip: [at[0] + cdx * cl, at[1] + cdy * cl] });
+    }
     return ogre(q, back, G, how, boxOf([
+      // (props 3 to 5: the feet, far out in a long stride)
+      ...(RAMP || RUSH ? [[soleAt(true), u(10)] as const, [soleAt(false), u(10)] as const] : []),
       // the legs and the feet, wherever they have stepped; the hide; the barrel
       [[ax + u(1.5), ay - u(10)], u(21) + 2],
       [[hipX + drift, hem - u(7)], u(20) + 2],
@@ -793,7 +919,7 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
       [[at[0] + cdx * u(CLUB * long - choke * trail), at[1] + cdy * u(CLUB * long - choke * trail)], u(12)],
       [[hx, hy + 7], 11],
       ...streakAt.map((v) => [v, u(8)] as const),
-      ...(q.prop === 2 && q.sweep > 0 && q.sweep < 1 ? [[[scrape[0] - u(14), scrape[1] - u(8)], u(16)] as const] : []),
+      ...((q.prop === 2 || RUSH) && q.sweep > 0 && q.sweep < 1 ? [[[scrape[0] - u(14), scrape[1] - u(8)], u(16)] as const] : []),
       // (the chieftain's crown of antlers over his head, and his banner: its pole and its cloth)
       ...(flag ? [[[hx, hy - 9], 14] as const, [flag.foot, u(4)] as const, [flag.top, u(5)] as const, [[(flag.bar[0][0] + flag.bar[1][0]) / 2 + flag.sway / 2, flag.bar[0][1] + flag.long / 2], flag.long / 2 + u(8)] as const] : []),
     ], can), chief);
@@ -808,7 +934,7 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
     const side = near ? -farSide : farSide;
     const s = near ? q.near : q.far;
     const lf = near ? q.nearLift : q.farLift;
-    const sole = floorY - 2 + snap((near ? 1 : -1) * u(FOOT_TILT)) + snap(s * u(1.6) * fwd - lf * u(3.2));
+    const sole = floorY - 2 + snap((near ? 1 : -1) * u(FOOT_TILT)) + snap(s * u(SY) * fwd - lf * u(3.2)) - snap(Math.max(0, air));
     stump(body, [hipX + side * u(LEG - 2.5), hipY + (near ? 1 : -1) * u(1.5)], ax + side * u(LEG) + snap(s * u(3.6)), sole, up, S, near ? flesh : shade, back);
   };
   leg(false);
@@ -901,9 +1027,12 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const weapon = sheet();
   // (a level swing's streak: what of it is behind him on a sheet of its own, under everything)
   const behindAll = sheet();
-  if (level && Math.abs(q.sweep) >= 6) swingStreak(weapon, behindAll, q.aim, q.sweep, waist, back, S, G, lights);
+  if (level && Math.abs(q.sweep) >= 6) {
+    if (RAMP) rampStreak(weapon, behindAll, q.aim, q.gale, q.prop === 5, q.sweep, waist, back, S);
+    else swingStreak(weapon, behindAll, q.aim, q.sweep, waist, back, S, G, lights);
+  }
   // (the charge: the dust a scraping or digging foot kicks back)
-  if (q.prop === 2) kicked(behindAll, scrape[0], scrape[1], q.sweep, back, S);
+  if (q.prop === 2 || RUSH) kicked(behindAll, scrape[0], scrape[1], q.sweep, back, S);
   // (held part way up its handle, more of the handle is behind the fist)
   club(weapon, [at[0] - cdx * u(choke * trail), at[1] - cdy * u(choke * trail)], aim, S, G, Math.sin(ph * 2) + roar, lights, long);
   const hands = sheet();
@@ -918,7 +1047,7 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   if (!back) fist(hands, offHand, S, flesh, grips && (swapped || k > 0.6), swapped ? 0 : open);
 
   const skull = sheet();
-  const eyes = head(skull, hx, hy, flesh, back, roar > 0.45, G);
+  const eyes = head(skull, hx, hy, flesh, back, roar > 0.45, G, RUSH && q.gale > 2.5);
   const crownSheet = sheet();
   const banner = sheet();
   if (chief) crown(crownSheet, hx, hy);
@@ -1268,7 +1397,302 @@ const DEATH_PAINTED = true;
 function ogreMoves(back: boolean, G: boolean, how: Carry): MonsterMoves {
   const m: MonsterMoves = DEATH_PAINTED ? { attack: smash(back), die: (k) => ogreDeath(k, back, G, how) } : { attack: smash(back) };
   if (TROLL_MOVES.on) m.more = trollMoves(G, back);
+  // (FLOOR 3, MORE ACTION, BRUTE_RAMPAGE: the green troll's two attacks are his rampage, as his attack, and his bull rush, as the
+  // red troll's charge is played: its wind-up, its run and its stop. His swing and his slam are kept, out of his set.)
+  if (BRUTE_RAMPAGE.on && !G) {
+    m.attack = rampageTimeline(back);
+    m.more = { chargeWind: rushWindTimeline(back), charge: rushTimeline(back), chargeStop: rushStopTimeline(back) };
+  }
   return m;
+}
+
+// =============================================================================================
+// FLOOR 3, MORE ACTION: THE GREEN TROLL'S RAMPAGE AND HIS BULL RUSH (the art chat's helper, 31 Oct 2026;
+// docs/mockups/action_f3/README.md). The owner's review of every enemy for more action; for the brute, offered "Rampage: two
+// stepping club swings, then a leaping two-fisted slam with a shockwave ring. Bull rush as its second: lowers its head and
+// charges down a marked lane."; his pick: “Yes (Recommended)”. Under his rules: Movement 9 (“Like the wind up and wind down are
+// big but the actual punch is lightning quick”), and for the enemies, 28 Oct (“Start from now on, but every enemy is going to
+// need that change eventually.  And bigger AOE to compensate for the extra time the player gets to evade”). So:
+//   THE RAMPAGE (his attack): both fists on the club, wound back on his club side and HELD; a level swing round in front of him
+//     in ONE frame, smeared; on round and a step in; wound back the other way and HELD; the backhand, in one frame; on round and
+//     a step in; then the club raised up over his head as he crouches, HELD, the biggest of his warnings; a LEAP, the club tipped
+//     right back over his head in the air; and as he lands, in ONE frame, the club brought down on the floor before him with
+//     both fists, the shockwave ring going out from it (art/action_f3_fx.ts); stuck there, heaving; then he hauls it up.
+//   THE BULL RUSH (as the red troll's charge is played: `chargeWind`, `charge`, `chargeStop`): his head goes down before his
+//     chest, brow first, his free fist down on the floor, knuckles to it; HELD so, pawing the floor twice with a foot, dust
+//     kicked back (the warning, while the lane is marked: art/charge_lane.ts); then off down it head first, fast, bounding; and
+//     past where you stood he plants a foot, stumbles a step and another, rocks back off balance and shakes his head.
+// The game carries him over the floor through both (`rampageTravel`, `rushStopTravel`, and the run's pace): his feet are where
+// they are on the floor, tile by tile, as he is carried. Behind a switch that is off: while it is, he is exactly as he was.
+
+/** The switch: the rampage and the bull rush are the green troll's attacks only while it is on. */
+export const BRUTE_RAMPAGE = { on: false };
+
+/**
+ * WHERE HIS JOINTS ARE IN A FRAME (for the review, art/action_f1_checks.ts checkKit): picture pixels on his canvas. Nothing of the
+ * game sets `see`; while it is null nothing is reported and nothing about a frame changes.
+ */
+export interface BruteSeen {
+  head: V;
+  hips: V;
+  /** The club arm's fist and the other, and their elbows. */
+  hand: V;
+  offHand: V;
+  clubEl: V;
+  offEl: V;
+  /** His two feet (the nearer first): the middle of each sole, and how far each is lifted; and how far all of him is off the floor. */
+  soles: [V, V];
+  lifts: [number, number];
+  air: number;
+  /** The middle of the club's thick end. */
+  tip: V;
+}
+export const BRUTE_SEEN: { see: ((j: BruteSeen) => void) | null } = { see: null };
+
+/** How many of a stride's units (Pose.near and far: 3.6 picture pixels across) a tile along the grid is (32 across, 16 down). */
+export const STRIDE_PER_TILE = 32 / 3.6;
+const F30 = 1 / 30;
+
+/** A stretch of the floor he is carried along: from `t0` to `t1` seconds, from `a` to `b` tiles, eased ('io' slow at both ends, 'lin' even). */
+type Carried = readonly [number, number, number, number, 'io' | 'lin'];
+function carriedAt(spans: ReadonlyArray<Carried>, t: number): number {
+  let at = 0;
+  for (const [t0, t1, a, b, ease] of spans) {
+    if (t <= t0) return at;
+    const k = clamp01((t - t0) / (t1 - t0));
+    at = a + (b - a) * (ease === 'lin' ? k : k * k * (3 - 2 * k));
+    if (t < t1) return at;
+  }
+  return at;
+}
+/**
+ * A FOOT ON THE FLOOR, by its keys: [seconds, where it is (tiles along the way he faces, on the floor), and how high it was lifted
+ * on its way there from the key before]. Between two keys it is carried evenly-eased from the one place to the other, lifted on an
+ * arc that far at its highest (0: it is down, and has not moved). Where it is on the floor and how high, at a moment.
+ */
+type FootKey = readonly [number, number, number];
+function footAt(keys: ReadonlyArray<FootKey>, t: number): { w: number; lift: number } {
+  if (t <= keys[0][0]) return { w: keys[0][1], lift: 0 };
+  for (let i = 1; i < keys.length; i++) {
+    const [t0, w0] = keys[i - 1];
+    const [t1, w1, peak] = keys[i];
+    if (t > t1) continue;
+    const k = clamp01((t - t0) / (t1 - t0));
+    const e = k * k * (3 - 2 * k);
+    return { w: w0 + (w1 - w0) * e, lift: peak * Math.sin(Math.PI * k) };
+  }
+  return { w: keys[keys.length - 1][1], lift: 0 };
+}
+/**
+ * A MOVE MADE FRAME BY FRAME: its body and club from `keys` (as any timeline), its feet from where they are on the floor (`near`
+ * and `far`, FootKeys) less how far the game has carried him (`carried`, tiles); one key for every frame the game shows.
+ */
+function onTheFloor(keys: ReadonlyArray<Key>, near: ReadonlyArray<FootKey>, far: ReadonlyArray<FootKey>, carried: (t: number) => number, hit?: number, loop?: number): Timeline {
+  const end = keys[keys.length - 1].at;
+  const n = Math.round(end * 30);
+  const base: Pose = { ...REST, aim: 80 };
+  const out: Key[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i * F30;
+    const q = poseAt(keys, base, t);
+    const T = carried(t);
+    const a = footAt(near, t);
+    const b = footAt(far, t);
+    out.push({ at: t, ease: 'lin', pose: { ...q, near: (a.w - T) * STRIDE_PER_TILE, nearLift: a.lift, far: (b.w - T) * STRIDE_PER_TILE, farLift: b.lift } });
+  }
+  const tl: Timeline = { keys: out };
+  if (hit !== undefined) tl.hit = hit;
+  if (loop !== undefined) tl.loop = loop;
+  return tl;
+}
+
+// --- THE RAMPAGE ---
+
+/** Its three blows (seconds; frames 18, 35 and 71): the swing, the backhand, the slam. The slam is the clip's `hit`. */
+export const RAMPAGE_HITS: readonly number[] = [18 * F30, 35 * F30, 71 * F30];
+/** Each blow's strike: from the last frame of its wind-up to the frame it lands on (two frames, each smeared). */
+export const RAMPAGE_STRIKES: ReadonlyArray<readonly [number, number]> = RAMPAGE_HITS.map((h) => [h - 2 * F30, h] as const);
+/** How long it is, start to finish (seconds), and when the club is raised over his head (the slam's warning: the ring may be marked from here). */
+export const RAMPAGE_LONG = 93 * F30;
+export const RAMPAGE_RAISE = 42 * F30;
+/** How far the game carries him (tiles along the way he faces): a step in after each swing, then the leap. */
+const RAMPAGE_CARRIED: ReadonlyArray<Carried> = [
+  [0.7, 0.92, 0, 0.45, 'io'],
+  [1.27, 1.49, 0.45, 0.9, 'io'],
+  [62 * F30, 71 * F30, 0.9, 2.0, 'lin'],
+];
+export const rampageTravel = (t: number): number => carriedAt(RAMPAGE_CARRIED, t);
+/** In the leap: when his feet leave the floor and when they come down (with the slam). */
+export const RAMPAGE_LEAP: readonly [number, number] = [62 * F30, 71 * F30];
+
+/** THE RAMPAGE, seen from in front or from behind: two stepping swings, the leap and the slam. */
+export function rampageTimeline(back: boolean): Timeline {
+  const [h1, h2, h3] = RAMPAGE_HITS;
+  /** (how far the club is brought down, from level, for its head to lie on the floor before him: seen from the corner, the two views differ) */
+  const down = back ? -10 : -21;
+  const R: Partial<Pose> = { prop: 3, off: 1, drag: 1 };
+  const wound1: Partial<Pose> = { ...R, aim: 100, lean: -3, bob: 1, act: 1, pt: 1, wind: 0.25 };
+  const wound2: Partial<Pose> = { ...R, aim: -118, lean: -2, bob: 1, act: 1, pt: 1, wind: 0.8 };
+  const raised: Partial<Pose> = { ...R, aim: 0, gale: 108, lean: -3, bob: 3, act: 0, pt: 1, step: -6, wind: 0.2 };
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    // the first: gathered, wound round on his club side, HELD, coiling; his body goes first; the swing in one frame
+    { at: 0.2, pose: { ...R, aim: 70, lean: -1, act: 0.3, wind: 0.1 }, ease: 'io' },
+    { at: 0.38, pose: wound1, ease: 'out' },
+    { at: 0.5, pose: { ...wound1, aim: 106, bob: 2, wind: 0.32 }, ease: 'lin' },
+    { at: 15 * F30, pose: { ...wound1, aim: 107, lean: -2.5, bob: 2, wind: 0.34 }, ease: 'lin' },
+    { at: h1 - 2 * F30, pose: { ...wound1, aim: 106, lean: -1, bob: 1.5, act: 0.9, wind: 0.36 }, ease: 'in' },
+    { at: h1 - F30, pose: { ...R, aim: 48, sweep: 58, lean: 2, bob: 2, act: 0.75, pt: 1, wind: 0.43 }, ease: 'lin' },
+    { at: h1, pose: { ...R, aim: -12, sweep: 60, lean: 4, bob: 2, act: 0.6, pt: 1, wind: 0.5 }, ease: 'lin' },
+    // on round, and the step in
+    { at: h1 + F30, pose: { ...R, aim: -40, sweep: 26, lean: 5, bob: 3, act: 0.4, pt: 1, wind: 0.52 }, ease: 'lin' },
+    { at: h1 + 3 * F30, pose: { ...R, aim: -66, sweep: 8, lean: 4.5, bob: 2.8, act: 0.32, pt: 0.8, wind: 0.58 }, ease: 'lin' },
+    { at: 0.8, pose: { ...R, aim: -98, lean: 1, bob: 1, act: 0.5, pt: 0.6, wind: 0.7 }, ease: 'lin' },
+    // the second: wound round the other way, HELD; the backhand in one frame
+    { at: 0.92, pose: wound2, ease: 'out' },
+    { at: 1.07, pose: { ...wound2, aim: -123, bob: 2, wind: 0.9 }, ease: 'lin' },
+    { at: 32 * F30, pose: { ...wound2, aim: -124, lean: -2.5, bob: 2, wind: 0.92 }, ease: 'lin' },
+    { at: h2 - 2 * F30, pose: { ...wound2, aim: -122, lean: -1, bob: 1.5, act: 0.9, wind: 0.94 }, ease: 'in' },
+    { at: h2 - F30, pose: { ...R, aim: -58, sweep: -64, lean: 2, bob: 2, act: 0.75, pt: 1, wind: 0.97 }, ease: 'lin' },
+    { at: h2, pose: { ...R, aim: 8, sweep: -66, lean: 4, bob: 2, act: 0.6, pt: 1, wind: 1.0 }, ease: 'lin' },
+    { at: h2 + F30, pose: { ...R, aim: 34, sweep: -26, lean: 5, bob: 3, act: 0.4, pt: 1, wind: 1.02 }, ease: 'lin' },
+    { at: h2 + 3 * F30, pose: { ...R, aim: 54, sweep: -8, lean: 4.5, bob: 2.8, act: 0.32, pt: 0.8, wind: 1.06 }, ease: 'lin' },
+    { at: 1.27, pose: { ...R, aim: 64, lean: 4, bob: 2.5, act: 0.3, pt: 0.6, wind: 1.1 }, ease: 'out' },
+    // the step in, and the club brought round before him and up over his head as he crouches: HELD, the biggest of his warnings
+    { at: 1.42, pose: { ...R, aim: 22, gale: 12, lean: 1, bob: 1, act: 0.4, pt: 0.6, step: -1, wind: 1.15 }, ease: 'lin' },
+    { at: 1.58, pose: { ...R, aim: 4, gale: 72, lean: -1, bob: 2, act: 0.2, pt: 1, step: -4, wind: 1.2 }, ease: 'io' },
+    { at: 1.75, pose: raised, ease: 'out' },
+    { at: 1.97, pose: { ...raised, gale: 113, lean: -3.5, bob: 3.5, step: -6.5, wind: 0.35 }, ease: 'lin' },
+    { at: 60 * F30, pose: { ...raised, gale: 114, lean: -3, step: -6, wind: 0.37 }, ease: 'lin' },
+    // the leap: up off his bent legs, the club tipped right back over his head in the air
+    { at: RAMPAGE_LEAP[0], pose: { ...raised, gale: 117, lean: -2, bob: -1, act: 1, step: 1, wind: 0.42 }, ease: 'in' },
+    { at: 2.2, pose: { ...raised, gale: 124, lean: -4, bob: -3, act: 1, step: 15, wind: 0.55 }, ease: 'out' },
+    { at: h3 - 2 * F30, pose: { ...raised, gale: 125, lean: -3, bob: -2, act: 1, step: 5, wind: 0.62 }, ease: 'in' },
+    // the slam, as he lands, in two frames: the club brought down before him, all of him folded over it; and on the floor
+    { at: h3 - F30, pose: { prop: 5, off: 1, drag: 1, aim: 0, gale: 42, sweep: 83, lean: 3, bob: 3, act: 0.5, pt: 1, step: 2, wind: 0.64 }, ease: 'lin' },
+    { at: h3, pose: { prop: 5, off: 1, drag: 1, aim: 0, gale: down + 8, sweep: 34 - down, lean: 8, bob: 8, act: 0, pt: 1, step: 0, wind: 0.66 }, ease: 'lin' },
+    { at: h3 + F30, pose: { prop: 5, off: 1, drag: 1, aim: 0, gale: down - 1, sweep: 9, lean: 10, bob: 11, pt: 1, wind: 0.68 }, ease: 'out' },
+    { at: 2.5, pose: { prop: 5, off: 1, drag: 1, aim: 0, gale: down, lean: 9, bob: 7, pt: 0.6, wind: 0.74 }, ease: 'io' },
+    { at: 2.62, pose: { prop: 5, off: 1, drag: 1, aim: 0, gale: down + 0.5, lean: 8.5, bob: 8.5, pt: 0.5, wind: 0.8 }, ease: 'io' },
+    // hauled up, and let down to his side
+    { at: 2.85, pose: { ...R, aim: 30, gale: 0, lean: 2, bob: 2, act: 0.2, pt: 0.3, wind: 0.9 }, ease: 'io' },
+    { at: RAMPAGE_LONG, pose: { wind: 1 }, ease: 'io' },
+  ];
+  // his feet on the floor: a little set step for the first swing; a step in after each swing; off the floor in the leap and down
+  // as he slams, a little apart; and a shuffle back under him at the end
+  const near: FootKey[] = [[0, 0, 0], [0.7, 0, 0], [0.9, 0.62, 0.9], [RAMPAGE_LEAP[0], 0.62, 0], [h3, 2.0 - 0.8 / STRIDE_PER_TILE, 1.4], [2.8, 2.0 - 0.8 / STRIDE_PER_TILE, 0], [2.95, 2.0, 0.6], [RAMPAGE_LONG, 2.0, 0]];
+  const far: FootKey[] = [[0, 0, 0], [0.04, 0, 0], [0.2, 0.14, 0.6], [1.27, 0.14, 0], [1.47, 1.05, 0.9], [RAMPAGE_LEAP[0], 1.05, 0], [h3, 2.0 + 0.9 / STRIDE_PER_TILE, 1.4], [2.85, 2.0 + 0.9 / STRIDE_PER_TILE, 0], [3.0, 2.0, 0.6], [RAMPAGE_LONG, 2.0, 0]];
+  return onTheFloor(keys, near, far, rampageTravel, h3);
+}
+
+// --- THE BULL RUSH ---
+
+/** The moment he sets off (seconds: the wind-up's `hit`), how fast he runs (tiles a second), and one round of his run (6 frames). */
+export const RUSH_GO = 30 * F30;
+export const RUSH_PACE = 11;
+const RUSH_ROUND = 6;
+/** His stop: how far the game carries him as he stumbles to a stop (tiles), and over how long (seconds). */
+export const RUSH_STOP = { far: 1.2, long: 0.4, all: 1.0 } as const;
+/** How far the game carries him `t` seconds into his stop: fast at first (his run's pace), then less and less. */
+export function rushStopTravel(t: number): number {
+  const k = clamp01(t / RUSH_STOP.long);
+  const n = (RUSH_PACE * RUSH_STOP.long) / RUSH_STOP.far;
+  return RUSH_STOP.far * (1 - (1 - k) ** n);
+}
+/** (his feet by what they do: the one that paws the floor is the one we see the dust of: the nearer facing us, the further facing away) */
+function byRole(back: boolean, paw: ReadonlyArray<FootKey>, other: ReadonlyArray<FootKey>): [ReadonlyArray<FootKey>, ReadonlyArray<FootKey>] {
+  return back ? [other, paw] : [paw, other];
+}
+const RU: Partial<Pose> = { prop: 4 };
+/** Dust kicked back by a paw, by when each came down: its life at `t`. */
+const dustOf = (t: number, downs: readonly number[], long = 0.3): number => {
+  let k = 0;
+  for (const d of downs) if (t >= d) k = (t - d) / long;
+  return k > 0 && k < 1 ? k : 0;
+};
+/** The run's pose (all but his feet) at frame `i` of a round (0 to 5): head down, leaning hard into it, the free fist pumping (at the round's start, back as far as it goes). */
+function runPose(i: number, back: boolean): Partial<Pose> {
+  const k = (((i % RUSH_ROUND) + RUSH_ROUND) % RUSH_ROUND) / RUSH_ROUND;
+  const a = k * Math.PI * 2;
+  return { ...RU, lean: 14, bob: 2 + 1.3 * Math.cos(2 * a), gale: 5, swing: (back ? 0.45 : -0.55) * Math.cos(a), drag: 1.6, act: 0.3, wind: k };
+}
+
+/** THE BULL RUSH'S WARNING: head down, a fist on the floor, HELD, pawing twice; and he is off (`hit`). */
+export function rushWindTimeline(back: boolean): Timeline {
+  const low: Partial<Pose> = { ...RU, lean: 12, bob: 4, gale: 5, ohx: 7, ohy: 11, drag: 0.4 };
+  const paws = [0.46, 0.76];
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    { at: 0.14, pose: { ...RU, lean: 5, bob: 1, gale: 2, pt: 0.5, act: 0.2, drag: 0.2 }, ease: 'out' },
+    { at: 0.3, pose: low, ease: 'in' },
+    { at: 0.4, pose: { ...low, lean: 11, bob: 3.5 }, ease: 'io' },
+    { at: 0.5, pose: { ...low, lean: 13, bob: 4.5, gale: 5.5 }, ease: 'io' },
+    { at: 0.68, pose: { ...low, lean: 11.5, bob: 3.5 }, ease: 'io' },
+    { at: 0.8, pose: { ...low, lean: 13, bob: 5, gale: 6 }, ease: 'io' },
+    { at: 0.86, pose: { ...low, lean: 13.5, bob: 5.5, gale: 6, ohx: 7.5 }, ease: 'io' },
+    { at: RUSH_GO, pose: runPose(0, back), ease: 'io' },
+  ];
+  // the paw: up and stamped down behind, twice; at the last the other foot up for the first stride
+  const paw: FootKey[] = [[0, 0, 0], [0.34, 0, 0], [paws[0], -0.2, 0.7], [0.56, -0.2, 0], [0.64, 0.0, 0.8], [paws[1], -0.2, 0.6], [RUSH_GO, -0.2, 0]];
+  const other: FootKey[] = [[0, 0, 0], [0.9, 0, 0], [1.1, 0.11, 0.67]];
+  const [near, far] = byRole(back, paw, other);
+  const tl = onTheFloor(keys, near, far, () => 0, RUSH_GO);
+  for (const k of tl.keys) (k.pose as Pose).sweep = dustOf(k.at, paws);
+  return tl;
+}
+
+/**
+ * THE RUN: head down, bounding; six frames round, at RUSH_PACE (the game carries him on as they go round). Each foot is down two
+ * frames of the six, where it came down on the floor (it goes back under him as fast as he goes on), and between the two
+ * footfalls he is off the floor.
+ */
+export function rushTimeline(back: boolean): Timeline {
+  const T = RUSH_PACE * F30 * STRIDE_PER_TILE;
+  const half = T / 2;
+  // (a foot by the frame of the round, from its first footfall: down, down, then up and forward again over four)
+  const foot = (j: number): { s: number; lift: number } => {
+    const f = ((j % RUSH_ROUND) + RUSH_ROUND) % RUSH_ROUND;
+    if (f === 0) return { s: half, lift: 0 };
+    if (f === 1) return { s: -half, lift: 0 };
+    const k = (f - 1) / (RUSH_ROUND - 1);
+    return { s: -half + 2 * half * (k * k * (3 - 2 * k)), lift: 0.7 * Math.sin(Math.PI * k) };
+  };
+  const keys: Key[] = [];
+  for (let i = 0; i < RUSH_ROUND; i++) {
+    // (the paw foot comes down second-to-last of the round: it is down at the round's first frame, pushing off)
+    const p = foot(i + 1);
+    const o = foot(i - 2);
+    const [n, f] = back ? [o, p] : [p, o];
+    keys.push({ at: i * F30, ease: 'lin', pose: { ...REST, aim: 80, ...runPose(i, back), near: n.s, nearLift: n.lift, far: f.s, farLift: f.lift } });
+  }
+  return { keys, loop: 0 };
+}
+
+/** THE STOP: a foot dug in, a stumble and another, rocked back off balance, his head shaken; and he stands. */
+export function rushStopTimeline(back: boolean): Timeline {
+  const L = RUSH_STOP.all;
+  const keys: Key[] = [
+    { at: 0, pose: runPose(0, back) },
+    { at: 2 * F30, pose: { ...RU, lean: 10, bob: 5, gale: 5, swing: 0.6, drag: 1.4, act: 0.2 }, ease: 'out' },
+    { at: 0.2, pose: { ...RU, lean: 4, bob: 4, gale: 3, swing: 0.3, drag: 1, act: 0.3, pt: 0.4 }, ease: 'io' },
+    { at: 0.36, pose: { ...RU, lean: -5, bob: 1, gale: 1, swing: -0.3, drag: 0.6, act: 0.6, pt: 1 }, ease: 'out' },
+    { at: 0.5, pose: { ...RU, lean: -3, bob: 2, gale: 2, hx: 2, drag: 0.4, act: 0.3, pt: 0.6 }, ease: 'io' },
+    { at: 0.6, pose: { ...RU, lean: -2, bob: 2, gale: 2.5, hx: -2, drag: 0.3, pt: 0.3 }, ease: 'io' },
+    { at: 0.7, pose: { ...RU, lean: -1.5, bob: 2, gale: 2, hx: 1.5, drag: 0.2, pt: 0.2 }, ease: 'io' },
+    { at: 0.8, pose: { ...RU, lean: -1, bob: 1.5, gale: 1, hx: -0.5, drag: 0.1 }, ease: 'io' },
+    { at: L, pose: { wind: 1 }, ease: 'io' },
+  ];
+  // (where his feet were at the run's last frame, on the floor as it was then; then dug in, stumbling, and back under him)
+  const pawW = (RUSH_PACE * F30 * STRIDE_PER_TILE) / 2 / STRIDE_PER_TILE;
+  const D = (t: number): number => rushStopTravel(t);
+  const paw: FootKey[] = [[0, -pawW, 0], [4 * F30, D(4 * F30) + 2.0 / STRIDE_PER_TILE, 1.2], [0.42, D(4 * F30) + 2.0 / STRIDE_PER_TILE, 0], [0.56, D(0.6) - 0.9 / STRIDE_PER_TILE, 0.7], [0.82, D(0.6) - 0.9 / STRIDE_PER_TILE, 0], [0.94, RUSH_STOP.far, 0.6], [L, RUSH_STOP.far, 0]];
+  // (the other in the air at the run's last frame, half way to its next footfall: so it is drawn from before the stop began)
+  const plant = D(2 * F30) + 2.4 / STRIDE_PER_TILE;
+  const other: FootKey[] = [[-2 * F30, 0.11 - plant, 0], [2 * F30, plant, 0.67], [0.22, plant, 0], [0.34, RUSH_STOP.far + 0.2 / STRIDE_PER_TILE, 0.8], [0.9, RUSH_STOP.far + 0.2 / STRIDE_PER_TILE, 0], [0.98, RUSH_STOP.far, 0.4], [L, RUSH_STOP.far, 0]];
+  const [near, far] = byRole(back, paw, other);
+  const tl = onTheFloor(keys, near, far, D);
+  for (const k of tl.keys) (k.pose as Pose).sweep = dustOf(k.at, [2 * F30, 4 * F30], 0.35);
+  return tl;
 }
 
 export function makeBruteArt(): ActorArt {

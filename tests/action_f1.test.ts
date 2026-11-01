@@ -173,7 +173,8 @@ test('1. the switches are off, nothing of the game imports the mock-up, and ever
   assert.equal(ARCHER_RAIN.on, false, 'ARCHER_RAIN is off');
   assert.equal(WARDEN_LOCKDOWN.on, false, 'WARDEN_LOCKDOWN is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f1_(fx|checks)\.ts$/.test(f)) continue;
+    // (the later floors' action mock-ups, art/action_f2_fx.ts and art/action_f3_fx.ts, are mock-ups too: nothing of the game imports them either)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f[1-9]_(fx|checks)\.ts$/.test(f)) continue;
     assert.ok(!/from ['"][^'"]*action_f1_(fx|checks)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   const was = WARDEN_MOVES.on;

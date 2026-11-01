@@ -36,6 +36,8 @@ export interface KitFrame {
   down: [boolean, boolean];
   tip: V | null;
   smeared: boolean;
+  /** (floor 3's helper: one carried over the floor, his soles on it wherever they are) How far each sole is above the floor (game pixels), for FLOOR, in place of its height on the picture. */
+  heights?: [number, number];
 }
 /** A move: its frames, its blow (seconds), its strike (the last frame of its wind-up to the frame it lands on), and whether it goes round. */
 export interface KitMove {
@@ -46,6 +48,15 @@ export interface KitMove {
   round?: boolean;
   /** After the blow, where the end it strikes with goes on to when it has left the figure's own frames (the arrow loosed, flying on): seconds from the blow. */
   after?: (t: number) => V | null;
+  /**
+   * (floor 3's helper, 31 Oct 2026: the brute's rampage) A MOVE OF MORE THAN ONE BLOW, a combo: in place of `hit` and `strike`,
+   * each of its blows, reviewed as one is (BLOW, HIPS, STRIKE), its drawing back and its held warning looked for from `from` (the
+   * end of the blow before it) and its follow-through up to `until` (the next one's `from`). Every blow's strike is the flash
+   * JERK does not hold to its rules.
+   */
+  blows?: ReadonlyArray<{ hit: number; strike: readonly [number, number]; from: number; until?: number }>;
+  /** (the same) Where the game has carried him by the move's end (game pixels, across and down): the stand it hands back to is there. */
+  shift?: V;
 }
 
 const dist = (a: V, b: V): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -75,10 +86,15 @@ export function checkKit(move: KitMove, stand: KitMove): Finding[] {
     }
   }
   // --- FLOOR ---
-  for (const f of F) for (const side of [0, 1] as const) if (f.soles[side][1] > SINK_MAX) found.push({ move: which, t: f.t, kind: 'floor', what: `sole ${side ? 'far' : 'near'}`, by: f.soles[side][1] });
+  for (const f of F) {
+    for (const side of [0, 1] as const) {
+      const under = f.heights ? -f.heights[side] : f.soles[side][1];
+      if (under > SINK_MAX) found.push({ move: which, t: f.t, kind: 'floor', what: `sole ${side ? 'far' : 'near'}`, by: under });
+    }
+  }
   // --- JERK ---
-  const strike = move.strike;
-  const struck = (i: number): boolean => !!strike && ts[i] !== undefined && ts[i] >= strike[0] - 1e-6 && ts[i] <= strike[1] + 1e-6;
+  const blows = move.blows ?? (move.hit !== undefined || move.strike ? [{ hit: move.hit, strike: move.strike, from: 0.15, until: Infinity }] : []);
+  const struck = (i: number): boolean => ts[i] !== undefined && blows.some((b) => !!b.strike && ts[i] >= b.strike[0] - 1e-6 && ts[i] <= b.strike[1] + 1e-6);
   const names = ['tip', ...Object.keys(F[0]?.pts ?? {})];
   for (const name of names) {
     const at = (i: number): V | null => (name === 'tip' ? F[i].tip : F[i].pts[name] ?? null);
@@ -92,12 +108,42 @@ export function checkKit(move: KitMove, stand: KitMove): Finding[] {
       i0 = i1 + 1;
     }
   }
+  for (const blow of blows) reviewBlow(found, move, F, ts, blow.hit, blow.strike, blow.from, blow.until ?? Infinity);
+  // --- JUMP: from every frame of his stand into the move, and from its end into his stand ---
+  const leap = (a: KitFrame, b: KitFrame, by: V = [0, 0]): number => {
+    const keys = Object.keys(a.pts).filter((k) => b.pts[k]);
+    let sum = 0;
+    const at = (p: V): V => [p[0] + by[0], p[1] + by[1]];
+    for (const k of keys) sum += dist(a.pts[k], at(b.pts[k]));
+    for (const s of [0, 1] as const) sum += dist(a.soles[s], at(b.soles[s]));
+    return sum / (keys.length + 2);
+  };
+  const first = F[0];
+  const last = F[F.length - 1];
+  let worst = 0;
+  let worstAt = 0;
+  for (const s of stand.frames) {
+    const d = leap(s, first);
+    if (d > worst) {
+      worst = d;
+      worstAt = s.t;
+    }
+  }
+  if (worst > JUMP_MAX) found.push({ move: `stand > ${which}`, t: worstAt, kind: 'jump', what: `stand at ${worstAt.toFixed(2)} s into ${which}`, by: worst });
+  const back = leap(last, stand.frames[0], move.shift);
+  if (back > JUMP_MAX) found.push({ move: `${which} > stand`, t: last.t, kind: 'jump', what: `${which} at its end into stand`, by: back });
+  return found.sort((a, b) => b.by - a.by);
+}
+
+/** STRIKE, BLOW and HIPS, for one blow of a move: its moment, its strike, and the stretch of the move that is its own (from, until). */
+function reviewBlow(found: Finding[], move: KitMove, F: KitFrame[], ts: number[], hit: number | undefined, strike: readonly [number, number] | undefined, own: number, until: number): void {
+  const which = move.name;
   // --- STRIKE ---
   if (strike) {
     const [t0, t1] = strike;
     const steps = Math.round((t1 - t0) * 30);
     if (steps < 1 || steps > 2) found.push({ move: which, t: t0, kind: 'strike', what: `the strike takes ${steps} frames (one or two)`, by: steps });
-    if (move.hit !== undefined && (move.hit < t0 - 1e-6 || move.hit > t1 + 1e-6)) found.push({ move: which, t: move.hit, kind: 'strike', what: 'the blow lands outside its strike', by: 1 });
+    if (hit !== undefined && (hit < t0 - 1e-6 || hit > t1 + 1e-6)) found.push({ move: which, t: hit, kind: 'strike', what: 'the blow lands outside its strike', by: 1 });
     const a = ts.findIndex((t) => Math.abs(t - t0) < 1e-6);
     const b = ts.findIndex((t) => Math.abs(t - t1) < 1e-6);
     if (a < 0 || b < 0) found.push({ move: which, t: t0, kind: 'strike', what: "its strike is not on the game's frames", by: 1 });
@@ -112,7 +158,6 @@ export function checkKit(move: KitMove, stand: KitMove): Finding[] {
     for (const f of F) if (f.t > t0 + 1e-6 && f.t <= t1 + 1e-6 && !f.smeared) found.push({ move: which, t: f.t, kind: 'strike', what: 'not smeared', by: 1 });
   }
   // --- BLOW and HIPS ---
-  const hit = move.hit;
   if (hit !== undefined) {
     const ih = ts.findIndex((t) => Math.abs(t - hit) < 1e-6);
     const h0 = ih > 0 ? F[ih - 1].tip : null;
@@ -128,16 +173,16 @@ export function checkKit(move: KitMove, stand: KitMove): Finding[] {
       let stillMost = 0;
       F.forEach((f, i) => {
         const p = f.tip;
-        if (p && f.t < hit - 1e-6) back = Math.max(back, -along(p));
-        if (p && f.t > hit + 1e-6) on = Math.max(on, along(p));
-        if (i > 0 && f.t > 0.15 && f.t < hit - 0.08 && p && F[i - 1].tip) {
+        if (p && f.t < hit - 1e-6 && f.t >= own - 0.15 - 1e-6) back = Math.max(back, -along(p));
+        if (p && f.t > hit + 1e-6 && f.t <= until + 1e-6) on = Math.max(on, along(p));
+        if (i > 0 && f.t > own && f.t < hit - 0.08 && p && F[i - 1].tip) {
           const d = Math.min(dist(p, F[i - 1].tip as V), Math.max(dist(f.pts.head, F[i - 1].pts.head), dist(f.pts.hips, F[i - 1].pts.hips)));
           still = d < 1.5 ? still + 1 : 0;
           stillMost = Math.max(stillMost, still);
         }
       });
       // (what has left the figure's frames, the loosed arrow, goes on as `after` says)
-      if (move.after) for (const t of [1 / 30, 2 / 30, 3 / 30]) {
+      if (move.after && !move.blows) for (const t of [1 / 30, 2 / 30, 3 / 30]) {
         const p = move.after(t);
         if (p) on = Math.max(on, along(p));
       }
@@ -145,7 +190,7 @@ export function checkKit(move: KitMove, stand: KitMove): Finding[] {
       if (on < 3) found.push({ move: which, t: hit, kind: 'blow', what: 'no follow-through after the blow', by: on });
       if (stillMost < 2) found.push({ move: which, t: hit, kind: 'blow', what: 'no held warning before the blow', by: stillMost });
       // HIPS: where in the blow each gets going (the first frame it moves at most of its own top speed), from the end of the held warning to just after the blow
-      let from = hit - 0.5;
+      let from = Math.max(hit - 0.5, own - 0.15);
       for (let i = 1; i < F.length; i++) {
         const a = F[i].tip;
         const b = F[i - 1].tip;
@@ -170,29 +215,6 @@ export function checkKit(move: KitMove, stand: KitMove): Finding[] {
       if (fh >= 0 && fc >= 0 && ft >= 0 && !(fh <= fc && fc <= ft)) found.push({ move: which, t: hit, kind: 'hips', what: `gets going: hips at ${ts[fh].toFixed(2)} s, chest ${ts[fc].toFixed(2)}, the blow's end ${ts[ft].toFixed(2)}`, by: Math.max(0, ts[fh] - ts[fc], ts[fc] - ts[ft]) * 30 });
     }
   }
-  // --- JUMP: from every frame of his stand into the move, and from its end into his stand ---
-  const leap = (a: KitFrame, b: KitFrame): number => {
-    const keys = Object.keys(a.pts).filter((k) => b.pts[k]);
-    let sum = 0;
-    for (const k of keys) sum += dist(a.pts[k], b.pts[k]);
-    for (const s of [0, 1] as const) sum += dist(a.soles[s], b.soles[s]);
-    return sum / (keys.length + 2);
-  };
-  const first = F[0];
-  const last = F[F.length - 1];
-  let worst = 0;
-  let worstAt = 0;
-  for (const s of stand.frames) {
-    const d = leap(s, first);
-    if (d > worst) {
-      worst = d;
-      worstAt = s.t;
-    }
-  }
-  if (worst > JUMP_MAX) found.push({ move: `stand > ${which}`, t: worstAt, kind: 'jump', what: `stand at ${worstAt.toFixed(2)} s into ${which}`, by: worst });
-  const back = leap(last, stand.frames[0]);
-  if (back > JUMP_MAX) found.push({ move: `${which} > stand`, t: last.t, kind: 'jump', what: `${which} at its end into stand`, by: back });
-  return found.sort((a, b) => b.by - a.by);
 }
 
 /** JERK, as checkBoss has it, on one point's run of frames. */
