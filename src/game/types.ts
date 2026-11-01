@@ -1,5 +1,6 @@
 // Shared data shapes. Game rules, dungeon generation, items and art all agree on these.
 
+import type { YardPlan } from './yard';
 export interface Vec {
   x: number;
   y: number;
@@ -539,6 +540,8 @@ export interface Floor {
   hazards?: HazardSpot[];
   /** (THE FIRST FIVE FLOORS) The bone heaps of the Fleshmancer's hall, where he raises his dead (game/bosses.ts); absent where there are none. */
   heaps?: Vec[];
+  /** (THE HEADSMAN'S YARD) Floor 2's boss hall laid as the yard, outdoors (game/yard.ts); absent where it is not. */
+  yard?: YardPlan;
 }
 
 /**

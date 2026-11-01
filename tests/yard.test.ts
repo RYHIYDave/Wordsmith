@@ -1,4 +1,4 @@
-// THE HEADSMAN'S YARD, OUTDOORS, AT NIGHT (src/art/yard.ts; behind YARD, off; nothing of the game imports it), held to his
+// THE HEADSMAN'S YARD, OUTDOORS, AT NIGHT (src/art/yard.ts; behind YARD, off; laid by game/yard.ts and drawn by render/yard.ts), held to his
 // art rulebook before it goes to the main chat: crisp (every pixel all there or not at all, a floor tile covering its
 // whole diamond, no pixel standing alone); nothing cyan, nothing pink (Colour 3: the friend's and the enemy's glows); the
 // floor and the wall darker than the darkest word (Colour 4); light from the upper left (Pixels 4: a wall's face turned to
@@ -31,18 +31,20 @@ const all: [string, Sprite][] = [
   ...Y.pieces.flatMap((p) => sprites(p).map((s, i) => [`${p.name} ${i}`, s] as [string, Sprite])),
 ];
 
-test('the yard: off, and nothing of the game imports it', () => {
+test('the yard: off until he has seen it in play (the game lays and draws it behind YARD: game/yard.ts, render/yard.ts)', () => {
   assert.ok(YARD.on === false, 'YARD is off');
+  // (who may import it: the game's own yard, the renderer's, and those that ask them; nothing else)
+  const may = ['game/yard.ts', 'render/yard.ts'].map((q) => join(...q.split('/')));
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(`${join('src', 'dev')}`) && !p.endsWith(join('art', 'yard.ts')) && /from '\.\.?\/(art\/)?yard'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(`${join('src', 'dev')}`) && !p.endsWith(join('art', 'yard.ts')) && /from '\.\.?\/art\/yard'/.test(readFileSync(p, 'utf8')) && !may.some((q) => p.endsWith(q))) found.push(p);
     }
   };
   walk('src');
-  assert.ok(found.length === 0, `imported by ${found.join(', ')}`);
+  assert.ok(found.length === 0, `the art imported by ${found.join(', ')}`);
 });
 
 test('the yard: every picture painted', () => {

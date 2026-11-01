@@ -38,6 +38,7 @@ import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
 import { WAYS } from './ways';
+import { YARD_N, layYard, yardOn } from './yard';
 import type { Floor, MonsterKind, PackSpot, PropKind, PropSpot, Room, RoomKind } from './types';
 
 // ---------------------------------------------------------------------------------------------
@@ -178,6 +179,11 @@ function openBy(k: 'grow' | 'blocks' | 'pair' | 'long' | 'gapMax' | 'elbow' | 'b
 }
 /** THE WAYS (game/ways.ts, WAYS): the floor being laid is the first, with its gate to town in a back wall of its first room (set by `generateFloor`). */
 let squareStart = false;
+/**
+ * THE HEADSMAN'S YARD (game/yard.ts, behind YARD): the floor being laid is the second, its boss's hall the yard: YARD_N tiles each
+ * way, grown off the room before it toward +y and straight, so that it is come into by its far wall along x (set by `planLevel`).
+ */
+let yardHere = false;
 /** The side of a cell block that its cells hang off: its back wall along its length (3, the upper right on the screen, if it runs along x; 2, the upper left, if along y). */
 function blockBack(w: number, h: number): number {
   return w >= h ? 3 : 2;
@@ -555,6 +561,9 @@ function grow(
     by1 = Math.max(by1, r.y1);
   }
   const span = SPAN_MAX - 2 * EDGE;
+  // (THE HEADSMAN'S YARD: the boss's hall the yard's size, grown toward +y, straight: come into by its far wall along x)
+  const yardHall = yardHere && role === 'boss';
+  if (yardHall) size = { ...size, w: YARD_N, h: YARD_N };
 
   for (let tries = 0; tries < GROW_TRIES; tries++) {
     // TRIANGLES: now and then the new room is set off DIAGONALLY from the last one, to the right of
@@ -567,7 +576,7 @@ function grow(
     // a corridor straight across the screen has none. Such a try is thrown and weighed as ever, and
     // refused only where it would have been taken: so every dungeon whose boss hall was not come
     // into at a corner is the dungeon it was, and one whose hall was is tried again from there.)
-    if (RELIEF.cuts && RELIEF.across && rng.chance(ACROSS_SHARE)) {
+    if (!yardHall && RELIEF.cuts && RELIEF.across && rng.chance(ACROSS_SHARE)) {
       const right = rng.chance(0.5);
       const g = rng.int(ACROSS_MIN, ACROSS_MAX);
       const dir = right ? 1 : -1;
@@ -601,6 +610,7 @@ function grow(
     // by it, nor does the way in come into it. Turned left or right instead.)
     if (cryptK > 0 && from.block && side === blockBack(from.w, from.h)) side = (side + (rng.chance(0.5) ? 1 : 3)) % 4;
     if (cryptK > 0 && size.block && (side + 2) % 4 === blockBack(size.w, size.h)) side = (side + (rng.chance(0.5) ? 1 : 3)) % 4;
+    if (yardHall) side = 1;
     const blockHere = cryptK > 0 && (from.block === true || size.block === true);
     // THE MIX: now and then the new room is set down NEXT DOOR to the last one: three tiles of
     // rock between them, facing each other along most of the shorter one's side, a door and no
@@ -619,7 +629,7 @@ function grow(
         : rng.chance(LONG_CORRIDOR)
           ? rng.int(9, 13)
           : rng.int(ROOM_GAP, 8);
-    const elbow = !pair && !blockHere && rng.chance(cryptK > 0 ? openBy('elbow') : ELBOW_SHARE);
+    const elbow = !yardHall && !pair && !blockHere && rng.chance(cryptK > 0 ? openBy('elbow') : ELBOW_SHARE);
     let x: number;
     let y: number;
     if (SIDE_DX[side] !== 0) {
@@ -646,7 +656,8 @@ function grow(
     rooms.push(cand);
     const legs = planCorridor(rng, rooms, corridors, from, cand);
     // (next door there is one way to join them, straight across the three tiles: no other will do)
-    if (!legs || (pair && legs.length !== 1)) {
+    // (THE HEADSMAN'S YARD: its hall come into straight, by its far wall along x, and by no other)
+    if (!legs || (pair && legs.length !== 1) || (yardHall && legs.length !== 1)) {
       rooms.pop();
       continue;
     }
@@ -864,6 +875,7 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   cryptK = cryptLayoutFloor(depth);
   kindHere = levelKindOf(depth);
   squareStart = WAYS.on && depth === 1;
+  yardHere = yardOn(depth);
   const pathLen = pathRoomCount(depth);
   const used = new Set<number>();
   // (OPEN: the great hall, a map-maker of its own)
@@ -2299,6 +2311,8 @@ export function generateFloor(depth: number, seed: number): Floor {
   };
   if (cut) floor.cut = cut;
   if (lay.gated >= 0 && leverTile >= 0) floor.levers = [{ x: leverTile % size, y: Math.floor(leverTile / size), room: lay.gated }];
+  // (THE HEADSMAN'S YARD: the boss's hall squared, what stood in it taken away and the yard's own set down: game/yard.ts)
+  if (yardHere) layYard(floor, boss.id);
   // Step 5: TERRACES AND STAIRS (relief.ts), laid last and by dice of their own: the rooms, the
   // corridors, the packs and the props are what they were before there was any height.
   if (RELIEF.on) layTerraces(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x7e44ace5) >>> 0));
@@ -2319,6 +2333,9 @@ export function generateFloor(depth: number, seed: number): Floor {
   }
   // (THE CRYPT, behind CRYPT_LITTER, off: more lying about on its deeper floors, laid last, by dice of its own)
   if (CRYPT_LITTER.on && d >= 1) moreLitter(floor, new RNG((mixSeed(d, seed) ^ 0x51ed270b) >>> 0));
+  // (THE HEADSMAN'S YARD: nothing of the Crypt's lying about in it)
+  const Y = floor.yard;
+  if (Y) floor.props = floor.props.filter((p) => !((p.kind === 'bones' || p.kind === 'rubble') && p.x >= Y.x && p.x < Y.x + Y.n && p.y >= Y.y && p.y < Y.y + Y.n));
   return floor;
 }
 

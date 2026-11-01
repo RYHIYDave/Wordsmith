@@ -72,6 +72,7 @@ import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
+import { YARD_DARK, YARD_SKY_LIFT, YARD_VIGNETTE, YardView } from './yard';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
@@ -448,6 +449,10 @@ export class Renderer {
   private readonly stage: Stage;
   /** THE FIRST FIVE FLOORS, drawn: each floor's own pieces and its moments (render/pieces.ts). */
   readonly pieces: FloorPieces;
+  /** THE HEADSMAN'S YARD, floor 2's boss hall outdoors (render/yard.ts). */
+  readonly yard: YardView;
+  /** (the yard's floor, this frame, while the hero is in it: only it, its walls and its way in are drawn) */
+  private yardOnly: Game['level']['floor'] | null = null;
   /** Whether this frame's level is laid with them. */
   private dressed = false;
   /** ACT 1, THE DESCENT: the outdoor ground of a floor of it, painted in pieces (render/outdoor.ts). */
@@ -1058,6 +1063,7 @@ export class Renderer {
     // (ACT 1: the outdoor ground's pieces painted by the painter's ground worker, where there is one)
     this.outdoor.painterOf = () => this.painter;
     this.pieces = new FloorPieces(() => this.painter);
+    this.yard = new YardView();
     this.stage = {
       cam: this.cam,
       stand: (d, sp, x, y, alpha = 1) => this.stand(d, sp, x, y, null, 0, 1, alpha),
@@ -1454,6 +1460,7 @@ export class Renderer {
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
         const idx = ty * f.w + tx;
         if (hs[idx] >= 0 || f.tiles[idx] !== T_FLOOR || !L.explored[idx]) continue;
+        if (this.yardOnly && !this.yard.shows(this.yardOnly, tx, ty)) continue;
         const px = cam.ox + df * 16;
         const base = hs[idx] * LEDGE_H;
         const py = cam.oy + s * 8 - base;
@@ -1741,7 +1748,10 @@ export class Renderer {
     const fh = f.h;
     /** Is the ground at this place the kind this pass draws on? */
     const hs = f.height;
+    const yo = this.yardOnly;
     const here = (x: number, y: number): boolean => {
+      // (THE HEADSMAN'S YARD: from in it, nothing of what lies behind its far walls)
+      if (yo && !this.yard.shows(yo, Math.floor(x), Math.floor(y))) return false;
       if (pass < 0 || !top) return true;
       const tx = Math.floor(x);
       const ty = Math.floor(y);
@@ -2376,6 +2386,8 @@ export class Renderer {
     this.bossFx.begin();
     // (THE FIRST FIVE FLOORS: this level's own pieces, and a step of its moments)
     this.dressed = this.pieces.begin(game);
+    // (THE HEADSMAN'S YARD: its pictures made as the floor is come into)
+    if (this.yard.on(game.level.floor)) this.yard.warm();
     if (this.dressed) this.pieces.step(game);
     const live = pace > 0;
     const amb = pace * fx.room();
@@ -2458,6 +2470,12 @@ export class Renderer {
     // (ACT2_WALLS on: the houses on the screen whole at once, their shells painted here when the worker has not sent them)
     if (land && !hallNow) this.houses.ensure(() => gateWardLand(land, f, true), this.outdoor.terrain(), cam.ox, cam.oy, W, H, t);
 
+    // ---- THE HEADSMAN'S YARD (render/yard.ts): the sky and the tower over its far walls, while the hero is in it ----
+    const yardOn = this.yard.on(f);
+    const yardOut = yardOn && this.yard.heroIn(f, h.x, h.y);
+    this.yardOnly = yardOut ? f : null;
+    if (yardOut) this.yard.back(g, cam, f, W, H);
+
     // ---- floor, and collect walls -------------------------------------------------------------
     this.pitTiles.length = 0;
     this.raisedTiles.length = 0;
@@ -2479,6 +2497,8 @@ export class Renderer {
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
         // (ACT 1: in a stronghold's hall, only the hall's own tiles and its walls)
         if (hallNow && (tx < hallNow.inside.x - 1 || ty < hallNow.inside.y - 1 || tx > hallNow.inside.x + hallNow.inside.w || ty > hallNow.inside.y + hallNow.inside.h)) continue;
+        // (THE HEADSMAN'S YARD: from in it, only it, its walls and its way in: behind its far walls, the sky)
+        if (yardOut && !this.yard.shows(f, tx, ty)) continue;
         const idx = ty * f.w + tx;
         if (!L.explored[idx]) continue;
         const kind = f.tiles[idx];
@@ -2503,7 +2523,8 @@ export class Renderer {
           if (sunk && sunk[idx] < 0) continue;
           // (the flagstones are laid on the world, not on the tiles: a tile's picture goes by where it is)
           // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
-          const sp = (this.dressed && this.pieces.tile(idx)) || art.ground.floor(tx, ty);
+          // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
+          const sp = (yardOn && this.yard.floor(f, tx, ty)) || (this.dressed && this.pieces.tile(idx)) || art.ground.floor(tx, ty);
           g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
           // the shadow of a wall that stands over it (the light is from the upper left)
           // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
@@ -2540,12 +2561,14 @@ export class Renderer {
             const again = this.doorBack !== null && this.doorBack[idx] === 1;
             const veil = again && which ? this.doorVeil(game, idx, px, py, s + 1, t) : 1;
             // (`hide` marks the stand just made: raised floor at a face's foot hides the foot of it)
+            // (THE HEADSMAN'S YARD: the ring of wall round it is the prison's wall: render/yard.ts)
+            const prison = yardOn && this.yard.ring(f, tx, ty);
             if (which & FACE_LEFT) {
-              this.stand(s + 1, art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
+              this.stand(s + 1, prison ? this.yard.face(true, v) : art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             if (which & FACE_RIGHT) {
-              this.stand(s + 1, art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
+              this.stand(s + 1, prison ? this.yard.face(false, v) : art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             // (THE FIRST FIVE FLOORS: what is set in its faces: render/pieces.ts)
@@ -2568,6 +2591,13 @@ export class Renderer {
     }
 
     // ---- what lies on the floor ----------------------------------------------------------------
+    // (THE HEADSMAN'S YARD: its wide puddles, flat on its cobbles)
+    if (yardOn) {
+      for (const q of this.yard.puddles(f, cam)) {
+        if (q.x < -80 || q.x > W + 80 || q.y < -40 || q.y > H + 40) continue;
+        g.drawImage(q.s.img, q.x - q.s.ax, q.y - q.s.ay, q.s.w, q.s.h);
+      }
+    }
     // (on a level with ledges: what lies on the low floor, then the pits and the raised floor
     // over whatever of that reaches under them, then what lies on the raised floor)
     if (!relief) this.flat(g, W, H, game, fx, t, amb, -1);
@@ -2607,8 +2637,32 @@ export class Renderer {
       this.frameChunks.length = 0;
       this.topsCache.leave(L);
     }
+    // (THE HEADSMAN'S YARD: the torches on its far walls, burning: render/yard.ts)
+    if (yardOn) {
+      for (const q of this.yard.torches(f)) {
+        if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        const ts = this.yard.torch(q.alongX, t);
+        const tx = wx(cam, q.x, q.y);
+        const ty = wyFlat(cam, q.x, q.y);
+        this.stand(q.x + q.y - 0.49, ts, tx, ty);
+        if (ts.lights) this.propLit.push({ s: ts, x: Math.round(tx), y: Math.round(ty) });
+      }
+    }
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
+      // (THE HEADSMAN'S YARD: its scaffold and its gallows, in strips each in its place; what stands on their other tiles is nothing to see)
+      if (yardOut && !this.yard.shows(f, p.tx, p.ty)) continue;
+      const big = yardOn && p.kind === 'piece' ? this.yard.owns(p.name) : null;
+      if (big === 'foot') continue;
+      if (big === 'piece') {
+        // (seen through only where the hero is behind it and it covers him: his middle, his head or his feet)
+        const whole = this.yard.bigSprite(p.name!);
+        const ax = wx(cam, p.x, p.y);
+        const ay = wyFlat(cam, p.x, p.y);
+        const covers = !!whole && this.yard.behind(p.name!, p.x, p.y, h.x, h.y) && [14, 28, 3].some((up) => spriteCovers(whole, heroX - (ax - whole.ax), heroY - up - (ay - whole.ay)));
+        for (const st of this.yard.bigStands(p.name!, p.x, p.y, cam, covers ? SEEN_THROUGH : 1)) this.stand(st.d, st.s, st.x, st.y, null, 0, 1, st.alpha);
+        continue;
+      }
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -140 || sx > W + 140 || sy < -30 || sy > H + 200) continue;
@@ -4133,7 +4187,9 @@ export class Renderer {
     const def = this.openGround ? act1Def(f.depth) : null;
     const up = !!(def?.top && L.land?.tower && onTop(L.land.tower, game.hero.x, game.hero.y));
     const day = isCamp(L) ? CAMP_DUSK : def ? (up ? def.top! : def.light) : null;
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${FAR_DARK})`;
+    // (THE HEADSMAN'S YARD: under the open sky, the moon's dark: render/yard.ts)
+    const yardSky = this.yard.on(f) && this.yard.heroIn(f, game.hero.x, game.hero.y);
+    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${yardSky ? YARD_DARK : FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
@@ -4159,6 +4215,14 @@ export class Renderer {
     // near them and is gone a screen's height away)
     if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT);
     if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, day ? day.pool * 3 : 1);
+    // (THE HEADSMAN'S YARD: its torches light the wall and the floor below them)
+    if (this.yard.on(f)) {
+      for (const q of this.yard.torches(f)) {
+        if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        const at = this.yard.torchLight(cam, q.x, q.y);
+        spot(at.x, at.y, 48 + Math.sin(t * 9 + q.x) * 2, 0.85);
+      }
+    }
     // (the town's gate lights the floor before it)
     if (L.town && !isCamp(L)) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
     for (const p of L.props) {
@@ -4240,7 +4304,9 @@ export class Renderer {
     dg.globalCompositeOperation = 'source-over';
     // the vignette, laid on the dark after the lights have cut their holes in it: the corners of
     // the screen are shadowy whatever is lit there (what GLOWS is drawn after the dark, and still shines)
-    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? VIGNETTE_TOWN : VIGNETTE), 0, 0);
+    // (THE HEADSMAN'S YARD: the sky over its far walls lit by its moon, and the edges of the screen less dark under the open sky)
+    if (yardSky) this.yard.skyLift(dg, cam, f, YARD_SKY_LIFT);
+    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? VIGNETTE_TOWN : yardSky ? YARD_VIGNETTE : VIGNETTE), 0, 0);
   }
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {

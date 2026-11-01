@@ -27,6 +27,7 @@ import { T_FLOOR, T_PIT, T_WALL } from './types';
 import type { Floor, Room } from './types';
 import type { Level, PropInst } from './state';
 import { FIRST5, beforeGate } from './ways';
+import { YARD_FOOT, inYard } from './yard';
 
 /** Where one of a floor's three moments is set: in a wall's face, at a piece laid for it, on the floor. */
 export interface MomentSite {
@@ -621,6 +622,20 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   };
   const rooms = f.rooms.filter((r) => r.kind !== 'boss');
 
+  // ---- THE HEADSMAN'S YARD: its pieces where the art's picture has them (game/yard.ts laid where; nobody stands on their tiles)
+  if (f.yard) {
+    for (const p of f.yard.pieces) {
+      const at = Math.floor(p.y) * W + Math.floor(p.x);
+      props.push({ kind: 'piece', name: p.name, tx: Math.floor(p.x), ty: Math.floor(p.y), x: p.x, y: p.y, solid: true, state: 0, variant: 0 });
+      for (const i of p.blocks) {
+        taken[i] = 1;
+        solid[i] = 1;
+        L.walk[i] = 0;
+        if (i !== at) props.push({ kind: 'piece', name: YARD_FOOT, tx: i % W, ty: Math.floor(i / W), x: (i % W) + 0.5, y: Math.floor(i / W) + 0.5, solid: true, state: 0, variant: 0 });
+      }
+    }
+  }
+
   // ---- THE MOMENTS' HOSTS (first, while there is room): in rooms apart, away from where he comes in
   const used: { x: number; y: number }[] = [{ x: f.start.x, y: f.start.y }];
   const farFromUsed = (x: number, y: number, by: number): boolean => used.every((u) => Math.hypot(u.x - x, u.y - y) >= by);
@@ -890,6 +905,8 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     // (SCENES: a scene's room has its own pieces on its walls; few more)
     const fx0 = Math.floor(w.x);
     const fy0 = Math.floor(w.y);
+    // (THE HEADSMAN'S YARD: its walls are the prison's, with nothing of the Crypt's set in them)
+    if (inYard(f, fx0, fy0)) continue;
     const inScene = sceneRooms.size > 0 && rooms.some((r) => sceneRooms.has(r.id) && inRoom(r, fx0, fy0));
     if (wallTaken.has(key) || !rng.chance(inScene ? 0.08 : WALL_SHARE)) continue;
     const along = w.side === 0 ? 1 : W;

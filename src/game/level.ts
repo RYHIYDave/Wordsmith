@@ -14,6 +14,7 @@ import { dress } from './first5';
 import { act1Floor } from './act1';
 import { makeAct1Level } from './act1_level';
 import { EXITS, FIRST5, TOWN_SHAFT, TOWN_STAIR, TOWN_WAY, WAYS, beforeGate, openGate, placeCave, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, stairTiles, townGate } from './ways';
+import { yardBlocks } from './yard';
 
 /**
  * A wall tile is drawn cut down low when floor lies behind it (up-screen), so walls never hide
@@ -843,14 +844,15 @@ export function makeDungeon(depth: number, seed: number): Level {
   const shaftAt = FIRST5.on && depth === 5 ? placeShaft(floor) : null;
   if (shaftAt) floor.props = floor.props.filter((p) => Math.abs(p.x - shaftAt.x) > 1 || Math.abs(p.y - shaftAt.y) > 1);
   // (the places in the boss's hall where the stairwell may open; where the hall has no room for it, the portal home stands in it as before)
-  const solidSpot = new Set<number>();
+  // (THE HEADSMAN'S YARD: and the tiles its scaffold, gallows and the rest stand on: game/yard.ts)
+  const solidSpot = yardBlocks(floor);
   for (const p of floor.props) if (SOLID_PROPS.includes(p.kind)) solidSpot.add(p.y * floor.w + p.x);
   let stairs = shaftAt || cave ? [] : stairSpots(floor, (i) => solidSpot.has(i));
   // (a hall so crowded that it has fewer than two: its barrels and urns are what give way, those on
   // the places taken away; its fires and pillars stay. Its places run along x: stairSpots.)
   if (stairs.length < 2 && !shaftAt && !cave) {
     const breaks = (k: string): boolean => k === 'barrel' || k === 'urn';
-    const fixed = new Set<number>();
+    const fixed = yardBlocks(floor);
     for (const p of floor.props) if (SOLID_PROPS.includes(p.kind) && !breaks(p.kind)) fixed.add(p.y * floor.w + p.x);
     const more = stairSpots(floor, (i) => fixed.has(i));
     if (more.length > stairs.length) {
@@ -874,6 +876,7 @@ export function makeDungeon(depth: number, seed: number): Level {
   if (shaftAt) for (const i of [...shaftTiles(floor, shaftAt), shaftAt.y * floor.w + shaftAt.x]) level.walk[i] = 0;
   const solidAt = new Uint8Array(floor.w * floor.h);
   for (const p of level.props) if (p.solid) solidAt[p.ty * floor.w + p.tx] = 1;
+  for (const i of yardBlocks(floor)) solidAt[i] = 1;
   const way = depth >= 2 ? placeWay(floor, (i) => level.walk[i] === 1 && solidAt[i] === 0) : null;
   // (what lies flat where its dais is, is taken away: bones, rubble; and where the stairwell opens, as it opens: game.ts, `openStair`)
   level.props = level.props.filter((p) => p.solid || way === null || Math.abs(p.x - way.x) >= 1.6 || Math.abs(p.y - way.y) >= 1.6);
