@@ -334,7 +334,51 @@ function plan(rng: RNG): Plan | null {
     }
     if (!laid && kind !== 'sidestacks') return null;
   }
+  // (COMBO, his pick for floor 15: ways round)
+  if (LB_COMBO.on) waysRound(rng, rooms, ways);
   return { rooms, ways, doorsSide, inTo, reading, beyond, bell };
+}
+
+/**
+ * COMBO (his pick for floor 15 among open, linear and combo: “combo”): the library's main way and its rooms off it, and up to
+ * LB_COMBO.loops ways round besides: a straight way three wide between two of its halls, its stacks, its scriptorium or its
+ * antechamber that face each other across the rock, two places or more apart along the main way, clear of every other room and
+ * way (the doors, the Reading Room, the way on, the bell's room, the closet and the bindery keep their one way in).
+ */
+export const LB_COMBO = { on: true, loops: 2 };
+
+function waysRound(rng: RNG, rooms: PRoom[], ways: PWay[]): void {
+  const open: Kind[] = ['hall', 'scriptorium', 'ante', 'stacks', 'sidestacks'];
+  const along = (i: number): number => (rooms[i].path >= 0 ? rooms[i].path : along(rooms[i].parent));
+  const cands: PWay[] = [];
+  for (let a = 0; a < rooms.length; a++) {
+    for (let b = a + 1; b < rooms.length; b++) {
+      if (!open.includes(rooms[a].kind) || !open.includes(rooms[b].kind) || Math.abs(along(a) - along(b)) < 2) continue;
+      if (ways.some((w) => (w.a === a && w.b === b) || (w.a === b && w.b === a))) continue;
+      const A = rooms[a].box;
+      const B = rooms[b].box;
+      for (const alongX of [true, false]) {
+        const lo = alongX ? Math.max(A.y, B.y) + 1 : Math.max(A.x, B.x) + 1;
+        const hi = alongX ? Math.min(A.y + A.h, B.y + B.h) - WAY_W - 1 : Math.min(A.x + A.w, B.x + B.w) - WAY_W - 1;
+        if (hi < lo) continue;
+        const [L, R] = alongX ? (A.x < B.x ? [A, B] : [B, A]) : A.y < B.y ? [A, B] : [B, A];
+        const gap = alongX ? R.x - (L.x + L.w) : R.y - (L.y + L.h);
+        if (gap < 3 || gap > 24) continue;
+        const c = rng.int(lo, hi);
+        const box: Box = alongX ? { x: L.x + L.w, y: c, w: gap, h: WAY_W } : { x: c, y: L.y + L.h, w: WAY_W, h: gap };
+        if (rooms.some((r, j) => j !== a && j !== b && touch(box, r.box, WAY_GAP))) continue;
+        if (ways.some((w) => touch(box, w.box, WAY_GAP))) continue;
+        cands.push({ box, a, b, alongX });
+      }
+    }
+  }
+  let n = 0;
+  for (const w of rng.shuffle(cands)) {
+    if (n >= LB_COMBO.loops) break;
+    if (ways.some((v) => touch(w.box, v.box, WAY_GAP))) continue;
+    ways.push(w);
+    n++;
+  }
 }
 
 /** Where he comes in: three tiles in from the doors, before the middle of the wall they stand in. */
