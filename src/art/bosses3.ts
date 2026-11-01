@@ -1824,7 +1824,7 @@ function usualHold(name: CoRope, s: Skeleton): ChainHold {
  * it comes back to him (`back`). The floor going by under him (a walk), the figure's own lengths a
  * second.
  */
-interface CoChainPlan {
+export interface CoChainPlan {
   hold?: (name: CoRope, s: Skeleton, t: number) => ChainHold | 'out' | undefined;
   back?: (name: CoRope, s: Skeleton, t: number) => ReadonlyArray<V3>;
   ground?: number;
@@ -3511,6 +3511,20 @@ export function makeChainedArt3(pace = CHAINED.pace, freed: CoFreed = 0): ActorA
   const mob = freed === 0 ? CHAINED : CHAINED_FREED[freed];
   return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
 }
+
+/**
+ * WHAT HIS MOVES DONE THE ACTION WAY ARE BUILT ON (art/chained_action.ts: a mock-up behind its switch, CHAINED_ACTION, off;
+ * docs/mockups/action_f3_chained): his body, his chains and how they are worked out, his poses and the helpers his moves are
+ * made with, as they are here. Nothing here is changed by it: it is only said again by name.
+ */
+export const CO_KIT = {
+  body: CB2, spec: CO_SPEC, ropes: CO_ROPES, ropesOf, ballAt: BALL_AT, ballR: BALL_R, ballDrag: BALL_DRAG, ballTurn: BALL_TURN, ballPivot: BALL_PIVOT, ballNear: BALL_NEAR, wristChain: WRIST_CHAIN, kneeDown: CO_KNEE_DOWN,
+  coMove, restChains, settledChains, usualHold, hookBack, slamBurst, chainedBits, coElbows, coShake, coGlint, between,
+  LASH_LIFT, LASH_UP, LASH_COCK, LASH_OVER, LASH_SNAP, LASH_THROUGH, LASH_HAUL,
+  HOOK_UP, hookWhirl, HOOK_THROW, hookHaul, whirlAt, whirlW0: WHIRL_W0,
+  onBall, ballBefore, ballBeforeFace, turnedTo, halfway, ballLow, ballHaul,
+  BALL_STOOP, BALL_RISE_BODY, BALL_CHEST_BODY, BALL_HOP_BODY, BALL_BACK_BODY, BALL_FACE_BODY, BALL_OVER, BALL_HURL,
+} as const;
 
 // =============================================================================================
 // 3. THE OSSUARY AMALGAMATION
