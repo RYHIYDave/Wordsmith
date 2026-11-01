@@ -997,11 +997,14 @@ export function paintWorkerMain(): void {
     } else {
       // (what he does most: as a man, and blazing, M and B; the change, C; the demon, D)
       const most: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.clips?.attack?.frames, (a) => a.walk, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames];
-      const demonMost: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.walk, (a) => a.clips?.attack?.frames, (a) => a.clips?.attack2?.frames, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames];
+      const demonMost: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.walk, (a) => a.clips?.attack?.frames, (a) => a.clips?.attack2?.frames, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames, (a) => a.clips?.change?.frames];
       const M = most.map((pick) => [0, at(0, pick)] as [number, number]);
       const B = most.map((pick) => [1, at(1, pick)] as [number, number]);
+      // (THE CHANGE AS IT IS SEEN: his pact is full as he changes, so his arm blazes, and it is the blazing set's change that is
+      // shown (render/render.ts, the hero's look). Till now the plain set's was painted early, and the one seen came last of
+      // all: his word of 30 Oct, "Changing into the demon". The plain set's, never seen so far as the main chat can find, last.)
       const changeAt = at(0, (a) => a.clips?.change?.frames);
-      const C: [number, number][] = [[0, changeAt]];
+      const C: [number, number][] = [[1, at(1, (a) => a.clips?.change?.frames)]];
       const D = demonMost.map((pick) => [2, at(2, pick)] as [number, number]);
       // (every step-th frame of each of those lists, both ways)
       const every = (G: [number, number][], step: number): void => {
@@ -1031,7 +1034,8 @@ export function paintWorkerMain(): void {
         every(M, 1);
         for (const step of [4, 2, 1]) every(B, step);
         rest(0, changeAt);
-        rest(1);
+        rest(1, C[0][1]);
+        add(0, changeAt, Infinity);
       } else if (part === 'demon') {
         firsts(2);
         every(C, 1 << 30);
@@ -1048,7 +1052,10 @@ export function paintWorkerMain(): void {
         every(B, 1);
         every([...C, ...D], 2);
         every([...C, ...D], 1);
-        for (let p = 0; p < 3; p++) rest(p);
+        rest(0, changeAt);
+        rest(1);
+        rest(2);
+        add(0, changeAt, Infinity);
       }
     }
     const out = new Map<number, { list: Given[]; transfer: Transferable[] }>();
