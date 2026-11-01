@@ -84,7 +84,7 @@ export interface Act1Dress {
  * towards the edges”), and what stands at the far cliffs' feet is a scene of its own; nothing stands about at random but in
  * the boss's ground. `floors`: those laid so, each shown to him first as pictures from the game.
  */
-export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7] };
+export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7, 8] };
 
 /** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
 interface Part {
@@ -162,6 +162,28 @@ export const ACT1_SCENE_SETS: Readonly<Record<number, { open: readonly Act1Scene
       { name: 'the tethers', need: 1, most: 2, parts: [Ly(0, 0, 'iron rings in the wall'), S(2, 2, "the cult's perch"), Ly(1, 1, 'a dead vulture')] },
       // THE ICE: icicles down the cliff, snow drifted at its foot
       { name: 'the ice', need: 1, most: 3, parts: [Ly(0, 0, 'icicles in the wall'), Wl(2, 'icicles in the wall'), Ly(1, 1, 'snow drift')] },
+    ],
+  },
+  8: {
+    open: [
+      // THE CONVOY: the cult's wagon and behind it the obelisk on its dray, its stores and meal set down by them
+      { name: 'the convoy', need: 2, most: 1, parts: [S(0, 0, "the cult's wagon"), S(3, 0, 'an obelisk on its dray'), Br(1, 2, 'barrel'), Br(-1, 2, 'urn'), Ly(2, 2, 'sagebrush')] },
+      // THE BROKEN WAGON: the cult's wagon broken down against the boulder it struck, its meal spilled, driftwood
+      { name: 'the broken wagon', need: 2, most: 1, parts: [S(0, 0, "the cult's wagon, broken down"), S(-2, -1, 'red boulder'), Br(2, 1, 'urn'), Ly(1, 2, 'driftwood')] },
+      // THE GREAT HORN: the cult's great horn, a frame of its bells by it, singing stones about them
+      { name: 'the great horn', need: 2, most: 1, parts: [S(0, 0, "the cult's great horn"), S(2, 1, "a frame of the cult's bells"), S(-2, 1, 'singing stones'), Ly(0, 2, 'sagebrush')] },
+      // THE SINGING STONES: three singing stones standing in a ring, sagebrush between them
+      { name: 'the singing stones', need: 3, most: 2, parts: [S(0, 0, 'singing stones'), S(2, 1, 'singing stones'), S(0, 2, 'singing stones'), Ly(1, 1, 'sagebrush')] },
+      // THE DRY GROVE: a juniper, one dead beside it, a yucca and a red boulder, sagebrush and driftwood about them
+      { name: 'the dry grove', need: 2, most: 3, parts: [S(0, 0, 'juniper'), S(2, 0, 'dead juniper'), S(1, 2, 'yucca'), S(-2, 1, 'red boulder'), Ly(3, 2, 'sagebrush'), Ly(-1, 3, 'driftwood')] },
+    ],
+    face: [
+      // THE CHANT: the cult's chant carved in the canyon wall, a frame of its bells before it
+      { name: 'the chant', need: 1, most: 2, parts: [Ly(0, 0, 'the chant carved in the wall'), S(2, 2, "a frame of the cult's bells"), Ly(1, 1, 'sagebrush')] },
+      // THE HOIST: the cult's hoist up the cliff, its stores at its foot
+      { name: 'the hoist', need: 1, most: 2, parts: [Ly(0, 0, "the cult's hoist"), Br(2, 1, 'barrel'), Br(1, 2, 'urn')] },
+      // THE SEEP: water seeping from the rock, a juniper grown by it, sagebrush
+      { name: 'the seep', need: 1, most: 3, parts: [Ly(0, 0, 'a seep in the wall'), S(2, 2, 'juniper'), Ly(1, 1, 'sagebrush')] },
     ],
   },
 };
