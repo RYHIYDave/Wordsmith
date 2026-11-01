@@ -57,6 +57,9 @@ export const MITE = {
   bite: { hit: f(14), strike: [f(12), f(14)] as const, lunge: 16 / TILE3, reach: 0.75, long: f(31) },
   die: 0.45,
   tall: 20,
+  /** Left alone, it crumbles this long after it began forming: its death plays (the same burst of chips). His pick, 1 Nov 2026:
+   *  “They crumble after a while” (offered as about 10 seconds after forming). A number for the rules; no new frames. */
+  life: 10,
 } as const;
 
 // =============================================================================================

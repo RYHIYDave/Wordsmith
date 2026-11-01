@@ -331,3 +331,19 @@ bite's reach; a third of the knight's height; its pace; its forming in half a se
 - (second round) Their pace: 3.2 tiles a second (quick, but the knight outruns them), or as fast as he is.
 - (second round) The rakes' slash reaches a tile past its claws (3.3 and 3.5 against its hands' 2.2 and 2.3): its claws' arc
   thrown out over the floor, as he asked of the areas ("bigger AOE"); or the rule's reach only where the claws themselves go.
+
+## His word on the pictures (the second round)
+
+Shown `amalgam_action2.mp4` and `amalgam_action2_sheet.png`, 1 Nov 2026 (answered by 15:05 his time), and asked of each:
+
+- The rakes (the arm hauled high, the heap lunging and tearing 3.3 to 3.5 tiles across the floor): “Yes, that's it (Recommended)”.
+- The bone mites (every skull of the rain a little skull on finger-bone legs, dead in one blow, 58 of them swarming): “That’s
+  awesome”.
+- Bone mites no one kills (offered: the heap eats them back, recommended; they crumble after a while, each about 10 seconds after
+  forming; they stay until killed): “They crumble after a while”. So `MITE.life` is **10 s** from when it began forming; then its
+  death plays, the same burst of chips (no new frames). It is not eaten back.
+- Their pace he was told: a bit slower than the knight, so you can get away from them but not ignore them (3.2 tiles a second,
+  kept).
+
+So: the Amalgamation, every move, has his yes: the rakes, the finisher, the bone rain and its mites, the floor arms, the devour, and
+its rearing and crash. Ready for the main chat to bring in behind AMALGAM_ACTION.
