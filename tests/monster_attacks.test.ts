@@ -214,6 +214,18 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
         assert.equal(n, 5, `${what}: five, at his word`);
         continue;
       }
+      // (THE HIGH CITY, FLOOR 20: the shadows of the four royals are one kind, each royal (Monster.form) with its own two, its basic
+      // blow and its one big move, of the kind's eight: game/act1_rules/rshadow.ts; tests/act2_floor20_kinds.test.ts holds each)
+      // (and the Moth: four in the air, the buffet, Dust, the Swarm and the Eyes; its beat only down on the book, in place of them:
+      // game/act1_rules/moth.ts)
+      if (kind === 'moth') {
+        assert.equal(n, 5, `${what}: four in the air, and the beat on the book`);
+        continue;
+      }
+      if (kind === 'rshadow') {
+        assert.equal(n, 8, `${what}: four royals' two each`);
+        continue;
+      }
       assert.ok(waiting || (n >= want[size][0] && n <= want[size][1] + leads), `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;
       const first = moves[0];

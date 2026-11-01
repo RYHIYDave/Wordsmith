@@ -188,7 +188,7 @@ test('1. the switch is off, and of the game only floor 17\'s own files import hi
   }
   // (Brought into the game by the main chat, 30 Oct 2026, on floor 17 behind HIGH_CITY (off): his figure, rules and effects files
   // import him, and nothing else of the game)
-  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/prince.ts game/act1_rules/prince.ts render/act1_fx/prince.ts', 'game files that import him');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/prince.ts game/act1_rules/prince.ts game/act1_rules/rshadow.ts render/act1_fx/prince.ts render/act1_fx/rshadow.ts', 'game files that import him');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
