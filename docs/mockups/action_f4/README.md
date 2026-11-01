@@ -176,7 +176,21 @@ Also passing: `tests/action_f1.test.ts`, `action_f2`, `action_f3`, `action_f3_ch
 Made by: `tools/action_f4_film.ts` (the film), `tools/action_f4_sheet.ts` and `tools/action_f4_captions.py` (the sheet),
 `src/dev/action_f4_scene.ts` (the scenes, on floor 1's stand-in floor), `tools/action_f4_hash.ts` (the hashes).
 
-## For him to decide (the art chat's to ask)
+## His word on the pictures
+
+Shown `action_f4.mp4` and `action_f4_sheet.png`, 1 Nov 2026 (answered by 10:27 his time), and asked of each:
+
+- The skeleton hurl (hauled up out of the floor, held high at its side, hurled fast, cartwheeling in over its shadow on a pink
+  mark, bursting 2.25 tiles round; the bones lying a moment, then crumbling), offered with a bigger burst (2.5) or a change:
+  “Yes, that's it (Recommended)”. So it is held at its side (not overhead), aims as the hold begins, and bursts at 2.25 tiles.
+- Its club swing by Movement 9 (held longer, whipped round in two smeared frames, a little more reach): “Yes, that's it
+  (Recommended)”.
+- The dagger cultist's frenzy (coiled; four stabs in a blur, stepping in with each; bent over, winded, about a second):
+  “Yes, that's it (Recommended)”.
+
+All three are his yes: the main chat may bring them in (`GOLEM_HURL` and `DAGGER_FRENZY` turned on).
+
+## For him to decide (the art chat's to ask) — asked and settled above
 
 - The burst at 2.25 tiles (or 2.5); the flight 0.45 to 0.79 s; aimed as it holds the skeleton up (1.08 s), the mark down 0.8 to 1.1
   s before it bursts. (Aimed only as it lets go, it would be as good as unavoidable at 5 tiles: the mark would be down 0.57 s.)
