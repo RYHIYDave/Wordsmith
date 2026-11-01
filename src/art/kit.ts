@@ -900,7 +900,7 @@ function paintedOf(list: readonly Sprite[], i: number): Sprite | null {
  * thousandths of a second; painting every frame of every hero at start-up would be a pause you
  * could feel on a phone.) `heavy`: see HEAVY.
  */
-export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false): Sprite[] {
+export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false, stand?: () => readonly Sprite[] | undefined): Sprite[] {
   const out: Sprite[] = new Array<Sprite>(n);
   for (let i = 0; i < n; i++) {
     Object.defineProperty(out, i, {
@@ -912,6 +912,15 @@ export function lazyFrames(n: number, make: (i: number) => Sprite, heavy = false
           if (near) {
             HEAVY.deferred++;
             return near;
+          }
+          // (`stand`: a list to stand in for this one while none of it is painted, where a frame of it would be the stall: the
+          // Brawler's combos, each seconds to make the first time: art/brawler_art.ts. Its frame at the same share of the way through.)
+          const other = stand?.();
+          if (other && other.length) {
+            // (read as the game would read it: its own nearest painted frame, or ITS stand-in's, and so on down to one painted)
+            const k = Math.min(other.length - 1, Math.floor((i * other.length) / n));
+            HEAVY.deferred++;
+            return other[k];
           }
         }
         const t0 = performance.now();

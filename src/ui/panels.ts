@@ -914,11 +914,15 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
     // the figure stands on the floor of its box; whatever flies wide of the card (a scarf) is cut off at its edge
     // (CARDS3: the card on its side, the portrait at its left, standing on its foot; the rest beside it)
     const portW = CARDS3.on ? Math.min(70, Math.floor(cw * 0.42)) : cw;
-    const fx = x + Math.floor(portW / 2);
+    // (THE WARLOCK, his arm held out and his robe trailing, is wider than his portrait: he stands a little further in, and his arm's
+    // fire may reach out over the card's middle, between its words and its icons, where nothing else is. His word, 1 Nov 2026,
+    // 10:42: “Oh and the warlock gets cut off in the character select screen”)
+    const wide = CARDS3.on && id === 'warlock';
+    const fx = x + Math.floor(portW / 2) + (wide ? 8 : 0);
     const fy = CARDS3.on ? cy + ch - 4 : cy + 2 + figH;
     g.save();
     g.beginPath();
-    if (CARDS3.on) g.rect(x + 1, cy + 1, portW - 1, ch - 2);
+    if (CARDS3.on) g.rect(x + 1, cy + 1, wide ? cw - 2 : portW - 1, ch - 2);
     else g.rect(x + 1, cy + 1, cw - 2, figH + 4);
     g.clip();
     if (gone > 0) fig.drawPhased(g, sp, fx, fy, 2, 0.15 + gone * 0.85, 1 - gone * gone);

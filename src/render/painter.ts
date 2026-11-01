@@ -100,7 +100,7 @@ type Ask =
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
   | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
-  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: WarlockPart };
+  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: WarlockPart; soon?: boolean };
 /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
 interface WallBitMsg {
   d: number;
@@ -364,6 +364,14 @@ export class Painter {
         }
       }
       return true;
+    }
+    // (THE BRAWLER: the first frame of each of his combos soon, before the floor's monsters, a jab and a cross first: each is seconds
+    // to make, and where none of one is painted his jab or cross stands in for it: art/brawler_art.ts. His word, 1 Nov 2026, 10:19:
+    // “I had some stutter issues with the brawler loading his hold ability”)
+    if (cls === 'brawler' && place !== 'card' && !this.heroAsked.has('brawler:soon')) {
+      this.heroAsked.add('brawler:soon');
+      this.groundLane.open++;
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, soon: true } satisfies Ask);
     }
     const key = `${cls}:${place}`;
     if (!this.heroAsked.has(key)) {
@@ -896,12 +904,20 @@ export function paintWorkerMain(): void {
   let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
 
   /** A hero's frames in a place, painted and handed over a few at a time, in the order the page paints them ahead. */
-  function* hero(cls: ClassId, place: HeroPlace): Generator<void, void, void> {
+  function* hero(cls: ClassId, place: HeroPlace, soon = false): Generator<void, void, void> {
     heroArt ??= makeHeroArt3();
     const art = heroArt.of(cls, lookOfPlace(place));
     const lists = [heroLists(art.front), heroLists(art.back)];
     const order: [number, number, number][] = [];
-    if (place === 'card') {
+    if (soon) {
+      // (SOON: the first frame of each of his combos, both ways, by how often they are thrown: one press, two, three; a hold first)
+      const punches = art.front.clips?.punches;
+      const keys = Object.keys(punches ?? {}).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
+      for (const key of keys) {
+        const l = lists[0].indexOf(punches![key].frames);
+        if (l >= 0) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      }
+    } else if (place === 'card') {
       // ON A CLASS CARD (ui/panels.ts; the owner, 31 Oct 2026, 18:23: "Can you animate the tinkerer and the brawler on the
       // character select screen in the test version"): only what a card shows, the front, standing and running; every eighth
       // frame first, then every fourth, and so on, so that each figure moves within a second or two and grows smooth as the
@@ -918,7 +934,16 @@ export function paintWorkerMain(): void {
           }
         }
       }
-    } else for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+    } else {
+      // (STANDING AND RUNNING, then THE FIRST FRAME OF EVERY OTHER LIST, both ways, then the rest: a list with none painted is painted where the game is played,
+      // the frame asked for, and a frame of the new classes' is a tenth of a second and more, a Brawler's combo's first seconds; his
+      // word, 1 Nov 2026, 10:19: “I had some stutter issues with the brawler loading his hold ability”)
+      // (standing and running whole before anything: what is seen most)
+      const seenMost = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
+      for (const l of seenMost) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < 2; v++) for (let i = 1; i < lists[v][l].length; i++) order.push([v, l, i]);
+    }
     const sent = new Set<Sprite>();
     let list: Given[] = [];
     let transfer: Transferable[] = [];
@@ -1164,7 +1189,7 @@ export function paintWorkerMain(): void {
           scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls, flow }, [bmp, ...walls.map((b) => b.img), ...(flow ? flow.frames : [])]);
         }
       } else if (job.ask.t === 'hero') {
-        job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place);
+        job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place, !!job.ask.soon);
         if (job.run.next().done) done();
         // (the heroes on their class cards take turns, a piece of work each, so that all of them move soon)
         else if (job.ask.place === 'card') job.seq = seq++;

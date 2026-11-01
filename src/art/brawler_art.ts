@@ -69,15 +69,36 @@ function punchesOf(run: string): Punch[] {
   return out;
 }
 
-function clip(t0: number, t1: number, fps: number, at: (t: number) => Sprite, hit?: number, tail = false): Clip {
+/**
+ * HIS FRAMES ARE THE SIDE PAINTER'S IN A GAME (his word, 1 Nov 2026, 10:19: “I had some stutter issues with the brawler loading
+ * his hold ability”): a frame of his is a tenth of a second and more to paint, and a combo's first frame seconds (its move made
+ * then: comboMove). So where the game is played a frame of his not painted yet is shown as the nearest of its list that is
+ * (art/kit.ts HEAVY), as the Warlock's are; the painter's worker paints the first frame of every list of his first
+ * (render/painter.ts), then the rest.
+ */
+const HEAVY_HIM = true;
+
+/** Each run of presses' move (its chain baked: seconds), made the first time a frame of it is painted, once for both views. */
+const combos = new Map<string, { move: BrawlerMove }>();
+function comboMove(key: string): { move: BrawlerMove } {
+  let made = combos.get(key);
+  if (made) return made;
+  const ps = punchesOf(key);
+  const c = chain(ps);
+  made = { move: { name: `Combo ${key}`, motion: bake(c.motion, c.long, 60, ps.length > 1 ? 2 : 1, strikes(c.blows)), long: c.long, loops: false, blows: c.blows, air: c.air } };
+  combos.set(key, made);
+  return made;
+}
+
+function clip(t0: number, t1: number, fps: number, at: (t: number) => Sprite, hit?: number, tail = false, heavy = HEAVY_HIM, stand?: () => readonly Sprite[] | undefined): Clip {
   const n = Math.max(1, Math.ceil((t1 - t0) * fps - 1e-6) + 1);
-  const c: Clip = { frames: lazyFrames(n, (i) => at(Math.min(t1, t0 + i / fps))), fps };
+  const c: Clip = { frames: lazyFrames(n, (i) => at(Math.min(t1, t0 + i / fps)), heavy, stand), fps };
   if (hit !== undefined) c.hit = hit - t0;
   if (tail) c.tail = true;
   return c;
 }
 function spread(t0: number, t1: number, n: number, at: (t: number) => Sprite): Clip {
-  return { frames: lazyFrames(n, (i) => at(t0 + ((t1 - t0) * i) / (n - 1))), fps: n / Math.max(1e-6, t1 - t0) };
+  return { frames: lazyFrames(n, (i) => at(t0 + ((t1 - t0) * i) / (n - 1)), HEAVY_HIM), fps: n / Math.max(1e-6, t1 - t0) };
 }
 function three(c: Clip): Sprite[] {
   const n = c.frames.length;
@@ -98,8 +119,8 @@ function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
   const at = atIn(view);
   const [stand, run] = brawlerMoves();
   const made = {
-    idle: lazyFrames(Math.round(stand.long * IDLE_FPS), (i) => at(stand)(i / IDLE_FPS)),
-    walk: lazyFrames(Math.round(RUN_ROUND * RUN_FPS), (i) => at(run)(i / RUN_FPS)),
+    idle: lazyFrames(Math.round(stand.long * IDLE_FPS), (i) => at(stand)(i / IDLE_FPS), HEAVY_HIM),
+    walk: lazyFrames(Math.round(RUN_ROUND * RUN_FPS), (i) => at(run)(i / RUN_FPS), HEAVY_HIM),
   };
   standRuns.set(view, made);
   return made;
@@ -130,23 +151,16 @@ function hisSet(view: GameView): AnimSet {
   // (each run of presses: its last punch, from where the one before it was cut off to his guard)
   const punches: Record<string, Clip> = {};
   for (const key of PRESS_RUNS) {
-    let made: { move: BrawlerMove; t0: number; hit: number } | null = null;
-    const get = (): { move: BrawlerMove; t0: number; hit: number } => {
-      if (made) return made;
-      const ps = punchesOf(key);
-      const c = chain(ps);
-      const k = ps.length - 1;
-      const t0 = k === 0 ? 0 : c.blows[k - 1].at + (ps[k - 1].cut - ps[k - 1].hit);
-      const move: BrawlerMove = { name: `Combo ${key}`, motion: bake(c.motion, c.long, 60, ps.length > 1 ? 2 : 1, strikes(c.blows)), long: c.long, loops: false, blows: c.blows, air: c.air };
-      made = { move, t0, hit: c.blows[k].at };
-      return made;
-    };
+    const get = (): { move: BrawlerMove } => comboMove(key);
     // (its length and its blow are known without painting: the chain's numbers alone)
     const ps = punchesOf(key);
     const c = chain(ps);
     const k = ps.length - 1;
     const t0 = k === 0 ? 0 : c.blows[k - 1].at + (ps[k - 1].cut - ps[k - 1].hit);
-    punches[key] = clip(t0, c.long, CLIP_FPS, (t) => at(get().move)(t), c.blows[k].at, true);
+    // (while none of a combo is painted in a game, its last press's own punch stands in for it, and for a jab or a cross his
+    // standing: never seconds of a combo made where the game is played; the painter makes them, a jab and a cross first)
+    const last = key[key.length - 1];
+    punches[key] = clip(t0, c.long, CLIP_FPS, (t) => at(get().move)(t), c.blows[k].at, true, true, () => (key.length > 1 ? punches[last]?.frames : idle));
   }
   const s = slipNumbers();
   const slip = slipMove();

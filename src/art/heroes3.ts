@@ -27,7 +27,7 @@ import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
 import { makeTinkererArt, makeTinkererCardArt } from './tinkerer_art';
-import { makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
+import { PRESS_RUNS, makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
 import { makeWarlockArt } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
@@ -351,7 +351,7 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
  * then the rest; what a hero does when left standing is painted as it is shown, which is slowly enough): each of these
  * a list of frames of one side of the hero.
  */
-const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
+const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...PRESS_RUNS.map((key) => (a: AnimSet) => a.clips?.punches?.[key]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
           (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? []),
           // (THE WARLOCK's changing, art/warlock_art.ts; and every hero's fall, last)
           (a) => a.clips?.change?.frames ?? [], (a) => a.clips?.fall?.frames ?? []];
