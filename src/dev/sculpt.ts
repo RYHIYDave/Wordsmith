@@ -21,6 +21,8 @@ import type { Ramp } from '../art/kit';
 import { stage, toneOf } from '../art/skin';
 import type { PaintView, Sheet, Stage } from '../art/skin';
 import type { V3 } from '../art/skeleton';
+// (the same march on the graphics chip, behind its switch, off: dev/gpu_sculpt.ts)
+import { GPU_SCULPT, sculptOnChip } from './gpu_sculpt';
 
 /** The light, as the eye sees it (art/skin.ts's own): from the left, from above, a little from the eye's side. */
 const LX = -0.52;
@@ -2046,7 +2048,7 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
       const box = { xs: Math.max(0, Math.floor(x0)), xe: Math.min(W - 1, Math.ceil(x1)), ys: Math.max(0, Math.floor(y0)), ye: Math.min(H - 1, Math.ceil(y1)), zNear, zFar };
       // (each solid's part's number, as `pieceOf` gives it the first time it is asked)
       const pieceAt = new Int32Array(fa.n).fill(-1);
-      marchFast(fa, st, ax, ay, box, CX, CY, CZ, L2, E, (x, y, t, q, n, m, open, pi) => {
+      const shade = (x: number, y: number, t: number, q: V3, n: V3, m: number, open: number, pi: number): void => {
         const seenN = st.seen(n);
         const sl = Math.hypot(seenN[0], seenN[1], seenN[2]) || 1;
         const nl = (seenN[0] * LX + seenN[1] * LY + seenN[2] * LZ) / sl;
@@ -2060,7 +2062,9 @@ export function draw(sc0: Sculpt, view: PaintView, ax: number, ay: number, size:
         stuff[k] = m;
         piece[k] = pieceAt[pi] >= 0 ? pieceAt[pi] : (pieceAt[pi] = pieceOf(m, prim.piece));
         colour[k] = pack(c);
-      });
+      };
+      // (on the graphics chip where its switch is on and it can: the same numbers, in its own 32-bit sums; else here)
+      if (!(GPU_SCULPT.on && sculptOnChip(f, st, ax, ay, box, CX, CY, CZ, L2, E, shade))) marchFast(fa, st, ax, ay, box, CX, CY, CZ, L2, E, shade);
     } finally {
       ARENAS.push(arena);
     }
