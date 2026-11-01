@@ -84,7 +84,7 @@ export interface Act1Dress {
  * towards the edges”), and what stands at the far cliffs' feet is a scene of its own; nothing stands about at random but in
  * the boss's ground. `floors`: those laid so, each shown to him first as pictures from the game.
  */
-export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7, 8] };
+export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7, 8, 9, 10] };
 
 /** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
 interface Part {
@@ -185,6 +185,36 @@ export const ACT1_SCENE_SETS: Readonly<Record<number, { open: readonly Act1Scene
       // THE SEEP: water seeping from the rock, a juniper grown by it, sagebrush
       { name: 'the seep', need: 1, most: 3, parts: [Ly(0, 0, 'a seep in the wall'), S(2, 2, 'juniper'), Ly(1, 1, 'sagebrush')] },
     ],
+  },
+  9: {
+    open: [
+      // THE SIEGE WORKS: the cult's siege tent, a battering ram half built beside it, siege ladders, barrels of pitch
+      { name: 'the siege works', need: 2, most: 1, parts: [S(0, 0, "the cult's siege tent"), S(3, 0, 'a battering ram, half built'), S(1, 2, 'siege ladders'), Br(-2, 1, 'barrel'), Br(3, 2, 'barrel')] },
+      // THE FELLING: pines felled and stacked, the stumps they were cut from, the woodpile
+      { name: 'the felling', need: 2, most: 2, parts: [S(0, 0, 'felled pines, stacked'), S(3, 1, 'stump'), S(2, -2, 'stump'), Br(-2, 1, 'urn'), Ly(1, 2, 'ferns')] },
+      // THE HUNTER'S CAMP: the hunter's drying rack, a stag's skull and antlers by it, his woodpile, ferns
+      { name: "the hunter's camp", need: 1, most: 2, parts: [S(0, 0, "the hunter's drying rack"), Ly(1, 1, "a stag's skull and antlers"), Br(2, 0, 'urn'), Ly(-1, 2, 'ferns'), Ly(2, 2, 'bilberries')] },
+      // THE WINDFALL: a pine come down, the snag it broke from, a mossy boulder, toadstools and ferns on the dead wood
+      { name: 'the windfall', need: 2, most: 2, parts: [S(0, 0, 'fallen pine'), S(-2, 1, 'pine snag'), S(3, 1, 'mossy boulder'), Ly(1, 2, 'toadstools'), Ly(-1, 3, 'ferns')] },
+      // THE GLADE: young pines coming up by a mossy boulder, bilberries and ferns under them
+      { name: 'the glade', need: 2, most: 3, parts: [S(0, 0, 'young pine'), S(2, 1, 'young pine'), S(-1, 2, 'mossy boulder'), Ly(1, 2, 'bilberries'), Ly(3, 3, 'ferns')] },
+    ],
+    face: [],
+  },
+  10: {
+    open: [
+      // THE RUIN: a broken stair going up to nothing, a broken column by it, its drums fallen, mossy stones
+      { name: 'the ruin', need: 2, most: 1, parts: [S(0, 0, 'a broken stair'), S(3, 0, 'a broken column'), S(2, 2, 'fallen column drums'), Ly(-1, 2, 'mossy stones'), Ly(4, 2, 'sedge tussock')] },
+      // THE STATUE: a statue's head sunk in the mud, the drums of its column fallen by it, sedge about them
+      { name: 'the statue', need: 2, most: 2, parts: [S(0, 0, "a sunken statue's head"), S(2, 1, 'fallen column drums'), Ly(1, 2, 'sedge tussock'), Ly(-1, 1, 'mossy stones')] },
+      // THE BEAST'S BONES: a drowned beast's ribs, pale toadstools grown on them, a dead swamp tree over them
+      { name: "the beast's bones", need: 2, most: 1, parts: [S(0, 0, "a drowned beast's ribs"), S(3, -1, 'dead swamp tree'), Ly(1, 2, 'pale toadstools'), Ly(-1, 2, 'sedge tussock')] },
+      // THE CULT'S MARK: a marker post where the cult leaves its offerings, the cage of offerings, its supply crates
+      { name: "the cult's mark", need: 2, most: 2, parts: [S(0, 0, 'a marker post'), Br(2, 0, 'urn'), Br(1, 2, 'barrel'), Ly(-1, 1, 'pale toadstools')] },
+      // THE DEAD WOOD: arching roots of a tree long drowned, a drowned stump, a dead swamp tree, sedge and toadstools
+      { name: 'the dead wood', need: 2, most: 2, parts: [S(0, 0, 'arching roots'), S(3, 1, 'drowned stump'), S(-2, 1, 'dead swamp tree'), Ly(1, 2, 'sedge tussock'), Ly(2, 3, 'pale toadstools')] },
+    ],
+    face: [],
   },
 };
 
