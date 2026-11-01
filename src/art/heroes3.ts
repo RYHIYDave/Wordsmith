@@ -29,6 +29,7 @@ import { paintRanger3 } from './hero3_ranger';
 import { makeTinkererArt, makeTinkererCardArt } from './tinkerer_art';
 import { makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
 import { makeWarlockArt } from './warlock_art';
+import type { WarlockShare } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -368,6 +369,8 @@ export let painted3: Sprite | undefined;
 export function makeHeroArt3(): HeroArt {
   const made = new Map<string, ActorArt>();
   const todo = new Map<ActorArt, (() => Sprite)[]>();
+  // (the warlock's lists that are the same in every place he is shown in, made once: art/warlock_art.ts WarlockShare)
+  const warlockShare: WarlockShare = new Map();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -378,7 +381,7 @@ export function makeHeroArt3(): HeroArt {
       const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}`;
       let wart = made.get(wkey);
       if (!wart) {
-        wart = makeWarlockArt({ form, place, blaze });
+        wart = makeWarlockArt({ form, place, blaze }, warlockShare);
         made.set(wkey, wart);
       }
       return wart;
