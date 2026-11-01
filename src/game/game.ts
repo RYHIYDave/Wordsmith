@@ -1,6 +1,8 @@
 // The rules of the game: one Game object holds a run (one character's life) and advances it
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
+import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
+import { RAIN } from '../art/action_f1_fx';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
@@ -3840,7 +3842,10 @@ export class Game {
       const k = Math.min(1, dt / Math.max(1e-6, st.t));
       const sx = st.dx * k;
       const sy = st.dy * k;
+      const stepX = h.x;
+      const stepY = h.y;
       this.slide(h, TUNE.heroRadius, sx, sy, this.level.walk);
+      if (this.perils.length) cageHero(this, h, TUNE.heroRadius, stepX, stepY);
       st.dx -= sx;
       st.dy -= sy;
       st.t -= dt;
@@ -3890,6 +3895,8 @@ export class Game {
       this.slide(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, this.level.walk);
       this.intoLine(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
       this.intoDoor(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
+      // (FLOOR 1, MORE ACTION: the Warden's bars, while they stand, a cage his walking does not cross: game/action_f1.ts)
+      if (this.perils.length) cageHero(this, h, TUNE.heroRadius, wasX, wasY);
       if (h.attackT <= 0 && !c.face) {
         h.fx = mx / len;
         h.fy = my / len;
@@ -9040,6 +9047,10 @@ export class Game {
     } else if (mv.id === 'summon') {
       this.sfx('bossRoar');
       this.msg(`${m.name} calls the dead`, MSG.foe);
+    } else if (mv.id === 'lockdown') {
+      // (FLOOR 1, MORE ACTION: the Warden's Lockdown, its bars' shadows across his room as his keys go up: game/action_f1.ts)
+      this.perils.push({ kind: 'act1', a1: BARS_PERIL, x: m.x, y: m.y, fx: m.fx, fy: m.fy, t: -mv.windup, hit: 0, dur: BARS_LASTS, dmg: this.rollMonsterDmg(m) * mv.dmg, el: this.monsterElement(m), words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: 0, c: 0, d: 0, hand: 1 });
+      this.sfx('bossRoar', 0.5);
     } else if (mv.id === 'pierce') {
       // (THE NEW MONSTERS: the marksman's line of aim, from him toward the hero: AIM)
       const end = this.aimEnd(m.x, m.y, m.fx, m.fy);
@@ -9089,10 +9100,26 @@ export class Game {
       } else this.throwSpear(m, mv);
     } else if (mv.id === 'rally') {
       this.rally(m);
+    } else if (mv.id === 'rain') {
+      // (FLOOR 1, MORE ACTION: the archer's arrow rain, a ring where the hero stands as it looses, struck a moment later; a Twin
+      // archer's second ring where he stands a moment after: game/action_f1.ts)
+      const rain = (x: number, y: number, dmg: number): void => {
+        this.perils.push({ kind: 'act1', a1: RAIN_PERIL, x, y, fx: m.fx, fy: m.fy, t: 0, hit: RAIN.delay, dur: RAIN_LASTS, dmg, el, words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: m.x, c: m.y, d: 0, hand: 1 });
+      };
+      rain(h.x, h.y, this.rollMonsterDmg(m) * mv.dmg);
+      if (twin > 0) {
+        this.after(0.35, () => {
+          if (!m.dead) rain(this.hero.x, this.hero.y, this.rollMonsterDmg(m) * mv.dmg * twin);
+        });
+      }
+      this.sfx('shot', 0.6);
+    } else if (mv.id === 'lockdown') {
+      // (its bars crash at the peril's own clock: game/action_f1.ts)
     } else if (mv.id === 'shoot') {
-      // THE NEW MONSTERS: a leader who shoots, as those he leads shoot (a Twin one, two at once)
+      // THE NEW MONSTERS: a leader who shoots, as those he leads shoot (a Twin one, two at once); FLOOR 1, MORE ACTION: the bone
+      // archer's one shot, with its moves
       const base = Math.atan2(dy, dx);
-      const look = m.kind === 'marksman' ? 'arrow' : 'bolt';
+      const look = m.kind === 'marksman' || m.kind === 'archer' ? 'arrow' : 'bolt';
       if (twin > 0) {
         this.shootAt(m, base - 0.12, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, look, def.range + 3);
         this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg * twin, el, look, def.range + 3);

@@ -236,6 +236,11 @@ export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
       return more?.summon;
     case 'bolts':
       return clips?.heavy ?? clips?.attack;
+    // (FLOOR 1, MORE ACTION: the archer's arrow rain and the Warden's Lockdown, the art chat's: art/monster_bones.ts, art/monster_warden.ts)
+    case 'rain':
+      return more?.rain;
+    case 'lockdown':
+      return more?.lockdown;
     default:
       return clips?.attack;
   }

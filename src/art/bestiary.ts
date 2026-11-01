@@ -21,7 +21,7 @@
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { BOSSES5 } from '../game/bosses';
-import { CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
+import { ACTION_F1, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { BOSSES, makeAmalgamArt3, makeBoneBeastArt3, makeChainedArt3, makeHeadsmanArt3 } from './bosses3';
@@ -31,11 +31,11 @@ import { HEADSMAN2 } from './headsman2';
 import { makeHeadsman2Art } from './headsman2_moves';
 import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
-import { makeArcherArt, makeSkeletonArt } from './monster_bones';
+import { ARCHER_RAIN, makeArcherArt, makeSkeletonArt } from './monster_bones';
 import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
 import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
 import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
-import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
+import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
@@ -55,6 +55,14 @@ export function useMonsterAttacks(on: boolean): void {
   CRAWL_OUT.on = on;
 }
 useMonsterAttacks(MONSTER_ATTACKS.on);
+
+/** FLOOR 1, MORE ACTION (game/defs.ts ACTION_F1): the rules and the art chat's pictures of the arrow rain and the Lockdown, on and off together. */
+export function useActionF1(on: boolean): void {
+  ACTION_F1.on = on;
+  ARCHER_RAIN.on = on;
+  WARDEN_LOCKDOWN.on = on;
+}
+useActionF1(ACTION_F1.on);
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,

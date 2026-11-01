@@ -975,7 +975,7 @@ export const MONSTER_ATTACKS = { on: true };
  * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
  * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
  */
-export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer';
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown';
 export interface MonsterMove {
   id: MoveId;
   /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
@@ -995,7 +995,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -1057,13 +1057,38 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
     { id: 'swing', windup: 0.73, dmg: 0.7, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
     { id: 'slam', windup: 1.03, dmg: 1.2, cooldown: 7, first: 2, after: 2.6, recover: 0.35, near: 0, far: 0 },
   ],
+  // FLOOR 1, MORE ACTION (ACTION_F1): the bone archer its one shot as it always was (MONSTERS.archer's wind-up and wait) and,
+  // now and then, its arrow rain (art/monster_bones.ts RAIN_LOOSE; the art's suggestion, a cooldown of 6 to 8 s, from 3 to 8
+  // tiles off); the Warden his swing, bolts and summon as before and the Lockdown in place of his slam (art/monster_warden.ts
+  // LOCKDOWN_HIT; the slam's cooldown; it fills his arena, so from any range). Each move's `recover`: the rest of its picture.
+  archer: [
+    { id: 'shoot', windup: 0.55, dmg: 1, cooldown: 0, first: 0, after: 2.0, recover: 0.3, near: 0, far: 0 },
+    { id: 'rain', windup: 0.9, dmg: 1.4, cooldown: 7, first: 3, after: 1.8, recover: 0.82, near: 3, far: 8 },
+  ],
+  wardenLock: [
+    { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },
+    { id: 'bolts', windup: 0.7, dmg: 0.5, cooldown: 3.5, first: 0, after: 2.4, recover: 0.3, near: 3.4, far: 12 },
+    { id: 'lockdown', windup: 1.2, dmg: 1, cooldown: 8, first: 3, after: 2.4, recover: 0.95, near: 0, far: 14 },
+    { id: 'summon', windup: 1.1, dmg: 0, cooldown: 18, first: 9, after: 1.5, recover: 0.8, near: 0, far: 12 },
+  ],
 };
+/**
+ * FLOOR 1, MORE ACTION (the art chat's art/action-f1, his yes to its pictures, 31 Oct 2026: of the arrow rain “Yes, that's it
+ * (Recommended)”; of the Lockdown, the bars, “You’re caged but you can swipe to move around”, and offered more, “No that’s good.
+ * I was just asking”): the bone archer's ARROW RAIN, a ring where he stood struck 1.5 s after it looses; the Warden's LOCKDOWN in
+ * place of his slam, bars crashing down across his arena in rows, whoever is on a row struck, a cell safe, the bars standing as
+ * a cage for 1.5 s that his swipe carries him through (game/action_f1.ts). The art's switches go with it (art/bestiary.ts
+ * useActionF1).
+ */
+export const ACTION_F1 = { on: false };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
   if (!MONSTER_ATTACKS.on) return null;
   switch (m.kind) {
     case 'warden':
-      return MONSTER_MOVES.warden;
+      return ACTION_F1.on ? MONSTER_MOVES.wardenLock : MONSTER_MOVES.warden;
+    case 'archer':
+      return ACTION_F1.on ? MONSTER_MOVES.archer : null;
     case 'brute':
       return m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute;
     case 'boneward':
