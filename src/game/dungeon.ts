@@ -142,6 +142,34 @@ export function cryptLayoutFloor(depth: number): number {
 }
 /** (the Crypt's floor of the level being planned, 0 if none: set by `planLevel` for the level it plans) */
 let cryptK = 0;
+
+/**
+ * EVERY FLOOR OPEN, LINEAR OR COMBO (behind its switch, off until his yes to pictures of each floor laid so). His words, 31 Oct
+ * 2026, 10:46: “I just feel like these levels would benefit from having a lot more branches that go further off the beaten
+ * path. And they can even, you know, you can have two branches that go in separate directions, but then reconnect somewhere
+ * further along ... it doesn't always have to be like a straight linear path from the beginning of the level to the end of the
+ * level.”; by 11:15: “Combo would be something like the library.  It has a bunch of rooms, but they’re fairly tight and you
+ * find your way through them.”; and his pick for each floor by pop-up (the Crypt's: 1 combo, 2 open, 3 linear, 4 combo, 5
+ * combo). Here, the Crypt's floors (this map-maker's); the floors past them have map-makers of their own.
+ *   COMBO: WAYS ROUND (`loops`): now and then, off a room of the main path, a room set down as a branch's first room is, and from
+ *     it a way on to a room of the path two or three further on: two ways that part and meet again, so that the way to the boss
+ *     is not one line; and more branches (`branches` more), each with a room to cross before its reward (further off the way).
+ *   LINEAR and OPEN: as each floor is laid today (the Crypt opening up from its second floor), for now.
+ * OFF, EVERY DUNGEON IS WHAT IT WAS: none of its dice are thrown. `floors`: the floors laid so, each at his yes to its pictures;
+ * the others as they were. FLOOR 1, combo, his yes, 1 Nov 2026, to its maps beside today's: “Yes, as shown”.
+ */
+export const LEVEL_KINDS: { on: boolean; floors: number[] } = { on: true, floors: [1] };
+export type LevelKind = 'open' | 'linear' | 'combo';
+/** The Crypt's floors' kinds, his picks (index 0 unused). */
+export const CRYPT_KINDS: readonly (LevelKind | null)[] = [null, 'combo', 'open', 'linear', 'combo', 'combo'];
+/** A combo floor's ways round, and how many more branches it has than another. */
+export const COMBO = { loops: 2, branches: 1 };
+/** The kind of floor `depth` is laid as, while LEVEL_KINDS is on (null: as it always was). */
+export function levelKindOf(depth: number): LevelKind | null {
+  return LEVEL_KINDS.on && depth >= 1 && depth <= CRYPT_LAST && LEVEL_KINDS.floors.includes(depth) ? CRYPT_KINDS[depth] : null;
+}
+/** (the kind of the level being planned: set by `planLevel`) */
+let kindHere: LevelKind | null = null;
 /** THE WAYS (game/ways.ts, WAYS): the floor being laid is the first, with its gate to town in a back wall of its first room (set by `generateFloor`). */
 let squareStart = false;
 /** The side of a cell block that its cells hang off: its back wall along its length (3, the upper right on the screen, if it runs along x; 2, the upper left, if along y). */
@@ -642,7 +670,8 @@ function grow(
  * sometimes one room to cross first, then the reward room. Returns false if no host has space.
  */
 function growBranch(rng: RNG, rooms: RoomPlan[], corridors: Corridor[], hosts: readonly number[], reward: Role, used: Set<number>): boolean {
-  const twoRooms = rng.chance(TWO_ROOM_BRANCH);
+  // (COMBO: every branch has a room to cross before its reward, further off the way; not a die thrown for it)
+  const twoRooms = kindHere === 'combo' ? true : rng.chance(TWO_ROOM_BRANCH);
   const crossSize = freshSize(rng, rng.chance(0.5) ? 'small' : 'medium', used);
   // A guardian needs room to fight in; a vault is a small room.
   const rewardSize = freshSize(rng, reward === 'lair' ? 'lair' : 'small', used, reward !== 'vault');
@@ -676,6 +705,42 @@ interface Plan {
   /** THE MIX: the room of the main path whose way in a gate bars, and the nook its lever stands in (-1: the level has none). */
   gated: number;
   nook: number;
+  /** COMBO: how many ways round it has (each a loop the hero can walk round). */
+  loops: number;
+}
+
+/**
+ * COMBO: A WAY ROUND. Off room i of the main path (never the start nor the boss's hall), a room set down as a branch's first is,
+ * and from it a way to room i + 2, i + 3 or i + 4 of the path (never the boss's hall), laid as any corridor is, clear of every other
+ * room and corridor; where none can be, a second room on from the first and a way from that. `skip(i, j)`: a span not to be
+ * gone round (the gate's). True if one was laid. (Tried again, with rooms of other sizes, where one is not laid at first.)
+ */
+function growLoop(rng: RNG, rooms: RoomPlan[], corridors: Corridor[], pathLen: number, used: Set<number>, skip: (i: number, j: number) => boolean): boolean {
+  const starts: number[] = [];
+  for (let i = 1; i <= pathLen - 4; i++) starts.push(i);
+  for (const i of rng.shuffle(starts)) {
+    const roomMark = rooms.length;
+    const corridorMark = corridors.length;
+    let from = rooms[i];
+    let heading = -1;
+    for (let n = 0; n < 2; n++) {
+      const size = freshSize(rng, rng.chance(0.5) ? 'small' : 'medium', used);
+      heading = grow(rng, rooms, corridors, from, size, 'side', -1, heading);
+      if (heading < 0) break;
+      from = rooms[rooms.length - 1];
+      from.base = size.base;
+      for (const j of [i + 2, i + 3, i + 4]) {
+        if (j >= pathLen - 1 || skip(i, j)) continue;
+        const legs = planCorridor(rng, rooms, corridors, from, rooms[j]);
+        if (!legs) continue;
+        corridors.push({ a: from.id, b: rooms[j].id, legs });
+        return true;
+      }
+    }
+    rooms.length = roomMark;
+    corridors.length = corridorMark;
+  }
+  return false;
 }
 
 /** Steps 1a-1c: the whole level as rectangles, on a grid with no edges (coordinates may be negative). */
@@ -684,6 +749,7 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   pairsHere = MIX.on && MIX.pairs && depth >= MIX_FROM;
   // (THE CRYPT: its floor, while its layout is on; 0 otherwise, and not a die is thrown for it)
   cryptK = cryptLayoutFloor(depth);
+  kindHere = levelKindOf(depth);
   squareStart = WAYS.on && depth === 1;
   const pathLen = pathRoomCount(depth);
   const used = new Set<number>();
@@ -707,7 +773,7 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   // The side branches: one in each stretch of the path, never from the start room or the boss hall.
   // The first branch always ends in a vault, so the first side path a player tries pays off and a
   // guardian is never met in the opening rooms; of the rest, at least one ends in a guardian's lair.
-  const want = branchCount(depth);
+  const want = branchCount(depth) + (kindHere === 'combo' ? COMBO.branches : 0);
   const later: Role[] = ['lair'];
   while (later.length < want - 1) later.push(rng.chance(0.5) ? 'vault' : 'lair');
   const rewards: Role[] = ['vault', ...rng.shuffle(later)];
@@ -742,9 +808,15 @@ function planLevel(rng: RNG, depth: number): Plan | null {
       break;
     }
   }
+  // COMBO: ITS WAYS ROUND, never round the gate (so that its lever is still wanted). Where one finds no room, the floor has one
+  // fewer.
+  let loops = 0;
+  if (kindHere === 'combo') {
+    for (let n = 0; n < COMBO.loops * 3 && loops < COMBO.loops; n++) if (growLoop(rng, rooms, corridors, pathLen, used, (i, j) => gated > i && gated <= j)) loops++;
+  }
   // THE CRYPT: A ROW OF CELLS along the back wall of each cell block, where they fit.
   for (const host of rooms.slice(0, pathLen)) if (cryptK > 0 && host.block) addCells(rng, rooms, corridors, host);
-  return { rooms, corridors, pathLen, gated, nook };
+  return { rooms, corridors, pathLen, gated, nook, loops };
 }
 
 /**
@@ -1252,8 +1324,8 @@ function tryLayout(rng: RNG, depth: number): Layout | null {
   carve(size, rooms, corridors, tiles, corr);
   const clips = clipCorners(rng, size, rooms, tiles, corr);
   growWalls(size, tiles);
-  // The plan's own checks should make these impossible; they are here as a net.
-  if (hasThinWall(size, tiles) || countLoops(size, tiles) !== 0) return null;
+  // The plan's own checks should make these impossible; they are here as a net. (COMBO: as many loops as ways round were laid.)
+  if (hasThinWall(size, tiles) || countLoops(size, tiles) !== plan.loops) return null;
   const open = new Uint8Array(size * size);
   for (let i = 0; i < open.length; i++) open[i] = tiles[i] === T_FLOOR ? 1 : 0;
   const field = flowField(open, size, size, centreX(rooms[0]), centreY(rooms[0]));

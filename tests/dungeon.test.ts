@@ -18,7 +18,7 @@ import nodeAssert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
 import { FIRST_LEVELS, MONSTERS, MONSTER_PACKS, PACK_BY_SIZE, packRange, sizeOf } from '../src/game/defs';
 import { doorPiers, doorWay, isLeaf } from '../src/game/doors';
-import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
+import { COMBO, LEVEL_KINDS, MIX, generateFloor, levelKindOf, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
 import type { Floor, PackSpot, PropSpot, Room } from '../src/game/types';
@@ -340,7 +340,10 @@ test('the map is square and no larger than 160, and room counts and arrays match
       assert.equal(r.id, i, `${tag}: main-path rooms come first, in walking order`);
     });
     const off = f.rooms.length - path.length;
-    assert.ok(off >= branches(depth) && off <= 2 * branches(depth), `${tag}: ${off} rooms on side branches`);
+    // (a combo floor: a branch more, each of two rooms, and its ways round, a room or two each: game/dungeon.ts COMBO)
+    const combo = levelKindOf(depth) === 'combo';
+    const most = combo ? 2 * (branches(depth) + COMBO.branches) + 2 * COMBO.loops : 2 * branches(depth);
+    assert.ok(off >= branches(depth) && off <= most, `${tag}: ${off} rooms on side branches`);
     assert.ok(f.rooms.every(r => r.path >= -1 && Number.isInteger(r.path)), tag);
     for (let i = 0; i < f.tiles.length; i++) {
       const t = f.tiles[i];
@@ -501,16 +504,35 @@ test('every room has a doorway, and doorways are exactly 3 tiles wide, or one wh
   console.log(`(${across} corridors straight across the screen in ${withOne} of ${samples.length} dungeons)`);
 });
 
-test('a level is a tree: no loops, and every corridor joins exactly two rooms', () => {
+test('a level is a tree: no loops, and every corridor joins exactly two rooms (a combo floor: its ways round, each one loop)', () => {
   for (const { f, tag } of samples) {
-    assert.equal(countLoops(f), 0, `${tag}: there is a loop to walk round`);
+    // (EVERY FLOOR OPEN, LINEAR OR COMBO: a combo floor has its ways round, each a corridor more and a loop: game/dungeon.ts COMBO)
+    const loops = countLoops(f);
+    if (levelKindOf(f.depth) === 'combo') assert.ok(loops <= COMBO.loops, `${tag}: ${loops} loops to walk round`);
+    else assert.equal(loops, 0, `${tag}: there is a loop to walk round`);
     const corridors = corridorsOf(f);
-    assert.equal(corridors.length, f.rooms.length - 1, `${tag}: ${corridors.length} corridors for ${f.rooms.length} rooms`);
+    assert.equal(corridors.length, f.rooms.length - 1 + loops, `${tag}: ${corridors.length} corridors for ${f.rooms.length} rooms`);
     for (const c of corridors) assert.equal(c.rooms.length, 2, `${tag}: a corridor touches rooms ${c.rooms.join(', ')}`);
     // every doorway belongs to one end of one corridor
     const doors = f.rooms.reduce((n, r) => n + doorways(f, r).length, 0);
-    assert.equal(doors, 2 * (f.rooms.length - 1), `${tag}: ${doors} doorways`);
+    assert.equal(doors, 2 * (f.rooms.length - 1 + loops), `${tag}: ${doors} doorways`);
   }
+});
+
+test('a combo floor has its ways round, and with LEVEL_KINDS off it is laid as it was', () => {
+  let some = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const f = generateFloor(1, seed * 7919);
+    if (countLoops(f) > 0) some++;
+    LEVEL_KINDS.on = false;
+    try {
+      const g = generateFloor(1, seed * 7919);
+      assert.equal(countLoops(g), 0, `seed ${seed}: off, no loop`);
+    } finally {
+      LEVEL_KINDS.on = true;
+    }
+  }
+  assert.ok(some >= 9, `${some} of 12 first floors have a way round`);
 });
 
 test('the main path runs from the start to the boss, and every side branch is a dead end with a reward', () => {
@@ -524,7 +546,10 @@ test('the main path runs from the start to the boss, and every side branch is a 
     // walking from the start, each room of the path is farther than the one before
     const dist = flowField(buildOpenGrid(f), f.w, f.h, Math.floor(f.start.x), Math.floor(f.start.y));
     const walk = (r: Room): number => dist[centreOf(r).y * f.w + centreOf(r).x];
-    for (let i = 1; i < path.length; i++) assert.ok(walk(path[i]) > walk(path[i - 1]), `${tag}: path room ${i} is nearer the start than room ${i - 1}`);
+    // (a combo floor's ways round may bring a room of the path nearer the start than the one before it: there, the boss's hall the
+    // farthest of them)
+    if (levelKindOf(depth) === 'combo') for (let i = 0; i < path.length - 1; i++) assert.ok(walk(path[path.length - 1]) > walk(path[i]), `${tag}: path room ${i} is farther than the boss's hall`);
+    else for (let i = 1; i < path.length; i++) assert.ok(walk(path[i]) > walk(path[i - 1]), `${tag}: path room ${i} is nearer the start than room ${i - 1}`);
     assert.equal(path[0].kind, 'start', tag);
     assert.equal(path[path.length - 1].kind, 'boss', tag);
     assert.equal(doorways(f, path[0]).length, 1, `${tag}: the start room has one way out`);
@@ -533,7 +558,7 @@ test('the main path runs from the start to the boss, and every side branch is a 
     // branches: each hangs off one room of the path (never the start or the boss hall), and no path room has two
     const off = f.rooms.filter(r => r.path < 0);
     const rewards = off.filter(r => r.kind === 'treasure' || r.kind === 'guardian');
-    assert.equal(rewards.length, branches(depth), `${tag}: ${rewards.length} reward rooms`);
+    assert.equal(rewards.length, branches(depth) + (levelKindOf(depth) === 'combo' ? COMBO.branches : 0), `${tag}: ${rewards.length} reward rooms`);
     const hosts: number[] = [];
     for (const end of rewards) {
       assert.equal(doorways(f, end).length, 1, `${tag}: ${end.kind} room ${end.id} is not a dead end`);
@@ -618,7 +643,7 @@ test('room kinds: one start, one boss, elites along the path, a vault or a guard
     assert.equal(count('start'), 1, tag);
     assert.equal(count('boss'), 1, tag);
     assert.equal(count('elite'), eliteRooms(depth), tag);
-    assert.equal(count('treasure') + count('guardian'), branches(depth), tag);
+    assert.equal(count('treasure') + count('guardian'), branches(depth) + (levelKindOf(depth) === 'combo' ? COMBO.branches : 0), tag);
     assert.ok(count('treasure') >= 1, `${tag}: no treasure vault`);
     assert.ok(count('guardian') >= 1, `${tag}: no guardian`);
     for (const r of f.rooms) {

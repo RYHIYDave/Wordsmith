@@ -116,7 +116,9 @@ const smearIn = (p: Painted): number => {
 };
 
 /** The game's files that import him (his figure now; his rules and effects as they are built). */
-const KING_USERS = 'art/act1_figs/gking.ts game/act1_rules/gking.ts render/act1_fx/gking.ts';
+// (and floor 20's shadow of the King, brought in by the main chat on floor 20 behind HIGH_CITY (off): its rules and effects take his
+// charge and the Crown's Weight from him, the art chat's mockup/royal-shadows)
+const KING_USERS = 'art/act1_figs/gking.ts game/act1_rules/gking.ts game/act1_rules/rshadow.ts render/act1_fx/gking.ts render/act1_fx/rshadow.ts';
 
 test('1. the switch is off, and of the game only floor 19\'s own files import him', () => {
   assert.equal(KING_ON.on, false, 'KING_ON is off');
