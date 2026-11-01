@@ -9,10 +9,13 @@
 
 import { Px } from '../engine/px';
 import type { ActorArt } from '../art/actor_types';
-import { ARMS_HIT, ARMS_LONG, DEVOUR_HITS, DEVOUR_LONG, DRAG, RAIN_HIT, RAIN_LONG, SWIPE_HITS, SWIPE_LONG, makeAmalgamActionArt } from '../art/amalgam_action';
+import { ARMS_HIT, ARMS_LONG, DEVOUR_HITS, DEVOUR_LONG, DRAG, FINISHER_LATER, RAIN_HIT, RAIN_LONG, RAKE_FREEZE, SWIPE1_HITS, SWIPE1_LONG, SWIPE_HITS, SWIPE_LONG, makeAmalgamActionArt, makeAmalgamRound1Art } from '../art/amalgam_action';
 import {
-  ARMS, BIG_ARM_CANVAS, BIG_ARM_FRAMES, BIG_ARM_FPS, DROP_CANVAS, RAIN, RAIN_SKULL_CANVAS, SLAM_RING, dropAt, dropPainted, makeBigArmArt, makeRainSkullArt, rainDrops, slamRingCanvas, slamRingPainted,
+  ARMS, BIG_ARM_CANVAS, BIG_ARM_FRAMES, BIG_ARM_FPS, DROP_CANVAS, RAIN, RAIN_SKULL_CANVAS, SLAM_RING, dropAt, dropPainted, makeBigArmArt, makeRainSkullArt, rainDrops, rakeFloorPainted, slamRingCanvas, slamRingPainted,
 } from '../art/amalgam_action_fx';
+import { MITE, makeBoneMiteArt } from '../art/amalgam_mites';
+import type { Clip } from '../art/actor_types';
+import { ACT_CANVAS } from '../art/amalgam_action';
 import type { Drop } from '../art/amalgam_action_fx';
 import { AMALGAM } from '../art/bosses3';
 import { drawArmCrack, drawClawRake, ARM_CRACK_WARN } from '../art/boss_shots';
@@ -36,12 +39,27 @@ const smooth = (u: number): number => {
 // The figures, and where things are on the floor
 
 let AM: ActorArt | null = null;
+let AM1: ActorArt | null = null;
 let HERO: ActorArt | null = null;
-/** The Amalgamation as the game would hold it with AMALGAM_ACTION on; the knight. */
-export function figures(): { am: ActorArt; knight: ActorArt } {
+let MITES: ActorArt | null = null;
+/** The Amalgamation as the game would hold it with AMALGAM_ACTION on (and with the first round's rakes, for the picture of them beside the new); the knight; a bone mite. */
+export function figures(): { am: ActorArt; am1: ActorArt; knight: ActorArt; mite: ActorArt } {
   AM ??= makeAmalgamActionArt(AMALGAM.pace);
+  AM1 ??= makeAmalgamRound1Art(AMALGAM.pace);
   HERO ??= makeHeroArt3().of('warrior', { twoHanded: false }) as unknown as ActorArt;
-  return { am: AM, knight: HERO };
+  MITES ??= makeBoneMiteArt();
+  return { am: AM, am1: AM1, knight: HERO, mite: MITES };
+}
+/** A frame of a figure's death (the game's own clip of it). */
+function deathAt(art: ActorArt, view: View, t: number): Laid {
+  const c = (view === 'front' ? art.front : art.back).clips?.die as Clip;
+  return spriteLaid(c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(t * c.fps + 1e-6)))]);
+}
+/** The way a figure at `from` facing toward `to` (tiles) is seen: from in front if it faces down the screen; turned (mirrored) if it faces left. */
+function facingOf(from: readonly [number, number], to: readonly [number, number]): { view: View; flip: boolean } {
+  const dx = (to[0] - from[0]) - (to[1] - from[1]);
+  const dy = (to[0] - from[0]) + (to[1] - from[1]);
+  return { view: dy >= 0 ? 'front' : 'back', flip: dx < 0 };
 }
 /** The way it faces on the floor (tiles): from in front, down-right (+x); from behind, up-right (-y); and the way its left is. */
 const ahead = (view: View): [number, number] => (view === 'front' ? [1, 0] : [0, -1]);
@@ -65,10 +83,11 @@ function floorOf(base: Px): Px {
   return p;
 }
 /** The knight at `K` (tiles), turned toward it at `B`, standing or running. */
-function knightStood(knight: ActorArt, K: readonly [number, number], B: readonly [number, number], walking: boolean, t: number, cx: number, cy: number, k: number): Stood {
+function knightStood(knight: ActorArt, K: readonly [number, number], B: readonly [number, number], walking: boolean, t: number, cx: number, cy: number, k: number, act?: { move: 'attack' | 'reel'; at: number }): Stood {
   const [kx, ky] = onFloor(K[0], K[1], cx, cy, k);
   const [bx, by] = onFloor(B[0], B[1], cx, cy, k);
-  return standing([kx, ky], frameAt(knight, ky < by ? 'front' : 'back', walking ? 'walk' : 'stand', t), { flip: kx > bx, shadow: 9 });
+  const v: View = ky < by ? 'front' : 'back';
+  return standing([kx, ky], act ? frameAt(knight, v, act.move, act.at) : frameAt(knight, v, walking ? 'walk' : 'stand', t), { flip: kx > bx, shadow: 9 });
 }
 /** THE GAME'S WARNING (render/render.ts, a 'warn' zone): its faint ground and its dotted edge, round a list of floor points (tiles). */
 function warnZone(px: Px, pts: ReadonlyArray<readonly [number, number]>, k: number, kk: number, cx: number, cy: number): void {
@@ -140,23 +159,40 @@ export const LEAD = 0.4;
 // THE SWIPE: the right, the left, the finisher and its ring; the knight giving ground, and out of the ring
 
 const SWIPE_FROM = -1.8;
-export function swipeScene(view: View, t: number, base: Px, cx: number, cy: number, k = 1): Px {
-  const { am, knight } = figures();
+/** The knight's reel (seconds), as the game's clip of it. */
+const REEL_LONG = 8 / 30;
+/**
+ * THE SWIPE (the second round): the right rake, the backhand, the finisher and its ring. The knight 2.7 tiles before it: the first
+ * rake catches him (the freeze on the hit; he is struck and thrown back); he backs off out of its reach before the backhand, which
+ * sweeps by just before him; out of the ring sideways as it rears. `round1`: it with the first round's rakes (for the picture of
+ * them beside the new), the knight standing.
+ */
+export function swipeScene(view: View, t: number, base: Px, cx: number, cy: number, k = 1, round1 = false): Px {
+  const { am, am1, knight } = figures();
   const m = t - LEAD;
   const B = before([0, 0], view, SWIPE_FROM);
-  const fig = m < 0 ? frameAt(am, view, 'stand', t) : m < SWIPE_LONG ? frameAt(am, view, 'attack', m) : frameAt(am, view, 'stand', m - SWIPE_LONG);
-  // (the knight: just out of its reach; back a step from each rake; out of the ring sideways as it rears)
-  const back = 0.45 * smooth((m - 0.45) / 0.35) + 0.4 * smooth((m - 1.35) / 0.35);
-  const aside = 2.6 * smooth((m - 2.05) / 0.55);
-  const K = before(B, view, 2.7 + back + 0.6 * smooth((m - 2.05) / 0.55), view === 'front' ? aside : -aside);
-  const kWalk = (m > 0.45 && m < 0.8) || (m > 1.35 && m < 1.7) || (m > 2.05 && m < 2.6);
+  const long = round1 ? SWIPE1_LONG : SWIPE_LONG;
+  const art = round1 ? am1 : am;
+  const fig = m < 0 ? frameAt(art, view, 'stand', t) : m < long ? frameAt(art, view, 'attack', m) : frameAt(art, view, 'stand', m - long);
+  const [h1, h2, h3] = round1 ? SWIPE1_HITS : SWIPE_HITS;
+  const smooth2 = (a: number, d: number): number => smooth((m - a) / d);
+  // (the knight: struck by the first and thrown back; backing off from the second; out of the ring sideways as it rears)
+  const thrown = round1 ? 0 : 0.85 * smooth2(h1 + RAKE_FREEZE, 0.3);
+  const backs = round1 ? 0 : 0.5 * smooth2(1.15, 0.35);
+  const rear = (58 + FINISHER_LATER) / 30;
+  const aside = round1 ? 0 : 2.6 * smooth2(rear + 0.05, 0.55);
+  const K = before(B, view, 2.7 + thrown + backs + (round1 ? 0 : 0.6 * smooth2(rear + 0.05, 0.55)), view === 'front' ? aside : -aside);
+  const struck = !round1 && m >= h1 && m < h1 + RAKE_FREEZE + REEL_LONG ? { move: 'reel' as const, at: Math.max(0, m - h1 - RAKE_FREEZE) } : undefined;
+  const kWalk = !round1 && ((m > 1.15 && m < 1.5) || (m > rear + 0.05 && m < rear + 0.6));
   const px0 = floorOf(base);
-  const hit = SWIPE_HITS[2];
-  if (m >= 2.0 && m < hit) warnZone(px0, circle(before(B, view, SLAM_RING.ahead), SLAM_RING.finisher), (m - 2.0) / (hit - 2.0), k, cx, cy);
+  if (m >= rear && m < h3 && !round1) warnZone(px0, circle(before(B, view, SLAM_RING.ahead), SLAM_RING.finisher), (m - rear) / (h3 - rear), k, cx, cy);
   const at = onFloor(B[0], B[1], cx, cy, k);
-  const ring = ringAt(B, view, m - hit, SLAM_RING.finisher, cx, cy, k, 61);
-  const stood: Stood[] = [standing(at, fig, { shadow: 30 }), knightStood(knight, K, B, kWalk, t, cx, cy, k), ...ring.air];
-  return shaken(compose(px0, [ring.floor], stood, k), shakeOf(m, [[SWIPE_HITS[0], 1], [SWIPE_HITS[1], 1], [hit, 4]]));
+  const ring = ringAt(B, view, m - h3, SLAM_RING.finisher, cx, cy, k, 61);
+  // (the gouges its claws rip in the floor)
+  const floor: { at: [number, number]; l: Laid }[] = [ring.floor];
+  if (!round1) for (const [i, h] of [[0, h1], [1, h2]] as const) floor.push({ at, l: laid(rakeFloorPainted(m - h, i, view), ACT_CANVAS.ax, ACT_CANVAS.ay) });
+  const stood: Stood[] = [standing(at, fig, { shadow: 30 }), knightStood(knight, K, B, kWalk, t, cx, cy, k, struck), ...ring.air];
+  return shaken(compose(px0, floor, stood, k), shakeOf(m, [[h1, round1 ? 1 : 3], [h2, round1 ? 1 : 3.5], [h3, 4]]));
 }
 export const SWIPE_PASS = LEAD + SWIPE_LONG + 0.4;
 
@@ -171,13 +207,7 @@ export function dropsFor(boss: readonly [number, number]): Drop[] {
   return DROPS.get(key) as Drop[];
 }
 const SKULLS: Partial<Record<View, ReturnType<typeof makeRainSkullArt>>> = {};
-/** A pile lying still (from 1.2 s after it lands until it crumbles) is the same picture: kept. */
-const PILES = new Map<number, Px>();
 function dropFloor(d: Drop, since: number): Px {
-  if (since >= 1.25 && since < RAIN.pile.lie) {
-    if (!PILES.has(d.seed)) PILES.set(d.seed, dropPainted(1.25, 'floor', d.seed).px);
-    return PILES.get(d.seed) as Px;
-  }
   return dropPainted(since, 'floor', d.seed).px;
 }
 /** The rain's skulls at `m` seconds of the move, laid on a scene: shadows and piles on the floor; skulls in the air and their bursts standing, sorted. */
@@ -189,7 +219,7 @@ function rainLaid(drops: ReadonlyArray<Drop>, m: number, view: View, cx: number,
   for (const d of drops) {
     if (!keep(d)) continue;
     const since = m - RAIN_HIT - d.land;
-    if (since < -RAIN.fly || since > RAIN.pile.lie + RAIN.pile.crumble) continue;
+    if (since < -RAIN.fly || since > RAIN.mite.scuff) continue;
     const at = onFloor(d.at[0], d.at[1], cx, cy, k);
     floor.push({ at, l: laid(dropFloor(d, since), C.ax, C.ay) });
     if (since < 0) {
@@ -214,71 +244,189 @@ export function rainScene(view: View, t: number, base: Px, cx: number, cy: numbe
   const B: [number, number] = view === 'front' ? RAIN_B : [RAIN_B[1], -RAIN_B[0]];
   const drops = dropsFor(B);
   const fig = m < 0 ? frameAt(am, view, 'stand', t) : m < RAIN_LONG ? frameAt(am, view, 'rain', m) : frameAt(am, view, 'stand', m - RAIN_LONG);
-  const K = knightPath(drops, B, m, before(B, view, 4.0, view === 'front' ? 0.6 : -0.6));
+  const sw = swarmFor(drops, B, before(B, view, 4.0, view === 'front' ? 0.6 : -0.6));
+  const K = frameOfSwarm(sw.knight, m);
+  void knight;
   const px0 = floorOf(base);
   const at = onFloor(B[0], B[1], cx, cy, k);
   const ring = ringAt(B, view, m - RAIN_HIT, SLAM_RING.rain, cx, cy, k, 63);
   const r = rainLaid(drops, m, view, cx, cy, k);
-  const stood: Stood[] = [standing(at, fig, { shadow: 30 }), knightStood(knight, K.at, B, K.running, t, cx, cy, k), ...ring.air, ...r.stood];
+  const stood: Stood[] = [standing(at, fig, { shadow: 30 }), swarmKnight(K, m, t, cx, cy, k), ...ring.air, ...r.stood, ...frameOfSwarm(sw.mites, m).map((mt) => miteStood(mt, cx, cy, k))];
   return shaken(compose(px0, [ring.floor, ...r.floor], stood, k), shakeOf(m, [[RAIN_HIT, 5], ...drops.map((d) => [RAIN_HIT + d.land, 0.6] as const)]));
 }
 export const RAIN_PASS = LEAD + RAIN_HIT + RAIN.first + 2 * RAIN.gap + RAIN.ripple + RAIN.fly + 1.4;
 
+/** A bone mite of the rain at a moment: where it is (tiles), what it is doing and since when, what it faces. */
+interface MiteNow {
+  p: [number, number];
+  state: 'form' | 'run' | 'bite' | 'dead';
+  since: number;
+  face: [number, number];
+}
+/** The knight at a moment: where, running or not, swinging or not (and since when), what he faces. */
+interface KnightNow {
+  p: [number, number];
+  running: boolean;
+  swing: number | null;
+  face: [number, number];
+}
+/** The knight's swing: when it lands (seconds into his attack), how far it reaches (tiles), how wide (to either side of where he faces, degrees), how long his attack is. */
+const SWING = { hit: 0.133, reach: 1.45, wide: 80, long: 29 / 30 } as const;
 /**
- * THE KNIGHT DODGING THE RAIN (worked out once for a place of it and where he starts): at each moment, if a skull is coming down
- * on him within half a second, he runs (4.6 tiles a second; at RAIN.pile.slow of it in a pile) to the nearest spot no skull will
- * come down on in the next second and a quarter, out of its reach and a little more.
+ * THE KNIGHT IN THE RAIN, AND ITS BONE MITES (worked out once for a place of it and where he starts), frame by frame: each skull
+ * that bursts pulls together into a bone mite (RAIN.mite.at after it lands, MITE.form long), which skitters at him (MITE.pace),
+ * keeping a little apart from the others, and bites when it is near (its bite, again and again). He runs from where a skull is
+ * coming down on him within three quarters of a second (4.6 tiles a second) to the nearest spot none will come down on in the
+ * next second and a quarter; else, with a mite near, he swings, and every mite within his swing as it lands bursts.
  */
-const PATHS = new Map<string, { at: [number, number]; running: boolean }[]>();
-function knightPath(drops: ReadonlyArray<Drop>, boss: readonly [number, number], m: number, start: readonly [number, number]): { at: [number, number]; running: boolean } {
-  const key = `${boss.join(',')}:${start.join(',')}`;
-  if (!PATHS.has(key)) {
-    const out: { at: [number, number]; running: boolean }[] = [];
-    let p: [number, number] = [start[0], start[1]];
-    const danger = (q: readonly [number, number], at: number, ahead2: number, more = 0.35): boolean =>
-      drops.some((d) => {
-        const land = RAIN_HIT + d.land;
-        return land >= at && land <= at + ahead2 && Math.hypot(q[0] - d.at[0], q[1] - d.at[1]) < RAIN.r + more;
-      });
-    const inPile = (q: readonly [number, number], at: number): boolean => drops.some((d) => at - RAIN_HIT - d.land >= 0 && at - RAIN_HIT - d.land < RAIN.pile.lie && Math.hypot(q[0] - d.at[0], q[1] - d.at[1]) < RAIN.pile.r);
-    let goal: [number, number] | null = null;
-    for (let f = 0; f <= 30 * 12; f++) {
-      const at = f / 30;
-      if (!goal && danger(p, at, 0.75)) {
-        let best: [number, number] | null = null;
-        let bd = Infinity;
-        for (let r = 0.3; r <= 3.2; r += 0.15) {
-          for (let a = 0; a < 24; a++) {
-            const q: [number, number] = [p[0] + Math.cos((a / 24) * Math.PI * 2) * r, p[1] + Math.sin((a / 24) * Math.PI * 2) * r];
-            if (Math.hypot(q[0] / 8.5, q[1] / 10) > 0.85 || Math.hypot(q[0] - boss[0], q[1] - boss[1]) < 2.2) continue;
-            if (danger(q, at, 1.25, 0.45)) continue;
-            if (r < bd) {
-              bd = r;
-              best = q;
-            }
-          }
-          if (best) break;
-        }
-        goal = best;
+const SWARMS = new Map<string, { knight: KnightNow[]; mites: MiteNow[][] }>();
+function swarmFor(drops: ReadonlyArray<Drop>, boss: readonly [number, number], start: readonly [number, number], long = 12, mites = true): { knight: KnightNow[]; mites: MiteNow[][] } {
+  const key = `${boss.join(',')}:${start.join(',')}:${mites}`;
+  const had = SWARMS.get(key);
+  if (had) return had;
+  const knight: KnightNow[] = [];
+  const out: MiteNow[][] = [];
+  let p: [number, number] = [start[0], start[1]];
+  let goal: [number, number] | null = null;
+  let swing: { at0: number; target: [number, number]; done: boolean } | null = null;
+  let face: [number, number] = [boss[0], boss[1]];
+  const live: (MiteNow & { d: number })[] = [];
+  const made = new Set<number>();
+  const danger = (q: readonly [number, number], at: number, ahead2: number, more = 0.35): boolean =>
+    drops.some((d) => {
+      const land = RAIN_HIT + d.land;
+      return land >= at && land <= at + ahead2 && Math.hypot(q[0] - d.at[0], q[1] - d.at[1]) < RAIN.r + more;
+    });
+  for (let f = 0; f <= 30 * long; f++) {
+    const at = f / 30;
+    // the mites pulling themselves together where the skulls burst
+    if (mites) {
+      for (const d of drops) {
+        const from = RAIN_HIT + d.land + RAIN.mite.at;
+        if (made.has(d.seed) || at < from) continue;
+        made.add(d.seed);
+        live.push({ d: d.seed, p: [d.at[0], d.at[1]], state: 'form', since: from, face: [p[0], p[1]] });
       }
-      let running = false;
-      if (goal) {
-        const sp = (4.6 * (inPile(p, at) ? RAIN.pile.slow : 1)) / 30;
-        const d = Math.hypot(goal[0] - p[0], goal[1] - p[1]);
-        if (d <= sp) {
-          p = goal;
-          goal = null;
-        } else {
-          p = [p[0] + ((goal[0] - p[0]) * sp) / d, p[1] + ((goal[1] - p[1]) * sp) / d];
-          running = true;
-        }
-      }
-      out.push({ at: p, running });
     }
-    PATHS.set(key, out);
+    // the knight: running from what is coming down on him; else swinging at what is near
+    if (!goal && danger(p, at, 0.75)) {
+      let best: [number, number] | null = null;
+      let bd = Infinity;
+      for (let r = 0.3; r <= 3.2; r += 0.15) {
+        for (let a = 0; a < 24; a++) {
+          const q: [number, number] = [p[0] + Math.cos((a / 24) * Math.PI * 2) * r, p[1] + Math.sin((a / 24) * Math.PI * 2) * r];
+          if (Math.hypot(q[0] / 8.5, q[1] / 10) > 0.85 || Math.hypot(q[0] - boss[0], q[1] - boss[1]) < 2.2) continue;
+          if (danger(q, at, 1.25, 0.45)) continue;
+          if (r < bd) {
+            bd = r;
+            best = q;
+          }
+        }
+        if (best) break;
+      }
+      goal = best;
+      swing = null;
+    }
+    let running = false;
+    if (goal) {
+      const sp = 4.6 / 30;
+      const dd = Math.hypot(goal[0] - p[0], goal[1] - p[1]);
+      face = [goal[0], goal[1]];
+      if (dd <= sp) {
+        p = goal;
+        goal = null;
+      } else {
+        p = [p[0] + ((goal[0] - p[0]) * sp) / dd, p[1] + ((goal[1] - p[1]) * sp) / dd];
+        running = true;
+      }
+    }
+    if (!running && swing && at - swing.at0 >= SWING.long) swing = null;
+    if (!running && !swing) {
+      let near: (typeof live)[number] | null = null;
+      let nd = 1.3;
+      for (const mt of live) {
+        if (mt.state === 'dead') continue;
+        const dd = Math.hypot(mt.p[0] - p[0], mt.p[1] - p[1]);
+        if (dd < nd) {
+          nd = dd;
+          near = mt;
+        }
+      }
+      if (near) swing = { at0: at, target: [near.p[0], near.p[1]], done: false };
+    }
+    if (swing) {
+      face = swing.target;
+      if (!swing.done && at - swing.at0 >= SWING.hit) {
+        swing.done = true;
+        const fa = Math.atan2(swing.target[1] - p[1], swing.target[0] - p[0]);
+        for (const mt of live) {
+          if (mt.state === 'dead') continue;
+          const dd = Math.hypot(mt.p[0] - p[0], mt.p[1] - p[1]);
+          let da = Math.abs(Math.atan2(mt.p[1] - p[1], mt.p[0] - p[0]) - fa);
+          if (da > Math.PI) da = 2 * Math.PI - da;
+          if (dd <= SWING.reach && da <= (SWING.wide * Math.PI) / 180) {
+            mt.state = 'dead';
+            mt.since = at;
+          }
+        }
+      }
+    } else if (!running) face = [boss[0], boss[1]];
+    knight.push({ p: [p[0], p[1]], running, swing: swing ? swing.at0 : null, face: [face[0], face[1]] });
+    // the mites: skittering at him, keeping apart; biting when near
+    for (const mt of live) {
+      if (mt.state === 'dead') continue;
+      mt.face = [p[0], p[1]];
+      const dd = Math.hypot(p[0] - mt.p[0], p[1] - mt.p[1]);
+      if (mt.state === 'form' && at - mt.since >= MITE.form) {
+        mt.state = 'run';
+        mt.since = at;
+      }
+      if (mt.state === 'bite' && at - mt.since >= MITE.bite.long) {
+        mt.state = dd <= 0.75 ? 'bite' : 'run';
+        mt.since = at;
+      }
+      if (mt.state === 'run') {
+        if (dd <= 0.62) {
+          mt.state = 'bite';
+          mt.since = at;
+        } else {
+          const sp = MITE.pace / 30;
+          mt.p = [mt.p[0] + ((p[0] - mt.p[0]) * sp) / dd, mt.p[1] + ((p[1] - mt.p[1]) * sp) / dd];
+        }
+      }
+    }
+    // (keeping apart: never on top of one another, nor in it)
+    for (const a of live) {
+      if (a.state === 'dead' || a.state === 'form') continue;
+      for (const b of live) {
+        if (a === b || b.state === 'dead') continue;
+        const dd = Math.hypot(a.p[0] - b.p[0], a.p[1] - b.p[1]);
+        if (dd < 0.42 && dd > 1e-6) {
+          const push = (0.42 - dd) / 2;
+          a.p = [a.p[0] + ((a.p[0] - b.p[0]) / dd) * push, a.p[1] + ((a.p[1] - b.p[1]) / dd) * push];
+        }
+      }
+      const db = Math.hypot(a.p[0] - boss[0], a.p[1] - boss[1]);
+      if (db < 1.7) a.p = [boss[0] + ((a.p[0] - boss[0]) / db) * 1.7, boss[1] + ((a.p[1] - boss[1]) / db) * 1.7];
+    }
+    out.push(live.filter((mt) => mt.state !== 'dead' || at - mt.since < MITE.die).map((mt) => ({ p: [mt.p[0], mt.p[1]], state: mt.state, since: at - mt.since, face: [mt.face[0], mt.face[1]] })));
   }
-  const list = PATHS.get(key) as { at: [number, number]; running: boolean }[];
-  return list[Math.max(0, Math.min(list.length - 1, Math.round(m * 30)))];
+  const res = { knight, mites: out };
+  SWARMS.set(key, res);
+  return res;
+}
+const frameOfSwarm = <T,>(list: T[], m: number): T => list[Math.max(0, Math.min(list.length - 1, Math.round(m * 30)))];
+/** A bone mite as it stands in a scene. */
+function miteStood(mt: MiteNow, cx: number, cy: number, k: number): Stood {
+  const { mite } = figures();
+  const { view, flip } = facingOf(mt.p, mt.face);
+  const l = mt.state === 'form' ? frameAt(mite, view, 'form', mt.since) : mt.state === 'run' ? frameAt(mite, view, 'walk', mt.since) : mt.state === 'bite' ? frameAt(mite, view, 'attack', mt.since) : deathAt(mite, view, mt.since);
+  return standing(onFloor(mt.p[0], mt.p[1], cx, cy, k), l, { flip, shadow: mt.state === 'dead' ? 0 : 5 });
+}
+/** The knight as he stands in the swarm: running, swinging, or standing. */
+function swarmKnight(K: KnightNow, m: number, t: number, cx: number, cy: number, k: number): Stood {
+  const { knight } = figures();
+  return knightStood(knight, K.p, K.face, K.running, t, cx, cy, k, K.swing !== null ? { move: 'attack', at: m - K.swing } : undefined);
 }
 
 /** A stand-in for the ossuary's wall round the back of the arena: rough dark stone, rows of niches, a skull in each, its eyes the enemy's pink; the niches it sheds from emptying as their skulls leave. */
@@ -343,16 +491,18 @@ export function rainArena(t: number, base: Px, cx: number, cy: number): Px {
   const B = ARENA_B;
   const drops = dropsFor(B);
   const fig = m < 0 ? frameAt(am, view, 'stand', t) : m < RAIN_LONG ? frameAt(am, view, 'rain', m) : frameAt(am, view, 'stand', m - RAIN_LONG);
-  const K = knightPath(drops, B, m, before(B, view, 3.0, -0.8));
+  const sw = swarmFor(drops, B, before(B, view, 3.0, -0.8));
+  const K = frameOfSwarm(sw.knight, m);
+  void knight;
   const px0 = floorOf(base);
   ossuaryWall(px0, cx, cy, drops, m);
   const at = onFloor(B[0], B[1], cx, cy, 1);
   const ring = ringAt(B, view, m - RAIN_HIT, SLAM_RING.rain, cx, cy, 1, 63);
   const r = rainLaid(drops, m, view, cx, cy, 1);
-  const stood: Stood[] = [standing(at, fig, { shadow: 30 }), knightStood(knight, K.at, B, K.running, t, cx, cy, 1), ...ring.air, ...r.stood];
+  const stood: Stood[] = [standing(at, fig, { shadow: 30 }), swarmKnight(K, m, t, cx, cy, 1), ...ring.air, ...r.stood, ...frameOfSwarm(sw.mites, m).map((mt) => miteStood(mt, cx, cy, 1))];
   return shaken(compose(px0, [ring.floor, ...r.floor], stood, 1), shakeOf(m, [[RAIN_HIT, 4]]));
 }
-export const ARENA_PASS = LEAD + RAIN_HIT + RAIN.first + 2 * RAIN.gap + RAIN.ripple + RAIN.fly + 3.2;
+export const ARENA_PASS = LEAD + RAIN_HIT + RAIN.first + 2 * RAIN.gap + RAIN.ripple + RAIN.fly + 3.6;
 
 // ---------------------------------------------------------------------------------------------
 // THE FLOOR ARMS: reared, held, slammed; the cracks glowing; the arms up under and round the knight, who runs out
@@ -443,3 +593,62 @@ export function devourScene(view: View, t: number, base: Px, cx: number, cy: num
   return shaken(compose(px0, [], stood, k), shakeOf(m, [[hit0, 2.5], [DEVOUR_HITS[1], 3.5]]));
 }
 export const DEVOUR_PASS = LEAD + DEVOUR_LONG + 0.4;
+
+// ---------------------------------------------------------------------------------------------
+// A BONE MITE, CLOSE: a skull of the rain comes down and bursts; its bones pull together; it skitters at the knight, crouches and
+// bites; he swings, and it bursts into chips. `view`: it seen from in front (coming at you) or from behind (going at him).
+
+/** Its moments (seconds into the scene): the skull lands; it pulls itself together; it is off; it bites; he swings. */
+export const MITE_CLOSE = { land: 0.6, run: 1.9, swing: 2.45, long: 3.35 } as const;
+export function miteScene(view: View, t: number, base: Px, cx: number, cy: number, k = 1): Px {
+  const { knight, mite } = figures();
+  const m = t;
+  const dir = ahead(view);
+  // (the knight a little to the side of where it stops, so that both are seen: its bite reaches him, 0.67 tiles off)
+  const Kp: [number, number] = [0, 0];
+  const E: [number, number] = [-0.3, 0.6];
+  const S: [number, number] = [E[0] - dir[0] * MITE_CLOSE.run, E[1] - dir[1] * MITE_CLOSE.run];
+  const L = MITE_CLOSE.land;
+  const formAt = L + RAIN.mite.at;
+  const runAt = formAt + MITE.form;
+  const stopAt = runAt + MITE_CLOSE.run / MITE.pace;
+  const biteHit = stopAt + MITE.bite.hit;
+  const swingHit = MITE_CLOSE.swing + SWING.hit;
+  // the skull coming down, its shadow, its burst
+  const d: Drop = { at: S, wave: 0, leave: -RAIN.fly, land: 0, from: [S[0] - 4, S[1] - 4], seed: 7 };
+  const since = m - L;
+  const floor: { at: [number, number]; l: Laid }[] = [];
+  const stood: Stood[] = [];
+  const C = DROP_CANVAS;
+  const sAt = onFloor(S[0], S[1], cx, cy, k);
+  if (since >= -RAIN.fly && since <= RAIN.mite.scuff) floor.push({ at: sAt, l: laid(dropPainted(since, 'floor', d.seed), C.ax, C.ay) });
+  if (since >= -RAIN.fly && since < 0) {
+    const set = (SKULLS[view] ??= makeRainSkullArt(view));
+    const p = dropAt(d, 1 + since / RAIN.fly);
+    const [x, y] = onFloor(p[0], p[1], cx, cy, k);
+    const sp = spriteLaid(set[Math.floor(m * 2.2 * 8) % 8]);
+    stood.push(standing([x, y], { ...sp, ay: sp.ay + p[2] * 2 }));
+  } else if (since >= 0 && since < 0.8) stood.push(...airHalves(sAt, laid(dropPainted(since, 'air', d.seed, 'behind'), C.ax, C.ay), laid(dropPainted(since, 'air', d.seed, 'before'), C.ax, C.ay)));
+  // the mite
+  if (m >= formAt) {
+    let P: [number, number] = S;
+    let l: Laid;
+    if (m >= swingHit) {
+      P = E;
+      l = deathAt(mite, view, m - swingHit);
+    } else if (m < runAt) l = frameAt(mite, view, 'form', m - formAt);
+    else if (m < stopAt) {
+      const u = (m - runAt) * MITE.pace;
+      P = [S[0] + dir[0] * u, S[1] + dir[1] * u];
+      l = frameAt(mite, view, 'walk', m - runAt);
+    } else {
+      P = E;
+      l = frameAt(mite, view, 'attack', Math.min(m - stopAt, MITE.bite.long));
+    }
+    if (m < swingHit + MITE.die) stood.push(standing(onFloor(P[0], P[1], cx, cy, k), l, { shadow: m >= swingHit ? 0 : 5 }));
+  }
+  // the knight: bitten (he flinches), then he swings
+  const act = m >= MITE_CLOSE.swing ? { move: 'attack' as const, at: m - MITE_CLOSE.swing } : m >= biteHit && m < biteHit + REEL_LONG ? { move: 'reel' as const, at: m - biteHit } : undefined;
+  stood.push(knightStood(knight, Kp, E, false, t, cx, cy, k, act));
+  return shaken(compose(floorOf(base), floor, stood, k), shakeOf(m, [[L, 1]]));
+}

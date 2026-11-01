@@ -39,6 +39,7 @@ import type { Stage } from './skin';
 import { add, lerp3, mul, norm, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 import { FLAME } from './mkit';
+import { BONE as BONE_W, PINK as PINK_W, hash } from './kit';
 
 type P = Partial<Bones>;
 const K = AM_KIT;
@@ -99,95 +100,237 @@ function hindIn(name: string, t0: number, back0: number, back1: number): HandMov
 const homeFrom = (name: string, t0: number, t1: number): HandMove[] => (SLAM[name] === PL[name] ? [] : [{ t0, t1, to: PL[name], lift: 6 }]);
 
 // =============================================================================================
-// THE SWIPE, A COMBO: its right arm, its left, and the finisher
+// THE SWIPE, A COMBO: THE RAKES REDONE (the second round), and the finisher as it was
 
 /**
- * THE SWIPE'S MOMENTS (seconds; on the game's frames). Each blow: its strike from the last frame of its wind-up to the frame it
- * lands on (two frames), the blow on its last.
- *   the right   drawn up and back by 0.333 s (f10), HELD to 0.667 (f20); its body turns from f20; strike f22-f24, blow 0.8 s
- *   the left    drawn up and back by 1.267 s (f38), HELD to 1.6 (f48); strike f50-f52, blow 1.733 s
- *   finisher    reared by 2.4 s (f72), HELD to 2.867 (f86); strike f88-f90, blow 3.0 s; crashed, pressed, settled by 4.0 s
+ * HIS WORD ON THE FIRST ROUND'S RAKES (1 Nov 2026): “His regular arm swipe is pretty lackluster”; “The rakes are lackluster”. So
+ * each rake is now the wildest blow it has. THE RIGHT: its great right arm hauled up and back high over its hump, the heap twisted
+ * away and heaved half up, its weight thrown onto its left arms, its maw snarling: HELD, trembling; it turns; THE RAKE in two
+ * frames, a vast arc of bone claws swept across the floor before it, the whole heap lunging into it; the freeze on the hit; the arm
+ * carried right round, the heap rocking on with it and back. THE LEFT, a backhand from the other side, bigger again. Then the
+ * finisher, as it was (its moments 16 frames later).
+ *   the right     hauled up by 0.333 s (f10), HELD to 0.6 (f18), it turns f18-f20; strike f20-f22, its blow 0.733 s; frozen to
+ *                 f24; carried round to f30, rocking to f42
+ *   the left      hauled up from 1.2 s (f36) by 1.6 (f48), HELD to 1.867 (f56), it turns f56-f58; strike f58-f60, its blow
+ *                 2.0 s; frozen to f62; carried round to f68, rocking to f74
+ *   finisher      rearing from 2.467 s (f74), reared by 2.933 (f88), HELD to 3.4 (f102); strike f104-f106, its blow 3.533 s;
+ *                 crashed, pressed, settled by 4.533 s (f136)
  */
-export const SWIPE_STRIKES = [[f(22), f(24)], [f(50), f(52)], [f(88), f(90)]] as const;
-export const SWIPE_HITS = [f(24), f(52), f(90)] as const;
-export const SWIPE_LONG = f(120);
-/** Where each rake's claws go: drawn back high at its side; raked across low before it (through these), and on round to its other side. */
-const RAKE_R: { back: V3; via: V3[]; to: V3; on: V3 } = { back: [18, -66, 54], via: [[46, -62, 24], [64, -36, 7], [68, -12, 7]], to: [62, -6, 8], on: [58, 3, 32] };
-const RAKE_L: { back: V3; via: V3[]; to: V3; on: V3 } = { back: [22, 68, 54], via: [[48, 64, 24], [66, 38, 7], [70, 12, 7]], to: [68, -8, 9], on: [60, -22, 24] };
+export const FINISHER_LATER = 16;
+const S = FINISHER_LATER;
+export const SWIPE_STRIKES = [[f(20), f(22)], [f(58), f(60)], [f(88 + S), f(90 + S)]] as const;
+export const SWIPE_HITS = [f(22), f(60), f(90 + S)] as const;
+export const SWIPE_LONG = f(120 + S);
+/** The freeze on each rake's hit: held still this long after it lands (seconds). */
+export const RAKE_FREEZE = f(2);
+/**
+ * THE RAKES' WAYS (the figure's own lengths; forward, to its left, up; from its middle as the move began): hauled up and back
+ * (`back`), swept across through `via` to `to` in two frames, and carried on round to `on`. The slash each throws (`out`: how far
+ * from its middle the vast arc of its claws reaches, in tiles) is art/amalgam_action.ts `rakeTrail`.
+ */
+export const RAKES = [
+  { hand: 'R1', side: -1, strike: SWIPE_STRIKES[0], back: [-10, -54, 70] as V3, via: [[30, -76, 36], [70, -62, 10], [94, -22, 6]] as V3[], to: [80, 22, 8] as V3, on: [62, 18, 44] as V3, out: 3.3 },
+  { hand: 'L1', side: 1, strike: SWIPE_STRIKES[1], back: [-2, 64, 68] as V3, via: [[34, 80, 38], [74, 64, 10], [98, 22, 6]] as V3[], to: [84, -28, 8] as V3, on: [72, -10, 48] as V3, out: 3.5 },
+] as const;
+const RK = RAKES;
+/** Wound up for a rake (`sg` -1 its right, 1 its left; `big` the backhand's more): twisted away, heaved half up and tipped back, its weight thrown onto its other side, its maw snarling. */
+const windUp = (sg: number, big: number): P => ({ yaw: 16 * sg * big, pz: R.pz + 6 * big, faceUp: 11 * big, faceTilt: 19 * big, pitch: R.pitch - 3, px: -4 * big, py: -3 * sg, draw: 0.95, pt: 1 });
+/** Lunged into the rake as it lands: turned through, thrown forward and down over its hands. */
+const lunged = (sg: number, big: number): P => ({ yaw: -34 * sg * big, pz: R.pz - 2 * big, faceUp: 0, faceTilt: 0, pitch: R.pitch + 7, px: 21 * big, py: 2 * sg, draw: 0.55, pt: 1 });
+const W1 = windUp(-1, 1);
+const W2 = windUp(1, 1.15);
+const H1 = lunged(-1, 1);
+const H2 = lunged(1, 1.15);
+/** Where a hand grips the floor under it turned and moved as in `pose` (its grip at rest, carried with it). */
+function plantAt(name: string, pose: P, k = 1): V3 {
+  const a = ((pose.yaw as number) ?? 0) * (Math.PI / 180);
+  const p = mul(PL[name], k);
+  return [(pose.px ?? 0) + p[0] * Math.cos(a) - p[1] * Math.sin(a), (pose.py ?? 0) + p[0] * Math.sin(a) + p[1] * Math.cos(a), 0];
+}
+/** ITS WEIGHT SHIFTED: the hands it stands on step to where they grip under it wound up, are flung on with it as it lunges (lifted in the strike's two frames, down again as it lands), and step back. */
+function bracing(name: string, d: number, wound: P, struck: P, strike: readonly [number, number], back: number | null, start: number): HandMove[] {
+  const out: HandMove[] = [
+    { t0: f(start + d), t1: f(start + 7 + d), to: plantAt(name, wound, wound === W2 ? 0.76 : 0.9), lift: 6 },
+    { t0: strike[0], t1: strike[1], to: plantAt(name, struck), lift: 9 },
+  ];
+  if (back !== null) out.push({ t0: f(back + d), t1: f(back + 7 + d), to: PL[name], lift: 6 });
+  return out;
+}
+/** After the backhand, a hand it stands on stepped in under it as it rocks back (from frame `at`, seven frames), ready to rear. */
+const settle = (name: string, at: number, pose: P = { yaw: -18, px: 12, py: 1.5 }): HandMove => ({ t0: f(at), t1: f(at + 7), to: plantAt(name, pose), lift: 6 });
 function swipeHands(): (t: number) => Record<string, V3> {
   const [h1, h2, h3] = SWIPE_HITS;
+  const [r, l] = RK;
+  const s1 = SWIPE_STRIKES[0];
+  const s2 = SWIPE_STRIKES[1];
   return K.handwork({
     R1: {
       start: PL.R1,
       moves: [
-        { t0: f(1), t1: f(10), to: RAKE_R.back, lift: 10 },
-        { t0: f(10), t1: f(15), to: add(RAKE_R.back, [0.6, -0.8, 1.4]) },
-        { t0: f(15), t1: f(20), to: add(RAKE_R.back, [0.2, -0.3, 0.4]) },
-        { t0: f(20), t1: f(22), to: add(RAKE_R.back, [-1.2, -1.4, 1.2]) },
-        { t0: SWIPE_STRIKES[0][0], t1: h1, to: RAKE_R.to, via: RAKE_R.via, ease: 'strike' },
-        { t0: h1, t1: f(32), to: RAKE_R.on, ease: 'io' },
-        { t0: f(33), t1: f(42), to: PL.R1, via: [[64, -8, 22]], lift: 8 },
+        // HAULED UP AND BACK, high over its hump; HELD, trembling; drawn a hair further as it turns
+        { t0: f(1), t1: f(10), to: r.back, via: [[36, -66, 50]], lift: 12 },
+        { t0: f(10), t1: f(14), to: add(r.back, [0.6, -0.8, 1.2]) },
+        { t0: f(14), t1: f(18), to: add(r.back, [0.2, -0.3, 0.4]) },
+        { t0: f(18), t1: f(20), to: add(r.back, [-1.4, -1.2, 1.4]) },
+        // THE RAKE: two frames, across the floor before it; frozen on the hit; carried right round, up over its brow
+        { t0: s1[0], t1: h1, to: r.to, via: r.via, ease: 'strike' },
+        { t0: h1 + RAKE_FREEZE, t1: f(30), to: r.on, via: [[82, 26, 20]], ease: 'io' },
+        { t0: f(31), t1: f(42), to: PL.R1, via: [[78, 0, 32]], lift: 8 },
+        // (as the backhand is wound up: its weight thrown onto it, gripping in under it; flung on with it as it lunges)
+        { t0: f(44), t1: f(51), to: [34, -38, 0], lift: 6 },
+        { t0: s2[0], t1: s2[1], to: plantAt('R1', H2), lift: 9 },
         // the finisher: raised over it with the other, held, slammed
+        ...rearUp('R1', f(58 + S), f(72 + S), f(86 + S), [0.6, -0.8, 1.4]),
+        { t0: f(86 + S), t1: f(88 + S), to: add(UP.R1, [-1.5, -0.6, 1.5]) },
+        { t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.R1, via: [[56, -30, 44]], ease: 'strike' },
+        ...homeFrom('R1', f(104 + S), f(114 + S)),
+      ],
+    },
+    L1: {
+      start: PL.L1,
+      moves: [
+        // (as the right is wound up: its weight thrown onto it, gripping in under it; flung on with it as it lunges)
+        { t0: f(3), t1: f(10), to: [40, 36, 0], lift: 6 },
+        { t0: s1[0], t1: s1[1], to: plantAt('L1', H1), lift: 9 },
+        { t0: f(36), t1: f(48), to: l.back, via: [[52, 62, 32]], lift: 12 },
+        { t0: f(48), t1: f(52), to: add(l.back, [0.6, 0.8, 1.2]) },
+        { t0: f(52), t1: f(56), to: add(l.back, [0.2, 0.3, 0.4]) },
+        { t0: f(56), t1: f(58), to: add(l.back, [-1.4, 1.2, 1.4]) },
+        { t0: s2[0], t1: h2, to: l.to, via: l.via, ease: 'strike' },
+        { t0: h2 + RAKE_FREEZE, t1: f(68), to: l.on, via: [[88, -24, 22]], ease: 'io' },
+        // (on up into the finisher's rear, from where it was carried round to: up and out over its brow)
+        { t0: f(60 + S), t1: f(76 + S), to: UP.L1, via: [[80, 6, 52], [66, 42, 70]] },
+        { t0: f(76 + S), t1: f(81 + S), to: add(UP.L1, [0.6, 0.8, 1.4]) },
+        { t0: f(81 + S), t1: f(86 + S), to: add(UP.L1, [0.2, 0.3, 0.6]) },
+        { t0: f(86 + S), t1: f(88 + S), to: add(UP.L1, [-1.5, 0.6, 1.5]) },
+        { t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.L1, via: [[58, 32, 44]], ease: 'strike' },
+        ...homeFrom('L1', f(106 + S), f(116 + S)),
+      ],
+    },
+    R2: { start: PL.R2, moves: [...bracing('R2', 0, W1, H1, s1, 31, 2), ...bracing('R2', 0, W2, H2, s2, null, 38), settle('R2', 65), ...rearUp('R2', f(60 + S), f(74 + S), f(86 + S), [0.4, -0.8, 1.0]), { t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.R2, ease: 'strike' }] },
+    L2: { start: PL.L2, moves: [...bracing('L2', 2, W1, H1, s1, 30, 2), ...bracing('L2', 2, W2, H2, s2, null, 38), settle('L2', 66), ...rearUp('L2', f(61 + S), f(75 + S), f(86 + S), [0.4, 0.8, 1.0]), { t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.L2, ease: 'strike' }] },
+    R3: { start: PL.R3, moves: [...bracing('R3', 3, W1, H1, s1, 27, 2), ...bracing('R3', 3, W2, H2, s2, null, 39), settle('R3', 64, { yaw: -33, px: 20, py: -1 }), ...hindIn('R3', f(56 + S), f(100 + S), f(110 + S))] },
+    L3: { start: PL.L3, moves: [...bracing('L3', 1, W1, H1, s1, 29, 2), ...bracing('L3', 1, W2, H2, s2, null, 39), settle('L3', 65, { yaw: -22, px: 15, py: 0 }), ...hindIn('L3', f(57 + S), f(102 + S), f(112 + S))] },
+  });
+}
+function swipeMotion(): Motion {
+  const keys: Key3[] = [
+    { at: 0, pose: {} },
+    // THE RIGHT: hauled up, the heap twisted away and heaved half up, its weight on its left; HELD, trembling
+    { at: f(10), pose: W1, ease: 'io' },
+    { at: f(14), pose: { ...W1, py: (W1.py as number) + 0.7, pz: (W1.pz as number) + 0.4 }, ease: 'io' },
+    { at: f(18), pose: { ...W1, py: (W1.py as number) - 0.3 }, ease: 'io' },
+    // it turns, the hips first; the rake in two frames, the heap lunging into it; frozen on the hit
+    { at: f(20), pose: { ...W1, yaw: (W1.yaw as number) + 4, px: (W1.px as number) + 1 }, ease: 'in' },
+    { at: SWIPE_HITS[0], pose: H1, ease: 'lin' },
+    { at: SWIPE_HITS[0] + RAKE_FREEZE, pose: H1, ease: 'lin' },
+    // carried right round: the heap rocking on with it, and back
+    { at: f(30), pose: { ...H1, yaw: 42, px: 24, pz: R.pz - 3, pitch: R.pitch + 8, py: 3.5, draw: 0.45 }, ease: 'out' },
+    { at: f(36), pose: { yaw: 14, px: 11, pz: R.pz - 0.5, pitch: R.pitch + 3, py: -1.5, draw: 0.5, pt: 0.9 }, ease: 'io' },
+    { at: f(42), pose: { yaw: 4, px: 3, pz: R.pz + 1.5, pitch: R.pitch, py: 0.5, draw: 0.7, pt: 0.9 }, ease: 'io' },
+    // THE LEFT, a backhand from the other side, bigger again
+    { at: f(48), pose: W2, ease: 'io' },
+    { at: f(52), pose: { ...W2, py: (W2.py as number) - 0.7, pz: (W2.pz as number) + 0.4 }, ease: 'io' },
+    { at: f(56), pose: { ...W2, py: (W2.py as number) + 0.3 }, ease: 'io' },
+    { at: f(58), pose: { ...W2, yaw: (W2.yaw as number) - 4, px: (W2.px as number) + 1 }, ease: 'in' },
+    { at: SWIPE_HITS[1], pose: H2, ease: 'lin' },
+    { at: SWIPE_HITS[1] + RAKE_FREEZE, pose: H2, ease: 'lin' },
+    { at: f(68), pose: { ...H2, yaw: -48, px: 28, pz: R.pz - 4, pitch: R.pitch + 9, py: -4, draw: 0.45 }, ease: 'out' },
+    { at: f(74), pose: { yaw: -18, px: 12, pz: R.pz - 1, pitch: R.pitch + 4, py: 1.5, draw: 0.5, pt: 0.9 }, ease: 'io' },
+    // THE FINISHER (as the first round's, 16 frames later): reared up to its full height, HELD longest; slammed; crashed down
+    { at: f(72 + S), pose: { ...REARED }, ease: 'io' },
+    { at: f(77 + S), pose: trembling(1), ease: 'io' },
+    { at: f(82 + S), pose: trembling(-1), ease: 'io' },
+    { at: f(86 + S), pose: trembling(0.2), ease: 'io' },
+    { at: f(88 + S), pose: { ...REARED, pz: (REARED.pz as number) - 1, faceTilt: REAR.tilt - 2, pitch: R.pitch + 3, px: -1 }, ease: 'in' },
+    { at: SWIPE_HITS[2], pose: CRASH, ease: 'lin' },
+    { at: f(97 + S), pose: SQUASH, ease: 'out' },
+    { at: f(101 + S), pose: { ...SQUASH, pz: R.pz - 9, py: 1.0 }, ease: 'io' },
+    { at: f(105 + S), pose: { ...SQUASH, pz: R.pz - 9.6, py: -1.0 }, ease: 'io' },
+    { at: f(110 + S), pose: { pz: R.pz - 4, pitch: R.pitch + 4, px: 2, draw: 0.5, pt: 0.7 }, ease: 'io' },
+    { at: SWIPE_LONG, pose: {}, ease: 'io' },
+  ];
+  return { hit: SWIPE_HITS[0], keys };
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE FIRST ROUND'S RAKES, kept only for the picture of them beside the new (dev/action_f4_amalgam_scene.ts): not its moves
+
+export const SWIPE1_STRIKES = [[f(22), f(24)], [f(50), f(52)], [f(88), f(90)]] as const;
+export const SWIPE1_HITS = [f(24), f(52), f(90)] as const;
+export const SWIPE1_LONG = f(120);
+const RAKE1_R: { back: V3; via: V3[]; to: V3; on: V3 } = { back: [18, -66, 54], via: [[46, -62, 24], [64, -36, 7], [68, -12, 7]], to: [62, -6, 8], on: [58, 3, 32] };
+const RAKE1_L: { back: V3; via: V3[]; to: V3; on: V3 } = { back: [22, 68, 54], via: [[48, 64, 24], [66, 38, 7], [70, 12, 7]], to: [68, -8, 9], on: [60, -22, 24] };
+function swipeHands1(): (t: number) => Record<string, V3> {
+  const [h1, h2, h3] = SWIPE1_HITS;
+  return K.handwork({
+    R1: {
+      start: PL.R1,
+      moves: [
+        { t0: f(1), t1: f(10), to: RAKE1_R.back, lift: 10 },
+        { t0: f(10), t1: f(15), to: add(RAKE1_R.back, [0.6, -0.8, 1.4]) },
+        { t0: f(15), t1: f(20), to: add(RAKE1_R.back, [0.2, -0.3, 0.4]) },
+        { t0: f(20), t1: f(22), to: add(RAKE1_R.back, [-1.2, -1.4, 1.2]) },
+        { t0: SWIPE1_STRIKES[0][0], t1: h1, to: RAKE1_R.to, via: RAKE1_R.via, ease: 'strike' },
+        { t0: h1, t1: f(32), to: RAKE1_R.on, ease: 'io' },
+        { t0: f(33), t1: f(42), to: PL.R1, via: [[64, -8, 22]], lift: 8 },
         ...rearUp('R1', f(58), f(72), f(86), [0.6, -0.8, 1.4]),
         { t0: f(86), t1: f(88), to: add(UP.R1, [-1.5, -0.6, 1.5]) },
-        { t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.R1, via: [[56, -30, 44]], ease: 'strike' },
+        { t0: SWIPE1_STRIKES[2][0], t1: h3, to: SLAM.R1, via: [[56, -30, 44]], ease: 'strike' },
         ...homeFrom('R1', f(104), f(114)),
       ],
     },
     L1: {
       start: PL.L1,
       moves: [
-        { t0: f(29), t1: f(38), to: RAKE_L.back, lift: 10 },
-        { t0: f(38), t1: f(43), to: add(RAKE_L.back, [0.6, 0.8, 1.4]) },
-        { t0: f(43), t1: f(48), to: add(RAKE_L.back, [0.2, 0.3, 0.4]) },
-        { t0: f(48), t1: f(50), to: add(RAKE_L.back, [-1.2, 1.4, 1.2]) },
-        { t0: SWIPE_STRIKES[1][0], t1: h2, to: RAKE_L.to, via: RAKE_L.via, ease: 'strike' },
-        { t0: h2, t1: f(60), to: RAKE_L.on, ease: 'io' },
+        { t0: f(29), t1: f(38), to: RAKE1_L.back, lift: 10 },
+        { t0: f(38), t1: f(43), to: add(RAKE1_L.back, [0.6, 0.8, 1.4]) },
+        { t0: f(43), t1: f(48), to: add(RAKE1_L.back, [0.2, 0.3, 0.4]) },
+        { t0: f(48), t1: f(50), to: add(RAKE1_L.back, [-1.2, 1.4, 1.2]) },
+        { t0: SWIPE1_STRIKES[1][0], t1: h2, to: RAKE1_L.to, via: RAKE1_L.via, ease: 'strike' },
+        { t0: h2, t1: f(60), to: RAKE1_L.on, ease: 'io' },
         { t0: f(60), t1: f(76), to: UP.L1, via: [[52, 14, 52]] },
         { t0: f(76), t1: f(81), to: add(UP.L1, [0.6, 0.8, 1.4]) },
         { t0: f(81), t1: f(86), to: add(UP.L1, [0.2, 0.3, 0.6]) },
         { t0: f(86), t1: f(88), to: add(UP.L1, [-1.5, 0.6, 1.5]) },
-        { t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.L1, via: [[58, 32, 44]], ease: 'strike' },
+        { t0: SWIPE1_STRIKES[2][0], t1: h3, to: SLAM.L1, via: [[58, 32, 44]], ease: 'strike' },
         ...homeFrom('L1', f(106), f(116)),
       ],
     },
-    R2: { start: PL.R2, moves: rearUp('R2', f(60), f(74), f(86), [0.4, -0.8, 1.0]).concat([{ t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.R2, ease: 'strike' }]) },
-    L2: { start: PL.L2, moves: rearUp('L2', f(61), f(75), f(86), [0.4, 0.8, 1.0]).concat([{ t0: SWIPE_STRIKES[2][0], t1: h3, to: SLAM.L2, ease: 'strike' }]) },
+    R2: { start: PL.R2, moves: rearUp('R2', f(60), f(74), f(86), [0.4, -0.8, 1.0]).concat([{ t0: SWIPE1_STRIKES[2][0], t1: h3, to: SLAM.R2, ease: 'strike' }]) },
+    L2: { start: PL.L2, moves: rearUp('L2', f(61), f(75), f(86), [0.4, 0.8, 1.0]).concat([{ t0: SWIPE1_STRIKES[2][0], t1: h3, to: SLAM.L2, ease: 'strike' }]) },
     R3: { start: PL.R3, moves: hindIn('R3', f(56), f(100), f(110)) },
     L3: { start: PL.L3, moves: hindIn('L3', f(57), f(102), f(112)) },
   });
 }
-function swipeMotion(): Motion {
+function swipeMotion1(): Motion {
   const keys: Key3[] = [
     { at: 0, pose: {} },
-    // THE RIGHT: twisted away to its right, rising, its maw opening; HELD, trembling; its body turns; two frames; on round
     { at: f(10), pose: { yaw: -12, pz: R.pz + 4, faceTilt: 10, faceUp: 2, pitch: R.pitch - 2, draw: 0.85, pt: 0.9 }, ease: 'io' },
     { at: f(15), pose: { yaw: -12.5, pz: R.pz + 4.4, faceTilt: 10.5, faceUp: 2, pitch: R.pitch - 2, py: 0.6, draw: 0.95, pt: 1 }, ease: 'io' },
     { at: f(20), pose: { yaw: -12.2, pz: R.pz + 4.2, faceTilt: 10.2, faceUp: 2, pitch: R.pitch - 2, py: -0.3, draw: 0.95, pt: 1 }, ease: 'io' },
     { at: f(22), pose: { yaw: -9, pz: R.pz + 3.6, faceTilt: 9, faceUp: 2, pitch: R.pitch - 1, draw: 0.9, pt: 1 }, ease: 'in' },
-    { at: SWIPE_HITS[0], pose: { yaw: 10, pz: R.pz - 1, faceTilt: 0, faceUp: 0, pitch: R.pitch + 5, px: 2, draw: 0.6, pt: 1 }, ease: 'lin' },
+    { at: SWIPE1_HITS[0], pose: { yaw: 10, pz: R.pz - 1, faceTilt: 0, faceUp: 0, pitch: R.pitch + 5, px: 2, draw: 0.6, pt: 1 }, ease: 'lin' },
     { at: f(32), pose: { yaw: 14, pz: R.pz - 2, pitch: R.pitch + 6, px: 3, draw: 0.5, pt: 0.9 }, ease: 'out' },
-    // THE LEFT: the same, the other way
     { at: f(38), pose: { yaw: 12, pz: R.pz + 4, faceTilt: 10, faceUp: 2, pitch: R.pitch - 2, draw: 0.85, pt: 0.9 }, ease: 'io' },
     { at: f(43), pose: { yaw: 12.5, pz: R.pz + 4.4, faceTilt: 10.5, faceUp: 2, pitch: R.pitch - 2, py: -0.6, draw: 0.95, pt: 1 }, ease: 'io' },
     { at: f(48), pose: { yaw: 12.2, pz: R.pz + 4.2, faceTilt: 10.2, faceUp: 2, pitch: R.pitch - 2, py: 0.3, draw: 0.95, pt: 1 }, ease: 'io' },
     { at: f(50), pose: { yaw: 9, pz: R.pz + 3.6, faceTilt: 9, faceUp: 2, pitch: R.pitch - 1, draw: 0.9, pt: 1 }, ease: 'in' },
-    { at: SWIPE_HITS[1], pose: { yaw: -8, pz: R.pz - 1, faceTilt: 0, faceUp: 0, pitch: R.pitch + 5, px: 2, draw: 0.6, pt: 1 }, ease: 'lin' },
+    { at: SWIPE1_HITS[1], pose: { yaw: -8, pz: R.pz - 1, faceTilt: 0, faceUp: 0, pitch: R.pitch + 5, px: 2, draw: 0.6, pt: 1 }, ease: 'lin' },
     { at: f(58), pose: { yaw: -10, pz: R.pz - 2, pitch: R.pitch + 6, px: 3, draw: 0.5, pt: 0.9 }, ease: 'out' },
-    // THE FINISHER: reared up to its full height, HELD longest, trembling; it leans in; two frames; crashed down; pressed; up
     { at: f(72), pose: { ...REARED }, ease: 'io' },
     { at: f(77), pose: trembling(1), ease: 'io' },
     { at: f(82), pose: trembling(-1), ease: 'io' },
     { at: f(86), pose: trembling(0.2), ease: 'io' },
     { at: f(88), pose: { ...REARED, pz: (REARED.pz as number) - 1, faceTilt: REAR.tilt - 2, pitch: R.pitch + 3, px: -1 }, ease: 'in' },
-    { at: SWIPE_HITS[2], pose: CRASH, ease: 'lin' },
+    { at: SWIPE1_HITS[2], pose: CRASH, ease: 'lin' },
     { at: f(97), pose: SQUASH, ease: 'out' },
     { at: f(101), pose: { ...SQUASH, pz: R.pz - 9, py: 1.0 }, ease: 'io' },
     { at: f(105), pose: { ...SQUASH, pz: R.pz - 9.6, py: -1.0 }, ease: 'io' },
     { at: f(110), pose: { pz: R.pz - 4, pitch: R.pitch + 4, px: 2, draw: 0.5, pt: 0.7 }, ease: 'io' },
-    { at: SWIPE_LONG, pose: {}, ease: 'io' },
+    { at: SWIPE1_LONG, pose: {}, ease: 'io' },
   ];
-  return { hit: SWIPE_HITS[0], keys };
+  return { hit: SWIPE1_HITS[0], keys };
 }
 
 // =============================================================================================
@@ -355,10 +498,10 @@ export function amSmeared(move: string, t: number): boolean {
   return (AM_ACT_STRIKES[move] ?? []).some(({ s }) => t > s[0] + 1e-6 && t <= s[1] + FR + 1e-6);
 }
 /** THE SMEAR'S AFTER-IMAGES of the hands that strike (and, at the bite, of its maw's lips), along the way they came: lines of points, oldest first, as ropes `smear...`. */
-function smearOf(move: string, hands: (t: number) => Record<string, V3>, maw?: (t: number) => V3[]): (t: number) => Record<string, V3[]> {
+function smearOf(move: string, hands: (t: number) => Record<string, V3>, maw?: (t: number) => V3[], strikes = AM_ACT_STRIKES[move] ?? []): (t: number) => Record<string, V3[]> {
   return (t) => {
     const out: Record<string, V3[]> = {};
-    for (const { s, hands: names } of AM_ACT_STRIKES[move] ?? []) {
+    for (const { s, hands: names } of strikes) {
       if (!(t > s[0] + 1e-6 && t <= s[1] + FR + 1e-6)) continue;
       // (on the frame after it lands, only the last of its way, thinning)
       const from = t > s[1] + 1e-6 ? s[1] - FR * 0.6 : s[0] - FR * 0.3;
@@ -405,6 +548,204 @@ function smearBits(m: Moment): Bit[] {
 }
 const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
 
+// ---------------------------------------------------------------------------------------------
+// THE RAKE'S SLASH: the vast arc of its claws, the after-images of them, the bone chips and dust flung
+
+/** A rake's slash stays whole through the freeze on its hit, then thins out over these four frames. */
+export const RAKE_FADE = f(4);
+/** How many moments of a rake's way its slash is drawn through (its strike's two frames). */
+const RAKE_N = 30;
+/**
+ * THE WAY A RAKE'S HAND WENT through its strike, up to `t` (the figure's own lengths, oldest first): RAKE_N + 1 moments from the
+ * last frame of its wind-up to `t` (or to where it landed).
+ */
+function rakeWay(hands: (t: number) => Record<string, V3>, i: number, t: number): V3[] {
+  const rk = RK[i];
+  const [s0, s1] = rk.strike;
+  const to = Math.min(t, s1);
+  const out: V3[] = [];
+  // (where its hand truly is, its arm put within reach: the figure as the game paints it)
+  const mob = MADE;
+  for (let k = 0; k <= RAKE_N; k++) {
+    const tt = s0 + ((to - s0) * k) / RAKE_N;
+    const h = hands(tt);
+    if (!mob) {
+      out.push(h[rk.hand]);
+      continue;
+    }
+    const g = amGeometry(skeletonAt(mob, 'attack', tt), posedOfMob(mob, 'attack', tt), { amR3: [h.R3], amL3: [h.L3] });
+    out.push((g.arms.find((a) => a.name === rk.hand) as { hand: V3 }).hand);
+  }
+  return out;
+}
+/** THE WAY A RAKE'S HAND WENT through the whole of its strike (the figure's own lengths, oldest first): for its gouges in the floor (art/amalgam_action_fx.ts). */
+export function rakePath(i: number): V3[] {
+  amalgamActionMob();
+  return rakeWay(SWIPE_HANDS as (t: number) => Record<string, V3>, i, RK[i].strike[1]);
+}
+let SWIPE_HANDS: ((t: number) => Record<string, V3>) | null = null;
+/** How much of a rake's slash is left at `t` (1 whole, 0 gone), or -1 if none is drawn then. */
+export function rakeLeft(i: number, t: number): number {
+  const [s0, s1] = RK[i].strike;
+  if (t <= s0 + 1e-6) return -1;
+  const end = s1 + RAKE_FREEZE;
+  if (t <= end + 1e-6) return 1;
+  const k = 1 - (t - end) / RAKE_FADE;
+  return k > 1e-6 ? k : -1;
+}
+/** The rake's slash as ropes: `rake<i>` its hand's way, `rake<i>k` [how much is left, how far out it reaches (lengths), its side]. */
+function rakeRopes(hands: (t: number) => Record<string, V3>): (t: number) => Record<string, V3[]> {
+  return (t) => {
+    const out: Record<string, V3[]> = {};
+    RK.forEach((rk, i) => {
+      const left = rakeLeft(i, t);
+      if (left < 0) return;
+      out[`rake${i}`] = rakeWay(hands, i, t);
+      out[`rake${i}k`] = [[left, rk.out * TILE3, rk.side]];
+    });
+    // (THE WARNING: the claws of the arm hauled up glowing with the enemy's fire, brighter and brighter while it is held)
+    RK.forEach((rk, i) => {
+      const [s0] = rk.strike;
+      const from = s0 - f(12);
+      if (t < from || t > s0 + 1e-6) return;
+      const h = rakeWay(hands, i, s0)[0];
+      const mob = MADE;
+      let at = h;
+      if (mob) {
+        const hh = hands(t);
+        const g = amGeometry(skeletonAt(mob, 'attack', t), posedOfMob(mob, 'attack', t), { amR3: [hh.R3], amL3: [hh.L3] });
+        at = (g.arms.find((a) => a.name === rk.hand) as { hand: V3 }).hand;
+      }
+      out[`glint${i}`] = [at, [clamp01((t - from) / f(8)), 0, 0]];
+    });
+    return out;
+  };
+}
+/** Bone chips and dust flung off the floor along a rake's way as its claws tear across it (`since` its hit). */
+function rakeChips(hands: (t: number) => Record<string, V3>, i: number, since: number): Record<string, V3[]> {
+  if (since < 0 || since > 0.7) return {};
+  const way = rakeWay(hands, i, RK[i].strike[1]);
+  const chips: V3[] = [];
+  for (let k = 6; k < way.length; k += 2) {
+    const p = way[k];
+    const o = norm([p[0], p[1], 0], [1, 0, 0]);
+    for (let j = 0; j < 3; j++) {
+      const life = 0.35 + 0.3 * hash01(k, j, 2101 + i);
+      if (since > life) continue;
+      const sp = 30 + 70 * hash01(k, j + 5, 2101 + i);
+      const vz = 50 + 90 * hash01(k, j + 9, 2101 + i);
+      const a = (hash01(k, j + 13, 2101 + i) - 0.5) * 1.4;
+      const d: V3 = [o[0] * Math.cos(a) - o[1] * Math.sin(a), o[0] * Math.sin(a) + o[1] * Math.cos(a), 0];
+      const tt = since + 0.02;
+      chips.push([p[0] + d[0] * sp * tt, p[1] + d[1] * sp * tt, Math.max(0.8, 1.5 + vz * tt - 300 * tt * tt)]);
+    }
+  }
+  const low = way.filter((p) => p[2] < 14);
+  return { ...(K.slamBurst(low, since, 2111 + i, 1.1) as Record<string, V3[]>), [`chips${i}`]: chips };
+}
+const hash01 = hash;
+/** The slash's colours: its claws' streaks bone-white, newest near white; between them the enemy's pink, darkening as it goes back. */
+const SLASH = { white: '#fff0e6', bone: BONE_W[3], boneDim: BONE_W[2], hot: PINK_W[3], pink: PINK_W[2], deep: PINK_W[1] } as const;
+/** Where the claws' four streaks lie across the slash (0 its inner edge, at its claws; 1 its outer edge, its reach). */
+const STREAKS = [0.04, 0.35, 0.66, 0.97] as const;
+/**
+ * THE VAST ARC OF ITS CLAWS, a rake's slash: four streaks of its claws, from where its claws are out to `out` (its reach), swept
+ * round its middle along the way its hand went: widest at the hand, narrowing back along the way it came (and only as its claws
+ * come down low over the floor: drawn up high it is only the arm's own smear); each streak thick and near white at its head, bone,
+ * then the enemy's pink, thinning to nothing at its tail; a thin haze of the enemy's pink between them; low over the floor and
+ * falling to it at the outer edge. After-images of its claws along the way too. Thinning as it goes.
+ */
+function rakeBits(m: Moment): Bit[] {
+  const bits: Bit[] = [];
+  const ropes = m.ropes;
+  if (!ropes) return bits;
+  const mote = (p: V3, c: string, size: number): void => {
+    bits.push({ part: 'slash', piece: 'slash', shape: { k: 'mote', p, c, size } });
+  };
+  for (let i = 0; i < RK.length; i++) {
+    const glint = ropes[`glint${i}`];
+    if (glint) {
+      const [h, [g]] = glint;
+      bits.push({ part: 'slash', piece: 'slash', shape: { k: 'glow', p: h, c: '#ff3a78', r: 10 + 8 * g, a: 0.25 + 0.25 * g } });
+      for (let c = 0; c < 6; c++) {
+        const a = (c / 6) * Math.PI * 2 + m.t * 9;
+        const p: V3 = [h[0] + Math.cos(a) * 4, h[1] + Math.sin(a) * 4, h[2] + 3 + Math.sin(a * 2) * 2];
+        if (hash01(c, Math.floor(m.t * 30), 2151) < 0.4 + 0.6 * g) mote(p, g > 0.7 && c % 2 ? SLASH.white : SLASH.hot, g > 0.5 && c % 3 === 0 ? 2 : 1);
+      }
+    }
+    const way = ropes[`rake${i}`];
+    const info = ropes[`rake${i}k`]?.[0];
+    if (!way || !info || way.length < 2) continue;
+    const [keep, OUT] = info;
+    const n = way.length - 1;
+    const seed = 2131 + i * 7 + Math.floor(m.t * 30 + 0.5);
+    const at = (k: number): { a: number; r: number; z: number; low: number } => {
+      const p = way[k];
+      return { a: Math.atan2(p[1], p[0]), r: Math.hypot(p[0], p[1]) + 8, z: Math.max(12, p[2] + 4), low: clamp01((28 - p[2]) / 14) };
+    };
+    for (let k = 1; k <= n; k++) {
+      const age = 1 - k / n;
+      // (as it thins, its oldest end is eaten away first)
+      if (age > keep) continue;
+      const A = at(k - 1);
+      const B = at(k);
+      let da = B.a - A.a;
+      if (da > Math.PI) da -= 2 * Math.PI;
+      if (da < -Math.PI) da += 2 * Math.PI;
+      const steps = Math.max(1, Math.ceil((Math.abs(da) * OUT + Math.abs(B.r - A.r) + Math.abs(B.z - A.z)) / 1.2));
+      for (let j = 0; j < steps; j++) {
+        const u = j / steps;
+        const ang = A.a + da * u;
+        const rin = A.r + (B.r - A.r) * u;
+        const zin = A.z + (B.z - A.z) * u;
+        const low = A.low + (B.low - A.low) * u;
+        const ag = Math.min(1, age + (1 / n) * (1 - u));
+        // (drawn up high, coming down, it is only the arm's own smear)
+        if (low < 0.2) continue;
+        const wide = Math.max(0, 1 - Math.pow(ag, 1.6)) * low;
+        const rout = rin + (OUT - rin) * wide;
+        const span = rout - rin;
+        const across = Math.max(1, Math.ceil(span / 1.1));
+        const co = Math.cos(ang);
+        const sn = Math.sin(ang);
+        // (each streak's thickness: most at its head, thinning to its tail; less when keeping less)
+        const thick = Math.pow(1 - ag, 0.7) * (0.4 + 0.6 * keep);
+        const core = 0.4 + 1.5 * thick;
+        const edge = core + 1.2;
+        for (let q = 0; q <= across; q++) {
+          const v = q / across;
+          const r = rin + span * v;
+          const p: V3 = [co * r, sn * r, Math.max(1.2, zin + (5 - zin) * v * low)];
+          let d = 99;
+          for (const c of STREAKS) d = Math.min(d, Math.abs(v - c) * span);
+          if (span < 2) d = 0;
+          if (d < core) mote(p, ag < 0.24 ? SLASH.white : ag < 0.5 ? SLASH.bone : ag < 0.75 ? SLASH.hot : SLASH.pink, ag < 0.5 && d < core - 0.6 ? 2 : 1);
+          else if (d < edge) {
+            if (ag < 0.8 && hash01(k * 37 + j, q, seed) < 0.85 * keep) mote(p, ag < 0.4 ? SLASH.hot : SLASH.pink, 1);
+          } else if (ag < 0.05 && low > 0.5) mote(p, SLASH.boneDim, 1);
+          else if (hash01(k * 37 + j, q, seed + 1) < 0.16 * (1 - ag) * keep * low) mote(p, ag < 0.4 ? SLASH.pink : SLASH.deep, 1);
+        }
+      }
+    }
+    // AFTER-IMAGES OF ITS CLAWS along the way, older and older
+    for (const g of [0.22, 0.46, 0.7]) {
+      if (g > keep) continue;
+      const k = Math.round((1 - g) * n);
+      const p = way[k];
+      const o = norm([p[0], p[1], 0], [1, 0, 0]);
+      const side: V3 = [-o[1], o[0], 0];
+      for (let c = 0; c < 4; c++) {
+        const spread = (c - 1.5) * 0.22;
+        const d = norm(add(add(o, mul(side, spread)), [0, 0, -0.25]));
+        for (let s = 0; s <= 14; s += 1.2) mote(add(add(p, [0, 0, 1.5]), mul(d, s)), g < 0.3 ? SLASH.bone : g < 0.5 ? SLASH.hot : SLASH.pink, 1);
+      }
+    }
+    // BONE CHIPS flung off the floor
+    for (const p of ropes[`chips${i}`] ?? []) mote(p, hash01(p[0], p[1], 2141) < 0.5 ? SLASH.bone : SLASH.boneDim, hash01(p[1], p[0], 2143) < 0.35 ? 2 : 1);
+  }
+  return bits;
+}
+
 // =============================================================================================
 // THE AMALGAMATION WITH THESE MOVES
 
@@ -416,6 +757,7 @@ export function amalgamActionMob(): Mob {
   if (MADE) return MADE;
   const base = AMALGAM;
   const sw = swipeHands();
+  SWIPE_HANDS = sw;
   const rh = rainHands();
   const ah = armsHands();
   const dh = devourHands();
@@ -429,13 +771,11 @@ export function amalgamActionMob(): Mob {
     return out;
   };
   const swSmear = smearOf('attack', sw);
-  const rakeSlam = (t: number): Record<string, V3[]> => {
-    const h = sw(SWIPE_HITS[0]);
-    const g = sw(SWIPE_HITS[1]);
-    return merge(K.slamBurst([h.R1], t - SWIPE_HITS[0], 71, 0.8) as Record<string, V3[]>, K.slamBurst([g.L1], t - SWIPE_HITS[1], 72, 0.8) as Record<string, V3[]>);
-  };
+  const swRake = rakeRopes(sw);
   const attack = K.amMove('The swipe, the other swipe, and the slam', swipeMotion(), sw, {
-    also: (t) => merge(swSmear(t), rakeSlam(t), slams(SWIPE_HITS[2], 73, sw)(t), { burn: [[Math.max(0.6 * burning(t, 0.05, 0.33, 0.8, 1.1), 0.6 * burning(t, 0.95, 1.27, 1.73, 2.0), burning(t, 1.95, 2.4, 3.0, 3.6)), 0, 0]] }),
+    also: (t) => merge(swSmear(t), swRake(t), rakeChips(sw, 0, t - SWIPE_HITS[0]), rakeChips(sw, 1, t - SWIPE_HITS[1]), slams(SWIPE_HITS[2], 73, sw)(t), {
+      burn: [[Math.max(0.7 * burning(t, 0.05, 0.33, SWIPE_HITS[0] + 0.1, SWIPE_HITS[0] + 0.45), 0.8 * burning(t, 1.2, 1.6, SWIPE_HITS[1] + 0.1, SWIPE_HITS[1] + 0.45), burning(t, f(58 + S) - 0.02, f(72 + S), SWIPE_HITS[2], SWIPE_HITS[2] + 0.6)), 0, 0]],
+    }),
   });
   const rain = K.amMove('The bone rain', rainMotion(), rh, {
     also: (t) => merge(smearOf('rain', rh)(t), slams(RAIN_HIT, 74, rh)(t), { burn: [[burning(t, 0.05, 0.6, RAIN_HIT + 0.4, RAIN_HIT + 1.2), 0, 0]] }),
@@ -458,11 +798,36 @@ export function amalgamActionMob(): Mob {
     attack,
     hit: SWIPE_HITS[0],
     more,
-    bits: (st: Stage, m: Moment) => [...base.bits(st, m), ...smearBits(m)],
+    bits: (st: Stage, m: Moment) => [...base.bits(st, m), ...smearBits(m), ...rakeBits(m)],
   };
   return MADE;
 }
 void AM_CANVAS;
+
+/** IT WITH THE FIRST ROUND'S RAKES (only for the picture of them beside the new: dev/action_f4_amalgam_scene.ts; not its moves). */
+let MADE1: Mob | null = null;
+export function amalgamRound1Mob(): Mob {
+  if (MADE1) return MADE1;
+  const mob = amalgamActionMob();
+  const sw = swipeHands1();
+  const strikes = [{ s: SWIPE1_STRIKES[0], hands: ['R1'] }, { s: SWIPE1_STRIKES[1], hands: ['L1'] }, { s: SWIPE1_STRIKES[2], hands: ['R1', 'L1', 'R2', 'L2'] }];
+  const smear = smearOf('attack', sw, undefined, strikes);
+  const slam = (t: number): Record<string, V3[]> => {
+    const at = (h: number, n: string): V3 => sw(h)[n];
+    const burst = (pts: V3[], since: number, seed: number, k: number): Record<string, ReadonlyArray<V3>> => K.slamBurst(pts, since, seed, k) as Record<string, V3[]>;
+    const out: Record<string, V3[]> = {};
+    for (const r of [burst([at(SWIPE1_HITS[0], 'R1')], t - SWIPE1_HITS[0], 71, 0.8), burst([at(SWIPE1_HITS[1], 'L1')], t - SWIPE1_HITS[1], 72, 0.8), burst(['R1', 'L1', 'R2', 'L2'].map((n) => at(SWIPE1_HITS[2], n)).filter((p) => p[2] < 1), t - SWIPE1_HITS[2], 73, 1.3)]) for (const [k, v] of Object.entries(r)) out[k] = [...(out[k] ?? []), ...v];
+    return out;
+  };
+  const attack = K.amMove('The first round’s swipe', swipeMotion1(), sw, { also: (t) => ({ ...slam(t), ...smear(t), burn: [[Math.max(0.6 * burning(t, 0.05, 0.33, 0.8, 1.1), 0.6 * burning(t, 0.95, 1.27, 1.73, 2.0), burning(t, 1.95, 2.4, 3.0, 3.6)), 0, 0]] }) });
+  MADE1 = { ...mob, id: 'amalgam+action round 1', attack, hit: SWIPE1_HITS[0], bits: (st: Stage, m: Moment) => [...AMALGAM.bits(st, m), ...smearBits(m)] };
+  return MADE1;
+}
+/** It with the first round's rakes, as the game holds a monster (for the pictures only). */
+export function makeAmalgamRound1Art(pace = AMALGAM.pace): ActorArt {
+  const mob = amalgamRound1Mob();
+  return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
+}
 
 /** THE AMALGAMATION WITH THESE MOVES, as the game holds a monster. */
 export function makeAmalgamActionArt(pace = AMALGAM.pace): ActorArt {
@@ -497,9 +862,9 @@ const handOf = (g: ReturnType<typeof amGeometry>, n: string): V3 => (g.arms.find
 export function amActionShape(mob: Mob = amalgamActionMob()): BossShape {
   const blows: Record<string, { hit: number; strike: readonly [number, number]; from: number; until?: number }[]> = {
     attack: [
-      { hit: SWIPE_HITS[0], strike: SWIPE_STRIKES[0], from: 0, until: f(33) },
-      { hit: SWIPE_HITS[1], strike: SWIPE_STRIKES[1], from: f(33), until: f(60) },
-      { hit: SWIPE_HITS[2], strike: SWIPE_STRIKES[2], from: f(60) },
+      { hit: SWIPE_HITS[0], strike: SWIPE_STRIKES[0], from: 0, until: f(34) },
+      { hit: SWIPE_HITS[1], strike: SWIPE_STRIKES[1], from: f(34), until: f(74) },
+      { hit: SWIPE_HITS[2], strike: SWIPE_STRIKES[2], from: f(60 + S) },
     ],
     rain: [{ hit: RAIN_HIT, strike: RAIN_STRIKE, from: 0 }],
     floorArms: [{ hit: ARMS_HIT, strike: ARMS_STRIKE, from: 0 }],
@@ -533,9 +898,9 @@ export function amActionShape(mob: Mob = amalgamActionMob()): BossShape {
     tip: (move, t, s, q) => {
       const g = (): ReturnType<typeof amGeometry> => actAt(mob, move, t, s, q);
       if (move === 'attack') {
-        if (t <= f(36) + 1e-6) return handOf(g(), 'R1');
-        if (t >= f(38) - 1e-6 && t <= f(64) + 1e-6) return handOf(g(), 'L1');
-        if (t >= f(74)) return g().frame.lumps[3].c;
+        if (t <= f(34) + 1e-6) return handOf(g(), 'R1');
+        if (t <= f(76) + 1e-6) return handOf(g(), 'L1');
+        if (t >= f(74 + S)) return g().frame.lumps[3].c;
         return null;
       }
       if (move === 'rain' || move === 'floorArms') return g().frame.lumps[3].c;

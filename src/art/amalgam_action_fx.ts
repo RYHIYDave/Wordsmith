@@ -5,7 +5,8 @@
 //   THE BONE RAIN   his pick, 31 Oct, in place of the skull swarm: as it slams down, the ossuary's walls shed the skulls in their
 //                   niches over the whole floor, in three waves; each skull's SHADOW on the floor first, growing and darkening as
 //                   it comes down, the reach of its burst ringed in the enemy's pink; it BURSTS where it lands (bone flying, a band
-//                   of bone dust out to its reach); and leaves A PILE OF BONES lying there a while that slows you; then it crumbles.
+//                   of bone dust out to its reach); and (the second round, his word of 1 Nov) its bones then pull together into A
+//                   BONE MITE (art/amalgam_mites.ts), in place of the first round's pile that slowed you.
 //   THE ARMS        the arms of the dead out of the floor, more than before and bigger: four to a hole, half as big again.
 //   THE SLAM'S RING its weight landing: a shockwave out over the floor round where its hands come down, the floor cracking (the
 //                   Chained One's ring, art/chained_action_fx.ts, at its own sizes).
@@ -29,7 +30,8 @@ import { add, cross, mul, norm, sub } from './skeleton';
 import type { V3 } from './skeleton';
 import { floorPx } from './action_f1_fx';
 import { RING, ringCanvas, ringPainted } from './chained_action_fx';
-import { RAIN_HIT } from './amalgam_action';
+import { ACT_CANVAS, RAIN_HIT, RAKES, rakePath } from './amalgam_action';
+import { project } from './skeleton';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (u: number): number => {
@@ -56,13 +58,13 @@ export type Side = 'behind' | 'before' | 'all';
  *                       nothing more comes down
  *   r                   a hero within this of where a skull lands is struck as it bursts
  *   edge, clear         no skull nearer the wall than `edge`, nor nearer its middle than `clear` (it is not to land on itself)
- *   pile                what it leaves: a pile of bones `r` round, lying `lie` seconds, crumbling over `crumble`; a hero in it goes
- *                       at `slow` of his pace
+ *   mite                what it leaves (the second round): a bone mite, pulling itself together out of its bones from `at` seconds
+ *                       after it lands (art/amalgam_mites.ts MITE.form long); the scuff where it struck lies `scuff` seconds
  *   high                how high over the floor it falls from, as it comes in over the floor (game pixels)
  */
 export const RAIN = {
   waves: 3, first: 0.15, gap: 0.6, ripple: 0.12, fly: 1.0, spacing: 2.1, r: 0.9, edge: 0.9, clear: 1.8,
-  pile: { r: 0.75, lie: 6.0, crumble: 0.6, slow: 0.55 },
+  mite: { at: 0.05, scuff: 1.2 },
   high: 150,
 } as const;
 /** A skull of the rain: where it lands (tiles from the arena's middle), its wave, when it leaves its niche and when it lands (seconds from the slam), the niche it falls from (on the wall, tiles from the middle), and its own number. */
@@ -104,8 +106,6 @@ export function rainDrops(arena: { rx: number; ry: number } = { rx: 8.5, ry: 10 
 }
 /** Whether a skull bursting strikes a hero at (x, y) tiles from where it lands. */
 export const rainStrikes = (x: number, y: number): boolean => Math.hypot(x, y) <= RAIN.r;
-/** Whether a hero at (x, y) tiles from a pile is slowed by it, `t` seconds after its skull landed. */
-export const pileSlows = (x: number, y: number, t: number): boolean => t >= 0 && t < RAIN.pile.lie && Math.hypot(x, y) <= RAIN.pile.r;
 /**
  * A SKULL OF THE RAIN IN THE AIR, `u` (0 to 1) of the way from its niche to where it lands: where it is (tiles from the arena's
  * middle, and how high, game pixels). It is thrown out of the niche and in over the floor high, and comes down steep at the last,
@@ -178,73 +178,21 @@ function blob(dot: (x: number, y: number, c: string) => void, x: number, y: numb
     }
   }
 }
-/** THE BONES OF A PILE, as it lies (the figure's own lengths from where its skull landed): long bones every which way, ribs, its skull broken open, its jaw. */
-function pileBits(st: Stage, put: Put, seed: number, sink: number): void {
-  const R = RAIN.pile.r * TILE3 * 0.62;
-  for (let i = 0; i < 12; i++) {
-    const a = hash(seed, i, 1311) * TAU;
-    const r = R * Math.sqrt(hash(seed, i + 20, 1311));
-    const c: V3 = [Math.cos(a) * r, Math.sin(a) * r, 1.2 + 1.6 * hash(seed, i + 40, 1311) * (1 - r / R) - sink];
-    const way = (hash(seed, i + 60, 1311) * 180) * D;
-    const ax: V3 = [Math.cos(way), Math.sin(way), (hash(seed, i + 80, 1311) - 0.5) * 0.5];
-    const L = 9 + 7 * hash(seed, i + 100, 1311);
-    const rr = 1.1 + 0.4 * hash(seed, i + 120, 1311);
-    const p0 = add(c, mul(ax, -L / 2));
-    const p1 = add(c, mul(ax, L / 2));
-    if (i % 4 === 3) {
-      // (a rib, curved)
-      const side = norm(cross([0, 0, 1], ax), [0, 1, 0]);
-      let last: V3 | null = null;
-      for (let k = 0; k <= 4; k++) {
-        const b = -0.9 + (1.8 * k) / 4;
-        const p = add(c, add(mul(ax, Math.sin(b) * L * 0.5), mul(side, (Math.cos(b) - 0.8) * L * 0.35)));
-        if (last) put(`pile${i}`, `pile${i}`, { k: 'rod', a: last, b: p, ra: 0.75, rb: 0.7, ramp: K.DEEP_OSS });
-        last = p;
-      }
-      continue;
-    }
-    put(`pile${i}`, `pile${i}`, { k: 'rod', a: p0, b: p1, ra: rr, rb: rr * 0.85, ramp: K.DEEP_OSS });
-    put(`pile${i}`, `pile${i}`, { k: 'ball', c: p0, ax: sphere(rr * 1.5), skin: K.DEEP_OSS });
-    put(`pile${i}`, `pile${i}`, { k: 'ball', c: p1, ax: sphere(rr * 1.35), skin: K.DEEP_OSS });
-  }
-  // its skull, broken open, lying on its side; its jaw by it
-  const a = hash(seed, 7, 1313) * TAU;
-  const at: V3 = [Math.cos(a) * 3, Math.sin(a) * 3, 3.6 - sink];
-  const face = faceAlong(norm([Math.cos(a + 1.2), Math.sin(a + 1.2), 0.25]), norm([Math.cos(a), Math.sin(a), 0.6]));
-  skull(st, put, 'pskull', 'pskull', at, face, [4.6, 4.2, 4.2], OSS, eyesOf(st, face), 0, false, 3);
-  const jw = (a + 2.4) % TAU;
-  put('pjaw', 'pjaw', { k: 'ball', c: [Math.cos(jw) * 8, Math.sin(jw) * 8, 1.1 - sink], ax: [[Math.cos(jw) * 2.6, Math.sin(jw) * 2.6, 0], [-Math.sin(jw) * 3.2, Math.cos(jw) * 3.2, 0], [0, 0, 1.1]], skin: K.DEEP_OSS });
-}
-
 /**
  * WHAT A SKULL OF THE RAIN DOES WHERE IT LANDS, `t` seconds after it lands (the anchor). Before it lands (`t` from -RAIN.fly to 0):
  * on the floor, ITS SHADOW, small and faint as it leaves its niche, growing and darkening as it comes down, and THE REACH OF ITS
  * BURST ringed round it in the enemy's pink, filling in. As it lands and after:
- *   floor   the scuff where it struck; a band of bone dust going out to its reach in a tenth of a second and more, the enemy's
- *           pink at its leading edge; THE PILE of its bones lying there, a grey drift of bone dust round it as far as it slows you;
- *           from RAIN.pile.lie it crumbles away, gone by lie + crumble
+ *   floor   the scuff where it struck, fading by RAIN.mite.scuff; a band of bone dust going out to its reach in a tenth of a second
+ *           and more, the enemy's pink at its leading edge (its bones are the bone mite's, art/amalgam_mites.ts `form`)
  *   air     the flash (white, the enemy's gold and pink); bits of skull and teeth flung up and out, falling; a puff of bone dust
  * The air by halves (`side`): 'behind' before a figure where it lands, 'before' after it.
  */
 export function dropPainted(t: number, layer: 'floor' | 'air', seed: number, side: Side = 'all', view: GameView = 'front'): Painted {
   const C = DROP_CANVAS;
   const lights: Light[] = [];
-  const gone = RAIN.pile.lie + RAIN.pile.crumble;
-  if (t < -RAIN.fly - 1e-6 || t > gone + 1e-6) return { px: new Px(C.w, C.h), lights };
-  const st = stage(view, C.ax, C.ay, C);
-  const bits: Bit[] = [];
-  const put: Put = (part, piece, shape) => {
-    bits.push({ part, piece, shape });
-  };
-  // THE PILE: down as it bursts (its bones settle into it over a tenth of a second); sinking into dust as it crumbles
-  const crumble = clamp01((t - RAIN.pile.lie) / RAIN.pile.crumble);
-  if (layer === 'floor' && t >= 0.06 && crumble < 0.85) pileBits(st, put, seed, 6 * crumble * crumble);
-  paintBits(st, bits, [0, 0, 0]);
-  const px = st.whole(null);
-  if (crumble > 0) {
-    // (crumbling: its pixels going to dust, more and more)
-    for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) if (px.d[(y * px.w + x) * 4 + 3] && hash(x, y, 1317 + seed) < crumble * 1.1) px.set(x, y, hash(x, y, 1319) < 0.5 ? '#4a4266' : '#6a6488');
-  }
+  if (t < -RAIN.fly - 1e-6 || t > RAIN.mite.scuff + 1e-6) return { px: new Px(C.w, C.h), lights };
+  const px = new Px(C.w, C.h);
+  void view;
   const at = (x: number, y: number): [number, number] => {
     const [X, Y] = floorPx(x, y);
     return [C.ax + X, C.ay + Y];
@@ -280,28 +228,8 @@ export function dropPainted(t: number, layer: 'floor' | 'air', seed: number, sid
       }
       return { px, lights };
     }
-    // the drift of bone dust round the pile, as far as it slows you
-    const drift = 1 - crumble;
-    const P = RAIN.pile.r;
-    if (drift > 0 && t > 0.1) {
-      for (let i = 0; i < 90; i++) {
-        const a = hash(seed, i, 1321) * TAU;
-        const r = P * Math.sqrt(hash(seed, i + 100, 1321));
-        if (hash(seed, i + 200, 1321) > drift) continue;
-        const [x, y] = at(Math.cos(a) * r, Math.sin(a) * r);
-        dot(x, y, i % 3 ? '#4a4266' : '#5f5878');
-        if (i % 4 === 0) dot(x + 1, y, '#4a4266');
-      }
-      // (its edge, faint, the dust thinning out: where it stops slowing you)
-      for (let i = 0; i < 40; i++) {
-        if (i % 2) continue;
-        const a = (i / 40) * TAU;
-        const [x, y] = at(Math.cos(a) * P, Math.sin(a) * P);
-        if (hash(seed, i, 1323) < 0.7 * drift) dot(x, y, '#5f5878');
-      }
-    }
     // the scuff where it struck
-    const scuff = 1 - clamp01((t - 0.6) / 0.6);
+    const scuff = 1 - clamp01((t - 0.6) / (RAIN.mite.scuff - 0.6));
     if (scuff > 0) for (let j = -4; j <= 4; j++) for (let i = -9; i <= 9; i++) if ((i / 9) ** 2 + (j / 4) ** 2 < 0.7 && hash(i, j, 1325 + seed) < scuff * 0.7) dot(C.ax + i, C.ay + j, SEAM);
     // the band of bone dust going out to its reach, the enemy's pink at its leading edge
     const wave = 0.12;
@@ -480,3 +408,80 @@ export function slamRingPainted(t: number, layer: 'floor' | 'air', radius: numbe
 }
 /** Seconds into the bone rain at which each skull lands (for the film: RAIN_HIT plus its own landing). */
 export const rainLandsAt = (d: Drop): number => RAIN_HIT + d.land;
+
+// =============================================================================================
+// THE RAKES' GOUGES: its claws ripped across the floor
+
+/**
+ * WHERE A RAKE'S CLAWS TORE THE FLOOR (the figure's own lengths from its middle as the move began, on the floor): four gouges along
+ * the way its hand went where it came down low, `apart` lengths apart across it. They lie `lie` seconds after the rake lands,
+ * glowing with the enemy's fire at first (`hot`), and fade over `fade`.
+ */
+export const RAKE_GOUGE = { apart: 5, low: 16, lie: 1.6, fade: 0.5, hot: 0.35 } as const;
+export function rakeGouges(i: number): V3[][] {
+  const way = rakePath(i).filter((p) => p[2] < RAKE_GOUGE.low);
+  const out: V3[][] = [[], [], [], []];
+  for (let k = 0; k < way.length; k++) {
+    const p = way[k];
+    const o = norm([p[0], p[1], 0], [1, 0, 0]);
+    for (let c = 0; c < 4; c++) {
+      const r = (c - 1.5) * RAKE_GOUGE.apart + 6;
+      out[c].push([p[0] + o[0] * r, p[1] + o[1] * r, 0]);
+    }
+  }
+  return out;
+}
+const GOUGES = new Map<number, V3[][]>();
+/** A RAKE'S GOUGES IN THE FLOOR, `since` seconds after it lands, on a canvas as its own (ACT_CANVAS, its floor point the anchor): torn deep and dark, their lips broken up pale, glowing with the enemy's fire at first; chips of bone lying along them; fading. */
+export function rakeFloorPainted(since: number, i: number, view: GameView = 'front'): Painted {
+  const C = ACT_CANVAS;
+  const px = new Px(C.w, C.h);
+  const lights: Light[] = [];
+  if (since < 0 || since > RAKE_GOUGE.lie + RAKE_GOUGE.fade) return { px, lights };
+  if (!GOUGES.has(i)) GOUGES.set(i, rakeGouges(i));
+  const lines = GOUGES.get(i) as V3[][];
+  const dot = pen(px, false);
+  const under = pen(px, true);
+  const fade = 1 - clamp01((since - RAKE_GOUGE.lie) / RAKE_GOUGE.fade);
+  const hot = 1 - clamp01(since / RAKE_GOUGE.hot);
+  const at = (p: V3): [number, number] => {
+    const q = project(p, view);
+    return [C.ax + q[0], C.ay + q[1]];
+  };
+  lines.forEach((line, c) => {
+    for (let k = 1; k < line.length; k++) {
+      const [x0, y0] = at(line[k - 1]);
+      const [x1, y1] = at(line[k]);
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+      // (deepest in its middle, thinning to its ends)
+      const mid = Math.sin(Math.PI * (k / line.length));
+      for (let j = 0; j < n; j++) {
+        const u = j / n;
+        const x = x0 + (x1 - x0) * u;
+        const y = y0 + (y1 - y0) * u;
+        if (hash(Math.round(x), Math.round(y), 2201 + c) > fade * (0.6 + 0.4 * mid) + 0.05) continue;
+        dot(x, y, hot > 0.3 && mid > 0.3 ? (hot > 0.7 ? PINK[3] : PINK[2]) : INK);
+        if (mid > 0.45) dot(x, y + 1, hot > 0.5 ? FLAME[1] : SEAM);
+        under(x, y - 1, hash(Math.round(x), c, 2203) < 0.5 ? '#6a6488' : '#4a4266');
+      }
+    }
+    // chips of bone along it
+    for (let k = 2; k < line.length; k += 3) {
+      if (hash(k, c, 2205) > 0.55 * fade) continue;
+      const [x, y] = at(line[k]);
+      const dx = Math.round((hash(k, c, 2207) - 0.5) * 8);
+      const dy = Math.round((hash(k, c, 2209) - 0.5) * 5);
+      under(x + dx, y + dy, BONE[2]);
+      if (hash(k, c, 2211) < 0.4) under(x + dx + 1, y + dy, BONE[1]);
+    }
+  });
+  if (hot > 0) {
+    const mid = lines[1][Math.floor(lines[1].length / 2)];
+    if (mid) {
+      const [x, y] = at(mid);
+      lights.push({ x, y, r: 70, color: SOCKET, a: 0.22 * hot });
+    }
+  }
+  void RAKES;
+  return { px, lights };
+}

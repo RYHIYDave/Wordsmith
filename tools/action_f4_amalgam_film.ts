@@ -45,7 +45,7 @@ const parts: Part[] = [
   part(swipeScene, 'front', 2, 330, 215, SWIPE_PASS, 'THE SWIPE · FROM IN FRONT', `Right arm drawn up, HELD, raked in 2 frames · left, the same · REARED, both arms up, HELD · slammed: a ring ${SLAM_RING.finisher} tiles`),
   part(swipeScene, 'back', 2, 300, 215, SWIPE_PASS, 'THE SWIPE · FROM BEHIND', 'Every big move: it rears up to near twice its height on its arms, and comes down shaking the floor'),
   part(rainScene, 'front', 2, 320, 235, RAIN_PASS, 'THE BONE RAIN · FROM IN FRONT', 'Reared, ROARING, HELD · all four arms slammed down · the niches shed their skulls: shadows first'),
-  { long: ARENA_PASS, title: 'THE BONE RAIN · THE WHOLE FLOOR, FROM ABOVE', line: `Three waves, the shadows first · each skull bursts (${RAIN.r} tiles) and leaves a pile that slows you for ${RAIN.pile.lie} s`, frame: (t) => rainArena(t, arenaBase, 600, 370) },
+  { long: ARENA_PASS, title: 'THE BONE RAIN · THE WHOLE FLOOR, FROM ABOVE', line: `Three waves, the shadows first · each skull bursts (${RAIN.r} tiles) and leaves a pile that slows you for 6 s`, frame: (t) => rainArena(t, arenaBase, 600, 370) },
   part(armsScene, 'front', 2, 310, 190, ARMS_PASS, 'THE FLOOR ARMS · FROM IN FRONT', `Reared higher, HELD · slammed flat · ${ARMS.n} holes, the first under you, cracks glowing ${ARMS.warn} s before`),
   part(armsScene, 'back', 2, 300, 200, ARMS_PASS, 'THE FLOOR ARMS · FROM BEHIND', 'Four arms of the dead to a hole, half as big again: you must move'),
   part(devourScene, 'front', 2, 330, 200, DEVOUR_PASS, 'DEVOUR · FROM IN FRONT', `Reared, maw gaping, arms flung wide, HELD (the cone marked, ${CONE.reach} tiles) · the RAKE, 2 frames · the drag · the BITE, 2 frames`),

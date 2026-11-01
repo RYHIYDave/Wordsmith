@@ -5,6 +5,9 @@ One's). Nothing here is in the game until the main chat puts it there, on his ye
 `AMALGAM_ACTION = { on: false }` (art/amalgam_action.ts): with it off every frame the game shows of the Amalgamation, and of what it
 sends out, is the same, pixel for pixel (hashes below). Its old moves are kept as they are (art/bosses3.ts), the skull swarm too.
 
+**The second round (1 Nov 2026), his word on the first: the rakes redone and the bone rain's skulls made little bone monsters,
+is at "Second round" below; where it and the first round's text differ, the second round's holds.**
+
 ## His words
 
 - His review of every enemy for more action, 31 Oct 2026, offered "Bone rain, in place of the skull fan: the ossuary's niches shed
@@ -25,6 +28,9 @@ sends out, is the same, pixel for pixel (hashes below). Its old moves are kept a
   each of its seven strikes at half speed. The floor shakes as its weight lands (a few pixels, as the game's own shake).
 - `amalgam_action_sheet.png` (1200 wide): five key moments of each move from in front and from behind, with the knight; ITS OLD
   SWIPE BESIDE THE NEW; the bone rain over the whole floor at three moments.
+
+- Round 2 (below, "Second round"): `amalgam_action2.mp4` and `amalgam_action2_sheet.png`. The first round's two are kept as he saw
+  them (made at d494444).
 
 ## It looms (his “not intimidating at all”)
 
@@ -202,6 +208,115 @@ Shown `amalgam_action.mp4` and `amalgam_action_sheet.png`, 1 Nov 2026 (answered 
 
 So: the floor arms, the devour and its rearing stand; the rakes and the rain's piles are redrawn (the second round).
 
+## Second round (1 Nov 2026): the rakes redone; the bone rain's skulls become little bone monsters
+
+### His words (1 Nov, to the first round's film and sheet)
+
+- “His regular arm swipe is pretty lackluster”, and of the swipe combo, “The rakes are lackluster”.
+- Of the bone rain: “Love the bone rain, can they all become little bone monsters.  Super easy to kill, but there’s a ton of them”.
+
+Kept exactly as he said yes to them: the floor arms, the devour, its rearing and crash (and the bone rain's rear, slam, shadows,
+waves and bursts; the finisher's rear and slam, only later in the move).
+
+### The pictures (`pictures/`)
+
+- `amalgam_action2.mp4` (1200 × 676, 41.6 s, captioned): the new rakes with the knight from in front and from behind (twice the
+  game's pixels); each rake at half speed (three times), the backhand from behind too; THE FIRST ROUND'S RIGHT RAKE BESIDE THE NEW
+  at the same moment, at half speed; a bone mite close (four times: a skull bursts, its bones pull together, it skitters at the
+  knight, crouches and snaps; he swings and it bursts into chips), from in front and from behind; THE BONE RAIN OVER THE WHOLE FLOOR
+  FROM ABOVE, a mite pulling together where each skull bursts, dozens of them swarming the knight while he hacks them down; and close.
+- `amalgam_action2_sheet.png` (1200 wide): six moments of the rakes from in front and from behind with the knight; the first
+  round's rake beside the new; the bone mite from in front and from behind (three times); the mites swarming the knight (twice);
+  the bone rain over the whole floor at two moments.
+- Made by `tools/action_f4_amalgam_film2.ts`, `tools/action_f4_amalgam_sheet2.ts` and `tools/action_f4_amalgam_captions2.py`; the
+  scenes `src/dev/action_f4_amalgam_scene.ts` (`swipeScene`, `miteScene`, `rainArena`, the swarm `swarmFor`). The first round's
+  film and sheet tools now draw the new moves.
+
+### THE RAKES, REDONE (`attack`: the combo's first two blows; the finisher as it was, 16 frames later)
+
+Each rake: THE GREAT ARM HAULED UP HIGH, out and back over its side (its hand 70 of its lengths up, over its heap from behind),
+its claws spread and GLOWING with the enemy's fire, brighter and brighter while it is HELD (the warning); the heap twisted away,
+heaved half up and tipped back, its weight thrown onto its other arms (they step in under it and grip), its maw snarling; it
+turns, the hips first; THE RAKE IN TWO FRAMES, the whole heap lunging into it and turning through, every hand it stands on flung on
+with it and gripping again as it lands; a VAST ARC OF ITS CLAWS swept across the floor before it: four streaks, bone-white and near
+white at their heads, the enemy's pink between them and behind, out to its reach, after-images of its claws along the way, BONE
+CHIPS AND DUST flung off the floor and FOUR GOUGES torn in it, glowing at first; THE FREEZE on the hit (it holds two frames); a big
+follow-through, the arm carried on round and up over its brow, the heap rocking on with it and back. The backhand from the other
+side, bigger again. (art/amalgam_action.ts `RAKES`, `rakeBits`; the gouges art/amalgam_action_fx.ts `rakeFloorPainted`.)
+
+| | |
+|---|---|
+| the move | **4.533 s** (frames 0–136; the first round's 4.0) |
+| the right rake | hauled up by 0.333 s (f10), HELD (glowing) to 0.6 (f18), it turns f18–f20; **strike f20–f22**, its blow **0.733 s** (`SWIPE_HITS[0]`); frozen to f24; carried round to 1.0 s (f30), rocking to 1.4 (f42) |
+| the backhand | hauled up from 1.2 s (f36) by 1.6 (f48), HELD to 1.867 (f56), it turns f56–f58; **strike f58–f60**, its blow **2.0 s** (`SWIPE_HITS[1]`); frozen to f62; carried round to 2.267 (f68), rocking to 2.467 (f74) |
+| the finisher (as before, `FINISHER_LATER` 16 frames later) | rearing from 2.467 s (f74), reared by 2.933 (f88), HELD to 3.4 (f102); **strike f104–f106**, its blow **3.533 s** (`SWIPE_HITS[2]`); settled by 4.533; its ring as before (`SLAM_RING.finisher`, 2.6 round a point 1.71 before it) |
+| THE RIGHT RAKE'S REACH | its slash out to **3.3 tiles** from its middle as the move began (`RAKES[0].out`), over an arc of **109 degrees**: from 94 degrees to its right round to 15 degrees past its front to its left; its hand itself sweeps out to 2.19 tiles |
+| THE BACKHAND'S REACH | its slash out to **3.5 tiles** (`RAKES[1].out`), over **111 degrees**: from 93 degrees to its left round to 18 degrees past its front to its right; its hand out to 2.30 tiles |
+| the lunge | the heap thrown on 0.54 tiles into the right rake and turned through 50 degrees; 0.62 tiles and 57 degrees into the backhand |
+| the slash | whole from the strike's first frame through the freeze, then thinning out over four frames (`RAKE_FADE`); the claws' glow from 0.4 s before each strike |
+| the gouges (`RAKE_GOUGE`) | four along the way its claws went low, 5 of its lengths apart; glowing 0.35 s, lying 1.6 s, fading over 0.5 |
+| the old ones | the first round's: 1.87 and 1.94 tiles (its hands), its old single swipe 2.45 |
+
+For the rules (a suggestion; damage the rules' own): each rake strikes a hero within its slash as it lands: within `out` tiles of
+its middle (3.3, 3.5) and inside its arc (from its right round to 15 degrees past its front; from its left round to 18 past), at
+`SWIPE_HITS[0]` and `[1]`; mark it from when the arm is hauled up (0.033 s and 1.2 s: 0.7 and 0.8 s of warning); the game's shake
+3 and 3.5 at the rakes, a hit-stop of `RAKE_FREEZE` (two frames) on a hero struck. The slash is drawn by the Amalgamation's own
+frames (its canvas as before, 460 × 370: it fits); the gouges by `rakeFloorPainted(since, i, view)` on a canvas as its own, its
+floor point the anchor (`ACT_CANVAS`), the floor layer.
+
+### THE BONE MITES (art/amalgam_mites.ts `BONE_MITE`: the bone rain's skulls, in place of the piles)
+
+Every skull of the rain still bursts where it lands (the hit, as before), and then its bones PULL TOGETHER INTO A BONE MITE: an
+original little creature of its own, a skull carried low on six legs of finger bones (knuckled, a claw at each foot), its jaw hung
+under it with a row of teeth, its cheekbones jutting, cracks over its crown with the enemy's fire glowing in them, a curled tail
+of four finger knuckles with a hooked claw, the pink in its sockets and its pink rim. Its moves:
+
+- FORMING (`more.form`, **0.5 s**, from **0.05 s** after its skull lands: `RAIN.mite.at`): its skull lying on its side among its
+  bones; the bones dragged in to it, hopping over the floor; its legs unfold under it and grip; it heaves itself up, rolling
+  upright; the pink lights in its sockets; it shakes itself.
+- ITS SKITTER (`walk`): **3.2 tiles a second** (`MITE.pace`; the knight runs 4.6 in the pictures), six frames round at 30 a second,
+  three feet down and three up at a time, the swinging legs blurred, its feet gripping.
+- ITS BITE (`attack`, **1.033 s**, Movement 9 at its size): crouched, its skull tipped up, its jaw wide and its front legs raised,
+  claws up, by 0.167 s; HELD, trembling, to 0.4; **the snap in two frames, f12–f14, the bite at 0.467 s**: it leaps on (0.41 tiles,
+  all six feet off the floor), its jaw snapped shut, its teeth 0.61 tiles before its middle; the freeze; carried on into it to
+  0.633; hopped back by 0.933. For the rules: a hero within **0.75 tiles** before it (`MITE.bite.reach`) at 0.467 s.
+- STRUCK, DEAD IN ONE BLOW (`dying`, **0.45 s**): knocked back, its skull cracking white; at 0.1 s it bursts into a puff of bone
+  chips, shards of it tumbling out and a puff of dust.
+- Its stand (bobbing, swaying, its skull turning, its jaw clacking, a foot tapping) and a flinch (`reel`, never needed).
+- Its size: **20 of the figures' lengths tall** (the knight's build is 57: about a third of him).
+- HOW MANY: one for every skull of the rain: **58** on the pictures' arena (8.5 by 10 tiles), 18, 20 and 20 by wave, each forming
+  where its skull burst, 1.2 to 2.5 s after the slam (`RAIN_HIT + land + RAIN.mite.at`).
+- In the pictures they skitter at the knight, keep a little apart (0.42 tiles), stop 0.62 tiles off and bite, again and again;
+  his every swing bursts every mite within 1.45 tiles and 80 degrees to either side of where he faces (the pictures' own stand-in
+  for his reach: the game's are the rules').
+
+The game's own bone beasts (bursting out of it at 80/60/40/20%) are as they were; the mites are new, and smaller.
+
+To bring them in (the main chat's, with AMALGAM_ACTION on): the bestiary `bonemite` → `makeBoneMiteArt()` (the game's monster
+shape: stand, walk, attack, reel, die, and `moves.form`); at `RAIN_HIT + d.land + RAIN.mite.at` spawn one at each skull's spot,
+playing `form` (0.5 s) before it acts; its rules (a suggestion): one hit point, pace 3.2, its bite as above; RAIN's piles and their
+slowing are gone (`RAIN.pile`, `pileSlows`); `dropPainted`'s floor now only the shadow, the scuff and the burst's dust (gone by
+`RAIN.mite.scuff`, 1.2 s).
+
+### Changed in the second round
+
+- art/amalgam_action.ts: the rakes (`RAKES`, `swipeHands`, `swipeMotion`, the slash `rakeBits`, its glow and chips; `rakePath`),
+  the finisher 16 frames later, `SWIPE_*` and the shape's blows to match; the first round's rakes kept for the picture beside
+  the new only (`amalgamRound1Mob`, `SWIPE1_*`; not its moves).
+- art/amalgam_action_fx.ts: no piles (`RAIN.mite`); the rakes' gouges (`RAKE_GOUGE`, `rakeGouges`, `rakeFloorPainted`).
+- art/amalgam_mites.ts: new, the bone mite (`BONE_MITE`, `MITE`, `MITE_SHAPE`, `makeBoneMiteArt`).
+- Nothing outside these, the scene, the tools and the tests. The game's frames hash the same (below).
+
+### The checks (second round)
+
+`tests/action_f4_amalgam.test.ts`, now 6 tests: 1 to 5 as before (the mites' file added to "nothing of the game imports it"; test
+4 holds the rakes to their reach (hands past 2.1 tiles, slash 3.2 to 3.5), their arc (past 95 degrees), their hold up high, their
+freeze, their lunge and their slash's time; test 5 the rain without piles and the gouges: crisp, no cyan, nothing cut off, gone
+after); and 6, THE BONE MITES: every frame of its stand, skitter, bite, flinch and forming, from in front and from behind, painted,
+its pink edge, crisp, no cyan, nothing cut off; its death bursting into chips; THE WHOLE BOSSES' REVIEW (`checkBoss`, every frame
+of every move, both ways round, every handing over): nothing found; its snap held and struck in two frames, smeared then only; its
+bite's reach; a third of the knight's height; its pace; its forming in half a second.
+
 ## For him to decide (the art chat's to ask)
 
 - The swipe as its every basic attack (4.0 s: two rakes and the slam), or a single quick rake kept between combos (his rule of 9
@@ -211,3 +326,8 @@ So: the floor arms, the devour and its rearing stand; the rakes and the rain's p
 - Its rear: 95 high, about twice its height lying (the pictures); higher would need its arms longer than they are.
 - Its crawl at 0.8 tiles a second (kept), or quicker between fights (say 1.1, the Chained One's: a rules number only, its crawl's
   frames shown faster).
+- (second round) How long a bone mite lasts if no one kills it (in the pictures, until it is killed), and whether the
+  Amalgamation eats them back as it does its bone beasts: 58 at once is a lot for the game to run and the hero to wade through.
+- (second round) Their pace: 3.2 tiles a second (quick, but the knight outruns them), or as fast as he is.
+- (second round) The rakes' slash reaches a tile past its claws (3.3 and 3.5 against its hands' 2.2 and 2.3): its claws' arc
+  thrown out over the floor, as he asked of the areas ("bigger AOE"); or the rule's reach only where the claws themselves go.
