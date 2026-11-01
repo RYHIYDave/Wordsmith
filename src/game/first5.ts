@@ -172,6 +172,160 @@ export const FLOOR_SETS: readonly FloorSet[] = [
   },
 ];
 
+/** What a scene is given to lay itself in room `r` (its middle cx, cy): each of these lays one piece where it may, true if it did. */
+interface SceneCtx {
+  r: Room;
+  rng: RNG;
+  cx: number;
+  cy: number;
+  stand: (x: number, y: number, name: string, big?: boolean) => boolean;
+  lie: (x: number, y: number, name: string) => boolean;
+  heap: (x: number, y: number, side: 0 | 1, name: string) => boolean;
+  onWall: (x: number, y: number, side: 0 | 1, name: string) => boolean;
+  onFloor: (x: number, y: number, name: string, frame?: number) => boolean;
+}
+/** A scene: its name, the least room it wants (area, width along x, depth along y), how many a floor has at most, and how it is laid (true if it was). */
+interface Scene {
+  name: string;
+  area: number;
+  w: number;
+  h: number;
+  most: number;
+  lay: (c: SceneCtx) => boolean;
+}
+/** (the king's runner's frames: along y, 3 and 4 by turns, 5 its fringed end) */
+const runnerY = (c: SceneCtx, x: number, y0: number, len: number): void => {
+  for (let k = 0; k < len; k++) c.onFloor(x, y0 + k, "the king's runner", k === len - 1 ? 5 : 3 + (k % 2));
+};
+/**
+ * THE SCENES OF EACH FLOOR (SCENES), by floor. The back walls are the two the eye sees, along the room's -y side (its faces side 0)
+ * and its -x side (side 1).
+ */
+export const SCENE_SETS: Readonly<Record<number, readonly Scene[]>> = {
+  1: [
+    {
+      // THE THRONE ROOM: the dead king's throne against the back wall, a horned knight standing guard either side of it, his
+      // banners on the wall behind them, his runner laid from the throne down the room, torches further along the wall
+      name: 'the throne room', area: 110, w: 9, h: 9, most: 1,
+      lay: (c) => {
+        const { r, cx } = c;
+        if (!c.stand(cx, r.y + 1, "the king's throne", true)) return false;
+        c.stand(cx - 2, r.y + 1, 'horned knight');
+        c.stand(cx + 2, r.y + 1, 'horned knight');
+        c.onWall(cx, r.y, 0, "the king's head");
+        c.onWall(cx - 2, r.y, 0, 'banner');
+        c.onWall(cx + 2, r.y, 0, 'banner');
+        c.onWall(cx - 4, r.y, 0, 'torch');
+        c.onWall(cx + 4, r.y, 0, 'torch');
+        runnerY(c, cx, r.y + 3, Math.min(5, r.h - 4));
+        return true;
+      },
+    },
+    {
+      // THE KING'S TOMB: his tomb in the middle of the room, the crown set in the floor at its foot, his head carved on the back
+      // wall over it with sealed niches either side, urns of the dead about the tomb's foot
+      name: "the king's tomb", area: 90, w: 8, h: 8, most: 1,
+      lay: (c) => {
+        const { r, cx, cy } = c;
+        if (!c.stand(cx, cy, "the king's tomb", true)) return false;
+        c.onFloor(cx, cy + 2, 'the crown in the floor');
+        c.onFloor(cx - 1, cy + 2, 'ledger stone');
+        c.onFloor(cx + 1, cy + 2, 'ledger stone');
+        c.onWall(cx, r.y, 0, "the king's head");
+        c.onWall(cx - 2, r.y, 0, 'sealed niche');
+        c.onWall(cx + 2, r.y, 0, 'sealed niche');
+        return true;
+      },
+    },
+    {
+      // THE BURIAL HALL: a row of sarcophagi along the back wall, a burial niche in the wall over each and a grave slab before
+      // each, now and then one lying open
+      name: 'the burial hall', area: 60, w: 9, h: 7, most: 3,
+      lay: (c) => {
+        const { r, rng } = c;
+        let n = 0;
+        for (let x = r.x + 2; x <= r.x + r.w - 3; x += 3) {
+          if (!c.stand(x, r.y + 1, rng.chance(0.3) ? 'open sarcophagus' : 'sarcophagus', true)) continue;
+          n++;
+          c.onWall(x, r.y, 0, rng.chance(0.5) ? 'burial niche' : 'sealed niche');
+          c.onFloor(x, r.y + 3, rng.chance(0.5) ? 'grave slab and ring' : 'sunken grave slab');
+        }
+        return n >= 2;
+      },
+    },
+    {
+      // THE GUARD POST: the jailers' rack of mauls against the side wall, a horned knight beside it, keys on a hook and crossed
+      // mauls on the wall over them, a helm set down on the floor by the rack, a fallen banner where the post was overrun
+      name: 'the guard post', area: 40, w: 6, h: 7, most: 3,
+      lay: (c) => {
+        const { r, cy } = c;
+        if (!c.stand(r.x + 1, cy, 'rack of mauls')) return false;
+        c.stand(r.x + 1, cy + 2, 'horned knight');
+        c.onWall(r.x, cy + 1, 1, 'keys on a hook');
+        c.onWall(r.x, cy - 1, 1, 'crossed mauls');
+        c.onWall(r.x, cy - 2, 1, 'horned helm on a peg');
+        c.lie(r.x + 2, cy + 1, 'horned helm');
+        return true;
+      },
+    },
+    {
+      // THE FALLEN WALL: part of the back wall come down in a heap, cracks running out from it, the head of a statue it crushed
+      // lying before it (wherever along the wall it can)
+      name: 'the fallen wall', area: 30, w: 6, h: 5, most: 2,
+      lay: (c) => {
+        const { r } = c;
+        for (let x = r.x + 2; x <= r.x + r.w - 3; x++) {
+          if (!c.heap(x, r.y, 0, 'crumbled wall')) continue;
+          c.onWall(x - 1, r.y, 0, 'great crack');
+          c.onWall(x + 1, r.y, 0, 'fallen-in stones');
+          c.lie(x + 1, r.y + 2, "the statue's head");
+          return true;
+        }
+        return false;
+      },
+    },
+    {
+      // A TOMB: one sarcophagus against the back wall, a niche in the wall over it, a slab before it
+      name: 'a tomb', area: 36, w: 5, h: 6, most: 6,
+      lay: (c) => {
+        const { r, cx, rng } = c;
+        if (!c.stand(cx, r.y + 1, rng.chance(0.25) ? 'open sarcophagus' : 'sarcophagus', true)) return false;
+        c.onWall(cx, r.y, 0, 'burial niche');
+        c.onFloor(cx, r.y + 3, 'ledger stone');
+        return true;
+      },
+    },
+    {
+      // THE JAILERS' ROOM: shackles on the back wall, the chain from them lying on the floor below, the jailers' dropped keys,
+      // a drain in the floor
+      name: "the jailers' room", area: 36, w: 6, h: 6, most: 4,
+      lay: (c) => {
+        const { r, cx, cy } = c;
+        if (!c.onWall(cx, r.y, 0, 'shackles')) return false;
+        c.onWall(cx + 2, r.y, 0, 'shackles');
+        c.lie(cx, r.y + 1, 'chain');
+        c.lie(cx + 2, cy, 'dropped keys');
+        c.onFloor(cx - 1, cy + 1, 'drain');
+        return true;
+      },
+    },
+    {
+      // THE ARMOURY: two racks of mauls along the side wall, a shield and crossed mauls on the wall over them, a helm set down
+      name: 'the armoury', area: 48, w: 6, h: 8, most: 2,
+      lay: (c) => {
+        const { r, cy } = c;
+        if (!c.stand(r.x + 1, cy - 1, 'rack of mauls')) return false;
+        c.stand(r.x + 1, cy + 1, 'rack of mauls');
+        c.onWall(r.x, cy - 1, 1, 'shield');
+        c.onWall(r.x, cy, 1, 'crossed mauls');
+        c.onWall(r.x, cy + 1, 1, 'shield');
+        c.lie(r.x + 2, cy, 'horned helm');
+        return true;
+      },
+    },
+  ],
+};
+
 /** The fifth floor's bone heaps, in its boss's hall: where the Fleshmancer raises his dead (game/bosses.ts, Floor.heaps). */
 export const LAIR_HEAPS = ['the great bone heap', 'the long bone heap'] as const;
 
@@ -209,7 +363,20 @@ export interface Dress {
   wall: WallPiece[];
   tiles: TilePiece[];
   moments: MomentHost[];
+  /** SCENES: the rooms laid as a scene, and which (for the pictures and the tests). */
+  scenes?: { room: number; name: string }[];
 }
+
+/**
+ * SCENES: A FLOOR'S THINGS WHERE THEY BELONG. His words, 1 Nov 2026, 10:05: “Can you make sure the doodads go in places that seem
+ * proper as opposed to randomly?  I know we’ve talked about this a little with the camp sites and the markets”; when, “With each
+ * floor (Recommended)”, as its layout is reworked (game/dungeon.ts LEVEL_KINDS). A room is laid as one of its floor's scenes, its
+ * pieces where they would be (a throne against the back wall with its guards either side and its runner before it; a row of
+ * sarcophagi along a wall, a niche over each and a slab before it; a guard post's rack and keys by the wall), and a room with no
+ * scene has no things standing about at random, only its walls' and its floor's own. `floors`: the floors laid so (shown to him
+ * first, as pictures from the game).
+ */
+export const SCENES: { on: boolean; floors: number[] } = { on: true, floors: [1] };
 
 /** How many of a wall's faces have a piece, about (one in four). */
 const WALL_SHARE = 0.26;
@@ -468,6 +635,69 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     if (heaps.length) f.heaps = heaps;
   }
 
+  // ---- SCENES: rooms laid as one of the floor's scenes, their pieces where they belong (SCENES)
+  const sceneRooms = new Set<number>();
+  if (SCENES.on && SCENES.floors.includes(depth)) {
+    out.scenes = [];
+    /** The face of the back wall behind floor tile (x, y): the wall at y - 1 (side 0) or at x - 1 (side 1), if it is drawn and free. */
+    const face = (x: number, y: number, side: 0 | 1): number => {
+      const i = side === 0 ? (y - 1) * W + x : y * W + x - 1;
+      if (i < 0 || i >= W * f.h || !(drawnFaces(f, i) & (side === 0 ? 1 : 2)) || wallTaken.has(keyOf(i, side)) || keep[y * W + x]) return -1;
+      return i;
+    };
+    const onWall = (x: number, y: number, side: 0 | 1, name: string): boolean => {
+      const i = face(x, y, side);
+      if (i < 0) return false;
+      out.wall.push({ i, side, name, spot: 0 });
+      wallTaken.set(keyOf(i, side), name);
+      return true;
+    };
+    const onFloor = (x: number, y: number, name: string, frame = 0): boolean => {
+      if (!plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x]) return false;
+      out.tiles.push({ i: y * W + x, name, frame });
+      taken[y * W + x] = 1;
+      return true;
+    };
+    const stand = (x: number, y: number, name: string, big = false): boolean => {
+      if (!freeAt(x, y, big)) return false;
+      put(name, x, y, true);
+      if (big) clear(x + 0.5, y + 0.5, 1.5);
+      return true;
+    };
+    const lie = (x: number, y: number, name: string): boolean => {
+      if (!freeAt(x, y, false)) return false;
+      put(name, x, y, false, rng.int(0, 3));
+      return true;
+    };
+    // (a piece in the wall with a heap of its own, standing on the floor before it: nobody walks through it)
+    const heap = (x: number, y: number, side: 0 | 1, name: string): boolean => {
+      if (face(x, y, side) < 0 || !freeAt(x, y, true)) return false;
+      onWall(x, y, side, name);
+      taken[y * W + x] = 1;
+      solid[y * W + x] = 1;
+      L.walk[y * W + x] = 0;
+      return true;
+    };
+    const scenes = SCENE_SETS[depth] ?? [];
+    const used = new Map<string, number>();
+    // (the biggest rooms first, so that the grandest scenes find room; a cell and the start have none)
+    const hosts = [...rooms].filter((r) => r.kind !== 'start' && !r.cell).sort((a, b) => b.w * b.h - a.w * a.h);
+    for (const r of hosts) {
+      // (the floor's grandest, its first two, tried first in its biggest rooms; then the others in an order of the dice's, so that
+      // the floor's rooms are not all the same; about one room in five left with its walls' and its floor's own alone)
+      if (rng.chance(0.2)) continue;
+      const order = [...scenes.slice(0, 2), ...rng.shuffle(scenes.slice(2))];
+      for (const sc of order) {
+        if ((used.get(sc.name) ?? 0) >= sc.most || r.w * r.h < sc.area || r.w < sc.w || r.h < sc.h) continue;
+        if (!sc.lay({ r, rng, stand, lie, heap, onWall, onFloor, cx: r.x + Math.floor(r.w / 2), cy: r.y + Math.floor(r.h / 2) })) continue;
+        used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
+        sceneRooms.add(r.id);
+        out.scenes.push({ room: r.id, name: sc.name });
+        break;
+      }
+    }
+  }
+
   // ---- THE ROOMS' THINGS: big ones first, then the rest; each of the floor's before any is laid twice
   const bag = (names: readonly string[]): (() => string | null) => {
     let left: string[] = [];
@@ -481,6 +711,8 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   const nextThing = bag(set.things);
   const nextSmall = bag(set.small);
   for (const r of rng.shuffle([...rooms])) {
+    // (SCENES: a floor laid so has no things standing about at random)
+    if (SCENES.on && SCENES.floors.includes(depth)) continue;
     const area = r.w * r.h;
     let n = Math.min(THINGS_MOST, Math.floor(area / THING_EVERY));
     if (r.kind === 'start') n = Math.min(n, 1);
@@ -555,7 +787,11 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   let heaps = 0;
   for (const w of rng.shuffle(faces)) {
     const key = keyOf(w.i, w.side);
-    if (wallTaken.has(key) || !rng.chance(WALL_SHARE)) continue;
+    // (SCENES: a scene's room has its own pieces on its walls; few more)
+    const fx0 = Math.floor(w.x);
+    const fy0 = Math.floor(w.y);
+    const inScene = sceneRooms.size > 0 && rooms.some((r) => sceneRooms.has(r.id) && inRoom(r, fx0, fy0));
+    if (wallTaken.has(key) || !rng.chance(inScene ? 0.08 : WALL_SHARE)) continue;
     const along = w.side === 0 ? 1 : W;
     const near = [wallTaken.get(keyOf(w.i - along, w.side)), wallTaken.get(keyOf(w.i + along, w.side))];
     // (a heap of its own: once or twice a floor, where its floor tile is free and the tile beyond it too, in a room)
