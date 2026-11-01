@@ -167,7 +167,24 @@ Made by: `tools/action_f3_chained_film.ts` (the film), `tools/action_f3_chained_
 (the sheet), `src/dev/action_f3_chained_scene.ts` (the scenes, on floor 1's stand-in floor; the game's red circle and lane drawn by
 the game's own code through a stand-in canvas), `tools/action_f3_chained_hash.ts` (the hashes).
 
-## For him to decide (the art chat's to ask)
+## His word on the pictures
+
+Shown `chained_action.mp4` and `chained_action_sheet.png` on the evening of 31 Oct 2026 (answered by 06:08 Pacific, 1 Nov), and
+asked of each move:
+
+- The lash as a combo (forehand, backhand, both fists up, held, slammed down, the crack 6.4 tiles along the floor; in place of his
+  single lash), offered with keeping a single lash too, or a change: “Yes, that's it (Recommended)”. So the combo is his basic
+  attack, as drawn; no single lash between.
+- The whirl (gathered and held; four turns a second on one foot, still chasing you; fists up and the slam, a ring 3.5 tiles):
+  “Yes, that's it (Recommended)”.
+- The hook (aimed and held; flung; two hauls; the blow waiting at his feet, 0.6 s to escape it): “Yes, that's it (Recommended)”.
+- The ball (held high, drawn back and held, whipped down 4.5 tiles off into a ring 2.5 tiles, marked about a second before):
+  “Yes, that's it (Recommended)”.
+
+All four are his yes: the main chat may bring them in (`CHAINED_ACTION` turned on). His walk was not asked; it stays 1.1 tiles a
+second.
+
+## For him to decide (the art chat's to ask) — asked and settled above (all but his walk, left as it is)
 
 - The lash as his every basic attack (3.6 s, three blows and the crack), or a quick single lash kept between combos (his rule of
   9 Oct: "They should always have a basic, single target attack").
