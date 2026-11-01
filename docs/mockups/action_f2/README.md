@@ -186,7 +186,21 @@ not this branch's.)
 Made by: `tools/action_f2_film.ts` (the film), `tools/action_f2_sheet.ts` and `tools/action_f2_captions.py` (the sheet),
 `src/dev/action_f2_scene.ts` (the scenes, on floor 1's stand-in floor), `tools/action_f2_hash.ts` (the hashes).
 
-## For him to decide (the art chat's to ask)
+## His word on the pictures
+
+Shown `action_f2.mp4` and `action_f2_sheet.png`, 31 Oct 2026 (about 17:55), and asked of each:
+
+- The cultist's fire sigil (raised, traced under you, held, slammed; the pillar a second later; the floor burning 3 s), offered
+  with a bigger ring (2 tiles) or a change: “Yes, that's it (Recommended)”. So the ring stays at 1.75 tiles.
+- The Shade's frost rake and its rime (4 s, slowing), offered with a smaller rime or a change: “Yes, that's it (Recommended)”.
+  So the rime stays at 1.2 tiles and 4 s; the rake's motion stays as it was.
+- The Headsman's axe held firm (walk, stop, lunge, wheel; the lunge's wind-down round low and onto his shoulder; the flurry
+  still turning the blade a little between cuts), offered with holding it still in the flurry too, or still wonky: “Yes, that's
+  fixed (Recommended)”. So `AXE_HELD` is his yes, as drawn, and the flurry keeps its turn between cuts.
+
+All three are his yes: the main chat may bring them in (the sigil and the frost behind their switches, turned on).
+
+## For him to decide (the art chat's to ask) — asked and settled above
 
 - The sigil's ring at 1.75 tiles, or 2.0 (bigger, his "bigger AOE"; the cultists come several at a time).
 - The rime at 1.2 tiles and 4 s, slowing by 40 percent: the Shades come in threes, so three rakes can lay a good deal of it.
