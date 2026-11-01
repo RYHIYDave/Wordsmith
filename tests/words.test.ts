@@ -26,7 +26,7 @@ import { RNG } from '../src/engine/rng';
 import { emptyControls } from '../src/game/state';
 import type { Derived, GameEvent, Monster, Resolved } from '../src/game/state';
 import { CLASS_IDS, WORD_IDS } from '../src/game/types';
-import type { ClassId, Element, WeaponKind, WordId } from '../src/game/types';
+import type { Attr, ClassId, Element, WeaponKind, WordId } from '../src/game/types';
 import { resolveSkill, skillName, socketProblem } from '../src/game/words';
 import { land } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
@@ -94,7 +94,7 @@ const tag = (cls: ClassId, def: SkillDef, front: readonly WordId[], behind: read
  * What the loadout's numbers must be, put together from what each of its words gives on its own.
  * (So this test survives any retuning of a word, and fails if one word ever disturbs another.)
  */
-function checkNumbers(def: SkillDef, front: readonly WordId[], behind: readonly WordId[], cls: ClassId, d: Derived, r: Resolved, name: string): void {
+function checkNumbers(def: SkillDef, front: readonly WordId[], behind: readonly WordId[], cls: ClassId | Attr, d: Derived, r: Resolved, name: string): void {
   const bare = resolveSkill(def, [], [], cls, d);
   const solos: Resolved[] = [...front.map((w) => resolveSkill(def, [w], [], cls, d)), ...behind.map((w) => resolveSkill(def, [], [w], cls, d))];
   const inFront = (w: WordId): Resolved | null => (front.includes(w) ? resolveSkill(def, [w], [], cls, d) : null);
@@ -297,7 +297,11 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
   for (const w of behind) assert.equal(g.socket(skill, 'behind', w), null, `${name}: ${w} goes behind`);
   const s = h.skills[skill];
   const def = SKILLS[s.id];
-  checkNumbers(def, front, behind, cls, h.d, s.r, name);
+  // (THE TINKERER's picks on her tree: her Golem's gun arm and her Contraption's kind grow with Dexterity, the cannon and the
+  // bombs, or with Intelligence, the tesla coil and the energy, as game/game.ts resolves them)
+  const picked = cls !== 'tinkerer' ? null : def.kind === 'golem' && g.has('gunarm') ? g.pickOf('gunarm') : def.kind === 'contraption' && g.has('contraptions') ? g.pickOf('contraptions') : null;
+  const grows: ClassId | Attr = picked === 'cannon' || picked === 'bombs' ? 'dex' : picked === 'tesla' || picked === 'energy' ? 'int' : cls;
+  checkNumbers(def, front, behind, grows, h.d, s.r, name);
   // (a life orb is a matter of chance; here the chance is made certain so the rule itself is tested)
   if (weak && s.r.orbChance > 0) s.r.orbChance = 1;
   const lay = layout(def.kind);
