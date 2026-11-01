@@ -84,7 +84,7 @@ export interface Act1Dress {
  * towards the edges”), and what stands at the far cliffs' feet is a scene of its own; nothing stands about at random but in
  * the boss's ground. `floors`: those laid so, each shown to him first as pictures from the game.
  */
-export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [] };
+export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6] };
 
 /** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
 interface Part {
