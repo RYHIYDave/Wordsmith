@@ -38,7 +38,7 @@ import type { Skeleton, V3 } from './skeleton';
 import { PRINCESS, PR_LASH, PR_SNARE } from './princess_moves';
 import { PC_MASKS, PC_THRUST, PRINCE } from './prince_moves';
 import { QN_COMB, QN_REFLECT, QUEEN } from './queen_moves';
-import { KG_CROWN, KG_SWEEP, KING_ALONE } from './king_moves';
+import { KG_CHARGE, KG_WEIGHT, KING_ALONE } from './king_moves';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file. */
 export const SHADOWS_ON = { on: false };
@@ -79,7 +79,7 @@ function fogged(v: unknown): unknown {
   return v;
 }
 /** A bit of the boss's, as the shadow's: its eyes the dull pink, everything else fog. */
-function foggedBit(b: Bit): Bit {
+export function foggedBit(b: Bit): Bit {
   if (b.piece === 'eyes' && b.shape.k === 'dot') return { ...b, shape: { ...b.shape, c: EYE, c2: EYE_LIT } };
   return { ...b, shape: fogged(b.shape) as Bit['shape'] };
 }
@@ -134,6 +134,12 @@ export interface Royal {
 const royal = (id: RoyalId, name: string, boss: Mob, k: number, big: string, bigName: string, strikes: Royal['strikes'], drop?: (b: Bit) => boolean): Royal => ({
   id, name, boss, mob: shadowMobOf(boss, `shadow_${id}`, name, drop), k, pace: Math.round(boss.pace * k * 100) / 100, basic: 'attack', big, bigName, strikes,
 });
+/**
+ * THE KING AS HIS SHADOW ECHOES HIM: alone (the Hush not on his back), with his own moves as they are now: his basic blow
+ * his charge, its blade dragged (his `attack`; the line of sparks it cuts, small: art/royal_shadows_fx.ts `sparksFx`), his big
+ * move the Crown's Weight (his `weight`; the shadow crown: `weightFx`). Out of its set, kept in the code: his old sweep
+ * (art/king_moves.ts KG_SWEEP_MOVE) and the Crown's leap (KG_RETIRED.leap; `crownFx`). Checked as he is (KG_ALONE_SHAPE).
+ */
 /** The Queen's ring of glass round her lifted hand (her Reflections') is not her shadow's: its hand mirror is. */
 const QUEEN_GLASS = (b: Bit): boolean => /glass|shard|ring|whirl/i.test(b.part) || /glass|shard|whirl/i.test(b.piece);
 
@@ -141,7 +147,7 @@ export const ROYALS: Readonly<Record<RoyalId, Royal>> = {
   princess: royal('princess', 'Shadow of the Princess', PRINCESS, 0.8, 'snare', 'The vine snare, a small cage', { attack: PR_LASH.strike, snare: PR_SNARE.strike }),
   prince: royal('prince', 'Shadow of the Prince', PRINCE, 0.76, 'masks', 'Masks, three and short', { attack: PC_THRUST.strike, masks: PC_MASKS.strike }),
   queen: royal('queen', 'Shadow of the Queen', QUEEN, 0.72, 'blink', 'Looking Glass: a blink through her hand mirror', { attack: QN_COMB.strike, blinkIn: BLINK.strikeIn, blinkOut: BLINK.strikeOut }, QUEEN_GLASS),
-  king: royal('king', 'Shadow of the King', KING_ALONE, 0.64, 'crown', 'The Crown, leap and slam, short', { attack: KG_SWEEP.strike, crown: KG_CROWN.strike }),
+  king: royal('king', 'Shadow of the King', KING_ALONE, 0.64, 'weight', 'The Crown’s Weight, a shadow crown', { attack: KG_CHARGE.strike, weight: KG_WEIGHT.strike }),
 };
 export const ROYAL_IDS: readonly RoyalId[] = ['princess', 'prince', 'queen', 'king'];
 

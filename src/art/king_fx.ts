@@ -23,10 +23,13 @@ import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
 import { TILE3, paintBits, sphere } from './new_mobs3';
 import type { Bit, Put } from './new_mobs3';
-import { GOLD, SAPPHIRE, royalSwan } from './king';
+import { CROWN_HEAD, GOLD, SAPPHIRE, crownAt, crownFog, crownOnHead, royalSwan, smearParts } from './king';
+import { BREATH_PALE } from './hushed';
+import { HS_FOG, HS_GRAB, HUSH, KG_CHARGE, KG_WEIGHT, KING, grabBare, grabReach } from './king_moves';
+import { skeletonAt } from './new_mobs3';
 import { stage } from './skin';
 import type { GameView, Stage } from './skin';
-import { add, buildOf, cross, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import { add, buildOf, cross, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Posed, V3 } from './skeleton';
 
 const TAU = Math.PI * 2;
@@ -636,6 +639,713 @@ export function birdPainted(state: BirdState, t: number, view: GameView = 'front
       const p = add(tip, [life * 8 + Math.sin(life * 9 + i) * 3, Math.cos(life * 7 + i) * 4, 2 + life * 24]);
       const [x, y] = st.at(p);
       if (life < 0.85) lay(px, x, y, life < 0.3 ? DIAMOND : life < 0.6 ? SILVER[3] : SILVER[2], i % 3 === 0 && life < 0.5 ? 2 : 1);
+    }
+  }
+  return { px, lights: [] };
+}
+
+// =============================================================================================
+// THE CHARGE: THE LINE OF SPARKS cut in the stones behind him; its sparks shooting off it and popping in shrapnel
+
+/** Its colours: the cut glowing white-hot where the point is, cooling to the enemy's pink along it, the sparks white-hot and gold. */
+const CUT = ['#fff4c8', '#ffd27a', FLAME[2], FLAME[1], '#4a1838'];
+const SPARKS = ['#fff4c8', '#ffd27a', '#ff9a3a', FLAME[3]];
+/** The shrapnel cooling as it flies: white-hot, gold, orange, the enemy's pink, dark pink. */
+const SHARDS = ['#fff4c8', '#ffd27a', FLAME[3], FLAME[2], FLAME[1]];
+/**
+ * ITS NUMBERS (seconds from its moment, `KG_CHARGE.burstAfter` after he stops; lengths in tiles). THE HELD BEAT, `hold`
+ * before it: the line brightening to white-hot, its sparks gathered on it as beads, trembling. THE RELEASE, at 0: every
+ * spark SHOOTS OFF the line at once, up and out to either side, arcing, streaked; each POPS at the top of its flight,
+ * `fly` after it went (staggered along the line), up to `high` tiles up and `out` tiles off the line (one spark for
+ * every `every` tiles of it); its SHRAPNEL flies out `r` tiles round its pop, every way, in `shards`, and is gone. THE
+ * HIT, for the game: everything within `reach` tiles of the line (`out` + `r`; round its ends too), from the first pop
+ * (`fly[0]`) to the last shrapnel gone (`fly[1]` + `shards`). Smoke and the scar after; all gone at `long`.
+ */
+export const CHARGE_FX = { hold: 0.35, fly: [0.28, 0.4] as const, high: 1.5, out: 1.6, every: 0.33, r: 1.0, shards: 0.25, reach: 2.6, long: 1.0 } as const;
+/** The cut wavering a little as the blade bounced along (own lengths, to his left, at `x` along the line). */
+const cutWob = (x: number): number => 2.2 * Math.sin(x * 0.11) + 1.2 * Math.sin(x * 0.37 + 1);
+/** One of its sparks (own lengths, from where he set off): where it sits on the line, where it pops, and when (seconds after the release). */
+export interface ChargeSpark { x: number; y: number; pop: V3; at: number }
+/** ITS SPARKS, for a line `lane` tiles long: one every `CHARGE_FX.every` tiles, popping to either side in turn. */
+export function chargeSparks(lane: number = KG_CHARGE.most): ChargeSpark[] {
+  const T = TILE3;
+  const x0 = -KG_CHARGE.tail * T;
+  const x1 = (lane - KG_CHARGE.tail) * T;
+  const n = Math.max(2, Math.round(lane / CHARGE_FX.every));
+  const out: ChargeSpark[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + ((x1 - x0) * (i + 0.15 + 0.7 * hash(i, 1, 7910))) / n;
+    const y = cutWob(x);
+    const side = i % 2 ? 1 : -1;
+    const o = CHARGE_FX.out * T * (0.35 + 0.65 * hash(i, 2, 7910));
+    const along = (hash(i, 3, 7910) - 0.5) * 0.6 * T;
+    const z = CHARGE_FX.high * T * (0.55 + 0.45 * hash(i, 4, 7910));
+    const at = CHARGE_FX.fly[0] + (CHARGE_FX.fly[1] - CHARGE_FX.fly[0]) * hash(i, 5, 7910);
+    out.push({ x, y, pop: [x + along, y + side * o, z], at });
+  }
+  return out;
+}
+/** Where a spark is `s` seconds after the release (until it pops): shot off fast, slowing, up and out, arcing over at the top. */
+export function chargeSparkAt(k: ChargeSpark, s: number): V3 {
+  const u = clamp01(s / k.at);
+  const e = 1 - (1 - u) ** 1.4;
+  const z = 1 - (1 - u) ** 3;
+  return [k.x + (k.pop[0] - k.x) * e, k.y + (k.pop[1] - k.y) * e, 0.5 + (k.pop[2] - 0.5) * z];
+}
+/** Its shrapnel: each piece's way out of the pop (a unit, every way round, as much down as up). */
+const SHARD_N = 12;
+function shardWay(i: number, j: number): V3 {
+  const c = 2 * hash(i, 40 + j, 7911) - 1;
+  const a = TAU * (j / SHARD_N + 0.6 * hash(i, 60 + j, 7911));
+  const s = Math.sqrt(1 - c * c);
+  return [s * Math.cos(a), s * Math.sin(a), c];
+}
+/** Where a piece of shrapnel is, `u` of the way through its flight (0 at the pop, 1 gone): flung out fast, slowing, falling a little; never under the stones. */
+export function chargeShardAt(k: ChargeSpark, i: number, j: number, u: number): V3 {
+  const w = shardWay(i, j);
+  const d = CHARGE_FX.r * TILE3 * (1 - (1 - clamp01(u)) ** 2);
+  return [k.pop[0] + w[0] * d, k.pop[1] + w[1] * d, Math.max(0.5, k.pop[2] + w[2] * d - 0.3 * TILE3 * u * u)];
+}
+/** Every piece of shrapnel in the air `s` seconds after the release (own lengths; `u`, how far through its flight). */
+export function chargeShards(s: number, lane: number = KG_CHARGE.most): { p: V3; u: number; from: V3 }[] {
+  const out: { p: V3; u: number; from: V3 }[] = [];
+  chargeSparks(lane).forEach((k, i) => {
+    const u = (s - k.at) / CHARGE_FX.shards;
+    if (u < 0 || u >= 1) return;
+    for (let j = 0; j < SHARD_N; j++) out.push({ p: chargeShardAt(k, i, j, u), u, from: k.pop });
+  });
+  return out;
+}
+/**
+ * THE LINE OF SPARKS `t` seconds after he sets off (his charge's `run[0]`), laid where he set off: cut in the stones by
+ * his sword's point (`KG_CHARGE.tail` tiles behind him) the whole way he runs (`lane` tiles: at most `KG_CHARGE.most`);
+ * glowing and fizzing; held, white-hot, its sparks beaded on it, trembling (`CHARGE_FX.hold`); then (`KG_CHARGE.burstAfter`
+ * after he stops) its sparks shoot off it, up and out, and pop in shrapnel all round it; then smoke, the scar, nothing.
+ */
+export function sparksPainted(t: number, view: GameView = 'front', lane: number = KG_CHARGE.most): Painted {
+  const st = stageOf(view);
+  const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
+  const ran = lane / KG_CHARGE.pace;
+  const tb = ran + KG_CHARGE.burstAfter;
+  if (t < 0 || t >= tb + CHARGE_FX.long) return { px, lights: [] };
+  const T = TILE3;
+  const tail = KG_CHARGE.tail * T;
+  const cut = Math.min(t, ran) * KG_CHARGE.pace * T;
+  const x0 = -tail;
+  const x1 = cut - tail;
+  const since = t - tb;
+  const wob = cutWob;
+  const sparks = chargeSparks(lane);
+  // (the held beat: from `hold` before it goes, brighter and brighter, flickering)
+  const held = since < 0 ? smooth(-CHARGE_FX.hold, -0.04, since) : 0;
+  const pulse = held * (0.6 + 0.4 * Math.sin(t * 46));
+  const scar = since < 0 ? 1 : 1 - smooth(0.12, CHARGE_FX.long - 0.05, since);
+  // THE CUT: a groove scored along the stones, glowing
+  for (let x = x0; x <= x1; x += 0.7) {
+    const age = (x1 - x) / (KG_CHARGE.pace * T) + Math.max(0, t - ran);
+    const y = wob(x);
+    let c: string;
+    if (since >= 0) c = since < 0.08 ? CUT[0] : hash(Math.round(x), 3, 7901) < scar ? (since < 0.25 ? CUT[2] : since < 0.5 ? CUT[3] : CUT[4]) : '';
+    else if (age < 0.05) c = CUT[0];
+    else if (age < 0.15) c = CUT[1];
+    else if (held > 0.7 && hash(Math.round(x), Math.floor(t * 20), 7902) < held - 0.25) c = CUT[0];
+    else if (pulse > 0.4 && hash(Math.round(x), Math.floor(t * 20) + 1, 7902) < pulse) c = CUT[1];
+    else c = age < 0.4 ? CUT[2] : CUT[3];
+    if (!c) continue;
+    const [X, Y] = st.at([x, y, 0.2]);
+    // (a groove two pixels wide: its hot core, its glowing lips, the stone cut dark at its edge)
+    lay(px, X, Y, c, 2);
+    if (since < 0) {
+      const lip = age < 0.15 ? CUT[1] : pulse > 0.4 ? CUT[2] : CUT[3];
+      const [Xa, Ya] = st.at([x, y - 2.4, 0.2]);
+      lay(px, Xa, Ya, lip, 1);
+      const [Xb, Yb] = st.at([x, y + 2.4, 0.2]);
+      lay(px, Xb, Yb, hash(Math.round(x * 2), 1, 7903) < 0.5 ? INK : lip, 1);
+    }
+  }
+  if (since < 0) {
+    // (sparks fizzing up off it all along)
+    const n = Math.round((x1 - x0) / 2.5);
+    for (let i = 0; i < n; i++) {
+      const x = x0 + (x1 - x0) * hash(i, 1, 7904);
+      const age = (x1 - x) / (KG_CHARGE.pace * T) + Math.max(0, t - ran);
+      const life = fr(t * (2.2 + hash(i, 2, 7904)) + hash(i, 3, 7904));
+      if (hash(i, 4, 7904) > 0.45 + 0.4 * held + (age < 0.25 ? 0.5 : 0)) continue;
+      const p: V3 = [x + (hash(i, 5, 7904) - 0.5) * 6, wob(x) + (hash(i, 6, 7904) - 0.5) * 12 * life, 0.5 + 26 * life * (1 - life) * (1 - 0.6 * held)];
+      const [X, Y] = st.at(p);
+      lay(px, X, Y, SPARKS[i % 4], life < 0.35 ? 2 : 1);
+    }
+    // (THE HELD BEAT: the sparks that will go, gathered on the line as beads of light, swelling, trembling)
+    if (held > 0) {
+      sparks.forEach((k, i) => {
+        if (k.x > x1) return;
+        const shake = held > 0.3 ? (hash(i, Math.floor(t * 30), 7912) - 0.5) * 2.5 : 0;
+        const [X, Y] = st.at([k.x, k.y, 2 + 4 * held + shake]);
+        const hot = (Math.floor(t * 30) + i) % 3 !== 0;
+        if (held > 0.45) {
+          // (a bead: its white-hot heart, a gold rim round it, a pink glint under)
+          lay(px, X - 2, Y, SPARKS[1], 1);
+          lay(px, X + 2, Y, SPARKS[1], 1);
+          lay(px, X, Y - 2, SPARKS[1], 1);
+          lay(px, X, Y + 2, FLAME[2], 1);
+        }
+        lay(px, X, Y, held > 0.5 && hot ? SPARKS[0] : SPARKS[1], held > 0.45 ? 3 : 2);
+      });
+    }
+    return { px, lights: [] };
+  }
+  // THE RELEASE: (a flash along the line as they tear off it, narrow, and stone chips kicked up out of it)
+  if (since < 0.1) {
+    const H = 0.35 * T;
+    for (let x = x0; x <= x1; x += 1.1) {
+      for (let y = -H; y <= H; y += 2.2) {
+        if (hash(Math.round(x), Math.round(y * 3), 7906) > 0.6 * (1 - since / 0.1) * (1 - Math.abs(y) / H)) continue;
+        const [X, Y] = st.at([x, wob(x) + y, 0.6]);
+        lay(px, X, Y, Math.abs(y) < H * 0.4 ? SPARKS[0] : FLAME[2], 1);
+      }
+    }
+  }
+  const nc = Math.round((x1 - x0) / 4);
+  for (let i = 0; i < nc; i++) {
+    const k = since / (0.22 + 0.12 * hash(i, 16, 7905));
+    if (k >= 1) continue;
+    const x = x0 + (x1 - x0) * hash(i, 17, 7905);
+    const side = (hash(i, 18, 7905) - 0.5) * 2;
+    const [X, Y] = st.at([x, wob(x) + side * 0.45 * T * k, Math.max(0.5, 0.45 * T * (2.6 * k - 2.6 * k * k))]);
+    lay(px, X, Y, GRIT[i % 3], 2);
+  }
+  sparks.forEach((k, i) => {
+    // THE SPARK SHOT OFF: its head white-hot, its streak back along the way it came (the first frames, back to the line)
+    if (since < k.at) {
+      const trail = 0.07;
+      const [X, Y] = st.at(chargeSparkAt(k, since));
+      const [Xt, Yt] = st.at(chargeSparkAt(k, Math.max(0, since - trail)));
+      const steps = Math.max(1, Math.ceil(Math.hypot(X - Xt, Y - Yt)));
+      for (let q = 0; q < steps; q++) {
+        const f = q / steps;
+        lay(px, Xt + (X - Xt) * f, Yt + (Y - Yt) * f, f < 0.4 ? SPARKS[2] : f < 0.75 ? SPARKS[1] : SPARKS[0], f > 0.6 ? 2 : 1);
+      }
+      // (its head: a white-hot heart, a gold rim)
+      lay(px, X - 2, Y, SPARKS[1], 1);
+      lay(px, X + 2, Y, SPARKS[1], 1);
+      lay(px, X, Y - 2, SPARKS[1], 1);
+      lay(px, X, Y + 2, SPARKS[1], 1);
+      lay(px, X, Y, SPARKS[0], 3);
+      return;
+    }
+    const a = since - k.at;
+    const [PX, PY] = st.at(k.pop);
+    // ITS POP: a star of light, for a moment
+    if (a < 0.06) {
+      lay(px, PX, PY, SPARKS[0], 3);
+      const L = a < 0.03 ? 6 : 4;
+      for (let r = 2; r <= L; r++) {
+        const c = r < 4 ? SPARKS[0] : SPARKS[1];
+        lay(px, PX + r, PY, c, 1);
+        lay(px, PX - r, PY, c, 1);
+        lay(px, PX, PY + r, c, 1);
+        lay(px, PX, PY - r, c, 1);
+        if (r <= L - 2) {
+          lay(px, PX + r, PY + r, SPARKS[1], 1);
+          lay(px, PX - r, PY + r, SPARKS[1], 1);
+          lay(px, PX + r, PY - r, SPARKS[1], 1);
+          lay(px, PX - r, PY - r, SPARKS[1], 1);
+        }
+      }
+    }
+    // ITS SHRAPNEL: hot fragments flung out every way, streaked, cooling, gone
+    const u = a / CHARGE_FX.shards;
+    if (u < 1) {
+      const c = SHARDS[Math.min(4, Math.floor(u * 5))];
+      for (let j = 0; j < SHARD_N; j++) {
+        const [Xb, Yb] = st.at(chargeShardAt(k, i, j, Math.max(0, u - 0.16)));
+        const [X, Y] = st.at(chargeShardAt(k, i, j, u));
+        const steps = Math.max(1, Math.ceil(Math.hypot(X - Xb, Y - Yb)));
+        for (let q = 0; q < steps; q++) lay(px, Xb + ((X - Xb) * q) / steps, Yb + ((Y - Yb) * q) / steps, u < 0.5 ? SHARDS[Math.min(4, Math.floor(u * 5) + 1)] : c, 1);
+        lay(px, X, Y, c, u < 0.4 ? 2 : 1);
+      }
+    }
+    // (its smoke, a few puffs drifting up off where it popped)
+    for (let q = 0; q < 3; q++) {
+      const life = clamp01((a - 0.05 - 0.05 * q) / (CHARGE_FX.long - 0.08 - k.at - 0.05 * q));
+      if (life <= 0 || life >= 1) continue;
+      const [X, Y] = st.at([k.pop[0] + (hash(i, 20 + q, 7913) - 0.5) * 12 - 5 * life, k.pop[1] + (hash(i, 23 + q, 7913) - 0.5) * 12, k.pop[2] + 16 * life]);
+      lay(px, X, Y, life < 0.4 ? '#8e8aa0' : '#5c586c', life < 0.5 ? 2 : 1);
+    }
+  });
+  return { px, lights: [] };
+}
+
+// =============================================================================================
+// THE CROWN'S WEIGHT: his crown sent up off his head, grown huge, following you, slamming down
+
+/** Its picture (laid where the game puts the crown: under it, on the floor), room for it high over you and for its blast round it. */
+export const WEIGHT_CANVAS = { w: 340, h: 360, ax: 170, ay: 268 } as const;
+const wStage = (view: GameView): Stage => stage(view === 'back' ? 'rear' : view, WEIGHT_CANVAS.ax, WEIGHT_CANVAS.ay, WEIGHT_CANVAS);
+/** Its times (seconds from his sending it up: KG_WEIGHT.send): flying out over you; following you; stopped and hanging (the warning); its drop (two frames); lying, ringing; flying home; on his head again. */
+export const WEIGHT_FX = (() => {
+  const W = KG_WEIGHT;
+  const s = W.send;
+  return { fly: W.fly, follow: W.follow, hold: [W.hold[0] - s, W.hold[1] - s] as const, drop: [W.strike[0] - s, W.strike[1] - s] as const, lie: [W.lie[0] - s, W.lie[1] - s] as const, home: [W.home[0] - s, W.home[1] - s] as const, long: W.back - s, r: W.r, k: W.k, z: W.z, low: 2.2 * W.k };
+})();
+/** Where the crown is, `t` seconds after it is sent, seen in `view`: how far the game has moved the floor point under it (`lerp`, 0 to 1: from him out to over you as it flies; from where it slammed back to him as it comes home), where it is from that floor point (own lengths: its band's middle), how big (`k`), its ways. */
+export function weightAt(t: number, view: GameView = 'front'): { phase: 'fly' | 'follow' | 'hold' | 'drop' | 'lie' | 'home' | 'back'; lerp: number; c: V3; k: number; ff: V3; fl: V3; fu: V3 } {
+  const F = WEIGHT_FX;
+  const from = weightHead(KG_WEIGHT.send, view);
+  const to = weightHead(KG_WEIGHT.back, view);
+  // (it turns slowly as it hangs: half round by its drop, a quarter more coming home: it sits on his head as it was)
+  const spin = Math.PI * smooth(0, F.drop[0], t) + (Math.PI / 2) * smooth(F.home[0], F.home[1], t);
+  const level = (k: number): [V3, V3, V3] => {
+    const wob = 0.08 * k * Math.sin(t * 2.6);
+    const fu = norm([wob * Math.cos(t * 1.7), wob * Math.sin(t * 1.7), 1]);
+    const ff0: V3 = [Math.cos(spin), Math.sin(spin), 0];
+    const ff = norm(sub(ff0, mul(fu, ff0[0] * fu[0] + ff0[1] * fu[1])));
+    return [ff, cross(fu, ff), fu];
+  };
+  const mixW = (a: [V3, V3, V3], b: [V3, V3, V3], k: number): [V3, V3, V3] => {
+    const fu = norm(lerp3(a[2], b[2], k));
+    const f0 = lerp3(a[0], b[0], k);
+    const ff = norm(sub(f0, mul(fu, f0[0] * fu[0] + f0[1] * fu[1] + f0[2] * fu[2])));
+    return [ff, cross(fu, ff), fu];
+  };
+  const bob = 3 * Math.sin(t * 2.2);
+  if (t < F.fly) {
+    const e = smooth(0, F.fly, t);
+    const z = from.c[2] + (F.z - from.c[2]) * e + 26 * Math.sin(Math.PI * e);
+    const c: V3 = [from.c[0] * (1 - e), from.c[1] * (1 - e), z + bob * e];
+    const [ff, fl, fu] = mixW([from.ff, from.fl, from.fu], level(1), smooth(0, 0.25, t));
+    return { phase: 'fly', lerp: e, c, k: 1 + (F.k - 1) * smooth(0, F.fly * 0.8, t), ff, fl, fu };
+  }
+  if (t < F.hold[0]) return { phase: 'follow', lerp: 1, c: [0, 0, F.z + bob], k: F.k, ...ways(level(1)) };
+  if (t < F.drop[0]) {
+    // (stopped: it rises a little, and hangs trembling over you)
+    const k = smooth(F.hold[0], F.hold[0] + 0.25, t);
+    const shake = 1.2 * Math.sin(t * 60) * k;
+    return { phase: 'hold', lerp: 1, c: [shake, -shake * 0.6, F.z + bob + 14 * k], k: F.k, ...ways(level(1 - k)) };
+  }
+  const top = F.z + 3 * Math.sin(F.drop[0] * 2.2) + 14;
+  if (t < F.drop[1]) {
+    const k = (t - F.drop[0]) / (F.drop[1] - F.drop[0]);
+    return { phase: 'drop', lerp: 1, c: [0, 0, top + (F.low - top) * k * k], k: F.k, ...ways(level(0)) };
+  }
+  if (t < F.home[0]) {
+    // (down on the stones, rocking as it rings, stiller and stiller)
+    const s2 = t - F.drop[1];
+    const rock = 0.06 * Math.exp(-s2 * 7) * Math.sin(s2 * 34);
+    const [ff, fl] = level(0);
+    const fu = norm(add([0, 0, 1], mul(fl, rock)));
+    return { phase: 'lie', lerp: 1, c: [0, 0, F.low], k: F.k, ff, fl: cross(fu, ff), fu };
+  }
+  if (t < F.home[1]) {
+    const e = smooth(F.home[0], F.home[1], t);
+    const z = F.low + (to.c[2] - F.low) * e + 110 * Math.sin(Math.PI * e);
+    const [ff, fl, fu] = mixW(level(1), [to.ff, to.fl, to.fu], smooth(F.home[1] - 0.25, F.home[1], t));
+    return { phase: 'home', lerp: e, c: [to.c[0] * e, to.c[1] * e, z], k: F.k + (1 - F.k) * smooth(F.home[0] + 0.1, F.home[1], t), ff, fl, fu };
+  }
+  return { phase: 'back', lerp: 1, c: to.c, k: 1, ff: to.ff, fl: to.fl, fu: to.fu };
+}
+const ways = (w: [V3, V3, V3]): { ff: V3; fl: V3; fu: V3 } => ({ ff: w[0], fl: w[1], fu: w[2] });
+const HEAD_CACHE = new Map<string, { c: V3; ff: V3; fl: V3; fu: V3 }>();
+/** His crown on his head at a moment of his move, as `view` paints him (KING's bones; his last phase's are the same). */
+export function weightHead(t: number, view: GameView): { c: V3; ff: V3; fl: V3; fu: V3 } {
+  const key = `${t}:${view}`;
+  const have = HEAD_CACHE.get(key);
+  if (have) return have;
+  const st = stage(view === 'back' ? 'rear' : view, 10, 10, { w: 20, h: 20 });
+  const s = skeletonAt(KING, 'weight', t);
+  const lift = t < KG_WEIGHT.send + 1e-6 ? 5 + 3.2 : 0;
+  const out = crownOnHead(st, s, lift);
+  HEAD_CACHE.set(key, out);
+  return out;
+}
+const SHADOW = '#05040a';
+/**
+ * THE CROWN'S WEIGHT `t` seconds after he sends it up, laid at the floor point the game has under it (weightAt's `lerp`):
+ * `'crown'`, the crown itself high in the air (laid over the figures), and `'floor'`, what it lays on the floor beneath it
+ * (laid under them): its shadow, and THE WARNING, the enemy's pink ring round where it will fall (`WEIGHT_FX.r` tiles),
+ * brighter and closing as it hangs; then the slam's blast, the cracks, the dust, and its ring.
+ */
+export function weightPainted(t: number, view: GameView = 'front', part: 'crown' | 'floor' = 'crown'): Painted {
+  const F = WEIGHT_FX;
+  const px = new Px(WEIGHT_CANVAS.w, WEIGHT_CANVAS.h);
+  if (t < 0 || t >= F.long) return { px, lights: [] };
+  const w = weightAt(t, view);
+  const st = wStage(view);
+  if (part === 'crown') {
+    const bits: Bit[] = [];
+    const put: Put = (pt, piece, shape) => bits.push({ part: pt, piece, shape });
+    const fog: [V3, string, number][] = [];
+    crownAt(put, w.c, w.ff, w.fl, w.fu, CROWN_HEAD, t, w.k);
+    crownFog(w.c, w.ff, w.fl, w.fu, CROWN_HEAD, t, fog, Math.min(2.4, w.k));
+    // (its drop: after-images of its band, all the way down, the newest bright)
+    if (t > F.drop[0] + 1e-6 && t <= F.drop[1] + 1 / 30 + 1e-6) {
+      // (streaks down from where its band and its points were, to where they are: the oldest third dull, the newest bright)
+      const a = weightAt(F.drop[0] - 1e-3, view).c[2];
+      const b = Math.min(w.c[2], weightAt(Math.min(t, F.drop[1] - 1e-4), view).c[2]);
+      const from = t > F.drop[1] + 1e-6 ? a + (b - a) * 0.5 : a;
+      const lines: V3[][] = [];
+      for (let k = 0; k < 3; k++) {
+        for (let j = 0; j < 12; j++) {
+          const q = (j / 12) * TAU;
+          const rim = add(mul(w.ff, Math.cos(q) * CROWN_HEAD[0] * 0.8 * w.k), mul(w.fl, Math.sin(q) * CROWN_HEAD[1] * 0.86 * w.k));
+          const up = j % 2 === 0 ? 8.4 * w.k : 0;
+          const z0 = from + ((b - from) * k) / 3;
+          const z1 = from + ((b - from) * (k + 1)) / 3;
+          lines.push([add(rim, [0, 0, z0 + up]), add(rim, [0, 0, z1 + up])]);
+        }
+      }
+      smearParts(put, st, lines);
+    }
+    paintBits(st, bits, w.c);
+    const out = st.whole(ENEMY_RIM);
+    // (the fog of the Hush in it, wisping off it and up; and as it rings, rings of sound going out off it, pale)
+    for (const [p, c, size] of fog) {
+      const [X, Y] = st.at(p);
+      lay(out, X, Y, c, size);
+    }
+    if (w.phase === 'lie') {
+      const s2 = t - F.drop[1];
+      for (let r = 0; r < 3; r++) {
+        const R = CROWN_HEAD[1] * w.k * (1.1 + 0.5 * r + 2.4 * s2);
+        if (s2 > 0.3 + 0.08 * r) continue;
+        for (let j = 0; j < 70; j++) {
+          const q = (j / 70) * TAU;
+          if (hash(j, r, 7911) > 0.7 - s2) continue;
+          const [X, Y] = st.at([Math.cos(q) * R, Math.sin(q) * R, w.c[2] + 8 + 6 * r + 20 * s2]);
+          lay(out, X, Y, r === 0 ? '#eceaf4' : '#b8b4cc', 1);
+        }
+      }
+    }
+    return { px: out, lights: [] };
+  }
+  // THE FLOOR UNDER IT
+  const T = TILE3;
+  const R = F.r * T;
+  const there = w.phase === 'fly' ? smooth(0.15, F.fly, t) : w.phase === 'home' ? 1 - smooth(F.home[0], F.home[0] + 0.3, t) : w.phase === 'back' ? 0 : 1;
+  const holding = w.phase === 'hold' ? smooth(F.hold[0], F.drop[0], t) : w.phase === 'drop' ? 1 : 0;
+  const landed = t >= F.drop[1] - 1e-6 ? t - F.drop[1] : -1;
+  // (its shadow: as broad as it is, darker and tighter as it hangs and drops)
+  if (landed < 0 && there > 0) {
+    const sr = CROWN_HEAD[1] * w.k * (1.25 - 0.25 * holding) * (w.phase === 'drop' ? 0.95 : 1);
+    for (let y = -sr; y <= sr; y += 1) {
+      for (let x = -sr; x <= sr; x += 1) {
+        const q = (x * x + y * y) / (sr * sr);
+        if (q > 1) continue;
+        if (hash(Math.round(x), Math.round(y), 7912) > there * (0.35 + 0.5 * holding) * (1 - q * 0.7)) continue;
+        const [X, Y] = st.at([x, y, 0.1]);
+        lay(px, X, Y, SHADOW, 1);
+      }
+    }
+  }
+  // THE WARNING: the enemy's pink ring round where it will fall, its dashes going round; as it hangs, solid and bright, and a second ring closing in on it
+  if (landed < 0 && there > 0) {
+    const n = Math.ceil((TAU * R) / 1.0);
+    for (let i = 0; i < n; i++) {
+      const q = (i / n) * TAU;
+      const dash = fr(q * 3 - t * 0.9) < 0.6;
+      if (!dash && holding < 0.3) continue;
+      if (hash(i, 1, 7913) > there) continue;
+      const [X, Y] = st.at([Math.cos(q) * R, Math.sin(q) * R, 0.3]);
+      lay(px, X, Y, holding > 0.4 ? FLAME[2] : FLAME[1], 1);
+      if (holding > 0.2) {
+        const [X2, Y2] = st.at([Math.cos(q) * (R - 1.5), Math.sin(q) * (R - 1.5), 0.3]);
+        lay(px, X2, Y2, FLAME[1], 1);
+      }
+    }
+    if (holding > 0) {
+      const Rc = R * (1 + 0.7 * (1 - holding));
+      const m = Math.ceil((TAU * Rc) / 1.4);
+      for (let i = 0; i < m; i++) {
+        const q = (i / m) * TAU;
+        if (i % 2) continue;
+        const [X, Y] = st.at([Math.cos(q) * Rc, Math.sin(q) * Rc, 0.3]);
+        lay(px, X, Y, FLAME[2], 1);
+      }
+    }
+  }
+  // THE SLAM: a flash over all it strikes; the stones cracked out from under it; a ring rolling out off it; dust
+  if (landed >= 0) {
+    const fade = 1 - smooth(0.3, F.home[1] - F.drop[1], landed);
+    if (landed < 0.12) {
+      for (let y = -R; y <= R; y += 1.6) for (let x = -R; x <= R; x += 1.6) {
+        const q = (x * x + y * y) / (R * R);
+        if (q > 1 || hash(Math.round(x), Math.round(y), 7914) > 0.5 * (1 - landed / 0.12)) continue;
+        const [X, Y] = st.at([x, y, 0.3]);
+        lay(px, X, Y, q < 0.5 ? SPARKS[0] : FLAME[3], 1);
+      }
+    }
+    for (let j = 0; j < 16; j++) {
+      let a = (j / 16) * TAU + hash(j, 1, 7915);
+      let r = CROWN_HEAD[1] * w.k * 0.8;
+      const long = R * (0.9 + 0.35 * hash(j, 2, 7915)) * smooth(0, 0.08, landed);
+      while (r < long) {
+        if (hash(j, Math.round(r), 7916) < fade) {
+          const [X, Y] = st.at([Math.cos(a) * r, Math.sin(a) * r, 0.2]);
+          lay(px, X, Y, INK, r < long * 0.5 ? 2 : 1);
+        }
+        a += (hash(j, Math.round(r), 7917) - 0.5) * 0.12;
+        r += 1;
+      }
+    }
+    const ringR = R * (0.6 + 0.95 * smooth(0, 0.45, landed));
+    const rf = 1 - smooth(0.2, 0.55, landed);
+    if (rf > 0) {
+      const n = Math.ceil((TAU * ringR) / 1.0);
+      for (let i = 0; i < n; i++) {
+        const q = (i / n) * TAU;
+        for (const [dr, c, keep] of [[0, '#eceaf4', 1], [2, FLAME[3], 0.8], [6, '#8e8aa6', 0.5]] as const) {
+          if (hash(i, dr, 7918) > rf * keep) continue;
+          const [X, Y] = st.at([Math.cos(q) * (ringR + dr), Math.sin(q) * (ringR + dr), 0.4]);
+          lay(px, X, Y, c, 1);
+        }
+      }
+      for (let i = 0; i < 90; i++) {
+        const q = hash(i, 1, 7919) * TAU;
+        const r = ringR * (0.55 + 0.45 * hash(i, 2, 7919));
+        const z = 2 + 18 * smooth(0, 0.4, landed) * hash(i, 3, 7919);
+        if (hash(i, 4, 7919) > rf) continue;
+        const [X, Y] = st.at([Math.cos(q) * r, Math.sin(q) * r, z]);
+        lay(px, X, Y, i % 4 === 0 ? GRIT[1] : '#7a768c', i % 5 === 0 ? 2 : 1);
+      }
+    }
+  }
+  return { px, lights: [] };
+}
+
+// =============================================================================================
+// THE HUSH'S MOVES: its arms shot out across the hall; its breath; its patches of grey fog; its fog round the King
+
+const FOG_RAMP: Ramp = ['#221e2c', '#3a3650', '#5a5472', '#847e9e', '#ada7c4'];
+const FOG_TIP: Ramp = ['#6a6478', '#9690a6', '#bcb6ca', '#dcd8e6', '#f0eef4'];
+/**
+ * ITS ARMS SHOT OUT (its grab), `t` seconds into it, laid at its floor point: its forearms out of its elbows, long and
+ * thin, stretched across the hall, rags of fog hanging off them, its long hands open and reaching (`grip` 0) or closed on
+ * you (1). How far out its hands are (`reach`, tiles past where they would be) and which way (`aim`, degrees from its
+ * forward to its left) are the game's (grabReach is its own, if they catch nothing).
+ */
+export function grabPainted(t: number, view: GameView = 'front', o: { reach?: number; aim?: number; grip?: number } = {}): Painted {
+  const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
+  if (!grabBare(t)) return { px, lights: [] };
+  const st = stageOf(view);
+  const s = skeletonAt(HUSH, 'attack', t);
+  const reach = (o.reach ?? grabReach(t)) * TILE3;
+  const aim = ((o.aim ?? 0) * Math.PI) / 180;
+  const grip = o.grip ?? smooth(HS_GRAB.out[1] - 0.06, HS_GRAB.out[1] + 0.08, t);
+  const way: V3 = [Math.cos(aim), Math.sin(aim), 0];
+  const across: V3 = [-way[1], way[0], 0];
+  const bits: Bit[] = [];
+  const put: Put = (pt, piece, shape) => bits.push({ part: pt, piece, shape });
+  const wisps: V3[] = [];
+  for (const [side, el, hand0] of [[1, s.elbowL, s.handL], [-1, s.elbowR, s.handR]] as const) {
+    const L0 = len(sub(hand0, el));
+    // (out along the way it shoots, the hands side by side, coming down to your height as they go)
+    const k = clamp01(reach / (0.6 * TILE3));
+    const far0 = add(add(el, mul(way, L0 + reach)), mul(across, side * 3 * k));
+    const far: V3 = [far0[0], far0[1], 34 + (hand0[2] - 34) * Math.exp(-reach / 70)];
+    const hand = lerp3(hand0, far, k);
+    const part = `arm${side}`;
+    const n = Math.max(2, Math.ceil(len(sub(hand, el)) / 7));
+    const taut = clamp01(reach / (4 * TILE3));
+    let prev = el;
+    for (let i = 1; i <= n; i++) {
+      const u = i / n;
+      const wave = Math.sin(u * Math.PI * 3 - t * 18 + side) * (1 - taut * 0.7) * 3 * Math.sin(Math.PI * u);
+      const p = add(lerp3(el, hand, u), add(mul(across, wave), [0, 0, wave * 0.6 - 4 * Math.sin(Math.PI * u) * (1 - taut)]));
+      // (thick fog at the elbow, thinning toward the wrist, swelling and pinching along it as it ripples)
+      const r0 = (3.3 - 1.1 * ((i - 1) / n)) * (1 + 0.18 * Math.sin(u * 23 - t * 14 + side));
+      put(part, part, { k: 'rod', a: prev, b: p, ra: r0, rb: r0 * 0.94, ramp: FOG_RAMP });
+      if (i % 2 === 1 && i < n) {
+        const sw = Math.sin(t * 9 + i + side);
+        put(part, part, { k: 'rod', a: p, b: add(p, add(mul(way, -3 - 3 * hash(i, side, 7922)), [sw * 1.4, -sw, -(6 + 6 * hash(i, side + 3, 7921))])), ra: 1.4, rb: 0.3, ramp: FOG_RAMP });
+      }
+      if (i % 2 === 0) wisps.push(add(p, [0, 0, 2]));
+      prev = p;
+    }
+    // (its hand: a long palm, four long fingers spread to catch, or closed in a fist round what it holds)
+    const fore = norm(sub(hand, lerp3(el, hand, 0.85)), way);
+    const g = norm(cross(fore, across), [0, 0, -1]);
+    put(part, part, { k: 'ball', c: add(hand, mul(fore, 1.6)), ax: [mul(fore, 3.4), mul(across, 3.2), mul(g, 1.6)], skin: FOG_RAMP });
+    for (let i = 0; i < 4; i++) {
+      const sp = (i - 1.5) * (1.7 - 0.9 * grip);
+      const base = add(hand, add(mul(fore, 3.6), mul(across, sp)));
+      const m1 = add(base, add(mul(fore, 4.4 * (1 - 0.5 * grip)), add(mul(across, sp * 0.6 * (1 - grip)), mul(g, 3.2 * grip))));
+      const tip = add(m1, add(mul(fore, 3.4 * (1 - 0.8 * grip)), mul(g, 1.4 + 3.0 * grip)));
+      put(part, part, { k: 'rod', a: base, b: m1, ra: 1.05, rb: 0.85, ramp: FOG_RAMP });
+      put(part, part, { k: 'rod', a: m1, b: tip, ra: 0.85, rb: 0.4, ramp: FOG_TIP });
+    }
+  }
+  paintBits(st, bits, s.pelvis);
+  const out = st.whole(ENEMY_RIM);
+  // (fog streaming up off its arms)
+  wisps.forEach((w, i) => {
+    const life = fr(t * 1.6 + hash(i, 1, 7923));
+    const [X, Y] = st.at(add(w, [-6 * life, (hash(i, 2, 7923) - 0.5) * 6, 10 * life]));
+    if (life < 0.8) lay(out, X, Y, life < 0.3 ? BREATH_PALE : FOG_RAMP[3], life < 0.35 ? 2 : 1);
+  });
+  return { px: out, lights: [] };
+}
+
+/** Where its breath goes by its own (the game's: where you are, and either side of you): own tiles from it. */
+export const FOG_AT: ReadonlyArray<readonly [number, number]> = [[6, 0], [6, HS_FOG.apart], [6, -HS_FOG.apart]];
+/** ITS BREATH `t` seconds after it breathes out, laid at its floor point: a gout of grey fog out of its mouth, and three clots of it flying out to where they lie (`at`: own tiles from it). */
+export function breathPainted(t: number, view: GameView = 'front', at: ReadonlyArray<readonly [number, number]> = FOG_AT): Painted {
+  const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
+  if (t < 0 || t > 0.9) return { px, lights: [] };
+  const st = stageOf(view);
+  const s = skeletonAt(HUSH, 'fog', HS_FOG.hit + Math.min(t, 0.3));
+  const mouth = add(s.head, add(mul(s.face[0], 6), mul(s.face[2], -4)));
+  // (the gout: billowing out of its mouth, widening, thinning)
+  for (let i = 0; i < 160; i++) {
+    const life = clamp01(t * 2.2 - 0.6 * hash(i, 1, 7931));
+    if (life <= 0 || life >= 1) continue;
+    const d = 6 + 60 * life;
+    const spread = 4 + 22 * life;
+    const q = hash(i, 2, 7931) * TAU;
+    const p: V3 = [mouth[0] + d * s.face[0][0] + Math.cos(q) * spread * 0.4, mouth[1] + d * s.face[0][1] + Math.sin(q) * spread, Math.max(2, mouth[2] + d * s.face[0][2] * 0.6 - 20 * life + Math.cos(q * 2) * spread * 0.4)];
+    const [X, Y] = st.at(p);
+    lay(px, X, Y, life < 0.3 ? BREATH_PALE : life < 0.6 ? FOG_RAMP[3] : FOG_RAMP[2], life < 0.5 ? 2 : 1);
+  }
+  // (the three clots flying out, each trailing fog, coming down where they will lie)
+  at.forEach(([ax, ay], j) => {
+    const k = clamp01(t / HS_FOG.fly);
+    if (k >= 1) return;
+    const to: V3 = [ax * TILE3, ay * TILE3, 4];
+    const p = add(lerp3(mouth, to, k), [0, 0, 24 * Math.sin(Math.PI * k)]);
+    for (let i = 0; i < 40; i++) {
+      const back = (i / 40) * 0.25;
+      const q = add(lerp3(mouth, to, Math.max(0, k - back)), [(hash(i, j, 7932) - 0.5) * 10, (hash(i, j + 5, 7932) - 0.5) * 10, 24 * Math.sin(Math.PI * Math.max(0, k - back)) + (hash(i, j + 9, 7932) - 0.5) * 8]);
+      const [X, Y] = st.at(i < 14 ? add(p, [(hash(i, j, 7933) - 0.5) * 9, (hash(i, j, 7934) - 0.5) * 9, (hash(i, j, 7935) - 0.5) * 9]) : q);
+      lay(px, X, Y, i < 6 ? BREATH_PALE : i < 20 ? FOG_RAMP[3] : FOG_RAMP[2], i < 14 ? 3 : 2);
+    }
+    // (the clot itself: a ball of fog, darker below, pale on top)
+    const [cx, cy] = st.at(p);
+    for (let y = -7; y <= 7; y++) for (let x = -9; x <= 9; x++) {
+      const q = (x / 9) ** 2 + (y / 7) ** 2;
+      if (q > 1 || hash(x + 20 * j, y, Math.floor(t * 30) + 7936) < 0.12 * q) continue;
+      lay(px, cx + x, cy + y, y < -3 ? FOG_RAMP[4] : y < 2 ? FOG_RAMP[3] : FOG_RAMP[2], 1);
+    }
+  });
+  return { px, lights: [] };
+}
+
+/** Its patch's picture (laid where it lies). */
+export const FOG_CANVAS = { w: 300, h: 190, ax: 150, ay: 100 } as const;
+/**
+ * A PATCH OF GREY FOG `t` seconds after it is breathed out (less than nothing: through its breath drawn in, the place
+ * marked, a faint ring of the enemy's pink with fog drifting at it), laid where it lies: it comes down (as its clot lands,
+ * `HS_FOG.fly`) and spreads out `HS_FOG.r` tiles round, and lies, low and rolling, curls of it lifting; in its last
+ * second and more it thins and draws in, and is gone at `HS_FOG.lies`.
+ */
+export function fogPatchPainted(t: number, view: GameView = 'front'): Painted {
+  const px = new Px(FOG_CANVAS.w, FOG_CANVAS.h);
+  if (t < -0.6 || t >= HS_FOG.lies) return { px, lights: [] };
+  const st = stage(view === 'back' ? 'rear' : view, FOG_CANVAS.ax, FOG_CANVAS.ay, FOG_CANVAS);
+  const R = HS_FOG.r * TILE3;
+  if (t < HS_FOG.fly) {
+    // THE MARK: where it will lie
+    const k = smooth(-0.6, -0.2, t);
+    const n = Math.ceil((TAU * R) / 1.2);
+    for (let i = 0; i < n; i++) {
+      const q = (i / n) * TAU;
+      if (fr(q * 4 + t * 0.6) > 0.5 || hash(i, 1, 7941) > k) continue;
+      const [X, Y] = st.at([Math.cos(q) * R, Math.sin(q) * R, 0.3]);
+      lay(px, X, Y, FLAME[1], 1);
+    }
+    for (let i = 0; i < 40; i++) {
+      const life = fr(t * 0.8 + i / 40);
+      const q = hash(i, 2, 7941) * TAU;
+      const r = R * (1 - 0.6 * life);
+      if (hash(i, 3, 7941) > k) continue;
+      const [X, Y] = st.at([Math.cos(q) * r, Math.sin(q) * r, 1 + 3 * life]);
+      lay(px, X, Y, FOG_RAMP[2], 1);
+    }
+    return { px, lights: [] };
+  }
+  const since = t - HS_FOG.fly;
+  const spread = smooth(0, 0.35, since);
+  const end = smooth(HS_FOG.lies - HS_FOG.fly - 1.3, HS_FOG.lies - HS_FOG.fly, since);
+  const Rn = R * (0.3 + 0.7 * spread) * (1 - 0.2 * end);
+  // (the fog lying: a low bank of it, laid pixel by pixel over the floor under it: its folds rolling slowly, darker and
+  // paler, its edge ragged and drifting round; as it goes, breaking up into clots and thinning to nothing)
+  const o = st.at([0, 0, 0]);
+  const ex = st.at([1, 0, 0]);
+  const ey = st.at([0, 1, 0]);
+  const a1 = ex[0] - o[0];
+  const b1 = ex[1] - o[1];
+  const a2 = ey[0] - o[0];
+  const b2 = ey[1] - o[1];
+  const det = a1 * b2 - a2 * b1;
+  const noise = (x: number, y: number): number => 0.5 + 0.22 * Math.sin(x * 0.083 + t * 0.6) * Math.cos(y * 0.079 - t * 0.45) + 0.16 * Math.sin((x + y) * 0.13 + t * 1.1) * Math.cos((x - y) * 0.12 - t * 0.7) + 0.1 * Math.sin(x * 0.29 + Math.cos(y * 0.23 + t));
+  for (let Y = 0; Y < px.h; Y++) {
+    for (let X = 0; X < px.w; X++) {
+      const dx = X + 0.5 - o[0];
+      const dy = Y + 0.5 - o[1];
+      const x = (dx * b2 - dy * a2) / det;
+      const y = (a1 * dy - b1 * dx) / det;
+      const r = Math.hypot(x, y);
+      if (r > Rn * 1.12) continue;
+      const a = Math.atan2(y, x);
+      const n = noise(x, y);
+      const edge = Rn * (0.9 + 0.07 * Math.sin(a * 5 + t * 0.7) + 0.05 * Math.sin(a * 11 - t * 1.3) + 0.08 * (n - 0.5));
+      if (r > edge) continue;
+      const q = r / edge;
+      // (thin at its very edge and as it goes: holes opening where its folds are thinnest)
+      const keep = n - 0.55 * end - 0.5 * Math.max(0, q - 0.8) / 0.2 * 0.6 - (1 - spread) * 0.3;
+      if (keep < 0.18) continue;
+      const fold = n + 0.15 * Math.sin(x * 0.21 + y * 0.17 + t * 0.9);
+      const c = keep < 0.26 ? FOG_RAMP[1] : fold > 0.74 ? FOG_RAMP[4] : fold > 0.56 ? FOG_RAMP[3] : FOG_RAMP[2];
+      const k = (Y * px.w + X) * 4;
+      const [R0, G0, B0] = rgbOf(c);
+      px.d[k] = R0;
+      px.d[k + 1] = G0;
+      px.d[k + 2] = B0;
+      px.d[k + 3] = 255;
+    }
+  }
+  // (curls of it lifting off and drifting up)
+  for (let i = 0; i < 46; i++) {
+    const life = fr(t * 0.45 + i / 46 + hash(i, 4, 7943));
+    if (hash(i, 5, 7943) > (1 - end) * spread) continue;
+    const q = hash(i, 6, 7943) * TAU;
+    const r = Rn * Math.sqrt(hash(i, 7, 7943)) * 0.9;
+    const [X, Y] = st.at([Math.cos(q) * r - 4 * life, Math.sin(q) * r, 4 + 22 * life * (1 + end)]);
+    if (life < 0.8) lay(px, X, Y, life < 0.3 ? BREATH_PALE : FOG_RAMP[3], life < 0.35 ? 2 : 1);
+  }
+  return { px, lights: [] };
+}
+const RGB = new Map<string, [number, number, number]>();
+const rgbOf = (c: string): [number, number, number] => {
+  let v = RGB.get(c);
+  if (!v) RGB.set(c, (v = [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]));
+  return v;
+};
+
+/**
+ * ITS FOG ROUND THE KING as it wraps itself round him (`'on'`, `t` seconds after its wrap: winding in onto him over
+ * `SHIELD_FX.on`) and as it is struck off him (`'off'`: bursting off him, flung out, gone in `SHIELD_FX.off`), laid at his
+ * floor point; `'behind'` him and `'before'` him, to lay him between them.
+ */
+export const SHIELD_FX = { on: 0.45, off: 0.6 } as const;
+export function shieldPainted(t: number, view: GameView = 'front', mode: 'on' | 'off' = 'on', part: 'all' | 'behind' | 'before' = 'all'): Painted {
+  const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
+  const long = mode === 'on' ? SHIELD_FX.on : SHIELD_FX.off;
+  if (t < 0 || t > long) return { px, lights: [] };
+  const st = stageOf(view);
+  const k = t / long;
+  for (let j = 0; j < 7; j++) {
+    for (let i = 0; i < 60; i++) {
+      const u = i / 60;
+      const spin = (mode === 'on' ? 1 : -1) * (t * 7 + j) + u * TAU * 1.2;
+      const r0 = 26 + 6 * Math.sin(j * 2.3);
+      const r = mode === 'on' ? r0 * (1 + 2.2 * (1 - smooth(0, 1, k))) : r0 * (1 + 3 * smooth(0, 1, k));
+      const z = 14 + 70 * ((j / 7 + u * 0.5) % 1) + (mode === 'off' ? 30 * k * hash(i, j, 7951) : 0);
+      const keep = mode === 'on' ? 0.25 + 0.6 * k : 0.85 * (1 - k);
+      if (hash(i, j, 7952) > keep) continue;
+      const p: V3 = [Math.cos(spin) * r * 0.82 - 4, Math.sin(spin) * r, z];
+      const near = st.near(p);
+      if (part !== 'all' && (part === 'behind') !== near < 0) continue;
+      const [X, Y] = st.at(p);
+      lay(px, X, Y, i % 5 === 0 ? BREATH_PALE : i % 2 ? FOG_RAMP[3] : FOG_RAMP[2], i % 4 === 0 ? 2 : 1);
     }
   }
   return { px, lights: [] };

@@ -56,6 +56,8 @@ export const GOLD: Ramp = ['#2a200e', '#4a3a18', '#76602c', '#a08646', '#c2a866'
 /** His great sword's blade: old steel. */
 export const BLADE: Ramp = ['#262838', '#44465c', '#6c6e86', '#9a9cb0', '#c6c8d6'];
 const EDGE = '#e2e2ea';
+/** Rubies set in his crown's band. */
+const RUBY: Ramp = ['#3a0a1a', '#6a1230', '#962040', '#b83a58', '#d86a80'];
 /** Sapphires in his crown and his pommel. */
 export const SAPPHIRE: Ramp = ['#0a0e3a', '#1a2280', '#2a3ac0', '#5a70e8', '#a0b0ff'];
 /** His skin: old, grey, dying. */
@@ -287,7 +289,7 @@ interface HeadAt {
   hr: V3;
 }
 /** HIS HEAD: old and gaunt, hollow-cheeked, deep-eyed, white brows; his long white hair behind; his white beard down over his breastplate; the gold crown, grey fog curling up through it. */
-function head(put: Put, st: Stage, s: Skeleton, t: number, lag: V3, fog: [V3, string, number][], crownOn: boolean): HeadAt {
+function head(put: Put, st: Stage, s: Skeleton, t: number, lag: V3, fog: [V3, string, number][], crownOn: boolean, lift = 0): HeadAt {
   const [ff, fl, fu] = wornOn(st, s, 14);
   const hr: V3 = [B.headR[0] * 0.98, B.headR[1] * 0.98, B.headR[2] * 1.0];
   const hc = add(s.head, mul(fu, -0.2));
@@ -359,15 +361,41 @@ function head(put: Put, st: Stage, s: Skeleton, t: number, lag: V3, fog: [V3, st
     }
     for (let i = 1; i < pts.length; i++) put('head', 'hair', { k: 'rod', a: pts[i - 1], b: pts[i], ra: 1.5 - 0.14 * i, rb: 1.4 - 0.14 * i, ramp: WHITE });
   }
-  if (crownOn) crown(put, hc, ff, fl, fu, hr, t, fog);
+  const ringC = add(crownRingOf(hc, ff, fu, hr), mul(fu, lift));
+  if (crownOn) crownAt(put, ringC, ff, fl, fu, hr, t, 1);
+  crownFog(ringC, ff, fl, fu, hr, t, fog, 1);
   void cu;
   return { ff, fl, fu, hc, hr };
 }
 
-/** THE CROWN: a broad gold band at his brow set with sapphires, tall pointed fleurons standing up off it all round; and the Hush's grey fog curling up through it. */
-function crown(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, t: number, fog: [V3, string, number][]): void {
-  const ring: Ring = { c: add(hc, add(mul(fu, hr[2] * 0.84), mul(ff, -hr[0] * 0.12))), u: mul(ff, hr[0] * 0.8), v: mul(fl, hr[1] * 0.86) };
-  put('crown', 'crown', { k: 'band', ring, ramp: GOLD, rows: 2 });
+/** Where the middle of his crown's band sits on his head (from his head's middle, its ways and its half-lengths). */
+export function crownRingOf(hc: V3, ff: V3, fu: V3, hr: V3): V3 {
+  return add(hc, add(mul(fu, hr[2] * 0.84), mul(ff, -hr[0] * 0.12)));
+}
+/** His head's half-lengths as the crown is fitted to them. */
+export const CROWN_HEAD: V3 = [KING_BODY.headR[0] * 0.98, KING_BODY.headR[1] * 0.98, KING_BODY.headR[2] * 1.0];
+/**
+ * THE CROWN: a broad gold band set with sapphires, tall pointed fleurons standing up off it all round, its band's middle
+ * at `c`; `k` times as big as on his head (THE CROWN'S WEIGHT: sent up off his head, it grows huge and heavy: its band
+ * thicker, its points taller, its stones bigger, all as the one crown).
+ */
+export function crownAt(put: Put, c: V3, ff: V3, fl: V3, fu: V3, hr: V3, t: number, k = 1, part = 'crown'): void {
+  const ring: Ring = { c, u: mul(ff, hr[0] * 0.8 * k), v: mul(fl, hr[1] * 0.86 * k) };
+  if (k <= 1.5) put(part, part, { k: 'band', ring, ramp: GOLD, rows: 2 });
+  else {
+    // (grown huge, its band is a band of gold as deep as a hand is long: a rim top and bottom, sapphires and rubies set
+    // round it between the fleurons, its inside dark)
+    const lo: Ring = { ...ring, c: add(c, mul(fu, -1.0 * k)) };
+    const hi: Ring = { ...ring, c: add(c, mul(fu, 1.6 * k)) };
+    put(part, part, { k: 'cloth', rings: [lo, hi], ramp: GOLD, look: { folds: [], lift: 0.02 } });
+    put(part, part, { k: 'band', ring: { ...lo, u: mul(lo.u, 1.04), v: mul(lo.v, 1.04) }, ramp: GOLD, rows: 2 });
+    put(part, part, { k: 'band', ring: { ...hi, u: mul(hi.u, 1.04), v: mul(hi.v, 1.04) }, ramp: GOLD, rows: 2 });
+    for (let i = 0; i < 8; i++) {
+      const a = ((i + 0.5) / 8) * Math.PI * 2;
+      const p = add(c, add(add(mul(ring.u, Math.cos(a) * 1.04), mul(ring.v, Math.sin(a) * 1.04)), mul(fu, 0.3 * k)));
+      put(part, `${part}Gem`, { k: 'ball', c: p, ax: sphere(0.62 * k), skin: i % 2 ? SAPPHIRE : RUBY });
+    }
+  }
   const N = 8;
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2;
@@ -375,23 +403,33 @@ function crown(put: Put, hc: V3, ff: V3, fl: V3, fu: V3, hr: V3, t: number, fog:
     const sa = Math.sin(a);
     const base = add(ring.c, add(mul(ring.u, ca), mul(ring.v, sa)));
     const outw = norm(add(mul(ff, ca), mul(fl, sa)), ff);
-    const tall = i % 2 === 0 ? 8.4 : 5.4;
-    const tip = add(base, add(mul(fu, tall), mul(outw, 0.9)));
+    const tall = (i % 2 === 0 ? 8.4 : 5.4) * k;
+    const foot = k > 1.5 ? 1.6 * k : 0.6 * k;
+    const tip = add(base, add(mul(fu, tall + foot), mul(outw, 0.9 * k)));
     // a fleuron: a tapering gold point, two leaves curling off it, and a sapphire at its foot on the band
-    put('crown', 'crown', { k: 'rod', a: add(base, mul(fu, 0.6)), b: tip, ra: 1.3, rb: 0.35, ramp: GOLD });
+    put(part, part, { k: 'rod', a: add(base, mul(fu, foot)), b: tip, ra: 1.3 * k, rb: 0.35 * Math.sqrt(k), ramp: GOLD });
     const side = norm(cross(fu, outw), fl);
-    for (const k of [-1, 1]) put('crown', 'crown', { k: 'rod', a: add(base, mul(fu, tall * 0.42)), b: add(base, add(mul(fu, tall * 0.62), mul(side, k * 1.7))), ra: 0.6, rb: 0.3, ramp: GOLD });
-    put('crown', 'gem', { k: 'ball', c: add(base, add(mul(outw, 0.7), mul(fu, 0.2))), ax: sphere(i % 2 === 0 ? 1.05 : 0.8), skin: SAPPHIRE });
+    for (const s2 of [-1, 1]) put(part, part, { k: 'rod', a: add(base, mul(fu, tall * 0.42)), b: add(base, add(mul(fu, tall * 0.62), mul(side, s2 * 1.7 * k))), ra: 0.6 * k, rb: 0.3 * Math.sqrt(k), ramp: GOLD });
+    put(part, `${part}Gem`, { k: 'ball', c: add(base, add(mul(outw, 0.7 * k), mul(fu, 0.2 * k))), ax: sphere((i % 2 === 0 ? 1.05 : 0.8) * k), skin: SAPPHIRE });
   }
-  // THE FOG IN HIS CROWN: the Hush's grey curling up through it from inside, rising and thinning
+}
+/** THE FOG IN HIS CROWN: the Hush's grey curling up from inside it, rising and thinning (on his head whether the crown is there or not). */
+export function crownFog(c: V3, ff: V3, fl: V3, fu: V3, hr: V3, t: number, fog: [V3, string, number][], k = 1): void {
   for (let i = 0; i < 18; i++) {
     const life = fr(t / 1.8 + i / 18 + 0.31 * hash(i, 3, 7701));
     const a = hash(i, 4, 7701) * Math.PI * 2 + life * 2.4;
-    const r = (hr[1] * 0.55) * (0.4 + 0.6 * hash(i, 5, 7701)) * (1 - 0.4 * life);
-    const p = add(ring.c, add(add(mul(ff, Math.cos(a) * r), mul(fl, Math.sin(a) * r)), mul(fu, 1.5 + life * 13)));
+    const r = (hr[1] * 0.55 * k) * (0.4 + 0.6 * hash(i, 5, 7701)) * (1 - 0.4 * life);
+    const p = add(c, add(add(mul(ff, Math.cos(a) * r), mul(fl, Math.sin(a) * r)), mul(fu, (1.5 + life * 13) * k)));
     if (life > 0.85) continue;
     fog.push([p, life < 0.25 ? BREATH_PALE : life < 0.55 ? FOG[4] : FOG[3], life < 0.45 ? 2 : 1]);
   }
+}
+
+/** Where his crown sits on his head at a moment, as `st` paints him (the band's middle, and its forward, left and up: tipped from the eye as all headgear is). */
+export function crownOnHead(st: Stage, s: Skeleton, lift = 0): { c: V3; ff: V3; fl: V3; fu: V3 } {
+  const [ff, fl, fu] = wornOn(st, s, 14);
+  const hc = add(s.head, mul(fu, -0.2));
+  return { c: add(crownRingOf(hc, ff, fu, CROWN_HEAD), mul(fu, lift)), ff, fl, fu };
 }
 
 /** HIS GREAT SWORD in his right hand: a gold pommel set with a sapphire, a long grip bound in royal blue, a broad gold cross with down-curved quillons, a broad blade of old steel with a fuller, bright edges. */
@@ -462,6 +500,10 @@ export interface HushPose {
   gone: number;
   /** How thick its fog is (1 as it stands; a little thinner riding him, its bulk flattened along his back). */
   bulk: number;
+  /** Its forearms and hands are not on its own picture (its grab: shot out across the hall, art/king_fx.ts `grabPainted`, from its elbows). */
+  bare?: boolean;
+  /** How wide its mouth gapes (0 as ever; 1 its breath of fog). */
+  gape?: number;
 }
 /** Two poses of the Hush mixed (`k` of the way from `a` to `b`), each of its ways kept a unit. */
 export function hushMix(a: HushPose, b: HushPose, k: number): HushPose {
@@ -477,6 +519,7 @@ export function hushMix(a: HushPose, b: HushPose, k: number): HushPose {
     handL: L(a.handL, b.handL), handR: L(a.handR, b.handR), gripL: norm(L(a.gripL, b.gripL)), gripR: norm(L(a.gripR, b.gripR)),
     chest: L(a.chest, b.chest), rot: R(a.rot, b.rot), waist: L(a.waist, b.waist), tail: L(a.tail, b.tail), lag: L(a.lag, b.lag),
     gone: a.gone + (b.gone - a.gone) * k, bulk: a.bulk + (b.bulk - a.bulk) * k,
+    gape: (a.gape ?? 0) + ((b.gape ?? 0) - (a.gape ?? 0)) * k,
   };
 }
 /** The same pose moved along the floor by `by`. */
@@ -522,6 +565,49 @@ export function hushRiding(s: Skeleton, t: number, lag: V3): HushPose {
     gripR: norm(add(mul(upperR, 0.3), mul(outR, -1))), gripL: norm(add(mul(cf, -1), mul(cu, -0.6))),
     chest, rot, waist, tail, lag, gone: 0, bulk: 0.92,
   };
+}
+
+/**
+ * THE HUSH WRAPPED ROUND HIM, SHIELDING HIM (his last phase: its Shield, his pick “Shields the King”): back on his back as it
+ * rode him, but clinging close: its head down over his crown, its fog swollen round him and wound about him from his knees
+ * to his shoulders (shroudParts), its long arms over his shoulders, the right gripping his sword arm, the left clutching at
+ * his breast. From his bones at a moment, so that it clings to him whatever he does.
+ */
+export function hushWrapped(s: Skeleton, t: number, lag: V3): HushPose {
+  const H = hushRiding(s, t, lag);
+  const [cf, , cu] = s.chest;
+  // (its head lower, close down over his crown)
+  const head = add(H.head, add(mul(cu, -4.5), mul(cf, 2.5)));
+  return { ...H, head, bulk: 1.06 };
+}
+/** The fog wound round him as the Hush shields him: ribbons of it spiralling about him from his knees to his shoulders, going round, frayed, thinning as it unwinds (`gone`). */
+export function shroudParts(put: Put, s: Skeleton, t: number, lag: V3, fog: [V3, string, number][], gone = 0): void {
+  if (gone >= 0.9) return;
+  const thin = 1 - gone;
+  const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+  const l: V3 = [-f[1], f[0], 0];
+  const knees = lerp3(s.kneeL, s.kneeR, 0.5);
+  const lo = Math.max(10, knees[2]);
+  const hi = s.shoulderL[2] * 0.5 + s.shoulderR[2] * 0.5 - 2;
+  const mid = lerp3(s.pelvis, s.ribs, 0.4);
+  for (let j = 0; j < 5; j++) {
+    // (a ribbon: round him once and a half, rising as it goes, turning about him as a whole)
+    const spin = t * W2 * 0.5 + j * 1.3;
+    const rad = (B.pelvisHalf + 13 + 3 * Math.sin(j * 2.1)) * (1 + 0.15 * gone);
+    let prev: V3 | null = null;
+    const n = 26;
+    for (let i = 0; i <= n; i++) {
+      const u = i / n;
+      const a = spin + u * Math.PI * 2.6 * (j % 2 ? 1 : -1);
+      const z = lo + (hi - lo) * ((j / 5 + u * 0.55 + 0.1 * Math.sin(t * W2 + j)) % 1);
+      const c: V3 = [mid[0] + lag[0] * (1 - u) * 0.6, mid[1] + lag[1] * (1 - u) * 0.6, z];
+      const p = add(c, add(mul(f, Math.cos(a) * rad * 0.82), mul(l, Math.sin(a) * rad)));
+      const w = (0.9 + 1.2 * Math.sin(Math.PI * u) * (0.6 + 0.4 * Math.sin(u * 17 + t * 3 + j))) * thin;
+      if (prev && hash(i, j, 7731) > 0.2 + 0.5 * gone) put('shroud', 'shroud', { k: 'rod', a: prev, b: p, ra: w, rb: w * 0.85, ramp: FOG });
+      if (i % 2 === 0) fog.push([add(p, [(hash(i, j, 7733) - 0.5) * 4, (hash(i, j, 7734) - 0.5) * 4, 2 + 5 * hash(i, j, 7732)]), i % 4 ? FOG[3] : BREATH_PALE, 1]);
+      prev = p;
+    }
+  }
 }
 
 /** THE HUSH STANDING ON ITS OWN, from its own bones (its last phase, beside him). */
@@ -606,6 +692,8 @@ export function hushParts(put: Put, H: HushPose, t: number, fog: [V3, string, nu
     const part = `hushArm${side}`;
     put(part, part, { k: 'rod', a: sh, b: el, ra: 3.2 * thin, rb: 2.3 * thin, ramp: FOG });
     put(part, part, { k: 'ball', c: el, ax: sphere(2.4 * thin), skin: FOG });
+    // (its forearms shot out across the hall: the effect's, from its elbows)
+    if (H.bare) continue;
     put(part, part, { k: 'rod', a: el, b: hand, ra: 2.3 * thin, rb: 1.5 * thin, ramp: FOG });
     // (the hand: a narrow palm, four long fingers curling round what it grips, pale at their tips)
     const fore = norm(sub(hand, el), [0, 0, -1]);
@@ -629,6 +717,7 @@ export function hushParts(put: Put, H: HushPose, t: number, fog: [V3, string, nu
     }
   }
   // ITS HEAD: a hood of fog, the mask of a face hung in it
+  const gape = clamp01(H.gape ?? 0);
   if (gone < 0.9) {
     const hr: V3 = [6.4 * thin, 6.0 * thin, 9.4 * thin];
     const hc = H.head;
@@ -643,8 +732,8 @@ export function hushParts(put: Put, H: HushPose, t: number, fog: [V3, string, nu
         // its eyes: two long hollows slanting down outward
         const ey = 0.18 - 0.22 * side;
         if (side > 0.14 && side < 0.58 && Math.abs(u[2] - ey) < 0.12 + 0.06 * (0.58 - side)) return HOLLOW;
-        // its mouth: a long dark gape, narrow, from under the nose down the long chin
-        if (side < 0.13 - 0.05 * Math.max(0, -u[2] - 0.5) && u[2] < -0.22 && u[2] > -0.78) return HOLLOW;
+        // its mouth: a long dark gape, narrow, from under the nose down the long chin (wide as it breathes out its fog)
+        if (side < 0.13 + 0.2 * gape - 0.05 * Math.max(0, -u[2] - 0.5) && u[2] < -0.22 + 0.06 * gape && u[2] > -0.78 - 0.1 * gape) return HOLLOW;
         // the cheekbones high and sharp, the cheeks fallen in beneath them
         if (side > 0.36 && u[2] < -0.06 && u[2] > -0.42) return MASK[Math.max(0, tone - 1)];
         if (u[0] > 0.85 && side < 0.1 && u[2] > -0.16 && u[2] < 0.18) return MASK[Math.min(4, tone + 1)];
@@ -678,14 +767,16 @@ export function hushParts(put: Put, H: HushPose, t: number, fog: [V3, string, nu
 
 /** What a moment of a move says of him over and above the bones. */
 export interface KingSay {
-  /** The Hush as it is now: riding him (`'riding'`), somewhere else on his picture (climbing off), or not with him (null). */
-  hush: (m: Moment) => 'riding' | HushPose | null;
+  /** The Hush as it is now: riding him (`'riding'`), wrapped round him shielding him (`'wrapped'`, his last phase), somewhere else on his picture (climbing off), or not with him (null). */
+  hush: (m: Moment) => 'riding' | 'wrapped' | HushPose | null;
   /** How far the Hush has unwound into nothing (his death). */
   unwind?: (m: Moment) => number;
   /** Whether his sword has fallen from his hand, and where it lies then (its pommel, the way it points, its flat). */
   dropped?: (m: Moment) => { pommel: V3; way: V3; across: V3 } | null;
-  /** Whether his crown is on his head; if not, where it lies. */
-  crown?: (m: Moment) => { c: V3; up: V3; fwd: V3 } | null;
+  /** Whether his crown is on his head (null); if not, where it lies on his picture, or `'away'` (THE CROWN'S WEIGHT: sent up off his head, it is the game's to lay, art/king_fx.ts). */
+  crown?: (m: Moment) => { c: V3; up: V3; fwd: V3 } | 'away' | { lift: number } | null;
+  /** How fast the game is carrying him along his own forward now (his own lengths a second: his charge): his mantle, hair and beard stream back with it. */
+  rush?: (m: Moment) => number;
   /** THE SMEAR OF A LIGHTNING STRIKE (his Movement 9): after-images of what strikes, each a line of points, the oldest first. */
   smear?: (m: Moment) => V3[][] | null;
   /** Grains of his own move laid after his edge (sparks off his sword's point, the stones kicked up). */
@@ -704,7 +795,10 @@ function kingBits(st: Stage, m: Moment, say: KingSay): Bit[] {
   // (nothing of him into the stones: what he wears and holds lies on them, pressed flat where it would go in, as his
   // mantle, his beard and his plate do as he lies down)
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape: onTheStones(shape) });
-  const lag = lagOf(m, 1.6, 6);
+  const rush = say.rush?.(m) ?? 0;
+  const lag0 = lagOf(m, 1.6, 6);
+  // (carried at a run: what hangs off him streams back, the faster the further, as far as it will go)
+  const lag: V3 = rush > 0 ? add(lag0, mul(norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]), -Math.min(9, rush * 0.022))) : lag0;
   const t = m.t;
   const [cf, cl, cu] = s.chest;
   for (const side of ['L', 'R'] as const) leg(put, s, side);
@@ -753,12 +847,14 @@ function kingBits(st: Stage, m: Moment, say: KingSay): Bit[] {
   const fallen = say.dropped?.(m) ?? null;
   arm(put, s, 'L', m.q.lhIn === 3 ? 1 : 0.35);
   arm(put, s, 'R', fallen ? 0.3 : 1);
-  const crownLies = say.crown?.(m) ?? null;
-  const hd = head(put, st, s, t, lag, fog, !crownLies);
-  if (crownLies) {
+  const crownSay = say.crown?.(m) ?? null;
+  const lift = crownSay && typeof crownSay === 'object' && 'lift' in crownSay ? crownSay.lift : 0;
+  const crownLies = crownSay && typeof crownSay === 'object' && 'lift' in crownSay ? null : crownSay;
+  const hd = head(put, st, s, t, lag, fog, !crownLies, lift);
+  if (crownLies && crownLies !== 'away') {
     const up = crownLies.up;
     const fwd = norm(sub(crownLies.fwd, mul(up, dot(crownLies.fwd, up))), [1, 0, 0]);
-    crown(put, crownLies.c, fwd, cross(up, fwd), up, hd.hr, t, []);
+    crownAt(put, crownRingOf(crownLies.c, fwd, up, hd.hr), fwd, cross(up, fwd), up, hd.hr, t, 1);
   }
   // HIS GREAT SWORD
   if (!fallen) sword(put, s, clamp01(m.glint));
@@ -769,29 +865,33 @@ function kingBits(st: Stage, m: Moment, say: KingSay): Bit[] {
   // THE HUSH, riding his back or beside him
   const h = say.hush(m);
   if (h) {
-    const H = h === 'riding' ? hushRiding(s, t, lag) : h;
+    const H = h === 'riding' ? hushRiding(s, t, lag) : h === 'wrapped' ? hushWrapped(s, t, lag) : h;
     const un = say.unwind?.(m) ?? 0;
     hushParts(put, un > 0 ? { ...H, gone: Math.max(H.gone, un) } : H, t, fog, 0, st.eye);
+    if (h === 'wrapped') shroudParts(put, s, t, lag, fog, un);
   }
   // THE SMEAR of a lightning strike
   const sm = say.smear?.(m);
-  if (sm) {
-    sm.forEach((line, j) => {
-      const k = j / Math.max(1, sm.length - 1);
-      for (let i = 1; i < line.length; i++) {
-        const [x0, y0] = st.at(line[i - 1]);
-        const [x1, y1] = st.at(line[i]);
-        const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
-        for (let e = 0; e < n; e++) {
-          if (k < 0.5 && (e + i) % 2) continue;
-          put('smear', 'smear', { k: 'mote', p: lerp3(line[i - 1], line[i], e / n), c: k > 0.7 ? SMEAR[2] : k > 0.35 ? SMEAR[1] : SMEAR[0], size: k > 0.7 ? 2 : 1 });
-        }
-      }
-    });
-  }
+  if (sm) smearParts(put, st, sm);
   fog.push(...(say.more?.(m) ?? []));
   void INK;
   return bits;
+}
+
+/** THE SMEAR of a lightning strike: its after-images, each a line of points, the oldest first (dull), the newest bright. */
+export function smearParts(put: Put, st: Stage, sm: V3[][]): void {
+  sm.forEach((line, j) => {
+    const k = j / Math.max(1, sm.length - 1);
+    for (let i = 1; i < line.length; i++) {
+      const [x0, y0] = st.at(line[i - 1]);
+      const [x1, y1] = st.at(line[i]);
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+      for (let e = 0; e < n; e++) {
+        if (k < 0.5 && (e + i) % 2) continue;
+        put('smear', 'smear', { k: 'mote', p: lerp3(line[i - 1], line[i], e / n), c: k > 0.7 ? SMEAR[2] : k > 0.35 ? SMEAR[1] : SMEAR[0], size: k > 0.7 ? 2 : 1 });
+      }
+    }
+  });
 }
 
 /** A solid kept out of the stones (its lowest just on them): a rod's ends lifted, a ball or a ring lifted or pressed flat. */
@@ -848,14 +948,18 @@ export const HUSH_REST: Bones = {
 
 const HUSH_FOG = new WeakMap<Moment, [V3, string, number][]>();
 /** THE HUSH ON ITS OWN, as the painter takes it (`gone`: how far it has unwound, by the moment). */
-export function hushPainter(gone: (m: Moment) => number): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
+export function hushPainter(gone: (m: Moment) => number, more?: (m: Moment) => { bare?: boolean; gape?: number; bulk?: number; smear?: V3[][] | null; grains?: [V3, string, number][] }): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
   return {
     bits: (st, m) => {
       const bits: Bit[] = [];
       const fog: [V3, string, number][] = [];
       HUSH_FOG.set(m, fog);
       const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
-      hushParts(put, hushStanding(m.s, lagOf(m, 1.6, 6), gone(m)), m.t, fog, 3, st.eye);
+      const x = more?.(m) ?? {};
+      const H = hushStanding(m.s, lagOf(m, 1.6, 6), gone(m));
+      hushParts(put, { ...H, bare: x.bare, gape: x.gape, bulk: x.bulk ?? H.bulk }, m.t, fog, 3, st.eye);
+      if (x.smear) smearParts(put, st, x.smear);
+      if (x.grains) fog.push(...x.grains);
       return bits;
     },
     grains: (_st, m) => HUSH_FOG.get(m) ?? [],
