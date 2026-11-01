@@ -144,15 +144,17 @@ but it may read slow between them: see "For him to decide".
 - To bring it in (the main chat's):
   - THE BESTIARY: `figure === 'amalgam'` → `AMALGAM_ACTION.on ? makeAmalgamActionArt(MONSTERS.amalgam.speed) : makeAmalgamArt3(...)`.
   - THE RULES (`ACTS.amalgam`, `AMALGAM`), a suggestion (damage and cooldowns the rules' own; as now unless said):
-    - `swipe`: long 4.0, its blows at `SWIPE_HITS` (0.8, 1.733, 3.0). The two rakes: a hero within 2.7 tiles in the half before it
-      (the right's from its right round to its middle, the left's from its left; the game's was 2.45). The finisher: within
-      `SLAM_RING.finisher` (2.6) of the point 1.71 before it, as the ring goes out (`ringReach`); mark it from 1.933 s (its rear):
-      a second's warning.
+    - `swipe` (as of the second round, which he said yes to): long 4.533 (`SWIPE_LONG`), its blows at `SWIPE_HITS` (0.733,
+      2.0, 3.533). The two rakes: a hero within `RAKES[i].out` (3.3, then 3.5) inside its arc (see "THE RAKES, REDONE"); marked
+      from the haul (0.033 s and 1.2 s). The finisher: within `SLAM_RING.finisher` (2.6) of the point 1.71 before it, as the
+      ring goes out (`ringReach`); mark it from 2.467 s (its rear): a second's warning.
     - `rain` (in place of `swarm`, its cooldown 7 s or more): long 3.0, the slam at `RAIN_HIT` (1.467); the skulls by
       `rainDrops(arena, its place)` (tiles from the arena's middle): at `RAIN_HIT + leave` lay each one's shadow (`dropPainted(t,
       'floor', seed)` for `t` from -1 to 0: shadow and mark) and fly it from its niche (`dropAt(d, u)`, its picture
-      `makeRainSkullArt`); at `RAIN_HIT + land` it bursts: strike within `RAIN.r`, and the pile lies `RAIN.pile.lie` s, slowing
-      (`pileSlows`) to `RAIN.pile.slow`; `dropPainted(t, 'floor' | 'air', ...)` after, the air by halves.
+      `makeRainSkullArt`); at `RAIN_HIT + land` it bursts: strike within `RAIN.r`; `dropPainted(t, 'floor' | 'air', ...)`
+      after, the air by halves. (Second round: no piles; at `RAIN_HIT + land + RAIN.mite.at` a bone mite forms there instead,
+      `makeBoneMiteArt()`, one hit point, pace 3.2, its bite as in "THE BONE MITES", and left alone it crumbles `MITE.life`
+      (10 s) after it began forming, playing its death.)
     - `floorArms`: long 2.8, the slam at `ARMS_HIT` (1.333); `ARMS` in place of `AMALGAM.arms` (n 8, near 1.4, far 3.2, first 0.5,
       last 1.1, warn 0.6, r 0.9), the arms' picture `makeBigArmArt` (`BIG_ARM_CANVAS`).
     - `devour`: long 3.2, its rake at 1.267 (`DEVOUR_HITS[0]`): from then to the bite at 2.2 (`DEVOUR_HITS[1]`), drag what is in
