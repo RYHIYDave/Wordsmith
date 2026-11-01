@@ -324,6 +324,106 @@ export const SCENE_SETS: Readonly<Record<number, readonly Scene[]>> = {
       },
     },
   ],
+  2: [
+    {
+      // THE SCAFFOLD: the great scaffold in the middle of the room, sawdust strewn round its foot, skulls in the sawdust, his
+      // banner on the back wall over it
+      name: 'the scaffold', area: 100, w: 9, h: 9, most: 2,
+      lay: (c) => {
+        const { r, cx, cy } = c;
+        if (!c.stand(cx, cy, 'the scaffold', true)) return false;
+        for (const [dx, dy] of [[-2, 0], [2, 0], [0, 2], [0, -2]]) c.onFloor(cx + dx, cy + dy, 'sawdust');
+        c.lie(cx + 2, cy + 1, 'skulls in the sawdust');
+        c.onWall(cx, r.y, 0, 'his banner');
+        c.onWall(cx - 3, r.y, 0, 'torch');
+        c.onWall(cx + 3, r.y, 0, 'torch');
+        return true;
+      },
+    },
+    {
+      // THE BLOCK: the headsman's block in the middle, sawdust about it, a broken axe dropped beside it, the long stain down the
+      // back wall and his axes on their hooks
+      name: 'the block', area: 50, w: 7, h: 7, most: 3,
+      lay: (c) => {
+        const { r, cx, cy } = c;
+        if (!c.stand(cx, cy, 'the block')) return false;
+        for (const [dx, dy] of [[-1, 1], [1, 1], [1, -1]]) c.onFloor(cx + dx, cy + dy, 'sawdust');
+        c.lie(cx - 1, cy - 1, 'broken axe');
+        c.onWall(cx, r.y, 0, 'the long stain');
+        c.onWall(cx + 2, r.y, 0, 'axe on hooks');
+        return true;
+      },
+    },
+    {
+      // THE GALLOWS: the gallows near the back wall, a noose hung on the wall by it, a coil of rope on the floor, the trapdoor
+      name: 'the gallows', area: 50, w: 7, h: 7, most: 2,
+      lay: (c) => {
+        const { r, cx } = c;
+        if (!c.stand(cx, r.y + 2, 'the gallows')) return false;
+        c.onWall(cx - 2, r.y, 0, 'noose');
+        c.lie(cx + 2, r.y + 3, 'coil of rope');
+        c.onFloor(cx, r.y + 4, 'trapdoor');
+        return true;
+      },
+    },
+    {
+      // THE STOCKS: a row of stocks along the back wall, bones still in irons before one, a stool kicked over
+      name: 'the stocks', area: 45, w: 8, h: 6, most: 2,
+      lay: (c) => {
+        const { r, cx } = c;
+        if (!c.stand(cx - 1, r.y + 2, 'the stocks')) return false;
+        c.stand(cx + 2, r.y + 2, 'the stocks');
+        c.lie(cx - 1, r.y + 4, 'bones in irons');
+        c.lie(cx + 1, r.y + 4, 'kicked-over stool');
+        c.onWall(cx, r.y, 0, 'chain from the dark');
+        return true;
+      },
+    },
+    {
+      // THE TORTURER'S CORNER: branding irons and the tools of the trade on the side wall, the grindstone by them, a broken
+      // wheel on the floor, the gutter running past
+      name: "the torturer's corner", area: 42, w: 6, h: 7, most: 2,
+      lay: (c) => {
+        const { r, cy } = c;
+        // (a corner wants its wall: none in the open hall's breached rooms)
+        if (!c.onWall(r.x, cy - 1, 1, 'branding irons')) return false;
+        c.stand(r.x + 1, cy, 'the grindstone');
+        c.onWall(r.x, cy + 1, 1, 'tools of the trade');
+        c.lie(r.x + 2, cy + 2, 'broken wheel');
+        c.onFloor(r.x + 3, cy, 'gutter');
+        return true;
+      },
+    },
+    {
+      // THE HOODED SHRINE: the hood carved in the back wall, black candles either side of it, hoods on their pegs, the hood in
+      // the floor before it, a lantern dropped there
+      name: 'the hooded shrine', area: 36, w: 6, h: 6, most: 2,
+      lay: (c) => {
+        const { r, cx } = c;
+        if (!c.onWall(cx, r.y, 0, 'the hood carved')) return false;
+        c.onWall(cx - 1, r.y, 0, 'black candles');
+        c.onWall(cx + 1, r.y, 0, 'black candles');
+        c.onWall(cx + 3, r.y, 0, 'hoods on pegs');
+        c.onFloor(cx, r.y + 2, 'the hood in the floor');
+        c.lie(cx + 1, r.y + 3, 'dropped lantern');
+        return true;
+      },
+    },
+    {
+      // THE CHUTE: the chute down which the dead go, a hatch in the wall by it, bones heaped on the floor at its foot
+      name: 'the chute', area: 30, w: 6, h: 5, most: 2,
+      lay: (c) => {
+        const { r } = c;
+        for (let x = r.x + 2; x <= r.x + r.w - 3; x++) {
+          if (!c.heap(x, r.y, 0, 'the chute')) continue;
+          c.onWall(x + 1, r.y, 0, 'hatch');
+          c.lie(x + 1, r.y + 2, 'skulls in the sawdust');
+          return true;
+        }
+        return false;
+      },
+    },
+  ],
 };
 
 /** The fifth floor's bone heaps, in its boss's hall: where the Fleshmancer raises his dead (game/bosses.ts, Floor.heaps). */
@@ -376,7 +476,7 @@ export interface Dress {
  * scene has no things standing about at random, only its walls' and its floor's own. `floors`: the floors laid so (shown to him
  * first, as pictures from the game).
  */
-export const SCENES: { on: boolean; floors: number[] } = { on: true, floors: [1] };
+export const SCENES: { on: boolean; floors: number[] } = { on: true, floors: [1, 2] };
 
 /** How many of a wall's faces have a piece, about (one in four). */
 const WALL_SHARE = 0.26;
