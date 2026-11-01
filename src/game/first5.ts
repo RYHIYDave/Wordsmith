@@ -77,6 +77,8 @@ export interface FloorSet {
   moments: readonly [MomentSite, MomentSite, MomentSite];
   /** The pieces painted that the game does not lay yet (the quest's: there is no quest for them yet). */
   unlaid: readonly string[];
+  /** SCENES: pieces that belong to a scene, laid only with it on a floor laid as scenes (never here and there at random). */
+  sceneOnly?: readonly string[];
 }
 
 export const FLOOR_SETS: readonly FloorSet[] = [
@@ -116,6 +118,8 @@ export const FLOOR_SETS: readonly FloorSet[] = [
     traps: { holes: 'blade slots', plate: 'crescent plate', slot: 'dart mask' },
     moments: [{ at: 'floor' }, { at: 'thing', piece: 'the great bell' }, { at: 'thing', piece: 'the gibbet' }],
     unlaid: ["the Headsman's hood"],
+    // (the gallows' trapdoor, the shrine's hood in the wall and in the floor, the noose by the gallows, the torturer's irons and tools)
+    sceneOnly: ['trapdoor', 'the hood in the floor', 'the hood carved', 'noose', 'branding irons', 'tools of the trade'],
   },
   {
     // 3, THE CHAINED ONE'S: the prison
@@ -180,6 +184,10 @@ interface SceneCtx {
   cx: number;
   cy: number;
   stand: (x: number, y: number, name: string, big?: boolean) => boolean;
+  /** Takes away what was just stood at (x, y) by `stand` (a scene that finds it cannot finish there). */
+  unstand: (x: number, y: number) => void;
+  /** A fire (the game's brazier, the floor's own) stood at (x, y), lighting the scene: true if it was. */
+  fire: (x: number, y: number) => boolean;
   lie: (x: number, y: number, name: string) => boolean;
   heap: (x: number, y: number, side: 0 | 1, name: string) => boolean;
   onWall: (x: number, y: number, side: 0 | 1, name: string) => boolean;
@@ -197,6 +205,10 @@ interface Scene {
 /** (the king's runner's frames: along y, 3 and 4 by turns, 5 its fringed end) */
 const runnerY = (c: SceneCtx, x: number, y0: number, len: number): void => {
   for (let k = 0; k < len; k++) c.onFloor(x, y0 + k, "the king's runner", k === len - 1 ? 5 : 3 + (k % 2));
+};
+/** A fire stood by a scene: for each list of places, the first that is free (a scene with two fires gives two lists). */
+const fires = (c: SceneCtx, ...lists: [number, number][][]): void => {
+  for (const list of lists) for (const [x, y] of list) if (c.fire(x, y)) break;
 };
 /**
  * THE SCENES OF EACH FLOOR (SCENES), by floor. The back walls are the two the eye sees, along the room's -y side (its faces side 0)
@@ -327,14 +339,16 @@ export const SCENE_SETS: Readonly<Record<number, readonly Scene[]>> = {
   ],
   2: [
     {
-      // THE SCAFFOLD: the great scaffold in the middle of the room, sawdust strewn round its foot, skulls in the sawdust, his
-      // banner on the back wall over it
+      // THE SCAFFOLD: the great scaffold in the middle of the room, a ring of sawdust round its foot, skulls and a broken axe in
+      // the sawdust, a fire either side of it; his banner on the back wall over it and torches by it, where it has one
       name: 'the scaffold', area: 100, w: 9, h: 9, most: 2,
       lay: (c) => {
         const { r, cx, cy } = c;
         if (!c.stand(cx, cy, 'the scaffold', true)) return false;
-        for (const [dx, dy] of [[-2, 0], [2, 0], [0, 2], [0, -2]]) c.onFloor(cx + dx, cy + dy, 'sawdust');
+        for (const [dx, dy] of [[-2, 0], [2, 0], [0, 2], [0, -2], [-2, 2], [2, 2], [2, -2], [-2, -2]]) c.onFloor(cx + dx, cy + dy, 'sawdust');
         c.lie(cx + 2, cy + 1, 'skulls in the sawdust');
+        c.lie(cx - 1, cy + 2, 'broken axe');
+        fires(c, [[cx - 3, cy], [cx - 3, cy + 1]], [[cx + 3, cy], [cx + 3, cy - 1]]);
         c.onWall(cx, r.y, 0, 'his banner');
         c.onWall(cx - 3, r.y, 0, 'torch');
         c.onWall(cx + 3, r.y, 0, 'torch');
@@ -342,62 +356,86 @@ export const SCENE_SETS: Readonly<Record<number, readonly Scene[]>> = {
       },
     },
     {
-      // THE BLOCK: the headsman's block in the middle, sawdust about it, a broken axe dropped beside it, the long stain down the
-      // back wall and his axes on their hooks
+      // THE BLOCK: the headsman's block in the middle, sawdust about it, a broken axe dropped beside it, a gutter running off
+      // from it, skulls and a stool kicked over, a fire by it; the long stain down the back wall and his axes on their hooks
       name: 'the block', area: 50, w: 7, h: 7, most: 3,
       lay: (c) => {
         const { r, cx, cy } = c;
         if (!c.stand(cx, cy, 'the block')) return false;
-        for (const [dx, dy] of [[-1, 1], [1, 1], [1, -1]]) c.onFloor(cx + dx, cy + dy, 'sawdust');
+        for (const [dx, dy] of [[-1, 1], [1, 1], [1, -1], [0, 1], [-1, 0]]) c.onFloor(cx + dx, cy + dy, 'sawdust');
+        for (let k = 2; k <= 4; k++) c.onFloor(cx, cy + k, 'gutter');
         c.lie(cx - 1, cy - 1, 'broken axe');
+        c.lie(cx + 1, cy + 2, 'skulls in the sawdust');
+        c.lie(cx - 2, cy + 1, 'kicked-over stool');
+        fires(c, [[cx + 2, cy - 2], [cx - 2, cy - 2], [cx + 2, cy - 1]]);
         c.onWall(cx, r.y, 0, 'the long stain');
         c.onWall(cx + 2, r.y, 0, 'axe on hooks');
         return true;
       },
     },
     {
-      // THE GALLOWS: the gallows near the back wall, a noose hung on the wall by it, a coil of rope on the floor, the trapdoor
+      // THE GALLOWS: the gallows, its trapdoor before it, a fire either side, a coil of rope and bones in their irons below it,
+      // a noose on the wall by it where it has one
       name: 'the gallows', area: 50, w: 7, h: 7, most: 2,
       lay: (c) => {
         const { r, cx } = c;
         if (!c.stand(cx, r.y + 2, 'the gallows')) return false;
+        c.onFloor(cx, r.y + 3, 'trapdoor');
+        c.onFloor(cx, r.y + 4, 'sawdust');
+        c.lie(cx + 2, r.y + 4, 'coil of rope');
+        c.lie(cx - 1, r.y + 4, 'bones in irons');
+        fires(c, [[cx - 2, r.y + 2], [cx - 2, r.y + 3]], [[cx + 2, r.y + 2], [cx + 2, r.y + 1]]);
         c.onWall(cx - 2, r.y, 0, 'noose');
-        c.lie(cx + 2, r.y + 3, 'coil of rope');
-        c.onFloor(cx, r.y + 4, 'trapdoor');
         return true;
       },
     },
     {
-      // THE STOCKS: a row of stocks along the back wall, bones still in irons before one, a stool kicked over
+      // THE STOCKS: a row of stocks, two or three a tile apart, along the back wall (or, in the open hall, across the middle of
+      // its bay), bones still in irons before one, a stool kicked over, a lantern dropped, a fire at the row's end, a chain on
+      // the wall behind them if there is one
       name: 'the stocks', area: 45, w: 8, h: 6, most: 2,
       lay: (c) => {
-        const { r, cx } = c;
-        if (!c.stand(cx - 1, r.y + 2, 'the stocks')) return false;
-        c.stand(cx + 2, r.y + 2, 'the stocks');
-        c.lie(cx - 1, r.y + 4, 'bones in irons');
-        c.lie(cx + 1, r.y + 4, 'kicked-over stool');
-        c.onWall(cx, r.y, 0, 'chain from the dark');
-        return true;
+        const { r, cx, cy } = c;
+        for (const y of [r.y + 2, cy]) {
+          const xs = [cx - 3, cx, cx + 3].filter((x) => x > r.x && x < r.x + r.w - 1);
+          const at = xs.filter((x) => c.stand(x, y, 'the stocks'));
+          if (at.length === 0) continue;
+          // (one alone is no row: it is taken away again, and the next row tried)
+          if (at.length === 1) {
+            c.unstand(at[0], y);
+            continue;
+          }
+          c.lie(at[0], y + 2, 'bones in irons');
+          c.lie(at[at.length - 1] + 1, y + 2, 'kicked-over stool');
+          c.lie(at[0] + 1, y + 1, 'dropped lantern');
+          for (const x of at) c.onFloor(x, y + 1, 'sawdust');
+          fires(c, [[at[at.length - 1] + 2, y], [at[0] - 2, y], [at[at.length - 1] + 2, y + 1]]);
+          if (y === r.y + 2) c.onWall(cx, r.y, 0, 'chain from the dark');
+          return true;
+        }
+        return false;
       },
     },
     {
-      // THE TORTURER'S CORNER: branding irons and the tools of the trade on the side wall, the grindstone by them, a broken
-      // wheel on the floor, the gutter running past
+      // THE TORTURER'S CORNER: branding irons and the tools of the trade on the side wall, the fire they are heated in before
+      // them, the grindstone by them, a broken wheel and bones in irons on the floor, the gutter running past
       name: "the torturer's corner", area: 42, w: 6, h: 7, most: 2,
       lay: (c) => {
         const { r, cy } = c;
         // (a corner wants its wall: none in the open hall's breached rooms)
         if (!c.onWall(r.x, cy - 1, 1, 'branding irons')) return false;
-        c.stand(r.x + 1, cy, 'the grindstone');
         c.onWall(r.x, cy + 1, 1, 'tools of the trade');
-        c.lie(r.x + 2, cy + 2, 'broken wheel');
-        c.onFloor(r.x + 3, cy, 'gutter');
+        fires(c, [[r.x + 1, cy - 1], [r.x + 1, cy - 2], [r.x + 2, cy - 1]]);
+        if (!c.stand(r.x + 1, cy + 1, 'the grindstone')) c.stand(r.x + 2, cy + 1, 'the grindstone');
+        c.lie(r.x + 2, cy + 3, 'broken wheel');
+        c.lie(r.x + 3, cy - 1, 'bones in irons');
+        for (let k = -2; k <= 2; k++) c.onFloor(r.x + 4, cy + k, 'gutter');
         return true;
       },
     },
     {
-      // THE HOODED SHRINE: the hood carved in the back wall, black candles either side of it, hoods on their pegs, the hood in
-      // the floor before it, a lantern dropped there
+      // THE HOODED SHRINE: the hood carved in the back wall, black candles either side of it, hoods on their pegs, a fire either
+      // side before it, the hood in the floor before it, a lantern dropped there
       name: 'the hooded shrine', area: 36, w: 6, h: 6, most: 2,
       lay: (c) => {
         const { r, cx } = c;
@@ -405,20 +443,26 @@ export const SCENE_SETS: Readonly<Record<number, readonly Scene[]>> = {
         c.onWall(cx - 1, r.y, 0, 'black candles');
         c.onWall(cx + 1, r.y, 0, 'black candles');
         c.onWall(cx + 3, r.y, 0, 'hoods on pegs');
+        c.onWall(cx - 3, r.y, 0, 'hoods on pegs');
         c.onFloor(cx, r.y + 2, 'the hood in the floor');
         c.lie(cx + 1, r.y + 3, 'dropped lantern');
+        fires(c, [[cx - 2, r.y + 1], [cx - 2, r.y + 2]], [[cx + 2, r.y + 1], [cx + 2, r.y + 2]]);
         return true;
       },
     },
     {
-      // THE CHUTE: the chute down which the dead go, a hatch in the wall by it, bones heaped on the floor at its foot
+      // THE CHUTE: the chute down which the dead go, a hatch in the wall by it, bones heaped on the floor at its foot and bones
+      // still in their irons, a torch on the wall by it and a fire before it
       name: 'the chute', area: 30, w: 6, h: 5, most: 2,
       lay: (c) => {
         const { r } = c;
         for (let x = r.x + 2; x <= r.x + r.w - 3; x++) {
           if (!c.heap(x, r.y, 0, 'the chute')) continue;
           c.onWall(x + 1, r.y, 0, 'hatch');
+          c.onWall(x - 1, r.y, 0, 'torch');
           c.lie(x + 1, r.y + 2, 'skulls in the sawdust');
+          c.lie(x - 1, r.y + 2, 'bones in irons');
+          fires(c, [[x + 2, r.y + 1], [x - 2, r.y + 1], [x, r.y + 3]]);
           return true;
         }
         return false;
@@ -603,6 +647,21 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     }
     return runs > 1;
   };
+  /**
+   * A tile against a back wall (the wall at y - 1, side 0, or at x - 1, side 1) where a heap may stand: plain floor, nothing there,
+   * not kept clear; the floor before it and either side of it along the wall plain and walked on, nothing solid there or at the two
+   * tiles before those; and the floor round it not cut in two. (freeAt asks its four sides be floor, which a tile by a wall never is.)
+   */
+  const heapFree = (x: number, y: number, side: 0 | 1): boolean => {
+    if (!plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x] || L.walk[y * W + x] !== 1) return false;
+    const [ax, ay] = side === 0 ? [1, 0] : [0, 1];
+    const [ox, oy] = side === 0 ? [0, 1] : [1, 0];
+    for (const [dx, dy] of [[ox, oy], [ax, ay], [-ax, -ay], [ox + ax, oy + ay], [ox - ax, oy - ay]]) {
+      const j = (y + dy) * W + x + dx;
+      if (!plainAt(f, x + dx, y + dy) || L.walk[j] !== 1 || solid[j]) return false;
+    }
+    return !cuts(x, y);
+  };
   const props: PropInst[] = [];
   const put = (name: string, x: number, y: number, isSolid: boolean, variant = 0): PropInst => {
     const p: PropInst = { kind: 'piece', name, tx: x, ty: y, x: x + 0.5, y: y + 0.5, solid: isSolid, state: 0, variant };
@@ -752,7 +811,10 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
 
   // ---- SCENES: rooms laid as one of the floor's scenes, their pieces where they belong (SCENES)
   const sceneRooms = new Set<number>();
-  if (SCENES.on && SCENES.floors.includes(depth)) {
+  /** A floor laid as scenes: its scenes' own pieces are laid with them alone, never at random (FloorSet.sceneOnly). */
+  const sceneFloor = SCENES.on && SCENES.floors.includes(depth);
+  const loose = (names: readonly string[]): readonly string[] => (sceneFloor && set.sceneOnly ? names.filter((n) => !set.sceneOnly!.includes(n)) : names);
+  if (sceneFloor) {
     out.scenes = [];
     /** The face of the back wall behind floor tile (x, y): the wall at y - 1 (side 0) or at x - 1 (side 1), if it is drawn and free. */
     const face = (x: number, y: number, side: 0 | 1): number => {
@@ -779,14 +841,30 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
       if (big) clear(x + 0.5, y + 0.5, 1.5);
       return true;
     };
+    const unstand = (x: number, y: number): void => {
+      const k = props.findIndex((p) => p.tx === x && p.ty === y && p.solid);
+      if (k < 0) return;
+      props.splice(k, 1);
+      taken[y * W + x] = 0;
+      solid[y * W + x] = 0;
+      L.walk[y * W + x] = 1;
+    };
     const lie = (x: number, y: number, name: string): boolean => {
       if (!freeAt(x, y, false)) return false;
       put(name, x, y, false, rng.int(0, 3));
       return true;
     };
+    const fire = (x: number, y: number): boolean => {
+      if (!freeAt(x, y, false)) return false;
+      props.push({ kind: 'brazier', tx: x, ty: y, x: x + 0.5, y: y + 0.5, solid: true, state: 0, variant: rng.int(0, 3) });
+      taken[y * W + x] = 1;
+      solid[y * W + x] = 1;
+      L.walk[y * W + x] = 0;
+      return true;
+    };
     // (a piece in the wall with a heap of its own, standing on the floor before it: nobody walks through it)
     const heap = (x: number, y: number, side: 0 | 1, name: string): boolean => {
-      if (face(x, y, side) < 0 || !freeAt(x, y, true)) return false;
+      if (face(x, y, side) < 0 || !heapFree(x, y, side)) return false;
       onWall(x, y, side, name);
       taken[y * W + x] = 1;
       solid[y * W + x] = 1;
@@ -804,7 +882,7 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
       const order = [...scenes.slice(0, 2), ...rng.shuffle(scenes.slice(2))];
       for (const sc of order) {
         if ((used.get(sc.name) ?? 0) >= sc.most || r.w * r.h < sc.area || r.w < sc.w || r.h < sc.h) continue;
-        if (!sc.lay({ r, rng, stand, lie, heap, onWall, onFloor, cx: r.x + Math.floor(r.w / 2), cy: r.y + Math.floor(r.h / 2) })) continue;
+        if (!sc.lay({ r, rng, stand, unstand, fire, lie, heap, onWall, onFloor, cx: r.x + Math.floor(r.w / 2), cy: r.y + Math.floor(r.h / 2) })) continue;
         used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
         sceneRooms.add(r.id);
         out.scenes.push({ room: r.id, name: sc.name });
@@ -853,7 +931,7 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   }
 
   // ---- THE FLOOR'S TILES: here and there in the rooms; never two the same side by side
-  const nextTile = bag(set.tiles);
+  const nextTile = bag(loose(set.tiles));
   const tileAt = new Map<number, string>();
   for (const t of out.tiles) tileAt.set(t.i, t.name);
   for (const r of rooms) {
@@ -897,8 +975,8 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   // ---- THE WALLS: about one face in four, never the same piece on two neighbouring tiles; those that burn apart
   const faces = wallFaces(null);
   const burning: { x: number; y: number }[] = [];
-  const nextWall = bag(set.wall.filter((n) => !set.burning.includes(n)));
-  const nextBurn = bag(set.burning);
+  const nextWall = bag(loose(set.wall.filter((n) => !set.burning.includes(n))));
+  const nextBurn = bag(loose(set.burning));
   let heaps = 0;
   for (const w of rng.shuffle(faces)) {
     const key = keyOf(w.i, w.side);
@@ -914,7 +992,8 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     // (a heap of its own: once or twice a floor, where its floor tile is free and the tile beyond it too, in a room)
     const fx = Math.floor(w.x);
     const fy = Math.floor(w.y);
-    if (heaps < 2 && set.heaps.length && rng.chance(0.25) && rooms.some((r) => inRoom(r, fx, fy)) && freeAt(fx, fy, true)) {
+    // (on a floor laid as scenes, its heaps are its scenes')
+    if (!sceneFloor && heaps < 2 && set.heaps.length && rng.chance(0.25) && rooms.some((r) => inRoom(r, fx, fy)) && freeAt(fx, fy, true)) {
       const name = set.heaps[heaps % set.heaps.length];
       out.wall.push({ i: w.i, side: w.side, name, spot: 0 });
       wallTaken.set(key, name);
