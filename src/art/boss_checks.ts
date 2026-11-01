@@ -428,7 +428,9 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
             const flash = Math.min(...Array.from({ length: i1 - i0 }, (_, k) => step(i0 + k)));
             // (its wind-up and its wind-down, a third of a second either side: the strike at least twice as fast as any frame of them)
             let slow = 0;
-            for (let i = Math.max(0, i0 - 10); i < Math.min(ts.length - 1, i1 + 11); i++) if (i < i0 || i > i1) slow = Math.max(slow, step(i));
+            // (a combo's other strikes, and the step each lands on, are flashes of their own, not its wind-up or wind-down: a blur
+            // of stabs, the dagger cultist's frenzy, floor 4's more action)
+            for (let i = Math.max(0, i0 - 10); i < Math.min(ts.length - 1, i1 + 11); i++) if ((i < i0 || i > i1) && !(combo && struck(i))) slow = Math.max(slow, step(i));
             if (flash < 2 * slow) found.push({ move: which, t: t0, kind: 'strike', what: `not a flash (${view}): its slowest step ${flash.toFixed(1)}, its wind-up or wind-down's fastest ${slow.toFixed(1)}`, by: 2 * slow - flash });
           }
         }
