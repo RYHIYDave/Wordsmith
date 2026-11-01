@@ -84,7 +84,7 @@ export interface Act1Dress {
  * towards the edges”), and what stands at the far cliffs' feet is a scene of its own; nothing stands about at random but in
  * the boss's ground. `floors`: those laid so, each shown to him first as pictures from the game.
  */
-export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6] };
+export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7] };
 
 /** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
 interface Part {
@@ -137,6 +137,31 @@ export const ACT1_SCENE_SETS: Readonly<Record<number, { open: readonly Act1Scene
       { name: 'the great hand', need: 1, most: 1, parts: [Ly(0, 0, 'the great hand, half carved'), Wl(3, 'ladder against the face'), Wl(-3, 'rope and bucket'), Ly(1, 1, 'chippings')] },
       // THE WORKING FACE: a ladder, a rope and bucket, a block split from the bed at its foot
       { name: 'the working face', need: 1, most: 3, parts: [Ly(0, 0, 'ladder against the face'), Wl(2, 'rope and bucket'), S(2, 2, 'block split from the bed'), Ly(1, 1, 'splitting tools')] },
+    ],
+  },
+  7: {
+    open: [
+      // THE LOST CARAVAN: the cult's supply cart gone over, its pack mule picked clean beside it, the rockfall that took them,
+      // bones and feathers where the flock fed
+      { name: 'the lost caravan', need: 2, most: 1, parts: [S(0, 0, "the cult's supply cart, gone over"), S(2, 1, 'a pack mule, picked clean'), S(-2, -1, 'rockfall'), Ly(1, 3, 'bones and feathers'), Ly(3, -1, 'snow drift')] },
+      // THE FLOCK'S CAGE: the cult's cage for the flock, its feather standard by it, a dead vulture and feathers about it
+      { name: "the flock's cage", need: 2, most: 1, parts: [S(0, 0, "the cult's cage for the flock"), S(2, -1, "the cult's feather standard"), Ly(2, 1, 'a dead vulture'), Ly(-1, 2, 'bones and feathers')] },
+      // THE FEEDING PERCH: the cult's perch, its feather standard, what was fed to the flock below it
+      { name: 'the feeding perch', need: 2, most: 2, parts: [S(0, 0, "the cult's perch"), S(2, 0, "the cult's feather standard"), Ly(0, 2, 'bones and feathers'), Ly(1, 1, 'a dead vulture')] },
+      // THE NEST ON THE ROCK: a vulture's nest on a perching rock, a dead snag, bones below
+      { name: 'the nest on the rock', need: 2, most: 1, parts: [S(0, 0, "a vulture's nest"), S(2, 1, 'a perching rock'), S(-2, 1, 'a dead snag'), Ly(1, 2, 'bones and feathers')] },
+      // THE WAYMARK: a cairn by the trail, a dead snag, snow drifted against them
+      { name: 'the waymark', need: 1, most: 2, parts: [S(0, 0, 'cairn'), S(2, 1, 'a dead snag'), Ly(1, 1, 'snow drift')] },
+      // THE FALL: rock come down across the trail's edge, a perching rock in it, snow over it
+      { name: 'the fall', need: 2, most: 2, parts: [S(0, 0, 'rockfall'), S(2, 0, 'a perching rock'), Ly(1, 1, 'snow drift'), Ly(-1, 1, 'bones and feathers')] },
+    ],
+    face: [
+      // THE NESTING CLIFF: a nest in the wall, a second along the cliff, bones and feathers below them
+      { name: 'the nesting cliff', need: 1, most: 2, parts: [Ly(0, 0, 'a nest in the wall'), Wl(3, 'a nest in the wall'), Ly(1, 1, 'bones and feathers')] },
+      // THE TETHERS: iron rings in the wall where the cult ties its birds, its perch before them
+      { name: 'the tethers', need: 1, most: 2, parts: [Ly(0, 0, 'iron rings in the wall'), S(2, 2, "the cult's perch"), Ly(1, 1, 'a dead vulture')] },
+      // THE ICE: icicles down the cliff, snow drifted at its foot
+      { name: 'the ice', need: 1, most: 3, parts: [Ly(0, 0, 'icicles in the wall'), Wl(2, 'icicles in the wall'), Ly(1, 1, 'snow drift')] },
     ],
   },
 };

@@ -21,12 +21,36 @@ export default async function (page, snap) {
     const k = (seen.get(s.name) || 0) + 1;
     seen.set(s.name, k);
     if (k > 2) continue;
+    // (the hero on the scene's own ground, a few steps before it: walked to from it, as far toward the eye as six steps go)
     await page.evaluate(([x, y]) => {
       const g = window.__dbg.game();
+      const L = g.level;
+      const f = L.floor;
       const h = g.hero;
-      for (const [dx, dy] of [[3, 3], [3.5, 2], [2, 3.5], [4, 4], [2.5, 2.5], [-3, 3], [3, -3]]) {
-        if (g.isOpen(x + dx, y + dy)) { h.x = x + dx; h.y = y + dy; break; }
+      const start = Math.floor(y) * f.w + Math.floor(x);
+      const dist = new Map([[start, 0]]);
+      const q = [start];
+      for (let k = 0; k < q.length; k++) {
+        const i = q[k];
+        const d = dist.get(i);
+        if (d >= 7) continue;
+        for (const j of [i - 1, i + 1, i - f.w, i + f.w]) {
+          if (dist.has(j) || L.walk[j] !== 1) continue;
+          dist.set(j, d + 1);
+          q.push(j);
+        }
       }
+      let best = null;
+      let score = -1e9;
+      for (const [i] of dist) {
+        const tx = i % f.w;
+        const ty = Math.floor(i / f.w);
+        const dx = tx - Math.floor(x);
+        const dy = ty - Math.floor(y);
+        const sc = dx + dy - Math.abs(dx - dy) * 0.6 - Math.abs(dx + dy - 5) * 1.5;
+        if (sc > score) { score = sc; best = [tx + 0.5, ty + 0.5]; }
+      }
+      if (best) { h.x = best[0]; h.y = best[1]; }
       h.fx = -0.7; h.fy = -0.7;
     }, [s.x, s.y]);
     await page.waitForTimeout(1500);
