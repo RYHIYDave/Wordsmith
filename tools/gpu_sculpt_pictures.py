@@ -134,9 +134,8 @@ def mp4():
         files = sorted(glob.glob(os.path.join(PICS, f'film{k}', '*.json')))
         frames = [load(p) for p in files]
         films.append(frames)
-    # one stage per film, big enough for every frame of it, each laid by its anchor
-    W, H = 1600, 900
-    f_title, f_cap, f_small = font(44, True), font(34, True), font(26)
+    # one stage per film, big enough for every frame of it, each laid by its anchor; the picture just big enough for both
+    f_title, f_cap, f_small = font(40, True), font(32, True), font(26)
     video = []
 
     def card(lines):
@@ -150,7 +149,6 @@ def mp4():
         return im
 
     def stage(frames):
-        x0 = min(r['ax'] - 0 for r, *_ in frames)
         # (the union of every frame's drawn pixels, by anchor, so nothing jumps)
         lo_x, lo_y, hi_x, hi_y = 1e9, 1e9, -1e9, -1e9
         for r, c, g, m in frames:
@@ -178,24 +176,30 @@ def mp4():
         b = big(on_bg(placed(g)), K)
         im = Image.new('RGB', (W, H), BG)
         d = ImageDraw.Draw(im)
-        top = 150
+        top = 130
         gap = (W - a.width - b.width) // 3
         im.paste(a, (gap, top))
         im.paste(b, (2 * gap + a.width, top))
-        d.text((gap, top - 52), 'NOW', font=f_cap, fill=TEXT)
-        d.text((2 * gap + a.width, top - 52), 'GRAPHICS CHIP', font=f_cap, fill=TEXT)
-        d.text((40, 24), f'{label}{speed}', font=f_title, fill=TEXT)
+        d.text((gap, top - 46), 'NOW', font=f_cap, fill=TEXT)
+        d.text((2 * gap + a.width, top - 46), 'GRAPHICS CHIP', font=f_cap, fill=TEXT)
+        d.text((gap, 18), f'{label}{speed}', font=f_title, fill=TEXT)
         dd = r['diff']
         msg = 'not one pixel differs' if dd['diff'] == 0 else f"{dd['diff']} of {dd['fig']:,} pixels differ ({100 * dd['diff'] / max(1, dd['fig']):.2f}%)"
-        d.text((40, H - 60), f"frame {r['i'] + 1} of {len(frames_now)}: {msg}", font=f_small, fill=DIM)
+        d.text((gap, H - 56), f"frame {r['i'] + 1} of {len(frames_now)}: {msg}", font=f_small, fill=DIM)
         return im
 
-    intro = card([('The new classes, painted now and on the graphics chip', f_title, TEXT), ('NOW on the left, GRAPHICS CHIP on the right, twice as big', f_small, DIM)])
+    stages = [stage(fr) for fr in films]
+    pw = max(st[2] - st[0] for st in stages) * K
+    ph = max(st[3] - st[1] for st in stages) * K
+    W = max(1000, 3 * 40 + 2 * pw)
+    W += W % 2
+    H = 150 + ph + 80
+    H += H % 2
+    intro = card([('Painted now, and on the graphics chip', f_title, TEXT), ('NOW on the left, GRAPHICS CHIP on the right, twice as big', f_small, DIM)])
     video += [intro] * (fps * 2)
-    for frames in films:
+    for frames, st in zip(films, stages):
         frames_now = frames
         label = frames[0][0]['label']
-        st = stage(frames)
         imgs = [frame_img(r, c, g, m, st, label, '') for r, c, g, m in frames]
         slow = [frame_img(r, c, g, m, st, label, ', at half speed') for r, c, g, m in frames]
         video += [card([(label, f_title, TEXT)])] * fps

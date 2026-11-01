@@ -85,11 +85,42 @@ FILL
 
 ## Speed
 
-FILL
+Measured in Playwright's Chromium on this machine (2 cores, shared), each frame painted in a worker as the side painter
+paints, the CPU's and the chip's never at once; the median of three frames of each move, after its first
+(`node tools/gpu_sculpt_check.mjs speed`, `data/speed.json`). **This Chromium's WebGL2 is SwiftShader: no graphics chip at all,
+but the CPU pretending to be one, on two shared cores**, and here the "chip" is far slower than the CPU. Nearly all its time
+is the shader walking each cell's list of solids: with that walk taken out (a test variant, wrong pictures), a man frame
+took 38 to 48 ms on it all in; with it, about 600. A demon frame asks some 70 million list entries and 14 million distance
+sums (counted in `listMarch`); a phone's graphics chip runs such work on hundreds of lanes at once, where SwiftShader has a
+few. What this machine can measure is the part no chip can take away: the frame's own work on the CPU (making the figure,
+its colour, ink and edge of light, and handing the numbers back), the last column. On a real chip a frame should cost about
+that, plus the chip's own march; that is an estimate, not a measure, and the test page (below) measures it on the owner's
+own phone.
+
+| a frame of | CPU now (ms) | on SwiftShader (ms) | its CPU share, with the chip (ms) |
+|---|---|---|---|
+| the Warrior standing (painted his own way) | 21 to 48 | (no sculpting) | |
+| the Warrior's attack | 17 | (no sculpting) | |
+| the Warlock standing | 97 | 652 | 25 |
+| his bolt | 92 | 654 | 6 |
+| blazing, standing | 74 | 600 | 6 |
+| the change | 598 | 8,223 | 73 |
+| the demon standing | 600 | 10,174 | 47 |
+| its rake | 631 | 10,026 | 35 |
+| its Damning | 600 | 9,886 | 36 |
+| the Tinkerer standing | 71 | 461 | 14 |
+| the Brawler standing | 129 | 689 | 14 |
+
+(The Warrior's two runs, 21 and 48 ms, show this machine's noise. Making the chip ready, once a page or worker: a shader
+build and the self-test, 0.9 s here.)
+
+All of each class's frames painted, both ways (every frame of every list, each painted once; the times of the run below):
+
+FILL_TOTALS
 
 ## The phone test page
 
-`dist/gpu_speed.html` (FILL MB, one file, nothing else needed; made by `node tools/gpu_speed_page.mjs`). Opened on any phone
+`dist/gpu_speed.html` (0.48 MB, one file, nothing else needed; made by `node tools/gpu_speed_page.mjs`). Opened on any phone
 or computer, it says whether this device has a graphics chip the game can use (and its name), then paints some frames of
 the Warlock (standing, his bolt, the change) and of the demon (standing, its rake) the way the game paints them now and then
 on the chip, and shows each time in big plain words ("1,100 ms → 35 ms ... 31 times as fast"). Last it paints the demon

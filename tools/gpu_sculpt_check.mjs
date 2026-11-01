@@ -24,6 +24,7 @@ fs.mkdirSync(OUT, { recursive: true });
 if (mode === 'report') {
   const group = (name) => {
     if (name.startsWith('warlock:demon')) return /clips\.change/.test(name) ? 'the demon burning out' : 'the demon';
+    if (name.startsWith('warlock:') && /clips\.change/.test(name)) return 'the change';
     if (name.startsWith('warlock:blaze')) return 'blazing (his own standing and running)';
     if (name.startsWith('warlock:')) return /clips\.change/.test(name) ? 'the change' : 'the man';
     if (name.startsWith('golem:')) return 'her Golem';
