@@ -38,9 +38,13 @@ first.
   march in the CPU's own 64-bit numbers over the same lists (`listMarch`, in the same file) gives every frame to the bit:
   476 frames sampled from every list of all three classes (`tools/gpu_sculpt_emul.ts 25`), 0 differ; and in the node test.
   So the chip differs from the CPU only by its 32-bit sums.
-- **Proved before it is trusted.** The first time it is asked for, the chip marches a small figure (a ball, a rod melted
-  into it, a cut and carved block, a sheet and 36 beads, so the lists span two words and their top bit) and is held
-  against `listMarch`; if it meets it otherwise, the CPU paints from then on.
+- **Proved before it is trusted, and used only where it is faster.** The first time it is asked for, the chip marches a
+  small figure (a ball, a rod melted into it, a cut and carved block, a sheet and 36 beads, so the lists span two words and
+  their top bit) and is held against `listMarch`; if it meets it otherwise, the CPU paints from then on. Then it marches it
+  again, timed against the CPU: a chip that is the CPU pretending to be one (SwiftShader, llvmpipe: Chrome on a computer
+  with no usable graphics, some Android phones) or that is slower than the CPU is not used, and the CPU paints as now. This
+  machine's Chromium is such a one (its small figure: 729 ms on it, 135 ms on the CPU), so the checks and the test page set
+  `GPU_SCULPT_TEST.allowSlow` to measure it all the same; the game never does.
 
 ## The switch, and falling back
 
@@ -52,6 +56,8 @@ first.
   that are not sound (checked for every pixel before anything is painted), the CPU marches that frame exactly as before,
   and after any failure of the chip itself it is not asked again in that page or worker (`GPU_SCULPT_TEST.why` says why).
   Node (the tests) has no WebGL2: with the switch on there, every frame falls back and hashes as pinned (the node test).
+  In this Chromium, with the switch on and nothing else set, the chip is refused as a software stand-in and the frame is
+  painted on the CPU (checked).
 - **Where the chip lives.** The first time a page or a worker paints a sculpted frame with the switch on, it makes one
   WebGL2 context: on an `OffscreenCanvas` where there is one (the side painter's worker: Chrome, Firefox, Safari 17 and
   later), else on a page canvas (the game painting for itself on the page; Safari 16, which has `OffscreenCanvas` but no
@@ -72,8 +78,9 @@ export const GPU_SCULPT = { on: true };
 That is all. `draw` (src/dev/sculpt.ts) already asks the chip; the side painter's workers (render/painter.ts, `Painter`, its
 hero lane too) run the game's own script, so they use the chip through their own `OffscreenCanvas`, and the page uses its
 own canvas where it paints for itself. No message, no new worker, no change to `paintWorkerMain`. Each worker makes its own
-context the first time it paints a sculpted frame (a shader build and the self-test: about 30 to 900 ms here on
-SwiftShader, less on a real chip) and gives it back when the worker is ended at the end of a floor.
+context the first time it paints a sculpted frame (a shader build, the self-test and the timing: about 0.9 s here on
+SwiftShader with `allowSlow`, of which the CPU's own part, `listMarch` on the small figure twice, is about 0.3 s) and gives it back when the worker is ended at the end of a floor. The module adds about 38 KB to
+the release (minified).
 
 Worth knowing, not needed: with the chip on, the Warlock's demon and change frames cost about what the man's do now, so the
 side painter's second hero lane (`Painter.heroLane`) and `HEAVY_ART` (art/warlock_art.ts) could be revisited later; both
@@ -123,9 +130,12 @@ FILL_TOTALS
 `dist/gpu_speed.html` (0.48 MB, one file, nothing else needed; made by `node tools/gpu_speed_page.mjs`). Opened on any phone
 or computer, it says whether this device has a graphics chip the game can use (and its name), then paints some frames of
 the Warlock (standing, his bolt, the change) and of the demon (standing, its rake) the way the game paints them now and then
-on the chip, and shows each time in big plain words ("1,100 ms → 35 ms ... 31 times as fast"). Last it paints the demon
-standing in a worker, as the game's side painter would, and says whether the chip works there too. About a minute; keep the
-screen on. For the owner's iPhone, the art chat publishes it as a page and sends him the link.
+on the chip, and shows each time in big plain words ("793 ms → 28,423 ms ... 35.9 times slower" here; on a phone with a
+real chip it should read the other way). It says too whether the game itself would use the chip there ("yes", or "too
+slow" for a software stand-in or a chip slower than the CPU). Last it paints a frame of the man and one of the demon in a
+worker, as the game's side painter would, and says whether the chip works there ("works" here). About a minute on a phone;
+keep the screen on. Checked in this Chromium at a phone's size (390 by 844): every part shows. For the owner's iPhone, the
+art chat publishes it as a page and sends him the link.
 
 ## Files
 

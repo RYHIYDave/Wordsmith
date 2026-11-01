@@ -37,6 +37,8 @@ if (self_[WORKER_MARK]) {
     try {
       if (m.t === 'init') {
         GPU_SCULPT.on = !!m.gpu;
+        // (this Chromium's WebGL2 is SwiftShader, a software stand-in the game itself would not use: measured all the same)
+        GPU_SCULPT_TEST.allowSlow = true;
         GPU_SCULPT_TEST.profile = !!(m as { profile?: boolean }).profile;
         const ready = m.gpu ? chipReady() : false;
         self_.postMessage({ t: 'ready', chip: ready, why: GPU_SCULPT_TEST.why });

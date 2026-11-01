@@ -49,6 +49,13 @@ export const GPU_SCULPT_TEST = {
   ms: { lists: 0, upload: 0, march: 0, shade: 0 },
   /** Wait for the first pass to time it alone (slower: for the checks). */
   profile: false,
+  /**
+   * Use a chip that is the CPU pretending to be one (SwiftShader, llvmpipe), or one slower than the CPU: for the checks and
+   * the test page only. The game never does: there it would paint his frames many times slower.
+   */
+  allowSlow: false,
+  /** How the chip was found, the first time it was asked for: its name; how long the small figure took on it and here. */
+  seen: { name: '', chipMs: 0, cpuMs: 0 },
   /** (for the checks: read back every cell's list) */
   masks: false,
   maskData: null as null | { all: Uint32Array[]; order: number[]; nCells: number },
@@ -1346,6 +1353,12 @@ function chip(): Chip | null {
       giveUp(why);
       return null;
     }
+    // (and only a chip that is faster than the CPU: a software one, or a weak one, would paint his frames slower)
+    const slow = slowness(c);
+    if (slow && !GPU_SCULPT_TEST.allowSlow) {
+      giveUp(slow);
+      return null;
+    }
     return CHIP;
   } catch (e) {
     giveUp(String((e as Error)?.message ?? e));
@@ -1635,6 +1648,32 @@ export function smallFigure(): { f: FieldLike; st: Seen; box: MarchBox; CX: V3; 
   const half = (v: V3): V3 => [v[0] / 2, v[1] / 2, v[2] / 2];
   const box: MarchBox = { xs: 0, xe: 79, ys: 0, ye: 79, zNear: 60, zFar: -60 };
   return { f, st, box, CX: half(CX), CYn: half(CYn), CZ: half(CZ) };
+}
+
+/** Why the chip is not worth using (a software stand-in, or slower than the CPU on the small figure, warm), or ''. */
+function slowness(c: Chip): string {
+  let name = '';
+  try {
+    const dbg = c.gl.getExtension('WEBGL_debug_renderer_info');
+    name = String(c.gl.getParameter(dbg ? dbg.UNMASKED_RENDERER_WEBGL : c.gl.RENDERER));
+  } catch {
+    /* (no name) */
+  }
+  GPU_SCULPT_TEST.seen.name = name;
+  const { f, st, box, CX, CYn, CZ } = smallFigure();
+  const none: Shade = () => {};
+  const t0 = performance.now();
+  const ok = gpuMarch(f, st, 40, 54, box, CX, CYn, CZ, 0.5, 0.18, none);
+  const t1 = performance.now();
+  listMarch(f, st, 40, 54, box, CX, CYn, CZ, 0.5, 0.18, none);
+  const t2 = performance.now();
+  if (ok) GPU_SCULPT_TEST.marched--;
+  GPU_SCULPT_TEST.seen.chipMs = t1 - t0;
+  GPU_SCULPT_TEST.seen.cpuMs = t2 - t1;
+  if (/swiftshader|llvmpipe|softpipe|lavapipe|software|basic render/i.test(name)) return `a software stand-in for a graphics chip (${name})`;
+  if (!ok) return GPU_SCULPT_TEST.why || 'the small figure could not be marched again';
+  if (t1 - t0 > 1.5 * (t2 - t1) + 2) return `slower than the CPU here (the small figure ${(t1 - t0).toFixed(0)} ms on it, ${(t2 - t1).toFixed(0)} ms here)`;
+  return '';
 }
 
 /** What `draw` asks when the switch is on: the march done on the chip (or, for the checks, its twin), or false: march here. */
