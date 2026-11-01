@@ -50,9 +50,9 @@ import nodeAssert from 'node:assert/strict';
 import { WALLS_FADING } from '../src/art/ground';
 import type { RNG } from '../src/engine/rng';
 import { MONSTERS, TUNE } from '../src/game/defs';
-import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, hasDoor, insideBy, onALoop, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
+import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, hasDoor, insideBy, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
-import { MIX, generateFloor, levelKindOf } from '../src/game/dungeon';
+import { MIX, generateFloor } from '../src/game/dungeon';
 import { TRAPS } from '../src/game/traps';
 import { Game } from '../src/game/game';
 import { makeDungeon, makeTown } from '../src/game/level';
@@ -308,15 +308,10 @@ test('every room but the first has one way in, the doorway toward the start; a d
         else if (inWays.length === 0) {
           cornered++;
           assert.ok(r.kind !== 'boss', `${what}: the boss hall is never come into at a corner`);
-        } else if (levelKindOf(s.depth) === 'combo') {
-          // (EVERY FLOOR OPEN, LINEAR OR COMBO: a room on a combo floor's way round may be come into from either side of it)
-          assert.ok(inWays.length <= 2, `${what}: room ${r.id} has ${inWays.length} ways in`);
-          if (inWays.length === 2) assert.ok(onALoop(before, r, inWays[0]), `${what}: room ${r.id}, with two ways in, is on a way round`);
         } else assert.equal(inWays.length, 1, `${what}: room ${r.id} has one way in`);
         // (Version 18.8: NOT EVERY ROOM HAS A DOOR. The owner, 7 Oct 2026, 23:12: "Every room doesn’t have to have a door.  It’s just a cool little interactive thing that gets you immersed.  It’s not to force little contained battles in each room")
         const reward = r.kind === 'treasure' || r.kind === 'guardian';
-        // (and a room on a way round has none: doors.ts onALoop)
-        const door = r.kind !== 'boss' && hasDoor(before, r) && !inWays.some((d) => onALoop(before, r, d));
+        const door = r.kind !== 'boss' && hasDoor(before, r);
         if (inWays.length === 1 && reward) {
           rewards++;
           if (door) rewardDoors++;
