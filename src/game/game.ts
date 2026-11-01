@@ -3576,6 +3576,15 @@ export class Game {
     return lineOfSight(this.level.open, f.w, f.h, x0, y0, x1, y1, f.cut ?? null);
   }
 
+  /**
+   * Is there a clear line for the hero's own blows, shots and aim? As `sees`, but on the descent's open ground (SEE_OVER_ROCK) the
+   * cliffs and drops are no stop to them, as they are none to his eye: his words, 1 Nov 2026, “We don’t want projectiles to be
+   * stopped”. (Monsters, his allies and what walks still go by `sees`.)
+   */
+  shotSees(x0: number, y0: number, x1: number, y1: number): boolean {
+    return this.overRock || this.sees(x0, y0, x1, y1);
+  }
+
   /** The farthest point toward (tx, ty), at most `range` away, that the hero can stand on and see. */
   private reachPoint(tx: number, ty: number, range: number): { x: number; y: number } {
     const h = this.hero;
@@ -3616,7 +3625,7 @@ export class Game {
     const def = SKILLS[s0.id];
     const dist = Math.hypot(m.x - h.x, m.y - h.y);
     const need = def.kind === 'melee' ? def.range * s0.r.size * 0.9 + m.r : def.range * 0.85;
-    return dist <= need && this.sees(h.x, h.y, m.x, m.y);
+    return dist <= need && this.shotSees(h.x, h.y, m.x, m.y);
   }
 
   /**
@@ -3634,7 +3643,7 @@ export class Game {
     for (const m of this.monsters) {
       if (m.dead || !m.seen) continue;
       const d = Math.hypot(m.x - h.x, m.y - h.y) - m.r;
-      if (d > reach || !this.sees(h.x, h.y, m.x, m.y)) continue;
+      if (d > reach || !this.shotSees(h.x, h.y, m.x, m.y)) continue;
       if (m.id === last) return m;
       const score = d + (m.state === 'sleep' ? 2 : 0);
       if (score < bs) {
@@ -3669,7 +3678,7 @@ export class Game {
       const mx = m.x - h.x;
       const my = m.y - h.y;
       const dist = Math.hypot(mx, my);
-      if (dist > 12 || !this.sees(h.x, h.y, m.x, m.y)) continue;
+      if (dist > 12 || !this.shotSees(h.x, h.y, m.x, m.y)) continue;
       const cos = dist > 0.01 ? (mx * dx + my * dy) / dist : 1;
       const awake = m.state !== 'sleep';
       let score: number;
@@ -6354,7 +6363,7 @@ export class Game {
   private curseAll(i: number, x: number, y: number, rad: number, frac: number, n = 0, echo = false): void {
     const to: { id: number; x: number; y: number }[] = [];
     for (const m of this.monsters) {
-      if (m.dead || this.shutIn(m) || Math.hypot(m.x - x, m.y - y) > rad + m.r || !this.sees(x, y, m.x, m.y)) continue;
+      if (m.dead || this.shutIn(m) || Math.hypot(m.x - x, m.y - y) > rad + m.r || !this.shotSees(x, y, m.x, m.y)) continue;
       to.push({ id: m.id, x: m.x, y: m.y });
     }
     this.emit({ t: 'curse', x, y, r: rad, to, n, echo });
@@ -9505,7 +9514,8 @@ export class Game {
         travel -= step;
         const nx = p.x + (p.vx / sp) * step;
         const ny = p.y + (p.vy / sp) * step;
-        if (!this.isOpen(nx, ny)) {
+        // (SEE_OVER_ROCK: on the descent's open ground a shot flies over the cliffs and drops, and stops only at the map's edge)
+        if (!this.isOpen(nx, ny) && !(this.overRock && nx >= 0 && ny >= 0 && nx < f.w && ny < f.h)) {
           // (THE TRAPS: what the hero shoots may meet a sealed door, and open it)
           if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
           // (THE SKILL TREES REMADE: Ricochet, a hero's arrow bounces off the wall, and flies on)
@@ -11288,7 +11298,7 @@ export class Game {
         for (const m of this.monsters) {
           if (m.dead || m.state === 'sleep' || this.shutIn(m)) continue;
           const dd = Math.hypot(m.x - h.x, m.y - h.y);
-          if (dd < bd && this.sees(h.x, h.y, m.x, m.y)) {
+          if (dd < bd && this.shotSees(h.x, h.y, m.x, m.y)) {
             bd = dd;
             best = m;
           }

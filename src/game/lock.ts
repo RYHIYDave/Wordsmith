@@ -74,7 +74,7 @@ export class LockOn {
     const h = g.hero;
     let cur: Monster | null = this.id === null ? null : g.monsters.find((m) => m.id === this.id && !m.dead) ?? null;
     if (cur) {
-      const inSight = cur.seen && g.sees(h.x, h.y, cur.x, cur.y);
+      const inSight = cur.seen && g.shotSees(h.x, h.y, cur.x, cur.y);
       this.lost = inSight ? 0 : this.lost + dt;
       // (a lock the game made is only ever on something awake; one the player made may be on a sleeper)
       if (gap(g, cur) > LOCK.keep || this.lost > LOCK.lostFor || (!this.pinned && cur.state === 'sleep')) cur = null;
@@ -86,7 +86,7 @@ export class LockOn {
       for (const m of g.monsters) {
         if (m.dead || !m.seen || m.state === 'sleep') continue;
         const d = gap(g, m);
-        if (d > LOCK.take || d >= bd || !g.sees(h.x, h.y, m.x, m.y)) continue;
+        if (d > LOCK.take || d >= bd || !g.shotSees(h.x, h.y, m.x, m.y)) continue;
         bd = d;
         best = m;
       }
@@ -139,7 +139,7 @@ export function aimAhead(g: Game, reach: number): { x: number; y: number; m: Mon
     if (d > LOCK.ahead || d >= bd) continue;
     // (one standing on the hero's toes is "ahead" whichever way the hero happens to be turned)
     const cos = d > 0.6 ? (dx * h.fx + dy * h.fy) / d : 1;
-    if (cos < LOCK.cone || !g.sees(h.x, h.y, m.x, m.y)) continue;
+    if (cos < LOCK.cone || !g.shotSees(h.x, h.y, m.x, m.y)) continue;
     bd = d;
     best = m;
   }
