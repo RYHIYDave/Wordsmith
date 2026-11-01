@@ -83,6 +83,13 @@ interface Given {
   same?: [number, number, number];
 }
 /** What the page asks of a worker. */
+/**
+ * THE WARLOCK'S FRAMES, as asked of a worker (paintWorkerMain's warlock): 'soon', the first frame of every list of his; 'rest',
+ * all the rest, in one worker; or, where there are cores for two (Painter.heroLane), 'soonMan' and 'man' (as a man, and blazing)
+ * in one and 'demon' (the change, and the demon, the first frame of each of their lists first) in the other.
+ */
+export type WarlockPart = 'soon' | 'soonMan' | 'rest' | 'man' | 'demon';
+
 type Ask =
   | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean }
   | { t: 'film'; key: string; pri: number }
@@ -93,7 +100,7 @@ type Ask =
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
   | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
-  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: 'soon' | 'rest' };
+  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: WarlockPart };
 /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
 interface WallBitMsg {
   d: number;
@@ -174,6 +181,14 @@ export class Painter {
    */
   toHero: ((cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
   private heroAsked = new Set<string>();
+  /**
+   * THE WARLOCK'S DEMON'S WORKER (his word, 31 Oct 2026, 20:08: "Show up late mostly"): where there are cores for it (`many` two
+   * or more), a worker of its own paints the change and the demon while the ground's worker paints him as a man (paintWorkerMain's
+   * warlock, 'demon' and 'man'). Kept from floor to floor as the ground's is; ended when it has done. If it cannot start or
+   * fails, its work is the ground's worker's, as it was before there were two.
+   */
+  private heroLane: Lane | null = null;
+  private heroWatch: ReturnType<typeof setTimeout> | null = null;
   /** The hero's frames taken in from the worker, for measuring. */
   heroFrames = 0;
   /**
@@ -339,9 +354,14 @@ export class Painter {
     if (cls === 'warlock' && place !== 'card' && place !== 'town') {
       if (!this.heroAsked.has('warlock:all')) {
         this.heroAsked.add('warlock:all');
+        const two = this.many >= 2 && this.startHeroLane();
         this.groundLane.open += 2;
-        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, warlock: 'soon' } satisfies Ask);
-        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 30.5, warlock: 'rest' } satisfies Ask);
+        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, warlock: two ? 'soonMan' : 'soon' } satisfies Ask);
+        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 30.5, warlock: two ? 'man' : 'rest' } satisfies Ask);
+        if (two && this.heroLane) {
+          this.heroLane.open++;
+          this.heroLane.worker.postMessage({ t: 'hero', cls, place: 'demon', pri: 1, warlock: 'demon' } satisfies Ask);
+        }
       }
       return true;
     }
@@ -353,6 +373,78 @@ export class Painter {
       this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'demon' ? 31.5 : 32 } satisfies Ask);
     }
     return true;
+  }
+
+  /** The demon's worker started (Painter.heroLane). False: it could not be. */
+  private startHeroLane(): boolean {
+    if (this.heroLane) return true;
+    if (this.state !== 'on' || !this.url) return false;
+    let worker: Worker;
+    try {
+      worker = new Worker(this.url);
+    } catch {
+      return false;
+    }
+    const lane: Lane = { n: -2, worker, ready: false, open: 0 };
+    worker.onmessage = (e: MessageEvent<Tell>) => this.toldHero(lane, e.data);
+    worker.onerror = (e: ErrorEvent) => {
+      e.preventDefault?.();
+      this.stats.failed.push(`demon's worker: ${e.message || 'error'}`);
+      this.heroLaneFailed(lane);
+    };
+    this.heroLane = lane;
+    this.stats.workers++;
+    this.heroWatch = setTimeout(() => {
+      this.heroWatch = null;
+      if (this.heroLane === lane && !lane.ready) {
+        this.stats.failed.push("demon's worker: never ready");
+        this.heroLaneFailed(lane);
+      }
+    }, READY_MS);
+    return true;
+  }
+
+  private toldHero(lane: Lane, m: Tell): void {
+    const mine = this.heroLane === lane;
+    if (m.t === 'ready') {
+      lane.ready = true;
+      return;
+    }
+    if (m.t === 'heroFrames') {
+      for (const g of m.list) {
+        if (g.s) {
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s)) this.heroFrames++;
+          else (g.s.img as unknown as ImageBitmap).close();
+        }
+      }
+      if (m.left === 0 && mine) this.endHeroLane();
+      return;
+    }
+    if (m.t === 'fail') {
+      this.stats.failed.push(`demon's worker, ${m.what}: ${m.why}`);
+      if (mine) this.heroLaneFailed(lane);
+    }
+  }
+
+  /** The demon's worker failed: ended, and its work given to the ground's worker. */
+  private heroLaneFailed(lane: Lane): void {
+    if (this.heroLane !== lane) return;
+    this.endHeroLane();
+    const g = this.groundLane;
+    if (!g) return;
+    g.open++;
+    g.worker.postMessage({ t: 'hero', cls: 'warlock', place: 'demon', pri: 30.6, warlock: 'demon' } satisfies Ask);
+  }
+
+  private endHeroLane(): void {
+    const lane = this.heroLane;
+    if (this.heroWatch !== null) clearTimeout(this.heroWatch);
+    this.heroWatch = null;
+    if (!lane) return;
+    lane.worker.onmessage = null;
+    lane.worker.onerror = null;
+    lane.worker.terminate();
+    this.heroLane = null;
   }
 
   /**
@@ -595,6 +687,7 @@ export class Painter {
       this.groundLane = null;
       this.ground = 0;
       this.heroAsked.clear();
+      this.endHeroLane();
     }
     if (this.watchdog !== null) clearTimeout(this.watchdog);
     this.watchdog = null;
@@ -854,11 +947,19 @@ export function paintWorkerMain(): void {
    * THE WARLOCK'S FRAMES, his three places in one order (his lag, 30 Oct 2026: "Changing into the demon,Casting spells"; every
    * frame of his is left to this worker while the game is played, art/warlock_art.ts HEAVY_MAN). 'soon': the first frame of
    * every list of him as a man, in a dungeon and with his arm blazing, and of the demon (a list with none painted is painted
-   * where the game is played, the frame asked for: the demon's, half a second each, were the stop as he changed). 'rest':
-   * what he does first, standing, running, his bolt and his curse, as a man and blazing; the change; the demon standing, running, raking
-   * and Damning; then all the rest. A frame already handed over is not painted again.
+   * where the game is played, the frame asked for: the demon's, half a second each, were the stop as he changed). Then what he
+   * does most, as a man (his bolt, running, his curse, standing, his smoke step), blazing (the same), the change, and the demon
+   * (running, raking, Damning, standing, his step), a little of each at a time: every eighth frame, then every fourth, every
+   * other, and the rest. A frame not here yet is shown as the nearest of its list that is (art/kit.ts HEAVY), so every move of
+   * his is seen soon, roughly at first. 'rest', in one worker: the man every eighth and every fourth frame; blazing, the change
+   * and the demon every eighth; the man whole; blazing, the change and the demon every fourth; blazing whole; the change and
+   * the demon whole; then all the rest. Where there are cores for two workers (Painter.heroLane): 'man', in the ground's
+   * worker, the man and blazing so; 'demon', in the other, the change and the demon so. (His word, 31 Oct 2026, 20:07:
+   * "Warlock still has massive performance issues with animations loading correctly", 20:08: "Show up late mostly". Before,
+   * each list was painted whole, one after another, in one worker: his standing, 132 frames, before his running or his bolt;
+   * the demon minutes after.) A frame already handed over is not painted again.
    */
-  function* warlock(part: 'soon' | 'rest'): Generator<void, void, void> {
+  function* warlock(part: WarlockPart): Generator<void, void, void> {
     heroArt ??= makeHeroArt3();
     const art = heroArt;
     const places: HeroPlace[] = ['dungeon', 'blaze', 'demon'];
@@ -889,16 +990,66 @@ export function paintWorkerMain(): void {
       const L = pick(sets[p][0]);
       return L && L.length ? lists[p][0].indexOf(L) : -1;
     };
-    if (part === 'soon') {
+    if (part === 'soon' || part === 'soonMan') {
       firsts(0);
       firsts(1);
-      firsts(2);
+      if (part === 'soon') firsts(2);
     } else {
-      const man: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.idle, (a) => a.walk, (a) => a.clips?.attack?.frames, (a) => a.clips?.heavy?.frames];
-      for (const p of [0, 1]) for (const pick of man) add(p, at(p, pick), Infinity);
-      add(0, at(0, (a) => a.clips?.change?.frames), Infinity);
-      for (const pick of [...man, (a: AnimSet) => a.clips?.attack2?.frames]) add(2, at(2, pick), Infinity);
-      for (let p = 0; p < 3; p++) for (let l = 0; l < lists[p][0].length; l++) add(p, l, Infinity);
+      // (what he does most: as a man, and blazing, M and B; the change, C; the demon, D)
+      const most: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.clips?.attack?.frames, (a) => a.walk, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames];
+      const demonMost: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.walk, (a) => a.clips?.attack?.frames, (a) => a.clips?.attack2?.frames, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames];
+      const M = most.map((pick) => [0, at(0, pick)] as [number, number]);
+      const B = most.map((pick) => [1, at(1, pick)] as [number, number]);
+      const changeAt = at(0, (a) => a.clips?.change?.frames);
+      const C: [number, number][] = [[0, changeAt]];
+      const D = demonMost.map((pick) => [2, at(2, pick)] as [number, number]);
+      // (every step-th frame of each of those lists, both ways)
+      const every = (G: [number, number][], step: number): void => {
+        for (const [p, l] of G) {
+          if (l < 0) continue;
+          for (let v = 0; v < 2; v++) {
+            const L = lists[p][v][l];
+            for (let i = 0; i < L.length; i += step) {
+              const k = `${p}:${v}:${l}:${i}`;
+              if (!seen.has(k)) {
+                seen.add(k);
+                order.push([p, v, l, i]);
+              }
+            }
+          }
+        }
+      };
+      const rest = (p: number, but = -1): void => {
+        for (let l = 0; l < lists[p][0].length; l++) if (l !== but) add(p, l, Infinity);
+      };
+      if (part === 'man') {
+        // (as a man: every eighth frame, then every fourth; blazing, every eighth; then the man whole, and blazing whole)
+        every(M, 8);
+        every(M, 4);
+        every(B, 8);
+        every(M, 2);
+        every(M, 1);
+        for (const step of [4, 2, 1]) every(B, step);
+        rest(0, changeAt);
+        rest(1);
+      } else if (part === 'demon') {
+        firsts(2);
+        every(C, 1 << 30);
+        for (const step of [8, 4, 2, 1]) every([...C, ...D], step);
+        rest(2);
+      } else {
+        every(M, 8);
+        every(M, 4);
+        every([...B, ...C, ...D], 8);
+        every(M, 2);
+        every(M, 1);
+        every([...B, ...C, ...D], 4);
+        every(B, 2);
+        every(B, 1);
+        every([...C, ...D], 2);
+        every([...C, ...D], 1);
+        for (let p = 0; p < 3; p++) rest(p);
+      }
     }
     const out = new Map<number, { list: Given[]; transfer: Transferable[] }>();
     let t0 = performance.now();
