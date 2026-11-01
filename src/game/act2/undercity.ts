@@ -53,6 +53,12 @@ import { makeHazards } from '../traps';
 import { T_FLOOR, T_PIT, T_WALL } from '../types';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room, RoomKind } from '../types';
 
+/**
+ * LINEAR (his pick for floor 12 among open, linear and combo: “linear”): the main way and its side chambers, every one a dead
+ * end, and no way round (neither the Muffled Bell's cistern back to the main way, nor two chambers of it joined by a tunnel).
+ */
+export const UC_LINEAR = { on: true };
+
 /** Whether this map-maker lays the floor (false: the descent's stands in). */
 export const BUILT = true;
 
@@ -315,7 +321,7 @@ function lay(depth: number, seed: number): { laid: Laid; plan: UPlan } | null {
   const branch: { nodes: number[]; kind: TunnelKind }[] = [{ nodes: [P, M], kind: 'main' }];
   // (and from it, a way round to the main way again, or on to a chamber of its own: more tunnels round the bell, for its bells)
   const loopTo = DIRS.map(([dx, dy]) => at.get(key(nodes[M].i + dx, nodes[M].j + dy))).find((q) => q !== undefined && q !== P && isPathChamber(q) && nodes[q].path <= LEN - 3);
-  if (loopTo !== undefined && rng.chance(0.7)) branch.push({ nodes: [M, loopTo], kind: 'main' });
+  if (!UC_LINEAR.on && loopTo !== undefined && rng.chance(0.7)) branch.push({ nodes: [M, loopTo], kind: 'main' });
   else if (freeNbrs(M).length) branch.push({ nodes: [M, mk(...rng.pick(freeNbrs(M)), 'side', -1)], kind: 'main' });
   // (and, where the lattice has the room, one more sewer out of it to a chamber of its own: the bells spread round it, not far)
   if (freeNbrs(M).length > 1 || (freeNbrs(M).length === 1 && rng.chance(0.5))) branch.push({ nodes: [M, mk(...rng.pick(freeNbrs(M)), 'side', -1)], kind: 'main' });
@@ -348,7 +354,7 @@ function lay(depth: number, seed: number): { laid: Laid; plan: UPlan } | null {
       rounds.push([a, b]);
     }
   }
-  if (rounds.length && rng.chance(0.6)) {
+  if (!UC_LINEAR.on && rounds.length && rng.chance(0.6)) {
     const [a, b] = rng.pick(rounds);
     branch.push({ nodes: [a, b], kind: 'narrow' });
   }
@@ -683,7 +689,7 @@ function lay(depth: number, seed: number): { laid: Laid; plan: UPlan } | null {
   };
   const vr = new RNG(seed ^ 0x1b873593);
   for (let i = 0; i < W * H; i++) floor.variant[i] = vr.int(0, 255);
-  floor.packs = packsOf(rng, floor, nodes, tunnels, stretches, depth);
+  floor.packs = packsOf(rng, floor, nodes, tunnels, stretches, depth, [bells.muffled, ...bells.bells]);
   floor.props = propsOf(rng, floor, nodes, mouths, [bells.muffled, ...bells.bells]);
 
   const roleOf = (k: NodeKind): AreaRole => (k === 'start' ? 'start' : k === 'boss' ? 'boss' : k === 'lair' ? 'lair' : k === 'vault' || k === 'cistern' ? 'path' : 'side');
@@ -712,7 +718,9 @@ function lay(depth: number, seed: number): { laid: Laid; plan: UPlan } | null {
 // (game/act1_layout.ts placePacks): in each chamber one for every seventy tiles of it, the lair's guardian, a yellow pack
 // in an elite chamber; now and then a small one on a tunnel's walkway
 
-function packsOf(rng: RNG, f: Floor, nodes: readonly UNode[], tunnels: readonly Tunnel[], stretches: readonly Stretch[], depth: number): PackSpot[] {
+function packsOf(rng: RNG, f: Floor, nodes: readonly UNode[], tunnels: readonly Tunnel[], stretches: readonly Stretch[], depth: number, bells: readonly { x: number; y: number }[]): PackSpot[] {
+  // (no pack stands on a bell or the tiles round it: the bell stands solid there)
+  const byBell = (x: number, y: number): boolean => bells.some((b) => Math.hypot(b.x - x, b.y - y) < 3);
   const out: PackSpot[] = [];
   const W = f.w;
   const used: [number, number][] = [];
@@ -736,7 +744,7 @@ function packsOf(rng: RNG, f: Floor, nodes: readonly UNode[], tunnels: readonly 
       for (let tries = 0; tries < 40; tries++) {
         const x = n.rect[0] + 1.5 + rng.next() * (n.w - 3);
         const y = n.rect[1] + 1.5 + rng.next() * (n.h - 3);
-        if (!free(x, y, 1) || Math.hypot(x - f.start.x, y - f.start.y) < 10 || used.some(([ux, uy]) => Math.hypot(ux - x, uy - y) < 5)) continue;
+        if (!free(x, y, 1) || byBell(x, y) || Math.hypot(x - f.start.x, y - f.start.y) < 10 || used.some(([ux, uy]) => Math.hypot(ux - x, uy - y) < 5)) continue;
         const tier: PackSpot['tier'] = n.kind === 'lair' ? 'champion' : room.kind === 'elite' && k === 0 ? 'elite' : 'normal';
         const p = act1Pack(depth, rng, tier);
         put(x, y, room.id, tier, p.size, p.kind);
@@ -751,7 +759,7 @@ function packsOf(rng: RNG, f: Floor, nodes: readonly UNode[], tunnels: readonly 
     const off = t.kind === 'main' ? 2 : 0;
     const x = st.seg.alongX ? a + 0.5 : st.seg.line + off + 0.5;
     const y = st.seg.alongX ? st.seg.line + off + 0.5 : a + 0.5;
-    if (!free(x, y, 0.5) || Math.hypot(x - f.start.x, y - f.start.y) < 10 || used.some(([ux, uy]) => Math.hypot(ux - x, uy - y) < 6)) continue;
+    if (!free(x, y, 0.5) || byBell(x, y) || Math.hypot(x - f.start.x, y - f.start.y) < 10 || used.some(([ux, uy]) => Math.hypot(ux - x, uy - y) < 6)) continue;
     const p = act1Pack(depth, rng, 'normal');
     put(x, y, -1, 'normal', Math.max(2, Math.ceil(p.size * 0.6)), p.kind);
   }
