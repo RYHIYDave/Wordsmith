@@ -3744,14 +3744,51 @@ interface AmFrame {
   heave: number;
   lean: number;
   apart: number;
-  lumps: ReadonlyArray<{ c: V3; r: V3; seed: number }>;
+  /** Each lump's middle and half-sizes; and, REARED (below), its own forward, left and up, tipped back with the heap (none: the heap's). */
+  lumps: ReadonlyArray<{ c: V3; r: V3; seed: number; ax?: readonly [V3, V3, V3] }>;
   at: (fw: number, lf: number, z: number) => V3;
   onLump: (i: number, deg: number, v: number, out?: number) => V3;
   normalOn: (i: number, p: V3) => V3;
   inHeap: (p: V3) => boolean;
   rimOf: (deg: number, z: number) => number;
+  /** REARED: a way (a vector of its own space) as a lump `i` is tipped back (none: as it is); and how far it is reared (0 to 1). */
+  tilt?: (v: V3, i: number) => V3;
+  rear?: number;
+}
+/**
+ * REARED UP ON ITS ARMS (the action way's, art/amalgam_action.ts; no move of the game's rears it so, and with none of it every
+ * frame is as before): `faceUp`, how high it has heaved itself up off the floor (its own lengths), and `faceTilt`, how far its
+ * front is tipped up (degrees), as its bones' fields (its head is not its: it has none). What it drags behind it stays on the
+ * floor; from there on forward the heap is lifted and tipped back, as one, about a line across it 20 lengths behind its middle.
+ */
+const AM_REAR_BACK = -62;
+const AM_REAR_FULL = -8;
+const AM_REAR_AXLE = -20;
+/** How much it swells as it rears, by how far its front is tipped up (three tenths again at 22 degrees, its full height). */
+const AM_SWELL = 0.3 / 22;
+function amReared(f: V3, l: V3, O: V3, H: number, A: number): { T: (p: V3) => V3; turn: (s: number) => number; swell: (s: number) => number } {
+  const along = (s: number): number => smooth01((s - AM_REAR_BACK) / (AM_REAR_FULL - AM_REAR_BACK));
+  const turn = (s: number): number => A * D * along(s);
+  const swell = (s: number): number => 1 + AM_SWELL * Math.max(0, A) * along(s);
+  const T = (p: V3): V3 => {
+    const d = sub(p, O);
+    const s0 = dot(d, f);
+    const w = along(s0);
+    const g = 1 + AM_SWELL * Math.max(0, A) * w;
+    const lat = dot(d, l) * g;
+    const sa = (s0 - AM_REAR_AXLE) * g;
+    const z = p[2] * g;
+    const th = A * D * w;
+    const c = Math.cos(th);
+    const sn = Math.sin(th);
+    const s1 = AM_REAR_AXLE + sa * c - z * sn;
+    const z1 = sa * sn + z * c + H * w;
+    return add(O, add(add(mul(f, s1), mul(l, lat)), [0, 0, z1]));
+  };
+  return { T, turn, swell };
 }
 function amFrame(s: Skeleton, q: Posed): AmFrame {
+  if (q.faceUp !== 0 || q.faceTilt !== 0) return amFrameReared(s, q);
   const f = norm([s.chest[0][0], s.chest[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
   const up: V3 = [0, 0, 1];
@@ -3793,6 +3830,50 @@ function amFrame(s: Skeleton, q: Posed): AmFrame {
     return last;
   };
   return { O, f, l, heave, lean, apart, lumps, at, onLump, normalOn, inHeap, rimOf };
+}
+/** ITS HEAP REARED UP ON ITS ARMS (above): as it is unreared, lifted and tipped back; where its arms come out of it found on it unreared and carried with it. */
+function amFrameReared(s: Skeleton, q: Posed): AmFrame {
+  const base = amFrame(s, { ...q, faceUp: 0, faceTilt: 0 });
+  const { O, f, l } = base;
+  const up: V3 = [0, 0, 1];
+  const { T, turn, swell } = amReared(f, l, O, q.faceUp, q.faceTilt);
+  /** A way tipped back by `th`, about its left. */
+  const tip = (v: V3, th: number): V3 => {
+    const a = dot(v, f);
+    const c = Math.cos(th);
+    const sn = Math.sin(th);
+    return add(add(mul(f, a * c - v[2] * sn), mul(l, dot(v, l))), [0, 0, a * sn + v[2] * c]);
+  };
+  const lumps = base.lumps.map((L) => {
+    const s0 = dot(sub(L.c, O), f);
+    const th = turn(s0);
+    return { c: T(L.c), r: mul(L.r, swell(s0)), seed: L.seed, ax: [tip(f, th), tip(l, th), tip(up, th)] as const, th };
+  });
+  const onLump = (i: number, deg: number, v: number, out = 1): V3 => {
+    const L = lumps[i];
+    const a = deg * D;
+    const k = Math.sqrt(Math.max(0, 1 - v * v));
+    return add(L.c, add(add(mul(L.ax[0], Math.cos(a) * k * L.r[0] * out), mul(L.ax[1], Math.sin(a) * k * L.r[1] * out)), mul(L.ax[2], v * L.r[2] * out)));
+  };
+  const normalOn = (i: number, p: V3): V3 => {
+    const L = lumps[i];
+    const d = sub(p, L.c);
+    return norm(add(add(mul(L.ax[0], dot(d, L.ax[0]) / (L.r[0] * L.r[0])), mul(L.ax[1], dot(d, L.ax[1]) / (L.r[1] * L.r[1]))), mul(L.ax[2], dot(d, L.ax[2]) / (L.r[2] * L.r[2]))), up);
+  };
+  const inHeap = (p: V3): boolean =>
+    lumps.some((L) => {
+      const d = sub(p, L.c);
+      return (dot(d, L.ax[0]) / L.r[0]) ** 2 + (dot(d, L.ax[1]) / L.r[1]) ** 2 + (dot(d, L.ax[2]) / L.r[2]) ** 2 <= 1;
+    });
+  return {
+    O, f, l, heave: base.heave, lean: base.lean, apart: base.apart, lumps,
+    at: (fw, lf, z) => T(base.at(fw, lf, z)),
+    onLump, normalOn, inHeap,
+    // (where its arms come out of it: found on it unreared, and carried with it by `at`)
+    rimOf: base.rimOf,
+    tilt: (v, i) => tip(v, lumps[i].th),
+    rear: clamp01(Math.max(q.faceUp / 14, q.faceTilt / 22)),
+  };
 }
 /** One of its great arms at a moment: where it comes out of the heap, its elbow, its hand (put within reach of where it is wanted), how thick. */
 interface AmLimb {
@@ -3859,7 +3940,8 @@ const amSwarmLaunch = (i: number): number => 0.018 * i;
 /** Its maw's middle as it truly faces (it is drawn turned some way toward the eye, as a face is). */
 function amMawOf(fr: AmFrame): V3 {
   const b = fr.lumps[2];
-  return add(b.c, add(mul(fr.f, b.r[0] * 0.84), [0, 0, -b.r[2] * 0.05]));
+  const v: V3 = add(mul(fr.f, b.r[0] * 0.84), [0, 0, -b.r[2] * 0.05]);
+  return add(b.c, fr.tilt ? fr.tilt(v, 2) : v);
 }
 /** A skull of its swarm, `a` seconds after it left the maw (`drawn`: the maw where it is drawn): where it is, and its way (along the floor). */
 function amSwarmAt(fr: AmFrame, drawn: V3, i: number, a: number): { p: V3; way: V3 } {
@@ -3903,7 +3985,7 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
   const burn = clamp01(m.ropes?.burn?.[0]?.[0] ?? 0);
   const hot = lit * (1 + 0.5 * burn);
   lumps.forEach((L) => {
-    put('heap', 'heap', { k: 'ball', c: L.c, ax: [mul(f, L.r[0]), mul(l, L.r[1]), [0, 0, L.r[2]]], skin: massSkin(Math.max(L.r[0], L.r[1]) / 3.4, L.seed, hot) });
+    put('heap', 'heap', { k: 'ball', c: L.c, ax: L.ax ? [mul(L.ax[0], L.r[0]), mul(L.ax[1], L.r[1]), mul(L.ax[2], L.r[2])] : [mul(f, L.r[0]), mul(l, L.r[1]), [0, 0, L.r[2]]], skin: massSkin(Math.max(L.r[0], L.r[1]) / 3.4, L.seed, hot) });
   });
   if (bulge > 0) {
     const out = norm(add(mul(f, AM_BURST_FROM[0] + 6), mul(l, AM_BURST_FROM[1])));
@@ -3981,11 +4063,15 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
   const fa: V3 = norm(add(mul(f, Math.cos(mawA)), mul(l, Math.sin(mawA))));
   const la: V3 = [-fa[1], fa[0], 0];
   const browOut = 1 / Math.hypot(Math.cos(mawA) / brow.r[0], Math.sin(mawA) / brow.r[1]);
-  const mc = add(brow.c, add(mul(fa, browOut * 0.84), [0, 0, -brow.r[2] * 0.05]));
-  const wide = 22;
-  const gape = 3.4 + 7 * jaw;
+  // (reared, its maw tipped back with its brow: `tb`)
+  const tb = (v: V3): V3 => (fr.tilt ? fr.tilt(v, 2) : v);
+  const mc = add(brow.c, tb(add(mul(fa, browOut * 0.84), [0, 0, -brow.r[2] * 0.05])));
+  // (reared, swollen: its maw wider, and gaping wider still)
+  const mk = fr.tilt ? brow.r[0] / AM_LUMPS[2].r[0] : 1;
+  const wide = fr.tilt ? 22 * mk : 22;
+  const gape = fr.tilt ? (3.4 + 7 * jaw) * mk * mk : 3.4 + 7 * jaw;
   // (its lips' way up, tipped back a little: it opens forward and up, at you)
-  const ua: V3 = norm(add([0, 0, 1], mul(fa, -0.35)));
+  const ua: V3 = tb(norm(add([0, 0, 1], mul(fa, -0.35))));
   const fo: V3 = norm(cross(la, ua));
   put('maw', 'maw', {
     k: 'ball',
@@ -4006,7 +4092,7 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
       const lip = gape * round * 0.8;
       const base = add(mc, add(add(mul(la, k * wide * 0.9), mul(fo, 4.2 * round + 0.5)), mul(ua, sgn * (lip + 0.7))));
       const fang = hash(i, sgn > 0 ? 1 : 2, 53);
-      const long = 2.4 + fang * 2.4 + (fang > 0.78 ? 3.6 : 0);
+      const long = (2.4 + fang * 2.4 + (fang > 0.78 ? 3.6 : 0)) * (fr.tilt ? mk : 1);
       const tip = add(base, add(mul(ua, -sgn * long), mul(fo, 0.6 + hash(i, 5, 53))));
       put('teeth', 'maw', { k: 'rod', a: base, b: tip, ra: fang > 0.78 ? 1.35 : 1.05, rb: 0.25, ramp: OSS });
     }
@@ -4018,8 +4104,8 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
   // a crowd of skulls packed over it, all staring out
   for (let i = 0; i < 6; i++) {
     const k = (i / 5) * 2 - 1;
-    const p = add(brow.c, add(add(mul(fa, browOut * (0.36 + 0.2 * (1 - Math.abs(k)))), mul(la, k * 20 + (hash(i, 1, 61) - 0.5) * 4)), [0, 0, brow.r[2] * (0.78 + 0.3 * hash(i, 2, 61))]));
-    const look = faceAlong(norm(add(add(fa, mul(la, k * 0.35 + (hash(i, 3, 61) - 0.5) * 0.5)), [0, 0, (hash(i, 4, 61) - 0.3) * 0.5])), norm(add(up, mul(la, (hash(i, 5, 61) - 0.5) * 0.9))));
+    const p = add(brow.c, tb(add(add(mul(fa, browOut * (0.36 + 0.2 * (1 - Math.abs(k)))), mul(la, k * 20 + (hash(i, 1, 61) - 0.5) * 4)), [0, 0, brow.r[2] * (0.78 + 0.3 * hash(i, 2, 61))])));
+    const look = faceAlong(tb(norm(add(add(fa, mul(la, k * 0.35 + (hash(i, 3, 61) - 0.5) * 0.5)), [0, 0, (hash(i, 4, 61) - 0.3) * 0.5]))), tb(norm(add(up, mul(la, (hash(i, 5, 61) - 0.5) * 0.9)))));
     const r = 4.3 + hash(i, 6, 61) * 1.2;
     skull(st, put, `crowd${i}`, `crowd${i}`, p, look, [r, r * 0.9, r * 0.92], OSS, eyesOf(st, look), lit * (0.75 + 0.25 * Math.sin(t * 3 + i * 1.7)), i % 2 === 1, 3);
   }
@@ -4049,6 +4135,47 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
     }
     put('streak', 'streak', { k: 'glow', p: cT[Math.min(1, n)], c: FLAME[3], r: 16, a: 0.3 });
   }
+  // --- REARED UP, ITS UNDERSIDE SEEN: no less the dead's than its top: bones and skulls packed in it every which way, and the dead's arms hanging from it, swaying ---
+  if (fr.tilt && fr.rear !== undefined && fr.rear > 0.05) {
+    const rr = fr.rear;
+    const below = [0, 0, 0, 2, 2, 0, 4, 5, 1, 6];
+    for (let i = 0; i < 46; i++) {
+      const li = below[i % below.length];
+      const p0 = onLump(li, -180 + hash(i, 1, 141) * 360, -0.85 + hash(i, 2, 141) * 0.95, 0.99);
+      if (p0[2] < 3) continue;
+      const out = normalOn(li, p0);
+      const tang = norm(cross(out, norm([hash(i, 3, 141) - 0.5, hash(i, 4, 141) - 0.5, hash(i, 5, 141) - 0.5], [0, 0, 1])), up);
+      const L = 8 + hash(i, 6, 141) * 8;
+      const r = 1.2 + hash(i, 8, 141) * 0.45;
+      const a = add(p0, mul(tang, -L / 2));
+      const b = add(add(p0, mul(tang, L / 2)), mul(out, 0.6 + hash(i, 7, 141) * 2.4));
+      put('under', 'heap', { k: 'rod', a, b, ra: r, rb: r * 0.88, ramp: OSS });
+      put('under', 'heap', { k: 'ball', c: a, ax: sphere(r * 1.55), skin: OSS });
+      put('under', 'heap', { k: 'ball', c: b, ax: sphere(r * 1.45), skin: OSS });
+    }
+    for (let i = 0; i < 14; i++) {
+      const li = below[(i * 3 + 1) % below.length];
+      const p = onLump(li, -180 + hash(i, 1, 143) * 360, -0.8 + hash(i, 2, 143) * 0.8, 0.94);
+      if (p[2] < 4) continue;
+      const out = normalOn(li, p);
+      const look = faceAlong(norm(add(out, mul(cross(up, out), (hash(i, 3, 143) - 0.5) * 1.2))), norm(add(up, mul(out, -0.3))));
+      const r = 3.9 + hash(i, 5, 143) * 1.3;
+      skull(st, put, `usk${i}`, `usk${i}`, add(p, mul(out, r * 0.25)), look, [r, r * 0.9, r * 0.92], OSS, eyesOf(st, look), lit * Math.max(burn, 0.6 + 0.4 * Math.sin(t * 2.4 + i)), i % 2 === 0, 3);
+    }
+    // (the dead's arms hanging from it, limp, swaying as it heaves: never down to the floor)
+    for (let i = 0; i < 8; i++) {
+      const li = [0, 0, 2, 0, 2, 0, 4, 5][i];
+      const sh = onLump(li, -150 + i * 41 + 20 * hash(i, 1, 147), -0.55 + 0.3 * hash(i, 2, 147), 0.96);
+      const out = normalOn(li, sh);
+      const sway = Math.sin(t * (2.3 + 0.4 * i) + i * 1.9) * 0.35;
+      const dir = norm(add(add([0, 0, -1], mul(out, 0.45)), mul(cross(up, out), sway)));
+      const reach = Math.min(18 * rr, Math.max(0, (sh[2] - 3) / Math.max(0.3, -dir[2])));
+      if (reach < 6) continue;
+      const { el, hand } = twoBone(sh, add(sh, mul(dir, reach)), 9.5, 9.5, norm(add(out, [0, 0, 0.3])));
+      boneArm(put, `hang${i}`, sh, el, hand, 1.35, 0.15 + 0.2 * Math.sin(t * 3 + i), OSS);
+    }
+  }
+
   // --- the dead's own arms, reaching up out of it; and two of its own at its top, grabbing at the air ---
   // (all of them falling limp as it bursts apart)
   const still = 1 - fr.apart;
@@ -4779,7 +4906,7 @@ function longOfMove(mv: MobMove): number {
 export const AM_SHAPE: BossShape = {
   body: (s, q) => {
     const fr = amFrame(s, q);
-    const lumps: CheckLump[] = fr.lumps.map((L, i) => ({ name: `heap${i}`, c: L.c, rot: [fr.f, fr.l, [0, 0, 1]], h: [L.r[0] * 0.92, L.r[1] * 0.92, L.r[2] * 0.92] }));
+    const lumps: CheckLump[] = fr.lumps.map((L, i) => ({ name: `heap${i}`, c: L.c, rot: L.ax ? [L.ax[0], L.ax[1], L.ax[2]] : [fr.f, fr.l, [0, 0, 1]], h: [L.r[0] * 0.92, L.r[1] * 0.92, L.r[2] * 0.92] }));
     return { limbs: [], lumps };
   },
   floorFree: AM_LUMPS.map((_, i) => `heap${i}`),
@@ -4993,6 +5120,14 @@ export function amRakeAt(t: number): { R1: V3; L1: V3 } {
 }
 /** Where its great hands slam the floor, bringing up the arms of the dead (the figure's own space). */
 export const AM_SLAM_SPOTS: ReadonlyArray<V3> = [AM_SLAM_R, AM_SLAM_L];
+/**
+ * WHAT ITS MOVES ARE BUILT ON, said again by name for its moves done the action way (art/amalgam_action.ts, a mock-up behind
+ * AMALGAM_ACTION, off; as CO_KIT is the Chained One's): its rest, where its hands grip, its arms, its hands' ways through a move,
+ * its heap at a moment (reared, too: `faceUp`, `faceTilt`), its maw, how its fire flares, the slam's sparks and dust, a hand of
+ * the dead, the floor's stone. Nothing here is changed by being named.
+ */
+export const AM_KIT = { REST: AM_REST, PLANT: AM_PLANT, HANDS: AM_HANDS, ARMS: AM_ARMS, DOWN, handwork, amMove, amFrame, amArms, amMawOf, amClaws, burning, slamBurst, deadHand, DEEP_OSS, FLOOR_STONE, amWalkPose, AM_STAND_HANDS };
+export type { AmFrame, AmLimb, HandMove, HandTrack };
 
 // =============================================================================================
 // 4. THE BONE BEAST

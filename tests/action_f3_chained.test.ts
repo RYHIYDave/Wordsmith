@@ -93,7 +93,8 @@ const gameOf = (freed: CoFreed) => (freed === 0 ? CHAINED : CHAINED_FREED[freed]
 test('1. the switch is off, nothing of the game imports the mock-up, his other moves are the game’s own and the game’s four are kept', () => {
   assert.equal(CHAINED_ACTION.on, false, 'CHAINED_ACTION is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/chained_action.ts' || f === 'art/chained_action_fx.ts') continue;
+    // (the Amalgamation's moves done the action way, art/amalgam_action*.ts, a mock-up behind AMALGAM_ACTION, off, draws its slams' rings with this one's)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/chained_action.ts' || f === 'art/chained_action_fx.ts' || f.startsWith('art/amalgam_action')) continue;
     assert.ok(!/from ['"][^'"]*(chained_action|chained_action_fx|action_f3_chained_scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   for (const freed of STATES) {
