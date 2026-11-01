@@ -29,7 +29,7 @@ import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { sphere } from './new_mobs3';
-import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
+import type { Bit, MobCanvas, Moment, Put, Shape } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
 import { add, buildOf, cross, dot, lerp3, mul, norm, sub } from './skeleton';
@@ -59,6 +59,8 @@ const HAIR: Ramp = ['#120e12', '#1e181e', '#2e242c', '#42363e', '#584852'];
 export const GLASS: Ramp = ['#1a1e2c', '#2a3044', '#465068', '#727c98', '#a6aec8'];
 const PEARL = '#e8e4ee';
 const LIPS: Ramp = ['#3e2e36', '#523a44', '#6a4c56', '#80606a', '#94747c'];
+/** Her lashes, her eyes shut. */
+const LASH: Ramp = ['#140e14', '#1c141a', '#261c22', '#30242a', '#3a2c32'];
 
 // =============================================================================================
 // THE BODY
@@ -66,8 +68,8 @@ const LIPS: Ramp = ['#3e2e36', '#523a44', '#6a4c56', '#80606a', '#94747c'];
 /** A grown woman of the court: slender, narrow in the waist; with her hair up, the knight's height (58). */
 export const LADY_BODY: Build = buildOf(55, 1.16, { shoulders: 0.84, chest: 0.88, depth: 0.88, waist: 0.66, hips: 0.98, legs: 1.0, arms: 0.92, trunk: 1.0, limbs: 0.78 });
 const B = LADY_BODY;
-/** Her picture: room for her dart (two and a half tiles on) and her mirror's beam (four and a half tiles out). */
-export const LADY_CANVAS: MobCanvas = { w: 256, h: 252, ax: 54, ay: 146 };
+/** Her picture: room for her mirror's beam, thrown from range (six and a half tiles out, three wide at its end), and for her as she lies. */
+export const LADY_CANVAS: MobCanvas = { w: 340, h: 280, ax: 66, ay: 140 };
 
 // =============================================================================================
 // THE HAND MIRROR
@@ -87,10 +89,15 @@ export function mirrorOf(s: Skeleton): { grip: V3; up: V3; n: V3; side: V3; c: V
   const c = add(neck, mul(up, MIRROR.ry));
   return { grip, up, n, side, c, face: add(c, mul(n, MIRROR.thick + 0.2)), butt: add(grip, mul(up, -MIRROR.butt)), neck };
 }
+/** The mirror as `mirrorOf` gives it, for one loose of her hand: from its middle and its own ways. */
+export function mirrorAt(c: V3, up: V3, n: V3, side: V3): ReturnType<typeof mirrorOf> {
+  const neck = add(c, mul(up, -MIRROR.ry));
+  const grip = add(neck, mul(up, -MIRROR.handle));
+  return { grip, up, n, side, c, face: add(c, mul(n, MIRROR.thick + 0.2)), butt: add(grip, mul(up, -MIRROR.butt)), neck };
+}
 
 /** THE MIRROR: the handle and its knob, the silver frame, the glass (or its engraved back), a glint on it as she winds up, and cracks as she dies. */
-function mirror(put: Put, s: Skeleton, glint: number, crack: number, t: number): void {
-  const k = mirrorOf(s);
+function mirror(put: Put, k: ReturnType<typeof mirrorOf>, glint: number, crack: number, t: number): void {
   put('mirror', 'mirror', { k: 'rod', a: k.butt, b: add(k.neck, mul(k.up, 0.6)), ra: 0.62, rb: 0.5, ramp: SILVER });
   put('mirror', 'mirror', { k: 'ball', c: k.butt, ax: sphere(0.85), skin: SILVER });
   put('mirror', 'mirror', { k: 'ball', c: add(k.neck, mul(k.up, -0.3)), ax: [mul(k.up, 0.9), mul(k.side, 1.1), mul(k.n, 0.7)], skin: SILVER });
@@ -172,7 +179,7 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', cu: V3, grip: number): void
  * THE GOWN'S LINES: the bodice from the waist up to its square neckline; the skirt from the waist out over the farthingale
  * to the floor, a full bell; its hem under her feet (drawn back and swung as she goes), or pooled round her knees.
  */
-export function gownRings(s: Skeleton, m: Moment): { bodice: Ring[]; skirt: Ring[]; hemC: V3; f: V3; l: V3; waistC: V3 } {
+export function gownRings(s: Skeleton, m: Moment, glide = 0, pool: Pool | null = null): { bodice: Ring[]; skirt: Ring[]; hemC: V3; f: V3; l: V3; waistC: V3 } {
   const [cf, cl] = s.chest;
   const ph = m.wind * Math.PI * 2;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
@@ -186,16 +193,23 @@ export function gownRings(s: Skeleton, m: Moment): { bodice: Ring[]; skirt: Ring
   const hemZ = 0.9;
   const knelt = clamp01((15 - kneeMid[2]) / 9);
   const under: V3 = lerp3([footMid[0] * 0.6 + s.pelvis[0] * 0.4, footMid[1] * 0.6 + s.pelvis[1] * 0.4, 0], [kneeMid[0] * 0.55 + s.pelvis[0] * 0.45, kneeMid[1] * 0.55 + s.pelvis[1] * 0.45, 0], knelt);
-  const hemC: V3 = [under[0] + lag[0] * 1.1, under[1] + lag[1] * 1.1, hemZ];
-  const hemDeep = B.pelvisDeep + 9.0 + 3.5 * knelt;
-  const hemWide = B.pelvisHalf + 9.2 + 3.0 * knelt;
+  // (gliding, the hem kept over her feet and its train streaming after her: no step shows)
+  const keep = 1.1 - 0.65 * glide;
+  const hemC: V3 = [under[0] + lag[0] * keep, under[1] + lag[1] * keep, hemZ];
+  const hemDeep = B.pelvisDeep + 9.0 + 3.5 * knelt + 1.6 * glide;
+  const hemWide = B.pelvisHalf + 9.2 + 3.0 * knelt + 0.8 * glide;
+  const trail = 0.9 + 1.4 * glide;
+  const lagLen = Math.hypot(lag[0], lag[1]);
+  const lagDir: V3 = lagLen > 1e-6 ? [lag[0] / lagLen, lag[1] / lagLen, 0] : mul(f, -1);
   const hemPts: V3[] = [];
   for (let i = 0; i < 28; i++) {
     const a = (i / 28) * Math.PI * 2;
     const rear = Math.max(0, -Math.cos(a));
     // (a short train behind; the hem rippling as it sweeps)
     const p = add(hemC, add(mul(f, Math.cos(a) * (hemDeep + rear * rear * 2.5)), mul(l, Math.sin(a) * hemWide)));
-    hemPts.push(add(p, add([0, 0, Math.max(0, Math.sin(ph * 2 + a * 4) * 0.4) * (1 - knelt)], mul(lag, rear * 0.9))));
+    // (gliding, the hem streams out after her on whichever side trails, the way she goes: behind her going forward, before her backing away, to her side circling)
+    const trails = glide > 0 ? Math.max(0, (Math.cos(a) * (f[0] * lagDir[0] + f[1] * lagDir[1]) + Math.sin(a) * (l[0] * lagDir[0] + l[1] * lagDir[1]))) : rear;
+    hemPts.push(add(p, add([0, 0, Math.max(0, Math.sin(ph * 2 + a * 4) * 0.4) * (1 - knelt)], mul(lag, trails * trail))));
   }
   const bodice: Ring[] = [
     { c: waistC, u: mul(be[0], B.waistDeep + 1.0), v: mul(be[1], B.waistHalf + 0.9) },
@@ -211,7 +225,56 @@ export function gownRings(s: Skeleton, m: Moment): { bodice: Ring[]; skirt: Ring
     { c: [s.pelvis[0], s.pelvis[1], s.pelvis[2] + 0.6], u: mul(f, B.pelvisDeep + 5.0), v: mul(l, B.pelvisHalf + 5.8) },
     { c: waistC, u: mul(be[0], B.waistDeep + 1.1), v: mul(be[1], B.waistHalf + 1.0) },
   ];
-  return { bodice, skirt, hemC, f, l, waistC };
+  return { bodice, skirt: pool && pool.k > 0 ? pooled(skirt, s, pool) : skirt, hemC, f, l, waistC };
+}
+/** As she comes down: how far her skirt is laid out on the floor round her (0 not yet, 1 all of it), and how far she lies back (0 sat, 1 lying). */
+export interface Pool { k: number; lie: number }
+/** Two rings mixed, `k` of the way from the one to the other (their hems' points too, if both have them). */
+function mixRing(a: Ring, b: Ring, k: number): Ring {
+  // (a ring without points of its own, as the points round its ellipse: so that the one goes into the other smoothly)
+  const n = a.pts?.length ?? b.pts?.length ?? 0;
+  const round = (r: Ring): V3[] => Array.from({ length: n }, (_, i) => add(r.c, add(mul(r.u, Math.cos((i / n) * Math.PI * 2)), mul(r.v, Math.sin((i / n) * Math.PI * 2)))));
+  const ap = n ? (a.pts && a.pts.length === n ? a.pts : round(a)) : undefined;
+  const bp = n ? (b.pts && b.pts.length === n ? b.pts : round(b)) : undefined;
+  const pts = ap && bp ? ap.map((p, i) => lerp3(p, bp[i], k)) : undefined;
+  return { c: lerp3(a.c, b.c, k), u: lerp3(a.u, b.u, k), v: lerp3(a.v, b.v, k), pts };
+}
+/**
+ * HER SKIRT POOLED ON THE FLOOR as she comes down: the hem laid out flat round her hips and legs, wider as she lies back, its
+ * folds lying in it in soft waves; a heap of it over her legs; a ring round her hips; the waist as it was.
+ */
+function pooled(rings: ReadonlyArray<Ring>, s: Skeleton, pool: Pool): Ring[] {
+  const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+  const l: V3 = [-f[1], f[0], 0];
+  const kneeMid = lerp3(s.kneeL, s.kneeR, 0.5);
+  const footMid = lerp3(s.ankleL, s.ankleR, 0.5);
+  const legTop = Math.max(s.kneeL[2], s.kneeR[2], footMid[2]) + 2.4;
+  const toward = lerp3(kneeMid, footMid, 0.45);
+  const mid: V3 = [s.pelvis[0] * 0.45 + toward[0] * 0.55, s.pelvis[1] * 0.45 + toward[1] * 0.55, 0];
+  const wide: [number, number] = [15.5 + 4 * pool.lie, 16.5 + 1.5 * pool.lie];
+  const N = rings[0].pts?.length ?? 28;
+  const hemC: V3 = [mid[0], mid[1], 0.9];
+  const pts: V3[] = [];
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    // (its folds lie in it: a little in and out, a little up off the floor; fuller behind, where it is heaped)
+    const wave = Math.sin(a * 6 + 0.6) * 0.7 + Math.sin(a * 3 + 1.9) * 0.3;
+    const r = 1 + 0.08 * wave + 0.06 * Math.max(0, -Math.cos(a));
+    pts.push(add(hemC, add(mul(f, Math.cos(a) * wide[0] * r), add(mul(l, Math.sin(a) * wide[1] * r), [0, 0, -0.5 + 0.3 * wave]))));
+  }
+  const hem: Ring = { c: hemC, u: mul(f, wide[0]), v: mul(l, wide[1]), pts };
+  // (the heap of it over her legs, lower and narrower than its brim on the floor, its folds in it)
+  const overPts: V3[] = [];
+  const oc: V3 = [mid[0] * 0.8 + s.pelvis[0] * 0.2, mid[1] * 0.8 + s.pelvis[1] * 0.2, Math.max(2.4, legTop - 0.8)];
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    const wave = Math.sin(a * 5 + 1.3) * 0.6 + Math.sin(a * 2 + 0.4) * 0.4;
+    overPts.push(add(oc, add(mul(f, Math.cos(a) * wide[0] * 0.5 * (1 + 0.1 * wave)), add(mul(l, Math.sin(a) * wide[1] * 0.55 * (1 + 0.1 * wave)), [0, 0, 0.5 * wave]))));
+  }
+  const over: Ring = { c: oc, u: mul(f, wide[0] * 0.5), v: mul(l, wide[1] * 0.55), pts: overPts };
+  const hips: Ring = { c: [s.pelvis[0], s.pelvis[1], Math.max(s.pelvis[2] + 1.2, over.c[2] + 1.0)], u: mul(f, B.pelvisDeep + 4.4), v: mul(l, B.pelvisHalf + 4.2) };
+  const want = [hem, over, hips, rings[rings.length - 1]];
+  return rings.map((r, i) => mixRing(r, want[i], pool.k));
 }
 
 /** How far round the skirt's front (degrees either side) it opens on the forepart. */
@@ -275,13 +338,18 @@ function stomacher(put: Put, s: Skeleton, waistC: V3): void {
  * THE HIGH FAN COLLAR: standing up from the shoulders behind the head, two halves meeting behind the neck and wrapping
  * a little round, tipped back; pleated lace on wires, its edge in points; its inside a shade darker.
  */
-function fanCollar(put: Put, s: Skeleton, lag: V3): void {
+function fanCollar(put: Put, s: Skeleton, lag: V3, flat = 0): void {
   const [cf, cl, cu] = s.chest;
   // (its foot round the base of her neck, from her left shoulder round the back to her right; its top a half-round fan
   // standing up behind her head, leaning back a little, from out over her left shoulder over the top to out over her right)
   const footC = add(add(s.neck, mul(cf, -0.7)), mul(cu, -1.5));
-  const topC = add(add(add(s.neck, mul(cf, -2.4)), mul(cu, 0.2)), mul(lag, 0.1));
-  const up = norm(add(cu, mul(cf, -0.3)));
+  let topC = add(add(add(s.neck, mul(cf, -2.4)), mul(cu, 0.2)), mul(lag, 0.1));
+  let up = norm(add(cu, mul(cf, -0.3)));
+  if (flat > 0) {
+    // (as she lies: crushed back flat on the floor round her head, a fan of lace on the floor)
+    up = norm(lerp3(up, [up[0], up[1], Math.max(0, up[2])], flat), up);
+    topC = [topC[0], topC[1], topC[2] + (Math.max(topC[2], 1.6) - topC[2]) * flat];
+  }
   const W = 6.8;
   const H = 12.6;
   const footAt = (a: number): V3 => add(footC, add(mul(cf, 3.0 * Math.cos(a)), mul(cl, 4.2 * Math.sin(a))));
@@ -331,7 +399,7 @@ function fanCollar(put: Put, s: Skeleton, lag: V3): void {
 // THE HEAD
 
 /** HER HEAD: a powdered grey face, the cult's dull pink in her eyes, her lips parted on no sound; her dark hair drawn up into a high coil, pinned with silver and pearl, a ringlet at each temple. Returns her mouth. */
-function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number, lag: V3, t: number): { mouth: V3; ff: V3; fl: V3 } {
+function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number, lag: V3, t: number, shut = 0): { mouth: V3; ff: V3; fl: V3 } {
   const [ff, fl, fu] = wornOn(st, s, 8);
   const hr: V3 = [B.headR[0], B.headR[1] * 1.02, B.headR[2]];
   const hc = add(s.head, mul(fu, -0.2));
@@ -358,7 +426,9 @@ function head(put: Put, st: Stage, s: Skeleton, jaw: number, lit: number, lag: V
   }
   for (const k of [-1, 1]) {
     const e = add(hc, add(mul(ff, hr[0] * 0.93), add(mul(fl, k * hr[1] * 0.34), mul(fu, hr[2] * 0.1))));
-    put('head', 'eyes', { k: 'dot', p: e, c: lit > 0.4 ? FLAME[1] : '#3a2a30', facing: ff });
+    // (her eyes closing as she swoons: the lids down, a dark line of lashes)
+    if (shut > 0.5) put('head', 'lashes', { k: 'rod', a: add(e, add(mul(ff, 0.2), add(mul(fl, -0.55), mul(fu, -0.15)))), b: add(e, add(mul(ff, 0.2), add(mul(fl, 0.55), mul(fu, -0.15)))), ra: 0.3, rb: 0.3, ramp: LASH });
+    else put('head', 'eyes', { k: 'dot', p: e, c: lit > 0.4 ? FLAME[1] : '#3a2a30', facing: ff });
   }
   // THE COIL: her hair drawn up into a high coil at the crown, a little back; its strands wound round it
   const coilC = add(hc, add(mul(fu, hr[2] * 0.78), mul(ff, -hr[0] * 0.36)));
@@ -407,13 +477,25 @@ export interface LadySay {
   puff?: (m: Moment) => number;
   /** The light she gives off with her own move (the flash at her mirror). */
   lights?: (m: Moment) => { p: V3; c: string; r: number; a: number }[];
+  /** THE MIRROR LOOSE OF HER HAND as she dies (falling, landing, cracked on the floor): its middle and its own ways, how far cracked. */
+  loose?: (m: Moment) => { c: V3; up: V3; n: V3; side: V3; crack: number } | null;
+  /** How far her eyes are shut (0 open, 1 shut). */
+  shut?: (m: Moment) => number;
+  /** As she dies: when the Hush leaves her in its grey breath; when she is still; how far her skirt is pooled on the floor round her, and how far she lies back. */
+  dies?: { breath: readonly [number, number]; still: number; pool: (t: number) => Pool };
+  /** How much she is gliding (0 not, 1 gliding: the hem kept over her feet, its train streaming). */
+  glide?: (m: Moment) => number;
+  /** How far the game carries her over the floor each frame over and above what her bones say (circling, to her side): her gown trails after it. */
+  drift?: (m: Moment) => V3;
 }
 const GRAINS = new WeakMap<Moment, [V3, string, number][]>();
-function ladyBits(st: Stage, m: Moment, say: LadySay): Bit[] {
+function ladyBits(st: Stage, m0: Moment, say: LadySay): Bit[] {
+  const drift = say.drift?.(m0);
+  const m: Moment = drift ? { ...m0, come: add(m0.come, drift) } : m0;
   const { s, q } = m;
-  const bits: Bit[] = [];
+  let bits: Bit[] = [];
   const grains: [V3, string, number][] = [];
-  GRAINS.set(m, grains);
+  GRAINS.set(m0, grains);
   const put: Put = (part, piece, shape) => {
     if (shape.k === 'mote' && part === 'hush') {
       grains.push([shape.p, shape.c, shape.size]);
@@ -424,8 +506,11 @@ function ladyBits(st: Stage, m: Moment, say: LadySay): Bit[] {
   const [, , cu] = s.chest;
   const lit = 1 - clamp01(q.out);
   const lag = lagOf(m, 1.6, 7);
-  const t = m.t;
+  const dies = m.dying ? say.dies : undefined;
+  // (once she lies still, nothing of her stirs)
+  const t = dies ? Math.min(m.t, dies.still) : m.t;
   const jaw = clamp01(m.jaw ?? 0.4);
+  const pool = dies ? dies.pool(m.t) : null;
   // (her slippers, under the hem: a step shows the toe)
   for (const side of ['L', 'R'] as const) {
     const heel = side === 'L' ? s.heelL : s.heelR;
@@ -433,7 +518,7 @@ function ladyBits(st: Stage, m: Moment, say: LadySay): Bit[] {
     put(`foot${side}`, `foot${side}`, { k: 'rod', a: add(heel, [0, 0, 1.1]), b: add(toe, [0, 0, 0.85]), ra: 1.15, rb: 0.85, ramp: SILVER, far: true });
   }
   // THE GOWN
-  const g = gownRings(s, m);
+  const g = gownRings(s, m, say.glide?.(m) ?? 0, pool);
   put('skirt', 'skirt', { k: 'cloth', rings: g.skirt, ramp: GOWN, look: { arc: [OPEN, 360 - OPEN], folds: [40, -40, 66, -66, 94, -94, 124, -124, 150, -150, 180], lift: 0.1, hem: LACE } });
   forepart(put, g);
   // the skirt's guards: two bands of silver round it above the hem
@@ -452,21 +537,52 @@ function ladyBits(st: Stage, m: Moment, say: LadySay): Bit[] {
   put('neck', 'breast', { k: 'ball', c: add(lerp3(s.ribs, s.neck, 0.6), mul(cf, 0.5)), ax: [mul(cf, B.ribDeep * 0.72), mul(cl, B.shoulderHalf * 0.78), mul(cu, 2.0)], skin: SKIN });
   put('body', 'lace', { k: 'band', ring: g.bodice[3], ramp: LACE, rows: 1 });
   put('body', 'girdle', { k: 'band', ring: { c: g.waistC, u: mul(s.belly[0], B.waistDeep + 1.25), v: mul(s.belly[1], B.waistHalf + 1.15) }, ramp: SILVER, rows: 1 });
-  fanCollar(put, s, lag);
+  fanCollar(put, s, lag, pool ? pool.lie : 0);
   // THE ARMS: the left hand loose, the right closed on the mirror
   const held = !(say.dropped?.(m) ?? false);
   arm(put, s, 'L', cu, 0.3);
   arm(put, s, 'R', cu, held ? 1 : 0.4);
-  const hd = head(put, st, s, jaw, lit, lag, t);
-  // THE MIRROR (painted even once dropped: as she dies it falls from her as a piece of its own, Mob.fall)
-  mirror(put, s, held ? clamp01(m.glint) : 0, clamp01(say.crack?.(m) ?? 0), t);
+  const hd = head(put, st, s, jaw, lit, lag, t, say.shut?.(m) ?? 0);
+  // THE MIRROR: in her hand; or, dying, loose of it (falling, then cracked on the floor beside her)
+  if (held) mirror(put, mirrorOf(s), clamp01(m.glint), clamp01(say.crack?.(m) ?? 0), t);
+  else {
+    const lm = say.loose?.(m);
+    if (lm) mirror(put, mirrorAt(lm.c, lm.up, lm.n, lm.side), 0, lm.crack, t);
+  }
   // THE HUSH, leaking out of her as she breathes; pouring out of her as it leaves her
   const puff = say.puff?.(m) ?? 0.8;
   hushBreath(put, hd.mouth, hd.ff, hd.fl, t, puff, 18);
-  if (m.dying) hushLeaves(put, hd.mouth, hd.ff, hd.fl, t, 18, 0.32, 1.75);
+  if (m.dying) hushLeaves(put, hd.mouth, hd.ff, hd.fl, m.t, 18, dies?.breath[0] ?? 0.32, dies?.breath[1] ?? 1.75);
   for (const l of say.lights?.(m) ?? []) put('mirror', 'flash', { k: 'glow', p: l.p, c: l.c, r: l.r, a: l.a });
-  grains.push(...(say.more?.(m) ?? []));
+  grains.push(...(say.more?.(m0) ?? []));
+  // (dying, whatever of her comes down onto the floor lies on it, not in it: her hair, her collar, her cuffs)
+  if (m.dying) bits = bits.map((b) => ({ ...b, shape: offFloor(b.shape) }));
   return bits;
+}
+/** A solid lying on the floor, not in it (a rod each end, a ball or a panel or a band whole). */
+function offFloor(sh: Shape): Shape {
+  const up = (p: V3, r: number): V3 => (p[2] < r + 0.1 ? [p[0], p[1], r + 0.1] : p);
+  const lift = (lo: number): number => Math.max(0, 0.1 - lo);
+  switch (sh.k) {
+    case 'rod':
+      return { ...sh, a: up(sh.a, sh.ra), b: up(sh.b, sh.rb) };
+    case 'ball': {
+      const d = lift(sh.c[2] - Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]));
+      return d > 0 ? { ...sh, c: add(sh.c, [0, 0, d]) } : sh;
+    }
+    case 'panel': {
+      const d = lift(sh.c[2] - Math.abs(sh.u[2]) - Math.abs(sh.v[2]));
+      return d > 0 ? { ...sh, c: add(sh.c, [0, 0, d]) } : sh;
+    }
+    case 'band': {
+      const d = lift(sh.ring.c[2] - Math.hypot(sh.ring.u[2], sh.ring.v[2]));
+      return d > 0 ? { ...sh, ring: { ...sh.ring, c: add(sh.ring.c, [0, 0, d]) } } : sh;
+    }
+    case 'dot':
+      return sh.p[2] < 0.3 ? { ...sh, p: [sh.p[0], sh.p[1], 0.3] } : sh;
+    default:
+      return sh;
+  }
 }
 
 /** HER AS THE PAINTER TAKES HER. */
