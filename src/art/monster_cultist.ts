@@ -235,6 +235,24 @@ function foot(p: Px, x: number, sole: number, far: boolean, back: boolean): void
 //   off          the knife arm: 0 hanging, 1 flung wide, -1 swept back.
 //   wind, drag   the flame, the hem, the open sleeve, the rope's end, the point of the cowl.
 
+/**
+ * WHERE ITS JOINTS ARE IN A FRAME (for the floor 2 action mock-ups' review, art/action_f1_checks.ts checkKit): picture pixels on
+ * the kit's canvas. Nothing of the game sets `see`; while it is null nothing is reported and nothing about a frame changes.
+ */
+export interface CultistSeen {
+  head: V;
+  hips: V;
+  /** The flame hand and its elbow; the knife hand and its elbow. */
+  hand: V;
+  elbow: V;
+  knife: V;
+  knifeElbow: V;
+  /** The two feet (the nearer first): where the sole is, and how far each is lifted. */
+  soles: [V, V];
+  lifts: [number, number];
+}
+export const CULTIST_SEEN: { see: ((j: CultistSeen) => void) | null } = { see: null };
+
 function cultist(q: Pose, back: boolean, caller = false, priest = false): Painted {
   const lights: Light[] = [];
   /** The robe's cloth: the cultist's violet, or the gravecaller's shroud. */
@@ -497,9 +515,141 @@ function cultist(q: Pose, back: boolean, caller = false, priest = false): Painte
   // (thrown: a last lick of it at the fingertips, streaming back; it lingers a moment as it dies)
   // (the high priest's `pt` is his censer's, while it pours out smoke: `prop` 1)
   if (q.pt > 0.02 && !(priest && q.prop >= 1)) fire(over, fHand[0] + 3, Math.round(fHand[1]) - 2, Math.sqrt(q.pt) * 0.9, q.wind, -3, lights);
+  // THE FIRE SIGIL (CULTIST_SIGIL, below; no live frame of the cultist has a `gale` or a `sweep`): the ring its hand traces in
+  // the air, burning where the hand has been; and in the instant it is flung down, the streak of its fire down the way it went
+  if (!priest && !caller && q.gale > 0.01 && q.act > 0.5) sigilInAir(over, q, back, lights);
+  if (!priest && !caller && q.sweep >= 4) slamStreak(over, fHand, q.sweep, lights);
+  if (CULTIST_SEEN.see) {
+    CULTIST_SEEN.see({
+      head: [cx, cy],
+      hips: [WX, ropeY + 2],
+      hand: fHand,
+      elbow: fElbow,
+      knife: kHand,
+      knifeElbow: kElbow,
+      // (feet[0] is the far foot, feet[1] the near)
+      soles: [[feet[1][0] + 2, feet[1][1]], [feet[0][0] + 2, feet[0][1]]],
+      lifts: [q.nearLift, q.farLift],
+    });
+  }
 
   const layers = back ? [knifeL, far, farHand, body, head, arm, hands] : [body, knifeL, head, arm, hands];
   return { px: compose(null, layers, over), lights };
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE FIRE SIGIL (the art chat's helper, 31 Oct 2026; docs/mockups/action_f2/README.md). The owner's review of every enemy for
+// more action; for the cultist, offered "Fire sigil: draws a burning circle on the floor under you. It erupts in a pillar of fire
+// a second later and burns on for a few seconds.", his pick “Yes (Recommended)”. So, in place of its fire bolt: it raises its
+// flame high and TRACES A RING IN THE AIR with it, round once, the ring burning where its hand has been (and the same ring is
+// drawn on the floor under the hero, in step: art/action_f2_fx.ts); it HOLDS the fire up, swollen to a ball, leaning back (the
+// warning); then in ONE frame flings its hand down to the floor before it, the fire gone out of it in a streak, and the sigil on
+// the floor erupts in a pillar of fire; it stays bent over, its hand to the floor, then straightens, the flame kindling again in
+// its palm. Behind a switch that is off: while it is, the cultist is exactly as it was (tests/action_f2.test.ts), and its fire
+// bolt is its attack; with it on, the sigil is (the bolt is kept, here, out of its set).
+
+/** The switch. */
+export const CULTIST_SIGIL = { on: false };
+/** The moment its hand is flung down and the sigil erupts (seconds into its cast, on the game's frames: 36 of them). */
+export const SIGIL_SLAM = 1.2;
+/** The trace: from when to when its hand goes round the ring in the air (and the ring on the floor is drawn, in step). */
+export const SIGIL_TRACE = [0.16, 0.56] as const;
+/** The ring in the air: its middle (from where the flame hand rests) and its radius, picture pixels; from behind, a little lower. */
+const AIR_RING: Readonly<Record<'front' | 'back', readonly [number, number, number]>> = { front: [3, -17, 8], back: [3, -15, 8] };
+/** How far over the hand the fire's heart rides (picture pixels): the ring burns where the fire has been. */
+const FIRE_UP = 5;
+/** Where the flame hand is on the ring in the air, `k` of the way round (0 and 1 at its top, going round clockwise as seen). */
+export function sigilHand(k: number, back: boolean): [number, number] {
+  const [x, y, r] = AIR_RING[back ? 'back' : 'front'];
+  const a = k * Math.PI * 2;
+  return [x + r * Math.sin(a), y - r * Math.cos(a)];
+}
+/** The ring in the air, as far round as the hand has drawn it (`gale`, 0..1), burning: pink at its edge, gold inside, the newest of it brightest. */
+function sigilInAir(over: Px, q: Pose, back: boolean, lights: Light[]): void {
+  const rest: V = [KX + Math.round(q.lean) + 14.5, KAY - SHOULDER + Math.round(q.bob) + 2.5 - (back ? 2 : 0)];
+  const [x0, y0, r] = AIR_RING[back ? 'back' : 'front'];
+  const cxr = rest[0] + x0;
+  const cyr = rest[1] + y0 - FIRE_UP;
+  const k = clamp(q.gale, 0, 1);
+  const M = 64;
+  const n = Math.max(2, Math.round(M * k));
+  for (let i = 0; i <= n; i++) {
+    const u = (i / M) * Math.PI * 2;
+    // (the newest of it, nearest the hand, brightest; and it flickers, broken here and there)
+    const age = k - i / M;
+    const broken = hash(i, Math.floor(q.wind * 12), 811) < 0.08 + age * 0.3;
+    for (const [dr, c] of [[0, age < 0.12 ? WHITE : FLAME[4]], [1, age < 0.3 ? FLAME[4] : FLAME[3]], [-1, FLAME[2]], [2, PINK[2]]] as const) {
+      if (broken && dr !== 2) continue;
+      const x = Math.round(cxr + (r + dr) * Math.sin(u));
+      const y = Math.round(cyr - (r + dr) * Math.cos(u));
+      if (dr === 2 && over.has(x, y)) continue;
+      over.set(x, y, c);
+    }
+  }
+  lights.push({ x: cxr, y: cyr, r: 12 + 8 * k, color: FLAME[3], a: 0.3 * k });
+}
+/** The slam's streak: from where the hand was, `len` pixels up the way it came, down to the hand: the fire's after-images, hot at the hand. */
+function slamStreak(over: Px, hand: V, len: number, lights: Light[]): void {
+  for (let k = 0; k <= len; k++) {
+    const u = k / len;
+    const y = Math.round(hand[1] - 2 - k);
+    const w = u < 0.25 ? 2 : u < 0.6 ? 1 : 0;
+    for (let dx = -w; dx <= w; dx++) {
+      if (u > 0.6 && (k + dx) % 3 === 0) continue;
+      over.set(Math.round(hand[0] + dx - u * 2), y, u < 0.2 ? FLAME[4] : u < 0.5 ? FLAME[3] : u < 0.8 ? FLAME[2] : PINK[2]);
+    }
+  }
+  lights.push({ x: hand[0], y: hand[1] - len * 0.4, r: 14, color: FLAME[3], a: 0.45 });
+}
+
+/**
+ * THE CAST, seen from in front or from behind: the flame raised high before the cowl (0.16 s); traced once round a ring in the air
+ * (to 0.56 s), the fire swelling; HELD up there, a ball of fire, the cultist leaning back into it, trembling (to 1.1 s: the
+ * warning); its body thrown forward and then, in ONE frame, its hand flung down to the floor before it (SIGIL_SLAM, 1.2 s), the
+ * fire gone out of it in a streak; held down there, bent over, a lick of fire at its fingertips (to 1.45 s); and up again, the
+ * flame kindling in its palm, at rest by 1.95 s. Its feet stay where they are.
+ */
+export function cultistSigilTimeline(back: boolean): Timeline {
+  const hit = SIGIL_SLAM;
+  const [t0, t1] = SIGIL_TRACE;
+  const at = (k: number): Partial<Pose> => {
+    const [hx, hy] = sigilHand(k, back);
+    return { hx, hy };
+  };
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    // (raised to the top of the ring, the knife hand drawn back a little)
+    { at: t0, pose: { ...at(0), lean: -1, act: 1.8, off: 0.4, wind: 0.1, gale: 0 }, ease: 'io' },
+  ];
+  // the trace: round once, a key every frame or so, the fire swelling, the ring burning behind the hand
+  const N = 12;
+  for (let i = 1; i <= N; i++) {
+    const k = i / N;
+    keys.push({ at: t0 + (t1 - t0) * k, pose: { ...at(k), lean: -1 - k, act: 1.8 + 0.9 * k, off: 0.4 + 0.3 * k, wind: 0.1 + 0.25 * k, gale: k }, ease: 'lin' });
+  }
+  const held: Partial<Pose> = { ...at(1), lean: -3, act: 2.9, off: 0.7, gale: 1 };
+  const [tx, ty] = sigilHand(1, back);
+  keys.push(
+    { at: t1 + 0.08, pose: { ...held, hy: ty - 1, wind: 0.4 }, ease: 'out' },
+    // (held there, trembling: the fire swelling and throbbing, the robe stirring; the hand a pixel this way and that)
+    { at: 0.72, pose: { ...held, hx: tx + 0.4, hy: ty - 1, wind: 0.48 }, ease: 'hold' },
+    { at: 0.84, pose: { ...held, hx: tx - 0.3, hy: ty - 1, act: 3, wind: 0.56 }, ease: 'hold' },
+    { at: 0.96, pose: { ...held, hx: tx + 0.3, hy: ty - 1, act: 3, wind: 0.64 }, ease: 'hold' },
+    { at: 1.06, pose: { ...held, hy: ty - 1, act: 3, wind: 0.7 }, ease: 'hold' },
+    // (its body goes first: thrown forward, the hand still up)
+    { at: hit - 0.067, pose: { ...held, lean: -1.5, bob: 1, hy: ty, act: 3, wind: 0.76 }, ease: 'in' },
+    { at: hit - 1 / 30, pose: { ...held, lean: 0.5, bob: 1, hx: tx + 1, hy: ty + 2, act: 3, wind: 0.8 }, ease: 'in' },
+    // THE SLAM: one frame, down to the floor before it, the fire gone out of the hand in a streak
+    { at: hit, pose: { lean: 3, bob: 2, hx: 8, hy: back ? 4 : 9, act: 0, pt: 1, off: -0.6, gale: 0, sweep: back ? 22 : 27, wind: 0.84, drag: 0.8 }, ease: 'lin' },
+    { at: hit + 1 / 30, pose: { lean: 3, bob: 2, hx: 8.5, hy: back ? 6 : 11.5, act: 0, pt: 0.8, off: -0.6, wind: 0.86, drag: 0.6 }, ease: 'lin' },
+    // (pressed on down, bent over it: the follow-through)
+    { at: hit + 0.12, pose: { lean: 3.5, bob: 2, hx: 9.5, hy: back ? 10 : 16, act: 0, pt: 0.5, off: -0.5, wind: 0.9, drag: 0.4 }, ease: 'out' },
+    { at: hit + 0.25, pose: { lean: 3, bob: 2, hx: 9, hy: back ? 9 : 15, act: 0, pt: 0.2, off: -0.4, wind: 0.94 }, ease: 'io' },
+    // (and up, the flame kindling again in its palm)
+    { at: hit + 0.5, pose: { lean: 1, bob: 1, hx: 3, hy: 2, act: 0.5, off: -0.1, wind: 0.97 }, ease: 'io' },
+    { at: hit + 0.75, pose: { wind: 1 }, ease: 'io' },
+  );
+  return { keys, hit };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -622,7 +772,9 @@ export function makeGravecallerArt(): ActorArt {
 
 /** The cultist. */
 export function makeCultistArt(): ActorArt {
-  const { front, backMoves } = cultMoves();
+  const moves = cultMoves();
+  // (THE FIRE SIGIL, behind its switch: its attack in place of the fire bolt, which is kept in cultMoves, out of its set)
+  const { front, backMoves } = CULTIST_SIGIL.on ? { front: { attack: cultistSigilTimeline(false) }, backMoves: { attack: cultistSigilTimeline(true) } } : moves;
   // (it does not hurry: its steps are a little slower than a hero's)
   return monsterArt(paintCultist, DEATH_PAINTED ? { ...front, die: (k) => cultistDeath(k, false) } : front, DEATH_PAINTED ? { ...backMoves, die: (k) => cultistDeath(k, true) } : backMoves, { rest: { act: 1 }, walkFps: 14, dieTime: 0.95 });
 }

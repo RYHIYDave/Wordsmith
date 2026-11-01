@@ -263,7 +263,7 @@ export const HEADSMAN = {
 export const HEADSMAN2_FIGHT = {
   on: true,
   lunge: { long: 1.5, hit: 0.6, reach: 3.7, from: -1.5, to: 1.3 },
-  flurry: { long: 2.38, r: 1.3, cuts: [[0.62, 3.419, 2.17, 0.7], [1.08, 4.029, -2.111, 0.7], [1.54, 5.513, -0.019, 1.0]] as ReadonlyArray<readonly [number, number, number, number]> },
+  flurry: { long: 2.38, r: 1.3, cuts: [[0.62, 3.421, 2.165, 0.7], [1.08, 4.022, -2.123, 0.7], [1.54, 5.513, -0.021, 1.0]] as ReadonlyArray<readonly [number, number, number, number]> },
   wheel: { long: 2.36, hit: 0.8, stop: 1.86, every: 11 / 30, from: 0.6, to: 1.7, drive: 2.5, ahead: 0.97, r: 1.5, warnFrom: 0.24 },
   vault: { long: 2.5, hit: 1.44, warnFrom: 0.26, spot: [6.121, -0.102] as const, reach: 2.5, dmg: 1.8, knock: 2.2, shake: 7, slam: 1.8 },
   dash: { long: 0.5, far: 1.5 },
