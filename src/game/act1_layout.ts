@@ -326,6 +326,8 @@ export interface ChainOpts {
   laneW: number;
   laneLong: [number, number];
   gap: number;
+  /** (floor 13, laid open) the boss's area joined by a way, whatever `broad` is: its ground kept to itself for the fight. */
+  laneLast?: boolean;
 }
 
 /** A chain of open areas from the start to the boss's, each joined to the last. */
@@ -348,7 +350,7 @@ export function planChain(rng: RNG, o: ChainOpts): Plan | null {
       const h = Math.max(o.heading - o.spread, Math.min(o.heading + o.spread, turnTo));
       const rNew = Math.max(sz.rx, sz.ry);
       const rOld = Math.max(prev.blob.rx, prev.blob.ry);
-      const broad = rng.chance(o.broad);
+      const broad = !(o.laneLast && role === 'boss') && rng.chance(o.broad);
       const d = broad ? (rOld + rNew) * rng.range(0.62, 0.8) : rOld + rNew + rng.range(o.laneLong[0], o.laneLong[1]);
       const [x, y] = along(prev.blob.x, prev.blob.y, h, d);
       const b: Blob = { x, y, rx: sz.rx, ry: sz.ry, rot: rng.range(0, Math.PI), wob: sz.wob, seed: rng.int(0, 9999) };

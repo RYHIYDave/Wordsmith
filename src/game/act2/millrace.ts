@@ -159,12 +159,60 @@ function sizeOf(rng: RNG, role: AreaRole): { rx: number; ry: number; wob: number
   return { rx: rng.range(F.rx[0], F.rx[1]), ry: rng.range(F.ry[0], F.ry[1]), wob: F.wob };
 }
 
+/**
+ * OPEN (his pick for floor 13, and his word of 1 Nov 2026 on the fields laid one after another: “That’s not open for 13 really.
+ * That I would call linear.”): every field of the main way opens broadly into the next, the way wanders, and up to `fill` more
+ * fields are set beside and between them, each overlapping two of the main way's fields or more, so that the floor is one wide
+ * open ground with many ways across it; none on the water, the mill's ground, the farmstead, the lair, where he comes in or
+ * the Pulping Floor.
+ */
+export const MR_OPEN = { on: true, fill: 7 };
+
+function openUp(rng: RNG, plan: Plan, dry: (x: number, y: number, r: number) => boolean, mill: number): void {
+  const F = MR_PLAN.field;
+  const path = plan.areas.map((_a, i) => i).filter((i) => plan.areas[i].role === 'path' && i !== mill);
+  const keepOff = plan.areas.map((_a, i) => i).filter((i) => !path.includes(i));
+  let added = 0;
+  for (let tries = 0; tries < 160 && added < MR_OPEN.fill; tries++) {
+    // (beside the way between two of its fields a step or two apart, pushed out to one side)
+    const k = rng.pick(path);
+    const near = path.filter((j) => j !== k && Math.hypot(plan.areas[j].blob.x - plan.areas[k].blob.x, plan.areas[j].blob.y - plan.areas[k].blob.y) < plan.areas[j].r + plan.areas[k].r + 8);
+    if (!near.length) continue;
+    const j = rng.pick(near);
+    const A = plan.areas[k].blob;
+    const B = plan.areas[j].blob;
+    const mx = (A.x + B.x) / 2;
+    const my = (A.y + B.y) / 2;
+    const len = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+    const side = rng.chance(0.5) ? 1 : -1;
+    const push = rng.range(0.4, 0.9) * Math.min(plan.areas[k].r, plan.areas[j].r);
+    const x = mx + (-(B.y - A.y) / len) * push * side;
+    const y = my + ((B.x - A.x) / len) * push * side;
+    const b: Blob = { x, y, rx: rng.range(F.rx[0], F.rx[1]) * 0.85, ry: rng.range(F.ry[0], F.ry[1]) * 0.85, rot: rng.range(0, Math.PI), wob: F.wob, seed: rng.int(0, 9999) };
+    const r = radiusOf(b);
+    if (!dry(x, y, r)) continue;
+    // (clear of what keeps one way in: the start, the Pulping Floor, the mill's ground, the farmstead, the lair)
+    if (keepOff.some((i) => Math.hypot(plan.areas[i].blob.x - x, plan.areas[i].blob.y - y) < plan.areas[i].r + r + 3)) continue;
+    // (opening into two of the way's fields or more)
+    const into = path.filter((i) => Math.hypot(plan.areas[i].blob.x - x, plan.areas[i].blob.y - y) < plan.areas[i].r + r * 0.75);
+    if (into.length < 2) continue;
+    // (and not on top of a field already there)
+    if (plan.areas.some((a) => Math.hypot(a.blob.x - x, a.blob.y - y) < Math.max(a.r, r) * 0.7)) continue;
+    plan.areas.push({ blob: b, role: 'path', path: -1, parent: k, r });
+    added++;
+  }
+}
+
 /** Lay floor 13, or null (not laid this time: the dice are rolled again, game/act2_layout.ts). */
 export function generate(depth: number, seed: number): Laid | null {
   const rng = new RNG((seed ^ 0x13a7c0de) >>> 0);
   // THE MAIN WAY: the fields, as the Pinewood's (across the screen one way or the other)
   const across = rng.chance(0.5) ? LEFT : RIGHT;
-  const plan = planChain(rng, { count: MR_PLAN.count, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size: sizeOf, broad: 0.55, laneW: MR_PLAN.path, laneLong: [3, 7], gap: 4 });
+  // (MR_OPEN, his “That’s not open for 13 really.  That I would call linear.”: every field opening broadly into the next, the
+  // way wandering more, then fields between and beside them below)
+  const plan = MR_OPEN.on
+    ? planChain(rng, { count: MR_PLAN.count, heading: across + rng.range(-0.3, 0.3), spread: 1.3, turn: 1.0, size: sizeOf, broad: 1, laneW: MR_PLAN.path, laneLong: [3, 7], gap: 4, laneLast: true })
+    : planChain(rng, { count: MR_PLAN.count, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size: sizeOf, broad: 0.55, laneW: MR_PLAN.path, laneLong: [3, 7], gap: 4 });
   if (!plan) return null;
   // THE MILL, off the main way half way along; THE RIVER past its front and across the way
   const site = siteMill(rng, plan);
@@ -176,6 +224,8 @@ export function generate(depth: number, seed: number): Laid | null {
   const dry = (x: number, y: number, r: number): boolean => laneDist({ pts: river, w: 0 }, x, y) > r + 3 && laneDist({ pts: race0, w: 0 }, x, y) > r + 3;
   if (growAway(rng, plan, 'side', MR_PLAN.farm, MR_PLAN.side, 3, dry) < 0) return null;
   if (growAway(rng, plan, 'lair', MR_PLAN.lair, MR_PLAN.side, 3, dry) < 0) return null;
+  // (MR_OPEN: fields between and beside the main way's, each opening into two of them or more: the floor one wide open ground)
+  if (MR_OPEN.on) openUp(rng, plan, dry, site.area);
 
   // THE BOUNDS: everything moved so the open ground starts MARGIN tiles in (by whole tiles, so the mill's works stay on theirs)
   let x0 = Infinity;
