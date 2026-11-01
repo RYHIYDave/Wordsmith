@@ -1108,7 +1108,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       if (input.pressed('KeyQ')) c.potion = true;
       if (input.pressed('KeyE') || input.pressed('KeyF')) c.interact = true;
-    } else if (meta.aim === 'auto') {
+    } else if (meta.aim === 'auto' || meta.aim === 'one') {
       // Touch, with everything aimed by the game (the owner, 4 Oct 2026, 21:10: "a third option to
       // the attacks: option which will auto aim everything. So any ability that goes where you
       // tap or hold will auto target an enemy"). Where the right thumb lands does not matter: TAP
@@ -1133,8 +1133,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // a tap too, whichever side of the screen it is on: a newcomer told to "tap" taps the
       // monster). The hero walks into reach first if need be, so the tap is kept as an order until
       // it is carried out, exactly as where the thumb aims.
+      const one = meta.aim === 'one';
       const touched = input.tap ?? (input.poke && !spot && monsterAt(g, input.poke.x, input.poke.y) ? input.poke : null);
-      if (touched && !spot) {
+      // (ONE HAND: the quick attack goes by itself at the enemy picked, once it is in reach, and the hero is not walked to it; a tap
+      // throws the slow attack, below)
+      if (one && !order && aims.quick && (melee ? g.quickReaches(aims.quick) : Math.hypot(aims.quick.x - h.x, aims.quick.y - h.y) <= Math.max(3, SKILLS[quick.id].range || 8))) {
+        const a = placedAim(g, aims.quick, SKILLS[quick.id].kind);
+        c.aimX = a.x;
+        c.aimY = a.y;
+        c.fire = true;
+        fought = aims.quick.id;
+      }
+      if (one && touched && !spot) {
+        const def = SKILLS[slow.id];
+        const reach = Math.min(def.range > 0 ? def.range : 3, 4);
+        const p = aims.slow ? placedAim(g, aims.slow, def.kind) : { x: h.x + h.fx * reach, y: h.y + h.fy * reach };
+        c.cast = true;
+        c.castX = p.x;
+        c.castY = p.y;
+        if (aims.slow) renderer.lockId = aims.slow.id;
+      } else if (touched && !spot) {
         order = { id: aims.quick ? aims.quick.id : null, x: h.x + h.fx * 3, y: h.y + h.fy * 3, t: 0, uses: quick.uses };
         if (aims.quick) fought = aims.quick.id;
       }
@@ -1565,6 +1583,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)) * dbg.slowmo;
     last = now;
     clock += dt;
+    input.oneHand = scr.touch && meta.aim === 'one';
     input.beginFrame();
     if (GAMEPAD.on) padFrame(dt);
     else PAD_USE.live = false;

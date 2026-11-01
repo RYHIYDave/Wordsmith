@@ -1084,10 +1084,14 @@ export interface Meta {
  *           THE DEFAULT since Version 12.2.1 (the owner, 4 Oct 2026, 22:26, having played it:
  *           "When playing on mobile, let's put auto-aim as the default setting").
  * A mouse always aims with its pointer.
+ * 'one':  ONE HAND (the owner, 1 Nov 2026, 10:50: “And I think I want an option to play one handed.  Like you can just move and
+ *           swipe and the attacks will happen automatically”; of the slow attack, his pick “Tap to throw it (Recommended)”). One
+ *           thumb anywhere: resting or dragged, it is the stick (he walks); a quick tap throws the slow attack, at the enemy auto
+ *           aim picks; a quick swipe is the evasive move. The quick attack goes by itself at the nearest enemy awake and in reach.
  */
-export type AimMode = 'face' | 'tap' | 'auto';
+export type AimMode = 'face' | 'tap' | 'auto' | 'one';
 /** In the order the switch in OPTIONS goes through them: the way the game starts out first. */
-export const AIM_MODES: readonly AimMode[] = ['auto', 'tap', 'face'];
+export const AIM_MODES: readonly AimMode[] = ['auto', 'tap', 'face', 'one'];
 
 export interface PropInst {
   kind: PropType;

@@ -1011,6 +1011,7 @@ export interface PauseOut {
 /** What the switch between the two ways of aiming on a phone says. */
 export function aimLabel(aim: AimMode): string {
   if (aim === 'auto') return 'ATTACKS: AUTO AIM';
+  if (aim === 'one') return 'ATTACKS: ONE HAND';
   return aim === 'face' ? 'ATTACKS: THE WAY YOU FACE' : 'ATTACKS: WHERE YOU TAP';
 }
 
