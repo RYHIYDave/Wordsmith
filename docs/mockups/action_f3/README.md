@@ -175,7 +175,22 @@ Made by: `tools/action_f3_film.ts` (the film), `tools/action_f3_sheet.ts` and `t
 `src/dev/action_f3_scene.ts` (the scenes, on floor 1's stand-in floor; the game's own red circle, charge lane and thrown spear drawn
 through a stand-in canvas), `tools/action_f3_hash.ts` (the hashes).
 
-## For him to decide (the art chat's to ask)
+## His word on the pictures
+
+Shown `action_f3.mp4` and `action_f3_sheet.png`, 31 Oct 2026 (answered by 19:59), and asked of each:
+
+- The rampage (swing, backhand, the club held up in a crouch, the leap and the slam; the ring 2.5 tiles round; in place of the
+  old single swing), offered with keeping a quick single swing too, or a change: “Yes, that's it (Recommended)”. So the rampage
+  is his every attack beside the rush, as drawn; the old swing stays out of the set; the ring stays at 2.5 tiles.
+- The bull rush (head down, pawing, held; the lane 1.8 tiles wide; 11 tiles a second, on past where you stood; rocked back to a
+  stop): “Yes, that's it (Recommended)”.
+- The Boneward's shield wall (braced advance; blows from the front glance off; from the side or behind they land; the shield
+  dropped to throw), offered with redoing its spear thrust too, or a change: “Yes, that's it (Recommended)”. So the wall is as
+  drawn (up while it stands and walks), and its thrust stays the game's own for now.
+
+All three are his yes: the main chat may bring them in (`BRUTE_RAMPAGE` and `BONEWARD_WALL` turned on).
+
+## For him to decide (the art chat's to ask) — asked and settled above
 
 - The rampage as his every attack (his offer's two: the rampage and the rush), or his old level swing kept as a quick basic blow
   between rampages (his rule of 9 Oct: "They should always have a basic, single target attack"). The rampage's two swings are
