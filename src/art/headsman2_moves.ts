@@ -26,12 +26,12 @@
 import { between, footwork, kneelHips, kneelSettle, plantBy, plantOf } from './bosses3';
 import type { FootTrack, Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
-import { AXE2_HOLD, AXE2_LEN, BLADE_OUT, BLADE_TALL, D, H2_AXE_GOES, WHEEL_NAME, H2_BASE, H2_HANG, H2_HOOD_GOES, H2_BODY, H2_CANVAS, FLURRY_NAME, H2_FLURRY_HITS, H2_GUARD, HAFT_TOP, SPIKE, axe2Of, axeWay, axed, clamp01, coatSkirts, headsman2Bits, resolvedRest } from './headsman2';
+import { AXE2_HOLD, AXE2_LEN, AXE_HELD, BLADE_OUT, BLADE_TALL, D, H2_AXE_GOES, WHEEL_NAME, H2_BASE, H2_HANG, H2_HOOD_GOES, H2_BODY, H2_CANVAS, FLURRY_NAME, H2_FLURRY_HITS, H2_GUARD, HAFT_TOP, SPIKE, axe2Of, axeWay, axed, carried, clamp01, edgeAlong, coatSkirts, headsman2Bits, resolvedRest } from './headsman2';
 import type { P } from './headsman2';
 import type { ActorArt } from './actor_types';
 import { TILE3, mobSet, posedOfMob } from './new_mobs3';
 import type { Mob, MobMove } from './new_mobs3';
-import { add, bonesAt, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
+import { about, add, bonesAt, cross, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 const B = H2_BODY;
@@ -68,6 +68,10 @@ const overOf = (way: V3): P => {
 };
 /** A held pose trembling: its right hand (and the axe) up or down a little, and whatever else is said. */
 const trembling = (pose: P, dz: number, more: P = {}): P => ({ ...pose, rhz: (pose.rhz as number) + dz, ...more });
+/** `e` square to the haft's way `p` (both unit): the way the edge faces. */
+const squareOf = (e: V3, p: V3): V3 => norm(sub(e, mul(p, dot(e, p))), norm(cross(p, [0, 0, 1]), [0, 1, 0]));
+/** THE EDGE AS IT IS CARRIED, HELD FIRM, from a haft running `from` with its edge facing `edge` to a haft running `to` (art/action_f2's mend). */
+const heldEdge = (from: V3, edge: V3, to: V3): V3 => squareOf(carried(squareOf(edge, norm(from)), norm(from), norm(to)), norm(to));
 
 // ---------------------------------------------------------------------------------------------
 // A QUICK MOVE AS ONE SMOOTH SWEEP. A blow that whips the axe round him in a tenth of a second goes a long
@@ -108,16 +112,58 @@ function sweep(ctrls: ReadonlyArray<{ at: number; pose: P }>, rest: Bones = R): 
   const first = full[0].at;
   const last = full[n - 1].at;
   let lastAz: [number, number] | null = null;
-  for (let fi = Math.ceil(first * 30 + 1e-6); fi / 30 <= last + 1e-9; fi++) {
-    const t = Math.min(last, fi / 30);
+  const segOf = (t: number): number => {
     let i = 0;
     while (i < n - 2 && t > full[i + 1].at) i++;
+    return i;
+  };
+  const haftAt = (t: number): V3 => {
+    const i = segOf(t);
+    const T = full[i + 1].at - full[i].at;
+    const u = T > 0 ? (t - full[i].at) / T : 1;
+    return norm([0, 1, 2].map((k) => hermite(wseries[0][k][i], wseries[0][k][i + 1], slope(wseries[0][k], i) * T, slope(wseries[0][k], i + 1) * T, u)) as unknown as V3, [0, 0, 1]);
+  };
+  // THE BLADE HELD FIRM (art/action_f2's mend: the edge was mixed by itself, apart from the haft, and rolled round it as
+  // much as 21 degrees a frame): each control's edge is carried along the haft's own way through the air, step by step,
+  // to the next control, and what is left between the two (how far the axe is turned in his grip) turned evenly the short
+  // way as it goes.
+  const edgeAt = ((): ((t: number) => V3) | null => {
+    if (!AXE_HELD.on) return null;
+    const STEP = 1 / 240;
+    const along = (e: V3, t0: number, t1: number): V3 => {
+      let h = haftAt(t0);
+      let v = e;
+      const m = Math.max(1, Math.ceil((t1 - t0) / STEP));
+      for (let j = 1; j <= m; j++) {
+        const h2 = haftAt(t0 + ((t1 - t0) * j) / m);
+        v = carried(v, h, h2);
+        h = h2;
+      }
+      return squareOf(v, h);
+    };
+    const edges = full.map((c, i) => squareOf(ways[i][1], haftAt(c.at)));
+    const turns = full.slice(0, -1).map((c, i) => {
+      const got = along(edges[i], c.at, full[i + 1].at);
+      const h = haftAt(full[i + 1].at);
+      return Math.atan2(dot(cross(got, edges[i + 1]), h), dot(got, edges[i + 1])) / D;
+    });
+    return (t: number): V3 => {
+      const i = segOf(t);
+      const T = full[i + 1].at - full[i].at;
+      const u = T > 0 ? clamp01((t - full[i].at) / T) : 1;
+      return norm(about(along(edges[i], full[i].at, t), haftAt(t), turns[i] * u));
+    };
+  })();
+  for (let fi = Math.ceil(first * 30 + 1e-6); fi / 30 <= last + 1e-9; fi++) {
+    const t = Math.min(last, fi / 30);
+    const i = segOf(t);
     const T = full[i + 1].at - full[i].at;
     const u = T > 0 ? (t - full[i].at) / T : 1;
     const at = (vals: number[]): number => hermite(vals[i], vals[i + 1], slope(vals, i) * T, slope(vals, i + 1) * T, u);
     const pose: Record<string, number> = {};
     for (const f of SMOOTHED) pose[f] = at(series[f]);
-    const [haft, edge] = [0, 1].map((j) => norm([at(wseries[j][0]), at(wseries[j][1]), at(wseries[j][2])] as V3, [0, 0, 1]));
+    const [haft, edge0] = [0, 1].map((j) => norm([at(wseries[j][0]), at(wseries[j][1]), at(wseries[j][2])] as V3, [0, 0, 1]));
+    const edge = edgeAt ? edgeAt(t) : edge0;
     const sAz = (v: V3, prev: number | undefined): number => {
       let az = Math.atan2(v[1], v[0]) / D;
       if (prev !== undefined) az -= 360 * Math.round((az - prev) / 360);
@@ -188,7 +234,17 @@ const H2_GROUND = H2_PACE * TILE3;
 const STRIDE = H2_GROUND / H2_WALK_FPS;
 /** HIS BODY AS HE PROWLS (the middle of it), and the axe as he carries it so: up beside his right shoulder, the head high behind him and its foot before him, clear of his legs as they go. */
 const WALK_BODY: P = { px: 2, pz: R.pz - 4, yaw: -20, twist: 4, pitch: R.pitch + 9, bend: R.bend + 3, faceTurn: 8, faceUp: R.faceUp + 4 };
-const WALK_AXE: P = onChest(elbowsTo({ ...WALK_BODY, ...grip([10, -19, 82], [-0.72, -0.2, 0.66], [-0.55, -0.15, -0.8], 0.95, null) }, null, [-0.5, -0.5, -0.7]), H2_BASE);
+const WALK_AXE_WAS: P = onChest(elbowsTo({ ...WALK_BODY, ...grip([10, -19, 82], [-0.72, -0.2, 0.66], [-0.55, -0.15, -0.8], 0.95, null) }, null, [-0.5, -0.5, -0.7]), H2_BASE);
+/** His guard's axe: the way its haft runs and its edge faces. */
+const GUARD_HAFT: V3 = [-0.42, -0.2, 0.88];
+const GUARD_EDGE: V3 = [-0.1, -1, 0];
+/**
+ * (art/action_f2's mend: in his walk the blade faced down and behind him, in his guard out to his right, so that every
+ * time he set off or stopped, the blade turned over 70 degrees round the haft in his hand. Now he carries it as his guard
+ * holds it: its edge as his guard's, carried with the haft to the way he carries it in his walk.)
+ */
+const WALK_AXE_HELD: P = onChest(elbowsTo({ ...WALK_BODY, ...grip([10, -19, 82], [-0.72, -0.2, 0.66], heldEdge(GUARD_HAFT, GUARD_EDGE, [-0.72, -0.2, 0.66]), 0.95, null) }, null, [-0.5, -0.5, -0.7]), H2_BASE);
+const walkAxe = (): P => (AXE_HELD.on ? WALK_AXE_HELD : WALK_AXE_WAS);
 function h2WalkPose(j: number): P {
   const n = H2_WALK_FRAMES;
   const d = STRIDE;
@@ -208,7 +264,7 @@ function h2WalkPose(j: number): P {
     lfx: lx, lfz: lz, lfy: R.lfy, lft: R.lft, lk: 14, lfp: lp,
     // (his left arm swinging with his stride; the axe as WALK_AXE has it, rocking with his steps)
     lhIn: 0, lhx: 12 + 5 * Math.cos(a), lhy: 7, lhz: H2_HANG + 10, le: -34,
-    ...WALK_AXE, rhz: (WALK_AXE.rhz as number) + 1.2 * Math.cos(2 * a), wEl: (WALK_AXE.wEl as number) + 2 * Math.cos(2 * a),
+    ...walkAxe(), rhz: (walkAxe().rhz as number) + 1.2 * Math.cos(2 * a), wEl: (walkAxe().wEl as number) + 2 * Math.cos(2 * a),
   };
 }
 function h2Walk(): Motion {
@@ -228,7 +284,8 @@ export const H2_SET_OFF = (L0.at[0] - plantOf(B, 'L', WALK0, R).at[0]) / H2_GROU
 export const H2_HALT = (plantOf(B, 'R', WALK0, R).at[0] - R0.at[0]) / H2_GROUND;
 function h2SetOff(): Motion {
   const T = H2_SET_OFF;
-  return { keys: [{ at: 0, pose: {} }, { at: T * 0.5, pose: { ...between(R, WALK0, 0.5, R), pz: (R.pz + (WALK0.pz as number)) / 2 - 1.5 }, ease: 'io' }, { at: T, pose: WALK0, ease: 'io' }] };
+  const W0 = h2WalkPose(0);
+  return { keys: [{ at: 0, pose: {} }, { at: T * 0.5, pose: { ...between(R, W0, 0.5, R), pz: (R.pz + (W0.pz as number)) / 2 - 1.5 }, ease: 'io' }, { at: T, pose: W0, ease: 'io' }] };
 }
 function h2SetOffFeet(): (t: number) => P {
   const T = H2_SET_OFF;
@@ -240,7 +297,8 @@ function h2SetOffFeet(): (t: number) => P {
 }
 function h2Halt(): Motion {
   const T = H2_HALT;
-  return { keys: [{ at: 0, pose: WALK0 }, { at: T * 0.55, pose: { ...between(WALK0, R, 0.55, R), pz: (R.pz + (WALK0.pz as number)) / 2 - 1.2 }, ease: 'io' }, { at: T, pose: {}, ease: 'io' }] };
+  const W0 = h2WalkPose(0);
+  return { keys: [{ at: 0, pose: W0 }, { at: T * 0.55, pose: { ...between(W0, R, 0.55, R), pz: (R.pz + (W0.pz as number)) / 2 - 1.2 }, ease: 'io' }, { at: T, pose: {}, ease: 'io' }] };
 }
 function h2HaltFeet(): (t: number) => P {
   const T = H2_HALT;
@@ -293,6 +351,22 @@ const FOLLOW: P = elbowsTo({ ...FOLLOW_BODY, ...grip([36, 16, 48], heading(82, -
 /** Springing back: the axe swung up before him, upright, in both hands at its foot, the head high; on its way back behind his shoulder. */
 const LIFT_BODY: P = { px: 4, pz: R.pz - 8, yaw: -26, pitch: 10, twist: 2, bend: 9, faceTurn: 20, faceUp: -8, lk: 26, rk: -22 };
 const LIFT: P = elbowsTo({ ...LIFT_BODY, ...grip([30, -6, 70], [0.42, -0.36, 0.83], [-0.6, -0.6, 0], 0.08, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
+/**
+ * (art/action_f2's mend. HIS WIND-DOWN AS IT WAS: from the follow-through, the axe out flat to his left, its edge facing
+ * behind him, it was whipped up over his head (LIFT) and down behind his right shoulder in a fifth of a second, as fast as
+ * the blow, and his guard's edge faces out to his right: so the blade turned over in his hands on the way, 92 degrees by
+ * LIFT and 50 more after it. NOW: he brings it back the way it came, flat and low before him, round to his right, and up
+ * onto his shoulder: held firm all the way, the blade carried with the haft, as it comes to his guard turned in his grip by
+ * a few degrees only.)
+ */
+const LUNGE_BACK_WAY = [36, -6] as const;
+const LUNGE_SIDE_WAY = [-132, -10] as const;
+const LUNGE_BACK_HAFT = heading(...LUNGE_BACK_WAY);
+const LUNGE_SIDE_HAFT = heading(...LUNGE_SIDE_WAY);
+const LUNGE_BACK_EDGE = edgeAlong(flatEdge(heading(82, -6)), [82, -6], LUNGE_BACK_WAY);
+const LUNGE_BACK_BODY: P = { px: 10, pz: R.pz - 11, yaw: -8, pitch: 16, twist: 8, bend: 11, faceTurn: 8, faceUp: -12, lk: 38, rk: -12 };
+const LUNGE_BACK: P = elbowsTo({ ...LUNGE_BACK_BODY, ...grip([42, 4, 52], LUNGE_BACK_HAFT, LUNGE_BACK_EDGE, 0.06, -6) }, [-0.2, 0.7, -0.6], [-0.2, -0.7, -0.6]);
+const LUNGE_SIDE: P = elbowsTo({ ...LIFT_BODY, ...grip([26, -22, 62], LUNGE_SIDE_HAFT, edgeAlong(LUNGE_BACK_EDGE, LUNGE_BACK_WAY, [LUNGE_SIDE_WAY[0] - 360 * Math.round((LUNGE_SIDE_WAY[0] - LUNGE_BACK_WAY[0]) / 360), LUNGE_SIDE_WAY[1]]), 0.06, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
 /** Settling: the axe behind his right shoulder as his guard has it, his right hand still low on it, sliding up to its middle. */
 const SETTLE: P = { ...grip([4, -16, 74], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 0.5, null), lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52, re: 30 };
 /** On the way into the coil: his hands slid to the foot of the haft, the head going down behind him. */
@@ -311,9 +385,18 @@ function h2Lunge(): Motion {
       { at: H - 0.05, pose: ROUND, ease: 'in' },
       { at: H, pose: HOOK, ease: 'lin' },
       { at: H + 0.14, pose: FOLLOW, ease: 'out' },
-      { at: H + 0.28, pose: { ...FOLLOW, pz: R.pz - 13, twist: 24 }, ease: 'io' },
-      { at: H + 0.46, pose: LIFT, ease: 'in' },
-      { at: H + 0.68, pose: SETTLE, ease: 'out' },
+      ...(AXE_HELD.on
+        ? [
+            { at: H + 0.2, pose: { ...FOLLOW, pz: R.pz - 13, twist: 24 }, ease: 'io' as const },
+            { at: H + 0.38, pose: LUNGE_BACK, ease: 'in' as const },
+            { at: H + 0.6, pose: LUNGE_SIDE, ease: 'lin' as const },
+            { at: H + 0.78, pose: SETTLE, ease: 'out' as const },
+          ]
+        : [
+            { at: H + 0.28, pose: { ...FOLLOW, pz: R.pz - 13, twist: 24 }, ease: 'io' as const },
+            { at: H + 0.46, pose: LIFT, ease: 'in' as const },
+            { at: H + 0.68, pose: SETTLE, ease: 'out' as const },
+          ]),
       { at: H + 0.9, pose: {}, ease: 'io' },
     ],
   };
@@ -512,10 +595,19 @@ function h2Wheel(): Motion {
   const keys: Key3[] = [{ at: 0, pose: {} }];
   // (squared up, the axe raised upright before him in his right hand: the start of the wheel)
   const raise = (t: number, dz = 0): P => {
-    const [haft, edge] = wheelWays(wheelAngle(t));
+    const phi = wheelAngle(t);
+    const [haft, edge] = wheelWays(phi);
     const x = wheelAt(t);
-    return elbowsTo({ ...WH_BODY, px: x + 4, ...grip([x + WH_HAND[0], WH_HAND[1], WH_HAND[2] + dz], haft, edge, 1, null) }, null, [0, -0.6, -0.8]);
+    // (art/action_f2's mend: the ways said as going on round the wheel, its haft `phi` up from his left and its edge with it,
+    // not as the way they point, which goes over the top and comes back from the other side twice a turn: between two frames
+    // the haft swung out of the wheel there, toward him and away, and the wheel of fire, drawn through the moments between,
+    // wobbled. Each frame is the same.)
+    const round: P = AXE_HELD.on ? { wAz: 90, wEl: phi, pAz: -90, pEl: 90 - phi } : {};
+    return elbowsTo({ ...WH_BODY, px: x + 4, ...grip([x + WH_HAND[0], WH_HAND[1], WH_HAND[2] + dz], haft, edge, 1, null), ...round }, null, [0, -0.6, -0.8]);
   };
+  /** (and after it, the haft's way said as having gone round the wheel as many times as it has: so that it does not unwind between two keys) */
+  const gone = AXE_HELD.on ? 360 * Math.round((wheelAngle(W.stop) - 90) / 360) : 0;
+  const on = (p: P): P => (gone ? { ...p, wEl: ((p.wEl as number | undefined) ?? R.wEl) + gone } : p);
   // (the axe brought forward first, still leaning back, clear of his shoulder and his hood; then upright)
   keys.push({ at: 0.12, pose: elbowsTo({ ...between(R, WH_BODY, 0.5, R), px: 2, ...grip([20, -20, 74], [-0.18, -0.25, 0.95], [0, -1, 0], 1, null) }, null, [0, -0.6, -0.8]), ease: 'in' });
   keys.push({ at: 0.24, pose: raise(0), ease: 'out' });
@@ -535,10 +627,10 @@ function h2Wheel(): Motion {
   // (and round and up behind his shoulder, his guard where he has come to)
   const x = wheelAt(W.stop);
   const home: P = { px: x, ...grip([x + 2, -15, 66], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 1, null), lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52, re: 30 };
-  keys.push({ at: W.stop + 0.1, pose: elbowsTo({ ...WH_BODY, px: x + 2, ...grip([x + 22, -20, 78], [-0.18, -0.25, 0.95], [0, -1, 0], 1, null) }, null, [0, -0.6, -0.8]), ease: 'in' });
-  keys.push({ at: W.stop + 0.2, pose: elbowsTo({ px: x + 1, ...grip([x + 12, -24, 70], [-0.32, -0.3, 0.9], [-0.05, -1, 0], 1, null), lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52 }, null, [-0.4, -0.7, -0.5]), ease: 'lin' });
-  keys.push({ at: W.stop + 0.3, pose: home, ease: 'out' });
-  keys.push({ at: W.long, pose: { px: x }, ease: 'io' });
+  keys.push({ at: W.stop + 0.1, pose: on(elbowsTo({ ...WH_BODY, px: x + 2, ...grip([x + 22, -20, 78], [-0.18, -0.25, 0.95], [0, -1, 0], 1, null) }, null, [0, -0.6, -0.8])), ease: 'in' });
+  keys.push({ at: W.stop + 0.2, pose: on(elbowsTo({ px: x + 1, ...grip([x + 12, -24, 70], [-0.32, -0.3, 0.9], [-0.05, -1, 0], 1, null), lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52 }, null, [-0.4, -0.7, -0.5])), ease: 'lin' });
+  keys.push({ at: W.stop + 0.3, pose: on(home), ease: 'out' });
+  keys.push({ at: W.long, pose: on({ px: x }), ease: 'io' });
   return { hit: W.hit, keys };
 }
 function h2WheelFeet(): (t: number) => P {
@@ -632,7 +724,8 @@ function h2Vault(): Motion {
   const tip = elbowsTo(air(hungFrom(vtHand(18), { yaw: 0, pitch: 222, roll: 0, bend: -10 }, 41, 16), 20, { ...grip(vtHand(18), vtWay(18), edgeR, VT_HOLD, null), ...VT_FLUNG }), LEFT, [1, -0.3, 0]);
   // (flipping over in the air, the axe torn out of the floor and upright beside him, his hand over his head and sliding down it toward its foot)
   const flipBody: P = air({ px: 114, py: 6, pz: R.pz + 40, yaw: 0, pitch: 300, roll: 0, bend: -8 }, 10, {});
-  const flip = elbowsTo({ ...flipBody, ...grip(overHead(flipBody, 40, 10), heading(180, 80), edgeR, 0.45, null), ...VT_FLUNG }, LEFT, [0.3, -0.5, -0.8]);
+  // (art/action_f2's mend: the blade turns from out to his right to before him as he goes over: half of it on the way up to here, not all of it in the four frames after)
+  const flip = elbowsTo({ ...flipBody, ...grip(overHead(flipBody, 40, 10), heading(180, 80), AXE_HELD.on ? [0.7, -0.7, 0] : edgeR, 0.45, null), ...VT_FLUNG }, LEFT, [0.3, -0.5, -0.8]);
   // (from here on he has gone over once: his pitch and his head's tip said a full turn on)
   // (landing crouched, the blade high over his head behind him, both hands at its foot)
   const landed = elbowsTo({ px: F, py: 0, pz: R.pz - 18, yaw: -4, pitch: 360 + 4, roll: 0, twist: 0, bend: 4, side: 0, faceTurn: 2, faceUp: 4 - 360, faceTilt: 0, lk: 40, rk: -24, ...grip([F + 18, -2, 118], heading(176, 74), [0, 0, 1], 0, -4) }, [0.3, 0.9, -0.2], [0.3, -0.9, -0.2]);
@@ -644,7 +737,13 @@ function h2Vault(): Motion {
   const bite = elbowsTo({ px: F, py: 0, pz: R.pz - 20, yaw: -4, pitch: 360 + 12, roll: 0, twist: 0, bend: 9, side: 0, faceTurn: 2, faceUp: -20 - 360, faceTilt: 0, lk: 40, rk: -24, ...grip(add(VT_BITE_HAND, [0, 0, VT_BITE]), VT_BITE_WAY, [-0.53, 0, -0.85], 0, -4) }, [-0.1, 0.6, -0.8], [-0.1, -0.6, -0.8]);
   const held = elbowsTo({ ...bite, pz: R.pz - 22, pitch: 360 + 14, faceUp: -22 - 360, ...grip(VT_BITE_HAND, VT_BITE_WAY, [-0.53, 0, -0.85], 0, -4) }, [-0.1, 0.6, -0.8], [-0.1, -0.6, -0.8]);
   // (wrenched out, raised before him; and into his guard)
-  const up = elbowsTo({ px: F + 2, pz: R.pz - 8, yaw: -26, pitch: 360 + 10, twist: 2, bend: 9, faceTurn: 20, faceUp: -8 - 360, lk: 26, rk: -22, ...grip([F + 30, -6, 76], [0.42, -0.36, 0.83], [-0.6, -0.6, 0], 0.08, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
+  const upWas = elbowsTo({ px: F + 2, pz: R.pz - 8, yaw: -26, pitch: 360 + 10, twist: 2, bend: 9, faceTurn: 20, faceUp: -8 - 360, lk: 26, rk: -22, ...grip([F + 30, -6, 76], [0.42, -0.36, 0.83], [-0.6, -0.6, 0], 0.08, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
+  // (art/action_f2's mend: wrenched up out of the floor as it was, before him and upright, the blade turned over in his hands
+  // 111 degrees on the way, and 61 more after it into his guard. Now wrenched up and out to his right, rising, the blade
+  // carried with the haft from where it bit: and so up onto his shoulder, turned in his grip a few degrees only.)
+  const UP_HAFT = heading(-70, 20);
+  const upHeld = elbowsTo({ px: F + 2, pz: R.pz - 8, yaw: -26, pitch: 360 + 10, twist: 2, bend: 9, faceTurn: 20, faceUp: -8 - 360, lk: 26, rk: -22, ...grip([F + 28, -12, 66], UP_HAFT, heldEdge(VT_BITE_WAY, [-0.53, 0, -0.85], UP_HAFT), 0.08, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
+  const up = AXE_HELD.on ? upHeld : upWas;
   const TURNED: P = { pitch: R.pitch + 360, faceUp: R.faceUp - 360 };
   const home = elbowsTo({ px: F, ...TURNED, ...grip([F + 2, -15, 66], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 1, -22) }, [-0.3, 0.6, -0.7], null);
   return {
@@ -858,7 +957,12 @@ function trailOf(s: Skeleton, q: Posed): V3[] {
   const a = axe2Of(s, q);
   return [a.horns[0], a.edge, a.horns[1], a.eye];
 }
-export const HEADSMAN_2: Mob = {
+/**
+ * HIM, MADE (with the axe held as AXE_HELD says: art/action_f2's mend on; off, as he was before it, for the pictures of
+ * before and after; the switch is read as he is made, and again as he is painted).
+ */
+export function headsman2Mob(): Mob {
+  return {
   id: 'headsman',
   name: 'The Headsman',
   size: 'a boss: the Warden’s height, lean',
@@ -876,7 +980,7 @@ export const HEADSMAN_2: Mob = {
     halt: mv('The Headsman stops', h2Halt(), { ground: H2_GROUND, feet: h2HaltFeet() }),
     flurry: mv(FLURRY_NAME, h2Flurry(), { feet: h2FlurryFeet(), glint: heldGlint(0.22, 0.36, H2_FLURRY_HITS[0]), trail: trailOf, trailSpan: 4, trailOver: (t) => H2_FLURRY_HITS.some((h) => t > h - 0.07 && t < h + 0.1) }),
     wheel: mv(WHEEL_NAME, h2Wheel(), { feet: h2WheelFeet(), glint: heldGlint(H2_WHEEL.warnFrom, 0.42, H2_WHEEL.hit), trail: trailOf, trailSpan: 6, trailOver: (t) => t > H2_WHEEL.full - 0.05 && t < H2_WHEEL.slow + 0.1 }),
-    vault: mv('The vault', VT_MOTION, { feet: h2VaultFeet(), glint: heldGlint(H2_VAULT.warnFrom, 0.4, H2_VAULT.hit), trail: trailOf, trailSpan: 4, trailOver: (t) => t > H2_VAULT.hit - 0.12 && t < H2_VAULT.hit + 0.06 }),
+    vault: mv('The vault', h2Vault(), { feet: h2VaultFeet(), glint: heldGlint(H2_VAULT.warnFrom, 0.4, H2_VAULT.hit), trail: trailOf, trailSpan: 4, trailOver: (t) => t > H2_VAULT.hit - 0.12 && t < H2_VAULT.hit + 0.06 }),
     dashL: mv('The Headsman dashes to his left', h2Dash(true), { feet: h2DashFeet(true) }),
     dashR: mv('The Headsman dashes to his right', h2Dash(false), { feet: h2DashFeet(false) }),
   },
@@ -897,7 +1001,9 @@ export const HEADSMAN_2: Mob = {
     if (piece === 'hood') return { from: H2_HOOD_GOES, to: [42, -50], spin: -60, lay: 'axis', hop: 2.2 };
     return null;
   },
-};
+  };
+}
+export const HEADSMAN_2: Mob = headsman2Mob();
 
 export function makeHeadsman2Art(pace = HEADSMAN_2.pace): ActorArt {
   return { front: mobSet(HEADSMAN_2, 'front', pace), back: mobSet(HEADSMAN_2, 'back', pace) };

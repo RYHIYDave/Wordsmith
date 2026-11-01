@@ -603,6 +603,27 @@ function kiteShield(p: Px, x0: number, y0: number, inside: boolean): void {
   p.erase(m + 7, y0 + 12).erase(m + 8, y0 + 12).erase(m + 8, y0 + 13);
 }
 
+/**
+ * WHERE ITS JOINTS ARE IN A FRAME (for the floor 1 action mock-ups' review, art/action_f1_checks.ts): picture pixels on the kit's
+ * canvas. Nothing of the game sets `see`; while it is null nothing is reported and nothing about a frame changes.
+ */
+export interface BonesSeen {
+  head: V;
+  hips: V;
+  /** The weapon hand (the bow hand) and its elbow; the free hand (the string hand) and its elbow. */
+  hand: V;
+  elbowR: V;
+  free: V;
+  elbowL: V;
+  knees: [V, V];
+  /** The two feet (the nearer first): where the sole is, and how far each is lifted. */
+  soles: [V, V];
+  lifts: [number, number];
+  /** The archer's arrowhead while an arrow is on the string, or flying off it (the streak's head); else null. */
+  tip: V | null;
+}
+export const BONES_SEEN: { see: ((j: BonesSeen) => void) | null } = { see: null };
+
 function bones(q: Pose, back: boolean, carry: Carry, take?: (parts: BoneParts) => void): Painted {
   const lights: Light[] = [];
   const bowman = carry === 'bow';
@@ -855,6 +876,8 @@ function bones(q: Pose, back: boolean, carry: Carry, take?: (parts: BoneParts) =
   // --- the weapon, and what goes with it ---
   const fist = layer();
   const line = layer();
+  /** (for BONES_SEEN: the arrowhead) */
+  let tipAt: V | null = null;
   if (!bowman) {
     sword(weapon, hand[0], hand[1], aim);
     // (in the instant of the blow the body is thrown harder than any walk throws it: the blade blurs)
@@ -875,12 +898,14 @@ function bones(q: Pose, back: boolean, carry: Carry, take?: (parts: BoneParts) =
       thread(line, free, tips.bot, lower);
       // (held at full draw, the spark on the arrowhead spits: brighter every other frame)
       arrow(line, free, aim, Math.max(0, q.act), q.act >= 1 && Math.floor(q.wind * SPIT + 1e-6) % 2 === 1, lights, lower);
+      tipAt = [free[0] + dir(aim)[0] * ARROW, free[1] + dir(aim)[1] * ARROW];
     } else if (nocked) {
       // the hand is not on it: the string is straight, and the arrow sits on it. (Facing us, the
       // arm that hangs is in front of both.)
       const behindArm: Hidden = (x, y) => (back ? behindBody(x, y) : skull.has(x, y) || foreNear.has(x, y));
       thread(line, tips.top, tips.bot, behindArm);
       arrow(line, nockAt, aim, 0, false, lights, behindArm);
+      tipAt = [nockAt[0] + dir(aim)[0] * ARROW, nockAt[1] + dir(aim)[1] * ARROW];
     } else {
       // let go: straight, but for the instant after the arrow has left, when it is flung forward
       const mid = nockOf(tips, aim, Math.round(q.pt));
@@ -888,6 +913,9 @@ function bones(q: Pose, back: boolean, carry: Carry, take?: (parts: BoneParts) =
       thread(line, mid, tips.bot, lower);
       // a fresh arrow on its way from the quiver: it swings down toward the bow as the hand comes back
       if (q.prop === 1 && q.off < 1.7) arrow(line, free, (Math.atan2(-(hand[1] - free[1]), hand[0] - free[0]) * 180) / Math.PI, 0, false, lights, upper);
+      // THE ARROW RAIN (ARCHER_RAIN, below): in the instant of the loose the arrow is `sweep` pixels gone up its flight, a streak
+      // of its spark and its fletching's pink behind it back to the bow (no live frame has a `sweep`)
+      if (q.sweep >= 4) tipAt = looseStreak(line, mid, aim, q.sweep, lights);
     }
   }
   fistOn(fist, hand);
@@ -922,7 +950,38 @@ function bones(q: Pose, back: boolean, carry: Carry, take?: (parts: BoneParts) =
   else if (q.behind) layers = [weapon, fist, farLayer, nearLegLayer, trunk, skull, upperNear, foreNear];
   else layers = [farLayer, nearLegLayer, trunk, skull, upperNear, foreNear, weapon, fist];
   if (shield) layers = back ? [shield, ...layers] : [...layers, shield];
+  if (BONES_SEEN.see) BONES_SEEN.see({ head: [headX + 1, headY + 6], hips: [hipX, py], hand, elbowR, free, elbowL, knees: [nearLeg.knee, farLeg.knee], soles: [[nearLeg.ax, nearLeg.sole], [farLeg.ax, farLeg.sole]], lifts: [q.nearLift, q.farLift], tip: tipAt });
   return { px: compose(null, layers, line), lights };
+}
+
+/**
+ * THE ARROW RAIN's loose (ARCHER_RAIN): the arrow `gone` pixels up its flight from the string (`nock`), and behind it, back to the
+ * bow, its streak: the spark's light hot at the head and thinning, the fletching's pink in broken after-images. Kept a few pixels
+ * clear of the canvas's top (what flies on up is drawn apart from the archer: art/action_f1_fx.ts). Gives the arrowhead.
+ */
+function looseStreak(p: Px, nock: V, deg: number, gone: number, lights: Light[]): V {
+  const [fx, fy] = dir(deg);
+  // (the head no higher than 4 pixels under the canvas's top)
+  const room = fy < 0 ? (nock[1] - 4 - ARROW * -fy) / -fy : gone;
+  const d = Math.max(0, Math.min(gone, room));
+  const head: V = [nock[0] + fx * (d + ARROW), nock[1] + fy * (d + ARROW)];
+  // the streak: from the bow up to the arrow's tail, after-images of its pink every few pixels, a hot line down its middle
+  for (let k = 0; k <= d; k++) {
+    const x = Math.round(nock[0] + fx * k);
+    const y = Math.round(nock[1] + fy * k);
+    const u = k / Math.max(1, d);
+    if (u > 0.35 || k % 3 !== 1) p.set(x, y, u > 0.7 ? FLAME[3] : u > 0.4 ? FLAME[2] : PINK[2]);
+    if (u > 0.5 && k % 4 === 0) p.set(x - Math.round(fy), y + Math.round(fx), PINK[3]);
+  }
+  // the arrow itself, as it leaves: pink fletching, the shaft, the spark at its head
+  for (let k = 0; k <= ARROW; k++) {
+    const x = Math.round(nock[0] + fx * (d + k));
+    const y = Math.round(nock[1] + fy * (d + k));
+    p.set(x, y, k >= 1 && k <= 3 ? PINK[k === 2 ? 3 : 2] : k < ARROW - 2 ? SHAFT : k === ARROW ? FLAME[4] : FLAME[3]);
+  }
+  lights.push({ x: head[0], y: head[1], r: 9, color: SOCKET, a: 0.6 });
+  lights.push({ x: nock[0] + fx * d * 0.5, y: nock[1] + fy * d * 0.5, r: 7, color: FLAME[3], a: 0.3 });
+  return head;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1163,6 +1222,68 @@ function shot(hit: number, nock: Partial<Pose>, drawn: Partial<Pose>, loosed: Pa
   return { keys, hit };
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE ARROW RAIN (the art chat's helper, 31 Oct 2026; docs/mockups/action_f1/README.md). The owner's review of every enemy for more
+// action: “I want buried battles when you’re fighting enemies and then once you fight them enough, I want you to be able to
+// recognize what’s going to happen and which enemies to be aware of and what they do”; for the bone archer, offered "Arrow rain:
+// it shoots high into the dark, a ring on the floor where you stand fills with falling shadows, and a second and a half later
+// arrows rain down there", his pick “Both shots” (its straight arrow kept, the rain now and then). So its second attack: it nocks,
+// raises the bow almost straight up and draws (held: the warning, the spark on the head spitting), looses in one frame (the
+// arrow a streak up off the string, the string hand snapping back), holds the bow up a moment, and takes a fresh arrow. What it
+// looses flies on up into the dark, and comes down as a rain in a ring where the hero stood: art/action_f1_fx.ts. Behind a
+// switch that is off: while it is, the archer is exactly as it was (tests/action_f1.test.ts).
+
+/** The switch: the rain (AnimSet.clips.moves.rain) is made only while it is on. */
+export const ARCHER_RAIN = { on: false };
+/** The moment it looses, in seconds (on the game's frames: 27 of them). */
+export const RAIN_LOOSE = 0.9;
+/** How far up its flight the arrow is in the frame of the loose (picture pixels): the streak. */
+const RAIN_STREAK = 30;
+/** Its pose at rest (makeArcherArt's): the bow low, the string hand hanging. */
+export const ARCHER_REST: Partial<Pose> = { aim: -45, off: -1 };
+
+/**
+ * THE RAIN SHOT, seen from in front or from behind: the hand to the string; the bow up, almost straight up, drawn full by 0.46 s;
+ * held drawn to the loose (the warning, 0.44 s), leaning back into it; the loose, one frame (the arrow gone up its streak, the
+ * string flung, the string hand snapped back past the jaw, the bow kicking up); the bow held up a moment (the follow-through),
+ * then down, the bow arm long, as the hand goes back over the shoulder for a fresh arrow and lays it on the string; at rest 0.82 s after the loose. The feet stay where they
+ * are (the rulebook's "Feet grip the floor").
+ */
+export function archerRainTimeline(back: boolean): Timeline {
+  const hit = RAIN_LOOSE;
+  const nock: Partial<Pose> = back ? { hx: 0, hy: 2, aim: -42, off: 0, wind: 0.05 } : { hx: -7, hy: -1, aim: -46, off: 0, wind: 0.05 };
+  // (the bow up and forward, the string drawn to the jaw: the arrow runs up past the face, not through it; it leans back into it)
+  const up: Partial<Pose> = back ? { hx: 3, hy: -22, aim: 68 } : { hx: 6, hy: -26, aim: 68 };
+  // (on the way up the bow is swung up out in front of it, the arm long, the string coming back as it rises)
+  const lift: Partial<Pose> = back ? { hx: 8, hy: -14, aim: 28, off: 0, act: 0.25, ohx: 1, ohy: -3, lean: -1, wind: 0.1 } : { hx: 8, hy: -12, aim: 28, off: 0, act: 0.25, ohx: 1, ohy: -3, lean: -1, wind: 0.1 };
+  // (drawn up, a full draw would bring the string hand down to the hip: it is drawn to the jaw, `ohx`/`ohy` along the flight)
+  const drawn: Partial<Pose> = { ...up, lean: -2, bob: 1, off: 0, act: 1, ohx: 4, ohy: -10, wind: 0.2 };
+  const held: Partial<Pose> = { ...drawn, lean: -3, act: 1.06, wind: 0.42 };
+  const loosed: Partial<Pose> = { ...up, hx: (up.hx ?? 0) + 1, hy: (up.hy ?? 0) - 2, aim: 71, lean: -3, bob: 1, act: 1, off: 1, ohx: -3, ohy: 5, pt: 2, sweep: RAIN_STREAK, wind: 0.46 };
+  const after: Partial<Pose> = { ...up, hy: (up.hy ?? 0) + 1, aim: 66, lean: -2, bob: 0.5, act: 1, off: 1, ohx: -5, ohy: 6, pt: 0, wind: 0.62 };
+  // (coming down, the bow arm stays long, out in front: the bow swung down past the front of it; the hand back over the shoulder for an arrow, then laying it on the string)
+  const down: Partial<Pose> = { hx: 10, hy: -12, aim: 22, act: 0.8, off: 1.3, wind: 0.7 };
+  const fetch: Partial<Pose> = { hx: 9, hy: 2, aim: back ? -24 : -32, act: 0.6, off: back ? 1.55 : 1.75, wind: 0.8 };
+  const laid: Partial<Pose> = { hx: 2, hy: 0, aim: back ? -38 : -42, act: 0.08, off: 0, prop: 1, wind: 0.9 };
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    { at: 0.14, pose: nock, ease: 'io' },
+    // (from behind, the bow hand goes out level with its shoulder, the arm long, before it comes up)
+    ...(back ? [{ at: 0.22, pose: { ...lift, hx: 11, hy: -6, aim: 0, act: 0.12, ohx: 0, ohy: -1, lean: -0.5, wind: 0.08 }, ease: 'in' as const }, { at: 0.3, pose: lift, ease: 'lin' as const }] : [{ at: 0.3, pose: lift, ease: 'in' as const }]),
+    { at: 0.5, pose: drawn, ease: 'out' },
+    { at: hit - 0.01, pose: held, ease: 'lin' },
+    { at: hit, pose: loosed, ease: 'hold' },
+    { at: hit + 1 / 30, pose: { ...loosed, sweep: 0, pt: 1, ohx: -4, ohy: 6 }, ease: 'lin' },
+    { at: hit + 0.17, pose: after, ease: 'out' },
+    { at: hit + 0.3, pose: down, ease: 'in' },
+    { at: hit + 0.46, pose: fetch, ease: 'out' },
+    { at: hit + 0.47, pose: { ...fetch, prop: 1 }, ease: 'lin' },
+    { at: hit + 0.66, pose: laid, ease: 'io' },
+    { at: hit + 0.82, pose: { wind: 1 }, ease: 'io' },
+  ];
+  return { keys, hit };
+}
+
 /** The bone archer. (`was`: with the kit's walk, as it was up to Version 15.0.) */
 export function makeArcherArt(was = false): ActorArt {
   const front = {
@@ -1185,5 +1306,8 @@ export function makeArcherArt(was = false): ActorArt {
       { hx: 4, hy: -7, aim: -20, act: 0.6, off: 2, wind: 0.75 },
     ),
   };
-  return monsterArt(paintArcher, { ...front, die: (k) => bonesDeath(k, false, 'bow') }, { ...back, die: (k) => bonesDeath(k, true, 'bow') }, was ? { rest: { aim: -45, off: -1 } } : { rest: { aim: -45, off: -1 }, walk: shamble(true) });
+  // (THE ARROW RAIN, behind its switch: its second attack)
+  const rainF = ARCHER_RAIN.on ? { more: { rain: archerRainTimeline(false) } } : {};
+  const rainB = ARCHER_RAIN.on ? { more: { rain: archerRainTimeline(true) } } : {};
+  return monsterArt(paintArcher, { ...front, ...rainF, die: (k) => bonesDeath(k, false, 'bow') }, { ...back, ...rainB, die: (k) => bonesDeath(k, true, 'bow') }, was ? { rest: { aim: -45, off: -1 } } : { rest: { aim: -45, off: -1 }, walk: shamble(true) });
 }
