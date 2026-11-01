@@ -72,7 +72,74 @@ export interface Act1Dress {
    * floor's own dresser had laid the rest (game/act2_dress.ts); played by render/act1_pieces.ts as he comes near and sees it.)
    */
   moments?: HushMoment[];
+  /** (ACT1_SCENES) The scenes laid, each at its place: for the pictures and the tests. */
+  scenes?: { x: number; y: number; name: string }[];
 }
+
+/**
+ * ACT1_SCENES: A FLOOR'S THINGS WHERE THEY BELONG, as the first five floors' are (game/first5.ts SCENES). His words, 1 Nov 2026,
+ * 10:05: “Can you make sure the doodads go in places that seem proper as opposed to randomly?  I know we’ve talked about this a
+ * little with the camp sites and the markets”; when, “With each floor (Recommended)”. On a floor laid so, an open area's things
+ * stand together as one of its floor's scenes, in its outer band (his 17 Oct rule: “a little thinner in density and spread
+ * towards the edges”), and what stands at the far cliffs' feet is a scene of its own; nothing stands about at random but in
+ * the boss's ground. `floors`: those laid so, each shown to him first as pictures from the game.
+ */
+export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [] };
+
+/** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
+interface Part {
+  dx: number;
+  dy: number;
+  name: string;
+  solid: boolean;
+  kind?: 'barrel' | 'urn';
+  /** It stands against the cliff (rock behind it, up and to the left on the screen); `alt`, the other place along the cliff it may take. */
+  wall?: boolean;
+  alt?: [number, number];
+}
+/** A scene of a floor of the descent: its name, its parts (the first `need` of them must all be laid for it to be laid at all), and how many a floor has at most. */
+interface Act1Scene {
+  name: string;
+  need: number;
+  most: number;
+  parts: Part[];
+}
+const S = (dx: number, dy: number, name: string): Part => ({ dx, dy, name, solid: true });
+const Ly = (dx: number, dy: number, name: string): Part => ({ dx, dy, name, solid: false });
+const Br = (dx: number, dy: number, kind: 'barrel' | 'urn'): Part => ({ dx, dy, name: kind, solid: true, kind });
+/** Against the cliff, along x by `d` or else along y by `d`. */
+const Wl = (d: number, name: string): Part => ({ dx: d, dy: 0, name, solid: false, wall: true, alt: [0, d] });
+/**
+ * THE SCENES OF EACH FLOOR OF THE DESCENT (in its open areas; turned any of four ways as they are laid). `face`: the scenes at
+ * the far cliffs' feet, the face's own piece at their place (its foot, the face up and to the left of it on the screen).
+ */
+export const ACT1_SCENE_SETS: Readonly<Record<number, { open: readonly Act1Scene[]; face: readonly Act1Scene[] }>> = {
+  6: {
+    open: [
+      // THE BLOCK YARD: cut blocks stacked in a row, two more set down before them, the sledge on its rollers at the row's end
+      // to drag them off, chippings, a water barrel
+      { name: 'the block yard', need: 3, most: 2, parts: [S(0, 0, 'stacked blocks'), S(2, 0, 'stacked blocks'), S(4, 0, 'stacked blocks'), S(1, 2, 'cut block'), S(3, 2, 'cut block'), S(6, 1, 'sledge on rollers'), Ly(2, 3, 'chippings'), Br(-2, 1, 'barrel')] },
+      // THE SPLITTING: a block marked to split and one split from the bed beside it, the splitting tools between them, chippings
+      // round them, a basket of chippings
+      { name: 'the splitting', need: 2, most: 2, parts: [S(0, 0, 'block marked to split'), S(2, 0, 'block split from the bed'), Ly(1, 1, 'splitting tools'), Ly(0, 2, 'chippings'), Ly(3, 2, 'chippings'), Br(-2, 0, 'urn')] },
+      // THE CRANE: the crane, a cut block waiting under its arm, blocks stacked by it, a cart of rubble
+      { name: 'the crane', need: 2, most: 1, parts: [S(0, 0, 'the crane'), S(2, 1, 'cut block'), S(-2, 2, 'stacked blocks'), S(3, -2, 'cart of rubble'), Ly(1, 3, 'chippings')] },
+      // THE OBELISK: the great obelisk being cut, its scaffolding beside it, the splitting tools and chippings at its foot
+      { name: 'the obelisk', need: 2, most: 1, parts: [S(0, 0, 'the great obelisk'), S(2, 0, 'scaffolding'), Ly(0, 2, 'splitting tools'), Ly(2, 2, 'chippings'), Br(-2, 1, 'barrel')] },
+      // THE CARTS: an empty cart and one of rubble left side by side, rubble tipped out by them
+      { name: 'the carts', need: 2, most: 1, parts: [S(0, 0, 'empty cart'), S(2, 0, 'cart of rubble'), Ly(1, 2, 'chippings'), Ly(3, 1, 'chippings')] },
+    ],
+    face: [
+      // THE GREAT FACE: the face half carved in the cliff, a ladder up the cliff beside it, scaffolding before it, the splitting
+      // tools and chippings at its foot
+      { name: 'the great face', need: 1, most: 1, parts: [Ly(0, 0, 'the great face, half carved'), Wl(3, 'ladder against the face'), S(2, 2, 'scaffolding'), Ly(1, 1, 'splitting tools'), Ly(0, 2, 'chippings')] },
+      // THE GREAT HAND: the hand half carved, a ladder, a rope and bucket let down, chippings
+      { name: 'the great hand', need: 1, most: 1, parts: [Ly(0, 0, 'the great hand, half carved'), Wl(3, 'ladder against the face'), Wl(-3, 'rope and bucket'), Ly(1, 1, 'chippings')] },
+      // THE WORKING FACE: a ladder, a rope and bucket, a block split from the bed at its foot
+      { name: 'the working face', need: 1, most: 3, parts: [Ly(0, 0, 'ladder against the face'), Wl(2, 'rope and bucket'), S(2, 2, 'block split from the bed'), Ly(1, 1, 'splitting tools')] },
+    ],
+  },
+};
 
 /** A FLOOR'S PIECES BY WHAT THE GAME DOES WITH THEM (their names the art's; tests/act1_floors.test.ts holds each to the art's own list). */
 export interface Act1Set {
@@ -573,11 +640,73 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     for (const [tx, ty] of list) if (beds < 2 && free(tx, ty, false)) { put(rng.pick(CAMP.lying), tx, ty, false); beds++; }
   }
 
+  // ---- ACT1_SCENES: each open area's things together as one of the floor's scenes, in its outer band
+  const scened = ACT1_SCENES.on && ACT1_SCENES.floors.includes(n) && !!ACT1_SCENE_SETS[n];
+  const used = new Map<string, number>();
+  const usedScene = (name: string): number => used.get(name) ?? 0;
+  const turnOf = (k: number, dx: number, dy: number): [number, number] => (k === 0 ? [dx, dy] : k === 1 ? [-dy, dx] : k === 2 ? [-dx, -dy] : [dy, -dx]);
+  /** Lay scene `sc` with its place at (x, y), turned `k`: false (and nothing laid) if its first `need` parts cannot all be. */
+  const layScene = (sc: Act1Scene, x: number, y: number, k: number, foot: boolean): boolean => {
+    const rock = (tx: number, ty: number): boolean => f.tiles[(ty - 1) * W + tx] === T_WALL || f.tiles[ty * W + tx - 1] === T_WALL;
+    const at = sc.parts.map((p) => {
+      const [dx, dy] = foot ? [p.dx, p.dy] : turnOf(k, p.dx, p.dy);
+      // (what stands against the cliff: where there is rock behind it, along x or else along y)
+      if (p.wall && p.alt && !rock(x + dx, y + dy)) return [x + p.alt[0], y + p.alt[1]] as [number, number];
+      return [x + dx, y + dy] as [number, number];
+    });
+    const fits = (i: number): boolean => {
+      const p = sc.parts[i];
+      const [tx, ty] = at[i];
+      // (the face's own piece at the foot of the cliff: the tile is free, nothing more asked)
+      if (foot && i === 0) return whole(tx, ty) && !keep[ty * W + tx] && !taken[ty * W + tx];
+      if (p.wall && !rock(tx, ty)) return false;
+      return free(tx, ty, p.solid) && !at.some((q, j) => j < i && q[0] === tx && q[1] === ty);
+    };
+    for (let i = 0; i < sc.need; i++) if (!fits(i)) return false;
+    sc.parts.forEach((p, i) => {
+      if (i >= sc.need && !fits(i)) return;
+      const [tx, ty] = at[i];
+      if (p.kind) {
+        L.props.push({ kind: p.kind, tx, ty, x: tx + 0.5, y: ty + 0.5, solid: true, state: 0, variant: rng.int(0, 2) });
+        taken[ty * W + tx] = 1;
+        L.walk[ty * W + tx] = 0;
+      } else if ((foot && i === 0) || p.wall) put(p.name, tx, ty, false, 0, { x: tx + 0.12, y: ty + 0.12 });
+      else put(p.name, tx, ty, p.solid, rng.int(0, 3));
+      if (p.solid && !p.kind) for (const [ex, ey] of [[1, 0], [0, 1]]) keep[(ty + ey) * W + tx + ex] = 1;
+    });
+    (out.scenes ??= []).push({ x: x + 0.5, y: y + 0.5, name: sc.name });
+    used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
+    return true;
+  };
+  if (scened) {
+    const set6 = ACT1_SCENE_SETS[n];
+    for (const a of rng.shuffle([...land.areas])) {
+      if (a.role === 'yard' || a.role === 'start' || a.role === 'boss') continue;
+      const band = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) > DRESS_EDGES.from && blobDist(a.blob, x, y) < DRESS_EDGES.to - 0.1);
+      // (the big scenes first, while there is room; then the others in an order of the dice's; a big area takes two)
+      const order = [...set6.open.filter((q) => q.most === 1), ...rng.shuffle(set6.open.filter((q) => q.most > 1))];
+      const want = band.length > 90 ? 2 : 1;
+      let laid = 0;
+      for (const sc of order) {
+        if (laid >= want) break;
+        if ((used.get(sc.name) ?? 0) >= sc.most) continue;
+        let done = false;
+        for (const [tx, ty] of band.slice(0, 60)) {
+          for (let k = 0; k < 4 && !done; k++) done = layScene(sc, tx, ty, (k + rng.int(0, 3)) % 4, false);
+          if (done) break;
+        }
+        if (done) laid++;
+      }
+    }
+  }
+
   // ---- THE OPEN AREAS: a big thing or two on the floor, its things that stand, its small things that lie about
   let bigs = 0;
   for (const a of rng.shuffle([...land.areas])) {
     if (a.role === 'yard' || a.role === 'start') continue;
     const boss = a.role === 'boss';
+    // (ACT1_SCENES: a floor laid so has no things standing about at random but in the boss's ground)
+    if (scened && !boss) continue;
     const edgy = DRESS_EDGES.on && !boss;
     const inner = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) < (boss ? 0.86 : edgy ? DRESS_EDGES.to : 0.78) && blobDist(a.blob, x, y) > (boss ? 0.62 : edgy ? DRESS_EDGES.from : 0.15));
     // (DRESS_EDGES: as many things as before for the area as a whole, fewer, in its outer band)
@@ -624,7 +753,22 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     rng.shuffle(feet);
     const used: [number, number][] = [];
     let face = 0;
-    for (const [tx, ty] of feet) {
+    // (ACT1_SCENES: at the far cliffs' feet, the floor's scenes of the face, each a way along the cliff from the next)
+    if (scened) {
+      const faces = ACT1_SCENE_SETS[n].face;
+      for (const [tx, ty] of feet) {
+        if (used.length >= Math.ceil(feet.length / 9)) break;
+        if (used.some(([x, y]) => Math.hypot(x - tx, y - ty) < 9)) continue;
+        for (const sc of faces) {
+          if (usedScene(sc.name) >= sc.most) continue;
+          if (layScene(sc, tx, ty, 0, true)) {
+            used.push([tx, ty]);
+            break;
+          }
+        }
+      }
+    }
+    for (const [tx, ty] of scened ? [] : feet) {
       if (used.length >= Math.ceil(feet.length / 9)) break;
       if (used.some(([x, y]) => Math.hypot(x - tx, y - ty) < 7)) continue;
       // (the great face once a floor; the rest as they come)
