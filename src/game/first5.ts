@@ -521,7 +521,7 @@ export interface Dress {
  * scene has no things standing about at random, only its walls' and its floor's own. `floors`: the floors laid so (shown to him
  * first, as pictures from the game).
  */
-export const SCENES: { on: boolean; floors: number[] } = { on: true, floors: [1] };
+export const SCENES: { on: boolean; floors: number[] } = { on: true, floors: [1, 2] };
 
 /** How many of a wall's faces have a piece, about (one in four). */
 const WALL_SHARE = 0.26;
