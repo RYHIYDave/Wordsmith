@@ -215,7 +215,12 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
 /** Which piece of the hero's gear something is done to: a worn piece or a bag slot. */
 export type ItemRef = { kind: 'gear'; slot: EquipSlot } | { kind: 'bag'; i: number };
 
+/** THE DESCENT'S CLIFFS SEEN OVER (updateVision): on, at his word of 1 Nov 2026 on the Ledge Road. */
+export const SEE_OVER_ROCK = { on: true };
+
 export class Game {
+  /** (SEE_OVER_ROCK) Whether the hero's eye passed over the rock this time it looked (updateVision). */
+  private overRock = false;
   readonly rng: RNG;
   readonly seed: number;
   hero: Hero;
@@ -8510,6 +8515,10 @@ export class Game {
     this.visList.length = 0;
     const R = TUNE.sightRadius;
     const rays = 180;
+    // (THE DESCENT'S OPEN GROUND, floors 6 to 10: its cliffs and drops are seen over, not walls to the eye. His words, 1 Nov
+    // 2026, of the Ledge Road: “The cliff edge hides enemies like a wall but it should be wide open to line of sight.” Shots and
+    // the monsters' own sight still stop at the rock; inside a stronghold's hall its walls are walls.)
+    const over = (this.overRock = SEE_OVER_ROCK.on && !!L.land && !cityFloor(f.depth) && !L.land.holds.some((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1));
     for (let k = 0; k < rays; k++) {
       const a = (k / rays) * Math.PI * 2;
       const dx = Math.cos(a);
@@ -8524,6 +8533,7 @@ export class Game {
           L.explored[idx] = 1;
           this.visList.push(idx);
         }
+        if (over) continue;
         if (L.open[idx] === 0) break;
         // (the wall half of a tile cut corner to corner stops the eye as a wall does)
         if (f.cut && f.cut[idx] !== 0 && inWall(f, h.x + dx * s, h.y + dy * s)) break;
@@ -8623,7 +8633,8 @@ export class Game {
         // arrives: the first prompt was then the fight, with monsters already coming. A sleeper
         // that is struck still wakes.)
         const lesson = this.guide !== null && this.guide.walked < GUIDE.steps;
-        if (m.seen && dist <= TUNE.aggroRadius && !lesson) this.wakeUp(m);
+        // (THE DESCENT'S CLIFFS SEEN OVER: seen across a drop is not woken across it; a sleeper wakes as before, in a line the rock does not stop)
+        if (m.seen && dist <= TUNE.aggroRadius && !lesson && (!this.overRock || this.sees(h.x, h.y, m.x, m.y))) this.wakeUp(m);
         continue;
       }
       if (dist > 32) continue;
