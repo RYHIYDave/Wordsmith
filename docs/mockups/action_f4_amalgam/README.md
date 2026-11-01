@@ -187,6 +187,21 @@ Made by: `tools/action_f4_amalgam_film.ts` (the film), `tools/action_f4_amalgam_
 (the sheet), `src/dev/action_f4_amalgam_scene.ts` (the scenes, on floor 1's stand-in floor; the game's warnings, its arms' cracks
 and its claws' gouges drawn by the game's own code through a stand-in canvas), `tools/action_f4_amalgam_hash.ts` (the hashes).
 
+## His word on the pictures (the first round)
+
+Shown `amalgam_action.mp4` and `amalgam_action_sheet.png`, 1 Nov 2026 (answered by 13:40 his time), and asked of each:
+
+- Its looming (rearing up on its arms before each big move, maw gaping, fire flaring, crashing down): “His regular arm swipe is
+  pretty lackluster”.
+- The bone rain: “Love the bone rain, can they all become little bone monsters.  Super easy to kill, but there’s a ton of them”.
+  Read as: every skull that comes down bursts and its bones pull together into a little bone monster; one blow kills one, but
+  there are dozens of them (in place of the slowing piles).
+- The swipe as a combo (two rakes, then the rearing slam): “The rakes are lackluster”. So the two rakes are to be redone, much
+  bigger, faster and wilder (they reach less than its old swipe did: 1.87 and 1.94 tiles against 2.45).
+- The floor arms and the devour: “Yes, both (Recommended)”.
+
+So: the floor arms, the devour and its rearing stand; the rakes and the rain's piles are redrawn (the second round).
+
 ## For him to decide (the art chat's to ask)
 
 - The swipe as its every basic attack (4.0 s: two rakes and the slam), or a single quick rake kept between combos (his rule of 9
