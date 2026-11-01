@@ -15,5 +15,5 @@ export const FIG: Act1Fig | null = {
   // game/act1_rules/order.ts; their knife clip three knives fanned in the fist, his “A fan of three on 19 (Recommended)”)
   // (FLOOR 20, THE QUIET TOWER: the Order's last masks, only the mask floating where the face would be, held up by grey fog, the
   // cloak's shape barely there, faint by design: Monster.form 2 there)
-  looks: [{ make: () => makeOrderArt3(ORDER_ARMED), size: { top: 30, half: 10 }, switches: [ORDER_ON] }, { make: () => makeOrderArt3(ORDER_MASK), size: { top: 29, half: 9 }, switches: [ORDER_ON] }],
+  looks: [{ make: () => makeOrderArt3(ORDER_ARMED), size: { top: 30, half: 10 }, switches: [ORDER_ON] }, { make: () => makeOrderArt3(ORDER_MASK), size: { top: 37, half: 9 }, switches: [ORDER_ON] }],
 };

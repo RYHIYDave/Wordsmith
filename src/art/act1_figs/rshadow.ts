@@ -62,7 +62,7 @@ export function makeShadowArt(id: RoyalId): ActorArt {
 
 /** Each royal's shadow's height and half its width (game pixels: the art's README, the knight 57 picture pixels high). */
 const SIZE: Readonly<Record<RoyalId, { top: number; half: number }>> = {
-  princess: { top: 30, half: 10 },
+  princess: { top: 30, half: 9 },
   prince: { top: 31, half: 10 },
   queen: { top: 32, half: 10 },
   king: { top: 34, half: 12 },

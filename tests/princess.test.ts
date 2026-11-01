@@ -136,7 +136,8 @@ test('1. the switch is off, and only her pictures and what she casts for the gam
       if (hers.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/princess.ts render/act1_fx/princess.ts', 'game files that import her');
+  // (and floor 20's shadow of her, brought in by the main chat behind HIGH_CITY (off): its rules and effects take her snare from her)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/princess.ts game/act1_rules/rshadow.ts render/act1_fx/princess.ts render/act1_fx/rshadow.ts', 'game files that import her');
 });
 
 test('2. EVERY MOVE OF HERS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

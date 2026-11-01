@@ -10,7 +10,7 @@ import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
   make: () => makeMothArt3(),
-  size: { top: 160, half: 40 },
+  size: { top: 322, half: 70 },
   heavy: true,
   switches: [MOTH_ON],
 };
