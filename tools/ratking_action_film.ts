@@ -8,9 +8,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Px } from '../src/engine/px';
-import { BITE9, BITE9_STRIKE, SLUICE_HIT, SLUICE_STRIKE, UNKNOT9_STRIKE, WORDS9, WORDS9_STRIKE } from '../src/art/ratking_action';
+import { BITE9, BITE9_STRIKE, ROLL9, ROLL9_STRIKE, UNKNOT9_STRIKE, WORDS9, WORDS9_STRIKE } from '../src/art/ratking_action';
 import { FLOOD, SWARM9 } from '../src/art/ratking_action_fx';
-import { ARENA, BITE_PASS, LEAD, SLUICE_PASS, UNKNOT_PASS, WORDS_PASS, arenaScene, biteScene, sluiceScene, unknotScene, wordsScene } from '../src/dev/ratking_action_scene';
+import { ARENA, BITE_PASS, LEAD, ROLL_PASS, UNKNOT_PASS, WORDS_PASS, arenaScene, biteScene, rollScene, unknotScene, wordsScene } from '../src/dev/ratking_action_scene';
 import type { View } from '../src/dev/ratking_action_scene';
 import { cut, scaled } from '../src/dev/king_scene';
 import { png } from './king_png';
@@ -40,23 +40,20 @@ function part(scene: Scene, view: View, k: number, cx: number, cy: number, long:
 const strike = (scene: Scene, view: View, k: number, cx: number, cy: number, s: readonly [number, number], title: string, line: string, after = 0.35): Part => part(scene, view, k, cx, cy, s[1] - s[0] + 0.35 + after, title, line, LEAD + s[0] - 0.35, 2);
 /** A stretch of the fight over the whole cistern, from `a` to `b` seconds of it. */
 const arena = (a: number, b: number, title: string, line: string): Part => ({ long: b - a, title, line, frame: (t) => arenaScene(a + t, W, H, 600, 384) });
-const F1 = ARENA.first;
-const F2 = ARENA.second;
+// (his fix, 2 Nov 2026: the sluices the cistern's own, opening on their own; his roll back in their place: docs/mockups/action_fixes)
 const HALF = 'THE STRIKES · HALF SPEED';
 export const parts: Part[] = [
-  arena(0, F1 + SLUICE_HIT, 'THE SLUICES OPEN · THE WHOLE CISTERN FROM ABOVE', 'He rears up as a heap, screaming, HELD · the lanes marked, the gates grinding open · get onto a dry ledge'),
-  arena(F1 + SLUICE_HIT, F1 + SLUICE_HIT + FLOOD.runs + FLOOD.drain + 0.3, 'THE FLOOD', `The heap slams down: the gates burst · the lanes flood in ${Math.round((16 / FLOOD.front) * 30)} frames, full of rats · ${FLOOD.runs} seconds, then it drains`),
-  arena(F2 - 0.7, F2 + SLUICE_HIT + 1.3, 'AGAIN · CAUGHT IN A LANE', 'Too late off the lane: struck as the water hits · carried with it · scrambling out onto the ledge'),
-  arena(F2 + SLUICE_HIT + 1.3, ARENA.long, 'THE DRY LEDGES BETWEEN ARE SAFE', 'The water runs its three seconds and drains away down the lanes'),
-  part(sluiceScene, 'front', 2, 230, 230, SLUICE_PASS, 'THE SLUICES OPEN · FROM IN FRONT', 'Reared up as a heap, clawing, screaming, HELD · up out of the lane onto the ledge · slammed down in 2 frames'),
-  part(sluiceScene, 'back', 2, 300, 220, SLUICE_PASS, 'THE SLUICES OPEN · FROM BEHIND', 'The water parts round him · it runs down every lane at once'),
+  arena(0, ARENA.open2 - 0.2, 'THE SLUICES OPEN ON THEIR OWN · THE WHOLE CISTERN FROM ABOVE', `The lanes marked first, the gates grinding open · the flood, ${FLOOD.runs} seconds, full of rats · the dry ledges between are safe`),
+  arena(ARENA.open2 - 0.2, ARENA.long, 'AGAIN, WHILE HE ROLLS', 'Off the ledge out of his ball’s way · back up before the gates burst'),
+  part(rollScene, 'front', 2, 100, 106, ROLL_PASS, 'HIS ROLL · FROM IN FRONT', `Curled into a ball, spinning up, HELD · off in 2 frames · ${ROLL9.pace} tiles a second`),
+  part(rollScene, 'back', 2, 96, 290, ROLL_PASS, 'HIS ROLL · FROM BEHIND', `His lane ${ROLL9.half * 2} wide · he bursts open where he stops, a ring ${ROLL9.endR} round`),
   part(biteScene, 'front', 2, 230, 150, BITE_PASS, 'THE BITE · FROM IN FRONT', `The heap rears, the front three jaws wide, HELD · they leap ${BITE9.lunge} tiles on their tails in 2 frames: ${BITE9.arc}°, ${BITE9.reach} tiles`),
   part(biteScene, 'back', 2, 250, 230, BITE_PASS, 'THE BITE · FROM BEHIND', 'Out of the wedge while it is held · they bite down, shake, and are hauled back by their tails'),
   part(wordsScene, 'front', 2, 150, 100, WORDS_PASS, 'STOLEN WORDS · FROM IN FRONT', `A word of your own kind gathers · its line follows you, then LOCKS · step out · spat in 2 frames, ${WORDS9.speed} tiles a second`),
   part(wordsScene, 'back', 2, 200, 240, WORDS_PASS, 'STOLEN WORDS · FROM BEHIND', `It bursts where its line ends: ${WORDS9.burst} tiles round`),
   part(unknotScene, 'front', 2, 170, 150, UNKNOT_PASS, 'UNKNOT · FROM IN FRONT', `Swollen, tense, HELD · they BURST outward in 2 frames · ${SWARM9.rats} rats stream past you and knot again`),
   part(unknotScene, 'back', 2, 250, 260, UNKNOT_PASS, 'UNKNOT · FROM BEHIND', 'The swarm runs over you (it bites) · they knot again on your far side'),
-  strike(sluiceScene, 'front', 3, 150, 160, SLUICE_STRIKE, HALF, 'The slam: reared, then down in 2 frames, smeared · the gates burst', 0.6),
+  strike(rollScene, 'front', 2, 100, 106, ROLL9_STRIKE, HALF, 'His roll: spinning in place, then off the line in 2 frames, smeared', 0.6),
   strike(biteScene, 'front', 3, 150, 100, BITE9_STRIKE, HALF, 'The bite: held, then out to the end of their tails in 2 frames'),
   strike(wordsScene, 'front', 3, 150, 120, WORDS9_STRIKE, HALF, 'The word spat: his head thrust down in 2 frames', 0.5),
   strike(unknotScene, 'front', 3, 180, 110, UNKNOT9_STRIKE, HALF, 'The burst: every rat flung out in 2 frames', 0.45),

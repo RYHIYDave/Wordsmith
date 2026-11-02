@@ -15,7 +15,9 @@
 //   5. Movement 9 and the numbers: each strike two frames, held before it, smeared then only, landing on its last frame; each area
 //      bigger than the old;
 //   6. what her moves do to her eyrie: crisp, no cyan, her pink, nothing after; her gust's rays straight out from her and its shove
-//      straight away from her; the Eclipse's dark readable (darkened, not black), its pools lit, drifting slowly, never meeting.
+//      straight away from her; the Eclipse's dark readable (darkened, not black), its pools lit, drifting slowly, never meeting;
+//      HIS FIX, 2 Nov 2026, 07:32 (“The carrion queen’s dive should be a much bigger AOE, and really sell it with dirt and dust on the
+//      impact.”): her dive's area 3.2 round (twice the first pass's), its burst of rock and dust out to its edge, hanging, then gone.
 //   run: tsx --test tests/queen_action.test.ts
 // @ts-ignore
 import nodeTest from 'node:test';
@@ -27,7 +29,7 @@ import nodeFs from 'node:fs';
 import nodeCrypto from 'node:crypto';
 
 import { QA_DIVE, QA_ECLIPSE, QA_GUST, QA_HITS, QA_HOLDS, QA_MOVES, QA_NEW, QA_RAKE, QA_STRIKES, QA_TILE, QUEEN_ACTION, f, makeQueenActionArt, qaSmear, qaSmeared, queenActionGrains, queenActionLong, queenActionPainted, queenActionPose, talonTips } from '../src/art/carrion_queen_action';
-import { DARK_FLOOR, darkened, diveStrikes, eclipseDark, from, gustRays, gustShove, gustStrikes, inPool, lightAt, paintDiveMarks, paintGustMarks, paintPoolRims, paintRakeMarks, paintVultureLine, poolsAt, rakeStrikes } from '../src/art/carrion_queen_action_fx';
+import { DARK_FLOOR, darkened, diveStrikes, eclipseDark, from, gustRays, gustShove, gustStrikes, inPool, lightAt, paintDiveBurst, paintDiveMarks, paintGustMarks, paintPoolRims, paintRakeMarks, paintVultureLine, poolsAt, rakeStrikes } from '../src/art/carrion_queen_action_fx';
 import type { At } from '../src/art/carrion_queen_action_fx';
 import { Q2_CANVAS, Q2_IDLE, Q2_SCALE, queen2Bits, standPose, wingBones } from '../src/art/carrion_queen2';
 import type { QueenPose } from '../src/art/carrion_queen2';
@@ -346,10 +348,13 @@ test('5. the numbers: every area bigger than her old one; her dive further; held
   assert.ok(QA_GUST.far > QN.gust.far && QA_GUST.wide > QN.gust.wide && QA_GUST.spread > QN.gust.spread);
   assert.ok(gustStrikes(6.9, 5.5) && !gustStrikes(7.2, 0));
   assert.ok(QA_GUST.hit > Q2_GUST.hit);
-  // the dive: 4 tiles out (old 2.86), a ring 1.6 round (old 1.1), her line 0.9 to either side (old 0.6)
+  // the dive: 4 tiles out (old 2.86), her line 0.9 to either side (old 0.6); HIS FIX, 2 Nov 2026 (“The carrion queen’s dive should
+  // be a much bigger AOE”): the area she strikes 3.2 round, twice the first pass's 1.6 (the game's own 1.1)
   assert.ok(Math.abs(tile(QA_DIVE.strikeX + 8) - QA_DIVE.at) < 0.01, `her talons strike ${tile(QA_DIVE.strikeX + 8).toFixed(2)} tiles out`);
-  assert.ok(QA_DIVE.at > QN.dive.at && QA_DIVE.r > QN.dive.r && QA_DIVE.half > QN.dive.half);
-  assert.ok(diveStrikes(4, 1.5) && diveStrikes(2, 0.8) && !diveStrikes(2, 1.0));
+  assert.ok(QA_DIVE.at > QN.dive.at && QA_DIVE.r >= 2 * 1.6 && QA_DIVE.r > 2.5 * QN.dive.r && QA_DIVE.half > QN.dive.half);
+  assert.ok(diveStrikes(4, 3.1) && diveStrikes(4 + 3.1, 0) && diveStrikes(1.0, 0.8) && !diveStrikes(4, 3.3) && !diveStrikes(0.5, 1.0));
+  // (the dust hangs a second and more after her strike, the crater stays a moment; the game's shake the most it uses)
+  assert.ok(QA_DIVE.dust >= 2 && QA_DIVE.crater >= 1.5 && QA_DIVE.shake === 8);
   assert.ok(QA_DIVE.hit > Q2_DIVE.hit);
   // (her rake comes down where her pictures put her talons; her dive where they strike)
   const R = queenActionPose('attack', QA_RAKE.hit);
@@ -385,7 +390,7 @@ test('6a. what her moves do to her eyrie: marked in her pink while she winds up,
   const painters: [string, (p: Px, t: number) => void, number, number, number][] = [
     ['rake', (p, t) => paintRakeMarks(p, at, B, 0, t), QA_RAKE.hold[0], QA_RAKE.hit, QA_RAKE.long + 1],
     ['gust', (p, t) => paintGustMarks(p, at, B, 0, t), QA_GUST.hold[0], QA_GUST.hit, QA_GUST.hit + 1],
-    ['dive', (p, t) => paintDiveMarks(p, at, B, 0, t), QA_DIVE.hold[0], QA_DIVE.hit, QA_DIVE.hit + 1.7],
+    ['dive', (p, t) => paintDiveMarks(p, at, B, 0, t), QA_DIVE.hold[0], QA_DIVE.hit, QA_DIVE.hit + QA_DIVE.crater + 0.01],
   ];
   for (const [name, paint, warn, hit, gone] of painters) {
     for (let t = 0; t <= gone + 0.1; t += FR) {
@@ -402,6 +407,41 @@ test('6a. what her moves do to her eyrie: marked in her pink while she winds up,
     paintVultureLine(p, at, [-3, -2], [1, 1], k);
     const L = fxLook(p);
     assert.ok(L.soft === 0 && !L.cyan && (k < 0.05 || L.pink > 20), `a vulture's line at ${k.toFixed(1)}`);
+  }
+});
+
+test('6d. HER DIVE’S BURST (his fix, 2 Nov 2026: “really sell it with dirt and dust on the impact”): the rock flung up, the dust ringed out to the area’s edge, hanging, then gone; crisp; no cyan', () => {
+  const B: [number, number] = [-2, -1];
+  const big = (): Px => new Px(1000, 700);
+  const at2: At = (x, y, z = 0) => [500 + 32 * (x - y), 330 + 16 * (x + y) - z];
+  const [cx, cy] = from(B, 0, QA_DIVE.at, 0);
+  for (let t = QA_DIVE.hit - 0.1; t <= QA_DIVE.hit + QA_DIVE.dust + 0.1; t += FR) {
+    const s = t - QA_DIVE.hit;
+    for (const part of ['back', 'front'] as const) {
+      const p = big();
+      paintDiveBurst(p, at2, B, 0, t, part);
+      const L = fxLook(p);
+      assert.ok(L.soft === 0 && !L.cyan, `the burst (${part}) at ${s.toFixed(3)}: soft ${L.soft}, cyan ${L.cyan}`);
+      if (s < 0 || s > QA_DIVE.dust) assert.equal(L.painted, 0, `the burst (${part}) at ${s.toFixed(3)}: there before or after`);
+    }
+    // (both halves together: plenty of it from the first frame, and it reaching out to the area's edge)
+    if (s > 0.02 && s < 1.0) {
+      const p = big();
+      paintDiveBurst(p, at2, B, 0, t, 'back');
+      paintDiveBurst(p, at2, B, 0, t, 'front');
+      let n = 0;
+      let far = 0;
+      const [X0, Y0] = at2(cx, cy);
+      for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
+        if (!p.d[(y * p.w + x) * 4 + 3]) continue;
+        n++;
+        // (how far out along the floor: the picture's across, in tiles: 45 pixels a tile at the most)
+        far = Math.max(far, Math.abs(x - X0) / (32 * Math.SQRT2));
+        void Y0;
+      }
+      assert.ok(n > 3000, `the burst at ${s.toFixed(3)}: ${n} pixels`);
+      if (s > 0.45) assert.ok(far >= QA_DIVE.r * 0.9, `the dust out to ${far.toFixed(2)} tiles at ${s.toFixed(3)}`);
+    }
   }
 });
 

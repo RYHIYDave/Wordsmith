@@ -9,7 +9,7 @@ import { Px, rgba } from '../engine/px';
 import type { ActorArt } from '../art/actor_types';
 import { QA_DIVE, QA_ECLIPSE, QA_GUST, QA_RAKE, f, makeQueenActionArt } from '../art/carrion_queen_action';
 import { Q2_GUST, makeQueen2Art } from '../art/carrion_queen2_moves';
-import { DARK_FLOOR, darkened, eclipseDark, from, gustShove, inPool, lightAt, paintDiveMarks, paintGustMarks, paintPoolRims, paintRakeMarks, paintVultureLine, poolsAt } from '../art/carrion_queen_action_fx';
+import { DARK_FLOOR, darkened, eclipseDark, from, gustShove, inPool, lightAt, paintDiveBurst, paintDiveMarks, paintGustMarks, paintPoolRims, paintRakeMarks, paintVultureLine, poolsAt } from '../art/carrion_queen_action_fx';
 import type { At, Pool } from '../art/carrion_queen_action_fx';
 import { VULTURE_DIVE, vultureFrame } from '../art/ledge_vultures';
 import { makeHeroArt3 } from '../art/heroes3';
@@ -228,11 +228,11 @@ const atOf = (cx: number, cy: number): At => (x, y, z = 0) => {
   const [X, Y] = onFloor(x, y, cx, cy, 1);
   return [X, Y - z];
 };
-function shakeOf(m: number, hits: ReadonlyArray<readonly [number, number]>): [number, number] {
+function shakeOf(m: number, hits: ReadonlyArray<readonly [number, number]>, long = 0.35): [number, number] {
   let a = 0;
   for (const [at, amount] of hits) {
     const s = m - at;
-    if (s >= 0 && s < 0.35) a = Math.max(a, amount * (1 - s / 0.35));
+    if (s >= 0 && s < long) a = Math.max(a, amount * (1 - s / long));
   }
   const fr = Math.floor(m * 30);
   return [2 * Math.round((hash(fr, 1, 9201) - 0.5) * a), 2 * Math.round((hash(fr, 2, 9201) - 0.5) * a)];
@@ -328,26 +328,31 @@ export function gustScene(view: View, t: number, base: Px, cx: number, cy: numbe
 // ---------------------------------------------------------------------------------------------
 // HER DIVE: the knight 4 tiles off, where her line ends. From in front he runs out of her ring as she hangs; from behind he is struck.
 
-export const DIVE_PASS = LEAD + QA_DIVE.long + 0.4;
+export const DIVE_PASS = LEAD + Math.max(QA_DIVE.long, QA_DIVE.hit + QA_DIVE.dust) + 0.3;
+/** (his fix, 2 Nov: the area twice as wide; from in front he runs clear of its edge while she hangs, from behind he is caught in it) */
 export function diveScene(view: View, t: number, base: Px, cx: number, cy: number): Px {
   const { qa } = figures();
   const m = t - LEAD;
   const aim = aimOf(view);
   const at = atOf(cx, cy);
-  const K0 = from(B0, aim, QA_DIVE.at, 0.1);
+  const K0 = from(B0, aim, QA_DIVE.at - 0.6, 0.3);
   let knight: Fig;
   if (view === 'front') {
-    const K1 = from(B0, aim, QA_DIVE.at + 0.2, -2.3);
-    const k = smooth((m - QA_DIVE.hold[0]) / 0.5);
+    const K1 = from(B0, aim, QA_DIVE.at - 0.4, -(QA_DIVE.r + 0.6));
+    const k = smooth((m - QA_DIVE.launch - 0.15) / 0.95);
     const K = lerp2(K0, K1, k);
     knight = k > 0.02 && k < 0.98 ? knightAt(K, B0, t, cx, cy, { run: [K1[0] - K0[0], K1[1] - K0[1]] }) : knightAt(K, B0, t, cx, cy);
   } else {
     const s = m - QA_DIVE.hit;
-    const K = s > 0 ? lerp2(K0, from(B0, aim, QA_DIVE.at + 1.0, 0.1), smooth(s / 0.25)) : K0;
+    const K = s > 0 ? lerp2(K0, from(B0, aim, QA_DIVE.at - 1.6, 0.6), smooth(s / 0.25)) : K0;
     knight = s >= 0 && s < 0.45 ? knightAt(K, B0, t, cx, cy, { reel: s }) : knightAt(K, B0, t, cx, cy);
   }
   const figs = [queenAt(qa, B0, view, 'dive', m, QA_DIVE.long, cx, cy), knight];
-  return scene(base, cx, cy, (p) => paintDiveMarks(p, at, B0, aim, m), figs, null, shakeOf(m, [[QA_DIVE.hit, 7]]));
+  const marks = (p: Px): void => {
+    paintDiveMarks(p, at, B0, aim, m);
+    paintDiveBurst(p, at, B0, aim, m, 'back');
+  };
+  return scene(base, cx, cy, marks, figs, null, shakeOf(m, [[QA_DIVE.hit, 1.5 * QA_DIVE.shake]], 0.5), (p) => paintDiveBurst(p, at, B0, aim, m, 'front'));
 }
 
 // ---------------------------------------------------------------------------------------------

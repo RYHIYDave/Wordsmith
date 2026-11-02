@@ -34,15 +34,34 @@ His review of every enemy for more action, 31 Oct 2026; each offered as below an
 
 ## THE TWISTED DEER: THE BRAMBLE CHARGE (`DEER_BRAMBLE`, art/action_f9_pinewood.ts)
 
+**His fix, 2 Nov 2026** (on branch `art/action-fixes`; its film and sheet: docs/mockups/action_fixes/pictures/). His words, 07:33:
+“I’m not in love with the bramble charge from the deer.  Maybe it’s just the look I don’t love, not sure”; his pick by 07:36:
+“Redo hedge and gallop (Recommended)” (offered as: same move; the hedge becomes dark, living brambles: leaves, hooked thorns,
+writhing up; the deer stretches into a full gallop). The move, its times, its sizes and its wall are as they were; what changed is
+the look:
+- **THE GALLOP**: a real gallop, painted to the way it is carried: its body low and long, its neck stretched out before it, its head
+  and its antlers down and forward; its legs reaching far out in front (its forefeet come down 29 of its lengths before its middle,
+  three times as far as at its stand) and far back (its hind feet push off 35 behind it), GATHERING under it and STRETCHING out in
+  turn, two flights a stride (stretched out after its hind feet push off, gathered under it after its forefeet do), its forelegs
+  folding tight under it and its hind legs flicked up behind as they swing through; rocked onto its forefeet and back onto its
+  hind, rising in each flight; each foot down on its own spot of the floor while the floor goes by under it (feet grip); MUD kicked
+  up off each foot, a splash as it comes down and clods flung back as it pushes off, the hind feet most. Its stride 2.2 tiles (6
+  frames a stride at its 11 tiles a second); bursting off in its two frames into the stretched flight it lands from.
+- **THE HEDGE, LIVING BRAMBLE**: green-black canes, thick (half again the thickness of the knight's wrist, so that they read at the
+  game's size), each rising out of the ground COILED and WRITHING OPEN as it comes up, arching over along the hedge and curling down
+  at its tip into a hook; three-fingered dark leaves along them; BIG HOOKED THORNS, a dull red-brown, out from the cane and bent back
+  toward its root; writhing slowly while it stands (its arch swaying, its tip curling and uncurling); withering at the end, sagging
+  and sinking, gone brown-black, its leaves dropping. Its edge the enemy's pink while it stands. Still 16 clumps, 34 high, a wall
+  0.4 to either side of its path, standing 4 s, withering over 0.6 s.
+
 **What it is.** THE LANE is marked on the floor from it, through where you stood (the golem's lane: dashed edges and chevrons of the
 enemy's pink). It drops its thorned antlers, drawn back on its haunches, stamps its root-gnarled forefoot twice, earth flying, and
 HOLDS, trembling, its eyes flaring. In TWO FRAMES it bursts off, smeared (after-images of its antlers and its back), earth flung
 back off its hind feet; it gallops down the lane, fast, its antlers low, each foot down on its own spot of the floor as the floor
 goes by under it (the game carries it), and brakes at the lane's end, its forefeet dug in and earth sprayed before it, then tosses
-its antlers and snorts. And behind it, all along its path, A HEDGE OF THORNS bursts up out of the ground as it passes: its own
-twisted roots (the swamp's violet) and pale dead bramble, arching over and tangled, barbed all along, their points black, earth
-thrown up as each clump bursts, its edge the enemy's pink. A wall: the knight cannot cross it while it stands. It withers after a
-few seconds, its canes sinking and blackening, bits of dead thorn falling.
+its antlers and snorts. And behind it, all along its path, A HEDGE OF LIVING BRAMBLE writhes up out of the ground as it passes
+(his fix, above), earth thrown up as each clump bursts, its edge the enemy's pink. A wall: the knight cannot cross it while it
+stands. It withers after a few seconds, its canes sinking and blackening, its leaves dropping.
 
 | | |
 |---|---|

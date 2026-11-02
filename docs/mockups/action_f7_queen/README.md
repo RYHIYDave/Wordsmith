@@ -74,18 +74,30 @@ along the edge instead (or not shove him at all), so that no gust can ever put h
 
 ### HER DIVE (`dive`; old: 2.2 s, her strike at 1.08, 2.86 tiles out, within 1.1, her line 0.6 to either side)
 
+**His fix, 2 Nov 2026, 07:32:** “The carrion queen’s dive should be a much bigger AOE, and really sell it with dirt and dust on the
+impact.” (On branch `art/action-fixes`; its film and sheet are docs/mockups/action_fixes/pictures/.) So: the area she strikes twice
+as wide as this mock-up's first pass (3.2 round, was 1.6; the game's own 1.1), its mark on the rock first and plain; and where she
+strikes, THE ROCK BURSTS.
+
 Up off the rock and out of sight; up there she turns over and HANGS NOSE DOWN, her wings swept back, trembling, while her line is
-marked on the rock (its edges, chevrons down it, a ring where she will strike closing in, her shadow growing in it). Down her line in
-two frames, talons first, into the rock 4 tiles out, her wings flung open to brake: held a tenth in the crater (cracks thrown out,
-lit from under, then scorched). She rips free and beats home.
+marked on the rock and THE GROUND SHE WILL STRIKE (its edge a thick ring of her pink closing in to its size, a fainter ring inside
+it, her shadow growing in it; beating faster). Down her line in two frames, talons first, into the rock 4 tiles out, her wings flung
+open to brake: held a tenth. THE ROCK BURSTS: a fountain of dirt, grit and broken rock flung up and out over the whole area (a
+column straight up at its middle); a thick ring of dust rolling out along the rock to the area's edge in under half a second,
+billowing, an inner billow and a cloud rising over the crater; chunks of rock falling back and bouncing twice, lying a moment; the
+dust hanging, swelling and drifting off with the wind, thinning away over 2.3 s; a ring of her fire racing out to the edge; the
+crater (a bowl of broken rock, its rim heaved up pale) and its cracks thrown out across the area left 2 s, crumbling away; the
+game's shake. All of it in the eyrie's own colours (its rock's violet-greys, the dirt in its cracks; her fire only in the cracks and
+the ring), never cyan. She rips free and beats home.
 
 | | |
 |---|---|
 | the move | **2.8 s** (frames 0–84) |
-| the wind-up | crouched by f9, off the rock at f10, a hard wingbeat up to f15, **up out of sight and out of reach f14–f46**, HELD nose down **f29–f46**; her line marked from f10 |
+| the wind-up | crouched by f9, off the rock at f10, a hard wingbeat up to f15, **up out of sight and out of reach f14–f46**, HELD nose down **f29–f46**; her line and the area marked from f10 |
 | the strike | **f46–f48**, her talons in the rock at **1.6 s** (`QA_DIVE.hit`), held to f51 |
 | the wind-down | ripped free by f57, beating home to f78, her stand at f84 |
-| what it strikes | within **1.6** of where her talons strike, **4.0 tiles** out (140 of her lengths: her body 132 on, her talons 8 more), and on her line from 1.0 to there, **0.9 to either side**: `diveStrikes` |
+| what it strikes | within **3.2** of where her talons strike (was 1.6), **4.0 tiles** out (140 of her lengths: her body 132 on, her talons 8 more), and on her line from 1.0 to there, **0.9 to either side**: `diveStrikes` |
+| the burst | the fountain: 200 pieces (grit, dirt, broken rock), up to about 200 of the picture's pixels high, out to about 3.4 tiles; the rock bouncing twice; the dust ring out to the edge (0.97 × 3.2) by about 0.4 s; the dust hanging **2.3 s** (`QA_DIVE.dust`); the crater and cracks **2.0 s** (`QA_DIVE.crater`); the game's shake **8** (`QA_DIVE.shake`, the most the game uses) |
 
 ### HER CALL (`call`): the game's own, kept as it is.
 
@@ -121,7 +133,7 @@ WHERE IT STOOD (art/ledge_crawlers.ts); no picture of it shows the drop. Only it
 
 ## The checks
 
-`tests/queen_action.test.ts` (13 tests, all passing):
+`tests/queen_action.test.ts` (14 tests, all passing):
 
 1. the switch off; nothing of the game imports the mock-up; her stand, hop, call, struck and death the game's own (the very same
    poses); her pictures as the game holds a monster (`makeQueenActionArt`);
@@ -138,7 +150,9 @@ WHERE IT STOOD (art/ledge_crawlers.ts); no picture of it shows the drop. Only it
 5. the numbers: every area bigger than her old one, her dive further, her talons landing where the numbers say;
 6. what her moves do to her eyrie: marked in her pink while she winds up, struck, then gone; crisp; no cyan; her gust's rays straight
    out from her and its shove straight away from her, harder the nearer; the Eclipse's dark coming in six frames and going, readable
-   (darkened, never black), its pools lit, drifting at their pace, never meeting.
+   (darkened, never black), its pools lit, drifting at their pace, never meeting; **her dive's burst** (his fix, 2 Nov): crisp, no
+   cyan, from her hit to `QA_DIVE.dust` and gone after, thick from its first frame, its dust out to the area's edge (test 6d); the
+   crater gone by `QA_DIVE.crater`.
 
 Changed outside these files (no frame of the game's changes): tests/carrion_queen2.test.ts, its “only her figure imports her”
 check skips art/carrion_queen_action*.ts.
@@ -150,18 +164,22 @@ check skips art/carrion_queen_action*.ts.
   the new `eclipse` among her moves, her death and struck the game's own). `queenActionPose`, `queenActionPainted` her frames.
 - What her moves do to her eyrie is painted by art/carrion_queen_action_fx.ts onto plain pixels through `at` (a floor point and a
   height to the picture): `paintRakeMarks`, `paintGustMarks`, `paintDiveMarks`; the Eclipse: `eclipseDark`, `poolsAt`, `lightAt`,
-  `darkened` (a pixel darkened, its glows kept), `paintPoolRims`, `paintVultureLine`. The rules' numbers are there by name
+  `darkened` (a pixel darkened, its glows kept), `paintPoolRims`, `paintVultureLine`. Her dive's burst (his fix, 2 Nov):
+  `paintDiveBurst(p, at, B, aim, t, 'back' | 'front')`, the half of it behind where she strikes laid before the figures, the half
+  before it laid over them (as the game sorts what stands); the crater and its cracks are `paintDiveMarks`'s. The rules' numbers are there by name
   (`QA_RAKE`, `QA_GUST`, `QA_DIVE`, `QA_ECLIPSE`) with what strikes (`rakeStrikes`, `gustStrikes`, `gustShove`, `diveStrikes`, `inPool`).
 - To bring it in (the main chat's):
   - HER FIGURE (art/act1_figs/queen.ts): `make: () => (QUEEN_ACTION.on ? makeQueenActionArt() : makeQueen2Art())`, the same wrapping
     after it (her death among her moves as `fall`, `reel` among them); `QUEEN_ACTION` among its switches.
   - HER RULES (game/act1_rules/queen.ts `QN`, `QN_ACTS`), each as its table says: rake long 1.867, hit 1.067, the wedge
     (`rakeStrikes`), she lands 1.6 tiles on; gust long 2.0, hit 1.067, far 7.0, wide 1.6, spread 0.6, push 4.0 (least 1.5, over 0.4 s),
-    straight away from her and never toward the drop; dive long 2.8, hit 1.6, up out of reach 0.467–1.533, at 4.0, r 1.6, line 1.0,
-    half 0.9; `queen:home` the new dive too (its HOME_AT within her time up out of sight); the Eclipse a new act, as above.
+    straight away from her and never toward the drop; dive long 2.8, hit 1.6, up out of reach 0.467–1.533, at 4.0, **r 3.2** (his fix, 2 Nov), line
+    1.0, half 0.9, the game's shake 8 at its hit (`g.emit({ t: 'shake', amount: 8 })`, was 6); `queen:home` the new dive too (its HOME_AT within her time up out of sight); the Eclipse a new act, as above.
   - HER EFFECTS (render/act1_fx/queen.ts): the painters above onto a picture laid on the floor layer; for the Eclipse, the scene
     darkened point by point by `lightAt` (the floor more, the figures less, glows kept: `darkened`), the pools' rims, the flock
-    pouring over and wheeling high (the game's vultures, darkened), the dives (their lines and the vultures down them).
+    pouring over and wheeling high (the game's vultures, darkened), the dives (their lines and the vultures down them). Her dive's
+    burst (his fix): `paintDiveBurst` 'back' on the floor layer after the marks, 'front' over the figures, from her hit for
+    `QA_DIVE.dust` seconds, at the dive's own spot (it is the floor's, not hers: she may be gone home while it hangs).
 
 Made by: `tools/action_f7_queen_film.ts` (the film), `tools/action_f7_queen_sheet.ts` and `tools/action_f7_queen_captions.py` (the
 sheet), `src/dev/action_f7_queen_scene.ts` (the scenes, on a stand-in eyrie), `tools/action_f7_queen_hash.ts` (the hash).

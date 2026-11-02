@@ -465,8 +465,8 @@ export function mixRat(a: RatPose, b: RatPose, k: number): RatPose {
 
 // --- THE ROLL ---
 /** The ball of rats: its rats' backs out, tails in to its middle; its radius to their backs; how high its middle rides (a little over that, their heads and ears tucked under them). */
-const BALL_R = 14.5 * SC;
-const BALL_Z = BALL_R + 1.6 * SC;
+export const BALL_R = 14.5 * SC;
+export const BALL_Z = BALL_R + 1.6 * SC;
 /** Each rat's place on the ball: a spread of directions (a golden spiral), and the way it lies along the ball. */
 const BALL_AT: V3[] = RATS.map((_, i) => {
   const n = RATS.length;
@@ -478,7 +478,7 @@ const BALL_AT: V3[] = RATS.map((_, i) => {
 /** How fast it rolls (tiles a second): one turn of the ball in a loop of RK_ROLL.frames, so its rats do not slide on the floor. */
 export const ROLL_PACE = (2 * Math.PI * BALL_Z) / ((RK_ROLL.frames / RK_ROLL.fps) * TILE3);
 /** The ball turned forward by `ang` (degrees) about its own middle: each rat on it. */
-function ballPose(ang: number, k = 1): RatPose[] {
+export function ballPose(ang: number, k = 1): RatPose[] {
   const C: V3 = [0, 0, BALL_Z];
   return RATS.map((R, i) => {
     const d0 = BALL_AT[i];

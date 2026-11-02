@@ -1,11 +1,15 @@
 // THE RAT KING DONE THE ACTION WAY: WHAT HE DOES TO HIS CISTERN AND SENDS ACROSS IT (the art chat's helper, 2 Nov 2026;
 // docs/mockups/action_f12_ratking/README.md). A MOCK-UP: NOTHING OF THE GAME IMPORTS THIS FILE (RATKING_ACTION, off).
 //
-//   THE SLUICES OPEN: the cistern's lanes (`lanesFor`: lanes LANE.w tiles wide running across it from the sluice gates in one wall to
-//     the drain along the other, dry ledges between them); their warning (`paintLaneMarks`: each lane's edges dashed in his pink,
-//     chevrons down it the way the water will run); the gates in the wall grinding open and bursting (`paintGate`); THE FLOOD
-//     (`paintFlood`: murky water white and black, its front a wall of foam, full of tumbling rats with the enemy's pink eyes; the
-//     ledges left dry), running FLOOD.runs seconds and draining.
+//   THE SLUICES, AN ARENA HAZARD (his fix, 2 Nov 2026, 07:32: “The sluice gates should just open periodically in the rat king fight,
+//     I don’t think it needs to be one of his moves.  Just an arena hazard.”): they open ON THEIR OWN every so often (`SLUICES`,
+//     `sluiceAt`), needing nothing from him, so that they can go off while he bites, casts or rolls: the cistern's lanes (`lanesFor`:
+//     lanes LANE.w tiles wide running across it from the sluice gates in one wall to the drain along the other, dry ledges between
+//     them); their warning first (`paintLaneMarks`: each lane's edges dashed in his pink, chevrons down it the way the water will run);
+//     the gates in the wall grinding open (`paintGate`), then bursting; THE FLOOD (`paintFlood`: murky water white and black, its front
+//     a wall of foam, full of tumbling rats with the enemy's pink eyes; the ledges left dry), running FLOOD.runs seconds and draining.
+//   HIS ROLL'S LANE (`paintRollLane`): marked while he curls and holds, 2.4 wide, its end a ring where he bursts open; fading behind
+//     him as he rolls, scored by the ball.
 //   THE BITE'S WEDGE (`paintWedge`), marked while it is held, and torn where the jaws snap.
 //   STOLEN WORDS: the word's line (`paintWordLine`: following you, then LOCKED); the word in flight, twice the old size, in the shape of
 //     one of the hero's own words in the enemy's fire (`paintWord`); its burst, twice as wide (`paintWordBurst`).
@@ -15,7 +19,7 @@
 import { Px } from '../engine/px';
 import { hash } from './kit';
 import { FLAME } from './mkit';
-import { BITE9, SLUICE, SLUICE_HIT, UNKNOT9, WORDS9 } from './ratking_action';
+import { BITE9, ROLL9, ROLL9_FAR, UNKNOT9, WORDS9, roll9Along } from './ratking_action';
 import { BELLY, FUR, SKIN } from './rat_king';
 
 const cl01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -77,8 +81,20 @@ export const LANES = lanesFor(2 * CISTERN.half).lanes;
 export const laneOf = (y: number, lanes: readonly Lane[] = LANES): number => lanes.findIndex((l) => Math.abs(y - l.y) < l.half);
 
 /**
- * THE FLOOD'S NUMBERS (seconds from the summons' start; tiles):
- *   the gates grind open from SLUICE.gates, a crack of water spurting under each; BURST at SLUICE_HIT
+ * THE SLUICES' CLOCK (seconds from when this opening begins; the hazard's own, nothing of his): the lanes marked on the floor from
+ * `mark`; the gates grinding open from `gates`, water spurting under them; BURST at `burst` (2 s of warning in all). They open
+ * every `every` seconds of the fight, the first `first` seconds in (a suggestion: how often is the main chat's).
+ */
+export const SLUICES = { mark: 0, gates: 0.6, burst: 2.0, every: 14, first: 9 } as const;
+/** Seconds into the opening under way `fight` seconds into the fight, or null (none under way): as the suggestion has them. */
+export function sluiceAt(fight: number): number | null {
+  if (fight < SLUICES.first) return null;
+  const s = (fight - SLUICES.first) % SLUICES.every;
+  return s < SLUICES.burst + FLOOD.runs + FLOOD.drain + 0.3 ? s : null;
+}
+/**
+ * THE FLOOD'S NUMBERS (seconds from when the opening begins; tiles):
+ *   the gates grind open from SLUICES.gates, a crack of water spurting under each; BURST at SLUICES.burst
  *   the water's front races across from the gates at `front` tiles a second (16 tiles in 0.2 s: a few frames), each lane `stagger`
  *   later than the one before; it runs `runs` seconds from the burst at full; the gates drop and its tail drains away from them down
  *   the lanes in `drain` seconds. Its current `flow` tiles a second (the rats tumbling in it go at `rats`)
@@ -86,15 +102,15 @@ export const laneOf = (y: number, lanes: readonly Lane[] = LANES): number => lan
  *   it, struck again every `every` seconds (a suggestion: the rules' own)
  */
 export const FLOOD = { front: 80, stagger: 0.033, runs: 3.0, drain: 0.8, flow: 7, rats: 6, carry: 5, every: 0.5, gateLift: 0.3 } as const;
-/** How far the water has come from the gate wall in lane `i` and how far its tail has drained (tiles from the wall), `m` seconds into the summons, the lane `len` tiles long. */
+/** How far the water has come from the gate wall in lane `i` and how far its tail has drained (tiles from the wall), `m` seconds into the opening, the lane `len` tiles long. */
 export function floodSpan(m: number, i: number, len: number): [number, number] {
-  const s = m - SLUICE_HIT - i * FLOOD.stagger;
+  const s = m - SLUICES.burst - i * FLOOD.stagger;
   if (s <= 0) return [0, 0];
   const front = Math.min(len, FLOOD.front * s);
   const tail = s < FLOOD.runs ? 0 : Math.min(len, (len * (s - FLOOD.runs)) / FLOOD.drain);
   return [tail, front];
 }
-/** Is the floor point (x, y) under the flood, `m` seconds into the summons (the gates at x = -half)? */
+/** Is the floor point (x, y) under the flood, `m` seconds into the opening (the gates at x = -half)? */
 export function flooded(x: number, y: number, m: number, half: number = CISTERN.half, lanes: readonly Lane[] = LANES): boolean {
   const i = laneOf(y, lanes);
   if (i < 0 || x < -half || x > half) return false;
@@ -102,12 +118,12 @@ export function flooded(x: number, y: number, m: number, half: number = CISTERN.
   const d = x + half;
   return front > tail && d >= tail && d <= front;
 }
-/** How far up a gate is (0 shut, 1 up), `m` seconds into the summons. */
+/** How far up a gate is (0 shut, 1 up), `m` seconds into the opening. */
 export function gateUp(m: number, i: number): number {
-  const s0 = SLUICE.gates + i * 0.05;
+  const s0 = SLUICES.gates + i * 0.05;
   if (m < s0) return 0;
-  if (m < SLUICE_HIT) return FLOOD.gateLift * sm((m - s0) / (SLUICE_HIT - s0 - 0.1)) + 0.02 * Math.sin(m * 40) * (m < SLUICE_HIT - 0.1 ? 1 : 0);
-  const s = m - SLUICE_HIT - i * FLOOD.stagger;
+  if (m < SLUICES.burst) return FLOOD.gateLift * sm((m - s0) / (SLUICES.burst - s0 - 0.1)) + 0.02 * Math.sin(m * 40) * (m < SLUICES.burst - 0.1 ? 1 : 0);
+  const s = m - SLUICES.burst - i * FLOOD.stagger;
   if (s < 2 / 30) return FLOOD.gateLift + (1 - FLOOD.gateLift) * cl01(s / (2 / 30));
   if (s < FLOOD.runs) return 1;
   return 1 - sm((s - FLOOD.runs) / 0.35);
@@ -118,12 +134,12 @@ const WATER = ['#070b0a', '#0d1512', '#14201b', '#1d2c24', '#2b3c32', '#4a5a50']
 const FOAM = ['#7e877c', '#aab2a4', '#d2d6c8', '#eef0e4'] as const;
 const WET = ['#1a1418', '#231a1c'] as const;
 
-/** THE LANES' WARNING: each lane's two edges dashed in his pink from the gate wall to the drain, chevrons down it the way the water will run, beating faster as the burst nears; `m` seconds into the summons. */
+/** THE LANES' WARNING: each lane's two edges dashed in his pink from the gate wall to the drain, chevrons down it the way the water will run, beating faster as the burst nears; `m` seconds into the opening. */
 export function paintLaneMarks(px: Px, at: At, m: number, half: number = CISTERN.half, lanes: readonly Lane[] = LANES): void {
-  if (m < SLUICE.mark || m > SLUICE_HIT + 0.25) return;
+  if (m < SLUICES.mark || m > SLUICES.burst + 0.25) return;
   const dot = pen(px);
-  const k = sm((m - SLUICE.mark) / 0.3);
-  const on = beat(m, SLUICE.mark, SLUICE_HIT);
+  const k = sm((m - SLUICES.mark) / 0.3);
+  const on = beat(m, SLUICES.mark, SLUICES.burst);
   const len = 2 * half;
   lanes.forEach((L, i) => {
     const [tail, front] = floodSpan(m, i, len);
@@ -206,7 +222,7 @@ export function paintRat(px: Px, X: number, Y: number, ang: number, size: number
 }
 
 /**
- * THE FLOOD, `m` seconds into the summons: the water in each lane from its tail to its front, murky, streaked white and black
+ * THE FLOOD, `m` seconds into the opening: the water in each lane from its tail to its front, murky, streaked white and black
  * along its flow, its front a churning wall of foam with spray over it, foam lipping the ledges' edges; FULL OF TUMBLING RATS carried
  * with it. Parted round `him` (his floor point, if he stands in it). On the picture whose cistern's middle is at `I`.
  */
@@ -221,7 +237,7 @@ export function paintFlood(px: Px, I: Iso, m: number, him: [number, number] | nu
   const [r] = at(half, -half);
   const [, t] = at(-half, -half);
   const [, b] = at(half, half);
-  const s = m - SLUICE_HIT;
+  const s = m - SLUICES.burst;
   for (let Y = Math.max(1, Math.floor(t)); Y < Math.min(px.h - 1, Math.ceil(b)); Y++) {
     for (let X = Math.max(1, Math.floor(l)); X < Math.min(px.w - 1, Math.ceil(r)); X++) {
       const [x, y] = toFloor(I, X, Y);
@@ -259,7 +275,7 @@ export function paintFlood(px: Px, I: Iso, m: number, him: [number, number] | nu
   lanes.forEach((L, i) => {
     const [tail, front] = spans[i];
     if (front <= tail) return;
-    const sf = m - SLUICE_HIT - i * FLOOD.stagger;
+    const sf = m - SLUICES.burst - i * FLOOD.stagger;
     for (let j = 0; j < 60; j++) {
       const ys = L.y + (hash(i, j, 7121) - 0.5) * 2 * L.half;
       const life = 0.3;
@@ -293,7 +309,7 @@ export function paintFlood(px: Px, I: Iso, m: number, him: [number, number] | nu
 /**
  * A SLUICE GATE in the cistern's wall at x = -half, before lane `L`: its arch of wet brick, the dark of the culvert behind, the iron gate
  * (bars and cross-straps, rusted) lifted `up` of the way; under it, as it grinds open, water spurting; once burst, the flood pouring
- * out over the sill. `m` seconds into the summons.
+ * out over the sill. `m` seconds into the opening.
  */
 export function paintGate(px: Px, I: Iso, L: Lane, i: number, m: number, half: number = CISTERN.half): void {
   const at = isoAt(I);
@@ -301,7 +317,7 @@ export function paintGate(px: Px, I: Iso, L: Lane, i: number, m: number, half: n
   const up = gateUp(m, i);
   const H = 64;
   const w = L.half - 0.15;
-  const s = m - SLUICE_HIT - i * FLOOD.stagger;
+  const s = m - SLUICES.burst - i * FLOOD.stagger;
   const pouring = s > 0 && s < FLOOD.runs + 0.3;
   for (let q = -w; q <= w; q += 1 / 32) {
     const y = L.y + q;
@@ -334,7 +350,7 @@ export function paintGate(px: Px, I: Iso, L: Lane, i: number, m: number, half: n
     }
   }
   // spurts under the gate as it grinds open: jets of white out over the floor
-  if (m > SLUICE.gates && s < 0) {
+  if (m > SLUICES.gates && s < 0) {
     for (let j = 0; j < 18; j++) {
       const q = (hash(i, j, 7143) - 0.5) * 2 * w;
       const age = ((m * 3 + hash(i, j, 7144)) % 1);
@@ -638,4 +654,116 @@ export function paintSwarm9(px: Px, at: At, x0: number, y0: number, x1: number, 
     for (let k = 1; k < 4; k++) dot(sx - Math.cos(ang) * (10 + k * 4), sy - Math.sin(ang) * 0.6 * (10 + k * 4) + (hash(i, k, 7192) - 0.5) * 3, '#5e5248');
     paintRat(px, sx, sy, ang + Math.sin(q * 20 + i) * 0.25, 1.75, false, i, false, PINK[0]);
   }
+}
+
+// =============================================================================================
+// HIS ROLL'S LANE
+
+/**
+ * HIS ROLL'S LANE on the floor, he setting off from `B` along `aim` (radians on the floor), `m` seconds into his roll: MARKED while he
+ * curls and holds (its two edges dashed in his pink, ROLL9.half to either side, out to where he stops; chevrons marching down it;
+ * the floor in it hatched; its end A RING ROLL9.endR round where he bursts open; beating faster); once he is off, the lane behind him
+ * gone, scored where the ball ground along it; the ring flashing as he bursts open, then gone.
+ */
+export function paintRollLane(px: Px, at: At, m: number, B: readonly [number, number], aim: number): void {
+  const dot = pen(px);
+  const c = Math.cos(aim);
+  const s = Math.sin(aim);
+  const P = (a: number, side: number): [number, number] => at(B[0] + c * a - s * side, B[1] + s * a + c * side);
+  const H = ROLL9.half;
+  const R = ROLL9.endR;
+  const far = ROLL9_FAR;
+  const into = far - Math.sqrt(R * R - H * H);
+  const mark = (x: number, y: number, on: boolean, hot = false): void => {
+    dot(x, y, hot ? '#fff0f4' : on ? PINK[2] : PINK[1]);
+    dot(x + 1, y, on ? PINK[2] : PINK[1]);
+    dot(x, y + 1, PINK[1]);
+    dot(x + 1, y + 1, PINK[0]);
+  };
+  const ring = (r: number, on: boolean, gap: number, hot = false): void => {
+    for (let a = 0; a < TAU; a += 0.02) {
+      if (Math.round(a * 50) % gap >= gap - 2) continue;
+      const [x, y] = at(B[0] + c * far + Math.cos(a) * r, B[1] + s * far + Math.sin(a) * r);
+      mark(x, y, on, hot);
+    }
+  };
+  if (m >= ROLL9.mark && m < ROLL9.hit) {
+    const k = sm((m - ROLL9.mark) / 0.3);
+    const on = beat(m, ROLL9.mark, ROLL9.hit);
+    // its edges, laid out from him
+    for (let d = -0.6; d <= -0.6 + (into + 0.6) * k; d += 0.04) {
+      if (Math.round(d * 25) % 5 >= 3) continue;
+      for (const sd of [-1, 1]) {
+        const [x, y] = P(d, sd * H);
+        mark(x, y, on);
+      }
+    }
+    // the ring at its end, where he bursts open
+    if (k > 0.6) ring(R * (1 + 0.1 * (1 - k)), on, 6);
+    // chevrons marching down it, the way he will come
+    const run = (m * 2.5) % 1;
+    for (let q = 0; q < far / 1.2; q++) {
+      const d0 = 0.6 + (q + run) * 1.2;
+      if (d0 > (into + 0.6) * k - 0.6) continue;
+      for (let w = -H * 0.8; w <= H * 0.8; w += 0.03) {
+        const [x, y] = P(d0 - Math.abs(w) * 0.55, w);
+        mark(x, y, on);
+      }
+    }
+    // the floor in it hatched faintly: a place to be out of
+    for (let j = 0; j < 900 * k; j++) {
+      const d = -0.4 + hash(j, 1, 7401) * (far + R - 0.2);
+      const w = (hash(j, 2, 7401) - 0.5) * 2;
+      const inRing = Math.hypot(d - far, w * R) < R;
+      const side = inRing ? w * R : w * H;
+      if (!inRing && d > into + 0.2) continue;
+      if (d > far + R * 0.95) continue;
+      const [x, y] = P(d, side);
+      if ((Math.round(x) + Math.round(y)) % 2) continue;
+      dot(x, y, on ? PINK[1] : PINK[0]);
+    }
+    return;
+  }
+  const t = m - ROLL9.hit;
+  if (t < 0) return;
+  const now = roll9Along(m);
+  // the lane before him still marked, solid, until he stops; behind him gone; the ring until he bursts open, then flashing and gone
+  if (m < ROLL9.stop) {
+    for (let d = Math.max(now + 0.8, 0); d <= into; d += 0.04) {
+      if (Math.round(d * 25) % 5 >= 4) continue;
+      for (const sd of [-1, 1]) {
+        const [x, y] = P(d, sd * H);
+        mark(x, y, true);
+      }
+    }
+    ring(R, true, 6);
+  }
+  const o = m - ROLL9.stop;
+  if (o >= 0 && o < 0.45) {
+    for (const r of [R * (0.3 + 0.7 * Math.sqrt(Math.min(1, o / 0.15))), R]) ring(r, o < 0.2, 4, o < 0.1);
+  }
+  // scored where the ball ground along the floor: two dark grooves behind it, fading
+  for (let d = -0.5; d <= Math.min(now, far); d += 0.03) {
+    const when = roll9AtAlong(d);
+    const age = m - when;
+    if (age < 0 || age > 1.2) continue;
+    if (hash(Math.round(d * 33), 1, 7402) < age / 1.2) continue;
+    for (const sd of [-0.18, 0.18]) {
+      const [x, y] = P(d, sd);
+      dot(x, y, age < 0.2 ? '#8a7a68' : '#2a2220');
+      dot(x + 1, y, '#3a3028');
+    }
+  }
+}
+/** When (seconds into his roll) the ball came by a point `d` tiles along its lane, after it was off the line. */
+function roll9AtAlong(d: number): number {
+  let lo = ROLL9.strike[0];
+  let hi = ROLL9.stop;
+  if (d >= ROLL9_FAR) return hi;
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (roll9Along(mid) < d) lo = mid;
+    else hi = mid;
+  }
+  return hi;
 }

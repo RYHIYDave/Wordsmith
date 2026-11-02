@@ -241,8 +241,13 @@ function gustPose(t: number): QueenPose {
  * lengths on (her talons 8 more: `at` tiles), held `freeze`; home by `home`. What it strikes (for the rules): within `r` of where her talons strike,
  * and on her line from `line` to it, `half` to either side; her line marked on the rock from `launch`. Old: 2.2 s, her strike at
  * 1.08, 2.86 tiles out, within 1.1 and 0.6 to either side of her line.
+ * HIS FIX, 2 Nov 2026, 07:32: “The carrion queen’s dive should be a much bigger AOE, and really sell it with dirt and dust on the
+ * impact.” So `r` twice what it was (3.2, was 1.6), and the rock bursts where she strikes (art/carrion_queen_action_fx.ts
+ * `paintDiveBurst`): the fountain of dirt, grit and broken rock, the ring of dust rolling out to the area's edge, chunks falling back
+ * and bouncing, the dust hanging `dust` seconds after and drifting off; the crater and its cracks left `crater` seconds; the
+ * game's shake `shake` (the most it uses).
  */
-export const QA_DIVE = { long: f(84), launch: f(10), up: [f(14), f(46)] as const, hold: [f(29), f(46)] as const, strike: [f(46), f(48)] as const, hit: f(48), freeze: f(3), strikeX: 132, at: 4.0, r: 1.6, line: 1.0, half: 0.9, home: f(78) } as const;
+export const QA_DIVE = { long: f(84), launch: f(10), up: [f(14), f(46)] as const, hold: [f(29), f(46)] as const, strike: [f(46), f(48)] as const, hit: f(48), freeze: f(3), strikeX: 132, at: 4.0, r: 3.2, line: 1.0, half: 0.9, home: f(78), dust: 2.3, crater: 2.0, shake: 8 } as const;
 function diveBeats(): Beat[] {
   const R = R0();
   const X = QA_DIVE.strikeX;
@@ -537,9 +542,9 @@ export function queenActionGrains(move: string, t: number, view: GameView = 'fro
     dustRing(g, [0, 0, 0], (t - QA_DIVE.launch - FR) / 0.4, 20, 120, 1831);
     // (her smear: her whole body down the way she came, her quills' after-images edged in her pink)
     g.push(...qaSmear(move, t, view));
-    // (the crater: chips and a ring of dust where she strikes, bigger)
-    spray(g, [QA_DIVE.strikeX + 14, 0, 0], (t - QA_DIVE.hit) / 0.7, 44, 110, 1832);
-    dustRing(g, [QA_DIVE.strikeX + 10, 0, 0], (t - QA_DIVE.hit) / 0.55, 24, 150, 1833);
+    // (where she strikes, the rock bursts: painted on the eyrie, not on her: art/carrion_queen_action_fx.ts paintDiveBurst; here only
+    // the grit kicked off her own talons as they bite)
+    spray(g, [QA_DIVE.strikeX + 14, 0, 0], (t - QA_DIVE.hit) / 0.35, 20, 60, 1832);
     dustRing(g, [0, 0, 0], (t - QA_DIVE.home) / 0.3, 10, 50, 1834);
   }
   if (move === 'eclipse') {

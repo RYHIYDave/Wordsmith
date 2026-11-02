@@ -207,65 +207,287 @@ export function paintDiveMarks(p: Px, at: At, B: readonly [number, number], aim:
   const L = QA_DIVE.line;
   const H = QA_DIVE.half;
   const R = QA_DIVE.r;
+  const [cx, cy] = from(B, aim, A, 0);
   if (t >= QA_DIVE.launch && t < hit) {
     const k = cl01((t - QA_DIVE.launch) / (hit - QA_DIVE.launch));
     const on = beating(t, QA_DIVE.launch, hit);
     const c = on ? (k > 0.65 ? FLAME[4] : FLAME[3]) : FLAME[2];
     const dim = on ? FLAME[2] : FLAME[1];
     // (her line: its two edges dashed, chevrons down it toward where she strikes)
-    for (const sd of [-1, 1]) floorLine(p, at, from(B, aim, L, sd * H), from(B, aim, A - Math.sqrt(R * R - H * H), sd * H), (u) => (Math.floor(u * 10) % 2 === 0 ? c : dim), 2);
+    const lineEnd = A - Math.sqrt(Math.max(0, R * R - H * H));
+    if (lineEnd > L) for (const sd of [-1, 1]) floorLine(p, at, from(B, aim, L, sd * H), from(B, aim, lineEnd, sd * H), (u) => (Math.floor(u * 10) % 2 === 0 ? c : dim), 2);
     const march = ((t - QA_DIVE.launch) * (1 + 3 * k)) % 1;
     for (let r = L + 0.3 + march * 0.7; r < A - 0.4; r += 0.7) for (const sd of [-1, 1]) floorLine(p, at, from(B, aim, r - 0.4, sd * H * 0.75), from(B, aim, r, 0), () => c, 2);
-    // (the ring where she strikes, closing in on its middle as she stoops)
-    const rr = R * (1 + 0.15 * (1 - k));
-    const n = 48;
+    // THE AREA SHE STRIKES, PLAIN: its whole ground hatched in her pink (a place to be out of), and its edge a thick ring, closing in
+    // to its size as she stoops, beating faster
+    const rr = R * (1 + 0.12 * (1 - k));
+    const [X0, Y0] = at(cx, cy);
+    const [Xe] = at(cx + rr * Math.SQRT1_2, cy - rr * Math.SQRT1_2);
+    const rx = Math.abs(Xe - X0) + 4;
+    for (let Y = -rx / 2; Y <= rx / 2; Y += 2) {
+      for (let X = -rx; X <= rx; X += 2) {
+        const e = (X / rx) ** 2 + (Y / (rx / 2)) ** 2;
+        if (e >= 1) continue;
+        // (diagonal hatching, every fourth game pixel, sliding toward her line's end as it beats)
+        const band = (((X + 2 * Y) / 2 + Math.floor(t * 18)) % 6 + 6) % 6;
+        if (band === 0 && hash(X, Y, 7311) < 0.9) dot(p, X0 + X, Y0 + Y, on ? FLAME[1] : CHAR[2]);
+      }
+    }
+    const n = 96;
     for (let i = 0; i < n; i++) {
-      if (i % 3 === 2) continue;
+      if (i % 4 === 3) continue;
       const a0 = (i / n) * TAU;
       const a1 = ((i + 1) / n) * TAU;
-      floorLine(p, at, from(B, aim, A + Math.cos(a0) * rr, Math.sin(a0) * rr), from(B, aim, A + Math.cos(a1) * rr, Math.sin(a1) * rr), () => c, k > 0.6 ? 3 : 2);
+      floorLine(p, at, [cx + Math.cos(a0) * rr, cy + Math.sin(a0) * rr], [cx + Math.cos(a1) * rr, cy + Math.sin(a1) * rr], () => c, k > 0.6 ? 3 : 2);
+    }
+    // (a second ring inside it, fainter, so that it reads as a place and not a line)
+    for (let i = 0; i < 64; i += 2) {
+      const a0 = (i / 64) * TAU;
+      const a1 = ((i + 1) / 64) * TAU;
+      floorLine(p, at, [cx + Math.cos(a0) * rr * 0.55, cy + Math.sin(a0) * rr * 0.55], [cx + Math.cos(a1) * rr * 0.55, cy + Math.sin(a1) * rr * 0.55], () => dim, 1);
     }
     // (her shadow on the rock, growing as she plunges)
     if (t > QA_DIVE.hold[0]) {
       const sk = cl01((t - QA_DIVE.hold[0]) / (hit - QA_DIVE.hold[0]));
-      const [cx, cy] = at(...from(B, aim, A, 0));
-      const rx = 14 + 26 * sk;
-      for (let Y = -rx / 2; Y <= rx / 2; Y += 2) for (let X = -rx; X <= rx; X += 2) if ((X / rx) ** 2 + (Y / (rx / 2)) ** 2 < 1 && (X + Y) % 4 === 0) dot(p, cx + X, cy + Y, INK);
+      const sx = 20 + 40 * sk;
+      for (let Y = -sx / 2; Y <= sx / 2; Y += 2) for (let X = -sx; X <= sx; X += 2) if ((X / sx) ** 2 + (Y / (sx / 2)) ** 2 < 1 && (X + Y) % 4 === 0) dot(p, X0 + X, Y0 + Y, INK);
     }
     return;
   }
   const s = t - hit;
-  if (s < 0 || s > 1.6) return;
-  // THE CRATER: cracks thrown out from where she struck, lit from under, then scorched; a ring of her fire going out to the ring's edge
-  const [cx, cy] = from(B, aim, A, 0);
+  if (s < 0 || s > QA_DIVE.crater) return;
+  // THE CRATER, LEFT A MOMENT: a bowl of broken rock where she struck, its rim heaved up pale; cracks thrown out from it across the
+  // area, lit from under by her fire at first, then dark; a ring of her fire racing out to the area's edge; the rock about it dusted
+  // pale where the dust settles. Gone by QA_DIVE.crater, crumbling away (whole pixels dropping out).
+  const gone = cl01((s - (QA_DIVE.crater - 0.6)) / 0.6);
+  const keep = (i: number, j: number): boolean => hash(i, j, 7321) >= gone;
   const k = cl01(s / f(3));
-  for (let j = 0; j < 9; j++) {
-    const a = (j / 9) * TAU + hash(j, 1, 7301) * 0.5;
+  for (let j = 0; j < 14; j++) {
+    const a = (j / 14) * TAU + hash(j, 1, 7301) * 0.4;
     let x = cx;
     let y = cy;
-    const len = R * (0.7 + 0.5 * hash(j, 2, 7301)) * k;
-    const seg = 6;
+    const len = R * (0.45 + 0.45 * hash(j, 2, 7301)) * k;
+    const seg = 8;
     for (let q = 0; q < seg; q++) {
       const aa = a + (hash(j, q, 7302) - 0.5) * 0.9;
       const nx = x + Math.cos(aa) * (len / seg);
       const ny = y + Math.sin(aa) * (len / seg);
-      const age = s / 1.3;
-      floorLine(p, at, [x, y], [nx, ny], () => (age < 0.15 ? WHITE : age < 0.4 ? FLAME[4] : age < 0.7 ? FLAME[2] : CHAR[1]), q < 2 ? 2 : 1);
+      const age = s / 0.9;
+      if (keep(j, q)) floorLine(p, at, [x, y], [nx, ny], () => (age < 0.12 ? WHITE : age < 0.3 ? FLAME[4] : age < 0.55 ? FLAME[2] : CHAR[q < 3 ? 0 : 1]), q < 3 ? 2 : 1);
+      // (a fork off the bigger ones)
+      if (q === 3 && j % 2 === 0 && keep(j, 40)) floorLine(p, at, [nx, ny], [nx + Math.cos(aa + 0.8) * len * 0.22, ny + Math.sin(aa + 0.8) * len * 0.22], () => (age < 0.3 ? FLAME[3] : CHAR[1]), 1);
       x = nx;
       y = ny;
     }
   }
-  const ring = R * cl01(s / 0.25);
-  if (s < 0.45) {
-    const n = 56;
+  const ring = R * (1 - Math.exp(-s / 0.07));
+  if (s < 0.4) {
+    const n = 120;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * TAU;
       const [x, y] = at(cx + Math.cos(a) * ring, cy + Math.sin(a) * ring);
-      dot(p, x, y, s < 0.12 ? WHITE : s < 0.25 ? FLAME[4] : FLAME[3], 1);
+      dot(p, x, y, s < 0.1 ? WHITE : s < 0.22 ? FLAME[4] : FLAME[3], s < 0.2 ? 2 : 1);
     }
   }
   const [X0, Y0] = at(cx, cy);
-  for (let Y = -10; Y <= 10; Y += 2) for (let X = -20; X <= 20; X += 2) if ((X / 20) ** 2 + (Y / 10) ** 2 < 1) dot(p, X0 + X, Y0 + Y, s < 0.3 ? FLAME[1] : CHAR[(X + Y) & 2 ? 0 : 1]);
+  // (the bowl: an uneven rim of heaved-up rock, pale on its near lip, its inside dark and scorched)
+  const BR = 20;
+  for (let Y = -BR; Y <= BR; Y += 2) {
+    for (let X = -2 * BR; X <= 2 * BR; X += 2) {
+      const a = Math.atan2(Y * 2, X);
+      const wob = 1 + 0.18 * Math.sin(a * 5 + 1.3) + 0.1 * Math.sin(a * 11);
+      const e = Math.sqrt((X / (2 * BR)) ** 2 + (Y / BR) ** 2) / wob;
+      if (e >= 1 || !keep(X, Y)) continue;
+      let c: string;
+      if (e > 0.78) c = Y > 0 ? (e > 0.9 ? '#b8b0bc' : '#8a818e') : e > 0.9 ? '#766d7c' : '#5a5262';
+      else if (e > 0.62) c = Y < 0 ? '#2a2230' : '#3c3446';
+      else c = s < 0.25 ? (e < 0.3 ? FLAME[3] : FLAME[1]) : CHAR[((X >> 1) + (Y >> 1)) & 1];
+      dot(p, X0 + X, Y0 + Y, c);
+    }
+  }
+  // (broken rock lying about the bowl, and the dust settled pale over the rock round it)
+  for (let i = 0; i < 70; i++) {
+    const a = hash(i, 1, 7331) * TAU;
+    const r = R * (0.25 + 0.75 * Math.sqrt(hash(i, 2, 7331)));
+    const [x, y] = at(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    if (!keep(i, 99) || s < 0.25 + (r / R) * 0.3) continue;
+    if (i % 3 === 0) {
+      dot(p, x, y, '#8a818e', 2);
+      dot(p, x + 2, y + 2, '#3c3446');
+    } else dot(p, x, y, hash(i, 3, 7331) > 0.5 ? '#9d94a0' : '#b2a9b4');
+  }
+}
+
+// =============================================================================================
+// HER DIVE: THE ROCK BURSTS (his fix: “really sell it with dirt and dust on the impact”)
+
+/** The eyrie's own colours for what is flung up: its rock, its grit, the dirt in its cracks, its dust (pale, the rock's violet-grey). */
+const DIRT = ['#2e2630', '#3c3240', '#4e4250'] as const;
+const STONE = ['#3a3342', '#5a5262', '#766d7c', '#9d94a0', '#c6bec8'] as const;
+const DUST = ['#463e4e', '#5c5466', '#746c7e', '#8e8698', '#aaa2b2'] as const;
+/** An ordered dither (4 by 4) on whole game pixels: whether a pixel is kept at density `k` (0 to 1). */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const dense = (X: number, Y: number, k: number): boolean => (BAYER[((Y >> 1) & 3) * 4 + ((X >> 1) & 3)] + 0.5) / 16 < k;
+/**
+ * A PUFF OF DUST on the picture at (x, y), `r` picture pixels round, `k` how thick (thinning as it hangs and drifts off): a billow lit
+ * from the upper left, shaded under, its edge broken; in whole game pixels, dithered as it thins, so that it stays crisp.
+ */
+function puff(p: Px, x: number, y: number, r: number, k: number, seed: number): void {
+  if (k <= 0.02 || r < 2) return;
+  const X0 = 2 * Math.round(x / 2);
+  const Y0 = 2 * Math.round(y / 2);
+  const R = Math.ceil(r / 2) * 2;
+  for (let Y = -R; Y <= R; Y += 2) {
+    for (let X = -R; X <= R; X += 2) {
+      const a = Math.atan2(Y, X);
+      const lump = 1 + 0.16 * Math.sin(a * 3 + seed) + 0.1 * Math.sin(a * 5 - seed * 2);
+      const e = Math.hypot(X, Y) / (r * lump);
+      if (e >= 1) continue;
+      // (its edge thinner than its heart)
+      if (!dense(X0 + X, Y0 + Y, k * (e > 0.8 ? 0.55 : 1))) continue;
+      const lit = -(X + 1.4 * Y) / (r * 1.5) + 0.2 * (1 - e);
+      const c = e > 0.86 && Y > 0 ? DUST[0] : lit > 0.42 ? DUST[4] : lit > 0.12 ? DUST[3] : lit > -0.22 ? DUST[2] : lit > -0.55 ? DUST[1] : DUST[0];
+      dot(p, X0 + X, Y0 + Y, c);
+    }
+  }
+}
+/** A chunk of broken rock, a few game pixels across, turned: lit on top, dark under, an edge of shadow. */
+function chunk(p: Px, x: number, y: number, size: number, turn: number): void {
+  const X0 = 2 * Math.round(x / 2);
+  const Y0 = 2 * Math.round(y / 2);
+  const c = Math.cos(turn);
+  const sn = Math.sin(turn);
+  const S = size * 2;
+  for (let Y = -S - 2; Y <= S + 2; Y += 2) {
+    for (let X = -S - 2; X <= S + 2; X += 2) {
+      const u = (X * c + Y * sn) / S;
+      const v = (-X * sn + Y * c) / (S * 0.75);
+      // (an uneven lump: flat-faced, a corner knocked off)
+      if (Math.abs(u) + Math.abs(v) * 0.8 > 1.1 || (u > 0.55 && v < -0.3)) continue;
+      const edge = Math.abs(u) + Math.abs(v) * 0.8 > 0.8;
+      dot(p, X0 + X, Y0 + Y, edge ? STONE[0] : Y < 0 ? STONE[2] : u < 0 ? STONE[1] : DIRT[2]);
+    }
+  }
+}
+/** What is flung up where she strikes: each piece's way out (radians on the floor), how fast out (tiles a second) and up (picture pixels a second), its kind (0 grit, 1 dirt, 2 broken rock), how late. */
+interface Flung {
+  a: number;
+  v: number;
+  w: number;
+  kind: 0 | 1 | 2;
+  late: number;
+  size: number;
+}
+const FLUNG: Flung[] = Array.from({ length: 200 }, (_, i) => {
+  const h1 = hash(i, 1, 7341);
+  const h2 = hash(i, 2, 7341);
+  const h3 = hash(i, 3, 7341);
+  const kind = (i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0) as 0 | 1 | 2;
+  // (a column straight up at the middle, and a fountain out over the whole area; the heavy rock not so far)
+  const column = i % 7 === 0;
+  return { a: h1 * TAU, v: column ? 0.3 + 0.7 * h2 : (kind === 2 ? 1.8 : 2.4) + (kind === 2 ? 3.4 : 5.4) * h2 * h2, w: column ? 560 + 220 * h3 : 240 + 420 * h3, kind, late: hash(i, 4, 7341) * 0.05, size: kind === 2 ? 2 + Math.round(hash(i, 5, 7341) * 2) : kind === 1 ? 2 : 1 };
+});
+const GRAV = 1400;
+/** Where a flung piece is `s` seconds after the strike: how far out (tiles), how high (picture pixels), and whether it is lying (`rest`) or gone. Rock bounces twice and lies; grit and dirt are gone where they land. */
+function flight(q: Flung, s: number): { r: number; z: number; rest: boolean } | null {
+  let t = s - q.late;
+  if (t < 0) return null;
+  // (slowed by the air as it goes)
+  const out = (dt: number, v: number): number => (v * (1 - Math.exp(-dt * 2.2))) / 2.2;
+  let r = 0;
+  let w = q.w;
+  let v = q.v;
+  for (let b = 0; b < 3; b++) {
+    const land = (2 * w) / GRAV;
+    if (t < land) return { r: r + out(t, v), z: w * t - (GRAV * t * t) / 2, rest: false };
+    if (q.kind !== 2) return null;
+    r += out(land, v);
+    v *= 0.45 * Math.exp(-land * 2.2);
+    w *= 0.32;
+    t -= land;
+    if (w < 30) break;
+  }
+  return t < 0.9 ? { r, z: 0, rest: true } : null;
+}
+/** The ring of dust's puffs: rolling out from where she struck to the area's edge, and an inner billow; each its own place round. */
+const RING_N = 34;
+/**
+ * HER DIVE'S BURST, `t` seconds into her dive, she at `B` facing `aim`: what is flung up and the dust, `part` the half of it behind
+ * where she strikes ('back', laid before the figures) or before it ('front', laid over them), as the game sorts what stands.
+ *   THE FOUNTAIN   dirt, grit and broken rock flung up and out over the whole area in a fountain, a column straight up at its middle;
+ *                  the rock falls back and bounces twice and lies a moment; the grit and dirt are gone where they land
+ *   THE DUST RING  a thick ring of dust rolling out along the rock to the area's edge (QA_DIVE.r) in under half a second, billowing;
+ *                  an inner billow and a cloud over the crater rising; then all of it hanging, swelling, drifting off with the wind
+ *                  and thinning away by QA_DIVE.dust
+ */
+export function paintDiveBurst(p: Px, at: At, B: readonly [number, number], aim: number, t: number, part: 'back' | 'front'): void {
+  const s = t - QA_DIVE.hit;
+  if (s < 0 || s > QA_DIVE.dust) return;
+  const R = QA_DIVE.r;
+  const [cx, cy] = from(B, aim, QA_DIVE.at, 0);
+  const [, Yc] = at(cx, cy);
+  const mine = (y: number): boolean => (part === 'back' ? y < Yc : y >= Yc);
+  // (the wind: the dust drifting off to the picture's right and a little up; how thick it still is)
+  const drift = Math.max(0, s - 0.45);
+  const wind = 16 * drift + 4 * drift * drift;
+  const thick = 1 - cl01((s - 0.5) / (QA_DIVE.dust - 0.5));
+  // THE DUST RING: rolling out, then hanging; puffs behind the middle first (the far side), so the near ones lie over them
+  const out = R * 0.97 * (1 - Math.exp(-s / 0.13));
+  const puffs: [number, number, number, number, number][] = [];
+  for (let i = 0; i < RING_N; i++) {
+    const a = (i / RING_N) * TAU + hash(i, 1, 7351) * 0.12;
+    const rr = out * (0.93 + 0.1 * hash(i, 2, 7351));
+    const [x, y] = at(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+    const big = 8 + 13 * Math.sqrt(cl01(s / 0.5)) + 5 * drift;
+    // (rolling: two lobes, the upper one tumbling forward over the lower)
+    const roll = s * 7 + i;
+    puffs.push([x + wind, y - big * 0.55 - 3 * drift, big, thick, i]);
+    puffs.push([x + wind + Math.cos(roll) * big * 0.35, y - big * 1.05 - 4 * drift + Math.sin(roll) * big * 0.2, big * 0.72, thick * 0.9, i + 50]);
+  }
+  // (an inner billow, and the cloud over the crater rising and spreading)
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * TAU + 0.3;
+    const rr = out * 0.5;
+    const [x, y] = at(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+    const big = 10 + 13 * Math.sqrt(cl01(s / 0.6)) + 5 * drift;
+    puffs.push([x + wind * 0.8, y - big * 0.8 - 8 * drift, big, thick * 0.95, i + 100]);
+  }
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * TAU;
+    const rise = 30 + 70 * (1 - Math.exp(-s / 0.35)) + 10 * drift;
+    const spread = 6 + 26 * Math.sqrt(cl01(s / 0.7));
+    const [x, y] = at(cx, cy);
+    puffs.push([x + Math.cos(a) * spread * 1.4 + wind * 0.6, y - rise + Math.sin(a) * spread * 0.6, 12 + 12 * cl01(s / 0.6) + 4 * drift, thick * (s < 0.08 ? 0 : 0.8), i + 200]);
+  }
+  // (lay them far to near: what is higher on the picture first)
+  for (const [x, y, r, k, seed] of puffs.sort((u, v) => u[1] - v[1])) {
+    const floorY = y + r * 0.6;
+    if (mine(floorY)) puff(p, x, y, r, k, seed);
+  }
+  // THE FOUNTAIN, over the dust: dirt, grit and broken rock
+  for (const [i, q] of FLUNG.entries()) {
+    const fl = flight(q, s);
+    if (!fl) continue;
+    const fx = cx + Math.cos(q.a) * fl.r;
+    const fy = cy + Math.sin(q.a) * fl.r;
+    const [X, Yf] = at(fx, fy);
+    if (!mine(Yf)) continue;
+    const Y = Yf - fl.z;
+    if (fl.rest) {
+      if (hash(i, Math.floor(s * 10), 7361) < cl01((s - 1.4) / 0.6)) continue;
+      chunk(p, X, Y, q.size, q.a);
+      continue;
+    }
+    if (q.kind === 2) chunk(p, X, Y, q.size, q.a + s * 9 * (i % 2 ? 1 : -1));
+    else if (q.kind === 1) {
+      dot(p, X, Y, DIRT[i % 3], 2);
+      dot(p, X, Y + 2, DIRT[0]);
+    } else {
+      dot(p, X, Y, i % 2 ? STONE[2] : STONE[3]);
+      // (a streak behind fast grit, along the way it came)
+      if (s < 0.25) dot(p, X - Math.cos(q.a) * 2, Y + 4, STONE[1]);
+    }
+  }
 }
 
 // =============================================================================================

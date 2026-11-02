@@ -2,9 +2,12 @@
 // 2026, offered “The sluices open, in place of the roll: water floods across the cistern in lanes, carrying rats with it. Stand on
 // the dry ledges between”: “Yes (Recommended)”. And his rulebook's Monsters 9, Action, like a movie: every attack Movement 9 with
 // bigger areas. So:
+//   HIS FIX, 2 Nov 2026, 07:32: “The sluice gates should just open periodically in the rat king fight, I don’t think it needs to be one
+//   of his moves.  Just an arena hazard.” And his pick by 07:36: “His roll, back and bigger (Recommended)”. So the sluices are the
+//   cistern's own (they open on their own: SLUICES, sluiceAt), and his roll is back in their place among his moves, by Movement 9.
 //   1. the switch is off; nothing of the game imports the mock-up; the game's own frames of the Rat King and what the game draws of
 //      his moves hash the same as on the branch this one came from (tools/ratking_action_hash.ts); with the new art his stand, his
-//      scuttle, struck, knotting again and his death the game's own, frame for frame; his roll gone, the sluices in its place;
+//      scuttle, struck, knotting again and his death the game's own, frame for frame; his roll one clip, by Movement 9; no sluices;
 //   2. every frame of his new moves paints, wears the pink edge, is crisp, has no cyan, nothing cut off, both ways round;
 //   3. HIS NEW MOVES THROUGH THE REVIEW FOR THE OLD RIGS (art/action_f1_checks.ts checkKit: he is not on the heroes' bones), both ways
 //      round, six pairs of feet as his soles: nothing found; and the whole-figure checks the game's own test of him makes (FLOOR,
@@ -35,11 +38,11 @@ import { SWARM_FOR, SWARM_RATS, WORD_BURST_FOR, WORD_SPEED, drawStolenWord, draw
 import type { StolenWord } from '../src/art/rat_king_shots';
 import { drawChargeLane } from '../src/art/charge_lane';
 import {
-  BITE9, BITE9_HIT, BITE9_STRIKE, HITS9, LONG9, MOVES9, RATKING_ACTION, RK9_CANVAS, SLUICE, SLUICE_HIT, SLUICE_STRIKE, STRIKES9, UNKNOT9, UNKNOT9_HIT, WORDS9, WORDS9_HIT,
-  king9Painted, makeRatKingActionArt, pose9,
+  BITE9, BITE9_HIT, BITE9_STRIKE, HITS9, LONG9, MOVES9, RATKING_ACTION, RK9_CANVAS, ROLL9, ROLL9_FAR, ROLL9_HIT, ROLL9_STRIKE, STRIKES9, UNKNOT9, UNKNOT9_HIT, WORDS9, WORDS9_HIT,
+  king9Painted, makeRatKingActionArt, pose9, pose9World, roll9Along,
 } from '../src/art/ratking_action';
 import {
-  CISTERN, FLOOD, LANE, LANES, SWARM9, floodSpan, flooded, gateUp, isoAt, laneOf, lanesFor, paintBurstRing, paintFlood, paintGate, paintLaneMarks, paintSwarm9, paintWedge, paintWord, paintWordBurst, paintWordLine,
+  CISTERN, FLOOD, LANE, LANES, SLUICES, SWARM9, floodSpan, flooded, gateUp, isoAt, laneOf, lanesFor, paintBurstRing, paintFlood, paintGate, paintLaneMarks, paintRollLane, paintSwarm9, paintWedge, paintWord, paintWordBurst, paintWordLine, sluiceAt,
 } from '../src/art/ratking_action_fx';
 import type { Word } from '../src/art/ratking_action_fx';
 import { review, whole } from './ratking_action_shapes';
@@ -202,10 +205,11 @@ test('1. the switch is off; nothing of the game imports the mock-up; the game’
     const g = lists(game[v]);
     const n = lists(art[v]);
     for (const name of ['idle', 'walk', 'die', 'reel', 'moves.knot']) (g.get(name) as Sprite[]).forEach((sp, i) => assert.equal(unlike(sp, (n.get(name) as Sprite[])[i]), 0, `${v} ${name} ${i}: the game's own`));
-    for (const name of ['attack', 'attack3', 'moves.sluice', 'moves.words', 'moves.unknot']) assert.ok(n.has(name), `${v}: has ${name}`);
-    for (const name of ['moves.curl', 'moves.roll', 'moves.uncurl']) assert.ok(!n.has(name), `${v}: the sluices in place of his roll (${name})`);
+    for (const name of ['attack', 'attack3', 'moves.roll', 'moves.words', 'moves.unknot']) assert.ok(n.has(name), `${v}: has ${name}`);
+    for (const name of ['moves.curl', 'moves.uncurl', 'moves.sluice']) assert.ok(!n.has(name), `${v}: his roll one clip, the sluices not his (${name})`);
     assert.equal((art[v].clips?.attack as Clip).hit, BITE9_HIT, `${v}: the bite's moment`);
-    assert.equal((art[v].clips?.moves?.sluice as Clip).hit, SLUICE_HIT, `${v}: the slam's moment`);
+    assert.equal((art[v].clips?.moves?.roll as Clip).hit, ROLL9_HIT, `${v}: the roll off the line`);
+    assert.equal((art[v].clips?.moves?.roll as Clip).frames.length, Math.round(ROLL9.long * 30) + 1, `${v}: the roll's frames`);
   }
 });
 
@@ -213,7 +217,7 @@ test('2. every frame of his new moves paints, wears the pink edge, is crisp, has
   const art = makeRatKingActionArt();
   for (const v of ['front', 'back'] as const) {
     const set = art[v];
-    const clips: [string, Sprite[]][] = [['attack', (set.clips?.attack as Clip).frames], ...(['sluice', 'words', 'unknot'] as const).map((m): [string, Sprite[]] => [m, (set.clips?.moves?.[m] as Clip).frames])];
+    const clips: [string, Sprite[]][] = [['attack', (set.clips?.attack as Clip).frames], ...(['roll', 'words', 'unknot'] as const).map((m): [string, Sprite[]] => [m, (set.clips?.moves?.[m] as Clip).frames])];
     for (const [m, frames] of clips) {
       frames.forEach((sp, i) => {
         const l = look(paintingOf(sp), sp.lights);
@@ -236,15 +240,22 @@ test('3. his new moves through the review for the old rigs, both ways round, and
     const [a, b] = STRIKES9[m];
     const hit = HITS9[m];
     assert.ok(Math.round((b - a) * 30) === 2 && Math.abs(hit - b) < 1e-9, `${m}: a strike of two frames, its blow at its end`);
-    const held = m === 'attack' ? a - BITE9.held : m === 'sluice' ? a - SLUICE.held : m === 'words' ? a - WORDS9.held : a - UNKNOT9.held;
+    const held = m === 'attack' ? a - BITE9.held : m === 'roll' ? a - ROLL9.held : m === 'words' ? a - WORDS9.held : a - UNKNOT9.held;
     assert.ok(held >= 0.4 && hit >= 0.9, `${m}: held ${held.toFixed(2)} s, its whole wind-up ${hit.toFixed(2)} s`);
     // (unknotting's wind-down is its running off, the swarm and the knot: the game's own, after it)
     const down = m === 'unknot' ? LONG9[m] - hit + SWARM9.for + RK_UNKNOT.in : LONG9[m] - hit;
     assert.ok(down >= 1.2, `${m}: a big wind-down (${down.toFixed(2)} s)`);
   }
-  // THE SLUICES: he rears up as a heap (the King hoisted higher than the knight's head) and slams down
-  const king = (t: number): number => pose9('sluice', t).rats[10].c[2];
-  assert.ok(king(SLUICE.held + 0.2) > king(0) + 18 && king(SLUICE_HIT) < king(0), `reared ${(king(SLUICE.held + 0.2) - king(0)).toFixed(1)} up, slammed down`);
+  // HIS ROLL: curled into a ball (every rat up off the floor) and held there, spinning; off the line in two frames, far faster than it
+  // rolls after; down its lane at its pace; stopped where it says, and his stand there
+  const low = (t: number): number => Math.min(...pose9('roll', t).rats.flatMap((r) => r.feet.map((p) => p[2])));
+  for (let t = ROLL9.curl; t <= ROLL9.stop; t += 1 / 30) assert.ok(low(t) > 0.5, `curled up at ${t.toFixed(3)}: a foot on the floor`);
+  const along = (t: number): number => roll9Along(t);
+  const flash = (along(ROLL9_STRIKE[1]) - along(ROLL9_STRIKE[0])) / 2;
+  assert.ok(flash >= 2 * (ROLL9.pace / 30) && Math.abs(along(ROLL9_HIT + 0.2) - along(ROLL9_HIT + 0.1) - ROLL9.pace * 0.1) < 1e-9, `off the line ${flash.toFixed(2)} tiles a frame, rolling ${ROLL9.pace / 30}`);
+  assert.ok(Math.abs(along(ROLL9.long) - ROLL9_FAR) < 1e-9 && along(ROLL9.rocked) === -ROLL9.back, 'rocked back, then down the lane, stopped');
+  const ball = pose9World('roll', ROLL9.stop);
+  assert.ok(Math.abs(ball.knot[0] / 39.19 - ROLL9_FAR) < 0.05, 'the ball where the game has carried him');
   // THE BITE: the front three leap out to the end of their tails
   const front = (t: number): number => Math.hypot(pose9('attack', t).rats[0].c[0], pose9('attack', t).rats[0].c[1]);
   assert.ok(front(BITE9_HIT) - front(BITE9_STRIKE[0]) >= BITE9.lunge * 39 * 0.95, 'the front rat leaps out its lunge');
@@ -262,18 +273,18 @@ test('4. what he does to the cistern and sends across it: crisp, no cyan, the en
     assert.ok(l.odd === 0 && l.cyan === null, `${name}: crisp (${l.odd}), no cyan (${l.cyan})`);
     if (pink) assert.ok(l.pink > 30, `${name}: the enemy's pink (${l.pink})`);
   };
-  for (const m of [SLUICE.mark + 0.2, 1.0, SLUICE_HIT - 0.1]) {
+  for (const m of [SLUICES.mark + 0.2, 1.0, SLUICES.burst - 0.1]) {
     const px = new Px(1200, 720);
     paintLaneMarks(px, at, m);
     check(`lanes marked at ${m.toFixed(2)}`, px);
   }
-  for (const m of [0.5, SLUICE_HIT - 0.05, SLUICE_HIT + 0.05, SLUICE_HIT + 1, SLUICE_HIT + FLOOD.runs + 0.4]) {
+  for (const m of [0.5, SLUICES.burst - 0.05, SLUICES.burst + 0.05, SLUICES.burst + 1, SLUICES.burst + FLOOD.runs + 0.4]) {
     const px = new Px(1200, 720);
     paintFlood(px, I, m, [0.3, 0]);
     LANES.forEach((L, i) => paintGate(px, I, L, i, m));
     check(`the flood at ${m.toFixed(2)}`, px, false);
     // (never on a dry ledge: its middle between two lanes left as it was)
-    if (m > SLUICE_HIT + 0.3 && m < SLUICE_HIT + FLOOD.runs) {
+    if (m > SLUICES.burst + 0.3 && m < SLUICES.burst + FLOOD.runs) {
       for (let k = 0; k + 1 < LANES.length; k++) {
         const y = (LANES[k].y + LANES[k].half + LANES[k + 1].y - LANES[k + 1].half) / 2;
         for (let x = -7; x <= 7; x += 0.5) {
@@ -303,6 +314,15 @@ test('4. what he does to the cistern and sends across it: crisp, no cyan, the en
   paintBurstRing(px, at, [-4, 3], 0.05);
   paintSwarm9(px, at, -6, -4, 4, -3, 0.5);
   check('the wedge, the burst and the swarm', px);
+  // HIS ROLL'S LANE: marked from its mark to the strike, in his pink; its end's ring; scored behind him; gone after
+  for (let m = 0; m <= ROLL9.long + 1.3; m += 1 / 30) {
+    const p = new Px(1200, 720);
+    paintRollLane(p, at, m, [-6, -1], 0.2);
+    const l = look(p);
+    assert.ok(l.odd === 0 && l.cyan === null, `his roll's lane at ${m.toFixed(3)}: crisp (${l.odd}), no cyan (${l.cyan})`);
+    if (m > ROLL9.mark + 0.1 && m < ROLL9_HIT) assert.ok(l.pink > 400, `his roll's lane at ${m.toFixed(3)}: marked (${l.pink})`);
+    if (m > ROLL9.long + 1.25) assert.equal(l.painted, 0, `his roll's lane at ${m.toFixed(3)}: left behind`);
+  }
 });
 
 test('5. the numbers: the lanes and ledges, the flood, the bite, the word and the swarm', () => {
@@ -311,14 +331,20 @@ test('5. the numbers: the lanes and ledges, the flood, the bite, the word and th
   assert.ok(p16.lanes.length === 3 && Math.abs(p16.ledge - 1.75) < 1e-9 && LANE.w === 3, 'three lanes in the pictures');
   assert.ok(lanesFor(22).lanes.length === 4 && Math.abs(lanesFor(22).ledge - 2) < 1e-9 && lanesFor(26).lanes.length === 5 && lanesFor(26).ledge >= LANE.ledge, 'the game’s own cistern');
   assert.ok(laneOf(0) === 1 && laneOf(2.4) === -1 && laneOf(-7.5) === -1 && laneOf(4.75) === 2, 'lanes and ledges');
-  // THE FLOOD: across the cistern in a few frames, three seconds, draining; the gates grinding open while he holds, bursting in two frames
+  // THE SLUICES, THE CISTERN'S OWN: they open on their own, every so often (nothing of his: their clock is the fight's); the lanes
+  // marked two seconds before they burst, the gates grinding open; across the cistern in a few frames, three seconds, draining
   const len = 2 * CISTERN.half;
   assert.ok(len / FLOOD.front <= 0.25 && FLOOD.runs >= 3 && FLOOD.drain <= 1, 'fast, long, then gone');
-  assert.equal(floodSpan(SLUICE_HIT - 0.01, 0, len).join(), '0,0', 'no water before the burst');
-  assert.ok(floodSpan(SLUICE_HIT + 0.25, 0, len)[1] === len && floodSpan(SLUICE_HIT + 0.25 + FLOOD.runs + FLOOD.drain, 2, len)[0] === len, 'across, then drained');
-  assert.ok(flooded(0, 4.75, SLUICE_HIT + 1) && !flooded(0, 2.4, SLUICE_HIT + 1) && !flooded(0, 4.75, SLUICE_HIT + FLOOD.runs + FLOOD.drain + 0.2), 'flooded in a lane; dry on a ledge; drained');
-  assert.ok(gateUp(SLUICE.gates - 0.01, 0) === 0 && gateUp(1.2, 0) > 0.05 && gateUp(1.2, 0) <= FLOOD.gateLift + 0.03 && gateUp(SLUICE_HIT + 0.1, 0) === 1, 'the gates grinding open, bursting');
-  assert.ok(SLUICE_HIT - SLUICE.mark >= 1.2, 'the lanes marked well before');
+  assert.equal(floodSpan(SLUICES.burst - 0.01, 0, len).join(), '0,0', 'no water before the burst');
+  assert.ok(floodSpan(SLUICES.burst + 0.25, 0, len)[1] === len && floodSpan(SLUICES.burst + 0.25 + FLOOD.runs + FLOOD.drain, 2, len)[0] === len, 'across, then drained');
+  assert.ok(flooded(0, 4.75, SLUICES.burst + 1) && !flooded(0, 2.4, SLUICES.burst + 1) && !flooded(0, 4.75, SLUICES.burst + FLOOD.runs + FLOOD.drain + 0.2), 'flooded in a lane; dry on a ledge; drained');
+  assert.ok(gateUp(SLUICES.gates - 0.01, 0) === 0 && gateUp(1.6, 0) > 0.05 && gateUp(1.6, 0) <= FLOOD.gateLift + 0.03 && gateUp(SLUICES.burst + 0.1, 0) === 1, 'the gates grinding open, bursting');
+  assert.ok(SLUICES.burst - SLUICES.mark >= 1.8 && SLUICES.burst - SLUICES.gates >= 1.2, 'the lanes marked, the gates grinding, well before');
+  assert.ok(sluiceAt(SLUICES.first - 0.1) === null && sluiceAt(SLUICES.first + 1) === 1 && sluiceAt(SLUICES.first + SLUICES.every + 2.5) === 2.5 && sluiceAt(SLUICES.first + SLUICES.every - 0.5) === null, 'every so often, on their own');
+  assert.ok(SLUICES.every > SLUICES.burst + FLOOD.runs + FLOOD.drain + 4, 'dry a good while between');
+  // HIS ROLL: twice as fast as the old (6.45 tiles a second), its lane wider (1.5), a ring at its end; held long enough to read
+  assert.ok(ROLL9.pace >= 2 * 6.45 && ROLL9.half * 2 >= 1.5 * 1.5 && ROLL9.endR >= 2 && ROLL9_FAR >= 10, `the roll ${ROLL9.pace} tiles a second, ${ROLL9.half * 2} wide, ${ROLL9_FAR.toFixed(1)} long`);
+  assert.ok(ROLL9_STRIKE[0] - ROLL9.held >= 0.75 && ROLL9_HIT - ROLL9.mark >= 1.2, 'held, its lane marked well before');
   // THE BITE: a wedge further and wider than the game's own (2.5 tiles, 0.94 to either side)
   assert.ok(BITE9.reach >= OLD.biteReach * 1.3 && (BITE9.arc / 2) * (Math.PI / 180) > OLD.biteArc, `the wedge out to ${BITE9.reach}, ${BITE9.arc} degrees`);
   // STOLEN WORDS: twice as fast, twice as wide, its line locked a third of a second before it flies

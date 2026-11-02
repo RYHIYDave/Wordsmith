@@ -8,11 +8,12 @@
 // Movement 9 (24 Oct, “Like the wind up and wind down are big but the actual punch is lightning quick”; 28 Oct, “And bigger AOE to
 // compensate for the extra time the player gets to evade”) with bigger areas.
 //
-//   THE SLUICES OPEN (`sluice`, in place of the roll): he rears up as a heap, every rat on its hind legs clawing the air, the King
-//     hoisted on top, all of them SCREAMING, HELD, while the lanes are marked on the floor and the sluice gates in the cistern's wall
-//     grind open; in two frames the heap SLAMS DOWN and the gates burst: water floods across the cistern in its lanes in a few
-//     frames, white and black and full of tumbling rats (art/ratking_action_fx.ts), striking and carrying anyone in a lane; the
-//     dry ledges between are safe. It runs three seconds and drains.
+//   HIS FIX, 2 Nov 2026, 07:32: “The sluice gates should just open periodically in the rat king fight, I don’t think it needs to be
+//     one of his moves.  Just an arena hazard.” So THE SLUICES are the cistern's own now (art/ratking_action_fx.ts SLUICES: opening
+//     on their own every so often, whatever he is doing), and HIS ROLL comes back in their place, his pick by 07:36: “His roll, back
+//     and bigger (Recommended)”: he CURLS UP into a ball of rats, rocks back and HOLDS, spinning up in place, his lane marked; OFF THE
+//     LINE in two frames; barrelling down a lane 2.4 wide at 13 tiles a second (old 1.5 and 6.45); BURSTING OPEN where he stops, a
+//     ring 2.2 round.
 //   THE BITE (`attack`) by Movement 9: the heap rears, the front three rats up, jaws wide, HELD trembling; in two frames they LEAP
 //     out to the end of their knotted tails and snap, a wedge 130 degrees across and 3.4 tiles out (old: 108 and 2.5); they bite
 //     down and shake, and are hauled back by their tails.
@@ -35,7 +36,7 @@ import type { GameView } from './skin';
 import type { V3 } from './skeleton';
 import { FR, f, smearAlong } from './action_f6_fx';
 import {
-  FUR, KNOT, KNOT_R, RATS, RK_AURA, RK_VOICE, crownBits, eyeOf, headOf, knotBits, makeRatKingArt, mixRat, placed, ratBits, running, seepOf,
+  BALL_R, BALL_Z, FUR, KNOT, KNOT_R, RATS, RK_AURA, RK_VOICE, ballPose, crownBits, eyeOf, headOf, knotBits, makeRatKingArt, mixRat, placed, ratBits, running, seepOf, standPose,
 } from './rat_king';
 import type { KingPose, RatPose, RatRest } from './rat_king';
 
@@ -168,103 +169,163 @@ export function bite9Pose(t: number): KingPose {
 }
 
 // =============================================================================================
-// THE SLUICES OPEN: the summons
+// HIS ROLL, BACK AND BIGGER
 
 /**
- * ITS NUMBERS (seconds from its start):
- *   wind-up    HE REARS UP AS A HEAP by `rise` (0.5 s): every rat on the floor up on its hind legs, its forefeet clawing the air, the
- *              three on the knot climbing higher, the King hoisted on top, every mouth wide, SCREAMING (the stolen voices pouring up
- *              out of them); HELD, trembling, to the strike (1.0 s). The lanes marked on the floor from `mark`; the sluice gates grind
- *              open from `gates` (art/ratking_action_fx.ts)
- *   strike     TWO FRAMES, smeared: the heap SLAMS DOWN, forefeet onto the floor, the King flung down on top (frame 47, 1.567 s: the
- *              clip's `hit`): THE GATES BURST, the flood is loosed
- *   wind-down  squashed flat to `squash`; heaving back up, forefeet stepped back under them, the King shaking his head; on his stand
- *              by `long` (3.2 s). The flood runs on (art/ratking_action_fx.ts FLOOD) while he stands.
+ * HIS FIX, 2 Nov 2026, 07:32: “The sluice gates should just open periodically in the rat king fight, I don’t think it needs to be one
+ * of his moves.  Just an arena hazard.” So the sluices are the cistern's own (art/ratking_action_fx.ts SLUICES), and in their place
+ * among his moves, his pick by 07:36: “His roll, back and bigger (Recommended)” (offered as: he curls into a ball, a big held
+ * wind-up, then barrels down a wider marked lane, fast). Old: curled 0.7 s, one or two turns of 0.8 s at 6.45 tiles a second down
+ * a lane 1.5 wide, uncurled 0.6.
+ * ITS NUMBERS (seconds from its start; tiles along the way he faces):
+ *   wind-up    his lane marked on the floor from `mark` (to `far`, `half` to either side, its end a ring `endR` round); he CURLS UP into
+ *              a ball of rats by `curl`, rocks back `back` tiles by `rocked`, and HOLDS there, spinning up in place faster and
+ *              faster, grit sprayed back off the floor from under it, trembling (0.8 s from `curl`)
+ *   strike     TWO FRAMES, smeared: OFF THE LINE, `burst` tiles in two frames (frame 41, 1.367 s: the clip's `hit`)
+ *   the run    barrelling down the lane at `pace` tiles a second (twice the old) to `brake`, then skidding to a stop by `stop`,
+ *              `far` tiles from where he curled up
+ *   its end    he BURSTS OPEN where he stops (`open`, its blow at `stop`): the rats flung out of the ball in a ring of dust and grit
+ *              out to `endR`, landing in a heap; on his stand by `long`
+ *   struck     whoever the ball passes over in its lane (within `half` of its middle), and at its end whoever is within `endR` of where
+ *              it stops (a suggestion; the rules' own)
+ *   (the game carries him: `roll9Along(t)`, his floor point along the way he faces; the pictures are painted where he stands)
  */
-export const SLUICE_STRIKE = [f(45), f(47)] as const;
-export const SLUICE_HIT = f(47);
-export const SLUICE = { mark: f(6), gates: f(9), rise: f(15), held: f(15), hit: SLUICE_HIT, strike: SLUICE_STRIKE, squash: f(52), long: f(96) } as const;
-export const sluiceSmeared = (t: number): boolean => t > SLUICE_STRIKE[0] + 1e-6 && t <= SLUICE_STRIKE[1] + FR + 1e-6;
-/** How far up the heap is reared (0 to 1), and how far slammed down (0 to 1). */
-function sluiceUp(t: number): { up: number; slam: number } {
-  const [s0, s1] = SLUICE_STRIKE;
-  if (t <= s0) return { up: sm(t / SLUICE.rise), slam: 0 };
-  if (t < s1) {
-    const u = (t - s0) / (s1 - s0);
-    return { up: 1 - u, slam: u };
-  }
-  const deep = 1 + 0.6 * easeOut((t - s1) / (SLUICE.squash - s1));
-  return { up: 0, slam: t < SLUICE.squash ? deep : 1.6 * (1 - sm((t - SLUICE.squash) / (SLUICE.long - 0.35 - SLUICE.squash))) };
+export const ROLL9_STRIKE = [f(39), f(41)] as const;
+export const ROLL9_HIT = f(41);
+export const ROLL9 = { mark: f(3), curl: f(15), held: f(15), rocked: f(24), hit: ROLL9_HIT, strike: ROLL9_STRIKE, back: 0.5, burst: 2.2, pace: 13, brake: f(60), stop: f(66), open: f(80), long: f(96), half: 1.2, endR: 2.2 } as const;
+export const roll9Smeared = (t: number): boolean => t > ROLL9_STRIKE[0] + 1e-6 && t <= ROLL9_STRIKE[1] + FR + 1e-6;
+/** How far the game has carried him along the way he faces, `t` seconds into his roll (tiles): rocked back, off the line, the run, the stop. */
+export function roll9Along(t: number): number {
+  const [s0, s1] = ROLL9_STRIKE;
+  const B = ROLL9.back;
+  if (t <= ROLL9.curl) return 0;
+  if (t <= ROLL9.rocked) return -B * sm((t - ROLL9.curl) / (ROLL9.rocked - ROLL9.curl));
+  if (t <= s0) return -B;
+  const go = ROLL9.burst - B;
+  if (t <= s1) return -B + ROLL9.burst * ((t - s0) / (s1 - s0));
+  const run = Math.min(t, ROLL9.brake) - s1;
+  const at = go + ROLL9.pace * run;
+  if (t <= ROLL9.brake) return at;
+  const u = Math.min(t, ROLL9.stop) - ROLL9.brake;
+  const L = ROLL9.stop - ROLL9.brake;
+  return at + ROLL9.pace * u - (ROLL9.pace * u * u) / (2 * L);
 }
-function sluiceRat(R: RatRest, t: number, i: number): RatPose {
-  const [s0, s1] = SLUICE_STRIKE;
-  const { up, slam } = sluiceUp(t);
-  const held = t > SLUICE.held && t < s0 ? sm((t - SLUICE.held) / 0.08) : 0;
-  const sh = shake(t, held, i);
-  const scream = up * (0.82 + 0.18 * Math.sin(t * 31 + i * 1.7));
-  const way = outWay(R);
-  if (R.upper) {
-    const king = R.king;
-    return placed(R, {
-      z: R.z + (king ? 22 : 12) * up - (king ? 5 : 4) * slam,
-      pitch: R.pitch + (king ? 42 : 30) * up - (king ? 20 : 12) * slam,
-      hp: (king ? 26 : 20) * up - (king ? 24 : 26) * slam,
-      hy: king ? 10 * Math.sin(t * 6) * up + 18 * Math.sin((t - s1) * 24) * bump(t, SLUICE.squash, SLUICE.squash + 0.9) : 16 * Math.sin(t * 8 + i) * up,
-      gape: king ? Math.max(scream, 0.35 * Math.min(1, slam)) : Math.max(scream, 0.2),
-      eyes: 1 + Math.max(up, Math.min(1, slam)),
-      belly: 1 + 0.12 * up,
-      dx: sh[0],
-      dy: sh[1],
+/** Where he stops (tiles from where he curled up). */
+export const ROLL9_FAR = roll9Along(ROLL9.stop);
+/** How fast the ball spins up in place while he holds (radians a second at its fastest: as fast as it will turn running). */
+const SPIN = (ROLL9.pace * T) / BALL_Z;
+/** The ball's turn (degrees): rolled back as he rocks; spun up in place while held; still through the two frames off the line; rolled after, as far as he is carried. */
+function rollAng(t: number): number {
+  const [s0, s1] = ROLL9_STRIKE;
+  const rad = (along: number): number => (along * T) / BALL_Z;
+  if (t <= ROLL9.rocked) return (rad(roll9Along(t)) * 180) / Math.PI;
+  const a = ROLL9.rocked;
+  const u = cl01((Math.min(t, s0) - a) / (s0 - a));
+  const spun = rad(-ROLL9.back) + SPIN * (s0 - a) * (u * u * u - (u * u * u * u) / 2);
+  if (t <= s1) return (spun * 180) / Math.PI;
+  return ((spun + rad(roll9Along(Math.min(t, ROLL9.stop)) - roll9Along(s1))) * 180) / Math.PI;
+}
+/** The knot of tails at the ball's middle. */
+const BALL_MID: V3 = [0, 0, BALL_Z];
+function roll9Pose0(t: number): KingPose {
+  const st = standPose(0);
+  const [s0] = ROLL9_STRIKE;
+  // CURLING UP: each springs up into its place on the ball, turning over in the air (none through the floor)
+  if (t < ROLL9.curl) {
+    const k = sm(t / ROLL9.curl);
+    const ball = ballPose(0, 0.6);
+    const rats = st.rats.map((r, i) => {
+      const m = mixRat(r, ball[i], k);
+      const up: V3 = [0, 0, 9 * RATS[i].s * Math.sin(Math.PI * k)];
+      return { ...m, c: add(m.c, up), feet: m.feet.map((p) => add(p, up)), tailTo: add(m.tailTo, mul(up, 0.5)) };
     });
+    return { rats, knot: lerpV(KNOT, BALL_MID, k), knotR: lerp(KNOT_R, KNOT_R * 0.6, k), cord: 0, crownAt: null, grains: seepOf(rats, t, 0.6 * (1 - k)), alive: true, lump: lerp(1, 0.6, k) };
   }
-  // (a rat on the floor: reared on its hind legs, forefeet clawing; slammed down onto them a step out, then stepping them back)
-  const reach = 5;
-  const P = placed(R, {
-    r: R.r - 2 * up + 2 * Math.min(1, slam),
-    pitch: R.pitch + 40 * up - 6 * Math.min(1, slam),
-    hp: 22 * up - 12 * Math.min(1, slam),
-    hy: 12 * Math.sin(t * 7 + i) * up,
-    gape: Math.max(scream, 0.3 * Math.min(1, slam)),
-    eyes: 1 + Math.max(up, Math.min(1, slam)),
-    belly: 1 + 0.1 * up + 0.06 * Math.sin(t * 9 + i) * (1 - up),
-    dx: sh[0],
-    dy: sh[1],
+  if (t < ROLL9.stop + 1e-9) {
+    // THE BALL: rocked back, held spinning and trembling; off the line; rolling
+    const held = t > ROLL9.rocked && t < s0 ? sm((t - ROLL9.rocked) / 0.1) : 0;
+    const sh = shake(t, held * 1.4, 3);
+    const rats = ballPose(rollAng(t), 0.6 + 0.4 * held).map((r) => ({ ...r, c: add(r.c, sh), feet: r.feet.map((p) => add(p, sh)), tailTo: add(r.tailTo, sh) }));
+    return { rats, knot: add(BALL_MID, sh), knotR: KNOT_R * 0.6, cord: 0, crownAt: null, grains: [], alive: true, lump: 0.6 };
+  }
+  // ITS END: BURST OPEN where it stops, the rats flung out of the ball and landing in a heap; heaving; his stand
+  const k0 = cl01((t - ROLL9.stop) / (ROLL9.open - ROLL9.stop));
+  const k = 1 - (1 - k0) ** 2.2;
+  const ball = ballPose(rollAng(ROLL9.stop), 1);
+  const rats = st.rats.map((r, i) => {
+    const m = mixRat(ball[i], r, k);
+    // (flung out from the middle and up, then down onto its place)
+    const out = norm3([m.c[0], m.c[1], 0]);
+    const fling = 10 * RATS[i].s * Math.sin(Math.PI * k);
+    const up: V3 = [out[0] * fling * 0.6, out[1] * fling * 0.6, 7 * RATS[i].s * Math.sin(Math.PI * k)];
+    return { ...m, c: add(m.c, up), feet: m.feet.map((p) => add(p, up)), tailTo: add(m.tailTo, mul(up, 0.5)), gape: Math.max(m.gape, 0.8 * Math.sin(Math.PI * k0)), eyes: 1 + Math.sin(Math.PI * k0) };
   });
-  const rest = restFeet(R);
-  const claw = held * (0.5 + 0.5 * Math.sin(t * 20 + i * 2.3));
-  const down = restFeet(R, mul(way, reach));
-  // the forefeet: up clawing; slammed down a step out; stepped back in their turn
-  const step0 = 2.0 + 0.06 * (i % 4);
-  const fore = (side: number, k: number): V3 => {
-    if (t <= s0) return lerpV(rest[k], airFoot(P, side, claw), up);
-    if (t < s1 + 1e-6) {
-      const u = (t - s0) / (s1 - s0);
-      const air = airFoot(P, side, 0.3);
-      return [lerp(air[0], down[k][0], u), lerp(air[1], down[k][1], u), lerp(air[2], 0, u)];
-    }
-    const s = cl01((t - step0 - k * 0.1) / 0.24);
-    if (s <= 0) return down[k];
-    if (s >= 1) return rest[k];
-    return [lerp(down[k][0], rest[k][0], sm(s)), lerp(down[k][1], rest[k][1], sm(s)), 3 * Math.sin(Math.PI * s)];
-  };
-  P.feet = [fore(1, 0), fore(-1, 1), rest[2], rest[3]];
-  return P;
+  return { rats, knot: lerpV(BALL_MID, KNOT, k), knotR: lerp(KNOT_R * 0.6, KNOT_R, k), cord: 0, crownAt: null, grains: seepOf(rats, t, 0.5), alive: true, lump: lerp(0.6, 1, k) };
 }
-export function sluicePose(t: number): KingPose {
-  const { up, slam } = sluiceUp(t);
-  const rats = RATS.map((R, i) => sluiceRat(R, t, i));
-  // the stolen voices pouring up out of every mouth as they scream
-  const grains = seepOf(rats, t, up > 0.3 ? 0.95 : 0.3);
-  if (up > 0.3) {
-    rats.forEach((P, i) => {
-      const m = headOf(P).mouth;
-      for (let j = 0; j < 4; j++) {
-        const q = (t * 1.7 + j / 4 + hash(i, j, 6301)) % 1;
-        grains.push([add(m, [Math.sin(q * 9 + i) * 4 * q, Math.cos(q * 7 + j) * 4 * q, 4 + 46 * q]), q < 0.4 ? RK_VOICE[3] : RK_VOICE[2], q < 0.5 ? 2 : 1]);
-      }
-    });
+const norm3 = (v: V3): V3 => {
+  const l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+};
+/** What the ball throws off, painted where he stands: grit sprayed back from under it as it spins in place; the burst off the line; dust behind it as it runs (left where the floor was, the ball gone on from it); the ring of dust where it bursts open. */
+function rollGrains(t: number): [V3, string, number][] {
+  const g: [V3, string, number][] = [];
+  const now = roll9Along(t) * T;
+  const [s0, s1] = ROLL9_STRIKE;
+  const GRIT = ['#5e5248', '#8a7a68', '#3a3028'];
+  // (spinning in place: grit thrown back off the floor from under it, faster as it spins up)
+  if (t > ROLL9.rocked && t < s1 + 0.1) {
+    const k = cl01((t - ROLL9.rocked) / (s0 - ROLL9.rocked));
+    for (let i = 0; i < 26; i++) {
+      const life = 0.3;
+      const q = ((t * (1 + k) + hash(i, 1, 6401) * life) % life) / life;
+      if (hash(i, 2, 6401) > 0.3 + 0.7 * k) continue;
+      const sp = 30 + 60 * hash(i, 3, 6401);
+      const side = (hash(i, 4, 6401) - 0.5) * 30;
+      g.push([[-6 - sp * q * k, side * (0.4 + q), Math.max(0.6, 2 + 30 * q * (1 - q) * (0.5 + hash(i, 5, 6401)))], GRIT[i % 3], q < 0.5 ? 2 : 1]);
+    }
   }
-  return { rats, knot: add(KNOT, [0, 0, 8 * up - 3 * slam]), knotR: KNOT_R, cord: 0, crownAt: null, grains, alive: true };
+  // (dust behind it as it runs, and the burst of grit where it shot off the line: left on the floor, the ball gone on from them)
+  if (t > s0) {
+    for (let j = 0; j < 30; j++) {
+      const tj = s0 + j * 0.04;
+      if (tj > Math.min(t, ROLL9.stop)) break;
+      const age = t - tj;
+      const life = j < 3 ? 0.7 : 0.45;
+      if (age > life) continue;
+      const x = roll9Along(tj) * T - now - 10;
+      for (let i = 0; i < (j < 3 ? 10 : 4); i++) {
+        const a = hash(i, j, 6402) * Math.PI * 2;
+        const r = (6 + 26 * hash(i, j + 1, 6402)) * Math.sqrt(age / life);
+        const z = 1 + (j < 3 ? 40 : 14) * (age / life) * (1 - age / life) * (0.5 + hash(i, j + 2, 6402));
+        g.push([[x + Math.cos(a) * r * 0.6 - age * 20, Math.sin(a) * r, z], GRIT[(i + j) % 3], age < life * 0.5 ? 2 : 1]);
+      }
+    }
+  }
+  // (bursting open: a ring of dust and grit thrown out round it)
+  const s = t - ROLL9.stop;
+  if (s > 0 && s < 0.6) {
+    const q = s / 0.6;
+    const R = (20 + 66 * Math.sqrt(q));
+    for (let i = 0; i < 64; i++) {
+      if (hash(i, 7, 6403) < q) continue;
+      const a = (i / 64) * Math.PI * 2 + hash(i, 8, 6403) * 0.1;
+      g.push([[Math.cos(a) * R, Math.sin(a) * R, 1 + 10 * hash(i, 9, 6403) * (1 - q)], i % 3 ? '#8a7a68' : '#5e5248', i % 2 ? 2 : 1]);
+    }
+  }
+  return g;
+}
+export function roll9Pose(t: number): KingPose {
+  const K = roll9Pose0(t);
+  // (what he has left far behind him the picture lets go of: his picture is only so big)
+  return { ...K, grains: [...K.grains, ...rollGrains(t).filter(([p]) => Math.abs(p[0]) < 250)] };
+}
+/** His pose where the game has carried him (for the review: his floor point moved along the way he faces), `t` seconds into a move. */
+export function pose9World(which: Move9, t: number): KingPose {
+  const K = pose9(which, t);
+  if (which !== 'roll') return K;
+  const dx = roll9Along(t) * T;
+  const by = (p: V3): V3 => [p[0] + dx, p[1], p[2]];
+  return { ...K, rats: K.rats.map((r) => ({ ...r, c: by(r.c), feet: r.feet.map(by), tailTo: by(r.tailTo) })), knot: by(K.knot), grains: K.grains.map(([p, c, s]) => [by(p), c, s]) };
 }
 
 // =============================================================================================
@@ -393,43 +454,53 @@ export function unknot9Pose(t: number): KingPose {
 // THE STRIKES' SMEAR, AND HIS PICTURES
 
 /** His new moves. */
-export type Move9 = 'attack' | 'sluice' | 'words' | 'unknot';
-export const MOVES9: readonly Move9[] = ['attack', 'sluice', 'words', 'unknot'];
+export type Move9 = 'attack' | 'roll' | 'words' | 'unknot';
+export const MOVES9: readonly Move9[] = ['attack', 'roll', 'words', 'unknot'];
 export function pose9(which: Move9, t: number): KingPose {
   if (which === 'attack') return bite9Pose(t);
-  if (which === 'sluice') return sluicePose(t);
+  if (which === 'roll') return roll9Pose(t);
   if (which === 'words') return words9Pose(t);
   return unknot9Pose(t);
 }
-export const STRIKES9: Record<Move9, readonly [number, number]> = { attack: BITE9_STRIKE, sluice: SLUICE_STRIKE, words: WORDS9_STRIKE, unknot: UNKNOT9_STRIKE };
-export const HITS9: Record<Move9, number> = { attack: BITE9_HIT, sluice: SLUICE_HIT, words: WORDS9_HIT, unknot: UNKNOT9_HIT };
+export const STRIKES9: Record<Move9, readonly [number, number]> = { attack: BITE9_STRIKE, roll: ROLL9_STRIKE, words: WORDS9_STRIKE, unknot: UNKNOT9_STRIKE };
+export const HITS9: Record<Move9, number> = { attack: BITE9_HIT, roll: ROLL9_HIT, words: WORDS9_HIT, unknot: UNKNOT9_HIT };
 export const smeared9 = (which: Move9, t: number): boolean => t > STRIKES9[which][0] + 1e-6 && t <= STRIKES9[which][1] + FR + 1e-6;
 /** His moves' lengths. */
-export const LONG9: Record<Move9, number> = { attack: BITE9.long, sluice: SLUICE.long, words: WORDS9.long, unknot: UNKNOT9.out };
-/** The end each move strikes with: the front rat's jaws (the bite); the King's head (the slam); the King's jaws (the word spat); the front rat's head (the burst). */
+export const LONG9: Record<Move9, number> = { attack: BITE9.long, roll: ROLL9.long, words: WORDS9.long, unknot: UNKNOT9.out };
+/** The end each move strikes with: the front rat's jaws (the bite); the ball's front (the roll); the King's jaws (the word spat); the front rat's head (the burst). */
 export function tipOf(which: Move9, K: KingPose): V3 | null {
   if (which === 'attack') return headOf(K.rats[0]).mouth;
-  if (which === 'sluice' || which === 'words') return which === 'words' ? headOf(K.rats[KING_I]).mouth : headOf(K.rats[KING_I]).at;
+  if (which === 'roll') return add(K.knot, [BALL_R, 0, 0]);
+  if (which === 'words') return headOf(K.rats[KING_I]).mouth;
   return K.rats[0].gone > 0.5 ? null : headOf(K.rats[0]).at;
 }
 /** The smear of a strike: after-images along the way it came of what strikes (the leaping rats; the slammed heap; the King's head; every rat bursting out). */
 function smear9(st: ReturnType<typeof stage>, put: Put, which: Move9, t: number): void {
-  if (!smeared9(which, t)) return;
+  // (the roll: smeared off the line, and thinly all down its run, so that it reads as fast as it goes)
+  const running = which === 'roll' && t > ROLL9_HIT + FR + 1e-6 && t < ROLL9.brake;
+  if (!smeared9(which, t) && !running) return;
   const [, hit] = STRIKES9[which];
-  const thin = Math.abs(t - hit - FR) < 1e-6;
-  const back = FR * 1.5;
+  const thin = Math.abs(t - hit - FR) < 1e-6 || running;
+  const back = running ? FR * 0.9 : FR * 1.5;
   const pts: ((K: KingPose) => V3)[] =
     which === 'attack'
       ? [...FRONT].flatMap((i) => [(K: KingPose) => headOf(K.rats[i]).mouth, (K: KingPose) => headOf(K.rats[i]).at, (K: KingPose) => K.rats[i].c])
-      : which === 'sluice'
-        ? [(K) => headOf(K.rats[KING_I]).at, (K) => headOf(K.rats[KING_I]).mouth, ...FLOOR_RATS.map((i) => (K: KingPose) => headOf(K.rats[i]).at), (K) => K.rats[0].feet[0], (K) => K.rats[0].feet[1]]
+      : which === 'roll'
+        ? [(K) => add(K.knot, [BALL_R, 0, 0]), (K) => add(K.knot, [0, 0, BALL_R]), (K) => add(K.knot, [0, BALL_R * 0.8, 0]), (K) => add(K.knot, [0, -BALL_R * 0.8, 0]), (K) => add(K.knot, [-BALL_R * 0.7, 0, BALL_R * 0.7]), ...FLOOR_RATS.map((i) => (K: KingPose) => K.rats[i].c)]
         : which === 'words'
           ? [(K) => headOf(K.rats[KING_I]).mouth, (K) => headOf(K.rats[KING_I]).at, (K) => headOf(K.rats[KING_I]).p([-1, 0, 3])]
           : RATS.map((_, i) => (K: KingPose) => headOf(K.rats[i]).at);
   const lines: V3[][] = pts.map(() => []);
+  // (the roll's: where the game had carried him then, from where he is now: his after-images left behind him down his lane)
+  const now = which === 'roll' ? roll9Along(t) : 0;
   for (let i = 0; i <= 8; i++) {
-    const K = pose9(which, Math.min(t, hit) - (back * i) / 8);
-    pts.forEach((pt, j) => lines[j].push(pt(K)));
+    const tq = (running ? t : Math.min(t, hit)) - (back * i) / 8;
+    const K = pose9(which, tq);
+    const dx = which === 'roll' ? (roll9Along(tq) - now) * T : 0;
+    pts.forEach((pt, j) => {
+      const p = pt(K);
+      lines[j].push([p[0] + dx, p[1], p[2]]);
+    });
   }
   smearAlong(st, put, lines, thin, [FUR[2], FUR[3], FUR[4], '#efe4d6'], FLAME[2]);
 }
@@ -479,8 +550,8 @@ const frame9 = (which: Move9, t: number, view: GameView): Sprite => toSprite(kin
 
 /**
  * THE RAT KING AS THE GAME WOULD HOLD HIM WITH RATKING_ACTION ON: his stand, his scuttle, struck, knotting again and his death the
- * game's own; his bite, his stolen words and his unknotting by Movement 9; THE SLUICES OPEN (`moves.sluice`) in place of his roll
- * (no `curl`, `roll`, `uncurl`).
+ * game's own; his bite, his stolen words and his unknotting by Movement 9; HIS ROLL, BACK AND BIGGER, as one clip (`moves.roll`,
+ * the game carrying him by `roll9Along`) in place of his old three (`curl`, `roll`, `uncurl`). The sluices are the cistern's, not his.
  */
 export function makeRatKingActionArt(): ActorArt {
   const art = makeRatKingArt();
@@ -498,7 +569,7 @@ export function makeRatKingActionArt(): ActorArt {
       delete moves.curl;
       delete moves.roll;
       delete moves.uncurl;
-      set.clips.moves = { ...moves, sluice: clip('sluice', SLUICE_HIT), words: clip('words', WORDS9_HIT), unknot: clip('unknot', UNKNOT9_HIT) };
+      set.clips.moves = { ...moves, roll: clip('roll', ROLL9_HIT), words: clip('words', WORDS9_HIT), unknot: clip('unknot', UNKNOT9_HIT) };
     }
   }
   return art;

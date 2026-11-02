@@ -178,38 +178,84 @@ export function chargeAt(d: number): number {
   }
   return hi;
 }
-// ITS GALLOP, painted to the way it is carried: each foot down on its own spot of the floor while the floor goes by under it.
+// ITS GALLOP (his fix, 2 Nov 2026, 07:33: “I’m not in love with the bramble charge from the deer.  Maybe it’s just the look I don’t
+// love, not sure”; his pick by 07:36: “Redo hedge and gallop (Recommended)”, offered as: same move; the hedge becomes dark, living
+// brambles: leaves, hooked thorns, writhing up; the deer stretches into a full gallop). A REAL GALLOP, painted to the way it is
+// carried: the body low and long, its head and antlers down and forward; its legs reaching far out in front and far back, GATHERING
+// under it and STRETCHING out in turn (two flights a stride: stretched out after its hind feet push off, gathered under it after its
+// forefeet do); each foot down on its own spot of the floor while the floor goes by under it (feet grip); mud kicked up off each.
 const STRIDE = 2.2 * TILE3;
-const SPAN = 0.26 * STRIDE;
 const FIRST = 1.9 * TILE3;
-/** Its feet's order in the gallop: its right fore, left fore, right hind, left hind (a part of its stride). */
-const ORDER = [0, 0.1, 0.46, 0.56];
-const plantAt = (i: number, k: number): number => FIRST + (k + ORDER[i]) * STRIDE;
+/** Where in its stride it is (0 to 1 a stride) when it lands from bursting off: stretched out, its forefeet about to come down. */
+const U0 = 0.45;
+/** Each foot's stride: when it comes down and lifts (parts of a stride: its right fore, left fore, right hind, left hind), and where it comes down (its own lengths forward of its middle). */
+const GAIT = [
+  { td: 0.5, lo: 0.8, x: 29 },
+  { td: 0.56, lo: 0.86, x: 29 },
+  { td: 1.0, lo: 1.36, x: -4 },
+  { td: 1.06, lo: 1.42, x: -4 },
+] as const;
+/** A foot's fold as it comes down and as it lifts (its cannon reaching forward, or trailing back). */
+const FOLD_DOWN = [-28, -28, -12, -12];
+const FOLD_UP = [30, 30, 45, 45];
+/** Where a foot lifts (its own lengths forward of its middle): where it came down, less the floor gone by under it while it was down. */
+const liftX = (i: number): number => GAIT[i].x - (GAIT[i].lo - GAIT[i].td) * STRIDE;
+/**
+ * A foot swung through the air from where it lifted to where it comes down: [part of its swing, forward, up, fold]. Forefeet: flicked
+ * up and back, folded tight under the forearm; the knee driven up and forward; the cannon flung out, reaching; down. Hind feet:
+ * flicked up behind; swung forward under the belly, folded; reaching forward; down.
+ */
+const SWING: readonly (readonly (readonly number[])[])[] = [0, 1, 2, 3].map((i) =>
+  i < 2
+    ? [[0, liftX(i), 0, FOLD_UP[i]], [0.22, 3, 13, 112], [0.5, 19, 15, 70], [0.8, 34, 7, -32], [1, GAIT[i].x, 0, FOLD_DOWN[i]]]
+    : [[0, liftX(i), 0, FOLD_UP[i]], [0.3, -31, 12, 98], [0.6, -14, 12, 40], [0.85, -1, 5, -18], [1, GAIT[i].x, 0, FOLD_DOWN[i]]],
+);
+/** Through points `ks` ([at, ...values]) smoothly (Catmull-Rom), at `v`. */
+function through(ks: readonly (readonly number[])[], v: number): number[] {
+  let i = 0;
+  while (i < ks.length - 2 && v > ks[i + 1][0]) i++;
+  const p0 = ks[Math.max(0, i - 1)];
+  const p1 = ks[i];
+  const p2 = ks[i + 1];
+  const p3 = ks[Math.min(ks.length - 1, i + 2)];
+  const u = clamp01((v - p1[0]) / (p2[0] - p1[0] || 1));
+  const out: number[] = [];
+  for (let k = 1; k < p1.length; k++) {
+    const a = p0[k];
+    const b = p1[k];
+    const c = p2[k];
+    const d = p3[k];
+    out.push(0.5 * (2 * b + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u));
+  }
+  return out;
+}
+/** Where it is in its stride when it has been carried `c` (its own lengths): 0 to 1 a stride, from its landing out of the burst. */
+const strideOf = (c: number): number => (c - FIRST) / STRIDE + U0;
 /** A foot in the gallop when it has been carried `c` (its own lengths): down on its spot, or swung through to the next. */
 function gallopFoot(i: number, c: number): { foot: V3; fold: number } {
   const r = DEER_FEET[i];
-  const half = SPAN / 2;
-  const fore = i < 2;
-  const lift = fore ? 9 : 7;
-  const bend = fore ? 85 : 35;
-  const p0 = plantAt(i, 0);
-  if (c < p0 - half) {
-    // (bursting off: its forelegs flung forward, its hind legs thrust back, all four off the floor)
-    const v = clamp01(c / (p0 - half));
-    const reach = fore ? 7 * Math.sin(Math.PI * v) : -12 * Math.sin(Math.PI * Math.min(1, v * 1.6));
-    return { foot: [r[0] + half * sm(v) + reach, r[1], (fore ? 6 : 8) * Math.sin(Math.PI * v) + 0.01], fold: (fore ? 70 : 20) * Math.sin(Math.PI * v) };
+  const G = GAIT[i];
+  const duty = G.lo - G.td;
+  if (c < FIRST) {
+    // (bursting off, in its two frames: up off the floor from where it stood into the stretched flight it lands from)
+    const v = clamp01(c / FIRST);
+    const to = gallopFoot(i, FIRST);
+    const k = smooth(v);
+    const fore = i < 2;
+    return { foot: [r[0] + (to.foot[0] - r[0]) * k + (fore ? 6 : -8) * Math.sin(Math.PI * v), r[1], to.foot[2] * k + (fore ? 6 : 4) * Math.sin(Math.PI * v) + 0.01], fold: to.fold * k + (fore ? 40 : 30) * Math.sin(Math.PI * v) };
   }
-  const kf = (c - p0 + half) / STRIDE;
-  const k = Math.floor(kf);
-  const u = (kf - k) * STRIDE;
-  if (u < SPAN) {
-    const mid = plantAt(i, k);
-    return { foot: [r[0] + (mid - c), r[1], 0], fold: 0 };
+  const since = (((strideOf(c) - G.td) % 1) + 1) % 1;
+  if (since < duty) {
+    // down: on its own spot, the body going on over it; its cannon swung from reaching to trailing
+    return { foot: [G.x - since * STRIDE, r[1], 0], fold: FOLD_DOWN[i] + (FOLD_UP[i] - FOLD_DOWN[i]) * (since / duty) };
   }
-  const v = (u - SPAN) / (STRIDE - SPAN);
-  const reach = fore ? 5 * Math.sin(Math.PI * v) : -4 * Math.sin(Math.PI * v);
-  return { foot: [r[0] - half + 2 * half * sm(v) + reach, r[1], lift * Math.sin(Math.PI * v) + 0.01], fold: bend * Math.sin(Math.PI * v) };
+  const v = (since - duty) / (1 - duty);
+  const [x, z, fold] = through(SWING[i], v);
+  return { foot: [x, r[1], z > 0.01 ? z : 0.01], fold };
 }
+/** When a foot comes down and lifts in its `k`th stride (its own lengths carried then), for the mud kicked up. */
+const downAt = (i: number, k: number): number => FIRST + (k + GAIT[i].td - U0) * STRIDE;
+const upAt = (i: number, k: number): number => downAt(i, k) + (GAIT[i].lo - GAIT[i].td) * STRIDE;
 /** Where each foot is as it stops (its own lengths, a moment after its carry ends): to be stepped back under it. */
 const STOPPED = [0, 1, 2, 3].map((i) => gallopFoot(i, CHARGE_CARRIED * TILE3));
 /** Its feet stepped back under it after it stops: each that is up first, then each that is down far off its place. */
@@ -222,8 +268,9 @@ const SETTLE = ((): { from: V3; at: number }[] => {
   });
 })();
 const C_LOW = dKeyed({ x: -6, z: -3.4, pitch: 8, neck: 46, hp: 38, hy: -6, hr: -3, ears: -40, eyes: 1.9 });
-const C_FLY = dKeyed({ x: 4, z: 2.4, pitch: -1, neck: 34, hp: 28, hy: 0, hr: 0, ears: -50, eyes: 2 });
-const C_RUN = dKeyed({ x: 2, z: -1, pitch: 3, neck: 36, hp: 30, hy: 0, hr: 0, ears: -50, eyes: 2 });
+// (stretched out in the air as it bursts off; then low and long, its neck stretched out before it, its head and antlers down and forward)
+const C_FLY = dKeyed({ x: 6, z: 0.6, pitch: 1, neck: 40, hp: 40, hy: 0, hr: 0, ears: -65, eyes: 2 });
+const C_RUN = dKeyed({ x: 3, z: -4.2, pitch: 3, neck: 44, hp: 44, hy: 0, hr: 0, ears: -65, eyes: 2 });
 const C_BRAKE = dKeyed({ x: 3, z: -3, pitch: 9, neck: 40, hp: 32, hy: -2, hr: 0, ears: -45, eyes: 1.9 });
 const C_TOSS = dKeyed({ x: -1, z: 0.6, pitch: -6, neck: -8, hp: -20, hy: 10, hr: 6, ears: -20, eyes: 1.7 });
 function chargeBody(t: number): DeerPose {
@@ -242,11 +289,13 @@ function chargeBody(t: number): DeerPose {
     [CHARGE.long, DK0, swell],
   ]);
   const c = chargeCarry(t) * TILE3;
-  // (the gallop's rocking, by how far it has gone)
-  if (t > s1 && t < E) {
-    const ph = TAU * ((c - FIRST) / STRIDE);
-    const k = 1 - sm((t - (E - STOP * 0.6)) / (STOP * 0.6));
-    K = dPlus(K, { z: 1.6 * Math.cos(ph) * k, pitch: 3 * Math.sin(ph) * k, neck: -3 * Math.cos(ph) * k });
+  // (the gallop's rocking, by where it is in its stride: up in its two flights, down as each pair of feet takes it; rocked forward onto
+  // its forefeet and back onto its hind; its neck reaching on as its forefeet come down, so that its antlers go on steady)
+  if (t > s1 - FR && t < E) {
+    const u = strideOf(c);
+    const k = Math.min(1 - sm((t - (E - STOP * 0.6)) / (STOP * 0.6)), sm((t - s1 + FR) / (2 * FR)));
+    const rock = Math.sin(TAU * (u - 0.5));
+    K = dPlus(K, { z: 1.7 * Math.cos(2 * TAU * (u - 0.45)) * k, pitch: 4 * rock * k, neck: -3 * rock * k, hp: -1.5 * rock * k, x: 1.2 * Math.cos(TAU * (u - 0.45)) * k });
   }
   // (the stamps: it dips onto each)
   for (const s of CHARGE.stamps) K = dPlus(K, { z: -0.8 * bump(t, s - 0.02, s + 0.1), hy: 2 * bump(t, s - 0.02, s + 0.12) });
@@ -323,16 +372,23 @@ export function chargePose(t: number): DeerPose {
       if (p[0] > -95) chips.push([p, ch[1], ch[2]]);
     }
   }
-  // (galloping: a puff of earth and needles off each foot as it comes down)
-  if (t > CHARGE_STRIKE[1] && t < CHARGE.until + 0.3) {
+  // (galloping: MUD kicked up off each foot: a splash as it comes down, and clods flung back and up as it pushes off, the hind feet
+  // most; left in the air where they were thrown, the deer gone on from them)
+  if (t > CHARGE_STRIKE[1] - FR && t < CHARGE.until + 0.45) {
+    const far = Math.min(c, CHARGE_CARRIED * TILE3);
     for (let i = 0; i < 4; i++) {
-      for (let k = 0; k < 6; k++) {
-        const down = plantAt(i, k) - SPAN / 2;
-        if (down > Math.min(c, CHARGE_CARRIED * TILE3)) continue;
-        const t0 = chargeAt(down / TILE3);
-        const spot = DEER_FEET[i][0] + SPAN / 2 + down - c;
-        if (spot < -80) continue;
-        for (const ch of burst([0, DEER_FEET[i][1], 0.6], t0, t, 4, 321 + i * 7 + k, CLOD, { speed: 16, up: 14, ahead: [-0.6, 0, 0], life: 0.22, size: 2 })) chips.push([[ch[0][0] + spot, ch[0][1], ch[0][2]], ch[1], ch[2]]);
+      for (let k = 0; k < 5; k++) {
+        const d0 = downAt(i, k);
+        if (d0 <= far && d0 >= FIRST - 1) {
+          const spot = GAIT[i].x + d0 - c;
+          for (const ch of burst([0, DEER_FEET[i][1], 0.6], chargeAt(d0 / TILE3), t, 6, 321 + i * 7 + k, CLOD, { speed: 18, up: 16, ahead: [-0.4, 0, 0], life: 0.25, size: 2 })) chips.push([[ch[0][0] + spot, ch[0][1], ch[0][2]], ch[1], ch[2]]);
+        }
+        const d1 = upAt(i, k);
+        if (d1 <= far && d1 >= FIRST - 1) {
+          const spot = liftX(i) + d1 - c;
+          const hind = i >= 2;
+          for (const ch of burst([0, DEER_FEET[i][1], 0.6], chargeAt(d1 / TILE3), t, hind ? 12 : 7, 361 + i * 7 + k, CLOD, { speed: hind ? 46 : 30, up: hind ? 40 : 28, ahead: [-1.5, 0, 0], life: 0.42, size: hind ? 3 : 2 })) chips.push([[ch[0][0] + spot, ch[0][1], ch[0][2]], ch[1], ch[2]]);
+        }
       }
     }
   }
@@ -348,7 +404,8 @@ export function chargePose(t: number): DeerPose {
       chips.push([p, i % 2 ? '#a89a8e' : '#cfc6bc', u < 0.4 ? 2 : 1]);
     }
   }
-  P.chips = chips;
+  // (what has been left far behind it, the picture lets go of: the game's floor is the deer's own picture only so far)
+  P.chips = chips.filter(([p]) => p[0] > -100 && p[0] < 130);
   P.flares = t > 0.2 && t < CHARGE.until ? [[dHead(P).p([5, 0, 3]), 16, 0.3 * clamp01((t - 0.2) / 0.15)]] : [];
   return P;
 }
@@ -480,41 +537,119 @@ export function hedgeClumpPainted(d: number, t: number, view: GameView = 'front'
   const put: Put = (part, piece, shape) => {
     bits.push({ part, piece, shape });
   };
+  // LIVING BRAMBLE (his pick, 2 Nov: “Redo hedge and gallop (Recommended)”, offered as: the hedge becomes dark, living brambles:
+  // leaves, hooked thorns, writhing up): stems as thick as a wrist, green-black, burst up out of the ground coiled and writhing open
+  // as they rise, arching over and curling at their tips; leaves along them; big hooked thorns; writhing slowly while it stands;
+  // withering at the end, blackening, sinking, its leaves dropping
+  const dead = left < HEDGE.fade ? 1 - left / HEDGE.fade : 0;
   if (k > 0.02) {
-    const dead = left < HEDGE.fade ? 1 - left / HEDGE.fade : 0;
-    const wood = dead > 0.5 ? [BARK[0], BARK[0], BARK[1], BARK[2], BARK[2]] as const : THORN;
-    const root = dead > 0.5 ? [ROOT[0], ROOT[0], ROOT[1], ROOT[2], ROOT[2]] as const : ROOT;
-    const n = 9;
-    for (let i = 0; i < n; i++) {
-      // (each cane from the ground, rising and arching over, mostly along the hedge, a crook or two in it: a tangle)
-      const x0 = (hash(i, j, 703) - 0.5) * HEDGE.step * TILE3 * 1.2;
-      const y0 = (hash(i, j, 705) - 0.5) * HEDGE.half * TILE3 * 1.3;
-      const tall = HEDGE.high * (0.5 + 0.5 * hash(i, j, 707)) * k;
-      const phi = (hash(i, j, 709) < 0.5 ? 0 : Math.PI) + (hash(i, j, 711) - 0.5) * 1.4;
-      const reach = tall * (0.55 + 0.35 * hash(i, j, 713));
-      const pts: V3[] = [];
-      for (let q = 0; q <= 5; q++) {
-        const u = q / 5;
-        const wig = 1.3 * Math.sin(u * 7 + i * 1.7);
-        pts.push([x0 + Math.cos(phi) * reach * u + wig, y0 + Math.sin(phi) * reach * u * 0.7 + Math.cos(u * 5 + i) * 1.2, -1.5 + (tall + 1.5) * (Math.sin(Math.PI * u * 0.85) / Math.sin(Math.PI * 0.5)) * (u < 0.5 ? 1 : 0.92)]);
+    const stem: Ramp = dead > 0.5 ? BRAMBLE_DEAD : BRAMBLE;
+    const hook: Ramp = dead > 0.5 ? BRAMBLE_DEAD : HOOK;
+    const STEMS = 4;
+    for (let i = 0; i < STEMS; i++) {
+      const pts = brambleStem(i, j, k, t, dead);
+      const part = `bramble${i}`;
+      const r0 = i < 3 ? 1.9 : 1.5;
+      crooked(put, part, `stem${i}_`, pts, r0 * (0.6 + 0.4 * k), 0.75, stem);
+      if (k < 0.25) continue;
+      // (big hooked thorns along it: out from the stem, then bent back toward its root, the bramble's way)
+      for (let q = 1; q < pts.length - 1; q++) {
+        const dir = norm3(sub3(pts[q + 1], pts[q - 1]));
+        for (const side of [0, 1]) {
+          if (hash(q, i * 2 + side, 751 + j) > 0.62) continue;
+          const a = hash(q, i * 2 + side, 753 + j) * TAU;
+          const out = norm3(add(mul3(perp(dir), Math.cos(a)), mul3(norm3(cross3(dir, perp(dir))), Math.sin(a))));
+          const rr = r0 + (0.75 - r0) * (q / (pts.length - 1));
+          const root = add(pts[q], mul3(out, rr * 0.8));
+          const bend = add(root, mul3(out, 2.6 * Math.min(1, k)));
+          const tip = add(bend, add(mul3(dir, -2.2), mul3(out, 0.6)));
+          put(part, `hook${i}_${q}_${side}a`, { k: 'rod', a: root, b: bend, ra: 0.95, rb: 0.6, ramp: hook });
+          put(part, `hook${i}_${q}_${side}b`, { k: 'rod', a: bend, b: tip, ra: 0.6, rb: 0.3, ramp: hook });
+        }
       }
-      const isRoot = i % 3 === 0;
-      crooked(put, `hedge${i}`, `stem${i}_`, pts, isRoot ? 2.4 : 1.7, 0.6, isRoot ? (root as unknown as typeof ROOT) : (wood as unknown as typeof THORN));
-      if (k > 0.3) thorns(put, `hedge${i}`, `barb${i}_`, pts, 2, 3.2, 721 + i + j * 7, wood as unknown as typeof THORN, POINT, isRoot ? 2.4 : 1.7, 0.6);
-      if (i % 3 === 1 && dead < 0.5) put(`hedge${i}`, `moss${i}`, { k: 'ball', c: lerpV(pts[0], pts[1], 0.4), ax: [[2.2, 0, 0], [0, 2.2, 0], [0, 0, 1.4]], skin: MOSS });
+      // (its leaves: three-fingered, along it in pairs, dark green, their tops lit; dropping as it withers)
+      if (dead < 0.7) {
+        for (const at of [0.38, 0.62]) {
+          const q = at * (pts.length - 1);
+          const q0 = Math.floor(q);
+          const p0 = lerpV(pts[q0], pts[Math.min(pts.length - 1, q0 + 1)], q - q0);
+          const dir = norm3(sub3(pts[Math.min(pts.length - 1, q0 + 1)], pts[q0]));
+          for (const sd of [-1, 1]) {
+            if ((sd > 0) !== (at < 0.5) || hash(i, Math.round(at * 10) + sd, 761 + j) > 0.85) continue;
+            const side = norm3(add(mul3(perp(dir), sd), [0, 0, 0.5]));
+            const sag = dead * 6;
+            const stalk = add(p0, add(mul3(side, 2.6), [0, 0, -sag]));
+            for (const fan of [-0.55, 0, 0.55]) {
+              const w = norm3(add(side, mul3(dir, fan)));
+              const c = add(stalk, mul3(w, fan === 0 ? 2.5 : 2.0));
+              put(part, `leaf${i}_${at}_${sd}_${fan}`, { k: 'ball', c, ax: [mul3(w, fan === 0 ? 2.5 : 2.0), mul3(norm3(cross3(w, [0, 0, 1])), 1.3), [0, 0, 0.6]], skin: dead > 0.3 ? LEAF_DEAD : LEAF });
+            }
+          }
+        }
+      }
     }
   }
   const lights = paintBits(st, bits, [0, 0, 10]);
   const px = st.whole(left > HEDGE.fade * 0.5 ? ENEMY_RIM : null);
   // (earth thrown up as it bursts)
   const dot = (p: V3, c: string, size: number): void => dLaid(px, st, p, c, size);
-  for (const ch of burst([0, 0, 0.6], 0, s, 10, 731 + j, CLOD, { speed: 26, up: 46, life: 0.4, size: 2 })) dot(ch[0], ch[1], ch[2]);
-  // (withering: bits of dead thorn falling off it)
-  if (left < HEDGE.fade && left > 0) for (let i = 0; i < 6; i++) {
-    const u = ((HEDGE.fade - left) / HEDGE.fade + i / 6) % 1;
-    dot([(hash(i, j, 741) - 0.5) * 20, (hash(i, j, 743) - 0.5) * 14, Math.max(0.6, HEDGE.high * 0.8 * (1 - u))], i % 2 ? BARK[2] : THORN[1], 2);
+  for (const ch of burst([0, 0, 0.6], 0, s, 12, 731 + j, CLOD, { speed: 28, up: 50, life: 0.4, size: 2 })) dot(ch[0], ch[1], ch[2]);
+  // (withering: dead leaves and bits of stem falling off it)
+  if (left < HEDGE.fade && left > 0) for (let i = 0; i < 8; i++) {
+    const u = ((HEDGE.fade - left) / HEDGE.fade + i / 8) % 1;
+    dot([(hash(i, j, 741) - 0.5) * 22, (hash(i, j, 743) - 0.5) * 14, Math.max(0.6, HEDGE.high * 0.8 * (1 - u))], i % 2 ? LEAF_DEAD[2] : BRAMBLE_DEAD[3], 2);
   }
   return { px, lights };
+}
+// THE BRAMBLE'S OWN COLOURS: green-black stems, lit along their tops; dark leaves; its thorns a dull red-brown, their points dark;
+// dead, the stems and leaves gone brown-black and grey
+type Ramp = readonly [string, string, string, string, string];
+const BRAMBLE: Ramp = ['#030604', '#0a140c', '#142618', '#223a24', '#36522e'];
+const BRAMBLE_DEAD: Ramp = ['#0a0806', '#16100c', '#241a14', '#34281e', '#463828'];
+const HOOK: Ramp = ['#140808', '#341414', '#582624', '#844234', '#b8846a'];
+const LEAF: Ramp = ['#040a05', '#0a180c', '#142c16', '#224622', '#3a6230'];
+const LEAF_DEAD: Ramp = ['#0c0a06', '#1c160c', '#2e2414', '#463620', '#5c4a2c'];
+const sub3 = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul3 = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
+const cross3 = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm3 = (a: V3): V3 => {
+  const l = Math.hypot(a[0], a[1], a[2]) || 1;
+  return [a[0] / l, a[1] / l, a[2] / l];
+};
+/** A way square to `d` (level where it can be). */
+const perp = (d: V3): V3 => {
+  const c = cross3(d, [0, 0, 1]);
+  return Math.hypot(c[0], c[1], c[2]) < 1e-3 ? [0, 1, 0] : norm3(c);
+};
+/**
+ * ONE STEM OF THE BRAMBLE, clump `j`, stem `i`, `k` how far up it has come (0 to 1, with its overshoot), `t` seconds into the charge,
+ * `dead` how far withered: from its root in the ground it rises, arches over along the hedge and curls down at its tip into a hook;
+ * coming up it is coiled tight and writhes open as it rises; standing, it writhes slowly (its arch swaying, its tip curling and
+ * uncurling); withering, it sags and sinks. Its points along it, its own lengths from the clump's middle on the floor.
+ */
+function brambleStem(i: number, j: number, k: number, t: number, dead: number): V3[] {
+  const big = i < 3;
+  const x0 = (hash(i, j, 703) - 0.5) * HEDGE.step * TILE3 * 1.1;
+  const y0 = (hash(i, j, 705) - 0.5) * HEDGE.half * TILE3 * 1.1;
+  // (mostly along the hedge, either way; the small ones across it)
+  const phi0 = big ? (hash(i, j, 709) < 0.5 ? 0 : Math.PI) + (hash(i, j, 711) - 0.5) * 0.9 : Math.PI / 2 + (hash(i, j, 711) - 0.5) * 1.6 + (hash(i, j, 709) < 0.5 ? 0 : Math.PI);
+  const writhe = Math.sin(t * 2.4 + i * 1.9 + j) * (1 - dead);
+  const phi = phi0 + 0.14 * writhe;
+  const L = (big ? HEDGE.high * 1.75 : HEDGE.high * 1.2) * (0.85 + 0.2 * hash(i, j, 713)) * Math.min(1.12, k) * (1 - 0.35 * dead);
+  const dir: V3 = [Math.cos(phi), Math.sin(phi), 0];
+  const N = 14;
+  const pts: V3[] = [[x0, y0, -1.5]];
+  // (coiled as it comes up, writhing open as it rises)
+  const coil = 4.2 * (1 - Math.min(1, k)) ** 1.5;
+  for (let q = 1; q <= N; q++) {
+    const u = q / N;
+    const th = 1.45 - 1.3 * u - 5 * Math.max(0, u - 0.5) ** 2 - 18 * Math.max(0, u - 0.85) ** 2 - coil * u * u + 0.22 * writhe * u - dead * 0.9 * u;
+    const p = pts[q - 1];
+    const step = L / N;
+    pts.push([p[0] + dir[0] * Math.cos(th) * step, p[1] + dir[1] * Math.cos(th) * step + Math.sin(u * 5 + i) * 0.5, p[2] + Math.sin(th) * step]);
+  }
+  // (never through the floor)
+  return pts.map((p) => [p[0], p[1], Math.max(p === pts[0] ? -1.5 : 1.2, p[2] - dead * 8)] as V3);
 }
 /** Whether a point `x` tiles along the charge's path from where it set off and `y` aside is in the hedge's wall, `t` seconds into the charge. */
 export function inHedge(x: number, y: number, t: number): boolean {

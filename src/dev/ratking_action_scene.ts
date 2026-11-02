@@ -13,8 +13,8 @@ import type { ActorArt } from '../art/actor_types';
 import { makeHeroArt3 } from '../art/heroes3';
 import { hash } from '../art/kit';
 import { RK_ROLL, ROLL_PACE, makeRatKingArt } from '../art/rat_king';
-import { BITE9, BITE9_HIT, SLUICE, SLUICE_HIT, UNKNOT9, UNKNOT9_HIT, WORDS9, WORDS9_HIT, makeRatKingActionArt } from '../art/ratking_action';
-import { CISTERN, FLOOD, LANES, SWARM9, floodSpan, isoAt, laneOf, paintBurstRing, paintFlood, paintGate, paintLaneMarks, paintSwarm9, paintWedge, paintWord, paintWordBurst, paintWordLine } from '../art/ratking_action_fx';
+import { BITE9, BITE9_HIT, ROLL9, ROLL9_HIT, UNKNOT9, UNKNOT9_HIT, WORDS9, WORDS9_HIT, makeRatKingActionArt, roll9Along } from '../art/ratking_action';
+import { CISTERN, FLOOD, LANES, SLUICES, SWARM9, floodSpan, isoAt, laneOf, paintBurstRing, paintFlood, paintGate, paintLaneMarks, paintRollLane, paintSwarm9, paintWedge, paintWord, paintWordBurst, paintWordLine } from '../art/ratking_action_fx';
 import type { At, Iso, Word } from '../art/ratking_action_fx';
 import { drawChargeLane } from '../art/charge_lane';
 import { frameAt } from './action_f3_scene';
@@ -197,66 +197,72 @@ function splashAbout(px: Px, at: At, p: P2, t: number): void {
   }
 }
 
-/** The gates, the lanes' warning and the flood, `m` seconds into a summons (or none, `m` null), on a picture whose cistern's middle is at I; the flood parted round `him`. */
-function sluiceFloor(px: Px, I: Iso, m: number | null, him: P2 | null): void {
-  LANES.forEach((L, i) => paintGate(px, I, L, i, m ?? -1));
-  if (m === null) return;
-  paintLaneMarks(px, isoAt(I), m);
-  paintFlood(px, I, m, him);
+/** The gates, the lanes' warning and the flood, `h` seconds into an opening of the sluices (or none, `h` null: the gates shut), on a picture whose cistern's middle is at I; the flood parted round `him`. The cistern's own: nothing of his. */
+function sluiceFloor(px: Px, I: Iso, h: number | null, him: P2 | null): void {
+  LANES.forEach((L, i) => paintGate(px, I, L, i, h ?? -1));
+  if (h === null) return;
+  paintLaneMarks(px, isoAt(I), h);
+  paintFlood(px, I, h, him);
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE WHOLE CISTERN FROM ABOVE: the sluices open twice; the knight gets onto a dry ledge the first time, and is caught in a lane the
-// second, struck and carried, and scrambles out onto the ledge along the wall
+// THE WHOLE CISTERN FROM ABOVE (his fix, 2 Nov 2026: the sluices an arena hazard): THE SLUICES OPEN ON THEIR OWN while he fights. The
+// first time while he spits a stolen word at the knight on a ledge (the knight steps along the ledge out of its line; the flood runs
+// down every lane past them both); the knight crosses back over the drained lane; the second time while HE ROLLS down the ledge at
+// him: the knight steps down into a lane out of the ball's way, sees the lanes marked, and is back up on the ledge before the
+// gates burst. In the film the two are 7.6 s apart; in a fight, as often as the main chat sets (SLUICES.every, a suggestion of 14).
 
-export const ARENA = { him: [0.3, 0] as P2, first: 0.6, second: 7.2, long: 12.6 } as const;
+/** When each opening begins and when he spits his word and rolls (seconds of the scene). */
+export const ARENA = { him: [-6.0, 2.4] as P2, open1: 0.0, words: 0.25, roll: 7.0, open2: 7.6, long: 14.2 } as const;
+/** His roll from above: along the ledge, the way the picture's x runs. */
+const ROLL_WAY: P2 = [1, 0];
+/** His word: where the knight stands as its line locks, and where it ends (the line run on to the cistern's edge). */
+const WORD_AT: P2 = [1.6, -2.4];
 const KNIGHT_WAY: [number, P2][] = [
-  [0, [3.2, 0.5]],
-  [1.0, [3.2, 0.5]],
-  [1.5, [3.2, 2.45]],
-  [6.3, [3.2, 2.45]],
-  [7.5, [-1.6, 4.55]],
-  [8.5, [-1.6, 4.55]],
-  [8.85, [-1.45, 5.55]],
+  [0, WORD_AT],
+  [ARENA.words + WORDS9.lock + 0.03, WORD_AT],
+  [ARENA.words + WORDS9.lock + 0.55, [3.9, -2.4]],
+  [5.95, [3.9, -2.4]],
+  [6.95, [1.2, 2.4]],
+  [ARENA.roll + 0.3, [1.2, 2.4]],
+  [ARENA.roll + 0.75, [1.2, 4.05]],
+  [ARENA.roll + 1.95, [1.2, 4.05]],
+  [ARENA.roll + 2.35, [0.7, 2.45]],
 ];
-/** When the second flood's front reaches the knight, and how it carries him. */
-const CAUGHT = ((): { t: number; at: P2 } => {
-  const p = KNIGHT_WAY[KNIGHT_WAY.length - 1][1];
-  const i = laneOf(p[1]);
-  const t = ARENA.second + SLUICE_HIT + i * FLOOD.stagger + (p[0] + H) / FLOOD.front;
-  // (where he is then, on his way to the ledge)
-  const [t0, a] = KNIGHT_WAY[KNIGHT_WAY.length - 2];
-  const [t1, b] = KNIGHT_WAY[KNIGHT_WAY.length - 1];
-  const k = clamp01((t - t0) / (t1 - t0));
-  return { t, at: [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k] };
-})();
-const OUT_AT = 0.7;
-/** The knight in the arena at `t`: where, which way, walking, carried. */
-export function knightIn(t: number): { at: P2; face: P2; moving: boolean; carried: number } {
-  if (t >= CAUGHT.t) {
-    const s = t - CAUGHT.t;
-    if (s < OUT_AT) {
-      const k = smooth(s / OUT_AT);
-      return { at: [CAUGHT.at[0] + FLOOD.carry * s, CAUGHT.at[1] + (6.75 - CAUGHT.at[1]) * k], face: [1, 0.6], moving: true, carried: 1 };
-    }
-    return { at: [CAUGHT.at[0] + FLOOD.carry * OUT_AT, 6.75], face: [-1, -1], moving: false, carried: 0 };
-  }
+/** The knight in the arena at `t`: where, which way, walking. */
+export function knightIn(t: number): { at: P2; face: P2; moving: boolean } {
+  const kingAt = rollerAt(t);
   for (let i = 0; i + 1 < KNIGHT_WAY.length; i++) {
     const [t0, a] = KNIGHT_WAY[i];
     const [t1, b] = KNIGHT_WAY[i + 1];
     if (t >= t0 && t < t1) {
-      const k = (t - t0) / (t1 - t0);
+      const k = smooth((t - t0) / (t1 - t0));
       const moving = Math.hypot(b[0] - a[0], b[1] - a[1]) > 0.01;
-      return { at: [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k], face: moving ? [b[0] - a[0], b[1] - a[1]] : [ARENA.him[0] - a[0], ARENA.him[1] - a[1]], moving, carried: 0 };
+      const at: P2 = [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+      return { at, face: moving ? [b[0] - a[0], b[1] - a[1]] : [kingAt[0] - at[0], kingAt[1] - at[1]], moving };
     }
   }
   const p = KNIGHT_WAY[KNIGHT_WAY.length - 1][1];
-  return { at: p, face: [ARENA.him[0] - p[0], ARENA.him[1] - p[1]], moving: false, carried: 0 };
+  return { at: p, face: [kingAt[0] - p[0], kingAt[1] - p[1]], moving: false };
 }
-/** Which summons is under way at `t` and how far in (seconds), or null. */
-export function summonsAt(t: number): number | null {
-  for (const s of [ARENA.second, ARENA.first]) if (t >= s && t < s + SLUICE_HIT + FLOOD.runs + FLOOD.drain + 0.5) return t - s;
+/** Which opening of the sluices is under way at `t` and how far in (seconds), or null: the cistern's own clock. */
+export function openingAt(t: number): number | null {
+  for (const s of [ARENA.open2, ARENA.open1]) if (t >= s && t < s + SLUICES.burst + FLOOD.runs + FLOOD.drain + 0.5) return t - s;
   return null;
+}
+/** Where he is at `t` (carried down the ledge by his roll). */
+function rollerAt(t: number): P2 {
+  const m = t - ARENA.roll;
+  const d = m > 0 ? roll9Along(Math.min(m, ROLL9.long)) : 0;
+  return [ARENA.him[0] + ROLL_WAY[0] * d, ARENA.him[1] + ROLL_WAY[1] * d];
+}
+function wordLineEnd(from: P2, through: P2): P2 {
+  const dx = through[0] - from[0];
+  const dy = through[1] - from[1];
+  const len = Math.hypot(dx, dy);
+  let d = 0;
+  while (d < WORDS9.reach && Math.abs(from[0] + (dx / len) * (d + 0.05)) < H - 0.4 && Math.abs(from[1] + (dy / len) * (d + 0.05)) < H - 0.4) d += 0.05;
+  return [from[0] + (dx / len) * d, from[1] + (dy / len) * d];
 }
 /** THE WHOLE CISTERN FROM ABOVE, `t` seconds in: the game's own picture pixels, the cistern's middle at (cx, cy). */
 export function arenaScene(t: number, w: number, h: number, cx: number, cy: number): Px {
@@ -264,18 +270,41 @@ export function arenaScene(t: number, w: number, h: number, cx: number, cy: numb
   const at = isoAt(I);
   const { king } = figures();
   const base = cisternBase(w, h, I);
-  const m = summonsAt(t);
-  const inMove = m !== null && m < SLUICE.long;
-  const kl = inMove ? frameAt(king, 'front', 'sluice', m) : frameAt(king, 'front', 'stand', t);
-  const S = at(ARENA.him[0], ARENA.him[1]);
+  const o = openingAt(t);
   const K = knightIn(t);
-  const stood: Standing[] = [{ at: S, l: kl, shadow: 22 }, ...knightStood(I, K.at, K.face, K.moving, t, K.carried)];
+  const B = rollerAt(t);
+  const mw = t - ARENA.words;
+  const mr = t - ARENA.roll;
+  // (him: his word, facing the knight; his stand; his roll down the ledge; his stand where he burst open)
+  const toKnight: P2 = [WORD_AT[0] - ARENA.him[0], WORD_AT[1] - ARENA.him[1]];
+  let face: P2 = toKnight;
+  let l: Laid;
+  if (mw >= 0 && mw < WORDS9.long) l = frameAt(king, drawnAs(...face).view, 'words', mw);
+  else if (mr >= 0 && mr < ROLL9.long) {
+    face = ROLL_WAY;
+    l = frameAt(king, drawnAs(...face).view, 'roll', mr);
+  } else {
+    if (mr >= ROLL9.long) face = [K.at[0] - B[0], K.at[1] - B[1]];
+    l = frameAt(king, drawnAs(...face).view, 'stand', t);
+  }
+  const S = at(B[0], B[1]);
+  const stood: Standing[] = [{ at: S, l, flip: drawnAs(...face).flip, shadow: mr > ROLL9.curl && mr < ROLL9.stop ? 16 : 22 }, ...knightStood(I, K.at, K.face, K.moving, t)];
+  const mouth: P2 = [ARENA.him[0] + (toKnight[0] / Math.hypot(...toKnight)) * 0.62, ARENA.him[1] + (toKnight[1] / Math.hypot(...toKnight)) * 0.62];
+  const end = wordLineEnd(mouth, WORD_AT);
+  const flight = Math.hypot(end[0] - mouth[0], end[1] - mouth[1]) / WORDS9.speed;
+  const flying = mw - WORDS9_HIT;
   const px = layScene(base, (p) => {
-    sluiceFloor(p, I, m, ARENA.him);
-    if (K.carried) splashAbout(p, at, K.at, t);
+    sluiceFloor(p, I, o, B);
+    if (mw >= 0) {
+      const aimAt = mw < WORDS9.lock ? K.at : WORD_AT;
+      paintWordLine(p, at, mouth[0], mouth[1], ...wordLineEnd(mouth, aimAt), mw);
+      if (flying >= flight) paintWordBurst(p, at, 'fire', end[0], end[1], flying - flight);
+    }
+    if (mr >= 0 && mr < ROLL9.long + 1.2) paintRollLane(p, at, mr, ARENA.him, Math.atan2(ROLL_WAY[1], ROLL_WAY[0]));
   }, stood);
-  if (K.carried) splashAbout(px, at, [K.at[0] + 0.1, K.at[1] + 0.1], t + 0.3);
-  return shaken(px, t, [[ARENA.first + SLUICE_HIT, 4], [ARENA.second + SLUICE_HIT, 4], [CAUGHT.t, 2]]);
+  if (flying >= 0) paintWord(px, at, 'fire', mouth[0], mouth[1], 40, end[0], end[1], flying);
+  const hits: [number, number][] = [[ARENA.open1 + SLUICES.burst, 3], [ARENA.open2 + SLUICES.burst, 3], [ARENA.roll + ROLL9.stop, 4]];
+  return shaken(px, t, hits);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -293,23 +322,37 @@ function kingDoing(view: View, move: string, t: number, start: number, long: num
   return frameAt(king, view, 'stand', m < 0 ? t : m - long);
 }
 
-/** THE SLUICES OPEN, close: him in the middle lane, the gates in the wall behind; the knight steps up out of the lane onto the ledge beside it while he holds; the flood pours down the lane past him. */
-export const SLUICE_PASS = LEAD + SLUICE_HIT + 2.2;
-export function sluiceScene(view: View, t: number, w: number, h: number, cx: number, cy: number): Px {
-  const B: P2 = [-3.4, 0];
-  const I = placedAt(B, cx, cy);
+/**
+ * HIS ROLL, close: down the dry ledge, its lane marked; the knight in it steps down off the ledge out of the ball's way while he
+ * holds, and watches him burst open at its end. From in front he rolls down the picture to the right; from behind, up it.
+ */
+export const ROLL_PASS = LEAD + ROLL9.long + 0.5;
+export function rollStart(view: View): P2 {
+  return view === 'front' ? [-5.6, 2.4] : [2.4, 5.6];
+}
+export function rollScene(view: View, t: number, w: number, h: number, cx: number, cy: number): Px {
+  const B0 = rollStart(view);
+  const I = placedAt(B0, cx, cy);
   const at = isoAt(I);
   const m = t - LEAD;
   const base = cisternBase(w, h, I);
-  const from: P2 = view === 'front' ? [-1.0, -0.9] : [-2.0, -1.0];
-  const to: P2 = view === 'front' ? [-1.3, -2.45] : [-1.9, -2.45];
-  const k = smooth((m - 0.5) / 0.45);
-  const kp: P2 = [from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k];
-  const moving = m > 0.5 && m < 0.95;
-  const face: P2 = moving ? [to[0] - from[0], to[1] - from[1]] : [B[0] - kp[0], B[1] - kp[1]];
-  const stood: Standing[] = [{ at: at(B[0], B[1]), l: kingDoing(view, 'sluice', t, LEAD, SLUICE.long), shadow: 22 }, ...knightStood(I, kp, face, moving, t)];
-  const px = layScene(base, (p) => sluiceFloor(p, I, m, B), stood);
-  return shaken(px, m, [[SLUICE_HIT, 4]]);
+  const [fx, fy] = wayOf(view);
+  const [sx, sy] = sideOf(view);
+  const d = m > 0 ? roll9Along(Math.min(m, ROLL9.long)) : 0;
+  const B: P2 = [B0[0] + fx * d, B0[1] + fy * d];
+  // the knight: in the lane 6 tiles on; down off the ledge out of it as it is marked (into the lane beside, dry), turned to watch
+  const K0: P2 = [B0[0] + fx * 6.4 + sx * 0.2, B0[1] + fy * 6.4 + sy * 0.2];
+  const K1: P2 = [B0[0] + fx * 6.0 + sx * 2.9, B0[1] + fy * 6.0 + sy * 2.9];
+  const k = smooth((m - 0.35) / 0.55);
+  const kp: P2 = [K0[0] + (K1[0] - K0[0]) * k, K0[1] + (K1[1] - K0[1]) * k];
+  const moving = m > 0.35 && m < 0.9;
+  const kface: P2 = moving ? [K1[0] - K0[0], K1[1] - K0[1]] : [B[0] - kp[0], B[1] - kp[1]];
+  const stood: Standing[] = [{ at: at(B[0], B[1]), l: kingDoing(view, 'roll', t, LEAD, ROLL9.long), shadow: m > ROLL9.curl && m < ROLL9.stop ? 16 : 22 }, ...knightStood(I, kp, kface, moving, t)];
+  const px = layScene(base, (p) => {
+    LANES.forEach((L, i) => paintGate(p, I, L, i, -1));
+    paintRollLane(p, at, m, B0, Math.atan2(fy, fx));
+  }, stood);
+  return shaken(px, m, [[ROLL9_HIT, 2], [ROLL9.stop, 4]]);
 }
 
 /** THE BITE, close: the knight walks in to the front of the heap as it rears, and steps back out of the wedge while it is held. */
@@ -496,3 +539,4 @@ export function oldRollScene(t: number, w: number, h: number, cx: number, cy: nu
   return px;
 }
 export { floodSpan };
+void splashAbout;

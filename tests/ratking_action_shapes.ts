@@ -4,14 +4,16 @@
 // (art/ratking_action.ts tipOf); a pair of one rat's feet as his soles (`PAIRS`: the front rat's forefeet and hind feet, the two
 // beside it, the one at the back), down where they stand on the floor; frame by frame, in game pixels, both ways round. A rat gone
 // into the cracks is followed no further. With them, the review's run over every new move (`review`) and the whole-figure checks the
-// game's own test of him makes (`whole`: FLOOR, SLIDE on every rat's every foot, JUMP from his stand and back). Here and not in the art files: the game's own tests keep figures from importing the checks.
+// game's own test of him makes (`whole`: FLOOR, SLIDE on every rat's every foot, JUMP from his stand and back). His roll (2 Nov) as it is
+// seen: where the game has carried him down his lane (`pose9World`), handing back to his stand where he stopped (`shift`). Here and not in the art files: the game's own tests keep figures from importing the checks.
 
 import { checkKit } from '../src/art/action_f1_checks';
 import type { KitFrame, KitMove } from '../src/art/action_f1_checks';
 import type { V } from '../src/art/kit';
 import { RK_STAND, headOf, ratKingPose } from '../src/art/rat_king';
 import type { KingPose } from '../src/art/rat_king';
-import { HITS9, LONG9, MOVES9, STRIKES9, pose9, smeared9, solids9, tipOf } from '../src/art/ratking_action';
+import { HITS9, LONG9, MOVES9, STRIKES9, pose9, pose9World, roll9Along, smeared9, solids9, tipOf } from '../src/art/ratking_action';
+import { TILE3 } from '../src/art/new_mobs3';
 import type { Move9 } from '../src/art/ratking_action';
 import { stage } from '../src/art/skin';
 import type { GameView } from '../src/art/skin';
@@ -53,18 +55,21 @@ export function standKit(view: GameView, pair: readonly [number, number]): KitMo
   }
   return { name: 'stand', frames, round: true };
 }
-/** One of his new moves as the review reads it, every frame at 30 a second. */
+/** One of his new moves as the review reads it, every frame at 30 a second: his roll where the game has carried him (his floor point moved down his lane, `roll9Along`), as it is seen. */
 export function kingKit(view: GameView, which: Move9, pair: readonly [number, number]): KitMove {
   const at = seenAt(view);
   const n = Math.round(LONG9[which] * 30) + 1;
   const frames: KitFrame[] = [];
   for (let i = 0; i < n; i++) {
     const t = i / 30;
-    const K = pose9(which, t);
+    const K = pose9World(which, t);
     frames.push(kitFrame(at, K, t, pair, tipOf(which, K), smeared9(which, t)));
   }
   const name = which === 'attack' ? 'bite' : which;
-  return { name, frames, hit: HITS9[which], strike: STRIKES9[which] };
+  if (which !== 'roll') return { name, frames, hit: HITS9[which], strike: STRIKES9[which] };
+  const o = at([0, 0, 0]);
+  const e = at([roll9Along(LONG9.roll) * TILE3, 0, 0]);
+  return { name, frames, hit: HITS9[which], strike: STRIKES9[which], shift: [e[0] - o[0], e[1] - o[1]] };
 }
 
 /** THE REVIEW for the old rigs over every new move, both ways round, each pair of feet as his soles: its findings. */
@@ -111,9 +116,10 @@ export function whole(): string[] {
     const dt = 1 / 600;
     let worst = 0;
     let at = '';
+    // (where the game has carried him: a foot down must not slide over the floor as he goes)
     for (let t = 0; t + dt <= LONG9[m]; t += dt) {
-      const a = pose9(m, t).rats;
-      const b = pose9(m, t + dt).rats;
+      const a = pose9World(m, t).rats;
+      const b = pose9World(m, t + dt).rats;
       a.forEach((r, i) => r.feet.forEach((p, k) => {
         const q = b[i].feet[k];
         if (p[2] < 1e-6 && q[2] < 1e-6) {
