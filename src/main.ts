@@ -3,6 +3,7 @@
 
 import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
+import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { DOOR_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
@@ -2622,6 +2623,8 @@ function boot(): void {
 // (THE NEW ENEMY MOVES, FLOORS 5 TO 19: his “Yes, switch them on (Recommended)”, 2 Nov 2026: on as the game starts, in the painter's
 // worker too, before any of their pictures is made. game/enemy_moves.ts)
 useEnemyMoves(ENEMY_MOVES.on);
+// (THE FIRST FIVE FLOORS' NEW LOOKS, floors 3 to 5: his “Yes, switch them on (Recommended)”, 2 Nov 2026, 18:11: game/floor_looks.ts)
+useFloorLooks(FLOOR_LOOKS.on);
 
 // (THE PAINTER: the same script, started as the painter's worker, paints and does nothing else)
 if ((globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) paintWorkerMain();

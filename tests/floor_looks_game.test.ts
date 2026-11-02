@@ -8,12 +8,16 @@
 //      into the temple with no door in it; the rails run from by where he comes in, joined tile to tile, to a tile short of the
 //      way into the temple, ending on the rails' stop; the rift's cracks in the temple; the floor's own pieces each in its own
 //      part; nothing cut off.
+//   4. switched on, all seven switches of floors 3 to 5 together, as the game starts (game/floor_looks.ts).
 //   run: tsx --test tests/floor_looks_game.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
+// @ts-ignore
+import fs from 'node:fs';
 import { CHAPEL } from '../src/art/chapel';
+import { FLOOR_LOOKS, FLOOR_LOOK_SWITCHES, useFloorLooks } from '../src/game/floor_looks';
 import { LAIR_PART, LAIR_TEMPLE } from '../src/art/lair_temple';
 import { stretchTiles } from '../src/game/chapel_way';
 import { makeDungeon } from '../src/game/level';
@@ -135,3 +139,21 @@ test('3. THE MINE AND THE TEMPLE: the parts, the thresholds, the rails, the crac
     }
     assert.ok(thresholds >= SEEDS.length / 2, `thresholds on most floors (${thresholds})`);
   }));
+
+test('4. switched on together as the game starts, before it boots or paints (his “Yes, switch them on (Recommended)”, 18:11)', () => {
+  assert.equal(FLOOR_LOOKS.on, true);
+  assert.equal(FLOOR_LOOK_SWITCHES.length, 7);
+  const was = FLOOR_LOOK_SWITCHES.map((s) => s.on);
+  try {
+    useFloorLooks(true);
+    for (const s of FLOOR_LOOK_SWITCHES) assert.equal(s.on, true);
+    assert.ok(CHAPEL.on && LAIR_TEMPLE.on);
+    useFloorLooks(false);
+    for (const s of FLOOR_LOOK_SWITCHES) assert.equal(s.on, false);
+  } finally {
+    FLOOR_LOOK_SWITCHES.forEach((s, i) => (s.on = was[i]));
+  }
+  const src = (fs as { readFileSync(p: string, e: string): string }).readFileSync('src/main.ts', 'utf8');
+  const at = src.indexOf('useFloorLooks(FLOOR_LOOKS.on);');
+  assert.ok(at > 0 && at < src.indexOf('paintWorkerMain();\nelse boot();'), 'before the game or its painter starts');
+});
