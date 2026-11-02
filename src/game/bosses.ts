@@ -354,7 +354,7 @@ export const CHAINED_SPIN = { on: true, chase: 1.7 };
  *            HOOK_BLOW, CO_RING.hammer round a point `hook.ahead` before him (`blowDmg`), marked from `hook.warn`
  *   ball     held high, whipped down: it lands at BALL_LAND, BALL_REACH before him, CO_RING.ball round, marked from `ball.warn`
  */
-export const CO_ACTION = { on: false };
+export const CO_ACTION = { on: true };
 export const CO2 = {
   lash: [
     { reach: 3.42, left: [-0.6, 0.6] },
@@ -396,7 +396,7 @@ export const CO2_ACTS: readonly ActDef[] = [
  *   devour    its cone marked from `devour.warn`; raked in from its rake to its bite (`DEVOUR_HITS`), what is in the cone dragged to
  *             its maw at `devour.pull`; bitten within `devour.r` of its maw
  */
-export const AM_ACTION = { on: false };
+export const AM_ACTION = { on: true };
 export const AM2 = {
   rakeMark: [1 / 30, 36 / 30] as const,
   arcs: [[-94, 15], [-18, 93]] as ReadonlyArray<readonly [number, number]>,

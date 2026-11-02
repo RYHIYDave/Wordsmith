@@ -28,6 +28,16 @@ function on<T>(fn: () => T): T {
     useActionF4(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off<T>(fn: () => T): T {
+  const was = ACTION_F4.on;
+  useActionF4(false);
+  try {
+    return fn();
+  } finally {
+    useActionF4(was);
+  }
+}
 
 /** A golem `d` tiles from the hero along +x, beginning its move `i` (0 its swing, 1 its throw) at him. */
 function golem(d: number, i: number): { g: Game; m: Monster } {
@@ -59,19 +69,19 @@ function run(g: Game, secs: number, each: (t: number, p: Peril | undefined) => v
   return hits;
 }
 
-test('1. off, as ever; on, its new moves, their blows where its pictures have them, and the art with them', () => {
-  assert.equal(ACTION_F4.on, false);
-  assert.equal(GOLEM_HURL.on, false);
-  const was = movesOf({ kind: 'golem', champion: false })!;
-  assert.deepEqual(was.map((m) => [m.id, m.windup]), [['swing', 0.6], ['throw', 0.95]]);
-  on(() => {
-    assert.ok(GOLEM_HURL.on);
-    const now = movesOf({ kind: 'golem', champion: false })!;
-    assert.deepEqual(now.map((m) => m.id), ['swing', 'throw']);
-    assert.ok(Math.abs(now[0].windup - SWING_HIT) < 1e-3 && Math.abs(now[0].windup + now[0].recover - SWING.long) < 1e-3, 'the swing as its picture has it');
-    assert.ok(Math.abs(now[1].windup - HURL_HIT) < 1e-3 && Math.abs(now[1].windup + now[1].recover - 2.5) < 1e-3, 'the hurl as its picture has it');
+test('1. on (his yes), its new moves, their blows where its pictures have them, and the art with them; off, as ever', () => {
+  assert.equal(ACTION_F4.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  assert.ok(GOLEM_HURL.on);
+  const now = movesOf({ kind: 'golem', champion: false })!;
+  assert.deepEqual(now.map((m) => m.id), ['swing', 'throw']);
+  assert.ok(Math.abs(now[0].windup - SWING_HIT) < 1e-3 && Math.abs(now[0].windup + now[0].recover - SWING.long) < 1e-3, 'the swing as its picture has it');
+  assert.ok(Math.abs(now[1].windup - HURL_HIT) < 1e-3 && Math.abs(now[1].windup + now[1].recover - 2.5) < 1e-3, 'the hurl as its picture has it');
+  off(() => {
+    assert.equal(GOLEM_HURL.on, false);
+    const was = movesOf({ kind: 'golem', champion: false })!;
+    assert.deepEqual(was.map((m) => [m.id, m.windup]), [['swing', 0.6], ['throw', 0.95]]);
   });
-  assert.ok(!GOLEM_HURL.on);
+  assert.ok(GOLEM_HURL.on);
 });
 
 test('2. aimed where he stands as it holds it up; lands a flight later; struck if he stays, not if he runs', () => {
@@ -131,7 +141,7 @@ test('4. its swing reaches further, before it; not behind it', () => {
     if (behind) g.hero.x = m.x + far;
     return run(g, 1.0);
   };
-  assert.equal(swing(false), 0, 'off: out of its old reach');
+  off(() => assert.equal(swing(false), 0, 'off: out of its old reach'));
   on(() => {
     assert.equal(swing(false), 1, 'on: within its new');
     assert.equal(swing(true), 0, 'on: behind it');

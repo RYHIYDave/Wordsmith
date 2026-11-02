@@ -36,6 +36,16 @@ function on(fn: () => void): void {
     useAmAction(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off(fn: () => void): void {
+  const was = AM_ACTION.on;
+  useAmAction(false);
+  try {
+    fn();
+  } finally {
+    useAmAction(was);
+  }
+}
 /** The practice room, emptied: the Amalgamation `far` tiles west of the hero, facing him, awake, beginning act `id`. */
 function room(far: number, id: ActId): { g: Game; m: Monster } {
   const g = Game.forPractice('warrior', 5);
@@ -73,10 +83,12 @@ function watch(g: Game, secs: number, each: (t: number) => void = () => undefine
 }
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a.toFixed(3)} against ${b.toFixed(3)}`);
 
-test('1. off, its old acts; on, the new, where its pictures have them, and its new pictures with them', () => {
-  assert.equal(AM_ACTION.on, false);
-  assert.equal(AMALGAM_ACTION.on, false);
-  assert.equal(actsOf({ kind: 'amalgam' }), ACTS.amalgam);
+test('1. on (his yes), the new, where its pictures have them, and its new pictures with them; off, its old acts', () => {
+  assert.equal(AM_ACTION.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  off(() => {
+    assert.equal(AMALGAM_ACTION.on, false);
+    assert.equal(actsOf({ kind: 'amalgam' }), ACTS.amalgam);
+  });
   on(() => {
     assert.ok(AMALGAM_ACTION.on, 'the art with the rules');
     assert.equal(actsOf({ kind: 'amalgam' }), AM2_ACTS);

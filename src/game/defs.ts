@@ -1107,14 +1107,14 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
  * a cage for 1.5 s that his swipe carries him through (game/action_f1.ts). The art's switches go with it (art/bestiary.ts
  * useActionF1).
  */
-export const ACTION_F1 = { on: false };
+export const ACTION_F1 = { on: true };
 /**
  * FLOOR 2, MORE ACTION (the art chat's art/action-f2, his yes to its pictures): the cultist's FIRE SIGIL in place of its fire
  * bolt, a ring under the hero as it begins its cast, erupting in a pillar of fire at its slam, the floor burning on after; the
  * Shade's rake COLD, a patch of rime before it at its blow that slows whoever stands in it (game/action_f2.ts). The art's
  * switches go with it (art/bestiary.ts useActionF2). (The Headsman's mend, AXE_HELD, is on of itself.)
  */
-export const ACTION_F2 = { on: false };
+export const ACTION_F2 = { on: true };
 /**
  * FLOOR 3, MORE ACTION (the art chat's art/action-f3, his yes to its pictures): THE BONEWARD'S SHIELD WALL (his pick, “Yes
  * (Recommended)”, of “Its shield up, blows from in front glance off. Get round it, or wait for it to throw.”): while its wall is up
@@ -1123,7 +1123,7 @@ export const ACTION_F2 = { on: false };
  * BULL RUSH (game/action_f3.ts; MONSTER_MOVES bruteRampage). The art's switches go with it (art/bestiary.ts useActionF3:
  * BONEWARD_WALL, BRUTE_RAMPAGE).
  */
-export const ACTION_F3 = { on: false };
+export const ACTION_F3 = { on: true };
 /**
  * FLOOR 4, MORE ACTION (the art chat's art/action-f4, his yes to its pictures): THE DAGGER CULTIST'S FRENZY in place of his leap
  * and plunge: four quick stabs before him as he drives forward, then winded a moment, open (game.ts startMove and landMove,
@@ -1131,7 +1131,7 @@ export const ACTION_F3 = { on: false };
  * skeleton up, bursting 2.25 tiles round where it lands (game/action_f4.ts), with its club swing by Movement 9 (MONSTER_MOVES
  * golemHurl). The art's switches go with it (art/bestiary.ts useActionF4: DAGGER_FRENZY, GOLEM_HURL).
  */
-export const ACTION_F4 = { on: false };
+export const ACTION_F4 = { on: true };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
   if (!MONSTER_ATTACKS.on) return null;

@@ -44,7 +44,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { CULTISTS_SWITCH, DAGGER_CULTIST, KNIFE_BLOW, KNIFE_REST, MINI_DIES, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_GLIDE_LONG, MINI_HALT, MINI_RAISE, MINI_REEL, MINI_REST, MINI_SET_OFF, knifeCowlTop, knifeTipOf, makeDaggerCultistArt3, makeMiniFleshmancerArt3, miniFireAt, miniFireTurn } from '../src/art/cultists';
+import { CULTISTS_SWITCH, DAGGER_CULTIST, DAGGER_FRENZY, KNIFE_BLOW, KNIFE_REST, MINI_DIES, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_GLIDE_LONG, MINI_HALT, MINI_RAISE, MINI_REEL, MINI_REST, MINI_SET_OFF, knifeCowlTop, knifeTipOf, makeDaggerCultistArt3, makeMiniFleshmancerArt3, miniFireAt, miniFireTurn } from '../src/art/cultists';
 import { FM_FIRE_SIZE } from '../src/art/fm_spells';
 import { DEATH_FPS } from '../src/art/mkit';
 import { TILE3, posedOfMob } from '../src/art/new_mobs3';
@@ -58,6 +58,20 @@ import { solve } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
+
+/**
+ * The dagger cultist with his leap and plunge, as the art chat made him here: since his “Switch them all on (Recommended)”, 2 Nov
+ * 2026, the game's has the frenzy in its place (ACTION_F4, DAGGER_FRENZY), held by its own checks (tests/action_f4.test.ts).
+ */
+function leapCultist(): ReturnType<typeof makeDaggerCultistArt3> {
+  const was = DAGGER_FRENZY.on;
+  DAGGER_FRENZY.on = false;
+  try {
+    return makeDaggerCultistArt3();
+  } finally {
+    DAGGER_FRENZY.on = was;
+  }
+}
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -143,7 +157,7 @@ test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the be
 });
 
 test('2. their stands paint in every frame both ways round: nothing cyan, the pink edge round each, every pixel whole or empty but the edge, no lone pixel', () => {
-  const knife = makeDaggerCultistArt3();
+  const knife = leapCultist();
   const mini = makeMiniFleshmancerArt3();
   const found: string[] = [];
   for (const view of ['front', 'back'] as const) {
@@ -190,7 +204,7 @@ function madeOf(mob: Mob, set: AnimSet): { living: [string, Sprite[]][]; dying: 
 }
 
 test('6. each is made as the game takes a monster: both facings, its lists and clips, its blow on a frame', () => {
-  for (const [mob, art] of [[DAGGER_CULTIST, makeDaggerCultistArt3()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
+  for (const [mob, art] of [[DAGGER_CULTIST, leapCultist()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
     for (const view of ['front', 'back'] as const) {
       const set = art[view];
       const c = set.clips ?? {};
@@ -211,7 +225,7 @@ test('6. each is made as the game takes a monster: both facings, its lists and c
 test('7. every frame of every move made so far paints both ways round: nothing cyan, the pink edge round the living, every pixel whole or empty but the edge, no lone pixel; the dying wear no edge and give no light at the end', () => {
   const found: string[] = [];
   const [pr, pg, pb] = rgba(ENEMY_RIM);
-  for (const [mob, art] of [[DAGGER_CULTIST, makeDaggerCultistArt3()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
+  for (const [mob, art] of [[DAGGER_CULTIST, leapCultist()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
     for (const view of ['front', 'back'] as const) {
       const { living, dying } = madeOf(mob, art[view]);
       for (const [name, frames] of living) {

@@ -25,6 +25,16 @@ function on<T>(fn: () => T): T {
     useActionF4(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off<T>(fn: () => T): T {
+  const was = ACTION_F4.on;
+  useActionF4(false);
+  try {
+    return fn();
+  } finally {
+    useActionF4(was);
+  }
+}
 
 /** A dagger cultist `d` tiles from the hero along +x, just beginning his frenzy at him (turned to him as it begins); `behind`: the hero then slips round behind him. */
 function frenzy(d: number, behind = false, frames = 40): { g: Game; m: Monster; hits: number } {
@@ -55,14 +65,15 @@ function frenzy(d: number, behind = false, frames = 40): { g: Game; m: Monster; 
   return { g, m, hits };
 }
 
-test('1. off, his one blow; on, the frenzy, and the art with it', () => {
-  assert.equal(ACTION_F4.on, false);
-  assert.equal(movesOf({ kind: 'dagger', champion: false }), null);
-  on(() => {
-    assert.ok(DAGGER_FRENZY.on);
-    assert.deepEqual(movesOf({ kind: 'dagger', champion: false })!.map((m) => m.id), ['frenzy']);
+test('1. on (his yes), the frenzy, and the art with it; off, his one blow', () => {
+  assert.equal(ACTION_F4.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  assert.ok(DAGGER_FRENZY.on);
+  assert.deepEqual(movesOf({ kind: 'dagger', champion: false })!.map((m) => m.id), ['frenzy']);
+  off(() => {
+    assert.equal(movesOf({ kind: 'dagger', champion: false }), null);
+    assert.ok(!DAGGER_FRENZY.on);
   });
-  assert.ok(!DAGGER_FRENZY.on);
+  assert.ok(DAGGER_FRENZY.on);
 });
 
 test('2. before him, stabbed again and again; behind him, not', () => {

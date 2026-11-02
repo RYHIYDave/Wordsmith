@@ -23,6 +23,16 @@ function on<T>(fn: () => T): T {
     useActionF3(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off<T>(fn: () => T): T {
+  const was = ACTION_F3.on;
+  useActionF3(false);
+  try {
+    return fn();
+  } finally {
+    useActionF3(was);
+  }
+}
 
 /** A Boneward 1.5 tiles before the hero, facing the way `face` (radians) from him, awake; the hero's quick attack's index. */
 function setUp(face: number): { g: Game; m: Monster } {
@@ -40,10 +50,11 @@ function setUp(face: number): { g: Game; m: Monster } {
 
 const hit = (g: Game, m: Monster): void => (g as unknown as { hitMonster(m: Monster, i: number, frac: number, quiet: boolean): void }).hitMonster(m, 0, 1, true);
 
-test('1. off as ever; on, the art with it', () => {
-  assert.equal(ACTION_F3.on, false);
-  on(() => assert.ok(BONEWARD_WALL.on));
-  assert.ok(!BONEWARD_WALL.on);
+test('1. on (his yes), the art with it; off as ever', () => {
+  assert.equal(ACTION_F3.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  assert.ok(BONEWARD_WALL.on);
+  off(() => assert.ok(!BONEWARD_WALL.on));
+  assert.ok(BONEWARD_WALL.on);
 });
 
 test('2. its wall up: from before, the blow glances off and does nothing; from behind or the side, it hurts', () => {

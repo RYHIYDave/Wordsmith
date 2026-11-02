@@ -30,6 +30,16 @@ function on<T>(fn: () => T): T {
     useActionF3(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off<T>(fn: () => T): T {
+  const was = ACTION_F3.on;
+  useActionF3(false);
+  try {
+    return fn();
+  } finally {
+    useActionF3(was);
+  }
+}
 
 /** A floor of the green troll's with a long clear run along +x, the hero set on it (the first such place on it). */
 function floor(): Game {
@@ -84,20 +94,20 @@ function run(g: Game, secs: number, each: (t: number) => void = () => undefined)
   return hits;
 }
 
-test('1. off, as ever; on, the rampage and the rush where his pictures have them, and the art with them; the red troll untouched', () => {
-  assert.equal(ACTION_F3.on, false);
-  assert.equal(BRUTE_RAMPAGE.on, false);
-  assert.deepEqual(movesOf({ kind: 'brute', champion: false })!.map((m) => m.id), ['swing', 'slam']);
+test('1. on (his yes), the rampage and the rush where his pictures have them, and the art with them; off, as ever; the red troll untouched', () => {
+  assert.equal(ACTION_F3.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  assert.ok(BRUTE_RAMPAGE.on);
+  const now = movesOf({ kind: 'brute', champion: false })!;
+  assert.deepEqual(now.map((m) => m.id), ['rampage', 'charge']);
+  assert.ok(Math.abs(now[0].windup - RAMPAGE_HITS[2]) < 1e-9 && Math.abs(now[0].windup + now[0].recover - RAMPAGE_LONG) < 1e-9, 'the rampage as his picture has it');
+  assert.ok(Math.abs(now[1].windup - RUSH.windup) < 1e-9 && Math.abs(now[1].recover - RUSH.recover) < 1e-9, 'the rush as his pictures have it');
   const red = movesOf({ kind: 'brute', champion: true });
-  on(() => {
-    assert.ok(BRUTE_RAMPAGE.on);
-    const now = movesOf({ kind: 'brute', champion: false })!;
-    assert.deepEqual(now.map((m) => m.id), ['rampage', 'charge']);
-    assert.ok(Math.abs(now[0].windup - RAMPAGE_HITS[2]) < 1e-9 && Math.abs(now[0].windup + now[0].recover - RAMPAGE_LONG) < 1e-9, 'the rampage as his picture has it');
-    assert.ok(Math.abs(now[1].windup - RUSH.windup) < 1e-9 && Math.abs(now[1].recover - RUSH.recover) < 1e-9, 'the rush as his pictures have it');
+  off(() => {
+    assert.equal(BRUTE_RAMPAGE.on, false);
+    assert.deepEqual(movesOf({ kind: 'brute', champion: false })!.map((m) => m.id), ['swing', 'slam']);
     assert.equal(movesOf({ kind: 'brute', champion: true }), red, 'the red troll as he was');
   });
-  assert.ok(!BRUTE_RAMPAGE.on);
+  assert.ok(BRUTE_RAMPAGE.on);
 });
 
 test('2. the rampage: before him, both swings and the slam; behind him, nothing', () => {

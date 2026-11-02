@@ -35,6 +35,16 @@ function on<T>(fn: () => T): T {
     useActionF1(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off<T>(fn: () => T): T {
+  const was = ACTION_F1.on;
+  useActionF1(false);
+  try {
+    return fn();
+  } finally {
+    useActionF1(was);
+  }
+}
 
 /** Floor 1 with no monster on it, the hero in its first big room's middle, nothing making him safe. */
 function floor1(): Game {
@@ -63,17 +73,18 @@ function run(g: Game, secs: number): void {
   }
 }
 
-test('1. off: the archer one shot, the Warden his slam; on: the rain and the Lockdown, and the art with them', () => {
-  assert.equal(ACTION_F1.on, false);
-  assert.equal(movesOf({ kind: 'archer', champion: false }), null);
-  assert.equal(movesOf({ kind: 'warden', champion: false }), MONSTER_MOVES.warden);
-  on(() => {
-    assert.ok(ARCHER_RAIN.on && WARDEN_LOCKDOWN.on, "the art's switches on with it");
-    assert.ok(movesOf({ kind: 'archer', champion: false })!.some((m) => m.id === 'rain'));
-    const w = movesOf({ kind: 'warden', champion: false })!;
-    assert.ok(w.some((m) => m.id === 'lockdown') && !w.some((m) => m.id === 'slam'), 'the Lockdown in place of the slam');
+test('1. on (his yes): the rain and the Lockdown, and the art with them; off: the archer one shot, the Warden his slam', () => {
+  assert.equal(ACTION_F1.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  assert.ok(ARCHER_RAIN.on && WARDEN_LOCKDOWN.on, "the art's switches on with it");
+  assert.ok(movesOf({ kind: 'archer', champion: false })!.some((m) => m.id === 'rain'));
+  const w = movesOf({ kind: 'warden', champion: false })!;
+  assert.ok(w.some((m) => m.id === 'lockdown') && !w.some((m) => m.id === 'slam'), 'the Lockdown in place of the slam');
+  off(() => {
+    assert.equal(movesOf({ kind: 'archer', champion: false }), null);
+    assert.equal(movesOf({ kind: 'warden', champion: false }), MONSTER_MOVES.warden);
+    assert.ok(!ARCHER_RAIN.on && !WARDEN_LOCKDOWN.on, 'and the art off with it');
   });
-  assert.ok(!ARCHER_RAIN.on && !WARDEN_LOCKDOWN.on, 'and off again with it');
+  assert.ok(ARCHER_RAIN.on && WARDEN_LOCKDOWN.on, 'and on again');
 });
 
 test('2. the rain: a hero inside the ring at the strike is hit, outside it not, and not before', () => {

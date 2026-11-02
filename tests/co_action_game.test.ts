@@ -34,6 +34,16 @@ function on(fn: () => void): void {
     useCoAction(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off(fn: () => void): void {
+  const was = CO_ACTION.on;
+  useCoAction(false);
+  try {
+    fn();
+  } finally {
+    useCoAction(was);
+  }
+}
 /** The practice room, emptied: the Chained One `far` tiles west of the hero, facing him, awake, beginning act `id`. */
 function room(far: number, id: ActId): { g: Game; m: Monster } {
   const g = Game.forPractice('warrior', 5);
@@ -71,10 +81,12 @@ function watch(g: Game, secs: number, each: (t: number) => void = () => undefine
 }
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a.toFixed(3)} against ${b.toFixed(3)}`);
 
-test('1. off, his old acts; on, the new, where his pictures have them, and his new pictures with them', () => {
-  assert.equal(CO_ACTION.on, false);
-  assert.equal(CHAINED_ACTION.on, false);
-  assert.equal(actsOf({ kind: 'chained' }), ACTS.chained);
+test('1. on (his yes), the new, where his pictures have them, and his new pictures with them; off, his old acts', () => {
+  assert.equal(CO_ACTION.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  off(() => {
+    assert.equal(CHAINED_ACTION.on, false);
+    assert.equal(actsOf({ kind: 'chained' }), ACTS.chained);
+  });
   on(() => {
     assert.ok(CHAINED_ACTION.on, 'the art with the rules');
     assert.equal(actsOf({ kind: 'chained' }), CO2_ACTS);

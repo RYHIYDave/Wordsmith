@@ -34,6 +34,16 @@ function on<T>(fn: () => T): T {
     useActionF2(was);
   }
 }
+/** (the switches off for the test, and as they were after: on since his “Switch them all on (Recommended)”, 2 Nov 2026) */
+function off<T>(fn: () => T): T {
+  const was = ACTION_F2.on;
+  useActionF2(false);
+  try {
+    return fn();
+  } finally {
+    useActionF2(was);
+  }
+}
 
 function floor2(): Game {
   const g = new Game('warrior', 4243);
@@ -61,14 +71,15 @@ function run(g: Game, secs: number): void {
   }
 }
 
-test('1. off: the cultist its bolt; on: its sigil, and the art with it', () => {
-  assert.equal(ACTION_F2.on, false);
-  assert.equal(movesOf({ kind: 'cultist', champion: false }), null);
-  on(() => {
-    assert.ok(CULTIST_SIGIL.on && SHADE_FROST.on, "the art's switches on with it");
-    assert.deepEqual(movesOf({ kind: 'cultist', champion: false })!.map((m) => m.id), ['sigil']);
+test('1. on (his yes): its sigil, and the art with it; off: the cultist its bolt', () => {
+  assert.equal(ACTION_F2.on, true, 'his “Switch them all on (Recommended)”, 2 Nov 2026');
+  assert.ok(CULTIST_SIGIL.on && SHADE_FROST.on, "the art's switches on with it");
+  assert.deepEqual(movesOf({ kind: 'cultist', champion: false })!.map((m) => m.id), ['sigil']);
+  off(() => {
+    assert.equal(movesOf({ kind: 'cultist', champion: false }), null);
+    assert.ok(!CULTIST_SIGIL.on && !SHADE_FROST.on, 'and the art off with it');
   });
-  assert.ok(!CULTIST_SIGIL.on && !SHADE_FROST.on, 'and off again with it');
+  assert.ok(CULTIST_SIGIL.on && SHADE_FROST.on, 'and on again');
 });
 
 test('2. the sigil: inside struck, outside not, not before; the floor burns on; nothing if its cultist stops', () => {
