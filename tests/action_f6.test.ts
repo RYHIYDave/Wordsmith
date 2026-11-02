@@ -134,8 +134,9 @@ test('1. the switches are off; nothing of the game imports the mock-ups; the gam
   const OURS = /from ['"][^'"]*action_f6_(fx|cult|golem|canyon|scene)['"]/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (floors 9 and 10's more action, art/action_f9_*.ts, the Hollow Stag's, art/stag_action*.ts, and floors 11 to 15's, art/action_f11_*.ts,
-    // are mock-ups built on these that nothing of the game imports: tests/action_f9.test.ts 1, tests/stag_action.test.ts 1, tests/action_f11.test.ts 1)
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(action_f(6|9|11|16)_|stag_action)/.test(f)) continue;
+    // are mock-ups built on these that nothing of the game imports: tests/action_f9.test.ts 1, tests/stag_action.test.ts 1, tests/action_f11.test.ts 1;
+    // the Rat King's, art/ratking_action.ts, too: tests/ratking_action.test.ts 1)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(action_f(6|9|11|16)_|stag_action|ratking_action)/.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   // the game's own frames, pixel for pixel, as they were
