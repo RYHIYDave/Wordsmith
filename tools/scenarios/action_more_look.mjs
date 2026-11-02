@@ -95,7 +95,9 @@ export default async function (page, snap) {
           const i = ty * f.w + tx;
           return L.walk[i] === 1 && !(f.cut && f.cut[i]);
         });
-        const ok = tries.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy)).sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]))[0];
+        // (the Stag in his clearing: the hero beside him as the picture is drawn, the wood behind them both)
+        const side = C.kind === 'stag' ? [[-C.d / Math.SQRT2, C.d / Math.SQRT2], [C.d / Math.SQRT2, -C.d / Math.SQRT2]] : [];
+        const ok = [...side.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy)), ...tries.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy)).sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]))][0];
         if (ok) { h.x = m.x - ok[0]; h.y = m.y - ok[1]; }
       } else {
         const ok = tries.find(([ox, oy]) => g.isOpen(h.x + ox, h.y + oy) && g.sees(h.x + ox, h.y + oy, h.x, h.y));
