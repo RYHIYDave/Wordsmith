@@ -1173,6 +1173,11 @@ export interface Level {
   pier: Uint8Array | null;
   /** (and where a door is still shut, 1 in the grid; null on a level with no door. A shut door holds monsters, and its tile is shut in `open`: game/doors.ts, `shutGrid`.) */
   shut: Uint8Array | null;
+  /**
+   * A FENCE across the floor that is no wall of its tiles (floor 9, the Hollow Stag's wood closing in: game/act1_rules/stag.ts): whether
+   * a body of radius `r` may stand at (x, y) for it. Asked by `free` for every body and everything that flies; absent: none.
+   */
+  fence?: ((x: number, y: number, r: number) => boolean) | null;
   /** (THE TRAPS, game/traps.ts) The level's spike floors and dart walls, and where each is in its beat. None unless laid. */
   hazards: HazardInst[];
   /** (THE WAYS, game/ways.ts, behind WAYS) The stairwell down, the waypoint and the gate of the way; null where they are off. */

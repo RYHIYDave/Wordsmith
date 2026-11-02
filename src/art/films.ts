@@ -31,6 +31,8 @@
 //   things:deer                (FLOOR 9, DEER_BRAMBLE) the twisted deer's hedge of bramble, each clump's moments (art/act1_figs/deer.ts
 //                              deerThings)
 //   things:drowned             (FLOOR 10, DROWNED_RETCH) the Drowned's slick, its frames (art/act1_figs/drowned.ts drownedThings)
+//   things:stag                (FLOOR 9, STAG_ACTION) the Hollow Stag's wall of roots, each kind of clump's moments (art/act1_figs/
+//                              stag.ts stagThings)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
 // the page.
 
@@ -55,6 +57,7 @@ import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
 import { princessThings } from './act1_figs/princess';
 import { deerThings } from './act1_figs/deer';
 import { drownedThings } from './act1_figs/drowned';
+import { stagThings } from './act1_figs/stag';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -220,6 +223,7 @@ export function filmRoom(key: string): number {
   // (FLOOR 9: the deer's hedge, 704 pictures each cut down to what is painted in it: measured 2 Nov 2026 in node as the others are)
   if (kind === 'things' && a === 'deer') return DEER_THINGS_ROOM;
   if (kind === 'things' && a === 'drowned') return DROWNED_THINGS_ROOM;
+  if (kind === 'things' && a === 'stag') return STAG_THINGS_ROOM;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -233,6 +237,7 @@ export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y
 const CAVE_ROOM = 62;
 const DEER_THINGS_ROOM = 20;
 const DROWNED_THINGS_ROOM = 20;
+const STAG_THINGS_ROOM = 24;
 const TOWN_ARRIVE_ROOM = 32;
 
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
@@ -295,6 +300,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   if (kind === 'things' && a === 'deer') return deerThings();
   // (FLOOR 10: the Drowned's slick, as render/act1_fx/drowned.ts asks for it)
   if (kind === 'things' && a === 'drowned') return drownedThings();
+  // (FLOOR 9: the Hollow Stag's wall, as render/act1_fx/stag.ts asks for it)
+  if (kind === 'things' && a === 'stag') return stagThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();

@@ -117,6 +117,10 @@ export function clumpHigh(s: number, gone = -1, broken = -1): number {
   return k;
 }
 const CACHE = new Map<string, { px: Px; lights: Light[] }>();
+/** (the main chat's, 2 Nov 2026) Let go of every clump's moment kept: the game keeps its own pictures of them (art/act1_figs/stag.ts). */
+export function forgetClumps(): void {
+  CACHE.clear();
+}
 /**
  * ONE CLUMP OF THE WALL (`kind` 0 to 9), `s` seconds after it burst up (or sinking `gone` seconds, or splintered `broken` seconds
  * since), its anchor its foot on the floor: 'air' the clump, 'floor' the torn earth at its foot. Painted once for each moment that

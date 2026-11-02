@@ -3276,6 +3276,9 @@ export class Game {
    */
   free(grid: Uint8Array, x: number, y: number, r: number, flat = false, held = false): boolean {
     const f = this.level.floor;
+    // (A FENCE that is no wall of its tiles: the Hollow Stag's wood closing in)
+    const fence = this.level.fence;
+    if (fence && !fence(x, y, r)) return false;
     // (DOORS: `held` is a monster's step. A shut door holds a monster, walking or flying; nobody else. game/doors.ts)
     const shut = held ? this.level.shut : null;
     const x0 = Math.floor(x - r);
