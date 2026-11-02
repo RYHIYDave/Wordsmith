@@ -86,6 +86,18 @@ export const SG_PLAN = {
   bed: { w: 5, h: 3 },
 };
 
+/**
+ * OPEN (his pick for floor 16), as he put what open means, 1 Nov 2026: “When I say open I mean one massive area with a waypoint
+ * on one side, and the boss somewhere on the other”. Shown the terraces with one stair through each wall (walked back and
+ * forth up the hill), asked how, his pick: “Three stairs per wall (Recommended)”, the terraces kept. On, each terrace wall has
+ * its stair at both ends and one in the middle (the maze's walls' middle stairs into a corridor of it; none into the boss's
+ * ground), so the hill is climbed anywhere from the gate to the lake. Off, one stair each.
+ */
+export const SG_OPEN = { on: true, apart: 8 };
+
+/** A terrace wall's stairs' columns: its own and its others. */
+export const stairsOf = (q: { tx: number; more?: number[] }): number[] => [q.tx, ...(q.more ?? [])];
+
 /** ITS PIECES BY NAME (art/floor16.ts, art/high_city_set.ts): what the dresser lays. */
 export const SG_PIECE = {
   wall: 'a terrace wall',
@@ -205,6 +217,28 @@ export function generate(depth: number, seed: number): Laid | null {
   const pavilion = { x: arena.x - 2, y: Ly0 + S.lake.island };
   const gateOn = { x: xb[4] - 3, y: ya[4] - 1 };
   if (walls[3].tx + 3 > arena.x - S.arena.rx - 2) return null;
+  // (SG_OPEN: each wall's other stairs, at its other end and its middle: into the maze's lawns, or its middle into a corridor of
+  // it; none into the boss's ground; each SG_OPEN.apart from the others and three in from the wall's ends)
+  if (SG_OPEN.on) {
+    walls.forEach((q, k) => {
+      const want = [k % 2 === 0 ? q.x0 + S.stair.down : q.x1 - S.stair.up, Math.round((q.x0 + q.x1) / 2)];
+      const more: number[] = [];
+      for (let c of want) {
+        if (k === 1 || k === 2) {
+          // (the maze's terrace: an end stair onto a lawn, clear of the maze; the middle one onto a corridor's middle)
+          if (c > mx0 - 3 && c < mx1 + 3) {
+            const i = Math.max(0, Math.min(nx - 1, Math.round((c - mx0 - 2) / pitch)));
+            c = mx0 + i * pitch + 2;
+          }
+        }
+        if (k === 3 && c + 3 > arena.x - S.arena.rx - 4) continue;
+        if (c - 2 < q.x0 + 1 || c + 2 >= q.x1 - 1) continue;
+        if ([q.tx, ...more].some((o) => Math.abs(o - c) < SG_OPEN.apart)) continue;
+        more.push(c);
+      }
+      q.more = more;
+    });
+  }
   // THE FORECOURT: the drive from the gate he came in by, in its near end's hedge, along its middle
   const gy = ya[0] + Math.floor(d[0] / 2);
   const gateIn = { x: xa[0] - 1, y: gy };
@@ -234,7 +268,7 @@ export function generate(depth: number, seed: number): Laid | null {
   const Y = (v: number): number => v + dy;
   const R = (r: Rect): Rect => [X(r[0]), Y(r[1]), X(r[2]), Y(r[3])];
   const tr: Rect[] = [0, 1, 2, 3, 4].map((k) => R([xa[k], ya[k], xb[k], yb[k]]));
-  const wallRows = walls.map((q) => ({ y: Y(q.y), x0: X(q.x0), x1: X(q.x1), tx: X(q.tx) }));
+  const wallRows = walls.map((q) => ({ y: Y(q.y), x0: X(q.x0), x1: X(q.x1), tx: X(q.tx), ...(q.more ? { more: q.more.map(X) } : {}) }));
   const lakeR = R(lake);
   const A = { x: X(arena.x), y: Y(arena.y) };
   const Pv = { x: X(pavilion.x), y: Y(pavilion.y) };
@@ -330,8 +364,10 @@ export function generate(depth: number, seed: number): Laid | null {
     // its foot, on T(k): up from that terrace's own walk; its head, on T(k + 1): down to that one's
     const lo = cross[k];
     const hi = cross[k + 1];
-    if (lo >= 0) walks.push(clip([q.tx - 1, q.y + 1, q.tx + 2, lo + 2], tr[k]));
-    if (hi >= 0) walks.push(clip([q.tx - 1, hi - 1, q.tx + 1, q.y], tr[k + 1]));
+    for (const tx of stairsOf(q)) {
+      if (lo >= 0) walks.push(clip([tx - 1, q.y + 1, tx + 2, lo + 2], tr[k]));
+      if (hi >= 0) walks.push(clip([tx - 1, hi - 1, tx + 1, q.y], tr[k + 1]));
+    }
   });
   // THE MAZE'S LAWNS: a walk from the stair's foot to its way in, and from its way out to the stair up
   walks.push(clip([wallRows[1].tx - 1, mazeIn[1] - 1, mazeIn[0], wallRows[1].y], tr[2]));
@@ -339,7 +375,7 @@ export function generate(depth: number, seed: number): Laid | null {
   walks.push(clip([wallRows[2].tx - 1, wallRows[2].y + 1, wallRows[2].tx + 2, mazeOut[1] + 2], tr[2]));
   // THE LAKE WALK, along its near shore the length of the terrace; up from the stair to it; and up past the lake's end to the gate on
   walks.push([tr[4][0], lakeR[3], tr[4][2], lakeR[3] + 2]);
-  walks.push([wallRows[3].tx - 1, lakeR[3], wallRows[3].tx + 1, wallRows[3].y]);
+  for (const tx of stairsOf(wallRows[3])) walks.push([tx - 1, lakeR[3], tx + 1, wallRows[3].y]);
   walks.push([gOn.x - 1, tr[4][1], gOn.x + 2, lakeR[3]]);
   // A BED OF NETTLES on the forecourt's lawn, one on the lake terrace's, one in the gardeners' corner (their beds gone wild)
   const lawnBed = (t: Rect, w0: number, h0: number, avoid: (x: number, y: number) => boolean): void => {
@@ -404,7 +440,7 @@ export function generate(depth: number, seed: number): Laid | null {
   };
   for (const q of wallRows) {
     reserve([q.x0, q.y, q.x1, q.y + 1]);
-    reserve([q.tx - 2, q.y - 2, q.tx + 3, q.y + 3]);
+    for (const tx of stairsOf(q)) reserve([tx - 2, q.y - 2, tx + 3, q.y + 3]);
   }
   for (const fo of fountains) reserve([Math.floor(fo.x) - 2, Math.floor(fo.y) - 2, Math.floor(fo.x) + 3, Math.floor(fo.y) + 3]);
   for (const b of [...roses, ...nettles]) reserve(b, 1);
@@ -421,7 +457,7 @@ export function generate(depth: number, seed: number): Laid | null {
   // fountains, the beds and their box, the gateways, in the way)
   const walkable = new Uint8Array(W * H);
   for (let i = 0; i < W * H; i++) walkable[i] = tiles[i] === T_FLOOR ? 1 : 0;
-  for (const q of wallRows) for (let tx = q.x0; tx < q.x1; tx++) if (tx < q.tx - 1 || tx > q.tx + 1) walkable[q.y * W + tx] = 0;
+  for (const q of wallRows) for (let tx = q.x0; tx < q.x1; tx++) if (stairsOf(q).every((c) => tx < c - 1 || tx > c + 1)) walkable[q.y * W + tx] = 0;
   for (const fo of fountains) for (let ty = Math.floor(fo.y) - 1; ty <= Math.floor(fo.y) + 1; ty++) for (let tx = Math.floor(fo.x) - 1; tx <= Math.floor(fo.x) + 1; tx++) walkable[ty * W + tx] = 0;
   for (const b of roses) for (let ty = b[1] - 1; ty <= b[3]; ty++) for (let tx = b[0] - 1; tx <= b[2]; tx++) walkable[ty * W + tx] = 0;
   walkable[gIn.y * W + gIn.x] = 0;
@@ -792,7 +828,7 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
   for (const p of f.packs) clearRound(p.x, p.y, 1.5);
   const g0 = G.gates.start;
   clearRect([g0.x, g0.y - 1, g0.x + 2, g0.y + 2]);
-  for (const q of G.walls) clearRect([q.tx - 1, q.y - 2, q.tx + 2, q.y + 3]);
+  for (const q of G.walls) for (const tx of stairsOf(q)) clearRect([tx - 1, q.y - 2, tx + 2, q.y + 3]);
   clearRect([G.maze.gin[0] - 2, G.maze.gin[1] - 1, G.maze.gin[0] + 3, G.maze.gin[1] + 2]);
   clearRect([G.maze.gout[0] - 2, G.maze.gout[1] - 1, G.maze.gout[0] + 3, G.maze.gout[1] + 2]);
   for (const s of G.sides) clearRect([s.gap[0] - 2, s.gap[1], s.gap[0] + 3, s.gap[1] + 3]);
@@ -882,21 +918,26 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
     return xs.length ? { x: xs[rng.int(0, xs.length - 1)], y: q.y } : null;
   })();
   for (const q of G.walls) {
+    const st = stairsOf(q);
     for (let x = q.x0; x < q.x1; x++) {
-      if (x >= q.tx - 1 && x <= q.tx + 1) continue;
-      const name = x === q.tx - 2 || x === q.tx + 2 ? SG_PIECE.pier : vinedWall && vinedWall.x === x && vinedWall.y === q.y ? SG_PIECE.wallVine : SG_PIECE.wall;
+      if (st.some((c) => x >= c - 1 && x <= c + 1)) continue;
+      const name = st.some((c) => x === c - 2 || x === c + 2) ? SG_PIECE.pier : vinedWall && vinedWall.x === x && vinedWall.y === q.y ? SG_PIECE.wallVine : SG_PIECE.wall;
       put(name, x, q.y, true, 0);
     }
-    put(SG_PIECE.stair, q.tx, q.y + 1, false, 0);
-    put(SG_PIECE.stair, q.tx + 1, q.y + 1, false, 0);
+    for (const c of st) {
+      put(SG_PIECE.stair, c, q.y + 1, false, 0);
+      put(SG_PIECE.stair, c + 1, q.y + 1, false, 0);
+    }
   }
   // (at each stair's foot, a lantern either side; at its head, bay trees in their tubs)
   for (const q of G.walls) {
-    for (const x of [q.tx - 2, q.tx + 3]) {
-      if (free(x, q.y + 1, false, false)) put(SG_PIECE.lantern, x, q.y + 1, true);
-    }
-    for (const x of [q.tx - 3, q.tx + 2]) {
-      if (free(x, q.y - 1, false, false)) put(SG_PIECE.bay, x, q.y - 1, true);
+    for (const c of stairsOf(q)) {
+      for (const x of [c - 2, c + 3]) {
+        if (free(x, q.y + 1, false, false)) put(SG_PIECE.lantern, x, q.y + 1, true);
+      }
+      for (const x of [c - 3, c + 2]) {
+        if (free(x, q.y - 1, false, false)) put(SG_PIECE.bay, x, q.y - 1, true);
+      }
     }
   }
 
@@ -964,7 +1005,7 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
   for (let k = 0; k < 4; k++) {
     const q = G.walls[k];
     for (let x = q.x0 + 2 + rng.int(0, 3); x < q.x1 - 1; x += rng.int(6, 8)) {
-      if (Math.abs(x - q.tx) < 5) continue;
+      if (stairsOf(q).some((c) => Math.abs(x - c) < 5)) continue;
       putFirst(SG_PIECE.cone, [[x, q.y + 1], [x + 1, q.y + 1]], true, 0, true);
     }
   }

@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import { ACT2 } from '../src/game/act1';
 import { makeDungeon } from '../src/game/level';
-import { GW_NAMES, GW_PLAN, GW_ZONES, bellKinds } from '../src/game/act2/gateward';
+import { GW_NAMES, GW_OPEN, GW_PLAN, GW_ZONES, bellKinds } from '../src/game/act2/gateward';
 import type { GateWardDress } from '../src/game/act2/gateward';
 import type { HouseLaid } from '../src/game/act2_types';
 import type { Level } from '../src/game/state';
@@ -102,11 +102,12 @@ test('the switch is off; with it on, floor 11 is laid by its own map-maker, as t
   assert.ok(L.land!.zones && L.land!.squares && L.land!.houses && L.land!.bells, 'its zones, squares, houses and bells');
   // (the zones are the art's: a street, a square, a room)
   assert.deepEqual(GW_ZONES, GW_ZONE);
-  // (as long as the descent's: about 160 tiles, ten open areas on the main way)
+  // (as long as the descent's: about 160 tiles, ten open areas on the main way; GW_OPEN, his word of what open means: the gate's
+  // street, the great ward's squares and the Crier's)
   for (const seed of SEEDS) {
     const M = floorOf(seed);
     const way = M.land!.areas.filter((a) => a.role === 'start' || a.role === 'path' || a.role === 'boss');
-    assert.equal(way.length, GW_PLAN.chain, `seed ${seed}: ${way.length} open areas on the main way`);
+    assert.equal(way.length, GW_OPEN.on ? 2 + GW_OPEN.rects + GW_OPEN.bulges : GW_PLAN.chain, `seed ${seed}: ${way.length} open areas on the main way`);
     assert.ok(Math.max(M.floor.w, M.floor.h) >= 110, `seed ${seed}: ${M.floor.w} by ${M.floor.h}`);
     assert.ok(M.land!.areas.some((a) => a.role === 'lair'), 'a lair');
     assert.ok(M.land!.areas.some((a) => a.role === 'side'), 'a side area');

@@ -22,7 +22,7 @@ import type { StartArt, WayArt } from '../src/art/films';
 import { HIGH_CITY } from '../src/game/act1';
 import { ACT1_SETS, CAMP, HOLD } from '../src/game/act1_dress';
 import { blobDist } from '../src/game/act1_layout';
-import { BUILT, SG_PIECE, SG_PLAN } from '../src/game/act2/swangardens';
+import { BUILT, SG_OPEN, SG_PIECE, SG_PLAN, stairsOf } from '../src/game/act2/swangardens';
 import { NETTLES, YEW_VINE, inNettles, nettleSlow, stepGardens } from '../src/game/act2/garden_rules';
 import { isCamp } from '../src/game/camp';
 import { Game } from '../src/game/game';
@@ -139,28 +139,30 @@ test('everything that matters is reached from the start on the walk grid: the bo
   }
 }));
 
-test('the terraces built true (the art\'s README): a wall on every tile of its row but its stair\'s three, a pier either side, the stair\'s two feet; the row walked only at its stair', () => high(() => {
+test('the terraces built true (the art\'s README): a wall on every tile of its row but its stairs\' three each, a pier either side of each, each stair\'s two feet; the row walked only at its stairs (SG_OPEN: three to a wall, his “Three stairs per wall (Recommended)”)', () => high(() => {
   for (const L of LEVELS) {
     const G = L.land!.garden!;
     const W = L.floor.w;
     const seed = `seed ${L.floor.seed}`;
     for (const q of G.walls) {
+      const st = stairsOf(q);
+      if (SG_OPEN.on) assert.ok(st.length >= 2, `${seed}: ${st.length} stairs in the wall at ${q.y}`);
       for (let x = q.x0; x < q.x1; x++) {
         const here = piecesAt(L, x, q.y);
-        const open = x >= q.tx - 1 && x <= q.tx + 1;
+        const open = st.some((c) => x >= c - 1 && x <= c + 1);
         assert.equal(L.floor.tiles[q.y * W + x], T_FLOOR, `${seed}: the wall's row is floor (the game walks on one level)`);
         if (open) {
           assert.equal(here.filter((p) => p.solid).length, 0, `${seed}: its stair's way through at ${x}`);
           assert.equal(L.walk[q.y * W + x], 1, seed);
           continue;
         }
-        const want = x === q.tx - 2 || x === q.tx + 2 ? [SG_PIECE.pier] : [SG_PIECE.wall, SG_PIECE.wallVine];
+        const want = st.some((c) => x === c - 2 || x === c + 2) ? [SG_PIECE.pier] : [SG_PIECE.wall, SG_PIECE.wallVine];
         assert.ok(here.length === 1 && want.includes(here[0].name as never) && here[0].solid, `${seed}: ${want[0]} at ${x}, ${q.y}`);
         assert.equal(L.walk[q.y * W + x], 0, seed);
       }
-      for (const x of [q.tx, q.tx + 1]) {
-        const st = piecesAt(L, x, q.y + 1).filter((p) => p.name === SG_PIECE.stair);
-        assert.ok(st.length === 1 && !st[0].solid, `${seed}: the stair's foot at ${x}, ${q.y + 1}`);
+      for (const x of st.flatMap((c) => [c, c + 1])) {
+        const feet = piecesAt(L, x, q.y + 1).filter((p) => p.name === SG_PIECE.stair);
+        assert.ok(feet.length === 1 && !feet[0].solid, `${seed}: the stair's foot at ${x}, ${q.y + 1}`);
       }
     }
     // (her vine over one of them, by the gardeners' corner)

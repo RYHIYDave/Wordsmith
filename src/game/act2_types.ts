@@ -41,8 +41,8 @@ export type Rect = [number, number, number, number];
 export interface GardenPlan {
   /** The terraces up the hill, the lowest first (where he comes in) to the top (the lake): each its floor (Rect), what it is, and its room. */
   terraces: { r: Rect; role: 'forecourt' | 'parterre' | 'maze' | 'roses' | 'lake'; room: number }[];
-  /** THE TERRACES' WALLS, each a row of tiles along x (floor, `a terrace wall` on each, its face toward +y): its row, from x0 to x1 (x1 not in it), and its stair (`tx`: the stair's feet on (tx, y + 1) and (tx + 1, y + 1), the row open from tx - 1 to tx + 1). */
-  walls: { y: number; x0: number; x1: number; tx: number }[];
+  /** THE TERRACES' WALLS, each a row of tiles along x (floor, `a terrace wall` on each, its face toward +y): its row, from x0 to x1 (x1 not in it), and its stair (`tx`: the stair's feet on (tx, y + 1) and (tx + 1, y + 1), the row open from tx - 1 to tx + 1); `more`, its other stairs, each the same (SG_OPEN). */
+  walls: { y: number; x0: number; x1: number; tx: number; more?: number[] }[];
   /** THE HEDGE MAZE: its corner (the hedge's), its cells across and deep, their pitch (a corridor pitch - 1 wide, a hedge one), where it is gone into and come out of (a tile each, in its hedge), and its dead ends' cells (tile middles). */
   maze: { x0: number; y0: number; nx: number; ny: number; pitch: number; gin: [number, number]; gout: [number, number]; ends: [number, number][] };
   /** THE LAKE (its tiles: Land.lake), its rectangle; the Swan Pavilion's middle on its island in it. */
