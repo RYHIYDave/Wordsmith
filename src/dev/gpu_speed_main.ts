@@ -51,7 +51,7 @@ if (G[WORKER_MARK]) {
       const ready = chipReady();
       const which = [{ ...SET[0], frames: [16] }, { ...SET[3], frames: [16] }];
       const t = ready ? paintTimes(true, which, false).map((x) => x[0]) : [];
-      G.postMessage({ ready, why: GPU_SCULPT_TEST.why || (GPU_SCULPT_TEST.fellBack ? 'it fell back' : ''), name: chipName(), t, marched: GPU_SCULPT_TEST.marched });
+      G.postMessage({ ready, why: GPU_SCULPT_TEST.why || (GPU_SCULPT_TEST.fellBack ? 'it fell back' : '') || (ready ? '' : 'no chip, and no reason given'), name: chipName(), t, marched: GPU_SCULPT_TEST.marched });
     } catch (e) {
       G.postMessage({ ready: false, why: String((e as Error)?.message ?? e), t: [] });
     }
@@ -124,6 +124,37 @@ h1{font-size:30px;margin:0 0 6px}.dim{color:var(--dim);font-size:17px}.row{margi
   // the side painter: a worker, as the game's (render/painter.ts)
   const side = say('In the side painter (a worker, as the game paints his frames)…', 'row dim');
   await tick();
+  // (first a tiny worker of its own: can a worker start here at all, and does it get WebGL2 on a canvas that needs no page?)
+  const probe = await new Promise<string>((res) => {
+    try {
+      const pw = new Worker(
+        URL.createObjectURL(
+          new Blob(
+            [
+              "try{var c=typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(1,1):null;var g=c?c.getContext('webgl2'):null;" +
+                "postMessage(!c?'a worker starts; no OffscreenCanvas in it':g?'a worker starts; WebGL2 in it: yes':'a worker starts; WebGL2 in it: no')}" +
+                "catch(e){postMessage('a worker starts; trying WebGL2 in it threw: '+e)}",
+            ],
+            { type: 'text/javascript' },
+          ),
+        ),
+      );
+      const to = setTimeout(() => res('a worker made no answer in ten seconds'), 10000);
+      pw.onmessage = (e) => {
+        clearTimeout(to);
+        pw.terminate();
+        res(String(e.data));
+      };
+      pw.onerror = (e) => {
+        clearTimeout(to);
+        pw.terminate();
+        res('a worker could not run here' + (e.message ? ': ' + e.message : ''));
+      };
+    } catch (e) {
+      res('a worker could not be made here: ' + String((e as Error)?.message ?? e));
+    }
+  });
+  say(`<div class="dim">Worker check: ${probe}</div>`, 'row');
   if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' || !SRC) side.innerHTML = '<div>In the side painter</div><div class="big bad">not on this browser</div><div class="dim">the game would paint his frames on the page instead</div>';
   else {
     const w = new Worker(URL.createObjectURL(new Blob([PRELUDE, SRC], { type: 'text/javascript' })));
@@ -135,7 +166,9 @@ h1{font-size:30px;margin:0 0 6px}.dim{color:var(--dim);font-size:17px}.row{margi
       };
       w.onerror = (e) => {
         clearTimeout(to);
-        res({ ready: false, why: e.message, t: [] });
+        e.preventDefault?.();
+        const where = e.filename || e.lineno ? ` (line ${e.lineno}, column ${e.colno})` : '';
+        res({ ready: false, why: 'the painter stopped with an error' + (e.message ? ': ' + e.message : '') + where, t: [] });
       };
       w.postMessage(1);
     });
