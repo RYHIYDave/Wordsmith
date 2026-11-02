@@ -54,6 +54,43 @@ import { T_FLOOR, T_PIT, T_WALL } from '../types';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room, RoomKind } from '../types';
 
 /**
+ * UC_SCENES: THE SEWERS' THINGS WHERE THEY BELONG (his words, 1 Nov 2026, 10:05: “Can you make sure the doodads go in places
+ * that seem proper as opposed to randomly?”; floor by floor, pictures first; floor 11's shown and kept, “Yes, on to 12
+ * (Recommended)”). On, what stood in a chamber at random toward its edges stands together as one scene against one of its far
+ * walls (the faces seen: the wall behind it up the screen), the first part at the wall's foot, the rest along it (`du`) and out
+ * from it (`dv`); what lies, at their feet. The Order's store's racks, the bells, the sluices, the light from the street above
+ * and the King's cistern as they were.
+ */
+export const UC_SCENES = { on: true };
+type UCPart = [du: number, dv: number, name: string, solid: boolean];
+interface UCScene {
+  name: string;
+  parts: UCPart[];
+}
+/** Each kind of chamber's scenes (one laid of them: of those laid least on the floor yet, the first that fits). */
+const UC_SCENE_SETS: Readonly<Record<'start' | 'treasure' | 'lair' | 'cistern' | 'any', readonly UCScene[]>> = {
+  // (the landing at the outflow: the sewermen's punt hauled up against the wall, their eel traps by it)
+  start: [{ name: 'the landing', parts: [[0, 0, "a sewerman's punt, hauled up", true], [2, 0, 'eel traps', true], [3, 1, 'pale toadstools', false]] }],
+  // (the Order's leavings: its crates against the wall, one the rats have gnawed open, what they left about it)
+  treasure: [{ name: "the Order's leavings", parts: [[0, 0, 'a crate of stolen voices', true], [1, 0, 'a crate of jars, gnawed open', true], [1, 1, 'gnawed bones and rags', false]] }],
+  // (the lair: the sewermen's things it took, against the wall, its bones heaped before them)
+  lair: [{ name: 'the lair', parts: [[0, 0, "a sewerman's barrow", true], [2, 0, 'eel traps', true], [0, 1, 'gnawed bones and rags', false], [1, 2, 'gnawed bones and rags', false], [3, 1, 'gnawed bones and rags', false], [2, 2, 'pale toadstools', false]] }],
+  // (where the Order hauled the bell in: its hoist against the wall, the punt that brought it; or the vault come down)
+  cistern: [
+    { name: 'the hoist', parts: [[0, 0, 'a chain hoist', true], [2, 0, "a sewerman's punt, hauled up", true], [1, 1, 'pale toadstools', false]] },
+    { name: 'the vault come down', parts: [[0, 0, 'rubble of the siege', true], [1, 1, 'a sinkhole in the flags', true], [2, 0, 'gnawed bones and rags', false]] },
+  ],
+  any: [
+    // (the sewermen's work left off: the barrow against the wall, the eel traps by it)
+    { name: "the sewermen's barrow", parts: [[0, 0, "a sewerman's barrow", true], [2, 0, 'eel traps', true], [1, 1, 'pale toadstools', false]] },
+    // (the vault come down: the street's rubble against the wall, the hole it broke in the flags)
+    { name: 'the vault come down', parts: [[0, 0, 'rubble of the siege', true], [2, 1, 'a sinkhole in the flags', true], [1, 2, 'gnawed bones and rags', false]] },
+    // (the eel traps set by the wall, the rats' leavings by them)
+    { name: 'the eel traps', parts: [[0, 0, 'eel traps', true], [1, 0, 'eel traps', true], [2, 1, 'gnawed bones and rags', false]] },
+  ],
+};
+
+/**
  * LINEAR (his pick for floor 12 among open, linear and combo: “linear”): the main way and its side chambers, every one a dead
  * end, and no way round (neither the Muffled Bell's cistern back to the main way, nor two chambers of it joined by a tunnel).
  */
@@ -1203,9 +1240,47 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
         k++;
       }
     };
+    // (UC_SCENES: a scene against one of its far walls: the wall behind it up the screen, along x or along y)
+    const scene = (sets: readonly UCScene[]): boolean => {
+      const [x0, y0, x1, y1] = n.rect!;
+      const feet: { x: number; y: number; alongX: boolean }[] = [];
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        if (!whole(x, y)) continue;
+        if (!whole(x, y - 1)) feet.push({ x, y, alongX: true });
+        else if (!whole(x - 1, y)) feet.push({ x, y, alongX: false });
+      }
+      rng.shuffle(feet);
+      // (what stands at the wall: nothing walked on beside it shut, but by its own scene's)
+      const byWall = (x: number, y: number, mine: PropInst[]): boolean => {
+        if (!free(x, y, false)) return false;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if ((!dx && !dy) || !whole(x + dx, y + dy)) continue;
+          if (L.walk[(y + dy) * W + x + dx] !== 1 && !mine.some((q) => q.tx === x + dx && q.ty === y + dy)) return false;
+        }
+        return true;
+      };
+      // (those laid least on the floor yet first)
+      const laid = (q: UCScene): number => (out.scenes ?? []).filter((o) => o.name === q.name).length;
+      for (const { name: title, parts } of rng.shuffle([...sets]).sort((a, b) => laid(a) - laid(b))) {
+        for (const ft of feet) {
+          const spots = parts.map(([du, dv]) => (ft.alongX ? [ft.x + du, ft.y + dv] : [ft.x + dv, ft.y + du]) as [number, number]);
+          if (!parts.every(([, , , solid], i) => (solid ? byWall(spots[i][0], spots[i][1], []) : free(spots[i][0], spots[i][1], false)))) continue;
+          const mine: PropInst[] = [];
+          parts.forEach(([, , name, solid], i) => mine.push(put(name, spots[i][0], spots[i][1], solid, rng.int(0, 1))));
+          (out.scenes ??= []).push({ x: ft.x + 0.5, y: ft.y + 0.5, name: title });
+          return true;
+        }
+      }
+      return false;
+    };
+    const sc = UC_SCENES.on;
     switch (n.kind) {
       case 'start':
         // (the landing at the outflow: the sewermen's punt hauled up by the water, their eel traps)
+        if (sc) {
+          scene(UC_SCENE_SETS.start);
+          break;
+        }
         stand(["a sewerman's punt, hauled up", 'eel traps']);
         lie(['pale toadstools', 'pale toadstools'], 0, 0);
         break;
@@ -1222,10 +1297,12 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
         lie(['an ink spill'], 1, 3);
         break;
       case 'treasure':
+        if (sc && scene(UC_SCENE_SETS.treasure)) break;
         stand(['a crate of stolen voices', 'a crate of jars, gnawed open']);
         lie(['gnawed bones and rags']);
         break;
       case 'lair':
+        if (sc && scene(UC_SCENE_SETS.lair)) break;
         stand(['eel traps', "a sewerman's barrow"]);
         lie(['gnawed bones and rags', 'gnawed bones and rags', 'gnawed bones and rags', 'pale toadstools'], 0, 4);
         break;
@@ -1233,12 +1310,14 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
         lie(['pale toadstools', 'gnawed bones and rags'], 0, 1);
         break;
       case 'cistern':
+        if (sc && scene(UC_SCENE_SETS.cistern)) break;
         stand([rng.chance(0.5) ? 'a chain hoist' : "a sewerman's punt, hauled up", rng.chance(0.5) ? 'rubble of the siege' : 'a sinkhole in the flags']);
         lie(['pale toadstools', 'gnawed bones and rags'], 0, 1);
         break;
       case 'exit':
         break;
       default:
+        if (sc && scene(UC_SCENE_SETS.any)) break;
         stand([rng.pick(["a sewerman's barrow", 'rubble of the siege', 'eel traps', 'a sinkhole in the flags'])]);
         lie([rng.pick(['pale toadstools', 'gnawed bones and rags'])], 0, 1);
     }
