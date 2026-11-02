@@ -45,6 +45,9 @@ import type { Monster, Peril } from '../state';
 import type { Element, WordId } from '../types';
 import { blobDist } from '../act1_layout';
 import type { Act1Rules } from './types';
+import { BITE9, BITE9_HIT, RATKING_ACTION, ROLL9, ROLL9_FAR, ROLL9_HIT, UNKNOT9, UNKNOT9_HIT, WORDS9, WORDS9_HIT, roll9Along } from '../../art/ratking_action';
+import { FLOOD, SLUICES, SWARM9, flooded, lanesFor, sluiceAt, swarm9Span } from '../../art/ratking_action_fx';
+import type { Game } from '../game';
 
 /** The figure's lengths in a tile (art/new_mobs3.ts TILE3: the floor's tile as its pictures measure it). */
 const T3 = 32 / Math.sqrt(2 / 3);
@@ -206,15 +209,17 @@ function knotSpot(R: BossRules, m: Monster): { x: number; y: number } {
 /** Is he gone into the cracks now (between unknotting and knotting again: out of reach)? */
 export function unknotted(m: { act?: { id: string; t: number } }): boolean {
   const U = RK.unknot;
+  if (RATKING_ACTION.on) return !!m.act && m.act.id === 'ratking:unknot' && m.act.t >= UNKNOT9.land && m.act.t < UNKNOT9.out + SWARM9.for + U.formed;
   return !!m.act && m.act.id === 'ratking:unknot' && m.act.t >= U.gone && m.act.t < U.out + U.swarm + U.formed;
 }
 /** Is he nowhere to be seen now (his swarm running: nothing of him but it)? */
 export function swarming(m: { act?: { id: string; t: number } }): boolean {
   const U = RK.unknot;
+  if (RATKING_ACTION.on) return !!m.act && m.act.id === 'ratking:unknot' && m.act.t >= UNKNOT9.out && m.act.t < UNKNOT9.out + SWARM9.for;
   return !!m.act && m.act.id === 'ratking:unknot' && m.act.t >= U.out && m.act.t < U.out + U.swarm;
 }
 
-export const RULES: Act1Rules | null = {
+const OLD: Act1Rules = {
   gait: RK_GAIT,
   acts: RK_ACTS,
 
@@ -377,7 +382,8 @@ export const RULES: Act1Rules | null = {
     if (p.a1 !== 'ratking:word' || p.done) return;
     const g = R.g;
     const h = g.hero;
-    const W = RK.words;
+    // (the action way's word, `d` 1: faster, further, wider)
+    const W = p.d ? { ...RK.words, speed: WORDS9.speed, reach: WORDS9.reach, r: WORDS9.r, burst: WORDS9.burst, burstFor: WORDS9.burstFor } : RK.words;
     const hurt = (x: number, y: number): void => g.hurtHero(p.dmg, p.el, p.words, null, p.from, x, y, p.half);
     // (its flight this step, in short steps: it bursts on the hero it meets, or where it ends)
     const d0 = Math.min(p.a, (p.t - dt) * W.speed);
@@ -407,5 +413,263 @@ function burst(p: Peril, d: number): void {
   p.done = 1;
   p.c = d;
   p.hit = p.t;
-  p.dur = p.t + RK.words.burstFor;
+  p.dur = p.t + (p.d ? WORDS9.burstFor : RK.words.burstFor);
 }
+
+// =============================================================================================
+// HIS FIGHT DONE THE ACTION WAY (the art chat's art/ratking_action.ts behind RATKING_ACTION, his yes there; his fix of 2 Nov 2026, 07:32:
+// “The sluice gates should just open periodically in the rat king fight, I don’t think it needs to be one of his moves.  Just an arena
+// hazard.”; and in its place among his moves, by 07:36, “His roll, back and bigger (Recommended)”):
+//   bite    the front rats reared and held, the wedge marked; they leap out and snap shut (BITE9_HIT): a hero in the wedge (BITE9.near
+//           to BITE9.reach, BITE9.arc across) bitten
+//   roll    curled into a ball, rocked back, spun up and held, his lane marked; off the line in two frames (ROLL9_HIT), barrelling down
+//           it at ROLL9.pace (roll9Along, to a wall), skidding to a stop and BURSTING OPEN at its end: a hero the ball passes over
+//           (within ROLL9.half of its line) struck once and thrown aside; at the burst, within ROLL9.endR, struck
+//   words   a word of the hero's own gathers, its line following him, then LOCKED (WORDS9.lock); spat at WORDS9_HIT down it at
+//           WORDS9.speed, bursting on whoever it meets (WORDS9.r) or where it ends (WORDS9.burst round)
+//   unknot  swollen and held; THEY BURST OUTWARD (UNKNOT9_HIT): a hero within UNKNOT9.ring struck; gone into the cracks, the swarm
+//           (SWARM9: twice as many, twice as wide) streams past the hero and they knot again on his far side
+//   THE SLUICES: the King's Cistern's own: every SLUICES.every seconds of his fight, the first SLUICES.first in, its lanes marked, the
+//           gates grinding open, then the flood down every lane from the gates to the drain ('ratking:sluice', its clock the
+//           opening's): a hero in a lane as its front passes struck; then carried with the water at FLOOD.carry while in it, struck
+//           every FLOOD.every. The dry ledges between stay dry; he is not struck by it.
+export const SLUICE_PERIL = 'ratking:sluice';
+export const ROLL9_PERIL = 'ratking:roll9';
+export const RK9_ACTS: readonly ActDef[] = [
+  { id: 'ratking:bite', clip: 'attack', long: BITE9.long, hit: BITE9_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.4, near: 0, far: BITE9.reach - 0.3 },
+  { id: 'ratking:words', clip: 'words', long: WORDS9.long, hit: WORDS9_HIT, dmg: 0.9, cooldown: 6, first: 3, after: 0.5, near: 2.2, far: WORDS9.reach },
+  { id: 'ratking:roll', clip: 'roll', long: ROLL9.long, hit: ROLL9_HIT, dmg: 1.4, cooldown: 9, first: 5, after: 0.6, near: 3, far: ROLL9_FAR },
+  { id: 'ratking:unknot', clip: 'unknot', long: UNKNOT9.out + SWARM9.for + RK.unknot.knot, hit: UNKNOT9_HIT, dmg: 0.35, cooldown: 13, first: 7, after: 0.5, near: 0, far: 9 },
+];
+/** His cistern's sluices: its middle, which way the water runs (`alongY`: down the floor's y, the gates on its wall at the top), half its length, the lanes across it. */
+export interface Cistern {
+  x: number;
+  y: number;
+  alongY: boolean;
+  half: number;
+  across: number;
+}
+/** The King's Cistern, from the floor's boss room: the gates on its longer wall, the water running across to the other. */
+export function cisternOf(g: Game, m: Monster): Cistern {
+  const r = g.level.floor.rooms.find((q) => q.kind === 'boss');
+  if (!r) return { x: m.x, y: m.y, alongY: false, half: 8, across: 16 };
+  const alongY = r.w >= r.h;
+  return { x: r.x + r.w / 2, y: r.y + r.h / 2, alongY, half: (alongY ? r.h : r.w) / 2, across: alongY ? r.w : r.h };
+}
+/** A floor point in the cistern's own frame (art/ratking_action_fx.ts: along the water from the gates at -half, across it). */
+export function inCistern(c: { x: number; y: number; alongY: boolean }, x: number, y: number): [number, number] {
+  return c.alongY ? [y - c.y, x - c.x] : [x - c.x, y - c.y];
+}
+/** The cistern's frame back to the floor. */
+export function fromCistern(c: { x: number; y: number; alongY: boolean }, u: number, v: number): [number, number] {
+  return c.alongY ? [c.x + v, c.y + u] : [c.x + u, c.y + v];
+}
+/** The sluice peril's cistern (`a` half its length, `b` across, `c` 1 along y). */
+export const cisternOfPeril = (p: Peril): Cistern => ({ x: p.x, y: p.y, alongY: p.c === 1, half: p.a, across: p.b });
+
+const ACTION: Act1Rules = {
+  gait: RK_GAIT,
+  acts: RK9_ACTS,
+  spawned: (R, m) => void keep(m),
+  reachable: (m) => !unknotted(m),
+  tick(R, m, dt) {
+    // THE SLUICES: on the cistern's own clock, from his fight's start (the hero come in and his line said)
+    const g = R.g;
+    if (!g.bossMet || m.dead) return false;
+    const k = keep(m);
+    const was = k.fight ?? 0;
+    k.fight = was + dt;
+    const s = sluiceAt(k.fight);
+    if (s !== null && (sluiceAt(was) === null || s < (sluiceAt(was) ?? 0))) {
+      const c = cisternOf(g, m);
+      R.peril(m, 'act1', c.x, c.y, { a1: SLUICE_PERIL, t: s, hit: 0, dur: SLUICES.burst + FLOOD.runs + FLOOD.drain + 0.3, dmg: g.rollMonsterDmg(m) * 0.6, el: 'frost', a: c.half, b: c.across, c: c.alongY ? 1 : 0, d: 0 });
+    }
+    return false;
+  },
+  can(R, m, a, dist) {
+    if (a.id !== 'ratking:roll') return true;
+    const g = R.g;
+    const h = g.hero;
+    const fx = (h.x - m.x) / Math.max(0.01, dist);
+    const fy = (h.y - m.y) / Math.max(0.01, dist);
+    return clearFor(R, m.x, m.y, fx, fy, 0.6, 4) >= 3.6;
+  },
+  start(R, m, a) {
+    const k = keep(m);
+    const act = m.act!;
+    if (a.id === 'ratking:words') {
+      k.word = stealWord(R);
+      const o = wordFrom(m);
+      act.a = Math.min(WORDS9.reach, flightOf(R, o.x, o.y, o.fx, o.fy) * (WORDS9.reach / RK.words.reach));
+      R.g.sfx('bossRoar', 0.35);
+    } else if (a.id === 'ratking:roll') {
+      act.x = m.x;
+      act.y = m.y;
+      k.run = clearFor(R, m.x, m.y, m.fx, m.fy, 0.6, ROLL9_FAR + 0.6);
+      k.ran = 0;
+      R.peril(m, 'act1', m.x, m.y, { a1: ROLL9_PERIL, t: 0, hit: ROLL9_HIT, dur: ROLL9.stop + 0.6, a: m.id, d: Math.min(k.run, ROLL9_FAR) });
+    } else if (a.id === 'ratking:unknot') {
+      k.sx = m.x;
+      k.sy = m.y;
+      k.bit = -1;
+    }
+  },
+  acting(R, m, a, t0, t1) {
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    const k = keep(m);
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    const free = h.invuln <= 0 && !h.move && !g.over;
+    switch (a.id) {
+      case 'ratking:bite': {
+        if (at(BITE9.rear)) g.sfx('bossRoar', 0.3);
+        if (!at(a.hit)) break;
+        const r = R.rel(m);
+        const d = Math.hypot(r.fwd, r.left);
+        if (free && d >= BITE9.near - TUNE.heroRadius && d <= BITE9.reach + TUNE.heroRadius * 0.5 && Math.abs(Math.atan2(r.left, r.fwd)) <= ((BITE9.arc / 2) * Math.PI) / 180) R.blow(m, a.dmg);
+        g.emit({ t: 'shake', amount: 2 });
+        g.sfx('hit', 0.6);
+        break;
+      }
+      case 'ratking:words': {
+        if (t0 < WORDS9.lock) {
+          act.x = h.x;
+          act.y = h.y;
+        }
+        const o = wordFrom(m);
+        if (t1 < a.hit) act.a = Math.min(WORDS9.reach, flightOf(R, o.x, o.y, o.fx, o.fy) * (WORDS9.reach / RK.words.reach));
+        if (!at(a.hit)) break;
+        const harm = harmOf(k.word, m.words);
+        R.peril(m, 'act1', o.x, o.y, { a1: 'ratking:word', fx: o.fx, fy: o.fy, a: act.a, b: k.word, c: 0, d: 1, hit: 1e9, dur: 1e9, dmg: g.rollMonsterDmg(m) * a.dmg, el: harm.el, words: harm.words });
+        g.sfx('fire', 0.7);
+        g.emit({ t: 'shake', amount: 1 });
+        break;
+      }
+      case 'ratking:roll': {
+        if (at(ROLL9.mark)) g.sfx('bossRoar', 0.5);
+        const run = Math.min(k.run ?? ROLL9_FAR, ROLL9_FAR);
+        const c0 = Math.max(-ROLL9.back, Math.min(roll9Along(t0), run));
+        const c1 = Math.max(-ROLL9.back, Math.min(roll9Along(t1), run));
+        if (t1 > ROLL9.curl && t0 < ROLL9.stop) {
+          m.x = act.x + m.fx * c1;
+          m.y = act.y + m.fy * c1;
+          if (Math.floor(t1 * 4) !== Math.floor(t0 * 4) && t1 > ROLL9_HIT) g.emit({ t: 'shake', amount: 1 });
+        }
+        // (run down as the ball comes by: once, thrown aside)
+        if (free && !(act.b & 1) && c1 > c0 && t1 > ROLL9.strike[0]) {
+          const along = (h.x - act.x) * m.fx + (h.y - act.y) * m.fy;
+          const aside = -(h.x - act.x) * m.fy + (h.y - act.y) * m.fx;
+          if (Math.abs(aside) <= ROLL9.half + TUNE.heroRadius * 0.5 && along >= c0 - 0.6 && along <= c1 + 0.6) {
+            act.b |= 1;
+            const was = h.life;
+            R.blow(m, a.dmg);
+            if (h.life < was) {
+              const s = aside >= 0 ? 1 : -1;
+              g.knockHero(h.x + m.fy * s * 0.05, h.y - m.fx * s * 0.05, RK.roll.knock);
+            }
+          }
+        }
+        if (at(ROLL9.stop)) {
+          // (he bursts open at its end)
+          if (free && !(act.b & 2) && Math.hypot(h.x - m.x, h.y - m.y) <= ROLL9.endR + TUNE.heroRadius * 0.5) {
+            act.b |= 2;
+            R.blow(m, a.dmg * 0.6);
+            g.knockHero(m.x, m.y, 0.8);
+          }
+          g.emit({ t: 'shake', amount: 3 });
+          g.sfx('slam', 0.7);
+        }
+        break;
+      }
+      case 'ratking:unknot': {
+        const U = RK.unknot;
+        if (at(0.12)) g.sfx('bossRoar', 0.45);
+        if (at(UNKNOT9_HIT)) {
+          // (THEY BURST OUTWARD: whoever is within its ring)
+          if (free && Math.hypot(h.x - m.x, h.y - m.y) <= UNKNOT9.ring + TUNE.heroRadius * 0.5) R.blow(m, a.dmg * 2);
+          g.emit({ t: 'shake', amount: 3 });
+          k.bx = m.x;
+          k.by = m.y;
+        }
+        if (at(UNKNOT9.out)) {
+          k.sx = m.x;
+          k.sy = m.y;
+          const sp = knotSpot(R, m);
+          m.x = sp.x;
+          m.y = sp.y;
+          const d = Math.hypot(h.x - m.x, h.y - m.y);
+          if (d > 0.01) {
+            m.fx = (h.x - m.x) / d;
+            m.fy = (h.y - m.y) / d;
+          }
+          g.msg(`${m.name} comes apart into a swarm`, MSG.foe);
+        }
+        // THE SWARM, twice as wide, as it runs over the hero: it bites, a little, now and then
+        if (t1 > UNKNOT9.out && t0 < UNKNOT9.out + SWARM9.for && free) {
+          const [back, front] = swarm9Span(t1 - UNKNOT9.out);
+          const lx = m.x - k.sx;
+          const ly = m.y - k.sy;
+          const len = Math.hypot(lx, ly);
+          if (len > 0.05) {
+            const r = fromFigure(k.sx, k.sy, lx / len, ly / len, 1, h.x, h.y);
+            const q = r.fwd / len;
+            if (q >= back - 0.05 && q <= front + 0.05 && Math.abs(r.left) <= SWARM9.half + TUNE.heroRadius * 0.5 && (k.bit < 0 || t1 - k.bit >= U.every)) {
+              k.bit = t1;
+              R.blow(m, a.dmg);
+            }
+          }
+        }
+        if (at(UNKNOT9.out + SWARM9.for)) g.sfx('bossRoar', 0.3);
+        break;
+      }
+      default:
+        break;
+    }
+  },
+  died: (R, m) => OLD.died?.(R, m),
+  peril(R, p, dt) {
+    if (p.a1 === 'ratking:word') return OLD.peril!(R, p, dt);
+    if (p.a1 !== SLUICE_PERIL) return;
+    const g = R.g;
+    const h = g.hero;
+    const C = cisternOfPeril(p);
+    const L = lanesFor(C.across).lanes;
+    const [u, v] = inCistern(C, h.x, h.y);
+    const wet = flooded(u, v, p.t, C.half, L);
+    if (!wet) {
+      p.d = 0;
+      return;
+    }
+    if (h.move || g.over) return;
+    // (struck as its front passes; then carried with the water, struck again and again)
+    if (!p.d) {
+      p.d = 1;
+      p.hit = p.t + FLOOD.every;
+      if (h.invuln <= 0) g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+    } else if (p.t >= p.hit) {
+      p.hit = p.t + FLOOD.every;
+      if (h.invuln <= 0) g.hurtHero(p.dmg * 0.5, p.el, p.words, null, p.from, h.x, h.y, p.half);
+    }
+    const [dx, dy] = C.alongY ? [0, 1] : [1, 0];
+    g.slide(h, TUNE.heroRadius, dx * FLOOD.carry * dt, dy * FLOOD.carry * dt, g.level.walk);
+  },
+};
+
+const pick = (): Act1Rules => (RATKING_ACTION.on ? ACTION : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  spawned: (R, m) => pick().spawned?.(R, m),
+  reachable: (m) => !unknotted(m),
+  tick: (R, m, dt, dist) => pick().tick?.(R, m, dt, dist) ?? false,
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  start: (R, m, a) => pick().start?.(R, m, a),
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
+  died: (R, m) => pick().died?.(R, m),
+  peril: (R, p, dt) => (p.a1 === SLUICE_PERIL || p.a1 === ROLL9_PERIL ? ACTION.peril!(R, p, dt) : OLD.peril!(R, p, dt)),
+};

@@ -7,10 +7,12 @@
 // (art/rat_king_shots.ts), drawn there too.
 
 import { RAT_KING_ON, makeRatKingArt } from '../rat_king';
+import { RATKING_ACTION, makeRatKingActionArt } from '../ratking_action';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
-  make: makeRatKingArt,
+  // (and his fight done the action way, behind RATKING_ACTION: art/ratking_action.ts, his yes, 2 Nov 2026)
+  make: () => (RATKING_ACTION.on ? makeRatKingActionArt() : makeRatKingArt()),
   // (measured off his stand as the descent's are, tests/act2_ratking.test.ts: the top of the King on his heap over his floor
   // point, his glass crown with him; half the heap's width, near three tiles across)
   size: { top: 29, half: 36 },
