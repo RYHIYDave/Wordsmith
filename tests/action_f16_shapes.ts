@@ -15,6 +15,8 @@ import { BANNER, BANNER_AT, BANNER_HIT, BANNER_KNIGHT, BANNER_SMEARED, BANNER_ST
 import { TILE3 } from '../src/art/new_mobs3';
 import { add } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
+import { DN_SHAPE_GENT, DN_SHAPE_LADY } from '../src/art/masque_dancers_moves';
+import { THROW_GENT, THROW_LADY, THROW_SMEARED, THROW_STRIKE } from '../src/art/action_f16_dancer';
 import { HEDGE_GARDENER, HEDGE_HITS, HEDGE_SMEARED, HEDGE_STRIKES, HEDGE_TRAVEL } from '../src/art/action_f16_gardener';
 
 /** Handovers for one whose `attack` ends `travel` on (the game moves him on by it): his stand into each move and back; into his walk and out of it at every step. */
@@ -129,3 +131,20 @@ export function whistleShape(): BossShape {
 }
 export const groomRows = (): [string, Mob, BossShape, string[]][] => [['groom', WHISTLE_GROOM, whistleShape(), ['attack']]];
 export const gardenerRows = (): [string, Mob, BossShape, string[]][] => [['gardener', HEDGE_GARDENER, hedgeShape(), ['attack']]];
+
+/** THE DANCERS: the throw a blow of its own for each (their hands the end they strike with: his flung open, hers drawn in as she is flung); it ends where it began (she is carried down the lane by the game). */
+export function throwShape(mob: Mob): BossShape {
+  const base = mob === THROW_GENT ? DN_SHAPE_GENT : DN_SHAPE_LADY;
+  return {
+    ...base,
+    // (his hands, flung open; hers not: she is carried off down the lane by the game, her strike that, not her picture's)
+    tip: (move, t, s) => (move === 'attack' && mob === THROW_GENT ? s.handR : null),
+    strikes: mob === THROW_GENT ? { attack: THROW_STRIKE } : {},
+    smeared: (move, t) => move === 'attack' && THROW_SMEARED(t),
+    handovers: (base.handovers ?? []).map((h) => (h.from === 'attack' ? { ...h, shift: undefined } : h)),
+  };
+}
+export const dancerRows = (): [string, Mob, BossShape, string[]][] => [
+  ['gent', THROW_GENT, throwShape(THROW_GENT), ['attack']],
+  ['lady', THROW_LADY, throwShape(THROW_LADY), ['attack']],
+];
