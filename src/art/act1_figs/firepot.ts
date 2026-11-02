@@ -4,11 +4,13 @@
 // going off).
 
 import { ACT1_CULT_ON, makeFirepotThrowerArt3 } from '../act1_cultists';
+import { FIREPOT_BLAZE, makeBlazeThrowerArt } from '../action_f6_cult';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig = {
-  make: () => makeFirepotThrowerArt3(),
+  // (and its lob made big, behind FIREPOT_BLAZE: art/action_f6_cult.ts, his yes, 2 Nov 2026)
+  make: () => (FIREPOT_BLAZE.on ? makeBlazeThrowerArt() : makeFirepotThrowerArt3()),
   // (measured off its stand as the others are: tests/act1_firepot.test.ts, and tests/first5_bosses.test.ts 10)
   size: { top: 30, half: 8 },
-  switches: [ACT1_CULT_ON],
+  switches: [ACT1_CULT_ON, FIREPOT_BLAZE],
 };

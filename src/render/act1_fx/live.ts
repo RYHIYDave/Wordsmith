@@ -6,7 +6,7 @@
 
 import { GRAIN } from '../../art/kit';
 import { Px } from '../../engine/px';
-import type { Sprite } from '../../engine/px';
+import type { Light, Sprite } from '../../engine/px';
 
 interface Live {
   px: Px;
@@ -14,8 +14,12 @@ interface Live {
   im: ImageData;
   stamp: string;
   s: Sprite;
+  used: number;
 }
 const LIVE = new Map<string, Live>();
+/** No more than this many kept: the longest unused let go first (each perils' own key, and a floor sends out many in a fight). */
+const MOST = 40;
+let clock = 0;
 
 /** A floor point (tiles from the picture's anchor) and a height over it (picture pixels) to the picture (its anchor at `ax`, `ay`). */
 export type PicAt = (x: number, y: number, z?: number) => readonly [number, number];
@@ -45,12 +49,18 @@ export function livePicture(key: string, w: number, h: number, ax: number, ay: n
   if (typeof document === 'undefined') return null;
   let L = LIVE.get(key);
   if (!L || L.px.w !== w || L.px.h !== h) {
+    if (LIVE.size >= MOST) {
+      let old: string | null = null;
+      let at = Infinity;
+      for (const [k, v] of LIVE) if (v.used < at) [old, at] = [k, v.used];
+      if (old !== null) LIVE.delete(old);
+    }
     const cv = document.createElement('canvas');
     cv.width = w;
     cv.height = h;
     const g = cv.getContext('2d');
     if (!g) return null;
-    L = { px: new Px(w, h), cv, im: g.createImageData(w, h), stamp: '', s: { img: cv, w: w / GRAIN, h: h / GRAIN, ax: ax / GRAIN, ay: ay / GRAIN, density: GRAIN } };
+    L = { px: new Px(w, h), cv, im: g.createImageData(w, h), stamp: '', s: { img: cv, w: w / GRAIN, h: h / GRAIN, ax: ax / GRAIN, ay: ay / GRAIN, density: GRAIN }, used: 0 };
     LIVE.set(key, L);
   }
   if (L.stamp !== stamp) {
@@ -62,10 +72,29 @@ export function livePicture(key: string, w: number, h: number, ax: number, ay: n
   }
   L.s.ax = ax / GRAIN;
   L.s.ay = ay / GRAIN;
+  L.used = ++clock;
   return L.s;
 }
 
 /** Let a picture go (its move over): its room given back. */
 export function liveDone(key: string): void {
   LIVE.delete(key);
+}
+
+/**
+ * The same, for a painter that hands back a picture of its own each time (the art's `…Painted(t)`: its pixels and its lights): its
+ * pixels laid onto the canvas kept for `key`, its lights given to the sprite (in game pixels, as art/kit.ts toSprite gives them).
+ */
+export function liveFrom(key: string, stamp: string, ax: number, ay: number, make: () => { px: Px; lights?: ReadonlyArray<Light> }): Sprite | null {
+  if (typeof document === 'undefined') return null;
+  let lights: ReadonlyArray<Light> = [];
+  let made: Px | null = null;
+  const L0 = LIVE.get(key);
+  if (L0 && L0.stamp === stamp) return L0.s;
+  const f = make();
+  made = f.px;
+  lights = f.lights ?? [];
+  const s = livePicture(key, made.w, made.h, ax, ay, stamp, (px) => px.d.set(made!.d));
+  if (s) s.lights = lights.map((l) => ({ ...l, x: l.x / GRAIN, y: l.y / GRAIN, r: l.r / GRAIN }));
+  return s;
 }

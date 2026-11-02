@@ -7,6 +7,11 @@
 // and their own light (the pot's in flight goes with it among the figures).
 
 import { FIREPOT_BURST_FRAMES, FIREPOT_FRAMES, firepotFire, firepotFlying } from '../../art/act1_cultists';
+import { BLAZE, FIRE_CANVAS, FIREPOT_BLAZE, blazePainted, makeFlyingPotArt, potShadowPainted } from '../../art/action_f6_cult';
+import { markRing } from '../../art/action_f6_fx';
+import { toSprite } from '../../art/kit';
+import { drawSprite } from '../../engine/px';
+import { livePicture, liveFrom } from './live';
 import { lazyFrames } from '../../art/kit';
 import type { GameView } from '../../art/skin';
 import { drawLights, flipSprite } from '../../engine/px';
@@ -26,7 +31,63 @@ const BURNING = 4;
 const pots: Partial<Record<GameView, Sprite[]>> = {};
 let fires: Sprite[] | null = null;
 
-export const FX: Act1Fx = {
+// THE LOB MADE BIG (FIREPOT_BLAZE: art/action_f6_cult.ts, his yes, 2 Nov 2026): its shadow growing under it and the reach of its
+// burst marked where it will come down, filling as it comes; the pot tumbling; the whoosh as it lands ('air', by halves, before and
+// behind a figure there) and the floor burning ('floor'), painted afresh a frame at a time (render/act1_fx/live.ts).
+const SHADOWS = new Map<number, Sprite>();
+let BIG: Partial<Record<GameView, Sprite[]>> = {};
+const BLAZE_FX: Act1Fx = {
+  ground(c, m, p) {
+    if (!p || p.a1 !== 'firepot:pot' || !c.g) return;
+    const g = c.g;
+    const key = `pot:${p.x.toFixed(3)}:${p.y.toFixed(3)}`;
+    const [lx, ly] = c.at(p.x, p.y);
+    if (p.t < p.hit) {
+      // (the reach of its burst marked where it will come down, filling as it comes; its shadow under it)
+      const k = clamp01(p.t / p.hit);
+      const C = FIRE_CANVAS;
+      const mark = livePicture(`${key}:mark`, C.w, C.h, C.ax, C.ay, `${Math.floor(k * 24)}`, (px) => markRing(px, C.ax, C.ay, BLAZE.r, k));
+      if (mark) drawSprite(g, mark, lx, ly);
+      const w = potAt(p);
+      const [sx, sy] = c.at(w.x, w.y);
+      const q = Math.round(k * 24);
+      let sh = SHADOWS.get(q);
+      if (!sh) SHADOWS.set(q, (sh = toSprite(potShadowPainted(q / 24), null, 30, 15)));
+      drawSprite(g, sh, sx, sy);
+      return;
+    }
+    const s = liveFrom(`${key}:floor`, `${Math.floor((p.t - p.hit) * 30)}`, FIRE_CANVAS.ax, FIRE_CANVAS.ay, () => blazePainted(p.t - p.hit, 'floor'));
+    if (!s) return;
+    drawSprite(g, s, lx, ly);
+    drawLights(g, s, Math.round(lx), Math.round(ly), 1, 1);
+    c.spot(lx, ly - 4, 40, 0.6);
+  },
+  standing(c, m, p) {
+    if (!p || p.a1 !== 'firepot:pot') return;
+    if (p.t < p.hit) {
+      const w = potAt(p);
+      const view: GameView = backView(p.fx, p.fy) ? 'back' : 'front';
+      const clip = (BIG[view] ??= makeFlyingPotArt(view).frames as Sprite[]);
+      const sp = clip[Math.floor(p.t * 8 * BLAZE.spin) % clip.length];
+      const [sx, sy] = c.at(w.x, w.y);
+      c.stand(w.x + w.y, flipped(p.fx, p.fy) ? flipSprite(sp) : sp, sx, sy - w.z);
+      c.spot(sx, sy - w.z, 12, 0.5);
+      return;
+    }
+    const t = p.t - p.hit;
+    if (t > BLAZE.burstLong) return;
+    const key = `pot:${p.x.toFixed(3)}:${p.y.toFixed(3)}`;
+    const [sx, sy] = c.at(p.x, p.y);
+    const f = `${Math.floor(t * 30)}`;
+    const behind = liveFrom(`${key}:behind`, f, FIRE_CANVAS.ax, FIRE_CANVAS.ay, () => blazePainted(t, 'air', 'behind'));
+    const before = liveFrom(`${key}:before`, f, FIRE_CANVAS.ax, FIRE_CANVAS.ay, () => blazePainted(t, 'air', 'before'));
+    if (behind) c.stand(p.x + p.y - 0.02, behind, sx, sy);
+    if (before) c.stand(p.x + p.y + 0.02, before, sx, sy);
+    c.spot(sx, sy - 20, 70, 0.8 * (1 - t / BLAZE.burstLong));
+  },
+};
+
+const OLD_FX: Act1Fx = {
   ground(c, m, p) {
     if (!p || p.a1 !== 'firepot:pot' || !c.g) return;
     const g = c.g;
@@ -65,3 +126,9 @@ export const FX: Act1Fx = {
     c.spot(sx, sy - w.z, 12, 0.5);
   },
 };
+
+export const FX: Act1Fx = {
+  ground: (c, m, p) => (FIREPOT_BLAZE.on ? BLAZE_FX : OLD_FX).ground!(c, m, p),
+  standing: (c, m, p) => (FIREPOT_BLAZE.on ? BLAZE_FX : OLD_FX).standing!(c, m, p),
+};
+void BIG;
