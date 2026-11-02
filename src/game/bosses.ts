@@ -377,6 +377,21 @@ export const CO2 = {
   hook: { r: 0.6, ahead: 2.0, warn: 77 / 30, blowDmg: 1.2, most: 7.5 },
   ball: { warn: 1.5 },
 };
+/**
+ * THE CHAINED ONE'S NEW BODY (the art chat's art/chained_look.ts behind CHAINED_LOOK, his pick of 1 Nov 21:31, “Gaunt chain-wraith”,
+ * and his yes there to its pictures): his approved moves on a body 1.2 times as tall (LOOK_K), so his reach 1.2 times as long. On
+ * and off with its art (art/bestiary.ts useChainedLook): the lash carries him LOOK_TRAVEL; its forehand and backhand reach and his
+ * whirl's chains 1.2 times as far (the crack, the whirl's ring, the hook and the ball as they were). Off, as approved.
+ */
+export const CO_LOOK = { on: false, k: 1.2 };
+const CO2_BASE = { lash: [3.42, 3.51], travel: LASH_TRAVEL_TILES, whirl: 2.94 };
+export function useCoLook(on: boolean, travel: number): void {
+  CO_LOOK.on = on;
+  const k = on ? CO_LOOK.k : 1;
+  CO2.lash.forEach((L, i) => void (L.reach = CO2_BASE.lash[i] * k));
+  CO2.travel = on ? travel : CO2_BASE.travel;
+  CO2.whirl.reach = CO2_BASE.whirl * k;
+}
 /** (CO_ACTION) The perils his moves leave on the floor, drawn only (their blows are his own): the finisher's crack (from its lane's warning on), and a ring. */
 export const CO_CRACK = 'chained:crack';
 export const CO_RING_PERIL = 'chained:ring';

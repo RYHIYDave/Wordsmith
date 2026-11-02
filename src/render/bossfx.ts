@@ -28,6 +28,13 @@ import { flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { AMALGAM, AM_ACTION, CHAINED, CO2, CO_ACTION, FLESHMANCER, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
 import { BALL_LAND, BALL_LET, HOOK_LET, WHIRL_SPIN, actBallPath, actCollarAt, actCuffAt, actHookPath } from '../art/chained_action';
+import { CHAINED_LOOK, LOOK_K, lookBallPath, lookHookPath } from '../art/chained_look';
+/** (THE CHAINED ONE'S NEW BODY, CHAINED_LOOK: art/chained_look.ts) His hook and ball out from his hands as big as he now is, and his cuff and collar 1.2 times as far out. */
+const coHook = (t: number, reach?: number) => (CHAINED_LOOK.on ? lookHookPath(t, reach) : actHookPath(t, reach));
+const coBall = (t: number) => (CHAINED_LOOK.on ? lookBallPath(t) : actBallPath(t));
+const grown = (v: readonly number[]): [number, number, number] => (CHAINED_LOOK.on ? [v[0] * LOOK_K, v[1] * LOOK_K, v[2] * LOOK_K] : [v[0], v[1], v[2]]);
+const coCuff = (move: string, t: number): [number, number, number] => grown(actCuffAt(move, t));
+const coCollar = (move: string, t: number): [number, number, number] => grown(actCollarAt(move, t));
 import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, makeBigArmArt } from '../art/amalgam_action_fx';
 import type { GaitedKind } from '../game/bosses';
 import { backView, beside, flipped } from '../game/facing';
@@ -162,14 +169,14 @@ export class BossFx {
           const H = CHAINED.hook;
           // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY: his hook's own way, aimed as he holds it; then dragged along the floor)
           if (m.kind === 'chained' && CO_ACTION.on) {
-            const from = actHookPath(HOOK_LET + 1e-4, act.a);
+            const from = coHook(HOOK_LET + 1e-4, act.a);
             const left = from ? from.at[1] : H.from[1];
             if (T < HOOK_LET) {
               const e = B(act.a, left * 0.3);
               const s = B(0.6, left);
               drawAimLine(g, at, s.x, s.y, e.x, e.y, clamp01((T - 0.9) / (HOOK_LET - 0.9)), t);
             } else {
-              const p = actHookPath(T, act.a);
+              const p = coHook(T, act.a);
               if (p && !p.flying) {
                 const w = B(p.at[0], p.at[1]);
                 const far = B(act.a, left * 0.3);
@@ -206,7 +213,7 @@ export class BossFx {
           // (the action way: its shadow as it flies, its ring marked by the rules' red circle; dragged back along the floor)
           if (m.kind === 'chained' && CO_ACTION.on) {
             if (T >= BALL_LET && T < BALL_LAND) drawBallShadow(g, at, act.x, act.y, 0.15 + 0.85 * ((T - BALL_LET) / (BALL_LAND - BALL_LET)));
-            const b = actBallPath(T);
+            const b = coBall(T);
             if (b && !b.flying) {
               const w = B(b.at[0], b.at[1]);
               drawScrape(g, at, w.x, w.y, act.x, act.y, 1);
@@ -341,7 +348,7 @@ export class BossFx {
       } else if (act.id === 'hook') {
         // (the action way: its own path, art/chained_action.ts actHookPath)
         const co = m.kind === 'chained' && CO_ACTION.on;
-        const q = co ? actHookPath(T, act.a) : null;
+        const q = co ? coHook(T, act.a) : null;
         const p = co ? (q ? { fwd: q.at[0], left: q.at[1], flying: q.flying } : null) : hookAt(T, act.a);
         if (!p) continue;
         const w = B(p.fwd, p.left);
@@ -350,7 +357,7 @@ export class BossFx {
         const [sx, sy] = at(w.x, w.y);
         stand(w.x + w.y, turned(p.flying ? set[Math.floor((T * 2.5 * HOOK_SHOT_FRAMES) % HOOK_SHOT_FRAMES)] : set[HOOK_SHOT_FRAMES]), sx, sy - high);
       } else if (act.id === 'ball') {
-        const b = m.kind === 'chained' && CO_ACTION.on ? actBallPath(T) : coBallPath(T);
+        const b = m.kind === 'chained' && CO_ACTION.on ? coBall(T) : coBallPath(T);
         if (!b) continue;
         const w = B(b.at[0], b.at[1]);
         const set = (this.balls ?? (this.balls = { front: makeBallShotArt('front'), back: makeBallShotArt('back') }))[view];
@@ -421,21 +428,21 @@ export class BossFx {
       if (act.id === 'hook') {
         // (the action way: its own path, and the chain out from his cuff as his new pictures have it)
         const co = m.kind === 'chained' && CO_ACTION.on;
-        const q = co ? actHookPath(T, act.a) : null;
+        const q = co ? coHook(T, act.a) : null;
         const p = co ? (q ? { fwd: q.at[0], left: q.at[1], flying: q.flying } : null) : hookAt(T, act.a);
         if (!p) continue;
         const w = B(p.fwd, p.left);
         const [sx, sy] = at(w.x, w.y);
-        const c = co ? actCuffAt('hook', T) : coCuffAt('hook', T);
+        const c = co ? coCuff('hook', T) : coCuffAt('hook', T);
         const [cx, cy] = this.onPicture(at, m, c[0] / TILE3, c[1] / TILE3, c[2] / 2);
         drawChainOut(g, cx, cy, sx, sy - (q ? q.at[2] : hookHigh(T)), p.flying ? 6 : 1);
       } else if (act.id === 'ball') {
         const co = m.kind === 'chained' && CO_ACTION.on;
-        const b = co ? actBallPath(T) : coBallPath(T);
+        const b = co ? coBall(T) : coBallPath(T);
         if (!b) continue;
         const w = B(b.at[0], b.at[1]);
         const [sx, sy] = at(w.x, w.y);
-        const c = co ? actCollarAt('ball', T) : coCollarAt('ball', T);
+        const c = co ? coCollar('ball', T) : coCollarAt('ball', T);
         const [cx, cy] = this.onPicture(at, m, c[0] / TILE3, c[1] / TILE3, c[2] / 2);
         drawChainOut(g, cx, cy, sx, sy - b.at[2], b.flying ? 8 : 2);
       } else if (act.id === 'fire' || act.id === 'miniFire') {

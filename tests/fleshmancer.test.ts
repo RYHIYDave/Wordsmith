@@ -129,7 +129,8 @@ test('1. his switch goes with the rules\' (game/bosses.ts BOSSES5), and only the
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*(fleshmancer|fm_spells)['"]/.test(text)) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw him');
+  // (and his rings' hands as his moves done the action way raise them, FM_ACTION: render/act1_fx/fm.ts)
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/act1_fx/fm.ts render/bossfx.ts', 'the game files that draw him');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY CHECK: every frame, from in front and from behind, and from every frame of his stand into each and back, into his glide and out of it; his death and his teleport as he is dragged down through the floor and pushed up out of it', () => {

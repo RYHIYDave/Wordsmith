@@ -116,7 +116,9 @@ const LENGTHS = new Set(['px', 'py', 'pz', 'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'r
 test('1. the switch is off, nothing of the game imports the new look, and the game’s Chained One is every frame as he was', () => {
   assert.equal(CHAINED_LOOK.on, false, 'CHAINED_LOOK is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/chained_look.ts') continue;
+    // (brought in by the main chat behind the same switch: the bestiary's choosing of his art, and his hook, ball and chains drawn
+    // from his new hands, render/bossfx.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/chained_look.ts' || ['art/bestiary.ts', 'render/bossfx.ts'].includes(f)) continue;
     assert.ok(!/from ['"][^'"]*(chained_look|chained_look_scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   // (as docs/mockups/action_f3_chained/README.md recorded them, on 76b444b and on art/action-f3)

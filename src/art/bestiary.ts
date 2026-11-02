@@ -20,7 +20,8 @@
 
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { AM_ACTION, BOSSES5, CO_ACTION } from '../game/bosses';
+import { AM_ACTION, BOSSES5, CO_ACTION, useCoLook } from '../game/bosses';
+import { TILE3 } from './new_mobs3';
 import { ACTION_F1, ACTION_F2, ACTION_F3, ACTION_F4, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
@@ -40,6 +41,7 @@ import { BONEWARD_WALL, makeWallBonewardArt } from './action_f3_fx';
 import { DAGGER_FRENZY } from './cultists';
 import { GOLEM_HURL, makeHurlGolemArt } from './action_f4_fx';
 import { CHAINED_ACTION, makeChainedActionArt } from './chained_action';
+import { CHAINED_LOOK, LOOK_K, LOOK_TRAVEL, makeChainedLookArt } from './chained_look';
 import { AMALGAM_ACTION, makeAmalgamActionArt } from './amalgam_action';
 import { FLESH_ACTION, makeFleshmancerActionArt, makeMiniActionArt } from './fleshmancer_action';
 import { FM_ACTION } from '../game/fm_action';
@@ -111,6 +113,15 @@ export function useFmAction(on: boolean): void {
   FLESH_ACTION.on = on;
 }
 useFmAction(FM_ACTION.on);
+/**
+ * THE CHAINED ONE'S NEW BODY (art/chained_look.ts CHAINED_LOOK; the rules' numbers that grow with him, game/bosses.ts CO_LOOK): his
+ * pictures, his reach and his bar over his head together. (His moves the action way's, CO_ACTION, which it needs.)
+ */
+export function useChainedLook(on: boolean): void {
+  CHAINED_LOOK.on = on;
+  useCoLook(on, LOOK_TRAVEL / TILE3);
+  for (const f of ['chained', 'chained1', 'chained2'] as const) (FIGURE_SIZE[f] as { top: number }).top = Math.round(48 * (on ? LOOK_K : 1));
+}
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
@@ -384,9 +395,10 @@ export function makeBestiary(): Bestiary {
         // (THE HEADSMAN MADE NEW: his new look and moves, with HEADSMAN2 on: art/headsman2.ts)
         : figure === 'headsman' ? (HEADSMAN2.on ? makeHeadsman2Art() : makeHeadsmanArt3())
         // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY, behind CHAINED_ACTION with the rules' CO_ACTION: art/chained_action.ts)
-        : figure === 'chained' ? (CHAINED_ACTION.on ? makeChainedActionArt(undefined, 0) : makeChainedArt3(undefined, 0))
-        : figure === 'chained1' ? (CHAINED_ACTION.on ? makeChainedActionArt(undefined, 1) : makeChainedArt3(undefined, 1))
-        : figure === 'chained2' ? (CHAINED_ACTION.on ? makeChainedActionArt(undefined, 2) : makeChainedArt3(undefined, 2))
+        // (and his new body, behind CHAINED_LOOK: art/chained_look.ts)
+        : figure === 'chained' ? (CHAINED_LOOK.on ? makeChainedLookArt(undefined, 0) : CHAINED_ACTION.on ? makeChainedActionArt(undefined, 0) : makeChainedArt3(undefined, 0))
+        : figure === 'chained1' ? (CHAINED_LOOK.on ? makeChainedLookArt(undefined, 1) : CHAINED_ACTION.on ? makeChainedActionArt(undefined, 1) : makeChainedArt3(undefined, 1))
+        : figure === 'chained2' ? (CHAINED_LOOK.on ? makeChainedLookArt(undefined, 2) : CHAINED_ACTION.on ? makeChainedActionArt(undefined, 2) : makeChainedArt3(undefined, 2))
         : figure === 'amalgam' ? (AMALGAM_ACTION.on ? makeAmalgamActionArt(MONSTERS.amalgam.speed) : makeAmalgamArt3())
         : figure === 'mite' ? makeBoneMiteArt()
         : figure === 'beast' ? makeBoneBeastArt3()

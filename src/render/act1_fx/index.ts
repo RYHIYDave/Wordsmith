@@ -18,7 +18,7 @@ import { FX as brute } from './brute';
 // FLOOR 4, MORE ACTION (ACTION_F4): the Ossuary Golem's skeleton hurl
 import { FX as golem } from './golem';
 // THE FLESHMANCER'S MOVES DONE THE ACTION WAY (FM_ACTION): his shards, rings, fire, heaps, pit and rise (and the mini's fire)
-import { FX as fleshmancer } from './fleshmancer';
+import { FX as fleshmancer } from './fm';
 import { FX as chanter } from './chanter';
 import { FX as firepot } from './firepot';
 import { FX as qgolem } from './qgolem';

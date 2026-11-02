@@ -151,7 +151,9 @@ function miniShape(): BossShape {
 
 test('1. the switch is off, nothing of the game imports the mock-up, the rest of him is the game’s own and the game’s moves are kept', () => {
   assert.equal(FLESH_ACTION.on, false, 'FLESH_ACTION is off');
-  const mock = ['art/fleshmancer_action.ts', 'art/fleshmancer_action_fx.ts'];
+  // (and what the main chat brought in behind the same switch with the rules' FM_ACTION: the bestiary's choosing of his art, his
+  // rules, game/fm_action.ts and game/bosses.ts, and what he sends out drawn, render/act1_fx/fm.ts)
+  const mock = ['art/fleshmancer_action.ts', 'art/fleshmancer_action_fx.ts', 'art/bestiary.ts', 'game/fm_action.ts', 'game/bosses.ts', 'render/act1_fx/fm.ts'];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || mock.includes(f)) continue;
     assert.ok(!/from ['"][^'"]*(fleshmancer_action|fleshmancer_action_fx|action_f5_fm_scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);

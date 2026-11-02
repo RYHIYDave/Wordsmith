@@ -2,7 +2,7 @@
 // art/fleshmancer_action_fx.ts behind FLESH_ACTION; his yes to it there, 2 Nov 2026, “Yes, that's it (Recommended)”, the fire whip
 // faster than he can run, as drawn). Behind this switch (off), with the art's (art/bestiary.ts useFmAction). His acts (game/bosses.ts
 // FM2_ACTS, fmActing) leave these perils of kind 'act1', stepped here (game/bosses.ts stepPerils) and drawn by
-// render/act1_fx/fleshmancer.ts; each one's clock is his act's own (0 as it begins) unless said:
+// render/act1_fx/fm.ts; each one's clock is his act's own (0 as it begins) unless said:
 //   FM_SHARDS  his two fans of bone shards: drawn up out of the floor and hung before him, each its lane marked; flung at his hammer
 //              (SHARD_HITS), 15 tiles a second for 10; a hero within SHARDS.r of a flying shard is struck, once by each. `b` the
 //              first fan's aim (radians on the floor, taken as he begins), `c` the second's (taken as it is drawn up, in the first's
