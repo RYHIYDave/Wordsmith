@@ -130,16 +130,16 @@ export function makeChainedLookArt(pace = CHAINED_PACE, freed: CoFreed = 0): Act
 // =============================================================================================
 // HIS BODY: its sizes (the figure's own lengths, as big as he now is), for the painter and for the checks alike
 
-/** Each limb's skin from ring to ring: along the bone (0 at its root, 1 at its end), how far out it is to its front and to its side, and how far its middle is put to its front. */
-type Section = readonly [number, number, number, number?];
-/** THE THIGH: lean, a hollow at its inside, narrowing to a bony knee. */
-const THIGH: ReadonlyArray<Section> = [[-0.04, 5.6, 5.4, 0.2], [0.18, 5.0, 4.6, 0.5], [0.5, 4.1, 3.7, 0.4], [0.8, 3.3, 3.2, 0.2], [1.0, 3.4, 3.5, 0.6]];
-/** THE SHIN: the bone sharp at its front, the calf a knot of sinew behind, the ankle thin. */
-const SHIN: ReadonlyArray<Section> = [[0.0, 3.4, 3.5, 0.6], [0.12, 3.0, 3.0, -0.2], [0.32, 3.4, 2.9, -1.1], [0.6, 2.5, 2.3, -0.3], [0.88, 2.0, 2.0, 0], [1.0, 2.1, 2.4, 0]];
-/** THE UPPER ARM: a bony shoulder, the arm thin under it. */
-const UPPER: ReadonlyArray<Section> = [[-0.1, 4.0, 4.2, 0], [0.16, 3.5, 3.6, 0.3], [0.5, 2.8, 2.9, 0.3], [0.86, 2.5, 2.6, 0], [1.0, 2.7, 2.8, -0.3]];
-/** THE FOREARM: sinewy below the elbow, wasted to a thin wrist. */
-const FORE: ReadonlyArray<Section> = [[0.0, 2.7, 2.8, -0.3], [0.14, 3.0, 3.1, -0.1], [0.45, 2.6, 2.7, 0], [0.78, 2.0, 2.2, 0], [0.92, 1.9, 2.1, 0]];
+/** Each limb's skin from ring to ring: along the bone (0 at its root, 1 at its end), how far out it is to its front and to its side, and how far its middle is put to its front and to its side. */
+type Section = readonly [number, number, number, number?, number?];
+/** THE THIGH: lean, a stringy swell down its front, wasted thin just above the knee; the knee's two knobs wide. */
+const THIGH: ReadonlyArray<Section> = [[-0.04, 5.6, 5.4, 0.2], [0.16, 5.0, 4.6, 0.7, 0.2], [0.36, 4.3, 3.8, 0.9, -0.2], [0.56, 3.5, 3.4, 0.5, 0.1], [0.74, 2.8, 2.9, 0.2], [0.88, 2.5, 2.8, 0], [1.0, 3.4, 3.9, 0.5]];
+/** THE SHIN: the knee's knobs; thin under them; the calf a knot of sinew behind; wasted to a thin ankle. */
+const SHIN: ReadonlyArray<Section> = [[0.0, 3.4, 3.9, 0.5], [0.09, 2.7, 3.0, 0.1], [0.24, 3.2, 3.1, -1.1, 0.2], [0.38, 3.0, 2.8, -1.1, -0.2], [0.55, 2.3, 2.3, -0.5], [0.74, 1.8, 1.9, -0.1], [0.9, 1.7, 1.8, 0], [1.0, 2.0, 2.4, 0]];
+/** THE UPPER ARM: a bony cap of a shoulder; pinched under it; the string of muscle at its back; thin above the elbow; the elbow's knob. */
+const UPPER: ReadonlyArray<Section> = [[-0.08, 4.3, 4.4, 0], [0.12, 3.8, 3.8, 0.2], [0.27, 2.5, 2.4, 0.2, -0.2], [0.45, 2.6, 3.1, -0.7, 0.5], [0.64, 2.3, 2.4, -0.5, 0.1], [0.82, 1.9, 1.9, 0], [1.0, 2.6, 3.2, -0.5]];
+/** THE FOREARM: the elbow's knob; a stringy swell below it, to the outside; wasted to a thin wrist; the wrist's knob. */
+const FORE: ReadonlyArray<Section> = [[0.0, 2.6, 3.2, -0.5], [0.12, 3.0, 3.6, -0.1, 0.6], [0.28, 2.7, 3.0, 0, 0.45], [0.48, 2.1, 2.2, 0, 0.1], [0.7, 1.6, 1.6, 0], [0.86, 1.6, 1.7, 0], [0.94, 1.9, 2.3, 0, 0.25]];
 /** How thick his own chain wound round a limb stands off it (a link's thickness and a little). */
 const WRAP_OFF = 1.15;
 /** His skin and what is on him, as the checks see them (radii, his lengths): a limb, at its thickest, with the chain wound round it. */
@@ -155,10 +155,12 @@ export const BLACK_IRON: Ramp = ['#0b0a12', '#191624', '#2e2a3f', '#565170', '#8
 /** Rags, grey-brown and filthy. */
 const RAG: Ramp = ['#17121b', '#17121b', '#2f2632', '#4a3e4c', '#4a3e4c'];
 const HAIR: Ramp = ['#0b0911', '#0b0911', '#1c1726', '#302a3e', '#302a3e'];
+/** His nails, long and dark, hooked like claws. */
+const CLAW: Ramp = ['#130f19', '#1d1826', '#332c40', '#4f4760', '#6d6582'];
 /** The dark inside his cage, and the pink burning in it. */
 const CAGE_DARK = '#140a1a';
 /** How much of the light is taken off his skin: so that it is the mid grey that most of him is, the light catching only his bones' edges. */
-const SKIN_SHADE = 0.06;
+const SKIN_SHADE = 0.17;
 
 // =============================================================================================
 // THE PAINTER
@@ -171,9 +173,14 @@ function along(a: V3, b: V3, front: V3): { d: V3; f: V3; l: V3 } {
   return { d, f, l: norm(cross(d, f)) };
 }
 /** A limb's skin as rings from `a` to `b` (its front `front`): one ring for each section. */
-function limbRings(a: V3, b: V3, front: V3, sections: ReadonlyArray<Section>, thin = 1): Ring[] {
+function limbRings(a: V3, b: V3, front: V3, sections: ReadonlyArray<Section>, thin = 1, sideSign = 1): Ring[] {
   const { f, l } = along(a, b, front);
-  return sections.map(([t, rf, rl, off = 0]) => ({ c: add(lerp3(a, b, t), mul(f, off)), u: mul(f, rf * thin), v: mul(l, rl * thin) }));
+  return sections.map(([t, rf, rl, off = 0, offL = 0]) => ({ c: add(lerp3(a, b, t), add(mul(f, off), mul(l, offL * sideSign))), u: mul(f, rf * thin), v: mul(l, rl * thin) }));
+}
+/** A KNOT ON A LIMB from `a` to `b` (front `front`), `t` along it: a swell of stringy muscle or a knob of bone, `f` to its front and `l` to its side, `r` its three half-sizes (front, side, along the bone): it breaks the limb's outline. */
+function knot(put: Put, part: string, piece: string, a: V3, b: V3, front: V3, t: number, f: number, l: number, r: V3, skin: Ramp): void {
+  const fr = along(a, b, front);
+  put(part, piece, { k: 'ball', c: add(lerp3(a, b, t), add(mul(fr.f, f), mul(fr.l, l))), ax: [mul(fr.f, r[0]), mul(fr.l, r[1]), mul(fr.d, r[2])], skin });
 }
 /** Where a limb's two bones bend toward: the way from the line between its ends out to its middle joint (or `or`, if it is straight). */
 function bendOf(a: V3, m: V3, b: V3, or: V3): V3 {
@@ -276,14 +283,23 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
     const kneeFwd = bendOf(hip, knee, ankle, fl0);
     // (the knee bends forward: the thigh's front is that way, the shin's is too)
     const ramp = skinAt(lerp3(hip, ankle, 0.5));
-    put(`leg${side}`, `leg${side}`, { k: 'cloth', rings: limbRings(hip, knee, kneeFwd, THIGH), ramp, look: { lift: 0, shade: SKIN_SHADE } });
-    put(`leg${side}`, `shin${side}`, { k: 'cloth', rings: limbRings(knee, ankle, kneeFwd, SHIN), ramp, look: { lift: 0, shade: SKIN_SHADE } });
+    const outL = L ? 1 : -1;
+    put(`leg${side}`, `leg${side}`, { k: 'cloth', rings: limbRings(hip, knee, kneeFwd, THIGH, 1, outL), ramp, look: { lift: 0, shade: SKIN_SHADE } });
+    put(`leg${side}`, `shin${side}`, { k: 'cloth', rings: limbRings(knee, ankle, kneeFwd, SHIN, 1, outL), ramp, look: { lift: 0, shade: SKIN_SHADE } });
     // (the edge of the shin bone down its front, catching the light)
     for (let i = 0; i <= 14; i++) put(`leg${side}`, `shin${side}`, { k: 'dot', p: add(lerp3(knee, ankle, 0.12 + i * 0.05), mul(kneeFwd, 3.0 - i * 0.07)), c: GAUNT[3], facing: kneeFwd });
-    // the kneecap, bony, and the knobs of his ankle
-    put(`leg${side}`, `leg${side}`, { k: 'ball', c: add(knee, mul(kneeFwd, 2.3)), ax: sphere(2.2), skin: ramp });
+    // (the stringy muscle of his thigh down its front and outside; the calf's knot behind, and its inner head)
+    knot(put, `leg${side}`, `leg${side}`, hip, knee, kneeFwd, 0.32, 2.6, outL * 2.2, [2.6, 2.6, 6.0], ramp);
+    knot(put, `leg${side}`, `leg${side}`, hip, knee, kneeFwd, 0.52, 0.6, -outL * 2.8, [2.0, 2.0, 4.6], ramp);
+    // (kept within the old shin's reach, which his chains were kept out of: nothing of them goes into his calf)
+    knot(put, `leg${side}`, `shin${side}`, knee, ankle, kneeFwd, 0.27, -2.2, outL * 0.8, [2.2, 2.2, 5.0], ramp);
+    knot(put, `leg${side}`, `shin${side}`, knee, ankle, kneeFwd, 0.33, -1.7, -outL * 2.0, [1.8, 1.8, 3.8], ramp);
+    // the kneecap and the knee's two knobs, bony, breaking the line of the leg; the knobs of his ankle
     const { l: al } = along(knee, ankle, kneeFwd);
-    for (const sg of [1, -1]) put(`leg${side}`, `shin${side}`, { k: 'ball', c: add(lerp3(knee, ankle, 0.95), mul(al, sg * 1.9)), ax: sphere(1.15), skin: ramp });
+    const { l: tl } = along(hip, knee, kneeFwd);
+    put(`leg${side}`, `leg${side}`, { k: 'ball', c: add(knee, mul(kneeFwd, 2.6)), ax: [mul(kneeFwd, 1.9), mul(tl, 2.3), mul(norm(sub(hip, knee)), 2.6)], skin: ramp });
+    for (const sg of [1, -1]) put(`leg${side}`, `leg${side}`, { k: 'ball', c: add(lerp3(knee, hip, 0.05), add(mul(tl, sg * 3.6), mul(kneeFwd, 0.4))), ax: sphere(1.9), skin: ramp });
+    for (const sg of [1, -1]) put(`leg${side}`, `shin${side}`, { k: 'ball', c: add(lerp3(knee, ankle, 0.95), mul(al, sg * 2.2)), ax: sphere(1.45), skin: ramp });
     // the foot: long and bony, its arch high, its toes long and splayed, curled to grip the floor
     const fwd = norm(sub(toe, heel), [1, 0, 0]);
     const side3 = norm(Math.abs(fwd[2]) < 0.95 ? [-fwd[1], fwd[0], 0] : cross(hu, fwd), [0, 1, 0]);
@@ -295,16 +311,20 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
       { c: add(toe, mul(up3, 1.4)), u: mul(up3, 1.3), v: mul(side3, 3.4) },
     ];
     put(`leg${side}`, `foot${side}`, { k: 'cloth', rings: footRings, ramp, look: { lift: 0.2 } });
-    for (let i = 0; i < 4; i++) {
-      const k = (i - 1.6) / 1.6;
-      const base = add(add(toe, mul(side3, k * 2.6)), mul(up3, 1.2));
-      const longT = 3.6 - Math.abs(k) * 0.9 + (i === 1 ? 0.5 : 0);
-      const splay = norm(add(fwd, mul(side3, k * 0.22)));
-      const knuckle = add(add(base, mul(splay, longT * 0.55)), mul(up3, 0.9));
+    for (let i = 0; i < 5; i++) {
+      // (the big toe on the inside: his left foot's left is its outside)
+      const k = ((i - 2) / 2) * (L ? -1 : 1);
+      const base = add(add(toe, mul(side3, k * 3.0)), mul(up3, 1.3));
+      const longT = [5.4, 4.8, 4.4, 3.9, 3.3][i];
+      const splay = norm(add(fwd, mul(side3, k * 0.26)));
+      const knuckle = add(add(base, mul(splay, longT * 0.5)), mul(up3, 1.5));
       const tip = add(base, mul(splay, longT));
-      const tipDown: V3 = [tip[0], tip[1], Math.max(0.7, Math.min(tip[2], 1.0))];
-      put(`leg${side}`, `foot${side}`, { k: 'rod', a: base, b: knuckle, ra: 1.05, rb: 0.95, ramp });
-      put(`leg${side}`, `foot${side}`, { k: 'rod', a: knuckle, b: tipDown, ra: 0.95, rb: 0.6, ramp });
+      const tipDown: V3 = [tip[0], tip[1], Math.max(0.7, Math.min(tip[2], 0.9))];
+      const r0 = i === 0 ? 1.45 : 1.15;
+      put(`leg${side}`, `foot${side}`, { k: 'rod', a: base, b: knuckle, ra: r0, rb: r0 * 0.85, ramp });
+      put(`leg${side}`, `foot${side}`, { k: 'ball', c: knuckle, ax: sphere(r0 * 0.95), skin: ramp });
+      put(`leg${side}`, `foot${side}`, { k: 'rod', a: knuckle, b: tipDown, ra: r0 * 0.8, rb: 0.6, ramp });
+      put(`leg${side}`, `foot${side}`, { k: 'rod', a: lerp3(knuckle, tipDown, 0.7), b: add(tipDown, mul(splay, 0.6)), ra: 0.7, rb: 0.45, ramp: CLAW });
     }
     // the iron on his ankle, a broken stub of chain hanging from it
     const ironC = lerp3(ankle, knee, 0.1);
@@ -313,7 +333,7 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
     const stub = add(ironC, mul(sl, (L ? 1 : -1) * 3.3));
     chainAlong(put, `irons${side}`, [stub, add(stub, [-1.2 + lag[0] * 0.4, 0, -2.6]), add(stub, [-3.2 + lag[0] * 0.8, L ? 1 : -1, -3.8])], 0.9);
     // HIS OWN CHAIN WOUND ROUND HIS SHIN, from the iron up toward the knee; and twice round the thigh
-    wound(put, `wrapShin${side}`, knee, ankle, kneeFwd, 0.42, 0.84, 2.6, 2.3, 1.9, L ? 0.6 : 2.2);
+    wound(put, `wrapShin${side}`, knee, ankle, kneeFwd, 0.56, 0.86, 2.2, 1.8, 1.7, L ? 0.6 : 2.2);
     wound(put, `wrapThigh${side}`, hip, knee, kneeFwd, 0.5, 0.6, 4.0, 3.8, 1.0, L ? 1.4 : 4.0);
   }
 
@@ -344,13 +364,14 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
   const be = s.belly;
   const chestTop = lerp3(s.ribs, s.neck, 0.78);
   const trunk: Ring[] = [
-    { c: add(s.pelvis, mul(hu, -B.waist * 0.2)), u: mul(hf, B.pelvisDeep * 0.7), v: mul(hl, B.pelvisHalf * 0.74) },
-    { c: add(s.pelvis, mul(hu, B.waist * 0.36)), u: mul(hf, B.pelvisDeep * 0.76), v: mul(hl, B.pelvisHalf * 0.84) },
-    { c: add(s.waist, mul(be[0], -B.waistDeep * 0.22)), u: mul(be[0], B.waistDeep * 0.62), v: mul(be[1], B.waistHalf * 0.7) },
-    { c: add(s.ribs, mul(cu, -B.ribs * 0.12)), u: mul(cf, B.ribDeep * 0.92), v: mul(cl, B.ribHalf * 0.84) },
-    { c: add(s.ribs, mul(cu, B.chest * 0.38)), u: mul(cf, B.ribDeep * 1.0), v: mul(cl, B.ribHalf * 0.9) },
-    { c: add(chestTop, mul(cf, -0.9)), u: mul(cf, B.ribDeep * 0.9), v: mul(cl, B.shoulderHalf * 0.52) },
-    { c: add(s.neck, add(mul(cu, -1.2), mul(cf, -1.8))), u: mul(cf, B.ribDeep * 0.6), v: mul(cl, B.shoulderHalf * 0.34) },
+    { c: add(s.pelvis, mul(hu, -B.waist * 0.2)), u: mul(hf, B.pelvisDeep * 0.66), v: mul(hl, B.pelvisHalf * 0.7) },
+    { c: add(s.pelvis, mul(hu, B.waist * 0.36)), u: mul(hf, B.pelvisDeep * 0.7), v: mul(hl, B.pelvisHalf * 0.8) },
+    { c: add(s.waist, mul(be[0], -B.waistDeep * 0.34)), u: mul(be[0], B.waistDeep * 0.5), v: mul(be[1], B.waistHalf * 0.55) },
+    { c: add(s.ribs, add(mul(cu, -B.ribs * 0.1), mul(cf, -0.4))), u: mul(cf, B.ribDeep * 0.9), v: mul(cl, B.ribHalf * 0.84) },
+    { c: add(s.ribs, mul(cu, B.chest * 0.2)), u: mul(cf, B.ribDeep * 1.0), v: mul(cl, B.ribHalf * 0.96) },
+    { c: add(s.ribs, add(mul(cu, B.chest * 0.52), mul(cf, -0.3))), u: mul(cf, B.ribDeep * 0.96), v: mul(cl, B.ribHalf * 0.8) },
+    { c: add(chestTop, add(mul(cf, -1.9), mul(cu, 0.6))), u: mul(cf, B.ribDeep * 0.98), v: mul(cl, B.shoulderHalf * 0.5) },
+    { c: add(s.neck, add(mul(cu, -1.0), mul(cf, -2.6))), u: mul(cf, B.ribDeep * 0.64), v: mul(cl, B.shoulderHalf * 0.34) },
   ];
   const trunkRamp = GAUNT;
   put('body', 'body', { k: 'cloth', rings: trunk, ramp: trunkRamp, look: { lift: 0.02, shade: SKIN_SHADE + 0.08 } });
@@ -374,7 +395,7 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
     const n = 60;
     for (let i = 0; i <= n; i++) {
       const u = i / n;
-      const { p, out } = onTrunk(4.9 - 2.5 * u, (150 - 560 * u) * D, WRAP_OFF + 0.3);
+      const { p, out } = onTrunk(5.7 - 3.3 * u, (150 - 560 * u) * D, WRAP_OFF + 0.3);
       pts.push(p);
       outs.push(out);
     }
@@ -403,16 +424,29 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
     put('body', 'body', { k: 'rod', a: notch, b: add(sh, add(mul(cf, 2.4), mul(cu, 1.0))), ra: 1.25, rb: 1.5, ramp: trunkRamp });
     // a shoulder blade, standing out of his back
     const sgn = side === 'L' ? 1 : -1;
-    put('body', 'body', { k: 'ball', c: add(lerp3(s.ribs, s.neck, 0.62), add(mul(cf, -B.ribDeep * 0.82), mul(cl, sgn * B.ribHalf * 0.5))), ax: [mul(cf, 2.4), mul(cl, 4.4), mul(cu, 5.6)], skin: trunkRamp });
+    const blade = add(lerp3(s.ribs, s.neck, 0.6), add(mul(cf, -B.ribDeep * 0.98), mul(cl, sgn * B.ribHalf * 0.52)));
+    const bl = norm(add(mul(cl, sgn), mul(cu, 0.35)));
+    put('body', 'body', { k: 'ball', c: blade, ax: [mul(cf, 2.9), mul(bl, 4.6), mul(norm(cross(cf, bl)), 6.2)], skin: trunkRamp });
+    // (the shadow under its lower, inner edge)
+    for (let k = 0; k <= 12; k++) {
+      const a = (-30 - k * 11) * D;
+      const p = add(blade, add(mul(bl, Math.cos(a) * 4.4 * sgn * sgn), add(mul(norm(cross(cf, bl)), Math.sin(a) * 6.0), mul(cf, -1.6))));
+      put('body', 'body', { k: 'dot', p, c: GAUNT[1], facing: mul(cf, -1) });
+    }
     // a hip bone, standing out over the rags
-    put('body', 'body', { k: 'ball', c: add(s.pelvis, add(mul(hu, B.waist * 0.42), add(mul(hl, sgn * B.pelvisHalf * 0.8), mul(hf, 1.6)))), ax: sphere(2.0), skin: trunkRamp });
+    put('body', 'body', { k: 'ball', c: add(s.pelvis, add(mul(hu, B.waist * 0.44), add(mul(hl, sgn * B.pelvisHalf * 0.8), mul(hf, 1.4)))), ax: [mul(hf, 2.6), mul(hl, 1.9), mul(hu, 2.0)], skin: trunkRamp });
+    // the hollow under his collarbone
+    for (let k = 0; k <= 10; k++) {
+      const p = add(lerp3(add(s.neck, add(mul(cf, B.ribDeep * 0.5), mul(cu, -2.2))), add(sh, add(mul(cf, 2.4), mul(cu, 1.0))), 0.15 + k * 0.07), add(mul(cu, -2.3), mul(cf, 0.2)));
+      put('body', 'body', { k: 'dot', p, c: GAUNT[1], facing: cf });
+    }
   }
   // (the knobs of his spine, down his bent back)
   for (let i = 0; i < 8; i++) {
     const k = 0.04 + i * 0.125;
     const cc = lerp3(s.waist, s.neck, k);
     const deep = k < 0.25 ? B.waistDeep * 0.55 : B.ribDeep * (0.84 + 0.1 * Math.sin(k * Math.PI));
-    put('body', 'body', { k: 'ball', c: add(cc, mul(k < 0.25 ? be[0] : cf, -deep)), ax: sphere(1.45), skin: trunkRamp });
+    put('body', 'body', { k: 'ball', c: add(cc, mul(k < 0.25 ? be[0] : cf, -deep - (k < 0.25 ? 0 : 0.3))), ax: sphere(1.7), skin: trunkRamp });
   }
   // HIS RIBS, grooved in his skin: five each side, sloping down from his back round to his breastbone; the hollow under them
   {
@@ -430,21 +464,53 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
           put('body', 'body', { k: 'dot', p, c: GAUNT[1], facing: n });
         }
         // (and round his back, from his spine: as starved as he is, the middle three show there too, fainter)
-        for (let k = 0; k <= 12 && i >= 1 && i <= 3; k++) {
-          const a = (118 + k * 4.6) * D;
+        for (let k = 0; k <= 18; k++) {
+          const a = (92 + k * 4.4) * D;
           const h = h0 + 1.2 + 1.4 * Math.cos(a);
           const rf = B.ribDeep * 0.98;
           const rl = B.ribHalf * 0.88;
           const n = norm(add(mul(cf, Math.cos(a) / rf), mul(cl, (sg * Math.sin(a)) / rl)));
           const p = add(ribC(h), add(mul(cf, Math.cos(a) * rf), mul(cl, sg * Math.sin(a) * rl)));
-          put('body', 'body', { k: 'dot', p, c: GAUNT[2], facing: n });
+          put('body', 'body', { k: 'dot', p, c: k < 7 ? GAUNT[1] : GAUNT[2], facing: n });
         }
+      }
+    }
+    // (his flanks, pulled in under the ribs: in shadow down each side of his waist)
+    for (const sg of [1, -1]) {
+      for (let k = 0; k <= 14; k++) {
+        const u = k / 14;
+        const c = lerp3(add(s.waist, mul(be[0], -B.waistDeep * 0.34)), add(s.ribs, mul(cu, -B.ribs * 0.1)), u);
+        const half = B.waistHalf * 0.55 + (B.ribHalf * 0.84 - B.waistHalf * 0.55) * u;
+        for (const a of [70, 82, 98]) {
+          const ar = a * D;
+          const n = norm(add(mul(cf, Math.cos(ar)), mul(cl, sg * Math.sin(ar))));
+          put('body', 'body', { k: 'dot', p: add(c, add(mul(cf, Math.cos(ar) * B.waistDeep * 0.6), mul(cl, sg * Math.sin(ar) * half))), c: a === 82 ? GAUNT[1] : GAUNT[2], facing: n });
+        }
+      }
+    }
+    // (the hollow under his rib cage, in front: his belly sunk in under it)
+    for (let k = 0; k <= 22; k++) {
+      const a = (-58 + k * 5.3) * D;
+      for (const dh of [-1.4, -2.6]) {
+        const n = norm(add(mul(cf, Math.cos(a)), mul(cl, Math.sin(a))));
+        const p = add(ribC(B.chest * 0.02 - 3.2 + dh + 2.0 * (1 - Math.cos(a))), add(mul(cf, Math.cos(a) * B.ribDeep * 0.9), mul(cl, Math.sin(a) * B.ribHalf * 0.8)));
+        put('body', 'body', { k: 'dot', p, c: dh < -2 ? GAUNT[0] : GAUNT[1], facing: n });
       }
     }
     // (the groove of his spine, between the knobs)
     for (let k = 0; k <= 16; k++) {
       const cc = lerp3(s.ribs, s.neck, k / 16);
-      put('body', 'body', { k: 'dot', p: add(cc, mul(cf, -B.ribDeep * 0.97)), c: GAUNT[1], facing: mul(cf, -1) });
+      for (const sg of [0.9, -0.9]) put('body', 'body', { k: 'dot', p: add(cc, add(mul(cf, -B.ribDeep * 1.0), mul(cl, sg))), c: GAUNT[1], facing: mul(cf, -1) });
+      // (the hollows either side of it, between his spine and his shoulder blades)
+      for (const sg of [3.2, -3.2]) if (k > 4) put('body', 'body', { k: 'dot', p: add(cc, add(mul(cf, -B.ribDeep * 0.97), mul(cl, sg))), c: GAUNT[2], facing: mul(cf, -1) });
+    }
+    // (and on down the small of his back to his hips, between the two ridges of sinew either side of it)
+    for (let k = 0; k <= 12; k++) {
+      const cc = lerp3(add(s.pelvis, mul(hu, B.waist * 0.4)), s.ribs, k / 12);
+      const back = mul(be[0], -1);
+      const deep = B.waistDeep * 0.5 + (B.ribDeep * 0.9 - B.waistDeep * 0.5) * (k / 12);
+      put('body', 'body', { k: 'dot', p: add(cc, add(mul(be[0], -deep), mul(be[1], 0.5))), c: GAUNT[0], facing: back });
+      put('body', 'body', { k: 'dot', p: add(cc, add(mul(be[0], -deep), mul(be[1], -0.5))), c: GAUNT[1], facing: back });
     }
     // (his breastbone: a groove down the middle of his chest)
     for (let k = 0; k <= 10; k++) {
@@ -464,50 +530,65 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
     // (the inside of the elbow is its front: the way the hand has come round to)
     const inside = bendOf(sh, el, hand, cf);
     const ramp = skinAt(el);
-    put(`arm${side}`, `upper${side}`, { k: 'cloth', rings: limbRings(sh, el, inside, UPPER), ramp, look: { lift: 0, shade: SKIN_SHADE } });
+    const outA = L ? 1 : -1;
+    put(`arm${side}`, `upper${side}`, { k: 'cloth', rings: limbRings(sh, el, inside, UPPER, 1, outA), ramp, look: { lift: 0, shade: SKIN_SHADE } });
     const wrist = add(hand, mul(fore, -1.4 * K));
-    put(`arm${side}`, `fore${side}`, { k: 'cloth', rings: limbRings(el, wrist, inside, FORE), ramp, look: { lift: 0, shade: SKIN_SHADE } });
-    // the point of the elbow, sharp, behind
-    put(`arm${side}`, `fore${side}`, { k: 'ball', c: add(el, mul(inside, -2.1)), ax: sphere(1.7), skin: ramp });
+    put(`arm${side}`, `fore${side}`, { k: 'cloth', rings: limbRings(el, wrist, inside, FORE, 1, outA), ramp, look: { lift: 0, shade: SKIN_SHADE } });
+    // (the string of muscle down the back of his upper arm; the swell below his elbow, to the outside, and its inner head; the two knobs of his elbow)
+    knot(put, `arm${side}`, `upper${side}`, sh, el, inside, 0.44, -2.0, outA * 1.6, [2.2, 2.2, 4.6], ramp);
+    knot(put, `arm${side}`, `upper${side}`, sh, el, inside, 0.3, 1.3, outA * 1.9, [1.7, 1.7, 3.4], ramp);
+    knot(put, `arm${side}`, `fore${side}`, el, wrist, inside, 0.17, 1.9, outA * 1.9, [2.1, 2.1, 4.4], ramp);
+    knot(put, `arm${side}`, `fore${side}`, el, wrist, inside, 0.24, 1.7, -outA * 1.8, [1.8, 1.8, 3.4], ramp);
+    knot(put, `arm${side}`, `fore${side}`, el, wrist, inside, 0.3, -1.9, outA * 0.6, [1.6, 1.6, 3.6], ramp);
+    for (const sg of [1, -1]) knot(put, `arm${side}`, `fore${side}`, el, wrist, inside, 0.0, -0.4, sg * 3.3, [1.6, 1.6, 1.8], ramp);
+    // the point of the elbow, sharp, behind; the knob of the wrist, outside
+    put(`arm${side}`, `fore${side}`, { k: 'ball', c: add(el, mul(inside, -2.6)), ax: [mul(inside, 2.0), mul(along(el, wrist, inside).l, 1.6), mul(fore, 1.8)], skin: ramp });
+    put(`arm${side}`, `fore${side}`, { k: 'ball', c: add(lerp3(el, wrist, 0.92), mul(along(el, wrist, inside).l, outA * 2.2)), ax: sphere(1.5), skin: ramp });
     // the iron cuff, heavy, its ring where the chain hangs
     const cuff = cuffOf(s, side);
     const { f: ff0, l: fl1 } = along(el, hand, inside);
     put(`cuff${side}`, `cuff${side}`, { k: 'cloth', rings: [{ c: add(cuff, mul(fore, -2.6)), u: mul(ff0, 3.1), v: mul(fl1, 3.2) }, { c: add(cuff, mul(fore, 2.2)), u: mul(ff0, 2.9), v: mul(fl1, 3.0) }], ramp: BLACK_IRON, look: { lift: 0 } });
     for (const k of [-2.3, 1.9]) put(`cuff${side}`, `cuff${side}`, { k: 'band', ring: { c: add(cuff, mul(fore, k)), u: mul(ff0, 3.3), v: mul(fl1, 3.4) }, ramp: BLACK_IRON, rows: 1 });
     // HIS OWN CHAIN WOUND UP HIS FOREARM from the cuff, like a bandage; and round his upper arm
-    wound(put, `wrapFore${side}`, el, wrist, inside, 0.2, 0.62, 2.95, 2.4, 2.2, L ? 0.3 : 2.6);
+    wound(put, `wrapFore${side}`, el, wrist, inside, 0.44, 0.78, 2.35, 1.75, 1.9, L ? 0.3 : 2.6);
     wound(put, `wrapUpper${side}`, sh, el, inside, 0.48, 0.6, 2.9, 2.75, 1.0, L ? 2.0 : 5.0);
     // THE HAND: a great bony palm; four long fingers, knuckled, hooked like claws; a thumb
     const palmUp = norm(sub(cf, mul(fore, dot(cf, fore))), cu);
     const across = norm(cross(fore, palmUp), cl);
     const curl = 0.5 + 0.22 * Math.sin(wave * 3 + (L ? 0 : 2)) * (1 - clamp01(q.draw));
     const palm: Ring[] = [
-      { c: add(hand, mul(fore, -0.6)), u: mul(palmUp, 1.9), v: mul(across, 2.4) },
-      { c: add(hand, mul(fore, 2.6)), u: mul(palmUp, 2.1), v: mul(across, 3.6) },
-      { c: add(hand, mul(fore, 5.4)), u: mul(palmUp, 1.7), v: mul(across, 3.9) },
+      { c: add(hand, mul(fore, -0.8)), u: mul(palmUp, 2.0), v: mul(across, 2.6) },
+      { c: add(hand, mul(fore, 2.8)), u: mul(palmUp, 2.4), v: mul(across, 4.3) },
+      { c: add(hand, mul(fore, 6.2)), u: mul(palmUp, 1.9), v: mul(across, 4.7) },
     ];
     const hr = skinAt(hand);
-    put(`hand${side}`, `hand${side}`, { k: 'cloth', rings: palm, ramp: hr, look: { lift: 0 } });
+    put(`hand${side}`, `hand${side}`, { k: 'cloth', rings: palm, ramp: hr, look: { lift: 0, shade: SKIN_SHADE * 0.6 } });
     for (let i = 0; i < 4; i++) {
       const k = (i - 1.5) / 1.5;
-      const base = add(add(hand, mul(fore, 5.6)), mul(across, k * 2.8));
-      const longF = 1 - Math.abs(k) * 0.12;
-      const d1 = norm(add(fore, mul(palmUp, -curl * 0.5)));
-      const k1 = add(base, mul(d1, 4.4 * longF));
+      const base = add(add(hand, mul(fore, 6.4)), mul(across, k * 3.3));
+      const longF = 1 - Math.abs(k) * 0.14 + (i === 1 || i === 2 ? 0.06 : 0);
+      const d1 = norm(add(add(fore, mul(palmUp, -curl * 0.45)), mul(across, k * 0.12)));
+      const k1 = add(base, mul(d1, 5.4 * longF));
       const d2 = norm(add(mul(fore, 1 - curl), mul(palmUp, -curl * 1.3)));
-      const k2 = add(k1, mul(d2, 3.6 * longF));
-      const d3 = norm(add(mul(fore, 0.6 - curl), mul(palmUp, -curl * 1.6 - 0.4)));
-      const tip = add(k2, mul(d3, 2.6 * longF));
-      put(`hand${side}`, `hand${side}`, { k: 'rod', a: base, b: k1, ra: 1.25, rb: 1.05, ramp: hr });
-      put(`hand${side}`, `hand${side}`, { k: 'ball', c: k1, ax: sphere(1.25), skin: hr });
-      put(`hand${side}`, `hand${side}`, { k: 'rod', a: k1, b: k2, ra: 1.05, rb: 0.95, ramp: hr });
-      put(`hand${side}`, `hand${side}`, { k: 'ball', c: k2, ax: sphere(1.05), skin: hr });
-      put(`hand${side}`, `hand${side}`, { k: 'rod', a: k2, b: tip, ra: 0.9, rb: 0.5, ramp: hr });
+      const k2 = add(k1, mul(d2, 4.4 * longF));
+      const d3 = norm(add(mul(fore, 0.5 - curl), mul(palmUp, -curl * 1.7 - 0.5)));
+      const tip = add(k2, mul(d3, 3.4 * longF));
+      put(`hand${side}`, `hand${side}`, { k: 'ball', c: base, ax: sphere(1.65), skin: hr });
+      put(`hand${side}`, `hand${side}`, { k: 'rod', a: base, b: k1, ra: 1.4, rb: 1.15, ramp: hr });
+      put(`hand${side}`, `hand${side}`, { k: 'ball', c: k1, ax: sphere(1.45), skin: hr });
+      put(`hand${side}`, `hand${side}`, { k: 'rod', a: k1, b: k2, ra: 1.2, rb: 1.0, ramp: hr });
+      put(`hand${side}`, `hand${side}`, { k: 'ball', c: k2, ax: sphere(1.15), skin: hr });
+      put(`hand${side}`, `hand${side}`, { k: 'rod', a: k2, b: lerp3(k2, tip, 0.55), ra: 1.0, rb: 0.85, ramp: hr });
+      // (a claw: a long dark nail, hooked)
+      put(`hand${side}`, `hand${side}`, { k: 'rod', a: lerp3(k2, tip, 0.45), b: add(tip, mul(d3, 0.9)), ra: 0.85, rb: 0.35, ramp: CLAW });
     }
-    const thumbBase = add(add(hand, mul(fore, 1.6)), mul(across, (L ? 1 : -1) * -3.0));
-    const t1 = add(thumbBase, add(mul(fore, 3.4), mul(palmUp, -1.4)));
-    put(`hand${side}`, `hand${side}`, { k: 'rod', a: thumbBase, b: t1, ra: 1.2, rb: 1.0, ramp: hr });
-    put(`hand${side}`, `hand${side}`, { k: 'rod', a: t1, b: add(t1, add(mul(fore, 2.6), mul(palmUp, -1.6))), ra: 1.0, rb: 0.55, ramp: hr });
+    const thumbBase = add(add(hand, mul(fore, 1.8)), mul(across, (L ? 1 : -1) * -3.6));
+    const t1 = add(thumbBase, add(mul(fore, 4.0), mul(palmUp, -1.6)));
+    const t2 = add(t1, add(mul(fore, 3.0), mul(palmUp, -2.0)));
+    put(`hand${side}`, `hand${side}`, { k: 'rod', a: thumbBase, b: t1, ra: 1.5, rb: 1.2, ramp: hr });
+    put(`hand${side}`, `hand${side}`, { k: 'ball', c: t1, ax: sphere(1.3), skin: hr });
+    put(`hand${side}`, `hand${side}`, { k: 'rod', a: t1, b: t2, ra: 1.1, rb: 0.75, ramp: hr });
+    put(`hand${side}`, `hand${side}`, { k: 'rod', a: lerp3(t1, t2, 0.6), b: add(t2, mul(norm(sub(t2, t1)), 0.9)), ra: 0.75, rb: 0.35, ramp: CLAW });
   }
 
   // --- HIS NECK, long and corded; his head, a gaunt skull of a head; lank hair; THE IRON CAGE BOLTED OVER HIS FACE, the pink burning
@@ -541,7 +622,9 @@ function lookBits(st: Stage, m: Moment, freed: CoFreed): Bit[] {
   const roar = clamp01(q.pt);
   // his skull, the skin drawn tight over it; where his face is, the dark of the cage
   const faceDark = (u: V3): boolean => u[0] > 0.42 && u[2] < 0.42 && u[2] > -1.05 && Math.abs(u[1]) < 0.86;
-  put('head', 'head', { k: 'ball', c: at(-0.8, 0, 0.4), ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: (u, tone) => (faceDark(u) ? CAGE_DARK : GAUNT[tone]) });
+  // (his temples sunk in shadow beside the cage, the bone of his brow catching the light over them)
+  const temple = (u: V3): boolean => Math.abs(u[1]) > 0.62 && u[0] > -0.1 && u[2] > -0.35 && u[2] < 0.42;
+  put('head', 'head', { k: 'ball', c: at(-0.8, 0, 0.4), ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: (u, tone) => (faceDark(u) ? CAGE_DARK : temple(u) ? GAUNT[Math.max(0, Math.min(tone, 2) - 1)] : GAUNT[tone]) });
   // his jaw, long, under the cage; dropped open as he roars, the dark of his mouth behind the bars
   put('head', 'head', { k: 'ball', c: at(1.0, 0, -hr[2] * 0.72 - 2.6 * roar), ax: [mul(ff, hr[0] * 0.7), mul(fl, hr[1] * 0.66), mul(fu, 3.0)], skin: (u, tone) => (u[0] > 0.3 ? CAGE_DARK : GAUNT[Math.max(0, tone - 1)]) });
   // (his temples sunk, his cheekbones sharp: the light catching the bone at each side of the cage)

@@ -23,14 +23,19 @@ game shows of the Chained One, in all three of his states, is as it was (hashes 
 A gaunt giant, **1.2 times as tall as before** (his head 128 of his lengths off the floor as he stands, the old 107; about two and a
 half times the knight) and **much thinner**: his chest about two thirds as wide as the old's made as big, every limb thinner.
 
-- **A real body, not tubes and balls.** Each limb, his trunk and his neck are one skin drawn from ring to ring (`art/skin.ts`
-  `cloth`, as the Headsman made new's coat): lean thighs narrowing to bony knees with a kneecap; shins with the bone's edge catching
-  the light down the front, the calf a knot of sinew behind, thin knobbed ankles; long thin arms under bony shoulders, a sharp elbow,
-  a sinewy forearm wasted to a thin wrist; big bony hands with long knuckled fingers hooked like claws; long bony feet, the toes
-  splayed and gripping the floor.
-- **Skin drawn tight over bone**, pale grey: a narrow pelvis with the hip bones standing out; a waist wasted to nothing, the belly sunk
-  under the ribs; five ribs a side grooved in the skin, three showing on his back too; a breastbone; collarbones like bars; shoulder
-  blades and the knobs of his spine standing out of his hunched back; a long corded neck.
+- **A real body, not tubes and balls** (made more so at the art chat's second look, before he sees it). Each limb, his trunk and his
+  neck are one skin drawn from ring to ring (`art/skin.ts` `cloth`, as the Headsman made new's coat), and NO LIMB IS OF EVEN WIDTH:
+  each tapers, thin at the wrist, the ankle and just above the knee; stringy knots of muscle swell out of the outline (down the front
+  and outside of the thigh, the calf behind and its inner head, the back of the upper arm, the forearm below the elbow, outside and
+  inside); knobs of bone break it at the elbow (its point and its two knobs), the knee (the kneecap and its two knobs), the wrist and
+  the ankle. Big bony hands, the fingers long and knuckled, hooked, each ending in a long dark claw, a long clawed thumb; long bony
+  feet, five long knuckled toes curled to grip the floor, dark-nailed.
+- **Skin drawn tight over bone**, pale grey, lit from the upper left: a clear light side, mid grey, and shadow, the hollows in
+  shadow (under the rib cage, under the collarbones, his temples beside the cage, his flanks). A narrow pelvis with the hip bones
+  standing out; a waist pulled in far narrower than his chest, the belly sunk under the ribs; five ribs a side grooved in the skin,
+  round his sides and onto his back too; a breastbone; collarbones like bars; from behind, the hunch rounding his upper back, the
+  shoulder blades standing out with shadow under their edges, the knobs of his spine in a groove between two hollows, running on down
+  the small of his back; a long corded neck.
 - **Wrapped in his own chains like bandages**: black iron chain wound up each forearm from the cuff and once round each upper arm,
   round each shin from the ankle iron and once round each thigh, and round his body from over his left shoulder blade down round his
   ribs and his waist. The links are a little bigger than the old chains' and lit at their edges, the flat ones showing their holes.
@@ -110,7 +115,7 @@ His canvas is made as much bigger: **504 × 408**, his floor point at (252, 283)
    None was touched, so that every key and timing stays as he approved them;
 5. taller and thinner: his head 1.2 times as high; every limb no thicker than the old's made as big, his chest under 85% as wide.
 
-All 5 pass (about 4 minutes). Also: `tsc` clean; `tests/action_f3_chained.test.ts`, `tests/bosses.test.ts` and
+All 5 pass (about 5 minutes). Also: `tsc` clean; `tests/action_f3_chained.test.ts`, `tests/bosses.test.ts` and
 `tests/new_mobs3.test.ts` pass (27 of 27). Changed outside this mock-up's own files, the smallest change each: those three tests'
 lists of mock-up files that may import the bosses' files, `chained_look` added (the action test: `art/chained_look.ts` may import
 `chained_action`, as the Amalgamation's mock-up may). No file of the game changed.
