@@ -319,8 +319,8 @@ function horseBits(P: HorsePose, put: Put, near: number): void {
   ball('horseBody', 'buttock', [-24, 0, 39], [5, 0, 0], [0, 8.6, 0], [0, 0, 8.6], 7, 0.3);
   // ITS NECK: thick, carried low and stretched out at the gallop
   const k = P.neck;
-  const crest: V3[] = [[11, 0, 46], [18, 0, 53 + k], [23, 0, 58.5 + k], [27, 0, 62.5 + k], [30.5, 0, 64.5 + k]].map(W);
-  const throat: V3[] = [[22, 0, 33], [26, 0, 40], [29.5, 0, 46], [32.5, 0, 51], [35, 0, 55]].map(W);
+  const crest: V3[] = ([[11, 0, 46], [18, 0, 53 + k], [23, 0, 58.5 + k], [27, 0, 62.5 + k], [30.5, 0, 64.5 + k]] as V3[]).map(W);
+  const throat: V3[] = ([[22, 0, 33], [26, 0, 40], [29.5, 0, 46], [32.5, 0, 51], [35, 0, 55]] as V3[]).map(W);
   const wide = [8.0, 7.2, 6.4, 5.6, 5.0];
   const side: V3 = [0, 1, 0];
   const rings: Ring[] = [];

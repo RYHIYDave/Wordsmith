@@ -188,8 +188,8 @@ function gentPose(t: number): P {
   const open = t <= THROW_HIT ? (t - REL) / (THROW_HIT - REL) : 1 ;
   const back = sm(1.75, 2.25, t);
   const j = joined(REL);
-  const outL = rot([3 - 1 * back, 15 - 6 * back, 0], y);
-  const outR = rot([4 - 2 * back, -16 + 7 * back, 0], y);
+  const outL = rot([3 - 1 * back, 15 - 6 * back], y);
+  const outR = rot([4 - 2 * back, -16 + 7 * back], y);
   // (carried on up after the fling)
   const up = 14 * sm(THROW_HIT - 0.02, THROW_HIT + 0.14, t) * (1 - sm(THROW_HIT + 0.35, 1.2, t));
   const zL = 60 + up - 30 * back;

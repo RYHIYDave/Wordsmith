@@ -108,7 +108,7 @@ export const BANNER_SMEARED = (t: number): boolean => t > BANNER_STRIKE[0] + 1e-
 export const BANNER = { grab: 0.42, raised: 0.9, hit: BANNER_HIT, strike: BANNER_STRIKE, let: 1.75, long: 2.6, wave: 2.2, knock: 0.6, reach: 3.5, sink: 8, near: 1.5, far: 6 } as const;
 const BANNER_NAME = 'The rallying banner';
 /** Where it is planted (first pass's lengths, before him and to his left), and where his fist is on it then. */
-const SPOT0: [number, number] = [21, 15];
+const SPOT0: [number, number] = [27, 19];
 const HELD0: V3 = [SPOT0[0], SPOT0[1], GRIP / G];
 /** Where it stands, tiles before him and to his left. */
 export const BANNER_AT: [number, number] = [(SPOT0[0] * G) / TILE3, (SPOT0[1] * G) / TILE3];
@@ -127,9 +127,9 @@ function bannerKeys(): Key3[] {
   const raisedBody: P = { px: 0.6, pz: R.pz + 0.6, pitch: -4, bend: -9, yaw: 4, twist: 4, side: -2, roll: 0, faceUp: 18, faceTurn: 6 };
   const RAISED: P = elbowsTo({ ...raisedBody, ...handL2([5, 21, 86]) }, [0.1, 1, -0.2], null);
   const shake = (k: number): P => ({ ...RAISED, lhz: 86 + (k % 2 ? 0.6 : -0.3), lhx: 5 - 0.25 * (k % 2), px: 0.6 - 0.2 * (k % 2) });
-  const MID: P = elbowsTo({ px: 3.0, pz: R.pz - 2.6, pitch: 6, bend: 0, yaw: 6, twist: 4, side: -1, roll: 0, faceUp: 6, faceTurn: 10, ...handL2([14, 18, 64]) }, [0.1, 1, -0.3], null);
-  const DRIVEN: P = elbowsTo({ px: 5.0, pz: R.pz - 6.0, pitch: 14, bend: 8, yaw: 8, twist: 6, side: 0, roll: 0, faceUp: -2, faceTurn: 12, ...handL2(HELD0) }, [0.2, 1, -0.5], null);
-  const ON: P = elbowsTo({ ...DRIVEN, px: 5.6, pz: R.pz - 7.0, pitch: 16, ...handL2([HELD0[0], HELD0[1], HELD0[2] - BANNER.sink / G]) }, [0.2, 1, -0.5], null);
+  const MID: P = elbowsTo({ px: 3.0, pz: R.pz - 2.6, pitch: 6, bend: 0, yaw: 6, twist: 4, side: -1, roll: 0, faceUp: 6, faceTurn: 10, ...handL2([17, 20, 64]) }, [0.1, 1, -0.3], null);
+  const DRIVEN: P = elbowsTo({ px: 6.5, pz: R.pz - 7.0, pitch: 14, bend: 8, yaw: 8, twist: 6, side: 0, roll: 0, faceUp: -2, faceTurn: 12, ...handL2(HELD0) }, [0.2, 1, -0.5], null);
+  const ON: P = elbowsTo({ ...DRIVEN, px: 7.0, pz: R.pz - 7.8, pitch: 16, ...handL2([HELD0[0], HELD0[1], HELD0[2] - BANNER.sink / G]) }, [0.2, 1, -0.5], null);
   return [
     { at: 0, pose: {} },
     // (his left hand off the grip, up toward his shoulder; then over it, onto the staff)
@@ -146,8 +146,8 @@ function bannerKeys(): Key3[] {
     { at: f(40), pose: MID, ease: 'lin' },
     { at: BANNER_HIT, pose: DRIVEN, ease: 'lin' },
     { at: BANNER_HIT + 0.14, pose: ON, ease: 'out' },
-    { at: 1.6, pose: { ...ON, pz: R.pz - 6.6 }, ease: 'io' },
-    { at: BANNER.let, pose: elbowsTo({ ...ON, pz: R.pz - 5.6, px: 4.8 }, [0.2, 1, -0.5], null), ease: 'io' },
+    { at: 1.6, pose: { ...ON, pz: R.pz - 7.4 }, ease: 'io' },
+    { at: BANNER.let, pose: elbowsTo({ ...ON, pz: R.pz - 6.4, px: 6.2 }, [0.2, 1, -0.5], null), ease: 'io' },
     // (let go; the hand out round his side and back onto the sword's grip)
     { at: 1.95, pose: elbowsTo({ px: 2.4, pz: R.pz - 2.6, pitch: 5, bend: 3, yaw: 2, twist: 2, side: 0, roll: 0, faceUp: 2, faceTurn: 4, lhIn: 1, lhx: 10, lhy: 2, lhz: -14 }, [-0.2, 1, -0.5], null), ease: 'io' },
     { at: 2.15, pose: { px: 1.0, pz: R.pz - 0.8, pitch: 3, bend: 2, yaw: 0, twist: 0, faceUp: 0, faceTurn: 0 }, ease: 'io' },
