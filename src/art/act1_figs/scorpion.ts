@@ -5,10 +5,12 @@
 // (`reel`) and its death (`die`, thirty a second as it is painted).
 
 import { SCORPION_ON, makeScorpionArt } from '../canyon_scorpions';
+import { SCORPION_SPIT, makeSpitScorpionArt } from '../action_f6_canyon';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
-  make: makeScorpionArt,
+  // (and its acid spit and snap by Movement 9, behind SCORPION_SPIT: art/action_f6_canyon.ts, his yes, 2 Nov 2026)
+  make: () => (SCORPION_SPIT.on ? makeSpitScorpionArt() : makeScorpionArt()),
   // (measured off its standing picture: its head-plate and back, under its raised tail; half its body)
   size: { top: 19, half: 14 },
   switches: [SCORPION_ON],

@@ -6,6 +6,10 @@
 // it; where it bursts, the same knot of light going out.
 
 import { BOLT_FRAMES, chantWard, curseBolt } from '../../art/act1_cultists';
+import { CAST_HIT, CHAIN, RING_CANVAS, STATIC_CANVAS, chainBoltPainted, ringPainted, staticPainted } from '../../art/action_f6_cult';
+import { toSprite } from '../../art/kit';
+import { drawSprite } from '../../engine/px';
+import { CHAIN_PERIL } from '../../game/act1_rules/chanter';
 import { lazyFrames } from '../../art/kit';
 import { drawLights } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
@@ -21,6 +25,25 @@ const BOLT_FPS = 20;
 
 let wards: Sprite[] | null = null;
 let bolts: Sprite[] | null = null;
+
+// ITS CHAIN LIGHTNING (CHANTER_LIGHTNING: art/action_f6_cult.ts, his yes, 2 Nov 2026; 'chanter:chain'): the ring crackling where it
+// will strike, from its aim (ringPainted, under the figures); the lightning from its pages to the ring as it strikes, crackling a
+// new way each frame (chainBoltPainted, over them); the static round the hero it struck (staticPainted, over him), as long as it lasts.
+const RINGS = new Map<number, Sprite>();
+const STATICS = new Map<number, Sprite>();
+function chainRing(p: Peril): Sprite {
+  const k = Math.floor(p.t * 30);
+  let s = RINGS.get(k);
+  if (!s) RINGS.set(k, (s = toSprite(ringPainted(k / 30), null, RING_CANVAS.ax, RING_CANVAS.ay)));
+  return s;
+}
+function staticOf(t: number): Sprite {
+  const k = Math.floor(t * 30);
+  let s = STATICS.get(k);
+  if (!s) STATICS.set(k, (s = toSprite(staticPainted(k / 30), null, STATIC_CANVAS.ax, STATIC_CANVAS.ay)));
+  return s;
+}
+void CAST_HIT;
 
 /** The bolt's frame now. */
 function boltFrame(p: Peril): Sprite {
@@ -49,6 +72,13 @@ export const FX: Act1Fx = {
       }
       return;
     }
+    if (p && p.a1 === CHAIN_PERIL) {
+      if (p.t > 0.6) return;
+      const [sx, sy] = c.at(p.x, p.y);
+      drawSprite(c.g, chainRing(p), sx, sy);
+      if (p.t < 0) c.spot(sx, sy, 30, 0.3);
+      return;
+    }
     if (p && p.a1 === 'chanter:bolt' && !p.done) {
       const [sx, sy] = c.at(p.x, p.y);
       thrownShadow(c.g, sx, sy, 3, 0.22);
@@ -62,6 +92,24 @@ export const FX: Act1Fx = {
     c.spot(sx, sy - p.c, 18, 0.5);
   },
   air(c, m, p) {
+    if (p && p.a1 === CHAIN_PERIL && p.done && c.g) {
+      // (the lightning from its pages to the ring; the static round him if it struck him)
+      if (p.t <= CHAIN.seen + 0.3) {
+        const b = chainBoltPainted(p.x - p.a, p.y - p.b, p.c, 0, p.t, Math.floor(p.a * 7 + p.b * 13));
+        const s = toSprite(b, null, b.ax, b.ay);
+        const [sx, sy] = c.at(p.a, p.b);
+        drawSprite(c.g, s, sx, sy);
+        drawLights(c.g, s, Math.round(sx), Math.round(sy), 1, 1);
+        c.spot(sx, sy - p.c, 50, 0.6);
+      }
+      if (p.d === 1 && p.t < CHAIN.crackle) {
+        const h = c.game.hero;
+        const [hx, hy] = c.at(h.x, h.y);
+        drawSprite(c.g, staticOf(p.t), hx, hy);
+        c.spot(hx, hy - 14, 24, 0.5 * (1 - p.t / CHAIN.crackle));
+      }
+      return;
+    }
     if (!p || p.a1 !== 'chanter:bolt' || !p.done || !c.g) return;
     // (burst: the knot of light goes out where it struck)
     const k = 1 - Math.min(1, (p.t - p.hit) / CHANTER.bolt.burst);
