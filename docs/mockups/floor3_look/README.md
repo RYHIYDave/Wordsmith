@@ -287,3 +287,89 @@ clear to 88, the same shape both ways and lit along x, the mark dull and alight 
 alight, the portcullis from up (its spikes at 90) down step by step to the floor on its points, the drop's timing and the slam's
 soot and sparks. With them `tests/yard.test.ts`, `tests/yard_gate.test.ts`, `tests/gates.test.ts`, `tests/floor3.test.ts` and
 `tests/floor3_look.test.ts` pass, and `tsc` is clean.
+
+### The door out the back of his hall (`src/art/prison_exit.ts`), in place of a stairwell
+
+His words, shown floor 3 built for the game, 2 Nov 2026: “Love it, but let’s not have stairs down from his arena cause if under it
+is fire, going down to something else is gonna be weird”. Asked how to leave floor 3 instead, his pick: “Door out the back
+(Recommended)”, offered as: when he falls, a heavy iron door in his hall's back wall grinds open onto a passage leading away from
+the fire, down to floor 4.
+
+Behind `PRISON_EXIT = { on: false }`; nothing of the game imports it (a test proves it). `exitArt(alongX)` gives, for a wall along x
+(its face turned to screen-left, lit) or along y (to screen-right, in shade):
+
+- `frames` (90, at 30 a second from the moment he falls; `shut` the first, `open` the last): THE DOOR in the wall, two tiles of it.
+  A doorcase of black riveted iron (jambs, lintel, a head plate with five short spikes, standing whole over the wall's fading top as
+  his gate does), the way through 40 across and 70 high (`EXIT_DOOR`; a hero is 56); in it one leaf of riveted plate, set back in
+  the frame, on two strap hinges; TWO BARS across it in staples on both jambs; THE GREAT LOCK, a hasp over a staple on the jamb
+  with a padlock in it; HIS MARK, the iron face-cage he wore, cast in the leaf's head, the enemy's embers dull in its eye-slits.
+  220 x 190, anchored at the foot of the wall's face under the middle of the door (the joint of its two tiles), its face on the
+  wall's line exactly as the two wall tiles it takes the place of.
+- `under` (4 frames: its baskets flicker, about 6 a second): THE PASSAGE behind it. Through the doorway the iron sill, the flags
+  and the doorway's dark reveal, the passage's firelight low on them; beyond the wall the passage two tiles wide going straight
+  back, away from the hall and its grate, its left wall the prison's (80 high, fading as the game's), two of floor 3's own fire
+  baskets on it; level for three tiles past the wall's row, then seven steps going DOWN (each half a tile deep and 8 picture pixels down), on
+  into the dark
+  (`EXIT_PASSAGE`). Laid as the game shows a corridor beyond a back wall: the hall's back wall hides its first tiles, and it shows
+  over the wall from there on. 370 x 230, anchored at the same point. Its baskets carry their own `lights`.
+
+THE OPENING (Movement 9: the build-up held, the release quick), frames at 30 a second from his fall (`EXIT_JOLTS` for a kick and a
+sound each, `EXIT_KICKS` how hard):
+
+- 0 to 8: his mark goes out (`MARK_OUT`); 6 to 11: the door shudders;
+- 12 to 16: the upper bar judders and slides back into the hinge jamb, home with a clank at 16; 18 to 22: the lower bar, clank at 22;
+- 26: the padlock's shackle springs (a clank), it drops to the floor and lies there, the hasp falls to hang;
+- 27 to 43: HELD, half a second, grit sifting off the lintel;
+- 44: the lurch, grinding, sparks off the hinge; 45 to 47: it catches; 48 to 52: it swings in, fast (smeared), the leaf going away
+  behind the hinge jamb; 53: it hits the passage wall (the stop: soot burst out of the doorway and pouring off the lintel, sparks),
+  rebounds, settles square by 57; the soot rolls out over the hall's floor and is gone by frame 84.
+- OPEN TO WALK INTO: `EXIT_OPEN_SECS` = 3.0 s after his fall (the film's end, as floor 4's cave's `CAVE_OPEN_SECS`).
+
+### Bringing the door in (the main chat; not done here)
+
+1. NO STAIRWELL on floor 3: with `PRISON_EXIT` on, floor 3's boss hall gets no `stairSpots` / stairwell; this door is its way to
+   floor 4.
+2. WHERE IT STANDS: a back wall of his hall, the one farthest from his gate (so the passage leads away from the hall and its
+   grate), two of its tiles side by side near the middle of its run, as `placeInBackWall` (game/ways.ts) chooses floor 4's cave's
+   three: the dark behind them (the passage picture fills about 9 tiles back and 2 across: nothing of the level should be drawn
+   there), nothing standing on the two rows of floor before them. In the pictures: the far wall (along x), its tiles x 4 and 5,
+   his gate in the opposite wall. Set one of floor 3's fire baskets on the wall tile either side of it: lit, the door reads in the fight.
+3. DRAWING IT: those two wall tiles' faces not drawn; `frames[f]` stood at the wall's face (its anchor: along x the floor point
+   (x0 + 1, row + 1), along y (row + 1, y0 + 1)), sorted at the face's line, so that whoever stands in the hall is drawn after it
+   and whoever has gone into its doorway's row before it (as the gates' arch strips are); `under[k]` drawn with the floor, after
+   the floor tiles and under everything that stands, all the while (shut, the leaf hides its doorway part).
+4. ITS FILM: frame 0 while he lives; from his fall `frames[min(89, floor((game.time - fell) * 30))]`; a kick and a sound at each
+   of `EXIT_JOLTS`.
+5. WHAT TAKES HIM ON (`EXIT_TAKES`): the doorway's two tiles in the wall's row, solid while it is shut, cut to floor once open
+   (as `openGate` cuts a gate's three); walking onto either, `EXIT_OPEN_SECS` after his fall, takes him down to floor 4 (the
+   curtain, as the stairwell's).
+6. THE LIGHT (`EXIT_LIGHTS`, game pixels from the door's anchor along x; along y mirror x): a hole and a glow at each of the
+   passage's baskets (as `PRISON_LIGHTS.basket`), and holes down the passage's floor (`path`), all the while; from the lurch the
+   doorway's light (`spill`, its strength times `exitSpill(f)`); the door's frames carry the doorway's glow and the sparks' flashes
+   as their own `lights`.
+
+### Pictures of the door (for him)
+
+- `pictures/exit_door.png` (1200 x 2230): his hall built the game's way, the door shut during the fight with the Chained One in
+  it; the door opening at three moments, three times the game's size (bars drawn back; swinging in, sparks off the hinge; hitting
+  the wall, soot and grit); open, the knight walking into the passage; a phone screen of it open.
+- `pictures/exit_door.mp4` (about 13 s, 30 a second, captioned): the fight with the door shut; he falls and the door opens; the
+  knight walks into the doorway and the screen goes dark (on to floor 4); the opening again close up at half speed.
+
+```
+node tools/preview.mjs src/dev/preview_prison_exit.ts docs/mockups/floor3_look/pictures/exit_door.png 1200 2230 "sheet"
+node tools/film_frames.mjs src/dev/preview_prison_exit.ts "film" <dir>
+ffmpeg -framerate 30 -i <dir>/f%04d.png -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart docs/mockups/floor3_look/pictures/exit_door.mp4
+```
+
+### Checks of the door
+
+`tests/prison.test.ts`, now 20 of 20: off and imported by nothing of the game; every frame (90, both ways) and the passage
+painted, at their sizes and anchors, the face's foot on the wall's line column by column as the two wall tiles it replaces;
+crisp (every pixel whole but the wall's fading top, the game's steps), nothing cyan, nothing cut off; shut the leaf fills the
+doorway and his mark's embers burn, out from frame 8 and no enemy's fire on it after; open the doorway clear and the passage
+painted through it, its baskets burning with their light; the timing (open at 3.0 s; the bars home at their clanks; held half a
+second; a quick swing; the stop, the rebound, square at rest; the light from the lurch; something moving at every jolt; the
+shudder; the soot gone); the passage going back and on beyond the wall and down its steps, lit, dimmer as it goes down; the two
+tiles that take him on. `tsc` is clean; `tests/bosses.test.ts`, `tests/floor3.test.ts`, `tests/floor3_look.test.ts` and
+`tests/gates.test.ts` pass. (`floorAt` and `stoneFace` in art/prison.ts are now exported for it; nothing else there changed.)

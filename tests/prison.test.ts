@@ -7,7 +7,9 @@
 // his mark; the floor and the walls darker than the darkest word; light from the upper left; the ribs every two tiles; the
 // grates' fire flickering; floor 3's own pieces in look B's colours, their shapes and fire as they were; the boss hall flat,
 // its great grate glowing; and his gate: the way the game's three tiles, the mark in embers and alight, the portcullis from up
-// to down, the drop's timing (Movement 9), the slam.
+// to down, the drop's timing (Movement 9), the slam. And THE DOOR OUT OF HIS HALL (src/art/prison_exit.ts, behind PRISON_EXIT, off):
+// its frames, sizes and anchors, its face on the wall's line, crisp, nothing cyan, his mark out as he falls, shut and open, the
+// passage going down away from the hall, its timing.
 //   run: tsx --test tests/prison.test.ts
 
 // @ts-ignore
@@ -21,6 +23,10 @@ import {
   PG_BARS, PG_LIFT, PG_SLAM_FRAMES, PG_SPRING, PRISON_GATE, PRISON_GATE_DROP, PRISON_SLAM_AT, makePrisonGateArt, prisonGateDropAt,
   prisonGateSlam, prisonInWay, prisonLift,
 } from '../src/art/prison_gate';
+import {
+  EXIT_DOOR, EXIT_FPS, EXIT_FRAMES, EXIT_JOLTS, EXIT_LIGHTS, EXIT_OPEN_SECS, EXIT_PASSAGE, EXIT_TAKES, EXIT_TILES, MARK_OUT, PRISON_EXIT, exitArt, exitBar,
+  exitSpill, exitSwing,
+} from '../src/art/prison_exit';
 import { chainedGates, chainedPieces } from '../src/art/floor3';
 import { ARCH_WIDE, GATE_UP, PILLAR, SPAN, STRIP } from '../src/art/gates';
 import type { Strip } from '../src/art/gates';
@@ -73,14 +79,14 @@ const floorLike: Sprite[] = [...floors, ...tiles.map(([, s]) => s), ...hallTiles
 const FIRE = new Set(EMBER.map((c) => c.toLowerCase()));
 const isFire = (r: number, g: number, b: number): boolean => FIRE.has(hex(r, g, b));
 
-test('the prison and his gate: off, and nothing of the game imports them', () => {
-  assert.ok(PRISON.on === false && PRISON_GATE.on === false, 'PRISON and PRISON_GATE are off');
+test('the prison, his gate and the door out of his hall: off, and nothing of the game imports them', () => {
+  assert.ok(PRISON.on === false && PRISON_GATE.on === false && PRISON_EXIT.on === false, 'PRISON, PRISON_GATE and PRISON_EXIT are off');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'prison.ts')) && !p.endsWith(join('art', 'prison_gate.ts')) && /from '\.\.?\/(art\/)?prison(_gate)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'prison.ts')) && !p.endsWith(join('art', 'prison_gate.ts')) && !p.endsWith(join('art', 'prison_exit.ts')) && /from '\.\.?\/(art\/)?prison(_gate|_exit)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');
@@ -461,4 +467,173 @@ test('his gate: the drop (Movement 9): held juddering at the top, down in two fr
     });
     assert.ok(sparks >= 12, `frame ${f}: ${sparks} pixels of sparks`);
   }
+});
+
+// =================================================================================================
+// THE DOOR OUT OF HIS HALL (src/art/prison_exit.ts): his words, 2 Nov 2026, “Love it, but let’s not have stairs down from his arena
+// cause if under it is fire, going down to something else is gonna be weird”; his pick, “Door out the back (Recommended)”.
+
+const EX = [exitArt(true), exitArt(false)];
+const doorPics = (k: number): [string, Sprite][] => [
+  ...EX[k].frames.map((s, f) => [`door ${k ? 'along y' : 'along x'} frame ${f}`, s] as [string, Sprite]),
+  ...EX[k].under.map((s, f) => [`passage ${k ? 'along y' : 'along x'} ${f}`, s] as [string, Sprite]),
+];
+const exitAll: [string, Sprite][] = [...doorPics(0), ...doorPics(1)];
+const FADES = new Set([255, ...FADE_STEPS.map((a) => Math.round(255 * a))]);
+/** What is painted inside the doorway's own place on the face (u0..u1 along, 0..high up), in a door picture laid at its anchor. */
+function inDoorway(s: Sprite, alongX: boolean): { painted: number; all: number } {
+  const p = paintingOf(s);
+  const [ax, ay] = anchor(s);
+  let painted = 0;
+  let all = 0;
+  for (let us = EXIT_DOOR.u0 + 2; us < EXIT_DOOR.u1 - 2; us++) {
+    const c = ax - 32 + us;
+    const foot = alongX ? ay + Math.floor((c - ax) / 2) : ay + Math.floor((ax - c) / 2);
+    for (let z = 6; z < EXIT_DOOR.high - 2; z++) {
+      all++;
+      if (p.has(c, foot - z)) painted++;
+    }
+  }
+  return { painted, all };
+}
+
+test('the door out of his hall: every frame and the passage painted; two tiles of wall; at its size, anchored under its middle on the wall\'s line', () => {
+  assert.equal(EXIT_TILES, 2, 'two tiles of the wall');
+  for (const [n, s] of exitAll) assert.ok(count(s) > 400, `${n}: ${count(s)} pixels`);
+  for (const k of [0, 1]) {
+    const alongX = k === 0;
+    assert.equal(EX[k].frames.length, EXIT_FRAMES, 'every frame of the film');
+    assert.ok(EX[k].shut === EX[k].frames[0] && EX[k].open === EX[k].frames[EXIT_FRAMES - 1], 'shut its first, open its last');
+    for (const s of EX[k].frames) {
+      const q = paintingOf(s);
+      assert.ok(q.w === 220 && q.h === 190 && anchor(s)[0] === 110 && anchor(s)[1] === 136 && s.density === GRAIN, 'a door frame 220 x 190 at its anchor');
+    }
+    for (const s of EX[k].under) {
+      const q = paintingOf(s);
+      assert.ok(q.w === 370 && q.h === 230 && anchor(s)[0] === (alongX ? 40 : 330) && anchor(s)[1] === 214, 'the passage 370 x 230 at its anchor');
+    }
+    // its face on the wall's line: laid where the two wall tiles it takes the place of would stand, the foot of every column of its
+    // face (the doorway's aside: its jambs and the wall's ends) on the same row as theirs
+    const shut = paintingOf(EX[k].shut);
+    const [ax, ay] = anchor(EX[k].shut);
+    const walls2 = alongX ? A.faceLeft : A.faceRight;
+    let checked = 0;
+    for (let t = 0; t < 2; t++) {
+      const w = walls2[t];
+      const wp = paintingOf(w);
+      const [wx, wy] = anchor(w);
+      // (the wall tile's anchor, its top corner's floor point, from the door's: along x (32 t, 16 t - 32), along y (-32 t, 16 t - 32))
+      const ox = ax + (alongX ? 32 * t : -32 * t) - wx;
+      const oy = ay + 16 * t - 32 - wy;
+      for (let x = 0; x < wp.w; x++) {
+        let low = -1;
+        for (let y = wp.h - 1; y >= 0; y--) if (wp.has(x, y)) { low = y; break; }
+        if (low < 0) continue;
+        const c = x + ox;
+        const us = c - (ax - 32);
+        if (us >= EXIT_DOOR.u0 && us < EXIT_DOOR.u1) continue;
+        let dlow = -1;
+        for (let y = shut.h - 1; y >= 0; y--) if (shut.has(c, y)) { dlow = y; break; }
+        assert.equal(dlow, low + oy, `${alongX ? 'along x' : 'along y'}: the foot of column ${us} on the wall's line`);
+        checked++;
+      }
+    }
+    assert.ok(checked >= 20, `${checked} columns checked`);
+  }
+});
+
+test('the door out of his hall: crisp (every pixel whole but the wall\'s fading top, in the game\'s own steps), nothing cyan, nothing on its picture\'s edge', () => {
+  for (const [n, s] of exitAll) {
+    const bad = new Set<number>();
+    const cyan = new Set<string>();
+    each(s, (r, g, b, a) => {
+      if (!FADES.has(a)) bad.add(a);
+      const [h, sa, v] = hsv(r, g, b);
+      if (h >= 160 && h <= 205 && sa > 0.3 && v > 0.4) cyan.add(hex(r, g, b));
+    });
+    assert.ok(bad.size === 0, `${n}: alpha ${[...bad].join(' ')}`);
+    assert.ok(cyan.size === 0, `${n}: cyan ${[...cyan].join(' ')}`);
+    const p = paintingOf(s);
+    let edge = 0;
+    for (let x = 0; x < p.w; x++) edge += (p.has(x, 0) ? 1 : 0) + (p.has(x, p.h - 1) ? 1 : 0);
+    for (let y = 0; y < p.h; y++) edge += (p.has(0, y) ? 1 : 0) + (p.has(p.w - 1, y) ? 1 : 0);
+    assert.equal(edge, 0, `${n}: ${edge} pixels on its picture's edge (nothing cut off)`);
+  }
+});
+
+test('the door out of his hall: shut fast in the fight (the leaf fills the doorway, two bars, the great lock, his mark in the enemy\'s embers); open at the end, the passage seen through it', () => {
+  const FL = new Set(FLAME.map((c) => c.toLowerCase()));
+  for (const k of [0, 1]) {
+    const alongX = k === 0;
+    const shut = inDoorway(EX[k].shut, alongX);
+    assert.ok(shut.painted === shut.all, `shut, the leaf fills the doorway: ${shut.painted} of ${shut.all}`);
+    const open = inDoorway(EX[k].open, alongX);
+    assert.ok(open.painted < open.all * 0.45, `open, the doorway's depth only (the passage under shows): ${open.painted} of ${open.all}`);
+    const fire = (s: Sprite): number => {
+      let n = 0;
+      each(s, (r, g, b) => (n += FL.has(hex(r, g, b)) ? 1 : 0));
+      return n;
+    };
+    assert.ok(fire(EX[k].shut) >= 6, `his mark's embers while he lives: ${fire(EX[k].shut)}`);
+    assert.equal(fire(EX[k].frames[MARK_OUT]), 0, 'out as he falls');
+    for (let f = MARK_OUT; f < EXIT_FRAMES; f++) assert.equal(fire(EX[k].frames[f]), 0, `no enemy's fire on it after he falls (frame ${f})`);
+    // the passage seen through the open doorway: the layer under painted in the doorway's place, its baskets burning, their light
+    const under = inDoorway(EX[k].under[0], alongX);
+    assert.ok(under.painted > under.all * 0.8, `the passage through the doorway: ${under.painted} of ${under.all}`);
+    let flame = 0;
+    each(EX[k].under[0], (r, g, b) => (flame += isFire(r, g, b) ? 1 : 0));
+    assert.ok(flame >= 20, `its fire baskets burning: ${flame}`);
+    assert.ok((EX[k].under[0].lights ?? []).length >= 2, 'their light');
+    assert.ok(count(EX[k].under[0]) !== count(EX[k].under[1]) || EX[k].under[0] !== EX[k].under[1], 'they flicker');
+  }
+  assert.ok(exitBar('upper', 0) === 0 && exitBar('lower', 0) === 0, 'both bars across it at first');
+});
+
+test('the door out of his hall: its opening (Movement 9): his mark out, the bars back one by one with a clank, the lock, HELD a beat, the lurch, a quick swing, the stop; open to walk into at the film\'s end, about 3 s', () => {
+  const J = EXIT_JOLTS;
+  assert.equal(EXIT_FPS, 30);
+  assert.ok(EXIT_OPEN_SECS === EXIT_FRAMES / EXIT_FPS && EXIT_OPEN_SECS >= 2.5 && EXIT_OPEN_SECS <= 3.5, `open to walk into ${EXIT_OPEN_SECS} s after he falls`);
+  assert.ok(MARK_OUT < J.upperBar && J.upperBar < J.lowerBar && J.lowerBar < J.lock && J.lock < J.lurch && J.lurch < J.stop && J.stop < EXIT_FRAMES - 20, 'in order, the soot settling after');
+  assert.ok(exitBar('upper', J.upperBar - 5) === 0 && exitBar('upper', J.upperBar) >= 52 && exitBar('lower', J.lowerBar - 5) === 0 && exitBar('lower', J.lowerBar) >= 52, 'each bar home at its clank');
+  // held: from the lock to the lurch the leaf does not move (a beat of half a second)
+  assert.ok(J.lurch - J.lock >= 15, `held ${J.lurch - J.lock} frames`);
+  for (let f = 0; f < J.lurch; f++) assert.equal(exitSwing(f), 0, `still at ${f}`);
+  // the swing quick: from the catch to the stop in a few frames, smeared; the stop past square, the rebound, at rest square
+  const moving: number[] = [];
+  for (let f = J.lurch; f <= J.stop; f++) moving.push(exitSwing(f));
+  assert.ok(moving.every((d, i) => i === 0 || d >= moving[i - 1]), `opening: ${moving.join(' ')}`);
+  let fast = 0;
+  for (let f = J.lurch; f < J.stop; f++) if (exitSwing(f + 1) - exitSwing(f) >= 15) fast++;
+  assert.ok(fast >= 3 && fast <= 6, `the swing in ${fast} quick frames`);
+  assert.ok(exitSwing(J.stop) > 90 && exitSwing(J.stop + 2) < exitSwing(J.stop) && exitSwing(EXIT_FRAMES - 1) === 90, 'the stop, the rebound, at rest');
+  assert.ok(exitSpill(0) === 0 && exitSpill(J.lurch - 1) === 0 && exitSpill(EXIT_FRAMES - 1) === 1, "the doorway's light from the lurch");
+  // the frames change at each jolt (a clank is seen), and the door is still between the lock and the lurch but for grit
+  const differ = (a: Sprite, b: Sprite): number => {
+    const p = paintingOf(a);
+    const q = paintingOf(b);
+    let n = 0;
+    for (let i = 0; i < p.d.length; i += 4) if (p.d[i] !== q.d[i] || p.d[i + 1] !== q.d[i + 1] || p.d[i + 2] !== q.d[i + 2] || p.d[i + 3] !== q.d[i + 3]) n++;
+    return n;
+  };
+  for (const j of [J.upperBar, J.lowerBar, J.lock, J.lurch, J.stop]) assert.ok(differ(EX[0].frames[j], EX[0].frames[j - 2]) > 20, `something moves at ${j}`);
+  // the soot gone by the end
+  assert.ok(count(EX[0].open) < count(EX[0].frames[J.stop + 6]), 'the soot thins and goes');
+  // the shudder before the bars go: the door jars
+  assert.ok(differ(EX[0].frames[6], EX[0].frames[5]) > 40, 'it shudders');
+});
+
+test('the door out of his hall: the passage leads away from the hall (back from the wall) and down (its steps), lit; the doorway\'s two tiles take him on', () => {
+  const P = EXIT_PASSAGE;
+  assert.ok(P.stepsAt < -32 && P.steps >= 5 && P.rise > 0 && P.end < P.stepsAt - P.steps * P.tread, 'level beyond the wall, then steps down, then on into the dark');
+  assert.ok(P.baskets.every((b) => b < -32 && b > P.end), 'its fire baskets down its length');
+  assert.ok(EXIT_LIGHTS.baskets.length === P.baskets.length && EXIT_LIGHTS.path.length >= 3 && EXIT_LIGHTS.path.every((q, i) => i === 0 || q.strength <= EXIT_LIGHTS.path[i - 1].strength), 'its light, dimmer as it goes down');
+  // away from the hall: up the screen from the door; along x to the screen's right, along y to its left
+  for (const k of [0, 1]) {
+    const p = paintingOf(EX[k].under[0]);
+    const [ax, ay] = anchor(EX[k].under[0]);
+    let far = 0;
+    for (let y = 0; y < ay - 120; y++) for (let x = 0; x < p.w; x++) if (p.has(x, y) && (k === 0 ? x > ax + 80 : x < ax - 80)) far++;
+    assert.ok(far > 2000, `${k ? 'along y' : 'along x'}: the passage going on beyond the wall: ${far}`);
+  }
+  assert.deepEqual(EXIT_TAKES.map((t) => [...t]), [[0, 0], [1, 0]], "the doorway's two tiles in the wall's row");
 });

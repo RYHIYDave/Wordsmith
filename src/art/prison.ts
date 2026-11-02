@@ -192,7 +192,7 @@ function flagAt(x: number, y: number): number {
   return clampK(k);
 }
 /** The floor at a point of the world, before anything is laid over it. */
-function floorAt(x: number, y: number): string {
+export function floorAt(x: number, y: number): string {
   const k = flagAt(x, y);
   if (k < 0) return FLAGS[0];
   let c = FLAGS[k];
@@ -416,7 +416,7 @@ function channelTile(kind: 'grate' | 'open' | 'start' | 'bridge', alongY: boolea
 type Dress = (u: number, up: number) => string | undefined;
 
 /** The stone and iron of a face at (u across it from its left end on the screen, up from the floor). */
-function stoneFace(lit: boolean, u: number, up: number, seed: number, rib: boolean): string {
+export function stoneFace(lit: boolean, u: number, up: number, seed: number, rib: boolean): string {
   const S = STONE;
   const I = IRON;
   const top = PRISON_WALL;
