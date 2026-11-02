@@ -23,6 +23,8 @@ import { HUSH } from './crier';
 import { CROWD_HIT, CROWD_HOLD, PROCLAIM_HIT, PROCLAIM_HOLD, SHOUT_HIT, SHOUT_HOLD, SWING_HITS, SWING_STRIKES, f } from './crier_action';
 import { hash } from './kit';
 import { FLAME } from './mkit';
+import { pen as pen6 } from './action_f6_fx';
+import { TOLL } from './crier_action';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (u: number): number => {
@@ -617,3 +619,71 @@ export function paintCall(p: Px, at: At, m: number, C: readonly [number, number]
   }
 }
 void SWING_HITS;
+
+// =============================================================================================
+// THE TOLL (his basic now: art/crier_action.ts TOLL), moved here from the art chat's scene (src/dev/action_fixes2_scene.ts) as it was
+// brought in (the main chat's, 2 Nov 2026), unchanged: each toll's mark where the hero stood as it was rung, and its burst.
+const PINKS = ['#e0287a', '#ff7aa8', '#7a1058'] as const;
+const HUSHC = ['#14121e', '#262234', '#3e3852', '#625a7a', '#9890b4', '#d8d0f0'] as const;
+/** A toll's mark and its burst on the floor round `C`, `since` seconds after it was rung. */
+export function paintToll(px: Px, C: readonly [number, number], since: number): void {
+  if (since < 0 || since > TOLL.burst + 0.5) return;
+  const dot = pen6(px, true);
+  const top = pen6(px);
+  const r = TOLL.r;
+  const at = (x: number, y: number): [number, number] => [C[0] + 32 * (x - y), C[1] + 16 * (x + y)];
+  if (since < TOLL.burst) {
+    // THE MARK: a ring of the Hush's grey, the enemy's pink at its edge; a pale ring closing in on its middle as it counts down; the
+    // floor within it greying
+    const k = since / TOLL.burst;
+    const n = Math.round(r * 160);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + since * 0.8;
+      const [x, y] = at(Math.cos(a) * r, Math.sin(a) * r);
+      dot(x, y, i % 5 < 3 ? HUSHC[4] : HUSHC[3]);
+      dot(x, y + 1, HUSHC[2]);
+      const [x2, y2] = at(Math.cos(a) * (r + 0.07), Math.sin(a) * (r + 0.07));
+      if (i % 3 !== 2) dot(x2, y2, i % 6 === 0 ? PINKS[1] : PINKS[0]);
+      const ri = r * (1 - k);
+      if (ri > 0.1 && i % 2 === 0) {
+        const [x3, y3] = at(Math.cos(-a * 1.3) * ri, Math.sin(-a * 1.3) * ri);
+        dot(x3, y3, HUSHC[5]);
+      }
+    }
+    for (let i = 0; i < 260 * k; i++) {
+      const a = hash(i, 1, 5101) * Math.PI * 2;
+      const d = r * Math.sqrt(hash(i, 2, 5101));
+      const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
+      dot(x, y, i % 3 ? HUSHC[2] : HUSHC[3]);
+    }
+    return;
+  }
+  // THE BURST: a ring of silence thrown out to its edge, a flash, the Hush boiling up out of it
+  const u = since - TOLL.burst;
+  const grow = smooth(u / 0.12);
+  const n = Math.round(r * 170);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    for (const w of [0, 0.06, 0.12]) {
+      if (u > 0.25 && w > 0 && hash(i, 7, 5103) < (u - 0.25) / 0.25) continue;
+      const [x, y] = at(Math.cos(a) * r * grow * (1 - w), Math.sin(a) * r * grow * (1 - w));
+      dot(x, y, w === 0 ? (u < 0.15 ? '#ffffff' : HUSHC[5]) : u < 0.2 ? PINKS[1] : HUSHC[4]);
+    }
+  }
+  if (u < 0.08) for (let i = 0; i < 200; i++) {
+    const a = hash(i, 3, 5103) * Math.PI * 2;
+    const d = r * 0.8 * Math.sqrt(hash(i, 4, 5103));
+    const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
+    top(x, y, '#f0e8ff');
+  }
+  for (let i = 0; i < 70; i++) {
+    const a = hash(i, 5, 5103) * Math.PI * 2;
+    const d = r * Math.sqrt(hash(i, 6, 5103));
+    const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
+    const life = u / 0.5;
+    if (hash(i, 8, 5103) < life) continue;
+    const up = 4 + 40 * u * (0.5 + hash(i, 9, 5103));
+    top(x, y - up, i % 4 === 0 ? PINKS[1] : HUSHC[4]);
+    top(x + 1, y - up, HUSHC[3]);
+  }
+}

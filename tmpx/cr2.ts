@@ -1,0 +1,11 @@
+import { paintShout, paintDecree } from '../src/art/crier_action_fx';
+import { Px } from '../src/engine/px';
+const time = (name: string, n: number, f: (i: number) => void) => { const t0 = performance.now(); for (let i = 0; i < n; i++) f(i); console.log(name, ((performance.now() - t0) / n).toFixed(2), 'ms'); };
+const sq = { x0: -8, x1: 8, y0: -8, y1: 8 };
+const big = new Px(1000, 600);
+const at = (x: number, y: number, z = 0): [number, number] => [500 + 32 * (x - y), 300 + 16 * (x + y) - z];
+time('alloc 1000x600', 10, () => new Px(1000, 600));
+time('shout run reuse', 6, (i) => { big.d.fill(0); paintShout(big, at, 1.8 + i * 0.15, [0, 0], 0, sq); });
+time('decree reuse 1.0', 6, (i) => { big.d.fill(0); paintDecree(big, at, 1.0 + i * 0.05, [0, 0], 0.3); });
+time('decree reuse 2.0', 6, (i) => { big.d.fill(0); paintDecree(big, at, 2.0 + i * 0.2, [0, 0], 0.3); });
+time('decree reuse 4.0', 6, (i) => { big.d.fill(0); paintDecree(big, at, 4.0 + i * 0.2, [0, 0], 0.3); });

@@ -17,6 +17,7 @@ import type { V3 } from '../art/skeleton';
 import { markRing, pen } from '../art/action_f6_fx';
 import { FAN, FAN_HIT, FAN_LONG, amalgamActionMob, fanLines } from '../art/amalgam_action';
 import { TOLL, TOLL_HITS, TOLL_LONG, crierActionMob } from '../art/crier_action';
+import { paintToll } from '../art/crier_action_fx';
 import { BOOM, BOOM_CATCH, BOOM_HIT, BOOM_REAPER, SPIN_CANVAS, boomAt, boomCurve, sicklePainted } from '../art/action_f11_field';
 import { CLIP_CANVAS, LUNGE, LUNGE_GARDENER, LUNGE_HIT, LUNGE_TRAVEL_TILES, clippingsPainted, snapAt } from '../art/action_f16_gardener';
 import { FLIGHT_CANVAS, JAV, JAV_PARTISAN, JAV_PARTISAN_SWORD, JAV_SWORD, PULL, STUCK, STUCK_CANVAS, javAt, javFly, spearFlying, spearStuck } from '../art/action_f16_guard';
@@ -152,68 +153,8 @@ export function fanScene(view: View, t: number, base: Px, A: [number, number], c
 // ---------------------------------------------------------------------------------------------
 // 2. THE CRIER'S TOLL: each toll marks where the knight is then; it bursts a beat later
 
-/** A toll's mark and its burst on the floor round `C`, `since` seconds after it was rung. */
-function tollFloor(px: Px, C: [number, number], since: number): void {
-  if (since < 0 || since > TOLL.burst + 0.5) return;
-  const dot = pen(px, true);
-  const top = pen(px);
-  const r = TOLL.r;
-  const at = (x: number, y: number): [number, number] => [C[0] + 32 * (x - y), C[1] + 16 * (x + y)];
-  if (since < TOLL.burst) {
-    // THE MARK: a ring of the Hush's grey, the enemy's pink at its edge; a pale ring closing in on its middle as it counts down; the
-    // floor within it greying
-    const k = since / TOLL.burst;
-    const n = Math.round(r * 160);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + since * 0.8;
-      const [x, y] = at(Math.cos(a) * r, Math.sin(a) * r);
-      dot(x, y, i % 5 < 3 ? HUSHC[4] : HUSHC[3]);
-      dot(x, y + 1, HUSHC[2]);
-      const [x2, y2] = at(Math.cos(a) * (r + 0.07), Math.sin(a) * (r + 0.07));
-      if (i % 3 !== 2) dot(x2, y2, i % 6 === 0 ? PINKS[1] : PINKS[0]);
-      const ri = r * (1 - k);
-      if (ri > 0.1 && i % 2 === 0) {
-        const [x3, y3] = at(Math.cos(-a * 1.3) * ri, Math.sin(-a * 1.3) * ri);
-        dot(x3, y3, HUSHC[5]);
-      }
-    }
-    for (let i = 0; i < 260 * k; i++) {
-      const a = hash(i, 1, 5101) * Math.PI * 2;
-      const d = r * Math.sqrt(hash(i, 2, 5101));
-      const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
-      dot(x, y, i % 3 ? HUSHC[2] : HUSHC[3]);
-    }
-    return;
-  }
-  // THE BURST: a ring of silence thrown out to its edge, a flash, the Hush boiling up out of it
-  const u = since - TOLL.burst;
-  const grow = smooth(u / 0.12);
-  const n = Math.round(r * 170);
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2;
-    for (const w of [0, 0.06, 0.12]) {
-      if (u > 0.25 && w > 0 && hash(i, 7, 5103) < (u - 0.25) / 0.25) continue;
-      const [x, y] = at(Math.cos(a) * r * grow * (1 - w), Math.sin(a) * r * grow * (1 - w));
-      dot(x, y, w === 0 ? (u < 0.15 ? '#ffffff' : HUSHC[5]) : u < 0.2 ? PINKS[1] : HUSHC[4]);
-    }
-  }
-  if (u < 0.08) for (let i = 0; i < 200; i++) {
-    const a = hash(i, 3, 5103) * Math.PI * 2;
-    const d = r * 0.8 * Math.sqrt(hash(i, 4, 5103));
-    const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
-    top(x, y, '#f0e8ff');
-  }
-  for (let i = 0; i < 70; i++) {
-    const a = hash(i, 5, 5103) * Math.PI * 2;
-    const d = r * Math.sqrt(hash(i, 6, 5103));
-    const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
-    const life = u / 0.5;
-    if (hash(i, 8, 5103) < life) continue;
-    const up = 4 + 40 * u * (0.5 + hash(i, 9, 5103));
-    top(x, y - up, i % 4 === 0 ? PINKS[1] : HUSHC[4]);
-    top(x + 1, y - up, HUSHC[3]);
-  }
-}
+// (the toll's floor painter: moved into art/crier_action_fx.ts paintToll as it was brought in, 2 Nov 2026)
+const tollFloor = paintToll;
 export const TOLL_PASS = LEAD + TOLL_LONG + 0.4;
 /** The knight's way round the Crier (tiles from him: before him, to his left), `m` seconds into the toll: `still` he stands through the first two tolls, then runs. */
 export function tollPath(m: number, still: boolean): [number, number, boolean] {

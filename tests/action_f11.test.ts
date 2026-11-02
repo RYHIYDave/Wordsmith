@@ -133,11 +133,13 @@ const KINDS = ['watch', 'fieldhand', 'orderly', 'bookwarden'] as const;
 /** The game's own frames of the four, on 3162e05 (origin/art/action-f9-stag, before this branch): tools/action_f11_hash.ts. */
 const HASHES: Record<(typeof KINDS)[number], string> = { watch: 'c3413bcd1a90928e', fieldhand: 'daaa89f2fb62922b', orderly: 'e439e6af0e3c0014', bookwarden: 'e163b6c454bcb810' };
 
-test('1. the switches are off; nothing of the game imports the mock-ups; the game’s frames the same; only the new moves new', () => {
+test('1. the switches are off; nothing of the game imports the mock-ups but what brings them in; the game’s frames the same; only the new moves new', () => {
   for (const sw of [WATCH_LANTERN, FIELD_HARVEST, ORDERLY_GURNEY, WARDEN_BARRAGE]) assert.equal(sw.on, false, 'a switch is on');
   const OURS = /from ['"][^'"]*action_f11_(watch|field|orderly|warden|scene)['"]/;
+  // (brought in by the main chat, 2 Nov 2026, behind the switches: only through each one's figure, rules and what it leaves)
+  const BRINGS = /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/(watch|fieldhand|orderly|bookwarden)\.ts$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f11_/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || BRINGS.test(f) || /^art\/action_f11_/.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   for (const k of KINDS) assert.equal(whole(hashMoves((act1Fig(k) as NonNullable<ReturnType<typeof act1Fig>>).make())), HASHES[k], `${k}: the game's own frames changed`);
