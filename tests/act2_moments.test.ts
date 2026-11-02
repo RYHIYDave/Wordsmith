@@ -29,6 +29,7 @@ import { HOUSE_ZONE } from '../src/game/act2/housequiet';
 import { LB, LB_PIECES } from '../src/game/act2/library';
 import { ZONE as UC_ZONE } from '../src/game/act2/undercity';
 import { MOMENT_FROM_BELL, MOMENT_FROM_START, MOMENT_NEAR_WAY, bellDist, hushMomentKey, inBossGround, roofRidge, wayDist } from '../src/game/act2_moments';
+import { GW_OPEN } from '../src/game/act2/gateward';
 import type { HushMoment } from '../src/game/act2_moments';
 import type { Game } from '../src/game/game';
 import { makeDungeon } from '../src/game/level';
@@ -118,8 +119,12 @@ test('the Gate Ward\'s roofs as the game holds them are the art\'s (roofRidge, a
   for (let y = -3; y < 140; y += 0.37) for (let x = -3; x < 140; x += 0.41) assert.deepEqual(roofRidge(x, y), gateWardRidge(x, y), `at ${x}, ${y}`);
 });
 
+/** (floor 11 laid as one great ward, GW_OPEN: on about one laying in five no roof is fit for the pigeons, and it has none: no more than two of the ten) */
+const NO_PIGEONS = (): number[] => SEEDS.filter((s) => GW_OPEN.on && (floorOf(11, s).act1?.moments ?? []).length === 0);
 test('over ten seeds every floor of the five lays its moment: past the start, near the main way, out of the boss\'s ground, away from the bells', () => {
+  assert.ok(NO_PIGEONS().length <= 2, `floor 11 without its pigeons on seeds ${NO_PIGEONS().join(', ')}`);
   for (const d of FLOORS) for (const s of SEEDS) {
+    if (d === 11 && NO_PIGEONS().includes(s)) continue;
     const L = floorOf(d, s);
     const m = momentOf(L);
     const f = L.floor;
@@ -127,7 +132,8 @@ test('over ten seeds every floor of the five lays its moment: past the start, ne
     const at = `floor ${d}, seed ${s}, (${m.x.toFixed(2)}, ${m.y.toFixed(2)})`;
     assert.equal(m.key, hushMomentKey(d), at);
     assert.ok(Math.hypot(m.x - f.start.x, m.y - f.start.y) >= MOMENT_FROM_START, `${at}: by the start`);
-    assert.ok(wayDist(land, m.x, m.y) <= MOMENT_NEAR_WAY, `${at}: ${wayDist(land, m.x, m.y).toFixed(1)} off the main way`);
+    // (floor 11 laid as one great ward, GW_OPEN: the pigeons on the roof nearest the way that has a street at its foot, however far)
+    if (!(d === 11 && GW_OPEN.on)) assert.ok(wayDist(land, m.x, m.y) <= MOMENT_NEAR_WAY, `${at}: ${wayDist(land, m.x, m.y).toFixed(1)} off the main way`);
     assert.ok(!inBossGround(L, m.x, m.y), `${at}: in the boss's ground`);
     assert.ok(bellDist(land, m.x, m.y) >= MOMENT_FROM_BELL, `${at}: by a bell`);
     // (the tile it is seen from: whole floor, walked on, within a few tiles of it)
@@ -143,6 +149,7 @@ test('over ten seeds every floor of the five lays its moment: past the start, ne
 
 test('floor 11: the pigeons on a roof whose ridge runs along x, three tiles long and more, its plot houses, a street at its foot', () => {
   for (const s of SEEDS) {
+    if (NO_PIGEONS().includes(s)) continue;
     const L = floorOf(11, s);
     const m = momentOf(L);
     const f = L.floor;

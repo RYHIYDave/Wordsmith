@@ -138,7 +138,8 @@ test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the be
     // (art/cultists.ts itself: not the cult's two kinds of the descent, art/act1_cultists.ts)
     if (/from ['"][^'"]*\/cultists['"]/.test(text)) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
+  // (and FLOOR 4, MORE ACTION, behind ACTION_F4: the frenzy's numbers in its rules, game/game.ts and game/action_f4.ts)
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts game/action_f4.ts game/game.ts render/bossfx.ts', 'the game files that draw them, and the rules that take its numbers');
 });
 
 test('2. their stands paint in every frame both ways round: nothing cyan, the pink edge round each, every pixel whole or empty but the edge, no lone pixel', () => {

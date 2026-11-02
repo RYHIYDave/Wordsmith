@@ -37,6 +37,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { STAIR_LONG as ART_STAIR_LONG, STAIR_WIDE as ART_STAIR_WIDE, WAY_R } from '../src/art/crypt_ways';
+import { YARD } from '../src/art/yard';
 import { doorMiddle, doorTiles, insideBy } from '../src/game/doors';
 import { CRYPT_LAYOUT, generateFloor } from '../src/game/dungeon';
 import { Game } from '../src/game/game';
@@ -171,7 +172,8 @@ test('on, every floor has places for its stairwell in the boss\'s hall on plain 
             } else {
             assert.ok(st && !st.open, `${at}: its stairwell, shut`);
             assert.ok(W!.stairs.length >= 2 && W!.stairs.length <= STAIR_SPOTS && W!.stairs[0] === st, `${at}: its places (${W!.stairs.length})`);
-            assert.deepEqual([st!.x, st!.y], [Math.floor(f.boss.x) - 1, Math.floor(f.boss.y) - 1], `${at}: the first across the hall's middle`);
+            // (floor 2 laid as the Headsman's yard, YARD: its places moved off the yard's pieces, tests/yard_game.test.ts)
+            if (!(YARD.on && d === 2)) assert.deepEqual([st!.x, st!.y], [Math.floor(f.boss.x) - 1, Math.floor(f.boss.y) - 1], `${at}: the first across the hall's middle`);
             }
             for (const [k, sp] of W!.stairs.entries()) {
               assert.ok(sp.x >= hall.x && sp.y >= hall.y && sp.x + 3 <= hall.x + hall.w && sp.y + 2 <= hall.y + hall.h, `${at}: in the boss's hall`);
