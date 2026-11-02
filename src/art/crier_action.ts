@@ -164,11 +164,11 @@ const S_IN: Beat = { t: f(8), body: { px: -1 * K, yaw: R.yaw - 14, twist: -10, b
 const S_BACK1: Beat = { t: f(14), body: { px: -3 * K, pz: R.pz - 2, yaw: R.yaw - 36, twist: -24, bend: R.bend - 6, pitch: R.pitch - 5, side: 3, faceTurn: 34, faceUp: R.faceUp + 2, lk: 22, rk: -20, lhx: TWO }, hand: [-2, -30, 78], az: -152, el: 22, draw: 0 };
 const S_SWEPT1: Beat = { t: f(20), body: { px: 6 * K, pz: R.pz - 4 * K, yaw: R.yaw + 30, twist: 18, bend: R.bend + 10, pitch: R.pitch + 8, side: -2, faceTurn: -12, faceUp: R.faceUp - 6, lk: 34, rk: -10, lhx: TWO, gale: 1 }, hand: [46, 10, 54], az: 58, el: -6, draw: 0, ease: 'lin' };
 const S_ON1: Beat = { t: f(28), body: { px: 5 * K, pz: R.pz - 3.5 * K, yaw: R.yaw + 42, twist: 24, bend: R.bend + 8, pitch: R.pitch + 6, side: -3, faceTurn: -20, faceUp: R.faceUp - 3, lk: 32, rk: -10, lhx: TWO, gale: 0.6 }, hand: [36, 22, 62], az: 98, el: 4, draw: 0, ease: 'out' };
-const S_BACK2: Beat = { t: f(42), body: { px: 1 * K, pz: R.pz - 2 * K, yaw: R.yaw + 52, twist: 30, bend: R.bend - 2, pitch: R.pitch - 3, side: -4, faceTurn: -34, faceUp: R.faceUp + 2, lk: 30, rk: -16, lhx: TWO, gale: 0.2 }, hand: [14, 22, 84], az: 150, el: 26, draw: 0 };
+const S_BACK2: Beat = { t: f(40), body: { px: 1 * K, pz: R.pz - 2 * K, yaw: R.yaw + 52, twist: 30, bend: R.bend - 2, pitch: R.pitch - 3, side: -4, faceTurn: -34, faceUp: R.faceUp + 2, lk: 30, rk: -16, lhx: TWO, gale: 0.2 }, hand: [14, 22, 84], az: 150, el: 26, draw: 0 };
 const S_SWEPT2: Beat = { t: f(50), body: { px: 9 * K, pz: R.pz - 4.5 * K, yaw: R.yaw - 26, twist: -16, bend: R.bend + 10, pitch: R.pitch + 8, side: 3, faceTurn: 14, faceUp: R.faceUp - 6, lk: 34, rk: -8, lhx: TWO, gale: 1 }, hand: [46, -34, 54], az: -48, el: -6, draw: 0, ease: 'lin' };
 const S_ON2: Beat = { t: f(58), body: { px: 6 * K, pz: R.pz - 4 * K, yaw: R.yaw - 38, twist: -22, bend: R.bend + 8, pitch: R.pitch + 6, side: 4, faceTurn: 22, faceUp: R.faceUp - 3, lk: 32, rk: -10, lhx: TWO, gale: 0.6 }, hand: [36, -32, 62], az: -98, el: 6, draw: 0, ease: 'out' };
 /** The finisher: raised straight up over his head and back, arched (held the longest); slammed down over the top, bell first. */
-const S_UP: Beat = { t: f(74), body: { px: -2 * K, pz: R.pz - 1, yaw: R.yaw - 6, twist: -4, bend: R.bend - 12, pitch: R.pitch - 8, side: 0, faceTurn: 6, faceUp: R.faceUp + 14, lk: 26, rk: -18, lhx: TWO, gale: 0.1 }, hand: [6, -12, 116], az: -186, el: 62, draw: 0 };
+const S_UP: Beat = { t: f(72), body: { px: -2 * K, pz: R.pz - 1, yaw: R.yaw - 6, twist: -4, bend: R.bend - 12, pitch: R.pitch - 8, side: 0, faceTurn: 6, faceUp: R.faceUp + 14, lk: 26, rk: -18, lhx: TWO, gale: 0.1 }, hand: [6, -12, 116], az: -186, el: 62, draw: 0 };
 const S_SLAM: Beat = { t: f(86), body: { px: 18 * K, pz: R.pz - 10 * K, yaw: R.yaw + 8, twist: 6, bend: R.bend + 26, pitch: R.pitch + 16, side: 0, faceTurn: -2, faceUp: R.faceUp - 16, lk: 46, rk: -8, lhx: TWO, gale: 1 }, hand: [60, -8, 50], az: -186, el: 222, draw: 0, ease: 'lin' };
 const S_REST: Beat = { t: f(96), body: { px: 17 * K, pz: R.pz - 9 * K, yaw: R.yaw + 8, twist: 4, bend: R.bend + 20, pitch: R.pitch + 20, faceTurn: 0, faceUp: R.faceUp - 10, lk: 44, rk: -10, lhx: TWO, gale: 0.4 }, hand: [58, -8, 54], az: -186, el: 215, draw: 0, ease: 'out' };
 const S_RISE: Beat = { t: f(104), body: { px: 10 * K, pz: R.pz - 6 * K, yaw: R.yaw + 6, twist: 3, bend: R.bend + 9, pitch: R.pitch + 9, faceUp: R.faceUp - 6, lk: 38, rk: -12, lhx: TWO, gale: 0.2 }, hand: [54, -20, 64], az: -190, el: 188, draw: 0 };
@@ -178,7 +178,7 @@ const S_OUT: Beat = { ...S_HEAVE, t: f(116), body: { ...S_HEAVE.body, lhx: 36, l
 const S_BYHIP: Beat = { ...S_HEAVE, t: f(120), body: { ...S_HEAVE.body, px: 1 * K, pz: R.pz - 0.5 * K, yaw: R.yaw, twist: 2, bend: R.bend + 1, pitch: R.pitch + 1, faceUp: R.faceUp, lk: 18, rk: -14, lhx: 12, lhy: 26, lhz: 50, gale: 0 }, hand: [12, -32, 60], az: -240, el: 100, draw: 0.8 };
 function swingMotion(): Motion {
   const [[a0], [b0], [c0]] = SWING_STRIKES;
-  const held = (t: number): number => heldIn(f(14), a0)(t) + heldIn(f(42), b0)(t) + heldIn(f(74), c0)(t);
+  const held = (t: number): number => heldIn(f(14), a0)(t) + heldIn(f(40), b0)(t) + heldIn(f(72), c0)(t);
   const hold = (b: Beat, t: number): Beat => ({ ...b, t, ease: 'lin' });
   const beats: Beat[] = [S_IN, S_BACK1, hold(S_BACK1, a0), S_SWEPT1, S_ON1, S_BACK2, hold(S_BACK2, b0), S_SWEPT2, S_ON2, S_UP, hold(S_UP, c0), S_SLAM, S_REST, S_RISE, S_HEAVE];
   // (his left hand lets go of it once it is up, and goes back to his hip round the front of him: a stretch of its own)
@@ -270,8 +270,6 @@ export const PROCLAIM_HIT = f(42);
 export const PROCLAIM_LONG = f(84);
 /** Held high (the lane marked from the first of these). */
 export const PROCLAIM_HOLD = [f(18), f(40)] as const;
-const PR_T: P = { rhIn: 2 };
-void PR_T;
 function proclaimMotion(): Motion {
   const [a0, a1] = PROCLAIM_STRIKE;
   const trumpetUp = (t: number, body: P, lh: V3, prop: number, ease?: Beat['ease']): Beat & { lh: V3; prop: number } => ({ t, body, hand: [30 * K, -22 * K, 60 * K], az: -22, el: 74, draw: 0.6, lh, prop, ease });
