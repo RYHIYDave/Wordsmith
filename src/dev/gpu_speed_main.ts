@@ -111,6 +111,8 @@ self.document = { currentScript: null, createElement: function (n) { if (n === '
 
 const avg = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 const ms = (x: number): string => (x >= 100 ? Math.round(x).toLocaleString('en-GB') : x.toFixed(x >= 10 ? 0 : 1)) + ' ms';
+/** A frame's time, or a dash where it was painted already (the Tinkerer and the Brawler keep their standing once painted). */
+const msOr = (x: number): string => (x > 0.05 ? ms(x) : '— (painted already)');
 const tick = (n = 30): Promise<void> => new Promise((r) => setTimeout(r, n));
 /** How a time `b` stands to a time `a` (`than`: what `a` is). */
 const than = (a: number, b: number, what: string): string =>
@@ -176,8 +178,8 @@ button{font:inherit;font-size:22px;padding:12px 20px;border-radius:12px;border:0
       say(
         `<div>${it.label}</div>` +
           `<div class="way"><span>NOW</span><b>${ms(now)}</b></div>` +
-          `<div class="way"><span>ROUND 1</span><b>${ms(r1)}</b></div>` +
-          `<div class="way"><span>ROUND 2</span><b class="${r2 <= now ? 'good' : 'bad'}">${ms(r2)}</b></div>` +
+          `<div class="way"><span>ROUND 1</span><b>${msOr(r1)}</b></div>` +
+          `<div class="way"><span>ROUND 2</span><b class="${r2 <= now ? 'good' : 'bad'}">${msOr(r2)}</b></div>` +
           `<div class="dim">a frame. Round 2: ${than(now, r2, 'now')}; ${than(r1, r2, 'round 1')}</div>`,
       );
     } else say(`<div>${it.label}</div><div class="big">${ms(now)}</div><div class="dim">a frame, the way the game paints now</div>`);

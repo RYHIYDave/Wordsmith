@@ -303,7 +303,10 @@ and ROUND 2 in big words (each way paints the next frame of the list, as the Tin
 the Warrior's own frame as the mark; then where a round 2 frame's time goes on the device (the CPU's share before and after,
 waiting for the chip and reading back; each pass waited for in turn; the chip's own clock where the browser has
 EXT_disjoint_timer_query_webgl2); a line for the main chat with the hop's time; and the worker check and the side painter as
-before. Checked end to end in Playwright's Chromium at 390 × 844 (`node tools/gpu_speed_check.mjs`).
+before. Checked end to end in Playwright's Chromium at 390 × 844 (`node tools/gpu_speed_check.mjs`: 533 s on SwiftShader,
+nothing fetched, no sideways scroll, the worker check and the side painter work). Left: the Tinkerer's and the Brawler's
+standing are kept once painted for the whole page, so their ROUND 1 and ROUND 2 show "painted already" (NOW is timed); the
+Warlock's lists all time three ways.
 
 ### What the main chat must change
 
