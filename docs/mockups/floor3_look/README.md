@@ -121,3 +121,169 @@ chat puts it in:
 (1200 x 840, 1014 x 468, the sheet 1200 wide and 4992 high); in each picture nothing cyan but round the knight and nothing
 pink but on the Chained One, on his mark on the gate, or the knight's own deep red, and in the sheet the cyan in no more
 patches than it has knights. `tsc` is clean.
+
+## Made game-ready (his “B, torchlit dark (Recommended)”)
+
+His pick, 2 Nov 2026, by 07:52: “B, torchlit dark (Recommended)”, offered as: fire baskets on the walls, grates glowing here and
+there, deep shadow between; the hero and words stand out best; the gate the same in all three. Made ready for the game as the
+Headsman's yard was (docs/mockups/headsman_yard/README.md), in files of their own behind switches that are off; nothing of the
+game imports them (a test proves it) and no game file is changed:
+
+- `src/art/prison.ts`, `makePrisonArt()`, behind `PRISON = { on: false }`;
+- `src/art/prison_gate.ts`, `makePrisonGateArt()` (a GateArt), behind `PRISON_GATE = { on: false }`;
+- checked by `tests/prison.test.ts`; laid and lit the game's way by `src/dev/preview_prison_game.ts`.
+
+Every picture is in the game's measures (picture pixels, two to a game pixel, `density` 2), anchored as the game's own are.
+
+### The pieces and their anchors
+
+- `floor(tx, ty)`: THE DARK FLAGS, laid on the world so the stones run on across tiles (sixteen pictures, repeating every four
+  tiles each way), in place of `CRYPT_FLOORS[2]`'s floor. 64 x 32, anchored at the tile's top corner, as the game's floor tiles.
+- `tiles` (floor tiles, laid over the flags; each 64 x 32 at its top corner):
+  - `a grate` (dark: embers dying under it), `a grate, glowing` (the fire under it, four frames: it flickers), `soot`,
+    `rust stains`, `a drain`, `straw before a cell`;
+  - THE FIRE CHANNEL, two tiles wide (each piece a `…, its far half` and a `…, its near half`, the far half the one with the
+    lower x along y, the lower y along x), `along y` and `along x`: `the channel's grate …` (dark), `the channel's grate …,
+    glowing` (four frames), `the open channel …` (its bed of coals burnt low, 20 below the floor, fire in its cracks; its far
+    side going down), `the open channel …, where it begins` (its far end going down too: the first open tile after the grates),
+    `the bridge …` (a grate across it, the bed seen through it).
+- `faceLeft` / `faceRight`: THE PRISON'S WALL a tile at a time, as the game lays walls (along x its face turned to screen-left
+  and lit, along y to screen-right in shade). 80 high, as floor 3's walls are now (`WALL_LOOK.tall` 40 game pixels), its top 24
+  fading out in the game's own four steps (art/ground.ts `put`); the columns at the tile's two ends left empty as the game's.
+  64 x 112, anchored at the floor point of the tile's top corner, the face hanging to the floor line of its near edge. Dark
+  stone in courses, footed with a riveted iron plate, rust and soot; [0] and [2] carry an iron rib, [1] and [3] none:
+  `face(alongX, tx, ty)` picks them so the ribs fall every two tiles along a wall.
+- `cellLeft[0..2]` / `cellRight[0..2]`: A CELL'S FRONT, three tiles of the cell block's back wall (bars of black iron, a door with
+  its hinges and lock in the middle, the cell seen through them: straw, its floor going back into the dark, a chain on its
+  back wall). [k] is the tile at the front's start + k along the wall (along x in x order, along y in y order). As the faces.
+- `hall` (THE BOSS HALL, FLAT, as the game's boss hall is):
+  - `hall.floor(tx, ty, dx, dy)`: the hall's floor tile at world tile (tx, ty), (dx, dy) tiles from the great grate's far
+    corner: frames (the grate's four, else one), or null beyond `HALL_REACH` (-3 to 7 each way: the plain flags there). THE
+    GREAT GRATE is four tiles each way (`GREAT`), glowing; round it THE IRON RING let into the floor (radius 3 tiles from its
+    middle, riveted) and the two grooves his ball has worn (3.35, 3.9); rings let into the floor for the great chains at
+    `HALL_RINGS` (from the grate's far corner). He stands on its middle.
+  - `hall.faceLeft[0..3]` / `hall.faceRight[0..3]`: the hall's walls, the tile at (tile's place along the wall) mod 4: a great
+    ring on a plate every four tiles, a chain slung slack between, the ribs. As the faces.
+- `pieces`:
+  - the prison's own (`PRISON_OWN`): `railing along y`, `railing along x` (a tile's length of rail, its post at its far end;
+    56 x 96 anchored at the floor point under its middle, on the rim line), `railing post` (to close a run, at the rim point
+    where the run ends); `a chain from the dark, a hook` and `…, a shackle` (wall pieces, three spots, 48 x 120 at the foot of
+    the face under its tile's middle, as every wall piece: art/floorkit.ts); `a chain from the dark, hanging to a hook` (its
+    hook 50 up) and `…, hanging to a cage` (70 up), and `a great chain from the dark` (down to a ring in the floor), each
+    anchored at the floor point under it, the chain fading into the dark above the screen;
+  - and every one of FLOOR 3'S OWN PIECES (art/floor3.ts, his yes already), under the same names and kinds, at the same sizes
+    and anchors and with the same lights, in look B's colours (`gradedB`: their colours drawn toward the stone's charcoal, a
+    third of their colour kept, a shade darker; fire as it was). Its fire basket and the jailers' lamp are the burning ones.
+
+### The gate (`src/art/prison_gate.ts`)
+
+A GateArt, as the yard's: everything but the boss's pillar, arch and portcullis is floor 3's own (`chainedGates()`).
+
+- `pillar(true)`: square, each face 12 (`PILLAR`), clad in riveted black iron, a plinth and a capital, up to the spring at 64
+  (`PG_SPRING`). One picture for a gate either way, anchored at its front corner on the floor.
+- `arch(alongX, true, lit)`: strips (art/gates.ts `Flat`) from the outer edge of one pillar to the other: iron voussoirs over
+  the three tiles of the way (its crown 112), a rivet in each; the face plated in riveted iron to the cornice at 150
+  (`PG_FACE`), its top a pillar's thickness back, iron spikes along it (taller over the middle, up to 176); HIS MARK on the
+  tall keystone, the iron face-cage he wore, the enemy's embers dull in its eye-slits, or `lit` (the gate fallen) the cage alight
+  pink to gold, and then it gives the enemy's light (FLAME[2], 24, 0.32); two great rings on the face's upper corners, a chain
+  slung between them across the arch (its lowest point 96 over the floor); through the way, the arch's iron underside. Its
+  iron is the prison's a tone lifted: it is the way on, seen from across the dark.
+- `portcullis(alongX, true, raise)`: at the back of the arch, bars five wide every twelve (`PG_BARS`), each to a spike, a heavy
+  rail over the spikes; the game's raise 0 to `GATE_UP` drawn up 0 to 90 (`prisonLift`; `PG_LIFT` 90: its spikes under the
+  crown, a hero 56).
+- THE DROP, Movement 9 (`PRISON_GATE_DROP`, at 30 a second from the moment the fight begins): 60 60 56 60 60 54 60 58 52 60
+  (held, juddering), 24 (the drop), 0 (the landing, frame 11, `PRISON_SLAM_AT`: the slam begins, the mark lights), 0 6 8 2 0 0
+  (a bounce, then down). `prisonGateDropAt(frame)` gives `{ raise, slam, lit }`.
+- THE SLAM, `prisonGateSlam(alongX, f)`, f 0 to 15: soot thrown off the flags both ways and rolling out low, thinning; sparks
+  struck off the spikes (an honest orange). 280 x 180, anchored at the middle of the gate's foot.
+
+### The light, for the main chat to place
+
+Nothing of the light is painted in: as everywhere in the game the renderer lays its dark and cuts a hole where each light burns
+(render.ts `light`, `spot(x, y, r, strength)`), and what gives light is drawn over it (`drawLights`, `drawGlow`, colour added).
+`PRISON_LIGHTS` (art/prison.ts) holds these numbers; `src/dev/preview_prison_game.ts` lays them exactly so, with the game's own
+pools round the hero (380 at 0.36, 165 at 1), the boss's own light (56 at 0.7) and its vignette (0.62). In game pixels:
+
+- THE DARK on floor 3: `rgba(6, 4, 14, 0.8)` in place of `FAR_DARK` 0.88 (look B's deep shadow between the fires; at 0.88 the
+  unlit walls are lost).
+- A FIRE BASKET (the floor's own `fire basket`, a wall piece stood at render/pieces.ts's `px ∓ 8, py + 12`): a hole at that
+  point 22 up the wall, radius 56, strength 0.85; and a glow there, radius 28, `#ff8a2a` (EMBER[2]), 0.34, besides its own
+  lights. The same for the jailers' lamp. (Today floor 3's burning wall pieces give only their own little glow and cut no hole.)
+  Look B has them every few tiles: in the pictures on the cell block's back wall between the cells, either side of the
+  corridors, and on his hall's walls (two on its far wall, one on its side wall).
+- A GLOWING GRATE (a tile, and each tile of the channel's glowing grate): a hole at the tile's middle (8 below its top corner),
+  radius 44, strength 0.75; and a glow there, radius 30, `#ff8a2a`, 0.34 (the glowing tiles carry it as their `lights`).
+- THE OPEN CHANNEL, burnt low: a hole on its middle line every second tile of the open run, radius 38, strength 0.55; a glow
+  there, radius 26, `#d0501a` (EMBER[1]), 0.28.
+- THE GREAT GRATE in his hall: one hole at its middle, radius 130, strength 0.95; one glow there, radius 84, `#ff8a2a`, 0.44.
+- The jailers' kettle is the floor's fire and is lit as a brazier already (62, 0.9). Dark grates and the dark channel's grates
+  give none.
+
+### How to bring it in (the main chat; not done here)
+
+1. THE SWITCH: on with his yes to it in play, as the yard's was (game/yard.ts and render/yard.ts are the pattern): floor 3 (look
+   3) is the prison while `PRISON` is on.
+2. THE FLOOR: every floor tile of floor 3 drawn with `floor(tx, ty)` in place of the Crypt's; the prison's tiles laid where the
+   level lays them (grates, a few glowing, soot under the fire baskets, rust by the iron, drains, straw before the cells), and
+   floor 3's own tiles (in look B's colours) where they are laid now.
+3. THE WALLS: every wall face of floor 3 `face(alongX, tx, ty)` in place of `art.ground.faceLeft/Right`; on each cell block's
+   back wall (art: the long side its cells hang off, dungeon.ts `blockBack`) a cell's front, three tiles, where no real cell's
+   doorway is (the real cells keep their doors: floor 3's own cell door); his hall's ring of wall `hall.faceLeft[tx mod 4]` /
+   `hall.faceRight[ty mod 4]`.
+4. THE FIRE CHANNEL down the middle of each cell block, along its length, two tiles wide: two or three tiles of the channel's
+   grate at its far end, the open run (its first tile `where it begins`) with a bridge tile in its middle, two tiles of the
+   glowing grate at its near end. The open tiles are not walked on (as a pit's: the bridge and the grates are); a railing on
+   both rims of every open tile but the bridge's (stood at the rim, at the tile's middle, depth x + y), a post closing each run.
+5. HIS HALL, FLAT: its floor `hall.floor(tx, ty, tx - gx, ty - gy)` with the great grate's far corner (gx, gy) two tiles before
+   where he stands each way, its grate tiles' four frames by time (as a fire's, about 6 a second); `a great chain from the dark`
+   stood at each of `HALL_RINGS`; floor 3's own winch, chain posts and heaps about it. (If the game can take the sunk pit of
+   the pictures, the sunk version follows from the art chat.)
+6. THE PIECES: with `PRISON` on, floor 3's pieces (`lookPieces(3)`, art/floors.ts) are `pieces` (the same names, look B's
+   colours); the prison's chains from the dark set in the walls among floor 3's wall pieces; the free-hanging chains stood in the
+   cell block like a thing (nobody blocked).
+7. HIS GATE: with `PRISON_GATE` on, floor 3's gates are `makePrisonGateArt()` (wherever `lookGates(3)` / main.ts choose them),
+   stood by render.ts `standDoors` as any boss gate (no change there). For its drop, as the yard's: drive the boss gate's raise
+   from `prisonGateDropAt((game.time - d.fell) * 30)` in place of `d.open * GATE_UP` while it falls, light the mark from
+   `PRISON_SLAM_AT`, stand `prisonGateSlam(s.alongX, f)` at `at(1.5, PILLAR / 32)` (depth x + y + 0.3) for its 16 frames, a
+   small shake of 2 for 4 frames. Its face rises to 150 (its spikes to 176) over walls 80 high that fade: it stands whole over
+   the dark, as in the pictures.
+8. THE LIGHT, as above.
+
+### What differs from B as he saw it (so he is not surprised)
+
+- The light is the game's: its dark with holes and soft glows, not the painted bands of the pictures; a little darker away from
+  the fires and the hero.
+- The walls toward the eye are not drawn (the game's look since Version 18.4: the floor's edge against the dark); the pictures
+  had them cut low.
+- The fire channel is two whole tiles wide and its bed a little below the floor (the pictures' was 1.6 wide and deep).
+- His hall is flat (the brief): the great grate, its iron ring and his ball's grooves on the hall's own floor, no sunk pit, no
+  steps down.
+
+### Pictures
+
+- `pictures/game_ready.png` (1200 x 1624): floor 3's run built from these pieces the game's way, the knight in it, beside B as he
+  picked it; one phone screen (1014 x 468) at the game's own size, the knight in the corridor before the gate; and the gate
+  close with the knight, twice as big, its portcullis up and then down behind him with his mark alight.
+- `pictures/game_run.png` (1200 x 840): the run alone at full size.
+
+```
+node tools/preview.mjs src/dev/preview_prison_game.ts docs/mockups/floor3_look/pictures/game_ready.png 1200 1624 "sheet"
+node tools/preview.mjs src/dev/preview_prison_game.ts docs/mockups/floor3_look/pictures/game_run.png 1200 840 "run"
+  (PREVIEW_TIMEOUT=120000; "phone" at 1014 x 468 and "gate" at 1120 x 540 give those alone)
+```
+
+### Checks
+
+`tests/prison.test.ts`, 15 of 15: off, and nothing of the game imports either file; every piece the brief asks for painted;
+every picture at its size and anchored where the game lays it (the walls as high as `WALL_LOOK.tall` and fading as far down as
+its `fade`, every column of a face 80 high, the ends empty, the foot on the tile's near edge); crisp (every pixel whole or empty
+but a wall's fading top, in the game's own four steps; a floor tile covering its whole diamond; no pixel alone); nothing cyan,
+nothing pink (floor 3's own pieces: the enemy's fire only where it was); the floor and walls darker than the darkest word; light
+from the upper left and the ribs every two tiles; the grates (dark: nothing bright; glowing: four frames that differ, fire in
+each, its light), the channel burnt low with its far side going down; floor 3's own pieces with their shapes, anchors, lights
+and fire as they were and their colours greyer; the hall's great grate (sixteen tiles, four frames, fire in each), its iron ring,
+its reach; and the gate: floor 3's own for all but the boss's, crisp, nothing cyan, the way exactly three tiles with its middle
+clear to 88, the same shape both ways and lit along x, the mark dull and alight on the keystone giving the enemy's light only
+alight, the portcullis from up (its spikes at 90) down step by step to the floor on its points, the drop's timing and the slam's
+soot and sparks. With them `tests/yard.test.ts`, `tests/yard_gate.test.ts`, `tests/gates.test.ts`, `tests/floor3.test.ts` and
+`tests/floor3_look.test.ts` pass, and `tsc` is clean.
