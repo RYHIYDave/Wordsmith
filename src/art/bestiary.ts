@@ -38,6 +38,7 @@ import { CULTIST_SIGIL, makeCultistArt, makeHighPriestArt } from './monster_cult
 import { SHADE_FROST, makeFrostShadeArt } from './action_f2_fx';
 import { BONEWARD_WALL, makeWallBonewardArt } from './action_f3_fx';
 import { DAGGER_FRENZY } from './cultists';
+import { GOLEM_HURL, makeHurlGolemArt } from './action_f4_fx';
 import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
@@ -79,10 +80,11 @@ export function useActionF3(on: boolean): void {
   BONEWARD_WALL.on = on;
 }
 useActionF3(ACTION_F3.on);
-/** FLOOR 4, MORE ACTION (game/defs.ts ACTION_F4): the rules and the art chat's pictures of the dagger cultist's frenzy, on and off together. */
+/** FLOOR 4, MORE ACTION (game/defs.ts ACTION_F4): the rules and the art chat's pictures of the dagger cultist's frenzy and the Ossuary Golem's skeleton hurl, on and off together. */
 export function useActionF4(on: boolean): void {
   ACTION_F4.on = on;
   DAGGER_FRENZY.on = on;
+  GOLEM_HURL.on = on;
 }
 useActionF4(ACTION_F4.on);
 
@@ -346,7 +348,7 @@ export function makeBestiary(): Bestiary {
         // THE NEW MONSTERS: their walks shown at the paces the rules give them
         : figure === 'shade' ? (SHADE_FROST.on ? makeFrostShadeArt(MONSTERS.shade.speed) : makeShadeArt3(MONSTERS.shade.speed))
         : figure === 'boneward' ? (BONEWARD_WALL.on ? makeWallBonewardArt(MONSTERS.boneward.speed) : makeBonewardArt3(MONSTERS.boneward.speed))
-        : figure === 'golem' ? withSkulls(makeGolemArt3(MONSTERS.golem.speed))
+        : figure === 'golem' ? (GOLEM_HURL.on ? makeHurlGolemArt(MONSTERS.golem.speed) : withSkulls(makeGolemArt3(MONSTERS.golem.speed)))
         : figure === 'champion' ? makeChampionArt3(MONSTERS.champion.speed)
         : figure === 'marksman' ? makeMarksmanArt3(MONSTERS.marksman.speed)
         : figure === 'priest' ? makeHighPriestArt()

@@ -995,7 +995,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil' | 'daggerFrenzy';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil' | 'daggerFrenzy' | 'golemHurl';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -1036,6 +1036,14 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
   golem: [
     { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 2.0, recover: 0.55, near: 0, far: 0 },
     { id: 'throw', windup: 0.95, dmg: 1.1, cooldown: 5, first: 1, after: 2.2, recover: 0.55, near: 2.5, far: 10 },
+  ],
+  // (FLOOR 4, MORE ACTION, ACTION_F4: the Ossuary Golem by Movement 9, the art chat's (art/action_f4_fx.ts, his yes to it): its
+  // club swing wound and held, its blow at SWING_HIT (0.867 s), 2.2 tiles in the half before it (SWING.reach: the golem's own
+  // reach and 0.4 more), done by SWING.long (1.6 s); its SKELETON HURL in place of the skull, let go at HURL_HIT (1.433 s), done by
+  // 2.5 s (game/action_f4.ts). Its burst a little harder than the skull's, being bigger and marked longer before it.)
+  golemHurl: [
+    { id: 'swing', windup: 0.867, dmg: 0.6, cooldown: 0, first: 0, after: 2.0, recover: 0.733, near: 0, far: 0 },
+    { id: 'throw', windup: 1.433, dmg: 1.25, cooldown: 5, first: 1, after: 2.2, recover: 1.067, near: 2.5, far: 10 },
   ],
   champion: [
     { id: 'swing', windup: 0.8, dmg: 1.3, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
@@ -1105,7 +1113,9 @@ export const ACTION_F3 = { on: false };
 /**
  * FLOOR 4, MORE ACTION (the art chat's art/action-f4, his yes to its pictures): THE DAGGER CULTIST'S FRENZY in place of his leap
  * and plunge: four quick stabs before him as he drives forward, then winded a moment, open (game.ts startMove and landMove,
- * 'frenzy'). The art's switch goes with it (art/bestiary.ts useActionF4). (The golem's hurl, GOLEM_HURL, not yet wired: off.)
+ * 'frenzy'); and THE OSSUARY GOLEM'S SKELETON HURL in place of its skull lob, aimed where the hero stands as it holds the
+ * skeleton up, bursting 2.25 tiles round where it lands (game/action_f4.ts), with its club swing by Movement 9 (MONSTER_MOVES
+ * golemHurl). The art's switches go with it (art/bestiary.ts useActionF4: DAGGER_FRENZY, GOLEM_HURL).
  */
 export const ACTION_F4 = { on: false };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
@@ -1125,7 +1135,7 @@ export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly M
     case 'boneward':
       return MONSTER_MOVES.boneward;
     case 'golem':
-      return MONSTER_MOVES.golem;
+      return ACTION_F4.on ? MONSTER_MOVES.golemHurl : MONSTER_MOVES.golem;
     case 'champion':
       return MONSTER_MOVES.champion;
     case 'marksman':

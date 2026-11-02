@@ -27,6 +27,7 @@
 
 import { stepActionF1 } from './action_f1';
 import { stepActionF2 } from './action_f2';
+import { stepActionF4 } from './action_f4';
 import { BODIES, MONSTERS, MSG, SUMMON, TUNE, wordShare } from './defs';
 import type { MonsterDef } from './defs';
 import { beside, fromFigure, handOf } from './facing';
@@ -1355,7 +1356,8 @@ export class BossRules {
         const r1 = p.a1 ? act1Rules(p.a1.split(':')[0] as MonsterKind) : null;
         if (r1 && r1.peril) r1.peril(this, p, dt);
         // (FLOOR 1, MORE ACTION: the archer's arrow rain and the Warden's Lockdown, whose kinds have no such rules: game/action_f1.ts)
-        else if (!r1 && !stepActionF1(g, p, hurt)) stepActionF2(g, p, hurt);
+        // (floor 2's and floor 4's likewise: game/action_f2.ts, game/action_f4.ts)
+        else if (!r1 && !stepActionF1(g, p, hurt) && !stepActionF2(g, p, hurt)) stepActionF4(g, p, hurt);
       } else if (p.kind === 'split') {
         // (the split burns: whoever stands in it is burned, tick by tick)
         const S = HEADSMAN.sentence;

@@ -3,10 +3,12 @@
 
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
+import { TWIN_AFTER, aimHurl, aimedHurl, looseHurl } from './action_f4';
 import { RAIN } from '../art/action_f1_fx';
 import { RIME } from '../art/action_f2_fx';
 import { WALL, glances } from '../art/action_f3_fx';
 import { FRENZY as DAGGER_FRENZY_MOVE, FRENZY_HITS, frenzyTravel } from '../art/cultists';
+import { HURL, SWING as GOLEM_SWING } from '../art/action_f4_fx';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
@@ -9095,6 +9097,12 @@ export class Game {
       FRENZY_HITS.slice(0, 3).forEach((at) => this.after(at, () => {
         if (!m.dead && m.state === 'windup' && m.frenzy === F) this.frenzyStab(m, F.x + F.fx * frenzyTravel(at), F.y + F.fy * frenzyTravel(at), mv);
       }));
+    } else if (mv.id === 'throw' && m.kind === 'golem' && ACTION_F4.on) {
+      // (FLOOR 4, MORE ACTION: the Golem's skeleton hurl, aimed where the hero stands as it has the skeleton up and begins to hold
+      // it, the reach of its burst marked there: game/action_f4.ts)
+      this.after(HURL.aim, () => {
+        if (!m.dead && m.state === 'windup' && m.move === i && !aimedHurl(this, m, 1)) aimHurl(this, m, mv, 1, 1, Math.max(0, m.t));
+      });
     } else if (mv.id === 'sigil') {
       // (FLOOR 2, MORE ACTION: the cultist's fire sigil, its ring under where the hero stands as it begins its cast: game/action_f2.ts)
       this.perils.push({ kind: 'act1', a1: SIGIL_PERIL, x: this.hero.x, y: this.hero.y, fx: m.fx, fy: m.fy, t: -mv.windup, hit: 0, dur: SIGIL_LASTS, dmg: this.rollMonsterDmg(m) * mv.dmg, el: this.monsterElement(m), words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: m.x, c: m.y, d: 0, hand: 1 });
@@ -9127,9 +9135,13 @@ export class Game {
     if (mv.id === 'swing' || mv.id === 'bash') {
       // the basic blow: whoever is in its reach when it lands (a Twin monster swings again); the
       // Boneward's shield, while its spear is gone, shoves the hero back too (THE NEW MONSTERS)
-      const reach = this.reachOf(m, def) + 0.45 + TUNE.heroRadius;
+      // (FLOOR 4, MORE ACTION: the Golem's club swing by Movement 9 reaches further, in the half of the floor before it:
+      // art/action_f4_fx.ts SWING)
+      const golem9 = m.kind === 'golem' && ACTION_F4.on;
+      const reach = this.reachOf(m, def) + 0.45 + TUNE.heroRadius + (golem9 ? GOLEM_SWING.reach - def.range : 0);
       const bash = mv.id === 'bash';
-      if (dist <= reach) {
+      const before = (): boolean => !golem9 || (this.hero.x - m.x) * m.fx + (this.hero.y - m.y) * m.fy >= -TUNE.heroRadius;
+      if (dist <= reach && before()) {
         this.hurtHero(this.rollMonsterDmg(m) * mv.dmg, el, m.words, m);
         if (bash) this.knockHero(m.x, m.y, 0.8);
       }
@@ -9137,12 +9149,24 @@ export class Game {
       if (twin > 0) {
         this.after(0.28, () => {
           if (m.dead) return;
-          if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m);
+          if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach && before()) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m);
         });
       }
     } else if (mv.id === 'throw') {
       // THE NEW MONSTERS: the Golem's skull, or the Boneward's spear
-      if (m.kind === 'golem') {
+      if (m.kind === 'golem' && ACTION_F4.on) {
+        // (FLOOR 4, MORE ACTION: it lets the skeleton go at the mark it took (or, if it had none, where the hero stands now); a Twin
+        // golem's second aimed now and let go a moment after: game/action_f4.ts)
+        looseHurl(aimedHurl(this, m, 1) ?? aimHurl(this, m, mv, 1, 1, 0), m);
+        this.sfx('swing', 0.6);
+        if (twin > 0) {
+          aimHurl(this, m, mv, twin, -1, TWIN_AFTER);
+          this.after(TWIN_AFTER, () => {
+            const p = aimedHurl(this, m, -1);
+            if (p && !m.dead) looseHurl(p, m);
+          });
+        }
+      } else if (m.kind === 'golem') {
         this.hurlSkull(m, mv, 1);
         if (twin > 0) {
           this.after(0.35, () => {

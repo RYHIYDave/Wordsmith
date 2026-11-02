@@ -103,7 +103,9 @@ test('1. the switches are off, nothing of the game imports the mock-up, and with
   assert.equal(GOLEM_HURL.on, false, 'GOLEM_HURL is off');
   assert.equal(DAGGER_FRENZY.on, false, 'DAGGER_FRENZY is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/action_f4_fx.ts') continue;
+    // (and the game's own, brought in by the main chat behind ACTION_F4: the hurl's rules, game/action_f4.ts and game/game.ts; its
+    // drawing, render/act1_fx/golem.ts; and the bestiary's choosing of its art)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/action_f4_fx.ts' || ['game/action_f4.ts', 'game/game.ts', 'render/act1_fx/golem.ts', 'art/bestiary.ts'].includes(f)) continue;
     assert.ok(!/from ['"][^'"]*action_f4_(fx|scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   // the dagger cultist: with his switch off, the game's own; with it on, every list the same but his attack, which is the frenzy
