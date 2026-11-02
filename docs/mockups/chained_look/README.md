@@ -110,7 +110,10 @@ His canvas is made as much bigger: **504 × 408**, his floor point at (252, 283)
    None was touched, so that every key and timing stays as he approved them;
 5. taller and thinner: his head 1.2 times as high; every limb no thicker than the old's made as big, his chest under 85% as wide.
 
-Also: `tsc` clean.
+All 5 pass (about 4 minutes). Also: `tsc` clean; `tests/action_f3_chained.test.ts`, `tests/bosses.test.ts` and
+`tests/new_mobs3.test.ts` pass (27 of 27). Changed outside this mock-up's own files, the smallest change each: those three tests'
+lists of mock-up files that may import the bosses' files, `chained_look` added (the action test: `art/chained_look.ts` may import
+`chained_action`, as the Amalgamation's mock-up may). No file of the game changed.
 
 ## For him to decide (the art chat's to ask)
 
