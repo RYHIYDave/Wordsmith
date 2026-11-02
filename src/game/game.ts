@@ -1257,6 +1257,7 @@ export class Game {
     this.snareAt = [-9, -9, -9];
     // (BINDING, on a monster: what roots the hero stays on its own level)
     this.hero.rootT = 0;
+    this.hero.iceT = 0;
     this.hero.rootAgain = 0;
     this.boss = null;
     this.visList = [];
@@ -3789,6 +3790,7 @@ export class Game {
     if (h.stillT) h.stillT = Math.max(0, h.stillT - dt);
     // (BINDING, on monsters: rooted, and the time before he may be rooted again)
     if (h.rootT) h.rootT = Math.max(0, h.rootT - dt);
+    if (h.iceT) h.iceT = Math.max(0, h.iceT - dt);
     if (h.slowT) h.slowT = Math.max(0, h.slowT - dt);
     if (h.rootAgain) h.rootAgain = Math.max(0, h.rootAgain - dt);
     // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
@@ -3908,6 +3910,8 @@ export class Game {
       if (this.level.land?.garden) sp *= nettleSlow(h);
       // (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
       if ((h.rootT ?? 0) > 0) sp = 0;
+      // (FROZEN IN PLACE by the Drowned's frost grab: he walks nowhere, nor dodges)
+      if ((h.iceT ?? 0) > 0) sp = 0;
       // (an attack slows the hero for a moment from when it is begun, as it always has; one that is
       // being held slows them for as long as it is: a beam to a walk, a whirlwind hardly at all)
       if (h.channel) sp *= SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? TUNE.whirlWalk : TUNE.beamWalk;
@@ -4405,6 +4409,8 @@ export class Game {
     const s = h.skills[2];
     // (THE FIRST LEVELS: not before its level)
     if (!this.moveOpen(2)) return;
+    // (FROZEN IN PLACE by the Drowned's frost grab: no dodging out of it)
+    if ((h.iceT ?? 0) > 0) return;
     if (s.charges < 1) return;
     if (h.mana < s.r.mana) {
       this.noMana();

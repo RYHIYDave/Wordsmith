@@ -28,6 +28,9 @@
 //                              that none of it is painted in its fight (17 Oct: his "serious slowdown" in the rock throw)
 //   things:princess            (THE HIGH CITY, FLOOR 16) what the Princess casts and sends (her snare's cage, her Vow's
 //                              ring, her swans circling and diving: art/act1_figs/princess.ts princessThings)
+//   things:deer                (FLOOR 9, DEER_BRAMBLE) the twisted deer's hedge of bramble, each clump's moments (art/act1_figs/deer.ts
+//                              deerThings)
+//   things:drowned             (FLOOR 10, DROWNED_RETCH) the Drowned's slick, its frames (art/act1_figs/drowned.ts drownedThings)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
 // the page.
 
@@ -50,6 +53,8 @@ import { stairwellKicks, stairwellOpens } from './stairwell_open';
 import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
 // (THE HIGH CITY, FLOOR 16: the Princess's things)
 import { princessThings } from './act1_figs/princess';
+import { deerThings } from './act1_figs/deer';
+import { drownedThings } from './act1_figs/drowned';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -212,6 +217,9 @@ export function filmRoom(key: string): number {
   if (kind === 'start') return 2;
   // (THE HIGH CITY, FLOOR 16: the Princess's things, measured 30 Oct 2026 as the others are: 20.8, art/act1_figs/princess.ts THINGS_COST)
   if (kind === 'things' && a === 'princess') return 22;
+  // (FLOOR 9: the deer's hedge, 704 pictures each cut down to what is painted in it: measured 2 Nov 2026 in node as the others are)
+  if (kind === 'things' && a === 'deer') return DEER_THINGS_ROOM;
+  if (kind === 'things' && a === 'drowned') return DROWNED_THINGS_ROOM;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -223,6 +231,8 @@ export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y
 
 /** (EXITS) The cave's film's room and the cage's coming up's, in megabytes: see filmRoom. */
 const CAVE_ROOM = 62;
+const DEER_THINGS_ROOM = 20;
+const DROWNED_THINGS_ROOM = 20;
 const TOWN_ARRIVE_ROOM = 32;
 
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
@@ -281,6 +291,10 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   }
   // (THE HIGH CITY, FLOOR 16: what the Princess casts and sends, as render/act1_fx/princess.ts asks for it)
   if (kind === 'things' && a === 'princess') return princessThings();
+  // (FLOOR 9: the deer's hedge of bramble, as render/act1_fx/deer.ts asks for it)
+  if (kind === 'things' && a === 'deer') return deerThings();
+  // (FLOOR 10: the Drowned's slick, as render/act1_fx/drowned.ts asks for it)
+  if (kind === 'things' && a === 'drowned') return drownedThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();

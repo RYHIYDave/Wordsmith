@@ -254,6 +254,8 @@ export interface Hero {
   stillK?: number;
   /** BINDING on monsters: seconds left rooted (he walks nowhere), and before a monster's Binding may root him again. */
   rootT?: number;
+  /** FROZEN IN PLACE (floor 10, the Drowned's frost grab, DROWNED_RETCH: game/act1_rules/drowned.ts): seconds left that he neither walks nor dodges. */
+  iceT?: number;
   /** (THE HIGH CITY, FLOOR 19) Slowed by an enemy's ground (the King's Hush's grey fog): by this share of his pace while slowT lasts. */
   slowT?: number;
   slowBy?: number;
