@@ -2,7 +2,9 @@
 // art/amalgam_action.ts behind AMALGAM_ACTION; his yes to each, 1 Nov 2026, and of the bone mites, "That’s awesome", and "They
 // crumble after a while"). Held here, with both switches on for each test:
 //   1. off, its old acts; on, the new, where its pictures have them, and the art's switch with it;
-//   2. the swipe: before it, both rakes and the finisher; behind it, nothing; the finisher's ring marked as it rears;
+//   2. the grasping fan (his pick of 2 Nov in place of the swipe combo, “Grasping fan (Recommended)”; a hero caught, “Just a hit
+//      (Recommended)”): before it, struck once as the arms land, and not dragged; to its side, behind it, or past the arms' reach,
+//      nothing;
 //   3. the bone rain: the skulls come down over the floor round it, each where it was marked a second before; one that lands
 //      where the hero stands strikes him; a bone mite pulls together where each burst, one blow kills it, it leaves nothing,
 //      and left alone it crumbles;
@@ -13,8 +15,8 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { AMALGAM_ACTION, ARMS_HIT, DEVOUR_HITS, RAIN_HIT, SWIPE_HITS, SWIPE_LONG } from '../src/art/amalgam_action';
-import { ARMS, RAIN, SLAM_RING } from '../src/art/amalgam_action_fx';
+import { AMALGAM_ACTION, ARMS_HIT, DEVOUR_HITS, FAN, FAN_HIT, FAN_LONG, RAIN_HIT } from '../src/art/amalgam_action';
+import { ARMS, RAIN } from '../src/art/amalgam_action_fx';
 import { MITE } from '../src/art/amalgam_mites';
 import { useAmAction } from '../src/art/bestiary';
 import { RNG } from '../src/engine/rng';
@@ -92,26 +94,31 @@ test('1. on (his yes), the new, where its pictures have them, and its new pictur
   on(() => {
     assert.ok(AMALGAM_ACTION.on, 'the art with the rules');
     assert.equal(actsOf({ kind: 'amalgam' }), AM2_ACTS);
-    assert.deepEqual(AM2_ACTS.map((a) => a.id), ['swipe', 'am:rain', 'floorArms', 'devour', 'burst']);
-    assert.equal(AM2_ACTS[0].long, SWIPE_LONG);
+    assert.deepEqual(AM2_ACTS.map((a) => a.id), ['am:fan', 'am:rain', 'floorArms', 'devour', 'burst']);
+    assert.equal(AM2_ACTS[0].long, FAN_LONG);
+    assert.equal(AM2_ACTS[0].hit, FAN_HIT);
     assert.equal(AM2_ACTS[1].hit, RAIN_HIT);
     assert.equal(AM2_ACTS[2].hit, ARMS_HIT);
   });
 });
 
-test('2. the swipe: both rakes and the finisher before it; nothing behind it; the finisher marked as it rears', () => {
+test('2. the grasping fan: struck once as its arms land before it, not dragged; to its side, behind it, past its reach, nothing', () => {
   on(() => {
-    const a = room(2.5, 'swipe');
-    let marked = -1;
-    const hurts = watch(a.g, SWIPE_LONG + 0.2, (t) => {
-      if (marked < 0 && a.g.zones.some((z) => z.kind === 'warn' && z.src === a.m.id && Math.abs(z.r - SLAM_RING.finisher) < 1e-9)) marked = t;
-    });
-    assert.equal(hurts.length, 3, `struck at ${hurts.map((t) => t.toFixed(2)).join(', ')}`);
-    SWIPE_HITS.forEach((T, i) => near(hurts[i], T, 0.03, `blow ${i + 1}`));
-    near(marked, AM2.finisherWarn, 0.03, 'the finisher marked');
-    const b = room(2.5, 'swipe');
+    const a = room(3, 'am:fan');
+    const at = { x: a.g.hero.x, y: a.g.hero.y };
+    const hurts = watch(a.g, FAN_LONG + 0.2);
+    assert.equal(hurts.length, 1, `struck at ${hurts.map((t) => t.toFixed(2)).join(', ')}`);
+    near(hurts[0], FAN_HIT, 0.03, 'as the arms land');
+    assert.ok(Math.hypot(a.g.hero.x - at.x, a.g.hero.y - at.y) < 1e-6, 'not dragged');
+    const side = room(3, 'am:fan');
+    side.g.hero.x = side.m.x;
+    side.g.hero.y = side.m.y + 3;
+    assert.equal(watch(side.g, FAN_LONG + 0.2).length, 0, 'to its side: nothing');
+    const b = room(2.5, 'am:fan');
     b.g.hero.x = b.m.x - 2.5;
-    assert.equal(watch(b.g, SWIPE_LONG + 0.2).length, 0, 'behind it: nothing');
+    assert.equal(watch(b.g, FAN_LONG + 0.2).length, 0, 'behind it: nothing');
+    const far = room(FAN.reach + FAN.vary + 0.6, 'am:fan');
+    assert.equal(watch(far.g, FAN_LONG + 0.2).length, 0, 'past its reach: nothing');
   });
 });
 

@@ -1,13 +1,15 @@
 // THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY (game/bosses.ts AM_ACTION): what its moves leave on the floor and send over
 // it, drawn (render/act1_fx/types.ts), from the art chat's pictures (art/amalgam_action_fx.ts, his yes to them, 1 Nov 2026). Its
 // moves are in its own pictures (art/amalgam_action.ts, AMALGAM_ACTION); its arms of the dead are render/bossfx.ts's; here:
-// - WHILE IT ACTS: each rake's arc marked on the floor from when its arm is hauled up to its blow; the devour's cone marked from
-//   its warning to its rake (the warning's own dots, as the bosses' marks are drawn: art/boss_shots.ts);
+// - WHILE IT ACTS: each of its grasping fan's dozen arms' lines marked on the floor from FAN.mark to their landing, a claw's three
+//   slashes at each line's end (the art chat's scene, src/dev/action_fixes2_scene.ts fanScene); each rake's arc marked on the floor
+//   from when its arm is hauled up to its blow; the devour's cone marked from its warning to its rake (the warning's own dots, as the
+//   bosses' marks are drawn: art/boss_shots.ts);
 // - A RING of its slam (AM_RING, `d` its radius): slamRingPainted, on the floor and in the air by halves;
 // - A RAKE'S GOUGES (AM_RAKE, `c` which): rakeFloorPainted, on the floor, seen as it was;
 // - A SKULL OF THE RAIN (AM_DROP): its shadow and its mark from the second before it lands, its burst and its scuff after
 //   (dropPainted 'floor', 'air' by halves); the skull itself in flight from its niche (dropAt, makeRainSkullArt), over everything.
-import { ACT_CANVAS, RAKES, SWIPE_HITS, DEVOUR_HITS } from '../../art/amalgam_action';
+import { ACT_CANVAS, FAN, FAN_HIT, RAKES, SWIPE_HITS, DEVOUR_HITS, fanLines } from '../../art/amalgam_action';
 import { DROP_CANVAS, RAIN, RAIN_SKULL_FRAMES, SLAM_RING, dropAt, dropPainted, makeRainSkullArt, rakeFloorPainted, slamRingCanvas, slamRingPainted } from '../../art/amalgam_action_fx';
 import type { Drop } from '../../art/amalgam_action_fx';
 import { toSprite } from '../../art/kit';
@@ -65,7 +67,22 @@ export const FX: Act1Fx | null = {
       if (!act || m.state !== 'act' || !m.seen) return;
       const at = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
       const T = act.t;
-      if (act.id === 'swipe') {
+      if (act.id === 'am:fan') {
+        if (T < FAN.mark || T >= FAN_HIT) return;
+        // (each arm's line, drawn out from it, full by 0.45 s; a claw's three slashes where it will close)
+        const k = clamp01((T - FAN.mark) / 0.35);
+        for (const { deg, reach } of fanLines()) {
+          const th = (deg * Math.PI) / 180;
+          const a = at(FAN.near * Math.cos(th), FAN.near * Math.sin(th));
+          const end = FAN.near + (reach - FAN.near) * k;
+          const b = at(end * Math.cos(th), end * Math.sin(th));
+          dotLine(c, a.x, a.y, b.x, b.y, k);
+          if (k > 0.95) {
+            const [sx, sy] = c.at(b.x, b.y);
+            for (let j = -1; j <= 1; j++) for (let i = -3; i <= 3; i++) dot(c.g, sx + i + j * 3, sy + i * 0.5 - j, FLAME[3]);
+          }
+        }
+      } else if (act.id === 'swipe') {
         for (let i = 0; i < 2; i++) {
           if (T < AM2.rakeMark[i] || T >= SWIPE_HITS[i]) continue;
           const k = clamp01((T - AM2.rakeMark[i]) / (SWIPE_HITS[i] - AM2.rakeMark[i]));

@@ -30,7 +30,7 @@ import { stepActionF2 } from './action_f2';
 import { stepActionF4 } from './action_f4';
 import { BALL_LAND, BALL_LET, BALL_LONG, BALL_REACH, HOOK_BACK, HOOK_BITE, HOOK_BLOW, HOOK_LET, HOOK_LONG, LASH_HITS, LASH_LONG, LASH_TRAVEL_TILES, WHIRL_HIT, WHIRL_LONG, WHIRL_LOOP, actBallPath, actHookPath } from '../art/chained_action';
 import { CRACK, RING as CO_RING, crackStrikes, ringStrikes as coRingStrikes } from '../art/chained_action_fx';
-import { ARMS_HIT, ARMS_LONG, DEVOUR_HITS, DEVOUR_LONG, RAIN_HIT, RAIN_LONG, RAKES, SWIPE_HITS, SWIPE_LONG } from '../art/amalgam_action';
+import { ARMS_HIT, ARMS_LONG, DEVOUR_HITS, DEVOUR_LONG, FAN, FAN_HIT, FAN_LONG, RAIN_HIT, RAIN_LONG, RAKES, SWIPE_HITS, fanStrikes } from '../art/amalgam_action';
 import { ARMS as AM_ARMS, BIG_ARM_TIME, RAIN as AM_RAIN, SLAM_RING, rainDrops, rainStrikes } from '../art/amalgam_action_fx';
 import { MITE } from '../art/amalgam_mites';
 import { BODIES, MONSTERS, MSG, SUMMON, TUNE, wordShare } from './defs';
@@ -385,9 +385,10 @@ export const CO2_ACTS: readonly ActDef[] = [
  * each, 1 Nov 2026, the rakes redone at his word and the rain's skulls become bone mites: "That’s awesome"). Behind this switch
  * (off), with the art's (AMALGAM_ACTION: art/bestiary.ts useAmAction). It rears to its full height before each big move and
  * crashes down; its numbers the pictures' own, the rest the rules':
- *   swipe     a combo: two rakes, each a hero within its slash (`RAKES[i].out` of its middle) inside its arc (`arcs[i]`: degrees
- *             from its front, to its left), marked as the arm is hauled up (`rakeMark[i]`); then the finisher, slammed down: a
- *             ring SLAM_RING.finisher round a point SLAM_RING.ahead before it (`finisherDmg`), marked from its rear (`finisherWarn`)
+ *   am:fan    its basic, THE GRASPING FAN (his pick of 2 Nov, in place of its swipe combo: “Grasping fan (Recommended)”; a hero
+ *             caught, “Just a hit (Recommended)”): each of its dozen arms' lines marked on the floor from FAN.mark; as they land
+ *             (FAN_HIT) a hero within FAN.r of a line, from FAN.near out to its reach, is struck (fanStrikes); not dragged
+ *   (swipe     its combo of two rakes and a finisher, as it was: no longer one of its moves; its rules kept below)
  *   am:rain   it rears and roars, slams down, and the skulls come down out of the walls over the whole floor round it (rainDrops,
  *             `rain.rx`, `rain.ry`), each a second's shadow first, bursting where it lands (AM_RAIN.r), a bone mite pulling
  *             together where it burst (game/am_mites.ts); the slam's ring drawn only (what strikes is the skulls)
@@ -411,7 +412,7 @@ export const AM_RING = 'amalgam:ring';
 export const AM_RAKE = 'amalgam:rake';
 export const AM_DROP = 'amalgam:drop';
 export const AM2_ACTS: readonly ActDef[] = [
-  { id: 'swipe', clip: 'attack', long: SWIPE_LONG, hit: SWIPE_HITS[0], dmg: 1, cooldown: 0, first: 0, after: 0.5, near: 0, far: 3.3 },
+  { id: 'am:fan', clip: 'attack', long: FAN_LONG, hit: FAN_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.5, near: 0, far: FAN.reach },
   { id: 'am:rain', clip: 'rain', long: RAIN_LONG, hit: RAIN_HIT, dmg: AM2.rain.dmg, cooldown: 10, first: 3, after: 0.6, near: 0, far: 11 },
   { id: 'floorArms', clip: 'floorArms', long: ARMS_LONG, hit: ARMS_HIT, dmg: 0.75, cooldown: 9, first: 5, after: 0.6, near: 0, far: 11 },
   { id: 'devour', clip: 'devour', long: DEVOUR_LONG, hit: DEVOUR_HITS[0], dmg: 1.8, cooldown: 12, first: 8, after: 0.8, near: 0, far: 4.2 },
@@ -1037,6 +1038,15 @@ export class BossRules {
     const mark = (x: number, y: number, r: number, left: number): void => g.addWarn(x, y, r, Math.max(0.05, left), 0, el, m.words, m.name, m.id, half, true);
     const ring = (x: number, y: number, r: number): void => void this.peril(m, 'act1', x, y, { a1: AM_RING, dur: SLAM_RING.long, d: r, done: 1 });
     switch (a.id) {
+      case 'am:fan': {
+        // (THE GRASPING FAN: its dozen arms land across the floor; a hero on an arm's line is struck, and not dragged)
+        if (!at(FAN_HIT)) break;
+        const r = this.rel(m);
+        if (fanStrikes(r.fwd, r.left)) this.blow(m, a.dmg);
+        g.emit({ t: 'shake', amount: 3 });
+        g.sfx('slam', 0.8);
+        break;
+      }
       case 'swipe': {
         // (its two rakes: each a hero within its slash and inside its arc, as it lands)
         for (let i = 0; i < 2; i++) {
