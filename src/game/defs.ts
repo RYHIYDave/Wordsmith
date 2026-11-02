@@ -1077,7 +1077,8 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
   // into its cast, the rest of it 0.75 s; a cooldown a little longer than the bolt's 2.7 s; as far as it would shoot)
   // FLOOR 4, MORE ACTION (ACTION_F4): the dagger cultist's frenzy in place of his leap and plunge (art/cultists.ts FRENZY: four
   // stabs, at 0.5, 0.73, 0.97 and 1.2 s, each a share of his blow, carrying him 1.2 tiles; winded to 2.7 s; his cooldown 1.6 s)
-  daggerFrenzy: [{ id: 'frenzy', windup: 1.2, dmg: 0.45, cooldown: 0, first: 0, after: 1.6, recover: 1.5, near: 0, far: 0 }],
+  // (begun from his run as soon as the hero is within the whole of its reach: its four steps and a stab's, 2.4 tiles)
+  daggerFrenzy: [{ id: 'frenzy', windup: 1.2, dmg: 0.45, cooldown: 0, first: 0, after: 1.6, recover: 1.5, near: 0, far: 2.4 }],
   cultistSigil: [{ id: 'sigil', windup: 1.2, dmg: 1.2, cooldown: 0, first: 0, after: 3.2, recover: 0.75, near: 0, far: 7.5 }],
   wardenLock: [
     { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },

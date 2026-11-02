@@ -9,10 +9,12 @@
 //   IT BURSTS as it lands: a hero within HURL.r of where it lands is struck by the bones (burstStrikes). The bones lie, crumble and
 //     are gone by BURST_LONG.
 // A Twin golem's second skeleton is aimed as the first is loosed and loosed TWIN_AFTER later.
+// (And THE DAGGER CULTIST'S FRENZY, carried along the floor as its pictures carry him: frenzyAt, below; its stabs are game.ts's.)
 //   The peril's own numbers: `done` 0 aimed, 1 in flight, 2 burst; `a` the golem; `b`, `c` where it leaves the fist (tiles);
 //   `d` the tiles from the golem to the mark; `fx`, `fy` the way the golem faced as it let go; `hand` 1, or -1 a Twin's second.
 
 import { BURST_LONG, HURL, HURL_FROM, burstStrikes, hurlArc, hurlFly } from '../art/action_f4_fx';
+import { FRENZY, frenzyCame } from '../art/cultists';
 import type { MonsterMove } from './defs';
 import type { Game } from './game';
 import type { Monster, Peril } from './state';
@@ -100,4 +102,27 @@ export function stepActionF4(g: Game, p: Peril, hurt: (mult?: number) => void): 
     g.emit({ t: 'shake', amount: 2.5 });
   }
   return true;
+}
+
+// =============================================================================================
+// THE DAGGER CULTIST'S FRENZY, CARRIED
+
+const CAME: number[] = [];
+/** How far the frenzy's pictures have carried him by its frame `age` seconds in (tiles; art/cultists.ts frenzyCame, a frame at a time). */
+export function frenzyAt(age: number): number {
+  const k = Math.max(0, Math.min(Math.round(FRENZY.long * 30), Math.floor(age * 30 + 1e-6)));
+  return (CAME[k] ??= frenzyCame(k / 30));
+}
+/** How long his frenzy has run (seconds), as his pictures show it: its wind-up counted down (`t` left of `windup`), then its recover. */
+export function frenzyAge(state: string, t: number, windup: number, recover: number): number {
+  return state === 'windup' ? windup - Math.max(0, Math.min(windup, t)) : windup + recover - Math.max(0, Math.min(recover, t));
+}
+/**
+ * Where his picture is to be drawn from his place (game pixels), while his frenzy runs: his pictures carry him along the way they
+ * face (pictureWays), and the rules carry him the way he truly faces, so his picture is drawn back by what it carries him.
+ */
+export function frenzyShift(fx: number, fy: number, age: number): [number, number] {
+  const { ahead } = pictureWays(fx, fy);
+  const c = frenzyAt(age);
+  return [-Math.round((ahead[0] - ahead[1]) * 16 * c), -Math.round((ahead[0] + ahead[1]) * 8 * c)];
 }

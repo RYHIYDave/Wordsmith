@@ -45,6 +45,7 @@ import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
 import { AIM, BODIES, MONSTERS, OWN_MOVES, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
+import { frenzyAge, frenzyShift } from '../game/action_f4';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { MELD_DUST_COLOR, withParts } from '../game/melds';
@@ -2907,6 +2908,16 @@ export class Renderer {
         sy += oy;
       }
       const sp = this.monsterSprite(m);
+      // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy carries him in its own pictures, the rules the way he truly faces: his
+      // picture drawn back by what it carries him, so that it is where the rules have him: game/action_f4.ts frenzyShift)
+      if (m.frenzy && (m.state === 'windup' || m.state === 'recover')) {
+        const mv = movesOf(m)?.[m.move ?? -1];
+        if (mv && mv.id === 'frenzy') {
+          const [ox, oy] = frenzyShift(m.fx, m.fy, frenzyAge(m.state, m.t, mv.windup, mv.recover));
+          sx += ox;
+          sy += oy;
+        }
+      }
       // (ACT 1: up in the air, as its kind has it; and drawn over what it is latched on to)
       const a1 = act1Fx(m.kind);
       if (a1 && a1.lift) sy -= Math.round(a1.lift(m));

@@ -3,7 +3,7 @@
 
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
-import { TWIN_AFTER, aimHurl, aimedHurl, looseHurl } from './action_f4';
+import { TWIN_AFTER, aimHurl, aimedHurl, frenzyAge, frenzyAt, looseHurl } from './action_f4';
 import { RAIN } from '../art/action_f1_fx';
 import { RIME } from '../art/action_f2_fx';
 import { WALL, glances } from '../art/action_f3_fx';
@@ -8757,6 +8757,8 @@ export class Game {
         if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'charge') this.laneOf(m, (z) => (z.t = Math.max(0, z.dur - m.t)));
         // (THE NEW MONSTERS: the marksman's line of aim runs out as he draws, and follows the hero till it holds still: AIM)
         if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'pierce') this.holdAim(m);
+        // (FLOOR 4, MORE ACTION: the dagger cultist carried on as his frenzy's pictures carry him)
+        if (m.frenzy && moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'frenzy') this.carryFrenzy(m, moves[m.move]);
         if (m.t <= 0) this.monsterAttack(m, def);
         continue;
       }
@@ -8770,6 +8772,7 @@ export class Game {
       }
       if (m.state === 'recover') {
         m.t -= mdt;
+        if (m.frenzy && moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'frenzy') this.carryFrenzy(m, moves[m.move]);
         if (m.t <= 0) {
           m.state = 'chase';
           m.anim = 'idle';
@@ -9093,7 +9096,7 @@ export class Game {
       this.msg(`${m.name} calls the dead`, MSG.foe);
     } else if (mv.id === 'frenzy') {
       // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy: its first three stabs in its wind-up, the fourth as it lands)
-      const F = (m.frenzy = { x: m.x, y: m.y, fx: m.fx, fy: m.fy });
+      const F = (m.frenzy = { x: m.x, y: m.y, fx: m.fx, fy: m.fy, went: 0 });
       FRENZY_HITS.slice(0, 3).forEach((at) => this.after(at, () => {
         if (!m.dead && m.state === 'windup' && m.frenzy === F) this.frenzyStab(m, F.x + F.fx * frenzyTravel(at), F.y + F.fy * frenzyTravel(at), mv);
       }));
@@ -9190,17 +9193,11 @@ export class Game {
       }
       this.sfx('shot', 0.6);
     } else if (mv.id === 'frenzy') {
-      // (FLOOR 4, MORE ACTION: its fourth stab, then carried on as far as its stabs drove it, winded: art/cultists.ts FRENZY)
-      const F = m.frenzy ?? { x: m.x, y: m.y, fx: m.fx, fy: m.fy };
-      const sx = F.x + F.fx * DAGGER_FRENZY_MOVE.travel;
-      const sy = F.y + F.fy * DAGGER_FRENZY_MOVE.travel;
-      this.frenzyStab(m, sx, sy, mv);
+      // (FLOOR 4, MORE ACTION: its fourth stab, then winded where it has carried him (carryFrenzy): art/cultists.ts FRENZY)
+      const F = m.frenzy ?? { x: m.x, y: m.y, fx: m.fx, fy: m.fy, went: 0 };
+      this.frenzyStab(m, F.x + F.fx * DAGGER_FRENZY_MOVE.travel, F.y + F.fy * DAGGER_FRENZY_MOVE.travel, mv);
       m.fx = F.fx;
       m.fy = F.fy;
-      if (this.free(this.level.walk, sx, sy, m.r)) {
-        m.x = sx;
-        m.y = sy;
-      }
     } else if (mv.id === 'lockdown' || mv.id === 'sigil') {
       // (its bars crash, its sigil erupts, at the peril's own clock: game/action_f1.ts, action_f2.ts)
     } else if (mv.id === 'shoot') {
@@ -9466,6 +9463,30 @@ export class Game {
       // (FLOOR 3, MORE ACTION: its shield raised again a moment after: WALL.raisedAgain)
       m.raisedT = 0;
     }
+  }
+
+  /**
+   * FLOOR 4, MORE ACTION: the dagger cultist carried along the floor as far as his frenzy's pictures have carried him by now
+   * (game/action_f4.ts frenzyAt: on with each stab, settling back a little as he stands winded), the way he faced as it began;
+   * not on through the hero (as far as to him), nor into a wall.
+   * (render.ts draws his picture back by what it carries him: frenzyShift.)
+   */
+  private carryFrenzy(m: Monster, mv: MonsterMove): void {
+    const F = m.frenzy;
+    if (!F) return;
+    const h = this.hero;
+    let go = frenzyAt(frenzyAge(m.state, m.t, mv.windup, mv.recover));
+    const along = (h.x - F.x) * F.fx + (h.y - F.y) * F.fy;
+    const aside = Math.abs((h.x - F.x) * F.fy - (h.y - F.y) * F.fx);
+    const body = m.r + TUNE.heroRadius;
+    if (along > 0 && aside < body) go = Math.min(go, Math.max(F.went, along - Math.sqrt(body * body - aside * aside)));
+    if (Math.abs(go - F.went) < 1e-6) return;
+    const x = F.x + F.fx * go;
+    const y = F.y + F.fy * go;
+    if (!this.free(this.level.walk, x, y, m.r)) return;
+    m.x = x;
+    m.y = y;
+    F.went = go;
   }
 
   /** FLOOR 4, MORE ACTION: a stab of the dagger cultist's frenzy from (x, y): the hero within its reach and its arc before him is struck. */

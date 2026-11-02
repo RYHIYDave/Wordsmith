@@ -455,7 +455,7 @@ export interface Monster {
   glanceT?: number;
   raisedT?: number;
   /** (FLOOR 4, MORE ACTION: the dagger cultist's frenzy) Where it began and the way he faced: his stabs drive on that way, whatever he turns to. */
-  frenzy?: { x: number; y: number; fx: number; fy: number };
+  frenzy?: { x: number; y: number; fx: number; fy: number; went: number };
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
