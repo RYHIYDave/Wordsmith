@@ -266,7 +266,7 @@ test('only her Gun Arm draws the charged shots: of the game (src/, but for its m
     const text = readFileSync(file, 'utf8');
     if (/golem_charge_fx|golemChargeShell|golemChargeBeam|GCHARGE/.test(text)) found.push(file);
   }
-  assert.deepEqual(found.sort(), ['src/art/tinkerer_art.ts', 'src/game/tinkerer.ts', 'src/render/tinkerer_fx.ts']);
+  assert.deepEqual(found.sort(), ['src/art/golem_shots_fx.ts', 'src/art/tinkerer_art.ts', 'src/game/tinkerer.ts', 'src/render/tinkerer_fx.ts']);
 });
 
 // ---- the scene its effects are checked in: the Golem drawn as the game would (turned 45 from in front, 135 truly from behind),

@@ -262,7 +262,7 @@ export function coilArcs(l: Light, x0: number, y0: number, x1: number, y1: numbe
 }
 
 /** The light, smoke and steam of a charge at frame `f` (before it fires): its gather, its vents and stacks, its arcs, its flash. */
-function charging(kind: 'shell' | 'beam', ly: ChargeLayers, at: ChargeAt, f: number): void {
+export function charging(kind: 'shell' | 'beam', ly: ChargeLayers, at: ChargeAt, f: number): void {
   const C = GCHARGE;
   // (held at its full, each round the same)
   const c = chargeOf(kind, f < C.loop ? f : C.loop + ((f - C.loop) % C.round));
@@ -334,7 +334,7 @@ function shellSprite(l: Light, iron: Light, x: number, y: number, dx: number, dy
  * THE SHELL IN FLIGHT, `k` frames after it fired (its flight `n` frames): the shell, after-images of it smeared back along
  * its way, and a trail of cyan behind those, thinning and gone a few frames after it lands.
  */
-function shellFlightFx(ly: ChargeLayers, at: ChargeAt, k: number, n: number): void {
+export function shellFlightFx(ly: ChargeLayers, at: ChargeAt, k: number, n: number): void {
   if (k < 0 || k > n + 3) return;
   const u = Math.min(1, (k + 1) / n);
   const now = at.S(shellAt(at, u));
@@ -370,7 +370,7 @@ function shellFlightFx(ly: ChargeLayers, at: ChargeAt, k: number, n: number): vo
   shellSprite(ly.l, ly.iron, now[0], now[1], dx, dy);
 }
 /** THE HUGE MUZZLE BURST out of its mouth (x, y) the way (dx, dy), `k` frames after it fired: a white heart, long cyan tongues, a ring of air blown out round it. */
-function bigBurst(l: Light, x: number, y: number, dx: number, dy: number, k: number, seed: number): void {
+export function bigBurst(l: Light, x: number, y: number, dx: number, dy: number, k: number, seed: number): void {
   if (k < 0 || k > 4) return;
   const big = [1, 0.8, 0.55, 0.3, 0.15][k];
   disc(l, x + dx * 6, y + dy * 6, 11 * big, 3);
@@ -534,7 +534,7 @@ export function beamReach(f: number): number {
  * THE BEAM from (x0, y0) to (x1, y1) on the picture, `w` pixels thick, at frame `f`: white-hot at its heart, cyan round it,
  * its edge writhing; arcs coiling along it; a flare at its root; a splash of light where it ends. Thinning, it frays to threads.
  */
-function beamFx(l: Light, x0: number, y0: number, x1: number, y1: number, w: number, f: number, thinning: boolean): void {
+export function beamFx(l: Light, x0: number, y0: number, x1: number, y1: number, w: number, f: number, thinning: boolean): void {
   const len = Math.hypot(x1 - x0, y1 - y0) || 1;
   const ux = (x1 - x0) / len;
   const uy = (y1 - y0) / len;

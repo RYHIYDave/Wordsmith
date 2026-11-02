@@ -243,7 +243,7 @@ test('only her Contraption\'s pick draws the new kinds: of the game (src/, but f
       i = text.indexOf('sculptContraptionBuild(', i + 1);
     }
   }
-  assert.deepEqual(found.sort(), ['src/art/tinkerer_art.ts', 'src/game/tinkerer.ts', 'src/render/tinkerer_fx.ts']);
+  assert.deepEqual(found.sort(), ['src/art/golem_shots_fx.ts', 'src/art/tinkerer_art.ts', 'src/game/tinkerer.ts', 'src/render/tinkerer_fx.ts']);
 });
 
 // ---- the scene its effects are checked in: the Contraption drawn as the game would (turned 315 from in front, 45 from
