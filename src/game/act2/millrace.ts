@@ -170,6 +170,23 @@ function sizeOf(rng: RNG, role: AreaRole): { rx: number; ry: number; wob: number
  */
 export const MR_OPEN = { on: true, long: 78, wide: 36, cell: [6.5, 8.5] as [number, number], step: 7, wob: 0.22, millIn: 5, packs: 0.72 };
 
+/**
+ * MR_SCENES: THE FIELDS' THINGS WHERE THEY BELONG (his words, 1 Nov 2026, 10:05: “Can you make sure the doodads go in places that
+ * seem proper as opposed to randomly?”; floor by floor, pictures first; floor 12's kept, “Yes, on to 13 (Recommended)”). On the
+ * one massive field (MR_OPEN) every shape of it took its own scarecrows and sheets, and the field stood thick with them (95
+ * scarecrows to the fields' 15). On, the field's things stand as SCENES across it, one to `every` tiles of it, no two within
+ * `apart`, clear of the track: a scarecrow gagged with the sheets caught round it and blown on past; the corn blown flat, sheets
+ * strewn in a line where the wind took them; near the city's side, what the siege left in the corn. The farmstead, the lair,
+ * the mill, the hay wain, the stamping mill, the willows and the hedges as they were.
+ */
+export const MR_SCENES = { on: true, every: 420, apart: 13 };
+type MRPart = [dx: number, dy: number, name: string, solid: boolean];
+const MR_SCENE_SETS: readonly { name: string; city?: boolean; parts: MRPart[] }[] = [
+  { name: 'the gagged scarecrow', parts: [[0, 0, 'a scarecrow, gagged', true], [1, 1, 'sheets blown into the corn', false], [-1, 2, 'sheets blown into the corn', false], [2, 3, 'sheets blown into the corn', false]] },
+  { name: 'the corn blown flat', parts: [[0, 0, 'sheets blown into the corn', false], [2, 1, 'sheets blown into the corn', false], [4, 1, 'sheets blown into the corn', false], [6, 2, 'sheets blown into the corn', false], [3, -1, 'a scarecrow, gagged', true]] },
+  { name: 'the siege in the corn', city: true, parts: [[0, 0, 'rubble of the siege', true], [2, 1, 'rubble of the siege', true], [1, 2, 'sheets blown into the corn', false]] },
+];
+
 /** Lay floor 13, or null (not laid this time: the dice are rolled again, game/act2_layout.ts). */
 export function generate(depth: number, seed: number): Laid | null {
   const rng = new RNG((seed ^ 0x13a7c0de) >>> 0);
@@ -1278,7 +1295,9 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       }
     }
     const nearCity = Math.hypot(b.x - f.start.x, b.y - f.start.y) < 40;
-    const things: string[] = [MR_PIECE.scarecrow, ...(farm ? [MR_PIECE.willow, MR_PIECE.scarecrow] : nearCity ? [MR_PIECE.rubble] : []), ...(rng.chance(0.5) ? [MR_PIECE.scarecrow] : [])];
+    // (MR_SCENES: the massive field's own things laid as scenes across it, below; the farmstead's as ever)
+    const scened = MR_SCENES.on && !farm;
+    const things: string[] = scened ? [] : [MR_PIECE.scarecrow, ...(farm ? [MR_PIECE.willow, MR_PIECE.scarecrow] : nearCity ? [MR_PIECE.rubble] : []), ...(rng.chance(0.5) ? [MR_PIECE.scarecrow] : [])];
     let k = 0;
     for (const [x, y] of band) {
       if (k >= things.length) break;
@@ -1288,7 +1307,7 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       k++;
     }
     let lying = 0;
-    const lie = Math.round(band.length / 60);
+    const lie = scened ? 0 : Math.round(band.length / 60);
     for (const [x, y] of band) {
       if (lying >= lie) break;
       if (!free(x, y, false)) continue;
@@ -1310,6 +1329,48 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       }
     }
   }
+  // ---- MR_SCENES: the field's things as scenes across it, one to so many tiles of it, spread
+  if (MR_SCENES.on) {
+    const field = land.areas.filter((a) => a.role === 'path');
+    const spots: P[] = [];
+    let ground = 0;
+    for (let ty = 1; ty < H - 1; ty++) for (let tx = 1; tx < W - 1; tx++) {
+      if (!field.some((a) => blobDist(a.blob, tx + 0.5, ty + 0.5) < 0.9)) continue;
+      ground++;
+      if (bossArea && blobDist(bossArea.blob, tx + 0.5, ty + 0.5) < 1.3) continue;
+      if (Math.hypot(tx + 0.5 - f.start.x, ty + 0.5 - f.start.y) < 9 || trackD(tx + 0.5, ty + 0.5) < 3) continue;
+      spots.push([tx, ty]);
+    }
+    rng.shuffle(spots);
+    const want = Math.round(ground / MR_SCENES.every);
+    const laid: P[] = [];
+    const flipOf = (k: number, dx: number, dy: number): P => (k === 0 ? [dx, dy] : k === 1 ? [-dx, dy] : k === 2 ? [dy, dx] : [-dy, dx]);
+    for (const [x, y] of spots) {
+      if (laid.length >= want) break;
+      if (laid.some(([lx, ly]) => Math.hypot(lx - x, ly - y) < MR_SCENES.apart)) continue;
+      const near = Math.hypot(x - f.start.x, y - f.start.y) < 40;
+      // (the city's side has its siege, the rest of the field its scarecrows and its corn: those laid least first)
+      const sets = MR_SCENE_SETS.filter((q) => !q.city || near);
+      const count = (n: string): number => (out.scenes ?? []).filter((o) => o.name === n).length;
+      const order = rng.shuffle([...sets]).sort((a, b) => count(a.name) - count(b.name));
+      let done = false;
+      for (const sc of order) {
+        for (let k = 0; k < 4 && !done; k++) {
+          const at = sc.parts.map(([dx, dy]) => { const [u, v] = flipOf(k, dx, dy); return [x + u, y + v] as P; });
+          if (!sc.parts.every(([, , , solid], i) => free(at[i][0], at[i][1], solid))) continue;
+          sc.parts.forEach(([, , name, solid], i) => {
+            put(name, at[i][0], at[i][1], solid, 0);
+            if (solid) room(at[i][0] - 1, at[i][1] - 1, at[i][0] + 1, at[i][1] + 1);
+          });
+          (out.scenes ??= []).push({ x: x + 0.5, y: y + 0.5, name: sc.name });
+          done = true;
+        }
+        if (done) break;
+      }
+      if (done) laid.push([x, y]);
+    }
+  }
+
   // (a cart of the Order's left standing on the track, half way along)
   const main = land.tracks?.[0];
   if (main) {
