@@ -246,3 +246,68 @@ Made by: `tools/action_f16_film.ts` (the film), `tools/action_f16_sheet.ts` and 
 - THE HEDGE CUT carries the gardener 0.77 tiles on; the game moves him on by it as it ends.
 - Sizes: the banner's staff stands 3.8 tiles tall (above the knight, as a standard should); its reach 3.5 tiles; the horse 0.86 of the
   steed's build.
+
+## 2 Nov 2026: THE SHEAR LUNGE and THE JAVELIN, in place of the hedge cut and the drill (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds.** The groom, the dancers and the king's knight are as they were.
+
+His words, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)” (offered as: the first two to get it; the Amalgamation, Crier, reapers, gardener and guard each get something new). Asked what each gets in its place (answered by 07:46):
+
+- THE GARDENER: “Shear lunge”, offered as: a long held crouch, then one lunge 3 tiles across the lawn, the open shears snapping shut on you.
+- THE PALACE GUARD: “Javelin (Recommended)”, offered as: he hurls the partisan; it sticks quivering where you stood with a burst of turf.
+  He draws a sword till he pulls it out.
+
+### THE SHEAR LUNGE (`GARDENER_HEDGE`; art/action_f16_gardener.ts `LUNGE`, `LUNGE_GARDENER`, `lungeStrikes`, `snapAt`)
+
+His one attack. He sinks into a deep crouch, the shears out low before him OPENED THEIR WIDEST, the lane marked before him across the lawn:
+HELD long, shaking, glinting pink; in TWO FRAMES he LUNGES, flung low and long through the air, smeared (after-images of him and the blades
+all the way), the blades SNAPPING SHUT at its end in a spray of cut grass; stumbling on, bent double, the shut shears dragged along the
+turf, a second stumbling step; straightened. (`makeHedgeArt()` now gives it; the hedge cut's code is kept, out of his set.)
+
+| | |
+|---|---|
+| the move | **2.8 s** (frames 0–84) |
+| the crouch | by 0.35 s; the lane marked from **0.15 s**; **HELD to 1.1 s** (0.75 s) |
+| THE LUNGE | **strike f33–f35**, the blades shut at **1.167 s** (`LUNGE_HIT`); flung **3.1 tiles** in the two frames |
+| struck | a hero in **the lane** (**3.8** long, **0.85** to either side) as he goes through it, or within **1.2** of where the blades shut (4.2 tiles on) |
+| wind-down | stumbling, the shears dragged, to 1.85 s; straightened by 2.4 s; his stand by 2.8 s, **3.36 tiles** on (the game moves him on by `LUNGE_TRAVEL_TILES` as it ends) |
+
+For the rules: `attack` long 2.8, hit `LUNGE_HIT`, `near`/`far` 1.5/3.6; the lane marked from `LUNGE.mark`; `lungeStrikes(x, y)`; the
+spray `clippingsPainted(t, 'air', side, 0.75)` at `snapAt()`. His canvas for it 380 × 280.
+
+### THE JAVELIN (`GUARD_DRILL`; art/action_f16_guard.ts `JAV`, `JAV_PARTISAN`, `JAV_PARTISAN_SWORD`, `JAV_SWORD`, `JAV_SWORD_AFTER`, `PULL`)
+
+Their second attack (the long thrust by Movement 9 stays their first).
+
+- THE PARTISAN GUARD (`JAV_PARTISAN`): **a sword in a scabbard at his left hip now, in every frame of his set** (his frames change by it).
+  The partisan HAULED BACK over his right shoulder, his left hand pointed at you, where you stand MARKED on the turf: HELD, shaking, its
+  blade glinting pink; in TWO FRAMES HURLED, smeared; it flies (`spearFlying`) and STICKS QUIVERING where you stood (`spearStuck`), a BURST
+  OF TURF 1.6 tiles round; he DRAWS HIS SWORD from his hip. With it (`JAV_PARTISAN_SWORD`: the sword guard's stand, march and thrust by
+  Movement 9, no shield) he fights until he has walked to his partisan; then THE PULL-OUT (`moves.pullOut`): his sword put up, both fists
+  high on the shaft, HEAVED, held, WRENCHED OUT in a spray of turf, swung over and up: the partisan guard again.
+- THE SWORD GUARDS (`JAV_SWORD`): **a light javelin across their back now, and a scabbard at the hip, in every frame of their set**
+  (their frames change by them). The same throw: their sword put up in the scabbard, the javelin drawn off their back over the right
+  shoulder, hauled back, HELD, hurled in two frames; their sword drawn again; then the sword guard as they are (`JAV_SWORD_AFTER`: no
+  javelin on their back; nothing to fetch).
+
+| | |
+|---|---|
+| the partisan's throw (`moves.javelin`) | **2.25 s**: hauled back by 0.45 s, **HELD to 0.9 s**; **strike f27–f29**, it leaves his hand at **0.967 s**; the sword drawn 1.62–1.87 s |
+| the sword guard's | **2.55 s**: sword put up by 0.32 s, the javelin off his back at 0.5 s, hauled back by 0.85 s, **HELD to 1.167 s**; **strike f35–f37**, away at **1.233 s**; sword drawn at 1.95 s |
+| its flight (`javAt`) | `javFly(d)` = 0.22 + 0.035·d s (over 4.6 tiles, 0.38 s), `javArc(d)` = 14 + 4·d of their lengths high |
+| where it sticks | where the hero stood as it left the hand: struck within **1.6** as it lands (`javStrikes`), the burst of turf 1.6 round; it quivers 0.8 s, then stands |
+| THE PULL-OUT (`moves.pullOut`) | **2.65 s**, begun standing 1.12 tiles short of it (`STUCK`): sword put up by 0.42 s, fists on it 0.72 s, heaved to 1.32 s, **wrenched out 1.48 s**, upright by 2.02 s, the partisan's stand by 2.65 s |
+
+For the rules: the partisan guard's second attack `moves.javelin` (hit `JAV.partisan.hit`), the weapon away from his hand from then;
+fly it to where the hero stood (`javAt`, `spearFlying`), stick it there (`spearStuck`, and `clippingsPainted(t, layer, side, 1)` for the
+turf), strike by `javStrikes`; he is `JAV_PARTISAN_SWORD` after it (sword in hand) until he has walked to it (stopping 1.12 tiles short)
+and played `pullOut`, taking it off the floor as it begins; then `JAV_PARTISAN` again. The sword guard: `JAV_SWORD` until it throws, then
+`JAV_SWORD_AFTER`. Their canvas 560 × 380.
+
+### Checks
+
+`tests/action_f16.test.ts` updated: test 1 (the guard's lists are new now: the scabbard in every frame; the javelin in place of the drill,
+the pull-out in the sword set); test 2 every frame of the new moves and the guards' new sets both ways round; test 3 the whole bosses'
+review of the lunge (its one blow, ending on where the game hands it back) and of the javelin, the sword set and the pull-out, the sword
+guard's throw (each set handing over to the next: `after`): nothing found; test 4 the javelin flying and stuck, both guards', both ways:
+crisp, no cyan, not cut off; test 5 the numbers. The game's frames hash as before.

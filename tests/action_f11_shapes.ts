@@ -15,7 +15,7 @@ import { OD_SHAPE } from '../src/art/orderlies_moves';
 import { WB_SHAPE, tomeWayOf } from '../src/art/bookwardens_moves';
 import { tomeAt } from '../src/art/bookwardens';
 import { CHOP_SMEARED, CHOP_STRIKE, LANTERN, LOB_HIT, LOB_SMEARED, LOB_STRIKE, hangOf, lanternPts, ringOf } from '../src/art/action_f11_watch';
-import { HARVEST_HITS, HARVEST_REAPER, HARVEST_SMEARED, HARVEST_STRIKES, TRAVEL } from '../src/art/action_f11_field';
+import { BOOM_BACK, BOOM_REAPER, BOOM_SMEARED, BOOM_STRIKE, HARVEST_HITS, HARVEST_REAPER, HARVEST_SMEARED, HARVEST_STRIKES, TRAVEL, boomAway } from '../src/art/action_f11_field';
 import { BLOW_SMEARED, BLOW_STRIKE, GURNEY_SMEARED, GURNEY_STRIKE } from '../src/art/action_f11_orderly';
 import { BARRAGE_SMEARED, BARRAGE_STRIKE, SLAM_SMEARED, SLAM_STRIKE, slamWarp } from '../src/art/action_f11_warden';
 
@@ -51,6 +51,24 @@ export function harvestShape(mob: Mob = HARVEST_REAPER): BossShape {
     ...FH_SHAPE,
     blows: { attack: [{ hit: h1, strike: s1, from: 0, until: 0.9 }, { hit: h2, strike: s2, from: 0.9, until: 1.42 }, { hit: h3, strike: s3, from: 1.42 }] },
     smeared: (move, t) => move === 'attack' && HARVEST_SMEARED(t),
+    handovers: hand,
+  };
+}
+/** THE FIELDHANDS' SICKLE BOOMERANG (2 Nov, in place of the harvest): one blow, the throwing hand the end they strike with (it flings the
+ * sickle); the sickle not theirs to carry while it is away; it ends a step back, where the game hands it back to the stand. */
+export function boomShape(mob: Mob = BOOM_REAPER): BossShape {
+  const others = movesOf(mob).filter((x) => x !== 'stand' && x !== 'walk');
+  const hand: Handover[] = [
+    ...others.flatMap((x): Handover[] => (x === 'dying' ? [{ from: 'stand', at: 0, to: x, toAt: 0 }] : [{ from: 'stand', at: 0, to: x, toAt: 0 }, { from: x, at: 'end', to: 'stand', toAt: 0, shift: x === 'attack' ? [BOOM_BACK, 0] : undefined }])),
+    { from: 'stand', at: 0, to: 'walk', toAt: 0 },
+    ...framesOf(mob, 'walk').map((t): Handover => ({ from: 'walk', at: t, to: 'stand', toAt: 0 })),
+  ];
+  return {
+    ...FH_SHAPE,
+    tip: (move, t, s, q) => (move === 'attack' ? s.handR : (FH_SHAPE.tip?.(move, t, s, q) ?? null)),
+    things: (move, t, s, q) => (move === 'attack' && boomAway(t) ? [] : (FH_SHAPE.things?.(move, t, s, q) ?? [])),
+    strikes: { attack: BOOM_STRIKE },
+    smeared: (move, t) => move === 'attack' && BOOM_SMEARED(t),
     handovers: hand,
   };
 }

@@ -28,14 +28,15 @@
 import type { ActorArt } from './actor_types';
 import { footwork, plantBy, plantOf } from './bosses3';
 import type { BossShape, CheckThing } from './boss_checks';
-import { CROWD_NAME, CR_BASE, CR_BODY, CR_K, D, HUSH, SWING_NAME, TRUMPET_HOLD, crierBits, trumpetOf, trumpetR } from './crier';
+import { BRASS, CROWD_NAME, CR_BASE, CR_BODY, CR_K, D, HUSH, SWING_NAME, TRUMPET_HOLD, crierBits, trumpetOf, trumpetR, waistOf } from './crier';
 import type { P } from './crier';
 import { CRIER_MOB, CR_SHAPE } from './crier_moves';
 import { hash } from './kit';
+import type { Ramp } from './kit';
 import { FLAME } from './mkit';
 import { TILE3, mobSet, posedOfMob, skeletonAt } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, MobMove, Moment, Ropes } from './new_mobs3';
-import { add, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
+import { add, cross, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
 import type { Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF. With it on, the game's Crier is `makeCrierActionArt` (the bestiary's to choose), his rules as the README says. */
@@ -351,12 +352,205 @@ function crowdFeet(): (t: number) => P {
 }
 
 // =============================================================================================
+// THE TOLL FOLLOWS YOU (2 Nov 2026): IN PLACE OF THE TRUMPET SWING
+//
+// The owner, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you
+// over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)”. So the trumpet swing (swing,
+// backswing, a slammed finisher) goes; asked what in its place, his pick: “The toll follows you”, offered as: he rings his handbell; a
+// toll marks where you stand and bursts a beat later, again and again. Keep moving.
+//
+// HE HAD NO HANDBELL: it hangs at his belt now, at his left front, in every frame of this set (his look changes by it). THE MOVE: his left
+// hand takes it from his belt and raises it high over his hat, arched back, HELD, shaking (the warning); RUNG in two frames, swung down
+// and out before him, smeared, a ring of the Hush shaken out of its mouth: THE FIRST TOLL, and where you stand then is MARKED (a ring of
+// the Hush's grey, the enemy's pink at its edge), bursting a beat later in a ring of silence. Swung back up, held again, rung again:
+// five tolls, each marking where you are THEN. Stand still and every one bursts on you. Then the bell back to his belt.
+
+/** The tolls: rung at these frames (each strike the two frames before). */
+const TOLL_FRAMES = [29, 45, 61, 77, 93] as const;
+export const TOLL_HITS = TOLL_FRAMES.map((n) => f(n));
+export const TOLL_STRIKES = TOLL_FRAMES.map((n) => [f(n - 2), f(n)] as const);
+export const TOLL_LONG = f(126);
+/** The toll's numbers: raised and held from `raised` to the first strike; each mark `r` tiles round, bursting `burst` seconds after its toll. */
+export const TOLL = { take: f(10), raised: f(18), every: f(16), r: 1.6, burst: 0.6, lies: 0.45, near: 1, far: 9 } as const;
+const TOLL_NAME = 'The Crier rings his handbell: the toll follows you';
+/** THE HANDBELL: its handle (from the fist), its crown and its mouth along its way, its mouth's round, in his own lengths. */
+export const HANDBELL = { grip: 2.4, handle: 6.4, crown: 2.6, high: 10, mouth: 6.2 } as const;
+const BELL_WOOD: Ramp = ['#1c120e', '#1c120e', '#46301e', '#72502e', '#72502e'];
+const BELL_IRON: Ramp = ['#0e0c14', '#0e0c14', '#2a2632', '#4a4456', '#4a4456'];
+/** Where it hangs at his belt in a frame: its handle's top under his belt at his left front, hanging mouth down, swaying as he moves. */
+function bellAtBelt(s: Skeleton, sway: number): { top: V3; way: V3 } {
+  const be = s.belly;
+  const beltC = add(waistOf(s), mul(s.hips[2], -0.8));
+  const a = 34 * D;
+  const top = add(beltC, add(mul(be[0], (B.waistDeep + 3.6) * Math.cos(a)), mul(be[1], (B.waistHalf + 3.6) * Math.sin(a))));
+  const way = norm(add(mul(s.hips[2], -1), add(mul(be[0], 0.28 + 0.08 * sway), mul(be[1], 0.06 * sway))));
+  return { top, way };
+}
+/** Where it is in his left fist: its handle in the fist, the bell on beyond it the way his forearm points. */
+function bellInHand(s: Skeleton): { top: V3; way: V3 } {
+  const way = norm(sub(s.handL, s.elbowL), [0, 0, 1]);
+  return { top: add(s.handL, mul(way, -HANDBELL.grip)), way };
+}
+/** The bell's points: its handle's top, its crown, its middle, its mouth. */
+function bellPts(top: V3, way: V3): { top: V3; crown: V3; mid: V3; mouth: V3 } {
+  const crown = add(top, mul(way, HANDBELL.handle));
+  return { top, crown, mid: add(crown, mul(way, HANDBELL.high * 0.55)), mouth: add(crown, mul(way, HANDBELL.high)) };
+}
+/** THE HANDBELL as solids: a turned wooden handle with its knob, the brass bell flaring from its crown to its lipped mouth, its iron clapper. */
+function bellSolids(bits: Bit[], top: V3, way: V3, ring: number): void {
+  const put = (part: string, shape: Bit['shape']): void => void bits.push({ part, piece: 'handbell', shape });
+  const b = bellPts(top, way);
+  const e1 = norm(cross(way, Math.abs(way[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
+  const e2 = cross(way, e1);
+  put('bellhandle', { k: 'ball', c: add(top, mul(way, -0.6)), ax: [mul(way, 1.3), mul(e1, 1.3), mul(e2, 1.3)], skin: BELL_WOOD });
+  put('bellhandle', { k: 'rod', a: top, b: b.crown, ra: 0.95, rb: 1.2, ramp: BELL_WOOD });
+  put('bell', { k: 'rod', a: b.crown, b: add(b.crown, mul(way, HANDBELL.high * 0.4)), ra: HANDBELL.crown, rb: HANDBELL.crown * 1.35, ramp: BRASS });
+  put('bell', { k: 'rod', a: add(b.crown, mul(way, HANDBELL.high * 0.38)), b: b.mouth, ra: HANDBELL.crown * 1.35, rb: HANDBELL.mouth, ramp: BRASS });
+  put('bell', { k: 'band', ring: { c: b.mouth, u: mul(e1, HANDBELL.mouth + 0.5), v: mul(e2, HANDBELL.mouth + 0.5) }, ramp: BRASS, rows: 2 });
+  // (its clapper, swung to the side it is rung toward)
+  put('bell', { k: 'ball', c: add(add(b.mouth, mul(way, -0.6)), mul(e1, 1.6 * ring)), ax: [mul(way, 1.1), mul(e1, 1.1), mul(e2, 1.1)], skin: BELL_IRON });
+}
+/** The trumpet held up at his right side through it, as the decree's (his right hand on it). */
+const T_UP = { hand: [12 * K, -36 * K, 50 * K] as V3, az: -84, el: 62, draw: 0.6 };
+/** His left fist through the toll (the floor's axes from his place). */
+const BELT_AT = ((): V3 => {
+  const s0 = solve(B, { ...R } as Posed);
+  const b = bellAtBelt(s0, 0);
+  return add(b.top, [0.6, 0.4, 1.2]);
+})();
+const RAISED_AT: V3 = [-16, 17, 122];
+const RUNG_AT = (k: number): V3 => [52, 14 + (k % 2 ? 8 : -2), 54];
+const MID_AT = (k: number): V3 => [37, 15 + (k % 2 ? 4 : 0), 100];
+const BACKUP_AT = (k: number): V3 => [-13, 18 + (k % 2 ? 2 : 0), 120];
+/** The toll's beats: his body, and his left fist. */
+interface TollBeat extends Beat {
+  lh: V3;
+}
+function tollBeats(): TollBeat[] {
+  const tb = (t: number, body: P, lh: V3, ease?: Beat['ease']): TollBeat => ({ t, body, ...T_UP, lh, ease });
+  const ARCH: P = { px: -3 * K, pz: R.pz + 1, yaw: R.yaw + 10, pitch: R.pitch - 8, twist: 6, bend: R.bend - 10, faceTurn: -6, faceUp: 20, lk: 18, rk: -16, gale: 0.1 };
+  const RING: P = { px: 4 * K, pz: R.pz - 3 * K, yaw: R.yaw + 4, pitch: R.pitch + 10, twist: -4, bend: R.bend + 8, faceTurn: 0, faceUp: 2, lk: 30, rk: -12, gale: 0.8 };
+  const UP2: P = { px: -1 * K, pz: R.pz - 1, yaw: R.yaw + 8, pitch: R.pitch - 4, twist: 4, bend: R.bend - 5, faceTurn: -4, faceUp: 12, lk: 22, rk: -14, gale: 0.2 };
+  const out: TollBeat[] = [
+    tb(f(6), { px: 0, yaw: R.yaw + 12, pitch: R.pitch + 4, twist: 8, bend: R.bend + 4, faceTurn: -10, faceUp: R.faceUp - 6, lk: 16, rk: -12 }, BELT_AT),
+    tb(TOLL.take, { px: 0, yaw: R.yaw + 12, pitch: R.pitch + 4, twist: 8, bend: R.bend + 4, faceTurn: -10, faceUp: R.faceUp - 4, lk: 16, rk: -12 }, add(BELT_AT, [0, 0, 1.5])),
+    // (up out to his left side, clear of his hat, and over)
+    tb(f(14), { ...ARCH, pitch: R.pitch - 3, bend: R.bend - 4, faceUp: 10 }, [8, 34, 98]),
+    tb(TOLL.raised, ARCH, RAISED_AT),
+  ];
+  TOLL_FRAMES.forEach((n, k) => {
+    const [a0] = TOLL_STRIKES[k];
+    if (k > 0) {
+      // (swung back up over his head, evenly, and held: easing out of the carry, on up at an even pace, easing into the hold)
+      const from = out[out.length - 1];
+      const mixP = (a: P, b: P, u: number): P => {
+        const o: Record<string, number> = {};
+        for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+          const x = ((a as Record<string, number>)[key] ?? (R as unknown as Record<string, number>)[key]) as number;
+          const y = ((b as Record<string, number>)[key] ?? (R as unknown as Record<string, number>)[key]) as number;
+          o[key] = x + (y - x) * u;
+        }
+        return o as P;
+      };
+      out.push(tb(f(n - 13), mixP(from.body, UP2, 0.08), lerp3(from.lh, BACKUP_AT(k), 0.08), 'in'));
+      out.push(tb(f(n - 8), mixP(from.body, UP2, 0.92), lerp3(from.lh, BACKUP_AT(k), 0.92), 'lin'));
+      out.push(tb(f(n - 7), UP2, BACKUP_AT(k), 'out'));
+    }
+    out.push(tb(a0, k === 0 ? ARCH : UP2, k === 0 ? RAISED_AT : BACKUP_AT(k), 'lin'));
+    // (half way through the swing: the bell over the top and coming down, so that both its frames carry it as far)
+    out.push(tb(f(n - 1), { ...RING, px: 1 * K, pitch: R.pitch + 2, bend: R.bend }, MID_AT(k), 'lin'));
+    out.push(tb(f(n), RING, RUNG_AT(k), 'lin'));
+    out.push(tb(f(n + 2), { ...RING, px: 4.6 * K, pitch: R.pitch + 11, gale: 0.6 }, add(RUNG_AT(k), [2.5, 0, -3]), 'out'));
+  });
+  out.push(
+    tb(f(104), { px: 1 * K, yaw: R.yaw + 10, pitch: R.pitch + 4, twist: 6, bend: R.bend + 3, faceTurn: -8, faceUp: R.faceUp - 4, lk: 18, rk: -12, gale: 0.1 }, add(BELT_AT, [0, 0, 1.5])),
+    tb(f(108), { px: 0, yaw: R.yaw + 10, pitch: R.pitch + 4, twist: 6, bend: R.bend + 3, faceTurn: -8, faceUp: R.faceUp - 5, lk: 16, rk: -12 }, BELT_AT),
+  );
+  return out;
+}
+/** Whether the bell is in his hand at a moment of the toll. */
+export const bellInHandAt = (t: number): boolean => t > TOLL.take - 1e-6 && t < f(108) - 1e-6;
+function tollMotion(): Motion {
+  const beats = tollBeats();
+  const holds: [number, number][] = [[TOLL.raised, TOLL_STRIKES[0][0]], ...TOLL_FRAMES.slice(1).map((n, k): [number, number] => [f(n - 7), TOLL_STRIKES[k + 1][0]])];
+  const held = (t: number): number => holds.reduce((m, [a, b]) => Math.max(m, heldIn(a, b)(t)), 0);
+  const lhAt = (t: number): V3 => {
+    let i = 0;
+    while (i < beats.length - 2 && t > beats[i + 1].t) i++;
+    const a = beats[i];
+    const b = beats[Math.min(beats.length - 1, i + 1)];
+    const u = b === a ? 1 : EASE[b.ease ?? 'io'](clamp01((t - a.t) / Math.max(1e-9, b.t - a.t)));
+    return lerp3(a.lh, b.lh, u);
+  };
+  const keys = stretch(beats, {
+    pz: (t) => shiver(t, 0.3, 41) * held(t),
+  }, 2, (t) => [lhAt(t)[2] > 100 ? [-0.3, 0.9, 0.1] : [0, 0.8, -0.5], [0.2, -0.8, -0.4]], (t) => {
+    const lh = lhAt(t);
+    const tr = held(t);
+    return { lhx: lh[0] + shiver(t, 0.6, 43) * tr, lhy: lh[1], lhz: lh[2] + shiver(t, 0.7, 44) * tr };
+  });
+  return moveFrom(keys, TOLL_LONG, TOLL_HITS[0]);
+}
+function tollFeet(): (t: number) => P {
+  // (his left foot steps in to the first toll and stays; back at the end)
+  return footwork(B, {
+    L: { start: L0, moves: [{ t0: TOLL_STRIKES[0][0] - f(3), t1: TOLL_HITS[0], to: plantBy(L0, 10 * K, 1 * K, 6), lift: 5 * K }, { t0: f(104), t1: f(116), to: L0, lift: 5 * K }] },
+    R: { start: R0, moves: [] },
+  });
+}
+/** The toll's things at a moment: the bell (its middle, and its mouth) and where it is; and the ring of the Hush it shakes out as each toll is rung. */
+function tollBits(m: Moment): Bit[] {
+  const bits: Bit[] = [];
+  const t = m.t;
+  const inHand = m.move === TOLL_NAME && bellInHandAt(t);
+  const sway = Math.sin(m.wind * Math.PI * 2) * 0.6;
+  const b = inHand ? bellInHand(m.s) : bellAtBelt(m.s, sway);
+  const sinceToll = m.move === TOLL_NAME ? Math.min(...TOLL_HITS.map((h) => (t >= h - 1e-6 ? t - h : 99))) : 99;
+  bellSolids(bits, b.top, b.way, sinceToll < 0.25 ? Math.cos(sinceToll * 50) : 0);
+  if (inHand && sinceToll < 0.35) {
+    // (each toll shakes a ring of the Hush out of its mouth, and a flash)
+    const p = bellPts(b.top, b.way);
+    const e1 = norm(cross(b.way, Math.abs(b.way[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
+    const e2 = cross(b.way, e1);
+    for (let j = 0; j < 2; j++) {
+      const age = sinceToll * 3.2 - j * 0.3;
+      if (age < 0 || age > 1) continue;
+      const r = HANDBELL.mouth * (1.4 + age * 3.4);
+      const n = Math.round(r * 1.8);
+      for (let i = 0; i < n; i++) {
+        if (hash(i, j, 4131) < 0.2 + age * 0.4) continue;
+        const a = (i / n) * Math.PI * 2;
+        bits.push({ part: 'hush', piece: 'hush', shape: { k: 'mote', p: add(add(p.mouth, mul(b.way, 3 + age * 14)), add(mul(e1, Math.cos(a) * r), mul(e2, Math.sin(a) * r))), c: age < 0.3 ? FLAME[3] : age < 0.6 ? HUSH[4] : HUSH[3], size: age < 0.5 ? 2 : 1 } });
+      }
+    }
+    if (sinceToll < 0.08) bits.push({ part: 'hush', piece: 'hush', shape: { k: 'glow', p: p.mouth, c: FLAME[3], r: 26, a: 0.55 } });
+  }
+  if (m.move === TOLL_NAME && bellInHandAt(t)) {
+    // (the warning: a pink glint on its lip while it is held up)
+    const lead = TOLL_STRIKES.find(([a0]) => t > a0 - 0.45 && t <= a0 + 1e-6);
+    if (lead) bits.push({ part: 'hush', piece: 'hush', shape: { k: 'glow', p: bellPts(b.top, b.way).mid, c: FLAME[1], r: 10, a: 0.45 } });
+  }
+  return bits;
+}
+/** Where the bell's middle is (his own lengths), `t` seconds into the toll. */
+export function tollBellAt(t: number): V3 {
+  const mob = crierActionMob();
+  const s = skeletonAt(mob, 'attack', t);
+  const b = bellInHandAt(t) ? bellInHand(s) : bellAtBelt(s, 0);
+  return bellPts(b.top, b.way).mid;
+}
+/** Whether toll `k`'s burst strikes a hero who stood at (x0, y0) as it was rung and is at (x, y) as it bursts (tiles, on the floor): within `r` of the mark. */
+export function tollStrikes(x0: number, y0: number, x: number, y: number): boolean {
+  return Math.hypot(x - x0, y - y0) <= TOLL.r;
+}
+
+// =============================================================================================
 // THE STRIKES, AND THEIR SMEAR: after-images of the bell (or the scroll in his hand) along the way it came
 
 export type ActMove = 'attack' | 'shout' | 'proclaim' | 'crowd';
 export const CR_ACT_MOVES: ReadonlyArray<ActMove> = ['attack', 'shout', 'proclaim', 'crowd'];
 export const CR_ACT_STRIKES: Readonly<Record<ActMove, ReadonlyArray<readonly [number, number]>>> = {
-  attack: SWING_STRIKES,
+  attack: TOLL_STRIKES,
   shout: [SHOUT_STRIKE],
   proclaim: [PROCLAIM_STRIKE],
   crowd: [CROWD_STRIKE],
@@ -368,6 +562,13 @@ export function crSmeared(move: string, t: number): boolean {
 /** What of him strikes: the trumpet's bell (round its rim, and its middle), or his left hand with the scroll. */
 function struckPoints(move: string, s: Skeleton, q: Posed): V3[] {
   if (move === 'proclaim') return [s.handL, add(s.handL, mul(norm(sub(s.handL, s.elbowL)), 6))];
+  if (move === 'attack') {
+    // (the toll: round the handbell's mouth, and its middle)
+    const b = bellInHand(s);
+    const p = bellPts(b.top, b.way);
+    const e1 = norm(cross(b.way, Math.abs(b.way[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
+    return [add(p.mouth, mul(e1, HANDBELL.mouth)), p.mouth, add(p.mouth, mul(e1, -HANDBELL.mouth)), p.mid];
+  }
   const t = trumpetOf(s, q);
   const e1 = norm(sub(heading(q.wAz + 90, 0), mul(t.way, dot(heading(q.wAz + 90, 0), t.way))), [0, 1, 0]);
   return [add(t.rim, mul(e1, BELL)), t.rim, add(t.rim, mul(e1, -BELL)), lerp3(t.mouth, t.rim, 0.6)];
@@ -470,7 +671,7 @@ const mobNow = (): Mob => (MOB ??= crierActionMob());
 const withSmear = (mv: MobMove, move: string): MobMove => ({ ...mv, ropes: (t) => smearRopes(mobNow, move, t) });
 /** The names these moves go by (none of the game's own, so that his painter draws none of the old moves' bursts on them). */
 export const ACT_NAMES = {
-  attack: 'The Crier swings his trumpet round, back, and slams it down',
+  attack: 'The Crier swings his trumpet round, back, and slams it down (the first round; now TOLL_NAME)',
   shout: 'The Crier shouts off the walls',
   proclaim: 'The Crier flings his decree down a lane',
   crowd: 'The Crier calls the crowd',
@@ -492,8 +693,9 @@ export function crierActionMob(): Mob {
   const more = G.more as Readonly<Record<string, MobMove>>;
   MOB = {
     ...G,
-    attack: withSmear({ name: ACT_NAMES.attack, motion: swingMotion(), rest: R, feet: swingFeet(), glint: glintOf([[f(8), SWING_HITS[0], 0.1], [f(36), SWING_HITS[1], 0.1], [f(66), SWING_HITS[2], 0.3]]) }, 'attack'),
-    hit: SWING_HITS[0],
+    // (2 Nov: the toll follows you, in place of the trumpet swing)
+    attack: withSmear({ name: TOLL_NAME, motion: tollMotion(), rest: R, feet: tollFeet(), glint: glintOf([[f(10), TOLL_HITS[0], 0.1]]), jaw: (t) => (t < TOLL.raised ? 0.3 : t < TOLL_HITS[4] + 0.3 ? 0.8 : 0.4) }, 'attack'),
+    hit: TOLL_HITS[0],
     canvas: CR_ACT_CANVAS,
     aura: { ...G.aura, x: CR_ACT_CANVAS.ax - 2, y: CR_ACT_CANVAS.ay - 54 },
     bits: (st, m) => {
@@ -504,7 +706,7 @@ export function crierActionMob(): Mob {
       if (name === ACT_NAMES.attack) base = { ...m, move: SWING_NAME, since: m.t - SWING_HITS[2] };
       else if (name === ACT_NAMES.crowd) base = { ...m, move: CROWD_NAME, since: m.t - CROWD_HIT };
       const which = name === ACT_NAMES.shout ? 'shout' : '';
-      return [...crierBits(st, base), ...smearBits(m), ...(which ? bellBits(m, which) : [])];
+      return [...crierBits(st, base), ...smearBits(m), ...(which ? bellBits(m, which) : []), ...tollBits(m)];
     },
     more: {
       ...more,
@@ -519,18 +721,18 @@ export function crierActionMob(): Mob {
 /** HIM AS THE CHECKS SEE HIM, with these moves: as the game's (CR_SHAPE), each blow of the combo its own, the strikes and the smear. */
 export const CR_ACT_SHAPE: BossShape = {
   ...CR_SHAPE,
-  tip: (move, t, s, q) => (move === 'proclaim' ? s.handL : CR_SHAPE.tip!(move, t, s, q)),
+  tip: (move, t, s, q) => (move === 'proclaim' ? s.handL : move === 'attack' ? (bellInHandAt(t) ? bellPts(bellInHand(s).top, bellInHand(s).way).mid : null) : CR_SHAPE.tip!(move, t, s, q)),
   things: (move, t, s, q) => {
     const th: CheckThing[] = CR_SHAPE.things!(move, t, s, q);
-    // (both his hands on it through the swing: his left hand's forearm may lie along it)
-    return move === 'attack' ? th.map((x) => ({ ...x, may: [...(x.may ?? []), 'foreL', 'foreR'] })) : th;
+    if (move !== 'attack' || !bellInHandAt(t)) return th;
+    // (the handbell in his left fist: its handle in the fist, the bell beyond it)
+    const b = bellInHand(s);
+    const p = bellPts(b.top, b.way);
+    return [...th, { name: 'handbell', pts: [p.crown, p.mid, p.mouth], r: 3, may: ['foreL'] }];
   },
+  // (the toll: five blows, each rung in two frames; each from the end of the one before)
   blows: {
-    attack: [
-      { hit: SWING_HITS[0], strike: SWING_STRIKES[0], from: 0, until: f(30) },
-      { hit: SWING_HITS[1], strike: SWING_STRIKES[1], from: f(30), until: f(62) },
-      { hit: SWING_HITS[2], strike: SWING_STRIKES[2], from: f(62) },
-    ],
+    attack: TOLL_HITS.map((hit, k) => ({ hit, strike: TOLL_STRIKES[k], from: k === 0 ? 0 : TOLL_HITS[k - 1] + f(3), until: k === 4 ? undefined : TOLL_HITS[k] + f(3) })),
   },
   strikes: { shout: SHOUT_STRIKE, proclaim: PROCLAIM_STRIKE, crowd: CROWD_STRIKE },
   smeared: crSmeared,

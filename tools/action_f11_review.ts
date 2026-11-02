@@ -16,7 +16,8 @@ void (async (): Promise<void> => {
     for (const mob of [m.LANTERN_WATCHMAN, m.LANTERN_SERGEANT]) rows.push([mob.id, mob, sh.lanternShape(mob), []]);
   } else if (who === 'field') {
     const m = await import('../src/art/action_f11_field');
-    rows.push(['reaper', m.HARVEST_REAPER, sh.harvestShape(), ['attack']]);
+    rows.push(['reaper', m.BOOM_REAPER, sh.boomShape(m.BOOM_REAPER), ['attack']]);
+    rows.push(['gleaner', m.BOOM_GLEANER, sh.boomShape(m.BOOM_GLEANER), ['attack']]);
   } else if (who === 'orderly') {
     const m = await import('../src/art/action_f11_orderly');
     rows.push(['orderly', m.GURNEY_ORDERLY, sh.gurneyShape(), ['attack', 'gurney']]);

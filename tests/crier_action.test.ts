@@ -24,7 +24,7 @@ import nodeCrypto from 'node:crypto';
 
 import {
   CRIER_ACTION, CR_ACT_CANVAS, CR_ACT_MOVES, CR_ACT_SHAPE, CR_ACT_STRIKES, CROWD_HIT, CROWD_HOLD, CROWD_STRIKE, PROCLAIM_HIT, PROCLAIM_HOLD, PROCLAIM_STRIKE, SHOUT_HIT, SHOUT_HOLD,
-  SHOUT_STRIKE, SWING_HITS, SWING_STRIKES, bellAt, crSmeared, crierActionMob, makeCrierActionArt, tilesOf,
+  SHOUT_STRIKE, SWING_HITS, TOLL, TOLL_HITS, TOLL_LONG, TOLL_STRIKES, bellAt, crSmeared, crierActionMob, makeCrierActionArt, tilesOf, tollBellAt, tollStrikes,
 } from '../src/art/crier_action';
 import type { ActMove } from '../src/art/crier_action';
 import { CALL, DECREE, RING, SWEEP, WALLS, decreeBurns, decreeFront, echoTimes, paintCall, paintDecree, paintShout, paintSwing, shoutSafe, shoutStrikes, swingStrikes } from '../src/art/crier_action_fx';
@@ -198,7 +198,7 @@ test('3. every frame of the new moves paints, wears the pink edge, is crisp, has
 });
 
 test('4. THE WHOLE BOSSES’ REVIEW: every frame of every new move, both ways round, each blow its own, every handing over: nothing found', () => {
-  assert.equal(CR_ACT_SHAPE.blows?.attack?.length, 3, 'the swing: three blows');
+  assert.equal(CR_ACT_SHAPE.blows?.attack?.length, 5, 'the toll (2 Nov): five tolls, each its own blow');
   const found = checkBoss(crierActionMob(), CR_ACT_SHAPE, [...CR_ACT_MOVES]);
   assert.equal(found.length, 0, findingsSaid(found).slice(0, 12).join('; '));
 });
@@ -211,7 +211,7 @@ test('5. Movement 9: each blow held, struck in two frames, smeared then only; bi
   };
   const tipOf = (move: string, t: number): V3 => {
     const s = skeletonAt(mob, move, t);
-    return move === 'proclaim' ? s.handL : trumpetOf(s, posedOfMob(mob, move, t)).rim;
+    return move === 'proclaim' ? s.handL : move === 'attack' ? tollBellAt(t) : trumpetOf(s, posedOfMob(mob, move, t)).rim;
   };
   for (const [move, strikes] of Object.entries(CR_ACT_STRIKES)) {
     for (const [s0, s1] of strikes) {
@@ -233,18 +233,20 @@ test('5. Movement 9: each blow held, struck in two frames, smeared then only; bi
       assert.ok(Object.keys(ropes(s0 + 1 / 30)).some((k) => k.startsWith('smear')) && !Object.keys(ropes(s0 - 0.2)).some((k) => k.startsWith('smear')), `${move}: its after-images there, and only there`);
     }
   }
-  assert.ok(SWING_HITS.every((h, i) => h === SWING_STRIKES[i][1]) && SHOUT_HIT === SHOUT_STRIKE[1] && PROCLAIM_HIT === PROCLAIM_STRIKE[1] && CROWD_HIT === CROWD_STRIKE[1], 'each blow lands on the last frame of its strike');
+  assert.ok(TOLL_HITS.every((h, i) => h === TOLL_STRIKES[i][1]) && SHOUT_HIT === SHOUT_STRIKE[1] && PROCLAIM_HIT === PROCLAIM_STRIKE[1] && CROWD_HIT === CROWD_STRIKE[1], 'each blow lands on the last frame of its strike');
   // HELD: each wind-up held long before its strike (the warning): the big ones near a second
-  for (const [what, held] of [['swing', SWING_STRIKES[0][0] - 14 / 30], ['backswing', SWING_STRIKES[1][0] - 42 / 30], ['finisher', SWING_STRIKES[2][0] - 74 / 30], ['shout', SHOUT_STRIKE[0] - SHOUT_HOLD[0]], ['decree', PROCLAIM_STRIKE[0] - PROCLAIM_HOLD[0]], ['call', CROWD_STRIKE[0] - CROWD_HOLD[0]]] as const) {
+  for (const [what, held] of [['first toll', TOLL_STRIKES[0][0] - TOLL.raised], ['shout', SHOUT_STRIKE[0] - SHOUT_HOLD[0]], ['decree', PROCLAIM_STRIKE[0] - PROCLAIM_HOLD[0]], ['call', CROWD_STRIKE[0] - CROWD_HOLD[0]]] as const) {
     assert.ok(held >= 0.13 - 1e-6, `${what}: held ${held.toFixed(2)} s`);
   }
   assert.ok(SHOUT_STRIKE[0] - SHOUT_HOLD[0] >= 0.99 && CROWD_STRIKE[0] - CROWD_HOLD[0] >= 0.86 && PROCLAIM_STRIKE[0] - PROCLAIM_HOLD[0] >= 0.7, 'the big three held long');
-  // THE SWING: a combo of three (the old: one blow); the sweeps out past where the old bell came down, across a wide arc; the finisher's ring
-  const reach = (m: ActMove, t: number): number => Math.hypot(...tilesOf(bellAt(m, t)));
-  assert.ok(reach('attack', SWING_HITS[0]) > 2.3 && reach('attack', SWING_HITS[1]) > 2.6 && reach('attack', SWING_HITS[2]) > 2.4, 'the bell out at full reach');
-  assert.ok(SWEEP.every((s) => Math.abs(s.to - s.from) >= 140 && s.r >= RULES.swing.spot[0] + 0.5), 'each sweep wide, and as far as the old blow and more');
-  assert.ok(RING.ahead + RING.r > RULES.swing.spot[0] + RULES.swing.r + 1.5, `the finisher's ring out to ${(RING.ahead + RING.r).toFixed(1)} tiles (old ${(RULES.swing.spot[0] + RULES.swing.r).toFixed(1)})`);
-  assert.ok(swingStrikes(0, 2.5, 1.5) && !swingStrikes(0, -2, -1) && swingStrikes(1, 2.5, -1.5) && swingStrikes(2, RING.ahead + 2.5, 0) && !swingStrikes(2, -1, 0), 'what each blow strikes');
+  // THE TOLL (2 Nov, in place of the swing combo): his handbell raised high and held, then rung five times, each a strike of two frames;
+  // each toll marks where you are then, 1.6 tiles round, bursting a beat later
+  assert.ok(TOLL_STRIKES[0][0] - TOLL.raised >= 0.28, `the first toll held ${(TOLL_STRIKES[0][0] - TOLL.raised).toFixed(2)} s`);
+  for (let k = 1; k < 5; k++) assert.ok(TOLL_STRIKES[k][0] - (TOLL_HITS[k - 1] + 9 / 30) >= 0.16, `toll ${k + 1}: held again`);
+  assert.ok(TOLL_HITS.length === 5 && TOLL.r >= 1.5 && TOLL.burst >= 0.5 && TOLL.burst <= 0.7 && TOLL_LONG - TOLL_HITS[4] >= 0.9, 'five tolls; each mark 1.6 round, bursting a beat later; a big wind-down');
+  assert.ok(tollBellAt(TOLL.raised + 0.1)[2] > 110 && tollBellAt(TOLL_HITS[0])[2] < 80, 'the bell held up over his hat, rung down before him');
+  assert.ok(tollStrikes(0, 0, 1.2, 0.8) && !tollStrikes(0, 0, 1.4, 1.0) && !tollStrikes(0, 0, 3, 0), 'standing still is death; moving 1.7 tiles saves you');
+  void [bellAt, SWEEP, RING, swingStrikes, RULES];
   // THE SCROLL: longer and wider than the old (8.6 by 2.5): to the far wall, 3 tiles wide; its letters burn on
   assert.ok(DECREE.to > PROCLAIM_TO + 3 && DECREE.half * 2 >= PROCLAIM_HALF * 2 + 0.4, 'a longer, wider lane');
   assert.ok(decreeFront(DECREE.unrolled) === DECREE.to && decreeFront(DECREE.lands - 0.01) === null, 'unrolled in a smear, in 0.2 s');

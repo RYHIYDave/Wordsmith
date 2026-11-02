@@ -30,16 +30,17 @@
 // Its stand, its crawl, setting off and stopping, struck, its death and a bone beast bursting out of it are the game's own.
 
 import type { ActorArt } from './actor_types';
-import { AMALGAM, AM_CANVAS, AM_KIT, AM_SHAPE, amGeometry } from './bosses3';
+import { AMALGAM, AM_CANVAS, AM_KIT, AM_SHAPE, OSS, amGeometry } from './bosses3';
 import type { HandMove, HandTrack } from './bosses3';
 import type { BossShape, Handover } from './boss_checks';
-import { TILE3, mobSet, posedOfMob, skeletonAt } from './new_mobs3';
+import { TILE3, mobSet, posedOfMob, skeletonAt, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, MobMove, Moment, Ropes } from './new_mobs3';
 import type { Stage } from './skin';
-import { add, lerp3, mul, norm, sub } from './skeleton';
+import { add, cross, lerp3, mul, norm, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 import { FLAME } from './mkit';
 import { BONE as BONE_W, PINK as PINK_W, hash } from './kit';
+import type { Ramp } from './kit';
 
 type P = Partial<Bones>;
 const K = AM_KIT;
@@ -484,11 +485,177 @@ function devourMotion(): Motion {
 }
 
 // =============================================================================================
+// THE GRASPING FAN (2 Nov 2026): ITS BASIC ATTACK, IN PLACE OF THE SWIPE COMBO
+//
+// The owner, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you
+// over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)”. So the swipe combo (rake,
+// rake, rearing slam) goes; asked what in its place, his pick: “Grasping fan (Recommended)”, offered as: a dozen arms burst from its
+// heap and shoot across the floor in a wide fan, snatch at you, then drag back in. Its bone rain, mites, floor arms and devour stay.
+//
+// THE GRASPING FAN: the heap SWELLS, heaving itself up, its great front hands drawn in under it, and out of its front A DOZEN ARMS OF
+// THE DEAD BUNCH AND STRAIN, knotted against it, trembling, while each one's line is MARKED on the floor before it: HELD; in TWO
+// FRAMES the heap lurches forward and THE ARMS SHOOT OUT ACROSS THE FLOOR in a wide fan, smeared, each a real arm of its own bones and
+// flesh (a dark sinewy upper arm, a bone elbow, the two bones of the forearm, a dead hand with its claws spread); THEY SNATCH SHUT; and
+// it HAULS THEM BACK IN along the floor, clawing, heaving itself back on them, until they are in it again.
+
+/** Its moments (seconds, on the game's frames): swelling to 0.4 s, HELD to 1.0 s; the strike frames 30 to 32; snatched shut by 1.2 s; hauled back in to 1.9 s; its stand by 2.6 s. */
+export const FAN_STRIKE = [f(30), f(32)] as const;
+export const FAN_HIT = f(32);
+export const FAN_LONG = f(78);
+/** THE FAN: `n` arms from `from` to `to` degrees (its right to its left), reaching `reach` tiles from its middle (each a little more or less, `vary`); a hero within `r` of an arm's line, from `near` tiles out, is struck as they land; the lines marked from `mark` s. */
+export const FAN = { n: 12, from: -60, to: 60, reach: 4.75, vary: 0.45, near: 1.0, r: 0.6, mark: 0.1, swell: f(12), snatch: f(36), back: f(58), gone: f(62) } as const;
+/** The heap's own flesh, dark: its arms' sinew; and its bones (art/bosses3.ts OSS and its dimmer). */
+const FLESH: Ramp = ['#120d20', '#120d20', '#2c2140', '#463a64', '#463a64'];
+/** How far out its arms are `t` seconds in (0 in it, bunched; 1 at full reach), and how open its hands (1 spread, 0 shut). */
+export function fanOut(t: number): { out: number; grab: number } {
+  const [s0, s1] = FAN_STRIKE;
+  const sm = (k: number): number => k * k * (3 - 2 * k);
+  if (t <= s0) return { out: 0.06 + 0.03 * clamp01((t - 0.15) / 0.3), grab: 0.2 + 0.8 * clamp01((t - 0.3) / 0.4) };
+  if (t <= s1) return { out: (t - s0) / (s1 - s0) * 0.98 + 0.02 * 0, grab: 1 };
+  if (t <= FAN.snatch) {
+    const k = sm(clamp01((t - s1) / (FAN.snatch - s1)));
+    return { out: 1 + 0.045 * k, grab: 1 - k };
+  }
+  if (t <= f(40)) return { out: 1.045 - 0.01 * sm(clamp01((t - FAN.snatch) / (f(40) - FAN.snatch))), grab: 0 };
+  if (t <= FAN.back) return { out: 1.035 - 1.0 * sm(clamp01((t - f(40)) / (FAN.back - f(40)))), grab: 0.1 + 0.15 * Math.sin(t * 40) ** 2 };
+  return { out: 0.035 * (1 - clamp01((t - FAN.back) / (FAN.gone - FAN.back))), grab: 0.2 };
+}
+/** Arm `i` of the fan: its way (degrees from its forward, to its left), and its reach (tiles). */
+export function fanArmWay(i: number): { deg: number; reach: number } {
+  const deg = FAN.from + ((FAN.to - FAN.from) * i) / (FAN.n - 1) + (hash(i, 1, 2201) - 0.5) * 6;
+  return { deg, reach: FAN.reach + (hash(i, 2, 2201) - 0.5) * 2 * FAN.vary };
+}
+/** Arm `i` at `t` seconds in, with the heap `px` on: where it bursts out of the heap, its elbow, its wrist, the way its hand points and its side; how open. */
+export function fanArmAt(i: number, t: number, px: number): { base: V3; elbow: V3; wrist: V3; fd: V3; side: V3; grab: number; out: number } {
+  const { deg, reach } = fanArmWay(i);
+  const th = (deg * Math.PI) / 180;
+  const o: V3 = [Math.cos(th), Math.sin(th), 0];
+  const sd: V3 = [-o[1], o[0], 0];
+  const { out, grab } = fanOut(t);
+  const base: V3 = [px + o[0] * 34, o[1] * 34, 11 + 2 * Math.sin(i * 1.7)];
+  const far = reach * TILE3 - 16;
+  const shiver = t < FAN_STRIKE[0] && t > 0.3 ? Math.sin(t * 47 + i * 2.1) * 0.9 : 0;
+  // BUNCHED, while it is held: each wrist reared up off the front of the heap, clawing at the air, straining, the elbow cocked out to
+  // the side; as they go out, down onto the floor and along it, the elbow bowed out the other way, low
+  const bunch = clamp01(1 - out / 0.12);
+  const along = 34 + (far - 34) * out;
+  const z0 = 22 + 9 * Math.abs(Math.sin(i * 2.3)) + shiver;
+  const wrist: V3 = add(add([px * (1 - out), 0, 0], mul(o, along + 14 * bunch)), [shiver * 0.4 * sd[0], shiver * 0.4 * sd[1], bunch * z0 + (1 - bunch) * (3.5 + 10 * (1 - out))]);
+  const kink = (i % 2 ? 1 : -1) * (5 + 4 * hash(i, 4, 2201));
+  const mid = lerp3(base, wrist, 0.46);
+  const lift = bunch * 12 + (1 - bunch) * (8 * (1 - 0.6 * out) + 3);
+  const elbow: V3 = add(mid, add(mul(sd, kink * (bunch * 1.4 + (1 - bunch) * (0.6 + 0.4 * out))), [0, 0, lift]));
+  const fd = norm(sub(wrist, elbow), o);
+  const side = norm(cross([0, 0, 1], fd), sd);
+  return { base, elbow, wrist, fd, side, grab, out };
+}
+/** The fan's lines on the floor (tiles before it, to its left): from `near` out to each arm's reach. */
+export function fanLines(): { deg: number; reach: number }[] {
+  return Array.from({ length: FAN.n }, (_, i) => fanArmWay(i));
+}
+/** Whether the fan strikes a hero `x` tiles before it and `y` to its left (as its arms land, `FAN_HIT`): within `r` of an arm's line. */
+export function fanStrikes(x: number, y: number): boolean {
+  return fanLines().some(({ deg, reach }) => {
+    const th = (deg * Math.PI) / 180;
+    const along = x * Math.cos(th) + y * Math.sin(th);
+    const across = -x * Math.sin(th) + y * Math.cos(th);
+    return along >= FAN.near && along <= reach + 0.2 && Math.abs(across) <= FAN.r;
+  });
+}
+/** THE FAN'S ARMS as solids, at a moment (and their smear as they shoot out). */
+function fanBits(m: Moment): Bit[] {
+  const bits: Bit[] = [];
+  if (m.move !== FAN_NAME || m.t > FAN.gone) return bits;
+  const t = m.t;
+  const put = (part: string, shape: Bit['shape']): void => void bits.push({ part, piece: part, shape });
+  const px = (m.q.px as number) ?? 0;
+  for (let i = 0; i < FAN.n; i++) {
+    const a = fanArmAt(i, t, px);
+    if (a.out < 0.025 && t > FAN.back) continue;
+    const part = `fan${i}`;
+    const r = 2.9 + 0.5 * hash(i, 3, 2201);
+    // where it bursts out of the heap: a knot of its flesh
+    put(part, { k: 'ball', c: a.base, ax: sphere(r * 1.5), skin: FLESH });
+    // the upper arm, dark sinew, a ridge of bone down it
+    put(part, { k: 'rod', a: a.base, b: a.elbow, ra: r * 1.15, rb: r * 0.9, ramp: FLESH, far: true });
+    put(part, { k: 'rod', a: lerp3(a.base, a.elbow, 0.25), b: lerp3(a.base, a.elbow, 0.85), ra: r * 0.42, rb: r * 0.36, ramp: K.DEEP_OSS, far: true });
+    // the elbow, bone; the forearm's two bones
+    put(part, { k: 'ball', c: a.elbow, ax: sphere(r * 1.05), skin: OSS, far: true });
+    const fd2 = norm(sub(a.wrist, a.elbow), a.fd);
+    const sd = norm(cross(fd2, [0, 0, 1]), a.side);
+    for (const q of [-1, 1]) put(part, { k: 'rod', a: add(a.elbow, mul(sd, q * r * 0.42)), b: add(a.wrist, mul(sd, q * r * 0.3)), ra: r * 0.5, rb: r * 0.4, ramp: OSS, far: true });
+    // the hand: the dead's, big, its claws spread, then snatched shut
+    K.deadHand((pp, pc, sh) => put(pp, sh), part, a.wrist, a.fd, a.side, r * 1.25, a.grab, OSS);
+    // (its claws' tips burning with the enemy's fire as they snatch)
+    if (a.out > 0.9 && t < FAN.snatch + 0.1) bits.push({ part: 'fanglint', piece: 'fanglint', shape: { k: 'glow', p: add(a.wrist, mul(a.fd, r * 5)), c: '#ff3a78', r: 7, a: 0.3 } });
+  }
+  // THE SMEAR: as they shoot out, after-images of each arm along the way it came, bone-white at their heads, the enemy's pink behind
+  if (t > FAN_STRIKE[0] + 1e-6 && t <= FAN_HIT + FR + 1e-6) {
+    const thin = t > FAN_HIT + 1e-6;
+    const k0 = thin ? 0.82 : 0.02;
+    const k1 = Math.min(1, fanOut(Math.min(t, FAN_HIT)).out);
+    for (let i = 0; i < FAN.n; i++) {
+      const { deg, reach } = fanArmWay(i);
+      const th = (deg * Math.PI) / 180;
+      const o: V3 = [Math.cos(th), Math.sin(th), 0];
+      const sd: V3 = [-o[1], o[0], 0];
+      const far = reach * TILE3 - 16;
+      for (let d = 34 + (far - 34) * k0; d <= 34 + (far - 34) * k1; d += 1.4) {
+        const age = 1 - (d - 34) / Math.max(1, far - 34);
+        for (const q of [-1, 0, 1]) {
+          if (q !== 0 && age > 0.5) continue;
+          const c = age < 0.12 ? '#fff0e6' : age < 0.35 ? BONE_W[3] : age < 0.6 ? PINK_W[3] : PINK_W[2];
+          bits.push({ part: 'smear', piece: 'smear', shape: { k: 'mote', p: [px * 0 + o[0] * d + sd[0] * q * 2.2, o[1] * d + sd[1] * q * 2.2, 4 + 8 * age], c, size: age < 0.4 ? 2 : 1 } });
+        }
+      }
+    }
+  }
+  return bits;
+}
+const FAN_NAME = 'The grasping fan';
+/** Its swelling: heaved up, tipped back a little, swollen, its maw open. */
+const SWELL: P = { pz: R.pz + 7, faceUp: 8, faceTilt: 12, pitch: R.pitch - 3, px: -5, draw: 1, pt: 1 };
+/** Its lurch as the arms go out: thrown forward and down. */
+const LURCH: P = { pz: R.pz - 3, faceUp: 0, faceTilt: 0, pitch: R.pitch + 8, px: 12, draw: 1, pt: 1 };
+function fanHands(): (t: number) => Record<string, V3> {
+  const [s0, s1] = FAN_STRIKE;
+  return K.handwork({
+    // its great front hands drawn in under it, gripping, as it swells; flung on and slammed flat before it as it lurches; back after
+    R1: { start: PL.R1, moves: [{ t0: f(2), t1: f(11), to: [42, -30, 0], lift: 8 }, { t0: s0, t1: s1, to: SLAM.R1, via: [[56, -30, 20]], ease: 'strike' }, { t0: f(60), t1: f(70), to: PL.R1, lift: 6 }] },
+    L1: { start: PL.L1, moves: [{ t0: f(3), t1: f(12), to: [44, 32, 0], lift: 8 }, { t0: s0, t1: s1, to: SLAM.L1, via: [[58, 32, 20]], ease: 'strike' }, { t0: f(61), t1: f(71), to: PL.L1, lift: 6 }] },
+  });
+}
+function fanMotion(): Motion {
+  const [s0] = FAN_STRIKE;
+  const keys: Key3[] = [
+    { at: 0, pose: {} },
+    { at: FAN.swell, pose: SWELL, ease: 'io' },
+    { at: f(17), pose: { ...SWELL, py: 0.8, pz: (SWELL.pz as number) + 0.5 }, ease: 'io' },
+    { at: f(22), pose: { ...SWELL, py: -0.8, pz: (SWELL.pz as number) - 0.3 }, ease: 'io' },
+    { at: f(27), pose: { ...SWELL, py: 0.3, pz: (SWELL.pz as number) + 0.3 }, ease: 'io' },
+    { at: s0, pose: { ...SWELL, px: -6, pz: (SWELL.pz as number) + 0.6 }, ease: 'in' },
+    { at: FAN_HIT, pose: LURCH, ease: 'lin' },
+    { at: FAN.snatch, pose: { ...LURCH, pz: R.pz - 5, pitch: R.pitch + 9, px: 13, draw: 0.9 }, ease: 'out' },
+    { at: f(40), pose: { ...LURCH, pz: R.pz - 4.6, pitch: R.pitch + 8.6, px: 12.6, draw: 0.9 }, ease: 'io' },
+    // HAULED BACK: heaving itself back on its arms
+    { at: f(50), pose: { pz: R.pz + 3, faceUp: 4, faceTilt: 6, pitch: R.pitch - 4, px: 1, draw: 1, pt: 1 }, ease: 'io' },
+    { at: FAN.back, pose: { pz: R.pz + 2, faceUp: 2, faceTilt: 3, pitch: R.pitch - 2, px: -1, draw: 0.8, pt: 0.9 }, ease: 'io' },
+    { at: f(68), pose: { pz: R.pz - 1, pitch: R.pitch + 1, px: 0, draw: 0.5, pt: 0.8 }, ease: 'io' },
+    { at: FAN_LONG, pose: {}, ease: 'io' },
+  ];
+  return { hit: FAN_HIT, keys };
+}
+/** The middle of the fan's hands at a moment (the end it strikes with, for the review): arm 5's, in front of it. */
+export function fanTip(t: number, px: number): V3 {
+  return fanArmAt(5, t, px).wrist;
+}
+
+// =============================================================================================
 // THE SMEAR, and what the slams throw off
 
 /** The strikes of each move (from the last frame of its wind-up to the frame it lands on), and which hands strike in each. */
 export const AM_ACT_STRIKES: Readonly<Record<string, ReadonlyArray<{ s: readonly [number, number]; hands: readonly string[] }>>> = {
-  attack: [{ s: SWIPE_STRIKES[0], hands: ['R1'] }, { s: SWIPE_STRIKES[1], hands: ['L1'] }, { s: SWIPE_STRIKES[2], hands: ['R1', 'L1', 'R2', 'L2'] }],
+  attack: [{ s: FAN_STRIKE, hands: ['R1', 'L1'] }],
   rain: [{ s: RAIN_STRIKE, hands: ['R1', 'L1', 'R2', 'L2'] }],
   floorArms: [{ s: ARMS_STRIKE, hands: ['R1', 'L1', 'R2', 'L2'] }],
   devour: [{ s: DEVOUR_STRIKES[0], hands: ['R1', 'L1'] }, { s: DEVOUR_STRIKES[1], hands: [] }],
@@ -564,8 +731,8 @@ function rakeWay(hands: (t: number) => Record<string, V3>, i: number, t: number)
   const [s0, s1] = rk.strike;
   const to = Math.min(t, s1);
   const out: V3[] = [];
-  // (where its hand truly is, its arm put within reach: the figure as the game paints it)
-  const mob = MADE;
+  // (where its hand truly is, its arm put within reach: the figure as the game paints it, with the swipe combo: its picture's own)
+  const mob = MADE ? amalgamSwipeMob() : null;
   for (let k = 0; k <= RAKE_N; k++) {
     const tt = s0 + ((to - s0) * k) / RAKE_N;
     const h = hands(tt);
@@ -609,7 +776,7 @@ function rakeRopes(hands: (t: number) => Record<string, V3>): (t: number) => Rec
       const from = s0 - f(12);
       if (t < from || t > s0 + 1e-6) return;
       const h = rakeWay(hands, i, s0)[0];
-      const mob = MADE;
+      const mob = MADE ? amalgamSwipeMob() : null;
       let at = h;
       if (mob) {
         const hh = hands(t);
@@ -750,7 +917,7 @@ function rakeBits(m: Moment): Bit[] {
 // THE AMALGAMATION WITH THESE MOVES
 
 /** Its canvas: room over it for it reared and its arms raised, and before it for its rake and what it drags in. */
-export const ACT_CANVAS: MobCanvas = { w: 460, h: 370, ax: 210, ay: 236 };
+export const ACT_CANVAS: MobCanvas = { w: 500, h: 400, ax: 210, ay: 236 };
 let MADE: Mob | null = null;
 /** THE AMALGAMATION AS FREE AS THE GAME'S, with these moves (made the first time asked for). */
 export function amalgamActionMob(): Mob {
@@ -772,9 +939,17 @@ export function amalgamActionMob(): Mob {
   };
   const swSmear = smearOf('attack', sw);
   const swRake = rakeRopes(sw);
-  const attack = K.amMove('The swipe, the other swipe, and the slam', swipeMotion(), sw, {
+  // (the second round's swipe combo, kept for the picture of it beside the new: `amalgamSwipeMob`; not its moves)
+  SWIPE_MOVE = K.amMove('The swipe, the other swipe, and the slam', swipeMotion(), sw, {
     also: (t) => merge(swSmear(t), swRake(t), rakeChips(sw, 0, t - SWIPE_HITS[0]), rakeChips(sw, 1, t - SWIPE_HITS[1]), slams(SWIPE_HITS[2], 73, sw)(t), {
       burn: [[Math.max(0.7 * burning(t, 0.05, 0.33, SWIPE_HITS[0] + 0.1, SWIPE_HITS[0] + 0.45), 0.8 * burning(t, 1.2, 1.6, SWIPE_HITS[1] + 0.1, SWIPE_HITS[1] + 0.45), burning(t, f(58 + S) - 0.02, f(72 + S), SWIPE_HITS[2], SWIPE_HITS[2] + 0.6)), 0, 0]],
+    }),
+  });
+  // THE GRASPING FAN (2 Nov), its basic attack
+  const fh = fanHands();
+  const attack = K.amMove(FAN_NAME, fanMotion(), fh, {
+    also: (t) => merge(smearOf('attack', fh)(t), K.slamBurst([fh(FAN_HIT).R1, fh(FAN_HIT).L1], t - FAN_HIT, 77, 1.0) as Record<string, V3[]>, {
+      burn: [[burning(t, 0.05, 0.45, FAN_HIT + 0.1, FAN_HIT + 0.6), 0, 0]],
     }),
   });
   const rain = K.amMove('The bone rain', rainMotion(), rh, {
@@ -796,11 +971,20 @@ export function amalgamActionMob(): Mob {
     canvas: ACT_CANVAS,
     aura: { ...base.aura, x: ACT_CANVAS.ax - 4, y: ACT_CANVAS.ay - 34 },
     attack,
-    hit: SWIPE_HITS[0],
+    hit: FAN_HIT,
     more,
-    bits: (st: Stage, m: Moment) => [...base.bits(st, m), ...smearBits(m), ...rakeBits(m)],
+    bits: (st: Stage, m: Moment) => [...base.bits(st, m), ...smearBits(m), ...rakeBits(m), ...fanBits(m)],
   };
   return MADE;
+}
+let SWIPE_MOVE: MobMove | null = null;
+/** IT WITH THE SECOND ROUND'S SWIPE COMBO as its attack (only for the picture of it beside the new fan; not its moves). */
+let MADE2: Mob | null = null;
+export function amalgamSwipeMob(): Mob {
+  if (MADE2) return MADE2;
+  const mob = amalgamActionMob();
+  MADE2 = { ...mob, id: 'amalgam+action swipe', attack: SWIPE_MOVE as MobMove, hit: SWIPE_HITS[0] };
+  return MADE2;
 }
 void AM_CANVAS;
 
@@ -861,11 +1045,7 @@ const handOf = (g: ReturnType<typeof amGeometry>, n: string): V3 => (g.arms.find
  */
 export function amActionShape(mob: Mob = amalgamActionMob()): BossShape {
   const blows: Record<string, { hit: number; strike: readonly [number, number]; from: number; until?: number }[]> = {
-    attack: [
-      { hit: SWIPE_HITS[0], strike: SWIPE_STRIKES[0], from: 0, until: f(34) },
-      { hit: SWIPE_HITS[1], strike: SWIPE_STRIKES[1], from: f(34), until: f(74) },
-      { hit: SWIPE_HITS[2], strike: SWIPE_STRIKES[2], from: f(60 + S) },
-    ],
+    attack: [{ hit: FAN_HIT, strike: FAN_STRIKE, from: 0 }],
     rain: [{ hit: RAIN_HIT, strike: RAIN_STRIKE, from: 0 }],
     floorArms: [{ hit: ARMS_HIT, strike: ARMS_STRIKE, from: 0 }],
     devour: [
@@ -897,12 +1077,8 @@ export function amActionShape(mob: Mob = amalgamActionMob()): BossShape {
     },
     tip: (move, t, s, q) => {
       const g = (): ReturnType<typeof amGeometry> => actAt(mob, move, t, s, q);
-      if (move === 'attack') {
-        if (t <= f(34) + 1e-6) return handOf(g(), 'R1');
-        if (t <= f(76) + 1e-6) return handOf(g(), 'L1');
-        if (t >= f(74 + S)) return g().frame.lumps[3].c;
-        return null;
-      }
+      // (the fan: the hand of its middle arm, as it shoots out and is hauled back)
+      if (move === 'attack') return t <= FAN.back + 1e-6 ? fanTip(t, (q.px as number) ?? 0) : null;
       if (move === 'rain' || move === 'floorArms') return g().frame.lumps[3].c;
       if (move === 'devour') {
         if (t <= f(50) + 1e-6) return lerp3(handOf(g(), 'R1'), handOf(g(), 'L1'), 0.5);

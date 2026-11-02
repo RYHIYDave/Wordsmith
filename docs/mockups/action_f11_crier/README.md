@@ -175,3 +175,38 @@ Made by: `tools/crier_action_film.ts` (the film), `tools/crier_action_sheet.ts` 
   it is too quick to read.
 - The crowd: 16 at a call in the pictures (two from each of eight pools), against the old three or four and never more than six.
 - The decree's letters burn 4 seconds down the whole square: floor taken away, a hero on it struck every half second.
+
+## 2 Nov 2026: THE TOLL FOLLOWS YOU, in place of the trumpet swing (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds: his basic (`attack`) is now the toll; the trumpet swing combo is no longer one of his
+moves** (its code and its floor painter `paintSwing` are kept, out of his set). His shout off the walls, scroll and crowd stay.
+
+His words, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)” (offered as: the first two to get it; the Amalgamation, Crier, reapers, gardener and guard each get something new). Asked what the Crier gets in its place (answered by 07:46): “The toll follows
+you”, offered as: he rings his handbell; a toll marks where you stand and bursts a beat later, again and again. Keep moving.
+
+**HE HAD NO HANDBELL: it hangs at his belt now, at his left front (a brass bell on a turned wooden handle, hanging mouth down), in every
+frame of his set: his frames change by it** (his stand, march, struck and death are the game's own moves, painted with the bell).
+
+THE TOLL (art/crier_action.ts `TOLL`, `TOLL_HITS`, `TOLL_STRIKES`, `HANDBELL`, `tollStrikes`): his left hand takes the bell from his belt
+and raises it high over his hat, arched back, HELD, shaking, its lip glinting pink; RUNG in two frames, swung down and out before him,
+smeared, a ring of the Hush shaken out of its mouth: the first toll; swung back up, held again, rung again: FIVE TOLLS. Each lays a mark
+where the hero stands THEN (a ring of the Hush's grey, the enemy's pink at its edge, a pale ring closing in on its middle as it counts
+down), bursting a beat later in a ring of silence (a flash, the Hush boiling up out of it). Then the bell back to his belt.
+
+| | |
+|---|---|
+| the move | **4.2 s** (frames 0–126) |
+| the bell taken | from his belt by 0.333 s (f10); raised high by 0.6 s (f18); **HELD to 0.9 s** |
+| the tolls | **strike f27–f29, f43–f45, f59–f61, f75–f77, f91–f93**: rung at **0.967, 1.5, 2.033, 2.567, 3.1 s** (`TOLL_HITS`; 0.533 s apart); each after the first swung back up in 7 frames and HELD 5 (0.17 s) |
+| each mark | where the hero is at the toll, **1.6 tiles round** (`TOLL.r`: 3.2 across), **bursting 0.6 s later** (`TOLL.burst`) |
+| after | the bell back at his belt by 3.6 s (f108); his stand by 4.2 s |
+
+For the rules (a suggestion): `attack` long 4.2; at each of `TOLL_HITS` lay a mark at the hero's place; at it plus `TOLL.burst`, strike a
+hero within `TOLL.r` of it (`tollStrikes(x0, y0, x, y)`). The mark and its burst are painted in the pictures by `tollFloor` in
+src/dev/action_fixes2_scene.ts (to move into art/crier_action_fx.ts as the others are, when it is brought in). His figure:
+`makeCrierActionArt()` as before.
+
+Checks: `tests/crier_action.test.ts` updated: test 4 (the whole bosses' review, every new move both ways, the toll's five tolls each its own
+blow, the handbell a thing in his hand): nothing found; test 5 (each toll two frames, held, smeared then only; the first held 0.3 s, each
+later one 0.17 s; five tolls, marks 1.6 round bursting 0.6 s later, the bell over his hat and rung down before him). The game's frames
+hash as before.

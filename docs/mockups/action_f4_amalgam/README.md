@@ -349,3 +349,40 @@ Shown `amalgam_action2.mp4` and `amalgam_action2_sheet.png`, 1 Nov 2026 (answere
 
 So: the Amalgamation, every move, has his yes: the rakes, the finisher, the bone rain and its mites, the floor arms, the devour, and
 its rearing and crash. Ready for the main chat to bring in behind AMALGAM_ACTION.
+
+## 2 Nov 2026: THE GRASPING FAN, in place of the swipe combo (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds: its basic attack (`attack`) is now the grasping fan; the swipe combo (rakes and
+finisher) is no longer one of its moves** (its code is kept, out of its set, for the picture of it beside the new). Its bone rain, mites,
+floor arms, devour and rearing stay as approved.
+
+His words, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)” (offered as: the first two to get it; the Amalgamation, Crier, reapers, gardener and guard each get something new). Asked what the Amalgamation gets in its place (answered by 07:46): “Grasping
+fan (Recommended)”, offered as: a dozen arms burst from its heap and shoot across the floor in a wide fan, snatch at you, then drag back in.
+
+THE GRASPING FAN (art/amalgam_action.ts `FAN`, `fanOut`, `fanArmAt`, `fanLines`, `fanStrikes`): the heap SWELLS (heaved up, tipped back,
+its maw open, its fire flaring), its great front hands drawn in under it, and out of its front a dozen arms of the dead BUNCH, reared up
+off it clawing at the air, STRAINING, trembling, while each arm's line is MARKED on the floor; HELD; in TWO FRAMES the heap lurches on its
+great hands and THE ARMS SHOOT OUT ACROSS THE FLOOR in a wide fan, smeared (each arm's after-image streaked along its line, bone-white at
+its head, the enemy's pink behind), each a real arm of its own bones and flesh (a dark sinewy upper arm with a ridge of bone, a bone elbow
+cocked to one side, the forearm's two bones, a big dead hand, its claws spread); THEY SNATCH SHUT, their claws burning; it HAULS THEM
+BACK IN along the floor, clawing, heaving itself back on them, until they are in it again.
+
+| | |
+|---|---|
+| the move | **2.6 s** (frames 0–78) |
+| the swell | by 0.4 s (f12); the arms bunched and straining; **HELD to 1.0 s** (0.6 s) |
+| the lines | each arm's marked on the floor from **0.1 s** (0.97 s before they land) |
+| THE FAN | **strike f30–f32**, they land **1.067 s** (`FAN_HIT`): **12 arms**, from 60 degrees to its right to 60 to its left (**120 degrees**), each **4.3 to 5.0 tiles** from its middle (`FAN.reach` 4.75, ±0.45) |
+| the snatch | hands shut by 1.2 s (f36), the arms overreaching a little |
+| hauled back | from 1.33 s to 1.93 s (f40–f58), gone into it by 2.07 s; its stand by 2.6 s |
+| struck (`fanStrikes`) | a hero within **0.6** of an arm's line, from 1 tile out to its reach, as they land |
+
+For the rules (a suggestion; damage the rules' own): `attack` long 2.6 (`FAN_LONG`), its hit `FAN_HIT`; mark each line from 0.1 s
+(`fanLines()`: each arm's way and reach, from `FAN.near`); strike by `fanStrikes(x, y)` at `FAN_HIT`; the game's shake 3 there. **Whether a
+hero caught is dragged in with the arms is for him to decide.** The arms are drawn by its own frames: ITS CANVAS IS BIGGER now
+(`ACT_CANVAS` 500 × 400, was 460 × 370; the same anchor) for the arms' reach.
+
+Checks: `tests/action_f4_amalgam.test.ts` updated: test 3 (the whole bosses' review, every move both ways, the fan its one blow, the end it
+strikes with the hand of its middle arm): nothing found; test 4 holds the fan to its numbers (12 arms, 120 degrees, out 4.3 to 5 tiles in
+two frames from bunched against it, held, snatched, hauled back, what it strikes); the swipe's checks gone with it. The game's frames hash
+as before.

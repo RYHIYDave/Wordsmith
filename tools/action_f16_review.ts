@@ -10,7 +10,7 @@ void (async (): Promise<void> => {
   const rows: [string, Mob, BossShape, string[]][] = [];
   if (who === 'gardener') {
     const m = await import('../src/art/action_f16_gardener');
-    rows.push(['gardener', m.HEDGE_GARDENER, sh.hedgeShape(), ['attack']]);
+    rows.push(['gardener', m.LUNGE_GARDENER, sh.lungeShape(), ['attack']]);
   } else {
     const all = sh as unknown as Record<string, () => [string, Mob, BossShape, string[]][]>;
     if (all[`${who}Rows`]) rows.push(...all[`${who}Rows`]());

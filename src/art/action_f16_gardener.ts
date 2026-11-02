@@ -176,8 +176,8 @@ function hedger(base: Mob): Mob {
 }
 /** THE GARDENER WITH THE HEDGE CUT (GARDENER_HEDGE): the game's own in all but it. */
 export const HEDGE_GARDENER = hedger(PALACE_GARDENER);
-/** As the game holds a monster: the game's own gardener, the hedge cut as its `attack`. */
-export function makeHedgeArt(mob: Mob = HEDGE_GARDENER, pace = mob.pace): ActorArt {
+/** As the game holds a monster: the game's own gardener, his attack the SHEAR LUNGE (2 Nov, his pick; the hedge cut before it kept as `HEDGE_GARDENER` for the picture beside the new). */
+export function makeHedgeArt(mob: Mob = LUNGE_GARDENER, pace = mob.pace): ActorArt {
   return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
 }
 
@@ -289,4 +289,158 @@ export function clippingsPainted(t: number, layer: 'floor' | 'air', side: 'behin
     for (let q = 0; q < L; q++) dot2(x + Math.cos(spin) * q + Math.sin(s * 3 + i) * 3 * s, y - up + Math.sin(spin) * q, i % 13 === 0 ? PINK[1] : CLIPPINGS[2 + ((i + q) % 4)]);
   }
   return { px, lights };
+}
+
+// =============================================================================================
+// THE SHEAR LUNGE (2 Nov 2026): IN PLACE OF THE HEDGE CUT
+//
+// The owner, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you
+// over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)”. So the gardener's hedge cut
+// (snip, snip, a scissoring leap) goes; asked what in its place, his pick: “Shear lunge”, offered as: a long held crouch, then one lunge 3
+// tiles across the lawn, the open shears snapping shut on you. By his Movement 9 (a big held wind-up, a strike of 1 to 2 frames, a big
+// wind-down) and Monsters 9 (big areas, readable marks). Their one attack.
+//
+// THE SHEAR LUNGE: he sinks into a deep crouch, the shears thrust out before him low and OPENED THEIR WIDEST, the lane marked before
+// him across the lawn: HELD long, shaking, the blades glinting pink; in TWO FRAMES he LUNGES, flung low and long through the air three
+// tiles down the lane, smeared (after-images of him and the blades all the way), the blades SNAPPING SHUT at its end in a spray of cut
+// grass; THE WIND-DOWN: carried on, stumbling, bent double, the shut shears dragged along the turf, a second stumbling step, and only
+// then straightened, on where he stopped.
+
+/**
+ * THE SHEAR LUNGE'S NUMBERS (seconds from its start; tiles):
+ *   crouch    sunk into it by 0.35 s, the shears out low before him opened their widest; the lane marked from 0.15 s
+ *   HELD      shaking, glinting pink, 0.35 to 1.1 s (0.75 s)
+ *   THE LUNGE TWO FRAMES, smeared (frames 33 to 35): flung three tiles down the lane; the blades snapped shut at its end (frame 35,
+ *             1.167 s: the clip's `hit`)
+ *   wind-down stumbling on, the shut shears dragged on the turf, to 1.85 s; straightened by 2.4 s; his stand by 2.8 s, `travel` tiles on
+ *             from where he began (the game moves him on by it as it ends)
+ *   struck    a hero in the lane as he goes through it (`lane` long, `half` to either side), or within `snap` of where the blades shut
+ *   near, far begun at a hero from 1.5 to 3.6 tiles off
+ */
+export const LUNGE_HIT = f(35);
+export const LUNGE_STRIKE = [f(33), f(35)] as const;
+export const LUNGE_SMEARED = (t: number): boolean => t > LUNGE_STRIKE[0] + 1e-6 && t <= LUNGE_STRIKE[1] + FR + 1e-6;
+export const LUNGE = { crouch: 0.35, mark: 0.15, held: LUNGE_STRIKE[0], long: 2.8, lunge: 3.0, lane: 3.8, half: 0.85, snap: 1.2, near: 1.5, far: 3.6 } as const;
+const LUNGE_NAME = 'The shear lunge';
+/** How far he is flung in the lunge, in his own lengths (the pelvis's), and how far on he stumbles after it. */
+const FLUNG = LUNGE.lunge * TILE3;
+const STUMBLE = 14;
+/** How far on he is when it ends (his own lengths, and tiles). */
+export const LUNGE_TRAVEL = FLUNG + STUMBLE;
+export const LUNGE_TRAVEL_TILES = LUNGE_TRAVEL / TILE3;
+
+/** Sunk into the crouch: down low, leaning in, the shears out low before him OPENED THEIR WIDEST, his eyes on you. */
+const L_CROUCH: P = pose({ px: -3, pz: R.pz - 7, yaw: -4, twist: -6, pitch: 16, bend: 6, side: 0, roll: 0, faceUp: 22, faceTilt: 0, faceTurn: 2, ...fists(12, -4, 17, 2, 0, 0), lk: 24, rk: -30 }, [[0.1, 1, -0.2], [0.1, -1, -0.2]]);
+const lShake = (k: number): P => ({ ...L_CROUCH, lhz: (L_CROUCH.lhz as number) + (k % 2 ? 0.5 : -0.2), rhz: (L_CROUCH.rhz as number) + (k % 2 ? -0.2 : 0.5), pz: (L_CROUCH.pz as number) - 0.25 * (k % 2), px: (L_CROUCH.px as number) - 0.2 * (k % 2) });
+/** Coiled the last frame before it: down a hair lower, drawn back a hair. */
+const L_COIL: P = { ...L_CROUCH, px: -4, pz: R.pz - 7.6, pitch: 18 };
+/** Half way: flung low and long through the air, the shears thrust out ahead, still open. */
+const L_FLY: P = pose({ px: FLUNG * 0.5, pz: R.pz + 2, yaw: 0, twist: 0, pitch: 34, bend: 8, side: 0, roll: 0, faceUp: 26, faceTilt: 0, faceTurn: 0, ...fists(17, 0, 15, 0), lk: 20, rk: -20 }, [[0.2, 1, -0.2], [0.2, -1, -0.2]]);
+/** Landed, three tiles on: deep in a lunge, the blades SNAPPED SHUT, thrust out and down. */
+const L_SNAP: P = pose({ px: FLUNG, pz: R.pz - 8, yaw: 2, twist: 2, pitch: 28, bend: 12, side: 0, roll: 0, faceUp: 12, faceTilt: 0, faceTurn: -2, ...fists(17, -8, 3.2, -14), lk: 22, rk: -20 }, [[0.1, 1, -0.4], [0.1, -1, -0.4]]);
+/** Carried on, stumbling, bent double over the shut shears, their points on the turf. */
+const L_STUMBLE: P = pose({ px: FLUNG + 8, pz: R.pz - 9.5, yaw: 4, twist: 4, pitch: 36, bend: 16, side: -1, roll: 0, faceUp: 4, faceTilt: 0, faceTurn: -4, ...fists(15, -15, 3.2, -40, 6, 1), lk: 22, rk: -16 }, [[0.1, 1, -0.5], [0.1, -1, -0.5]]);
+/** The second stumbling step: still bent, the shears dragged along the turf beside him. */
+const L_DRAG: P = pose({ px: FLUNG + 12, pz: R.pz - 7, yaw: -3, twist: -4, pitch: 30, bend: 14, side: 1, roll: 0, faceUp: 6, faceTilt: 0, faceTurn: 4, ...fists(13, -17, 3.2, -52, -8, -1), lk: 18, rk: -18 }, [[0.1, 1, -0.5], [0.1, -1, -0.5]]);
+/** Heaving himself up. */
+const L_UP: P = pose({ px: FLUNG + 13.5, pz: R.pz - 2.5, yaw: 0, twist: -2, pitch: 12, bend: 6, side: 0, roll: 0, faceUp: 8, faceTilt: 0, faceTurn: 0, ...fists(10, -10, 4, -10), lk: 14, rk: -14 }, [[0.1, 1, -0.5], [0.1, -1, -0.5]]);
+function lungeKeys(): Key3[] {
+  const [s0] = LUNGE_STRIKE;
+  return [
+    { at: 0, pose: {} },
+    { at: LUNGE.crouch, pose: L_CROUCH, ease: 'io' },
+    { at: 0.45, pose: lShake(1), ease: 'io' },
+    { at: 0.55, pose: lShake(2), ease: 'io' },
+    { at: 0.65, pose: lShake(3), ease: 'io' },
+    { at: 0.75, pose: lShake(4), ease: 'io' },
+    { at: 0.85, pose: lShake(5), ease: 'io' },
+    { at: 0.95, pose: lShake(6), ease: 'io' },
+    { at: s0 - 0.034, pose: L_CROUCH, ease: 'io' },
+    { at: s0, pose: L_COIL, ease: 'in' },
+    { at: f(34), pose: L_FLY, ease: 'lin' },
+    { at: LUNGE_HIT, pose: L_SNAP, ease: 'lin' },
+    { at: LUNGE_HIT + 0.2, pose: L_STUMBLE, ease: 'out' },
+    { at: 1.45, pose: { ...L_STUMBLE, px: FLUNG + 9.5, pz: R.pz - 9 }, ease: 'io' },
+    { at: 1.7, pose: L_DRAG, ease: 'io' },
+    { at: 1.85, pose: { ...L_DRAG, px: FLUNG + 12.5, pz: R.pz - 6.5 }, ease: 'io' },
+    { at: 2.25, pose: L_UP, ease: 'io' },
+    { at: LUNGE.long, pose: { px: LUNGE_TRAVEL }, ease: 'io' },
+  ];
+}
+function lungeFeet(): (t: number) => P {
+  const [s0, s1] = LUNGE_STRIKE;
+  // (the crouch: the left foot out before him, the right drawn back; flung through the air, both off the lawn; down three tiles on,
+  // the left first; stumbling on, the right, then the left; set side by side as he straightens)
+  const Lc = plantBy(L0, 7, 0.5, 8);
+  const Rc = plantBy(R0, -7, -0.5, -14);
+  return footwork(B, {
+    L: { start: L0, moves: [{ t0: 0.04, t1: 0.3, to: Lc, lift: 2.4 }, { t0: s0, t1: s1, to: plantBy(L0, FLUNG + 9, 0.5, 6), lift: 9 }, { t0: 1.62, t1: 1.84, to: plantBy(L0, FLUNG + 21, 0.5, 2), lift: 2.4 }, { t0: 2.36, t1: 2.6, to: plantBy(L0, LUNGE_TRAVEL, 0), lift: 1.6 }] },
+    R: { start: R0, moves: [{ t0: 0.08, t1: 0.32, to: Rc, lift: 2.2 }, { t0: s0, t1: s1, to: plantBy(R0, FLUNG - 7, -0.5, -8), lift: 7 }, { t0: 1.24, t1: 1.46, to: plantBy(R0, FLUNG + 14, -1, -4), lift: 2.6 }, { t0: 2.1, t1: 2.34, to: plantBy(R0, LUNGE_TRAVEL, 0), lift: 1.8 }] },
+  });
+}
+/** The glint on its blades: up as he sinks into the crouch, held, gone after the snap. */
+const lungeGlint = (t: number): number => (t < 0.06 || t > LUNGE_HIT + 0.25 ? 0 : t < LUNGE.crouch ? (t - 0.06) / (LUNGE.crouch - 0.06) : t <= LUNGE_HIT ? 1 : 1 - (t - LUNGE_HIT) / 0.25);
+const lungeJaw = (t: number): number => (t < 0.2 ? 0.45 + 2 * t : t < LUNGE_HIT + 0.4 ? 1 : 1 - 0.5 * Math.min(1, (t - LUNGE_HIT - 0.4) / 0.5));
+/** THE LUNGE'S SMEAR: after-images of the blades and of HIM, all the way he was flung (his head, his hands, his hips, his knees). */
+function lungeBits(mob: Mob, st: Stage, m: Moment): Bit[] {
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const t = m.t;
+  if (m.move !== LUNGE_NAME || !LUNGE_SMEARED(t)) return bits;
+  const thin = Math.abs(t - LUNGE_HIT - FR) < 1e-6;
+  const blades: V3[][] = [[], [], [], []];
+  const him: V3[][] = [[], [], [], [], []];
+  for (let i = 0; i <= 12; i++) {
+    const u = Math.min(t, LUNGE_HIT) - (FR * 1.6 * i) / 12;
+    const s = skeletonAt(mob, 'attack', Math.max(0, u));
+    const sk = shearsOf(s);
+    blades[0].push(sk.tipL);
+    blades[1].push(sk.tipR);
+    blades[2].push(sk.mid);
+    blades[3].push(sk.pivot);
+    him[0].push(s.head);
+    him[1].push(s.neck);
+    him[2].push(s.pelvis);
+    him[3].push(s.kneeL);
+    him[4].push(s.kneeR);
+  }
+  smearAlong(st, put, him, thin, ['#2a2c34', '#4a4e5a', '#7e8494', '#b6bccb'], '#9aa0b0');
+  smearAlong(st, put, blades, thin, ['#3a3e48', '#6e7480', '#b8bcc6', '#eef0f4'], PINK[1]);
+  return bits;
+}
+const PH_CANVAS3 = { w: 380, h: 280, ax: 120, ay: 186 } as const;
+function lunger(base: Mob): Mob {
+  const mob: Mob = {
+    ...base,
+    id: `${base.id}-lunge`,
+    attack: { name: LUNGE_NAME, motion: { keys: lungeKeys(), hit: LUNGE_HIT }, rest: R, feet: lungeFeet(), glint: lungeGlint, jaw: lungeJaw } as MobMove,
+    hit: LUNGE_HIT,
+    warn: LUNGE.held - LUNGE.crouch,
+    canvas: PH_CANVAS3,
+    aura: { ...base.aura, x: base.aura.x - PH_CANVAS.ax + PH_CANVAS3.ax, y: base.aura.y - PH_CANVAS.ay + PH_CANVAS3.ay },
+    bits: (st, m) => [...base.bits(st, m), ...lungeBits(mob, st, m)],
+  };
+  return mob;
+}
+/** THE GARDENER WITH THE SHEAR LUNGE (GARDENER_HEDGE): the game's own in all but it. */
+export const LUNGE_GARDENER = lunger(PALACE_GARDENER);
+
+/** Where the blades snap shut (tiles before where he began, to his left). */
+export function snapAt(): [number, number] {
+  const k = shearsOf(skeletonAt(LUNGE_GARDENER, 'attack', LUNGE_HIT));
+  return [k.mid[0] / TILE3, k.mid[1] / TILE3];
+}
+/** Where he is `t` seconds in (the pelvis's place, tiles on from where he began). */
+export function lungeOn(t: number): number {
+  return skeletonAt(LUNGE_GARDENER, 'attack', t).pelvis[0] / TILE3;
+}
+/**
+ * Whether the lunge strikes a hero `x` tiles before where he began and `y` to his left: in THE LANE as he goes through it (from where he
+ * was to the end of it, `half` to either side: at the strike's frames), or within `snap` of where the blades snap shut (at the hit).
+ */
+export function lungeStrikes(x: number, y: number): boolean {
+  const [sx, sy] = snapAt();
+  return (x >= 0 && x <= LUNGE.lane && Math.abs(y) <= LUNGE.half) || Math.hypot(x - sx, y - sy) <= LUNGE.snap;
 }

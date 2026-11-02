@@ -9,7 +9,7 @@ import type { Mob } from '../src/art/new_mobs3';
 import { PH_SHAPE_GARDENER, PH_SHAPE_GROOM } from '../src/art/palace_hands_moves';
 import { WHISTLE_GROOM, WHISTLE_SMEARED, WHISTLE_STRIKE } from '../src/art/action_f16_groom';
 import { GD_SHAPE_PARTISAN, GD_SHAPE_SWORD } from '../src/art/palace_guard_moves';
-import { DRILL_PARTISAN, DRILL_SMEARED, DRILL_STRIKES, DRILL_HITS, DRILL_SWORD, THRUST9_SMEARED, THRUST9_STRIKE } from '../src/art/action_f16_guard';
+import { DRILL_PARTISAN, DRILL_SMEARED, DRILL_STRIKES, DRILL_HITS, DRILL_SWORD, JAV, JAV_PARTISAN, JAV_PARTISAN_SWORD, JAV_SMEARED, JAV_SWORD, JAV_SWORD_AFTER, PULL, THRUST9_SMEARED, THRUST9_STRIKE } from '../src/art/action_f16_guard';
 import { KN_SHAPE, KN_CLEAVE, smearedAt as knSmeared } from '../src/art/kings_knights_moves';
 import { BANNER, BANNER_AT, BANNER_HIT, BANNER_KNIGHT, BANNER_SMEARED, BANNER_STRIKE, CLEAVE_KNIGHT, STAFF, backBanner, bannerHeld } from '../src/art/action_f16_knight';
 import { TILE3 } from '../src/art/new_mobs3';
@@ -17,7 +17,7 @@ import { add } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { DN_SHAPE_GENT, DN_SHAPE_LADY } from '../src/art/masque_dancers_moves';
 import { THROW_GENT, THROW_LADY, THROW_SMEARED, THROW_STRIKE } from '../src/art/action_f16_dancer';
-import { HEDGE_GARDENER, HEDGE_HITS, HEDGE_SMEARED, HEDGE_STRIKES, HEDGE_TRAVEL } from '../src/art/action_f16_gardener';
+import { HEDGE_GARDENER, HEDGE_HITS, HEDGE_SMEARED, HEDGE_STRIKES, HEDGE_TRAVEL, LUNGE_GARDENER, LUNGE_SMEARED, LUNGE_STRIKE, LUNGE_TRAVEL } from '../src/art/action_f16_gardener';
 
 /** Handovers for one whose `attack` ends `travel` on (the game moves him on by it): his stand into each move and back; into his walk and out of it at every step. */
 export function travelHandovers(mob: Mob, travel: Readonly<Record<string, number>>): Handover[] {
@@ -62,9 +62,43 @@ export function drillShape(mob: Mob): BossShape {
     smeared: (move, t) => (move === 'attack' && THRUST9_SMEARED(t)) || (move === 'drill' && DRILL_SMEARED(t)),
   };
 }
+/**
+ * THE PALACE GUARD WITH THE JAVELIN (2 Nov, in place of the drill): the thrust a blow of its own; the javelin a blow (his right hand, which
+ * hurls it, the end he strikes with, until he reaches for his sword); after it he is another (his sword drawn: `after`). The partisan
+ * guard with his sword: the sword guard's moves, no shield; the pull-out no blow, and after it the partisan guard again.
+ */
+export function javShape(mob: Mob): BossShape {
+  const partisan = mob === JAV_PARTISAN;
+  const withSword = mob === JAV_PARTISAN_SWORD;
+  const base = partisan ? GD_SHAPE_PARTISAN : GD_SHAPE_SWORD;
+  const who = partisan ? 'partisan' : 'sword';
+  const noShield = (th: ReturnType<NonNullable<BossShape['things']>>): ReturnType<NonNullable<BossShape['things']>> => th.filter((x) => x.name !== 'shield');
+  return {
+    ...base,
+    tip: (move, t, s, q) => {
+      if (move === 'javelin') return t <= JAV[who].sword - 0.25 ? s.handR : null;
+      if (move === 'pullOut') return null;
+      return base.tip?.(move, t, s, q) ?? null;
+    },
+    things: (move, t, s, q) => {
+      if (move === 'javelin') {
+        if (partisan) return t <= JAV.partisan.hit + 1e-6 ? (GD_SHAPE_PARTISAN.things?.(move, t, s, q) ?? []) : t >= JAV.partisan.sword ? noShield(GD_SHAPE_SWORD.things?.(move, t, s, q) ?? []) : [];
+        const th = GD_SHAPE_SWORD.things?.(move, t, s, q) ?? [];
+        return t >= JAV.sword.sheathed - 0.1 && t < JAV.sword.sword ? th.filter((x) => x.name === 'shield') : th;
+      }
+      if (move === 'pullOut') return t >= PULL.grip ? (GD_SHAPE_PARTISAN.things?.(move, t, s, q) ?? []) : t < PULL.sheathed - 0.2 ? noShield(GD_SHAPE_SWORD.things?.(move, t, s, q) ?? []) : [];
+      const th = base.things?.(move, t, s, q) ?? [];
+      return withSword ? noShield(th) : th;
+    },
+    strikes: { attack: THRUST9_STRIKE, ...(withSword ? {} : { javelin: JAV[who].strike }) },
+    smeared: (move, t) => (move === 'attack' && THRUST9_SMEARED(t)) || (move === 'javelin' && JAV_SMEARED(who)(t)),
+    after: partisan ? { javelin: JAV_PARTISAN_SWORD } : withSword ? { pullOut: JAV_PARTISAN } : mob === JAV_SWORD ? { javelin: JAV_SWORD_AFTER } : {},
+  };
+}
 export const guardRows = (): [string, Mob, BossShape, string[]][] => [
-  ['partisan', DRILL_PARTISAN, drillShape(DRILL_PARTISAN), ['attack', 'drill']],
-  ['sword', DRILL_SWORD, drillShape(DRILL_SWORD), ['attack', 'drill']],
+  ['partisan', JAV_PARTISAN, javShape(JAV_PARTISAN), ['attack', 'javelin']],
+  ['partisan with sword', JAV_PARTISAN_SWORD, javShape(JAV_PARTISAN_SWORD), ['stand', 'walk', 'attack', 'pullOut']],
+  ['sword', JAV_SWORD, javShape(JAV_SWORD), ['attack', 'javelin']],
 ];
 
 /** THE KING'S KNIGHT: his cleave his blow; the banner a blow of its own (its staff's foot the end he strikes with); it on his back, a thing he carries. */
@@ -130,7 +164,16 @@ export function whistleShape(): BossShape {
   };
 }
 export const groomRows = (): [string, Mob, BossShape, string[]][] => [['groom', WHISTLE_GROOM, whistleShape(), ['attack']]];
-export const gardenerRows = (): [string, Mob, BossShape, string[]][] => [['gardener', HEDGE_GARDENER, hedgeShape(), ['attack']]];
+/** THE GARDENER'S SHEAR LUNGE (2 Nov, in place of the hedge cut): one blow, the shears' middle the end he strikes with; it ends `travel` on. */
+export function lungeShape(mob: Mob = LUNGE_GARDENER): BossShape {
+  return {
+    ...PH_SHAPE_GARDENER,
+    strikes: { attack: LUNGE_STRIKE },
+    smeared: (move, t) => move === 'attack' && LUNGE_SMEARED(t),
+    handovers: travelHandovers(mob, { attack: LUNGE_TRAVEL }),
+  };
+}
+export const gardenerRows = (): [string, Mob, BossShape, string[]][] => [['gardener', LUNGE_GARDENER, lungeShape(), ['attack']]];
 
 /** THE DANCERS: the throw a blow of its own for each (their hands the end they strike with: his flung open, hers drawn in as she is flung); it ends where it began (she is carried down the lane by the game). */
 export function throwShape(mob: Mob): BossShape {

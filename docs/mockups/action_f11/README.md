@@ -236,3 +236,34 @@ while drawing), `tools/action_f11_rest.ts` (their rests measured).
 - THE BARRAGE: 9 books, one every 0.08 s, each at where you are as it goes: running across the stream beats it; standing still does not.
   Each book is a blow of its own (a suggestion: a fifth of a blow each).
 - The burning oil 1.9 tiles round for 6 s; the gurney's lane 10 tiles at 9 a second; the mallet's ring 1.5; the slam's dust 1.7.
+
+## 2 Nov 2026: THE SICKLE BOOMERANG, in place of the harvest (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds: the reaper's and the gleaner's one attack is now the sickle boomerang** (the harvest's
+code is kept, out of their set, for the picture of it beside the new: `HARVEST_REAPER`). `makeHarvestArt()` now gives `BOOM_REAPER`.
+
+His words, 2 Nov 2026, 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you over corrected to that a little too much.” Asked which keep it: “Chained One and troll (Recommended)” (offered as: the first two to get it; the Amalgamation, Crier, reapers, gardener and guard each get something new). Asked what the reapers get in its place (answered by 07:46): “Sickle boomerang
+(Recommended)”, offered as: the sickle thrown spinning out in a wide curve and back to the hand. Dodge it going out and coming back.
+
+THE SICKLE BOOMERANG (art/action_f11_field.ts `BOOM`, `boomAt`, `boomCurve`, `boomStrikes`, `sicklePainted`, `curvePainted`): the sickle
+DRAWN BACK far behind them at the shoulder, the body wound right round, the left hand pointed at you, the way it will fly MARKED on the
+ground (a loop out to their left, round, and back on their right, its edges dotted as far as it strikes): HELD, shaking, glinting pink;
+in TWO FRAMES FLUNG, the arm whipped round and across, smeared; the sickle SPINNING out along the curve, crisp, glinting pink, a blur of
+its blade round it; round; and BACK; caught, the reaper STAGGERING A STEP BACK with the catch (their hand open while it is away); straightened.
+
+| | |
+|---|---|
+| the move | **3.0 s** (frames 0–90) |
+| drawn back | by 0.32 s; the curve marked from **0.12 s**; **HELD to 0.7 s** (0.38 s) |
+| THE THROW | **strike f21–f23**, it leaves the hand at **0.767 s** (`BOOM_HIT`) |
+| its flight | **1.5 s** (`BOOM.fly`), **14.2 tiles** of curve (9.4 tiles a second): out to **6 tiles** before them, 1.7 to their left going out, 2.5 to their right coming back; spinning 5 turns a second, dipping to the knight's waist |
+| the catch | **2.267 s** (`BOOM_CATCH`); staggered a step back (5 of their lengths: `BOOM_BACK`); straightened by 3.0 s |
+| struck (`boomStrikes`) | a hero within **0.75** of it, once going out and once coming back |
+
+For the rules (a suggestion): `attack` long 3.0, hit `BOOM_HIT`, `near`/`far` 2/6; the sickle's place `boomAt(t)` (tiles from where they
+stand, and its height), drawn by `sicklePainted(t, view)` (`SPIN_CANVAS`, its anchor the floor under it) over a small shadow; the curve
+`curvePainted(k, view)` from `BOOM.mark`; strike by `boomStrikes(t, x, y)` (each pass once); move them back `BOOM_BACK` as it ends.
+
+Checks: `tests/action_f11.test.ts` updated: test 3 (the bosses' review, both, both ways, their throwing hand the end they strike with, the
+sickle not theirs to carry while it is away): nothing found; test 4 the sickle in flight both ways round and its curve: crisp, no cyan,
+not cut off; test 5 its numbers (six tiles out, a wide curve, struck going out and back, held, a stagger). The game's frames hash as before.

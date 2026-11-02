@@ -70,3 +70,109 @@ src/dev/ratking_action_scene.ts, src/dev/action_f9_scene.ts).
 - The Queen's dust: hanging 2.3 s over the area (it hides what is under it a moment), or thinner and shorter.
 - The Rat King's roll: 13 tiles a second, 11 tiles long, held 0.8 s spinning up first.
 - The deer's bramble: its thorns a dull red-brown (to read on its green-black canes), or darker.
+
+---
+
+# The second round (2 Nov 2026): five that lose their hit-hit-slam combo
+
+The same helper's work, on the same branch (`art/action-fixes`), after `art/chained-look` (31b0ee4, the Chained One's new body, his yes)
+was merged into it (so the branch holds all the action work). Each mock-up is changed IN PLACE, in its own files, behind its own switch,
+still off; its own test and README say what changed (each README's "2 Nov" section). Nothing here is in the game until the main chat puts
+it there, on his yes. The game's own frames are unchanged (each mock-up's test checks its hashes).
+
+## His words, 2 Nov 2026
+
+- 07:32: “Okay now I need you to look at how many enemies do a small hit, small hit, slam combo.  I feel like you over corrected to that a
+  little too much.”
+- Seven did; asked which keep it (offered: the first two to get it; the Amalgamation, Crier, reapers, gardener and guard each get
+  something new): “Chained One and troll (Recommended)”.
+- Then each of the five, asked one at a time, answered by 07:46:
+  - THE AMALGAMATION: “Grasping fan (Recommended)”, offered as: a dozen arms burst from its heap and shoot across the floor in a wide
+    fan, snatch at you, then drag back in.
+  - THE CRIER: “The toll follows you”, offered as: he rings his handbell; a toll marks where you stand and bursts a beat later, again and
+    again. Keep moving.
+  - THE HUSHED REAPER AND GLEANER: “Sickle boomerang (Recommended)”, offered as: the sickle thrown spinning out in a wide curve and back
+    to the hand. Dodge it going out and coming back.
+  - THE HUSHED GARDENER: “Shear lunge”, offered as: a long held crouch, then one lunge 3 tiles across the lawn, the open shears snapping
+    shut on you.
+  - THE PALACE GUARD: “Javelin (Recommended)”, offered as: he hurls the partisan; it sticks quivering where you stood with a burst of
+    turf. He draws a sword till he pulls it out.
+
+Every one by Movement 9 (a big held wind-up, a strike of two frames smeared, a big wind-down) and Monsters 9 (big areas, readable marks);
+none of them a combo of blows ending in a slam.
+
+## The five (seconds; tiles)
+
+4. **THE AMALGAMATION'S GRASPING FAN** (its basic attack, in place of the swipe combo; docs/mockups/action_f4_amalgam/README.md,
+   `AMALGAM_ACTION`; art/amalgam_action.ts `FAN`, `fanArmAt`, `fanStrikes`). It swells by 0.4 s, a dozen arms of the dead bunched
+   against its front, straining; each arm's line marked on the floor from 0.1 s; HELD to 1.0 s; in **two frames** (30 to 32, 1.067 s)
+   the heap lurches and **twelve arms** shoot out across the floor in a **120 degree** fan, **4.3 to 5.0 tiles** from its middle, each
+   a real arm of its own bones and flesh (dark sinew, a bone elbow, the forearm's two bones, a dead hand); they snatch shut by 1.2 s;
+   hauled back in along the floor by 1.93 s; its stand by **2.6 s**. Struck: a hero within 0.6 of an arm's line (from 1 tile out) as
+   they land. Its bone rain, mites, floor arms and devour as approved.
+5. **THE CRIER'S TOLL** (his basic, in place of the trumpet swing; docs/mockups/action_f11_crier/README.md, `CRIER_ACTION`;
+   art/crier_action.ts `TOLL`, `TOLL_HITS`, `tollStrikes`). He had no handbell: **it hangs at his belt now, at his left front, in every
+   frame of his set** (his frames change by it). His left hand takes it and raises it high over his hat by 0.6 s, HELD to 0.9 s; rung in
+   **two frames**, swung down before him, a ring of the Hush shaken out of it: **five tolls**, at 0.967, 1.5, 2.033, 2.567 and 3.1 s
+   (each swung back up and held again, 0.17 s); each lays a mark **where the hero is then** (a ring of the Hush's grey, the enemy's pink at
+   its edge, **1.6 tiles round**: 3.2 across), bursting **0.6 s** later in a ring of silence. The bell back at his belt by 3.6 s; his
+   stand by **4.2 s**. His shout off the walls, scroll and crowd stay.
+6. **THE HUSHED REAPER AND GLEANER'S SICKLE BOOMERANG** (their one attack, in place of the harvest; docs/mockups/action_f11/README.md,
+   `FIELD_HARVEST`; art/action_f11_field.ts `BOOM`, `boomAt`, `boomStrikes`, `sicklePainted`, `curvePainted`). Drawn back far behind
+   the shoulder by 0.32 s, its curve marked on the ground from 0.12 s, HELD, shaking, glinting pink, to 0.7 s; flung in **two frames**
+   (it leaves the hand at 0.767 s); the sickle spinning (5 turns a second, a blur of its blade round it, glinting pink) out along the
+   curve **6 tiles** before them, round (out on their left, back on their right: **14.2 tiles** of flight in **1.5 s**, 9.4 tiles a
+   second), and back to the hand at 2.267 s; caught, **staggered a step back**; straightened by **3.0 s**. Struck: a hero within 0.75
+   of it, once going out and once coming back.
+7. **THE HUSHED GARDENER'S SHEAR LUNGE** (his one attack, in place of the hedge cut; docs/mockups/action_f16/README.md,
+   `GARDENER_HEDGE`; art/action_f16_gardener.ts `LUNGE`, `lungeStrikes`, `snapAt`). Sunk into a deep crouch by 0.35 s, the shears out low
+   before him opened their widest, the lane marked from 0.15 s; HELD, shaking, to 1.1 s (**0.75 s**); the lunge in **two frames**
+   (33 to 35, 1.167 s), smeared (after-images of him and the blades all the way), flung **3.1 tiles**, the blades snapping shut at its
+   end in a spray of cut grass; stumbling on, bent double, the shut shears dragged along the turf; straightened by 2.4 s, his stand by
+   **2.8 s**, **3.36 tiles** on. Struck: a hero in the lane (3.8 long, 0.85 to either side) as he goes through it, or within 1.2 of where
+   the blades shut.
+8. **THE PALACE GUARD'S JAVELIN** (his second attack, in place of the drill; the long thrust stays; docs/mockups/action_f16/README.md,
+   `GUARD_DRILL`; art/action_f16_guard.ts `JAV`, `spearFlying`, `spearStuck`, `javStrikes`, `PULL`). **He has a sword in a scabbard at
+   his left hip now, in every frame of his set.** The partisan hauled back over his shoulder by 0.45 s, where you stand marked, HELD,
+   shaking, to 0.9 s; hurled in **two frames** (it leaves his hand at 0.967 s); it flies (0.38 s over 4.6 tiles, 32 lengths high at the
+   top of its arc) and **sticks quivering** where you stood (it shakes 0.8 s), a **burst of turf 1.6 tiles round**; he **draws his
+   sword** from his hip (1.62 to 1.87 s); with it he stands, marches and strikes (the sword guard's thrust by Movement 9) until he has
+   walked to it; then **THE PULL-OUT** (2.65 s): sword put up, both fists high on the shaft, heaved (0.72 to 1.32 s), **wrenched out**
+   at 1.48 s in a spray of turf, swung over, the partisan guard again. **THE SWORD GUARDS**: a light javelin across their back now
+   (their frames change by it) and a scabbard at the hip; the same throw: sword put up (0.32 s), the javelin off their back (0.5 s),
+   hauled back, held to 1.167 s, hurled in two frames (1.233 s), sword drawn again (1.95 s); then the sword guard as they are (no
+   javelin to fetch).
+
+## The pictures (`pictures/`)
+
+- `action_fixes2.mp4` (1200 × 676, 53.1 s, 30 a second, H.264 yuv420p, captioned): each new move on its own floor's ground with the
+  knight (stand-ins as the models used: the ossuary, the square, the fields, the gardens), from in front and from behind, then at half
+  speed; the Crier's tolls and the sickle's curve also from higher up (the game's own pixels); the guard's throw, his pull-out (from
+  behind), and the sword guard's throw.
+- `action_fixes2_sheet.png` (1200 × 2843): for each of the five, its old combo beside its new move at the same scale (the old from the
+  branch before, 523e891), and three key moments of the new move on its floor with the knight.
+
+Made by: `tools/action_fixes2_film.ts` (the film), `tools/action_fixes2_frames.ts` and `tools/action_fixes2_sheet.py` (the sheet),
+`tools/action_fixes2_stills.ts` and `tools/action_fixes2_peek.ts` (stills); the scenes `src/dev/action_fixes2_scene.ts` (each figure's
+marks and what it sends out placed through the figure's own projection, both ways round).
+
+## The checks (second round)
+
+- Each mock-up's own test updated to its new move and passing (`tests/action_f4_amalgam.test.ts`, `tests/crier_action.test.ts`,
+  `tests/action_f11.test.ts`, `tests/action_f16.test.ts`): every frame of each new move from in front and behind through the bosses'
+  review (`checkBoss`) with every handing over: nothing found; painted, the pink edge, crisp, no cyan, nothing cut off; the new numbers;
+  what each sends out (the sickle in flight, its curve, the javelin flying and stuck) crisp, no cyan, not cut off. The game's own frames
+  hash as before in each.
+- `tsc --noEmit -p tsconfig.json` clean.
+- Changed outside the mock-ups' own files: none of the game's (no shared engine file changed). The merge's two mock-up lists
+  (`tests/bosses.test.ts`, `tests/new_mobs3.test.ts`) take both sides.
+
+## For him to decide (the art chat's to ask)
+
+- The grasping fan: **whether a hero caught is dragged in** with the arms (as the devour drags), or only struck where they land.
+- The Crier's handbell at his belt changes every frame of his set; the later tolls are held 0.17 s each (the mark and its 0.6 s beat
+  are the warning), the first 0.3 s.
+- The sickle: 9.4 tiles a second, a stagger on the catch; it can strike twice in one throw (out and back).
+- The palace guards: the sword at the partisan guard's hip (every frame); his free left hand held up as the sword guard holds his
+  shield's grip while he fights with the sword; the sword guards' javelin on their back and their scabbard (every frame), and whether
+  they too should walk to their javelin and pull it out (in the pictures they fight on with the sword).

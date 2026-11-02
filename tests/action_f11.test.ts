@@ -36,14 +36,14 @@ import { FIELDHAND } from '../src/game/act1_rules/fieldhand';
 import { ORDERLY as ORDERLY_RULES } from '../src/game/act1_rules/orderly';
 import { BOOKWARDEN as WARDEN_RULES } from '../src/game/act1_rules/bookwarden';
 import { CHOP, CHOP_HIT, CHOP_STRIKE, LANTERN_SERGEANT, LANTERN_WATCHMAN, LOB, LOB_HIT, LOB_STRIKE, OIL, POOL, WATCH_LANTERN, bitePainted, biteAt, chopStrikes, inOil, lanternFlying, lobArc, lobFly, makeLanternWatchArt, oilPainted } from '../src/art/action_f11_watch';
-import { FIELD_HARVEST, HARVEST, HARVEST_GLEANER, HARVEST_HITS, HARVEST_REAPER, HARVEST_STRIKES, chaffPainted, harvestStrikes, hookAt, makeHarvestArt } from '../src/art/action_f11_field';
+import { BOOM, BOOM_CATCH, BOOM_GLEANER, BOOM_HIT, BOOM_REAPER, BOOM_STRIKE, FIELD_HARVEST, boomAt, boomStrikes, chaffPainted, curvePainted, makeHarvestArt, sicklePainted } from '../src/art/action_f11_field';
 import { BLOW9, BLOW_HIT, BLOW_STRIKE, GURNEY, GURNEY_HIT, GURNEY_ORDERLY, GURNEY_STRIKE, ORDERLY_GURNEY, blowStrikes, crashPainted, gurneyGone, gurneyPainted, gurneyStrikes, makeGurneyOrderlyArt } from '../src/art/action_f11_orderly';
 import { BARRAGE, BARRAGE_HIT, BARRAGE_STRIKE, BARRAGE_WARDEN, SLAM9, SLAM_HIT, SLAM_STRIKE, WARDEN_BARRAGE, bookAt, bookGoes, bookPainted, bookStrikes, makeBarrageWardenArt, slamStrikes } from '../src/art/action_f11_warden';
 import { makeWatchArt3 } from '../src/art/hushed_watch_moves';
 import { makeFieldArt3 } from '../src/art/fieldhands_moves';
 import { makeOrderlyArt3 } from '../src/art/orderlies_moves';
 import { makeBookwardenArt3 } from '../src/art/bookwardens_moves';
-import { barrageShape, gurneyShape, harvestShape, lanternShape } from './action_f11_shapes';
+import { barrageShape, boomShape, gurneyShape, lanternShape } from './action_f11_shapes';
 import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
 
 interface Assert {
@@ -165,8 +165,8 @@ test('2. every frame of the new moves paints, wears the pink edge, is crisp, has
   const arts: Array<[string, Mob, string[]]> = [
     ['watchman', LANTERN_WATCHMAN, ['attack', 'lantern', 'stand', 'walk', 'reel']],
     ['sergeant', LANTERN_SERGEANT, ['attack', 'lantern']],
-    ['reaper', HARVEST_REAPER, ['attack']],
-    ['gleaner', HARVEST_GLEANER, ['attack']],
+    ['reaper', BOOM_REAPER, ['attack']],
+    ['gleaner', BOOM_GLEANER, ['attack']],
     ['orderly', GURNEY_ORDERLY, ['attack', 'gurney']],
     ['warden', BARRAGE_WARDEN, ['attack', 'barrage']],
   ];
@@ -189,14 +189,14 @@ test('2. every frame of the new moves paints, wears the pink edge, is crisp, has
 test('3. all four through the bosses’ review, both ways round: nothing found; Movement 9', () => {
   const said: string[] = [];
   for (const mob of [LANTERN_WATCHMAN, LANTERN_SERGEANT]) for (const f of findingsSaid(checkBoss(mob, lanternShape(mob)))) said.push(`${mob.id}: ${f}`);
-  for (const mob of [HARVEST_REAPER, HARVEST_GLEANER]) for (const f of findingsSaid(checkBoss(mob, harvestShape(mob)))) said.push(`${mob.id}: ${f}`);
+  for (const mob of [BOOM_REAPER, BOOM_GLEANER]) for (const f of findingsSaid(checkBoss(mob, boomShape(mob)))) said.push(`${mob.id}: ${f}`);
   for (const f of findingsSaid(checkBoss(GURNEY_ORDERLY, gurneyShape()))) said.push(`orderly: ${f}`);
   for (const f of findingsSaid(checkBoss(BARRAGE_WARDEN, barrageShape()))) said.push(`warden: ${f}`);
   assert.equal(said.length, 0, `the review found:\n${said.join('\n')}`);
   const strikes: Array<[string, readonly [number, number], number, number, number]> = [
     ['chop', CHOP_STRIKE, CHOP_HIT, CHOP.long, CHOP_STRIKE[0] - CHOP.up],
     ['lantern', LOB_STRIKE, LOB_HIT, LOB.long, LOB_STRIKE[0] - LOB.back],
-    ['harvest', HARVEST_STRIKES[2], HARVEST_HITS[2], HARVEST.long, HARVEST.held - HARVEST.up],
+    ['sickle boomerang', BOOM_STRIKE, BOOM_HIT, BOOM.long, BOOM_STRIKE[0] - BOOM.drawn],
     ['mallet', BLOW_STRIKE, BLOW_HIT, BLOW9.long, BLOW_STRIKE[0] - BLOW9.raised],
     ['gurney', GURNEY_STRIKE, GURNEY_HIT, GURNEY.long0, GURNEY_STRIKE[0] - GURNEY.up],
     ['slam', SLAM_STRIKE, SLAM_HIT, SLAM9.long, SLAM_STRIKE[0] - 0.32],
@@ -207,8 +207,7 @@ test('3. all four through the bosses’ review, both ways round: nothing found; 
     assert.ok(held >= 0.3, `${name}: held ${held.toFixed(2)} s`);
     assert.ok(long - hit >= 0.8, `${name}: a big wind-down (${(long - hit).toFixed(2)} s)`);
   }
-  // the harvest's three, each two frames
-  for (let k = 0; k < 3; k++) assert.ok(Math.round((HARVEST_STRIKES[k][1] - HARVEST_STRIKES[k][0]) * 30) === 2 && Math.abs(HARVEST_HITS[k] - HARVEST_STRIKES[k][1]) < 1e-9, `harvest ${k}: two frames`);
+  // (2 Nov: the harvest, a combo ending in a hook, is now the sickle boomerang: one throw)
 });
 
 test('4. what they send and leave: crisp, no cyan, not cut off', () => {
@@ -223,6 +222,11 @@ test('4. what they send and leave: crisp, no cyan, not cut off', () => {
   for (let t = 0; t <= POOL.burn; t += 0.1) for (const layer of ['floor', 'air'] as const) check(`oil ${layer} ${t.toFixed(1)}`, oilPainted(t, layer));
   check('oil burning', oilPainted(2, 'floor'), true);
   for (let t = 0; t <= 1.8; t += 0.05) for (const layer of ['floor', 'air'] as const) check(`chaff ${layer} ${t.toFixed(2)}`, chaffPainted(t, layer));
+  // (2 Nov) the sickle spinning out and back, both ways round; its curve marked
+  for (const v of ['front', 'back'] as const) {
+    for (let t = BOOM_HIT + 1 / 30; t < BOOM_CATCH; t += 1 / 30) check(`sickle ${v} ${t.toFixed(2)}`, sicklePainted(t, v), true);
+    for (let k = 0.1; k <= 1; k += 0.3) check(`curve ${v} ${k.toFixed(1)}`, { px: curvePainted(k, v) }, true);
+  }
   for (const v of ['front', 'rear'] as const) {
     for (let t = 0; t <= 1; t += 0.05) check(`gurney ${v} ${t.toFixed(2)}`, gurneyPainted(t, v), true);
     for (let c = 0; c <= 1; c += 0.05) check(`gurney crashed ${v} ${c.toFixed(2)}`, gurneyPainted(0.6, v, c), true);
@@ -243,9 +247,12 @@ test('5. the numbers: bigger areas than the game’s own, fast strikes', () => {
   // THE LANTERN: lobbed high and far; the oil bigger than the firepot's and lasting
   assert.ok(lobFly(5) <= 1 && lobArc(5) >= 70 && LOB.far >= 7 && POOL.r >= 1.6 && POOL.burn >= 5 && inOil(1.5, 0, 2) && !inOil(1.5, 0, POOL.burn + 0.1), 'the throw far, the oil wide and lasting');
   assert.ok(LOB_HIT - LOB.back >= 0.3, 'the throw held');
-  // THE HARVEST: three blows, each reaching further than the old slash; the hook's chaff round where it goes in
-  const [hx] = hookAt();
-  assert.ok(HARVEST.cut.fwd[1] >= FIELDHAND.slash.fwd[1] * 1.3 && HARVEST.cut.half * 2 >= (FIELDHAND.slash.left[1] - FIELDHAND.slash.left[0]) * 1.5 && HARVEST.r >= 1.4 && hx >= 1.2 && harvestStrikes(2, hx + 1, 0) && !harvestStrikes(2, hx + 1.8, 0) && HARVEST.travel > 0.5, 'the harvest further and wider, the hook a burst');
+  // THE SICKLE BOOMERANG (2 Nov): out about six tiles in a wide curve and back; it strikes going out and coming back, not off its way
+  const far = Math.max(...Array.from({ length: 60 }, (_, i) => (boomAt(BOOM_HIT + 0.01 + (BOOM.fly - 0.02) * i / 59) as { x: number }).x));
+  const mid = boomAt(BOOM_HIT + BOOM.fly * 0.25) as { x: number; y: number };
+  const back = boomAt(BOOM_HIT + BOOM.fly * 0.75) as { x: number; y: number };
+  assert.ok(far >= 5.6 && far <= 6.4 && Math.abs(mid.y - back.y) >= 2.5 && boomStrikes(BOOM_HIT + BOOM.fly * 0.25, mid.x, mid.y + 0.5) === 'out' && boomStrikes(BOOM_HIT + BOOM.fly * 0.75, back.x + 0.4, back.y) === 'back' && boomStrikes(BOOM_HIT + BOOM.fly * 0.25, mid.x, mid.y + 1.5) === null && BOOM_STRIKE[0] - BOOM.drawn >= 0.3 && BOOM.long - BOOM_CATCH >= 0.5, 'the boomerang: six tiles out, a wide curve, struck going out and back, held before, a stagger after');
+  void FIELDHAND;
   // THE ORDERLY: the blow's ring twice the game's; the gurney fast and long
   assert.ok(BLOW9.r >= ORDERLY_RULES.blow.r * 2 && blowStrikes(1.4, 1.2) && !blowStrikes(1.4, 1.8), 'the mallet ring twice the game\'s');
   assert.ok(GURNEY.pace >= 8 && GURNEY.lane >= 9 && GURNEY.half * 2 >= 1.4 && GURNEY.r >= 1.4 && gurneyGone(0.5) > 3 && gurneyStrikes(3, GURNEY.at + 3, 0.5) && !gurneyStrikes(3, GURNEY.at + 3, 1.2) && GURNEY_HIT - GURNEY.aim >= 0.6, 'the gurney fast, its lane marked well before it');
