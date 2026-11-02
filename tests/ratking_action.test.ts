@@ -193,7 +193,8 @@ test('1. the switch is off; nothing of the game imports the mock-up; the game’
   assert.equal(RATKING_ACTION.on, false, 'the switch is on');
   const OURS = /from ['"][^'"]*ratking_action(_fx)?['"]/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/ratking_action/.test(f)) continue;
+    // (brought in by the main chat, 2 Nov 2026, behind the switch: only through the game's figures, rules and what they leave)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/ratking_action/.test(f) || /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/[a-z0-9_]+\.ts$/.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   const game = makeRatKingArt();
