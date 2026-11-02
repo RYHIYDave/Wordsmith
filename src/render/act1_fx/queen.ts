@@ -23,7 +23,12 @@ import { drawSweepRing } from '../../art/boss_shots';
 import { drawAimLine } from '../../art/mob_shots';
 import { Px, flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { HOME_AT, QN, viewIndex } from '../../game/act1_rules/queen';
+import { HOME_AT, QN, viewIndex, BURST_PERIL, ECLIPSE_PERIL, VDIVE_PERIL, eclipsePools } from '../../game/act1_rules/queen';
+import { QA_DIVE, QA_ECLIPSE, QUEEN_ACTION } from '../../art/carrion_queen_action';
+import { paintDiveBurst, paintDiveMarks, paintGustMarks, paintPoolRims, paintRakeMarks, paintVultureLine } from '../../art/carrion_queen_action_fx';
+import { drawSprite } from '../../engine/px';
+import { livePicture, picAt } from './live';
+import type { Act1FxCtx } from './types';
 import { actDef } from '../../game/bosses';
 import { flipped } from '../../game/facing';
 import type { Peril } from '../../game/state';
@@ -80,7 +85,73 @@ function buried(s: Sprite, flip: boolean, rock: (gx: number, gy: number) => bool
 /** Her fall's frames as drawn, each made the first time it is shown; and what the ground shows round where she went over, asked once a game pixel. */
 const falls = new WeakMap<Peril, { frames: Map<number, Sprite>; rock: (gx: number, gy: number) => boolean }>();
 
-export const FX: Act1Fx | null = {
+// HER MOVES DONE THE ACTION WAY (QUEEN_ACTION: art/carrion_queen_action_fx.ts, his yes, 2 Nov 2026): while she acts, what she will
+// strike marked on the rock (paintRakeMarks, paintGustMarks, paintDiveMarks); where her dive struck, the crater and its cracks and the
+// rock bursting (paintDiveMarks after its hit, paintDiveBurst: its back half on the floor, its front half over the figures, the
+// floor's own, 'queen:burst'); in her Eclipse, the pools' rims ('queen:eclipse'; the dark itself is the renderer's, render.ts light)
+// and each dive of her flock, its line marked and the rock scored (paintVultureLine, 'queen:vdive'), a frame at a time.
+const ROOM = { w: 2 * 360 + 24, h: 2 * 180 + 24 + 220, ax: 372, ay: 192 + 220 };
+const POOL = { w: 2 * 110 + 24, h: 2 * 56 + 24, ax: 122, ay: 68 };
+function marked(c: Act1FxCtx, key: string, x: number, y: number, t: number, paint: (px: Px, at: ReturnType<typeof picAt>) => void, R = ROOM): void {
+  if (!c.g) return;
+  const at = picAt(R.ax, R.ay);
+  const s = livePicture(key, R.w, R.h, R.ax, R.ay, `${Math.floor(t * 30)}`, (px) => paint(px, at));
+  if (!s) return;
+  const [sx, sy] = c.at(x, y);
+  drawSprite(c.g, s, sx, sy);
+}
+const ACTION_FX: Act1Fx = {
+  ground(c, m, p) {
+    if (m) {
+      if (m.state !== 'act' || !m.act) return;
+      const T = m.act.t;
+      const aim = Math.atan2(m.fy, m.fx);
+      const id = m.act.id;
+      const paint = id === 'queen:rake' ? paintRakeMarks : id === 'queen:gust' ? paintGustMarks : id === 'queen:dive' || (id === 'queen:home' && T >= (QA_DIVE.up[0] + QA_DIVE.up[1]) / 2) ? paintDiveMarks : null;
+      if (paint && T < QA_DIVE.hit + 0.05) marked(c, `queen:${m.id}`, m.x, m.y, T, (px, at) => paint(px, at, [0, 0], aim, T));
+      return;
+    }
+    if (!p) return;
+    if (p.a1 === BURST_PERIL) {
+      const T = QA_DIVE.hit + p.t;
+      marked(c, `queen:burst:${p.x.toFixed(3)}:${p.y.toFixed(3)}`, p.x, p.y, T, (px, at) => {
+        paintDiveMarks(px, at, [0, 0], p.b, T);
+        paintDiveBurst(px, at, [0, 0], p.b, p.t, 'back');
+      });
+    } else if (p.a1 === ECLIPSE_PERIL) {
+      // (each pool's rim on a picture of its own, where it is)
+      eclipsePools(p).forEach((q, i) => marked(c, `queen:pool:${i}`, q.x, q.y, p.t, (px, at) => paintPoolRims(px, at, [{ ...q, x: 0, y: 0 }], p.t), POOL));
+    } else if (p.a1 === VDIVE_PERIL) {
+      const k = Math.min(1, (p.t + QA_ECLIPSE.warn) / QA_ECLIPSE.warn);
+      marked(c, `queen:vdive:${p.b.toFixed(3)}:${p.c.toFixed(3)}`, p.x, p.y, p.t, (px, at) => paintVultureLine(px, at, [p.b - p.x, p.c - p.y], [0, 0], k, p.t >= 0 ? p.t : -1));
+    }
+  },
+  air(c, m, p) {
+    if (m || !p || !c.g) return;
+    if (p.a1 === VDIVE_PERIL && p.t > -0.12 && p.t < 0.3) {
+      // (one of her flock, down its line out of the dark, and pulled out up into it)
+      const set = c.bestiary.of('vulture').front;
+      const frames = set.clips?.attack?.frames ?? set.attack;
+      if (!frames || !frames.length) return;
+      const u = p.t < 0 ? (p.t + 0.12) / 0.12 : 1;
+      const up = p.t < 0 ? (1 - u) * 70 : (p.t / 0.3) * 80;
+      const x = p.b + (p.x - p.b) * u;
+      const y = p.c + (p.y - p.c) * u;
+      const [sx, sy] = c.at(x, y);
+      const sp = frames[Math.min(frames.length - 1, Math.floor(frames.length * 0.6))];
+      drawSprite(c.g, p.x < p.b ? flipSprite(sp) : sp, sx, sy - up);
+      return;
+    }
+    if (p.a1 !== BURST_PERIL) return;
+    const at = picAt(ROOM.ax, ROOM.ay);
+    const s = livePicture(`queen:burstfront:${p.x.toFixed(3)}:${p.y.toFixed(3)}`, ROOM.w, ROOM.h, ROOM.ax, ROOM.ay, `${Math.floor(p.t * 30)}`, (px) => paintDiveBurst(px, at, [0, 0], p.b, p.t, 'front'));
+    if (!s) return;
+    const [sx, sy] = c.at(p.x, p.y);
+    drawSprite(c.g, s, sx, sy);
+  },
+};
+
+const OLD_FX: Act1Fx = {
   standing(c, m, p) {
     // HER FALL OFF THE EDGE, where she went over
     if (m || !p || p.a1 !== 'queen:fall') return;
@@ -146,5 +217,13 @@ export const FX: Act1Fx | null = {
         drawAimLine(g, c.at, sx, sy, ex, ey, k, c.t);
       }
     }
+  },
+};
+
+export const FX: Act1Fx | null = {
+  standing: (c, m, p) => OLD_FX.standing!(c, m, p),
+  ground: (c, m, p) => (QUEEN_ACTION.on ? ACTION_FX : OLD_FX).ground!(c, m, p),
+  air: (c, m, p) => {
+    if (QUEEN_ACTION.on) ACTION_FX.air!(c, m, p);
   },
 };

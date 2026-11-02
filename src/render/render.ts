@@ -99,6 +99,9 @@ const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as c
 import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
+import { QUEEN_ACTION } from '../art/carrion_queen_action';
+import { eclipseDark } from '../art/carrion_queen_action_fx';
+import { eclipseNow, eclipsePools } from '../game/act1_rules/queen';
 import { blinkNowhere, gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
@@ -4214,6 +4217,15 @@ export class Renderer {
     const yardSky = this.yard.on(f) && this.yard.heroIn(f, game.hero.x, game.hero.y);
     dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${yardSky ? YARD_DARK : FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
+    // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
+    // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
+    const eclipse = QUEEN_ACTION.on ? eclipseNow(game.perils) : null;
+    const eDark = eclipse ? eclipseDark(eclipse.t) : 0;
+    if (eDark > 0) {
+      dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    const heroLit = 1 - 0.8 * eDark;
     dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
     // to its size and faded to its strength. (A fresh gradient for each light each frame was the
@@ -4236,8 +4248,13 @@ export class Renderer {
     // (the owner, 6 Oct 2026: "Add a soft gradient so the floor gets darker further away from the
     // player": under the bright pool round the hero a wide and gentle one, which thins the dark
     // near them and is gone a screen's height away)
-    if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT);
-    if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, day ? day.pool * 3 : 1);
+    if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT * heroLit);
+    if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, (day ? day.pool * 3 : 1) * heroLit);
+    if (eDark > 0) {
+      // (a little of his own, that he is seen; and the pools, fully lit)
+      spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 10, 40, 0.5 * eDark);
+      for (const q of eclipsePools(eclipse!)) spot(wx(cam, q.x, q.y), wy(cam, q.x, q.y), q.r * 22.6 * 1.15, q.k);
+    }
     // (THE HEADSMAN'S YARD: its torches light the wall and the floor below them)
     if (this.yard.on(f)) {
       for (const q of this.yard.torches(f)) {

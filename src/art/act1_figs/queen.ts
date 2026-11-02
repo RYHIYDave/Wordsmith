@@ -16,6 +16,7 @@
 
 import { Q2_CANVAS, Q2_SCALE, QUEEN2_ON } from '../carrion_queen2';
 import { Q2_DIE, makeQueen2Art } from '../carrion_queen2_moves';
+import { QUEEN_ACTION, makeQueenActionArt } from '../carrion_queen_action';
 import { TILE3 } from '../new_mobs3';
 import type { Act1Fig } from './types';
 
@@ -45,7 +46,8 @@ export const Q2_FALL = { over: Q2_DIE.over, long: Q2_DIE.long } as const;
 
 export const FIG: Act1Fig | null = {
   make: () => {
-    const art = makeQueen2Art();
+    // (and her moves done the action way, behind QUEEN_ACTION: art/carrion_queen_action.ts, his yes, 2 Nov 2026)
+    const art = QUEEN_ACTION.on ? makeQueenActionArt() : makeQueen2Art();
     for (const view of ['front', 'back'] as const) {
       const clips = art[view].clips ?? {};
       const moves = { ...(clips.moves ?? {}) };
