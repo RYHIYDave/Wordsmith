@@ -40,7 +40,7 @@
 
 import { RNG } from '../../engine/rng';
 import { act1Pack } from '../act1_mobs';
-import { LEFT, MARGIN, RIGHT, along, blobDist, clear, cross, farEnd, laneDist, layTiles, nearestFloor, planChain, radiusOf, reach, segDist, tileMid, wander } from '../act1_layout';
+import { LEFT, MARGIN, RIGHT, along, blobDist, clear, cross, farEnd, laneDist, layTiles, nearestFloor, planChain, planMassive, radiusOf, reach, segDist, tileMid, wander } from '../act1_layout';
 import type { AreaRole, Blob, Bridge, Laid, Land, Plan } from '../act1_layout';
 import type { Act1Dress, Act1Tile } from '../act1_dress';
 import type { BellsPlan } from '../act2_types';
@@ -160,59 +160,27 @@ function sizeOf(rng: RNG, role: AreaRole): { rx: number; ry: number; wob: number
 }
 
 /**
- * OPEN (his pick for floor 13, and his word of 1 Nov 2026 on the fields laid one after another: “That’s not open for 13 really.
- * That I would call linear.”): every field of the main way opens broadly into the next, the way wanders, and up to `fill` more
- * fields are set beside and between them, each overlapping two of the main way's fields or more, so that the floor is one wide
- * open ground with many ways across it; none on the water, the mill's ground, the farmstead, the lair, where he comes in or
- * the Pulping Floor.
+ * OPEN (his pick for floor 13), as he put what open means, 1 Nov 2026: “When I say open I mean one massive area with a waypoint
+ * on one side, and the boss somewhere on the other”. On, the fields are ONE MASSIVE GROUND (act1_layout planMassive): where he
+ * comes in on one side, the ground `long` tiles on and `wide` across, the Pulping Floor beyond it at the far side behind a
+ * short path of its own; the mill, the farmstead and the lair off its edges; the river across it, with a bridge wherever the
+ * way along its middle, or a line along it either side (Plan.along), meets the water; its packs `packs` of its ground's due,
+ * so that the floor has the monsters it had (the fields' packs were fewer than their ground's due: they overlapped). Off, the
+ * fields laid one after another.
  */
-export const MR_OPEN = { on: true, fill: 7 };
-
-function openUp(rng: RNG, plan: Plan, dry: (x: number, y: number, r: number) => boolean, mill: number): void {
-  const F = MR_PLAN.field;
-  const path = plan.areas.map((_a, i) => i).filter((i) => plan.areas[i].role === 'path' && i !== mill);
-  const keepOff = plan.areas.map((_a, i) => i).filter((i) => !path.includes(i));
-  let added = 0;
-  for (let tries = 0; tries < 160 && added < MR_OPEN.fill; tries++) {
-    // (beside the way between two of its fields a step or two apart, pushed out to one side)
-    const k = rng.pick(path);
-    const near = path.filter((j) => j !== k && Math.hypot(plan.areas[j].blob.x - plan.areas[k].blob.x, plan.areas[j].blob.y - plan.areas[k].blob.y) < plan.areas[j].r + plan.areas[k].r + 8);
-    if (!near.length) continue;
-    const j = rng.pick(near);
-    const A = plan.areas[k].blob;
-    const B = plan.areas[j].blob;
-    const mx = (A.x + B.x) / 2;
-    const my = (A.y + B.y) / 2;
-    const len = Math.hypot(B.x - A.x, B.y - A.y) || 1;
-    const side = rng.chance(0.5) ? 1 : -1;
-    const push = rng.range(0.4, 0.9) * Math.min(plan.areas[k].r, plan.areas[j].r);
-    const x = mx + (-(B.y - A.y) / len) * push * side;
-    const y = my + ((B.x - A.x) / len) * push * side;
-    const b: Blob = { x, y, rx: rng.range(F.rx[0], F.rx[1]) * 0.85, ry: rng.range(F.ry[0], F.ry[1]) * 0.85, rot: rng.range(0, Math.PI), wob: F.wob, seed: rng.int(0, 9999) };
-    const r = radiusOf(b);
-    if (!dry(x, y, r)) continue;
-    // (clear of what keeps one way in: the start, the Pulping Floor, the mill's ground, the farmstead, the lair)
-    if (keepOff.some((i) => Math.hypot(plan.areas[i].blob.x - x, plan.areas[i].blob.y - y) < plan.areas[i].r + r + 3)) continue;
-    // (opening into two of the way's fields or more)
-    const into = path.filter((i) => Math.hypot(plan.areas[i].blob.x - x, plan.areas[i].blob.y - y) < plan.areas[i].r + r * 0.75);
-    if (into.length < 2) continue;
-    // (and not on top of a field already there)
-    if (plan.areas.some((a) => Math.hypot(a.blob.x - x, a.blob.y - y) < Math.max(a.r, r) * 0.7)) continue;
-    plan.areas.push({ blob: b, role: 'path', path: -1, parent: k, r });
-    added++;
-  }
-}
+export const MR_OPEN = { on: true, long: 78, wide: 36, cell: [6.5, 8.5] as [number, number], step: 7, wob: 0.22, millIn: 5, packs: 0.72 };
 
 /** Lay floor 13, or null (not laid this time: the dice are rolled again, game/act2_layout.ts). */
 export function generate(depth: number, seed: number): Laid | null {
   const rng = new RNG((seed ^ 0x13a7c0de) >>> 0);
   // THE MAIN WAY: the fields, as the Pinewood's (across the screen one way or the other)
   const across = rng.chance(0.5) ? LEFT : RIGHT;
-  // (MR_OPEN, his “That’s not open for 13 really.  That I would call linear.”: every field opening broadly into the next, the
-  // way wandering more, then fields between and beside them below)
-  const plan = MR_OPEN.on
-    ? planChain(rng, { count: MR_PLAN.count, heading: across + rng.range(-0.3, 0.3), spread: 1.3, turn: 1.0, size: sizeOf, broad: 1, laneW: MR_PLAN.path, laneLong: [3, 7], gap: 4, laneLast: true })
-    : planChain(rng, { count: MR_PLAN.count, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size: sizeOf, broad: 0.55, laneW: MR_PLAN.path, laneLong: [3, 7], gap: 4 });
+  // (MR_OPEN: one massive ground from where he comes in to the Pulping Floor's side)
+  const heading = across + rng.range(-0.3, 0.3);
+  const O = MR_OPEN;
+  const plan = O.on
+    ? planMassive(rng, { heading, long: O.long, wide: O.wide, size: sizeOf, cell: O.cell, step: O.step, wob: O.wob, laneLast: true, laneW: MR_PLAN.path, laneLong: [3, 6] })
+    : planChain(rng, { count: MR_PLAN.count, heading, spread: 0.9, turn: 0.6, size: sizeOf, broad: 0.55, laneW: MR_PLAN.path, laneLong: [3, 7], gap: 4 });
   if (!plan) return null;
   // THE MILL, off the main way half way along; THE RIVER past its front and across the way
   const site = siteMill(rng, plan);
@@ -224,8 +192,6 @@ export function generate(depth: number, seed: number): Laid | null {
   const dry = (x: number, y: number, r: number): boolean => laneDist({ pts: river, w: 0 }, x, y) > r + 3 && laneDist({ pts: race0, w: 0 }, x, y) > r + 3;
   if (growAway(rng, plan, 'side', MR_PLAN.farm, MR_PLAN.side, 3, dry) < 0) return null;
   if (growAway(rng, plan, 'lair', MR_PLAN.lair, MR_PLAN.side, 3, dry) < 0) return null;
-  // (MR_OPEN: fields between and beside the main way's, each opening into two of them or more: the floor one wide open ground)
-  if (MR_OPEN.on) openUp(rng, plan, dry, site.area);
 
   // THE BOUNDS: everything moved so the open ground starts MARGIN tiles in (by whole tiles, so the mill's works stay on theirs)
   let x0 = Infinity;
@@ -254,6 +220,7 @@ export function generate(depth: number, seed: number): Laid | null {
   };
   for (const l of plan.lanes) move(l.pts);
   move(plan.way);
+  for (const l of plan.along ?? []) move(l);
   move(river);
   const at: MillAt = { cx: site.at.cx + dx, wy: site.at.wy + dy, s: site.at.s };
   const works = millWorks(at);
@@ -281,7 +248,10 @@ export function generate(depth: number, seed: number): Laid | null {
     for (const i of b.tiles) bridgeTiles.add(i);
   };
   const routes: P[][] = [main, branch, ...plan.lanes.map((l) => l.pts)];
-  for (const c of crossingsOf(routes, riverPts)) {
+  // (MR_OPEN: the lines along the one massive ground either side of its middle, a bridge too where they meet the water on it)
+  const onGround = (x: number, y: number): boolean => plan.areas.some((a) => a.role === 'path' && blobDist(a.blob, x, y) < 0.8);
+  const more = crossingsOf(plan.along ?? [], riverPts).filter((c) => onGround(c.x, c.y));
+  for (const c of [...crossingsOf(routes, riverPts), ...more].filter((c, k, all) => all.findIndex((d) => Math.hypot(d.x - c.x, d.y - c.y) < 6) === k)) {
     const tiles: number[] = [];
     const tx = Math.floor(c.x);
     const ty = Math.floor(c.y);
@@ -318,8 +288,21 @@ export function generate(depth: number, seed: number): Laid | null {
     const r = l.w / 2;
     return [bx0 - r, by0 - r, bx1 + r, by1 + r] as const;
   });
+  // (the areas near each patch of eight tiles, so a point asks only those: the one massive ground is many)
+  const PATCH = 8;
+  const PW = Math.ceil(W / PATCH) + 1;
+  const near: number[][] = Array.from({ length: PW * (Math.ceil(H / PATCH) + 1) }, () => []);
+  plan.areas.forEach((a, i) => {
+    const r = reachOf[i];
+    for (let py = Math.max(0, Math.floor((a.blob.y - r) / PATCH)); py <= Math.min(Math.ceil(H / PATCH), Math.floor((a.blob.y + r) / PATCH)); py++) {
+      for (let px = Math.max(0, Math.floor((a.blob.x - r) / PATCH)); px <= Math.min(PW - 1, Math.floor((a.blob.x + r) / PATCH)); px++) near[py * PW + px].push(i);
+    }
+  });
   const inside = (x: number, y: number): boolean => {
-    for (let i = 0; i < plan.areas.length; i++) {
+    const px = Math.floor(x / PATCH);
+    const py = Math.floor(y / PATCH);
+    const list = px >= 0 && py >= 0 && px < PW ? near[py * PW + px] ?? [] : [];
+    for (const i of list) {
       const b = plan.areas[i].blob;
       const ex = x - b.x;
       const ey = y - b.y;
@@ -487,12 +470,45 @@ function siteMill(rng: RNG, plan: Plan): { area: number; host: number; lane: num
   if (!hosts.length) return null;
   const M = MR_PLAN.mill;
   for (let tries = 0; tries < 120; tries++) {
-    const k = rng.pick(hosts);
-    const a = plan.areas[k].blob;
+    let k = rng.pick(hosts);
+    let a = plan.areas[k].blob;
     const ang = (rng.chance(0.5) ? 90 : 270) * DEG + rng.range(-0.6, 0.6);
-    const rA = Math.max(a.rx, a.ry);
+    let rA = Math.max(a.rx, a.ry);
     const rB = Math.max(M.rx, M.ry);
-    const [x, y] = along(a.x, a.y, ang, rA + rB + rng.range(1, 5));
+    let [x, y] = along(a.x, a.y, ang, rA + rB + rng.range(1, 5));
+    if (plan.packShare !== undefined) {
+      // (MR_OPEN: off the edge of the one massive ground, that way from a field half way along it; its path from the edge's
+      // field nearest it)
+      // (its yard opening onto the ground: into the ground's edge by MR_OPEN.millIn tiles; clear of all else)
+      const gap = -MR_OPEN.millIn;
+      let d = rA + rB + gap;
+      const rM = radiusOf({ x, y, rx: M.rx, ry: M.ry, rot: 0, wob: M.wob, seed: 0 });
+      const off = (): boolean => plan.areas.every((o) => Math.hypot(o.blob.x - x, o.blob.y - y) >= o.r + rM + (o.role === 'path' ? gap : 3));
+      while (d < rA + rB + 80 && !off()) {
+        d += 1.5;
+        [x, y] = along(a.x, a.y, ang, d);
+      }
+      let best = Infinity;
+      plan.areas.forEach((o, i) => {
+        const e = Math.hypot(o.blob.x - x, o.blob.y - y) - o.r;
+        if (o.role === 'path' && e < best) {
+          best = e;
+          k = i;
+        }
+      });
+      a = plan.areas[k].blob;
+      rA = Math.max(a.rx, a.ry);
+      const ang2 = Math.atan2(y - a.y, x - a.x);
+      const b: Blob = { x, y, rx: M.rx, ry: M.ry, rot: 0, wob: M.wob, seed: rng.int(0, 9999) };
+      if (Math.hypot(x - S.x, y - S.y) < MILL_FROM.start || Math.hypot(x - B.x, y - B.y) < MILL_FROM.boss + radiusOf(B)) continue;
+      const lane = wander(rng, ...along(a.x, a.y, ang2, rA * 0.6), ...along(x, y, ang2 + Math.PI, rB * 0.4), MR_PLAN.side, 0.8);
+      if (plan.areas.some((o) => o.role !== 'path' && laneDist(lane, o.blob.x, o.blob.y) < o.r + lane.w / 2 + 2)) continue;
+      if (plan.lanes.some((l) => laneDist(l, x, y) < radiusOf(b) + l.w / 2 + 3)) continue;
+      plan.areas.push({ blob: b, role: 'side', path: -1, parent: k, r: radiusOf(b) });
+      plan.lanes.push(lane);
+      const s: 1 | -1 = Math.sin(ang) > 0 ? -1 : 1;
+      return { area: plan.areas.length - 1, host: k, lane: plan.lanes.length - 1, at: { cx: Math.round(x + MR_PLAN.mill.rx - 5), wy: Math.floor(y), s } };
+    }
     if (Math.hypot(x - S.x, y - S.y) < MILL_FROM.start || Math.hypot(x - B.x, y - B.y) < MILL_FROM.boss + radiusOf(B)) continue;
     const b: Blob = { x, y, rx: M.rx, ry: M.ry, rot: 0, wob: M.wob, seed: rng.int(0, 9999) };
     const lane = wander(rng, ...along(a.x, a.y, ang, rA * 0.6), ...along(x, y, ang + Math.PI, rB * 0.4), MR_PLAN.side, 0.8);
@@ -523,13 +539,18 @@ function riverOf(rng: RNG, plan: Plan, host: number, at: MillAt): P[] | null {
   let T: P | null = null;
   let g: P = [0, s];
   let best = 0.5;
-  for (const nb of [host + 1, host - 1]) {
-    const N = plan.areas[nb]?.blob;
-    if (!N || plan.areas[nb].role === 'boss') continue;
-    const t: P = [(A.x + N.x) / 2, (A.y + N.y) / 2];
+  // (MR_OPEN: across the one massive ground, at the nearest point of the way's middle half it turns no more than sixty degrees to)
+  const mid = plan.way.slice(1, -1);
+  const toward: P[] = plan.packShare !== undefined
+    ? mid
+        .slice(Math.floor(mid.length * 0.25), Math.ceil(mid.length * 0.75))
+        .map((p) => [p[0], p[1]] as P)
+        .sort((p, q) => Math.hypot(p[0] - run1[0], p[1] - run1[1]) - Math.hypot(q[0] - run1[0], q[1] - run1[1]))
+    : [host + 1, host - 1].filter((nb) => plan.areas[nb] && plan.areas[nb].role !== 'boss').map((nb) => [(A.x + plan.areas[nb].blob.x) / 2, (A.y + plan.areas[nb].blob.y) / 2] as P);
+  for (const t of toward) {
     const gl = Math.hypot(t[0] - run1[0], t[1] - run1[1]) || 1;
     const along = ((t[1] - run1[1]) * s) / gl;
-    if (along < best) continue;
+    if (along < best || (T && plan.packShare !== undefined)) continue;
     best = along;
     T = t;
     g = [(t[0] - run1[0]) / gl, (t[1] - run1[1]) / gl];
@@ -568,6 +589,8 @@ function riverOf(rng: RNG, plan: Plan, host: number, at: MillAt): P[] | null {
   // (clear of every area's middle; well clear of where he comes in and of the Pulping Floor)
   const d = (x: number, y: number): number => laneDist({ pts, w: 0 }, x, y);
   for (const a of plan.areas) {
+    // (across one massive ground it passes where it will: bridged where the lines across it meet it)
+    if (a.role === 'path' && plan.packShare !== undefined) continue;
     const need = a.role === 'start' || a.role === 'boss' ? radiusOf(a.blob) + 3 : a.role === 'side' && a.blob.rx === MR_PLAN.mill.rx ? 8.5 : 3;
     if (d(a.blob.x, a.blob.y) < need) return null;
   }
@@ -674,16 +697,39 @@ function crossingsOf(routes: readonly (readonly P[])[], water: readonly P[]): { 
 function growAway(rng: RNG, plan: Plan, role: AreaRole, size: { rx: number; ry: number; wob: number }, laneW: number, gap: number, dry: (x: number, y: number, r: number) => boolean): number {
   const hosts = plan.areas.map((_a, i) => i).filter((i) => plan.areas[i].role === 'path' || plan.areas[i].role === 'start');
   for (let tries = 0; tries < 80; tries++) {
-    const host = rng.pick(hosts);
-    const a = plan.areas[host].blob;
-    const ang = rng.range(0, Math.PI * 2);
-    const rA = Math.max(a.rx, a.ry);
+    let host = rng.pick(hosts);
+    let a = plan.areas[host].blob;
+    let ang = rng.range(0, Math.PI * 2);
+    let rA = Math.max(a.rx, a.ry);
     const rB = Math.max(size.rx, size.ry);
-    const [x, y] = along(a.x, a.y, ang, rA + rB + rng.range(3, 7));
+    let [x, y] = along(a.x, a.y, ang, rA + rB + rng.range(3, 7));
     const b: Blob = { x, y, rx: size.rx, ry: size.ry, rot: rng.range(0, Math.PI), wob: size.wob, seed: rng.int(0, 9999) };
+    const massive = plan.packShare !== undefined;
+    if (massive) {
+      // (MR_OPEN: off the edge of the one massive ground, its path from the edge's field nearest it)
+      const r = radiusOf(b);
+      let d = rA + rB + rng.range(3, 7);
+      while (d < rA + rB + 80 && plan.areas.some((o) => Math.hypot(o.blob.x - x, o.blob.y - y) < o.r + r + gap)) {
+        d += 1.5;
+        [x, y] = along(a.x, a.y, ang, d);
+      }
+      b.x = x;
+      b.y = y;
+      let best = Infinity;
+      plan.areas.forEach((o, i) => {
+        const e = Math.hypot(o.blob.x - x, o.blob.y - y) - o.r;
+        if (o.role === 'path' && e < best) {
+          best = e;
+          host = i;
+        }
+      });
+      a = plan.areas[host].blob;
+      rA = Math.max(a.rx, a.ry);
+      ang = Math.atan2(y - a.y, x - a.x);
+    }
     if (!dry(x, y, radiusOf(b))) continue;
     const lane = wander(rng, ...along(a.x, a.y, ang, rA * 0.6), ...along(x, y, ang + Math.PI, rB * 0.5), laneW, 0.8);
-    if (!clear(plan.areas, b, gap, [host], lane)) continue;
+    if (massive ? plan.areas.some((o) => Math.hypot(o.blob.x - x, o.blob.y - y) < o.r + radiusOf(b) + gap || (o.role !== 'path' && laneDist(lane, o.blob.x, o.blob.y) < o.r + lane.w / 2 + gap * 0.6)) : !clear(plan.areas, b, gap, [host], lane)) continue;
     if (plan.lanes.some((l) => laneDist(l, x, y) < rB + l.w / 2 + gap)) continue;
     plan.areas.push({ blob: b, role, path: -1, parent: host, r: radiusOf(b) });
     plan.lanes.push(lane);
@@ -797,11 +843,18 @@ function packsOf(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[], de
     out.push({ x: Math.floor(x) + 0.5, y: Math.floor(y) + 0.5, roomId: room, size, tier, kind });
     used.push([x, y]);
   };
+  let owed = 0.5;
   plan.areas.forEach((a, i) => {
     const room = f.rooms[areaRoom[i]];
     if (a.role === 'start' || a.role === 'boss') return;
     const b = a.blob;
-    const n = a.role === 'lair' ? 1 : Math.max(1, Math.round((Math.PI * b.rx * b.ry) / 70));
+    // (one massive ground: its packs by the ground it really covers, the parts of one carried from shape to shape)
+    let n: number;
+    if (a.role === 'path' && plan.packShare !== undefined) {
+      owed += (Math.PI * b.rx * b.ry * plan.packShare * MR_OPEN.packs) / 70;
+      n = Math.floor(owed);
+      owed -= n;
+    } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round((Math.PI * b.rx * b.ry) / 70));
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 30; tries++) {
         const ang = rng.range(0, Math.PI * 2);
@@ -854,6 +907,7 @@ function propsOf(rng: RNG, f: Floor, plan: Plan, w: MillWorks, reserved: Uint8Ar
   };
   // (the chest past the wheel: the strip is two tiles wide, so it is laid as it is)
   put('chest', w.chest[0], w.chest[1]);
+  let owed = 0.5;
   for (const a of plan.areas) {
     const b = a.blob;
     if (a.role === 'boss' || a.role === 'start' || a.role === 'lair') continue;
@@ -868,7 +922,13 @@ function propsOf(rng: RNG, f: Floor, plan: Plan, w: MillWorks, reserved: Uint8Ar
         k++;
       }
     }
-    const n = isMill ? 2 : rng.int(1, 4);
+    let n = isMill ? 2 : rng.int(1, 4);
+    // (on one massive ground, by the ground each of its shapes really covers, the parts of one carried on)
+    if (a.role === 'path' && plan.packShare !== undefined) {
+      owed += n * (plan.areaShare ?? 1);
+      n = Math.floor(owed);
+      owed -= n;
+    }
     for (let k = 0, t = 0; k < n && t < 30; t++) {
       const ang = rng.range(0, Math.PI * 2);
       const tx = Math.floor(b.x + Math.cos(ang) * b.rx * rng.range(0.55, 0.85));
@@ -1078,7 +1138,11 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
     }
     // the stamping mill, turned from the wheel's shaft: before the mill toward its wheel end (two tiles along x: its hammers' trough)
     let stamped = false;
-    for (const [x, y] of [[m.x1 - 1, m.y1 + 3], [m.x1 - 2, m.y1 + 3], [m.x1 - 1, m.y0 - 3], [m.x1 - 2, m.y0 - 3], [m.x0, m.y1 + 4], [m.x0, m.y0 - 4]] as P[]) {
+    // (else, the mill on the one massive ground's edge with its spots taken, the nearest free run about it)
+    const about: P[] = [];
+    for (let y = m.y0 - 6; y <= m.y1 + 6; y++) for (let x = m.x0 - 6; x <= m.x1 + 5; x++) if (y < m.y0 - 2 || y > m.y1 + 2 || x < m.x0 - 2 || x > m.x1 + 1) about.push([x, y]);
+    about.sort((p, q) => Math.hypot(p[0] - m.x1, p[1] - m.y1 - 3) - Math.hypot(q[0] - m.x1, q[1] - m.y1 - 3));
+    for (const [x, y] of [[m.x1 - 1, m.y1 + 3], [m.x1 - 2, m.y1 + 3], [m.x1 - 1, m.y0 - 3], [m.x1 - 2, m.y0 - 3], [m.x0, m.y1 + 4], [m.x0, m.y0 - 4], ...about] as P[]) {
       if (stamped || !freeRun(x, y, 2, true)) continue;
       put(MR_PIECE.stamper, x, y, false, 0, { x: x + 1, y: y + 0.5 });
       over(x, y, x + 1, y, false);
