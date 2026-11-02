@@ -31,8 +31,8 @@ const all: [string, Sprite][] = [
   ...Y.pieces.flatMap((p) => sprites(p).map((s, i) => [`${p.name} ${i}`, s] as [string, Sprite])),
 ];
 
-test('the yard: off until he has seen it in play (the game lays and draws it behind YARD: game/yard.ts, render/yard.ts)', () => {
-  assert.ok(YARD.on === false, 'YARD is off');
+test('the yard: on, his yes to it in play with its own gate (the game lays and draws it behind YARD: game/yard.ts, render/yard.ts)', () => {
+  assert.ok(YARD.on === true, 'YARD is on');
   // (who may import it: the game's own yard, the renderer's, and those that ask them; nothing else)
   // (and main.ts, choosing floor 2's gates: the yard's own gate goes with the yard, art/yard_gate.ts)
   const may = ['game/yard.ts', 'render/yard.ts', 'main.ts'].map((q) => join(...q.split('/')));

@@ -97,8 +97,8 @@ for (const alongX of [true, false]) {
 const slams = pictures.filter(([n]) => n.startsWith('the slam'));
 const gatePieces = pictures.filter(([n]) => !n.startsWith('the slam'));
 
-test("the yard gate: off until he has seen it in play; only the yard's own and the gates' choosing import it (the main chat put it in, his yes to the art: “Yes, that's it (Recommended)”)", () => {
-  assert.ok(YARD_GATE.on === false, 'YARD_GATE is off');
+test("the yard gate: on, his yes to it in play (“Yes, switch them on (Recommended)”); only the yard's own and the gates' choosing import it (the main chat put it in, his yes to the art: “Yes, that's it (Recommended)”)", () => {
+  assert.ok(YARD_GATE.on === true, 'YARD_GATE is on');
   const may = ['main.ts', join('render', 'render.ts'), join('render', 'yard.ts')];
   const found: string[] = [];
   const walk = (d: string): void => {

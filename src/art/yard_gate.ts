@@ -28,8 +28,8 @@ import { GRAIN, hash } from './kit';
 import { FLAME } from './mkit';
 import { EMBER } from './props';
 
-/** THE SWITCH: off until the main chat puts the gate in the yard's boss doorway, on his yes. */
-export const YARD_GATE = { on: false };
+/** THE SWITCH: on, his yes to it in the yard in play, 1 Nov 2026: “Yes, switch them on (Recommended)”. */
+export const YARD_GATE = { on: true };
 
 // =================================================================================================
 // MEASURES (picture pixels, two to a game pixel; u along the plane from the outer edge of the first pillar, v up)

@@ -38,8 +38,8 @@ import { EMBER } from './props';
 import type { Piece } from './floorkit';
 import { headsmanPieces } from './floor2';
 
-/** THE SWITCH: off until the main chat puts the yard in, on his yes. */
-export const YARD = { on: false };
+/** THE SWITCH: on, his yes to the yard in play with its own gate, 1 Nov 2026: “Yes, switch them on (Recommended)”. */
+export const YARD = { on: true };
 
 // =================================================================================================
 // MEASURES

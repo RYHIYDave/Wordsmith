@@ -55,9 +55,14 @@ function reached(f: Floor): Set<number> {
   return seen;
 }
 
-test('1. off: no floor is laid with the yard', () => {
-  assert.equal(YARD.on, false);
-  for (const seed of SEEDS.slice(0, 4)) assert.equal(generateFloor(2, seed).yard, undefined);
+test('1. on (his “Yes, switch them on (Recommended)”, 1 Nov 2026); off, no floor is laid with the yard', () => {
+  assert.equal(YARD.on, true);
+  YARD.on = false;
+  try {
+    for (const seed of SEEDS.slice(0, 4)) assert.equal(generateFloor(2, seed).yard, undefined);
+  } finally {
+    YARD.on = true;
+  }
 });
 
 test('2. on: the boss hall of every second floor is the yard, walled round, come into by its far wall along x alone, its gate there, nothing of the Crypt in it', () => {
