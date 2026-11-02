@@ -218,8 +218,11 @@ the floor cracked on in a line 8 tiles long and 2.1 wide), so it is kept as it i
 5. the numbers above (bigger areas than the game's own: the gardener's rules imported; the guard's thrust written down, its rules and the
    game's monsters' index importing each other).
 
-Also passing: the figures' own tests (`palace_hands`, `palace_guard`, `masque_dancers`, `kings_knights`, `princess`), `act2_palace_hands`,
-`act2_pguard`, `act2_kknight`, `bosses`, `new_mobs3`, the model `action_f6`; `tsc` clean. Changed outside this branch's own files (only to let
+Also passing: the figures' own tests (`palace_hands`, `palace_guard`, `masque_dancers`, `kings_knights`), `act2_palace_hands`,
+`act2_pguard`, `act2_kknight`, `bosses`, `new_mobs3`, and all of `action_f6` and `princess` but one check each that already failed on the
+branch this one came from, for files not of this branch: `action_f6` 1 (art/ratking_action.ts, the Rat King helper's, imports its
+art/action_f6_fx.ts and is not let through) and `princess` 1 (game/act1_rules/rshadow.ts and render/act1_fx/rshadow.ts, floor 20's shadows,
+import her and are not on its list); `tsc` clean. Changed outside this branch's own files (only to let
 the new mock-ups through their checks that nothing else imports them): tests/palace_hands.test.ts, tests/palace_guard.test.ts,
 tests/masque_dancers.test.ts, tests/kings_knights.test.ts, tests/princess.test.ts (art/action_f16_*.ts let through), tests/bosses.test.ts 1
 (the same, for art/bosses3.ts), tests/new_mobs3.test.ts (the five added to its list of mock-ups), tests/action_f6.test.ts (built on its
