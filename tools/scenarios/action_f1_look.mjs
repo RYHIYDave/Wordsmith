@@ -27,7 +27,7 @@ export default async function (page, snap) {
       if (a1 === 'warden:bars' && t < -0.1) {
         let w = g.monsters.find((m) => m.kind === 'warden');
         if (!w) { w = g.spawn('warden', p.x, p.y, -1, 0, true, g.rng); }
-        w.state = 'windup'; w.speed = 0; p.a = w.id;
+        w.state = 'windup'; w.t = 5; w.move = 0; w.speed = 0; p.a = w.id;
       }
     }, [a1, t, dx, dy]);
     await page.waitForTimeout(60);
