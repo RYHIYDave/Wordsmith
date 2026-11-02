@@ -60,11 +60,11 @@ const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[
 // light falls; the far side, seen through the gaps, nearly black-red, and where its bell lights it from inside, the
 // cult's pink; its bell old bronze, its mouth burning the cult's pink to gold (FLAME); grit dark and pale. Nothing cyan.
 
-const DUST: Ramp = ['#2a0a10', '#5a1414', '#9a2a1a', '#d4502a', '#ff8a40'];
-const DEEP: Ramp = ['#10050a', '#1e0910', '#33111a', '#4c1a22', '#66282a'];
-const HEART: Ramp = ['#2a0818', '#4a0e2c', '#7c1846', '#b42a60', '#e64c86'];
+export const DUST: Ramp = ['#2a0a10', '#5a1414', '#9a2a1a', '#d4502a', '#ff8a40'];
+export const DEEP: Ramp = ['#10050a', '#1e0910', '#33111a', '#4c1a22', '#66282a'];
+export const HEART: Ramp = ['#2a0818', '#4a0e2c', '#7c1846', '#b42a60', '#e64c86'];
 const BRONZE: Ramp = ['#3a1c08', '#7a4410', '#c07a1a', '#f0b030', '#fff0a0'];
-const GRIT = ['#2a0c0e', '#5a1e16', '#e8a868', '#ffdca0'] as const;
+export const GRIT = ['#2a0c0e', '#5a1e16', '#e8a868', '#ffdca0'] as const;
 /** The heap of its sand it leaves: its red dust, lit on top. */
 const HEAP: Ramp = ['#3a1010', '#6a1e16', '#9a3420', '#c4502c', '#e07a44'];
 
@@ -73,13 +73,13 @@ const HEAP: Ramp = ['#3a1010', '#6a1e16', '#9a3420', '#c4502c', '#e07a44'];
 // on the floor at the origin.
 
 /** How high its funnel stands: waist-high to the knight, and thin. */
-const DD_HIGH = 32;
+export const DD_HIGH = 32;
 /** Its funnel's girth: a thin neck on the floor, widening as it rises; its top spilling out. */
 const R_FOOT = 1.2;
 const R_TOP = 8.2;
 /** How many bands of its sand are wound round it at once. */
 /** How far up its funnel its bell tumbles (a share of its height). */
-const BELL_UP = 0.46;
+export const BELL_UP = 0.46;
 /** Its bell: how long from its crown to its mouth, and how wide its mouth. */
 const BELL_LONG = 9.6;
 const BELL_MOUTH = 4.8;
@@ -90,13 +90,13 @@ export const DD_STAND = { frames: 24, fps: 16, period: 1.5 } as const;
 /** The canvas it is painted on, and its floor point on it. */
 export const DD_CANVAS = { w: 180, h: 150, ax: 90, ay: 110 };
 /** Its pool of light while it lives (the enemy's pink, faint, round its bell). */
-const DD_AURA = { x: DD_CANVAS.ax, y: DD_CANVAS.ay - 14, r: 26, color: '#ff3a78', a: 0.08 };
+export const DD_AURA = { x: DD_CANVAS.ax, y: DD_CANVAS.ay - 14, r: 26, color: '#ff3a78', a: 0.08 };
 
 // ---------------------------------------------------------------------------------------------
 // ITS POSES
 
 /** One moment of it. */
-interface DdPose {
+export interface DdPose {
   /** Its foot on the floor, forward and to its left. */
   x: number;
   y: number;
@@ -137,20 +137,20 @@ interface DdPose {
 }
 
 /** The middle of its funnel at `h` (a share of its height). */
-function middleAt(P: DdPose, h: number): V3 {
+export function middleAt(P: DdPose, h: number): V3 {
   const k = Math.pow(cl01(h), 1.4);
   const s = P.snake * Math.sin(TAU * 1.1 * h - P.snakeAt) * h;
   const c = P.snake * Math.cos(TAU * 1.1 * h - P.snakeAt) * h;
   return [P.x + P.top[0] * k + s, P.y + P.top[1] * k + 0.7 * c, h * P.high];
 }
 /** Its funnel's girth at `h`: a thin neck on the floor widening as it rises, its top spilling out. */
-function girthAt(P: DdPose, h: number): number {
+export function girthAt(P: DdPose, h: number): number {
   const spill = 1.4 * Math.pow(sm((h - 0.8) / 0.25), 2);
   return P.girth * (R_FOOT + (R_TOP - R_FOOT) * Math.pow(cl01(h), 1.1) + spill);
 }
 
 /** Its stand: it never stops spinning, its sand rising up it; it sways, its top wandering and a snake running up it; its foot weaves on the spot; its bell tumbles in its heart. */
-function standPose(t: number): DdPose {
+export function standPose(t: number): DdPose {
   const ph = fr(t / DD_STAND.period);
   const a = TAU * ph;
   return {
@@ -193,11 +193,11 @@ export const DD_REEL = { long: 0.45, stutter: 0.26, fps: 30 } as const;
 export const DD_DIE = { long: 1.4, freeze: 0.1, drop: 0.46, land: 0.72, crack: 0.88, out: 1.12, still: 1.2, fps: 30 } as const;
 
 /** A stand as fast as `rate` stand rounds a second, `t` in: the stand's own moment `tau` along. */
-function stood(tau: number): DdPose {
+export function stood(tau: number): DdPose {
   return standPose(((tau % DD_STAND.period) + DD_STAND.period) % DD_STAND.period);
 }
 /** A curve from 0 to 1, eased in and out. */
-const ease = (v: number): number => sm(v);
+export const ease = (v: number): number => sm(v);
 /** Of the stand's frames a second, the 30 a second of a move: which frame it is (for its stutter's flicker). */
 const frameOf = (t: number): number => Math.round(t * 30);
 
@@ -446,7 +446,7 @@ function deathPose(t: number): DdPose {
   return P;
 }
 
-function poseOf(which: string, t: number): DdPose {
+export function poseOf(which: string, t: number): DdPose {
   if (which === 'stand') return standPose(t);
   if (which === 'walk') return walkPose(t);
   if (which === 'attack') return lashPose(t);
@@ -470,7 +470,7 @@ function bandOf(i: number): { from: number; arc: number; thick: number; climb: n
 export const LOOK = { rings: 8, streaks: 2, arc: [170, 60], thick: [1.3, 0.4], climb: [0.14, 0.06], farTop: 0.2 };
 
 /** THE DUST DEVIL AS SOLIDS: the streaks of its sand (the near side, a ring to a part; the far side as one, dark, lit pink by its bell), the light of its bell behind it, its bell. `eye`: the way to the eye. */
-function devilBits(P: DdPose, put: Put, eye: V3): void {
+export function devilBits(P: DdPose, put: Put, eye: V3): void {
   const flat = norm([eye[0], eye[1], 0], [1, 0, 0]);
   // its sand: rings of streaks up it, each streak sweeping round its left way (seen from above), rising a little as
   // it goes; the rings flowing up it and spilling off its top; thinnest at their ends, thinned to nothing at its foot
@@ -584,7 +584,7 @@ function bellBits(P: DdPose, put: Put): void {
 }
 
 /** GRIT flung round it as it spins: dark specks and pale ones, rising with its sand, a few pebbles among them. */
-function gritOf(P: DdPose): [V3, string, number][] {
+export function gritOf(P: DdPose): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   const n = Math.round(22 * P.sand);
   for (let j = 0; j < n; j++) {
@@ -633,7 +633,7 @@ export function devilPainted(which: string, t: number, view: GameView = 'front')
   return { px, lights };
 }
 /** A RING OF SOUND in the air (its bell ringing once): a circle of the cult's pink round `c`, growing and thinning, `tau` after it rang, on whole game pixels. */
-function airRing(px: Px, st: Stage, c: V3, tau: number, life: number): void {
+export function airRing(px: Px, st: Stage, c: V3, tau: number, life: number): void {
   const u = tau / life;
   if (u < 0 || u >= 1) return;
   const [cx, cy] = st.at(c);
@@ -649,7 +649,7 @@ function airRing(px: Px, st: Stage, c: V3, tau: number, life: number): void {
   }
 }
 /** A grain laid on a finished picture (after its pink edge, so that it stays its own colour), on whole game pixels; `behind`: only where nothing is painted. */
-function laid(px: Px, st: Stage, p: V3, col: string, size: number, behind: boolean): void {
+export function laid(px: Px, st: Stage, p: V3, col: string, size: number, behind: boolean): void {
   const [x, y] = st.at(p);
   const xi = 2 * Math.round((x - size / 2) / 2);
   const yi = 2 * Math.round((y - size / 2) / 2);
