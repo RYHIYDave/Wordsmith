@@ -130,11 +130,13 @@ const KINDS = ['deer', 'wolf', 'drowned'] as const;
 /** The game's own frames of the three, on 0386b52 (origin/art/action-f6, before this branch): tools/action_f9_hash.ts. */
 const HASHES: Record<(typeof KINDS)[number], string> = { deer: '13bda852bc8fff58', wolf: '3e6b7fd0ff8d8f3b', drowned: '6d07028e30e962bb' };
 
-test('1. the switches are off; nothing of the game imports the mock-ups; the game’s frames the same; only the new moves new', () => {
+test('1. the switches are off; nothing of the game imports the mock-ups but what brings them in; the game’s frames the same; only the new moves new', () => {
   for (const sw of [DEER_BRAMBLE, WOLF_PACK, DROWNED_RETCH]) assert.equal(sw.on, false, 'a switch is on');
   const OURS = /from ['"][^'"]*action_f9_(pinewood|fen|scene)['"]/;
+  // (brought in by the main chat, 2 Nov 2026, behind the switches: only through each one's figure, rules and what it leaves)
+  const BRINGS = /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/(deer|wolf|drowned)\.ts$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f9_/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || BRINGS.test(f) || /^art\/action_f9_/.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   // the game's own frames, pixel for pixel, as they were
