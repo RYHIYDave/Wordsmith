@@ -29,7 +29,7 @@ import {
 } from '../src/game/act1_rules/eye';
 import { bossKind } from '../src/game/bosses';
 import { MONSTERS, PACK_BY_SIZE, TUNE, sizeOf } from '../src/game/defs';
-import { Game } from '../src/game/game';
+import { Game, SEE_OVER_ROCK } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { ActId, GameEvent, Monster } from '../src/game/state';
 import { act1Fx } from '../src/render/act1_fx/index';
@@ -588,8 +588,9 @@ test('12. he is seen from wherever on his ring the hero sees any of his pool, no
     }
   }
   assert.ok(places >= 50, `the ring stood on in ${places} places`);
-  // (the case it is for: from some of them his middle tile is out of sight)
-  assert.ok(middleHid > 0, `his middle tile hidden from ${middleHid} of them`);
+  // (the case it is for: from some of them his middle tile is out of sight; not since his word of 1 Nov 2026 on the descent's
+  // cliffs, “it should be wide open to line of sight”: SEE_OVER_ROCK, the hero's eye over the ring's stones too)
+  if (!SEE_OVER_ROCK.on) assert.ok(middleHid > 0, `his middle tile hidden from ${middleHid} of them`);
   // (and not from beyond the hero's sight)
   g.hero.x = m.x + 30;
   g.hero.y = m.y;

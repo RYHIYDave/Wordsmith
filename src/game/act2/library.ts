@@ -335,7 +335,8 @@ function plan(rng: RNG): Plan | null {
     if (!laid && kind !== 'sidestacks') return null;
   }
   // (COMBO, his pick for floor 15: ways round)
-  if (LB_COMBO.on) waysRound(rng, rooms, ways);
+  // (a floor with fewer than LB_COMBO.least laid again: a combo floor has a way round)
+  if (LB_COMBO.on && waysRound(rng, rooms, ways) < LB_COMBO.least) return null;
   return { rooms, ways, doorsSide, inTo, reading, beyond, bell };
 }
 
@@ -343,11 +344,12 @@ function plan(rng: RNG): Plan | null {
  * COMBO (his pick for floor 15 among open, linear and combo: “combo”): the library's main way and its rooms off it, and up to
  * LB_COMBO.loops ways round besides: a straight way three wide between two of its halls, its stacks, its scriptorium or its
  * antechamber that face each other across the rock, two places or more apart along the main way, clear of every other room and
- * way (the doors, the Reading Room, the way on, the bell's room, the closet and the bindery keep their one way in).
+ * way (the doors, the Reading Room, the way on, the bell's room, the closet and the bindery keep their one way in). A floor
+ * with fewer than `least` is laid again (a combo floor has a way round).
  */
-export const LB_COMBO = { on: true, loops: 2 };
+export const LB_COMBO = { on: true, loops: 2, least: 1 };
 
-function waysRound(rng: RNG, rooms: PRoom[], ways: PWay[]): void {
+function waysRound(rng: RNG, rooms: PRoom[], ways: PWay[]): number {
   const open: Kind[] = ['hall', 'scriptorium', 'ante', 'stacks', 'sidestacks'];
   const along = (i: number): number => (rooms[i].path >= 0 ? rooms[i].path : along(rooms[i].parent));
   const cands: PWay[] = [];
@@ -379,6 +381,7 @@ function waysRound(rng: RNG, rooms: PRoom[], ways: PWay[]): void {
     ways.push(w);
     n++;
   }
+  return n;
 }
 
 /** Where he comes in: three tiles in from the doors, before the middle of the wall they stand in. */

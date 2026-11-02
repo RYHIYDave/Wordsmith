@@ -197,10 +197,11 @@ function attach(rng: RNG, plan: Plan, host: number, side: Side, w: number, h: nu
  * HQ_COMBO.loops ways round besides: a straight hall between two rooms that face each other across the rock, two places or
  * more apart along the main way (never the entrance, the vestibule, the theatre or the room beyond it: the start one way out,
  * the theatre one way in; nor the lair, a store or the chapel: dead ends with what they hold), clear of every other room and hall.
+ * A floor with fewer than `least` is laid again (half of them had none: a combo floor has a way round).
  */
-export const HQ_COMBO = { on: true, loops: 2 };
+export const HQ_COMBO = { on: true, loops: 2, least: 1 };
 
-function waysRound(rng: RNG, plan: Plan, mainCount: number): void {
+function waysRound(rng: RNG, plan: Plan, mainCount: number): number {
   // (the dead ends stay dead ends: the lair, the stores and the chapel; and the start, the vestibule, the theatre, beyond it)
   const fixed: HouseRole[] = ['entrance', 'vestibule', 'theatre', 'beyond', 'lair', 'store', 'chapel'];
   // (where a room is along the main way: its own place, or its host's)
@@ -235,6 +236,7 @@ function waysRound(rng: RNG, plan: Plan, mainCount: number): void {
     plan.joins.push(J);
     n++;
   }
+  return n;
 }
 
 /** A room's two sides for a step: its length along the way it is entered (`alongWay`) or across it. */
@@ -389,7 +391,7 @@ export function generate(depth: number, seed: number): Laid | null {
   for (let n = 0; n < stores; n++) growSide(rng, plan, 'store', rng.shuffle([0, ...anyHost]));
   if (rng.chance(0.5)) growSide(rng, plan, 'apothecary', rng.shuffle([...anyHost]));
   // (COMBO, his pick for floor 14: ways round, halls between rooms of the main way that face each other, not one after the other)
-  if (HQ_COMBO.on) waysRound(rng, plan, mainCount);
+  if (HQ_COMBO.on && waysRound(rng, plan, mainCount) < HQ_COMBO.least) return null;
 
   // THE BOUNDS: everything moved MARGIN in from the map's edge
   let x0 = Infinity;
