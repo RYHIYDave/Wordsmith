@@ -442,3 +442,50 @@ export function bannerScene(view: View, t: number, base: Px, cx: number, cy: num
   return px;
 }
 void BANNER;
+
+// ---------------------------------------------------------------------------------------------
+// FLOOR 19: THE BANNER'S REACH FROM HIGHER UP (2 Nov, his pick “About twice, 7 tiles (Recommended)”): the king's knight plants it
+// among his fellows; most of the fight is inside its gold ring; the hero, at its edge, steps back out of it and pulls one of them out
+
+/** His fellows round him (tiles before the banner knight and to his right), king's knights, inside its reach. */
+const FELLOWS: ReadonlyArray<readonly [number, number]> = [[3.4, 2.2], [-1.2, -3.0], [1.4, 4.4]];
+export const RALLY_WIDE_PASS = LEAD + BANNER_HIT + 4.6;
+export function bannerWideScene(t: number, base: Px, cx: number, cy: number): Px {
+  const view: View = 'front';
+  const at = placer(view, cx, cy);
+  const m = t - LEAD;
+  const Kp = at(B_AT);
+  const BA: [number, number] = [B_AT + BANNER_AT[0], -BANNER_AT[1]];
+  const Bp = at(BA[0], BA[1]);
+  // the hero: inside the ring near its edge; after the plant he steps back out past it, and the nearest of them follows him out
+  const h = walker(m, BANNER_HIT + 1.0, BANNER_HIT + 2.0, BA[0] + 5.4, BA[1] - 1.2, BA[0] + 8.4, BA[1] - 1.6);
+  const H = at(h.a, h.s);
+  const kv = kViewOf(view);
+  const stood: Stood[] = [
+    { at: Kp, l: m > longOf(BANNER_KNIGHT, 'banner') ? frame(CLEAVE_KNIGHT, 'stand', (m - longOf(BANNER_KNIGHT, 'banner')) % 3.2, view) : doing(BANNER_KNIGHT, view, 'banner', t, LEAD), shadow: 0 },
+    { at: H, l: frameAt(hero(), kv, h.moving ? 'walk' : 'stand', h.moving ? t * 1.6 : t), flip: false, shadow: 9 },
+  ];
+  const floor: Floor = [{ at: Kp, l: laid(shadowOf(13), 14, 7) }];
+  FELLOWS.forEach(([a, s], i) => {
+    const out = i === 0 ? walker(m, BANNER_HIT + 1.4, BANNER_HIT + 3.0, a, s, BA[0] + 7.6, BA[1] - 0.4) : walker(m, 99, 100, a, s, a, s);
+    const P = at(out.a, out.s);
+    stood.push({ at: P, l: frame(CLEAVE_KNIGHT, out.moving ? 'walk' : 'stand', ((t + i * 0.7) % (out.moving ? 1.2 : 3.2)), view), flip: P[0] > H[0] ? true : false, shadow: 0 });
+    floor.push({ at: P, l: laid(shadowOf(13), 14, 7) });
+  });
+  const lights: Light[] = [];
+  if (m >= BANNER_HIT) {
+    const u = m - BANNER_HIT;
+    const C = RALLY_CANVAS;
+    const fl = rallyPainted(u, 'floor');
+    floor.push(put(fl, C, Bp));
+    lights.push(...shifted(fl.lights, Bp[0] - C.ax, Bp[1] - C.ay));
+    const air = rallyPainted(u, 'air');
+    stood.push(put(air, C, Bp, 0.6));
+    const pic = bannerPainted(u, view);
+    stood.push({ at: [Bp[0], Bp[1] + 0.3], l: laid(pic.px, STANDING_CANVAS.ax, STANDING_CANVAS.ay) });
+    lights.push(...shifted(pic.lights, Bp[0] - STANDING_CANVAS.ax, Bp[1] - STANDING_CANVAS.ay));
+  }
+  const px = compose(copy(base), floor, stood);
+  layLights(px, lights);
+  return px;
+}

@@ -250,3 +250,40 @@ Made by: `tools/action_f6_film.ts` (the film), `tools/action_f6_sheet.ts` and `t
   pool 1.4 for 4.5 s; the twister 3.5 s, dragging from 2.6 tiles.
 - The dust devil's twister is its one attack in place of its lash (his rule for small mobs); a quick lash kept between twisters
   would be a second attack.
+
+## 2 Nov 2026: THE CHANTER'S LIGHTNING JUMPS ONLY TO OTHER PLAYERS (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds.** The rest of the Chanter (the wind-up, the ring, the strike, its numbers) as
+approved; the firepot thrower, the golem, the scorpion and the dust devil as they were.
+
+His words, 2 Nov 2026, going through the night's films with the art chat. Asked whom the chain lightning may jump to: “I don’t really
+want the rangers animals to have HP bars so it doesn’t really matter to jump to them”. Asked whether it should jump on to monsters near
+you and hurt them, his pick: “No jumps” (offered as: it just strikes you, one bolt with a crackle round you). Then, at 07:56: “If we
+have multiplayer, the lightningwould jump to other players”.
+
+So: THE BOLT JUMPS ONLY TO OTHER HEROES (players) near the one it strikes, never to companions (the ranger's animals) or to monsters.
+With one hero (as the game is now): ONE BOLT down onto him (its ring marked first, as before) and A CRACKLE OF STATIC round him a moment:
+little jagged arcs crawling over him and jumping off him into the air, a new place every frame (white at their heart, the cult's
+violet beside, flecks of its pink), sparks running round his feet on the floor and spitting off him, the cult's violet light on him,
+strong at first and dying away. With another player within reach, the jump is drawn as before, on to them (the film shows it once,
+with a second knight, captioned "with another player"), and they crackle too.
+
+| | |
+|---|---|
+| THE JUMPS (`CHAIN.jump`, `jumps`, `every`, `share`; `chainOf(heroes, first)`) | to the nearest OTHER HERO within **2.5 tiles**, at most **twice**, **0.1 s** apart; never a companion or a monster: the rules pass `chainOf` the heroes only. Alone: `[first]`, no jump |
+| THE CRACKLE (`CHAIN.crackle`, `staticPainted(t, seed)`, `STATIC_CANVAS`) | round each hero it strikes, from the moment the bolt reaches him, **0.8 s**, strong at first and dying away; a picture of its own, **96 × 112**, its anchor **(48, 94)** at his feet, laid OVER him (a knight's height) |
+| the rest | as approved: the ring 1.0 tile, down 0.57 s before; the strike in two frames; each bolt crackling 0.22 s |
+
+**Bringing it in** (the main chat's), in place of the line above about the jumps: in game/act1_rules/chanter.ts at the hit, strike the
+hero within `CHAIN.r` of the ring and lay `chainBoltPainted` from `castFrom()` to him and `staticPainted(t)` over him (`STATIC_CANVAS`,
+anchored at his feet) for `CHAIN.crackle`; then `chainOf(heroes, i)` over THE HEROES ONLY (the players: in a game alone, just him), each
+jumped to `CHAIN.every` later, struck by `CHAIN.share`, a bolt between them and the crackle on them. Nothing jumps to companions or
+monsters.
+
+The checks (`tests/action_f6.test.ts`, 5 tests, passing): test 5 adds every frame of the crackle (both seeds, 1/30 s apart, to
+`CHAIN.crackle`): painted, crisp, no cyan, not cut off; gone after; and the jumps: alone, or the other player out of reach, one bolt and
+no jump (`chainOf([[0, 0]], 0)` is `[0]`). The game's own frames hash as before (test 1). The scene (src/dev/action_f6_scene.ts
+`chainScene(view, t, base, cx, cy, others)`) is the knight alone, or with one other player (a second knight); the stand-ins (the mage
+and the ranger) are gone from it.
+
+Pictures: docs/mockups/action_fixes/pictures/action_fixes3.mp4 and action_fixes3_sheet.png.

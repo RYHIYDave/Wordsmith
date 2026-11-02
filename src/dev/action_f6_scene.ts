@@ -11,7 +11,7 @@ import type { ActorArt, Clip } from '../art/actor_types';
 import { hash } from '../art/kit';
 import { TILE3 } from '../art/new_mobs3';
 import { makeHeroArt3 } from '../art/heroes3';
-import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, LOB_HIT, RING_CANVAS, blazeFly, blazePainted, castFrom, chainOf, layChainBolt, lobFrom, makeBlazeThrowerArt, makeFlyingPotArt, makeLightningChanterArt, potShadowPainted, ringPainted } from '../art/action_f6_cult';
+import { BLAZE, CAST_HIT, CHAIN, FIRE_CANVAS, LOB_HIT, RING_CANVAS, STATIC_CANVAS, blazeFly, blazePainted, castFrom, chainOf, layChainBolt, lobFrom, makeBlazeThrowerArt, makeFlyingPotArt, makeLightningChanterArt, potShadowPainted, ringPainted, staticPainted } from '../art/action_f6_cult';
 import { BOULDER, BOULDER_R, HAMMER, HAMMER_HIT, ROLL_HIT, ROLL_ROUND, SMASH_CANVAS, boulderGone, boulderHop, lanePainted, makeBoulderGolemArt, smashPainted } from '../art/action_f6_golem';
 import { GLOB_CANVAS, POOL_CANVAS, SPIT, SPIT_HIT, SNAP9, SWIRL_CANVAS, TW, TW_HIT, globAt, globShadowPainted, layTwisterBolts, makeSpitScorpionArt, makeTwisterDevilArt, poolPainted, spitFly, spitFrom, swirlPainted } from '../art/action_f6_canyon';
 import { markRing } from '../art/action_f6_fx';
@@ -199,41 +199,49 @@ export function lobScene(view: View, t: number, base: Px, cx: number, cy: number
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE CHANTER'S CHAIN LIGHTNING: the book up, crackling; the ring under the knight; the strike; the jumps to two near him
+// THE CHANTER'S LIGHTNING: the book up, crackling; the ring under the knight; the strike; the static round him. 2 Nov (his word): it
+// jumps ONLY to other heroes (players): alone, one bolt; with another player near him (a second knight), on to him too.
 
 const C_AT = -2.6;
 const CK_AT = 1.8;
-/** The two stand-ins near the knight (the game's mage and ranger: the knight fights alone, so these stand for anyone near him). */
-const NEAR: ReadonlyArray<readonly [number, number]> = [[0.7, 1.7], [2.0, -0.2]];
+/** Another player near the knight (a second knight), for "with another player": the chain jumps only to other heroes. */
+const OTHER: readonly [number, number] = [1.2, -1.6];
 export function chainTimes(): { start: number; aim: number; strike: number } {
   return { start: LEAD, aim: LEAD + CHAIN.aim, strike: LEAD + CAST_HIT };
 }
-export const CHAIN_PASS = ((): number => chainTimes().strike + 0.9)();
-export function chainScene(view: View, t: number, base: Px, cx: number, cy: number): Px {
-  const { chanter, knight, mage, ranger } = figures();
+export const CHAIN_PASS = ((): number => chainTimes().strike + 1.0)();
+/** `others`: how many other heroes (players) stand near the knight (0: he plays alone; 1: another player, a second knight). */
+export function chainScene(view: View, t: number, base: Px, cx: number, cy: number, others = 0): Px {
+  const { chanter, knight } = figures();
   const { start, strike } = chainTimes();
   const at = placer(view, cx, cy);
   const Ch = at(C_AT);
-  const who: [number, number][] = [[CK_AT, 0], [CK_AT + NEAR[0][0], NEAR[0][1]], [CK_AT + NEAR[1][0], NEAR[1][1]]];
+  const who: [number, number][] = [[CK_AT, 0], ...(others > 0 ? [[CK_AT + OTHER[0], OTHER[1]] as [number, number]] : [])];
   const kView: View = view === 'front' ? 'back' : 'front';
-  const struckAt = (i: number): number => strike + i * CHAIN.every;
+  const order = chainOf(who, 0);
+  const struckAt = (i: number): number => strike + order.indexOf(i) * CHAIN.every;
   // (each, struck, jolted a little back: the game's own struck clip for a hero is the rules'; here a jolt)
   const jolt = (i: number): number => {
     const s = t - struckAt(i);
     return s >= 0 && s < 0.25 ? 3 * Math.sin((s / 0.25) * Math.PI) : 0;
   };
-  const arts = [knight, mage, ranger];
   const pts = who.map(([a, s]) => at(a, s));
   const stood: Stood[] = [{ at: Ch, l: doing(chanter, view, 'attack', t, start), shadow: 10 }];
+  const lights: Light[] = [];
   pts.forEach((p, i) => {
-    const l = frameAt(arts[i], kView, 'stand', t + i * 0.3);
-    stood.push({ at: p, l: { ...l, ax: l.ax + jolt(i) * (view === 'front' ? 1 : 1), ay: l.ay }, flip: p[0] > Ch[0], shadow: 9 });
+    const l = frameAt(knight, kView, 'stand', t + i * 0.37);
+    stood.push({ at: p, l: { ...l, ax: l.ax + jolt(i), ay: l.ay }, flip: p[0] > Ch[0], shadow: 9 });
+    // (the static crackling round him, over him)
+    const s = t - struckAt(i);
+    if (s >= 0 && s <= CHAIN.crackle) {
+      const st = staticPainted(s, i);
+      stood.push({ at: [p[0], p[1] + 0.5], l: laid(st.px, STATIC_CANVAS.ax - jolt(i), STATIC_CANVAS.ay) });
+      lights.push(...st.lights.map((x) => ({ ...x, x: x.x - STATIC_CANVAS.ax + p[0], y: x.y - STATIC_CANVAS.ay + p[1] })));
+    }
   });
   const floor: { at: [number, number]; l: Laid }[] = [{ at: pts[0], l: laid(ringPainted(t - strike), RING_CANVAS.ax, RING_CANVAS.ay) }];
   const px = compose(copy(base), floor, stood);
-  const lights: Light[] = [];
-  // the lightning: from its book to the knight, then on through the chain
-  const order = chainOf(who, 0);
+  // the lightning: from its book down onto the knight; then on to another player, if one is near
   const [bx, by, bz] = castFrom();
   const [fx, fy] = ahead(view);
   const [sx, sy] = rightOf(view);
@@ -243,7 +251,7 @@ export function chainScene(view: View, t: number, base: Px, cx: number, cy: numb
   for (let j = 1; j < order.length; j++) {
     const a = pts[order[j - 1]];
     const b = pts[order[j]];
-    lights.push(...layChainBolt(px, a[0], a[1] - chest, b[0], b[1] - chest, t - struckAt(j), 1 + j));
+    lights.push(...layChainBolt(px, a[0], a[1] - chest, b[0], b[1] - chest, t - struckAt(order[j]), 1 + j));
   }
   layLights(px, lights);
   return px;

@@ -12,9 +12,14 @@
 //   DIAGNOSIS (BEAM, MARK): a cone of pale light from the lens across the floor at you, following you a breath behind; the beds and
 //     the pillars throw hard shadows down it (their line broken: `blocked`); a mark on the floor round you, a dial filling in the
 //     enemy's pink to gold while you stand in the light, draining while you are hid; a shaft of light from the lens to it.
-//   HE OPERATES (FIELD): the mark full, the field round where you stood marked out as a surgeon marks his cuts, a ring and a cross,
-//     beating ever faster while he holds the wind-up; at the strike the light through the lens BURNS the cuts into the floor, the
-//     field blinding white for two frames; the scorched cuts glowing after, smoking, dying away.
+//   HE OPERATES (FIELD, OPERATION): the mark full, the field round where you stood marked out as a surgeon marks his cuts, a ring and a
+//     cross, beating ever faster while he holds the wind-up; at the strike the light through the lens BURNS the cuts into the floor, the
+//     field blinding white for two frames; the scorched cuts glowing after, smoking, dying away. 2 Nov 2026, the owner: “It needs a
+//     little more excitement, and the meter needs to fill faster”; told him the mark fills in about 1.4 s (was 2.2); his pick for the
+//     excitement, “Bigger operation” (offered as: when the mark fills, the room goes dark but a spotlight on you, and his instruments
+//     close in round you). So THE THEATRE PLUNGES DARK, ONE HARD SURGICAL SPOTLIGHT ON YOU from his lens (the field: get out of it),
+//     HIS INSTRUMENTS (scalpels, bone saws, forceps, needles, lancets) flung out round you at its edge, HELD, then CLOSING IN on you from
+//     all round in two frames, smeared, with his one huge strike; stuck quivering in the boards; plucked back; the light back after.
 //   ROUNDS (RINGS): while he holds the cane up, the reach of his rings marked round him; from each rap a great ring of the Hush rolls
 //     out over the floor, thick, pink motes in it.
 // Each is painted onto a picture through `at` (a floor point, tiles, and a height, picture pixels, to the picture), every pixel whole;
@@ -234,7 +239,9 @@ export type Cover = { kind: 'bed'; x0: number; y0: number; x1: number; y1: numbe
  * you a breath behind); how long it takes to fill the mark while you stand in its light, and to drain it while you are hid
  * (seconds, the whole of it); the mark's size round you (tiles).
  */
-export const BEAM = { half: 0.26, reach: 18, lag: 0.22, fill: 2.2, drain: 1.6, ring: 0.85 } as const;
+export const BEAM = { half: 0.26, reach: 18, lag: 0.22, fill: 1.4, drain: 1.6, ring: 0.85 } as const;
+/** (2 Nov, the owner: “the meter needs to fill faster”: it was 2.2 s) */
+export const BEAM_FILL_WAS = 2.2;
 /** Whether the line from a to b (floor points, tiles) is broken by any of the cover. */
 export function blocked(a: Pt, b: Pt, cover: ReadonlyArray<Cover>): boolean {
   for (const c of cover) {
@@ -445,26 +452,7 @@ export function paintField(p: Px, at: At, x: number, y: number, t: number, seed 
     const hot = t > OP_HOLD[1] - 0.3 || Math.floor(t * (4 + 10 * clamp01(t / OP_HIT))) % 2 === 0;
     for (const dr of [0, -0.06]) dashedRing(p, at, x, y, FIELD.r * (0.5 + 0.5 * smooth(k)) + dr, k, run, hot);
     for (const [a, b] of cuts) for (const o of [0, 0.05]) dashes(p, at, [x + a[0] * k + o, y + a[1] * k - o], [x + b[0] * k + o, y + b[1] * k - o], k, -run, hot);
-    // (the field stippled with his pink, beating)
-    const beat = Math.floor(t * (3 + 9 * clamp01(t / OP_HIT))) % 2;
-    for (let gx = -FIELD.r; gx <= FIELD.r; gx += 0.3) {
-      for (let gy = -FIELD.r; gy <= FIELD.r; gy += 0.3) {
-        if (Math.hypot(gx, gy) > FIELD.r * smooth(k) - 0.1) continue;
-        const ix = Math.round(gx / 0.3);
-        const iy = Math.round(gy / 0.3);
-        if ((ix + iy + beat) % 2) continue;
-        const [X, Y] = at(x + gx, y + gy);
-        dot(p, X, Y, hot ? FLAME[2] : FLAME[1], 2, 1);
-      }
-    }
-    // (the light gathering in on the field: motes drawn in to its middle)
-    for (let i = 0; i < 24; i++) {
-      const life = (t * 1.5 + i / 24) % 1;
-      const a = i * 2.39996;
-      const r = FIELD.r * (1 - life);
-      const [X, Y] = at(x + Math.cos(a) * r, y + Math.sin(a) * r, 2 + 20 * (1 - life) * hash(i, 5, 7942));
-      dot(p, X, Y, life > 0.7 ? FLAME[3] : LIGHT.warm, 1, 1);
-    }
+    // (2 Nov: the field is the spotlight now, lit hard in the dark: its stipple and its motes gone, the surgeon's marks kept)
     return;
   }
   const s = t - OP_HIT;
@@ -524,6 +512,376 @@ export function paintBurnLine(p: Px, from: Pt, to: Pt, s: number): void {
     const u = d / L;
     const w = (1 + 2.5 * u) * (0.4 + 0.6 * k);
     for (let q = -w; q <= w; q += 1) dot(p, from[0] + (to[0] - from[0]) * u + nx * q, from[1] + (to[1] - from[1]) * u + ny * q, Math.abs(q) < w * 0.5 ? LIGHT.white : FLAME[3]);
+  }
+}
+
+// =============================================================================================
+// HE OPERATES, BIGGER (2 Nov 2026, his pick “Bigger operation”): the theatre plunged dark; one hard surgical spotlight on you from his
+// lens; his instruments flung out round you at its edge, HELD; closing in on you from all round in two frames with his one huge strike
+
+/**
+ * THE OPERATION'S NUMBERS (seconds from when the mark came full: his `operate` clip's own time; tiles):
+ *   fall    the theatre plunges dark from `fall[0]` to `fall[1]` (three frames: sudden), as dark as `low` (of its light); held dark
+ *   rise    to `rise[0]`; the light back by `rise[1]`
+ *   THE SPOTLIGHT  one hard spotlight from his lens on where you stood as the mark came full, `FIELD.r` round (the field), lit through
+ *          the dark: GET OUT OF IT before the instruments close (`ESCAPE` seconds from the dark falling)
+ *   THE RING  `count` instruments flung out of his coat from `fly[0]`, each in its place round the spotlight's edge (`FIELD.r` + `out`
+ *          from its middle, `high` picture pixels up; each `size` times its own length, 38 pixels) by `fly[1]`: HELD there,
+ *          trembling, glinting, pointing in at you; drawn back
+ *          `back` tiles from `draw` to the strike
+ *   THE CLOSE  in TWO FRAMES (`OP_STRIKE`, frames 40 to 42), smeared, they close in on the middle from all round, to `meet` from it:
+ *          `OP_HIT`, the one huge strike (whoever is within `FIELD.r`: `fieldStrikes`)
+ *   after   slammed point-down into the boards round the middle by `stuck` after the strike, quivering; plucked out at `pull` and flown
+ *          back into his coat by `home` (as the fan in his fist shuts)
+ */
+export const OPERATION = {
+  fall: [1 / 30, 4 / 30] as const,
+  low: 0.2,
+  rise: [OP_HIT + 0.45, OP_HIT + 0.8] as const,
+  count: 12,
+  out: 0.12,
+  high: 30,
+  size: 1.35,
+  fly: [0.1, 0.45] as const,
+  draw: 1.0,
+  back: 0.3,
+  meet: 0.3,
+  stuck: 0.1,
+  sink: 0.62,
+  pull: 60 / 30,
+  home: 70 / 30,
+} as const;
+/** HOW LONG YOU HAVE to get out of the spotlight: from the dark falling (the warning) to the instruments closing (1.2 s). */
+export const ESCAPE = OP_STRIKE[0] - OPERATION.fall[1];
+/** How dark the theatre is `t` seconds into his operation (0: as lit as ever; 1: as dark as it goes). */
+export function opDark(t: number): number {
+  const { fall, rise } = OPERATION;
+  if (t < fall[0]) return 0;
+  if (t < fall[1]) return (t - fall[0]) / (fall[1] - fall[0]);
+  if (t < rise[0]) return 1;
+  if (t < rise[1]) return 1 - smooth((t - rise[0]) / (rise[1] - rise[0]));
+  return 0;
+}
+/**
+ * HOW LIT a floor point is `dx`, `dy` tiles from the spotlight's middle, `t` seconds in (1: as ever; less: darkened; more: lit
+ * harder than the room ever is): in the spotlight lit hard; a thin band at its edge a step down; outside it the dark.
+ */
+export function opLight(dx: number, dy: number, t: number): number {
+  const dark = opDark(t);
+  if (dark <= 0) return 1;
+  const lo = 1 - (1 - OPERATION.low) * dark;
+  const d = Math.hypot(dx, dy);
+  if (d <= FIELD.r - 0.05) return 1 + 0.18 * dark;
+  if (d <= FIELD.r + 0.08) return lo + (1 - lo) * 0.5;
+  return lo;
+}
+/** The dark's own colour (a deep violet-black), and the spotlight's (a hard warm white). */
+const DUSK = rgba('#0a0812');
+const SPOTC = rgba('#fff2d8');
+/**
+ * A pixel's colour lit at `l` (opLight): darkened toward the dusk (what glows bright and strong in colour kept, a little dimmed: his
+ * eyes, the lens, the enemy's pink); or, over 1, lifted toward the spotlight's white.
+ */
+export function litRGB(r: number, g: number, b: number, l: number): [number, number, number] {
+  if (Math.abs(l - 1) < 1e-3) return [r, g, b];
+  if (l > 1) {
+    const k = l - 1;
+    return [Math.round(r + (SPOTC[0] - r) * k), Math.round(g + (SPOTC[1] - g) * k), Math.round(b + (SPOTC[2] - b) * k)];
+  }
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max > 170 && max - min > 0.45 * max) return [Math.round(r * 0.9), Math.round(g * 0.9), Math.round(b * 0.9)];
+  const m = 1 - l;
+  return [Math.round(r * l + DUSK[0] * m), Math.round(g * l + DUSK[1] * m), Math.round(b * l + DUSK[2] * m)];
+}
+/** THE SPOTLIGHT'S HARD EDGE on the floor round (x, y), `t` seconds in: a crisp line of its white all round, a fainter one just in. */
+export function paintSpotEdge(p: Px, at: At, x: number, y: number, t: number): void {
+  const dark = opDark(t);
+  if (dark < 0.5) return;
+  const n = Math.round(FIELD.r * 120);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const [X, Y] = at(x + Math.cos(a) * FIELD.r, y + Math.sin(a) * FIELD.r);
+    dot(p, X, Y, LIGHT.white, 1, 1);
+    if (i % 2 === 0) {
+      const [X2, Y2] = at(x + Math.cos(a) * (FIELD.r - 0.1), y + Math.sin(a) * (FIELD.r - 0.1));
+      dot(p, X2, Y2, LIGHT.pale, 1, 1);
+    }
+  }
+}
+/**
+ * THE SPOTLIGHT'S CONE through the dark air, from his lens (picture point) down onto the spotlight (its middle a picture point, `rx`
+ * and `ry` picture pixels round): a fine dither of its white, thicker near the lens, so that what it passes over shows through.
+ */
+export function paintSpotCone(p: Px, from: Pt, mid: Pt, rx: number, ry: number, t: number): void {
+  const dark = opDark(t);
+  if (dark < 0.5) return;
+  const L = Math.hypot(mid[0] - from[0], mid[1] - from[1]);
+  const n = Math.max(40, Math.round(L));
+  for (let j = 0; j <= n; j++) {
+    const u = j / n;
+    const cx = from[0] + (mid[0] - from[0]) * u;
+    const cy = from[1] + (mid[1] - from[1]) * u;
+    const hx = 2 + (rx - 2) * u;
+    const hy = 1 + (ry - 1) * u;
+    // (a slice across the cone: the ellipse it has opened to there, its rim and a dither within)
+    const m = Math.max(8, Math.round(hx * 0.9));
+    for (let i = 0; i < m; i++) {
+      const a = (i / m) * Math.PI * 2;
+      const w = hash(j, i, 7951);
+      const rim = Math.abs(Math.cos(a)) > 0.92;
+      if (!rim && w > 0.16 * (1 - 0.6 * u)) continue;
+      if (rim && w > 0.5) continue;
+      const k = rim ? 1 : Math.sqrt(hash(i, j, 7953));
+      dot(p, cx + Math.cos(a) * hx * k, cy + Math.sin(a) * hy * k, rim || w < 0.04 ? LIGHT.white : LIGHT.pale);
+    }
+  }
+}
+
+// THE INSTRUMENTS, each drawn flat on the picture along the way its point faces (`dir`), every pixel whole; steel, ebony, brass; an
+// edge of the enemy's deep pink on their dark side, a glint of his pink and gold running along their blades. Never cyan.
+const ST = ['#0b0910', '#3a3842', '#68667a', '#a4a2b2', '#d8d6e2', '#fffaf0'] as const;
+const EB = ['#1a1214', '#33262a', '#4a3a3c'] as const;
+const BR = ['#5a4018', '#a07a36', '#ecca7c'] as const;
+/** The five kinds: a scalpel, a bone saw, forceps, a curved needle threaded, an amputation knife. Their length, picture pixels. */
+export const TOOL_KINDS = ['scalpel', 'bone saw', 'forceps', 'needle', 'knife'] as const;
+const TOOL_LONG = 38;
+/** What of a tool is at (u, v): along it toward its point, across it (its light side toward -v): its stuff and how lit, or null. */
+function toolAt(kind: number, u: number, v: number): { c: string; blade: boolean } | null {
+  const steel = (edge: number, side: number): { c: string; blade: boolean } => ({ c: edge > 0.75 ? ST[5] : side < 0 ? ST[4] : side < 0.5 ? ST[3] : ST[2], blade: true });
+  const ebony = (side: number): { c: string; blade: boolean } => ({ c: side < -0.3 ? EB[2] : side < 0.4 ? EB[1] : EB[0], blade: false });
+  const brass = (side: number): { c: string; blade: boolean } => ({ c: side < 0 ? BR[2] : BR[1], blade: false });
+  if (kind === 0) {
+    // SCALPEL: an ebony handle, a brass ferrule, a bellied blade, its spine curving down to the point
+    if (u >= -19 && u < -3 && Math.abs(v) <= 1.7 - 0.25 * (u + 19) / 16) return ebony(v / 1.7);
+    if (u >= -3 && u < -1 && Math.abs(v) <= 1.9) return brass(v);
+    if (u >= -1 && u <= 19) {
+      const q = (u + 1) / 20;
+      const spine = -1.4 + 1.6 * q * q * q;
+      const belly = spine + 0.6 + 3.6 * Math.sin(Math.PI * Math.min(1, q * 1.08)) ** 0.7 * (1 - q * 0.3);
+      if (v >= spine && v <= belly) return steel(belly - v < 0.9 ? 1 : 0, (v - spine) / Math.max(0.5, belly - spine) - 0.4);
+    }
+    return null;
+  }
+  if (kind === 1) {
+    // BONE SAW: an ebony grip, a steel blade toothed along its edge, a brass back-frame over it to its end
+    if (u >= -19 && u < -9 && Math.abs(v - 0.5) <= 2.6) return Math.abs(v - 0.5) < 0.8 && u > -17 && u < -11 ? { c: EB[0], blade: false } : ebony((v - 0.5) / 2.6);
+    if (u >= -9 && u <= 17 && v >= -0.6 && v <= 3.4) return steel(0, (v + 0.6) / 4 - 0.4);
+    if (u >= -9 && u <= 17 && v > 3.4 && v <= 5 && Math.floor(u) % 2 === 0 && v - 3.4 < 1.6 * (1 - ((u + 9) % 2) / 2)) return steel(1, 0.5);
+    if (u >= -10 && u <= 17.5 && v >= -3.6 && v <= -2.2) return brass(-1);
+    if (u >= 15.8 && u <= 17.5 && v > -2.2 && v < -0.6) return brass(0);
+    return null;
+  }
+  if (kind === 2) {
+    // FORCEPS: two long arms sprung apart in the middle, joined at the back (brass), their serrated jaws meeting at the point
+    if (u < -19 || u > 19) return null;
+    const gap = 3.6 * Math.sin((Math.PI * (u + 19)) / 38) ** 0.8;
+    for (const sgn of [-1, 1]) {
+      const c = sgn * gap;
+      if (Math.abs(v - c) <= 0.85) return u < -15 ? brass(v) : u > 14 && Math.round(u) % 2 === 0 ? { c: ST[5], blade: true } : steel(0, sgn < 0 ? -1 : 0.2);
+    }
+    if (u >= -19 && u < -15 && Math.abs(v) <= 1.6) return brass(v);
+    return null;
+  }
+  if (kind === 3) {
+    // A CURVED NEEDLE, threaded: a half-round of steel from its eye to its point (its point leading), the thread trailing from its eye
+    const cu = 0;
+    const cv = 6;
+    const R = 13;
+    const d = Math.hypot(u - cu, v - cv);
+    const ang = Math.atan2(v - cv, u - cu);
+    if (ang <= 0 && Math.abs(d - R) <= 1.1 - 0.7 * Math.max(0, (u - 8) / 6)) {
+      if (u > 12.5 && v > 5) return null;
+      return steel(u > 9 ? 1 : 0, d < R ? -1 : 0.3);
+    }
+    // (its eye: a hole at the back end)
+    if (u <= -11.5 && u >= -14.5 && Math.abs(v - 5.5) <= 1.6 && !(Math.abs(u + 13) < 0.6 && Math.abs(v - 5.5) < 0.7)) return steel(0, 0);
+    // (the thread, the enemy's deep pink, curling back from the eye)
+    const tv = 6 + 2.2 * Math.sin((u + 13) * 0.55);
+    if (u < -13 && u >= -19 && Math.abs(v - tv) <= 0.6) return { c: FLAME[1], blade: false };
+    return null;
+  }
+  // AN AMPUTATION KNIFE: an ebony handle, a brass guard, a long straight blade swelling a little and coming to a point
+  if (u >= -19 && u < -6 && Math.abs(v) <= 2) return ebony(v / 2);
+  if (u >= -6 && u < -4 && Math.abs(v) <= 3.4) return brass(v);
+  if (u >= -4 && u <= 19) {
+    const q = (u + 4) / 23;
+    const w = 2.4 * Math.sin(Math.PI * Math.min(1, 0.5 + q * 0.5)) ** 0.6 + 0.2;
+    if (v >= -w * 0.6 && v <= w) return steel(w - v < 0.8 ? 1 : 0, v / Math.max(0.5, w) - 0.2);
+  }
+  return null;
+}
+/** One instrument laid on the picture: its middle at (X, Y), its point the way (dx, dy); its glint at `glint` along it (or none). */
+export function layTool(p: Px, kind: number, X: number, Y: number, dx: number, dy: number, glint = -99, scale = 1): void {
+  const L = Math.hypot(dx, dy) || 1;
+  const ux = dx / L;
+  const uy = dy / L;
+  const R = Math.ceil((TOOL_LONG / 2 + 8) * scale);
+  const X0 = Math.round(X);
+  const Y0 = Math.round(Y);
+  const W = 2 * R + 1;
+  const got: (string | null)[] = new Array(W * W).fill(null);
+  const isBlade: boolean[] = new Array(W * W).fill(false);
+  for (let j = -R; j <= R; j++) {
+    for (let i = -R; i <= R; i++) {
+      const x = (X0 + i + 0.5 - X) / scale;
+      const y = (Y0 + j + 0.5 - Y) / scale;
+      const u = x * ux + y * uy;
+      const v = -x * uy + y * ux;
+      // (its light side up the picture: across it flipped where its way runs right to left)
+      const t = toolAt(kind, u, ux >= 0 ? v : -v);
+      if (!t) continue;
+      let c = t.c;
+      if (t.blade && Math.abs(u - glint) < 1.6) c = Math.abs(u - glint) < 0.6 ? FLAME[4] : (Math.round(u) & 1) === 0 ? FLAME[3] : FLAME[2];
+      got[(j + R) * W + (i + R)] = c;
+      isBlade[(j + R) * W + (i + R)] = t.blade;
+    }
+  }
+  // (its outline: ink round it, and on its lower side the enemy's deep pink, its edge in the dark)
+  for (let j = -R; j <= R; j++) {
+    for (let i = -R; i <= R; i++) {
+      const k = (j + R) * W + (i + R);
+      if (got[k]) continue;
+      const nb = (a: number, b: number): boolean => a >= -R && a <= R && b >= -R && b <= R && got[(b + R) * W + (a + R)] !== null;
+      if (nb(i, j - 1)) dot(p, X0 + i, Y0 + j, FLAME[0]);
+      else if (nb(i - 1, j) || nb(i + 1, j) || nb(i, j + 1)) dot(p, X0 + i, Y0 + j, ST[0]);
+    }
+  }
+  for (let j = -R; j <= R; j++) for (let i = -R; i <= R; i++) {
+    const c = got[(j + R) * W + (i + R)];
+    if (c) dot(p, X0 + i, Y0 + j, c);
+  }
+  void isBlade;
+}
+/** Where the instruments are, `t` seconds into his operation, round the spotlight at (x, y): each one's kind, its floor point (tiles), its middle on the picture, the way its point faces there, and its smear (the picture points it came by, for the two frames of the close and the one after). `coat`: where on the picture they come out of him (and go back), and his floor point. */
+export interface ToolNow {
+  kind: number;
+  floor: Pt;
+  P: Pt;
+  dir: Pt;
+  glint: number;
+  smear: Pt[] | null;
+}
+export function toolsAt(at: At, x: number, y: number, t: number, coat: Pt, coatFloor: Pt): ToolNow[] {
+  const O = OPERATION;
+  const out: ToolNow[] = [];
+  if (t < O.fly[0] || t >= O.home) return out;
+  const R0 = FIELD.r + O.out;
+  const mid = at(x, y, O.high);
+  const fr = Math.floor(t * 30 + 1e-6);
+  for (let i = 0; i < O.count; i++) {
+    const kind = i % TOOL_KINDS.length;
+    const a = (i / O.count) * Math.PI * 2 + 0.26;
+    const ca = Math.cos(a);
+    const sa = Math.sin(a);
+    const ringAt = (r: number, z: number): { P: Pt; floor: Pt } => ({ P: at(x + ca * r, y + sa * r, z), floor: [x + ca * r, y + sa * r] });
+    const inward = (P: Pt, toward: Pt = mid): Pt => [toward[0] - P[0], toward[1] - P[1]];
+    const glint = -19 + ((t * 46 + i * 9.3) % 58);
+    const start = O.fly[0] + i * 0.012;
+    // (flung out of his coat, spinning, over in an arc to its place)
+    if (t < start) continue;
+    if (t < O.fly[1]) {
+      const u = smooth((t - start) / (O.fly[1] - start));
+      const end = ringAt(R0, O.high);
+      const P: Pt = [coat[0] + (end.P[0] - coat[0]) * u, coat[1] + (end.P[1] - coat[1]) * u - 60 * Math.sin(Math.PI * u)];
+      const spin = (1 - u) * Math.PI * 5 * (i % 2 ? 1 : -1);
+      const d0 = inward(end.P);
+      const ang = Math.atan2(d0[1], d0[0]) + spin;
+      out.push({ kind, floor: [coatFloor[0] + (end.floor[0] - coatFloor[0]) * u, coatFloor[1] + (end.floor[1] - coatFloor[1]) * u], P, dir: [Math.cos(ang), Math.sin(ang)], glint: -99, smear: null });
+      continue;
+    }
+    // HELD round the edge of the light, trembling, glinting; drawn back before the strike
+    if (t <= OP_STRIKE[0] + 1e-6) {
+      const back = O.back * smooth((t - O.draw) / (OP_STRIKE[0] - O.draw));
+      const r = ringAt(R0 + back, O.high);
+      const shake = 0.6 + 1.6 * clamp01((t - O.fly[1]) / (OP_STRIKE[0] - O.fly[1]));
+      const P: Pt = [r.P[0] + Math.round((hash(i, fr, 7961) - 0.5) * 2 * shake), r.P[1] + Math.round((hash(i, fr, 7963) - 0.5) * 2 * shake)];
+      out.push({ kind, floor: r.floor, P, dir: inward(r.P), glint, smear: null });
+      continue;
+    }
+    // THE CLOSE: in two frames from all round to the middle, smeared (and the frame after it)
+    const from = ringAt(R0 + O.back, O.high).P;
+    if (t <= OP_HIT + 1e-6) {
+      const u = clamp01((t - OP_STRIKE[0]) / (OP_HIT - OP_STRIKE[0]));
+      const r = ringAt(R0 + O.back + (O.meet - R0 - O.back) * u, O.high * (1 - 0.25 * u));
+      out.push({ kind, floor: r.floor, P: r.P, dir: inward(from), glint: 0, smear: [from, r.P] });
+      continue;
+    }
+    // (slammed point-down into the boards round the middle, leaning out, quivering)
+    const s = t - OP_HIT;
+    const tip = ringAt(O.sink, 0);
+    const handle = ringAt(O.sink + 0.4, 40).P;
+    const lean0 = Math.atan2(tip.P[1] - handle[1], tip.P[0] - handle[0]);
+    const lean = lean0 + 0.2 * Math.sin(s * 44 + i) * Math.exp(-s * 3.5);
+    const dirS: Pt = [Math.cos(lean), Math.sin(lean)];
+    const stuckMid: Pt = [tip.P[0] - dirS[0] * TOOL_LONG * O.size * 0.4, tip.P[1] - dirS[1] * TOOL_LONG * O.size * 0.4];
+    const met = ringAt(O.meet, O.high * 0.75).P;
+    if (t < O.pull) {
+      const u = smooth(s / O.stuck);
+      const P: Pt = [met[0] + (stuckMid[0] - met[0]) * u, met[1] + (stuckMid[1] - met[1]) * u];
+      const d0 = inward(from, met);
+      const n0 = Math.hypot(d0[0], d0[1]) || 1;
+      const dir: Pt = [(d0[0] / n0) * (1 - u) + dirS[0] * u, (d0[1] / n0) * (1 - u) + dirS[1] * u];
+      out.push({ kind, floor: tip.floor, P, dir, glint: s < 0.3 ? glint : -99, smear: t <= OP_HIT + 1 / 30 + 1e-6 ? [from, met] : null });
+      continue;
+    }
+    // (plucked out and flown back into his coat, spinning)
+    const u = smooth((t - O.pull) / (O.home - O.pull));
+    if (u > 0.95) continue;
+    const P: Pt = [stuckMid[0] + (coat[0] - stuckMid[0]) * u, stuckMid[1] + (coat[1] - stuckMid[1]) * u - 50 * Math.sin(Math.PI * u)];
+    const ang = lean + u * Math.PI * 4 * (i % 2 ? 1 : -1);
+    out.push({ kind, floor: [tip.floor[0] + (coatFloor[0] - tip.floor[0]) * u, tip.floor[1] + (coatFloor[1] - tip.floor[1]) * u], P, dir: [Math.cos(ang), Math.sin(ang)], glint: -99, smear: null });
+  }
+  return out;
+}
+/**
+ * THE INSTRUMENTS laid on the picture, `t` seconds into his operation, round the spotlight at (x, y) (those whose floor point `keep`
+ * keeps, by its picture row: so that the scene lays them before and after what stands); their smears through the close (lines of his
+ * pink and gold and the light's white from where each was to where it is); the burst where they meet.
+ */
+export function paintTools(p: Px, at: At, x: number, y: number, t: number, coat: Pt, coatFloor: Pt, keep: Keep = () => true): void {
+  const tools = toolsAt(at, x, y, t, coat, coatFloor);
+  for (const tl of tools) {
+    if (!keep(at(tl.floor[0], tl.floor[1])[1])) continue;
+    if (tl.smear) {
+      const [a, b] = tl.smear;
+      const thin = t > OP_HIT + 1e-6;
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const nx = -(b[1] - a[1]) / Math.max(1e-6, L);
+      const ny = (b[0] - a[0]) / Math.max(1e-6, L);
+      for (let d = 0; d <= L; d += 1) {
+        const u = d / Math.max(1e-6, L);
+        if (thin && u < 0.45) continue;
+        for (const [o, c] of (thin ? [[0, LIGHT.pale]] : [[-2, FLAME[2]], [-1, FLAME[3]], [0, LIGHT.white], [1, FLAME[3]], [2, FLAME[1]]]) as [number, string][]) {
+          if (Math.abs(o) === 2 && hash(Math.round(d), tools.indexOf(tl), 7965) > 0.5 + 0.5 * u) continue;
+          dot(p, a[0] + (b[0] - a[0]) * u + nx * o, a[1] + (b[1] - a[1]) * u + ny * o, c);
+        }
+      }
+    }
+    layTool(p, tl.kind, tl.P[0], tl.P[1], tl.dir[0], tl.dir[1], tl.glint, OPERATION.size);
+    // (a glint at its point now and then as it is held: a four-pointed star of his gold)
+    if (tl.glint > -99 && t < OP_STRIKE[0] && hash(tools.indexOf(tl), Math.floor(t * 10), 7967) < 0.22) {
+      const L = Math.hypot(tl.dir[0], tl.dir[1]) || 1;
+      const X = tl.P[0] + (tl.dir[0] / L) * 19 * OPERATION.size;
+      const Y = tl.P[1] + (tl.dir[1] / L) * 19 * OPERATION.size;
+      for (let k = -3; k <= 3; k++) {
+        dot(p, X + k, Y, Math.abs(k) < 2 ? FLAME[4] : FLAME[3]);
+        dot(p, X, Y + k, Math.abs(k) < 2 ? FLAME[4] : FLAME[2]);
+      }
+    }
+  }
+  // THE STRIKE: where they meet, a burst of white, his gold and his pink flung out (its two frames and two after)
+  const s = t - OP_HIT;
+  if (s >= -1e-6 && s < 0.14) {
+    const [X, Y] = at(x, y, OPERATION.high * 0.8);
+    const k = 1 - s / 0.14;
+    for (let i = 0; i < 48; i++) {
+      const a = hash(i, 1, 7969) * Math.PI * 2;
+      const r = (6 + 46 * hash(i, 2, 7969)) * (0.4 + 0.6 * (1 - k));
+      if (hash(i, 3, 7969) > k + 0.2) continue;
+      dot(p, X + Math.cos(a) * r, Y + Math.sin(a) * r * 0.7, i % 3 === 0 ? FLAME[2] : i % 3 === 1 ? FLAME[3] : LIGHT.white, 2, 2);
+    }
+    if (s < 0.07) for (let j = -7; j <= 7; j++) for (let i2 = -9; i2 <= 9; i2++) if ((i2 / 9) ** 2 + (j / 7) ** 2 < 1) dot(p, X + i2, Y + j, (i2 / 9) ** 2 + (j / 7) ** 2 < 0.4 ? LIGHT.white : FLAME[4]);
   }
 }
 

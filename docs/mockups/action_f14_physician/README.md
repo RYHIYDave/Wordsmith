@@ -189,3 +189,66 @@ Made by: `tools/physician_action_film.ts` (the film), `tools/physician_action_sh
   he looks before giving up (8 s suggested); how hard the operation hits (one huge strike: a heavy blow, 2.5 tiles round).
 - ROUNDS' RINGS now do something (the old did nothing): each hushes whoever it passes, out to 6.5 tiles; or harm too.
 - THE DRAW reaches further (a needle of light down the lane to 3.6 tiles): a word is taken from further away than before.
+
+## 2 Nov 2026: THE MARK FILLS FASTER, AND A BIGGER OPERATION (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds.** His rap, draw, rounds, the Diagnosis's look and his body through the operation
+are as approved (none of his own frames changes: only what he sends out); the pillars stay as drawn (his “Yes, pillars (Recommended)”).
+
+His words, 2 Nov 2026, going through the night's films with the art chat, asked about him: “It needs a little more excitement, and the
+meter needs to fill faster”. Told him the mark fills in about 1.4 s (was 2.2); it drains as before. For the excitement, his pick:
+“Bigger operation” (offered as: when the mark fills, the room goes dark but a spotlight on you, and his instruments close in round
+you).
+
+**THE MARK** fills in **1.4 s** standing in the light (`BEAM.fill`; was 2.2, `BEAM_FILL_WAS`); drains in 1.6 s hid (as before).
+
+**THE OPERATION, BIGGER** (`OPERATION`, `ESCAPE`, `opDark`, `opLight`, `litRGB`, `paintSpotEdge`, `paintSpotCone`, `toolsAt`,
+`paintTools`, `layTool`, `TOOL_KINDS`; art/physician_action_fx.ts). The moment the mark is full THE THEATRE PLUNGES DARK (three
+frames: sudden, as the Queen's Eclipse darkens but all at once; what glows keeps its glow: his eyes, the lens, the enemy's pink), and
+ONE HARD SURGICAL SPOTLIGHT falls on where you stood, from his lens flung up over his head: a cone of its white down through the dark,
+the field lit hard, a crisp white edge round it, the surgeon's marks (the ring and the cross) on it, everything else dark. HIS
+INSTRUMENTS are flung out of his coat, spinning, over in an arc to the edge of the light, and ring you there, a dozen of them, each a
+real one drawn crisp in steel, ebony and brass (scalpels, bone saws, forceps, curved needles threaded, amputation knives), pointing in
+at you, trembling ever harder, glints of his pink and gold running along their blades, their dark edge the enemy's deep pink: HELD
+(the warning: GET OUT OF THE LIGHT). Drawn back a moment; then in TWO FRAMES they close in on the middle from all round, smeared (lines
+of his pink, gold and the light's white from where each was): THE ONE HUGE STRIKE (the field blinding white, the cuts burnt in, a burst
+where they meet, the game's shake 8); slammed point-down into the boards round the middle, quivering; plucked out and flown back into
+his coat as the fan in his fist shuts; the light back. Never cyan.
+
+| (seconds from when the mark came full: his `operate` clip's time) | |
+|---|---|
+| THE DARK (`OPERATION.fall`, `low`, `rise`; `opDark(t)`) | falls **0.033–0.133 s** (three frames) to **0.2** of the light; held dark through the strike; the light back **1.85–2.2 s** |
+| THE SPOTLIGHT (`FIELD.r`; `opLight`) | **2.5 tiles round** where you stood as the mark came full (the field, as before), lit hard (`litRGB` over 1), its edge a thin band a step down, the rest dark |
+| HOW LONG TO GET OUT (`ESCAPE`) | **1.2 s** from the dark falling to the close (a hero at the game's 4.6 tiles a second is out from the middle in 0.55 s) |
+| THE RING (`OPERATION.count`, `out`, `high`, `size`, `fly`) | **12** instruments, five kinds, flung out **0.1–0.45 s**, each at **2.62 tiles** from the middle (the light's edge and 0.12), **30** picture pixels up, **51** long (1.35 times their 38) |
+| HELD (`OPERATION.draw`, `back`) | **0.88 s** round you (0.45 to 1.333 s), trembling harder; drawn back **0.3 tiles** from 1.0 s |
+| THE CLOSE (`OP_STRIKE`, `OPERATION.meet`) | **two frames**, 40 to 42 (1.333 to 1.4 s), smeared, to **0.3 tiles** from the middle: `OP_HIT`, **1.4 s**, struck: whoever is within `FIELD.r` (`fieldStrikes`, as before) |
+| AFTER (`OPERATION.stuck`, `sink`, `pull`, `home`) | point-down in the boards **0.62 tiles** round the middle by 0.1 s after, quivering; plucked out at **2.0 s** (frame 60), back in his coat by **2.333 s** (frame 70) |
+| his body | as approved: the lens flung up flaring, the fan in his fist, his arm hauled back, HELD f12–f40, slashed down f40–f42 |
+
+**Bringing it in** (the main chat's), in place of step 3 above's look: full, hand over to `operate` as before, the field locked where the
+hero stands; then
+- THE DARK: a dark over the whole room at `opDark(t)` (to `OPERATION.low` of its light, the glows kept), with the spotlight's hole
+  `FIELD.r` round the field: as the Queen's Eclipse darkens, its pools one fixed spotlight here (`opLight(dx, dy, t)` gives how lit any
+  floor point is; `litRGB` a pixel at it). Things standing in the dark are darkened by their own floor point (the scene does exactly
+  this: src/dev/physician_action_scene.ts `diagScene`, `litLaid`).
+- THE LIGHT: `paintSpotEdge` on the floor, `paintSpotCone` from the lens (`lensAt('operate', t)`) over what stands.
+- THE INSTRUMENTS: `paintTools(p, at, x, y, t, coat, coatFloor, keep)`, twice (those behind the hero before what stands, those before
+  him after: `keep` by the picture row of each one's floor point); `toolsAt` says where each is. At `OP_HIT` strike as before.
+
+**The checks** (`tests/physician_action.test.ts`, now 7 tests, passing): tests 1 to 6 as before (his frames hash as before:
+`a760e8052487ba6c`, his moves drawn `0b3243670d124c61`; the whole bosses' review of every frame of every move, both ways round, every
+handing over: nothing found; the mark full in `BEAM.fill`); **7 (new)**: the mark fills in 1.4 s; the dark sudden, held through the
+strike, the light back after; lit hard in the spotlight, dark outside it; out of it in 1.2 s; a dozen instruments of every kind at the
+light's edge pointing in; closed in on the middle in two frames, smeared then only; out of his coat after the dark, back in it by the
+end; held 0.88 s; and EVERY FRAME of the operation (1/30 s apart, 0 to 2.37 s), the instruments, the spotlight's edge and its cone:
+crisp, no cyan, nothing cut off, painted with his pink while they are out; nothing after.
+
+The scenes: src/dev/physician_action_scene.ts (`diagScene`: the dark, each figure lit by its floor point; `diagClose(view, caught)`:
+the knight runs out of the light, or is caught in it); the whole theatre's path retimed for the faster mark (he ducks behind the bed
+as it nears full, behind a pillar as it drains, caught in the open: full 5.43 s into the Diagnosis; the close ones 4.6 s).
+
+Pictures: docs/mockups/action_fixes/pictures/action_fixes3.mp4 and action_fixes3_sheet.png.
+
+For him to decide (the art chat's to ask): how dark (0.2 of the light; the theatre's walls and beds still faintly seen); the
+instruments' size (51 pixels, bigger than life, to read at phone size); whether a hero caught is also thrown or bleeds (the rules').

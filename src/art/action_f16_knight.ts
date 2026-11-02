@@ -18,6 +18,12 @@
 // again. It stands (`bannerPainted`), its gold glow on the floor round it to its reach, the cloth stirring, until it is cut down: struck,
 // it shudders; cut, its staff splinters half way up and the top falls, and it is gone. One banner a knight: after it he is the game's own
 // knight with the cleave (his look without it, `CLEAVE_KNIGHT`).
+//
+// 2 Nov 2026 (art/action-fixes), his words, 08:01: “The banner buff AOE probably needs to be much bigger or it won’t affect much”; asked
+// how big (it was 3.5 tiles), his pick: “About twice, 7 tiles (Recommended)” (offered as: a wide gold ring on the floor; most of a fight
+// happens inside it, but you can still pull enemies out). So ITS REACH IS 7 TILES ROUND (`BANNER.reach`), drawn to match on the floor
+// (`rallyPainted`): a ring of the enemy's gold at its edge, plain to read, and a faint glow within (a sparse twinkle of gold and motes
+// drifting up), not a wash over the floor.
 
 import { Px } from '../engine/px';
 import type { Light } from '../engine/px';
@@ -99,13 +105,13 @@ export function backBanner(s: Skeleton, k = 1): { foot: V3; way: V3; across: V3 
  *   THE PLANT TWO FRAMES, smeared: driven straight down into the floor before him to his left (frame 41, 1.367 s: the clip's `hit`): the
  *             SHOCKWAVE, a hero within `wave` of it struck and knocked `knock`
  *   wind-down  his fist on it, driven on, to 1.75 s; let go; his hand on his sword's grip again by 2.15 s; at rest by 2.6 s
- *   IT STANDS  `at` before him (tiles), until cut down: every enemy within `reach` of it hits harder (the rules' how much); `life` blows
- *             of the hero's cut it down (the rules')
+ *   IT STANDS  `at` before him (tiles), until cut down: every enemy within `reach` of it (7 tiles round, his pick of 2 Nov; it was 3.5)
+ *             hits harder (the rules' how much); `life` blows of the hero's cut it down (the rules')
  */
 export const BANNER_HIT = f(41);
 export const BANNER_STRIKE = [f(39), f(41)] as const;
 export const BANNER_SMEARED = (t: number): boolean => t > BANNER_STRIKE[0] + 1e-6 && t <= BANNER_STRIKE[1] + FR + 1e-6;
-export const BANNER = { grab: 0.42, raised: 0.9, hit: BANNER_HIT, strike: BANNER_STRIKE, let: 1.75, long: 2.6, wave: 2.2, knock: 0.6, reach: 3.5, sink: 8, near: 1.5, far: 6 } as const;
+export const BANNER = { grab: 0.42, raised: 0.9, hit: BANNER_HIT, strike: BANNER_STRIKE, let: 1.75, long: 2.6, wave: 2.2, knock: 0.6, reach: 7, sink: 8, near: 1.5, far: 6 } as const;
 const BANNER_NAME = 'The rallying banner';
 /** Where it is planted (first pass's lengths, before him and to his left), and where his fist is on it then. */
 const SPOT0: [number, number] = [27, 19];
@@ -381,8 +387,8 @@ export function bannerPainted(t: number, view: PaintView, struck = -1, cut = -1)
   return { px, lights };
 }
 
-/** The floor's canvas (its anchor where the banner stands). */
-export const RALLY_CANVAS = { w: 640, h: 360, ax: 320, ay: 180 } as const;
+/** The floor's canvas (its anchor where the banner stands): room for its reach, 7 tiles round. */
+export const RALLY_CANVAS = { w: 700, h: 372, ax: 350, ay: 186 } as const;
 /**
  * WHAT IS ON THE FLOOR ROUND IT, `t` seconds after it is planted:
  *   floor  the SHOCKWAVE: a ring of force and dust going out to `BANNER.wave` in 0.2 s, the floor cracked under its foot; then THE GOLD
@@ -438,31 +444,64 @@ export function rallyPainted(t: number, layer: 'floor' | 'air', cut = -1): { px:
         }
       }
     }
-    // the gold glow of its reach
+    // THE GOLD OF ITS REACH (7 tiles round, 2 Nov): a ring of the enemy's gold at its edge, plain to read; a faint glow within
     const on = clamp01((t - 0.15) / 0.35) * (cut < 0 ? 1 : 1 - clamp01(cut / 0.5));
     if (on > 0) {
       const r = BANNER.reach;
-      const n = Math.round(r * 130);
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * TAU + t * 0.25;
-        const dash = i % 8;
-        if (dash > 4 || hash(i, 7, 1957) > on) continue;
-        const [x, y] = at(Math.cos(a) * r, Math.sin(a) * r);
-        dot2(x, y, dash === 2 ? RALLY_GOLD[3] : RALLY_GOLD[2]);
-        dot2(x, y + 1, RALLY_GOLD[0]);
-        if (dash === 2) {
-          const [xi, yi] = at(Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95);
-          dot2(xi, yi, RALLY_GOLD[1]);
+      // (the glow within: a sparse twinkle of gold over the floor, thinning out from the banner to the ring, so that the floor shows)
+      const tw = Math.floor(t * 3);
+      for (let Y = 2; Y < C.h - 2; Y++) {
+        for (let X = 2; X < C.w - 2; X += 2) {
+          const a = (X - C.ax) / 32;
+          const b = (Y - C.ay) / 16;
+          const d = Math.hypot((a + b) / 2, (b - a) / 2);
+          if (d > r - 0.25) continue;
+          const g = hash(X >> 1, Y, 1961 + (hash(X >> 3, Y >> 2, 1963) < 0.5 ? tw : tw + 7));
+          if (g > (0.035 - 0.015 * (d / r)) * on) continue;
+          under(X, Y, g < 0.006 ? RALLY_GOLD[2] : RALLY_GOLD[1]);
         }
       }
-      // (motes of gold drifting over its reach: the rally)
-      for (let i = 0; i < 70; i++) {
+      // (the ring at its edge: a thick dashed band of gold turning slowly, its dashes bright, a fine line inside it)
+      const n = Math.round(r * 150);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU + t * 0.12;
+        const dash = i % 14;
+        if (hash(i, 7, 1957) > on) continue;
+        const [xi, yi] = at(Math.cos(a) * (r - 0.16), Math.sin(a) * (r - 0.16));
+        if (i % 3 === 0) dot2(xi, yi, RALLY_GOLD[1]);
+        if (dash > 9) continue;
+        const [x, y] = at(Math.cos(a) * r, Math.sin(a) * r);
+        const hi = dash === 3 || dash === 4;
+        dot2(x, y - 1, hi ? RALLY_GOLD[3] : RALLY_GOLD[2]);
+        dot2(x + 1, y - 1, hi ? RALLY_GOLD[3] : RALLY_GOLD[2]);
+        dot2(x, y, RALLY_GOLD[2]);
+        dot2(x + 1, y, RALLY_GOLD[2]);
+        dot2(x, y + 1, RALLY_GOLD[1]);
+        dot2(x + 1, y + 1, RALLY_GOLD[1]);
+        dot2(x, y + 2, RALLY_GOLD[0]);
+        dot2(x + 1, y + 2, RALLY_GOLD[0]);
+      }
+      // (twelve chevrons pointing in round the ring: the banner's reach, read from anywhere on it)
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * TAU + t * 0.12;
+        for (let j = -10; j <= 10; j++) {
+          const side = Math.abs(j) / 10;
+          const rr = r - 0.32 - 0.3 * (1 - side);
+          const [x, y] = at(Math.cos(a + j * 0.007) * rr, Math.sin(a + j * 0.007) * rr);
+          if (hash(k, j, 1965) > on + 0.2) continue;
+          dot2(x, y - 1, RALLY_GOLD[3]);
+          dot2(x, y, RALLY_GOLD[2]);
+          dot2(x, y + 1, RALLY_GOLD[0]);
+        }
+      }
+      // (motes of gold drifting up over its reach: the rally)
+      for (let i = 0; i < 220; i++) {
         const a = hash(i, 8, 1957) * TAU;
         const d = r * Math.sqrt(hash(i, 9, 1957));
         const life = (t * 0.6 + hash(i, 10, 1957)) % 1;
         if (life > 0.7 || hash(i, 11, 1957) > on) continue;
         const [x, y] = at(Math.cos(a) * d, Math.sin(a) * d);
-        under(x, y, life < 0.3 ? RALLY_GOLD[2] : RALLY_GOLD[1]);
+        under(x, y - life * 6, life < 0.3 ? RALLY_GOLD[2] : RALLY_GOLD[1]);
       }
       lights.push({ x: C.ax, y: C.ay, r: 150, color: RALLY_GOLD[2], a: 0.18 * on });
     }

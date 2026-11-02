@@ -311,3 +311,52 @@ the pull-out in the sword set); test 2 every frame of the new moves and the guar
 review of the lunge (its one blow, ending on where the game hands it back) and of the javelin, the sword set and the pull-out, the sword
 guard's throw (each set handing over to the next: `after`): nothing found; test 4 the javelin flying and stuck, both guards', both ways:
 crisp, no cyan, not cut off; test 5 the numbers. The game's frames hash as before.
+
+## 2 Nov 2026 (third round): THE DANCERS' OLD SPIN KEPT, AND THE BANNER'S REACH TWICE AS BIG (branch `art/action-fixes`)
+
+**Where this and the text above differ, this holds.** Going through the night's films with the art chat, 2 Nov 2026:
+
+- THE MASKED DANCERS: asked what a dancer whose partner is gone does, his yes to: a dancer whose partner is gone just spins into you as
+  before.
+- THE KING'S KNIGHT'S BANNER: his words, 08:01: “The banner buff AOE probably needs to be much bigger or it won’t affect much”; asked how
+  big (it was 3.5 tiles), his pick: “About twice, 7 tiles (Recommended)” (offered as: a wide gold ring on the floor; most of a fight
+  happens inside it, but you can still pull enemies out).
+
+### THE DANCERS: THE OLD SPIN KEPT FOR A DANCER ALONE (`DANCER_THROW`; art/action_f16_dancer.ts)
+
+No new art. The set with `DANCER_THROW` on (`makeThrowArt(THROW_DANCERS[who][room])`) now holds THE GAME'S OWN WHIRLING SPIN as well, by
+its own name, **`clips.moves.spin`**: the game's `attack` clip, frame for frame (its 1.8 s, its hit at 0.8 s, its lunge 1.25 and its
+area 1.5 round where it lands: `DN_SPIN`, `SPIN`), in every room's lady and gentleman, from in front and from behind. The throw stays
+the set's `attack`.
+
+**How the main chat chooses** (game/act1_rules/dancer.ts): when a dancer's partner (the other of its pair: the lady's gentleman, the
+gentleman's lady) is alive and near enough to take the waltz's hold (a suggestion: within 3 tiles), the pair make THE THROW together
+(`attack`, as above); when its partner is gone (dead, or none in the room), it plays `moves.spin` with the spin's act as the game has it
+now (its numbers, its strike, its cooldown: unchanged).
+
+### THE BANNER'S REACH: 7 TILES (`KNIGHT_BANNER`; art/action_f16_knight.ts `BANNER.reach`, `inRally`, `rallyPainted`, `RALLY_CANVAS`)
+
+| | |
+|---|---|
+| ITS REACH (`BANNER.reach`; `inRally`) | while it stands, every enemy within **7 tiles** of it hits harder (was 3.5; how much, the rules') |
+| drawn on the floor (`rallyPainted(t, 'floor')`) | **a ring of the enemy's gold at its edge**, 7 tiles round: a thick dashed band (3 pixels and its dark under it) turning slowly, its dashes bright, a fine line just inside it, **twelve chevrons** pointing in round it; within it **a faint glow**: a sparse twinkle of gold over the floor (about 1.4 in 100 of its pixels, thinning toward the ring) and motes of gold drifting up, the floor plain to see under it; the light round the banner as before |
+| its floor picture (`RALLY_CANVAS`) | **700 × 372**, its anchor (350, 186) where it stands (was 640 × 360) |
+| the rest | as approved: the plant, the shockwave 2.2 round, the banner standing and cut down |
+
+For the rules: `inRally(x, y)` as before (now 7 round); the floor picture at its new size.
+
+### Checks
+
+`tests/action_f16.test.ts` (5 tests, passing): test 1 adds THE OLD SPIN KEPT: in every room's lady and gentleman, both ways round, the
+set's `moves.spin` the game's `attack` (as many frames, the same hit and speed), and frame for frame the same pixels (the violet lady,
+the blue gentleman); test 3 reviews the kept spin too, in the throw set, as the game's own review reviews its spin (`throwShape`, its
+strikes, smears and handings over): nothing found; test 5 the banner's reach exactly 7 (within it, and only within: 6.9 out, 4.9 and 4.9
+across, not 7.1 or 7.2) and its gold drawn to match (the ring at 7 round, inside its picture: over 1200 pixels of it, about 4600 drawn; a faint glow
+within: between 1 and 6 in 100 of the floor's pixels inside it, about 1.4 drawn); test 4 the floor's gold every tenth of a second from
+0 to 4 s crisp, no cyan, not cut off. The
+game's frames hash as before (test 1).
+
+The scene: src/dev/action_f16_scene.ts `bannerWideScene` (from higher up, the game's own pixels: the king's knight plants it among three
+of his fellows; the hero at its edge steps back out of it and one of them follows him out).
+
+Pictures: docs/mockups/action_fixes/pictures/action_fixes3.mp4 and action_fixes3_sheet.png.

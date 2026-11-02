@@ -8,6 +8,10 @@
 // Under his Movement 9 (24 Oct: “Like the wind up and wind down are big but the actual punch is lightning quick”; 28 Oct: “And bigger
 // AOE to compensate for the extra time the player gets to evade”). Small: one attack (his rule of 9 Oct): a pair's, each with a part.
 //
+// 2 Nov 2026 (art/action-fixes), asked what a dancer whose partner is gone does, his yes to: it just spins into you as before. So the set
+// with DANCER_THROW on holds THE OLD SPIN too (`clips.moves.spin`: the game's own whirling spin, frame for frame), for the rules to play
+// when a dancer is alone; the throw is the pair's.
+//
 // THE PAIR'S PARTS (each drawn at its own spot, played together; the lady at the gentleman's right, both facing you as they begin):
 //   HIS (`THROW_GENT`): he turns to her and takes both her hands, and the pair WHIRL ROUND, he turning on the spot on the balls of his
 //     feet, she swung round him off her feet at the full length of their arms, faster, a whole turn, HELD at full speed (THE LANE marked
@@ -377,6 +381,9 @@ function throwMob(who: DancerWho, room: RoomName): Mob {
   Object.assign(mob, {
     id: `${base.id}-throw`,
     attack,
+    // (2 Nov, his yes: a dancer whose partner is gone just spins into you as before: THE GAME'S OWN WHIRLING SPIN kept in the set by
+    // its own name, `moves.spin`, frame for frame the game's, for the rules to play when a dancer is alone)
+    more: { ...(base.more ?? {}), spin: base.attack },
     hit: THROW_HIT,
     warn: REL - THROW.fast,
     canvas: DANCER_CANVAS,

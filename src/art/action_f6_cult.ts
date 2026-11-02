@@ -19,6 +19,12 @@
 // in TWO FRAMES it brings the book down at you, smeared, and the lightning leaps from its pages to the ring; whoever it strikes, it
 // jumps from to the nearest within 2.5 tiles, and on from that one to another. White at its heart, the cult's violet and its pink:
 // never the friend's cyan.
+//
+// 2 Nov 2026 (art/action-fixes), his words. Asked whom it may jump to: “I don’t really want the rangers animals to have HP bars so it
+// doesn’t really matter to jump to them”; asked whether it should jump on to monsters near you and hurt them, his pick: “No jumps”
+// (offered as: it just strikes you, one bolt with a crackle round you); then, 07:56: “If we have multiplayer, the lightningwould jump
+// to other players”. So THE JUMPS ARE TO OTHER HEROES (players) ONLY, never to companions or monsters: with one hero, one bolt down
+// onto him (its ring marked first, as before) and A CRACKLE OF STATIC round him a moment (`staticPainted`, `CHAIN.crackle`).
 
 import type { Light } from '../engine/px';
 import { Px } from '../engine/px';
@@ -301,12 +307,14 @@ export const CAST_SMEARED = (t: number): boolean => t > CAST_STRIKE[0] + 1e-6 &&
 /**
  * THE LIGHTNING (seconds; tiles):
  *   r       a hero within this many tiles of the ring's middle as it strikes is struck (the bolt's old reach: 0.4, flying)
- *   jump    from whoever it strikes it jumps to the nearest other within this many tiles, `jumps` times, `every` seconds apart
- *           (each one jumped to is struck, by `share` of the blow)
+ *   jump    (2 Nov, his word) from the hero it strikes it jumps to the nearest OTHER HERO (another player) within this many tiles,
+ *           `jumps` times, `every` seconds apart (each one jumped to is struck, by `share` of the blow): NEVER to a companion (the
+ *           ranger's animals) or a monster. With one hero there is no jump: one bolt.
+ *   crackle the static crackling round each hero it strikes, this long, dying away (`staticPainted`)
  *   seen    each bolt crackles this long, fading
  *   near, far  cast at a hero from 2 to 7 tiles off (the bolt's: up to 7)
  */
-export const CHAIN = { hit: CAST_HIT, strike: CAST_STRIKE, aim: 0.4, r: 1.0, jump: 2.5, jumps: 2, every: 0.1, share: 0.6, seen: 0.22, near: 2, far: 7, long: 1.8 } as const;
+export const CHAIN = { hit: CAST_HIT, strike: CAST_STRIKE, aim: 0.4, r: 1.0, jump: 2.5, jumps: 2, every: 0.1, share: 0.6, crackle: 0.8, seen: 0.22, near: 2, far: 7, long: 1.8 } as const;
 const CAST_NAME = 'The chanter heaves its book up, crackling, and casts chain lightning';
 const CR = CHANTER_REST;
 function castKeys(): Key3[] {
@@ -510,14 +518,18 @@ export function chainBoltPainted(dx: number, dy: number, z0: number, z1: number,
   const lights = layChainBolt(px, x0 - minX, y0 - minY, x1 - minX, y1 - minY, t, seed);
   return { px, lights, ax: -minX, ay: -minY };
 }
-/** Who the chain jumps to: from the one struck (index 0 of `who`, tiles), the nearest not yet struck within `CHAIN.jump`, `CHAIN.jumps` times. */
-export function chainOf(who: ReadonlyArray<readonly [number, number]>, first: number): number[] {
+/**
+ * Who the chain jumps to (2 Nov: OTHER HEROES ONLY): `heroes` are where the heroes (the players) stand, tiles, and nothing else (no
+ * companion, no monster: the rules pass only the heroes); from the one struck (`first`), the nearest hero not yet struck within
+ * `CHAIN.jump`, `CHAIN.jumps` times. With one hero: `[first]`, no jump.
+ */
+export function chainOf(heroes: ReadonlyArray<readonly [number, number]>, first: number): number[] {
   const out = [first];
   for (let j = 0; j < CHAIN.jumps; j++) {
-    const [x, y] = who[out[out.length - 1]];
+    const [x, y] = heroes[out[out.length - 1]];
     let best = -1;
     let bd = Infinity;
-    who.forEach(([a, b], i) => {
+    heroes.forEach(([a, b], i) => {
       if (out.includes(i)) return;
       const d = Math.hypot(a - x, b - y);
       if (d <= CHAIN.jump && d < bd) {
@@ -530,7 +542,54 @@ export function chainOf(who: ReadonlyArray<readonly [number, number]>, first: nu
   }
   return out;
 }
-/** A STAND-IN for the film (not in the game): one the chain jumps to, struck: thrown a little, a flash on it (drawn by the scene). */
-export const CHAIN_STAND_INS = 2;
+/** The static's canvas (its anchor the struck hero's floor point: his feet). */
+export const STATIC_CANVAS = { w: 96, h: 112, ax: 48, ay: 94 } as const;
+/**
+ * THE CRACKLE OF STATIC round a hero it strikes, `t` seconds after the bolt reaches him (to `CHAIN.crackle`): little jagged arcs
+ * crawling over him, a new place each frame (white at their heart, the cult's violet beside, flecks of its pink), sparks running
+ * round his feet on the floor and spitting off him, fewer and fewer as it dies. Laid OVER him (his own body's height: the knight's).
+ */
+export function staticPainted(t: number, seed = 0): { px: Px; lights: Light[] } {
+  const C = STATIC_CANVAS;
+  const px = new Px(C.w, C.h);
+  const lights: Light[] = [];
+  if (t < 0 || t > CHAIN.crackle) return { px, lights };
+  // (strong at first, dying away at the end)
+  const k = 1 - clamp01(t / CHAIN.crackle) ** 2;
+  const flick = Math.floor(t * 30 + 1e-6) * 7 + seed * 131;
+  const dot2 = pen(px);
+  // (his body: an upright oval over his feet; arcs crawl over it, and jump off it into the air round him)
+  const [mx, my, hx, hy] = [C.ax, C.ay - 30, 12, 26];
+  const arcs = Math.max(2, Math.round(2 + 5 * k));
+  for (let i = 0; i < arcs; i++) {
+    const a = hash(i, flick, 991) * TAU;
+    const d = 0.3 + 0.6 * Math.sqrt(hash(i, flick, 993));
+    const x0 = mx + Math.cos(a) * hx * d;
+    const y0 = my + Math.sin(a) * hy * d;
+    const off = i % 2 === 0;
+    const b = off ? a + (hash(i, flick, 995) - 0.5) * 0.8 : a + (hash(i, flick, 995) - 0.5) * 2.4;
+    const long = (off ? 14 : 9) + 10 * hash(i, flick, 997) * (0.5 + 0.5 * k);
+    const x1 = Math.max(5, Math.min(C.w - 6, x0 + Math.cos(b) * long));
+    const y1 = Math.max(5, Math.min(C.h - 6, y0 + Math.sin(b) * long * 1.2));
+    layBolt(px, x0, y0, x1, y1, 41 + i, flick + i, Math.max(0.5, k), k > 0.45 ? 2 : 1, off ? 1 : 0);
+  }
+  // (sparks running round his feet, and spitting off him)
+  const n = Math.round(8 + 16 * k);
+  for (let i = 0; i < n; i++) {
+    const a = hash(i, flick, 999) * TAU;
+    const [x, y] = tileAt(C.ax, C.ay, Math.cos(a) * 0.6, Math.sin(a) * 0.6);
+    dot2(x, y, i % 3 ? BOLT.pale : BOLT.pink);
+    if (i % 2 === 0) dot2(x + 1, y, BOLT.violet);
+  }
+  for (let i = 0; i < Math.round(10 * k); i++) {
+    const a = hash(i, flick, 1001) * TAU;
+    const r = 18 + 14 * hash(i, flick, 1003);
+    dot2(mx + Math.cos(a) * r, my + Math.sin(a) * r * 1.3, i % 2 ? BOLT.pink : BOLT.white);
+  }
+  lights.push({ x: mx, y: my, r: 40 + 20 * k, color: '#c060ff', a: 0.45 * k });
+  return { px, lights };
+}
+/** For the film: the other heroes (players) near the one struck that the chain jumps to (none in a game alone). */
+export const CHAIN_STAND_INS = 1;
 void paintBits;
 void stage;

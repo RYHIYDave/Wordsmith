@@ -176,3 +176,83 @@ marks and what it sends out placed through the figure's own projection, both way
 - The palace guards: the sword at the partisan guard's hip (every frame); his free left hand held up as the sword guard holds his
   shield's grip while he fights with the sword; the sword guards' javelin on their back and their scabbard (every frame), and whether
   they too should walk to their javelin and pull it out (in the pictures they fight on with the sword).
+
+---
+
+# The third round (2 Nov 2026): four more from his look at the night's films
+
+The same helper's work, on the same branch (`art/action-fixes`). Each mock-up is changed IN PLACE, in its own files, behind its own switch,
+still off; its own test and README say what changed (each README's "2 Nov" section). Nothing here is in the game until the main chat puts
+it there, on his yes. The game's own frames are unchanged (each mock-up's test checks its hashes).
+
+## His words, 2 Nov 2026 (going through the night's films with the art chat, one at a time)
+
+- THE CHANTER: asked whom the chain lightning may jump to: “I don’t really want the rangers animals to have HP bars so it doesn’t really
+  matter to jump to them”; asked whether it should jump on to monsters near you and hurt them, his pick: “No jumps” (offered as: it just
+  strikes you, one bolt with a crackle round you). Then, at 07:56: “If we have multiplayer, the lightningwould jump to other players”.
+- THE PHYSICIAN: “It needs a little more excitement, and the meter needs to fill faster”. Told him the mark fills in about 1.4 s (was
+  2.2); drain as now. For the excitement, his pick: “Bigger operation” (offered as: when the mark fills, the room goes dark but a
+  spotlight on you, and his instruments close in round you). The pillars stay as drawn (his “Yes, pillars (Recommended)”).
+- THE MASKED DANCERS: his yes to: a dancer whose partner is gone just spins into you as before.
+- THE KING'S KNIGHT'S BANNER, 08:01: “The banner buff AOE probably needs to be much bigger or it won’t affect much”; asked how big (it
+  was 3.5 tiles), his pick: “About twice, 7 tiles (Recommended)” (offered as: a wide gold ring on the floor; most of a fight happens
+  inside it, but you can still pull enemies out).
+
+## The four (seconds; tiles)
+
+9. **THE CHANTER'S LIGHTNING** (floors 6–10; docs/mockups/action_f6/README.md, `CHANTER_LIGHTNING`; art/action_f6_cult.ts `CHAIN`,
+   `chainOf`, `staticPainted`). It jumps ONLY to other heroes (players) near the one it strikes (within **2.5 tiles**, at most twice,
+   **0.1 s** apart), never to companions or monsters. Alone (as the game is now): one bolt down onto him (its ring, 1.0 round, marked
+   0.57 s before, as approved) and **a crackle of static** round him (`CHAIN.crackle`, **0.8 s**: arcs crawling over him and jumping
+   off him, sparks round his feet, strong at first, dying away). The rest of the Chanter as approved.
+10. **THE PHYSICIAN'S DIAGNOSIS** (floor 14 boss; docs/mockups/action_f14_physician/README.md, `PHYSICIAN_ACTION`;
+    art/physician_action_fx.ts `BEAM.fill`, `OPERATION`, `ESCAPE`, `opDark`, `opLight`, `paintTools`). The mark fills in **1.4 s** (was
+    2.2; drains in 1.6 as before). Full: THE THEATRE PLUNGES DARK in **three frames** (to 0.2 of its light), **one hard surgical
+    spotlight** from his lens on where you stood (**2.5 tiles round**, the field), his instruments (a dozen: scalpels, bone saws, forceps,
+    curved needles threaded, amputation knives; steel, ebony and brass, glinting his pink and gold, never cyan) flung out of his coat to
+    ring it at its edge by 0.45 s, **HELD 0.88 s**, then closing in on you from all round in **two frames** (frames 40 to 42), smeared,
+    with his one huge strike at **1.4 s**; stuck quivering in the boards, plucked back by 2.33 s; the light back by 2.2 s. **Where to run:
+    out of the spotlight, 1.2 s from the dark falling to the close.** His body, the pillars and the rest of him as approved.
+11. **THE MASKED DANCERS** (art/action_f16_dancer.ts, `DANCER_THROW`). No new art: the set with the switch on holds the game's own
+    whirling spin too, `clips.moves.spin`, frame for frame the game's (every room's lady and gentleman, both ways round). The main chat
+    chooses: partner alive and near enough to take the waltz's hold (a suggestion: within 3 tiles), the pair's throw; partner gone, the
+    old spin with the game's own act (docs/mockups/action_f16/README.md).
+12. **THE KING'S KNIGHT'S BANNER** (art/action_f16_knight.ts, `KNIGHT_BANNER`; `BANNER.reach`, `inRally`, `rallyPainted`). Its reach
+    **7 tiles** round (was 3.5); the enemy's gold drawn to match: a thick dashed ring at its edge with twelve chevrons pointing in, a
+    faint twinkle of gold within (about 1.4 in 100 of the floor's pixels) and motes drifting up, not a wash; its floor picture 700 × 372.
+
+## The pictures (`pictures/`)
+
+- `action_fixes3.mp4` (1200 × 676, 34.2 s, 30 a second, H.264 yuv420p, captioned): the Chanter's bolt alone (from in front, its strike
+  at half speed, from behind) and with another player (a second knight); the Physician's Diagnosis and operation over his whole theatre
+  from above with the knight (the mark filling, hid behind a bed and a pillar, caught, the dark, the spotlight, the ring; he runs out),
+  the ring flung out at half speed, then close from in front (he gets out; they close on nothing) and from behind (caught), and the
+  strike at half speed; the banner's reach from higher up (the game's own pixels) with the knight and three of his fellows in it, the
+  hero stepping back out of it and one following him out.
+- `action_fixes3_sheet.png` (1200 × 3058): each one's old beside its new at the same scale (the old from the branch before, f4e6a3d,
+  made by its own scenes), and the key moments of each; the dancers' spin as the game has it beside the spin kept in the new set.
+
+Made by: `tools/action_fixes3_film.ts` (the film, and its stills), `tools/action_fixes3_frames.ts` (the dancers' frames),
+`tools/action_fixes3_sheet.py` (the sheet). The scenes are each mock-up's own (src/dev/action_f6_scene.ts `chainScene(…, others)`,
+src/dev/physician_action_scene.ts `diagScene`, `diagClose(view, caught)`, src/dev/action_f16_scene.ts `bannerWideScene`).
+
+## The checks (third round)
+
+- `tests/action_f6.test.ts` (5), `tests/physician_action.test.ts` (7: test 7 new), `tests/action_f16.test.ts` (5): each updated to its
+  new numbers and passing (each mock-up's README says what each checks); every new frame through the checks (the crackle every frame;
+  the operation's instruments, the spotlight's edge and its cone every frame; the banner's gold): crisp, no cyan, not cut off; the
+  Physician's every frame through the bosses' review both ways round, every handing over (his body unchanged: nothing found); the
+  dancers' kept spin through the review in the throw set, and frame for frame the game's. The game's own frames hash as before in each
+  (the Physician `a760e8052487ba6c`, his moves drawn `0b3243670d124c61`; the cult, the dancers and the king's knight as before).
+- The figures' own tests as before: `tests/physician.test.ts`, `tests/act2_physician.test.ts`, `tests/masque_dancers.test.ts`,
+  `tests/kings_knights.test.ts`, `tests/act1_cultists.test.ts`.
+- `tsc --noEmit -p tsconfig.json` clean.
+- Changed outside the mock-ups' own files: none of the game's.
+
+## For him to decide (the art chat's to ask)
+
+- The operation's dark (0.2 of the light: the theatre's walls and beds still faintly seen) and the instruments' size (51 pixels: bigger
+  than life, to read at phone size).
+- The dancers: how near a partner must be for the pair to throw (a suggestion: 3 tiles); else the old spin.
+- The banner: its ring with chevrons and a faint twinkle within; whether the knights inside it should show they are rallied (a glint on
+  them), which the pictures do not.

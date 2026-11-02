@@ -13,7 +13,7 @@ import { houseOfQuietPieces } from '../art/floor14';
 import { makeHeroArt3 } from '../art/heroes3';
 import { hash } from '../art/kit';
 import { DIAG, DRAW9, OP_HIT, OP_LONG, OP_STRIKE, RAP9_HIT, RAP9_LONG, DRAW9_LONG, ROUNDS9_HITS, ROUNDS9_LONG, lensAt, makePhysicianActionArt } from '../art/physician_action';
-import { BEAM, FIELD, RINGS, diagnosis, isoAt, paintBeam, paintBurnLine, paintDial, paintDraw, paintField, paintMark, paintRap, paintRounds, paintShaft, spot, waysOf } from '../art/physician_action_fx';
+import { BEAM, FIELD, OPERATION, RINGS, diagnosis, isoAt, litRGB, opDark, opLight, paintBeam, paintBurnLine, paintDial, paintDraw, paintField, paintMark, paintRap, paintRounds, paintShaft, paintSpotCone, paintSpotEdge, paintTools, spot, waysOf } from '../art/physician_action_fx';
 import type { At, Cover, Iso, Keep, Pt } from '../art/physician_action_fx';
 import { PHYSICIAN } from '../art/physician_moves';
 import { drawHeldWord, drawHushCloud, drawPhialFlight, HELD_WORD_UP } from '../art/physician_shots';
@@ -361,7 +361,34 @@ function fullOf(D: Diag, cx: number, cy: number): number {
   }
   return FULL.get(D)!;
 }
-/** THE DIAGNOSIS AND THE OPERATION, `t` seconds into a scene: him at B, the hero along his path, the beam on him till the mark is full; then the field where he stood, the wind-up, the strike, the scorch. */
+/** A figure's picture lit at `l` (opLight at its floor point): every pixel of it darkened in the dark, or lit hard in the spotlight. */
+function litLaid(l: Laid, k: number): Laid {
+  if (Math.abs(k - 1) < 1e-3) return l;
+  const q = new Px(l.px.w, l.px.h);
+  const s = l.px.d;
+  const d = q.d;
+  for (let i = 0; i < s.length; i += 4) {
+    if (!s[i + 3]) continue;
+    const [r, g, b] = litRGB(s[i], s[i + 1], s[i + 2], k);
+    d[i] = r;
+    d[i + 1] = g;
+    d[i + 2] = b;
+    d[i + 3] = s[i + 3];
+  }
+  return { px: q, ax: l.ax, ay: l.ay };
+}
+/** The floor point (tiles) of a picture point on the floor. */
+const floorAt = (X: number, Y: number, cx: number, cy: number): Pt => {
+  const a = (X + 0.5 - cx) / 32;
+  const b = (Y + 0.5 - cy) / 16;
+  return [(a + b) / 2, (b - a) / 2];
+};
+/**
+ * THE DIAGNOSIS AND THE OPERATION, `t` seconds into a scene: him at B, the hero along his path, the beam on him till the mark is full;
+ * then (2 Nov, “Bigger operation”) THE THEATRE PLUNGED DARK, one hard spotlight from his lens on where the hero stood, his instruments
+ * flung out round its edge, HELD, closing in from all round in two frames with the strike; stuck in the boards; plucked back; the light
+ * back. `caught`: the hero stays in the light (else he runs out of it while they are held).
+ */
 function diagScene(D: Diag, t: number, base: Px, cx: number, cy: number): Px {
   const m = t - LEAD;
   const at = atOf(cx, cy);
@@ -374,30 +401,62 @@ function diagScene(D: Diag, t: number, base: Px, cx: number, cy: number): Px {
   const st = op >= 0 ? null : diagnosis(L, (q) => D.hero(q).at, DIAG.up, Math.max(DIAG.up, m), D.cover);
   const hit = op >= OP_HIT && op < OP_HIT + 0.4 && Math.hypot(k.at[0] - field[0], k.at[1] - field[1]) <= FIELD.r;
   const him = op < 0 ? himAt(D.B, D.view, 'diagnose', m < 0 ? m : diagT(m), 99, cx, cy) : himAt(D.B, D.view, 'operate', op, OP_LONG, cx, cy);
-  const figs = [...D.stuff(cx, cy), him, knightAt(k.at, k.moving ? k.to : D.B, t, cx, cy, hit ? { reel: op - OP_HIT } : k.moving ? 'walk' : 'stand')];
-  // (the beam on from as the lens comes up; tracking him; locked on the field while he winds up; out after the strike)
-  const on = m < DIAG.up - 0.1 ? 0 : op < 0 ? clamp01((m - DIAG.up + 0.1) / 0.25) : op < OP_HIT + 0.05 ? 1 : 0;
+  const knight = knightAt(k.at, k.moving ? k.to : D.B, t, cx, cy, hit ? { reel: op - OP_HIT } : k.moving ? 'walk' : 'stand');
+  const dark = op >= 0 ? opDark(op) : 0;
+  // (in the dark, each figure lit by how lit its own floor point is: the hero hard in the spotlight, the rest dark)
+  const lightOf = (P: Pt): number => (dark > 0 ? opLight(P[0] - field[0], P[1] - field[1], op) : 1);
+  const things: { s: Stood; floor: Pt }[] = [
+    ...D.stuff(cx, cy).map((s0) => ({ s: s0, floor: floorAt(s0.at[0], s0.at[1], cx, cy) })),
+    { s: him, floor: D.B },
+    { s: knight, floor: k.at },
+  ];
+  const figs: Stood[] = things.map(({ s: s0, floor: f0 }) => (dark > 0 ? { ...s0, l: litLaid(s0.l, lightOf(f0)) } : s0));
+  // (the beam on from as the lens comes up; tracking him; out as the theatre goes dark: his lens throws the spotlight then)
+  const on = m < DIAG.up - 0.1 ? 0 : op < 0 ? clamp01((m - DIAG.up + 0.1) / 0.25) : 1 - clamp01(op / OPERATION.fall[1]);
   const aim = op < 0 ? (st?.aim ?? 0) : Math.atan2(field[1] - L[1], field[0] - L[0]);
+  const lensNow = op < 0 ? lensAt('diagnose', m < 0 ? 0 : diagT(m)) : lensAt('operate', Math.min(op, OP_LONG));
+  const lensPic = ofHim(D.B, D.view, lensNow, cx, cy).pic;
+  const coat = at(D.B[0], D.B[1], 58);
+  const [, kY] = at(k.at[0], k.at[1]);
   const floor = (p: Px): void => {
     paintBeam(p, I, L, aim, D.cover, on, inRoom);
     if (op < 0 && m >= DIAG.up && st) paintMark(p, at, k.at[0], k.at[1], st.fill, st.lit, m);
     if (op >= 0) paintField(p, at, field[0], field[1], op);
+    // THE DARK over the floor and its walls, the spotlight lit hard; its edge
+    if (dark > 0) {
+      const d = p.d;
+      for (let Y = 0; Y < p.h; Y++) {
+        for (let X = 0; X < p.w; X++) {
+          const [fx, fy] = floorAt(X, Y, cx, cy);
+          const l = opLight(fx - field[0], fy - field[1], op);
+          if (Math.abs(l - 1) < 1e-3) continue;
+          const i = (Y * p.w + X) * 4;
+          const [r, g, b] = litRGB(d[i], d[i + 1], d[i + 2], l);
+          d[i] = r;
+          d[i + 1] = g;
+          d[i + 2] = b;
+        }
+      }
+      paintSpotEdge(p, at, field[0], field[1], op);
+    }
+    if (op >= 0) paintTools(p, at, field[0], field[1], op, coat, D.B, (fy) => fy < kY);
   };
   const over = (p: Px): void => {
-    // the shaft of light from the lens to where it falls (the hero, or the field)
-    const lensNow = op < 0 ? lensAt('diagnose', m < 0 ? 0 : diagT(m)) : lensAt('operate', Math.min(op, OP_LONG));
-    const from = ofHim(D.B, D.view, lensNow, cx, cy).pic;
+    if (op >= 0) paintTools(p, at, field[0], field[1], op, coat, D.B, (fy) => fy >= kY);
+    // the shaft of light from the lens to where it falls (the hero, while he looks)
     const target = op < 0 ? k.at : field;
     const lit = op < 0 ? (st?.lit ? 1 : 0.35) : 1;
-    if (on > 0 && op < OP_STRIKE[0]) paintShaft(p, from, at(target[0], target[1], 14), on * lit * (op >= 0 ? 1.6 : 1));
-    if (op >= 0) paintBurnLine(p, from, at(field[0], field[1]), op - OP_HIT);
+    if (on > 0 && op < 0) paintShaft(p, lensPic, at(target[0], target[1], 14), on * lit);
+    // (the spotlight's cone from his lens down through the dark onto the field)
+    if (op >= 0) paintSpotCone(p, lensPic, at(field[0], field[1]), 32 * FIELD.r * Math.SQRT2, 16 * FIELD.r * Math.SQRT2, op);
+    if (op >= 0) paintBurnLine(p, lensPic, at(field[0], field[1]), op - OP_HIT);
     // the mark over him: the dial over his head (full and white as the field is marked)
-    if (m >= DIAG.up && op < OP_HIT) {
+    if (m >= DIAG.up && op < OP_STRIKE[0]) {
       const [X, Y] = at(k.at[0], k.at[1], 64);
       paintDial(p, X, Y, op >= 0 ? 1 : st?.fill ?? 0, op >= 0 || !!st?.lit, D.dial ?? 7);
     }
   };
-  return scene(base, floor, figs, over, shakeOf(op, [[OP_HIT, 6]]));
+  return scene(base, floor, figs, over, shakeOf(op, [[OP_HIT, 8]]));
 }
 /** OVER THE WHOLE THEATRE FROM ABOVE: him from behind at the theatre's near side; the knight in the open, ducking behind a bed as the mark fills, out, behind a pillar as it drains, caught in the open: it fills; the operation; he runs from the field. */
 export const ARENA_DIAG: Diag = {
@@ -415,12 +474,13 @@ function ARENA_PATH(): [number, number, number][] {
   const H2: Pt = [-4.85, -3.25];
   const C3: Pt = [-2.2, -4.4];
   const E: Pt = [-5.7, -5.6];
-  const base: [number, number, number][] = [[0, A[0], A[1]], [1.75, A[0], A[1]], [2.45, H1[0], H1[1]], [3.7, H1[0], H1[1]], [4.4, H2[0], H2[1]], [5.2, H2[0], H2[1]], [5.6, C3[0], C3[1]]];
+  // (2 Nov: the mark fills in 1.4 s now: he ducks behind the bed as it nears full, behind a pillar as it drains, and is caught in the open)
+  const base: [number, number, number][] = [[0, A[0], A[1]], [1.4, A[0], A[1]], [1.95, H1[0], H1[1]], [2.75, H1[0], H1[1]], [3.3, H2[0], H2[1]], [3.95, H2[0], H2[1]], [4.35, C3[0], C3[1]]];
   AP = base;
   // (where the mark comes full, he sees the field marked round him and runs out of it while the Physician winds up)
   const L0 = ofHim(ARENA_DIAG.B, 'back', lensAt('diagnose', DIAG.loop[0]), 0, 0).floor;
   const full = diagnosis(L0, (m) => along(base, m).at, DIAG.up, 30, COVER).full ?? 99;
-  AP = [...base, [full + 0.3, C3[0], C3[1]], [full + 1.05, E[0], E[1]]];
+  AP = [...base, [full + 0.25, C3[0], C3[1]], [full + 1.0, E[0], E[1]]];
   return AP;
 }
 export function diagArena(t: number, base: Px, cx: number, cy: number): Px {
@@ -434,9 +494,10 @@ function closeBed(view: View, cx: number, cy: number): Stood {
   return { at: onFloor(bedAt[0], bedAt[1], cx, cy, 1), l: laidOfSprite(pieces().bed[view === 'front' ? 2 : 0]), shadow: 0 };
 }
 /** CLOSE: him at (0, 0), the knight 4.5 tiles before him; one bed beside the knight's way; the mark fills, he ducks behind the bed, steps out, is caught; the operation; he runs from the field. */
-const CLOSE = new Map<View, Diag>();
-export function diagClose(view: View): Diag {
-  if (CLOSE.has(view)) return CLOSE.get(view)!;
+const CLOSE = new Map<string, Diag>();
+export function diagClose(view: View, caught = false): Diag {
+  const key = `${view}${caught}`;
+  if (CLOSE.has(key)) return CLOSE.get(key)!;
   const B: Pt = [0, 0];
   const bedAt = spot(B, view, 3.6, 1.6);
   const bedK = view === 'front' ? 3 : 0;
@@ -445,17 +506,22 @@ export function diagClose(view: View): Diag {
   const D0: Diag = { B, view, cover, hero: (m) => along(base, m), stuff: (cx, cy) => [closeBed(view, cx, cy)] };
   const L = ofHim(B, view, lensAt('diagnose', DIAG.loop[0]), 0, 0).floor;
   const full = diagnosis(L, (m) => along(base, m).at, DIAG.up, 30, cover).full ?? 99;
-  const run = pathFrom(B, view, [[full + 0.25, 4.3, 0.4], [full + 1.05, 4.7, -3.6]]);
+  // (the dark falls; he runs out of the spotlight while the instruments are held round it; or, `caught`, he stays in it)
+  const run = caught ? [] : pathFrom(B, view, [[full + 0.25, 4.3, 0.4], [full + 1.0, 4.7, -3.6]]);
   const path = [...base, ...run];
   const D: Diag = { ...D0, hero: (m) => along(path, m) };
-  CLOSE.set(view, D);
+  CLOSE.set(key, D);
   return D;
 }
 
-export function diagCloseScene(view: View, t: number, base: Px, cx: number, cy: number): Px {
-  return diagScene(diagClose(view), t, base, cx, cy);
+export function diagCloseScene(view: View, t: number, base: Px, cx: number, cy: number, caught = false): Px {
+  return diagScene(diagClose(view, caught), t, base, cx, cy);
 }
-export const diagClosePass = (view: View): number => LEAD + fullOf(diagClose(view), 0, 0) + OP_HIT + 1.2;
+export const diagClosePass = (view: View, caught = false): number => LEAD + fullOf(diagClose(view, caught), 0, 0) + OP_HIT + 1.2;
+/** When the mark comes full in the close one (seconds into the scene). */
+export const diagCloseFull = (view: View, caught = false): number => LEAD + fullOf(diagClose(view, caught), 0, 0);
+/** When the mark comes full over the whole theatre (seconds into the scene). */
+export const diagArenaFullAt = (): number => LEAD + fullOf(ARENA_DIAG, 0, 0);
 
 // ---------------------------------------------------------------------------------------------
 // ROUNDS: the knight 3 tiles from him; out past the marked ring while he holds the cane up (from behind), or caught by it

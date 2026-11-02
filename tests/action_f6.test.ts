@@ -36,7 +36,7 @@ import { CHANTER as CHANTER_RULES } from '../src/game/act1_rules/chanter';
 import { QGOLEM as QGOLEM_RULES } from '../src/game/act1_rules/qgolem';
 import { SCORPION as SCORPION_RULES } from '../src/game/act1_rules/scorpion';
 import { DEVIL as DEVIL_RULES } from '../src/game/act1_rules/devil';
-import { BLAZE, BLAZE_THROWER, CAST_HIT, CAST_STRIKE, CHAIN, CHANTER_LIGHTNING, FIREPOT_BLAZE, LIGHTNING_CHANTER, LOB, LOB_HIT, LOB_STRIKE, blazeArc, blazeFly, blazePainted, chainBoltPainted, chainOf, makeBlazeThrowerArt, makeFlyingPotArt, makeLightningChanterArt, potShadowPainted, ringPainted } from '../src/art/action_f6_cult';
+import { BLAZE, BLAZE_THROWER, CAST_HIT, CAST_STRIKE, CHAIN, CHANTER_LIGHTNING, FIREPOT_BLAZE, LIGHTNING_CHANTER, LOB, LOB_HIT, LOB_STRIKE, blazeArc, blazeFly, blazePainted, chainBoltPainted, chainOf, staticPainted, makeBlazeThrowerArt, makeFlyingPotArt, makeLightningChanterArt, potShadowPainted, ringPainted } from '../src/art/action_f6_cult';
 import { BOULDER, BOULDER_GOLEM, GOLEM_BOULDER, HAMMER, HAMMER_HIT, HAMMER_STRIKE, ROLLING_FRAMES, ROLL_HIT, ROLL_STRIKE, boulderHeld, lanePainted, makeBoulderGolemArt, paintRolling, smashPainted } from '../src/art/action_f6_golem';
 import { DEVIL_TWISTER, SCORPION_SPIT, SNAP9, SNAP_STRIKE, SPIT, SPIT_STRIKE, TW, TW_STRIKE, makeSpitScorpionArt, makeTwisterDevilArt, paintGlob, poolPainted, spitArc, spitFly, swirlPainted, twisterPose, globShadowPainted } from '../src/art/action_f6_canyon';
 import { blazeShape, boulderShape, castShape, devilKit, scorpionKit } from './action_f6_shapes';
@@ -239,6 +239,9 @@ test('5. what they send and leave: crisp, no cyan, not cut off; the numbers', ()
   for (const v of ['front', 'back'] as const) makeFlyingPotArt(v).frames.forEach((sp, i) => check(`pot ${v} ${i}`, { px: paintingOf(sp), lights: sp.lights }, true, true));
   for (let t = -0.6; t <= 0.6; t += 0.05) check(`ring ${t.toFixed(2)}`, ringPainted(t));
   for (let t = 0; t <= 0.5; t += 0.05) check(`bolt ${t.toFixed(2)}`, chainBoltPainted(2, -1, 30, 20, t, 1));
+  // (2 Nov) the crackle of static round the one it strikes: crisp, no cyan, not cut off, every frame of it; gone after
+  for (let t = 0; t <= CHAIN.crackle + 1e-6; t += 1 / 30) for (const seed of [0, 1]) check(`static ${seed} ${t.toFixed(3)}`, staticPainted(t, seed), true);
+  assert.ok(look(staticPainted(CHAIN.crackle + 0.05).px).painted === 0, 'the static gone after');
   for (let t = 0; t <= BOULDER.rubble; t += 0.1) for (const layer of ['floor', 'air'] as const) for (const q of [false, true]) check(`smash ${layer} ${q} ${t.toFixed(1)}`, smashPainted(t, layer, BOULDER.r, q));
   for (const v of ['front', 'back'] as const) for (let i = 0; i < ROLLING_FRAMES; i++) check(`rolling ${v} ${i}`, paintRolling(i / ROLLING_FRAMES, v), true);
   for (const k of [0, 0.5, 1]) check(`lane ${k}`, lanePainted(1, 0, k, 3));
@@ -250,7 +253,10 @@ test('5. what they send and leave: crisp, no cyan, not cut off; the numbers', ()
   assert.ok(BLAZE.r >= 1.5 && BLAZE.r > FIREPOT.burst.r * 2 && BLAZE.fire > FIREPOT.fire.r * 3 && BLAZE.burn >= FIREPOT.fire.burn, 'the burst and the fire much bigger');
   assert.ok(blazeArc(5) > 2.5 * (FIREPOT.pot.arc0 + FIREPOT.pot.arcPer * 5) && blazeFly(5) <= 1, 'the pot lobbed high');
   assert.ok(CHAIN.r > CHANTER_RULES.bolt.r * 2 && CHAIN.jump >= 2.5 && CHAIN.jumps === 2 && CHAIN.aim < CAST_HIT - 0.5, 'the ring and the jumps; the ring down half a second and more before it strikes');
-  assert.ok(chainOf([[0, 0], [1.5, 0], [3.5, 0.5], [9, 9]], 0).join() === '0,1,2', 'it jumps to the nearest, then on, within its reach');
+  assert.ok(chainOf([[0, 0], [1.5, 0], [3.5, 0.5], [9, 9]], 0).join() === '0,1,2', 'it jumps to the nearest other hero, then on, within its reach');
+  // (2 Nov, his word: “If we have multiplayer, the lightningwould jump to other players”) heroes only: alone, one bolt and no jump
+  assert.ok(chainOf([[0, 0]], 0).join() === '0' && chainOf([[0, 0], [CHAIN.jump + 0.1, 0]], 0).join() === '0', 'alone (or the other player out of reach): one bolt, no jump');
+  assert.ok(CHAIN.crackle >= 0.5 && CHAIN.crackle <= 1, 'the crackle round him a moment');
   assert.ok(HAMMER.r > QGOLEM_RULES.hammer.r * 1.7 && BOULDER.half * 2 >= 1.4 && BOULDER.pace >= 7 && BOULDER.r >= 1.5 && BOULDER.long >= 8, 'the hammer bigger; the lane, the roll, the smash');
   assert.ok(SNAP9.fwd[1] > SCORPION_RULES.snap.fwd[1] && SNAP9.half > SCORPION_RULES.snap.half && SPIT.pool >= 1.4 && SPIT.stays >= 4 && SPIT.far > SCORPION_RULES.sting.reach * 2 && spitArc(3) > 50 && spitFly(5) <= 0.85, 'the snap further; the spit high, its pool big and lasting');
   assert.ok(TW.pull > DEVIL_RULES.lash.reach * 1.8 && TW.until - TW.hit >= 3 && TW.high > 100 && TW.out[1] >= 2, 'the twister big, a few seconds, throwing lightning');

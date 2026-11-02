@@ -36,8 +36,8 @@ import { PALACE } from '../src/game/act1_rules/gardener';
 import { GARDENER_HEDGE, LUNGE, LUNGE_GARDENER, LUNGE_HIT, LUNGE_STRIKE, LUNGE_TRAVEL_TILES, clippingsPainted, lungeOn, lungeStrikes, makeHedgeArt, snapAt } from '../src/art/action_f16_gardener';
 import { GROOM_HORSE, HORSE_STRIDE, LOOSE, WHISTLE_GROOM, WHISTLE_HIT, WHISTLE_STRIKE, gallopPose, horsePainted, horseStrikes, makeWhistleArt, mistPainted } from '../src/art/action_f16_groom';
 import { FLIGHT_CANVAS, GUARD_DRILL, JAV, JAV_PARTISAN, JAV_PARTISAN_SWORD, JAV_SWORD, JAV_SWORD_AFTER, PULL, STUCK_CANVAS, THRUST9, THRUST9_HIT, THRUST9_STRIKE, javStrikes, makeJavelinGuardArt, spearFlying, spearStuck, thrustReach, thrustStrikes } from '../src/art/action_f16_guard';
-import { DANCER_THROW, LANE_LONG, THROW, THROW_GENT, THROW_HIT, THROW_LADY, THROW_STRIKE, makeThrowArt, topStrikes } from '../src/art/action_f16_dancer';
-import { BANNER, BANNER_HIT, BANNER_KNIGHT, BANNER_STRIKE, CLEAVE_KNIGHT, KNIGHT_BANNER, bannerPainted, inRally, makeBannerKnightArt, makeCleaveKnightArt, rallyPainted, waveStrikes } from '../src/art/action_f16_knight';
+import { DANCER_THROW, LANE_LONG, THROW, THROW_DANCERS, THROW_GENT, THROW_HIT, THROW_LADY, THROW_STRIKE, makeThrowArt, topStrikes } from '../src/art/action_f16_dancer';
+import { BANNER, BANNER_AT, BANNER_HIT, BANNER_KNIGHT, BANNER_STRIKE, CLEAVE_KNIGHT, KNIGHT_BANNER, RALLY_CANVAS, bannerPainted, inRally, makeBannerKnightArt, makeCleaveKnightArt, rallyPainted, waveStrikes } from '../src/art/action_f16_knight';
 import { PALACE_GARDENER, PALACE_GROOM, makePalaceArt3 } from '../src/art/palace_hands_moves';
 import { GUARD_PARTISAN, makeGuardArt3 } from '../src/art/palace_guard_moves';
 import { DANCERS, SPIN, makeDancerArt3 } from '../src/art/masque_dancers_moves';
@@ -158,6 +158,20 @@ test('1. the switches are off; nothing of the game imports the mock-ups; the gam
       const n = new Map(lists(art[v]));
       for (const name of kept) (g.get(name) as Sprite[]).forEach((sp, i) => assert.equal(unlike(sp, (n.get(name) as Sprite[])[i]), 0, `${k} ${v} ${name} ${i}: the game's own`));
       for (const name of fresh) assert.ok(n.has(name), `${k} ${v}: has ${name}`);
+    }
+  }
+  // (2 Nov, his yes: a dancer whose partner is gone just spins into you as before) THE OLD SPIN KEPT in the set with DANCER_THROW on,
+  // `moves.spin`, the game's own whirling spin frame for frame (its `attack`), for every room's lady and gentleman
+  for (const who of ['lady', 'gent'] as const) {
+    for (const room of Object.keys(THROW_DANCERS[who]) as Array<keyof (typeof THROW_DANCERS)['lady']>) {
+      const game = makeDancerArt3(DANCERS[who][room]);
+      const art = makeThrowArt(THROW_DANCERS[who][room]);
+      for (const v of ['front', 'back'] as const) {
+        const g0 = game[v].clips?.attack as Clip;
+        const n0 = art[v].clips?.moves?.spin as Clip;
+        assert.ok(n0 && n0.frames.length === g0.frames.length && n0.hit === g0.hit && n0.fps === g0.fps, `${who} ${room} ${v}: the old spin in the set`);
+        if (room === 'violet' || room === 'blue') g0.frames.forEach((sp, i) => assert.equal(unlike(sp, n0.frames[i]), 0, `${who} ${room} ${v} spin ${i}: the game's own`));
+      }
     }
   }
   // the knight's cleave, his blow now, the game's own frame for frame
@@ -289,6 +303,30 @@ test('5. the numbers: bigger areas than the game’s own, fast strikes', () => {
   // THE THROW: a lane far longer than the spin's lunge, its area as wide
   assert.ok(LANE_LONG >= 8 && LANE_LONG > SPIN.lunge * 5 && THROW.half * 2 >= 1.6 && topStrikes(0.3, 3.5, 0.5) === true && THROW_STRIKE[0] - THROW.take >= 0.6, 'she is flung a long way, marked well before');
   // THE BANNER: its shockwave and its reach
-  assert.ok(BANNER.wave >= 2 && BANNER.reach >= 3 && waveStrikes(2, 0) && inRally(3, 1) && !inRally(6, 0), 'the banner\'s shockwave and reach');
+  // (2 Nov, his pick: “About twice, 7 tiles (Recommended)”) its reach 7 tiles round where it stands (it was 3.5)
+  const [bx, by] = BANNER_AT;
+  assert.ok(BANNER.wave >= 2 && BANNER.reach === 7 && waveStrikes(2, 0), 'the banner\'s shockwave; its reach 7 tiles');
+  assert.ok(inRally(bx + 6.9, by) && inRally(bx - 4.9, by + 4.9) && inRally(bx + 3.5, by + 3) && !inRally(bx + 7.1, by) && !inRally(bx, by - 7.2), 'within 7 tiles of it, and only within');
+  // its gold drawn to match: the ring at 7 tiles round, inside the floor's picture (nothing cut off), a faint glow within, not a wash
+  const fl = rallyPainted(2, 'floor');
+  const C = RALLY_CANVAS;
+  let ring = 0;
+  let inner = 0;
+  let innerAll = 0;
+  for (let Y = 0; Y < fl.px.h; Y++) {
+    for (let X = 0; X < fl.px.w; X++) {
+      const a = (X + 0.5 - C.ax) / 32;
+      const b = (Y + 0.5 - C.ay) / 16;
+      const d = Math.hypot((a + b) / 2, (b - a) / 2);
+      const lit = fl.px.d[(Y * fl.px.w + X) * 4 + 3] > 0;
+      if (Math.abs(d - BANNER.reach) < 0.2 && lit) ring++;
+      if (d < BANNER.reach - 1 && d > 1) {
+        innerAll++;
+        if (lit) inner++;
+      }
+    }
+  }
+  assert.ok(ring > 1200, `the ring at its edge (${ring} pixels)`);
+  assert.ok(inner > 0.01 * innerAll && inner < 0.06 * innerAll, `a faint glow within: ${((100 * inner) / innerAll).toFixed(1)}% of the floor inside`);
   assert.ok(SWEEP.r > 0, 'the sweep it replaces');
 });

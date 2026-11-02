@@ -14,6 +14,9 @@
 //   5. Movement 9 and the numbers: each blow held, struck in two frames, smeared then only; bigger and further than the old;
 //   6. what he sends out: crisp, no cyan, the enemy's pink, nothing cut off, nothing after; THE DIAGNOSIS: the beam's line broken by a
 //      bed and a pillar, the mark filling in the light and draining in hiding, the beam following, the field struck.
+//   7. (2 Nov) the owner: “It needs a little more excitement, and the meter needs to fill faster”; the mark full in 1.4 s (was 2.2); his
+//      pick “Bigger operation”: the theatre plunged dark, one spotlight on you, his instruments ringed round it HELD, closing in from all
+//      round in two frames with the strike, the light back after; every frame of it crisp, no cyan, the enemy's pink, nothing cut off.
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -28,7 +31,7 @@ import {
   RAP9_STRIKE, ROUNDS9_HITS, ROUNDS9_HOLD, ROUNDS9_STRIKES, lensAt, makePhysicianActionArt, phSmeared, physicianActionMob, tilesOf, tipAt,
 } from '../src/art/physician_action';
 import type { ActMove } from '../src/art/physician_action';
-import { BEAM, FIELD, LUNGE, RAP, RINGS, blocked, diagnosis, drawStrikes, fieldStrikes, inLight, isoAt, paintBeam, paintDial, paintDraw, paintField, paintMark, paintRap, paintRounds, rapStrikes, ringAt, ringStrikes } from '../src/art/physician_action_fx';
+import { BEAM, BEAM_FILL_WAS, ESCAPE, FIELD, LUNGE, OPERATION, RAP, RINGS, TOOL_KINDS, blocked, diagnosis, drawStrikes, fieldStrikes, inLight, isoAt, litRGB, opDark, opLight, paintBeam, paintDial, paintDraw, paintField, paintMark, paintRap, paintRounds, paintSpotCone, paintSpotEdge, paintTools, rapStrikes, ringAt, ringStrikes, toolsAt } from '../src/art/physician_action_fx';
 import type { Cover } from '../src/art/physician_action_fx';
 import { PHYSICIAN, PH_DRAW, PH_RAP, PH_ROUNDS, PH_TONIC, makePhysicianArt } from '../src/art/physician_moves';
 import { ROUNDS_RING_REACH, drawCaneRap, drawDrawAim, drawHeldWord, drawHushCloud, drawPhialFlight, drawRoundsRing, drawWordFreed } from '../src/art/physician_shots';
@@ -298,3 +301,57 @@ test('6. what he sends out: crisp, no cyan, the enemy’s pink, nothing cut off,
   const ran = diagnosis(L, (t) => [-2 + 1.5 * (t - DIAG.up), -1], DIAG.up, DIAG.up + 2, []);
   assert.ok(ran.lit, 'the beam follows him as he runs');
 });
+
+test('7. (2 Nov) the mark fills faster; THE BIGGER OPERATION: dark, a spotlight, his instruments round it, closing in two frames', () => {
+  // THE MARK: full in 1.4 s standing in the light (was 2.2)
+  assert.ok(BEAM.fill === 1.4 && BEAM_FILL_WAS === 2.2, 'the mark fills in 1.4 s');
+  // THE DARK: sudden (three frames), held through the wind-up and the strike, the light back after
+  assert.ok(opDark(0) === 0 && opDark(OPERATION.fall[1]) === 1 && OPERATION.fall[1] - OPERATION.fall[0] <= 0.1 + 1e-9, 'the theatre plunged dark, suddenly');
+  assert.ok(opDark(OP_HIT) === 1 && opDark(OPERATION.rise[1]) === 0 && OPERATION.rise[0] > OP_HIT, 'dark through the strike; the light back after');
+  // THE SPOTLIGHT: the field, lit hard; the rest dark
+  assert.ok(opLight(0.5, 0.5, 0.5) > 1 && opLight(FIELD.r + 0.5, 0, 0.5) < 0.3 && opLight(FIELD.r + 0.5, 0, OPERATION.rise[1] + 0.1) === 1, 'lit hard in the spotlight, dark outside it');
+  const [r0, g0, b0] = litRGB(120, 90, 60, OPERATION.low);
+  assert.ok(r0 < 40 && g0 < 40 && b0 < 40, 'the dark is dark');
+  // HOW LONG TO GET OUT: from the dark falling to the close, a hero at 4.6 tiles a second gets out from the middle with time to spare
+  assert.ok(ESCAPE > 1.1 && ESCAPE < 1.4 && FIELD.r / 4.6 < ESCAPE - 0.5, `out of the light in ${ESCAPE.toFixed(2)} s`);
+  // THE RING: a dozen, of five kinds, at the light's edge, pointing in, held; in two frames at the middle
+  const at = isoAt({ cx: 650, cy: 380 });
+  const C: [number, number] = [0, 0];
+  const coat = at(-6, 4, 58);
+  const held = toolsAt(at, 0, 0, OP_STRIKE[0] - 0.05, coat, [-6, 4]);
+  assert.ok(held.length === OPERATION.count && OPERATION.count >= 12 && new Set(held.map((x) => x.kind)).size === TOOL_KINDS.length, 'a dozen of his instruments, every kind');
+  for (const x of held) {
+    const d = Math.hypot(x.floor[0] - C[0], x.floor[1] - C[1]);
+    assert.ok(d > FIELD.r && d < FIELD.r + OPERATION.out + OPERATION.back + 0.01, `held at the light's edge (${d.toFixed(2)})`);
+    const mid = at(0, 0, OPERATION.high);
+    const to: [number, number] = [mid[0] - x.P[0], mid[1] - x.P[1]];
+    assert.ok((to[0] * x.dir[0] + to[1] * x.dir[1]) / (Math.hypot(...to) * Math.hypot(...x.dir)) > 0.95, 'pointing in at you');
+  }
+  const met = toolsAt(at, 0, 0, OP_HIT, coat, [-6, 4]);
+  for (const x of met) assert.ok(Math.hypot(x.floor[0], x.floor[1]) <= OPERATION.meet + 1e-6 && x.smear, 'closed in on the middle in two frames, smeared');
+  assert.ok(toolsAt(at, 0, 0, OP_STRIKE[0] + 1 / 30, coat, [-6, 4]).every((x) => x.smear), 'smeared through the close');
+  assert.ok(toolsAt(at, 0, 0, OP_STRIKE[0], coat, [-6, 4]).every((x) => !x.smear) && toolsAt(at, 0, 0, OP_HIT + 3 / 30, coat, [-6, 4]).every((x) => !x.smear), 'smeared then only');
+  assert.ok(toolsAt(at, 0, 0, OPERATION.home + 0.01, coat, [-6, 4]).length === 0 && toolsAt(at, 0, 0, 0.05, coat, [-6, 4]).length === 0, 'out of his coat after the dark, back in it by the end');
+  assert.ok(OP_STRIKE[0] - OPERATION.fly[1] >= 0.8, `held round you ${(OP_STRIKE[0] - OPERATION.fly[1]).toFixed(2)} s`);
+  // EVERY FRAME of it, the instruments and the spotlight's edge and cone: crisp, no cyan, nothing cut off; the enemy's pink and gold
+  const W = 1300;
+  const H = 760;
+  for (let n = 0; n <= Math.round(OPERATION.home * 30) + 1; n++) {
+    const t = n / 30;
+    const p = new Px(W, H);
+    paintTools(p, at, 0, 0, t, coat, [-6, 4]);
+    paintSpotEdge(p, at, 0, 0, t);
+    paintSpotCone(p, at(-6, 4, 110), at(0, 0), 32 * FIELD.r * Math.SQRT2, 16 * FIELD.r * Math.SQRT2, t);
+    const l = look(p);
+    const tag = `the operation, frame ${n}`;
+    assert.equal(l.odd, 0, `${tag}: crisp`);
+    assert.equal(l.cyan, null, `${tag}: no cyan`);
+    assert.ok(!l.edge, `${tag}: nothing cut off`);
+    if (t >= OPERATION.fly[1] && t < OPERATION.pull) assert.ok(l.painted > 2000 && l.pink > 6, `${tag}: painted (${l.painted}), his pink (${l.pink})`);
+  }
+  const after = new Px(W, H);
+  paintTools(after, at, 0, 0, OPERATION.home + 0.05, coat, [-6, 4]);
+  paintSpotEdge(after, at, 0, 0, OPERATION.home + 0.05);
+  assert.equal(look(after).painted, 0, 'nothing after');
+});
+

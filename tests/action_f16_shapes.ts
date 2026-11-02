@@ -178,13 +178,16 @@ export const gardenerRows = (): [string, Mob, BossShape, string[]][] => [['garde
 /** THE DANCERS: the throw a blow of its own for each (their hands the end they strike with: his flung open, hers drawn in as she is flung); it ends where it began (she is carried down the lane by the game). */
 export function throwShape(mob: Mob): BossShape {
   const base = mob === THROW_GENT ? DN_SHAPE_GENT : DN_SHAPE_LADY;
+  // (2 Nov: the game's own whirling spin kept in the set as `spin`, for a dancer alone: reviewed as the game's own reviews its `attack`)
+  const spun = (m: string): string => (m === 'attack' ? 'spin' : m);
+  const spinHands = (base.handovers ?? []).filter((h) => h.from === 'attack' || h.to === 'attack').map((h) => ({ ...h, from: spun(h.from), to: spun(h.to) }));
   return {
     ...base,
     // (his hands, flung open; hers not: she is carried off down the lane by the game, her strike that, not her picture's)
-    tip: (move, t, s) => (move === 'attack' && mob === THROW_GENT ? s.handR : null),
-    strikes: mob === THROW_GENT ? { attack: THROW_STRIKE } : {},
-    smeared: (move, t) => move === 'attack' && THROW_SMEARED(t),
-    handovers: (base.handovers ?? []).map((h) => (h.from === 'attack' ? { ...h, shift: undefined } : h)),
+    tip: (move, t, s, q) => (move === 'attack' && mob === THROW_GENT ? s.handR : move === 'spin' ? base.tip?.('attack', t, s, q) ?? null : null),
+    strikes: { ...(mob === THROW_GENT ? { attack: THROW_STRIKE } : {}), ...(base.strikes?.attack ? { spin: base.strikes.attack } : {}) },
+    smeared: (move, t) => (move === 'attack' ? THROW_SMEARED(t) : move === 'spin' ? !!base.smeared?.('attack', t) : false),
+    handovers: [...(base.handovers ?? []).map((h) => (h.from === 'attack' ? { ...h, shift: undefined } : h)), ...spinHands],
   };
 }
 export const dancerRows = (): [string, Mob, BossShape, string[]][] => [
