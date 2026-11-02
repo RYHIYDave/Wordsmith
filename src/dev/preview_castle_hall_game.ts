@@ -1,10 +1,14 @@
 // Dev page: THE FIRST TOWN AS THE CASTLE'S HALL, BUILT FROM ITS GAME-READY PIECES (art/castle_hall.ts behind CASTLE_HALL, off; its
 // owl art/hall_owl.ts), laid as the game lays the town (game/level.ts makeTown, game/ways.ts: its floor a tile at a time, its two
 // back walls a face at a time, none toward the eye; the stairs down, the shaft's head and its cage, the gate in the back wall,
-// barred; everything that stands sorted as the renderer sorts it), every townsperson, vendor's place, the ring, the Lexicon, the
-// stash, the waypoint and the cage the game's own pictures, as they are; the sun's slats and its light in the air ADDED to what
-// is under them; then the town's own dark laid over it with holes where the lights are, and the lights' glow over that, as the
-// renderer does (render.ts, light). Nothing of the game imports it.
+// barred; everything that stands sorted as the renderer sorts it), every townsperson and the cage the game's own pictures, as they
+// are; the town's own things (the vendors' places, the ring, the Lexicon, the stash, the waypoint, the braziers, barrels and urn)
+// in the castle's stone and timber (A.town, A.way, A.props: his “Brighter, castle stone (Recommended)”; `#<view>:game` shows the
+// game's own instead); the sun's slats and its light in the air ADDED to what is under them; then the town's dark (a day's, thin
+// and warm) laid over it with holes where the lights are, and the lights' and the day's glows over that, as the renderer does
+// (render.ts, light). Nothing of the game imports it.
+//   node tools/preview.mjs src/dev/preview_castle_hall_game.ts shots/castle/mask.png 1200 840 "mask"   (the floor white, the walls grey: to measure by)
+//   node tools/preview.mjs src/dev/preview_castle_hall_game.ts shots/castle/words.png 600 360 "words"  (the words dropped in the hall's day)
 //   node tools/preview.mjs src/dev/preview_castle_hall_game.ts shots/castle/town.png 1200 840 "town"
 //   node tools/preview.mjs src/dev/preview_castle_hall_game.ts shots/castle/phone.png 1014 468 "phone"
 //   node tools/preview.mjs src/dev/preview_castle_hall_game.ts shots/castle/owl.png 1200 604 "owl"
@@ -24,18 +28,24 @@ import { makeGroundArt } from '../art/ground';
 import { GATE_UP, PILLAR, STRIP, makeGateArt } from '../art/gates';
 import type { Strip } from '../art/gates';
 import type { Piece } from '../art/floorkit';
-import { AIR_DEPTH, CASTLE_ADDED, CASTLE_LIGHTS, CASTLE_OWL_AT, CASTLE_THEME, HALL, SUN, SUN_WINDOWS, TRUSSES_X, TRUSSES_Y, TRUSS_DEPTH, makeCastleHallArt } from '../art/castle_hall';
+import { AIR_DEPTH, CASTLE_ADDED, CASTLE_LIGHTS, dayLights, CASTLE_OWL_AT, CASTLE_THEME, HALL, SUN, SUN_WINDOWS, TRUSSES_X, TRUSSES_Y, TRUSS_DEPTH, makeCastleHallArt } from '../art/castle_hall';
 import type { CastleHallArt } from '../art/castle_hall';
 import { OWL_NAMES, OWL_POSES, owlOnBeam } from '../art/hall_owl';
+import { makeIconArt } from '../art/icons';
+import type { WordId } from '../game/types';
 
-const [mode = 'town'] = decodeURIComponent(location.hash.slice(1)).split(':');
+const ICONS = makeIconArt();
+
+const [mode = 'town', which = 'castle'] = decodeURIComponent(location.hash.slice(1)).split(':');
 let A!: CastleHallArt;
 const G0 = makeGateArt();
 const GROUND = makeGroundArt(CASTLE_THEME);
-const props = makeDungeonProps();
-const ART: TownArt = { town: makeTownProps(), folk: makeTownsfolk() };
+const FOLK = makeTownsfolk();
+/** The town's own things: in the castle's stone and timber (A.town, A.way, A.props), or the game's own as they are (`#...:game`, to set beside). */
+let ART!: TownArt;
+let props!: { brazier: Sprite[]; barrel: Sprite; urn: Sprite };
+let DAIS!: Sprite;
 const hero = makeHeroArt3().of('warrior', { twoHanded: false, town: true });
-const WAYS = lookWays(1);
 const shaft = townShaft();
 
 // =================================================================================================
@@ -115,8 +125,33 @@ const pool = ((): HTMLCanvasElement => {
   return c;
 })();
 
-interface Stand { d: number; s: Sprite; x: number; y: number; shadow: number; added?: boolean }
-interface Look { heroAt: [number, number]; raise: number; barred: boolean; time: number; lights: boolean }
+interface Stand { d: number; s: Sprite; x: number; y: number; shadow: number; added?: boolean; cat?: Cat }
+interface Look { heroAt: [number, number]; raise: number; barred: boolean; time: number; lights: boolean; mask?: boolean; words?: [WordId, number, number][] }
+
+/** (THE MASK, for measuring how bright the hall reads: the floor white, the walls' faces grey, everything else black) */
+const silMemo = new Map<string, HTMLCanvasElement>();
+const silKeys = new WeakMap<Sprite, number>();
+let silN = 0;
+function silOf(s: Sprite, col: string): HTMLCanvasElement {
+  let k = silKeys.get(s);
+  if (k === undefined) silKeys.set(s, (k = silN++));
+  const key = `${k}${col}`;
+  let c = silMemo.get(key);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = s.img.width;
+    c.height = s.img.height;
+    const q = c.getContext('2d') as CanvasRenderingContext2D;
+    q.drawImage(s.img, 0, 0);
+    q.globalCompositeOperation = 'source-in';
+    q.fillStyle = col;
+    q.fillRect(0, 0, c.width, c.height);
+    silMemo.set(key, c);
+  }
+  return c;
+}
+type Cat = 'floor' | 'wall' | 'thing';
+const MASK: Record<Cat, string> = { floor: '#ffffff', wall: '#808080', thing: '#000000' };
 
 /** THE TOWN DRAWN: RW x RH game pixels, at two picture pixels each. */
 function scene(L: Look): HTMLCanvasElement {
@@ -128,10 +163,11 @@ function scene(L: Look): HTMLCanvasElement {
   g.fillStyle = '#07050a';
   g.fillRect(0, 0, cv.width, cv.height);
   g.setTransform(2, 0, 0, 2, 0, 0);
-  const draw = (s: Sprite, x: number, y: number): void => {
-    g.drawImage(s.img, Math.round(x) - s.ax, Math.round(y) - s.ay, s.w, s.h);
+  const draw = (s: Sprite, x: number, y: number, cat: Cat = 'thing'): void => {
+    g.drawImage(L.mask ? silOf(s, MASK[cat]) : s.img, Math.round(x) - s.ax, Math.round(y) - s.ay, s.w, s.h);
   };
   const added = (s: Sprite, x: number, y: number): void => {
+    if (L.mask) return;
     g.globalCompositeOperation = 'lighter';
     draw(s, x, y);
     g.globalCompositeOperation = 'source-over';
@@ -144,9 +180,10 @@ function scene(L: Look): HTMLCanvasElement {
   for (let x = 4; x < 24; x++) for (let y = 4; y < 22; y++) {
     if (!isFloor(x, y)) continue;
     const [px, py] = at(x, y);
-    draw(A.floor(x, y), px, py);
+    draw(A.floor(x, y), px, py, 'floor');
     const n = LAID.get(`${x},${y}`);
-    if (n) draw(tile(n).frames![0], px, py);
+    if (n) draw(tile(n).frames![0], px, py, 'floor');
+    if (L.mask) continue;
     const wl = isWall(x - 1, y);
     const wr = isWall(x, y - 1);
     if (wl) draw(GROUND.shadeLeft, px, py);
@@ -157,7 +194,7 @@ function scene(L: Look): HTMLCanvasElement {
   }
   // ---- WHAT LIES ON THE FLOOR: the stairs down, the waypoint's dais (the game's), the rug, the ring cut in the floor (the game's)
   draw(A.stairs('x'), ...at(STAIR.x, STAIR.y));
-  draw(WAYS.way.asleep, ...at(WAY.x, WAY.y));
+  draw(DAIS, ...at(WAY.x, WAY.y));
   for (const [kind, p] of [['rug', T.mystic], ['runeRing', T.wordsmith]] as const) {
     const s = townSprite(ART, kind, 0, t);
     if (s) draw(s, ...at(p[0] + 0.5, p[1] + 0.5));
@@ -174,12 +211,12 @@ function scene(L: Look): HTMLCanvasElement {
   // ---- WHAT STANDS, sorted as the renderer sorts it
   const stands: Stand[] = [];
   const lit: { s: Sprite; x: number; y: number }[] = [];
-  const stand = (d: number, s: Sprite | null, x: number, y: number, shadow = 0, add = false): void => {
-    if (s) stands.push({ d, s, x, y, shadow, added: add });
+  const stand = (d: number, s: Sprite | null, x: number, y: number, shadow = 0, add = false, cat: Cat = 'thing'): void => {
+    if (s) stands.push({ d, s, x, y, shadow, added: add, cat });
   };
   // the back walls, a face at a time
-  for (let x = HALL.x0; x < HALL.x1; x++) if (isWall(x, HALL.y0 - 1)) stand(x + HALL.y0, A.face(true, x, HALL.y0 - 1), x, HALL.y0 - 1);
-  for (let y = HALL.y0; y < HALL.y1; y++) stand(HALL.x0 + y, A.face(false, HALL.x0 - 1, y), HALL.x0 - 1, y);
+  for (let x = HALL.x0; x < HALL.x1; x++) if (isWall(x, HALL.y0 - 1)) stand(x + HALL.y0, A.face(true, x, HALL.y0 - 1), x, HALL.y0 - 1, 0, false, 'wall');
+  for (let y = HALL.y0; y < HALL.y1; y++) stand(HALL.x0 + y, A.face(false, HALL.x0 - 1, y), HALL.x0 - 1, y, 0, false, 'wall');
   // the trusses on them, the owl on its beam
   const truss = tile('a hammer-beam truss').frames![0];
   const post = tile('a wall post and brace').frames![0];
@@ -227,10 +264,15 @@ function scene(L: Look): HTMLCanvasElement {
   strips(A.gate.arch(true), -wide, 0);
   // THE KNIGHT
   stand(L.heroAt[0] + L.heroAt[1], hero.front.idle[0], L.heroAt[0], L.heroAt[1], 0.36);
+  // (THE WORDS, dropped on the floor as the game shows them (render.ts drops: a little over the floor, a hole of light round each), to see them read in the hall's day)
+  for (const [w, x, y] of L.words ?? []) {
+    const sp = ICONS.word[w];
+    stands.push({ d: x + y - 0.2, s: { ...sp, ay: sp.ay + 3 }, x, y, shadow: 0 });
+  }
   stands.sort((p, q) => p.d - q.d);
   for (const st of stands) {
     const [sx, sy] = at(st.x, st.y);
-    if (st.shadow) {
+    if (st.shadow && !L.mask) {
       const w = st.shadow * 22.6 * 1.5;
       const hh = st.shadow * 11.3 * 1.5;
       g.save();
@@ -240,10 +282,10 @@ function scene(L: Look): HTMLCanvasElement {
       g.restore();
     }
     if (st.added) added(st.s, sx, sy);
-    else draw(st.s, sx, sy);
+    else draw(st.s, sx, sy, st.cat);
     if (st.s.lights) lit.push({ s: st.s, x: Math.round(sx), y: Math.round(sy) });
   }
-  if (!L.lights) {
+  if (!L.lights || L.mask) {
     g.setTransform(1, 0, 0, 1, 0, 0);
     return cv;
   }
@@ -310,6 +352,15 @@ function scene(L: Look): HTMLCanvasElement {
   for (const q of A.slatLights()) {
     const [px, py] = at(q.x, q.y);
     spot(px, py, q.r, q.strength);
+  }
+  for (const [, x, y] of L.words ?? []) {
+    const [px, py] = at(x, y);
+    spot(px, py - 10, 40, 0.85);
+  }
+  // THE DAY THAT FILLS THE HALL: its glows over the floor and on every tile of wall
+  for (const q of dayLights()) {
+    const [px, py] = at(q.x, q.y);
+    glows.push([px, py - q.up, q.r, q.color, q.a]);
   }
   dg.globalAlpha = 1;
   dg.globalCompositeOperation = 'source-over';
@@ -421,6 +472,15 @@ function gate(): HTMLCanvasElement {
   return cv;
 }
 
+/** (A CHECK, not in the sheet: the words dropped on the hall's floor, in its slats of sun and out of them, three times the game's size) */
+function words(): HTMLCanvasElement {
+  const W9: WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+  const list = W9.map((w, i): [WordId, number, number] => [w, 8.6 + (i % 3) * 1.3 + Math.floor(i / 3) * 0.5, 9.4 + Math.floor(i / 3) * 1.4]);
+  const town = scene({ ...START, heroAt: [11.5, 13.2], words: list });
+  const [cx, cy] = at(10.4, 10.8);
+  return crop(town, cx, cy - 10, 200, 120, 3);
+}
+
 async function sheet(): Promise<HTMLCanvasElement> {
   const SW = 1200;
   const picked = await new Promise<HTMLImageElement | null>((ok) => {
@@ -442,7 +502,7 @@ async function sheet(): Promise<HTMLCanvasElement> {
     });
   };
   const pic = (c: HTMLCanvasElement, gap = 14): void => void blocks.push({ h: c.height + gap, draw: (g, y) => g.drawImage(c, Math.round((SW - c.width) / 2), y) });
-  text("The first town as the castle's hall, built for the game.", 25, true);
+  text("The first town as the castle's hall, for the game: sunnier, its things in castle stone.", 25, true);
   text('Left: built from the new pieces, laid and lit the way the game does it. Right: the castle hall as you saw it.', 18, false, '#b8ab98');
   const run = scene(START);
   blocks.push({
@@ -485,8 +545,18 @@ async function sheet(): Promise<HTMLCanvasElement> {
 void (async () => {
   await new Promise((ok) => setTimeout(ok, 0));
   A = makeCastleHallArt();
+  if (which === 'game') {
+    const P = makeDungeonProps();
+    ART = { town: makeTownProps(), folk: FOLK };
+    props = P;
+    DAIS = lookWays(1).way.asleep;
+  } else {
+    ART = { town: A.town, folk: FOLK };
+    props = A.props;
+    DAIS = A.way.asleep;
+  }
   layTiles();
-  const out = mode === 'sheet' ? await sheet() : mode === 'phone' ? phone() : mode === 'owl' ? owl() : mode === 'gate' ? gate() : mode === 'flat' ? scene({ ...START, lights: false }) : scene(START);
+  const out = mode === 'sheet' ? await sheet() : mode === 'phone' ? phone() : mode === 'owl' ? owl() : mode === 'gate' ? gate() : mode === 'flat' ? scene({ ...START, lights: false }) : mode === 'mask' ? scene({ ...START, mask: true }) : mode === 'words' ? words() : scene(START);
   out.style.display = 'block';
   document.body.style.margin = '0';
   document.body.style.background = '#000';

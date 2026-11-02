@@ -34,14 +34,23 @@
 //   stairs(way)         THE STAIRS DOWN TO FLOOR 1 (art/town_ways.ts `townStairs`: its size, anchor and shape pixel for pixel),
 //                       the hall's stone turning to floor 1's mossy stone on the way down
 //   owl                 THE OWL on its hammer beam over the smithy, alive (art/hall_owl.ts): its frames and its loop
+//   town, way, props    THE TOWN'S OWN THINGS IN THE CASTLE'S STONE AND TIMBER (his “Brighter, castle stone (Recommended)”, 2 Nov
+//                       2026): the forge, anvil, rack, trough, the tent's poles and table, the rug, the ring's stones, slab and
+//                       circle, the Lexicon's stand, the stash, the waypoint's dais, the braziers, barrels and urn, painted by the
+//                       game's own painters in the hall's stone, their indigo iron grey steel and their plum wood the hall's
+//                       timber; every rune, glow and mark of the town's teal-to-cyan and the forge's fire exactly as they are
 //
-// NOT PAINTED IN: the dark and the light. As everywhere in the game the renderer lays its dark (the town's own, 0.45) and cuts a
-// hole where each light burns (render.ts, light). What the main chat should place: CASTLE_LIGHTS here and docs/mockups/
-// town_look/README.md ("Made game-ready"). The sun's slats and its light in the air are pictures of light, drawn ADDED to what
-// is under them (globalCompositeOperation 'lighter'), as floor 1's daylight is.
+// NOT PAINTED IN: the dark and the light. As everywhere in the game the renderer lays its dark and cuts a hole where each light
+// burns (render.ts, light), and draws its glows over it. Since his “Brighter, castle stone (Recommended)” the town's dark is a
+// day's, thin and warm (0.1, in place of the town's own 0.45: the town is above ground and the sunniest place in the act), and
+// the day that fills the hall is warm glows over its floor and walls; the windows, the slats and the gate as before, stronger.
+// What the main chat should place: CASTLE_LIGHTS and dayLights() here and docs/mockups/town_look/README.md ("Made game-ready",
+// "Brighter, castle stone"). The sun's slats and its light in the air are pictures of light, drawn ADDED to what is under them
+// (globalCompositeOperation 'lighter'), as floor 1's daylight is.
 //
-// NOT CHANGED: every townsperson, the vendors' places, the ring, the Lexicon, the stash, the waypoint, the shaft's head and its
-// cage, the braziers, barrels and urn are the game's own pictures, in their places, as they are.
+// NOT CHANGED: every townsperson; the shaft's head and its cage (floor 5's own cage, ridden up from there) and the portcullis and
+// the town's bars over the gate (the game's working gate, the seal on it the enemy's) are the game's own pictures, as they are.
+// The game's own pictures of the town's things are not changed either: the castle's are new pictures, for while CASTLE_HALL is on.
 //
 // His art rulebook kept: crisp pixels; one camera; light from the upper left (a face turned to screen-left lit, one to screen-
 // right in shade); a dark base, the place's own colours darker than the darkest word (the light makes it bright); daylight
@@ -61,6 +70,11 @@ import { TOWN_STAIRS } from './town_ways';
 import { Scene } from './floor4';
 import type { V3 } from './floor4';
 import { OWL_LOOP, OWL_LOOP_SECS, owlFrameAt, owlFrames } from './hall_owl';
+import { makeTownProps } from './town';
+import type { TownProps } from './town';
+import { makeWaypointArt } from './crypt_ways';
+import type { WaypointArt } from './crypt_ways';
+import { makeDungeonProps } from './props';
 
 /** THE SWITCH: off until the main chat puts it in, on his yes. */
 export const CASTLE_HALL = { on: false };
@@ -127,13 +141,15 @@ export const DAY = { gap: '#fff0c4', gapDim: '#e8d6a6', road: ['#b8a47a', '#d4c0
 const LIGHTS = new Set<string>([DAY.gap, DAY.gapDim, ...DAY.road, ...DAY.grass, ...DAY.block]);
 
 /**
- * THE SUN, A's low morning gold, as LIGHT to add (its pictures are drawn added: 'lighter'): on the floor, a slat's rim and its
- * core; in the air, three steps and its motes. Its glow (the renderer's) at a window and at the gate.
+ * THE SUN, A's low morning gold, as LIGHT to add (its pictures are drawn added: 'lighter'): on the floor, a slat's edge (a game
+ * pixel round it, so it reaches wider), its rim and its core; in the air, three steps and its motes. Its glow (the renderer's)
+ * at a window and at the gate. (Stronger since his “Brighter, castle stone (Recommended)”: the core was #7e5e2a, the air's
+ * brightest #4a3f24.)
  */
 export const SUN = {
-  slat: ['#46341a', '#7e5e2a'] as const,
-  air: ['#1a160c', '#302918', '#4a3f24'] as const,
-  mote: '#6a5c3a',
+  slat: ['#2e2210', '#62492a', '#9c7a3e'] as const,
+  air: ['#241e10', '#443a22', '#685834'] as const,
+  mote: '#8a7a52',
   glow: '#ffdf9a',
   day: '#ffe9b8',
 };
@@ -747,10 +763,19 @@ function sunTile(tx: number, ty: number): Sprite | null {
       const bx = x >> 1;
       const by = y >> 1;
       all++;
-      if (!blockLit(bx, by)) continue;
+      if (!blockLit(bx, by)) {
+        // (THE SLAT WIDENED: a game pixel of its light's edge beside it, all round)
+        if (!(blockLit(bx - 1, by) || blockLit(bx + 1, by) || blockLit(bx, by - 1) || blockLit(bx, by + 1))) continue;
+        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const yy = y + dy;
+          const h2 = halfWidth(yy);
+          if (yy < TH && x + dx >= HALF - h2 && x + dx < HALF + h2) p.set(x + dx, yy, SUN.slat[0]);
+        }
+        continue;
+      }
       n++;
       const rim = !blockLit(bx - 1, by) || !blockLit(bx + 1, by) || !blockLit(bx, by - 1) || !blockLit(bx, by + 1);
-      const c = rim ? SUN.slat[0] : SUN.slat[1];
+      const c = rim ? SUN.slat[1] : SUN.slat[2];
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         const yy = y + dy;
         const h2 = halfWidth(yy);
@@ -759,7 +784,9 @@ function sunTile(tx: number, ty: number): Sprite | null {
     }
   }
   sunFrac.set(key, n / Math.max(1, all));
-  const s = n > 0 ? p.sprite(HALF, 0, GRAIN) : null;
+  let any = false;
+  for (let i = 3; i < p.d.length && !any; i += 4) any = p.d[i] > 0;
+  const s = any ? p.sprite(HALF, 0, GRAIN) : null;
   sunTiles.set(key, s);
   return s;
 }
@@ -1340,25 +1367,194 @@ function pixelsOf(s: Sprite): Px {
 }
 
 // =================================================================================================
+// THE TOWN'S OWN THINGS IN THE CASTLE'S STONE AND TIMBER (his “Brighter, castle stone (Recommended)”, 2 Nov 2026, offered as: lift
+// the town's light so it's sunny like the picture, and give its own things the castle's stone and wood). As in the castle hall he
+// said yes to (its dev page: the town's things painted in the look's stone, their indigo iron and steel brought to
+// grey steel, their plum wood to the hall's timber): the forge, the anvil, the rack, the trough, the tent's poles and table, the
+// rug, the ring's standing stones, slab and circle, the Lexicon's stand, the stash, the waypoint's dais, the braziers, the barrels
+// and the urn, painted by the game's own painters (art/town.ts, art/crypt_ways.ts, art/props.ts) in the hall's stone, then every
+// pixel of indigo iron or stone turned to grey steel and every pixel of plum wood to the hall's timber, by how light it is. KEPT
+// EXACTLY: every rune, glow and mark of the town's teal-to-cyan (the ring's runes, the Lexicon's script, the stash's stone, the
+// waypoint's light), the forge's fire, the gold, the cloth, and every light a picture gives off; the ring's column of light and its
+// swirling letters are the game's own, untouched. The people are not touched. The game's own pictures are not changed: these are
+// new ones, for while CASTLE_HALL is on.
+
+/** The town's own things' stone: the hall's (as the castle hall he saw painted them, its dev page's themeOf). */
+export const TOWN_THEME: Theme = {
+  id: 'castlehalltown',
+  mortar: SEAM,
+  slab: [FLAGS[1], FLAGS[2], FLAGS[3], FLAGS[4]],
+  slabs: 1.6,
+  cap: [SEAM, STONE[2], STONE[3], STONE[3], STONE[4]],
+  capLow: [SEAM, STONE[1], STONE[2], STONE[2], STONE[3]],
+  lit: [SEAM, STONE[1], STONE[2], STONE[3], STONE[4]],
+  shade: [SEAM, STONE[0], STONE[1], STONE[2], STONE[3]],
+};
+/** Grey steel, for what was the town's indigo iron and steel (the castle hall's, as he saw it). */
+export const STEEL5: R5 = ['#19191b', '#2e2f33', '#4f5156', '#7e8186', '#b4b6ba'];
+function hsvOf(c: string): [number, number, number] {
+  const [r, g, b] = hexOf(c);
+  const mx = Math.max(r, g, b);
+  const mn = Math.min(r, g, b);
+  const d = mx - mn;
+  let h = 0;
+  if (d > 0) {
+    if (mx === r) h = 60 * (((g - b) / d) % 6);
+    else if (mx === g) h = 60 * ((b - r) / d + 2);
+    else h = 60 * ((r - g) / d + 4);
+  }
+  if (h < 0) h += 360;
+  return [h, mx === 0 ? 0 : d / mx, mx / 255];
+}
+/** The town's own teal-to-cyan (a rune, the Lexicon's script, the stash's stone, the waypoint's light): never touched. */
+export function isTownTeal(c: string): boolean {
+  const [h, s] = hsvOf(c);
+  return h >= 160 && h <= 205 && s > 0.3;
+}
+const toneMemo = new Map<string, string>();
+/**
+ * A colour of the town's own things brought into the castle hall (the castle hall he said yes to, its dev page's
+ * `graded`, but nothing else changed): its indigo iron, steel and stone to grey steel, its plum wood to the hall's timber, each
+ * by how light it is; the rest (the teal-to-cyan, fire, gold, cloth, the bright purple of the table of wares) as it is.
+ */
+export function castleTone(c: string): string {
+  const key = c.toLowerCase();
+  const hit = toneMemo.get(key);
+  if (hit) return hit;
+  const [h, s, v] = hsvOf(key);
+  const [r, g, b] = hexOf(key);
+  const lum = 0.3 * r + 0.55 * g + 0.15 * b;
+  const at = (ramp: readonly string[], lo: number, hi: number): string => {
+    const t = Math.max(0, Math.min(3.999, ((lum - lo) / (hi - lo)) * 4));
+    const i = Math.floor(t);
+    return mixC(ramp[i], ramp[Math.min(4, i + 1)], t - i);
+  };
+  let out = key;
+  if (isTownTeal(key)) out = key;
+  else if (h >= 225 && h < 292 && s < 0.72 && v < 0.92) out = at(STEEL5, 10, 200);
+  else if (h >= 292 && h <= 352 && s < 0.6 && v < 0.75) out = at(WOOD, 8, 120);
+  toneMemo.set(key, out);
+  return out;
+}
+/** A picture of the game's with every pixel's colour brought into the hall by `tone`: the same size, anchor, shape and lights. */
+export function inTheHall(s: Sprite, tone: (c: string) => string = castleTone): Sprite {
+  const p = pixelsOf(s);
+  const out = new Px(p.w, p.h);
+  out.d.set(p.d);
+  const memo = new Map<number, [number, number, number]>();
+  for (let i = 0; i < out.d.length; i += 4) {
+    if (out.d[i + 3] === 0) continue;
+    const key = (out.d[i] << 16) | (out.d[i + 1] << 8) | out.d[i + 2];
+    let v = memo.get(key);
+    if (!v) memo.set(key, (v = hexOf(tone(`#${key.toString(16).padStart(6, '0')}`))));
+    out.d[i] = v[0];
+    out.d[i + 1] = v[1];
+    out.d[i + 2] = v[2];
+  }
+  const d = s.density ?? 1;
+  const n = out.sprite(s.ax * d, s.ay * d, d);
+  if (s.lights) n.lights = s.lights;
+  if (s.aura) n.aura = s.aura;
+  if (s.tails) n.tails = s.tails;
+  if (s.charge) n.charge = s.charge;
+  return n;
+}
+/** The town's own things (art/town.ts makeTownProps, as the game knows them), in the castle's stone and timber. */
+function castleTown(): TownProps {
+  const g = makeTownProps(TOWN_THEME);
+  const r = (s: Sprite): Sprite => inTheHall(s);
+  const out: TownProps = {
+    forge: g.forge.map(r),
+    anvil: r(g.anvil),
+    rack: r(g.rack),
+    trough: r(g.trough),
+    tentBack: r(g.tentBack),
+    tentTable: r(g.tentTable),
+    rug: r(g.rug),
+    runeSlab: g.runeSlab.map(r),
+    runeStone: g.runeStone.map((q) => ({ dim: r(q.dim), alight: r(q.alight) })),
+    runeRing: g.runeRing.map(r),
+    lexicon: g.lexicon.map(r),
+    stash: r(g.stash),
+  };
+  // (the ring made new (art/ring3.ts): its stones, its circle in the floor and its slab in the hall's stone; its column of light
+  // and its swirling letters are light, the game's own)
+  if (g.ring3) {
+    const q = g.ring3;
+    out.ring3 = {
+      ...q,
+      stones: q.stones.map((a) => a.map((b) => b.map(r))),
+      floor: q.floor.map(r),
+      floorDark: r(q.floorDark),
+      slabEmpty: r(q.slabEmpty),
+      slabSet: q.slabSet.map(r),
+      slabRunes: q.slabRunes.map(r),
+      slab: q.slab.map(r),
+      fuse: q.fuse.map(r),
+    };
+  }
+  return out;
+}
+/** The waypoint (art/crypt_ways.ts makeWaypointArt): its dais asleep and awake in the hall's stone; its motes and its warp, light, the game's own. */
+function castleWay(): WaypointArt {
+  const w = makeWaypointArt(TOWN_THEME);
+  return { ...w, asleep: inTheHall(w.asleep), awake: w.awake.map((s) => inTheHall(s)) };
+}
+/** The braziers, the barrels and the urn the town stands about (art/props.ts), their iron grey steel and their staves the hall's timber. */
+export interface CastleProps {
+  brazier: Sprite[];
+  barrel: Sprite;
+  urn: Sprite;
+}
+function castleProps(): CastleProps {
+  const g = makeDungeonProps();
+  return { brazier: g.brazier.map((s) => inTheHall(s)), barrel: inTheHall(g.barrel), urn: inTheHall(g.urn) };
+}
+
+// =================================================================================================
 // THE LIGHTS, for the main chat to place (the renderer's own: a hole cut in the dark, render.ts `spot`, and a glow drawn over it,
 // `drawGlow`). In game pixels, from where each thing is anchored; the slats' holes worked out from the windows.
 
 export interface SlatLight { x: number; y: number; r: number; strength: number }
+/** A glow of the day's (render.ts `drawGlow`, drawn added over everything): at the floor point (x, y) in tiles, `up` game pixels over it. */
+export interface DayGlow { x: number; y: number; up: number; r: number; color: string; a: number }
+/** THE DAY'S OWN LIGHT in the hall: a warm white, for the daylight that fills it (the sun's own gold is SUN.glow). */
+export const DAYLIGHT = '#ffeccc';
 export const CASTLE_LIGHTS = {
-  /** THE TOWN'S OWN DARK, as it is (render.ts: rgba(8, 5, 14, 0.45)), its vignette (VIGNETTE_TOWN 0.4), the hero's pool (170 at 1): unchanged. */
-  dark: { a: 0.45, rgb: [8, 5, 14] as const },
-  vignette: 0.4,
+  /**
+   * THE TOWN'S DARK, MADE A DAY'S (his “Brighter, castle stone (Recommended)”, 2 Nov 2026: the town is above ground and the
+   * sunniest place in the act): a thin warm dark in place of the town's own (render.ts rgba(8, 5, 14, 0.45)), laid as the game
+   * lays a day's (render.ts `day`, as act 1's open ground and the camp: { dark, tint, vignette, pool }); its vignette lighter
+   * (VIGNETTE_TOWN 0.4 now); the hero's pool as now (170 at 1).
+   */
+  dark: { a: 0.1, rgb: [26, 18, 12] as const },
+  vignette: 0.26,
   hero: { r: 170, strength: 1 },
-  /** EACH WINDOW in the wall along y (the day through its gaps): a hole at its middle, `up` over the wall's foot, so its gaps read as daylight, and its warm glow; and the room's daylight before it, a wide soft hole on the floor `out` tiles in from the wall (0.3 of that along it), a faint warm glow over it. */
-  window: { up: 26, r: 40, strength: 0.7, glow: { r: 26, color: SUN.glow, a: 0.16 }, floor: { out: 2.6, r: 100, strength: 0.55, glow: { r: 64, color: SUN.glow, a: 0.1 } } },
+  /** EACH WINDOW in the wall along y (the day through its gaps): a hole at its middle, `up` over the wall's foot, so its gaps read as daylight, and its warm glow; and the room's daylight before it, a wide hole on the floor `out` tiles in from the wall (0.3 of that along it), a wide warm glow over it. */
+  window: { up: 26, r: 48, strength: 0.9, glow: { r: 34, color: SUN.glow, a: 0.12 }, floor: { out: 2.6, r: 140, strength: 0.8, glow: { r: 120, color: SUN.glow, a: 0.08 } } },
   /** THE SLATS OF SUN on the floor: a hole at each lit tile's middle, by how much of it is in the sun (`slatLights()`: the list). */
   slat: { r0: 24, r1: 48, s0: 0.4, s1: 0.85 },
-  /** EVERY TILE OF WALL THAT STANDS (as floor 1's): a low hole at the foot of its face under its middle, so the castle's stone reads in the hall's daylight. */
-  wall: { up: 26, r: 36, strength: 0.4 },
+  /** EVERY TILE OF WALL THAT STANDS (as floor 1's): a hole at the foot of its face under its middle, so the castle's stone reads in the hall's daylight; and the day on its face, a warm glow (in `dayLights()`). */
+  wall: { up: 26, r: 40, strength: 0.6, glow: { up: 22, r: 46, color: DAYLIGHT, a: 0.035 } },
   /** THE GATE: the floor before it lit as now (render.ts: 84 at 0.9, 14 up from TOWN.gate), and the day's glow in its way. */
-  gate: { up: 14, r: 84, strength: 0.9, glow: { up: 30, r: 46, color: SUN.day, a: 0.2 } },
+  gate: { up: 14, r: 84, strength: 0.9, glow: { up: 30, r: 46, color: SUN.day, a: 0.3 } },
+  /** THE DAY THAT FILLS THE HALL: warm glows over its floor, every `every` tiles from (x0, y0) to (x1, y1), and smaller ones along its two near edges `edge.in` tiles in from them (in `dayLights()`). */
+  day: { x0: 8, y0: 8, x1: 19, y1: 17, every: 2.75, r: 90, color: DAYLIGHT, a: 0.05, edge: { in: 1.3, r: 60, a: 0.045 } },
   /** The braziers, the forge, the Lexicon, the table of wares, the wordsmith's slab: as now (render.ts light). */
 } as const;
+/** THE DAY'S GLOWS in the hall (CASTLE_LIGHTS.day over the floor, CASTLE_LIGHTS.wall.glow on every tile of wall that stands): the list, for the renderer to draw added with the rest of its glows. */
+export function dayLights(): DayGlow[] {
+  const L = CASTLE_LIGHTS;
+  const out: DayGlow[] = [];
+  const D = L.day;
+  for (let x = D.x0; x <= D.x1 + 0.01; x += D.every) for (let y = D.y0; y <= D.y1 + 0.01; y += D.every) out.push({ x, y, up: 0, r: D.r, color: D.color, a: D.a });
+  for (let x = D.x0; x <= HALL.x1 - D.edge.in + 0.01; x += D.every) out.push({ x, y: HALL.y1 - D.edge.in, up: 0, r: D.edge.r, color: D.color, a: D.edge.a });
+  for (let y = D.y0; y < HALL.y1 - D.edge.in - 1; y += D.every) out.push({ x: HALL.x1 - D.edge.in, y, up: 0, r: D.edge.r, color: D.color, a: D.edge.a });
+  const w = L.wall.glow;
+  for (let x = HALL.x0; x < HALL.x1; x++) if (x < GATE_AT.a || x > GATE_AT.a + 2) out.push({ x: x + 0.5, y: HALL.y0, up: w.up, r: w.r, color: w.color, a: w.a });
+  for (let y = HALL.y0; y < HALL.y1; y++) out.push({ x: HALL.x0, y: y + 0.5, up: w.up, r: w.r, color: w.color, a: w.a });
+  return out;
+}
 
 // =================================================================================================
 // ALL OF IT
@@ -1384,6 +1580,12 @@ export interface CastleHallArt {
   pieces: Piece[];
   /** The holes to cut in the dark for the slats of sun on the floor (game pixels for r; x, y the floor's point, in tiles). */
   slatLights(): SlatLight[];
+  /** THE TOWN'S OWN THINGS in the castle's stone and timber: in place of the game's `art.town` (art/town.ts makeTownProps) while CASTLE_HALL is on (made when first asked for). */
+  readonly town: TownProps;
+  /** THE WAYPOINT's dais in the castle's stone: in place of the town's (made when first asked for). */
+  readonly way: WaypointArt;
+  /** THE BRAZIERS, BARRELS AND URN of the town, their iron grey steel and their staves the hall's timber: in place of the game's `art.props`' (made when first asked for). */
+  readonly props: CastleProps;
 }
 
 /** The place's own pieces' names. */
@@ -1414,6 +1616,9 @@ export function makeCastleHallArt(): CastleHallArt {
   const beyonds = new Map<boolean, Sprite>();
   const stairs = new Map<string, Sprite>();
   const pillar = gatePillar();
+  let town: TownProps | null = null;
+  let way: WaypointArt | null = null;
+  let props: CastleProps | null = null;
   made = {
     floor(tx, ty) {
       const key = `${tx},${ty}`;
@@ -1474,6 +1679,15 @@ export function makeCastleHallArt(): CastleHallArt {
         out.push({ x: tx + 0.5, y: ty + 0.5, r: Math.round(L.r0 + (L.r1 - L.r0) * Math.min(1, f * 1.6)), strength: +(L.s0 + (L.s1 - L.s0) * Math.min(1, f * 1.6)).toFixed(2) });
       }
       return out;
+    },
+    get town() {
+      return (town ??= castleTown());
+    },
+    get way() {
+      return (way ??= castleWay());
+    },
+    get props() {
+      return (props ??= castleProps());
     },
   };
   return made;

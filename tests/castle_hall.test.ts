@@ -19,7 +19,10 @@ import { inflateSync } from 'node:zlib';
 import {
   AIR_DEPTH, CASTLE_ADDED, CASTLE_HALL, CASTLE_LIGHTS, CASTLE_OWL_AT, CASTLE_OWN, CASTLE_TOP, CH_WALL, CGATE, HALL, IVY_PIC, PILLAR_PIC, POT_PIC, ROOF_PIC, SUN,
   SUN_WINDOWS, TRUSSES_X, TRUSS_PIC, WINDOWS, isDaylight, makeCastleHallArt, sunAt, FLOWERS, STAIRS_THEME, FLOOR1_THEME,
+  DAYLIGHT, STEEL5, STONE, TOWN_THEME, WOOD, castleTone, dayLights, isTownTeal,
 } from '../src/art/castle_hall';
+import { makeTownProps } from '../src/art/town';
+import { lookWays } from '../src/art/floors';
 import { OWL_LOOP, OWL_LOOP_SECS, OWL_PERCH, OWL_PIC, OWL_POSES, owlFrameAt } from '../src/art/hall_owl';
 import { makeGroundArt, WALL_LOOK } from '../src/art/ground';
 import { TOWN_STAIRS, townStairs } from '../src/art/town_ways';
@@ -264,7 +267,10 @@ test('Colour 4: its floor, walls, roof and the things of its own darker than the
     if (p99 >= darkest) bad.push(`${n} ${p99}`);
   }
   assert.ok(bad.length === 0, `brighter than the darkest word (${darkest.toFixed(0)}): ${bad.join(', ')}`);
-  assert.ok(CASTLE_LIGHTS.dark.a === 0.45 && CASTLE_LIGHTS.vignette === 0.4 && CASTLE_LIGHTS.hero.r === 170, "the town's own dark, vignette and pool round the hero, as they are");
+  // (the light makes it bright: since his “Brighter, castle stone (Recommended)” a day's thin warm dark, not the town's own 0.45)
+  const dk: number = CASTLE_LIGHTS.dark.a;
+  const [tr, tg, tb] = CASTLE_LIGHTS.dark.rgb;
+  assert.ok(dk <= 0.12 && tr >= tb && CASTLE_LIGHTS.vignette <= 0.3 && CASTLE_LIGHTS.hero.r === 170, `a thin warm dark (${dk}, ${CASTLE_LIGHTS.dark.rgb.join(' ')}), a light vignette (${CASTLE_LIGHTS.vignette}), the hero's pool as now`);
 });
 
 test('Pixels 4: light from the upper left: the wall along x (turned to screen-left) lighter than the wall along y', () => {
@@ -274,14 +280,14 @@ test('Pixels 4: light from the upper left: the wall along x (turned to screen-le
   assert.ok(X > Y + 3, `along x ${X.toFixed(0)}, along y ${Y.toFixed(0)}`);
 });
 
-test("the sun through the boards: slats on the floor where the windows throw them, the gaps' own shapes; its light in the air; pictures of light, dim, drawn added", () => {
+test("the sun through the boards: slats on the floor where the windows throw them, the gaps' own shapes; its light in the air; pictures of light, drawn added", () => {
   assert.ok(suns.length >= 15, `${suns.length} tiles of floor in the sun`);
   // (all of it in from the wall along y, before the windows: the sun comes in only there)
   for (const [n] of suns) {
     const [x, y] = n.split(' ').pop()!.split(',').map(Number);
     assert.ok(x < 15 && SUN_WINDOWS.some((W) => y >= W.c - 1.5 && y <= W.c + 4), `${n}: before a window`);
   }
-  for (const [n, s] of suns) each(s, (r, g, b) => assert.ok(SUN.slat.includes(hex(r, g, b) as never), `${n}: only the slats' two tones`));
+  for (const [n, s] of suns) each(s, (r, g, b) => assert.ok(SUN.slat.includes(hex(r, g, b) as never), `${n}: only the slats' three tones`));
   // (a slat is the gap's shape: a point in the sun sees a gap in the boards up the sun's line, a point beside it may not)
   let edges = 0;
   for (const y of [9, 12, 15, 18]) for (let x = 6.05; x < 14; x += 0.05) if (sunAt(x, y, 0) !== sunAt(x + 0.05, y, 0)) edges++;
@@ -289,12 +295,12 @@ test("the sun through the boards: slats on the floor where the windows throw the
   for (const [n, s] of own.filter(([m]) => light(m))) {
     let max = 0;
     each(s, (r, g, b) => (max = Math.max(max, luma(r, g, b))));
-    assert.ok(max < 100, `${n}: light to add, never solid: its brightest ${max.toFixed(0)}`);
+    assert.ok(max < 140, `${n}: light to add, never solid: its brightest ${max.toFixed(0)}`);
   }
   for (const [, s] of suns) {
     let max = 0;
     each(s, (r, g, b) => (max = Math.max(max, luma(r, g, b))));
-    assert.ok(max < 100, `a slat to add: ${max.toFixed(0)}`);
+    assert.ok(max < 140, `a slat to add: ${max.toFixed(0)}`);
   }
   for (const p of A.pieces.filter((q) => light(q.name))) {
     assert.ok(CASTLE_ADDED.has(p.name) && p.frames!.length === 4, `${p.name}: drawn added, four frames`);
@@ -497,6 +503,38 @@ function readPng(path: string): { w: number; h: number; px: (x: number, y: numbe
 }
 
 const PICTURE = join('docs', 'mockups', 'town_look', 'pictures', 'game_ready.png');
+test("game_ready.png: the hall built the game's way as bright as the castle hall he said yes to beside it (its floor and walls, on average, within a tenth)", () => {
+  const P = readPng(PICTURE);
+  // (the first picture: the game's (left) and his (right), each 600 x 420 at the game's size, under the title and its line)
+  const Y = 43 + 36;
+  const OX = 284;
+  const OY = 55;
+  let ng = 0;
+  let nh = 0;
+  let sg = 0;
+  let sh = 0;
+  for (let sy = 0; sy < 420; sy++) for (let sx = 0; sx < 600; sx++) {
+    // (the floor: back from the screen to the tile; the two back walls up to 40 over their feet)
+    const u = (sx - OX) / 16;
+    const v = (sy - OY) / 8;
+    const tx = (u + v) / 2;
+    const ty = (v - u) / 2;
+    const floor = tx > HALL.x0 + 0.1 && tx < HALL.x1 - 0.1 && ty > HALL.y0 + 0.1 && ty < HALL.y1 - 0.1;
+    const xw = u + 6;
+    const zx = OY + (xw + 6) * 8 - sy;
+    const yw = 6 - u;
+    const zy = OY + (6 + yw) * 8 - sy;
+    const wall = (xw > HALL.x0 + 0.2 && xw < HALL.x1 - 0.2 && zx > 1 && zx < 38) || (yw > HALL.y0 + 0.2 && yw < HALL.y1 - 0.2 && zy > 1 && zy < 38);
+    if (!floor && !wall) continue;
+    sg += luma(...P.px(sx, Y + sy));
+    sh += luma(...P.px(600 + sx, Y + sy));
+    ng++;
+    nh++;
+  }
+  const g = sg / ng;
+  const h = sh / nh;
+  assert.ok(Math.abs(g - h) < h * 0.1, `the game's ${g.toFixed(1)} against his picture's ${h.toFixed(1)}`);
+});
 test("game_ready.png: 1200 wide; on its phone screen nothing pink but the game's own (the mystic's, the seal on the gate's bars) and the knight's, the knight standing out", () => {
   assert.ok(existsSync(PICTURE), 'the picture is there');
   const P = readPng(PICTURE);
@@ -542,4 +580,119 @@ test("game_ready.png: 1200 wide; on its phone screen nothing pink but the game's
   assert.ok(hi > floor + 50 && lo < floor - 20, `the knight: ${hi.toFixed(0)} and ${lo.toFixed(0)} against the floor round him, ${floor.toFixed(0)}`);
   void pink;
   void CASTLE_TOP;
+});
+
+// =================================================================================================
+// HIS “Brighter, castle stone (Recommended)”, 2 Nov 2026: the town's own things in the castle's stone and timber, and the town's
+// light lifted so it reads as sunny as the castle hall he said yes to
+
+const GAME = makeTownProps();
+const GAME_PROPS = makeDungeonProps();
+const GAME_WAY = lookWays(1).way;
+type Pair = [string, Sprite, Sprite];
+const C = A.town;
+/** (the things the game's painters paint without the place's stone: only their indigo and plum may change) */
+const plain: Pair[] = [
+  ['the anvil', GAME.anvil, C.anvil], ['the rack', GAME.rack, C.rack], ['the trough', GAME.trough, C.trough], ["the tent's back", GAME.tentBack, C.tentBack],
+  ['the table of wares', GAME.tentTable, C.tentTable], ['the rug', GAME.rug, C.rug], ['the stash', GAME.stash, C.stash],
+  ...GAME_PROPS.brazier.map((s, i): Pair => [`a brazier ${i}`, s, A.props.brazier[i]]), ['a barrel', GAME_PROPS.barrel, A.props.barrel], ['the urn', GAME_PROPS.urn, A.props.urn],
+];
+/** (the things painted in the place's stone: the forge, the ring, the Lexicon, the waypoint's dais) */
+const themed: Pair[] = [
+  ...GAME.forge.map((s, i): Pair => [`the forge ${i}`, s, C.forge[i]]), ...GAME.lexicon.map((s, i): Pair => [`the Lexicon ${i}`, s, C.lexicon[i]]),
+  ...GAME.runeSlab.map((s, i): Pair => [`the slab ${i}`, s, C.runeSlab[i]]), ...GAME.runeStone.flatMap((q, i): Pair[] => [[`stone ${i} dim`, q.dim, C.runeStone[i].dim], [`stone ${i} alight`, q.alight, C.runeStone[i].alight]]),
+  ...GAME.runeRing.map((s, i): Pair => [`the ring's circle ${i}`, s, C.runeRing[i]]),
+  ...(GAME.ring3 && C.ring3
+    ? [
+        ...GAME.ring3.stones.flatMap((a, i) => a.flatMap((b, j) => b.filter((_, k) => k % 3 === 0).map((s, k): Pair => [`ring stone ${i} ${j} ${k}`, s, C.ring3!.stones[i][j][k * 3]]))),
+        ...GAME.ring3.slab.map((s, i): Pair => [`the ring's slab ${i}`, s, C.ring3!.slab[i]]),
+        ...GAME.ring3.floor.filter((_, i) => i % 2 === 0).map((s, i): Pair => [`the ring's circle ${i * 2}`, s, C.ring3!.floor[i * 2]]),
+        ['the slab, empty', GAME.ring3.slabEmpty, C.ring3.slabEmpty] as Pair,
+      ]
+    : []),
+  // (the town's waypoint as the game has it today: floor 1's crypt's, art/floors.ts lookWays(1))
+  ['the waypoint asleep', GAME_WAY.asleep, A.way.asleep], ...GAME_WAY.awake.filter((_, i) => i % 3 === 0).map((s, i): Pair => [`the waypoint awake ${i * 3}`, s, A.way.awake[i * 3]]),
+];
+const isIndigoOrPlum = (r: number, g: number, b: number): boolean => {
+  const [h, sa, v] = hsv(r, g, b);
+  return h >= 225 && h <= 352 && sa > 0.22 && sa < 0.6 && v < 0.75;
+};
+
+test("the town's own things in the castle's stone and timber: the same pictures (size, anchor, shape, lights), their indigo grey steel and their plum the hall's timber, every rune, glow and mark of the town's teal-to-cyan and the forge's fire exactly as they are", () => {
+  assert.ok(STEEL5.length === 5 && WOOD.length === 5, 'grey steel and the hall timber');
+  for (const [n, g, c] of [...plain, ...themed]) {
+    const pg = paintingOf(g);
+    const pc = paintingOf(c);
+    assert.ok(pg.w === pc.w && pg.h === pc.h && anchor(g).join() === anchor(c).join() && (g.density ?? 1) === (c.density ?? 1), `${n}: the game's size and anchor`);
+    assert.equal(sameShape(g, c), 0, `${n}: the game's shape`);
+    assert.deepEqual(c.lights ?? null, g.lights ?? null, `${n}: the lights it gives off, as the game's`);
+    // every rune, glow and mark of the town's teal-to-cyan, where it is and as it is
+    let moved = 0;
+    for (let i = 0; i < pg.d.length; i += 4) {
+      if (pg.d[i + 3] === 0) continue;
+      const cg = hex(pg.d[i], pg.d[i + 1], pg.d[i + 2]);
+      if (isTownTeal(cg) && cg !== hex(pc.d[i], pc.d[i + 1], pc.d[i + 2])) moved++;
+    }
+    assert.equal(moved, 0, `${n}: its teal-to-cyan as it is`);
+    let left = 0;
+    each(c, (r, gg, b) => void (isIndigoOrPlum(r, gg, b) && left++));
+    assert.ok(left === 0, `${n}: ${left} pixels of indigo or plum left`);
+  }
+  // the plain things: every pixel the game's, or its indigo or plum brought into the hall (nothing else touched: the fire, the gold, the cloth)
+  for (const [n, g, c] of plain) {
+    const pg = paintingOf(g);
+    const pc = paintingOf(c);
+    let bad = 0;
+    let changed = 0;
+    for (let i = 0; i < pg.d.length; i += 4) {
+      if (pg.d[i + 3] === 0) continue;
+      const cg = hex(pg.d[i], pg.d[i + 1], pg.d[i + 2]);
+      const cc = hex(pc.d[i], pc.d[i + 1], pc.d[i + 2]);
+      if (cc !== castleTone(cg)) bad++;
+      if (cc !== cg) changed++;
+    }
+    assert.ok(bad === 0, `${n}: ${bad} pixels not the game's or its tone in the hall`);
+    if (n !== 'the urn') assert.ok(changed > 20, `${n}: brought into the hall (${changed} pixels)`);
+  }
+  // the things of stone: in the hall's stone
+  const hall = new Set<string>([...STONE, TOWN_THEME.mortar, ...TOWN_THEME.slab].map((q) => q.toLowerCase()));
+  for (const [n, , c] of themed.filter(([m]) => /forge|Lexicon|slab|stone|waypoint asleep/.test(m))) {
+    let k = 0;
+    each(c, (r, g, b) => void (hall.has(hex(r, g, b)) && k++));
+    assert.ok(k > 30, `${n}: ${k} pixels of the hall's stone`);
+  }
+  // the ring's column of light and its swirling letters: the game's own, untouched
+  if (GAME.ring3 && C.ring3) for (const [k, list] of [['column', 'column'], ['letters', 'letters']] as const) {
+    const a = (GAME.ring3[list] as unknown as (Sprite | Sprite[])[]).flat()[0];
+    const b = (C.ring3[k] as unknown as (Sprite | Sprite[])[]).flat()[0];
+    assert.equal(sameShape(a, b), 0, `the ring's ${k}: as the game's`);
+    const pa = paintingOf(a);
+    const pb = paintingOf(b);
+    let diff = 0;
+    for (let i = 0; i < pa.d.length; i++) if (pa.d[i] !== pb.d[i]) diff++;
+    assert.equal(diff, 0, `the ring's ${k}: the game's own colours`);
+  }
+  // the forge's fire: its embers and flames as they are
+  const fire = (s: Sprite): number => {
+    let k = 0;
+    each(s, (r, g, b) => {
+      const [h, sa, v] = hsv(r, g, b);
+      if (h >= 10 && h <= 50 && sa > 0.55 && v > 0.6) k++;
+    });
+    return k;
+  };
+  for (let i = 0; i < GAME.forge.length; i++) assert.equal(fire(C.forge[i]), fire(GAME.forge[i]), `the forge ${i}: its fire as it is`);
+});
+
+test("the town's light lifted (his “Brighter, castle stone”): a thin warm day's dark, the day's glows over the hall's floor and walls, warm, none outside it", () => {
+  const list = dayLights();
+  assert.ok(list.length >= 40, `${list.length} glows of the day`);
+  for (const q of list) {
+    const onFloor = q.x >= HALL.x0 && q.x <= HALL.x1 && q.y >= HALL.y0 && q.y <= HALL.y1;
+    assert.ok(onFloor, `a glow at (${q.x}, ${q.y}): in the hall`);
+    const [h, sa] = hsv(...rgb(q.color));
+    assert.ok(h >= 25 && h <= 55 && sa > 0.1 && sa < 0.5 && q.a <= 0.1, `a glow of ${q.color} at ${q.a}: a warm white, soft`);
+  }
+  assert.ok(rgb(DAYLIGHT)[0] > rgb(DAYLIGHT)[2], 'the day warm');
+  assert.ok(CASTLE_LIGHTS.window.floor.r > 100 && CASTLE_LIGHTS.window.strength > 0.7, 'the windows: wider and stronger');
 });

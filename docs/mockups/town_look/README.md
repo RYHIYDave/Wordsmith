@@ -278,8 +278,8 @@ place: the sun's own pictures are light, drawn added.
   `grass in the joints` (tufts a few pixels high up through a tile's near joints).
 - `sun(tx, ty)`: THE SUN'S SLATS on the floor, LIGHT: the low gold morning sun through the gaps in the boards of the four windows in
   the wall along y, worked out ray by ray (`sunAt`: a point is in the sun if the line from it toward the sun passes through a gap),
-  so each slat is its gap's own shape; a rim and a core (`SUN.slat`, dim: the brightest 97 of 255, because it is ADDED), in whole
-  game pixels; 64 x 32 at the tile's top corner, or null where no sun falls (44 tiles have some).
+  so each slat is its gap's own shape; an edge, a rim and a core (`SUN.slat`: the brightest 125 of 255, because it is ADDED), in whole
+  game pixels; 64 x 32 at the tile's top corner, or null where no sun falls (48 tiles have some).
 - `face(alongX, tx, ty)`: THE CASTLE'S WALL a tile at a time, as the game lays walls (render.ts: along x, the wall at y 5, its face
   turned to screen-left and lit; along y, the wall at x 5, to screen-right, a tone down). 80 high, the town's walls' height
   (`WALL_LOOK.tall` 40 game pixels); 64 x 112, anchored at the floor point of the tile's top corner, column by column on the
@@ -332,9 +332,10 @@ place: the sun's own pictures are light, drawn added.
   - `a pillar of the hall`: a round column of the castle's stone, ivy winding up it, moss at its foot, the game's pillar's size and
     anchor (art/props.ts: 40 x 100 at (20, 84)), in place of the vault's pillar at (10, 9) and (7, 10).
 
-What is not changed (the brief: the game's own pictures, in their places, NOT recoloured): every townsperson, the smithy, the bazaar,
-the ring, the Lexicon, the stash, the waypoint's dais, the shaft's head and its cage, the braziers, barrels and urn, the
-portcullis and the town's bars. The town is made as now (game/level.ts); only its pictures are new.
+What is not changed: every townsperson, the shaft's head and its cage, the portcullis and the town's bars (the game's own
+pictures, in their places). The town's own things (the smithy, the bazaar, the ring, the Lexicon, the stash, the waypoint's dais,
+the braziers, barrels and urn) have new pictures in the castle's stone and timber since his “Brighter, castle stone (Recommended)”
+(below); the game's own are not changed. The town is made as now (game/level.ts); only its pictures are new.
 
 ### The lights, for the main chat to place
 
@@ -342,19 +343,27 @@ Nothing of the light is painted in: the renderer lays the town's own dark and cu
 `light`, `spot(x, y, r, strength)`), and what gives light is drawn over it (`drawLights`, `drawGlow`). `CASTLE_LIGHTS` holds these
 numbers; `src/dev/preview_castle_hall_game.ts` lays them exactly so. In game pixels:
 
-- THE TOWN'S OWN DARK, AS IT IS: `rgba(8, 5, 14, 0.45)`, its vignette 0.4, the hero's pool 170 at 1 (render.ts, unchanged).
+- THE TOWN'S DARK, MADE A DAY'S (his “Brighter, castle stone (Recommended)”): `rgba(26, 18, 12, 0.1)` in place of the town's own
+  `rgba(8, 5, 14, 0.45)`, its vignette 0.26 (0.4 now), the hero's pool as now (170 at 1). It is laid as render.ts lays a day's
+  (`day`: `{ dark, tint, vignette, pool }`, as act 1's open ground and the camp have).
 - THE SUN'S PICTURES, ADDED (the renderer change floor 1's README asks for: drawn with `globalCompositeOperation = 'lighter'`, as a
   glow is): `sun(tx, ty)` over each floor tile after the floor's own tiles and what lies flat (the rug, the ring, the dais, the
   stairs); `the sun in the air, window k` stood at the depth of its anchor + `AIR_DEPTH` (2.5: after the faces of the wall it lies
   over, before most of what stands in the hall), its frame `floor(t * 4) % 4`.
 - THE SLATS: a hole for each tile well in the sun, `slatLights()` (19 holes: at the tile's middle, radius 29 to 43, 0.49 to 0.75, by
-  how much of the tile is in the sun).
-- EACH WINDOW IN THE WALL ALONG Y (`SUN_WINDOWS`): a hole at its middle, 26 up from the floor point (6, c), radius 40, 0.7, and its
-  glow (`#ffdf9a`, 26, 0.16); and the room's daylight before it: a hole on the floor 2.6 tiles in from the wall (at (8.6, c + 0.78)),
-  radius 100, 0.55, a faint glow over it (`#ffdf9a`, 64, 0.1).
-- EVERY TILE OF WALL THAT STANDS (as floor 1's): a low hole at the foot of its face under its middle, 26 up, radius 36, 0.4.
+  how much of the tile is in the sun). The slats' pictures are stronger and a game pixel wider all round (`SUN.slat`: an edge
+  `#2e2210`, a rim `#62492a`, a core `#9c7a3e`; the core was `#7e5e2a`), the sun in the air stronger (`SUN.air` up to `#685834`).
+- EACH WINDOW IN THE WALL ALONG Y (`SUN_WINDOWS`): a hole at its middle, 26 up from the floor point (6, c), radius 48, 0.9, and its
+  glow (`#ffdf9a`, 34, 0.12); and the room's daylight before it: a hole on the floor 2.6 tiles in from the wall (at (8.6, c + 0.78)),
+  radius 140, 0.8, a wide glow over it (`#ffdf9a`, 120, 0.08).
+- EVERY TILE OF WALL THAT STANDS (as floor 1's): a hole at the foot of its face under its middle, 26 up, radius 40, 0.6; and the
+  day on its face, a glow 22 up (`#ffeccc`, 46, 0.035) (in `dayLights()`).
 - THE GATE: the floor before it lit as now (render.ts: 84 at 0.9, 14 up from TOWN.gate); the day's glow in its way (`#ffe9b8`, 46,
-  0.2, 30 up from (14.5, 6)).
+  0.3, 30 up from (14.5, 6)).
+- THE DAY THAT FILLS THE HALL (`dayLights()`, with the walls' above: 56 glows in all, drawn added with the rest of the glows): warm
+  white glows (`DAYLIGHT`, `#ffeccc`) over its floor every 2.75 tiles from (8, 8) to (19, 17), radius 90, 0.05; and smaller ones
+  1.3 tiles in from its two near edges, radius 60, 0.045. Each is `{ x, y, up, r, color, a }`: the floor point in tiles, so many
+  game pixels up, `drawGlow(g, wx, wy - up, r, color, a)`.
 - THE BRAZIERS, THE FORGE, THE LEXICON, THE TABLE OF WARES, THE WORDSMITH'S SLAB: as now.
 
 ### How to bring it in (the main chat; not done here)
@@ -376,19 +385,23 @@ numbers; `src/dev/preview_castle_hall_game.ts` lays them exactly so. In game pix
    arch's first strip's point (as floor 1's stairs up are drawn: `[s.a - wide, face]`).
 7. THE STAIRS: where `flatWays` draws the town's stairs (`dress.townWays(game).stairs`), `stairs(st.way)`: the same size, anchor and
    shape.
-8. THE PLANTS AND THE PILLARS: the pillars' picture `a pillar of the hall` in place of `art.props.pillar` in town; the pots and the
+8. THE TOWN'S OWN THINGS (his “Brighter, castle stone (Recommended)”): while `CASTLE_HALL` is on, the town's `art.town` is
+   `A.town` (the same `TownProps`, every picture the same size, anchor, shape and lights: `townSprite` works on it unchanged), the
+   town's waypoint is `A.way` (a `WaypointArt`: its dais asleep and awake; its motes and warp the game's), and the town's braziers,
+   barrels and urn are `A.props.brazier`, `.barrel`, `.urn`. The townsfolk (`art.folk`) as they are.
+9. THE PLANTS AND THE PILLARS: the pillars' picture `a pillar of the hall` in place of `art.props.pillar` in town; the pots and the
    ivy as pieces where the preview has them (`POTS`, `IVY` in src/dev/preview_castle_hall_game.ts: along the walls' feet between
    the windows, by every vendor's place), each on a tile nobody walks or blocking its tile, as the main chat likes.
-9. THE LIGHT, as above.
+10. THE LIGHT, as above: the town's dark a day's, and the day's glows (`dayLights()`) with the rest.
 
 ### What differs from the castle hall as he saw it (so he is not surprised)
 
-- The light is the game's: the town's own dark over everything with holes where the lights are, the vignette at the corners; the
-  hall's stone a step darker in its own colours (under the darkest word), and the sun's slats and the windows bring it up where
-  they fall. So the hall is darker away from the knight and the windows than in the picture he said yes to (as floor 1's was).
-- The town's own things are the game's own pictures as they are today (as the brief asks): the stash, the ring's stones and
-  slab, the Lexicon, the forge, the rack and the waypoint's dais in the vault's indigo stone and plum wood, where in the picture he
-  saw they were in the castle's stone and timber. (His to decide: they could be given the castle's stone.)
+- The light is the game's: a thin warm dark with holes where the lights are, the day's glows over the hall, the vignette at the
+  corners; the hall's stone a step darker in its own colours (under the darkest word), and the light brings it up to his picture's
+  brightness on average. Light can only add, so the stone's darkest joints are a little lighter than in his picture, and its
+  brightest a little brighter where the sun falls (below, "Brighter, castle stone").
+- The shaft's head and its cage keep the game's indigo iron (it is floor 5's cage, ridden up from there), and the portcullis and
+  the town's bars theirs (the game's working gate; the seal on it the enemy's pink).
 - The walls toward the eye are not drawn (the game leaves them out); the floor ends in its line of light against the dark.
 - The gate keeps the game's own way, its portcullis and the town's bars exactly as they work; its arch is a little lower than
   in the picture (the game's way, 82 to its crown, where the picture's was 98).
@@ -396,31 +409,94 @@ numbers; `src/dev/preview_castle_hall_game.ts` lays them exactly so. In game pix
 
 ### The picture
 
-- `pictures/game_ready.png` (1200 x 2237): the town built from these pieces the game's way, the knight among the vendors, beside the
-  castle hall as he saw it; one phone screen (1014 x 468) at the game's own size; the owl on its beam at the game's size and close,
+- `pictures/game_ready.png` (1200 x 2237): the town built from these pieces the game's way, in the hall's day, its own things in the
+  castle's stone, the knight among the vendors, beside the castle hall as he saw it; one phone screen (1014 x 468) at the game's own size; the owl on its beam at the game's size and close,
   and six of its moments three times as big; the gate close, three times as big, barred (as a new game finds it) and open (its
   portcullis up, the bars struck off, the road out in the sun).
 
 ```
 PREVIEW_TIMEOUT=600000 node tools/preview.mjs src/dev/preview_castle_hall_game.ts docs/mockups/town_look/pictures/game_ready.png 1200 2237 "sheet"
-  ("town" at 1200 x 840, "flat" (no dark) at 1200 x 840, "phone" at 1014 x 468, "owl" at 1200 x 604, "gate" at 1200 x 462 alone)
+  ("town" at 1200 x 840, "flat" (no dark) at 1200 x 840, "phone" at 1014 x 468, "owl" at 1200 x 604, "gate" at 1200 x 462 alone;
+  "mask" at 1200 x 840: the floor white and the walls grey, to measure by; "words" at 600 x 360: the words dropped in the hall's
+  day; any of them with ":game" after it shows the town's things as the game's own, to set beside)
 ```
 
 ### Checks
 
-`tests/castle_hall.test.ts`, 12 of 12: off, and nothing of the game imports either file; every piece the brief asks for painted;
+`tests/castle_hall.test.ts`, 15 of 15: off, and nothing of the game imports either file; every piece the brief asks for painted;
 every picture at its size and anchored where the game lays it (the floor tiles at their top corner; the faces 80 high, every
 column whole, on the game's own town walls' line column by column; the roof never below the faces' tops; the pieces at their
 floor points; the owl on its beam; the pillar the game's pillar's size and anchor; everything of the place's own in whole game
 pixels, nothing cut off); crisp (every pixel all there or not at all; a floor tile covering its whole diamond; no pixel alone);
 nothing cyan and nothing pink in the place, its owl, its gate, its stairs and the day through the gate, the sun a warm gold;
-its floor, walls, roof, gate, stairs and its own pieces darker than the darkest word, the town's own dark, vignette and pool as
-they are; light from the upper left; the sun's slats only before the windows, the gaps' own shapes, light to add (dim), its air in
+its floor, walls, roof, gate, stairs and its own pieces darker than the darkest word, the town's dark a day's (thin, warm, its
+vignette light, the hero's pool as now); light from the upper left; the sun's slats only before the windows, the gaps' own shapes, light to add, its air in
 four frames, its motes moving; the owl alive (every frame played, no jump between frames, a blink at least every 9 seconds,
 breathing in wider than out, ruffled bigger, its turns and blinks seen, its pale face and dark eyes); the gate: the way as clear as
 the game's, a hero's breadth under it, the portcullis and the town's bars no more hidden than under the game's own arch, the hood
 mould, the wall over the doorway, the pillar the game's shape, the passage and the day through it the size of floor 1's stairs
 up; the stairs down townStairs' size, anchor and shape pixel for pixel, the hall's stone at the parapet and floor 1's down the
 flight; and in `game_ready.png`, on its phone screen, nothing pink but in the game's own pictures (the mystic's, the smithy's,
-the seal on the bars) and the knight's, and the knight standing out of the floor round him. With them `tests/town_look.test.ts`,
+the seal on the bars) and the knight's, and the knight standing out of the floor round him; the town's own things in the castle's stone and timber (each the game's
+picture's size, anchor, shape and lights; no indigo or plum left; every pixel of the town's teal-to-cyan where it was and as it
+was; the plain things' every pixel the game's or its tone in the hall; the forge's fire as it is; the ring's column and letters
+the game's own); the day's glows all over the hall, warm and soft; and in `game_ready.png` the game's hall as bright as his picture
+beside it, its floor and walls on average within a tenth. With them `tests/town_look.test.ts`,
 `tests/tomb.test.ts` and `tests/bosses.test.ts` pass, and `tsc` is clean.
+
+## Brighter, castle stone (his “Brighter, castle stone (Recommended)”, 2 Nov 2026)
+
+Shown the castle hall built the game's way beside the picture he said yes to, it came out darker than his picture, and the town's
+own things (the forge, the rack, the stash, the ring's standing stones and slab, the Lexicon's stand, the waypoint, the trough, the
+tent's poles) kept the game's indigo stone and plum wood against the warm castle stone. Asked what to do, his pick: “Brighter,
+castle stone (Recommended)”, offered as: lift the town's light so it's sunny like the picture, and give its own things the
+castle's stone and wood.
+
+### Brighter: the light
+
+Done with the light, as the game lights a place; the stone's own colours are as they were (under the darkest word):
+
+- the town's dark made a day's: `rgba(26, 18, 12, 0.1)` in place of `rgba(8, 5, 14, 0.45)`, the vignette 0.26 in place of 0.4;
+- the windows' light wider and stronger, the slats of sun stronger and a game pixel wider all round, the sun in the air stronger;
+- the day that fills the hall: warm white glows over its floor and on every tile of its walls (`dayLights()`).
+
+All the numbers are in "The lights, for the main chat to place" above, and in `CASTLE_LIGHTS` and `dayLights()` in
+art/castle_hall.ts.
+
+HOW BRIGHT, measured on the floor and the walls (what is not covered by anything standing; brightness 0 to 255, the whole town at
+the game's size, 1200 x 840, beside his `castle_hall.png` at the same size and camera):
+
+| | floor | walls | both |
+|---|---|---|---|
+| his picture | 120.9 | 110.0 | 118.3 |
+| the game's way, before | 70.3 | 70.3 | 70.3 |
+| the game's way, now | 122.3 | 114.0 | 120.3 |
+
+The middle of the floor's brightness is his picture's (115 against 116). Light can only add to what is under it, so the spread
+is not quite his picture's: the darkest joints of the flags a little lighter (69 against 57, the darkest twentieth) and the sun's
+brightest patches brighter (212 against 174, the brightest twentieth). For the same spread as his picture the stone itself would
+have to be lighter: the flags half as light again (x 1.54) and the walls' stone x 1.79, their own colours as in his picture, the
+brightest of them 143 and 166 where the darkest word is 95 (his Colour 4: a place's colours darker than any word's). That is
+his to decide; it is not done.
+
+The knight, the vendors and the words still read plainly: the knight on the phone screen lighter and darker both than the floor
+round him (the test); the words dropped on the floor in the sun and out of it (the dev page's "words" view) each on its own dark
+stone, its colour clear.
+
+### Castle stone: the town's own things
+
+New pictures in art/castle_hall.ts (`A.town`, `A.way`, `A.props`), the game's own untouched: the forge, the anvil, the rack, the
+trough, the tent's poles and table, the rug, the ring's standing stones, slab and circle in the floor, the Lexicon's stand, the
+stash, the waypoint's dais, the braziers, the barrels and the urn. As in the castle hall he said yes to: each painted by the
+game's own painter in the hall's stone (`TOWN_THEME`), then every pixel of indigo iron, steel or stone turned to grey steel
+(`STEEL5`) and every pixel of plum wood to the hall's timber (`WOOD`), each by how light it is (`castleTone`). Every picture is
+the game's size, anchor and shape, and gives off the same lights.
+
+Kept exactly: every rune, glow and mark of the town's teal-to-cyan (the ring's runes, the Lexicon's script, the stash's stone,
+the waypoint's light; a test holds every one of their pixels where it was and as it was), the forge's fire, the gold, the
+cloth, the bright purple of the table of wares; the ring's column of light and its swirling letters are the game's own. The
+townsfolk are not touched.
+
+Not done (the game's own, as they are): the shaft's head and its cage (floor 5's own cage, ridden up from there into the town:
+grey here would not match it there), and the portcullis and the town's bars over the gate (the game's working gate; the seal on
+it is the enemy's pink). Both could be given the castle's iron the same way if he wants.
