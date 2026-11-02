@@ -173,11 +173,12 @@ test('1. the switches are off, nothing of the game imports the mock-up, and ever
   assert.equal(ARCHER_RAIN.on, false, 'ARCHER_RAIN is off');
   assert.equal(WARDEN_LOCKDOWN.on, false, 'WARDEN_LOCKDOWN is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (the later floors' action mock-ups, art/action_f2_fx.ts and art/action_f3_fx.ts, are mock-ups too: nothing of the game imports them either)
-    // (the Chained One's action, art/chained_action_fx.ts, a mock-up of the art chat's that takes the floor's helpers from it; and
-    // the game's own floor 1 files, brought in by the main chat behind ACTION_F1: its rules, game/action_f1.ts and game/game.ts,
-    // and its pictures on the floor, render/act1_fx/archer.ts and warden.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f[1-9]_(fx|checks)\.ts$/.test(f) || f === 'art/chained_action_fx.ts' || ['game/action_f1.ts', 'game/game.ts', 'render/act1_fx/archer.ts', 'render/act1_fx/warden.ts'].includes(f)) continue;
+    // (the later floors' action mock-ups, art/action_f2_fx.ts and art/action_f3_fx.ts, are mock-ups too: nothing of the game imports them either;
+    // the Chained One's and the Amalgamation's moves done the action way, art/chained_action.ts, art/amalgam_action.ts and their
+    // _fx, likewise; and the game's own
+    // floor 1 files, brought in by the main chat behind ACTION_F1: its rules, game/action_f1.ts and game/game.ts, and its pictures
+    // on the floor, render/act1_fx/archer.ts and warden.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f[1-9]_(fx|checks)\.ts$/.test(f) || /^art\/(chained|amalgam)_action(_fx)?\.ts$/.test(f) || ['game/action_f1.ts', 'game/game.ts', 'render/act1_fx/archer.ts', 'render/act1_fx/warden.ts'].includes(f)) continue;
     assert.ok(!/from ['"][^'"]*action_f1_(fx|checks)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   const was = WARDEN_MOVES.on;

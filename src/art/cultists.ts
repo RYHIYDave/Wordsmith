@@ -32,7 +32,7 @@ import type { Ramp } from './kit';
 import { FLAME, SOCKET } from './mkit';
 import { FM_BODY, FM_DYING, FM_LOOK, FM_REST, HAND_BONE, IVORY, clamp01, curve, fireAt, fleck, fleshmancerBits, pk, rampAt, sampled, screenStep, shiver, smooth, stamp, tr, unit2, withFmLook } from './fleshmancer';
 import type { FmLook, Keys, P2, Pix } from './fleshmancer';
-import { TILE3, mobSet, paintViewOf, skeletonAt, sphere } from './new_mobs3';
+import { TILE3, mobSet, paintViewOf, posedOfMob, skeletonAt, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import { onCloth, wornOn } from './skin';
 import type { GameView, Ring, Skin, Stage } from './skin';
@@ -944,7 +944,9 @@ function knifeBits(st: Stage, m: Moment): Bit[] {
     const [px, py] = st.seen(s.point);
     const deg = (Math.atan2(-py, px) * 180) / Math.PI;
     const pix = daggerPix(Math.floor(gx) + 0.5, Math.floor(gy) + 0.5, deg, Math.hypot(px, py), clamp01(m.glint));
-    stamp(st, put, 'dagger', 'dagger', pix, add(s.handR, mul(st.eye, -0.6)));
+    // (as near the eye as his fist; in his frenzy, where he holds it out at his side, as its middle: beside his robe, not in it)
+    const depthAt = m.move === FRENZY_NAME ? add(s.handR, mul(s.point, BLADE_FROM + BLADE_LONG * 0.5)) : s.handR;
+    stamp(st, put, 'dagger', 'dagger', pix, add(depthAt, mul(st.eye, -0.6)));
   }
   // (its way through the air as he plunges it, streaked)
   if (m.blur && m.trails) {
@@ -1228,5 +1230,210 @@ export const DAGGER_CULTIST: Mob = {
 
 /** THE DAGGER CULTIST, as the game holds a monster. */
 export function makeDaggerCultistArt3(pace = DAGGER_CULTIST.pace): ActorArt {
+  // (floor 4, more action: his frenzy in place of his leap and plunge, with DAGGER_FRENZY on, below)
+  if (DAGGER_FRENZY.on) return makeFrenzyCultistArt(pace);
   return { front: mobSet(DAGGER_CULTIST, 'front', pace), back: mobSet(DAGGER_CULTIST, 'back', pace) };
 }
+
+// =============================================================================================
+// FLOOR 4, MORE ACTION: THE FRENZY (the art chat's helper, 1 Nov 2026; docs/mockups/action_f4/README.md). A MOCK-UP behind
+// DAGGER_FRENZY, off: with it off, nothing here is used and the dagger cultist is every frame as he was.
+//
+// The owner's review of every enemy for more action, 31 Oct 2026: for THE DAGGER CULTIST (small, floors 4 to 10 and the cult),
+// offered "Frenzy: four stabs in a blur, stepping in with each, then it stands winded a moment. That's your opening."; his pick
+// “Yes (Recommended)”. Under his Movement 9 (24 Oct: “Like the wind up and wind down are big but the actual punch is lightning
+// quick”). So his one attack becomes THE FRENZY: a short coil, HELD (the warning); four stabs in a blur, each ONE FRAME,
+// smeared, stepping in with each; then he stands WINDED, bent over, heaving for breath, a clear moment (the opening); and
+// straightens, where his steps have taken him.
+
+/** THE SWITCH, OFF. With it on, `makeDaggerCultistArt3` has the frenzy as his attack, in place of the leap and plunge. */
+export const DAGGER_FRENZY = { on: false };
+
+const FR30 = 1 / 30;
+const fr = (f: number): number => f / 30;
+/** Each stab steps him in this far (tiles); four of them. */
+export const FRENZY_STEP = 0.3;
+/** How far the frenzy takes him, in his own lengths (the game moves him there as it ends: `FRENZY.travel` tiles). */
+export const FRENZY_TRAVEL = 4 * FRENZY_STEP * TILE3;
+const STEP_L = FRENZY_STEP * TILE3;
+/** The frame each stab's thrust begins on (the last frame of its wind-up): the thrust is the one frame after it. */
+const STAB_FROM: readonly number[] = [14, 21, 28, 35];
+/** Each stab's strike, from the last frame of its wind-up to the frame it lands on (seconds): one frame each. */
+export const FRENZY_STRIKES: ReadonlyArray<readonly [number, number]> = STAB_FROM.map((s) => [fr(s), fr(s + 1)] as const);
+/** When each stab lands. */
+export const FRENZY_HITS: readonly number[] = STAB_FROM.map((s) => fr(s + 1));
+/**
+ * THE FRENZY'S NUMBERS (seconds from its start; tiles):
+ *   long      the whole move, 2.7 s (81 frames)
+ *   coil      crouched and the knife drawn back by 0.2 s; HELD, trembling, the light on the blade, to 0.467 s (the warning)
+ *   hits      the four stabs land at 0.5, 0.733, 0.967, 1.2 s (a stab every 0.233 s); each thrust ONE frame, smeared
+ *   reach     each stab strikes a hero within this many tiles of him, before him (from where his steps have taken him by then)
+ *   step      each stab steps him in 0.3 tiles: 1.2 tiles in all (`travel`), the game moving him there as the move ends
+ *   winded    bent over, heaving for breath, his knife hanging, from 1.4 s to 2.33 s (0.93 s; from his last stab, 1.13 s):
+ *             the opening. He straightens by 2.7 s.
+ *   fromRun   the frames of his run's round (eight) the game may begin the frenzy from (as the troll's bull rush ends on chosen
+ *             frames): not 2, 3 or 7, where his feet are furthest from his crouch (a frame or two more of the run: 0.15 s at most)
+ */
+export const FRENZY = { long: fr(81), coil: fr(6), held: fr(14), hits: FRENZY_HITS, reach: 1.2, arc: 90, step: FRENZY_STEP, travel: 4 * FRENZY_STEP, winded: [fr(42), fr(70)] as const, fromRun: [0, 1, 4, 5, 6] as readonly number[] } as const;
+/** Whether a frame of the frenzy shows a stab's smear: the frame it lands on, and (thinning) the frame after. */
+export const FRENZY_SMEARED = (t: number): boolean => FRENZY_STRIKES.some(([a, b]) => t > a + 1e-6 && t <= b + FR30 + 1e-6);
+/** How far the game has carried him by `t` seconds into the frenzy (tiles): each step as he lunges, in the stab's own frame. */
+export function frenzyTravel(t: number): number {
+  let n = 0;
+  for (const s of STAB_FROM) if (t >= fr(s + 1) - 1e-6) n++;
+  return n * FRENZY_STEP;
+}
+
+/**
+ * THE FRENZY ON HIS BONES. Coiled (frames 0 to 6): he sinks into a crouch, his weight back, his chest turned away and the knife
+ * drawn back low by his right hip, its point at you, his clawed left hand out before him; HELD, trembling (6 to 14). Then four
+ * times: his right foot comes up and on (the frame before), and in ONE frame he lunges, his hips and chest coming round and the
+ * knife driven out at your middle as his foot lands a step on; it goes on a little (the follow-through), and is snatched back
+ * to his hip over three frames as his left foot is drawn up after him; a moment held, and the next. After the fourth, the
+ * deepest, he sags: bent over, his knife arm hanging, his other hand braced on his thigh, his back heaving, his cowl bobbing, a
+ * clear moment; then he straightens and draws his knife up beside his cowl, a step and more on from where he began.
+ */
+function knifeFrenzy(): Motion {
+  const R = KNIFE_REST;
+  const L = FRENZY.long;
+  const T = FRENZY_TRAVEL;
+  /** The drawn-back pose of stab k (its pelvis and feet where its steps have taken it), the extended, and the follow-through. */
+  const base = (k: number): number => k * STEP_L;
+  const keys = (f: (k: number) => [number, number, number], coil: number, rest0: number, winded: Array<[number, number]>, rest1: number): Keys => {
+    const out: Array<[number, number]> = [[0, rest0], [fr(6), coil], [fr(13), coil]];
+    STAB_FROM.forEach((s, k) => {
+      const [d, e, ff] = f(k);
+      out.push([fr(s), d], [fr(s + 1), e], [fr(s + 2), ff]);
+      if (k < 3) {
+        const [dn] = f(k + 1);
+        out.push([fr(s + 5), dn], [fr(s + 6), dn]);
+      }
+    });
+    out.push(...winded, [fr(70), winded[winded.length - 1][1]], [L, rest1]);
+    return out;
+  };
+  /** The left foot (behind): where it is as he stabs, lifted half way on as he draws back, and down a step on; then as he sags, the same once more. */
+  const leftFoot = (f: (k: number) => [number, number, number], end: number, start = f(0)[0]): Keys => {
+    const out: Array<[number, number]> = [[0, start], [fr(13), f(0)[0]]];
+    STAB_FROM.forEach((s, k) => {
+      const [down, up, on] = f(k);
+      out.push([fr(s), down], [fr(s + 2), down]);
+      if (k < 3) out.push([fr(s + 3), up], [fr(s + 4), on], [fr(s + 6), on]);
+      else out.push([fr(39), down], [fr(40), up], [fr(41), on], [fr(70), on]);
+    });
+    out.push([FRENZY.long, end]);
+    return out;
+  };
+  const heave = (t: number, a: number): number => (t > fr(41) && t < fr(72) ? a * Math.sin((t - fr(41)) * Math.PI * 2 * 3.2) * rampAt(t, fr(41), fr(46)) * (1 - rampAt(t, fr(66), fr(72))) : 0);
+  const held = (t: number): number => rampAt(t, fr(5), fr(7)) * (1 - rampAt(t, fr(12), fr(14)));
+  const X = (k: number): number => base(k);
+  const track = {
+    // the pelvis: crouched back; lunging forward a step and more with each stab, settling back onto the step; sagging; up again
+    px: tr(keys((k) => [R.px + X(k) - 1.0, R.px + X(k) + STEP_L * 0.85 + 2.5, R.px + X(k) + STEP_L + 2.0], R.px - 1.6, R.px + 0.35, [[fr(37), R.px + X(3) + STEP_L + 3.5], [fr(44), R.px + T + 1.6]], R.px + T)),
+    pz: (t: number) => tr(keys(() => [R.pz - 4.2, R.pz - 5.2, R.pz - 5.0], R.pz - 4.6, R.pz + 0.5, [[fr(37), R.pz - 6.0], [fr(44), R.pz - 5.2]], R.pz))(t) + shiver(t, 0.3, 1) * held(t) + heave(t, 0.9),
+    pitch: tr(keys(() => [14, 24, 26], 15, R.pitch + 4, [[fr(37), 30], [fr(44), 30]], R.pitch)),
+    bend: (t: number) => tr(keys(() => [16, 20, 22], 17, R.bend, [[fr(37), 26], [fr(44), 30]], R.bend))(t) + heave(t, 3.2) + shiver(t, 0.8, 2) * held(t),
+    // the hips come round a frame before the chest; the chest turned away as he draws back, round into each stab
+    yaw: tr(keys(() => [2, 6, 6], -6, R.yaw, [[fr(37), 6], [fr(44), 2]], R.yaw)),
+    twist: tr(keys(() => [-12, 8, 10], -14, R.twist, [[fr(37), 10], [fr(44), 2]], R.twist)),
+    roll: (t: number) => heave(t, 0.8),
+    faceUp: (t: number) => tr(keys(() => [16, 10, 10], 18, R.faceUp, [[fr(37), 8], [fr(44), -6]], R.faceUp))(t) + heave(t, 4),
+    faceTurn: tr(keys(() => [0, 0, 0], 0, R.faceTurn, [[fr(37), 0], [fr(44), 6]], R.faceTurn)),
+    // his feet: the right comes up and on the frame before each stab and lands as it strikes; the left is drawn up after it
+    rfx: tr(keys((k) => [R.rfx + X(k) + 3, R.rfx + X(k) + STEP_L, R.rfx + X(k) + STEP_L], R.rfx, R.rfx, [[fr(37), R.rfx + T], [fr(44), R.rfx + T]], R.rfx + T)),
+    rfz: tr(keys(() => [2.6, 0, 0], 0, 0, [[fr(37), 0], [fr(44), 0]], 0)),
+    rfp: tr(keys(() => [-10, 0, 0], 0, 0, [[fr(37), 0], [fr(44), 0]], 0)),
+    lfx: tr(leftFoot((k) => [R.lfx + X(k), R.lfx + X(k) + STEP_L * 0.45, R.lfx + X(k) + STEP_L], R.lfx + T)),
+    lfz: tr(leftFoot(() => [0, 2.4, 0], 0)),
+    lfp: tr(leftFoot(() => [5, -4, 4], 0, 0)),
+    // the knife: drawn back low by his right hip, its point at you; driven out at your middle; snatched back
+    rhx: (t: number) => tr(keys(() => [-4.5, 15, 17], -5, R.rhx - 0.75, [[fr(37), 18], [fr(44), 4]], R.rhx))(t) + shiver(t, 0.3, 3) * held(t),
+    rhy: tr(keys(() => [-7.5, 3, 3.5], -7.5, R.rhy, [[fr(37), 3.5], [fr(44), -7]], R.rhy)),
+    rhz: (t: number) => tr(keys(() => [-14, -1, -1.5], -14.5, R.rhz - 0.5, [[fr(37), -2], [fr(44), -16]], R.rhz))(t) + shiver(t, 0.3, 4) * held(t) + heave(t, 0.6),
+    re: tr(keys(() => [40, 10, 10], 40, R.re, [[fr(37), 10], [fr(44), 10]], R.re)),
+    wAz: tr(keys(() => [-12, 2, 2], -12, R.wAz, [[fr(37), 2], [fr(44), -30]], R.wAz)),
+    wEl: tr(keys(() => [-4, -10, -12], -6, R.wEl - 6, [[fr(37), -14], [fr(44), -70]], R.wEl)),
+    // the other hand: out before him, clawing; flung back as he stabs; braced on his thigh as he heaves
+    lhx: tr(keys(() => [9, 4, 3.5], 10, R.lhx - 3, [[fr(37), 3], [fr(44), 6.5]], R.lhx)),
+    lhy: tr(keys(() => [3, 5, 5], 2.5, R.lhy, [[fr(37), 5], [fr(44), 3.5]], R.lhy)),
+    lhz: (t: number) => tr(keys(() => [-6, -10, -10], -6, R.lhz + 2, [[fr(37), -10], [fr(44), -14]], R.lhz))(t) + heave(t, 0.5),
+    draw: tr(keys(() => [0.9, 0.3, 0.3], 1, R.draw, [[fr(37), 0.2], [fr(44), 0.6]], R.draw)),
+    gale: tr(keys(() => [0.25, 0.8, 0.7], 0.2, 0.1, [[fr(37), 0.8], [fr(44), 0.3]], 0.1)),
+  } as Partial<Record<keyof Bones, (t: number) => number>>;
+  return { keys: sampled(L, track, { prop: 0, pAz: 0, pEl: 0 }), hit: FRENZY_HITS[3] };
+}
+/**
+ * How far his pictures have carried him over the floor by `t` seconds into the frenzy (tiles, the way he faces): his body as he
+ * lunges and settles (his feet go a step at a time with it). The game, which moves him `FRENZY.travel` as the move ends, may lay his
+ * shadow and sort him by his place plus this, as the film does.
+ */
+export function frenzyCame(t: number): number {
+  return (posedOfMob(FRENZY_CULTIST, 'attack', Math.max(0, Math.min(FRENZY.long, t))).px - KNIFE_REST.px) / TILE3;
+}
+/** The light caught on his blade as he coils (the warning): up as he draws it back, brightest as he holds, gone at the first stab. */
+function frenzyGlint(t: number): number {
+  if (t < fr(2) || t > FRENZY_HITS[0]) return 0;
+  return t < fr(8) ? (t - fr(2)) / fr(6) : t < fr(13) ? 1 : 1 - (t - fr(13)) / (FRENZY_HITS[0] - fr(13));
+}
+const FRENZY_NAME = 'The dagger cultist’s frenzy';
+/** The smear's colours: the oldest a dull violet-grey, then the blade's bone, the newest near white; the enemy's pink at its edge. */
+const SMEAR: readonly string[] = ['#6a6088', BLADE.M, BLADE.L, BLADE.H];
+/**
+ * THE STABS' SMEAR (each the frame it lands on, and thinning on the frame after): after-images of the blade from the fist to its
+ * point all along the way it came in that frame (`m.trails`, the blade's points a frame and a fifth back to now), the newest
+ * near white, the oldest dull; a line of the enemy's pink along the far side of it.
+ */
+function frenzySmear(st: Stage, m: Moment): Bit[] {
+  const bits: Bit[] = [];
+  if (m.move !== FRENZY_NAME || !m.trails || !FRENZY_SMEARED(m.t)) return bits;
+  const after = FRENZY_STRIKES.some(([, b]) => m.t > b + 1e-6);
+  const thin = FRENZY_STRIKES.some(([, b]) => Math.abs(m.t - b - FR30) < 1e-6);
+  const lines = m.trails;
+  const n = lines[0].length;
+  for (let i = n - 1; i >= 1; i--) {
+    const age = i / (n - 1);
+    if (thin && age > 0.45) continue;
+    const c = age > 0.75 ? SMEAR[0] : age > 0.45 ? SMEAR[1] : age > 0.2 ? SMEAR[2] : SMEAR[3];
+    for (let j = 0; j < lines.length; j++) {
+      const a = lines[j][i];
+      const b = lines[j][i - 1];
+      const steps = Math.max(1, Math.ceil(Math.hypot(st.at(b)[0] - st.at(a)[0], st.at(b)[1] - st.at(a)[1])));
+      for (let k = 0; k < steps; k++) {
+        const p = lerp3(a, b, k / steps);
+        // (the oldest of it broken: after-images, not a blade)
+        if (age > 0.55 && (k + j) % 2 === 1) continue;
+        bits.push({ part: 'smear', piece: 'smear', shape: { k: 'mote', p, c: j === 0 && age < 0.6 && !thin ? FLAME[2] : c, size: j === 1 && age < 0.5 ? 2 : 1 } });
+      }
+    }
+    // (across the blade: from fist to point, every line between the fist's track and the point's)
+    if (i % 2 === 0 || thin) continue;
+    const tip = lines[0][i];
+    const fist = lines[lines.length - 1][i];
+    const steps = Math.max(1, Math.ceil(Math.hypot(st.at(tip)[0] - st.at(fist)[0], st.at(tip)[1] - st.at(fist)[1])));
+    for (let k = 0; k <= steps; k++) bits.push({ part: 'smear', piece: 'smear', shape: { k: 'mote', p: lerp3(fist, tip, k / steps), c, size: 1 } });
+  }
+  void after;
+  return bits;
+}
+/** THE DAGGER CULTIST WITH HIS FRENZY: the game's own in all but his attack. */
+export const FRENZY_CULTIST: Mob = {
+  ...DAGGER_CULTIST,
+  attack: {
+    name: FRENZY_NAME,
+    motion: knifeFrenzy(),
+    rest: KNIFE_REST,
+    glint: frenzyGlint,
+    // (the blade's point, a point down it, and his fist: their way through the air, for the smear)
+    trail: (s) => [knifeTipOf(s), add(s.handR, mul(s.point, BLADE_FROM + BLADE_LONG * 0.5)), s.handR],
+    trailOver: FRENZY_SMEARED,
+    trailSpan: 1.2,
+  },
+  hit: FRENZY_HITS[3],
+  warn: FRENZY.coil,
+  bits: (st, m) => [...frenzySmear(st, m), ...knifeBits(st, m)],
+};
+/** The dagger cultist as the game holds a monster, with his frenzy (DAGGER_FRENZY on) or as he was. */
+export function makeFrenzyCultistArt(pace = DAGGER_CULTIST.pace): ActorArt {
+  return { front: mobSet(FRENZY_CULTIST, 'front', pace), back: mobSet(FRENZY_CULTIST, 'back', pace) };
+}
+void FR30;
