@@ -145,11 +145,14 @@ const travel = (m: string, a: number, b: number): number => {
 
 // =============================================================================================
 
-test('1. the switch off; nothing of the game imports the mock-up; her stand, hop, call, struck and death the game\'s own', () => {
+test('1. the switch off; nothing of the game imports the mock-up but what brings it in; her stand, hop, call, struck and death the game\'s own', () => {
   assert.equal(QUEEN_ACTION.on, false);
+  // (brought in by the main chat, 2 Nov 2026, behind the switch: only through her figure, her rules, what she leaves, and the dark of
+  // her Eclipse in the floor's light)
+  const BRINGS = /^(art\/act1_figs\/queen|game\/act1_rules\/queen|render\/act1_fx\/queen|render\/render)\.ts$/;
   for (const f0 of fs.readdirSync('src', { recursive: true })) {
     const name = f0.replace(/\\/g, '/');
-    if (!name.endsWith('.ts') || name.startsWith('dev') || name.startsWith('art/carrion_queen_action')) continue;
+    if (!name.endsWith('.ts') || name.startsWith('dev') || name.startsWith('art/carrion_queen_action') || BRINGS.test(name)) continue;
     assert.ok(!/from ['"][^'"]*carrion_queen_action(_fx)?['"]/.test(fs.readFileSync(`src/${f0}`, 'utf8')), `src/${name} imports the mock-up`);
   }
   for (const m of ['stand', 'walk', 'call', 'reel', 'dying']) {

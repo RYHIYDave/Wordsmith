@@ -129,14 +129,16 @@ const KINDS = ['firepot', 'chanter', 'qgolem', 'scorpion', 'devil'] as const;
 /** The game's own frames of the five, on 9c54eff (origin/art/action-f5, before this branch): tools/action_f6_hash.ts. */
 const HASHES: Record<(typeof KINDS)[number], string> = { firepot: '3e929f4d0c7ea056', chanter: 'ad617cb4114228b9', qgolem: '0f4c1703d6945977', scorpion: '2cc541277cc10f8f', devil: '48654659352a42ac' };
 
-test('1. the switches are off; nothing of the game imports the mock-ups; the game’s frames the same; only the new moves new', () => {
+test('1. the switches are off; nothing of the game imports the mock-ups but what brings them in; the game’s frames the same; only the new moves new', () => {
   for (const sw of [FIREPOT_BLAZE, CHANTER_LIGHTNING, GOLEM_BOULDER, SCORPION_SPIT, DEVIL_TWISTER]) assert.equal(sw.on, false, 'a switch is on');
+  // (brought in by the main chat, 2 Nov 2026, behind the switches: only through each one's figure, rules and what it leaves)
+  const BRINGS = /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/(firepot|chanter|qgolem|scorpion|devil)\.ts$/;
   const OURS = /from ['"][^'"]*action_f6_(fx|cult|golem|canyon|scene)['"]/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (floors 9 and 10's more action, art/action_f9_*.ts, the Hollow Stag's, art/stag_action*.ts, and floors 11 to 15's, art/action_f11_*.ts,
     // are mock-ups built on these that nothing of the game imports: tests/action_f9.test.ts 1, tests/stag_action.test.ts 1, tests/action_f11.test.ts 1;
     // the Rat King's, art/ratking_action.ts, too: tests/ratking_action.test.ts 1)
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(action_f(6|9|11|16)_|stag_action|ratking_action)/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || BRINGS.test(f) || /^art\/(action_f(6|9|11|16)_|stag_action|ratking_action)/.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   // the game's own frames, pixel for pixel, as they were
