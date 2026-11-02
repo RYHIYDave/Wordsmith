@@ -45,7 +45,7 @@ import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
 import { AIM, BODIES, MONSTERS, OWN_MOVES, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
-import { frenzyAge, frenzyShift } from '../game/action_f4';
+import { moveAge, frenzyShift } from '../game/action_f4';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { MELD_DUST_COLOR, withParts } from '../game/melds';
@@ -2913,7 +2913,7 @@ export class Renderer {
       if (m.frenzy && (m.state === 'windup' || m.state === 'recover')) {
         const mv = movesOf(m)?.[m.move ?? -1];
         if (mv && mv.id === 'frenzy') {
-          const [ox, oy] = frenzyShift(m.fx, m.fy, frenzyAge(m.state, m.t, mv.windup, mv.recover));
+          const [ox, oy] = frenzyShift(m.fx, m.fy, moveAge(m.state, m.t, mv.windup, mv.recover));
           sx += ox;
           sy += oy;
         }

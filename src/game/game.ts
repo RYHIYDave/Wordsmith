@@ -3,12 +3,15 @@
 
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
-import { TWIN_AFTER, aimHurl, aimedHurl, frenzyAge, frenzyAt, looseHurl } from './action_f4';
+import { RAMPAGE_BLOWS, RING_LASTS, RING_PERIL, chargeOf, greenTroll, rushMayEnd } from './action_f3';
+import { TWIN_AFTER, aimHurl, aimedHurl, moveAge, frenzyAt, looseHurl } from './action_f4';
 import { RAIN } from '../art/action_f1_fx';
 import { RIME } from '../art/action_f2_fx';
 import { WALL, glances } from '../art/action_f3_fx';
 import { FRENZY as DAGGER_FRENZY_MOVE, FRENZY_HITS, frenzyTravel } from '../art/cultists';
 import { HURL, SWING as GOLEM_SWING } from '../art/action_f4_fx';
+import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
+import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
@@ -7493,11 +7496,12 @@ export class Game {
     this.sfx('rune', 0.7);
   }
 
-  addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords): void {
+  addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords, mark = false): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
     const z: Zone = { x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src };
     if (half) z.half = half;
+    if (mark) z.mark = true;
     this.zones.push(z);
   }
 
@@ -8759,6 +8763,8 @@ export class Game {
         if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'pierce') this.holdAim(m);
         // (FLOOR 4, MORE ACTION: the dagger cultist carried on as his frenzy's pictures carry him)
         if (m.frenzy && moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'frenzy') this.carryFrenzy(m, moves[m.move]);
+        // (FLOOR 3, MORE ACTION: the green troll carried on through his rampage, as his pictures have him go)
+        if (m.rampage && moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'rampage') this.carryAlong(m, m.rampage, rampageTravel(moveAge(m.state, m.t, moves[m.move].windup, moves[m.move].recover)));
         if (m.t <= 0) this.monsterAttack(m, def);
         continue;
       }
@@ -8773,7 +8779,14 @@ export class Game {
       if (m.state === 'recover') {
         m.t -= mdt;
         if (m.frenzy && moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'frenzy') this.carryFrenzy(m, moves[m.move]);
+        // (FLOOR 3, MORE ACTION: the green troll's bull rush carries him on through his stop, less and less)
+        if (m.rushStop !== undefined && moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'charge') {
+          const want = rushStopTravel(moves[m.move].recover - Math.max(0, m.t));
+          if (want > m.rushStop) this.slide(m, Math.min(m.r, 0.42), m.fx * (want - m.rushStop), m.fy * (want - m.rushStop), this.level.walk, true);
+          m.rushStop = want;
+        }
         if (m.t <= 0) {
+          m.rushStop = undefined;
           m.state = 'chase';
           m.anim = 'idle';
         }
@@ -9088,12 +9101,28 @@ export class Game {
         m.move = -1;
         return;
       }
-      m.charge = { ...lane, hit: false };
-      this.zones.push({ x: lane.x0, y: lane.y0, x1: lane.x1, y1: lane.y1, r: CHARGE.half, t: 0, dur: mv.windup, kind: 'lane', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, gone: 0 });
+      // (FLOOR 3, MORE ACTION: the green troll's bull rush runs RUSH.past beyond the hero, and its lane is drawn on to where his stop takes him)
+      const P = chargeOf(m);
+      m.charge = { ...lane, hit: false, run: Math.min(Math.hypot(lane.x1 - lane.x0, lane.y1 - lane.y0), dist + P.run) };
+      this.zones.push({ x: lane.x0, y: lane.y0, x1: lane.x1, y1: lane.y1, r: P.half, t: 0, dur: mv.windup, kind: 'lane', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, gone: 0 });
       this.sfx('bossRoar', 0.45);
     } else if (mv.id === 'summon') {
       this.sfx('bossRoar');
       this.msg(`${m.name} calls the dead`, MSG.foe);
+    } else if (mv.id === 'rampage') {
+      // (FLOOR 3, MORE ACTION: the green troll's rampage: its two swings in its wind-up; its ring marked as the club goes up over his
+      // head, where he will land; the slam as it lands: game/action_f3.ts)
+      const R = (m.rampage = { x: m.x, y: m.y, fx: m.fx, fy: m.fy, went: 0, rx: NaN, ry: NaN });
+      RAMPAGE.hits.slice(0, 2).forEach((at) => this.after(at, () => {
+        if (!m.dead && m.state === 'windup' && m.rampage === R) this.rampageSwing(m, mv);
+      }));
+      this.after(RAMPAGE.raise, () => {
+        if (m.dead || m.state !== 'windup' || m.rampage !== R) return;
+        const go = this.carryReach(m, R, RAMPAGE.travel);
+        R.rx = R.x + R.fx * (go + RING.ahead);
+        R.ry = R.y + R.fy * (go + RING.ahead);
+        this.addWarn(R.rx, R.ry, RING.radius, Math.max(0.05, m.t), 0, this.monsterElement(m), m.words, m.name, m.id, this.halfOf(m), true);
+      });
     } else if (mv.id === 'frenzy') {
       // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy: its first three stabs in its wind-up, the fourth as it lands)
       const F = (m.frenzy = { x: m.x, y: m.y, fx: m.fx, fy: m.fy, went: 0 });
@@ -9192,6 +9221,19 @@ export class Game {
         });
       }
       this.sfx('shot', 0.6);
+    } else if (mv.id === 'rampage') {
+      // (FLOOR 3, MORE ACTION: the slam: the ring where it was marked (or before him, if it never was), and out it goes)
+      const R = m.rampage ?? { x: m.x, y: m.y, fx: m.fx, fy: m.fy, went: 0, rx: NaN, ry: NaN };
+      const rx = Number.isNaN(R.rx) ? m.x + R.fx * RING.ahead : R.rx;
+      const ry = Number.isNaN(R.ry) ? m.y + R.fy * RING.ahead : R.ry;
+      if (ringStrikes(h.x - rx, h.y - ry)) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * RAMPAGE_BLOWS.slam, el, m.words, m);
+      this.perils.push({ kind: 'act1', a1: RING_PERIL, x: rx, y: ry, fx: R.fx, fy: R.fy, t: 0, hit: 0, dur: RING_LASTS, dmg: 0, el, words: m.words, half: this.halfOf(m), from: m.name, done: 1, a: m.id, b: 0, c: 0, d: 0, hand: 1 });
+      this.emit({ t: 'shake', amount: 3 });
+      this.sfx('slam', 0.9);
+      m.fx = R.fx;
+      m.fy = R.fy;
+      // (a Twin troll follows it with a second, quicker one, as his slam did)
+      if (twin > 0) this.addWarn(h.x, h.y, RING.radius * 0.6, 0.6, this.rollMonsterDmg(m) * mv.dmg * RAMPAGE_BLOWS.slam * twin, el, m.words, m.name, undefined, this.halfOf(m));
     } else if (mv.id === 'frenzy') {
       // (FLOOR 4, MORE ACTION: its fourth stab, then winded where it has carried him (carryFrenzy): art/cultists.ts FRENZY)
       const F = m.frenzy ?? { x: m.x, y: m.y, fx: m.fx, fy: m.fy, went: 0 };
@@ -9229,7 +9271,7 @@ export class Game {
       // he is off, down the line he marked
       m.state = 'charge';
       const c = m.charge;
-      m.t = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) / CHARGE.speed + 0.5;
+      m.t = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) / chargeOf(m).speed + 0.5;
       m.animT = 0;
       this.sfx('slam', 0.5);
     }
@@ -9261,7 +9303,7 @@ export class Game {
     const r = Math.min(m.r, 0.42);
     const held = L.shut !== null;
     let len = 0;
-    for (let a = 0.2; a <= dist + CHARGE.past + 1e-6; a += 0.2) {
+    for (let a = 0.2; a <= dist + chargeOf(m).past + 1e-6; a += 0.2) {
       if (!this.free(L.walk, m.x + fx * a, m.y + fy * a, r, false, held)) break;
       len = a;
     }
@@ -9283,7 +9325,8 @@ export class Game {
     const len = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) || 1;
     const fx = (c.x1 - c.x0) / len;
     const fy = (c.y1 - c.y0) / len;
-    const step = CHARGE.speed * (m.speed / def.speed) * slow * dt;
+    const P = chargeOf(m);
+    const step = P.speed * (m.speed / def.speed) * slow * dt;
     const ax = m.x;
     const ay = m.y;
     this.slide(m, Math.min(m.r, 0.42), fx * step, fy * step, this.level.walk, true);
@@ -9301,11 +9344,13 @@ export class Game {
       const ox = c.x0 + fx * along;
       const oy = c.y0 + fy * along;
       const side = (h.x - ox) * -fy + (h.y - oy) * fx >= 0 ? 1 : -1;
-      this.knockHero(h.x + fy * side, h.y - fx * side, CHARGE.knock);
+      this.knockHero(h.x + fy * side, h.y - fx * side, P.knock);
       this.emit({ t: 'shake', amount: 3 });
       this.sfx('slam', 0.9);
     }
-    if (along >= len - 0.05 || Math.hypot(m.x - ax, m.y - ay) < step * 0.3 || m.t <= 0) this.endCharge(m);
+    // (FLOOR 3, MORE ACTION: the green troll's run ends at its own end, as its round comes to a frame his stop can take him from)
+    const run = c.run ?? len;
+    if ((along >= run - 0.05 && (P.stop <= 0 || rushMayEnd(m))) || Math.hypot(m.x - ax, m.y - ay) < step * 0.3 || m.t <= 0) this.endCharge(m);
   }
 
   /** The charge is over: he pulls up, skidding, and stands for a moment (a moment to hit him). */
@@ -9316,6 +9361,8 @@ export class Game {
     m.t = mv ? mv.recover : TUNE.monsterRecover;
     m.charge = undefined;
     this.dropLane(m);
+    // (FLOOR 3, MORE ACTION: the green troll's stop carries him on: game/action_f3.ts)
+    if (greenTroll(m) && mv && mv.id === 'charge') m.rushStop = 0;
   }
 
   /** THE WARDEN CALLS THE DEAD (his fourth move): they crawl out of the ground round him, a little after one another, and join the fight when they are out. */
@@ -9472,10 +9519,16 @@ export class Game {
    * (render.ts draws his picture back by what it carries him: frenzyShift.)
    */
   private carryFrenzy(m: Monster, mv: MonsterMove): void {
-    const F = m.frenzy;
-    if (!F) return;
+    if (m.frenzy) this.carryAlong(m, m.frenzy, frenzyAt(moveAge(m.state, m.t, mv.windup, mv.recover)));
+  }
+
+  /**
+   * A monster carried by a move of its own (the dagger cultist's frenzy, the green troll's rampage) `want` tiles along the way it
+   * faced as it began (`F`, from where it began; `went`, how far so far): not on through the hero (as far as to him), nor into a wall.
+   */
+  private carryAlong(m: Monster, F: { x: number; y: number; fx: number; fy: number; went: number }, want: number): void {
     const h = this.hero;
-    let go = frenzyAt(frenzyAge(m.state, m.t, mv.windup, mv.recover));
+    let go = want;
     const along = (h.x - F.x) * F.fx + (h.y - F.y) * F.fy;
     const aside = Math.abs((h.x - F.x) * F.fy - (h.y - F.y) * F.fx);
     const body = m.r + TUNE.heroRadius;
@@ -9487,6 +9540,41 @@ export class Game {
     m.x = x;
     m.y = y;
     F.went = go;
+  }
+
+  /** How far a move of its own could carry it on to `want` tiles from where it began, as things stand: up to the hero, or a wall. */
+  private carryReach(m: Monster, F: { x: number; y: number; fx: number; fy: number; went: number }, want: number): number {
+    const h = this.hero;
+    let go = want;
+    const along = (h.x - F.x) * F.fx + (h.y - F.y) * F.fy;
+    const aside = Math.abs((h.x - F.x) * F.fy - (h.y - F.y) * F.fx);
+    const body = m.r + TUNE.heroRadius;
+    if (along > 0 && aside < body) go = Math.min(go, Math.max(F.went, along - Math.sqrt(body * body - aside * aside)));
+    let ok = F.went;
+    for (let a = F.went; a <= go + 1e-6; a = Math.min(go, a + 0.1)) {
+      if (!this.free(this.level.walk, F.x + F.fx * a, F.y + F.fy * a, m.r)) break;
+      ok = a;
+      if (a >= go) break;
+    }
+    return ok;
+  }
+
+  /** FLOOR 3, MORE ACTION: a swing of the green troll's rampage: the hero within its reach, in the half of the floor before him, is struck (a Twin troll's a moment after again). */
+  private rampageSwing(m: Monster, mv: MonsterMove): void {
+    const R = m.rampage;
+    if (!R) return;
+    const reach = RAMPAGE.reach + TUNE.heroRadius;
+    const strikes = (): boolean => {
+      const h = this.hero;
+      const dx = h.x - m.x;
+      const dy = h.y - m.y;
+      return Math.hypot(dx, dy) <= reach && dx * R.fx + dy * R.fy >= -TUNE.heroRadius;
+    };
+    const el = this.monsterElement(m);
+    if (strikes()) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * RAMPAGE_BLOWS.swing, el, m.words, m);
+    this.sfx('swing', 0.6);
+    const twin = wordShare(m, 'twin');
+    if (twin > 0) this.after(0.28, () => !m.dead && strikes() && this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * RAMPAGE_BLOWS.swing * twin, el, m.words, m));
   }
 
   /** FLOOR 4, MORE ACTION: a stab of the dagger cultist's frenzy from (x, y): the hero within its reach and its arc before him is struck. */
@@ -9934,6 +10022,8 @@ export class Game {
       if (z.kind === 'warn') {
         if (z.t >= z.dur) {
           this.zones.splice(i, 1);
+          // (a mark only: its blow is its monster's own, FLOOR 3, MORE ACTION)
+          if (z.mark) continue;
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
           if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtFrom(z);

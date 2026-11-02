@@ -26,8 +26,10 @@ export default async function (page, snap) {
     const h = g.hero;
     const m = g.spawn(kind, h.x + dx, h.y + dy, -1, 0, false, g.rng);
     g.monsters = [m];
-    m.state = 'chase'; m.cd = 0; m.speed = 0; m.moveCd = Array.from({ length: n }, (_, i) => (i === ready ? 0 : 99));
+    m.state = 'chase'; m.cd = 0; const pace = m.speed; m.speed = 0; m.moveCd = Array.from({ length: n }, (_, i) => (i === ready ? 0 : 99));
     for (let k = 0; k < 120 && m.state !== 'windup'; k++) { h.invuln = 1; h.life = h.d.maxLife; window.__step(1 / 30, idle); }
+    // (still, till it begins; then at its pace again, for what runs)
+    m.speed = pace;
     return m.state === 'windup' ? m.move : null;
   }, [kind, dx, dy, n, ready, idle]);
   /** The game stepped on `secs`, and pictured. */

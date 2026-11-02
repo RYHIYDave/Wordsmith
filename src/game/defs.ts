@@ -975,7 +975,7 @@ export const MONSTER_ATTACKS = { on: true };
  * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
  * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
  */
-export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown' | 'sigil' | 'frenzy';
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown' | 'sigil' | 'frenzy' | 'rampage';
 export interface MonsterMove {
   id: MoveId;
   /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
@@ -995,7 +995,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil' | 'daggerFrenzy' | 'golemHurl';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil' | 'daggerFrenzy' | 'golemHurl' | 'bruteRampage';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -1010,6 +1010,14 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
   brute: [
     { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
     { id: 'slam', windup: 0.85, dmg: 1, cooldown: 6, first: 2, after: 2.3, recover: 0.3, near: 0, far: 0 },
+  ],
+  // (FLOOR 3, MORE ACTION, ACTION_F3: the green troll's rampage, every attack of his but his rush, as his pictures have it (its
+  // blows at 0.6, 1.167 and its slam at 2.367 s, done by 3.1 s; begun within its swing's reach and his step, 2.4 tiles: game/
+  // action_f3.ts, its blows' shares there); and his bull rush, the red troll's charge his own way (its wind-up 1.0 s, his stop
+  // 1.0 s), from 3 to 8 tiles, about every 7 s.)
+  bruteRampage: [
+    { id: 'rampage', windup: 71 / 30, dmg: 1, cooldown: 0, first: 0, after: 2.0, recover: 22 / 30, near: 0, far: 2.4 },
+    { id: 'charge', windup: 1.0, dmg: 1.3, cooldown: 7, first: 2, after: 2.2, recover: 1.0, near: 3, far: 8 },
   ],
   guardian: [
     { id: 'swing', windup: 0.6, dmg: 0.65, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
@@ -1107,8 +1115,9 @@ export const ACTION_F2 = { on: false };
  * FLOOR 3, MORE ACTION (the art chat's art/action-f3, his yes to its pictures): THE BONEWARD'S SHIELD WALL (his pick, “Yes
  * (Recommended)”, of “Its shield up, blows from in front glance off. Get round it, or wait for it to throw.”): while its wall is up
  * a blow from within 60 degrees of straight before it does nothing, it holds its ground and the blow glances off
- * (art/action_f3_fx.ts WALL, glances; game.ts wallUp). The art's switch goes with it (art/bestiary.ts useActionF3). (The green
- * troll's rampage and bull rush, BRUTE_RAMPAGE, are not yet wired: off.)
+ * (art/action_f3_fx.ts WALL, glances; game.ts wallUp); and THE GREEN TROLL'S RAMPAGE in place of his swing and his slam, and his
+ * BULL RUSH (game/action_f3.ts; MONSTER_MOVES bruteRampage). The art's switches go with it (art/bestiary.ts useActionF3:
+ * BONEWARD_WALL, BRUTE_RAMPAGE).
  */
 export const ACTION_F3 = { on: false };
 /**
@@ -1132,7 +1141,7 @@ export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly M
     case 'dagger':
       return ACTION_F4.on ? MONSTER_MOVES.daggerFrenzy : null;
     case 'brute':
-      return m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute;
+      return m.champion ? MONSTER_MOVES.guardian : ACTION_F3.on ? MONSTER_MOVES.bruteRampage : MONSTER_MOVES.brute;
     case 'boneward':
       return MONSTER_MOVES.boneward;
     case 'golem':

@@ -114,7 +114,7 @@ export function frenzyAt(age: number): number {
   return (CAME[k] ??= frenzyCame(k / 30));
 }
 /** How long his frenzy has run (seconds), as his pictures show it: its wind-up counted down (`t` left of `windup`), then its recover. */
-export function frenzyAge(state: string, t: number, windup: number, recover: number): number {
+export function moveAge(state: string, t: number, windup: number, recover: number): number {
   return state === 'windup' ? windup - Math.max(0, Math.min(windup, t)) : windup + recover - Math.max(0, Math.min(recover, t));
 }
 /**

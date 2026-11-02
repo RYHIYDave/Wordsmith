@@ -422,7 +422,7 @@ export interface Monster {
   move?: number;
   moveCd?: number[];
   /** The red troll's charge: the line he runs along (from where he stood to where he will stop), and whether he has run the hero down on it yet. */
-  charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean };
+  charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean; run?: number };
   /** THE NEW MONSTERS (game/defs.ts SPEAR): the Boneward's spear is out of its hand (flying, or lying where it fell: Game.spears). */
   bare?: boolean;
   /** THE NEW MONSTERS (game/defs.ts RALLY): a minion's seconds left of its leader's words whole, since the skeleton champion's cry. */
@@ -456,6 +456,10 @@ export interface Monster {
   raisedT?: number;
   /** (FLOOR 4, MORE ACTION: the dagger cultist's frenzy) Where it began and the way he faced: his stabs drive on that way, whatever he turns to. */
   frenzy?: { x: number; y: number; fx: number; fy: number; went: number };
+  /** FLOOR 3, MORE ACTION: the green troll's rampage: where he began it and the way he faced, how far it has carried him, and the middle of its ring once marked (NaN till then). */
+  rampage?: { x: number; y: number; fx: number; fy: number; went: number; rx: number; ry: number };
+  /** FLOOR 3, MORE ACTION: how far his bull rush's stop has carried him on (while he stops). */
+  rushStop?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -593,6 +597,8 @@ export interface Zone {
   dmg: number;
   slow: number;
   tick: number;
+  /** A 'warn' that only marks where a blow will land, its blow its monster's own: it does nothing as it ends (FLOOR 3, MORE ACTION: the green troll's ring). */
+  mark?: boolean;
   /** 'warn' zones are monster attacks about to land. */
   hostile: boolean;
   skill: number;

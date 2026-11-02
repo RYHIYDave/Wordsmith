@@ -33,7 +33,7 @@ import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { ARCHER_RAIN, makeArcherArt, makeSkeletonArt } from './monster_bones';
 import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
-import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
+import { BRUTE_RAMPAGE, TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
 import { CULTIST_SIGIL, makeCultistArt, makeHighPriestArt } from './monster_cultist';
 import { SHADE_FROST, makeFrostShadeArt } from './action_f2_fx';
 import { BONEWARD_WALL, makeWallBonewardArt } from './action_f3_fx';
@@ -74,10 +74,11 @@ export function useActionF2(on: boolean): void {
   SHADE_FROST.on = on;
 }
 useActionF2(ACTION_F2.on);
-/** FLOOR 3, MORE ACTION (game/defs.ts ACTION_F3): the rules and the art chat's pictures of the Boneward's shield wall, on and off together. */
+/** FLOOR 3, MORE ACTION (game/defs.ts ACTION_F3): the rules and the art chat's pictures of the Boneward's shield wall and the green troll's rampage and bull rush, on and off together. */
 export function useActionF3(on: boolean): void {
   ACTION_F3.on = on;
   BONEWARD_WALL.on = on;
+  BRUTE_RAMPAGE.on = on;
 }
 useActionF3(ACTION_F3.on);
 /** FLOOR 4, MORE ACTION (game/defs.ts ACTION_F4): the rules and the art chat's pictures of the dagger cultist's frenzy and the Ossuary Golem's skeleton hurl, on and off together. */
