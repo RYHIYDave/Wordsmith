@@ -9,6 +9,11 @@ import type { Mob } from '../src/art/new_mobs3';
 import { PH_SHAPE_GARDENER } from '../src/art/palace_hands_moves';
 import { GD_SHAPE_PARTISAN, GD_SHAPE_SWORD } from '../src/art/palace_guard_moves';
 import { DRILL_PARTISAN, DRILL_SMEARED, DRILL_STRIKES, DRILL_HITS, DRILL_SWORD, THRUST9_SMEARED, THRUST9_STRIKE } from '../src/art/action_f16_guard';
+import { KN_SHAPE, KN_CLEAVE, smearedAt as knSmeared } from '../src/art/kings_knights_moves';
+import { BANNER, BANNER_AT, BANNER_HIT, BANNER_KNIGHT, BANNER_SMEARED, BANNER_STRIKE, CLEAVE_KNIGHT, STAFF, backBanner, bannerHeld } from '../src/art/action_f16_knight';
+import { TILE3 } from '../src/art/new_mobs3';
+import { add } from '../src/art/skeleton';
+import type { V3 } from '../src/art/skeleton';
 import { HEDGE_GARDENER, HEDGE_HITS, HEDGE_SMEARED, HEDGE_STRIKES, HEDGE_TRAVEL } from '../src/art/action_f16_gardener';
 
 /** Handovers for one whose `attack` ends `travel` on (the game moves him on by it): his stand into each move and back; into his walk and out of it at every step. */
@@ -57,4 +62,57 @@ export function drillShape(mob: Mob): BossShape {
 export const guardRows = (): [string, Mob, BossShape, string[]][] => [
   ['partisan', DRILL_PARTISAN, drillShape(DRILL_PARTISAN), ['attack', 'drill']],
   ['sword', DRILL_SWORD, drillShape(DRILL_SWORD), ['attack', 'drill']],
+];
+
+/** THE KING'S KNIGHT: his cleave his blow; the banner a blow of its own (its staff's foot the end he strikes with); it on his back, a thing he carries. */
+export function bannerShape(mob: Mob = BANNER_KNIGHT): BossShape {
+  const carrying = mob === BANNER_KNIGHT;
+  const staffPts = (foot: V3, way: V3, from = 0): V3[] => {
+    const out: V3[] = [];
+    for (let k = from; k <= STAFF.long; k += 8) out.push([foot[0] + way[0] * k, foot[1] + way[1] * k, foot[2] + way[2] * k]);
+    return out;
+  };
+  return {
+    ...KN_SHAPE,
+    tip: (move, t, s, q) => {
+      if (move === 'banner') {
+        // (the staff's foot: on his back, in his fist, and driven into the floor where it stands)
+        if (t <= BANNER_HIT + 1e-6) return bannerHeld(mob, t, s)?.foot ?? backBanner(s).foot;
+        const k = Math.min(1, (t - BANNER_HIT) / 0.14);
+        return add(bannerFoot(), [0, 0, -BANNER.sink * k * k * (3 - 2 * k)]);
+      }
+      return KN_SHAPE.tip?.(move === 'attack' ? 'cleave' : move, t, s, q) ?? null;
+    },
+    things: (move, t, s, q) => {
+      const out = [...(KN_SHAPE.things?.(move, t, s, q) ?? [])];
+      if (!carrying) return out;
+      if (move === 'banner' && t > BANNER_HIT + 1e-6) {
+        // (planted where he drove it; his fist on it till he lets go)
+        if (t < BANNER.let + 0.1) out.push({ name: 'banner', pts: staffPts(add(bannerFoot(), [0, 0, -BANNER.sink]), [0, 0, 1], BANNER.sink), r: STAFF.r, may: ['foreL'] });
+        return out;
+      }
+      const h = move === 'banner' ? bannerHeld(mob, t, s) : null;
+      // (in his left fist, his raised arm alongside the staff)
+      if (h) out.push({ name: 'banner', pts: staffPts(h.foot, h.way), r: STAFF.r, may: ['foreL', 'upperL'] });
+      else {
+        const b = backBanner(s);
+        out.push({ name: 'banner', pts: staffPts(b.foot, b.way), r: STAFF.r, may: move === 'banner' ? ['foreL', 'upperL'] : [] });
+      }
+      return out;
+    },
+    strikes: { attack: KN_CLEAVE.strike, ...(carrying ? { banner: BANNER_STRIKE } : {}) },
+    smeared: (move, t) => (move === 'attack' && knSmeared('cleave', t)) || (move === 'banner' && BANNER_SMEARED(t)),
+    handovers: [
+      ...(KN_SHAPE.handovers ?? []).filter((h) => h.from !== 'cleave' && h.to !== 'cleave'),
+      ...(carrying ? [{ from: 'stand', at: 0, to: 'banner', toAt: 0 } as Handover] : []),
+    ],
+  };
+}
+/** Where the banner's foot stands as he drives it (his own lengths). */
+export function bannerFoot(): V3 {
+  return [BANNER_AT[0] * TILE3, BANNER_AT[1] * TILE3, 0];
+}
+export const knightRows = (): [string, Mob, BossShape, string[]][] => [
+  ['banner', BANNER_KNIGHT, bannerShape(BANNER_KNIGHT), ['banner', 'attack']],
+  ['cleave', CLEAVE_KNIGHT, bannerShape(CLEAVE_KNIGHT), ['attack']],
 ];
