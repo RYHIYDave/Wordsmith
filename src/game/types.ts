@@ -118,6 +118,8 @@ export type MonsterKind =
   | 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain'
   // THE FIRST FIVE FLOORS (game/bosses.ts): the bosses of floors 2 to 5, the amalgamation's bone beast, and the cult's two fighters
   | 'headsman' | 'chained' | 'amalgam' | 'beast' | 'fleshmancer' | 'dagger' | 'minifm'
+  // (the Amalgamation's bone mites, done the action way: its rain's skulls pulled together where they burst, game/bosses.ts AM_ACTION)
+  | 'mite'
   // ACT 1, THE DESCENT (game/act1.ts): the cult's two new kinds; each floor's own creatures; the five bosses
   | 'chanter' | 'firepot'
   | 'qgolem' | 'rubbling' | 'vulture' | 'crawler' | 'scorpion' | 'devil' | 'deer' | 'wolf' | 'drowned' | 'leech' | 'spawn'

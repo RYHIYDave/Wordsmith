@@ -94,6 +94,7 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   chained2: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: true },
   amalgam: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
   beast: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
+  mite: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
   fleshmancer: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
   dagger: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
   minifm: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },

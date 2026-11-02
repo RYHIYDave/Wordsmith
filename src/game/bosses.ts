@@ -30,6 +30,9 @@ import { stepActionF2 } from './action_f2';
 import { stepActionF4 } from './action_f4';
 import { BALL_LAND, BALL_LET, BALL_LONG, BALL_REACH, HOOK_BACK, HOOK_BITE, HOOK_BLOW, HOOK_LET, HOOK_LONG, LASH_HITS, LASH_LONG, LASH_TRAVEL_TILES, WHIRL_HIT, WHIRL_LONG, WHIRL_LOOP, actBallPath, actHookPath } from '../art/chained_action';
 import { CRACK, RING as CO_RING, crackStrikes, ringStrikes as coRingStrikes } from '../art/chained_action_fx';
+import { ARMS_HIT, ARMS_LONG, DEVOUR_HITS, DEVOUR_LONG, RAIN_HIT, RAIN_LONG, RAKES, SWIPE_HITS, SWIPE_LONG } from '../art/amalgam_action';
+import { ARMS as AM_ARMS, BIG_ARM_TIME, RAIN as AM_RAIN, SLAM_RING, rainDrops, rainStrikes } from '../art/amalgam_action_fx';
+import { MITE } from '../art/amalgam_mites';
 import { BODIES, MONSTERS, MSG, SUMMON, TUNE, wordShare } from './defs';
 import type { MonsterDef } from './defs';
 import { beside, fromFigure, handOf } from './facing';
@@ -225,6 +228,8 @@ export function actsOf(m: { kind: MonsterKind }): readonly ActDef[] | null {
   if (m.kind === 'headsman' && HEADSMAN2_FIGHT.on && BOSSES5.on) return H2_ACTS;
   // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY)
   if (m.kind === 'chained' && CO_ACTION.on && BOSSES5.on) return CO2_ACTS;
+  // (THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY)
+  if (m.kind === 'amalgam' && AM_ACTION.on && BOSSES5.on) return AM2_ACTS;
   return BOSSES5.on && m.kind in ACTS ? ACTS[m.kind as GaitedKind] : null;
 }
 export function actDef(m: { kind: MonsterKind; act?: { id: ActId } }): ActDef | null {
@@ -375,6 +380,51 @@ export const CO2_ACTS: readonly ActDef[] = [
   { id: 'breakL', clip: 'breakL', long: 2.3, hit: 0.8, dmg: 0.5, cooldown: 0, first: 0, after: 0.3, near: 0, far: 0, forced: true },
   { id: 'breakBall', clip: 'breakBall', long: 2.3, hit: 0.8, dmg: 0.5, cooldown: 0, first: 0, after: 0.3, near: 0, far: 0, forced: true },
 ];
+/**
+ * THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY (the art chat's art/action-f4 amalgam, art/amalgam_action.ts; his yes to
+ * each, 1 Nov 2026, the rakes redone at his word and the rain's skulls become bone mites: "That’s awesome"). Behind this switch
+ * (off), with the art's (AMALGAM_ACTION: art/bestiary.ts useAmAction). It rears to its full height before each big move and
+ * crashes down; its numbers the pictures' own, the rest the rules':
+ *   swipe     a combo: two rakes, each a hero within its slash (`RAKES[i].out` of its middle) inside its arc (`arcs[i]`: degrees
+ *             from its front, to its left), marked as the arm is hauled up (`rakeMark[i]`); then the finisher, slammed down: a
+ *             ring SLAM_RING.finisher round a point SLAM_RING.ahead before it (`finisherDmg`), marked from its rear (`finisherWarn`)
+ *   am:rain   it rears and roars, slams down, and the skulls come down out of the walls over the whole floor round it (rainDrops,
+ *             `rain.rx`, `rain.ry`), each a second's shadow first, bursting where it lands (AM_RAIN.r), a bone mite pulling
+ *             together where it burst (game/am_mites.ts); the slam's ring drawn only (what strikes is the skulls)
+ *   floorArms its arms of the dead, bigger and more (AM_ARMS): the first under the hero, the others round where he stood, a gap
+ *             left the way away from it; the slam's ring drawn only
+ *   devour    its cone marked from `devour.warn`; raked in from its rake to its bite (`DEVOUR_HITS`), what is in the cone dragged to
+ *             its maw at `devour.pull`; bitten within `devour.r` of its maw
+ */
+export const AM_ACTION = { on: false };
+export const AM2 = {
+  rakeMark: [1 / 30, 36 / 30] as const,
+  arcs: [[-94, 15], [-18, 93]] as ReadonlyArray<readonly [number, number]>,
+  finisherDmg: 1.3,
+  finisherWarn: 74 / 30,
+  rain: { rx: 8.5, ry: 8.5, dmg: 0.45 },
+  armGap: 35,
+  devour: { warn: 0.5, near: 1.0, reach: 4.2, end: 0.25, narrow: 0.7, wide: 2.0, maw: 1.15, pull: 3.6, r: 1.3 },
+};
+/** (AM_ACTION) The perils its moves leave, drawn by render/act1_fx/amalgam.ts: a ring of its slam (`d` its radius), a rake's gouges (`c` which), a skull of the rain (`d` its own number; its 0 its landing; `b`, `c` the niche it falls from; `a` its pack, the mite's). */
+export const AM_RING = 'amalgam:ring';
+export const AM_RAKE = 'amalgam:rake';
+export const AM_DROP = 'amalgam:drop';
+export const AM2_ACTS: readonly ActDef[] = [
+  { id: 'swipe', clip: 'attack', long: SWIPE_LONG, hit: SWIPE_HITS[0], dmg: 1, cooldown: 0, first: 0, after: 0.5, near: 0, far: 3.3 },
+  { id: 'am:rain', clip: 'rain', long: RAIN_LONG, hit: RAIN_HIT, dmg: AM2.rain.dmg, cooldown: 10, first: 3, after: 0.6, near: 0, far: 11 },
+  { id: 'floorArms', clip: 'floorArms', long: ARMS_LONG, hit: ARMS_HIT, dmg: 0.75, cooldown: 9, first: 5, after: 0.6, near: 0, far: 11 },
+  { id: 'devour', clip: 'devour', long: DEVOUR_LONG, hit: DEVOUR_HITS[0], dmg: 1.8, cooldown: 12, first: 8, after: 0.8, near: 0, far: 4.2 },
+  { id: 'burst', clip: 'burst', long: 1.5, hit: 0.6, dmg: 0, cooldown: 0, first: 0, after: 0.3, near: 0, far: 0, forced: true },
+];
+/** (AM_ACTION) Whether a hero at (fwd, left) of it, `r` round, is inside the devour's cone. */
+export function inCone(fwd: number, left: number, r = 0): boolean {
+  const D = AM2.devour;
+  if (fwd < D.near - r || fwd > D.reach + D.end + r) return false;
+  const k = Math.max(0, Math.min(1, (fwd - D.near) / (D.reach - D.near)));
+  return Math.abs(left) <= D.narrow + (D.wide - D.narrow) * k + r;
+}
+
 /** (CO_ACTION) A moment of a looped act's pictures (seconds into them) as the act's own clock has it (its loop played round). */
 export function actTimeOf(a: ActDef, T: number): number {
   const L = a.loop;
@@ -656,8 +706,8 @@ export class BossRules {
         if (this.called(m) > FLESHMANCER.raise.most - 1) continue;
       } else if (a.id === 'miniRaise') {
         if (this.called(m) > MINIFM.raise.most - 1 || this.bodiesNear(m).length === 0) continue;
-      } else if (a.id === 'floorArms') {
-        // (out of the floor, wherever he is: it needs no clear line to him)
+      } else if (a.id === 'floorArms' || a.id === 'am:rain') {
+        // (out of the floor, out of the walls, wherever he is: it needs no clear line to him)
       } else if (!los) continue;
       // (devour: only a hero who is before it, where its arms rake)
       if (a.id === 'ball' && !g.sees(m.x, m.y, g.hero.x, g.hero.y)) continue;
@@ -975,6 +1025,172 @@ export class BossRules {
     }
   }
 
+  /** (AM_ACTION) The Amalgamation's moves done the action way, from `t0` to `t1` of act `a` (AM2). */
+  private amActing(m: Monster, a: ActDef, t0: number, t1: number, dt: number): void {
+    const g = this.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    const here = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
+    const el = g.monsterElement(m);
+    const half = g.halfOf(m);
+    const mark = (x: number, y: number, r: number, left: number): void => g.addWarn(x, y, r, Math.max(0.05, left), 0, el, m.words, m.name, m.id, half, true);
+    const ring = (x: number, y: number, r: number): void => void this.peril(m, 'act1', x, y, { a1: AM_RING, dur: SLAM_RING.long, d: r, done: 1 });
+    switch (a.id) {
+      case 'swipe': {
+        // (its two rakes: each a hero within its slash and inside its arc, as it lands)
+        for (let i = 0; i < 2; i++) {
+          if (!at(SWIPE_HITS[i])) continue;
+          const r = this.rel(m);
+          const d = Math.hypot(r.fwd, r.left);
+          const deg = (Math.atan2(r.left, r.fwd) * 180) / Math.PI;
+          const slack = d > 0.01 ? (Math.asin(Math.min(1, TUNE.heroRadius / d)) * 180) / Math.PI : 180;
+          if (d <= RAKES[i].out + TUNE.heroRadius * 0.5 && deg >= AM2.arcs[i][0] - slack && deg <= AM2.arcs[i][1] + slack) {
+            this.blow(m, a.dmg);
+            g.knockHero(m.x, m.y, 0.6);
+          }
+          this.peril(m, 'act1', m.x, m.y, { a1: AM_RAKE, dur: 2.2, c: i });
+          g.emit({ t: 'shake', amount: i === 0 ? 3 : 3.5 });
+          g.sfx('swing', 0.9);
+        }
+        // (the finisher: marked as it rears, a ring before it as it crashes down)
+        const c = here(SLAM_RING.ahead, 0);
+        if (at(AM2.finisherWarn)) mark(c.x, c.y, SLAM_RING.finisher, SWIPE_HITS[2] - AM2.finisherWarn);
+        if (at(SWIPE_HITS[2])) {
+          if (Math.hypot(h.x - c.x, h.y - c.y) <= SLAM_RING.finisher + TUNE.heroRadius * 0.5) {
+            this.blow(m, AM2.finisherDmg);
+            g.knockHero(c.x, c.y, 1);
+          }
+          ring(c.x, c.y, SLAM_RING.finisher);
+          g.emit({ t: 'shake', amount: 5 });
+          g.sfx('slam', 1);
+        }
+        break;
+      }
+      case 'am:rain': {
+        if (!at(RAIN_HIT)) break;
+        const c = here(SLAM_RING.ahead, 0);
+        ring(c.x, c.y, SLAM_RING.rain);
+        g.emit({ t: 'shake', amount: 5 });
+        g.sfx('slam', 1);
+        g.sfx('bossRoar', 0.6);
+        // (the skulls, out of the walls over the floor round it: each its shadow first, then down)
+        const dmg = g.rollMonsterDmg(m) * a.dmg;
+        for (const d of rainDrops({ rx: AM2.rain.rx, ry: AM2.rain.ry }, [0, 0])) {
+          const x = m.x + d.at[0];
+          const y = m.y + d.at[1];
+          if (!g.free(g.level.walk, x, y, AM_RAIN.edge)) continue;
+          this.peril(m, 'act1', x, y, { a1: AM_DROP, t: -d.land, hit: 0, dur: AM_RAIN.mite.scuff, dmg, a: m.packId, b: m.x + d.from[0], c: m.y + d.from[1], d: d.seed });
+        }
+        break;
+      }
+      case 'floorArms': {
+        if (!at(a.hit)) break;
+        const A = AM_ARMS;
+        const c = here(SLAM_RING.ahead, 0);
+        ring(c.x, c.y, SLAM_RING.arms);
+        g.emit({ t: 'shake', amount: 5 });
+        g.sfx('slam', 1);
+        // (the first where he stands, the others round him, a gap left the way away from it: the way out)
+        const dmg = g.rollMonsterDmg(m) * a.dmg;
+        const away = Math.atan2(h.y - m.y, h.x - m.x);
+        const spots: { x: number; y: number }[] = [{ x: h.x, y: h.y }];
+        for (let tries = 0; spots.length < A.n && tries < 60; tries++) {
+          const ang = g.rng.range(0, Math.PI * 2);
+          const off = Math.abs(((ang - away + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+          if (off < (AM2.armGap * Math.PI) / 180) continue;
+          const far = g.rng.range(A.near, A.far);
+          const x = h.x + Math.cos(ang) * far;
+          const y = h.y + Math.sin(ang) * far;
+          if (!g.isOpen(x, y) || spots.some((q) => Math.hypot(q.x - x, q.y - y) < 1.3)) continue;
+          spots.push({ x, y });
+        }
+        spots.forEach((s, k) => {
+          const hit = A.first + ((A.last - A.first) * k) / Math.max(1, A.n - 1);
+          this.peril(m, 'arm', s.x, s.y, { hit, dur: hit + BIG_ARM_TIME + AMALGAM.arms.after, dmg, c: k, d: 1 });
+        });
+        break;
+      }
+      case 'devour': {
+        const D = AM2.devour;
+        const maw = here(D.maw, 0);
+        if (t1 > DEVOUR_HITS[0] && t0 < DEVOUR_HITS[1]) {
+          // (raked in: what is in its cone is dragged to its maw, a bone beast of its own too)
+          const pull = (b: { x: number; y: number }, rad: number): boolean => {
+            const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, b.x, b.y);
+            if (!inCone(r.fwd, r.left, rad)) return false;
+            const ddx = maw.x - b.x;
+            const ddy = maw.y - b.y;
+            const d = Math.hypot(ddx, ddy);
+            if (d < 0.25) return true;
+            const step = Math.min(d, D.pull * dt);
+            g.slide(b, rad, (ddx / d) * step, (ddy / d) * step, g.level.walk);
+            return true;
+          };
+          if (!h.move && !g.over) pull(h, TUNE.heroRadius);
+          for (const o of g.monsters) {
+            if (o.dead || o.kind !== 'beast' || o.packId !== m.packId) continue;
+            if (o.act && o.act.id === 'emerge') continue;
+            if (pull(o, 0.3)) this.drag(o, m);
+            else if (o.act && o.act.id === 'dragged') this.breakOff(o);
+          }
+        }
+        if (at(DEVOUR_HITS[0])) {
+          g.emit({ t: 'shake', amount: 2 });
+          g.sfx('swing', 0.9);
+        }
+        if (at(DEVOUR_HITS[1])) {
+          if (Math.hypot(h.x - maw.x, h.y - maw.y) <= D.r) this.blow(m, a.dmg);
+          g.emit({ t: 'shake', amount: 4 });
+          g.sfx('slam', 0.9);
+          // (any bone beast it has dragged in is eaten back)
+          for (const o of g.monsters) {
+            if (o.dead || o.kind !== 'beast' || !o.act || o.act.id !== 'dragged') continue;
+            if (Math.hypot(o.x - maw.x, o.y - maw.y) <= D.r + 0.5) {
+              o.dead = true;
+              m.life = Math.min(m.maxLife, m.life + m.maxLife * AMALGAM.devour.heal);
+              g.emit({ t: 'gone', x: o.x, y: o.y, what: 'beast' });
+              g.emit({ t: 'text', x: m.x, y: m.y, text: 'heals', color: '#ff8a80' });
+            } else this.breakOff(o);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  /** (AM_ACTION) A step of one of the Amalgamation's own perils: a skull of its rain bursting where it lands, and the bone mite pulling together there. */
+  private stepAmPeril(p: Peril, hurt: (mult?: number) => void): void {
+    if (p.a1 !== AM_DROP) return;
+    const g = this.g;
+    const h = g.hero;
+    if (!p.done && p.t >= 0) {
+      p.done = 1;
+      if (rainStrikes(h.x - p.x, h.y - p.y)) hurt();
+      g.emit({ t: 'shake', amount: 0.6 });
+      g.sfx('hit', 0.25);
+    }
+    if (p.done === 1 && p.t >= AM_RAIN.mite.at) {
+      p.done = 2;
+      // (a bone mite pulls itself together where it burst: among the monsters once it has, MITE.form on; one blow kills it; left
+      // alone it crumbles MITE.life after it began)
+      if (!g.free(g.level.walk, p.x, p.y, MONSTERS.mite.radius)) return;
+      const add = g.spawn('mite', p.x, p.y, p.a, 0, false, g.rng);
+      g.monsters.splice(g.monsters.indexOf(add), 1);
+      add.life = add.maxLife = 1;
+      add.state = 'chase';
+      add.cd = 0.2;
+      add.seen = true;
+      const dx = h.x - p.x;
+      const dy = h.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      add.fx = dx / d;
+      add.fy = dy / d;
+      add.crumbleT = MITE.life - MITE.form;
+      g.risers.push({ m: add, age: 0, way: 'form', rise: MITE.form });
+    }
+  }
+
   /** What one of them does to the hero with a blow of its own, `mult` times its blow. */
   blow(m: Monster, mult: number): void {
     const g = this.g;
@@ -1010,6 +1226,11 @@ export class BossRules {
     // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY: his own, but for the breaking of his chains)
     if (m.kind === 'chained' && CO_ACTION.on && a.id !== 'breakL' && a.id !== 'breakBall') {
       this.coActing(m, a, t0, t1, dt);
+      return;
+    }
+    // (THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY: its own, but for the bursting out of its beasts)
+    if (m.kind === 'amalgam' && AM_ACTION.on && a.id !== 'burst') {
+      this.amActing(m, a, t0, t1, dt);
       return;
     }
     switch (a.id) {
@@ -1550,7 +1771,7 @@ export class BossRules {
         if (r1 && r1.peril) r1.peril(this, p, dt);
         // (FLOOR 1, MORE ACTION: the archer's arrow rain and the Warden's Lockdown, whose kinds have no such rules: game/action_f1.ts)
         // (floor 2's and floor 4's likewise: game/action_f2.ts, game/action_f4.ts)
-        else if (!r1 && !stepActionF1(g, p, hurt) && !stepActionF2(g, p, hurt)) stepActionF4(g, p, hurt);
+        else if (!r1 && !stepActionF1(g, p, hurt) && !stepActionF2(g, p, hurt) && !stepActionF4(g, p, hurt)) this.stepAmPeril(p, hurt);
       } else if (p.kind === 'split') {
         // (the split burns: whoever stands in it is burned, tick by tick)
         const S = HEADSMAN.sentence;
@@ -1561,9 +1782,11 @@ export class BossRules {
           if (r.fwd >= S.from - 0.2 && r.fwd <= S.to + 0.2 && Math.abs(r.left) <= S.half - 0.05) hurt();
         }
       } else if (p.kind === 'arm') {
-        if (!p.done && p.t >= p.hit + AMALGAM.arms.up) {
+        // (`d` 1: the Amalgamation's bigger arms, done the action way: AM_ARMS)
+        const A = p.d === 1 ? AM_ARMS : AMALGAM.arms;
+        if (!p.done && p.t >= p.hit + A.up) {
           p.done = 1;
-          if (Math.hypot(h.x - p.x, h.y - p.y) <= AMALGAM.arms.r) hurt();
+          if (Math.hypot(h.x - p.x, h.y - p.y) <= A.r) hurt();
           g.emit({ t: 'shake', amount: 1 });
         }
       } else if (p.kind === 'skull' || p.kind === 'shard') {

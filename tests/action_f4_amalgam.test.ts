@@ -105,7 +105,9 @@ const longOf = (name: string): number => {
 
 test('1. the switch is off, nothing of the game imports the mock-up, the rest of it is the game’s own and the game’s moves are kept', () => {
   assert.equal(AMALGAM_ACTION.on, false, 'AMALGAM_ACTION is off');
-  const mock = ['art/amalgam_action.ts', 'art/amalgam_action_fx.ts', 'art/amalgam_mites.ts'];
+  // (and the game's own, brought in by the main chat behind AM_ACTION: its rules, game/bosses.ts; its big arms, render/bossfx.ts;
+  // its marks, rings, gouges and rain, render/act1_fx/amalgam.ts; and the bestiary's choosing of its art and its mites')
+  const mock = ['art/amalgam_action.ts', 'art/amalgam_action_fx.ts', 'art/amalgam_mites.ts', 'game/bosses.ts', 'render/bossfx.ts', 'render/act1_fx/amalgam.ts', 'art/bestiary.ts'];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || mock.includes(f)) continue;
     assert.ok(!/from ['"][^'"]*(amalgam_action|amalgam_action_fx|amalgam_mites|action_f4_amalgam_scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);

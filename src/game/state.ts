@@ -460,6 +460,8 @@ export interface Monster {
   rampage?: { x: number; y: number; fx: number; fy: number; went: number; rx: number; ry: number };
   /** FLOOR 3, MORE ACTION: how far his bull rush's stop has carried him on (while he stops). */
   rushStop?: number;
+  /** AM_ACTION: a bone mite's seconds left before it crumbles, untouched. */
+  crumbleT?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -639,9 +641,10 @@ export interface Riser {
    * THE FIRST FIVE FLOORS (game/bosses.ts): how it comes. Absent, the Warden's way: it crawls out of the
    * ground (and so the mini fleshmancer's dead, out of the ground where a cultist's body lay). 'gather':
    * the Fleshmancer's way: its bones are snatched up off a heap and slam together (after `stir` seconds
-   * of his fire on the heap). `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
+   * of his fire on the heap). 'form' (AM_ACTION): a bone mite pulling itself together where its skull burst (its `form`
+   * pictures), out in `rise`. `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
    */
-  way?: 'gather';
+  way?: 'gather' | 'form';
   rise?: number;
 }
 

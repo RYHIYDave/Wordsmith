@@ -628,6 +628,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   chained: { kind: 'chained', name: 'Chained One', life: 450, dmgMin: 18, dmgMax: 25, speed: 1.1, radius: 0.7, range: 2.6, windup: 0.86, cooldown: 2.0, xp: 230, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   amalgam: { kind: 'amalgam', name: 'Ossuary Amalgamation', life: 470, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 1.1, range: 2.2, windup: 0.82, cooldown: 2.0, xp: 270, ranged: false, projSpeed: 4, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   // (THE BONE BEAST: a piece of the amalgamation broken off it; quick, and it bites. Never in a pack.)
+  // (THE AMALGAMATION DONE THE ACTION WAY, AM_ACTION: its bone mites, out of its rain's skulls: dead in one blow, quick, many;
+  // crumbling MITE.life after they began forming; nothing to take from them. Their bite at their pictures' snap, 0.467 s, its
+  // reach theirs, 0.75 tiles before them; their skitter's pace, 3.2: art/amalgam_mites.ts MITE)
+  mite: { kind: 'mite', name: 'Bone Mite', life: 1, dmgMin: 2, dmgMax: 4, speed: 3.2, radius: 0.2, range: 0.87, windup: 14 / 30, cooldown: 0.8, xp: 0, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
   beast: { kind: 'beast', name: 'Bone Beast', life: 24, dmgMin: 7, dmgMax: 11, speed: 2.6, radius: 0.36, range: 1.0, windup: 0.62, cooldown: 1.5, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   // (THE FLESHMANCER, the Crypt's lair boss: human-sized, a caster; his fire is the enemy's, and burns)
   fleshmancer: { kind: 'fleshmancer', name: 'Fleshmancer', life: 330, dmgMin: 17, dmgMax: 24, speed: 1.0, radius: 0.42, range: 6, windup: 0.8, cooldown: 1.6, xp: 320, ranged: false, projSpeed: 9, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },

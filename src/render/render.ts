@@ -2858,7 +2858,8 @@ export class Renderer {
         if (gs) this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(gs) : gs, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
         continue;
       }
-      const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.crawl;
+      // (AM_ACTION: a bone mite pulling itself together where its skull burst: its own pictures of it, art/amalgam_mites.ts)
+      const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.[r.way === 'form' ? 'form' : 'crawl'];
       if (!c) continue;
       const sp = clipFrame(c, r.age);
       this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));

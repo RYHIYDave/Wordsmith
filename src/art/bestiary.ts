@@ -20,7 +20,7 @@
 
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { BOSSES5, CO_ACTION } from '../game/bosses';
+import { AM_ACTION, BOSSES5, CO_ACTION } from '../game/bosses';
 import { ACTION_F1, ACTION_F2, ACTION_F3, ACTION_F4, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
@@ -40,6 +40,8 @@ import { BONEWARD_WALL, makeWallBonewardArt } from './action_f3_fx';
 import { DAGGER_FRENZY } from './cultists';
 import { GOLEM_HURL, makeHurlGolemArt } from './action_f4_fx';
 import { CHAINED_ACTION, makeChainedActionArt } from './chained_action';
+import { AMALGAM_ACTION, makeAmalgamActionArt } from './amalgam_action';
+import { makeBoneMiteArt } from './amalgam_mites';
 import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
@@ -95,6 +97,12 @@ export function useCoAction(on: boolean): void {
   CHAINED_ACTION.on = on;
 }
 useCoAction(CO_ACTION.on);
+/** THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY (game/bosses.ts AM_ACTION), and its bone mites: the rules and the art chat's pictures, on and off together. */
+export function useAmAction(on: boolean): void {
+  AM_ACTION.on = on;
+  AMALGAM_ACTION.on = on;
+}
+useAmAction(AM_ACTION.on);
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
@@ -213,6 +221,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   chained2: { top: 48, half: 20 },
   amalgam: { top: 34, half: 46 },
   beast: { top: 14, half: 17 },
+  // (the Amalgamation's bone mites: a third of the knight)
+  mite: { top: 10, half: 6 },
   // (he floats: his hood, not the skull on his staff over it)
   fleshmancer: { top: 35, half: 14 },
   dagger: { top: 28, half: 9 },
@@ -369,7 +379,8 @@ export function makeBestiary(): Bestiary {
         : figure === 'chained' ? (CHAINED_ACTION.on ? makeChainedActionArt(undefined, 0) : makeChainedArt3(undefined, 0))
         : figure === 'chained1' ? (CHAINED_ACTION.on ? makeChainedActionArt(undefined, 1) : makeChainedArt3(undefined, 1))
         : figure === 'chained2' ? (CHAINED_ACTION.on ? makeChainedActionArt(undefined, 2) : makeChainedArt3(undefined, 2))
-        : figure === 'amalgam' ? makeAmalgamArt3()
+        : figure === 'amalgam' ? (AMALGAM_ACTION.on ? makeAmalgamActionArt(MONSTERS.amalgam.speed) : makeAmalgamArt3())
+        : figure === 'mite' ? makeBoneMiteArt()
         : figure === 'beast' ? makeBoneBeastArt3()
         : figure === 'fleshmancer' ? makeFleshmancerArt3()
         : figure === 'dagger' ? makeDaggerCultistArt3(MONSTERS.dagger.speed)

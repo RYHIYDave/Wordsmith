@@ -26,8 +26,9 @@ import { TILE3, handAt } from '../art/new_mobs3';
 import type { GameView } from '../art/skin';
 import { flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { AMALGAM, CHAINED, CO2, CO_ACTION, FLESHMANCER, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
+import { AMALGAM, AM_ACTION, CHAINED, CO2, CO_ACTION, FLESHMANCER, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
 import { BALL_LAND, BALL_LET, HOOK_LET, WHIRL_SPIN, actBallPath, actCollarAt, actCuffAt, actHookPath } from '../art/chained_action';
+import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, makeBigArmArt } from '../art/amalgam_action_fx';
 import type { GaitedKind } from '../game/bosses';
 import { backView, beside, flipped } from '../game/facing';
 import type { Game } from '../game/game';
@@ -72,6 +73,7 @@ export class BossFx {
   private balls: Record<GameView, Sprite[]> | null = null;
   private lefts: Record<string, Sprite> = {};
   private arms: Sprite[] | null = null;
+  private bigArms: Sprite[] | null = null;
   private skulls: Record<GameView, Sprite[]> | null = null;
   private hands: Sprite[][] | null = null;
   private axeFrom: readonly [number, number, number] | null = null;
@@ -221,6 +223,8 @@ export class BossFx {
         }
         case 'devour': {
           const D = AMALGAM.devour;
+          // (the action way: its cone and its rake are render/act1_fx/amalgam.ts's, its claws' gouges in its own pictures)
+          if (m.kind === 'amalgam' && AM_ACTION.on) break;
           if (T < D.from) break;
           // (its claws gouge the floor along the way they rake, from where they came down to where they are)
           const k = T < D.to ? 1 : 1 - (T - D.to) / 1.2;
@@ -260,7 +264,7 @@ export class BossFx {
           drawVaultSlam(g, at, p.x, p.y, p.fx, p.fy, p.t);
           break;
         case 'arm':
-          drawArmCrack(g, at, p.x, p.y, p.t - p.hit, FLOOR_ARM_TIME);
+          drawArmCrack(g, at, p.x, p.y, p.t - p.hit, p.d === 1 ? BIG_ARM_TIME : FLOOR_ARM_TIME);
           break;
         case 'skull':
           if (!p.done) drawSkullShadow(g, at, p.x, p.y, this.skullHigh(p), p.b);
@@ -356,7 +360,14 @@ export class BossFx {
     }
     for (const p of game.perils) {
       if (p.t < 0 || !here(p.x, p.y)) continue;
-      if (p.kind === 'arm') {
+      if (p.kind === 'arm' && p.d === 1) {
+        // (the Amalgamation's arms done the action way: four to a hole, half as big again, art/amalgam_action_fx.ts)
+        const u = p.t - p.hit;
+        if (u < 0 || u >= BIG_ARM_TIME) continue;
+        const set = this.bigArms ?? (this.bigArms = makeBigArmArt('front'));
+        const [sx, sy] = at(p.x, p.y);
+        stand(p.x + p.y, set[Math.min(BIG_ARM_FRAMES - 1, Math.floor(u * BIG_ARM_FPS + 1e-6))], sx, sy);
+      } else if (p.kind === 'arm') {
         const u = p.t - p.hit;
         if (u < 0 || u >= FLOOR_ARM_TIME) continue;
         const set = this.arms ?? (this.arms = makeFloorArmArt('front'));

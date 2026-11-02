@@ -8659,6 +8659,15 @@ export class Game {
       // `mdt`; what is done to it, burning, chill, stun and the rest, runs out as ever, by `dt`)
       const mdt = dt * this.timeOf(m);
       m.animT += mdt;
+      // (AM_ACTION: a bone mite left alone crumbles, its death played; nothing is gained by it)
+      if (m.crumbleT !== undefined) {
+        m.crumbleT -= dt;
+        if (m.crumbleT <= 0) {
+          m.dead = true;
+          this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: false, champion: false, boss: false, fx: m.fx, fy: m.fy });
+          continue;
+        }
+      }
       if (m.struckT !== undefined) m.struckT += dt;
       if (m.glanceT !== undefined) m.glanceT += dt;
       if (m.raisedT !== undefined) m.raisedT += dt;
@@ -9390,7 +9399,8 @@ export class Game {
     for (let k = this.risers.length - 1; k >= 0; k--) {
       const r = this.risers[k];
       r.age += dt;
-      if (r.age < SUMMON.rise) continue;
+      // (AM_ACTION: a bone mite is out as soon as it has pulled itself together)
+      if (r.age < (r.way === 'form' ? (r.rise ?? SUMMON.rise) : SUMMON.rise)) continue;
       this.risers.splice(k, 1);
       r.m.animT = 0;
       this.monsters.push(r.m);
@@ -10348,8 +10358,8 @@ export class Game {
       this.addDrop('card', m.x, m.y, 0, null, null);
       this.drops[this.drops.length - 1].royal = m.royal;
     }
-    // (the dead that rise for a new player's first word leave nothing: they are there to be felled)
-    if (m.packId === RISEN_PACK) return;
+    // (the dead that rise for a new player's first word leave nothing: they are there to be felled; nor the Amalgamation's bone mites)
+    if (m.packId === RISEN_PACK || m.kind === 'mite') return;
     const bonus = 1 + 0.3 * this.dungeonWords.length;
     const goldBase = Math.max(1, this.power);
     if (m.boss) {

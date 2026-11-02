@@ -322,6 +322,7 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   chained2: [IRON[4], IRON[2], PALLOR[3], M_FLAME[3]],
   amalgam: [OSSUARY[4], OSSUARY[2], BONE[4], M_FLAME[3]],
   beast: [OSSUARY[4], OSSUARY[2], M_FLAME[3]],
+  mite: [OSSUARY[4], OSSUARY[2], M_FLAME[3]],
   fleshmancer: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[4]],
   dagger: [GLOOM[4], GLOOM[2], PINK[2], BONE[3]],
   minifm: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
