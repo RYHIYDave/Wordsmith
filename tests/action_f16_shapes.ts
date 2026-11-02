@@ -6,7 +6,8 @@
 import type { BossShape, Handover } from '../src/art/boss_checks';
 import { framesOf, movesOf } from '../src/art/boss_checks';
 import type { Mob } from '../src/art/new_mobs3';
-import { PH_SHAPE_GARDENER } from '../src/art/palace_hands_moves';
+import { PH_SHAPE_GARDENER, PH_SHAPE_GROOM } from '../src/art/palace_hands_moves';
+import { WHISTLE_GROOM, WHISTLE_SMEARED, WHISTLE_STRIKE } from '../src/art/action_f16_groom';
 import { GD_SHAPE_PARTISAN, GD_SHAPE_SWORD } from '../src/art/palace_guard_moves';
 import { DRILL_PARTISAN, DRILL_SMEARED, DRILL_STRIKES, DRILL_HITS, DRILL_SWORD, THRUST9_SMEARED, THRUST9_STRIKE } from '../src/art/action_f16_guard';
 import { KN_SHAPE, KN_CLEAVE, smearedAt as knSmeared } from '../src/art/kings_knights_moves';
@@ -116,3 +117,15 @@ export const knightRows = (): [string, Mob, BossShape, string[]][] => [
   ['banner', BANNER_KNIGHT, bannerShape(BANNER_KNIGHT), ['banner', 'attack']],
   ['cleave', CLEAVE_KNIGHT, bannerShape(CLEAVE_KNIGHT), ['attack']],
 ];
+
+/** THE GROOM: the whistle a blow of its own, his left hand the end he strikes with (flung out down the line). */
+export function whistleShape(): BossShape {
+  return {
+    ...PH_SHAPE_GROOM,
+    tip: (move, t, s, q) => (move === 'attack' ? s.handL : PH_SHAPE_GROOM.tip?.(move, t, s, q) ?? null),
+    strikes: { attack: WHISTLE_STRIKE },
+    smeared: (move, t) => move === 'attack' && WHISTLE_SMEARED(t),
+  };
+}
+export const groomRows = (): [string, Mob, BossShape, string[]][] => [['groom', WHISTLE_GROOM, whistleShape(), ['attack']]];
+export const gardenerRows = (): [string, Mob, BossShape, string[]][] => [['gardener', HEDGE_GARDENER, hedgeShape(), ['attack']]];
