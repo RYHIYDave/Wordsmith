@@ -213,3 +213,9 @@ art chat publishes it as a page and sends him the link.
   `tools/gpu_sculpt_emul.ts`: `listMarch` held against the pinned hashes. `tools/gpu_speed_page.mjs` builds the test page.
 - `pictures/gpu_side_by_side.png`, `pictures/gpu_side_by_side.mp4`: for the owner. `data/`: every frame's numbers
   (`diff_warlock.json` the every-frame run as far as it went, `diff_warlock_sample.json` the demon's sample).
+
+## His word on the pictures
+
+Shown `gpu_side_by_side.png` and `gpu_side_by_side.mp4`, 1 Nov 2026, and asked whether the frames painted on the graphics chip
+look the same to him as they do now (answered by 19:03 his time): “Yes, they look the same (Recommended)”. The phone test page
+(`dist/gpu_speed.html`) is to be published for him to open on his iPhone; its numbers, when he sends them, go here.
