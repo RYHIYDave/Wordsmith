@@ -3,6 +3,9 @@
 
 import type { MonsterKind } from '../../game/types';
 import type { Act1Fx } from './types';
+// FLOOR 1, MORE ACTION (ACTION_F1): the bone archer's arrow rain, the Warden's Lockdown
+import { FX as archer } from './archer';
+import { FX as warden } from './warden';
 import { FX as chanter } from './chanter';
 import { FX as firepot } from './firepot';
 import { FX as qgolem } from './qgolem';
@@ -62,6 +65,9 @@ import { FX as rshadow } from './rshadow';
 import { FX as moth } from './moth';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
+  // (the first floors' own, done the action way: floor 1's, behind ACTION_F1; their perils only)
+  archer,
+  warden,
   chanter,
   firepot,
   qgolem,
