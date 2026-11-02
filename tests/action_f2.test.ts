@@ -161,7 +161,9 @@ test('1. the switches are off, nothing of the game imports the mock-up, and with
   assert.equal(CULTIST_SIGIL.on, false, 'CULTIST_SIGIL is off');
   assert.equal(SHADE_FROST.on, false, 'SHADE_FROST is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/action_f2_fx.ts') continue;
+    // (and the game's own floor 2 files, brought in by the main chat behind ACTION_F2: its rules, game/action_f2.ts and game/game.ts;
+    // the bestiary's choosing of the Shade's art; its pictures on the floor, render/act1_fx/cultist.ts and shade.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/action_f2_fx.ts' || ['game/action_f2.ts', 'game/game.ts', 'art/bestiary.ts', 'render/act1_fx/cultist.ts', 'render/act1_fx/shade.ts'].includes(f)) continue;
     assert.ok(!/from ['"][^'"]*action_f2_(fx|scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   // the cultist: every frame the same with the switch on, but its attack, which is the cast, its slam on its frame

@@ -975,7 +975,7 @@ export const MONSTER_ATTACKS = { on: true };
  * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
  * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
  */
-export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown';
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown' | 'sigil';
 export interface MonsterMove {
   id: MoveId;
   /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
@@ -995,7 +995,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -1065,6 +1065,9 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
     { id: 'shoot', windup: 0.55, dmg: 1, cooldown: 0, first: 0, after: 2.0, recover: 0.3, near: 0, far: 0 },
     { id: 'rain', windup: 0.9, dmg: 1.4, cooldown: 7, first: 3, after: 1.8, recover: 0.82, near: 3, far: 8 },
   ],
+  // FLOOR 2, MORE ACTION (ACTION_F2): the cultist's fire sigil in place of its bolt (art/monster_cultist.ts SIGIL_SLAM, 1.2 s
+  // into its cast, the rest of it 0.75 s; a cooldown a little longer than the bolt's 2.7 s; as far as it would shoot)
+  cultistSigil: [{ id: 'sigil', windup: 1.2, dmg: 1.2, cooldown: 0, first: 0, after: 3.2, recover: 0.75, near: 0, far: 7.5 }],
   wardenLock: [
     { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },
     { id: 'bolts', windup: 0.7, dmg: 0.5, cooldown: 3.5, first: 0, after: 2.4, recover: 0.3, near: 3.4, far: 12 },
@@ -1081,6 +1084,13 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
  * useActionF1).
  */
 export const ACTION_F1 = { on: false };
+/**
+ * FLOOR 2, MORE ACTION (the art chat's art/action-f2, his yes to its pictures): the cultist's FIRE SIGIL in place of its fire
+ * bolt, a ring under the hero as it begins its cast, erupting in a pillar of fire at its slam, the floor burning on after; the
+ * Shade's rake COLD, a patch of rime before it at its blow that slows whoever stands in it (game/action_f2.ts). The art's
+ * switches go with it (art/bestiary.ts useActionF2). (The Headsman's mend, AXE_HELD, is on of itself.)
+ */
+export const ACTION_F2 = { on: false };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
   if (!MONSTER_ATTACKS.on) return null;
@@ -1089,6 +1099,8 @@ export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly M
       return ACTION_F1.on ? MONSTER_MOVES.wardenLock : MONSTER_MOVES.warden;
     case 'archer':
       return ACTION_F1.on ? MONSTER_MOVES.archer : null;
+    case 'cultist':
+      return ACTION_F2.on ? MONSTER_MOVES.cultistSigil : null;
     case 'brute':
       return m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute;
     case 'boneward':

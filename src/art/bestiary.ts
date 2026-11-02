@@ -21,7 +21,7 @@
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { BOSSES5 } from '../game/bosses';
-import { ACTION_F1, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
+import { ACTION_F1, ACTION_F2, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { BOSSES, makeAmalgamArt3, makeBoneBeastArt3, makeChainedArt3, makeHeadsmanArt3 } from './bosses3';
@@ -34,7 +34,8 @@ import { makeBatArt } from './monster_bat';
 import { ARCHER_RAIN, makeArcherArt, makeSkeletonArt } from './monster_bones';
 import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
 import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
-import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
+import { CULTIST_SIGIL, makeCultistArt, makeHighPriestArt } from './monster_cultist';
+import { SHADE_FROST, makeFrostShadeArt } from './action_f2_fx';
 import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
@@ -63,6 +64,13 @@ export function useActionF1(on: boolean): void {
   WARDEN_LOCKDOWN.on = on;
 }
 useActionF1(ACTION_F1.on);
+/** FLOOR 2, MORE ACTION (game/defs.ts ACTION_F2): the rules and the art chat's pictures of the fire sigil and the Shade's rime, on and off together. */
+export function useActionF2(on: boolean): void {
+  ACTION_F2.on = on;
+  CULTIST_SIGIL.on = on;
+  SHADE_FROST.on = on;
+}
+useActionF2(ACTION_F2.on);
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
@@ -322,7 +330,7 @@ export function makeBestiary(): Bestiary {
         : figure === 'guardian' ? makeGuardianArt()
         : figure === 'warden' ? makeWardenArt()
         // THE NEW MONSTERS: their walks shown at the paces the rules give them
-        : figure === 'shade' ? makeShadeArt3(MONSTERS.shade.speed)
+        : figure === 'shade' ? (SHADE_FROST.on ? makeFrostShadeArt(MONSTERS.shade.speed) : makeShadeArt3(MONSTERS.shade.speed))
         : figure === 'boneward' ? makeBonewardArt3(MONSTERS.boneward.speed)
         : figure === 'golem' ? withSkulls(makeGolemArt3(MONSTERS.golem.speed))
         : figure === 'champion' ? makeChampionArt3(MONSTERS.champion.speed)

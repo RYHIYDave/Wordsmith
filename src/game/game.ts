@@ -2,10 +2,12 @@
 // frame by frame. It knows nothing about drawing or input; it reads Controls and emits GameEvents.
 
 import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './action_f1';
+import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAIN } from '../art/action_f1_fx';
+import { RIME } from '../art/action_f2_fx';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -8949,6 +8951,8 @@ export class Game {
     const reach = def.range + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
     if (dist <= reach) this.hurtHero(this.rollMonsterDmg(m), el, m.words, m);
     this.sfx('swing', 0.4);
+    // (FLOOR 2, MORE ACTION: the Shade's rake, cold: a patch of rime before it as it lands: game/action_f2.ts)
+    if (ACTION_F2.on && m.kind === 'shade') this.perils.push({ kind: 'act1', a1: RIME_PERIL, x: m.x + m.fx * RIME.ahead, y: m.y + m.fy * RIME.ahead, fx: m.fx, fy: m.fy, t: 0, hit: 0, dur: RIME_LASTS, dmg: 0, el, words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: 0, c: 0, d: 0, hand: 1 });
     if (twin > 0) {
       this.after(0.28, () => {
         if (m.dead) return;
@@ -9068,6 +9072,10 @@ export class Game {
     } else if (mv.id === 'summon') {
       this.sfx('bossRoar');
       this.msg(`${m.name} calls the dead`, MSG.foe);
+    } else if (mv.id === 'sigil') {
+      // (FLOOR 2, MORE ACTION: the cultist's fire sigil, its ring under where the hero stands as it begins its cast: game/action_f2.ts)
+      this.perils.push({ kind: 'act1', a1: SIGIL_PERIL, x: this.hero.x, y: this.hero.y, fx: m.fx, fy: m.fy, t: -mv.windup, hit: 0, dur: SIGIL_LASTS, dmg: this.rollMonsterDmg(m) * mv.dmg, el: this.monsterElement(m), words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: m.x, c: m.y, d: 0, hand: 1 });
+      this.sfx('fire', 0.4);
     } else if (mv.id === 'lockdown') {
       // (FLOOR 1, MORE ACTION: the Warden's Lockdown, its bars' shadows across his room as his keys go up: game/action_f1.ts)
       this.perils.push({ kind: 'act1', a1: BARS_PERIL, x: m.x, y: m.y, fx: m.fx, fy: m.fy, t: -mv.windup, hit: 0, dur: BARS_LASTS, dmg: this.rollMonsterDmg(m) * mv.dmg, el: this.monsterElement(m), words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: 0, c: 0, d: 0, hand: 1 });
@@ -9134,8 +9142,8 @@ export class Game {
         });
       }
       this.sfx('shot', 0.6);
-    } else if (mv.id === 'lockdown') {
-      // (its bars crash at the peril's own clock: game/action_f1.ts)
+    } else if (mv.id === 'lockdown' || mv.id === 'sigil') {
+      // (its bars crash, its sigil erupts, at the peril's own clock: game/action_f1.ts, action_f2.ts)
     } else if (mv.id === 'shoot') {
       // THE NEW MONSTERS: a leader who shoots, as those he leads shoot (a Twin one, two at once); FLOOR 1, MORE ACTION: the bone
       // archer's one shot, with its moves
