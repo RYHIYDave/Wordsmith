@@ -38,6 +38,8 @@ export interface Act1Fx {
   ground?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   standing?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   air?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
+  /** Over everything, AFTER THE DARK is laid (what shines in it, as the lights of what glows: the Physician's spotlight, his beam, his instruments). */
+  glow?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   /** Its picture this frame in place of the one its gait and acts give (`set`: its pictures seen the way it faces); null: as they give. Turned over as every monster's is, after. */
   sprite?(m: Monster, art: ActorArt, set: AnimSet): Sprite | null;
   /** How strongly it flashes white as a blow lands (0 to 1; 1 if not said): a body that fills the screen, fainter. */

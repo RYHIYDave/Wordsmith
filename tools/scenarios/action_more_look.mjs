@@ -21,6 +21,25 @@ const CASES = [
   { name: 'stag_close', depth: 9, kind: 'stag', boss: true, life: 0.74, n: 5, ready: 99, d: 3.0, snaps: [[0.9, 'bellow_marked'], [0.62, 'wall_bursting'], [1.5, 'wall_standing']] },
   { name: 'stag_gore', depth: 9, kind: 'stag', boss: true, n: 5, ready: 0, d: 2.0, snaps: [[0.7, 'held_marked'], [0.25, 'swept']] },
   { name: 'stag_charge', depth: 9, kind: 'stag', boss: true, n: 5, ready: 2, d: 5.5, snaps: [[0.7, 'lane'], [0.45, 'running'], [0.5, 'crash']] },
+  // (floors 11 to 15: the city's own)
+  { name: 'watch_chop', depth: 11, kind: 'watch', n: 2, ready: 0, d: 2.0, snaps: [[0.6, 'held_marked'], [0.3, 'chopped'], [0.5, 'split']] },
+  { name: 'watch_lantern', depth: 11, kind: 'watch', n: 2, ready: 1, d: 5, snaps: [[0.8, 'thrown'], [0.6, 'smash'], [1.5, 'burning']] },
+  { name: 'crier_toll', depth: 11, kind: 'crier', boss: true, n: 4, ready: 0, d: 3, snaps: [[0.9, 'marked'], [0.3, 'first_toll'], [1.3, 'tolls']] },
+  { name: 'crier_shout', depth: 11, kind: 'crier', boss: true, n: 4, ready: 1, d: 4, snaps: [[1.2, 'breath_walls'], [0.6, 'wave'], [0.5, 'echoes']] },
+  { name: 'crier_proclaim', depth: 11, kind: 'crier', boss: true, n: 4, ready: 2, d: 5, snaps: [[1.2, 'lane'], [0.4, 'unrolling'], [1.2, 'burning']] },
+  { name: 'crier_crowd', depth: 11, kind: 'crier', boss: true, n: 4, ready: 3, d: 4, snaps: [[1.4, 'pools'], [0.8, 'rising']] },
+  { name: 'rk_bite', depth: 12, kind: 'ratking', boss: true, n: 4, ready: 0, d: 2.4, snaps: [[0.8, 'held_marked'], [0.25, 'bite']] },
+  { name: 'rk_words', depth: 12, kind: 'ratking', boss: true, n: 4, ready: 1, d: 5, snaps: [[1.2, 'aimed'], [0.4, 'flying'], [0.3, 'burst']] },
+  { name: 'rk_roll', depth: 12, kind: 'ratking', boss: true, n: 4, ready: 2, d: 6, snaps: [[1.2, 'lane'], [0.5, 'rolling'], [0.8, 'burst']] },
+  { name: 'rk_unknot', depth: 12, kind: 'ratking', boss: true, n: 4, ready: 3, d: 3, snaps: [[0.9, 'swelling'], [0.5, 'scattered'], [0.8, 'swarm']] },
+  { name: 'rk_sluice', depth: 12, kind: 'ratking', boss: true, n: 4, ready: 99, noact: true, fight: 8.7, d: 4, snaps: [[0.6, 'gates_marked'], [1.6, 'burst'], [0.8, 'flood']] },
+  { name: 'fieldhand', depth: 13, kind: 'fieldhand', n: 1, ready: 0, d: 4, snaps: [[0.6, 'drawn_marked'], [0.5, 'flying_out'], [0.8, 'coming_back']] },
+  { name: 'orderly', depth: 14, kind: 'orderly', n: 2, ready: 1, d: 5, snaps: [[0.6, 'lane'], [0.5, 'careering'], [0.6, 'crashed']] },
+  { name: 'ph_rap', depth: 14, kind: 'physician', boss: true, n: 5, ready: 0, d: 2.5, snaps: [[0.75, 'held_marked'], [0.22, 'cracked']] },
+  { name: 'ph_draw', depth: 14, kind: 'physician', boss: true, n: 5, ready: 1, d: 3, snaps: [[0.9, 'lane'], [0.2, 'needle'], [1.3, 'word_up']] },
+  { name: 'ph_diag', depth: 14, kind: 'physician', boss: true, n: 5, ready: 2, d: 5, clear: true, snaps: [[1.0, 'beam'], [0.9, 'filling'], [0.55, 'dark'], [0.6, 'held'], [0.5, 'strike'], [0.55, 'scorched']] },
+  { name: 'ph_rounds', depth: 14, kind: 'physician', boss: true, n: 5, ready: 4, d: 3, snaps: [[0.8, 'raised_marked'], [0.35, 'first_ring'], [1.2, 'third_ring']] },
+  { name: 'warden', depth: 15, kind: 'bookwarden', n: 2, ready: 1, d: 5, snaps: [[0.9, 'raised'], [0.4, 'flying'], [0.8, 'landing']] },
 ];
 export default async function (page, snap) {
   const want = (process.env.WHO ?? '').split(',').filter(Boolean);
@@ -97,7 +116,17 @@ export default async function (page, snap) {
         });
         // (the Stag in his clearing: the hero beside him as the picture is drawn, the wood behind them both)
         const side = C.kind === 'stag' ? [[-C.d / Math.SQRT2, C.d / Math.SQRT2], [C.d / Math.SQRT2, -C.d / Math.SQRT2]] : [];
-        const ok = [...side.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy)), ...tries.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy)).sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]))][0];
+        // (`clear`: nothing on the floor between them that cannot be walked: a bed, a table)
+        const clear = (x, y) => {
+          if (!C.clear) return true;
+          const n = Math.ceil(Math.hypot(x - m.x, y - m.y) / 0.12);
+          for (let k = 1; k < n; k++) {
+            const tx = Math.floor(m.x + (x - m.x) * k / n), ty = Math.floor(m.y + (y - m.y) * k / n);
+            if (L.walk[ty * f.w + tx] !== 1) return false;
+          }
+          return true;
+        };
+        const ok = [...side.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy)), ...tries.filter(([ox, oy]) => firm(m.x - ox, m.y - oy) && g.sees(m.x, m.y, m.x - ox, m.y - oy) && clear(m.x - ox, m.y - oy)).sort((p, q) => (p[0] + p[1]) - (q[0] + q[1]))][0];
         if (ok) { h.x = m.x - ok[0]; h.y = m.y - ok[1]; }
       } else {
         const ok = tries.find(([ox, oy]) => g.isOpen(h.x + ox, h.y + oy) && g.sees(h.x + ox, h.y + oy, h.x, h.y));
@@ -119,7 +148,9 @@ export default async function (page, snap) {
         o.life = o.maxLife = 1e9; o.cd = 0; o.state = 'chase';
       }
       m.moveCd = Array.from({ length: C.n }, (_, i) => (i === C.ready ? 0 : 99));
-      for (let k = 0; k < 300 && m.state !== 'act' && m.state !== 'windup'; k++) {
+      // (`fight`: the Rat King's sluices, on the cistern's own clock: that far into his fight)
+      if (C.fight !== undefined && m.a1) m.a1.fight = C.fight;
+      for (let k = 0; k < 300 && !C.noact && m.state !== 'act' && m.state !== 'windup'; k++) {
         h.invuln = 1; h.life = h.d.maxLife;
         window.__step(1 / 30, idle);
         if (m.moveCd) for (let i = 0; i < m.moveCd.length; i++) if (i !== C.ready) m.moveCd[i] = 99;

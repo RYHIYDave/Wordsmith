@@ -152,8 +152,10 @@ const longOf = (name: string): number => {
 test('1. the switch is off, nothing of the game imports the mock-up, the rest of him is the game’s own and the game’s moves are kept', () => {
   assert.equal(PHYSICIAN_ACTION.on, false, 'PHYSICIAN_ACTION is off');
   const mock = ['art/physician_action.ts', 'art/physician_action_fx.ts'];
+  // (brought in by the main chat, 2 Nov 2026, behind the switch: his figure, his rules, what he draws, the dark of his operation)
+  const BRINGS = ['art/act1_figs/physician.ts', 'game/act1_rules/physician.ts', 'render/act1_fx/physician.ts', 'render/render.ts'];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || mock.includes(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || mock.includes(f) || BRINGS.includes(f)) continue;
     assert.ok(!/from ['"][^'"]*(physician_action|physician_action_fx|physician_action_scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   const mob = physicianActionMob();

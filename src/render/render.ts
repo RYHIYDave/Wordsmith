@@ -102,6 +102,8 @@ import type { Painter } from './painter';
 import { QUEEN_ACTION } from '../art/carrion_queen_action';
 import { eclipseDark } from '../art/carrion_queen_action_fx';
 import { eclipseNow, eclipsePools } from '../game/act1_rules/queen';
+import { operationNow } from '../game/act1_rules/physician';
+import { FIELD, opDark } from '../art/physician_action_fx';
 import { blinkNowhere, gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
@@ -3555,6 +3557,8 @@ export class Renderer {
     // ---- darkness, with holes cut by every light ----------------------------------------------
     this.light(W, H, game, t, fx);
     g.drawImage(this.dark, 0, 0);
+    // (what of the act's kinds shines in the dark: the Physician's spotlight and his instruments in it, his lens's beam)
+    this.bossFx.glow(g, this.floorAt, game, (x, y) => onScreen(x, y) && game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     // (ACT 2, THE BELLS: the bells still to ring, off the screen, marked at its edge)
     if (game.level.bells) this.bellsLook.arrows(g, this.cam, game.level, W, H, t);
 
@@ -4225,7 +4229,15 @@ export class Renderer {
       dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
       dg.fillRect(0, 0, W, H);
     }
-    const heroLit = 1 - 0.8 * eDark;
+    // (FLOOR 14, THE PHYSICIAN'S OPERATION, PHYSICIAN_ACTION: the theatre plunged dark, to a fifth of its light, art/physician_action_fx.ts
+    // OPERATION.low; one hard spotlight on the field, cut below)
+    const op = operationNow(game.perils);
+    const oDark = op ? opDark(op.t) : 0;
+    if (oDark > 0) {
+      dg.fillStyle = `rgba(10,8,18,${(0.8 * oDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    const heroLit = 1 - 0.8 * Math.max(eDark, oDark);
     dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
     // to its size and faded to its strength. (A fresh gradient for each light each frame was the
@@ -4254,6 +4266,23 @@ export class Renderer {
       // (a little of his own, that he is seen; and the pools, fully lit)
       spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 10, 40, 0.5 * eDark);
       for (const q of eclipsePools(eclipse!)) spot(wx(cam, q.x, q.y), wy(cam, q.x, q.y), q.r * 22.6 * 1.15, q.k);
+    }
+    if (oDark > 0 && op) {
+      // (THE SPOTLIGHT: the field lit hard, the dark gone from it, its edge a thin band a step down)
+      const sx = wx(cam, op.x, op.y);
+      const sy = wy(cam, op.x, op.y);
+      const R = FIELD.r * 16 * Math.SQRT2;
+      const R2 = (FIELD.r + 0.08) * 16 * Math.SQRT2;
+      dg.fillStyle = '#000';
+      dg.globalAlpha = 0.5 * oDark;
+      dg.beginPath();
+      dg.ellipse(sx, sy, R2, R2 / 2, 0, 0, Math.PI * 2);
+      dg.fill();
+      dg.globalAlpha = oDark;
+      dg.beginPath();
+      dg.ellipse(sx, sy, R, R / 2, 0, 0, Math.PI * 2);
+      dg.fill();
+      dg.globalAlpha = 1;
     }
     // (THE HEADSMAN'S YARD: its torches light the wall and the floor below them)
     if (this.yard.on(f)) {

@@ -34,6 +34,7 @@
 //   things:fieldhand           (FLOOR 13, FIELD_HARVEST) the reapers' sickle in flight and its curve (art/act1_figs/fieldhand.ts fieldThings)
 //   things:orderly             (FLOOR 14, ORDERLY_GURNEY) the orderly's gurney, its frames (art/act1_figs/orderly.ts orderlyThings)
 //   things:watch               (FLOOR 11, WATCH_LANTERN) the watch's burning oil, its frames (art/act1_figs/watch.ts watchThings)
+//   things:physician           (FLOOR 14, PHYSICIAN_ACTION) his instruments, each way round (art/act1_figs/physician.ts physicianThings)
 //   things:stag                (FLOOR 9, STAG_ACTION) the Hollow Stag's wall of roots, each kind of clump's moments (art/act1_figs/
 //                              stag.ts stagThings)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
@@ -64,6 +65,7 @@ import { stagThings } from './act1_figs/stag';
 import { watchThings } from './act1_figs/watch';
 import { fieldThings } from './act1_figs/fieldhand';
 import { orderlyThings } from './act1_figs/orderly';
+import { physicianThings } from './act1_figs/physician';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -233,9 +235,13 @@ export function filmRoom(key: string): number {
   if (kind === 'things' && a === 'watch') return 16;
   if (kind === 'things' && a === 'fieldhand') return 16;
   if (kind === 'things' && a === 'orderly') return 12;
+  if (kind === 'things' && a === 'physician') return PHYSICIAN_THINGS_ROOM;
   if (kind === 'things') return 12;
   return 57;
 }
+
+/** (FLOOR 14) His instruments' room, in megabytes: 240 pictures each cut down to what is painted in it (measured 2 Nov 2026). */
+export const PHYSICIAN_THINGS_ROOM = 4;
 
 /** The key of the film of a stairwell's opening: on floor `floor` (its look, 1 to 4), its steps going down `way`, its anchor on tile (x, y). */
 export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y' }): string {
@@ -317,6 +323,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   if (kind === 'things' && a === 'fieldhand') return fieldThings();
   // (FLOOR 14: the orderly's gurney, as render/act1_fx/orderly.ts asks for it)
   if (kind === 'things' && a === 'orderly') return orderlyThings();
+  // (FLOOR 14: the Physician's instruments, as render/act1_fx/physician.ts asks for them)
+  if (kind === 'things' && a === 'physician') return physicianThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();

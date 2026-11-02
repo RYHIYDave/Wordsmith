@@ -122,7 +122,7 @@ function importersOf(mods: readonly string[]): string[] {
 test('1. in the game through art/act1_figs/physician.ts and render/act1_fx/physician.ts alone, his switch on with the others\'', () => {
   assert.ok(FIG && FIG.switches?.includes(PHYSICIAN_ON), 'his pictures for the game hold his switch');
   assert.equal(PHYSICIAN_ON.on, ACT1.on, 'on with the figures of the acts (art/bestiary.ts useAct1Figs)');
-  assert.equal(importersOf(['art/physician', 'art/physician_moves', 'art/physician_shots', 'art/physician_action', 'art/physician_action_fx']).join(', '), 'art/act1_figs/physician.ts, render/act1_fx/physician.ts', 'only his pictures for the game, and what he draws, import him');
+  assert.equal(importersOf(['art/physician', 'art/physician_moves', 'art/physician_shots', 'art/physician_action', 'art/physician_action_fx']).join(', '), 'art/act1_figs/physician.ts, game/act1_rules/physician.ts, render/act1_fx/physician.ts, render/render.ts', 'only his pictures for the game, and what he draws, import him (and, his fight done the action way, 2 Nov 2026, behind PHYSICIAN_ACTION: his rules, the dark of his operation)');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

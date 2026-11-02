@@ -53,6 +53,9 @@ import type { WordId } from '../types';
 import { socketProblem } from '../words';
 import { bedPlace, callUp, freeBeds, inBed } from './patient';
 import type { Act1Rules } from './types';
+import { DIAG, DRAW9, DRAW9_HIT, DRAW9_LONG, OP_HIT, OP_LONG, PHYSICIAN_ACTION, RAP9_HIT, RAP9_LONG, ROUNDS9_HITS, ROUNDS9_LONG, lensAt } from '../../art/physician_action';
+import { BEAM, FIELD, LUNGE, RINGS, drawStrikes, fieldStrikes, inCone, rapStrikes, ringAt } from '../../art/physician_action_fx';
+import { TILE3 } from '../../art/new_mobs3';
 
 /** HIS WALK, a long stalking stride, painted for a tile a second (PH_PACE; twelve frames at eight a second); he stops at any frame of it, as his pictures hand over from any. */
 export const PHYSICIAN_GAIT: GaitDef = { pace: 1.0, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.2, slack: 0.4, trueBack: true };
@@ -209,7 +212,7 @@ function toRaise(R: BossRules, m: Monster): { lying: Monster[]; beds: ReturnType
   return { lying, beds: freeBeds(R, m.x, m.y, Q.reach) };
 }
 /** HIS ROUNDS RAISE THE PATIENTS: as many as he may, those lying near first, then new ones laid in the free beds; each rises with one of his raps in turn (`k` from now: the first rap's turn is now). */
-function makeRounds(R: BossRules, m: Monster): void {
+function makeRounds(R: BossRules, m: Monster, raps: readonly number[] = PHYSICIAN.rounds.raps): void {
   const g = R.g;
   const h = g.hero;
   const Q = PHYSICIAN.rounds;
@@ -237,8 +240,8 @@ function makeRounds(R: BossRules, m: Monster): void {
       o.cd = g.rng.range(0.4, 0.9);
     }
     // (one with each rap in turn)
-    const k = i % Q.raps.length;
-    callUp(o, Q.raps[k] - Q.raps[0] + 0.15 * o.seed);
+    const k = i % raps.length;
+    callUp(o, raps[k] - raps[0] + 0.15 * o.seed);
     if (inBed(o) === 0) {
       const d = Math.hypot(h.x - o.x, h.y - o.y) || 1;
       o.fx = (h.x - o.x) / d;
@@ -249,7 +252,7 @@ function makeRounds(R: BossRules, m: Monster): void {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-export const RULES: Act1Rules | null = {
+const OLD: Act1Rules = {
   gait: PHYSICIAN_GAIT,
   acts: PHYSICIAN_ACTS,
 
@@ -411,4 +414,256 @@ export const RULES: Act1Rules | null = {
       }
     }
   },
+};
+
+// =====================================================================================================================
+// HIS FIGHT DONE THE ACTION WAY (PHYSICIAN_ACTION: art/physician_action.ts and physician_action_fx.ts, the art chat's, his yes
+// there: his review of 31 Oct, "Diagnosis (Recommended)"; 2 Nov, "It needs a little more excitement, and the meter needs to fill
+// faster", and his pick "Bigger operation"; brought in by the main chat, 2 Nov 2026, behind the same switch, off until his yes here).
+// Every moment and reach is the art's (docs/mockups/action_f14_physician/README.md); what each hurts and how often, the rules':
+//   THE RAP: the cane hauled up and HELD; brought down in two frames far before him: whoever is in its line to where the ferrule
+//     cracks the boards, or in the star of cracks round it (`rapStrikes`), struck.
+//   THE DRAW: en garde, HELD; the long lunge, a needle of pink light down its lane (`drawStrikes`): struck, and a word drawn out of
+//     him as before; it hangs over his head from as he pushes the plunger home (DRAW9.push[0]).
+//   DIAGNOSIS (in place of the tonic): the great brass lens raised before his beak; its beam follows the hero a breath behind
+//     (BEAM.lag); the mark fills while he stands in its light (BEAM.fill), drains while he is hid from it (BEAM.drain). THE COVER:
+//     whatever of the floor cannot be walked (the beds, the operating table, the gallery, the walls: the walk grid, tile by tile:
+//     `lensSees`). He looks as long as LOOK_FOR, the look looping (DIAG.loop); then lowers it.
+//   HE OPERATES: the mark full, from that very frame of his look (the act handed over in place): the field locked where the hero
+//     stood; the theatre plunged dark, one hard spotlight on the field (render.ts light; opDark); his instruments flung out round it,
+//     HELD; then closed in, ONE HUGE STRIKE at OP_HIT on whoever is within FIELD.r of its middle (`fieldStrikes`).
+//   ROUNDS: three raps of the cane (ROUNDS9_HITS), a great ring of the Hush rolling out from each (RINGS): whoever it passes is
+//     hushed (`ringAt`); the patients rise with the raps, as before.
+// THE PILLARS the art's Diagnosis has are the scene's only: the game's theatre has none yet (a piece of the floor's, on his yes to its
+// picture); its beds and table are the cover until then.
+
+/** The Diagnosis's floor peril: the operation's field (x, y; `a` his id; `c` a seed for its cuts; struck at `hit`). */
+export const OP_PERIL = 'physician:op';
+/** How long he looks before he lowers the lens, if the mark is never full (the art's suggestion: 8 s). */
+export const LOOK_FOR = 8;
+
+/** His five, his basic blow first; his operation the Diagnosis's own end (forced: never picked). */
+export const PHYSICIAN9_ACTS: readonly ActDef[] = [
+  { id: 'physician:rap', clip: 'attack', long: RAP9_LONG, hit: RAP9_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.5, near: 0, far: 3.0 },
+  { id: 'physician:draw', clip: 'draw', long: DRAW9_LONG, hit: DRAW9_HIT, dmg: 0.8, cooldown: 9, first: 3, after: 0.6, near: 0, far: LUNGE.to - 0.4 },
+  { id: 'physician:diagnose', clip: 'diagnose', long: DIAG.long, hit: DIAG.up, dmg: 0, cooldown: 11, first: 5, after: 0.6, near: 1.6, far: BEAM.reach - 3 },
+  { id: 'physician:operate', clip: 'operate', long: OP_LONG, hit: OP_HIT, dmg: 2.5, cooldown: 0, first: 0, after: 1.0, near: 0, far: 0, forced: true },
+  { id: 'physician:rounds', clip: 'rounds', long: ROUNDS9_LONG, hit: ROUNDS9_HITS[0], dmg: 0, cooldown: 18, first: 7, after: 0.8, near: 0, far: 16 },
+];
+
+/** Where his lens is through the look (tiles before him, to his left; game pixels up), as his pictures hold it. */
+let LENS: readonly [number, number, number] | null = null;
+export function lensOfHim(): readonly [number, number, number] {
+  if (!LENS) {
+    const p = lensAt('diagnose', DIAG.loop[0]);
+    LENS = [p[0] / TILE3, p[1] / TILE3, p[2] / 2];
+  }
+  return LENS;
+}
+/** His lens's floor point, him at (x, y) facing (fx, fy), drawn with `hand`. */
+export function lensSpot(m: { x: number; y: number; fx: number; fy: number }, hand: number): { x: number; y: number } {
+  const L = lensOfHim();
+  return beside(m.x, m.y, m.fx, m.fy, hand, L[0], L[1]);
+}
+/** WHETHER THE LENS SEES a floor point from its own: no tile on the way between that cannot be walked (a bed, the table, a wall). */
+export function lensSees(g: Game, x0: number, y0: number, x1: number, y1: number): boolean {
+  const L = g.level;
+  const W = L.floor.w;
+  const H = L.floor.h;
+  const d = Math.hypot(x1 - x0, y1 - y0);
+  const n = Math.ceil(d / 0.12);
+  for (let k = 1; k < n; k++) {
+    const along = (k / n) * d;
+    if (along < 0.3 || d - along < 0.35) continue;
+    const x = x0 + ((x1 - x0) * k) / n;
+    const y = y0 + ((y1 - y0) * k) / n;
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
+    if (tx < 0 || ty < 0 || tx >= W || ty >= H || L.walk[ty * W + tx] !== 1) return false;
+  }
+  return true;
+}
+/** How far the beam's light goes from the lens (x, y) along the way `a` (radians), to the first tile it cannot cross, or its reach. */
+export function beamRun(g: Game, x: number, y: number, a: number): number {
+  const L = g.level;
+  const W = L.floor.w;
+  const H = L.floor.h;
+  const cx = Math.cos(a);
+  const cy = Math.sin(a);
+  for (let d = 0.3; d < BEAM.reach; d += 0.1) {
+    const tx = Math.floor(x + cx * d);
+    const ty = Math.floor(y + cy * d);
+    if (tx < 0 || ty < 0 || tx >= W || ty >= H || L.walk[ty * W + tx] !== 1) return d;
+  }
+  return BEAM.reach;
+}
+const wrap = (a: number): number => a - Math.PI * 2 * Math.round(a / (Math.PI * 2));
+const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+/** THE MARK FULL: he operates, from the frame of his look he is at; the field locked where the hero stands. */
+function operate(R: BossRules, m: Monster): void {
+  const g = R.g;
+  const h = g.hero;
+  const act = m.act!;
+  const i = PHYSICIAN9_ACTS.findIndex((a) => a.id === 'physician:operate');
+  const di = PHYSICIAN9_ACTS.findIndex((a) => a.id === 'physician:diagnose');
+  if (m.moveCd && di >= 0) m.moveCd[di] = PHYSICIAN9_ACTS[di].cooldown;
+  m.act = { id: 'physician:operate', t: 0, n: act.n, hand: act.hand, a: 0, b: 0, x: h.x, y: h.y };
+  m.move = i;
+  m.animT = 0;
+  if (m.a1) m.a1.dOn = 0;
+  R.peril(m, 'act1', h.x, h.y, { a1: OP_PERIL, hit: OP_HIT, dur: OP_HIT + FIELD.lie, dmg: g.rollMonsterDmg(m) * PHYSICIAN9_ACTS[i].dmg, a: m.id, c: Math.floor(m.seed * 97) });
+  g.sfx('bossRoar', 0.6);
+}
+
+const ACTION: Act1Rules = {
+  gait: PHYSICIAN_GAIT,
+  acts: PHYSICIAN9_ACTS,
+  spawned: OLD.spawned,
+  lifeFloor: OLD.lifeFloor,
+
+  can(R, m, a, dist, los) {
+    if (a.id === 'physician:diagnose') {
+      // (only with the hero in his lens's sight)
+      const L = lensSpot({ x: m.x, y: m.y, fx: (R.g.hero.x - m.x) / (dist || 1), fy: (R.g.hero.y - m.y) / (dist || 1) }, 1);
+      return los && lensSees(R.g, L.x, L.y, R.g.hero.x, R.g.hero.y);
+    }
+    return OLD.can!(R, m, a, dist, los);
+  },
+
+  start: OLD.start,
+
+  acting(R, m, a, t0, t1) {
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    const free = !h.move && h.invuln <= 0 && !g.over;
+    switch (a.id) {
+      case 'physician:rap': {
+        if (!at(RAP9_HIT)) break;
+        // (brought down hard far before him: in its line, or in the star of cracks round where the ferrule strikes)
+        const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+        if (rapStrikes(r.fwd, r.left) && free) R.blow(m, a.dmg);
+        g.emit({ t: 'shake', amount: 3 });
+        g.sfx('slam', 0.6);
+        break;
+      }
+      case 'physician:draw': {
+        if (at(DRAW9_HIT)) {
+          const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+          if (drawStrikes(r.fwd, r.left) && free) {
+            R.blow(m, a.dmg);
+            if (!heldWord(m)) drawOut(R, m);
+          }
+          g.sfx('swing', 0.9);
+        }
+        if (at(DRAW9.push[0]) && heldWord(m) && m.a1) m.a1.upT = g.time;
+        break;
+      }
+      case 'physician:diagnose': {
+        const s = m.a1 ?? (m.a1 = {});
+        const L = lensSpot(m, act.hand);
+        if (at(DIAG.up)) {
+          // (the lens up: its beam comes on, pointing at the hero)
+          s.dAim = Math.atan2(h.y - L.y, h.x - L.x);
+          s.dFill = 0;
+          s.dLook = 0;
+          s.dLit = 0;
+          s.dOn = 1;
+          g.sfx('gust', 0.4);
+        }
+        if (t1 < DIAG.up || !s.dOn) break;
+        const dt = Math.max(0, t1 - t0);
+        // THE BEAM follows him a breath behind; the mark fills while he stands in its light, drains while he is hid
+        s.dAim += wrap(Math.atan2(h.y - L.y, h.x - L.x) - s.dAim) * (1 - Math.exp(-dt / BEAM.lag));
+        const lit = !g.over && inCone([L.x, L.y], s.dAim, [h.x, h.y]) && lensSees(g, L.x, L.y, h.x, h.y);
+        s.dLit = lit ? 1 : 0;
+        s.dFill = clamp01(s.dFill + (lit ? dt / BEAM.fill : -dt / BEAM.drain));
+        s.dLook += dt;
+        if (s.dFill >= 1) {
+          operate(R, m);
+          return;
+        }
+        if (s.dLook >= LOOK_FOR || g.over) {
+          // (never full: he lowers it, the rest of his clip from the look's end)
+          s.dOn = 0;
+          break;
+        }
+        // (THE LOOK, round and round while he looks)
+        if (act.t >= DIAG.loop[1]) act.t = DIAG.loop[0] + (act.t - DIAG.loop[1]);
+        break;
+      }
+      case 'physician:operate':
+        // (the strike is the field's: its peril)
+        break;
+      case 'physician:rounds': {
+        const d = (() => {
+          const S = beside(m.x, m.y, m.fx, m.fy, act.hand, RINGS.ahead, RINGS.left);
+          return Math.hypot(h.x - S.x, h.y - S.y);
+        })();
+        ROUNDS9_HITS.forEach((T, k) => {
+          if (at(T)) {
+            g.emit({ t: 'shake', amount: k === 2 ? 3 : 2 });
+            g.sfx('slam', 0.4 + 0.1 * k);
+            if (k === 0) makeRounds(R, m, ROUNDS9_HITS);
+          }
+          // (A GREAT RING OF THE HUSH rolls out from it: whoever it passes is hushed, once a ring)
+          const bit = 1 << k;
+          if (act.b & bit) return;
+          const r = ringAt(k, t1);
+          if (r !== null && Math.abs(d - r) <= RINGS.band / 2 + 0.15 && !g.over) {
+            act.b |= bit;
+            g.hush();
+          }
+        });
+        break;
+      }
+      default:
+        break;
+    }
+  },
+
+  peril(R, p, dt) {
+    if (p.a1 !== OP_PERIL) return OLD.peril!(R, p, dt);
+    const g = R.g;
+    const h = g.hero;
+    if (p.done || p.t < p.hit) return;
+    // THE ONE HUGE STRIKE: his instruments close in on the field from all round
+    p.done = 1;
+    if (fieldStrikes(h.x - p.x, h.y - p.y) && !h.move && h.invuln <= 0 && !g.over) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    g.emit({ t: 'shake', amount: 8 });
+    g.sfx('slam', 1);
+  },
+
+  died(R, m) {
+    OLD.died!(R, m);
+    // (his operation, not yet struck, is no more: the light comes back)
+    const list = R.g.perils;
+    for (let k = list.length - 1; k >= 0; k--) if (list[k].a1 === OP_PERIL && list[k].a === m.id && list[k].t < list[k].hit) list.splice(k, 1);
+  },
+};
+
+/** The operation under way now (the field's peril), or null: for the dark it throws over the room (render.ts). */
+export function operationNow(perils: readonly Peril[]): Peril | null {
+  if (!PHYSICIAN_ACTION.on) return null;
+  for (const p of perils) if (p.kind === 'act1' && p.a1 === OP_PERIL) return p;
+  return null;
+}
+
+const pick = (): Act1Rules => (PHYSICIAN_ACTION.on ? ACTION : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  spawned: (R, m) => pick().spawned?.(R, m),
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  start: (R, m, a) => pick().start?.(R, m, a),
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
+  lifeFloor: (R, m) => pick().lifeFloor?.(R, m) ?? 0,
+  peril: (R, p, dt) => pick().peril?.(R, p, dt),
+  died: (R, m) => pick().died?.(R, m),
 };

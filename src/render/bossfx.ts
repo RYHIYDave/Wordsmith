@@ -519,7 +519,7 @@ export class BossFx {
    * ACT 1, THE DESCENT: what each of its own kinds draws in this layer (render/act1_fx/): for each of them on
    * the floor, and for each of their perils.
    */
-  private act1Layer(layer: 'ground' | 'standing' | 'air', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
+  private act1Layer(layer: 'ground' | 'standing' | 'air' | 'glow', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
     let c: Act1FxCtx | null = null;
     const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]), film: this.films });
     for (const m of game.monsters) {
@@ -536,6 +536,11 @@ export class BossFx {
       if (!fx || !f || !here(p.x, p.y)) continue;
       f.call(fx, ctx(), null, p);
     }
+  }
+
+  /** OVER EVERYTHING, after the dark: what of ACT 1 and 2's kinds shines in it (render/act1_fx/types.ts `glow`). */
+  glow(g: CanvasRenderingContext2D, at: FloorAt, game: Game, here: (x: number, y: number) => boolean): void {
+    this.act1Layer('glow', g, at, game, game.time, here, null);
   }
 
   /** What of all that lights the dark. (Called as the dark is laid: after everything has been drawn.) */
