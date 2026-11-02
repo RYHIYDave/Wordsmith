@@ -33,6 +33,9 @@ import { TUNE } from '../defs';
 import { beside } from '../facing';
 import type { ActDef, GaitDef } from '../bosses';
 import type { Act1Rules } from './types';
+import { BARRAGE, BARRAGE_DONE, BARRAGE_HIT, SLAM9, SLAM_HIT, WARDEN_BARRAGE, bookGoes, bookStrikes, slamAt9, slamStrikes } from '../../art/action_f11_warden';
+import { fromFigure } from '../facing';
+import type { Peril } from '../state';
 
 /** THE BOOKWARDENS' NUMBERS (tiles, seconds of their pictures). */
 export const BOOKWARDEN = {
@@ -78,10 +81,93 @@ export function inDust(bx: number, by: number, fx: number, fy: number, x: number
   return (u * u) / (ru * ru) + (v * v) / (rv * rv) <= 1;
 }
 
+/**
+ * THE TOME SLAM BY MOVEMENT 9 AND THE BOOK BARRAGE (the art chat's art/action_f11_warden.ts behind WARDEN_BARRAGE, his yes there), in
+ * place of the old slam's numbers and the page storm:
+ *   slam     flat on the floor in two frames (SLAM_HIT): a hero in its dust (SLAM9.reach round slamAt9, stretched: slamStrikes) struck,
+ *            shoved back SLAM9.knock; its mark as before
+ *   barrage  nine books torn up off the floor and wheeling round him, held; from BARRAGE_HIT flung at him one after another
+ *            (bookGoes), each at where he is as it goes, a little fanned; a hero within BARRAGE.r of a book as it flies struck by it,
+ *            each a blow of its own; they come down and lie a moment. The peril 'bookwarden:barrage', its clock the barrage's: (x, y)
+ *            where he stands, `fx`, `fy` the way he faces, `hand`; where the hero was as each book went kept (`aimsOf`); `done` the
+ *            books that struck, by bits.
+ */
+export const BARRAGE_PERIL = 'bookwarden:barrage';
+const BARRAGE_ACTS: readonly ActDef[] = [
+  { id: 'bookwarden:slam', clip: 'attack', long: SLAM9.long, hit: SLAM_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.6, near: 0, far: 2.6 },
+  { id: 'bookwarden:barrage', clip: 'barrage', long: BARRAGE.long, hit: BARRAGE_HIT, dmg: 0.5, cooldown: 7, first: 2.5, after: 0.8, near: BARRAGE.near, far: BARRAGE.far0 },
+];
+const AIMS = new WeakMap<Peril, ([number, number] | null)[]>();
+/** Where the hero was as each book of the barrage went (tiles before him and to his left): null, not yet gone. */
+export function aimsOf(p: Peril): ([number, number] | null)[] {
+  let a = AIMS.get(p);
+  if (!a) AIMS.set(p, (a = Array.from({ length: BARRAGE.n }, () => null)));
+  return a;
+}
+/** The barrage's aim, for the art's bookAt: where he was as book `i` went, or where he is now, before. */
+export function aimFor(p: Peril, now: [number, number]): (when: number) => [number, number] {
+  const aims = aimsOf(p);
+  return (when) => {
+    for (let i = 0; i < BARRAGE.n; i++) if (Math.abs(bookGoes(i) - when) < 1e-6) return aims[i] ?? now;
+    return now;
+  };
+}
+
 export const RULES: Act1Rules | null = {
   gait: GAIT,
-  acts: ACTS,
+  get acts() {
+    return WARDEN_BARRAGE.on ? BARRAGE_ACTS : ACTS;
+  },
+  peril(R, p) {
+    if (p.a1 !== BARRAGE_PERIL) return;
+    const g = R.g;
+    const h = g.hero;
+    if (p.t < BARRAGE_HIT) {
+      // (wheeling round him, not yet flung: gone if he is stopped first)
+      const m = g.monsters.find((o) => o.id === p.a);
+      if (!m || m.dead || m.state !== 'act' || m.act?.id !== 'bookwarden:barrage') p.dur = p.t;
+      return;
+    }
+    const r = fromFigure(p.x, p.y, p.fx, p.fy, p.hand, h.x, h.y);
+    const now: [number, number] = [r.fwd, r.left];
+    const aims = aimsOf(p);
+    for (let i = 0; i < BARRAGE.n; i++) if (!aims[i] && p.t >= bookGoes(i)) aims[i] = now;
+    if (h.move || h.invuln > 0 || g.over) return;
+    const aim = aimFor(p, now);
+    for (let i = 0; i < BARRAGE.n; i++) {
+      if (p.done & (1 << i) || p.t < bookGoes(i)) continue;
+      if (!bookStrikes(i, p.t, aim, r.fwd, r.left)) continue;
+      p.done |= 1 << i;
+      g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+    }
+  },
   acting(R, m, a, t0, t1) {
+    if (WARDEN_BARRAGE.on && (a.id === 'bookwarden:slam' || a.id === 'bookwarden:barrage')) {
+      const g = R.g;
+      const h = g.hero;
+      const act = m.act!;
+      const at = (T: number): boolean => t0 < T && t1 >= T;
+      if (a.id === 'bookwarden:barrage') {
+        if (at(0.12)) R.peril(m, 'act1', m.x, m.y, { a1: BARRAGE_PERIL, t: 0.12, dur: BARRAGE_DONE, dmg: g.rollMonsterDmg(m) * a.dmg, a: m.id });
+        if (at(BARRAGE.up)) g.sfx('gust', 0.4);
+        if (at(a.hit)) g.sfx('swing', 0.7);
+        return;
+      }
+      if (at(0.32)) g.sfx('swing', 0.5);
+      if (!at(a.hit)) return;
+      const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+      const [bx, by] = slamAt9();
+      const b = beside(m.x, m.y, m.fx, m.fy, act.hand, bx, by);
+      if (!h.move && h.invuln <= 0 && !g.over && slamStrikes(r.fwd, r.left)) {
+        const was = h.life;
+        R.blow(m, a.dmg);
+        if (h.life < was) g.knockHero(b.x, b.y, SLAM9.knock);
+      }
+      R.peril(m, 'act1', b.x, b.y, { a1: 'bookwarden:mark', hit: 0, dur: BOOKWARDEN.slam.mark, done: 1 });
+      g.emit({ t: 'shake', amount: 3 });
+      g.sfx('slam', 0.6);
+      return;
+    }
     if (a.id === 'bookwarden:storm') {
       // THE PAGE STORM: its front out across the fan; whoever is in it when the front reaches him is struck, once
       const g = R.g;

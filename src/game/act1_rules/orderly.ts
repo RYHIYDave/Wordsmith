@@ -31,8 +31,9 @@
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { TUNE } from '../defs';
 import { beside, fromFigure } from '../facing';
-import type { Monster } from '../state';
+import type { Monster, Peril } from '../state';
 import type { Act1Rules } from './types';
+import { BLOW9, BLOW_HIT, GURNEY, GURNEY_HIT, ORDERLY_GURNEY, blowAt, blowStrikes, gurneyGone, gurneyStrikes } from '../../art/action_f11_orderly';
 
 /** THE ORDERLIES' NUMBERS (tiles, seconds of their pictures). */
 export const ORDERLY = {
@@ -71,11 +72,98 @@ export function slamSpot(m: { x: number; y: number; fx: number; fy: number }, ha
   return beside(m.x, m.y, m.fx, m.fy, hand, ORDERLY.blow.at[0], ORDERLY.blow.at[1]);
 }
 
+/**
+ * THE MALLET BLOW BY MOVEMENT 9 AND THE GURNEY CHARGE (the art chat's art/action_f11_orderly.ts behind ORDERLY_GURNEY, his yes there),
+ * in place of the old blow's numbers and the quake:
+ *   blow    held high, in two frames into the floor (BLOW_HIT): a hero within BLOW9.r of where its head goes in (blowAt), or in its way
+ *           there, struck (blowStrikes) and knocked back BLOW9.knock; its mark as before
+ *   gurney  the gurney stands before him (GURNEY.at); at GURNEY.aim he takes the way to the hero and the lane is marked from him
+ *           through there (GURNEY.lane, to a wall); at GURNEY_HIT his mallet slams into its end and it careers off down the lane
+ *           (gurneyGone), striking a hero in its way (gurneyStrikes) and CRASHING on him, or at the lane's end or a wall; a hero within
+ *           GURNEY.r of the crash struck and knocked back GURNEY.knock. The peril 'orderly:gurney', its clock from the slam: `a` the
+ *           orderly, `d` how far it may go, `hit` when it crashed (1e9: not yet), `b`, `c` where.
+ */
+export const GURNEY_PERIL = 'orderly:gurney';
+const GURNEY_ACTS: readonly ActDef[] = [
+  { id: 'orderly:blow', clip: 'attack', long: BLOW9.long, hit: BLOW_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 2.2 },
+  { id: 'orderly:gurney', clip: 'gurney', long: 2.3, hit: GURNEY_HIT, dmg: 1.5, cooldown: 7, first: 2.5, after: 0.9, near: GURNEY.near, far: GURNEY.far },
+];
+/** Where the gurney's middle is (tiles on from where it stood before him), `t` seconds after the slam, until it crashes. */
+export const gurneyDown = (p: Peril): number => Math.min(p.d, gurneyGone(Math.max(0, p.t)));
+
 export const RULES: Act1Rules | null = {
   gait: ORDERLY_GAIT,
-  acts: ORDERLY_ACTS,
+  get acts() {
+    return ORDERLY_GURNEY.on ? GURNEY_ACTS : ORDERLY_ACTS;
+  },
+  peril(R, p) {
+    if (p.a1 !== GURNEY_PERIL) return;
+    const g = R.g;
+    const h = g.hero;
+    if (p.t < 0) {
+      // (not yet slammed: gone if he is stopped first)
+      const m = g.monsters.find((o) => o.id === p.a);
+      if (!m || m.dead || m.state !== 'act' || m.act?.id !== 'orderly:gurney') p.dur = p.t;
+      return;
+    }
+    if (p.hit < 1e9) return;
+    const d = gurneyDown(p);
+    const x = (h.x - p.x) * p.fx + (h.y - p.y) * p.fy;
+    const y = -(h.x - p.x) * p.fy + (h.y - p.y) * p.fx;
+    const onHim = !h.move && h.invuln <= 0 && !g.over && gurneyStrikes(d, x, y);
+    if (!onHim && d < p.d - 1e-6) return;
+    // (it crashes: on him, or at its end)
+    p.hit = p.t;
+    p.dur = p.t + GURNEY.lies;
+    p.b = p.x + p.fx * (GURNEY.at + d);
+    p.c = p.y + p.fy * (GURNEY.at + d);
+    if (Math.hypot(h.x - p.b, h.y - p.c) <= GURNEY.r + TUNE.heroRadius * 0.5 && !h.move && h.invuln <= 0 && !g.over) {
+      g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.b, p.c, p.half);
+      g.knockHero(p.b, p.c, GURNEY.knock);
+    }
+    g.emit({ t: 'shake', amount: 4 });
+    g.sfx('slam', 0.9);
+  },
 
   acting(R: BossRules, m: Monster, a, t0, t1) {
+    if (ORDERLY_GURNEY.on && (a.id === 'orderly:blow' || a.id === 'orderly:gurney')) {
+      const g = R.g;
+      const h = g.hero;
+      const act = m.act!;
+      const at = (T: number): boolean => t0 < T && t1 >= T;
+      if (a.id === 'orderly:blow') {
+        if (at(BLOW9.raised)) g.sfx('swing', 0.4);
+        if (!at(a.hit)) return;
+        const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+        if (!h.move && h.invuln <= 0 && !g.over && blowStrikes(r.fwd, r.left)) {
+          R.blow(m, a.dmg);
+          g.knockHero(m.x, m.y, BLOW9.knock);
+        }
+        const [bx, by] = blowAt();
+        const s = beside(m.x, m.y, m.fx, m.fy, act.hand, bx, by);
+        R.peril(m, 'act1', s.x, s.y, { a1: 'orderly:slam', dur: ORDERLY.blow.mark });
+        g.emit({ t: 'shake', amount: 3 });
+        g.sfx('slam', 0.7);
+        return;
+      }
+      if (at(GURNEY.aim)) {
+        // (the way to him now: the lane marked, the gurney's run to its end or a wall)
+        const dx = h.x - m.x;
+        const dy = h.y - m.y;
+        const d = Math.hypot(dx, dy) || 1;
+        m.fx = dx / d;
+        m.fy = dy / d;
+        let run = 0;
+        const most = GURNEY.lane - GURNEY.at - GURNEY.long / 2;
+        while (run < most && g.free(g.level.walk, m.x + m.fx * (GURNEY.at + run + GURNEY.long / 2 + 0.1), m.y + m.fy * (GURNEY.at + run + GURNEY.long / 2 + 0.1), GURNEY.wide / 2)) run += 0.1;
+        R.peril(m, 'act1', m.x, m.y, { a1: GURNEY_PERIL, t: -(GURNEY_HIT - GURNEY.aim), hit: 1e9, dur: 1e9, dmg: g.rollMonsterDmg(m) * a.dmg, a: m.id, d: Math.min(run, most) });
+      }
+      if (at(a.hit)) {
+        g.emit({ t: 'shake', amount: 2 });
+        g.sfx('slam', 0.6);
+      }
+      return;
+    }
     if (a.id === 'orderly:quake') {
       quaking(R, m, t0, t1, a.dmg);
       return;

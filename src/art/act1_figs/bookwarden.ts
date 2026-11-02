@@ -8,10 +8,12 @@
 // (game/act1.ts); it goes on with the Hush when the planning chat puts the act in.
 
 import { makeBookwardenArt3 } from '../bookwardens_moves';
+import { WARDEN_BARRAGE, makeBarrageWardenArt } from '../action_f11_warden';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
-  make: () => makeBookwardenArt3(),
+  // (and the slam by Movement 9 and the book barrage, behind WARDEN_BARRAGE: art/action_f11_warden.ts, his yes, 2 Nov 2026)
+  make: () => (WARDEN_BARRAGE.on ? makeBarrageWardenArt() : makeBookwardenArt3()),
   // (measured off its stand as tests/act2_bookwarden.test.ts measures it)
   size: { top: 34, half: 11 },
 };

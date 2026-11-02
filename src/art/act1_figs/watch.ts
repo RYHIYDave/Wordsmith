@@ -7,14 +7,29 @@
 
 import { WATCH_ON } from '../hushed_watch';
 import { WATCHMAN, WATCH_SERGEANT, makeWatchArt3 } from '../hushed_watch_moves';
+import { LANTERN_SERGEANT, LANTERN_WATCHMAN, OIL_CANVAS, POOL, WATCH_LANTERN, makeLanternWatchArt, oilPainted } from '../action_f11_watch';
+import { toSprite } from '../kit';
+import type { Sprite } from '../../engine/px';
 import type { Act1Fig } from './types';
 
 /** (measured off their stand as tests/act2_watch.test.ts measures it: a head taller than the knight; the two are one body) */
 const SIZE = { top: 34, half: 10 };
 
 export const FIG: Act1Fig | null = {
-  make: () => makeWatchArt3(WATCHMAN),
+  // (and the chop and the lantern throw, behind WATCH_LANTERN: art/action_f11_watch.ts, his yes, 2 Nov 2026)
+  make: () => (WATCH_LANTERN.on ? makeLanternWatchArt(LANTERN_WATCHMAN) : makeWatchArt3(WATCHMAN)),
   size: SIZE,
   switches: [WATCH_ON],
-  looks: [{ make: () => makeWatchArt3(WATCH_SERGEANT), size: SIZE, switches: [WATCH_ON] }],
+  looks: [{ make: () => (WATCH_LANTERN.on ? makeLanternWatchArt(LANTERN_SERGEANT) : makeWatchArt3(WATCH_SERGEANT)), size: SIZE, switches: [WATCH_ON] }],
 };
+
+// THE BURNING OIL (WATCH_LANTERN), as the game draws it: every pool the same at the same moment of it, so its frames are painted ahead
+// (art/films.ts things:watch), OIL_FPS a second from its smash to its end, or, until they are, as each is first wanted.
+export const OIL_FPS = 10;
+export const OIL_N = Math.ceil(POOL.burn * OIL_FPS) + 1;
+export const oilFrame = (t: number): number => (t < 0 || t > POOL.burn ? -1 : Math.min(OIL_N - 1, Math.floor(t * OIL_FPS)));
+export const oilSprite = (i: number): Sprite => toSprite(oilPainted(i / OIL_FPS, 'floor'), null, OIL_CANVAS.ax, OIL_CANVAS.ay);
+/** ITS OIL, painted ahead: `oil` its frames. */
+export function watchThings(): Record<string, Sprite[]> {
+  return { oil: Array.from({ length: OIL_N }, (_, i) => oilSprite(i)) };
+}

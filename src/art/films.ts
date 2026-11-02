@@ -31,6 +31,9 @@
 //   things:deer                (FLOOR 9, DEER_BRAMBLE) the twisted deer's hedge of bramble, each clump's moments (art/act1_figs/deer.ts
 //                              deerThings)
 //   things:drowned             (FLOOR 10, DROWNED_RETCH) the Drowned's slick, its frames (art/act1_figs/drowned.ts drownedThings)
+//   things:fieldhand           (FLOOR 13, FIELD_HARVEST) the reapers' sickle in flight and its curve (art/act1_figs/fieldhand.ts fieldThings)
+//   things:orderly             (FLOOR 14, ORDERLY_GURNEY) the orderly's gurney, its frames (art/act1_figs/orderly.ts orderlyThings)
+//   things:watch               (FLOOR 11, WATCH_LANTERN) the watch's burning oil, its frames (art/act1_figs/watch.ts watchThings)
 //   things:stag                (FLOOR 9, STAG_ACTION) the Hollow Stag's wall of roots, each kind of clump's moments (art/act1_figs/
 //                              stag.ts stagThings)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
@@ -58,6 +61,9 @@ import { princessThings } from './act1_figs/princess';
 import { deerThings } from './act1_figs/deer';
 import { drownedThings } from './act1_figs/drowned';
 import { stagThings } from './act1_figs/stag';
+import { watchThings } from './act1_figs/watch';
+import { fieldThings } from './act1_figs/fieldhand';
+import { orderlyThings } from './act1_figs/orderly';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -224,6 +230,9 @@ export function filmRoom(key: string): number {
   if (kind === 'things' && a === 'deer') return DEER_THINGS_ROOM;
   if (kind === 'things' && a === 'drowned') return DROWNED_THINGS_ROOM;
   if (kind === 'things' && a === 'stag') return STAG_THINGS_ROOM;
+  if (kind === 'things' && a === 'watch') return 16;
+  if (kind === 'things' && a === 'fieldhand') return 16;
+  if (kind === 'things' && a === 'orderly') return 12;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -302,6 +311,12 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   if (kind === 'things' && a === 'drowned') return drownedThings();
   // (FLOOR 9: the Hollow Stag's wall, as render/act1_fx/stag.ts asks for it)
   if (kind === 'things' && a === 'stag') return stagThings();
+  // (FLOOR 11: the watch's burning oil, as render/act1_fx/watch.ts asks for it)
+  if (kind === 'things' && a === 'watch') return watchThings();
+  // (FLOOR 13: the reapers' sickle and its curve, as render/act1_fx/fieldhand.ts asks for them)
+  if (kind === 'things' && a === 'fieldhand') return fieldThings();
+  // (FLOOR 14: the orderly's gurney, as render/act1_fx/orderly.ts asks for it)
+  if (kind === 'things' && a === 'orderly') return orderlyThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();

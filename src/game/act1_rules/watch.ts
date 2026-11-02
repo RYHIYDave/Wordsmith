@@ -49,6 +49,8 @@ import { beside, handOf } from '../facing';
 import type { Monster } from '../state';
 import { HOUND } from './hound';
 import type { Act1Rules } from './types';
+import { CHOP, CHOP_HIT, LOB, LOB_HIT, POOL, WATCH_LANTERN, biteAt, chopStrikes, inOil, lobArc, lobFly, lobFrom } from '../../art/action_f11_watch';
+import type { Peril } from '../state';
 
 /** THE HUSHED WATCH'S NUMBERS (tiles, seconds of their pictures). */
 export const WATCH = {
@@ -148,9 +150,36 @@ function brace(R: BossRules, m: Monster): void {
   }
 }
 
+/**
+ * THE HALBERD CHOP AND THE LANTERN THROW (the art chat's art/action_f11_watch.ts behind WATCH_LANTERN, his yes there), in place of the
+ * sweep and the round sweep:
+ *   chop     heaved back over his head and held, the bite's reach marked (the game's warning, CHOP.r round biteAt); in two frames its
+ *            head bites the floor (CHOP_HIT) and the floor splits on from it: a hero within CHOP.r of the bite, or on the split (from
+ *            CHOP.from to CHOP.split before him, CHOP.half to either side: chopStrikes), struck and knocked back CHOP.knock; the split
+ *            drawn ('watch:bite', CHOP.seen)
+ *   lantern  swung back high and held, flaring; lobbed at where the hero stands as it leaves his hand ('watch:lantern': `a`, `b` where
+ *            from, `c` how high (game pixels), `d` how high its arc rises; its blow `hit` after: lobFly), where it will land marked;
+ *            it smashes: a hero within POOL.burst struck; the oil burns POOL.burn seconds (inOil, to POOL.r), burning a hero in it
+ *            OIL_BURN.share of its blow every OIL_BURN.tick
+ */
+export const BITE_PERIL = 'watch:bite';
+export const LANTERN_PERIL = 'watch:lantern';
+export const OIL_BURN = { share: 0.3, tick: 0.5 };
+const LANTERN_ACTS: readonly ActDef[] = [
+  { id: 'watch:chop', clip: 'attack', long: CHOP.long, hit: CHOP_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 2.6 },
+  { id: 'watch:lantern', clip: 'lantern', long: LOB.long, hit: LOB_HIT, dmg: 1.2, cooldown: 7, first: 2.5, after: 0.8, near: LOB.near, far: LOB.far },
+];
+/** Where the lantern is, `p.t` seconds after it left his hand: over the floor (tiles) and how high (game pixels). */
+export function lanternAt(p: Peril): { x: number; y: number; z: number } {
+  const u = Math.max(0, Math.min(1, p.hit > 0 ? p.t / p.hit : 1));
+  return { x: p.a + (p.x - p.a) * u, y: p.b + (p.y - p.b) * u, z: p.c * (1 - u) + p.d * 4 * u * (1 - u) };
+}
+
 export const RULES: Act1Rules | null = {
   gait: GAIT,
-  acts: ACTS,
+  get acts() {
+    return WATCH_LANTERN.on ? LANTERN_ACTS : ACTS;
+  },
   spawned(R, m) {
     m.form = sergeantOf(m) ? WATCH.sergeant : 0;
     // (and called so: "Hushed Sergeant", his words before it as a leader's are)
@@ -158,6 +187,44 @@ export const RULES: Act1Rules | null = {
     brace(R, m);
   },
   acting(R, m, a, t0, t1) {
+    if (a.id === 'watch:chop' || a.id === 'watch:lantern') {
+      const g = R.g;
+      const h = g.hero;
+      const act = m.act!;
+      const at = (T: number): boolean => t0 < T && t1 >= T;
+      if (a.id === 'watch:chop') {
+        const [bx, by] = biteAt();
+        const b = beside(m.x, m.y, m.fx, m.fy, act.hand, bx, by);
+        // (its reach marked as he heaves it back over his head)
+        if (at(CHOP.up)) g.addWarn(b.x, b.y, CHOP.r, CHOP_HIT - CHOP.up, 0, g.monsterElement(m), m.words, m.name, m.id, g.halfOf(m), true);
+        if (at(CHOP.up)) g.sfx('swing', 0.4);
+        if (!at(a.hit)) return;
+        const r = R.rel(m);
+        if (!h.move && h.invuln <= 0 && !g.over && chopStrikes(r.fwd, r.left)) {
+          R.blow(m, a.dmg);
+          g.knockHero(m.x, m.y, CHOP.knock);
+        }
+        R.peril(m, 'act1', b.x, b.y, { a1: BITE_PERIL, dur: CHOP.seen });
+        g.emit({ t: 'shake', amount: 3 });
+        g.sfx('slam', 0.7);
+        return;
+      }
+      if (at(LOB.back)) g.sfx('fire', 0.3);
+      if (!at(a.hit)) return;
+      // (lobbed at where the hero stands now: it comes down there)
+      const F = lobFrom();
+      const o = beside(m.x, m.y, m.fx, m.fy, act.hand, F.x, F.y);
+      const dx = h.x - o.x;
+      const dy = h.y - o.y;
+      const d = Math.hypot(dx, dy);
+      const fly = lobFly(d);
+      R.peril(m, 'act1', h.x, h.y, {
+        a1: LANTERN_PERIL, hit: fly, dur: fly + POOL.burn, dmg: g.rollMonsterDmg(m) * a.dmg, el: 'fire',
+        fx: d > 0.01 ? dx / d : m.fx, fy: d > 0.01 ? dy / d : m.fy, a: o.x, b: o.y, c: F.z / 2, d: lobArc(d) / 2,
+      });
+      g.sfx('swing', 0.5);
+      return;
+    }
     if (a.id === 'watch:round') {
       // THE ROUND SWEEP: the blade comes all the way round; it strikes him as it passes where he stands, if it reaches him there
       const g = R.g;
@@ -195,5 +262,25 @@ export const RULES: Act1Rules | null = {
     act.b = 1;
     R.blow(m, a.dmg);
     if (!h.move && h.invuln <= 0 && !g.over) g.knockHero(m.x, m.y, S.knock);
+  },
+  peril(R, p) {
+    if (p.a1 !== LANTERN_PERIL || p.t < p.hit) return;
+    const g = R.g;
+    const h = g.hero;
+    if (!p.done) {
+      // (it smashes: whoever is near is struck)
+      p.done = 1;
+      if (Math.hypot(h.x - p.x, h.y - p.y) <= POOL.burst + TUNE.heroRadius * 0.5 && !h.move) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+      g.emit({ t: 'shake', amount: 1 });
+      g.sfx('fire', 0.7);
+      return;
+    }
+    // (the oil burns: whoever is in it is burned, tick by tick)
+    const s = p.t - p.hit;
+    const next = POOL.smash + OIL_BURN.tick * (p.done - 1);
+    if (s >= next && s < POOL.burn - POOL.fade * 0.5) {
+      p.done++;
+      if (!h.move && inOil(h.x - p.x, h.y - p.y, s)) g.hurtHero(p.dmg * OIL_BURN.share, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    }
   },
 };
