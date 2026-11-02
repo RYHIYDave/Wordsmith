@@ -22,6 +22,8 @@ import type { Monster, Peril } from './state';
 /** The peril's name, and how long it lasts after it lands (seconds). */
 export const HURL_PERIL = 'golem:hurl';
 export const HURL_LASTS = BURST_LONG;
+/** The reach of its burst round its mark (tiles: the art's HURL.r), for what steps out of it (src/dev/bot.ts). */
+export const HURL_REACH = HURL.r;
 /** A Twin golem's second skeleton: loosed this long after the first (as its second skull was). */
 export const TWIN_AFTER = 0.35;
 

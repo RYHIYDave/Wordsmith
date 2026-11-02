@@ -76,6 +76,8 @@ export interface Act2Land {
   keep?: import('./act2/keep').KeepPlan;
   /** (THE HIGH CITY, FLOOR 20: THE QUIET TOWER, game/act2/quiettower.ts) its rooms, its stair up, its top: for its look, its dresser and its rules. */
   tower?: import('./act2/quiettower').TowerPlan;
+  /** (THE GATE WARD AS ONE GREAT WARD, GW_PIGEON_ROW) The middle of the ridge of the pigeons' row of houses beside the main way: the pigeons wait on its roof (game/act2_moments.ts). */
+  pigeons?: { x: number; y: number; foot: number };
   /** What each walkable tile is, a tile each (its floor's own zones: GW_ZONE, UC_ZONE, HQ_ZONE, LB_ZONE); 0 where not said. */
   zones?: Uint8Array;
   /** THE UNDERCITY: 1 for each tile that is not floor and is water (the channels, the cisterns' pools, the outflow). */

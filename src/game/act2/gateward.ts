@@ -32,12 +32,13 @@
 import { RNG } from '../../engine/rng';
 import type { Act1Dress, Act1Tile } from '../act1_dress';
 import { act1Pack } from '../act1_mobs';
-import { nearestFloor, reach, tileMid } from '../act1_layout';
+import { nearestFloor, reach, segDist, tileMid } from '../act1_layout';
 import type { AreaRole, Blob, Land, Laid, Lane } from '../act1_layout';
 import type { BellsPlan, HouseLaid } from '../act2_types';
 import type { Level, PropInst } from '../state';
 import { makeHazards } from '../traps';
 import { T_FLOOR, T_WALL } from '../types';
+import { MOMENT_FROM_START, pigeonRoofTiles, roofRidge } from '../act2_moments';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room, RoomKind } from '../types';
 
 /** Whether this map-maker lays the floor yet (false: the descent's stands in). */
@@ -232,6 +233,22 @@ export const GW_OPEN = {
   /** Its packs this share of its ground's due (the old squares' were fewer: each a pack or more, the small ones one), so that the floor has the monsters it had. */
   packs: 0.8,
 };
+
+/**
+ * THE PIGEONS' ROW (his pick of 2 Nov 2026, to the pigeons on the great ward sitting far off the main way, and on some layings
+ * nowhere: “A row of houses by the path (Recommended)”). On the great ward (GW_OPEN), a block of houses is left standing in one of
+ * its squares beside the main way, its ridge `near` tiles off the way's middle line and none of it within `clear` of it, square-edged as houses are and no bigger than
+ * `most` tiles: one of the art's roof plots with its ridge along x, every tile the pigeons need as houses (act2_moments.ts
+ * pigeonRoofTiles); the street at its foot left open; nothing cut off by it, and nothing of it in or by the boss's ground or a house
+ * walked into. The pigeons wait on its roof (act2_moments.ts gateWardMomentAt), and go up as he comes near and sees them
+ * (render/act1_pieces.ts stepMoments): so along `see.run` tiles of the way's middle line at least, he is within `see.near` of them
+ * (their reach, MOMENT_NEAR, 5.5, less half a tile for his walk off the line), the street at their foot in his sight past the
+ * houses, and they on his screen: no more than `see.down` tiles further down it than he is, by x + y (on a phone's, 234 game
+ * pixels high, his feet 129 down it, the birds MOMENT_UP, 84, over their ridge and MOMENT_IN, 18, in from its top: 3.375). A
+ * laying with no room for it is laid again: every laying of the great ward has its row. On by his yes to its pictures, 2 Nov 2026:
+ * “Yes, switch it on (Recommended)”.
+ */
+export const GW_PIGEON_ROW = { on: true, near: [2, 8] as const, clear: 1, most: 110, see: { near: 5, down: 3, run: 1.5 } };
 
 function planOpen(rng: RNG): Plan | null {
   const P = GW_PLAN;
@@ -527,7 +544,10 @@ export function generate(depth: number, seed: number): Laid | null {
   const cut = new Uint8Array(W * H);
   // THE START: four tiles in from the gate, in the middle of its street
   const startTile = first === 0 ? Math.floor(gmid) * W + gr[0] + 4 : (gr[1] + 4) * W + Math.floor(gmid);
+  // (GW_PIGEON_ROW: the pigeons' row of houses beside the main way)
+  const pigeons = GW_OPEN.on && GW_PIGEON_ROW.on && tiles[startTile] === T_FLOOR ? pigeonRow(rng, plan, W, H, tiles, zones, startTile) : null;
   if (tiles[startTile] !== T_FLOOR) return null;
+  if (GW_OPEN.on && GW_PIGEON_ROW.on && !pigeons) return null;
   const got = reach(W, H, tiles, cut, startTile, true);
   for (let i = 0; i < W * H; i++) if (tiles[i] === T_FLOOR && !got[i]) return null;
 
@@ -577,7 +597,7 @@ export function generate(depth: number, seed: number): Laid | null {
   for (let i = 0; i < W * H; i++) floor.variant[i] = vr.int(0, 255);
 
   // THE BELLS (the contract, docs/act2_build.md)
-  const bells = bellsOf(rng, plan, floor, zones);
+  const bells = bellsOf(rng, plan, floor, zones, pigeons);
   if (!bells) return null;
 
   floor.packs = packsOf(rng, plan, floor, depth, bells);
@@ -616,6 +636,7 @@ export function generate(depth: number, seed: number): Laid | null {
     squares,
     houses: plan.houses,
     bells,
+    ...(pigeons ? { pigeons } : {}),
   };
   // (the plan's own, for the dresser: the gate, the rostrum, each area's kind and rectangle, each lane's rectangles)
   GW_PLANS.set(land, {
@@ -647,6 +668,149 @@ const GW_PLANS = new WeakMap<Land, DressPlan>();
 // ---------------------------------------------------------------------------------------------------
 // WHAT HANGS ON THE HOUSE FRONTS
 
+/** The main way's middle line, start to boss, as the land holds it (generate). */
+function wayLine(plan: Plan): [number, number][] {
+  const way: [number, number][] = [];
+  plan.areas.filter((a) => a.path >= 0).sort((a, b) => a.path - b.path).forEach((a, k) => {
+    if (k > 0) {
+      const w = plan.ways.find((q) => q.main && q.b === plan.areas.indexOf(a));
+      if (w) way.push(...w.pts.map((p) => [p[0], p[1]] as [number, number]));
+    }
+    way.push(midOf(a.r));
+  });
+  return way;
+}
+
+/** (GW_PIGEON_ROW) Leave a block of houses standing in a square of the great ward beside the main way for the pigeons: the first that fits. */
+function pigeonRow(rng: RNG, plan: Plan, W: number, H: number, tiles: Uint8Array, zones: Uint8Array, startTile: number): { x: number; y: number; foot: number } | null {
+  const P = GW_PIGEON_ROW;
+  const way = wayLine(plan);
+  const wayDist = (x: number, y: number): number => {
+    let d = Infinity;
+    for (let i = 0; i + 1 < way.length; i++) d = Math.min(d, segDist(x, y, way[i][0], way[i][1], way[i + 1][0], way[i + 1][1]));
+    return d;
+  };
+  /** The way's middle line a quarter tile at a time, start to boss. */
+  const along: [number, number][] = [];
+  for (let i = 0; i + 1 < way.length; i++) {
+    const [ax, ay] = way[i];
+    const [bx, by] = way[i + 1];
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 0.25));
+    for (let k = 0; k < n; k++) along.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+  }
+  const sx = (startTile % W) + 0.5;
+  const sy = Math.floor(startTile / W) + 0.5;
+  const boss = plan.areas.find((a) => a.role === 'boss')!.r;
+  const gate = plan.areas[0].r;
+  /** (a tile in or by the boss's ground: the Crier's square and two tiles round it) */
+  const byBoss = (tx: number, ty: number): boolean => tx >= boss[0] - 2 && ty >= boss[1] - 2 && tx < boss[2] + 2 && ty < boss[3] + 2;
+  /**
+   * A tile the block may take: houses already, or floor of one of the great ward's squares (not a lane, not the gate's street, not
+   * the Crier's square, not within `clear` of the way's middle line: the way left open past it); never a house walked into, nor by
+   * one (its roof is open, and faded: no pigeon sits on it).
+   */
+  const mayTake = (tx: number, ty: number): boolean => {
+    if (tx < 1 || ty < 1 || tx >= W - 1 || ty >= H - 1) return false;
+    if (walkInAt(plan.houses, tx, ty)) return false;
+    const i = ty * W + tx;
+    if (tiles[i] !== T_FLOOR) return true;
+    if (wayDist(tx + 0.5, ty + 0.5) < P.clear) return false;
+    if (zones[i] !== GW_ZONES.Square) return false;
+    if (byBoss(tx, ty)) return false;
+    return !(tx >= gate[0] - 1 && ty >= gate[1] - 1 && tx < gate[2] + 1 && ty < gate[3] + 1);
+  };
+  const found: { x0: number; y0: number; x1: number; y1: number; score: number; at: { x: number; y: number; foot: number } }[] = [];
+  /**
+   * How far along the way's middle line (tiles, the longest stretch) he would see the pigeons on the ridge whose middle is (mx, my)
+   * go up, the block (x0, y0) to (x1, y1) standing: near enough, them on his screen, and nothing but floor from him to the street at
+   * their foot (tile `seenX`, `seenY`).
+   */
+  const seenAlong = (mx: number, my: number, seenX: number, seenY: number, x0: number, y0: number, x1: number, y1: number): number => {
+    const S = P.see;
+    const clear = (tx: number, ty: number): boolean => tiles[ty * W + tx] === T_FLOOR && !(tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1);
+    const sees = (px: number, py: number): boolean => {
+      if (Math.hypot(px - mx, py - my) > S.near || px + py > mx + my + S.down) return false;
+      const ax = seenX + 0.5;
+      const ay = seenY + 0.5;
+      const n = Math.max(1, Math.ceil(Math.hypot(px - ax, py - ay) / 0.25));
+      for (let k = 0; k <= n; k++) if (!clear(Math.floor(ax + ((px - ax) * k) / n), Math.floor(ay + ((py - ay) * k) / n))) return false;
+      return true;
+    };
+    let best = 0;
+    let run = 0;
+    for (const [px, py] of along) {
+      run = sees(px, py) ? run + 1 : 0;
+      best = Math.max(best, run);
+    }
+    return best * 0.25;
+  };
+  const seen = new Set<string>();
+  for (let j = 1; j * 2.5 < H - 4; j++) {
+    for (let x = 1; x < W - 1; x += 0.5) {
+      const r = roofRidge(x, j * 2.5 + 1);
+      if (r.along !== 'x' || r.to - r.from < 3) continue;
+      const key = `${j}:${r.from}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const mx = (r.from + r.to) / 2;
+      const my = r.at;
+      const d = wayDist(mx, my);
+      if (d < P.near[0] || d > P.near[1]) continue;
+      if (Math.hypot(mx - sx, my - sy) < MOMENT_FROM_START + 2) continue;
+      // (its street at its foot, open, a square's: where he sees it from)
+      const foot = Math.ceil((j + 1) * 2.5);
+      const tx = Math.floor(mx);
+      if (!(tiles[foot * W + tx] === T_FLOOR && zones[foot * W + tx] === GW_ZONES.Square && tiles[(foot + 1) * W + tx] === T_FLOOR)) continue;
+      if (byBoss(tx, foot) || byBoss(tx, foot + 1)) continue;
+      // (every tile the pigeons need, and the block square round them)
+      const need = pigeonRoofTiles(mx, my, j, r.from, r.to);
+      let x0 = Infinity;
+      let y0 = Infinity;
+      let x1 = -Infinity;
+      let y1 = -Infinity;
+      for (const [a, b] of need) {
+        x0 = Math.min(x0, a);
+        y0 = Math.min(y0, b);
+        x1 = Math.max(x1, a);
+        y1 = Math.max(y1, b);
+      }
+      if (y1 >= foot) continue;
+      let take = 0;
+      let ok = true;
+      for (let ty = y0; ty <= y1 && ok; ty++) for (let tx2 = x0; tx2 <= x1 && ok; tx2++) {
+        if (!mayTake(tx2, ty)) ok = false;
+        else if (tiles[ty * W + tx2] === T_FLOOR) take++;
+      }
+      if (!ok || take === 0 || take > P.most) continue;
+      // (and from the way he sees them go up)
+      const run = seenAlong(mx, my, tx, foot, x0, y0, x1, y1);
+      if (run < P.see.run) continue;
+      found.push({ x0, y0, x1, y1, score: Math.abs(d - (P.near[0] + P.near[1]) / 2) + take / 60 - Math.min(run, 4) / 4 + rng.next() * 0.5, at: { x: mx, y: my, foot } });
+    }
+  }
+  found.sort((a, b) => a.score - b.score);
+  for (const f of found) {
+    // (houses there; kept only if nothing is cut off by them)
+    const was: number[] = [];
+    for (let ty = f.y0; ty <= f.y1; ty++) for (let tx = f.x0; tx <= f.x1; tx++) {
+      const i = ty * W + tx;
+      if (tiles[i] !== T_FLOOR) continue;
+      was.push(i);
+      tiles[i] = T_WALL;
+      zones[i] = 0;
+    }
+    const got = reach(W, H, tiles, new Uint8Array(W * H), startTile, true);
+    let whole = true;
+    for (let i = 0; i < W * H && whole; i++) if (tiles[i] === T_FLOOR && !got[i]) whole = false;
+    if (whole) return f.at;
+    for (const i of was) {
+      tiles[i] = T_FLOOR;
+      zones[i] = GW_ZONES.Square;
+    }
+  }
+  return null;
+}
+
 /** Is tile (a, b) of a house walked into (its room, its front, the tile of houses round them)? */
 function walkInAt(houses: readonly HouseLaid[], a: number, b: number): boolean {
   return houses.some((h) => a >= h.room[0] - 1 && b >= h.room[1] - 1 && (h.front.along === 'x' ? a <= h.room[2] && b <= h.front.at : a <= h.front.at && b <= h.room[3]));
@@ -675,7 +839,7 @@ function faceStands(floorAt: (x: number, y: number) => boolean, houses: readonly
  * Crier's Square. Which bell is which is told by where it is: a small bell with whole floor all round it stands; one at a
  * house front's foot is the shop's doorbell (`bellKinds`).
  */
-function bellsOf(rng: RNG, plan: Plan, f: Floor, zones: Uint8Array): BellsPlan | null {
+function bellsOf(rng: RNG, plan: Plan, f: Floor, zones: Uint8Array, pigeons: { x: number; y: number; foot: number } | null = null): BellsPlan | null {
   const W = f.w;
   const H = f.h;
   const floorAt = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < W && y < H && f.tiles[y * W + x] === T_FLOOR;
@@ -721,6 +885,8 @@ function bellsOf(rng: RNG, plan: Plan, f: Floor, zones: Uint8Array): BellsPlan |
       const d = Math.hypot(mx - cx, my - cy);
       if (d > far || d < 5 || Math.hypot(mx - sx, my - sy) < 10 || overlaps(bossR, [x, y, x + 1, y + 1], 1)) continue;
       if (nearDoor(x, y, 2)) continue;
+      // (GW_PIGEON_ROW: no bell by the pigeons' row, where they wait to go up)
+      if (pigeons && Math.hypot(mx - pigeons.x, my - pigeons.y) < 7) continue;
       const area = plan.areas.find((a) => inRect(a.r, x, y));
       if (area && area.kind !== 'gate' && ring(x, y) && !laneRects.some((r) => overlaps(r, [x, y, x + 1, y + 1], 2))) {
         const [ax, ay] = midOf(area.r);

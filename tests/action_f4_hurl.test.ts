@@ -5,7 +5,8 @@
 //   2. it takes its aim where the hero stands as it begins to hold the skeleton (HURL.aim), lets go at its hit, and the skeleton
 //      lands hurlFly(d) later: a hero who stands there is struck, once; one who runs out of the mark is not;
 //   3. if the golem falls before it lets go, the mark goes and nothing comes;
-//   4. its swing reaches further than it did, in the half of the floor before it, and not behind it.
+//   4. its swing reaches further than it did, in the half of the floor before it, and not behind it;
+//   5. the bot (src/dev/bot.ts, the game played without a person) steps out of the mark before it comes down.
 //   run: tsx --test tests/action_f4_hurl.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -15,6 +16,7 @@ import { GOLEM_HURL, HURL, HURL_HIT, SWING, SWING_HIT, hurlFly } from '../src/ar
 import { useActionF4 } from '../src/art/bestiary';
 import { ACTION_F4, MONSTERS, movesOf } from '../src/game/defs';
 import { HURL_PERIL } from '../src/game/action_f4';
+import { botStep, newBot } from '../src/dev/bot';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster, Peril } from '../src/game/state';
@@ -145,5 +147,33 @@ test('4. its swing reaches further, before it; not behind it', () => {
   on(() => {
     assert.equal(swing(false), 1, 'on: within its new');
     assert.equal(swing(true), 0, 'on: behind it');
+  });
+});
+
+test('5. the bot steps out of the mark before it comes down', () => {
+  on(() => {
+    const d = 6;
+    const { g, m } = golem(d, 1);
+    const h = g.hero;
+    const bot = newBot(false, true);
+    const c = emptyControls();
+    let mark: Peril | undefined;
+    let out = false;
+    for (let k = 0; k < Math.round((HURL_HIT + hurlFly(d) + 0.3) * 30); k++) {
+      botStep(g, c, bot, 1 / 30);
+      g.update(1 / 30, c);
+      h.invuln = 0;
+      h.life = h.d.maxLife;
+      mark ??= g.perils.find((p) => p.a1 === HURL_PERIL);
+      if (mark && mark.done === 2) {
+        out = Math.hypot(h.x - mark.x, h.y - mark.y) > HURL.r;
+        break;
+      }
+      // (the golem does nothing more in the meantime)
+      if (m.state !== 'windup' && m.state !== 'recover') m.cd = 9;
+    }
+    assert.ok(mark, 'it took its aim');
+    assert.equal(mark!.done, 2, 'it came down');
+    assert.ok(out, `out of its mark when it came down (${Math.hypot(h.x - mark!.x, h.y - mark!.y).toFixed(2)} tiles from it)`);
   });
 });

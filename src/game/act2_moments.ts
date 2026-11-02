@@ -245,6 +245,17 @@ function gateWardMomentAt(L: Level, land: Land, rng: RNG): Omit<HushMoment, 'key
   const f = L.floor;
   const W = f.w;
   const H = f.h;
+  // (GW_PIGEON_ROW: the pigeons' row of houses beside the main way: the street at its foot, where he sees them from, kept clear of
+  // whatever the dresser stood there)
+  if (land.pigeons) {
+    const tx = Math.floor(land.pigeons.x);
+    for (const ty of [land.pigeons.foot, land.pigeons.foot + 1]) {
+      const i = ty * W + tx;
+      if (f.tiles[i] !== T_FLOOR) continue;
+      L.props = L.props.filter((p) => !(p.solid && p.tx === tx && p.ty === ty));
+      L.walk[i] = 1;
+    }
+  }
   const floorAt = (tx: number, ty: number): boolean => tx >= 0 && ty >= 0 && tx < W && ty < H && f.tiles[ty * W + tx] === T_FLOOR;
   // (the houses walked into, a tile each, once)
   const inside = new Uint8Array(W * H);
@@ -300,8 +311,36 @@ function gateWardMomentAt(L: Level, land: Land, rng: RNG): Omit<HushMoment, 'key
     }
     return found;
   };
+  const near = search(false);
+  // (GW_PIGEON_ROW: on the pigeons' row of houses by the main way, laid for them, if it is fit for them)
+  const row = land.pigeons ? near.find((q) => Math.abs(q.x - land.pigeons!.x) < 1e-6 && Math.abs(q.y - land.pigeons!.y) < 1e-6) : undefined;
+  if (row) return row;
   // (near the way, as it was laid; or, on the great ward, GW_OPEN, as far from it as need be)
-  return pickNear(rng, land, search(false)) ?? (GW_OPEN.on ? pickNear(rng, land, search(true)) : null);
+  return pickNear(rng, land, near) ?? (GW_OPEN.on ? pickNear(rng, land, search(true)) : null);
+}
+
+/**
+ * (GW_PIGEON_ROW) The tiles that must be houses for the pigeons to sit whole on the roof of the plot whose ridge's middle is
+ * (mx, my): the plot's own (its row of the art's plots, `j`, and its ridge from `from` to `to`), the ridge's, and every tile under
+ * a bird's picture at its height over the ridge, as roofWhole asks (gateWardMomentAt). Tile x and y, each once.
+ */
+export function pigeonRoofTiles(mx: number, my: number, j: number, from: number, to: number): [number, number][] {
+  const out = new Map<number, [number, number]>();
+  const put = (tx: number, ty: number): void => void out.set(ty * 65536 + tx, [tx, ty]);
+  for (let ty = Math.floor(j * 2.5); ty < Math.ceil((j + 1) * 2.5); ty++) for (let tx = Math.floor(from); tx < Math.ceil(to); tx++) put(tx, ty);
+  for (let k = -2; k <= 2; k++) {
+    const bx = mx + (k * PIGEONS.half) / 2;
+    const by = my;
+    const px = (bx - by) * 32;
+    const py = (bx + by) * 16 - PIGEONS.rise;
+    for (let yy = py + 4; yy >= py - PIGEONS.tall; yy -= 3) for (let xx = px - PIGEONS.wide; xx <= px + PIGEONS.wide; xx += 3) {
+      const a = (xx + 0.5) / 32;
+      const b = (yy + 0.5) / 16;
+      put(Math.floor((a + b) / 2), Math.floor((b - a) / 2));
+    }
+    put(Math.floor(bx), Math.floor(by));
+  }
+  return [...out.values()];
 }
 
 /** Is tile (tx, ty) part of a house walked into (its room, its front or its doorway: its roof is open, and faded)? */

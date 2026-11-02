@@ -15,6 +15,7 @@ import { topStep } from '../game/ways';
 // half made, they taking it in turn)
 import '../game/act1_rules/index';
 import { CENSOR, barsOf, inked, strikeFrom, underBar } from '../game/act1_rules/censor';
+import { HURL_PERIL, HURL_REACH } from '../game/action_f4';
 
 export interface BotState {
   flow: Uint16Array | null;
@@ -51,6 +52,29 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
   }
   // An attack is about to land where the hero stands: walk straight out of it.
   const h = g.hero;
+  // (FLOOR 4, MORE ACTION, ACTION_F4: the Ossuary Golem's skeleton, marked where it will come down, until it has)
+  for (const p of g.perils) {
+    if (p.a1 !== HURL_PERIL || (p.done ?? 0) >= 2) continue;
+    const dx = h.x - p.x;
+    const dy = h.y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d > HURL_REACH + 0.5) continue;
+    let ux = d < 0.05 ? 1 : dx / d;
+    let uy = d < 0.05 ? 0 : dy / d;
+    // (its golem in the way, close by: out to the side of it instead, the side away from the mark's middle)
+    const m = g.monsters.find((o) => o.id === p.a && !o.dead);
+    const gx = m ? m.x - h.x : 0;
+    const gy = m ? m.y - h.y : 0;
+    const gd = Math.hypot(gx, gy);
+    if (m && gd < 2.5 && (gx * ux + gy * uy) / gd > 0.5) {
+      const side = -gy * dx + gx * dy >= 0 ? 1 : -1;
+      ux = (-gy / gd) * side;
+      uy = (gx / gd) * side;
+    }
+    c.mx = ux;
+    c.my = uy;
+    return;
+  }
   for (const z of g.zones) {
     // (THE MONSTERS' ATTACKS: the line a red troll will charge along, or a marksman's line of aim: out of it, sideways)
     if (z.kind === 'lane' || z.kind === 'aim') {
