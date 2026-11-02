@@ -104,7 +104,7 @@ test('1. the switch is off, and nothing of the game imports them', () => {
     // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/watch.ts, since 19 Oct; only them)
     // (and art/watch_shots.ts, the mock-up of what their round sweep leaves on the floor, nothing of the game's)
     // (and floor 16's palace guard, a mock-up built on the watch's body: tests/palace_guard.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed_watch(_moves)?|palace_guard(_moves)?)\.ts$/.test(f) || f === 'art/act1_figs/watch.ts' || f === 'art/watch_shots.ts') continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed_watch(_moves)?|palace_guard(_moves)?)\.ts$/.test(f) || f === 'art/act1_figs/watch.ts' || f === 'art/watch_shots.ts' || /^art\/action_f11_/.test(f)) continue;
     if (/from ['"][^'"]*hushed_watch(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import them');

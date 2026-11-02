@@ -135,7 +135,7 @@ test('in the game through art/act1_figs/ratking.ts and render/act1_fx/ratking.ts
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (the King's rats, art/rats.ts, are painted with the King's own rat painter)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(rat_king(_shots)?|rats)\.ts$/.test(f) || f === 'art/act1_figs/ratking.ts' || f === 'render/act1_fx/ratking.ts') continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(rat_king(_shots)?|rats|ratking_action(_fx)?)\.ts$/.test(f) || f === 'art/act1_figs/ratking.ts' || f === 'render/act1_fx/ratking.ts') continue;
     if (/from ['"][^'"]*\/rat_king(_shots)?['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'other game files that import it');

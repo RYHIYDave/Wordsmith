@@ -636,7 +636,7 @@ export interface FmLook {
   claw: number;
   tails: number;
   /** HIS OWN ATTACKS' MOMENTS, for one whose moves are not the master's: when raising the dead the skull shrieks and holds; when his fire bursts out and stops; how wide the skull's mouth blazes and how far its jaw drops, by attack and moment (as fmMawOf and fmJawOf are the master's). */
-  timing?: { raiseShriek: number; raiseHold: number; fireBurst: number; fireStop: number };
+  timing?: { raiseShriek: number; raiseHold: number; fireBurst: number; fireStop: number; shardHits?: readonly number[]; ringHits?: readonly number[] };
   maw?: (prop: number, t: number) => number;
   jaw?: (prop: number, t: number) => number;
   /**
@@ -804,7 +804,9 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
         }
       }
     }
-    const k = (t - FM_SHARDS.hit) / 0.22;
+    // (the moments it spits: the master's one, or each of another's: art/fleshmancer_action.ts, two fans)
+    for (const SH of LOOK.timing?.shardHits ?? [FM_SHARDS.hit]) {
+    const k = (t - SH) / 0.22;
     if (k >= -0.16 && k < 1) {
       const u = clamp01(k);
       // THE BLAST, out of its jaws the way it points: thrown on after the shards, burning down as it goes
@@ -823,8 +825,11 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
       }
       put('glow', 'glow', { k: 'glow', p: atPx(mouth[0] + way[0] * 8, mouth[1] + way[1] * 8), c: FLAME[3], r: 20 - 8 * u, a: 0.6 * (1 - u) });
     }
+    }
   } else if (q.prop === FM_ATTACKS.rings) {
-    const k = (t - FM_RINGS.hit) / 0.3;
+    // (the moments he slams: the master's one, or each of another's)
+    for (const RG of LOOK.timing?.ringHits ?? [FM_RINGS.hit]) {
+    const k = (t - RG) / 0.3;
     if (k >= -0.1 && k < 1) {
       const u = clamp01(k);
       // THE SLAM: a flash where the staff's foot strikes, and in his claw
@@ -832,6 +837,7 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
       if (!behindHim(foot)) fireBall(st, put, foot, 2 + 5 * (1 - u), [0, 1], 2, undefined, u < 0.3 ? FLAME[4] : FLAME[3]);
       put('glow', 'glow', { k: 'glow', p: foot, c: FLAME[3], r: 18 - 6 * u, a: 0.55 * (1 - u) });
       put('glow', 'glow', { k: 'glow', p: s.handL, c: FLAME[3], r: 16 - 6 * u, a: 0.5 * (1 - u) });
+    }
     }
   } else if (q.prop === FM_ATTACKS.raise) {
     // THE SHRIEK, a ring of sparks bursting out of the skull

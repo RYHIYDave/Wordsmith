@@ -106,7 +106,7 @@ const said = (_mob: Mob, move: string, view: string, t: number): string => `${mo
 function importersOf(mods: readonly string[]): string[] {
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || mods.includes(f.slice(0, -3))) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || mods.includes(f.slice(0, -3)) || /^art\/action_f11_/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];

@@ -42,7 +42,7 @@ import type { V3 } from './skeleton';
 /** THE SWITCH, OFF: nothing of the game reads this file. */
 export const STAG_ON = { on: false };
 
-const cl01 = (v: number): number => Math.max(0, Math.min(1, v));
+export const cl01 = (v: number): number => Math.max(0, Math.min(1, v));
 const fr = (t: number): number => t - Math.floor(t);
 const D = Math.PI / 180;
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -56,12 +56,12 @@ const norm = (a: V3, or: V3 = [0, 0, 1]): V3 => {
 const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const lerpV = (a: V3, b: V3, s: number): V3 => [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s];
-const sm = (v: number): number => {
+export const sm = (v: number): number => {
   const c = cl01(v);
   return c * c * (3 - 2 * c);
 };
 /** A swell from nothing at `a` to its fullest half way and back to nothing at `b`, smooth at both ends. */
-const bump = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 : Math.pow(Math.sin((Math.PI * (t - a)) / (b - a)), 2));
+export const bump = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 : Math.pow(Math.sin((Math.PI * (t - a)) / (b - a)), 2));
 
 // ---------------------------------------------------------------------------------------------
 // ITS COLOURS: a dark hide (a cool, deep umber), pale bone gone a little lilac (the swamp's), antlers of old ivory, the
@@ -69,24 +69,24 @@ const bump = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 
 // and in the dark its eye: pale, veined, its iris the enemy's pink burning to gold (FLAME), its pupil a black slit.
 // No red flesh, no blood (his word: "Not a gory zombie"). Nothing of it glows cyan.
 
-const HIDE: Ramp = ['#100a12', '#1e141c', '#33232a', '#4e3634', '#6a4c42'];
-const MANE: Ramp = ['#0b070d', '#150d15', '#251922', '#38272b', '#4c3733'];
-const BONE: Ramp = ['#3a3048', '#5c5070', '#8c80a0', '#c2b8cc', '#ebe3ee'];
-const ANTLER: Ramp = ['#2e2430', '#4e3e48', '#7c6a6c', '#ae9c94', '#d8cabc'];
-const ROOT: Ramp = ['#120a16', '#22142a', '#3a2642', '#58405c', '#78607a'];
-const MOSS: Ramp = ['#141e14', '#22341e', '#36502a', '#52703a', '#748c4c'];
+export const HIDE: Ramp = ['#100a12', '#1e141c', '#33232a', '#4e3634', '#6a4c42'];
+export const MANE: Ramp = ['#0b070d', '#150d15', '#251922', '#38272b', '#4c3733'];
+export const BONE: Ramp = ['#3a3048', '#5c5070', '#8c80a0', '#c2b8cc', '#ebe3ee'];
+export const ANTLER: Ramp = ['#2e2430', '#4e3e48', '#7c6a6c', '#ae9c94', '#d8cabc'];
+export const ROOT: Ramp = ['#120a16', '#22142a', '#3a2642', '#58405c', '#78607a'];
+export const MOSS: Ramp = ['#141e14', '#22341e', '#36502a', '#52703a', '#748c4c'];
 /** Its knees and hocks: the bone showing dark through the worn hide. */
 const KNOB: Ramp = ['#1e141c', '#33232a', '#4e4050', '#76688a', '#9a8eae'];
 /** The earth heaved up round it as it is dragged under: the Pinewood's earth, torn. */
-const EARTH: Ramp = ['#1e140e', '#30221a', '#463426', '#604834', '#7a5e44'];
+export const EARTH: Ramp = ['#1e140e', '#30221a', '#463426', '#604834', '#7a5e44'];
 const HOOF: Ramp = ['#0a070c', '#140e14', '#241a22', '#362832', '#4a3844'];
-const HOLLOW: Ramp = ['#050308', '#09060d', '#0f0a15', '#17101f', '#21172b'];
+export const HOLLOW: Ramp = ['#050308', '#09060d', '#0f0a15', '#17101f', '#21172b'];
 const EYEBALL: Ramp = ['#5a4a5c', '#8a7a86', '#bcaeae', '#e2d6cc', '#f6eee4'];
 const VEIN = '#7c4466';
 /** Its breath, a puff of the fog the wood's hollows are full of. */
-const FOG = ['#cfc6da', '#aea4be', '#8e849e'];
+export const FOG = ['#cfc6da', '#aea4be', '#8e849e'];
 /** Clods of the meadow's earth and grass, kicked up as it stamps. */
-const CLOD = ['#4c3c30', '#5e4a3a', '#3e4c2c', '#56663a'];
+export const CLOD = ['#4c3c30', '#5e4a3a', '#3e4c2c', '#56663a'];
 
 // ---------------------------------------------------------------------------------------------
 // ITS BODY, in picture units (the knight stands 58 high). x forward, y to its left, z up; its own frame has its floor
@@ -94,7 +94,7 @@ const CLOD = ['#4c3c30', '#5e4a3a', '#3e4c2c', '#56663a'];
 // tips about 130 up.
 
 /** The middle of its barrel: what its body turns about. */
-const PIVOT: V3 = [0, 0, 50];
+export const PIVOT: V3 = [0, 0, 50];
 /** Its hoofs at rest, on the floor: its right fore, its left fore, its right hind, its left hind. */
 export const STAG_FEET: V3[] = [
   [19, -7, 0],
@@ -142,13 +142,13 @@ export const STAG_HABITS = { toss: [0.24, 0.92], paw: [0.92, 1.54], stamps: [1.2
 /** The canvas it is painted on, and its floor point on it (room for its antlers' tips as it rears, from behind; for the splinters of its charge before it). */
 export const STAG_CANVAS = { w: 420, h: 400, ax: 190, ay: 312 };
 /** Its pool of light while it lives (the enemy's pink, faint). */
-const STAG_AURA = { x: STAG_CANVAS.ax, y: STAG_CANVAS.ay - 40, r: 70, color: '#ff3a78', a: 0.07 };
+export const STAG_AURA = { x: STAG_CANVAS.ax, y: STAG_CANVAS.ay - 40, r: 70, color: '#ff3a78', a: 0.07 };
 
 // ---------------------------------------------------------------------------------------------
 // ITS POSES
 
 /** One moment of it. */
-interface StagPose {
+export interface StagPose {
   /** Its body moved from where it stands (forward, to its left, up) and turned about its barrel's middle (degrees: to its left, nose down, rolled to its right). */
   x: number;
   y: number;
@@ -236,14 +236,14 @@ function pawFoot(t: number): { foot: V3; fold: number } {
 }
 
 /** A blow to the floor as a hoof comes down: from nothing just before, at its fullest a moment after, gone two tenths after. */
-const thud = (t: number, at: number): number => bump(t, at - 0.03, at + 0.2);
+export const thud = (t: number, at: number): number => bump(t, at - 0.03, at + 0.2);
 
 /**
  * Its stand, restless (his pick): its weight shifting from side to side; it breathes, its ribs heaving; it tosses its
  * head, its antlers rattling; it lifts its right forefoot and strikes it down, twice, the clods flying, its body
  * jolted; it lowers its head and snorts a breath of fog; its tail flicks; its eye glances off and back, and blinks.
  */
-function standBase(t0: number): StagPose {
+export function standBase(t0: number): StagPose {
   const T = STAG_STAND.period;
   const t = fr(t0 / T) * T;
   const a = (Math.PI * 2 * t) / T;
@@ -281,7 +281,7 @@ function standBase(t0: number): StagPose {
 }
 
 /** Clods of the meadow kicked up where a hoof strikes, at `t0`, falling, gone `life` after. */
-function clods(c: V3, t0: number, t: number, n: number, seed: number, life = 0.4): [V3, string, number][] {
+export function clods(c: V3, t0: number, t: number, n: number, seed: number, life = 0.4): [V3, string, number][] {
   const s = t - t0;
   if (s < 0 || s >= life) return [];
   const out: [V3, string, number][] = [];
@@ -297,7 +297,7 @@ function clods(c: V3, t0: number, t: number, n: number, seed: number, life = 0.4
 }
 
 /** Its breath: two jets of fog from its nostrils at `t0`, blown forward and down, spreading and thinning, gone `life` after. */
-function fog(nose: [V3, V3], ahead: V3, t0: number, t: number, seed: number, life = 0.5): [V3, string, number][] {
+export function fog(nose: [V3, V3], ahead: V3, t0: number, t: number, seed: number, life = 0.5): [V3, string, number][] {
   const s = t - t0;
   if (s < 0 || s >= life) return [];
   const k = s / life;
@@ -339,14 +339,14 @@ export const STAG_REEL = { long: 0.6, freeze: 0.06, fps: 30 } as const;
 /** Its death (his pick, roots drag it down into the ground): held as the blow lands (`freeze`); roots burst up round its legs (`roots`); dragged down from `sink`, its legs folding, thrashing; its eye shuts and goes out by `out`; under by `under`, only its antlers standing up out of the heaved earth; still from `still`. */
 export const STAG_DIE = { long: 3.2, freeze: 0.12, roots: 0.2, sink: 0.55, out: 2.3, under: 2.6, still: 2.75, fps: 30 } as const;
 
-const STAND0 = standBase(0);
+export const STAND0 = standBase(0);
 /** Ease out with a little overshoot that settles (a follow-through). */
-const backOut = (v: number): number => {
+export const backOut = (v: number): number => {
   const c = cl01(v) - 1;
   return 1 + 2.5 * c * c * c + 1.5 * c * c;
 };
 /** A key of its body and head, to blend between. */
-interface Key {
+export interface Key {
   x: number;
   y: number;
   z: number;
@@ -363,19 +363,19 @@ interface Key {
   breath: number;
 }
 const keyOf = (P: StagPose): Key => ({ x: P.x, y: P.y, z: P.z, yaw: P.yaw, pitch: P.pitch, roll: P.roll, neck: P.neck, hy: P.head[0], hp: P.head[1], hr: P.head[2], ears: P.ears, glow: P.glow, jaw: P.jaw, breath: P.breath });
-const K0 = keyOf(STAND0);
-const keyed = (k: Partial<Key>): Key => ({ ...K0, ...k });
-function mixKey(a: Key, b: Key, k: number): Key {
+export const K0 = keyOf(STAND0);
+export const keyed = (k: Partial<Key>): Key => ({ ...K0, ...k });
+export function mixKey(a: Key, b: Key, k: number): Key {
   const o = { ...a };
   for (const f of Object.keys(a) as (keyof Key)[]) o[f] = a[f] + (b[f] - a[f]) * k;
   return o;
 }
 /** A moment of it from a key: its feet where they stand (or as given). */
-function fromKey(K: Key, feet: V3[] = STAG_FEET, fold: number[] = [0, 0, 0, 0]): StagPose {
+export function fromKey(K: Key, feet: V3[] = STAG_FEET, fold: number[] = [0, 0, 0, 0]): StagPose {
   return { ...STAND0, x: K.x, y: K.y, z: K.z, yaw: K.yaw, pitch: K.pitch, roll: K.roll, neck: K.neck, head: [K.hy, K.hp, K.hr], ears: K.ears, glow: K.glow, jaw: K.jaw, breath: K.breath, feet: feet.map((f) => f), fold: fold.slice(), look: [0, 0], lid: 0, tail: [0, 0], chips: [], flares: [] };
 }
 /** Along a run of keys at their times, each stretch eased its own way. */
-function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
+export function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
   if (t <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) {
     const [t1, k1, ease] = keys[i];
@@ -384,24 +384,24 @@ function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
   }
   return keys[keys.length - 1][1];
 }
-const lin = (v: number): number => cl01(v);
+export const lin = (v: number): number => cl01(v);
 /** Slow to start, a little past its mark, and settled, slow to stop (a wind-up's weight, a follow-through). */
-const swell = (v: number): number => {
+export const swell = (v: number): number => {
   const c = cl01(v);
   return sm(c) + 0.3 * Math.pow(Math.sin(Math.PI * c), 2) * c;
 };
-const easeIn = (v: number): number => Math.pow(cl01(v), 2);
-const easeOut = (v: number): number => 1 - Math.pow(1 - cl01(v), 2);
+export const easeIn = (v: number): number => Math.pow(cl01(v), 2);
+export const easeOut = (v: number): number => 1 - Math.pow(1 - cl01(v), 2);
 /** A shiver: its body and head trembling as it holds a pose. */
-const shiver = (t: number, k: number, a = 1): Partial<Key> => ({ hy: a * 1.4 * Math.sin(t * 190) * k, hp: a * 1.1 * Math.sin(t * 150 + 1) * k, z: a * 0.35 * Math.sin(t * 170 + 2) * k });
-const plus = (K: Key, d: Partial<Key>): Key => {
+export const shiver = (t: number, k: number, a = 1): Partial<Key> => ({ hy: a * 1.4 * Math.sin(t * 190) * k, hp: a * 1.1 * Math.sin(t * 150 + 1) * k, z: a * 0.35 * Math.sin(t * 170 + 2) * k });
+export const plus = (K: Key, d: Partial<Key>): Key => {
   const o = { ...K };
   for (const f of Object.keys(d) as (keyof Key)[]) o[f] += d[f] ?? 0;
   return o;
 };
 
 /** A hoof's steps by a list of them (each lifted at `a`, set down at `b` on a spot `to` along the floor from where it stood), the floor going by under its body by `ground`: where the hoof is on its body's own floor, and its fold. */
-function stepping(i: number, t: number, steps: { a: number; b: number; to: number; up: number; fold: number }[], ground: number): { foot: V3; fold: number } {
+export function stepping(i: number, t: number, steps: { a: number; b: number; to: number; up: number; fold: number }[], ground: number): { foot: V3; fold: number } {
   const r = STAG_FEET[i];
   let at = 0;
   for (const s of steps) {
@@ -416,7 +416,7 @@ function stepping(i: number, t: number, steps: { a: number; b: number; to: numbe
   return { foot: [r[0] + at - ground, r[1], 0], fold: 0 };
 }
 /** A forefoot struck down on its own spot, as in its stand's pawing, lifted at `a`, high at `b`, down at `c`. */
-function pawAt(t: number, a: number, b: number, c: number, up: number, fold: number): { foot: V3; fold: number } | null {
+export function pawAt(t: number, a: number, b: number, c: number, up: number, fold: number): { foot: V3; fold: number } | null {
   const F = STAG_FEET[0];
   if (t < a || t >= c) return null;
   if (t < b) {
@@ -429,7 +429,7 @@ function pawAt(t: number, a: number, b: number, c: number, up: number, fold: num
 
 // --- ITS WALK: STOTTING ---
 /** Its stotting: where it is in its round (which bound, landed or in the air, how far through), its hoofs and body as they go. */
-function stotPose(t: number): StagPose {
+export function stotPose(t: number): StagPose {
   const P0 = STAG_WALK.period;
   const tt = fr(t / P0) * P0;
   const [l1, l2] = STAG_BOUNDS.land;
@@ -592,9 +592,9 @@ function chargePose(t: number): StagPose {
 
 // --- ITS ROOTS ---
 /** Where its hind hips are: it rears up about them. */
-const HIPS: V3 = [-27, 0, 52];
+export const HIPS: V3 = [-27, 0, 52];
 /** Reared up on its hind legs `deg` degrees: its pose's turn and the lift that keeps its hips where they are. */
-function reared(K: Key, deg: number): Key {
+export function reared(K: Key, deg: number): Key {
   const rel = sub(HIPS, PIVOT);
   const r = turn(rel, K.yaw, K.pitch - deg, K.roll);
   const r0 = turn(rel, K.yaw, K.pitch, K.roll);
@@ -726,7 +726,7 @@ function deathPose(t: number): StagPose {
   return P;
 }
 
-function basePose(which: string, t: number): StagPose {
+export function basePose(which: string, t: number): StagPose {
   if (which === 'stand') return standBase(t);
   if (which === 'walk') return stotPose(t);
   if (which === 'attack') return gorePose(t);
@@ -742,12 +742,12 @@ export function stagLong(which: string): number {
 }
 
 /** Where the tip of one of its antlers' beams is (its left, 1, or its right, -1). */
-function antlerTip(P: StagPose, s: number): V3 {
+export function antlerTip(P: StagPose, s: number): V3 {
   return headFrame(P).q([1.5 + 5, s * (2.6 + 40), 5.4 + 61]);
 }
 
 /** A burst of what flies from `c` at `t0`, thrown out (`ahead` biases it, and `up`), falling, gone `life` after. */
-function burst(c: V3, t0: number, t: number, n: number, seed: number, cols: string[], o: { speed?: number; up?: number; ahead?: V3; life?: number; size?: number; spread?: number } = {}): [V3, string, number][] {
+export function burst(c: V3, t0: number, t: number, n: number, seed: number, cols: string[], o: { speed?: number; up?: number; ahead?: V3; life?: number; size?: number; spread?: number } = {}): [V3, string, number][] {
   const life = o.life ?? 0.5;
   const s = t - t0;
   if (s < 0 || s >= life) return [];
@@ -765,12 +765,12 @@ function burst(c: V3, t0: number, t: number, n: number, seed: number, cols: stri
   return out;
 }
 /** Splinters of a pine smashed by its antlers: fresh pale wood, bark, needles. */
-const SPLINTER = ['#e8d6aa', '#cbb07c', '#5a3a2a', '#f2e4c0', '#4c6a34', '#8a6a48'];
+export const SPLINTER = ['#e8d6aa', '#cbb07c', '#5a3a2a', '#f2e4c0', '#4c6a34', '#8a6a48'];
 /** What flies off it when struck: bone, moss, dark hide. */
-const FLAKES = [BONE[3], MOSS[3], HIDE[3], BONE[2], ROOT[3]];
+export const FLAKES = [BONE[3], MOSS[3], HIDE[3], BONE[2], ROOT[3]];
 
 /** Its sound's rings and its fog, rolled from its mouth and poured over the ground round it as it bellows. */
-function bellowFog(P: StagPose, t: number): [V3, string, number][] {
+export function bellowFog(P: StagPose, t: number): [V3, string, number][] {
   const B = STAG_BELLOW;
   const out: [V3, string, number][] = [];
   const H = headFrame(P);
@@ -809,7 +809,7 @@ function heldAt(which: string, t: number): number {
   const h = held[which];
   return h && t >= h[0] && t < h[0] + h[1] ? h[0] : t;
 }
-function poseOf(which: string, t: number, view: GameView = 'front'): StagPose {
+export function poseOf(which: string, t: number, view: GameView = 'front'): StagPose {
   const P = basePose(which, t);
   const before = basePose(which, heldAt(which, t) - 0.1);
   P.drag = sub(worldOf(P, [0, 0, 40]), worldOf(before, [0, 0, 40]));
@@ -940,7 +940,7 @@ function poseOf(which: string, t: number, view: GameView = 'front'): StagPose {
   return P;
 }
 /** A grain laid at `p` (to the list of what its pose throws off). */
-function out(P: StagPose, p: V3, col: string, size: number): void {
+export function out(P: StagPose, p: V3, col: string, size: number): void {
   P.chips.push([[p[0], p[1], Math.max(0.6, p[2])], col, size]);
 }
 
@@ -948,7 +948,7 @@ function out(P: StagPose, p: V3, col: string, size: number): void {
 // ITS PAINTER
 
 /** A turn: rolled about its length, then pitched (nose down), then turned to its left. */
-function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
+export function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
   const cy = Math.cos(yaw * D), sy = Math.sin(yaw * D);
   const cp = Math.cos(pitch * D), sp = Math.sin(pitch * D);
   const cr = Math.cos(roll * D), sr = Math.sin(roll * D);
@@ -957,16 +957,16 @@ function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
   return [r2[0] * cy - r2[1] * sy, r2[0] * sy + r2[1] * cy, r2[2]];
 }
 /** A point of its body, where it is: turned about its barrel's middle and moved with it. */
-function worldOf(P: StagPose, p: V3): V3 {
+export function worldOf(P: StagPose, p: V3): V3 {
   return add(add([P.x, P.y, P.z], PIVOT), turn(sub(p, PIVOT), P.yaw, P.pitch, P.roll));
 }
 /** A direction of its body, where it points. */
-function turned(P: StagPose, v: V3): V3 {
+export function turned(P: StagPose, v: V3): V3 {
   return turn(v, P.yaw, P.pitch, P.roll);
 }
 
 /** Its head's frame: where its skull sits on its neck, and its skull's forward, left and up (the skull pitched nose-down at rest); `p` a point of its head (forward, left, up), `q` a point of its crown (the same, but as if its skull were level: its antlers). */
-interface HeadFrame {
+export interface HeadFrame {
   at: V3;
   f: V3;
   l: V3;
@@ -974,7 +974,7 @@ interface HeadFrame {
   p: (v: V3) => V3;
   q: (v: V3) => V3;
 }
-function headFrame(P: StagPose): HeadFrame {
+export function headFrame(P: StagPose): HeadFrame {
   const root = worldOf(P, NECK_ROOT);
   const along = turned(P, turn(norm(NECK_REST), 0, P.neck, 0));
   const at = add(root, mul(along, NECK_LONG));
@@ -988,7 +988,7 @@ function headFrame(P: StagPose): HeadFrame {
 }
 
 /** Two bones from `a` to a point `c`, `l1` and `l2` long, the joint between them bent toward `hint`. */
-function joint(a: V3, c: V3, l1: number, l2: number, hint: V3): V3 {
+export function joint(a: V3, c: V3, l1: number, l2: number, hint: V3): V3 {
   const d0 = sub(c, a);
   const d = Math.max(Math.abs(l1 - l2) + 0.01, Math.min(l1 + l2 - 0.01, len(d0)));
   const n = norm(d0);
@@ -998,7 +998,7 @@ function joint(a: V3, c: V3, l1: number, l2: number, hint: V3): V3 {
   return add(add(a, mul(n, along)), mul(side, h));
 }
 /** A rigid lower leg's point, its hoof at `foot`, folded `fold` degrees (the hoof swung back under the knee). */
-const lowerOf = (foot: V3, v: V3, fold: number): V3 => add(foot, turn(v, 0, fold, 0));
+export const lowerOf = (foot: V3, v: V3, fold: number): V3 => add(foot, turn(v, 0, fold, 0));
 
 /** A smooth value noise over a ball's skin (`u` on it), for patches of moss and wear. */
 function patch(u: V3, k: number, seed: number): number {
@@ -1041,10 +1041,10 @@ function strand(put: Put, part: string, piece: string, a: V3, long: number, r0: 
 }
 
 /** Which of its sides faces whoever looks: its right (-1) from in front, its left (1) from behind. */
-const sideSeen = (view: GameView): number => (view === 'front' ? -1 : 1);
+export const sideSeen = (view: GameView): number => (view === 'front' ? -1 : 1);
 const VIEWS = new Map<GameView, { eye: V3; at: (p: V3) => readonly [number, number] }>();
 /** The way to the eye of whoever looks, and where a point is on its canvas (worked out before a frame is begun: making a stage begins one). */
-function viewOf(view: GameView): { eye: V3; at: (p: V3) => readonly [number, number] } {
+export function viewOf(view: GameView): { eye: V3; at: (p: V3) => readonly [number, number] } {
   let v = VIEWS.get(view);
   if (!v) {
     const st = stage(view, STAG_CANVAS.ax, STAG_CANVAS.ay, { w: 2, h: 2 });
@@ -1052,12 +1052,12 @@ function viewOf(view: GameView): { eye: V3; at: (p: V3) => readonly [number, num
   }
   return v;
 }
-const eyeOf = (view: GameView): V3 => viewOf(view).eye;
+export const eyeOf = (view: GameView): V3 => viewOf(view).eye;
 /** A ball's outline on the canvas is a circle this many times its radius (the game's camera is a true one, scaled). */
 const SEEN_R = 2 / Math.sqrt(3);
 
 /** THE STAG AS SOLIDS: its body (shoulders, haunch, its hollow and its ribs, its spine), its eye in its nest of roots, its neck and mane, its head and antlers, its four legs, its tail, its hanging tatters and roots. */
-function stagBits(P: StagPose, put: Put, view: GameView): void {
+export function stagBits(P: StagPose, put: Put, view: GameView): void {
   const W = (p: V3): V3 => worldOf(P, p);
   const axes = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, a), turned(P, b), turned(P, c)];
   const seen = sideSeen(view);
@@ -1417,7 +1417,7 @@ function swallow(sh: Sheet, st: Stage): void {
   }
 }
 /** A grain laid on a finished picture (after its pink edge, so that it stays its own colour), on whole game pixels. */
-function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
+export function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
   const [x, y] = st.at(p);
   const xi = Math.round(x - size / 2);
   const yi = Math.round(y - size / 2);

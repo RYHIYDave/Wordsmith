@@ -28,7 +28,7 @@ import nodeFs from 'node:fs';
 
 import {
   AMALGAM_ACTION, AM_ACT_STRIKES, ARMS_HIT, FINISHER_LATER, ARMS_STRIKE, DEVOUR_HITS, DEVOUR_STRIKES, RAIN_HIT, RAIN_STRIKE, RAKES, RAKE_FADE, RAKE_FREEZE, REAR, SWIPE_HITS, SWIPE_STRIKES,
-  amActionShape, amSmeared, amalgamActionMob, handAt, heightAt, makeAmalgamActionArt, rakeLeft,
+  amActionShape, amSmeared, amalgamActionMob, handAt, heightAt, makeAmalgamActionArt, rakeLeft, FAN, FAN_HIT, FAN_LONG, FAN_STRIKE, fanArmAt, fanLines, fanOut, fanStrikes,
 } from '../src/art/amalgam_action';
 import { BONE_MITE, MITE, MITE_BURST, MITE_SHAPE, makeBoneMiteArt, miteAt, miteSmeared } from '../src/art/amalgam_mites';
 import {
@@ -154,7 +154,7 @@ test('2. every frame of its four new moves paints, wears the pink edge, is crisp
 test('3. THE WHOLE BOSSES’ REVIEW: every frame of every move of it, both ways round, every handing over: nothing found', () => {
   const mob = amalgamActionMob();
   const shape = amActionShape(mob);
-  assert.equal(shape.blows?.attack?.length, 3, 'the swipe: three blows');
+  assert.equal(shape.blows?.attack?.length, 1, 'the grasping fan (2 Nov, in place of the swipe combo): one blow');
   assert.equal(shape.blows?.devour?.length, 2, 'the devour: the rake and the bite');
   for (const m of NEW) assert.ok(shape.handovers?.some((h) => h.from === 'stand' && h.to === m) && shape.handovers?.some((h) => h.from === m && h.to === 'stand'), `from its stand into ${m} and back`);
   assert.ok(shape.handovers?.some((h) => h.from === 'walk' && h.to === 'halt') && shape.handovers?.some((h) => h.from === 'setOff' && h.to === 'walk'), 'into its crawl and out');
@@ -192,10 +192,10 @@ test('4. Movement 9, and it looms: each blow held, struck in two frames, smeared
       }
     }
   }
-  assert.ok(SWIPE_HITS.every((h, i) => h === SWIPE_STRIKES[i][1]) && RAIN_HIT === RAIN_STRIKE[1] && ARMS_HIT === ARMS_STRIKE[1] && DEVOUR_HITS.every((h, i) => h === DEVOUR_STRIKES[i][1]), 'each blow lands on the last frame of its strike');
+  assert.ok(FAN_HIT === FAN_STRIKE[1] && RAIN_HIT === RAIN_STRIKE[1] && ARMS_HIT === ARMS_STRIKE[1] && DEVOUR_HITS.every((h, i) => h === DEVOUR_STRIKES[i][1]), 'each blow lands on the last frame of its strike');
   // IT LOOMS: at rest its heap is 47 of its lengths high; reared before each big move, near twice that (the game's own rear: 65)
   const rest = Math.max(...amGeometry(skeletonAt(AMALGAM, 'stand', 0), posedOfMob(AMALGAM, 'stand', 0)).frame.lumps.map((L) => L.c[2] + L.r[2]));
-  for (const [m, f] of [['attack', 84 + FINISHER_LATER], ['rain', 35], ['floorArms', 30]] as const) {
+  for (const [m, f] of [['rain', 35], ['floorArms', 30]] as const) {
     const h = heightAt(m, f / 30);
     assert.ok(h.heap > 1.9 * rest && h.heap > 90, `${m}: reared ${h.heap.toFixed(0)} high (at rest ${rest.toFixed(0)})`);
     assert.ok(h.claws > 70, `${m}: its claws raised ${h.claws.toFixed(0)} high`);
@@ -204,35 +204,23 @@ test('4. Movement 9, and it looms: each blow held, struck in two frames, smeared
   assert.ok(REAR.lift === 14 && REAR.tilt === 22, 'its rear, as the README says');
   // ITS AREAS: the rakes' claws out near two tiles from its middle, across its front; the finisher's ring; more and bigger arms;
   // the devour's cone further and its drag faster (the game's: swipe 2.45, five arms 0.62 round to 2.8 tiles, cone 3.6 at 3.1 a second)
-  // THE RAKES (the second round): hauled up high and held; struck in two frames, their hands swept out past two tiles across a wide
-  // arc of its front, the whole heap lunging; the slash of their claws out to 3.3 and 3.5 tiles (its old swipe 2.45); frozen on the
-  // hit; carried on round after
-  RAKES.forEach((rk, i) => {
-    const [s0, s1] = rk.strike;
-    let out = 0;
-    let a0 = 999;
-    let a1 = -999;
-    for (let t = s0; t <= s1 + 1e-9; t += 1 / 240) {
-      const h = handAt('attack', rk.hand, t);
-      out = Math.max(out, Math.hypot(h[0], h[1]));
-      const a = (Math.atan2(h[1], h[0]) * 180) / Math.PI;
-      a0 = Math.min(a0, a);
-      a1 = Math.max(a1, a);
-    }
-    assert.ok(out > 2.1, `rake ${i}: its hand swept ${out.toFixed(2)} tiles out`);
-    assert.ok(a1 - a0 > 95, `rake ${i}: across ${(a1 - a0).toFixed(0)} degrees of its front`);
-    assert.ok(rk.out >= 3.2 && rk.out <= 3.5 && rk.out > RULES.swipe.reach + 0.8, `rake ${i}: its slash out to ${rk.out} tiles`);
-    assert.ok(handAt('attack', rk.hand, s0 - 0.15)[2] > 60, `rake ${i}: hauled up high before it`);
-    const h = handAt('attack', rk.hand, s1);
-    const g = handAt('attack', rk.hand, s1 + RAKE_FREEZE);
-    assert.ok(Math.hypot(g[0] - h[0], g[1] - h[1], g[2] - h[2]) < 1e-6, `rake ${i}: frozen on the hit`);
-    assert.ok(posedOfMob(mob, 'attack', s1).px > 20, `rake ${i}: the heap lunged into it`);
-    // (its slash, as painted: out to its reach, crisp, no cyan, nothing cut off; whole through the freeze, thinning, gone)
-    const ropes = moveOf('attack').ropes!(s1);
-    assert.ok(Math.abs((ropes[`rake${i}k`]?.[0]?.[1] ?? 0) - rk.out * TILE3) < 1e-6, `rake ${i}: its slash's reach`);
-    assert.ok(rakeLeft(i, s0) < 0 && rakeLeft(i, s1) === 1 && rakeLeft(i, s1 + RAKE_FREEZE) === 1 && rakeLeft(i, s1 + RAKE_FREEZE + RAKE_FADE + 1e-3) < 0, `rake ${i}: its slash's time`);
-  });
-  assert.ok(SLAM_RING.ahead + SLAM_RING.finisher > RULES.swipe.reach + 1.5, 'the finisher reaches far past the old swipe');
+  // THE GRASPING FAN (2 Nov, in place of the swipe combo): a dozen arms, a fan of 120 degrees, out about five tiles in two frames from
+  // bunched against its heap; held before it; snatched shut; hauled back in; each arm's line struck as they land (its old swipe 2.45)
+  assert.ok(FAN.n === 12 && FAN.to - FAN.from === 120, 'a dozen arms, 120 degrees');
+  const ways = fanLines();
+  assert.ok(Math.min(...ways.map((w) => w.reach)) >= 4.3 && Math.max(...ways.map((w) => w.reach)) <= 5.3 && FAN.reach > RULES.swipe.reach + 2, 'out about five tiles');
+  const [f0, f1] = FAN_STRIKE;
+  assert.ok(Math.round((f1 - f0) * 30) === 2 && f0 - 0.4 >= 0.55, 'held, then out in two frames');
+  for (let i = 0; i < FAN.n; i++) {
+    const a = fanArmAt(i, f0, 0);
+    const b = fanArmAt(i, FAN_HIT, 0);
+    assert.ok(Math.hypot(a.wrist[0], a.wrist[1]) < 2.0 * TILE3 && Math.hypot(b.wrist[0], b.wrist[1]) > 3.8 * TILE3 && b.wrist[2] < 6, `arm ${i}: bunched, then out along the floor`);
+  }
+  assert.ok(fanOut(f0 - 0.1).grab > 0.9 && fanOut(FAN.snatch).grab === 0 && fanOut(FAN.back).out < 0.1 && FAN_LONG - FAN_HIT >= 1.2, 'open, snatched shut, hauled back in; a big wind-down');
+  const w = ways[5];
+  const th = (w.deg * Math.PI) / 180;
+  assert.ok(fanStrikes(3 * Math.cos(th), 3 * Math.sin(th)) && !fanStrikes(0.5, 0) && !fanStrikes(-2, 0), 'what it strikes: an arm’s line, not under it nor behind');
+  void [RAKES, RAKE_FADE, RAKE_FREEZE, rakeLeft, SWIPE_HITS, SWIPE_STRIKES, FINISHER_LATER];
   assert.ok(ARMS.n > RULES.arms.n && ARMS.r > RULES.arms.r && ARMS.far > RULES.arms.far && ARMS.warn >= RULES.arms.warn, 'more arms, bigger, further, warned as long or longer');
   const [r1, l1] = [handAt('devour', 'R1', DEVOUR_HITS[0]), handAt('devour', 'L1', DEVOUR_HITS[0])];
   assert.ok(r1[0] > 1.9 && l1[0] > 1.9 && r1[2] > 0.6 && l1[2] > 0.6, 'the rake: its claws in the floor two tiles out (not gripping: raked)');

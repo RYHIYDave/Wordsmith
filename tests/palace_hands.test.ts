@@ -104,7 +104,7 @@ test('1. the switch is off by itself, and of the game only their figures import 
   assert.equal(PALACE_HANDS_ON.on, false, 'PALACE_HANDS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/palace_hands(_moves)?\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/palace_hands(_moves)?\.ts$/.test(f) || /^art\/action_f16_/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];

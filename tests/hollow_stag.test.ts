@@ -127,7 +127,8 @@ test('it is in the game through art/act1_figs/stag.ts (and its roots through ren
   const users: string[] = [];
   for (const f0 of fs.readdirSync('src', { recursive: true })) {
     const f = f0.split('\\').join('/');
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('hollow_stag.ts')) continue;
+    // (the Stag done the action way, art/stag_action*.ts: a mock-up nothing of the game imports, tests/stag_action.test.ts 1)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('hollow_stag.ts') || /art\/stag_action/.test(f)) continue;
     if (/from ['"][^'"]*\/hollow_stag['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
   assert.equal(users.sort().join(', '), 'art/act1_figs/stag.ts, render/act1_fx/stag.ts', 'only its figure and what its roots draw import it');

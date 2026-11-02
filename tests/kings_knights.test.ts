@@ -134,7 +134,7 @@ test('1. the switch is off, and only the knights\' own files of the game import 
   const users: string[] = [];
   const theirs = /^art\/kings_knights(_moves|_fx)?$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || theirs.test(f.replace(/\.ts$/, ''))) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || theirs.test(f.replace(/\.ts$/, '')) || /^art\/action_f16_/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];

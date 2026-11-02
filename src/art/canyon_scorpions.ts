@@ -49,7 +49,7 @@ const norm = (a: V3, or: V3 = [0, 0, 1]): V3 => {
   return l > 1e-9 ? mul(a, 1 / l) : or;
 };
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const lerpV = (a: V3, b: V3, s: number): V3 => [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s];
+export const lerpV = (a: V3, b: V3, s: number): V3 => [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s];
 
 // ---------------------------------------------------------------------------------------------
 // ITS COLOURS: its shell banded as the canyon's rock is, but bold and dark against the canyon's pale sand (Colour
@@ -58,18 +58,18 @@ const lerpV = (a: V3, b: V3, s: number): V3 => [a[0] + (b[0] - a[0]) * s, a[1] +
 // orange; its pincers' fingers and its barb black at their tips; its eyes and its sting the enemy's pink burning to
 // gold (FLAME). Nothing of it glows cyan.
 
-const SHELL: Ramp = ['#0e0610', '#1e0c16', '#3c1820', '#682a26', '#9a4230'];
-const BAND: Ramp = ['#4a160e', '#7a2410', '#c04818', '#f07a2a', '#ffb060'];
+export const SHELL: Ramp = ['#0e0610', '#1e0c16', '#3c1820', '#682a26', '#9a4230'];
+export const BAND: Ramp = ['#4a160e', '#7a2410', '#c04818', '#f07a2a', '#ffb060'];
 const LEG: Ramp = ['#0c060a', '#1a0c10', '#36161a', '#5a2620', '#7c3626'];
 const TIP: Ramp = ['#060305', '#060305', '#1a0c10', '#34181a', '#4e2622'];
-const HOTSTING: Ramp = ['#7a1058', '#7a1058', '#c0206a', '#ff4f8a', '#ff7aa8'];
+export const HOTSTING: Ramp = ['#7a1058', '#7a1058', '#c0206a', '#ff4f8a', '#ff7aa8'];
 
 // ---------------------------------------------------------------------------------------------
 // ITS BODY, in picture units (the knight stands 58 high; his knee is about 17 up). x forward, y left, z up; its own
 // frame has its middle at the origin.
 
 /** Its middle's height over the floor, at rest: its back about 12 up, knee-high to the knight. */
-const BODY_Z = 7.5;
+export const BODY_Z = 7.5;
 /** Its legs, four pairs: where each comes out of its body (its own frame), front pair first. */
 const HIP: V3[] = [
   [6, 6, -1], [6, -6, -1],
@@ -89,9 +89,9 @@ const TAIL_ROOT: V3 = [-19, 0, 1];
 const SEG = [7.4, 7.2, 7.0, 6.8, 6.6];
 const SEG_R = [3.5, 3.2, 3.0, 2.8, 2.6];
 /** Its tail at rest: the way each segment points, degrees up from forward in the tail's plane: up off its back and curled over it, the sting pointing down and forward over its head. */
-const TAIL_REST = [118, 86, 54, 22, -10];
+export const TAIL_REST = [118, 86, 54, 22, -10];
 /** Its pincers at rest: each hand's place (its own frame), held out before it, open a little. */
-const HAND: V3 = [25, 12, 1.5];
+export const HAND: V3 = [25, 12, 1.5];
 
 // ---------------------------------------------------------------------------------------------
 // ITS TIMES (seconds)
@@ -114,13 +114,13 @@ export const SC_DIE = { long: 1.1, freeze: 0.1, flipped: 0.5, out: 0.6, still: 0
 /** The canvas it is painted on, and its floor point on it (room for its venom's splash, two tiles on, and its throw as it dies). */
 export const SC_CANVAS = { w: 280, h: 200, ax: 140, ay: 130 };
 /** Its pool of light while it lives (the enemy's pink, faint). */
-const SC_AURA = { x: SC_CANVAS.ax, y: SC_CANVAS.ay - 8, r: 30, color: '#ff3a78', a: 0.08 };
+export const SC_AURA = { x: SC_CANVAS.ax, y: SC_CANVAS.ay - 8, r: 30, color: '#ff3a78', a: 0.08 };
 
 // ---------------------------------------------------------------------------------------------
 // ITS POSES
 
 /** One moment of it. */
-interface ScPose {
+export interface ScPose {
   /** Its middle, forward and to its left and up, from its floor point; and how it is turned (degrees: to its left, nose down, rolled to its right). */
   x: number;
   y: number;
@@ -148,7 +148,7 @@ interface ScPose {
 }
 
 /** Its stand: dead still, its feet where they are; it breathes; its tail sways slowly high over its back, curling and uncurling a little; its pincers open and shut by turns; its sting pulses. */
-function standPose(t: number): ScPose {
+export function standPose(t: number): ScPose {
   const a = (Math.PI * 2 * t) / SC_STAND.period;
   return {
     x: 0,
@@ -171,20 +171,20 @@ function standPose(t: number): ScPose {
   };
 }
 
-const sm = (v: number): number => {
+export const sm = (v: number): number => {
   const c = cl01(v);
   return c * c * (3 - 2 * c);
 };
 /** Ease out with a little overshoot that settles (a follow-through). */
-const backOut = (v: number): number => {
+export const backOut = (v: number): number => {
   const c = cl01(v) - 1;
   return 1 + 2.5 * c * c * c + 1.5 * c * c;
 };
-const mixN = (a: number[], b: number[], k: number): number[] => a.map((v, i) => v + (b[i] - v) * k);
-const STAND0 = standPose(0);
+export const mixN = (a: number[], b: number[], k: number): number[] => a.map((v, i) => v + (b[i] - v) * k);
+export const STAND0 = standPose(0);
 
 /** Its flakes of shell: thrown out from `origin` at `t0`, falling, gone `life` seconds after. */
-function flakes(origin: V3, t0: number, t: number, n: number, seed: number, speed: number, up: number, life = 0.5): [V3, string, number][] {
+export function flakes(origin: V3, t0: number, t: number, n: number, seed: number, speed: number, up: number, life = 0.5): [V3, string, number][] {
   const s = t - t0;
   if (s < 0 || s >= life - 1e-9) return [];
   const out: [V3, string, number][] = [];
@@ -198,7 +198,7 @@ function flakes(origin: V3, t0: number, t: number, n: number, seed: number, spee
   return out;
 }
 /** Dust kicked off the canyon's sand from `c`, thrown out and settling. */
-function dust(c: V3, t0: number, t: number, n: number, seed: number, reach: number, life = 0.4): [V3, string, number][] {
+export function dust(c: V3, t0: number, t: number, n: number, seed: number, reach: number, life = 0.4): [V3, string, number][] {
   const k = (t - t0) / life;
   if (k < 0 || k >= 1) return [];
   const out: [V3, string, number][] = [];
@@ -251,7 +251,7 @@ const SNAP_AT = 0.24;
  * trembling); then it lunges and both pincers snap shut through whoever is before it (`hit`), and squeeze on a moment;
  * then it settles back onto its stand. Its feet do not move: its legs stretch with the lunge.
  */
-function snapPose(t: number): ScPose {
+export function snapPose(t: number): ScPose {
   const P: ScPose = { ...STAND0, feet: STAND0.feet, hands: [STAND0.hands[0], STAND0.hands[1]], pinch: [STAND0.pinch[0], STAND0.pinch[1]], chips: [], flares: [] };
   const WIDE: V3 = [13, 22, 9];
   const SHUT: V3 = [34, 5, 2];
@@ -325,7 +325,7 @@ function snapPose(t: number): ScPose {
 }
 
 /** The tail drawn back high (cocked), and whipped over its head in the stab, each segment's way. */
-const TAIL_COCKED = [140, 122, 98, 66, 26];
+export const TAIL_COCKED = [140, 122, 98, 66, 26];
 const TAIL_STAB = [90, 66, 36, 4, -36];
 /** The tail's plane at the stab, turned off to its right a little, so that the tail comes over its shoulder and not over its back. */
 const STAB_YAW = -34;
@@ -336,7 +336,7 @@ const STAB_YAW = -34;
  * the floor two tiles before where it stood (`reach`), a splash of the cult's pink; then it draws the tail back and
  * settles. Its feet do not move.
  */
-function stingPose(t: number): ScPose {
+export function stingPose(t: number): ScPose {
   const S = SC_STING;
   const tt = t >= S.hit && t < S.hit + S.freeze ? S.hit : t;
   const P: ScPose = { ...STAND0, feet: STAND0.feet, chips: [], flares: [] };
@@ -435,7 +435,7 @@ function stingPose(t: number): ScPose {
   return P;
 }
 /** Where its sting's barb ends, in the floor's own grid. */
-function stingTip(P: ScPose): V3 {
+export function stingTip(P: ScPose): V3 {
   const { pts, dir } = tailJoints(P);
   const end = pts[pts.length - 1];
   const bulbC = add(end, mul(dir, 3.4));
@@ -536,7 +536,7 @@ function basePose(which: string, t: number): ScPose {
   if (which === 'reel') return reelPose(t);
   return deathPose(t);
 }
-function poseOf(which: string, t: number): ScPose {
+export function poseOf(which: string, t: number): ScPose {
   return basePose(which, t);
 }
 
@@ -544,7 +544,7 @@ function poseOf(which: string, t: number): ScPose {
 // ITS PAINTER
 
 /** A point of its own frame, where it is: turned and moved with its body. */
-function worldOf(P: ScPose, p: V3): V3 {
+export function worldOf(P: ScPose, p: V3): V3 {
   const cy = Math.cos(P.yaw * D), sy = Math.sin(P.yaw * D);
   const cp = Math.cos(P.pitch * D), sp = Math.sin(P.pitch * D);
   const cr = Math.cos(P.roll * D), sr = Math.sin(P.roll * D);
@@ -586,7 +586,7 @@ export function tailJoints(P: Pick<ScPose, 'tail' | 'tailYaw'>): { pts: V3[]; di
 }
 
 /** THE SCORPION AS SOLIDS: its body, its tail and sting, its pincers, its eight legs, its eyes. */
-function scorpionBits(P: ScPose, put: Put): void {
+export function scorpionBits(P: ScPose, put: Put): void {
   const W = (p: V3): V3 => worldOf(P, p);
   const axes = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, a), turned(P, b), turned(P, c)];
   // its body: the head-plate before, the long banded back behind it
@@ -676,7 +676,7 @@ export function scorpionPainted(which: string, t: number, view: GameView = 'fron
   return { px, lights };
 }
 /** A grain laid on a finished picture (after its pink edge, so that it stays its own colour), on whole game pixels. */
-function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
+export function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
   const [x, y] = st.at(p);
   const xi = Math.round(x - size / 2);
   const yi = Math.round(y - size / 2);

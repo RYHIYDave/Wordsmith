@@ -62,12 +62,12 @@ const bump = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 
 // violet roots (as the Stag's); moss; its antlers dead wood bleached pale, their thorns' points black; its eyes the enemy's pink
 // burning to gold (FLAME). Nothing of it glows cyan; nothing soft.
 
-const HIDE: Ramp = ['#1e181e', '#3a3036', '#5e5254', '#867872', '#a89a8e'];
-const BARK: Ramp = ['#120c0c', '#241816', '#3a2820', '#58402c', '#74583a'];
-const THORN: Ramp = ['#3a2e30', '#5e4e4a', '#8e7c70', '#bcae9c', '#e0d4c0'];
-const POINT: Ramp = ['#120c0c', '#1e1414', '#2e201c', '#46302a', '#5e4436'];
-const ROOT: Ramp = ['#120a16', '#22142a', '#3a2642', '#58405c', '#78607a'];
-const MOSS: Ramp = ['#141e14', '#22341e', '#36502a', '#52703a', '#748c4c'];
+export const HIDE: Ramp = ['#1e181e', '#3a3036', '#5e5254', '#867872', '#a89a8e'];
+export const BARK: Ramp = ['#120c0c', '#241816', '#3a2820', '#58402c', '#74583a'];
+export const THORN: Ramp = ['#3a2e30', '#5e4e4a', '#8e7c70', '#bcae9c', '#e0d4c0'];
+export const POINT: Ramp = ['#120c0c', '#1e1414', '#2e201c', '#46302a', '#5e4436'];
+export const ROOT: Ramp = ['#120a16', '#22142a', '#3a2642', '#58405c', '#78607a'];
+export const MOSS: Ramp = ['#141e14', '#22341e', '#36502a', '#52703a', '#748c4c'];
 const HOOF: Ramp = ['#0a070c', '#140e14', '#241a22', '#362832', '#4a3844'];
 const NOSE: Ramp = ['#0a070c', '#0a070c', '#1a1218', '#2c2026', '#3e3038'];
 
@@ -76,7 +76,7 @@ const NOSE: Ramp = ['#0a070c', '#0a070c', '#1a1218', '#2c2026', '#3e3038'];
 // frame has its floor point under its middle at the origin. Pony-sized: its withers about 40 up, its antlers to about
 // the knight's head.
 
-const PIVOT: V3 = [0, 0, 30];
+export const PIVOT: V3 = [0, 0, 30];
 /** Its feet at rest, on the floor: its right fore, left fore, right hind (the root, with no hoof), left hind. */
 export const DEER_FEET: V3[] = [
   [11, -4.6, 0],
@@ -115,12 +115,12 @@ export const DEER_HABITS = { snaps: [0.3, 1.2], shudder: [1.0, 1.2], lift: [0.78
 
 /** The canvas it is painted on, and its floor point on it. */
 export const DEER_CANVAS = { w: 280, h: 250, ax: 130, ay: 186 };
-const DEER_AURA = { x: DEER_CANVAS.ax, y: DEER_CANVAS.ay - 22, r: 40, color: '#ff3a78', a: 0.08 };
+export const DEER_AURA = { x: DEER_CANVAS.ax, y: DEER_CANVAS.ay - 22, r: 40, color: '#ff3a78', a: 0.08 };
 
 // ---------------------------------------------------------------------------------------------
 // ITS POSES
 
-interface DeerPose {
+export interface DeerPose {
   x: number;
   y: number;
   z: number;
@@ -207,14 +207,14 @@ export const DEER_REEL = { long: 0.45, freeze: 0.05, fps: 30 } as const;
 /** Its death (his pick): held as the blow lands (`freeze`); it convulses, cracking; it splits apart at `split` into roots and bark, its pieces falling and tumbling to lie on the floor by `down`; still from `still`. */
 export const DEER_DIE = { long: 1.5, freeze: 0.1, split: 0.4, down: 0.95, still: 1.1, fps: 30 } as const;
 
-const STAND0 = standPose(0);
-const swell = (v: number): number => {
+export const STAND0 = standPose(0);
+export const swell = (v: number): number => {
   const c = cl01(v);
   return sm(c) + 0.3 * Math.pow(Math.sin(Math.PI * c), 2) * c;
 };
 const easeIn = (v: number): number => Math.pow(cl01(v), 2);
 const easeOut = (v: number): number => 1 - Math.pow(1 - cl01(v), 2);
-interface Key {
+export interface Key {
   x: number;
   z: number;
   pitch: number;
@@ -227,14 +227,14 @@ interface Key {
   ears: number;
   eyes: number;
 }
-const K0: Key = { x: STAND0.x, z: STAND0.z, pitch: STAND0.pitch, roll: STAND0.roll, yaw: STAND0.yaw, neck: STAND0.neck, hy: STAND0.head[0], hp: STAND0.head[1], hr: STAND0.head[2], ears: STAND0.ears, eyes: STAND0.eyes };
-const keyed = (k: Partial<Key>): Key => ({ ...K0, ...k });
+export const K0: Key = { x: STAND0.x, z: STAND0.z, pitch: STAND0.pitch, roll: STAND0.roll, yaw: STAND0.yaw, neck: STAND0.neck, hy: STAND0.head[0], hp: STAND0.head[1], hr: STAND0.head[2], ears: STAND0.ears, eyes: STAND0.eyes };
+export const keyed = (k: Partial<Key>): Key => ({ ...K0, ...k });
 function mixKey(a: Key, b: Key, k: number): Key {
   const o = { ...a };
   for (const f of Object.keys(a) as (keyof Key)[]) o[f] = a[f] + (b[f] - a[f]) * k;
   return o;
 }
-function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
+export function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
   if (t <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) {
     const [t1, k1, ease] = keys[i];
@@ -243,11 +243,11 @@ function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
   }
   return keys[keys.length - 1][1];
 }
-function fromKey(K: Key, feet: V3[] = DEER_FEET, fold: number[] = [0, 0, 0, 0]): DeerPose {
+export function fromKey(K: Key, feet: V3[] = DEER_FEET, fold: number[] = [0, 0, 0, 0]): DeerPose {
   return { ...STAND0, x: K.x, y: 0, z: K.z, pitch: K.pitch, roll: K.roll, yaw: K.yaw, neck: K.neck, head: [K.hy, K.hp, K.hr], ears: K.ears, eyes: K.eyes, feet: feet.map((f) => f), fold: fold.slice(), chips: [], flares: [] };
 }
-const shiver = (t: number, k: number): Partial<Key> => ({ hy: 1.6 * Math.sin(t * 190) * k, hp: 1.2 * Math.sin(t * 150 + 1) * k, z: 0.3 * Math.sin(t * 170 + 2) * k });
-const plus = (K: Key, d: Partial<Key>): Key => {
+export const shiver = (t: number, k: number): Partial<Key> => ({ hy: 1.6 * Math.sin(t * 190) * k, hp: 1.2 * Math.sin(t * 150 + 1) * k, z: 0.3 * Math.sin(t * 170 + 2) * k });
+export const plus = (K: Key, d: Partial<Key>): Key => {
   const o = { ...K };
   for (const f of Object.keys(d) as (keyof Key)[]) o[f] += d[f] ?? 0;
   return o;
@@ -299,9 +299,9 @@ function limpPose(t: number): DeerPose {
 }
 
 // --- ITS ANTLER GORE ---
-const G_LOW = keyed({ x: -4.5, z: -2.4, pitch: 5, neck: 40, hp: 34, hy: -8, hr: -4, ears: -30, eyes: 1.6 });
-const G_HIT = keyed({ x: 8.5, z: -0.4, pitch: 0, neck: 10, hp: -6, hy: 8, hr: 6, ears: -30, eyes: 1.8 });
-const G_UP = keyed({ x: 4, z: 1, pitch: -5, neck: -6, hp: -22, hy: 11, hr: 8, ears: -20, eyes: 1.4 });
+export const G_LOW = keyed({ x: -4.5, z: -2.4, pitch: 5, neck: 40, hp: 34, hy: -8, hr: -4, ears: -30, eyes: 1.6 });
+export const G_HIT = keyed({ x: 8.5, z: -0.4, pitch: 0, neck: 10, hp: -6, hy: 8, hr: 6, ears: -30, eyes: 1.8 });
+export const G_UP = keyed({ x: 4, z: 1, pitch: -5, neck: -6, hp: -22, hy: 11, hr: 8, ears: -20, eyes: 1.4 });
 /** Its antler gore: it drops its head, its thorned antlers aimed at you, and holds there trembling (the warning); then it lunges and hooks up through you (`hit`), its head flung up after; it settles. Its feet stay where they stand. */
 /** The gore's own clock: stopped through the freeze as its blow lands, and running on after it. */
 function goreClock(t: number): number {
@@ -426,9 +426,9 @@ function spikeUp(s: number): number {
   return s < 0.08 ? 1 - Math.pow(1 - s / 0.08, 2) : s < 0.32 ? 1 : 1 - sm((s - 0.32) / 0.3);
 }
 /** Bark, splinters and moss: what flies off it. */
-const CHIPS_OF = [BARK[3], BARK[2], '#cbb07c', MOSS[3], HIDE[3]];
-const CLOD = ['#4c3c30', '#5e4a3a', '#3e4c2c', '#56663a'];
-function burst(c: V3, t0: number, t: number, n: number, seed: number, cols: string[], o: { speed?: number; up?: number; ahead?: V3; life?: number; size?: number } = {}): [V3, string, number][] {
+export const CHIPS_OF = [BARK[3], BARK[2], '#cbb07c', MOSS[3], HIDE[3]];
+export const CLOD = ['#4c3c30', '#5e4a3a', '#3e4c2c', '#56663a'];
+export function burst(c: V3, t0: number, t: number, n: number, seed: number, cols: string[], o: { speed?: number; up?: number; ahead?: V3; life?: number; size?: number } = {}): [V3, string, number][] {
   const life = o.life ?? 0.4;
   const s = t - t0;
   if (s < 0 || s >= life) return [];
@@ -444,7 +444,7 @@ function burst(c: V3, t0: number, t: number, n: number, seed: number, cols: stri
   }
   return out;
 }
-function poseOf(which: string, t: number): DeerPose {
+export function poseOf(which: string, t: number): DeerPose {
   const P = basePose(which, t);
   // (what hangs from it swings with how it has been moving a tenth of a second before, by the move's own clock: held
   // still, as everything is, through a blow's freeze, and swinging on after it as it was)
@@ -483,7 +483,7 @@ function poseOf(which: string, t: number): DeerPose {
 // ---------------------------------------------------------------------------------------------
 // ITS PAINTER
 
-function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
+export function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
   const cy = Math.cos(yaw * D), sy = Math.sin(yaw * D);
   const cp = Math.cos(pitch * D), sp = Math.sin(pitch * D);
   const cr = Math.cos(roll * D), sr = Math.sin(roll * D);
@@ -491,13 +491,13 @@ function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
   const r2: V3 = [r1[0] * cp + r1[2] * sp, r1[1], -r1[0] * sp + r1[2] * cp];
   return [r2[0] * cy - r2[1] * sy, r2[0] * sy + r2[1] * cy, r2[2]];
 }
-function worldOf(P: DeerPose, p: V3): V3 {
+export function worldOf(P: DeerPose, p: V3): V3 {
   return add(add([P.x, P.y, P.z], PIVOT), turn(sub(p, PIVOT), P.yaw, P.pitch, P.roll));
 }
 function turned(P: DeerPose, v: V3): V3 {
   return turn(v, P.yaw, P.pitch, P.roll);
 }
-interface HeadFrame {
+export interface HeadFrame {
   at: V3;
   f: V3;
   l: V3;
@@ -505,7 +505,7 @@ interface HeadFrame {
   p: (v: V3) => V3;
   q: (v: V3) => V3;
 }
-function headFrame(P: DeerPose): HeadFrame {
+export function headFrame(P: DeerPose): HeadFrame {
   const root = worldOf(P, NECK_ROOT);
   const along = turned(P, turn(norm(NECK_REST), 0, P.neck, 0));
   const at = add(root, mul(along, NECK_LONG));
@@ -559,14 +559,14 @@ function barkSkin(seed: number): Skin {
 }
 
 const VIEWS = new Map<GameView, V3>();
-function eyeOf(view: GameView): V3 {
+export function eyeOf(view: GameView): V3 {
   let e = VIEWS.get(view);
   if (!e) VIEWS.set(view, (e = stage(view, 0, 0, { w: 2, h: 2 }).eye));
   return e;
 }
 
 /** A crooked line through points (its antlers, its roots): each stretch a rod, tapering from `r0` to `r1`. */
-function crooked(put: Put, part: string, piece: string, pts: V3[], r0: number, r1: number, ramp: Ramp): void {
+export function crooked(put: Put, part: string, piece: string, pts: V3[], r0: number, r1: number, ramp: Ramp): void {
   for (let i = 0; i < pts.length - 1; i++) {
     const k0 = i / (pts.length - 1);
     const k1 = (i + 1) / (pts.length - 1);
@@ -574,7 +574,7 @@ function crooked(put: Put, part: string, piece: string, pts: V3[], r0: number, r
   }
 }
 /** Thorns along a crooked line: short, sharp, pointing every way off it, of `wood` with `point`s. */
-function thorns(put: Put, part: string, piece: string, pts: V3[], each: number, long: number, seed: number, wood: Ramp, point: Ramp, r0 = 1, r1 = 0.5): void {
+export function thorns(put: Put, part: string, piece: string, pts: V3[], each: number, long: number, seed: number, wood: Ramp, point: Ramp, r0 = 1, r1 = 0.5): void {
   for (let i = 0; i < pts.length - 1; i++) {
     const dir = norm(sub(pts[i + 1], pts[i]));
     const s1 = norm(cross(dir, [0, 0, 1]), [0, 1, 0]);
@@ -595,7 +595,7 @@ function thorns(put: Put, part: string, piece: string, pts: V3[], each: number, 
 }
 
 /** THE DEER AS SOLIDS. */
-function deerBits(P: DeerPose, put: Put, view: GameView): void {
+export function deerBits(P: DeerPose, put: Put, view: GameView): void {
   const W = (p: V3): V3 => worldOf(P, p);
   const axes = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, a), turned(P, b), turned(P, c)];
   void view;
@@ -899,7 +899,7 @@ function swallow(sh: Sheet, st: Stage): void {
     }
   }
 }
-function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
+export function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
   const [x, y] = st.at(p);
   const xi = Math.round(x - size / 2);
   const yi = Math.round(y - size / 2);

@@ -98,7 +98,8 @@ function hue(r: number, g: number, b: number): [number, number] {
 test('in the game through art/act1_figs/scorpion.ts alone, its switch thrown with the descent', () => {
   assert.ok(FIG_SCORPION !== null && (FIG_SCORPION.switches ?? []).includes(SCORPION_ON), 'its switch is one the bestiary throws with the descent');
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('canyon_scorpions.ts')) continue;
+    // (floors 6 to 8's more action, art/action_f6_*.ts, a mock-up built on it, which nothing of the game imports: tests/action_f6.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('canyon_scorpions.ts') || /action_f6_/.test(f)) continue;
     const at = f.split('\\').join('/');
     if (at === 'art/act1_figs/scorpion.ts') continue;
     assert.ok(!/from ['"][^'"]*\/canyon_scorpions['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the scorpions`);

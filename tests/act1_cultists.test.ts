@@ -83,7 +83,8 @@ test('in the game through art/act1_figs/ (its switch goes with the descent), and
   useAct1Figs(ACT1.on);
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('act1_cultists.ts')) continue;
+    // (floors 6 to 8's more action, art/action_f6_*.ts, a mock-up built on them, which nothing of the game imports: tests/action_f6.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('act1_cultists.ts') || /action_f6_/.test(f)) continue;
     if (/from ['"][^'"]*act1_cultists['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f.split('\\').join('/'));
   }
   assert.deepEqual(users.sort(), ['art/act1_figs/chanter.ts', 'art/act1_figs/firepot.ts', 'render/act1_fx/chanter.ts', 'render/act1_fx/firepot.ts'], 'the game files that hold them');

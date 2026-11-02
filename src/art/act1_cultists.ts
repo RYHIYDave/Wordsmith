@@ -157,7 +157,7 @@ function cowl(st: Stage, s: Skeleton, put: Put, glare: number, lag: V3, ph: numb
 }
 
 /** How the figure's going drags what hangs off it (its last moment's going, held to `most`). */
-function lagOf(m: Moment, k: number, most: number): V3 {
+export function lagOf(m: Moment, k: number, most: number): V3 {
   const raw = mul(m.come, -k);
   const l = len(raw);
   return l > most ? mul(raw, most / l) : raw;
@@ -194,10 +194,10 @@ const CB = CHANTER_BODY;
 export const CHANTER_CANVAS: MobCanvas = { w: 200, h: 180, ax: 100, ay: 136 };
 
 /** THE BOOK OF HYMNS: its pages, old and yellowed; its cover, dark leather, iron at its corners. */
-const PAGE: Ramp = ['#6e5a48', '#6e5a48', '#bfa98a', '#e4d4b4', '#e4d4b4'];
+export const PAGE: Ramp = ['#6e5a48', '#6e5a48', '#bfa98a', '#e4d4b4', '#e4d4b4'];
 const LEATHER: Ramp = ['#1a0c14', '#1a0c14', '#3e1c2c', '#5e2c40', '#5e2c40'];
 /** What fire leaves: char and ash. */
-const CHAR: Ramp = ['#140e14', '#140e14', '#2c2228', '#4a3e44', '#4a3e44'];
+export const CHAR: Ramp = ['#140e14', '#140e14', '#2c2228', '#4a3e44', '#4a3e44'];
 /** The book's size: each page's half across it and half along its spine (figure's lengths). */
 export const BOOK = { across: 4.2, along: 5.4, thick: 0.9 } as const;
 
@@ -619,11 +619,11 @@ const PB = POTS_BODY;
 export const POTS_CANVAS: MobCanvas = { w: 220, h: 200, ax: 108, ay: 150 };
 
 /** The clay of its firepots, fired red-brown; the wood of its rack; the rags its rack is lashed with. */
-const CLAY: Ramp = ['#3a1e20', '#3a1e20', '#7e4a3a', '#b0745a', '#b0745a'];
+export const CLAY: Ramp = ['#3a1e20', '#3a1e20', '#7e4a3a', '#b0745a', '#b0745a'];
 const WOOD: Ramp = ['#24181a', '#24181a', '#5a4032', '#86664c', '#86664c'];
 /** A firepot's half-size (its belly) and its neck; the sling's cords' length. */
 export const POT_R = 3.1;
-const SLING_LONG = 9;
+export const SLING_LONG = 9;
 
 /** Its rest: stooped under its rack, its knees bent; the sling's cords in its right fist at its side, the lit pot hanging below, swinging; its left hand out before it. */
 export const POTS_REST: Bones = {
@@ -675,7 +675,7 @@ export function slungPot(s: Skeleton, m: Moment): V3 {
 }
 
 /** A FIREPOT: a round clay belly, a short neck, a rag stopper and its fuse (`lit`: burning, 0 cold). */
-function firepot(put: Put, part: string, c: V3, up: V3, lit: number, t: number, seed: number): void {
+export function firepot(put: Put, part: string, c: V3, up: V3, lit: number, t: number, seed: number): void {
   const flat = norm(cross(up, [0, 0, 1]), [1, 0, 0]);
   const side = norm(cross(up, flat));
   put(part, part, { k: 'ball', c, ax: [mul(flat, POT_R), mul(side, POT_R), mul(up, POT_R * 0.92)], skin: (u, tone) => (hash(Math.floor((u[0] + 1) * 3), Math.floor((u[2] + 1) * 3), seed) > 0.86 ? CLAY[Math.max(0, tone - 1)] : CLAY[tone]) });
