@@ -96,6 +96,8 @@ interface Area {
   sides: number[];
   /** Which way the way came into it (-1: the start). */
   inDir: number;
+  /** (GW_OPEN) Its tiles that no area of the great ward laid before it has: its packs are by these. */
+  own?: number;
 }
 interface Way {
   rects: Rect[];
@@ -171,7 +173,7 @@ function clearOf(plan: Plan, r: Rect, gap: number, exceptAreas: readonly number[
  * in it), and the new area at its end, `along` deep and `across` wide; null if it would come within the houses' gap of
  * anything else. `mid`: the lane comes into the new area near the middle of its side (the Crier's Square: his rostrum faces it).
  */
-function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: AreaRole, size: [number, number], L: number, w: number, jog: boolean, mid: boolean): { area: Area; way: Way } | null {
+function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: AreaRole, size: [number, number], L: number, w: number, jog: boolean, mid: boolean, through: readonly number[] = []): { area: Area; way: Way } | null {
   const A = plan.areas[ai].r;
   const [a0, a1] = across(A, d);
   if (a1 - 1 - w < a0 + 1) return null;
@@ -200,7 +202,8 @@ function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: Are
   }
   const n = plan.areas.length;
   if (!clearOf(plan, b, GW_PLAN.gap, [])) return null;
-  for (const r of rects) if (!clearOf(plan, r, GW_PLAN.gap, [ai])) return null;
+  // (`through`: areas the lane may run through on its way out, the great ward's other squares)
+  for (const r of rects) if (!clearOf(plan, r, GW_PLAN.gap, [ai, ...through])) return null;
   const area: Area = { r: b, role, kind, path: -1, parent: ai, sides: [(d + 2) % 4], inDir: d };
   const way: Way = { rects, w, pts, a: ai, b: n, main: false };
   return { area, way };
@@ -209,7 +212,123 @@ function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: Are
 // ---------------------------------------------------------------------------------------------------
 // THE PLAN
 
+/**
+ * OPEN (his pick for floor 11), as he put what open means, 1 Nov 2026: “When I say open I mean one massive area with a waypoint
+ * on one side, and the boss somewhere on the other”; of the open floors, “The rest can change”. On, past the gate's street
+ * the city opens into ONE GREAT WARD, its edges straight as houses are: `rects` great squares in a row, each far into the last
+ * (`step` on, drifting across by up to `shift`), and `bulges` lesser ones pushed out of its sides, so that its edge steps in and
+ * out; the Crier's Square beyond its far end by a short lane of its own (his fight as it was); the side market (the Muffled
+ * Bell's), the Order's yard and the court off its sides. Off, the gate's street and nine squares laid one after another.
+ */
+export const GW_OPEN = {
+  on: true,
+  rects: 4,
+  along: [18, 22] as const,
+  across: [20, 25] as const,
+  step: [9, 12] as const,
+  shift: 5,
+  bulges: 3,
+  bulge: { along: [10, 14] as const, across: [9, 12] as const, into: [3, 5] as const },
+  /** Its packs this share of its ground's due (the old squares' were fewer: each a pack or more, the small ones one), so that the floor has the monsters it had. */
+  packs: 0.8,
+};
+
+function planOpen(rng: RNG): Plan | null {
+  const P = GW_PLAN;
+  const O = GW_OPEN;
+  const first = rng.int(0, 1);
+  const plan: Plan = { areas: [], ways: [], houses: [], first };
+  plan.areas.push({ r: first === 0 ? [0, 0, P.gate[0], P.gate[1]] : [0, 0, P.gate[1], P.gate[0]], role: 'start', kind: 'gate', path: 0, parent: -1, sides: [(first + 2) % 4], inDir: -1 });
+  // (along the way in, u, and across it, v)
+  const uv = (r: Rect): [number, number, number, number] => (first === 0 ? [r[0], r[2], r[1], r[3]] : [r[1], r[3], r[0], r[2]]);
+  const rect = (u0: number, u1: number, v0: number, v1: number): Rect => (first === 0 ? [u0, v0, u1, v1] : [v0, u0, v1, u1]);
+  // THE GREAT WARD: its first square off the gate's street
+  let got: { area: Area; way: Way } | null = null;
+  for (let tries = 0; tries < 30 && !got; tries++) got = grow(rng, plan, 0, first, 'market', 'path', [rng.int(O.along[0], O.along[1]), rng.int(O.across[0], O.across[1])], rng.int(5, 7), 3, false, true);
+  if (!got) return null;
+  got.area.path = 1;
+  got.way.main = true;
+  plan.areas[0].sides.push(first);
+  plan.areas.push(got.area);
+  plan.ways.push(got.way);
+  const ward = [1];
+  const [u0] = uv(got.area.r);
+  let u = u0;
+  let vc = (uv(got.area.r)[2] + uv(got.area.r)[3]) / 2;
+  for (let k = 1; k < O.rects; k++) {
+    u += rng.int(O.step[0], O.step[1]);
+    vc += rng.range(-O.shift, O.shift);
+    const al = rng.int(O.along[0], O.along[1]);
+    const ac = rng.int(O.across[0], O.across[1]);
+    const v0 = Math.round(vc - ac / 2);
+    plan.areas.push({ r: rect(u, u + al, v0, v0 + ac), role: 'path', kind: k % 2 === 1 ? 'square' : 'market', path: k + 1, parent: plan.areas.length - 1, sides: [], inDir: first });
+    ward.push(plan.areas.length - 1);
+  }
+  // (the lesser squares out of its sides)
+  for (let b = 0; b < O.bulges; b++) {
+    const h = plan.areas[rng.pick(ward)];
+    const [hu0, hu1, hv0, hv1] = uv(h.r);
+    const al = rng.int(O.bulge.along[0], O.bulge.along[1]);
+    const ac = rng.int(O.bulge.across[0], O.bulge.across[1]);
+    const into = rng.int(O.bulge.into[0], O.bulge.into[1]);
+    const bu = Math.max(u0, rng.int(hu0, Math.max(hu0, hu1 - al)));
+    const r = rng.chance(0.5) ? rect(bu, bu + al, hv1 - into, hv1 - into + ac) : rect(bu, bu + al, hv0 + into - ac, hv0 + into);
+    plan.areas.push({ r, role: 'path', kind: 'square', path: -1, parent: plan.areas.indexOf(h), sides: [], inDir: first });
+    ward.push(plan.areas.length - 1);
+  }
+  // (each its own ground: what none laid before it has)
+  const seen = new Set<number>();
+  for (const i of ward) {
+    const r = plan.areas[i].r;
+    let own = 0;
+    for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) {
+      const k = (y + 4096) * 8192 + (x + 4096);
+      if (!seen.has(k)) {
+        seen.add(k);
+        own++;
+      }
+    }
+    plan.areas[i].own = own;
+  }
+  // THE CRIER'S SQUARE beyond its far end
+  const far = ward.reduce((a, b) => (uv(plan.areas[b].r)[1] > uv(plan.areas[a].r)[1] ? b : a), ward[0]);
+  let crier: { area: Area; way: Way } | null = null;
+  for (let tries = 0; tries < 40 && !crier; tries++) crier = grow(rng, plan, far, first, 'crier', 'boss', sizeOf(rng, 'crier', false), rng.int(5, 8), 3, false, true, ward);
+  if (!crier) return null;
+  crier.area.path = O.rects + 1;
+  crier.way.main = true;
+  plan.areas[far].sides.push(first);
+  plan.areas.push(crier.area);
+  plan.ways.push(crier.way);
+  // THE SIDE AREAS off its sides: the Muffled Bell's market off its middle squares
+  const mid = ward.slice(1, Math.max(2, O.rects - 1));
+  if (!sideOff(rng, plan, 'market', 'side', mid, true, ward)) return null;
+  if (!sideOff(rng, plan, 'yard', 'lair', ward, true, ward)) return null;
+  sideOff(rng, plan, 'court', 'side', ward, false, ward);
+  return plan;
+}
+
+/** A side area off one of `hosts` (any of its sides no lane leaves by), by a lane of its own; false if none would go (and `must`). */
+function sideOff(rng: RNG, plan: Plan, kind: Kind, role: AreaRole, hosts: number[], must: boolean, through: readonly number[] = []): boolean {
+  const P = GW_PLAN;
+  for (let tries = 0; tries < 80; tries++) {
+    const h = rng.pick(hosts);
+    const free = [0, 1, 2, 3].filter((d) => !plan.areas[h].sides.includes(d));
+    if (!free.length) continue;
+    const d = rng.pick(free);
+    const L = rng.int(P.lane.side[0], P.lane.side[1]);
+    const got = grow(rng, plan, h, d, kind, role, sizeOf(rng, kind, true), L, 3, rng.chance(P.lane.jog * 0.5), false, through);
+    if (!got) continue;
+    plan.areas[h].sides.push(d);
+    plan.areas.push(got.area);
+    plan.ways.push(got.way);
+    return true;
+  }
+  return !must;
+}
+
 function planOf(rng: RNG): Plan | null {
+  if (GW_OPEN.on) return planOpen(rng);
   const P = GW_PLAN;
   // which way the floor goes in from the gate (its front along +x or +y), and the other way it turns now and then
   const first = rng.int(0, 1);
@@ -468,8 +587,9 @@ export function generate(depth: number, seed: number): Laid | null {
   const way: [number, number][] = [];
   plan.areas.filter((a) => a.path >= 0).sort((a, b) => a.path - b.path).forEach((a, k) => {
     if (k > 0) {
-      const w = plan.ways.find((q) => q.main && q.b === plan.areas.indexOf(a))!;
-      way.push(...w.pts.map((p) => [p[0], p[1]] as [number, number]));
+      // (GW_OPEN: the great ward's squares open into each other, no lane between them)
+      const w = plan.ways.find((q) => q.main && q.b === plan.areas.indexOf(a));
+      if (w) way.push(...w.pts.map((p) => [p[0], p[1]] as [number, number]));
     }
     way.push(midOf(a.r));
   });
@@ -667,10 +787,17 @@ function packsOf(rng: RNG, plan: Plan, f: Floor, depth: number, bells: BellsPlan
     out.push({ x: Math.floor(x) + 0.5, y: Math.floor(y) + 0.5, roomId: room, size: n ?? p.size, tier, kind: p.kind });
     used.push([x, y]);
   };
+  let owed = 0.5;
   plan.areas.forEach((a, i) => {
     if (a.role === 'start' || a.role === 'boss') return;
     const [w, h] = [a.r[2] - a.r[0], a.r[3] - a.r[1]];
-    const n = a.role === 'lair' ? 1 : Math.max(1, Math.round((w * h) / 75));
+    // (GW_OPEN: a square of the great ward by the ground that is its own, the parts of a pack carried on)
+    let n: number;
+    if (a.own !== undefined) {
+      owed += (a.own * GW_OPEN.packs) / 75;
+      n = Math.floor(owed);
+      owed -= n;
+    } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round((w * h) / 75));
     const room = f.rooms[i];
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 40; tries++) {
@@ -993,6 +1120,8 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
         since++;
         if (since < every) continue;
         if (!free(x, y, true)) continue;
+        // (GW_OPEN: only with houses at its back, never out in the great ward where its squares run into each other)
+        if (GW_OPEN.on && floorAt(s.facing === 1 ? r[0] - 1 : s.facing === 3 ? r[2] : x, s.facing === 0 ? r[1] - 1 : s.facing === 2 ? r[3] : y)) continue;
         // (one in five of those along x smashed by the siege: its frames, which of four, then facing +y or -y)
         const smashed = s.facing % 2 === 0 && rng.chance(0.2);
         const at = { x: x + 0.5 + (s.facing === 1 ? 0.1 : s.facing === 3 ? -0.1 : 0), y: y + 0.5 + (s.facing === 0 ? 0.1 : s.facing === 2 ? -0.1 : 0) };
