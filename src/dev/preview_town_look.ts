@@ -9,7 +9,13 @@
 //     owl       the owl close, three times the game's size, at a few moments, from below
 //     window    a barricaded window close, the light through it
 //     sheet     the three looks and their phone screens, labelled; the owl; a window close
-//   look: boards (A), fallen (B) or rafters (C)
+//   look: boards (A), fallen (B) or rafters (C), or castle (A carried into the castle's hall, his pick)
+// THE CASTLE HALL (his pick, A, carried right inside the castle):
+//   node tools/preview.mjs src/dev/preview_town_look.ts docs/mockups/town_look/pictures/castle_hall.png 1200 840 "overview:castle"
+//   node tools/preview.mjs src/dev/preview_town_look.ts docs/mockups/town_look/pictures/castle_phone.png 1014 468 "phone:castle"
+//   PREVIEW_TIMEOUT=600000 node tools/preview.mjs src/dev/preview_town_look.ts docs/mockups/town_look/pictures/castle_sheet.png 1200 4400 "castlesheet"
+//     owlclose  the owl's second pass close, three times the game's size, from below, its six moments
+//     cwindow   a boarded castle window close, the light through it;  cgate  the barred gate close
 import { drawLights } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import type { Theme } from '../art/ground';
@@ -24,14 +30,14 @@ import { townShaft } from '../art/town_ways';
 import { makeWaypointArt } from '../art/crypt_ways';
 import { Deep, mixC } from './floor1_look_paint';
 import {
-  CAPTION, HAMMER, HERO_AT, LETTER, LOOKS, LOWS, PALS, PHONE, PICTURE, POTS, TOWN_AT, TRUSSES, atPx, lowWall, paintAir,
-  paintParapet, paintPillars, paintPlace, paintPot, paintTrusses, paintTufts, sunAt,
+  CAPTION, CASTLE, CASTLE_OWL_AT, HAMMER, HERO_AT, LETTER, LOOKS, LOWS, PALS, PHONE, PICTURE, POTS, TOWN_AT, TRUSSES, atPx, lowWall, paintAir,
+  paintCastleTrusses, paintParapet, paintPillars, paintPlace, paintPot, paintTrusses, paintTufts, sunAt,
 } from './town_look_paint';
 import type { Look, Pal } from './town_look_paint';
-import { OWL_MOMENTS, paintOwl, paintTree } from './town_look_life';
+import { OWL, OWL_MOMENTS, paintOwl, paintTree } from './town_look_life';
 
 const [mode = 'overview', lookArg = 'boards'] = decodeURIComponent(location.hash.slice(1)).split(':');
-const ONE: Look = (LOOKS as string[]).includes(lookArg) ? (lookArg as Look) : 'boards';
+const ONE: Look = ([...LOOKS, CASTLE] as string[]).includes(lookArg) ? (lookArg as Look) : 'boards';
 const { W, H } = PICTURE;
 
 // ---- the town's own things (art/town.ts, his yes), their stone the look's, their wood and iron brought into its light
@@ -184,7 +190,8 @@ function scene(look: Look, heroAt: [number, number]): { D: Deep; blits: Blit[] }
   const toneAt = (x: number, y: number, z: number, grade = true) => {
     const s = sunAt(look, x, y, z);
     const k = (grade ? 0.3 : 0.16) * (s >= 1 ? 1 : s > 0 ? 0.5 : 0);
-    const own = (c: string): string => (grade ? graded(c, P) : unPink(c));
+    // (THE CASTLE HALL: the people exactly as he said yes to them, only the sun on them where it falls)
+    const own = (c: string): string => (grade ? graded(c, P) : look === CASTLE ? c : unPink(c));
     return (c: string): string => (SHINES.has(c) ? c : k > 0 ? mixC(own(c), P.sun, k) : own(c));
   };
   paintPlace(D, look);
@@ -200,7 +207,8 @@ function scene(look: Look, heroAt: [number, number]): { D: Deep; blits: Blit[] }
   paintTufts(D, look);
   paintParapet(D, look);
   paintPillars(D, look);
-  paintTrusses(D, look);
+  if (look === CASTLE) paintCastleTrusses(D);
+  else paintTrusses(D, look);
   for (const p of POTS[look]) paintPot(D, look, p);
 
   // ---- WHAT STANDS, each at its depth
@@ -243,8 +251,9 @@ function scene(look: Look, heroAt: [number, number]): { D: Deep; blits: Blit[] }
     blit(D, b);
   }
   // ---- THE OWL on a hammer beam's end, over the smithy
-  const owl = paintOwl(OWL_MOMENTS[0].pose);
-  blit(D, { s: owl, x: OWL_AT[0], y: OWL_AT[1], z: OWL_AT[2], d: OWL_AT[0] + OWL_AT[1] + 0.05, figure: false });
+  const owl = paintOwl(look === CASTLE ? { blink: 0, turn: 0.25, ruffle: 0, breath: 0.4 } : OWL_MOMENTS[0].pose);
+  const oat = look === CASTLE ? CASTLE_OWL_AT : OWL_AT;
+  blit(D, { s: owl, x: oat[0], y: oat[1], z: oat[2], d: oat[0] + oat[1] + 0.05, figure: false });
   // ---- THE WALLS TOWARD THE EYE, cut low; the tree; the sun in the air
   LOWS.forEach((r, i) => lowWall(D, look, r, 451 + i));
   paintTree(D, look);
@@ -349,6 +358,154 @@ function owlOf(): HTMLCanvasElement {
   return cv;
 }
 
+/** THE OWL CLOSE (second pass, the castle hall): three times the game's size, on its hammer beam seen from a little below, the castle's stone behind; its six moments, named. */
+export const OWL_CLOSE = { W: 1200, H: 330, K: 3 };
+function owlClose(): HTMLCanvasElement {
+  const P = PALS.castle;
+  const cv = document.createElement('canvas');
+  cv.width = OWL_CLOSE.W;
+  cv.height = OWL_CLOSE.H;
+  const g = cv.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const K = OWL_CLOSE.K;
+  // the castle's stone behind, in the hall's shade: courses of big blocks, their joints
+  g.fillStyle = mixC(P.stone[1], '#000000', 0.25);
+  g.fillRect(0, 0, cv.width, 260);
+  for (let row = 0; row * 18 * K < 260; row++) {
+    const y = row * 18 * K;
+    g.fillStyle = mixC(P.seam, '#000000', 0.2);
+    g.fillRect(0, y, cv.width, K);
+    const off = (row * 37) % 50;
+    for (let x = -off * K; x < cv.width; x += (38 + ((row * 13) % 17)) * K) {
+      g.fillStyle = mixC(P.seam, '#000000', 0.2);
+      g.fillRect(x, y, K, 18 * K);
+      g.fillStyle = mixC(P.stone[2], '#000000', 0.28);
+      g.fillRect(x + K, y + K, 30 * K, K);
+    }
+  }
+  // the hammer beam: its top, its face toward us, and (from a little below) its underside in shadow
+  const beamY = 196;
+  g.fillStyle = P.wood[4];
+  g.fillRect(0, beamY, cv.width, K);
+  g.fillStyle = P.wood[3];
+  g.fillRect(0, beamY + K, cv.width, 5 * K);
+  g.fillStyle = P.wood[2];
+  g.fillRect(0, beamY + 6 * K, cv.width, 6 * K);
+  for (let x = 40; x < cv.width; x += 170) {
+    g.fillStyle = P.wood[1];
+    g.fillRect(x, beamY + 4 * K, 18 * K, K);
+  }
+  g.fillStyle = P.wood[1];
+  g.fillRect(0, beamY + 12 * K, cv.width, 4 * K);
+  g.fillStyle = P.wood[0];
+  g.fillRect(0, beamY + 16 * K, cv.width, 3 * K);
+  g.fillStyle = '#0c0907';
+  g.fillRect(0, beamY + 19 * K, cv.width, cv.height - beamY - 19 * K);
+  const n = OWL_MOMENTS.length;
+  const cell = OWL_CLOSE.W / n;
+  OWL_MOMENTS.forEach((m, i) => {
+    const sp = paintOwl(m.pose);
+    const ox = Math.round(i * cell + cell / 2 - OWL.ax * K);
+    const oy = beamY - OWL.ay * K;
+    g.drawImage(sp.img, ox, oy, sp.img.width * K, sp.img.height * K);
+    g.fillStyle = '#e8dccb';
+    g.font = 'bold 17px sans-serif';
+    g.textBaseline = 'top';
+    const tw = g.measureText(m.name).width;
+    g.fillText(m.name, Math.round(i * cell + cell / 2 - tw / 2), 296);
+  });
+  return cv;
+}
+/** A crop of the castle hall, `k` times as big. */
+function cropOf(look: Look, C: { x: number; y: number; w: number; h: number }, k: number): HTMLCanvasElement {
+  const src = overview(look);
+  const cv = document.createElement('canvas');
+  cv.width = C.w * k;
+  cv.height = C.h * k;
+  const g = cv.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(src, C.x, C.y, C.w, C.h, 0, 0, C.w * k, C.h * k);
+  return cv;
+}
+/** The castle's window with the cart wheel against it, and the slats of sun it throws on the floor; the barred gate. */
+export const CWINDOW_CROP = { x: 300, y: 210, w: 400, h: 300 };
+export const CGATE_CROP = { x: 730, y: 286, w: 220, h: 170 };
+
+/** A picture he saw, from its file (the page is opened from dist/). */
+function loadPic(file: string): Promise<HTMLImageElement | null> {
+  return new Promise((res) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => res(null);
+    im.src = `../docs/mockups/town_look/pictures/${file}`;
+  });
+}
+
+async function castleSheet(): Promise<HTMLCanvasElement> {
+  const SW = 1200;
+  type Block = { h: number; draw: (g: CanvasRenderingContext2D, y: number) => void };
+  const blocks: Block[] = [];
+  const text = (s: string, size: number, bold = false, color = '#e8dccb', x = 24): Block => ({
+    h: size + 22,
+    draw: (g, y) => {
+      g.fillStyle = color;
+      g.font = `${bold ? 'bold ' : ''}${size}px sans-serif`;
+      g.textBaseline = 'top';
+      g.fillText(s, x, y + 12);
+    },
+  });
+  const pic = (c: HTMLCanvasElement, gap = 10): Block => ({ h: c.height + gap, draw: (g, y) => g.drawImage(c, Math.round((SW - c.width) / 2), y) });
+  const hall = overview(CASTLE);
+  blocks.push(text("The first town as the castle's hall, right inside its walls, in A's morning sun through the boards.", 20, true));
+  blocks.push(text('Thick dressed stone, tall windows boarded in a hurry, a great timber roof, the owl on a beam, the barred gate out to the Quarry.', 17, false, '#b8ab98'));
+  blocks.push(pic(hall));
+  blocks.push(text('On a phone: one screen, the knight among the vendors, the owl over the smithy.', 18, true));
+  blocks.push(pic(phoneOf(CASTLE), 26));
+  // beside A as he saw it, small
+  const a = await loadPic('a_morning_through_the_boards.png');
+  const half = 588;
+  const hh = Math.round((half * PICTURE.H) / PICTURE.W);
+  blocks.push({
+    h: 34,
+    draw: (g, y) => {
+      g.fillStyle = '#e8dccb';
+      g.font = 'bold 18px sans-serif';
+      g.textBaseline = 'top';
+      g.fillText('A, as you saw it', 8, y + 10);
+      g.fillText("Now: the castle's hall", 8 + half + 8, y + 10);
+    },
+  });
+  blocks.push({
+    h: hh + 26,
+    draw: (g, y) => {
+      g.imageSmoothingEnabled = true;
+      if (a) g.drawImage(a, 8, y, half, hh);
+      g.drawImage(hall, 8 + half + 8, y, half, hh);
+      g.imageSmoothingEnabled = false;
+    },
+  });
+  blocks.push(text('The owl on its beam, three times as big, from a little below: it breathes, blinks, turns its head, ruffles.', 18, true));
+  blocks.push(pic(owlClose(), 26));
+  blocks.push(text('A castle window close: two tall lights boarded in a hurry, a cart wheel wedged against it, the low sun knifing through.', 18, true));
+  blocks.push(pic(cropOf(CASTLE, CWINDOW_CROP, 2), 26));
+  blocks.push(text('The barred gate close: the way out of the prison to the Quarry, its portcullis down, daylight through the bars.', 18, true));
+  blocks.push(pic(cropOf(CASTLE, CGATE_CROP, 3), 20));
+  const total = blocks.reduce((t, b) => t + b.h, 0);
+  const cv = document.createElement('canvas');
+  cv.width = SW;
+  cv.height = total;
+  const g = cv.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#0a0809';
+  g.fillRect(0, 0, SW, total);
+  let y = 0;
+  for (const b of blocks) {
+    b.draw(g, y);
+    y += b.h;
+  }
+  return cv;
+}
+
 function sheet(): HTMLCanvasElement {
   const SW = 1200;
   type Block = { h: number; draw: (g: CanvasRenderingContext2D, y: number) => void };
@@ -391,8 +548,13 @@ function sheet(): HTMLCanvasElement {
   return cv;
 }
 
-const draw = (): void => {
-  const out = mode === 'sheet' ? sheet() : mode === 'phone' ? phoneOf(ONE) : mode === 'owl' ? owlOf() : mode === 'window' ? windowOf(ONE) : overview(ONE);
+const draw = async (): Promise<void> => {
+  const out =
+    mode === 'castlesheet' ? await castleSheet()
+    : mode === 'owlclose' ? owlClose()
+    : mode === 'cwindow' ? cropOf(CASTLE, CWINDOW_CROP, 2)
+    : mode === 'cgate' ? cropOf(CASTLE, CGATE_CROP, 3)
+    : mode === 'sheet' ? sheet() : mode === 'phone' ? phoneOf(ONE) : mode === 'owl' ? owlOf() : mode === 'window' ? windowOf(ONE) : overview(ONE);
   out.style.display = 'block';
   document.body.style.margin = '0';
   document.body.style.background = '#000';
@@ -400,5 +562,5 @@ const draw = (): void => {
   (window as unknown as { __size: [number, number] }).__size = [out.width, out.height];
   (window as unknown as { __ready: boolean }).__ready = true;
 };
-if (document.readyState === 'complete') setTimeout(draw, 50);
-else window.addEventListener('load', () => setTimeout(draw, 50));
+if (document.readyState === 'complete') setTimeout(() => void draw(), 50);
+else window.addEventListener('load', () => setTimeout(() => void draw(), 50));

@@ -150,3 +150,99 @@ off, nothing of the game importing them until the main chat puts them in:
 deep red, and the teal-to-cyan only round the town's own things where it is now (the Lexicon, the stash, the ring, the waypoint,
 the bazaar, the smithy) and the knight; no pink or cyan in the owl; on each phone screen the knight standing out of the floor
 round him, lighter and darker both; and each look well brighter in its lit places than floor 1 B (they come to 101, 106 and 118 of 255; floor 1 B's to 69). `tsc` is clean.
+
+## THE CASTLE HALL: his pick, A, carried right inside the castle (pictures first; not in the game)
+
+### His words
+
+- Shown the three looks: “Well it’s still supposed to be in the castle.  Like right inside.  The barred door in the back leads
+  out of the prison to the quarry”. Told him: redrawn as a hall right inside the castle, in the castle's own dressed stone, no
+  half-timbered barn gable, the barred gate in the back leading out of the prison to the quarry; the owl, the plants and the
+  boarded windows stay.
+- Asked which of the three to carry into the castle hall: “A's sun through boards (Recommended)” (offered as: a great hall's
+  timber roof over stone walls, the owl on a beam, low sun in gold slats through the boarded castle windows).
+
+### What changed from A
+
+The hall, its floor, its people and everything in it keep their places and are the game's own pictures, as in A; A's low
+morning sun through the boards, worked out ray by ray, the gold slats on the floor and the dust in the air, as in A. What is new
+(`town_look_paint.ts`, the look `castle`; the owl in `town_look_life.ts`; the pictures from `preview_town_look.ts`):
+
+- **The walls are the castle's own thick dressed stone**, standing whole to 140 (the game's walls are 80: above that is what
+  the game shows dark): deep courses of big blocks (18 high, 36 to 58 long), each dressed with a drafted margin, some tooled,
+  a few a shade apart, a putlog hole here and there; a chamfered plinth; moss low down and in the joints; along the top A CORBEL
+  TABLE (a row of little stone corbels under a projecting course) carrying the roof. No timber framing, NO GABLE END: A's
+  half-timbered gable over the left wall is gone. A's fluted pilasters (floor 1's tomb) are gone too: this is the castle, not
+  the tomb.
+- **The windows are tall, deep-set castle windows**: two lights under round heads with a stone mullion between, set in a
+  splayed embrasure (the wall's thickness seen in its jambs and sloping sill) under one round arch, a little round opening in
+  the tympanum; four in the left wall (the sun's side), two in the right. HASTILY BOARDED as A's were (odd planks of two woods
+  nailed crooked, overhanging onto the stone, one nailed up and down over the rest), as high as they could reach: the two round
+  heads left open. A cart wheel wedged against one, a door off its hinges against two others. The sun knifes through the gaps
+  in long gold slats across the floor round the ring and the pillars.
+- **The roof is a great hall's timber roof**, HIPPED so there is no gable: it slopes up from the tops of both back walls, its
+  hip rafter over the back corner, its wall plate on the corbel table, principal rafters over the trusses, purlins, common
+  rafters, boards, a chink of day here and there. Drawn only where the game shows dark above the back walls, never over the
+  floor.
+- **The trusses spring from carved stone corbels** (three steps): a wall post up the wall to the plate, an arch brace curving
+  out from it; on the right wall a hammer beam jutting out at the brace's head and a hammer post standing on it up to the roof
+  (four of them, none over the gate); on the left wall, between its windows, the posts and their braces only (three), so that
+  nothing crosses the windows.
+- **THE OWL, second pass**: a real barn owl's shape at the game's size (36 x 42 picture pixels, a picture pixel each): a round,
+  flat-topped head with no neck, the HEART-SHAPED PALE FACE in a thin ochre ruff (notched at the top, pointed at the chin, a soft
+  ridge down to the little pale beak), the DARK EYES set in it with a brown smudge before each, the crown golden-buff washed with
+  grey and peppered with white; a white breast with a few dark specks, buff at its shoulders; THE WINGS FOLDED soft along its
+  sides in rows of golden-buff and grey feathers, white-dotted, their long barred tips reaching down past the belly either side;
+  long feathered legs, a little knock-kneed; THE FEET GRIPPING THE BEAM, three toes each, the dark talons curled over its edge.
+  Lit from the upper left, outlined. It sits on the end of the hammer beam over the rack and the forge, before its hammer post
+  (in the phone screen). Its moments (`OWL_MOMENTS`): breathing in and out (its breast and wings swelling), blinking (the lids
+  down), its head turned (the face swung round and narrowed, the far eye going), looking behind (its back of head to us, a
+  sliver of the face at its side), ruffled (fluffed out all over, its edges ragged).
+- **The barred gate in the back wall** where the game has it (the way x 13 to 16), plainly the way out of the prison to the
+  Quarry: the castle's stone round it (big quoins up its jambs, long and short in turn; a ring of thirteen voussoirs with a
+  keystone; a hood mould over them); its PORTCULLIS DOWN as the game draws it (art/gates.ts `makePortcullis`: an upright every
+  quarter of a tile ending in a spike, a cross bar every 14) in the town's grey steel; through the bars the passage through the
+  thick wall, lit from its far end, and the bright day beyond: the road out, pale dust with a cart's ruts, grass either side, a
+  quarried block by it.
+- **The plants**: ivy climbing higher on the taller walls and hanging in tongues from the corbel table, flowers in it; moss in
+  the joints; the pots along the left wall moved onto the piers between its windows; grass and flowers in the floor's joints.
+  The tree is gone (no gable for its boughs, and it is inside the castle's walls), and with it A's two little roots on the floor.
+- **The stone**: a warm grey (the prison's dressed stone by day, the tomb's pale stone under it) in place of A's honey limestone.
+- **The people are exactly as he said yes to them**: in A the mystic's pink stones were turned red; here nothing of any
+  townsperson is recoloured (only the sun on them where it falls, as the game's light would be). So the mystic's two little pink
+  stones (on his chain and his turban) are pink, as in the game: the one pink in the hall (14 pixels; the knight's own 3 beside
+  it). His to decide. The town's own things (art/town.ts) are in the castle's stone, their iron grey steel and their plum wood
+  the hall's timber, as in A.
+
+### The pictures
+
+- `castle_hall.png` (1200 x 840): the whole town as the castle's hall, the knight among the vendors.
+- `castle_phone.png` (1014 x 468): one phone screen at the game's size, the knight among the vendors, the owl over the smithy.
+- `castle_sheet.png` (1200 x 3569): the castle hall and its phone screen; A as he saw it (small, from its own picture) beside the
+  castle hall; the owl close, three times the game's size, on its beam from a little below, at its six moments; a boarded castle
+  window close (two times), the cart wheel against it, the light through it; the barred gate close (three times).
+
+```
+node tools/preview.mjs src/dev/preview_town_look.ts docs/mockups/town_look/pictures/castle_hall.png 1200 840 "overview:castle"
+node tools/preview.mjs src/dev/preview_town_look.ts docs/mockups/town_look/pictures/castle_phone.png 1014 468 "phone:castle"
+PREVIEW_TIMEOUT=600000 node tools/preview.mjs src/dev/preview_town_look.ts docs/mockups/town_look/pictures/castle_sheet.png 1200 3569 "castlesheet"
+  (the viewport must be the sheet's full height, or only its first screen is painted; "owlclose", "cwindow" and "cgate" alone)
+```
+
+### What making it game-ready will add to the list above
+
+As above for A, with: the castle's faces (a tile at a time: the dressed stone, the corbel table, the castle window as a face of
+its own, its planks, wheel and door); the stone above the game's 80 and the hipped roof as one picture over the dark above the
+back walls; the trusses as pieces on the walls' tiles (their corbels in the faces); the gate's quoins, voussoirs and hood in the
+castle's stone round the game's own portcullis, its day beyond as a picture behind the bars; the owl a piece on its hammer beam
+with its moments as a loop (breathing always; a blink every few seconds; its head turned now and then, looking behind seldom; a
+ruffle seldom).
+
+### Checks
+
+`tests/town_look.test.ts`, 9 of 9 (the five above, and four for the castle hall): its three pictures there at the sizes asked
+for (the sheet 1200 wide, under 7500 high); nothing pink in the hall or its phone screen but the mystic's own two stones (left as
+he approved them) and the knight's own, the town's teal-to-cyan only round the town's own things where it is now and on the
+knight; on the phone screen the knight standing out of the floor round him, lighter and darker both, and the owl seen there
+over the smithy (its pale face and breast, its dark eyes); the hall as bright in its lit places as A (97 of 255; A's 101,
+floor 1 B's 69). `tsc` is clean.

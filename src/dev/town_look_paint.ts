@@ -32,14 +32,24 @@ import { Iso, ISO_X } from '../art/isokit';
 import { hash } from '../art/kit';
 import { Deep, fbm, mixC, noise } from './floor1_look_paint';
 
-export type Look = 'boards' | 'fallen' | 'rafters';
+export type Look = 'boards' | 'fallen' | 'rafters' | 'castle';
+/** The three looks he picked from (his pick: A, “A's sun through boards (Recommended)”). */
 export const LOOKS: Look[] = ['boards', 'fallen', 'rafters'];
-export const LETTER: Record<Look, string> = { boards: 'a', fallen: 'b', rafters: 'c' };
-export const FILE: Record<Look, string> = { boards: 'a_morning_through_the_boards', fallen: 'b_the_roof_fallen_in', rafters: 'c_bare_rafters_at_noon' };
+/**
+ * THE CASTLE HALL: look A carried into the castle, right inside its walls (his words, 2 Nov 2026: “Well it’s still supposed to
+ * be in the castle.  Like right inside.  The barred door in the back leads out of the prison to the quarry”; his pick of the
+ * three to carry in: “A's sun through boards (Recommended)”). The castle's own thick dressed stone, no timber framing and no
+ * gable end; tall deep-set castle windows of two lights, hastily boarded; a great hall's timber roof (hipped, so no gable)
+ * on hammer-beam trusses springing from stone corbels; the barred gate in the back wall the way out of the prison.
+ */
+export const CASTLE: Look = 'castle';
+export const LETTER: Record<Look, string> = { boards: 'a', fallen: 'b', rafters: 'c', castle: 'castle' };
+export const FILE: Record<Look, string> = { boards: 'a_morning_through_the_boards', fallen: 'b_the_roof_fallen_in', rafters: 'c_bare_rafters_at_noon', castle: 'castle_hall' };
 export const CAPTION: Record<Look, string> = {
   boards: 'A. Morning through the boards: the hall under its timber roof, low sun in long gold slats through the barricaded windows.',
   fallen: 'B. The roof fallen in: an old tree leaning in through the hole, sun pouring down through its leaves, its roots across the floor.',
   rafters: 'C. Bare rafters at noon: the boards gone, vines over the rafters, the noon sun in a lattice over the whole floor.',
+  castle: "The castle's hall, right inside its walls: thick dressed stone, the windows boarded in a hurry, the morning sun through the gaps.",
 };
 
 /** Five tones of a material: its seam, its shade, its body, its light, its lit edge. */
@@ -148,6 +158,28 @@ export const PALS: Record<Look, Pal> = {
     mote: '#ffffff',
     flowers: ['#f2d24a', '#f8f4e8', '#e8742c', '#9a7ee0', '#d8402c'],
   },
+  // THE CASTLE HALL: A's morning carried in; the castle's own dressed stone, a warm grey (the prison's stone by day, the tomb's
+  // pale stone under it), the sun a low gold through the boards
+  castle: {
+    ...COMMON,
+    stone: ['#37332d', '#58524a', '#776f63', '#938a7c', '#aea595'],
+    flags: ['#332e27', '#524b40', '#6c6455', '#837a69', '#978e7c'],
+    plank: ['#2a2018', '#46382a', '#615039', '#7a684c', '#92805e'],
+    plank2: ['#2b1d14', '#4a3222', '#664630', '#805c40', '#987250'],
+    moss: ['#1e2a12', '#2e4018', '#40561f', '#547028', '#688632'],
+    leaf: ['#13240f', '#1f3a16', '#2e521d', '#3f6a26', '#548432'],
+    boards: ['#18110b', '#271c12', '#36271a', '#463322', '#57402b'],
+    seam: '#25211b',
+    outside: '#fff0c4',
+    sky: '#2a2016',
+    sun: '#ffe4a2',
+    sunK: 0.6,
+    fill: 0.12,
+    air: '#ffe2a0',
+    airK: [0.09, 0.17, 0.26],
+    mote: '#fff6d8',
+    flowers: ['#f2d24a', '#f6f0dc', '#e8742c', '#8c78d8', '#d8402c'],
+  },
 };
 
 // =================================================================================================
@@ -213,8 +245,23 @@ const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 // wedged, against another A DOOR off its hinges. The day shows through the gaps, and through them the sun comes in.
 
 interface Plank { u: number; v: number; ang: number; len: number; w: number; wood: 0 | 1; seed: number }
-export interface Win { wall: 'L' | 'R'; c: number; half: number; sill: number; spring: number; brace: 'wheel' | 'door' | null; planks: Plank[] }
+interface WheelAt { u: number; v: number; r: number }
+interface DoorAt { u: number; v: number; w: number; h: number; ang: number }
+/**
+ * A window: its wall, its middle along it (tiles), its opening (half wide, sill, where its head springs), what is wedged
+ * against it, its planks. THE CASTLE'S (`castle`): two lights side by side under round heads, a stone MULLION between them
+ * (`mull`, half its width), set deep in the wall's thickness: the embrasure round them SPLAYED (`splay` wider each side, its
+ * sill sloping down), the whole under one round arch.
+ */
+export interface Win {
+  wall: 'L' | 'R'; c: number; half: number; sill: number; spring: number; brace: 'wheel' | 'door' | null; planks: Plank[];
+  wheel: WheelAt; door: DoorAt; castle?: { mull: number; splay: number };
+}
 
+/** The cart wheel against its window: its middle (u from the window's middle, up) and its radius. */
+const WHEEL: WheelAt = { u: 4, v: 30, r: 21 };
+/** The door against its window: its middle, its size, how it leans. */
+const DOOR: DoorAt = { u: -2, v: 34, w: 46, h: 62, ang: -0.16 };
 function makeWin(wall: 'L' | 'R', c: number, brace: 'wheel' | 'door' | null, seed: number): Win {
   const half = 23;
   const sill = 12;
@@ -234,9 +281,40 @@ function makeWin(wall: 'L' | 'R', c: number, brace: 'wheel' | 'door' | null, see
     v += w + 5 + Math.floor(h(7) * 8);
     i++;
   }
-  return { wall, c, half, sill, spring, brace, planks };
+  return { wall, c, half, sill, spring, brace, planks, wheel: WHEEL, door: DOOR };
 }
-/** The windows: four in the left wall (the sun's side), two in the right. */
+/**
+ * THE CASTLE'S WINDOWS: tall, of two lights under round heads with a mullion between, deep in the thick wall (a splayed
+ * embrasure round them); boarded over in a hurry right across the embrasure, planks of two woods nailed crooked and
+ * overhanging onto the stone, from low on the sill up into the heads, gaps between them; a cart wheel against one, a door
+ * off its hinges against another, planks nailed over what they leave.
+ */
+export const CWIN = { half: 17, mull: 2.5, sill: 18, spring: 84, splay: 8 };
+function makeCastleWin(wall: 'L' | 'R', c: number, brace: 'wheel' | 'door' | null, seed: number): Win {
+  const { half, sill, spring, splay } = CWIN;
+  const outer = half + splay;
+  const planks: Plank[] = [];
+  const wheel: WheelAt = { u: 3, v: 36, r: 23 };
+  const door: DoorAt = { u: -3, v: 44, w: 50, h: 76, ang: -0.12 };
+  // (boarded as high as they could reach in a hurry: up to where the heads spring, the two round heads left open)
+  const top = spring - 4;
+  const from = brace === 'door' ? door.v + door.h / 2 - 6 : brace === 'wheel' ? wheel.v + wheel.r - 4 : sill + 4;
+  let v = from;
+  let i = 0;
+  while (v < top && i < 12) {
+    const h = (k: number): number => hash(i, seed, k);
+    const w = 7 + Math.floor(h(1) * 5);
+    const ang = (h(2) - 0.5) * 0.5 * (h(3) < 0.25 ? 1.7 : 1);
+    const len = 2 * outer + 8 + h(4) * 20;
+    planks.push({ u: (h(5) - 0.5) * 12, v: v + w / 2, ang, len, w, wood: h(6) < 0.55 ? 0 : 1, seed: seed * 31 + i });
+    v += w + 3 + Math.floor(h(7) * 7);
+    i++;
+  }
+  // (and one or two nailed up and down or slantwise over the rest, in a hurry)
+  if (hash(seed, 3, 9) > 0.35) planks.push({ u: (hash(seed, 4, 9) - 0.5) * 20, v: (sill + top) / 2 + 2, ang: Math.PI / 2 + (hash(seed, 5, 9) - 0.5) * 0.5, len: top - sill + 4, w: 8, wood: 1, seed: seed * 31 + 40 });
+  return { wall, c, half, sill, spring, brace, planks, wheel, door, castle: { mull: CWIN.mull, splay } };
+}
+/** The windows: five in the left wall (the sun's side), three in the right. */
 export const WINDOWS: Win[] = [
   makeWin('L', 9, null, 11),
   makeWin('L', 11, null, 37),
@@ -247,40 +325,67 @@ export const WINDOWS: Win[] = [
   makeWin('R', 9, 'door', 23),
   makeWin('R', 19, null, 29),
 ];
-/** The cart wheel against its window: its middle (u from the window's middle, up) and its radius. */
-const WHEEL = { u: 4, v: 30, r: 21 };
-/** The door against its window: its middle, its size, how it leans. */
-const DOOR = { u: -2, v: 34, w: 46, h: 62, ang: -0.16 };
+
+/** THE CASTLE'S WINDOWS: four in the left wall (the sun's side) between the trusses, two in the right. */
+export const CASTLE_WINDOWS: Win[] = [
+  makeCastleWin('L', 8.5, null, 11),
+  makeCastleWin('L', 11.5, 'wheel', 13),
+  makeCastleWin('L', 14.5, null, 41),
+  makeCastleWin('L', 17.5, 'door', 17),
+  makeCastleWin('R', 8.7, 'door', 23),
+  makeCastleWin('R', 18.75, null, 29),
+];
+/** The left wall's trusses (between its windows), along y; the right wall's are TRUSSES, along x. */
+export const L_TRUSSES = [10, 13, 16];
 
 function inOpening(W: Win, u: number, v: number): boolean {
   if (Math.abs(u) >= W.half || v < W.sill) return false;
+  if (W.castle) {
+    // (two lights: the mullion between, each its own round head)
+    const m = W.castle.mull;
+    const au = Math.abs(u);
+    if (au <= m) return false;
+    if (v < W.spring) return true;
+    const rl = (W.half - m) / 2;
+    return Math.hypot(au - (W.half + m) / 2, v - W.spring) < rl;
+  }
   if (v < W.spring) return true;
   return (u / W.half) ** 2 + ((v - W.spring) / W.half) ** 2 < 1;
 }
+/** THE CASTLE'S WINDOW: the embrasure round its lights (the wall's thickness, splayed), under one round arch. */
+function inEmbrasure(W: Win, u: number, v: number): boolean {
+  if (!W.castle) return false;
+  const o = W.half + W.castle.splay;
+  if (Math.abs(u) >= o || v < W.sill - 6) return false;
+  if (v < W.spring) return true;
+  return Math.hypot(u, v - W.spring) < o;
+}
 
-type Cover = { kind: 'plank'; p: Plank; a: number; b: number } | { kind: 'wheel'; part: 'rim' | 'spoke' | 'hub'; ang: number; r: number } | { kind: 'door'; a: number; b: number };
+type Cover = { kind: 'plank'; p: Plank; a: number; b: number } | { kind: 'wheel'; part: 'rim' | 'spoke' | 'hub'; ang: number; r: number; R: number } | { kind: 'door'; a: number; b: number; w: number; h: number };
 /** What of the barricade covers a point of the window's face (u across from its middle, v up), or null. */
 function coverAt(W: Win, u: number, v: number): Cover | null {
   if (W.brace === 'wheel') {
-    const du = u - WHEEL.u;
-    const dv = v - WHEEL.v;
+    const WH = W.wheel;
+    const du = u - WH.u;
+    const dv = v - WH.v;
     const r = Math.hypot(du, dv);
-    if (r < WHEEL.r) {
+    if (r < WH.r) {
       const ang = Math.atan2(dv, du);
-      if (r > WHEEL.r - 4) return { kind: 'wheel', part: 'rim', ang, r };
-      if (r < 5) return { kind: 'wheel', part: 'hub', ang, r };
+      if (r > WH.r - 4) return { kind: 'wheel', part: 'rim', ang, r, R: WH.r };
+      if (r < 5) return { kind: 'wheel', part: 'hub', ang, r, R: WH.r };
       const sp = mod(ang + 0.2, Math.PI / 4);
-      if (Math.abs(sp - Math.PI / 8) * r < 1.6) return { kind: 'wheel', part: 'spoke', ang, r };
+      if (Math.abs(sp - Math.PI / 8) * r < 1.6) return { kind: 'wheel', part: 'spoke', ang, r, R: WH.r };
     }
   }
   if (W.brace === 'door') {
-    const du = u - DOOR.u;
-    const dv = v - DOOR.v;
-    const c = Math.cos(DOOR.ang);
-    const s = Math.sin(DOOR.ang);
+    const DR = W.door;
+    const du = u - DR.u;
+    const dv = v - DR.v;
+    const c = Math.cos(DR.ang);
+    const s = Math.sin(DR.ang);
     const a = du * c + dv * s;
     const b = -du * s + dv * c;
-    if (Math.abs(a) < DOOR.w / 2 && Math.abs(b) < DOOR.h / 2) return { kind: 'door', a: a + DOOR.w / 2, b: b + DOOR.h / 2 };
+    if (Math.abs(a) < DR.w / 2 && Math.abs(b) < DR.h / 2) return { kind: 'door', a: a + DR.w / 2, b: b + DR.h / 2, w: DR.w, h: DR.h };
   }
   // (the planks, the last nailed the nearest)
   for (let i = W.planks.length - 1; i >= 0; i--) {
@@ -299,7 +404,11 @@ function coverAt(W: Win, u: number, v: number): Cover | null {
 export function gapAt(W: Win, u: number, v: number): boolean {
   return inOpening(W, u, v) && coverAt(W, u, v) === null;
 }
-function winOn(wall: 'L' | 'R', along: number): Win | null {
+function winOn(wall: 'L' | 'R', along: number, look: Look = 'boards'): Win | null {
+  if (look === 'castle') {
+    for (const W of CASTLE_WINDOWS) if (W.wall === wall && Math.abs((along - W.c) * 32) < W.half + W.castle!.splay + 14) return W;
+    return null;
+  }
   for (const W of WINDOWS) if (W.wall === wall && Math.abs((along - W.c) * 32) < W.half + 40) return W;
   return null;
 }
@@ -327,7 +436,7 @@ function coverColour(P: Pal, cv: Cover, down: number): string {
     if (cv.part === 'hub') return cv.r < 2 ? P.iron[2] : W[clampK(3 - down)];
     if (cv.part === 'rim') {
       // (an iron tyre round it, the felloes' joints)
-      if (cv.r > WHEEL.r - 1.4) return cv.ang < -0.4 && cv.ang > -2.6 ? P.iron[1] : P.iron[3];
+      if (cv.r > cv.R - 1.4) return cv.ang < -0.4 && cv.ang > -2.6 ? P.iron[1] : P.iron[3];
       if (mod(cv.ang + 0.4, Math.PI / 3) < 0.06) return W[0];
       return W[clampK((cv.ang > 0.6 && cv.ang < 2.6 ? 3 : 2) - down)];
     }
@@ -335,12 +444,14 @@ function coverColour(P: Pal, cv: Cover, down: number): string {
   }
   // the door: boards up and down it, two ledges across, its ring
   const R = P.plank2;
-  const { a, b } = cv;
-  if (a < 1.2 || b > DOOR.h - 1.2) return R[clampK(4 - down)];
-  if (a > DOOR.w - 1.2 || b < 1.2) return R[0];
-  if (Math.abs(b - 14) < 4 || Math.abs(b - 48) < 4) return Math.abs(b - 14) > 3 || Math.abs(b - 48) > 3 ? R[clampK(3 - down)] : R[clampK(2 - down)];
+  const { a, b, w: DW, h: DH } = cv;
+  const l1 = DH * 0.22;
+  const l2 = DH * 0.77;
+  if (a < 1.2 || b > DH - 1.2) return R[clampK(4 - down)];
+  if (a > DW - 1.2 || b < 1.2) return R[0];
+  if (Math.abs(b - l1) < 4 || Math.abs(b - l2) < 4) return Math.abs(b - l1) > 3 || Math.abs(b - l2) > 3 ? R[clampK(3 - down)] : R[clampK(2 - down)];
   if (mod(a, 11.5) < 1) return R[0];
-  if (Math.hypot(a - DOOR.w * 0.78, b - 31) < 3.2 && Math.hypot(a - DOOR.w * 0.78, b - 31) > 1.8) return P.iron[3];
+  if (Math.hypot(a - DW * 0.78, b - DH / 2) < 3.2 && Math.hypot(a - DW * 0.78, b - DH / 2) > 1.8) return P.iron[3];
   return R[clampK((hash(Math.floor(a / 11.5), 3, 77) > 0.5 ? 2 : 1) + 1 - down)];
 }
 
@@ -352,7 +463,11 @@ export const SUN_DIR: Record<Look, readonly [number, number]> = {
   boards: [1 / 11, 1 / 40],
   fallen: [1 / 62, 1 / 260],
   rafters: [1 / 110, 1 / 300],
+  castle: [1 / 12.5, 1 / 40],
 };
+/** THE CASTLE: how high its stone walls stand (the roof springs from their tops), and the roof's pitch. */
+export const CASTLE_TOP = 140;
+export const CASTLE_PITCH = 60;
 /** B: the hole broken in the roof over the back corner (in tiles, where the ray crosses the roof). */
 export const HOLE = { x0: 6, x1: 11.6, y0: 6.4, y1: 11.2 };
 function inHole(x: number, y: number): boolean {
@@ -379,6 +494,16 @@ export function sunAt(look: Look, x: number, y: number, z: number): number {
   let dzT = roofZ(y) - z;
   for (let i = 0; i < 3; i++) dzT = Math.max(0, roofZ(y - b * dzT) - z);
   const first = Math.min(dzL, dzR, dzT);
+  if (look === 'castle') {
+    // (the castle: the sun only through the gaps in the left wall's boarded windows; its roof is higher than any ray that
+    // reaches that wall below its top)
+    if (dzR < dzL) return 0;
+    const zz = z + dzL;
+    if (zz >= CASTLE_TOP) return 0;
+    const yy = y - b * dzL;
+    const W = winOn('L', yy, look);
+    return W && gapAt(W, (yy - W.c) * 32, zz) ? 1 : 0;
+  }
   if (first === dzL) {
     const zz = z + dzL;
     if (zz >= WALL) return 0;
@@ -532,6 +657,174 @@ function faceAt(P: Pal, look: Look, wall: 'L' | 'R', s: number, up: number, seed
 }
 
 // =================================================================================================
+// THE CASTLE'S WALLS (the castle hall): its own thick DRESSED STONE in deep courses of big blocks, each block's face dressed
+// with a drafted margin (its upper and left edges catching the light, its lower and right in shade), some tooled, some a
+// shade apart, a putlog hole here and there; a chamfered plinth at the foot, moss in it and in the joints low down; along the
+// top A CORBEL TABLE (a row of little stone corbels under a projecting course) carrying the roof's wall plate; IVY climbing
+// high from the foot and hanging from the corbels; the tall deep-set windows, boarded; the trusses' stone corbels (painted
+// as solids, with the trusses).
+
+function castleAshlar(P: Pal, lit0: boolean, s: number, up: number, seed: number): string {
+  const S = P.stone;
+  const down = lit0 ? 0 : 1;
+  const CH = 18;
+  const cv = up - 14;
+  const row = Math.floor(cv / CH);
+  const lv = mod(cv, CH);
+  const off = Math.floor(hash(row, seed, 1) * 60);
+  const L = 36 + Math.floor(hash(row, seed, 2) * 22);
+  const uu = s + off + 600;
+  const bk = Math.floor(uu / L);
+  const lu = mod(uu, L);
+  if (lv === CH - 1 || lu === 0) {
+    if (up < 60 && fbm(s / 20, up / 14, seed + 5) > 0.58) return P.moss[clampK(1 + (lit0 ? 1 : 0))];
+    return P.seam;
+  }
+  let kk = 2;
+  const tone = hash(bk, row * 7 + seed, 3);
+  if (tone < 0.16) kk -= 1;
+  else if (tone > 0.86) kk += 1;
+  // (the drafted margin: the block's top and its edge toward the light catch it, its foot and far edge in shade)
+  if (lv === CH - 2) kk += 1;
+  if (lu === 1) kk += lit0 ? 1 : 0;
+  if (lv === 0) kk -= 1;
+  if (lu === L - 1) kk -= 1;
+  // (some blocks tooled in fine slanting strokes)
+  if (hash(bk, row, seed + 11) > 0.62 && lv > 1 && lv < CH - 2 && lu > 1 && lu < L - 1 && mod(lu + lv * 0.6, 4) < 1) kk -= 1;
+  // (a putlog hole: a square socket left by the builders' scaffold)
+  if (hash(bk, row, seed + 13) > 0.965 && Math.abs(lu - L / 2) < 3 && Math.abs(lv - CH / 2) < 3) return Math.abs(lu - L / 2) < 2 && lv > CH / 2 - 3 ? '#14110d' : S[0];
+  if (hash(bk, row, seed + 9) > 0.8 && lv > CH - 6 && lu < 5) kk -= 1;
+  let c = S[clampK(kk - down)];
+  if (up < 34 && fbm(s / 18, up / 10, seed + 7) > 0.6) c = P.moss[clampK(kk - down)];
+  else if (up < 24) c = mixC(c, S[0], 0.14);
+  return c;
+}
+
+/** The castle's corbel table along the wall's top: little corbels every 16 under a projecting course, their shadows. */
+function corbelTable(P: Pal, lit0: boolean, s: number, up: number): string | null {
+  const S = P.stone;
+  const down = lit0 ? 0 : 1;
+  const top = CASTLE_TOP;
+  if (up >= top - 7) {
+    // the projecting course: its lit top edge, its face, its shadowed underside
+    if (up === top - 1) return S[clampK(4 - down)];
+    if (up === top - 7) return S[0];
+    if (mod(s, 44) < 1) return P.seam;
+    return S[clampK(3 - down)];
+  }
+  if (up >= top - 19) {
+    // the corbels: each a block stepped in toward its foot; the wall in their shadow between them
+    const cs = mod(s, 16);
+    const vv = top - 8 - up;
+    const w = vv < 4 ? 8 : vv < 8 ? 6 : 4;
+    if (cs >= 8 - w / 2 && cs < 8 + w / 2) {
+      if (cs < 8 - w / 2 + 1) return S[clampK((lit0 ? 4 : 3) - down)];
+      if (cs >= 8 + w / 2 - 1) return S[clampK(1 - down)];
+      if (vv === 3 || vv === 7) return S[clampK(1 - down)];
+      return S[clampK(2 - down)];
+    }
+    return mixC(S[clampK(1 - down)], '#000000', vv < 3 ? 0.35 : 0.15);
+  }
+  return null;
+}
+
+/** The castle's wall at a point (s along it in picture pixels, up over its foot). */
+function castleFace(P: Pal, wall: 'L' | 'R', s: number, up: number, seed: number): string {
+  const lit0 = wall === 'R';
+  const down = lit0 ? 0 : 1;
+  const S = P.stone;
+  const ct = corbelTable(P, lit0, s, up);
+  if (ct) {
+    const iv = up < CASTLE_TOP - 7 ? castleIvy(P, s, up, seed, down) : null;
+    return iv ?? ct;
+  }
+  const along = s / 32;
+  const W = winOn(wall, along, 'castle');
+  if (W && W.castle) {
+    const u = (along - W.c) * 32;
+    const cv = coverAt(W, u, up);
+    const emb = inEmbrasure(W, u, up);
+    const o = W.half + W.castle.splay;
+    // (a plank overhangs the embrasure onto the stone only so far)
+    if (cv && (emb || Math.abs(u) < o + 12)) return coverColour(P, cv, down);
+    if (inOpening(W, u, up)) return P.outside;
+    if (emb) {
+      const au = Math.abs(u);
+      // the mullion: a slim shaft of the stone, chamfered, lit on its edge toward the light
+      if (au <= W.castle.mull && up < W.spring + 9) return u < 0 === (wall === 'L') ? S[clampK(3 - down)] : S[clampK(2 - down)];
+      // the splayed sill: it slopes down toward the room, facing up: lit
+      if (up < W.sill) return S[clampK((up > W.sill - 2 ? 4 : 3) - down)];
+      // the tympanum over the two heads: the wall's stone set back, in shade, a little round opening boarded
+      if (up >= W.spring && au < W.half) {
+        const oc = Math.hypot(u, up - W.spring - 13);
+        if (oc < 4) return oc < 2.5 ? P.plank[1] : S[0];
+        return mod(up, 9) < 1 ? P.seam : S[clampK(1 - down)];
+      }
+      // the splayed jambs and the arch's soffit: the one turned to screen-left lit, the one turned right in shade, the soffit dark
+      if (up >= W.spring && Math.hypot(u, up - W.spring) > o - W.castle.splay) {
+        const ang = Math.atan2(up - W.spring, u);
+        return ang > 0.55 && ang < Math.PI - 0.55 ? S[0] : (u > 0) === (wall === 'L') ? S[clampK(1 - down)] : S[clampK(3 - down)];
+      }
+      const toLight = (u > 0) !== (wall === 'L');
+      const deep = (au - W.half) / W.castle.splay;
+      if (deep < 0.2) return S[0];
+      return toLight ? S[clampK((deep > 0.75 ? 4 : 3) - down)] : S[clampK(1 - down)];
+    }
+    // the arris round the embrasure: a chamfer, lit where it turns to the light
+    const ring = Math.abs(u) < o + 3 && up >= W.sill - 9 && (up < W.spring || Math.hypot(u, up - W.spring) < o + 3);
+    if (ring) {
+      if (up < W.sill - 6) return S[clampK((up === W.sill - 7 ? 4 : 2) - down)];
+      return S[clampK((((u > 0) === (wall === 'L')) || up > W.spring + 14 ? 4 : 1) - down)];
+    }
+    // (a plank's shadow on the stone under it, where it overhangs)
+    if (coverAt(W, u - 1, up + 2) && Math.abs(u) < o + 13) return mixC(castleAshlar(P, lit0, s, up, seed), '#000000', 0.4);
+  }
+  const iv = castleIvy(P, s, up, seed, down);
+  if (iv) return iv;
+  if (up < 14) {
+    // the plinth: a chamfered course, lit along its slope, moss on it
+    if (fbm(s / 16, up / 6, seed + 3) > 0.56) return P.moss[clampK((up > 9 ? 3 : 2) - down)];
+    if (up === 13 || up === 12) return S[clampK(4 - down)];
+    if (up === 11) return S[clampK(3 - down)];
+    if (up === 10) return P.seam;
+    if (mod(s + 17, 52) < 1) return P.seam;
+    if (up < 2) return S[clampK(1 - down)];
+    return S[clampK(2 - down)];
+  }
+  return castleAshlar(P, lit0, s, up, seed);
+}
+
+/** IVY on the castle's walls: climbing high from the foot in masses, hanging in tongues from the corbel table. */
+function castleIvy(P: Pal, s: number, up: number, seed: number, down: number): string | null {
+  const pitch = 84;
+  const c0 = Math.floor(s / pitch);
+  let hit = false;
+  for (let c = c0 - 1; c <= c0 + 1 && !hit; c++) {
+    if (hash(c, seed, 401) > 0.6) continue;
+    const x0 = c * pitch + hash(c, seed, 403) * pitch;
+    const reach = 40 + hash(c, seed, 405) * 80;
+    const wob = Math.sin(up * 0.07 + c * 2.1) * 9;
+    const wide = (16 + hash(c, seed, 407) * 16) * (1 - (up / (reach + 1)) ** 2) + 3;
+    if (up < reach && Math.abs(s - x0 - wob) < wide && fbm(s / 6, up / 6, seed + c) > 0.38 + (up / reach) * 0.18) hit = true;
+    // (a stem going on up from the mass, leaves along it)
+    if (!hit && up < reach * 1.5 && up > reach * 0.6 && Math.abs(s - x0 - Math.sin(up * 0.11 + c) * 6) < 2.5 && hash(c, seed, 409) > 0.4) hit = fbm(s / 4, up / 4, seed + c * 3) > 0.32;
+  }
+  if (!hit && up > CASTLE_TOP - 60) {
+    const hc = Math.floor(s / 64);
+    if (hash(hc, seed, 411) < 0.55) {
+      const hx = hc * 64 + hash(hc, seed, 413) * 44;
+      const len = 14 + hash(hc, seed, 415) * 36 + Math.sin(s * 0.3) * 3;
+      if (Math.abs(s - hx - 10) < 14 - (CASTLE_TOP - up) * 0.12 && up > CASTLE_TOP - 7 - len && fbm(s / 5, up / 5, seed + 9) > 0.4) hit = true;
+    }
+  }
+  if (!hit) return null;
+  const lf = hash(s >> 1, up >> 1, seed + 417);
+  if (lf > 0.982) return P.flowers[Math.floor(hash(s >> 1, up >> 1, seed + 419) * P.flowers.length)];
+  const k = lf > 0.72 ? 4 : lf > 0.45 ? 3 : lf > 0.18 ? 2 : 1;
+  return P.leaf[clampK(k - down)];
+}
+
+// =================================================================================================
 // THE GATE OUT TO THE QUARRY, in the right wall where the game has it (its doorway x 13 to 16): a round-headed way under a
 // ring of voussoirs, standing whole over the wall plate; its portcullis down, the bright day outside through its bars.
 
@@ -567,6 +860,121 @@ function gateFace(P: Pal, du: number, up: number): string | null | 'way' {
   if (!inRound(du, up - 1.5, GWAY.half + 1.5, GWAY.spring, GWAY.rise + 1.5) && (du < 0 || up > GWAY.spring + 24)) return S[4];
   if (up < GWAY.spring) return mod(up, 16) === 15 ? P.seam : du < 0 ? S[3] : S[2];
   return S[idx % 2 ? 3 : 2];
+}
+
+
+/**
+ * THE CASTLE'S GATE OUT (the castle hall): the town's gate in the right wall where the game has it, the way out of the
+ * prison to the Quarry. The castle's stone round it: big QUOINS up its jambs, long and short in turn; a ring of VOUSSOIRS
+ * with a keystone; a hood mould over them. In the way, its PORTCULLIS down, as the game draws it (art/gates.ts
+ * `makePortcullis`: an upright every quarter of a tile ending in a spike, a cross bar every 14), in grey steel; through its
+ * bars the passage through the thick wall and the bright day beyond: the road out, its ruts, grass, quarried blocks by it.
+ */
+export const CGATE = { half: 48, spring: 58, rise: 40, ring: 14, hood: 3, bars: 5.66, outer: 4.75 };
+function castleGateFace(P: Pal, du: number, up: number): string | null | 'way' {
+  const S = P.stone;
+  const G = CGATE;
+  const au = Math.abs(du);
+  if (au >= G.half + 24) return null;
+  if (inRound(du, up, G.half, G.spring, G.rise)) return 'way';
+  const lightSide = du < 0;
+  // the hood mould over the ring: a projecting label, its top lit, its foot in shadow; it stops on a carved stop each side
+  if (up >= G.spring - 6 && inRound(du, up, G.half + G.ring + G.hood, G.spring, G.rise + G.ring + G.hood) && !inRound(du, up, G.half + G.ring, G.spring, G.rise + G.ring)) {
+    if (up < G.spring) return au > G.half + G.ring - 1 ? S[lightSide ? 3 : 2] : null;
+    if (!inRound(du, up - 1, G.half + G.ring + G.hood, G.spring, G.rise + G.ring + G.hood)) return S[4];
+    if (!inRound(du, up + 1, G.half + G.ring, G.spring, G.rise + G.ring)) return S[0];
+    return S[3];
+  }
+  if (up >= G.spring && inRound(du, up, G.half + G.ring, G.spring, G.rise + G.ring)) {
+    // the voussoirs, the keystone
+    const ang = Math.atan2(Math.max(0, up - G.spring), du * (G.rise / G.half));
+    const n = 13;
+    const idx = Math.floor((ang / Math.PI) * n);
+    const into = (ang / Math.PI) * n - idx;
+    if (into < 0.07) return P.seam;
+    const key = idx === Math.floor(n / 2);
+    if (!inRound(du, up - 1.5, G.half + 1.5, G.spring, G.rise + 1.5)) return lightSide || up > G.spring + 26 ? S[4] : S[2];
+    if (!inRound(du, up + 1.2, G.half + G.ring - 1.2, G.spring, G.rise + G.ring - 1.2)) return key ? S[3] : S[1];
+    if (key) return into < 0.25 ? S[4] : S[3];
+    return S[idx % 2 ? 3 : 2];
+  }
+  if (up < G.spring) {
+    // the jambs: quoins, long and short in turn, their faces dressed; the arris of the way lit on the side toward the light
+    const course = Math.floor(up / 14);
+    const lv = mod(up, 14);
+    const w = course % 2 ? 22 : 14;
+    if (au < G.half + w) {
+      if (lv === 13) return P.seam;
+      if (au < G.half + 1.6) return lightSide ? S[4] : S[1];
+      if (au > G.half + w - 1.2) return P.seam;
+      if (lv === 12) return S[lightSide ? 4 : 3];
+      return S[lightSide ? 3 : 2];
+    }
+  }
+  return null;
+}
+/** Through the castle's gate: the portcullis, the passage through the wall, the day beyond. */
+function castleThroughGate(P: Pal, q: number, sy: number, tFace: number): [string, number] | null {
+  const G = CGATE;
+  // the portcullis down, in the plane of its grooves near the wall's inner face
+  {
+    const t = 2 * G.bars + q;
+    const x = G.bars + q;
+    const z = 16 * t - sy;
+    const du = (x - GATE_MID) * 32;
+    if (z >= 0 && inRound(du, z, G.half, G.spring, G.rise)) {
+      const u = Math.floor(du + G.half);
+      const up = Math.floor(z);
+      const SPIKE = 7;
+      const STEEL = ['#1b1b1e', '#2e2f33', '#4f5156', '#7e8186', '#b4b6ba'];
+      // (the grooves it runs in, either side)
+      if (u < 3 || u > 2 * G.half - 4) return [u < 3 ? STEEL[1] : STEEL[0], t];
+      // the cross bars
+      for (let b = SPIKE + 5; b <= G.spring + G.rise + 8; b += 14) {
+        if (up === b + 1) return [STEEL[4], t];
+        if (up === b) return [STEEL[3], t];
+        if (up === b - 1) return [STEEL[2], t];
+        if (up === b - 2) return [STEEL[1], t];
+      }
+      // the uprights, each to a spike
+      const k = mod(u - 3, 8);
+      if (up < SPIKE) {
+        if (k === 1) return [STEEL[4], t];
+        if (k === 0 && up >= 2) return [STEEL[3], t];
+        if (k === 2 && up >= SPIKE / 2) return [STEEL[2], t];
+      } else if (k < 4) return [[STEEL[4], STEEL[3], STEEL[2], STEEL[1]][k], t];
+    }
+  }
+  // the passage's jambs and soffit (the wall's thickness), in shade, coursed
+  const tO = 2 * G.outer + q;
+  const xO = G.outer + q;
+  const zO = 16 * tO - sy;
+  const duO = (xO - GATE_MID) * 32;
+  if (!inRound(duO, zO, G.half, G.spring, G.rise)) {
+    // (lit from the day at its outer end)
+    const c = mod(zO, 14) < 1 ? P.seam : zO > G.spring ? P.stone[1] : P.stone[2];
+    return [c, tFace - 0.2];
+  }
+  // the ground: in the passage its worn flags in shade, the day spilling in from beyond; out past it the day
+  const tg = sy / 16;
+  const gx = (tg + q) / 2;
+  const gy = (tg - q) / 2;
+  if (gy >= G.outer) {
+    const f = flagT(gx, gy, 917);
+    const c = f < 0 ? P.seam : P.flags[clampK(f - 1)];
+    return [mixC(c, P.outside, Math.max(0.15, Math.min(0.7, (6.1 - gy) * 0.5))), tg];
+  }
+  // OUTSIDE, in the sun: the road out to the Quarry, pale dust with a cart's ruts, grass either side, a quarried block or two
+  const n = fbm(gx * 3, gy * 3, 71);
+  const roadD = Math.abs(gx - GATE_MID - (G.outer - gy) * 0.25);
+  let c: string;
+  if (roadD < 1.15) {
+    c = n > 0.6 ? '#e2d0a6' : '#d4c094';
+    if (Math.abs(roadD - 0.55) < 0.07) c = '#b8a47a';
+  } else c = n > 0.55 ? '#9cb256' : '#86a04a';
+  const bx = gx - GATE_MID - 1.7;
+  if (Math.abs(bx) < 0.32 && Math.abs(gy - 3.4) < 0.22) c = gy < 3.3 ? '#efe6d2' : '#cfc4ac';
+  return [mixC(c, P.outside, Math.min(0.6, 0.22 + (G.outer - gy) * 0.12)), tg];
 }
 
 // =================================================================================================
@@ -656,6 +1064,7 @@ export const FLOOR_ROOTS: Record<Look, readonly (readonly [number, number])[][]>
     [[6, 8.8], [6.8, 9.3], [7.1, 10.3]], [[6, 11.6], [6.8, 11.9], [7.4, 11.4]], [[10.5, 6], [11.0, 7.0], [10.6, 7.8]],
   ],
   rafters: [[[6, 11.4], [6.7, 11.8], [7.2, 11.5], [7.7, 12.0]], [[6, 7.4], [6.8, 7.0], [7.4, 6.6]]],
+  castle: [],
 };
 function rootDist(look: Look, x: number, y: number): { d: number; w: number } {
   let best = { d: 9, w: 0 };
@@ -717,7 +1126,13 @@ export function paintPlace(D: Deep, look: Look): void {
         const t = 2 * HALL.x0 - q;
         const y = HALL.x0 - q;
         const z = 16 * t - sy;
-        if (t > best && y >= HALL.y0 && y < HALL.y1 + 1 && z >= 0) {
+        if (look === 'castle') {
+          if (t > best && y >= HALL.y0 && y < HALL.y1 + 1 && z >= 0 && z < CASTLE_TOP) {
+            best = t;
+            col = castleFace(P, 'L', y * 32, Math.floor(z), 17);
+            if (col !== P.outside) col = sunlit(P, col, 0);
+          }
+        } else if (t > best && y >= HALL.y0 && y < HALL.y1 + 1 && z >= 0) {
           const top = look === 'fallen' && y > 6.4 && y < 12.2 ? Math.min(roofZ(y), 128 + 30 * noise(y * 2.2, 1, 5) + (y - 6) * 6) : roofZ(y);
           if (z < top) {
             best = t;
@@ -735,7 +1150,22 @@ export function paintPlace(D: Deep, look: Look): void {
         const t = 2 * HALL.y0 + q;
         const x = HALL.y0 + q;
         const z = 16 * t - sy;
-        if (t > best && x >= HALL.x0 && x < HALL.x1 + 1 && z >= 0) {
+        if (look === 'castle') {
+          if (t > best && x >= HALL.x0 && x < HALL.x1 + 1 && z >= 0 && z < CASTLE_TOP) {
+            const g = castleGateFace(P, (x - GATE_MID) * 32, Math.floor(z));
+            if (g === 'way') {
+              const out = castleThroughGate(P, q, sy, t);
+              if (out) {
+                best = out[1];
+                col = out[0];
+              }
+            } else {
+              best = t;
+              col = g ?? castleFace(P, 'R', x * 32, Math.floor(z), 19);
+              if (col !== P.outside) col = sunlit(P, col, 0);
+            }
+          }
+        } else if (t > best && x >= HALL.x0 && x < HALL.x1 + 1 && z >= 0) {
           const du = (x - GATE_MID) * 32;
           const g = gateFace(P, du, Math.floor(z));
           if (g === 'way') {
@@ -754,8 +1184,29 @@ export function paintPlace(D: Deep, look: Look): void {
           }
         }
       }
+      // THE CASTLE HALL'S ROOF: hipped, its two slopes rising from the tops of both back walls
+      if (look === 'castle') {
+        const TOP = CASTLE_TOP;
+        const PI = CASTLE_PITCH;
+        const cands: [number, 'X' | 'Y'][] = [
+          [(TOP - 6 * PI - (PI * q) / 2 + sy) / (16 - PI / 2), 'Y'],
+          [(TOP - 6 * PI + (PI * q) / 2 + sy) / (16 - PI / 2), 'X'],
+        ];
+        for (const [tr, plane] of cands) {
+          const x = (tr + q) / 2;
+          const y = (tr - q) / 2;
+          const z = 16 * tr - sy;
+          const dx = x - HALL.x0;
+          const dy = y - HALL.y0;
+          const ok = plane === 'Y' ? dy >= 0 && dy <= dx : dx >= 0 && dx <= dy;
+          if (tr > best && ok && x < HALL.x1 + 1 && y < HALL.y1 + 1 && Math.min(dx, dy) <= 7 && z >= TOP) {
+            best = tr;
+            col = castleRoofAt(P, x, y, z, plane);
+          }
+        }
+      }
       // THE ROOF'S UNDERSIDE over the right wall (the back slope, up to the ridge): boards on rafters (A, B), bare rafters (C)
-      {
+      else {
         // z = 16 t - sy and z = PLATE + PITCH (y - 6), y = (t - q) / 2:  t (16 - PITCH / 2) = PLATE - 6 PITCH - PITCH q / 2 + sy
         const tr = (PLATE - 6 * PITCH - (PITCH * q) / 2 + sy) / (16 - PITCH / 2);
         const x = (tr + q) / 2;
@@ -847,6 +1298,7 @@ const PLASTER: Record<Look, R5> = {
   boards: ['#4a4234', '#7c7058', '#91846a', '#a49678', '#b8aa8a'],
   fallen: ['#40432f', '#6e7258', '#828769', '#959a7a', '#a8ad8c'],
   rafters: ['#474640', '#7a776a', '#8e8b7d', '#a29e8e', '#b6b2a0'],
+  castle: ['#474640', '#7a776a', '#8e8b7d', '#a29e8e', '#b6b2a0'],
 };
 
 /** The roof's underside at a point of the back slope: its principal rafters over the hammer beams, its common rafters, its purlins, its boards; A and B boarded, B broken through at the back corner, C bare to the sky. */
@@ -885,6 +1337,51 @@ function roofAt(P: Pal, look: Look, x: number, y: number, z: number): string | n
 }
 /** The trusses' places along x (none over the gate's way). */
 export const TRUSSES = [7.5, 10.5, 17.5, 20.5];
+
+/**
+ * THE CASTLE HALL'S ROOF, seen from under it: a great hall's timber roof, HIPPED (it slopes up from the tops of both back
+ * walls, so there is no gable end), on its trusses. Its wall plate on the corbel table; its principal rafters over the
+ * trusses; the HIP RAFTER over the back corner where the two slopes meet; purlins along the slopes; common rafters between,
+ * stopping on the hip; the boards over them, a chink of day here and there. The slope over the right wall (turned to
+ * screen-left) a shade lighter than the one over the left.
+ */
+function castleRoofAt(P: Pal, x: number, y: number, z: number, plane: 'X' | 'Y'): string {
+  const W = P.wood;
+  const B = P.boards;
+  const along = plane === 'Y' ? x : y;
+  const up = z - CASTLE_TOP;
+  const d = plane === 'Y' ? 0 : 1;
+  // the wall plate: a beam along the wall's top, lit along its foot by the hall's light, pegged
+  if (up < 10) {
+    if (up < 1) return W[0];
+    if (up < 3) return W[clampK(4 - d)];
+    if (mod(along * 32, 40) < 1.2 && up > 4 && up < 7) return W[0];
+    return W[clampK(3 - d)];
+  }
+  // the hip rafter over the corner: big, its face toward each slope
+  const hip = x - y;
+  if (Math.abs(hip) < 0.17) return Math.abs(hip) < 0.03 ? W[0] : hip > 0 ? W[3] : W[2];
+  if (Math.abs(hip) < 0.21) return W[0];
+  // the principal rafters over the trusses
+  for (const a of plane === 'Y' ? TRUSSES : L_TRUSSES) {
+    const da = along - a;
+    if (Math.abs(da) < 0.14) return Math.abs(da) > 0.1 ? (da < 0 ? W[clampK(4 - d)] : W[0]) : W[clampK(3 - d)];
+  }
+  // the purlins, along the slope
+  const purl = Math.abs(mod(up + 35, 70) - 35);
+  if (purl < 5) return purl < 1 ? W[clampK(4 - d)] : purl > 3.6 ? W[0] : W[clampK(2 - d)];
+  // the common rafters (on the hip, the jacks stop at it)
+  const raft = Math.abs(mod(along + 0.25, 0.5) - 0.25);
+  if (raft < 0.045) return raft < 0.015 ? W[clampK(3 - d)] : W[clampK(1 - d)];
+  // the boards over them, across the rafters, a chink of day between two here and there
+  const bd = mod(up, 9);
+  if (bd < 1) {
+    if (hash(Math.floor(up / 9), Math.floor(along * 1.5), 67 + d) > 0.985) return P.outside;
+    return B[0];
+  }
+  return B[clampK((hash(Math.floor(up / 9), Math.floor(along * 1.5), 69 + d) > 0.7 ? 4 : 3) - d)];
+}
+
 
 /** Through the gate's way: the portcullis down (square bars every twelve, straps across), and past it the day: the road out, the grass, the haze. */
 function throughGate(P: Pal, look: Look, q: number, sy: number, tFace: number): [string, number] | null {
@@ -1012,6 +1509,81 @@ export function paintTrusses(D: Deep, look: Look): void {
         let c = W[clampK(k)];
         if (face !== 'z' && hash(Math.floor(z / 3), Math.floor(y * 20), 91) > 0.86) c = W[clampK(k - 1)];
         if (m === 'beam' && face === 'y' && Math.abs(z - (HAMMER.z0 + HAMMER.z1) / 2) < 1.2 && hash(Math.floor(y * 6), 0, 93) > 0.6) c = W[0];
+        return c;
+      },
+    }, 0.01);
+  }
+}
+
+
+/**
+ * THE CASTLE HALL'S TRUSSES, on both back walls, each springing from A CARVED STONE CORBEL set into the wall (three steps,
+ * the deepest at its top): its wall post stands on the corbel up the wall to the wall plate, and an ARCH BRACE curves out and
+ * up from the post. On the right wall (along x) a HAMMER BEAM juts out from the post at the arch brace's head, a hammer post
+ * standing on it up to the roof's principal rafter: THE OWL sits on one, on the beam's end over the smithy. On the left wall
+ * (along y, between the windows) the posts and their braces carry the hip's rafters (no hammer beams there, to keep the
+ * windows clear).
+ */
+export const CTRUSS = { hw: 0.13, corbel: [40, 56] as const, beamOut: 1.1, hpost: [0.62, 0.84] as const, braceFoot: 64, lBrace: 0.5 };
+/** Where the owl sits in the castle hall: on the end of the hammer beam over the rack and the forge, before its hammer post. */
+export const CASTLE_OWL_AT: [number, number, number] = [17.5, 6 + 0.98, 102];
+export function paintCastleTrusses(D: Deep): void {
+  const P = PALS.castle;
+  const W = P.wood;
+  const S = P.stone;
+  const T = CTRUSS;
+  const roofAt = (out: number): number => CASTLE_TOP + CASTLE_PITCH * out;
+  const runs: { wall: 'L' | 'R'; at: number }[] = [...TRUSSES.map((at) => ({ wall: 'R' as const, at })), ...L_TRUSSES.map((at) => ({ wall: 'L' as const, at }))];
+  for (const r of runs) {
+    const hammer = r.wall === 'R';
+    const [c0, c1] = T.corbel;
+    // the arch brace: a quarter of an ellipse from the post (vertical there) to the head (level there)
+    const bOut = hammer ? T.hpost[1] : T.lBrace;
+    const bTop = hammer ? HAMMER.z0 : CASTLE_TOP - 6;
+    const part = (al: number, out: number, z: number): 'beam' | 'post' | 'brace' | 'hpost' | 'corbel' | null => {
+      const a = Math.abs(al - r.at);
+      if (out < 0) return null;
+      if (z >= c0 && z < c1) {
+        const step = z < c0 + 5 ? 0.12 : z < c0 + 10 ? 0.22 : 0.32;
+        return out < step && a < T.hw + 0.05 ? 'corbel' : null;
+      }
+      if (a > T.hw) return null;
+      if (out < 0.22 && z >= c1 && z < CASTLE_TOP) return 'post';
+      if (hammer && z >= HAMMER.z0 && z < HAMMER.z1 && out < T.beamOut) return 'beam';
+      if (hammer && out > T.hpost[0] && out < T.hpost[1] && z >= HAMMER.z1 && z < roofAt(out) + 2) return 'hpost';
+      if (out >= 0.18 && out < bOut && z >= T.braceFoot && z < bTop) {
+        const e = Math.hypot((out - bOut) / (bOut - 0.2), (z - T.braceFoot) / (bTop - T.braceFoot));
+        if (e > 0.78 && e < 1) return 'brace';
+      }
+      return null;
+    };
+    const toLocal = (x: number, y: number): [number, number] => (r.wall === 'R' ? [x, y - HALL.y0] : [y, x - HALL.x0]);
+    const reach = hammer ? T.beamOut : T.lBrace;
+    const box = r.wall === 'R'
+      ? { x0: r.at - T.hw - 0.06, y0: HALL.y0, x1: r.at + T.hw + 0.06, y1: HALL.y0 + reach + 0.02 }
+      : { x0: HALL.x0, y0: r.at - T.hw - 0.06, x1: HALL.x0 + reach + 0.02, y1: r.at + T.hw + 0.06 };
+    march(D, {
+      box: { ...box, z0: c0 - 1, z1: (hammer ? roofAt(T.hpost[1]) : CASTLE_TOP) + 3 },
+      inside: (x, y, z) => {
+        const [al, out] = toLocal(x, y);
+        return part(al, out, z) !== null;
+      },
+      shade: (x, y, z, face) => {
+        const [al, out] = toLocal(x, y);
+        const m = part(al, out, z)!;
+        const k = faceK(face);
+        if (m === 'corbel') {
+          // (carved: each step's lip a roll, catching the light; its underside in shade)
+          if (face === 'z') return S[4];
+          const lip = mod(z - c0, 5);
+          return S[clampK(lip > 3.6 ? k + 1 : lip < 1 ? k - 1 : k)];
+        }
+        let c = W[clampK(k)];
+        // (the timber's grain along it, a darker split here and there; a moulding along the beam's face; pegs at its joints)
+        const along = m === 'post' || m === 'hpost' ? z : out * 32;
+        if (face !== 'z' && hash(Math.floor(along / 4), Math.floor(al * 40), 91) > 0.86) c = W[clampK(k - 1)];
+        if (m === 'beam' && face !== 'z' && Math.abs(z - (HAMMER.z0 + HAMMER.z1) / 2) < 0.8) c = W[clampK(k - 1)];
+        if ((m === 'post' && Math.abs(z - HAMMER.z0 - 4) < 1.2) || (m === 'hpost' && Math.abs(z - HAMMER.z1 - 6) < 1.2)) c = W[0];
         return c;
       },
     }, 0.01);
@@ -1165,6 +1737,14 @@ export const POTS: Record<Look, Pot[]> = {
   boards: [...POTS_COMMON, { x: 6.42, y: 12.05, r: 0.17, h: 13, kind: 'flower', seed: 14 }, { x: 8.7, y: 6.42, r: 0.18, h: 14, kind: 'flower', seed: 15 }],
   fallen: POTS_COMMON.filter((p) => p.seed !== 1 && p.seed !== 4),
   rafters: [...POTS_COMMON, { x: 6.42, y: 12.05, r: 0.17, h: 13, kind: 'herb', seed: 14 }, { x: 8.7, y: 6.42, r: 0.18, h: 14, kind: 'flower', seed: 15 }],
+  // (the castle hall: along the left wall on the piers between its windows, under the trusses; the rest as A's)
+  castle: [
+    ...POTS_COMMON.filter((p) => p.seed !== 1 && p.seed !== 2 && p.seed !== 3),
+    { x: 6.42, y: 10.0, r: 0.22, h: 19, kind: 'bay', seed: 2 },
+    { x: 6.42, y: 13.0, r: 0.2, h: 16, kind: 'flower', seed: 1 },
+    { x: 6.42, y: 16.0, r: 0.2, h: 15, kind: 'herb', seed: 3 },
+    { x: 8.7, y: 6.42, r: 0.18, h: 14, kind: 'flower', seed: 15 },
+  ],
 };
 
 export function paintPot(D: Deep, look: Look, p: Pot): void {
@@ -1258,7 +1838,7 @@ export function paintTufts(D: Deep, look: Look): void {
 export function paintAir(D: Deep, look: Look): void {
   const P = PALS[look];
   const { OX, OY } = PICTURE;
-  const zTop = look === 'boards' ? WALL : look === 'fallen' ? 330 : 0;
+  const zTop = look === 'boards' ? WALL : look === 'castle' ? 96 : look === 'fallen' ? 330 : 0;
   if (zTop === 0) return;
   for (let py = 0; py < D.h; py++) {
     const sy = py + 0.5 - OY;

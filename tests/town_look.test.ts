@@ -1,4 +1,4 @@
-// THE FIRST TOWN REDONE TO GO WITH FLOOR 1'S NEW LOOK: THE THREE LOOKS (src/dev/town_look_paint.ts, src/dev/town_look_life.ts,
+// THE FIRST TOWN REDONE TO GO WITH FLOOR 1'S NEW LOOK: THE THREE LOOKS, AND HIS PICK (A) CARRIED INTO THE CASTLE'S HALL (src/dev/town_look_paint.ts, src/dev/town_look_life.ts,
 // src/dev/preview_town_look.ts; pictures in docs/mockups/town_look/pictures). Pictures first: nothing of the game imports
 // them; nothing pink anywhere (the knight's own deep red is his); the town's own teal-to-cyan only where it is now (the
 // Lexicon, the stash, the wordsmith's ring, the waypoint, the bazaar's and the smithy's own) and the knight's; the pictures
@@ -12,7 +12,7 @@ import { join } from 'node:path';
 // @ts-ignore
 import { inflateSync } from 'node:zlib';
 import { assert, test } from './floor_checks';
-import { FILE, HERO_AT, LETTER, LOOKS, PHONE, PICTURE, TOWN_AT, atPx } from '../src/dev/town_look_paint';
+import { CASTLE, CASTLE_OWL_AT, FILE, HERO_AT, LETTER, LOOKS, PHONE, PICTURE, TOWN_AT, atPx } from '../src/dev/town_look_paint';
 import type { Look } from '../src/dev/town_look_paint';
 
 const DIR = join('docs', 'mockups', 'town_look', 'pictures');
@@ -231,4 +231,123 @@ test("town looks: brighter than floor 1 below it (its lit places well over floor
     }
     assert.ok(t / n > MIN_BRIGHT, `${look}: its lit places come to ${(t / n).toFixed(1)}`);
   }
+});
+
+// =================================================================================================
+// THE CASTLE HALL (his pick, A, carried right inside the castle): castle_hall.png, castle_phone.png, castle_sheet.png.
+
+/** The castle hall's two pictures of the place: the whole hall, and one phone screen. */
+function castlePics(): Pic[] {
+  const [hx, hy] = atPx(HERO_AT[0], HERO_AT[1]);
+  const dx = Math.round(PHONE.W / 2 - hx);
+  const dy = Math.round(PHONE.H / 2 - (hy - PHONE.lift));
+  return [
+    { file: `${FILE[CASTLE]}.png`, w: PICTURE.W, h: PICTURE.H, hero: [hx, hy], look: CASTLE, dx: 0, dy: 0 },
+    { file: 'castle_phone.png', w: PHONE.W, h: PHONE.H, hero: [hx + dx, hy + dy], look: CASTLE, dx, dy },
+  ];
+}
+
+test('the castle hall: its pictures there, the sizes asked for', () => {
+  for (const p of castlePics()) {
+    const path = join(DIR, p.file);
+    assert.ok(existsSync(path), `${p.file} is missing`);
+    const q = readPng(path);
+    assert.ok(q.w === p.w && q.h === p.h, `${p.file}: ${q.w} x ${q.h}, not ${p.w} x ${p.h}`);
+  }
+  const s = readPng(join(DIR, 'castle_sheet.png'));
+  assert.ok(s.w === 1200 && s.h <= 7500 && s.h > 2500, `the castle sheet: ${s.w} x ${s.h}`);
+});
+
+test("the castle hall, Colour 3: nothing pink (but the mystic's own, his approved figure, untouched); the town's own teal-to-cyan only where it is now, and the knight's", () => {
+  for (const p of castlePics()) {
+    const q = readPng(join(DIR, p.file));
+    const places = TEAL_PLACES.map(([x, y, rx, up, down]) => {
+      const [sx, sy] = atPx(x, y);
+      return { x: sx + p.dx, y: sy + p.dy, rx, up, down };
+    });
+    const [mx0, my0] = atPx(TOWN_AT.mystic[0] + 0.5, TOWN_AT.mystic[1] + 0.5);
+    const mx = mx0 + p.dx;
+    const my = my0 + p.dy;
+    let cyan = 0;
+    let strayCyan = 0;
+    let strayPink = 0;
+    let mysticPink = 0;
+    const where: string[] = [];
+    for (let y = 0; y < q.h; y++) for (let x = 0; x < q.w; x++) {
+      const [r, g, b] = q.px(x, y);
+      const onKnight = Math.abs(x - p.hero[0]) < 40 && y > p.hero[1] - 80 && y < p.hero[1] + 10;
+      if (isCyan(r, g, b)) {
+        cyan++;
+        const theirs = places.some((g) => Math.abs(x - g.x) <= g.rx && y >= g.y - g.up && y <= g.y + g.down);
+        if (!theirs && !onKnight) {
+          strayCyan++;
+          if (where.length < 6) where.push(`cyan at ${x},${y}`);
+        }
+      }
+      if (isPink(r, g, b) && !onKnight) {
+        // (the mystic's own: two little pink stones, on his chain and his turban, as he was approved; left as they are)
+        if (Math.abs(x - mx) < 24 && y > my - 90 && y < my + 4) mysticPink++;
+        else {
+          strayPink++;
+          if (where.length < 10) where.push(`pink at ${x},${y}`);
+        }
+      }
+    }
+    assert.ok(cyan > 20, `${p.file}: the town's own teal-to-cyan not found`);
+    assert.ok(strayCyan === 0 && strayPink === 0, `${p.file}: ${strayCyan} cyan and ${strayPink} pink astray: ${where.join('; ')}`);
+    assert.ok(mysticPink < 40, `${p.file}: ${mysticPink} pink pixels on the mystic, more than his two little stones`);
+  }
+});
+
+test('the castle hall: the knight reads on its phone screen; the owl is on it, over the smithy', () => {
+  const q = readPng(join(DIR, 'castle_phone.png'));
+  const luma = (x: number, y: number): number => {
+    const [r, g, b] = q.px(x, y);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const fx = Math.round(PHONE.W / 2);
+  const fy = Math.round(PHONE.H / 2 + PHONE.lift);
+  let floor = 0;
+  let n = 0;
+  for (let y = fy - 10; y < fy + 30; y++) for (const x of [fx - 70, fx - 50, fx + 50, fx + 70]) {
+    floor += luma(x, y);
+    n++;
+  }
+  floor /= n;
+  let hi = 0;
+  let lo = 255;
+  for (let y = fy - 50; y < fy - 4; y++) for (let x = fx - 12; x < fx + 12; x++) {
+    hi = Math.max(hi, luma(x, y));
+    lo = Math.min(lo, luma(x, y));
+  }
+  assert.ok(hi > floor + MIN_HI && lo < floor - MIN_LO, `the castle: the knight (${lo.toFixed(1)} to ${hi.toFixed(1)}) does not stand out of the floor (${floor.toFixed(1)})`);
+  // the owl: its pale face and breast on the phone screen where it sits, over the smithy (its eyes dark in it)
+  const [hx, hy] = atPx(HERO_AT[0], HERO_AT[1]);
+  const [ox0, oy0] = atPx(CASTLE_OWL_AT[0], CASTLE_OWL_AT[1], CASTLE_OWL_AT[2]);
+  const ox = Math.round(ox0 + PHONE.W / 2 - hx);
+  const oy = Math.round(oy0 + PHONE.H / 2 - (hy - PHONE.lift));
+  assert.ok(oy - 40 > 0 && ox > 0 && ox < PHONE.W, `the owl at ${ox},${oy} is off the phone screen`);
+  let pale = 0;
+  let dark = 0;
+  for (let y = oy - 36; y < oy; y++) for (let x = ox - 10; x < ox + 10; x++) {
+    const l = luma(x, y);
+    if (l > 200) pale++;
+    if (l < 30) dark++;
+  }
+  assert.ok(pale > 60 && dark > 4, `the owl not seen at ${ox},${oy} (${pale} pale, ${dark} dark)`);
+});
+
+test("the castle hall: as bright in its lit places as A (well over floor 1 B's 69 of 255)", () => {
+  const q = readPng(join(DIR, `${FILE[CASTLE]}.png`));
+  let t = 0;
+  let n = 0;
+  for (let y = 0; y < q.h; y += 2) for (let x = 0; x < q.w; x += 2) {
+    const [r, g, b] = q.px(x, y);
+    const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    if (l > 20) {
+      t += l;
+      n++;
+    }
+  }
+  assert.ok(t / n > MIN_BRIGHT, `the castle hall: its lit places come to ${(t / n).toFixed(1)}`);
 });
