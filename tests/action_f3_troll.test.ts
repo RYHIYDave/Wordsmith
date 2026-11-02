@@ -136,7 +136,8 @@ test('4. its ring marked as the club goes up, where he will land; staggered firs
       }
     });
     assert.ok(Math.abs(marked - RAMPAGE.raise) < 0.05, `marked at ${marked.toFixed(3)} s`);
-    assert.ok(ring && Math.abs(ring.x - (x0 + RAMPAGE.travel + RING.ahead)) < 0.05 && ring.r === RING.radius, 'where he will land, and as wide as the ring');
+    const got = ring as { x: number; y: number; r: number } | null;
+    assert.ok(got && Math.abs(got.x - (x0 + RAMPAGE.travel + RING.ahead)) < 0.05 && got.r === RING.radius, 'where he will land, and as wide as the ring');
     // (staggered: the mark goes, and nothing comes)
     const s = troll(1.8, 0);
     let gone = false;

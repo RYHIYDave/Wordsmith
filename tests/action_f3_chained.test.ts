@@ -94,7 +94,9 @@ test('1. the switch is off, nothing of the game imports the mock-up, his other m
   assert.equal(CHAINED_ACTION.on, false, 'CHAINED_ACTION is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (the Amalgamation's moves done the action way, art/amalgam_action*.ts, a mock-up behind AMALGAM_ACTION, off, draws its slams' rings with this one's)
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/chained_action.ts' || f === 'art/chained_action_fx.ts' || f.startsWith('art/amalgam_action')) continue;
+    // (and the game's own, brought in by the main chat behind CO_ACTION: his rules, game/bosses.ts; the hook and ball in flight,
+    // render/bossfx.ts; his crack and rings, render/act1_fx/chained.ts; and the bestiary's choosing of his art)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/chained_action.ts' || f === 'art/chained_action_fx.ts' || f.startsWith('art/amalgam_action') || ['game/bosses.ts', 'render/bossfx.ts', 'render/act1_fx/chained.ts', 'art/bestiary.ts'].includes(f)) continue;
     assert.ok(!/from ['"][^'"]*(chained_action|chained_action_fx|action_f3_chained_scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   for (const freed of STATES) {

@@ -28,6 +28,8 @@
 import { stepActionF1 } from './action_f1';
 import { stepActionF2 } from './action_f2';
 import { stepActionF4 } from './action_f4';
+import { BALL_LAND, BALL_LET, BALL_LONG, BALL_REACH, HOOK_BACK, HOOK_BITE, HOOK_BLOW, HOOK_LET, HOOK_LONG, LASH_HITS, LASH_LONG, LASH_TRAVEL_TILES, WHIRL_HIT, WHIRL_LONG, WHIRL_LOOP, actBallPath, actHookPath } from '../art/chained_action';
+import { CRACK, RING as CO_RING, crackStrikes, ringStrikes as coRingStrikes } from '../art/chained_action_fx';
 import { BODIES, MONSTERS, MSG, SUMMON, TUNE, wordShare } from './defs';
 import type { MonsterDef } from './defs';
 import { beside, fromFigure, handOf } from './facing';
@@ -221,6 +223,8 @@ export function actsOf(m: { kind: MonsterKind }): readonly ActDef[] | null {
   if (r) return r.acts;
   // (THE HEADSMAN MADE NEW: his four attacks and his dashes)
   if (m.kind === 'headsman' && HEADSMAN2_FIGHT.on && BOSSES5.on) return H2_ACTS;
+  // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY)
+  if (m.kind === 'chained' && CO_ACTION.on && BOSSES5.on) return CO2_ACTS;
   return BOSSES5.on && m.kind in ACTS ? ACTS[m.kind as GaitedKind] : null;
 }
 export function actDef(m: { kind: MonsterKind; act?: { id: ActId } }): ActDef | null {
@@ -329,6 +333,53 @@ export const CHAINED = {
  * second, as the hero's own Whirlwind carries him.
  */
 export const CHAINED_SPIN = { on: true, chase: 1.7 };
+
+/**
+ * THE CHAINED ONE'S MOVES DONE THE ACTION WAY (the art chat's art/action-f3, art/chained_action.ts; his "Yes, that's it
+ * (Recommended)" to each, 31 Oct 2026): every blow a big wind-up held, struck in two frames, a big wind-down; bigger areas; a
+ * finisher where it fits. Behind this switch (off), with the art's (CHAINED_ACTION: art/bestiary.ts useCoAction). His numbers the
+ * pictures' own; the rest the rules':
+ *   lash     a combo: the forehand and the backhand each a line before him (`lash[i]`: how far, and from his right to his left),
+ *            then the finisher's CRACK, from CRACK.from to CRACK.to before him, CRACK.half to either side, struck as it runs out
+ *            (`crackDmg`); its lane marked from his fists going up (`crackWarn`); he steps in LASH_TRAVEL as it ends
+ *   whirl    gathered and held; his chains out `whirl.reach` round him as he spins (`from` to `to`, a blow in each `gap`), walking
+ *            after the hero (CHAINED_SPIN); its loop played round `loops` more times; the RING round him at WHIRL_HIT,
+ *            CO_RING.whirl round (`ringDmg`), marked from `warn`
+ *   hook     flung and biting at HOOK_BITE however far it flies (actHookPath); dragged in to HOOK_BACK; then THE BLOW WAITING at
+ *            HOOK_BLOW, CO_RING.hammer round a point `hook.ahead` before him (`blowDmg`), marked from `hook.warn`
+ *   ball     held high, whipped down: it lands at BALL_LAND, BALL_REACH before him, CO_RING.ball round, marked from `ball.warn`
+ */
+export const CO_ACTION = { on: false };
+export const CO2 = {
+  lash: [
+    { reach: 3.42, left: [-0.6, 0.6] },
+    { reach: 3.51, left: [-1.4, 0.6] },
+  ] as ReadonlyArray<{ reach: number; left: readonly [number, number] }>,
+  crackDmg: 1.3,
+  crackWarn: 70 / 30,
+  travel: LASH_TRAVEL_TILES,
+  whirl: { from: 1.15, to: 2.2, reach: 2.94, gap: 0.3, warn: 2.2, ringDmg: 1.0, loops: 4 },
+  hook: { r: 0.6, ahead: 2.0, warn: 77 / 30, blowDmg: 1.2, most: 7.5 },
+  ball: { warn: 1.5 },
+};
+/** (CO_ACTION) The perils his moves leave on the floor, drawn only (their blows are his own): the finisher's crack (from its lane's warning on), and a ring. */
+export const CO_CRACK = 'chained:crack';
+export const CO_RING_PERIL = 'chained:ring';
+/** (CO_ACTION) His acts: as his old, each done the action way; his breaking of his chains as it was. */
+const CO2_LOOP = { at: WHIRL_LOOP.at, span: WHIRL_LOOP.span, extra: CO2.whirl.loops * WHIRL_LOOP.span };
+export const CO2_ACTS: readonly ActDef[] = [
+  { id: 'lash', clip: 'attack', long: LASH_LONG, hit: LASH_HITS[0], dmg: 0.9, cooldown: 0, first: 0, after: 0.4, near: 0, far: 3.2 },
+  { id: 'whirl', clip: 'whirl', long: WHIRL_LONG + CO2_LOOP.extra, hit: CO2.whirl.from, dmg: 0.55, cooldown: 10, first: 5, after: 0.6, near: 0, far: 2.9, loop: CO2_LOOP },
+  { id: 'hook', clip: 'hook', long: HOOK_LONG, hit: HOOK_LET, dmg: 0.5, cooldown: 8, first: 2.5, after: 0.15, near: 3.0, far: 7.5 },
+  { id: 'ball', clip: 'ball', long: BALL_LONG, hit: BALL_LET, dmg: 1.5, cooldown: 12, first: 7, after: 0.6, near: 3.2, far: 5.6 },
+  { id: 'breakL', clip: 'breakL', long: 2.3, hit: 0.8, dmg: 0.5, cooldown: 0, first: 0, after: 0.3, near: 0, far: 0, forced: true },
+  { id: 'breakBall', clip: 'breakBall', long: 2.3, hit: 0.8, dmg: 0.5, cooldown: 0, first: 0, after: 0.3, near: 0, far: 0, forced: true },
+];
+/** (CO_ACTION) A moment of a looped act's pictures (seconds into them) as the act's own clock has it (its loop played round). */
+export function actTimeOf(a: ActDef, T: number): number {
+  const L = a.loop;
+  return L && T >= L.at + L.span ? T + L.extra : T;
+}
 
 /** THE OSSUARY AMALGAMATION. */
 export const AMALGAM = {
@@ -669,7 +720,7 @@ export class BossRules {
     }
     else if (a.id === 'hook') act.a = Math.max(3.5, Math.min(CHAINED.hook.most, dist + 0.6));
     else if (a.id === 'ball') {
-      const p = beside(m.x, m.y, m.fx, m.fy, act.hand, CHAINED.ball.reach, 0);
+      const p = beside(m.x, m.y, m.fx, m.fy, act.hand, CO_ACTION.on && m.kind === 'chained' ? BALL_REACH : CHAINED.ball.reach, 0);
       act.x = p.x;
       act.y = p.y;
     } else if (a.id === 'breakL' || a.id === 'breakBall') {
@@ -711,7 +762,7 @@ export class BossRules {
     const swift = 1 - 0.3 * wordShare(m, 'swift');
     const i = m.move ?? -1;
     // (THE HEADSMAN MADE NEW: a move that carries him ends where he has gone: he is moved there; and his dashes share a wait)
-    const shift = HEADSMAN2_FIGHT.shift[a.id];
+    const shift = m.kind === 'chained' && CO_ACTION.on ? (a.id === 'lash' ? ([CO2.travel, 0] as const) : undefined) : HEADSMAN2_FIGHT.shift[a.id];
     if (shift && m.act) {
       const p = beside(m.x, m.y, m.fx, m.fy, m.act.hand, shift[0], shift[1]);
       if (this.walkable(p.x, p.y)) {
@@ -787,6 +838,143 @@ export class BossRules {
     return true;
   }
 
+  /** (CO_ACTION) The Chained One's moves done the action way, from `t0` to `t1` of act `a` (CO2). */
+  private coActing(m: Monster, a: ActDef, t0: number, t1: number, dt: number): void {
+    const g = this.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    const here = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
+    const dist = Math.hypot(h.x - m.x, h.y - m.y);
+    const el = g.monsterElement(m);
+    const half = g.halfOf(m);
+    /** The game's red circle where a blow of his will land, `left` seconds before it does: a mark only (its blow is his own). */
+    const mark = (x: number, y: number, r: number, left: number): void => g.addWarn(x, y, r, Math.max(0.05, left), 0, el, m.words, m.name, m.id, half, true);
+    /** A ring going out over the floor from (x, y), `r` round: drawn (render/act1_fx/chained.ts). */
+    const ring = (x: number, y: number, r: number): void => void this.peril(m, 'act1', x, y, { a1: CO_RING_PERIL, dur: CO_RING.long, d: r, done: 1 });
+    switch (a.id) {
+      case 'lash': {
+        // (the forehand and the backhand: each a line before him)
+        for (let i = 0; i < 2; i++) {
+          if (!at(LASH_HITS[i])) continue;
+          const L = CO2.lash[i];
+          const r = this.rel(m);
+          if (r.fwd > -0.2 && r.fwd <= L.reach && r.left >= L.left[0] - TUNE.heroRadius && r.left <= L.left[1] + TUNE.heroRadius) this.blow(m, a.dmg);
+          g.emit({ t: 'shake', amount: 2 });
+          g.sfx('slam', 0.5);
+        }
+        // (the finisher's lane marked as his fists go up; the crack, run out from his fists along it: struck once as it runs)
+        const F = LASH_HITS[2];
+        if (at(CO2.crackWarn)) this.peril(m, 'act1', m.x, m.y, { a1: CO_CRACK, t: CO2.crackWarn - F, dur: CRACK.long, b: F - CO2.crackWarn });
+        if (at(F)) {
+          g.emit({ t: 'shake', amount: 5 });
+          g.sfx('slam', 1);
+        }
+        if (t1 >= F && t0 < F + CRACK.run + 0.05 && !(act.b & 1)) {
+          const r = this.rel(m);
+          if (crackStrikes(r.fwd, r.left, t1 - F)) {
+            act.b |= 1;
+            this.blow(m, CO2.crackDmg);
+            g.knockHero(m.x, m.y, 0.8);
+          }
+        }
+        break;
+      }
+      case 'whirl': {
+        const W = CO2.whirl;
+        const from = actTimeOf(a, W.from);
+        const to = actTimeOf(a, W.to);
+        if (at(from)) g.sfx('swing', 1);
+        if (t1 > from && t0 < to) {
+          // (he comes on after the hero as he whirls)
+          if (CHAINED_SPIN.on && dist > 0.9) {
+            const step = Math.min(dist - 0.9, CHAINED_SPIN.chase * dt);
+            g.slide(m, Math.min(m.r, 0.42), ((h.x - m.x) / dist) * step, ((h.y - m.y) / dist) * step, g.level.walk, true);
+          }
+          // (his chains out round him, a blow at most in each `gap`)
+          if (dist <= W.reach + TUNE.heroRadius * 0.5 && t1 - act.a >= W.gap) {
+            act.a = t1;
+            this.blow(m, a.dmg);
+            g.knockHero(m.x, m.y, 0.6);
+          }
+        }
+        // (the ring, marked as his fists go up, and slammed out round him)
+        const hit = actTimeOf(a, WHIRL_HIT);
+        if (at(actTimeOf(a, W.warn))) mark(m.x, m.y, CO_RING.whirl, hit - actTimeOf(a, W.warn));
+        if (at(hit)) {
+          if (coRingStrikes(h.x - m.x, h.y - m.y, CO_RING.whirl + TUNE.heroRadius * 0.5)) {
+            this.blow(m, W.ringDmg);
+            g.knockHero(m.x, m.y, 1);
+          }
+          ring(m.x, m.y, CO_RING.whirl);
+          g.emit({ t: 'shake', amount: 5 });
+          g.sfx('slam', 1);
+        }
+        break;
+      }
+      case 'hook': {
+        const H = CO2.hook;
+        if (at(HOOK_LET)) g.sfx('swing', 0.7);
+        if (t1 > HOOK_LET && !act.b && t0 < HOOK_BITE + 0.06) {
+          // (flung: it catches a hero it passes, or bites the floor)
+          const steps = Math.max(1, Math.ceil((t1 - t0) / 0.012));
+          for (let s = 1; s <= steps && !act.b; s++) {
+            const p = actHookPath(Math.min(HOOK_BITE, t0 + ((t1 - t0) * s) / steps), act.a);
+            if (!p) continue;
+            const w = here(p.at[0], p.at[1]);
+            if (Math.hypot(h.x - w.x, h.y - w.y) <= H.r && h.invuln <= 0 && !h.move && !g.over) {
+              act.b = 1;
+              this.blow(m, a.dmg);
+              h.held = HOOK_BACK - t1 + 0.05;
+              g.emit({ t: 'text', x: h.x, y: h.y, text: 'Hooked', color: '#ff8a80' });
+              g.sfx('hit', 0.8);
+            }
+          }
+          if (at(HOOK_BITE) && !act.b) g.sfx('slam', 0.4);
+        }
+        if (act.b === 1) {
+          // (dragged in with it, hand over hand)
+          const p = actHookPath(t1, act.a);
+          if (p && !g.over) {
+            const w = here(Math.max(p.at[0], 0.9), p.at[1]);
+            g.slide(h, TUNE.heroRadius, w.x - h.x, w.y - h.y, g.level.walk);
+            h.held = Math.max(h.held ?? 0, 0.05);
+          } else {
+            act.b = 2;
+            h.held = 0;
+          }
+        }
+        // (THE BLOW WAITING: his fists hammered down before him where the hero lies)
+        if (at(H.warn)) {
+          const c = here(H.ahead, 0);
+          act.x = c.x;
+          act.y = c.y;
+          mark(c.x, c.y, CO_RING.hammer, HOOK_BLOW - H.warn);
+        }
+        if (at(HOOK_BLOW)) {
+          if (coRingStrikes(h.x - act.x, h.y - act.y, CO_RING.hammer + TUNE.heroRadius * 0.5)) this.blow(m, H.blowDmg);
+          ring(act.x, act.y, CO_RING.hammer);
+          g.emit({ t: 'shake', amount: 4 });
+          g.sfx('slam', 0.9);
+        }
+        break;
+      }
+      case 'ball': {
+        if (at(CO2.ball.warn)) mark(act.x, act.y, CO_RING.ball, BALL_LAND - CO2.ball.warn);
+        if (at(BALL_LET)) g.sfx('swing', 1);
+        if (!at(BALL_LAND)) break;
+        if (coRingStrikes(h.x - act.x, h.y - act.y, CO_RING.ball + TUNE.heroRadius * 0.5)) {
+          this.blow(m, a.dmg);
+          g.knockHero(act.x, act.y, 1);
+        }
+        ring(act.x, act.y, CO_RING.ball);
+        g.emit({ t: 'shake', amount: 6 });
+        g.sfx('slam', 1);
+        break;
+      }
+    }
+  }
+
   /** What one of them does to the hero with a blow of its own, `mult` times its blow. */
   blow(m: Monster, mult: number): void {
     const g = this.g;
@@ -819,6 +1007,11 @@ export class BossRules {
     const at = (T: number): boolean => t0 < T && t1 >= T;
     const here = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
     const dist = Math.hypot(h.x - m.x, h.y - m.y);
+    // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY: his own, but for the breaking of his chains)
+    if (m.kind === 'chained' && CO_ACTION.on && a.id !== 'breakL' && a.id !== 'breakBall') {
+      this.coActing(m, a, t0, t1, dt);
+      return;
+    }
     switch (a.id) {
       // ----- THE HEADSMAN
       case 'chop': {

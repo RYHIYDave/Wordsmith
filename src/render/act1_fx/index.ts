@@ -9,6 +9,8 @@ import { FX as warden } from './warden';
 // FLOOR 2, MORE ACTION (ACTION_F2): the cultist's fire sigil, the Shade's rime
 import { FX as cultist } from './cultist';
 import { FX as shade } from './shade';
+// THE CHAINED ONE'S MOVES DONE THE ACTION WAY (CO_ACTION): his crack and his rings
+import { FX as chained } from './chained';
 // FLOOR 3, MORE ACTION (ACTION_F3): the green troll's shockwave ring
 import { FX as brute } from './brute';
 // FLOOR 4, MORE ACTION (ACTION_F4): the Ossuary Golem's skeleton hurl
@@ -78,6 +80,8 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   // (floor 2's, behind ACTION_F2)
   cultist,
   shade,
+  // (the Chained One's, behind CO_ACTION)
+  chained,
   // (floor 3's, behind ACTION_F3)
   brute,
   // (floor 4's, behind ACTION_F4)

@@ -84,6 +84,8 @@ export const LASH_HITS = [f(26), f(52), f(88)] as const;
 export const LASH_LONG = f(108);
 /** How far he goes over the floor in the lash (his own lengths: a step in with each blow), and so where the game is to put him at its end. */
 export const LASH_TRAVEL = 40;
+/** (FOR THE GAME) The same in tiles: where the game moves him as the lash ends. */
+export const LASH_TRAVEL_TILES = LASH_TRAVEL / TILE3;
 
 // (the forehand: as his old lash, but held longer, struck in two frames, and stepped into further)
 const L1_COCK2: P = K.coElbows({ ...K.LASH_COCK, yaw: -38, twist: -28, side: -11, rhx: -24, rhz: 18 }, [-0.5, 0.5, -0.6], [0.3, -0.7, 0.6]);
@@ -890,6 +892,10 @@ export function chainEndAt(mob: Mob, move: string, name: CoRope, t: number): [nu
   const r = m?.ropes?.(t)[name];
   return r ? tilesOf(r[r.length - 1]) : null;
 }
+/** (FOR THE GAME: the main chat's, as it brought these moves in) Where his right cuff is at a moment of one of these moves (his hook's chain runs out from it), in his own space (render/bossfx.ts takes it as coCuffAt). */
+export const actCuffAt = (move: string, t: number): V3 => cuffAt(skeletonAt(chainedActionMob(0), move, t), 'R');
+/** (FOR THE GAME) Where the ring of his collar is at a moment of one of these moves (the ball's chain runs out from it), in his own space. */
+export const actCollarAt = (move: string, t: number): V3 => collarRingAt(skeletonAt(chainedActionMob(0), move, t));
 void sub;
 void norm;
 void mul;
