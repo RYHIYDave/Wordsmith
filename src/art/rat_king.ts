@@ -84,13 +84,13 @@ function about(v: V3, k: V3, deg: number): V3 {
 // ITS COLOURS: sewer rats, sleek and wet; the Order's black; the jars' green glass
 
 /** The fur: a cool grey-brown, wet, dark along the back. */
-const FUR: Ramp = ['#141217', '#242026', '#37302f', '#4c433e', '#655a52'];
+export const FUR: Ramp = ['#141217', '#242026', '#37302f', '#4c433e', '#655a52'];
 /** The belly, swollen and paler. */
-const BELLY: Ramp = ['#2e2828', '#463e3c', '#605652', '#7a6e66', '#94877c'];
+export const BELLY: Ramp = ['#2e2828', '#463e3c', '#605652', '#7a6e66', '#94877c'];
 /** Naked skin: tails, ears, paws, a dull mauve-grey (no glow). */
-const SKIN: Ramp = ['#2e2226', '#4a3638', '#664c4c', '#806460', '#987a72'];
+export const SKIN: Ramp = ['#2e2226', '#4a3638', '#664c4c', '#806460', '#987a72'];
 /** Teeth: a rat's long incisors, yellowed. */
-const TEETH: Ramp = ['#4e4838', '#6a6250', '#8c8268', '#aaa084', '#c4bca0'];
+export const TEETH: Ramp = ['#4e4838', '#6a6250', '#8c8268', '#aaa084', '#c4bca0'];
 /** The nose, dark. */
 const NOSE: Ramp = ['#1a1214', '#1a1214', '#2c2024', '#3e2e32', '#3e2e32'];
 /** The Silent Order's black cord. */
@@ -110,7 +110,7 @@ const FREED = ['#7a7468', '#a49c8c', '#cec6b2', '#e8e2d2', '#f6f2e6'];
 
 /** Its canvas, and its floor point on it (picture pixels). */
 export const RK_CANVAS = { w: 600, h: 430, ax: 300, ay: 296 };
-const RK_AURA = { x: RK_CANVAS.ax, y: RK_CANVAS.ay - 50, r: 100, color: '#ff3a78', a: 0.1 };
+export const RK_AURA = { x: RK_CANVAS.ax, y: RK_CANVAS.ay - 50, r: 100, color: '#ff3a78', a: 0.1 };
 /** Its stand: a loop of 3.0 s, fifteen frames a second. */
 export const RK_STAND = { frames: 45, fps: 15, period: 3.0 } as const;
 /** How fast it scuttles (tiles a second), and its scurry: a round of 0.25 s, six frames, painted for that pace. */
@@ -136,7 +136,7 @@ export const RK_DIE = { long: 2.8, crown: 0.24, snap: 0.46, voices: [0.5, 2.1], 
 // ITS RATS
 
 /** One rat as it lies in the heap at rest: its heading round the knot (degrees, 0 its forward), how far out its body is, how high, how pitched, how big. */
-interface RatRest {
+export interface RatRest {
   a: number;
   r: number;
   z: number;
@@ -147,9 +147,9 @@ interface RatRest {
   seed: number;
 }
 /** How big its rats are against a common sewer rat's measure: swollen. */
-const SC = 2.0;
+export const SC = 2.0;
 /** THE HEAP AT REST: seven on the floor in a ring, three climbing over the knot, and the King on top, facing forward. */
-const RATS: RatRest[] = (() => {
+export const RATS: RatRest[] = (() => {
   const out: RatRest[] = [];
   const ring = [0, 50, 102, 154, 206, 258, 309];
   ring.forEach((a, i) => out.push({ a: a + (hash(i, 0, 6101) - 0.5) * 10, r: (19 + (hash(i, 1, 6101) - 0.5) * 3) * SC, z: 0, pitch: -4, s: (1 + (hash(i, 2, 6101) - 0.5) * 0.14) * SC, upper: false, king: false, seed: i }));
@@ -158,8 +158,8 @@ const RATS: RatRest[] = (() => {
   return out;
 })();
 /** The knot of tails: its middle, how big. */
-const KNOT: V3 = [0, 0, 9 * SC];
-const KNOT_R = 6.5 * SC;
+export const KNOT: V3 = [0, 0, 9 * SC];
+export const KNOT_R = 6.5 * SC;
 
 /** A rat as it is painted at one moment, in the world. */
 export interface RatPose {
@@ -224,7 +224,7 @@ export const FOOT_REST: [number, number][] = [
 ];
 
 /** A rat placed: at heading `a` round the knot, out `r`, up `z` (its body's floor point), pitched, turned on itself by `yaw`. */
-function placed(R: RatRest, o: { a?: number; r?: number; z?: number; pitch?: number; yaw?: number; hy?: number; hp?: number; gape?: number; eyes?: number; belly?: number; dx?: number; dy?: number; gone?: number; tailBow?: V3; feet?: V3[] } = {}): RatPose {
+export function placed(R: RatRest, o: { a?: number; r?: number; z?: number; pitch?: number; yaw?: number; hy?: number; hp?: number; gape?: number; eyes?: number; belly?: number; dx?: number; dy?: number; gone?: number; tailBow?: V3; feet?: V3[] } = {}): RatPose {
   const a = o.a ?? R.a;
   const r = o.r ?? R.r;
   const s = R.s;
@@ -246,7 +246,7 @@ function placed(R: RatRest, o: { a?: number; r?: number; z?: number; pitch?: num
 // ITS MOVES
 
 /** THE STAND: never still. Each rat squirms its own way, its head lifting to sniff and turning; one gnaws at the knot; the King looks round over the heap; their swollen bellies heave. */
-function standPose(t0: number): KingPose {
+export function standPose(t0: number): KingPose {
   const T = RK_STAND.period;
   const t = fr(t0 / T) * T;
   const w = (k: number) => (2 * Math.PI * k) / T;
@@ -277,7 +277,7 @@ function standPose(t0: number): KingPose {
 }
 
 /** The voices leaking out of their mouths as they squeak: a few pink grains rising off the heap now and then. */
-function seepOf(rats: RatPose[], t: number, much = 0.3): [V3, string, number][] {
+export function seepOf(rats: RatPose[], t: number, much = 0.3): [V3, string, number][] {
   const out: [V3, string, number][] = [];
   rats.forEach((P, i) => {
     if (P.gone > 0.5) return;
@@ -439,7 +439,7 @@ function frameOfQuat(q: Quat): [V3, V3, V3] {
 }
 
 /** Two poses of a rat mixed `k` of the way (its frame turned between them). */
-function mixRat(a: RatPose, b: RatPose, k: number): RatPose {
+export function mixRat(a: RatPose, b: RatPose, k: number): RatPose {
   if (k <= 0) return a;
   if (k >= 1) return b;
   // (its body's frame turned from the one to the other the short way round, evenly: never through nothing)
@@ -516,7 +516,7 @@ function curlPose(t: number, out: boolean): KingPose {
 
 // --- UNKNOT AND KNOT ---
 /** A rat running out along its heading `d` units from its place, its feet pattering (stance feet held where they fell). */
-function running(R: RatRest, d: number, o: { gone?: number; belly?: number; gape?: number; eyes?: number; tailFree?: number } = {}): RatPose {
+export function running(R: RatRest, d: number, o: { gone?: number; belly?: number; gape?: number; eyes?: number; tailFree?: number } = {}): RatPose {
   const a = R.a;
   const s = R.s;
   const lift = R.upper ? 0 : 0;
@@ -559,7 +559,7 @@ function unknotPose(t: number): KingPose {
   return { rats, knot: KNOT, knotR: KNOT_R, cord: 0, cordAt: t > 0.2 ? 'mouth' : 'knot', crownAt: null, grains: [], alive: true, lump: 1 - free, charge: null, corks: [], ...(king ? {} : {}) };
 }
 /** KNOT: out of the cracks on every side they pour back in, the King with the cord in its teeth, and their tails wind together and the cord is bound round them; they settle. */
-function knotPose(t: number): KingPose {
+export function knotPose(t: number): KingPose {
   const U = RK_UNKNOT;
   const k = cl01(t / (U.in - 0.25));
   const d = 72 * (1 - sm(k)) ** 1.2;
@@ -815,14 +815,14 @@ export function ratBits(P: RatPose, put: Put, id: string, view: GameView): void 
 }
 
 const VIEWS = new Map<GameView, V3>();
-function eyeOf(view: GameView): V3 {
+export function eyeOf(view: GameView): V3 {
   let e = VIEWS.get(view);
   if (!e) VIEWS.set(view, (e = stage(view, 0, 0, { w: 2, h: 2 }).eye));
   return e;
 }
 
 /** THE KING'S CROWN: a jar's broken neck of green glass jammed on its head, its jagged rim up. */
-function crownBits(put: Put, P: RatPose, lying: V3 | null): void {
+export function crownBits(put: Put, P: RatPose, lying: V3 | null): void {
   let c: V3;
   let up: V3;
   let f: V3;
@@ -851,7 +851,7 @@ function crownBits(put: Put, P: RatPose, lying: V3 | null): void {
 }
 
 /** THE KNOT: the tails wound into one hard lump, crumbs of cork and wax in it, bound round with the Order's black cord. */
-function knotBits(put: Put, K: KingPose): void {
+export function knotBits(put: Put, K: KingPose): void {
   const c = K.knot;
   const lump = K.lump ?? 1;
   const R = K.knotR * Math.max(0.05, lump);
