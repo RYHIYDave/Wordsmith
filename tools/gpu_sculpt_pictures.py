@@ -17,7 +17,10 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PICS = os.path.join(ROOT, 'shots/gpu_sculpt/pics')
+PICS = os.path.join(ROOT, os.environ.get('GPU_PICS', 'shots/gpu_sculpt/pics'))
+# (round 2: GPU_PICS=shots/gpu_sculpt/pics_r2 GPU_PNG=gpu_side_by_side2.png GPU_TITLE='...' python3 tools/gpu_sculpt_pictures.py png)
+PNG_NAME = os.environ.get('GPU_PNG', 'gpu_side_by_side.png')
+TITLE = os.environ.get('GPU_TITLE', 'The new classes: painted now, and on the graphics chip')
 OUT = os.path.join(ROOT, 'docs/mockups/gpu_sculpt/pictures')
 BG = (44, 40, 54)
 PANEL = (30, 27, 38)
@@ -109,7 +112,7 @@ def png():
     sheet = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(sheet)
     f_title, f_head, f_cap = font(40, True), font(30, True), font(28)
-    d.text((gap, 14), 'The new classes: painted now, and on the graphics chip', font=f_title, fill=TEXT)
+    d.text((gap, 14), TITLE, font=f_title, fill=TEXT)
     for j, t in enumerate(['NOW', 'GRAPHICS CHIP', 'DIFFERENCES (lit and ringed)']):
         d.text((gap + j * (col_w + gap), 72), t, font=f_head, fill=LIT if j == 2 else TEXT)
     y = head_h
@@ -121,7 +124,7 @@ def png():
             sheet.paste(im, (x, y))
         y += a.height + gap
     os.makedirs(OUT, exist_ok=True)
-    out = os.path.join(OUT, 'gpu_side_by_side.png')
+    out = os.path.join(OUT, PNG_NAME)
     sheet.save(out, optimize=True)
     print('wrote', out, sheet.size)
 

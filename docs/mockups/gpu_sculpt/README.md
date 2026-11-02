@@ -233,3 +233,83 @@ times as fast), its rake 178 → 69 (2.6); "In the side painter: chip not availa
 "Worker check: a worker could not run here". So in the Claude app's file viewer no worker runs at all (not even the tiny
 check): the side painter's question is not answered there. The game itself runs at his web address, where its side painter's
 workers do run; the page is to be opened there (the main chat's to place beside the game) to answer it.
+
+## Round 2: a frame on the chip made cheaper (1 Nov 2026, kept short)
+
+The art chat's helper, on `art/gpu-sculpt` from 3f8ff46. Order: a chip frame much cheaper on a real phone, looking the same,
+and a test page measuring round 1 against round 2 on his phone. His iPhone, round 1 (now → chip): the Warlock standing 27 → 12
+ms, the demon standing 175 → 74.
+
+### What took the time (counted; this machine has no real chip)
+
+`tools/gpu_counts.ts` marches a frame exactly as the chip does, in the CPU's own numbers, and counts it. The demon standing,
+round 1: 35,868 rays (the whole box), 68% meeting nothing; 423,609 steps; 63.1 million list entries walked and 11.2 million
+distances worked out in the march, 7.5 and 3.0 million more after it (the way the skin faces, its creases, whose); the first
+pass 6.4 million bounds (13,650 cells × 491 solids). Half the steps (54% of entries, 60% of distances) were more than 8 lengths
+from any skin, and rays that meet nothing were 60% of the march's walking. 9 draws (1 first pass, 7 march bands, each
+flushed), 2 readbacks of 16 bytes a pixel (1.1 MB), each waited for. The man: 5,508 rays, 3.8 + 0.3 million entries, 1,080
+cells × 105 solids. On SwiftShader (no real chip: its numbers no guide to a phone's) the demon's chip frame was ~9% first pass,
+~90% march, and about 40–85 ms of CPU outside the chip's part (the figure, ink, edge: the game's own drawing, untouched).
+
+### What was changed (each on its own switch, `GPU_ROUND2` in src/dev/gpu_sculpt.ts)
+
+Kept (on), none of them changing a pixel (the chip's march in the CPU's numbers still gives every pinned frame to the bit,
+tests/gpu_sculpt.test.ts):
+- `cullSkip`: the first pass works out a solid's bound only where it can lower what is found (the same lists): the demon's
+  bounds worked out 6.4 → 1.75 million.
+- `raySkip`: the first pass also works out the least the skin can be from each cell (said in the mask's last, free bit); a new
+  small pass makes, for each column of cells, which cells a skin can be met in; a ray that passes none is not marched. The demon:
+  rays marched 35,868 → 19,656, steps 423,609 → 320,249, march entries 63.1 → 45.2 million, distances 11.2 → 7.3 million. The
+  man: rays 5,508 → 4,128, entries 3.83 → 3.40 million; the Tinkerer and Brawler about 5% fewer.
+- `keep`: the solids' table sent into textures kept from frame to frame (no new texture a frame), readback into kept buffers.
+- `oneGo`: the march's bands sent in one go, not flushed band by band (a phone's chip paints in tiles and would store and load
+  its targets for each band). Still flushed band by band on a software stand-in.
+
+Not kept (off, each behind its own switch, reported):
+- `hop` / `hopBig`: passing over the cells where no skin can be met (rays start at the figure). The demon's march 45 → 29
+  million entries more, but each ray then reaches the skin by other steps than the CPU's and stops a hair elsewhere: on the
+  sample (the demon and the change, every 8th frame, both views, 98 pictures) median 0.30%, worst 0.508%
+  (warlock:demon/back.walk[24], 63 of 12,408), 8 frames over 0.4%. Breaks the bound, so off. For every figure it is worse
+  (0.47% on a Tinkerer frame from the march alone).
+- `GPU_SCULPT_TEST.tetra` (the way the skin faces from 4 sums, not 6): 1.8–2.8% of pixels differ. Off.
+- Smaller cells (4 or 6 pixels): shorter lists, but the first pass 3–8 times dearer; slower on SwiftShader. Not kept.
+- Batching frames / async readback: not possible as things are: the game asks for one frame at a time and finishes it (ink,
+  edge) in the same call, and WebGL shows a fence signalled only after the page gives control back. Marching many frames in one
+  go would need every class's painting to ask for its frames ahead.
+
+### The bound held
+
+Round 2 as kept marches exactly the lists and steps of round 1, so its frames are round 1's; the sample, in Playwright's
+Chromium against the CPU's frames (every 8th frame of every list, both views, `node tools/gpu_sculpt_check.mjs diff <who> --every
+8 --nolast 1 --tag r2`): the Warlock as a man and blazing, 112 pictures, median 0.000%, worst 0.107% (warlock:blaze/front.walk[16],
+2 of 1,872), all tone; the Tinkerer, 88 pictures, not one pixel differs; her Golem and Contraption, 298 pictures, median 0.000%,
+worst 0.039% (1 pixel), tone. Not re-sampled with the hop off, for time: the demon and the change (their round-1 numbers stand:
+the march is round 1's, and its pictures' frames below match round 1's counts) and the Brawler (run stopped before it began).
+The pictures' frames (`pictures/gpu_side_by_side2.png`, made from round 2 as kept): the Warlock standing 1 of 1,968 pixels; his
+bolt 0; blazing 1; mid-change 6 of 12,650; the demon standing 9 of 15,150; its rake 14 of 15,561; its Damning 5 of 14,735; the
+Tinkerer, her Golem, the Brawler 0: every count the very one round 1 had, all tone.
+
+### Speed (SwiftShader, so only a direction)
+
+One frame each, in a worker, round 1 → round 2: the man standing 612 / 637 → 580 / 553 ms; the demon standing 10,511 / 10,014
+→ 8,544 / 8,258 ms (first pass 994 / 806 → 711 / 792, march 9,367 / 9,128 → 7,710 / 7,386). About a fifth off the demon, a tenth
+off the man. A real chip runs whole groups of rays together, so whole tiles left unmarched should pay at least as well there;
+the test page measures it on his phone.
+
+### The test page (`dist/gpu_speed.html`, 0.49 MB, nothing fetched; `node tools/gpu_speed_page.mjs`)
+
+For each of the Warlock standing, his bolt, the change, the demon standing, its rake, the Tinkerer and the Brawler: NOW, ROUND 1
+and ROUND 2 in big words (each way paints the next frame of the list, as the Tinkerer and Brawler keep a frame once painted);
+the Warrior's own frame as the mark; then where a round 2 frame's time goes on the device (the CPU's share before and after,
+waiting for the chip and reading back; each pass waited for in turn; the chip's own clock where the browser has
+EXT_disjoint_timer_query_webgl2); a line for the main chat with the hop's time; and the worker check and the side painter as
+before. Checked end to end in Playwright's Chromium at 390 × 844 (`node tools/gpu_speed_check.mjs`).
+
+### What the main chat must change
+
+Still only `GPU_SCULPT.on = true`. Round 2's kept switches are on by default. The module is now about 46 KB minified (was 37).
+
+### For the owner
+
+Nothing to decide on the look: round 2 paints the very frames round 1 painted. His numbers from the new page decide whether
+round 2 is enough; the page should be opened at his web address (beside the game) so the side painter's question is answered.

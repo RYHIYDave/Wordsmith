@@ -33,18 +33,20 @@ if (mode === 'report') {
     return 'the Brawler';
   };
   const rows = [];
+  // (--tag r2: round 2's runs only, diff_<who>_r2.json and pics_r2)
+  const RT = opt('tag') ? `_${opt('tag')}` : '';
   for (const who of ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler']) {
-    for (const tag of ['', '_sample']) {
+    for (const tag of RT ? [RT] : ['', '_sample']) {
       const f = path.join(OUT, `diff_${who}${tag}.json`);
       if (!fs.existsSync(f)) continue;
-      for (const r of JSON.parse(fs.readFileSync(f, 'utf8'))) rows.push({ ...r, who, group: group(r.name), sample: !!tag });
+      for (const r of JSON.parse(fs.readFileSync(f, 'utf8'))) rows.push({ ...r, who, group: group(r.name), sample: !!tag && !RT });
     }
   }
   // the demon's mean painting time a frame, both ways (for the estimate of all its frames)
   const dem = rows.filter((r) => !r.same && r.name.startsWith('warlock:demon'));
   if (dem.length) console.log(`demon frames compared: ${dem.length}; mean a frame: CPU ${(dem.reduce((a, r) => a + r.ms[0], 0) / dem.length).toFixed(0)} ms, chip ${(dem.reduce((a, r) => a + r.ms[1], 0) / dem.length).toFixed(0)} ms`);
   // the pictures' own frames
-  const pd = path.join(OUT, 'pics');
+  const pd = path.join(OUT, `pics${RT}`);
   if (fs.existsSync(pd)) {
     const pics = [];
     for (const f of fs.readdirSync(pd).filter((x) => x.startsWith('row'))) pics.push(JSON.parse(fs.readFileSync(path.join(pd, f), 'utf8')));
@@ -93,7 +95,10 @@ const page = await browser.newPage();
 page.on('console', (m) => { if (m.type() === 'error') console.log('page:', m.text()); });
 page.on('pageerror', (e) => console.log('page error:', e.message));
 await page.setContent(html);
-const started = await page.evaluate((p) => window.GPUCHECK.start(p), mode === 'quick');
+// (--round1: the chip as round 1 had it, every saving of round 2 off; --hop: round 2 with its saving not kept, for its count)
+const ROUND2 = args.includes('--round1') ? false : args.includes('--hop') ? { hop: true } : undefined;
+const CELLS = opt('cell') ? { ts: Number(opt('cell')), dt: Number(opt('cell')) } : undefined;
+const started = await page.evaluate(([p, r, c]) => window.GPUCHECK.start(p, r, c), [mode === 'quick' || args.includes('--profile'), ROUND2, CELLS]);
 console.log('workers:', JSON.stringify(started));
 if (!started.gpu.chip) { console.log('NO CHIP:', started.gpu.why); await browser.close(); process.exit(1); }
 
@@ -122,12 +127,13 @@ if (mode === 'quick') {
   for (const [who, names] of Object.entries(want)) {
     const L = await lists(who);
     for (const name of names) {
+      if (ONLY && !ONLY.test(name)) continue;
       const li = L.names.indexOf(name);
       if (li < 0) { console.log('no list', name, L.names.slice(0, 8).join(' ')); continue; }
       for (const i of [1, Math.floor(L.lengths[li] / 2)]) {
         const r = await frame(who, li, i);
         if (r.t === 'error' || !r.diff) { console.log(name, i, JSON.stringify(r).slice(0, 300)); continue; }
-        console.log(`${name}[${i}] cpu ${r.ms[0].toFixed(0)} ms, chip ${r.ms[1].toFixed(0)} ms (${Object.entries(r.parts).map(([k, v]) => k + ' ' + v.toFixed(0)).join(', ')}), on chip ${r.marched}, fell back ${r.fell} ${r.why || ''}; figure ${r.diff.fig} px, differ ${r.diff.diff} (${pct(r.diff.diff, r.diff.fig)}): edge ${r.diff.edge}, ink ${r.diff.ink}, tone ${r.diff.tone}`);
+        console.log(`${name}[${i}] cpu ${r.ms[0].toFixed(0)} ms, chip ${r.ms[1].toFixed(0)} ms (${Object.entries(r.seen.ms).map(([k, v]) => k + ' ' + v.toFixed(0)).join(', ')}; draws ${r.seen.draws}, read ${(r.seen.readBytes / 1024).toFixed(0)} KB), on chip ${r.marched}, fell back ${r.fell} ${r.why || ''}; figure ${r.diff.fig} px, differ ${r.diff.diff} (${pct(r.diff.diff, r.diff.fig)}): edge ${r.diff.edge}, ink ${r.diff.ink}, tone ${r.diff.tone}`);
       }
     }
   }
@@ -145,7 +151,7 @@ if (mode === 'diff') {
       if (r.t === 'error') throw new Error(`${name}[${i}]: ${r.why}`);
       if (r.same) { rows.push({ name, i, same: r.same, ms: r.ms }); return; }
       fell += r.fell;
-      rows.push({ name, i, n, ms: r.ms, marched: r.marched, fell: r.fell, ...r.diff, pw: r.pw, ph: r.ph });
+      rows.push({ name, i, n, ms: r.ms, marched: r.marched, fell: r.fell, ...r.diff, pw: r.pw, ph: r.ph, split: r.seen?.ms, draws: r.seen?.draws, readBytes: r.seen?.readBytes, solids: r.seen?.solids });
       if (rows.length % 50 === 0) {
         fs.writeFileSync(path.join(OUT, `diff_${who}${TAG}.json`), JSON.stringify(rows));
         console.log(`${who}: ${rows.length} frames, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
@@ -192,12 +198,12 @@ if (mode === 'speed') {
       if (r.same) continue;
       cpu.push(r.ms[0]);
       gpu.push(r.ms[1]);
-      parts.push(r.parts);
+      parts.push({ ...(r.seen?.ms ?? r.parts), draws: r.seen?.draws, readBytes: r.seen?.readBytes });
     }
     const row = { label, name, frames: is, cpu: med(cpu), gpu: med(gpu), cpuAll: cpu, gpuAll: gpu, parts };
     out.push(row);
     console.log(`${label.padEnd(44)} CPU ${row.cpu.toFixed(0).padStart(5)} ms   chip ${row.gpu.toFixed(0).padStart(6)} ms`);
-    fs.writeFileSync(path.join(OUT, 'speed.json'), JSON.stringify(out, null, 1));
+    fs.writeFileSync(path.join(OUT, `speed${TAG}.json`), JSON.stringify(out, null, 1));
   }
 }
 
@@ -223,7 +229,8 @@ async function save(dir, key, r) {
   fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(r));
 }
 if (mode === 'pics') {
-  const dir = path.join(OUT, 'pics');
+  // (--tag r2: to pics_r2, round 2's; --nofilm: the picture's frames only)
+  const dir = path.join(OUT, `pics${TAG}`);
   const L = {};
   for (const [k, [who, name, i, label]] of ROWS.entries()) {
     L[who] ??= await lists(who);
@@ -234,7 +241,7 @@ if (mode === 'pics') {
     await save(dir, `row${k}`, { label, name, i, ...r });
     console.log(`${label}: ${name}[${i}] ${r.diff.diff} of ${r.diff.fig} differ (edge ${r.diff.edge}, ink ${r.diff.ink}, tone ${r.diff.tone})`);
   }
-  for (const [k, [who, name, label]] of FILM.entries()) {
+  for (const [k, [who, name, label]] of (opt('nofilm') ? [] : FILM).entries()) {
     L[who] ??= await lists(who);
     const li = L[who].names.indexOf(name);
     for (let i = 0; i < L[who].lengths[li]; i++) {

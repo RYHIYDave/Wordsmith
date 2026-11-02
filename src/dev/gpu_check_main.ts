@@ -7,7 +7,7 @@
 // asked for the same frame in turn (never both at once, so each frame's time is its own), and the page compares the two
 // pictures pixel by pixel.
 
-import { GPU_SCULPT, GPU_SCULPT_TEST, chipReady } from './gpu_sculpt';
+import { CHIP_SEEN, GPU_ROUND2, GPU_SCULPT, GPU_SCULPT_TEST, chipReady, chipSeenReset } from './gpu_sculpt';
 import { listsOf } from './gpu_lists';
 import type { FrameList, Who } from './gpu_lists';
 import type { Sprite } from '../engine/px';
@@ -40,6 +40,12 @@ if (self_[WORKER_MARK]) {
         // (this Chromium's WebGL2 is SwiftShader, a software stand-in the game itself would not use: measured all the same)
         GPU_SCULPT_TEST.allowSlow = true;
         GPU_SCULPT_TEST.profile = !!(m as { profile?: boolean }).profile;
+        // (ROUND 1: every saving of round 2 off; or some of them, as asked)
+        const r2 = (m as { round2?: Partial<typeof GPU_ROUND2> | false }).round2;
+        if (r2 === false) Object.assign(GPU_ROUND2, { cullSkip: false, raySkip: false, hop: false, hopBig: false, keep: false, oneGo: false });
+        else if (r2) Object.assign(GPU_ROUND2, r2);
+        const cell = (m as { cell?: { ts: number; dt: number } }).cell;
+        if (cell) GPU_SCULPT_TEST.cell = cell;
         const ready = m.gpu ? chipReady() : false;
         self_.postMessage({ t: 'ready', chip: ready, why: GPU_SCULPT_TEST.why });
       } else if (m.t === 'lists') {
@@ -51,13 +57,14 @@ if (self_[WORKER_MARK]) {
         const l = ls[m.li as number];
         const marched = GPU_SCULPT_TEST.marched;
         const fell = GPU_SCULPT_TEST.fellBack;
+        chipSeenReset();
         const t0 = performance.now();
         const s = l.frames[m.i as number];
         const ms = performance.now() - t0;
         const key = `${m.li}:${m.i}`;
         const was = seen.get(s);
         if (!was) seen.set(s, key);
-        const out: Record<string, unknown> = { t: 'frame', ms, same: was ?? null, marched: GPU_SCULPT_TEST.marched - marched, parts: { ...GPU_SCULPT_TEST.ms }, fell: GPU_SCULPT_TEST.fellBack - fell, why: GPU_SCULPT_TEST.why, w: s.w, h: s.h, ax: s.ax, ay: s.ay };
+        const out: Record<string, unknown> = { t: 'frame', ms, same: was ?? null, marched: GPU_SCULPT_TEST.marched - marched, parts: { ...GPU_SCULPT_TEST.ms }, seen: { ...CHIP_SEEN, ms: { ...CHIP_SEEN.sum } }, fell: GPU_SCULPT_TEST.fellBack - fell, why: GPU_SCULPT_TEST.why, w: s.w, h: s.h, ax: s.ax, ay: s.ay };
         if (!was || m.pixels) {
           const cv = s.img as unknown as OffscreenCanvas;
           const g = cv.getContext('2d') as OffscreenCanvasRenderingContext2D;
@@ -165,11 +172,11 @@ const enc = (buf: ArrayBuffer): string => {
 const SRC = typeof document !== 'undefined' ? (document.currentScript?.textContent ?? '') : '';
 if (!self_[WORKER_MARK] && typeof window !== 'undefined') {
   (window as unknown as { GPUCHECK: unknown }).GPUCHECK = {
-    async start(profile = false): Promise<unknown> {
+    async start(profile = false, round2: unknown = undefined, cell: unknown = undefined): Promise<unknown> {
       CPU = new Lane(SRC);
       GPU = new Lane(SRC);
       const a = await CPU.ask({ t: 'init', gpu: false });
-      const b = await GPU.ask({ t: 'init', gpu: true, profile });
+      const b = await GPU.ask({ t: 'init', gpu: true, profile, round2, cell });
       return { cpu: a, gpu: b };
     },
     async lists(who: Who): Promise<unknown> {
@@ -186,7 +193,7 @@ if (!self_[WORKER_MARK] && typeof window !== 'undefined') {
       if (b.t !== 'frame') return b;
       const pw = a.pw as number;
       const ph = a.ph as number;
-      const res: Record<string, unknown> = { ms: [a.ms, b.ms], parts: b.parts, marched: b.marched, fell: b.fell, why: b.why, w: a.w, h: a.h, ax: a.ax, ay: a.ay, pw, ph };
+      const res: Record<string, unknown> = { ms: [a.ms, b.ms], parts: b.parts, seen: b.seen, marched: b.marched, fell: b.fell, why: b.why, w: a.w, h: a.h, ax: a.ax, ay: a.ay, pw, ph };
       if (a.w !== b.w || a.h !== b.h || a.ax !== b.ax || a.ay !== b.ay || pw !== b.pw || ph !== b.ph) {
         res.diff = { fig: 0, diff: -1, edge: 0, ink: 0, tone: 0, sizeSame: false };
         return res;

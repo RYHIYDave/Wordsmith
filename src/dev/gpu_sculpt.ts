@@ -47,8 +47,12 @@ export const GPU_SCULPT_TEST = {
   why: '' as string,
   /** Time in the last frames' parts, in thousandths of a second (lists, upload, march and readback, shading). */
   ms: { lists: 0, upload: 0, march: 0, shade: 0 },
-  /** Wait for the first pass to time it alone (slower: for the checks). */
+  /** Wait for each pass to time it alone (slower: for the checks and the test page's split). */
   profile: false,
+  /** Ask the chip for its own pass times where the browser can (EXT_disjoint_timer_query_webgl2): `chipTimes`. */
+  timer: false,
+  /** (TRIED, NOT KEPT, in the CPU's numbers only: the way the skin faces from four sums, not six) */
+  tetra: false,
   /**
    * Use a chip that is the CPU pretending to be one (SwiftShader, llvmpipe), or one slower than the CPU: for the checks and
    * the test page only. The game never does: there it would paint his frames many times slower.
@@ -64,6 +68,44 @@ export const GPU_SCULPT_TEST = {
   /** The cells' size: pixels square, lengths deep (as `Stage.near` measures). */
   cell: { ts: 8, dt: 8 },
 };
+
+/**
+ * ROUND 2's savings (the art chat's helper, 1 Nov 2026; docs/mockups/gpu_sculpt/README.md, "Round 2"), each on a switch of its
+ * own; all off, the chip marches exactly as in round 1 (the test page's ROUND 1).
+ */
+export const GPU_ROUND2 = {
+  /** The first pass works out a solid's bound only where it can lower what is found (the very same lists). */
+  cullSkip: true,
+  /** A ray that passes no cell in which a skin can be met is not marched (it would meet nothing: the very same pictures). */
+  raySkip: true,
+  /**
+   * NOT KEPT (off): every cell in which no skin can be met is passed over, the march going on past it. Fewer steps, but each ray
+   * then comes to the skin by other steps than the CPU's, and stops a hair from where it does: more pixels a tone off.
+   */
+  hop: false,
+  /**
+   * NOT KEPT (off) either: the same for the biggest figures only (more than `HOP_SOLIDS` solids: the demon, and the man
+   * changing into it), where the march costs the most. On the sample of round 2 one frame of the demon from behind differed
+   * from the CPU's on more than half a percent of its pixels (all tone but a few ink), and seven more over 0.4%.
+   */
+  hopBig: false,
+  /** The solids' table sent into a texture kept from frame to frame, and the readback into buffers kept (no new ones a frame). */
+  keep: true,
+  /**
+   * The march's bands sent to the chip in one go (no flush between them), so the chip keeps its targets for the whole march
+   * instead of storing and loading them again for each band (a chip that paints in tiles, as a phone's does). On a chip that is
+   * the CPU pretending (only ever used by the checks), each band is still sent alone, so no one wait runs long.
+   */
+  oneGo: true,
+};
+/** A figure of more solids than this is one of the biggest (`GPU_ROUND2.hopBig`): the demon has some 480, the man 105. */
+export const HOP_SOLIDS = 250;
+/** Does a figure of `n` solids have its cells in which no skin can be met passed over? */
+function hopsFor(n: number): boolean {
+  return GPU_ROUND2.hop || (GPU_ROUND2.hopBig && n > HOP_SOLIDS);
+}
+/** How near a skin can be in a cell for it to be marched (the march stops at 0.02; the rest a margin for the chip's sums). */
+const NEAR = 0.05;
 
 /** What `draw` hands over for each pixel that meets the figure (as `marchFast` does). */
 export type Shade = (x: number, y: number, t: number, q: V3, n: V3, m: number, open: number, prim: number) => void;
@@ -413,6 +455,53 @@ function upperOf(S: Solids, j: number, cx: number, cy: number, cz: number, rho: 
   return Math.max(up, dc + rho - S.br[j] - S.blend[j]) + MARGIN * (1 + Math.abs(up));
 }
 
+/**
+ * THE LEAST SOLID `j`'S DISTANCE CAN BE anywhere within `rho` of (cx, cy, cz): its distance there less how fast it can change
+ * (a rod, a block, a sheet); for a ball, through how far out of it the point is along its own half-lengths, as `dist` has it
+ * (out of it, no less than that less one, times its least half-length; in it, no less than what is left to one, times its
+ * most). Its cuts only take it further off.
+ */
+function lowOf(S: Solids, j: number, cx: number, cy: number, cz: number, rho: number): number {
+  let lo: number;
+  if (S.kind[j] === KE) {
+    const g = S.g;
+    const o = j * GS;
+    const v0 = cx - g[o];
+    const v1 = cy - g[o + 1];
+    const v2 = cz - g[o + 2];
+    const x0 = (v0 * g[o + 3] + v1 * g[o + 4] + v2 * g[o + 5]) / g[o + 12];
+    const y0 = (v0 * g[o + 6] + v1 * g[o + 7] + v2 * g[o + 8]) / g[o + 13];
+    const z0 = (v0 * g[o + 9] + v1 * g[o + 10] + v2 * g[o + 11]) / g[o + 14];
+    const k0 = Math.max(0, Math.sqrt(x0 * x0 + y0 * y0 + z0 * z0) * (1 - 1e-9) - (S.lip[j] * rho) / S.uMin[j]);
+    lo = k0 >= 1 ? (k0 - 1) * S.uMin[j] : -(1 - k0) * S.uMax[j];
+  } else lo = distOf(S, j, cx, cy, cz) - S.lip[j] * rho;
+  return lo - MARGIN * (1 + Math.abs(lo));
+}
+/** The least `Field.at` can be anywhere within `rho` of (cx, cy, cz), from a list good there: each material's solids' least, smoothly joined as `ofMat` joins them (a join only takes away); carves only add. */
+function lowOfList(S: Solids, L: Lists, s0: number, ns: number, cx: number, cy: number, cz: number, rho: number): number {
+  let least = Infinity;
+  for (let s = s0; s < s0 + ns; s++) {
+    const e0 = L.segs[s * 4 + 1];
+    const np = L.segs[s * 4 + 2];
+    let U = Infinity;
+    for (let k = e0; k < e0 + np; k++) {
+      const j = L.ents[k];
+      const l = lowOf(S, j, cx, cy, cz, rho);
+      if (U === Infinity) U = l;
+      else {
+        const kk = S.blend[j];
+        if (kk <= 0) U = Math.min(U, l);
+        else {
+          const h = Math.max(kk - Math.abs(U - l), 0) / kk;
+          U = Math.min(U, l) - h * h * kk * 0.25;
+        }
+      }
+    }
+    if (U < least) least = U;
+  }
+  return least - MARGIN * (1 + Math.abs(least));
+}
+
 let DC = new Float64Array(1024);
 /**
  * THE SOLIDS OF A LIST THAT CAN MATTER WITHIN `rho` OF (cx, cy, cz), into `out`; the list is segments `s0` on of `P`. A solid
@@ -452,15 +541,20 @@ function cull(S: Solids, P: Lists, s0: number, ns: number, cx: number, cy: numbe
     let uRun = Infinity;
     for (let k = 0; k < np; k++) {
       const j = P.ents[e0 + k];
-      const up = upperOf(S, j, cx, cy, cz, rho, DC[k]);
       if (!drop) {
         const u = Math.min(uRun, P.keepBounds ? P.entU[e0 + k] : Infinity);
         if (!(DC[k] - rho > u + S.blend[j] + S.br[j] + MARGIN)) {
           out.ent(j, u);
           kept++;
         }
-        uRun = Math.min(uRun, up);
       }
+      // (ROUND 2: its bound is no less than its ball's own clause, so where that is no less than the least found so far it
+      // lowers nothing, and is not worked out; when the material is not passed over, what is found so far is the witness)
+      COUNT.ups++;
+      if (GPU_ROUND2.cullSkip && DC[k] + rho - S.br[j] - S.blend[j] >= witness) continue;
+      COUNT.upsDone++;
+      const up = upperOf(S, j, cx, cy, cz, rho, DC[k]);
+      if (!drop) uRun = Math.min(uRun, up);
       witness = Math.min(witness, up);
     }
     if (!drop && kept) {
@@ -492,7 +586,22 @@ export interface Grid {
   /** Per cell, its first segment and how many (the cell after the last: the list of every solid). */
   cells: Int32Array;
   L: Lists;
+  /** Per cell, the least `Field.at` can be in it, and whether a skin can be met in it (the cell after the last: yes). */
+  low: Float64Array;
+  near: Uint8Array;
+  /** Per column of cells (across, down), whether a skin can be met in any of its cells; and whether these are known. */
+  colNear: Uint8Array;
+  lowOk: boolean;
 }
+/** The column of cells a pixel's ray goes down. */
+function colOfS(G: Grid, sx: number, sy: number): number {
+  const ix = Math.floor((sx - G.sx0) / G.ts);
+  const iy = Math.floor((sy - G.sy0) / G.ts);
+  if (ix < 0 || iy < 0 || ix >= G.nx || iy >= G.ny) return G.nx * G.ny;
+  return iy * G.nx + ix;
+}
+/** Most cells deep a column may be for the chip to say which can be met (four words of bits). */
+const MOST_DEEP = 128;
 
 /** How far a corner of a box of these half-sizes (across, down, deep) is from its middle. */
 function reachOf(CX: V3, CY: V3, CZ: V3, hx: number, hy: number, hz: number): number {
@@ -545,6 +654,11 @@ function buildGrid(S: Solids, rows: readonly [V3, V3, V3], CX: V3, CY: V3, CZ: V
   const { sx0, sy0, t0, ts, dt, nx, ny, nz, rho } = lay;
   const N = nx * ny * nz;
   const cells = new Int32Array((N + 1) * 2);
+  const low = new Float64Array(N + 1).fill(-Infinity);
+  const near = new Uint8Array(N + 1).fill(1);
+  const colNear = new Uint8Array(nx * ny + 1).fill(1);
+  // (as the chip can: no more cells deep than its words of bits hold, and a bit of the last word of a list free to say it)
+  const lowOk = (GPU_ROUND2.raySkip || hopsFor(S.n)) && nz <= MOST_DEEP && S.n < MOST;
   const L = new Lists(false);
   FULL.reset();
   const top = fullList(S, FULL);
@@ -556,14 +670,28 @@ function buildGrid(S: Solids, rows: readonly [V3, V3, V3], CX: V3, CY: V3, CZ: V
         const sy = sy0 + (iy + 0.5) * ts;
         const t = t0 + (iz + 0.5) * dt;
         cells[k * 2] = L.ns;
-        cells[k * 2 + 1] = cull(S, FULL, top.s0, top.ns, CX[0] * sx + CY[0] * sy + CZ[0] * t, CX[1] * sx + CY[1] * sy + CZ[1] * t, CX[2] * sx + CY[2] * sy + CZ[2] * t, rho, L);
+        const cx = CX[0] * sx + CY[0] * sy + CZ[0] * t;
+        const cy = CX[1] * sx + CY[1] * sy + CZ[1] * t;
+        const cz = CX[2] * sx + CY[2] * sy + CZ[2] * t;
+        cells[k * 2 + 1] = cull(S, FULL, top.s0, top.ns, cx, cy, cz, rho, L);
+        if (lowOk) {
+          low[k] = lowOfList(S, L, cells[k * 2], cells[k * 2 + 1], cx, cy, cz, rho);
+          near[k] = low[k] > NEAR ? 0 : 1;
+        }
       }
     }
   }
   // the list of every solid, for a point outside every cell
   cells[N * 2] = L.ns;
   cells[N * 2 + 1] = fullList(S, L).ns;
-  return { sx0, sy0, t0, ts, dt, nx, ny, nz, cells, L };
+  if (lowOk) {
+    for (let c = 0; c < nx * ny; c++) {
+      let any = 0;
+      for (let iz = 0; iz < nz && !any; iz++) any = near[iz * nx * ny + c];
+      colNear[c] = any;
+    }
+  }
+  return { sx0, sy0, t0, ts, dt, nx, ny, nz, cells, L, low, near, colNear, lowOk };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -617,8 +745,28 @@ function ofSeg(S: Solids, L: Lists, s: number, x: number, y: number, z: number, 
   return d;
 }
 
-/** (for the checks: how many entries and distances the march has looked at, and how many times `at` was asked) */
-export const COUNT = { ents: 0, dists: 0, ats: 0, segs: 0, steps: 0, rays: 0, hits: 0 };
+/** (for the checks: how many entries and distances the march has looked at, and where; how many times `at` was asked) */
+export const COUNT = {
+  ents: 0,
+  dists: 0,
+  ats: 0,
+  segs: 0,
+  steps: 0,
+  rays: 0,
+  hits: 0,
+  /** Rays not marched (nothing they pass can be met), cells passed over, upper bounds asked and worked out in the first pass. */
+  skipped: 0,
+  hops: 0,
+  ups: 0,
+  upsDone: 0,
+  /** The entries and distances of the march itself (the rest: the way the skin faces, its creases, whose). */
+  marchEnts: 0,
+  marchDists: 0,
+};
+/** Zero the counts. */
+export function countReset(): void {
+  for (const k of Object.keys(COUNT) as (keyof typeof COUNT)[]) COUNT[k] = 0;
+}
 /** `Field.at` over a cell's list: the nearest skin, whose, and the segment of it. */
 const AT = { d: 0, m: -1, s: -1 };
 function atCell(S: Solids, G: Grid, cell: number, x: number, y: number, z: number): void {
@@ -673,10 +821,18 @@ export function listMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: M
   const cellOfP = (x: number, y: number, z: number): number =>
     cellOfS(G, rows[0][0] * x + rows[0][1] * y + rows[0][2] * z, rows[1][0] * x + rows[1][1] * y + rows[1][2] * z, rows[2][0] * x + rows[2][1] * y + rows[2][2] * z);
   const { xs, xe, ys, ye, zNear, zFar } = box;
+  const skipRays = GPU_ROUND2.raySkip && G.lowOk;
+  const hop = hopsFor(S.n) && G.lowOk;
   for (let y = ys; y <= ye; y++) {
     for (let x = xs; x <= xe; x++) {
       const sx = x + 0.5 - ax;
       const sy = y + 0.5 - ay;
+      COUNT.rays++;
+      // (ROUND 2: a ray that passes no cell in which a skin can be met is not marched: it would meet nothing)
+      if (skipRays && !G.colNear[colOfS(G, sx, sy)]) {
+        COUNT.skipped++;
+        continue;
+      }
       const b0 = CX[0] * sx + CY[0] * sy;
       const b1 = CX[1] * sx + CY[1] * sy;
       const b2 = CX[2] * sx + CY[2] * sy;
@@ -687,12 +843,26 @@ export function listMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: M
       let q2 = b2;
       let m = -1;
       let ms = -1;
-      for (let i = 0; i < 160 && t > zFar; i++) {
+      const e0 = COUNT.ents;
+      const d0 = COUNT.dists;
+      let hops = 0;
+      for (let i = 0; i < 160 && t > zFar; ) {
+        if (hop && hops < 256) {
+          // (NOT KEPT, behind its own switch: a cell in which nothing can be met is passed over, the march going on past it)
+          const kc = cellOfS(G, sx, sy, t);
+          if (!G.near[kc]) {
+            t = G.t0 + Math.floor((t - G.t0) / G.dt) * G.dt - 1e-3 * G.dt;
+            hops++;
+            COUNT.hops++;
+            continue;
+          }
+        }
         q0 = b0 + CZ[0] * t;
         q1 = b1 + CZ[1] * t;
         q2 = b2 + CZ[2] * t;
         atCell(S, G, cellOfS(G, sx, sy, t), q0, q1, q2);
         COUNT.steps++;
+        i++;
         if (AT.d < 0.02) {
           hit = true;
           m = AT.m;
@@ -701,13 +871,29 @@ export function listMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: M
         }
         t -= Math.max(0.02, (AT.d * 0.8) / L2);
       }
-      COUNT.rays++;
+      COUNT.marchEnts += COUNT.ents - e0;
+      COUNT.marchDists += COUNT.dists - d0;
       if (!hit) continue;
       COUNT.hits++;
       const L = G.L;
-      const nx = ofSeg(S, L, ms, q0 + E, q1 + 0, q2 + 0, Infinity) - ofSeg(S, L, ms, q0 + -E, q1 + 0, q2 + 0, Infinity);
-      const ny = ofSeg(S, L, ms, q0 + 0, q1 + E, q2 + 0, Infinity) - ofSeg(S, L, ms, q0 + 0, q1 + -E, q2 + 0, Infinity);
-      const nz = ofSeg(S, L, ms, q0 + 0, q1 + 0, q2 + E, Infinity) - ofSeg(S, L, ms, q0 + 0, q1 + 0, q2 + -E, Infinity);
+      let nx: number;
+      let ny: number;
+      let nz: number;
+      if (GPU_SCULPT_TEST.tetra) {
+        // (TRIED, NOT KEPT: the way the skin faces from four sums, at the corners of a little three-sided pyramid, not six)
+        const h = E;
+        const a = ofSeg(S, L, ms, q0 + h, q1 - h, q2 - h, Infinity);
+        const b = ofSeg(S, L, ms, q0 - h, q1 - h, q2 + h, Infinity);
+        const c = ofSeg(S, L, ms, q0 - h, q1 + h, q2 - h, Infinity);
+        const d = ofSeg(S, L, ms, q0 + h, q1 + h, q2 + h, Infinity);
+        nx = a - b - c + d;
+        ny = -a - b + c + d;
+        nz = -a + b - c + d;
+      } else {
+        nx = ofSeg(S, L, ms, q0 + E, q1 + 0, q2 + 0, Infinity) - ofSeg(S, L, ms, q0 + -E, q1 + 0, q2 + 0, Infinity);
+        ny = ofSeg(S, L, ms, q0 + 0, q1 + E, q2 + 0, Infinity) - ofSeg(S, L, ms, q0 + 0, q1 + -E, q2 + 0, Infinity);
+        nz = ofSeg(S, L, ms, q0 + 0, q1 + 0, q2 + E, Infinity) - ofSeg(S, L, ms, q0 + 0, q1 + 0, q2 + -E, Infinity);
+      }
       const nn = Math.hypot(nx, ny, nz) || 1;
       const n: V3 = [nx / nn, ny / nn, nz / nn];
       const a0 = q0 + n[0] * 1.2;
@@ -723,11 +909,11 @@ export function listMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: M
       const open = Math.max(0, Math.min(1, (o1 + o2) / 2));
       // whose it is: `Field.nearest` over the material's own solids in the cell
       const so = ms * 4;
-      const e0 = L.segs[so + 1];
+      const e0n = L.segs[so + 1];
       const np = L.segs[so + 2];
       let best = Infinity;
-      let p = L.ents[e0];
-      for (let k = e0; k < e0 + np; k++) {
+      let p = L.ents[e0n];
+      for (let k = e0n; k < e0n + np; k++) {
         const j = L.ents[k];
         const lb = Math.hypot(q0 - S.bc[j * 3], q1 - S.bc[j * 3 + 1], q2 - S.bc[j * 3 + 2]) - S.br[j];
         if (lb > best) continue;
@@ -862,10 +1048,17 @@ const VERT = `#version 300 es
 void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }
 `;
 
-/** THE FIRST PASS: each cell's list, as `cull` makes it, as a mask over the solids in `Field`'s order. */
+/**
+ * THE FIRST PASS: each cell's list, as `cull` makes it, as a mask over the solids in `Field`'s order. ROUND 2: a solid's bound
+ * worked out only where it can lower what is found (`uSkipUp`); and (`uLow`) the least `Field.at` can be in the cell, from
+ * the solids kept, and whether a skin can be met there, said in the mask's last bit (left free: fewer than 512 solids).
+ */
 const CULL = `${HEAD}
 uniform int uNC;
 uniform float uRho;
+uniform int uSkipUp;
+uniform int uLow;
+uniform float uNear;
 layout(location = 0) out uvec4 o0;
 layout(location = 1) out uvec4 o1;
 layout(location = 2) out uvec4 o2;
@@ -880,19 +1073,10 @@ void put(int w, uint bits) {
   if (g == 0) OA |= add; else if (g == 1) OB |= add; else if (g == 2) OC |= add; else OD |= add;
 }
 void setBit(int r) { put(r >> 5, 1u << uint(r & 31)); }
-float upperOf(int r, vec3 c, float rho, float dc, vec4 h0, vec4 h1, vec4 h2) {
-  vec4 h3 = sol(r, 3);
-  float up;
-  if ((int(h1.x) & 7) == 1) {
-    vec4 C = sol(r, 4); vec4 U0 = sol(r, 5); vec4 U1 = sol(r, 6); vec4 U2 = sol(r, 7);
-    vec3 v = c - C.xyz;
-    vec3 p0 = vec3(dot(v, U0.xyz) / U0.w, dot(v, U1.xyz) / U1.w, dot(v, U2.xyz) / U2.w);
-    float k0 = length(p0) * (1.0 + 1e-5) + h3.x * rho / h3.y;
-    up = min(h3.x * (dc + rho), max(0.0, h3.z * (k0 - 1.0)));
-    int c1 = int(h1.w);
-    for (int cc = int(h1.z); cc < c1; cc++) { vec4 cv = cutAt(cc); up = max(up, dot(c, cv.xyz) - cv.w + length(cv.xyz) * rho); }
-  } else up = distOf(r, c, h1) + h3.x * rho;
-  return max(up, dc + rho - h2.x - h1.y) + M * (1.0 + abs(up));
+float smin1(float a, float b, float k) {
+  if (k <= 0.0) return min(a, b);
+  float h = max(k - abs(a - b), 0.0) / k;
+  return min(a, b) - h * h * k * 0.25;
 }
 void main() {
   OA = uvec4(0u); OB = uvec4(0u); OC = uvec4(0u); OD = uvec4(0u);
@@ -909,6 +1093,7 @@ void main() {
     vec3 c = uCX * sx + uCY * sy + uCZ * t;
     float rho = uRho;
     float capRun = BIG;
+    float least = BIG;
     for (int mi = 0; mi < uNM; mi++) {
       ivec4 mr = matOf(mi);
       if (mr.x == mr.y) continue;
@@ -922,15 +1107,56 @@ void main() {
       float uRun = BIG;
       float witness = BIG;
       int kept = 0;
+      bool hasU = false;
+      float U = 0.0;
       for (int r = mr.x; r < mr.y; r++) {
         vec4 h0 = uH0[r];
         vec4 h1 = uH1[r];
-        vec4 h2 = sol(r, 2);
         float dc = length(c - h0.xyz);
-        float up = upperOf(r, c, rho, dc, h0, h1, h2);
-        if (!drop && !(dc - rho > uRun + h0.w + M)) { setBit(r); kept++; }
-        uRun = min(uRun, up);
-        witness = min(witness, up);
+        bool keep = !drop && !(dc - rho > uRun + h0.w + M);
+        if (keep) { setBit(r); kept++; }
+        // (its least, for the cell's least: only while no material before has made it a cell where a skin can be met)
+        bool wantLow = keep && uLow != 0 && least > uNear;
+        // (its bound is no less than its ball's own clause: where that is no less than what is found so far, it lowers nothing)
+        bool wantUp = uSkipUp == 0 || dc + rho - h0.w < uRun;
+        if (!wantLow && !wantUp) continue;
+        vec4 h3 = sol(r, 3);
+        float up = 0.0;
+        float lo = 0.0;
+        if ((int(h1.x) & 7) == 1) {
+          vec4 C = sol(r, 4); vec4 U0 = sol(r, 5); vec4 U1 = sol(r, 6); vec4 U2 = sol(r, 7);
+          vec3 v = c - C.xyz;
+          vec3 p0 = vec3(dot(v, U0.xyz) / U0.w, dot(v, U1.xyz) / U1.w, dot(v, U2.xyz) / U2.w);
+          float kc = length(p0);
+          if (wantUp) {
+            // a ball: never more than how far the point is from its middle along its own lines, nor than its most half-length
+            // times how far out of it the point is, less one
+            float k0 = kc * (1.0 + 1e-5) + h3.x * rho / h3.y;
+            up = min(h3.x * (dc + rho), max(0.0, h3.z * (k0 - 1.0)));
+            int c1 = int(h1.w);
+            for (int cc = int(h1.z); cc < c1; cc++) { vec4 cv = cutAt(cc); up = max(up, dot(c, cv.xyz) - cv.w + length(cv.xyz) * rho); }
+          }
+          if (wantLow) {
+            // out of it, no less than how far out less one times its least half-length; in it, what is left to one times its most
+            float k0 = max(0.0, kc * (1.0 - 1e-5) - h3.x * rho / h3.y);
+            lo = k0 >= 1.0 ? (k0 - 1.0) * h3.y : -(1.0 - k0) * h3.z;
+          }
+        } else {
+          float dd = distOf(r, c, h1);
+          up = dd + h3.x * rho;
+          lo = dd - h3.x * rho;
+        }
+        if (wantUp) {
+          vec4 h2 = sol(r, 2);
+          up = max(up, dc + rho - h2.x - h1.y) + M * (1.0 + abs(up));
+          uRun = min(uRun, up);
+          witness = min(witness, up);
+        }
+        if (wantLow) {
+          lo -= M * (1.0 + abs(lo));
+          U = hasU ? smin1(U, lo, h1.y) : lo;
+          hasU = true;
+        }
       }
       bool carved = false;
       for (int r = mr.y; r < mr.z; r++) {
@@ -940,10 +1166,38 @@ void main() {
           if (!drop && kept > 0) setBit(r);
         }
       }
+      if (hasU) least = min(least, U);
       capRun = carved ? capB : min(capB, witness);
     }
+    // a skin can be met in the cell: said in the last bit, which no solid has
+    if (uLow != 0 && !(least - M * (1.0 + abs(least)) > uNear)) OD.w |= 0x80000000u;
   }
   o0 = OA; o1 = OB; o2 = OC; o3 = OD;
+}
+`;
+
+/** ROUND 2: for each column of cells (across, down), which of its cells (from the far end) a skin can be met in, as bits. */
+const COLS = `${HEAD}
+uniform usampler2D uM3;
+uniform int uNCol;
+layout(location = 0) out uvec4 o0;
+void main() {
+  ivec2 pix = ivec2(gl_FragCoord.xy);
+  int col = pix.y * uCW + pix.x;
+  uvec4 b = uvec4(0u);
+  if (col < uNCol) {
+    int per = uGN.x * uGN.y;
+    for (int iz = 0; iz < uGN.z; iz++) {
+      int k = iz * per + col;
+      uvec4 m = texelFetch(uM3, ivec2(k % uCW, k / uCW), 0);
+      if ((m.w & 0x80000000u) != 0u) {
+        uint bit = 1u << uint(iz & 31);
+        int w = iz >> 5;
+        if (w == 0) b.x |= bit; else if (w == 1) b.y |= bit; else if (w == 2) b.z |= bit; else b.w |= bit;
+      }
+    }
+  }
+  o0 = b;
 }
 `;
 
@@ -963,6 +1217,11 @@ uniform float uFar;
 uniform float uL2;
 uniform float uE;
 uniform int uNW;
+// (ROUND 2: which cells of each column a skin can be met in; a ray that passes none not marched; the last bit of a list freed)
+uniform usampler2D uCol;
+uniform int uSkipRays;
+uniform int uHop;
+uniform int uSteal;
 layout(location = 0) out uvec4 o0;
 layout(location = 1) out uvec4 o1;
 uvec4 MA; uvec4 MB; uvec4 MC; uvec4 MD;
@@ -1000,6 +1259,7 @@ void loadMask(int k) {
   MB = uN > 128 ? texelFetch(uM1, p, 0) : uvec4(0u);
   MC = uN > 256 ? texelFetch(uM2, p, 0) : uvec4(0u);
   MD = uN > 384 ? texelFetch(uM3, p, 0) : uvec4(0u);
+  if (uSteal != 0) MD.w &= 0x7fffffffu;
 }
 // Field.at over the list in MA..MD: the nearest skin and whose
 void atq(vec3 q) {
@@ -1135,12 +1395,34 @@ void main() {
   vec3 q = base;
   int m = -1;
   int cell = -2;
-  for (int i = 0; i < 160; i++) {
-    if (!(t > uFar)) break;
+  uvec4 nearC = uvec4(0xffffffffu);
+  if (uSkipRays != 0 || uHop != 0) {
+    ivec2 cc = ivec2(floor((vec2(sx, sy) - uG0.xy) / uGS.x));
+    if (all(greaterThanEqual(cc, ivec2(0))) && all(lessThan(cc, uGN.xy))) {
+      int col = cc.y * uGN.x + cc.x;
+      nearC = texelFetch(uCol, ivec2(col % uCW, col / uCW), 0);
+    }
+  }
+  // (a ray that passes no cell in which a skin can be met: nothing to march)
+  if (uSkipRays != 0 && nearC == uvec4(0u)) { o0 = uvec4(0u); o1 = uvec4(0u); return; }
+  int i = 0;
+  int hops = 0;
+  for (int it = 0; it < 416; it++) {
+    if (i >= 160 || !(t > uFar)) break;
+    if (uHop != 0 && hops < 256) {
+      // (NOT KEPT: a cell in which no skin can be met passed over, the march going on past it)
+      int iz = int(floor((t - uG0.z) / uGS.y));
+      if (iz >= 0 && iz < uGN.z && (pick(nearC, iz >> 5) & (1u << uint(iz & 31))) == 0u) {
+        t = uG0.z + float(iz) * uGS.y - 1e-3 * uGS.y;
+        hops++;
+        continue;
+      }
+    }
     q = base + uCZ * t;
     int k = cellAt(vec3(sx, sy, t));
     if (k != cell) { loadMask(k); cell = k; }
     atq(q);
+    i++;
     if (AT_D < 0.02) { hit = true; m = AT_M; break; }
     t -= max(0.02, (AT_D * 0.8) / uL2);
   }
@@ -1180,15 +1462,24 @@ void main() {
 interface Chip {
   gl: WebGL2RenderingContext;
   cull: WebGLProgram;
+  cols: WebGLProgram;
   march: WebGLProgram;
   cu: Map<string, WebGLUniformLocation | null>;
+  ku: Map<string, WebGLUniformLocation | null>;
   mu: Map<string, WebGLUniformLocation | null>;
   sol: WebGLTexture;
   cut: WebGLTexture;
   mat: WebGLTexture;
+  /** (ROUND 2: the textures' sizes as made, so a frame's table is sent into them, not a new texture each frame) */
+  solRows: number;
+  cutRows: number;
+  matMade: boolean;
   mask: WebGLTexture[];
   maskFb: WebGLFramebuffer;
   maskSize: [number, number];
+  col: WebGLTexture;
+  colFb: WebGLFramebuffer;
+  colSize: [number, number];
   out: WebGLTexture[];
   outFb: WebGLFramebuffer;
   outSize: [number, number];
@@ -1196,6 +1487,10 @@ interface Chip {
   heads: WebGLBuffer[];
   most: number;
   lost: boolean;
+  /** EXT_disjoint_timer_query_webgl2, where the browser has it (the chip's own time for each pass). */
+  timer: { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null;
+  /** Why it is not worth using, as found when it was made ('' : it is), for the checks that use it all the same. */
+  slow: string;
 }
 /** The chip, once made (null: there is none, or it failed, and the CPU marches from then on). */
 let CHIP: Chip | null = null;
@@ -1307,11 +1602,12 @@ function chip(): Chip | null {
     cv.addEventListener?.('webglcontextlost', () => giveUp('the context was lost'));
     if ((gl.getParameter(gl.MAX_DRAW_BUFFERS) as number) < 4 || (gl.getParameter(gl.MAX_COLOR_ATTACHMENTS) as number) < 4) throw new Error('fewer than four targets');
     const cull = compile(gl, VERT, CULL);
+    const cols = compile(gl, VERT, COLS);
     const march = compile(gl, VERT, MARCH);
     const names = (p: WebGLProgram, ns: string[]): Map<string, WebGLUniformLocation | null> => new Map(ns.map((n) => [n, gl.getUniformLocation(p, n)]));
     const common = ['uSol', 'uCut', 'uN', 'uNM', 'uMatT', 'uCX', 'uCY', 'uCZ', 'uG0', 'uGS', 'uGN', 'uCW'];
     // the two blocks of heads, bound once to both programs
-    for (const p of [cull, march]) {
+    for (const p of [cull, cols, march]) {
       gl.uniformBlockBinding(p, gl.getUniformBlockIndex(p, 'Head0'), 0);
       gl.uniformBlockBinding(p, gl.getUniformBlockIndex(p, 'Head1'), 1);
     }
@@ -1325,19 +1621,34 @@ function chip(): Chip | null {
     const vao = gl.createVertexArray();
     const maskFb = gl.createFramebuffer();
     const outFb = gl.createFramebuffer();
-    if (!vao || !maskFb || !outFb) throw new Error('no buffers');
+    const colFb = gl.createFramebuffer();
+    if (!vao || !maskFb || !outFb || !colFb) throw new Error('no buffers');
+    let timer: Chip['timer'] = null;
+    try {
+      timer = gl.getExtension('EXT_disjoint_timer_query_webgl2') as Chip['timer'];
+    } catch {
+      timer = null;
+    }
     const c: Chip = {
       gl,
       cull,
+      cols,
       march,
-      cu: names(cull, [...common, 'uNC', 'uRho']),
-      mu: names(march, [...common, 'uM0', 'uM1', 'uM2', 'uM3', 'uNW', 'uR0', 'uR1', 'uR2', 'uA', 'uO', 'uNear', 'uFar', 'uL2', 'uE']),
+      cu: names(cull, [...common, 'uNC', 'uRho', 'uSkipUp', 'uLow', 'uNear']),
+      ku: names(cols, [...common, 'uM3', 'uNCol']),
+      mu: names(march, [...common, 'uM0', 'uM1', 'uM2', 'uM3', 'uNW', 'uR0', 'uR1', 'uR2', 'uA', 'uO', 'uNear', 'uFar', 'uL2', 'uE', 'uCol', 'uSkipRays', 'uHop', 'uSteal']),
       sol: newTex(gl),
       cut: newTex(gl),
       mat: newTex(gl),
+      solRows: 0,
+      cutRows: 0,
+      matMade: false,
       mask: [newTex(gl), newTex(gl), newTex(gl), newTex(gl)],
       maskFb,
       maskSize: [0, 0],
+      col: newTex(gl),
+      colFb,
+      colSize: [0, 0],
       out: [newTex(gl), newTex(gl)],
       outFb,
       outSize: [0, 0],
@@ -1345,6 +1656,8 @@ function chip(): Chip | null {
       heads: heads as WebGLBuffer[],
       most: gl.getParameter(gl.MAX_TEXTURE_SIZE) as number,
       lost: false,
+      timer,
+      slow: '',
     };
     CHIP = c;
     // (proved on a small figure against the same march in the CPU's numbers, before it is trusted with any)
@@ -1355,6 +1668,7 @@ function chip(): Chip | null {
     }
     // (and only a chip that is faster than the CPU: a software one, or a weak one, would paint his frames slower)
     const slow = slowness(c);
+    c.slow = slow;
     if (slow && !GPU_SCULPT_TEST.allowSlow) {
       giveUp(slow);
       return null;
@@ -1366,10 +1680,23 @@ function chip(): Chip | null {
   }
 }
 
+/** Rows of the solids' table, for the most solids a figure may have. */
+const SOL_ROWS = (MOST * 16) / TEX_W;
+/** (ROUND 2: what is sent to the chip each frame, and read back, kept from frame to frame where `GPU_ROUND2.keep`) */
+const KEPT = {
+  sol: new Float32Array(TEX_W * SOL_ROWS * 4),
+  cut: new Float32Array(TEX_W * 4),
+  mats: new Int32Array(MOST_MATS * 4),
+  heads: [new Float32Array(MOST * 4), new Float32Array(MOST * 4)],
+  o0: new Uint32Array(0),
+  o1: new Uint32Array(0),
+};
+
 /** The solids in `Field`'s order, packed for the chip: their table, their cuts, each material's place in the order. */
 function pack(S: Solids): { sol: Float32Array; cut: Float32Array; mats: Int32Array; n: number; solH: number; cutH: number; heads: Float32Array[]; order: number[] } {
+  const keep = GPU_ROUND2.keep;
   const order: number[] = [];
-  const mats = new Int32Array(MOST_MATS * 4);
+  const mats = keep ? KEPT.mats : new Int32Array(MOST_MATS * 4);
   for (let m = 0; m < S.nm; m++) {
     mats[m * 4] = order.length;
     if (S.prims[m].length) {
@@ -1381,43 +1708,133 @@ function pack(S: Solids): { sol: Float32Array; cut: Float32Array; mats: Int32Arr
   }
   const n = order.length;
   const solH = Math.max(1, Math.ceil((n * 16) / TEX_W));
-  const sol = new Float32Array(TEX_W * solH * 4);
+  const sol = keep ? KEPT.sol : new Float32Array(TEX_W * solH * 4);
   const g = S.g;
-  order.forEach((j, r) => {
+  for (let r = 0; r < n; r++) {
+    const j = order[r];
     const o = r * 64;
     const go = j * GS;
-    sol.set([S.bc[j * 3], S.bc[j * 3 + 1], S.bc[j * 3 + 2], S.carve[j] ? S.farC[j] : S.blend[j] + S.br[j]], o);
-    sol.set([S.kind[j] + (S.carve[j] ? 8 : 0), S.blend[j], S.cut0[j], S.cut1[j]], o + 4);
-    sol.set([S.br[j], j, S.mat[j], 0], o + 8);
-    sol.set([S.lip[j], S.uMin[j], S.uMax[j], 0], o + 12);
+    // (each number as the round before laid it, one by one: the same 32-bit numbers)
+    sol[o] = S.bc[j * 3];
+    sol[o + 1] = S.bc[j * 3 + 1];
+    sol[o + 2] = S.bc[j * 3 + 2];
+    sol[o + 3] = S.carve[j] ? S.farC[j] : S.blend[j] + S.br[j];
+    sol[o + 4] = S.kind[j] + (S.carve[j] ? 8 : 0);
+    sol[o + 5] = S.blend[j];
+    sol[o + 6] = S.cut0[j];
+    sol[o + 7] = S.cut1[j];
+    sol[o + 8] = S.br[j];
+    sol[o + 9] = j;
+    sol[o + 10] = S.mat[j];
+    sol[o + 11] = 0;
+    sol[o + 12] = S.lip[j];
+    sol[o + 13] = S.uMin[j];
+    sol[o + 14] = S.uMax[j];
+    sol[o + 15] = 0;
     const k = S.kind[j];
-    const G = (a: number, b: number): number[] => Array.from(g.subarray(go + a, go + b));
     if (k === KC) {
-      sol.set([...G(0, 3), g[go + 6]], o + 16);
-      sol.set([...G(3, 6), g[go + 7]], o + 20);
-      sol.set([g[go + 8], 0, 0, 0], o + 24);
+      sol[o + 16] = g[go];
+      sol[o + 17] = g[go + 1];
+      sol[o + 18] = g[go + 2];
+      sol[o + 19] = g[go + 6];
+      sol[o + 20] = g[go + 3];
+      sol[o + 21] = g[go + 4];
+      sol[o + 22] = g[go + 5];
+      sol[o + 23] = g[go + 7];
+      sol[o + 24] = g[go + 8];
+      sol[o + 25] = 0;
+      sol[o + 26] = 0;
+      sol[o + 27] = 0;
     } else if (k === KT) {
-      sol.set([...G(0, 3), g[go + 30], ...G(3, 6), g[go + 31], ...G(6, 9), g[go + 32], ...G(9, 12), g[go + 33], ...G(12, 15), g[go + 34], ...G(15, 18), 0, ...G(18, 21), 0, ...G(21, 24), 0, ...G(24, 27), 0, ...G(27, 30), 0], o + 16);
+      // (ten texels: a, b, c, b - a, c - b, a - c, the flat's way, and the three edges' ways, each with one more number)
+      const more = [30, 31, 32, 33, 34, -1, -1, -1, -1, -1];
+      for (let t = 0; t < 10; t++) {
+        sol[o + 16 + t * 4] = g[go + t * 3];
+        sol[o + 17 + t * 4] = g[go + t * 3 + 1];
+        sol[o + 18 + t * 4] = g[go + t * 3 + 2];
+        sol[o + 19 + t * 4] = more[t] >= 0 ? g[go + more[t]] : 0;
+      }
     } else {
-      sol.set([...G(0, 3), g[go + 15], ...G(3, 6), g[go + 12], ...G(6, 9), g[go + 13], ...G(9, 12), g[go + 14]], o + 16);
+      sol[o + 16] = g[go];
+      sol[o + 17] = g[go + 1];
+      sol[o + 18] = g[go + 2];
+      sol[o + 19] = g[go + 15];
+      for (let a = 0; a < 3; a++) {
+        sol[o + 20 + a * 4] = g[go + 3 + a * 3];
+        sol[o + 21 + a * 4] = g[go + 4 + a * 3];
+        sol[o + 22 + a * 4] = g[go + 5 + a * 3];
+        sol[o + 23 + a * 4] = g[go + 12 + a];
+      }
     }
-  });
-  const heads = [new Float32Array(MOST * 4), new Float32Array(MOST * 4)];
+  }
+  const heads = keep ? KEPT.heads : [new Float32Array(MOST * 4), new Float32Array(MOST * 4)];
   for (let r = 0; r < n; r++) {
-    heads[0].set(sol.subarray(r * 64, r * 64 + 4), r * 4);
-    heads[1].set(sol.subarray(r * 64 + 4, r * 64 + 8), r * 4);
+    for (let q = 0; q < 4; q++) {
+      heads[0][r * 4 + q] = sol[r * 64 + q];
+      heads[1][r * 4 + q] = sol[r * 64 + 4 + q];
+    }
   }
   const nc = S.cutv.length / 4;
   const cutH = Math.max(1, Math.ceil(nc / TEX_W));
-  const cut = new Float32Array(TEX_W * cutH * 4);
+  if (keep && KEPT.cut.length < TEX_W * cutH * 4) KEPT.cut = new Float32Array(TEX_W * cutH * 4 * 2);
+  const cut = keep ? KEPT.cut : new Float32Array(TEX_W * cutH * 4);
   cut.set(S.cutv);
   return { sol, cut, mats, n, solH, cutH, heads, order };
+}
+
+/** What a frame on the chip cost and was (for the checks and the test page). */
+export const CHIP_SEEN = {
+  /** Thousandths of a second: making the table, sending it, the first pass, the columns, the march, the readback, checking the numbers, shading. */
+  ms: { pack: 0, upload: 0, cull: 0, cols: 0, march: 0, read: 0, check: 0, shade: 0, all: 0 },
+  /** Draws, readbacks and their bytes; the box marched; cells; solids. */
+  draws: 0,
+  reads: 0,
+  readBytes: 0,
+  box: [0, 0] as [number, number],
+  cells: 0,
+  cols: 0,
+  solids: 0,
+  /** The same, added up over every figure marched since `chipSeenReset` (a frame may have more than one). */
+  sum: { pack: 0, upload: 0, cull: 0, cols: 0, march: 0, read: 0, check: 0, shade: 0, all: 0 },
+  figures: 0,
+};
+/** Start counting a frame's draws, readbacks and times afresh (`CHIP_SEEN`). */
+export function chipSeenReset(): void {
+  CHIP_SEEN.draws = 0;
+  CHIP_SEEN.reads = 0;
+  CHIP_SEEN.readBytes = 0;
+  CHIP_SEEN.figures = 0;
+  for (const k of Object.keys(CHIP_SEEN.sum) as (keyof typeof CHIP_SEEN.sum)[]) CHIP_SEEN.sum[k] = 0;
+}
+/** Timer queries asked for and not yet read: each pass's. */
+let PENDING: { cull: WebGLQuery | null; cols: WebGLQuery | null; march: WebGLQuery | null }[] = [];
+/** The chip's own pass times of frames gone by, as they come in (call after the page has had a moment); null where it cannot say. */
+export function chipTimes(): { cull: number; cols: number; march: number }[] | null {
+  const c = CHIP;
+  if (!c || !c.timer) return null;
+  const gl = c.gl;
+  const out: { cull: number; cols: number; march: number }[] = [];
+  const left: typeof PENDING = [];
+  const disjoint = gl.getParameter(c.timer.GPU_DISJOINT_EXT) as boolean;
+  for (const p of PENDING) {
+    const qs = [p.cull, p.cols, p.march];
+    if (qs.some((q) => q && !gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE))) {
+      left.push(p);
+      continue;
+    }
+    const v = qs.map((q) => (q ? (gl.getQueryParameter(q, gl.QUERY_RESULT) as number) / 1e6 : 0));
+    for (const q of qs) if (q) gl.deleteQuery(q);
+    if (!disjoint) out.push({ cull: v[0], cols: v[1], march: v[2] });
+  }
+  PENDING = left;
+  return out;
 }
 
 /** THE MARCH ON THE CHIP: what `marchFast` does, handing `shade` the same numbers; false if the chip could not (nothing painted). */
 export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: MarchBox, CX: V3, CY: V3, CZ: V3, L2: number, E: number, shade: Shade): boolean {
   const c = chip();
   if (!c) return false;
+  const T = CHIP_SEEN.ms;
   const t0 = performance.now();
   const S = solidsOf(f);
   if (!soundOf(S) || S.n > MOST || S.nm > MOST_MATS || !S.n) return false;
@@ -1425,39 +1842,97 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
   const rows = rowsOf(st);
   const lay = layoutOf(rows, CX, CY, CZ, box, ax, ay, E);
   const nCells = lay.nx * lay.ny * lay.nz;
+  const nCols = lay.nx * lay.ny;
   const cw = CELLS_W;
   const ch = Math.ceil(nCells / cw);
+  const kh = Math.ceil(nCols / cw);
   const bw = box.xe - box.xs + 1;
   const bh = box.ye - box.ys + 1;
   if (bw <= 0 || bh <= 0) return true;
   if (ch > c.most || bw > c.most || bh > c.most || P.solH > c.most || P.cutH > c.most) return false;
+  // (ROUND 2: which cells a skin can be met in, where the chip can say it: a column no deeper than its words, a bit free)
+  const hop = hopsFor(P.n);
+  const low = (GPU_ROUND2.raySkip || hop) && lay.nz <= MOST_DEEP && P.n < MOST;
   const { gl } = c;
+  const profile = GPU_SCULPT_TEST.profile;
+  const timing = !!c.timer && GPU_SCULPT_TEST.timer;
+  const sync = (): void => {
+    // (for the split only: wait for the chip to finish what it was given)
+    gl.readPixels(0, 0, 1, 1, gl.RGBA_INTEGER, gl.UNSIGNED_INT, new Uint32Array(4));
+  };
+  const q: { cull: WebGLQuery | null; cols: WebGLQuery | null; march: WebGLQuery | null } = { cull: null, cols: null, march: null };
+  const begin = (k: keyof typeof q): void => {
+    if (!timing || !c.timer) return;
+    q[k] = gl.createQuery();
+    if (q[k]) gl.beginQuery(c.timer.TIME_ELAPSED_EXT, q[k] as WebGLQuery);
+  };
+  const end = (k: keyof typeof q): void => {
+    if (timing && c.timer && q[k]) gl.endQuery(c.timer.TIME_ELAPSED_EXT);
+  };
   let o0: Uint32Array;
   let o1: Uint32Array;
+  CHIP_SEEN.box = [bw, bh];
+  CHIP_SEEN.cells = nCells;
+  CHIP_SEEN.cols = nCols;
+  CHIP_SEEN.solids = P.n;
+  const tPack = performance.now();
+  T.pack = tPack - t0;
+  T.cull = T.cols = T.march = 0;
   try {
     gl.bindVertexArray(c.vao);
     gl.disable(gl.BLEND);
     gl.disable(gl.DEPTH_TEST);
     // the solids, their cuts, the materials' places
-    const up = (unit: number, t: WebGLTexture): void => {
+    const up = (unit: number, t: WebGLTexture | null): void => {
       gl.activeTexture(gl.TEXTURE0 + unit);
       gl.bindTexture(gl.TEXTURE_2D, t);
     };
-    up(0, c.sol);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEX_W, P.solH, 0, gl.RGBA, gl.FLOAT, P.sol);
-    up(1, c.cut);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEX_W, P.cutH, 0, gl.RGBA, gl.FLOAT, P.cut);
-    up(2, c.mat);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32I, MOST_MATS, 1, 0, gl.RGBA_INTEGER, gl.INT, P.mats);
-    for (let k = 0; k < 2; k++) {
-      gl.bindBuffer(gl.UNIFORM_BUFFER, c.heads[k]);
-      gl.bufferSubData(gl.UNIFORM_BUFFER, 0, P.heads[k]);
-      gl.bindBufferBase(gl.UNIFORM_BUFFER, k, c.heads[k]);
+    if (GPU_ROUND2.keep) {
+      // (made once at their most, then each frame's numbers sent into them)
+      up(0, c.sol);
+      if (c.solRows !== SOL_ROWS) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEX_W, SOL_ROWS, 0, gl.RGBA, gl.FLOAT, null);
+        c.solRows = SOL_ROWS;
+      }
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, TEX_W, P.solH, gl.RGBA, gl.FLOAT, P.sol, 0);
+      up(1, c.cut);
+      if (c.cutRows < P.cutH) {
+        c.cutRows = Math.max(P.cutH, 2 * c.cutRows, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEX_W, c.cutRows, 0, gl.RGBA, gl.FLOAT, null);
+      }
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, TEX_W, P.cutH, gl.RGBA, gl.FLOAT, P.cut, 0);
+      up(2, c.mat);
+      if (!c.matMade) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32I, MOST_MATS, 1, 0, gl.RGBA_INTEGER, gl.INT, null);
+        c.matMade = true;
+      }
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MOST_MATS, 1, gl.RGBA_INTEGER, gl.INT, P.mats, 0);
+      for (let k = 0; k < 2; k++) {
+        gl.bindBuffer(gl.UNIFORM_BUFFER, c.heads[k]);
+        gl.bufferSubData(gl.UNIFORM_BUFFER, 0, P.heads[k], 0, P.n * 4);
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, k, c.heads[k]);
+      }
+    } else {
+      up(0, c.sol);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEX_W, P.solH, 0, gl.RGBA, gl.FLOAT, P.sol);
+      c.solRows = 0;
+      up(1, c.cut);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEX_W, P.cutH, 0, gl.RGBA, gl.FLOAT, P.cut);
+      c.cutRows = 0;
+      up(2, c.mat);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32I, MOST_MATS, 1, 0, gl.RGBA_INTEGER, gl.INT, P.mats);
+      c.matMade = false;
+      for (let k = 0; k < 2; k++) {
+        gl.bindBuffer(gl.UNIFORM_BUFFER, c.heads[k]);
+        gl.bufferSubData(gl.UNIFORM_BUFFER, 0, P.heads[k]);
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, k, c.heads[k]);
+      }
     }
     const t1 = performance.now();
+    T.upload = t1 - tPack;
     // THE FIRST PASS: every cell's list
     if (c.maskSize[0] !== cw || c.maskSize[1] < ch) {
-      gl.activeTexture(gl.TEXTURE7);
+      gl.activeTexture(gl.TEXTURE10);
       targets(gl, c.maskFb, c.mask, cw, Math.max(ch, c.maskSize[1]));
       c.maskSize = [cw, Math.max(ch, c.maskSize[1])];
     }
@@ -1476,22 +1951,28 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
       gl.uniform1i(u.get('uCW') ?? null, cw);
     };
     // (no texture the pass paints into is bound to be read meanwhile)
-    for (let i = 3; i < 8; i++) up(i, null as unknown as WebGLTexture);
+    for (let i = 3; i < 8; i++) up(i, null);
     gl.useProgram(c.cull);
     common(c.cu);
     gl.uniform1i(c.cu.get('uNC') ?? null, nCells);
     gl.uniform1f(c.cu.get('uRho') ?? null, lay.rho);
+    gl.uniform1i(c.cu.get('uSkipUp') ?? null, GPU_ROUND2.cullSkip ? 1 : 0);
+    gl.uniform1i(c.cu.get('uLow') ?? null, low ? 1 : 0);
+    gl.uniform1f(c.cu.get('uNear') ?? null, NEAR);
     gl.bindFramebuffer(gl.FRAMEBUFFER, c.maskFb);
     gl.viewport(0, 0, cw, ch);
     gl.disable(gl.SCISSOR_TEST);
     GPU_SCULPT_TEST.log?.(`cull ${cw}x${ch} cells ${nCells} solids ${P.n} mats ${S.nm} box ${bw}x${bh}`);
+    begin('cull');
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    if (GPU_SCULPT_TEST.profile) {
-      // (for the checks: wait for the first pass, to time it alone)
+    end('cull');
+    CHIP_SEEN.draws++;
+    if (profile) {
       gl.readBuffer(gl.COLOR_ATTACHMENT0);
-      gl.readPixels(0, 0, 1, 1, gl.RGBA_INTEGER, gl.UNSIGNED_INT, new Uint32Array(4));
-      GPU_SCULPT_TEST.ms.lists = performance.now() - t1;
-      GPU_SCULPT_TEST.log?.(`cull done ${GPU_SCULPT_TEST.ms.lists.toFixed(0)} ms`);
+      sync();
+      T.cull = performance.now() - t1;
+      GPU_SCULPT_TEST.ms.lists = T.cull;
+      GPU_SCULPT_TEST.log?.(`cull done ${T.cull.toFixed(0)} ms`);
     }
     if (GPU_SCULPT_TEST.masks) {
       // (for the checks: every cell's mask, read back)
@@ -1500,13 +1981,42 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
         gl.readBuffer(gl.COLOR_ATTACHMENT0 + k);
         const m = new Uint32Array(cw * ch * 4);
         gl.readPixels(0, 0, cw, ch, gl.RGBA_INTEGER, gl.UNSIGNED_INT, m);
+        // (the last bit, where it says whether a skin can be met in the cell, is no solid)
+        if (k === 3 && low) for (let i = 3; i < m.length; i += 4) m[i] &= 0x7fffffff;
         all.push(m);
       }
       GPU_SCULPT_TEST.maskData = { all, order: P.order, nCells };
     }
+    // ROUND 2, THE COLUMNS: for each, which of its cells a skin can be met in
+    const tc = performance.now();
+    if (low) {
+      if (c.colSize[0] !== cw || c.colSize[1] < kh) {
+        gl.activeTexture(gl.TEXTURE10);
+        targets(gl, c.colFb, [c.col], cw, Math.max(kh, c.colSize[1]));
+        c.colSize = [cw, Math.max(kh, c.colSize[1])];
+      }
+      up(7, null);
+      up(6, c.mask[3]);
+      gl.useProgram(c.cols);
+      common(c.ku);
+      gl.uniform1i(c.ku.get('uM3') ?? null, 6);
+      gl.uniform1i(c.ku.get('uNCol') ?? null, nCols);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, c.colFb);
+      gl.viewport(0, 0, cw, kh);
+      begin('cols');
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      end('cols');
+      CHIP_SEEN.draws++;
+      if (profile) {
+        gl.readBuffer(gl.COLOR_ATTACHMENT0);
+        sync();
+        T.cols = performance.now() - tc;
+      }
+    }
     // THE MARCH
+    const tm = performance.now();
     if (c.outSize[0] < bw || c.outSize[1] < bh) {
-      gl.activeTexture(gl.TEXTURE7);
+      gl.activeTexture(gl.TEXTURE10);
       const w = Math.max(bw, c.outSize[0]);
       const h = Math.max(bh, c.outSize[1]);
       targets(gl, c.outFb, c.out, w, h);
@@ -1517,10 +2027,15 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
     const u = c.mu;
     common(u);
     for (let i = 0; i < 4; i++) up(3 + i, c.mask[i]);
+    up(7, low ? c.col : null);
     gl.uniform1i(u.get('uM0') ?? null, 3);
     gl.uniform1i(u.get('uM1') ?? null, 4);
     gl.uniform1i(u.get('uM2') ?? null, 5);
     gl.uniform1i(u.get('uM3') ?? null, 6);
+    gl.uniform1i(u.get('uCol') ?? null, 7);
+    gl.uniform1i(u.get('uSkipRays') ?? null, low && GPU_ROUND2.raySkip ? 1 : 0);
+    gl.uniform1i(u.get('uHop') ?? null, low && hop ? 1 : 0);
+    gl.uniform1i(u.get('uSteal') ?? null, low ? 1 : 0);
     gl.uniform1i(u.get('uNW') ?? null, Math.ceil(P.n / 32));
     gl.uniform3f(u.get('uR0') ?? null, rows[0][0], rows[0][1], rows[0][2]);
     gl.uniform3f(u.get('uR1') ?? null, rows[1][0], rows[1][1], rows[1][2]);
@@ -1533,24 +2048,47 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
     gl.uniform1f(u.get('uE') ?? null, E);
     gl.viewport(0, 0, bw, bh);
     gl.enable(gl.SCISSOR_TEST);
+    begin('march');
+    const flushEach = !GPU_ROUND2.oneGo || !!c.slow;
     for (let y = 0; y < bh; y += BAND) {
       gl.scissor(0, y, bw, Math.min(BAND, bh - y));
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      gl.flush();
+      CHIP_SEEN.draws++;
+      if (flushEach) gl.flush();
     }
+    end('march');
     gl.disable(gl.SCISSOR_TEST);
+    if (timing) PENDING.push(q);
+    if (profile) {
+      gl.readBuffer(gl.COLOR_ATTACHMENT0);
+      sync();
+      T.march = performance.now() - tm;
+    }
     GPU_SCULPT_TEST.log?.('march drawn');
-    o0 = new Uint32Array(bw * bh * 4);
-    o1 = new Uint32Array(bw * bh * 4);
+    const tr = performance.now();
+    if (GPU_ROUND2.keep) {
+      if (KEPT.o0.length < bw * bh * 4) {
+        KEPT.o0 = new Uint32Array(bw * bh * 4);
+        KEPT.o1 = new Uint32Array(bw * bh * 4);
+      }
+      o0 = KEPT.o0;
+      o1 = KEPT.o1;
+    } else {
+      o0 = new Uint32Array(bw * bh * 4);
+      o1 = new Uint32Array(bw * bh * 4);
+    }
     gl.readBuffer(gl.COLOR_ATTACHMENT0);
     gl.readPixels(0, 0, bw, bh, gl.RGBA_INTEGER, gl.UNSIGNED_INT, o0);
     gl.readBuffer(gl.COLOR_ATTACHMENT1);
     gl.readPixels(0, 0, bw, bh, gl.RGBA_INTEGER, gl.UNSIGNED_INT, o1);
+    CHIP_SEEN.reads += 2;
+    CHIP_SEEN.readBytes += 2 * bw * bh * 16;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     const err = gl.getError();
     if (err !== gl.NO_ERROR) throw new Error(`WebGL error ${err}`);
     if (gl.isContextLost()) throw new Error('the context was lost');
     GPU_SCULPT_TEST.log?.('read back');
+    T.read = performance.now() - tr;
     GPU_SCULPT_TEST.ms.upload = t1 - t0;
     GPU_SCULPT_TEST.ms.march = performance.now() - t1;
   } catch (e) {
@@ -1558,8 +2096,9 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
     return false;
   }
   // (nothing is painted until every pixel's numbers are seen to be sound)
-  const f0 = new Float32Array(o0.buffer);
-  const f1 = new Float32Array(o1.buffer);
+  const tk = performance.now();
+  const f0 = new Float32Array(o0.buffer, 0, bw * bh * 4);
+  const f1 = new Float32Array(o1.buffer, 0, bw * bh * 4);
   for (let k = 0; k < bw * bh; k++) {
     const i = k * 4;
     if (o1[i + 3] === 0) continue;
@@ -1569,6 +2108,7 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
     }
   }
   const t2 = performance.now();
+  T.check = t2 - tk;
   for (let r = 0; r < bh; r++) {
     for (let col = 0; col < bw; col++) {
       const i = (r * bw + col) * 4;
@@ -1584,7 +2124,11 @@ export function gpuMarch(f: FieldLike, st: Seen, ax: number, ay: number, box: Ma
       shade(x, y, t, [b0 + CZ[0] * t, b1 + CZ[1] * t, b2 + CZ[2] * t], [f0[i + 1], f0[i + 2], f0[i + 3]], o1[i + 1], f1[i], o1[i + 2]);
     }
   }
-  GPU_SCULPT_TEST.ms.shade = performance.now() - t2;
+  T.shade = performance.now() - t2;
+  T.all = performance.now() - t0;
+  for (const k of Object.keys(T) as (keyof typeof T)[]) CHIP_SEEN.sum[k] += T[k];
+  CHIP_SEEN.figures++;
+  GPU_SCULPT_TEST.ms.shade = T.shade;
   GPU_SCULPT_TEST.marched++;
   return true;
 }

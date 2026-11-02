@@ -4,7 +4,7 @@
 //   npx tsx tools/gpu_sculpt_emul.ts [every] [list-name-part...]
 // @ts-ignore
 import { readFileSync } from 'node:fs';
-import { GPU_SCULPT, GPU_SCULPT_TEST } from '../src/dev/gpu_sculpt';
+import { GPU_ROUND2, GPU_SCULPT, GPU_SCULPT_TEST } from '../src/dev/gpu_sculpt';
 import { hashSprite, listsOf } from './cheap_heroes';
 import type { Who } from './cheap_heroes';
 
@@ -12,9 +12,11 @@ declare const process: { argv: string[]; exit(code: number): never };
 const PINNED = JSON.parse(readFileSync(new URL('../tests/cheap_heroes.hashes.json', import.meta.url), 'utf8')) as { lists: Record<string, string[]> };
 const args = process.argv.slice(2);
 const every = Number(args.find((a) => /^\d+$/.test(a)) ?? 9);
-const parts = args.filter((a) => !/^\d+$/.test(a));
+const parts = args.filter((a) => !/^\d+$/.test(a) && !a.startsWith('--'));
 GPU_SCULPT.on = true;
 GPU_SCULPT_TEST.mode = 'emulate';
+// (round 2's savings that keep every pixel; --round1: none of them)
+Object.assign(GPU_ROUND2, process.argv.includes('--round1') ? { cullSkip: false, raySkip: false, hop: false, hopBig: false } : { hop: false, hopBig: false });
 let n = 0;
 let bad = 0;
 const t0 = performance.now();
