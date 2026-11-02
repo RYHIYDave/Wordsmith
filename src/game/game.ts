@@ -5,9 +5,10 @@ import { BARS_LASTS, BARS_PERIL, RAIN_LASTS, RAIN_PERIL, cageHero } from './acti
 import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAIN } from '../art/action_f1_fx';
 import { RIME } from '../art/action_f2_fx';
+import { WALL, glances } from '../art/action_f3_fx';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ACTION_F3, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -7502,6 +7503,19 @@ export class Game {
     // (what is shut in a room is out of reach: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
     const h = this.hero;
+    // (FLOOR 3, MORE ACTION: the Boneward behind its shield: a blow from before it glances off, and does nothing)
+    if (ACTION_F3.on && m.kind === 'boneward' && this.wallUp(m)) {
+      const dx = h.x - m.x;
+      const dy = h.y - m.y;
+      const from = (Math.acos(Math.max(-1, Math.min(1, (dx * m.fx + dy * m.fy) / (Math.hypot(dx, dy) || 1)))) * 180) / Math.PI;
+      if (glances(from)) {
+        m.glanceT = 0;
+        if (m.state === 'sleep') this.wakeUp(m);
+        this.sfx('hit', 0.35);
+        this.emit({ t: 'hit', x: m.x, y: m.y, amount: 0, crit: false, el: 'phys', onHero: false, heavy: false });
+        return;
+      }
+    }
     const d = h.d;
     const r = h.skills[i].r;
     // (THE SKILL TREES REMADE: how it was before the hit: Keen Eye's unnoticed, Deep Freeze's frozen)
@@ -8639,6 +8653,8 @@ export class Game {
       const mdt = dt * this.timeOf(m);
       m.animT += mdt;
       if (m.struckT !== undefined) m.struckT += dt;
+      if (m.glanceT !== undefined) m.glanceT += dt;
+      if (m.raisedT !== undefined) m.raisedT += dt;
       if (m.state === 'sleep') {
         // In a new player's first dungeon nothing wakes by itself until the lesson in walking is
         // done. (About seven such dungeons in four hundred put a pack in sight of where the hero
@@ -9404,7 +9420,26 @@ export class Game {
     if (m.t <= 0) {
       m.state = 'chase';
       m.anim = 'idle';
+      // (FLOOR 3, MORE ACTION: its shield raised again a moment after: WALL.raisedAgain)
+      m.raisedT = 0;
     }
+  }
+
+  /**
+   * FLOOR 3, MORE ACTION: is the Boneward's shield wall up (art/action_f3_fx.ts, the README's table)? While it stands or walks
+   * with its spear in hand, and through its thrust's wind-up to WALL.thrustOpen; down from the start of its throw, all the while
+   * its spear is gone, and until WALL.raisedAgain after it has picked it up.
+   */
+  wallUp(m: Monster): boolean {
+    if (m.bare || m.state === 'pickup') return false;
+    if (m.raisedT !== undefined && m.raisedT < WALL.raisedAgain) return false;
+    const moves = movesOf(m);
+    const mv = moves && m.move !== undefined && m.move >= 0 ? moves[m.move] : null;
+    if (mv && (m.state === 'windup' || m.state === 'recover')) {
+      if (mv.id === 'throw') return false;
+      if (mv.id === 'swing' && (m.state === 'recover' || mv.windup - m.t >= WALL.thrustOpen)) return false;
+    }
+    return true;
   }
 
   /** THE GOLEM HURLS A SKULL at where the hero stands: it comes down there SKULL.fly seconds later, its shadow showing where; `share` of its blow (a Twin Golem's second skull, of its Twin). */

@@ -451,6 +451,9 @@ export interface Monster {
   a1?: Record<string, number>;
   /** ACT 1: seconds since it was last struck (its `reel` picture plays from it: render/figure.ts gaitFrame). */
   struckT?: number;
+  /** (FLOOR 3, MORE ACTION: the Boneward behind its shield) Seconds since a blow glanced off its shield (it plays `glance`), and since it raised its shield again after picking its spear up. */
+  glanceT?: number;
+  raisedT?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;

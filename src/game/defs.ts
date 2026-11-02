@@ -1091,6 +1091,14 @@ export const ACTION_F1 = { on: false };
  * switches go with it (art/bestiary.ts useActionF2). (The Headsman's mend, AXE_HELD, is on of itself.)
  */
 export const ACTION_F2 = { on: false };
+/**
+ * FLOOR 3, MORE ACTION (the art chat's art/action-f3, his yes to its pictures): THE BONEWARD'S SHIELD WALL (his pick, “Yes
+ * (Recommended)”, of “Its shield up, blows from in front glance off. Get round it, or wait for it to throw.”): while its wall is up
+ * a blow from within 60 degrees of straight before it does nothing, it holds its ground and the blow glances off
+ * (art/action_f3_fx.ts WALL, glances; game.ts wallUp). The art's switch goes with it (art/bestiary.ts useActionF3). (The green
+ * troll's rampage and bull rush, BRUTE_RAMPAGE, are not yet wired: off.)
+ */
+export const ACTION_F3 = { on: false };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
   if (!MONSTER_ATTACKS.on) return null;

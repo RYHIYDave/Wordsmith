@@ -19,9 +19,9 @@
 //     warp's column rises and goes.
 //   run: tsx --test tests/crypt.test.ts
 
-// @ts-ignore
 import { YARD } from '../src/art/yard';
 import { A1_OPEN } from '../src/game/act1_layout';
+// @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';

@@ -2337,6 +2337,8 @@ export class Renderer {
     // (frozen solid: as it stands)
     if (m.frozenT > 0) return bare ? flip(bare.standBare.frames[0]) : this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
     if (m.state === 'pickup' && more?.pickUp) return flip(clipFrame(more.pickUp, SPEAR.stoop - m.t));
+    // (FLOOR 3, MORE ACTION: the Boneward behind its shield, a blow glancing off it: its `glance`, art/action_f3_fx.ts)
+    if (more?.glance && m.glanceT !== undefined && m.glanceT < more.glance.frames.length / more.glance.fps) return flip(clipFrame(more.glance, m.glanceT));
     // (THE MONSTERS' ATTACKS: a move of its own, with its own picture)
     const moves = movesOf(m);
     if (moves && m.move !== undefined && m.move >= 0 && m.move < moves.length && (m.anim === 'attack' || m.state === 'charge')) {

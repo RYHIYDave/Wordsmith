@@ -177,7 +177,9 @@ test('1. the switches are off, nothing of the game imports the mock-up, and with
   assert.equal(BRUTE_RAMPAGE.on, false, 'BRUTE_RAMPAGE is off');
   assert.equal(BONEWARD_WALL.on, false, 'BONEWARD_WALL is off');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/action_f3_fx.ts') continue;
+    // (and the game's own, brought in by the main chat behind ACTION_F3: the Boneward's wall in its rules, game/game.ts, and the
+    // bestiary's choosing of its art)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/action_f3_fx.ts' || ['game/game.ts', 'art/bestiary.ts'].includes(f)) continue;
     assert.ok(!/from ['"][^'"]*action_f3_(fx|scene)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   const was = TROLL_MOVES.on;
