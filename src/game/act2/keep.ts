@@ -272,6 +272,75 @@ export interface KeepPlan {
 }
 
 /** Lay floor 19, or null (this throw of the dice could not lay the keep: game/act2_layout.ts rolls again). */
+
+/**
+ * COMBO (his pick for floor 19 among open, linear and combo: “combo”, as floors 14 and 15 are laid, his yes to them on 1 Nov
+ * 2026: “Yes, on to 17 (Recommended)”): the way through and its side rooms, and up to KP_COMBO.loops ways round besides: a
+ * straight way three wide between two rooms that face each other across the rock, two places or more apart along the way
+ * through, or by a passage of its own off one of them to another (between its halls and its armoury: never the bailey, where he
+ * comes in, the gate passage or the wall walk, entered at their ends, nor the throne hall or the way on beyond it; nor the
+ * barracks, the bedchamber or a store: dead ends with what they hold), clear of every other room and way. A floor with fewer
+ * than `least` is laid again.
+ */
+export const KP_COMBO = { on: true, loops: 2, least: 1 };
+
+function waysRound(rng: RNG, plan: Plan): number {
+  const fixed: KeepRole[] = ['bailey', 'gate', 'walk', 'throne', 'beyond', 'barracks', 'chamber', 'store'];
+  // (where a room is along the way through: its own place, or its host's)
+  const along = (i: number): number => (plan.rooms[i].path >= 0 ? plan.rooms[i].path : along(plan.rooms[i].parent));
+  /** A straight way between rooms a and b facing each other across the rock (3 to 20), clear of all else; or null. */
+  const facing = (a: number, b: number): Join | null => {
+    const A = plan.rooms[a];
+    const B = plan.rooms[b];
+    for (const alongX of rng.shuffle([true, false])) {
+      const lo = alongX ? Math.max(A.y, B.y) + 1 : Math.max(A.x, B.x) + 1;
+      const hi = alongX ? Math.min(A.y + A.h, B.y + B.h) - CW - 1 : Math.min(A.x + A.w, B.x + B.w) - CW - 1;
+      if (hi < lo) continue;
+      const [L, R] = alongX ? (A.x < B.x ? [A, B] : [B, A]) : A.y < B.y ? [A, B] : [B, A];
+      const gap = alongX ? R.x - (L.x + L.w) : R.y - (L.y + L.h);
+      if (gap < 3 || gap > 20) continue;
+      const c = rng.int(lo, hi);
+      const J: Join = alongX ? { x: L.x + L.w, y: c, w: gap, h: CW, a, b, alongX } : { x: c, y: L.y + L.h, w: CW, h: gap, a, b, alongX };
+      if (plan.rooms.some((r, j) => j !== a && j !== b && near(J, r, CLEAR))) continue;
+      if (plan.joins.some((K) => near(J, K, CLEAR))) continue;
+      return J;
+    }
+    return null;
+  };
+  const open = (i: number): boolean => !fixed.includes(plan.rooms[i].role);
+  let n = 0;
+  // (straight across, where two of its rooms face each other)
+  const pairs: [number, number][] = [];
+  for (let a = 0; a < plan.rooms.length; a++) for (let b = a + 1; b < plan.rooms.length; b++) if (open(a) && open(b) && Math.abs(along(a) - along(b)) >= 2) pairs.push([a, b]);
+  for (const [a, b] of rng.shuffle(pairs)) {
+    if (n >= KP_COMBO.loops) break;
+    if (plan.joins.some((K) => (K.a === a && K.b === b) || (K.a === b && K.b === a))) continue;
+    const J = facing(a, b);
+    if (!J) continue;
+    plan.joins.push(J);
+    n++;
+  }
+  // (else through a passage of its own: a hall off one of its rooms, facing another of them two places or more along)
+  for (let t = 0; t < 40 && n < KP_COMBO.loops; t++) {
+    const hosts = plan.rooms.map((_, i) => i).filter((i) => open(i) && plan.rooms[i].path >= 0);
+    const N = growSide(rng, plan, 'hall', rng.shuffle([...hosts]), 6, [3, 6]);
+    if (N < 0) continue;
+    let J: Join | null = null;
+    for (const b of rng.shuffle(plan.rooms.map((_, i) => i).filter((b) => b !== N && open(b) && plan.rooms[b].path >= 0 && Math.abs(along(b) - along(N)) >= 2))) {
+      J = facing(N, b);
+      if (J) break;
+    }
+    if (!J) {
+      plan.rooms.pop();
+      plan.joins.pop();
+      continue;
+    }
+    plan.joins.push(J);
+    n++;
+  }
+  return n;
+}
+
 export function generate(depth: number, seed: number): Laid | null {
   const rng = new RNG((seed ^ 0x9b05688c) >>> 0);
   const A: 'x' | 'y' = rng.chance(0.5) ? 'x' : 'y';
@@ -286,6 +355,8 @@ export function generate(depth: number, seed: number): Laid | null {
   if (growSide(rng, plan, 'barracks', rng.shuffle(halls.filter((i) => i !== lastHall))) < 0) return null;
   const anyHost = plan.rooms.map((_, i) => i).filter((i) => i > 0 && i < throneI && plan.rooms[i].role !== 'gate' && plan.rooms[i].role !== 'walk');
   growSide(rng, plan, 'store', rng.shuffle([...anyHost]));
+  // (COMBO, his pick for floor 19: ways round between its halls and its armoury)
+  if (KP_COMBO.on && waysRound(rng, plan) < KP_COMBO.least) return null;
 
   // THE BOUNDS: everything moved MARGIN in from the map's edge
   let x0 = Infinity;

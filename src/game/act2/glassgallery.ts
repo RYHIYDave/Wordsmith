@@ -262,6 +262,53 @@ export interface GalleryPlan {
 }
 
 /** Lay floor 18, or null (this throw of the dice could not lay the wing: game/act2_layout.ts rolls again). */
+
+/**
+ * COMBO (his pick for floor 18 among open, linear and combo: “combo”, as floors 14 and 15 are laid, his yes to them on 1 Nov
+ * 2026: “Yes, on to 17 (Recommended)”): the way through and its side rooms, and up to GG_COMBO.loops ways round besides: a
+ * straight way three wide between two rooms that face each other across the rock, two places or more apart along the way through
+ * (never the antechamber, where he comes in, nor the Mirror Hall, nor the way on: one way in each; nor the dressing rooms, the
+ * lair or a store: dead ends with what they hold), clear of every other room and way. A floor with fewer than `least` is laid
+ * again.
+ */
+export const GG_COMBO = { on: true, loops: 2, least: 1 };
+
+function waysRound(rng: RNG, plan: Plan): number {
+  const fixed: GalleryRole[] = ['ante', 'hall', 'beyond', 'lair', 'store', 'dressing'];
+  // (where a room is along the way through: its own place, or its host's)
+  const along = (i: number): number => (plan.rooms[i].path >= 0 ? plan.rooms[i].path : along(plan.rooms[i].parent));
+  const cands: Join[] = [];
+  for (let a = 0; a < plan.rooms.length; a++) {
+    for (let b = a + 1; b < plan.rooms.length; b++) {
+      const A = plan.rooms[a];
+      const B = plan.rooms[b];
+      if (fixed.includes(A.role) || fixed.includes(B.role) || Math.abs(along(a) - along(b)) < 2 || plan.joins.some((K) => (K.a === a && K.b === b) || (K.a === b && K.b === a))) continue;
+      for (const alongX of [true, false]) {
+        // (facing across: their sides overlap enough for a way a tile in from each corner, and the rock between is 3 to 20)
+        const lo = alongX ? Math.max(A.y, B.y) + 1 : Math.max(A.x, B.x) + 1;
+        const hi = alongX ? Math.min(A.y + A.h, B.y + B.h) - CW - 1 : Math.min(A.x + A.w, B.x + B.w) - CW - 1;
+        if (hi < lo) continue;
+        const [L, R] = alongX ? (A.x < B.x ? [A, B] : [B, A]) : A.y < B.y ? [A, B] : [B, A];
+        const gap = alongX ? R.x - (L.x + L.w) : R.y - (L.y + L.h);
+        if (gap < 3 || gap > 20) continue;
+        const c = rng.int(lo, hi);
+        const J: Join = alongX ? { x: L.x + L.w, y: c, w: gap, h: CW, a, b, alongX } : { x: c, y: L.y + L.h, w: CW, h: gap, a, b, alongX };
+        if (plan.rooms.some((r, j) => j !== a && j !== b && near(J, r, CLEAR))) continue;
+        if (plan.joins.some((K) => near(J, K, CLEAR))) continue;
+        cands.push(J);
+      }
+    }
+  }
+  let n = 0;
+  for (const J of rng.shuffle(cands)) {
+    if (n >= GG_COMBO.loops) break;
+    if (plan.joins.some((K) => near(J, K, CLEAR))) continue;
+    plan.joins.push(J);
+    n++;
+  }
+  return n;
+}
+
 export function generate(depth: number, seed: number): Laid | null {
   const rng = new RNG((seed ^ 0x510e527f) >>> 0);
   const A: 'x' | 'y' = rng.chance(0.5) ? 'x' : 'y';
@@ -277,6 +324,8 @@ export function generate(depth: number, seed: number): Laid | null {
   for (let n = 0; n < dressing; n++) growSide(rng, plan, 'dressing', rng.shuffle([...galleries]));
   const stores = rng.int(1, 2);
   for (let n = 0; n < stores; n++) growSide(rng, plan, 'store', rng.shuffle([...anyHost]));
+  // (COMBO, his pick for floor 18: ways round between its galleries, its chapel and its glasshouse)
+  if (GG_COMBO.on && waysRound(rng, plan) < GG_COMBO.least) return null;
 
   // THE BOUNDS: everything moved MARGIN in from the map's edge
   let x0 = Infinity;
