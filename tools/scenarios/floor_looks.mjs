@@ -24,7 +24,10 @@ export default async function (page, snap) {
     window.__step = g.update.bind(g); g.update = () => undefined;
   }, [FLOOR]);
   /** Set the hero at (x, y) facing (fx, fy), step the game `secs`, the cards off the screen; then picture. */
+  // (ONLY=a,b,c: just those places, no fight)
+  const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null;
   const at = async (name, where, secs = 0.6) => {
+    if (ONLY && !ONLY.includes(name)) return;
     const ok = await page.evaluate(([where, secs, idle, FLOOR]) => {
       const g = window.__dbg.game();
       const f = g.level.floor;
@@ -39,6 +42,12 @@ export default async function (page, snap) {
         if (r) p = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
       } else if (where === 'hall') { p = { x: f.boss.x + 2.2, y: f.boss.y + 2.6 }; }
       else if (where === 'here') { p = { x: g.hero.x, y: g.hero.y }; }
+      else if (where === 'nearwall' || where === 'nearwall2') {
+        // (just inside the side of a big room toward the eye, its wall between him and the eye)
+        const list = rooms.filter((q) => q.kind !== 'boss' && q.w >= 6 && q.h >= 6).sort((a, b) => b.w * b.h - a.w * a.h);
+        const r = list[where === 'nearwall' ? 0 : Math.min(1, list.length - 1)];
+        if (r) p = where === 'nearwall' ? { x: r.x + r.w / 2, y: r.y + r.h - 0.7 } : { x: r.x + r.w - 0.7, y: r.y + r.h / 2 };
+      }
       else if (where === 'hallFar') { const r = rooms.find((q) => q.kind === 'boss'); if (r) p = { x: r.x + r.w - 2, y: r.y + r.h - 2 }; }
       else if (where === 'channel') {
         const c = (g.level.channels ?? [])[0];
@@ -91,6 +100,9 @@ export default async function (page, snap) {
   if (FLOOR === 5) { await at('rails', 'rails'); await at('threshold', 'threshold'); await at('rift', 'rift'); }
   await at('hall', 'hall');
   await at('hall_far', 'hallFar');
+  await at('nearwall', 'nearwall');
+  await at('nearwall2', 'nearwall2');
+  if (ONLY) return;
   // (THE FIGHT BEGINS: his gate falls behind the hero; then the moment it lands)
   const fell = await page.evaluate(() => {
     const g = window.__dbg.game();

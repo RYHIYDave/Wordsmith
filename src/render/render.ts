@@ -19,7 +19,7 @@ import type { GateArt, Strip } from '../art/gates';
 import { SPIKE_SPOTS, SPIKE_STEPS } from '../art/hazards';
 import type { HazardArt } from '../art/hazards';
 import { WALL_LOOK } from '../art/ground';
-import { DOOR_WALLS, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
+import { DOOR_WALLS, WHOLE_WALLS, wholeFaces, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
@@ -569,6 +569,13 @@ export class Renderer {
    */
   private lowWalls(L: Game['level']): Uint8Array {
     if (!WALL_LOOK.away) return L.low;
+    // (WHOLE_WALLS: on floors 1 to 5 every wall stands, and none stands again beside a door: render/walls.ts)
+    if (this.wholeHere(L)) {
+      if (!this.noneAway || this.noneAway.length !== L.floor.w * L.floor.h) this.noneAway = new Uint8Array(L.floor.w * L.floor.h);
+      this.doorBack = null;
+      this.awayFor = null;
+      return this.noneAway;
+    }
     const key = WALL_LOOK.tall * 1000 + WALL_LOOK.fade * 2 + (WALL_LOOK.faces ? 1 : 0) + (DOOR_WALLS.on ? 100000 : 0);
     if (this.awayGrid && this.awayFor === L && this.awayKey === key) return this.awayGrid;
     this.awayGrid = wallsAway(L.floor, WALL_LOOK);
@@ -582,6 +589,56 @@ export class Renderer {
     this.awayFor = L;
     this.awayKey = key;
     return this.awayGrid;
+  }
+
+  /** (WHOLE_WALLS) Does every wall stand on the floor being drawn; the game and the clock of this frame (for the slanting walls). */
+  private wholeNow = false;
+  private gameNow: Game | null = null;
+  private clockNow = 0;
+  /** (WHOLE_WALLS) An empty grid: no wall left out. */
+  private noneAway: Uint8Array | null = null;
+  /** (WHOLE_WALLS) Does every wall stand on this level: floors 1 to 5 of the dungeon, the switch on? */
+  wholeHere(L: Game['level']): boolean {
+    return WHOLE_WALLS.on && WALL_LOOK.faces && !L.town && L.floor.depth >= 1 && floorLook(L.floor.depth) >= 1 && floorLook(L.floor.depth) <= 5;
+  }
+  /** (WHOLE_WALLS) How solid each wall tile is drawn now (1 solid, WHOLE_WALLS.faint seen through), and when it was last drawn. */
+  private wallFade = new Map<number, { a: number; t: number }>();
+  /**
+   * (WHOLE_WALLS) How solid a wall tile is drawn: faint where it stands in front of the hero within a wide stretch either side of
+   * him (wholly faint near him, less so toward its edge), or in front of a monster in sight (a man's width); fading over
+   * WHOLE_WALLS.secs. (px, py): the wall tile's top corner on the screen; `depth` its depth.
+   */
+  private wallVeil(game: Game, idx: number, px: number, py: number, depth: number, t: number): number {
+    const W = WHOLE_WALLS;
+    const tall = WALL_LOOK.tall;
+    // (how much of the wall is wanted, for a figure at (fx, fy) at depth d, `half` pixels either side of it)
+    const want = (fx: number, fy: number, d: number, half: number, full: number): number => {
+      if (d >= depth - 0.5) return 1;
+      if (py - tall > fy + 30 || py + 16 < fy - 72) return 1;
+      const off = Math.max(0, Math.abs(px - fx) - 16);
+      if (off >= half) return 1;
+      if (off <= half * full) return W.faint;
+      return W.faint + ((1 - W.faint) * (off - half * full)) / (half * (1 - full));
+    };
+    let a = 1;
+    const at = this.wallHero;
+    if (at) a = Math.min(a, want(at.x, at.y, at.d, W.across, 0.6));
+    if (a > W.faint) {
+      for (const m of game.monsters) {
+        if (m.dead || !m.seen) continue;
+        a = Math.min(a, want(wx(this.cam, m.x, m.y), wy(this.cam, m.x, m.y), m.x + m.y, 30, 0.5));
+        if (a <= W.faint) break;
+      }
+    }
+    const was = this.wallFade.get(idx);
+    let now = a;
+    if (was) {
+      const dt = Math.max(0, Math.min(0.1, t - was.t));
+      const rate = (1 - W.faint) / W.secs;
+      now = was.a < a ? Math.min(a, was.a + rate * dt) : Math.max(a, was.a - rate * dt);
+    }
+    this.wallFade.set(idx, { a: now, t });
+    return now;
   }
 
   /** (THE WALL BESIDE A DOOR) The walls that stand again beside the doors of this level (render/walls.ts, `doorWallsBack`), or null. */
@@ -1705,6 +1762,17 @@ export class Renderer {
       // that runs up and down the screen, or one toward the eye: seen end-on the first is a line,
       // and the second is cut away. The floor's edge along the cut is a line of light.)
       if (!floor) return;
+      // (WHOLE_WALLS: the slanting wall across a corner stands, the one toward the eye too, seen through as any wall)
+      if (this.wholeNow && (part === 'far' || part === 'near')) {
+        const sp = this.lookGrade(G.part[part].tall);
+        const depth = s + (part === 'far' ? 0.66 : 1.34);
+        if (part === 'near' && up <= 0) {
+          const fl = G.floor(tx, ty);
+          g.drawImage(G.edgeAcross.img, px - fl.ax, py - fl.ay, fl.w, fl.h);
+        }
+        this.stand(depth, sp, px, py - Math.max(0, up), null, 0, 1, this.wallVeil(this.gameNow!, idx, px, py, depth, this.clockNow));
+        return;
+      }
       if (part !== 'far') {
         if (up <= 0) {
           const fl = G.floor(tx, ty);
@@ -1714,9 +1782,6 @@ export class Renderer {
         return;
       }
       if (low) return;
-      // (THE FIRST FIVE FLOORS' NEW LOOKS: the slanting wall across a corner is left out, as a wall toward the eye is: the looks'
-      // walls have no slanting face, and the Crypt's would stand in them out of place)
-      if (this.lookNow) return;
     }
     // (THE WALLS' LOOK: with no walls toward the eye, a wall cut down low is not drawn;
     // the half tile of floor behind it ends in a line of light)
@@ -2565,6 +2630,9 @@ export class Renderer {
     // ---- FLOOR 3, THE BLACK IRON PRISON (render/prison.ts): its flags, its own tiles and his hall's floor; its walls ----
     const look = this.lookOf(L);
     this.lookNow = look;
+    this.wholeNow = this.wholeHere(L);
+    this.gameNow = game;
+    this.clockNow = t;
     const prisonOn = look === this.prison;
     this.yardOnly = yardOut ? f : null;
     if (yardOut) this.yard.back(g, cam, f, W, H);
@@ -2651,12 +2719,15 @@ export class Renderer {
             // Which of a block's two faces have floor before them: render/walls.ts, `wallFaces`.)
             // (FLOOR 3, PRISON_EXIT: none on the door out the back of his hall once its pictures are made, or once it is open: render/dress.ts stands it there)
             // (THE FIRST FIVE FLOORS' NEW LOOKS: none where a picture of the look's own stands in the wall: render/looks.ts)
-            let which = look ? look.unfaced(L, idx, wallFaces(f, idx)) : wallFaces(f, idx);
+            // (WHOLE_WALLS: every wall stands, its faces turned to the eye drawn whatever is before them: render/walls.ts)
+            const whole = this.wholeHere(L);
+            const faces0 = whole ? wholeFaces(f, idx) : wallFaces(f, idx);
+            let which = look ? look.unfaced(L, idx, faces0) : faces0;
             if (prisonOn && L.ways?.exit && this.dress.exitShown(game)) which = this.prison.doorUnfaced(L, idx, which);
             const n = art.ground.faceLeft.length;
             // (THE WALL BESIDE A DOOR: one that stands again there is seen through while someone is behind it, and nothing is set in it)
             const again = this.doorBack !== null && this.doorBack[idx] === 1;
-            const veil = again && which ? this.doorVeil(game, idx, px, py, s + 1, t) : 1;
+            const veil = whole && which ? this.wallVeil(game, idx, px, py, s + 1, t) : again && which ? this.doorVeil(game, idx, px, py, s + 1, t) : 1;
             // (`hide` marks the stand just made: raised floor at a face's foot hides the foot of it)
             // (THE HEADSMAN'S YARD: the ring of wall round it is the prison's wall: render/yard.ts)
             const prison = yardOn && this.yard.ring(f, tx, ty);
@@ -2669,12 +2740,12 @@ export class Renderer {
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             // (THE FIRST FIVE FLOORS: what is set in its faces: render/pieces.ts)
-            if (which && this.dressed && !again) this.pieces.wall(game, idx, which, s, px, py, t, this.stage);
+            if (which && this.dressed && !again) this.pieces.wall(game, idx, which, s, px, py, t, this.stage, veil);
             // (FLOOR 3, THE BLACK IRON PRISON: the fire baskets it adds, stood in the faces as the floor's own are)
             if (which && look?.walls && !again) {
               look.walls(L, idx, which, t, (sp, side) => {
                 const bx = side === 0 ? px - 8 : px + 8;
-                this.stage.stand(s + 1.01, sp, bx, py + 12);
+                this.stage.stand(s + 1.01, sp, bx, py + 12, veil);
                 if (sp.lights) this.stage.lit(sp, bx, py + 12);
               });
             }

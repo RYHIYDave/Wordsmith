@@ -7,7 +7,7 @@
 // a tile straight behind another lies 16 pixels up the screen.
 import type { WallLook } from '../art/ground';
 import { doorPiers, doorTiles, isLeaf } from '../game/doors';
-import { CUT_FAR, CUT_LEFT, CUT_RIGHT, T_FLOOR, T_PIT, T_WALL } from '../game/types';
+import { CUT_FAR, CUT_LEFT, CUT_RIGHT, T_FLOOR, T_PIT, T_VOID, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 
 /**
@@ -129,3 +129,38 @@ export function wallFaces(f: Floor, idx: number): number {
   if (tx + 1 < f.w && open(idx + 1, CUT_LEFT)) out += FACE_RIGHT;
   return out;
 }
+
+/**
+ * EVERY WALL STANDING, SEEN THROUGH WIDE ROUND WHOEVER IS BEHIND IT. His words, 2 Nov 2026, 18:17: “We really need to figure out how we are going to do walls that block character view and
+ * apply it to every level.  Cause I hate that some wall sections are still missing from the early floors”; asked whether to use
+ * floors 11 to 15's way (the wall whole, a window round the hero), his answer: “I don’t really like the window, it’s too small.  But
+ * I also really didn’t like the old way we did level 6 where you actually couldn’t see a thing if you weren’t in an open square”;
+ * and “This release (Recommended)”. READ AS (told him so): on floors 1 to 5 no wall is left out (the walls toward the eye, between
+ * the rooms, across the corners); every wall between the eye and the hero fades to faint across a wide stretch round him, whole
+ * tiles of wall at a time (as the walls beside a door do), and round a monster in sight; floors 6 to 10 stay as open as they are.
+ *   across: how far to either side of the hero (game pixels) the walls in front of him fade, wholly within `across * 0.6` and
+ *     less to its edge; faint: how much of a wall is left there; secs: how long it takes to fade, and to come back.
+ */
+// (ON: shown pictures of floors 1 to 5 from the game as now and with every wall standing (walls_every_floor), and asked to switch it
+// on, his answer, 2 Nov 2026, 18:38: “I’m going to go with this for now, but I’m not sure how I feel about it.  I’ll test in game and
+// see”. Read as: on, in this release; he plays it and says.)
+export const WHOLE_WALLS = { on: true, across: 96, faint: 0.2, secs: 0.2 };
+
+/**
+ * (WHOLE_WALLS) THE FACES OF A WALL BLOCK THAT ARE PAINTED when every wall stands: those with floor before them (`wallFaces`), and
+ * those turned to the eye with nothing before them, where the wall bounds floor (the outside of a wall toward the eye: the room's
+ * floor is behind it). A face with another wall before it is never seen.
+ */
+export function wholeFaces(f: Floor, idx: number): number {
+  let out = wallFaces(f, idx);
+  const tx = idx % f.w;
+  const ty = (idx - tx) / f.w;
+  const tile = (x: number, y: number): number => (x < 0 || y < 0 || x >= f.w || y >= f.h ? T_VOID : f.tiles[y * f.w + x]);
+  let bounds = false;
+  for (let dy = -1; dy <= 1 && !bounds; dy++) for (let dx = -1; dx <= 1 && !bounds; dx++) bounds = tile(tx + dx, ty + dy) === T_FLOOR || tile(tx + dx, ty + dy) === T_PIT;
+  if (!bounds) return out;
+  if (!(out & FACE_LEFT) && tile(tx, ty + 1) === T_VOID) out |= FACE_LEFT;
+  if (!(out & FACE_RIGHT) && tile(tx + 1, ty) === T_VOID) out |= FACE_RIGHT;
+  return out;
+}
+
