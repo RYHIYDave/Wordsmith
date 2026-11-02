@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { BOSS_CALLS, BOSS_CALL_LINES, bossCall } from '../src/game/boss_calls';
 import { BOSS_VOICES, speakBoss } from '../src/engine/audio';
 import { MONSTER_MOVES } from '../src/game/defs';
-import { ACTS, H2_ACTS } from '../src/game/bosses';
+import { ACTS, AM2_ACTS, FM2_ACTS, H2_ACTS } from '../src/game/bosses';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -24,8 +24,13 @@ import type { MonsterKind } from '../src/game/types';
 
 const DT = 1 / 30;
 function movesOf(kind: string): { ids: string[]; basic: string } {
-  if (kind === 'warden') return { ids: MONSTER_MOVES.warden.map((m) => m.id), basic: MONSTER_MOVES.warden[0].id };
+  // (the Warden's: with floor 1's more action on, ACTION_F1, his Lockdown in place of his slam: MONSTER_MOVES.wardenLock)
+  if (kind === 'warden') return { ids: [...MONSTER_MOVES.warden, ...MONSTER_MOVES.wardenLock].map((m) => m.id), basic: MONSTER_MOVES.warden[0].id };
   if (kind === 'headsman') return { ids: H2_ACTS.map((a) => a.id), basic: H2_ACTS[0].id };
+  // (the Amalgamation's: with his action on, AM_ACTION, his moves as the action way has them: AM2_ACTS)
+  if (kind === 'amalgam') return { ids: [...ACTS.amalgam, ...AM2_ACTS].map((a) => a.id), basic: ACTS.amalgam[0].id };
+  // (the Fleshmancer's: with his action on, FM_ACTION, his moves as the action way has them: FM2_ACTS)
+  if (kind === 'fleshmancer') return { ids: [...ACTS.fleshmancer, ...FM2_ACTS].map((a) => a.id), basic: ACTS.fleshmancer[0].id };
   const r = act1Rules(kind as MonsterKind);
   const acts = r ? r.acts : (ACTS as Record<string, readonly { id: string }[]>)[kind];
   assert.ok(acts, `${kind}: his moves`);

@@ -25,7 +25,7 @@ export default async function (page, snap) {
   }, [FLOOR]);
   /** Set the hero at (x, y) facing (fx, fy), step the game `secs`, the cards off the screen; then picture. */
   const at = async (name, where, secs = 0.6) => {
-    const ok = await page.evaluate(([where, secs, idle]) => {
+    const ok = await page.evaluate(([where, secs, idle, FLOOR]) => {
       const g = window.__dbg.game();
       const f = g.level.floor;
       const rooms = f.rooms;
@@ -38,10 +38,29 @@ export default async function (page, snap) {
         const r = rooms.filter((q) => q.kind !== 'boss' && q.path > 0).sort((a, b) => b.w * b.h - a.w * a.h)[1];
         if (r) p = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
       } else if (where === 'hall') { p = { x: f.boss.x + 2.2, y: f.boss.y + 2.6 }; }
+      else if (where === 'here') { p = { x: g.hero.x, y: g.hero.y }; }
       else if (where === 'hallFar') { const r = rooms.find((q) => q.kind === 'boss'); if (r) p = { x: r.x + r.w - 2, y: r.y + r.h - 2 }; }
       else if (where === 'channel') {
         const c = (g.level.channels ?? [])[0];
         if (c) p = c.alongX ? { x: c.bridge + 0.5, y: c.row + 3.4 } : { x: c.row + 3.4, y: c.bridge + 0.5 };
+      } else if (where === 'wayin') {
+        const w = g.level.chapel?.wayIn;
+        if (w) p = w.alongX ? { x: w.a + 2.6, y: w.plane + 2.4 } : { x: w.plane + 2.4, y: w.a + 2.6 };
+      } else if (where === 'break') {
+        const b = g.level.chapel?.breaks?.[0];
+        if (b) p = b.alongX ? { x: b.a + 1.5, y: b.plane + 3.2 } : { x: b.plane + 3.2, y: b.a + 1.5 };
+      } else if (where === 'altar') {
+        const a = g.level.props.find((q) => q.name === "the cult's altar");
+        if (a) p = { x: a.x + 1.8, y: a.y + 2.2 };
+      } else if (where === 'threshold') {
+        const t = g.level.lair?.thresholds?.[0];
+        if (t) p = t.alongX ? { x: t.a + 1.5, y: t.line - t.temple * 2.6 } : { x: t.line - t.temple * 2.6, y: t.a + 1.5 };
+      } else if (where === 'rails') {
+        const r = g.level.lair?.rails;
+        if (r && r.length) { const i = r[Math.floor(r.length * 0.6)].i; p = { x: (i % f.w) + 1.5, y: Math.floor(i / f.w) + 1.5 }; }
+      } else if (where === 'rift') {
+        const m = g.level.dress?.moments?.find((q) => q.n === 2);
+        if (m && FLOOR === 5) p = { x: m.x + 2, y: m.y + 2 };
       } else if (where === 'door') {
         const e = g.level.ways?.exit;
         if (e) p = e.alongX ? { x: e.a + 1.6, y: e.line + 3.2 } : { x: e.line + 3.2, y: e.a + 1.6 };
@@ -58,7 +77,7 @@ export default async function (page, snap) {
       for (let k = 0; k < Math.round(secs * 30); k++) { g.hero.invuln = 1; g.hero.life = g.hero.d.maxLife; window.__step(1 / 30, idle); g.hero.x = best.x; g.hero.y = best.y; }
       for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'floorName' || g.events[i].t === 'bossIntro') g.events.splice(i, 1);
       return true;
-    }, [where, secs, idle]);
+    }, [where, secs, idle, FLOOR]);
     if (!ok) { console.log(`${name}: no place`); return; }
     await page.waitForTimeout(Number(process.env.SETTLE || 2500));
     await snap(name);
@@ -67,7 +86,9 @@ export default async function (page, snap) {
   await at('start', 'start');
   await at('block', 'block');
   await at('block2', 'block2');
-  await at('channel', 'channel');
+  if (FLOOR === 3) await at('channel', 'channel');
+  if (FLOOR === 4) { await at('wayin', 'wayin'); await at('break', 'break'); await at('altar', 'altar'); }
+  if (FLOOR === 5) { await at('rails', 'rails'); await at('threshold', 'threshold'); await at('rift', 'rift'); }
   await at('hall', 'hall');
   await at('hall_far', 'hallFar');
   // (THE FIGHT BEGINS: his gate falls behind the hero; then the moment it lands)
@@ -132,5 +153,34 @@ export default async function (page, snap) {
       return `state ${e.state}, depth ${d0} -> ${g.depth}`;
     }, [idle]);
     console.log(`door: ${went}`);
+  }
+  // (FLOOR 4's way down, the cave behind a wall of his hall: its film painted, he falls, the wall gives way, the cave open)
+  const cave = await page.evaluate(() => !!window.__dbg.game().level.ways?.cave);
+  if (cave) {
+    for (let k = 0; k < 300; k++) {
+      const ok = await page.evaluate(() => { const c = window.__dbg.game().level.ways.cave; return !!window.__dbg.painter.filmOf(`cave:${c.spot.alongX ? 'x' : 'y'}`); });
+      if (ok) { console.log(`the cave's film made (${k} s)`); break; }
+      await page.waitForTimeout(1000);
+    }
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const c = g.level.ways.cave.spot;
+      g.hero.x = c.alongX ? c.a + 1.5 : c.plane + 3.2;
+      g.hero.y = c.alongX ? c.plane + 3.2 : c.a + 1.5;
+    });
+    await at('cave_wall', 'here', 0.2);
+    await page.evaluate(() => { const g = window.__dbg.game(); if (g.boss && !g.boss.dead) g.kill(g.boss); });
+    let done = 0;
+    for (const [n, f] of [['cave_f40', 40], ['cave_f80', 80], ['cave_open', 140]]) {
+      await page.evaluate(([k, idle]) => {
+        const g = window.__dbg.game();
+        const x = g.hero.x, y = g.hero.y;
+        for (let i = 0; i < k; i++) { g.hero.invuln = 1; g.hero.life = g.hero.d.maxLife; window.__step(1 / 30, idle); g.hero.x = x; g.hero.y = y; }
+        for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'floorName' || g.events[i].t === 'bossIntro') g.events.splice(i, 1);
+      }, [f - done, idle]);
+      done = f;
+      await page.waitForTimeout(60);
+      await snap(n);
+    }
   }
 }

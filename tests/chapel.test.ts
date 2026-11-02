@@ -92,14 +92,17 @@ const pinkIn = (s: Sprite, allowShines: boolean): string[] => {
   return [...out];
 };
 
-test('the chapel and his gate: off, and nothing of the game imports them', () => {
+test('the chapel and his gate: off; brought into the game by the main chat, and by nothing else', () => {
+  // (2 Nov 2026, his “New looks for the first 5 floors are almost done.  We want those in the release as well”: the main chat brought
+  // it in behind its switches, off until his yes to it in play)
+  const BROUGHT = ['art/chapel.ts', 'art/chapel_gate.ts', 'art/films.ts', 'art/floors.ts', 'game/chapel_way.ts', 'game/first5.ts', 'main.ts', 'render/chapel.ts', 'render/dress.ts', 'render/render.ts'].map((f) => join('src', f));
   assert.ok(CHAPEL.on === false && CHAPEL_GATE.on === false, 'CHAPEL and CHAPEL_GATE are off');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'chapel.ts')) && !p.endsWith(join('art', 'chapel_gate.ts')) && /from '\.\.?\/(art\/)?chapel(_gate)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !BROUGHT.includes(p) && /from '\.\.?\/(art\/)?chapel(_gate)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

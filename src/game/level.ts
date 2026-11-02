@@ -13,6 +13,8 @@ import type { DoorSpot, Floor, HazardSpot, PackSpot, PropSpot, Room } from './ty
 import { dress } from './first5';
 import { act1Floor } from './act1';
 import { makeAct1Level } from './act1_level';
+import { beforeStretch, chapelHere, layChapel, placeChapel } from './chapel_way';
+import { lairHere, layLair, openLairDoors, planLair } from './lair_way';
 import { beforePrisonDoor, channelOpen, placeChannels, placePrisonDoor, prisonChannelsHere, prisonDoorHere } from './prison_way';
 import { EXITS, FIRST5, TOWN_SHAFT, TOWN_STAIR, TOWN_WAY, WAYS, beforeGate, openGate, placeCave, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, stairTiles, townGate } from './ways';
 import { yardBlocks } from './yard';
@@ -840,6 +842,13 @@ export function makeDungeon(depth: number, seed: number): Level {
     floor.props = floor.props.filter((p) => !beforeGate(d, p.x, p.y));
   }
   if (mouth) floor.start = insideDoorway(mouth);
+  // (FLOOR 4, CHAPEL: the way in from floor 3's door, a stair coming down through an arch in a back wall of the first room, the
+  // hero standing a tile and a half inside it; and the walls the miners broke through: game/chapel_way.ts. Their tiles stay wall.)
+  const chapel = chapelHere(depth) ? placeChapel(floor) : null;
+  if (chapel?.wayIn) floor.start = insideDoorway(chapel.wayIn);
+  if (chapel) floor.props = floor.props.filter((p) => ![chapel.wayIn, ...chapel.breaks].some((st) => st && beforeStretch(st, p.x, p.y)));
+  // (FLOOR 5, LAIR_TEMPLE: the ways from the mine into the temple left open, its threshold standing in each: game/lair_way.ts)
+  if (lairHere(depth)) openLairDoors(floor);
   // (FLOOR 3, PRISON_EXIT: its way down is a door out the back of his hall, not a stairwell: game/prison_way.ts. What stood or
   // lay before it is taken away; its two tiles stay wall until it is open.)
   const door = prisonDoorHere(depth) ? placePrisonDoor(floor) : null;
@@ -898,7 +907,16 @@ export function makeDungeon(depth: number, seed: number): Level {
   if (cave) level.ways.cave = { spot: cave, state: 'wall', t: 0 };
   if (mouth) level.ways.mouth = mouth;
   if (door) level.ways.exit = door;
+  if (chapel) level.chapel = chapel;
   // (THE FIRST FIVE FLOORS: the floor laid with its own pieces, last, by dice of its own: game/first5.ts)
   level.dress = dress(level, depth, seed);
+  // (FLOOR 4, CHAPEL: its own things, after the floor's: the rock before the break-ins, candles, his hall's piers and altar)
+  if (chapel) layChapel(level);
+  // (FLOOR 5, LAIR_TEMPLE: which of it is the mine and which the temple, the thresholds between, the rails and the rift's cracks;
+  // its own things, after the floor's: game/lair_way.ts)
+  if (lairHere(depth)) {
+    level.lair = planLair(level);
+    layLair(level);
+  }
   return level;
 }

@@ -10,6 +10,7 @@ import { BEYOND } from '../art/floorkit';
 import { stairKey } from '../art/films';
 import type { CaveWayFilm, ExitFilm, MouthWay, ShaftFilm, StairFilm, StartArt, TownWaysArt, WayArt } from '../art/films';
 import { CAVE4 } from '../art/cave4';
+import { CHAPEL, gradeSprite as chapelGrade } from '../art/chapel';
 import { CRYPT_FLOORS } from '../art/crypt';
 import { wallFacePixels } from '../art/ground';
 import { GRAIN } from '../art/kit';
@@ -410,7 +411,8 @@ function wallStill(alongX: boolean): Sprite {
     const ty = ay - 24 + 16 * j;
     face.blit(w.p, tx - w.ax, ty - w.ay);
   }
-  const s = face.sprite(ax, ay, GRAIN);
+  // (FLOOR 4 AS THE BURIED CHAPEL, CHAPEL: in look A's colours, as its own cave film is)
+  const s = CHAPEL.on ? chapelGrade(face.sprite(ax, ay, GRAIN)) : face.sprite(ax, ay, GRAIN);
   walls.set(alongX, s);
   return s;
 }

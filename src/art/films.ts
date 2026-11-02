@@ -72,7 +72,9 @@ import { orderlyThings } from './act1_figs/orderly';
 import { physicianThings } from './act1_figs/physician';
 import { groomThings } from './act1_figs/groom';
 import { kknightThings } from './act1_figs/kknight';
-import { caveFilm, lairMouth } from './cave4';
+import { CAVE_FRAMES, caveFilm, lairMouth } from './cave4';
+import { CHAPEL, chapelCave } from './chapel';
+import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { EXIT_KICKS, exitArt } from './prison_exit';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -299,6 +301,13 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     return { fps: m.fps, jolts: [...m.jolts], kicks: [...stairwellKicks(m)], frames: m.frames };
   }
   // (EXITS: the art chat's ways between the floors)
+  if (kind === 'cave' && CHAPEL.on) {
+    // (FLOOR 4 AS THE BURIED CHAPEL, CHAPEL: the same film in look A's colours, art/chapel.ts chapelCave)
+    const c = chapelCave(a !== 'y');
+    const frames: Sprite[] = [];
+    for (let k = 0; k < CAVE_FRAMES; k++) frames.push(c.frame(k));
+    return { fps: 30, jolts: [...c.jolts], kicks: c.jolts.map((_, i) => (i === 0 ? 6 : 4)), frames, before: c.before, under: c.under, over: c.over } satisfies CaveWayFilm;
+  }
   if (kind === 'cave') {
     const f = caveFilm(a !== 'y');
     return { fps: 30, jolts: [...f.jolts], kicks: f.jolts.map((_, i) => (i === 0 ? 6 : 4)), frames: f.frames, before: f.before, under: f.under, over: f.over } satisfies CaveWayFilm;
@@ -309,7 +318,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     return { fps: 30, jolts: [...e.jolts], kicks: [K.upperBar, K.lowerBar, K.lock, K.lurch, K.stop], frames: e.frames, under: e.under } satisfies ExitFilm;
   }
   if (kind === 'mouth') {
-    const m = lairMouth(a !== 'y');
+    // (FLOOR 5 AS THE MINE, LAIR_TEMPLE: the cave's mouth in the mine's wall: art/lair_temple.ts)
+    const m = LAIR_TEMPLE.on ? makeLairTempleArt().mouth(a !== 'y') : lairMouth(a !== 'y');
     return { under: m.under, over: m.over } satisfies MouthWay;
   }
   if (kind === 'town' && a === 'ways') {

@@ -663,8 +663,11 @@ export function placeCave(f: Floor): DoorSpot | null {
   return placeInBackWall(f, f.rooms.find((r) => r.kind === 'boss'));
 }
 
-/** Three tiles of a back wall of room `r` for a doorway into the dark, as `placeFirstGate` says; null where none will do. */
-function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined): DoorSpot | null {
+/**
+ * Three tiles of a back wall of room `r` for a doorway into the dark, as `placeFirstGate` says; null where none will do. `avoid`:
+ * a place ruled out besides (its wall, along x or not; its first tile along the wall).
+ */
+export function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined, avoid?: (alongX: boolean, a: number) => boolean): DoorSpot | null {
   if (!r) return null;
   const tile = (x: number, y: number): number => (x < 0 || y < 0 || x >= f.w || y >= f.h ? -1 : f.tiles[y * f.w + x]);
   // (what stands on the floor: what may be taken away for the gate, a brazier, a barrel, an urn, a pillar, counts against a place; a chest or a lever rules it out)
@@ -689,7 +692,7 @@ function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined): DoorS
       let ok = true;
       for (let j = k - 1; j <= k + 3 && ok; j++) ok = at(j) === T_WALL;
       for (let j = k; j <= k + 2 && ok; j++) ok = at(j, 1) !== T_FLOOR && room(j, 1) && room(j, 2);
-      if (!ok) continue;
+      if (!ok || (avoid && avoid(w.alongX, w.from + k))) continue;
       const dark = [k, k + 1, k + 2].every((j) => at(j, 1) === T_VOID);
       let things = 0;
       for (let j = k; j <= k + 2; j++) for (const d of [1, 2]) if (standing.has(here(j, d))) things++;

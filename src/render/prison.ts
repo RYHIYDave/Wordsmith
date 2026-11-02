@@ -23,6 +23,8 @@ import type { Floor, Room } from '../game/types';
 import type { Level } from '../game/state';
 import { EXIT_LIGHTS, exitSpill } from '../art/prison_exit';
 import { channelXY, prisonDoorTiles } from '../game/prison_way';
+import { gradeOnPage } from './looks';
+import type { LookStand, LookView } from './looks';
 
 /** Where a light burns: its floor point (tiles), how far up from it (game pixels), the hole's radius and strength, its glow. */
 export interface PrisonLight {
@@ -54,7 +56,9 @@ interface Laid {
   stands: { x: number; y: number; s: Sprite }[];
 }
 
-export class PrisonView {
+export class PrisonView implements LookView {
+  /** Look B's deep shadow between its fires (art/prison.ts PRISON_LIGHTS). */
+  readonly dark = PRISON_LIGHTS.dark;
   private art: PrisonArt | null = null;
   private cache: Laid | null = null;
   private cacheFor: Level | null = null;
@@ -232,7 +236,7 @@ export class PrisonView {
   }
 
   /** The face of wall tile (tx, ty): `left` the face turned to screen-left (a wall along x). His hall's, a cell's front, or the prison's. */
-  face(L: Level, left: boolean, tx: number, ty: number): Sprite {
+  face(L: Level, left: boolean, tx: number, ty: number, _t = 0): Sprite {
     const P = this.of(L);
     const A = this.A();
     const f = L.floor;
@@ -249,7 +253,7 @@ export class PrisonView {
   }
 
   /** The fire baskets the prison adds in the faces of wall tile `i` (its top corner at (px, py), its depth `s`): their pictures, where to stand them. */
-  baskets(L: Level, i: number, faces: number, t: number, put: (s: Sprite, side: 0 | 1) => void): void {
+  walls(L: Level, i: number, faces: number, t: number, put: (s: Sprite, side: 0 | 1) => void): void {
     const P = this.of(L);
     const p = this.basketPiece();
     if (!p) return;
@@ -263,7 +267,11 @@ export class PrisonView {
   }
 
   /** The faces of wall tile `i` to draw (`which`, render/walls.ts wallFaces): none on the door's two tiles (its own picture stands there: render/dress.ts). */
-  unfaced(L: Level, i: number, which: number): number {
+  unfaced(_L: Level, _i: number, which: number): number {
+    return which;
+  }
+  /** (PRISON_EXIT) The faces of wall tile `i` with none on the door's two tiles, once its pictures are drawn there (render/dress.ts). */
+  doorUnfaced(L: Level, i: number, which: number): number {
     const ex = L.ways?.exit;
     if (!ex || !which) return which;
     return prisonDoorTiles(L.floor, ex).includes(i) ? which & (ex.alongX ? ~1 : ~2) : which;
@@ -295,39 +303,13 @@ export class PrisonView {
   graded(s: Sprite): Sprite {
     const hit = this.gradedMemo.get(s);
     if (hit) return hit;
-    let out = s;
-    try {
-      const src = s.img as unknown as CanvasImageSource & { width: number; height: number };
-      const c = document.createElement('canvas');
-      c.width = src.width;
-      c.height = src.height;
-      const g = c.getContext('2d');
-      if (g && c.width && c.height) {
-        g.drawImage(src, 0, 0);
-        const im = g.getImageData(0, 0, c.width, c.height);
-        const d = im.data;
-        const memo = new Map<number, number>();
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i + 3] === 0) continue;
-          const key = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
-          let v = memo.get(key);
-          if (v === undefined) memo.set(key, (v = parseInt(gradedB(`#${key.toString(16).padStart(6, '0')}`).slice(1, 7), 16)));
-          d[i] = (v >> 16) & 255;
-          d[i + 1] = (v >> 8) & 255;
-          d[i + 2] = v & 255;
-        }
-        g.putImageData(im, 0, 0);
-        out = { ...s, img: c };
-      }
-    } catch {
-      out = s;
-    }
+    const out = gradeOnPage(s, gradedB);
     this.gradedMemo.set(s, out);
     return out;
   }
 
   /** What the prison stands on the floor (the channels' railings, the great chains in his hall): a floor point each, its depth x + y. */
-  stands(L: Level): readonly { x: number; y: number; s: Sprite }[] {
+  stands(L: Level, _t = 0): readonly LookStand[] {
     return this.of(L).stands;
   }
 

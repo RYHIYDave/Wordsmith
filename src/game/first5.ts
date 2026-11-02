@@ -29,6 +29,8 @@ import type { Level, PropInst } from './state';
 import { FIRST5, beforeGate } from './ways';
 import { onChannel } from './prison_way';
 import { PRISON } from '../art/prison';
+import { CHAPEL } from '../art/chapel';
+import { beforeStretch } from './chapel_way';
 import { YARD_FOOT, inYard } from './yard';
 
 /** Where one of a floor's three moments is set: in a wall's face, at a piece laid for it, on the floor. */
@@ -184,6 +186,8 @@ export const FLOOR_SETS: readonly FloorSet[] = [
  * the walls among its pieces, to a hook and to a shackle; hanging free in the rooms (walked past), to a hook and to a cage (the art
  * chat's README, "How to bring it in", step 6).
  */
+/** FLOOR 4 AS THE BURIED CHAPEL (art/chapel.ts, behind CHAPEL): its own set but the cult's altar, which stands in his hall (game/chapel_way.ts). */
+export const CHAPEL_SET: FloorSet = { ...FLOOR_SETS[3], things: FLOOR_SETS[3].things.filter((t) => t !== "the cult's altar") };
 export const PRISON_SET: FloorSet = {
   ...FLOOR_SETS[2],
   wall: [...FLOOR_SETS[2].wall, 'a chain from the dark, a hook', 'a chain from the dark, a shackle'],
@@ -581,7 +585,7 @@ export function drawnFaces(f: Floor, i: number): number {
  */
 export function dress(L: Level, depth: number, seed: number): Dress | null {
   if (!FIRST5.on || depth < 1 || depth > 5) return null;
-  const set = depth === 3 && PRISON.on ? PRISON_SET : FLOOR_SETS[depth - 1];
+  const set = depth === 3 && PRISON.on ? PRISON_SET : depth === 4 && CHAPEL.on ? CHAPEL_SET : FLOOR_SETS[depth - 1];
   const f = L.floor;
   const W = f.w;
   const rng = new RNG((Math.imul(seed, 2654435761) ^ 0x5eed5) >>> 0);
@@ -601,6 +605,8 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   // (FLOOR 3, PRISON: the fire channel down each cell block and a tile round it; PRISON_EXIT: the door out the back of his hall,
   // the wall either side of it, and the floor before it: game/prison_way.ts)
   for (const c of L.channels ?? []) for (let y = 0; y < f.h; y++) for (let x = 0; x < W; x++) if (onChannel(c, x, y, 1)) keep[y * W + x] = 1;
+  // (FLOOR 4, CHAPEL: the way in and the break-ins, and the floor before them: game/chapel_way.ts)
+  for (const st of [L.chapel?.wayIn ?? null, ...(L.chapel?.breaks ?? [])]) if (st) for (let y = 0; y < f.h; y++) for (let x = 0; x < W; x++) if (beforeStretch(st, x, y)) keep[y * W + x] = 1;
   const ex = ways?.exit;
   if (ex) for (let k = ex.a - 2; k <= ex.a + 3; k++) for (let d = 0; d <= 2; d++) {
     const x = ex.alongX ? k : ex.line + d;

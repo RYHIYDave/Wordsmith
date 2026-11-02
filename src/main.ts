@@ -26,6 +26,10 @@ import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookProps 
 import { YARD } from './art/yard';
 import { YARD_GATE, makeYardGateArt } from './art/yard_gate';
 import { PRISON_GATE, makePrisonGateArt } from './art/prison_gate';
+import { CHAPEL } from './art/chapel';
+import { CHAPEL_GATE, makeChapelGateArt } from './art/chapel_gate';
+import { LAIR_TEMPLE } from './art/lair_temple';
+import { LAIR_GATE, makeLairGateArt } from './art/lair_gate';
 import { PRISON } from './art/prison';
 import { FLOOR_SETS } from './game/first5';
 import { FIRST5 } from './game/ways';
@@ -1830,8 +1834,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
         const own = FIRST5.on && crypt >= 1 && crypt <= 5;
         // (THE HEADSMAN'S YARD with its own gate, behind YARD and YARD_GATE: floor 2's doors and gates, the boss's the yard's own)
-        // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts)
-        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : lookGates(crypt)) : vault.gates;
+        // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts; FLOOR 4, THE BURIED
+        // CHAPEL with its bone grille, behind CHAPEL and CHAPEL_GATE: art/chapel_gate.ts; FLOOR 5, THE TEMPLE with its hooked bars,
+        // behind LAIR_TEMPLE and LAIR_GATE: art/lair_gate.ts)
+        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : crypt === 4 && CHAPEL.on && CHAPEL_GATE.on ? makeChapelGateArt() : crypt === 5 && LAIR_TEMPLE.on && LAIR_GATE.on ? makeLairGateArt() : lookGates(crypt)) : vault.gates;
         art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
         forgetPieces(crypt);
         cryptShown = crypt;

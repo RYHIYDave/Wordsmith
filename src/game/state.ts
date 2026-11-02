@@ -2,6 +2,8 @@
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
 import type { PrisonChannel } from './prison_way';
+import type { ChapelPlan } from './chapel_way';
+import type { LairPlan } from './lair_way';
 import type { CompanionGroup, CompanionKind } from './companions';
 import type { Royal } from './royal_cards';
 import type { PunchName } from './brawler';
@@ -1187,6 +1189,10 @@ export interface Level {
   dress?: Dress | null;
   /** FLOOR 3, PRISON: the fire channel down each cell block (game/prison_way.ts). */
   channels?: PrisonChannel[];
+  /** FLOOR 4, CHAPEL: the way in from floor 3 and the walls the miners broke through (game/chapel_way.ts). */
+  chapel?: ChapelPlan;
+  /** FLOOR 5, LAIR_TEMPLE: the mine and the temple, the thresholds between, the rails and the rift's cracks (game/lair_way.ts). */
+  lair?: LairPlan;
   /**
    * ACT 1, THE DESCENT (game/act1_layout.ts): a floor of open ground, not a dungeon's rooms: what only it
    * has (the drop, the river, the boardwalks, its strongholds), for the painter of its ground and its rules;

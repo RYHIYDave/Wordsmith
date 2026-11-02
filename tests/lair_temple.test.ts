@@ -99,14 +99,17 @@ const edgeCount = (p: Px): number => {
   return edge;
 };
 
-test('the mine that becomes his temple, and his gate: off, and nothing of the game imports them', () => {
+test('the mine that becomes his temple, and his gate: off; brought into the game by the main chat, and by nothing else', () => {
+  // (2 Nov 2026, his “New looks for the first 5 floors are almost done.  We want those in the release as well”: the main chat brought
+  // it in behind its switches, off until his yes to it in play)
+  const BROUGHT = ['art/lair_temple.ts', 'art/lair_gate.ts', 'art/films.ts', 'art/floors.ts', 'game/lair_way.ts', 'main.ts', 'render/lair.ts', 'render/render.ts'].map((f) => join('src', f));
   assert.ok(LAIR_TEMPLE.on === false && LAIR_GATE.on === false, 'LAIR_TEMPLE and LAIR_GATE are off');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'lair_temple.ts')) && !p.endsWith(join('art', 'lair_gate.ts')) && /from '\.\.?\/(art\/)?lair_(temple|gate)'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !BROUGHT.includes(p) && /from '\.\.?\/(art\/)?lair_(temple|gate)'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

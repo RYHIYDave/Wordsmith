@@ -4,6 +4,8 @@
 // Until the fifth was put in, a floor deeper than the fourth looked as the fourth (cryptFloor); it still
 // does past the fifth, and with FIRST5 off (game/ways.ts) the fifth does too.
 
+import { CHAPEL, makeChapelArt } from './chapel';
+import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { PRISON, makePrisonArt } from './prison';
 import { FIRST5 } from '../game/ways';
 import { cryptFloor, cryptGround, cryptProps, cryptWays } from './crypt';
@@ -55,7 +57,9 @@ export function lookPieces(k: number): Map<string, Piece> {
   let m = PIECES.get(k);
   if (!m) {
     // (FLOOR 3, THE BLACK IRON PRISON, behind PRISON: floor 3's own pieces in look B's colours, and the prison's chains: art/prison.ts)
-    const list = k === 1 ? wardenPieces() : k === 2 ? headsmanPieces() : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? ossuaryPieces() : lairPieces();
+    // (FLOOR 4, THE BURIED CHAPEL, behind CHAPEL: floor 4's own pieces in look A's colours, and the chapel's own: art/chapel.ts;
+    // FLOOR 5, THE MINE AND THE TEMPLE, behind LAIR_TEMPLE: floor 5's own in look A's colours, and the place's own: art/lair_temple.ts)
+    const list = k === 1 ? wardenPieces() : k === 2 ? headsmanPieces() : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? (CHAPEL.on ? makeChapelArt().pieces : ossuaryPieces()) : LAIR_TEMPLE.on ? makeLairTempleArt().pieces : lairPieces();
     PIECES.set(k, (m = new Map(list.map((p) => [p.name, p]))));
   }
   return m;
