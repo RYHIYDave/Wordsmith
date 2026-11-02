@@ -312,6 +312,15 @@ export function brawlerPose(m: Motion, t: number): Posed {
  */
 const LAG = 0.12;
 export function drawBrawlerAt(view: GameView, m: Move, t: number, turn = 0): Drawn {
+  return drawBrawlerOf(view, brawlerAt(m, t), turn);
+}
+/** ALL THAT A MOMENT OF A MOVE OF HIS IS DRAWN FROM (drawBrawlerAt): his pose, and how his coat swings and lies. Two moments alike in it are the same picture. */
+export interface BrawlerMoment {
+  pose: Bones;
+  swing: V3;
+  floor: boolean;
+}
+export function brawlerAt(m: Move, t: number): BrawlerMoment {
   const pose = brawlerPose(m.motion, t);
   const before = brawlerPose(m.motion, m.loops ? (((t - LAG) % m.long) + m.long) % m.long : Math.max(0, t - LAG));
   const now = solve(BRAWLER_B, pose).pelvis;
@@ -320,8 +329,13 @@ export function drawBrawlerAt(view: GameView, m: Move, t: number, turn = 0): Dra
   const v: V3 = [(was[0] - now[0]) * 1.4 - blown, (was[1] - now[1]) * 1.4, (was[2] - now[2]) * 0.8 + blown * 0.25];
   const cap = 4.5;
   const n = Math.hypot(v[0], v[1], v[2]);
-  COAT_SWING.v = n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : v;
-  COAT_FLOOR.on = !!m.kneels && t >= m.kneels[0] && t <= m.kneels[1];
+  return { pose, swing: n > cap ? [(v[0] * cap) / n, (v[1] * cap) / n, (v[2] * cap) / n] : v, floor: !!m.kneels && t >= m.kneels[0] && t <= m.kneels[1] };
+}
+/** Him drawn at a moment (brawlerAt). */
+export function drawBrawlerOf(view: GameView, at: BrawlerMoment, turn = 0): Drawn {
+  const { pose } = at;
+  COAT_SWING.v = at.swing;
+  COAT_FLOOR.on = at.floor;
   try {
     return sculptBrawler(view, pose, BRAWLER_BUILD, undefined, turn);
   } finally {

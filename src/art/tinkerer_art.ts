@@ -28,7 +28,7 @@
 
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
-import { lazyFrames, toSprite } from './kit';
+import { HEAVY, LEFT_TO_PAINTER, lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
 import type { Drawn } from '../dev/sculpt';
@@ -130,6 +130,50 @@ function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
   return made;
 }
 
+/**
+ * WHAT IS IN HER HANDS AT A MOMENT OF TWO MOVES THAT ARE ONE BUT FOR IT (dev/tinkerer_moves.ts drawTinkerAt: a move's `hold` is all
+ * that it reads of it that two such moves differ in) THE SAME, nothing held in either (the art chat's helper, 1 Nov 2026;
+ * docs/cheap_heroes.md): then they are the same picture.
+ */
+function sameHold(a: TinkMove, b: TinkMove, t: number): boolean {
+  if (a.long !== b.long || !!a.loops !== !!b.loops || a.motion !== b.motion || a.along !== b.along || a.carry !== b.carry || a.tall !== b.tall) return false;
+  const u = a.loops ? ((t % a.long) + a.long) % a.long : Math.max(0, Math.min(a.long, t));
+  const none = { wrench: 0, twirl: false, spin: 0, vial: 0 };
+  const x: Record<string, unknown> = { held: null, lay: 0, droop: [0, 0, 0], ...(a.hold ? a.hold(u) : none) };
+  const y: Record<string, unknown> = { held: null, lay: 0, droop: [0, 0, 0], ...(b.hold ? b.hold(u) : none) };
+  if (x.held != null || y.held != null) return false;
+  for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) {
+    const p = x[k];
+    const q = y[k];
+    if (Array.isArray(p) && Array.isArray(q)) {
+      if (p.length !== q.length || p.some((v, i) => v !== q[i])) return false;
+    } else if (p !== q) return false;
+  }
+  return true;
+}
+/** `c`, its frames where `same` says so `first`'s own (painted once, for both), each read as itself, never a nearer frame standing in. */
+function sameAs(first: Clip, c: Clip, same: (i: number) => boolean): Clip {
+  const n = c.frames.length;
+  if (first.frames.length !== n) return c;
+  const own = c.frames;
+  return {
+    ...c,
+    frames: lazyFrames(n, (i) => {
+      const from = same(i) ? first.frames : own;
+      const was = HEAVY.defer;
+      const left = LEFT_TO_PAINTER.on;
+      HEAVY.defer = false;
+      LEFT_TO_PAINTER.on = false;
+      try {
+        return from[i];
+      } finally {
+        HEAVY.defer = was;
+        LEFT_TO_PAINTER.on = left;
+      }
+    }),
+  };
+}
+
 function herSet(view: GameView): AnimSet {
   const turn = TURN[view];
   const moves = tinkerMoves();
@@ -146,8 +190,10 @@ function herSet(view: GameView): AnimSet {
   // (her Vial Toss: the throw with a vial of hers in her fist, from when she has it off her belt to when she lets it go)
   const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
   const attack = clip(0, tap.long, CLIP_FPS, at(toss), TAP_LET_GO, true);
-  // (her Contraption thrown down, the art chat's own tap: her tap with the talent that swaps it in, CONTRAPTION on her tree)
-  const throwDown = clip(0, tap.long, CLIP_FPS, at(tap), TAP_LET_GO, true);
+  // (her Contraption thrown down, the art chat's own tap: her tap with the talent that swaps it in, CONTRAPTION on her tree;
+  // its frames before she has it in her hand and after she lets it go are her vial toss's own, the very same picture, painted
+  // once: sameAs)
+  const throwDown = sameAs(attack, clip(0, tap.long, CLIP_FPS, at(tap), TAP_LET_GO, true), (i) => sameHold(tap, toss, Math.min(tap.long, i / CLIP_FPS)));
   // (her whistle: the game shows her picture's wind-up as her own, up to her whistle; and from then on at its own pace, so
   // that she springs for joy as her Golem's blow lands, TINKER_TUNE.golem.pound's lead and hit after her whistle)
   const P = TINKER_TUNE.golem.pound;
@@ -202,28 +248,48 @@ function golemAt(view: GameView, pose: GolemPose & { aim?: number; kick?: number
     Object.assign(GOLEM_POSE, REST);
   }
 }
+/**
+ * THE GOLEM IN THE SAME POSE IS THE SAME PICTURE (the art chat's helper, 1 Nov 2026; docs/cheap_heroes.md): golemAt reads nothing
+ * of a moment but its pose, so a pose it has been painted in already (at rest, as each of its moves begins; laid on the floor,
+ * held to the end of its winding down) is not painted again. One of these for each set (a view, an arm).
+ */
+type GolemAt = (pose: GolemPose & { aim?: number; kick?: number; charge?: number; gunLevel?: number }) => Sprite;
+function golemOnce(view: GameView, gun: GolemGun): GolemAt {
+  const made = new Map<string, Sprite>();
+  // (every number of it, to the last bit: -0 apart from 0)
+  const num = (v: unknown): string => (typeof v === 'number' ? (Object.is(v, -0) ? '-0' : String(v)) : Array.isArray(v) ? `[${v.map(num).join(',')}]` : JSON.stringify(v));
+  return (pose) => {
+    const all: Record<string, unknown> = { ...REST, ...pose };
+    const key = Object.keys(all).sort().map((k) => `${k}:${num(all[k])}`).join(';');
+    let s = made.get(key);
+    if (!s) made.set(key, (s = golemAt(view, pose, gun)));
+    return s;
+  };
+}
 /** A move of the Golem's, by its frames (30 a second): `pose(f)` its pose at frame f. */
-function golemClip(view: GameView, end: number, pose: (f: number) => GolemPose & { aim?: number; kick?: number }, gun: GolemGun, hit?: number): Clip {
-  return clip(0, end * FR, CLIP_FPS, (t) => golemAt(view, pose(Math.round(t / FR)), gun), hit === undefined ? undefined : hit * FR, true);
+function golemClip(at: GolemAt, end: number, pose: (f: number) => GolemPose & { aim?: number; kick?: number }, hit?: number): Clip {
+  return clip(0, end * FR, CLIP_FPS, (t) => at(pose(Math.round(t / FR))), hit === undefined ? undefined : hit * FR, true);
 }
 
 /** (her tree's GUN ARM) Its charged shot, frame by frame (30 a second, made as they are wanted): the cannon's shell or the tesla coil's beam. dev/golem_moves.ts chargeFrame says which frame to show. */
 export function golemCharge(view: GameView, gun: GolemGun): Sprite[] {
   const tesla = gun === 'tesla';
   const end = tesla ? GCHARGE_BEAM.end : GCHARGE_SHELL.end;
-  return lazyFrames(end + 1, (f) => golemAt(view, tesla ? golemChargeBeam(f) : golemChargeShell(f), gun));
+  const at = golemOnce(view, gun);
+  return lazyFrames(end + 1, (f) => at(tesla ? golemChargeBeam(f) : golemChargeShell(f)));
 }
 
 function golemSet(view: GameView, gun: GolemGun): AnimSet {
-  const walk = lazyFrames(GWALK.round, (i) => golemAt(view, golemWalk(i), gun));
+  const at = golemOnce(view, gun);
+  const walk = lazyFrames(GWALK.round, (i) => at(golemWalk(i)));
   // (its uppercut, GOLEM_LOOK, the main chat's at his word of 28 Oct, 20:26, his yes by 21:41; off, its old punch)
-  const punch = GOLEM_LOOK.uppercut ? golemClip(view, GUPPER.end, golemUppercut, gun, GUPPER.hit) : golemClip(view, GPUNCH.end, golemPunch, gun, GPUNCH.hit);
-  const pound = golemClip(view, GP.end, groundPound, gun, GP.hit);
-  const cannon = golemClip(view, GCANNON.end, golemCannon, gun, GCANNON.fire);
-  const down = golemClip(view, GDOWN.end, golemDown, gun);
+  const punch = GOLEM_LOOK.uppercut ? golemClip(at, GUPPER.end, golemUppercut, GUPPER.hit) : golemClip(at, GPUNCH.end, golemPunch, GPUNCH.hit);
+  const pound = golemClip(at, GP.end, groundPound, GP.hit);
+  const cannon = golemClip(at, GCANNON.end, golemCannon, GCANNON.fire);
+  const down = golemClip(at, GDOWN.end, golemDown);
   return {
     // (standing: as he picked it, at rest; TO BE MADE ALIVE WHEN STILL by the art chat, as every figure is)
-    idle: lazyFrames(1, () => golemAt(view, {}, gun)),
+    idle: lazyFrames(1, () => at({})),
     walk,
     attack: three(punch),
     heavy: three(pound),

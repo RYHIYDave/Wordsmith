@@ -23,7 +23,7 @@ import { lazyFrames, toSprite } from './kit';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
 import { GRIP_SPEED } from './moves3';
-import { RUN_ROUND, brawlerMoves, drawBrawlerAt } from '../dev/brawler_moves';
+import { RUN_ROUND, brawlerAt, brawlerMoves, drawBrawlerOf } from '../dev/brawler_moves';
 import type { BrawlerMove } from '../dev/brawler_moves';
 import { SLIP_DASH, bake, chain, punchFor, slipCounter, strikes } from '../dev/brawler_punches';
 import type { Punch } from '../dev/brawler_punches';
@@ -106,8 +106,24 @@ function three(c: Clip): Sprite[] {
   return lazyFrames(3, (i) => c.frames[picks[i]]);
 }
 
-/** Him at a moment of a move, in a view. */
-const atIn = (view: GameView) => (m: BrawlerMove) => (t: number): Sprite => toSprite({ px: drawBrawlerAt('front', m, t, TURN[view]).px, lights: [] }, AURA, CANVAS3.ax, CANVAS3.ay);
+/**
+ * Him at a moment of a move, in a view. THE SAME MOMENT IS THE SAME PICTURE (the art chat's helper, 1 Nov 2026;
+ * docs/cheap_heroes.md): all that a moment of his is drawn from is his pose and how his coat swings and lies
+ * (dev/brawler_moves.ts brawlerAt), so a moment alike to one painted already, to the last bit (his guard as each punch, struck,
+ * struck from behind and his fall begin; his standing breath coming round), is not painted again.
+ */
+const madeIn = new Map<GameView, Map<string, Sprite>>();
+const num = (v: unknown): string =>
+  typeof v === 'number' ? (Object.is(v, -0) ? '-0' : String(v)) : Array.isArray(v) ? `[${v.map(num).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).sort().map((k) => `${k}:${num((v as Record<string, unknown>)[k])}`).join(',')}}` : JSON.stringify(v) ?? 'undefined';
+const atIn = (view: GameView) => (m: BrawlerMove) => (t: number): Sprite => {
+  let made = madeIn.get(view);
+  if (!made) madeIn.set(view, (made = new Map()));
+  const at = brawlerAt(m, t);
+  const key = num(at);
+  let s = made.get(key);
+  if (!s) made.set(key, (s = toSprite({ px: drawBrawlerOf('front', at, TURN[view]).px, lights: [] }, AURA, CANVAS3.ax, CANVAS3.ay)));
+  return s;
+};
 /**
  * Him standing and running, in a view (his moves for these made at once: a few thousandths of a second). One list of each for
  * each view, his class card's and the game's alike: what is painted for the card is not painted again in the game.
