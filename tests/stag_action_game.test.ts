@@ -167,7 +167,7 @@ test('4. his bounds go all round the clearing, landing only inside it; now and t
     const lands: { x: number; y: number }[] = [];
     let stares = 0;
     let was = '';
-    watch(g, 16, null, () => {
+    watch(g, 16, undefined, () => {
       m.cd = 5;
       // (the hero keeps out of his way, at the middle)
       g.hero.x = f.cx;
@@ -209,7 +209,7 @@ test('5. at 1/4 the clearing is 40%: his charge across it is cut where his antle
     m.cd = 0;
     only(m, 'stag:charge');
     let charged = false;
-    watch(g, 3, null, () => {
+    watch(g, 3, undefined, () => {
       if (m.act?.id === 'stag:charge') charged = true;
       if (charged) {
         // (the hero out of his way once he has set off)

@@ -59,8 +59,8 @@ export function roundToBack(m: { x: number; y: number; seed: number }, h: { x: n
  * held, and in two frames it leaps clean through where he stands, the game carrying it LEAP.leap tiles on and a skid more
  * (leapCarry, to a wall), landing on the ring across from where it was; a hero in the strip it leaps through (leapStrikes, from where
  * it set off) as its jaws snap shut (LEAP_HIT) is bitten. The first of a round goes once all are on the ring, or once it has held
- * there PACK.gather; one that cannot reach its place (blocked a while: WOLF.circle.most) comes straight in and lunges, as one he
- * is close upon does.
+ * there PACK.gather; one he comes close upon glides back out to its place; one that cannot reach its place (blocked a while:
+ * WOLF.circle.most) comes straight in and lunges. None leaps at him into a wall.
  */
 const LUNGE_ACTS: readonly ActDef[] = [{ id: 'wolf:lunge', clip: 'attack', long: LEAP.long, hit: LEAP_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.3, near: 0, far: PACK.ring + 0.3 }];
 /** Its place on the ring, within this of it, counts as there (tiles). */
@@ -138,6 +138,14 @@ function itsTurn(g: Game, m: Monster, anyway = false): boolean {
   // (a new round: once all are on their places, or it has held a while)
   return pack.every((o) => onRing(g, o)) || (m.a1?.held ?? 0) >= PACK.gather;
 }
+/** Whether its leap at the hero (`dist` off) is clear of walls for `need` tiles. */
+function clearLeap(g: Game, m: Monster, dist: number, need: number): boolean {
+  const h = g.hero;
+  const fx = (h.x - m.x) / Math.max(0.01, dist);
+  const fy = (h.y - m.y) / Math.max(0.01, dist);
+  for (let d = 0.3; d <= need; d += 0.3) if (!g.free(g.level.walk, m.x + fx * d, m.y + fy * d, Math.min(m.r, 0.42))) return false;
+  return true;
+}
 /** How far it can be carried from where it is along the way it faces, to `most` tiles, before a wall. */
 function runOn(g: Game, m: Monster, most: number): number {
   let d = 0;
@@ -152,7 +160,7 @@ function gather(R: BossRules, m: Monster, dt: number, dist: number): boolean {
   const a1 = (m.a1 ??= { circ: 0, rest: 0, held: 0 });
   a1.rest = Math.max(0, (a1.rest ?? 0) - dt);
   const p = placeOf(g, m);
-  if (g.over || a1.rest > 0 || !p || dist < C.from || dist > C.to) {
+  if (g.over || a1.rest > 0 || !p || dist > C.to) {
     a1.circ = 0;
     a1.held = 0;
     return false;
@@ -163,7 +171,17 @@ function gather(R: BossRules, m: Monster, dt: number, dist: number): boolean {
     a1.held = (a1.held ?? 0) + dt;
     m.fx = (h.x - m.x) / dist;
     m.fy = (h.y - m.y) / dist;
-    if (itsTurn(g, m)) return false;
+    if (itsTurn(g, m)) {
+      // (its turn, but no room to leap from here, a while: it comes straight in)
+      if (!clearLeap(g, m, dist, Math.min(LEAP.leap, dist + 1.5))) {
+        a1.blocked = (a1.blocked ?? 0) + dt;
+        if (a1.blocked > 1.0) {
+          a1.blocked = 0;
+          a1.rest = C.rest;
+        }
+      } else a1.blocked = 0;
+      return false;
+    }
     m.state = 'chase';
     m.anim = 'idle';
     if (m.gait) m.gait = { mode: 'stand', t: 0 };
@@ -217,9 +235,9 @@ export const RULES: Act1Rules | null = {
   can(R, m, a, dist) {
     if (a.id !== 'wolf:lunge') return true;
     const g = R.g;
-    // (in close, or come straight in: once a beat has gone by; on the ring, at its turn)
-    if (dist < WOLF.circle.from || (m.a1?.rest ?? 0) > 0) return itsTurn(g, m, true);
-    return onRing(g, m) && itsTurn(g, m);
+    // (come straight in: once a beat has gone by, if it reaches him; on the ring, at its turn, with room to land out on the ring)
+    if ((m.a1?.rest ?? 0) > 0) return clearLeap(g, m, dist, dist + 0.2) && itsTurn(g, m, true);
+    return onRing(g, m) && clearLeap(g, m, dist, Math.min(LEAP.leap, dist + 1.5)) && itsTurn(g, m);
   },
   start(R, m, a) {
     if (a.id !== 'wolf:lunge') return;

@@ -49,6 +49,14 @@ export default async function (page, snap) {
         g.talentsLeft = () => 0;
         const r = g.level.floor.rooms.filter((q) => q.kind !== 'boss').sort((a, b) => b.w * b.h - a.w * a.h)[0];
         g.hero.x = r.x + r.w / 2 + 0.5; g.hero.y = r.y + r.h / 2 + 0.5;
+        // (the openest spot of it: the most open floor within three tiles round)
+        let best = -1;
+        for (let y = r.y + 1; y < r.y + r.h - 1; y += 1) for (let x = r.x + 1; x < r.x + r.w - 1; x += 1) {
+          if (!g.isOpen(x + 0.5, y + 0.5)) continue;
+          let n = 0;
+          for (let a = 0; a < 16; a++) for (const d of [1, 2, 3]) if (g.free(g.level.walk, x + 0.5 + Math.cos(a / 16 * Math.PI * 2) * d, y + 0.5 + Math.sin(a / 16 * Math.PI * 2) * d, 0.4)) n++;
+          if (n > best) { best = n; g.hero.x = x + 0.5; g.hero.y = y + 0.5; }
+        }
         if (boss && bossy) { g.hero.x = boss.x + 2.5; g.hero.y = boss.y + 2.5; }
         window.__step = g.update.bind(g); g.update = () => undefined;
         // (some seconds on, the floor's name gone)
@@ -71,6 +79,12 @@ export default async function (page, snap) {
       // (where it can stand and see him, C.d off)
       const tries = [];
       for (let k = 0; k < 16; k++) tries.push([Math.cos((k / 16) * Math.PI * 2) * C.d, Math.sin((k / 16) * Math.PI * 2) * C.d]);
+      if (C.kind === 'stag') {
+        // (the Stag in the middle of his clearing, not bounding off to stare)
+        const area = g.level.land?.areas.find((q) => q.role === 'boss');
+        if (area) { m.x = area.blob.x; m.y = area.blob.y; }
+        if (m.a1) { m.a1.stareAt = 999; m.a1.bounds = 0; }
+      }
       if (m.boss) {
         // (the boss where she is: the hero C.d off her, on firm ground (a tile round him every way, none the eyrie's rounded edge
         // cuts), she seeing him; the one most in front of her as the picture is drawn, so she does not hide him)
@@ -90,14 +104,15 @@ export default async function (page, snap) {
       m.state = 'chase'; m.act = undefined;
       g.wakeUp(m);
       if (m.boss && g.bossReady) g.bossReady();
-      m.life = m.maxLife = 1e9; m.cd = 0; m.speed = 0;
+      m.life = m.maxLife = 1e9; m.cd = 0;
+      if (!C.pack) m.speed = 0;
       if (C.life) m.life = m.maxLife * C.life;
       if (C.up && m.a1) m.a1.under = 0;
       // (a pack: more of its kind round him, evenly)
       for (let i = 1; i < (C.pack ?? 1); i++) {
         const a = Math.atan2(m.y - h.y, m.x - h.x) + (i / C.pack) * Math.PI * 2;
         const o = g.spawn(C.kind, h.x + Math.cos(a) * C.d, h.y + Math.sin(a) * C.d, -2, 0, false, g.rng, null, null);
-        g.monsters.push(o);
+        if (!g.monsters.includes(o)) g.monsters.push(o);
         g.wakeUp(o);
         o.life = o.maxLife = 1e9; o.cd = 0; o.state = 'chase';
       }
