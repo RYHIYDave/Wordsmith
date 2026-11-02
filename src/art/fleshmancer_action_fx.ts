@@ -161,11 +161,12 @@ function shardPix(p: Px, x: number, y: number, ux: number, uy: number, big: numb
 }
 /**
  * THE SHARDS, `t` seconds into his shards, aimed along `aim`, from his middle at `C` (tiles), painted `layer` 'floor' (their lanes and
- * shadows) or 'air' (the shards).
+ * shadows) or 'air' (the shards). `only`: that fan alone (the game aims each fan where the hero is as it is drawn up: the main chat's).
  */
-export function paintShards(p: Px, at: At, t: number, C: readonly [number, number], aim: number, layer: 'floor' | 'air', keep: Keep = ALL): void {
+export function paintShards(p: Px, at: At, t: number, C: readonly [number, number], aim: number, layer: 'floor' | 'air', keep: Keep = ALL, only = -1): void {
   const list = shardsAt(t, aim);
   for (const [i, s] of list.entries()) {
+    if (only >= 0 && s.fan !== only) continue;
     const X = C[0] + s.x;
     const Y = C[1] + s.y;
     const [fx, fy] = at(X, Y);

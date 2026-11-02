@@ -17,6 +17,8 @@ import { FX as chained } from './chained';
 import { FX as brute } from './brute';
 // FLOOR 4, MORE ACTION (ACTION_F4): the Ossuary Golem's skeleton hurl
 import { FX as golem } from './golem';
+// THE FLESHMANCER'S MOVES DONE THE ACTION WAY (FM_ACTION): his shards, rings, fire, heaps, pit and rise (and the mini's fire)
+import { FX as fleshmancer } from './fleshmancer';
 import { FX as chanter } from './chanter';
 import { FX as firepot } from './firepot';
 import { FX as qgolem } from './qgolem';
@@ -90,6 +92,8 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   brute,
   // (floor 4's, behind ACTION_F4)
   golem,
+  // (the Fleshmancer's, behind FM_ACTION: his perils only)
+  fleshmancer,
   chanter,
   firepot,
   qgolem,

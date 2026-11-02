@@ -90,9 +90,23 @@ export function cageHero(g: Game, b: { x: number; y: number }, r: number, wasX: 
     if (!R) continue;
     const room = R.room;
     if (wasX < room.x || wasX >= room.x + room.w || wasY < room.y || wasY >= room.y + room.h) continue;
+    const x0 = b.x;
+    const y0 = b.y;
     for (const line of R.x) b.y = keepSide(b.y, wasY, line, r);
     for (const line of R.y) b.x = keepSide(b.x, wasX, line, r);
+    // (never into a wall: a row of bars by a wall leaves him no room on its far side; where keeping him off it would put him in
+    // the wall, he stays where he was, as walking into the wall would leave him)
+    if ((b.x !== x0 || b.y !== y0) && !bodyFits(g, b.x, b.y, r)) {
+      b.x = wasX;
+      b.y = wasY;
+    }
   }
+}
+
+/** Whether a body of radius `r` at (x, y) stands clear of the walls. */
+function bodyFits(g: Game, x: number, y: number, r: number): boolean {
+  const k = r * 0.95;
+  return g.isOpen(x - k, y - k) && g.isOpen(x + k, y - k) && g.isOpen(x - k, y + k) && g.isOpen(x + k, y + k);
 }
 
 /** A coordinate kept at least `r` from `line`, on the side it was on (`was`). */

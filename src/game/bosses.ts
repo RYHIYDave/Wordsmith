@@ -28,6 +28,8 @@
 import { stepActionF1 } from './action_f1';
 import { stepActionF2 } from './action_f2';
 import { stepActionF4 } from './action_f4';
+import { FM2, FM_ACTION, FM_FIRE, FM_HEAP, FM_PIT, FM_RINGS, FM_RISE, FM_SHARDS, stepFm } from './fm_action';
+import { FIRE_HIT, FIRE_LONG, MINI_HIT, MINI_LONG, RAISE_HIT, RAISE_LONG, RING_HITS, RING_LONG, SHARD_HITS, SHARD_LONG } from '../art/fleshmancer_action';
 import { BALL_LAND, BALL_LET, BALL_LONG, BALL_REACH, HOOK_BACK, HOOK_BITE, HOOK_BLOW, HOOK_LET, HOOK_LONG, LASH_HITS, LASH_LONG, LASH_TRAVEL_TILES, WHIRL_HIT, WHIRL_LONG, WHIRL_LOOP, actBallPath, actHookPath } from '../art/chained_action';
 import { CRACK, RING as CO_RING, crackStrikes, ringStrikes as coRingStrikes } from '../art/chained_action_fx';
 import { ARMS_HIT, ARMS_LONG, DEVOUR_HITS, DEVOUR_LONG, FAN, FAN_HIT, FAN_LONG, RAIN_HIT, RAIN_LONG, RAKES, SWIPE_HITS, fanStrikes } from '../art/amalgam_action';
@@ -139,13 +141,18 @@ export interface ActDef {
   loop?: { at: number; span: number; extra: number };
 }
 
+/** (FLESH_BLINK) His teleport's timings: as they were, or his moves done the action way's (FM_ACTION, game/fm_action.ts FM2.blink). */
+export function blinkTimes(): { sink: number; gone: number; pause: number; rise: number; up: number } {
+  return FM_ACTION.on && BOSSES5.on ? FM2.blink : FLESH_BLINK;
+}
 /** (FLESH_BLINK) Is he gone now, between going and coming back (out of reach)? */
 export function blinkedAway(m: { act?: { id: string; t: number } }): boolean {
-  return !!m.act && ((m.act.id === 'blink' && m.act.t >= FLESH_BLINK.gone) || (m.act.id === 'rise' && m.act.t < FLESH_BLINK.up));
+  const B = blinkTimes();
+  return !!m.act && ((m.act.id === 'blink' && m.act.t >= B.gone) || (m.act.id === 'rise' && m.act.t < B.up));
 }
 /** (FLESH_BLINK) Is he nowhere, between his two pits (nothing of him to be drawn: his shadow, bar and name too)? */
 export function blinkNowhere(m: { act?: { id: string; t: number } }): boolean {
-  return !!m.act && m.act.id === 'blink' && m.act.t >= FLESH_BLINK.sink;
+  return !!m.act && m.act.id === 'blink' && m.act.t >= blinkTimes().sink;
 }
 
 /** Where in its pictures, and in its own timings, an act `t` seconds in is (its `loop` played round and round). */
@@ -230,6 +237,9 @@ export function actsOf(m: { kind: MonsterKind }): readonly ActDef[] | null {
   if (m.kind === 'chained' && CO_ACTION.on && BOSSES5.on) return CO2_ACTS;
   // (THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY)
   if (m.kind === 'amalgam' && AM_ACTION.on && BOSSES5.on) return AM2_ACTS;
+  // (THE FLESHMANCER'S, AND THE MINI FLESHMANCER'S FIRE, DONE THE ACTION WAY)
+  if (m.kind === 'fleshmancer' && FM_ACTION.on && BOSSES5.on) return FM2_ACTS;
+  if (m.kind === 'minifm' && FM_ACTION.on && BOSSES5.on) return MINI2_ACTS;
   return BOSSES5.on && m.kind in ACTS ? ACTS[m.kind as GaitedKind] : null;
 }
 export function actDef(m: { kind: MonsterKind; act?: { id: ActId } }): ActDef | null {
@@ -425,6 +435,25 @@ export function inCone(fwd: number, left: number, r = 0): boolean {
   const k = Math.max(0, Math.min(1, (fwd - D.near) / (D.reach - D.near)));
   return Math.abs(left) <= D.narrow + (D.wide - D.narrow) * k + r;
 }
+
+/**
+ * THE FLESHMANCER'S MOVES DONE THE ACTION WAY (FM_ACTION, game/fm_action.ts; the art chat's art/fleshmancer_action.ts, his yes, 2
+ * Nov 2026): his shards two fans, his rings five, his fire whipped round and the lanes it leaves burning, his dead raised at the
+ * new moment, his teleport's going and coming back with the mark where he will rise and its burst; the mini fleshmancer's fire.
+ * Their numbers the pictures' own; what strikes, game/fm_action.ts.
+ */
+export const FM2_ACTS: readonly ActDef[] = [
+  { id: 'fm:shards', clip: 'attack', long: SHARD_LONG, hit: SHARD_HITS[0], dmg: 0.42, cooldown: 0, first: 0, after: 0.9, near: 0, far: 9.5 },
+  { id: 'fm:rings', clip: 'rings', long: RING_LONG, hit: RING_HITS[0], dmg: 0.9, cooldown: 9, first: 4, after: 0.8, near: 0, far: 6.2 },
+  { id: 'fm:fire', clip: 'fire', long: FIRE_LONG, hit: FIRE_HIT, dmg: 0.5, cooldown: 15, first: 9, after: 1.0, near: 0, far: 7.0 },
+  { id: 'raise', clip: 'raise', long: RAISE_LONG, hit: RAISE_HIT, dmg: 0, cooldown: 17, first: 6, after: 0.8, near: 0, far: 14 },
+  { id: 'blink', clip: 'sink', long: FM2.blink.sink + FM2.blink.pause, hit: FM2.blink.gone, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
+  { id: 'rise', clip: 'rise', long: FM2.blink.rise, hit: FM2.blink.up, dmg: 0, cooldown: 0, first: 0, after: 0.4, near: 0, far: 99, forced: true },
+];
+export const MINI2_ACTS: readonly ActDef[] = [
+  { id: 'fm:minifire', clip: 'attack', long: MINI_LONG, hit: MINI_HIT, dmg: 0.4, cooldown: 0, first: 0, after: 1.6, near: 0, far: 3.2 },
+  { id: 'miniRaise', clip: 'raise', long: 2.2, hit: 1.1, dmg: 0, cooldown: 9, first: 1.5, after: 0.8, near: 0, far: 12 },
+];
 
 /** (CO_ACTION) A moment of a looped act's pictures (seconds into them) as the act's own clock has it (its loop played round). */
 export function actTimeOf(a: ActDef, T: number): number {
@@ -1026,6 +1055,84 @@ export class BossRules {
     }
   }
 
+  /** (FM_ACTION) The Fleshmancer's moves done the action way (and the mini fleshmancer's fire), from `t0` to `t1` of act `a`. */
+  private fmActing(m: Monster, a: ActDef, t0: number, t1: number): void {
+    const g = this.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    const begun = at(1e-4);
+    const dmg = (): number => g.rollMonsterDmg(m) * a.dmg;
+    switch (a.id) {
+      case 'fm:shards': {
+        if (begun) this.peril(m, 'act1', m.x, m.y, { a1: FM_SHARDS, dur: FM2.lasts.shards, dmg: dmg(), b: Math.atan2(h.y - m.y, h.x - m.x), c: NaN, d: 0, a: m.id });
+        for (const T of SHARD_HITS) {
+          if (!at(T)) continue;
+          g.sfx('fire', 0.8);
+          g.emit({ t: 'shake', amount: 2 });
+        }
+        break;
+      }
+      case 'fm:rings': {
+        if (begun) this.peril(m, 'act1', m.x, m.y, { a1: FM_RINGS, dur: FM2.lasts.rings, dmg: dmg(), b: Math.atan2(m.fy, m.fx), d: 0, a: m.id });
+        RING_HITS.forEach((T, i) => {
+          if (!at(T)) return;
+          g.emit({ t: 'shake', amount: i === 0 ? 5 : 4 });
+          g.sfx('slam', 0.9);
+        });
+        break;
+      }
+      case 'fm:fire':
+      case 'fm:minifire': {
+        const mini = a.id === 'fm:minifire';
+        if (begun) this.peril(m, 'act1', m.x, m.y, { a1: FM_FIRE, dur: mini ? FM2.lasts.mini : FM2.lasts.fire, dmg: dmg(), d: mini ? 1 : 0, c: -1, a: m.id });
+        if (at(a.hit)) {
+          g.sfx('fire', 1);
+          g.emit({ t: 'shake', amount: mini ? 1 : 3 });
+        }
+        break;
+      }
+      case 'raise': {
+        // (the bone heaps his dead will come out of, shaking from his summoning: the ones raiseFromHeaps will call on)
+        if (begun) {
+          const R = FLESHMANCER.raise;
+          const room = Math.max(0, Math.min(R.n, R.most - this.called(m)));
+          (g.level.floor.heaps ?? [])
+            .filter((q) => Math.hypot(q.x - m.x, q.y - m.y) <= 18)
+            .sort((u, v) => Math.hypot(u.x - h.x, u.y - h.y) - Math.hypot(v.x - h.x, v.y - h.y))
+            .slice(0, room)
+            .forEach((q, i) => void this.peril(m, 'act1', q.x, q.y, { a1: FM_HEAP, dur: RAISE_LONG + 0.8, b: i }));
+        }
+        if (at(a.hit)) {
+          this.raiseFromHeaps(m);
+          g.emit({ t: 'shake', amount: 3 });
+        }
+        break;
+      }
+      case 'blink': {
+        const B = FM2.blink;
+        if (begun) this.peril(m, 'act1', m.x, m.y, { a1: FM_PIT, dur: B.sink });
+        if (at(0.24)) g.sfx('slam', 0.5);
+        // (gone, and nowhere: where he will come up, elsewhere in his hall, far from the hero and in sight of him; marked there)
+        if (!at(B.sink)) break;
+        const spots = g.spotsRound(m.x, m.y, 120).filter((s) => Math.hypot(s.x - h.x, s.y - h.y) >= FLESH_BLINK.far && g.sees(s.x, s.y, h.x, h.y));
+        if (spots.length) {
+          const s = spots[Math.floor(g.rng.next() * spots.length)];
+          m.x = s.x;
+          m.y = s.y;
+          const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
+          m.fx = (h.x - m.x) / d;
+          m.fy = (h.y - m.y) / d;
+        }
+        this.peril(m, 'act1', m.x, m.y, { a1: FM_RISE, t: -(B.pause + B.up), dur: 1.0, dmg: g.rollMonsterDmg(m) * FM2.riseDmg });
+        break;
+      }
+      default:
+        break;
+    }
+    void act;
+  }
+
   /** (AM_ACTION) The Amalgamation's moves done the action way, from `t0` to `t1` of act `a` (AM2). */
   private amActing(m: Monster, a: ActDef, t0: number, t1: number, dt: number): void {
     const g = this.g;
@@ -1241,6 +1348,11 @@ export class BossRules {
     // (THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY: its own, but for the bursting out of its beasts)
     if (m.kind === 'amalgam' && AM_ACTION.on && a.id !== 'burst') {
       this.amActing(m, a, t0, t1, dt);
+      return;
+    }
+    // (THE FLESHMANCER'S MOVES DONE THE ACTION WAY, and the mini fleshmancer's fire: his call stays as it was)
+    if ((m.kind === 'fleshmancer' || (m.kind === 'minifm' && a.id !== 'miniRaise')) && FM_ACTION.on) {
+      this.fmActing(m, a, t0, t1);
       return;
     }
     switch (a.id) {
@@ -1781,7 +1893,7 @@ export class BossRules {
         if (r1 && r1.peril) r1.peril(this, p, dt);
         // (FLOOR 1, MORE ACTION: the archer's arrow rain and the Warden's Lockdown, whose kinds have no such rules: game/action_f1.ts)
         // (floor 2's and floor 4's likewise: game/action_f2.ts, game/action_f4.ts)
-        else if (!r1 && !stepActionF1(g, p, hurt) && !stepActionF2(g, p, hurt) && !stepActionF4(g, p, hurt)) this.stepAmPeril(p, hurt);
+        else if (!r1 && !stepActionF1(g, p, hurt) && !stepActionF2(g, p, hurt) && !stepActionF4(g, p, hurt) && !stepFm(g, p, hurt)) this.stepAmPeril(p, hurt);
       } else if (p.kind === 'split') {
         // (the split burns: whoever stands in it is burned, tick by tick)
         const S = HEADSMAN.sentence;

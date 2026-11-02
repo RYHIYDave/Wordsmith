@@ -41,6 +41,8 @@ import { DAGGER_FRENZY } from './cultists';
 import { GOLEM_HURL, makeHurlGolemArt } from './action_f4_fx';
 import { CHAINED_ACTION, makeChainedActionArt } from './chained_action';
 import { AMALGAM_ACTION, makeAmalgamActionArt } from './amalgam_action';
+import { FLESH_ACTION, makeFleshmancerActionArt, makeMiniActionArt } from './fleshmancer_action';
+import { FM_ACTION } from '../game/fm_action';
 import { makeBoneMiteArt } from './amalgam_mites';
 import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
@@ -103,6 +105,12 @@ export function useAmAction(on: boolean): void {
   AMALGAM_ACTION.on = on;
 }
 useAmAction(AM_ACTION.on);
+/** THE FLESHMANCER'S MOVES DONE THE ACTION WAY (game/fm_action.ts FM_ACTION): the rules and the art chat's pictures (FLESH_ACTION) together. */
+export function useFmAction(on: boolean): void {
+  FM_ACTION.on = on;
+  FLESH_ACTION.on = on;
+}
+useFmAction(FM_ACTION.on);
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
@@ -382,9 +390,9 @@ export function makeBestiary(): Bestiary {
         : figure === 'amalgam' ? (AMALGAM_ACTION.on ? makeAmalgamActionArt(MONSTERS.amalgam.speed) : makeAmalgamArt3())
         : figure === 'mite' ? makeBoneMiteArt()
         : figure === 'beast' ? makeBoneBeastArt3()
-        : figure === 'fleshmancer' ? makeFleshmancerArt3()
+        : figure === 'fleshmancer' ? (FLESH_ACTION.on ? makeFleshmancerActionArt() : makeFleshmancerArt3())
         : figure === 'dagger' ? makeDaggerCultistArt3(MONSTERS.dagger.speed)
-        : figure === 'minifm' ? makeMiniFleshmancerArt3()
+        : figure === 'minifm' ? (FLESH_ACTION.on ? makeMiniActionArt() : makeMiniFleshmancerArt3())
         : makeChieftainArt();
       made.set(figure, art);
     }

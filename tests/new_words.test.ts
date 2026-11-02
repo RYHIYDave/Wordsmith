@@ -17,7 +17,9 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
-import { FRENZY, GUARD, HEAVY, PRECISE } from '../src/game/defs';
+import { ACTION_F3, FRENZY, GUARD, HEAVY, PRECISE } from '../src/game/defs';
+import { useActionF3 } from '../src/art/bestiary';
+import { RAMPAGE } from '../src/art/action_f3_fx';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster, Zone } from '../src/game/state';
@@ -158,23 +160,34 @@ test('a stun: an elite for half as long, a boss never; a longer one is not cut s
 });
 
 test('a stun breaks off the blow a monster is winding up, and the warning of it goes too', () => {
-  const { g, a, seen } = room('warrior');
-  const m = put(g, a, 'brute', 1.5, 0);
-  m.cd = 0;
-  m.state = 'chase';
-  // (THE MONSTERS' ATTACKS, Version 19.8: its slam, not its swing; the swing is made to wait)
-  m.moveCd = [99, 0];
-  // (the brute brings its club down on the ground: a warning comes first)
-  for (let t = 0; t < 1 && stateOf(m) !== 'windup'; t += DT) run(g, seen, DT);
-  assert.equal(stateOf(m), 'windup');
-  assert.equal(a.zones.filter((z) => z.kind === 'warn' && z.src === m.id).length, 1, 'its warning lies on the floor');
-  const life = g.hero.life;
-  a.stunMonster(m, HEAVY.stun);
-  assert.equal(m.state, 'chase');
-  assert.equal(a.zones.filter((z) => z.kind === 'warn').length, 0, 'the warning is gone');
-  m.cd = 1e9;
-  run(g, seen, 1.5);
-  assert.equal(g.hero.life, life, 'and the blow never falls');
+  // (as written, the brute's slam, with floor 3's more action off; and its rampage, with it on: his “Switch them all on
+  // (Recommended)”, 2 Nov 2026, its leaping slam's ring marked as the club goes up)
+  const was = ACTION_F3.on;
+  try {
+    for (const action of [false, true]) {
+      useActionF3(action);
+      const { g, a, seen } = room('warrior');
+      const m = put(g, a, 'brute', 1.5, 0);
+      m.cd = 0;
+      m.state = 'chase';
+      // (THE MONSTERS' ATTACKS, Version 19.8: its slam, not its swing; the swing is made to wait; or, on, its rampage, the rush made to wait)
+      m.moveCd = action ? [0, 99] : [99, 0];
+      // (the brute brings its club down on the ground: a warning comes first)
+      for (let t = 0; t < 3 && !(stateOf(m) === 'windup' && a.zones.some((z) => z.kind === 'warn' && z.src === m.id)); t += DT) run(g, seen, DT);
+      assert.equal(stateOf(m), 'windup', `action ${action}`);
+      assert.equal(a.zones.filter((z) => z.kind === 'warn' && z.src === m.id).length, 1, `action ${action}: its warning lies on the floor`);
+      const life = g.hero.life;
+      a.stunMonster(m, HEAVY.stun);
+      assert.equal(m.state, 'chase');
+      assert.equal(a.zones.filter((z) => z.kind === 'warn').length, 0, `action ${action}: the warning is gone`);
+      m.cd = 1e9;
+      run(g, seen, 1.5);
+      assert.ok(g.hero.life >= life, `action ${action}: and the blow never falls (${g.hero.life} from ${life})`);
+      void RAMPAGE;
+    }
+  } finally {
+    useActionF3(was);
+  }
 });
 
 test("gear's chance to stun (Heavy burned in): on any hit, and never more than half the time", () => {

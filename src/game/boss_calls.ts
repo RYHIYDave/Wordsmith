@@ -18,16 +18,22 @@ export const BOSS_CALLS = { on: true, /** seconds a line stays up over him */ sa
 
 /** Each talking boss's big moves (by their names in his rules) and what he calls out as he begins each. */
 export const BOSS_CALL_LINES: Partial<Record<MonsterKind, Record<string, string>>> = {
-  // (floor 1: his slam, and his fan of bolts when you are out of its reach)
-  warden: { slam: 'On your knees!', bolts: 'Back to your cell!' },
+  // (floor 1: his slam, and his fan of bolts when you are out of its reach; his Lockdown in his slam's place, its line with it:
+  // floor 1's more action, ACTION_F1)
+  warden: { slam: 'On your knees!', lockdown: 'On your knees!', bolts: 'Back to your cell!' },
   // (floor 2, the Headsman made new: his flurry, his wheel, his vault)
   headsman: { 'h2:flurry': 'Hold still.', 'h2:wheel': 'Heads will roll.', 'h2:vault': 'The block awaits.' },
   // (floor 3: muzzled, and completely insane: his hook, his whirl, his ball and chain)
   chained: { hook: 'Mine! MINE!', whirl: 'Round... round... ROUND!', ball: 'Mmmph... FREE!' },
   // (floor 4, all its dead at once: its arms slamming down, its swarm of skulls, its devouring, its bursting)
-  amalgam: { floorArms: 'All our hands.', swarm: 'Fly, brothers.', devour: 'Be one of us.', burst: 'We break. We mend.' },
+  // (its bone rain in its swarm's place, its line with it: its moves done the action way, AM_ACTION)
+  amalgam: { floorArms: 'All our hands.', swarm: 'Fly, brothers.', 'am:rain': 'Fly, brothers.', devour: 'Be one of us.', burst: 'We break. We mend.' },
   // (floor 5: his fan of shards (his basic blow), his rings, his dead raised, his fire)
-  fleshmancer: { shards: 'Bone remembers how to cut.', rings: 'Stay in the circle.', raise: 'Rise. Serve.', fire: 'Burn, and be useful.' },
+  // (and the same done the action way, FM_ACTION: game/fm_action.ts)
+  fleshmancer: {
+    shards: 'Bone remembers how to cut.', rings: 'Stay in the circle.', raise: 'Rise. Serve.', fire: 'Burn, and be useful.',
+    'fm:shards': 'Bone remembers how to cut.', 'fm:rings': 'Stay in the circle.', 'fm:fire': 'Burn, and be useful.',
+  },
   // (floor 6, the quarry's half-cut giant: the rock hurled, the stomp, the rockslide, tearing himself out of the wall)
   unfinished: {
     'unfinished:hurl': 'Catch.', 'unfinished:stomp': 'Be still. Be stone.', 'unfinished:rockslide': 'The mountain falls with me.', 'unfinished:tear': 'Tear me free!',
