@@ -25,6 +25,8 @@ import { CRYPT, forgetCrypt } from './art/crypt';
 import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookProps } from './art/floors';
 import { YARD } from './art/yard';
 import { YARD_GATE, makeYardGateArt } from './art/yard_gate';
+import { PRISON_GATE, makePrisonGateArt } from './art/prison_gate';
+import { PRISON } from './art/prison';
 import { FLOOR_SETS } from './game/first5';
 import { FIRST5 } from './game/ways';
 import { momentKeys, stairKey } from './art/films';
@@ -1828,7 +1830,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
         const own = FIRST5.on && crypt >= 1 && crypt <= 5;
         // (THE HEADSMAN'S YARD with its own gate, behind YARD and YARD_GATE: floor 2's doors and gates, the boss's the yard's own)
-        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : lookGates(crypt)) : vault.gates;
+        // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts)
+        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : lookGates(crypt)) : vault.gates;
         art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
         forgetPieces(crypt);
         cryptShown = crypt;
@@ -1865,6 +1868,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (EXITS.on && W) {
           if (W.cave) painter.film(`cave:${W.cave.spot.alongX ? 'x' : 'y'}`, true);
           if (W.mouth) painter.film(`mouth:${W.mouth.alongX ? 'x' : 'y'}`, true, true);
+          // (FLOOR 3, PRISON_EXIT: the door out the back of his hall, seen shut all through his fight)
+          if (W.exit) painter.film(`exit:${W.exit.alongX ? 'x' : 'y'}`, true);
           const gate = W.gate >= 0 ? g.level.doors[W.gate] : null;
           if (g.level.town && gate) {
             if (W.shaft?.state === 'arriving') painter.film('town:arrive', true, true);

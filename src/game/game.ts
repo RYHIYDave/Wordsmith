@@ -59,6 +59,7 @@ import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_T
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
+import { DOOR_OPENING, prisonDoorTiles } from './prison_way';
 import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, takesTiles, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
@@ -2010,6 +2011,20 @@ export class Game {
       }
     }
     if (cv && cv.state === 'open' && doorTiles(L.floor, cv.spot).includes(Math.floor(h.y) * L.floor.w + Math.floor(h.x))) {
+      this.leave('down');
+      return false;
+    }
+    // FLOOR 3, PRISON_EXIT: the door out the back of his hall opening (its film), then open: walking into its doorway takes him down.
+    const ex = W.exit;
+    if (ex && ex.state === 'opening') {
+      ex.t += dt;
+      if (ex.t >= DOOR_OPENING) {
+        ex.state = 'open';
+        for (const i of prisonDoorTiles(L.floor, ex)) L.walk[i] = 1;
+        this.msg('The door behind his hall stands open. The way down.', MSG.good);
+      }
+    }
+    if (ex && ex.state === 'open' && prisonDoorTiles(L.floor, ex).includes(Math.floor(h.y) * L.floor.w + Math.floor(h.x))) {
       this.leave('down');
       return false;
     }
@@ -8142,6 +8157,11 @@ export class Game {
         W.shaft.state = 'coming';
         W.shaft.t = 0;
         this.sfx('thunder', 0.35);
+      } else if (W && W.exit && W.exit.state === 'shut') {
+        // (FLOOR 3, PRISON_EXIT: the door out the back of his hall unbars and swings open: the way down; its jolts kick the screen as it plays: render/prison.ts)
+        W.exit.state = 'opening';
+        W.exit.t = 0;
+        this.sfx('thunder', 0.2);
       } else if (W && W.cave && W.cave.state === 'wall') {
         // (EXITS, FLOOR 4: a wall of his hall crumbles, and behind it, a cave: the way down to the Fleshmancer's lair)
         W.cave.state = 'falling';
@@ -9124,6 +9144,8 @@ export class Game {
       // (FLOOR 3, MORE ACTION: the green troll's bull rush runs RUSH.past beyond the hero, and its lane is drawn on to where his stop takes him)
       const P = chargeOf(m);
       m.charge = { ...lane, hit: false, run: Math.min(Math.hypot(lane.x1 - lane.x0, lane.y1 - lane.y0), dist + P.run) };
+      // (a monster's warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it, as addWarn's)
+      this.roomForZone();
       this.zones.push({ x: lane.x0, y: lane.y0, x1: lane.x1, y1: lane.y1, r: P.half, t: 0, dur: mv.windup, kind: 'lane', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, gone: 0 });
       this.sfx('bossRoar', 0.45);
     } else if (mv.id === 'summon') {
@@ -9166,6 +9188,7 @@ export class Game {
     } else if (mv.id === 'pierce') {
       // (THE NEW MONSTERS: the marksman's line of aim, from him toward the hero: AIM)
       const end = this.aimEnd(m.x, m.y, m.fx, m.fy);
+      this.roomForZone();
       this.zones.push({ x: m.x, y: m.y, x1: end.x, y1: end.y, r: AIM.r, t: 0, dur: mv.windup, kind: 'aim', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id });
     }
   }
@@ -9630,6 +9653,7 @@ export class Game {
   /** THE GOLEM HURLS A SKULL at where the hero stands: it comes down there SKULL.fly seconds later, its shadow showing where; `share` of its blow (a Twin Golem's second skull, of its Twin). */
   private hurlSkull(m: Monster, mv: MonsterMove, share: number): void {
     const h = this.hero;
+    this.roomForZone();
     this.zones.push({
       x: h.x, y: h.y, x1: m.x + m.fx * SKULL.hand, y1: m.y + m.fy * SKULL.hand, r: SKULL.r, t: 0, dur: SKULL.fly, kind: 'skull', element: this.monsterElement(m),
       dmg: this.rollMonsterDmg(m) * mv.dmg * share, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, half: this.halfOf(m), gone: 0,
@@ -9709,6 +9733,7 @@ export class Game {
       y = m.y + m.fy * SMOKE.near;
     }
     const ticks = Math.max(1, Math.round(SMOKE.dur / SMOKE.tick));
+    this.roomForZone();
     this.zones.push({
       x, y, r: SMOKE.r, t: 0, dur: SMOKE.dur, kind: 'smoke', element: 'fire', dmg: (this.rollMonsterDmg(m) * mv.dmg) / ticks, slow: 0, tick: 0, hostile: true,
       skill: -1, words: m.words, from: m.name, src: m.id, half: this.halfOf(m),

@@ -40,7 +40,7 @@ import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
 import { LEDGE_H, WALL_H } from '../engine/iso';
-import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
+import { drawAura, drawGlow, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
 import { WARLOCK_TUNE } from '../game/warlock';
@@ -74,7 +74,11 @@ import { FloorDress } from './dress';
 import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
 import { YARD_DARK, YARD_SKY_LIFT, YARD_VIGNETTE, YardView } from './yard';
+import { PrisonView } from './prison';
+import { prisonDoorAnchor, prisonDoorTiles } from '../game/prison_way';
+import { PRISON_LIGHTS } from '../art/prison';
 import { YARD_GATE, yardGateDropAt, yardGateSlam } from '../art/yard_gate';
+import { PRISON_GATE, prisonGateDropAt, prisonGateSlam } from '../art/prison_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
@@ -458,6 +462,14 @@ export class Renderer {
   readonly pieces: FloorPieces;
   /** THE HEADSMAN'S YARD, floor 2's boss hall outdoors (render/yard.ts). */
   readonly yard: YardView;
+  /** FLOOR 3, THE BLACK IRON PRISON (render/prison.ts, behind PRISON). */
+  readonly prison = new PrisonView();
+  /** Is the floor being drawn the prison (set as each frame's floor is drawn)? */
+  private prisonNow = false;
+  /** A picture of the game's own walls (a slanting wall) in the look of the floor being drawn: the prison's colours on floor 3. */
+  private lookGrade(sp: Sprite): Sprite {
+    return this.prisonNow ? this.prison.graded(sp) : sp;
+  }
   /** (the yard's floor, this frame, while the hero is in it: only it, its walls and its way in are drawn) */
   private yardOnly: Game['level']['floor'] | null = null;
   /** Whether this frame's level is laid with them. */
@@ -721,12 +733,14 @@ export class Renderer {
         // (EXITS: floor 1's gate is the stairs up to the town, the art chat's, drawn with the floor: its portcullis is gone)
         // (THE HEADSMAN'S YARD's own gate, YARD_GATE: it falls by its own beat, held juddering, dropped, a bounce; the mark on its
         // keystone lit as it lands, its dust and sparks, a little shake: art/yard_gate.ts)
-        const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : null;
+        // (FLOOR 3, THE BLACK IRON PRISON's own gate, PRISON_GATE: the same beat, its own pictures: art/prison_gate.ts)
+        const prisonGate = boss && d.want === 0 && d.fell !== undefined && PRISON_GATE.on && this.prison.on(L);
+        const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : prisonGate ? prisonGateDropAt((game.time - d.fell!) * 30) : null;
         if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, drop ? drop.raise : d.open * GATE_UP), -wide, wide);
         strips(A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
         if (drop && drop.slam >= 0) {
           const [x, y] = at(1.5, wide);
-          put(x + y + 0.3, yardGateSlam(s.alongX, drop.slam), x, y);
+          put(x + y + 0.3, prisonGate ? prisonGateSlam(s.alongX, drop.slam) : yardGateSlam(s.alongX, drop.slam), x, y);
           if (drop.slam < 4) fx.shake = Math.max(fx.shake, 2);
         }
         // (EXITS, the town's gate: barred until the Fleshmancer is beaten, its bars struck off the first time he comes in
@@ -1659,12 +1673,13 @@ export class Renderer {
       }
       return;
     }
-    const sp = G.part[part][low ? 'low' : 'tall'];
+    // (FLOOR 3, THE BLACK IRON PRISON: its slanting walls, the Crypt's in look B's colours: render/prison.ts)
+    const sp = this.lookGrade(G.part[part][low ? 'low' : 'tall']);
     const depth = s + (part === 'far' ? 0.66 : part === 'near' ? 1.34 : 1);
     if (floor && up > 0) {
       // the wall over a half tile of raised floor stands ON that floor: as tall over the terrace as over the room's floor
       // (with one top line: the top of a whole wall, as much of it as stands over the terrace)
-      this.stand(depth, WALL_LOOK.level && !low ? G.part[part].mid : sp, px, py - up);
+      this.stand(depth, WALL_LOOK.level && !low ? this.lookGrade(G.part[part].mid) : sp, px, py - up);
       return;
     }
     // (a block taller than the game's old walls is seen through while it stands over the hero. A wall
@@ -1681,7 +1696,8 @@ export class Renderer {
   /** The half of a cut tile that is floor: the flagstones, cut along the line, and the shadows of the walls over it. (px, py): where its diamond is drawn, lifted as it is. */
   private halfFloor(g: CanvasRenderingContext2D, f: Floor, idx: number, tx: number, ty: number, px: number, py: number, part: WallPart): void {
     const G = this.art.ground;
-    const sp = G.floor(tx, ty);
+    // (FLOOR 3, THE BLACK IRON PRISON: its own dark flags)
+    const sp = this.prisonNow ? this.prison.flags(tx, ty) : G.floor(tx, ty);
     g.save();
     g.beginPath();
     // (the floor is the half the wall is not over)
@@ -2405,6 +2421,8 @@ export class Renderer {
     this.dressed = this.pieces.begin(game);
     // (THE HEADSMAN'S YARD: its pictures made as the floor is come into)
     if (this.yard.on(game.level.floor)) this.yard.warm();
+    // (FLOOR 3, THE BLACK IRON PRISON: likewise)
+    if (this.prison.on(game.level)) this.prison.warm();
     if (this.dressed) this.pieces.step(game);
     const live = pace > 0;
     const amb = pace * fx.room();
@@ -2490,6 +2508,9 @@ export class Renderer {
     // ---- THE HEADSMAN'S YARD (render/yard.ts): the sky and the tower over its far walls, while the hero is in it ----
     const yardOn = this.yard.on(f);
     const yardOut = yardOn && this.yard.heroIn(f, h.x, h.y);
+    // ---- FLOOR 3, THE BLACK IRON PRISON (render/prison.ts): its flags, its own tiles and his hall's floor; its walls ----
+    const prisonOn = this.prison.on(L);
+    this.prisonNow = prisonOn;
     this.yardOnly = yardOut ? f : null;
     if (yardOut) this.yard.back(g, cam, f, W, H);
 
@@ -2541,7 +2562,8 @@ export class Renderer {
           // (the flagstones are laid on the world, not on the tiles: a tile's picture goes by where it is)
           // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
           // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
-          const sp = (yardOn && this.yard.floor(f, tx, ty)) || (this.dressed && this.pieces.tile(idx)) || art.ground.floor(tx, ty);
+          // (FLOOR 3, THE BLACK IRON PRISON: his hall's floor and its own tiles, then the floor's own, on its dark flags: render/prison.ts)
+          const sp = (yardOn && this.yard.floor(f, tx, ty)) || (prisonOn && this.prison.laid(L, tx, ty, t)) || (this.dressed && this.pieces.tile(idx)) || (prisonOn ? this.prison.flags(tx, ty) : art.ground.floor(tx, ty));
           g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
           // the shadow of a wall that stands over it (the light is from the upper left)
           // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
@@ -2572,7 +2594,8 @@ export class Renderer {
           } else if (WALL_LOOK.faces && !lowGrid[idx]) {
             // (THE WALLS' LOOK, `faces`: a wall is the upright planes behind the far edges of floor.
             // Which of a block's two faces have floor before them: render/walls.ts, `wallFaces`.)
-            const which = wallFaces(f, idx);
+            // (FLOOR 3, PRISON_EXIT: none on the door out the back of his hall once its pictures are made, or once it is open: render/dress.ts stands it there)
+            const which = prisonOn && L.ways?.exit && this.dress.exitShown(game) ? this.prison.unfaced(L, idx, wallFaces(f, idx)) : wallFaces(f, idx);
             const n = art.ground.faceLeft.length;
             // (THE WALL BESIDE A DOOR: one that stands again there is seen through while someone is behind it, and nothing is set in it)
             const again = this.doorBack !== null && this.doorBack[idx] === 1;
@@ -2581,15 +2604,23 @@ export class Renderer {
             // (THE HEADSMAN'S YARD: the ring of wall round it is the prison's wall: render/yard.ts)
             const prison = yardOn && this.yard.ring(f, tx, ty);
             if (which & FACE_LEFT) {
-              this.stand(s + 1, prison ? this.yard.face(true, v) : art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
+              this.stand(s + 1, prison ? this.yard.face(true, v) : prisonOn ? this.prison.face(L, true, tx, ty) : art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             if (which & FACE_RIGHT) {
-              this.stand(s + 1, prison ? this.yard.face(false, v) : art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
+              this.stand(s + 1, prison ? this.yard.face(false, v) : prisonOn ? this.prison.face(L, false, tx, ty) : art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             // (THE FIRST FIVE FLOORS: what is set in its faces: render/pieces.ts)
             if (which && this.dressed && !again) this.pieces.wall(game, idx, which, s, px, py, t, this.stage);
+            // (FLOOR 3, THE BLACK IRON PRISON: the fire baskets it adds, stood in the faces as the floor's own are)
+            if (which && prisonOn && !again) {
+              this.prison.baskets(L, idx, which, t, (sp, side) => {
+                const bx = side === 0 ? px - 8 : px + 8;
+                this.stage.stand(s + 1.01, sp, bx, py + 12);
+                if (sp.lights) this.stage.lit(sp, bx, py + 12);
+              });
+            }
           } else if (!(lowGrid[idx] && WALL_LOOK.front === 'none')) {
             const sp = lowGrid[idx] ? art.ground.wallsLow[v % art.ground.wallsLow.length] : art.ground.wallsTall[v % art.ground.wallsTall.length];
             const thin = !lowGrid[idx] && this.overHero(px, py, s + 1, WALL_LOOK.tall) ? SEEN_THROUGH : 1;
@@ -2752,6 +2783,16 @@ export class Renderer {
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     if (L.ways) this.standWays(L, t, game.time, game);
     if (L.ways) this.dress.standing(game, this.stage);
+    // (FLOOR 3, THE BLACK IRON PRISON: the railings along its fire channels, the great chains in his hall: render/prison.ts)
+    if (this.prison.on(L)) {
+      for (const q of this.prison.stands(L)) {
+        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
+        const sx = Math.round(wx(cam, q.x, q.y));
+        const sy = Math.round(wy(cam, q.x, q.y));
+        if (sx < -120 || sx > W + 120 || sy < -40 || sy > H + 200) continue;
+        this.stage.stand(q.x + q.y, q.s, sx, sy);
+      }
+    }
     if (this.dressed) this.pieces.standMoments(game, this.stage);
     // (ACT 2, THE HUSH: its floor's moment around the hero, in depth at its anchor or over every figure, the surge shown over its
     // channel's run alone; its candles' light, and the chandelier drawn again over that light while it hangs and falls, as the
@@ -3557,6 +3598,22 @@ export class Renderer {
     // ---- darkness, with holes cut by every light ----------------------------------------------
     this.light(W, H, game, t, fx);
     g.drawImage(this.dark, 0, 0);
+    // (FLOOR 3, THE BLACK IRON PRISON: the warm glow of its fires over the dark: render/prison.ts)
+    if (this.prison.on(game.level)) {
+      const L3 = game.level;
+      for (const q of this.prison.lights(L3)) {
+        if (!L3.explored[Math.floor(q.y) * L3.floor.w + Math.floor(q.x)]) continue;
+        drawGlow(g, wx(this.cam, q.x, q.y), wy(this.cam, q.x, q.y) - q.up, q.glow.r + Math.sin(t * 9 + q.y * 5) * 1.5, q.glow.color, q.glow.a);
+      }
+      const ex = L3.ways?.exit;
+      const ef = ex ? this.dress.exitFilm(game) : null;
+      if (ex && ef && prisonDoorTiles(L3.floor, ex).some((i) => L3.explored[i] === 1 || L3.explored[ex.alongX ? i + L3.floor.w : i + 1] === 1)) {
+        const A = prisonDoorAnchor(ex);
+        const ax = wx(this.cam, A.x, A.y);
+        const ay = wy(this.cam, A.x, A.y);
+        for (const q of this.prison.exitLights(ex.alongX, FloorDress.exitFrame(ex, ef.frames.length))) if (q.glow) drawGlow(g, ax + q.dx, ay + q.dy, q.glow.r + Math.sin(t * 9 + q.dy) * 1.5, q.glow.color, q.glow.a);
+      }
+    }
     // (what of the act's kinds shines in the dark: the Physician's spotlight and his instruments in it, his lens's beam)
     this.bossFx.glow(g, this.floorAt, game, (x, y) => onScreen(x, y) && game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     // (ACT 2, THE BELLS: the bells still to ring, off the screen, marked at its edge)
@@ -4219,7 +4276,9 @@ export class Renderer {
     const day = isCamp(L) ? CAMP_DUSK : def ? (up ? def.top! : def.light) : null;
     // (THE HEADSMAN'S YARD: under the open sky, the moon's dark: render/yard.ts)
     const yardSky = this.yard.on(f) && this.yard.heroIn(f, game.hero.x, game.hero.y);
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${yardSky ? YARD_DARK : FAR_DARK})`;
+    // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.8: art/prison.ts PRISON_LIGHTS)
+    const prisonOn = this.prison.on(L);
+    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${yardSky ? YARD_DARK : prisonOn ? PRISON_LIGHTS.dark : FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
     // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
@@ -4283,6 +4342,22 @@ export class Renderer {
       dg.ellipse(sx, sy, R, R / 2, 0, 0, Math.PI * 2);
       dg.fill();
       dg.globalAlpha = 1;
+    }
+    // (FLOOR 3, THE BLACK IRON PRISON: its fire baskets, its glowing grates and his great grate cut the dark: render/prison.ts)
+    if (prisonOn) {
+      for (const q of this.prison.lights(L)) {
+        if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        spot(wx(cam, q.x, q.y), wy(cam, q.x, q.y) - q.up, q.r + Math.sin(t * 7 + q.x * 3) * 2, q.strength);
+      }
+      // (PRISON_EXIT: the passage's baskets and floor beyond the door out the back of his hall, and its doorway's light as it opens)
+      const ex = L.ways?.exit;
+      const ef = ex ? this.dress.exitFilm(game) : null;
+      if (ex && ef && prisonDoorTiles(f, ex).some((i) => L.explored[i] === 1 || L.explored[ex.alongX ? i + f.w : i + 1] === 1)) {
+        const A = prisonDoorAnchor(ex);
+        const ax = wx(cam, A.x, A.y);
+        const ay = wy(cam, A.x, A.y);
+        for (const q of this.prison.exitLights(ex.alongX, FloorDress.exitFrame(ex, ef.frames.length))) spot(ax + q.dx, ay + q.dy, q.r + Math.sin(t * 7 + q.dy) * 2, q.strength);
+      }
     }
     // (THE HEADSMAN'S YARD: its torches light the wall and the floor below them)
     if (this.yard.on(f)) {

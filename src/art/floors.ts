@@ -4,6 +4,7 @@
 // Until the fifth was put in, a floor deeper than the fourth looked as the fourth (cryptFloor); it still
 // does past the fifth, and with FIRST5 off (game/ways.ts) the fifth does too.
 
+import { PRISON, makePrisonArt } from './prison';
 import { FIRST5 } from '../game/ways';
 import { cryptFloor, cryptGround, cryptProps, cryptWays } from './crypt';
 import type { WaypointArt } from './crypt_ways';
@@ -53,7 +54,8 @@ const PIECES = new Map<number, Map<string, Piece>>();
 export function lookPieces(k: number): Map<string, Piece> {
   let m = PIECES.get(k);
   if (!m) {
-    const list = k === 1 ? wardenPieces() : k === 2 ? headsmanPieces() : k === 3 ? chainedPieces() : k === 4 ? ossuaryPieces() : lairPieces();
+    // (FLOOR 3, THE BLACK IRON PRISON, behind PRISON: floor 3's own pieces in look B's colours, and the prison's chains: art/prison.ts)
+    const list = k === 1 ? wardenPieces() : k === 2 ? headsmanPieces() : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? ossuaryPieces() : lairPieces();
     PIECES.set(k, (m = new Map(list.map((p) => [p.name, p]))));
   }
   return m;

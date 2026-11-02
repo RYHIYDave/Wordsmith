@@ -11,6 +11,7 @@
 //   elsewhere, a way on that is a column of light: WAY ON, once awake.
 // Where each stands (the rules know it) and how high over its foot the name is, in game pixels.
 
+import { prisonDoorMiddle } from './prison_way';
 import { doorMiddle } from './doors';
 import type { Level } from './state';
 import { EXITS, ONWARD, stairMiddle, STAIR_OPENING } from './ways';
@@ -43,6 +44,10 @@ export function exitLabels(L: Level): ExitLabel[] {
   if (EXITS.on && W.cave && W.cave.state === 'open') {
     const m = doorMiddle(W.cave.spot);
     out.push({ x: m.x, y: m.y, text: 'CAVE', lift: 52 });
+  }
+  if (W.exit && W.exit.state === 'open') {
+    const m = prisonDoorMiddle(W.exit);
+    out.push({ x: m.x, y: m.y, text: 'DOOR', lift: 56 });
   }
   if (W.shaft && W.shaft.state === 'down') out.push({ x: W.shaft.x + 0.5, y: W.shaft.y + 0.5, text: 'CAGE', lift: 56 });
   const on = W.onward;

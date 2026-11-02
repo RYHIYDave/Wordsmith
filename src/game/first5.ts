@@ -27,6 +27,8 @@ import { T_FLOOR, T_PIT, T_WALL } from './types';
 import type { Floor, Room } from './types';
 import type { Level, PropInst } from './state';
 import { FIRST5, beforeGate } from './ways';
+import { onChannel } from './prison_way';
+import { PRISON } from '../art/prison';
 import { YARD_FOOT, inYard } from './yard';
 
 /** Where one of a floor's three moments is set: in a wall's face, at a piece laid for it, on the floor. */
@@ -176,6 +178,17 @@ export const FLOOR_SETS: readonly FloorSet[] = [
     unlaid: ['his book'],
   },
 ];
+
+/**
+ * FLOOR 3 AS THE BLACK IRON PRISON (art/prison.ts, behind PRISON): its own set, and the prison's chains from the dark with it: in
+ * the walls among its pieces, to a hook and to a shackle; hanging free in the rooms (walked past), to a hook and to a cage (the art
+ * chat's README, "How to bring it in", step 6).
+ */
+export const PRISON_SET: FloorSet = {
+  ...FLOOR_SETS[2],
+  wall: [...FLOOR_SETS[2].wall, 'a chain from the dark, a hook', 'a chain from the dark, a shackle'],
+  small: [...FLOOR_SETS[2].small, 'a chain from the dark, hanging to a hook', 'a chain from the dark, hanging to a cage'],
+};
 
 /** What a scene is given to lay itself in room `r` (its middle cx, cy): each of these lays one piece where it may, true if it did. */
 interface SceneCtx {
@@ -568,7 +581,7 @@ export function drawnFaces(f: Floor, i: number): number {
  */
 export function dress(L: Level, depth: number, seed: number): Dress | null {
   if (!FIRST5.on || depth < 1 || depth > 5) return null;
-  const set = FLOOR_SETS[depth - 1];
+  const set = depth === 3 && PRISON.on ? PRISON_SET : FLOOR_SETS[depth - 1];
   const f = L.floor;
   const W = f.w;
   const rng = new RNG((Math.imul(seed, 2654435761) ^ 0x5eed5) >>> 0);
@@ -585,6 +598,15 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
   if (ways?.way) clear(ways.way.x, ways.way.y, 2.5);
   for (const s of ways?.stairs ?? []) for (let y = s.y - 2; y <= s.y + 3; y++) for (let x = s.x - 2; x <= s.x + 4; x++) if (x >= 0 && y >= 0 && x < W && y < f.h) keep[y * W + x] = 1;
   if (ways?.shaft) clear(ways.shaft.x + 0.5, ways.shaft.y + 0.5, 2.5);
+  // (FLOOR 3, PRISON: the fire channel down each cell block and a tile round it; PRISON_EXIT: the door out the back of his hall,
+  // the wall either side of it, and the floor before it: game/prison_way.ts)
+  for (const c of L.channels ?? []) for (let y = 0; y < f.h; y++) for (let x = 0; x < W; x++) if (onChannel(c, x, y, 1)) keep[y * W + x] = 1;
+  const ex = ways?.exit;
+  if (ex) for (let k = ex.a - 2; k <= ex.a + 3; k++) for (let d = 0; d <= 2; d++) {
+    const x = ex.alongX ? k : ex.line + d;
+    const y = ex.alongX ? ex.line + d : k;
+    if (x >= 0 && y >= 0 && x < W && y < f.h) keep[y * W + x] = 1;
+  }
   for (const z of L.hazards) {
     const s = z.spot;
     for (let y = s.y - 1; y <= s.y + s.h; y++) for (let x = s.x - 1; x <= s.x + s.w; x++) if (x >= 0 && y >= 0 && x < W && y < f.h) keep[y * W + x] = 1;

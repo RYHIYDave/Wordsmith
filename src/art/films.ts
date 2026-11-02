@@ -15,6 +15,8 @@
 //   cave:<x|y>                 EXITS: floor 4's wall giving way to the cave, in a face along x or y (art/cave4.ts); with
 //                              the wall standing before it and the cave after, in its two layers
 //   mouth:<x|y>                EXITS: floor 5's mouth, the cave's other end (art/cave4.ts), in its two layers
+//   exit:<x|y>                 FLOOR 3, PRISON_EXIT: the door out the back of his hall, in a wall along x or y, unbarring and
+//                              swinging open frame by frame, and the passage behind it (art/prison_exit.ts)
 //   town:ways:<x|y>            EXITS: the town's stairs down, the shaft's head with its cage, the gate's bars, their
 //                              unbarring and what is left of them, the gate in a plane along x or y (art/town_ways.ts)
 //   town:arrive                EXITS: the cage coming up into the town with him in it (art/town_ways.ts)
@@ -71,6 +73,7 @@ import { physicianThings } from './act1_figs/physician';
 import { groomThings } from './act1_figs/groom';
 import { kknightThings } from './act1_figs/kknight';
 import { caveFilm, lairMouth } from './cave4';
+import { EXIT_KICKS, exitArt } from './prison_exit';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
 import { canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from './act1_ways';
@@ -153,6 +156,14 @@ export interface CaveWayFilm {
   under: Sprite;
   over: Sprite;
 }
+/** FLOOR 3, PRISON_EXIT: the door out the back of his hall (art/prison_exit.ts), anchored at the foot of the wall's face under its middle: its frames from his fall (30 a second), the screen's kick at each jolt; the passage behind it, four frames, drawn with the floor. */
+export interface ExitFilm {
+  fps: number;
+  jolts: number[];
+  kicks: number[];
+  frames: Sprite[];
+  under: Sprite[];
+}
 /** EXITS, FLOOR 5: the cave's other end, its two layers. */
 export interface MouthWay {
   under: Sprite;
@@ -223,6 +234,8 @@ export function filmRoom(key: string): number {
   // the town's 7.4, the cage coming up 31.0, the stairs up 0.1)
   if (kind === 'cave') return CAVE_ROOM;
   if (kind === 'mouth') return 2;
+  // (FLOOR 3: the door out the back of his hall, measured 2 Nov 2026 in node as the others are: 16.4, its 90 frames and the passage's 4)
+  if (kind === 'exit') return 17;
   if (kind === 'town') return a === 'arrive' ? TOWN_ARRIVE_ROOM : 8;
   if (kind === 'up') return 1;
   // (EXITS, floors 6 to 10: the art chat's measures, every picture cut down to what is painted in it: the quarry 27.3, the ledge
@@ -262,7 +275,7 @@ const STAG_THINGS_ROOM = 24;
 const TOWN_ARRIVE_ROOM = 32;
 
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
-export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | MouthWay | TownWaysArt | WayArt | StartArt | Sprite {
+export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | ExitFilm | MouthWay | TownWaysArt | WayArt | StartArt | Sprite {
   const [kind, a, b, c, d] = key.split(':');
   if (kind === 'moments') {
     const list = momentsOf(Number(a));
@@ -289,6 +302,11 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   if (kind === 'cave') {
     const f = caveFilm(a !== 'y');
     return { fps: 30, jolts: [...f.jolts], kicks: f.jolts.map((_, i) => (i === 0 ? 6 : 4)), frames: f.frames, before: f.before, under: f.under, over: f.over } satisfies CaveWayFilm;
+  }
+  if (kind === 'exit') {
+    const e = exitArt(a !== 'y');
+    const K = EXIT_KICKS;
+    return { fps: 30, jolts: [...e.jolts], kicks: [K.upperBar, K.lowerBar, K.lock, K.lurch, K.stop], frames: e.frames, under: e.under } satisfies ExitFilm;
   }
   if (kind === 'mouth') {
     const m = lairMouth(a !== 'y');

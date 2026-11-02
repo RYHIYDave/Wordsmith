@@ -79,14 +79,17 @@ const floorLike: Sprite[] = [...floors, ...tiles.map(([, s]) => s), ...hallTiles
 const FIRE = new Set(EMBER.map((c) => c.toLowerCase()));
 const isFire = (r: number, g: number, b: number): boolean => FIRE.has(hex(r, g, b));
 
-test('the prison, his gate and the door out of his hall: off, and nothing of the game imports them', () => {
+test('the prison, his gate and the door out of his hall: off; brought into the game by the main chat, and by nothing else', () => {
   assert.ok(PRISON.on === false && PRISON_GATE.on === false && PRISON_EXIT.on === false, 'PRISON, PRISON_GATE and PRISON_EXIT are off');
+  // (2 Nov 2026, his “New looks for the first 5 floors are almost done.  We want those in the release as well”: the main chat brought
+  // them in behind their switches, off until his yes to them in play: the floor's look, its gate, the door and the fire channel)
+  const BROUGHT = ['art/prison.ts', 'art/prison_gate.ts', 'art/prison_exit.ts', 'art/films.ts', 'art/floors.ts', 'game/first5.ts', 'game/prison_way.ts', 'main.ts', 'render/dress.ts', 'render/prison.ts', 'render/render.ts'].map((f) => join('src', f));
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'prison.ts')) && !p.endsWith(join('art', 'prison_gate.ts')) && !p.endsWith(join('art', 'prison_exit.ts')) && /from '\.\.?\/(art\/)?prison(_gate|_exit)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !BROUGHT.includes(p) && /from '\.\.?\/(art\/)?prison(_gate|_exit)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

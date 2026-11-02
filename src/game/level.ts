@@ -13,6 +13,7 @@ import type { DoorSpot, Floor, HazardSpot, PackSpot, PropSpot, Room } from './ty
 import { dress } from './first5';
 import { act1Floor } from './act1';
 import { makeAct1Level } from './act1_level';
+import { beforePrisonDoor, channelOpen, placeChannels, placePrisonDoor, prisonChannelsHere, prisonDoorHere } from './prison_way';
 import { EXITS, FIRST5, TOWN_SHAFT, TOWN_STAIR, TOWN_WAY, WAYS, beforeGate, openGate, placeCave, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, stairTiles, townGate } from './ways';
 import { yardBlocks } from './yard';
 
@@ -839,6 +840,12 @@ export function makeDungeon(depth: number, seed: number): Level {
     floor.props = floor.props.filter((p) => !beforeGate(d, p.x, p.y));
   }
   if (mouth) floor.start = insideDoorway(mouth);
+  // (FLOOR 3, PRISON_EXIT: its way down is a door out the back of his hall, not a stairwell: game/prison_way.ts. What stood or
+  // lay before it is taken away; its two tiles stay wall until it is open.)
+  const door = prisonDoorHere(depth) ? placePrisonDoor(floor) : null;
+  if (door) floor.props = floor.props.filter((p) => !beforePrisonDoor(door, p.x, p.y));
+  // (FLOOR 3, PRISON: the fire channel down the middle of each cell block; its open run is not walked on)
+  const channels = prisonChannelsHere(depth) ? placeChannels(floor) : [];
   // (THE FIRST FIVE FLOORS: the fifth floor has no stairwell: the miners' shaft at the back of its boss's
   // hall, and the ride up to town. What stood or lay where it stands is taken away.)
   const shaftAt = FIRST5.on && depth === 5 ? placeShaft(floor) : null;
@@ -847,10 +854,10 @@ export function makeDungeon(depth: number, seed: number): Level {
   // (THE HEADSMAN'S YARD: and the tiles its scaffold, gallows and the rest stand on: game/yard.ts)
   const solidSpot = yardBlocks(floor);
   for (const p of floor.props) if (SOLID_PROPS.includes(p.kind)) solidSpot.add(p.y * floor.w + p.x);
-  let stairs = shaftAt || cave ? [] : stairSpots(floor, (i) => solidSpot.has(i));
+  let stairs = shaftAt || cave || door ? [] : stairSpots(floor, (i) => solidSpot.has(i));
   // (a hall so crowded that it has fewer than two: its barrels and urns are what give way, those on
   // the places taken away; its fires and pillars stay. Its places run along x: stairSpots.)
-  if (stairs.length < 2 && !shaftAt && !cave) {
+  if (stairs.length < 2 && !shaftAt && !cave && !door) {
     const breaks = (k: string): boolean => k === 'barrel' || k === 'urn';
     const fixed = yardBlocks(floor);
     for (const p of floor.props) if (SOLID_PROPS.includes(p.kind) && !breaks(p.kind)) fixed.add(p.y * floor.w + p.x);
@@ -862,7 +869,7 @@ export function makeDungeon(depth: number, seed: number): Level {
     }
   }
   const stair = stairs[0] ?? null;
-  const level = finish(floor, false, stair || shaftAt || cave ? null : portalAt(floor.boss.x, floor.boss.y, false));
+  const level = finish(floor, false, stair || shaftAt || cave || door ? null : portalAt(floor.boss.x, floor.boss.y, false));
   // (EXITS: the cave's mouth, and the fifth floor's, are wall to whatever walks, flies, is shot or looks: the one until its
   // wall has crumbled (game.ts), the other for good: nobody goes back into it)
   for (const d of [cave, mouth]) {
@@ -872,6 +879,8 @@ export function makeDungeon(depth: number, seed: number): Level {
       level.open[i] = 0;
     }
   }
+  for (const c of channels) for (const i of channelOpen(floor, c)) level.walk[i] = 0;
+  if (channels.length) level.channels = channels;
   // (the shaft's timbers, and its middle while the cage is up, are stood on by nobody)
   if (shaftAt) for (const i of [...shaftTiles(floor, shaftAt), shaftAt.y * floor.w + shaftAt.x]) level.walk[i] = 0;
   const solidAt = new Uint8Array(floor.w * floor.h);
@@ -888,6 +897,7 @@ export function makeDungeon(depth: number, seed: number): Level {
   level.ways = { stair, stairs, way, gate: g, shaft: shaftAt ? { x: shaftAt.x, y: shaftAt.y, state: 'empty', t: 0 } : null };
   if (cave) level.ways.cave = { spot: cave, state: 'wall', t: 0 };
   if (mouth) level.ways.mouth = mouth;
+  if (door) level.ways.exit = door;
   // (THE FIRST FIVE FLOORS: the floor laid with its own pieces, last, by dice of its own: game/first5.ts)
   level.dress = dress(level, depth, seed);
   return level;

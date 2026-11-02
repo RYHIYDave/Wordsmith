@@ -28,6 +28,7 @@
 // portal home in the boss's hall.
 
 import { SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
+import type { PrisonDoor } from './prison_way';
 import type { DoorSpot, Floor } from './types';
 
 /**
@@ -207,6 +208,8 @@ export interface Ways {
    * ('open': walking into the mouth takes him down to floor 5).
    */
   cave?: { spot: DoorSpot; state: 'wall' | 'falling' | 'open'; t: number } | null;
+  /** FLOOR 3, PRISON_EXIT: the door out the back of his hall, its way down in place of a stairwell (game/prison_way.ts). */
+  exit?: PrisonDoor | null;
   /** EXITS, FLOOR 5: the cave's other end, in a back wall of the first room, where he comes in from floor 4 (nobody goes back into it). */
   mouth?: DoorSpot | null;
   /** EXITS, IN TOWN: the gate barred (the Fleshmancer not yet beaten): it does not rise. */
