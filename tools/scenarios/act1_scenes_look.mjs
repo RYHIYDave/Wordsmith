@@ -1,4 +1,5 @@
-// ACT1_SCENES in the game: a still of each scene of a floor of the descent (game/act1_dress.ts), the hero a few steps before it.
+// ACT1_SCENES in the game: a still of each scene of a floor of the descent (game/act1_dress.ts), the hero a few steps before it
+// (NEAR: how many, 5).
 //   DEPTH=6 SEED=9 node tools/playtest.mjs --file dist/act1_scenes.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/act1_scenes_look.mjs --out shots/a1sc
 export default async function (page, snap) {
   const depth = Number(process.env.DEPTH || 6);
@@ -22,7 +23,7 @@ export default async function (page, snap) {
     seen.set(s.name, k);
     if (k > 2) continue;
     // (the hero on the scene's own ground, a few steps before it: walked to from it, as far toward the eye as six steps go)
-    await page.evaluate(([x, y]) => {
+    await page.evaluate(([x, y, near]) => {
       const g = window.__dbg.game();
       const L = g.level;
       const f = L.floor;
@@ -47,12 +48,12 @@ export default async function (page, snap) {
         const ty = Math.floor(i / f.w);
         const dx = tx - Math.floor(x);
         const dy = ty - Math.floor(y);
-        const sc = dx + dy - Math.abs(dx - dy) * 0.6 - Math.abs(dx + dy - 5) * 1.5;
+        const sc = dx + dy - Math.abs(dx - dy) * 0.6 - Math.abs(dx + dy - near) * 1.5;
         if (sc > score) { score = sc; best = [tx + 0.5, ty + 0.5]; }
       }
       if (best) { h.x = best[0]; h.y = best[1]; }
       h.fx = -0.7; h.fy = -0.7;
-    }, [s.x, s.y]);
+    }, [s.x, s.y, Number(process.env.NEAR || 5)]);
     await page.waitForTimeout(1500);
     await snap(`${s.name.replace(/[^a-z]+/gi, '_')}_${k}`);
   }

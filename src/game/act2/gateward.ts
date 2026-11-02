@@ -873,6 +873,65 @@ function propsOf(rng: RNG, plan: Plan, f: Floor, bells: BellsPlan): PropSpot[] {
 // THE DRESSER
 
 /** The art's names, as the dresser lays them (art/floor11.ts and art/act2_set.ts). */
+/**
+ * GW_SCENES: THE WARD'S THINGS WHERE THEY BELONG (his words, 1 Nov 2026, 10:05: “Can you make sure the doodads go in places that
+ * seem proper as opposed to randomly?”; floor by floor, “With each floor (Recommended)”, pictures first). On, what stood about
+ * at random in the squares, the yard and the court stands together as one of these scenes: against a house front that stands
+ * (`front`: its first part's tile with the face behind it, the rest along the front by `du` and out from it by `dv`), or out
+ * in the square's outer band near its stalls (`open`, turned any of four ways). The stalls round the edges, the hearts of the
+ * squares, the lanes' things and the house fronts' as they were; what lies (the dome's shards, the ink) still lies about.
+ */
+export const GW_SCENES = { on: true };
+interface GWPart {
+  du: number;
+  dv: number;
+  name: string;
+  solid: boolean;
+  frames?: number;
+}
+interface GWScene {
+  name: string;
+  /** Against a house front (else out in the open). */
+  front: boolean;
+  /** The first `need` parts must all be laid for it to be laid at all. */
+  need: number;
+  parts: GWPart[];
+}
+const GS = (du: number, dv: number, name: string, frames = 1): GWPart => ({ du, dv, name, solid: true, frames });
+const GL = (du: number, dv: number, name: string, frames = 1): GWPart => ({ du, dv, name, solid: false, frames });
+/** Each kind of area's scenes, the first that fit laid (a big market two). */
+const GW_SCENE_SETS: Readonly<Record<'market' | 'square' | 'yard' | 'court' | 'crier', readonly GWScene[]>> = {
+  market: [
+    // (the produce come off the carts: a handcart, its baskets and its sacks, out by the stalls)
+    { name: 'the produce cart', front: false, need: 2, parts: [GS(0, 0, 'handcart', 2), GS(2, 0, 'baskets of produce'), GS(0, 2, 'sacks of grain'), GS(2, 2, 'baskets of produce')] },
+    // (the carters' corner: the trough against a house, the hay beside it)
+    { name: 'the trough', front: true, need: 2, parts: [GS(0, 0, 'the horse trough'), GS(2, 0, 'hay bales'), GS(3, 1, 'hay bales')] },
+    // (the notices: the board against a house, the Order's lantern by it, its ink run down below)
+    { name: 'the notice board', front: true, need: 1, parts: [GS(0, 0, 'the notice board', 2), GS(2, 0, "the Order's hooded lantern", 2), GL(0, 1, 'an ink spill', 2), GL(1, 2, "the Order's ink bars", 2)] },
+    // (a cellar's hatch at a house front's foot, its stores brought up beside it)
+    { name: 'the cellar', front: true, need: 1, parts: [GS(0, 0, "a cellar's hatch", 2), GS(2, 0, 'crates'), GS(3, 0, 'barrel')] },
+  ],
+  square: [
+    { name: 'the notice board', front: true, need: 1, parts: [GS(0, 0, 'the notice board', 2), GS(2, 0, "the Order's hooded lantern", 2), GL(0, 1, 'an ink spill', 2)] },
+    // (a house the siege brought down: its rubble against what stands, the dome's shards about it)
+    { name: 'the fallen house', front: true, need: 2, parts: [GS(0, 0, 'rubble of the siege', 2), GS(1, 1, 'rubble of the siege', 2), GL(3, 1, 'a shard of the dome', 4), GL(0, 3, 'a shard of the dome', 4)] },
+    { name: 'the cellar', front: true, need: 1, parts: [GS(0, 0, "a cellar's hatch", 2), GS(2, 0, 'crates'), GS(3, 0, 'handcart', 2)] },
+  ],
+  yard: [
+    // (the Order's: its cart unloaded against the yard's wall, the crates of stolen voices and the blank paper by it, its lantern)
+    { name: "the Order's cart", front: true, need: 2, parts: [GS(1, 1, "the carters' cart, the Order's", 4), GS(0, 0, 'a crate of stolen voices', 2), GS(3, 0, 'bundles of blank paper', 2), GS(4, 0, 'a crate of stolen voices', 2), GS(5, 1, "the Order's hooded lantern", 2), GL(2, 3, "the Order's ink bars", 3)] },
+    { name: "the Order's stores", front: true, need: 2, parts: [GS(0, 0, 'crates', 2), GS(1, 0, 'bundles of blank paper', 2), GS(2, 0, 'crates', 2), GL(1, 1, 'an ink spill', 3)] },
+  ],
+  court: [
+    // (the stable yard: the trough and the hay against its wall, the well in it)
+    { name: 'the stable yard', front: true, need: 2, parts: [GS(0, 0, 'the horse trough'), GS(2, 0, 'hay bales'), GS(3, 0, 'hay bales')] },
+  ],
+  crier: [
+    // (the siege's work at his square's edge: rubble against a house, a handcart and sacks left by it)
+    { name: 'the fallen house', front: true, need: 2, parts: [GS(0, 0, 'rubble of the siege', 2), GS(2, 1, 'handcart', 2), GS(3, 0, 'sacks of grain')] },
+  ],
+};
+
 export const GW_NAMES = {
   gate: 'the city gate, broken',
   muffled: 'the market bell (the Muffled Bell)',
@@ -1165,31 +1224,107 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       laid++;
     }
   };
+  // ---- GW_SCENES: a scene laid in area `ai`: against a house front that stands (along it, out from it), or in its outer band
+  const used = new Map<string, number>();
+  const layScene = (sc: GWScene, at: [number, number][], alongX: boolean | null, k: number): boolean => {
+    for (const [x, y] of at) {
+      const spots = sc.parts.map((p) => {
+        if (alongX === true) return [x + p.du, y + p.dv] as [number, number];
+        if (alongX === false) return [x + p.dv, y + p.du] as [number, number];
+        const [a, b] = k === 0 ? [p.du, p.dv] : k === 1 ? [-p.dv, p.du] : k === 2 ? [-p.du, -p.dv] : [p.dv, -p.du];
+        return [x + a, y + b] as [number, number];
+      });
+      // (against a front: what stands has the house at its back, and nothing standing beside it but its own scene's)
+      const byFront = (x0: number, y0: number): boolean => {
+        if (!free(x0, y0, false)) return false;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if ((!dx && !dy) || !floorAt(x0 + dx, y0 + dy)) continue;
+          if (L.walk[(y0 + dy) * W + x0 + dx] !== 1 && !props.slice(-sc.parts.length).some((q) => q.tx === x0 + dx && q.ty === y0 + dy)) return false;
+        }
+        return true;
+      };
+      const fits = (i: number): boolean => (sc.front && sc.parts[i].solid ? byFront(spots[i][0], spots[i][1]) : free(spots[i][0], spots[i][1], sc.parts[i].solid)) && !spots.some((q, j) => j < i && q[0] === spots[i][0] && q[1] === spots[i][1]);
+      let ok = true;
+      for (let i = 0; i < sc.need && ok; i++) ok = fits(i);
+      if (!ok) continue;
+      sc.parts.forEach((p, i) => {
+        if (i >= sc.need && !fits(i)) return;
+        put(p.name, spots[i][0], spots[i][1], p.solid, rng.int(0, (p.frames ?? 1) - 1));
+        // (a little room round what stands)
+        if (p.solid) for (const [ex, ey] of [[1, 0], [0, 1]]) if (floorAt(spots[i][0] + ex, spots[i][1] + ey)) keep[(spots[i][1] + ey) * W + spots[i][0] + ex] = 1;
+      });
+      (out.scenes ??= []).push({ x: x + 0.5, y: y + 0.5, name: sc.name });
+      used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
+      return true;
+    }
+    return false;
+  };
+  const scenesIn = (ai: number, kind: keyof typeof GW_SCENE_SETS, want: number): void => {
+    const r = P.rects[ai];
+    const [cx, cy] = midOf(r);
+    // (the tiles against a house front that stands: the face behind them up the screen, along x or along y)
+    const fronts: { at: [number, number]; alongX: boolean }[] = [];
+    const band: [number, number][] = [];
+    for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) {
+      if (!floorAt(x, y)) continue;
+      if (stands(x, y - 1, true)) fronts.push({ at: [x, y], alongX: true });
+      else if (stands(x - 1, y, false)) fronts.push({ at: [x, y], alongX: false });
+      const u = Math.abs(x + 0.5 - cx) / ((r[2] - r[0]) / 2);
+      const v = Math.abs(y + 0.5 - cy) / ((r[3] - r[1]) / 2);
+      if (Math.max(u, v) > 0.45 && Math.max(u, v) < 0.8) band.push([x, y]);
+    }
+    rng.shuffle(fronts);
+    rng.shuffle(band);
+    // (the scenes not yet laid on the floor first, then the rest, in an order of the dice's)
+    const order = rng.shuffle([...GW_SCENE_SETS[kind]]).sort((a, b) => (used.get(a.name) ?? 0) - (used.get(b.name) ?? 0));
+    let laid = 0;
+    for (const sc of order) {
+      if (laid >= want) break;
+      let done = false;
+      if (sc.front) {
+        for (const al of [true, false]) if (!done) done = layScene(sc, fronts.filter((q) => q.alongX === al).map((q) => q.at), al, 0);
+      } else for (let k = 0; k < 4 && !done; k++) done = layScene(sc, band.slice(0, 40), null, (k + rng.int(0, 3)) % 4);
+      if (done) laid++;
+    }
+  };
+
   const hearts = rng.shuffle(['the herald, gagged', 'the town well', 'the festival maypole', 'the town well', 'the festival maypole', 'the herald, gagged']);
   let nh = 0;
+  const sc = GW_SCENES.on;
   P.kinds.forEach((k, ai) => {
     const r = P.rects[ai];
     const big = r[2] - r[0] >= 13 && r[3] - r[1] >= 13;
     if (k === 'crier') {
       stalls(ai, 9);
-      about(ai, ['rubble of the siege', 'handcart', 'sacks of grain'], 3, true);
+      if (sc) scenesIn(ai, 'crier', 1);
+      else about(ai, ['rubble of the siege', 'handcart', 'sacks of grain'], 3, true);
       about(ai, ['a shard of the dome'], 3, false, 4);
     } else if (k === 'market') {
       stalls(ai, big ? 6 : 7);
       heart(ai, hearts[nh++ % hearts.length]);
-      about(ai, ['handcart', 'the notice board', 'the horse trough', 'hay bales', 'baskets of produce', 'sacks of grain'], big ? 3 : 2, true);
-      if (rng.chance(0.4)) about(ai, ["a cellar's hatch"], 1, true, 2);
+      if (sc) scenesIn(ai, 'market', big ? 2 : 1);
+      else {
+        about(ai, ['handcart', 'the notice board', 'the horse trough', 'hay bales', 'baskets of produce', 'sacks of grain'], big ? 3 : 2, true);
+        if (rng.chance(0.4)) about(ai, ["a cellar's hatch"], 1, true, 2);
+      }
       about(ai, ['a shard of the dome', 'an ink spill', "the Order's ink bars"], 2, false, 2);
     } else if (k === 'square') {
       heart(ai, rng.chance(0.7) ? hearts[nh++ % hearts.length] : null);
-      about(ai, ['the notice board', 'rubble of the siege', 'handcart', "the Order's hooded lantern", "a cellar's hatch"], 2, true, 2);
+      if (sc) scenesIn(ai, 'square', 1);
+      else about(ai, ['the notice board', 'rubble of the siege', 'handcart', "the Order's hooded lantern", "a cellar's hatch"], 2, true, 2);
       about(ai, ['a shard of the dome', 'an ink spill'], 2, false, 2);
     } else if (k === 'yard') {
-      about(ai, ["the carters' cart, the Order's"], 1, true, 4);
-      about(ai, ['a crate of stolen voices', 'bundles of blank paper', 'crates', "the Order's hooded lantern"], 4, true, 2);
-      about(ai, ["the Order's ink bars", 'an ink spill'], 2, false, 3);
+      if (sc) scenesIn(ai, 'yard', 2);
+      else {
+        about(ai, ["the carters' cart, the Order's"], 1, true, 4);
+        about(ai, ['a crate of stolen voices', 'bundles of blank paper', 'crates', "the Order's hooded lantern"], 4, true, 2);
+        about(ai, ["the Order's ink bars", 'an ink spill'], 2, false, 3);
+      }
     } else if (k === 'court') {
-      about(ai, ['the horse trough', 'hay bales', 'the town well'], 3, true);
+      if (sc) {
+        scenesIn(ai, 'court', 1);
+        heart(ai, 'the town well');
+      } else about(ai, ['the horse trough', 'hay bales', 'the town well'], 3, true);
       about(ai, ['a shard of the dome'], 1, false, 4);
     }
   });
