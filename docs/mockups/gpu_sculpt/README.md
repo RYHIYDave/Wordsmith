@@ -227,3 +227,9 @@ change 197 → 77 (2.6); the demon standing 175 → 74 (2.4); its rake 188 → 7
 In the side painter (a worker), he reported: “Chip not available there” (its reason line asked for). So on his phone the
 chip is about two and a half times as fast, not many times: his phone's CPU is much quicker than this machine's (the man 27 ms
 there against 97 here); and, as it stands, the side painter's worker gets no chip there, where the game paints his frames.
+
+His second run (19:19, the page with its worker check, again opened in the Claude app): the demon standing 169 → 80 ms (2.1
+times as fast), its rake 178 → 69 (2.6); "In the side painter: chip not available there · the painter stopped with an error";
+"Worker check: a worker could not run here". So in the Claude app's file viewer no worker runs at all (not even the tiny
+check): the side painter's question is not answered there. The game itself runs at his web address, where its side painter's
+workers do run; the page is to be opened there (the main chat's to place beside the game) to answer it.
