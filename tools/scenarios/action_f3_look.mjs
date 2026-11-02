@@ -1,6 +1,7 @@
 // FLOOR 3, MORE ACTION in the game (ACTION_F3 on in the page built for it): the green troll's rampage and his bull rush, played
 // by the game's own rules in a big room: each set by the hero, ready to begin, the game stepped on until it begins and then to each
-// moment of it, then pictured (as tools/scenarios/action_f4_look.mjs).
+// moment of it, then pictured (as tools/scenarios/action_f4_look.mjs); and the Boneward behind its shield wall, struck from before it
+// (the blow glances off) and from behind (it is hurt).
 //   node tools/playtest.mjs --file dist/action_f3.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/action_f3_look.mjs --out shots/af3
 export default async function (page, snap) {
   await page.evaluate(() => { const d = window.__dbg; d.saving(false); if (d.paintDefer) d.paintDefer.on = false; d.run('warrior', 4242); d.seasoned(3); d.autoLevel = false; d.autoWords = false; d.god = true; });
@@ -57,4 +58,26 @@ export default async function (page, snap) {
   await at(0.6, 'rush_a_pawing');
   await at(0.55, 'rush_b_run');
   await at(0.6, 'rush_c_stop');
+  // THE BONEWARD'S SHIELD WALL: standing behind it; struck from before it, the blow glancing off; struck from behind, hurt
+  await page.evaluate(() => {
+    const g = window.__dbg.game();
+    g.monsters = []; g.perils = []; g.zones = [];
+    const h = g.hero;
+    const m = g.spawn('boneward', h.x - 2.0, h.y + 0.5, -1, 0, false, g.rng);
+    g.monsters = [m];
+    m.state = 'chase'; m.cd = 99; m.speed = 0; m.moveCd = [99, 99, 99];
+    const d = Math.hypot(h.x - m.x, h.y - m.y);
+    m.fx = (h.x - m.x) / d; m.fy = (h.y - m.y) / d;
+    window.__look = m;
+  });
+  await at(0.3, 'wall_a_behind_shield');
+  await page.evaluate(() => { const g = window.__dbg.game(); g.hitMonster(window.__look, 0, 1, false); });
+  await at(0.1, 'wall_b_glance');
+  await page.evaluate(() => {
+    const g = window.__dbg.game();
+    const m = window.__look;
+    g.hero.x = m.x - m.fx * 1.4; g.hero.y = m.y - m.fy * 1.4;
+    g.hitMonster(m, 0, 1, false);
+  });
+  await at(0.1, 'wall_c_struck_from_behind');
 }
