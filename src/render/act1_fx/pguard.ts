@@ -86,7 +86,8 @@ const JAV_FX: Act1Fx = {
       const x = p.x - p.fx * (p.c - j.x);
       const y = p.y - p.fy * (p.c - j.x);
       const [sx, sy] = c.at(x, y);
-      c.stand(x + y, s, sx, sy - j.z / 2);
+      // (its height is in its picture: painted at it over the picture's floor point)
+      c.stand(x + y, s, sx, sy);
       return;
     }
     const u = p.t - p.hit;

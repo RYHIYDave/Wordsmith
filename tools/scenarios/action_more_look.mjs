@@ -37,7 +37,7 @@ const CASES = [
   { name: 'orderly', depth: 14, kind: 'orderly', n: 2, ready: 1, d: 5, snaps: [[0.6, 'lane'], [0.5, 'careering'], [0.6, 'crashed']] },
   { name: 'ph_rap', depth: 14, kind: 'physician', boss: true, n: 5, ready: 0, d: 2.5, snaps: [[0.75, 'held_marked'], [0.22, 'cracked']] },
   { name: 'ph_draw', depth: 14, kind: 'physician', boss: true, n: 5, ready: 1, d: 3, snaps: [[0.9, 'lane'], [0.2, 'needle'], [1.3, 'word_up']] },
-  { name: 'ph_diag', depth: 14, kind: 'physician', boss: true, n: 5, ready: 2, d: 5, clear: true, snaps: [[1.0, 'beam'], [0.9, 'filling'], [0.55, 'dark'], [0.6, 'held'], [0.5, 'strike'], [0.55, 'scorched']] },
+  { name: 'ph_diag', depth: 14, kind: 'physician', boss: true, n: 5, ready: 2, d: 5, clear: true, snaps: [[1.0, 'beam'], [0.9, 'filling'], [0.55, 'dark'], [0.6, 'held'], [0.45, 'strike'], [0.55, 'scorched']] },
   { name: 'ph_rounds', depth: 14, kind: 'physician', boss: true, n: 5, ready: 4, d: 3, snaps: [[0.8, 'raised_marked'], [0.35, 'first_ring'], [1.2, 'third_ring']] },
   { name: 'warden', depth: 15, kind: 'bookwarden', n: 2, ready: 1, d: 5, snaps: [[0.9, 'raised'], [0.4, 'flying'], [0.8, 'landing']] },
   // (floors 16 to 19: the High City's)
@@ -89,7 +89,7 @@ export default async function (page, snap) {
         const idle = { mx: 0, my: 0, aimX: 0, aimY: 0, fire: false, approach: false, face: false, cast: false, castX: 0, castY: 0, hold: false, evade: false, evadeX: 0, evadeY: 0, potion: false, interact: false };
         const hx = g.hero.x, hy = g.hero.y;
         for (let k = 0; k < 240; k++) { g.hero.invuln = 1; g.hero.life = g.hero.d.maxLife; window.__step(1 / 30, idle); g.hero.x = hx; g.hero.y = hy; }
-        for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'bossIntro') g.events.splice(i, 1);
+        for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'bossIntro' || g.events[i].t === 'floorName') g.events.splice(i, 1);
       }, [C.depth, bossy]);
       await page.waitForTimeout(Number(process.env.SETTLE || 5000));
     }
@@ -178,15 +178,16 @@ export default async function (page, snap) {
         if (m.moveCd) for (let i = 0; i < m.moveCd.length; i++) if (i !== C.ready) m.moveCd[i] = 99;
         if (lady && lady.moveCd) for (let i = 0; i < lady.moveCd.length; i++) lady.moveCd[i] = 99;
       }
-      // (her name's banner, woken again for each, not over the picture)
-      for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'bossIntro') g.events.splice(i, 1);
+      // (her name's banner, woken again for each, and a place's name as he is set in it: not over the picture)
+      for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'bossIntro' || g.events[i].t === 'floorName') g.events.splice(i, 1);
       return m.state === 'act' ? m.act.id : m.state === 'windup' ? `windup ${m.move}` : `none (${m.state}, d ${Math.hypot(h.x - m.x, h.y - m.y).toFixed(1)}, sees ${g.sees(m.x, m.y, h.x, h.y)})`;
     }, [C, idle]);
     console.log(`${C.name}: ${got}`);
     for (const [secs, name] of C.snaps) {
       const at = await page.evaluate(([secs, idle]) => {
         const g = window.__dbg.game();
-        for (let k = 0; k < Math.round(secs * 30); k++) { g.hero.invuln = 0; g.hero.life = 1e6; window.__step(1 / 30, idle); g.hero.life = g.hero.d.maxLife; }
+        for (let k = 0; k < Math.round(secs * 30); k++) { const was = g.hero.d.maxLife; g.hero.invuln = 0; g.hero.d.maxLife = 1e6; g.hero.life = 1e6; window.__step(1 / 30, idle); g.hero.d.maxLife = was; g.hero.life = was; }
+        for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'floorName' || g.events[i].t === 'bossIntro') g.events.splice(i, 1);
         const m = g.monsters.find((q) => q.act) ?? null;
         return `${m && m.act ? `${m.act.id} ${m.act.t.toFixed(2)}` : '-'}; ${g.perils.filter((p) => p.a1).map((p) => `${p.a1} ${p.t.toFixed(2)}`).slice(0, 3).join(', ')}`;
       }, [secs, idle]);
