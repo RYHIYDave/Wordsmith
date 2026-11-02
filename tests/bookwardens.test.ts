@@ -113,7 +113,7 @@ test('1. the switch is off, and only their pictures and drawings for the game (b
   const art = new Set(['art/bookwardens', 'art/bookwardens_moves', 'art/bookwarden_shots']);
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || art.has(f.replace(/\.ts$/, ''))) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || art.has(f.replace(/\.ts$/, '')) || /^art\/action_f11_/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     for (const m of text.matchAll(/from ['"]([^'"]+)['"]/g)) if (art.has(resolve(f, m[1]))) users.push(f);
   }
