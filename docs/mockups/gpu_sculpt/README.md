@@ -78,17 +78,67 @@ export const GPU_SCULPT = { on: true };
 That is all. `draw` (src/dev/sculpt.ts) already asks the chip; the side painter's workers (render/painter.ts, `Painter`, its
 hero lane too) run the game's own script, so they use the chip through their own `OffscreenCanvas`, and the page uses its
 own canvas where it paints for itself. No message, no new worker, no change to `paintWorkerMain`. Each worker makes its own
-context the first time it paints a sculpted frame (a shader build, the self-test and the timing: about 0.9 s here on
-SwiftShader with `allowSlow`, of which the CPU's own part, `listMarch` on the small figure twice, is about 0.3 s) and gives it back when the worker is ended at the end of a floor. The module adds about 38 KB to
-the release (minified).
+context the first time it paints a sculpted frame (a shader build, the self-test and its timing: on SwiftShader with
+`allowSlow` about 1.7 s, of which the CPU's own part, `listMarch` on the small figure twice, is about 0.3 s) and gives it back
+when the worker is ended at the end of a floor. The module adds about 38 KB to the release (minified).
 
-Worth knowing, not needed: with the chip on, the Warlock's demon and change frames cost about what the man's do now, so the
-side painter's second hero lane (`Painter.heroLane`) and `HEAVY_ART` (art/warlock_art.ts) could be revisited later; both
-work as they are.
+Worth knowing, not needed: if a real chip brings the demon's frames near their CPU share (35 to 47 ms here, against about
+600 now: see Speed), the side painter's second hero lane (`Painter.heroLane`) and `HEAVY_ART` (art/warlock_art.ts) could be
+revisited; both work as they are.
 
 ## How the chip's frames differ from the CPU's
 
-FILL
+In Playwright's Chromium (`node tools/gpu_sculpt_check.mjs diff`), each frame painted twice, in two workers as the side
+painter paints: the switch off (the CPU, exactly as now) and on (the chip), the two pictures compared pixel by pixel. A
+pixel that differs is counted as **edge** (there in one, empty in the other), **ink** (the outline's ink in one and not the
+other) or **tone** (both coloured, another colour). The share is of the figure's own pixels.
+
+**What was compared (a sample, in part).** Every frame, both views: the Tinkerer (654 pictures), her Golem and Contraption
+(2,082), the Brawler (1,142), and the Warlock as a man, blazing and the change (890). The demon: every frame of its
+standing, running, both rakes and its Damning from in front, and 5 of its 10 leap frames; then the run was stopped for time
+(SwiftShader takes 10 to 30 s a demon frame). Its landing and being struck from in front, and the other 5 leap frames, were
+not compared. The demon from behind (every list) and its burning out from in front: **a sample, every 6th frame of every
+list** (65 pictures). With the pictures' own frames (below), 5,131 pictures compared in all.
+
+| class | frames read | pictures compared | differing pixels: median | mean | worst (frame) | frames over 1% | edge / ink / tone pixels | painting, CPU | painting, chip |
+|---|---|---|---|---|---|---|---|---|---|
+| warlock | 1717 | 1163 | 0.000% | 0.028% | 0.242% (warlock:demon/back.walk[24], 30 of 12408) | 0 | 2 / 6 / 3880 | 298 s | 6212 s |
+| tinkerer | 722 | 654 | 0.000% | 0.000% | 0.085% (tinkerer:dungeon/back.idle[42], 1 of 1181) | 0 | 0 / 0 / 1 | 72 s | 969 s |
+| tinkerer-kit | 2316 | 2082 | 0.000% | 0.000% | 0.161% (golem:cannon/front.clips.attack.frames[34], 6 of 3736) | 0 | 3 / 3 / 10 | 135 s | 1706 s |
+| brawler | 1256 | 1142 | 0.000% | 0.000% | 0.112% (brawler:dungeon/front.clips.reel.frames[10], 2 of 1780) | 0 | 0 / 2 / 0 | 156 s | 1231 s |
+
+| group | frames read | pictures compared | differing pixels: median | mean | worst (frame) | frames over 1% | edge / ink / tone pixels | painting, CPU | painting, chip |
+|---|---|---|---|---|---|---|---|---|---|
+| the man | 622 | 610 | 0.000% | 0.004% | 0.152% (warlock:dungeon/front.idle[19], 3 of 1978) | 0 | 1 / 2 / 50 | 69 s | 960 s |
+| the change | 192 | 96 | 0.061% | 0.069% | 0.236% (warlock:dungeon/back.clips.change.frames[25], 27 of 11457) | 0 | 0 / 0 / 784 | 55 s | 1753 s |
+| blazing (his own standing and running) | 622 | 184 | 0.000% | 0.013% | 0.207% (warlock:blaze/front.idle[21], 4 of 1930) | 0 | 1 / 2 / 44 | 18 s | 267 s |
+| the demon | 265 | 257 | 0.072% | 0.078% | 0.242% (warlock:demon/back.walk[24], 30 of 12408) | 0 | 0 / 1 / 2934 | 150 s | 3154 s |
+| the demon burning out | 16 | 16 | 0.000% | 0.036% | 0.118% (warlock:demon/back.clips.change.frames[0], 16 of 13548) | 0 | 0 / 1 / 68 | 6 s | 78 s |
+| the Tinkerer | 722 | 654 | 0.000% | 0.000% | 0.085% (tinkerer:dungeon/back.idle[42], 1 of 1181) | 0 | 0 / 0 / 1 | 72 s | 969 s |
+| her Golem | 1764 | 1530 | 0.000% | 0.000% | 0.161% (golem:cannon/front.clips.attack.frames[34], 6 of 3736) | 0 | 3 / 3 / 10 | 121 s | 1593 s |
+| her Contraption | 552 | 552 | 0.000% | 0.000% | 0.000% (contraption:vials/front.tumble[0], 0 of 124) | 0 | 0 / 0 / 0 | 14 s | 112 s |
+| the Brawler | 1256 | 1142 | 0.000% | 0.000% | 0.112% (brawler:dungeon/front.clips.reel.frames[10], 2 of 1780) | 0 | 0 / 2 / 0 | 156 s | 1231 s |
+
+(Frames read counts every frame of every list, both views; a frame that is the same picture as one before it, by the very
+same sums, is painted once and compared once.)
+
+**Not one frame differs on more than 1% of its pixels, none falls back to the CPU, and none differs in size or anchor.**
+The man, the Tinkerer, the Brawler, her Golem and Contraption: the median frame differs in no pixel at all. The demon and the
+change, the biggest and most crowded figures: about 0.07% (some 10 pixels of 14,000). **The worst frame: the demon running,
+seen from behind, frame 24: 30 of its 12,408 pixels (0.24%), every one tone**; next, the change from behind, frame 25: 27
+of 11,457 (0.24%), all tone. Why: where two tones of a material meet, a pixel whose light is within a hair of the line
+between them falls one side in the CPU's 64-bit sums and the other in the chip's 32-bit sums; each such pixel is exactly one
+step of its material's own ramp away (checked on the rake at the strike: all 14 one step). Edge and ink differences are
+almost nil (in all, 5 edge and 11 ink pixels over every picture compared). Seen side by side at six times, the rake at the
+strike cannot be told apart.
+
+The pictures' own frames (`pictures/`): the Warlock standing 1 of 1,968 pixels; his bolt 0 of 1,978; blazing 1 of 1,971;
+mid-change 6 of 12,650; the demon standing 9 of 15,150; its rake at the strike 14 of 15,561; its Damning 5 of 14,735; the
+Tinkerer 0 of 1,430; her Golem 0 of 3,805; the Brawler 0 of 1,671. The film's: the demon's rake, 32 frames, median 0.063%,
+worst 0.099% (frame 5, 15 of 15,140, all tone); the change, 48 frames, median 0.058%, worst 0.128% (frame 40, 18 of 14,024,
+all tone).
+
+Every frame's numbers: `data/diff_*.json` (`node tools/gpu_sculpt_check.mjs report` makes these tables).
 
 ## Speed
 
@@ -118,12 +168,24 @@ own phone.
 | the Tinkerer standing | 71 | 461 | 14 |
 | the Brawler standing | 129 | 689 | 14 |
 
-(The Warrior's two runs, 21 and 48 ms, show this machine's noise. Making the chip ready, once a page or worker: a shader
-build and the self-test, 0.9 s here.)
+(The Warrior's two runs, 21 and 48 ms, show this machine's noise.)
 
 All of each class's frames painted, both ways (every frame of every list, each painted once; the times of the run below):
 
-FILL_TOTALS
+| | pictures painted | CPU now | on SwiftShader |
+|---|---|---|---|
+| the Warlock as a man, every frame | 610 | 69 s | 960 s |
+| blazing (his own standing and running), every frame | 184 | 18 s | 267 s |
+| the change, every frame | 96 | 55 s | 1,753 s |
+| the demon and its burning out (624 pictures in a run, docs/cheap_heroes.md): **an estimate**, its 273 compared frames' mean (572 ms and 11,837 ms) times 624 | 624 | about 357 s | about 7,390 s |
+| the Warlock in a run, all (**an estimate**, the four rows) | 1,514 | about 500 s | about 10,370 s |
+| the Tinkerer, every frame | 654 | 72 s | 969 s |
+| her Golem and Contraption, every frame | 2,082 | 135 s | 1,706 s |
+| the Brawler, every frame | 1,142 | 156 s | 1,231 s |
+
+These are SwiftShader's times, measured (but for the two estimates) and of no use for a phone, as above. Times in the
+every-frame runs were taken with two runs at once on the two cores, so both columns are higher than a quiet machine's (the
+quiet speed run above: the demon 600 ms and 10 s a frame).
 
 ## The phone test page
 
@@ -149,4 +211,5 @@ art chat publishes it as a page and sends him the link.
 - `tools/gpu_sculpt_check.mjs`: in Playwright's Chromium, every frame painted both ways (`diff`), the cost table (`speed`),
   the pictures' frames (`pics`), the tables below (`report`). `tools/gpu_sculpt_pictures.py` makes the picture and the film.
   `tools/gpu_sculpt_emul.ts`: `listMarch` held against the pinned hashes. `tools/gpu_speed_page.mjs` builds the test page.
-- `pictures/gpu_side_by_side.png`, `pictures/gpu_side_by_side.mp4`: for the owner. `data/`: every frame's numbers.
+- `pictures/gpu_side_by_side.png`, `pictures/gpu_side_by_side.mp4`: for the owner. `data/`: every frame's numbers
+  (`diff_warlock.json` the every-frame run as far as it went, `diff_warlock_sample.json` the demon's sample).

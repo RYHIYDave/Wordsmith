@@ -34,9 +34,29 @@ if (mode === 'report') {
   };
   const rows = [];
   for (const who of ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler']) {
-    const f = path.join(OUT, `diff_${who}.json`);
-    if (!fs.existsSync(f)) continue;
-    for (const r of JSON.parse(fs.readFileSync(f, 'utf8'))) rows.push({ ...r, who, group: group(r.name) });
+    for (const tag of ['', '_sample']) {
+      const f = path.join(OUT, `diff_${who}${tag}.json`);
+      if (!fs.existsSync(f)) continue;
+      for (const r of JSON.parse(fs.readFileSync(f, 'utf8'))) rows.push({ ...r, who, group: group(r.name), sample: !!tag });
+    }
+  }
+  // the demon's mean painting time a frame, both ways (for the estimate of all its frames)
+  const dem = rows.filter((r) => !r.same && r.name.startsWith('warlock:demon'));
+  if (dem.length) console.log(`demon frames compared: ${dem.length}; mean a frame: CPU ${(dem.reduce((a, r) => a + r.ms[0], 0) / dem.length).toFixed(0)} ms, chip ${(dem.reduce((a, r) => a + r.ms[1], 0) / dem.length).toFixed(0)} ms`);
+  // the pictures' own frames
+  const pd = path.join(OUT, 'pics');
+  if (fs.existsSync(pd)) {
+    const pics = [];
+    for (const f of fs.readdirSync(pd).filter((x) => x.startsWith('row'))) pics.push(JSON.parse(fs.readFileSync(path.join(pd, f), 'utf8')));
+    for (const k of [0, 1]) {
+      const d = path.join(pd, `film${k}`);
+      if (!fs.existsSync(d)) continue;
+      const fr = fs.readdirSync(d).map((f) => JSON.parse(fs.readFileSync(path.join(d, f), 'utf8')));
+      const sh = fr.map((r) => r.diff.diff / Math.max(1, r.diff.fig)).sort((a, b) => a - b);
+      const w = fr.reduce((a, r) => (r.diff.diff / Math.max(1, r.diff.fig) > a.diff.diff / Math.max(1, a.diff.fig) ? r : a));
+      console.log(`film: ${fr[0].label}: ${fr.length} frames; differing pixels median ${(100 * med(sh)).toFixed(3)}%, worst ${(100 * sh[sh.length - 1]).toFixed(3)}% (frame ${w.i}, ${w.diff.diff} of ${w.diff.fig}; edge ${w.diff.edge} ink ${w.diff.ink} tone ${w.diff.tone})`);
+    }
+    for (const r of pics.sort((a, b) => a.label.localeCompare(b.label))) console.log(`picture: ${r.label}: ${r.diff.diff} of ${r.diff.fig}`);
   }
   const table = (key) => {
     const by = new Map();
@@ -81,6 +101,9 @@ const lists = async (who) => page.evaluate((w) => window.GPUCHECK.lists(w), who)
 const frame = async (who, li, i, pixels = false) => page.evaluate(([w, l, f, p]) => window.GPUCHECK.frame(w, l, f, p), [who, li, i, pixels]);
 const pct = (a, b) => (b ? ((100 * a) / b).toFixed(2) : '0.00') + '%';
 
+// (--only <regex>: only the lists it matches; --tag <name>: the file the rows go to, diff_<who>_<name>.json)
+const ONLY = opt('only') ? new RegExp(opt('only')) : null;
+const TAG = opt('tag') ? `_${opt('tag')}` : '';
 async function eachFrame(who, every, fn) {
   const L = await lists(who);
   if (!L.same) throw new Error(`${who}: the two workers' lists differ`);
@@ -88,7 +111,8 @@ async function eachFrame(who, every, fn) {
     const n = L.lengths[li];
     const picks = new Set();
     for (let i = 0; i < n; i += every) picks.add(i);
-    picks.add(n - 1);
+    if (!opt('nolast')) picks.add(n - 1);
+    if (ONLY && !ONLY.test(L.names[li])) continue;
     for (const i of [...picks].sort((a, b) => a - b)) await fn(L.names[li], li, i, n);
   }
 }
@@ -111,7 +135,7 @@ if (mode === 'quick') {
 
 if (mode === 'diff') {
   const every = Number(opt('every', 1));
-  const whos = args.slice(1).filter((a) => !a.startsWith('--') && !/^\d+$/.test(a));
+  const whos = args.slice(1).filter((a, k, all) => !a.startsWith('--') && !/^\d+$/.test(a) && !(k > 0 && all[k - 1].startsWith('--')));
   for (const who of whos.length ? whos : ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler']) {
     const rows = [];
     const t0 = Date.now();
@@ -123,11 +147,11 @@ if (mode === 'diff') {
       fell += r.fell;
       rows.push({ name, i, n, ms: r.ms, marched: r.marched, fell: r.fell, ...r.diff, pw: r.pw, ph: r.ph });
       if (rows.length % 50 === 0) {
-        fs.writeFileSync(path.join(OUT, `diff_${who}.json`), JSON.stringify(rows));
+        fs.writeFileSync(path.join(OUT, `diff_${who}${TAG}.json`), JSON.stringify(rows));
         console.log(`${who}: ${rows.length} frames, ${((Date.now() - t0) / 1000).toFixed(0)} s`);
       }
     });
-    fs.writeFileSync(path.join(OUT, `diff_${who}.json`), JSON.stringify(rows));
+    fs.writeFileSync(path.join(OUT, `diff_${who}${TAG}.json`), JSON.stringify(rows));
     const own = rows.filter((r) => !r.same);
     const shares = own.map((r) => (r.fig ? r.diff / r.fig : 0)).sort((a, b) => a - b);
     const worst = own.reduce((w, r) => (!w || r.diff / Math.max(1, r.fig) > w.diff / Math.max(1, w.fig) ? r : w), null);
