@@ -54,6 +54,8 @@ def row(a, ca, b, cb, tag_a=None, tag_b=None):
 N = lambda n, crop=None: cell(f'{new}/{n}.png', crop)
 O = lambda n, crop=None: cell(f'{old}/{n}', crop)
 ARENA = (250, 220, 850, 558)
+# (his cistern from above at the game's own pixels, round his gates: the same size as the old close-up beside it, both a half of the film's)
+GATES = (130, 170, 730, 508)
 
 title('THREE FIXES FROM THIS MORNING’S FILMS', 'Each one as it was beside how it is now, at the same size; then its key moments. The knight is there for size.')
 
@@ -64,8 +66,8 @@ row(N('q_fountain'), 'The strike: a fountain of rock and dirt', N('q_ring'), 'Th
 row(N('q_hang'), 'The dust hangs and drifts off (from behind)', N('q_crater'), 'The crater and its cracks, left a moment')
 
 title('2 · THE RAT KING', '“The sluice gates should just open periodically ... Just an arena hazard.”  And his roll: “His roll, back and bigger”')
-row(O('rk/p4_1.40.png'), 'Before: he reared up to open the sluices', N('rk_marked', ARENA), 'Now: they open on their own while he fights', 'BEFORE', 'NOW')
-row(O('rk/p4_2.40.png'), 'Before: the flood, his move', N('rk_flood', ARENA), 'Now: the flood, while he spits a word', 'BEFORE', 'NOW')
+row(O('rk/p4_1.40.png'), 'Before: he reared up to open the sluices', N('rk_marked', GATES), 'Now: they open on their own while he spits a word', 'BEFORE', 'NOW')
+row(O('rk/p4_2.40.png'), 'Before: the flood, his move', N('rk_flood', GATES), 'Now: the flood runs past him; it is not his', 'BEFORE', 'NOW')
 row(O('oldroll_0.50.png'), 'His old roll: curled, a lane 1.5 wide', N('rk_held'), 'Now: curled, spinning up, HELD; a lane 2.4 wide', 'BEFORE', 'NOW')
 row(O('oldroll_1.20.png'), 'His old roll: 6.45 tiles a second', N('rk_run'), 'Now: 13 tiles a second', 'BEFORE', 'NOW')
 row(N('rk_strike'), 'Off the line in 2 frames', N('rk_open'), 'He bursts open where he stops: a ring 2.2 round')

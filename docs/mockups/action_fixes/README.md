@@ -44,7 +44,7 @@ until the main chat puts it there, on his yes. The game's own frames are unchang
   from above (the game's own picture pixels), the sluices opening on their own twice while he spits a word and while he rolls, the
   knight on the ledges; his roll close (twice as big), from in front and from behind, and at half speed; the deer's charge and its
   bramble with the knight (three times as big), from in front and from behind, its gallop at half speed, and the bramble withering.
-- `action_fixes_sheet.png` (1200 wide): each one's old beside its new at the same scale (the old from the branch before, made by its
+- `action_fixes_sheet.png` (1200 × 5576): each one's old beside its new at the same scale (the old from the branch before, made by its
   own film tools at the same zoom), and the key moments of each.
 
 Made by: `tools/action_fixes_film.ts` (the film), `tools/action_fixes_sheet.ts` and `tools/action_fixes_sheet.py` (the sheet),
@@ -53,8 +53,13 @@ src/dev/ratking_action_scene.ts, src/dev/action_f9_scene.ts).
 
 ## The checks
 
-- `tests/queen_action.test.ts`, `tests/ratking_action.test.ts`, `tests/action_f9.test.ts`: each updated to its new numbers and
-  passing (each mock-up's README says what each checks); the game's own frames hash as before in each.
+- `tests/queen_action.test.ts` (14 tests), `tests/ratking_action.test.ts` (5), `tests/action_f9.test.ts` (5): each updated to its
+  new numbers, all passing (each mock-up's README says what each checks); the game's own frames hash as before in each (the Queen
+  `d41a8cbde1d948d1`; the Rat King `e0df474ef6b3a1cb`, his moves drawn `45bc53ab47f551ee`; the deer, wolf and Drowned as before).
+- The figures' own tests as before: `tests/rat_king.test.ts`, `tests/carrion_queen2.test.ts`, `tests/twisted_deer.test.ts`,
+  `tests/new_mobs3.test.ts` (59 passing).
+- The reviews: the Rat King's roll through the review for the old rigs where the game carries him (`pose9World`, `shift`), both ways
+  round, six pairs of feet as his soles: nothing found; the deer's new gallop through it, both pairs of feet: nothing found.
 - `tsc --noEmit -p tsconfig.json` clean.
 - Changed outside the mock-ups' own files (no frame of the game's changes): art/rat_king.ts, its ball (`BALL_R`, `BALL_Z`,
   `ballPose`) exported (`export` added; nothing else).

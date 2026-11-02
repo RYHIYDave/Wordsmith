@@ -12,7 +12,7 @@ mkdirSync(out, { recursive: true });
 export const CELLS: [string, number, number][] = [
   ['q_held', 0, 1.2],
   ['q_hit', 0, 1.9],
-  ['q_fountain', 0, 1.87],
+  ['q_fountain', 0, 2.0],
   ['q_ring', 0, 2.25],
   ['q_hang', 1, 3.0],
   ['q_crater', 0, 3.5],

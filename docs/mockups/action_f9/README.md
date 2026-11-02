@@ -41,7 +41,7 @@ writhing up; the deer stretches into a full gallop). The move, its times, its si
 the look:
 - **THE GALLOP**: a real gallop, painted to the way it is carried: its body low and long, its neck stretched out before it, its head
   and its antlers down and forward; its legs reaching far out in front (its forefeet come down 29 of its lengths before its middle,
-  three times as far as at its stand) and far back (its hind feet push off 35 behind it), GATHERING under it and STRETCHING out in
+  more than twice as far as at its stand, 11) and far back (its hind feet push off 35 behind it), GATHERING under it and STRETCHING out in
   turn, two flights a stride (stretched out after its hind feet push off, gathered under it after its forefeet do), its forelegs
   folding tight under it and its hind legs flicked up behind as they swing through; rocked onto its forefeet and back onto its
   hind, rising in each flight; each foot down on its own spot of the floor while the floor goes by under it (feet grip); MUD kicked

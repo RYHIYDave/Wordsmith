@@ -60,9 +60,9 @@ function deer(view: View, cx: number, cy: number, from: number, long: number, ti
 const cht = chargeTimes();
 
 export const parts: Part[] = [
-  queen('front', 170, 150, 0.2, DIVE_PASS - 0.2, 'THE CARRION QUEEN’S DIVE · FROM IN FRONT', `Up out of sight, HELD · the ground she strikes marked: ${QA_DIVE.r * 2} tiles across (was 3.2) · run clear of it`),
+  queen('front', 170, 172, 0.2, DIVE_PASS - 0.2, 'THE CARRION QUEEN’S DIVE · FROM IN FRONT', `Up out of sight, HELD · the ground she strikes marked: ${QA_DIVE.r * 2} tiles across (was 3.2) · run clear of it`),
   queen('back', 170, 300, 0.2, DIVE_PASS - 0.2, 'HER DIVE · FROM BEHIND', 'Down in 2 frames · the rock bursts: dirt, grit and broken rock flung up, dust rolling out to the edge'),
-  queen('front', 170, 150, Q_LEAD + QA_DIVE.hit - 0.2, 1.75, 'HER DIVE · THE IMPACT' + HALF, 'A fountain of rock · a ring of dust out to the edge · chunks falling back and bouncing · the dust hangs and drifts off', 2),
+  queen('front', 170, 172, Q_LEAD + QA_DIVE.hit - 0.2, 1.75, 'HER DIVE · THE IMPACT' + HALF, 'A fountain of rock · a ring of dust out to the edge · chunks falling back and bouncing · the dust hangs and drifts off', 2),
   above(0, ARENA.open2 - 0.2, 'THE RAT KING’S CISTERN · THE SLUICES OPEN ON THEIR OWN', `Not his move now: the lanes marked first · the gates grind open · ${FLOOD.runs} s of flood · the ledges stay dry`),
   above(ARENA.open2 - 0.2, ARENA.long, 'AGAIN, WHILE HE ROLLS', `Every ${SLUICES.every} s or so in a fight (here sooner) · off the ledge out of his ball's way · back up before the gates burst`),
   ratking('front', 2, 100, 106, 0.2, ROLL_PASS - 0.2, 'HIS ROLL, BACK AND BIGGER · FROM IN FRONT', `Curled into a ball, spinning up, HELD · off in 2 frames · ${ROLL9.pace} tiles a second (was 6.45) · his lane ${ROLL9.half * 2} wide (was 1.5)`),
