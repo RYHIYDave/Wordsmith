@@ -7,6 +7,13 @@
 // 4, at twelve a second; 4 is what is left), lying a while, then fading.
 
 import { CHUNK_FRAMES, chunkShatter, makeGolemChunkArt } from '../../art/floor6_mobs';
+import { BOULDER, GOLEM_BOULDER, HAMMER, ROLL_HIT, ROLL_ROUND, SMASH_CANVAS, boulderHop, lanePainted, makeRollingArt, smashPainted } from '../../art/action_f6_golem';
+import { toSprite } from '../../art/kit';
+import { drawLights, drawSprite } from '../../engine/px';
+import { BOULDER_PERIL, QUAKE_PERIL, boulderDown } from '../../game/act1_rules/qgolem';
+import type { Peril } from '../../game/state';
+import { liveFrom } from './live';
+import type { Act1FxCtx } from './types';
 import { lazyFrames } from '../../art/kit';
 import type { GameView } from '../../art/skin';
 import { flipSprite } from '../../engine/px';
@@ -27,7 +34,77 @@ const FADE = 1;
 const chunks: Partial<Record<GameView, Sprite[]>> = {};
 let shatter: Sprite[] | null = null;
 
-export const FX: Act1Fx = {
+// ITS BOULDER ROLL AND HAMMER (GOLEM_BOULDER: art/action_f6_golem.ts, his yes, 2 Nov 2026): the lane marked from its aim, broken
+// up behind the boulder; the boulder rolling down it, hopping (makeRollingArt), turned as the figures are; where it smashes, and where
+// the hammer's fists come down, the cracks and the ring of dust ('floor') and the rock flung ('air', by halves), a frame at a time.
+const rolls: Partial<Record<GameView, Sprite[]>> = {};
+/** The smash where it is, `t` seconds after it, its 'floor' or the 'air' about a figure there. */
+function smash(c: Act1FxCtx, p: Peril, x: number, y: number, t: number, r: number, quake: boolean, layer: 'floor' | 'air'): void {
+  const key = `qg:${p.a1}:${x.toFixed(3)}:${y.toFixed(3)}`;
+  const f = `${Math.floor(t * 30)}`;
+  const [sx, sy] = c.at(x, y);
+  const C = SMASH_CANVAS;
+  if (layer === 'floor') {
+    const s = liveFrom(`${key}:floor`, f, C.ax, C.ay, () => smashPainted(t, 'floor', r, quake));
+    if (s && c.g) {
+      drawSprite(c.g, s, sx, sy);
+      drawLights(c.g, s, Math.round(sx), Math.round(sy), 1, 1);
+    }
+    return;
+  }
+  const behind = liveFrom(`${key}:behind`, f, C.ax, C.ay, () => smashPainted(t, 'air', r, quake, 'behind'));
+  const before = liveFrom(`${key}:before`, f, C.ax, C.ay, () => smashPainted(t, 'air', r, quake, 'before'));
+  if (behind) c.stand(x + y - 0.02, behind, sx, sy);
+  if (before) c.stand(x + y + 0.02, before, sx, sy);
+}
+const ROLL_FX: Act1Fx = {
+  ground(c, m, p) {
+    if (!p || !c.g) return;
+    if (p.a1 === QUAKE_PERIL) {
+      smash(c, p, p.x, p.y, p.t, HAMMER.r, true, 'floor');
+      return;
+    }
+    if (p.a1 !== BOULDER_PERIL) return;
+    const smashed = p.hit < 1e9;
+    if (!smashed) {
+      // (its lane, laid out from the golem as it is marked, broken up behind the boulder)
+      const lead = ROLL_HIT - BOULDER.aim;
+      const k = Math.min(1, (p.t + lead) / 0.3);
+      const L = lanePainted(p.fx, p.fy, k, p.t > 0 ? boulderDown(p) : 0, p.d);
+      const s = toSprite({ px: L.px, lights: [] }, null, L.ax, L.ay);
+      const [sx, sy] = c.at(p.x, p.y);
+      drawSprite(c.g, s, sx, sy);
+      return;
+    }
+    smash(c, p, p.b, p.c, p.t - p.hit, BOULDER.r, false, 'floor');
+  },
+  standing(c, m, p) {
+    if (!p) return;
+    if (p.a1 === QUAKE_PERIL) {
+      smash(c, p, p.x, p.y, p.t, HAMMER.r, true, 'air');
+      return;
+    }
+    if (p.a1 !== BOULDER_PERIL || p.t < 0) return;
+    if (p.hit < 1e9) {
+      smash(c, p, p.b, p.c, p.t - p.hit, BOULDER.r, false, 'air');
+      return;
+    }
+    // (rolling down its lane, hopping; seen from behind when it rolls up the screen, turned over when it rolls to the left)
+    const down = boulderDown(p);
+    const x = p.x + p.fx * down;
+    const y = p.y + p.fy * down;
+    const view: GameView = backView(p.fx, p.fy) ? 'back' : 'front';
+    const clip = makeRolling(view);
+    const sp = clip[Math.floor((p.t / ROLL_ROUND) * clip.length) % clip.length];
+    const [sx, sy] = c.at(x, y);
+    c.stand(x + y, flipped(p.fx, p.fy) ? flipSprite(sp) : sp, sx, sy - boulderHop(down - BOULDER.from));
+  },
+};
+function makeRolling(view: GameView): Sprite[] {
+  return (rolls[view] ??= makeRollingArt(view).frames as Sprite[]);
+}
+
+const CHUNK_FX: Act1Fx = {
   ground(c, m, p) {
     if (!p || p.a1 !== 'qgolem:chunk' || !c.g) return;
     const g = c.g;
@@ -59,4 +136,9 @@ export const FX: Act1Fx = {
     const [sx, sy] = c.at(w.x, w.y);
     c.stand(w.x + w.y, flipped(p.fx, p.fy) ? flipSprite(sp) : sp, sx, sy - w.z);
   },
+};
+
+export const FX: Act1Fx = {
+  ground: (c, m, p) => (GOLEM_BOULDER.on ? ROLL_FX : CHUNK_FX).ground!(c, m, p),
+  standing: (c, m, p) => (GOLEM_BOULDER.on ? ROLL_FX : CHUNK_FX).standing!(c, m, p),
 };
