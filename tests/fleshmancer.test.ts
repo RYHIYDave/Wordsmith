@@ -124,7 +124,8 @@ test('1. his switch goes with the rules\' (game/bosses.ts BOSSES5), and only the
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (art/cultists.ts, the cult's new fighters: its mini fleshmancer is painted by his painter)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/fleshmancer.ts' || f === 'art/fm_spells.ts' || f === 'art/cultists.ts') continue;
+    // (and art/fleshmancer_action*.ts, his moves done the action way: a mock-up behind FLESH_ACTION, off, nothing of the game importing it)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/fleshmancer.ts' || f === 'art/fm_spells.ts' || f === 'art/cultists.ts' || f.startsWith('art/fleshmancer_action')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*(fleshmancer|fm_spells)['"]/.test(text)) users.push(f);
   }
