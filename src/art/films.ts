@@ -34,6 +34,8 @@
 //   things:fieldhand           (FLOOR 13, FIELD_HARVEST) the reapers' sickle in flight and its curve (art/act1_figs/fieldhand.ts fieldThings)
 //   things:orderly             (FLOOR 14, ORDERLY_GURNEY) the orderly's gurney, its frames (art/act1_figs/orderly.ts orderlyThings)
 //   things:watch               (FLOOR 11, WATCH_LANTERN) the watch's burning oil, its frames (art/act1_figs/watch.ts watchThings)
+//   things:groom               (FLOOR 16, GROOM_HORSE) the groom's horse and its mist (art/act1_figs/groom.ts groomThings)
+//   things:kknight             (FLOOR 19, KNIGHT_BANNER) the king's knight's banner standing (art/act1_figs/kknight.ts kknightThings)
 //   things:physician           (FLOOR 14, PHYSICIAN_ACTION) his instruments, each way round (art/act1_figs/physician.ts physicianThings)
 //   things:stag                (FLOOR 9, STAG_ACTION) the Hollow Stag's wall of roots, each kind of clump's moments (art/act1_figs/
 //                              stag.ts stagThings)
@@ -66,6 +68,8 @@ import { watchThings } from './act1_figs/watch';
 import { fieldThings } from './act1_figs/fieldhand';
 import { orderlyThings } from './act1_figs/orderly';
 import { physicianThings } from './act1_figs/physician';
+import { groomThings } from './act1_figs/groom';
+import { kknightThings } from './act1_figs/kknight';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -236,6 +240,8 @@ export function filmRoom(key: string): number {
   if (kind === 'things' && a === 'fieldhand') return 16;
   if (kind === 'things' && a === 'orderly') return 12;
   if (kind === 'things' && a === 'physician') return PHYSICIAN_THINGS_ROOM;
+  if (kind === 'things' && a === 'groom') return 8;
+  if (kind === 'things' && a === 'kknight') return 8;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -325,6 +331,10 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   if (kind === 'things' && a === 'orderly') return orderlyThings();
   // (FLOOR 14: the Physician's instruments, as render/act1_fx/physician.ts asks for them)
   if (kind === 'things' && a === 'physician') return physicianThings();
+  // (FLOOR 16: the groom's horse, as render/act1_fx/groom.ts asks for it)
+  if (kind === 'things' && a === 'groom') return groomThings();
+  // (FLOOR 19: the king's knight's banner, as render/act1_fx/kknight.ts asks for it)
+  if (kind === 'things' && a === 'kknight') return kknightThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();

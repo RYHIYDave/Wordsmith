@@ -131,11 +131,13 @@ const whole = (m: Record<string, string[]>): string => {
 /** The game's own frames of the five, on 2bdb29c (origin/art/action-f14-physician, before this branch): tools/action_f16_hash.ts. */
 const HASHES: Record<string, string> = { gardener: '76fefe169ef5110e', groom: '5b28c43f7c65296d', pguard: 'e225c6a011ec5b46', 'pguard:1': '6a656bce0cf2c467', dancer: 'd8b44ea2582bf4a3', kknight: 'f62a48cef195f610' };
 
+const BRINGS = /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/(gardener|groom|pguard|dancer|kknight)\.ts$/;
 test('1. the switches are off; nothing of the game imports the mock-ups; the game’s frames the same; only the new moves new', () => {
   for (const sw of [GARDENER_HEDGE, GROOM_HORSE, GUARD_DRILL, DANCER_THROW, KNIGHT_BANNER]) assert.equal(sw.on, false, 'a switch is on');
   const OURS = /from ['"][^'"]*action_f16_(gardener|groom|guard|dancer|knight|scene)['"]/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f16_/.test(f)) continue;
+    // (brought in by the main chat, 2 Nov 2026, behind the switches: their figures, rules and what they draw)
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/action_f16_/.test(f) || BRINGS.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   for (const k of ['gardener', 'groom', 'pguard', 'dancer', 'kknight'] as const) {

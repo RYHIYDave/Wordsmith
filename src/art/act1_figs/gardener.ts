@@ -8,9 +8,11 @@
 import { PALACE_HANDS_ON } from '../palace_hands';
 import { PALACE_GARDENER, makePalaceArt3 } from '../palace_hands_moves';
 import type { Act1Fig } from './types';
+import { GARDENER_HEDGE, makeHedgeArt } from '../action_f16_gardener';
 
 export const FIG: Act1Fig | null = {
-  make: () => makePalaceArt3(PALACE_GARDENER),
+  // (and his shear lunge in place of the snap, behind GARDENER_HEDGE: art/action_f16_gardener.ts, his pick of 2 Nov 2026)
+  make: () => (GARDENER_HEDGE.on ? makeHedgeArt() : makePalaceArt3(PALACE_GARDENER)),
   // (measured off their stand as tests/act2_palace_hands.test.ts measures it: the knight's height, the hat's brim)
   size: { top: 29, half: 9 },
   switches: [PALACE_HANDS_ON],

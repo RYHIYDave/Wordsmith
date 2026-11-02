@@ -19,7 +19,7 @@ import type { Sprite } from '../../engine/px';
 import { RIME_PERIL, SLICK_PERIL } from '../../game/act1_rules/drowned';
 import { backView, flipped } from '../../game/facing';
 import type { Peril } from '../../game/state';
-import { liveFrom } from './live';
+import { liveFrom, liveTurned } from './live';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const THINGS = 'things:drowned';
@@ -46,10 +46,11 @@ function gush(c: Act1FxCtx, p: Peril, side: 'behind' | 'before'): void {
   const view = viewOf(p);
   const flip = flipped(p.fx, p.fy);
   const C = SLICK_CANVAS;
-  const s = liveFrom(`dr:gush:${p.x.toFixed(3)}:${p.y.toFixed(3)}:${side}`, `${Math.floor(p.t * 30)}`, C.ax, C.ay, () => gushPainted(p.t, view, side));
+  // (turned over as it is painted, not after: engine/px.ts flipSprite keeps the mirror of the first frame it is given)
+  const s = liveTurned(`dr:gush:${p.x.toFixed(3)}:${p.y.toFixed(3)}:${side}`, `${Math.floor(p.t * 30)}`, C.w, C.ax, C.ay, flip, () => gushPainted(p.t, view, side));
   if (!s) return;
   const [sx, sy] = c.at(p.x, p.y);
-  c.stand(p.x + p.y + (side === 'before' ? 0.03 : -0.03), flip ? flipSprite(s) : s, sx, sy);
+  c.stand(p.x + p.y + (side === 'before' ? 0.03 : -0.03), s, sx, sy);
 }
 
 const RETCH: Act1Fx = {

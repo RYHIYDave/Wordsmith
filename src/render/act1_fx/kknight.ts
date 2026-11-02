@@ -16,6 +16,14 @@ import { beside } from '../../game/facing';
 import type { Monster, Peril } from '../../game/state';
 import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
+import { BANNER, BANNER_AT, BANNER_HIT, KNIGHT_BANNER, RALLY_CANVAS, RALLY_GOLD, STANDING_CANVAS, bannerPainted, rallyPainted } from '../../art/action_f16_knight';
+import { BANNER_LOOP, BANNER_N, bannerSprite } from '../../art/act1_figs/kknight';
+import type { ThingsFilm } from '../../art/films';
+import { flipSprite } from '../../engine/px';
+import type { Sprite } from '../../engine/px';
+import { BANNER_PERIL } from '../../game/act1_rules/kknight';
+import { backView, flipped } from '../../game/facing';
+import { liveFrom, liveTurned } from './live';
 
 const D = Math.PI / 180;
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -121,11 +129,176 @@ function warnings(c: Act1FxCtx, m: Monster): void {
   }
 }
 
-export const FX: Act1Fx | null = {
+// THE RALLYING BANNER (KNIGHT_BANNER: art/action_f16_knight.ts, his picks of 31 Oct and 2 Nov 2026): through its hold, the shockwave's
+// reach marked round where it will go in; planted, the shockwave rolling out and the floor cracked under its foot; while it stands, THE
+// GOLD OF ITS REACH on the floor, BANNER.reach round it: a thick dashed band of the enemy's gold turning slowly, a fine line inside it,
+// twelve chevrons pointing in, a sparse twinkle of gold within and motes of it drifting up, its light; going out as it is cut down.
+// The shockwave and the gold are drawn with the canvas's own lines in the art's colours (rallyPainted paints the whole of its 7-tile
+// reach each frame: too slow for the game; the art chat's README allows it: "or their few drawing calls turned into the canvas's").
+// THE BANNER STANDING, its cloth stirring (painted ahead: art/films.ts things:kknight), shuddering as a blow lands on it, cut down
+// (bannerPainted, as it comes), seen as the knight who planted it faced, turned over as he was; its splinters (rallyPainted, 'air').
+const THINGS = 'things:kknight';
+const own = new Map<string, Sprite>();
+function bannerFrame(c: Act1FxCtx, view: 'front' | 'back', flip: boolean, i: number): Sprite {
+  const key = `banner:${view}`;
+  const made = c.film ? c.film<ThingsFilm>(THINGS) : null;
+  let s = made?.[key]?.[i];
+  const from = s ? 'film' : 'own';
+  if (!s) {
+    s = own.get(`${key}:${i}`);
+    if (!s) own.set(`${key}:${i}`, (s = bannerSprite(i, view)));
+  }
+  if (!flip) return s;
+  const fk = `flip:${key}:${i}:${from}`;
+  let f = own.get(fk);
+  if (!f) own.set(fk, (f = flipSprite(s)));
+  return f;
+}
+const ringPt = (c: Act1FxCtx, p: Peril, a: number, r: number): readonly [number, number] => c.at(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
+function rally(c: Act1FxCtx, p: Peril): void {
+  const g = c.g!;
+  const t = p.t;
+  const cut = p.d >= 0 ? t - p.d : -1;
+  const [X, Y] = c.at(p.x, p.y);
+  g.save();
+  // THE SHOCKWAVE, rolling out to BANNER.wave in a fifth of a second
+  if (t < 0.6) {
+    const k = 1 - (1 - clamp01(t / 0.2)) ** 2;
+    const fade = 1 - clamp01((t - 0.3) / 0.3);
+    const r = BANNER.wave * k;
+    g.globalAlpha = fade;
+    g.lineWidth = 1;
+    g.strokeStyle = RALLY_PINK[1];
+    g.beginPath();
+    g.ellipse(X, Y, r * 16 * Math.SQRT2, r * 8 * Math.SQRT2, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.strokeStyle = RALLY_PINK[2];
+    g.beginPath();
+    g.ellipse(X, Y + 1, r * 16 * Math.SQRT2, r * 8 * Math.SQRT2, 0, 0, Math.PI * 2);
+    g.stroke();
+  }
+  // (the floor cracked under its foot)
+  if (cut < 1.6) {
+    g.globalAlpha = 1;
+    for (let j = 0; j < 7; j++) {
+      const a0 = hash(j, 5, 1953) * Math.PI * 2;
+      let x0 = p.x;
+      let y0 = p.y;
+      const n = 6 + Math.floor(5 * hash(j, 6, 1953));
+      for (let i = 0; i < n; i++) {
+        const a = a0 + (hash(j, i, 1955) - 0.5) * 0.9;
+        x0 += Math.cos(a) * 0.09;
+        y0 += Math.sin(a) * 0.09;
+        const [x, y] = c.at(x0, y0);
+        dot(g, x, y, '#120f18');
+      }
+    }
+  }
+  // THE GOLD OF ITS REACH
+  const on = clamp01((t - 0.15) / 0.35) * (cut < 0 ? 1 : 1 - clamp01(cut / 0.5));
+  if (on > 0) {
+    const r = BANNER.reach;
+    const turn = t * 0.12;
+    // (the glow within: a sparse twinkle of gold, thinning out to the ring; and motes of it drifting up)
+    const tw = Math.floor(t * 3);
+    for (let i = 0; i < 260; i++) {
+      if (hash(i, tw, 1961) > 0.55 * on) continue;
+      const a = hash(i, 1, 1962) * Math.PI * 2;
+      const d = r * 0.97 * Math.sqrt(hash(i, 2, 1962));
+      const [x, y] = ringPt(c, p, a, d);
+      dot(g, x, y, hash(i, 3, 1962) < 0.2 ? RALLY_GOLD[2] : RALLY_GOLD[1]);
+    }
+    for (let i = 0; i < 110; i++) {
+      const life = (t * 0.6 + hash(i, 10, 1957)) % 1;
+      if (life > 0.7 || hash(i, 11, 1957) > on) continue;
+      const a = hash(i, 8, 1957) * Math.PI * 2;
+      const d = r * Math.sqrt(hash(i, 9, 1957));
+      const [x, y] = ringPt(c, p, a, d);
+      dot(g, x, y - life * 3, life < 0.3 ? RALLY_GOLD[2] : RALLY_GOLD[1]);
+    }
+    // (the ring at its edge: a thick dashed band turning slowly, its dashes bright; a fine line inside it)
+    const n = Math.round(r * 60);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + turn;
+      if (hash(i, 7, 1957) > on) continue;
+      const dash = i % 6;
+      const [xi, yi] = ringPt(c, p, a, r - 0.16);
+      if (i % 2 === 0) dot(g, xi, yi, RALLY_GOLD[1]);
+      if (dash > 3) continue;
+      const [x, y] = ringPt(c, p, a, r);
+      const hi = dash === 1 || dash === 2;
+      dot(g, x, y - 0.5, hi ? RALLY_GOLD[3] : RALLY_GOLD[2], 2, 1);
+      dot(g, x, y + 0.5, RALLY_GOLD[1], 2, 1);
+      dot(g, x, y + 1.5, RALLY_GOLD[0], 2, 1);
+    }
+    // (twelve chevrons pointing in round it)
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2 + turn;
+      for (let j = -6; j <= 6; j++) {
+        const side = Math.abs(j) / 6;
+        const [x, y] = ringPt(c, p, a + j * 0.012, r - 0.32 - 0.3 * (1 - side));
+        if (hash(k, j, 1965) > on + 0.2) continue;
+        dot(g, x, y - 0.5, RALLY_GOLD[3]);
+        dot(g, x, y + 0.5, RALLY_GOLD[0]);
+      }
+    }
+    c.spot(X, Y, 75, 0.18 * on);
+  }
+  g.restore();
+}
+const RALLY_PINK = ['#7a1058', '#ff7aa8', '#c0206a'] as const;
+const BANNER_FX: Act1Fx = {
+  films: [THINGS],
   ground(c, m, p) {
+    if (!c.g) return;
+    if (m && m.act) {
+      if (m.act.id === 'kknight:banner') {
+        // (the shockwave's reach marked round where it will go in, as it is held aloft)
+        const k = warnK(m.act.t, BANNER.raised - 0.2, BANNER_HIT);
+        if (k < 0) return;
+        const w = beside(m.x, m.y, m.fx, m.fy, m.act.hand, BANNER_AT[0], BANNER_AT[1]);
+        drawFanWarn(c.g, c.at, { x: w.x, y: w.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, BANNER.wave, k, c.t);
+        return;
+      }
+      warnings(c, m);
+      return;
+    }
+    if (p && p.a1 === BANNER_PERIL) rally(c, p);
+    else if (p && p.a1 === 'kknight:crack') crack(c, p);
+  },
+  standing(c, m, p) {
+    if (!p || p.a1 !== BANNER_PERIL) return;
+    const view = backView(p.fx, p.fy) ? 'back' : 'front';
+    const flip = flipped(p.fx, p.fy);
+    const cut = p.d >= 0 ? p.t - p.d : -1;
+    const struck = p.b >= 0 ? p.t - p.b : -1;
+    const [sx, sy] = c.at(p.x, p.y);
+    let s: Sprite | null;
+    if (cut >= 0 || (struck >= 0 && struck < 0.4) || p.t < 0.2) {
+      // (planted, struck, cut down: as it comes)
+      const C = STANDING_CANVAS;
+      s = liveTurned(`kk:banner:${p.x.toFixed(3)}:${p.y.toFixed(3)}`, `${Math.floor(p.t * 30)}`, C.w, C.ax, C.ay, flip, () => bannerPainted(p.t, view, cut >= 0 ? -1 : struck, cut));
+    } else s = bannerFrame(c, view, flip, Math.floor(((p.t - 0.2) / BANNER_LOOP) * BANNER_N) % BANNER_N);
+    if (s) c.stand(p.x + p.y, s, sx, sy);
+    // (splinters, as it is cut)
+    if (cut >= 0 && cut < 1.0) {
+      const R = RALLY_CANVAS;
+      const a = liveFrom(`kk:splinters:${p.x.toFixed(3)}:${p.y.toFixed(3)}`, `${Math.floor(cut * 30)}`, R.ax, R.ay, () => rallyPainted(p.t, 'air', cut));
+      if (a) c.stand(p.x + p.y + 0.05, a, sx, sy);
+    }
+  },
+};
+
+export const FX: Act1Fx | null = {
+  get films() {
+    return KNIGHT_BANNER.on ? BANNER_FX.films : undefined;
+  },
+  ground(c, m, p) {
+    if (KNIGHT_BANNER.on) return BANNER_FX.ground!(c, m, p);
     if (!c.g) return;
     if (m && m.act) warnings(c, m);
     if (p && p.a1 === 'kknight:sweep') sweep(c, p);
     else if (p && p.a1 === 'kknight:crack') crack(c, p);
   },
+  standing: (c, m, p) => BANNER_FX.standing!(c, m, p),
 };

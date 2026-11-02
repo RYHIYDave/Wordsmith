@@ -7,10 +7,12 @@
 import { DANCERS_ON } from '../masque_dancers';
 import { DANCERS, makeDancerArt3 } from '../masque_dancers_moves';
 import type { Act1Fig } from './types';
+import { DANCER_THROW, THROW_DANCERS, makeThrowArt } from '../action_f16_dancer';
 
 const ROOMS = ['blue', 'purple', 'green', 'orange', 'white', 'violet'] as const;
 // (the knight's size: the lady 56 tall, the gentleman 59, the knight 58; their heads as tests/first5_bosses.test.ts measures them, the hair piled up)
-const look = (who: 'lady' | 'gent', room: (typeof ROOMS)[number]): Act1Fig => ({ make: () => makeDancerArt3(DANCERS[who][room]), size: { top: who === 'lady' ? 33 : 34, half: 9 } });
+// (and the partner throw, behind DANCER_THROW: art/action_f16_dancer.ts, his yes of 31 Oct 2026; the spin kept as `moves.spin`)
+const look = (who: 'lady' | 'gent', room: (typeof ROOMS)[number]): Act1Fig => ({ make: () => (DANCER_THROW.on ? makeThrowArt(THROW_DANCERS[who][room]) : makeDancerArt3(DANCERS[who][room])), size: { top: who === 'lady' ? 33 : 34, half: 9 } });
 const ALL: Act1Fig[] = ROOMS.flatMap((r) => [look('lady', r), look('gent', r)]);
 
 export const FIG: Act1Fig | null = { ...ALL[0], switches: [DANCERS_ON], looks: ALL.slice(1) };

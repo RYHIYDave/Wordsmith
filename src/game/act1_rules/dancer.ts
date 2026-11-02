@@ -26,6 +26,8 @@ import { TILE3 } from '../../art/new_mobs3';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import type { Monster } from '../state';
 import type { Act1Rules } from './types';
+import { DANCER_THROW, THROW, THROW_HIT, THROW_STRIKE, topGone, topStrikes } from '../../art/action_f16_dancer';
+import { beside, fromFigure, handOf } from '../facing';
 
 /** The six rooms the dancers are dressed for, in the tale's order (the black room has none: its floor is the Prince's). */
 export const DANCE_ROOMS = ['blue', 'purple', 'green', 'orange', 'white', 'violet'] as const;
@@ -86,7 +88,7 @@ function carry(R: BossRules, m: Monster, d: number): void {
   }
 }
 
-export const RULES: Act1Rules | null = {
+const OLD: Act1Rules = {
   gait: GAIT,
   acts: ACTS,
   spawned(R, m) {
@@ -141,4 +143,102 @@ export const RULES: Act1Rules | null = {
       if (Math.hypot(h.x - m.x, h.y - m.y) <= SPIN.area + 0.3) R.blow(m, a.dmg);
     }
   },
+};
+
+// THE PARTNER THROW (DANCER_THROW: art/action_f16_dancer.ts, the art chat's, his yes of 31 Oct 2026, “Yes (Recommended)”; and his yes of 2
+// Nov, a dancer whose partner is gone just spins into you as before; brought in by the main chat, 2 Nov 2026, behind the same switch, off
+// until his yes here). A PAIR'S ATTACK, the gentleman leading: when his lady lives and is within THROW_HOLD of him, and neither is busy,
+// he begins it, and she with him at his right, both facing the hero: the pair WHIRL ROUND, HELD at full speed a whole turn while THE
+// LANE is marked from her place on at the hero (from THROW.take: LANE_LONG long, THROW.half to either side); in two frames he FLINGS
+// her (THROW_HIT); spinning like a top she is carried down the lane by the game (topGone, to a wall), a hero within THROW.r2 of her as
+// she comes by struck once and knocked THROW.knock (`topStrikes`). A dancer whose partner is gone (dead, or not within THROW_HOLD) SPINS
+// INTO YOU as before (the game's own spin, its numbers, now `moves.spin` of the throw's set).
+/** How near his lady must be for the pair to throw (tiles: the art chat's suggestion, 3). */
+export const THROW_HOLD = 3;
+const THROW_ACTS: readonly ActDef[] = [
+  { id: 'dancer:throw', clip: 'attack', long: THROW.gent, hit: THROW_HIT, dmg: 0, cooldown: 6, first: 1, after: 0.6, near: 0, far: THROW.far },
+  { id: 'dancer:thrown', clip: 'attack', long: THROW.lady, hit: THROW_HIT, dmg: 1.1, cooldown: 0, first: 0, after: 0.6, near: 0, far: 999, forced: true },
+  { ...ACTS[0], clip: 'spin' },
+  ACTS[1],
+  ACTS[2],
+];
+/** Her partner, alive and near enough to take the waltz's hold, or null. */
+function partnerNear(R: BossRules, m: Monster): Monster | null {
+  const k = keep(m);
+  if (k.partner < 0) return null;
+  const o = R.g.monsters.find((q) => q.id === k.partner && !q.dead) ?? null;
+  return o && Math.hypot(o.x - m.x, o.y - m.y) <= THROW_HOLD ? o : null;
+}
+const THROWER: Act1Rules = {
+  gait: GAIT,
+  acts: THROW_ACTS,
+  spawned: OLD.spawned,
+  forced: OLD.forced,
+  tick: OLD.tick,
+  can(R, m, a) {
+    if (a.id === 'dancer:spin') return !partnerNear(R, m);
+    if (a.id !== 'dancer:throw') return true;
+    // (the gentleman leads; his lady not busy)
+    if ((m.form ?? 0) % 2 !== 1) return false;
+    const o = partnerNear(R, m);
+    return !!o && o.state !== 'act' && !keep(o).want;
+  },
+  start(R, m, a) {
+    OLD.start!(R, m, a);
+    if (a.id !== 'dancer:throw') return;
+    const o = partnerNear(R, m);
+    if (!o) return;
+    // SHE TAKES HIS HANDS, at his right, facing the hero as he does: her part begins with his
+    const act = m.act!;
+    const at = beside(m.x, m.y, m.fx, m.fy, act.hand, 0, -THROW.r);
+    const L = R.g.level;
+    if (L.walk[Math.floor(at.y) * L.floor.w + Math.floor(at.x)] === 1) {
+      o.x = at.x;
+      o.y = at.y;
+    }
+    R.startAct(o, THROW_ACTS, THROW_ACTS.findIndex((q) => q.id === 'dancer:thrown'));
+    o.fx = m.fx;
+    o.fy = m.fy;
+    o.act!.hand = handOf(GAIT.trueBack, o.fx, o.fy);
+    // (where she is flung from: the lane is from there)
+    o.act!.x = o.x;
+    o.act!.y = o.y;
+  },
+  acting(R, m, a, t0, t1, dt) {
+    if (a.id !== 'dancer:thrown') return OLD.acting(R, m, a, t0, t1, dt);
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    if (at(THROW_STRIKE[0] - 0.05)) g.sfx('whirl', 0.4);
+    const u0 = t0 - THROW_STRIKE[0];
+    const u1 = t1 - THROW_STRIKE[0];
+    if (u1 <= 0) return;
+    // SPUN DOWN THE LANE like a top, the game carrying her (so far as the floor lets her)
+    carry(R, m, topGone(u1) - topGone(Math.max(0, u0)));
+    if (act.a) return;
+    // (as she comes by: struck once, knocked aside)
+    const r = fromFigure(act.x, act.y, m.fx, m.fy, act.hand, h.x, h.y);
+    const on = fromFigure(act.x, act.y, m.fx, m.fy, act.hand, m.x, m.y).fwd;
+    if (!topStrikes(Math.min(u1, THROW.stop), Math.min(r.fwd + (topGone(u1) - on), 99), r.left) || h.move || h.invuln > 0 || g.over) return;
+    act.a = 1;
+    R.blow(m, a.dmg);
+    g.knockHero(m.x, m.y, THROW.knock);
+  },
+};
+
+const pick = (): Act1Rules => (DANCER_THROW.on ? THROWER : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  spawned: (R, m) => pick().spawned?.(R, m),
+  forced: (R, m, acts) => pick().forced?.(R, m, acts) ?? -1,
+  tick: (R, m, dt, dist) => pick().tick?.(R, m, dt, dist) ?? false,
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  start: (R, m, a) => pick().start?.(R, m, a),
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
 };

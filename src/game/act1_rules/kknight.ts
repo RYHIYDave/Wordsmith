@@ -19,7 +19,10 @@
 import { CRACK, SWEEP } from '../../art/kings_knights_fx';
 import { CHOP_AT, KN_CLEAVE, KN_HALT, KN_PACE, KN_SETOFF, KN_SWEEP, KN_WALK } from '../../art/kings_knights_moves';
 import { TILE3 } from '../../art/new_mobs3';
-import type { ActDef } from '../bosses';
+import type { ActDef, GaitDef } from '../bosses';
+import { BANNER, BANNER_AT, BANNER_HIT, KNIGHT_BANNER, waveStrikes } from '../../art/action_f16_knight';
+import { beside, fromFigure } from '../facing';
+import type { Monster, Peril } from '../state';
 import type { Act1Rules } from './types';
 
 /** Their numbers: the sweep's reach and how far round it goes (degrees each side of before him); the crack's start, end and width (tiles); the cleave's blow (times his own); a pack's size, and their lair's. */
@@ -56,8 +59,9 @@ export function onCrack(sx: number, sy: number, fx: number, fy: number, x: numbe
   return fwd >= C.from - 0.3 && fwd <= C.reach + 0.2 && side <= C.wide / 2;
 }
 
-export const RULES: Act1Rules | null = {
-  gait: { pace: KN_PACE, cycle: KN_WALK.frames / KN_WALK.fps, setOff: KN_SETOFF, halt: KN_HALT, raise: 0, lower: 0, stopAt: 2.8, slack: 0.8, trueBack: true },
+const GAIT: GaitDef = { pace: KN_PACE, cycle: KN_WALK.frames / KN_WALK.fps, setOff: KN_SETOFF, halt: KN_HALT, raise: 0, lower: 0, stopAt: 2.8, slack: 0.8, trueBack: true };
+const OLD: Act1Rules = {
+  gait: GAIT,
   acts: ACTS,
   acting(R, m, a, t0, t1) {
     const g = R.g;
@@ -81,3 +85,86 @@ export const RULES: Act1Rules | null = {
   },
 };
 
+
+// THE RALLYING BANNER (KNIGHT_BANNER: art/action_f16_knight.ts, the art chat's, his pick of 31 Oct 2026, “The rallying banner”, and his
+// pick of 2 Nov, 08:01, its reach about twice as big, 7 tiles; brought in by the main chat, 2 Nov 2026, behind the same switch, off until
+// his yes here). The knight carries it furled on his back (his look, form 0). THE CLEAVE stays his blow (his `attack` now, its numbers the
+// game's own). THE BANNER, once a knight: drawn off his back, unfurled, HELD aloft; in two frames driven into the floor before him to his
+// left (BANNER_AT, at BANNER_HIT): a SHOCKWAVE, a hero within BANNER.wave of it struck and knocked BANNER.knock (`waveStrikes`). IT STANDS
+// (`BANNER_PERIL`): while it stands every enemy within BANNER.reach of it HITS HARDER (by RALLY: game.ts rollMonsterDmg, `rallyOf`); the
+// hero's blows cut it down (BANNER_LIFE of them: the rules' `floorBlow`): it shudders as each lands; cut down, its staff splinters, its
+// glow goes out, and it is gone. After the move he is his look without it (form 1).
+/** The banner standing (x, y where its foot is; `a` the knight's id; `c` the blows on it; `b` when it was last struck, -1 none; `d` when it was cut down, -1 none; t from the plant). */
+export const BANNER_PERIL = 'kknight:banner';
+/** How much harder those within its reach hit while it stands; how many of the hero's blows cut it down. */
+export const RALLY = 1.3;
+export const BANNER_LIFE = 3;
+const BANNER_ACTS: readonly ActDef[] = [
+  { id: 'kknight:cleave', clip: 'attack', long: KN_CLEAVE.long, hit: KN_CLEAVE.hit, dmg: KNIGHT_TUNE.cleave, cooldown: 0, first: 0.5, after: 0.8, near: 0, far: KNIGHT_TUNE.crack.reach - 0.5 },
+  { id: 'kknight:banner', clip: 'banner', long: BANNER.long, hit: BANNER_HIT, dmg: 0.6, cooldown: 0, first: 2, after: 0.8, near: BANNER.near, far: BANNER.far },
+];
+const BANNERED: Act1Rules = {
+  gait: GAIT,
+  acts: BANNER_ACTS,
+  can(_R, m, a) {
+    // (one banner a knight)
+    return a.id !== 'kknight:banner' || !m.form;
+  },
+  acting(R, m, a, t0, t1, dt) {
+    if (a.id === 'kknight:cleave') return OLD.acting(R, m, a, t0, t1, dt);
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    if (!at(BANNER_HIT)) return;
+    // PLANTED: the shockwave; and it stands
+    const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+    if (waveStrikes(r.fwd, r.left) && !h.move && h.invuln <= 0 && !g.over) {
+      R.blow(m, a.dmg);
+      g.knockHero(m.x + m.fx * BANNER_AT[0], m.y + m.fy * BANNER_AT[0], BANNER.knock);
+    }
+    const w = beside(m.x, m.y, m.fx, m.fy, act.hand, BANNER_AT[0], BANNER_AT[1]);
+    R.peril(m, 'act1', w.x, w.y, { a1: BANNER_PERIL, dur: 1e9, a: m.id, b: -1, c: 0, d: -1 });
+    g.emit({ t: 'shake', amount: 4 });
+    g.sfx('slam', 0.8);
+    m.form = 1;
+  },
+  floorBlow(R, p, x, y, rad) {
+    // THE HERO'S BLOWS CUT IT DOWN
+    if (p.a1 !== BANNER_PERIL || p.d >= 0 || Math.hypot(p.x - x, p.y - y) > rad + 0.35) return;
+    p.c += 1;
+    p.b = p.t;
+    if (p.c < BANNER_LIFE) {
+      R.g.sfx('hit', 0.4);
+      return;
+    }
+    p.d = p.t;
+    p.dur = p.t + 1.6;
+    R.g.sfx('shatter', 0.7);
+    R.g.msg('The banner is cut down', '#e8b23a');
+  },
+  died(R, m) {
+    // (its knight dead, the banner still stands: the hero must cut it down)
+    void R;
+    void m;
+  },
+};
+/** HOW MUCH HARDER one hits now: RALLY within the reach of a standing banner (game.ts rollMonsterDmg). */
+export function rallyOf(perils: readonly Peril[], m: Monster): number {
+  if (!KNIGHT_BANNER.on) return 1;
+  for (const p of perils) if (p.kind === 'act1' && p.a1 === BANNER_PERIL && p.d < 0 && p.t >= 0 && Math.hypot(m.x - p.x, m.y - p.y) <= BANNER.reach) return RALLY;
+  return 1;
+}
+
+const pick = (): Act1Rules => (KNIGHT_BANNER.on ? BANNERED : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
+  floorBlow: (R, p, x, y, rad, el) => pick().floorBlow?.(R, p, x, y, rad, el),
+};

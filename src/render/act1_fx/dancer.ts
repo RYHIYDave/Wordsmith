@@ -5,11 +5,18 @@
 // - THE SPIN'S WARNING: through its wind-up, the circle round where it will land (game/act1_rules/dancer.ts: SPIN.lunge before
 //   them, SPIN.area round) marked on the floor in the enemy's pink (render/act1_fx/garden_warn.ts).
 import { DN_SPIN, SPIN } from '../../art/masque_dancers_moves';
-import { drawFanWarn, warnK } from './garden_warn';
+import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
+import { LANE_LONG, THROW, THROW_HIT } from '../../art/action_f16_dancer';
 import type { Act1Fx } from './types';
 
 export const FX: Act1Fx | null = {
   ground(c, m) {
+    if (m && c.g && m.act && m.act.id === 'dancer:thrown') {
+      // THE LANE, marked from her place on at the hero as the pair whirl (DANCER_THROW), until she is flung
+      const k = warnK(m.act.t, THROW.take, THROW_HIT);
+      if (k >= 0) drawStripWarn(c.g, c.at, { x: m.act.x, y: m.act.y, fx: m.fx, fy: m.fy, hand: m.act.hand }, 0, LANE_LONG, -THROW.half, THROW.half, k, c.t);
+      return;
+    }
     if (!m || !c.g || !m.act || m.act.id !== 'dancer:spin') return;
     const k = warnK(m.act.t, DN_SPIN.warn[0] - 0.2, DN_SPIN.hit);
     if (k < 0) return;

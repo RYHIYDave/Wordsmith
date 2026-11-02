@@ -152,7 +152,7 @@ function dial(c: Act1FxCtx, fill: number, lit: boolean): void {
   const s = livePicture('ph:dial', 24, 24, 12, 12, `${Math.round(fill * 48)}:${lit ? 1 : 0}`, (px) => paintDial(px, 12, 12, fill, lit, 7));
   if (!s || !c.g) return;
   const [sx, sy] = c.at(h.x, h.y);
-  drawSprite(c.g, s, sx, sy - 32);
+  drawSprite(c.g, s, sx, sy - 46);
 }
 /** One of his instruments on the screen: its middle (game pixels), the way its point faces, its glint (along it, or none). */
 const own = new Map<string, { tool: Sprite; glint: Sprite }>();

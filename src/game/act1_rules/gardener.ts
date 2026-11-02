@@ -33,6 +33,8 @@ import type { ActDef, BossRules, GaitDef } from '../bosses';
 import type { Monster } from '../state';
 import type { MonsterKind } from '../types';
 import type { Act1Rules } from './types';
+import { CLIP_CANVAS, GARDENER_HEDGE, LUNGE, LUNGE_HIT, LUNGE_TRAVEL_TILES, lungeStrikes, snapAt } from '../../art/action_f16_gardener';
+import { beside, fromFigure } from '../facing';
 
 /** THE HUSHED GARDENERS' AND GROOMS' NUMBERS (tiles before them and to their left; seconds of their pictures). */
 export const PALACE = {
@@ -94,7 +96,7 @@ const ACTS: readonly ActDef[] = [
   { id: 'gardener:snap', clip: 'attack', long: PALACE.blow.long, hit: PALACE.blow.hit, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 1.5 },
 ];
 
-export const RULES: Act1Rules | null = {
+const OLD: Act1Rules = {
   gait: palaceGait(1.0),
   acts: ACTS,
   spawned(_R, m) {
@@ -109,4 +111,78 @@ export const RULES: Act1Rules | null = {
     // (the blades snap shut before him: whoever is in the strip they are driven down along is struck)
     if (inStrip(R, m, SNAP_STRIP)) R.blow(m, a.dmg);
   },
+};
+
+// THE SHEAR LUNGE (GARDENER_HEDGE: art/action_f16_gardener.ts, the art chat's, his pick of 2 Nov 2026, 07:46, “Shear lunge”, in place of
+// the hedge cut he had said yes to on 31 Oct; brought in by the main chat, 2 Nov 2026, behind the same switch, off until his yes here).
+// His one attack: sunk into a deep crouch, the shears out low and opened their widest, the lane marked before him (from LUNGE.mark),
+// HELD; in two frames flung low and long through the air, the blades SNAPPING SHUT at its end (LUNGE_HIT): whoever is in the lane
+// (LUNGE.lane long, LUNGE.half to either side) or within LUNGE.snap of where they shut is struck (`lungeStrikes`, from where he began);
+// a spray of cut grass there (`CLIP_PERIL`); stumbling on, straightened, LUNGE_TRAVEL_TILES on from where he began (the game moves him
+// there as it ends). He rushes in to where he can lunge (no further than LUNGE.far), and lunges only where the lawn is clear before him.
+/** The spray of cut grass where the blades snap shut (its clock from the snap). */
+export const CLIP_PERIL = 'gardener:clip';
+const LUNGE_ACTS: readonly ActDef[] = [{ id: 'gardener:lunge', clip: 'attack', long: LUNGE.long, hit: LUNGE_HIT, dmg: 1.1, cooldown: 0, first: 0, after: 0.8, near: 0, far: LUNGE.far }];
+/** Whether the lawn is clear for him to be flung across and stumble on, from (x, y) the way (fx, fy). */
+function clearLunge(R: BossRules, m: Monster, fx: number, fy: number): boolean {
+  const g = R.g;
+  for (let d = 0.3; d <= LUNGE_TRAVEL_TILES + 0.2; d += 0.25) if (!g.free(g.level.walk, m.x + fx * d, m.y + fy * d, Math.min(m.r, 0.35))) return false;
+  return true;
+}
+const LUNGER: Act1Rules = {
+  gait: palaceGait(2.6),
+  acts: LUNGE_ACTS,
+  spawned: OLD.spawned,
+  can(R, m, _a, dist) {
+    const h = R.g.hero;
+    return clearLunge(R, m, (h.x - m.x) / (dist || 1), (h.y - m.y) / (dist || 1));
+  },
+  start(_R, m) {
+    // (where he began: the lane and the snap are from there)
+    m.act!.a = m.x;
+    m.act!.b = m.y;
+  },
+  acting(R, m, a, t0, t1) {
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    if (at(LUNGE_HIT - 0.12)) g.sfx('swing', 0.5);
+    if (!at(LUNGE_HIT)) return;
+    const r = fromFigure(act.a, act.b, m.fx, m.fy, act.hand, h.x, h.y);
+    if (lungeStrikes(r.fwd, r.left) && !h.move && h.invuln <= 0 && !g.over) R.blow(m, a.dmg);
+    const [sx, sy] = snapAt();
+    const w = beside(act.a, act.b, m.fx, m.fy, act.hand, sx, sy);
+    R.peril(m, 'act1', w.x, w.y, { a1: CLIP_PERIL, dur: 1.8 });
+    g.sfx('slam', 0.35);
+  },
+  end(R, m) {
+    // (stumbled on and straightened, LUNGE_TRAVEL_TILES on: he is moved there, as far as the lawn lets him)
+    const g = R.g;
+    const act = m.act;
+    const x0 = act ? act.a : m.x;
+    const y0 = act ? act.b : m.y;
+    for (let d = LUNGE_TRAVEL_TILES; d >= 0; d -= 0.1) {
+      if (!g.free(g.level.walk, x0 + m.fx * d, y0 + m.fy * d, Math.min(m.r, 0.42))) continue;
+      m.x = x0 + m.fx * d;
+      m.y = y0 + m.fy * d;
+      break;
+    }
+  },
+};
+void CLIP_CANVAS;
+
+const pick = (): Act1Rules => (GARDENER_HEDGE.on ? LUNGER : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  spawned: (R, m) => pick().spawned?.(R, m),
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  start: (R, m, a) => pick().start?.(R, m, a),
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
+  end: (R, m, a) => pick().end?.(R, m, a),
 };

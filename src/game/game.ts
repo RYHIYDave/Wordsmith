@@ -53,6 +53,7 @@ import { act1Rules, act1Ward } from './act1_rules/index';
 import { PAIR, partnerOf } from './act1_rules/pair';
 // (ACT 2, THE HUSH: a word the Physician has drawn out of the hero is never lost: given back as a level is left or the hero falls, and written into the save)
 import { giveBackAll, inTheSave } from './act1_rules/physician';
+import { rallyOf } from './act1_rules/kknight';
 import { blobDist } from './act1_layout';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
@@ -8258,7 +8259,8 @@ export class Game {
   }
 
   rollMonsterDmg(m: Monster): number {
-    return this.rng.range(m.dmgMin, m.dmgMax);
+    // (THE HIGH CITY, FLOOR 19: within the reach of a king's knight's standing banner, harder: game/act1_rules/kknight.ts, KNIGHT_BANNER)
+    return this.rng.range(m.dmgMin, m.dmgMax) * (this.perils.length ? rallyOf(this.perils, m) : 1);
   }
 
   /**

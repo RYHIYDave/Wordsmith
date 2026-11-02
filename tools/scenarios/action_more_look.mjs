@@ -40,6 +40,13 @@ const CASES = [
   { name: 'ph_diag', depth: 14, kind: 'physician', boss: true, n: 5, ready: 2, d: 5, clear: true, snaps: [[1.0, 'beam'], [0.9, 'filling'], [0.55, 'dark'], [0.6, 'held'], [0.5, 'strike'], [0.55, 'scorched']] },
   { name: 'ph_rounds', depth: 14, kind: 'physician', boss: true, n: 5, ready: 4, d: 3, snaps: [[0.8, 'raised_marked'], [0.35, 'first_ring'], [1.2, 'third_ring']] },
   { name: 'warden', depth: 15, kind: 'bookwarden', n: 2, ready: 1, d: 5, snaps: [[0.9, 'raised'], [0.4, 'flying'], [0.8, 'landing']] },
+  // (floors 16 to 19: the High City's)
+  { name: 'gardener', depth: 16, kind: 'gardener', n: 1, ready: 0, d: 2.5, snaps: [[0.75, 'crouched_lane'], [0.45, 'snapped'], [0.8, 'stumbled']] },
+  { name: 'groom', depth: 16, kind: 'groom', n: 1, ready: 0, d: 4, snaps: [[0.6, 'whistle_line'], [0.5, 'horse'], [0.35, 'horse_by']] },
+  { name: 'pguard_partisan', depth: 16, kind: 'pguard', form: 0, n: 4, ready: 1, d: 5, snaps: [[0.85, 'held_marked'], [0.25, 'flying'], [0.6, 'stuck'], [1.2, 'sword_drawn']] },
+  { name: 'pguard_sword', depth: 16, kind: 'pguard', form: 1, n: 4, ready: 2, d: 5, snaps: [[1.1, 'held_marked'], [0.5, 'stuck']] },
+  { name: 'dancers', depth: 17, kind: 'dancer', pair: true, n: 5, ready: 0, d: 5, snaps: [[0.9, 'whirl_lane'], [0.35, 'flung'], [0.5, 'down_lane']] },
+  { name: 'kknight', depth: 19, kind: 'kknight', n: 2, ready: 1, d: 3, snaps: [[1.2, 'held_marked'], [0.25, 'planted'], [1.6, 'standing_rally']] },
 ];
 export default async function (page, snap) {
   const want = (process.env.WHO ?? '').split(',').filter(Boolean);
@@ -91,10 +98,17 @@ export default async function (page, snap) {
       g.perils = []; g.zones = [];
       const h = g.hero;
       let m = C.boss ? g.boss : null;
-      if (!m) {
+      let lady = null;
+      if (!m && C.pair) {
+        // (a waltzing pair: the lady first, the gentleman with her; he leads)
+        lady = g.spawn(C.kind, h.x + C.d, h.y, 77, 0, false, g.rng, null, null);
+        m = g.spawn(C.kind, h.x + C.d, h.y, 77, 1, false, g.rng, null, null);
+        g.monsters = [...g.monsters.filter((q) => q.boss), lady, m];
+      } else if (!m) {
         m = g.spawn(C.kind, h.x + C.d, h.y, -2, 0, false, g.rng, null, null);
         g.monsters = [...g.monsters.filter((q) => q.boss), m];
       }
+      if (C.form !== undefined) m.form = C.form;
       // (where it can stand and see him, C.d off)
       const tries = [];
       for (let k = 0; k < 16; k++) tries.push([Math.cos((k / 16) * Math.PI * 2) * C.d, Math.sin((k / 16) * Math.PI * 2) * C.d]);
@@ -131,9 +145,17 @@ export default async function (page, snap) {
       } else {
         const ok = tries.find(([ox, oy]) => g.isOpen(h.x + ox, h.y + oy) && g.sees(h.x + ox, h.y + oy, h.x, h.y));
         if (ok) { m.x = h.x + ok[0]; m.y = h.y + ok[1]; }
+        if (lady) {
+          lady.x = m.x; lady.y = m.y;
+          g.wakeUp(lady);
+          lady.life = lady.maxLife = 1e9; lady.speed = 0; lady.state = 'chase';
+          if (lady.a1) { lady.a1.noticed = 1; lady.a1.want = 0; }
+          lady.moveCd = Array.from({ length: C.n }, () => 99);
+        }
       }
       m.state = 'chase'; m.act = undefined;
       g.wakeUp(m);
+      if (C.pair && m.a1) { m.a1.noticed = 1; m.a1.want = 0; }
       if (m.boss && g.bossReady) g.bossReady();
       m.life = m.maxLife = 1e9; m.cd = 0;
       if (!C.pack) m.speed = 0;
@@ -154,6 +176,7 @@ export default async function (page, snap) {
         h.invuln = 1; h.life = h.d.maxLife;
         window.__step(1 / 30, idle);
         if (m.moveCd) for (let i = 0; i < m.moveCd.length; i++) if (i !== C.ready) m.moveCd[i] = 99;
+        if (lady && lady.moveCd) for (let i = 0; i < lady.moveCd.length; i++) lady.moveCd[i] = 99;
       }
       // (her name's banner, woken again for each, not over the picture)
       for (let i = g.events.length - 1; i >= 0; i--) if (g.events[i].t === 'bossIntro') g.events.splice(i, 1);
@@ -161,11 +184,14 @@ export default async function (page, snap) {
     }, [C, idle]);
     console.log(`${C.name}: ${got}`);
     for (const [secs, name] of C.snaps) {
-      await page.evaluate(([secs, idle]) => {
+      const at = await page.evaluate(([secs, idle]) => {
         const g = window.__dbg.game();
-        for (let k = 0; k < Math.round(secs * 30); k++) { g.hero.invuln = 0; g.hero.life = g.hero.d.maxLife; window.__step(1 / 30, idle); }
+        for (let k = 0; k < Math.round(secs * 30); k++) { g.hero.invuln = 0; g.hero.life = 1e6; window.__step(1 / 30, idle); g.hero.life = g.hero.d.maxLife; }
+        const m = g.monsters.find((q) => q.act) ?? null;
+        return `${m && m.act ? `${m.act.id} ${m.act.t.toFixed(2)}` : '-'}; ${g.perils.filter((p) => p.a1).map((p) => `${p.a1} ${p.t.toFixed(2)}`).slice(0, 3).join(', ')}`;
       }, [secs, idle]);
       await page.waitForTimeout(30);
+      console.log(`  ${name}: ${at}`);
       await snap(`${C.name}_${name}`);
     }
   }

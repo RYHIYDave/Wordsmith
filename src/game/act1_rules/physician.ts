@@ -447,7 +447,7 @@ export const PHYSICIAN9_ACTS: readonly ActDef[] = [
   { id: 'physician:rap', clip: 'attack', long: RAP9_LONG, hit: RAP9_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.5, near: 0, far: 3.0 },
   { id: 'physician:draw', clip: 'draw', long: DRAW9_LONG, hit: DRAW9_HIT, dmg: 0.8, cooldown: 9, first: 3, after: 0.6, near: 0, far: LUNGE.to - 0.4 },
   { id: 'physician:diagnose', clip: 'diagnose', long: DIAG.long, hit: DIAG.up, dmg: 0, cooldown: 11, first: 5, after: 0.6, near: 1.6, far: BEAM.reach - 3 },
-  { id: 'physician:operate', clip: 'operate', long: OP_LONG, hit: OP_HIT, dmg: 2.5, cooldown: 0, first: 0, after: 1.0, near: 0, far: 0, forced: true },
+  { id: 'physician:operate', clip: 'operate', long: OP_LONG, hit: OP_HIT, dmg: 2.0, cooldown: 0, first: 0, after: 1.0, near: 0, far: 0, forced: true },
   { id: 'physician:rounds', clip: 'rounds', long: ROUNDS9_LONG, hit: ROUNDS9_HITS[0], dmg: 0, cooldown: 18, first: 7, after: 0.8, near: 0, far: 16 },
 ];
 

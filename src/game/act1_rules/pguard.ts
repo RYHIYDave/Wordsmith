@@ -42,6 +42,10 @@ import { along } from '../bosses';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import type { Monster } from '../state';
 import type { Act1Rules } from './types';
+import { DRILL_PARTISAN, DRILL_SWORD, GUARD_DRILL, JAV, PULL, STUCK, THRUST9, THRUST9_HIT, javFly, javStrikes, thrustReach } from '../../art/action_f16_guard';
+import { TILE3 } from '../../art/new_mobs3';
+import { fromFigure, handOf } from '../facing';
+import type { Peril } from '../state';
 
 /** Their looks: the partisan guard (Monster.form 0, its own pictures) and the sword guard (form 1). */
 export const PARTISAN_GUARD = 0;
@@ -157,7 +161,7 @@ function inStep(R: BossRules, m: Monster, dt: number): void {
   gt.t += Math.max(-most, Math.min(most, off * P));
 }
 
-export const RULES: Act1Rules | null = {
+const OLD: Act1Rules = {
   gait: GAIT,
   acts: ACTS,
   spawned(_R, m) {
@@ -205,4 +209,176 @@ export const RULES: Act1Rules | null = {
     const r = R.rel(m);
     if (r.fwd >= L.from && r.fwd <= L.to && r.left >= L.left0 && r.left <= L.left1) R.blow(m, a.dmg);
   },
+};
+
+// THE JAVELIN, AND THE LONG THRUST BY MOVEMENT 9 (GUARD_DRILL: art/action_f16_guard.ts, the art chat's, his pick of 2 Nov 2026, 07:46,
+// “Javelin (Recommended)”, in place of the drill he had said yes to on 31 Oct; brought in by the main chat, 2 Nov 2026, behind the same
+// switch, off until his yes here). Their two attacks:
+//   THE LONG THRUST, their blow: drawn far back, HELD, thrust out in two frames: whoever is along its line (`thrustStrikes`'s:
+//     THRUST9.from to the point's reach and THRUST9.more beyond, THRUST9.half to either side) struck.
+//   THE JAVELIN: the partisan (or the sword guard's light javelin, drawn off his back) hauled back, the hero MARKED where he stands,
+//     HELD; hurled in two frames at where he stands as it leaves the hand (JAV[who].hit); it flies (javFly), and STICKS QUIVERING there,
+//     a burst of turf JAV.r round: whoever is within it as it lands struck (`JAV_PERIL`).
+// THEIR LOOKS (Monster.form, art/act1_figs/pguard.ts): 0 the partisan guard (a sword at his hip now); 1 the sword guard (a javelin on his
+// back); 2 the partisan guard with his sword drawn, his partisan stuck in the turf: he fights with the sword as he marches to it, and
+// stood JAV's pull-out's length short of it, facing it, WRENCHES IT OUT (`pguard:pullout`, PULL), the partisan guard again; 3 the sword
+// guard with his back bare, the javelin thrown (nothing to fetch: it lies where it stuck a while, and is gone).
+/** The thrown weapon: in flight to (x, y) and stuck there (`a` the thrower's id; `b` 0 the partisan, 1 the javelin; `c` how far it was thrown; `hit` its flight; `d` 1 once it has landed). */
+export const JAV_PERIL = 'pguard:jav';
+export const JAV_PARTISAN_FORM = 0;
+export const JAV_SWORD_FORM = 1;
+export const PARTISAN_SWORD_FORM = 2;
+export const SWORD_AFTER_FORM = 3;
+/** How far short of the stuck partisan he stands to wrench it out (tiles: art/action_f16_guard.ts STUCK). */
+export const PULL_SHORT = STUCK.tip[0] / TILE3;
+const JAV_ACTS: readonly ActDef[] = [
+  { id: 'pguard:thrust', clip: 'attack', long: THRUST9.long, hit: THRUST9_HIT, dmg: 1, cooldown: 0, first: 0, after: PGUARD.thrust.after, near: 0, far: 4.5 },
+  { id: 'pguard:javelin', clip: 'javelin', long: JAV.partisan.long, hit: JAV.partisan.hit, dmg: 1.2, cooldown: 7, first: 1.5, after: 0.6, near: JAV.near, far: JAV.far },
+  { id: 'pguard:javelin2', clip: 'javelin', long: JAV.sword.long, hit: JAV.sword.hit, dmg: 1.2, cooldown: 7, first: 1.5, after: 0.6, near: JAV.near, far: JAV.far },
+  { id: 'pguard:pullout', clip: 'pullOut', long: PULL.long, hit: PULL.free, dmg: 0, cooldown: 0, first: 0, after: 0.4, near: 0, far: 0, forced: true },
+];
+/** The thrust's point (tiles before him, to his left), for a look: the partisan's, or the sword's (the sword guard's, and the partisan guard's own while his partisan is stuck). */
+let REACH: [[number, number], [number, number]] | null = null;
+function reachOf(form: number): [number, number] {
+  REACH ??= [thrustReach(DRILL_PARTISAN), thrustReach(DRILL_SWORD)];
+  return REACH[form === JAV_PARTISAN_FORM ? 0 : 1];
+}
+/** Whether the thrust of one of look `form` strikes a hero `x` before him and `y` to his left. */
+export function thrust9Strikes(form: number, x: number, y: number): boolean {
+  const [rx, ry] = reachOf(form);
+  return x >= THRUST9.from && x <= rx + THRUST9.more && Math.abs(y - ry) <= THRUST9.half;
+}
+/** His partisan stuck in the turf (or flying to it), or null. */
+export function spearOf(perils: readonly Peril[], m: Monster): Peril | null {
+  for (const p of perils) if (p.kind === 'act1' && p.a1 === JAV_PERIL && p.a === m.id && p.b === 0) return p;
+  return null;
+}
+const idx = (id: string): number => JAV_ACTS.findIndex((a) => a.id === id);
+const JAVELIN: Act1Rules = {
+  gait: GAIT,
+  acts: JAV_ACTS,
+  spawned: OLD.spawned,
+  tick(R, m, dt, dist) {
+    inStep(R, m, dt);
+    if (m.form !== PARTISAN_SWORD_FORM || m.state === 'act' || m.dead) return false;
+    const g = R.g;
+    const sp = spearOf(g.perils, m);
+    if (!sp) {
+      // (it is gone: he is the partisan guard again)
+      m.form = JAV_PARTISAN_FORM;
+      return false;
+    }
+    if (!sp.d) return false;
+    // (the hero right there and his sword ready: he fights)
+    if (dist <= reachOf(m.form)[0] + THRUST9.more && m.cd <= 0 && (m.moveCd?.[0] ?? 0) <= 0) return false;
+    const dx = sp.x - m.x;
+    const dy = sp.y - m.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const s = m.a1 ?? (m.a1 = {});
+    if (d <= PULL_SHORT + 0.3) {
+      // STOOD SHORT OF IT, facing it: he wrenches it out (it is in his hands from here: taken off the floor)
+      m.fx = dx / d;
+      m.fy = dy / d;
+      const wx = sp.x - m.fx * PULL_SHORT;
+      const wy = sp.y - m.fy * PULL_SHORT;
+      if (g.free(g.level.walk, wx, wy, Math.min(m.r, 0.42))) {
+        m.x = wx;
+        m.y = wy;
+      }
+      R.startAct(m, JAV_ACTS, idx('pguard:pullout'));
+      m.fx = dx / d;
+      m.fy = dy / d;
+      m.act!.hand = handOf(GAIT.trueBack, m.fx, m.fy);
+      g.perils.splice(g.perils.indexOf(sp), 1);
+      s.stuckT = 0;
+      return true;
+    }
+    // MARCHING TO IT (where he cannot get on toward it a while, he gives up and fights as he is: it is called back to him)
+    const was = Math.hypot(m.x - sp.x, m.y - sp.y);
+    m.fx = dx / d;
+    m.fy = dy / d;
+    m.state = 'chase';
+    if (!m.gait || m.gait.mode !== 'walk') m.gait = { mode: 'walk', t: 0 };
+    g.slide(m, Math.min(m.r, 0.42), m.fx * m.speed * dt, m.fy * m.speed * dt, g.level.walk, true);
+    m.anim = 'walk';
+    m.gait.t += (dt * m.speed) / GAIT.pace;
+    const now = Math.hypot(m.x - sp.x, m.y - sp.y);
+    s.stuckT = now < was - m.speed * dt * 0.3 ? 0 : (s.stuckT ?? 0) + dt;
+    if (s.stuckT > 2.5) {
+      g.perils.splice(g.perils.indexOf(sp), 1);
+      m.form = JAV_PARTISAN_FORM;
+      s.stuckT = 0;
+    }
+    return true;
+  },
+  can(R, m, a, dist, los) {
+    const form = m.form ?? 0;
+    if (a.id === 'pguard:thrust') return dist <= reachOf(form)[0] + THRUST9.more;
+    if (a.id === 'pguard:javelin') return form === JAV_PARTISAN_FORM && los;
+    if (a.id === 'pguard:javelin2') return form === JAV_SWORD_FORM && los;
+    return false;
+  },
+  acting(R, m, a, t0, t1) {
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    const free = !h.move && h.invuln <= 0 && !g.over;
+    if (a.id === 'pguard:thrust') {
+      if (at(THRUST9_HIT - 0.08)) g.sfx('swing', 0.6);
+      if (!at(THRUST9_HIT)) return;
+      const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+      if (thrust9Strikes(m.form ?? 0, r.fwd, r.left) && free) R.blow(m, a.dmg);
+      return;
+    }
+    if (a.id === 'pguard:javelin' || a.id === 'pguard:javelin2') {
+      if (!at(a.hit)) return;
+      // HURLED at where he stands as it leaves the hand (no further than it is thrown; on open floor)
+      let dx = h.x - m.x;
+      let dy = h.y - m.y;
+      let d = Math.hypot(dx, dy) || 1;
+      dx /= d;
+      dy /= d;
+      d = Math.max(1, Math.min(JAV.far + 1, d));
+      while (d > 1 && !g.isOpen(m.x + dx * d, m.y + dy * d)) d -= 0.25;
+      R.peril(m, 'act1', m.x + dx * d, m.y + dy * d, { a1: JAV_PERIL, hit: javFly(d), dur: a.id === 'pguard:javelin' ? 1e9 : javFly(d) + JAV.quiver + 4, dmg: g.rollMonsterDmg(m) * a.dmg, fx: dx, fy: dy, a: m.id, b: a.id === 'pguard:javelin' ? 0 : 1, c: d, d: 0 });
+      g.sfx('swing', 0.8);
+    }
+  },
+  end(_R, m, a) {
+    if (a.id === 'pguard:javelin') m.form = PARTISAN_SWORD_FORM;
+    else if (a.id === 'pguard:javelin2') m.form = SWORD_AFTER_FORM;
+    else if (a.id === 'pguard:pullout') m.form = JAV_PARTISAN_FORM;
+  },
+  peril(R, p) {
+    if (p.a1 !== JAV_PERIL || p.d || p.t < p.hit) return;
+    // IT STICKS, a burst of turf round it: whoever is within it struck
+    const g = R.g;
+    const h = g.hero;
+    p.d = 1;
+    if (javStrikes(h.x - p.x, h.y - p.y) && !h.move && h.invuln <= 0 && !g.over) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    g.emit({ t: 'shake', amount: 2 });
+    g.sfx('slam', 0.4);
+  },
+  died(R, m) {
+    // (his partisan, stuck, lies a while and is gone)
+    for (const p of R.g.perils) if (p.a1 === JAV_PERIL && p.a === m.id) p.dur = Math.min(p.dur, p.t + 3);
+  },
+};
+
+const pick = (): Act1Rules => (GUARD_DRILL.on ? JAVELIN : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  spawned: (R, m) => pick().spawned?.(R, m),
+  tick: (R, m, dt, dist) => pick().tick?.(R, m, dt, dist) ?? false,
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
+  end: (R, m, a) => pick().end?.(R, m, a),
+  peril: (R, p, dt) => pick().peril?.(R, p, dt),
+  died: (R, m) => pick().died?.(R, m),
 };

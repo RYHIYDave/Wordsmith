@@ -98,3 +98,28 @@ export function liveFrom(key: string, stamp: string, ax: number, ay: number, mak
   if (s) s.lights = lights.map((l) => ({ ...l, x: l.x / GRAIN, y: l.y / GRAIN, r: l.r / GRAIN }));
   return s;
 }
+
+/**
+ * As `liveFrom`, turned over left to right where `flip` (one facing to the left): painted turned over into its own picture (a live
+ * picture's pixels change frame by frame, so engine/px.ts flipSprite, which keeps the mirror of each picture it is given, will not do
+ * for it). `w`: the painter's canvas's width.
+ */
+export function liveTurned(key: string, stamp: string, w: number, ax: number, ay: number, flip: boolean, make: () => { px: Px; lights?: ReadonlyArray<Light> }): Sprite | null {
+  if (!flip) return liveFrom(key, stamp, ax, ay, make);
+  return liveFrom(`${key}:turned`, stamp, w - 1 - ax, ay, () => {
+    const f = make();
+    const P = f.px;
+    const out = new Px(P.w, P.h);
+    for (let y = 0; y < P.h; y++) {
+      for (let x = 0; x < P.w; x++) {
+        const i = (y * P.w + x) * 4;
+        const j = (y * P.w + (P.w - 1 - x)) * 4;
+        out.d[j] = P.d[i];
+        out.d[j + 1] = P.d[i + 1];
+        out.d[j + 2] = P.d[i + 2];
+        out.d[j + 3] = P.d[i + 3];
+      }
+    }
+    return { px: out, lights: (f.lights ?? []).map((l) => ({ ...l, x: P.w - 1 - l.x })) };
+  });
+}
