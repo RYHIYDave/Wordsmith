@@ -12,5 +12,5 @@ export const FIG: Act1Fig = {
   make: () => (FIREPOT_BLAZE.on ? makeBlazeThrowerArt() : makeFirepotThrowerArt3()),
   // (measured off its stand as the others are: tests/act1_firepot.test.ts, and tests/first5_bosses.test.ts 10)
   size: { top: 30, half: 8 },
-  switches: [ACT1_CULT_ON, FIREPOT_BLAZE],
+  switches: [ACT1_CULT_ON],
 };
