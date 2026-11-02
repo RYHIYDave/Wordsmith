@@ -132,7 +132,8 @@ const HASHES: Record<(typeof KINDS)[number], string> = { firepot: '3e929f4d0c7ea
 test('1. the switches are off; nothing of the game imports the mock-ups but what brings them in; the game’s frames the same; only the new moves new', () => {
   for (const sw of [FIREPOT_BLAZE, CHANTER_LIGHTNING, GOLEM_BOULDER, SCORPION_SPIT, DEVIL_TWISTER]) assert.equal(sw.on, false, 'a switch is on');
   // (brought in by the main chat, 2 Nov 2026, behind the switches: only through each one's figure, rules and what it leaves)
-  const BRINGS = /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/(firepot|chanter|qgolem|scorpion|devil)\.ts$/;
+  // (and the golem's lane, drawn for the deer's charge and the Hollow Stag's: render/act1_fx/deer.ts, stag.ts)
+  const BRINGS = /^((art\/act1_figs|game\/act1_rules|render\/act1_fx)\/(firepot|chanter|qgolem|scorpion|devil)|render\/act1_fx\/(deer|stag))\.ts$/;
   const OURS = /from ['"][^'"]*action_f6_(fx|cult|golem|canyon|scene)['"]/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (floors 9 and 10's more action, art/action_f9_*.ts, the Hollow Stag's, art/stag_action*.ts, and floors 11 to 15's, art/action_f11_*.ts,

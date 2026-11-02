@@ -121,11 +121,13 @@ function stagHashes(art: ActorArt): { whole: string; roots: string } {
 /** The game's own frames of the Stag and its roots, on 5a3d9fc (origin/art/action-f7-queen, before this branch): tools/stag_action_hash.ts. */
 const HASH = { stag: 'f060c17f773e5221', roots: 'd2069c9f30276b52' };
 
-test('1. the switch is off; nothing of the game imports the mock-up; the game’s frames the same; only the new moves new', () => {
+test('1. the switch is off; nothing of the game imports the mock-up but what brings it in; the game’s frames the same; only the new moves new', () => {
   assert.equal(STAG_ACTION.on, false, 'the switch is on');
   const OURS = /from ['"][^'"]*stag_action(_fx)?['"]/;
+  // (brought in by the main chat, 2 Nov 2026, behind the switch: only through his figure, his rules and what he leaves)
+  const BRINGS = /^(art\/act1_figs|game\/act1_rules|render\/act1_fx)\/stag\.ts$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/stag_action/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || BRINGS.test(f) || /^art\/stag_action/.test(f)) continue;
     assert.ok(!OURS.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
   const game: ActorArt = makeStagArt();
