@@ -6,7 +6,8 @@
 //   4. its leap comes down on the hero at its picture's moment and grabs him, and drags him as it hops back; he is held
 //      only while he is dragged;
 //   5. on the Ledge Road: one that comes into the world near the drop waits under the lip out of sight and out of reach,
-//      and as it wakes springs up over the lip onto the road; its drag pulls the hero toward the drop, and never over it;
+//      and as it wakes springs up over the lip onto the road; its drag pulls the hero back with it, away from the drop (his “Yes, no
+//      drop-pushes (Recommended)”, 31 Oct 2026; as it was, toward the drop), and never over it;
 //   6. its packs are a medium monster's; nothing it draws is cyan; a long fight throws nothing and leaves him free.
 //   run: tsx --test tests/act1_crawler.test.ts
 
@@ -166,7 +167,7 @@ test('4. its leap comes down on him at its picture\'s moment, grabs him and drag
   assert.ok(!(g.hero.held ?? 0), 'and has not got hold of him');
 });
 
-test('5. on the Ledge Road: it waits under the lip, springs up over it as it wakes; its drag pulls him toward the drop, never over', () => {
+test('5. on the Ledge Road: it waits under the lip, springs up over it as it wakes; its drag pulls him back with it (as it was, toward the drop), never over', () => {
   const g = floorOf(3, 7);
   const h = g.hero;
   g.monsters.length = 0;
@@ -201,7 +202,9 @@ test('5. on the Ledge Road: it waits under the lip, springs up over it as it wak
   assert.equal(reachDuring, 0, 'out of reach as it climbs');
   assert.ok(!underLip(m) && g.free(g.level.walk, m.x, m.y, 0.42), 'up, and on the road');
   assert.equal(seen.hurts.length, 0, 'its climb harms nobody');
-  // THE DRAG TOWARD THE DROP: the hero at a lip, it before him on the road
+  // THE DRAG, BACK WITH IT (and, as it was, toward the drop): the hero at a lip, it before him on the road
+  for (const toDrop of [false, true]) {
+  CRAWLER.toDrop = toDrop;
   let tried = 0;
   for (const p of all) {
     const ix = p.x - p.px;
@@ -229,9 +232,12 @@ test('5. on the Ledge Road: it waits under the lip, springs up over it as it wak
       assert.ok(g.free(g.level.walk, h.x, h.y, TUNE.heroRadius), 'he is never over the edge');
     });
     assert.ok(grabbed, 'it grabs him');
-    assert.ok(pit() <= before + 1e-6, `dragged toward the drop, not away (${before.toFixed(2)} to ${pit().toFixed(2)})`);
+    if (toDrop) assert.ok(pit() <= before + 1e-6, `dragged toward the drop, not away (${before.toFixed(2)} to ${pit().toFixed(2)})`);
+    else assert.ok(pit() >= before - 1e-6, `dragged back with it, away from the drop (${before.toFixed(2)} to ${pit().toFixed(2)})`);
   }
   assert.ok(tried > 0, 'a lip to try it at');
+  }
+  CRAWLER.toDrop = false;
 });
 
 test('6. its packs are a medium monster\'s; nothing it draws is cyan; a long fight throws nothing and leaves him free', () => {
