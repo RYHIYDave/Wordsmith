@@ -22,6 +22,8 @@ import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
 import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookProps } from './art/floors';
+import { YARD } from './art/yard';
+import { YARD_GATE, makeYardGateArt } from './art/yard_gate';
 import { FLOOR_SETS } from './game/first5';
 import { FIRST5 } from './game/ways';
 import { momentKeys, stairKey } from './art/films';
@@ -1824,7 +1826,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         art.props = crypt ? lookProps(crypt) : vault.props;
         // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
         const own = FIRST5.on && crypt >= 1 && crypt <= 5;
-        art.gates = own ? lookGates(crypt) : vault.gates;
+        // (THE HEADSMAN'S YARD with its own gate, behind YARD and YARD_GATE: floor 2's doors and gates, the boss's the yard's own)
+        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : lookGates(crypt)) : vault.gates;
         art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
         forgetPieces(crypt);
         cryptShown = crypt;

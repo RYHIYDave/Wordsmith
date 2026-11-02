@@ -73,6 +73,7 @@ import { FloorDress } from './dress';
 import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
 import { YARD_DARK, YARD_SKY_LIFT, YARD_VIGNETTE, YardView } from './yard';
+import { YARD_GATE, yardGateDropAt, yardGateSlam } from '../art/yard_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
@@ -679,7 +680,7 @@ export class Renderer {
    * (The stone on either side of a door is wall, and the walls' own rules draw it or leave it out:
    * render/walls.ts.)
    */
-  private standDoors(L: Game['level'], cam: Cam, game: Game): void {
+  private standDoors(L: Game['level'], cam: Cam, game: Game, fx: Fx): void {
     if (L.doors.length === 0) return;
     const A = this.art.gates;
     const f = L.floor;
@@ -712,8 +713,16 @@ export class Renderer {
         const pillar = A.pillar(boss);
         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
         // (EXITS: floor 1's gate is the stairs up to the town, the art chat's, drawn with the floor: its portcullis is gone)
-        if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
-        strips(A.arch(s.alongX, boss, boss && d.want === 0), -wide, 0);
+        // (THE HEADSMAN'S YARD's own gate, YARD_GATE: it falls by its own beat, held juddering, dropped, a bounce; the mark on its
+        // keystone lit as it lands, its dust and sparks, a little shake: art/yard_gate.ts)
+        const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : null;
+        if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, drop ? drop.raise : d.open * GATE_UP), -wide, wide);
+        strips(A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
+        if (drop && drop.slam >= 0) {
+          const [x, y] = at(1.5, wide);
+          put(x + y + 0.3, yardGateSlam(s.alongX, drop.slam), x, y);
+          if (drop.slam < 4) fx.shake = Math.max(fx.shake, 2);
+        }
         // (EXITS, the town's gate: barred until the Fleshmancer is beaten, its bars struck off the first time he comes in
         // sight of it after, and what is left of them lying at its foot from then on: the art chat's, art/town_ways.ts)
         const tw = L.town && L.ways && L.doors[L.ways.gate] === d ? this.dress.townWays(game) : null;
@@ -2731,7 +2740,7 @@ export class Renderer {
     if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
     if (!L.town && QUEST3.on) this.standQuestStone(game, cam, t);
     this.standHazards(game, cam);
-    this.standDoors(L, cam, game);
+    this.standDoors(L, cam, game, fx);
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     if (L.ways) this.standWays(L, t, game.time, game);
     if (L.ways) this.dress.standing(game, this.stage);

@@ -306,6 +306,8 @@ export interface DoorInst {
   want: 0 | 1;
   /** (THE MIX) A lever's gate, and (THE TRAPS) a sealed door: the hero has been told of it (a line on the screen, the first time it is seen from near). */
   told?: boolean;
+  /** (The boss's gate) the game's time it began to fall: the Headsman's yard's own gate falls by its own beat (art/yard_gate.ts). */
+  fell?: number;
 }
 
 /** The doors of a level as a run begins: every door shut, the boss's gate up; (THE MIX) a lever's gate down, the gates of a room that locks up. */

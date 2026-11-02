@@ -11,6 +11,7 @@
 //   - `dark`: under the open sky the yard's dark is the moon's (the art's preview lays it at 0.42), while the hero is in it.
 
 import { YARD, makeYardArt } from '../art/yard';
+import { YARD_GATE } from '../art/yard_gate';
 import type { YardArt } from '../art/yard';
 import type { Sprite } from '../engine/px';
 import { YARD_FOOT, inYard } from '../game/yard';
@@ -183,6 +184,8 @@ export class YardView {
     const Y = f.yard!;
     const out: { x: number; y: number; alongX: boolean }[] = [];
     for (const x of [1.5, 4.5, 7.5, 10.5]) if (x < Y.door - 1 || x > Y.door + 4) out.push({ x: Y.x + x, y: Y.y, alongX: true });
+    // (its own gate, YARD_GATE: a torch either side of the doorway, three quarters of a tile out from each end, as the art's pictures have them)
+    if (YARD_GATE.on) for (const x of [Y.door - 0.75, Y.door + 3.75]) if (!out.some((q) => q.alongX && Math.abs(q.x - Y.x - x) < 1.5)) out.push({ x: Y.x + x, y: Y.y, alongX: true });
     for (const y of [3.5, 7.5, 11.5]) out.push({ x: Y.x, y: Y.y + y, alongX: false });
     return out;
   }

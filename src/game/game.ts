@@ -2624,6 +2624,7 @@ export class Game {
     const L = this.level;
     const f = L.floor;
     d.want = 0;
+    d.fell = this.time;
     const tiles = doorTiles(f, d.spot);
     for (const i of tiles) {
       L.walk[i] = 0;
