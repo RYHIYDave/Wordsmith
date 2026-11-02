@@ -219,3 +219,11 @@ art chat publishes it as a page and sends him the link.
 Shown `gpu_side_by_side.png` and `gpu_side_by_side.mp4`, 1 Nov 2026, and asked whether the frames painted on the graphics chip
 look the same to him as they do now (answered by 19:03 his time): “Yes, they look the same (Recommended)”. The phone test page
 (`dist/gpu_speed.html`) is to be published for him to open on his iPhone; its numbers, when he sends them, go here.
+
+### On his iPhone (1 Nov 2026, 19:05 his time; `dist/gpu_speed.html` sent to him as a file and opened in the Claude app)
+
+His screenshot, a frame now → on the chip: the Warlock standing 27 ms → 12 ms (2.3 times as fast); his bolt 27 → 13 (2.0); the
+change 197 → 77 (2.6); the demon standing 175 → 74 (2.4); its rake 188 → 72. Asked what the page showed: “It says much faster”.
+In the side painter (a worker), he reported: “Chip not available there” (its reason line asked for). So on his phone the
+chip is about two and a half times as fast, not many times: his phone's CPU is much quicker than this machine's (the man 27 ms
+there against 97 here); and, as it stands, the side painter's worker gets no chip there, where the game paints his frames.
