@@ -21,7 +21,7 @@
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { BOSSES5 } from '../game/bosses';
-import { ACTION_F1, ACTION_F2, ACTION_F3, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
+import { ACTION_F1, ACTION_F2, ACTION_F3, ACTION_F4, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { BOSSES, makeAmalgamArt3, makeBoneBeastArt3, makeChainedArt3, makeHeadsmanArt3 } from './bosses3';
@@ -37,6 +37,7 @@ import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './
 import { CULTIST_SIGIL, makeCultistArt, makeHighPriestArt } from './monster_cultist';
 import { SHADE_FROST, makeFrostShadeArt } from './action_f2_fx';
 import { BONEWARD_WALL, makeWallBonewardArt } from './action_f3_fx';
+import { DAGGER_FRENZY } from './cultists';
 import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
@@ -78,6 +79,12 @@ export function useActionF3(on: boolean): void {
   BONEWARD_WALL.on = on;
 }
 useActionF3(ACTION_F3.on);
+/** FLOOR 4, MORE ACTION (game/defs.ts ACTION_F4): the rules and the art chat's pictures of the dagger cultist's frenzy, on and off together. */
+export function useActionF4(on: boolean): void {
+  ACTION_F4.on = on;
+  DAGGER_FRENZY.on = on;
+}
+useActionF4(ACTION_F4.on);
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,

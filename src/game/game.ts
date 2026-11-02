@@ -6,9 +6,10 @@ import { RIME_LASTS, RIME_PERIL, SIGIL_LASTS, SIGIL_PERIL } from './action_f2';
 import { RAIN } from '../art/action_f1_fx';
 import { RIME } from '../art/action_f2_fx';
 import { WALL, glances } from '../art/action_f3_fx';
+import { FRENZY as DAGGER_FRENZY_MOVE, FRENZY_HITS, frenzyTravel } from '../art/cultists';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ACTION_F3, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -9088,6 +9089,12 @@ export class Game {
     } else if (mv.id === 'summon') {
       this.sfx('bossRoar');
       this.msg(`${m.name} calls the dead`, MSG.foe);
+    } else if (mv.id === 'frenzy') {
+      // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy: its first three stabs in its wind-up, the fourth as it lands)
+      const F = (m.frenzy = { x: m.x, y: m.y, fx: m.fx, fy: m.fy });
+      FRENZY_HITS.slice(0, 3).forEach((at) => this.after(at, () => {
+        if (!m.dead && m.state === 'windup' && m.frenzy === F) this.frenzyStab(m, F.x + F.fx * frenzyTravel(at), F.y + F.fy * frenzyTravel(at), mv);
+      }));
     } else if (mv.id === 'sigil') {
       // (FLOOR 2, MORE ACTION: the cultist's fire sigil, its ring under where the hero stands as it begins its cast: game/action_f2.ts)
       this.perils.push({ kind: 'act1', a1: SIGIL_PERIL, x: this.hero.x, y: this.hero.y, fx: m.fx, fy: m.fy, t: -mv.windup, hit: 0, dur: SIGIL_LASTS, dmg: this.rollMonsterDmg(m) * mv.dmg, el: this.monsterElement(m), words: m.words, half: this.halfOf(m), from: m.name, done: 0, a: m.id, b: m.x, c: m.y, d: 0, hand: 1 });
@@ -9158,6 +9165,18 @@ export class Game {
         });
       }
       this.sfx('shot', 0.6);
+    } else if (mv.id === 'frenzy') {
+      // (FLOOR 4, MORE ACTION: its fourth stab, then carried on as far as its stabs drove it, winded: art/cultists.ts FRENZY)
+      const F = m.frenzy ?? { x: m.x, y: m.y, fx: m.fx, fy: m.fy };
+      const sx = F.x + F.fx * DAGGER_FRENZY_MOVE.travel;
+      const sy = F.y + F.fy * DAGGER_FRENZY_MOVE.travel;
+      this.frenzyStab(m, sx, sy, mv);
+      m.fx = F.fx;
+      m.fy = F.fy;
+      if (this.free(this.level.walk, sx, sy, m.r)) {
+        m.x = sx;
+        m.y = sy;
+      }
     } else if (mv.id === 'lockdown' || mv.id === 'sigil') {
       // (its bars crash, its sigil erupts, at the peril's own clock: game/action_f1.ts, action_f2.ts)
     } else if (mv.id === 'shoot') {
@@ -9423,6 +9442,18 @@ export class Game {
       // (FLOOR 3, MORE ACTION: its shield raised again a moment after: WALL.raisedAgain)
       m.raisedT = 0;
     }
+  }
+
+  /** FLOOR 4, MORE ACTION: a stab of the dagger cultist's frenzy from (x, y): the hero within its reach and its arc before him is struck. */
+  private frenzyStab(m: Monster, x: number, y: number, mv: MonsterMove): void {
+    const h = this.hero;
+    const dx = h.x - x;
+    const dy = h.y - y;
+    const d = Math.hypot(dx, dy);
+    const f = m.frenzy ?? { fx: m.fx, fy: m.fy };
+    const ahead = d < 1e-6 || (dx * f.fx + dy * f.fy) / d >= Math.cos(((DAGGER_FRENZY_MOVE.arc / 2) * Math.PI) / 180);
+    if (d <= DAGGER_FRENZY_MOVE.reach + TUNE.heroRadius && ahead) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg, this.monsterElement(m), m.words, m);
+    this.sfx('swing', 0.35);
   }
 
   /**

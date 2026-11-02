@@ -454,6 +454,8 @@ export interface Monster {
   /** (FLOOR 3, MORE ACTION: the Boneward behind its shield) Seconds since a blow glanced off its shield (it plays `glance`), and since it raised its shield again after picking its spear up. */
   glanceT?: number;
   raisedT?: number;
+  /** (FLOOR 4, MORE ACTION: the dagger cultist's frenzy) Where it began and the way he faced: his stabs drive on that way, whatever he turns to. */
+  frenzy?: { x: number; y: number; fx: number; fy: number };
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;

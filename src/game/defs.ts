@@ -975,7 +975,7 @@ export const MONSTER_ATTACKS = { on: true };
  * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
  * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
  */
-export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown' | 'sigil';
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown' | 'sigil' | 'frenzy';
 export interface MonsterMove {
   id: MoveId;
   /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
@@ -995,7 +995,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil' | 'daggerFrenzy';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -1067,6 +1067,9 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
   ],
   // FLOOR 2, MORE ACTION (ACTION_F2): the cultist's fire sigil in place of its bolt (art/monster_cultist.ts SIGIL_SLAM, 1.2 s
   // into its cast, the rest of it 0.75 s; a cooldown a little longer than the bolt's 2.7 s; as far as it would shoot)
+  // FLOOR 4, MORE ACTION (ACTION_F4): the dagger cultist's frenzy in place of his leap and plunge (art/cultists.ts FRENZY: four
+  // stabs, at 0.5, 0.73, 0.97 and 1.2 s, each a share of his blow, carrying him 1.2 tiles; winded to 2.7 s; his cooldown 1.6 s)
+  daggerFrenzy: [{ id: 'frenzy', windup: 1.2, dmg: 0.45, cooldown: 0, first: 0, after: 1.6, recover: 1.5, near: 0, far: 0 }],
   cultistSigil: [{ id: 'sigil', windup: 1.2, dmg: 1.2, cooldown: 0, first: 0, after: 3.2, recover: 0.75, near: 0, far: 7.5 }],
   wardenLock: [
     { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },
@@ -1099,6 +1102,12 @@ export const ACTION_F2 = { on: false };
  * troll's rampage and bull rush, BRUTE_RAMPAGE, are not yet wired: off.)
  */
 export const ACTION_F3 = { on: false };
+/**
+ * FLOOR 4, MORE ACTION (the art chat's art/action-f4, his yes to its pictures): THE DAGGER CULTIST'S FRENZY in place of his leap
+ * and plunge: four quick stabs before him as he drives forward, then winded a moment, open (game.ts startMove and landMove,
+ * 'frenzy'). The art's switch goes with it (art/bestiary.ts useActionF4). (The golem's hurl, GOLEM_HURL, not yet wired: off.)
+ */
+export const ACTION_F4 = { on: false };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
   if (!MONSTER_ATTACKS.on) return null;
@@ -1109,6 +1118,8 @@ export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly M
       return ACTION_F1.on ? MONSTER_MOVES.archer : null;
     case 'cultist':
       return ACTION_F2.on ? MONSTER_MOVES.cultistSigil : null;
+    case 'dagger':
+      return ACTION_F4.on ? MONSTER_MOVES.daggerFrenzy : null;
     case 'brute':
       return m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute;
     case 'boneward':
