@@ -108,3 +108,10 @@ middle clear to 100, the portcullis drawn up to 88; light from the upper left, t
 the same; the portcullis down to the floor on its points; the drop's timing and the slam's dust thinning; and the game's own
 doors and gates for all five of the Crypt's floors hash exactly as on high-city 5a2e280. With them, `tests/gates.test.ts`
 and `tests/yard.test.ts` pass, and `tsc` is clean.
+
+## His word on the pictures
+
+Shown `yard_gate_sheet.png` and `yard_gate.mp4`, 1 Nov 2026, told it is much darker and quieter than the Crypt's gate (the
+glowing mark and the black opening what catch the eye), and asked whether that is it (offered: that's it, recommended; make it
+grander, a gatehouse rising above the wall; something else), answered by 19:52 his time: “Yes, that's it (Recommended)”. So it
+goes to the main chat to bring in, as above.
