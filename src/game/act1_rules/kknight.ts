@@ -168,3 +168,6 @@ export const RULES: Act1Rules | null = {
   acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
   floorBlow: (R, p, x, y, rad, el) => pick().floorBlow?.(R, p, x, y, rad, el),
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { KNIGHT_BANNER };

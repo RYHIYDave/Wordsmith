@@ -113,3 +113,6 @@ export const RULES: Act1Rules | null = {
     if (r.fwd >= S.fwd[0] && r.fwd <= S.fwd[1] && r.left >= S.left[0] && r.left <= S.left[1]) R.blow(m, a.dmg);
   },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { FIELD_HARVEST };

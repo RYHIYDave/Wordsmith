@@ -186,3 +186,6 @@ export const RULES: Act1Rules | null = {
   acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
   end: (R, m, a) => pick().end?.(R, m, a),
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { GARDENER_HEDGE };

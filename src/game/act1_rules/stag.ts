@@ -850,3 +850,6 @@ export const RULES: Act1Rules | null = {
   died: (R, m) => pick().died?.(R, m),
   peril: (R, p, dt) => pick().peril?.(R, p, dt),
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { STAG_ACTION };

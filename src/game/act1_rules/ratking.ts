@@ -673,3 +673,6 @@ export const RULES: Act1Rules | null = {
   died: (R, m) => pick().died?.(R, m),
   peril: (R, p, dt) => (p.a1 === SLUICE_PERIL || p.a1 === ROLL9_PERIL ? ACTION.peril!(R, p, dt) : OLD.peril!(R, p, dt)),
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { RATKING_ACTION };

@@ -114,3 +114,6 @@ export const RULES: Act1Rules = {
     }
   },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { FIREPOT_BLAZE };

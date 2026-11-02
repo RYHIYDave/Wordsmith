@@ -161,3 +161,6 @@ export const RULES: Act1Rules | null = {
     m.anim = 'walk';
   },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { DEVIL_TWISTER };

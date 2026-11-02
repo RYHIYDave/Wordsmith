@@ -216,3 +216,6 @@ function quaking(R: BossRules, m: Monster, t0: number, t1: number, dmg: number):
   g.emit({ t: 'shake', amount: 6 });
   g.sfx('slam', 1.0);
 }
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { ORDERLY_GURNEY };

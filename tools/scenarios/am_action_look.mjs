@@ -42,13 +42,11 @@ export default async function (page, snap) {
     await snap(name);
   };
   // (its acts: swipe, rain, floor arms, devour, and its bursting)
-  console.log('swipe:', await begin(-1.8, -1.7, 5, 0));
-  await at(0.5, 'swipe_a_hauled_marked');
-  await at(0.27, 'swipe_b_rake');
-  await at(0.93, 'swipe_c_backhand_held');
-  await at(0.33, 'swipe_d_backhand');
-  await at(1.2, 'swipe_e_reared_marked');
-  await at(0.37, 'swipe_f_finisher');
+  // (its basic now THE GRASPING FAN, his pick of 2 Nov: its dozen lines marked, the arms snatching along them)
+  console.log('fan:', await begin(-2.4, -2.2, 5, 0));
+  await at(0.75, 'fan_a_marked');
+  await at(0.33, 'fan_b_snatch');
+  await at(0.5, 'fan_c_after');
   console.log('rain:', await begin(-2.2, -2.0, 5, 1));
   await at(1.2, 'rain_a_reared_roaring');
   await at(0.4, 'rain_b_slam');

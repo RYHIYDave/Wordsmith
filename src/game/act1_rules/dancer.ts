@@ -242,3 +242,6 @@ export const RULES: Act1Rules | null = {
   start: (R, m, a) => pick().start?.(R, m, a),
   acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { DANCER_THROW };

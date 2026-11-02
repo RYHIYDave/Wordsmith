@@ -213,3 +213,6 @@ export const RULES: Act1Rules | null = {
 
 /** (for the tests) Their acts. */
 export const BOOKWARDEN_ACTS = ACTS;
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { WARDEN_BARRAGE };

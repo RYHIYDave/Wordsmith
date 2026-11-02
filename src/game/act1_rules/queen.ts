@@ -774,3 +774,6 @@ function stepPeril(R: BossRules, p: Peril): void {
     g.sfx('swing', 0.6);
   }
 }
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { QUEEN_ACTION };
