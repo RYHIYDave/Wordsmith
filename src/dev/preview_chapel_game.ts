@@ -68,9 +68,9 @@ const anchorOf = (s: Stretch3): [number, number] => (s.alongX ? [s.a + 1.5, s.ro
 /** Where he stands, and where the knight stands: in the first chapel (the run, the phone), at the gate, in the hall. */
 const BOSS: [number, number] = [3.4, -4.6];
 const HERO_RUN: [number, number] = [-3.6, 9.4];
-const HERO_PHONE: [number, number] = [-2.6, 9.0];
+const HERO_PHONE: [number, number] = [-1.6, 8.8];
 const HERO_GATE: [number, number] = [3.3, 2.1];
-const HERO_IN: [number, number] = [3.7, -1.7];
+const HERO_IN: [number, number] = [1.6, -1.0];
 
 /** The floor tiles of the chapel's own laid in their place (by "x,y"). */
 const laid = new Map<string, Sprite>();
@@ -107,10 +107,10 @@ function layTiles(): void {
 // =================================================================================================
 // THE CAMERA: game pixels; the floor's (0, 0) at (OX, OY) on the run's picture (600 x 420 game pixels, at two picture pixels each)
 
-const RW = 600;
-const RH = 420;
-const OX = 308;
-const OY = 196;
+let RW = 600;
+let RH = 420;
+let OX = 308;
+let OY = 196;
 const at = (x: number, y: number, z = 0): [number, number] => [OX + (x - y) * 16, OY + (x + y) * 8 - z];
 
 let hero!: ReturnType<ReturnType<typeof makeHeroArt3>['of']>;
@@ -363,16 +363,14 @@ function scene(heroAt: [number, number], raise: number, frame = 1): HTMLCanvasEl
 
 /** One phone screen (507 x 234 game pixels at two picture pixels each), the camera on the knight a little up the screen of him. */
 function phone(): HTMLCanvasElement {
-  const src = scene(HERO_PHONE, GATE_UP);
-  const [hx, hy] = at(HERO_PHONE[0], HERO_PHONE[1]);
-  const cv = document.createElement('canvas');
-  cv.width = 1014;
-  cv.height = 468;
-  const g = cv.getContext('2d') as CanvasRenderingContext2D;
-  g.imageSmoothingEnabled = false;
-  g.fillStyle = '#060508';
-  g.fillRect(0, 0, cv.width, cv.height);
-  g.drawImage(src, Math.round(507 - hx * 2), Math.round(234 - (hy - 14) * 2));
+  // (the camera on the knight: the level drawn on a screen of the phone's own size, its dark and its vignette the screen's)
+  const keep = [RW, RH, OX, OY];
+  RW = 507;
+  RH = 234;
+  OX = Math.round(253 - (HERO_PHONE[0] - HERO_PHONE[1]) * 16);
+  OY = Math.round(117 + 14 - (HERO_PHONE[0] + HERO_PHONE[1]) * 8);
+  const cv = scene(HERO_PHONE, GATE_UP);
+  [RW, RH, OX, OY] = keep;
   return cv;
 }
 /** A part of the run, `k` times the game's size. */

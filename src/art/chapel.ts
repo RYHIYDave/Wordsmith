@@ -1326,13 +1326,13 @@ export function chapelCave(alongX: boolean): ChapelCave {
 
 export const CHAPEL_LIGHTS = {
   /** The floor's dark on floor 4: the Crypt's FAR_DARK is 0.88; look A's candlelit dark. */
-  dark: 0.82,
+  dark: 0.76,
   /** The candles in the niches of a tile of wall: a hole at its face (from the foot of the face under its middle, `up`), and its glow. One to every wall tile. */
-  niche: { up: 14, r: 34, strength: 0.6, glow: { r: 16, color: CANDLE_GOLD, a: 0.26 } },
+  niche: { up: 14, r: 42, strength: 0.72, glow: { r: 22, color: CANDLE_GOLD, a: 0.3 } },
   /** The hall's walls, their lower niches fuller: the same, a little stronger. */
-  hallNiche: { up: 9, r: 36, strength: 0.66, glow: { r: 16, color: CANDLE_GOLD, a: 0.3 } },
+  hallNiche: { up: 9, r: 44, strength: 0.76, glow: { r: 22, color: CANDLE_GOLD, a: 0.32 } },
   /** Candles on the floor (the pieces): a hole at the cluster, `up` over its foot, and its glow (on the pieces' own `lights`). */
-  floorCandles: { up: 12, r: 48, strength: 0.82, glow: { r: 20, color: CANDLE_GOLD, a: 0.36 } },
+  floorCandles: { up: 12, r: 56, strength: 0.88, glow: { r: 22, color: CANDLE_GOLD, a: 0.4 } },
   /** A miner's lantern on a break-in's prop: a hole at it, and its glow, an honest orange (the miners' fire, not the chapel's gold). */
   lantern: { r: 60, strength: 0.88, glow: { r: 24, color: EMBER[2], a: 0.4 } },
   /** The way in: floor 3's fire basket burning low up the stair, out of sight: a hole in the arch's head, `up` over the floor, and its glow. */
@@ -1437,8 +1437,8 @@ export function makeChapelArt(): ChapelArt {
       cave: chapelCave,
     },
     pieces: [
-      { name: 'candles on the floor, a few', kind: 'on the floor', frames: four.map((f) => candlesOnFloor(4, 0.24, 3, f)) },
-      { name: 'candles on the floor, many', kind: 'on the floor', frames: four.map((f) => candlesOnFloor(8, 0.36, 5, f)) },
+      { name: 'candles on the floor, a few', kind: 'on the floor', frames: four.map((f) => candlesOnFloor(5, 0.3, 3, f)) },
+      { name: 'candles on the floor, many', kind: 'on the floor', frames: four.map((f) => candlesOnFloor(9, 0.4, 5, f)) },
       { name: 'rock spilled from the break, along x', kind: 'obstacle', frames: [rockSpill(true)], shadow: 0.5 },
       { name: 'rock spilled from the break, along y', kind: 'obstacle', frames: [rockSpill(false)], shadow: 0.5 },
       { name: 'a broken pew', kind: 'obstacle', frames: [pew('snapped', 0.3)], shadow: 0.44 },
