@@ -251,9 +251,10 @@ export function coneBlast(px: Px, at: (r: number, a: number) => [number, number]
         if (seen.has(k)) continue;
         seen.add(k);
         const near = r / Math.max(1, front);
-        if ((X + Y) % 2 !== 0 && !(age <= 4 && near > 0.7)) continue;
-        if (age > 6 && (X * 3 + Y) % 4 !== 0) continue;
-        put(px, X, Y, near > 0.82 && age <= 6 ? cols[2] : cols[1]);
+        // (dense while it is new, so its reach reads: the whole wedge lit, its front hottest; thinning as it dies)
+        if (age > 4 && (X + Y) % 2 !== 0 && near < 0.75) continue;
+        if (age > 7 && (X * 3 + Y) % 4 !== 0) continue;
+        put(px, X, Y, near > 0.85 && age <= 7 ? cols[3] : near > 0.6 || (X + Y) % 2 === 0 ? cols[2] : cols[1]);
       }
     }
   }
@@ -278,5 +279,165 @@ export function coneBlast(px: Px, at: (r: number, a: number) => [number, number]
     const a = -half * 0.85 + (deg * 0.85 * i) / 5;
     const [x, y] = at(front * (0.9 + 0.1 * rnd(seed + 41 + i)), a);
     dust(px, x, y, Math.max(0, age - 2), i % 2 === 0, seed + 53 + i * 7);
+  }
+}
+
+// =============================================================================================
+// HIS REACH (his word, 3 Nov 2026: “I’d like all of his moves to have more reach”; his pick “Both”): THE FORCE PAST THE FIST
+// OR FOOT, a blast of air and light in the blow's colour (cyan a punch, hot orange a kick; never pink, never gold).
+
+type V3 = readonly [number, number, number] | readonly number[];
+/** The picture's point for a point of the scene (his measure, along the floor and up). */
+export type To = (q: V3) => [number, number];
+
+/**
+ * A SHOCK CONE shot out along a straight blow's line from the fist, foot or knee (`o`), its line `dir` along the floor and
+ * tipped `up` off it, `half` its half-spread (radians): its front `front` out (a bright ring of air across the line, inked
+ * round, white at its heart), two rings of air left behind it, and streaks of light racing along the cone's skin to the
+ * front. `age` frames since the blow; once its front is out (`out`, frames), it breaks up and is gone in five.
+ */
+export function shockCone(px: Px, to: To, o: V3, dir: number, up: number, half: number, front: number, age: number, out: number, cols: readonly string[], seed: number): void {
+  if (age < 0 || age > out + 5 || front <= 1) return;
+  const gone = Math.max(0, Math.min(1, (age - out) / 5));
+  const a: V3 = [Math.cos(up) * Math.cos(dir), Math.cos(up) * Math.sin(dir), Math.sin(up)];
+  const v: V3 = [-Math.sin(dir), Math.cos(dir), 0];
+  const w: V3 = [a[1] * v[2] - a[2] * v[1], a[2] * v[0] - a[0] * v[2], a[0] * v[1] - a[1] * v[0]];
+  const at = (t: number, phi: number, rho: number): [number, number] => to([o[0] + a[0] * t + (v[0] * Math.cos(phi) + w[0] * Math.sin(phi)) * rho, o[1] + a[1] * t + (v[1] * Math.cos(phi) + w[1] * Math.sin(phi)) * rho, o[2] + a[2] * t + (v[2] * Math.cos(phi) + w[2] * Math.sin(phi)) * rho]);
+  const keep = (i: number): boolean => gone <= 0 || rnd(seed * 7 + i) > gone;
+  const tan = Math.tan(half);
+  // (its body of air, lit: every other pixel inside it, over its front half, thinning as it breaks up)
+  if (gone < 0.6) {
+    const seen = new Set<number>();
+    for (let t = front * 0.45; t <= front; t += 0.7) {
+      const rho = t * tan;
+      for (let r = 0; r <= rho; r += 0.8) {
+        const n = Math.max(1, Math.ceil((2 * Math.PI * r) / 0.8));
+        for (let i = 0; i < n; i++) {
+          const [x, y] = at(t, (i / n) * Math.PI * 2, r);
+          const X = Math.round(x);
+          const Y = Math.round(y);
+          const key = Y * 100000 + X;
+          if (seen.has(key) || (X + Y) % 2 !== 0) continue;
+          seen.add(key);
+          if (gone > 0 && rnd(key) < gone * 1.6) continue;
+          put(px, X, Y, t > front * 0.8 ? cols[3] : cols[2]);
+        }
+      }
+    }
+  }
+  // (the streaks along its skin, from a quarter of the way out to the front)
+  const n = 16;
+  for (let i = 0; i < n; i++) {
+    const phi = (i / n) * Math.PI * 2 + rnd(seed + i) * 0.4;
+    const t0 = front * (0.2 + 0.25 * rnd(seed + 20 + i));
+    const t1 = front * (0.94 + 0.06 * rnd(seed + 40 + i));
+    const [x0, y0] = at(t0, phi, t0 * tan);
+    const [x1, y1] = at(t1, phi, t1 * tan);
+    const N = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+    for (let k = 0; k <= N; k++) {
+      if (!keep(i * 97 + k)) continue;
+      const u = k / N;
+      const c = u < 0.4 ? cols[2] : u < 0.8 ? cols[3] : cols[4];
+      if (u > 0.5) disc(px, x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, 0.9, cols[1]);
+      put(px, x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, c);
+    }
+  }
+  // (the rings: two left behind, thin; the front, thick, inked round, white at its heart)
+  const ring = (t: number, layers: [number, string][], step: number): void => {
+    const rho = t * tan + 1.5;
+    const [ax, ay] = at(t, 0, rho);
+    const [bx, by] = at(t, Math.PI / 2, rho);
+    const R = Math.max(2, Math.hypot(ax - bx, ay - by));
+    const N = Math.max(12, Math.ceil(R * 2 * Math.PI * step));
+    for (const [r, c] of layers) {
+      for (let k = 0; k < N; k++) {
+        if (!keep(k + Math.round(t) * 31)) continue;
+        const [x, y] = at(t, (k / N) * Math.PI * 2, rho);
+        if (r <= 0.5) put(px, x, y, c);
+        else disc(px, x, y, r, c);
+      }
+    }
+  };
+  ring(front * 0.45, [[0.9, cols[1]], [0.5, cols[2]]], 0.6);
+  ring(front * 0.72, [[1.4, cols[0]], [0.9, cols[1]], [0.5, cols[3]]], 0.8);
+  ring(front, [[2.8, cols[0]], [2.1, cols[1]], [1.4, cols[2]], [0.9, cols[3]], [0.5, cols[4]]], 1.4);
+  // (its heart at the front, a flash while it is new)
+  if (age <= 2) {
+    const [x, y] = at(front, 0, 0);
+    const r = Math.max(1.5, front * tan * 0.35) * (age <= 1 ? 1 : 0.6);
+    disc(px, x, y, r + 1, cols[3]);
+    disc(px, x, y, r * 0.6, cols[4]);
+  }
+}
+
+/**
+ * A CRESCENT OF FORCE lying flat at a height round a centre (`o`), from `a0` to `a1` (radians, along the floor), its leading
+ * edge `r` out: thick in its middle, its two horns tapering to points, `thick` deep at the most; inked round, its colour, a
+ * glow and a white-hot core along its leading edge. `gone` (0 to 1) breaks it up as it dies. `keep` says which stretch of it
+ * is painted now (a crescent round him is painted behind him where it is behind him, in front where it is in front).
+ */
+export function crescent(px: Px, to: To, o: V3, a0: number, a1: number, r: number, thick: number, cols: readonly string[], gone = 0, seed = 0, keep?: (q: V3) => boolean, r0?: number): void {
+  if (r <= 1 || Math.abs(a1 - a0) < 0.02 || gone >= 1) return;
+  const to3 = to;
+  const N = Math.max(8, Math.ceil(r * Math.abs(a1 - a0) * 2.4));
+  type S = { x: number; y: number; ox: number; oy: number; rad: number; on: boolean };
+  const pts: S[] = [];
+  for (let k = 0; k <= N; k++) {
+    const s = k / N;
+    const a = a0 + (a1 - a0) * s;
+    const t = thick * Math.pow(Math.sin(Math.PI * s), 0.65);
+    if (t < 0.4) continue;
+    const c = Math.cos(a);
+    const sn = Math.sin(a);
+    const outer: V3 = [o[0] + c * r, o[1] + sn * r, o[2]];
+    const mid: V3 = [o[0] + c * (r - t / 2), o[1] + sn * (r - t / 2), o[2]];
+    const inner: V3 = [o[0] + c * (r - t), o[1] + sn * (r - t), o[2]];
+    const [ox, oy] = to(outer);
+    const [mx, my] = to(mid);
+    const [ix, iy] = to(inner);
+    const rad = Math.max(0.7, Math.hypot(ox - ix, oy - iy) / 2, t * 0.22);
+    pts.push({ x: mx, y: my, ox, oy, rad, on: (keep ? keep(mid) : true) && (gone <= 0 || rnd(seed + k) > gone) });
+  }
+  // (streaks of air left behind it, out along the way it goes, from where it was thrown)
+  if (gone < 0.7 && r0 !== undefined && r - thick > r0 + 4) {
+    const n = Math.max(4, Math.round((Math.abs(a1 - a0) * 180) / Math.PI / 9));
+    for (let i = 0; i <= n; i++) {
+      const s = (i + 0.5 * rnd(seed + 300 + i)) / (n + 0.5);
+      const t = Math.pow(Math.sin(Math.PI * s), 0.65);
+      if (t < 0.3) continue;
+      const a = a0 + (a1 - a0) * s;
+      const from = r0 + (r - thick - r0) * (0.15 + 0.45 * rnd(seed + 400 + i));
+      const to = r - thick * t * 0.6;
+      const N = Math.ceil((to - from) * 1.6);
+      for (let k = 0; k <= N; k++) {
+        const rr = from + ((to - from) * k) / N;
+        const q: V3 = [o[0] + Math.cos(a) * rr, o[1] + Math.sin(a) * rr, o[2]];
+        if (keep && !keep(q)) continue;
+        const [x, y] = to3(q);
+        put(px, x, y, k / N < 0.5 ? cols[2] : cols[3]);
+      }
+    }
+  }
+  const layers: [number, string, number][] = [[1.6, cols[0], 0], [0.8, cols[1], 0], [0, cols[2], 0.25], [-1.4, cols[3], 0.5], [-2.8, cols[4], 0.75]];
+  for (const [grow, c, lean] of layers) {
+    for (const p of pts) {
+      if (!p.on) continue;
+      const rr = p.rad + grow * Math.min(1, p.rad / 2.2);
+      if (rr <= 0.35) continue;
+      // (the bright layers drawn toward the leading edge)
+      disc(px, p.x + (p.ox - p.x) * lean, p.y + (p.oy - p.y) * lean, rr, c);
+    }
+  }
+}
+
+/** WHERE A CRESCENT IS OVER THE FLOOR: a faint line of its colour along the floor under its leading edge (so its reach reads). */
+export function floorTrace(px: Px, to: To, o: V3, a0: number, a1: number, r: number, c: string, gone = 0): void {
+  if (r <= 1 || gone >= 1) return;
+  const N = Math.max(8, Math.ceil(r * Math.abs(a1 - a0) * 2.4));
+  for (let k = 0; k <= N; k++) {
+    if (k % 3 === 2) continue;
+    if (gone > 0 && rnd(k * 3 + 1) < gone) continue;
+    const a = a0 + ((a1 - a0) * k) / N;
+    put(px, ...to([o[0] + Math.cos(a) * r, o[1] + Math.sin(a) * r, 0]), c);
   }
 }

@@ -12,6 +12,7 @@ import type { Bones, Posed, V3 } from '../art/skeleton';
 import { Sculpt, draw } from './sculpt';
 import type { Drawn } from './sculpt';
 import type { Reaction } from './veteran_moves';
+import { STEP_KICK, STEP_PUNCH } from './veteran_moves';
 
 const FOE_B = buildOf(52, 1.45, { shoulders: 1.12, chest: 1.08, waist: 1.0, hips: 1.0, limbs: 1.08, arms: 1.0 });
 const SACK: Ramp = ['#1c1a16', '#36302a', '#544a3e', '#766a58', '#988a74'];
@@ -52,8 +53,14 @@ export interface FoeState {
 /** How long each reaction plays (frames), and whether he ends where he started (he comes back in) or stays down. */
 export const REACT_LONG: Record<Reaction, number> = { snap: 14, reel: 24, knock: 34, launch: 60, fly: 46, kneed: 46, aside: 34, shove: 34 };
 export const REACT_STAYS: Record<Reaction, boolean> = { snap: false, reel: false, knock: false, launch: true, fly: true, kneed: true, aside: false, shove: false };
+/**
+ * HOW FAR EACH BLOW DRIVES HIM BACK FOR GOOD (his measure): the force off the Veteran's blows (his “I’d like all of his moves
+ * to have more reach”) drives him back as far as the Veteran's step carries the Veteran in, so that in a combo the next blow
+ * finds him at its reach again. (Those flung away for good are driven back by their fall.)
+ */
+export const REACT_DRIVE: Record<Reaction, number> = { snap: STEP_PUNCH, reel: STEP_PUNCH, knock: STEP_KICK, launch: 0, fly: 0, kneed: 0, aside: STEP_PUNCH, shove: STEP_KICK };
 /** Which way a blow sends him, turned from straight away from the Veteran (degrees to the left): the spinning elbow knocks him ASIDE. */
-export const REACT_VEER: Record<Reaction, number> = { snap: 0, reel: 0, knock: 0, launch: 0, fly: 0, kneed: 0, aside: -40, shove: 0 };
+export const REACT_VEER: Record<Reaction, number> = { snap: 0, reel: 0, knock: 0, launch: 0, fly: 0, kneed: 0, aside: -30, shove: 0 };
 
 /** Him, `g` frames after a blow of a kind landed (g >= 0). */
 export function foeHit(kind: Reaction, g: number): FoeState {

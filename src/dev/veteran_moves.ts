@@ -66,6 +66,42 @@ export interface Strike {
    * Every foe in it is hit, the near ones first (a frame for each tile out).
    */
   cone?: { deg: number; reach: number; react: Reaction };
+  /**
+   * HIS REACH (his word, 3 Nov 2026: “I’d like all of his moves to have more reach”; how it shows, his pick “Both”; how far,
+   * “About 2½ tiles (Recommended)”): THE FORCE THROWN PAST THE FIST OR FOOT, out along the blow's line, a blast of air and
+   * light in the blow's colour. Every foe it reaches is hit, as its front comes to him (`hits` are worked out from it).
+   */
+  force?: Force;
+}
+/**
+ * THE FORCE OF A BLOW, past the fist or foot: a SHOCK CONE of air and light shot out along a straight blow's line (the jab,
+ * the cross, the uppercut, the knee); a CRESCENT of force flung out flat across a round blow's (the hook, the round kick,
+ * the elbow); the spinning jump kick's crescent, rolled out ROUND him as he turns (one pass: each foe hit once as it passes
+ * him; never a ring of blades, never again and again). `reach`: how far it goes from where he stood (his measure) when the
+ * move began; `deg`: how wide (all of it); `long`: frames from the blow until its front is there.
+ */
+export interface Force {
+  shape: 'cone' | 'crescent' | 'round';
+  reach: number;
+  deg: number;
+  long: number;
+  react: Reaction;
+  /** The cone's line tipped up off the level (degrees): the uppercut's goes up and on through their chin. */
+  up?: number;
+  /** Its line, degrees to his left of his forward as the move began (if not along the limb from his hips at the blow). */
+  dir?: number;
+  /** The frame it is thrown, if later than the blow (the spinning kick that closes in throws its crescent as he arrives). */
+  from?: number;
+}
+/**
+ * A FOOT'S WAY THROUGH A MOVE THAT CARRIES HIM (his driving step), from a frame on: DOWN (held where it is on the floor of the
+ * scene: as the move begins if it is the first, else where it is as that stretch ends), a STEP through the air (`lift` high)
+ * to where it is next down, a SLIDE along the floor to it (dust thrown up), or in the AIR as the move has it.
+ */
+export interface Tread {
+  f: number;
+  k: 'down' | 'step' | 'slide' | 'air';
+  lift?: number;
 }
 export interface VetMotion {
   id: string;
@@ -84,6 +120,13 @@ export interface VetMotion {
    * foot coming down (`'end'`), where it is at the last: eased onto it over the three frames before it lands.
    */
   plants?: ['L' | 'R', number, number, 'end'?][];
+  /**
+   * HIS FEET ON THE FLOOR OF THE SCENE, for a move that carries him while a foot is down (his driving step): each foot's way
+   * through the move (`plants` are not used then). A foot down stays where it is on the floor however the game carries him.
+   */
+  feet?: { L: Tread[]; R: Tread[] };
+  /** Where a foot SLIDES along the floor as he drives (a foot from a frame to a frame; dust thrown up): its ball may move. */
+  slides?: ['L' | 'R', number, number][];
   /** How far the game carries him, along his own forward and left (his own measure), at a frame. */
   carry?: (f: number) => [number, number];
   /**
@@ -281,17 +324,41 @@ function keyed(keys: Key[], f: number): Q {
   return out as Q;
 }
 
-/** The raw pose of a move at a frame (before its feet are held where they are put). */
+/** The raw pose of a move at a frame (before its feet are held where they are put); each worked out once (a copy given). */
+const RAW = new WeakMap<VetMotion, Map<number, Q>>();
 function rawAt(m: VetMotion, f: number): Q {
   const g = m.loops ? (((f % m.long) + m.long) % m.long) : Math.max(0, Math.min(m.long, f));
-  if (m.fn) return m.fn(g);
-  return keyed(m.keys as Key[], g);
+  let memo = RAW.get(m);
+  if (!memo) RAW.set(m, (memo = new Map()));
+  let q = memo.get(g);
+  if (!q) {
+    q = m.fn ? m.fn(g) : keyed(m.keys as Key[], g);
+    memo.set(g, q);
+  }
+  return { ...q };
 }
 
 /** HIS FEET GRIP THE FLOOR: while a foot is planted, its ball stays where it was put (a pivot turns on it). */
 export function poseAt(m: VetMotion, f: number): Q {
   const q = rawAt(m, f);
   const g = m.loops ? (((f % m.long) + m.long) % m.long) : Math.max(0, Math.min(m.long, f));
+  if (m.feet) {
+    // HIS FEET ON THE FLOOR OF THE SCENE (a move that carries him): each foot where its way puts it on the floor, turned back
+    // into his own measure as the game has carried and turned him then
+    for (const side of ['L', 'R'] as const) {
+      const at = treadAt(m, side, g);
+      if (!at) continue;
+      const want = fromWorld(m, g, at.p);
+      const now = toeOf(q, side);
+      const x = side === 'L' ? 'lfx' : 'rfx';
+      const y = side === 'L' ? 'lfy' : 'rfy';
+      const z = side === 'L' ? 'lfz' : 'rfz';
+      (q as Record<string, number>)[x] = num(q, x) + (want[0] - now[0]) * at.k;
+      (q as Record<string, number>)[y] = num(q, y) + (want[1] - now[1]) * at.k;
+      if (at.lift) (q as Record<string, number>)[z] = num(q, z) + at.lift;
+    }
+    return q;
+  }
   for (const [side, a, b, anchor] of m.plants ?? []) {
     // (held from a to b; eased off over three frames after b as the foot lifts, or on over three before a as it lands)
     const fade = g < a ? (anchor === 'end' ? Math.max(0, 1 - (a - g) / 3) : 0) : g <= b ? 1 : anchor === 'end' ? 0 : Math.max(0, 1 - (g - b) / 3);
@@ -309,6 +376,254 @@ export function poseAt(m: VetMotion, f: number): Q {
 function toeOf(q: Q, side: 'L' | 'R'): V3 {
   const s = skel(q);
   return side === 'L' ? s.toeL : s.toeR;
+}
+
+/** A point on the floor of the scene (the move's own measure, from where he stood) in his own measure at a frame. */
+function fromWorld(m: VetMotion, f: number, w: readonly number[]): [number, number] {
+  const a = spinAt(m, f);
+  const [cx, cy] = carryAt(m, f);
+  const [px, py] = m.pivot ?? [0, 0];
+  const [x, y] = turnXY(w[0] - px - cx, w[1] - py - cy, -a);
+  return [x + px, y + py];
+}
+const smooth = (u: number): number => {
+  const v = Math.max(0, Math.min(1, u));
+  return v * v * (3 - 2 * v);
+};
+/**
+ * WHERE A FOOT IS ON THE FLOOR OF THE SCENE at a frame, as its way through the move has it (and how much of that to take, and
+ * how high a step lifts it); null where it is in the air as the move has it, nothing held.
+ */
+function treadAt(m: VetMotion, side: 'L' | 'R', g: number): { p: [number, number]; k: number; lift: number } | null {
+  const T = (m.feet as { L: Tread[]; R: Tread[] })[side];
+  const end = (i: number): number => (i + 1 < T.length ? T[i + 1].f : m.long);
+  const world = (f: number): [number, number] => {
+    const w = worldOf(m, f, toeOf(rawAt(m, f), side));
+    return [w[0], w[1]];
+  };
+  // (a foot down is held where it is as the move begins, if it is the first; else where it is as that stretch ends)
+  const downAt = (i: number): [number, number] => (i === 0 ? world(T[0].f) : world(end(i)));
+  let i = 0;
+  while (i + 1 < T.length && g >= T[i + 1].f) i++;
+  const t = T[i];
+  const a = t.f;
+  const b = end(i);
+  if (t.k === 'down') return { p: downAt(i), k: 1, lift: 0 };
+  if (t.k === 'air') {
+    // (eased off the floor over three frames after it was down, and onto it over three before it is down again)
+    if (i > 0 && T[i - 1].k === 'down' && g - a < 3) return { p: downAt(i - 1), k: smooth(1 - (g - a) / 3), lift: 0 };
+    if (i + 1 < T.length && T[i + 1].k === 'down' && b - g < 3) return { p: downAt(i + 1), k: smooth(1 - (b - g) / 3), lift: 0 };
+    return null;
+  }
+  // A STEP OR A SLIDE: from where it was down to where it is next down
+  const P0 = i > 0 && T[i - 1].k === 'down' ? downAt(i - 1) : world(a);
+  const P1 = downAt(i + 1);
+  let u = smooth((g - a) / (b - a));
+  if (t.k === 'slide') {
+    // (a slide goes as the game carries him: it is dragged up behind him)
+    const c0 = carryAt(m, a);
+    const c1 = carryAt(m, b);
+    const cg = carryAt(m, g);
+    const d: [number, number] = [P1[0] - P0[0], P1[1] - P0[1]];
+    const all = (c1[0] - c0[0]) * d[0] + (c1[1] - c0[1]) * d[1];
+    if (Math.abs(all) > 1) u = Math.max(0, Math.min(1, ((cg[0] - c0[0]) * d[0] + (cg[1] - c0[1]) * d[1]) / all));
+  }
+  return { p: [P0[0] + (P1[0] - P0[0]) * u, P0[1] + (P1[1] - P0[1]) * u], k: 1, lift: t.k === 'step' ? (t.lift ?? 3) * Math.sin(Math.PI * u) : 0 };
+}
+/** The frames a foot slides along the floor in a move (dust thrown up; its ball may move): [foot, from, to]. */
+export function slidesOf(m: VetMotion): ['L' | 'R', number, number][] {
+  const out: ['L' | 'R', number, number][] = [...(m.slides ?? [])];
+  for (const side of ['L', 'R'] as const) {
+    const T = m.feet?.[side] ?? [];
+    T.forEach((t, i) => {
+      if (t.k === 'slide') out.push([side, t.f, i + 1 < T.length ? T[i + 1].f : m.long]);
+    });
+  }
+  return out;
+}
+
+/**
+ * THE STAMPING STEP OF A PUNCH (his “I’d like all of his moves to have more reach”; his pick “Both”: he lunges further and
+ * force comes off each blow): the game carries him as his lead foot stamps down `step` on from where it stood, and it stays
+ * there: nothing while the wind-up is held (to `from`); thrown in behind it in the strike (by `at`, the blow); then, as the
+ * move brings that foot back under him in his own measure, carried on over it, so that the foot never moves on the floor.
+ */
+function stampCarry(keys: () => Key[], step: number, from: number, at: number, long: number): (f: number) => [number, number] {
+  let c: number[] | null = null;
+  const make = (): number[] => {
+    const ks = keys();
+    // (by his lead ankle, which the tip of the foot does not move; smoothed over three frames)
+    const ank = (f: number): number => skel(keyed(ks, f)).ankleL[0];
+    const home = ank(long);
+    const raw: number[] = [];
+    for (let f = 0; f <= long; f++) raw.push(f < at ? 0 : step + home - ank(f));
+    return raw.map((v, f) => (f <= at + 1 || f >= long ? v : (raw[f - 1] + v + raw[f + 1]) / 3));
+  };
+  return (f) => {
+    c ??= make();
+    if (f <= from) return [0, 0];
+    if (f < at) {
+      const u = (f - from) / (at - from);
+      return [c[at] * (1 - (1 - u) * (1 - u) * (1 - u)), 0];
+    }
+    const i = Math.min(long - 1, Math.floor(f));
+    const k = Math.min(1, f - i);
+    return [c[i] + (c[i + 1] - c[i]) * k, 0];
+  };
+}
+/** A SKIPPING STEP (the kicks): the game carries him `step` on, most of it in the strike (from `from` to `at`), the rest by `by`. */
+function skipCarry(step: number, from: number, at: number, by: number): (f: number) => [number, number] {
+  return (f) => {
+    if (f <= from) return [0, 0];
+    if (f < at) {
+      const u = (f - from) / (at - from);
+      return [step * 0.85 * (1 - (1 - u) * (1 - u)), 0];
+    }
+    if (f >= by) return [step, 0];
+    const u = (f - at) / (by - at);
+    return [step * (0.85 + 0.15 * (1 - (1 - u) * (1 - u))), 0];
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// HIS REACH: the force past the fist or foot
+
+/** A tile, his measure; how far his punches and kicks reach, and the push kick's cone and the spin kick's crescent. */
+export const REACH = 2.5 * VET_TILE;
+export const REACH_FAR = 3.5 * VET_TILE;
+/** How far each kind of blow carries him in (his measure): a punch's stamping step, a kick's skipping step. */
+export const STEP_PUNCH = 0.75 * VET_TILE;
+export const STEP_KICK = 1.0 * VET_TILE;
+/** Where a blow's force starts, which way it goes and how far (the move's own measure, from where he stood). */
+export interface ForceGeo {
+  shape: Force['shape'];
+  /** The cone's apex (at the fist, foot or knee), or the crescent's centre (over his hips, at the limb's height). */
+  o: V3;
+  /** Its line (radians, to his left of his forward as the move began); the round crescent's: where his leg is at the blow. */
+  dir: number;
+  up: number;
+  half: number;
+  /** Its front, from the blow (r0) to its reach (r1), along its line (the cone's tipped up with it). */
+  r0: number;
+  r1: number;
+}
+const GEOS = new WeakMap<Strike, ForceGeo>();
+export function forceGeo(m: VetMotion, s: Strike): ForceGeo {
+  const have = GEOS.get(s);
+  if (have) return have;
+  const F = s.force as Force;
+  const fa = F.from ?? s.at;
+  const k = skel(poseAt(m, fa));
+  const limb = worldOf(m, fa, k[s.joint] as V3);
+  const pel = worldOf(m, fa, k.pelvis);
+  const lean = Math.atan2(limb[1] - pel[1], limb[0] - pel[0]);
+  const dir = F.dir !== undefined ? (F.dir * Math.PI) / 180 : lean;
+  const up = ((F.up ?? 0) * Math.PI) / 180;
+  // (how far along a line from a point it is to the circle of its reach round where he stood)
+  const far = (ox: number, oy: number, d: number): number => {
+    const ux = Math.cos(d);
+    const uy = Math.sin(d);
+    const b = ox * ux + oy * uy;
+    return -b + Math.sqrt(Math.max(0, b * b - (ox * ox + oy * oy) + F.reach * F.reach));
+  };
+  const half = ((F.deg / 2) * Math.PI) / 180;
+  let g: ForceGeo;
+  if (F.shape === 'cone') g = { shape: 'cone', o: limb, dir, up, half, r0: 3, r1: far(limb[0], limb[1], dir) / Math.cos(up) };
+  else {
+    const r0 = Math.hypot(limb[0] - pel[0], limb[1] - pel[1]);
+    const o: V3 = [pel[0], pel[1], limb[2]];
+    g = F.shape === 'crescent'
+      ? { shape: 'crescent', o, dir, up: 0, half, r0, r1: far(pel[0], pel[1], dir) }
+      : { shape: 'round', o, dir: lean, up: 0, half, r0, r1: far(pel[0], pel[1], 0) };
+  }
+  GEOS.set(s, g);
+  return g;
+}
+const outE = (u: number): number => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
+/** How far out its front is at a frame of the move (along its line), and how far round the round crescent has come (degrees). */
+export function forceFront(m: VetMotion, s: Strike, f: number): number {
+  const g = forceGeo(m, s);
+  const F = s.force as Force;
+  return g.r0 + (g.r1 - g.r0) * outE((f - (F.from ?? s.at)) / F.long);
+}
+/**
+ * THE ROUND CRESCENT AT A FRAME: from how far round to how far round it lies (degrees, the way he turns, from where his leg
+ * was at the blow): its head where his leg is, `deg` long behind it at the most; one turn of his leg, and no more.
+ */
+export function roundSpan(m: VetMotion, s: Strike, f: number): [number, number] {
+  const F = s.force as Force;
+  const hi = Math.max(0, Math.min(360, spinAt(m, f) - spinAt(m, F.from ?? s.at)));
+  return [Math.max(0, hi - F.deg), hi];
+}
+/**
+ * THE FRAME ITS FORCE REACHES ONE STANDING AT A POINT on the floor (the move's own measure: from where he stood), or null if
+ * it never does: in a cone or a crescent, within its reach; the round crescent, once it has come round to him and rolled
+ * out to him. (One standing there is hit as its front comes to his near side.)
+ */
+export function forceHit(m: VetMotion, s: Strike, P: readonly number[]): number | null {
+  const F = s.force as Force;
+  const g = forceGeo(m, s);
+  const BODY = 9;
+  const NEAR = 7;
+  const when = (d: number): number => {
+    const u = Math.max(0, Math.min(1, (d - g.r0) / (g.r1 - g.r0)));
+    return (F.from ?? s.at) + F.long * (1 - Math.cbrt(1 - u));
+  };
+  const vx = P[0] - g.o[0];
+  const vy = P[1] - g.o[1];
+  const d = Math.hypot(vx, vy);
+  if (g.shape === 'cone') {
+    const ux = Math.cos(g.dir);
+    const uy = Math.sin(g.dir);
+    const along = vx * ux + vy * uy;
+    const across = Math.abs(vx * uy - vy * ux);
+    const flat = Math.cos(g.up);
+    if (along <= 0 || along > g.r1 * flat + BODY || across > (along / flat) * Math.tan(g.half) + BODY) return null;
+    return when(Math.max(0, along - NEAR) / flat);
+  }
+  if (d > g.r1 + BODY) return null;
+  let a = Math.atan2(vy, vx) - g.dir;
+  if (g.shape === 'crescent') {
+    a = Math.atan2(Math.sin(a), Math.cos(a));
+    if (Math.abs(a) > g.half + Math.atan2(BODY, Math.max(1, d))) return null;
+    return when(d - NEAR);
+  }
+  // (the round crescent: how far round from where his leg was at the blow, the way he turns)
+  let deg = ((((a * 180) / Math.PI) % 360) + 360) % 360;
+  const margin = (Math.atan2(BODY, Math.max(1, d)) * 180) / Math.PI;
+  if (deg > 360 - margin) deg = 0;
+  // (the first frame it lies over him and has rolled out to him: it passes him once)
+  const near = Math.max(0, d - NEAR);
+  for (let t = F.from ?? s.at; t < s.at + 40; t += 0.1) {
+    const [lo, hi] = roundSpan(m, s, t);
+    if (hi >= deg - margin && lo <= deg + margin && forceFront(m, s, t) >= near) return t;
+  }
+  return null;
+}
+/** Where one stands to be reached by a blow: on its line (or `off` degrees to his left of it), `back` short of its reach. */
+function standOn(m: VetMotion, s: Strike, off = 0, back = 10, r?: number): [number, number] {
+  const g = forceGeo(m, s);
+  const a = g.dir + (off * Math.PI) / 180;
+  const R = r ?? (s.force as Force).reach;
+  // (from the cone's apex or the crescent's centre, out along the way to the circle of `R` round where he stood, less `back`)
+  const ux = Math.cos(a);
+  const uy = Math.sin(a);
+  const b = g.o[0] * ux + g.o[1] * uy;
+  const L = -b + Math.sqrt(Math.max(0, b * b - (g.o[0] * g.o[0] + g.o[1] * g.o[1]) + R * R));
+  return [g.o[0] + ux * (L - back), g.o[1] + uy * (L - back)];
+}
+/** Work out who a move's blows reach, and when, from its force (each foe once, as its front comes to him). */
+function hitsFromForce(m: VetMotion): void {
+  for (const s of m.strikes) {
+    if (!s.force) continue;
+    const F = s.force;
+    const hits: Strike['hits'] = [];
+    m.foes.forEach((P, foe) => {
+      const t = forceHit(m, s, P);
+      if (t !== null) hits.push({ foe, f: Math.max(s.at, Math.ceil(t - 1e-6)), react: F.react });
+    });
+    s.hits = hits;
+  }
 }
 
 const clampF = (m: VetMotion, f: number): number => (m.loops ? f : Math.max(0, Math.min(m.long, f)));
@@ -532,7 +847,7 @@ function chestHands(q: Partial<Bones>): Q {
 // straight, the shoulder rolled up over his chin, palm down; the stop; the fist snaps back to his guard.
 const JAB: VetMotion = {
   id: 'jab', name: 'The jab', input: 'tap (the first punch)', long: 28,
-  line: 'Coiled back on his rear foot, the lead fist cocked by his cheek, held; then a stamping step in and the fist shot straight out in a frame; the stop; stepped back out to his guard.',
+  line: 'Coiled back on his rear foot, the lead fist cocked by his cheek, held; then a stamping step in and the fist shot straight out in a frame, a cone of force on past it to two and a half tiles; the stop; his guard.',
   keys: [
     { f: 0, q: P({}) },
     { f: 8, q: elbows(P({ px: -4.0, pz: -9.0, yaw: -16, twist: 24, bend: 4, pitch: -5, faceTurn: -18, lfz: 3.6, lfp: 34, lk: 22, lhx: 3.5, lhy: -1.0, lhz: 4.0, le: 2, ...CHIN_R }), [-0.2, 0.3, -1]), e: 'out' },
@@ -540,14 +855,17 @@ const JAB: VetMotion = {
     { f: 12, q: elbows(P({ px: 9.0, pz: -8.4, yaw: -34, twist: -28, bend: 15, pitch: 11, side: -5, faceTurn: -10, lfx: 11.5, lfz: 0, lfp: 12, lk: 16, rfp: 40, lhx: 22.5, lhy: -1.5, lhz: 3.0, le: 4, palmL: DOWN, ...CHIN_R }), [0.1, 0.45, -1], undefined), e: 'lin' },
     { f: 14, q: elbows(P({ px: 9.4, pz: -8.6, yaw: -35, twist: -29, bend: 16, pitch: 12, side: -5, faceTurn: -10, lfx: 11.5, lfz: 0, lfp: 12, lk: 16, rfp: 40, lhx: 22.8, lhy: -1.6, lhz: 2.8, le: 4, palmL: DOWN, ...CHIN_R }), [0.1, 0.45, -1], undefined), e: 'out' },
     { f: 19, q: elbows(P({ px: 3.5, pz: -6.5, yaw: -28, twist: -6, bend: 10, pitch: 5, faceTurn: -18, lfx: 11.5, lfz: 0, lfp: 16, lk: 20, lhx: 9, lhy: 0.0, lhz: 4.5, le: 18, ...CHIN_R }), [-0.2, 0.4, -1], undefined), e: 'out' },
-    { f: 22, q: P({ px: 2.0, pz: -5.0, lfx: 10.5, lfz: 5.5, lfp: 30, lhx: 9, lhz: 4.5, ...CHIN_R }), e: 'out' },
-    { f: 24, q: P({ px: 0.5, pz: -4.0, lfx: 7.2, lfz: 4.5, lfp: 30 }), e: 'io' },
+    { f: 22, q: P({ px: 2.0, pz: -5.0, lfx: 10.5, lfz: 0.4, lfp: 22, lhx: 9, lhz: 4.5, ...CHIN_R }), e: 'io' },
+    { f: 24, q: P({ px: 0.5, pz: -4.0, lfx: 7.2, lfz: 0.4, lfp: 24 }), e: 'io' },
     { f: 28, q: P({}) },
   ],
-  plants: [['R', 0, 28], ['L', 0, 7], ['L', 12, 20, 'end'], ['L', 26, 28, 'end']],
-  strikes: [{ from: 11, at: 12, joint: 'handL', kind: 'punch', heavy: false, hits: [{ foe: 0, f: 12, react: 'snap' }] }],
-  foes: [[38, 2]],
-  dust: [{ f: 12, at: 'L' }],
+  // HIS STAMPING STEP: the lead foot, cocked through the held wind-up, stamps down three quarters of a tile on as the fist
+  // shoots out; his rear foot is dragged up after him along the floor in the dust
+  carry: stampCarry(() => JAB.keys as Key[], STEP_PUNCH, 11, 12, 28),
+  feet: { L: [{ f: 0, k: 'down' }, { f: 11, k: 'step', lift: 6 }, { f: 12, k: 'down' }], R: [{ f: 0, k: 'down' }, { f: 11, k: 'slide' }, { f: 28, k: 'down' }] },
+  strikes: [{ from: 11, at: 12, joint: 'handL', kind: 'punch', heavy: false, hits: [], force: { shape: 'cone', reach: REACH, deg: 36, dir: 0, long: 3, react: 'snap' } }],
+  foes: [],
+  dust: [{ f: 12, at: 'L' }, { f: 12, at: 'R', big: true }, { f: 16, at: 'R' }],
 };
 
 // THE CROSS (tap, the second punch): his rear fist. Wind-up: his whole trunk wound back right round, the rear fist
@@ -558,18 +876,22 @@ const CROSS: VetMotion = {
   line: 'Wound right back, the rear fist drawn past his ear, sunk on his back leg, held; then hips, shoulders and heel thrown round as the fist drives straight through; the stop; back to his guard.',
   keys: [
     { f: 0, q: P({}) },
-    { f: 9, q: elbows(P({ px: -4.5, pz: -9.5, yaw: -36, twist: -38, bend: 6, pitch: -6, side: 4, faceTurn: -14, rfp: 14, rfz: 1.2, rk: -30, ...CHIN_L, rhx: -6.5, rhy: -2.0, rhz: 6.0, re: 60 }), undefined, [-0.5, -0.4, -1]), e: 'out' },
-    { f: 12, q: elbows(P({ px: -5.0, pz: -10.0, yaw: -38, twist: -42, bend: 6, pitch: -7, side: 5, faceTurn: -14, rfp: 14, rfz: 1.2, rk: -30, ...CHIN_L, rhx: -7.2, rhy: -2.2, rhz: 6.2, re: 64 }), undefined, [-0.5, -0.4, -1]), e: 'io' },
-    { f: 14, q: elbows(P({ px: 7.5, pz: -7.0, yaw: 4, twist: 44, bend: 16, pitch: 12, side: -6, faceTurn: -6, rft: 10, rfp: 56, rfz: 4.4, rk: -6, lk: 22, ...CHIN_L, rhx: 22.0, rhy: 2.5, rhz: 3.0, re: 6, palmR: DOWN }), undefined, [0.1, -0.45, -1]), e: 'lin' },
-    { f: 16, q: elbows(P({ px: 7.8, pz: -7.2, yaw: 5, twist: 45, bend: 17, pitch: 12, side: -6, faceTurn: -6, rft: 10, rfp: 56, rfz: 4.4, rk: -6, lk: 22, ...CHIN_L, rhx: 22.3, rhy: 2.4, rhz: 2.8, re: 6, palmR: DOWN }), undefined, [0.1, -0.45, -1]), e: 'out' },
-    { f: 22, q: P({ px: 3.0, pz: -6.0, yaw: -14, twist: 12, bend: 10, pitch: 5, faceTurn: -18, rft: -16, rfp: 36, rfz: 3.0, rk: -18, rhx: 10, rhy: 0.5, rhz: 4.0, re: 14 }), e: 'io' },
+    { f: 9, q: elbows(P({ px: -4.5, pz: -9.5, yaw: -36, twist: -38, bend: 6, pitch: -6, side: 4, faceTurn: -14, lfz: 3.0, lfp: 30, lk: 22, rfp: 14, rfz: 1.2, rk: -30, ...CHIN_L, rhx: -6.5, rhy: -2.0, rhz: 6.0, re: 60 }), undefined, [-0.5, -0.4, -1]), e: 'out' },
+    { f: 12, q: elbows(P({ px: -5.0, pz: -10.0, yaw: -38, twist: -42, bend: 6, pitch: -7, side: 5, faceTurn: -14, lfz: 3.4, lfp: 32, lk: 22, rfp: 14, rfz: 1.2, rk: -30, ...CHIN_L, rhx: -7.2, rhy: -2.2, rhz: 6.2, re: 64 }), undefined, [-0.5, -0.4, -1]), e: 'io' },
+    { f: 14, q: elbows(P({ px: 7.5, pz: -7.0, yaw: 4, twist: 44, bend: 16, pitch: 12, side: -6, faceTurn: -6, lfx: 10.5, lfp: 14, rft: 10, rfp: 56, rfz: 4.4, rk: -6, lk: 22, ...CHIN_L, rhx: 22.0, rhy: 2.5, rhz: 3.0, re: 6, palmR: DOWN }), undefined, [0.1, -0.45, -1]), e: 'lin' },
+    { f: 16, q: elbows(P({ px: 7.8, pz: -7.2, yaw: 5, twist: 45, bend: 17, pitch: 12, side: -6, faceTurn: -6, lfx: 10.5, lfp: 14, rft: 10, rfp: 56, rfz: 4.4, rk: -6, lk: 22, ...CHIN_L, rhx: 22.3, rhy: 2.4, rhz: 2.8, re: 6, palmR: DOWN }), undefined, [0.1, -0.45, -1]), e: 'out' },
+    { f: 22, q: P({ px: 3.0, pz: -6.0, yaw: -14, twist: 12, bend: 10, pitch: 5, faceTurn: -18, lfx: 8.0, rft: -16, rfp: 36, rfz: 3.0, rk: -18, rhx: 10, rhy: 0.5, rhz: 4.0, re: 14 }), e: 'io' },
     { f: 28, q: P({}) },
   ],
-  plants: [['L', 0, 28], ['R', 0, 28]],
-  strikes: [{ from: 12, at: 14, joint: 'handR', kind: 'punch', heavy: true, hits: [{ foe: 0, f: 14, react: 'reel' }] }],
+  // HIS STAMPING STEP: the lead foot lifted and cocked as he winds back, stamped down three quarters of a tile on as the rear
+  // fist is driven through; the rear foot, up on its toes, dragged up after him in the dust
+  carry: stampCarry(() => CROSS.keys as Key[], STEP_PUNCH, 12, 14, 28),
+  feet: { L: [{ f: 0, k: 'down' }, { f: 12, k: 'step', lift: 6 }, { f: 14, k: 'down' }], R: [{ f: 0, k: 'down' }, { f: 12, k: 'slide' }, { f: 28, k: 'down' }] },
+  strikes: [{ from: 12, at: 14, joint: 'handR', kind: 'punch', heavy: true, hits: [], force: { shape: 'cone', reach: REACH, deg: 42, dir: 0, long: 3, react: 'reel' } }],
   // (the fist turning over as it goes: palm in, then down)
   turn: { f: 13, palmR: [0.2, 0.56, -0.8] },
-  foes: [[36, 2]],
+  foes: [],
+  dust: [{ f: 14, at: 'L' }, { f: 14, at: 'R', big: true }, { f: 18, at: 'R' }],
   shake: [[14, 16]],
 };
 
@@ -583,17 +905,22 @@ const HOOK: VetMotion = {
   line: 'His weight rocked onto his lead leg, wound left, the lead elbow drawn up, held; then everything whips round, the lead foot pivoting, the fist swung flat across and through two of them side by side; carried on round; back to guard.',
   keys: [
     { f: 0, q: P({}) },
-    { f: 10, q: elbows(P({ px: 2.5, pz: -9.0, yaw: -6, twist: 34, bend: 10, side: -8, pitch: 2, faceTurn: -22, lk: 24, lft: 20, ...CHIN_RH, lhx: -2.0, lhy: 6.0, lhz: 4.5, le: 78 }), [-0.3, 1, 0.5], undefined), e: 'out' },
-    { f: 13, q: elbows(P({ px: 2.7, pz: -9.6, yaw: -4, twist: 38, bend: 10, side: -9, pitch: 2, faceTurn: -22, lk: 24, lft: 20, ...CHIN_RH, lhx: -2.6, lhy: 6.6, lhz: 4.8, le: 80 }), [-0.3, 1, 0.5], undefined), e: 'io' },
-    { f: 15, q: elbows(P({ px: 5.0, pz: -8.0, yaw: -46, twist: -34, bend: 12, side: 6, pitch: 6, faceTurn: -30, lft: -28, lfp: 44, lfz: 3.6, lk: -12, rfp: 30, rk: -34, ...CHIN_RH, lhx: 10.0, lhy: -11.0, lhz: 2.5, le: 84, palmL: DOWN }), [0.1, 1, 0.12], undefined), e: 'lin' },
-    { f: 16, q: elbows(P({ px: 5.2, pz: -8.0, yaw: -54, twist: -42, bend: 12, side: 6, pitch: 6, faceTurn: -38, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_RH, lhx: 6.5, lhy: -15.0, lhz: 2.5, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'lin' },
-    { f: 18, q: elbows(P({ px: 5.2, pz: -8.1, yaw: -55, twist: -43, bend: 12, side: 6, pitch: 6, faceTurn: -38, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_RH, lhx: 6.2, lhy: -15.3, lhz: 2.4, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'out' },
-    { f: 23, q: elbows(P({ px: 3.5, pz: -7.0, yaw: -62, twist: -48, bend: 10, side: 4, pitch: 4, faceTurn: -36, lft: -34, lfp: 44, lfz: 3.6, lk: -18, rfp: 30, rk: -36, ...CHIN_RH, lhx: 2.0, lhy: -14.0, lhz: 0.0, le: 70, palmL: DOWN }), [0.2, 1, -0.2], undefined), e: 'out' },
+    { f: 10, q: elbows(P({ px: -0.5, pz: -9.0, yaw: -6, twist: 34, bend: 10, side: -8, pitch: 2, faceTurn: -22, lk: 24, lft: 20, lfz: 3.0, lfp: 30, ...CHIN_RH, lhx: -2.0, lhy: 6.0, lhz: 4.5, le: 78 }), [-0.3, 1, 0.5], undefined), e: 'out' },
+    { f: 13, q: elbows(P({ px: -0.8, pz: -9.6, yaw: -4, twist: 38, bend: 10, side: -9, pitch: 2, faceTurn: -22, lk: 24, lft: 20, lfz: 3.4, lfp: 32, ...CHIN_RH, lhx: -2.6, lhy: 6.6, lhz: 4.8, le: 80 }), [-0.3, 1, 0.5], undefined), e: 'io' },
+    { f: 15, q: elbows(P({ px: 5.0, pz: -8.0, yaw: -46, twist: -34, bend: 12, side: 6, pitch: 6, faceTurn: -30, lfx: 9.5, lft: -28, lfp: 44, lfz: 3.6, lk: -12, rfp: 30, rk: -34, ...CHIN_RH, lhx: 10.0, lhy: -11.0, lhz: 2.5, le: 84, palmL: DOWN }), [0.1, 1, 0.12], undefined), e: 'lin' },
+    { f: 16, q: elbows(P({ px: 5.2, pz: -8.0, yaw: -54, twist: -42, bend: 12, side: 6, pitch: 6, faceTurn: -38, lfx: 9.5, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_RH, lhx: 6.5, lhy: -15.0, lhz: 2.5, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'lin' },
+    { f: 18, q: elbows(P({ px: 5.2, pz: -8.1, yaw: -55, twist: -43, bend: 12, side: 6, pitch: 6, faceTurn: -38, lfx: 9.5, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_RH, lhx: 6.2, lhy: -15.3, lhz: 2.4, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'out' },
+    { f: 23, q: elbows(P({ px: 3.5, pz: -7.0, yaw: -62, twist: -48, bend: 10, side: 4, pitch: 4, faceTurn: -36, lfx: 8.5, lft: -34, lfp: 44, lfz: 3.6, lk: -18, rfp: 30, rk: -36, ...CHIN_RH, lhx: 2.0, lhy: -14.0, lhz: 0.0, le: 70, palmL: DOWN }), [0.2, 1, -0.2], undefined), e: 'out' },
     { f: 32, q: P({}) },
   ],
-  plants: [['L', 0, 32], ['R', 0, 32]],
-  strikes: [{ from: 13, at: 15, joint: 'handL', kind: 'punch', heavy: true, hits: [{ foe: 0, f: 15, react: 'reel' }, { foe: 1, f: 16, react: 'reel' }] }],
-  foes: [[33, 10], [31, -12]],
+  // HIS STAMPING STEP: his weight sat back, the lead foot cocked, held; then stamped down three quarters of a tile on as
+  // everything whips round, pivoting on its ball; the rear foot dragged up after him in the dust
+  carry: stampCarry(() => HOOK.keys as Key[], STEP_PUNCH, 13, 15, 32),
+  feet: { L: [{ f: 0, k: 'down' }, { f: 13, k: 'step', lift: 5 }, { f: 15, k: 'down' }], R: [{ f: 0, k: 'down' }, { f: 13, k: 'slide' }, { f: 32, k: 'down' }] },
+  // (a crescent of force flung out flat across the front of him, through two of them side by side)
+  strikes: [{ from: 13, at: 15, joint: 'handL', kind: 'punch', heavy: true, hits: [], force: { shape: 'crescent', reach: REACH, deg: 84, dir: 0, long: 4, react: 'reel' } }],
+  foes: [],
+  dust: [{ f: 15, at: 'L' }, { f: 15, at: 'R', big: true }, { f: 19, at: 'R' }],
   shake: [[15, 18]],
 };
 
@@ -633,9 +960,13 @@ const RK: VetMotion = {
     { f: 29, q: P({ px: 1.0, pz: -7.0, yaw: -40, bend: 8, lfx: 7.0, lfy: 2.0, lfz: 5.5, lft: -10, lk: 6, lfp: 30, rft: -90, rk: -88, faceTurn: -20 }), e: 'io' },
     { f: 36, q: P({}) },
   ],
-  plants: [['R', 0, 36], ['L', 0, 1], ['L', 5, 6, 'end'], ['L', 31, 36, 'end']],
-  strikes: [{ from: 14, at: 16, joint: 'ankleL', kind: 'kick', heavy: true, hits: [{ foe: 0, f: 16, react: 'knock' }] }],
-  foes: [[34, -6]],
+  // HIS SKIPPING STEP: the support foot skips a tile on as the hips turn over (both feet off the floor for a frame), and
+  // he lands it pivoted, heel toward them, as the shin lands; the kicking foot comes down a tile on from where it went up
+  carry: skipCarry(STEP_KICK, 14, 16, 20),
+  feet: { L: [{ f: 0, k: 'down' }, { f: 1, k: 'step', lift: 4 }, { f: 5, k: 'down' }, { f: 6, k: 'air' }, { f: 31, k: 'down' }], R: [{ f: 0, k: 'down' }, { f: 14, k: 'step', lift: 4 }, { f: 16, k: 'down' }] },
+  // (a crescent of hot orange force flung out flat across the front of him at rib height)
+  strikes: [{ from: 14, at: 16, joint: 'ankleL', kind: 'kick', heavy: true, hits: [], force: { shape: 'crescent', reach: REACH, deg: 90, dir: 0, long: 4, react: 'knock' } }],
+  foes: [],
   dust: [{ f: 4, at: 'L' }, { f: 16, at: 'R', big: true }, { f: 30, at: 'L' }],
   shake: [[16, 19]],
 };
@@ -691,14 +1022,17 @@ function elbowAt(f: number): Q {
   const out = elbows({ ...q, re: S0.re }, undefined, [0.12, -1, 0.3]).re ?? 0;
   return { ...q, le: t.le, re: (t.re ?? 0) + (out - (t.re ?? 0)) * elbowUp };
 }
+/** His step in as he turns: three quarters of a tile, on the ball of his lead foot (sliding on it in the dust), most of it in the strike. */
+const elbowCarry = (f: number): [number, number] => [STEP_PUNCH * (f <= 18 ? 0 : f <= 20 ? 0.8 * (1 - Math.pow(1 - (f - 18) / 2, 3)) : f >= 27 ? 1 : 0.8 + 0.2 * (1 - Math.pow(1 - (f - 20) / 7, 3))), 0];
 const ELBOW: VetMotion = {
-  id: 'elbow', name: 'The spinning elbow', input: 'tap (between two round kicks)', long: ELB_LONG, fn: elbowAt, spin: elbowSpin, pivot: ELB_PIVOT,
+  id: 'elbow', name: 'The spinning elbow', input: 'tap (between two round kicks)', long: ELB_LONG, fn: elbowAt, spin: elbowSpin, pivot: ELB_PIVOT, carry: elbowCarry,
+  slides: [['L', 18, 27]],
   line: 'A big coil: his back turned nearly to them, his chest wound hard against it, the rear arm folded tight across it, eyes on them over his shoulder, held; then a whole turn on the ball of his lead foot, drawn in light round him, the elbow leading at head height into them; round, and back to his guard.',
   plants: [['L', 0, ELB_LONG], ['R', 0, 17], ['R', 44, ELB_LONG, 'end']],
-  strikes: [{ from: 18, at: 20, joint: 'elbowR', kind: 'punch', heavy: true, w: 18, burst: 0.8, under: true, hits: [{ foe: 0, f: 20, react: 'aside' }] }],
+  strikes: [{ from: 18, at: 20, joint: 'elbowR', kind: 'punch', heavy: true, w: 18, burst: 0.8, under: true, hits: [], force: { shape: 'crescent', reach: REACH, deg: 64, long: 4, react: 'aside' } }],
   arc: { joint: 'elbowR', from: 18, to: 34, w: 10, kind: 'punch', out: 7 },
-  foes: [[35, 11]],
-  dust: [{ f: 18, at: 'L', big: true }, { f: 44, at: 'R' }],
+  foes: [],
+  dust: [{ f: 18, at: 'L', big: true }, { f: 22, at: 'L' }, { f: 44, at: 'R' }],
   shake: [[20, 24]],
 };
 
@@ -758,9 +1092,9 @@ function VET_UP_S(): Partial<Bones> {
     lhIn: 1, lhx: -6, lhy: 9, lhz: -12, le: -16, rhIn: 1, rhx: 7, rhy: 0.5, rhz: 23.5, re: 14 };
 }
 const TOWARD: V3 = [-1, 0, 0];
-/** The flying uppercut, carried `go` in as he goes up (his own measure). */
-export function upperOf(go = 10, id = 'uppercut'): VetMotion {
-  return {
+/** The flying uppercut, carried `go` in as he goes up (his own measure): most of it in the strike, the fist driven up into them. */
+export function upperOf(go = 1.75 * VET_TILE, id = 'uppercut'): VetMotion {
+  return readied({
   id, name: 'The flying uppercut', input: 'swipe, then tap', long: 46,
   line: 'Dropped right down low and coiled, the fist by his knee, held; then he drives up off the floor behind it, the fist rising through their chin and on over his head, launching them; hangs; comes down hard.',
   keys: [
@@ -777,12 +1111,13 @@ export function upperOf(go = 10, id = 'uppercut'): VetMotion {
     { f: 46, q: P({}) },
   ],
   plants: [['L', 0, 14], ['R', 0, 14], ['L', 31, 46, 'end'], ['R', 31, 46, 'end']],
-  carry: (f) => [go * track(f, [[13, 0], [22, 0.8], [31, 1]], 'io'), 0],
-  strikes: [{ from: 13, at: 15, joint: 'handR', kind: 'punch', heavy: true, hits: [{ foe: 0, f: 15, react: 'launch' }] }],
-  foes: [[20 + go, -4]],
+  carry: (f) => [go * track(f, [[13, 0], [15, 0.8], [22, 0.95], [31, 1]], 'io'), 0],
+  // (a shock cone shot up and on from the fist, through their chin: it launches them)
+  strikes: [{ from: 13, at: 15, joint: 'handR', kind: 'punch', heavy: true, hits: [], force: { shape: 'cone', reach: REACH, deg: 40, up: 50, dir: 4, long: 3, react: 'launch' } }],
+  foes: [],
   dust: [{ f: 14, at: 'both', big: true }, { f: 31, at: 'both', big: true }],
   shake: [[15, 18], [31, 33]],
-};
+});
 }
 const UPPER = upperOf();
 
@@ -837,27 +1172,29 @@ function jkKeysOf(sweepEnd: number, land: number): Key[] {
 }
 const SPINKICK: VetMotion = {
   id: 'spinkick', name: 'The spinning jump kick', input: 'swipe, then hold (after two round kicks: all round)', long: 50, keys: jkKeysOf(22, 30), spin: jkSpinOf(22, 30),
-  line: 'Sunk low on his toes, wound the other way, coiled, held; then off the floor into two whole turns, the leg whipping round flat at head height through everyone round him, each in his turn; down out of the turn in a ring of dust.',
+  line: 'Sunk low on his toes, wound the other way, coiled, held; then off the floor into two whole turns, the leg whipping round flat at head height and throwing out one heavy crescent of force that rolls out round him to three and a half tiles, each foe hit once as it passes; down out of the turn in a ring of dust.',
   plants: [['L', 0, 14], ['R', 0, 14], ['L', 30, 50, 'end'], ['R', 30, 50, 'end']],
-  strikes: [{ from: 14, at: 16, joint: 'ankleR', kind: 'kick', heavy: true, hits: [{ foe: 0, f: 16, react: 'fly' }, { foe: 1, f: 18, react: 'fly' }, { foe: 2, f: 20, react: 'fly' }, { foe: 3, f: 22, react: 'fly' }] }],
-  foes: [[33, 2], [2, 33], [-33, -2], [-2, -33]],
+  // (HIS CRESCENT: “I don’t want the kick to look or act like it”: one heavy crescent of force thrown off his leg as it comes
+  // round, rolled out round him three and a half tiles; each foe hit once as it passes him, knocked flying)
+  strikes: [{ from: 14, at: 16, joint: 'ankleR', kind: 'kick', heavy: true, hits: [], force: { shape: 'round', reach: REACH_FAR, deg: 200, long: 8, react: 'fly' } }],
+  foes: [],
   dust: [{ f: 15, at: 'both', big: true }, { f: 30, at: 'both', big: true }],
   shake: [[16, 24], [30, 32]],
 };
-/** The spinning jump kick that closes the distance: `go` in (his own measure). */
-export function closeKickOf(go = 70, id = 'spinkickClose'): VetMotion {
+/** The spinning jump kick that closes the distance: `go` in (his own measure); its crescent thrown round him as he arrives. */
+export function closeKickOf(go = 2 * VET_TILE, id = 'spinkickClose'): VetMotion {
   const JK_CLOSE = go;
-  return {
+  return readied({
   ...SPINKICK, id, name: 'The spinning jump kick, closing in', input: 'swipe, then hold (first)', long: 52,
   keys: jkKeysOf(24, 32), spin: jkSpinOf(24, 32),
-  line: 'Coiled low, held; then a spinning leap two tiles in at them, the leg whipping round flat at head height as he arrives; down in a ring of dust.',
+  line: 'Coiled low, held; then a spinning leap two tiles in at them, the leg whipping round flat at head height, its crescent of force rolled out round him as he arrives; down in a ring of dust.',
   plants: [['L', 0, 14], ['R', 0, 14], ['L', 32, 52, 'end'], ['R', 32, 52, 'end']],
   carry: (f) => [JK_CLOSE * track(f, [[14, 0], [24, 0.88], [32, 1]], 'io'), 0],
-  strikes: [{ from: 14, at: 16, joint: 'ankleR', kind: 'kick', heavy: true, hits: [{ foe: 0, f: 24, react: 'fly' }] }],
-  foes: [[JK_CLOSE + 30, 0]],
+  strikes: [{ from: 14, at: 16, joint: 'ankleR', kind: 'kick', heavy: true, hits: [], force: { shape: 'round', reach: REACH_FAR, deg: 200, long: 6, react: 'fly', from: 22 } }],
+  foes: [],
   dust: [{ f: 15, at: 'both', big: true }, { f: 32, at: 'both', big: true }],
   shake: [[24, 27], [32, 34]],
-};
+});
 }
 const SPINKICK_CLOSE = closeKickOf();
 
@@ -889,13 +1226,11 @@ const REACH_R: V3 = [0.1, -0.35, -1];
 const kneeS = chestHands(VET_KNEE_S());
 /** The landing, heavy: deep in his knees, his feet where his stance has them. */
 const KNEE_LAND: Q = P({ px: 1.0, pz: -15.5, yaw: -18, bend: 28, pitch: 14, hunch: 14, faceTurn: -14, faceUp: 20, lfx: 6.6, lfy: 3.0, lfz: 0.2, lft: 14, lk: 30, lfp: 10, rfx: -5.6, rfy: -3.4, rfz: 0.2, rft: -30, rk: -30, rfp: 30, lhx: 9, lhy: 5, lhz: -3, le: 24, rhx: 8, rhy: -4, rhz: -3, re: 20 });
-/** The flying knee, leaping `go` in to land it (his own measure). */
-export function kneeOf(go = 40, id = 'knee'): VetMotion {
+/** The flying knee, leaping `go` in to land it (his own measure): most of it in the strike. */
+export function kneeOf(go = 1.5 * VET_TILE, id = 'knee'): VetMotion {
   const KNEE_GO = go;
-  const carry = (f: number): [number, number] => [KNEE_GO * track(f, [[19, 0], [22, 0.72], [26, 0.86], [34, 1]], 'out'), 0];
-  // (they stand where the knee meets them: just past where it is at the blow)
-  const k = skel(P(kneeS)).kneeR;
-  return {
+  const carry = (f: number): [number, number] => [KNEE_GO * track(f, [[19, 0], [21, 0.75], [26, 0.9], [34, 1]], 'out'), 0];
+  return readied({
   id, name: 'The flying knee', input: 'tap, tap, then swipe and hold', long: KNEE_LONG,
   line: 'A long lunge in, sunk low over his lead foot, both hands reaching for their head, held; then a leap and the knee driven up into them, thigh level, shin tucked, both hands pulling their head down onto it; snapped back; landed heavy, up.',
   keys: [
@@ -912,24 +1247,28 @@ export function kneeOf(go = 40, id = 'knee'): VetMotion {
   ],
   plants: [['L', 0, 2], ['R', 0, 19], ['L', 11, 19, 'end'], ['L', 34, KNEE_LONG, 'end'], ['R', 34, KNEE_LONG, 'end']],
   carry,
-  strikes: [{ from: 19, at: 21, joint: 'kneeR', kind: 'kick', heavy: true, w: 22, burst: 0.85, under: true, hits: [{ foe: 0, f: 21, react: 'kneed' }] }],
-  foes: [[carry(21)[0] + k[0] + 9, k[1]]],
+  strikes: [{ from: 19, at: 21, joint: 'kneeR', kind: 'kick', heavy: true, w: 22, burst: 0.85, under: true, hits: [], force: { shape: 'cone', reach: REACH, deg: 42, dir: 5, long: 3, react: 'kneed' } }],
+  foes: [],
   dust: [{ f: 3, at: 'L' }, { f: 19, at: 'both', big: true }, { f: 34, at: 'both', big: true }],
   shake: [[21, 25], [34, 37]],
   quake: [34],
-};
+});
 }
 const KNEE = kneeOf();
 
-// THE PUSH KICK (hold, the first of the three kicks): his word, 3 Nov 2026, 00:36: “And the 3 kick combo seemed like two of
+// THE PUSH KICK (hold, the second of the three kicks: his “Round kick first”): his word, 3 Nov 2026, 00:36: “And the 3 kick combo seemed like two of
 // the same kicks”; his pick “Push kick, then round”; and at 00:37: “Push kick hits in a cone in front of”. So: the rear
 // knee CHAMBERED HIGH in front of him and held, the foot cocked under it, the toes pulled back; then the foot DRIVEN STRAIGHT
 // OUT heel first into their middle, his hips thrown in behind it, his body leaning back over his support foot, which stays
 // FLAT on the floor; his fists guarding his face. It shoves back everyone in a cone in front of him: a blast of force
-// spreading out from his heel along the floor, 60 degrees wide and two and a half tiles long. Re-chambered; set down; guard.
+// spreading out from his heel along the floor, 60 degrees wide, out to three and a half tiles from where he stood (his
+// skipping step carries him a tile in as the heel goes out). Re-chambered; set down; guard.
 const PUSH_LONG = 44;
-/** The push kick's cone: 60 degrees wide, two and a half tiles long (his own measure). */
-export const PUSH_CONE = { deg: 60, reach: 2.5 * VET_TILE, react: 'shove' as Reaction };
+/**
+ * The push kick's cone: 60 degrees wide, fanning out from his heel, out to three and a half tiles from where he stood (his
+ * own measure; his “About 2½ tiles (Recommended)”, offered with the cone at about 3½).
+ */
+export const PUSH_CONE = { deg: 60, reach: REACH_FAR, react: 'shove' as Reaction };
 const pushChamber: Q = P({ px: 0.5, pz: -3.0, yaw: -4, twist: -2, bend: 4, pitch: -6, hunch: 6, faceTurn: -6, faceUp: 6,
   lfx: 3.0, lfy: 2.8, lft: 10, lk: 12, lfp: 0, lfz: 0,
   rfx: 7.5, rfy: -2.6, rfz: 21.0, rft: -6, rk: -4, rkUp: 62, rfp: -14,
@@ -939,7 +1278,7 @@ const pushOut: Q = P({ px: 1.0, pz: -3.6, yaw: -2, twist: -4, bend: -6, pitch: -
   rfx: 26.0, rfy: -2.2, rfz: 23.0, rft: -4, rk: -4, rkUp: 50, rfp: -22,
   ...GUARD });
 const PUSH: VetMotion = {
-  id: 'push', name: 'The push kick', input: 'hold (the first of the three kicks)', long: PUSH_LONG,
+  id: 'push', name: 'The push kick', input: 'hold (the second of the three kicks)', long: PUSH_LONG,
   line: 'The rear knee chambered high, the foot cocked, the toes back, held; then the foot driven straight out heel first, his support foot flat: a blast of force fanning out from his heel shoves back everyone in a cone in front of him; set down; guard.',
   keys: [
     { f: 0, q: P({}) },
@@ -952,9 +1291,11 @@ const PUSH: VetMotion = {
     { f: 34, q: P({ px: 0.2, pz: -6.0, yaw: -18, lfx: 5.0, lfy: 3.0, lft: 14, lk: 18, lfp: 12, lfz: 0.8, rfx: -5.0, rfz: 4.5, rfp: 30, rk: -24 }), e: 'io' },
     { f: PUSH_LONG, q: P({}) },
   ],
-  plants: [['L', 0, PUSH_LONG], ['R', 0, 2], ['R', 36, PUSH_LONG, 'end']],
+  // HIS SKIPPING STEP: the support foot skips a tile on as the heel is driven out, and lands flat
+  carry: skipCarry(STEP_KICK, 15, 17, 21),
+  feet: { L: [{ f: 0, k: 'down' }, { f: 15, k: 'step', lift: 4 }, { f: 17, k: 'down' }], R: [{ f: 0, k: 'down' }, { f: 2, k: 'air' }, { f: 36, k: 'down' }] },
   strikes: [{ from: 15, at: 17, joint: 'heelR', kind: 'kick', heavy: true, w: 16, burst: 0.8, under: true, cone: PUSH_CONE, hits: [{ foe: 0, f: 17, react: 'shove' }] }],
-  foes: [[47, -8], [76, 15], [96, -31]],
+  foes: [[2.0 * VET_TILE, -8], [2.8 * VET_TILE, 20], [3.3 * VET_TILE, -30]],
   dust: [{ f: 17, at: 'L', big: true }, { f: 36, at: 'R' }],
   shake: [[17, 20]],
 };
@@ -1059,6 +1400,27 @@ for (const m of [JAB, CROSS, HOOK, RK, DODGE, UPPER, KNEE, PUSH, HURT, FALL]) {
   const q = keyed(m.keys, at);
   m.keys.splice(i, 0, { f: at, q: { ...q, ...(m.turn.palmL ? { palmL: m.turn.palmL } : {}), ...(m.turn.palmR ? { palmR: m.turn.palmR } : {}) }, e: m.keys[i].e });
 }
+// WHO STANDS WHERE: each at the reach of the blow (on its line, a little short of where its force reaches), and who it
+// reaches, and when, worked out from its force
+for (const m of [JAB, CROSS, UPPER, KNEE]) m.foes = [standOn(m, m.strikes[0], 0, 12)];
+HOOK.foes = [standOn(HOOK, HOOK.strikes[0], 17, 12), standOn(HOOK, HOOK.strikes[0], -17, 12)];
+RK.foes = [standOn(RK, RK.strikes[0], -8, 12)];
+ELBOW.foes = [standOn(ELBOW, ELBOW.strikes[0], 0, 12)];
+/** Four round him for the spinning jump kick, three tiles out: where his leg is at the blow, and a quarter turn on each. */
+export function roundFoes(m: VetMotion, r = 3 * VET_TILE): [number, number][] {
+  const g = forceGeo(m, m.strikes[0]);
+  return [0, 90, 180, 270].map((a) => [g.o[0] + Math.cos(g.dir + (a * Math.PI) / 180) * r, g.o[1] + Math.sin(g.dir + (a * Math.PI) / 180) * r]);
+}
+SPINKICK.foes = roundFoes(SPINKICK);
+SPINKICK_CLOSE.foes = [[3 * VET_TILE, 0]];
+for (const m of [JAB, CROSS, HOOK, RK, ELBOW, UPPER, KNEE, SPINKICK, SPINKICK_CLOSE]) hitsFromForce(m);
+/** A move made again for a combo (a flying knee or uppercut leaping its own way in): its foe where its blow reaches, its hits. */
+export function readied(m: VetMotion): VetMotion {
+  m.foes = m.strikes[0].force?.shape === 'round' ? [[3 * VET_TILE, 0]] : [standOn(m, m.strikes[0], 0, 12)];
+  hitsFromForce(m);
+  return m;
+}
+
 export const VET_STAND: VetMotion = { id: 'stand', name: 'Standing', input: 'standing ready', long: STAND_LONG, loops: true, fn: standAt, strikes: [], foes: [], plants: [], line: 'Bouncing on his toes, cocky, ready: his fists circling, a roll of his shoulders, his chin up.' };
 export const VET_RUN: VetMotion = { id: 'run', name: 'Running', input: 'moving', long: RUN_LONG, loops: true, fn: runAt, strikes: [], foes: [], carry: (f) => [RUN_CARRY * f, 0], line: 'An action hero’s run: low and driving, knees high, fists pumping, both feet off the floor between strides.' };
 
@@ -1086,8 +1448,9 @@ export const VET_COMBOS: Combo[] = [
   { n: 1, name: 'Jab, cross, hook', inputs: 'tap, tap, tap', steps: [{ input: 'tap', move: 'jab' }, { input: 'tap', move: 'cross' }, { input: 'tap', move: 'hook' }], line: 'Steady damage; the hook catches two side by side.' },
   { n: 2, name: 'Jab, cross, flying knee', inputs: 'tap, tap, swipe and hold', steps: [{ input: 'tap', move: 'jab' }, { input: 'tap', move: 'cross' }, { input: 'swipeHold', move: 'knee' }], line: 'The strongest single blow.' },
   { n: 3, name: 'Jab, cross, flying uppercut', inputs: 'tap, tap, swipe and tap', steps: [{ input: 'tap', move: 'jab' }, { input: 'tap', move: 'cross' }, { input: 'swipeTap', move: 'uppercut' }], line: 'Launches one into the air, stunned.' },
-  // (his pick, 3 Nov 2026: “Push kick, then round”: the three kicks are three different kicks)
-  { n: 4, name: 'Push kick, round kick, spinning jump kick', inputs: 'hold, hold, swipe and hold', steps: [{ input: 'hold', move: 'push' }, { input: 'hold', move: 'roundkick' }, { input: 'swipeHold', move: 'spinkick' }], line: 'The push kick shoves back all in a cone in front; the spinning jump kick hits all round.' },
+  // (his pick, 3 Nov 2026: “Push kick, then round”: the three kicks are three different kicks; and which a first hold is:
+  // “Round kick first”)
+  { n: 4, name: 'Round kick, push kick, spinning jump kick', inputs: 'hold, hold, swipe and hold', steps: [{ input: 'hold', move: 'roundkick' }, { input: 'hold', move: 'push' }, { input: 'swipeHold', move: 'spinkick' }], line: 'The push kick shoves back all in a cone in front; the spin kick’s crescent hits all round.' },
   { n: 5, name: 'Round kick, spinning elbow, round kick', inputs: 'hold, tap, hold', steps: [{ input: 'hold', move: 'roundkick' }, { input: 'tap', move: 'elbow' }, { input: 'hold', move: 'roundkick' }], line: 'Knocks them back to make room.' },
   { n: 6, name: 'A swipe first', inputs: 'swipe; or swipe and hold', steps: [{ input: 'swipe', move: 'dodge' }, { input: 'swipeHold', move: 'spinkickClose' }], line: 'A swipe on its own is the dodging jump; a swipe and hold first, a spinning jump kick that closes the distance.' },
 ];

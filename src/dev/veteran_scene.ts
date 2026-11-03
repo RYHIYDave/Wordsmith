@@ -11,11 +11,11 @@ import { GRID } from '../art/skeleton';
 import type { V3 } from '../art/skeleton';
 import { INK } from '../art/kit';
 import { VET_CANVAS, paintVeteran } from './sculpt_veteran';
-import { VET_STAND, carryAt, placeOf, poseAt, skel, vetAt, worldOf } from './veteran_moves';
+import { VET_STAND, carryAt, forceFront, forceGeo, forceHit, placeOf, poseAt, roundSpan, skel, vetAt, worldOf } from './veteran_moves';
 import type { Input, Reaction, VetMotion } from './veteran_moves';
-import { FOE_CANVAS, REACT_LONG, REACT_STAYS, REACT_VEER, SWING_HIT, foeHit, foeSwing, paintFoe } from './veteran_foe';
+import { FOE_CANVAS, REACT_DRIVE, REACT_LONG, REACT_STAYS, REACT_VEER, SWING_HIT, foeHit, foeSwing, paintFoe } from './veteran_foe';
 import type { FoeState } from './veteran_foe';
-import { FX_KICK, FX_PUNCH, coneBlast, dust, floorRing, ghost, impact, put, rnd, shadow, smear, speedLines, stars } from './veteran_fx';
+import { FX_KICK, FX_PUNCH, coneBlast, crescent, dust, floorRing, floorTrace, ghost, impact, put, rnd, shadow, shockCone, smear, speedLines, stars } from './veteran_fx';
 import { GLOBES_H, GLOBES_W, paintGlobes } from './veteran_globes';
 import type { Globe, GlobeRow } from './veteran_globes';
 
@@ -45,7 +45,7 @@ const turnXY = (x: number, y: number, a: number): [number, number] => {
   return [x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)];
 };
 
-interface At {
+export interface At {
   /** The move and the frame of it (a stance before and after). */
   m: VetMotion;
   f: number;
@@ -55,7 +55,7 @@ interface At {
   start: number;
 }
 /** Where in a play a frame falls. */
-function stepAt(p: Play, G: number): At {
+export function stepAt(p: Play, G: number): At {
   let origin: [number, number] = [0, 0];
   let t = p.lead;
   if (G < p.lead) return { m: VET_STAND, f: VET_STAND.long - p.lead + G, k: -1, origin, start: 0 };
@@ -79,6 +79,14 @@ function stepAt(p: Play, G: number): At {
 function vetWorld(at: At, p: V3, f = at.f): V3 {
   const w = worldOf(at.m, f, p);
   return [w[0] + at.origin[0], w[1] + at.origin[1], w[2]];
+}
+
+/** How far a cone from a point (the play's floor) along a way reaches to the circle of `reach` round where he stood (`o`). */
+export function coneLength(from: readonly number[], o: readonly number[], way: number, reach: number): number {
+  const ox = from[0] - o[0];
+  const oy = from[1] - o[1];
+  const b = ox * Math.cos(way) + oy * Math.sin(way);
+  return -b + Math.sqrt(Math.max(0, b * b - (ox * ox + oy * oy) + reach * reach));
 }
 
 /** Every blow that lands in a play: when (play frame), on whom, how, and from where (his pelvis then). */
@@ -114,6 +122,8 @@ function eventsOf(p: Play): Ev[] {
         const fwd = vetWorld(at, [1, 0, 0], s.at);
         const o = vetWorld(at, [0, 0, 0], s.at);
         const way = Math.atan2(fwd[1] - o[1], fwd[0] - o[0]);
+        // (its reach is from where he stood as the move began: so far along it from his heel)
+        const long = coneLength(heel, at.origin, way, cone.reach);
         p.foes.forEach((_, foe) => {
           const f0 = foeAt(p, foe, t + s.at - 1, [heel[0], heel[1]]);
           const dx = f0.x - heel[0];
@@ -121,9 +131,31 @@ function eventsOf(p: Play): Ev[] {
           const r = Math.hypot(dx, dy);
           let a = Math.atan2(dy, dx) - way;
           a = Math.atan2(Math.sin(a), Math.cos(a));
-          if (r > cone.reach + 6 || Math.abs(a) > ((cone.deg / 2) * Math.PI) / 180) return;
+          if (r > long + 6 || Math.abs(a) > ((cone.deg / 2) * Math.PI) / 180) return;
           const f = s.at + Math.floor(r / 40);
           out.push({ G: t + f, foe, react: cone.react, from: [heel[0], heel[1]], heavy: false, kind: s.kind, at: [f0.x, f0.y, 26], step: k, big: 0.9 });
+        });
+        continue;
+      }
+      if (s.force) {
+        // HIS REACH: every foe of the play its force comes to (as he stands then), as its front comes to his near side
+        const F = s.force;
+        const fa = F.from ?? s.at;
+        const g = forceGeo(st.m, s);
+        const O = at.origin;
+        const ow: [number, number] = [g.o[0] + O[0], g.o[1] + O[1]];
+        p.foes.forEach((_, foe) => {
+          if (st.foe !== undefined && foe !== st.foe) return;
+          const f0 = foeAt(p, foe, t + fa - 1, ow);
+          const hit = forceHit(st.m, s, [f0.x - O[0], f0.y - O[1]]);
+          if (hit === null) return;
+          const dx = ow[0] - f0.x;
+          const dy = ow[1] - f0.y;
+          const dd = Math.hypot(dx, dy) || 1;
+          const z = Math.max(24, Math.min(48, g.o[2]));
+          // (a cone drives them on along its line; a crescent out from its centre)
+          const from: [number, number] = g.shape === 'cone' ? [ow[0] - Math.cos(g.dir) * 400, ow[1] - Math.sin(g.dir) * 400] : ow;
+          out.push({ G: t + Math.max(s.at, Math.ceil(hit - 1e-6)), foe, react: st.react ?? F.react, from, heavy: s.heavy, kind: s.kind, at: [f0.x + (dx / dd) * 7, f0.y + (dy / dd) * 7, z], step: k, big: s.burst ?? 1 });
         });
         continue;
       }
@@ -150,6 +182,11 @@ function eventsOf(p: Play): Ev[] {
 /** Every blow that lands in a play (for the checks): when (play frame), on which foe, and how. */
 export const blowsOf = (p: Play): { G: number; foe: number; react: string }[] => eventsOf(p).map((e) => ({ G: e.G, foe: e.foe, react: e.react }));
 
+/** Where a foe of a play is on the floor at a frame (the scene's floor, unturned). */
+export const foePlace = (p: Play, i: number, G: number): [number, number] => {
+  const f = foeAt(p, i, G, [0, 0]);
+  return [f.x, f.y];
+};
 /** A foe at a frame of a play: where (the scene's floor, unturned), which way he faces, his pose. */
 function foeAt(p: Play, i: number, G: number, vet: [number, number]): { x: number; y: number; face: number; st: FoeState } {
   const home = p.foes[i];
@@ -162,12 +199,11 @@ function foeAt(p: Play, i: number, G: number, vet: [number, number]): { x: numbe
   const last = evs[evs.length - 1];
   for (const e of evs) {
     if (e.react === 'swing' || e === last) continue;
-    if (REACT_STAYS[e.react]) {
-      const d = Math.atan2(home[1] + by - e.from[1], home[0] + bx - e.from[0]) + (REACT_VEER[e.react] * Math.PI) / 180;
-      const b = foeHit(e.react, REACT_LONG[e.react]).back;
-      bx += Math.cos(d) * b;
-      by += Math.sin(d) * b;
-    }
+    // (a blow he does not come back from; and how far each blow's force has driven him back for good)
+    const d = Math.atan2(home[1] + by - e.from[1], home[0] + bx - e.from[0]) + (REACT_VEER[e.react] * Math.PI) / 180;
+    const b = (REACT_STAYS[e.react] ? foeHit(e.react, REACT_LONG[e.react]).back : 0) + REACT_DRIVE[e.react];
+    bx += Math.cos(d) * b;
+    by += Math.sin(d) * b;
   }
   if (last && last.react === 'swing') {
     st = foeSwing(G - last.G);
@@ -175,7 +211,9 @@ function foeAt(p: Play, i: number, G: number, vet: [number, number]): { x: numbe
     const d = Math.atan2(home[1] + by - last.from[1], home[0] + bx - last.from[0]) + (REACT_VEER[last.react as Reaction] * Math.PI) / 180;
     face = d + Math.PI;
     st = foeHit(last.react as Reaction, Math.min(G - last.G, REACT_LONG[last.react as Reaction]));
-    return { x: home[0] + bx + Math.cos(d) * st.back, y: home[1] + by + Math.sin(d) * st.back, face: (face * 180) / Math.PI, st };
+    const g = Math.max(0, Math.min(1, (G - last.G) / 10));
+    const back = st.back + REACT_DRIVE[last.react as Reaction] * (1 - (1 - g) * (1 - g) * (1 - g));
+    return { x: home[0] + bx + Math.cos(d) * back, y: home[1] + by + Math.sin(d) * back, face: (face * 180) / Math.PI, st };
   } else {
     // (on guard, shifting his weight a little)
     st = { pose: { pz: -3.5 + 0.8 * Math.sin(G * 0.21 + i), faceUp: 6 + 2 * Math.sin(G * 0.13 + i) }, back: 0, lift: 0, stars: false, down: false };
@@ -404,11 +442,49 @@ export function scene(p: Play, G: number, shot: Shot): Px {
         coneBlast(px, (r, a) => {
           const w = way + (a * Math.PI) / 180;
           return scr(toScene([heel[0] + Math.cos(w) * r, heel[1] + Math.sin(w) * r, 0]));
-        }, cone.deg, cone.reach, Math.floor(age), FX_KICK, t + sk.at);
+        }, cone.deg, coneLength(heel, a0.origin, way, cone.reach), Math.floor(age), FX_KICK, t + sk.at);
       }
       t += st.m.long;
     }
   }
+  // HIS REACH: THE FORCE PAST THE FIST OR FOOT (a shock cone, a crescent, the spinning kick's crescent rolled out round him):
+  // where it is over the floor painted now; the crescents' stretches behind him now and before him after; the cones after
+  const forces: ((behind: boolean) => void)[] = [];
+  {
+    let t = p.lead;
+    p.steps.forEach((st) => {
+      for (const s of st.m.strikes) {
+        if (!s.force) continue;
+        const F = s.force;
+        const fa = F.from ?? s.at;
+        const age = G - (t + fa);
+        if (age < 0 || age > F.long + 7) continue;
+        const O = stepAt(p, t + fa).origin;
+        const g = forceGeo(st.m, s);
+        const fm = G - t;
+        const front = forceFront(st.m, s, fm);
+        const cols = s.kind === 'kick' ? FX_KICK : FX_PUNCH;
+        const to = (q: readonly number[]): [number, number] => scr(toScene([q[0] + O[0], q[1] + O[1], q[2]]));
+        const gone = Math.max(0, Math.min(1, (age - F.long - 2) / 5));
+        const seed = t * 13 + fa;
+        if (g.shape === 'cone') {
+          forces.push((behind) => {
+            if (!behind) shockCone(px, to, g.o, g.dir, g.up, g.half, front, age, F.long + 1, cols, seed);
+          });
+          continue;
+        }
+        const span = roundSpan(st.m, s, fm);
+        const a0 = g.shape === 'round' ? g.dir + (span[0] * Math.PI) / 180 : g.dir - g.half;
+        const a1 = g.shape === 'round' ? g.dir + (span[1] * Math.PI) / 180 : g.dir + g.half;
+        const thick = g.shape === 'round' ? 18 : s.heavy ? 14 : 11;
+        floorTrace(px, to, g.o, a0, a1, front, cols[1], gone);
+        // (the round crescent one heavy wave, no streaks behind it: never a wheel of spokes)
+        forces.push((behind) => crescent(px, to, g.o, a0, a1, front, thick, cols, gone, seed, (q) => to([q[0], q[1], 0])[1] < fs[1] === behind, g.shape === 'round' ? undefined : g.r0));
+      }
+      t += st.m.long;
+    });
+  }
+  for (const fp of forces) fp(true);
   // A WHOLE TURN DRAWN IN LIGHT round him (the spinning elbow): its stretches behind him painted now, before him
   const arcOf = (): { path: [number, number][]; behind: boolean[]; w: number; cols: readonly string[]; show: number } | null => {
     const a = at.m.arc;
@@ -504,6 +580,8 @@ export function scene(p: Play, G: number, shot: Shot): Px {
     if (s.under) continue;
     smearOf(s);
   }
+  // HIS FORCE, before him
+  for (const fp of forces) fp(false);
   // THE IMPACTS where blows land (his, and a foe's on him)
   for (const e of evs) {
     const age = Math.floor(G - e.G);

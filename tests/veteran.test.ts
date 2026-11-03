@@ -178,18 +178,19 @@ test('the globes: crisp; cyan a punch, hot orange a kick, white the jump; never 
 
 import { VET_CANVAS } from '../src/dev/sculpt_veteran';
 import type { VetPose } from '../src/dev/sculpt_veteran';
-import { PUSH_CONE, VET_COMBOS, VET_MOTIONS, VET_TILE, closeKickOf, inAir, kneeOf, motionById, placeOf, poseAt, skel, spinAt, upperOf, vetAt, worldOf } from '../src/dev/veteran_moves';
+import { PUSH_CONE, REACH, REACH_FAR, STEP_KICK, STEP_PUNCH, VET_COMBOS, VET_MOTIONS, VET_TILE, carryAt, closeKickOf, forceGeo, inAir, kneeOf, motionById, placeOf, poseAt, roundSpan, skel, slidesOf, spinAt, upperOf, vetAt, worldOf } from '../src/dev/veteran_moves';
 import type { VetMotion } from '../src/dev/veteran_moves';
 import { project } from '../src/art/skeleton';
 import type { Skeleton, V3 } from '../src/art/skeleton';
 import { Px } from '../src/engine/px';
-import { smear } from '../src/dev/veteran_fx';
+import { crescent, shockCone, smear } from '../src/dev/veteran_fx';
 import { FX_KICK, FX_PUNCH } from '../src/dev/veteran_fx';
-import { blowsOf, globesAt } from '../src/dev/veteran_scene';
+import { blowsOf, globesAt, playLong } from '../src/dev/veteran_scene';
 import { cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
 import { VET_FILM } from '../src/dev/veteran_plays';
 
-const MOVES_ALL: VetMotion[] = [...VET_MOTIONS, kneeOf(27, 'kneeC'), upperOf(20, 'uppercutC'), closeKickOf(48, 'spinkickC')];
+const MOVES_ALL: VetMotion[] = [...VET_MOTIONS, closeKickOf(1.25 * VET_TILE, 'spinkickC')];
+void upperOf;
 const framesOf = (m: VetMotion): number[] => Array.from({ length: m.long + (m.loops ? 0 : 1) }, (_, i) => i);
 /** No solid of him flattened to nothing (a muscle whose ways have folded onto each other paints as a slab). */
 function flattened(sc: { prims: readonly { k: string; axes?: readonly (readonly number[])[]; piece: string; tag?: string }[] }): string[] {
@@ -283,9 +284,12 @@ for (const m of MOVES_ALL) {
         }
       }
     }
-    // HIS FEET GRIP THE FLOOR: a ball of a foot down on the floor in two frames running stays where it is
+    // HIS FEET GRIP THE FLOOR: a ball of a foot down on the floor in two frames running stays where it is (but where it is
+    // dragged up after him as he drives in: its slides, checked below)
+    const slides = slidesOf(m);
     for (let i = 1; i < fr.length; i++) {
       for (const toe of ['toeL', 'toeR'] as const) {
+        if (slides.some(([side, a, b]) => side === toe.slice(3) && fr[i] > a && fr[i] <= b)) continue;
         const a = worldOf(m, fr[i - 1], sk[i - 1][toe]);
         const b = worldOf(m, fr[i], sk[i][toe]);
         if (a[2] < 0.7 && b[2] < 0.7 && Math.hypot(a[0] - b[0], a[1] - b[1]) > 0.55) found.push(`f${fr[i]}: ${toe} slides ${Math.hypot(a[0] - b[0], a[1] - b[1]).toFixed(2)}`);
@@ -389,20 +393,20 @@ test('his stance: a fighter’s guard, the elbows tucked in (inside his shoulder
   }
 });
 
-test('the push kick hits everyone in a cone in front of him, 60 degrees wide and 2.5 tiles long, and no one outside it; combo 4 is three different kicks', () => {
-  assert.ok(PUSH_CONE.deg === 60 && Math.abs(PUSH_CONE.reach - 2.5 * VET_TILE) < 1e-9, 'the cone');
+test('the push kick hits everyone in a cone in front of him, 60 degrees wide and out to 3.5 tiles from where he stood, and no one outside it; combo 4 is three different kicks', () => {
+  assert.ok(PUSH_CONE.deg === 60 && Math.abs(PUSH_CONE.reach - 3.5 * VET_TILE) < 1e-9, 'the cone');
   const part = VET_FILM.find((x) => x.title.startsWith('THE PUSH KICK ·'));
   assert.ok(part, 'the push kick in the film');
   if (!part) return;
   const hit = new Set(blowsOf(part.play).filter((b) => b.react === 'shove').map((b) => b.foe));
   assert.deepEqual([...hit].sort(), [0, 1, 2], 'the three in the cone shoved, the one outside it not');
   const c4 = VET_COMBOS.find((c) => c.n === 4);
-  assert.deepEqual(c4?.steps.map((x) => x.move), ['push', 'roundkick', 'spinkick']);
+  assert.deepEqual(c4?.steps.map((x) => x.move), ['roundkick', 'push', 'spinkick']);
   assert.ok(new Set(c4?.steps.map((x) => x.move)).size === 3, 'three different kicks');
 });
 
 test('the flying knee at the blow: the thigh near level, the knee leading (the furthest forward of him) at their chest; the spinning elbow at the blow at head height, pointing at them', () => {
-  for (const m of [motionById('knee'), kneeOf(27, 'kneeC')]) {
+  for (const m of [motionById('knee'), kneeOf(1.25 * VET_TILE, 'kneeC')]) {
     const s = m.strikes[0];
     const k = skel(poseAt(m, s.at));
     const thigh = sub3(k.kneeR, k.hipR);
@@ -419,4 +423,140 @@ test('the flying knee at the blow: the thigh near level, the knee leading (the f
   const a = Math.atan2(el[1] - head[1], el[0] - head[0]);
   const b = Math.atan2(foe[1] - head[1], foe[0] - head[0]);
   assert.ok(Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) < (25 * Math.PI) / 180, 'the elbow not pointing at them');
+});
+
+// =============================================================================================
+// HIS REACH (3 Nov 2026). His words: “Okay, I don’t like his range.  I get that’s as far as his arms and legs go but I’d like
+// all of his moves to have more reach.  And I’m only using whirlwind as a size comparison, I don’t want the kick to look or
+// act like it.”; how it shows, his pick “Both”; how far, “About 2½ tiles (Recommended)”; which kick a first hold is, “Round
+// kick first”.
+
+const BLOWS = ['jab', 'cross', 'hook', 'roundkick', 'elbow', 'uppercut', 'knee'];
+test('every punch and kick reaches 2.5 tiles from where he stood (his step and the force past the fist or foot); the push kick’s cone and the spinning kick’s crescent 3.5', () => {
+  assert.ok(Math.abs(REACH - 2.5 * VET_TILE) < 1e-9 && Math.abs(REACH_FAR - 3.5 * VET_TILE) < 1e-9, 'the reaches');
+  for (const id of BLOWS) {
+    const m = motionById(id);
+    const s = m.strikes[0];
+    const g = forceGeo(m, s);
+    // (the far end of its force, along its line, from where he stood)
+    const tip = g.shape === 'cone' ? [g.o[0] + Math.cos(g.dir) * Math.cos(g.up) * g.r1, g.o[1] + Math.sin(g.dir) * Math.cos(g.up) * g.r1] : [g.o[0] + Math.cos(g.dir) * g.r1, g.o[1] + Math.sin(g.dir) * g.r1];
+    assert.ok(Math.abs(Math.hypot(tip[0], tip[1]) - REACH) < 1, `${id}: reaches ${(Math.hypot(tip[0], tip[1]) / VET_TILE).toFixed(2)} tiles`);
+    // (the force goes on past the fist or foot: it is not all his arm or leg)
+    const k = worldOf(m, s.at, skel(poseAt(m, s.at))[s.joint] as V3);
+    assert.ok(REACH - Math.hypot(k[0], k[1]) > 0.5 * VET_TILE, `${id}: the force reaches only ${((REACH - Math.hypot(k[0], k[1])) / VET_TILE).toFixed(2)} tiles past the limb`);
+  }
+  for (const id of ['spinkick', 'spinkickClose']) {
+    const m = motionById(id);
+    const g = forceGeo(m, m.strikes[0]);
+    assert.ok(Math.abs(g.o[0] + g.r1 - REACH_FAR) < 1, `${id}: the crescent reaches ${((g.o[0] + g.r1) / VET_TILE).toFixed(2)} tiles ahead`);
+  }
+  assert.ok(motionById('spinkick').strikes[0].force?.shape === 'round' && Math.abs(forceGeo(motionById('spinkick'), motionById('spinkick').strikes[0]).r1 - REACH_FAR) < 2, 'the spinning kick: 3.5 tiles round him');
+});
+
+test('he steps in on every blow: a big driving step, most of it in the strike (a punch three quarters of a tile, a kick a tile); the leaps carry him further', () => {
+  const want: Record<string, number> = { jab: STEP_PUNCH, cross: STEP_PUNCH, hook: STEP_PUNCH, elbow: STEP_PUNCH, roundkick: STEP_KICK, push: STEP_KICK, uppercut: 1.75 * VET_TILE, knee: 1.5 * VET_TILE, spinkickClose: 2 * VET_TILE };
+  for (const [id, go] of Object.entries(want)) {
+    const m = motionById(id);
+    const s = m.strikes[0];
+    assert.ok(Math.abs(carryAt(m, m.long)[0] - go) < 0.5, `${id}: carried ${(carryAt(m, m.long)[0] / VET_TILE).toFixed(2)} tiles`);
+    if (id !== 'spinkickClose') assert.ok(carryAt(m, s.at)[0] >= 0.6 * go, `${id}: only ${(carryAt(m, s.at)[0] / go).toFixed(2)} of the step by the blow`);
+    assert.ok(carryAt(m, s.from)[0] < 0.05 * go, `${id}: he moves in before the wind-up is let go`);
+  }
+  for (const id of ['uppercut', 'knee']) assert.ok(carryAt(motionById(id), 99)[0] > STEP_KICK, `${id}: the leap carries him no further than a step`);
+});
+
+test('a foot slides only where he drives in: forward along the floor, its dust thrown up', () => {
+  for (const m of MOVES_ALL) {
+    for (const [side, a, b] of slidesOf(m)) {
+      const toe = side === 'L' ? 'toeL' : 'toeR';
+      const p0 = worldOf(m, a, skel(poseAt(m, a))[toe]);
+      const p1 = worldOf(m, b, skel(poseAt(m, b))[toe]);
+      assert.ok(p1[0] - p0[0] > 5 && Math.abs(p1[1] - p0[1]) < 0.35 * (p1[0] - p0[0]), `${m.id}: the ${side} foot slides ${(p1[0] - p0[0]).toFixed(1)} on, ${(p1[1] - p0[1]).toFixed(1)} aside`);
+      for (let f = a; f < b; f++) {
+        const q0 = worldOf(m, f, skel(poseAt(m, f))[toe]);
+        const q1 = worldOf(m, f + 1, skel(poseAt(m, f + 1))[toe]);
+        assert.ok(q1[0] - q0[0] > -0.3, `${m.id}: the ${side} foot slides back at f${f + 1}`);
+      }
+      assert.ok((m.dust ?? []).some((d) => d.f >= a && d.f <= b && (d.at === side || d.at === 'both')), `${m.id}: no dust where the ${side} foot slides`);
+    }
+  }
+});
+
+test('the foes stand at his reach, and his blows land on them there', () => {
+  for (const id of BLOWS) {
+    const m = motionById(id);
+    for (const f of m.foes) {
+      const d = Math.hypot(f[0], f[1]) / VET_TILE;
+      assert.ok(d > 2.0 && d <= 2.5, `${id}: a foe ${d.toFixed(2)} tiles from where he stood`);
+    }
+    assert.ok(m.strikes[0].hits.length === m.foes.length, `${id}: hits ${m.strikes[0].hits.length} of ${m.foes.length}`);
+  }
+  const sk = motionById('spinkick');
+  for (const f of sk.foes) assert.ok(Math.abs(Math.hypot(f[0], f[1]) / VET_TILE - 3) < 0.1, 'the spinning kick’s foes three tiles round him');
+  // (every blow of every part of the film lands on someone: the combos' foes where each blow reaches)
+  for (const part of VET_FILM) {
+    const p = part.play;
+    let t = p.lead;
+    for (const st of p.steps) {
+      if (st.m.strikes.length) {
+        const n = blowsOf(p).filter((b) => b.G >= t && b.G < t + st.m.long + 10 && b.react !== 'swing').length;
+        assert.ok(n > 0, `${part.title}: ${st.m.id} lands on no one`);
+      }
+      t += st.m.long;
+    }
+    void playLong;
+  }
+});
+
+test('the spinning jump kick is not the Whirlwind: one crescent thrown off his leg, rolled out round him, never a whole ring; each foe hit once, never again', () => {
+  for (const id of ['spinkick', 'spinkickClose']) {
+    const m = motionById(id);
+    assert.ok(m.strikes.length === 1, `${id}: one blow`);
+    const s = m.strikes[0];
+    const seen = new Set<number>();
+    for (const h of s.hits) {
+      assert.ok(!seen.has(h.foe), `${id}: foe ${h.foe} hit twice`);
+      seen.add(h.foe);
+    }
+    assert.ok(seen.size === m.foes.length, `${id}: every foe round him hit`);
+    for (let f = s.at; f <= m.long; f++) {
+      const [lo, hi] = roundSpan(m, s, f);
+      assert.ok(hi - lo <= 200 && hi <= 360, `${id}: the crescent closes into a ring, or goes round again`);
+    }
+  }
+  const part = VET_FILM.find((x) => x.title.startsWith('THE SPINNING JUMP KICK ·'));
+  assert.ok(part, 'the spinning kick in the film');
+  if (!part) return;
+  const per = new Map<number, number>();
+  for (const b of blowsOf(part.play)) per.set(b.foe, (per.get(b.foe) ?? 0) + 1);
+  assert.ok([...per.values()].every((n) => n === 1) && per.size === 4, `each of the four hit once: ${JSON.stringify([...per])}`);
+});
+
+test('the force past the fist or foot: cyan for a punch, hot orange for a kick, crisp, never pink, never gold', () => {
+  for (const [cols, want] of [[FX_PUNCH, 'cyan'], [FX_KICK, 'orange']] as const) {
+    const px = new Px(220, 160);
+    const to = (q: readonly number[]): [number, number] => [40 + 0.82 * (q[0] + q[1]), 110 + 0.41 * (q[0] - q[1]) - q[2]];
+    shockCone(px, to, [0, 0, 40], 0.2, 0, 0.3, 60, 2, 3, cols, 5);
+    crescent(px, to, [0, 0, 30], -0.6, 0.6, 70, 14, cols, 0, 9, undefined, 20);
+    let saw = false;
+    for (let i = 0; i < px.d.length; i += 4) {
+      const a = px.d[i + 3];
+      assert.ok(a === 0 || a === 255, 'a pixel neither there nor not');
+      if (!a) continue;
+      const [h, sat, v] = hsv(px.d[i], px.d[i + 1], px.d[i + 2]);
+      assert.ok(!(h >= 290 && h <= 352 && sat > 0.4 && v > 0.4), `${want}: pink`);
+      assert.ok(!(h >= 38 && h <= 64 && sat > 0.45 && v > 0.55), `${want}: gold`);
+      if (want === 'cyan' && h >= 175 && h <= 195 && sat > 0.5) saw = true;
+      if (want === 'orange' && h >= 10 && h <= 32 && sat > 0.5 && v > 0.5) saw = true;
+    }
+    assert.ok(saw, `${want} shown`);
+  }
+});
+
+test('a first hold is the round kick: on its own, first in combo 4 (round kick, push kick, spinning jump kick) and first in combo 5', () => {
+  for (const c of VET_COMBOS) {
+    const first = c.steps.find((x) => x.input === 'hold');
+    if (first && c.steps[0].input === 'hold') assert.ok(first.move === 'roundkick', `combo ${c.n} starts with ${first.move}`);
+  }
+  assert.ok(motionById('roundkick').input === 'hold', 'a lone hold');
 });

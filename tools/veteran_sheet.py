@@ -21,17 +21,18 @@ def wrap(d, text, font, maxw):
     if line: out.append(line)
     return out
 probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
-HEAD = 150
-cellh = Image.open(os.path.join(src, rows[0]['cells'][0]['file'])).height
+HEAD = 178
+# (each row's own pictures: the push kick's cone and the spinning kick's crescent are two wide ones)
+cellhs = [Image.open(os.path.join(src, r['cells'][0]['file'])).height for r in rows]
 heights = []
-for r in rows:
+for r, cellh in zip(rows, cellhs):
     lines = wrap(probe, r['line'], small, W - 40)
     heights.append(40 + 24 * len(lines) + 6 + cellh + 30 + 12)
 total = HEAD + sum(heights) + 20
 im = Image.new('RGB', (W, total), BG)
 d = ImageDraw.Draw(im)
 d.text((18, 16), 'The Veteran: his moves', font=big, fill=GOLD)
-for k, ln in enumerate(wrap(d, 'The key moments of every move: the big wind-up held so you can read it, the strike in a frame or two, the big wind-down. Then each combo, its globes filling over him. From in front, at the arena\'s scale, twice the game size, with a stand-in foe. Pictures only: not in the game.', small, W - 36)):
+for k, ln in enumerate(wrap(d, 'The key moments of every move: the big wind-up held so you can read it, the strike in a frame or two (now with his step in and the force off the blow, out to 2½ tiles; the push kick\'s cone and the spinning kick\'s crescent to 3½), the big wind-down. Then each combo, its globes filling over him. From in front, at the arena\'s scale, twice the game size, with a stand-in foe. Pictures only: not in the game.', small, W - 36)):
     d.text((18, 64 + k * 25), ln, font=small, fill=SOFT)
 y = HEAD
 for i, r in enumerate(rows):
@@ -43,6 +44,7 @@ for i, r in enumerate(rows):
         d.text((20, y + 40 + k * 24), ln, font=small, fill=TEXT)
     cy = y + 40 + 24 * len(lines) + 6
     cells = r['cells']
+    cellh = cellhs[i]
     cw = Image.open(os.path.join(src, cells[0]['file'])).width
     gap = (W - 16 - len(cells) * cw) // (len(cells) + 1)
     for k, c in enumerate(cells):

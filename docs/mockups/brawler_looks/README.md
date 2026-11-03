@@ -246,7 +246,7 @@ The moves, frame by frame (30 a second; the wind-up's last frame is held, the st
 | The cross | tap | 28 (0.93 s) | 0–12, wound right back, the rear fist past his ear | 14 (two frames) | hips, shoulders and rear heel thrown round, the fist driven straight through, palm down; reels them |
 | The hook | tap | 32 (1.07 s) | 0–13, his weight on his lead leg, wound left, the elbow drawn up | 15, and 16 on the second | everything whipped round, the lead foot pivoting on its ball, the elbow level, the fist flat across, palm down, through two of them side by side; carried on round |
 | The round kick | hold | 36 (1.2 s) | 0–14: the switch (the lead foot hops back, down at 5), the knee hauled up and cocked | 16 (two frames) | the hips turned right over, the support foot pivoting on its ball till its heel points at them, the shin whipped round flat into the ribs; knocks them back; landed back in his stance by 36 |
-| The push kick (new, 3 Nov) | hold, the first of the three kicks | 44 (1.47 s) | 0–15: the rear knee chambered high, the foot cocked, the toes back (held 10–15) | 17 (two frames) | the foot driven straight out heel first, his support foot flat, his body leaning back, fists guarding; a blast of force fans out from his heel along the floor and shoves back EVERYONE IN A CONE in front of him (60 degrees wide, 2.5 tiles long), the near ones first (a frame for each tile out); re-chambered; set down by 36 |
+| The push kick (new, 3 Nov) | hold, the second of the three kicks (the first until his “Round kick first”) | 44 (1.47 s) | 0–15: the rear knee chambered high, the foot cocked, the toes back (held 10–15) | 17 (two frames) | the foot driven straight out heel first, his support foot flat, his body leaning back, fists guarding; a blast of force fans out from his heel along the floor and shoves back EVERYONE IN A CONE in front of him (60 degrees wide, 2.5 tiles long), the near ones first (a frame for each tile out); re-chambered; set down by 36 |
 | The spinning elbow (made again, 3 Nov) | tap | 50 (1.67 s) | 0–18: a big coil, his hips turned round till his back is nearly to them, his chest wound hard against it (50 degrees), the rear arm folded tight across his chest, eyes on them over his shoulder (held 12–18) | 20 (two frames) | a whole turn on the ball of his lead foot (his weight right over it), his chest whipped round past his hips, the ELBOW leading at head height and pointing straight at them as it lands; the turn drawn as a great arc of light round him at head height (18–34, dying away by 39); the burst at the elbow; knocks them aside; round, and plainly back in his guard by 42, held to 50 |
 | The flying uppercut | swipe, then tap | 46 (1.53 s) | 0–13, dropped right down low, the fist by his knee | 15 (two frames), as he leaves the floor | driven up through the chin and on over his head, his feet 27 over the floor, launching them into the air, stunned (stars); hangs at the top; down at 31 |
 | The spinning jump kick | swipe, then hold | 50 (1.67 s) | 0–14, sunk low on his toes, wound the other way | the leg out by 16; the four round him caught at 16, 18, 20 and 22 | off the floor (15–29, his feet up to 31 over it) into TWO WHOLE TURNS, the leg whipping round flat at head height through everyone round him, each in his turn; flung away; down in a ring of dust |
@@ -261,9 +261,9 @@ locked when three are in; a swipe and then a tap or a hold sets that globe in cy
 1. tap, tap, tap: the jab, the cross, the hook. Steady damage; the hook catches two side by side.
 2. tap, tap, swipe and hold: the jab, the cross, the FLYING KNEE. The strongest single blow.
 3. tap, tap, swipe and tap: the jab, the cross, the FLYING UPPERCUT. Launches one into the air, stunned.
-4. hold, hold, swipe and hold: the PUSH KICK, the round kick, the SPINNING JUMP KICK (his pick of 3 Nov, “Push kick, then
-   round”). The push kick shoves back everyone in a cone in front of him; the spinning jump kick hits all round, for when
-   he is surrounded.
+4. hold, hold, swipe and hold: the round kick, the PUSH KICK, the SPINNING JUMP KICK (his picks of 3 Nov, “Push kick, then
+   round”, then “Round kick first”: see “His reach” below). The push kick shoves back everyone in a cone in front of him;
+   the spinning jump kick's crescent hits all round, for when he is surrounded.
 5. hold, tap, hold: the round kick, the SPINNING ELBOW, the round kick (his 22:27). Knocks them back to make room.
 6. A swipe first: the dodging jump; a swipe and hold first: a spinning jump kick that closes the distance.
 
@@ -365,4 +365,100 @@ One thing for the owner or the main chat: a first hold is the push kick in combo
 round kick in combo 5 (hold, tap, hold), and on its own. The game cannot know which combo is coming at the first hold, so
 in the game the first hold must be one of the two: either the push kick starts every kick combo (combo 5 would become push
 kick, spinning elbow, round kick), or the round kick does and the push kick is the second hold. Pictures only so far; his
-call.
+call. (His call, 3 Nov: “Round kick first”. Done: see “His reach” below.)
+
+### His reach (3 Nov 2026)
+
+His words, 3 Nov 2026. Asked which kick a first hold is (push kick first, or round kick first): “Round kick first”. Asked
+about the spin kick's area against the Warrior's Whirlwind (told: the spin kick about 1 tile, once each; the Whirlwind 2
+tiles, again and again for 2.4 s): “Okay, I don’t like his range.  I get that’s as far as his arms and legs go but I’d like
+all of his moves to have more reach.  And I’m only using whirlwind as a size comparison, I don’t want the kick to look or
+act like it.” Asked how the reach should show (offered: force off each blow; he lunges further; both): “Both”. Asked how
+far (offered: about 2½ tiles, recommended: punches and kicks about 2½ tiles, the push kick's cone and the spin kick's
+crescent about 3½): “About 2½ tiles (Recommended)”.
+
+So every blow reaches both ways:
+
+- HE STEPS IN. Each blow carries him forward a big driving step, most of it in the strike itself (the one or two frames;
+  after-images along it): a STAMPING STEP on the jab, cross and hook (the lead foot lifted and cocked through the held
+  wind-up, stamped down three quarters of a tile on as the fist lands; the rear foot dragged up after him along the floor in
+  the dust); a SKIPPING STEP on the kicks (the support foot skips a tile on, both feet off the floor for a frame); on the
+  spinning elbow he slides in on the ball of his pivot foot as he turns; the leaps carry him further. His feet are held on
+  the floor of the scene however far he is carried (a foot down never moves; a foot only slides where he drives, forward,
+  with dust: a test).
+- FORCE FLIES PAST THE FIST OR FOOT, out along the blow's line: cyan for a punch, hot orange for a kick (never pink, never
+  gold: a test). On the straight blows (jab, cross, uppercut, knee) a SHOCK CONE of air and light: rings of air, the
+  front one inked and white at its heart, its body lit, streaks racing along its skin. On the round blows (hook, round
+  kick, elbow) a CRESCENT of force flung out flat at the height of the blow, thick in its middle, its horns tapering,
+  streaks of air behind it, a faint line on the floor under it. Its front gets out to its reach in 3 or 4 frames; whoever
+  it comes to is hit as it reaches them (worked out from where they stand: each foe once), and it breaks up over 5 more.
+- The foes stand at that range in every scene, and each blow's force drives them back for good about as far as his step
+  carried him in (a punch three quarters of a tile, a kick a tile), so that in a combo the next blow finds them at its
+  reach again.
+
+FOR THE MAIN CHAT, each move's reach, in the game's tiles (a tile 39.2 of his measure, `VET_TILE`), from where he stood as
+the move began, along the blow's line (`veteran_moves.ts`: `REACH`, `REACH_FAR`, `STEP_PUNCH`, `STEP_KICK`, each strike's
+`force`; `forceGeo`, `forceHit` give the shapes and who is hit when):
+
+| Move | His step (by the blow / in all) | The fist or foot at the blow | The force | Reaches |
+|---|---|---|---|---|
+| The jab | 0.62 / 0.75 (stamping) | 1.53 | a shock cone, 36° wide, straight ahead, at head height; out in 3 frames | 2.5 |
+| The cross | 0.65 / 0.75 (stamping) | 1.60 | a shock cone, 42° wide, straight ahead; 3 frames | 2.5 |
+| The hook | 0.67 / 0.75 (stamping) | 1.50 | a crescent 84° wide (42° each side of straight ahead), flung from 0.74 to 1.70 round his hips; 4 frames; catches two side by side | 2.5 |
+| The round kick | 0.85 / 1.0 (skipping) | 1.55 | a crescent 90° wide at rib height; 4 frames | 2.5 |
+| The push kick | 0.85 / 1.0 (skipping) | 1.49 (his heel) | the cone along the floor from his heel, 60° wide, 2.0 long from the heel; out in 7 frames; shoves back all in it, the near ones first (`PUSH_CONE`) | 3.5 |
+| The spinning elbow | 0.60 / 0.75 (sliding on the ball of his pivot foot) | 1.30 | a crescent 64° wide at head height; 4 frames | 2.5 |
+| The flying uppercut | 1.40 / 1.75 (a flying leap) | 1.81 | a shock cone 40° wide shot up and on from the fist, tipped 50° up; 3 frames; launches them | 2.5 |
+| The flying knee | 1.13 / 1.50 (a flying leap) | 1.56 | a shock cone, 42° wide, from the knee; 3 frames | 2.5 |
+| The spinning jump kick | none (he turns in place) | 0.54 | ONE crescent, see below | 3.5 round him |
+| The spinning jump kick, closing in | 2.0 (a spinning leap) | 0.72 | the same crescent, thrown as he arrives (frame 22), rolled out round him to 3.5 from where he stood | 3.5 |
+
+THE SPINNING JUMP KICK, NOT THE WHIRLWIND (his “I don’t want the kick to look or act like it”): one blow, never repeated
+ticks, never a spinning ring of blades. As he turns, his leg throws out a single heavy CRESCENT of hot orange force at head
+height (thick in its middle, horns tapering; 200 degrees long at the most, its head where his leg is), and it ROLLS OUT
+round him to 3.5 tiles in 8 frames while his leg goes round once (one turn and no more; it never closes into a ring); each
+foe is hit ONCE, as it passes over him and has rolled out to him, and is knocked flying. In the film four stand round him
+at 3 tiles: hit at frames 20, 20, 20 and 22. No streaks behind it (they made it look like a wheel of spokes).
+
+COMBO 4, his “Round kick first”: hold, hold, swipe and hold is now the ROUND KICK, the PUSH KICK, the SPINNING JUMP KICK,
+everywhere (`VET_COMBOS`, the globes, the film, the sheet, this file). A first hold is always the round kick: on its own,
+first in combo 4 and first in combo 5 (round kick, spinning elbow, round kick, as before).
+
+Pictures:
+
+- `pictures/veteran_reach.png` (1200 by 4733): before and now for the hook, the round kick, the push kick and the spinning
+  jump kick, from the game's view, each at the moment it reaches furthest, on a faint ruler laid on the floor round where he
+  stood (rings at 1, 2, 2½, 3 and 3½ tiles, labelled; a small cross where he stood). Made by `tools/veteran_reach.ts` (run
+  once in the old version's files and once in these) and `tools/veteran_reach.py`.
+- `pictures/veteran_moves.mp4` made again (every move with his step and its force; the moves with reach shown three times
+  the game's size so the reach fits; the push kick and the spinning jump kick from in front only, as wide as their 3.5
+  tiles needs; combo 4 reordered; half speed: the hook, the push kick and the spinning jump kick).
+- `pictures/veteran_moves_sheet.png` made again (each blow's moment now the force at its reach; the push kick's and the
+  spinning kick's rows two wide pictures each).
+
+How it is made: `veteran_moves.ts` (each strike's `force`; a move's `feet` held on the floor of the scene while the game
+carries him, `stampCarry` and `skipCarry` his steps; each move's foes stood where its force reaches, `standOn`; its hits
+worked out from its force, `forceHit`), `veteran_fx.ts` (`shockCone`, `crescent`, `floorTrace`; the push kick's cone
+denser), `veteran_scene.ts` (every foe of a scene its force comes to is hit as it reaches him; the force drawn, its
+stretches behind him under him; each blow drives them back for good, `REACT_DRIVE` in `veteran_foe.ts`), `veteran_plays.ts`
+(the film's parts: foes at reach, combo 4 reordered).
+
+Checks (`tests/veteran.test.ts`; his joint rule in every frame of every move as before, from in front and from behind, all
+passing): new: every punch and kick reaches 2.5 tiles from where he stood, at least half a tile of it force past the fist
+or foot; the push kick's cone and the spinning kick's crescent 3.5; he steps in on every blow (three quarters of a tile a
+punch and the elbow, a tile a kick, the leaps 1.5 to 2), at least 60% of it by the blow and none of it before the wind-up is
+let go; a foot slides only where he drives in, forward, with dust; the foes stand between 2 and 2.5 tiles out and are hit,
+and every blow of every part of the film lands on someone; the spinning jump kick one blow, each foe hit once, its crescent
+never more than 200 degrees long nor round again; the force cyan or hot orange, crisp, never pink or gold; a first hold
+the round kick everywhere.
+
+Choices made that he or the main chat may want to call:
+
+- The steps: three quarters of a tile on a punch and the elbow, a tile on a kick (his “Both” left the split between step
+  and force open; the force carries the rest to 2.5).
+- The push kick's 3.5 tiles are from where he stood; its cone fans from his heel, which the skip has carried 1.5 tiles out,
+  so the cone itself is 2 tiles long (before it was 2.5 tiles from the heel, about 3.1 from where he stood).
+- The spinning jump kick that closes in throws its crescent as he arrives; in combo 6 (after the dodge, from close in) its
+  leap is shorter (1.25 tiles) so that he lands at them, not on them: in the game it could leap to the foe, up to 2 tiles.
+- The force of a blow drives a foe back for good (a punch three quarters of a tile, a kick a tile) so combos keep finding
+  them; before, a foe came back in to where he stood.
