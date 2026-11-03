@@ -7,7 +7,7 @@
 //   4. each rarer one finer: the four all different, Magic with a touch of blue, Rare with gold or a yellow stone, Unique with
 //      orange stones, and more finery (gold, stones) than the Normal;
 //   5. no two kinds' silhouettes alike, at any rarity (the closest pair is printed);
-//   6. no enemy's colours anywhere; the friend's cyan only in the core of the Tinkerer's wrench; the tome's fire the demon's
+//   6. no enemy's colours anywhere; the friend's cyan only in the core of the Tinkerer's wrench; the grimoire's fire the demon's
 //      red-orange (his words, 3 Nov 2026, 10:44: “red/orange fire on the tome”), never cyan;
 //   7. itemArt: 16 by 16 game pixels, anchor the middle, painted two to a game pixel; the old weapons show the kind they became.
 //   run: tsx --test tests/items_a.test.ts
@@ -163,10 +163,10 @@ test('no enemy’s colours anywhere; the friend’s cyan only in the core of the
   }
 });
 
-test('the demonic tome burns in the demon’s red-orange fire at every rarity, none of it cyan', () => {
+test('the demonic grimoire burns in the demon’s red-orange fire at every rarity, none of it cyan', () => {
   const FIRE = new Set(['#4a0806', '#8e1a0a', '#d8401a', '#ff8a2c', '#ffd49a'].map(key));
   for (const r of RARS) {
-    const p = pic('tome', r);
+    const p = pic('grimoire', r);
     let fire = 0, cyan = 0;
     for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
       const c = p.get(x, y);
@@ -174,8 +174,8 @@ test('the demonic tome burns in the demon’s red-orange fire at every rarity, n
       if (FIRE.has(key(c))) fire++;
       if (GLOW.has(key(c))) cyan++;
     }
-    assert.ok(fire >= 15, `the tome (rarity ${r}): its pages' fire shows only ${fire} pixels of red-orange`);
-    assert.equal(cyan, 0, `the tome (rarity ${r}): ${cyan} pixels of the friend's cyan`);
+    assert.ok(fire >= 15, `the grimoire (rarity ${r}): its pages' fire shows only ${fire} pixels of red-orange`);
+    assert.equal(cyan, 0, `the grimoire (rarity ${r}): ${cyan} pixels of the friend's cyan`);
   }
 });
 
