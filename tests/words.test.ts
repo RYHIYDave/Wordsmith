@@ -655,7 +655,8 @@ const CASES: readonly { cls: ClassId; weapon: WeaponKind; skill: 0 | 1 | 2; demo
 
 test('between them the cases use every ability that takes words, once each', () => {
   const used = CASES.map((k) => practice(k.cls, k.weapon, 5, k.demon, k.talents).hero.skills[k.skill].id).sort();
-  const all = Object.values(SKILLS).filter((d) => d.sockets).map((d) => d.id).sort();
+  // (THE VETERAN's three, behind VETERAN: his words' cases are tests/veteran_words.test.ts, his moves being played as his combos play them)
+  const all = Object.values(SKILLS).filter((d) => d.sockets && d.kind !== 'vblow' && d.kind !== 'vjump').map((d) => d.id).sort();
   assert.deepEqual(used, all);
 });
 

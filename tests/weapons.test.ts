@@ -145,7 +145,9 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
   // every attack there is is brought by a weapon or a class
   // (and since 28 Oct 2026 the classes' own, OWN_MOVES: the warlock's, and his demon's: game/warlock.ts; and the Tinkerer's
   // Contraption, her tree's swap for her Vial Toss)
-  const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade), ...Object.values(CLASSES).flatMap((c) => [c.tap, c.hold, c.evade]), ...DEMON_KIT, 'contraption']);
+  const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade), ...Object.values(CLASSES).flatMap((c) => [c.tap, c.hold, c.evade]), ...DEMON_KIT, 'contraption',
+    // (THE VETERAN's own three, the Brawler made again, behind game/veteran.ts VETERAN: game/defs.ts skillsFor)
+    'vpunch', 'vkick', 'vjump']);
   assert.deepEqual([...brought].sort(), Object.keys(SKILLS).sort(), 'no attack is left that nothing gives');
   // the staff and the wand share neither attack (the owner: "Let's get a different skill for staff on Tap")
   assert.equal(new Set([...WEAPON_SKILLS.staff, ...WEAPON_SKILLS.wand]).size, 4);
