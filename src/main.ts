@@ -4,6 +4,7 @@
 import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
+import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
 import { DOOR_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
@@ -2671,6 +2672,8 @@ function boot(): void {
 useEnemyMoves(ENEMY_MOVES.on);
 // (THE FIRST FIVE FLOORS' NEW LOOKS, floors 3 to 5: his “Yes, switch them on (Recommended)”, 2 Nov 2026, 18:11: game/floor_looks.ts)
 useFloorLooks(FLOOR_LOOKS.on);
+// (THE ONE RELEASE, ALL OF IT: the High City, floors 16 to 20, his “All of it in this one”, 2 Nov 2026: game/all_of_it.ts)
+useAllOfIt(ALL_OF_IT.on);
 
 // (THE PAINTER: the same script, started as the painter's worker, paints and does nothing else)
 if ((globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) paintWorkerMain();

@@ -79,6 +79,7 @@ import { ChapelView } from './chapel';
 import { LairView } from './lair';
 import { TombView } from './tomb';
 import { CastleView } from './castle';
+import type { TinkererFx } from './tinkerer_fx';
 import { TOMB_GATE, tombGateDropAt, tombGateSlam } from '../art/tomb_gate';
 import type { LookView } from './looks';
 import { prisonDoorAnchor, prisonDoorTiles } from '../game/prison_way';
@@ -1385,8 +1386,7 @@ export class Renderer {
           const key = `${arm === 'tesla' ? 'tesla' : 'cannon'}:${back ? 'back' : 'front'}`;
           let frames = this.chargeArt.get(key);
           if (!frames) this.chargeArt.set(key, (frames = golemCharge(back ? 'back' : 'front', arm === 'tesla' ? 'tesla' : 'cannon')));
-          const held = (g.held ?? -1) < 0 ? 1e9 : Math.max(TINKER_TUNE.golem.charge.build, g.held ?? 0) * 30;
-          sp = frames[Math.max(0, Math.min(frames.length - 1, Math.floor(chargeFrame(Math.floor(g.actT * 30), Math.round(held)))))];
+          sp = frames[Math.max(0, Math.min(frames.length - 1, this.chargeAt(g)))];
         }
         else if (g.act === 'down' && clips.fall) sp = at(clips.fall, g.actT);
         else sp = set.idle[0];
@@ -1401,6 +1401,18 @@ export class Renderer {
         this.stand(g.x + g.y + 0.02, pic, sx, sy - drop, glow > 0 ? silhouette(pic, BREW_CYAN) : null, glow, grow);
       }
     }
+  }
+
+  /** (HER TREE'S GUN ARM) The frame of its charged shot a Golem shows: the wind-up, the loop round and round while she holds, then on from the shot (dev/golem_moves.ts chargeFrame). */
+  private chargeAt(g: Game['golems'][number]): number {
+    const held = (g.held ?? -1) < 0 ? 1e9 : Math.max(TINKER_TUNE.golem.charge.build, g.held ?? 0) * 30;
+    return Math.floor(chargeFrame(Math.floor(g.actT * 30), Math.round(held)));
+  }
+  /** (HER TREE'S GUN ARM) Each Golem charging: where, which way its picture is drawn, its gun, its frame. */
+  private golemsCharging(game: Game): TinkererFx['charging'] {
+    const arm = game.armOf();
+    const gun = arm === 'tesla' ? 'tesla' : 'cannon';
+    return game.golems.filter((g) => g.act === 'charge').map((g) => ({ x: g.x, y: g.y, view: g.fx + g.fy < -0.2 ? ('back' as const) : ('front' as const), flip: g.fx - g.fy < 0, gun, f: this.chargeAt(g) }));
   }
 
   /** THE RANGER'S COMPANIONS: each kind's pictures, made the first time one is seen. */
@@ -2688,6 +2700,8 @@ export class Renderer {
     this.wholeNow = this.wholeHere(L);
     this.gameNow = game;
     this.clockNow = t;
+    // (HER TREE'S GUN ARM: each Golem charging, as its picture will be drawn, for the art chat's steam and light round it: render/tinkerer_fx.ts)
+    fx.tinkerer.charging = game.golems.length ? this.golemsCharging(game) : [];
     const prisonOn = look === this.prison;
     this.yardOnly = yardOut ? f : null;
     if (yardOut) this.yard.back(g, cam, f, W, H);

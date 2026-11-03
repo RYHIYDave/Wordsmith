@@ -34,6 +34,17 @@
 //   golemGrow         steam and dust as it grows (its picture grown: render.ts drawTinkerers)
 //   overdrive         a burst of steam off it (its cyan pulsing: drawTinkerers)
 //   decoyStruck       an enemy's blow on the Golem a lightning rod: cyan shards off its iron
+//
+// HER TREE'S GUN ARM AND HER CONTRAPTION'S PICKS, THE ART CHAT'S GAME-READY PIECES (art/golem_shots_fx.ts, his “Yes, that's them
+// (Recommended)”, 31 Oct 2026; laid in by the main chat with the characters, at his word of 2 Nov, “All of it in this one”), in
+// place of the main chat's stand-ins:
+//   charging          everything at the Golem as it braces and charges and fires (its stacks' steam, the light gathering at its
+//                     gun's mouth, the ring and grit on the floor round it): its floor under what stands, its air over it, frame
+//                     by frame with its picture (render.ts sets `charging` each frame)
+//   golemCharged      THE CANNON'S SHELL out of its mouth, its trail, and its BLAST where it lands (2.5 tiles at its full; a weaker
+//                     shot's to the half tile); THE TESLA COIL'S BEAM from its coil's ball, with the Golem as it is pushed back
+//   vialBurst bomb    her Contraption's little bomb going off (2 tiles)
+//   contraptionBolt   her Contraption's bolt of energy from its ball to what it strikes, crackling there
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -49,6 +60,9 @@ import type { Brew } from '../game/state';
 import { GEARS, SPARKS, gears, sparks } from '../dev/golem_down_fx';
 import { BOMB_FX, bombSprite, layShotAir, shotLayers } from '../dev/contraption_shots';
 import { STUFF, crackStar, drawCrack } from '../dev/demon_fx';
+import { BEAM_FRAMES, contraptionBoltFx, contraptionBombBlastFx, golemBeamFx, golemChargeFx, golemShellBlastFx, golemShellFlightFx, golemSkid, paintAhead } from '../art/golem_shots_fx';
+import type { Layered, ShotGun } from '../art/golem_shots_fx';
+import { flipSprite } from '../engine/px';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
 
@@ -228,6 +242,16 @@ export class TinkererFx {
   private vents: Spot[] = [];
   /** Things to come: a Contraption coming down, being lit (seconds until). */
   private later: { at: number; e: () => void }[] = [];
+  /**
+   * (HER TREE'S GUN ARM) Each Golem charging this frame: its floor point, as its picture is drawn (from behind or in front,
+   * turned over or not), its gun, and the frame of its charged shot shown (dev/golem_moves.ts chargeFrame). Set by render.ts.
+   */
+  charging: { x: number; y: number; view: 'front' | 'back'; flip: boolean; gun: ShotGun; f: number }[] = [];
+  /** (the art chat's pieces) shells in flight; the beams pouring; the blasts of the shell and of her bomb; her Contraption's bolts. */
+  private flights: { x: number; y: number; frames: Sprite[]; t: number }[] = [];
+  private beams: { x: number; y: number; ux: number; uy: number; frames: Sprite[]; t: number }[] = [];
+  private bigBlasts: { x: number; y: number; fx: Layered<Sprite[]>; t: number }[] = [];
+  private conBolts: { x: number; y: number; frames: Sprite[]; t: number }[] = [];
 
   handle(e: GameEvent): void {
     switch (e.t) {
@@ -247,8 +271,7 @@ export class TinkererFx {
       case 'vialBurst':
         // (her tree's CONTRAPTION, its pick BOMBS: her bomb going off, as her blast jump's does)
         if (e.bomb) {
-          this.blasts.push({ x: e.x, y: e.y, t: 0 });
-          this.scorches.push({ x: e.x, y: e.y, t: 0 });
+          this.bigBlasts.push({ x: e.x, y: e.y, fx: contraptionBombBlastFx(), t: 0 });
           break;
         }
         this.bursts.push({ x: e.x, y: e.y, t: 0, k: e.little ? 0.6 : e.big ? 2 : 1, brew: e.brew, r: e.r, big: e.big });
@@ -259,11 +282,8 @@ export class TinkererFx {
         break;
       // (her tree's CONTRAPTION, its pick ENERGY: a bolt of her cyan streaking at what it strikes, crackling where it lands)
       case 'contraptionBolt': {
-        this.bolts.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: Math.max(0.05, e.flight) });
-        this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
-        const x = e.x1;
-        const y = e.y1;
-        this.later.push({ at: this.t + e.flight, e: () => this.impacts.push({ x, y, t: 0, big: 0.8 }) });
+        const [view, flip] = facing(e.x1 - e.x0, e.y1 - e.y0);
+        this.conBolts.push({ x: e.x0, y: e.y0, frames: contraptionBoltFx(view, flip, e.x1 - e.x0, e.y1 - e.y0).frames, t: 0 });
         break;
       }
       case 'bombsAway':
@@ -315,32 +335,25 @@ export class TinkererFx {
         break;
       // (her tree's GUN ARM: braced, it begins to charge, steam bursting from its stacks; then its great shot, from its own
       // effects (golem_gun_fx.ts, blast_fx.ts) until the art chat's charged shots (dev/golem_charge_fx.ts) are laid in)
+      // (its charge's own steam and light are laid with the Golem: `charging`)
       case 'golemCharge':
-        this.vents.push({ x: e.x, y: e.y, t: 0 });
         break;
       case 'golemCharged': {
-        const way = e.x1 - e.y1 - (e.x0 - e.y0) >= 0 ? 1 : -1;
-        const x = e.x1;
-        const y = e.y1;
+        const dx = e.x1 - e.x0;
+        const dy = e.y1 - e.y0;
+        const [view, flip] = facing(dx, dy);
         if (e.kind === 'shell') {
-          this.shots.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: Math.max(0.05, e.flight), way });
-          this.flashes.push({ x: e.x0, y: e.y0, t: 0, way });
-          this.vents.push({ x: e.x0, y: e.y0, t: 0 });
-          this.later.push({
-            at: this.t + e.flight,
-            e: () => {
-              this.blasts.push({ x, y, t: 0 });
-              this.scorches.push({ x, y, t: 0 });
-              this.impacts.push({ x, y, t: 0, big: 1.2 + e.r });
-            },
-          });
+          // (the shell out of its mouth and its trail, from where it stood as it fired; its blast where it lands, as it lands)
+          const fl = golemShellFlightFx(view, flip, dx, dy, Math.max(1, Math.round(e.flight * 30)));
+          this.flights.push({ x: e.x0, y: e.y0, frames: fl.frames, t: 0 });
+          const x = e.x1;
+          const y = e.y1;
+          const r = e.r;
+          this.later.push({ at: this.t + e.flight, e: () => this.bigBlasts.push({ x, y, fx: golemShellBlastFx(r), t: 0 }) });
         } else {
-          // (the beam: lightning along its whole length, three times over as it pours, and a splash where it ends)
-          const n = Math.max(2, Math.round(Math.hypot(e.x1 - e.x0, e.y1 - e.y0) / 1.2));
-          const to = Array.from({ length: n }, (_, k) => ({ x: e.x0 + ((e.x1 - e.x0) * (k + 1)) / n, y: e.y0 + ((e.y1 - e.y0) * (k + 1)) / n }));
-          for (let k = 0; k < 3; k++) this.later.push({ at: this.t + k * 0.1, e: () => this.zaps.push({ x: e.x0, y: e.y0, t: 0, frames: zapFrames(e.x0, e.y0, COIL_UP, to) }) });
-          this.flashes.push({ x: e.x0, y: e.y0, t: 0, way });
-          this.impacts.push({ x, y, t: 0, big: 1.6 });
+          // (the beam from the coil's ball, with the Golem as it is pushed back while it pours)
+          const len = Math.hypot(dx, dy) || 1;
+          this.beams.push({ x: e.x0, y: e.y0, ux: dx / len, uy: dy / len, frames: golemBeamFx(view, flip, dx, dy), t: 0 });
         }
         break;
       }
@@ -388,6 +401,20 @@ export class TinkererFx {
     this.zaps = age(this.zaps, LIFE.zap);
     this.rings = age(this.rings, LIFE.ring);
     this.vents = age(this.vents, LIFE.pound);
+    const frames = <T extends { t: number; frames: Sprite[] }>(list: T[]): T[] => {
+      for (const x of list) x.t += dt;
+      return list.filter((x) => Math.floor(x.t * 30) < x.frames.length);
+    };
+    this.flights = frames(this.flights);
+    this.beams = frames(this.beams);
+    this.conBolts = frames(this.conBolts);
+    for (const b of this.bigBlasts) b.t += dt;
+    this.bigBlasts = this.bigBlasts.filter((b) => Math.floor(b.t * 30) < b.fx.air.length);
+    // (the cannon's full blast is heavy to paint: painted ahead a little each frame while a Golem with the cannon charges)
+    if (this.charging.some((c) => c.gun === 'cannon')) {
+      const b = golemShellBlastFx();
+      paintAhead([b.floor, b.air], 4);
+    }
   }
 
   clear(): void {
@@ -410,6 +437,11 @@ export class TinkererFx {
     this.rings = [];
     this.vents = [];
     this.later = [];
+    this.charging = [];
+    this.flights = [];
+    this.beams = [];
+    this.bigBlasts = [];
+    this.conBolts = [];
   }
 
   /** What lies on the floor: scorches, the pounds' cracks and rings, the thuds of dust, lamps lit. */
@@ -446,6 +478,15 @@ export class TinkererFx {
     for (const p of this.thuds) put(at(th, p.t / LIFE.thud), p.x, p.y);
     const lm = lampFrames();
     for (const p of this.lamps) put(at(lm, p.t / LIFE.lamp), p.x, p.y, 8);
+    // (the art chat's: the ring and grit round a charging Golem; the shell's and the bomb's scorches and cracks)
+    for (const q of this.charging) {
+      const L = golemChargeFx(q.view, q.gun).floor;
+      if (q.f >= 0 && q.f < L.length) put(q.flip ? flipSprite(L[q.f]) : L[q.f], q.x, q.y);
+    }
+    for (const b of this.bigBlasts) {
+      const k = Math.floor(b.t * 30);
+      if (k < b.fx.floor.length) put(b.fx.floor[k], b.x, b.y);
+    }
   }
 
   /** What is over everything: her vials in the air and bursting, her bomb, the Golem's steam, flashes, shots, sparks. */
@@ -564,5 +605,46 @@ export class TinkererFx {
     for (const p of this.zaps) put(at(p.frames, p.t / LIFE.zap), p.x, p.y);
     for (const p of this.vents) put(at(pa, p.t / LIFE.pound), p.x, p.y);
     for (const p of this.sparks) put(at(sparkFrames(p.size), p.t / LIFE.sparks), p.x, p.y, 0);
+    // (THE ART CHAT'S, laid as its film lays them: the shell's first two frames under the Golem's air (still in the burst at its
+    // mouth); the Golem's air; the shell in flight; the beam; the blasts' air; the bolts)
+    const frame = (list: Sprite[], t: number): Sprite | null => {
+      const k = Math.floor(t * 30);
+      return k >= 0 && k < list.length ? list[k] : null;
+    };
+    for (const f of this.flights) if (f.t * 30 < 2) {
+      const sp = frame(f.frames, f.t);
+      if (sp) put(sp, f.x, f.y);
+    }
+    for (const q of this.charging) {
+      const L = golemChargeFx(q.view, q.gun).air;
+      if (q.f >= 0 && q.f < L.length) put(q.flip ? flipSprite(L[q.f]) : L[q.f], q.x, q.y);
+    }
+    for (const f of this.flights) if (f.t * 30 >= 2) {
+      const sp = frame(f.frames, f.t);
+      if (sp) put(sp, f.x, f.y);
+    }
+    for (const b of this.beams) {
+      const k = Math.floor(b.t * 30);
+      const sp = frame(b.frames, b.t);
+      if (!sp) continue;
+      const back = golemSkid('tesla', Math.min(k, BEAM_FRAMES));
+      put(sp, b.x - b.ux * back, b.y - b.uy * back);
+    }
+    for (const b of this.bigBlasts) {
+      const sp = frame(b.fx.air, b.t);
+      if (sp) put(sp, b.x, b.y);
+    }
+    for (const b of this.conBolts) {
+      const sp = frame(b.frames, b.t);
+      if (sp) put(sp, b.x, b.y);
+    }
   }
+}
+
+/** Which way a thing faces that fires along (dx, dy), as render.ts picks its picture: from behind or in front, turned over or not. */
+function facing(dx: number, dy: number): ['front' | 'back', boolean] {
+  const len = Math.hypot(dx, dy) || 1;
+  const fx = dx / len;
+  const fy = dy / len;
+  return [fx + fy < -0.2 ? 'back' : 'front', fx - fy < 0];
 }
