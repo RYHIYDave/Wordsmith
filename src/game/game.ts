@@ -70,6 +70,8 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
+import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TUNE, isVetPunch, newVet, vetCarryAt, vetFireFor, vetLocked, vetMoveFor, vetReach } from './veteran';
+import type { VetBlowId, VetMoveDef, VetPlaying } from './veteran';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import type { Brew, Decoy, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
@@ -318,6 +320,8 @@ export class Game {
   cannonballs: { id: number; dx: number; dy: number; left: number; skill: number; frac: number; hit: number[] }[] = [];
   /** THE BRAWLER'S TREE (game/talents.ts BRAWLER_TREE): what his talents keep going. */
   brawl: BrawlState = newBrawl();
+  /** THE VETERAN (game/veteran.ts): his presses waiting to go in (a tap or a hold made while his combo is locked goes in as it ends, if still held; a swipe for a moment). */
+  private vetIn: { tap: boolean; hold: boolean; fireWas: boolean; castWas: boolean; swipe: { x: number; y: number; t: number } | null } = { tap: false, hold: false, fireWas: false, castWas: false, swipe: null };
   drops: Drop[] = [];
   events: GameEvent[] = [];
   boss: Monster | null = null;
@@ -1266,6 +1270,9 @@ export class Game {
     this.hellwaves = [];
     this.souls = [];
     this.brawl = newBrawl();
+    // (THE VETERAN: a level begins with his globes out and nothing being played)
+    if (this.hero.vet) this.hero.vet = newVet();
+    this.vetIn = { tap: false, hold: false, fireWas: false, castWas: false, swipe: null };
     this.drops = [];
     this.later = [];
     // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
@@ -3882,6 +3889,12 @@ export class Game {
     }
 
     if (c.potion) this.usePotion();
+    // (THE VETERAN, game/veteran.ts: his presses fill his globes and his moves are played in turn; while one is played he
+    // does nothing else, and nothing else is made of a tap, a hold or a swipe of his)
+    if (this.vetOn()) {
+      if (this.stepVeteran(dt, c)) return;
+      c = { ...c, fire: false, cast: false, evade: false, hold: false };
+    }
     if (c.evade) this.useEvasive(c.evadeX, c.evadeY, c);
     if (h.move) return;
     // an attack that was begun lands when its wind-up is over
@@ -5068,6 +5081,213 @@ export class Game {
       b.act = 'stand';
       b.actT = 0;
     }
+  }
+
+  // ---- THE VETERAN (game/veteran.ts, behind VETERAN) ----------------------------------------------
+  // How a combo goes, which move a press makes, and his moves' numbers: game/veteran.ts. Here, what the game makes of them.
+
+  /** Is the hero the Veteran? */
+  vetOn(): boolean {
+    return VETERAN.on && this.hero.cls === 'brawler';
+  }
+
+  /** One step of him: his presses, and the move being played. True while a move is being played (he does nothing else). */
+  private stepVeteran(dt: number, c: Controls): boolean {
+    const h = this.hero;
+    const v = (h.vet ??= newVet());
+    const I = this.vetIn;
+    // (a press goes in as it is made; one made while the combo is locked waits, while it is still held, for the combo's end)
+    if (c.fire && !I.fireWas) I.tap = true;
+    if (!c.fire) I.tap = false;
+    I.fireWas = c.fire;
+    if (c.cast && !I.castWas) I.hold = true;
+    if (!c.cast) I.hold = false;
+    I.castWas = c.cast;
+    if (c.evade) I.swipe = { x: c.evadeX, y: c.evadeY, t: VET_TUNE.swipeWaits };
+    else if (I.swipe && (I.swipe.t -= dt) <= 0) I.swipe = null;
+    // (frozen in place by the Drowned's frost grab, or hooked: no presses go in)
+    const stuck = (h.iceT ?? 0) > 0 || (h.held ?? 0) > 0;
+    if (!stuck) {
+      if (I.swipe && this.vetPress('swipe', c, I.swipe.x, I.swipe.y)) I.swipe = null;
+      if (I.tap && this.vetPress('tap', c)) I.tap = false;
+      if (I.hold && this.vetPress('hold', c)) I.hold = false;
+    }
+    if (!v.move && v.queue.length && !stuck) this.vetStart(c);
+    if (v.move) {
+      this.vetPlay(dt);
+      return true;
+    }
+    if (v.globes.length) {
+      v.idle += dt;
+      if (v.idle >= VET_TUNE.gap) {
+        v.globes = [];
+        v.done = [];
+      }
+    }
+    return false;
+  }
+
+  /**
+   * A press of his: a swipe spends the jump and fills a white globe (the dodge); a tap or a hold sets a swipe's globe in fire
+   * if its jump has not left the floor yet (or not begun), else fills the next globe, cyan or orange. Whether it went in (a
+   * swipe with the jump not ready goes in as nothing; a press with the combo locked does not go in).
+   */
+  private vetPress(kind: 'tap' | 'hold' | 'swipe', c: Controls, sx = 0, sy = 0): boolean {
+    const h = this.hero;
+    const v = h.vet!;
+    const before: VetBlowId[] = [...v.done, ...(v.move ? [v.move.id] : []), ...v.queue.map((q) => q.id)];
+    if (kind === 'swipe') {
+      if (vetLocked(v)) return false;
+      const s = h.skills[2];
+      if (s.charges < 1) {
+        if (this.denyT <= 0) {
+          this.denyT = 0.8;
+          this.sfx('deny');
+          this.emit({ t: 'text', x: h.x, y: h.y, text: 'No jump', color: '#8c8090' });
+        }
+        return true;
+      }
+      s.charges--;
+      s.uses++;
+      if (s.cd <= 0) s.cd = s.r.cooldown;
+      v.globes.push('jump');
+      v.queue.push({ id: 'dodge', globe: v.globes.length - 1, tx: sx, ty: sy });
+      v.idle = 0;
+      return true;
+    }
+    const i = kind === 'tap' ? 0 : 1;
+    // (set in fire: the swipe's jump waiting its turn, or begun and not yet off the floor)
+    const lastQ = v.queue.length ? v.queue[v.queue.length - 1] : null;
+    const jumping = !lastQ && v.move && v.move.id === 'dodge' && v.move.f < VET_MOVES.dodge.air![0] ? v.move : null;
+    if ((lastQ && lastQ.id === 'dodge') || jumping) {
+      const g = lastQ ? lastQ.globe : jumping!.globe;
+      const prior = before.slice(0, before.lastIndexOf('dodge'));
+      const id = vetFireFor(kind, prior);
+      v.globes[g] = kind === 'tap' ? 'punchFire' : 'kickFire';
+      if (lastQ) lastQ.id = id;
+      else {
+        // (begun as the dodge's crouch: it is the fire move from its own start, at what he aims at)
+        v.move = null;
+        v.queue.unshift({ id, globe: g, tx: 0, ty: 0 });
+        this.vetStart(c);
+      }
+      h.skills[i].uses++;
+      v.idle = 0;
+      return true;
+    }
+    if (vetLocked(v)) return false;
+    v.globes.push(kind === 'tap' ? 'punch' : 'kick');
+    v.queue.push({ id: vetMoveFor(kind, before), globe: v.globes.length - 1, tx: 0, ty: 0 });
+    h.skills[i].uses++;
+    v.idle = 0;
+    return true;
+  }
+
+  /** The next move of his combo begins: turned to what he aims at (the dodge: springing away the way he swiped), from where he stands. */
+  private vetStart(c: Controls): void {
+    const h = this.hero;
+    const v = h.vet!;
+    const q = v.queue.shift()!;
+    let fx = h.fx;
+    let fy = h.fy;
+    if (q.id === 'dodge') {
+      // (his jump springs back and away from the way he faces: he faces from where he is going)
+      const dx = q.tx - h.x;
+      const dy = q.ty - h.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 0.3) {
+        fx = -dx / l;
+        fy = -dy / l;
+      }
+    } else {
+      const dx = c.aimX - h.x;
+      const dy = c.aimY - h.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 0.3) {
+        fx = dx / l;
+        fy = dy / l;
+      }
+    }
+    h.fx = fx;
+    h.fy = fy;
+    v.move = { id: q.id, f: 0, x0: h.x, y0: h.y, fx, fy, carried: [0, 0], hit: [], globe: q.globe };
+    // (the attack's words: what a use gives him, Swiftness, the frenzy, a shield)
+    if (q.id !== 'dodge') this.boons(isVetPunch(q.id) ? 0 : 1);
+  }
+
+  /** How fast his move is played: his attack speed against his weapon's (Swiftness, the frenzy), as any attack of his quickens. */
+  private vetPace(id: VetBlowId): number {
+    if (id === 'dodge') return 1;
+    const s = this.hero.skills[isVetPunch(id) ? 0 : 1];
+    return Math.max(0.5, Math.min(2, s.r.rate / Math.max(0.3, this.weaponRate()))) * this.frenzyPace();
+  }
+
+  /** A step of the move being played: he is carried as the art carries him, his blow lands on each its force comes to, and it ends. */
+  private vetPlay(dt: number): void {
+    const h = this.hero;
+    const v = h.vet!;
+    const mv = v.move!;
+    const m = VET_MOVES[mv.id];
+    mv.f += dt * VET_FPS * this.vetPace(mv.id);
+    // (carried: the art's step, slid along the floor; walls stop him)
+    const [cf, cl] = vetCarryAt(m, Math.min(mv.f, m.long));
+    const df = cf - mv.carried[0];
+    const dl = cl - mv.carried[1];
+    mv.carried = [cf, cl];
+    if (df || dl) this.slide(h, TUNE.heroRadius, mv.fx * df + mv.fy * dl, mv.fy * df - mv.fx * dl, this.level.walk);
+    // (his dodging jump: nothing touches him while he is off the floor)
+    if (m.air && mv.id === 'dodge' && mv.f >= m.air[0] && mv.f <= m.air[1]) h.invuln = Math.max(h.invuln, 0.06);
+    h.anim = 'attack';
+    if (m.strike && mv.f >= m.strike.at) this.vetStrike(mv, m);
+    if (mv.f >= m.long) {
+      v.done.push(mv.id);
+      v.move = null;
+      v.idle = 0;
+      // (the combo locked and played out: its globes go out)
+      if (vetLocked(v) && !v.queue.length) {
+        v.globes = [];
+        v.done = [];
+      }
+    }
+  }
+
+  /** His blow's force going out: each monster it comes to is struck, once. */
+  private vetStrike(mv: VetPlaying, m: VetMoveDef): void {
+    const F = m.force!;
+    const S = m.strike!;
+    const from = F.from ?? S.at;
+    if (mv.f > from + F.long + 1) return;
+    let k = 0;
+    for (const o of this.monsters) {
+      if (o.dead || mv.hit.includes(o.id) || this.shutIn(o)) continue;
+      const at = vetReach(m, mv, o.x, o.y, o.r);
+      if (at === null || mv.f < at) continue;
+      mv.hit.push(o.id);
+      this.vetHit(o, mv, m, k++);
+    }
+  }
+
+  /** One of his blows landing on a monster: its share of the hit; driven back for good, staggered, stunned or thrown up, as the blow is. */
+  private vetHit(o: Monster, mv: VetPlaying, m: VetMoveDef, n: number): void {
+    const i = isVetPunch(mv.id) ? 0 : 1;
+    const R = VET_REACT[m.force!.react];
+    const first = mv.hit.length === 1;
+    this.hitMonster(o, i, m.share, n >= 3);
+    if (first) {
+      this.landed(i);
+      const heavy = m.strike!.kind === 'kick' || m.share >= 1;
+      this.sfx(heavy ? 'slam' : 'hit', heavy ? 0.8 : 0.6);
+      if (m.share >= 1.5) this.emit({ t: 'shake', amount: 3.5 });
+      else if (heavy) this.emit({ t: 'shake', amount: 1.8 });
+    }
+    if (o.dead) return;
+    if (R.up && this.popUp(o)) {
+      o.stunT = BRAWL_TUNE.talents.bigUppercut.up + (R.stun ?? 0);
+      return;
+    }
+    if (R.back) this.throwMonster(o, mv.x0, mv.y0, R.back, VET_TUNE.driveSecs);
+    if (R.stagger) o.staggerT = Math.max(o.staggerT, R.stagger);
+    if (R.stun) o.stunT = Math.max(o.stunT, R.stun);
   }
 
   // ---- THE BRAWLER (game/brawler.ts) -----------------------------------------------------------

@@ -1,6 +1,7 @@
 // The game's content tables: classes, abilities, power words, monsters, and the numbers that
 // tune them. Change the game's feel here; the rules that read these tables live in game.ts.
 
+import { VETERAN } from './veteran';
 import { act1Def } from './act1';
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MeldId, MonsterKind, Slot, WeaponKind, WordId } from './types';
@@ -31,7 +32,10 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
   // (THE TINKERER, game/tinkerer.ts: her Vial Toss, her Contraption (a talent's swap for it), her Golem, her Blast Jump)
   | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
   // (THE BRAWLER, game/brawler.ts: his taps, his holds, his slip and counter)
-  | 'jab' | 'cross' | 'slip';
+  | 'jab' | 'cross' | 'slip'
+  // (THE VETERAN, game/veteran.ts, behind VETERAN: his tap a punch, his hold a kick, his swipe the jump; which punch, kick
+  // or fire move each press makes is his combo's: game/veteran.ts vetMoveFor)
+  | 'vpunch' | 'vkick' | 'vjump';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -57,7 +61,10 @@ export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 
   | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
   // (THE BRAWLER, game/brawler.ts: `punch`, the punch of a combo its place makes; `slip`, a weaving dash, untouchable, and a
   // counter hook where he comes up)
-  | 'punch' | 'slip';
+  | 'punch' | 'slip'
+  // (THE VETERAN, game/veteran.ts: `vblow`, a punch or a kick of his combo, its force reaching out past the fist or foot;
+  // `vjump`, his jump: the dodge, or spent on a globe set in fire)
+  | 'vblow' | 'vjump';
 
 export interface SkillDef {
   id: SkillId;
@@ -197,6 +204,11 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   jab: { id: 'jab', name: 'Jab', kind: 'punch', icon: 'jab', dmg: 1.0, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'Quick and light: a jab, then a hook, then an uppercut that pops it up stunned. Mix in holds for other combos.', verb: 'JAB', windup: 4 / 30, follow: 8 / 30 },
   cross: { id: 'cross', name: 'Cross', kind: 'punch', icon: 'cross', dmg: 1.0, cooldown: 0, mana: 0, range: 1.9, radius: 1.9, speed: 0, sockets: true, desc: 'Slow and heavy, every blow knocking back: a cross, a body blow that staggers all round you, and after two holds a haymaker that fires one down the line.', verb: 'CROSS', windup: 10 / 30, follow: 14 / 30 },
   slip: { id: 'slip', name: 'Slip and Counter', kind: 'slip', icon: 'slip', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.9, speed: 0, sockets: true, desc: 'Bob and weave to a spot, untouchable, and come up with a counter hook into whatever is there.', verb: 'SLIP', windup: 0, follow: 0 },
+  // (THE VETERAN: his three; the icons the old Brawler's until the art chat's are in. His blows' shares of the hit are each
+  // move's own, game/veteran.ts VET_MOVES; his jump's wait one fire globe a combo, as a rule: his “Swipes spend the jump”)
+  vpunch: { id: 'vpunch', name: 'Punch', kind: 'vblow', icon: 'jab', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A tap fills a cyan globe: the jab, the cross, the hook, the spinning elbow, as his combo comes to them.', verb: 'PUNCH', windup: 0, follow: 0 },
+  vkick: { id: 'vkick', name: 'Kick', kind: 'vblow', icon: 'cross', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A hold fills an orange globe: the round kick, then the push kick.', verb: 'KICK', windup: 0, follow: 0 },
+  vjump: { id: 'vjump', name: 'Jump', kind: 'vjump', icon: 'slip', dmg: 1.0, cooldown: 4.0, mana: 0, range: 1, radius: 0, speed: 0, sockets: true, desc: 'A swipe is his dodging jump. A swipe then a tap or a hold sets the globe in fire: the flying uppercut, the flying knee, the spinning jump kick.', verb: 'JUMP', windup: 0, follow: 0 },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -310,6 +322,8 @@ export function weaponAttr(weapon: WeaponKind | null): Attr {
 /** A character's three abilities: quick and slow (the class's own, OWN_MOVES; with it off, the weapon's), evasive (the class's). */
 export function skillsFor(cls: ClassId, weapon: WeaponKind | null): [SkillId, SkillId, SkillId] {
   const c = CLASSES[cls];
+  // (THE VETERAN, game/veteran.ts: the Brawler made again, his own three)
+  if (cls === 'brawler' && VETERAN.on) return ['vpunch', 'vkick', 'vjump'];
   if (OWN_MOVES.on || c.own) return [c.tap, c.hold, c.evade];
   return [tapSkill(weapon), holdSkill(weapon), c.evade];
 }

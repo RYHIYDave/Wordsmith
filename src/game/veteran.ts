@@ -128,6 +128,8 @@ export const VET_TUNE = {
   body: 0.3,
   /** Seconds a foe that is driven back takes to be carried there. */
   driveSecs: 0.18,
+  /** Seconds a swipe made while his combo is locked waits to go in. */
+  swipeWaits: 0.35,
 };
 
 /** A move being played: which, how far through it (frames, at his pace), where he stood and the way he faced as it began, whom its blow has struck. */
@@ -150,8 +152,8 @@ export interface VetPlaying {
 export interface VetState {
   /** The globes filled so far in this combo, in order (none to three). */
   globes: VetGlobe[];
-  /** The presses whose globes are filled and whose moves are still to be played, in turn: each the move it makes. */
-  queue: { id: VetBlowId; globe: number }[];
+  /** The presses whose globes are filled and whose moves are still to be played, in turn: each the move it makes, its globe, and for a swipe where it was swiped to. */
+  queue: { id: VetBlowId; globe: number; tx: number; ty: number }[];
   /** The move being played. */
   move: VetPlaying | null;
   /** The moves of this combo played or playing, in order (for which move a press makes). */
