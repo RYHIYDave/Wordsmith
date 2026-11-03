@@ -32,6 +32,11 @@ export interface HeroLook {
   /** THE WARLOCK (art/warlock_art.ts): he is the demon; his pact is full (his arm blazes). */
   demon?: boolean;
   blaze?: boolean;
+  /**
+   * THE BRAWLER AS THE VETERAN (art/veteran_art.ts): given, whether he is (the painter's worker, which has no switch of its
+   * own, says so); absent, as game/veteran.ts VETERAN is.
+   */
+  vet?: boolean;
 }
 
 /**
@@ -58,7 +63,7 @@ export interface HeroArt {
    */
   warm(cls: ClassId, look: HeroLook): boolean;
   /** (The heroes painted over the bones: a frame painted by the painter's worker, taken in: art/heroes3.ts.) */
-  give?(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite): boolean;
+  give?(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean): boolean;
 }
 
 export const PLAIN: HeroLook = { twoHanded: false };

@@ -28,6 +28,8 @@ import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
 import { makeTinkererArt, makeTinkererCardArt } from './tinkerer_art';
 import { PRESS_RUNS, makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
+import { VET_LISTS, makeVeteranArt, makeVeteranCardArt } from './veteran_art';
+import { VETERAN } from '../game/veteran';
 import { makeWarlockArt } from './warlock_art';
 import type { WarlockShare } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
@@ -355,7 +357,12 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
 const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...PRESS_RUNS.map((key) => (a: AnimSet) => a.clips?.punches?.[key]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
           (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? []),
           // (THE WARLOCK's changing, art/warlock_art.ts; and every hero's fall, last)
-          (a) => a.clips?.change?.frames ?? [], (a) => a.clips?.fall?.frames ?? []];
+          (a) => a.clips?.change?.frames ?? [], (a) => a.clips?.fall?.frames ?? [],
+          // (THE VETERAN's moves, art/veteran_art.ts, after every other hero's lists, so theirs keep their places; and each
+          // strike's half-frames, its after-images)
+          ...VET_LISTS.map((id) => (a: AnimSet) => a.clips?.vet?.[id]?.frames ?? []), ...VET_LISTS.map((id) => (a: AnimSet) => a.clips?.vetHalves?.[id]?.frames ?? []),
+          // (and his action lines, art/veteran_fx_art.ts: each move's three layers)
+          ...VET_LISTS.flatMap((id) => (['ground', 'behind', 'front'] as const).map((k) => (a: AnimSet) => a.clips?.vetFx?.[id]?.[k] ?? []))];
 
 /** A hero's lists of frames, in the order they are painted ahead (the painter's worker and the page agree on them by this). */
 export function heroLists(set: AnimSet): Sprite[][] {
@@ -385,6 +392,17 @@ export function makeHeroArt3(): HeroArt {
         made.set(wkey, wart);
       }
       return wart;
+    }
+    // (THE VETERAN, the Brawler made again, while game/veteran.ts VETERAN is on (or the look says he is: the painter's worker,
+    // which has no switch of its own): art/veteran_art.ts; one set of him for every place)
+    if (cls === 'brawler' && (look.vet ?? VETERAN.on)) {
+      const vkey = place === 'card' ? 'veteran:card' : 'veteran';
+      let vart = made.get(vkey);
+      if (!vart) {
+        vart = place === 'card' ? makeVeteranCardArt() : makeVeteranArt();
+        made.set(vkey, vart);
+      }
+      return vart;
     }
     // (THE BRAWLER: sculpted, art/brawler_art.ts; one set of him for every place, as yet)
     // (on a class card, only what a card shows, made at once: makeBrawlerCardArt; the same for the Tinkerer)
@@ -422,8 +440,9 @@ export function makeHeroArt3(): HeroArt {
      * THE PAINTER (render/painter.ts): a frame of a hero painted beside the game, taken in where the game has not painted
      * it yet (`v` the side, `l` its list as heroLists has them, `i` the frame). False: not wanted (the game had painted it).
      */
-    give(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite): boolean {
-      const art = of(cls, lookOfPlace(place));
+    give(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean): boolean {
+      // (`vet`: painted as the Veteran, whatever the switch is now: art/veteran_art.ts)
+      const art = of(cls, { ...lookOfPlace(place), vet: !!vet });
       const frames = heroLists(v === 0 ? art.front : art.back)[l];
       if (!frames || i < 0 || i >= frames.length) return false;
       const d = Object.getOwnPropertyDescriptor(frames, i);

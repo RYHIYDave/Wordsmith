@@ -1,7 +1,8 @@
 // THE VETERAN (dev/sculpt_veteran.ts, dev/veteran_globes.ts, dev/preview_veteran.ts; mock-ups, pictures first). His pick,
 // 2 Nov 2026: “7, the Veteran”; “I don’t want anything reused from the original brawler, we need a totally new look”; and
-// at 22:06 “I want him to look and play like an action movie hero.  Muscly, Bouncing on his toes”. So: nothing of the game
-// imports him; nothing of the original Brawler's art is in him (his files and everything they import); every pose is
+// at 22:06 “I want him to look and play like an action movie hero.  Muscly, Bouncing on his toes”. So: the game brings him in
+// only through its own pictures of him (art/veteran_art.ts, veteran_fx_art.ts, render/veteran_fx.ts, behind game/veteran.ts
+// VETERAN); nothing of the original Brawler's art is in him (his files and everything they import); every pose is
 // crisp, edged in the friend's cyan, never the enemy's pink, nothing cut off, nothing in the floor, arms never through his
 // trunk; up on his toes; in the air when he leaps; the headband's two long tails stream, follow and never pass through
 // him; big fists; no eye patch, the blind eye milky; the globes cyan, hot orange and white, never pink or gold.
@@ -49,12 +50,28 @@ function closureOf(file: string): Set<string> {
 /** The original Brawler's art: his painters, his sculpt, his moves and looks. */
 const BRAWLERS = /brawler|sculpt_classes/i;
 
-test('nothing of the game imports the Veteran, his globes or his sheet', () => {
+/**
+ * THE GAME'S OWN PICTURES OF HIM (the main chat, 3 Nov 2026, behind game/veteran.ts VETERAN): the game brings in his figure, his
+ * moves, his action lines and his globes through these files only, as the old Brawler's were through art/brawler_art.ts; never
+ * his sheet, his film's scene, its parts or the stand-in foe.
+ */
+const GAME_DOOR: Record<string, readonly string[]> = {
+  'art/veteran_art.ts': ['sculpt_veteran', 'veteran_moves'],
+  'art/veteran_fx_art.ts': ['veteran_moves', 'veteran_fx'],
+  'render/veteran_fx.ts': ['veteran_moves', 'veteran_fx', 'veteran_globes'],
+};
+test('the game brings in the Veteran only through its own pictures of him (art/veteran_art.ts, art/veteran_fx_art.ts, render/veteran_fx.ts), never his sheet', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/')) continue;
-    const re = new RegExp(`from ['"][^'"]*(${OURS.join('|')})['"]`);
+    const allowed = GAME_DOOR[f] ?? [];
+    const banned = OURS.filter((o) => !allowed.includes(o));
+    // (the art's files, in src/dev: the game's own render/veteran_fx.ts is not the art's dev/veteran_fx.ts)
+    const re = new RegExp(`from ['"][^'"]*dev/(${banned.join('|')})['"]`);
     assert.ok(!re.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the mock-up`);
   }
+  // (and his frames bring in nothing of the old Brawler: his file and everything it imports)
+  const bad = [...closureOf('src/art/veteran_art.ts')].filter((x) => BRAWLERS.test(x));
+  assert.deepEqual(bad, [], 'art/veteran_art.ts brings in the old Brawler\'s files');
 });
 
 test('built fresh: nothing of the original Brawler is in the Veteran or his globes (their whole import closure), nor imported by his sheet', () => {
@@ -354,11 +371,12 @@ test('the globes over him as each combo is put in: crisp, cyan, hot orange and w
   }
 });
 
-test('his moves, his film and its pieces: nothing of the game imports them, and nothing of the old Brawler is in them', () => {
+test('his moves, his film and its pieces: the game brings in only his moves and action lines, through its own pictures of him; nothing of the old Brawler is in them', () => {
   const mine = ['veteran_moves', 'veteran_fx', 'veteran_foe', 'veteran_scene', 'veteran_plays'];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/')) continue;
-    const re = new RegExp(`from ['"][^'"]*(${mine.join('|')})['"]`);
+    const banned = mine.filter((o) => !(GAME_DOOR[f] ?? []).includes(o));
+    const re = new RegExp(`from ['"][^'"]*dev/(${banned.join('|')})['"]`);
     assert.ok(!re.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports his moves`);
   }
   for (const f of mine) {

@@ -38,6 +38,8 @@ import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 import type { ClassId } from '../game/types';
+import { VETERAN } from '../game/veteran';
+import { VET_LISTS } from '../art/veteran_art';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
@@ -100,7 +102,7 @@ type Ask =
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
   | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
-  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: WarlockPart; soon?: boolean };
+  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: WarlockPart; soon?: boolean; vet?: boolean };
 /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
 interface WallBitMsg {
   d: number;
@@ -118,7 +120,7 @@ type Tell =
   | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[]; flow?: FlowBits<ImageBitmap> | null }
   // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
   | { t: 'shell'; id: number; n: number; x0: number; y0: number; w: number; h: number; bmp: ImageBitmap | null; ms: number; last: boolean }
-  | { t: 'heroFrames'; cls: ClassId; place: HeroPlace; list: Given[]; left: number }
+  | { t: 'heroFrames'; cls: ClassId; place: HeroPlace; list: Given[]; left: number; vet?: boolean }
   | { t: 'fail'; what: string; why: string };
 
 const isSprite = (v: unknown): v is Sprite => !!v && typeof v === 'object' && 'img' in v && 'ax' in v && 'ay' in v;
@@ -179,7 +181,7 @@ export class Painter {
    * THE HERO'S PICTURES, painted ahead by the same worker (the ground's: it is kept for the whole game). `toHero` takes in
    * each frame as it comes (render/render.ts): true if it was wanted. `heroAsked`: what has been asked of it.
    */
-  toHero: ((cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
+  toHero: ((cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean) | null = null;
   private heroAsked = new Set<string>();
   /**
    * THE WARLOCK'S DEMON'S WORKER (his word, 31 Oct 2026, 20:08: "Show up late mostly"): where there are cores for it (`many` two
@@ -368,17 +370,25 @@ export class Painter {
     // (THE BRAWLER: the first frame of each of his combos soon, before the floor's monsters, a jab and a cross first: each is seconds
     // to make, and where none of one is painted his jab or cross stands in for it: art/brawler_art.ts. His word, 1 Nov 2026, 10:19:
     // “I had some stutter issues with the brawler loading his hold ability”)
-    if (cls === 'brawler' && place !== 'card' && !this.heroAsked.has('brawler:soon')) {
+    // (THE VETERAN, the Brawler made again while game/veteran.ts VETERAN is on: the worker has no switch of its own, so it is told
+    // (`vet`). His stance's, his run's and every move's first frame soon, before the floor's monsters: art/veteran_art.ts)
+    const vet = cls === 'brawler' && VETERAN.on;
+    if (cls === 'brawler' && !vet && place !== 'card' && !this.heroAsked.has('brawler:soon')) {
       this.heroAsked.add('brawler:soon');
       this.groundLane.open++;
       this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, soon: true } satisfies Ask);
     }
-    const key = `${cls}:${place}`;
+    if (vet && place !== 'card' && !this.heroAsked.has('veteran:soon')) {
+      this.heroAsked.add('veteran:soon');
+      this.groundLane.open++;
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, soon: true, vet: true } satisfies Ask);
+    }
+    const key = `${cls}:${place}${vet ? ':vet' : ''}`;
     if (!this.heroAsked.has(key)) {
       this.heroAsked.add(key);
       this.groundLane.open++;
       // (the Warlock's demon before his arm blazing: it is the heavier by far, and its frames are not painted in the game: art/kit.ts HEAVY)
-      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'demon' ? 31.5 : 32 } satisfies Ask);
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'demon' ? 31.5 : 32, ...(vet ? { vet: true } : {}) } satisfies Ask);
     }
     return true;
   }
@@ -421,7 +431,7 @@ export class Painter {
     if (m.t === 'heroFrames') {
       for (const g of m.list) {
         if (g.s) {
-          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s)) this.heroFrames++;
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s, m.vet)) this.heroFrames++;
           else (g.s.img as unknown as ImageBitmap).close();
         }
       }
@@ -558,7 +568,7 @@ export class Painter {
       const mine = this.groundLane === lane;
       for (const g of m.list) {
         if (g.s) {
-          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s)) this.heroFrames++;
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s, m.vet)) this.heroFrames++;
           else (g.s.img as unknown as ImageBitmap).close();
         }
       }
@@ -905,12 +915,46 @@ export function paintWorkerMain(): void {
   let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
 
   /** A hero's frames in a place, painted and handed over a few at a time, in the order the page paints them ahead. */
-  function* hero(cls: ClassId, place: HeroPlace, soon = false): Generator<void, void, void> {
+  function* hero(cls: ClassId, place: HeroPlace, soon = false, vet = false): Generator<void, void, void> {
     heroArt ??= makeHeroArt3();
-    const art = heroArt.of(cls, lookOfPlace(place));
+    const art = heroArt.of(cls, { ...lookOfPlace(place), vet });
     const lists = [heroLists(art.front), heroLists(art.back)];
     const order: [number, number, number][] = [];
-    if (soon) {
+    if (vet && place !== 'card') {
+      // THE VETERAN (art/veteran_art.ts): every frame of his a few tenths of a second to paint. SOON: the first frame of his
+      // stance, his run, and every move of his, both ways (a list with none painted stands on his stance where the game is
+      // played: never one painted there). Then the rest: his run whole, then his stance and every move coarse to fine (a frame
+      // in eight, then in four, in two, the rest: a move not here yet is shown by the nearest frame of it that is), the most
+      // thrown first, his action lines (art/veteran_fx_art.ts) whole after the first pass; then struck, his fall, and the
+      // strikes' half-frames.
+      const idx = (l: readonly unknown[] | undefined): number => (l ? lists[0].indexOf(l as never) : -1);
+      const stand = [idx(art.front.idle), idx(art.front.walk)].filter((l) => l >= 0);
+      const moves = VET_LISTS.map((id) => idx(art.front.clips?.vet?.[id]?.frames)).filter((l) => l >= 0);
+      const fx = VET_LISTS.flatMap((id) => (['front', 'ground', 'behind'] as const).map((k) => idx(art.front.clips?.vetFx?.[id]?.[k]))).filter((l) => l >= 0);
+      const after = [idx(art.front.clips?.reel?.frames), idx(art.front.clips?.fall?.frames), ...VET_LISTS.map((id) => idx(art.front.clips?.vetHalves?.[id]?.frames))].filter((l) => l >= 0);
+      const all = [...stand, ...moves, ...after];
+      if (soon) {
+        for (const l of [...stand, ...moves]) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      } else {
+        const seen = new Set<string>();
+        const add = (v: number, l: number, i: number): void => {
+          if (seen.has(`${v}:${l}:${i}`)) return;
+          seen.add(`${v}:${l}:${i}`);
+          order.push([v, l, i]);
+        };
+        for (const l of all) for (let v = 0; v < 2; v++) if (lists[v][l].length) add(v, l, 0);
+        // (his run whole: it is seen the most; then his stance and every move a frame in eight; his action lines whole, a tenth
+        // of his frames' time to paint (a frame of them not here yet is not shown at all where the game is played); then the
+        // stance and the moves a frame in four, in two, the rest)
+        const walk = stand.length > 1 ? [stand[1]] : [];
+        for (const l of walk) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+        for (const step of [8, 4, 2, 1]) {
+          for (const l of [...stand, ...moves]) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i += step) add(v, l, i);
+          if (step === 8) for (const l of fx) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+        }
+        for (const l of after) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+      }
+    } else if (soon) {
       // (SOON: the first frame of each of his combos, both ways, by how often they are thrown: one press, two, three; a hold first)
       const punches = art.front.clips?.punches;
       const keys = Object.keys(punches ?? {}).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
@@ -949,7 +993,8 @@ export function paintWorkerMain(): void {
     let list: Given[] = [];
     let transfer: Transferable[] = [];
     let t0 = performance.now();
-    if (order.length === 0) scope.postMessage({ t: 'heroFrames', cls, place, list, left: 0 });
+    const said = vet ? { vet: true } : {};
+    if (order.length === 0) scope.postMessage({ t: 'heroFrames', cls, place, list, left: 0, ...said });
     for (let n = 0; n < order.length; n++) {
       const [v, l, i] = order[n];
       const s = lists[v][l][i];
@@ -960,7 +1005,7 @@ export function paintWorkerMain(): void {
       }
       const last = n === order.length - 1;
       if (last || performance.now() - t0 >= CHUNK_MS) {
-        scope.postMessage({ t: 'heroFrames', cls, place, list, left: order.length - 1 - n }, transfer);
+        scope.postMessage({ t: 'heroFrames', cls, place, list, left: order.length - 1 - n, ...said }, transfer);
         list = [];
         transfer = [];
         if (!last) yield;
@@ -1190,7 +1235,7 @@ export function paintWorkerMain(): void {
           scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls, flow }, [bmp, ...walls.map((b) => b.img), ...(flow ? flow.frames : [])]);
         }
       } else if (job.ask.t === 'hero') {
-        job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place, !!job.ask.soon);
+        job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place, !!job.ask.soon, !!job.ask.vet);
         if (job.run.next().done) done();
         // (the heroes on their class cards take turns, a piece of work each, so that all of them move soon)
         else if (job.ask.place === 'card') job.seq = seq++;

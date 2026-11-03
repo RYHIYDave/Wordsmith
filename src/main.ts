@@ -319,7 +319,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const painter = new Painter(painterAsk === 'off' ? null : SOURCE, () => art.bestiary, { small: scr.touch, ...(painterAsk === '1' || painterAsk === '2' ? { many: Number(painterAsk) } : {}) });
   renderer.painter = painter;
   // (the hero's pictures painted ahead by the painter's worker, taken in as they come: render/painter.ts)
-  painter.toHero = (cls, place, v, l, i, s) => !!art.heroes.give?.(cls, place, v, l, i, s);
+  painter.toHero = (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet);
   // (the worker is started at once: the hero's pictures are wanted from the first moment)
   painter.warmGround();
   /** The place whose pictures the painter has been asked for (a level, or null: none, the starting screen). */
