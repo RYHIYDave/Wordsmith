@@ -21,7 +21,7 @@
 
 import { RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { GAMBLE_KINDS, TUNE, WORDS } from '../game/defs';
+import { TUNE, WORDS } from '../game/defs';
 import type { Game } from '../game/game';
 import type { Meta } from '../game/state';
 import type { WordId } from '../game/types';
@@ -220,8 +220,10 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
   const capY = bodyY + intro.length * 6 + 4;
   const gridY = capY + 8;
   const cols = Math.max(1, Math.min(8, Math.floor((bw + 2) / PITCH)));
-  const cells = GAMBLE_KINDS.map((kind, k) => ({ id: `kind:${k}`, k, kind, r: { x: x0 + (k % cols) * PITCH, y: gridY + Math.floor(k / cols) * PITCH, w: CELL, h: CELL } }));
-  const gridEnd = gridY + Math.ceil(GAMBLE_KINDS.length / cols) * PITCH - 2;
+  // (what he offers this hero: with NEW_WEAPONS on, a new class's own weapon too, game/defs.ts gambleKinds)
+  const kinds = game.gambleKinds();
+  const cells = kinds.map((kind, k) => ({ id: `kind:${k}`, k, kind, r: { x: x0 + (k % cols) * PITCH, y: gridY + Math.floor(k / cols) * PITCH, w: CELL, h: CELL } }));
+  const gridEnd = gridY + Math.ceil(kinds.length / cols) * PITCH - 2;
   for (const c of cells) ui.mark(c.id, c.r.x, c.r.y, c.r.w, c.r.h);
   const picked = (): (typeof cells)[number] | undefined => cells.find((c) => c.id === st.pick);
   const bh = T ? 18 : 13;

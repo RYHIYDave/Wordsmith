@@ -121,9 +121,10 @@ function ready(g: Game, skill: 0 | 1): void {
   g.hero.skills[skill].cd = 0;
 }
 
-const TAP: Record<WeaponKind, SkillId> = { sword: 'strike', greatsword: 'strike', bow: 'shot', staff: 'wave', wand: 'familiar' };
-const HOLD: Record<WeaponKind, SkillId> = { sword: 'slam', greatsword: 'whirlwind', bow: 'volley', staff: 'orb', wand: 'beam' };
-const GROWS: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
+// (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: the wraps as the greatsword, the grimoire as the wand, the wrench as the sword, growing with Dexterity)
+const TAP: Record<WeaponKind, SkillId> = { sword: 'strike', greatsword: 'strike', bow: 'shot', staff: 'wave', wand: 'familiar', wraps: 'strike', grimoire: 'familiar', wrench: 'strike' };
+const HOLD: Record<WeaponKind, SkillId> = { sword: 'slam', greatsword: 'whirlwind', bow: 'volley', staff: 'orb', wand: 'beam', wraps: 'whirlwind', grimoire: 'beam', wrench: 'slam' };
+const GROWS: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', grimoire: 'int', wrench: 'dex' };
 const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp', warlock: 'smokestep', tinkerer: 'blastjump', brawler: 'slip' };
 
 // =============================================================================================

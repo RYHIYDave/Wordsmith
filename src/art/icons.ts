@@ -593,6 +593,84 @@ function beltIcon(): Sprite {
   ]));
 }
 
+// ---------------------------------------------------------------------------------------------
+// Item icons: THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, game/defs.ts; off).
+
+/**
+ * STAND-IN, until the art chat's picture (its branch art/items-look): the Veteran's brawler's wraps, a pair of fists bound
+ * in plain linen (1..3), a band of the wrapping across each, the back fist's loose end trailing. Nothing glows.
+ */
+function wrapsIcon(): Sprite {
+  return icon(grid('wraps', [
+    '................',
+    '.........1212...',
+    '........112222..',
+    '........122223..',
+    '........133332..',
+    '..1212..122223..',
+    '.112222.122223..',
+    '.122223.133332..',
+    '.122223..2223...',
+    '.133332..2223...',
+    '.122223..3333...',
+    '.122223...33....',
+    '..2223.....3....',
+    '..2223..........',
+    '..3333..........',
+    '................',
+  ], P.bn4, P.bn3, P.bn2));
+}
+
+/**
+ * STAND-IN, until the art chat's picture: the Warlock's grimoire, a dark book seen from the front (its cover 1..3, its
+ * spine 6, its pages' edge 4), a steel chain across it and a small lock. Nothing glows.
+ */
+function grimoireIcon(): Sprite {
+  return icon(grid('grimoire', [
+    '................',
+    '................',
+    '...61111111114..',
+    '...61222222234..',
+    '...61222222234..',
+    '...61222222234..',
+    '...61222222234..',
+    '.TtSTtSTtSTtSTt.',
+    '.SszSszSszSszSs.',
+    '...6122TtS2234..',
+    '...6122SzS2234..',
+    '...61222222234..',
+    '...61222222234..',
+    '...61222222234..',
+    '...63333333334..',
+    '................',
+  ], P.st5, P.st3, P.st2, P.bn3, P.bn2, P.st1));
+}
+
+/**
+ * STAND-IN, until the art chat's picture: the Tinkerer's wrench, all steel, on the diagonal as the other weapons lie, its
+ * handle at the bottom left and its open jaw at the top right. Nothing glows.
+ */
+function wrenchIcon(): Sprite {
+  return icon(grid('wrench', [
+    '................',
+    '..........Tt....',
+    '.........TtS.T..',
+    '........TtS.Tt..',
+    '........tSStSs..',
+    '.......TtSSss...',
+    '......TtSs......',
+    '.....TtS........',
+    '....TtS.........',
+    '...TtS..........',
+    '..TtS...........',
+    '.TtS............',
+    '.tSs............',
+    '..s.............',
+    '................',
+    '................',
+  ]));
+}
+
 function makeItemIcons(): Record<IconKey, Sprite> {
   return {
     sword: swordIcon(),
@@ -618,6 +696,10 @@ function makeItemIcons(): Record<IconKey, Sprite> {
     boots: bootsIcon(),
     ring: ringIcon(),
     amulet: amuletIcon(),
+    // (THE NEW CLASSES' WEAPONS, NEW_WEAPONS: stand-ins until the art chat's pictures)
+    wraps: wrapsIcon(),
+    grimoire: grimoireIcon(),
+    wrench: wrenchIcon(),
   };
 }
 
