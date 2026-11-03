@@ -7,7 +7,9 @@
 // FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (art/lair_temple.ts LAIR_TEMPLE; LAIR_GATE, the hooked bars). And, shown pictures from the
 // game of the first town as the castle's hall and of floor 1 as the king's tomb (castle_sheet, look1_sheet3), his “Yes, switch both
 // on (Recommended)” (2 Nov 2026, 19:50): FLOOR 1, THE KING'S TOMB (art/tomb.ts TOMB; TOMB_GATE, the Warden's gate) and THE FIRST
-// TOWN, THE CASTLE'S HALL (art/castle_hall.ts CASTLE_HALL). Here, as the game itself
+// TOWN, THE CASTLE'S HALL (art/castle_hall.ts CASTLE_HALL). And, shown pictures from the game of floor 2 as the prison's grounds at
+// night (floor2_grounds_sheet), his “Yes, switch it on (Recommended)” (2 Nov 2026, by 22:41): FLOOR 2, THE PRISON'S GROUNDS
+// (art/grounds.ts GROUNDS: game/grounds_way.ts, render/grounds.ts). Here, as the game itself
 // starts (main.ts, and so in the side painter's worker too, which runs the game's own script), they are put on, every one. The unit
 // tests (which do not start the game) see each as its own file has it, and turn on what they test.
 import { PRISON } from '../art/prison';
@@ -20,11 +22,12 @@ import { LAIR_GATE } from '../art/lair_gate';
 import { TOMB } from '../art/tomb';
 import { TOMB_GATE } from '../art/tomb_gate';
 import { CASTLE_HALL } from '../art/castle_hall';
+import { GROUNDS } from '../art/grounds';
 
 /** His yes: on. */
 export const FLOOR_LOOKS = { on: true };
 /** Every switch it puts on. */
-export const FLOOR_LOOK_SWITCHES: readonly { on: boolean }[] = [PRISON, PRISON_GATE, PRISON_EXIT, CHAPEL, CHAPEL_GATE, LAIR_TEMPLE, LAIR_GATE, TOMB, TOMB_GATE, CASTLE_HALL];
+export const FLOOR_LOOK_SWITCHES: readonly { on: boolean }[] = [PRISON, PRISON_GATE, PRISON_EXIT, CHAPEL, CHAPEL_GATE, LAIR_TEMPLE, LAIR_GATE, TOMB, TOMB_GATE, CASTLE_HALL, GROUNDS];
 /** Put them all on (or off). */
 export function useFloorLooks(on: boolean): void {
   for (const s of FLOOR_LOOK_SWITCHES) s.on = on;

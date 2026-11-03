@@ -8,7 +8,7 @@
 //      into the temple with no door in it; the rails run from by where he comes in, joined tile to tile, to a tile short of the
 //      way into the temple, ending on the rails' stop; the rift's cracks in the temple; the floor's own pieces each in its own
 //      part; nothing cut off.
-//   4. switched on, all ten switches of floors 1 and 3 to 5 and the first town together, as the game starts (game/floor_looks.ts);
+//   4. switched on, all eleven switches of floors 1 to 5 and the first town together, as the game starts (game/floor_looks.ts);
 //   5. FLOOR 1, THE KING'S TOMB (game/tomb_way.ts, the art chat's art/tomb.ts behind TOMB): up to four chained tombs in his hall
 //      against its back walls (the walls toward the eye where its back is taken; none where its stairs fill it), in most halls; a
 //      tomb of the court in some rooms; each solid on open floor; nothing cut off; off, none;
@@ -28,6 +28,7 @@ import { LAIR_PART, LAIR_TEMPLE } from '../src/art/lair_temple';
 import { stretchTiles } from '../src/game/chapel_way';
 import { TOMB } from '../src/art/tomb';
 import { CASTLE_HALL } from '../src/art/castle_hall';
+import { GROUNDS } from '../src/art/grounds';
 import { CASTLE_POTS, POT_NAMES } from '../src/game/castle_way';
 import { makeDungeon, makeTown } from '../src/game/level';
 import type { Level } from '../src/game/state';
@@ -149,10 +150,10 @@ test('3. THE MINE AND THE TEMPLE: the parts, the thresholds, the rails, the crac
     assert.ok(thresholds >= SEEDS.length / 2, `thresholds on most floors (${thresholds})`);
   }));
 
-test('4. switched on together as the game starts, before it boots or paints (his “Yes, switch them on (Recommended)”, 18:11; floor 1 and the town, his “Yes, switch both on (Recommended)”, 19:50)', () => {
+test('4. switched on together as the game starts, before it boots or paints (his “Yes, switch them on (Recommended)”, 18:11; floor 1 and the town, his “Yes, switch both on (Recommended)”, 19:50; floor 2, his “Yes, switch it on (Recommended)”, by 22:41)', () => {
   assert.equal(FLOOR_LOOKS.on, true);
-  assert.equal(FLOOR_LOOK_SWITCHES.length, 10);
-  for (const s of [TOMB, CASTLE_HALL]) assert.ok(FLOOR_LOOK_SWITCHES.includes(s));
+  assert.equal(FLOOR_LOOK_SWITCHES.length, 11);
+  for (const s of [TOMB, CASTLE_HALL, GROUNDS]) assert.ok(FLOOR_LOOK_SWITCHES.includes(s));
   const was = FLOOR_LOOK_SWITCHES.map((s) => s.on);
   try {
     useFloorLooks(true);

@@ -62,7 +62,7 @@ const isLight = (r: number, g: number, b: number): boolean => {
 };
 
 // (brought into the game by the main chat, 2 Nov 2026, behind the same switch: the files that bring it in may import it)
-const BROUGHT = ['art/floors.ts', 'game/grounds_way.ts', 'main.ts', 'render/grounds.ts', 'render/render.ts'].map((f) => join('src', f));
+const BROUGHT = ['art/floors.ts', 'game/floor_looks.ts', 'game/grounds_way.ts', 'render/grounds.ts', 'render/render.ts'].map((f) => join('src', f));
 test('the grounds: off, and nothing of the game imports it but the files that bring it in', () => {
   assert.ok(GROUNDS.on === false, 'GROUNDS is off');
   const found: string[] = [];
