@@ -124,7 +124,7 @@ def shot_block(title, sub, img):
     return h, draw
 
 
-inv = Image.open(os.path.join(shots, '_inventory.png')).convert('RGB').crop((1300, 160, 1300 + 1180, 1179))
+inv = Image.open(os.path.join(shots, '_inventory.png')).convert('RGB').crop((1300, 160, 2200, 1179))
 floor = Image.open(os.path.join(shots, '_floor.png')).convert('RGB').crop((760, 420, 1800, 1000))
 blocks.append(head_block())
 blocks.append(items_block())
