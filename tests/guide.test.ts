@@ -20,6 +20,10 @@ import { resolveSkill } from '../src/game/words';
 import { guideAttack, guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
 import { PAD_USE } from '../src/engine/gamepad';
 import { land, toFirstFloor, withoutExits } from './helpers';
+import { OWN_MOVES } from '../src/game/defs';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 // THE FIRST LEVELS (game/defs.ts, on since Version 19.5) changed the lesson: the abilities open by
 // level, the fallen wordsmith's satchel holds the master rune-stone, the first word is given in town and the
@@ -337,7 +341,8 @@ test("half way through a character's first dungeon lies a fallen wordsmith, and 
   }
   // the three first words, as the owner chose them
   // (the ranger's Poison goes on Trap, and Trap has been the swipe since Version 12.2: "Let's move the trap on ranger to the tumble")
-  assert.deepEqual(FIRST_WORD, { warrior: { word: 'power', skill: 0 }, ranger: { word: 'poison', skill: 2 }, mage: { word: 'fire', skill: 0 } });
+  // (and the warlock's, the main chat's proposal behind WARLOCK: Leeching on his bolt)
+  assert.deepEqual(FIRST_WORD, { warrior: { word: 'power', skill: 0 }, ranger: { word: 'poison', skill: 2 }, mage: { word: 'fire', skill: 0 }, warlock: { word: 'leech', skill: 0 }, tinkerer: { word: 'volatile', skill: 0 }, brawler: { word: 'power', skill: 0 } });
 });
 
 test('before the body there is no word, so what stands before it hits softer; it is no softer to kill', () => {
@@ -1526,12 +1531,26 @@ test('a new player\'s first dungeon does not begin with a fight: nothing wakes b
   // be of bats (game/defs.ts, packKinds): eight of the first nine hundred and thirty-seven did; and
   // for Version 20.2, when the first floor came to be the Crypt's, with its cell blocks and its first
   // room kept square for the gate to town (game/dungeon.ts CRYPT_LAYOUT, game/ways.ts WAYS): eight
-  // of the first four hundred and thirty-two do, these.)
+  // of the first four hundred and thirty-two did; and for the floors' kinds, 1 Nov 2026, when the
+  // first floor came to be laid as combo (game/dungeon.ts LEVEL_KINDS, its ways round and a branch
+  // more): one of the first two thousand four hundred does, this one, and the rule is asked of it; and
+  // of two more, with a pack set down asleep in sight of where he arrives, as the map-maker might.)
   let tried = 0;
-  for (const seed of [332611, 475153, 902779, 1187863, 1536299, 1718436, 2779582, 3413102]) {
+  for (const seed of [14103752, 13, 7932]) {
     const g = Game.forFirstRun('mage', seed);
     const h = g.hero;
     const c = emptyControls();
+    // (where the map-maker has put none in sight, a pack of three is set down asleep in sight of him, as it might have put one)
+    const sleepers = (q: Game): void => {
+      const qh = q.hero;
+      if (q.monsters.some((m) => !m.dead && Math.hypot(m.x - qh.x, m.y - qh.y) <= TUNE.aggroRadius - 1.5)) return;
+      const sp = q as unknown as { spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: unknown) => Monster; rng: unknown };
+      for (const [dx, dy] of [[2.5, 0], [2.5, 1], [3.5, 0.5]]) {
+        if (!q.isOpen(qh.x + dx, qh.y + dy)) continue;
+        sp.spawn('skeleton', qh.x + dx, qh.y + dy, 991, 0, false, sp.rng).state = 'sleep';
+      }
+    };
+    sleepers(g);
     for (let k = 0; k < 40; k++) {
       g.update(DT, c);
       assert.equal(g.guideStep(), 'move', `seed ${seed}: the first prompt is how to walk`);
@@ -1543,6 +1562,7 @@ test('a new player\'s first dungeon does not begin with a fight: nothing wakes b
     assert.equal(g.inFight(), false);
     // one that is struck wakes, lesson or no lesson
     const g2 = Game.forFirstRun('mage', seed);
+    sleepers(g2);
     for (let k = 0; k < 5; k++) g2.update(DT, c);
     const m2 = g2.monsters.filter((m) => !m.dead && m.seen).sort((a, b) => Math.hypot(a.x - g2.hero.x, a.y - g2.hero.y) - Math.hypot(b.x - g2.hero.x, b.y - g2.hero.y))[0];
     (g2 as unknown as { damageMonster: (m: Monster, dmg: number, el: string, crit: boolean, skill: number) => void }).damageMonster(m2, 1, 'phys', false, 0);
@@ -1554,7 +1574,7 @@ test('a new player\'s first dungeon does not begin with a fight: nothing wakes b
     assert.ok(inSight.some((m) => m.state !== 'sleep'), `seed ${seed}: once the hero has learned to walk, they wake`);
     assert.equal(g.guideStep(), 'fight');
   }
-  assert.ok(tried >= 6, `${tried} of these dungeons do have a pack in sight of the door`);
+  assert.ok(tried >= 2, `${tried} of these dungeons do have a pack in sight of the door`);
   // an ordinary dungeon (no prompts) is as it always was: what sees the hero wakes
   const plain = new Game('mage', 622132791);
   plain.enterDungeon();

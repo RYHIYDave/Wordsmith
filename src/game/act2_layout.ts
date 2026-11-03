@@ -2,7 +2,7 @@
 // the descent's (game/act1_layout.ts). One not built yet (it gives null every time) is stood in for by the descent's
 // map-maker, its open areas laid as the Quarry's, the floor's own ground painted over them, and no stronghold.
 
-import { act2Floor, landOf } from './act1';
+import { cityFloor, landOf } from './act1';
 import type { Act2LandKind } from './act1';
 import { generateAct1 } from './act1_layout';
 import type { Laid } from './act1_layout';
@@ -11,6 +11,11 @@ import { BUILT as undercityBuilt, generate as undercity } from './act2/undercity
 import { BUILT as millraceBuilt, generate as millrace } from './act2/millrace';
 import { BUILT as housequietBuilt, generate as housequiet } from './act2/housequiet';
 import { BUILT as libraryBuilt, generate as library } from './act2/library';
+import { BUILT as swangardensBuilt, generate as swangardens } from './act2/swangardens';
+import { BUILT as masqueBuilt, generate as masque } from './act2/masque';
+import { BUILT as glassBuilt, generate as glassgallery } from './act2/glassgallery';
+import { BUILT as keepBuilt, generate as keep } from './act2/keep';
+import { BUILT as towerBuilt, generate as quiettower } from './act2/quiettower';
 
 const MAKERS: Readonly<Record<Act2LandKind, { built: boolean; make: (depth: number, seed: number) => Laid | null }>> = {
   gateward: { built: gatewardBuilt, make: gateward },
@@ -18,11 +23,17 @@ const MAKERS: Readonly<Record<Act2LandKind, { built: boolean; make: (depth: numb
   millrace: { built: millraceBuilt, make: millrace },
   housequiet: { built: housequietBuilt, make: housequiet },
   library: { built: libraryBuilt, make: library },
+  // (ACT 2, PART TWO, THE HIGH CITY: its floors' own, as the Hush's: game/act1.ts HIGH_CITY)
+  swangardens: { built: swangardensBuilt, make: swangardens },
+  masque: { built: masqueBuilt, make: masque },
+  glassgallery: { built: glassBuilt, make: glassgallery },
+  keep: { built: keepBuilt, make: keep },
+  quiettower: { built: towerBuilt, make: quiettower },
 };
 
-/** Lay floor `depth` (11 to 15) of the Hush. */
+/** Lay floor `depth` (11 to 15) of the Hush, or one of the High City's (16 on, HIGH_CITY). */
 export function generateAct2(depth: number, seed: number): Laid {
-  if (!act2Floor(depth)) throw new Error(`no floor of the Hush at ${depth}`);
+  if (!cityFloor(depth)) throw new Error(`no floor of the city at ${depth}`);
   const kind = landOf(depth) as Act2LandKind;
   const M = MAKERS[kind];
   if (!M.built) return generateAct1(depth, seed);

@@ -21,15 +21,23 @@ import { SKY_WRAP, cloudBelow, ledgeLook, paintSky } from '../art/ledge';
 import { paintTown } from '../art/ledge_town';
 import { pinewoodLook } from '../art/pinewood';
 import { QUARRY_LOOK } from '../art/quarry';
-import { GRAIN, paintTerrain, terrainOf } from '../art/terrain';
-import type { Terrain, TerrainLook } from '../art/terrain';
+import { GRAIN, TK, paintTerrain, pictureOf, terrainOf, worldOf } from '../art/terrain';
+import type { Terrain, TerrainLook, TerrainPiece } from '../art/terrain';
 // ACT 2, THE HUSH: the art chat's five grounds (each its own look, painted by the same painter)
 import { GW_DEEP, gateWardLook, gateWardPaintFloor } from '../art/gateward';
 import type { GateWardLand } from '../art/gateward';
 import { UC_DEEP, undercityLook } from '../art/undercity';
 import { millraceLook } from '../art/millrace';
 import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
+import { MQ_DEEP, masqueLook } from '../art/masque';
+import { GG_DEEP, glassGalleryLook, paintGlassGallery } from '../art/glassgallery';
+import { KP_DEEP, keepLook } from '../art/keep';
+import { QT_DEEP, paintQuietTower, quietTowerLook, towerTopTerrain } from '../art/quiettower';
+import { TOP } from '../game/act2/quiettower';
+import type { TowerPlan } from '../game/act2/quiettower';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
+import { SG_WATER, paintSwanGardens, swanGardensLook, swanGardensTerrain } from '../art/swangardens';
+import type { SwanLand } from '../art/swangardens';
 // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 // (FLOOR 15'S STACKS A BLOCK HIGH, the art chat's, behind LOW_STACKS: art/low_stacks.ts)
@@ -46,6 +54,7 @@ import type { WallBit } from './act2_walls';
 import { blobDist, laneDist, segDist } from '../game/act1_layout';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
+import { T_FLOOR, T_WALL } from '../game/types';
 import type { Cam } from './fx';
 import type { Painter } from './painter';
 
@@ -183,6 +192,8 @@ function flowOf(pts: readonly [number, number][]): (x: number, y: number) => [nu
  * them, faded as he goes in, are render's.)
  */
 export function landTerrain(land: Land, floor: Floor, fresh = false): Terrain {
+  // (THE HIGH CITY, FLOOR 16: the Swan Gardens' ground, the yew throwing its shadows across it: art/swangardens.ts)
+  if (land.kind === 'swangardens') return swanGardensTerrain(floor, swanLandOf(land, floor));
   if (land.kind === 'gateward') {
     const gl = gateWardLand(land, floor, fresh);
     return terrainOf(gateWardPaintFloor(gl, 'open'), gateWardLook(gl, 'open'));
@@ -251,6 +262,23 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
     case 'library':
       return greatLibraryLook({ floor, zone: zoneOf(land, W, H), rows: lowRowsOf(land, floor) ?? undefined });
+    // (ACT 2, PART TWO, THE HIGH CITY: the Swan Gardens, the art chat's look, given what its map-maker laid: swanLandOf)
+    case 'swangardens':
+      return swanGardensLook(swanLandOf(land, floor));
+    // (floor 17, the Masque: the art chat's seven rooms, galleries, card rooms and passages, given what its map-maker laid, as floor 14's)
+    case 'masque':
+      return masqueLook({ floor, zone: zoneOf(land, W, H) });
+    // (floor 18, the Glass Gallery: the art chat's galleries, Mirror Hall, dressing rooms, chapel and glasshouse, the runners and
+    // the skylights broken through, given what its map-maker laid)
+    case 'glassgallery':
+      return glassGalleryLook({ floor, zone: zoneOf(land, W, H), runner: runnerOf(land), skylight: holeOf(land, W, H) });
+    // (floor 19, the Keep: the art chat's bailey, wall walk, gate passage, halls, throne hall, barracks, armoury and bedchamber)
+    case 'keep':
+      return keepLook({ floor, zone: zoneOf(land, W, H) });
+    // (floor 20, the Quiet Tower: the art chat's inside, room by room (its top is a place of its own, painted by its own look:
+    // groundPainter))
+    case 'quiettower':
+      return quietTowerLook({ floor, zone: zoneOf(land, W, H) });
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -316,6 +344,89 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
 // keep the imports the shapes need, for the fields above
 void blobDist;
 void segDist;
+
+/**
+ * (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS) WHAT ONLY THE LEVEL KNOWS, as the art chat's ground asks it (art/swangardens.ts
+ * SwanLand), from what its map-maker laid (game/act2/swangardens.ts: Land.lake and Land.garden): the lake's tiles; its gravel
+ * walks, its flags (the walls' rows, the fountains' paving), its beds of bare earth, each a field held as a grid four to a tile;
+ * how far into a bed of nettles a place is (the painter rags its edge), the same.
+ */
+export function swanLandOf(land: Land, floor: Floor): SwanLand {
+  const W = floor.w;
+  const H = floor.h;
+  const lake = land.lake;
+  const G = land.garden;
+  if (!G) return { lake: lake ? (tx, ty) => tx >= 0 && ty >= 0 && tx < W && ty < H && lake[ty * W + tx] === 1 : undefined };
+  const K = 4;
+  const GW = W * K;
+  const code = new Uint8Array(GW * H * K);
+  const lay = (r: readonly number[], c: number): void => {
+    for (let j = Math.max(0, r[1] * K); j < Math.min(H * K, r[3] * K); j++) for (let i = Math.max(0, r[0] * K); i < Math.min(GW, r[2] * K); i++) if (code[j * GW + i] < c) code[j * GW + i] = c;
+  };
+  // (the stronger over the weaker: flags over earth over gravel)
+  for (const r of G.walks) lay(r, 1);
+  for (const r of G.beds) lay(r, 2);
+  for (const r of G.paved) lay(r, 3);
+  for (const [x, y, rr] of G.rounds) {
+    for (let j = Math.max(0, Math.floor((y - rr) * K)); j < Math.min(H * K, Math.ceil((y + rr) * K)); j++) {
+      for (let i = Math.max(0, Math.floor((x - rr) * K)); i < Math.min(GW, Math.ceil((x + rr) * K)); i++) if (Math.hypot((i + 0.5) / K - x, (j + 0.5) / K - y) < rr) code[j * GW + i] = 3;
+    }
+  }
+  const at = (x: number, y: number): number => {
+    const i = Math.floor(x * K);
+    const j = Math.floor(y * K);
+    return i >= 0 && j >= 0 && i < GW && j < H * K ? code[j * GW + i] : 0;
+  };
+  const beds = G.nettles;
+  const nettle = gridField(W, H, K, (x, y) => {
+    let best = -9;
+    for (const r of beds) {
+      const inside = Math.min(x - r[0], r[2] - x, y - r[1], r[3] - y);
+      if (inside > best) best = inside;
+    }
+    return best;
+  });
+  return {
+    lake: lake ? (tx, ty) => tx >= 0 && ty >= 0 && tx < W && ty < H && lake[ty * W + tx] === 1 : undefined,
+    walk: (x, y) => at(x, y) === 1,
+    bed: (x, y) => at(x, y) === 2,
+    paved: (x, y) => at(x, y) === 3,
+    nettles: beds.length ? (x, y) => nettle(x, y) : undefined,
+  };
+}
+
+/**
+ * (THE HIGH CITY, FLOOR 16) How a piece of a floor's ground is painted: the Swan Gardens' lake painted into its drop
+ * (art/swangardens.ts paintSwanGardens, in place of paintTerrain: here and in the painter's worker, render/painter.ts).
+ */
+export function groundPainter(land: Land | null): (T: Terrain, x0: number, y0: number, w: number, h: number) => TerrainPiece {
+  // (floor 20, the Quiet Tower: its inside and its top, each painted by its own ground where it lies: towerPainter)
+  if (land?.kind === 'quiettower' && land.tower) return towerPainter(land.tower);
+  // (floor 18, the Glass Gallery: the hall below painted into its skylights' holes, art/glassgallery.ts paintGlassGallery)
+  if (land?.kind === 'glassgallery' && land.gallery) {
+    const W = land.gallery.w;
+    const sky = holeOf(land, W, Math.floor(land.gallery.holes.length / W));
+    return (T, x0, y0, w, h) => paintGlassGallery(T, x0, y0, w, h, sky);
+  }
+  return land?.kind === 'swangardens' ? paintSwanGardens : paintTerrain;
+}
+
+/** (floor 18) How far in from a runner's nearer edge a place is (tiles; above 0 on one): the art's GlassLand.runner. */
+function runnerOf(land: Land): ((x: number, y: number) => number) | undefined {
+  const rs = land.gallery?.runners;
+  if (!rs || !rs.length) return undefined;
+  return (x, y) => {
+    let best = -1;
+    for (const r of rs) best = Math.max(best, Math.min(x - r.x, r.x + r.w - x, y - r.y, r.y + r.h - y));
+    return best;
+  };
+}
+/** (floor 18) Whether a tile is a skylight broken through: the art's GlassLand.skylight. */
+function holeOf(land: Land, W: number, H: number): ((tx: number, ty: number) => boolean) | undefined {
+  const holes = land.gallery?.holes;
+  if (!holes) return undefined;
+  return (tx, ty) => tx >= 0 && ty >= 0 && tx < W && ty < H && holes[ty * W + tx] === 1;
+}
 
 // ---------------------------------------------------------------------------------------------------
 // THE GROUND, IN PIECES
@@ -430,7 +541,7 @@ export class OutdoorGround {
     this.town = null;
     const hex = (c: readonly number[]): string => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
     // (ACT 2: each ground's own deep colour, the art chat's)
-    this.deep = land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
+    this.deep = land.kind === 'swangardens' ? hex(SG_WATER[0]) : land.kind === 'masque' ? hex(MQ_DEEP) : land.kind === 'glassgallery' ? hex(GG_DEEP) : land.kind === 'keep' ? hex(KP_DEEP) : land.kind === 'quiettower' ? hex(QT_DEEP) : land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
     return true;
   }
 
@@ -488,7 +599,8 @@ export class OutdoorGround {
     const t0 = performance.now();
     // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, painted with it)
     const both = this.stands && this.near ? paintWithStanding(T, this.stands, this.near, i * PIECE, j * PIECE, PIECE, PIECE) : null;
-    const p = both ? both.ground : paintTerrain(T, i * PIECE, j * PIECE, PIECE, PIECE);
+    // (THE HIGH CITY, FLOOR 16: the Swan Gardens' lake painted into its drop: groundPainter)
+    const p = both ? both.ground : groundPainter(this.land)(T, i * PIECE, j * PIECE, PIECE, PIECE);
     this.stats.pieces++;
     this.stats.ms += performance.now() - t0;
     const cvs = document.createElement('canvas');
@@ -746,4 +858,72 @@ export class OutdoorGround {
       g.fillRect(0, top + SKY_H / GRAIN, W, H - top - SKY_H / GRAIN);
     }
   }
+}
+
+/** A 4 by 4 ordered dither's threshold at a picture pixel, 0 to 1. */
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const bayer = (px: number, py: number): number => (BAYER4[(((py % 4) + 4) % 4) * 4 + (((px % 4) + 4) % 4)] + 0.5) / 16;
+
+/**
+ * (THE HIGH CITY, FLOOR 20) THE QUIET TOWER'S GROUND, its two grounds each where it lies (the art chat's, art/quiettower.ts: one
+ * look has one height of wall, and the inside's stand 120 picture pixels, the top's parapet 44): west of the plan's split the
+ * inside's (the floor's own terrain, `T`), east of it the top's, made once over the top's own square of the map and painted at
+ * its place in the world's picture; the fog sea in its drop fading in a dither into the dark from TOP.dark[0] tiles out of its
+ * middle to TOP.dark[1], so that where the two meet (TOP.own tiles out) both are the dark, and never seen together.
+ */
+export function towerPainter(P: TowerPlan): (T: Terrain, x0: number, y0: number, w: number, h: number) => TerrainPiece {
+  let top: { T: Terrain; dx: number; dy: number } | null = null;
+  const topOf = (T: Terrain): { T: Terrain; dx: number; dy: number } => {
+    if (top) return top;
+    const R = TOP.own;
+    const ox = Math.floor(P.top.cx) - R;
+    const oy = Math.floor(P.top.cy) - R;
+    const n = 2 * R + 1;
+    const tiles = new Uint8Array(n * n).fill(T_WALL);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (Math.hypot(x + ox + 0.5 - P.top.cx, y + oy + 0.5 - P.top.cy) < P.top.r) tiles[y * n + x] = T_FLOOR;
+    const f = T.floor;
+    const sub: Floor = { ...f, w: n, h: n, tiles, cut: new Uint8Array(n * n), variant: new Uint8Array(n * n), rooms: [], start: { x: P.top.arrive.x - ox, y: P.top.arrive.y - oy }, packs: [], props: [] };
+    const [dx, dy] = pictureOf(ox, oy);
+    top = { T: towerTopTerrain(sub, { centre: [P.top.cx - ox, P.top.cy - oy] }), dx, dy };
+    return top;
+  };
+  const deep = QT_DEEP;
+  return (T, x0, y0, w, h) => {
+    const sideOf = (px: number, py: number): boolean => worldOf(px, py)[0] >= P.split;
+    const corners = [sideOf(x0, y0), sideOf(x0 + w - 1, y0), sideOf(x0, y0 + h - 1), sideOf(x0 + w - 1, y0 + h - 1)];
+    if (corners.every((c) => !c)) return paintQuietTower(T, x0, y0, w, h);
+    const t = topOf(T);
+    const p = paintQuietTower(t.T, x0 - t.dx, y0 - t.dy, w, h);
+    p.x0 = x0;
+    p.y0 = y0;
+    // (the fog sea fading into the dark far from the top's middle)
+    const [d0, d1] = TOP.dark;
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) {
+        const i = r * w + c;
+        if (p.kind[i] !== TK.Drop) continue;
+        const [wx, wy] = worldOf(x0 + c, y0 + r);
+        const k = Math.max(0, Math.min(1, (Math.hypot(wx - P.top.cx, wy - P.top.cy) - d0) / (d1 - d0)));
+        if (k <= 0) continue;
+        const b = bayer(x0 + c, y0 + r);
+        const half = b >= k && b < Math.min(1, k * 2);
+        if (b >= k && !half) continue;
+        const m = half ? 0.5 : 1;
+        p.rgba[i * 4] = Math.round(p.rgba[i * 4] + (deep[0] - p.rgba[i * 4]) * m);
+        p.rgba[i * 4 + 1] = Math.round(p.rgba[i * 4 + 1] + (deep[1] - p.rgba[i * 4 + 1]) * m);
+        p.rgba[i * 4 + 2] = Math.round(p.rgba[i * 4 + 2] + (deep[2] - p.rgba[i * 4 + 2]) * m);
+      }
+    }
+    if (corners.every((c) => c)) return p;
+    const q = paintQuietTower(T, x0, y0, w, h);
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) {
+        if (!sideOf(x0 + c, y0 + r)) continue;
+        const i = r * w + c;
+        q.kind[i] = p.kind[i];
+        for (let k = 0; k < 4; k++) q.rgba[i * 4 + k] = p.rgba[i * 4 + k];
+      }
+    }
+    return q;
+  };
 }

@@ -51,6 +51,10 @@ import type { MonsterKind } from '../types';
 import { act2Ready } from '../act2_mobs';
 import { blobDist, laneDist } from '../act1_layout';
 import type { Act1Rules } from './types';
+import { CRIER_ACTION, CROWD_HIT, CROWD_LONG, PROCLAIM_HIT, PROCLAIM_LONG, SHOUT_HIT, SHOUT_LONG, TOLL, TOLL_HITS, TOLL_LONG } from '../../art/crier_action';
+import { CALL, DECREE, WALLS, comesOut, decreeBurns, decreeFront, echoTimes, frontsAt } from '../../art/crier_action_fx';
+import { TUNE } from '../defs';
+import type { Game } from '../game';
 
 /** HIS MARCH (art/crier_moves.ts CR_PACE, CR_WALK_FRAMES at CR_WALK_FPS: 12 frames at 15 a second; CR_SET_OFF and CR_HALT, his setting off and stopping). */
 export const CRIER_GAIT: GaitDef = { pace: 1.7, cycle: 0.8, setOff: 0.2472871273885219, halt: 0.29379867887472483, raise: 0, lower: 0, stopAt: 2.2, slack: 0.5, trueBack: true };
@@ -255,7 +259,7 @@ function callCrowd(R: BossRules, m: Monster): number {
   return spots.length;
 }
 
-export const RULES: Act1Rules | null = {
+const OLD: Act1Rules = {
   gait: CRIER_GAIT,
   acts: CRIER_ACTS,
 
@@ -422,3 +426,221 @@ export const RULES: Act1Rules | null = {
     }
   },
 };
+
+// =============================================================================================
+// HIS FIGHT DONE THE ACTION WAY (the art chat's art/crier_action.ts behind CRIER_ACTION, his yes there; and his pick of 2 Nov 2026, by
+// 07:46, for his basic blow in place of the trumpet swing: “The toll follows you”, offered as: he rings his handbell; a toll marks where
+// you stand and bursts a beat later, again and again. Keep moving.):
+//   toll      five tolls (TOLL_HITS), each marking where the hero stands then ('crier:toll'), bursting TOLL.burst later: struck within
+//             TOLL.r of it
+//   shout     OFF THE WALLS: he faces down the square along one of the floor's ways (the nearest the hero); the walls of his square
+//             found from where he stands (WALL_LOOK); the wave out before him, its echoes back off the three walls it meets
+//             (frontsAt); a hero within a front as it passes struck, once by each, and hushed; THE ONE SPOT behind him none reach
+//   proclaim  the decree flung down a lane at him, to the wall (DECREE.to at most): its roll striking once as it passes, then THE
+//             FLOOR TAKEN AWAY: on it while its letters burn, struck every DECREE.every (decreeBurns)
+//   crowd     the Hush welling up in pools at the edges of his square, and out of each the Hushed come, CALL.each a pool, CALL.apart
+//             apart (comesOut); never more than his old most of them up at once
+// Each move's own peril, its clock the move's from its start (its blow at the move's hit): 'crier:shout9' (`a`, `b`, `c`, `d` the
+// far, back, left and right walls from him; `done` the fronts that struck, by bits), 'crier:decree' (`d` its length; `b` when it may
+// strike again; `done` 1 once its roll struck), 'crier:call9' (its pools kept: `poolsOf`).
+export const TOLL_PERIL = 'crier:toll';
+export const SHOUT9_PERIL = 'crier:shout9';
+export const DECREE_PERIL = 'crier:decree';
+export const CALL9_PERIL = 'crier:call9';
+/** How far he looks for his square's walls (tiles). */
+const WALL_LOOK = 20;
+export const CRIER9_ACTS: readonly ActDef[] = [
+  { id: 'crier:toll', clip: 'attack', long: TOLL_LONG, hit: TOLL_HITS[0], dmg: 0.9, cooldown: 0, first: 0, after: 0.4, near: 0, far: TOLL.far },
+  { id: 'crier:shout', clip: 'shout', long: SHOUT_LONG, hit: SHOUT_HIT, dmg: 0.6, cooldown: 8, first: 3, after: 0.4, near: 0, far: 14 },
+  { id: 'crier:proclaim', clip: 'proclaim', long: PROCLAIM_LONG, hit: PROCLAIM_HIT, dmg: 1.2, cooldown: 11, first: 5, after: 0.4, near: 2.0, far: DECREE.to },
+  { id: 'crier:crowd', clip: 'crowd', long: CROWD_LONG, hit: CROWD_HIT, dmg: 0, cooldown: 16, first: 7, after: 0.4, near: 0, far: 14 },
+];
+/** The way of the floor's four nearest (fx, fy). */
+function axis(fx: number, fy: number): [number, number] {
+  return Math.abs(fx) >= Math.abs(fy) ? [Math.sign(fx) || 1, 0] : [0, Math.sign(fy) || 1];
+}
+/** How far the open floor runs from (x, y) along (ux, uy), to WALL_LOOK. */
+function openTo(g: Game, x: number, y: number, ux: number, uy: number): number {
+  let d = 0;
+  while (d < WALL_LOOK && g.free(g.level.walk, x + ux * (d + 0.25), y + uy * (d + 0.25), 0.2)) d += 0.25;
+  return d;
+}
+/** His square's walls from where he stands, facing (fx, fy) along one of the floor's ways: ahead, behind, to his left and right. */
+export function wallsHere(g: Game, x: number, y: number, fx: number, fy: number, hand: number): { far: number; back: number; left: number; right: number } {
+  const L = beside(0, 0, fx, fy, hand, 0, 1);
+  return { far: openTo(g, x, y, fx, fy), back: openTo(g, x, y, -fx, -fy), left: openTo(g, x, y, L.x, L.y), right: openTo(g, x, y, -L.x, -L.y) };
+}
+const POOLS = new WeakMap<Peril, { x: number; y: number }[]>();
+/** Where the pools of his call well up. */
+export function poolsOf(p: Peril): { x: number; y: number }[] {
+  return POOLS.get(p) ?? [];
+}
+
+const ACTION: Act1Rules = {
+  gait: CRIER_GAIT,
+  acts: CRIER9_ACTS,
+  can(R, m, a, dist) {
+    const g = R.g;
+    if (a.id === 'crier:crowd') return called(R, m) < CRIER.crowd.most;
+    if (a.id === 'crier:proclaim') {
+      // (the first stretch of its lane open floor, toward him)
+      const h = g.hero;
+      const fx = (h.x - m.x) / Math.max(0.01, dist);
+      const fy = (h.y - m.y) / Math.max(0.01, dist);
+      for (let d = DECREE.from; d <= Math.min(dist, 5) + 1e-6; d += 0.35) if (!g.free(g.level.walk, m.x + fx * d, m.y + fy * d, 0.25)) return false;
+    }
+    return true;
+  },
+  start(R, m, a) {
+    const g = R.g;
+    const h = g.hero;
+    const act = m.act!;
+    if (a.id === 'crier:shout') {
+      // (down his square along the floor's way nearest the hero; its walls from here)
+      [m.fx, m.fy] = axis(h.x - m.x, h.y - m.y);
+      act.hand = handOf(CRIER_GAIT.trueBack, m.fx, m.fy);
+      const w = wallsHere(g, m.x, m.y, m.fx, m.fy, act.hand);
+      const T = echoTimes(w);
+      R.peril(m, 'act1', m.x, m.y, { a1: SHOUT9_PERIL, t: 0, hit: SHOUT_HIT, dur: SHOUT_HIT + Math.max(T.far[1], T.left[1], T.right[1]) + WALLS.dark, dmg: g.rollMonsterDmg(m) * a.dmg, a: w.far, b: w.back, c: w.left, d: w.right, hand: act.hand, done: 0 });
+    } else if (a.id === 'crier:proclaim') {
+      // (down a lane at him, to the wall)
+      const to = Math.min(DECREE.to, openTo(g, m.x, m.y, m.fx, m.fy));
+      R.peril(m, 'act1', m.x, m.y, { a1: DECREE_PERIL, t: 0, hit: PROCLAIM_HIT, dur: PROCLAIM_HIT + DECREE.gone, dmg: g.rollMonsterDmg(m) * a.dmg, d: Math.max(DECREE.from + 1, to), b: 0, done: 0 });
+    } else if (a.id === 'crier:crowd') {
+      const want = Math.max(0, Math.min(m.life < m.maxLife / 2 ? CRIER.crowd.more : CRIER.crowd.n, CRIER.crowd.most - called(R, m)));
+      const pools = want > 0 ? spotsFor(R, m, Math.ceil(want / CALL.each)) : [];
+      const p = R.peril(m, 'act1', m.x, m.y, { a1: CALL9_PERIL, t: 0, hit: CROWD_HIT, dur: CROWD_HIT + comesOut(Math.max(0, pools.length - 1), CALL.each - 1) + CALL.out + CALL.sink + 0.2, a: want, d: m.packId });
+      POOLS.set(p, pools);
+    }
+  },
+  acting(R, m, a, t0, t1) {
+    const g = R.g;
+    const h = g.hero;
+    const at = (T: number): boolean => t0 < T && t1 >= T;
+    if (a.id === 'crier:toll') {
+      for (const T of TOLL_HITS) {
+        if (!at(T)) continue;
+        // (a toll: marked where he stands now, bursting a beat later)
+        R.peril(m, 'act1', h.x, h.y, { a1: TOLL_PERIL, t: 0, hit: TOLL.burst, dur: TOLL.burst + 0.5, dmg: g.rollMonsterDmg(m) * a.dmg });
+        g.sfx('echo', 0.5);
+      }
+      return;
+    }
+    if (a.id === 'crier:shout' && at(a.hit)) {
+      g.emit({ t: 'shake', amount: 3 });
+      g.sfx('gust', 0.7);
+    } else if (a.id === 'crier:proclaim' && at(a.hit)) g.sfx('swing', 0.6);
+    else if (a.id === 'crier:crowd' && at(a.hit)) {
+      g.msg(`${m.name} calls, and no sound comes: the Hushed answer`, MSG.foe);
+      g.sfx('gust', 0.3);
+    }
+  },
+  peril(R, p, dt) {
+    const g = R.g;
+    const h = g.hero;
+    const free = !h.move && h.invuln <= 0 && !g.over;
+    // (each but the toll and the call gone if he is stopped before its blow)
+    if (p.t < p.hit && p.a1 !== TOLL_PERIL) {
+      const m = g.monsters.find((o) => o.kind === 'crier' && o.name === p.from && !o.dead);
+      const id = p.a1 === SHOUT9_PERIL ? 'crier:shout' : p.a1 === DECREE_PERIL ? 'crier:proclaim' : 'crier:crowd';
+      if (!m || m.state !== 'act' || m.act?.id !== id) p.dur = p.t;
+      return;
+    }
+    if (p.a1 === TOLL_PERIL) {
+      if (p.done || p.t < p.hit) return;
+      p.done = 1;
+      if (free && Math.hypot(h.x - p.x, h.y - p.y) <= TOLL.r + TUNE.heroRadius * 0.5) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+      g.sfx('thunder', 0.3);
+      return;
+    }
+    if (p.a1 === SHOUT9_PERIL) {
+      const s = p.t - p.hit;
+      const w = { far: p.a, back: p.b, left: p.c, right: p.d };
+      const r = fromFigure(p.x, p.y, p.fx, p.fy, p.hand, h.x, h.y);
+      const F = frontsAt(s, w);
+      const B = WALLS.band + TUNE.heroRadius * 0.5;
+      const hits = [
+        F.wave !== null && r.fwd > 0 && Math.abs(Math.hypot(r.fwd, r.left) - F.wave) <= B && r.fwd <= w.far && Math.abs(r.left) <= Math.max(w.left, w.right),
+        F.far !== null && Math.abs(r.fwd - F.far) <= B,
+        F.left !== null && r.left > 0 && Math.abs(r.left - F.left) <= B,
+        F.right !== null && r.left < 0 && Math.abs(-r.left - F.right) <= B,
+      ];
+      hits.forEach((hit, k) => {
+        if (!hit || !free || p.done & (1 << k)) return;
+        p.done |= 1 << k;
+        g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+        if (g.hushT <= 0) g.emit({ t: 'text', x: h.x, y: h.y, text: 'Hushed', color: '#9890b4' });
+        g.hush();
+      });
+      return;
+    }
+    if (p.a1 === DECREE_PERIL) {
+      const s = p.t - p.hit;
+      if (s < DECREE.lands && s - dt < DECREE.lands && s >= DECREE.lands - dt) g.sfx('slam', 0.3);
+      if (!free) return;
+      const r = fromFigure(p.x, p.y, p.fx, p.fy, 1, h.x, h.y);
+      if (!p.done) {
+        // (its roll, racing out down the lane: whoever it passes over, struck, once)
+        const d1 = decreeFront(s, p.d);
+        const d0 = decreeFront(s - dt, p.d) ?? DECREE.from;
+        if (d1 !== null && Math.abs(r.left) <= DECREE.half + 0.15 && r.fwd >= d0 - 0.35 && r.fwd <= d1 + 0.2) {
+          p.done = 1;
+          p.b = p.t + DECREE.every;
+          g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+          return;
+        }
+        if (s >= DECREE.unrolled) p.done = 1;
+      }
+      // (THE FLOOR TAKEN AWAY while its letters burn)
+      if (p.t >= p.b && decreeBurns(s, r.fwd, r.left, p.d)) {
+        p.b = p.t + DECREE.every;
+        g.hurtHero(p.dmg * 0.4, p.el, p.words, null, p.from, h.x, h.y, p.half);
+      }
+      return;
+    }
+    if (p.a1 === CALL9_PERIL) {
+      // (out of each pool the Hushed come, CALL.each a pool, so many as he may call)
+      const pools = poolsOf(p);
+      const s = p.t - p.hit;
+      pools.forEach((q, i) => {
+        for (let k = 0; k < CALL.each; k++) {
+          const bit = 1 << (i * CALL.each + k);
+          if (p.done & bit || s < comesOut(i, k) + CALL.out) continue;
+          p.done |= bit;
+          if (i * CALL.each + k >= p.a || !g.free(g.level.walk, q.x, q.y, 0.3)) continue;
+          const o = g.spawn(answers(), q.x, q.y, p.d, 0, false, g.rng);
+          o.state = 'chase';
+          o.cd = g.rng.range(0.4, 0.9);
+          o.xp = 0;
+          o.a1 = { ...(o.a1 ?? {}), crierCalled: 1 };
+          const dd = Math.hypot(h.x - q.x, h.y - q.y) || 1;
+          o.fx = (h.x - q.x) / dd;
+          o.fy = (h.y - q.y) / dd;
+        }
+      });
+    }
+  },
+  died: (R, m) => OLD.died?.(R, m),
+};
+
+const pick = (): Act1Rules => (CRIER_ACTION.on ? ACTION : OLD);
+export const RULES: Act1Rules | null = {
+  get gait() {
+    return pick().gait;
+  },
+  get acts() {
+    return pick().acts;
+  },
+  can: (R, m, a, dist, los) => pick().can?.(R, m, a, dist, los) ?? true,
+  start: (R, m, a) => pick().start?.(R, m, a),
+  acting: (R, m, a, t0, t1, dt) => pick().acting(R, m, a, t0, t1, dt),
+  peril: (R, p, dt) => {
+    // (what either left on the floor is stepped by whichever made it)
+    if (p.a1 === TOLL_PERIL || p.a1 === SHOUT9_PERIL || p.a1 === DECREE_PERIL || p.a1 === CALL9_PERIL) ACTION.peril!(R, p, dt);
+    else OLD.peril!(R, p, dt);
+  },
+  died: (R, m) => pick().died?.(R, m),
+};
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { CRIER_ACTION };

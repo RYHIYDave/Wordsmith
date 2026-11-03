@@ -12,7 +12,9 @@ import { log } from './lib.mjs';
 export default async function (page, snap) {
   let fails = 0;
   const check = (label, ok, detail = '') => { if (!ok) fails++; log(label, `${ok ? 'ok' : 'FAILED'} ${detail}`); if (!ok) console.log(`  !! ${label} ${detail}`); };
-  await page.evaluate(() => { window.__dbg.saving(false); });
+  // (the floors' more action, Version 25.0, off for this playtest: it holds the monsters' moves of Version 19.8 as they were; the new
+  // moves have playtests of their own, action_f1_look.mjs to action_f4_look.mjs)
+  await page.evaluate(() => { window.__dbg.saving(false); if (window.__dbg.floorAction) window.__dbg.floorAction(false); });
   check('the attacks are on in the game', await page.evaluate(() => window.__dbg.monsterAttacks()) === true);
 
   /**

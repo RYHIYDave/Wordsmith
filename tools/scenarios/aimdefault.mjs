@@ -78,6 +78,10 @@ export default async function (page, snap) {
   check('then to the way the hero faces', m.aim === 'face', JSON.stringify(m));
   await tapMark('button:ATTACKS: THE WAY YOU FACE');
   m = await meta();
+  // (ONE HAND, a fourth way, after the way the hero faces: Version 25.0)
+  check('then to ONE HAND', m.aim === 'one', JSON.stringify(m));
+  await tapMark('button:ATTACKS: ONE HAND');
+  m = await meta();
   check('and round to auto aim', m.aim === 'auto' && m.chosen === true, JSON.stringify(m));
   await snap('03_pause');
   await tapMark('button:Resume');

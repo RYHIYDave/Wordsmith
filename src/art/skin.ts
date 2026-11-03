@@ -120,9 +120,10 @@ export interface Stage {
    * The whole frame: `under`, every part with the nearer skin winning at each pixel and the
    * style's dark seam where one part ends in front of another and round the figure, then `over`.
    * `rim`: a colour for the crisp edge of light outside the seam (a hero's is cyan, an enemy's
-   * pink), or nothing for none.
+   * pink), or nothing for none. `seen`: told which part, in the order they were made, won each pixel (before the seams
+   * and the rim are laid), for a figure that thins some of its parts afterwards (Mob.finish).
    */
-  whole(rim?: string | null): Px;
+  whole(rim?: string | null, seen?: (ids: Int16Array, w: number, h: number) => void): Px;
   /** Where a point of the figure is on the canvas, in picture pixels (not rounded). */
   at(p: V3): V;
   /** How near the eye a point is (bigger = nearer), in the figure's own lengths. */
@@ -203,7 +204,7 @@ export function stage(view: PaintView, ax = CANVAS3.ax, ay = CANVAS3.ay, size: {
       parts.push(s);
       return s;
     },
-    whole: (rim = null) => {
+    whole: (rim = null, told?: (ids: Int16Array, w: number, h: number) => void) => {
       const out = new Px(W, H);
       const o = out.d;
       if (zbuf.length !== W * H) {
@@ -229,6 +230,7 @@ export function stage(view: PaintView, ax = CANVAS3.ax, ay = CANVAS3.ay, size: {
       // (for looking into a fault: which layer, in the order they were made, won each pixel)
       const seen = (globalThis as { __partsSeen?: (ids: Int16Array, w: number, h: number) => void }).__partsSeen;
       if (seen) seen(idbuf, W, H);
+      if (told) told(idbuf, W, H);
       const ink = rgba(INK);
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {

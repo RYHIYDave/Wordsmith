@@ -4,6 +4,7 @@
 //   node tools/build_to.mjs dist/act1.html
 //   DEPTH=6 node tools/playtest.mjs --file dist/act1.html --size 1014x468 --scenario tools/scenarios/act1_floor.mjs --out shots/act1/floor6
 // DEPTH: which floor (6 to 15). SEED: the run's (9). FOES=1: its monsters kept (else taken away). AREAS: how many areas (5).
+// SPREAD=1: those areas taken evenly over the floor's (else its first few).
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
@@ -52,8 +53,12 @@ export default async function (page, snap) {
     await page.waitForTimeout(900);
     await snap(name);
   };
+  // (SETTLE: milliseconds let pass first, the floor's name gone from the screen)
+  if (process.env.SETTLE) await page.waitForTimeout(Number(process.env.SETTLE));
   await snap('a_start');
-  const list = info.areas.filter((a) => a[2] === 'path' || a[2] === 'side' || a[2] === 'lair').slice(0, areas);
+  // (SPREAD=1: the areas taken evenly from first to last, not the first few: one massive ground is many shapes)
+  const all = info.areas.filter((a) => a[2] === 'path' || a[2] === 'side' || a[2] === 'lair');
+  const list = process.env.SPREAD === '1' ? Array.from({ length: Math.min(areas, all.length) }, (_, k) => all[Math.floor(((k + 0.5) * all.length) / Math.min(areas, all.length))]) : all.slice(0, areas);
   for (let k = 0; k < list.length; k++) await go(list[k][0], list[k][1], `b_area${k}`);
   for (let k = 0; k < info.holds.length; k++) {
     await go(info.holds[k][0], info.holds[k][1], `c_yard${k}`);

@@ -19,6 +19,8 @@
 //     warp's column rises and goes.
 //   run: tsx --test tests/crypt.test.ts
 
+import { YARD } from '../src/art/yard';
+import { A1_OPEN } from '../src/game/act1_layout';
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -149,9 +151,14 @@ test('nothing of the game changes with the switches off (and the Crypt\'s layout
   const c = createHash('sha1');
   const was = LEVER_CLEAR.on;
   const cult = CULT.on;
+  const yard = YARD.on;
+  const open = A1_OPEN.on;
   LEVER_CLEAR.on = false;
-  // (and THE FIRST FIVE FLOORS' cult, whose packs come on floors 4 and 5: game/defs.ts CULT)
+  // (and THE FIRST FIVE FLOORS' cult, whose packs come on floors 4 and 5: game/defs.ts CULT; and the switches of 1 Nov 2026:
+  // the Headsman's yard, floor 2's boss hall, YARD; the Quarry laid as one massive area, floor 6, A1_OPEN)
   CULT.on = false;
+  YARD.on = false;
+  A1_OPEN.on = [];
   try {
     for (let d = 1; d <= 6; d++) {
       for (let s = 1; s <= 25; s++) {
@@ -162,6 +169,8 @@ test('nothing of the game changes with the switches off (and the Crypt\'s layout
   } finally {
     LEVER_CLEAR.on = was;
     CULT.on = cult;
+    YARD.on = yard;
+    A1_OPEN.on = open;
   }
   assert.equal(c.digest('hex').slice(0, 16), 'a89c4a6c51c4eba8', '150 dungeons as they were');
 });

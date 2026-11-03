@@ -25,6 +25,12 @@ export default async function (page, snap) {
   const inTown = await page.evaluate(() => !!(window.__dbg.exits && window.__dbg.exits.on));
   const begins = (g) => g !== null && (inTown ? g.town : !g.town && g.depth === 1);
   const where = inTown ? 'in town' : 'in the first dungeon';
+  // (THE CLASS CARDS WITH CONFIRM, CARDS3, his word of 31 Oct 2026: a card pressed is chosen; CONFIRM sends the hero to make ready)
+  const pick = async (cls) => {
+    await hands.press(`class:${cls}`, 0, true);
+    const c = await hands.mark('button:CONFIRM');
+    if (c) await hands.pressAt(c.x, c.y);
+  };
   await page.waitForTimeout(300);
   await hands.press('button:NEW GAME');
   await page.waitForTimeout(500);
@@ -39,7 +45,7 @@ export default async function (page, snap) {
   } else {
     // 1. a press begins the entrance, not the run; Escape calls it off
     // (`stay`: these presses are not to wait for the entrance to be over, which every other playtest's are)
-    await hands.press('class:ranger', 0, true);
+    await pick('ranger');
     await page.waitForTimeout(250);
     hold((await inGame()) === null, 'a card pressed: the run has not begun, the hero is making ready');
     await snap('making_ready');
@@ -48,7 +54,7 @@ export default async function (page, snap) {
     hold((await inGame()) === null, 'Escape: called off (two and a half seconds later the run has still not begun)');
     hold((await hands.mark('class:ranger')) !== null, 'and the cards are still there');
     // 2. a second press lets them go at once
-    await hands.press('class:mage', 0, true);
+    await pick('mage');
     await page.waitForTimeout(250);
     hold((await inGame()) === null, 'another card pressed: making ready again');
     await hands.pressAt(20, 20);
@@ -68,7 +74,7 @@ export default async function (page, snap) {
     hold((await inGame()) === null, 'back on the start screen');
     await hands.press('button:NEW GAME');
     await page.waitForTimeout(500);
-    await hands.press('class:warrior', 0, true);
+    await pick('warrior');
     const t0 = Date.now();
     let began = -1;
     while (Date.now() - t0 < 4000) {

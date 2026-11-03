@@ -60,7 +60,7 @@
 //     or dragged there.
 // There is no game to go back to by pressing it: DONE closes both.
 
-import { WORD_COLOR } from '../art/icons';
+import { WORD_COLOR, itemPic } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
@@ -82,7 +82,7 @@ import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { arrow, drawName, drawNameLines, drawWordTile, nameLines, nameParts, namePartsWidth, tileWidth } from './words';
 import { TALENTS } from '../game/talents';
-import { drawTalents, layTalents, newTalentUi, talentPresses } from './talents';
+import { drawTalentCard, drawTalents, layTalents, newTalentUi, talentPresses } from './talents';
 import type { TalentUi } from './talents';
 
 export type InvPage = 'gear' | 'attacks' | 'stats' | 'talents';
@@ -378,7 +378,7 @@ export function dollAt(slot: EquipSlot, pitch: number): [number, number] {
 export function dollHeight(pitch: number): number {
   return (DOLL_ROWS - 1) * pitch + CELL;
 }
-/** What an empty slot shows, faintly: the kind of thing that goes there. */
+/** What an empty slot shows, faintly: the kind of thing that goes there (with ITEMS_A on, the art chat's picture of it at Normal). */
 const GHOST: Record<EquipSlot, IconKey> = { mainhand: 'sword', offhand: 'shield', helm: 'helm', chest: 'armor', gloves: 'gloves', belt: 'belt', boots: 'boots', amulet: 'amulet', ring1: 'ring', ring2: 'ring' };
 
 /** The figure on the GEAR page: it stands in its loop and now and then does what its class does when left standing, as on the class cards. */
@@ -531,7 +531,12 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const pouchX = X0;
   // (WORD_HALF: every word over the game's half, and the panel's bottom the bag alone)
   const half = WORD_HALF.on && !side;
-  const stripH = (half ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
+  /**
+   * (THE SKILL TREES' page: no bag at its foot; the tree has the panel down to its bottom. His words, 31 Oct 2026, 00:23: "Dude
+   * fix the bag so I can allocate passives in the classes test", and asked what happens: "The bag covers the tree".)
+   */
+  const bare = half && page === 'talents';
+  const stripH = bare ? 0 : (half ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
   const stripY = R.y + R.h - stripH;
   // (WORD_ROOM: the bottom shows the bag, with the line of words over it, or every word in the room both take)
   const sideWants: 'words' | 'bag' | null = side ? (side.pieceDrop || side.bagButton || side.bagQuick ? 'bag' : side.wordDrop ? 'words' : null) : null;
@@ -643,13 +648,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     }
   }
   // (WORD_ROOM: while every word is shown, the bag is not: none of its cells is there to be pressed or dropped on)
-  if (!allWords) {
+  if (!allWords && !bare) {
     h.bag.forEach((it, i) => {
       gear.push({ r: { x: bagX + (i % bagCols) * PITCH, y: bagY + Math.floor(i / bagCols) * PITCH, w: CELL, h: CELL }, sel: { kind: 'bag', i }, item: it });
     });
   }
   const dollR: Rect = { x: dollX - 3, y: dollY - 2, w: DOLL_W + 6, h: dollH + 4 };
-  const bagR: Rect = allWords ? { x: -9999, y: -9999, w: 0, h: 0 } : { x: bagX - 3, y: bagY - 3, w: bagW + 6, h: bagH + 6 };
+  const bagR: Rect = allWords || bare ? { x: -9999, y: -9999, w: 0, h: 0 } : { x: bagX - 3, y: bagY - 3, w: bagW + 6, h: bagH + 6 };
   /** Beside the hero: their numbers at a glance. */
   const glanceR: Rect = { x: dollX + DOLL_W + 8, y: pageY + 1, w: X0 + bodyW - (dollX + DOLL_W + 8), h: pageH - 1 };
 
@@ -1065,11 +1070,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // the panel
   g.fillStyle = THEME.ink;
   g.fillRect(R.x, R.y, R.w, R.h);
-  // (the bottom that never changes stands on a ground of its own)
-  g.fillStyle = THEME.bg;
-  g.fillRect(R.x, stripY - 3, R.w, R.y + R.h - stripY + 3);
-  g.fillStyle = THEME.edge;
-  g.fillRect(R.x, stripY - 3, R.w, 0.5);
+  // (the bottom that never changes stands on a ground of its own: none on the SKILL TREES' page, `bare`)
+  if (!bare) {
+    g.fillStyle = THEME.bg;
+    g.fillRect(R.x, stripY - 3, R.w, R.y + R.h - stripY + 3);
+    g.fillStyle = THEME.edge;
+    g.fillRect(R.x, stripY - 3, R.w, 0.5);
+  }
   // its edge against the game: a line, and a hair of light along it
   g.fillStyle = THEME.edgeHi;
   if (below) g.fillRect(R.x, R.y, R.w, 1);
@@ -1189,7 +1196,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // ---- draw: gear, worn and carried (the worn on the GEAR page only) -----------------------------------
-  if (!allWords) cap('BAG', bagX, bagY - CAP);
+  if (!allWords && !bare) cap('BAG', bagX, bagY - CAP);
   // (while a piece is carried, the place it may go is lit: the hero for a piece from the bag, the bag for a piece worn)
   if (carried && st.carry) {
     const want = st.carry.sel.kind === 'bag' ? (page === 'gear' ? dollR : null) : bagR;
@@ -1221,12 +1228,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const bad = it && c.sel.kind === 'bag' && game.useProblem(it) !== null;
     g.globalAlpha = worn ? 1 : dimBag;
     const edge = waiting || looked || aim ? THEME.accent : ok ? (blink ? THEME.accent : THEME.accentLo) : it ? RARITY_COLOR[it.rarity] : THEME.edge;
-    ui.slot(c.r.x, c.r.y, CELL, it && !away ? art.icons.item[it.icon] : null, edge, lit);
+    ui.slot(c.r.x, c.r.y, CELL, it && !away ? itemPic(art.icons, it.icon, it.rarity) : null, edge, lit);
     if (!it && c.sel.kind === 'gear') {
-      // an empty slot on the hero shows, faintly, the kind of thing that goes in it
-      const ghost = art.icons.item[GHOST[c.sel.slot]];
+      // an empty slot on the hero shows, faintly, the kind of thing that goes in it (at its size in game pixels: the new
+      // pictures, ITEMS_A, are painted two to a game pixel)
+      const ghost = itemPic(art.icons, GHOST[c.sel.slot], 0);
       g.globalAlpha = 0.3;
-      g.drawImage(ghost.img, c.r.x + Math.floor((CELL - ghost.w) / 2), c.r.y + Math.floor((CELL - ghost.h) / 2));
+      g.drawImage(ghost.img, c.r.x + Math.floor((CELL - ghost.w) / 2), c.r.y + Math.floor((CELL - ghost.h) / 2), ghost.w, ghost.h);
       g.globalAlpha = 1;
     }
     // (the four places it has for properties: what it came with, the words burned in, and the room left)
@@ -1240,7 +1248,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // beside the bag: what they have, and who they are
-  if (!allWords) {
+  if (!allWords && !bare) {
     const ix = bagX + bagW + 8;
     const iw = X0 + bodyW - ix;
     if (iw >= 30) {
@@ -1291,6 +1299,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     drawText(g, allWords ? 'BAG' : 'ALL', mid, swapR.y + 3, allWords ? THEME.text : lay.hidden > 0 ? THEME.accent : THEME.text, { align: 'center', font: 'small' });
     drawText(g, allWords ? `${inBag}/${h.bag.length}` : `${held}`, mid, swapR.y + 11, THEME.dim, { align: 'center', font: 'small' });
   }
+  // (the card of the talent being read, over all of that: above the words' own panel, never under it; his words, 30 Oct 2026,
+  // 08:31: “The rune pouch covers the talent tree descriptions and allocation button”)
+  if (tlay) drawTalentCard(ui, game, st.talents, tlay, R, halfR);
 
   // ---- draw: what is being read -----------------------------------------------------------------------
   // (a word that is being looked at in its socket and has been taken out since: nothing to look at)
@@ -1732,7 +1743,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
   // and so does a piece of gear (a finger hides what is under it: the piece floats above the finger)
   if (carryAt && carried) {
-    const icon = art.icons.item[carried.icon];
+    const icon = itemPic(art.icons, carried.icon, carried.rarity);
     const cx = Math.round(carryAt.x - CELL / 2);
     const cyy = Math.round(carryAt.y - (T ? CELL + 8 : CELL / 2));
     g.globalAlpha = 0.95;

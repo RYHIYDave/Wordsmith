@@ -40,7 +40,12 @@ export async function makeHands(page) {
     const m = await mark(name);
     if (!m) { console.log(`  !! nothing on screen called "${name}". On screen: ${(await marks()).join(', ')}`); return null; }
     await pressAt(m.x, m.y, button);
-    if (m.name.startsWith('class:') && !stay) await entered(page);
+    if (m.name.startsWith('class:') && !stay) {
+      // (THE CLASS CARDS WITH CONFIRM, CARDS3, his word of 31 Oct 2026: a card pressed is chosen, and CONFIRM starts the run)
+      const c = await mark('button:CONFIRM');
+      if (c) await pressAt(c.x, c.y);
+      await entered(page);
+    }
     return m.name;
   };
   const key = async (code) => { await page.keyboard.press(code); await page.waitForTimeout(140); };

@@ -1,6 +1,7 @@
 // A crude automatic player, used only for testing: it lets the game be played end to end without
 // a person, in the headless tests and in browser screenshots. It is not part of the game.
 
+import { WARLOCK_TUNE } from '../game/warlock';
 import { FIRST_WORD, SKILLS, TUNE, firstWordSkill } from '../game/defs';
 import type { Game } from '../game/game';
 import { placedAim } from '../game/lock';
@@ -14,6 +15,7 @@ import { topStep } from '../game/ways';
 // half made, they taking it in turn)
 import '../game/act1_rules/index';
 import { CENSOR, barsOf, inked, strikeFrom, underBar } from '../game/act1_rules/censor';
+import { HURL_PERIL, HURL_REACH } from '../game/action_f4';
 
 export interface BotState {
   flow: Uint16Array | null;
@@ -50,6 +52,29 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
   }
   // An attack is about to land where the hero stands: walk straight out of it.
   const h = g.hero;
+  // (FLOOR 4, MORE ACTION, ACTION_F4: the Ossuary Golem's skeleton, marked where it will come down, until it has)
+  for (const p of g.perils) {
+    if (p.a1 !== HURL_PERIL || (p.done ?? 0) >= 2) continue;
+    const dx = h.x - p.x;
+    const dy = h.y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d > HURL_REACH + 0.5) continue;
+    let ux = d < 0.05 ? 1 : dx / d;
+    let uy = d < 0.05 ? 0 : dy / d;
+    // (its golem in the way, close by: out to the side of it instead, the side away from the mark's middle)
+    const m = g.monsters.find((o) => o.id === p.a && !o.dead);
+    const gx = m ? m.x - h.x : 0;
+    const gy = m ? m.y - h.y : 0;
+    const gd = Math.hypot(gx, gy);
+    if (m && gd < 2.5 && (gx * ux + gy * uy) / gd > 0.5) {
+      const side = -gy * dx + gx * dy >= 0 ? 1 : -1;
+      ux = (-gy / gd) * side;
+      uy = (gx / gd) * side;
+    }
+    c.mx = ux;
+    c.my = uy;
+    return;
+  }
   for (const z of g.zones) {
     // (THE MONSTERS' ATTACKS: the line a red troll will charge along, or a marksman's line of aim: out of it, sideways)
     if (z.kind === 'lane' || z.kind === 'aim') {
@@ -155,6 +180,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   c.cast = false;
   c.hold = false;
   c.evade = false;
+  c.change = false;
   c.potion = false;
   c.interact = false;
   c.approach = false;
@@ -226,8 +252,10 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     const area = SKILLS[h.skills[1].id];
     const melee = basic.kind === 'melee';
     const sees = lineOfSight(L.open, f.w, f.h, h.x, h.y, target.x, target.y, f.cut ?? null);
-    c.aimX = target.x;
-    c.aimY = target.y;
+    // (her vial put where the enemy is going, as auto aim puts it: placedAim)
+    const tapAt = placedAim(g, target, basic.kind);
+    c.aimX = tapAt.x;
+    c.aimY = tapAt.y;
     // (near enough for the quick attack to get there: a wave fades after a short way)
     const want = melee ? 1.1 + target.r : Math.min(5.5, basic.range * 0.7);
     // (BOSS_INTRO: a boss who waits for his gate to fall is not to be shot at from its doorway: walk in to him)
@@ -237,6 +265,8 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
       c.my = -(target.y - h.y) / best;
     }
     if (sees && (melee ? best < 2 + target.r : true)) c.fire = true;
+    // (THE WARLOCK: his pact full, a tap on him, and the demon tears out: game/warlock.ts)
+    if (h.cls === 'warlock' && h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full) c.change = true;
     // (a slam must be beside its enemies; a trap is tossed, an orb set down, a beam fired from where the hero stands)
     const areaReach = area.kind === 'burst' || area.kind === 'whirl' ? 2.6 : 7;
     if (sees && best < areaReach) {

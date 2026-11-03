@@ -101,7 +101,8 @@ test('1. in the game through art/act1_figs/dredger.ts alone, their switch thrown
   assert.ok(FIG_DR !== null && (FIG_DR.switches ?? []).includes(DREDGERS_ON), 'their switch is one the bestiary throws');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/dredgers(_moves)?\.ts$/.test(f) || f === 'art/act1_figs/dredger.ts') continue;
+    // (and floor 16's gardeners and grooms, mock-ups that take the dredgers' pole from them: tests/palace_hands.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(dredgers(_moves)?|palace_hands(_moves)?)\.ts$/.test(f) || f === 'art/act1_figs/dredger.ts') continue;
     if (/from ['"][^'"]*dredgers(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'other game files that import them');

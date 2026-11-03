@@ -113,7 +113,8 @@ export default async function (page, snap) {
           let a = null; let b = null;
           for (let d = 1.2; d <= 3 && !a; d += 0.1) if (ok(px + nx * d, py + ny * d)) a = { x: px + nx * (d + 0.4), y: py + ny * (d + 0.4) };
           for (let d = 1.2; d <= 3 && !b; d += 0.1) if (ok(px - nx * d, py - ny * d)) b = { x: px - nx * (d + 0.4), y: py - ny * (d + 0.4) };
-          if (!a || !b || !ok(a.x, a.y) || !ok(b.x, b.y) || Math.hypot(a.x - b.x, a.y - b.y) > 5.5) continue;
+          // (and a clear line across: a swipe lands only where the hero sees, game.ts reachPoint; a stone on a bank stops it)
+          if (!a || !b || !ok(a.x, a.y) || !ok(b.x, b.y) || Math.hypot(a.x - b.x, a.y - b.y) > 5.5 || !g.sees(a.x, a.y, b.x, b.y)) continue;
           const dm = Math.hypot(px - mx, py - my);
           if (!best || dm < best.d) best = { a, b, d: dm };
         }

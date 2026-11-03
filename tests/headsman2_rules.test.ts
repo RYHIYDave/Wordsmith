@@ -13,7 +13,7 @@ import { HEADSMAN_2, H2_DASH, H2_DASH_TIME, H2_HALT, H2_LUNGE_HIT, H2_PACE, H2_S
 import { H2_SLAM } from '../src/art/headsman2_shots';
 import { TILE3, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
-import { H2_ACTS, H2_GAIT, HEADSMAN2_FIGHT, actsOf, gaitOf } from '../src/game/bosses';
+import { H2_ACTS, H2_GAIT, HEADSMAN2_FIGHT, actsOf, gaitOf, bossPace } from '../src/game/bosses';
 import { beside } from '../src/game/facing';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -133,7 +133,8 @@ test('2. with both on, floor 2\'s Headsman fights with his new acts, at his pict
     const { g, m } = room(3);
     assert.equal(actsOf(m), H2_ACTS);
     assert.equal(gaitOf('headsman'), H2_GAIT);
-    assert.equal(m.speed, H2_PACE, 'quick, at his prowl\'s own pace');
+    // (his prowl faster than it was painted, at his word on the bosses' paces, 31 Oct 2026: game/bosses.ts BOSS_PACE; its walk played faster)
+    assert.equal(m.speed, bossPace('headsman') ?? H2_PACE, 'quick, at his prowl\'s pace');
     const w = watch(g, m, 20);
     assert.ok(w.acts.length >= 4, `he fought: ${w.acts.join(', ')}`);
     assert.ok(w.acts.every((a) => a.startsWith('h2:')), 'only his new attacks');

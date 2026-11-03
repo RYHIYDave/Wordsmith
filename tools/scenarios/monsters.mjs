@@ -21,7 +21,7 @@ export default async function (page, snap) {
 
   // ---- a practice room with nothing in it, and a hero who cannot be hurt ---------------------------------
   await page.evaluate(() => {
-    const d = window.__dbg; d.saving(false); d.monsterAttacks(false); d.practice('warrior', 7); d.autoLevel = false; d.autoWords = false; d.god = true;
+    const d = window.__dbg; d.saving(false); /* (and the floors' more action, Version 25.0: these are the moves as they were) */ if (d.floorAction) d.floorAction(false); d.monsterAttacks(false); d.practice('warrior', 7); d.autoLevel = false; d.autoWords = false; d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
   });
   await page.waitForTimeout(400);
@@ -232,5 +232,5 @@ export default async function (page, snap) {
   const missing = await page.evaluate(() => window.__dbg.missing());
   if (missing.length) bad('text asked for characters the fonts cannot draw: ' + missing.join(' '));
   // (and the monsters' attacks on again, as the game has them)
-  check('the monsters\' attacks on again, as the game has them', await page.evaluate(() => window.__dbg.monsterAttacks(true)) === true);
+  check('the monsters\' attacks on again, as the game has them', await page.evaluate(() => { const d = window.__dbg; if (d.floorAction) d.floorAction(true); return d.monsterAttacks(true); }) === true);
 }

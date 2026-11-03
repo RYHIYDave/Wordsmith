@@ -4,10 +4,12 @@
 // (`reel`) and its death (`die`: the wind dies, its bell drops and cracks; thirty a second as it is painted).
 
 import { DEVIL_ON, makeDevilArt } from '../dust_devils';
+import { DEVIL_TWISTER, makeTwisterDevilArt } from '../action_f6_canyon';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
-  make: makeDevilArt,
+  // (and its twister, behind DEVIL_TWISTER: art/action_f6_canyon.ts, his yes, 2 Nov 2026)
+  make: () => (DEVIL_TWISTER.on ? makeTwisterDevilArt() : makeDevilArt()),
   // (measured off its standing picture: the top of its funnel; half its funnel)
   size: { top: 16, half: 6 },
   switches: [DEVIL_ON],

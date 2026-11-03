@@ -23,6 +23,8 @@ Oct 8, 2026
 > **CHANGED BY THE OWNER, 14 Oct 2026: A FLIER IS THE EXCEPTION TO "FEET GRIP THE FLOOR".** Asked whether a flier is an exception to "Feet grip the floor" (Movement 8), his pick, 14 Oct: "Yes, add it (Recommended)". So Movement 8 says so. This copy has it; his living doc does not yet (this chat has not edited it).
 >
 > **CHANGED BY THE OWNER, 24 Oct 2026: REAL SHAPES, NOT CIRCLES AND SQUARES, FOR ALL ART.** His words to the art chat of the new classes, 23 Oct, by 22:21: “Wrap the fists but keep the outfit.  And make sure the characters don’t just look like circles and squares slapped together”; at 10:41, 24 Oct: “I’d like the circles and squares comment to be made a rule for all characters and bosses at least.  Maybe all art needs that rule.”; asked how far it should reach, his pick by 10:44: “All art (Recommended)”. So How art is made and approved has a new rule 9, and the Never line under the pillars names it. The doc is at rev 85 with both.
+>
+> **CHANGED BY THE OWNER, 24 Oct 2026: BIG WIND-UP, LIGHTNING STRIKE.** Sent a moving picture of a boxer's punch, his words to the art chat by 19:05: “A gif of kinda the power I’m looking for”, “And speed”, “Like the wind up and wind down are big but the actual punch is lightning quick”; at 19:17: “I want this to be added to the rules.  Wind ups and wind downs, the actually swings and hits are quick.  Especially for the melee characters.”; asked how far it should reach, his pick: “All attacks, melee most (Recommended)”. So Movement has a new rule 9, and the doc is at rev 86 with it.
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
@@ -133,6 +135,7 @@ Weight is the test for every animation, and every character moves its own way, a
 6. **Alive when still.** A figure left standing breathes, shifts its weight and has small habits of its own.
 7. **Heavy blows land with a freeze.** The moment a heavy blow lands, everything holds for a tenth of a second. You chose it on 8 Oct.
 8. **Feet grip the floor.** A foot stays where it lands; a running figure moves its legs faster rather than slide. You chose it on 8 Oct. A flier is the exception: its feet are off the floor and never land, so this does not hold for it (added on his yes, 14 Oct: "Yes, add it (Recommended)").
+9. **Big wind-up, lightning strike.** Every attack winds up big and winds down big, and the swing or the hit itself is lightning quick: a frame or two, smeared with after-images and speed lines, then the impact. Melee characters push it furthest. Rule 5 holds for the wind-up and the wind-down; the strike itself is a flash, not a motion to follow frame by frame. In your words, 24 Oct: “Like the wind up and wind down are big but the actual punch is lightning quick”, and “I want this to be added to the rules.  Wind ups and wind downs, the actually swings and hits are quick.  Especially for the melee characters.” Your pick of its reach: “All attacks, melee most (Recommended)”.
 
 ## Hits, blood and deaths
 

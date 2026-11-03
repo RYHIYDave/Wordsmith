@@ -1,0 +1,500 @@
+// THE TINKERER'S RULES (game/tinkerer.ts): her design, the owner's, 23 Oct 2026 (in the art chat): “She’s going to have
+// minions.  I think she’ll set turrets on the ground that fire something.  Not an arrow or a bolt.  That’s the tap.  We’ll
+// call those “Contraption”.  Tap and hold will be “Golem”.  And this is gonna be clockwork Automaton that follows her around
+// and attacks.  It will just go around and I guess punch things or whatever but tap+hold will have him do a bigger move.”;
+// “Lobbed vials (Recommended)”, “Ground pound (Recommended)”, “Cannon”, “Blast jump (Recommended)”; and to the main chat,
+// 28 Oct: “Three at once (Recommended)”, “Always with her (Recommended)”; and by 16:31: “I think for her I’d like her to start
+// with golem and a vial toss.  Then in the skill tree you can swap the vial toss to a contraption that throws the vials” (her
+// tap the VIAL TOSS; the Contraption her tree's swap for it, CONTRAPTION, its tests here with it taken).
+//   run: tsx --test tests/tinkerer.test.ts
+
+// @ts-ignore - node typings are not part of this project
+import { test } from 'node:test';
+// @ts-ignore
+import assert from 'node:assert/strict';
+import type { RNG } from '../src/engine/rng';
+import { SKILLS } from '../src/game/defs';
+import { Game } from '../src/game/game';
+import { emptyControls } from '../src/game/state';
+import type { Controls, GameEvent, Monster } from '../src/game/state';
+import { GOLEM_CANNON, GOLEM_LOOK, TINKERER, TINKER_TUNE, golemBlow } from '../src/game/tinkerer';
+import { GOLEM_ROCKET, ROCKET } from '../src/art/golem_rocket_fx';
+import { placedAim } from '../src/game/lock';
+import { playableClasses } from '../src/game/warlock';
+import { land } from './helpers';
+
+const DT = 1 / 60;
+type Inner = { rng: RNG; waveT: number; spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: RNG) => Monster; wakeUp: (m: Monster) => void; die: () => void };
+const inner = (g: Game): Inner => g as unknown as Inner;
+const C = TINKER_TUNE.contraption;
+const G = TINKER_TUNE.golem;
+
+function room(seed = 3): Game {
+  const g = Game.forPractice('tinkerer', seed);
+  inner(g).waveT = 1e9;
+  g.monsters.length = 0;
+  g.hero.x = 14.5;
+  g.hero.y = 15.5;
+  g.hero.fx = 1;
+  g.hero.fy = 0;
+  g.events.length = 0;
+  return g;
+}
+function dummy(g: Game, dx: number, dy: number, life = 1e7, awake = true): Monster {
+  const a = inner(g);
+  const m = a.spawn('skeleton', g.hero.x + dx, g.hero.y + dy, 1, 0, false, a.rng);
+  if (awake) a.wakeUp(m);
+  m.speed = 0;
+  m.cd = 1e9;
+  m.life = m.maxLife = life;
+  return m;
+}
+const hurt = (m: Monster): number => m.maxLife - m.life;
+/** Her tree's CONTRAPTION taken: her tap the Contraption, in place of the Vial Toss. */
+function withContraption(g: Game): Game {
+  g.hero.talents = ['bombsaway', 'fortune', 'contraptions'];
+  g.refresh();
+  return g;
+}
+function wait(g: Game, seconds: number, c: Controls = emptyControls()): GameEvent[] {
+  const ev: GameEvent[] = [];
+  for (let t = 0; t < seconds - 1e-9; t += DT) {
+    g.update(DT, c);
+    for (const e of g.events) ev.push(e);
+    g.events.length = 0;
+  }
+  return ev;
+}
+function ready(g: Game): void {
+  for (const s of g.hero.skills) {
+    s.charges = s.maxCharges;
+    s.cd = 0;
+  }
+  g.hero.swingT = 0;
+  g.hero.mana = g.hero.d.maxMana;
+}
+/** Her tap (0) or her tap and hold (1) at a spot `dx`, `dy` from her, landed. */
+function use(g: Game, skill: 0 | 1, dx: number, dy: number): GameEvent[] {
+  ready(g);
+  const h = g.hero;
+  const c = emptyControls();
+  c.aimX = c.castX = h.x + dx;
+  c.aimY = c.castY = h.y + dy;
+  if (skill === 0) c.fire = true;
+  else c.cast = true;
+  const ev: GameEvent[] = [];
+  const take = (): void => {
+    for (const e of g.events) ev.push(e);
+    g.events.length = 0;
+  };
+  g.update(DT, c);
+  c.fire = false;
+  c.cast = false;
+  take();
+  land(g, c, DT, take);
+  return ev;
+}
+const standing = (g: Game): number => g.contraptions.filter((q) => q.broke < 0).length;
+
+test('she is not offered yet: the class cards hold the others until her switch is on', () => {
+  assert.equal(TINKERER.on, false);
+  assert.ok(!playableClasses().includes('tinkerer'));
+  TINKERER.on = true;
+  assert.ok(playableClasses().includes('tinkerer'));
+  TINKERER.on = false;
+});
+
+test('a new Tinkerer: the Vial Toss, the Golem and the Blast Jump; no Golem out yet', () => {
+  const g = room();
+  assert.deepEqual(g.hero.skills.map((s) => s.id), ['vialtoss', 'golem', 'blastjump']);
+  assert.equal(g.golem, null);
+  assert.equal(g.contraptions.length, 0);
+});
+
+test('her Vial Toss: a vial lobbed from her hand to where she aimed, no further than its throw, bursting where it comes down on all near it', () => {
+  const g = room();
+  const m = dummy(g, 4, 0);
+  const side = dummy(g, 4, 0.8);
+  const far = dummy(g, 4, 3);
+  let ev = use(g, 0, 4, 0);
+  const v = ev.find((e) => e.t === 'vial');
+  assert.ok(v && v.t === 'vial' && v.id === -1, 'a vial, from her hand');
+  assert.equal(g.contraptions.length, 0, 'no Contraption');
+  ev = ev.concat(wait(g, TINKER_TUNE.toss.flight + 0.2));
+  const b = ev.find((e) => e.t === 'vialBurst');
+  assert.ok(b && b.t === 'vialBurst' && Math.abs(b.x - (g.hero.x + 4)) < 0.6 && Math.abs(b.y - g.hero.y) < 0.6, 'it bursts where she aimed');
+  assert.ok(hurt(m) > 0 && hurt(side) > 0, 'on the one it lands on and the one beside');
+  assert.equal(hurt(far), 0, 'not on one three tiles off');
+  // (aimed far off, it stops at its range)
+  ready(g);
+  ev = use(g, 0, 20, 0);
+  const v2 = ev.find((e) => e.t === 'vial');
+  assert.ok(v2 && v2.t === 'vial' && Math.hypot(v2.x1 - v2.x0, v2.y1 - v2.y0) <= SKILLS.vialtoss.range + 0.01, 'no further than its throw');
+});
+
+test("her tree's CONTRAPTION swaps the Vial Toss for the Contraption; undone, she tosses vials again and her Contraptions fall apart", () => {
+  const g = withContraption(room());
+  assert.deepEqual(g.hero.skills.map((s) => s.id), ['contraption', 'golem', 'blastjump']);
+  dummy(g, 6, 0);
+  use(g, 0, 3, 0);
+  assert.equal(g.contraptions.length, 1, 'her tap throws a Contraption');
+  g.hero.talents = ['bombsaway', 'fortune'];
+  g.refresh();
+  assert.equal(g.hero.skills[0].id, 'vialtoss');
+  const ev = wait(g, 0.2);
+  assert.ok(ev.some((e) => e.t === 'contraptionEnd'), 'the one standing falls apart');
+});
+
+test('her abilities grow with Dexterity and Intelligence alike', () => {
+  const g = room();
+  const r0 = g.hero.skills[0].r.dmgMult;
+  g.hero.attrs.dex += 10;
+  g.refresh();
+  const r1 = g.hero.skills[0].r.dmgMult;
+  g.hero.attrs.int += 10;
+  g.refresh();
+  const r2 = g.hero.skills[0].r.dmgMult;
+  assert.ok(r1 > r0 && r2 > r1);
+  assert.ok(Math.abs(r1 - r0 - (r2 - r1)) < 1e-9, 'a point of either is as good as a point of the other');
+});
+
+test('her Contraption comes to rest where she aimed it, no further than its throw; set up, it lobs vials at the enemies awake within its reach, which burst on them', () => {
+  const g = withContraption(room());
+  const m = dummy(g, 6, 0);
+  const sleeper = dummy(g, -3, 0, 1e7, false);
+  use(g, 0, 3, 0);
+  assert.equal(g.contraptions.length, 1);
+  const c = g.contraptions[0];
+  assert.ok(Math.abs(c.x - (g.hero.x + 3)) < 0.6 && Math.abs(c.y - g.hero.y) < 0.6, 'it lands where she aimed');
+  let ev = wait(g, C.set - 0.1);
+  assert.ok(!ev.some((e) => e.t === 'vial'), 'it does not fire before it is set up');
+  ev = wait(g, 3);
+  const vials = ev.filter((e) => e.t === 'vial');
+  assert.ok(vials.length >= 2, 'set up, it lobs one every so often');
+  assert.ok(ev.some((e) => e.t === 'vialBurst'));
+  assert.ok(hurt(m) > 0, 'its vials burst on the one awake');
+  assert.equal(hurt(sleeper), 0, 'and never wake a sleeper');
+  // (thrown far, it stops at its range)
+  ready(g);
+  use(g, 0, 20, 0);
+  const far = g.contraptions[g.contraptions.length - 1];
+  assert.ok(Math.hypot(far.x - g.hero.x, far.y - g.hero.y) <= SKILLS.contraption.range + 0.6, 'no further than its throw');
+});
+
+test('three Contraptions at once: a fourth puts the oldest out of action, and each falls apart when its time is up', () => {
+  const g = withContraption(room());
+  dummy(g, 8, 0);
+  for (let i = 0; i < 3; i++) use(g, 0, 2, i - 1);
+  assert.equal(standing(g), 3);
+  const first = g.contraptions[0].id;
+  const ev = use(g, 0, 2, 2);
+  assert.equal(standing(g), C.most, 'still three');
+  assert.ok(ev.some((e) => e.t === 'contraptionEnd' && e.id === first), 'the oldest put out of action');
+  wait(g, C.set + C.life + C.broke + 0.5);
+  assert.equal(g.contraptions.length, 0, 'their time up, they fall apart and are gone');
+});
+
+test('her first tap and hold whistles her Golem out beside her; it stays with her, knuckling after her where she goes', () => {
+  const g = room();
+  const ev = use(g, 1, 3, 0);
+  assert.ok(g.golem, 'it is out');
+  assert.ok(ev.some((e) => e.t === 'golemArrive'));
+  assert.ok(!ev.some((e) => e.t === 'golemPound'), 'the first whistle only brings it out');
+  assert.ok(Math.hypot(g.golem!.x - g.hero.x, g.golem!.y - g.hero.y) < 2.5, 'beside her');
+  // (she walks away: it follows)
+  const c = emptyControls();
+  c.mx = 1;
+  wait(g, 2, c);
+  wait(g, 2);
+  assert.ok(g.golem && Math.hypot(g.golem.x - g.hero.x, g.golem.y - g.hero.y) < 3, 'it keeps near her');
+  wait(g, 60);
+  assert.ok(g.golem, 'always with her');
+});
+
+test('her Golem punches what is near it, and runs at what is further off to punch it too (its cannon off, his word); on, it fires', () => {
+  const g = room();
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  const near = dummy(g, 1.5, 1.6);
+  const ev1 = wait(g, 3);
+  assert.ok(ev1.some((e) => e.t === 'golemPunch'), 'it punches');
+  assert.ok(hurt(near) > 0);
+  // (his word, 30 Oct 2026: “It needs to run at the enemies.”; “always trying to be in melee range”: as fast as she runs, at it)
+  assert.equal(GOLEM_CANNON.on, false, 'its cannon off for now');
+  assert.equal(G.speed, 5.5, 'faster than she runs (his word of 2 Nov 2026, 21:29)');
+  const g2 = room(5);
+  use(g2, 1, 3, 0);
+  wait(g2, G.arrive + 0.1);
+  const far = dummy(g2, 6, 0);
+  const ev2 = wait(g2, 3);
+  assert.ok(!ev2.some((e) => e.t === 'golemShot'), 'no shot');
+  assert.ok(ev2.some((e) => e.t === 'golemPunch'), 'it runs at it and punches it');
+  assert.ok(hurt(far) > 0);
+  // (its cannon kept for a later passive: on, it fires at what is further off)
+  GOLEM_CANNON.on = true;
+  try {
+    const g3 = room(5);
+    use(g3, 1, 3, 0);
+    wait(g3, G.arrive + 0.1);
+    dummy(g3, 6, 0);
+    assert.ok(wait(g3, 3).some((e) => e.t === 'golemShot'), 'on, it fires its cannon');
+  } finally {
+    GOLEM_CANNON.on = false;
+  }
+});
+
+test('each tap and hold after sets it on to ground pound, striking everything round its fist', () => {
+  const g = room();
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  const gx = g.golem!.x;
+  const gy = g.golem!.y;
+  // (enemies round it that it cannot get at first: asleep, so it punches none of them before the pound)
+  const round = [dummy(g, gx - g.hero.x + 1.2, gy - g.hero.y, 1e7, false), dummy(g, gx - g.hero.x, gy - g.hero.y + 1.3, 1e7, false)];
+  const ev = use(g, 1, gx - g.hero.x + 1, gy - g.hero.y);
+  const more = wait(g, G.pound.lead + G.pound.long);
+  assert.ok(ev.concat(more).some((e) => e.t === 'golemPound'), 'it pounds');
+  for (const m of round) assert.ok(hurt(m) > 0, 'what is round it is struck');
+});
+
+// The owner, 28 Oct 2026, 20:25: “She needs the same auto aim targeting that the ranger gets on his hold so the vials land
+// where the enemies are going” (game/lock.ts placedAim: what auto aim, the lock and the gamepad aim her tap at).
+test('aimed for her (auto aim), her vial is put where the enemy is going: one running at her runs into it, as into the ranger’s volley', () => {
+  const run = (lead: boolean): { hurt: number; ahead: number } => {
+    const g = room(7);
+    const a = inner(g);
+    const m = a.spawn('skeleton', g.hero.x + 6, g.hero.y, 1, 0, false, a.rng);
+    a.wakeUp(m);
+    m.cd = 1e9;
+    m.life = m.maxLife = 1e7;
+    const x0 = m.x;
+    wait(g, 0.6);
+    assert.ok(m.x < x0 - 0.5, 'it is running at her');
+    const p = lead ? placedAim(g, m, 'vialtoss') : { x: m.x, y: m.y };
+    const ahead = m.x - p.x;
+    use(g, 0, p.x - g.hero.x, p.y - g.hero.y);
+    wait(g, TINKER_TUNE.toss.flight + 0.1);
+    return { hurt: hurt(m), ahead };
+  };
+  const led = run(true);
+  assert.ok(led.ahead > 1.5, `put well ahead of it (${led.ahead.toFixed(2)} tiles)`);
+  assert.ok(led.hurt > 0, 'aimed where it is going, the vial bursts on it');
+  assert.equal(run(false).hurt, 0, 'aimed where it was, it has run on out of the burst');
+  // (one standing still, or asleep, is aimed at where it stands)
+  const g = room();
+  const still = dummy(g, 4, 0);
+  assert.deepEqual(placedAim(g, still, 'vialtoss'), { x: still.x, y: still.y });
+});
+
+// The owner, 28 Oct 2026, 20:25: “The golem’s slam is too slow to really plan a good hit”.
+test('its ground pound comes down quickly: its blow under half a second after her whistle (it was 1.1 seconds)', () => {
+  const g = room();
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  use(g, 1, 3, 0);
+  let t = 0;
+  let pounded = false;
+  while (!pounded && t < 2) {
+    pounded = wait(g, DT).some((e) => e.t === 'golemPound');
+    t += DT;
+  }
+  assert.ok(pounded, 'it pounds');
+  assert.ok(t < 0.5, `its blow ${t.toFixed(2)} s after her whistle`);
+  assert.ok(SKILLS.golem.windup + G.pound.lead + G.pound.hit <= 0.75, 'and under three quarters of a second from her hold');
+});
+
+// The owner, 28 Oct 2026, 20:26: “And his normal punch doesn’t really look very good”; to the film, by 21:41, “Yes, use the
+// uppercut (Recommended)”.
+test('its uppercut: its blow up close lands at the uppercut’s own moment and strikes; switched off, its old punch', () => {
+  assert.equal(GOLEM_LOOK.uppercut, true, 'on, at his yes');
+  GOLEM_LOOK.uppercut = false;
+  assert.deepEqual(golemBlow(), { long: G.punch.long, hit: G.punch.hit });
+  GOLEM_LOOK.uppercut = true;
+  try {
+    assert.deepEqual(golemBlow(), G.upper);
+    const g = room();
+    use(g, 1, 3, 0);
+    wait(g, G.arrive + 0.1);
+    const near = dummy(g, 1.5, 1.6);
+    let t = 0;
+    let begun = -1;
+    let landed = -1;
+    while (landed < 0 && t < 3) {
+      const ev = wait(g, DT);
+      t += DT;
+      if (begun < 0 && g.golem!.act === 'punch') begun = t - DT;
+      if (ev.some((e) => e.t === 'golemPunch')) landed = t;
+    }
+    assert.ok(landed > 0 && hurt(near) > 0, 'it strikes');
+    assert.ok(Math.abs(landed - begun - G.upper.hit) < 0.05, `its blow ${(landed - begun).toFixed(2)} s into it`);
+  } finally {
+    GOLEM_LOOK.uppercut = true;
+  }
+});
+
+test('ITS ROCKET JUMP (his word, 2 Nov 2026, 21:29: “And the golem is gonna need that rocket jump for positioning, and probably more movespeed”): far from what it goes for, it blasts off and comes down by it; not again at once', () => {
+  const g = room(5);
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  const gm = g.golem!;
+  // (it stands a little behind her; what it will go for is eight tiles off it, within her leash)
+  gm.x = g.hero.x - 0.5;
+  gm.y = g.hero.y - 1.5;
+  const far = dummy(g, 0, 6.5);
+  const from = { x: gm.x, y: gm.y };
+  let jumped = false;
+  let landedAt = 1e9;
+  for (let k = 0; k < 60; k++) {
+    const ev = wait(g, 1 / 30);
+    if (ev.some((e) => e.t === 'bombsAway')) jumped = true;
+    if (jumped && g.golem && g.golem.act !== 'jump' && landedAt === 1e9) landedAt = Math.hypot(g.golem.x - far.x, g.golem.y - far.y);
+  }
+  assert.ok(jumped, 'it blasts off');
+  assert.ok(landedAt < 3.5, `and comes down by it (${landedAt.toFixed(2)} tiles off)`);
+  assert.ok(Math.hypot(g.golem!.x - from.x, g.golem!.y - from.y) > 3, 'it went');
+  assert.ok((g.golem!.jumpCd ?? 0) > 0 || g.golem!.act !== 'jump', 'not again at once');
+  assert.equal(G.jump.from, 5);
+});
+
+/**
+ * Her Golem set a little behind her and a skeleton eight tiles off it (as above), stepped a sixtieth of a second at a time for
+ * `seconds`: when it decided to jump, where it was each step and what it did, and the events of its jump (seconds from the
+ * start). `keepFar`: after its first jump, while it is not jumping, it is put back where it started (so it wants to jump again).
+ */
+function rocketRun(seconds: number, keepFar = false): { from: { x: number; y: number }; to: { x: number; y: number }; decide: number[]; steps: { t: number; x: number; y: number; act: string; cd: number }[]; events: { t: number; e: GameEvent }[] } {
+  const g = room(5);
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  const gm = g.golem!;
+  gm.x = g.hero.x - 0.5;
+  gm.y = g.hero.y - 1.5;
+  const from = { x: gm.x, y: gm.y };
+  dummy(g, 0, 6.5);
+  const out = { from, to: { x: 0, y: 0 }, decide: [] as number[], steps: [] as { t: number; x: number; y: number; act: string; cd: number }[], events: [] as { t: number; e: GameEvent }[] };
+  let t = 0;
+  for (let i = 0; i < Math.round(seconds / DT); i++) {
+    if (keepFar && out.decide.length && gm.act !== 'jump') {
+      gm.x = from.x;
+      gm.y = from.y;
+    }
+    const was = gm.act;
+    const ev = wait(g, DT);
+    t += DT;
+    if (gm.act === 'jump' && was !== 'jump') {
+      out.decide.push(t);
+      if (out.decide.length === 1) out.to = { x: gm.ax, y: gm.ay };
+    }
+    out.steps.push({ t, x: gm.x, y: gm.y, act: gm.act, cd: gm.jumpCd ?? 0 });
+    for (const e of ev) out.events.push({ t, e });
+  }
+  return out;
+}
+
+test("ITS ROCKET JUMP, THE ART CHAT'S (art/golem_rocket_fx.ts, behind GOLEM_ROCKET, ON at his yes of 3 Nov 2026): held where it stands for its half second's take-off; its blast at frame 15, carried through the air to its landing at 36, standing up till 56; its next jump 3.5 s from its landing", () => {
+  assert.equal(GOLEM_ROCKET.on, true, 'on at his “Yes, switch it on (Recommended)”');
+  GOLEM_ROCKET.on = false;
+  assert.equal(G.jump.high, 46, "off, the stand-in's height");
+  GOLEM_ROCKET.on = true;
+  try {
+    assert.equal(G.jump.high, 92, "on, twice the stand-in's (his “Yes, but higher (Recommended)”)");
+    assert.deepEqual([ROCKET.blast, ROCKET.land, ROCKET.end, ROCKET.flight], [15, 36, 56, 21]);
+    const r = rocketRun(1 + 56 / 30 + 0.5);
+    const t0 = r.decide[0];
+    assert.ok(t0 > 0, 'it decides to jump');
+    const since = (t: number): number => t - t0;
+    // (THE TAKE-OFF: held where it stands, no blast yet)
+    const held = r.steps.filter((s) => s.t >= t0 && since(s.t) < ROCKET.blast / 30 - 1e-9);
+    assert.ok(held.length >= 28, `held ${held.length} steps`);
+    for (const s of held) assert.ok(Math.hypot(s.x - r.from.x, s.y - r.from.y) < 1e-9 && s.act === 'jump', `held where it stands at ${since(s.t).toFixed(3)} s`);
+    const of = (t: string): { t: number; e: GameEvent }[] => r.events.filter((q) => q.e.t === t && q.t >= t0);
+    // (THE BLAST at frame 15: the stand-in's bomb going off, its shake and its sound, moved there, where it took off)
+    const blasts = of('bombsAway');
+    assert.equal(blasts.length, 1, 'one blast');
+    const b = blasts[0];
+    assert.ok(Math.abs(since(b.t) - ROCKET.blast / 30) <= DT + 1e-9, `its blast ${since(b.t).toFixed(3)} s after it decided (frame ${(since(b.t) * 30).toFixed(1)})`);
+    assert.ok(b.e.t === 'bombsAway' && Math.hypot(b.e.x - r.from.x, b.e.y - r.from.y) < 1e-9, 'where it took off');
+    assert.ok(b.e.t === 'bombsAway' && b.e.rocket && Math.hypot(b.e.rocket.x1 - r.to.x, b.e.rocket.y1 - r.to.y) < 1e-9 && b.e.rocket.flight === ROCKET.flight, 'its rocket: where it comes down, its flight');
+    assert.ok(r.events.some((q) => q.t === b.t && q.e.t === 'shake' && q.e.amount === 1.5), 'its shake, with its blast');
+    assert.ok(!r.events.some((q) => q.t >= t0 && q.t < b.t && (q.e.t === 'shake' || q.e.t === 'golemArrive')), 'nothing before it');
+    // (THE FLIGHT: steady from where it took off to where it comes down, 0.7 s)
+    const mid = r.steps.find((s) => since(s.t) >= (ROCKET.blast + ROCKET.flight / 2) / 30)!;
+    const along = Math.hypot(mid.x - r.from.x, mid.y - r.from.y) / Math.hypot(r.to.x - r.from.x, r.to.y - r.from.y);
+    assert.ok(Math.abs(along - 0.5) < 0.05, `half way along half way through its flight (${along.toFixed(3)})`);
+    // (THE LANDING at frame 36: the stand-in's slam, there; its wait from then)
+    const lands = of('golemArrive');
+    assert.equal(lands.length, 1, 'one landing');
+    const l = lands[0];
+    assert.ok(Math.abs(since(l.t) - ROCKET.land / 30) <= DT + 1e-9, `its landing ${since(l.t).toFixed(3)} s after it decided (frame ${(since(l.t) * 30).toFixed(1)})`);
+    assert.ok(l.e.t === 'golemArrive' && l.e.rocket && Math.hypot(l.e.x - r.to.x, l.e.y - r.to.y) < 1e-9, 'where it comes down, its rocket');
+    // (ITS FIST SLAM: it lands as its ground pound strikes: his “The jump needs to include the fist slam.  Thats kinda the whole
+    // point”, 3 Nov 2026: the one it came down by struck, the pound's shake)
+    assert.ok(r.events.some((q) => q.t === l.t && q.e.t === 'shake' && q.e.amount === 5), 'its ground pound’s shake, with its landing');
+    assert.ok(r.events.some((q) => q.t === l.t && q.e.t === 'hit' && !q.e.onHero), 'its fist slam strikes the one it came down by');
+    assert.ok(!r.events.some((q) => q.e.t === 'golemPound'), 'its crater and dust its landing’s own pictures, not the pound’s');
+    assert.equal(r.steps.find((s) => s.t === l.t)!.cd, G.jump.wait, 'its wait from its landing');
+    // (STANDING UP till frame 56, where it came down; then itself again)
+    const up = r.steps.filter((s) => s.t > l.t && s.act === 'jump');
+    for (const s of up) assert.ok(Math.hypot(s.x - r.to.x, s.y - r.to.y) < 1e-9, 'it stands up where it came down');
+    const done = r.steps.find((s) => s.t > l.t && s.act !== 'jump')!;
+    assert.ok(done && Math.abs(since(done.t) - ROCKET.end / 30) <= DT + 1e-9, `done ${since(done.t).toFixed(3)} s after it decided (frame ${(since(done.t) * 30).toFixed(1)})`);
+    // (ITS NEXT JUMP: put back far off each step it is not jumping, it jumps again 3.5 s after its landing, not before)
+    const again = rocketRun(1 + 56 / 30 + G.jump.wait + 0.5, true);
+    const land1 = again.events.find((q) => q.e.t === 'golemArrive' && q.t >= again.decide[0])!.t;
+    assert.ok(again.decide.length >= 2, 'it jumps again');
+    assert.ok(Math.abs(again.decide[1] - land1 - G.jump.wait) <= 2 * DT + 1e-9, `again ${(again.decide[1] - land1).toFixed(3)} s after its landing`);
+  } finally {
+    GOLEM_ROCKET.on = false;
+  }
+  try {
+  // (off, the stand-in as it was: its blast as it decides, down 0.7 s on, itself again then)
+  const r = rocketRun(1.5);
+  const t0 = r.decide[0];
+  const b = r.events.find((q) => q.e.t === 'bombsAway')!;
+  const l = r.events.find((q) => q.e.t === 'golemArrive' && q.t > t0)!;
+  assert.ok(b && b.t === t0 && b.e.t === 'bombsAway' && !b.e.rocket, 'off: its blast as it decides');
+  assert.ok(l && Math.abs(l.t - t0 - G.jump.long) <= DT + 1e-9 && l.e.t === 'golemArrive' && !l.e.rocket, `off: down ${(l.t - t0).toFixed(3)} s on`);
+  assert.ok(r.steps.find((s) => s.t === l.t)!.act !== 'jump', 'off: itself again as it lands');
+  assert.ok(r.steps.some((s) => s.t > t0 && s.t < l.t && Math.hypot(s.x - r.from.x, s.y - r.from.y) > 0.5), 'off: on its way at once');
+  } finally {
+    GOLEM_ROCKET.on = true;
+  }
+});
+
+test('left far behind, her Golem is whistled up beside her again; when she falls, it winds down where it stands and is gone', () => {
+  const g = room();
+  use(g, 1, 3, 0);
+  g.golem!.x = g.hero.x + G.lost + 2;
+  const ev = wait(g, 0.2);
+  assert.ok(ev.some((e) => e.t === 'golemArrive'));
+  assert.ok(Math.hypot(g.golem!.x - g.hero.x, g.golem!.y - g.hero.y) < 2.5);
+  // (the practice room only knocks the wind out of her: out of it, she falls)
+  g.practice = false;
+  g.hero.life = 1;
+  g.hero.invuln = 0;
+  inner(g).die();
+  assert.equal(g.golem!.act, 'down', 'it winds down');
+  assert.equal(g.over, true);
+});
+
+test('her Blast Jump carries her to the spot; what is by her is hurt and blown away, and nothing hurts her in the air', () => {
+  const g = room();
+  const by = dummy(g, 0.8, 0.3);
+  const x0 = by.x;
+  const y0 = by.y;
+  const h = g.hero;
+  const from = { x: h.x, y: h.y };
+  const c = emptyControls();
+  c.evade = true;
+  c.evadeX = h.x - 5;
+  c.evadeY = h.y;
+  g.update(DT, c);
+  const ev = [...g.events];
+  g.events.length = 0;
+  assert.ok(ev.some((e) => e.t === 'blastJump'));
+  assert.ok(h.invuln > 0, 'nothing hurts her in the air');
+  const rest = wait(g, TINKER_TUNE.blast.secs + 0.3);
+  assert.ok(rest.some((e) => e.t === 'blastLand'));
+  assert.ok(Math.abs(h.x - (from.x - 5)) < 0.3 && Math.abs(h.y - from.y) < 0.3, 'she comes down on the spot');
+  assert.ok(hurt(by) > 0, 'what was by her is hurt');
+  assert.ok(Math.hypot(by.x - x0, by.y - y0) > 0.5, 'and blown away');
+});

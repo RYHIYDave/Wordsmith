@@ -2,11 +2,14 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
+/** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
+export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
-import { WORD_COLOR } from '../art/icons';
+import { WORD_COLOR, itemPic } from '../art/icons';
 import type { IconArt } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { SPELL_TONES } from '../art/spells';
@@ -16,7 +19,7 @@ import type { GateArt, Strip } from '../art/gates';
 import { SPIKE_SPOTS, SPIKE_STEPS } from '../art/hazards';
 import type { HazardArt } from '../art/hazards';
 import { WALL_LOOK } from '../art/ground';
-import { DOOR_WALLS, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
+import { DOOR_WALLS, WHOLE_WALLS, wholeFaces, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
@@ -37,10 +40,12 @@ import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
 import { LEDGE_H, WALL_H } from '../engine/iso';
-import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
+import { drawAura, drawGlow, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { AIM, BODIES, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
+import { WARLOCK_TUNE } from '../game/warlock';
+import { AIM, BODIES, MONSTERS, OWN_MOVES, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
+import { moveAge, frenzyShift } from '../game/action_f4';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { MELD_DUST_COLOR, withParts } from '../game/melds';
@@ -52,7 +57,7 @@ import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
-import { Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
+import { Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, paintedNear, PHASE_APART } from './figure';
 import { drawChargeLane } from '../art/charge_lane';
 import { drawAimLine, drawBurningSmoke, drawGreatArrow, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
 import { skullAt, spearHeight } from './mob_world';
@@ -60,6 +65,7 @@ import { PACK_MARKS, drawPackMark } from './pack_marks';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
+import { VeteranFx } from './veteran_fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting, shiftM3, tickM3, tintM3 } from './melds3';
 import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
@@ -68,6 +74,21 @@ import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
+import { YARD_DARK, YARD_SKY_LIFT, YARD_VIGNETTE, YardView } from './yard';
+import { PrisonView } from './prison';
+import { ChapelView } from './chapel';
+import { LairView } from './lair';
+import { TombView } from './tomb';
+import { CastleView } from './castle';
+import { GroundsView } from './grounds';
+import type { TinkererFx } from './tinkerer_fx';
+import { TOMB_GATE, tombGateDropAt, tombGateSlam } from '../art/tomb_gate';
+import type { LookView } from './looks';
+import { prisonDoorAnchor, prisonDoorTiles } from '../game/prison_way';
+import { YARD_GATE, yardGateDropAt, yardGateSlam } from '../art/yard_gate';
+import { PRISON_GATE, prisonGateDropAt, prisonGateSlam } from '../art/prison_gate';
+import { CHAPEL_GATE, chapelGateDropAt, chapelGateSlam } from '../art/chapel_gate';
+import { LAIR_GATE, lairGateDropAt, lairGateSlam } from '../art/lair_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
@@ -86,14 +107,36 @@ import { act1Fx } from './act1_fx/index';
 import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
+import { onTop } from '../game/act2/quiettower';
+/** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
+const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
 import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
+import { QUEEN_ACTION } from '../art/carrion_queen_action';
+import { eclipseDark } from '../art/carrion_queen_action_fx';
+import { eclipseNow, eclipsePools } from '../game/act1_rules/queen';
+import { operationNow } from '../game/act1_rules/physician';
+import { FIELD, opDark } from '../art/physician_action_fx';
 import { blinkNowhere, gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
+import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
+// (THE GOLEM'S ROCKET JUMP AND ITS RUN, the art chat's, behind GOLEM_ROCKET: off until he has seen them in the game and said yes)
+import { GOLEM_ROCKET, ROCKET, RUN_STRIDE, golemRocketFrames, golemRocketFx, golemRunFrames, rocketShadow, rocketUp } from '../art/golem_rocket_fx';
+import { chargeFrame } from '../dev/golem_moves';
+import type { ContraptionArt } from '../art/tinkerer_art';
+// (THE RANGER'S COMPANIONS: their pictures, the art chat's, behind COMPANIONS_ART_ON)
+import { COMP_SHADOW, makeCompanionArt } from '../art/companions_art';
+import { strideOf } from '../art/companions_art_moves';
+import type { CompanionKind } from '../game/companions';
+import type { Clip } from '../art/actor_types';
+import { TINKER_TUNE } from '../game/tinkerer';
+// (THE HIGH CITY, THE ROYAL CARDS: the crests over touched enemies, and the cards they drop)
+import { drawRoyalCrest, royalCardSprite, royalLabelColor } from './royal_cards';
+import { ROYAL_NAMES } from '../game/royal_cards';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -146,6 +189,17 @@ export interface Art {
  * dark it is in the corners (in a dungeon, in town).
  */
 const SHADOW = 0.7;
+/**
+ * HER CONTRAPTIONS MADE EASIER TO SEE. His word, 2 Nov 2026, 21:13: “And it’s really hard to see the contraptions once you get the
+ * passive skill” (her tree's Contraption: each a little tripod mortar 15 game pixels high, dark brass on the dark floor). Shown
+ * three ways in play (con_options.png: a cyan ring, twice as big, both), his pick: “A: cyan ring only”. `ring`: the friend's cyan
+ * ring on the floor round each set up; `scale`: drawn so many times as big (1: as painted).
+ */
+export const CON_SEEN = { on: true, ring: true, scale: 1 };
+/** How wide the Tinkerer's Golem's shadow is (tiles round, as a monster's `r`): its broad feet and its fist planted. */
+const GOLEM_SHADOW = 0.6;
+/** (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET) The frame of its rocket jump (30 a second from deciding to jump, art/golem_rocket_fx.ts) `actT` seconds into it. */
+const rocketFrame = (actT: number): number => Math.max(0, Math.min(ROCKET.end, Math.floor(actT * 30 + 1e-6)));
 const FAR_DARK = 0.88;
 const NEAR_POOL = 380;
 const NEAR_LIFT = 0.36;
@@ -155,6 +209,8 @@ const VIGNETTE_TOWN = 0.4;
 const WARM_MS = 2;
 /** Where there is no painter (render/painter.ts): one frame of a heavy figure is painted every this many times the world is drawn. */
 const HEAVY_EVERY = 4;
+/** A boss below this share of its life has its death painted next by the painter (Painter.dieFirst). */
+const DIE_SOON = 0.6;
 const WARM_ENTER_MS = 90;
 
 /** A light on a monster's picture lights the floor too if it is at least this big, in game pixels. */
@@ -178,6 +234,8 @@ interface Stand {
   scale: number;
   /** 1 = solid; less for phantoms and afterimages. */
   alpha: number;
+  /** Drawn added to what is under it ('lighter'), as light is (floor 1's daylight: render/tomb.ts). */
+  add?: boolean;
   /** The hero: the scarf and the feather that fly from the figure are drawn with it, behind and in front. */
   figure: Figure | null;
   /**
@@ -424,12 +482,78 @@ export class Renderer {
   private heavy: MonsterFigure[] = [];
   /** THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (render/painter.ts), if the game has one. */
   painter: Painter | null = null;
+  /** The bosses whose death has been asked to be painted next (Painter.dieFirst, Bestiary.dieFirst); begun again with each floor. */
+  private dieSoon = new Set<MonsterFigure>();
+  private dieSoonFor: unknown = null;
   /** THE FIRST FIVE FLOORS, drawn: the mine shaft and its cage, the stairwell's opening (render/dress.ts). */
   readonly dress: FloorDress;
   /** What the renderer lends it. */
   private readonly stage: Stage;
   /** THE FIRST FIVE FLOORS, drawn: each floor's own pieces and its moments (render/pieces.ts). */
   readonly pieces: FloorPieces;
+  /** THE HEADSMAN'S YARD, floor 2's boss hall outdoors (render/yard.ts). */
+  readonly yard: YardView;
+  /** FLOOR 3, THE BLACK IRON PRISON (render/prison.ts, behind PRISON). */
+  readonly prison = new PrisonView();
+  /** FLOOR 1, THE KING'S TOMB (render/tomb.ts, behind TOMB). */
+  readonly tomb = new TombView();
+  /** THE FIRST TOWN AS THE CASTLE'S HALL (render/castle.ts, behind CASTLE_HALL). */
+  readonly castle = new CastleView();
+  /** FLOOR 4, THE BURIED CHAPEL OF BONES (render/chapel.ts, behind CHAPEL). */
+  readonly chapel = new ChapelView();
+  /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
+  readonly lair = new LairView();
+  /** FLOOR 2, THE PRISON'S GROUNDS AT NIGHT (render/grounds.ts, behind GROUNDS). */
+  readonly grounds = new GroundsView();
+  /** (FLOOR 2, THE PRISON'S GROUNDS: this frame's level while the sky is over one of its courtyards: only what is not behind its far walls is drawn) */
+  private groundsOnly: Game['level'] | null = null;
+  /** THE FIRST FIVE FLOORS' NEW LOOKS (render/looks.ts): the one of the floor being drawn, if any (set as each frame's floor is drawn). */
+  private lookNow: LookView | null = null;
+  /** The new look of this level's floor, if it has one on. */
+  lookOf(L: Game['level']): LookView | null {
+    for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    return null;
+  }
+  /** A picture of the game's own walls (a slanting wall) in the look of the floor being drawn: the prison's colours on floor 3. */
+  private lookGrade(sp: Sprite): Sprite {
+    return this.lookNow ? this.lookNow.graded(sp) : sp;
+  }
+  /** (the game's own ground in each look's colours, made the first time each is wanted) */
+  private lookGrounds = new Map<LookView, { of: GroundArt; g: GroundArt }>();
+  /**
+   * THE GAME'S OWN GROUND in the look of the floor being drawn (its ledges, lips and rims, its stairs between heights, its pits):
+   * the looks' art has none of these, so the Crypt's are drawn in the look's colours, and its floor is the look's own flags.
+   */
+  private lookGround(): GroundArt {
+    const G = this.art.ground;
+    const look = this.lookNow;
+    if (!look) return G;
+    const had = this.lookGrounds.get(look);
+    if (had && had.of === G) return had.g;
+    const k = (sp: Sprite): Sprite => look.graded(sp);
+    const ks = (list: Sprite[]): Sprite[] => list.map(k);
+    const g: GroundArt = {
+      ...G,
+      floor: (tx: number, ty: number) => look.flags(tx, ty),
+      ledgeLeft: ks(G.ledgeLeft),
+      ledgeRight: ks(G.ledgeRight),
+      lipLeft: k(G.lipLeft),
+      lipRight: k(G.lipRight),
+      rimLeft: k(G.rimLeft),
+      rimRight: k(G.rimRight),
+      stairsN: k(G.stairsN),
+      stairsNSide: k(G.stairsNSide),
+      stairsW: k(G.stairsW),
+      stairsWSide: k(G.stairsWSide),
+      pit: k(G.pit),
+      pitLeft: ks(G.pitLeft),
+      pitRight: ks(G.pitRight),
+    };
+    this.lookGrounds.set(look, { of: G, g });
+    return g;
+  }
+  /** (the yard's floor, this frame, while the hero is in it: only it, its walls and its way in are drawn) */
+  private yardOnly: Game['level']['floor'] | null = null;
   /** Whether this frame's level is laid with them. */
   private dressed = false;
   /** ACT 1, THE DESCENT: the outdoor ground of a floor of it, painted in pieces (render/outdoor.ts). */
@@ -455,6 +579,8 @@ export class Renderer {
   private fallenFor: unknown = null;
   /** The hero as a moving figure: which frame, the scarf and the feather, what they do when left standing. */
   readonly figure = new Figure();
+  /** THE VETERAN (game/veteran.ts, behind VETERAN): his frame while a move plays, and what his blows throw off (render/veteran_fx.ts). */
+  readonly vetFx = new VeteranFx();
   /** Which hero the figure was last asked for (a new character starts over). */
   private figureOf = '';
   /** The hero's life as a bar over their head: when it is there and what it shows (lifebar.ts). */
@@ -480,6 +606,13 @@ export class Renderer {
    */
   private lowWalls(L: Game['level']): Uint8Array {
     if (!WALL_LOOK.away) return L.low;
+    // (WHOLE_WALLS: on floors 1 to 5 every wall stands, and none stands again beside a door: render/walls.ts)
+    if (this.wholeHere(L)) {
+      if (!this.noneAway || this.noneAway.length !== L.floor.w * L.floor.h) this.noneAway = new Uint8Array(L.floor.w * L.floor.h);
+      this.doorBack = null;
+      this.awayFor = null;
+      return this.noneAway;
+    }
     const key = WALL_LOOK.tall * 1000 + WALL_LOOK.fade * 2 + (WALL_LOOK.faces ? 1 : 0) + (DOOR_WALLS.on ? 100000 : 0);
     if (this.awayGrid && this.awayFor === L && this.awayKey === key) return this.awayGrid;
     this.awayGrid = wallsAway(L.floor, WALL_LOOK);
@@ -493,6 +626,56 @@ export class Renderer {
     this.awayFor = L;
     this.awayKey = key;
     return this.awayGrid;
+  }
+
+  /** (WHOLE_WALLS) Does every wall stand on the floor being drawn; the game and the clock of this frame (for the slanting walls). */
+  private wholeNow = false;
+  private gameNow: Game | null = null;
+  private clockNow = 0;
+  /** (WHOLE_WALLS) An empty grid: no wall left out. */
+  private noneAway: Uint8Array | null = null;
+  /** (WHOLE_WALLS) Does every wall stand on this level: floors 1 to 5 of the dungeon, the switch on? */
+  wholeHere(L: Game['level']): boolean {
+    return WHOLE_WALLS.on && WALL_LOOK.faces && !L.town && L.floor.depth >= 1 && floorLook(L.floor.depth) >= 1 && floorLook(L.floor.depth) <= 5;
+  }
+  /** (WHOLE_WALLS) How solid each wall tile is drawn now (1 solid, WHOLE_WALLS.faint seen through), and when it was last drawn. */
+  private wallFade = new Map<number, { a: number; t: number }>();
+  /**
+   * (WHOLE_WALLS) How solid a wall tile is drawn: faint where it stands in front of the hero within a wide stretch either side of
+   * him (wholly faint near him, less so toward its edge), or in front of a monster in sight (a man's width); fading over
+   * WHOLE_WALLS.secs. (px, py): the wall tile's top corner on the screen; `depth` its depth.
+   */
+  private wallVeil(game: Game, idx: number, px: number, py: number, depth: number, t: number): number {
+    const W = WHOLE_WALLS;
+    const tall = WALL_LOOK.tall;
+    // (how much of the wall is wanted, for a figure at (fx, fy) at depth d, `half` pixels either side of it)
+    const want = (fx: number, fy: number, d: number, half: number, full: number): number => {
+      if (d >= depth - 0.5) return 1;
+      if (py - tall > fy + 30 || py + 16 < fy - 72) return 1;
+      const off = Math.max(0, Math.abs(px - fx) - 16);
+      if (off >= half) return 1;
+      if (off <= half * full) return W.faint;
+      return W.faint + ((1 - W.faint) * (off - half * full)) / (half * (1 - full));
+    };
+    let a = 1;
+    const at = this.wallHero;
+    if (at) a = Math.min(a, want(at.x, at.y, at.d, W.across, 0.6));
+    if (a > W.faint) {
+      for (const m of game.monsters) {
+        if (m.dead || !m.seen) continue;
+        a = Math.min(a, want(wx(this.cam, m.x, m.y), wy(this.cam, m.x, m.y), m.x + m.y, 30, 0.5));
+        if (a <= W.faint) break;
+      }
+    }
+    const was = this.wallFade.get(idx);
+    let now = a;
+    if (was) {
+      const dt = Math.max(0, Math.min(0.1, t - was.t));
+      const rate = (1 - W.faint) / W.secs;
+      now = was.a < a ? Math.min(a, was.a + rate * dt) : Math.max(a, was.a - rate * dt);
+    }
+    this.wallFade.set(idx, { a: now, t });
+    return now;
   }
 
   /** (THE WALL BESIDE A DOOR) The walls that stand again beside the doors of this level (render/walls.ts, `doorWallsBack`), or null. */
@@ -568,13 +751,17 @@ export class Renderer {
     // (THE FIRST FIVE FLOORS: while its opening is played from its film, the film is the stairwell: render/dress.ts)
     if (st && st.open && L.explored[st.y * L.floor.w + st.x] && !this.dress.stairPlaying(game)) {
       // (EXITS: the town's stairs down, the art chat's, three tiles by two, once made)
-      const sp = (L.town ? this.dress.townWays(game)?.stairs : null) ?? art.stair[st.way];
+      // (THE FIRST TOWN AS THE CASTLE'S HALL: its own stairs down, the hall's stone turning to floor 1's: art/castle_hall.ts)
+      const sp = (L.town ? (this.castle.on(L) ? this.castle.A().stairs(st.way) : this.dress.townWays(game)?.stairs) : null) ?? art.stair[st.way];
       g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
     }
     // (EXITS: floor 1's stairs up to the town, seen through its gate's arch, with the floor: anchored as the arch's strips are)
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: through its gate the passage through the castle's wall and the day beyond, the road out
+    // to the Quarry, anchored so too: art/castle_hall.ts)
+    const hall = this.castle.on(L) ? this.castle.A().gate : null;
     for (const d of L.doors) {
       const s = d.spot;
-      const sp = s.kind === 'waygate' ? this.dress.stairsUp(game, s) : null;
+      const sp = s.kind === 'waygate' ? (hall && L.doors[W.gate] === d ? hall.beyond(s.alongX) : this.dress.stairsUp(game, s)) : null;
       if (!sp || !doorTiles(L.floor, s).some((i) => L.explored[i] === 1)) continue;
       const face = doorFace(s);
       const wide = PILLAR / 32;
@@ -597,9 +784,12 @@ export class Renderer {
   /** THE WAYS' PICTURES for this level: its floor's; the town's the first floor's (THE CAMP, game/camp.ts: its waypoint in the city's grey stone, art/hub2.ts CITY). */
   private waysOf(L: Game['level']): ReturnType<typeof lookWays> {
     if (isCamp(L)) return (this.cityWays ??= { stair: lookWays(1).stair, way: makeWaypointArt(CITY) });
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: its waypoint's dais in the castle's stone: art/castle_hall.ts)
+    if (this.castle.on(L)) return (this.hallWays ??= { stair: lookWays(1).stair, way: this.castle.A().way });
     return lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
   }
   private cityWays: ReturnType<typeof lookWays> | null = null;
+  private hallWays: ReturnType<typeof lookWays> | null = null;
   /** (THE CAMP) Its three people's pictures, painted once each as they are first wanted. */
   private folkFrames = new Map<string, Sprite>();
 
@@ -656,7 +846,7 @@ export class Renderer {
    * (The stone on either side of a door is wall, and the walls' own rules draw it or leave it out:
    * render/walls.ts.)
    */
-  private standDoors(L: Game['level'], cam: Cam, game: Game): void {
+  private standDoors(L: Game['level'], cam: Cam, game: Game, fx: Fx): void {
     if (L.doors.length === 0) return;
     const A = this.art.gates;
     const f = L.floor;
@@ -686,11 +876,30 @@ export class Renderer {
         // (the boss's, heavy and carved; or a plain one: a lever's, a locking room's)
         const boss = s.kind === 'bossgate';
         const wide = PILLAR / 32;
-        const pillar = A.pillar(boss);
+        // (THE FIRST TOWN AS THE CASTLE'S HALL: the town's gate in the castle's stone, its quoins and its ring of voussoirs; the
+        // portcullis and the bars the game's own: art/castle_hall.ts)
+        const hallGate = this.castle.on(L) && L.ways && L.doors[L.ways.gate] === d ? this.castle.A().gate : null;
+        const pillar = hallGate ? hallGate.pillar : A.pillar(boss);
         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
         // (EXITS: floor 1's gate is the stairs up to the town, the art chat's, drawn with the floor: its portcullis is gone)
-        if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
-        strips(A.arch(s.alongX, boss, boss && d.want === 0), -wide, 0);
+        // (THE HEADSMAN'S YARD's own gate, YARD_GATE: it falls by its own beat, held juddering, dropped, a bounce; the mark on its
+        // keystone lit as it lands, its dust and sparks, a little shake: art/yard_gate.ts)
+        // (FLOOR 3, THE BLACK IRON PRISON's own gate, PRISON_GATE: the same beat, its own pictures: art/prison_gate.ts)
+        // (FLOOR 4, THE BURIED CHAPEL's bone grille, CHAPEL_GATE: the same beat, its own pictures, the maw alight: art/chapel_gate.ts)
+        const prisonGate = boss && d.want === 0 && d.fell !== undefined && PRISON_GATE.on && this.prison.on(L);
+        const chapelGate = boss && d.want === 0 && d.fell !== undefined && CHAPEL_GATE.on && this.chapel.on(L);
+        // (FLOOR 5, THE TEMPLE's hooked bars, LAIR_GATE: the same beat, the skull alight: art/lair_gate.ts)
+        const lairGate = boss && d.want === 0 && d.fell !== undefined && LAIR_GATE.on && this.lair.on(L);
+        // (FLOOR 1, THE KING'S TOMB's gate, TOMB_GATE: the same beat, the lock alight: art/tomb_gate.ts)
+        const tombGate = boss && d.want === 0 && d.fell !== undefined && TOMB_GATE.on && this.tomb.on(L);
+        const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : prisonGate ? prisonGateDropAt((game.time - d.fell!) * 30) : chapelGate ? chapelGateDropAt((game.time - d.fell!) * 30) : lairGate ? lairGateDropAt((game.time - d.fell!) * 30) : tombGate ? tombGateDropAt((game.time - d.fell!) * 30) : null;
+        if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, drop ? drop.raise : d.open * GATE_UP), -wide, wide);
+        strips(hallGate ? hallGate.arch(s.alongX) : A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
+        if (drop && drop.slam >= 0) {
+          const [x, y] = at(1.5, wide);
+          put(x + y + 0.3, prisonGate ? prisonGateSlam(s.alongX, drop.slam) : chapelGate ? chapelGateSlam(s.alongX, drop.slam) : lairGate ? lairGateSlam(s.alongX, drop.slam) : tombGate ? tombGateSlam(s.alongX, drop.slam) : yardGateSlam(s.alongX, drop.slam), x, y);
+          if (drop.slam < 4) fx.shake = Math.max(fx.shake, 2);
+        }
         // (EXITS, the town's gate: barred until the Fleshmancer is beaten, its bars struck off the first time he comes in
         // sight of it after, and what is left of them lying at its foot from then on: the art chat's, art/town_ways.ts)
         const tw = L.town && L.ways && L.doors[L.ways.gate] === d ? this.dress.townWays(game) : null;
@@ -1018,6 +1227,8 @@ export class Renderer {
   goal: Station | null = null;
   /** Touch: the monster the hero is locked onto (its id): a ring is drawn round its feet. Set every frame by the controls. */
   lockId: number | null = null;
+  /** THE WARLOCK: what his full pact bar says to do, by what is played with (main.ts sets it each frame). */
+  pactHint = 'TAP HIM';
   /**
    * For measuring only (`__dbg.renderer.skip.add('ground')` in a playtest): parts of the picture to
    * leave out, to find what a slow frame is spending its time on. 'ground' = the hero's ground
@@ -1038,6 +1249,7 @@ export class Renderer {
     // (ACT 1: the outdoor ground's pieces painted by the painter's ground worker, where there is one)
     this.outdoor.painterOf = () => this.painter;
     this.pieces = new FloorPieces(() => this.painter);
+    this.yard = new YardView();
     this.stage = {
       cam: this.cam,
       stand: (d, sp, x, y, alpha = 1) => this.stand(d, sp, x, y, null, 0, 1, alpha),
@@ -1124,8 +1336,230 @@ export class Renderer {
     return v.cv;
   }
 
-  private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0): void {
-    this.stands.push({ d, q: this.stands.length, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase });
+  /** THE BRAWLER's slip: his after-images where he has weaved (the picture, where, and how long ago), in the friend's cyan, fading. */
+  private slipGhosts: { s: Sprite; x: number; y: number; t: number }[] = [];
+
+  /** THE TINKERER's minions' pictures, made the first time one is seen. */
+  private tinkerArt: { golem: ActorArt; con: { front: ContraptionArt; back: ContraptionArt } } | null = null;
+  /** (her tree's GUN ARM) Her Golem's pictures with the tesla coil for its arm, and its charged shots' frames, made as they are wanted. */
+  private teslaArt: ActorArt | null = null;
+  private chargeArt = new Map<string, Sprite[]>();
+  /** (her tree's CONTRAPTION) its pictures loaded with what it fires, made as they are wanted. */
+  private conArt = new Map<string, { front: ContraptionArt; back: ContraptionArt }>();
+
+  /** Her Contraptions (in the air, springing open, set up, kicked by a shot, broken) and her Golem, stood among the rest. */
+  private drawTinkerers(game: Game, cam: Cam, t: number, W: number, H: number, tfx: TinkererFx): void {
+    /** Her brew's cyan (dev/contraption_fx.ts BREW): what glows on a friend. */
+    const BREW_CYAN = '#22d0e0';
+    const art = (this.tinkerArt ??= { golem: makeGolemArt(), con: makeContraptionArt() });
+    const C = TINKER_TUNE.contraption;
+    const at = (c: Clip, k: number): Sprite => c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(k * c.fps + 1e-6)))];
+    const turned = (fx: number, fy: number, s: Sprite): Sprite => (fx - fy < 0 ? flipSprite(s) : s);
+    // (the art's moments, from her letting go: it comes down, bounces, springs open: dev/contraption_fx.ts CT)
+    const LAND = 12 / 30;
+    const SETTLE = 22 / 30;
+    const OPEN0 = 24 / 30;
+    for (const c of game.contraptions) {
+      let x = c.x;
+      let y = c.y;
+      let lift = 0;
+      // (her tree's CONTRAPTION: loaded with what it fires, her pick, bombs or energy)
+      const ammo = game.contraptionAmmo();
+      const con = ammo ? (this.conArt.get(ammo) ?? this.conArt.set(ammo, makeContraptionArt(ammo)).get(ammo)!) : art.con;
+      const set = c.fx + c.fy < -0.2 ? con.back : con.front;
+      let sp: Sprite;
+      if (c.broke >= 0) sp = at(set.broke, c.broke);
+      else if (c.t < LAND) {
+        const u = c.t / LAND;
+        x = c.x0 + (c.x - c.x0) * u;
+        y = c.y0 + (c.y - c.y0) * u;
+        lift = 14 + 26 * 4 * u * (1 - u) - 14 * u;
+        sp = set.tumble[Math.floor(c.t * 24) % set.tumble.length];
+      } else if (c.t < SETTLE) {
+        const u = (c.t - LAND) / (SETTLE - LAND);
+        lift = 9 * 4 * u * (1 - u);
+        sp = set.tumble[(Math.floor(c.t * 18) % 2) * 4];
+      } else if (c.t < OPEN0) sp = set.tumble[0];
+      else if (c.t < C.set) sp = at(set.open, c.t - OPEN0);
+      else if (c.shotAge < set.shot.frames.length / set.shot.fps) sp = at(set.shot, c.shotAge);
+      else sp = set.stand[0];
+      const sx = wx(cam, x, y);
+      const sy = wy(cam, x, y);
+      if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 60) continue;
+      this.stand(x + y + 0.01, turned(c.fx, c.fy, sp), sx, sy - lift, null, 0, CON_SEEN.on ? CON_SEEN.scale : 1);
+    }
+    // (her Golems: one; two with her tree's Mark II)
+    const GS = TINKER_TUNE.talents.growth;
+    for (const g of game.golems) {
+      const sx = wx(cam, g.x, g.y);
+      const sy = wy(cam, g.x, g.y);
+      if (sx > -80 && sx < W + 80 && sy > -40 && sy < H + 200) {
+        // (her tree's GUN ARM: the arm she picked, the cannon or the tesla coil)
+        const arm = game.armOf();
+        const golemArt = arm === 'tesla' ? (this.teslaArt ??= makeGolemArt('tesla')) : art.golem;
+        const back = g.fx + g.fy < -0.2;
+        const set = back ? golemArt.back : golemArt.front;
+        const clips = set.clips ?? {};
+        // (THE ART CHAT'S ROCKET JUMP, behind GOLEM_ROCKET: its own frames through it, by its frame from deciding to jump)
+        const view = back ? 'back' : 'front';
+        const gun = arm === 'tesla' ? 'tesla' : 'cannon';
+        const rocket = GOLEM_ROCKET.on && g.act === 'jump';
+        const rf = rocketFrame(g.actT);
+        let sp: Sprite;
+        if (g.act === 'walk' && GOLEM_ROCKET.on) {
+          // (ITS RUN, the art chat's gallop, by the floor it covers: RUN_STRIDE tiles a round, so that its fist and feet grip)
+          const run = golemRunFrames(view, gun);
+          sp = run[Math.floor((g.walked / RUN_STRIDE) * run.length) % run.length];
+        } else if (g.act === 'walk') {
+          const stride = set.walkStride ?? 1;
+          sp = set.walk[Math.floor((g.walked / stride) * set.walk.length) % set.walk.length];
+        } else if (rocket) sp = golemRocketFrames(view, gun)[rf];
+        else if (g.act === 'punch' && clips.attack) sp = at(clips.attack, g.actT);
+        else if (g.act === 'cannon' && clips.attack2) sp = at(clips.attack2, g.actT);
+        else if (g.act === 'pound' && clips.heavy && g.actT >= 0) sp = at(clips.heavy, g.actT);
+        else if (g.act === 'charge') {
+          // (its charged shot: the wind-up, the loop round and round while she holds, then on from the shot: chargeFrame)
+          const key = `${arm === 'tesla' ? 'tesla' : 'cannon'}:${back ? 'back' : 'front'}`;
+          let frames = this.chargeArt.get(key);
+          if (!frames) this.chargeArt.set(key, (frames = golemCharge(back ? 'back' : 'front', arm === 'tesla' ? 'tesla' : 'cannon')));
+          sp = frames[Math.max(0, Math.min(frames.length - 1, this.chargeAt(g)))];
+        }
+        else if (g.act === 'down' && clips.fall) sp = at(clips.fall, g.actT);
+        else sp = set.idle[0];
+        // (whistled out: it drops in, landing heavy; ITS ROCKET JUMP, up over the floor in its arc, its stand lifted (the art chat's
+        // pictures of it to come))
+        // (behind GOLEM_ROCKET, the art chat's: up fast, down like a stone, 92 game pixels at the top, in place of the stand-in's arc)
+        const J = TINKER_TUNE.golem.jump;
+        const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : rocket ? rocketUp(rf - ROCKET.blast) : g.act === 'jump' ? Math.sin(Math.PI * Math.min(1, g.actT / J.long)) * J.high : 0;
+        // (her tree: GROWTH SERUM, twice as big, growing and shrinking back over a quarter of a second; OVERDRIVE, her cyan
+        // pulsing over it; LIGHTNING ROD, her cyan flickering over it while the enemies go after it)
+        const grow = g.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - g.growT) / 0.25, g.growT / 0.25)) : 1;
+        let glow = g.overT > 0 && g.act !== 'down' ? 0.22 + 0.14 * Math.sin(t * 12) : 0;
+        if (game.decoys.some((d) => d.golem === g) && Math.floor(t * 15) % 4 === 0) glow = Math.max(glow, 0.55);
+        const pic = turned(g.fx, g.fy, sp);
+        // (behind GOLEM_ROCKET: everything at it, its stacks' fire and steam, laid just before its picture and just after it, lifted
+        // and turned over with it: from in front its stacks' fire is behind it, from behind over it)
+        const atIt = rocket ? golemRocketFx(view) : null;
+        if (atIt) this.stand(g.x + g.y + 0.02, turned(g.fx, g.fy, atIt.behind[rf]), sx, sy - drop, null, 0, grow);
+        this.stand(g.x + g.y + 0.02, pic, sx, sy - drop, glow > 0 ? silhouette(pic, BREW_CYAN) : null, glow, grow);
+        if (atIt) this.stand(g.x + g.y + 0.02, turned(g.fx, g.fy, atIt.over[rf]), sx, sy - drop, null, 0, grow);
+      }
+    }
+    // (behind GOLEM_ROCKET: what of its take-offs and landings stands among what stands, its flash, fire, dust and stone)
+    for (const q of tfx.rocketStands()) {
+      const sx = wx(cam, q.x, q.y);
+      const sy = wy(cam, q.x, q.y);
+      if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200) continue;
+      this.stand(q.d, q.s, sx, sy);
+    }
+  }
+
+  /** (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET) Each Golem in its rocket jump: where, which way its picture is drawn, its frame, its size. */
+  private golemsRocketing(game: Game): TinkererFx['rocketing'] {
+    const GS = TINKER_TUNE.talents.growth;
+    return game.golems.filter((g) => g.act === 'jump').map((g) => ({
+      x: g.x,
+      y: g.y,
+      view: g.fx + g.fy < -0.2 ? ('back' as const) : ('front' as const),
+      flip: g.fx - g.fy < 0,
+      f: rocketFrame(g.actT),
+      grow: g.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - g.growT) / 0.25, g.growT / 0.25)) : 1,
+    }));
+  }
+
+  /** (HER TREE'S GUN ARM) The frame of its charged shot a Golem shows: the wind-up, the loop round and round while she holds, then on from the shot (dev/golem_moves.ts chargeFrame). */
+  private chargeAt(g: Game['golems'][number]): number {
+    const held = (g.held ?? -1) < 0 ? 1e9 : Math.max(TINKER_TUNE.golem.charge.build, g.held ?? 0) * 30;
+    return Math.floor(chargeFrame(Math.floor(g.actT * 30), Math.round(held)));
+  }
+  /** (HER TREE'S GUN ARM) Each Golem charging: where, which way its picture is drawn, its gun, its frame. */
+  private golemsCharging(game: Game): TinkererFx['charging'] {
+    const arm = game.armOf();
+    const gun = arm === 'tesla' ? 'tesla' : 'cannon';
+    return game.golems.filter((g) => g.act === 'charge').map((g) => ({ x: g.x, y: g.y, view: g.fx + g.fy < -0.2 ? ('back' as const) : ('front' as const), flip: g.fx - g.fy < 0, gun, f: this.chargeAt(g) }));
+  }
+
+  /** THE RANGER'S COMPANIONS: each kind's pictures, made the first time one is seen. */
+  private readonly petArt: Partial<Record<CompanionKind, ActorArt>> = {};
+
+  /**
+   * THE RANGER'S COMPANIONS (game/companions.ts, behind COMPANIONS; their pictures the art chat's, art/companions_art.ts, his yes
+   * to all six by 30 Oct 2026): each as a figure, from in front or behind as it faces, mirrored for
+   * the screen's left; standing, going (its frames by the ground it covers, so its feet grip), its bite (the art's clip, its
+   * blow at the game's own: COMPANION_TUNE.bite), its gift painted in it; a soft shadow under it (the fliers' on the floor).
+   * Called for, it comes in over a third of a second.
+   */
+  private drawPets(g: CanvasRenderingContext2D, game: Game, cam: Cam, t: number, W: number, H: number): void {
+    for (const p of game.pets) {
+      const sx = wx(cam, p.x, p.y);
+      const sy = wy(cam, p.x, p.y);
+      if (sx < -80 || sx > W + 80 || sy < -60 || sy > H + 120) continue;
+      const art = (this.petArt[p.kind] ??= makeCompanionArt(p.kind));
+      const set = p.fx + p.fy < -0.2 ? art.back : art.front;
+      const clip = set.clips?.attack;
+      let sp: Sprite;
+      if (p.act === 'bite' && clip) sp = clip.frames[Math.max(0, Math.min(clip.frames.length - 1, Math.floor(p.actT * clip.fps + 1e-6)))];
+      else if (p.act === 'walk') {
+        const n = set.walk.length;
+        sp = set.walk[Math.floor((p.walked / strideOf(p.kind)) * n) % n];
+      } else sp = set.idle[Math.floor(t * (set.idleFps ?? 15)) % set.idle.length];
+      const come = p.act === 'arrive' ? Math.max(0, Math.min(1, p.actT / 0.3)) : 1;
+      ellipse(g, sx, sy, COMP_SHADOW[p.kind] / 45, '#000000', 0.26 * come);
+      this.stand(p.x + p.y + 0.015, p.fx - p.fy < 0 ? flipSprite(sp) : sp, sx, sy, null, 0, 1, come);
+    }
+  }
+
+  /** The hero as he was last drawn, before this frame (his shadow, Phantom Step). */
+  private heroBefore: Sprite | null = null;
+  /** (THE WARLOCK's tree: Phantom Step) each shadow's picture: him as he was the moment he stepped away. */
+  private readonly shadows = new WeakMap<object, Sprite>();
+  /**
+   * THE WARLOCK'S SHADOWS (his tree, game/talents.ts: Phantom Step): where he stepped from, him as he stood, gone dark as his
+   * smoke, an edge of the friend's cyan either side; flickering, and fading as its time runs out. A FIRST PASS, TO BE SHOWN TO
+   * THE OWNER.
+   */
+  private drawShadows(game: Game, cam: Cam, t: number): void {
+    for (const d of game.decoys) {
+      if (d.golem) continue;
+      let s = this.shadows.get(d);
+      if (!s) {
+        if (!this.heroBefore) continue;
+        s = this.heroBefore;
+        this.shadows.set(d, s);
+      }
+      const fade = Math.min(1, d.t / 0.4) * (0.85 + 0.15 * Math.sin(t * 23 + d.x));
+      const sx = wx(cam, d.x, d.y);
+      const sy = wy(cam, d.x, d.y);
+      const edge = silhouette(s, '#22d0e0');
+      this.stand(d.x + d.y - 0.002, edge, sx - 1, sy, null, 0, 1, 0.45 * fade);
+      this.stand(d.x + d.y - 0.001, edge, sx + 1, sy, null, 0, 1, 0.45 * fade);
+      this.stand(d.x + d.y, silhouette(s, '#0c0e22'), sx, sy, null, 0, 1, 0.9 * fade);
+    }
+  }
+
+  /** (THE WARLOCK's tree) The Bound Demon's figure: the demon's own pictures, played as a figure of its own. */
+  private readonly boundFig = new Figure();
+  /**
+   * THE WARLOCK'S BOUND DEMON (his tree, game/talents.ts: Bound Demon), at his side: the demon's own pictures (art/warlock_art.ts,
+   * the same as his when he changes), standing, walking, raking; torn out of him, it comes together out of nothing; burning
+   * out, it fades. A FIRST PASS, TO BE SHOWN TO THE OWNER.
+   */
+  private drawBound(game: Game, cam: Cam, W: number, H: number, dt: number): void {
+    const b = game.bound;
+    if (!b) return;
+    const sx = wx(cam, b.x, b.y);
+    const sy = wy(cam, b.x, b.y);
+    if (sx < -100 || sx > W + 100 || sy < -40 || sy > H + 160) return;
+    const art = this.art.heroes.of('warlock', { twoHanded: false, town: false, demon: true });
+    const B = WARLOCK_TUNE.talents.bound;
+    const anim = b.act === 'rake' ? 'attack' : b.act === 'walk' ? 'walk' : 'idle';
+    const sp = this.boundFig.frame(art, { anim, animT: b.actT, fx: b.fx, fy: b.fy, attackSkill: 0, attackAge: b.act === 'rake' ? b.actT : 0, attackWind: B.hit, leapK: -1, walked: b.walked }, dt, (b.x - b.y) * 16, (b.x + b.y) * 8);
+    const alpha = b.act === 'arrive' ? Math.min(1, b.actT / B.arrive) : b.act === 'out' ? Math.max(0, 1 - b.actT / B.out) : 1;
+    this.stand(b.x + b.y + 0.02, sp, sx, sy, null, 0, 1, alpha);
+  }
+
+  private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0, add = false): void {
+    this.stands.push({ d, q: this.stands.length, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase, ...(add ? { add } : {}) });
   }
 
   // =============================================================================================
@@ -1247,7 +1681,7 @@ export class Renderer {
    * diamond is drawn, lifted as it is.
    */
   private lowEdges(g: CanvasRenderingContext2D, R: Relief, idx: number, tx: number, ty: number, px: number, py: number): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const f = R.floor;
     const e = G.shadeLeft;
     const X = px - e.ax;
@@ -1268,7 +1702,7 @@ export class Renderer {
    * floor's to draw: `rimFaces`.)
    */
   private drawSunken(g: CanvasRenderingContext2D, R: Relief, L: Game['level'], dmin: number, dmax: number, smin: number, smax: number): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const f = R.floor;
     const cam = this.cam;
     const hs = f.height;
@@ -1281,6 +1715,7 @@ export class Renderer {
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
         const idx = ty * f.w + tx;
         if (hs[idx] >= 0 || f.tiles[idx] !== T_FLOOR || !L.explored[idx]) continue;
+        if (this.yardOnly && !this.yard.shows(this.yardOnly, tx, ty)) continue;
         const px = cam.ox + df * 16;
         const base = hs[idx] * LEDGE_H;
         const py = cam.oy + s * 8 - base;
@@ -1307,7 +1742,7 @@ export class Renderer {
 
   /** A tile of the room's own floor beside sunken floor: the faces of the drop, where the ground toward the eye is lower, and the lip of light on the floor's edge above each. */
   private rimFaces(g: CanvasRenderingContext2D, R: Relief, idx: number, tx: number, ty: number, px: number, py: number): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const f = R.floor;
     const v = f.variant[idx];
     const lip = G.lipLeft;
@@ -1331,7 +1766,7 @@ export class Renderer {
 
   /** A floor tile's edges against a pit: a rim where the pit lies behind it, a lip of light where the floor ends over one. */
   private pitEdges(g: CanvasRenderingContext2D, f: Floor, idx: number, tx: number, ty: number, X: number, Y: number): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const e = G.rimLeft;
     if (tx > 0 && f.tiles[idx - 1] === T_PIT) g.drawImage(G.rimLeft.img, X, Y, e.w, e.h);
     if (ty > 0 && f.tiles[idx - f.w] === T_PIT) g.drawImage(G.rimRight.img, X, Y, e.w, e.h);
@@ -1341,7 +1776,7 @@ export class Renderer {
 
   /** The pits, and then the raised floor and the stairs, of this frame (the floor pass has listed them, from the back of the screen to the front). */
   private drawRelief(g: CanvasRenderingContext2D, R: Relief): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const f = R.floor;
     const pits = this.pitTiles;
     if (pits.length) {
@@ -1434,7 +1869,7 @@ export class Renderer {
    * everything else that stands.
    */
   private cutTile(g: CanvasRenderingContext2D, f: Floor, idx: number, tx: number, ty: number, px: number, py: number, s: number, c: number, floor: boolean, up = 0): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const part = cutPart(c);
     // (cut down low by its kind; or, THE WALLS' LOOK, cut away because standing whole it would hide floor behind it)
     const low = c >= CUT_FAR_LOW || (WALL_LOOK.away && this.lowNow !== null && this.lowNow[idx] === 1);
@@ -1445,6 +1880,17 @@ export class Renderer {
       // that runs up and down the screen, or one toward the eye: seen end-on the first is a line,
       // and the second is cut away. The floor's edge along the cut is a line of light.)
       if (!floor) return;
+      // (WHOLE_WALLS: the slanting wall across a corner stands, the one toward the eye too, seen through as any wall)
+      if (this.wholeNow && (part === 'far' || part === 'near')) {
+        const sp = this.lookGrade(G.part[part].tall);
+        const depth = s + (part === 'far' ? 0.66 : 1.34);
+        if (part === 'near' && up <= 0) {
+          const fl = G.floor(tx, ty);
+          g.drawImage(G.edgeAcross.img, px - fl.ax, py - fl.ay, fl.w, fl.h);
+        }
+        this.stand(depth, sp, px, py - Math.max(0, up), null, 0, 1, this.wallVeil(this.gameNow!, idx, px, py, depth, this.clockNow));
+        return;
+      }
       if (part !== 'far') {
         if (up <= 0) {
           const fl = G.floor(tx, ty);
@@ -1464,12 +1910,13 @@ export class Renderer {
       }
       return;
     }
-    const sp = G.part[part][low ? 'low' : 'tall'];
+    // (FLOOR 3, THE BLACK IRON PRISON: its slanting walls, the Crypt's in look B's colours: render/prison.ts)
+    const sp = this.lookGrade(G.part[part][low ? 'low' : 'tall']);
     const depth = s + (part === 'far' ? 0.66 : part === 'near' ? 1.34 : 1);
     if (floor && up > 0) {
       // the wall over a half tile of raised floor stands ON that floor: as tall over the terrace as over the room's floor
       // (with one top line: the top of a whole wall, as much of it as stands over the terrace)
-      this.stand(depth, WALL_LOOK.level && !low ? G.part[part].mid : sp, px, py - up);
+      this.stand(depth, WALL_LOOK.level && !low ? this.lookGrade(G.part[part].mid) : sp, px, py - up);
       return;
     }
     // (a block taller than the game's old walls is seen through while it stands over the hero. A wall
@@ -1485,8 +1932,9 @@ export class Renderer {
 
   /** The half of a cut tile that is floor: the flagstones, cut along the line, and the shadows of the walls over it. (px, py): where its diamond is drawn, lifted as it is. */
   private halfFloor(g: CanvasRenderingContext2D, f: Floor, idx: number, tx: number, ty: number, px: number, py: number, part: WallPart): void {
-    const G = this.art.ground;
-    const sp = G.floor(tx, ty);
+    const G = this.lookGround();
+    // (FLOOR 3, THE BLACK IRON PRISON: its own dark flags)
+    const sp = this.lookNow ? this.lookNow.flags(tx, ty) : G.floor(tx, ty);
     g.save();
     g.beginPath();
     // (the floor is the half the wall is not over)
@@ -1516,7 +1964,7 @@ export class Renderer {
    * there: relief.ts.)
    */
   private raisedHalf(g: CanvasRenderingContext2D, f: Floor, idx: number, tx: number, ty: number, px: number, py: number, base: number, c: number): void {
-    const G = this.art.ground;
+    const G = this.lookGround();
     const part = cutPart(c);
     this.halfFloor(g, f, idx, tx, ty, px, py - base, part);
     const sp = G.floor(tx, ty);
@@ -1568,7 +2016,12 @@ export class Renderer {
     const fh = f.h;
     /** Is the ground at this place the kind this pass draws on? */
     const hs = f.height;
+    const yo = this.yardOnly;
+    const go = this.groundsOnly;
     const here = (x: number, y: number): boolean => {
+      // (THE HEADSMAN'S YARD: from in it, nothing of what lies behind its far walls)
+      if (yo && !this.yard.shows(yo, Math.floor(x), Math.floor(y))) return false;
+      if (go && !this.grounds.shows(go, Math.floor(x), Math.floor(y))) return false;
       if (pass < 0 || !top) return true;
       const tx = Math.floor(x);
       const ty = Math.floor(y);
@@ -1627,6 +2080,19 @@ export class Renderer {
           if (st.lights) this.propLit.push({ s: st, x: Math.round(x), y: Math.round(y) });
           if (Math.random() < 0.15 * amb) fx.mote(p.x + STONE_BY[0], p.y + STONE_BY[1], [P.white, '#b8fff8', '#22d0e0']);
         }
+      }
+    }
+    // (THE FIRST FIVE FLOORS' NEW LOOKS: what each lays flat, added where it is light, over what lies on the floor: floor 1's pools
+    // of daylight, the castle hall's slats of sun: render/looks.ts)
+    if (this.lookNow?.flats && pass <= 0) {
+      for (const q of this.lookNow.flats(L, this.clockNow)) {
+        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
+        const sx = Math.round(wx(this.cam, q.x, q.y));
+        const sy = Math.round(wy(this.cam, q.x, q.y));
+        if (sx - q.s.ax > W || sx - q.s.ax + q.s.w < 0 || sy - q.s.ay > H || sy - q.s.ay + q.s.h < 0) continue;
+        if (q.add) g.globalCompositeOperation = 'lighter';
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+        g.globalCompositeOperation = 'source-over';
       }
     }
     // (THE TRAPS) a spike floor's holes, glinting in the moment before its spikes come up; a dart wall's plate
@@ -1910,6 +2376,8 @@ export class Renderer {
     g.globalAlpha = 1;
     // (the effects that lie flat are drawn once, over the last floor to be drawn)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
+    // (THE VETERAN's that lie on the floor: the push kick's cone, the crescents' traces, rings, dust behind him: render/veteran_fx.ts)
+    if ((pass < 0 || pass === 1) && !this.skip.has('fx')) this.vetFx.drawGround(g, cam, game);
 
     // (THE NEW MONSTERS: a Boneward's spear lying where it came down, till it is picked up)
     for (const sp of game.spears) if (L.explored[Math.floor(sp.y) * f.w + Math.floor(sp.x)] && here(sp.x, sp.y)) drawSpearLying(g, this.floorAt, sp.x, sp.y, sp.fx, sp.fy);
@@ -1934,10 +2402,36 @@ export class Renderer {
     }
     if (here(h.x, h.y)) {
       // (a hero in the air is further from their shadow: it is smaller and fainter at the top of a leap)
-      const up = h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
+      // (THE VETERAN off the floor in a move: as high as the art has him, render/veteran_fx.ts)
+      const vetUp = this.vetFx.liftOf(game);
+      const up = vetUp > 0 ? Math.min(1, vetUp / 40) : h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
+    // (THE TINKERER'S GOLEMS: a soft shadow under each, as under everyone, growing with it under her Growth Serum, coming in as it
+    // drops in. His word, 2 Nov 2026, 21:05: “And the golem needs a shadow”)
+    for (const gm of game.golems) {
+      if (!here(gm.x, gm.y)) continue;
+      const GS = TINKER_TUNE.talents.growth;
+      const grow = gm.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - gm.growT) / 0.25, gm.growT / 0.25)) : 1;
+      const come = gm.act === 'arrive' ? Math.min(1, gm.actT / 0.25) : gm.act === 'jump' ? 1 - 0.45 * Math.sin(Math.PI * Math.min(1, gm.actT / TINKER_TUNE.golem.jump.long)) : 1;
+      // (behind GOLEM_ROCKET, the art chat's: shrinking and fading further as it flies twice as high)
+      const rk = GOLEM_ROCKET.on && gm.act === 'jump' ? rocketShadow(rocketFrame(gm.actT) - ROCKET.blast) : { r: 0.6 + 0.4 * come, a: come };
+      this.shadow(g, wx(cam, gm.x, gm.y), wy(cam, gm.x, gm.y), GOLEM_SHADOW * grow * rk.r, Math.min(1, SHADOW * 1.2) * rk.a);
+    }
+    // (CON_SEEN, a mock-up: the friend's cyan ring round each of her Contraptions set up)
+    if (CON_SEEN.on && CON_SEEN.ring) {
+      for (const c of game.contraptions) {
+        if (!here(c.x, c.y) || c.broke >= 0 || c.t < 22 / 30) continue;
+        const cx = Math.round(wx(cam, c.x, c.y));
+        const cy = Math.round(wy(cam, c.x, c.y));
+        const k = Math.min(1, (c.t - 22 / 30) / 0.2);
+        ellipse(g, cx, cy, 0.5 * CON_SEEN.scale, '#22d0e0', 0.14 * k);
+        g.globalAlpha = k;
+        ringDots(g, cx, cy, 0.46 * CON_SEEN.scale, '#7af4ff');
+        g.globalAlpha = 1;
+      }
+    }
     // (the Meldstone hanging over the floor has a shadow too, smaller and fainter the higher it is: art/meld_drops.ts)
     if (MELD_DROPS.on) {
       for (const dr of game.drops) {
@@ -1997,7 +2491,13 @@ export class Renderer {
     // holding their own. The warrior has two figures: with the great sword in both hands when that
     // is what he carries, with sword and shield otherwise.)
     // (and whether they are in town: the heroes painted over the bones have their weapons on their backs there, art/heroes3.ts)
-    const look = { twoHanded: h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword', town: !!game.level.town };
+    // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES: each always drawn with his own weapon, the warrior's the great sword)
+    const look = {
+      twoHanded: OWN_MOVES.on ? h.cls === 'warrior' : h.gear.mainhand !== null && h.gear.mainhand.weapon === 'greatsword',
+      town: !!game.level.town,
+      // (THE WARLOCK: the demon's pictures while he is it; his arm blazing while his pact is full)
+      ...(h.cls === 'warlock' ? { demon: h.form === 'demon', blaze: h.form !== 'demon' && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full } : {}),
+    };
     // Frames are painted ahead of need each time the world is drawn: the hero's, and those of the
     // monsters in this dungeon, turn and turn about. At least one each time, and more for as long
     // as it has cost less than WARM_MS (a fast machine has them all in a second or two; a slow
@@ -2005,10 +2505,20 @@ export class Renderer {
     // changes in that instant and a pause is not seen: then up to WARM_ENTER_MS is spent on it.
     const figs = this.figures;
     figs.length = 0;
+    if (this.dieSoonFor !== game.level) {
+      this.dieSoon.clear();
+      this.dieSoonFor = game.level;
+    }
     for (const m of game.monsters) {
       if (m.dead) continue;
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
+      // (A BOSS NEARING ITS END: its death painted next by the painter, so that its fall is not painted here as it is shown)
+      if (m.boss && m.life < m.maxLife * DIE_SOON && !this.dieSoon.has(f)) {
+        this.dieSoon.add(f);
+        this.painter?.dieFirst(f);
+        this.art.bestiary.dieFirst(f);
+      }
       // (THE MONSTERS' ATTACKS: the Warden calls up skeletons: their crawling out of the ground is painted ahead)
       if (m.boss && movesOf(m) && !figs.includes('skeleton')) figs.push('skeleton');
     }
@@ -2050,7 +2560,9 @@ export class Renderer {
     // is a frame's whole time and more to paint here, so the game painting one a frame ran late every frame until all
     // were done. Until the worker is up, or where there is none, the game paints them ahead as before.)
     const pw = this.painter && this.art.heroes.give ? this.painter : null;
-    const byWorker = !!pw && pw.hero(h.cls, look.town ? 'town' : 'dungeon') && (!look.town || pw.hero(h.cls, 'dungeon'));
+    // (THE WARLOCK: the one he is now first, then his others: the demon's, his arm blazing, as a man in a dungeon)
+    const now = h.cls === 'warlock' && !look.town ? (h.form === 'demon' ? 'demon' : look.blaze ? 'blaze' : 'dungeon') : look.town ? 'town' : 'dungeon';
+    const byWorker = !!pw && pw.hero(h.cls, now) && (!look.town || pw.hero(h.cls, 'dungeon')) && (h.cls !== 'warlock' || look.town || (pw.hero(h.cls, 'dungeon') && pw.hero(h.cls, 'blaze') && pw.hero(h.cls, 'demon')));
     const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
     // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the
@@ -2087,6 +2599,30 @@ export class Renderer {
     return this.art.bestiary.of(figureOf(m));
   }
 
+  /** (FLOOR 20) How far the picture leans toward the Moth now (screen pixels), gliding there and back. */
+  private lean = { x: 0, y: 0 };
+  /**
+   * (FLOOR 20, THE QUIET TOWER) THE PICTURE LEANS TOWARD THE MOTH while it lives and he is on the top with it: it hovers four
+   * knights' height over its floor point, so with the hero in the middle of a phone's screen its body would be off its top. The
+   * picture glides toward the middle of the two (MOTH_LEAN.share of the way), never further than MOTH_LEAN.most of the screen.
+   */
+  private mothLean(game: Game, W: number, H: number, dt: number): { x: number; y: number } {
+    const L = game.level;
+    const h = game.hero;
+    let tx = 0;
+    let ty = 0;
+    const m = L.land?.tower && onTop(L.land.tower, h.x, h.y) ? game.monsters.find((q) => q.kind === 'moth' && !q.dead && q.state !== 'sleep') : undefined;
+    if (m) {
+      const up = m.a1?.perched ? MOTH_LEAN.perched : MOTH_LEAN.up;
+      tx = Math.max(-W * MOTH_LEAN.most, Math.min(W * MOTH_LEAN.most, ((m.x - m.y - (h.x - h.y)) * 16) * MOTH_LEAN.share));
+      ty = Math.max(-H * MOTH_LEAN.most, Math.min(H * MOTH_LEAN.most, ((m.x + m.y - (h.x + h.y)) * 8 - up) * MOTH_LEAN.share));
+    }
+    const k = 1 - Math.exp(-dt * MOTH_LEAN.glide);
+    this.lean.x += (tx - this.lean.x) * k;
+    this.lean.y += (ty - this.lean.y) * k;
+    return this.lean;
+  }
+
   /**
    * The picture of a monster this frame.
    *
@@ -2113,6 +2649,8 @@ export class Renderer {
     // (frozen solid: as it stands)
     if (m.frozenT > 0) return bare ? flip(bare.standBare.frames[0]) : this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
     if (m.state === 'pickup' && more?.pickUp) return flip(clipFrame(more.pickUp, SPEAR.stoop - m.t));
+    // (FLOOR 3, MORE ACTION: the Boneward behind its shield, a blow glancing off it: its `glance`, art/action_f3_fx.ts)
+    if (more?.glance && m.glanceT !== undefined && m.glanceT < more.glance.frames.length / more.glance.fps) return flip(clipFrame(more.glance, m.glanceT));
     // (THE MONSTERS' ATTACKS: a move of its own, with its own picture)
     const moves = movesOf(m);
     if (moves && m.move !== undefined && m.move >= 0 && m.move < moves.length && (m.anim === 'attack' || m.state === 'charge')) {
@@ -2144,7 +2682,16 @@ export class Renderer {
     if (!clip || clip.frames.length === 0) return null;
     const last = clip.frames.length - 1;
     const i = Math.floor(f.t * clip.fps);
-    const sp = clip.frames[Math.min(last, i)];
+    // (a frame of its fall not painted yet, the painter painting it: the nearest of the fall that is shown meanwhile, never
+    // painted here as it is shown: art/kit.ts LEFT_TO_PAINTER. Where the painter is not painting it, as before.)
+    const left = LEFT_TO_PAINTER.on;
+    if (this.painter?.paints(f.figure)) LEFT_TO_PAINTER.on = true;
+    let sp: Sprite;
+    try {
+      sp = clip.frames[Math.min(last, i)];
+    } finally {
+      LEFT_TO_PAINTER.on = left;
+    }
     // (`since`: how long it has lain, in seconds)
     return { sp: f.flip ? flipSprite(sp) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }
@@ -2156,9 +2703,25 @@ export class Renderer {
    * looks the same on a fast screen and a slow one. It also thins out when the air is full.
    */
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
+    // (heavy frames not yet painted are shown as their nearest painted ones, for the side painter to paint: art/kit.ts HEAVY)
+    HEAVY.defer = PAINT_DEFER.on;
+    try {
+      return this.drawWorld(g, W, H, game, fx, t, pace);
+    } finally {
+      HEAVY.defer = false;
+    }
+  }
+
+  private drawWorld(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
+    // (the hero as he was last drawn, before this frame: THE WARLOCK's Phantom Step leaves him so as his shadow)
+    this.heroBefore = this.heroWas;
     this.bossFx.begin();
     // (THE FIRST FIVE FLOORS: this level's own pieces, and a step of its moments)
     this.dressed = this.pieces.begin(game);
+    // (THE HEADSMAN'S YARD: its pictures made as the floor is come into)
+    if (this.yard.on(game.level.floor)) this.yard.warm();
+    // (FLOOR 3, THE BLACK IRON PRISON: likewise)
+    this.lookOf(game.level)?.warm();
     if (this.dressed) this.pieces.step(game);
     const live = pace > 0;
     const amb = pace * fx.room();
@@ -2171,8 +2734,13 @@ export class Renderer {
     // (magic with no element word on it is violet, where a blade's blow is steel: a mage's, and
     // anyone's who carries a staff or a wand)
     const held = game.weapon();
-    const arcane = h.cls === 'mage' || held === 'staff' || held === 'wand';
+    const arcane = h.cls === 'mage' || (!OWN_MOVES.on && (held === 'staff' || held === 'wand'));
     fx.arcane = arcane;
+    // (THE WARLOCK's effects read the burning and the cursed off the monsters: render/warlock_fx.ts)
+    fx.warlock.game = game;
+    fx.brawler.game = game;
+    // (THE VETERAN, behind a switch that is off: his moves' effects and his globes, render/veteran_fx.ts)
+    this.vetFx.step(game, fx, pace / 60);
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
     if (WORDS3.on) tick3(pace / 60, game, fx);
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts)
@@ -2199,8 +2767,10 @@ export class Renderer {
     const relief = this.reliefOf(L);
     cam.lift = relief ? relief.lift : null;
     const heroLift = this.heroLift(game);
-    cam.ox = Math.round(va.x - (h.x - h.y) * 16) + fx.shakeX;
-    cam.oy = Math.round(va.y + 12 - (h.x + h.y) * 8 + heroLift) + fx.shakeY;
+    // (FLOOR 20, THE MOTH: the picture leans toward it, so that its body, high over the top, is in sight with him: mothLean)
+    const lean = this.mothLean(game, W, H, vdt);
+    cam.ox = Math.round(va.x - (h.x - h.y) * 16 - lean.x) + fx.shakeX;
+    cam.oy = Math.round(va.y + 12 - (h.x + h.y) * 8 + heroLift - lean.y) + fx.shakeY;
     const stands = this.stands;
     stands.length = 0;
     this.labels.length = 0;
@@ -2236,6 +2806,38 @@ export class Renderer {
     // (ACT2_WALLS on: the houses on the screen whole at once, their shells painted here when the worker has not sent them)
     if (land && !hallNow) this.houses.ensure(() => gateWardLand(land, f, true), this.outdoor.terrain(), cam.ox, cam.oy, W, H, t);
 
+    // ---- THE HEADSMAN'S YARD (render/yard.ts): the sky and the tower over its far walls, while the hero is in it ----
+    const yardOn = this.yard.on(f);
+    const yardOut = yardOn && this.yard.heroIn(f, h.x, h.y);
+    // ---- FLOOR 3, THE BLACK IRON PRISON (render/prison.ts): its flags, its own tiles and his hall's floor; its walls ----
+    const look = this.lookOf(L);
+    this.lookNow = look;
+    this.wholeNow = this.wholeHere(L);
+    this.gameNow = game;
+    this.clockNow = t;
+    // (HER TREE'S GUN ARM: each Golem charging, as its picture will be drawn, for the art chat's steam and light round it: render/tinkerer_fx.ts)
+    fx.tinkerer.charging = game.golems.length ? this.golemsCharging(game) : [];
+    // (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET: each Golem in it, for what is laid on the floor under it; and, her Golem out, its
+    // frames painted ahead a little each frame, so that none is painted as it is shown)
+    fx.tinkerer.rocketing = GOLEM_ROCKET.on && game.golems.length ? this.golemsRocketing(game) : [];
+    fx.tinkerer.rocketGun = GOLEM_ROCKET.on && game.golems.length ? (game.armOf() === 'tesla' ? 'tesla' : 'cannon') : null;
+    const prisonOn = look === this.prison;
+    this.yardOnly = yardOut ? f : null;
+    if (yardOut) this.yard.back(g, cam, f, W, H);
+    // (FLOOR 2, THE PRISON'S GROUNDS: under the sky in a courtyard, the night sky and the tower over its far walls: render/grounds.ts)
+    const groundsSky = look === this.grounds ? this.grounds.skyOver(L, h.x, h.y, yardOut) : null;
+    this.groundsOnly = groundsSky ? L : null;
+    if (groundsSky) this.grounds.drawSky(g, cam, W, H);
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
+    if (look?.back) {
+      for (const q of look.back(L, t)) {
+        const sx = Math.round(wx(cam, q.x, q.y));
+        const sy = Math.round(wy(cam, q.x, q.y));
+        if (sx - q.s.ax > W || sx - q.s.ax + q.s.w < 0 || sy - q.s.ay > H || sy - q.s.ay + q.s.h < 0) continue;
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+      }
+    }
+
     // ---- floor, and collect walls -------------------------------------------------------------
     this.pitTiles.length = 0;
     this.raisedTiles.length = 0;
@@ -2257,6 +2859,9 @@ export class Renderer {
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
         // (ACT 1: in a stronghold's hall, only the hall's own tiles and its walls)
         if (hallNow && (tx < hallNow.inside.x - 1 || ty < hallNow.inside.y - 1 || tx > hallNow.inside.x + hallNow.inside.w || ty > hallNow.inside.y + hallNow.inside.h)) continue;
+        // (THE HEADSMAN'S YARD: from in it, only it, its walls and its way in: behind its far walls, the sky)
+        if (yardOut && !this.yard.shows(f, tx, ty)) continue;
+        if (groundsSky && !this.grounds.shows(L, tx, ty)) continue;
         const idx = ty * f.w + tx;
         if (!L.explored[idx]) continue;
         const kind = f.tiles[idx];
@@ -2281,7 +2886,9 @@ export class Renderer {
           if (sunk && sunk[idx] < 0) continue;
           // (the flagstones are laid on the world, not on the tiles: a tile's picture goes by where it is)
           // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
-          const sp = (this.dressed && this.pieces.tile(idx)) || art.ground.floor(tx, ty);
+          // (THE HEADSMAN'S YARD: its cobbles and its own tiles: render/yard.ts)
+          // (FLOOR 3, THE BLACK IRON PRISON: his hall's floor and its own tiles, then the floor's own, on its dark flags: render/prison.ts)
+          const sp = (yardOn && this.yard.floor(f, tx, ty)) || (look && look.laid(L, tx, ty, t)) || (this.dressed && this.pieces.tile(idx)) || (look ? look.flags(tx, ty) : art.ground.floor(tx, ty));
           g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
           // the shadow of a wall that stands over it (the light is from the upper left)
           // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
@@ -2312,22 +2919,38 @@ export class Renderer {
           } else if (WALL_LOOK.faces && !lowGrid[idx]) {
             // (THE WALLS' LOOK, `faces`: a wall is the upright planes behind the far edges of floor.
             // Which of a block's two faces have floor before them: render/walls.ts, `wallFaces`.)
-            const which = wallFaces(f, idx);
+            // (FLOOR 3, PRISON_EXIT: none on the door out the back of his hall once its pictures are made, or once it is open: render/dress.ts stands it there)
+            // (THE FIRST FIVE FLOORS' NEW LOOKS: none where a picture of the look's own stands in the wall: render/looks.ts)
+            // (WHOLE_WALLS: every wall stands, its faces turned to the eye drawn whatever is before them: render/walls.ts)
+            const whole = this.wholeHere(L);
+            const faces0 = whole ? wholeFaces(f, idx) : wallFaces(f, idx);
+            let which = look ? look.unfaced(L, idx, faces0) : faces0;
+            if (prisonOn && L.ways?.exit && this.dress.exitShown(game)) which = this.prison.doorUnfaced(L, idx, which);
             const n = art.ground.faceLeft.length;
             // (THE WALL BESIDE A DOOR: one that stands again there is seen through while someone is behind it, and nothing is set in it)
             const again = this.doorBack !== null && this.doorBack[idx] === 1;
-            const veil = again && which ? this.doorVeil(game, idx, px, py, s + 1, t) : 1;
+            const veil = whole && which ? this.wallVeil(game, idx, px, py, s + 1, t) : again && which ? this.doorVeil(game, idx, px, py, s + 1, t) : 1;
             // (`hide` marks the stand just made: raised floor at a face's foot hides the foot of it)
+            // (THE HEADSMAN'S YARD: the ring of wall round it is the prison's wall: render/yard.ts)
+            const prison = yardOn && this.yard.ring(f, tx, ty);
             if (which & FACE_LEFT) {
-              this.stand(s + 1, art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
+              this.stand(s + 1, prison ? this.yard.face(true, v) : look ? look.face(L, true, tx, ty, t) : art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             if (which & FACE_RIGHT) {
-              this.stand(s + 1, art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
+              this.stand(s + 1, prison ? this.yard.face(false, v) : look ? look.face(L, false, tx, ty, t) : art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             // (THE FIRST FIVE FLOORS: what is set in its faces: render/pieces.ts)
-            if (which && this.dressed && !again) this.pieces.wall(game, idx, which, s, px, py, t, this.stage);
+            if (which && this.dressed && !again) this.pieces.wall(game, idx, which, s, px, py, t, this.stage, veil);
+            // (FLOOR 3, THE BLACK IRON PRISON: the fire baskets it adds, stood in the faces as the floor's own are)
+            if (which && look?.walls && !again) {
+              look.walls(L, idx, which, t, (sp, side) => {
+                const bx = side === 0 ? px - 8 : px + 8;
+                this.stage.stand(s + 1.01, sp, bx, py + 12, veil);
+                if (sp.lights) this.stage.lit(sp, bx, py + 12);
+              });
+            }
           } else if (!(lowGrid[idx] && WALL_LOOK.front === 'none')) {
             const sp = lowGrid[idx] ? art.ground.wallsLow[v % art.ground.wallsLow.length] : art.ground.wallsTall[v % art.ground.wallsTall.length];
             const thin = !lowGrid[idx] && this.overHero(px, py, s + 1, WALL_LOOK.tall) ? SEEN_THROUGH : 1;
@@ -2346,6 +2969,13 @@ export class Renderer {
     }
 
     // ---- what lies on the floor ----------------------------------------------------------------
+    // (THE HEADSMAN'S YARD: its wide puddles, flat on its cobbles)
+    if (yardOn) {
+      for (const q of this.yard.puddles(f, cam)) {
+        if (q.x < -80 || q.x > W + 80 || q.y < -40 || q.y > H + 40) continue;
+        g.drawImage(q.s.img, q.x - q.s.ax, q.y - q.s.ay, q.s.w, q.s.h);
+      }
+    }
     // (on a level with ledges: what lies on the low floor, then the pits and the raised floor
     // over whatever of that reaches under them, then what lies on the raised floor)
     if (!relief) this.flat(g, W, H, game, fx, t, amb, -1);
@@ -2385,8 +3015,33 @@ export class Renderer {
       this.frameChunks.length = 0;
       this.topsCache.leave(L);
     }
+    // (THE HEADSMAN'S YARD: the torches on its far walls, burning: render/yard.ts)
+    if (yardOn) {
+      for (const q of this.yard.torches(f)) {
+        if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        const ts = this.yard.torch(q.alongX, t);
+        const tx = wx(cam, q.x, q.y);
+        const ty = wyFlat(cam, q.x, q.y);
+        this.stand(q.x + q.y - 0.49, ts, tx, ty);
+        if (ts.lights) this.propLit.push({ s: ts, x: Math.round(tx), y: Math.round(ty) });
+      }
+    }
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
+      // (THE HEADSMAN'S YARD: its scaffold and its gallows, in strips each in its place; what stands on their other tiles is nothing to see)
+      if (yardOut && !this.yard.shows(f, p.tx, p.ty)) continue;
+      if (groundsSky && !this.grounds.shows(L, p.tx, p.ty)) continue;
+      const big = yardOn && p.kind === 'piece' ? this.yard.owns(p.name) : null;
+      if (big === 'foot') continue;
+      if (big === 'piece') {
+        // (seen through only where the hero is behind it and it covers him: his middle, his head or his feet)
+        const whole = this.yard.bigSprite(p.name!);
+        const ax = wx(cam, p.x, p.y);
+        const ay = wyFlat(cam, p.x, p.y);
+        const covers = !!whole && this.yard.behind(p.name!, p.x, p.y, h.x, h.y) && [14, 28, 3].some((up) => spriteCovers(whole, heroX - (ax - whole.ax), heroY - up - (ay - whole.ay)));
+        for (const st of this.yard.bigStands(p.name!, p.x, p.y, cam, covers ? SEEN_THROUGH : 1)) this.stand(st.d, st.s, st.x, st.y, null, 0, 1, st.alpha);
+        continue;
+      }
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -140 || sx > W + 140 || sy < -30 || sy > H + 200) continue;
@@ -2455,10 +3110,24 @@ export class Renderer {
     if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
     if (!L.town && QUEST3.on) this.standQuestStone(game, cam, t);
     this.standHazards(game, cam);
-    this.standDoors(L, cam, game);
+    this.standDoors(L, cam, game, fx);
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     if (L.ways) this.standWays(L, t, game.time, game);
     if (L.ways) this.dress.standing(game, this.stage);
+    // (THE FIRST FIVE FLOORS' NEW LOOKS: what each stands of its own: the prison's railings along its fire channels and the great
+    // chains in his hall; the chapel's way in and break-ins: render/looks.ts)
+    if (this.lookNow) {
+      for (const q of this.lookNow.stands(L, t)) {
+        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
+        const sx = Math.round(wx(cam, q.x, q.y));
+        const sy = Math.round(wy(cam, q.x, q.y));
+        if (sx < -160 || sx > W + 160 || sy < -40 || sy > H + 260) continue;
+        const d = q.d ?? q.x + q.y;
+        if (q.add) this.stand(d, q.s, sx, sy, null, 0, 1, 1, null, 0, true);
+        else this.stage.stand(d, q.s, sx, sy, this.stage.veil(q.s, sx, sy, d));
+        if (q.s.lights) this.stage.lit(q.s, sx, sy);
+      }
+    }
     if (this.dressed) this.pieces.standMoments(game, this.stage);
     // (ACT 2, THE HUSH: its floor's moment around the hero, in depth at its anchor or over every figure, the surge shown over its
     // channel's run alone; its candles' light, and the chandelier drawn again over that light while it hangs and falls, as the
@@ -2503,6 +3172,13 @@ export class Renderer {
         hid?.(dr.x, dr.y);
         continue;
       }
+      // (THE HIGH CITY, THE ROYAL CARDS: a royal's card lying face up, named in its royal's colour: render/royal_cards.ts)
+      if (dr.kind === 'card' && dr.royal) {
+        this.stand(dr.x + dr.y - 0.2, royalCardSprite(dr.royal), sx, sy - pop);
+        hid?.(dr.x, dr.y);
+        this.labels.push({ x: sx, y: sy - 14, text: `The ${ROYAL_NAMES[dr.royal].one}'s card`, color: royalLabelColor(dr.royal) });
+        continue;
+      }
       let sp: Sprite;
       if (dr.kind === 'gold') sp = art.icons.gold[dr.gold >= 30 ? 2 : dr.gold >= 8 ? 1 : 0];
       else if (dr.kind === 'orb') sp = art.icons.lifeOrb;
@@ -2510,7 +3186,8 @@ export class Renderer {
       // (WORDMELDING, behind MELD: runedust and the Meldstone)
       else if (dr.kind === 'dust') sp = art.icons.runedust;
       else if (dr.kind === 'stone') sp = art.icons.meldstone;
-      else if (dr.item) sp = art.icons.item[dr.item.icon];
+      // (the same picture as in the bag, at its rarity: with ITEMS_A on the art chat's, painted finer than a game pixel; stand draws it at its size)
+      else if (dr.item) sp = itemPic(art.icons, dr.item.icon, dr.item.rarity);
       else continue;
       if (dr.kind === 'orb') {
         // a life orb beats like a heart
@@ -2563,15 +3240,16 @@ export class Renderer {
         if (gs) this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(gs) : gs, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
         continue;
       }
-      const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.crawl;
+      // (AM_ACTION: a bone mite pulling itself together where its skull burst: its own pictures of it, art/amalgam_mites.ts)
+      const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.[r.way === 'form' ? 'form' : 'crawl'];
       if (!c) continue;
       const sp = clipFrame(c, r.age);
       this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
     }
     // (THE FIRST FIVE FLOORS: what the bosses send out that stands among the figures: an axe, a hook, a ball in flight, arms and hands out of the floor, skulls on the wing)
-    this.bossFx.standing(this.floorAt, game, (d, sp, x, y) => {
+    this.bossFx.standing(this.floorAt, game, (d, sp, x, y, alpha = 1) => {
       if (sp.lights) this.monsterLit.push({ s: sp, x: Math.round(x), y: Math.round(y) });
-      this.stand(d, sp, x, y);
+      this.stand(d, sp, x, y, null, 0, 1, alpha);
     }, (x, y) => game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     for (const m of game.monsters) {
       if (m.dead || !m.seen || unseen(m)) continue;
@@ -2613,9 +3291,21 @@ export class Renderer {
         sy += oy;
       }
       const sp = this.monsterSprite(m);
+      // (FLOOR 4, MORE ACTION: the dagger cultist's frenzy carries him in its own pictures, the rules the way he truly faces: his
+      // picture drawn back by what it carries him, so that it is where the rules have him: game/action_f4.ts frenzyShift)
+      if (m.frenzy && (m.state === 'windup' || m.state === 'recover')) {
+        const mv = movesOf(m)?.[m.move ?? -1];
+        if (mv && mv.id === 'frenzy') {
+          const [ox, oy] = frenzyShift(m.fx, m.fy, moveAge(m.state, m.t, mv.windup, mv.recover));
+          sx += ox;
+          sy += oy;
+        }
+      }
       // (ACT 1: up in the air, as its kind has it; and drawn over what it is latched on to)
       const a1 = act1Fx(m.kind);
       if (a1 && a1.lift) sy -= Math.round(a1.lift(m));
+      // (THE BRAWLER'S TREE: Big Uppercut, one he has thrown up is up in the air: render/brawler_fx.ts)
+      if (game.brawl.up.length) sy -= fx.brawler.liftOf(m);
       const depthBy = a1 && a1.over ? a1.over(m) : 0;
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
@@ -2623,7 +3313,8 @@ export class Renderer {
       let overA = 0;
       if (m.flash > 0) {
         over = silhouette(sp, P.white);
-        overA = 1;
+        // (a body as big as the Moth's flashes fainter: the whole screen would go white: its kind's own, Act1Fx.flash)
+        overA = a1?.flash ?? 1;
       } else if (m.frozenT > 0) {
         // frozen solid: a block of pale ice
         over = silhouette(sp, P.bu5);
@@ -2696,7 +3387,9 @@ export class Renderer {
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
-      const leapK = h.move && h.move.kind === 'leap' ? Math.min(1, h.move.t / h.move.dur) : -1;
+      // (THE WARLOCK's smoke step is laid out over the step as a leap is: art/warlock_art.ts)
+      const leapK = h.move && (h.move.kind === 'leap' || h.move.kind === 'smoke' || h.move.kind === 'blast' || h.move.kind === 'slip') ? Math.min(1, h.move.t / h.move.dur) : -1;
+      const changeK = h.change ? Math.min(1, h.change.t / Math.max(1e-6, h.change.dur)) : -1;
       const rollK = h.move && h.move.kind === 'roll' ? Math.min(1, h.move.t / h.move.dur) : -1;
       // (a figure with a tumble of its own is seen making it; one without is drawn faint, to read as a blur)
       const tumbles = heroArt.front.clips?.roll !== undefined;
@@ -2707,6 +3400,7 @@ export class Renderer {
       if (who !== this.figureOf) {
         this.figureOf = who;
         fig.reset();
+        this.vetFx.clear();
         this.lifeBar.reset();
         this.reelT = -1;
         this.lifeWas = h.life;
@@ -2717,7 +3411,10 @@ export class Renderer {
       // The bar of life over the hero's head (and the line they speak, in fx.ts) stands clear of the
       // figure at rest, whatever it is doing now: a raised sword passes in front of the bar and does
       // not push it about. With mana to show as well the bar is two pixels taller.
-      const top = heroArt.front.idle[0].ay + (game.meta.limit === 'mana' ? 2 : 0);
+      // (read from a frame painted already, or as it last was: reading one not painted paints it, and the demon's first standing
+      // frame painted here, to be read, was the half of a second's stop as the Warlock changed: his lag, 30 Oct 2026)
+      const stand = paintedNear(heroArt.front.idle, 0, true);
+      const top = stand ? stand.ay + (game.meta.limit === 'mana' ? 2 : 0) : this.heroAt.top;
       this.heroAt = { x: Math.round(sx), y: Math.round(sy), top };
       fx.headroom = top;
       // A hero whose life has run out FALLS (their art's `fall`): the world has stopped, and they go
@@ -2756,7 +3453,10 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
+      const vetSp = this.vetFx.shown(game, heroArt);
+      if (vetSp) sp = vetSp;
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -2787,10 +3487,17 @@ export class Renderer {
       this.heroLit = null;
       // (THE FIRST FIVE FLOORS: riding up the mine shaft in its cage, lifted with it and taken into the dark: render/dress.ts)
       const ride = this.dress.rider(game, sp);
+      // (THE BRAWLER weaving: after-images of him left along the way, fading: render/brawler_fx.ts has the rest)
+      for (const gh of this.slipGhosts) gh.t += pace / 60;
+      this.slipGhosts = this.slipGhosts.filter((gh) => gh.t < 0.3);
+      if (h.move && h.move.kind === 'slip' && (this.slipGhosts.length === 0 || this.slipGhosts[this.slipGhosts.length - 1].t > 0.03)) this.slipGhosts.push({ s: sp, x: h.x, y: h.y, t: 0 });
+      for (const gh of this.slipGhosts) this.stand(gh.x + gh.y - 0.02, silhouette(gh.s, '#22d0e0'), wx(cam, gh.x, gh.y), wy(cam, gh.x, gh.y), null, 0, 1, 0.55 * (1 - gh.t / 0.3));
       if (ride) this.stand(ride.d, ride.sp, sx, sy - ride.up);
       else if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
+        // (THE VETERAN: what is behind him at height, and his after-images along a strike, just behind him: render/veteran_fx.ts)
+        for (const b of this.vetFx.behind(game, heroArt, Math.round(sx), Math.round(sy), cam, top)) this.stand(h.x + h.y + b.dd, b.s, b.x, b.y);
         // (WORDMELDING's looks, behind a switch that is off: standing in Scald's steam, the hero is hidden, seen faint through it)
-        this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, (coming > 0 ? 1 - coming * coming * 0.85 : 1) * (MELD3.on ? heroAlphaM3(t) : 1), fig, coming);
+        this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, (coming > 0 ? 1 - coming * coming * 0.85 : 1) * (MELD3.on ? heroAlphaM3(t) : 1), vetSp ? null : fig, coming);
         // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
         const copies = WORDS3.on ? heroCopies3(t) : null;
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
@@ -2880,6 +3587,15 @@ export class Renderer {
       }
       this.stand(q.x + q.y + 0.02, sp, sx, sy - FAMILIAR_HOVER + bob, tint ? silhouette(sp, tint) : null, tintA, (0.4 + 0.6 * born) * (flare ? 1.25 : 1));
     }
+
+    // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
+    if (game.golems.length || game.contraptions.length || fx.tinkerer.rocketLeft()) this.drawTinkerers(game, cam, t, W, H, fx.tinkerer);
+    // THE RANGER'S COMPANIONS (game/companions.ts), at his side; their pictures the art chat's (art/companions_art.ts): only with
+    // COMPANIONS on (game/talents.ts) are there any, so the pictures go on with them, as the art chat's README asks
+    if (game.pets.length) this.drawPets(g, game, cam, t, W, H);
+    // THE WARLOCK'S BOUND DEMON (his tree: game/talents.ts), at his side; his shadows where he stepped from (Phantom Step)
+    if (game.bound) this.drawBound(game, cam, W, H, pace / 60);
+    if (game.decoys.length) this.drawShadows(game, cam, t);
 
     for (const p of game.projectiles) {
       const sx = wx(cam, p.x, p.y);
@@ -2972,6 +3688,14 @@ export class Renderer {
         cut = true;
       }
       if (st.alpha !== 1) g.globalAlpha = Math.max(0, st.alpha);
+      // (light, drawn added to what is under it: floor 1's daylight in the air)
+      if (st.add) {
+        g.globalCompositeOperation = 'lighter';
+        g.drawImage(s.img, st.x - s.ax, st.y - s.ay, s.w, s.h);
+        g.globalCompositeOperation = 'source-over';
+        g.globalAlpha = 1;
+        continue;
+      }
       // (ACT 2: a bit of a wall standing whole, seen through round whoever is behind it)
       if (st.holes) {
         drawHoled(g, s.img as HTMLCanvasElement, st.x - s.ax, st.y - s.ay, s.w, s.h, st.holes, WINDOW_FAINT);
@@ -3066,6 +3790,11 @@ export class Renderer {
     }
     // arrows are drawn as short lines so they can point any way; a Swift orb gets its tail here too
     for (const p of game.projectiles) {
+      // (THE WARLOCK's bolt: his fire on its side, render/warlock_fx.ts)
+      if (p.look === 'hellbolt') {
+        if (onScreen(p.x, p.y)) fx.warlock.drawBolt(g, cam, p);
+        continue;
+      }
       // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
       if (p.look === 'spear') {
         const v = Math.hypot(p.vx, p.vy) || 1;
@@ -3219,6 +3948,27 @@ export class Renderer {
     // ---- darkness, with holes cut by every light ----------------------------------------------
     this.light(W, H, game, t, fx);
     g.drawImage(this.dark, 0, 0);
+    // (FLOOR 3, THE BLACK IRON PRISON: the warm glow of its fires over the dark: render/prison.ts)
+    if (this.lookNow) {
+      const L3 = game.level;
+      for (const q of this.lookNow.lights(L3)) {
+        if (!q.glow || !L3.explored[Math.floor(q.y) * L3.floor.w + Math.floor(q.x)]) continue;
+        const gx = wx(this.cam, q.x, q.y) + (q.dx ?? 0);
+        const gy = wy(this.cam, q.x, q.y) - q.up;
+        if (gx < -q.glow.r || gx > W + q.glow.r || gy < -q.glow.r || gy > H + q.glow.r) continue;
+        drawGlow(g, gx, gy, q.still ? q.glow.r : q.glow.r + Math.sin(t * 9 + q.y * 5) * 1.5, q.glow.color, q.glow.a);
+      }
+      const ex = L3.ways?.exit;
+      const ef = ex ? this.dress.exitFilm(game) : null;
+      if (ex && ef && prisonDoorTiles(L3.floor, ex).some((i) => L3.explored[i] === 1 || L3.explored[ex.alongX ? i + L3.floor.w : i + 1] === 1)) {
+        const A = prisonDoorAnchor(ex);
+        const ax = wx(this.cam, A.x, A.y);
+        const ay = wy(this.cam, A.x, A.y);
+        for (const q of this.prison.exitLights(ex.alongX, FloorDress.exitFrame(ex, ef.frames.length))) if (q.glow) drawGlow(g, ax + q.dx, ay + q.dy, q.glow.r + Math.sin(t * 9 + q.dy) * 1.5, q.glow.color, q.glow.a);
+      }
+    }
+    // (what of the act's kinds shines in the dark: the Physician's spotlight and his instruments in it, his lens's beam)
+    this.bossFx.glow(g, this.floorAt, game, (x, y) => onScreen(x, y) && game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     // (ACT 2, THE BELLS: the bells still to ring, off the screen, marked at its edge)
     if (game.level.bells) this.bellsLook.arrows(g, this.cam, game.level, W, H, t);
 
@@ -3378,6 +4128,8 @@ export class Renderer {
     if (BINDING3.on && !this.skip.has('fx')) airB3(g, cam, t, game);
     if (VOLATILE3.on && !this.skip.has('fx')) airV3(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
+    // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
+    if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
     this.drawWordDrops(g, W, H, game, t);
@@ -3873,9 +4625,34 @@ export class Renderer {
     // Version 16, 0.8, and a wide gentle pool round the hero, below, takes it back to what it was near them)
     // (ACT 1, THE DESCENT: out on the open ground the day, thin or none, and the dusk deepening toward the Fen: game/act1.ts, `light`)
     // (THE CAMP, game/camp.ts: dusk, warm, the fires lit: his “Dusk, warm and alive (Recommended)” to the art chat)
-    const day = isCamp(L) ? CAMP_DUSK : this.openGround ? act1Def(f.depth)?.light ?? null : null;
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${FAR_DARK})`;
+    // (FLOOR 20, THE QUIET TOWER: on its top, under the grey sky, its own light: game/act2/quiettower.ts onTop)
+    const def = this.openGround ? act1Def(f.depth) : null;
+    const up = !!(def?.top && L.land?.tower && onTop(L.land.tower, game.hero.x, game.hero.y));
+    const day = isCamp(L) ? CAMP_DUSK : def ? (up ? def.top! : def.light) : null;
+    // (THE HEADSMAN'S YARD: under the open sky, the moon's dark: render/yard.ts)
+    const yardSky = this.yard.on(f) && this.yard.heroIn(f, game.hero.x, game.hero.y);
+    // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.8: art/prison.ts PRISON_LIGHTS)
+    const look = this.lookNow;
+    const prisonOn = look === this.prison;
+    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
+    // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
+    // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
+    const eclipse = QUEEN_ACTION.on ? eclipseNow(game.perils) : null;
+    const eDark = eclipse ? eclipseDark(eclipse.t) : 0;
+    if (eDark > 0) {
+      dg.fillStyle = `rgba(10,6,22,${(0.72 * eDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    // (FLOOR 14, THE PHYSICIAN'S OPERATION, PHYSICIAN_ACTION: the theatre plunged dark, to a fifth of its light, art/physician_action_fx.ts
+    // OPERATION.low; one hard spotlight on the field, cut below)
+    const op = operationNow(game.perils);
+    const oDark = op ? opDark(op.t) : 0;
+    if (oDark > 0) {
+      dg.fillStyle = `rgba(10,8,18,${(0.8 * oDark).toFixed(3)})`;
+      dg.fillRect(0, 0, W, H);
+    }
+    const heroLit = 1 - 0.8 * Math.max(eDark, oDark);
     dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
     // to its size and faded to its strength. (A fresh gradient for each light each frame was the
@@ -3898,8 +4675,59 @@ export class Renderer {
     // (the owner, 6 Oct 2026: "Add a soft gradient so the floor gets darker further away from the
     // player": under the bright pool round the hero a wide and gentle one, which thins the dark
     // near them and is gone a screen's height away)
-    if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT);
-    if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, day ? day.pool * 3 : 1);
+    if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT * heroLit);
+    if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, (day ? day.pool * 3 : 1) * heroLit);
+    if (eDark > 0) {
+      // (a little of his own, that he is seen; and the pools, fully lit)
+      spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 10, 40, 0.5 * eDark);
+      for (const q of eclipsePools(eclipse!)) spot(wx(cam, q.x, q.y), wy(cam, q.x, q.y), q.r * 22.6 * 1.15, q.k);
+    }
+    if (oDark > 0 && op) {
+      // (THE SPOTLIGHT: the field lit hard, the dark gone from it, its edge a thin band a step down)
+      const sx = wx(cam, op.x, op.y);
+      const sy = wy(cam, op.x, op.y);
+      const R = FIELD.r * 16 * Math.SQRT2;
+      const R2 = (FIELD.r + 0.08) * 16 * Math.SQRT2;
+      dg.fillStyle = '#000';
+      dg.globalAlpha = 0.5 * oDark;
+      dg.beginPath();
+      dg.ellipse(sx, sy, R2, R2 / 2, 0, 0, Math.PI * 2);
+      dg.fill();
+      dg.globalAlpha = oDark;
+      dg.beginPath();
+      dg.ellipse(sx, sy, R, R / 2, 0, 0, Math.PI * 2);
+      dg.fill();
+      dg.globalAlpha = 1;
+    }
+    // (FLOOR 3, THE BLACK IRON PRISON: its fire baskets, its glowing grates and his great grate cut the dark: render/prison.ts)
+    if (look) {
+      for (const q of look.lights(L)) {
+        if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        const lx = wx(cam, q.x, q.y) + (q.dx ?? 0);
+        const ly = wy(cam, q.x, q.y) - q.up;
+        if (lx < -q.r || lx > W + q.r || ly < -q.r || ly > H + q.r) continue;
+        spot(lx, ly, q.still ? q.r : q.r + Math.sin(t * 7 + q.x * 3) * 2, q.strength);
+      }
+    }
+    if (prisonOn) {
+      // (PRISON_EXIT: the passage's baskets and floor beyond the door out the back of his hall, and its doorway's light as it opens)
+      const ex = L.ways?.exit;
+      const ef = ex ? this.dress.exitFilm(game) : null;
+      if (ex && ef && prisonDoorTiles(f, ex).some((i) => L.explored[i] === 1 || L.explored[ex.alongX ? i + f.w : i + 1] === 1)) {
+        const A = prisonDoorAnchor(ex);
+        const ax = wx(cam, A.x, A.y);
+        const ay = wy(cam, A.x, A.y);
+        for (const q of this.prison.exitLights(ex.alongX, FloorDress.exitFrame(ex, ef.frames.length))) spot(ax + q.dx, ay + q.dy, q.r + Math.sin(t * 7 + q.dy) * 2, q.strength);
+      }
+    }
+    // (THE HEADSMAN'S YARD: its torches light the wall and the floor below them)
+    if (this.yard.on(f)) {
+      for (const q of this.yard.torches(f)) {
+        if (!L.explored[Math.floor(q.y) * f.w + Math.floor(q.x)]) continue;
+        const at = this.yard.torchLight(cam, q.x, q.y);
+        spot(at.x, at.y, 48 + Math.sin(t * 9 + q.x) * 2, 0.85);
+      }
+    }
     // (the town's gate lights the floor before it)
     if (L.town && !isCamp(L)) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
     for (const p of L.props) {
@@ -3981,7 +4809,12 @@ export class Renderer {
     dg.globalCompositeOperation = 'source-over';
     // the vignette, laid on the dark after the lights have cut their holes in it: the corners of
     // the screen are shadowy whatever is lit there (what GLOWS is drawn after the dark, and still shines)
-    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? VIGNETTE_TOWN : VIGNETTE), 0, 0);
+    // (THE HEADSMAN'S YARD: the sky over its far walls lit by its moon, and the edges of the screen less dark under the open sky)
+    if (yardSky) this.yard.skyLift(dg, cam, f, YARD_SKY_LIFT);
+    // (FLOOR 2, THE PRISON'S GROUNDS: the sky's own light over a courtyard's far walls; under the sky, his yard's vignette)
+    const groundsOut = look === this.grounds && this.grounds.outdoors();
+    if (look === this.grounds) this.grounds.skyLift(dg, cam);
+    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? (this.lookNow?.vignette ?? VIGNETTE_TOWN) : yardSky ? YARD_VIGNETTE : groundsOut ? (this.grounds.vignette ?? VIGNETTE) : VIGNETTE), 0, 0);
   }
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {
@@ -4049,6 +4882,49 @@ export class Renderer {
       }
       g.globalAlpha = 1;
     }
+    // THE WARLOCK'S PACT (game/warlock.ts), his pick of 28 Oct: “Bar over his head” (offered as: a thin cyan bar just under
+    // the red life bar over his head; when it's full it blazes). Filling with his hellfire as he hits; full, it blazes and
+    // says how he changes; as the demon, it runs down. There while the life bar is, and always while it is full or he is
+    // the demon.
+    {
+      const h = game.hero;
+      if (h.cls === 'warlock' && !game.over) {
+        const full = WARLOCK_TUNE.pact.full;
+        const k = Math.max(0, Math.min(1, (h.pact ?? 0) / full));
+        const demon = h.form === 'demon';
+        // (not while he changes: the demon is tearing out of him)
+        const blaze = !demon && k >= 1 && !h.change;
+        const a = Math.max(lb.alpha, blaze || demon || h.change ? 1 : 0);
+        if (a > 0.01) {
+          const w = LIFE_BAR.w;
+          const mana = game.meta.limit === 'mana';
+          const x = this.heroAt.x - Math.floor(w / 2);
+          const y = this.heroAt.y - this.heroAt.top - LIFE_BAR.lift + LIFE_BAR.h + 2 + (mana ? 2 : 0);
+          const hot = blaze && Math.floor(t * 6) % 2 === 0;
+          g.globalAlpha = a;
+          g.fillStyle = blaze ? (hot ? P.white : '#22d0e0') : P.ink;
+          g.fillRect(x - 1, y - 1, w + 2, 4);
+          g.fillStyle = '#0a2630';
+          g.fillRect(x, y, w, 2);
+          g.fillStyle = blaze ? (hot ? '#e8ffff' : '#b8fff8') : '#22d0e0';
+          g.fillRect(x, y, barPixels(k, w), 2);
+          g.fillStyle = '#b8fff8';
+          g.fillRect(x, y, barPixels(k, w), 1);
+          if (blaze) {
+            // (its fire licking up off it, and what to do)
+            for (let i = 0; i < 4; i++) {
+              const fx0 = x + 2 + ((i * 7 + Math.floor(t * 11)) % (w - 3));
+              const up = 1 + ((i + Math.floor(t * 9)) % 3);
+              g.fillStyle = up > 2 ? '#e8ffff' : '#22d0e0';
+              g.fillRect(fx0, y - 1 - up, 1, up);
+            }
+            // (over the life bar, clear of his head)
+            drawText(g, this.pactHint, this.heroAt.x, y - LIFE_BAR.h - 2 - (mana ? 2 : 0) - 9, hot ? '#e8ffff' : '#22d0e0', { align: 'center', font: 'small', shadow: P.ink });
+          }
+          g.globalAlpha = 1;
+        }
+      }
+    }
     // The word a monster carries hangs over its head as its rune stone: what you see is what its
     // death will leave on the floor.
     for (const m of game.monsters) {
@@ -4068,6 +4944,14 @@ export class Renderer {
         g.fillRect(x - 1, y + 13, 14, 1);
         g.drawImage(icon.img, x, y);
       });
+    }
+    // (THE HIGH CITY, THE ROYAL CARDS: one a royal touched wears that royal's crest over its head, above the word it carries)
+    for (const m of game.monsters) {
+      if (m.dead || !m.seen || !m.royal || unseen(m)) continue;
+      const sx = Math.round(wx(cam, m.x, m.y));
+      const top = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top;
+      const words = (m.elite || m.boss) && game.wordsCarried(m).length > 0;
+      drawRoyalCrest(g, m.royal, sx, top - (words ? (m.boss ? 6 : 15) + 16 : 5), t, m.id);
     }
   }
 

@@ -16,8 +16,10 @@
 //
 // Every number here that is a picture's is written down here; tests/act1_drowned.test.ts holds it to the art.
 
+import { DROWNED_RETCH, FROST, GRAB9, GRAB_HIT, RETCH, RETCH_HIT, SLICK, inCone } from '../../art/action_f9_fen';
 import { TUNE } from '../defs';
 import type { ActDef, GaitDef } from '../bosses';
+import { backView, flipped } from '../facing';
 import type { Monster } from '../state';
 import { T_FLOOR, T_PIT } from '../types';
 import type { Act1Rules } from './types';
@@ -40,6 +42,42 @@ const ACTS: readonly ActDef[] = [
   { id: 'drowned:rise', clip: 'rise', long: DROWNED.rise.long, hit: DROWNED.rise.up, dmg: 0, cooldown: 0, first: 0, after: 0.2, near: 0, far: 0, forced: true },
 ];
 
+/**
+ * ITS BOG RETCH AND ITS FROST GRAB (the art chat's art/action_f9_fen.ts behind DROWNED_RETCH, his yes there; his picks of 31 Oct: the
+ * retch, “something that, like, takes away space”, and for frost, “The Drowned, 10”):
+ *   grab   its hands clutch shut at GRAB_HIT on a strip GRAB9.fwd before it, GRAB9.half to either side: struck, and slowed as before;
+ *          and a hero within FROST.r of where they close (FROST.at before it) is FROZEN IN PLACE for FROST.hold (Hero.iceT: he
+ *          neither walks nor dodges), the rime racing out there ('drowned:rime': `d` 1 if he was frozen, `b`, `c` where he stood)
+ *   retch  it rears up, the cone it will cover marked on the floor before it from RETCH.mark into it (0.53 s before it retches); at RETCH_HIT the gush
+ *          is thrown out over the cone and comes down SLICK.lands after: a hero in the cone then is struck; it lies there as A SLICK
+ *          for SLICK.stays (shrinking over its last SLICK.fade): whoever wades in it is slowed to SLICK.slow of his pace and stung,
+ *          SLICK_STING.share of its blow every SLICK_STING.every ('drowned:slick', its clock from the retch; `b` when it may sting
+ *          again). The cone is drawn from in front or behind as the Drowned is (one of the floor's four ways), so it retches straight
+ *          along the way its picture faces, the way nearest him (`start`).
+ */
+export const RIME_PERIL = 'drowned:rime';
+export const SLICK_PERIL = 'drowned:slick';
+export const SLICK_STING = { share: 0.3, every: 0.5 };
+const RETCH_ACTS: readonly ActDef[] = [
+  { id: 'drowned:grab', clip: 'attack', long: GRAB9.long, hit: GRAB_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.6, near: 0, far: GRAB9.fwd[1] },
+  { id: 'drowned:retch', clip: 'retch', long: RETCH.long, hit: RETCH_HIT, dmg: 1, cooldown: 7, first: 2, after: 0.6, near: SLICK.near, far: SLICK.far },
+  ACTS[1],
+];
+/** The way its picture faces (one of the floor's four, as backView and flipped choose it): the way the cone is drawn. */
+export function axisOf(fx: number, fy: number): [number, number] {
+  const back = backView(fx, fy);
+  const flip = flipped(fx, fy);
+  return back ? (flip ? [-1, 0] : [0, -1]) : flip ? [0, 1] : [1, 0];
+}
+/** How far the slick reaches now (tiles), `s` seconds after the gush came down: spread out, lying, shrinking. */
+export function slickReach(s: number): number {
+  if (s < 0) return 0;
+  const grow = 1 - (1 - Math.min(1, s / SLICK.spread)) ** 2;
+  const k = Math.max(0, Math.min(1, (s - (SLICK.stays - SLICK.fade)) / SLICK.fade));
+  const shrink = 1 - k * k * (3 - 2 * k);
+  return SLICK.long * grow * (0.2 + 0.8 * shrink);
+}
+
 /** Is it under the water (not yet risen, or rising and not yet up)? */
 export function underWater(m: Monster): boolean {
   return !!m.a1 && (m.a1.under ?? 0) > 0;
@@ -47,7 +85,9 @@ export function underWater(m: Monster): boolean {
 
 export const RULES: Act1Rules | null = {
   gait: GAIT,
-  acts: ACTS,
+  get acts() {
+    return DROWNED_RETCH.on ? RETCH_ACTS : ACTS;
+  },
   spawned(R, m) {
     m.a1 = { under: 1 };
     // (by the water's edge where the floor has water near: the nearest tile of ground beside the water, not taken by another of them)
@@ -81,6 +121,8 @@ export const RULES: Act1Rules | null = {
   },
   start(_R, m, a) {
     if (a.id === 'drowned:rise' && m.a1) m.a1.under = 2;
+    // (its retch straight along the way its picture faces)
+    if (a.id === 'drowned:retch') [m.fx, m.fy] = axisOf(m.fx, m.fy);
   },
   end(_R, m, a) {
     if (a.id === 'drowned:rise' && m.a1) m.a1.under = 0;
@@ -97,6 +139,33 @@ export const RULES: Act1Rules | null = {
       if (at(DROWNED.rise.up) && m.a1) m.a1.under = 0;
       return;
     }
+    if (a.id === 'drowned:retch') {
+      // (the cone marked before it, the gush, the slick: 'drowned:slick', its clock from the retch)
+      if (at(RETCH.mark)) R.peril(m, 'act1', m.x, m.y, { a1: SLICK_PERIL, t: -(RETCH_HIT - RETCH.mark), hit: SLICK.lands, dur: SLICK.lands + SLICK.stays, dmg: g.rollMonsterDmg(m) * a.dmg, a: m.id });
+      if (at(a.hit)) g.sfx('wave', 0.5);
+      return;
+    }
+    if (DROWNED_RETCH.on && a.id === 'drowned:grab') {
+      if (!at(a.hit)) return;
+      // (its hands clutch shut: whoever they close on is struck and slowed; whoever is in the rime as it races out, frozen in place)
+      const r = R.rel(m);
+      const free = !h.move && h.invuln <= 0 && !g.over;
+      if (free && r.fwd >= GRAB9.fwd[0] - TUNE.heroRadius * 0.5 && r.fwd <= GRAB9.fwd[1] + TUNE.heroRadius * 0.5 && Math.abs(r.left) <= GRAB9.half) {
+        R.blow(m, a.dmg);
+        h.chill = Math.max(h.chillT > 0 ? h.chill : 0, DROWNED.grab.slow);
+        h.chillT = Math.max(h.chillT, DROWNED.grab.secs);
+      }
+      const px = m.x + m.fx * FROST.at;
+      const py = m.y + m.fy * FROST.at;
+      const frozen = free && Math.hypot(h.x - px, h.y - py) <= FROST.r + TUNE.heroRadius * 0.5;
+      if (frozen) {
+        h.iceT = FROST.hold;
+        g.emit({ t: 'text', x: h.x, y: h.y, text: 'Frozen', color: '#ff8a80' });
+      }
+      R.peril(m, 'act1', px, py, { a1: RIME_PERIL, dur: FROST.seen, d: frozen ? 1 : 0, b: h.x, c: h.y });
+      g.sfx('frost', 0.5);
+      return;
+    }
     if (a.id !== 'drowned:grab' || !at(a.hit)) return;
     // (its hands clutch shut before it: whoever they close on is grabbed, and dragged, slowed)
     const G = DROWNED.grab;
@@ -109,4 +178,41 @@ export const RULES: Act1Rules | null = {
     }
     g.sfx('swing', 0.35);
   },
+  peril(R, p, dt) {
+    if (p.a1 !== SLICK_PERIL) return;
+    const g = R.g;
+    const h = g.hero;
+    if (p.t < 0) {
+      // (marked, not yet retched: gone if it is stopped first)
+      const m = g.monsters.find((o) => o.id === p.a);
+      if (!m || m.dead || m.state !== 'act' || m.act?.id !== 'drowned:retch') p.dur = p.t;
+      return;
+    }
+    const dx = h.x - p.x;
+    const dy = h.y - p.y;
+    const along = dx * p.fx + dy * p.fy;
+    const aside = -dx * p.fy + dy * p.fx;
+    const free = !h.move && h.invuln <= 0 && !g.over;
+    // (the gush comes down over the cone: whoever is in it is struck)
+    if (p.done === 0 && p.t >= SLICK.lands) {
+      p.done = 1;
+      p.b = p.t + SLICK_STING.every;
+      if (free && inCone(along, aside, SLICK.long + TUNE.heroRadius * 0.5)) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+      return;
+    }
+    if (p.done === 0) return;
+    // (the slick: whoever wades in it is slowed, and stung)
+    const reach = slickReach(p.t - SLICK.lands);
+    if (reach <= SLICK.from || !inCone(along, aside, reach)) return;
+    h.slowT = Math.max(h.slowT ?? 0, 0.12);
+    h.slowBy = Math.max((h.slowT ?? 0) > 0.12 ? h.slowBy ?? 0 : 0, 1 - SLICK.slow);
+    if (p.t >= p.b && free) {
+      p.b = p.t + SLICK_STING.every;
+      g.hurtHero(p.dmg * SLICK_STING.share, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    }
+    void dt;
+  },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { DROWNED_RETCH };

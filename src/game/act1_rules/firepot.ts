@@ -14,6 +14,8 @@
 // The rules know nothing of the pictures: each number here that is a picture's is written down, and
 // tests/act1_firepot.test.ts holds it to the art.
 
+import { BLAZE, FIREPOT_BLAZE, LOB, LOB_HIT, blazeArc, blazeFly, lobFrom } from '../../art/action_f6_cult';
+import { TILE3 } from '../../art/new_mobs3';
 import type { BossRules } from '../bosses';
 import { TUNE } from '../defs';
 import { beside } from '../facing';
@@ -33,6 +35,24 @@ export const FIREPOT = {
   fire: { r: 0.42, burn: 4, tick: 0.5, dmg: 0.35, fade: 0.6 },
 };
 
+/**
+ * THE LOB MADE BIG (the art chat's art/action_f6_cult.ts behind FIREPOT_BLAZE, his yes there, 2 Nov 2026): its wind-up held, the pot
+ * slung in two frames (LOB_HIT) from the sling (lobFrom), high (blazeArc) and longer in the air (blazeFly); its burst 1.6 round, the
+ * floor burning 1.4 round for 5 s. Its numbers with the art's switch: the old above while it is off.
+ */
+export function firepotNums(): { long: number; hit: number; far: number; from: readonly [number, number, number]; fly: (d: number) => number; arc: (d: number) => number; burst: { r: number; long: number }; fire: { r: number; burn: number; tick: number; dmg: number; fade: number } } {
+  if (!FIREPOT_BLAZE.on) {
+    const P = FIREPOT.pot;
+    return { long: 1.7, hit: 27 / 30, far: 7.5, from: P.from, fly: (d) => P.fly0 + P.flyPer * d, arc: (d) => P.arc0 + P.arcPer * d, burst: FIREPOT.burst, fire: FIREPOT.fire };
+  }
+  const o = lobFrom();
+  return {
+    long: LOB.long, hit: LOB_HIT, far: BLAZE.far, from: [o[0] / TILE3, o[1] / TILE3, o[2] / 2], fly: blazeFly, arc: blazeArc,
+    burst: { r: BLAZE.r, long: BLAZE.burstLong }, fire: { r: BLAZE.fire, burn: BLAZE.burn, tick: FIREPOT.fire.tick, dmg: FIREPOT.fire.dmg, fade: BLAZE.fade },
+  };
+}
+const LOB_ACTS = new Map<boolean, import('../bosses').ActDef[]>();
+
 /** Where a pot is, `p.t` seconds after it was let go: over the floor (tiles) and how high (game pixels). */
 export function potAt(p: Peril): { x: number; y: number; z: number } {
   const u = Math.max(0, Math.min(1, p.hit > 0 ? p.t / p.hit : 1));
@@ -43,7 +63,16 @@ export const RULES: Act1Rules = {
   // (its trudge: eight frames at eight a second, painted for 1.1 tiles a second, looping from its stand; from
   // behind as the camera truly sees it. It stands off and lobs)
   gait: { pace: 1.1, cycle: 1.0, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 4.5, slack: 1, trueBack: true },
-  acts: [{ id: 'firepot:lob', clip: 'attack', long: 1.7, hit: 27 / 30, dmg: 1, cooldown: 0, first: 0, after: 1.5, near: 0, far: 7.5 }],
+  // (its lob: the old, or made big with the art's switch)
+  get acts() {
+    const on = FIREPOT_BLAZE.on;
+    let a = LOB_ACTS.get(on);
+    if (!a) {
+      const N = firepotNums();
+      LOB_ACTS.set(on, (a = [{ id: 'firepot:lob', clip: 'attack', long: N.long, hit: N.hit, dmg: 1, cooldown: 0, first: 0, after: 1.5, near: 0, far: N.far }]));
+    }
+    return a;
+  },
   acting(R: BossRules, m: Monster, a, t0, t1): void {
     const g = R.g;
     const h = g.hero;
@@ -51,16 +80,15 @@ export const RULES: Act1Rules = {
     if (a.id !== 'firepot:lob') return;
     if (t0 < 0.4 && t1 >= 0.4) g.sfx('fire', 0.25);
     if (!(t0 < a.hit && t1 >= a.hit)) return;
-    const P = FIREPOT.pot;
-    const o = beside(m.x, m.y, m.fx, m.fy, m.act!.hand, P.from[0], P.from[1]);
+    const N = firepotNums();
+    const o = beside(m.x, m.y, m.fx, m.fy, m.act!.hand, N.from[0], N.from[1]);
     const dx = h.x - o.x;
     const dy = h.y - o.y;
     const d = Math.hypot(dx, dy);
-    const fly = P.fly0 + P.flyPer * d;
-    const F = FIREPOT.fire;
+    const fly = N.fly(d);
     R.peril(m, 'act1', h.x, h.y, {
-      a1: 'firepot:pot', hit: fly, dur: fly + FIREPOT.burst.long + F.burn, dmg: g.rollMonsterDmg(m) * a.dmg,
-      fx: d > 0.01 ? dx / d : m.fx, fy: d > 0.01 ? dy / d : m.fy, a: o.x, b: o.y, c: P.from[2], d: P.arc0 + P.arcPer * d, el: 'fire',
+      a1: 'firepot:pot', hit: fly, dur: fly + N.burst.long + N.fire.burn, dmg: g.rollMonsterDmg(m) * a.dmg,
+      fx: d > 0.01 ? dx / d : m.fx, fy: d > 0.01 ? dy / d : m.fy, a: o.x, b: o.y, c: N.from[2], d: N.arc(d), el: 'fire',
     });
     g.sfx('swing', 0.5);
   },
@@ -68,20 +96,24 @@ export const RULES: Act1Rules = {
     if (p.a1 !== 'firepot:pot' || p.t < p.hit) return;
     const g = R.g;
     const h = g.hero;
-    const F = FIREPOT.fire;
+    const N = firepotNums();
+    const F = N.fire;
     if (!p.done) {
       // (it comes down, and bursts in the cult's fire)
       p.done = 1;
-      if (Math.hypot(h.x - p.x, h.y - p.y) <= FIREPOT.burst.r) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+      if (Math.hypot(h.x - p.x, h.y - p.y) <= N.burst.r) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
       g.emit({ t: 'shake', amount: 1 });
       g.sfx('fire', 0.7);
       return;
     }
     // (and the floor burns: whoever stands in it is burned, tick by tick)
-    const next = p.hit + FIREPOT.burst.long + F.tick * (p.done - 1);
+    const next = p.hit + N.burst.long + F.tick * (p.done - 1);
     if (p.t >= next && p.t < p.dur - F.fade) {
       p.done++;
       if (Math.hypot(h.x - p.x, h.y - p.y) <= F.r + TUNE.heroRadius * 0.5) g.hurtHero(p.dmg * F.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
     }
   },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { FIREPOT_BLAZE };

@@ -32,12 +32,13 @@
 import { RNG } from '../../engine/rng';
 import type { Act1Dress, Act1Tile } from '../act1_dress';
 import { act1Pack } from '../act1_mobs';
-import { nearestFloor, reach, tileMid } from '../act1_layout';
+import { nearestFloor, reach, segDist, tileMid } from '../act1_layout';
 import type { AreaRole, Blob, Land, Laid, Lane } from '../act1_layout';
 import type { BellsPlan, HouseLaid } from '../act2_types';
 import type { Level, PropInst } from '../state';
 import { makeHazards } from '../traps';
 import { T_FLOOR, T_WALL } from '../types';
+import { MOMENT_FROM_START, pigeonRoofTiles, roofRidge } from '../act2_moments';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room, RoomKind } from '../types';
 
 /** Whether this map-maker lays the floor yet (false: the descent's stands in). */
@@ -96,6 +97,8 @@ interface Area {
   sides: number[];
   /** Which way the way came into it (-1: the start). */
   inDir: number;
+  /** (GW_OPEN) Its tiles that no area of the great ward laid before it has: its packs are by these. */
+  own?: number;
 }
 interface Way {
   rects: Rect[];
@@ -171,7 +174,7 @@ function clearOf(plan: Plan, r: Rect, gap: number, exceptAreas: readonly number[
  * in it), and the new area at its end, `along` deep and `across` wide; null if it would come within the houses' gap of
  * anything else. `mid`: the lane comes into the new area near the middle of its side (the Crier's Square: his rostrum faces it).
  */
-function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: AreaRole, size: [number, number], L: number, w: number, jog: boolean, mid: boolean): { area: Area; way: Way } | null {
+function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: AreaRole, size: [number, number], L: number, w: number, jog: boolean, mid: boolean, through: readonly number[] = []): { area: Area; way: Way } | null {
   const A = plan.areas[ai].r;
   const [a0, a1] = across(A, d);
   if (a1 - 1 - w < a0 + 1) return null;
@@ -200,7 +203,8 @@ function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: Are
   }
   const n = plan.areas.length;
   if (!clearOf(plan, b, GW_PLAN.gap, [])) return null;
-  for (const r of rects) if (!clearOf(plan, r, GW_PLAN.gap, [ai])) return null;
+  // (`through`: areas the lane may run through on its way out, the great ward's other squares)
+  for (const r of rects) if (!clearOf(plan, r, GW_PLAN.gap, [ai, ...through])) return null;
   const area: Area = { r: b, role, kind, path: -1, parent: ai, sides: [(d + 2) % 4], inDir: d };
   const way: Way = { rects, w, pts, a: ai, b: n, main: false };
   return { area, way };
@@ -209,7 +213,139 @@ function grow(rng: RNG, plan: Plan, ai: number, d: number, kind: Kind, role: Are
 // ---------------------------------------------------------------------------------------------------
 // THE PLAN
 
+/**
+ * OPEN (his pick for floor 11), as he put what open means, 1 Nov 2026: “When I say open I mean one massive area with a waypoint
+ * on one side, and the boss somewhere on the other”; of the open floors, “The rest can change”. On, past the gate's street
+ * the city opens into ONE GREAT WARD, its edges straight as houses are: `rects` great squares in a row, each far into the last
+ * (`step` on, drifting across by up to `shift`), and `bulges` lesser ones pushed out of its sides, so that its edge steps in and
+ * out; the Crier's Square beyond its far end by a short lane of its own (his fight as it was); the side market (the Muffled
+ * Bell's), the Order's yard and the court off its sides. Off, the gate's street and nine squares laid one after another.
+ */
+export const GW_OPEN = {
+  on: true,
+  rects: 4,
+  along: [18, 22] as const,
+  across: [20, 25] as const,
+  step: [9, 12] as const,
+  shift: 5,
+  bulges: 3,
+  bulge: { along: [10, 14] as const, across: [9, 12] as const, into: [3, 5] as const },
+  /** Its packs this share of its ground's due (the old squares' were fewer: each a pack or more, the small ones one), so that the floor has the monsters it had. */
+  packs: 0.8,
+};
+
+/**
+ * THE PIGEONS' ROW (his pick of 2 Nov 2026, to the pigeons on the great ward sitting far off the main way, and on some layings
+ * nowhere: “A row of houses by the path (Recommended)”). On the great ward (GW_OPEN), a block of houses is left standing in one of
+ * its squares beside the main way, its ridge `near` tiles off the way's middle line and none of it within `clear` of it, square-edged as houses are and no bigger than
+ * `most` tiles: one of the art's roof plots with its ridge along x, every tile the pigeons need as houses (act2_moments.ts
+ * pigeonRoofTiles); the street at its foot left open; nothing cut off by it, and nothing of it in or by the boss's ground or a house
+ * walked into. The pigeons wait on its roof (act2_moments.ts gateWardMomentAt), and go up as he comes near and sees them
+ * (render/act1_pieces.ts stepMoments): so along `see.run` tiles of the way's middle line at least, he is within `see.near` of them
+ * (their reach, MOMENT_NEAR, 5.5, less half a tile for his walk off the line), the street at their foot in his sight past the
+ * houses, and they on his screen: no more than `see.down` tiles further down it than he is, by x + y (on a phone's, 234 game
+ * pixels high, his feet 129 down it, the birds MOMENT_UP, 84, over their ridge and MOMENT_IN, 18, in from its top: 3.375). A
+ * laying with no room for it is laid again: every laying of the great ward has its row. On by his yes to its pictures, 2 Nov 2026:
+ * “Yes, switch it on (Recommended)”.
+ */
+export const GW_PIGEON_ROW = { on: true, near: [2, 8] as const, clear: 1, most: 110, see: { near: 5, down: 3, run: 1.5 } };
+
+function planOpen(rng: RNG): Plan | null {
+  const P = GW_PLAN;
+  const O = GW_OPEN;
+  const first = rng.int(0, 1);
+  const plan: Plan = { areas: [], ways: [], houses: [], first };
+  plan.areas.push({ r: first === 0 ? [0, 0, P.gate[0], P.gate[1]] : [0, 0, P.gate[1], P.gate[0]], role: 'start', kind: 'gate', path: 0, parent: -1, sides: [(first + 2) % 4], inDir: -1 });
+  // (along the way in, u, and across it, v)
+  const uv = (r: Rect): [number, number, number, number] => (first === 0 ? [r[0], r[2], r[1], r[3]] : [r[1], r[3], r[0], r[2]]);
+  const rect = (u0: number, u1: number, v0: number, v1: number): Rect => (first === 0 ? [u0, v0, u1, v1] : [v0, u0, v1, u1]);
+  // THE GREAT WARD: its first square off the gate's street
+  let got: { area: Area; way: Way } | null = null;
+  for (let tries = 0; tries < 30 && !got; tries++) got = grow(rng, plan, 0, first, 'market', 'path', [rng.int(O.along[0], O.along[1]), rng.int(O.across[0], O.across[1])], rng.int(5, 7), 3, false, true);
+  if (!got) return null;
+  got.area.path = 1;
+  got.way.main = true;
+  plan.areas[0].sides.push(first);
+  plan.areas.push(got.area);
+  plan.ways.push(got.way);
+  const ward = [1];
+  const [u0] = uv(got.area.r);
+  let u = u0;
+  let vc = (uv(got.area.r)[2] + uv(got.area.r)[3]) / 2;
+  for (let k = 1; k < O.rects; k++) {
+    u += rng.int(O.step[0], O.step[1]);
+    vc += rng.range(-O.shift, O.shift);
+    const al = rng.int(O.along[0], O.along[1]);
+    const ac = rng.int(O.across[0], O.across[1]);
+    const v0 = Math.round(vc - ac / 2);
+    plan.areas.push({ r: rect(u, u + al, v0, v0 + ac), role: 'path', kind: k % 2 === 1 ? 'square' : 'market', path: k + 1, parent: plan.areas.length - 1, sides: [], inDir: first });
+    ward.push(plan.areas.length - 1);
+  }
+  // (the lesser squares out of its sides)
+  for (let b = 0; b < O.bulges; b++) {
+    const h = plan.areas[rng.pick(ward)];
+    const [hu0, hu1, hv0, hv1] = uv(h.r);
+    const al = rng.int(O.bulge.along[0], O.bulge.along[1]);
+    const ac = rng.int(O.bulge.across[0], O.bulge.across[1]);
+    const into = rng.int(O.bulge.into[0], O.bulge.into[1]);
+    const bu = Math.max(u0, rng.int(hu0, Math.max(hu0, hu1 - al)));
+    const r = rng.chance(0.5) ? rect(bu, bu + al, hv1 - into, hv1 - into + ac) : rect(bu, bu + al, hv0 + into - ac, hv0 + into);
+    plan.areas.push({ r, role: 'path', kind: 'square', path: -1, parent: plan.areas.indexOf(h), sides: [], inDir: first });
+    ward.push(plan.areas.length - 1);
+  }
+  // (each its own ground: what none laid before it has)
+  const seen = new Set<number>();
+  for (const i of ward) {
+    const r = plan.areas[i].r;
+    let own = 0;
+    for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) {
+      const k = (y + 4096) * 8192 + (x + 4096);
+      if (!seen.has(k)) {
+        seen.add(k);
+        own++;
+      }
+    }
+    plan.areas[i].own = own;
+  }
+  // THE CRIER'S SQUARE beyond its far end
+  const far = ward.reduce((a, b) => (uv(plan.areas[b].r)[1] > uv(plan.areas[a].r)[1] ? b : a), ward[0]);
+  let crier: { area: Area; way: Way } | null = null;
+  for (let tries = 0; tries < 40 && !crier; tries++) crier = grow(rng, plan, far, first, 'crier', 'boss', sizeOf(rng, 'crier', false), rng.int(5, 8), 3, false, true, ward);
+  if (!crier) return null;
+  crier.area.path = O.rects + 1;
+  crier.way.main = true;
+  plan.areas[far].sides.push(first);
+  plan.areas.push(crier.area);
+  plan.ways.push(crier.way);
+  // THE SIDE AREAS off its sides: the Muffled Bell's market off its middle squares
+  const mid = ward.slice(1, Math.max(2, O.rects - 1));
+  if (!sideOff(rng, plan, 'market', 'side', mid, true, ward)) return null;
+  if (!sideOff(rng, plan, 'yard', 'lair', ward, true, ward)) return null;
+  sideOff(rng, plan, 'court', 'side', ward, false, ward);
+  return plan;
+}
+
+/** A side area off one of `hosts` (any of its sides no lane leaves by), by a lane of its own; false if none would go (and `must`). */
+function sideOff(rng: RNG, plan: Plan, kind: Kind, role: AreaRole, hosts: number[], must: boolean, through: readonly number[] = []): boolean {
+  const P = GW_PLAN;
+  for (let tries = 0; tries < 80; tries++) {
+    const h = rng.pick(hosts);
+    const free = [0, 1, 2, 3].filter((d) => !plan.areas[h].sides.includes(d));
+    if (!free.length) continue;
+    const d = rng.pick(free);
+    const L = rng.int(P.lane.side[0], P.lane.side[1]);
+    const got = grow(rng, plan, h, d, kind, role, sizeOf(rng, kind, true), L, 3, rng.chance(P.lane.jog * 0.5), false, through);
+    if (!got) continue;
+    plan.areas[h].sides.push(d);
+    plan.areas.push(got.area);
+    plan.ways.push(got.way);
+    return true;
+  }
+  return !must;
+}
+
 function planOf(rng: RNG): Plan | null {
+  if (GW_OPEN.on) return planOpen(rng);
   const P = GW_PLAN;
   // which way the floor goes in from the gate (its front along +x or +y), and the other way it turns now and then
   const first = rng.int(0, 1);
@@ -408,7 +544,10 @@ export function generate(depth: number, seed: number): Laid | null {
   const cut = new Uint8Array(W * H);
   // THE START: four tiles in from the gate, in the middle of its street
   const startTile = first === 0 ? Math.floor(gmid) * W + gr[0] + 4 : (gr[1] + 4) * W + Math.floor(gmid);
+  // (GW_PIGEON_ROW: the pigeons' row of houses beside the main way)
+  const pigeons = GW_OPEN.on && GW_PIGEON_ROW.on && tiles[startTile] === T_FLOOR ? pigeonRow(rng, plan, W, H, tiles, zones, startTile) : null;
   if (tiles[startTile] !== T_FLOOR) return null;
+  if (GW_OPEN.on && GW_PIGEON_ROW.on && !pigeons) return null;
   const got = reach(W, H, tiles, cut, startTile, true);
   for (let i = 0; i < W * H; i++) if (tiles[i] === T_FLOOR && !got[i]) return null;
 
@@ -458,7 +597,7 @@ export function generate(depth: number, seed: number): Laid | null {
   for (let i = 0; i < W * H; i++) floor.variant[i] = vr.int(0, 255);
 
   // THE BELLS (the contract, docs/act2_build.md)
-  const bells = bellsOf(rng, plan, floor, zones);
+  const bells = bellsOf(rng, plan, floor, zones, pigeons);
   if (!bells) return null;
 
   floor.packs = packsOf(rng, plan, floor, depth, bells);
@@ -468,8 +607,9 @@ export function generate(depth: number, seed: number): Laid | null {
   const way: [number, number][] = [];
   plan.areas.filter((a) => a.path >= 0).sort((a, b) => a.path - b.path).forEach((a, k) => {
     if (k > 0) {
-      const w = plan.ways.find((q) => q.main && q.b === plan.areas.indexOf(a))!;
-      way.push(...w.pts.map((p) => [p[0], p[1]] as [number, number]));
+      // (GW_OPEN: the great ward's squares open into each other, no lane between them)
+      const w = plan.ways.find((q) => q.main && q.b === plan.areas.indexOf(a));
+      if (w) way.push(...w.pts.map((p) => [p[0], p[1]] as [number, number]));
     }
     way.push(midOf(a.r));
   });
@@ -496,6 +636,7 @@ export function generate(depth: number, seed: number): Laid | null {
     squares,
     houses: plan.houses,
     bells,
+    ...(pigeons ? { pigeons } : {}),
   };
   // (the plan's own, for the dresser: the gate, the rostrum, each area's kind and rectangle, each lane's rectangles)
   GW_PLANS.set(land, {
@@ -527,6 +668,149 @@ const GW_PLANS = new WeakMap<Land, DressPlan>();
 // ---------------------------------------------------------------------------------------------------
 // WHAT HANGS ON THE HOUSE FRONTS
 
+/** The main way's middle line, start to boss, as the land holds it (generate). */
+function wayLine(plan: Plan): [number, number][] {
+  const way: [number, number][] = [];
+  plan.areas.filter((a) => a.path >= 0).sort((a, b) => a.path - b.path).forEach((a, k) => {
+    if (k > 0) {
+      const w = plan.ways.find((q) => q.main && q.b === plan.areas.indexOf(a));
+      if (w) way.push(...w.pts.map((p) => [p[0], p[1]] as [number, number]));
+    }
+    way.push(midOf(a.r));
+  });
+  return way;
+}
+
+/** (GW_PIGEON_ROW) Leave a block of houses standing in a square of the great ward beside the main way for the pigeons: the first that fits. */
+function pigeonRow(rng: RNG, plan: Plan, W: number, H: number, tiles: Uint8Array, zones: Uint8Array, startTile: number): { x: number; y: number; foot: number } | null {
+  const P = GW_PIGEON_ROW;
+  const way = wayLine(plan);
+  const wayDist = (x: number, y: number): number => {
+    let d = Infinity;
+    for (let i = 0; i + 1 < way.length; i++) d = Math.min(d, segDist(x, y, way[i][0], way[i][1], way[i + 1][0], way[i + 1][1]));
+    return d;
+  };
+  /** The way's middle line a quarter tile at a time, start to boss. */
+  const along: [number, number][] = [];
+  for (let i = 0; i + 1 < way.length; i++) {
+    const [ax, ay] = way[i];
+    const [bx, by] = way[i + 1];
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 0.25));
+    for (let k = 0; k < n; k++) along.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+  }
+  const sx = (startTile % W) + 0.5;
+  const sy = Math.floor(startTile / W) + 0.5;
+  const boss = plan.areas.find((a) => a.role === 'boss')!.r;
+  const gate = plan.areas[0].r;
+  /** (a tile in or by the boss's ground: the Crier's square and two tiles round it) */
+  const byBoss = (tx: number, ty: number): boolean => tx >= boss[0] - 2 && ty >= boss[1] - 2 && tx < boss[2] + 2 && ty < boss[3] + 2;
+  /**
+   * A tile the block may take: houses already, or floor of one of the great ward's squares (not a lane, not the gate's street, not
+   * the Crier's square, not within `clear` of the way's middle line: the way left open past it); never a house walked into, nor by
+   * one (its roof is open, and faded: no pigeon sits on it).
+   */
+  const mayTake = (tx: number, ty: number): boolean => {
+    if (tx < 1 || ty < 1 || tx >= W - 1 || ty >= H - 1) return false;
+    if (walkInAt(plan.houses, tx, ty)) return false;
+    const i = ty * W + tx;
+    if (tiles[i] !== T_FLOOR) return true;
+    if (wayDist(tx + 0.5, ty + 0.5) < P.clear) return false;
+    if (zones[i] !== GW_ZONES.Square) return false;
+    if (byBoss(tx, ty)) return false;
+    return !(tx >= gate[0] - 1 && ty >= gate[1] - 1 && tx < gate[2] + 1 && ty < gate[3] + 1);
+  };
+  const found: { x0: number; y0: number; x1: number; y1: number; score: number; at: { x: number; y: number; foot: number } }[] = [];
+  /**
+   * How far along the way's middle line (tiles, the longest stretch) he would see the pigeons on the ridge whose middle is (mx, my)
+   * go up, the block (x0, y0) to (x1, y1) standing: near enough, them on his screen, and nothing but floor from him to the street at
+   * their foot (tile `seenX`, `seenY`).
+   */
+  const seenAlong = (mx: number, my: number, seenX: number, seenY: number, x0: number, y0: number, x1: number, y1: number): number => {
+    const S = P.see;
+    const clear = (tx: number, ty: number): boolean => tiles[ty * W + tx] === T_FLOOR && !(tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1);
+    const sees = (px: number, py: number): boolean => {
+      if (Math.hypot(px - mx, py - my) > S.near || px + py > mx + my + S.down) return false;
+      const ax = seenX + 0.5;
+      const ay = seenY + 0.5;
+      const n = Math.max(1, Math.ceil(Math.hypot(px - ax, py - ay) / 0.25));
+      for (let k = 0; k <= n; k++) if (!clear(Math.floor(ax + ((px - ax) * k) / n), Math.floor(ay + ((py - ay) * k) / n))) return false;
+      return true;
+    };
+    let best = 0;
+    let run = 0;
+    for (const [px, py] of along) {
+      run = sees(px, py) ? run + 1 : 0;
+      best = Math.max(best, run);
+    }
+    return best * 0.25;
+  };
+  const seen = new Set<string>();
+  for (let j = 1; j * 2.5 < H - 4; j++) {
+    for (let x = 1; x < W - 1; x += 0.5) {
+      const r = roofRidge(x, j * 2.5 + 1);
+      if (r.along !== 'x' || r.to - r.from < 3) continue;
+      const key = `${j}:${r.from}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const mx = (r.from + r.to) / 2;
+      const my = r.at;
+      const d = wayDist(mx, my);
+      if (d < P.near[0] || d > P.near[1]) continue;
+      if (Math.hypot(mx - sx, my - sy) < MOMENT_FROM_START + 2) continue;
+      // (its street at its foot, open, a square's: where he sees it from)
+      const foot = Math.ceil((j + 1) * 2.5);
+      const tx = Math.floor(mx);
+      if (!(tiles[foot * W + tx] === T_FLOOR && zones[foot * W + tx] === GW_ZONES.Square && tiles[(foot + 1) * W + tx] === T_FLOOR)) continue;
+      if (byBoss(tx, foot) || byBoss(tx, foot + 1)) continue;
+      // (every tile the pigeons need, and the block square round them)
+      const need = pigeonRoofTiles(mx, my, j, r.from, r.to);
+      let x0 = Infinity;
+      let y0 = Infinity;
+      let x1 = -Infinity;
+      let y1 = -Infinity;
+      for (const [a, b] of need) {
+        x0 = Math.min(x0, a);
+        y0 = Math.min(y0, b);
+        x1 = Math.max(x1, a);
+        y1 = Math.max(y1, b);
+      }
+      if (y1 >= foot) continue;
+      let take = 0;
+      let ok = true;
+      for (let ty = y0; ty <= y1 && ok; ty++) for (let tx2 = x0; tx2 <= x1 && ok; tx2++) {
+        if (!mayTake(tx2, ty)) ok = false;
+        else if (tiles[ty * W + tx2] === T_FLOOR) take++;
+      }
+      if (!ok || take === 0 || take > P.most) continue;
+      // (and from the way he sees them go up)
+      const run = seenAlong(mx, my, tx, foot, x0, y0, x1, y1);
+      if (run < P.see.run) continue;
+      found.push({ x0, y0, x1, y1, score: Math.abs(d - (P.near[0] + P.near[1]) / 2) + take / 60 - Math.min(run, 4) / 4 + rng.next() * 0.5, at: { x: mx, y: my, foot } });
+    }
+  }
+  found.sort((a, b) => a.score - b.score);
+  for (const f of found) {
+    // (houses there; kept only if nothing is cut off by them)
+    const was: number[] = [];
+    for (let ty = f.y0; ty <= f.y1; ty++) for (let tx = f.x0; tx <= f.x1; tx++) {
+      const i = ty * W + tx;
+      if (tiles[i] !== T_FLOOR) continue;
+      was.push(i);
+      tiles[i] = T_WALL;
+      zones[i] = 0;
+    }
+    const got = reach(W, H, tiles, new Uint8Array(W * H), startTile, true);
+    let whole = true;
+    for (let i = 0; i < W * H && whole; i++) if (tiles[i] === T_FLOOR && !got[i]) whole = false;
+    if (whole) return f.at;
+    for (const i of was) {
+      tiles[i] = T_FLOOR;
+      zones[i] = GW_ZONES.Square;
+    }
+  }
+  return null;
+}
+
 /** Is tile (a, b) of a house walked into (its room, its front, the tile of houses round them)? */
 function walkInAt(houses: readonly HouseLaid[], a: number, b: number): boolean {
   return houses.some((h) => a >= h.room[0] - 1 && b >= h.room[1] - 1 && (h.front.along === 'x' ? a <= h.room[2] && b <= h.front.at : a <= h.front.at && b <= h.room[3]));
@@ -555,7 +839,7 @@ function faceStands(floorAt: (x: number, y: number) => boolean, houses: readonly
  * Crier's Square. Which bell is which is told by where it is: a small bell with whole floor all round it stands; one at a
  * house front's foot is the shop's doorbell (`bellKinds`).
  */
-function bellsOf(rng: RNG, plan: Plan, f: Floor, zones: Uint8Array): BellsPlan | null {
+function bellsOf(rng: RNG, plan: Plan, f: Floor, zones: Uint8Array, pigeons: { x: number; y: number; foot: number } | null = null): BellsPlan | null {
   const W = f.w;
   const H = f.h;
   const floorAt = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < W && y < H && f.tiles[y * W + x] === T_FLOOR;
@@ -601,6 +885,8 @@ function bellsOf(rng: RNG, plan: Plan, f: Floor, zones: Uint8Array): BellsPlan |
       const d = Math.hypot(mx - cx, my - cy);
       if (d > far || d < 5 || Math.hypot(mx - sx, my - sy) < 10 || overlaps(bossR, [x, y, x + 1, y + 1], 1)) continue;
       if (nearDoor(x, y, 2)) continue;
+      // (GW_PIGEON_ROW: no bell by the pigeons' row, where they wait to go up)
+      if (pigeons && Math.hypot(mx - pigeons.x, my - pigeons.y) < 7) continue;
       const area = plan.areas.find((a) => inRect(a.r, x, y));
       if (area && area.kind !== 'gate' && ring(x, y) && !laneRects.some((r) => overlaps(r, [x, y, x + 1, y + 1], 2))) {
         const [ax, ay] = midOf(area.r);
@@ -667,10 +953,17 @@ function packsOf(rng: RNG, plan: Plan, f: Floor, depth: number, bells: BellsPlan
     out.push({ x: Math.floor(x) + 0.5, y: Math.floor(y) + 0.5, roomId: room, size: n ?? p.size, tier, kind: p.kind });
     used.push([x, y]);
   };
+  let owed = 0.5;
   plan.areas.forEach((a, i) => {
     if (a.role === 'start' || a.role === 'boss') return;
     const [w, h] = [a.r[2] - a.r[0], a.r[3] - a.r[1]];
-    const n = a.role === 'lair' ? 1 : Math.max(1, Math.round((w * h) / 75));
+    // (GW_OPEN: a square of the great ward by the ground that is its own, the parts of a pack carried on)
+    let n: number;
+    if (a.own !== undefined) {
+      owed += (a.own * GW_OPEN.packs) / 75;
+      n = Math.floor(owed);
+      owed -= n;
+    } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round((w * h) / 75));
     const room = f.rooms[i];
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 40; tries++) {
@@ -746,6 +1039,65 @@ function propsOf(rng: RNG, plan: Plan, f: Floor, bells: BellsPlan): PropSpot[] {
 // THE DRESSER
 
 /** The art's names, as the dresser lays them (art/floor11.ts and art/act2_set.ts). */
+/**
+ * GW_SCENES: THE WARD'S THINGS WHERE THEY BELONG (his words, 1 Nov 2026, 10:05: “Can you make sure the doodads go in places that
+ * seem proper as opposed to randomly?”; floor by floor, “With each floor (Recommended)”, pictures first). On, what stood about
+ * at random in the squares, the yard and the court stands together as one of these scenes: against a house front that stands
+ * (`front`: its first part's tile with the face behind it, the rest along the front by `du` and out from it by `dv`), or out
+ * in the square's outer band near its stalls (`open`, turned any of four ways). The stalls round the edges, the hearts of the
+ * squares, the lanes' things and the house fronts' as they were; what lies (the dome's shards, the ink) still lies about.
+ */
+export const GW_SCENES = { on: true };
+interface GWPart {
+  du: number;
+  dv: number;
+  name: string;
+  solid: boolean;
+  frames?: number;
+}
+interface GWScene {
+  name: string;
+  /** Against a house front (else out in the open). */
+  front: boolean;
+  /** The first `need` parts must all be laid for it to be laid at all. */
+  need: number;
+  parts: GWPart[];
+}
+const GS = (du: number, dv: number, name: string, frames = 1): GWPart => ({ du, dv, name, solid: true, frames });
+const GL = (du: number, dv: number, name: string, frames = 1): GWPart => ({ du, dv, name, solid: false, frames });
+/** Each kind of area's scenes, the first that fit laid (a big market two). */
+const GW_SCENE_SETS: Readonly<Record<'market' | 'square' | 'yard' | 'court' | 'crier', readonly GWScene[]>> = {
+  market: [
+    // (the produce come off the carts: a handcart, its baskets and its sacks, out by the stalls)
+    { name: 'the produce cart', front: false, need: 2, parts: [GS(0, 0, 'handcart', 2), GS(2, 0, 'baskets of produce'), GS(0, 2, 'sacks of grain'), GS(2, 2, 'baskets of produce')] },
+    // (the carters' corner: the trough against a house, the hay beside it)
+    { name: 'the trough', front: true, need: 2, parts: [GS(0, 0, 'the horse trough'), GS(2, 0, 'hay bales'), GS(3, 1, 'hay bales')] },
+    // (the notices: the board against a house, the Order's lantern by it, its ink run down below)
+    { name: 'the notice board', front: true, need: 1, parts: [GS(0, 0, 'the notice board', 2), GS(2, 0, "the Order's hooded lantern", 2), GL(0, 1, 'an ink spill', 2), GL(1, 2, "the Order's ink bars", 2)] },
+    // (a cellar's hatch at a house front's foot, its stores brought up beside it)
+    { name: 'the cellar', front: true, need: 1, parts: [GS(0, 0, "a cellar's hatch", 2), GS(2, 0, 'crates'), GS(3, 0, 'barrel')] },
+  ],
+  square: [
+    { name: 'the notice board', front: true, need: 1, parts: [GS(0, 0, 'the notice board', 2), GS(2, 0, "the Order's hooded lantern", 2), GL(0, 1, 'an ink spill', 2)] },
+    // (a house the siege brought down: its rubble against what stands, the dome's shards about it)
+    { name: 'the fallen house', front: true, need: 2, parts: [GS(0, 0, 'rubble of the siege', 2), GS(1, 1, 'rubble of the siege', 2), GL(3, 1, 'a shard of the dome', 4), GL(0, 3, 'a shard of the dome', 4)] },
+    { name: 'the cellar', front: true, need: 1, parts: [GS(0, 0, "a cellar's hatch", 2), GS(2, 0, 'crates'), GS(3, 0, 'handcart', 2)] },
+  ],
+  yard: [
+    // (the Order's: its cart unloaded against the yard's wall, the crates of stolen voices and the blank paper by it, its lantern)
+    { name: "the Order's cart", front: true, need: 2, parts: [GS(1, 1, "the carters' cart, the Order's", 4), GS(0, 0, 'a crate of stolen voices', 2), GS(3, 0, 'bundles of blank paper', 2), GS(4, 0, 'a crate of stolen voices', 2), GS(5, 1, "the Order's hooded lantern", 2), GL(2, 3, "the Order's ink bars", 3)] },
+    { name: "the Order's stores", front: true, need: 2, parts: [GS(0, 0, 'crates', 2), GS(1, 0, 'bundles of blank paper', 2), GS(2, 0, 'crates', 2), GL(1, 1, 'an ink spill', 3)] },
+  ],
+  court: [
+    // (the stable yard: the trough and the hay against its wall, the well in it)
+    { name: 'the stable yard', front: true, need: 2, parts: [GS(0, 0, 'the horse trough'), GS(2, 0, 'hay bales'), GS(3, 0, 'hay bales')] },
+  ],
+  crier: [
+    // (the siege's work at his square's edge: rubble against a house, a handcart and sacks left by it)
+    { name: 'the fallen house', front: true, need: 2, parts: [GS(0, 0, 'rubble of the siege', 2), GS(2, 1, 'handcart', 2), GS(3, 0, 'sacks of grain')] },
+  ],
+};
+
 export const GW_NAMES = {
   gate: 'the city gate, broken',
   muffled: 'the market bell (the Muffled Bell)',
@@ -993,6 +1345,8 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
         since++;
         if (since < every) continue;
         if (!free(x, y, true)) continue;
+        // (GW_OPEN: only with houses at its back, never out in the great ward where its squares run into each other)
+        if (GW_OPEN.on && floorAt(s.facing === 1 ? r[0] - 1 : s.facing === 3 ? r[2] : x, s.facing === 0 ? r[1] - 1 : s.facing === 2 ? r[3] : y)) continue;
         // (one in five of those along x smashed by the siege: its frames, which of four, then facing +y or -y)
         const smashed = s.facing % 2 === 0 && rng.chance(0.2);
         const at = { x: x + 0.5 + (s.facing === 1 ? 0.1 : s.facing === 3 ? -0.1 : 0), y: y + 0.5 + (s.facing === 0 ? 0.1 : s.facing === 2 ? -0.1 : 0) };
@@ -1036,31 +1390,107 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       laid++;
     }
   };
+  // ---- GW_SCENES: a scene laid in area `ai`: against a house front that stands (along it, out from it), or in its outer band
+  const used = new Map<string, number>();
+  const layScene = (sc: GWScene, at: [number, number][], alongX: boolean | null, k: number): boolean => {
+    for (const [x, y] of at) {
+      const spots = sc.parts.map((p) => {
+        if (alongX === true) return [x + p.du, y + p.dv] as [number, number];
+        if (alongX === false) return [x + p.dv, y + p.du] as [number, number];
+        const [a, b] = k === 0 ? [p.du, p.dv] : k === 1 ? [-p.dv, p.du] : k === 2 ? [-p.du, -p.dv] : [p.dv, -p.du];
+        return [x + a, y + b] as [number, number];
+      });
+      // (against a front: what stands has the house at its back, and nothing standing beside it but its own scene's)
+      const byFront = (x0: number, y0: number): boolean => {
+        if (!free(x0, y0, false)) return false;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if ((!dx && !dy) || !floorAt(x0 + dx, y0 + dy)) continue;
+          if (L.walk[(y0 + dy) * W + x0 + dx] !== 1 && !props.slice(-sc.parts.length).some((q) => q.tx === x0 + dx && q.ty === y0 + dy)) return false;
+        }
+        return true;
+      };
+      const fits = (i: number): boolean => (sc.front && sc.parts[i].solid ? byFront(spots[i][0], spots[i][1]) : free(spots[i][0], spots[i][1], sc.parts[i].solid)) && !spots.some((q, j) => j < i && q[0] === spots[i][0] && q[1] === spots[i][1]);
+      let ok = true;
+      for (let i = 0; i < sc.need && ok; i++) ok = fits(i);
+      if (!ok) continue;
+      sc.parts.forEach((p, i) => {
+        if (i >= sc.need && !fits(i)) return;
+        put(p.name, spots[i][0], spots[i][1], p.solid, rng.int(0, (p.frames ?? 1) - 1));
+        // (a little room round what stands)
+        if (p.solid) for (const [ex, ey] of [[1, 0], [0, 1]]) if (floorAt(spots[i][0] + ex, spots[i][1] + ey)) keep[(spots[i][1] + ey) * W + spots[i][0] + ex] = 1;
+      });
+      (out.scenes ??= []).push({ x: x + 0.5, y: y + 0.5, name: sc.name });
+      used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
+      return true;
+    }
+    return false;
+  };
+  const scenesIn = (ai: number, kind: keyof typeof GW_SCENE_SETS, want: number): void => {
+    const r = P.rects[ai];
+    const [cx, cy] = midOf(r);
+    // (the tiles against a house front that stands: the face behind them up the screen, along x or along y)
+    const fronts: { at: [number, number]; alongX: boolean }[] = [];
+    const band: [number, number][] = [];
+    for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) {
+      if (!floorAt(x, y)) continue;
+      if (stands(x, y - 1, true)) fronts.push({ at: [x, y], alongX: true });
+      else if (stands(x - 1, y, false)) fronts.push({ at: [x, y], alongX: false });
+      const u = Math.abs(x + 0.5 - cx) / ((r[2] - r[0]) / 2);
+      const v = Math.abs(y + 0.5 - cy) / ((r[3] - r[1]) / 2);
+      if (Math.max(u, v) > 0.45 && Math.max(u, v) < 0.8) band.push([x, y]);
+    }
+    rng.shuffle(fronts);
+    rng.shuffle(band);
+    // (the scenes not yet laid on the floor first, then the rest, in an order of the dice's)
+    const order = rng.shuffle([...GW_SCENE_SETS[kind]]).sort((a, b) => (used.get(a.name) ?? 0) - (used.get(b.name) ?? 0));
+    let laid = 0;
+    for (const sc of order) {
+      if (laid >= want) break;
+      let done = false;
+      if (sc.front) {
+        for (const al of [true, false]) if (!done) done = layScene(sc, fronts.filter((q) => q.alongX === al).map((q) => q.at), al, 0);
+      } else for (let k = 0; k < 4 && !done; k++) done = layScene(sc, band.slice(0, 40), null, (k + rng.int(0, 3)) % 4);
+      if (done) laid++;
+    }
+  };
+
   const hearts = rng.shuffle(['the herald, gagged', 'the town well', 'the festival maypole', 'the town well', 'the festival maypole', 'the herald, gagged']);
   let nh = 0;
+  const sc = GW_SCENES.on;
   P.kinds.forEach((k, ai) => {
     const r = P.rects[ai];
     const big = r[2] - r[0] >= 13 && r[3] - r[1] >= 13;
     if (k === 'crier') {
       stalls(ai, 9);
-      about(ai, ['rubble of the siege', 'handcart', 'sacks of grain'], 3, true);
+      if (sc) scenesIn(ai, 'crier', 1);
+      else about(ai, ['rubble of the siege', 'handcart', 'sacks of grain'], 3, true);
       about(ai, ['a shard of the dome'], 3, false, 4);
     } else if (k === 'market') {
       stalls(ai, big ? 6 : 7);
       heart(ai, hearts[nh++ % hearts.length]);
-      about(ai, ['handcart', 'the notice board', 'the horse trough', 'hay bales', 'baskets of produce', 'sacks of grain'], big ? 3 : 2, true);
-      if (rng.chance(0.4)) about(ai, ["a cellar's hatch"], 1, true, 2);
+      if (sc) scenesIn(ai, 'market', big ? 2 : 1);
+      else {
+        about(ai, ['handcart', 'the notice board', 'the horse trough', 'hay bales', 'baskets of produce', 'sacks of grain'], big ? 3 : 2, true);
+        if (rng.chance(0.4)) about(ai, ["a cellar's hatch"], 1, true, 2);
+      }
       about(ai, ['a shard of the dome', 'an ink spill', "the Order's ink bars"], 2, false, 2);
     } else if (k === 'square') {
       heart(ai, rng.chance(0.7) ? hearts[nh++ % hearts.length] : null);
-      about(ai, ['the notice board', 'rubble of the siege', 'handcart', "the Order's hooded lantern", "a cellar's hatch"], 2, true, 2);
+      if (sc) scenesIn(ai, 'square', 1);
+      else about(ai, ['the notice board', 'rubble of the siege', 'handcart', "the Order's hooded lantern", "a cellar's hatch"], 2, true, 2);
       about(ai, ['a shard of the dome', 'an ink spill'], 2, false, 2);
     } else if (k === 'yard') {
-      about(ai, ["the carters' cart, the Order's"], 1, true, 4);
-      about(ai, ['a crate of stolen voices', 'bundles of blank paper', 'crates', "the Order's hooded lantern"], 4, true, 2);
-      about(ai, ["the Order's ink bars", 'an ink spill'], 2, false, 3);
+      if (sc) scenesIn(ai, 'yard', 2);
+      else {
+        about(ai, ["the carters' cart, the Order's"], 1, true, 4);
+        about(ai, ['a crate of stolen voices', 'bundles of blank paper', 'crates', "the Order's hooded lantern"], 4, true, 2);
+        about(ai, ["the Order's ink bars", 'an ink spill'], 2, false, 3);
+      }
     } else if (k === 'court') {
-      about(ai, ['the horse trough', 'hay bales', 'the town well'], 3, true);
+      if (sc) {
+        scenesIn(ai, 'court', 1);
+        heart(ai, 'the town well');
+      } else about(ai, ['the horse trough', 'hay bales', 'the town well'], 3, true);
       about(ai, ['a shard of the dome'], 1, false, 4);
     }
   });

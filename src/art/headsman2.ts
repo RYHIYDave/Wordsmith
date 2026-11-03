@@ -103,12 +103,84 @@ export function axeWay(pt: V3, edge: V3, over = false): P {
  * some way of his body: any such way is one the haft must sometimes run along, spun as this axe is, and
  * there the roll cannot be measured and the blade would spin round between two keys.)
  */
-export function axe2EdgeOf(s: Skeleton, q: { pAz: number; pEl: number }): V3 {
+export function axe2EdgeOf(s: Skeleton, q: AxeQ): V3 {
   const p = s.point;
+  // (between two keys, THE BLADE GOES WITH THE HAFT, held firm in his hands: art/action_f2's mend, below)
+  const carried = carriedEdge(p, q);
+  if (carried) return carried;
   const e = heading(q.pAz, q.pEl);
   const r = sub(e, mul(p, dot(e, p)));
   return len(r) > 1e-4 ? norm(r) : norm(cross(p, [0, 0, 1]), [0, 1, 0]);
 }
+/** What of a pose the axe is read from: the ways, how far up the haft his hand is, and (between two keys) the two keys and how far it has gone from the one to the other. */
+export interface AxeQ {
+  draw: number;
+  pAz: number;
+  pEl: number;
+  from?: Bones;
+  to?: Bones;
+  mixK?: number;
+}
+/** `e` square to the way `p` (unit), or null if it runs along it. */
+const squareTo = (e: V3, p: V3): V3 | null => {
+  const r = sub(e, mul(p, dot(e, p)));
+  return len(r) > 1e-4 ? norm(r) : null;
+};
+/** `v` carried with the turn that takes the way `a` to the way `b` the short way (both unit): what is fixed to a thing turned so. */
+export function carried(v: V3, a: V3, b: V3): V3 {
+  const c = cross(a, b);
+  const s = len(c);
+  if (s < 1e-9) return v;
+  return about(v, mul(c, 1 / s), Math.atan2(s, dot(a, b)) / D);
+}
+/**
+ * THE FAULT HE SAW (his words, 31 Oct 2026: “His axe is still spinning around and kinda wonky”; asked when: “His axe
+ * wheel,Walking or standing,His flurry or lunge”), AND ITS MEND. Between two keys the way the haft runs and the way the
+ * blade's edge faces were each mixed by itself, as two pairs of angles, and the edge then squared to the haft: where the
+ * haft swung a long way between two keys the mixed edge came round near the haft's own line and the blade whipped round
+ * the haft, 48 and 60 degrees in a frame in the lunge's wind-down, 37 and 43 in the vault's. Now THE BLADE IS CARRIED WITH
+ * THE HAFT as one thing held in his hands: each key's edge is carried with the haft from that key's way to where the haft
+ * is now, and what is left between the two (how far the axe is turned in his grip from the one key to the other) is turned
+ * evenly, the short way, as the pose goes from the one to the other. At a key, its own edge.
+ */
+function carriedEdge(p: V3, q: AxeQ): V3 | null {
+  const a = q.from;
+  const b = q.to;
+  const k = q.mixK;
+  if (!AXE_HELD.on || !a || !b || k === undefined) return null;
+  const ha = heading(a.wAz, a.wEl);
+  const hb = heading(b.wAz, b.wEl);
+  const ea = squareTo(heading(a.pAz, a.pEl), ha);
+  const eb = squareTo(heading(b.pAz, b.pEl), hb);
+  if (!ea || !eb) return null;
+  // (carried along the way the haft truly goes between the two keys, as the pose mixes it: its two angles each from the one key's to the other's)
+  const from: readonly [number, number] = [a.wAz, a.wEl];
+  const to: readonly [number, number] = [b.wAz, b.wEl];
+  const back = edgeAlong(eb, from, to, 1, 0);
+  const turn = Math.atan2(dot(cross(ea, back), ha), dot(ea, back)) / D;
+  const e = edgeAlong(about(ea, ha, turn * k), from, to, 0, k);
+  return squareTo(e, p) ?? null;
+}
+/**
+ * THE EDGE `e` CARRIED WITH THE HAFT, held firm, as the haft goes from the way `from` to the way `to` (each an angle round and an
+ * angle up, the two mixed evenly from the one to the other, as a pose mixes them), from `u0` of the way to `u1`: turned with
+ * the haft step by step, never round it.
+ */
+export function edgeAlong(e: V3, from: readonly [number, number], to: readonly [number, number], u0 = 0, u1 = 1): V3 {
+  const at = (u: number): V3 => heading(from[0] + (to[0] - from[0]) * u, from[1] + (to[1] - from[1]) * u);
+  const span = Math.abs(to[0] - from[0]) + Math.abs(to[1] - from[1]);
+  const n = Math.max(1, Math.ceil((span * Math.abs(u1 - u0)) / 2));
+  let h = at(u0);
+  let v = squareTo(e, h) ?? e;
+  for (let i = 1; i <= n; i++) {
+    const h2 = at(u0 + ((u1 - u0) * i) / n);
+    v = carried(v, h, h2);
+    h = h2;
+  }
+  return squareTo(v, h) ?? v;
+}
+/** THE MEND'S SWITCH (art/action_f2: on: the axe held firm; off: as it was, for the before-and-after pictures and the hashes). */
+export const AXE_HELD = { on: true };
 /** Each key's way the blade faces, said within half a turn of the last key's (so that it goes the short way round from one to the next). */
 export function resolveAxe2(keys: ReadonlyArray<Key3>, rest: Bones): Key3[] {
   let last: number | undefined;
@@ -133,7 +205,7 @@ export function resolvedRest(b: Bones): Bones {
 export const axed = (m: Motion, rest: Bones): Motion => ({ ...m, keys: resolveAxe2(m.keys, rest) });
 
 /** WHERE HIS AXE IS: its butt (the haft's foot), the eye of its head, the middle of its edge and the edge's two horns, the way the edge faces, and the spike's point. */
-export function axe2Of(s: Skeleton, q: { draw: number; pAz: number; pEl: number }): { butt: V3; eye: V3; edge: V3; horns: readonly [V3, V3]; out: V3; spike: V3 } {
+export function axe2Of(s: Skeleton, q: AxeQ): { butt: V3; eye: V3; edge: V3; horns: readonly [V3, V3]; out: V3; spike: V3 } {
   const pt = s.point;
   const out = axe2EdgeOf(s, q);
   const draw = q.draw;

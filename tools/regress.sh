@@ -394,7 +394,7 @@ DEPTH=4 run first5_cult4 --scenario $S/first5_cult.mjs &
 DEPTH=5 run first5_cult5 $P --scenario $S/first5_cult.mjs &
 wait
 DEPTH=1 run first5_stair1 --scenario $S/first5_stair.mjs &
-DEPTH=3 run first5_stair3_phone $P --scenario $S/first5_stair.mjs &
+DEPTH=2 run first5_stair2_phone $P --scenario $S/first5_stair.mjs &   # (Version 25.0: floor 3 has no stairwell now, its door out the back of his hall)
 run first5_shaft --scenario $S/first5_shaft.mjs &
 run first5_shaft_upright $U --scenario $S/first5_shaft.mjs &
 run first5_titles --scenario $S/first5_titles.mjs &
@@ -527,6 +527,11 @@ PARTS=stacks,river9 SECS=1 run next_looks $P --scenario $S/next_looks.mjs &
 wait
 # FLOOR 15'S CENSOR (24.3): one phase, his ink filling the floor; the bot fights him through his life brought down by thirds
 SECS=24 PHASES=1 LONG_OK=1 run censor_fight --touch --size 844x390 --dpr 1.5 --scenario $S/censor_fight.mjs &
+wait
+# VERSION 25.0'S OWN: the Brawler as the Veteran, with real touches (three taps, a hold, a swipe and a tap: his globes, his
+# blows landing, his jump spent); floor 20's Rime Shades in play (their lines laid, frozen and let go, the frame time)
+run veteran_play $P --scenario $S/veteran_play.mjs &
+run rime_shade_play $P --scenario $S/rime_shade_play.mjs &
 wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &

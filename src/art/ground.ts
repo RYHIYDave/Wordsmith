@@ -1123,6 +1123,13 @@ export interface GroundArt {
   edgeUpRight: Sprite;
 }
 
+/** The floor's edges toward the eye in a theme's stone (as makeGroundArt makes them), alone: the first town's castle hall wants these and nothing else of its ground (art/castle_hall.ts CASTLE_THEME). */
+export function edgesOf(theme: Theme): Pick<GroundArt, 'edgeLeft' | 'edgeRight'> {
+  return {
+    edgeLeft: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.16), (_u, v) => v > 0.935),
+    edgeRight: makeEdge(mixHex(theme.slab[3], '#ffffff', 0.08), (u) => u > 0.935),
+  };
+}
 export function makeGroundArt(theme: Theme = VAULT): GroundArt {
   TALL = WALL_LOOK.tall * GRAIN;
   const LOW = lowHeight();

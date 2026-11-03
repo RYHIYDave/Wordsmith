@@ -33,6 +33,13 @@ import { undercityPieces } from '../art/floor12';
 import { WHEEL_STEPS, WHEEL_TURN, millracePieces } from '../art/floor13';
 import { houseOfQuietPieces } from '../art/floor14';
 import { greatLibraryPieces } from '../art/floor15';
+import { herVinesPieces, swanGardensPieces } from '../art/floor16';
+import { highCitySetPieces } from '../art/high_city_set';
+import { masquePieces } from '../art/floor17';
+import { glassGalleryPieces } from '../art/floor18';
+import { keepPieces } from '../art/floor19';
+import { lecternIn, quietTowerPieces } from '../art/floor20';
+import { done, scene } from '../art/act2_kit';
 import { hubPieces } from '../art/hub2';
 import { CAMP_ANIM, CAMP_DRESS, CAMP_TOPS } from '../game/camp';
 import { GRAIN, clearOfFloor, fbm, pictureOf, worldOf } from '../art/terrain';
@@ -69,6 +76,12 @@ export function act1Pieces(n: number): Map<string, Piece> {
     MAPS.set(n, m);
     return m;
   }
+  // (ACT 2, PART TWO, THE HIGH CITY: each floor's own 25 and the High City's 25, the art chat's; floor 16 her vines in its gardens too)
+  if (n >= 16) {
+    m = new Map([...highCitySetPieces(), ...(n === 20 ? withEmptyLectern(quietTowerPieces()) : n === 19 ? keepPieces() : n === 18 ? glassGalleryPieces() : n === 17 ? masquePieces() : [...swanGardensPieces(), ...herVinesPieces()])].map((p) => [p.name, p]));
+    MAPS.set(n, m);
+    return m;
+  }
   // (ACT 2, THE HUSH: each floor's own 25 and the set's 25 of the Hush, the art chat's; nothing of the descent's camp or strongholds)
   if (n >= 11) {
     const own2 = n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces();
@@ -89,7 +102,9 @@ export function forgetAct1(keep: number): void {
 }
 
 /** The pieces that move (their frames a loop), at LOOP_FPS; every other's frames are its looks, one a place. */
-const MOVING = new Set(["the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse"]);
+const MOVING = new Set(['a brazier on its tripod', "the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse",
+  // (THE HIGH CITY, FLOOR 19, THE KEEP: its honest fire, its frames over and over: the braziers, the pitch heating, the torches on the walls)
+  'a brazier', 'a cauldron of pitch', 'a torch in its sconce']);
 const LOOP_FPS = 8;
 /**
  * ACT 2, THE BELLS (game/bells.ts): THE BELLS' PICTURES BY THEIR STATE. A small bell's frames are the art's: quiet, awake (ready
@@ -246,11 +261,17 @@ export class Act1Pieces {
       // a wall along y, the floor on its greater-x side), `variant` >> 1 its frame; a bell on the wall its state's frame)
       const side = p.variant & 1 ? pc?.right : pc?.left;
       if (!side || side.length === 0) return null;
+      // (a wall piece that moves (MOVING: floor 19's torches): its frames over and over, from its own)
+      if (bell === null && MOVING.has(p.name)) return side[(Math.floor(t * LOOP_FPS) + (p.variant >> 1)) % side.length] ?? null;
       return side[(bell ?? p.variant >> 1) % side.length] ?? null;
     }
     if (bell !== null) return fr[bell % fr.length] ?? fr[0];
     if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
+    // (THE HIGH CITY, FLOOR 17: THE GREAT EBONY CLOCK, its six frames for the way it stands (its variant the first): its pendulum's
+    // four over and over at its slow beat, a swing each 0.6 s; at its chime (its state 1: game/act2/masque_rules.ts) the hammer
+    // drawn back and the bell struck, turn about)
+    if (p.name === 'the great ebony clock') return fr[p.variant + (p.state === 1 ? 4 + (Math.floor(t * 3) % 2) : Math.floor(t / 0.6) % 4)] ?? fr[0];
     if (MOVING.has(p.name)) return fr[(Math.floor(t * LOOP_FPS) + p.variant) % fr.length];
     // (THE CAMP, game/camp.ts: what moves there, at the art chat's own frames a second: the cooking fire, the field forge, the lamps)
     const fps = this.dress.floor === CAMP_DRESS ? CAMP_ANIM.get(p.name) : undefined;
@@ -273,6 +294,9 @@ export class Act1Pieces {
   /** (ACT 2, THE HUSH) A piece's own picture for being seen through (SEEN_FRAME), or null: drawn whole in place of it while someone is behind it. */
   seenOf(p: PropInst): Sprite | null {
     if (p.kind !== 'piece' || !p.name) return null;
+    // (THE HIGH CITY, FLOOR 16: a rose arbour half there while someone is under it or behind it, the art's own picture of it:
+    // its frames whole and half along x, whole and half along y, art/floor16.ts)
+    if (p.name === 'a rose arbour') return this.piece(p.name)?.frames?.[(p.variant & 2) + 1] ?? null;
     const k = SEEN_FRAME[p.name];
     return k === undefined ? null : this.piece(p.name)?.frames?.[k] ?? null;
   }
@@ -696,4 +720,17 @@ function keepClearOf(L: Level): { x: number; y: number }[] {
   const st = START[a1.floor];
   if (st && !a1.start.none) box(st.solid, a1.start.ref.x, a1.start.ref.y, a1.start.dir);
   return out;
+}
+
+/**
+ * (FLOOR 20, THE QUIET TOWER) The Moth's 25 with the lectern's second picture, its chapter gone (knocked to the stones as the Moth
+ * comes down on it, his pick to the art chat, “Book knocked to the stones (Recommended)”: game/act1_rules/moth.ts): the art's
+ * own lectern (art/floor20.ts lecternIn), drawn without the chapter.
+ */
+function withEmptyLectern(list: Piece[]): Piece[] {
+  return list.map((p) => {
+    if (p.kind !== 'quest' || !p.frames) return p;
+    const S = scene(150, 130, 75, 100);
+    return { ...p, frames: [p.frames[0], done(S, 75, 100, lecternIn(S, false))] };
+  });
 }

@@ -27,7 +27,7 @@ import type { RNG } from '../src/engine/rng';
 import { bodyInWall, cutHalf, cutLow, inWall, intoWall, segmentInWall } from '../src/game/cut';
 import { botStep, newBot } from '../src/dev/bot';
 import { TUNE } from '../src/game/defs';
-import { RELIEF, generateFloor } from '../src/game/dungeon';
+import { RELIEF, generateFloor, levelKindOf } from '../src/game/dungeon';
 import { STAIR_N, stepGrid } from '../src/game/height';
 import { Game } from '../src/game/game';
 import { SHAPES, makeArena, makeShapeRoom, makeTown } from '../src/game/level';
@@ -730,7 +730,8 @@ test('a dungeon with corridors across the screen is still a tree, and all of it 
         }
       }
     }
-    assert.equal(regions, 1, `${label(s)}: ${regions - 1} loop(s) a player can walk round`);
+    // (a floor laid by his pick, combo or open, has its ways round and its piers: game/dungeon.ts LEVEL_KINDS, tests/level_kinds.test.ts)
+    if (!levelKindOf(s.depth)) assert.equal(regions, 1, `${label(s)}: ${regions - 1} loop(s) a player can walk round`);
     // nothing stands or lies on a half tile, and no pack is put down on one
     if (f.cut) {
       for (const p of f.props) assert.equal(f.cut[p.y * f.w + p.x], 0, `${label(s)}: a ${p.kind} on a cut tile`);

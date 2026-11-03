@@ -5,10 +5,12 @@
 
 import { FLOOR6_MOBS_ON, QG_PACE, QUARRY_GOLEM } from '../floor6_mobs';
 import { mobSet } from '../new_mobs3';
+import { GOLEM_BOULDER, makeBoulderGolemArt } from '../action_f6_golem';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig = {
-  make: () => ({ front: mobSet(QUARRY_GOLEM, 'front', QG_PACE), back: mobSet(QUARRY_GOLEM, 'back', QG_PACE) }),
+  // (and its boulder roll and hammer by Movement 9, behind GOLEM_BOULDER: art/action_f6_golem.ts, his yes, 2 Nov 2026)
+  make: () => (GOLEM_BOULDER.on ? makeBoulderGolemArt(QG_PACE) : { front: mobSet(QUARRY_GOLEM, 'front', QG_PACE), back: mobSet(QUARRY_GOLEM, 'back', QG_PACE) }),
   // (measured off its stand as the others are: tests/act1_qgolem.test.ts, and tests/first5_bosses.test.ts 10)
   size: { top: 38, half: 20 },
   switches: [FLOOR6_MOBS_ON],

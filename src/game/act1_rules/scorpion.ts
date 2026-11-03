@@ -17,10 +17,12 @@
 //   own poison (Hero.poisonT, as a monster's Poison word gives it, game.ts hurtHero): most of the blow again over the
 //   next few seconds.
 
+import { SCORPION_SPIT, SNAP9, SNAP_HIT, SPIT, spitArc, spitFly, spitFrom } from '../../art/action_f6_canyon';
+import { TILE3 } from '../../art/new_mobs3';
 import type { ActDef } from '../bosses';
 import { beside } from '../facing';
 import { TUNE } from '../defs';
-import type { Monster } from '../state';
+import type { Monster, Peril } from '../state';
 import type { Act1Rules } from './types';
 
 /** THE SCORPION'S NUMBERS: the art's (art/canyon_scorpions.ts, held to it by tests/act1_scorpion.test.ts) and the rules'. */
@@ -43,6 +45,35 @@ const ACTS: readonly ActDef[] = [
   { id: 'scorpion:sting', clip: 'sting', long: 1.35, hit: 0.66, dmg: 1.1, cooldown: 6, first: 2, after: 0.6, near: 1.3, far: 2.6 },
 ];
 
+/**
+ * ITS ACID SPIT AND ITS SNAP BY MOVEMENT 9 (the art chat's art/action_f6_canyon.ts behind SCORPION_SPIT, his yes there, 2 Nov 2026), in
+ * place of its tail strike and old snap: the snap held, its strip SNAP9 before it; THE SPIT, aimed where the hero stands as it spits
+ * (SPIT_HIT), a glob from its sting (spitFrom) high over its shadow (spitArc), coming down spitFly(d) later ('scorpion:glob', its
+ * `hit` the landing): a hero within SPIT.splash is struck and poisoned as the tail strike's venom poisoned; then A POOL OF ACID
+ * SPIT.pool round for SPIT.stays, burning whoever stands in it every POOL.tick (POOL.share of the blow), shrinking over its last
+ * SPIT.fade. `a`, `b` where it left the sting, `c` its height there (game pixels), `d` its arc.
+ */
+export const GLOB_PERIL = 'scorpion:glob';
+const POOL = { tick: 0.5, share: 0.3 };
+const SPIT_ACTS: readonly ActDef[] = [
+  { id: 'scorpion:snap', clip: 'attack', long: SNAP9.long, hit: SNAP_HIT, dmg: 1, cooldown: 0, first: 0, after: 1.0, near: 0, far: SNAP9.fwd[1] },
+  { id: 'scorpion:spit', clip: 'spit', long: SPIT.long, hit: SPIT.hit, dmg: 1.1, cooldown: 6, first: 2, after: 0.6, near: SPIT.near, far: SPIT.far },
+];
+const actsNow = (): readonly ActDef[] => (SCORPION_SPIT.on ? SPIT_ACTS : ACTS);
+/** Where a glob is, `p.t` seconds after it was spat: over the floor (tiles) and how high (game pixels). */
+export function globNow(p: Peril): { x: number; y: number; z: number } {
+  const u = Math.max(0, Math.min(1, p.hit > 0 ? p.t / p.hit : 1));
+  return { x: p.a + (p.x - p.a) * u, y: p.b + (p.y - p.b) * u, z: p.c * (1 - u) + 2 * u + p.d * 4 * u * (1 - u) };
+}
+/** Poisoned, as its venom poisons: `took` of his life taken, `share` of it over his poison time. */
+function poison(g: import('../game').Game, took: number, share: number): void {
+  const h = g.hero;
+  if (took <= 0 || g.over) return;
+  h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (took * share) / TUNE.poisonTime);
+  h.poisonT = TUNE.poisonTime;
+  g.emit({ t: 'text', x: h.x, y: h.y, text: 'Poisoned', color: '#ff8a80' });
+}
+
 /** What it keeps (Monster.a1): `dash` its walk's rounds still to go; `still` seconds still to stand; `ph` its walk's place in its round when last seen; `back` its dart back's rounds still to go, the way (`bx`, `by`). */
 function keep(m: Monster): Record<string, number> {
   return (m.a1 ??= { dash: -1, still: 0, ph: 0, back: 0, bx: 0, by: 0 });
@@ -55,7 +86,9 @@ export function venomAt(m: Monster): { x: number; y: number } {
 
 export const RULES: Act1Rules | null = {
   gait: { pace: 2.0, cycle: 0.5, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.05, slack: 0.4, trueBack: true },
-  acts: ACTS,
+  get acts() {
+    return actsNow();
+  },
 
   tick(R, m, dt, dist) {
     const g = R.g;
@@ -101,7 +134,7 @@ export const RULES: Act1Rules | null = {
     a.ph = 0;
     a.dash = -1;
     // (standing, its tail strike ready and he too near for it: it darts back first)
-    const sting = ACTS[1];
+    const sting = actsNow()[1];
     if (G.mode === 'stand' && m.cd <= 0 && m.moveCd && m.moveCd[1] <= 0 && dist < sting.near && g.sees(m.x, m.y, g.hero.x, g.hero.y)) {
       const n = dist || 1;
       a.bx = (m.x - g.hero.x) / n;
@@ -118,7 +151,7 @@ export const RULES: Act1Rules | null = {
       m.fx = (g.hero.x - m.x) / dist;
       m.fy = (g.hero.y - m.y) / dist;
     }
-    const ready = m.cd <= 0 && ACTS.some((d, i) => (!m.moveCd || m.moveCd[i] <= 0) && dist >= d.near && dist <= d.far);
+    const ready = m.cd <= 0 && actsNow().some((d, i) => (!m.moveCd || m.moveCd[i] <= 0) && dist >= d.near && dist <= d.far);
     if (ready) {
       a.still = 0;
       return false;
@@ -133,9 +166,21 @@ export const RULES: Act1Rules | null = {
     const h = g.hero;
     const at = (T: number): boolean => t0 < T && t1 >= T;
     switch (a.id) {
+      case 'scorpion:spit': {
+        if (!at(a.hit)) break;
+        // (spat at where he stands now: it comes down there)
+        const f = spitFrom();
+        const o = beside(m.x, m.y, m.fx, m.fy, m.act!.hand, f[0] / TILE3, f[1] / TILE3);
+        const d = Math.hypot(h.x - o.x, h.y - o.y);
+        const fly = spitFly(d);
+        R.peril(m, 'act1', h.x, h.y, { a1: GLOB_PERIL, hit: fly, dur: fly + SPIT.stays, dmg: g.rollMonsterDmg(m) * a.dmg, a: o.x, b: o.y, c: f[2] / 2, d: spitArc(d) });
+        g.sfx('swing', 0.8);
+        g.emit({ t: 'shake', amount: 1.5 });
+        break;
+      }
       case 'scorpion:snap': {
         if (!at(a.hit)) break;
-        const S = SCORPION.snap;
+        const S = SCORPION_SPIT.on ? SNAP9 : SCORPION.snap;
         const r = R.rel(m);
         if (r.fwd >= S.fwd[0] && r.fwd <= S.fwd[1] && Math.abs(r.left) <= S.half) R.blow(m, a.dmg);
         g.sfx('swing', 0.5);
@@ -167,4 +212,30 @@ export const RULES: Act1Rules | null = {
         break;
     }
   },
+  peril(R, p) {
+    if (p.a1 !== GLOB_PERIL || p.t < p.hit) return;
+    const g = R.g;
+    const h = g.hero;
+    const near = Math.hypot(h.x - p.x, h.y - p.y);
+    if (!p.done) {
+      // (it splashes: struck and poisoned within its splash; the pool spreads)
+      p.done = 1;
+      if (near <= SPIT.splash && !h.move) {
+        const before = h.life;
+        g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+        poison(g, before - h.life, SCORPION.sting.poison);
+      }
+      g.sfx('fire', 0.4);
+      return;
+    }
+    // (the pool burns whoever stands in it, tick by tick, until it shrinks away)
+    const next = p.hit + POOL.tick * p.done;
+    if (p.t >= next && p.t < p.dur - SPIT.fade) {
+      p.done++;
+      if (near <= SPIT.pool) g.hurtHero(p.dmg * POOL.share, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    }
+  },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { SCORPION_SPIT };

@@ -13,7 +13,15 @@ import type { DoorSpot, Floor, HazardSpot, PackSpot, PropSpot, Room } from './ty
 import { dress } from './first5';
 import { act1Floor } from './act1';
 import { makeAct1Level } from './act1_level';
+import { beforeStretch, chapelHere, layChapel, placeChapel } from './chapel_way';
+import { beforeGrounds, layGrounds, planGrounds } from './grounds_way';
+import { lairHere, layLair, openLairDoors, planLair } from './lair_way';
+import { layTomb, tombHere } from './tomb_way';
+import { CASTLE_HALL } from '../art/castle_hall';
+import { layCastle } from './castle_way';
+import { beforePrisonDoor, channelOpen, placeChannels, placePrisonDoor, prisonChannelsHere, prisonDoorHere } from './prison_way';
 import { EXITS, FIRST5, TOWN_SHAFT, TOWN_STAIR, TOWN_WAY, WAYS, beforeGate, openGate, placeCave, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, stairTiles, townGate } from './ways';
+import { yardBlocks } from './yard';
 
 /**
  * A wall tile is drawn cut down low when floor lies behind it (up-screen), so walls never hide
@@ -278,6 +286,8 @@ export function makeTown(seed: number): Level {
   if (TUNE.tradesOpen) level.stations.push({ kind: 'stranger', x: stranger.x, y: stranger.y });
   // (the trader behind the table can be reached by nobody: the place to stand is in front of the table)
   void mystic;
+  // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: its pots, each blocking its tile: game/castle_way.ts)
+  if (CASTLE_HALL.on) layCastle(level);
   return level;
 }
 
@@ -838,19 +848,39 @@ export function makeDungeon(depth: number, seed: number): Level {
     floor.props = floor.props.filter((p) => !beforeGate(d, p.x, p.y));
   }
   if (mouth) floor.start = insideDoorway(mouth);
+  // (FLOOR 4, CHAPEL: the way in from floor 3's door, a stair coming down through an arch in a back wall of the first room, the
+  // hero standing a tile and a half inside it; and the walls the miners broke through: game/chapel_way.ts. Their tiles stay wall.)
+  const chapel = chapelHere(depth) ? placeChapel(floor) : null;
+  if (chapel?.wayIn) floor.start = insideDoorway(chapel.wayIn);
+  if (chapel) floor.props = floor.props.filter((p) => ![chapel.wayIn, ...chapel.breaks].some((st) => st && beforeStretch(st, p.x, p.y)));
+  // (FLOOR 2 AS THE PRISON'S GROUNDS: its courtyards, the ways through the blocks, the long walk; the stair down from floor 1 in a back
+  // wall of the gaoler's room, the hero a tile and a half before it; the chapel's front in a block: game/grounds_way.ts. Their tiles
+  // stay wall; what stood before them is taken away.)
+  const grounds = planGrounds(floor);
+  if (grounds?.wayIn) floor.start = insideDoorway(grounds.wayIn);
+  if (grounds) floor.props = floor.props.filter((p) => !beforeGrounds(grounds, p.x, p.y));
+  // (FLOOR 5, LAIR_TEMPLE: the ways from the mine into the temple left open, its threshold standing in each: game/lair_way.ts)
+  if (lairHere(depth)) openLairDoors(floor);
+  // (FLOOR 3, PRISON_EXIT: its way down is a door out the back of his hall, not a stairwell: game/prison_way.ts. What stood or
+  // lay before it is taken away; its two tiles stay wall until it is open.)
+  const door = prisonDoorHere(depth) ? placePrisonDoor(floor) : null;
+  if (door) floor.props = floor.props.filter((p) => !beforePrisonDoor(door, p.x, p.y));
+  // (FLOOR 3, PRISON: the fire channel down the middle of each cell block; its open run is not walked on)
+  const channels = prisonChannelsHere(depth) ? placeChannels(floor) : [];
   // (THE FIRST FIVE FLOORS: the fifth floor has no stairwell: the miners' shaft at the back of its boss's
   // hall, and the ride up to town. What stood or lay where it stands is taken away.)
   const shaftAt = FIRST5.on && depth === 5 ? placeShaft(floor) : null;
   if (shaftAt) floor.props = floor.props.filter((p) => Math.abs(p.x - shaftAt.x) > 1 || Math.abs(p.y - shaftAt.y) > 1);
   // (the places in the boss's hall where the stairwell may open; where the hall has no room for it, the portal home stands in it as before)
-  const solidSpot = new Set<number>();
+  // (THE HEADSMAN'S YARD: and the tiles its scaffold, gallows and the rest stand on: game/yard.ts)
+  const solidSpot = yardBlocks(floor);
   for (const p of floor.props) if (SOLID_PROPS.includes(p.kind)) solidSpot.add(p.y * floor.w + p.x);
-  let stairs = shaftAt || cave ? [] : stairSpots(floor, (i) => solidSpot.has(i));
+  let stairs = shaftAt || cave || door ? [] : stairSpots(floor, (i) => solidSpot.has(i));
   // (a hall so crowded that it has fewer than two: its barrels and urns are what give way, those on
   // the places taken away; its fires and pillars stay. Its places run along x: stairSpots.)
-  if (stairs.length < 2 && !shaftAt && !cave) {
+  if (stairs.length < 2 && !shaftAt && !cave && !door) {
     const breaks = (k: string): boolean => k === 'barrel' || k === 'urn';
-    const fixed = new Set<number>();
+    const fixed = yardBlocks(floor);
     for (const p of floor.props) if (SOLID_PROPS.includes(p.kind) && !breaks(p.kind)) fixed.add(p.y * floor.w + p.x);
     const more = stairSpots(floor, (i) => fixed.has(i));
     if (more.length > stairs.length) {
@@ -860,7 +890,7 @@ export function makeDungeon(depth: number, seed: number): Level {
     }
   }
   const stair = stairs[0] ?? null;
-  const level = finish(floor, false, stair || shaftAt || cave ? null : portalAt(floor.boss.x, floor.boss.y, false));
+  const level = finish(floor, false, stair || shaftAt || cave || door ? null : portalAt(floor.boss.x, floor.boss.y, false));
   // (EXITS: the cave's mouth, and the fifth floor's, are wall to whatever walks, flies, is shot or looks: the one until its
   // wall has crumbled (game.ts), the other for good: nobody goes back into it)
   for (const d of [cave, mouth]) {
@@ -870,10 +900,13 @@ export function makeDungeon(depth: number, seed: number): Level {
       level.open[i] = 0;
     }
   }
+  for (const c of channels) for (const i of channelOpen(floor, c)) level.walk[i] = 0;
+  if (channels.length) level.channels = channels;
   // (the shaft's timbers, and its middle while the cage is up, are stood on by nobody)
   if (shaftAt) for (const i of [...shaftTiles(floor, shaftAt), shaftAt.y * floor.w + shaftAt.x]) level.walk[i] = 0;
   const solidAt = new Uint8Array(floor.w * floor.h);
   for (const p of level.props) if (p.solid) solidAt[p.ty * floor.w + p.tx] = 1;
+  for (const i of yardBlocks(floor)) solidAt[i] = 1;
   const way = depth >= 2 ? placeWay(floor, (i) => level.walk[i] === 1 && solidAt[i] === 0) : null;
   // (what lies flat where its dais is, is taken away: bones, rubble; and where the stairwell opens, as it opens: game.ts, `openStair`)
   level.props = level.props.filter((p) => p.solid || way === null || Math.abs(p.x - way.x) >= 1.6 || Math.abs(p.y - way.y) >= 1.6);
@@ -885,7 +918,22 @@ export function makeDungeon(depth: number, seed: number): Level {
   level.ways = { stair, stairs, way, gate: g, shaft: shaftAt ? { x: shaftAt.x, y: shaftAt.y, state: 'empty', t: 0 } : null };
   if (cave) level.ways.cave = { spot: cave, state: 'wall', t: 0 };
   if (mouth) level.ways.mouth = mouth;
+  if (door) level.ways.exit = door;
+  if (chapel) level.chapel = chapel;
+  if (grounds) level.grounds = grounds;
   // (THE FIRST FIVE FLOORS: the floor laid with its own pieces, last, by dice of its own: game/first5.ts)
   level.dress = dress(level, depth, seed);
+  // (FLOOR 4, CHAPEL: its own things, after the floor's: the rock before the break-ins, candles, his hall's piers and altar)
+  if (chapel) layChapel(level);
+  // (FLOOR 2, GROUNDS: the wells, the tumbrils, the braziers before the chapel, after the floor's things: game/grounds_way.ts)
+  if (grounds) layGrounds(level);
+  // (FLOOR 1, TOMB: the king's tomb's own tombs, after the floor's things: game/tomb_way.ts)
+  if (tombHere(depth)) layTomb(level);
+  // (FLOOR 5, LAIR_TEMPLE: which of it is the mine and which the temple, the thresholds between, the rails and the rift's cracks;
+  // its own things, after the floor's: game/lair_way.ts)
+  if (lairHere(depth)) {
+    level.lair = planLair(level);
+    layLair(level);
+  }
   return level;
 }

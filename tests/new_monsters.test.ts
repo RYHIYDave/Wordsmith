@@ -33,7 +33,7 @@ import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 
-import { FIGURE_SIZE, NEW_FIGURES, makeBestiary, useNewMonsters } from '../src/art/bestiary';
+import { FIGURE_SIZE, NEW_FIGURES, makeBestiary, useActionF4, useNewMonsters } from '../src/art/bestiary';
 import { SKULL_BURST } from '../src/art/mob_shots';
 import {
   BONEWARD, BW_BASH_HIT, BW_GRAB, BW_HIT, BW_THROW_HIT, CHAMPION, CHAMPION_HIT, GOLEM, GOLEM_SWING_HIT, GOLEM_THROW_HIT, MARKSMAN, MK_PIERCE_HIT, MK_SHOT_HIT, NEW_MOBS, RALLY_CRY, SHADE, SHADE_HIT, walkFpsAt,
@@ -43,7 +43,7 @@ import type { Mob } from '../src/art/new_mobs3';
 import { GRAIN } from '../src/art/kit';
 import { botStep, newBot } from '../src/dev/bot';
 import { RNG } from '../src/engine/rng';
-import { AIM, LEADERS, MONSTERS, MONSTER_MOVES, NEW_MONSTERS, PACKS, RALLY, SKULL, SMOKE, SPEAR, leaderKind, movesOf, packGrowth, packKinds, packRange, packRarity, scaleLife, sizeOf, wordShare } from '../src/game/defs';
+import { ACTION_F4, AIM, LEADERS, MONSTERS, MONSTER_MOVES, NEW_MONSTERS, PACKS, RALLY, SKULL, SMOKE, SPEAR, leaderKind, movesOf, packGrowth, packKinds, packRange, packRarity, scaleLife, sizeOf, wordShare } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -82,6 +82,19 @@ function withNew<T>(fn: () => T): T {
     return fn();
   } finally {
     useNewMonsters(was);
+  }
+}
+/**
+ * (the Golem's skull, as it was: with floor 4's more action off, ACTION_F4; on since his “Switch them all on (Recommended)”,
+ * 2 Nov 2026, its skeleton hurl is thrown in its place, held by tests/action_f4_hurl.test.ts)
+ */
+function oldSkull<T>(fn: () => T): T {
+  const was = ACTION_F4.on;
+  useActionF4(false);
+  try {
+    return fn();
+  } finally {
+    useActionF4(was);
   }
 }
 /** The same with the new monsters switched off, as the game was until Version 19.9. */
@@ -364,7 +377,7 @@ test('the Boneward throws its spear from afar; it lies where it came down; it fi
 });
 
 test('the Golem’s skull comes down where the hero stood: under it, hurt; stepped out, not; then it bursts and is gone', () => {
-  withNew(() => {
+  withNew(() => oldSkull(() => {
     for (const stays of [true, false]) {
       const { g, m } = room('golem', 6);
       const h = g.hero;
@@ -408,7 +421,7 @@ test('the Golem’s skull comes down where the hero stood: under it, hurt; stepp
       return most >= 2;
     });
     assert.equal(most, 2, 'a Twin Golem’s second skull');
-  });
+  }));
 });
 
 test('the champion’s cry: his minions near him have his words whole for a while, then half again; no cry with no one to hear it', () => {
@@ -584,8 +597,8 @@ test('the pictures: each move by the rules’ clock, the stoop, the stand and pl
     }
     const bw = of('boneward').front.clips?.moves;
     assert.ok(bw?.pickUp && bw.standBare && bw.walkBare, 'the Boneward: its stoop, and its stand and plod with no spear');
-    const skull = of('golem').front.clips?.moves?.skull;
-    assert.ok(skull && skull.frames.length === 8, 'the Golem: its skull in flight, painted ahead with it');
+    const skull = oldSkull(() => makeBestiary().of('golem').front.clips?.moves?.skull);
+    assert.ok(skull && skull.frames.length === 8, 'the Golem: its skull in flight, painted ahead with it (as it was: its skeleton hurl in its place now)');
     // their sizes, as the game goes by (where a bar hangs, and what a finger is on): held against the pictures as the old figures' are
     for (const f of NEW_FIGURES) {
       const size = FIGURE_SIZE[f];
@@ -662,7 +675,7 @@ test('the bot steps out of a line of aim and out of the smoke', () => {
 });
 
 test('the bot steps out from under a skull', () => {
-  withNew(() => {
+  withNew(() => oldSkull(() => {
     const { g, m } = room('golem', 6);
     const h = g.hero;
     m.moveCd = [0, 0];
@@ -680,5 +693,5 @@ test('the bot steps out from under a skull', () => {
       m.cd = 9;
     }
     assert.ok(Math.hypot(h.x - z.x, h.y - z.y) > SKULL.r, 'out from under it when it came down');
-  });
+  }));
 });

@@ -38,7 +38,7 @@ import { botStep, newBot } from '../src/dev/bot';
 import type { RNG } from '../src/engine/rng';
 import { DOORS, GATE_RISE, LEVER_NEAR, LOCK_CLEAR, doorMiddle, doorTiles, doorways } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
-import { LEVER_CLEAR, MIX, generateFloor } from '../src/game/dungeon';
+import { LEVER_CLEAR, MIX, generateFloor, levelKindOf } from '../src/game/dungeon';
 import { TRAPS } from '../src/game/traps';
 import { MONSTER_PACKS, useFirstLevels } from '../src/game/defs';
 import { Game } from '../src/game/game';
@@ -505,6 +505,8 @@ test('with the switch off a dungeon is Version 18.8\'s to the letter: the finger
 test('the switch is on in the game (Version 18.9): from the second dungeon a gate with its lever; and with it off no dungeon has a gate with a lever, a room that locks or two rooms next door', () => {
   assert.equal(MIX.on, true, 'the owner, 8 Oct 2026, 07:32, of its pictures in a real dungeon: "Yeah looks good"');
   for (const [depth, seed] of [[2, 6], [4, 11], [7, 21]] as const) {
+    // (an open floor, the great hall, has no gate to go round: game/dungeon.ts LEVEL_KINDS)
+    if (levelKindOf(depth) === 'open') continue;
     const f = generateFloor(depth, seed);
     assert.ok(f.levers !== undefined && f.levers.length === 1 && (f.doors ?? []).some((d) => d.kind === 'gate'), `dungeon ${depth}, seed ${seed}: a gate and its lever`);
   }

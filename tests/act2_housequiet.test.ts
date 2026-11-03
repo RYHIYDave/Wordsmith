@@ -10,7 +10,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { ACT2 } from '../src/game/act1';
-import { BUILT, HOUSE_ZONE, HQ_BELLS, houseBeds, walkReach } from '../src/game/act2/housequiet';
+import { BUILT, HOUSE_ZONE, HQ_BELLS, HQ_COMBO, houseBeds, walkReach } from '../src/game/act2/housequiet';
 import type { HouseDress } from '../src/game/act2/housequiet';
 import { makeDungeon } from '../src/game/level';
 import type { Level } from '../src/game/state';
@@ -208,7 +208,8 @@ test('rooms and halls, like the Prison: wards of iron beds, halls, an apothecary
       for (const n of [i + 1, i - 1, i + W, i - W]) if (L.walk[n] === 1 && dist[n] < 0) (dist[n] = dist[i] + 1), q.push(n);
     }
     assert.ok(dist[tileOf(L, f.boss)] >= 150, `seed ${s}: the walk to the boss ${dist[tileOf(L, f.boss)]}`);
-    assert.ok(Math.max(f.w, f.h) >= 160, `seed ${s}: ${f.w} by ${f.h}`);
+    // (laid with its ways round, HQ_COMBO, his pick of 1 Nov, it folds back on itself: as long to walk, if less long on the map)
+    assert.ok(Math.max(f.w, f.h) >= (HQ_COMBO.on ? 140 : 160), `seed ${s}: ${f.w} by ${f.h}`);
   }
 });
 

@@ -3,6 +3,22 @@
 
 import type { MonsterKind } from '../../game/types';
 import type { Act1Fx } from './types';
+// FLOOR 1, MORE ACTION (ACTION_F1): the bone archer's arrow rain, the Warden's Lockdown
+import { FX as archer } from './archer';
+import { FX as warden } from './warden';
+// FLOOR 2, MORE ACTION (ACTION_F2): the cultist's fire sigil, the Shade's rime
+import { FX as cultist } from './cultist';
+import { FX as shade } from './shade';
+// THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY (AM_ACTION): its marks, rings, gouges and rain
+import { FX as amalgam } from './amalgam';
+// THE CHAINED ONE'S MOVES DONE THE ACTION WAY (CO_ACTION): his crack and his rings
+import { FX as chained } from './chained';
+// FLOOR 3, MORE ACTION (ACTION_F3): the green troll's shockwave ring
+import { FX as brute } from './brute';
+// FLOOR 4, MORE ACTION (ACTION_F4): the Ossuary Golem's skeleton hurl
+import { FX as golem } from './golem';
+// THE FLESHMANCER'S MOVES DONE THE ACTION WAY (FM_ACTION): his shards, rings, fire, heaps, pit and rise (and the mini's fire)
+import { FX as fleshmancer } from './fm';
 import { FX as chanter } from './chanter';
 import { FX as firepot } from './firepot';
 import { FX as qgolem } from './qgolem';
@@ -41,8 +57,44 @@ import { FX as physician } from './physician';
 import { FX as censor } from './censor';
 import { FX as scraper } from './scraper';
 import { FX as quill } from './quill';
+import { FX as swan } from './swan';
+import { FX as gardener } from './gardener';
+import { FX as groom } from './groom';
+import { FX as pguard } from './pguard';
+import { FX as princess } from './princess';
+import { FX as footman } from './footman';
+import { FX as dancer } from './dancer';
+import { FX as order } from './order';
+import { FX as prince } from './prince';
+import { FX as lady } from './lady';
+import { FX as qguard } from './qguard';
+import { FX as reflection } from './reflection';
+import { FX as gqueen } from './gqueen';
+import { FX as kknight } from './kknight';
+import { FX as xbow } from './xbow';
+import { FX as gking } from './gking';
+import { FX as hshape } from './hshape';
+import { FX as rshade } from './rshade';
+import { FX as rshadow } from './rshadow';
+import { FX as moth } from './moth';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
+  // (the first floors' own, done the action way: floor 1's, behind ACTION_F1; their perils only)
+  archer,
+  warden,
+  // (floor 2's, behind ACTION_F2)
+  cultist,
+  shade,
+  // (the Chained One's, behind CO_ACTION)
+  chained,
+  // (the Amalgamation's, behind AM_ACTION)
+  amalgam,
+  // (floor 3's, behind ACTION_F3)
+  brute,
+  // (floor 4's, behind ACTION_F4)
+  golem,
+  // (the Fleshmancer's, behind FM_ACTION: his perils only)
+  fleshmancer,
   chanter,
   firepot,
   qgolem,
@@ -80,6 +132,31 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   censor,
   scraper,
   quill,
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's)
+  swan,
+  gardener,
+  groom,
+  pguard,
+  princess,
+  // (floor 17's)
+  footman,
+  dancer,
+  order,
+  prince,
+  // (floor 18's)
+  lady,
+  qguard,
+  reflection,
+  gqueen,
+  // (floor 19's)
+  kknight,
+  xbow,
+  gking,
+  // (floor 20's)
+  hshape,
+  rshadow,
+  moth,
+  rshade,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {

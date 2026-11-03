@@ -349,7 +349,8 @@ test('on a phone the game starts out with auto aim; a choice made with the switc
   assert.deepEqual([fresh.aim, fresh.aimChosen], ['auto', false]);
   assert.deepEqual([cleanMeta({ aim: 'face', aimChosen: false }).aim, cleanMeta({ aim: 'face', aimChosen: false }).aimChosen], ['auto', false]);
   // the switch goes round all three, beginning with the way the game starts out
-  assert.deepEqual([...AIM_MODES], ['auto', 'tap', 'face']);
+  // (and ONE HAND, the fourth: his word of 1 Nov 2026, 10:50, game/state.ts AimMode)
+  assert.deepEqual([...AIM_MODES], ['auto', 'tap', 'face', 'one']);
 });
 
 // ---------------------------------------------------------------------------------------------

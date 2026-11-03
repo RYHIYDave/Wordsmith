@@ -41,6 +41,26 @@ import { FIG as physician } from './physician';
 import { FIG as censor } from './censor';
 import { FIG as scraper } from './scraper';
 import { FIG as quill } from './quill';
+import { FIG as swan } from './swan';
+import { FIG as gardener } from './gardener';
+import { FIG as groom } from './groom';
+import { FIG as pguard } from './pguard';
+import { FIG as princess } from './princess';
+import { FIG as footman } from './footman';
+import { FIG as dancer } from './dancer';
+import { FIG as order } from './order';
+import { FIG as prince } from './prince';
+import { FIG as lady } from './lady';
+import { FIG as qguard } from './qguard';
+import { FIG as reflection } from './reflection';
+import { FIG as gqueen } from './gqueen';
+import { FIG as kknight } from './kknight';
+import { FIG as xbow } from './xbow';
+import { FIG as gking } from './gking';
+import { FIG as hshape } from './hshape';
+import { FIG as rshade } from './rshade';
+import { FIG as rshadow } from './rshadow';
+import { FIG as moth } from './moth';
 
 export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> = {
   chanter,
@@ -80,6 +100,31 @@ export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> =
   censor,
   scraper,
   quill,
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's)
+  swan,
+  gardener,
+  groom,
+  pguard,
+  princess,
+  // (floor 17's)
+  footman,
+  dancer,
+  order,
+  prince,
+  // (floor 18's)
+  lady,
+  qguard,
+  reflection,
+  gqueen,
+  // (floor 19's)
+  kknight,
+  xbow,
+  gking,
+  // (floor 20's)
+  hshape,
+  rshadow,
+  moth,
+  rshade,
 };
 
 export function act1Fig(kind: string): Act1Fig | null {

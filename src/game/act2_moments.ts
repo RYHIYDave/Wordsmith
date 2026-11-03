@@ -48,6 +48,7 @@ import { HOUSE_ZONE } from './act2/housequiet';
 import type { HouseDress } from './act2/housequiet';
 import { LB, LB_PIECES } from './act2/library';
 import type { LibraryDress } from './act2/library';
+import { GW_OPEN } from './act2/gateward';
 import { ZONE as UC_ZONE } from './act2/undercity';
 import type { Level, PropInst } from './state';
 import { T_FLOOR } from './types';
@@ -228,11 +229,33 @@ const PIGEONS = { half: 1.5, rise: 152, tall: 34, wide: 14, ridge: 3 } as const;
  * still near enough for it to play.
  */
 const PIGEONS_STREET = 1.5;
+/**
+ * (THE GATE WARD AS ONE GREAT WARD, GW_OPEN, his yes of 1 Nov: its squares open far and wide round the main way, its houses
+ * about their edges. Where no roof the pigeons may have lies near the way, as above, they wait on the roof nearest it, however
+ * far: its street at its foot as near as ever, or he could not see it go up as he came near. On about one laying in five of the
+ * great ward there is none: then floor 11 has no moment. His to decide: docs/NEXT_VERSION.md, 2 Nov.)
+ */
+/** (GW_OPEN) Whether a moment may be laid at (x, y) as far from the main way as the great ward lets it: past the start, out of the boss's ground, away from the bells. */
+function allowedFar(L: Level, land: Land, x: number, y: number): boolean {
+  const f = L.floor;
+  return Math.hypot(x - f.start.x, y - f.start.y) >= MOMENT_FROM_START && !inBossGround(L, x, y) && bellDist(land, x, y) >= MOMENT_FROM_BELL;
+}
 
 function gateWardMomentAt(L: Level, land: Land, rng: RNG): Omit<HushMoment, 'key'> | null {
   const f = L.floor;
   const W = f.w;
   const H = f.h;
+  // (GW_PIGEON_ROW: the pigeons' row of houses beside the main way: the street at its foot, where he sees them from, kept clear of
+  // whatever the dresser stood there)
+  if (land.pigeons) {
+    const tx = Math.floor(land.pigeons.x);
+    for (const ty of [land.pigeons.foot, land.pigeons.foot + 1]) {
+      const i = ty * W + tx;
+      if (f.tiles[i] !== T_FLOOR) continue;
+      L.props = L.props.filter((p) => !(p.solid && p.tx === tx && p.ty === ty));
+      L.walk[i] = 1;
+    }
+  }
   const floorAt = (tx: number, ty: number): boolean => tx >= 0 && ty >= 0 && tx < W && ty < H && f.tiles[ty * W + tx] === T_FLOOR;
   // (the houses walked into, a tile each, once)
   const inside = new Uint8Array(W * H);
@@ -253,38 +276,71 @@ function gateWardMomentAt(L: Level, land: Land, rng: RNG): Omit<HushMoment, 'key
     }
     return houseAt(Math.floor(bx), Math.floor(by));
   };
-  const seenPlots = new Set<string>();
-  const found: Omit<HushMoment, 'key'>[] = [];
-  for (let j = 0; j * 2.5 < H; j++) {
-    for (let x = 0; x < W; x += 0.5) {
-      const r = roofRidge(x, j * 2.5 + 1);
-      if (r.along !== 'x' || r.to - r.from < PIGEONS.ridge) continue;
-      const key = `${j}:${r.from}`;
-      if (seenPlots.has(key)) continue;
-      seenPlots.add(key);
-      const mx = (r.from + r.to) / 2;
-      const my = r.at;
-      if (!allowed(L, land, mx, my)) continue;
-      // (the plot itself all houses, and every bird on the roof whole)
-      let ok = true;
-      for (let ty = Math.floor(j * 2.5); ty < Math.ceil((j + 1) * 2.5) && ok; ty++) for (let tx = Math.floor(r.from); tx < Math.ceil(r.to) && ok; tx++) ok = houseAt(tx, ty);
-      for (let k = -2; k <= 2 && ok; k++) ok = roofWhole(mx + (k * PIGEONS.half) / 2, my);
-      if (!ok) continue;
-      // (the street at the foot of its houses, before the plot's middle: where he sees it from)
-      let seen = -1;
-      for (let ty = Math.ceil((j + 1) * 2.5); ty <= (j + 1) * 2.5 + PIGEONS_STREET && seen < 0; ty++) {
-        const tx = Math.floor(mx);
-        if (floorAt(tx, ty) && !inside[ty * W + tx] && L.walk[ty * W + tx] === 1) seen = ty * W + tx;
-        else if (floorAt(tx, ty)) break;
+  const search = (far: boolean): Omit<HushMoment, 'key'>[] => {
+    const may = far ? allowedFar : allowed;
+    const seenPlots = new Set<string>();
+    const found: Omit<HushMoment, 'key'>[] = [];
+    for (let j = 0; j * 2.5 < H; j++) {
+      for (let x = 0; x < W; x += 0.5) {
+        const r = roofRidge(x, j * 2.5 + 1);
+        if (r.along !== 'x' || r.to - r.from < PIGEONS.ridge) continue;
+        const key = `${j}:${r.from}`;
+        if (seenPlots.has(key)) continue;
+        seenPlots.add(key);
+        const mx = (r.from + r.to) / 2;
+        const my = r.at;
+        if (!may(L, land, mx, my)) continue;
+        // (the plot itself all houses, and every bird on the roof whole)
+        let ok = true;
+        for (let ty = Math.floor(j * 2.5); ty < Math.ceil((j + 1) * 2.5) && ok; ty++) for (let tx = Math.floor(r.from); tx < Math.ceil(r.to) && ok; tx++) ok = houseAt(tx, ty);
+        for (let k = -2; k <= 2 && ok; k++) ok = roofWhole(mx + (k * PIGEONS.half) / 2, my);
+        if (!ok) continue;
+        // (the street at the foot of its houses, before the plot's middle: where he sees it from)
+        let seen = -1;
+        for (let ty = Math.ceil((j + 1) * 2.5); ty <= (j + 1) * 2.5 + PIGEONS_STREET && seen < 0; ty++) {
+          const tx = Math.floor(mx);
+          if (floorAt(tx, ty) && !inside[ty * W + tx] && L.walk[ty * W + tx] === 1) seen = ty * W + tx;
+          else if (floorAt(tx, ty)) break;
+        }
+        if (seen < 0) continue;
+        const sx = (seen % W) + 0.5;
+        const sy = Math.floor(seen / W) + 0.5;
+        if (!may(L, land, sx, sy)) continue;
+        found.push({ x: mx, y: my, seen, over: true });
       }
-      if (seen < 0) continue;
-      const sx = (seen % W) + 0.5;
-      const sy = Math.floor(seen / W) + 0.5;
-      if (!allowed(L, land, sx, sy)) continue;
-      found.push({ x: mx, y: my, seen, over: true });
     }
+    return found;
+  };
+  const near = search(false);
+  // (GW_PIGEON_ROW: on the pigeons' row of houses by the main way, laid for them, if it is fit for them)
+  const row = land.pigeons ? near.find((q) => Math.abs(q.x - land.pigeons!.x) < 1e-6 && Math.abs(q.y - land.pigeons!.y) < 1e-6) : undefined;
+  if (row) return row;
+  // (near the way, as it was laid; or, on the great ward, GW_OPEN, as far from it as need be)
+  return pickNear(rng, land, near) ?? (GW_OPEN.on ? pickNear(rng, land, search(true)) : null);
+}
+
+/**
+ * (GW_PIGEON_ROW) The tiles that must be houses for the pigeons to sit whole on the roof of the plot whose ridge's middle is
+ * (mx, my): the plot's own (its row of the art's plots, `j`, and its ridge from `from` to `to`), the ridge's, and every tile under
+ * a bird's picture at its height over the ridge, as roofWhole asks (gateWardMomentAt). Tile x and y, each once.
+ */
+export function pigeonRoofTiles(mx: number, my: number, j: number, from: number, to: number): [number, number][] {
+  const out = new Map<number, [number, number]>();
+  const put = (tx: number, ty: number): void => void out.set(ty * 65536 + tx, [tx, ty]);
+  for (let ty = Math.floor(j * 2.5); ty < Math.ceil((j + 1) * 2.5); ty++) for (let tx = Math.floor(from); tx < Math.ceil(to); tx++) put(tx, ty);
+  for (let k = -2; k <= 2; k++) {
+    const bx = mx + (k * PIGEONS.half) / 2;
+    const by = my;
+    const px = (bx - by) * 32;
+    const py = (bx + by) * 16 - PIGEONS.rise;
+    for (let yy = py + 4; yy >= py - PIGEONS.tall; yy -= 3) for (let xx = px - PIGEONS.wide; xx <= px + PIGEONS.wide; xx += 3) {
+      const a = (xx + 0.5) / 32;
+      const b = (yy + 0.5) / 16;
+      put(Math.floor((a + b) / 2), Math.floor((b - a) / 2));
+    }
+    put(Math.floor(bx), Math.floor(by));
   }
-  return pickNear(rng, land, found);
+  return [...out.values()];
 }
 
 /** Is tile (tx, ty) part of a house walked into (its room, its front or its doorway: its roof is open, and faded)? */

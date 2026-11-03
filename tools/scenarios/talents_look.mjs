@@ -14,13 +14,17 @@ const BUILDS = {
   mage: { taken: ['kindling', 'searing', 'flamewarp', 'charged'], take: 'fuel', shut: 'shatter' },
   ranger: { taken: ['fleet', 'windrunner', 'quickdraw', 'longshot'], take: 'lightstep', shut: 'farsight' },
   warrior: { taken: ['honededge', 'cadence', 'drilledleap', 'sweepingcut'], take: 'earthshaker', shut: 'unbreakable' },
+  // (the new classes' trees, drafts of 28 Oct 2026: only on a page built with them, CLS=warlock and so on)
+  warlock: { taken: ['hunger', 'terribleroar', 'blazingarm', 'souldebt'], take: 'bloodlust', shut: 'bounddemon', draft: true },
+  tinkerer: { taken: ['bombsaway', 'fortune', 'contraptions', 'clustervials'], take: 'tar', shut: 'growthserum', draft: true },
+  brawler: { taken: ['doublejab', 'tenderize', 'flurry', 'bobweave'], take: 'knockout', shut: 'setup', draft: true },
 };
 
 export default async function (page, snap) {
   let fails = 0;
   const check = (label, ok, detail = '') => { if (!ok) fails++; log(label, `${ok ? 'ok' : 'FAILED'} ${detail}`); if (!ok) console.log(`  !! ${label} ${detail}`); };
   const hands = await makeHands(page);
-  const only = process.env.CLS ? [process.env.CLS] : Object.keys(BUILDS);
+  const only = process.env.CLS ? process.env.CLS.split(',') : Object.keys(BUILDS).filter((c) => !BUILDS[c].draft);
   for (const cls of only) {
     const b = BUILDS[cls];
     await page.evaluate(([cls, taken]) => {
@@ -45,13 +49,21 @@ export default async function (page, snap) {
     await hands.press('button:NEW TALENT');
     await page.waitForTimeout(500);
     await snap(`${cls}_1_tree`);
+    // (the tree with nothing taken yet, as a new hero's: every place to start pulsing)
+    await page.evaluate(() => { const g = window.__dbg.game(); window.__keep = [...g.hero.talents]; g.hero.talents = []; g.refresh(); });
+    await page.waitForTimeout(300);
+    await snap(`${cls}_1_clean`);
+    await page.evaluate(() => { const g = window.__dbg.game(); g.hero.talents = window.__keep; g.refresh(); });
+    await page.waitForTimeout(200);
     const st = () => page.evaluate(() => {
       const d = window.__dbg; const g = d.game();
       const marks = [...d.ui.marks.keys()];
       return { taken: [...g.hero.talents], left: g.talentsLeft(), stones: marks.filter((m) => m.startsWith('talent:')).length, card: marks.includes('talent-card'), take: marks.includes('button:TAKE'), page: d.invUi.page, d: { fire: g.hero.d.stats.firePct, light: g.hero.d.stats.lightPct, move: g.hero.d.stats.moveSpeed, atk: g.hero.d.stats.atkSpeed, dmg: g.hero.d.stats.dmgPct } };
     });
     let s = await st();
-    check(`${cls}: 1. the TALENTS page, fifteen talents, two points to spend`, s.page === 'talents' && s.stones === 15 && s.left === 2, `${s.stones} stones, ${s.left} left`);
+    // (the ranger's two of his companions, COMPANIONS, his idea of 28 Oct 2026, on in the game from Version 25.0: seventeen on his tree)
+    const stones = cls === 'ranger' && (await page.evaluate(() => window.__dbg.game()?.hero?.cls === 'ranger')) ? [15, 17] : [15];
+    check(`${cls}: 1. the TALENTS page, fifteen talents (the ranger seventeen), two points to spend`, s.page === 'talents' && stones.includes(s.stones) && s.left === 2, `${s.stones} stones, ${s.left} left`);
     // 2. a talent that can be taken now, pressed and read
     await hands.press(`talent:${b.take}`);
     await page.waitForTimeout(300);

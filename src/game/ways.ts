@@ -28,6 +28,7 @@
 // portal home in the boss's hall.
 
 import { SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
+import type { PrisonDoor } from './prison_way';
 import type { DoorSpot, Floor } from './types';
 
 /**
@@ -207,6 +208,8 @@ export interface Ways {
    * ('open': walking into the mouth takes him down to floor 5).
    */
   cave?: { spot: DoorSpot; state: 'wall' | 'falling' | 'open'; t: number } | null;
+  /** FLOOR 3, PRISON_EXIT: the door out the back of his hall, its way down in place of a stairwell (game/prison_way.ts). */
+  exit?: PrisonDoor | null;
   /** EXITS, FLOOR 5: the cave's other end, in a back wall of the first room, where he comes in from floor 4 (nobody goes back into it). */
   mouth?: DoorSpot | null;
   /** EXITS, IN TOWN: the gate barred (the Fleshmancer not yet beaten): it does not rise. */
@@ -257,6 +260,8 @@ export interface OnwardShape {
   /** Its way in solid while it is shut (a door, a grille: nobody walks into it until it opens). */
   shutTakes?: boolean;
 }
+/** (THE HIGH CITY, FLOOR 16) The garden gates' film: so many frames shut, then open, at 30 a second (art/films.ts); its one jolt as the leaves swing back. */
+export const GARDEN_GATE = { shut: 6, open: 12, secs: 18 / 30 };
 /** The ways on of floors 6 to 15 (the art chat's tables, mockup/ways at 6226714 and b7c7470). */
 export const ONWARD: Readonly<Record<number, OnwardShape>> = {
   // THE QUARRY'S CUT: the stair's head; the kerbs and the hoist's posts; the bench of rock and its boulders; the cult's blocks thrown out
@@ -279,6 +284,10 @@ export const ONWARD: Readonly<Record<number, OnwardShape>> = {
   14: { secs: 110 / 30, back: 0, place: 'wall', shutTakes: true, takes: [[0, 0]], solid: [[0, -1], [0, 1]], thrown: [] },
   // THE GREAT DOORS, in a back wall of the Reading Room: home, to the camp
   15: { secs: 130 / 30, back: 0, place: 'wall', shutTakes: true, takes: [[0, 0]], solid: [[0, -1], [0, 1]], thrown: [] },
+  // (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS' GATE ON UP THE HILL, in the back hedge beyond the lake's end (game/act2/swangardens.ts):
+  // the art chat drew no film for it, so it is the art's own `a garden gate` (art/floor16.ts), shut while the Princess lives, swung
+  // open as she falls (art/films.ts: a half second, the gate's two pictures); its gateway the way in, its piers in the yew)
+  16: { secs: GARDEN_GATE.secs, back: 0, shutTakes: true, takes: [[0, 0]], solid: [], thrown: [] },
 };
 /** Where floors 6 to 15 begin: how far on along the way back the piece he came out of stands, and the tiles it makes solid (from the start's tile); or (`wall`) in a back wall nearest the start, its doorway's three tiles solid, he coming in `back` tiles out from it. */
 export const START: Readonly<Record<number, { back: number; solid: readonly AB[]; place?: 'wall' }>> = {
@@ -295,6 +304,8 @@ export const START: Readonly<Record<number, { back: number; solid: readonly AB[]
   // the infirmary's back door; a side door of the library: in a back wall
   14: { back: 1.7, place: 'wall', solid: span(0, 0, -1, 1) },
   15: { back: 1.7, place: 'wall', solid: span(0, 0, -1, 1) },
+  // (THE HIGH CITY, FLOOR 16: the garden gate he came in by, shut behind him in the hedge two tiles back: its gateway)
+  16: { back: 2, solid: [[2, 0]] },
 };
 
 /** Where a way (or a start) stands: its tile (`ref`, whole tiles: the way's own frame counts from it), the way it leads (`dir`), where its picture is anchored (`at`, tiles), and (in a wall) the room's zone before it. */
@@ -392,7 +403,7 @@ export function backWallNear(f: Floor, x0: number, y0: number, far = 12): Placed
  * own wall face does not stand over it). Floor 11's grate is laid in the middle of the Crier's Square (the land's greatest
  * square), the way on moved there. Null for a floor that has none (or where a wall to cut is not to be found).
  */
-export function placeOnward(f: Floor, land: { exit: { x: number; y: number }; arrive?: { x: number; y: number }; squares?: { x: number; y: number; r: number }[]; zones?: Uint8Array }): OnwardLaid | null {
+export function placeOnward(f: Floor, land: { exit: { x: number; y: number }; arrive?: { x: number; y: number }; squares?: { x: number; y: number; r: number }[]; zones?: Uint8Array; wayDirs?: { on: OnDir; back: OnDir } }): OnwardLaid | null {
   const shape = ONWARD[f.depth];
   const st = START[f.depth];
   if (!shape || !st) return null;
@@ -415,7 +426,8 @@ export function placeOnward(f: Floor, land: { exit: { x: number; y: number }; ar
     const at = sq ? { x: Math.floor(sq.x) + 0.5, y: Math.floor(sq.y) + 0.5 } : { x: land.exit.x, y: land.exit.y };
     way = { dir: onDirOf(land.exit.x - f.boss.x, land.exit.y - f.boss.y), ref: { x: Math.floor(at.x), y: Math.floor(at.y) }, at };
   } else {
-    const dir = onDirOf(land.exit.x - f.boss.x, land.exit.y - f.boss.y);
+    // (THE HIGH CITY, FLOOR 16: the way its map-maker laid its gate, Land.wayDirs)
+    const dir = land.wayDirs?.on ?? onDirOf(land.exit.x - f.boss.x, land.exit.y - f.boss.y);
     way = { dir, ref: { x: Math.floor(land.exit.x), y: Math.floor(land.exit.y) }, at: onwardAnchor(land.exit, dir, shape.back) };
   }
   // the start
@@ -428,7 +440,7 @@ export function placeOnward(f: Floor, land: { exit: { x: number; y: number }; ar
     }
   }
   if (!start) {
-    const dir = onDirOf(f.start.x - f.boss.x, f.start.y - f.boss.y);
+    const dir = land.wayDirs?.back ?? onDirOf(f.start.x - f.boss.x, f.start.y - f.boss.y);
     start = { dir, ref: { x: Math.floor(f.start.x), y: Math.floor(f.start.y) }, at: startAnchor(f.start, dir, st.place === 'wall' ? 0 : st.back) };
     // (a start in a wall with no wall to stand it in: none drawn there, as it would have been)
     if (st.place === 'wall') start.none = true;
@@ -651,8 +663,11 @@ export function placeCave(f: Floor): DoorSpot | null {
   return placeInBackWall(f, f.rooms.find((r) => r.kind === 'boss'));
 }
 
-/** Three tiles of a back wall of room `r` for a doorway into the dark, as `placeFirstGate` says; null where none will do. */
-function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined): DoorSpot | null {
+/**
+ * Three tiles of a back wall of room `r` for a doorway into the dark, as `placeFirstGate` says; null where none will do. `avoid`:
+ * a place ruled out besides (its wall, along x or not; its first tile along the wall).
+ */
+export function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined, avoid?: (alongX: boolean, a: number) => boolean): DoorSpot | null {
   if (!r) return null;
   const tile = (x: number, y: number): number => (x < 0 || y < 0 || x >= f.w || y >= f.h ? -1 : f.tiles[y * f.w + x]);
   // (what stands on the floor: what may be taken away for the gate, a brazier, a barrel, an urn, a pillar, counts against a place; a chest or a lever rules it out)
@@ -677,7 +692,7 @@ function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined): DoorS
       let ok = true;
       for (let j = k - 1; j <= k + 3 && ok; j++) ok = at(j) === T_WALL;
       for (let j = k; j <= k + 2 && ok; j++) ok = at(j, 1) !== T_FLOOR && room(j, 1) && room(j, 2);
-      if (!ok) continue;
+      if (!ok || (avoid && avoid(w.alongX, w.from + k))) continue;
       const dark = [k, k + 1, k + 2].every((j) => at(j, 1) === T_VOID);
       let things = 0;
       for (let j = k; j <= k + 2; j++) for (const d of [1, 2]) if (standing.has(here(j, d))) things++;

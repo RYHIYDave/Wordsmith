@@ -11,6 +11,7 @@
 //   elsewhere, a way on that is a column of light: WAY ON, once awake.
 // Where each stands (the rules know it) and how high over its foot the name is, in game pixels.
 
+import { prisonDoorMiddle } from './prison_way';
 import { doorMiddle } from './doors';
 import type { Level } from './state';
 import { EXITS, ONWARD, stairMiddle, STAIR_OPENING } from './ways';
@@ -19,7 +20,8 @@ import { EXITS, ONWARD, stairMiddle, STAIR_OPENING } from './ways';
 export const EXIT_LABELS = { on: true };
 
 /** Floors 6 to 10's ways on, what each is. */
-export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY', 11: 'GRATE', 12: 'OUTFALL', 13: 'POSTERN', 14: 'DOOR', 15: 'GREAT DOORS' };
+// (THE HIGH CITY, FLOOR 16: the Swan Gardens' gate on up the hill, GATE)
+export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY', 11: 'GRATE', 12: 'OUTFALL', 13: 'POSTERN', 14: 'DOOR', 15: 'GREAT DOORS', 16: 'GATE' };
 
 /** An open exit's name: where its foot is (tiles), the name, and how high over its foot it stands (game pixels). */
 export interface ExitLabel {
@@ -42,6 +44,10 @@ export function exitLabels(L: Level): ExitLabel[] {
   if (EXITS.on && W.cave && W.cave.state === 'open') {
     const m = doorMiddle(W.cave.spot);
     out.push({ x: m.x, y: m.y, text: 'CAVE', lift: 52 });
+  }
+  if (W.exit && W.exit.state === 'open') {
+    const m = prisonDoorMiddle(W.exit);
+    out.push({ x: m.x, y: m.y, text: 'DOOR', lift: 56 });
   }
   if (W.shaft && W.shaft.state === 'down') out.push({ x: W.shaft.x + 0.5, y: W.shaft.y + 0.5, text: 'CAGE', lift: 56 });
   const on = W.onward;

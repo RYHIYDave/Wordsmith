@@ -39,6 +39,8 @@ export default async function (page, snap) {
   await clickMark('button:BACK');
   await clickMark('button:NEW GAME');
   await clickMark('class:mage');
+  // (the class cards with CONFIRM, CARDS3, his word of 31 Oct 2026: the card chosen, CONFIRM starts her)
+  if (await markAt('button:CONFIRM')) await clickMark('button:CONFIRM');
   // (she makes ready on her card before the run begins: Version 16)
   await entered(page);
   await page.waitForTimeout(300);

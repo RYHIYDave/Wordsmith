@@ -7,20 +7,25 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { CRYPT_LAYOUT, cryptLayoutFloor, generateFloor, monsterBudget } from '../src/game/dungeon';
+import { CRYPT_LAYOUT, LEVEL_KINDS, cryptLayoutFloor, generateFloor, monsterBudget } from '../src/game/dungeon';
 import { doorTiles } from '../src/game/doors';
 import { SOLID_PROPS, T_FLOOR } from '../src/game/types';
 import type { Floor } from '../src/game/types';
 
 const SEEDS = Array.from({ length: 16 }, (_, i) => 1009 + i * 7919);
 
+// (the Crypt's layout as such: EVERY FLOOR OPEN, LINEAR OR COMBO lays some of its floors otherwise, game/dungeon.ts LEVEL_KINDS,
+// with tests of its own, tests/level_kinds.test.ts)
 function withLayout<T>(on: boolean, f: () => T): T {
   const was = CRYPT_LAYOUT.on;
+  const kinds = LEVEL_KINDS.on;
   CRYPT_LAYOUT.on = on;
+  LEVEL_KINDS.on = false;
   try {
     return f();
   } finally {
     CRYPT_LAYOUT.on = was;
+    LEVEL_KINDS.on = kinds;
   }
 }
 
@@ -65,7 +70,7 @@ test('on every floor of the Crypt: its cell blocks, and a row of cells along the
     let cellsSeen = 0;
     for (let d = 1; d <= 5; d++) {
       for (const seed of SEEDS) {
-        const f = generateFloor(d, seed);
+        const f = withLayout(true, () => generateFloor(d, seed));
         const blocks = f.rooms.filter((r) => r.block);
         const cells = f.rooms.filter((r) => r.cell);
         assert.equal(blocks.length, want[d], `dungeon ${d}, seed ${seed}: cell blocks`);
@@ -145,7 +150,7 @@ test('from the third floor some rooms are joined by a breach, a wide opening in 
       }
       return n;
     };
-    const per = [1, 2, 3, 4, 5].map((d) => SEEDS.reduce((a, s) => a + wide(generateFloor(d, s)), 0));
+    const per = [1, 2, 3, 4, 5].map((d) => SEEDS.reduce((a, s) => a + wide(withLayout(true, () => generateFloor(d, s))), 0));
     assert.equal(per[0], 0);
     assert.equal(per[1], 0);
     assert.ok(per[2] > 0 && per[3] > per[2] * 0.9 && per[4] > 0, `wide openings by floor: ${per.join(', ')}`);
@@ -158,7 +163,7 @@ test('the Crypt\'s floors keep the map-maker\'s other rules: as many monsters as
       const share: number[] = [];
       const base: number[] = [];
       for (const seed of SEEDS) {
-        const f = generateFloor(d, seed);
+        const f = withLayout(true, () => generateFloor(d, seed));
         const at = `dungeon ${d}, seed ${seed}`;
         share.push(f.packs.reduce((a, p) => a + p.size, 0) / monsterBudget(d));
         const off = withLayout(false, () => generateFloor(d, seed));

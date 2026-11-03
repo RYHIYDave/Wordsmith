@@ -18,7 +18,7 @@ import { test as nodeTest } from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 
-import { FIGURE_SIZE, FIRST5_FIGURES, baseFigure, figureOf, makeBestiary } from '../src/art/bestiary';
+import { FIGURE_SIZE, FIRST5_FIGURES, baseFigure, figureOf, makeBestiary, useAmAction, useCoAction } from '../src/art/bestiary';
 import { SENTENCE_FROM, SENTENCE_TO, SPLIT_FOR, throwPathAt } from '../src/art/boss_shots';
 import {
   AMALGAM as AM_MOB, AM_BURST_AT, AM_BURST_SPOT, AM_BURST_WAY, AM_DEVOUR_HIT, AM_SLAM_HIT, AM_SLAM_SPOTS, AM_SWARM_HIT, AM_SWARM_SPEED, AM_SWIPE_HIT, BB_BITE_HIT, BB_EMERGE_TIME, BONE_BEAST, CHAINED as CO_MOB, CHAINED_FREED,
@@ -34,7 +34,7 @@ import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { hookHigh } from '../src/render/bossfx';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
+import { ACTS, AMALGAM, AM_ACTION, BOSSES5, CO_ACTION, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand, bossPace } from '../src/game/bosses';
 import { HEADSMAN2 } from '../src/art/headsman2';
 
 // (THE HEADSMAN MADE NEW has a fight of his own, held in tests/headsman2_rules.test.ts: this file holds the first Headsman's)
@@ -345,14 +345,16 @@ test('3. a boss sets off, walks and stops as his pictures hand over, carried at 
       const step = Math.hypot(m.x - x0, m.y - y0);
       if (was === 'setOff' || was === 'walk' || was === 'halt') {
         carried += step;
-        near(step, G.pace / 60, 1e-6, `${kind}: carried at his pace while ${was}`);
+        // (at his pace: his own, or as the bosses' paces have it, 31 Oct 2026: game/bosses.ts BOSS_PACE, his walk played faster to match)
+        near(step, (bossPace(kind) ?? G.pace) / 60, 1e-6, `${kind}: carried at his pace while ${was}`);
       } else {
         moved += step;
       }
       if (mode !== was) {
         modes.push(mode);
         // (how it hands over)
-        if (mode === 'halt' && was === 'walk') near(Math.min(wasT % G.cycle, G.cycle - (wasT % G.cycle)), 0, 1 / 60 + 0.005, `${kind}: stopping begins as his walk comes round to its first frame`);
+        // (his walk's clock goes on by as much of its loop as he goes in a frame: more where his pace is quicker than it was painted)
+        if (mode === 'halt' && was === 'walk') near(Math.min(wasT % G.cycle, G.cycle - (wasT % G.cycle)), 0, (bossPace(kind) ?? G.pace) / G.pace / 60 + 0.005, `${kind}: stopping begins as his walk comes round to its first frame`);
         if (mode === 'walk') assert.equal(was, 'setOff', `${kind}: into his walk from setting off`);
         if (mode === 'setOff') assert.ok(was === (G.raise > 0 ? 'carry' : 'stand'), `${kind}: sets off from ${G.raise > 0 ? 'his carry' : 'his stand'} (from ${was})`);
         if (mode === 'raise') assert.equal(was, 'stand', 'the Headsman takes his axe up from where it stands');
@@ -440,7 +442,17 @@ test("4. the Headsman's four attacks hurt where and when their pictures say, and
     assert.ok(s.hurts.length >= 1, 'it reaches a hero who stands eight tiles off');
   }
 });
-test("5. the Chained One's attacks, and his chains breaking as he is hurt", () => {
+/** (his moves as they were: the Chained One's and the Amalgamation's done the action way, CO_ACTION and AM_ACTION, on since 2 Nov 2026 at
+ * his “Switch them all on (Recommended)”, are held by tests/co_action_game.test.ts and tests/am_action_game.test.ts) */
+function asWere(on: (v: boolean) => void, was: boolean, body: () => void): void {
+  on(false);
+  try {
+    body();
+  } finally {
+    on(was);
+  }
+}
+test("5. the Chained One's attacks, and his chains breaking as he is hurt", () => asWere(useCoAction, CO_ACTION.on, () => {
   {
     const { g, m } = room('chained', 2.4, 'lash');
     const s = watch(g, m, 2);
@@ -514,7 +526,7 @@ test("5. the Chained One's attacks, and his chains breaking as he is hurt", () =
     const s = watch(g, m, 5);
     assert.ok(!s.events.some((e) => e.t === 'shake' && e.amount === 6) && g.perils.every((p) => p.kind !== 'crash'), 'no ball throw once it is gone');
   }
-});
+}));
 
 test("5c. the Fleshmancer's teleport (FLESH_BLINK, his word): crowded, he is dragged down and out of reach, nowhere a moment, and pushed up far from the hero; its numbers his pictures' own", () => {
   assert.equal(FLESH_BLINK.on, true, 'on, his yes to its look');
@@ -553,7 +565,7 @@ test("5c. the Fleshmancer's teleport (FLESH_BLINK, his word): crowded, he is dra
   assert.ok(Math.hypot(m.x - h.x, m.y - h.y) >= Math.min(FLESH_BLINK.far, 4) - 0.01, `far from the hero (${Math.hypot(m.x - h.x, m.y - h.y).toFixed(1)})`);
 });
 
-test("6. the amalgamation's attacks, its bone beasts, and its eating them back", () => {
+test("6. the amalgamation's attacks, its bone beasts, and its eating them back", () => asWere(useAmAction, AM_ACTION.on, () => {
   {
     const { g, m } = room('amalgam', 2.0, 'swipe');
     const s = watch(g, m, 2);
@@ -659,7 +671,7 @@ test("6. the amalgamation's attacks, its bone beasts, and its eating them back",
     g.update(1 / 60, emptyControls());
     assert.equal(g.monsters.filter((o) => !o.dead).length, 0, 'none left');
   }
-});
+}));
 
 test("7. the Fleshmancer's spells", () => {
   // THE SHARDS: seven, a fan toward the hero; one strikes a hero who stands still

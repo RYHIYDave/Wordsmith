@@ -382,7 +382,12 @@ test("and in real dungeons: from the low floor of a room to a skeleton on its te
     }
     const far = (list: [number, number][], from: [number, number][]): [number, number] =>
       list.reduce((best, p) => (Math.min(...from.map((q) => dist(p[0], p[1], q[0], q[1]))) > Math.min(...from.map((q) => dist(best[0], best[1], q[0], q[1]))) ? p : best), list[0]);
-    const top = far(highs, stairs);
+    // (of the raised tiles that can be walked to: a corner tile the room's things stand round, closed in, is no way's end)
+    if (!stairs.length) continue;
+    const fromStairs = flowField(L.walk, f.w, f.h, stairs[0][0] + 0.5, stairs[0][1] + 0.5, Infinity, undefined, L.step);
+    const reached = highs.filter(([x, y]) => fromStairs[y * f.w + x] !== UNREACHABLE);
+    if (!reached.length) continue;
+    const top = far(reached, stairs);
     const low = far(lows, [top]);
     g.monsters.length = 0;
     const m = inner(g).spawn('skeleton', top[0] + 0.5, top[1] + 0.5, 900, 0, false, inner(g).rng);

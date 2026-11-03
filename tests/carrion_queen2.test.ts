@@ -128,7 +128,8 @@ test('her switch is off by itself, and of the game only her figure imports her',
   assert.equal(QUEEN2_ON.on, false);
   for (const f of fs.readdirSync('src', { recursive: true })) {
     const name = f.replace(/\\/g, '/');
-    if (!name.endsWith('.ts') || name.startsWith('dev') || /carrion_queen2(_moves)?\.ts$/.test(name) || name === 'art/act1_figs/queen.ts') continue;
+    // (and art/carrion_queen_action*.ts, her moves done the action way: a mock-up behind QUEEN_ACTION, off, nothing of the game importing it)
+    if (!name.endsWith('.ts') || name.startsWith('dev') || /carrion_queen2(_moves)?\.ts$/.test(name) || name === 'art/act1_figs/queen.ts' || name.startsWith('art/carrion_queen_action')) continue;
     assert.ok(!/from ['"][^'"]*carrion_queen2(_moves)?['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the new Carrion Queen`);
   }
 });

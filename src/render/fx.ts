@@ -24,6 +24,9 @@
 //   Poison     venom      a sour green spatter; what it touches bubbles and sickens, and its
 //                         numbers keep coming.   Behind: a cloud of it hangs over the floor.
 
+import { WarlockFx } from './warlock_fx';
+import { TinkererFx } from './tinkerer_fx';
+import { BrawlerFx } from './brawler_fx';
 import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
@@ -319,6 +322,7 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   chained2: [IRON[4], IRON[2], PALLOR[3], M_FLAME[3]],
   amalgam: [OSSUARY[4], OSSUARY[2], BONE[4], M_FLAME[3]],
   beast: [OSSUARY[4], OSSUARY[2], M_FLAME[3]],
+  mite: [OSSUARY[4], OSSUARY[2], M_FLAME[3]],
   fleshmancer: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[4]],
   dagger: [GLOOM[4], GLOOM[2], PINK[2], BONE[3]],
   minifm: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
@@ -360,6 +364,32 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   // (floor 13's pair: the Scraper's sodden grey pages and ink-black claws; the Quill's white pages and its ink; art/pair_skins.ts)
   scraper: ['#d2c9b0', '#a29a86', '#827c6c', '#14121a'],
   quill: ['#f2ecdc', '#d4ccb8', '#9a9384', '#14121a'],
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's, from the art chat's colours)
+  swan: ['#ece6df', '#d5cfd1', '#aca4b3', '#c8742c'],
+  gardener: ['#2e3e30', '#5a4632', '#8a7a5a', '#c8c0b0'],
+  groom: ['#7a3a32', '#c8b080', '#2a2622', '#d8d4cc'],
+  pguard: ['#6a1e30', '#d8d8e0', '#9aa0b0', '#f0e8e0'],
+  princess: ['#4a3a6a', '#8a7aa8', '#4a773a', '#ece6df'],
+  // (floor 17's)
+  footman: ['#5a1e2a', '#c8a84a', '#e8e4dc', '#1e1a22'],
+  dancer: ['#4a4e8a', '#8a6aa8', '#ece6df', '#c8a84a'],
+  order: ['#141218', '#2a2630', '#d8d0c0', '#5a5660'],
+  prince: ['#4a1420', '#c8a84a', '#a82a2a', '#141218'],
+  // (floor 18's)
+  lady: ['#47306a', '#9898aa', '#ece6df', '#312641'],
+  qguard: ['#3f3253', '#b6b6c6', '#7c7c90', '#14141c'],
+  reflection: ['#525877', '#9ea4bf', '#cdd2e6', '#f5f7ff'],
+  gqueen: ['#47306a', '#c2c2da', '#867cb8', '#2d1d45'],
+  // (floor 19's)
+  kknight: ['#28325a', '#5a6479', '#94794a', '#181b25'],
+  xbow: ['#33406e', '#5c6170', '#94794a', '#2a201b'],
+  gking: ['#28325a', '#94794a', '#9aa0b6', '#141a33'],
+  // (floor 20's: grey fog, bone white, no colour at all)
+  hshape: ['#5c586c', '#8a8699', '#bab6c6', '#e9e5ed'],
+  rshadow: ['#303034', '#6a6a6d', '#a4a19d', '#e6e0d3'],
+  moth: ['#35313a', '#77717a', '#958c7e', '#e3dccd'],
+  // (the Rime Shade: its fog and its frost, art/rime_shade.ts RS_FOG, RS_FROST)
+  rshade: ['#3a3d44', '#6f737b', '#9ca6b8', '#eef2f6'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };
@@ -478,11 +508,21 @@ const TAG_TIME = 3;
 const TAG_LIFT: Record<TownVoice, number> = { armourer: 66, mystic: 102, wordsmith: 62, stranger: 56 };
 /** (BOSS_INTRO) how far over a boss's feet his line is said: over the Warden's horns */
 const BOSS_SAY_LIFT = 84;
+/** Where a boss's line may go: below the boss's bar across the top (ui/hud.ts: its name and bar, 4 to 24), and left of the small map at the top right (66 wide and 4 from the edge, down to 50) while it is that high. */
+const SAY_TOP = 28;
+const SAY_MAP_W = 74;
+const SAY_MAP_FOOT = 54;
 
 type Words = readonly WordId[];
 const has = (w: Words | undefined, id: WordId): boolean => !!w && w.includes(id);
 
 export class Fx {
+  /** THE WARLOCK's (render/warlock_fx.ts): told of every event, moved on and drawn with the rest. */
+  readonly warlock = new WarlockFx();
+  /** THE TINKERER's (render/tinkerer_fx.ts): told of every event, moved on and drawn with the rest. */
+  readonly tinkerer = new TinkererFx();
+  /** THE BRAWLER's (render/brawler_fx.ts). */
+  readonly brawler = new BrawlerFx();
   particles: Particle[] = [];
   floaters: Floater[] = [];
   /** The line that last told of might gained ("MIGHT 2"): it is counted up in place while it is fresh. */
@@ -589,6 +629,9 @@ export class Fx {
   }
 
   clear(): void {
+    this.warlock.clear();
+    this.tinkerer.clear();
+    this.brawler.clear();
     this.particles = [];
     this.floaters = [];
     this.mightNote = null;
@@ -1086,6 +1129,9 @@ export class Fx {
 
   handle(events: GameEvent[], play: (name: Sfx, vol?: number) => void): void {
     for (const e of events) {
+      this.warlock.handle(e);
+      this.tinkerer.handle(e);
+      this.brawler.handle(e);
       // (WORDMELDING's looks, behind MELD3, off: a melded word's own bolts, blasts and patches are drawn by render/melds3.ts)
       if (meldOwnsEvent(e)) continue;
       // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
@@ -1274,6 +1320,10 @@ export class Fx {
         case 'bossIntro':
           if (e.line) this.bossSay = { text: e.line, t: 0, x: e.x, y: e.y, lift: BOSS_SAY_LIFT, secs: Math.min(e.secs, BOSS_INTRO.sayFor) };
           break;
+        // (THE HIGH CITY, FLOOR 16: a boss's line with no name coming up, the Princess's whisper as she falls: game/act1_rules/princess.ts)
+        case 'bossSay':
+          this.bossSay = { text: e.text, t: 0, x: e.x, y: e.y, lift: e.lift ?? BOSS_SAY_LIFT, secs: e.secs };
+          break;
         case 'bells': {
           // (ACT 2, THE BELLS, game/bells.ts: the Hush pouring out of the Muffled Bell; a bell's ring (the friend's cyan: his to
           // ring) knocking back what is near it; one of the Hush rising out of its fog; the Hush shattering in the explosion, or
@@ -1304,6 +1354,8 @@ export class Fx {
           break;
         }
         case 'burst': {
+          // (THE TINKERER's vials, her Golem's pound and her bomb: drawn by render/tinkerer_fx.ts)
+          if (e.style === 'vial' || e.style === 'pound' || e.style === 'bomb') break;
           // (WORDMELDING's looks, behind MELD3, off: as for a hit)
           const w = meldLookWords(e.words);
           const ramp = this.ramp(e.el);
@@ -1904,6 +1956,9 @@ export class Fx {
 
   /** `real` is the true frame time: `dt` is shorter while the game is holding still. */
   update(dt: number, real: number = dt): void {
+    this.warlock.update(dt);
+    this.tinkerer.update(dt);
+    this.brawler.update(dt);
     this.clock += dt;
     this.sinceHold += real;
     // Nothing here may pile up without limit, whatever is slotted and however fast it is used:
@@ -2063,6 +2118,8 @@ export class Fx {
 
   /** Flat effects on the floor: scorch and frost, cracks, ice, shockwave rings. Drawn under the characters. */
   drawGround(g: CanvasRenderingContext2D, c: Cam): void {
+    this.warlock.drawGround(g, c);
+    this.tinkerer.drawGround(g, c);
     // arrows of a volley standing in the floor: a short shaft leaning back the way it fell, its
     // fletching at the top; they fade out where they stand
     for (const a of this.stuck) {
@@ -2292,6 +2349,9 @@ export class Fx {
 
   /** Effects in the air, drawn over the characters and over the darkness so they glow. */
   drawAir(g: CanvasRenderingContext2D, c: Cam): void {
+    this.warlock.drawAir(g, c);
+    this.tinkerer.drawAir(g, c);
+    this.brawler.drawAir(g, c);
     for (const q of this.whirls) {
       // A whirlwind's turn: two crescents, opposite each other, going round the hero. Each is
       // thin at its tail and thick at its leading edge, which is white. They go round with the
@@ -2678,8 +2738,11 @@ export class Fx {
       const rows = textWidth(say.text) + 10 > viewW - 4 ? wrapText(say.text, viewW - 16) : [say.text];
       const w = rows.reduce((n, r) => Math.max(n, textWidth(r)), 0) + 10;
       const px = Math.round(wx(c, say.x, say.y));
-      const x = Math.max(Math.ceil(w / 2) + 2, Math.min(viewW - Math.ceil(w / 2) - 2, px));
-      const y = Math.max(4, Math.round(wy(c, say.x, say.y)) - say.lift - Math.round(Math.min(1, say.t / 0.12) * 4) - (rows.length - 1) * 10);
+      // (kept on the screen, and clear of the boss's bar across the top and the small map at the top right: a boss far up the
+      // screen says it under them, not hidden by them)
+      const y = Math.max(SAY_TOP, Math.round(wy(c, say.x, say.y)) - say.lift - Math.round(Math.min(1, say.t / 0.12) * 4) - (rows.length - 1) * 10);
+      const right = y < SAY_MAP_FOOT ? viewW - SAY_MAP_W : viewW;
+      const x = Math.max(Math.ceil(w / 2) + 2, Math.min(right - Math.ceil(w / 2) - 2, px));
       const foot = y + 1 + rows.length * 10;
       g.globalAlpha = 0.8 * a;
       g.fillStyle = P.ink;

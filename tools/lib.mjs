@@ -17,6 +17,18 @@ export function load(name) {
 }
 
 /** Bundle a TypeScript entry file into one browser script (IIFE). */
+/**
+ * WHAT THE GAME'S BUILDS SWITCH ON AS IT IS BUNDLED (switches read as its files load, so they cannot be put on as it starts): the
+ * three new characters, the Brawler, the Warlock and the Tinkerer (game/brawler.ts, warlock.ts, tinkerer.ts), and the ranger's
+ * companions (game/talents.ts COMPANIONS). His word, 2 Nov 2026, asked whether to keep them for the release after this one, with
+ * the High City: “All of it in this one”. The unit tests, which bundle nothing, see each off, as its file has it.
+ * THE BRAWLER LEFT OUT: his words, 2 Nov 2026, 22:52, “Let’s go it’s good.  The brawler is getting completely reworked so it’ll be
+ * a while before he’ll be ready”, and his pick, “Leave him out for now (Recommended)”: he comes in when his rework is done.
+ */
+// THE BRAWLER IN AGAIN, made again as the Veteran (game/veteran.ts VETERAN): shown him in play, his words, 3 Nov 2026, by 12:06
+// (Eastern): “Yes, he’s still the brawler tho.  Veteran was just the look I picked”.
+export const RELEASE_DEFINES = { __WARLOCK__: 'true', __TINKERER__: 'true', __COMPANIONS__: 'true', __BRAWLER__: 'true' };
+
 export async function bundle(entry, { minify = false, define = {} } = {}) {
   const esbuild = load('esbuild');
   const r = await esbuild.build({

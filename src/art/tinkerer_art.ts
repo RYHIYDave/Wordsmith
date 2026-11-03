@@ -1,0 +1,350 @@
+// THE TINKERER'S PICTURES IN THE GAME, HER GOLEM'S AND HER CONTRAPTION'S (the main chat, 28 Oct 2026; game/tinkerer.ts,
+// behind TINKERER).
+//
+// They are the art chat's, sculpted (src/dev/sculpt_tinkerer.ts, sculpt_golem.ts, sculpt_contraption.ts) and moved
+// (src/dev/tinkerer_moves.ts, tinkerer_hold.ts, tinkerer_hits.ts, tinkerer_fall.ts; golem_moves.ts; contraption_fx.ts), each
+// shown to the owner in the art chat (docs/mockups/classes/HANDBACK.md: what he said yes to, and what he has seen and not
+// judged). This file only turns those moves into the frames the game shows, in the shape it holds its heroes and monsters in
+// (art/actor_types.ts AnimSet), painted when first asked for (lazyFrames). Nothing here changes how they look.
+//
+// FROM BEHIND, AS THE CAMERA TRULY SEES THEM, NOT IN A MIRROR: his pick of 28 Oct in the art chat, “Draw them true
+// (Recommended)” (his word before it: “It seems like every time we get drawings from behind the arms switch sides.  I don't
+// understand why that happens”). The art chat's way: the figure drawn from in front, turned +90° (art/skeleton.ts project
+// 'rear' is the same picture), so what is in her right hand is on the right of the picture. Her wrench stays on her right
+// shoulder, the Golem's giant arm on its own side.
+//
+// HER MOMENTS:
+//   standing, running              her stand (6 s, cocky, gleeful) and her quick light sprint
+//   her tap (with CONTRAPTION)     the art chat's own: a Contraption thrown down (clips.tapAs)
+//   her tap                        her VIAL TOSS (her tap since the owner's words of 28 Oct, by 16:31: “I think for her I’d like
+//                                  her to start with golem and a vial toss”): the art chat's Contraption throw, her vial off her
+//                                  belt in her fist in its place (it leaves her hand at TAP_LET_GO; the game draws its flight)
+//   her tap and hold               she points the wrench, whistles her Golem on, hops for joy as its fist comes down
+//   her swipe                      the blast jump: the moments she is flung laid over the swipe's time (as a leap's are),
+//                                  her coming down and rising after (`land`)
+//   struck, struck from behind     tinkerer_hits.ts; her fall, tinkerer_fall.ts
+// THE GOLEM: standing (its pose at rest), its knuckling walk, its punch, its ground pound, its cannon, its winding down.
+// THE CONTRAPTION: shut and tumbling (thrown), springing open, set up, its mortar kicked by a shot, broken.
+
+import type { Light, Sprite } from '../engine/px';
+import type { ActorArt, AnimSet, Clip } from './actor_types';
+import { HEAVY, LEFT_TO_PAINTER, lazyFrames, toSprite } from './kit';
+import { CANVAS3 } from './skin';
+import type { GameView } from './skin';
+import type { Drawn } from '../dev/sculpt';
+import { BJ, FR, TAP_GRAB, TAP_LET_GO, TRUN_ROUND, TSTAND_LONG, drawTinkerAt, tinkerMoves } from '../dev/tinkerer_moves';
+import type { TinkMove } from '../dev/tinkerer_moves';
+import { HOLD, drawTinkerHoldAt, tinkerHold } from '../dev/tinkerer_hold';
+import { tinkerLurch, tinkerReel } from '../dev/tinkerer_hits';
+import { drawTinkerFallAt, tinkerFall } from '../dev/tinkerer_fall';
+import { GCANNON, GCHARGE_BEAM, GCHARGE_SHELL, GDOWN, GP, GPUNCH, GUPPER, GWALK, golemCannon, golemChargeBeam, golemChargeShell, golemDown, golemPunch, golemUppercut, golemWalk, groundPound } from '../dev/golem_moves';
+import { GOLEM_LOOK, TINKER_TUNE } from '../game/tinkerer';
+import { GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from '../dev/sculpt_golem';
+import type { GolemGun } from '../dev/sculpt_golem';
+import { CONTRAPTION_PICK, CONTRAPTION_POSE, sculptContraptionBuild } from '../dev/sculpt_contraption';
+import type { ContraptionAmmo } from '../dev/sculpt_contraption';
+import { CDOWN, CT, contraptionDown } from '../dev/contraption_fx';
+import { UNITS_PER_TILE } from './moves3';
+
+/** Frames a second: a standing loop, a run (its feet gripping, as the heroes' runs), what is played once. */
+const IDLE_FPS = 10;
+const RUN_FPS = 60;
+const CLIP_FPS = 30;
+/** How many pictures the blast jump's flight is painted in, laid over the swipe's time. */
+const FLY_FRAMES = 12;
+
+/** Their pool of light: as the heroes' (art/heroes3.ts). */
+const AURA: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
+const AURA_SMALL: Light = { x: CANVAS3.ax, y: CANVAS3.ay - 10, r: 22, color: '#28dcf0', a: 0.14 };
+
+/** From in front as the game shows heroes; from behind truly (the figure turned +90°: see the head of this file). */
+const TURN: Record<GameView, number> = { front: 0, back: 90 };
+/**
+ * THE GOLEM is built facing the eye, a little to the left (dev/sculpt_golem.ts: turned 0, it is the Golem he picked); the
+ * game's pictures from in front face down the screen and to the right (turned 45), and truly from behind, up it and to the
+ * right (turned 135, as the art chat's films show it from behind: tests/golem_moves.test.ts). Both turns are among the
+ * eight its checks are run on.
+ */
+const GOLEM_TURN: Record<GameView, number> = { front: 45, back: 135 };
+/** THE CONTRAPTION is built throwing to the picture's right (dev/sculpt_contraption.ts): turned to throw down and to the right, and up and to the right. */
+const CON_TURN: Record<GameView, number> = { front: 315, back: 45 };
+
+const asSprite = (d: Drawn, aura: Light, tall = 0): Sprite => toSprite({ px: d.px, lights: [] }, aura, CANVAS3.ax, CANVAS3.ay + tall);
+
+function round(long: number, fps: number, at: (t: number) => Sprite): Sprite[] {
+  const n = Math.max(1, Math.round(long * fps));
+  return lazyFrames(n, (i) => at(i / fps));
+}
+function clip(t0: number, t1: number, fps: number, at: (t: number) => Sprite, hit?: number, tail = false): Clip {
+  const n = Math.max(1, Math.ceil((t1 - t0) * fps - 1e-6) + 1);
+  const c: Clip = { frames: lazyFrames(n, (i) => at(Math.min(t1, t0 + i / fps))), fps };
+  if (hit !== undefined) c.hit = hit - t0;
+  if (tail) c.tail = true;
+  return c;
+}
+function spread(t0: number, t1: number, n: number, at: (t: number) => Sprite): Clip {
+  return { frames: lazyFrames(n, (i) => at(t0 + ((t1 - t0) * i) / (n - 1))), fps: n / Math.max(1e-6, t1 - t0) };
+}
+/** Its first frame, the blow's and its last, each painted only when asked for. */
+function three(c: Clip): Sprite[] {
+  const n = c.frames.length;
+  const picks = [0, Math.min(n - 1, Math.round((c.hit ?? 0) * c.fps)), n - 1];
+  return lazyFrames(3, (i) => c.frames[picks[i]]);
+}
+const byName = (list: readonly TinkMove[], start: string): TinkMove => {
+  const m = list.find((x) => x.name.startsWith(start));
+  if (!m) throw new Error(`tinkerer_art: no move "${start}"`);
+  return m;
+};
+
+// ---- HER ---------------------------------------------------------------------------------------
+
+/** Made the first time it is wanted, and only once (for both views). */
+function once<T>(make: () => T): () => T {
+  let made: T | undefined;
+  return () => (made ??= make());
+}
+/**
+ * HER MOVES THAT TAKE A WHILE TO MAKE (every key of her tap and hold steadied: seconds; her fall), made once for both views
+ * (they were made for each: twice the wait), as her whole set is first wanted (in the game; not for her class card,
+ * makeTinkererCardArt). Made with the set, not when first painted: in the game the page paints many of her frames itself, and
+ * seconds' wait the first time she whistles would be felt in a fight.
+ */
+const holdMove = once(tinkerHold);
+const fallMove = once(tinkerFall);
+
+/**
+ * Her standing and running, in a view (her moves for these made at once). One list of each for each view, her class card's and
+ * the game's alike: what is painted for the card is not painted again in the game.
+ */
+const standRuns = new Map<GameView, { idle: Sprite[]; walk: Sprite[] }>();
+function standRun(view: GameView): { idle: Sprite[]; walk: Sprite[] } {
+  const had = standRuns.get(view);
+  if (had) return had;
+  const moves = tinkerMoves();
+  const stand = byName(moves, 'Standing');
+  const run = byName(moves, 'Running');
+  const at = (m: TinkMove) => (t: number): Sprite => asSprite(drawTinkerAt('front', m, t, TURN[view]), AURA, m.tall ?? 0);
+  const made = { idle: round(TSTAND_LONG, IDLE_FPS, at(stand)), walk: round(TRUN_ROUND, RUN_FPS, at(run)) };
+  standRuns.set(view, made);
+  return made;
+}
+
+/**
+ * WHAT IS IN HER HANDS AT A MOMENT OF TWO MOVES THAT ARE ONE BUT FOR IT (dev/tinkerer_moves.ts drawTinkerAt: a move's `hold` is all
+ * that it reads of it that two such moves differ in) THE SAME, nothing held in either (the art chat's helper, 1 Nov 2026;
+ * docs/cheap_heroes.md): then they are the same picture.
+ */
+function sameHold(a: TinkMove, b: TinkMove, t: number): boolean {
+  if (a.long !== b.long || !!a.loops !== !!b.loops || a.motion !== b.motion || a.along !== b.along || a.carry !== b.carry || a.tall !== b.tall) return false;
+  const u = a.loops ? ((t % a.long) + a.long) % a.long : Math.max(0, Math.min(a.long, t));
+  const none = { wrench: 0, twirl: false, spin: 0, vial: 0 };
+  const x: Record<string, unknown> = { held: null, lay: 0, droop: [0, 0, 0], ...(a.hold ? a.hold(u) : none) };
+  const y: Record<string, unknown> = { held: null, lay: 0, droop: [0, 0, 0], ...(b.hold ? b.hold(u) : none) };
+  if (x.held != null || y.held != null) return false;
+  for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) {
+    const p = x[k];
+    const q = y[k];
+    if (Array.isArray(p) && Array.isArray(q)) {
+      if (p.length !== q.length || p.some((v, i) => v !== q[i])) return false;
+    } else if (p !== q) return false;
+  }
+  return true;
+}
+/** `c`, its frames where `same` says so `first`'s own (painted once, for both), each read as itself, never a nearer frame standing in. */
+function sameAs(first: Clip, c: Clip, same: (i: number) => boolean): Clip {
+  const n = c.frames.length;
+  if (first.frames.length !== n) return c;
+  const own = c.frames;
+  return {
+    ...c,
+    frames: lazyFrames(n, (i) => {
+      const from = same(i) ? first.frames : own;
+      const was = HEAVY.defer;
+      const left = LEFT_TO_PAINTER.on;
+      HEAVY.defer = false;
+      LEFT_TO_PAINTER.on = false;
+      try {
+        return from[i];
+      } finally {
+        HEAVY.defer = was;
+        LEFT_TO_PAINTER.on = left;
+      }
+    }),
+  };
+}
+
+function herSet(view: GameView): AnimSet {
+  const turn = TURN[view];
+  const moves = tinkerMoves();
+  const stand = byName(moves, 'Standing');
+  const run = byName(moves, 'Running');
+  const jump = byName(moves, 'Swipe');
+  const tap = byName(moves, 'Tap');
+  const hold = holdMove();
+  const fall = fallMove();
+  const reel = tinkerReel();
+  const lurch = tinkerLurch();
+  const at = (m: TinkMove, draw = drawTinkerAt) => (t: number): Sprite => asSprite(draw('front', m, t, turn), AURA, m.tall ?? 0);
+  const { idle, walk } = standRun(view);
+  // (her Vial Toss: the throw with a vial of hers in her fist, from when she has it off her belt to when she lets it go)
+  const toss: TinkMove = { ...tap, name: 'Tap: a vial tossed', hold: (t) => ({ wrench: 0, twirl: false, spin: 0, vial: t >= TAP_GRAB && t < TAP_LET_GO ? 1 : 0, held: null }) };
+  const attack = clip(0, tap.long, CLIP_FPS, at(toss), TAP_LET_GO, true);
+  // (her Contraption thrown down, the art chat's own tap: her tap with the talent that swaps it in, CONTRAPTION on her tree;
+  // its frames before she has it in her hand and after she lets it go are her vial toss's own, the very same picture, painted
+  // once: sameAs)
+  const throwDown = sameAs(attack, clip(0, tap.long, CLIP_FPS, at(tap), TAP_LET_GO, true), (i) => sameHold(tap, toss, Math.min(tap.long, i / CLIP_FPS)));
+  // (her whistle: the game shows her picture's wind-up as her own, up to her whistle; and from then on at its own pace, so
+  // that she springs for joy as her Golem's blow lands, TINKER_TUNE.golem.pound's lead and hit after her whistle)
+  const P = TINKER_TUNE.golem.pound;
+  const heavy = clip(0, hold.long, CLIP_FPS, at(hold, drawTinkerHoldAt), (HOLD.blow - Math.round((P.lead + P.hit) * 30)) * FR, true);
+  // (the blast jump: from the blast to her coming down, over the swipe; her crouch and rising after)
+  const leap = spread(BJ.boom * FR, BJ.land * FR, FLY_FRAMES, at(jump));
+  const land = clip(BJ.land * FR, jump.long, CLIP_FPS, at(jump));
+  const struck = clip(0, reel.long, CLIP_FPS, at(reel));
+  const struckBehind = clip(0, lurch.long, CLIP_FPS, at(lurch));
+  const down = clip(0, fall.long, CLIP_FPS, at(fall, drawTinkerFallAt));
+  return {
+    idle,
+    walk,
+    attack: three(attack),
+    heavy: three(heavy),
+    idleFps: IDLE_FPS,
+    walkFps: RUN_FPS,
+    walkStride: TRUN_ROUND * (run.travel ?? 0),
+    clips: { attack, tapAs: { contraption: throwDown }, heavy, leap, land, reel: struck, lurch: struckBehind, fall: down },
+  };
+}
+
+/** The Tinkerer's pictures, both views. */
+export function makeTinkererArt(): ActorArt {
+  return { front: herSet('front'), back: herSet('back') };
+}
+/**
+ * HER ON HER CLASS CARD (ui/panels.ts): standing and running, all a card shows, made at once. (Her whole set waits on her tap and
+ * hold, which takes seconds to make: the start screen stood still while it was, and her card with it. The owner, 31 Oct 2026,
+ * 18:23: "Can you animate the tinkerer and the brawler on the character select screen in the test version".)
+ */
+export function makeTinkererCardArt(): ActorArt {
+  const set = (view: GameView): AnimSet => {
+    const { idle, walk } = standRun(view);
+    const run = byName(tinkerMoves(), 'Running');
+    return { idle, walk, attack: idle, idleFps: IDLE_FPS, walkFps: RUN_FPS, walkStride: TRUN_ROUND * (run.travel ?? 0) };
+  };
+  return { front: set('front'), back: set('back') };
+}
+
+// ---- HER GOLEM ---------------------------------------------------------------------------------
+
+type GolemPose = Partial<typeof GOLEM_POSE>;
+const REST: typeof GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0, crumple: 0 };
+
+/** The Golem posed so, drawn (its pose put back after), with arm `gun`. `aim` and `kick`: its cannon's; `charge` and `gunLevel`: its charged shot's (her tree's GUN ARM). */
+function golemAt(view: GameView, pose: GolemPose & { aim?: number; kick?: number; charge?: number; gunLevel?: number }, gun: GolemGun): Sprite {
+  Object.assign(GOLEM_POSE, REST, pose);
+  try {
+    return asSprite(sculptGolemBuild('front', GOLEM_PICK.build, GOLEM_TURN[view], -14, GOLEM_PICK.giant, gun, pose.aim ?? 0, pose.kick ?? 0, pose.charge ?? 0, pose.gunLevel ?? 0), AURA);
+  } finally {
+    Object.assign(GOLEM_POSE, REST);
+  }
+}
+/**
+ * THE GOLEM IN THE SAME POSE IS THE SAME PICTURE (the art chat's helper, 1 Nov 2026; docs/cheap_heroes.md): golemAt reads nothing
+ * of a moment but its pose, so a pose it has been painted in already (at rest, as each of its moves begins; laid on the floor,
+ * held to the end of its winding down) is not painted again. One of these for each set (a view, an arm).
+ */
+type GolemAt = (pose: GolemPose & { aim?: number; kick?: number; charge?: number; gunLevel?: number }) => Sprite;
+function golemOnce(view: GameView, gun: GolemGun): GolemAt {
+  const made = new Map<string, Sprite>();
+  // (every number of it, to the last bit: -0 apart from 0)
+  const num = (v: unknown): string => (typeof v === 'number' ? (Object.is(v, -0) ? '-0' : String(v)) : Array.isArray(v) ? `[${v.map(num).join(',')}]` : JSON.stringify(v));
+  return (pose) => {
+    const all: Record<string, unknown> = { ...REST, ...pose };
+    const key = Object.keys(all).sort().map((k) => `${k}:${num(all[k])}`).join(';');
+    let s = made.get(key);
+    if (!s) made.set(key, (s = golemAt(view, pose, gun)));
+    return s;
+  };
+}
+/** A move of the Golem's, by its frames (30 a second): `pose(f)` its pose at frame f. */
+function golemClip(at: GolemAt, end: number, pose: (f: number) => GolemPose & { aim?: number; kick?: number }, hit?: number): Clip {
+  return clip(0, end * FR, CLIP_FPS, (t) => at(pose(Math.round(t / FR))), hit === undefined ? undefined : hit * FR, true);
+}
+
+/** (her tree's GUN ARM) Its charged shot, frame by frame (30 a second, made as they are wanted): the cannon's shell or the tesla coil's beam. dev/golem_moves.ts chargeFrame says which frame to show. */
+export function golemCharge(view: GameView, gun: GolemGun): Sprite[] {
+  const tesla = gun === 'tesla';
+  const end = tesla ? GCHARGE_BEAM.end : GCHARGE_SHELL.end;
+  const at = golemOnce(view, gun);
+  return lazyFrames(end + 1, (f) => at(tesla ? golemChargeBeam(f) : golemChargeShell(f)));
+}
+
+function golemSet(view: GameView, gun: GolemGun): AnimSet {
+  const at = golemOnce(view, gun);
+  const walk = lazyFrames(GWALK.round, (i) => at(golemWalk(i)));
+  // (its uppercut, GOLEM_LOOK, the main chat's at his word of 28 Oct, 20:26, his yes by 21:41; off, its old punch)
+  const punch = GOLEM_LOOK.uppercut ? golemClip(at, GUPPER.end, golemUppercut, GUPPER.hit) : golemClip(at, GPUNCH.end, golemPunch, GPUNCH.hit);
+  const pound = golemClip(at, GP.end, groundPound, GP.hit);
+  const cannon = golemClip(at, GCANNON.end, golemCannon, GCANNON.fire);
+  const down = golemClip(at, GDOWN.end, golemDown);
+  return {
+    // (standing: as he picked it, at rest; TO BE MADE ALIVE WHEN STILL by the art chat, as every figure is)
+    idle: lazyFrames(1, () => at({})),
+    walk,
+    attack: three(punch),
+    heavy: three(pound),
+    idleFps: IDLE_FPS,
+    walkFps: CLIP_FPS,
+    // (its fist and feet gripping the floor: GWALK.speed is in her measure a second)
+    walkStride: ((GWALK.round / CLIP_FPS) * GWALK.speed) / UNITS_PER_TILE,
+    clips: { attack: punch, heavy: pound, attack2: cannon, fall: down },
+  };
+}
+
+/** Her Golem's pictures, both views, with arm `gun` (the cannon, as he picked it; with her tree's GUN ARM, the one she picks). */
+export function makeGolemArt(gun: GolemGun = 'cannon'): ActorArt {
+  return { front: golemSet('front', gun), back: golemSet('back', gun) };
+}
+
+// ---- HER CONTRAPTION ---------------------------------------------------------------------------
+
+/** The tripod mortar posed so, drawn (its pose put back after). */
+function contraptionAt(view: GameView, pose: Partial<typeof CONTRAPTION_POSE>, spin = 0, ammo: ContraptionAmmo = 'vials'): Sprite {
+  const was = { ...CONTRAPTION_POSE };
+  Object.assign(CONTRAPTION_POSE, pose);
+  try {
+    return asSprite(sculptContraptionBuild('front', CONTRAPTION_PICK, (CON_TURN[view] + spin) % 360, ammo), AURA_SMALL);
+  } finally {
+    Object.assign(CONTRAPTION_POSE, was);
+  }
+}
+
+/** Its pictures in one view: shut and tumbling (eight turns of it), springing open, set up, kicked by a shot, broken. */
+export interface ContraptionArt {
+  /** Shut, as it flies and bounces: turned round in eighths. */
+  tumble: Sprite[];
+  /** Springing open, shut to set up (CT.open0 to CT.open1). */
+  open: Clip;
+  /** Set up, its lamp lit (one picture). */
+  stand: Sprite[];
+  /** A shot: its mortar kicked down its barrel at once, easing back up. */
+  shot: Clip;
+  /** Broken: its end. */
+  broke: Clip;
+}
+
+function contraptionSet(view: GameView, ammo: ContraptionAmmo): ContraptionArt {
+  const KICK = 10;
+  return {
+    tumble: lazyFrames(8, (i) => contraptionAt(view, { open: 0, kick: 0, lit: 0, broke: 0 }, i * 45, ammo)),
+    open: spread(0, (CT.open1 - CT.open0) * FR, CT.open1 - CT.open0 + 1, (t) => contraptionAt(view, { open: t / ((CT.open1 - CT.open0) * FR), kick: 0, lit: 0, broke: 0 }, 0, ammo)),
+    stand: lazyFrames(1, () => contraptionAt(view, { open: 1, kick: 0, lit: 1, broke: 0 }, 0, ammo)),
+    shot: clip(0, KICK * FR, CLIP_FPS, (t) => contraptionAt(view, { open: 1, kick: Math.exp(-t / FR / 2.5), lit: 1, broke: 0 }, 0, ammo)),
+    broke: clip(0, CDOWN.end * FR, CLIP_FPS, (t) => contraptionAt(view, contraptionDown(Math.round(t / FR)), 0, ammo)),
+  };
+}
+
+/** Her Contraption's pictures, both views, loaded with `ammo` (her vials; with her tree's Contraption, its pick: bombs or energy). */
+export function makeContraptionArt(ammo: ContraptionAmmo = 'vials'): { front: ContraptionArt; back: ContraptionArt } {
+  return { front: contraptionSet('front', ammo), back: contraptionSet('back', ammo) };
+}

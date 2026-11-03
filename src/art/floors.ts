@@ -4,6 +4,11 @@
 // Until the fifth was put in, a floor deeper than the fourth looked as the fourth (cryptFloor); it still
 // does past the fifth, and with FIRST5 off (game/ways.ts) the fifth does too.
 
+import { CHAPEL, makeChapelArt } from './chapel';
+import { TOMB, makeTombArt } from './tomb';
+import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
+import { PRISON, makePrisonArt } from './prison';
+import { GROUNDS, makeGroundsArt } from './grounds';
 import { FIRST5 } from '../game/ways';
 import { cryptFloor, cryptGround, cryptProps, cryptWays } from './crypt';
 import type { WaypointArt } from './crypt_ways';
@@ -29,6 +34,11 @@ export function lookProps(k: number): DungeonProps {
 
 /** The stairwell (each way down) and the waypoint of look `k` (1 to 5; the lair has no stairwell of its own: its way out is the mine shaft). */
 export function lookWays(k: number): { stair: Record<'x' | 'y', Sprite>; way: WaypointArt } {
+  // (FLOOR 1, THE KING'S TOMB, behind TOMB: its stairwell in the tomb's stone; its waypoint the Crypt's)
+  if (k === 1 && TOMB.on) {
+    const A = makeTombArt();
+    return { stair: { x: A.stairwell('x'), y: A.stairwell('y') }, way: cryptWays(1).way };
+  }
   if (k !== 5) return cryptWays(Math.max(1, k));
   return { stair: cryptWays(4).stair, way: lairWaypoint() };
 }
@@ -53,7 +63,12 @@ const PIECES = new Map<number, Map<string, Piece>>();
 export function lookPieces(k: number): Map<string, Piece> {
   let m = PIECES.get(k);
   if (!m) {
-    const list = k === 1 ? wardenPieces() : k === 2 ? headsmanPieces() : k === 3 ? chainedPieces() : k === 4 ? ossuaryPieces() : lairPieces();
+    // (FLOOR 3, THE BLACK IRON PRISON, behind PRISON: floor 3's own pieces in look B's colours, and the prison's chains: art/prison.ts)
+    // (FLOOR 4, THE BURIED CHAPEL, behind CHAPEL: floor 4's own pieces in look A's colours, and the chapel's own: art/chapel.ts;
+    // FLOOR 5, THE MINE AND THE TEMPLE, behind LAIR_TEMPLE: floor 5's own in look A's colours, and the place's own: art/lair_temple.ts)
+    // (FLOOR 1, THE KING'S TOMB, behind TOMB: floor 1's own pieces in look B's colours, and the place's own: art/tomb.ts)
+    // (FLOOR 2, THE PRISON'S GROUNDS, behind GROUNDS: floor 2's own pieces in the night's colours, and the grounds' own: art/grounds.ts)
+    const list = k === 1 ? (TOMB.on ? makeTombArt().pieces : wardenPieces()) : k === 2 ? (GROUNDS.on ? makeGroundsArt().pieces : headsmanPieces()) : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? (CHAPEL.on ? makeChapelArt().pieces : ossuaryPieces()) : LAIR_TEMPLE.on ? makeLairTempleArt().pieces : lairPieces();
     PIECES.set(k, (m = new Map(list.map((p) => [p.name, p]))));
   }
   return m;

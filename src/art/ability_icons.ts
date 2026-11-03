@@ -16,6 +16,10 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import type { AbilityId } from '../game/types';
 import { BLADE, BROWN, CYAN, INK, LEAF, MAIL, PLUM, ROBE, STEEL } from './kit';
+import { curseIcon, damningIcon, demonstepIcon, hellboltIcon, rakeIcon, smokestepIcon } from './warlock_icons';
+import { blastjumpIcon, contraptionIcon, golemIcon, vialtossIcon } from './tinkerer_icons';
+import { crossIcon, jabIcon, slipIcon } from './brawler_icons';
+import { vetJumpIcon, vetKickIcon, vetPunchIcon } from './veteran_icons';
 
 /** An icon's canvas, in picture pixels: two to a game pixel, so the sixteen game pixels the slots are made for. */
 const N = 32;
@@ -660,7 +664,9 @@ function warp(): Px {
 
 // ---------------------------------------------------------------------------------------------
 
-const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp };
+// (THE WARLOCK, behind WARLOCK: his six, art/warlock_icons.ts, a first pass to show him; THE VETERAN, behind VETERAN: his
+// Punch, Kick and Jump, art/veteran_icons.ts, a first pass to show him: nothing of the old Brawler's)
+const PAINTERS: Record<AbilityId, () => Px> = { strike, slam, whirl, leap, shot, volley, trap, wave, orb, beam, familiar, warp, hellbolt: hellboltIcon, curse: curseIcon, smokestep: smokestepIcon, rake: rakeIcon, damning: damningIcon, demonstep: demonstepIcon, vialtoss: vialtossIcon, contraption: contraptionIcon, golem: golemIcon, blastjump: blastjumpIcon, jab: jabIcon, cross: crossIcon, slip: slipIcon, vetpunch: vetPunchIcon, vetkick: vetKickIcon, vetjump: vetJumpIcon };
 
 /** Every attack's icon: sixteen game pixels square, anchor in the middle, painted two picture pixels to a game pixel. */
 export function makeAbilityIcons(): Record<AbilityId, Sprite> {

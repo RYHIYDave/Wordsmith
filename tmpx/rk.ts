@@ -1,0 +1,14 @@
+import { paintFlood, paintGate, paintLaneMarks, lanesFor, isoAt, paintRollLane, paintWedge, paintWordLine, paintWord, paintWordBurst, paintSwarm9, paintBurstRing, SLUICES, FLOOD } from '../src/art/ratking_action_fx';
+import { Px } from '../src/engine/px';
+const time = (name: string, n: number, f: (i: number) => void) => { const t0 = performance.now(); for (let i = 0; i < n; i++) f(i); console.log(name, ((performance.now() - t0) / n).toFixed(2), 'ms'); };
+const L = lanesFor(26).lanes; const half = 11;
+const big = new Px(1600, 900);
+const I = { cx: 800, cy: 450 };
+const at = isoAt(I);
+time('lane marks', 5, (i) => { big.d.fill(0); paintLaneMarks(big, at, 0.5 + i * 0.3, half, L); });
+time('gates', 5, (i) => { big.d.fill(0); L.forEach((l, k) => paintGate(big, I, l, k, 1.0 + i * 0.3, half)); });
+time('flood', 5, (i) => { big.d.fill(0); paintFlood(big, I, 2.2 + i * 0.5, null, half, L); });
+time('roll lane', 5, (i) => { big.d.fill(0); paintRollLane(big, at, 0.5 + i * 0.3, [0, 0], 0.3); });
+time('wedge', 5, (i) => { big.d.fill(0); paintWedge(big, at, 0.3 + i * 0.2, [0, 0], 0.3); });
+time('swarm', 5, (i) => { big.d.fill(0); paintSwarm9(big, at, -5, 0, 5, 1, 0.2 + i * 0.15); });
+console.log(L.length, JSON.stringify(L), JSON.stringify(SLUICES), JSON.stringify(FLOOD));

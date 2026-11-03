@@ -29,7 +29,9 @@ export default async function (page, snap) {
   /** A fresh practice room for a class, with nothing in it; the hero in the middle. */
   const room = async (cls) => {
     await page.evaluate((c) => {
-      const d = window.__dbg; d.practice(c, 7); d.autoLevel = false; d.autoWords = false; d.slowmo = 1;
+      // (Version 12's rule, both attacks the weapon's, held here with everyone's own moves off: his pick of 28 Oct 2026 gave every
+      // class its own, and kept Familiar and Beam to come back as skill-tree swaps)
+      const d = window.__dbg; if (d.ownMoves) d.ownMoves(false); d.practice(c, 7); d.autoLevel = false; d.autoWords = false; d.slowmo = 1;
       const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
     }, cls);
     await page.waitForTimeout(350);

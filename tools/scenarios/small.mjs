@@ -85,7 +85,8 @@ export default async function (page, snap) {
     // (how many shots at the hero have been loosed: counted as they appear)
     window.__seen = new Set(); window.__shots = 0;
     clearInterval(window.__count);
-    window.__count = setInterval(() => { const q = window.__dbg.game(); if (!q) return; for (const p of q.projectiles) if (!window.__seen.has(p)) { window.__seen.add(p); if (p.hostile) window.__shots++; } }, 4);
+    // (a cultist's fire sigil, ACTION_F2, on in the game from Version 25.0, is its shot: counted as it is cast)
+    window.__count = setInterval(() => { const q = window.__dbg.game(); if (!q) return; for (const p of q.projectiles) if (!window.__seen.has(p)) { window.__seen.add(p); if (p.hostile) window.__shots++; } for (const p of q.perils) if (!window.__seen.has(p)) { window.__seen.add(p); if (p.a1 === 'cultist:sigil') window.__shots++; } }, 4);
     return { at: [g.hero.x, g.hero.y] };
   }, [cls]);
   await page.waitForTimeout(600);
@@ -114,7 +115,8 @@ export default async function (page, snap) {
     const moved = Math.hypot(b.x - a.x, b.y - a.y);
     if (kind === 'archer') await snap('1_an_archer_two_tiles_off_stands_and_shoots');
     check(`1. ${kind === 'archer' ? 'an archer' : 'a cultist'} two tiles from the hero stands where it stood for seven seconds and more`, moved < 0.02 && !b.dead, `it moved ${moved.toFixed(3)} tiles`);
-    check('   and shoots at him from there', shots >= 2, `${shots} shots`);
+    // (the sigil slower to cast than the bolt was: once in the seven and a half seconds will do)
+    check('   and shoots at him from there', shots >= (kind === 'cultist' ? 1 : 2), `${shots} shots`);
   }
 
   // ---- 2. the hero walks at an archer with real input -------------------------------------------------

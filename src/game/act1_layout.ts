@@ -281,6 +281,12 @@ export interface Plan {
   /** (THE LEDGE ROAD) the trail's middle line, for which side of it is the drop. */
   trail?: [number, number][];
   holds: { yard: number; gx: number; gy: number }[];
+  /** (planMassive) The share of its areas' summed size that is ground of its own (they overlap): their packs counted by it. */
+  packShare?: number;
+  /** (planMassive) How much of one of the floor's old open areas (laid one after another) each of its shapes stands for: the floor's things that were so many to an area, so many to it. */
+  areaShare?: number;
+  /** (planMassive) Lines along the one massive ground either side of its middle: bridged where they meet water, as the way is. */
+  along?: [number, number][][];
   /** Extra shapes taken out of the floor (the Fen's pool), and put in (the Fen's boardwalks, the Pinewood's bridges). */
 }
 
@@ -326,7 +332,146 @@ export interface ChainOpts {
   laneW: number;
   laneLong: [number, number];
   gap: number;
+  /** (floor 13, laid open) the boss's area joined by a way, whatever `broad` is: its ground kept to itself for the fight. */
+  laneLast?: boolean;
 }
+
+/** How a floor laid as ONE MASSIVE AREA is laid (planMassive). */
+export interface MassiveOpts {
+  /** The way across it, from where he comes in to the boss's side (radians on the world), how far it runs and how wide (tiles). */
+  heading: number;
+  long: number;
+  wide: number;
+  /** Where he comes in and the boss's ground. */
+  size: (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number };
+  /** The open ground's own shapes, overlapping: how big, how far apart, how wandering their edges. */
+  cell: [number, number];
+  step: number;
+  wob: number;
+  /** The boss's ground joined by a way this wide and long (its fight kept to itself), else opening into the ground. */
+  laneLast: boolean;
+  laneW: number;
+  laneLong: [number, number];
+}
+
+/**
+ * ONE MASSIVE AREA (his word of 1 Nov 2026, of what OPEN means: “When I say open I mean one massive area with a waypoint on one
+ * side, and the boss somewhere on the other”): where he comes in on one side; then one great open ground, made of shapes
+ * overlapping on a jittered grid across a rounded oblong `long` by `wide`, so that its edge wanders; and the boss's ground on
+ * the far side. The ground's shapes are areas of the main way in the order they lie along it (its packs counted by the ground
+ * they really cover: Plan.packShare).
+ */
+export function planMassive(rng: RNG, o: MassiveOpts): Plan {
+  const areas: Area[] = [];
+  const lanes: Lane[] = [];
+  const way: [number, number][] = [];
+  const cos = Math.cos(o.heading);
+  const sin = Math.sin(o.heading);
+  // (a point `u` along the way and `v` across it, in the world)
+  const at = (u: number, v: number): [number, number] => [u * cos - v * sin, u * sin + v * cos];
+  const s0 = o.size(rng, 'start');
+  const b0: Blob = { x: 0, y: 0, rx: s0.rx, ry: s0.ry, rot: rng.range(0, Math.PI), wob: s0.wob, seed: rng.int(0, 9999) };
+  areas.push({ blob: b0, role: 'start', path: 0, parent: -1, r: radiusOf(b0) });
+  way.push([0, 0]);
+  // THE GROUND: from just past where he comes in to `long`, `wide` across, its corners rounded off
+  const u0 = radiusOf(b0) * 0.6;
+  const mid = (u0 + o.long) / 2;
+  const half = (o.long - u0) / 2;
+  const cells: { u: number; b: Blob }[] = [];
+  for (let u = u0; u <= o.long + 0.01; u += o.step) {
+    for (let v = -o.wide / 2; v <= o.wide / 2 + 0.01; v += o.step) {
+      const ju = u + rng.range(-0.3, 0.3) * o.step;
+      const jv = v + rng.range(-0.3, 0.3) * o.step;
+      // (an oblong with its corners rounded: a super-ellipse)
+      const e = Math.pow(Math.abs(ju - mid) / (half + o.step * 0.3), 4) + Math.pow(Math.abs(jv) / (o.wide / 2 + o.step * 0.3), 4);
+      if (e > 1) continue;
+      const r = rng.range(o.cell[0], o.cell[1]);
+      const [x, y] = at(ju, jv);
+      cells.push({ u: ju, b: { x, y, rx: r, ry: r * rng.range(0.8, 1), rot: rng.range(0, Math.PI), wob: o.wob, seed: rng.int(0, 9999) } });
+    }
+  }
+  cells.sort((p, q) => p.u - q.u);
+  let sum = 0;
+  cells.forEach((c, k) => {
+    areas.push({ blob: c.b, role: 'path', path: k + 1, parent: k, r: radiusOf(c.b) });
+    sum += Math.PI * c.b.rx * c.b.ry;
+  });
+  for (let u = u0; u <= o.long; u += o.step) way.push(at(u, 0));
+  const alongs: [number, number][][] = [-0.3, 0.3].map((f) => {
+    const line: [number, number][] = [];
+    for (let u = u0; u <= o.long; u += o.step) line.push(at(u, f * o.wide));
+    return line;
+  });
+  // (the ground they cover together, counted on a coarse grid)
+  let cover = 0;
+  for (let u = u0 - o.cell[1]; u <= o.long + o.cell[1]; u += 1) {
+    for (let v = -o.wide / 2 - o.cell[1]; v <= o.wide / 2 + o.cell[1]; v += 1) {
+      const [x, y] = at(u, v);
+      if (cells.some((c) => Math.abs(c.b.x - x) < c.b.rx * 1.6 && Math.abs(c.b.y - y) < c.b.rx * 1.6 && blobDist(c.b, x, y) < 1)) cover++;
+    }
+  }
+  // THE BOSS'S GROUND on the far side
+  const sb = o.size(rng, 'boss');
+  const rB = Math.max(sb.rx, sb.ry);
+  const uB = o.long + (o.laneLast ? rB + rng.range(o.laneLong[0], o.laneLong[1]) + o.cell[0] * 0.5 : rB * 0.4);
+  const [bx, by] = at(uB, rng.range(-0.15, 0.15) * o.wide);
+  const bb: Blob = { x: bx, y: by, rx: sb.rx, ry: sb.ry, rot: rng.range(0, Math.PI), wob: sb.wob, seed: rng.int(0, 9999) };
+  areas.push({ blob: bb, role: 'boss', path: cells.length + 1, parent: cells.length, r: radiusOf(bb) });
+  if (o.laneLast) lanes.push(wander(rng, ...at(o.long - o.cell[0] * 0.5, (by * cos - bx * sin) * 0.5), ...along(bx, by, o.heading + Math.PI, rB * 0.6), o.laneW, 0.6));
+  way.push([bx, by]);
+  // (an old open area's size, as the floor's own sizes have it, by dice of their own)
+  const sr = new RNG(0x0a4ea);
+  let old = 0;
+  for (let k = 0; k < 16; k++) {
+    const z = o.size(sr, 'path');
+    old += (Math.PI * z.rx * z.ry) / 16;
+  }
+  return { areas, lanes, way, holds: [], packShare: sum > 0 ? Math.min(1, cover / sum) : 1, areaShare: cells.length ? cover / old / cells.length : 1, along: alongs };
+}
+
+/**
+ * (planMassive) A place set off the edge of one massive ground: `b` moved on from `from` along `ang` (from `d0` tiles) until it is
+ * `gap` tiles clear of every area (`pathGap` of the ground's own: less than nothing to open into it), then hosted by the
+ * ground's area nearest it. The host, and the way from it to `b`.
+ */
+export function offEdge(plan: Plan, b: Blob, from: Blob, ang: number, d0: number, gap: number, pathGap: number): { host: number; ang: number } {
+  const r = radiusOf(b);
+  const clearOf = (): boolean => plan.areas.every((o) => Math.hypot(o.blob.x - b.x, o.blob.y - b.y) >= o.r + r + (o.role === 'path' ? pathGap : gap));
+  let d = d0;
+  [b.x, b.y] = along(from.x, from.y, ang, d);
+  while (d < d0 + 80 && !clearOf()) {
+    d += 1.5;
+    [b.x, b.y] = along(from.x, from.y, ang, d);
+  }
+  let host = 0;
+  let best = Infinity;
+  plan.areas.forEach((o, i) => {
+    const e = Math.hypot(o.blob.x - b.x, o.blob.y - b.y) - o.r;
+    if (o.role === 'path' && e < best) {
+      best = e;
+      host = i;
+    }
+  });
+  const h = plan.areas[host].blob;
+  return { host, ang: Math.atan2(b.y - h.y, b.x - h.x) };
+}
+
+/** (planMassive) `b` clear of every area as offEdge set it, and its path in clear of all but the ground's own areas. */
+export function edgeClear(plan: Plan, b: Blob, gap: number, pathGap: number, lane: Lane): boolean {
+  const r = radiusOf(b);
+  return plan.areas.every((o) => Math.hypot(o.blob.x - b.x, o.blob.y - b.y) >= o.r + r + (o.role === 'path' ? pathGap : gap) - 0.01 && (o.role === 'path' || laneDist(lane, o.blob.x, o.blob.y) >= o.r + lane.w / 2 + gap * 0.6));
+}
+
+/**
+ * ONE MASSIVE AREA on the descent's open floors (his picks of 1 Nov 2026: the Quarry, floor 6, and the Pinewood, floor 9, open;
+ * the Fen, floor 10, kept as it is: “10 should be okay, I like the islands in the swamp with bridges in between.  The rest can
+ * change”): which floors, and each one's ground (planMassive).
+ */
+export const A1_OPEN: { on: Act1LandKind[] } & Partial<Record<Act1LandKind, { long: number; wide: number; cell: [number, number]; step: number; wob: number }>> = {
+  on: ['quarry', 'pine'],
+  quarry: { long: 48, wide: 23, cell: [5.5, 7], step: 6, wob: 0.2 },
+  pine: { long: 76, wide: 34, cell: [6.5, 8.5], step: 7, wob: 0.22 },
+};
 
 /** A chain of open areas from the start to the boss's, each joined to the last. */
 export function planChain(rng: RNG, o: ChainOpts): Plan | null {
@@ -348,7 +493,7 @@ export function planChain(rng: RNG, o: ChainOpts): Plan | null {
       const h = Math.max(o.heading - o.spread, Math.min(o.heading + o.spread, turnTo));
       const rNew = Math.max(sz.rx, sz.ry);
       const rOld = Math.max(prev.blob.rx, prev.blob.ry);
-      const broad = rng.chance(o.broad);
+      const broad = !(o.laneLast && role === 'boss') && rng.chance(o.broad);
       const d = broad ? (rOld + rNew) * rng.range(0.62, 0.8) : rOld + rNew + rng.range(o.laneLong[0], o.laneLong[1]);
       const [x, y] = along(prev.blob.x, prev.blob.y, h, d);
       const b: Blob = { x, y, rx: sz.rx, ry: sz.ry, rot: rng.range(0, Math.PI), wob: sz.wob, seed: rng.int(0, 9999) };
@@ -370,16 +515,25 @@ function growSide(rng: RNG, plan: Plan, role: AreaRole, size: { rx: number; ry: 
   const hosts = plan.areas.map((a, i) => i).filter((i) => plan.areas[i].role === 'path' || (plan.areas[i].role === 'start' && role !== 'yard'));
   let best: { b: Blob; lane: Lane; host: number; score: number } | null = null;
   for (let tries = 0; tries < 80; tries++) {
-    const host = rng.pick(hosts);
-    const a = plan.areas[host];
-    const ang = rng.range(0, Math.PI * 2);
-    const rA = Math.max(a.blob.rx, a.blob.ry);
+    let host = rng.pick(hosts);
+    let a = plan.areas[host];
+    let ang = rng.range(0, Math.PI * 2);
+    let rA = Math.max(a.blob.rx, a.blob.ry);
     const rB = Math.max(size.rx, size.ry);
     const d = rA + rB + rng.range(3, 7);
-    const [x, y] = along(a.blob.x, a.blob.y, ang, d);
-    const b: Blob = { x, y, rx: size.rx, ry: size.ry, rot: role === 'yard' ? 0 : rng.range(0, Math.PI), wob: size.wob, seed: rng.int(0, 9999) };
+    const [x0, y0] = along(a.blob.x, a.blob.y, ang, d);
+    const b: Blob = { x: x0, y: y0, rx: size.rx, ry: size.ry, rot: role === 'yard' ? 0 : rng.range(0, Math.PI), wob: size.wob, seed: rng.int(0, 9999) };
+    const massive = plan.packShare !== undefined;
+    if (massive) {
+      const o = offEdge(plan, b, a.blob, ang, d, gap, gap);
+      host = o.host;
+      ang = o.ang;
+      a = plan.areas[host];
+      rA = Math.max(a.blob.rx, a.blob.ry);
+    }
+    const { x, y } = b;
     const lane = wander(rng, ...along(a.blob.x, a.blob.y, ang, rA * 0.6), ...along(x, y, ang + Math.PI, rB * 0.5), laneW, 0.8);
-    if (!clear(plan.areas, b, gap, [host], lane)) continue;
+    if (massive ? !edgeClear(plan, b, gap, gap, lane) : !clear(plan.areas, b, gap, [host], lane)) continue;
     // (and clear of every lane already laid)
     if (plan.lanes.some((l) => laneDist(l, x, y) < rB + l.w / 2 + gap)) continue;
     const score = prefer ? prefer(ang) + rng.next() * 0.3 : rng.next();
@@ -434,6 +588,10 @@ function planFor(kind: Act1LandKind, rng: RNG): Plan | null {
   const across = rng.chance(0.5) ? LEFT : RIGHT;
   switch (kind) {
     case 'quarry':
+      if (A1_OPEN.on.includes('quarry')) {
+        const o = A1_OPEN.quarry!;
+        return planMassive(rng, { heading: rng.pick([LEFT, RIGHT, UP, DOWN]) + rng.range(-0.4, 0.4), long: o.long, wide: o.wide, size, cell: o.cell, step: o.step, wob: o.wob, laneLast: true, laneW: 2.8, laneLong: [3, 6] });
+      }
       return planChain(rng, { count: CHAIN.quarry, heading: rng.pick([LEFT, RIGHT, UP, DOWN]) + rng.range(-0.4, 0.4), spread: 1.2, turn: 0.75, size, broad: 0.45, laneW: 2.8, laneLong: [3, 6], gap: 3 });
     case 'canyon':
       // (up the screen, mostly; a turn across now and then: see `canyonTrail`)
@@ -441,6 +599,10 @@ function planFor(kind: Act1LandKind, rng: RNG): Plan | null {
     case 'ledge':
       return planLedge(rng, size, across);
     case 'pine':
+      if (A1_OPEN.on.includes('pine')) {
+        const o = A1_OPEN.pine!;
+        return planMassive(rng, { heading: across + rng.range(-0.3, 0.3), long: o.long, wide: o.wide, size, cell: o.cell, step: o.step, wob: o.wob, laneLast: true, laneW: PINE_PATH.on ? PINE_PATH.w : 3.2, laneLong: [3, 7] });
+      }
       // (its paths between the open areas wider than they were, 3.2: "The thin paths through the forest are hard to see past
       // the trees maybe make them a little wider", 17 Oct 2026, 11:37)
       return planChain(rng, { count: CHAIN.pine, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size, broad: 0.55, laneW: PINE_PATH.on ? PINE_PATH.w : 3.2, laneLong: [3, 7], gap: 4 });
@@ -620,7 +782,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     p[0] += dx;
     p[1] += dy;
   }
-  for (const p of plan.way) {
+  for (const p of [...plan.way, ...(plan.along ?? []).flat()]) {
     p[0] += dx;
     p[1] += dy;
   }
@@ -979,6 +1141,10 @@ function riverOf(rng: RNG, plan: Plan, W: number, H: number): [number, number][]
 function bridgesOf(plan: Plan, river: [number, number][], W: number): Bridge[] {
   const out: Bridge[] = [];
   const routes: [number, number][][] = [plan.way, ...plan.lanes.map((l) => l.pts)];
+  // (one massive ground: its lines along it too, where they meet the river on the ground itself)
+  const onGround = (x: number, y: number): boolean => plan.areas.some((a) => a.role === 'path' && blobDist(a.blob, x, y) < 0.8);
+  const extra = plan.along ?? [];
+  routes.push(...extra);
   // (the river's own line as segments)
   const crossings: { x: number; y: number; rh: number }[] = [];
   for (const route of routes) {
@@ -986,6 +1152,7 @@ function bridgesOf(plan: Plan, river: [number, number][], W: number): Bridge[] {
       for (let j = 0; j + 1 < river.length; j++) {
         const p = cross(route[i], route[i + 1], river[j], river[j + 1]);
         if (!p) continue;
+        if (extra.includes(route) && !onGround(p[0], p[1])) continue;
         if (crossings.some((c) => Math.hypot(c.x - p[0], c.y - p[1]) < 6)) continue;
         crossings.push({ x: p[0], y: p[1], rh: Math.atan2(river[j + 1][1] - river[j][1], river[j + 1][0] - river[j][0]) });
       }
@@ -1051,12 +1218,19 @@ function placePacks(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[],
     out.push({ x: Math.floor(x) + 0.5, y: Math.floor(y) + 0.5, roomId: room, size, tier, kind: mk });
     used.push([x, y]);
   };
+  let owed = 0.5;
   plan.areas.forEach((a, i) => {
     const room = f.rooms[areaRoom[i]];
     if (a.role === 'start' || a.role === 'boss' || a.role === 'yard') return;
     const b = a.blob;
     const area = Math.PI * b.rx * b.ry;
-    const n = a.role === 'lair' ? 1 : Math.max(1, Math.round(area / (kind === 'ledge' ? 22 : 70)));
+    // (one massive ground: its packs by the ground it really covers, the parts of one carried from shape to shape)
+    let n: number;
+    if (a.role === 'path' && plan.packShare !== undefined) {
+      owed += (area * plan.packShare) / 70;
+      n = Math.floor(owed);
+      owed -= n;
+    } else n = a.role === 'lair' ? 1 : Math.max(1, Math.round(area / (kind === 'ledge' ? 22 : 70)));
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 30; tries++) {
         const ang = rng.range(0, Math.PI * 2);
@@ -1102,6 +1276,7 @@ function baseProps(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[], 
     out.push({ kind: k, x: tx, y: ty });
     taken.add(ty * W + tx);
   };
+  let owed = 0.5;
   plan.areas.forEach((a, i) => {
     const b = a.blob;
     if (a.role === 'side') {
@@ -1116,8 +1291,14 @@ function baseProps(rng: RNG, f: Floor, plan: Plan, areaRoom: readonly number[], 
       }
     }
     if (a.role === 'yard' || a.role === 'boss' || a.role === 'start') return;
-    // breakables about the area (barrels and urns: the floor's own breakables stand for them)
-    const n = rng.int(1, kind === 'ledge' ? 2 : 4);
+    // breakables about the area (barrels and urns: the floor's own breakables stand for them; on one massive ground, by the
+    // ground each of its shapes really covers, the parts of one carried on)
+    let n = rng.int(1, kind === 'ledge' ? 2 : 4);
+    if (a.role === 'path' && plan.packShare !== undefined) {
+      owed += n * (plan.areaShare ?? 1);
+      n = Math.floor(owed);
+      owed -= n;
+    }
     for (let k = 0, t = 0; k < n && t < 30; t++) {
       const ang = rng.range(0, Math.PI * 2);
       const tx = Math.floor(b.x + Math.cos(ang) * b.rx * rng.range(0.55, 0.85));

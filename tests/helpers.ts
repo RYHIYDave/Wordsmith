@@ -17,6 +17,7 @@ import type { Game } from '../src/game/game';
 import type { Controls } from '../src/game/state';
 import { EXITS, WAYS } from '../src/game/ways';
 import { GUIDE } from '../src/game/defs';
+import { YARD } from '../src/art/yard';
 
 /** No attack takes this long to land: the slowest wind-up in the game is about a quarter of a second. */
 export const LAND_LIMIT = 1;
@@ -116,14 +117,16 @@ export function seasoned(g: Game, level = 5): Game {
  * tests/crypt.test.ts and tests/ways.test.ts.)
  */
 export function withoutCrypt<T>(run: () => T): T {
-  const was = [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on];
+  // (and the Headsman's yard, floor 2's boss hall laid the Crypt's own way since 1 Nov: tests/yard.test.ts, yard_game.test.ts)
+  const was = [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on, YARD.on];
   CRYPT_LAYOUT.on = false;
   CRYPT_LITTER.on = false;
   WAYS.on = false;
+  YARD.on = false;
   try {
     return run();
   } finally {
-    [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on] = was;
+    [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on, YARD.on] = was;
   }
 }
 

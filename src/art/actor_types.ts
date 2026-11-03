@@ -79,6 +79,8 @@ export interface AnimSet {
    */
   clips?: {
     attack?: Clip;
+    /** (THE TINKERER) the tap as another ability, by that ability's id, where it has a move of its own (her Contraption's throw, the talent's swap for her Vial Toss). */
+    tapAs?: Partial<Record<string, Clip>>;
     /** (Strike's combo) the second swing: the downward slash. Absent: the second swing looks like the first. */
     attack2?: Clip;
     /**
@@ -138,6 +140,22 @@ export interface AnimSet {
     ready?: Clip;
     /** A HERO rocked back by a heavy blow, and upright again: a quarter of a second, shown while they stand or walk. */
     reel?: Clip;
+    /**
+     * THE WARLOCK (art/warlock_art.ts) CHANGING out of the form these pictures are of: the man into the demon, the demon
+     * burning out into the man. Laid over the rules' time for it, shown by how far through it he is (FigureState.changeK).
+     */
+    change?: Clip;
+    /** THE BRAWLER (art/brawler_art.ts): the punch each run of presses of a combo ends in, by its letters (T a tap, H a hold). */
+    punches?: Record<string, Clip>;
+    /**
+     * THE VETERAN (art/veteran_art.ts, behind game/veteran.ts VETERAN): each move a press makes, by the art's id (VetBlowId),
+     * its frame f the art's frame f, thirty a second at his pace; and each strike's half-frames (its after-images), the first
+     * at frame `from` (a half), a frame apart.
+     */
+    vet?: Record<string, Clip>;
+    vetHalves?: Record<string, { from: number; frames: Sprite[] }>;
+    /** ... and each move's action lines (art/veteran_fx_art.ts), a frame each of its own and some after, in three layers. */
+    vetFx?: Record<string, { ground: Sprite[]; behind: Sprite[]; front: Sprite[] }>;
     /** ... and thrown forward a step by one that comes from behind them. */
     lurch?: Clip;
     /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */

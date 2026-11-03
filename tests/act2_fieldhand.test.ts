@@ -59,7 +59,9 @@ test('1. they are built: their rules, both looks with a clip by each name their 
   const r = act1Rules('fieldhand');
   const fig = act1Fig('fieldhand');
   assert.ok(r && fig, 'their rules and their pictures');
-  assert.equal(act1Fx('fieldhand'), null, 'nothing beyond their figure: the blade, its glint and the Hush are their pictures\'');
+  // (nothing beyond their figure but, behind FIELD_HARVEST (off), the sickle boomerang's sickle in flight and its curve: render/act1_fx/fieldhand.ts)
+  const fx = act1Fx('fieldhand');
+  assert.ok(fx && !fx.films, 'nothing beyond their figure while the boomerang is off: the blade, its glint and the Hush are their pictures\'');
   assert.ok(fig!.switches?.includes(FIELDHANDS_ON), "the art chat's switch is theirs");
   makeBestiary();
   assert.equal(FIELDHANDS_ON.on, ACT1.on, 'on with the descent\'s figures (art/bestiary.ts useAct1Figs): a switch nothing reads');

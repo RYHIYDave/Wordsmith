@@ -19,9 +19,10 @@
 // costs is said, with the button that pays for it. What comes is in the bag at once, and is named
 // here in the colour of what it is; the kind stays picked, so that the next throw is one press.
 
+import { itemPic } from '../art/icons';
 import { RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { GAMBLE_KINDS, TUNE, WORDS } from '../game/defs';
+import { TUNE, WORDS } from '../game/defs';
 import type { Game } from '../game/game';
 import type { Meta } from '../game/state';
 import type { WordId } from '../game/types';
@@ -35,6 +36,7 @@ import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { drawWordTile } from './words';
 import { meldOpen, meldTab } from './meld';
+import { cardsOpen, cardsTab } from './royal_cards';
 
 /** The one place on the wordsmith's half a word of the hero's goes to: sold. */
 const SELL = 'sell';
@@ -219,8 +221,10 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
   const capY = bodyY + intro.length * 6 + 4;
   const gridY = capY + 8;
   const cols = Math.max(1, Math.min(8, Math.floor((bw + 2) / PITCH)));
-  const cells = GAMBLE_KINDS.map((kind, k) => ({ id: `kind:${k}`, k, kind, r: { x: x0 + (k % cols) * PITCH, y: gridY + Math.floor(k / cols) * PITCH, w: CELL, h: CELL } }));
-  const gridEnd = gridY + Math.ceil(GAMBLE_KINDS.length / cols) * PITCH - 2;
+  // (what he offers this hero: with NEW_WEAPONS on, a new class's own weapon too, game/defs.ts gambleKinds)
+  const kinds = game.gambleKinds();
+  const cells = kinds.map((kind, k) => ({ id: `kind:${k}`, k, kind, r: { x: x0 + (k % cols) * PITCH, y: gridY + Math.floor(k / cols) * PITCH, w: CELL, h: CELL } }));
+  const gridEnd = gridY + Math.ceil(kinds.length / cols) * PITCH - 2;
   for (const c of cells) ui.mark(c.id, c.r.x, c.r.y, c.r.w, c.r.h);
   const picked = (): (typeof cells)[number] | undefined => cells.find((c) => c.id === st.pick);
   const bh = T ? 18 : 13;
@@ -230,9 +234,16 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
   };
   /** Why a throw for kind `k` cannot be made just now, if it cannot. */
   const problem = (k: number): string | null => (h.gold < game.gamblePrice(k) ? 'Not enough gold' : h.bag.indexOf(null) < 0 ? 'Bag is full' : null);
+  // (THE HIGH CITY, THE ROYAL CARDS: once he holds a royal's card, a tab turns the stranger's half to his cards: ui/royal_cards.ts)
+  const tab = cardsOpen(game) ? cardsTab(ui, r, 'CARDS') : null;
 
   return {
     press(say): void {
+      if (tab && ui.pressIn(tab.x, tab.y, tab.w, tab.h)) {
+        st.cardPage = true;
+        st.pick = null;
+        return;
+      }
       const p = picked();
       if (p) {
         const b = button(`THROW: ${game.gamblePrice(p.k)} GOLD`);
@@ -255,12 +266,14 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
 
     draw(): void {
       sideFrame(ui, r, 'THE STRANGER');
+      if (tab) ui.drawButton(tab.x, tab.y, tab.w, tab.h, 'CARDS', { small: true, lit: true });
       intro.forEach((l, k) => drawText(g, l, x0, bodyY + 1 + k * 6, THEME.text, { font: 'small' }));
       drawText(g, 'A THROW FOR', x0, capY, THEME.dim, { font: 'small' });
       const p = picked();
       for (const c of cells) {
         const on = !!p && p.id === c.id;
-        ui.slot(c.r.x, c.r.y, CELL, art.icons.item[c.kind.icon], on ? THEME.accent : THEME.edge, on || (!T && ui.hover(c.r.x, c.r.y, CELL, CELL)));
+        // (a kind of thing, not yet a piece: it has no rarity until it is thrown for, so its picture is the Normal one)
+        ui.slot(c.r.x, c.r.y, CELL, itemPic(art.icons, c.kind.icon, 0), on ? THEME.accent : THEME.edge, on || (!T && ui.hover(c.r.x, c.r.y, CELL, CELL)));
         if (h.gold < game.gamblePrice(c.k)) {
           g.globalAlpha = 0.45;
           g.fillStyle = THEME.ink;

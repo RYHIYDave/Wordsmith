@@ -11,6 +11,8 @@
 //   moment, and KNOCKS YOU ABOUT (thrown back a step, as a heavy blow throws him),
 // - THEN SCATTERS: off away from you for a moment, weaving, before it comes back at you.
 
+import { DEVIL_TWISTER, TW, TW_BOLTS, TW_HIT } from '../../art/action_f6_canyon';
+import { TUNE } from '../defs';
 import type { ActDef } from '../bosses';
 import type { Monster } from '../state';
 import type { Act1Rules } from './types';
@@ -35,6 +37,17 @@ const ACTS: readonly ActDef[] = [
   { id: 'devil:lash', clip: 'attack', long: 0.9, hit: 0.5, dmg: 1, cooldown: 0, first: 0, after: 0.2, near: 0, far: 1.5 },
 ];
 
+/**
+ * ITS TWISTER (the art chat's art/action_f6_canyon.ts behind DEVIL_TWISTER, his yes there, 2 Nov 2026), in place of its lash: it
+ * spins up and holds; in two frames (TW_HIT) it bursts up into a sand twister taller than the knight, and till TW.until it wanders at
+ * him at TW.pace, DRAGGING him toward its foot within TW.pull at TW.drag tiles a second (not while he evades), SCOURING him within TW.r
+ * every TW.tick (TW.scour of its blow), and THROWING LIGHTNING onto the floor round it (TW_BOLTS: each place round its foot, as its
+ * pictures have them, crackling TW.warn first; a hero within TW.bolt of it as it strikes is struck); then it collapses back into the
+ * dust devil. It begins it from TWISTER.near tiles off.
+ */
+export const TWISTER = { near: 2.2, scour: 0.35 };
+const TWISTER_ACTS: readonly ActDef[] = [{ id: 'devil:twister', clip: 'attack', long: TW.long, hit: TW_HIT, dmg: 1, cooldown: 3, first: 0, after: 0.6, near: 0, far: TWISTER.near + 0.4 }];
+
 /** What it keeps (Monster.a1): `go` seconds of scattering still to go, the way it scatters (`sx`, `sy`); `w` its weave's clock. */
 function keep(m: Monster): Record<string, number> {
   return (m.a1 ??= { go: 0, sx: 0, sy: 0, w: m.seed * DEVIL.weave.period });
@@ -42,7 +55,9 @@ function keep(m: Monster): Record<string, number> {
 
 export const RULES: Act1Rules | null = {
   gait: { pace: DD_GAIT_PACE, cycle: 1.0, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.1, slack: 0.3, trueBack: true },
-  acts: ACTS,
+  get acts() {
+    return DEVIL_TWISTER.on ? TWISTER_ACTS : ACTS;
+  },
 
   tick(R, m, dt, dist) {
     const g = R.g;
@@ -60,7 +75,7 @@ export const RULES: Act1Rules | null = {
       m.gait.t += (dt * sp) / DD_GAIT_PACE;
       return true;
     }
-    if (m.gait.mode === 'walk' && dist <= DEVIL.near && g.sees(m.x, m.y, g.hero.x, g.hero.y)) {
+    if (m.gait.mode === 'walk' && dist <= (DEVIL_TWISTER.on ? TWISTER.near : DEVIL.near) && g.sees(m.x, m.y, g.hero.x, g.hero.y)) {
       // (it has no feet: in its reach it stops where it is, not where its weave comes round, as a walker's must)
       m.gait = { mode: 'stand', t: 0 };
       m.anim = 'idle';
@@ -80,6 +95,45 @@ export const RULES: Act1Rules | null = {
     const g = R.g;
     const h = g.hero;
     const at = (T: number): boolean => t0 < T && t1 >= T;
+    if (a.id === 'devil:twister') {
+      if (at(0.3)) g.sfx('gust', 0.6);
+      if (at(TW_HIT)) {
+        g.sfx('thunder', 0.4);
+        g.emit({ t: 'shake', amount: 2 });
+      }
+      const from = Math.max(t0, TW_HIT);
+      const to = Math.min(t1, TW.until);
+      if (to <= from) return;
+      const dt = to - from;
+      const k = keep(m);
+      // (it wanders at him, the game carrying it)
+      const dx = h.x - m.x;
+      const dy = h.y - m.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 0.3) {
+        m.fx = dx / d;
+        m.fy = dy / d;
+        g.slide(m, Math.min(m.r, 0.42), m.fx * TW.pace * dt, m.fy * TW.pace * dt, g.level.walk, true);
+      }
+      // (it drags him in, as long as he is within its pull and not evading)
+      const d2 = Math.hypot(h.x - m.x, h.y - m.y);
+      if (d2 <= TW.pull && d2 > 0.25 && !h.move && !g.over) g.slide(h, TUNE.heroRadius, ((m.x - h.x) / d2) * TW.drag * dt, ((m.y - h.y) / d2) * TW.drag * dt, g.level.walk);
+      // (it scours him at its foot)
+      k.scour = (k.scour ?? 0) - dt;
+      if (d2 <= TW.r && k.scour <= 0 && !h.move) {
+        k.scour = TW.tick;
+        R.blow(m, a.dmg * TWISTER.scour);
+      }
+      // (its lightning, round its foot as its pictures throw it)
+      for (const b of TW_BOLTS) {
+        if (!(t0 < b.t && t1 >= b.t)) continue;
+        const bx = m.x + Math.cos(b.a) * b.d;
+        const by = m.y + Math.sin(b.a) * b.d;
+        if (Math.hypot(h.x - bx, h.y - by) <= TW.bolt && !h.move) R.blow(m, a.dmg);
+        g.sfx('zap', 0.3);
+      }
+      return;
+    }
     if (at(0.42)) g.sfx('gust', 0.5);
     if (!at(a.hit)) return;
     // THE CRACK of its whip, before it: struck, and knocked about
@@ -107,3 +161,6 @@ export const RULES: Act1Rules | null = {
     m.anim = 'walk';
   },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { DEVIL_TWISTER };

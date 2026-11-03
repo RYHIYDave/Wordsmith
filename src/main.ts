@@ -2,26 +2,44 @@
 // interface together.
 
 import { actsOf } from './game/bosses';
-import { DOOR_WALLS } from './render/walls';
+import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
+import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
+import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
+import { DOOR_WALLS, WHOLE_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
-import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
+import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
+import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt } from './art/icons';
+import { ITEMS_A } from './art/items_a';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
-import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
+import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, edgesOf, makeGroundArt, setWallLook } from './art/ground';
 import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
 import { TALENTS, TALENTS2 } from './game/talents';
+import { VETERAN } from './game/veteran';
+import { RIME_SHADE_ON } from './art/rime_shade';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
 import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookProps } from './art/floors';
+import { YARD } from './art/yard';
+import { YARD_GATE, makeYardGateArt } from './art/yard_gate';
+import { PRISON_GATE, makePrisonGateArt } from './art/prison_gate';
+import { CHAPEL } from './art/chapel';
+import { CHAPEL_GATE, makeChapelGateArt } from './art/chapel_gate';
+import { LAIR_TEMPLE } from './art/lair_temple';
+import { LAIR_GATE, makeLairGateArt } from './art/lair_gate';
+import { TOMB } from './art/tomb';
+import { CASTLE_THEME } from './art/castle_hall';
+import { TOMB_GATE, makeTombGateArt } from './art/tomb_gate';
+import { PRISON } from './art/prison';
 import { FLOOR_SETS } from './game/first5';
 import { FIRST5 } from './game/ways';
 import { momentKeys, stairKey } from './art/films';
@@ -42,17 +60,18 @@ import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { TITLE_RING, makeRingTitle } from './art/title_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { initAudio, isMuted, setMuted, sfx, speak } from './engine/audio';
+import { initAudio, isMuted, setMuted, sfx, speak, speakBoss } from './engine/audio';
 import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
-import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
+import { LEDGE_H, screenDirToWorld, sx as isoSX, sy as isoSY, toWorldX, toWorldY } from './engine/iso';
+import { WARLOCK, WARLOCK_TUNE, playableClasses } from './game/warlock';
 import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
-import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, NEW_WEAPONS, OWN_MOVES, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { ALTAR_GOES } from './game/act1_holds';
 import { DRESS_EDGES } from './game/act1_dress';
@@ -64,7 +83,9 @@ import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } fr
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
-import { ACT2 } from './game/act1';
+import { ACT2, HIGH_CITY, lastFloor } from './game/act1';
+import { BOSS_CALLS } from './game/boss_calls';
+import { chimeNow } from './game/act2/masque_rules';
 import { MELD, RANK2, STONE_RISE, VOLT_MELDS, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -75,10 +96,10 @@ import { flowDir, flowField, lineOfSight } from './game/nav';
 import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
-import { CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
+import { ALL_CLASS_IDS, CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
-import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
+import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
@@ -93,10 +114,11 @@ import { AISLES_CLEAR } from './game/act2/library';
 import { LEAP_WATER } from './game/water';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
-import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
+import { CARDS3, ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
 import { altarSide, gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
+import { cardsOpen, cardsSide } from './ui/royal_cards';
 import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
@@ -135,7 +157,7 @@ const TITLE = 'WORDSMITH';
  */
 const FALL_SEEN = 2;
 /** What each hero says when their voice is tried out on the class cards. */
-const VOICE_SAMPLE: Record<ClassId, string> = { warrior: 'Was that it?', ranger: 'Quiet now.', mage: 'Jolly good.' };
+const VOICE_SAMPLE: Record<ClassId, string> = { warrior: 'Was that it?', ranger: 'Quiet now.', mage: 'Jolly good.', warlock: 'Feed it.', tinkerer: 'Boom.', brawler: 'Next!' };
 /** Where everything is kept between visits (this browser only): the run in progress, the Lexicon and the stash. */
 const SAVE_KEY = 'arpg.save';
 /** Build 1 kept only the run, under this name. Still read, so an old run carries over. */
@@ -270,6 +292,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // made the first time it is reached; the prison town's kept for going back to it)
   let campShown = false;
   let hallTown = art.town;
+  // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: whether its own things are the town's now, and its floor's edges)
+  let hallShown = false;
+  let hallEdges: ReturnType<typeof edgesOf> | null = null;
   let cityArt: { town: typeof art.town; props: typeof art.props } | null = null;
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
@@ -297,7 +322,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const painter = new Painter(painterAsk === 'off' ? null : SOURCE, () => art.bestiary, { small: scr.touch, ...(painterAsk === '1' || painterAsk === '2' ? { many: Number(painterAsk) } : {}) });
   renderer.painter = painter;
   // (the hero's pictures painted ahead by the painter's worker, taken in as they come: render/painter.ts)
-  painter.toHero = (cls, place, v, l, i, s) => !!art.heroes.give?.(cls, place, v, l, i, s);
+  painter.toHero = (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet);
   // (the worker is started at once: the hero's pictures are wanted from the first moment)
   painter.warmGround();
   /** The place whose pictures the painter has been asked for (a level, or null: none, the starting screen). */
@@ -445,7 +470,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // it) and the Lexicon and stash, which outlast any one character. Automated tests switch
   // saving off.
   let saving = true;
-  const validRun = (s: RunSave | null | undefined): RunSave | null => (s && s.v === 1 && CLASS_IDS.includes(s.cls) ? s : null);
+  const validRun = (s: RunSave | null | undefined): RunSave | null => (s && s.v === 1 && ALL_CLASS_IDS.includes(s.cls) ? s : null);
   const readSave = (): { run: RunSave | null; meta: Meta } => {
     try {
       const text = localStorage.getItem(SAVE_KEY);
@@ -913,7 +938,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const vx = v.x / l;
       const vy = v.y / l;
       const m = coneTarget(g, vx, vy, 10);
-      quickAt = m ? { x: m.x, y: m.y } : { x: h.x + vx * 4, y: h.y + vy * 4 };
+      quickAt = m ? placedAim(g, m, SKILLS[h.skills[0].id].kind) : { x: h.x + vx * 4, y: h.y + vy * 4 };
       slowAt = m ? placedAim(g, m, slowDef.kind) : { x: h.x + vx * reach, y: h.y + vy * reach };
       renderer.lockId = m ? m.id : null;
       // (he turns to where it points, walking or not)
@@ -921,7 +946,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     } else {
       const aims = autoTargets(g, lock.update(g, dt), fought);
       if (aims.quick) {
-        quickAt = { x: aims.quick.x, y: aims.quick.y };
+        quickAt = placedAim(g, aims.quick, SKILLS[h.skills[0].id].kind);
         renderer.lockId = aims.quick.id;
       }
       if (aims.slow) slowAt = placedAim(g, aims.slow, slowDef.kind);
@@ -955,6 +980,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     if (pad.pressed(BTN.X)) c.potion = true;
     if (pad.pressed(BTN.B)) c.interact = true;
+    // (THE WARLOCK: his pact full, the right bumper changes him, as a tap on him does: game/warlock.ts)
+    if (pad.pressed(BTN.RB)) c.change = true;
   };
 
   const readControls = (g: Game, dt: number): void => {
@@ -970,6 +997,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     c.hold = false;
     c.evade = false;
     c.potion = false;
+    c.change = false;
     c.interact = wantInteract;
     renderer.lockId = null;
     wantInteract = false;
@@ -1026,6 +1054,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       order = null;
       sfx('click');
     } else if (poke) errand = null;
+    // THE WARLOCK (game/warlock.ts): a touch or a click on him himself, his pact full, changes him (the owner: “then you tap on
+    // the warlock and he transforms”); on a keyboard, R as well. (A touch on him with it short of full is no attack.)
+    let onHim = false;
+    if (h.cls === 'warlock' && poke && !spot) {
+      const hx = isoSX(h.x, h.y) + cam.ox;
+      const hy = isoSY(h.x, h.y) + cam.oy;
+      onHim = Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y);
+      if (onHim && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full && h.form !== 'demon') c.change = true;
+    }
+    if (h.cls === 'warlock' && input.pressed('KeyR')) c.change = true;
 
     if (!input.touchMode) {
       // aim a little below the cursor: characters and shots are drawn above the floor
@@ -1094,7 +1132,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       if (input.pressed('KeyQ')) c.potion = true;
       if (input.pressed('KeyE') || input.pressed('KeyF')) c.interact = true;
-    } else if (meta.aim === 'auto') {
+    } else if (meta.aim === 'auto' || meta.aim === 'one') {
       // Touch, with everything aimed by the game (the owner, 4 Oct 2026, 21:10: "a third option to
       // the attacks: option which will auto aim everything. So any ability that goes where you
       // tap or hold will auto target an enemy"). Where the right thumb lands does not matter: TAP
@@ -1119,8 +1157,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // a tap too, whichever side of the screen it is on: a newcomer told to "tap" taps the
       // monster). The hero walks into reach first if need be, so the tap is kept as an order until
       // it is carried out, exactly as where the thumb aims.
+      const one = meta.aim === 'one';
       const touched = input.tap ?? (input.poke && !spot && monsterAt(g, input.poke.x, input.poke.y) ? input.poke : null);
-      if (touched && !spot) {
+      // (ONE HAND: the quick attack goes by itself at the enemy picked, once it is in reach, and the hero is not walked to it; a tap
+      // throws the slow attack, below)
+      if (one && !order && aims.quick && (melee ? g.quickReaches(aims.quick) : Math.hypot(aims.quick.x - h.x, aims.quick.y - h.y) <= Math.max(3, SKILLS[quick.id].range || 8))) {
+        const a = placedAim(g, aims.quick, SKILLS[quick.id].kind);
+        c.aimX = a.x;
+        c.aimY = a.y;
+        c.fire = true;
+        fought = aims.quick.id;
+      }
+      if (one && touched && !spot) {
+        const def = SKILLS[slow.id];
+        const reach = Math.min(def.range > 0 ? def.range : 3, 4);
+        const p = aims.slow ? placedAim(g, aims.slow, def.kind) : { x: h.x + h.fx * reach, y: h.y + h.fy * reach };
+        c.cast = true;
+        c.castX = p.x;
+        c.castY = p.y;
+        if (aims.slow) renderer.lockId = aims.slow.id;
+      } else if (touched && !spot) {
         order = { id: aims.quick ? aims.quick.id : null, x: h.x + h.fx * 3, y: h.y + h.fy * 3, t: 0, uses: quick.uses };
         if (aims.quick) fought = aims.quick.id;
       }
@@ -1135,7 +1191,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
         if (quick.uses > o.uses || o.t > 3 || (o.id !== null && !target)) order = null;
         else {
-          const a = target ?? { x: h.x + h.fx * 3, y: h.y + h.fy * 3 };
+          // (her vial is put where the enemy is going, as the ranger's volley: see placedAim)
+          const a = target ? placedAim(g, target, SKILLS[quick.id].kind) : { x: h.x + h.fx * 3, y: h.y + h.fy * 3 };
           c.aimX = a.x;
           c.aimY = a.y;
           c.fire = !(melee && target && moving && !g.quickReaches(target));
@@ -1216,6 +1273,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           if (ahead) {
             c.aimX = ahead.x;
             c.aimY = ahead.y;
+          }
+          // (her vial is put where the enemy is going, as the ranger's volley: see placedAim)
+          const at = target ?? ahead?.m ?? null;
+          if (at) {
+            const p = placedAim(g, at, SKILLS[h.skills[0].id].kind);
+            c.aimX = p.x;
+            c.aimY = p.y;
           }
           c.fire = true;
         }
@@ -1442,6 +1506,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       } else if (e.t === 'quip') {
         // the hero has something to say about a big kill: heard in their own voice (it is drawn by the effects)
         speak(g.hero.cls, g.voice, e.text);
+      } else if (e.t === 'bossSay' && e.voice) {
+        // (THE BOSSES CALL OUT THEIR BIG MOVES: heard in his own voice; the words are drawn by the effects. game/boss_calls.ts)
+        speakBoss(e.voice, e.text);
       } else if (e.t === 'bossIntro') {
         bossCard = { name: e.name, t: 0, secs: e.secs };
         floorCard = null;
@@ -1543,6 +1610,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)) * dbg.slowmo;
     last = now;
     clock += dt;
+    input.oneHand = scr.touch && meta.aim === 'one';
     input.beginFrame();
     if (GAMEPAD.on) padFrame(dt);
     else PAD_USE.live = false;
@@ -1579,26 +1647,38 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (while the Lexicon lies open over the menu, the menu does not listen)
       const press = ui.press;
       if (titleLex) ui.press = null;
+      // (THE NEW CLASSES on their cards, sculpted, too heavy to paint here as they are shown: the side painter paints them,
+      // and until it has, the nearest frame of theirs painted is shown: art/kit.ts LEFT_TO_PAINTER)
+      // (its worker started on the start screen, ahead: it takes seconds; while it starts, its frames are waited for too)
+      const byPainter: ClassId[] = [];
+      if (painter.warmGround()) {
+        for (const k of playableClasses()) {
+          if (k !== 'warlock' && k !== 'tinkerer' && k !== 'brawler') continue;
+          if (titleUi.page === 'class') painter.hero(k, 'card');
+          byPainter.push(k);
+        }
+      }
       const res = drawTitle(ui, art, titleArt, clock, TITLE, titleUi, {
         turn: turnLabel(),
         resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, ${ENDLESS.on && (saved.endless ?? 0) > 0 ? endlessName(saved.endless ?? 1) : `dungeon ${saved.depth}`}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
-        note: saved && confirm && !titleUi.practice ? `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : null,
+        note: saved && confirm && !titleUi.practice ? (CARDS3.on ? `Press CONFIRM again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.`) : null,
         guide: guideOn,
         limit: meta.limit,
         aim: scr.touch ? meta.aim : null,
         muted: isMuted(),
         voice: meta.voice,
         mode: MODES.on && !titleUi.practice ? meta.mode : null,
-        speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
+        speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? playableClasses()[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
         tryout: TRYOUT,
+        byPainter,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'ring' ? makeRingTitle() : titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;
       if (voiceTry && clock >= voiceTry.at) {
-        if (voiceTry.i >= CLASS_IDS.length) voiceTry = null;
+        if (voiceTry.i >= playableClasses().length) voiceTry = null;
         else {
-          const who = CLASS_IDS[voiceTry.i];
+          const who = playableClasses()[voiceTry.i];
           speak(who, meta.voice, VOICE_SAMPLE[who], 1.4);
           voiceTry = { i: voiceTry.i + 1, at: clock + 1.25 };
         }
@@ -1643,10 +1723,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           sfx('click');
           continueRun();
         } else if (res.pick) pickClass(res.pick);
+        else if (res.chose) sfx('click');
         else if (entering) {
           // (a hero is making ready: the keys that pick a class or leave the cards wait until they have gone)
         } else if (titleUi.page === 'class') {
-          for (let i = 0; i < CLASS_IDS.length; i++) if (input.pressed(`Digit${i + 1}`)) pickClass(CLASS_IDS[i]);
+          // (CARDS3: a number chooses a card, and Enter confirms it)
+          for (let i = 0; i < playableClasses().length; i++) {
+            if (!input.pressed(`Digit${i + 1}`)) continue;
+            if (CARDS3.on) {
+              titleUi.chosen = playableClasses()[i];
+              sfx('click');
+            } else pickClass(playableClasses()[i]);
+          }
+          if (CARDS3.on && titleUi.chosen && input.pressed('Enter')) pickClass(titleUi.chosen);
           if (input.pressed('Escape')) titleUi.page = titleUi.practice && titleUi.trial ? 'floors' : titleUi.practice ? 'options' : 'menu';
         } else if (titleUi.page === 'options' && input.pressed('Escape')) titleUi.page = 'menu';
         else if (titleUi.page === 'floors' && input.pressed('Escape')) titleUi.page = 'options';
@@ -1775,7 +1864,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         art.props = crypt ? lookProps(crypt) : vault.props;
         // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
         const own = FIRST5.on && crypt >= 1 && crypt <= 5;
-        art.gates = own ? lookGates(crypt) : vault.gates;
+        // (THE HEADSMAN'S YARD with its own gate, behind YARD and YARD_GATE: floor 2's doors and gates, the boss's the yard's own)
+        // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts; FLOOR 4, THE BURIED
+        // CHAPEL with its bone grille, behind CHAPEL and CHAPEL_GATE: art/chapel_gate.ts; FLOOR 5, THE TEMPLE with its hooked bars,
+        // behind LAIR_TEMPLE and LAIR_GATE: art/lair_gate.ts)
+        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : crypt === 4 && CHAPEL.on && CHAPEL_GATE.on ? makeChapelGateArt() : crypt === 5 && LAIR_TEMPLE.on && LAIR_GATE.on ? makeLairGateArt() : crypt === 1 && TOMB.on && TOMB_GATE.on ? makeTombGateArt() : lookGates(crypt)) : vault.gates;
         art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
         forgetPieces(crypt);
         cryptShown = crypt;
@@ -1783,7 +1876,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const campNow = isCamp(g.level);
       if (campNow !== campShown) {
         if (campNow) {
-          hallTown = art.town;
+          if (!hallShown) hallTown = art.town;
           cityArt ??= { town: makeTownProps(CITY), props: makeDungeonProps(CITY) };
           art.town = cityArt.town;
           art.props = cityArt.props;
@@ -1792,6 +1885,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           art.props = crypt ? lookProps(crypt) : vault.props;
         }
         campShown = campNow;
+      }
+      // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: the town's own things in the castle's stone and timber, its
+      // braziers, barrels, urn and pillars; its floor's edges toward the eye in its stone: art/castle_hall.ts, render/castle.ts)
+      const hallNow = renderer.castle.on(g.level);
+      if (hallNow !== hallShown) {
+        if (hallNow) {
+          const A = renderer.castle.A();
+          art.town = A.town;
+          hallEdges ??= edgesOf(CASTLE_THEME);
+          art.ground = { ...vault.ground, ...hallEdges };
+          const pillar = A.pieces.find((p) => p.name === 'a pillar of the hall')?.frames?.[0] ?? vault.props.pillar;
+          art.props = { ...vault.props, brazier: A.props.brazier, barrel: A.props.barrel, urn: A.props.urn, pillar };
+        } else {
+          art.ground = crypt ? lookGround(crypt) : vault.ground;
+          if (!campNow) {
+            art.town = hallTown;
+            art.props = crypt ? lookProps(crypt) : vault.props;
+          }
+        }
+        hallShown = hallNow;
       }
       // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
       // workers ended; this one's are asked for as it is drawn)
@@ -1812,6 +1925,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (EXITS.on && W) {
           if (W.cave) painter.film(`cave:${W.cave.spot.alongX ? 'x' : 'y'}`, true);
           if (W.mouth) painter.film(`mouth:${W.mouth.alongX ? 'x' : 'y'}`, true, true);
+          // (FLOOR 3, PRISON_EXIT: the door out the back of his hall, seen shut all through his fight)
+          if (W.exit) painter.film(`exit:${W.exit.alongX ? 'x' : 'y'}`, true);
           const gate = W.gate >= 0 ? g.level.doors[W.gate] : null;
           if (g.level.town && gate) {
             if (W.shaft?.state === 'arriving') painter.film('town:arrive', true, true);
@@ -1837,6 +1952,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (ACT 1: what its kinds throw and leave, painted ahead: render/act1_fx/, `films`)
         for (const kind of new Set(g.monsters.map((m) => m.kind))) for (const key of act1Fx(kind)?.films ?? []) painter.film(key, true);
       }
+      renderer.pactHint = GAMEPAD.on && PAD_USE.live ? 'RB: CHANGE' : input.touchMode ? 'TAP HIM' : 'R: CHANGE';
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
       for (const k of renderer.kicks()) {
@@ -2011,7 +2127,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
                       ? meldSide(ui, g, art, meta, panels, invUi, half)
                       : wordsmithSide(ui, g, art, meta, panels, invUi, half)
                     : at === 'stranger'
-                      ? gambleSide(ui, g, art, panels, invUi, half)
+                      ? // (THE HIGH CITY, THE ROYAL CARDS: his half's second page, ui/royal_cards.ts)
+                        cardsOpen(g) && panels.cardPage
+                        ? cardsSide(ui, g, art, panels, invUi, half)
+                        : gambleSide(ui, g, art, panels, invUi, half)
                       : at === 'altar'
                         ? altarSide(ui, g, art, invUi, half, panels.altar, input.pressed('Enter'), altar)
                         : null;
@@ -2056,7 +2175,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // Test hooks: automated playtests drive the game through these. Not used in normal play.
   const hash = new URLSearchParams(location.hash.slice(1));
   const auto = hash.get('bot') as ClassId | null;
-  if (auto && CLASS_IDS.includes(auto)) {
+  if (auto && ALL_CLASS_IDS.includes(auto)) {
     saving = false;
     saved = null;
     newRun(auto, Number(hash.get('seed') ?? 1234), false);
@@ -2066,9 +2185,31 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,
+    /** (THE HIGH CITY, behind HIGH_CITY, game/act1.ts: off until his yes) Its switch, for the playtests and pictures. */
+    highCity: HIGH_CITY,
+    /** (THE HIGH CITY, FLOOR 17) the ebony clock made to chime now, for the films: game/act2/masque_rules.ts. */
+    masqueChime: () => game && chimeNow(game.level),
     /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
     act2: (on: boolean, depth = 0) => {
       ACT2.on = on;
+      if (game && depth) {
+        game.depth = depth;
+        game.cleared = Math.max(game.cleared, depth - 1);
+        game.wayDepth = Math.max(game.wayDepth, depth);
+        game.enterDungeon();
+      }
+    },
+    /** (THE BOSSES CALL OUT THEIR BIG MOVES: behind BOSS_CALLS, game/boss_calls.ts, off until his yes) Its switch, for the films. */
+    calls: (on: boolean) => {
+      BOSS_CALLS.on = on;
+    },
+    /**
+     * (THE HIGH CITY, FLOOR 16: behind HIGH_CITY, game/act1.ts: off until his yes) Its switch (the Hush's with it), for the playtests
+     * and pictures; with `depth`, the hero taken there at once (16 on, as many as are built).
+     */
+    high: (on: boolean, depth = 0) => {
+      HIGH_CITY.on = on;
+      if (on) ACT2.on = true;
       if (game && depth) {
         game.depth = depth;
         game.cleared = Math.max(game.cleared, depth - 1);
@@ -2081,6 +2222,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      * floor it would be), as if he had beaten the last floor built and come so far; level 0, the endless levels opened to him in
      * town, as when the last floor is beaten.
      */
+    /** (the playtests of the Crypt's own walls, heights and room shapes, Version 25.0) The first five floors' new looks and every wall
+     * standing (game/floor_looks.ts, render/walls.ts WHOLE_WALLS) off, or on again: the rules under them are as they were. */
+    newLooks: (on: boolean) => {
+      useFloorLooks(on);
+      WHOLE_WALLS.on = on;
+    },
+    /** The last floor built (game/act1.ts lastFloor): the playtests go by it. */
+    lastFloor: () => lastFloor(),
     endless: (on: boolean, level = -1, floor = 0) => {
       ENDLESS.on = on;
       if (!game || level < 0) return;
@@ -2183,6 +2332,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     talents: TALENTS,
     /** THE TREES REMADE (game/talents.ts TALENTS2), on with his yes of 17 Oct: `talents2.on`. */
     talents2: TALENTS2,
+    /** THE VETERAN (game/veteran.ts), the Brawler made again, on since his yes of 3 Nov 2026 (25.0): `veteran.on` (his tree and his moves). */
+    veteran: VETERAN,
+    /** FLOOR 20'S RIME SHADE (art/rime_shade.ts RIME_SHADE_ON, the art chat's; game/act1_rules/rshade.ts), off until he has seen it in the game and said yes: `rimeShade.on`. */
+    rimeShade: RIME_SHADE_ON,
+    /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's demonic tome, the Tinkerer's wrench; stand-in pictures while `itemsA` is off). */
+    newWeapons: NEW_WEAPONS,
+    /** THE NEW ITEM PICTURES (art/items_a.ts ITEMS_A, the art chat's), off until his yes: `itemsA.on` (every item's picture by its kind and rarity: art/icons.ts itemPic). */
+    itemsA: ITEMS_A,
     /** A GAME CONTROLLER's switch (engine/gamepad.ts), on since Version 20.1; and the pad as read (its pointer). */
     gamepad: GAMEPAD,
     pad: () => ({ connected: pad.connected, live: pad.live(), pointer: padPointer, px: pad.px, py: pad.py }),
@@ -2212,8 +2369,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       if (game) game.refresh();
     },
-    /** A piece of gear made to order (playtests of crafting want a white, a blue and a yellow one of a kind they choose). */
-    item: (slot: Slot, rarity: Rarity, ilvl = 5, seed = 1): Item => rollItem(ilvl, new RNG(seed), { slot, rarity }),
+    /** A piece of gear made to order (playtests of crafting want a white, a blue and a yellow one of a kind they choose). `cls`: rolled as for a hero of that class (with NEW_WEAPONS on, his own weapon may be among them). */
+    item: (slot: Slot, rarity: Rarity, ilvl = 5, seed = 1, cls?: ClassId): Item => rollItem(ilvl, new RNG(seed), { slot, rarity, cls }),
     invUi,
     lexUi,
     titleUi,
@@ -2278,6 +2435,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
     slowmo: 1,
+    /** Heavy frames left to the side painter while the world is drawn (art/kit.ts HEAVY): a film made frame by frame turns it off, so every frame is painted when shown. */
+    paintDefer: PAINT_DEFER,
     /** The world's painter (its `skip` set leaves parts of the picture out, for measuring). */
     renderer,
     /** How many frames of art have been painted so far, and how long that took in all (art/kit.ts). */
@@ -2335,6 +2494,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       hallTown = art.town;
       cityArt = null;
       campShown = false;
+      hallShown = false;
     },
     /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
     clock: () => clock,
@@ -2372,6 +2532,21 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      * the new moves): on and off for playtests and films, and the monsters painted again. `monsterAttacks()`
      * says whether they are on.
      */
+    /**
+     * THE FLOORS' MORE ACTION (game/defs.ts ACTION_F1 to ACTION_F4, the art chat's, on since Version 25.0 at his “Switch them all on
+     * (Recommended)”): off for the playtests of the monsters' moves as they were before it, and on again; the monsters painted again.
+     */
+    /** EVERYONE'S OWN MOVES (game/defs.ts OWN_MOVES, his pick of 28 Oct 2026): off for the playtests of Version 12's rule, both attacks the weapon's, and on again. */
+    ownMoves: (on: boolean) => {
+      OWN_MOVES.on = on;
+    },
+    floorAction: (on: boolean) => {
+      useActionF1(on);
+      useActionF2(on);
+      useActionF3(on);
+      useActionF4(on);
+      art.bestiary = makeBestiary();
+    },
     monsterAttacks: (on?: boolean): boolean => {
       if (on !== undefined) {
         useMonsterAttacks(on);
@@ -2409,6 +2584,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     thrust: (on: boolean) => {
       THRUST.on = on;
       art.heroes = makeHeroArt3();
+    },
+    /**
+     * THE TINKERER'S GOLEM'S ROCKET JUMP AND ITS RUN (art/golem_rocket_fx.ts GOLEM_ROCKET, the art chat's; game/game.ts stepRocket;
+     * render/render.ts and render/tinkerer_fx.ts lay its pieces), on or off: off until he has seen them in the game and said yes.
+     * For playtests and films.
+     */
+    golemRocket: (on: boolean) => {
+      GOLEM_ROCKET.on = on;
     },
     /** For films of a hero's habits: the hero does one of the two things they do when left standing (1 or 2) now, whatever the wait. */
     habit: (which: 1 | 2) => renderer.figure.play(which),
@@ -2526,6 +2709,14 @@ function boot(): void {
     go(null);
   }
 }
+
+// (THE NEW ENEMY MOVES, FLOORS 5 TO 19: his “Yes, switch them on (Recommended)”, 2 Nov 2026: on as the game starts, in the painter's
+// worker too, before any of their pictures is made. game/enemy_moves.ts)
+useEnemyMoves(ENEMY_MOVES.on);
+// (THE FIRST FIVE FLOORS' NEW LOOKS, floors 3 to 5: his “Yes, switch them on (Recommended)”, 2 Nov 2026, 18:11: game/floor_looks.ts)
+useFloorLooks(FLOOR_LOOKS.on);
+// (THE ONE RELEASE, ALL OF IT: the High City, floors 16 to 20, his “All of it in this one”, 2 Nov 2026: game/all_of_it.ts)
+useAllOfIt(ALL_OF_IT.on);
 
 // (THE PAINTER: the same script, started as the painter's worker, paints and does nothing else)
 if ((globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) paintWorkerMain();

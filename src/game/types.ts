@@ -1,5 +1,6 @@
 // Shared data shapes. Game rules, dungeon generation, items and art all agree on these.
 
+import type { YardPlan } from './yard';
 export interface Vec {
   x: number;
   y: number;
@@ -8,15 +9,30 @@ export interface Vec {
 // ---------------------------------------------------------------------------------------------
 // Classes, attributes, abilities, power words
 
-export type ClassId = 'warrior' | 'ranger' | 'mage';
-export const CLASS_IDS: readonly ClassId[] = ['warrior', 'ranger', 'mage'];
+/** The first three classes, painted over the bones (art/heroes3.ts). */
+export type FirstClass = 'warrior' | 'ranger' | 'mage';
+/** Every class: the first three, and the new ones as they come (THE WARLOCK: game/warlock.ts, behind WARLOCK; THE TINKERER: game/tinkerer.ts, behind TINKERER). */
+export type ClassId = FirstClass | 'warlock' | 'tinkerer' | 'brawler';
+/** The classes a new hero may be made as, always (the warlock is offered beside them while WARLOCK is on: game/warlock.ts, playableClasses). */
+export const CLASS_IDS: readonly FirstClass[] = ['warrior', 'ranger', 'mage'];
+/** Every class there is (a save of any of them is read back). */
+export const ALL_CLASS_IDS: readonly ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
 
 /** The three attributes. Every class uses all three. */
 export type Attr = 'str' | 'dex' | 'int';
 export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 
 /** The pictures the attacks are shown by: one for each attack a weapon or a class gives, plus the universal dodge. */
-export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
+export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp'
+  // (THE WARLOCK, game/warlock.ts: his three as a man and the demon's three)
+  | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
+  // (THE TINKERER, game/tinkerer.ts: her Vial Toss, her Contraption, her Golem and her blast jump)
+  | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
+  // (THE BRAWLER, game/brawler.ts: his tap, his tap and hold, his slip and counter)
+  | 'jab' | 'cross' | 'slip'
+  // (THE VETERAN, behind VETERAN: his Punch (a tap), his Kick (a hold), his Jump (a swipe); art/veteran_icons.ts, a first pass
+  // to show him)
+  | 'vetpunch' | 'vetkick' | 'vetjump';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
 export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding';
@@ -105,6 +121,8 @@ export type MonsterKind =
   | 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain'
   // THE FIRST FIVE FLOORS (game/bosses.ts): the bosses of floors 2 to 5, the amalgamation's bone beast, and the cult's two fighters
   | 'headsman' | 'chained' | 'amalgam' | 'beast' | 'fleshmancer' | 'dagger' | 'minifm'
+  // (the Amalgamation's bone mites, done the action way: its rain's skulls pulled together where they burst, game/bosses.ts AM_ACTION)
+  | 'mite'
   // ACT 1, THE DESCENT (game/act1.ts): the cult's two new kinds; each floor's own creatures; the five bosses
   | 'chanter' | 'firepot'
   | 'qgolem' | 'rubbling' | 'vulture' | 'crawler' | 'scorpion' | 'devil' | 'deer' | 'wolf' | 'drowned' | 'leech' | 'spawn'
@@ -115,7 +133,21 @@ export type MonsterKind =
   | 'rat' | 'dredger' | 'fieldhand' | 'carter' | 'patient' | 'orderly' | 'inkling' | 'bookwarden'
   | 'crier' | 'ratking' | 'palimpsest' | 'physician' | 'censor'
   // ACT 2, THE HUSH: floor 13's double boss in place of the Palimpsest, the Scraper and the Quill (game/act1_rules/pair.ts)
-  | 'scraper' | 'quill';
+  | 'scraper' | 'quill'
+  // ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): floor 16's own (the swans, the Hushed gardeners and grooms, the
+  // palace guard) and its boss, the Princess; the art chat's
+  | 'swan' | 'gardener' | 'groom' | 'pguard' | 'princess'
+  // (floor 17, the Masque: the footmen, the masked dancers, the Silent Order; the Prince)
+  | 'footman' | 'dancer' | 'order' | 'prince'
+  // (floor 18, the Glass Gallery: the ladies-in-waiting, the queen's guard, your own reflections; the Queen (floor 5's Carrion Queen is 'queen'))
+  | 'lady' | 'qguard' | 'reflection' | 'gqueen'
+  // (floor 19, the Keep: the king's knights, the crossbowmen on the walls (the Silent Order's armed last is 'order'); the King)
+  | 'kknight' | 'xbow' | 'gking'
+  // (floor 20, the Quiet Tower: the Hush in its own shapes, the shadows of the four royals (the Silent Order's last masks are
+  // 'order'); the Moth)
+  | 'hshape' | 'rshadow' | 'moth'
+  // (floor 20's frost creature, the art chat's, behind RIME_SHADE_ON: game/act1_rules/rshade.ts)
+  | 'rshade';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -132,6 +164,10 @@ export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem
 export const ACT2_MOBS: readonly MonsterKind[] = ['hushed', 'watch', 'scribe', 'hound', 'rat', 'dredger', 'fieldhand', 'carter', 'patient', 'orderly', 'inkling', 'bookwarden'];
 export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor', 'scraper', 'quill'];
 export const ACT2_KINDS: readonly MonsterKind[] = [...ACT2_MOBS, ...ACT2_BOSSES];
+/** ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): its floors' own mobs and their bosses, the art chat's (mockup/high-city-all). */
+export const HIGH_MOBS: readonly MonsterKind[] = ['swan', 'gardener', 'groom', 'pguard', 'footman', 'dancer', 'order', 'lady', 'qguard', 'reflection', 'kknight', 'xbow', 'hshape', 'rshadow', 'rshade'];
+export const HIGH_BOSSES: readonly MonsterKind[] = ['princess', 'prince', 'gqueen', 'gking', 'moth'];
+export const HIGH_KINDS: readonly MonsterKind[] = [...HIGH_MOBS, ...HIGH_BOSSES];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers
@@ -206,9 +242,21 @@ export const RARITY_NAMES = ['Normal', 'Magic', 'Rare', 'Unique'] as const;
  * a sword (one-handed) and its two-handed variant; a bow (two-handed, but it takes a quiver); a
  * wand (one-handed) and its two-handed variant, the staff. Any character can use any of them, and
  * the weapon decides the quick attack (defs.ts, WEAPON_TAP).
+ * THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, game/defs.ts, off): each new class's own, found only by a hero of that
+ * class (ClassWeaponKind).
  */
-export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff';
+export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | ClassWeaponKind;
+/** The five any hero may find (every list of weapons the game had before the new classes' own). */
 export const WEAPONS: readonly WeaponKind[] = ['sword', 'greatsword', 'bow', 'wand', 'staff'];
+/**
+ * THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS, CLASS_WEAPON): the Veteran's brawler's wraps (two hands, nothing in
+ * the other), the Warlock's demonic tome (one hand, a focus beside it), the Tinkerer's wrench (one hand, a shield beside it).
+ * (The tome was the 'grimoire' until the art came: a saved piece of one loads as the tome, items.ts migrateItem.)
+ */
+export type ClassWeaponKind = 'wraps' | 'tome' | 'wrench';
+export const CLASS_WEAPONS: readonly ClassWeaponKind[] = ['wraps', 'tome', 'wrench'];
+/** Every kind of weapon there is: the five, and the new classes' own (a saved piece of any of them loads back as itself). */
+export const ALL_WEAPONS: readonly WeaponKind[] = [...WEAPONS, ...CLASS_WEAPONS];
 
 /** Weapons that were in the game until Version 12. A saved item of one of these becomes the kind that took its place (items.ts, migrateItem). */
 export type OldWeaponKind = 'axe' | 'mace' | 'maul' | 'longbow';
@@ -216,11 +264,16 @@ export type OldWeaponKind = 'axe' | 'mace' | 'maul' | 'longbow';
 /** Off-hand pieces: a shield goes with a one-handed sword, a quiver with a bow, a focus with a wand. */
 export type OffhandKind = 'shield' | 'quiver' | 'focus';
 
-/** Which 16x16 picture an item uses. (The old weapons keep their pictures: an old save may still show one for a moment.) */
+/**
+ * Which 16x16 picture an item uses. (The old weapons keep their pictures: an old save may still show one for a moment.)
+ * The new classes' weapons ('wraps', 'tome', 'wrench') have stand-in pictures in art/icons.ts, shown while ITEMS_A is off; with it
+ * on, every item's picture is the art chat's (art/items_a.ts, asked for through art/icons.ts itemPic).
+ */
 export type IconKey = WeaponKind | OldWeaponKind | OffhandKind | 'helm' | 'hood' | 'armor' | 'robe' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet';
 export const ICON_KEYS: readonly IconKey[] = [
   'sword', 'axe', 'mace', 'greatsword', 'maul', 'bow', 'longbow', 'wand', 'staff', 'shield', 'quiver', 'focus',
   'helm', 'hood', 'armor', 'robe', 'gloves', 'belt', 'boots', 'ring', 'amulet',
+  'wraps', 'tome', 'wrench',
 ];
 
 export interface Affix {
@@ -348,6 +401,8 @@ export interface Room {
    */
   block?: boolean;
   cell?: boolean;
+  /** FLOOR 2 AS THE PRISON'S GROUNDS (game/grounds_way.ts, behind GROUNDS; absent where it is off): a courtyard of its grid, under the sky. */
+  court?: boolean;
   /**
    * (THE TRAPS, game/traps.ts) A SEALED DOOR stands in its way in, a rune of this word on it: it
    * opens only to a hit from an attack that carries the word (`DoorSpot.word`).
@@ -511,6 +566,8 @@ export interface Floor {
   hazards?: HazardSpot[];
   /** (THE FIRST FIVE FLOORS) The bone heaps of the Fleshmancer's hall, where he raises his dead (game/bosses.ts); absent where there are none. */
   heaps?: Vec[];
+  /** (THE HEADSMAN'S YARD) Floor 2's boss hall laid as the yard, outdoors (game/yard.ts); absent where it is not. */
+  yard?: YardPlan;
 }
 
 /**

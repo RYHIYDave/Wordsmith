@@ -105,6 +105,8 @@ export interface Build {
   headFwd: number;
   /** Half the head's depth (face to back), width and height. */
   headR: V3;
+  /** How far its neck lets the face look up from the top of its back, if not as a man's (a beast's on all fours, its face lifted to look ahead). */
+  neckUp?: number;
   /** Shoulder to elbow; elbow to the middle of the grip. */
   upperArm: number;
   foreArm: number;
@@ -235,6 +237,17 @@ export interface Bones {
   bend: number;
   side: number;
   /**
+   * THE UPPER BACK, two joints more in the spine (neither is named by a pose that has no use for
+   * them, and then nothing is changed). `hunch`: how far the top of the back curls forward over
+   * the chest, in degrees, from half way up the ribs: a back hunched HIGH, between the shoulder
+   * blades, not bent at the hips or the waist (the owner, 25 Oct 2026, of the warlock: "The bend
+   * needs to be higher up in the back. Shoulders hunched forward"). The neck, the head and the
+   * shoulders go with it. `shrug`: the shoulders rolled forward round the chest and drawn up, 0
+   * not at all to 1 as far as they go.
+   */
+  hunch?: number;
+  shrug?: number;
+  /**
    * The head: where the FACE points, measured from the way the figure faces and from level, not
    * from the chest. (0, 0) looks straight ahead however the body under it is turned or tipped,
    * as far as a neck allows. `faceTilt` lays the head over toward the right shoulder.
@@ -325,6 +338,8 @@ const SMOOTH3 = [
   'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'rhz', 'le', 're',
   'lfx', 'lfy', 'lfz', 'lfp', 'lft', 'rfx', 'rfy', 'rfz', 'rfp', 'rft', 'lk', 'rk', 'lkUp', 'rkUp', 'wAz', 'wEl', 'wRoll', 'draw', 'out', 'gale', 'pt', 'pAz', 'pEl',
 ] as const;
+/** The upper back's two (`Bones.hunch`, `shrug`): smooth from key to key too, but only where a pose names them. */
+const UPPER_BACK = ['hunch', 'shrug'] as const;
 
 /** Standing easy, arms hanging: what every pose starts from. */
 export function standing(b: Build): Bones {
@@ -396,6 +411,8 @@ export function bonesAt(keys: ReadonlyArray<Key3>, rest: Bones, t: number): Pose
   const k = easeOf(keys[i + 1].ease, span > 0 ? (t - keys[i].at) / span : 1);
   const out: Posed = { ...a };
   for (const f of SMOOTH3) out[f] = a[f] + (b[f] - a[f]) * k;
+  // (the upper back's two, where either key names them: a key that does not has them at 0)
+  for (const f of UPPER_BACK) if (a[f] !== undefined || b[f] !== undefined) out[f] = (a[f] ?? 0) + ((b[f] ?? 0) - (a[f] ?? 0)) * k;
   // A hand that is measured from one thing at this key and from another at the next: both places
   // are worked out on the body as it is now, and the hand goes from the one to the other.
   if (a.lhIn !== b.lhIn) {
@@ -425,6 +442,8 @@ export interface Skeleton {
   pelvis: V3;
   waist: V3;
   ribs: V3;
+  /** Half way up the ribs, on the spine: where the upper back curls forward from (`Bones.hunch`). */
+  back: V3;
   neck: V3;
   skull: V3;
   head: V3;
@@ -454,6 +473,8 @@ export interface Skeleton {
   hips: Rot;
   belly: Rot;
   chest: Rot;
+  /** How the top of the back is turned, above `back`: the chest's own, curled forward by the pose's `hunch` (the very same as `chest` where it has none). The neck, the head and the shoulders hang from it. */
+  upper: Rot;
   face: Rot;
   /** The way what is held points, and the line across it (a bow's limbs, a blade's edge). */
   point: V3;
@@ -470,12 +491,33 @@ export interface Solid {
  * The trunk as three solids, for a painter to dress and for an arm to keep clear of: the ribs,
  * the waist under them, and the pelvis.
  */
-export function trunkOf(b: Build, s: { pelvis: V3; waist: V3; ribs: V3; hips: Rot; belly: Rot; chest: Rot }): readonly [Solid, Solid, Solid] {
+export function trunkOf(b: Build, s: { pelvis: V3; waist: V3; ribs: V3; hips: Rot; belly: Rot; chest: Rot; upper?: Rot; back?: V3 }): readonly [Solid, Solid, Solid] {
   return [
-    { c: add(s.ribs, mul(s.chest[2], b.chest * 0.42)), r: s.chest, h: [b.ribDeep, b.ribHalf, b.chest * 0.7] },
+    curled(s) ? hunchedRibs(b, s.back as V3, s.chest, s.upper as Rot) : { c: add(s.ribs, mul(s.chest[2], b.chest * 0.42)), r: s.chest, h: [b.ribDeep, b.ribHalf, b.chest * 0.7] },
     { c: lerp3(s.waist, s.ribs, 0.45), r: s.belly, h: [b.waistDeep, b.waistHalf, b.ribs * 0.9] },
     { c: add(s.pelvis, mul(s.hips[2], b.waist * 0.3)), r: s.hips, h: [b.pelvisDeep, b.pelvisHalf, b.waist * 0.9] },
   ];
+}
+
+/** Whether a figure's upper back is curled over its chest (`Bones.hunch`): its own `upper` turned other than its `chest`. */
+export function curled(s: { chest: Rot; upper?: Rot; back?: V3 }): boolean {
+  const u = s.upper;
+  if (!u || !s.back) return false;
+  return u[2][0] !== s.chest[2][0] || u[2][1] !== s.chest[2][1] || u[2][2] !== s.chest[2][2];
+}
+/** The way half way from the chest's turn to the upper back's: as the ribs lie when the back is curled. */
+export function halfUp(chest: Rot, upper: Rot): Rot {
+  const n = cross(chest[2], upper[2]);
+  const ang = Math.atan2(len(n), dot(chest[2], upper[2])) / D;
+  if (ang < 1e-6) return chest;
+  const k = norm(n);
+  const h = ang / 2;
+  return [about(chest[0], k, h), about(chest[1], k, h), about(chest[2], k, h)];
+}
+/** The ribs of a back curled forward: turned half as far as the top of it, round where it curls (a hump between the shoulder blades). */
+function hunchedRibs(b: Build, back: V3, chest: Rot, upper: Rot): Solid {
+  const mid = halfUp(chest, upper);
+  return { c: add(back, mul(mid[2], -b.chest * 0.08)), r: mid, h: [b.ribDeep, b.ribHalf, b.chest * 0.7] };
 }
 
 /** How deep inside a solid a point is: less than 1 inside it (0 at its middle), 1 on its skin, more outside. `pad` makes the solid that much bigger all round. */
@@ -495,9 +537,16 @@ function clearOf(o: Solid, p: V3, pad: number): V3 {
   return add(o.c, along(o.r, [out[0] * (o.h[0] + pad), out[1] * (o.h[1] + pad), out[2] * (o.h[2] + pad)]));
 }
 
+/** Where on the ribs the upper back curls from (`Bones.hunch`): this share of the way up them. */
+const UPPER_FROM = 0.5;
+/** Shoulders shrugged as far as they go (`Bones.shrug`): forward, drawn in toward each other, and up, each a share of half their width. */
+const SHRUG_FWD = 0.3;
+const SHRUG_IN = 0.1;
+const SHRUG_UP = 0.12;
+
 /** How far a neck lets the face turn from the chest, and look up and down from it. */
 const NECK_TURN = 88;
-const NECK_UP = 65;
+export const NECK_UP = 65;
 const NECK_DOWN = 55;
 
 /** A body's own frame, as far as an arm needs it. */
@@ -592,25 +641,39 @@ export function solve(b: Build, q: Posed): Skeleton {
   const pelvis: V3 = [q.px, q.py, hipH + q.pz];
   const waist = add(pelvis, along(hips, [0, 0, b.waist]));
   const ribs = add(waist, along(belly, [0, 0, b.ribs]));
-  const neck = add(ribs, along(chest, [0, 0, b.chest]));
-  const shoulderL = add(neck, along(chest, [0, b.shoulderHalf, -b.shoulderDrop]));
-  const shoulderR = add(neck, along(chest, [0, -b.shoulderHalf, -b.shoulderDrop]));
+  // THE UPPER BACK (`Bones.hunch`, `shrug`): from half way up the ribs the top of the back curls
+  // forward round the chest's own left, and the neck goes on from it; the shoulders hang from it,
+  // rolled forward and drawn up as far as the pose shrugs them. A pose that names neither is as
+  // it always was, to the last digit.
+  const hunch = q.hunch ?? 0;
+  const shrug = q.shrug ?? 0;
+  const back = add(ribs, along(chest, [0, 0, b.chest * UPPER_FROM]));
+  const upper: Rot = hunch === 0 ? chest : [about(chest[0], chest[1], hunch), chest[1], about(chest[2], chest[1], hunch)];
+  const neck = hunch === 0 ? add(ribs, along(chest, [0, 0, b.chest])) : add(back, along(upper, [0, 0, b.chest * (1 - UPPER_FROM)]));
+  const shoulderAt = (side: number): V3 =>
+    shrug === 0
+      ? add(neck, along(upper, [0, side * b.shoulderHalf, -b.shoulderDrop]))
+      : add(neck, along(upper, [shrug * SHRUG_FWD * b.shoulderHalf, side * b.shoulderHalf * (1 - shrug * SHRUG_IN), -b.shoulderDrop + shrug * SHRUG_UP * b.shoulderHalf]));
+  const shoulderL = shoulderAt(1);
+  const shoulderR = shoulderAt(-1);
 
   // --- the head: it looks where it is told, as far as the neck lets it ---
+  // (the neck is measured from the top of the back: from the chest, unless the back is curled)
   const want: Rot = [0, 1, 2].map((i) => rz(ry(rx(AXES[i], q.faceTilt * D), -q.faceUp * D), q.faceTurn * D)) as unknown as Rot;
-  const fc: V3 = [dot(want[0], chest[0]), dot(want[0], chest[1]), dot(want[0], chest[2])];
+  const fc: V3 = [dot(want[0], upper[0]), dot(want[0], upper[1]), dot(want[0], upper[2])];
   const turned = Math.atan2(fc[1], fc[0]) / D;
   const up = Math.asin(Math.max(-1, Math.min(1, fc[2]))) / D;
   let face: Rot = want;
-  if (Math.abs(turned) > NECK_TURN || up > NECK_UP || up < -NECK_DOWN) {
+  const neckUp = b.neckUp ?? NECK_UP;
+  if (Math.abs(turned) > NECK_TURN || up > neckUp || up < -NECK_DOWN) {
     const t2 = Math.max(-NECK_TURN, Math.min(NECK_TURN, turned));
-    const u2 = Math.max(-NECK_DOWN, Math.min(NECK_UP, up));
-    const fwd = along(chest, heading(t2, u2));
-    const top = norm(sub(want[2], mul(fwd, dot(want[2], fwd))), chest[2]);
+    const u2 = Math.max(-NECK_DOWN, Math.min(neckUp, up));
+    const fwd = along(upper, heading(t2, u2));
+    const top = norm(sub(want[2], mul(fwd, dot(want[2], fwd))), upper[2]);
     face = [fwd, cross(top, fwd), top];
   }
   // (a neck stands a little forward of the spine's line, and bends half way to wherever the head is tipped)
-  const skull = add(neck, mul(norm(add(add(chest[2], face[2]), mul(chest[0], 0.3))), b.neck));
+  const skull = add(neck, mul(norm(add(add(upper[2], face[2]), mul(upper[0], 0.3))), b.neck));
   const head = add(skull, add(mul(face[2], b.headUp), mul(face[0], b.headFwd)));
 
   // --- what is held ---
@@ -640,7 +703,7 @@ export function solve(b: Build, q: Posed): Skeleton {
   // inside what is worn on it: `pad`) is moved straight out to its skin; and an elbow that would
   // be inside it, or an arm that would pass through it on the way to the hand, is swung out round
   // the arm's own line by as little as clears it. A pose that is already clear is not changed.
-  const trunk: Solid[] = [...trunkOf(b, { pelvis, waist, ribs, hips, belly, chest })];
+  const trunk: Solid[] = [...trunkOf(b, { pelvis, waist, ribs, hips, belly, chest, upper, back })];
   if (b.skirt) {
     // (a flared coat: one more solid that an arm goes round, hung plumb below the hips whichever way they tip)
     const fwd = norm([hips[0][0], hips[0][1], 0], [1, 0, 0]);
@@ -841,11 +904,11 @@ export function solve(b: Build, q: Posed): Skeleton {
   const legR = legOf(hipR, -1, q.rfx, q.rfy, q.rfz, q.rfp, q.rft, q.rk, q.rkUp);
 
   return {
-    pelvis, waist, ribs, neck, skull, head,
+    pelvis, waist, ribs, back, neck, skull, head,
     shoulderL, shoulderR, elbowL: left.mid, elbowR: right.mid, handL: left.end, handR: right.end,
     hipL, hipR, kneeL: legL.knee, kneeR: legR.knee, ankleL: legL.ankle, ankleR: legR.ankle,
     heelL: legL.heel, heelR: legR.heel, toeL: legL.toe, toeR: legR.toe,
-    hips, belly, chest, face, point, across,
+    hips, belly, chest, upper, face, point, across,
     swungL: left.more, swungR: right.more, poleL: left.pole, poleR: right.pole,
   };
 }

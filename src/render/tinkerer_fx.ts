@@ -1,0 +1,764 @@
+// THE TINKERER'S EFFECTS IN THE GAME (the main chat, 28 Oct 2026; game/tinkerer.ts, behind TINKERER).
+//
+// What her moves and her minions throw off, made of the art chat's own pieces (src/dev/contraption_fx.ts: her vials, their
+// bursts, the thud of a thing coming down, the lamp lit; blast_fx.ts: her bomb, its scorch and its chips; golem_pound_fx.ts:
+// the Golem's steam and its shockwave; golem_gun_fx.ts: its cannon's flash, shot and hit; golem_down_fx.ts: sparks and
+// gears; demon_fx.ts: the floor's cracks), laid out where the rules say things happen. Each piece painted once at the
+// picture's grain and kept.
+//
+// A FIRST PASS, TO BE SHOWN TO THE OWNER.
+//
+//   contraption       a thud of dust where it comes down; its lamp's ring as it is lit
+//   vial              her vial lobbed high, tumbling, from its mouth to where it comes down; its mouth's flash
+//   vialBurst         glass flying, her brew splashed and fizzing, its vapour rising
+//   contraptionEnd    yellow sparks off its brass as it falls apart
+//   golemArrive       a great burst of steam and a ring of dust as it drops in
+//   golemPunch        cyan shards bursting where its fist meets
+//   golemShot         its cannon's flash, the shot streaking, its hit bursting
+//   golemPound        the floor cracked in a star round its fist, its heart's cyan in the cracks; a ring of steam and dust
+//                     racing out; steam bursting up
+//   golemDown         sparks and gears as it winds down
+//   blastJump         her bomb going off: its flash and fireball, chips flung, a scorch left glowing and cooling; puffs of
+//                     its smoke along the way she flew
+//   blastLand         a thud of dust where she comes down
+//
+// HER SKILL TREE'S (game/talents.ts TINKERER_TREE), as modest as can be, from the same pieces:
+//   vial little/big   Cluster Vials' little ones hopping out low and small; The Big One's vial thrown twice the size
+//   vialBurst         little ones small; The Big One's twice the size, with a ring of her cyan racing out to its edge and
+//                     a thud of dust; Mad Mixture's brew in the colours of its burning, freezing or poisoning
+//   bombsAway         a second bomb going off where she lands, and its scorch (as her blast jump's)
+//   tar               a puddle of tar, black and glossy, until it dries up
+//   shrapnel          the cannon's hit bursting bigger, a thud of dust under it
+//   teslaZap          a jag of her cyan lightning from the coil on the Golem's back to the nearest, and on (the art chat's
+//                     bolt, golem_gun_fx.ts, from the tesla coil he was offered for its arm), what it hits crackling
+//   golemGrow         steam and dust as it grows (its picture grown: render.ts drawTinkerers)
+//   overdrive         a burst of steam off it (its cyan pulsing: drawTinkerers)
+//   decoyStruck       an enemy's blow on the Golem a lightning rod: cyan shards off its iron
+//
+// HER TREE'S GUN ARM AND HER CONTRAPTION'S PICKS, THE ART CHAT'S GAME-READY PIECES (art/golem_shots_fx.ts, his “Yes, that's them
+// (Recommended)”, 31 Oct 2026; laid in by the main chat with the characters, at his word of 2 Nov, “All of it in this one”), in
+// place of the main chat's stand-ins:
+//   charging          everything at the Golem as it braces and charges and fires (its stacks' steam, the light gathering at its
+//                     gun's mouth, the ring and grit on the floor round it): its floor under what stands, its air over it, frame
+//                     by frame with its picture (render.ts sets `charging` each frame)
+//   golemCharged      THE CANNON'S SHELL out of its mouth, its trail, and its BLAST where it lands (2.5 tiles at its full; a weaker
+//                     shot's to the half tile); THE TESLA COIL'S BEAM from its coil's ball, with the Golem as it is pushed back
+//   vialBurst bomb    her Contraption's little bomb going off (2 tiles)
+//   contraptionBolt   her Contraption's bolt of energy from its ball to what it strikes, crackling there
+//
+// THE GOLEM'S ROCKET JUMP, THE ART CHAT'S GAME-READY PIECES (art/golem_rocket_fx.ts and its README's “Bringing it in”), BEHIND
+// GOLEM_ROCKET (off until he has seen it in the game and said yes), in place of the stand-in's bomb and drop-in:
+//   bombsAway rocket  WHERE IT TOOK OFF: its scorch and glowing cracks on the floor; its flash, fire splashed over the floor, the
+//                     ring of dust, stone, smoke and its after-image standing there (rocketStands, laid by render.ts among what
+//                     stands); and ITS TRAIL of smoke puffs over what stands, hanging where it passed
+//   golemArrive rocket WHERE IT LANDS: the crater on the floor, fading; its dust and stone standing there (rocketStands)
+//   rocketing         the light of its stacks' fire on the floor under it and grit hopping, while it crouches (render.ts sets
+//                     `rocketing` each frame); its frames painted ahead while she has it out (`rocketGun`)
+
+import { Px } from '../engine/px';
+import type { Sprite } from '../engine/px';
+import { drawSprite } from '../engine/px';
+import type { GameEvent } from '../game/state';
+import { Light, SMOKE, cloud } from '../dev/warlock_fx';
+import { BREW, CAP, VAPOUR, lampRing, thud, vialBurst, vialSprite } from '../dev/contraption_fx';
+import { CHIP, SCORCH, blast, chips, scorch } from '../dev/blast_fx';
+import { HEART, STEAM, burstSteam, shock } from '../dev/golem_pound_fx';
+import { GUN_GLOW, IRON, bolt, crackle, impactBurst, muzzleFlash } from '../dev/golem_gun_fx';
+import { P } from '../art/palette';
+import type { Brew } from '../game/state';
+import { GEARS, SPARKS, gears, sparks } from '../dev/golem_down_fx';
+import { BOMB_FX, bombSprite, layShotAir, shotLayers } from '../dev/contraption_shots';
+import { STUFF, crackStar, drawCrack } from '../dev/demon_fx';
+import { GOLEM_ROCKET, LAND_N, LAUNCH_N, PUFF_LIFE, golemLandFx, golemLaunchFx, golemRocketFrames, golemRocketFx, golemRunFrames, paintRocketAhead, rocketPuffFx, rocketTrail } from '../art/golem_rocket_fx';
+import type { GolemRocketAt } from '../game/state';
+import { BEAM_FRAMES, contraptionBoltFx, contraptionBombBlastFx, golemBeamFx, golemChargeFx, golemShellBlastFx, golemShellFlightFx, golemSkid, paintAhead } from '../art/golem_shots_fx';
+import type { Layered, ShotGun } from '../art/golem_shots_fx';
+import { flipSprite } from '../engine/px';
+import type { Cam } from './fx';
+import { wx, wy } from './fx';
+
+/** Picture pixels to a game pixel (the heroes' grain). */
+const G = 2;
+
+type Lay = [Light, readonly string[]];
+/** A piece painted on a canvas of its own, its anchor at (`ax`, `ay`) picture pixels: its lights laid in the order given. */
+function piece(w: number, h: number, ax: number, ay: number, lights: number, ramps: readonly (readonly string[])[], paint: (l: Light[]) => void): Sprite {
+  const px = new Px(w, h);
+  const ls = Array.from({ length: lights }, () => new Light());
+  paint(ls);
+  const order: Lay[] = ls.map((l, i) => [l, ramps[i]]);
+  for (const [l, r] of order) l.lay(px, r);
+  return px.sprite(ax, ay, G);
+}
+const kept = new Map<string, Sprite[]>();
+function loop(key: string, n: number, make: (i: number) => Sprite): Sprite[] {
+  let list = kept.get(key);
+  if (!list) {
+    list = Array.from({ length: n }, (_, i) => make(i));
+    kept.set(key, list);
+  }
+  return list;
+}
+
+/** (her tree's CONTRAPTION, its pick BOMBS) HER LITTLE BOMB, turned in eighths of a turn as it tumbles, its fuse spitting (the art: dev/contraption_shots.ts bombSprite). */
+const bombFrames = (): Sprite[] => loop('bomb', 8, (i) => {
+  const ly = shotLayers();
+  bombSprite(ly, 10, 10, (i / 8) * Math.PI * 2, i % 2 === 0);
+  return layShotAir(20, 20, ly).sprite(10, 10, G);
+});
+/** HER VIAL, turned in eighths of a turn as it tumbles. */
+const vialFrames = (): Sprite[] => loop('vial', 8, (i) => piece(16, 16, 8, 8, 2, [CAP, BREW], ([cap, brew]) => vialSprite(brew, cap, 8, 8, (i / 8) * Math.PI * 2)));
+/** A VIAL BURSTING, frame by frame (30 a second). */
+const BURST_N = 18;
+const burstFrames = (): Sprite[] => loop('vburst', BURST_N, (k) => piece(84, 64, 42, 46, 2, [VAPOUR, BREW], ([va, l]) => vialBurst(l, va, 42, 40, 46, k, k / 30, 5)));
+/** (her tree's MAD MIXTURE) a brew's colours, its vapour's and its splash's: burning, freezing, poisoning (the game's fire, frost and venom). */
+const BREWS: Record<Brew, readonly [readonly string[], readonly string[]]> = {
+  burn: [[P.fr1, P.fr2, P.fr3, P.fr4], [P.fr2, P.fr3, P.fr4, P.fr6]],
+  freeze: [[P.bu1, P.bu2, P.bu3, P.bu4], [P.bu2, P.bu3, P.bu4, P.bu5]],
+  poison: [[P.vn1, P.vn2, P.vn2, P.vn3], [P.vn2, P.vn3, P.vn4, P.vn5]],
+};
+const brewBurstFrames = (b: Brew): Sprite[] => loop(`vburst-${b}`, BURST_N, (k) => piece(84, 64, 42, 46, 2, BREWS[b], ([va, l]) => vialBurst(l, va, 42, 40, 46, k, k / 30, 5)));
+/** (her tree's TAR) a puddle `r` tiles across its middle: black and glossy, its edge uneven. */
+const TAR = ['#08060a', '#120d18', '#1e1626', '#3a3448'];
+const tarPuddle = (r: number): Sprite => loop(`tar${Math.round(r * 10)}`, 1, () => {
+  // (a circle on the floor, seen as the floor is: twice as wide as it is deep; 45 picture pixels a tile across it)
+  const rx = r * 45;
+  const ry = r * 22.6;
+  const w = Math.ceil(rx * 2.4) + 6;
+  const h = Math.ceil(ry * 2.4) + 6;
+  return piece(w, h, w / 2, h / 2, 1, [TAR], ([l]) => {
+    for (let yy = -Math.ceil(ry * 1.2); yy <= Math.ceil(ry * 1.2); yy++) {
+      for (let xx = -Math.ceil(rx * 1.2); xx <= Math.ceil(rx * 1.2); xx++) {
+        // (its edge uneven, as a splash runs)
+        const a = Math.atan2(yy / ry, xx / rx);
+        const d = Math.hypot(xx / rx, yy / ry) / (1 + 0.1 * Math.sin(a * 3 + r * 7) + 0.07 * Math.sin(a * 5 + 1.3));
+        if (d > 1) continue;
+        // (black at its heart, its rim a little lighter; its gloss a thin crescent of light toward the top left)
+        const sheen = Math.hypot(xx / rx + 0.28, yy / ry + 0.32);
+        const k = sheen > 0.42 && sheen < 0.5 && xx < 0 && yy < 0 ? 3 : d > 0.9 ? 2 : d > 0.6 ? 1 : 0;
+        l.put(Math.round(w / 2 + xx), Math.round(h / 2 + yy), k);
+      }
+    }
+  });
+})[0];
+/** A THUD of dust. */
+const thudFrames = (): Sprite[] => loop('thud', 14, (k) => piece(60, 30, 30, 22, 1, [SMOKE], ([sm]) => thud(sm, 30, 22, k, 3, 1)));
+/** ITS LAMP LIT: a ring of cyan. */
+const lampFrames = (): Sprite[] => loop('lamp', 5, (k) => piece(30, 30, 15, 15, 1, [BREW], ([l]) => lampRing(l, 15, 15, k)));
+/** HER BOMB GOING OFF (in the air: the flash, the fireball, the smoke, the chips) and its SCORCH (on the floor). */
+const BLAST_N = 24;
+const blastFrames = (): Sprite[] => loop('blast', BLAST_N, (k) => piece(120, 120, 60, 96, 3, [CHIP, SMOKE, BREW], ([st, sm, l]) => {
+  blast(l, sm, 60, 96, k, k / 30, 7);
+  chips(st, l, 60, 96, k, 7);
+}));
+const SCORCH_N = 40;
+const scorchFrames = (): Sprite[] => loop('scorch', 8, (i) => piece(50, 24, 25, 12, 2, [SCORCH, BREW], ([sc, l]) => scorch(sc, l, 25, 12, i * 5, 7)));
+/** THE GOLEM'S POUND: on the floor, the cracks and the ring; in the air, the steam. */
+const POUND_N = 24;
+const poundFloor = (): Sprite[] => loop('poundF', POUND_N, (k) => piece(200, 110, 100, 55, 3, [STUFF, STEAM, HEART], ([dk, st, l]) => {
+  const S = (p: readonly number[]): [number, number] => [100 + p[0], 55 + p[1] * 0.5];
+  const heat = k < 4 ? 3 : k < 12 ? 2 : k < 20 ? 1 : 0;
+  for (const c of crackStar(0, 0, 7, 40, 5, 9)) drawCrack(dk, l, c, Math.min(1, (k + 1) / 3), heat, S);
+  shock(st, 100, 55, k, k / 30, 3);
+}));
+const poundAir = (): Sprite[] => loop('poundA', POUND_N, (k) => piece(120, 110, 60, 90, 1, [STEAM], ([st]) => burstSteam(st, 60, 80, k * 1.6, k / 30, 1, 5)));
+/** THE GOLEM DROPPING IN: steam and a ring of dust. */
+const ARRIVE_N = 18;
+const arriveFrames = (): Sprite[] => loop('arrive', ARRIVE_N, (k) => piece(160, 110, 80, 80, 1, [STEAM], ([st]) => {
+  shock(st, 80, 80, k, k / 30, 11);
+  burstSteam(st, 80, 70, k * 1.6, k / 30, 0.8, 13);
+}));
+/** ITS FIST OR ITS SHOT LANDING: cyan shards. */
+const IMPACT_N = 10;
+const impactFrames = (big: number): Sprite[] => loop(`impact${big}`, IMPACT_N, (k) => piece(70, 70, 35, 35, 2, [IRON, GUN_GLOW], ([iron, l]) => {
+  void iron;
+  impactBurst(l, 35, 35, k, 3, big);
+}));
+/** ITS CANNON'S FLASH, to the left or the right of the picture. */
+const FLASH_N = 6;
+const flashFrames = (way: number): Sprite[] => loop(`flash${way}`, FLASH_N, (k) => piece(60, 50, 30, 25, 1, [GUN_GLOW], ([l]) => muzzleFlash(l, 30, 25, way, -0.3, k, 4)));
+/** SPARKS AND GEARS off brass. */
+const SPARK_N = 16;
+const sparkFrames = (size: number): Sprite[] => loop(`sparks${size}`, SPARK_N, (k) => piece(90, 80, 45, 60, 2, [GEARS, SPARKS], ([st, l]) => {
+  sparks(l, 45, 40, k, 7);
+  if (size > 0) gears(st, 45, 40, 60, k, 7, size);
+}));
+/** A TESLA COIL'S ZAP (her tree's), frame by frame. */
+const ZAP_N = 4;
+/** Where the coil sits on the Golem's back, and where the spark strikes what it hits (game pixels up from their feet). */
+const COIL_UP = 40;
+const STRUCK_UP = 14;
+/**
+ * The zap's frames: a bolt from the coil on the back of the Golem at (x, y) (`up` high) to each it leaps to in turn, what it
+ * strikes crackling. Painted once, as it comes, its anchor the Golem's foot.
+ */
+function zapFrames(x: number, y: number, up: number, to: readonly { x: number; y: number }[]): Sprite[] {
+  // (each point in picture pixels from the Golem's foot: the floor seen as it is, 16 and 8 game pixels a tile)
+  const at = (px: number, py: number, z: number): [number, number] => [((px - py) - (x - y)) * 16 * G, (((px + py) - (x + y)) * 8 - z) * G];
+  const pts = [at(x, y, up), ...to.map((p) => at(p.x, p.y, STRUCK_UP))];
+  const pad = 40;
+  const x0 = Math.min(...pts.map((p) => p[0])) - pad;
+  const y0 = Math.min(...pts.map((p) => p[1])) - pad;
+  const w = Math.ceil(Math.max(...pts.map((p) => p[0])) + pad - x0);
+  const h = Math.ceil(Math.max(...pts.map((p) => p[1])) + pad - y0);
+  const seed = Math.floor(Math.abs(x * 7 + y * 13) * 10);
+  return Array.from({ length: ZAP_N }, (_, k) => piece(w, h, -x0, -y0, 1, [GUN_GLOW], ([l]) => {
+    for (let i = 1; i < pts.length; i++) {
+      if (k < 3) bolt(l, pts[i - 1][0] - x0, pts[i - 1][1] - y0, pts[i][0] - x0, pts[i][1] - y0, seed + k * 31 + i, k);
+      crackle(l, pts[i][0] - x0, pts[i][1] - y0, 12, k < 2 ? 5 : 3, seed + k * 17 + i * 5);
+    }
+    crackle(l, pts[0][0] - x0, pts[0][1] - y0, 8, 3, seed + k * 23);
+  }));
+}
+/** A PUFF of her bomb's smoke. */
+const puffFrames = (): Sprite[] => loop('puff', 6, (i) => piece(40, 34, 20, 28, 1, [SMOKE], ([sm]) => cloud(sm, 20, 28, 18, 15, i * 0.17, 0.2, 31 + i)));
+
+interface Spot { x: number; y: number; t: number }
+/** A vial's burst: `k` its size (her tree's little ones and big ones), its brew. */
+interface Burst extends Spot { k: number; brew?: Brew; r: number; big?: boolean }
+/** A puddle of tar, `life` seconds long. */
+interface Puddle extends Spot { r: number; life: number }
+/** A Tesla Coil's zap: its frames painted as it came, laid at the Golem's foot. */
+interface Zap extends Spot { frames: Sprite[] }
+interface Lob { x0: number; y0: number; x1: number; y1: number; t: number; flight: number; hand?: boolean; little?: boolean; big?: boolean; fuse?: number }
+interface Bolt { x0: number; y0: number; x1: number; y1: number; t: number; flight: number }
+interface Path { x0: number; y0: number; x1: number; y1: number; t: number }
+
+/** How long each lasts (seconds). */
+const LIFE = { burst: BURST_N / 30, thud: 14 / 30, lamp: 5 / 30, blast: BLAST_N / 30, scorch: SCORCH_N / 30 * 2, pound: POUND_N / 30, arrive: ARRIVE_N / 30, impact: IMPACT_N / 30, flash: FLASH_N / 30, sparks: SPARK_N / 30, trail: 0.9, zap: ZAP_N / 30, ring: 0.3 };
+/** From her letting go, its coming down and its being lit (dev/contraption_fx.ts CT: land 27 and open1 53, from letGo 15). */
+const CON_LAND = 12 / 30;
+const CON_LIT = 38 / 30;
+
+export class TinkererFx {
+  private t = 0;
+  private lobs: Lob[] = [];
+  private bolts: Bolt[] = [];
+  private shots: (Lob & { way: number })[] = [];
+  private bursts: Burst[] = [];
+  private thuds: Spot[] = [];
+  private lamps: Spot[] = [];
+  private blasts: Spot[] = [];
+  private scorches: Spot[] = [];
+  private pounds: Spot[] = [];
+  private arrives: Spot[] = [];
+  private impacts: (Spot & { big: number })[] = [];
+  private flashes: (Spot & { way: number })[] = [];
+  private sparks: (Spot & { size: number })[] = [];
+  private trails: Path[] = [];
+  /** (her tree's) puddles of tar; Tesla Coil zaps; The Big One's rings racing out; steam off a Golem growing or in overdrive. */
+  private tars: Puddle[] = [];
+  private zaps: Zap[] = [];
+  private rings: Burst[] = [];
+  private vents: Spot[] = [];
+  /** Things to come: a Contraption coming down, being lit (seconds until). */
+  private later: { at: number; e: () => void }[] = [];
+  /**
+   * (HER TREE'S GUN ARM) Each Golem charging this frame: its floor point, as its picture is drawn (from behind or in front,
+   * turned over or not), its gun, and the frame of its charged shot shown (dev/golem_moves.ts chargeFrame). Set by render.ts.
+   */
+  charging: { x: number; y: number; view: 'front' | 'back'; flip: boolean; gun: ShotGun; f: number }[] = [];
+  /** (the art chat's pieces) shells in flight; the beams pouring; the blasts of the shell and of her bomb; her Contraption's bolts. */
+  private flights: { x: number; y: number; frames: Sprite[]; t: number }[] = [];
+  private beams: { x: number; y: number; ux: number; uy: number; frames: Sprite[]; t: number }[] = [];
+  private bigBlasts: { x: number; y: number; fx: Layered<Sprite[]>; t: number }[] = [];
+  private conBolts: { x: number; y: number; frames: Sprite[]; t: number }[] = [];
+  /**
+   * (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET) Each Golem in its rocket jump this frame: its floor point, as its picture is
+   * drawn (from behind or in front, turned over or not), its frame (art/golem_rocket_fx.ts, 0 to ROCKET.end) and its size (her
+   * tree's Growth Serum). Set by render.ts.
+   */
+  rocketing: { x: number; y: number; view: 'front' | 'back'; flip: boolean; f: number; grow: number }[] = [];
+  /** (behind GOLEM_ROCKET) Her Golems' gun arm while she has one out (its rocket jump and its run painted ahead), else null. Set by render.ts. */
+  rocketGun: 'cannon' | 'tesla' | null = null;
+  /** (behind GOLEM_ROCKET) where its rocket jumps took off (and their trails), and where they came down. */
+  private launches: { x: number; y: number; view: 'front' | 'back'; flip: boolean; gun: 'cannon' | 'tesla'; dx: number; dy: number; flight: number; t: number }[] = [];
+  private lands: { x: number; y: number; view: 'front' | 'back'; flip: boolean; t: number }[] = [];
+  /** (behind GOLEM_ROCKET) the gun arms whose rocket jump and run are all painted. */
+  private rocketPainted = new Set<string>();
+
+  handle(e: GameEvent): void {
+    switch (e.t) {
+      case 'contraption': {
+        const x = e.x;
+        const y = e.y;
+        this.later.push({ at: this.t + CON_LAND, e: () => this.thuds.push({ x, y, t: 0 }) });
+        this.later.push({ at: this.t + CON_LIT, e: () => this.lamps.push({ x, y, t: 0 }) });
+        break;
+      }
+      case 'vial':
+        // (out of a Contraption's mortar, with its flash; or, her Vial Toss, from her hand up by her shoulder)
+        // (her tree's: Cluster Vials' little ones hopping out of a burst; The Big One's, big)
+        this.lobs.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: e.flight, hand: e.id < 0, little: e.little, big: e.big, ...(e.bomb !== undefined ? { fuse: e.bomb } : {}) });
+        if (e.id >= 0) this.flashes.push({ x: e.x0, y: e.y0, t: 0, way: 0 });
+        break;
+      case 'vialBurst':
+        // (her tree's CONTRAPTION, its pick BOMBS: her bomb going off, as her blast jump's does)
+        if (e.bomb) {
+          this.bigBlasts.push({ x: e.x, y: e.y, fx: contraptionBombBlastFx(), t: 0 });
+          break;
+        }
+        this.bursts.push({ x: e.x, y: e.y, t: 0, k: e.little ? 0.6 : e.big ? 2 : 1, brew: e.brew, r: e.r, big: e.big });
+        if (e.big) {
+          this.rings.push({ x: e.x, y: e.y, t: 0, k: 1, r: e.r });
+          this.thuds.push({ x: e.x, y: e.y, t: 0 });
+        }
+        break;
+      // (her tree's CONTRAPTION, its pick ENERGY: a bolt of her cyan streaking at what it strikes, crackling where it lands)
+      case 'contraptionBolt': {
+        const [view, flip] = facing(e.x1 - e.x0, e.y1 - e.y0);
+        this.conBolts.push({ x: e.x0, y: e.y0, frames: contraptionBoltFx(view, flip, e.x1 - e.x0, e.y1 - e.y0).frames, t: 0 });
+        break;
+      }
+      case 'bombsAway':
+        // (behind GOLEM_ROCKET: the Golem's rocket jump blasting off, its take-off and its trail in place of her bomb's)
+        if (e.rocket) {
+          this.launches.push({ x: e.x, y: e.y, ...rocketFacing(e.rocket), gun: e.rocket.gun, dx: e.rocket.x1 - e.rocket.x0, dy: e.rocket.y1 - e.rocket.y0, flight: e.rocket.flight, t: 0 });
+          break;
+        }
+        this.blasts.push({ x: e.x, y: e.y, t: 0 });
+        this.scorches.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'tar':
+        this.tars.push({ x: e.x, y: e.y, t: 0, r: e.r, life: e.secs });
+        break;
+      case 'shrapnel': {
+        const x = e.x;
+        const y = e.y;
+        this.impacts.push({ x, y, t: 0, big: 2.2 });
+        this.thuds.push({ x, y, t: 0 });
+        break;
+      }
+      case 'teslaZap':
+        this.zaps.push({ x: e.x, y: e.y, t: 0, frames: zapFrames(e.x, e.y, COIL_UP * (e.grown ? 2 : 1), e.to) });
+        break;
+      case 'golemGrow':
+        this.arrives.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'overdrive':
+        this.vents.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'decoyStruck':
+        if (e.golem) this.impacts.push({ x: e.x, y: e.y, t: 0, big: 0.8 });
+        break;
+      case 'contraptionEnd':
+        this.sparks.push({ x: e.x, y: e.y, t: 0, size: 0 });
+        break;
+      case 'golemArrive':
+        // (behind GOLEM_ROCKET: its rocket jump landing, its crater, dust and stone in place of its drop-in's steam and ring)
+        if (e.rocket) {
+          this.lands.push({ x: e.x, y: e.y, ...rocketFacing(e.rocket), t: 0 });
+          break;
+        }
+        this.arrives.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      case 'golemPunch':
+        this.impacts.push({ x: e.x, y: e.y, t: 0, big: 1 });
+        break;
+      case 'golemShot': {
+        const way = e.x1 - e.y1 - (e.x0 - e.y0) >= 0 ? 1 : -1;
+        this.shots.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0, flight: Math.max(0.05, e.flight), way });
+        this.flashes.push({ x: e.x0, y: e.y0, t: 0, way });
+        const x = e.x1;
+        const y = e.y1;
+        this.later.push({ at: this.t + e.flight, e: () => this.impacts.push({ x, y, t: 0, big: 1.4 }) });
+        break;
+      }
+      case 'golemPound':
+        this.pounds.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      // (her tree's GUN ARM: braced, it begins to charge, steam bursting from its stacks; then its great shot, from its own
+      // effects (golem_gun_fx.ts, blast_fx.ts) until the art chat's charged shots (dev/golem_charge_fx.ts) are laid in)
+      // (its charge's own steam and light are laid with the Golem: `charging`)
+      case 'golemCharge':
+        break;
+      case 'golemCharged': {
+        const dx = e.x1 - e.x0;
+        const dy = e.y1 - e.y0;
+        const [view, flip] = facing(dx, dy);
+        if (e.kind === 'shell') {
+          // (the shell out of its mouth and its trail, from where it stood as it fired; its blast where it lands, as it lands)
+          const fl = golemShellFlightFx(view, flip, dx, dy, Math.max(1, Math.round(e.flight * 30)));
+          this.flights.push({ x: e.x0, y: e.y0, frames: fl.frames, t: 0 });
+          const x = e.x1;
+          const y = e.y1;
+          const r = e.r;
+          this.later.push({ at: this.t + e.flight, e: () => this.bigBlasts.push({ x, y, fx: golemShellBlastFx(r), t: 0 }) });
+        } else {
+          // (the beam from the coil's ball, with the Golem as it is pushed back while it pours)
+          const len = Math.hypot(dx, dy) || 1;
+          this.beams.push({ x: e.x0, y: e.y0, ux: dx / len, uy: dy / len, frames: golemBeamFx(view, flip, dx, dy), t: 0 });
+        }
+        break;
+      }
+      case 'golemDown':
+        this.sparks.push({ x: e.x, y: e.y, t: 0, size: 1 });
+        break;
+      case 'blastJump':
+        this.blasts.push({ x: e.x0, y: e.y0, t: 0 });
+        this.scorches.push({ x: e.x0, y: e.y0, t: 0 });
+        this.trails.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, t: 0 });
+        break;
+      case 'blastLand':
+        this.thuds.push({ x: e.x, y: e.y, t: 0 });
+        break;
+      default:
+        break;
+    }
+  }
+
+  update(dt: number): void {
+    this.t += dt;
+    const due = this.later.filter((l) => l.at <= this.t);
+    this.later = this.later.filter((l) => l.at > this.t);
+    for (const d of due) d.e();
+    const age = <T extends { t: number }>(list: T[], life: number): T[] => {
+      for (const x of list) x.t += dt;
+      return list.filter((x) => x.t < life);
+    };
+    this.lobs = this.lobs.filter((l) => (l.t += dt) < l.flight + (l.fuse ?? 0));
+    this.bolts = this.bolts.filter((b) => (b.t += dt) < b.flight);
+    this.shots = this.shots.filter((l) => (l.t += dt) < l.flight);
+    this.bursts = age(this.bursts, LIFE.burst);
+    this.thuds = age(this.thuds, LIFE.thud);
+    this.lamps = age(this.lamps, LIFE.lamp);
+    this.blasts = age(this.blasts, LIFE.blast);
+    this.scorches = age(this.scorches, LIFE.scorch);
+    this.pounds = age(this.pounds, LIFE.pound);
+    this.arrives = age(this.arrives, LIFE.arrive);
+    this.impacts = age(this.impacts, LIFE.impact);
+    this.flashes = age(this.flashes, LIFE.flash);
+    this.sparks = age(this.sparks, LIFE.sparks);
+    this.trails = age(this.trails, LIFE.trail);
+    for (const p of this.tars) p.t += dt;
+    this.tars = this.tars.filter((p) => p.t < p.life);
+    this.zaps = age(this.zaps, LIFE.zap);
+    this.rings = age(this.rings, LIFE.ring);
+    this.vents = age(this.vents, LIFE.pound);
+    const frames = <T extends { t: number; frames: Sprite[] }>(list: T[]): T[] => {
+      for (const x of list) x.t += dt;
+      return list.filter((x) => Math.floor(x.t * 30) < x.frames.length);
+    };
+    this.flights = frames(this.flights);
+    this.beams = frames(this.beams);
+    this.conBolts = frames(this.conBolts);
+    for (const b of this.bigBlasts) b.t += dt;
+    this.bigBlasts = this.bigBlasts.filter((b) => Math.floor(b.t * 30) < b.fx.air.length);
+    // (the cannon's full blast is heavy to paint: painted ahead a little each frame while a Golem with the cannon charges)
+    if (this.charging.some((c) => c.gun === 'cannon')) {
+      const b = golemShellBlastFx();
+      paintAhead([b.floor, b.air], 4);
+    }
+    // (behind GOLEM_ROCKET: its take-offs, trails and landings run their course; and, she has it out, its rocket jump and its run
+    // painted ahead a little each frame, its run first (wanted as soon as it moves), so that none is painted as it is shown)
+    for (const l of this.launches) l.t += dt;
+    this.launches = this.launches.filter((l) => Math.floor(l.t * 30) < Math.max(LAUNCH_N, Math.ceil(l.flight) + PUFF_LIFE + 1));
+    for (const l of this.lands) l.t += dt;
+    this.lands = this.lands.filter((l) => Math.floor(l.t * 30) < LAND_N);
+    if (GOLEM_ROCKET.on && this.rocketGun && !this.rocketPainted.has(this.rocketGun) && paintRocketAhead(rocketLists(this.rocketGun), ROCKET_PAINT_MS)) this.rocketPainted.add(this.rocketGun);
+  }
+
+  /** (behind GOLEM_ROCKET) Whether anything of a rocket jump's take-off or landing is still to be laid. */
+  rocketLeft(): boolean {
+    return this.launches.length > 0 || this.lands.length > 0;
+  }
+
+  /**
+   * (behind GOLEM_ROCKET) WHAT OF ITS TAKE-OFFS AND LANDINGS STANDS AMONG WHAT STANDS, for render.ts to lay: its depth, its
+   * picture, its floor point. Where it took off, a hair behind the Golem there from in front and a hair before it from behind
+   * (so that flying at the eye it is over it, and flying away under it); where it lands, a hair before the Golem there.
+   */
+  rocketStands(): { d: number; s: Sprite; x: number; y: number }[] {
+    const out: { d: number; s: Sprite; x: number; y: number }[] = [];
+    for (const l of this.launches) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLaunchFx(l.view, l.gun).air;
+      if (k < L.length) out.push({ d: l.x + l.y + 0.02 + (l.view === 'front' ? -0.005 : 0.005), s: l.flip ? flipSprite(L[k]) : L[k], x: l.x, y: l.y });
+    }
+    for (const l of this.lands) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLandFx(l.view).air;
+      if (k < L.length) out.push({ d: l.x + l.y + 0.025, s: l.flip ? flipSprite(L[k]) : L[k], x: l.x, y: l.y });
+    }
+    return out;
+  }
+
+  clear(): void {
+    this.lobs = [];
+    this.bolts = [];
+    this.shots = [];
+    this.bursts = [];
+    this.thuds = [];
+    this.lamps = [];
+    this.blasts = [];
+    this.scorches = [];
+    this.pounds = [];
+    this.arrives = [];
+    this.impacts = [];
+    this.flashes = [];
+    this.sparks = [];
+    this.trails = [];
+    this.tars = [];
+    this.zaps = [];
+    this.rings = [];
+    this.vents = [];
+    this.later = [];
+    this.charging = [];
+    this.flights = [];
+    this.beams = [];
+    this.bigBlasts = [];
+    this.conBolts = [];
+    this.rocketing = [];
+    this.rocketGun = null;
+    this.launches = [];
+    this.lands = [];
+  }
+
+  /** What lies on the floor: scorches, the pounds' cracks and rings, the thuds of dust, lamps lit. */
+  drawGround(g: CanvasRenderingContext2D, c: Cam): void {
+    const at = (list: Sprite[], k: number): Sprite => list[Math.max(0, Math.min(list.length - 1, Math.floor(k * list.length)))];
+    const put = (s: Sprite, x: number, y: number, up = 0): void => drawSprite(g, s, Math.round(wx(c, x, y)), Math.round(wy(c, x, y) - up));
+    // (her tree's TAR: its puddles, coming in a moment and drying up over the last half second)
+    for (const p of this.tars) {
+      g.globalAlpha = Math.max(0, Math.min(1, p.t / 0.12, (p.life - p.t) / 0.5)) * 0.92;
+      put(tarPuddle(p.r), p.x, p.y);
+      g.globalAlpha = 1;
+    }
+    // (THE BIG ONE: a ring of her cyan racing out to its burst's edge)
+    for (const p of this.rings) {
+      const k = p.t / LIFE.ring;
+      const u = 1 - Math.pow(1 - k, 2);
+      g.globalAlpha = Math.max(0, 1 - k);
+      g.strokeStyle = BREW[k < 0.4 ? 2 : 1];
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(Math.round(wx(c, p.x, p.y)), Math.round(wy(c, p.x, p.y)), Math.max(1, p.r * 22.6 * u), Math.max(1, p.r * 11.3 * u), 0, 0, Math.PI * 2);
+      g.stroke();
+      g.globalAlpha = 1;
+    }
+    const sc = scorchFrames();
+    for (const s of this.scorches) {
+      g.globalAlpha = Math.max(0, Math.min(1, 1.5 - (s.t / LIFE.scorch) * 1.5));
+      put(at(sc, Math.min(0.99, s.t / (SCORCH_N / 30))), s.x, s.y);
+      g.globalAlpha = 1;
+    }
+    const pf = poundFloor();
+    for (const p of this.pounds) put(at(pf, p.t / LIFE.pound), p.x, p.y);
+    const th = thudFrames();
+    for (const p of this.thuds) put(at(th, p.t / LIFE.thud), p.x, p.y);
+    const lm = lampFrames();
+    for (const p of this.lamps) put(at(lm, p.t / LIFE.lamp), p.x, p.y, 8);
+    // (the art chat's: the ring and grit round a charging Golem; the shell's and the bomb's scorches and cracks)
+    for (const q of this.charging) {
+      const L = golemChargeFx(q.view, q.gun).floor;
+      if (q.f >= 0 && q.f < L.length) put(q.flip ? flipSprite(L[q.f]) : L[q.f], q.x, q.y);
+    }
+    for (const b of this.bigBlasts) {
+      const k = Math.floor(b.t * 30);
+      if (k < b.fx.floor.length) put(b.fx.floor[k], b.x, b.y);
+    }
+    // (behind GOLEM_ROCKET, the art chat's: where its rocket jumps took off, scorched and cracked, glowing; where they came down,
+    // cracked open; under a Golem crouched to take off, the light of its stacks' fire and grit hopping, turned and grown with it)
+    for (const l of this.launches) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLaunchFx(l.view, l.gun).floor;
+      if (k < L.length) put(l.flip ? flipSprite(L[k]) : L[k], l.x, l.y);
+    }
+    for (const l of this.lands) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLandFx(l.view).floor;
+      if (k < L.length) put(l.flip ? flipSprite(L[k]) : L[k], l.x, l.y);
+    }
+    for (const q of this.rocketing) {
+      const L = golemRocketFx(q.view).floor;
+      if (q.f < 0 || q.f >= L.length) continue;
+      const s = q.flip ? flipSprite(L[q.f]) : L[q.f];
+      const X = Math.round(wx(c, q.x, q.y));
+      const Y = Math.round(wy(c, q.x, q.y));
+      if (q.grow === 1) drawSprite(g, s, X, Y);
+      else g.drawImage(s.img, Math.round(X - s.ax * q.grow), Math.round(Y - s.ay * q.grow), Math.round(s.w * q.grow), Math.round(s.h * q.grow));
+    }
+  }
+
+  /** What is over everything: her vials in the air and bursting, her bomb, the Golem's steam, flashes, shots, sparks. */
+  drawAir(g: CanvasRenderingContext2D, c: Cam): void {
+    const at = (list: Sprite[], k: number): Sprite => list[Math.max(0, Math.min(list.length - 1, Math.floor(k * list.length)))];
+    const put = (s: Sprite, x: number, y: number, up = 0): void => drawSprite(g, s, Math.round(wx(c, x, y)), Math.round(wy(c, x, y) - up));
+    // (behind GOLEM_ROCKET, the art chat's: the Golem's rocket trail, its puffs born out of its stacks' fire where it passed, hanging there)
+    for (const l of this.launches) {
+      const k = Math.floor(l.t * 30);
+      const P = rocketPuffFx();
+      for (const p of rocketTrail(l.view, l.flip, l.dx, l.dy, k, l.flight)) put(P[p.v][p.age], l.x + p.x, l.y + p.y, p.up);
+    }
+    // (the puffs of her bomb's smoke along the way she flew, thinning)
+    const pu = puffFrames();
+    for (const p of this.trails) {
+      const k = p.t / LIFE.trail;
+      const len = Math.hypot(p.x1 - p.x0, p.y1 - p.y0);
+      const n = Math.max(2, Math.round(len * 1.6));
+      g.globalAlpha = Math.max(0, 1 - k);
+      for (let i = 0; i <= n; i++) {
+        const u = i / n;
+        // (only where she has been: the trail grows behind her as she flies)
+        if (u > Math.min(1, p.t / 0.6)) break;
+        const lift = Math.sin(Math.PI * u) * 34 + 8 + k * 10;
+        put(pu[(i + Math.floor(this.t * 8)) % pu.length], p.x0 + (p.x1 - p.x0) * u, p.y0 + (p.y1 - p.y0) * u, lift);
+      }
+      g.globalAlpha = 1;
+    }
+    const bl = blastFrames();
+    for (const p of this.blasts) put(at(bl, p.t / LIFE.blast), p.x, p.y);
+    /** A piece `k` times its size (her tree's little vials and big ones). */
+    const putK = (s: Sprite, x: number, y: number, up: number, k: number): void => {
+      if (k === 1) return put(s, x, y, up);
+      const X = Math.round(wx(c, x, y));
+      const Y = Math.round(wy(c, x, y) - up);
+      g.drawImage(s.img, Math.round(X - s.ax * k), Math.round(Y - s.ay * k), Math.round(s.w * k), Math.round(s.h * k));
+    };
+    // (her vials, lobbed high, tumbling; Cluster Vials' little ones hopping out low)
+    const vf = vialFrames();
+    const bf = bombFrames();
+    for (const l of this.lobs) {
+      if (l.fuse !== undefined) {
+        // (a little bomb: lobbed, then landed, a hop, and sitting till it goes off, its fuse spitting)
+        const u = Math.min(1, l.t / l.flight);
+        const x = l.x0 + (l.x1 - l.x0) * u;
+        const y = l.y0 + (l.y1 - l.y0) * u;
+        const after = l.t - l.flight;
+        const hopT = BOMB_FX.hop / 30;
+        const up = after < 0 ? 10 * (1 - u) + 4 * 30 * u * (1 - u) : after < hopT ? 6 * Math.sin((after / hopT) * Math.PI) : 0;
+        putK(bf[after < 0 ? Math.floor(l.t * 18) % bf.length : Math.floor(l.t * 10) % 2], x, y, up, 1);
+        continue;
+      }
+      const u = l.t / l.flight;
+      const x = l.x0 + (l.x1 - l.x0) * u;
+      const y = l.y0 + (l.y1 - l.y0) * u;
+      const up = l.little ? 4 + 4 * 14 * u * (1 - u) : (l.hand ? 30 : 10) * (1 - u) + 4 * 30 * u * (1 - u);
+      putK(vf[Math.floor(l.t * 18) % vf.length], x, y, up, l.little ? 0.6 : l.big ? 1.8 : 1);
+    }
+    for (const p of this.bursts) putK(at(p.brew ? brewBurstFrames(p.brew) : burstFrames(), p.t / LIFE.burst), p.x, p.y, 0, p.k);
+    const pa = poundAir();
+    for (const p of this.pounds) put(at(pa, p.t / LIFE.pound), p.x, p.y);
+    const ar = arriveFrames();
+    for (const p of this.arrives) put(at(ar, p.t / LIFE.arrive), p.x, p.y);
+    // (her Contraption's bolts of energy, streaking in the friend's cyan)
+    for (const b of this.bolts) {
+      const u = b.t / b.flight;
+      const x0 = wx(c, b.x0, b.y0);
+      const y0 = wy(c, b.x0, b.y0) - 14;
+      const x1 = wx(c, b.x1, b.y1);
+      const y1 = wy(c, b.x1, b.y1) - 10;
+      const hx = x0 + (x1 - x0) * u;
+      const hy = y0 + (y1 - y0) * u;
+      const tx = x0 + (x1 - x0) * Math.max(0, u - 0.25);
+      const ty = y0 + (y1 - y0) * Math.max(0, u - 0.25);
+      g.strokeStyle = GUN_GLOW[1];
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(tx, ty);
+      g.lineTo(hx, hy);
+      g.stroke();
+      g.strokeStyle = GUN_GLOW[3];
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(tx, ty);
+      g.lineTo(hx, hy);
+      g.stroke();
+    }
+    // (its cannon's shot, streaking in the friend's cyan, from its muzzle up by its shoulder)
+    for (const s of this.shots) {
+      const u = s.t / s.flight;
+      const x0 = wx(c, s.x0, s.y0) + s.way * 8;
+      const y0 = wy(c, s.x0, s.y0) - 34;
+      const x1 = wx(c, s.x1, s.y1);
+      const y1 = wy(c, s.x1, s.y1) - 12;
+      const hx = x0 + (x1 - x0) * u;
+      const hy = y0 + (y1 - y0) * u;
+      const tx = x0 + (x1 - x0) * Math.max(0, u - 0.25);
+      const ty = y0 + (y1 - y0) * Math.max(0, u - 0.25);
+      g.strokeStyle = GUN_GLOW[1];
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(Math.round(tx), Math.round(ty));
+      g.lineTo(Math.round(hx), Math.round(hy));
+      g.stroke();
+      g.fillStyle = GUN_GLOW[3];
+      g.fillRect(Math.round(hx) - 1, Math.round(hy) - 1, 3, 3);
+    }
+    for (const f of this.flashes) {
+      if (f.way === 0) {
+        // (a contraption's mouth: a little puff of her brew's flash)
+        const k = f.t / LIFE.flash;
+        g.globalAlpha = 1 - k;
+        g.fillStyle = BREW[k < 0.4 ? 3 : 1];
+        const x = Math.round(wx(c, f.x, f.y));
+        const y = Math.round(wy(c, f.x, f.y) - 12);
+        g.fillRect(x - 1, y - 1 - Math.round(k * 4), 3, 3);
+        g.globalAlpha = 1;
+      } else put(at(flashFrames(f.way), f.t / LIFE.flash), f.x, f.y, 34);
+    }
+    for (const p of this.impacts) put(at(impactFrames(p.big), p.t / LIFE.impact), p.x, p.y, 12);
+    // (her tree's: the Tesla Coil's zaps; steam off a Golem sent into overdrive)
+    for (const p of this.zaps) put(at(p.frames, p.t / LIFE.zap), p.x, p.y);
+    for (const p of this.vents) put(at(pa, p.t / LIFE.pound), p.x, p.y);
+    for (const p of this.sparks) put(at(sparkFrames(p.size), p.t / LIFE.sparks), p.x, p.y, 0);
+    // (THE ART CHAT'S, laid as its film lays them: the shell's first two frames under the Golem's air (still in the burst at its
+    // mouth); the Golem's air; the shell in flight; the beam; the blasts' air; the bolts)
+    const frame = (list: Sprite[], t: number): Sprite | null => {
+      const k = Math.floor(t * 30);
+      return k >= 0 && k < list.length ? list[k] : null;
+    };
+    for (const f of this.flights) if (f.t * 30 < 2) {
+      const sp = frame(f.frames, f.t);
+      if (sp) put(sp, f.x, f.y);
+    }
+    for (const q of this.charging) {
+      const L = golemChargeFx(q.view, q.gun).air;
+      if (q.f >= 0 && q.f < L.length) put(q.flip ? flipSprite(L[q.f]) : L[q.f], q.x, q.y);
+    }
+    for (const f of this.flights) if (f.t * 30 >= 2) {
+      const sp = frame(f.frames, f.t);
+      if (sp) put(sp, f.x, f.y);
+    }
+    for (const b of this.beams) {
+      const k = Math.floor(b.t * 30);
+      const sp = frame(b.frames, b.t);
+      if (!sp) continue;
+      const back = golemSkid('tesla', Math.min(k, BEAM_FRAMES));
+      put(sp, b.x - b.ux * back, b.y - b.uy * back);
+    }
+    for (const b of this.bigBlasts) {
+      const sp = frame(b.fx.air, b.t);
+      if (sp) put(sp, b.x, b.y);
+    }
+    for (const b of this.conBolts) {
+      const sp = frame(b.frames, b.t);
+      if (sp) put(sp, b.x, b.y);
+    }
+  }
+}
+
+/** (behind GOLEM_ROCKET) How long a frame may spend painting the Golem's rocket jump and run ahead (thousandths of a second). */
+const ROCKET_PAINT_MS = 6;
+/** (behind GOLEM_ROCKET) Every list of its rocket jump and its run, with its gun arm, in the order they are painted ahead: its run first, then from in front, then from behind. */
+function rocketLists(gun: 'cannon' | 'tesla'): readonly (readonly Sprite[])[] {
+  const of = (view: 'front' | 'back'): Sprite[][] => {
+    const at = golemRocketFx(view);
+    const off = golemLaunchFx(view, gun);
+    const down = golemLandFx(view);
+    return [golemRocketFrames(view, gun), at.floor, at.behind, at.over, off.floor, off.air, down.floor, down.air];
+  };
+  return [golemRunFrames('front', gun), golemRunFrames('back', gun), ...of('front'), ...rocketPuffFx(), ...of('back')];
+}
+/** (behind GOLEM_ROCKET) Which way its pictures were drawn as it took off or came down: as render.ts picks them, by its facing. */
+function rocketFacing(r: GolemRocketAt): { view: 'front' | 'back'; flip: boolean } {
+  return { view: r.fx + r.fy < -0.2 ? 'back' : 'front', flip: r.fx - r.fy < 0 };
+}
+
+/** Which way a thing faces that fires along (dx, dy), as render.ts picks its picture: from behind or in front, turned over or not. */
+function facing(dx: number, dy: number): ['front' | 'back', boolean] {
+  const len = Math.hypot(dx, dy) || 1;
+  const fx = dx / len;
+  const fy = dy / len;
+  return [fx + fy < -0.2 ? 'back' : 'front', fx - fy < 0];
+}

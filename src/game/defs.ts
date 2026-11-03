@@ -1,9 +1,10 @@
 // The game's content tables: classes, abilities, power words, monsters, and the numbers that
 // tune them. Change the game's feel here; the rules that read these tables live in game.ts.
 
+import { VETERAN } from './veteran';
 import { act1Def } from './act1';
 import type { VendorId } from './state';
-import type { AbilityId, Attr, ClassId, Element, Limit, MeldId, MonsterKind, Slot, WeaponKind, WordId } from './types';
+import type { AbilityId, Attr, ClassId, ClassWeaponKind, Element, Limit, MeldId, MonsterKind, Slot, WeaponKind, WordId } from './types';
 import { DEEP_WORD_IDS, DEEP_WORDS_FROM as DEEP_FROM, FIRST5_KINDS, MELD_OF, NEW_KINDS, wordsAt as wordsAtLevel } from './types';
 
 export type { Limit } from './types';
@@ -24,7 +25,17 @@ export type { Limit } from './types';
 // Version 12.2: the bow's slow attack is VOLLEY; the ranger's evasive move is named TRAP (the same
 // roll, and it lays a trap); and the three evasive moves take power words as the attacks do.
 
-export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
+export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp'
+  // (THE WARLOCK, game/warlock.ts: the Hellfire Bolt, the Curse and the Smoke Step; and the demon's Claw Rake, Damning and
+  // its Smoke Step)
+  | 'hellbolt' | 'curse' | 'smokestep' | 'rake' | 'damning' | 'demonstep'
+  // (THE TINKERER, game/tinkerer.ts: her Vial Toss, her Contraption (a talent's swap for it), her Golem, her Blast Jump)
+  | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
+  // (THE BRAWLER, game/brawler.ts: his taps, his holds, his slip and counter)
+  | 'jab' | 'cross' | 'slip'
+  // (THE VETERAN, game/veteran.ts, behind VETERAN: his tap a punch, his hold a kick, his swipe the jump; which punch, kick
+  // or fire move each press makes is his combo's: game/veteran.ts vetMoveFor)
+  | 'vpunch' | 'vkick' | 'vjump';
 
 /**
  * How an ability is delivered. Power words act on the kind, never on one specific ability.
@@ -38,7 +49,22 @@ export type SkillId = 'strike' | 'slam' | 'whirlwind' | 'leap' | 'shot' | 'volle
  *   leap, roll, warp   the evasive moves. A leap lands with a shock; a roll with any `dmg` leaves a
  *           trap where it began (the ranger's); a warp bursts where it arrives.
  */
-export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 'wave' | 'orb' | 'beam' | 'summon' | 'leap' | 'roll' | 'warp';
+export type SkillKind = 'melee' | 'burst' | 'whirl' | 'projectile' | 'volley' | 'wave' | 'orb' | 'beam' | 'summon' | 'leap' | 'roll' | 'warp'
+  // (THE WARLOCK, game/warlock.ts: `curse`, every enemy near him struck and cursed; `smoke`, a streak of smoke to a spot
+  // that nothing can hit, cursing what it passes through; `damning`, every cursed or burning enemy near him struck and
+  // every burn on it going off at once)
+  | 'curse' | 'smoke' | 'damning'
+  // (THE TINKERER, game/tinkerer.ts: `vialtoss`, a vial lobbed from her hand, bursting where it lands; `contraption`, a
+  // little mortar thrown down that lobs her vials at what comes near;
+  // `golem`, her clockwork Golem whistled out, and then set on to ground pound; `blastjump`, a bomb at her feet that throws
+  // her to a spot and blows away what is by her)
+  | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
+  // (THE BRAWLER, game/brawler.ts: `punch`, the punch of a combo its place makes; `slip`, a weaving dash, untouchable, and a
+  // counter hook where he comes up)
+  | 'punch' | 'slip'
+  // (THE VETERAN, game/veteran.ts: `vblow`, a punch or a kick of his combo, its force reaching out past the fist or foot;
+  // `vjump`, his jump: the dodge, or spent on a globe set in fire)
+  | 'vblow' | 'vjump';
 
 export interface SkillDef {
   id: SkillId;
@@ -146,6 +172,44 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // have: read back to the owner at 18:37, "Warp burst where the mage arrives", and not objected
   // to. A word that could be set there and do nothing would break his first rule for words.)
   warp: { id: 'warp', name: 'Warp', kind: 'warp', icon: 'warp', dmg: 0.5, cooldown: 5.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Vanish and reappear at a spot, instantly, in a burst that hurts what stands there.', verb: 'WARP', windup: 0, follow: 0 },
+  // THE WARLOCK (game/warlock.ts, behind WARLOCK; his design in the art chat, 25 Oct 2026). As a man: his tap, “Hellfire
+  // bolt (Recommended)”; his tap and hold and swipe, “I was thinking tap does a single target shot that hits an enemy and
+  // does a relatively strong DOT.  The tap and hold is an AOE that curses all enemies with a smaller DOT.  If a cursed enemy
+  // dies, it spreads all DOTs to other enemies in range.  So the play pattern is: try to get the tap DOT to spread via the
+  // curse.”, and “I like smoke step, and we can have that apply the curse as well”. What each burns for: WARLOCK_TUNE.
+  hellbolt: { id: 'hellbolt', name: 'Hellfire Bolt', kind: 'projectile', icon: 'hellbolt', dmg: 0.8, cooldown: 0, mana: 0, range: 9, radius: 0.3, speed: 14, sockets: true, desc: 'Hurl a bolt of hellfire at one enemy. It burns, hard.', verb: 'HURL HELLFIRE', windup: 0.24, follow: 0.4 },
+  curse: { id: 'curse', name: 'Curse', kind: 'curse', icon: 'curse', dmg: 0.3, cooldown: 5.0, mana: 14, range: 0, radius: 4.5, speed: 0, sockets: true, desc: 'Chains of smoke curse every enemy near you. The cursed smoulder, and when one dies every burn on it spreads to those near it.', verb: 'CURSE', windup: 0.3, follow: 0.45 },
+  smokestep: { id: 'smokestep', name: 'Smoke Step', kind: 'smoke', icon: 'smokestep', dmg: 0.4, cooldown: 4.0, mana: 0, range: 6, radius: 1.0, speed: 0, sockets: true, desc: 'Break into smoke and streak to a spot. Nothing can hit you, and whoever you pass through is cursed.', verb: 'SMOKE STEP', windup: 0, follow: 0 },
+  // The demon (his picks: “Claw rakes (Recommended)”, cursing what they hit; Damning, “I want it to be called DAMN or DAMNING”,
+  // the cash-in: “Cash-in eruption (Recommended)”; its swipe “Smoke step (Recommended)”, the violent one).
+  rake: { id: 'rake', name: 'Claw Rake', kind: 'melee', icon: 'rake', dmg: 1.3, cooldown: 0, mana: 0, range: 2.0, radius: 0, speed: 0, sockets: true, desc: 'Rake with one claw, then the other. What it tears is cursed.', verb: 'RAKE', windup: 0.16, follow: 0.34 },
+  damning: { id: 'damning', name: 'Damning', kind: 'damning', icon: 'damning', dmg: 0.8, cooldown: 6.0, mana: 16, range: 0, radius: 6, speed: 0, sockets: true, desc: 'Tear up the floor: the ground erupts under every enemy near you that is cursed or burning, and every burn on it goes off at once.', verb: 'DAMN THEM', windup: 0.3, follow: 0.5 },
+  demonstep: { id: 'demonstep', name: 'Smoke Step', kind: 'smoke', icon: 'demonstep', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.2, speed: 0, sockets: true, desc: 'Tear along the floor as smoke, raking and cursing whoever you pass through, and burst out where you stop.', verb: 'SMOKE STEP', windup: 0, follow: 0 },
+  // THE TINKERER (game/tinkerer.ts, behind TINKERER; her brief, the owner's, 23 Oct 2026, in the art chat: “She’s going to
+  // have minions.  I think she’ll set turrets on the ground that fire something.  Not an arrow or a bolt.  That’s the tap.
+  // We’ll call those “Contraption”.  Tap and hold will be “Golem”.  And this is gonna be clockwork Automaton that follows her
+  // around and attacks.  It will just go around and I guess punch things or whatever but tap+hold will have him do a bigger
+  // move.”; her swipe, “Blast jump (Recommended)”; and to the main chat, 28 Oct: “Three at once (Recommended)”, “Always with
+  // her (Recommended)”). What each vial, punch, shot and pound comes to: TINKER_TUNE.
+  // (her tap since the owner’s words of 28 Oct 2026, by 16:31: “I think for her I’d like her to start with golem and a vial
+  // toss.  Then in the skill tree you can swap the vial toss to a contraption that throws the vials”)
+  vialtoss: { id: 'vialtoss', name: 'Vial Toss', kind: 'vialtoss', icon: 'vialtoss', dmg: 0.75, cooldown: 0, mana: 0, range: 6.5, radius: 1.1, speed: 0, sockets: true, desc: 'Lob a vial off your belt. It bursts where it lands, hurting everything near.', verb: 'TOSS A VIAL', windup: 0.22, follow: 0.34 },
+  contraption: { id: 'contraption', name: 'Contraption', kind: 'contraption', icon: 'contraption', dmg: 0.55, cooldown: 0, mana: 0, range: 6, radius: 1.1, speed: 0, sockets: true, desc: 'Throw down a little mortar. It sets itself up and lobs your vials at whatever comes near. Up to three at once.', verb: 'THROW A CONTRAPTION', windup: 0.22, follow: 0.34 },
+  golem: { id: 'golem', name: 'Golem', kind: 'golem', icon: 'golem', dmg: 1.6, cooldown: 5.0, mana: 16, range: 0, radius: 2.4, speed: 0, sockets: true, desc: 'Whistle your Golem out: it follows you, punches what is near and shoots its cannon at what is far. Whistle again, and it ground pounds.', verb: 'WHISTLE', windup: 0.28, follow: 0.5 },
+  blastjump: { id: 'blastjump', name: 'Blast Jump', kind: 'blastjump', icon: 'blastjump', dmg: 0.8, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Slap a bomb down at your feet and ride the blast to a spot. Whatever is by you is blown away.', verb: 'BLAST JUMP', windup: 0, follow: 0 },
+  // THE BRAWLER (game/brawler.ts, behind BRAWLER; his design, the owner's, 24 Oct 2026, in the art chat: “I want him to have
+  // combos using his tap and tap+hold.  So maybe tap is jab and tap+hold is cross.”, and all three hit combos, “By position
+  // (Recommended)”). What a press makes, and each punch's numbers: brawler.ts PUNCHES; his swipe, “Slip and counter
+  // (Recommended)”, “Weaving dash, same reach (Recommended)”.
+  jab: { id: 'jab', name: 'Jab', kind: 'punch', icon: 'jab', dmg: 1.0, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'Quick and light: a jab, then a hook, then an uppercut that pops it up stunned. Mix in holds for other combos.', verb: 'JAB', windup: 4 / 30, follow: 8 / 30 },
+  cross: { id: 'cross', name: 'Cross', kind: 'punch', icon: 'cross', dmg: 1.0, cooldown: 0, mana: 0, range: 1.9, radius: 1.9, speed: 0, sockets: true, desc: 'Slow and heavy, every blow knocking back: a cross, a body blow that staggers all round you, and after two holds a haymaker that fires one down the line.', verb: 'CROSS', windup: 10 / 30, follow: 14 / 30 },
+  slip: { id: 'slip', name: 'Slip and Counter', kind: 'slip', icon: 'slip', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.9, speed: 0, sockets: true, desc: 'Bob and weave to a spot, untouchable, and come up with a counter hook into whatever is there.', verb: 'SLIP', windup: 0, follow: 0 },
+  // (THE VETERAN: his three; their icons the art chat's, art/veteran_icons.ts, nothing of the old Brawler's (shown him on the
+  // phone's buttons, his yes to the art chat, 3 Nov 2026: “Yes, hand them over (Recommended)”). His blows' shares of the hit are each
+  // move's own, game/veteran.ts VET_MOVES; his jump's wait one fire globe a combo, as a rule: his “Swipes spend the jump”)
+  vpunch: { id: 'vpunch', name: 'Punch', kind: 'vblow', icon: 'vetpunch', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A tap fills a green globe: the jab, the cross, the hook, the spinning elbow, as his combo comes to them.', verb: 'PUNCH', windup: 0, follow: 0 },
+  vkick: { id: 'vkick', name: 'Kick', kind: 'vblow', icon: 'vetkick', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A hold fills an orange globe: the round kick, then the push kick.', verb: 'KICK', windup: 0, follow: 0 },
+  vjump: { id: 'vjump', name: 'Jump', kind: 'vjump', icon: 'vetjump', dmg: 1.0, cooldown: 4.0, mana: 0, range: 1, radius: 0, speed: 0, sockets: true, desc: 'A swipe is his dodging jump. A swipe then a tap or a hold sets the globe in fire: the flying uppercut, the flying knee, the spinning jump kick.', verb: 'JUMP', windup: 0, follow: 0 },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -164,15 +228,81 @@ export interface ClassDef {
    * the weapon's (WEAPON_SKILLS).
    */
   evade: SkillId;
-  /** The weapon a new character of this class starts with. */
+  /** The weapon a new character of this class starts with (a new class's: with NEW_WEAPONS on, its own, CLASS_WEAPON). */
   starts: WeaponKind;
+  /**
+   * EVERYONE FIGHTS WITH THEIR OWN MOVES (OWN_MOVES): the quick attack (tap) and the slow one (tap and hold) that are
+   * this class's own, whatever is in the hand.
+   */
+  tap: SkillId;
+  hold: SkillId;
+  /**
+   * A class of two attributes (the warlock, Strength and Intelligence): what its abilities grow with is both, a point of
+   * either as much as a point of the one a class of one has (resolveSkill: their sum less HYBRID_LESS, so that at level one
+   * it grows as much as the others do from theirs).
+   */
+  grows?: readonly [Attr, Attr];
+  /** A class that was never Version 12's (the new ones, the warlock first): its own two attacks whatever OWN_MOVES says. */
+  own?: true;
+}
+
+/** A class of two attributes grows with their sum less this (11 + 11 - 8 = 14, as a class of one's first attribute at level one). */
+export const HYBRID_LESS = 8;
+
+/**
+ * EVERYONE FIGHTS WITH THEIR OWN MOVES (the owner, 28 Oct 2026, to the main chat; asked how weapons should work for the
+ * three new classes, whose tap and tap and hold are their own, his pick: “Everyone own moves”, offered as “All six
+ * classes, the old three too, fight with their own moves; weapons only give stats”; and of the old three's moves,
+ * “Starting weapon's (Recommended)”: the warrior Strike and Whirlwind, the ranger Shot and Volley, the mage Wave and Orb,
+ * each always drawn with his own weapon; Slam, Familiar and Beam kept to come back later as skill-tree swaps).
+ * On: a hero's two attacks are his class's (ClassDef.tap, .hold) and grow with his class's attribute; the weapon in hand
+ * gives its damage, its speed and what is on it, nothing more. Off: Version 12's rule, both attacks the weapon's.
+ */
+export const OWN_MOVES = { on: true };
+
+/**
+ * THE NEW CLASSES' WEAPONS. The owner, 3 Nov 2026, 09:43, to the main chat: “Get the new items and item sprites into the
+ * game as well.  New weapon items for the 3 new classes”; and at 09:46 his pick, “Grimoire and wrench (Recommended)”
+ * (offered as the Warlock a pact grimoire, chained shut; the Tinkerer a heavy wrench). The Veteran's (class 'brawler'), his
+ * words in the art chat: “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.” And the
+ * Warlock's is a demonic tome, as he named it to the art chat, 3 Nov 2026, 09:39: “I need fighters wraps, a demonic tome, and
+ * something for the tinkerer’s weapon as items” (its kind 'tome', the art's key: it was 'grimoire' until the art came).
+ * On: each of the three classes has a weapon of its own (CLASS_WEAPON): he starts with it, it drops only for a hero of his
+ * class (as often as each other kind of weapon does for him), his class's vendor stocks it for him alone (vendorStock), and
+ * the stranger offers it to him alone (gambleKinds). Its numbers are another weapon's (game/items.ts CLASS_WEAPON_DEFS): the
+ * wraps the greatsword's (two hands, nothing in the other), the tome the wand's (a focus beside it), the wrench the
+ * sword's (a shield beside it). Its pictures are the art chat's with ITEMS_A on (art/items_a.ts), else stand-ins
+ * (art/icons.ts). Off: no hero ever sees one. ON: shown them in the game (the items' pictures from the game), asked whether to
+ * switch them on for 25.0, his pick, 3 Nov 2026, by 12:06 (Eastern): “Yes, switch them on (Recommended)”.
+ */
+export const NEW_WEAPONS = { on: true };
+
+/** NEW_WEAPONS: each new class's own weapon. */
+export const CLASS_WEAPON: Readonly<Partial<Record<ClassId, ClassWeaponKind>>> = { brawler: 'wraps', warlock: 'tome', tinkerer: 'wrench' };
+
+/** NEW_WEAPONS: the weapon that is this class's own, while the switch is on; else null (always, for the first three). */
+export function classWeapon(cls: ClassId | null | undefined): ClassWeaponKind | null {
+  return NEW_WEAPONS.on && cls ? (CLASS_WEAPON[cls] ?? null) : null;
 }
 
 export const CLASSES: Record<ClassId, ClassDef> = {
   // (the warrior: "lets have the warrior start with the two handed sword")
-  warrior: { id: 'warrior', name: 'Warrior', blurb: 'Up close and hard to kill.', primary: 'str', attrs: { str: 14, dex: 8, int: 6 }, evade: 'leap', starts: 'greatsword' },
-  ranger: { id: 'ranger', name: 'Ranger', blurb: 'Fast, sharp and far away.', primary: 'dex', attrs: { str: 8, dex: 14, int: 6 }, evade: 'trap', starts: 'bow' },
-  mage: { id: 'mage', name: 'Mage', blurb: 'Raw power. Handle with care.', primary: 'int', attrs: { str: 6, dex: 8, int: 14 }, evade: 'warp', starts: 'staff' },
+  warrior: { id: 'warrior', name: 'Warrior', blurb: 'Up close and hard to kill.', primary: 'str', attrs: { str: 14, dex: 8, int: 6 }, evade: 'leap', starts: 'greatsword', tap: 'strike', hold: 'whirlwind' },
+  ranger: { id: 'ranger', name: 'Ranger', blurb: 'Fast, sharp and far away.', primary: 'dex', attrs: { str: 8, dex: 14, int: 6 }, evade: 'trap', starts: 'bow', tap: 'shot', hold: 'volley' },
+  mage: { id: 'mage', name: 'Mage', blurb: 'Raw power. Handle with care.', primary: 'int', attrs: { str: 6, dex: 8, int: 14 }, evade: 'warp', starts: 'staff', tap: 'wave', hold: 'orb' },
+  // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: with it on, each of the three below starts with his own, CLASS_WEAPON;
+  // off, with the weapon he always has)
+  // THE WARLOCK (game/warlock.ts, behind WARLOCK): “Warlock is str/int, will transform into a demon so keep that in mind”
+  // (the owner, 23 Oct 2026, in the art chat). His attacks grow with both (`grows`); as the demon, the demon's three.
+  warlock: { id: 'warlock', name: 'Warlock', blurb: 'A demon inside. It wants out.', primary: 'int', grows: ['str', 'int'], own: true, attrs: { str: 11, dex: 6, int: 11 }, evade: 'smokestep', get starts(): WeaponKind { return classWeapon('warlock') ?? 'wand'; }, tap: 'hellbolt', hold: 'curse' },
+  // THE TINKERER (game/tinkerer.ts, behind TINKERER): her brief, “Gleeful mad bomber (Recommended)”, “Quick and nimble
+  // (Recommended)”. Her attributes and what her abilities grow with are a proposal (Dexterity and Intelligence: quick hands
+  // and a head for machines), the owner's to change.
+  tinkerer: { id: 'tinkerer', name: 'Tinkerer', blurb: 'Gadgets, a Golem. Mostly bombs.', primary: 'int', grows: ['dex', 'int'], own: true, attrs: { str: 6, dex: 11, int: 11 }, evade: 'blastjump', get starts(): WeaponKind { return classWeapon('tinkerer') ?? 'wand'; }, tap: 'vialtoss', hold: 'golem' },
+  // THE BRAWLER (game/brawler.ts, behind BRAWLER): his brief, “Bare-knuckle boxer”, “Light and bouncy”, “Bone-crunching
+  // (Recommended)”. His attributes and what his punches grow with are a proposal (Strength and Dexterity: a boxer's
+  // weight and his speed), the owner's to change.
+  brawler: { id: 'brawler', name: 'Brawler', blurb: 'Bare knuckles. Bad attitude.', primary: 'str', grows: ['str', 'dex'], own: true, attrs: { str: 11, dex: 11, int: 6 }, evade: 'slip', get starts(): WeaponKind { return classWeapon('brawler') ?? 'sword'; }, tap: 'jab', hold: 'cross' },
 };
 
 /**
@@ -186,11 +316,19 @@ export const WEAPON_SKILLS: Record<WeaponKind, readonly [SkillId, SkillId]> = {
   bow: ['shot', 'volley'],
   staff: ['wave', 'orb'],
   wand: ['familiar', 'beam'],
+  // (THE NEW CLASSES' WEAPONS, NEW_WEAPONS: whatever OWN_MOVES says their classes fight with their own moves; these are only
+  // so that nothing breaks with it off: the wraps as the greatsword, the tome as the wand, the wrench as the sword)
+  wraps: ['strike', 'whirlwind'],
+  tome: ['familiar', 'beam'],
+  wrench: ['strike', 'slam'],
 };
 /** With empty hands: a blow of the fist, and a slam of it. */
 const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
-/** The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand with Intelligence. */
-export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
+/**
+ * The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand
+ * with Intelligence (the new classes' own, NEW_WEAPONS: the wraps with Strength, the tome Intelligence, the wrench Dexterity).
+ */
+export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex' };
 
 /**
  * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
@@ -217,9 +355,23 @@ export function weaponAttr(weapon: WeaponKind | null): Attr {
   return weapon ? WEAPON_ATTR[weapon] : 'str';
 }
 
-/** A character's three abilities: quick and slow (the weapon's), evasive (the class's). */
+/** A character's three abilities: quick and slow (the class's own, OWN_MOVES; with it off, the weapon's), evasive (the class's). */
 export function skillsFor(cls: ClassId, weapon: WeaponKind | null): [SkillId, SkillId, SkillId] {
-  return [tapSkill(weapon), holdSkill(weapon), CLASSES[cls].evade];
+  const c = CLASSES[cls];
+  // (THE VETERAN, game/veteran.ts: the Brawler made again, his own three)
+  if (cls === 'brawler' && VETERAN.on) return ['vpunch', 'vkick', 'vjump'];
+  if (OWN_MOVES.on || c.own) return [c.tap, c.hold, c.evade];
+  return [tapSkill(weapon), holdSkill(weapon), c.evade];
+}
+
+/** What a character's two attacks grow with: the class's own (OWN_MOVES; a class's id, resolveSkill reads it), or with it off the weapon's attribute. */
+export function attackGrows(cls: ClassId, weapon: WeaponKind | null): Attr | ClassId {
+  return OWN_MOVES.on || CLASSES[cls].own ? cls : weaponAttr(weapon);
+}
+
+/** The attribute a character's attacks grow with, as one (a class that grows with two: its first). */
+export function attackAttr(cls: ClassId, weapon: WeaponKind | null): Attr {
+  return OWN_MOVES.on || CLASSES[cls].own ? CLASSES[cls].primary : weaponAttr(weapon);
 }
 
 export const ATTR_NAME: Record<Attr, string> = { str: 'Strength', dex: 'Dexterity', int: 'Intelligence' };
@@ -526,6 +678,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   chained: { kind: 'chained', name: 'Chained One', life: 450, dmgMin: 18, dmgMax: 25, speed: 1.1, radius: 0.7, range: 2.6, windup: 0.86, cooldown: 2.0, xp: 230, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   amalgam: { kind: 'amalgam', name: 'Ossuary Amalgamation', life: 470, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 1.1, range: 2.2, windup: 0.82, cooldown: 2.0, xp: 270, ranged: false, projSpeed: 4, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   // (THE BONE BEAST: a piece of the amalgamation broken off it; quick, and it bites. Never in a pack.)
+  // (THE AMALGAMATION DONE THE ACTION WAY, AM_ACTION: its bone mites, out of its rain's skulls: dead in one blow, quick, many;
+  // crumbling MITE.life after they began forming; nothing to take from them. Their bite at their pictures' snap, 0.467 s, its
+  // reach theirs, 0.75 tiles before them; their skitter's pace, 3.2: art/amalgam_mites.ts MITE)
+  mite: { kind: 'mite', name: 'Bone Mite', life: 1, dmgMin: 2, dmgMax: 4, speed: 3.2, radius: 0.2, range: 0.87, windup: 14 / 30, cooldown: 0.8, xp: 0, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
   beast: { kind: 'beast', name: 'Bone Beast', life: 24, dmgMin: 7, dmgMax: 11, speed: 2.6, radius: 0.36, range: 1.0, windup: 0.62, cooldown: 1.5, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   // (THE FLESHMANCER, the Crypt's lair boss: human-sized, a caster; his fire is the enemy's, and burns)
   fleshmancer: { kind: 'fleshmancer', name: 'Fleshmancer', life: 330, dmgMin: 17, dmgMax: 24, speed: 1.0, radius: 0.42, range: 6, windup: 0.8, cooldown: 1.6, xp: 320, ranged: false, projSpeed: 9, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
@@ -639,6 +795,47 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   scraper: { kind: 'scraper', name: 'The Scraper', life: 340, dmgMin: 22, dmgMax: 30, speed: 1.0, radius: 1.1, range: 3.6, windup: 0.5, cooldown: 2.0, xp: 260, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   // (the Quill quick, his word of 21 Oct 2026: “a heron should be quick”: twice the pace its wade was painted for, game/act1_rules/pair.ts)
   quill: { kind: 'quill', name: 'The Quill', life: 250, dmgMin: 18, dmgMax: 26, speed: 2.2, radius: 0.55, range: 2.6, windup: 0.6, cooldown: 2.0, xp: 200, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): floor 16's, the main chat's first picks beside the Hush's likenesses
+  // (the swans as the city's hounds, small and in flocks; the gardeners and grooms as the Hushed, faster: the art's rush,
+  // PH_PACE; the palace guard as the watch, a head taller; the Princess as the Censor, fast: her glide, PR_PACE). Their moves'
+  // moments and reaches are the art chat's (docs/mockups/swan_gardens/README.md); their rules game/act1_rules/<kind>.ts.
+  // (THE HIGH CITY, FLOOR 16: THE FOUR KINDS, as built: each at the pace its walk is painted for, SWAN_PACE, PH_PACE, GD_PACE, its
+  // feet not sliding; each wind-up its blow's moment, SWAN_BITE.hit, PH_BLOW.hit, GD_THRUST.hit; each `range` how far off its
+  // basic blow is made from, its rules' `far`: the swan's bite, the gardener's shears, the groom's fork, the partisan's thrust)
+  swan: { kind: 'swan', name: 'Wild Swan', life: 14, dmgMin: 5, dmgMax: 8, speed: 1.4, radius: 0.3, range: 1.4, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  gardener: { kind: 'gardener', name: 'Hushed Gardener', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.5, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  groom: { kind: 'groom', name: 'Hushed Groom', life: 22, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.3, range: 1.9, windup: 18 / 30, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  pguard: { kind: 'pguard', name: 'Palace Guard', life: 52, dmgMin: 13, dmgMax: 19, speed: 0.8, radius: 0.45, range: 2.7, windup: 20 / 30, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  princess: { kind: 'princess', name: 'The Princess', life: 640, dmgMin: 22, dmgMax: 31, speed: 4.0, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.0, xp: 1000, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 17, the Masque: the main chat's first picks, a floor up from 16's; their paces the art chat's: the dancers' whirl
+  // DN_PACE 3.4, the footmen's march FM_PACE 2.8, the Order's run ORDER_PACE 5.5, the Prince's dance-step PC_PACE 4.5)
+  footman: { kind: 'footman', name: 'Footman', life: 56, dmgMin: 14, dmgMax: 20, speed: 2.8, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.3, xp: 19, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  dancer: { kind: 'dancer', name: 'Masked Dancer', life: 23, dmgMin: 7, dmgMax: 11, speed: 3.4, radius: 0.3, range: 1.3, windup: 0.5, cooldown: 1.9, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  order: { kind: 'order', name: 'The Silent Order', life: 34, dmgMin: 10, dmgMax: 15, speed: 5.5, radius: 0.32, range: 1.6, windup: 0.6, cooldown: 2.1, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  prince: { kind: 'prince', name: 'The Prince', life: 660, dmgMin: 23, dmgMax: 32, speed: 4.5, radius: 0.6, range: 2.6, windup: 0.6, cooldown: 1.8, xp: 1050, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 18, the Glass Gallery: the main chat's first picks, a floor up from 17's; the Queen's glide QN_PACE 2.0, slower than
+  // the hero walks (her brief: “Cold and slow, then sudden”); a reflection as quick as the hero it copies)
+  lady: { kind: 'lady', name: 'Lady-in-Waiting', life: 25, dmgMin: 8, dmgMax: 12, speed: 3.0, radius: 0.3, range: 1.4, windup: 0.6, cooldown: 2.0, xp: 9, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  qguard: { kind: 'qguard', name: "Queen's Guard", life: 60, dmgMin: 15, dmgMax: 21, speed: 2.6, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.3, xp: 21, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  reflection: { kind: 'reflection', name: 'Your Reflection', life: 40, dmgMin: 12, dmgMax: 17, speed: 4.0, radius: 0.32, range: 1.6, windup: 0.5, cooldown: 2.0, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  gqueen: { kind: 'gqueen', name: 'The Queen', life: 680, dmgMin: 24, dmgMax: 33, speed: 2.0, radius: 0.6, range: 2.6, windup: 0.7, cooldown: 1.9, xp: 1100, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 19, the Keep: the main chat's first picks, a floor up from 18's; the knights huge and slow (the art chat's remake to
+  // come, his “huge and slow, one or two at a time”), the King's walk KG_PACE 1.0, slow and heavy, his blows across the hall)
+  // (THE KING'S KNIGHTS, built: twice the knight's height, one at a time; his pace the art's, his reach its sweep's)
+  kknight: { kind: 'kknight', name: "King's Knight", life: 180, dmgMin: 24, dmgMax: 33, speed: 1.5, radius: 0.85, range: 4.0, windup: 0.8, cooldown: 2.6, xp: 40, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
+  xbow: { kind: 'xbow', name: 'Crossbowman', life: 26, dmgMin: 11, dmgMax: 15, speed: 2.6, radius: 0.3, range: 7, windup: 0.6, cooldown: 2.4, xp: 11, ranged: true, projSpeed: 14, keepMax: 6, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  gking: { kind: 'gking', name: 'The King', life: 720, dmgMin: 26, dmgMax: 36, speed: 1.0, radius: 0.7, range: 3.0, windup: 0.8, cooldown: 2.2, xp: 1150, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (floor 20, the Quiet Tower: the main chat's first picks, a floor up from 19's. The Hush's shapes light, in swarms, drifting
+  // slow (HS_PACE 1.5) and darting four tiles at you; the royals' shadows a head over the knight at most, each its royal's pace
+  // made smaller (Monster.form: which royal, game/act1_rules/rshadow.ts); the Moth the biggest thing in the game, its drift
+  // MOTH_PACE 3, its buffet across the top)
+  hshape: { kind: 'hshape', name: 'Hush', life: 30, dmgMin: 11, dmgMax: 16, speed: 1.5, radius: 0.34, range: 1.6, windup: 0.6, cooldown: 2.2, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  rshadow: { kind: 'rshadow', name: 'Royal Shadow', life: 72, dmgMin: 17, dmgMax: 23, speed: 2.5, radius: 0.42, range: 2.0, windup: 0.7, cooldown: 2.3, xp: 26, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (THE RIME SHADE, floor 20's frost creature (his “Rime Shade (Recommended)”, 3 Nov 2026; “In 25.0 too”): a small mob of the
+  // tower, as the Hush's shapes, at its drift's pace, RS_PACE 1.8; one attack, the Rime Breath: its wind-up its breathing out,
+  // RS_BREATH.hit 0.833 s; its reach how far off it breathes, its line running on to 6.45 tiles: game/act1_rules/rshade.ts)
+  rshade: { kind: 'rshade', name: 'Rime Shade', life: 30, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.34, range: 5.6, windup: 25 / 30, cooldown: 2.5, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  moth: { kind: 'moth', name: 'The Moth', life: 780, dmgMin: 27, dmgMax: 38, speed: 3.0, radius: 1.4, range: 8.0, windup: 0.9, cooldown: 2.2, xp: 1250, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -836,7 +1033,7 @@ export const MONSTER_ATTACKS = { on: true };
  * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
  * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
  */
-export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer';
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer' | 'rain' | 'lockdown' | 'sigil' | 'frenzy' | 'rampage';
 export interface MonsterMove {
   id: MoveId;
   /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
@@ -856,7 +1053,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain' | 'archer' | 'wardenLock' | 'cultistSigil' | 'daggerFrenzy' | 'golemHurl' | 'bruteRampage';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -871,6 +1068,14 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
   brute: [
     { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
     { id: 'slam', windup: 0.85, dmg: 1, cooldown: 6, first: 2, after: 2.3, recover: 0.3, near: 0, far: 0 },
+  ],
+  // (FLOOR 3, MORE ACTION, ACTION_F3: the green troll's rampage, every attack of his but his rush, as his pictures have it (its
+  // blows at 0.6, 1.167 and its slam at 2.367 s, done by 3.1 s; begun within its swing's reach and his step, 2.4 tiles: game/
+  // action_f3.ts, its blows' shares there); and his bull rush, the red troll's charge his own way (its wind-up 1.0 s, his stop
+  // 1.0 s), from 3 to 8 tiles, about every 7 s.)
+  bruteRampage: [
+    { id: 'rampage', windup: 71 / 30, dmg: 1, cooldown: 0, first: 0, after: 2.0, recover: 22 / 30, near: 0, far: 2.4 },
+    { id: 'charge', windup: 1.0, dmg: 1.3, cooldown: 7, first: 2, after: 2.2, recover: 1.0, near: 3, far: 8 },
   ],
   guardian: [
     { id: 'swing', windup: 0.6, dmg: 0.65, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
@@ -898,6 +1103,14 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
     { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 2.0, recover: 0.55, near: 0, far: 0 },
     { id: 'throw', windup: 0.95, dmg: 1.1, cooldown: 5, first: 1, after: 2.2, recover: 0.55, near: 2.5, far: 10 },
   ],
+  // (FLOOR 4, MORE ACTION, ACTION_F4: the Ossuary Golem by Movement 9, the art chat's (art/action_f4_fx.ts, his yes to it): its
+  // club swing wound and held, its blow at SWING_HIT (0.867 s), 2.2 tiles in the half before it (SWING.reach: the golem's own
+  // reach and 0.4 more), done by SWING.long (1.6 s); its SKELETON HURL in place of the skull, let go at HURL_HIT (1.433 s), done by
+  // 2.5 s (game/action_f4.ts). Its burst a little harder than the skull's, being bigger and marked longer before it.)
+  golemHurl: [
+    { id: 'swing', windup: 0.867, dmg: 0.6, cooldown: 0, first: 0, after: 2.0, recover: 0.733, near: 0, far: 0 },
+    { id: 'throw', windup: 1.433, dmg: 1.25, cooldown: 5, first: 1, after: 2.2, recover: 1.067, near: 2.5, far: 10 },
+  ],
   champion: [
     { id: 'swing', windup: 0.8, dmg: 1.3, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
     { id: 'rally', windup: 0.85, dmg: 0, cooldown: 14, first: 2, after: 1.4, recover: 0.9, near: 0, far: 10 },
@@ -918,19 +1131,79 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
     { id: 'swing', windup: 0.73, dmg: 0.7, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
     { id: 'slam', windup: 1.03, dmg: 1.2, cooldown: 7, first: 2, after: 2.6, recover: 0.35, near: 0, far: 0 },
   ],
+  // FLOOR 1, MORE ACTION (ACTION_F1): the bone archer its one shot as it always was (MONSTERS.archer's wind-up and wait) and,
+  // now and then, its arrow rain (art/monster_bones.ts RAIN_LOOSE; the art's suggestion, a cooldown of 6 to 8 s, from 3 to 8
+  // tiles off); the Warden his swing, bolts and summon as before and the Lockdown in place of his slam (art/monster_warden.ts
+  // LOCKDOWN_HIT; the slam's cooldown; it fills his arena, so from any range). Each move's `recover`: the rest of its picture.
+  archer: [
+    { id: 'shoot', windup: 0.55, dmg: 1, cooldown: 0, first: 0, after: 2.0, recover: 0.3, near: 0, far: 0 },
+    { id: 'rain', windup: 0.9, dmg: 1.4, cooldown: 7, first: 3, after: 1.8, recover: 0.82, near: 3, far: 8 },
+  ],
+  // FLOOR 2, MORE ACTION (ACTION_F2): the cultist's fire sigil in place of its bolt (art/monster_cultist.ts SIGIL_SLAM, 1.2 s
+  // into its cast, the rest of it 0.75 s; a cooldown a little longer than the bolt's 2.7 s; as far as it would shoot)
+  // FLOOR 4, MORE ACTION (ACTION_F4): the dagger cultist's frenzy in place of his leap and plunge (art/cultists.ts FRENZY: four
+  // stabs, at 0.5, 0.73, 0.97 and 1.2 s, each a share of his blow, carrying him 1.2 tiles; winded to 2.7 s; his cooldown 1.6 s)
+  // (begun from his run as soon as the hero is within the whole of its reach: its four steps and a stab's, 2.4 tiles)
+  daggerFrenzy: [{ id: 'frenzy', windup: 1.2, dmg: 0.45, cooldown: 0, first: 0, after: 1.6, recover: 1.5, near: 0, far: 2.4 }],
+  cultistSigil: [{ id: 'sigil', windup: 1.2, dmg: 1.2, cooldown: 0, first: 0, after: 3.2, recover: 0.75, near: 0, far: 7.5 }],
+  wardenLock: [
+    { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },
+    { id: 'bolts', windup: 0.7, dmg: 0.5, cooldown: 3.5, first: 0, after: 2.4, recover: 0.3, near: 3.4, far: 12 },
+    { id: 'lockdown', windup: 1.2, dmg: 1, cooldown: 8, first: 3, after: 2.4, recover: 0.95, near: 0, far: 14 },
+    { id: 'summon', windup: 1.1, dmg: 0, cooldown: 18, first: 9, after: 1.5, recover: 0.8, near: 0, far: 12 },
+  ],
 };
+/**
+ * FLOOR 1, MORE ACTION (the art chat's art/action-f1, his yes to its pictures, 31 Oct 2026: of the arrow rain “Yes, that's it
+ * (Recommended)”; of the Lockdown, the bars, “You’re caged but you can swipe to move around”, and offered more, “No that’s good.
+ * I was just asking”): the bone archer's ARROW RAIN, a ring where he stood struck 1.5 s after it looses; the Warden's LOCKDOWN in
+ * place of his slam, bars crashing down across his arena in rows, whoever is on a row struck, a cell safe, the bars standing as
+ * a cage for 1.5 s that his swipe carries him through (game/action_f1.ts). The art's switches go with it (art/bestiary.ts
+ * useActionF1).
+ */
+export const ACTION_F1 = { on: true };
+/**
+ * FLOOR 2, MORE ACTION (the art chat's art/action-f2, his yes to its pictures): the cultist's FIRE SIGIL in place of its fire
+ * bolt, a ring under the hero as it begins its cast, erupting in a pillar of fire at its slam, the floor burning on after; the
+ * Shade's rake COLD, a patch of rime before it at its blow that slows whoever stands in it (game/action_f2.ts). The art's
+ * switches go with it (art/bestiary.ts useActionF2). (The Headsman's mend, AXE_HELD, is on of itself.)
+ */
+export const ACTION_F2 = { on: true };
+/**
+ * FLOOR 3, MORE ACTION (the art chat's art/action-f3, his yes to its pictures): THE BONEWARD'S SHIELD WALL (his pick, “Yes
+ * (Recommended)”, of “Its shield up, blows from in front glance off. Get round it, or wait for it to throw.”): while its wall is up
+ * a blow from within 60 degrees of straight before it does nothing, it holds its ground and the blow glances off
+ * (art/action_f3_fx.ts WALL, glances; game.ts wallUp); and THE GREEN TROLL'S RAMPAGE in place of his swing and his slam, and his
+ * BULL RUSH (game/action_f3.ts; MONSTER_MOVES bruteRampage). The art's switches go with it (art/bestiary.ts useActionF3:
+ * BONEWARD_WALL, BRUTE_RAMPAGE).
+ */
+export const ACTION_F3 = { on: true };
+/**
+ * FLOOR 4, MORE ACTION (the art chat's art/action-f4, his yes to its pictures): THE DAGGER CULTIST'S FRENZY in place of his leap
+ * and plunge: four quick stabs before him as he drives forward, then winded a moment, open (game.ts startMove and landMove,
+ * 'frenzy'); and THE OSSUARY GOLEM'S SKELETON HURL in place of its skull lob, aimed where the hero stands as it holds the
+ * skeleton up, bursting 2.25 tiles round where it lands (game/action_f4.ts), with its club swing by Movement 9 (MONSTER_MOVES
+ * golemHurl). The art's switches go with it (art/bestiary.ts useActionF4: DAGGER_FRENZY, GOLEM_HURL).
+ */
+export const ACTION_F4 = { on: true };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
   if (!MONSTER_ATTACKS.on) return null;
   switch (m.kind) {
     case 'warden':
-      return MONSTER_MOVES.warden;
+      return ACTION_F1.on ? MONSTER_MOVES.wardenLock : MONSTER_MOVES.warden;
+    case 'archer':
+      return ACTION_F1.on ? MONSTER_MOVES.archer : null;
+    case 'cultist':
+      return ACTION_F2.on ? MONSTER_MOVES.cultistSigil : null;
+    case 'dagger':
+      return ACTION_F4.on ? MONSTER_MOVES.daggerFrenzy : null;
     case 'brute':
-      return m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute;
+      return m.champion ? MONSTER_MOVES.guardian : ACTION_F3.on ? MONSTER_MOVES.bruteRampage : MONSTER_MOVES.brute;
     case 'boneward':
       return MONSTER_MOVES.boneward;
     case 'golem':
-      return MONSTER_MOVES.golem;
+      return ACTION_F4.on ? MONSTER_MOVES.golemHurl : MONSTER_MOVES.golem;
     case 'champion':
       return MONSTER_MOVES.champion;
     case 'marksman':
@@ -1093,6 +1366,18 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   physician: ['Say ah.', "Hold still. This won't hurt.", 'Your last words, please.'],
   // (ACT 2, THE HUSH: the Censor, his mouth a bar of ink, says nothing: a silence over him as his name comes up, game/act1_rules/censor.ts)
   censor: ['...'],
+  // (THE HIGH CITY: the Princess makes no sound but her vines and hooves, his pick; her one whisper is as she falls: game/act1_rules/princess.ts)
+  princess: ['...'],
+  // (floor 17: the Prince's lines his own, once he is built: game/act1_rules/prince.ts)
+  prince: ['...'],
+  // (floor 18: the Queen asks her looking-glass, as the Grimms' queen does (Margaret Hunt's translation, 1884); the rest is her
+  // mirror's: game/act1_rules/gqueen.ts)
+  gqueen: ['Looking-glass, Looking-glass, on the wall, who in this land is the fairest of all?'],
+  // (floor 19: the dying emperor's cry in Andersen's "The Nightingale" (1843; H. P. Paull's translation, 1872), out of copyright)
+  gking: ['Music! Music!'],
+  // (floor 20: the Moth makes no sound at all until it dies screaming, the first sound it ever makes (his doc): a silence over it
+  // as its name comes up, as the Censor's)
+  moth: ['...'],
 };
 
 /**
@@ -1150,6 +1435,23 @@ export const VENDORS: Record<VendorId, { name: string; weapons: readonly WeaponK
 };
 export const VENDOR_IDS: readonly VendorId[] = ['armourer', 'mystic'];
 
+/** NEW_WEAPONS: who stocks each new class's own weapon: the armourer the wraps and the wrench, the mystic the demonic tome. */
+export const CLASS_WEAPON_VENDOR: Readonly<Record<ClassWeaponKind, VendorId>> = { wraps: 'armourer', wrench: 'armourer', tome: 'mystic' };
+
+/**
+ * What a vendor deals in for a hero of this class (game.ts rollShop): VENDORS's, and with NEW_WEAPONS on, his class's own
+ * weapon too, where it is that vendor's (CLASS_WEAPON_VENDOR): a plain one on the shelf after the vendor's own plain weapons,
+ * in the place of the first rolled main-hand piece, so that a shelf stays TUNE.shopSize; and his weapon among those its rolled
+ * pieces may be. Any other hero, or with the switch off: VENDORS's, as it is.
+ */
+export function vendorStock(id: VendorId, cls: ClassId | null | undefined): { weapons: readonly WeaponKind[]; slots: readonly Slot[] } {
+  const v = VENDORS[id];
+  const own = classWeapon(cls);
+  if (!own || CLASS_WEAPON_VENDOR[own] !== id) return v;
+  const first = v.slots.indexOf('mainhand');
+  return { weapons: [...v.weapons, own], slots: first < 0 ? v.slots.slice(0, -1) : v.slots.filter((_, i) => i !== first) };
+}
+
 /**
  * What the stranger will let the hero gamble for: a kind of thing, named as loot on the floor is
  * named (items.ts, kindName). A weapon is its own kind; an off-hand piece is named by the weapon
@@ -1161,7 +1463,7 @@ export interface GambleKind {
   /** Main hand: the weapon. Off hand: the weapon the piece goes with. */
   weapon: WeaponKind | null;
   /** The picture it is shown by. */
-  icon: 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | 'shield' | 'quiver' | 'focus' | 'helm' | 'armor' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet';
+  icon: 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | 'shield' | 'quiver' | 'focus' | 'helm' | 'armor' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet' | ClassWeaponKind;
 }
 export const GAMBLE_KINDS: readonly GambleKind[] = [
   { name: 'Sword', slot: 'mainhand', weapon: 'sword', icon: 'sword' },
@@ -1180,6 +1482,20 @@ export const GAMBLE_KINDS: readonly GambleKind[] = [
   { name: 'Ring', slot: 'ring', weapon: null, icon: 'ring' },
   { name: 'Amulet', slot: 'amulet', weapon: null, icon: 'amulet' },
 ];
+
+/** NEW_WEAPONS: what each new class's own weapon is called, at the stranger's and over loot on the floor (items.ts, kindName). */
+export const CLASS_WEAPON_NAME: Readonly<Record<ClassWeaponKind, string>> = { wraps: "Brawler's Wraps", tome: 'Demonic Tome', wrench: 'Wrench' };
+
+/**
+ * What the stranger offers a hero of this class (game.ts gamble): GAMBLE_KINDS, and with NEW_WEAPONS on his class's own
+ * weapon too, after the other weapons. Any other hero, or with the switch off: GAMBLE_KINDS itself.
+ */
+export function gambleKinds(cls: ClassId | null | undefined): readonly GambleKind[] {
+  const own = classWeapon(cls);
+  if (!own) return GAMBLE_KINDS;
+  const at = GAMBLE_KINDS.filter((k) => k.slot === 'mainhand').length;
+  return [...GAMBLE_KINDS.slice(0, at), { name: CLASS_WEAPON_NAME[own], slot: 'mainhand', weapon: own, icon: own }, ...GAMBLE_KINDS.slice(at)];
+}
 
 /** The town's people who have something to say (state.ts, TownVoice). */
 export const TOWN_FOLK: readonly ('armourer' | 'mystic' | 'wordsmith' | 'stranger')[] = ['armourer', 'mystic', 'wordsmith', 'stranger'];
@@ -1234,6 +1550,12 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
   warrior: { word: 'power', skill: 0 },
   ranger: { word: 'poison', skill: 2 },
   mage: { word: 'fire', skill: 0 },
+  // (THE WARLOCK: Leeching on his bolt, the pact's hunger; a proposal, his to change)
+  warlock: { word: 'leech', skill: 0 },
+  // (THE TINKERER: Volatile on her Vial Toss, a bomber's word; a proposal, his to change)
+  tinkerer: { word: 'volatile', skill: 0 },
+  // (THE BRAWLER: Power on his jab; a proposal, his to change)
+  brawler: { word: 'power', skill: 0 },
 };
 
 /**
@@ -1333,7 +1655,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3, princess: 1.5, prince: 1.5, gqueen: 1.5, gking: 1.5, moth: 1.5 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];
@@ -1473,7 +1795,8 @@ export const LEVEL_SELECT = {
    * 22 Oct 2026). Seeds 11, 22 and 33 gave 1,2,5,6,8,9,11,11,12,15,16,17,18,19,20; 1,2,4,6,8,10,11,11,13,14,16,17,18,19,20;
    * and 1,3,5,7,8,10,11,12,13,15,16,17,18,19,21.
    */
-  level: [1, 2, 5, 6, 8, 10, 11, 11, 13, 15, 16, 17, 18, 19, 20] as readonly number[],
+  // (THE HIGH CITY, FLOOR 16: a level on from the fifteenth's, as each of the Hush's is from the last, until the floors' own dice are counted)
+  level: [1, 2, 5, 6, 8, 10, 11, 11, 13, 15, 16, 17, 18, 19, 20, 21] as readonly number[],
   /** Of every three points his levels give, how many go to his class's own attribute (the rest to the other two in turn). */
   ownOfThree: 2,
 };
@@ -1872,6 +2195,12 @@ export const ARRIVAL_LINES: Record<ClassId, readonly string[]> = {
   warrior: ['I must purge the evil of this place.', 'Something down here needs killing.'],
   ranger: ['Fresh tracks. Something hunts here.', "Quiet now. It's close."],
   mage: ['I smell foul magics.', 'Someone has been meddling down here.'],
+  // (THE WARLOCK, a proposal in his voice, pact-bound and pained: his to change)
+  warlock: ['It can smell them. So can I.', 'Quiet. It wants to come out.'],
+  // (THE TINKERER, a proposal in her voice, a gleeful mad bomber: his to change)
+  tinkerer: ['Ooh, a crowd. Perfect.', 'Stand back. Further. Bit further.'],
+  // (THE BRAWLER, a proposal in his voice, a cocky old-time prizefighter: his to change)
+  brawler: ['Who wants a go?', 'Come on then. All of you.'],
 };
 
 export const QUIPS: {
@@ -1948,6 +2277,26 @@ export const QUIPS: {
     beam: ['Underlined.', 'Crossed out.', 'Read between the lines.'],
     familiar: ["Teacher's pet.", 'Good help is hard to find.'],
     warp: ['Surprise.', 'Now you see me.'],
+    // (THE WARLOCK's, proposals)
+    hellbolt: ['Hot off the press.', 'Burn slowly.'],
+    curse: ['Cursed reading.', 'A bad omen.'],
+    smokestep: ['Vanished.', 'Gone.'],
+    rake: ['Dog-eared.', 'Torn out.'],
+    damning: ['Damning evidence.', 'Damned.'],
+    demonstep: ['Ripped through.', 'Smoke and mirrors.'],
+    // (THE TINKERER's, proposals)
+    vialtoss: ['Shake well before use.', 'Contents under pressure.'],
+    contraption: ['Some assembly required.', 'Fully automated.'],
+    golem: ['Good boy.', 'Wind him up, let him go.'],
+    blastjump: ['Wheee!', 'Explosive exit.'],
+    // (THE BRAWLER's, proposals)
+    jab: ['Sharp.', 'One-two.'],
+    cross: ['Right down the middle.', 'Down for the count.'],
+    slip: ['Saw that coming.', 'Not even close.'],
+    // (THE VETERAN)
+    vpunch: ['Should have ducked.', 'Hands up next time.', 'One-two. Done.'],
+    vkick: ['Out of my way.', 'Felt that one.', 'Shin meets face.'],
+    vjump: ['Up here.', 'From above.'],
   },
   /** By the weapon in hand. */
   weapon: {
@@ -1956,6 +2305,10 @@ export const QUIPS: {
     bow: ['Nock, nock.', 'Straight to the point.', 'Loosed and lost.'],
     wand: ['Wave goodbye.', 'A flick of the wrist.', 'Spelled it out.'],
     staff: ['Staff meeting adjourned.', 'Walk softly.'],
+    // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: proposals, his to change)
+    wraps: ['Wrapped up.', 'Knuckle down.'],
+    tome: ['By the book.', 'Read the small print.'],
+    wrench: ['Spanner in the works.', 'Tightened up.'],
   },
   /** By the hero's highest attribute (gear counted), whatever their class. */
   attr: {
@@ -1972,6 +2325,12 @@ export const QUIPS: {
     warrior: ['Hmph.', 'Done.', 'Was that it?', 'Stay dead.', 'Weak.'],
     ranger: ['Clean.', 'One less.', 'Quiet now.', 'Easy.', 'Hush.'],
     mage: ['Elementary.', 'Quite.', 'Jolly good.', 'Tut, tut.', 'How dreadfully dull.', 'Class dismissed.', 'A footnote, at best.'],
+    // (THE WARLOCK, a proposal: hoarse, pained, the thing in him enjoying it)
+    warlock: ['It liked that.', 'Feed it.', 'Not yet.', 'Burn.', 'Hungry, are we?'],
+    // (THE TINKERER, a proposal: gleeful, a bit reckless)
+    tinkerer: ['Ha! Again!', 'Kaboom!', 'Oops. Not sorry.', 'That one works.', 'Needs more bang.'],
+    // (THE BRAWLER, a proposal: cocky, a prizefighter)
+    brawler: ['Next!', 'And stay there.', 'Who else?', 'Glass jaw.', 'Ding ding.'],
   },
   /** For any kill. The library is never far away: the hero is a child dreaming in detention. */
   any: ['Overdue.', 'Shh. This is a library.', 'Next.', 'Is that all?', 'Back on the shelf.', 'Closed book.', 'Quiet, please.', 'Read it and weep.'],

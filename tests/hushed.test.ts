@@ -102,7 +102,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
     // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/hushed.ts, since 19 Oct; only them)
     // (and Act 2's town hub, the camp's people, the same three with their voices back, art/hub2_folk.ts, behind HUB2, off:
     // tests/hub2.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients|hub2_folk)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
+    // (and floor 16's gardeners and grooms, its palace guard and its boss, the Princess, their breath and its lag from
+    // them: tests/palace_hands.test.ts, tests/palace_guard.test.ts, tests/princess.test.ts; and the High City's mock-ups, floors 17 to 20 (the Silent Order, the Prince, the footmen, the masked dancers, the Queen, the queen's guard, the ladies-in-waiting, the King, the king's knights, the crossbowmen, the Hush's shapes, the Moth, the royal shadows): each its own test)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|king(_moves|_fx)?|hounds|fieldhands|patients|hub2_folk|palace_hands(_moves)?|palace_guard(_moves)?|princess(_moves|_ride)?|prince(_moves|_fx)?|masque_footmen(_moves|_fx)?|masque_dancers(_moves)?|queens_guard|gallery_ladies|kings_knights|keep_crossbowmen|hush_shapes)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
     // (each import followed to the file it names: the game's own files named for the kind, game/act1_rules/hushed.ts and
     // render/act1_fx/hushed.ts, and the registers that import them, are not these)
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {

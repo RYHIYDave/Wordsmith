@@ -15,7 +15,9 @@ import { P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { WORDS } from '../game/defs';
 import type { Game } from '../game/game';
-import { TREES, nextTalentLevel, talentName, talentOpen, talentText, talentWord } from '../game/talents';
+import { COMPANIONS, TREES, nextTalentLevel, talentName, talentOpen, talentText, talentWord } from '../game/talents';
+import { COMPANION_GROUPS, COMPANION_INFO, groupOfTalent, pickedIn } from '../game/companions';
+import type { CompanionKind } from '../game/companions';
 import type { TalentDef, TalentTree } from '../game/talents';
 import type { WordId } from '../game/types';
 import { THEME, inside } from './ui';
@@ -26,7 +28,7 @@ export interface TalentUi {
   /** The talent being read. */
   sel: string | null;
   /** The card as it was drawn last frame, and its TAKE or UNDO (a press on it is answered next frame). */
-  card: { r: Rect; take: Rect | null; undo?: Rect | null } | null;
+  card: { r: Rect; take: Rect | null; undo?: Rect | null; picks?: { r: Rect; id: string }[]; pets?: { r: Rect; kind: CompanionKind }[] } | null;
   /** A talent just taken, and how long ago: it flares. */
   flash: { id: string; t: number } | null;
 }
@@ -49,6 +51,25 @@ const ARROW: readonly string[] = ['....X..', '.....X.', 'XXXXXXo', '.....X.', '.
 const JAWS: readonly string[] = ['X.X.X.X', 'XXXXXXX', 'X.....X', '.X.o.X.', '..XXX..'];
 const SPLIT: readonly string[] = ['.....X', '....X.', 'XXXo..', '....X.', '.....X'];
 const BLADE: readonly string[] = ['.X.....', '.X.....', 'XXXXXXo', '.X.....', '.X.....'];
+// (the new classes' paths, 28 Oct 2026: the man's sigil, the demon's horned head, the pact's claw; a vial, the Golem's head, a
+// gear, a coin; speed's chevrons, power's impact, a fist thrown back)
+const SIGIL: readonly string[] = ['..XXX..', '.X...X.', 'X..o..X', '.X...X.', '..XXX..'];
+const HORNS: readonly string[] = ['X.....X', 'XX...XX', '.XXXXX.', '.XoXoX.', '..XXX..'];
+const CLAW: readonly string[] = ['X.X.X..', 'X.X.X..', 'XXXXX.X', '.XXXXo.', '..XXX..'];
+const VIAL: readonly string[] = ['..XXX..', '...X...', '..XoX..', '.XoooX.', '.XXXXX.'];
+const GOLEM: readonly string[] = ['.XXXXX.', 'XoX.XoX', 'XXXXXXX', 'X.XXX.X', 'X.X.X.X'];
+const GEAR: readonly string[] = ['.X.X.X.', 'XXXXXXX', '.XXoXX.', 'XXXXXXX', '.X.X.X.'];
+const COIN: readonly string[] = ['..XXX..', '.XoooX.', '.XoXoX.', '.XoooX.', '..XXX..'];
+const QUICK: readonly string[] = ['X..X...', '.X..X..', '..X..Xo', '.X..X..', 'X..X...'];
+const IMPACT: readonly string[] = ['X..X..X', '.X.X.X.', '..XoX..', '.X.X.X.', 'X..X..X'];
+const KNUCKLE: readonly string[] = ['..X....', '.XX....', 'XXXXXXo', '.XX...X', '..X..X.'];
+// (the Ranger's companions, 28 Oct 2026: a paw)
+const PAW: readonly string[] = ['..X.X..', 'X.....X', '..XXX..', '.XXoXX.', '..XXX..'];
+// (the Veteran's globes, 3 Nov 2026: a fist, a kick, a leap; and the fire over the punch and the kick globes)
+const FIST: readonly string[] = ['.XXXXX.', 'XoXoXoX', 'XXXXXXX', 'XXXXXX.', '.XXXX..'];
+const KICK: readonly string[] = ['X......', '.X.....', '..X....', '..XXXXo', '..XXXX.'];
+const LEAP: readonly string[] = ['...X...', '..XoX..', '.X.X.X.', '...X...', 'X.X.X.X'];
+const FLAME: readonly string[] = ['...X...', '..XX.X.', '.XXoXX.', '.XoooX.', '..XXX..'];
 /** A rune and its two colours. */
 interface Rune {
   rows: readonly string[];
@@ -71,6 +92,19 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   technique: (c) => ({ rows: BLADE, color: c, glow: P.white }),
   iron: () => wordRune('guarding'),
   cross: () => wordRune('heavy'),
+  man: (c) => ({ rows: SIGIL, color: c, glow: P.white }),
+  demon: (c) => ({ rows: HORNS, color: c, glow: P.white }),
+  pact: (c) => ({ rows: CLAW, color: c, glow: P.white }),
+  vials: (c) => ({ rows: VIAL, color: c, glow: P.white }),
+  golem: (c) => ({ rows: GOLEM, color: c, glow: P.white }),
+  works: (c) => ({ rows: GEAR, color: c, glow: P.white }),
+  gold: (c) => ({ rows: COIN, color: c, glow: P.white }),
+  speed: (c) => ({ rows: QUICK, color: c, glow: P.white }),
+  power: (c) => ({ rows: IMPACT, color: c, glow: P.white }),
+  counter: (c) => ({ rows: KNUCKLE, color: c, glow: P.white }),
+  punch: (c) => ({ rows: FIST, color: c, glow: P.white }),
+  kick: (c) => ({ rows: KICK, color: c, glow: P.white }),
+  jump: (c) => ({ rows: LEAP, color: c, glow: P.white }),
 };
 /** The rune a talent's stone carries: its word's, if it works with one; else its path's. */
 function runeOf(tree: TalentTree, t: TalentDef): Rune {
@@ -78,6 +112,10 @@ function runeOf(tree: TalentTree, t: TalentDef): Rune {
   if (word) return wordRune(word);
   const path = tree.paths.find((p) => p.id === t.path);
   const color = path ? path.color : THEME.text;
+  // (the Ranger's companions carry a paw)
+  if (t.id === 'huntcompanion' || t.id === 'wildcompanion') return { rows: PAW, color, glow: P.white };
+  // (the Veteran's fire: the globes over his punch and his kick set in fire)
+  if (tree.figures?.some((f) => f.kind === 'globe' && f.fire === t.id)) return { rows: FLAME, color, glow: P.white };
   return (PATH_RUNE[t.path] ?? ((c: string) => ({ rows: ARROW, color: c, glow: P.white })))(color);
 }
 function drawRune(g: CanvasRenderingContext2D, rune: Rune, cx: number, cy: number, alpha: number): void {
@@ -127,6 +165,199 @@ function line(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y
   g.globalAlpha = 1;
 }
 
+// ---- the new classes' figures (28 Oct 2026) ---------------------------------------------------------
+/**
+ * A TALON along talents `ns`: wide at the first, narrowing to a point past the last, hooking down by `hook` (radians, over
+ * the length past the last); filled faint, its edges a little less so.
+ */
+function drawTalon(g: CanvasRenderingContext2D, ns: readonly TalentAt[], width: number, hook: number, color: string): void {
+  if (ns.length < 2) return;
+  const pts = ns.map((n) => [n.cx, n.cy] as [number, number]);
+  // (past the last: on the way it was going, turning down, a few steps)
+  const a = pts[pts.length - 2];
+  const b = pts[pts.length - 1];
+  let ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  const step = Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.12;
+  let [x, y] = b;
+  for (let i = 0; i < 4; i++) {
+    ang += hook / 4;
+    x += Math.cos(ang) * step;
+    y += Math.sin(ang) * step;
+    pts.push([x, y]);
+  }
+  // (its length so far at each point: its width goes down along it to nothing at the point)
+  const along: number[] = [0];
+  for (let i = 1; i < pts.length; i++) along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = along[along.length - 1] || 1;
+  const left: [number, number][] = [];
+  const right: [number, number][] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[Math.max(0, i - 1)];
+    const q = pts[Math.min(pts.length - 1, i + 1)];
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+    const nx = -(q[1] - p[1]) / l;
+    const ny = (q[0] - p[0]) / l;
+    const w = width * Math.pow(1 - along[i] / total, 0.8);
+    left.push([pts[i][0] + nx * w, pts[i][1] + ny * w]);
+    right.push([pts[i][0] - nx * w, pts[i][1] - ny * w]);
+  }
+  g.globalAlpha = 0.1;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(left[0][0] + 0.5, left[0][1] + 0.5);
+  for (const p of left.slice(1)) g.lineTo(p[0] + 0.5, p[1] + 0.5);
+  for (const p of right.slice().reverse()) g.lineTo(p[0] + 0.5, p[1] + 0.5);
+  g.closePath();
+  g.fill();
+  g.globalAlpha = 1;
+  for (const side of [left, right]) for (let i = 1; i < side.length; i++) line(g, side[i - 1][0], side[i - 1][1], side[i][0], side[i][1], color, 0.3);
+}
+
+/** A GEAR: its ring through the talents `ring` round the hub talent, a tooth out at each, `spokes` spokes, the hub's boss. */
+function drawGear(g: CanvasRenderingContext2D, hub: TalentAt, ring: readonly TalentAt[], spokes: number, color: string): void {
+  const r = ring.reduce((s, n) => s + Math.hypot(n.cx - hub.cx, n.cy - hub.cy), 0) / ring.length;
+  const band = Math.max(4, Math.round(r * 0.13));
+  // (the ring: a band either side of the talents' circle)
+  g.globalAlpha = 0.09;
+  g.fillStyle = color;
+  g.beginPath();
+  g.arc(hub.cx + 0.5, hub.cy + 0.5, r + band, 0, Math.PI * 2);
+  g.arc(hub.cx + 0.5, hub.cy + 0.5, r - band, 0, Math.PI * 2, true);
+  g.fill();
+  // (a tooth out at each talent of the ring)
+  for (const n of ring) {
+    const a = Math.atan2(n.cy - hub.cy, n.cx - hub.cx);
+    const ux = Math.cos(a);
+    const uy = Math.sin(a);
+    const half = band * 0.9;
+    const r0 = r + band;
+    const r1 = r + band * 2.1;
+    g.beginPath();
+    g.moveTo(hub.cx + ux * r0 - uy * half * 1.2 + 0.5, hub.cy + uy * r0 + ux * half * 1.2 + 0.5);
+    g.lineTo(hub.cx + ux * r1 - uy * half * 0.8 + 0.5, hub.cy + uy * r1 + ux * half * 0.8 + 0.5);
+    g.lineTo(hub.cx + ux * r1 + uy * half * 0.8 + 0.5, hub.cy + uy * r1 - ux * half * 0.8 + 0.5);
+    g.lineTo(hub.cx + ux * r0 + uy * half * 1.2 + 0.5, hub.cy + uy * r0 - ux * half * 1.2 + 0.5);
+    g.closePath();
+    g.fill();
+  }
+  // (the boss round the hub)
+  g.beginPath();
+  g.arc(hub.cx + 0.5, hub.cy + 0.5, band * 1.8, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+  // (its edges, and the spokes: straight up, down, left and right for four)
+  const edge = (rad: number, alpha: number): void => {
+    let px = hub.cx + rad;
+    let py = hub.cy;
+    for (let i = 1; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      const qx = hub.cx + Math.cos(a) * rad;
+      const qy = hub.cy + Math.sin(a) * rad;
+      line(g, px, py, qx, qy, color, alpha);
+      px = qx;
+      py = qy;
+    }
+  };
+  edge(r + band, 0.3);
+  edge(r - band, 0.22);
+  for (let i = 0; i < spokes; i++) {
+    const a = (i / spokes) * Math.PI * 2;
+    for (const o of [-1.5, 1.5]) {
+      const nx = -Math.sin(a) * o;
+      const ny = Math.cos(a) * o;
+      line(g, hub.cx + Math.cos(a) * band * 1.8 + nx, hub.cy + Math.sin(a) * band * 1.8 + ny, hub.cx + Math.cos(a) * (r - band) + nx, hub.cy + Math.sin(a) * (r - band) + ny, color, 0.22);
+    }
+  }
+}
+
+/** A ROUNDED BLOCK round the talents `ns`, `pad` pixels out from their middles (the fist's fingers, its back, its thumb). */
+/**
+ * THE VETERAN'S GLOBE: a ball of glass through the talents round its rim (their middle its middle), faintly filled with its
+ * colour, its rim drawn round, a glint on its upper left; and with `fire`, round that talent over it, three tongues of flame
+ * licking up in its colour, as a globe in fire is over him in a fight.
+ */
+function drawGlobe(g: CanvasRenderingContext2D, ns: readonly TalentAt[], fire: TalentAt | null, color: string): void {
+  const cx = ns.reduce((s, n) => s + n.cx, 0) / ns.length;
+  const cy = ns.reduce((s, n) => s + n.cy, 0) / ns.length;
+  const rad = ns.reduce((s, n) => s + Math.hypot(n.cx - cx, n.cy - cy), 0) / ns.length;
+  g.globalAlpha = 0.08;
+  g.fillStyle = color;
+  g.beginPath();
+  g.arc(cx, cy, rad, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+  const seg = (r: number, a0: number, a1: number, alpha: number, steps: number): void => {
+    for (let i = 0; i < steps; i++) {
+      const a = a0 + ((a1 - a0) * i) / steps;
+      const b = a0 + ((a1 - a0) * (i + 1)) / steps;
+      line(g, cx + Math.cos(a) * r, cy + Math.sin(a) * r, cx + Math.cos(b) * r, cy + Math.sin(b) * r, color, alpha);
+    }
+  };
+  // (its rim, and a fainter one just inside: glass has a thickness)
+  seg(rad, 0, Math.PI * 2, 0.4, 48);
+  seg(rad - 2, 0, Math.PI * 2, 0.15, 48);
+  // (the glint)
+  seg(rad * 0.72, Math.PI * 1.08, Math.PI * 1.38, 0.5, 6);
+  seg(rad * 0.6, Math.PI * 1.12, Math.PI * 1.26, 0.35, 3);
+  if (!fire) return;
+  // (its fire: three tongues round the talent over it, the middle one tallest, each a little flame shape, fading to its tip)
+  const fx = fire.cx;
+  const crown = ns.reduce((a, n) => (n.cy < a.cy ? n : a), ns[0]);
+  const base = crown.r.y - 2;
+  const top = fire.r.y - 9;
+  for (const [dx, k] of [[-0.62, 0.62], [0, 1], [0.62, 0.7]] as const) {
+    const x0 = fx + dx * rad * 0.55;
+    const y1 = base - (base - top) * k;
+    const w = rad * 0.2;
+    g.globalAlpha = 0.14;
+    g.fillStyle = color;
+    g.beginPath();
+    g.moveTo(x0 - w, base);
+    g.quadraticCurveTo(x0 - w * 1.1, (base + y1) / 2, x0 + dx * w * 0.6, y1);
+    g.quadraticCurveTo(x0 + w * 1.1, (base + y1) / 2, x0 + w, base);
+    g.closePath();
+    g.fill();
+    g.globalAlpha = 1;
+    line(g, x0 - w, base, x0 + dx * w * 0.6, y1, color, 0.35);
+    line(g, x0 + w, base, x0 + dx * w * 0.6, y1, color, 0.35);
+  }
+}
+
+function drawRound(g: CanvasRenderingContext2D, ns: readonly TalentAt[], pad: number, color: string): void {
+  const x0 = Math.min(...ns.map((n) => n.cx)) - pad;
+  const x1 = Math.max(...ns.map((n) => n.cx)) + pad;
+  const y0 = Math.min(...ns.map((n) => n.cy)) - pad;
+  const y1 = Math.max(...ns.map((n) => n.cy)) + pad;
+  const rad = Math.min(pad, (x1 - x0) / 2, (y1 - y0) / 2);
+  g.globalAlpha = 0.1;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x0 + rad, y0);
+  g.lineTo(x1 - rad, y0);
+  g.arc(x1 - rad, y0 + rad, rad, -Math.PI / 2, 0);
+  g.lineTo(x1, y1 - rad);
+  g.arc(x1 - rad, y1 - rad, rad, 0, Math.PI / 2);
+  g.lineTo(x0 + rad, y1);
+  g.arc(x0 + rad, y1 - rad, rad, Math.PI / 2, Math.PI);
+  g.lineTo(x0, y0 + rad);
+  g.arc(x0 + rad, y0 + rad, rad, Math.PI, Math.PI * 1.5);
+  g.closePath();
+  g.fill();
+  g.globalAlpha = 1;
+  // (its edges: the straight runs, and the corners stepped round)
+  line(g, x0 + rad, y0, x1 - rad, y0, color, 0.3);
+  line(g, x0 + rad, y1, x1 - rad, y1, color, 0.3);
+  line(g, x0, y0 + rad, x0, y1 - rad, color, 0.3);
+  line(g, x1, y0 + rad, x1, y1 - rad, color, 0.3);
+  for (const [cx, cy, a0] of [[x1 - rad, y0 + rad, -Math.PI / 2], [x1 - rad, y1 - rad, 0], [x0 + rad, y1 - rad, Math.PI / 2], [x0 + rad, y0 + rad, Math.PI]] as const) {
+    for (let i = 0; i < 6; i++) {
+      const a = a0 + (i / 6) * (Math.PI / 2);
+      const b = a0 + ((i + 1) / 6) * (Math.PI / 2);
+      line(g, cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, cx + Math.cos(b) * rad, cy + Math.sin(b) * rad, color, 0.3);
+    }
+  }
+}
+
 // ---- where everything goes ------------------------------------------------------------------------
 export interface TalentAt {
   def: TalentDef;
@@ -142,6 +373,8 @@ export interface TalentLayout {
   labels: { text: string; x: number; y: number; color: string }[];
   /** The line over the tree: what it is and the points. */
   headY: number;
+  /** Pixels to one of the shape's own units (across: the smaller, where it is stretched). */
+  unit: number;
 }
 
 /** The tree laid into the page's room `r`, its shape stretched to fill it. */
@@ -149,16 +382,24 @@ export function layTalents(game: Game, r: Rect): TalentLayout {
   const tree = TREES[game.hero.cls];
   const pts: (readonly [number, number])[] = tree.talents.map((t) => t.at);
   if (tree.root) pts.push(tree.root);
-  const minX = Math.min(...pts.map((p) => p[0]));
-  const maxX = Math.max(...pts.map((p) => p[0]));
-  const minY = Math.min(...pts.map((p) => p[1]));
-  const maxY = Math.max(...pts.map((p) => p[1]));
+  // (the box its shape is laid in: where its talents go, or the room it says it needs)
+  const [minX, minY, maxX, maxY] = tree.room ?? [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
   const headY = r.y + 1;
   // (room for half a big stone round the edge, and for the captions of the paths above and below)
   const area: Rect = { x: r.x + 9, y: r.y + 19, w: r.w - 18, h: r.h - 29 };
-  const sx = area.w / Math.max(0.01, maxX - minX);
-  const sy = area.h / Math.max(0.01, maxY - minY);
-  const map = (x: number, y: number): [number, number] => [Math.round(area.x + (x - minX) * sx), Math.round(area.y + (y - minY) * sy)];
+  let sx = area.w / Math.max(0.01, maxX - minX);
+  let sy = area.h / Math.max(0.01, maxY - minY);
+  // (a round shape, the gear, laid as round as it is: the smaller of the two, in the middle of the room)
+  let ox = 0;
+  let oy = 0;
+  if (tree.square) {
+    const s = Math.min(sx, sy);
+    ox = (area.w - s * (maxX - minX)) / 2;
+    oy = (area.h - s * (maxY - minY)) / 2;
+    sx = s;
+    sy = s;
+  }
+  const map = (x: number, y: number): [number, number] => [Math.round(area.x + ox + (x - minX) * sx), Math.round(area.y + oy + (y - minY) * sy)];
   const nodes = tree.talents.map((def): TalentAt => {
     const [cx, cy] = map(def.at[0], def.at[1]);
     const s = def.big ? BIG_STONE : STONE;
@@ -182,19 +423,27 @@ export function layTalents(game: Game, r: Rect): TalentLayout {
       }
       return { text: p.name, x: Math.max(r.x, Math.min(r.x + r.w - w, x)), y: Math.max(r.y + 10, Math.min(r.y + r.h - 6, y)), color: p.color };
     });
-  return { tree, nodes, root, labels, headY };
+  return { tree, nodes, root, labels, headY, unit: Math.min(sx, sy) };
 }
 
-/** The card of the talent being read: where it goes, over the game's half against the panel. */
-function cardRect(panel: Rect, at: TalentAt, h: number, W: number, H: number): Rect {
+/**
+ * The card of the talent being read: where it goes, over the game's half against the panel; and above `words`, the words'
+ * own panel over the game's half (WORD_HALF), never on it. His words, 30 Oct 2026, 08:31: “The rune pouch covers the talent
+ * tree descriptions and allocation button”.
+ */
+function cardRect(panel: Rect, at: TalentAt, h: number, W: number, H: number, words: Rect | null): Rect {
+  let r: Rect;
   if (panel.y > 0) {
     // (the panel is the bottom half: the card stands over it)
     const x = Math.max(2, Math.min(W - CARD - 2, at.cx - Math.floor(CARD / 2)));
-    return { x, y: Math.max(2, panel.y - h - 3), w: CARD, h };
+    r = { x, y: Math.max(2, panel.y - h - 3), w: CARD, h };
+  } else {
+    const x = Math.max(2, panel.x - CARD - 3);
+    const y = Math.max(2, Math.min(H - h - 2, at.cy - 12));
+    r = { x, y, w: CARD, h };
   }
-  const x = Math.max(2, panel.x - CARD - 3);
-  const y = Math.max(2, Math.min(H - h - 2, at.cy - 12));
-  return { x, y, w: CARD, h };
+  if (words && r.x < words.x + words.w && r.x + r.w > words.x && r.y + r.h > words.y - 3) r.y = Math.max(2, words.y - 3 - r.h);
+  return r;
 }
 
 /** What the card says, line by line, and how tall it is. */
@@ -203,10 +452,19 @@ function cardLines(game: Game, t: TalentDef, tree: TalentTree): { text: string; 
   const out: { text: string; color: string; small: boolean }[] = [];
   out.push({ text: talentName(t).toUpperCase(), color: P.white, small: false });
   out.push({ text: `${t.big ? 'BIG ' : ''}${path && path.name ? `${path.name} ` : ''}TALENT`, color: path ? path.color : THEME.dim, small: true });
+  // (THE RANGER'S COMPANIONS, taken: in place of its words, the one at his side and what it does; in town he picks another of its three below)
+  const group = COMPANIONS.on ? groupOfTalent(t.id) : null;
+  const pet = group && game.hero.talents.includes(t.id) ? pickedIn(game.hero.pets, group) : null;
   // (TALENTS2: a remade talent's new words, name and word)
-  for (const l of wrapText(talentText(t), CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
+  if (!pet) for (const l of wrapText(talentText(t), CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
   const word = talentWord(t);
   if (word) out.push({ text: `WORKS WITH ${WORDS[word].name.toUpperCase()}`, color: WORD_COLOR[word], small: true });
+  // (a tree drafted, to be shown to the owner: its talents do nothing yet, and the card says so)
+  if (tree.draft && !t.works) out.push({ text: 'A DRAFT: NOT IN PLAY YET', color: THEME.dim, small: true });
+  if (pet) {
+    for (const l of wrapText(`${COMPANION_INFO[pet].name.toUpperCase()}: ${COMPANION_INFO[pet].short}`, CARD - 10)) out.push({ text: l, color: THEME.accent, small: false });
+    if (!game.level.town) out.push({ text: 'PICK ANOTHER IN TOWN', color: THEME.dim, small: true });
+  }
   return out;
 }
 
@@ -223,10 +481,19 @@ export function talentPresses(ui: Ui, game: Game, st: TalentUi, lay: TalentLayou
     if (why) say = why;
     else st.flash = { id, t: 0 };
   }
+  // (a talent with a pick of two, taken: the other's button switches to it)
+  for (const p of card?.picks ?? []) {
+    if (!st.sel || !ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) continue;
+    const why = game.choosePick(st.sel, p.id);
+    if (why) say = why;
+    else st.flash = { id: st.sel, t: 0 };
+  }
   if (card && card.undo && st.sel && ui.pressIn(card.undo.x, card.undo.y, card.undo.w, card.undo.h)) {
     const why = game.unlearnTalent(st.sel);
     if (why) say = why;
   }
+  // (THE RANGER'S COMPANIONS: in town, one of its three picked)
+  for (const p of card?.pets ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCompanion(p.kind);
   // (a press anywhere else on the card is the card's: it does not close the inventory)
   if (card && ui.press && !ui.used && inside(card.r, ui.press.x, ui.press.y)) ui.used = true;
   const pad = ui.touch ? 3 : 1;
@@ -263,7 +530,15 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
 
   const at = new Map(lay.nodes.map((n) => [n.def.id, n]));
   const isTaken = (id: string): boolean => taken.includes(id);
-  // the faint pictures behind the tree, so that its shape reads (the arrow's feathers and head, the swords)
+  // the faint pictures behind the tree, so that its shape reads (the arrow's feathers and head, the swords); the new classes'
+  // (a claw's talons, a gear, a fist) kept to the page
+  const keep = (tree.figures ?? []).some((f) => f.kind === 'talon' || f.kind === 'gear' || f.kind === 'round' || f.kind === 'globe');
+  g.save();
+  if (keep) {
+    g.beginPath();
+    g.rect(r.x - 4, r.y + 10, r.w + 8, r.h - 10);
+    g.clip();
+  }
   for (const f of tree.figures ?? []) {
     const path = tree.paths.find((p) => p.id === f.path);
     const color = path ? path.color : THEME.dim;
@@ -278,6 +553,17 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
       g.closePath();
       g.fill();
       g.globalAlpha = 1;
+    } else if (f.kind === 'talon') drawTalon(g, f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n), f.width, f.hook, color);
+    else if (f.kind === 'gear') {
+      const hub = at.get(f.hub);
+      const ring = f.ring.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
+      if (hub && ring.length >= 3) drawGear(g, hub, ring, f.spokes, color);
+    } else if (f.kind === 'round') {
+      const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
+      if (ns.length) drawRound(g, ns, f.pad * lay.unit, color);
+    } else if (f.kind === 'globe') {
+      const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
+      if (ns.length >= 3) drawGlobe(g, ns, f.fire ? at.get(f.fire) ?? null : null, color);
     } else {
       const P0 = at.get(f.pommel);
       const G = at.get(f.guard);
@@ -316,6 +602,7 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
       }
     }
   }
+  g.restore();
   // the lines: between each talent and the ones that lead to it; and from the mage's rune
   if (lay.root) {
     for (const n of lay.nodes) {
@@ -395,19 +682,33 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
     }
     ui.mark(`talent:${def.id}`, x, y, w, w);
   }
+}
 
-  // the card of the talent being read
+/**
+ * The card of the talent being read: drawn after everything else on the inventory (the words' own panel over the game's
+ * half, `words`, among it), so that nothing lies on it; and placed above that panel (cardRect).
+ */
+export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout, panel: Rect, words: Rect | null): void {
+  const g = ui.g;
+  const tree = lay.tree;
   st.card = null;
-  const sel = st.sel ? at.get(st.sel) : undefined;
+  const sel = st.sel ? lay.nodes.find((n) => n.def.id === st.sel) : undefined;
   if (!sel) return;
   const def = sel.def;
   const lines = cardLines(game, def, tree);
-  const took = isTaken(def.id);
+  const took = game.hero.talents.includes(def.id);
   const why = game.talentProblem(def.id);
   const bh = ui.touch ? 18 : 13;
   const textH = lines.reduce((a, l) => a + LINE_H[l.small ? 'small' : 'normal'] + (l.small ? 2 : 1), 0);
-  const ch = 5 + textH + 3 + bh + 5;
-  const cr = cardRect(panel, sel, ch, ui.w, ui.h);
+  // (THE RANGER'S COMPANIONS, taken, in town: a row of its three to pick from; shown him, by 23:37, 28 Oct, “Yes, like this (Recommended)”)
+  const group = COMPANIONS.on ? groupOfTalent(def.id) : null;
+  const picking = !!group && took && game.level.town;
+  // (a pick of two, once taken: a row of its two over the TAKEN row, the one picked lit)
+  const pickRow = took && def.pick ? bh + 3 : 0;
+  const ch = 5 + textH + 3 + (picking ? bh + 3 : 0) + pickRow + bh + 5;
+  const cr = cardRect(panel, sel, ch, ui.w, ui.h, words);
+  // (a companion's card with its picker, beside the page: it stands up from its stone, clear of what is under it on a phone)
+  if (picking && panel.y <= 0) cr.y = Math.max(2, Math.min(cr.y, sel.cy + 16 - cr.h));
   ui.box(cr.x, cr.y, cr.w, cr.h, THEME.bg, THEME.edgeHi);
   g.fillStyle = THEME.accentLo;
   g.fillRect(cr.x + 1, cr.y + 1, cr.w - 2, 0.5);
@@ -419,6 +720,17 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   const by = cr.y + cr.h - 5 - bh;
   let take: Rect | null = null;
   let undo: Rect | null = null;
+  const picks: { r: Rect; id: string }[] = [];
+  if (pickRow && def.pick) {
+    const now = game.pickOf(def.id);
+    const pw = Math.floor((cr.w - 10 - 3) / 2);
+    def.pick.ids.forEach((id, k) => {
+      const r = { x: cr.x + 5 + k * (pw + 3), y: by - pickRow, w: pw, h: bh };
+      ui.drawButton(r.x, r.y, r.w, r.h, def.pick!.names[k], { primary: now === id });
+      ui.mark(`button:${def.pick!.names[k]}`, r.x, r.y, r.w, r.h);
+      if (now !== id) picks.push({ r, id });
+    });
+  }
   if (took) {
     // taken: and in town, undone for gold (his rulebook), if nothing taken hangs on it alone
     drawText(g, 'TAKEN', cr.x + 5, by + Math.floor((bh - 8) / 2) + 1, THEME.good);
@@ -434,6 +746,20 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
     ui.drawButton(take.x, take.y, take.w, take.h, 'TAKE  (1 POINT)', { primary: true });
     ui.mark('button:TAKE', take.x, take.y, take.w, take.h);
   } else drawText(g, why.toUpperCase(), cr.x + 5, by + Math.floor((bh - 6) / 2) + 1, THEME.dim, { font: 'small' });
+  const pets: { r: Rect; kind: CompanionKind }[] = [];
+  if (picking && group) {
+    const kinds = COMPANION_GROUPS[group].kinds;
+    const now = pickedIn(game.hero.pets, group);
+    const gap = 3;
+    const w = Math.floor((cr.w - 10 - gap * (kinds.length - 1)) / kinds.length);
+    kinds.forEach((k, j) => {
+      const pr = { x: cr.x + 5 + j * (w + gap), y: by - bh - 3, w, h: bh };
+      const label = COMPANION_INFO[k].name.toUpperCase();
+      // (a name too long for its button in the game's letters, in the small ones)
+      ui.drawButton(pr.x, pr.y, pr.w, pr.h, label, { lit: k === now, primary: k === now, small: textWidth(label) > pr.w - 4 });
+      pets.push({ r: pr, kind: k });
+    });
+  }
   ui.mark('talent-card', cr.x, cr.y, cr.w, cr.h);
-  st.card = { r: cr, take, undo };
+  st.card = { r: cr, take, undo, picks, pets };
 }

@@ -11,10 +11,12 @@
 // with the act.
 
 import { makeCrierArt } from '../crier_moves';
+import { CRIER_ACTION, makeCrierActionArt } from '../crier_action';
 import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
-  make: () => makeCrierArt(),
+  // (and his fight done the action way, his handbell at his belt, behind CRIER_ACTION: art/crier_action.ts, his yes, 2 Nov 2026)
+  make: () => (CRIER_ACTION.on ? makeCrierActionArt() : makeCrierArt()),
   // (measured off his stand as tests/act2_crier.test.ts measures it: the top of his tricorn over his floor point, his plume
   // and his trumpet's bell beside it; half his width at the body, his belly and his coat)
   size: { top: 54, half: 16 },

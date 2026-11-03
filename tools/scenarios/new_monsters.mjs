@@ -53,7 +53,8 @@ export default async function (page, snap) {
         return {
           moves: live.filter((m) => m.state === 'windup' && NEW.includes(m.kind)).map((m) => `${m.kind}:${MOVES[m.kind] && m.move !== undefined && m.move >= 0 ? MOVES[m.kind][m.move] : 'blow'}`),
           states: live.filter((m) => NEW.includes(m.kind)).map((m) => `${m.kind}:${m.state}`),
-          zones: g.zones.map((z) => z.kind),
+          // (and the act's perils by their names: the Golem's skeleton hurl, ACTION_F4, on in the game from Version 25.0)
+          zones: [...g.zones.map((z) => z.kind), ...g.perils.filter((p) => p.a1).map((p) => p.a1)],
           shots: g.projectiles.map((p) => p.look),
           spears: g.spears.length,
           bare: live.some((m) => m.bare),
@@ -105,7 +106,7 @@ export default async function (page, snap) {
     const m = g.spawn('golem', h.x - 6, h.y, 1, 0, false, g.rng); g.wakeUp(m); m.life = m.maxLife = 1e7; m.cd = 0.2; m.moveCd = [0, 0];
   }, 9, false);
   check('the Golem: it throws a skull', has(golem, 'golem:throw'), list(golem));
-  check('the Golem: the skull comes down where it was aimed', golem.zones.has('skull'), [...golem.zones].join(' '));
+  check('the Golem: the skull comes down where it was aimed (or its skeleton hurled, ACTION_F4)', golem.zones.has('skull') || [...golem.zones].some((z) => /hurl/.test(z)), [...golem.zones].join(' '));
   check('the Golem: it swings its club', has(golem, 'golem:swing'), list(golem));
 
   const champion = await fight('champion', () => {

@@ -94,6 +94,7 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   chained2: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: true },
   amalgam: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
   beast: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
+  mite: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
   fleshmancer: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
   dagger: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
   minifm: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
@@ -134,6 +135,32 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   palimpsest: { bits: ['#cbc1a6', '#a59b82', '#6d6556'], sparks: false, blood: false, dust: true },
   scraper: { bits: ['#d2c9b0', '#a29a86', '#827c6c'], sparks: false, blood: false, dust: true },
   quill: { bits: ['#f2ecdc', '#d4ccb8', '#9a9384'], sparks: false, blood: false, dust: true },
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's; nothing gory, the Hush leaves them; the swans burst into feathers)
+  swan: { bits: ['#ece6df', '#d5cfd1', '#aca4b3'], sparks: false, blood: false, dust: true },
+  gardener: { bits: ['#2e3e30', '#5a4632', '#8a7a5a'], sparks: false, blood: false, dust: true },
+  groom: { bits: ['#7a3a32', '#c8b080', '#2a2622'], sparks: false, blood: false, dust: true },
+  pguard: { bits: ['#6a1e30', '#d8d8e0', '#9aa0b0'], sparks: true, blood: false, dust: true },
+  princess: { bits: ['#4a3a6a', '#8a7aa8', '#4a773a'], sparks: false, blood: false, dust: true },
+  // (floor 17's)
+  footman: { bits: ['#5a1e2a', '#c8a84a', '#e8e4dc'], sparks: false, blood: false, dust: true },
+  dancer: { bits: ['#4a4e8a', '#8a6aa8', '#ece6df'], sparks: false, blood: false, dust: true },
+  order: { bits: ['#141218', '#2a2630', '#d8d0c0'], sparks: false, blood: false, dust: true },
+  prince: { bits: ['#4a1420', '#c8a84a', '#a82a2a'], sparks: false, blood: false, dust: true },
+  // (floor 18's: glass, no blood)
+  lady: { bits: ['#47306a', '#9898aa', '#ece6df'], sparks: false, blood: false, dust: true },
+  qguard: { bits: ['#3f3253', '#b6b6c6', '#7c7c90'], sparks: true, blood: false, dust: true },
+  reflection: { bits: ['#9ea4bf', '#cdd2e6', '#f5f7ff'], sparks: true, blood: false, dust: false },
+  gqueen: { bits: ['#47306a', '#c2c2da', '#867cb8'], sparks: true, blood: false, dust: true },
+  // (floor 19's: armour, no blood)
+  kknight: { bits: ['#28325a', '#5a6479', '#94794a'], sparks: true, blood: false, dust: true },
+  xbow: { bits: ['#33406e', '#5c6170', '#94794a'], sparks: true, blood: false, dust: true },
+  gking: { bits: ['#28325a', '#94794a', '#9aa0b6'], sparks: true, blood: false, dust: true },
+  // (floor 20's: fog and dust, no blood)
+  hshape: { bits: ['#5c586c', '#8a8699', '#bab6c6'], sparks: false, blood: false, dust: false },
+  rshadow: { bits: ['#303034', '#6a6a6d', '#a4a19d'], sparks: false, blood: false, dust: false },
+  moth: { bits: ['#35313a', '#77717a', '#958c7e'], sparks: false, blood: false, dust: true },
+  // (the Rime Shade: shards of its frost, no blood, no dust: it comes apart into fog)
+  rshade: { bits: ['#686e7c', '#9ca6b8', '#cdd4de'], sparks: false, blood: false, dust: false },
   physician: { bits: ['#1e1a22', '#3a3440', '#929f84'], sparks: false, blood: false, dust: true },
   censor: { bits: ['#141218', '#24202b', '#3a3440'], sparks: false, blood: false, dust: true },
 };

@@ -20,8 +20,9 @@
 
 import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { BOSSES5 } from '../game/bosses';
-import { CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
+import { AM_ACTION, BOSSES5, CO_ACTION, useCoLook } from '../game/bosses';
+import { TILE3 } from './new_mobs3';
+import { ACTION_F1, ACTION_F2, ACTION_F3, ACTION_F4, CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { BOSSES, makeAmalgamArt3, makeBoneBeastArt3, makeChainedArt3, makeHeadsmanArt3 } from './bosses3';
@@ -31,15 +32,25 @@ import { HEADSMAN2 } from './headsman2';
 import { makeHeadsman2Art } from './headsman2_moves';
 import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
-import { makeArcherArt, makeSkeletonArt } from './monster_bones';
+import { ARCHER_RAIN, makeArcherArt, makeSkeletonArt } from './monster_bones';
 import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
-import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
-import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
-import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
+import { BRUTE_RAMPAGE, TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
+import { CULTIST_SIGIL, makeCultistArt, makeHighPriestArt } from './monster_cultist';
+import { SHADE_FROST, makeFrostShadeArt } from './action_f2_fx';
+import { BONEWARD_WALL, makeWallBonewardArt } from './action_f3_fx';
+import { DAGGER_FRENZY } from './cultists';
+import { GOLEM_HURL, makeHurlGolemArt } from './action_f4_fx';
+import { CHAINED_ACTION, makeChainedActionArt } from './chained_action';
+import { CHAINED_LOOK, LOOK_K, LOOK_TRAVEL, makeChainedLookArt } from './chained_look';
+import { AMALGAM_ACTION, makeAmalgamActionArt } from './amalgam_action';
+import { FLESH_ACTION, makeFleshmancerActionArt, makeMiniActionArt } from './fleshmancer_action';
+import { FM_ACTION } from '../game/fm_action';
+import { makeBoneMiteArt } from './amalgam_mites';
+import { WARDEN_LOCKDOWN, WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
-import { ACT1_KINDS, ACT2_KINDS } from '../game/types';
+import { ACT1_KINDS, ACT2_KINDS, HIGH_KINDS } from '../game/types';
 import { ACT1_FIGS, act1Fig, act1Look, act1Looks } from './act1_figs/index';
 
 /**
@@ -55,6 +66,62 @@ export function useMonsterAttacks(on: boolean): void {
   CRAWL_OUT.on = on;
 }
 useMonsterAttacks(MONSTER_ATTACKS.on);
+
+/** FLOOR 1, MORE ACTION (game/defs.ts ACTION_F1): the rules and the art chat's pictures of the arrow rain and the Lockdown, on and off together. */
+export function useActionF1(on: boolean): void {
+  ACTION_F1.on = on;
+  ARCHER_RAIN.on = on;
+  WARDEN_LOCKDOWN.on = on;
+}
+useActionF1(ACTION_F1.on);
+/** FLOOR 2, MORE ACTION (game/defs.ts ACTION_F2): the rules and the art chat's pictures of the fire sigil and the Shade's rime, on and off together. */
+export function useActionF2(on: boolean): void {
+  ACTION_F2.on = on;
+  CULTIST_SIGIL.on = on;
+  SHADE_FROST.on = on;
+}
+useActionF2(ACTION_F2.on);
+/** FLOOR 3, MORE ACTION (game/defs.ts ACTION_F3): the rules and the art chat's pictures of the Boneward's shield wall and the green troll's rampage and bull rush, on and off together. */
+export function useActionF3(on: boolean): void {
+  ACTION_F3.on = on;
+  BONEWARD_WALL.on = on;
+  BRUTE_RAMPAGE.on = on;
+}
+useActionF3(ACTION_F3.on);
+/** FLOOR 4, MORE ACTION (game/defs.ts ACTION_F4): the rules and the art chat's pictures of the dagger cultist's frenzy and the Ossuary Golem's skeleton hurl, on and off together. */
+export function useActionF4(on: boolean): void {
+  ACTION_F4.on = on;
+  DAGGER_FRENZY.on = on;
+  GOLEM_HURL.on = on;
+}
+useActionF4(ACTION_F4.on);
+/** THE CHAINED ONE'S MOVES DONE THE ACTION WAY (game/bosses.ts CO_ACTION): the rules and the art chat's pictures, on and off together. */
+export function useCoAction(on: boolean): void {
+  CO_ACTION.on = on;
+  CHAINED_ACTION.on = on;
+}
+useCoAction(CO_ACTION.on);
+/** THE OSSUARY AMALGAMATION'S MOVES DONE THE ACTION WAY (game/bosses.ts AM_ACTION), and its bone mites: the rules and the art chat's pictures, on and off together. */
+export function useAmAction(on: boolean): void {
+  AM_ACTION.on = on;
+  AMALGAM_ACTION.on = on;
+}
+useAmAction(AM_ACTION.on);
+/** THE FLESHMANCER'S MOVES DONE THE ACTION WAY (game/fm_action.ts FM_ACTION): the rules and the art chat's pictures (FLESH_ACTION) together. */
+export function useFmAction(on: boolean): void {
+  FM_ACTION.on = on;
+  FLESH_ACTION.on = on;
+}
+useFmAction(FM_ACTION.on);
+/**
+ * THE CHAINED ONE'S NEW BODY (art/chained_look.ts CHAINED_LOOK; the rules' numbers that grow with him, game/bosses.ts CO_LOOK): his
+ * pictures, his reach and his bar over his head together. (His moves the action way's, CO_ACTION, which it needs.)
+ */
+export function useChainedLook(on: boolean): void {
+  CHAINED_LOOK.on = on;
+  useCoLook(on, LOOK_TRAVEL / TILE3);
+  for (const f of ['chained', 'chained1', 'chained2'] as const) (FIGURE_SIZE[f] as { top: number }).top = Math.round(48 * (on ? LOOK_K : 1));
+}
 
 /**
  * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
@@ -127,9 +194,9 @@ export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'gole
 
 /** THE FIRST FIVE FLOORS' figures: the bosses of floors 2 to 5 (the Chained One in each of his three states), the bone beast, and the cult's two. */
 // (ACT 2, THE HUSH: its kinds as the descent's, once built, and their other looks: art/act1_figs/types.ts `looks`)
-export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...[...ACT1_KINDS, ...ACT2_KINDS].filter((k) => act1Fig(k) !== null), ...(act1Looks() as MonsterFigure[])];
+export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].filter((k) => act1Fig(k) !== null), ...(act1Looks() as MonsterFigure[])];
 /** Those of them that are heavy to paint and to hold (art/bosses3.ts: seconds of painting, tens of megabytes): made for the floor they are on, and let go of after it (Bestiary.forget). */
-export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...[...ACT1_KINDS, ...ACT2_KINDS].filter((k) => act1Fig(k)?.heavy), ...(act1Looks() as MonsterFigure[]).filter((f) => act1Fig(f)?.heavy)];
+export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...[...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].filter((k) => act1Fig(k)?.heavy), ...(act1Looks() as MonsterFigure[]).filter((f) => act1Fig(f)?.heavy)];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
@@ -139,7 +206,7 @@ export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: numbe
   if (look) return look as MonsterFigure;
   // (ACT 2, THE HUSH: a lair's guardian there is one of the floor's own, game/act2_mobs.ts ACT2_GUARD, and is shown as its
   // kind: nothing of the old floors fights on the new, his "let’s keep the acts separate")
-  return m.kind === 'warden' ? 'warden' : m.champion && !ACT2_KINDS.includes(m.kind) ? 'guardian' : m.kind;
+  return m.kind === 'warden' ? 'warden' : m.champion && !ACT2_KINDS.includes(m.kind) && !HIGH_KINDS.includes(m.kind) ? 'guardian' : m.kind;
 }
 
 /**
@@ -173,6 +240,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   chained2: { top: 48, half: 20 },
   amalgam: { top: 34, half: 46 },
   beast: { top: 14, half: 17 },
+  // (the Amalgamation's bone mites: a third of the knight)
+  mite: { top: 10, half: 6 },
   // (he floats: his hood, not the skull on his staff over it)
   fleshmancer: { top: 35, half: 14 },
   dagger: { top: 28, half: 9 },
@@ -216,8 +285,34 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   censor: { top: 41, half: 16 },
   scraper: { top: 22, half: 40 },
   quill: { top: 52, half: 14 },
+  // (ACT 2, PART TWO, THE HIGH CITY: floor 16's, from the art chat's notes until FIG.size says)
+  swan: { top: 18, half: 9 },
+  gardener: { top: 27, half: 9 },
+  groom: { top: 27, half: 9 },
+  pguard: { top: 33, half: 11 },
+  princess: { top: 42, half: 14 },
+  // (floor 17's, from the art chat's notes until FIG.size says: the footman 63 tall, the dancers the knight's size, the Order the knight's, the Prince a head taller)
+  footman: { top: 32, half: 10 },
+  dancer: { top: 29, half: 9 },
+  order: { top: 29, half: 9 },
+  prince: { top: 42, half: 12 },
+  // (floor 18's: the ladies and the reflections the knight's size, the guard a little taller, the Queen a head and a half and her crown)
+  lady: { top: 29, half: 9 },
+  qguard: { top: 32, half: 10 },
+  reflection: { top: 29, half: 9 },
+  gqueen: { top: 44, half: 13 },
+  // (floor 19's: the knights huge (their remake to come), the crossbowmen the knight's size, the King twice the knight with the Hush on him)
+  kknight: { top: 40, half: 14 },
+  xbow: { top: 30, half: 9 },
+  gking: { top: 58, half: 16 },
+  // (floor 20's: the Hush's shapes and the Order's masks the knight's size, the royals' shadows to a head over it, the Moth vast)
+  hshape: { top: 30, half: 10 },
+  rshadow: { top: 33, half: 9 },
+  moth: { top: 322, half: 70 },
+  // (the Rime Shade hunched, its head where its picture has it: tests/first5_bosses.test.ts 10)
+  rshade: { top: 32, half: 11 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
-  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
+  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)
   ...Object.fromEntries(act1Looks().map((k) => [k, act1Fig(k)!.size])),
 };
@@ -233,6 +328,8 @@ export interface Bestiary {
    * begin their attacks together would each want thirty new frames).
    */
   warm(figures: ReadonlyArray<MonsterFigure>): boolean;
+  /** A BOSS NEARING ITS END (render/render.ts): its death, of what is still to be painted ahead, painted next. */
+  dieFirst(figure: MonsterFigure): void;
   /**
    * THE FIRST FIVE FLOORS: let go of a figure's pictures (the boss of a floor that has been left: tens of
    * megabytes each). They are made again, frame by frame as they are wanted, if it is ever asked for again.
@@ -290,9 +387,9 @@ export function makeBestiary(): Bestiary {
         : figure === 'guardian' ? makeGuardianArt()
         : figure === 'warden' ? makeWardenArt()
         // THE NEW MONSTERS: their walks shown at the paces the rules give them
-        : figure === 'shade' ? makeShadeArt3(MONSTERS.shade.speed)
-        : figure === 'boneward' ? makeBonewardArt3(MONSTERS.boneward.speed)
-        : figure === 'golem' ? withSkulls(makeGolemArt3(MONSTERS.golem.speed))
+        : figure === 'shade' ? (SHADE_FROST.on ? makeFrostShadeArt(MONSTERS.shade.speed) : makeShadeArt3(MONSTERS.shade.speed))
+        : figure === 'boneward' ? (BONEWARD_WALL.on ? makeWallBonewardArt(MONSTERS.boneward.speed) : makeBonewardArt3(MONSTERS.boneward.speed))
+        : figure === 'golem' ? (GOLEM_HURL.on ? makeHurlGolemArt(MONSTERS.golem.speed) : withSkulls(makeGolemArt3(MONSTERS.golem.speed)))
         : figure === 'champion' ? makeChampionArt3(MONSTERS.champion.speed)
         : figure === 'marksman' ? makeMarksmanArt3(MONSTERS.marksman.speed)
         : figure === 'priest' ? makeHighPriestArt()
@@ -301,14 +398,17 @@ export function makeBestiary(): Bestiary {
         // cultist's run at the pace the rules give him
         // (THE HEADSMAN MADE NEW: his new look and moves, with HEADSMAN2 on: art/headsman2.ts)
         : figure === 'headsman' ? (HEADSMAN2.on ? makeHeadsman2Art() : makeHeadsmanArt3())
-        : figure === 'chained' ? makeChainedArt3(undefined, 0)
-        : figure === 'chained1' ? makeChainedArt3(undefined, 1)
-        : figure === 'chained2' ? makeChainedArt3(undefined, 2)
-        : figure === 'amalgam' ? makeAmalgamArt3()
+        // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY, behind CHAINED_ACTION with the rules' CO_ACTION: art/chained_action.ts)
+        // (and his new body, behind CHAINED_LOOK: art/chained_look.ts)
+        : figure === 'chained' ? (CHAINED_LOOK.on ? makeChainedLookArt(undefined, 0) : CHAINED_ACTION.on ? makeChainedActionArt(undefined, 0) : makeChainedArt3(undefined, 0))
+        : figure === 'chained1' ? (CHAINED_LOOK.on ? makeChainedLookArt(undefined, 1) : CHAINED_ACTION.on ? makeChainedActionArt(undefined, 1) : makeChainedArt3(undefined, 1))
+        : figure === 'chained2' ? (CHAINED_LOOK.on ? makeChainedLookArt(undefined, 2) : CHAINED_ACTION.on ? makeChainedActionArt(undefined, 2) : makeChainedArt3(undefined, 2))
+        : figure === 'amalgam' ? (AMALGAM_ACTION.on ? makeAmalgamActionArt(MONSTERS.amalgam.speed) : makeAmalgamArt3())
+        : figure === 'mite' ? makeBoneMiteArt()
         : figure === 'beast' ? makeBoneBeastArt3()
-        : figure === 'fleshmancer' ? makeFleshmancerArt3()
+        : figure === 'fleshmancer' ? (FLESH_ACTION.on ? makeFleshmancerActionArt() : makeFleshmancerArt3())
         : figure === 'dagger' ? makeDaggerCultistArt3(MONSTERS.dagger.speed)
-        : figure === 'minifm' ? makeMiniFleshmancerArt3()
+        : figure === 'minifm' ? (FLESH_ACTION.on ? makeMiniActionArt() : makeMiniFleshmancerArt3())
         : makeChieftainArt();
       made.set(figure, art);
     }
@@ -319,13 +419,13 @@ export function makeBestiary(): Bestiary {
    * first thing seen of a monster), walking, then its attacks from start to finish. The last of
    * `left` is the next to paint.
    */
-  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt }>();
-  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt } => {
+  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt; dies?: Set<() => Sprite> }>();
+  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt; dies?: Set<() => Sprite> } => {
     const art = of(figure);
     let list = todo.get(figure);
     // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, or the archer's, ARCHER3, was thrown)
     if (!list || list.art !== art) {
-      list = { left: [], done: 0, art };
+      list = { left: [], done: 0, art, dies: new Set() };
       // (and last its death: by the time one of them is killed, how it falls is painted; and before
       // it, a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves.
       // Each pick gives lists of frames, which are only counted here, never read: READING A FRAME IS
@@ -346,7 +446,13 @@ export function makeBestiary(): Bestiary {
       ];
       for (const pick of picks) {
         for (const set of [art.front, art.back]) {
-          for (const frames of pick(set)) for (let i = 0; i < frames.length; i++) list.left.push(() => (warmed = frames[i]));
+          for (const frames of pick(set)) {
+            for (let i = 0; i < frames.length; i++) {
+              const one = (): Sprite => (warmed = frames[i]);
+              list.left.push(one);
+              if (frames === set.clips?.die?.frames) list.dies!.add(one);
+            }
+          }
         }
       }
       list.left.reverse();
@@ -356,6 +462,16 @@ export function makeBestiary(): Bestiary {
   };
   return {
     of,
+    dieFirst(figure: MonsterFigure): void {
+      // (its death's frames still to be painted ahead, painted next: they are taken from the end of the list)
+      const list = listOf(figure);
+      const dies = list.dies;
+      if (!dies || !dies.size) return;
+      const rest = list.left.filter((f) => !dies.has(f));
+      const first = list.left.filter((f) => dies.has(f));
+      list.left = [...rest, ...first];
+      dies.clear();
+    },
     warm(figures: ReadonlyArray<MonsterFigure>): boolean {
       // Whichever of them has had the fewest painted goes next: so all of them can stand and
       // walk (forty frames each) before any of them has every frame of its attack.

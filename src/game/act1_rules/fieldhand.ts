@@ -19,8 +19,11 @@
 //
 // Every number here that is a picture's is written down here; tests/act2_fieldhand.test.ts holds it to the art.
 
+import { BOOM, BOOM_BACK, BOOM_CATCH, BOOM_HIT, FIELD_HARVEST, boomStrikes } from '../../art/action_f11_field';
+import { TILE3 } from '../../art/new_mobs3';
 import { TUNE } from '../defs';
 import type { ActDef, GaitDef } from '../bosses';
+import { backView, flipped } from '../facing';
 import type { Act1Rules } from './types';
 
 /** THE FIELDHANDS' NUMBERS (tiles before them and to their left; seconds of their pictures). */
@@ -43,9 +46,40 @@ const ACTS: readonly ActDef[] = [
   { id: 'fieldhand:slash', clip: 'attack', long: 1.3, hit: FIELDHAND.slash.hit, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 1.3 },
 ];
 
+/**
+ * THE SICKLE BOOMERANG (the art chat's art/action_f11_field.ts behind FIELD_HARVEST, his pick of 2 Nov 2026, 07:46: “Sickle boomerang
+ * (Recommended)”, offered as: the sickle thrown spinning out in a wide curve and back to the hand. Dodge it going out and coming back),
+ * in place of the slash: drawn back far, the way it will fly marked on the ground from BOOM.mark (a loop out to their left, round, and
+ * back on their right); flung at BOOM_HIT, spinning out along the curve and back to the hand at BOOM_CATCH; a hero within BOOM.r of it
+ * struck, once going out and once coming back (boomStrikes); caught, they stagger a step back (BOOM_BACK). Its curve drawn as they
+ * face in their picture (one of the floor's four ways), so it is thrown straight along that way, the way nearest him (`start`).
+ */
+const BOOM_ACTS: readonly ActDef[] = [{ id: 'fieldhand:boom', clip: 'attack', long: BOOM.long, hit: BOOM_HIT, dmg: 1, cooldown: 0, first: 0, after: 0.8, near: BOOM.near, far: BOOM.far }];
+/** The way their picture faces (one of the floor's four, as backView and flipped choose it). */
+function axisOf(fx: number, fy: number): [number, number] {
+  const back = backView(fx, fy);
+  const flip = flipped(fx, fy);
+  return back ? (flip ? [-1, 0] : [0, -1]) : flip ? [0, 1] : [1, 0];
+}
+
 export const RULES: Act1Rules | null = {
   gait: GAIT,
-  acts: ACTS,
+  get acts() {
+    return FIELD_HARVEST.on ? BOOM_ACTS : ACTS;
+  },
+  start(_R, m, a) {
+    if (a.id === 'fieldhand:boom') [m.fx, m.fy] = axisOf(m.fx, m.fy);
+  },
+  end(R, m, a) {
+    // (caught, staggered a step back)
+    if (a.id !== 'fieldhand:boom') return;
+    const g = R.g;
+    const back = BOOM_BACK / TILE3;
+    if (g.free(g.level.walk, m.x + m.fx * back, m.y + m.fy * back, Math.min(m.r, 0.42))) {
+      m.x += m.fx * back;
+      m.y += m.fy * back;
+    }
+  },
   spawned(_R, m) {
     // (a reaper or a gleaner: by its own seed, the dice the game threw for it as it came into the world)
     const gleaner = (m.seed * 9.73) % 1 < FIELDHAND.gleaners;
@@ -55,6 +89,21 @@ export const RULES: Act1Rules | null = {
   acting(R, m, a, t0, t1) {
     const g = R.g;
     const at = (T: number): boolean => t0 < T && t1 >= T;
+    if (a.id === 'fieldhand:boom') {
+      if (at(BOOM_HIT)) g.sfx('whirl', 0.4);
+      if (t1 <= BOOM_HIT || t0 >= BOOM_CATCH) return;
+      const h = g.hero;
+      const act = m.act!;
+      if (h.move || h.invuln > 0 || g.over) return;
+      const r = R.rel(m);
+      const pass = boomStrikes(Math.min(t1, BOOM_CATCH - 1e-3), r.fwd, r.left);
+      const bit = pass === 'out' ? 1 : pass === 'back' ? 2 : 0;
+      if (bit && !(act.b & bit)) {
+        act.b |= bit;
+        R.blow(m, a.dmg);
+      }
+      return;
+    }
     // (the sickle goes up over the shoulder: its swish as it comes down)
     if (at(0.46)) g.sfx('swing', 0.45);
     if (a.id !== 'fieldhand:slash' || !at(a.hit)) return;
@@ -64,3 +113,6 @@ export const RULES: Act1Rules | null = {
     if (r.fwd >= S.fwd[0] && r.fwd <= S.fwd[1] && r.left >= S.left[0] && r.left <= S.left[1]) R.blow(m, a.dmg);
   },
 };
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { FIELD_HARVEST };

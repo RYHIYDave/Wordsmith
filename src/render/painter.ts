@@ -30,16 +30,20 @@
 
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
-import type { ActorArt } from '../art/actor_types';
+import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
+import { lookOfPlace } from '../art/heroes';
+import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 import type { ClassId } from '../game/types';
+import { VETERAN } from '../game/veteran';
+import { VET_LISTS } from '../art/veteran_art';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
-import { PIECE, flowOfLand, gateWardLand, landTerrain, lowRowsOf, paintFlows, withLow } from './outdoor';
+import { PIECE, flowOfLand, gateWardLand, groundPainter, landTerrain, lowRowsOf, paintFlows, withLow } from './outdoor';
 import type { FlowBits } from './outdoor';
 import type { FlowLayer } from '../art/flowing';
 import type { Rows } from '../art/low_stacks';
@@ -81,17 +85,26 @@ interface Given {
   same?: [number, number, number];
 }
 /** What the page asks of a worker. */
+/**
+ * THE WARLOCK'S FRAMES, as asked of a worker (paintWorkerMain's warlock): 'soon', the first frame of every list of his; 'rest',
+ * all the rest, in one worker; or, where there are cores for two (Painter.heroLane), 'soonMan' and 'man' (as a man, and blazing)
+ * in one and 'demon' (the change, and the demon, the first frame of each of their lists first) in the other.
+ */
+export type WarlockPart = 'soon' | 'soonMan' | 'rest' | 'man' | 'demon';
+
 type Ask =
   | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean }
   | { t: 'film'; key: string; pri: number }
   | { t: 'drop'; figure: MonsterFigure }
+  // (A BOSS'S DEATH PAINTED NEXT: its fall, as it nears it, before the rest of its frames still to come: Painter.dieFirst)
+  | { t: 'dieFirst'; figure: MonsterFigure }
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
   | { t: 'ground'; id: number; floor: Floor; land: Land; walls: number }
   | { t: 'piece'; id: number; i: number; j: number; pri: number }
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
   | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
-  | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
+  | { t: 'hero'; cls: ClassId; place: HeroPlace; pri: number; warlock?: WarlockPart; soon?: boolean; vet?: boolean };
 /** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
 interface WallBitMsg {
   d: number;
@@ -109,7 +122,7 @@ type Tell =
   | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[]; flow?: FlowBits<ImageBitmap> | null }
   // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
   | { t: 'shell'; id: number; n: number; x0: number; y0: number; w: number; h: number; bmp: ImageBitmap | null; ms: number; last: boolean }
-  | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
+  | { t: 'heroFrames'; cls: ClassId; place: HeroPlace; list: Given[]; left: number; vet?: boolean }
   | { t: 'fail'; what: string; why: string };
 
 const isSprite = (v: unknown): v is Sprite => !!v && typeof v === 'object' && 'img' in v && 'ax' in v && 'ay' in v;
@@ -170,8 +183,16 @@ export class Painter {
    * THE HERO'S PICTURES, painted ahead by the same worker (the ground's: it is kept for the whole game). `toHero` takes in
    * each frame as it comes (render/render.ts): true if it was wanted. `heroAsked`: what has been asked of it.
    */
-  toHero: ((cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
+  toHero: ((cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean) | null = null;
   private heroAsked = new Set<string>();
+  /**
+   * THE WARLOCK'S DEMON'S WORKER (his word, 31 Oct 2026, 20:08: "Show up late mostly"): where there are cores for it (`many` two
+   * or more), a worker of its own paints the change and the demon while the ground's worker paints him as a man (paintWorkerMain's
+   * warlock, 'demon' and 'man'). Kept from floor to floor as the ground's is; ended when it has done. If it cannot start or
+   * fails, its work is the ground's worker's, as it was before there were two.
+   */
+  private heroLane: Lane | null = null;
+  private heroWatch: ReturnType<typeof setTimeout> | null = null;
   /** The hero's frames taken in from the worker, for measuring. */
   heroFrames = 0;
   /**
@@ -219,6 +240,7 @@ export class Painter {
       lane.open = Math.max(0, lane.open - 1);
     }
     this.sideFigures.clear();
+    this.dieAsked.clear();
     for (const film of this.films.values()) eachSprite(film, releaseSprite);
     this.films.clear();
     this.asked.clear();
@@ -255,6 +277,26 @@ export class Painter {
       if (was.left !== 0) this.finished(lane);
     }
     this.bestiary().forget(figure);
+  }
+
+  /**
+   * A FIGURE'S DEATH PAINTED NEXT (a boss nearing its end: render/render.ts). Its frames are painted in the order the game
+   * would paint them ahead, its death last (bestiary paintOrder): a boss with many moves had not had its death painted by the
+   * time it died, and every frame of its fall was painted where the game is played as it was shown, seconds of the game
+   * crawling (measured 3 Nov 2026: two to ten seconds of painting in the eight after a boss of floors 2 to 20 died, on this
+   * machine; 24.3's the same). So, asked once a figure: whatever worker paints it paints its death before the rest of it.
+   */
+  dieFirst(figure: MonsterFigure): void {
+    if (this.state !== 'on' || this.dieAsked.has(figure)) return;
+    if (!this.figures.has(figure) && !this.sideFigures.has(figure)) return;
+    this.dieAsked.add(figure);
+    for (const lane of [...this.lanes, this.groundLane]) lane?.worker.postMessage({ t: 'dieFirst', figure } satisfies Ask);
+  }
+  private dieAsked = new Set<MonsterFigure>();
+
+  /** Is this figure's painting the painter's (a boss's, or another monster's by the side worker)? Its frames not painted yet may be left to it. */
+  paints(figure: MonsterFigure): boolean {
+    return this.state === 'on' && (this.figures.has(figure) || this.sideFigures.has(figure));
   }
 
   /** How many of a figure's frames the painter has still to hand over (0: all are here, or it was never asked for; -1: not begun). */
@@ -328,15 +370,122 @@ export class Painter {
    * The hero's pictures in that place to be painted ahead by the worker. True: the worker is up and has them in hand (the
    * game need not paint them ahead itself); false: the game goes on painting them ahead as before.
    */
-  hero(cls: ClassId, place: 'town' | 'dungeon'): boolean {
+  hero(cls: ClassId, place: HeroPlace): boolean {
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
-    const key = `${cls}:${place}`;
+    // (THE WARLOCK, as a man in a dungeon, his arm blazing, or the demon: all three in one order, the order he needs them in
+    // (his lag, 30 Oct 2026): the first frame of each of his lists soon, before the floor's monsters (a frame of theirs is a
+    // few thousandths of a second to paint, of his a tenth to half a second), so that none is painted where the game is
+    // played; then the rest. The worker: warlock().)
+    if (cls === 'warlock' && place !== 'card' && place !== 'town') {
+      if (!this.heroAsked.has('warlock:all')) {
+        this.heroAsked.add('warlock:all');
+        const two = this.many >= 2 && this.startHeroLane();
+        this.groundLane.open += 2;
+        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, warlock: two ? 'soonMan' : 'soon' } satisfies Ask);
+        this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 30.5, warlock: two ? 'man' : 'rest' } satisfies Ask);
+        if (two && this.heroLane) {
+          this.heroLane.open++;
+          this.heroLane.worker.postMessage({ t: 'hero', cls, place: 'demon', pri: 1, warlock: 'demon' } satisfies Ask);
+        }
+      }
+      return true;
+    }
+    // (THE BRAWLER: the first frame of each of his combos soon, before the floor's monsters, a jab and a cross first: each is seconds
+    // to make, and where none of one is painted his jab or cross stands in for it: art/brawler_art.ts. His word, 1 Nov 2026, 10:19:
+    // “I had some stutter issues with the brawler loading his hold ability”)
+    // (THE VETERAN, the Brawler made again while game/veteran.ts VETERAN is on: the worker has no switch of its own, so it is told
+    // (`vet`). His stance's, his run's and every move's first frame soon, before the floor's monsters: art/veteran_art.ts)
+    const vet = cls === 'brawler' && VETERAN.on;
+    if (cls === 'brawler' && !vet && place !== 'card' && !this.heroAsked.has('brawler:soon')) {
+      this.heroAsked.add('brawler:soon');
+      this.groundLane.open++;
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, soon: true } satisfies Ask);
+    }
+    if (vet && place !== 'card' && !this.heroAsked.has('veteran:soon')) {
+      this.heroAsked.add('veteran:soon');
+      this.groundLane.open++;
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place: 'dungeon', pri: 1.8, soon: true, vet: true } satisfies Ask);
+    }
+    const key = `${cls}:${place}${vet ? ':vet' : ''}`;
     if (!this.heroAsked.has(key)) {
       this.heroAsked.add(key);
       this.groundLane.open++;
-      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'town' ? 30 : 31 } satisfies Ask);
+      // (the Warlock's demon before his arm blazing: it is the heavier by far, and its frames are not painted in the game: art/kit.ts HEAVY)
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'card' ? 29 : place === 'town' ? 30 : place === 'dungeon' ? 31 : place === 'demon' ? 31.5 : 32, ...(vet ? { vet: true } : {}) } satisfies Ask);
     }
     return true;
+  }
+
+  /** The demon's worker started (Painter.heroLane). False: it could not be. */
+  private startHeroLane(): boolean {
+    if (this.heroLane) return true;
+    if (this.state !== 'on' || !this.url) return false;
+    let worker: Worker;
+    try {
+      worker = new Worker(this.url);
+    } catch {
+      return false;
+    }
+    const lane: Lane = { n: -2, worker, ready: false, open: 0 };
+    worker.onmessage = (e: MessageEvent<Tell>) => this.toldHero(lane, e.data);
+    worker.onerror = (e: ErrorEvent) => {
+      e.preventDefault?.();
+      this.stats.failed.push(`demon's worker: ${e.message || 'error'}`);
+      this.heroLaneFailed(lane);
+    };
+    this.heroLane = lane;
+    this.stats.workers++;
+    this.heroWatch = setTimeout(() => {
+      this.heroWatch = null;
+      if (this.heroLane === lane && !lane.ready) {
+        this.stats.failed.push("demon's worker: never ready");
+        this.heroLaneFailed(lane);
+      }
+    }, READY_MS);
+    return true;
+  }
+
+  private toldHero(lane: Lane, m: Tell): void {
+    const mine = this.heroLane === lane;
+    if (m.t === 'ready') {
+      lane.ready = true;
+      return;
+    }
+    if (m.t === 'heroFrames') {
+      for (const g of m.list) {
+        if (g.s) {
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s, m.vet)) this.heroFrames++;
+          else (g.s.img as unknown as ImageBitmap).close();
+        }
+      }
+      if (m.left === 0 && mine) this.endHeroLane();
+      return;
+    }
+    if (m.t === 'fail') {
+      this.stats.failed.push(`demon's worker, ${m.what}: ${m.why}`);
+      if (mine) this.heroLaneFailed(lane);
+    }
+  }
+
+  /** The demon's worker failed: ended, and its work given to the ground's worker. */
+  private heroLaneFailed(lane: Lane): void {
+    if (this.heroLane !== lane) return;
+    this.endHeroLane();
+    const g = this.groundLane;
+    if (!g) return;
+    g.open++;
+    g.worker.postMessage({ t: 'hero', cls: 'warlock', place: 'demon', pri: 30.6, warlock: 'demon' } satisfies Ask);
+  }
+
+  private endHeroLane(): void {
+    const lane = this.heroLane;
+    if (this.heroWatch !== null) clearTimeout(this.heroWatch);
+    this.heroWatch = null;
+    if (!lane) return;
+    lane.worker.onmessage = null;
+    lane.worker.onerror = null;
+    lane.worker.terminate();
+    this.heroLane = null;
   }
 
   /**
@@ -442,7 +591,7 @@ export class Painter {
       const mine = this.groundLane === lane;
       for (const g of m.list) {
         if (g.s) {
-          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s)) this.heroFrames++;
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s, m.vet)) this.heroFrames++;
           else (g.s.img as unknown as ImageBitmap).close();
         }
       }
@@ -579,6 +728,7 @@ export class Painter {
       this.groundLane = null;
       this.ground = 0;
       this.heroAsked.clear();
+      this.endHeroLane();
     }
     if (this.watchdog !== null) clearTimeout(this.watchdog);
     this.watchdog = null;
@@ -592,6 +742,7 @@ export class Painter {
     // (the figures are the game's to paint now; it is told so by `mob` and `side` saying false)
     this.figures.clear();
     this.sideFigures.clear();
+    this.dieAsked.clear();
   }
 }
 
@@ -748,7 +899,7 @@ export function paintWorkerMain(): void {
   const scope = self as unknown as { postMessage(m: Tell, transfer?: Transferable[]): void; onmessage: ((e: MessageEvent<Ask>) => void) | null };
   const bestiary = makeBestiary();
   interface Job {
-    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' }>;
+    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' } | { t: 'dieFirst' }>;
     seq: number;
     run?: Generator<void, void, void>;
   }
@@ -756,7 +907,8 @@ export function paintWorkerMain(): void {
   let seq = 0;
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
-  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null; flow: FlowLayer | null } | null = null;
+  // (THE HIGH CITY, FLOOR 16: `paint`, how its pieces are painted: render/outdoor.ts groundPainter)
+  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null; flow: FlowLayer | null; paint: typeof paintTerrain } | null = null;
   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
 
   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
@@ -787,17 +939,86 @@ export function paintWorkerMain(): void {
   let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
 
   /** A hero's frames in a place, painted and handed over a few at a time, in the order the page paints them ahead. */
-  function* hero(cls: ClassId, place: 'town' | 'dungeon'): Generator<void, void, void> {
+  function* hero(cls: ClassId, place: HeroPlace, soon = false, vet = false): Generator<void, void, void> {
     heroArt ??= makeHeroArt3();
-    const art = heroArt.of(cls, { twoHanded: true, town: place === 'town' });
+    const art = heroArt.of(cls, { ...lookOfPlace(place), vet });
     const lists = [heroLists(art.front), heroLists(art.back)];
     const order: [number, number, number][] = [];
-    for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+    if (vet && place !== 'card') {
+      // THE VETERAN (art/veteran_art.ts): every frame of his a few tenths of a second to paint. SOON: the first frame of his
+      // stance, his run, and every move of his, both ways (a list with none painted stands on his stance where the game is
+      // played: never one painted there). Then the rest: his run whole, then his stance and every move coarse to fine (a frame
+      // in eight, then in four, in two, the rest: a move not here yet is shown by the nearest frame of it that is), the most
+      // thrown first, his action lines (art/veteran_fx_art.ts) whole after the first pass; then struck, his fall, and the
+      // strikes' half-frames.
+      const idx = (l: readonly unknown[] | undefined): number => (l ? lists[0].indexOf(l as never) : -1);
+      const stand = [idx(art.front.idle), idx(art.front.walk)].filter((l) => l >= 0);
+      const moves = VET_LISTS.map((id) => idx(art.front.clips?.vet?.[id]?.frames)).filter((l) => l >= 0);
+      const fx = VET_LISTS.flatMap((id) => (['front', 'ground', 'behind'] as const).map((k) => idx(art.front.clips?.vetFx?.[id]?.[k]))).filter((l) => l >= 0);
+      const after = [idx(art.front.clips?.reel?.frames), idx(art.front.clips?.fall?.frames), ...VET_LISTS.map((id) => idx(art.front.clips?.vetHalves?.[id]?.frames))].filter((l) => l >= 0);
+      const all = [...stand, ...moves, ...after];
+      if (soon) {
+        for (const l of [...stand, ...moves]) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      } else {
+        const seen = new Set<string>();
+        const add = (v: number, l: number, i: number): void => {
+          if (seen.has(`${v}:${l}:${i}`)) return;
+          seen.add(`${v}:${l}:${i}`);
+          order.push([v, l, i]);
+        };
+        for (const l of all) for (let v = 0; v < 2; v++) if (lists[v][l].length) add(v, l, 0);
+        // (his run whole: it is seen the most; then his stance and every move a frame in eight; his action lines whole, a tenth
+        // of his frames' time to paint (a frame of them not here yet is not shown at all where the game is played); then the
+        // stance and the moves a frame in four, in two, the rest)
+        const walk = stand.length > 1 ? [stand[1]] : [];
+        for (const l of walk) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+        for (const step of [8, 4, 2, 1]) {
+          for (const l of [...stand, ...moves]) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i += step) add(v, l, i);
+          if (step === 8) for (const l of fx) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+        }
+        for (const l of after) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+      }
+    } else if (soon) {
+      // (SOON: the first frame of each of his combos, both ways, by how often they are thrown: one press, two, three; a hold first)
+      const punches = art.front.clips?.punches;
+      const keys = Object.keys(punches ?? {}).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
+      for (const key of keys) {
+        const l = lists[0].indexOf(punches![key].frames);
+        if (l >= 0) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      }
+    } else if (place === 'card') {
+      // ON A CLASS CARD (ui/panels.ts; the owner, 31 Oct 2026, 18:23: "Can you animate the tinkerer and the brawler on the
+      // character select screen in the test version"): only what a card shows, the front, standing and running; every eighth
+      // frame first, then every fourth, and so on, so that each figure moves within a second or two and grows smooth as the
+      // rest come in (a frame not here yet is shown as the nearest that is: art/kit.ts LEFT_TO_PAINTER). Before, every list of
+      // a hero was painted, both ways, one hero after another: the Tinkerer's card waited on the Warlock's 610 frames.
+      const shown = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
+      const seen = new Set<string>();
+      for (const step of [8, 4, 2, 1]) {
+        for (const l of shown) {
+          for (let i = 0; i < lists[0][l].length; i += step) {
+            if (seen.has(`${l}:${i}`)) continue;
+            seen.add(`${l}:${i}`);
+            order.push([0, l, i]);
+          }
+        }
+      }
+    } else {
+      // (STANDING AND RUNNING, then THE FIRST FRAME OF EVERY OTHER LIST, both ways, then the rest: a list with none painted is painted where the game is played,
+      // the frame asked for, and a frame of the new classes' is a tenth of a second and more, a Brawler's combo's first seconds; his
+      // word, 1 Nov 2026, 10:19: “I had some stutter issues with the brawler loading his hold ability”)
+      // (standing and running whole before anything: what is seen most)
+      const seenMost = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
+      for (const l of seenMost) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < 2; v++) for (let i = 1; i < lists[v][l].length; i++) order.push([v, l, i]);
+    }
     const sent = new Set<Sprite>();
     let list: Given[] = [];
     let transfer: Transferable[] = [];
     let t0 = performance.now();
-    if (order.length === 0) scope.postMessage({ t: 'heroFrames', cls, place, list, left: 0 });
+    const said = vet ? { vet: true } : {};
+    if (order.length === 0) scope.postMessage({ t: 'heroFrames', cls, place, list, left: 0, ...said });
     for (let n = 0; n < order.length; n++) {
       const [v, l, i] = order[n];
       const s = lists[v][l][i];
@@ -808,7 +1029,7 @@ export function paintWorkerMain(): void {
       }
       const last = n === order.length - 1;
       if (last || performance.now() - t0 >= CHUNK_MS) {
-        scope.postMessage({ t: 'heroFrames', cls, place, list, left: order.length - 1 - n }, transfer);
+        scope.postMessage({ t: 'heroFrames', cls, place, list, left: order.length - 1 - n, ...said }, transfer);
         list = [];
         transfer = [];
         if (!last) yield;
@@ -817,17 +1038,165 @@ export function paintWorkerMain(): void {
     }
   }
 
+  /**
+   * THE WARLOCK'S FRAMES, his three places in one order (his lag, 30 Oct 2026: "Changing into the demon,Casting spells"; every
+   * frame of his is left to this worker while the game is played, art/warlock_art.ts HEAVY_MAN). 'soon': the first frame of
+   * every list of him as a man, in a dungeon and with his arm blazing, and of the demon (a list with none painted is painted
+   * where the game is played, the frame asked for: the demon's, half a second each, were the stop as he changed). Then what he
+   * does most, as a man (his bolt, running, his curse, standing, his smoke step), blazing (the same), the change, and the demon
+   * (running, raking, Damning, standing, his step), a little of each at a time: every eighth frame, then every fourth, every
+   * other, and the rest. A frame not here yet is shown as the nearest of its list that is (art/kit.ts HEAVY), so every move of
+   * his is seen soon, roughly at first. 'rest', in one worker: the man every eighth and every fourth frame; blazing, the change
+   * and the demon every eighth; the man whole; blazing, the change and the demon every fourth; blazing whole; the change and
+   * the demon whole; then all the rest. Where there are cores for two workers (Painter.heroLane): 'man', in the ground's
+   * worker, the man and blazing so; 'demon', in the other, the change and the demon so. (His word, 31 Oct 2026, 20:07:
+   * "Warlock still has massive performance issues with animations loading correctly", 20:08: "Show up late mostly". Before,
+   * each list was painted whole, one after another, in one worker: his standing, 132 frames, before his running or his bolt;
+   * the demon minutes after.) A frame already handed over is not painted again.
+   */
+  function* warlock(part: WarlockPart): Generator<void, void, void> {
+    heroArt ??= makeHeroArt3();
+    const art = heroArt;
+    const places: HeroPlace[] = ['dungeon', 'blaze', 'demon'];
+    const sets = places.map((p) => {
+      const a = art.of('warlock', lookOfPlace(p));
+      return [a.front, a.back] as const;
+    });
+    const lists = sets.map(([f, b]) => [heroLists(f), heroLists(b)]);
+    const order: [number, number, number, number][] = [];
+    const seen = new Set<string>();
+    const add = (p: number, l: number, upTo: number): void => {
+      if (l < 0) return;
+      for (let v = 0; v < 2; v++) {
+        const L = lists[p][v][l];
+        for (let i = 0; i < Math.min(upTo, L.length); i++) {
+          const k = `${p}:${v}:${l}:${i}`;
+          if (!seen.has(k)) {
+            seen.add(k);
+            order.push([p, v, l, i]);
+          }
+        }
+      }
+    };
+    const firsts = (p: number): void => {
+      for (let l = 0; l < lists[p][0].length; l++) add(p, l, 1);
+    };
+    const at = (p: number, pick: (a: AnimSet) => Sprite[] | undefined): number => {
+      const L = pick(sets[p][0]);
+      return L && L.length ? lists[p][0].indexOf(L) : -1;
+    };
+    if (part === 'soon' || part === 'soonMan') {
+      firsts(0);
+      firsts(1);
+      if (part === 'soon') firsts(2);
+    } else {
+      // (what he does most: as a man, and blazing, M and B; the change, C; the demon, D)
+      const most: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.clips?.attack?.frames, (a) => a.walk, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames];
+      const demonMost: ((a: AnimSet) => Sprite[] | undefined)[] = [(a) => a.walk, (a) => a.clips?.attack?.frames, (a) => a.clips?.attack2?.frames, (a) => a.clips?.heavy?.frames, (a) => a.idle, (a) => a.clips?.leap?.frames, (a) => a.clips?.land?.frames, (a) => a.clips?.change?.frames];
+      const M = most.map((pick) => [0, at(0, pick)] as [number, number]);
+      const B = most.map((pick) => [1, at(1, pick)] as [number, number]);
+      // (THE CHANGE AS IT IS SEEN: his pact is full as he changes, so his arm blazes, and it is the blazing set's change that is
+      // shown (render/render.ts, the hero's look). Till now the plain set's was painted early, and the one seen came last of
+      // all: his word of 30 Oct, "Changing into the demon". The plain set's, never seen so far as the main chat can find, last.)
+      const changeAt = at(0, (a) => a.clips?.change?.frames);
+      const C: [number, number][] = [[1, at(1, (a) => a.clips?.change?.frames)]];
+      const D = demonMost.map((pick) => [2, at(2, pick)] as [number, number]);
+      // (every step-th frame of each of those lists, both ways)
+      const every = (G: [number, number][], step: number): void => {
+        for (const [p, l] of G) {
+          if (l < 0) continue;
+          for (let v = 0; v < 2; v++) {
+            const L = lists[p][v][l];
+            for (let i = 0; i < L.length; i += step) {
+              const k = `${p}:${v}:${l}:${i}`;
+              if (!seen.has(k)) {
+                seen.add(k);
+                order.push([p, v, l, i]);
+              }
+            }
+          }
+        }
+      };
+      const rest = (p: number, but = -1): void => {
+        for (let l = 0; l < lists[p][0].length; l++) if (l !== but) add(p, l, Infinity);
+      };
+      if (part === 'man') {
+        // (as a man: every eighth frame, then every fourth; blazing, every eighth; then the man whole, and blazing whole)
+        every(M, 8);
+        every(M, 4);
+        every(B, 8);
+        every(M, 2);
+        every(M, 1);
+        for (const step of [4, 2, 1]) every(B, step);
+        rest(0, changeAt);
+        rest(1, C[0][1]);
+        add(0, changeAt, Infinity);
+      } else if (part === 'demon') {
+        firsts(2);
+        every(C, 1 << 30);
+        for (const step of [8, 4, 2, 1]) every([...C, ...D], step);
+        rest(2);
+      } else {
+        every(M, 8);
+        every(M, 4);
+        every([...B, ...C, ...D], 8);
+        every(M, 2);
+        every(M, 1);
+        every([...B, ...C, ...D], 4);
+        every(B, 2);
+        every(B, 1);
+        every([...C, ...D], 2);
+        every([...C, ...D], 1);
+        rest(0, changeAt);
+        rest(1);
+        rest(2);
+        add(0, changeAt, Infinity);
+      }
+    }
+    const out = new Map<number, { list: Given[]; transfer: Transferable[] }>();
+    let t0 = performance.now();
+    for (let n = 0; n < order.length; n++) {
+      const [p, v, l, i] = order[n];
+      const s = lists[p][v][l][i];
+      if (!emptied(s)) {
+        let o = out.get(p);
+        if (!o) out.set(p, (o = { list: [], transfer: [] }));
+        o.list.push({ v, l, i, s: shipped(s, o.transfer) });
+      }
+      const last = n === order.length - 1;
+      if (last || performance.now() - t0 >= CHUNK_MS) {
+        for (const [q, o] of out) scope.postMessage({ t: 'heroFrames', cls: 'warlock', place: places[q], list: o.list, left: 1 }, o.transfer);
+        out.clear();
+        if (!last) yield;
+        t0 = performance.now();
+      }
+    }
+    // (the one word that the job is done)
+    scope.postMessage({ t: 'heroFrames', cls: 'warlock', place: 'dungeon', list: [], left: 0 });
+  }
+
+  /** The figures whose death is to be painted next (Painter.dieFirst). */
+  const dieSoon = new Set<MonsterFigure>();
   /** A figure's frames, painted and handed over a few at a time. */
   function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
     const lists = [framesOf(art.front), framesOf(art.back)];
-    const order = paintOrder(art);
+    let order = paintOrder(art);
+    let soon = false;
     const sent = new Map<Sprite, [number, number, number]>();
     let list: Given[] = [];
     let transfer: Transferable[] = [];
     let t0 = performance.now();
     if (order.length === 0) scope.postMessage({ t: 'frames', figure, list, left: 0 });
     for (let n = 0; n < order.length; n++) {
+      // (its death wanted next: what is left of it, its death's frames first)
+      if (!soon && dieSoon.has(figure)) {
+        soon = true;
+        const dies = [art.front.clips?.die?.frames, art.back.clips?.die?.frames].map((f, v) => (f ? lists[v].indexOf(f as Sprite[]) : -1));
+        const rest = order.slice(n);
+        const first = rest.filter(([v, l]) => l === dies[v]);
+        order = [...order.slice(0, n), ...first, ...rest.filter(([v, l]) => l !== dies[v])];
+      }
       const [v, l, i] = order[n];
       // (reading it is what paints it)
       const s = lists[v][l][i];
@@ -877,7 +1246,7 @@ export function paintWorkerMain(): void {
           const t0 = performance.now();
           // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, painted with it: art/standing.ts)
           const both = ground.stands && ground.near ? paintWithStanding(ground.T, ground.stands, ground.near, a.i * PIECE, a.j * PIECE, PIECE, PIECE) : null;
-          const p = both ? both.ground : paintTerrain(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
+          const p = both ? both.ground : ground.paint(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
           const cv = new OffscreenCanvas(PIECE, PIECE);
           (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
           const bmp = cv.transferToImageBitmap();
@@ -901,8 +1270,10 @@ export function paintWorkerMain(): void {
           scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls, flow }, [bmp, ...walls.map((b) => b.img), ...(flow ? flow.frames : [])]);
         }
       } else if (job.ask.t === 'hero') {
-        job.run ??= hero(job.ask.cls, job.ask.place);
+        job.run ??= job.ask.warlock ? warlock(job.ask.warlock) : hero(job.ask.cls, job.ask.place, !!job.ask.soon, !!job.ask.vet);
         if (job.run.next().done) done();
+        // (the heroes on their class cards take turns, a piece of work each, so that all of them move soon)
+        else if (job.ask.place === 'card') job.seq = seq++;
       } else if (job.ask.t === 'shells') {
         job.run ??= shells(job.ask);
         if (job.run.next().done) done();
@@ -935,11 +1306,17 @@ export function paintWorkerMain(): void {
         const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
         const near = ask.walls > 0 ? nearOf(T, ask.walls) : null;
         const stands = near ? (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
-        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor), flow: flowOfLand(ask.land) };
+        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor), flow: flowOfLand(ask.land), paint: groundPainter(ask.land) };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }
       for (let i = jobs.length - 1; i >= 0; i--) if (jobs[i].ask.t === 'piece') jobs.splice(i, 1);
+      return;
+    }
+    if (ask.t === 'dieFirst') {
+      dieSoon.add(ask.figure);
+      // (and the figure's own job, if it waits behind others, first)
+      for (const j of jobs) if (j.ask.t === 'mob' && j.ask.figure === ask.figure) j.ask.pri = Math.min(j.ask.pri, 0);
       return;
     }
     if (ask.t === 'drop') {

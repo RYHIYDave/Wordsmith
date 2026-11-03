@@ -38,6 +38,8 @@ import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
 import { WAYS } from './ways';
+import { YARD_N, layYard, yardOn } from './yard';
+import { GROUNDS_HALL, groundsHere } from './grounds_way';
 import type { Floor, MonsterKind, PackSpot, PropKind, PropSpot, Room, RoomKind } from './types';
 
 // ---------------------------------------------------------------------------------------------
@@ -142,8 +144,53 @@ export function cryptLayoutFloor(depth: number): number {
 }
 /** (the Crypt's floor of the level being planned, 0 if none: set by `planLevel` for the level it plans) */
 let cryptK = 0;
+
+/**
+ * EVERY FLOOR OPEN, LINEAR OR COMBO (behind its switch, off until his yes to pictures of each floor laid so). His words, 31 Oct
+ * 2026, 10:46: “I just feel like these levels would benefit from having a lot more branches that go further off the beaten
+ * path. And they can even, you know, you can have two branches that go in separate directions, but then reconnect somewhere
+ * further along ... it doesn't always have to be like a straight linear path from the beginning of the level to the end of the
+ * level.”; by 11:15: “Combo would be something like the library.  It has a bunch of rooms, but they’re fairly tight and you
+ * find your way through them.”; and his pick for each floor by pop-up (the Crypt's: 1 combo, 2 open, 3 linear, 4 combo, 5
+ * combo). Here, the Crypt's floors (this map-maker's); the floors past them have map-makers of their own.
+ *   COMBO: WAYS ROUND (`loops`): now and then, off a room of the main path, a room set down as a branch's first room is, and from
+ *     it a way on to a room of the path two or three further on: two ways that part and meet again, so that the way to the boss
+ *     is not one line; and more branches (`branches` more), each with a room to cross before its reward (further off the way).
+ *   LINEAR and OPEN: as each floor is laid today (the Crypt opening up from its second floor), for now.
+ * OFF, EVERY DUNGEON IS WHAT IT WAS: none of its dice are thrown. `floors`: the floors laid so, each at his yes to its pictures;
+ * the others as they were. FLOOR 1, combo, his yes, 1 Nov 2026, to its maps beside today's: “Yes, as shown”. FLOOR 2, open (the
+ * great hall, planOpen), his yes to its maps the same morning: “Yes, as shown (Recommended)”.
+ */
+export const LEVEL_KINDS: { on: boolean; floors: number[] } = { on: true, floors: [1, 2] };
+export type LevelKind = 'open' | 'linear' | 'combo';
+/** The Crypt's floors' kinds, his picks (index 0 unused). */
+export const CRYPT_KINDS: readonly (LevelKind | null)[] = [null, 'combo', 'open', 'linear', 'combo', 'combo'];
+/** A combo floor's ways round, and how many more branches it has than another. */
+export const COMBO = { loops: 2, branches: 1 };
+/** The kind of floor `depth` is laid as, while LEVEL_KINDS is on (null: as it always was). */
+export function levelKindOf(depth: number): LevelKind | null {
+  // (the Crypt's own, as its layout is: without it, a dungeon is laid as every dungeon past it is)
+  return LEVEL_KINDS.on && cryptLayoutFloor(depth) > 0 && LEVEL_KINDS.floors.includes(depth) ? CRYPT_KINDS[depth] : null;
+}
+/** (the kind of the level being planned: set by `planLevel`) */
+let kindHere: LevelKind | null = null;
+/** The Crypt opening up, by its floor (OPEN). (An open floor is laid by a map-maker of its own: planOpen.) */
+function openBy(k: 'grow' | 'blocks' | 'pair' | 'long' | 'gapMax' | 'elbow' | 'breach'): number {
+  return OPEN[k][cryptK];
+}
 /** THE WAYS (game/ways.ts, WAYS): the floor being laid is the first, with its gate to town in a back wall of its first room (set by `generateFloor`). */
 let squareStart = false;
+/**
+ * THE HEADSMAN'S YARD (game/yard.ts, behind YARD): the floor being laid is the second, its boss's hall the yard: YARD_N tiles each
+ * way, grown off the room before it toward +y and straight, so that it is come into by its far wall along x (set by `planLevel`).
+ */
+let yardHere = false;
+/**
+ * FLOOR 2 AS THE PRISON'S GROUNDS AT NIGHT (game/grounds_way.ts, behind GROUNDS): the floor being laid is the second, laid open, its
+ * great rooms courtyards under the sky and the rock between them cell blocks standing whole, six deep, a way three wide through
+ * each between two neighbours (set by `planLevel`). Its rooms keep their corners and its floor is level.
+ */
+let groundsNow = false;
 /** The side of a cell block that its cells hang off: its back wall along its length (3, the upper right on the screen, if it runs along x; 2, the upper left, if along y). */
 function blockBack(w: number, h: number): number {
   return w >= h ? 3 : 2;
@@ -217,6 +264,8 @@ interface RoomPlan extends Rect {
   cellAlongX?: boolean;
   /** THE CRYPT OPENS UP: its area before it was grown (`Size.base`): its packs go by it. */
   base?: number;
+  /** FLOOR 2 AS THE PRISON'S GROUNDS: one of the grid's courtyards. */
+  court?: boolean;
 }
 
 /**
@@ -330,7 +379,7 @@ function rollSize(rng: RNG, cls: SizeClass, grows = true): Size {
   // are those of the room it would have been: `base`)
   const base = long * short;
   if (cryptK > 1 && cls !== 'nook' && grows) {
-    const g = OPEN.grow[cryptK];
+    const g = openBy('grow');
     long += rng.int(g - 1, g);
     short += rng.int(g - 1, g);
   }
@@ -353,7 +402,7 @@ function pathSizeClasses(rng: RNG, count: number): SizeClass[] {
   const mix: SizeClass[] = [];
   for (let i = 0; i < inner; i++) mix.push(i < halls ? 'hall' : i < halls + small ? 'small' : 'medium');
   // (THE CRYPT: its cell blocks take the place of middling rooms; no die is thrown for it)
-  for (let b = 0, i = mix.length - 1; cryptK > 0 && b < OPEN.blocks[cryptK] && i >= 0; i--) {
+  for (let b = 0, i = mix.length - 1; cryptK > 0 && b < openBy('blocks') && i >= 0; i--) {
     if (mix[i] !== 'medium') continue;
     mix[i] = 'block';
     b++;
@@ -521,6 +570,9 @@ function grow(
     by1 = Math.max(by1, r.y1);
   }
   const span = SPAN_MAX - 2 * EDGE;
+  // (THE HEADSMAN'S YARD: the boss's hall the yard's size, grown toward +y, straight: come into by its far wall along x)
+  const yardHall = yardHere && role === 'boss';
+  if (yardHall) size = { ...size, w: YARD_N, h: YARD_N };
 
   for (let tries = 0; tries < GROW_TRIES; tries++) {
     // TRIANGLES: now and then the new room is set off DIAGONALLY from the last one, to the right of
@@ -533,7 +585,8 @@ function grow(
     // a corridor straight across the screen has none. Such a try is thrown and weighed as ever, and
     // refused only where it would have been taken: so every dungeon whose boss hall was not come
     // into at a corner is the dungeon it was, and one whose hall was is tried again from there.)
-    if (RELIEF.cuts && RELIEF.across && rng.chance(ACROSS_SHARE)) {
+    // (FLOOR 2 AS THE PRISON'S GROUNDS: none: its ways are square to the blocks)
+    if (!yardHall && !groundsNow && RELIEF.cuts && RELIEF.across && rng.chance(ACROSS_SHARE)) {
       const right = rng.chance(0.5);
       const g = rng.int(ACROSS_MIN, ACROSS_MAX);
       const dir = right ? 1 : -1;
@@ -567,6 +620,7 @@ function grow(
     // by it, nor does the way in come into it. Turned left or right instead.)
     if (cryptK > 0 && from.block && side === blockBack(from.w, from.h)) side = (side + (rng.chance(0.5) ? 1 : 3)) % 4;
     if (cryptK > 0 && size.block && (side + 2) % 4 === blockBack(size.w, size.h)) side = (side + (rng.chance(0.5) ? 1 : 3)) % 4;
+    if (yardHall) side = 1;
     const blockHere = cryptK > 0 && (from.block === true || size.block === true);
     // THE MIX: now and then the new room is set down NEXT DOOR to the last one: three tiles of
     // rock between them, facing each other along most of the shorter one's side, a door and no
@@ -575,17 +629,17 @@ function grow(
     // with it, is rolled exactly as it always was.)
     // (THE CRYPT OPENS UP: by its floor, more rooms next door, shorter corridors, fewer that bend;
     // a cell block's corridors never bend, so that none comes into its back wall)
-    const pair = pairsHere && role !== 'boss' && rng.chance(cryptK > 0 ? OPEN.pair[cryptK] : PAIR_SHARE);
+    const pair = pairsHere && role !== 'boss' && rng.chance(cryptK > 0 ? openBy('pair') : PAIR_SHARE);
     const gap = pair
       ? PAIR_GAP
       : cryptK > 0
-        ? rng.chance(OPEN.long[cryptK])
+        ? rng.chance(openBy('long'))
           ? rng.int(9, 13)
-          : rng.int(ROOM_GAP, OPEN.gapMax[cryptK])
+          : rng.int(ROOM_GAP, openBy('gapMax'))
         : rng.chance(LONG_CORRIDOR)
           ? rng.int(9, 13)
           : rng.int(ROOM_GAP, 8);
-    const elbow = !pair && !blockHere && rng.chance(cryptK > 0 ? OPEN.elbow[cryptK] : ELBOW_SHARE);
+    const elbow = !yardHall && !pair && !blockHere && rng.chance(cryptK > 0 ? openBy('elbow') : ELBOW_SHARE);
     let x: number;
     let y: number;
     if (SIDE_DX[side] !== 0) {
@@ -612,14 +666,15 @@ function grow(
     rooms.push(cand);
     const legs = planCorridor(rng, rooms, corridors, from, cand);
     // (next door there is one way to join them, straight across the three tiles: no other will do)
-    if (!legs || (pair && legs.length !== 1)) {
+    // (THE HEADSMAN'S YARD: its hall come into straight, by its far wall along x, and by no other)
+    if (!legs || (pair && legs.length !== 1) || (yardHall && legs.length !== 1)) {
       rooms.pop();
       continue;
     }
     // (THE CRYPT OPENS UP: from its third floor, some of the rooms set down next door are joined by
     // a breach, the rock between them knocked out along all but a tile at either end of the side
     // they share; where that would come too near anything else, by the door's way after all)
-    if (pair && cryptK > 0 && OPEN.breach[cryptK] > 0 && !blockHere && (role === 'path' || role === 'side') && rng.chance(OPEN.breach[cryptK])) {
+    if (pair && cryptK > 0 && openBy('breach') > 0 && !blockHere && (role === 'path' || role === 'side') && rng.chance(openBy('breach'))) {
       const leg = legs[0];
       const wide: Leg = leg.horiz
         ? { ...leg, y0: Math.max(from.y0, cand.y0) + 1, y1: Math.min(from.y1, cand.y1) - 1 }
@@ -642,7 +697,8 @@ function grow(
  * sometimes one room to cross first, then the reward room. Returns false if no host has space.
  */
 function growBranch(rng: RNG, rooms: RoomPlan[], corridors: Corridor[], hosts: readonly number[], reward: Role, used: Set<number>): boolean {
-  const twoRooms = rng.chance(TWO_ROOM_BRANCH);
+  // (COMBO: every branch has a room to cross before its reward, further off the way; not a die thrown for it)
+  const twoRooms = kindHere === 'combo' ? true : rng.chance(TWO_ROOM_BRANCH);
   const crossSize = freshSize(rng, rng.chance(0.5) ? 'small' : 'medium', used);
   // A guardian needs room to fight in; a vault is a small room.
   const rewardSize = freshSize(rng, reward === 'lair' ? 'lair' : 'small', used, reward !== 'vault');
@@ -676,6 +732,187 @@ interface Plan {
   /** THE MIX: the room of the main path whose way in a gate bars, and the nook its lever stands in (-1: the level has none). */
   gated: number;
   nook: number;
+  /** COMBO: how many ways round it has (each a loop the hero can walk round). */
+  loops: number;
+}
+
+/**
+ * COMBO: A WAY ROUND. Off room i of the main path (never the start nor the boss's hall), a room set down as a branch's first is,
+ * and from it a way to room i + 2, i + 3 or i + 4 of the path (never the boss's hall), laid as any corridor is, clear of every other
+ * room and corridor; where none can be, a second room on from the first and a way from that. `skip(i, j)`: a span not to be
+ * gone round (the gate's). True if one was laid. (Tried again, with rooms of other sizes, where one is not laid at first.)
+ */
+function growLoop(rng: RNG, rooms: RoomPlan[], corridors: Corridor[], pathLen: number, used: Set<number>, skip: (i: number, j: number) => boolean): boolean {
+  const starts: number[] = [];
+  for (let i = 1; i <= pathLen - 4; i++) starts.push(i);
+  for (const i of rng.shuffle(starts)) {
+    const roomMark = rooms.length;
+    const corridorMark = corridors.length;
+    let from = rooms[i];
+    let heading = -1;
+    for (let n = 0; n < 2; n++) {
+      const size = freshSize(rng, rng.chance(0.5) ? 'small' : 'medium', used);
+      heading = grow(rng, rooms, corridors, from, size, 'side', -1, heading);
+      if (heading < 0) break;
+      from = rooms[rooms.length - 1];
+      from.base = size.base;
+      for (const j of [i + 2, i + 3, i + 4]) {
+        if (j >= pathLen - 1 || skip(i, j)) continue;
+        const legs = planCorridor(rng, rooms, corridors, from, rooms[j]);
+        if (!legs) continue;
+        corridors.push({ a: from.id, b: rooms[j].id, legs });
+        return true;
+      }
+    }
+    rooms.length = roomMark;
+    corridors.length = corridorMark;
+  }
+  return false;
+}
+
+/**
+ * OPEN: THE GREAT HALL. His words of 31 Oct, of the forest, “just a big rectangle. And, you know, somewhere is the start and
+ * somewhere is the end. And you just explore this giant area ... for the most part, it's almost completely open”: on an open
+ * floor of the Crypt, the middle of the floor is rooms laid in a grid (`OPEN_HALL.cols` by `rows`, each a great room), the rock
+ * between two neighbours knocked out along all but a tile at either end of the side they share (a breach), so that the grid is
+ * one great space, the stubs of rock left at the corners where four meet standing in it as piers; now and then (`wall`) the rock
+ * between two is left standing, a wall to go round. He comes in from an antechamber off one end of it (the start, one way out),
+ * and the boss's hall is off the other (one way in, its gate). The rooms of the grid are the main path in the order a walk
+ * snakes through them; its branches, vaults and lairs, hang off its outside.
+ */
+export const OPEN_HALL = { cols: 4, rows: 3, gap: 3, wall: 0.18, room: [12, 15] as const, row: [10, 13] as const, base: 90 };
+
+function planOpen(rng: RNG, depth: number, used: Set<number>): Plan | null {
+  // (FLOOR 2 AS THE PRISON'S GROUNDS: bigger rooms, courtyards; six tiles of cell block between two; the gaoler's room small)
+  const GR = groundsNow;
+  const C = OPEN_HALL.cols;
+  const R = OPEN_HALL.rows;
+  const G = GR ? GROUNDS_HALL.gap : OPEN_HALL.gap;
+  const cw = Array.from({ length: C }, () => (GR ? rng.int(GROUNDS_HALL.room[0], GROUNDS_HALL.room[1]) : rng.int(OPEN_HALL.room[0], OPEN_HALL.room[1])));
+  const rh = Array.from({ length: R }, () => (GR ? rng.int(GROUNDS_HALL.row[0], GROUNDS_HALL.row[1]) : rng.int(OPEN_HALL.row[0], OPEN_HALL.row[1])));
+  const rooms: RoomPlan[] = [];
+  const corridors: Corridor[] = [];
+  // (the antechamber he comes in by, west of the grid, its middle row on one of the grid's rows)
+  const first = freshSize(rng, 'medium', used, false);
+  if (GR) {
+    first.w = GROUNDS_HALL.gaol;
+    first.h = GROUNDS_HALL.gaol;
+  }
+  rooms.push(makeRoom(0, 0, 0, first.w, first.h, 'start', 0));
+  rooms[0].base = first.base;
+  const enter = rng.int(0, R - 1);
+  // (THE GROUNDS: the gaoler's house between his room and the grid, a block like the others)
+  const gx0 = GR ? first.w + GROUNDS_HALL.gap : first.w + rng.int(ROOM_GAP + 1, 7);
+  let rowY = 0;
+  const rowAt: number[] = [];
+  for (let r = 0; r < R; r++) {
+    rowAt.push(rowY);
+    rowY += rh[r] + G;
+  }
+  // (the grid set so that the antechamber's rows overlap its row `enter`)
+  const gy0 = -rowAt[enter] + Math.floor((first.h - rh[enter]) / 2);
+  const colAt: number[] = [];
+  let colX = gx0;
+  for (let c = 0; c < C; c++) {
+    colAt.push(colX);
+    colX += cw[c] + G;
+  }
+  // (the walk through it: along the row he comes in on and snaking through the others, so that the main path takes in every room)
+  const order: [number, number][] = [];
+  const rowsInOrder = [enter, ...Array.from({ length: R }, (_, r) => r).filter((r) => r !== enter)];
+  rowsInOrder.forEach((r, k) => {
+    for (let c = 0; c < C; c++) order.push([k % 2 === 0 ? c : C - 1 - c, r]);
+  });
+  const idOf = new Map<string, number>();
+  for (const [c, r] of order) {
+    const id = rooms.length;
+    const room = makeRoom(id, colAt[c], gy0 + rowAt[r], cw[c], rh[r], 'path', id);
+    // (its packs those of a middling room, as the Crypt's grown rooms keep theirs: so the floor holds about as many as it did)
+    room.base = OPEN_HALL.base;
+    if (GR) room.court = true;
+    rooms.push(room);
+    idOf.set(`${c},${r}`, id);
+  }
+  // (the way in, from the antechamber to the grid's first room)
+  // (THE GROUNDS: straight through the gaoler's house, three wide, from his room's middle row out into the first courtyard)
+  const lane0 = Math.floor(first.h / 2);
+  const into = GR ? [{ x0: first.w, x1: gx0 - 1, y0: lane0 - 1, y1: lane0 + 1, horiz: true, lane: lane0, roomA: 0, roomB: 1 }] : planCorridor(rng, rooms, corridors, rooms[0], rooms[1]);
+  if (!into) return null;
+  corridors.push({ a: 0, b: 1, legs: into });
+  // (the breaches: every pair of neighbours, but now and then a wall left standing, so long as the grid stays one)
+  const joins: [number, number, boolean][] = [];
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    if (c + 1 < C) joins.push([idOf.get(`${c},${r}`)!, idOf.get(`${c + 1},${r}`)!, true]);
+    if (r + 1 < R) joins.push([idOf.get(`${c},${r}`)!, idOf.get(`${c},${r + 1}`)!, false]);
+  }
+  const parent = new Map<number, number>();
+  const root = (a: number): number => {
+    while (parent.has(a)) a = parent.get(a)!;
+    return a;
+  };
+  const walls: [number, number, boolean][] = [];
+  // (THE GROUNDS: a way three wide through the block between two neighbours, near the middle of the side they share: between every
+  // two that follow one another on the walk, and most of the rest; now and then (`wall`) a block to go round, so long as the grid stays one)
+  if (GR) {
+    const onWalk = new Set<string>();
+    for (let k = 0; k + 1 < order.length; k++) {
+      const a = idOf.get(`${order[k][0]},${order[k][1]}`)!;
+      const b = idOf.get(`${order[k + 1][0]},${order[k + 1][1]}`)!;
+      onWalk.add(`${Math.min(a, b)},${Math.max(a, b)}`);
+    }
+    const walked = (j: [number, number, boolean]): boolean => onWalk.has(`${Math.min(j[0], j[1])},${Math.max(j[0], j[1])}`);
+    const list = rng.shuffle(joins);
+    for (const j of [...list.filter(walked), ...list.filter((q) => !walked(q))]) {
+      const [a, b, alongX] = j;
+      const ra = root(a);
+      const rb = root(b);
+      if (ra === rb && !walked(j) && rng.chance(GROUNDS_HALL.wall)) continue;
+      if (ra !== rb) parent.set(ra, rb);
+      const A = rooms[a];
+      const B = rooms[b];
+      const lo = alongX ? Math.max(A.y0, B.y0) : Math.max(A.x0, B.x0);
+      const hi = alongX ? Math.min(A.y1, B.y1) : Math.min(A.x1, B.x1);
+      const mid = Math.max(lo + 2, Math.min(hi - 2, ((lo + hi) >> 1) + rng.int(-2, 2)));
+      const leg: Leg = alongX
+        ? { x0: Math.min(A.x1, B.x1) + 1, x1: Math.max(A.x0, B.x0) - 1, y0: mid - 1, y1: mid + 1, horiz: true, lane: mid, roomA: a, roomB: b }
+        : { x0: mid - 1, x1: mid + 1, y0: Math.min(A.y1, B.y1) + 1, y1: Math.max(A.y0, B.y0) - 1, horiz: false, lane: mid, roomA: a, roomB: b };
+      corridors.push({ a, b, legs: [leg] });
+    }
+  }
+  for (const j of GR ? [] : rng.shuffle(joins)) {
+    const [a, b] = j;
+    const ra = root(a);
+    const rb = root(b);
+    if (ra === rb && rng.chance(OPEN_HALL.wall)) {
+      walls.push(j);
+      continue;
+    }
+    if (ra !== rb) parent.set(ra, rb);
+    const A = rooms[a];
+    const B = rooms[b];
+    const alongX = j[2];
+    const leg: Leg = alongX
+      ? { x0: Math.min(A.x1, B.x1) + 1, x1: Math.max(A.x0, B.x0) - 1, y0: Math.max(A.y0, B.y0) + 1, y1: Math.min(A.y1, B.y1) - 1, horiz: true, lane: 0, roomA: a, roomB: b }
+      : { x0: Math.max(A.x0, B.x0) + 1, x1: Math.min(A.x1, B.x1) - 1, y0: Math.min(A.y1, B.y1) + 1, y1: Math.max(A.y0, B.y0) - 1, horiz: false, lane: 0, roomA: a, roomB: b };
+    leg.lane = leg.horiz ? (leg.y0 + leg.y1) >> 1 : (leg.x0 + leg.x1) >> 1;
+    corridors.push({ a, b, legs: [leg], pair: true, breach: true });
+  }
+  void walls;
+  // (the boss's hall off the far end: grown off the last room of the walk, away from the grid)
+  const last = rooms[rooms.length - 1];
+  const hall = freshSize(rng, 'hall', used);
+  const pathLen = rooms.length + 1;
+  if (grow(rng, rooms, corridors, last, hall, 'boss', pathLen - 1, -1) < 0) return null;
+  rooms[rooms.length - 1].base = hall.base;
+  // (its branches off the grid's outside rooms)
+  const want = branchCount(depth);
+  const later: Role[] = ['lair'];
+  while (later.length < want - 1) later.push(rng.chance(0.5) ? 'vault' : 'lair');
+  const rewards: Role[] = ['vault', ...rng.shuffle(later)];
+  const hosts: number[] = [];
+  for (let id = 1; id < pathLen - 1; id++) hosts.push(id);
+  for (const reward of rewards) if (!growBranch(rng, rooms, corridors, rng.shuffle(hosts), reward, used)) return null;
+  return { rooms, corridors, pathLen, gated: -1, nook: -1, loops: -1 };
 }
 
 /** Steps 1a-1c: the whole level as rectangles, on a grid with no edges (coordinates may be negative). */
@@ -684,9 +921,14 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   pairsHere = MIX.on && MIX.pairs && depth >= MIX_FROM;
   // (THE CRYPT: its floor, while its layout is on; 0 otherwise, and not a die is thrown for it)
   cryptK = cryptLayoutFloor(depth);
+  kindHere = levelKindOf(depth);
   squareStart = WAYS.on && depth === 1;
+  yardHere = yardOn(depth);
+  groundsNow = kindHere === 'open' && groundsHere(depth);
   const pathLen = pathRoomCount(depth);
   const used = new Set<number>();
+  // (OPEN: the great hall, a map-maker of its own)
+  if (kindHere === 'open') return planOpen(rng, depth, used);
   const rooms: RoomPlan[] = [];
   const corridors: Corridor[] = [];
 
@@ -707,7 +949,7 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   // The side branches: one in each stretch of the path, never from the start room or the boss hall.
   // The first branch always ends in a vault, so the first side path a player tries pays off and a
   // guardian is never met in the opening rooms; of the rest, at least one ends in a guardian's lair.
-  const want = branchCount(depth);
+  const want = branchCount(depth) + (kindHere === 'combo' ? COMBO.branches : 0);
   const later: Role[] = ['lair'];
   while (later.length < want - 1) later.push(rng.chance(0.5) ? 'vault' : 'lair');
   const rewards: Role[] = ['vault', ...rng.shuffle(later)];
@@ -742,9 +984,16 @@ function planLevel(rng: RNG, depth: number): Plan | null {
       break;
     }
   }
+  // COMBO: ITS WAYS ROUND, never round the gate (so that its lever is still wanted). Where one finds no room, the floor has one
+  // fewer.
+  let loops = 0;
+  if (kindHere === 'combo') {
+    const want = COMBO.loops;
+    for (let n = 0; n < want * 3 && loops < want; n++) if (growLoop(rng, rooms, corridors, pathLen, used, (i, j) => gated > i && gated <= j)) loops++;
+  }
   // THE CRYPT: A ROW OF CELLS along the back wall of each cell block, where they fit.
   for (const host of rooms.slice(0, pathLen)) if (cryptK > 0 && host.block) addCells(rng, rooms, corridors, host);
-  return { rooms, corridors, pathLen, gated, nook };
+  return { rooms, corridors, pathLen, gated, nook, loops };
 }
 
 /**
@@ -850,6 +1099,8 @@ function clipCorners(rng: RNG, size: number, rooms: readonly RoomPlan[], tiles: 
     // straight back wall its gate to town stands in; its dice are thrown all the same, and the rest
     // of the floor is laid as it would be)
     if (squareStart && r.id === 0) continue;
+    // (FLOOR 2 AS THE PRISON'S GROUNDS: its courtyards, its cell blocks' passages and the gaoler's room keep theirs)
+    if (groundsNow) continue;
     const corners = [
       { x: r.x0, y: r.y0, sx: 1, sy: 1 },
       { x: r.x1, y: r.y0, sx: -1, sy: 1 },
@@ -964,7 +1215,8 @@ function cutClean(
     const kind = kinds[r.id];
     // (a treasure vault is a small room: it has its flat back wall whatever its size, three tiles wide)
     const vault = kind === 'treasure';
-    if (kind !== 'start' && kind !== 'boss') {
+    // (FLOOR 2 AS THE PRISON'S GROUNDS: no room of it is shaped: its courtyards and the rooms off them are square to the blocks)
+    if (kind !== 'start' && kind !== 'boss' && !groundsNow) {
       if (eight && short >= SHAPE_MIN) {
         // (two tiles of straight wall are left between two corners' cuts: no wider than half of what the short side has beyond those and the two walls' ends)
         const wide = Math.max(3, Math.min(5, Math.floor(short / 3), Math.floor((short - 3) / 2)));
@@ -1252,8 +1504,8 @@ function tryLayout(rng: RNG, depth: number): Layout | null {
   carve(size, rooms, corridors, tiles, corr);
   const clips = clipCorners(rng, size, rooms, tiles, corr);
   growWalls(size, tiles);
-  // The plan's own checks should make these impossible; they are here as a net.
-  if (hasThinWall(size, tiles) || countLoops(size, tiles) !== 0) return null;
+  // The plan's own checks should make these impossible; they are here as a net. (COMBO: as many loops as ways round were laid.)
+  if (hasThinWall(size, tiles) || (plan.loops >= 0 && countLoops(size, tiles) !== plan.loops)) return null;
   const open = new Uint8Array(size * size);
   for (let i = 0; i < open.length; i++) open[i] = tiles[i] === T_FLOOR ? 1 : 0;
   const field = flowField(open, size, size, centreX(rooms[0]), centreY(rooms[0]));
@@ -1291,7 +1543,8 @@ function assignKinds(rng: RNG, depth: number, lay: Layout): RoomKind[] {
   // (No dice for it in the first dungeons, nor where the map-maker does not mix.)
   if (MIX.on && MIX.locks && DOORS.on && depth >= MIX_FROM) {
     const before = lay.gated >= 0 ? lay.rooms[lay.gated].path - 1 : -9;
-    const fit = chosen.filter(r => r.id !== lay.gated && r.path !== before && !lay.corridors.some(c => (c.a === r.id || c.b === r.id) && (c.across !== undefined || c.pair === true || c.breach === true)));
+    // (FLOOR 2 AS THE PRISON'S GROUNDS: nor a courtyard: its ways are gatehouses, game/grounds_way.ts)
+    const fit = chosen.filter(r => r.id !== lay.gated && r.path !== before && !r.court && !lay.corridors.some(c => (c.a === r.id || c.b === r.id) && (c.across !== undefined || c.pair === true || c.breach === true)));
     if (fit.length > 0) lay.locks = rng.pick(fit).id;
   }
   return kinds;
@@ -1398,6 +1651,8 @@ function placePillars(st: Stage): void {
     const insetsX = boss ? [2] : rng.shuffle(r.w >= 12 ? [3, 3, 2] : [2, 3]);
     const insetsY = boss ? [2] : rng.shuffle(r.h >= 12 ? [3, 3, 2] : [2, 3]);
     const pair = !boss && rng.chance(0.4);
+    // (FLOOR 2 AS THE PRISON'S GROUNDS: no pillars stand in a courtyard under the sky)
+    if (r.court) continue;
     // Try each inset in turn until a whole set fits (a set is never placed with a pillar missing).
     const insets: [number, number][] = [];
     for (const qx of insetsX) for (const qy of insetsY) insets.push([qx, qy]);
@@ -2095,6 +2350,7 @@ export function generateFloor(depth: number, seed: number): Floor {
   for (const r of lay.rooms) {
     if (r.block) rooms[r.id].block = true;
     if (r.role === 'cell') rooms[r.id].cell = true;
+    if (r.court) rooms[r.id].court = true;
   }
   const floor: Floor = {
     depth: d,
@@ -2111,11 +2367,13 @@ export function generateFloor(depth: number, seed: number): Floor {
   };
   if (cut) floor.cut = cut;
   if (lay.gated >= 0 && leverTile >= 0) floor.levers = [{ x: leverTile % size, y: Math.floor(leverTile / size), room: lay.gated }];
+  // (THE HEADSMAN'S YARD: the boss's hall squared, what stood in it taken away and the yard's own set down: game/yard.ts)
+  if (yardHere) layYard(floor, boss.id);
   // Step 5: TERRACES AND STAIRS (relief.ts), laid last and by dice of their own: the rooms, the
   // corridors, the packs and the props are what they were before there was any height.
-  if (RELIEF.on) layTerraces(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x7e44ace5) >>> 0));
+  if (RELIEF.on && !groundsNow) layTerraces(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x7e44ace5) >>> 0));
   // (sunken floor, with dice of its own, after the terraces: a dungeon's terraces are the ones it had before there was any)
-  if (RELIEF.on && RELIEF.sunken) laySunken(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x051d0e11) >>> 0));
+  if (RELIEF.on && RELIEF.sunken && !groundsNow) laySunken(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x051d0e11) >>> 0));
   // (THE TRAPS, traps.ts: from the second dungeon, by dice of their own. A treasure vault is sealed
   // with a word before the doors are laid, so that a sealed door stands in its way in.)
   const traps = TRAPS.on && DOORS.on && d >= TRAPS_FROM ? new RNG((mixSeed(d, seed) ^ 0x51ce7a95) >>> 0) : null;
@@ -2131,6 +2389,9 @@ export function generateFloor(depth: number, seed: number): Floor {
   }
   // (THE CRYPT, behind CRYPT_LITTER, off: more lying about on its deeper floors, laid last, by dice of its own)
   if (CRYPT_LITTER.on && d >= 1) moreLitter(floor, new RNG((mixSeed(d, seed) ^ 0x51ed270b) >>> 0));
+  // (THE HEADSMAN'S YARD: nothing of the Crypt's lying about in it)
+  const Y = floor.yard;
+  if (Y) floor.props = floor.props.filter((p) => !((p.kind === 'bones' || p.kind === 'rubble') && p.x >= Y.x && p.x < Y.x + Y.n && p.y >= Y.y && p.y < Y.y + Y.n));
   return floor;
 }
 

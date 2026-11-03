@@ -1110,7 +1110,9 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
 
   // --- the maul and the two hands ---
   // planted (the volley), it stands on the floor and does not move with the body
-  const loose = q.prop === 1 ? clamp01(q.off) : 0;
+  // (THE LOCKDOWN, prop 3: planted as for the volley, the other hand up with his great ring of keys: WARDEN_LOCKDOWN below)
+  const keysUp = q.prop === 3;
+  const loose = q.prop === 1 || keysUp ? clamp01(q.off) : 0;
   // (swung level, prop 2: both hands on the shaft at his belt, `aim` the degrees round from straight ahead)
   const belt: V = [Xs + 1, AY - 58 + Y];
   const level = q.prop === 2 ? wardenLevel(q.aim, belt, back) : null;
@@ -1212,8 +1214,18 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
     y: (eR[1] + lead[1]) / 2,
     paint: (b, ox, oy) => {
       foreArm(b, shift(eR, ox, oy), shift(lead, ox, oy), rampR, boneR);
-      if (loose > 0.25) openHand(b, lead[0] - ox, lead[1] - oy, sweep ? cast : 90, boneR);
-      else fist(b, lead[0] - ox, lead[1] - oy, dx, dy, boneR);
+      if (loose > 0.25 && !keysUp) openHand(b, lead[0] - ox, lead[1] - oy, sweep ? cast : 90, boneR);
+      else fist(b, lead[0] - ox, lead[1] - oy, keysUp && loose > 0.25 ? 1 : dx, keysUp && loose > 0.25 ? 0 : dy, boneR);
+    },
+  };
+  // (the great ring of keys in his fist, a part of its own laid with the forearm: they hang from the ring, swing as `gale` says and rattle as `pt` does)
+  const keysHeld = keysUp && loose > KEYS_HELD;
+  const keysP: Part = {
+    x: lead[0],
+    y: lead[1] + 16,
+    paint: (b, ox, oy) => {
+      keyRing(b, lead[0] - ox, lead[1] - oy, q.gale, q.pt, q.wind, heat, BONE);
+      fist(b, lead[0] - ox, lead[1] - oy, 1, 0, boneR);
     },
   };
   const headP: Part = {
@@ -1288,6 +1300,7 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
     if (upL) stack.push(armL);
     stack.push(plateFar, plateNear, maulL, foreR, foreL);
   }
+  if (keysHeld) stack.splice(stack.indexOf(foreR) + 1, 0, keysP);
   // (the big things are layers; a part is laid on the layer under it)
   const layers: Px[] = [];
   for (const it of stack) {
@@ -1297,6 +1310,11 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
   const out = compose(null, layers);
 
   if (streakFront) out.blit(streakFront, 0, 0);
+  // THE LOCKDOWN's strike: the keys' fire smeared along the way the fist has just come down (`sweep` pixels), and their light
+  if (keysUp && loose > 0.25) {
+    if (q.sweep >= 4) keysSmear(out, lead, q.sweep, lights);
+    if (keysHeld && heat > 0.3) lights.push({ x: lead[0], y: lead[1] + 16, r: 10 + heat * 18, color: FLAME[3], a: 0.2 + heat * 0.35 });
+  }
   // --- what burns in the air: over everything, with no seam round it ---
   if (summon && loose > 0.5) {
     // the dead answer: embers rise off the floor all round his feet, more as his hand comes up
@@ -1304,7 +1322,7 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
     for (const [ox, seed] of [[-34, 1], [-18, 2], [16, 3], [36, 4], [-4, 5]] as const) embers(out, AX + ox, AY - 2, 2 + Math.round(rise * 3), 10 + rise * 26, q.wind, seed);
     lights.push({ x: AX, y: AY - 6, r: 30 + rise * 30, color: FLAME[2], a: 0.15 + rise * 0.3 });
   }
-  if (loose > 0.25) {
+  if (loose > 0.25 && !keysUp) {
     const fire = summon ? 0 : clamp01(q.pt);
     if (fire > 0.04 && loose > 0.6) {
       // the fire gathering over the open palm
@@ -1353,8 +1371,166 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
     const share = shows(out, g);
     if (share > 0) lights.push({ ...g.light, a: (g.light.a ?? 0.5) * share });
   }
+  if (WARDEN_SEEN.see) WARDEN_SEEN.see({ head: [hx, ty + 12], hips: [hipX, hipY], butt: rear, lead, elbowL: eL, elbowR: eR, soles: [[footN, AY - 1 + FOOT_NEAR + stepN.dy], [footF, AY - 3 - FOOT_FAR + stepF.dy]], maulHead: head, keys: keysHeld ? [lead[0], lead[1] + 6] : null });
   return { px: out, lights };
 }
+
+/**
+ * WHERE HIS JOINTS ARE IN A FRAME (for the floor 1 action mock-ups' review, art/action_f1_checks.ts): picture pixels on his canvas.
+ * Nothing of the game sets `see`; while it is null nothing is reported and nothing about a frame changes.
+ */
+export interface WardenSeen {
+  head: V;
+  hips: V;
+  /** The hand at the maul's butt (screen-left) and the other (screen-right); their elbows. */
+  butt: V;
+  lead: V;
+  elbowL: V;
+  elbowR: V;
+  /** His two soles, the nearer first. */
+  soles: [V, V];
+  maulHead: V;
+  /** THE LOCKDOWN: the middle of the ring of keys in his fist, while he holds it up; else null. */
+  keys: V | null;
+}
+export const WARDEN_SEEN: { see: ((j: WardenSeen) => void) | null } = { see: null };
+
+// ---------------------------------------------------------------------------------------------
+// THE GREAT RING OF KEYS (THE LOCKDOWN, below)
+
+/** The ring is in his fist (and drawn) while his hand is this far off the shaft (Pose.off); below it, it is back on his belt. */
+const KEYS_HELD = 0.55;
+/** The keys on the ring: how long each is (pixels), where it hangs on the ring (degrees round from straight down, + to screen-right), and how big its bit is. The first is the great key. */
+const KEY_SET: ReadonlyArray<{ long: number; at: number; bit: number }> = [
+  { long: 33, at: 4, bit: 8 },
+  { long: 20, at: -40, bit: 4 },
+  { long: 25, at: 32, bit: 5 },
+  { long: 17, at: -18, bit: 4 },
+  { long: 21, at: 56, bit: 4 },
+];
+
+/** A rod of pixels from `a` to `b`, `w` wide, in one colour. */
+function rodPx(p: Px, a: V, b: V, w: number, c: string): void {
+  const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) * 2));
+  for (let i = 0; i <= n; i++) {
+    const x = a[0] + ((b[0] - a[0]) * i) / n;
+    const y = a[1] + ((b[1] - a[1]) * i) / n;
+    for (let oy = 0; oy < w; oy++) for (let ox = 0; ox < w; ox++) {
+      const X = Math.round(x - (w - 1) / 2 + ox);
+      const Y = Math.round(y - (w - 1) / 2 + oy);
+      if (p.inside(X, Y)) p.set(X, Y, c);
+    }
+  }
+}
+
+/**
+ * The great ring of keys, held in a fist at (x, y): an iron hoop under the fist, and five keys of old bone-white iron hanging from
+ * it by their bows, the great one longest, its wards hot with his fire as he burns (`heat`). They hang down, swung round by
+ * `swing` degrees (+ toward screen-right: they stream after the fist as it moves, and swing back), and rattle against each other
+ * as `rattle` (0..1) says. The seam of the style round all of it.
+ */
+const keySheet = new Px(TILE, TILE);
+function keyRing(p: Px, x: number, y: number, swing: number, rattle: number, wind: number, heat: number, bone: Ramp): void {
+  const k = keySheet;
+  k.d.fill(0);
+  const cx = Math.round(x);
+  const cy = Math.round(y) + 6;
+  // the keys first (the ring passes over their bows)
+  KEY_SET.forEach((key, i) => {
+    const jangle = rattle * (Math.sin(wind * Math.PI * 2 * 9 + i * 2.1) * 11 + Math.sin(wind * Math.PI * 2 * 13 + i) * 5);
+    const a0 = (key.at * Math.PI) / 180;
+    const a = ((key.at * 0.45 + swing + jangle) * Math.PI) / 180;
+    const ux = Math.sin(a);
+    const uy = Math.cos(a);
+    const at: V = [cx + Math.sin(a0) * 7.5, cy + Math.cos(a0) * 6];
+    const big = i === 0;
+    // the bow: a loop it hangs by
+    const bc: V = [at[0] + ux * 2.5, at[1] + uy * 2.5];
+    for (let oy = -3; oy <= 3; oy++) for (let ox = -3; ox <= 3; ox++) {
+      const d = Math.hypot(ox, oy);
+      if (d > (big ? 3.6 : 2.8)) continue;
+      const X = Math.round(bc[0] + ox);
+      const Y = Math.round(bc[1] + oy);
+      if (!k.inside(X, Y)) continue;
+      k.set(X, Y, d < 1.1 ? INK : ox + oy < -1 ? bone[3] : bone[2]);
+    }
+    // the shaft, lit on its upper left
+    const s0: V = [at[0] + ux * 5, at[1] + uy * 5];
+    const s1: V = [at[0] + ux * key.long, at[1] + uy * key.long];
+    rodPx(k, s0, s1, 2, bone[2]);
+    rodPx(k, [s0[0] - 0.5, s0[1] - 0.5], [s1[0] - 0.5, s1[1] - 0.5], 1, bone[3]);
+    // the bit at its end: wards cut into it, toward screen-right of the shaft as it hangs
+    const vx = uy;
+    const vy = -ux;
+    const hot = big ? Math.max(0, (heat - 0.35) / 0.65) : Math.max(0, (heat - 0.7) / 0.3) * 0.6;
+    for (let s = 0; s < key.bit + 1; s++) {
+      const along = key.long - s;
+      const reach = s % 2 === 0 ? (big ? 6 : 4) : big ? 3 : 2;
+      for (let r = 1; r <= reach; r++) {
+        const X = Math.round(at[0] + ux * along + vx * r);
+        const Y = Math.round(at[1] + uy * along + vy * r);
+        if (!k.inside(X, Y)) continue;
+        k.set(X, Y, hot > 0.66 ? FLAME[4] : hot > 0.33 ? FLAME[3] : hot > 0.05 ? FLAME[2] : r === reach ? bone[1] : bone[2]);
+      }
+    }
+  });
+  // the hoop of iron, over the bows: lit on its upper left
+  for (let oy = -9; oy <= 9; oy++) for (let ox = -10; ox <= 10; ox++) {
+    const e = Math.hypot(ox / 8, oy / 6.5);
+    if (e < 0.74 || e > 1.1) continue;
+    const X = cx + ox;
+    const Y = cy + oy;
+    if (!k.inside(X, Y)) continue;
+    k.set(X, Y, ox + oy < -3 ? IRON[3] : ox + oy > 3 ? IRON[0] : IRON[2]);
+  }
+  // the seam of the style round all of it, then onto the bench
+  const solid = (X: number, Y: number): boolean => k.inside(X, Y) && k.d[(Y * k.w + X) * 4 + 3] > 0 && k.get(X, Y) !== INK;
+  for (let Y = 0; Y < k.h; Y++) for (let X = 0; X < k.w; X++) {
+    if (k.d[(Y * k.w + X) * 4 + 3] > 0) continue;
+    if (solid(X - 1, Y) || solid(X + 1, Y) || solid(X, Y - 1) || solid(X, Y + 1)) p.set(X, Y, INK);
+  }
+  for (let Y = 0; Y < k.h; Y++) for (let X = 0; X < k.w; X++) if (k.d[(Y * k.w + X) * 4 + 3] > 0) p.set(X, Y, k.get(X, Y) as string);
+}
+
+/**
+ * THE LOCKDOWN's strike: the keys' fire left in the air along the way the fist has just come down, from `gone` pixels above it:
+ * a band as wide as the keys hang, hottest at the fist and breaking up toward its oldest end; and its light.
+ */
+function keysSmear(p: Px, at: V, gone: number, lights: Light[]): void {
+  // where the fist was, up the way it came (it came down and a little toward his front)
+  const from: V = [at[0] + gone * 0.18, at[1] - gone];
+  // the speed lines: the keys' fire drawn out along the way, hottest nearest the fist, breaking up toward where it was
+  for (const ox of [-7, -3, 1, 5, 9]) {
+    const n = Math.round(gone);
+    for (let j = 6; j <= n; j++) {
+      const u = j / n;
+      const X = Math.round(at[0] + ox + (from[0] - at[0]) * u);
+      const Y = Math.round(at[1] + 16 + (from[1] - at[1]) * u);
+      if (!p.inside(X, Y)) continue;
+      if (hashW(X, Y + ox * 7) < u * 0.9 - 0.15) continue;
+      p.set(X, Y, u < 0.3 ? FLAME[3] : u < 0.6 ? FLAME[2] : FLAME[1]);
+    }
+  }
+  // after-images of the ring of keys, streaming up behind it: the oldest dimmest and most broken
+  for (const [u, c] of [[0.66, FLAME[1]], [0.4, FLAME[2]], [0.18, FLAME[3]]] as const) {
+    keySheet.d.fill(0);
+    const gx = at[0] + (from[0] - at[0]) * u;
+    const gy = at[1] + (from[1] - at[1]) * u;
+    ghost.d.fill(0);
+    keyRing(ghost, TILE / 2, TILE / 2 - 14, 165, 0, 0, 0, BONE);
+    for (let Y = 0; Y < TILE; Y++) {
+      for (let X = 0; X < TILE; X++) {
+        if (!ghost.has(X, Y) || ghost.get(X, Y) === INK) continue;
+        const x = Math.round(gx + X - TILE / 2);
+        const y = Math.round(gy + Y - TILE / 2 + 14);
+        if (!p.inside(x, y) || hashW(x * 3, y) < u * 0.8) continue;
+        p.set(x, y, c);
+      }
+    }
+  }
+  lights.push({ x: at[0], y: at[1] + 8 - gone * 0.3, r: 26, color: FLAME[3], a: 0.5 });
+}
+const ghost = new Px(TILE, TILE);
 
 // ---------------------------------------------------------------------------------------------
 // Animations
@@ -1460,6 +1636,65 @@ function wardenSummon(plant: Partial<Pose>): Timeline {
   return { keys, hit: SUMMON_RISE };
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE LOCKDOWN (the art chat's helper, 31 Oct 2026; docs/mockups/action_f1/README.md). The owner's review of every enemy for more
+// action: “I want buried battles when you’re fighting enemies and then once you fight them enough, I want you to be able to
+// recognize what’s going to happen and which enemies to be aware of and what they do”; for the Warden, offered "Lockdown, in
+// place of the slam: iron bars crash down across the room in rows, shadows first. Stand in the cells between them", his pick
+// “Yes (Recommended)”. So: he plants the maul (as for the volley) and his other hand goes up high over his helm with his great
+// ring of keys; held there, rattling, his fires burning up to white heat (the warning: and the bars' shadows are on the floor,
+// art/action_f1_fx.ts); in one frame he wrenches the ring down to his hip, the keys' fire smeared behind it (the strike: the bars
+// crash down in the same frame); the keys stream after the fist and swing back and forth as it holds there; he hooks them back on
+// his belt and takes up the maul. Behind a switch that is off: while it is, he is exactly as he was (tests/action_f1.test.ts).
+
+/** His pose at rest (makeWardenArt's): the maul across him, its head low. */
+export const WARDEN_REST: Partial<Pose> = { aim: REST_AIM };
+/** The switch: the Lockdown (AnimSet.clips.moves.lockdown) is made only while it is on. */
+export const WARDEN_LOCKDOWN = { on: false };
+/** The moment he wrenches the keys down and the bars crash, in seconds (on the game's frames: 36 of them). */
+export const LOCKDOWN_HIT = 1.2;
+/** How far the fist comes down in the strike (picture pixels): its smear. */
+const LOCKDOWN_DROP = 64;
+
+/** THE LOCKDOWN, seen from in front or from behind (prop 3: Pose.gale is how far round the keys hang, Pose.pt how hard they rattle). */
+export function wardenLockdownTimeline(back: boolean): Timeline {
+  const hit = LOCKDOWN_HIT;
+  const plant: Partial<Pose> = back ? { hx: -33, hy: -9, lean: -1, bob: 0.5 } : { hx: -22, hy: -5, lean: -1, bob: 0.5 };
+  const stood: Partial<Pose> = { prop: 3, aim: -90, hx: plant.hx ?? 0, hy: plant.hy ?? 0 };
+  const hi = back ? { ohx: 1, ohy: -20 } : { ohx: 2, ohy: -19 };
+  const lo = back ? { ohx: -17, ohy: 43 } : { ohx: -20, ohy: 43 };
+  // (where the hand takes the keys, low at his side, and where it passes his shoulder on its way up, the arm long)
+  const grab = back ? { ohx: 26, ohy: 46 } : { ohx: 22, ohy: 44 };
+  const wide = back ? { ohx: 35, ohy: 26 } : { ohx: 31, ohy: 18 };
+  const mid = back ? { ohx: 24, ohy: 0 } : { ohx: 22, ohy: -4 };
+  const up: Partial<Pose> = { ...stood, ...plant, off: 1, ...hi, pt: 0.5, act: 0.55, lean: -2, bob: 0, wind: 0.15, drag: 0.4, gale: -12 };
+  const held: Partial<Pose> = { ...up, ohy: hi.ohy - 2, pt: 1, act: 0.95, lean: -2.5, bob: -0.5, wind: 0.42, drag: 0.6, gale: 0 };
+  const down: Partial<Pose> = { ...stood, ...plant, off: 1, ...lo, pt: 0, act: 1, lean: 3, bob: 2.5, wind: 0.5, drag: 1.6, gale: 160, sweep: LOCKDOWN_DROP };
+  const at = (more: Partial<Pose>): Partial<Pose> => ({ ...down, sweep: 0, ohx: lo.ohx - 1, ohy: lo.ohy + 3, bob: 3, lean: 3.5, ...more });
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    // (the hand off the shaft to his hip for the keys, low and out to the side; swung up wide, the arm long as it passes his shoulder; up over the helm)
+    { at: 0.18, pose: { ...stood, ...plant, off: 1, ...grab, pt: 0.2, act: 0.3, wind: 0.06, drag: 0.3 }, ease: 'io' },
+    { at: 0.3, pose: { ...stood, ...plant, off: 1, ...wide, pt: 0.3, act: 0.4, lean: -1.5, wind: 0.1, drag: 0.35, gale: 24 }, ease: 'in' },
+    { at: 0.4, pose: { ...stood, ...plant, off: 1, ...mid, pt: 0.4, act: 0.48, lean: -1.8, wind: 0.13, drag: 0.38, gale: 8 }, ease: 'lin' },
+    { at: 0.52, pose: up, ease: 'out' },
+    { at: 0.72, pose: { ...up, ohy: hi.ohy - 1, pt: 0.8, act: 0.75, lean: -2.2, wind: 0.28, gale: 3 }, ease: 'io' },
+    { at: hit - 1 / 30, pose: held, ease: 'lin' },
+    { at: hit, pose: down, ease: 'in' },
+    // (it carries on down a little after the blow, and settles)
+    { at: hit + 1 / 30, pose: at({ gale: 95, ohy: lo.ohy + 7 }), ease: 'out' },
+    { at: hit + 2 / 30, pose: at({ gale: 28, act: 0.95, ohy: lo.ohy + 9 }), ease: 'out' },
+    { at: hit + 0.1, pose: at({ gale: -32, act: 0.9, ohy: lo.ohy + 8 }), ease: 'io' },
+    { at: hit + 0.18, pose: at({ gale: 20, act: 0.8, ohy: lo.ohy + 2 }), ease: 'io' },
+    { at: hit + 0.27, pose: at({ gale: -10, act: 0.7, lean: 2.5, bob: 2.5, ohy: lo.ohy + 2 }), ease: 'io' },
+    { at: hit + 0.36, pose: at({ gale: 4, act: 0.6, lean: 2, bob: 2, ohy: lo.ohy + 1 }), ease: 'io' },
+    { at: hit + 0.44, pose: at({ gale: 0, act: 0.5, lean: 1.5, bob: 1.5, ohy: lo.ohy + 1, wind: 0.62 }), ease: 'io' },
+    { at: hit + 0.72, pose: { ...stood, ...plant, off: 0, ohx: 0, ohy: 0, act: 0.35, wind: 0.85, drag: 0.4 }, ease: 'io' },
+    { at: hit + 0.95, pose: { wind: 1 }, ease: 'io' },
+  ];
+  return { keys, hit };
+}
+
 /**
  * How long he takes to die, in seconds. (The owner, 5 Oct 2026: "I think we want death animations
  * and corpses for enemies"; he was told the Warden "gets a big one".)
@@ -1551,6 +1786,8 @@ export function makeWardenArt(): ActorArt {
     die: (k) => wardenDeath(k, false),
   };
   if (WARDEN_MOVES.on) front.more = { swing: wardenSwing(), summon: wardenSummon({ hx: -22, hy: -5, lean: -1, bob: 0.5 }) };
+  // (THE LOCKDOWN, behind its own switch)
+  if (WARDEN_LOCKDOWN.on) front.more = { ...(front.more ?? {}), lockdown: wardenLockdownTimeline(false) };
   const backMoves: MonsterMoves = {
     attack: slam(
       { bob: 0.5, lean: 0.5, hx: 10, hy: -20, aim: 24, act: 0.3, wind: 0.08, drag: 0.5 },
@@ -1566,6 +1803,7 @@ export function makeWardenArt(): ActorArt {
     die: (k) => wardenDeath(k, true),
   };
   if (WARDEN_MOVES.on) backMoves.more = { swing: wardenSwing(), summon: wardenSummon({ hx: -33, hy: -9, lean: -1, bob: 0.5 }) };
+  if (WARDEN_LOCKDOWN.on) backMoves.more = { ...(backMoves.more ?? {}), lockdown: wardenLockdownTimeline(true) };
   return monsterArt(jailer, front, backMoves, {
     canvas: WARDEN_CANVAS,
     rest: { aim: REST_AIM },

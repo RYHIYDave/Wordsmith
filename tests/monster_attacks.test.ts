@@ -34,7 +34,9 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import type { AnimSet, Clip } from '../src/art/actor_types';
-import { figureOf, makeBestiary, useMonsterAttacks } from '../src/art/bestiary';
+import { figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useAmAction, useCoAction, useMonsterAttacks } from '../src/art/bestiary';
+import { ACTION_F1, ACTION_F2, ACTION_F3, ACTION_F4 } from '../src/game/defs';
+import { AM_ACTION, CO_ACTION } from '../src/game/bosses';
 import type { MonsterFigure } from '../src/art/bestiary';
 import { PAINTING } from '../src/art/kit';
 import { CRAWL_OUT, CRAWL_TIME } from '../src/art/mkit';
@@ -48,7 +50,7 @@ import type { MonsterMove, MoveId } from '../src/game/defs';
 import { actsOf } from '../src/game/bosses';
 import { PHASE_OF as EYE_PHASE_OF } from '../src/game/act1_rules/eye';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { ACT1_KINDS } from '../src/game/types';
+import { ACT1_KINDS, HIGH_KINDS } from '../src/game/types';
 import { ACT2 } from '../src/game/act1';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -129,7 +131,25 @@ function play(r: Room, secs: number, each?: (k: number) => void): { began: Began
 
 const FIGURES: Which[] = ['brute', 'guardian', 'warden'];
 
-test('the switch is on in the game, the pictures with it; switched off, no monster has moves, and each attacks as it did', () => {
+/**
+ * THE ENEMY REWORK (ACTION_F1 to ACTION_F4, CO_ACTION, AM_ACTION: on since his “Switch them all on (Recommended)”, 2 Nov 2026) put
+ * the action way's moves in place of some of these (the green troll's rampage and rush, the Warden's Lockdown, the cultist's sigil,
+ * the dagger cultist's frenzy, the golem's hurl, the two bosses' new acts), each held by its own tests (tests/action_f*_game.test.ts,
+ * co_action_game, am_action_game). These hold the monsters' attacks as they are without them: switched off for the test, and on
+ * again after.
+ */
+function withoutAction<T>(fn: () => T): T {
+  const was = [ACTION_F1.on, ACTION_F2.on, ACTION_F3.on, ACTION_F4.on, CO_ACTION.on, AM_ACTION.on] as const;
+  const uses = [useActionF1, useActionF2, useActionF3, useActionF4, useCoAction, useAmAction];
+  uses.forEach((u) => u(false));
+  try {
+    return fn();
+  } finally {
+    uses.forEach((u, k) => u(was[k]));
+  }
+}
+
+test('the switch is on in the game, the pictures with it; switched off, no monster has moves, and each attacks as it did', () => withoutAction(() => {
   assert.equal(MONSTER_ATTACKS.on, true, 'MONSTER_ATTACKS is on');
   assert.equal(TROLL_MOVES.on, true, "and the trolls' new pictures with it");
   assert.equal(WARDEN_MOVES.on, true, "and the Warden's");
@@ -157,12 +177,12 @@ test('the switch is on in the game, the pictures with it; switched off, no monst
   } finally {
     useMonsterAttacks(true);
   }
-});
+}));
 
 /** (ACT 2, THE HUSH) Its medium kinds the art drew with one attack, a second waiting on its picture (docs/act2_build.md, "Not done yet"). */
 const ACT2_ONE_MOVE: ReadonlySet<MonsterKind> = new Set<MonsterKind>(['watch', 'dredger', 'carter', 'orderly', 'bookwarden']);
 
-test('his rules: tiny and small one attack, medium two, large two or three, the boss four; a basic blow first; the bigger the hit, the longer the cooldown', () => {
+test('his rules: tiny and small one attack, medium two, large two or three, the boss four; a basic blow first; the bigger the hit, the longer the cooldown', () => withoutAction(() => {
   useMonsterAttacks(true);
   assert.equal(MONSTER_ATTACKS.on && TROLL_MOVES.on && WARDEN_MOVES.on && CRAWL_OUT.on, true, 'the rules and the pictures go on together');
   const want = { tiny: [1, 1], small: [1, 1], medium: [2, 2], large: [2, 3], boss: [4, 4] };
@@ -180,6 +200,8 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // ACT 1, each of the descent's own kinds once built, by its rules, game/act1_rules/: actsOf has both. One not
       // built yet is not in the game: the cult stands in for it)
       if (ACT1_KINDS.includes(kind) && !act1Rules(kind)) continue;
+      // (THE HIGH CITY: likewise one of its kinds not built yet: stood in for, behind HIGH_CITY)
+      if (HIGH_KINDS.includes(kind) && !act1Rules(kind)) continue;
       const acts = actsOf({ kind });
       // (the descent's own monsters, not its bosses: a basic blow first, each big move cooling down longer and hitting harder)
       const own = ACT1_KINDS.includes(kind) && size !== 'boss' ? act1Rules(kind) : null;
@@ -199,7 +221,10 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // combo: the Scraper's snap, rush and scour and its strip; the Quill's stab and ink lines, its Overwrite and its swoop.
       // The combo and the Overwrite are made by the pair (forced); the Quill's taking off, flying and landing are its way there)
       const PAIR_MOVES = new Set(['scraper:strip', 'quill:swoop', 'quill:write']);
-      const chosenIds = acts ? [...new Set(acts.filter((a) => (!a.forced || PAIR_MOVES.has(a.id)) && a.id !== 'h2:dashL' && a.id !== 'h2:dashR').map((a) => a.id.replace(/Wall$/, '')))] : [];
+      // (FLOOR 20, THE HUSH'S SHAPES, the art chat's of 31 Oct 2026: their grip, and their swoop, made by the swarm one after another
+      // (forced, either way round: one move); their glides round him are their way there)
+      const SWARM_MOVE = /^hshape:swoop[LR]$/;
+      const chosenIds = acts ? [...new Set(acts.filter((a) => (!a.forced || PAIR_MOVES.has(a.id) || SWARM_MOVE.test(a.id)) && a.id !== 'h2:dashL' && a.id !== 'h2:dashR').map((a) => a.id.replace(/Wall$/, '').replace(SWARM_MOVE, 'hshape:swoop')))] : [];
       const n = kind === 'eye' ? Math.max(...[0, 1, 2].map((p) => chosenIds.filter((id) => EYE_PHASE_OF[id]?.includes(p)).length)) : acts ? chosenIds.length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
@@ -207,6 +232,23 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // the night carters, the orderlies and the Bookwardens; a second each waits on its picture. Behind ACT2, off, none of them is in the game:
       // with it on, his rule holds them as it holds every other)
       const waiting = !ACT2.on && size === 'medium' && n === 1 && ACT2_ONE_MOVE.has(kind);
+      // (THE HIGH CITY, FLOOR 18: the Queen has five, at his word, 30 Oct 2026: her ring of mirrors “Add as a fifth move”)
+      if (kind === 'gqueen') {
+        assert.equal(n, 5, `${what}: five, at his word`);
+        continue;
+      }
+      // (THE HIGH CITY, FLOOR 20: the shadows of the four royals are one kind, each royal (Monster.form) with its own two, its basic
+      // blow and its one big move, of the kind's eight: game/act1_rules/rshadow.ts; tests/act2_floor20_kinds.test.ts holds each)
+      // (and the Moth: four in the air, the buffet, Dust, the Swarm and the Eyes; its beat only down on the book, in place of them:
+      // game/act1_rules/moth.ts)
+      if (kind === 'moth') {
+        assert.equal(n, 5, `${what}: four in the air, and the beat on the book`);
+        continue;
+      }
+      if (kind === 'rshadow') {
+        assert.equal(n, 8, `${what}: four royals' two each`);
+        continue;
+      }
       assert.ok(waiting || (n >= want[size][0] && n <= want[size][1] + leads), `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;
       const first = moves[0];
@@ -226,7 +268,7 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
   assert.equal(movesOf({ kind: 'brute', champion: false }), MONSTER_MOVES.brute);
   assert.equal(movesOf({ kind: 'brute', champion: true }), MONSTER_MOVES.guardian);
   assert.equal(movesOf({ kind: 'warden', champion: false }), MONSTER_MOVES.warden);
-});
+}));
 
 test('each move lands when its picture says: the swings, the charge setting off, the dead rising; the slams and the bolts as they were', () => {
   useMonsterAttacks(true);
@@ -247,7 +289,7 @@ test('each move lands when its picture says: the swings, the charge setting off,
   assert.equal(SUMMON.rise, CRAWL_TIME, 'the dead are out of the ground when their picture says');
 });
 
-test('a green troll swings while its slam cools down, and slams no sooner than the cooldown allows', () => {
+test('a green troll swings while its slam cools down, and slams no sooner than the cooldown allows', () => withoutAction(() => {
   useMonsterAttacks(true);
   const r = room('brute', 1);
   const slam = MONSTER_MOVES.brute[1];
@@ -261,7 +303,7 @@ test('a green troll swings while its slam cools down, and slams no sooner than t
   for (const b of began) assert.equal(b.circle, b.id === 'slam', `${b.id} at ${b.at.toFixed(2)} s: ${b.id === 'slam' ? 'its red circle' : 'no red circle: a blow at one'}`);
   assert.ok(harm.some((x) => x.id === 'swing'), 'the swing hurts the hero beside it');
   assert.ok(harm.some((x) => x.id === 'slam'), 'and so does the slam, on one who stands in its circle');
-});
+}));
 
 test('the red troll charges along a line on the floor: run down if you stand in it, not if you step out; he pulls up at its end, and the line goes', () => {
   useMonsterAttacks(true);
@@ -368,7 +410,7 @@ test('the red troll charges along a line on the floor: run down if you stand in 
   }
 });
 
-test('the Warden: his swing beside you, his bolts from afar, his slam not overused, and the dead called as an attack, crawling out of the ground', () => {
+test('the Warden: his swing beside you, his bolts from afar, his slam not overused, and the dead called as an attack, crawling out of the ground', () => withoutAction(() => {
   useMonsterAttacks(true);
   const slam = MONSTER_MOVES.warden[2];
   {
@@ -407,7 +449,7 @@ test('the Warden: his swing beside you, his bolts from afar, his slam not overus
     assert.ok(began.some((b) => b.id === 'bolts'), `from afar, his bolts (${began.map((b) => b.id).join(', ')})`);
     assert.ok(!began.some((b) => b.id === 'swing' || b.id === 'slam'), 'and nothing of his that reaches no further than his maul');
   }
-});
+}));
 
 test('the dead he calls are no more than a picture till they are out: not hit, not hitting, not walking', () => {
   useMonsterAttacks(true);
@@ -464,7 +506,7 @@ test('with the switch off the Warden calls the dead only as his life runs down, 
   }
 });
 
-test("the pictures: each move shown with its own clip, its blow in the step the rules land theirs; the run goes round; the dead have their crawl; and they are painted ahead", () => {
+test("the pictures: each move shown with its own clip, its blow in the step the rules land theirs; the run goes round; the dead have their crawl; and they are painted ahead", () => withoutAction(() => {
   useMonsterAttacks(true);
   const beasts = makeBestiary();
   const dt = 1 / 60;
@@ -538,7 +580,7 @@ test("the pictures: each move shown with its own clip, its blow in the step the 
   const a = fresh.of('guardian');
   const total = (s: AnimSet): number => s.idle.length + s.walk.length + (s.clips?.attack?.frames.length ?? 0) + (s.clips?.heavy?.frames.length ?? 0) + Object.values(s.clips?.moves ?? {}).reduce((n, c) => n + c.frames.length, 0) + (s.clips?.die?.frames.length ?? 0);
   assert.equal(calls, total(a.front) + total(a.back), 'every frame of the red troll, his new moves among them, is painted ahead');
-});
+}));
 
 test('the bot steps out of a charge’s line', () => {
   useMonsterAttacks(true);
@@ -549,4 +591,21 @@ test('the bot steps out of a charge’s line', () => {
   const c = emptyControls();
   botStep(g, c, newBot(true, true), 1 / 60);
   assert.ok(Math.abs(c.my) > 0.99 && Math.abs(c.mx) < 0.01, `it walks square out of the line (${c.mx.toFixed(2)}, ${c.my.toFixed(2)})`);
+});
+
+test('with the action way on (his yes): his rule of how many attacks holds, the bone archer two, his “Both shots”', () => {
+  useMonsterAttacks(true);
+  assert.ok(ACTION_F1.on && ACTION_F2.on && ACTION_F3.on && ACTION_F4.on && CO_ACTION.on && AM_ACTION.on, 'all six on');
+  const count = (kind: MonsterKind): number => {
+    const acts = actsOf({ kind });
+    if (acts) return acts.filter((a) => !a.forced).length;
+    return movesOf({ kind, champion: false })?.filter((mv) => mv.id !== 'bash').length ?? 1;
+  };
+  // (THE BONE ARCHER: offered the arrow rain with its straight arrow kept too, his pick “Both shots”: docs/mockups/action_f1/README.md)
+  assert.equal(count('archer'), 2, 'the archer: its shot and its rain');
+  for (const kind of ['cultist', 'dagger'] as MonsterKind[]) assert.equal(count(kind), 1, `${kind}: one`);
+  assert.equal(count('brute'), 2, 'the green troll: the rampage and the rush');
+  assert.equal(count('golem'), 2, 'the golem: its swing and its hurl');
+  for (const kind of ['warden', 'chained', 'amalgam'] as MonsterKind[]) assert.equal(count(kind), 4, `${kind}: four`);
+  assert.equal(count('mite'), 1, 'a bone mite: its bite');
 });

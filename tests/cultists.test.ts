@@ -44,7 +44,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { CULTISTS_SWITCH, DAGGER_CULTIST, KNIFE_BLOW, KNIFE_REST, MINI_DIES, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_GLIDE_LONG, MINI_HALT, MINI_RAISE, MINI_REEL, MINI_REST, MINI_SET_OFF, knifeCowlTop, knifeTipOf, makeDaggerCultistArt3, makeMiniFleshmancerArt3, miniFireAt, miniFireTurn } from '../src/art/cultists';
+import { CULTISTS_SWITCH, DAGGER_CULTIST, DAGGER_FRENZY, KNIFE_BLOW, KNIFE_REST, MINI_DIES, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_GLIDE_LONG, MINI_HALT, MINI_RAISE, MINI_REEL, MINI_REST, MINI_SET_OFF, knifeCowlTop, knifeTipOf, makeDaggerCultistArt3, makeMiniFleshmancerArt3, miniFireAt, miniFireTurn } from '../src/art/cultists';
 import { FM_FIRE_SIZE } from '../src/art/fm_spells';
 import { DEATH_FPS } from '../src/art/mkit';
 import { TILE3, posedOfMob } from '../src/art/new_mobs3';
@@ -58,6 +58,20 @@ import { solve } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
+
+/**
+ * The dagger cultist with his leap and plunge, as the art chat made him here: since his “Switch them all on (Recommended)”, 2 Nov
+ * 2026, the game's has the frenzy in its place (ACTION_F4, DAGGER_FRENZY), held by its own checks (tests/action_f4.test.ts).
+ */
+function leapCultist(): ReturnType<typeof makeDaggerCultistArt3> {
+  const was = DAGGER_FRENZY.on;
+  DAGGER_FRENZY.on = false;
+  try {
+    return makeDaggerCultistArt3();
+  } finally {
+    DAGGER_FRENZY.on = was;
+  }
+}
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -133,16 +147,18 @@ test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the be
   assert.equal(CULTISTS_SWITCH.on, CULT.on, 'the pictures are on just while the rules are (art/bestiary.ts, useFirstFive)');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/cultists.ts') continue;
+    // (art/fleshmancer_action.ts: the mini fleshmancer's fire done the action way, a mock-up behind FLESH_ACTION, off, nothing of the game importing it)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/cultists.ts' || f === 'art/fleshmancer_action.ts') continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     // (art/cultists.ts itself: not the cult's two kinds of the descent, art/act1_cultists.ts)
     if (/from ['"][^'"]*\/cultists['"]/.test(text)) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
+  // (and FLOOR 4, MORE ACTION, behind ACTION_F4: the frenzy's numbers in its rules, game/game.ts and game/action_f4.ts)
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts game/action_f4.ts game/game.ts render/bossfx.ts', 'the game files that draw them, and the rules that take its numbers');
 });
 
 test('2. their stands paint in every frame both ways round: nothing cyan, the pink edge round each, every pixel whole or empty but the edge, no lone pixel', () => {
-  const knife = makeDaggerCultistArt3();
+  const knife = leapCultist();
   const mini = makeMiniFleshmancerArt3();
   const found: string[] = [];
   for (const view of ['front', 'back'] as const) {
@@ -189,7 +205,7 @@ function madeOf(mob: Mob, set: AnimSet): { living: [string, Sprite[]][]; dying: 
 }
 
 test('6. each is made as the game takes a monster: both facings, its lists and clips, its blow on a frame', () => {
-  for (const [mob, art] of [[DAGGER_CULTIST, makeDaggerCultistArt3()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
+  for (const [mob, art] of [[DAGGER_CULTIST, leapCultist()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
     for (const view of ['front', 'back'] as const) {
       const set = art[view];
       const c = set.clips ?? {};
@@ -210,7 +226,7 @@ test('6. each is made as the game takes a monster: both facings, its lists and c
 test('7. every frame of every move made so far paints both ways round: nothing cyan, the pink edge round the living, every pixel whole or empty but the edge, no lone pixel; the dying wear no edge and give no light at the end', () => {
   const found: string[] = [];
   const [pr, pg, pb] = rgba(ENEMY_RIM);
-  for (const [mob, art] of [[DAGGER_CULTIST, makeDaggerCultistArt3()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
+  for (const [mob, art] of [[DAGGER_CULTIST, leapCultist()], [MINI_FM, makeMiniFleshmancerArt3()]] as const) {
     for (const view of ['front', 'back'] as const) {
       const { living, dying } = madeOf(mob, art[view]);
       for (const [name, frames] of living) {

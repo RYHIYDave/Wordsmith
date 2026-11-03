@@ -15,6 +15,8 @@
 //   cave:<x|y>                 EXITS: floor 4's wall giving way to the cave, in a face along x or y (art/cave4.ts); with
 //                              the wall standing before it and the cave after, in its two layers
 //   mouth:<x|y>                EXITS: floor 5's mouth, the cave's other end (art/cave4.ts), in its two layers
+//   exit:<x|y>                 FLOOR 3, PRISON_EXIT: the door out the back of his hall, in a wall along x or y, unbarring and
+//                              swinging open frame by frame, and the passage behind it (art/prison_exit.ts)
 //   town:ways:<x|y>            EXITS: the town's stairs down, the shaft's head with its cage, the gate's bars, their
 //                              unbarring and what is left of them, the gate in a plane along x or y (art/town_ways.ts)
 //   town:arrive                EXITS: the cage coming up into the town with him in it (art/town_ways.ts)
@@ -26,6 +28,19 @@
 //   things:unfinished          ACT 1: what floor 6's boss throws and leaves (its hurled block tumbling and lying, its
 //                              rockslide's boulders rolling, the terrace cracked under its stomp), painted ahead so
 //                              that none of it is painted in its fight (17 Oct: his "serious slowdown" in the rock throw)
+//   things:princess            (THE HIGH CITY, FLOOR 16) what the Princess casts and sends (her snare's cage, her Vow's
+//                              ring, her swans circling and diving: art/act1_figs/princess.ts princessThings)
+//   things:deer                (FLOOR 9, DEER_BRAMBLE) the twisted deer's hedge of bramble, each clump's moments (art/act1_figs/deer.ts
+//                              deerThings)
+//   things:drowned             (FLOOR 10, DROWNED_RETCH) the Drowned's slick, its frames (art/act1_figs/drowned.ts drownedThings)
+//   things:fieldhand           (FLOOR 13, FIELD_HARVEST) the reapers' sickle in flight and its curve (art/act1_figs/fieldhand.ts fieldThings)
+//   things:orderly             (FLOOR 14, ORDERLY_GURNEY) the orderly's gurney, its frames (art/act1_figs/orderly.ts orderlyThings)
+//   things:watch               (FLOOR 11, WATCH_LANTERN) the watch's burning oil, its frames (art/act1_figs/watch.ts watchThings)
+//   things:groom               (FLOOR 16, GROOM_HORSE) the groom's horse and its mist (art/act1_figs/groom.ts groomThings)
+//   things:kknight             (FLOOR 19, KNIGHT_BANNER) the king's knight's banner standing (art/act1_figs/kknight.ts kknightThings)
+//   things:physician           (FLOOR 14, PHYSICIAN_ACTION) his instruments, each way round (art/act1_figs/physician.ts physicianThings)
+//   things:stag                (FLOOR 9, STAG_ACTION) the Hollow Stag's wall of roots, each kind of clump's moments (art/act1_figs/
+//                              stag.ts stagThings)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
 // the page.
 
@@ -46,13 +61,32 @@ import { LAIR } from './lair';
 import { cageDown, cageUp } from './shaft';
 import { stairwellKicks, stairwellOpens } from './stairwell_open';
 import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
-import { caveFilm, lairMouth } from './cave4';
+// (THE HIGH CITY, FLOOR 16: the Princess's things)
+import { princessThings } from './act1_figs/princess';
+import { deerThings } from './act1_figs/deer';
+import { drownedThings } from './act1_figs/drowned';
+import { stagThings } from './act1_figs/stag';
+import { watchThings } from './act1_figs/watch';
+import { fieldThings } from './act1_figs/fieldhand';
+import { orderlyThings } from './act1_figs/orderly';
+import { physicianThings } from './act1_figs/physician';
+import { groomThings } from './act1_figs/groom';
+import { kknightThings } from './act1_figs/kknight';
+import { CAVE_FRAMES, caveFilm, lairMouth } from './cave4';
+import { CHAPEL, chapelCave } from './chapel';
+import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
+import { TOMB, TOMB_THEME, makeTombArt } from './tomb';
+import { EXIT_KICKS, exitArt } from './prison_exit';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
 import { canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from './act1_ways';
 import { gateWardStart, gateWardWay, houseOfQuietStart, houseOfQuietWay, libraryStart, libraryWay, millraceStart, millraceWay, undercityStart, undercityWay } from './act2_ways';
 import type { StartArt, WayArt, WayDir } from './ways_kit';
 export type { StartArt, WayArt };
+// (THE HIGH CITY, FLOOR 16: its garden gates, the art's own piece: art/floor16.ts)
+import { swanGardensPieces } from './floor16';
+import { Px } from '../engine/px';
+import { GARDEN_GATE } from '../game/ways';
 
 /** Where a piece in a wall stands (tiles), and the room's zone before it. */
 type At = { x: number; y: number } | undefined;
@@ -68,7 +102,31 @@ const ONWARD_ART: Record<number, { way: (d: WayDir, at: At, zone: number | undef
   13: { way: (d) => millraceWay(d), start: (d) => millraceStart(d) },
   14: { way: (d, at, zone) => houseOfQuietWay(d, at, zone), start: (d, at, zone) => houseOfQuietStart(d, at, zone) },
   15: { way: (d, at, zone) => libraryWay(d, at, zone), start: (d, at, zone) => libraryStart(d, at, zone) },
+  // (THE HIGH CITY, FLOOR 16: the art chat drew no film for its ways; its own `a garden gate` stands in the hedge at each)
+  16: { way: (d) => gardenGateWay(d), start: (d) => gardenGateStart(d) },
 };
+
+/**
+ * (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS' GATES, game/act2/swangardens.ts) The art's `a garden gate` (art/floor16.ts: its
+ * frames shut and open across x, shut and open across y), standing in the yew at the way on and where he came in: across
+ * the way through it (a way along x is crossed by a gate across y). THE WAY ON: shut while the Princess lives; as she falls,
+ * GARDEN_GATE.shut frames shut and then open, its leaves swinging back with a jolt (game/ways.ts ONWARD[16]); open after.
+ * WHERE HE CAME IN: shut behind him. Nothing of either lies on the floor (its `under` an empty picture).
+ */
+function gardenGate(d: WayDir): { shut: Sprite; open: Sprite; none: Sprite } {
+  const fr = swanGardensPieces().find((p) => p.name === 'a garden gate')!.frames!;
+  const k = d === 'x+' || d === 'x-' ? 1 : 0;
+  return { shut: fr[2 * k], open: fr[2 * k + 1], none: new Px(2, 2).sprite(1, 1, 2) };
+}
+function gardenGateWay(d: WayDir): WayArt {
+  const g = gardenGate(d);
+  const frames = [...new Array<Sprite>(GARDEN_GATE.shut).fill(g.shut), ...new Array<Sprite>(GARDEN_GATE.open).fill(g.open)];
+  return { shut: { under: g.none, over: g.shut }, film: { frames, fps: 30, jolts: [GARDEN_GATE.shut], kicks: [2] }, open: { under: g.none, over: g.open }, back: 0 };
+}
+function gardenGateStart(d: WayDir): StartArt {
+  const g = gardenGate(d);
+  return { under: g.none, over: g.shut, back: 2 };
+}
 const asDir = (d: string | undefined): WayDir => (d === 'x-' || d === 'y+' || d === 'y-' ? d : 'x+');
 
 /** One of a floor's moments, as the game plays it. */
@@ -100,6 +158,14 @@ export interface CaveWayFilm {
   before: Sprite;
   under: Sprite;
   over: Sprite;
+}
+/** FLOOR 3, PRISON_EXIT: the door out the back of his hall (art/prison_exit.ts), anchored at the foot of the wall's face under its middle: its frames from his fall (30 a second), the screen's kick at each jolt; the passage behind it, four frames, drawn with the floor. */
+export interface ExitFilm {
+  fps: number;
+  jolts: number[];
+  kicks: number[];
+  frames: Sprite[];
+  under: Sprite[];
 }
 /** EXITS, FLOOR 5: the cave's other end, its two layers. */
 export interface MouthWay {
@@ -171,6 +237,8 @@ export function filmRoom(key: string): number {
   // the town's 7.4, the cage coming up 31.0, the stairs up 0.1)
   if (kind === 'cave') return CAVE_ROOM;
   if (kind === 'mouth') return 2;
+  // (FLOOR 3: the door out the back of his hall, measured 2 Nov 2026 in node as the others are: 16.4, its 90 frames and the passage's 4)
+  if (kind === 'exit') return 17;
   if (kind === 'town') return a === 'arrive' ? TOWN_ARRIVE_ROOM : 8;
   if (kind === 'up') return 1;
   // (EXITS, floors 6 to 10: the art chat's measures, every picture cut down to what is painted in it: the quarry 27.3, the ledge
@@ -178,9 +246,24 @@ export function filmRoom(key: string): number {
   // (and floors 11 to 15's: 8.3, 27.6, 18.4, 9.3, 14.8)
   if (kind === 'onward') return [28, 70, 46, 27, 23, 9, 28, 19, 10, 15][Number(a) - 6] ?? 70;
   if (kind === 'start') return 2;
+  // (THE HIGH CITY, FLOOR 16: the Princess's things, measured 30 Oct 2026 as the others are: 20.8, art/act1_figs/princess.ts THINGS_COST)
+  if (kind === 'things' && a === 'princess') return 22;
+  // (FLOOR 9: the deer's hedge, 704 pictures each cut down to what is painted in it: measured 2 Nov 2026 in node as the others are)
+  if (kind === 'things' && a === 'deer') return DEER_THINGS_ROOM;
+  if (kind === 'things' && a === 'drowned') return DROWNED_THINGS_ROOM;
+  if (kind === 'things' && a === 'stag') return STAG_THINGS_ROOM;
+  if (kind === 'things' && a === 'watch') return 16;
+  if (kind === 'things' && a === 'fieldhand') return 16;
+  if (kind === 'things' && a === 'orderly') return 12;
+  if (kind === 'things' && a === 'physician') return PHYSICIAN_THINGS_ROOM;
+  if (kind === 'things' && a === 'groom') return 8;
+  if (kind === 'things' && a === 'kknight') return 8;
   if (kind === 'things') return 12;
   return 57;
 }
+
+/** (FLOOR 14) His instruments' room, in megabytes: 240 pictures each cut down to what is painted in it (measured 2 Nov 2026). */
+export const PHYSICIAN_THINGS_ROOM = 4;
 
 /** The key of the film of a stairwell's opening: on floor `floor` (its look, 1 to 4), its steps going down `way`, its anchor on tile (x, y). */
 export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y' }): string {
@@ -189,10 +272,13 @@ export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y
 
 /** (EXITS) The cave's film's room and the cage's coming up's, in megabytes: see filmRoom. */
 const CAVE_ROOM = 62;
+const DEER_THINGS_ROOM = 20;
+const DROWNED_THINGS_ROOM = 20;
+const STAG_THINGS_ROOM = 24;
 const TOWN_ARRIVE_ROOM = 32;
 
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
-export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | MouthWay | TownWaysArt | WayArt | StartArt | Sprite {
+export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | ExitFilm | MouthWay | TownWaysArt | WayArt | StartArt | Sprite {
   const [kind, a, b, c, d] = key.split(':');
   if (kind === 'moments') {
     const list = momentsOf(Number(a));
@@ -211,17 +297,31 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   }
   if (kind === 'stair') {
     const floor = Number(a);
-    const theme = floor === 5 ? LAIR : CRYPT_FLOORS[Math.max(1, Math.min(4, floor)) - 1];
+    // (FLOOR 1 AS THE KING'S TOMB, TOMB: its stairwell in the tomb's stone, art/tomb.ts TOMB_THEME)
+    const theme = floor === 5 ? LAIR : floor === 1 && TOMB.on ? TOMB_THEME : CRYPT_FLOORS[Math.max(1, Math.min(4, floor)) - 1];
     const m = stairwellOpens(theme, b === 'y' ? 'y' : 'x', [Number(c) || 0, Number(d) || 0]);
     return { fps: m.fps, jolts: [...m.jolts], kicks: [...stairwellKicks(m)], frames: m.frames };
   }
   // (EXITS: the art chat's ways between the floors)
+  if (kind === 'cave' && CHAPEL.on) {
+    // (FLOOR 4 AS THE BURIED CHAPEL, CHAPEL: the same film in look A's colours, art/chapel.ts chapelCave)
+    const c = chapelCave(a !== 'y');
+    const frames: Sprite[] = [];
+    for (let k = 0; k < CAVE_FRAMES; k++) frames.push(c.frame(k));
+    return { fps: 30, jolts: [...c.jolts], kicks: c.jolts.map((_, i) => (i === 0 ? 6 : 4)), frames, before: c.before, under: c.under, over: c.over } satisfies CaveWayFilm;
+  }
   if (kind === 'cave') {
     const f = caveFilm(a !== 'y');
     return { fps: 30, jolts: [...f.jolts], kicks: f.jolts.map((_, i) => (i === 0 ? 6 : 4)), frames: f.frames, before: f.before, under: f.under, over: f.over } satisfies CaveWayFilm;
   }
+  if (kind === 'exit') {
+    const e = exitArt(a !== 'y');
+    const K = EXIT_KICKS;
+    return { fps: 30, jolts: [...e.jolts], kicks: [K.upperBar, K.lowerBar, K.lock, K.lurch, K.stop], frames: e.frames, under: e.under } satisfies ExitFilm;
+  }
   if (kind === 'mouth') {
-    const m = lairMouth(a !== 'y');
+    // (FLOOR 5 AS THE MINE, LAIR_TEMPLE: the cave's mouth in the mine's wall: art/lair_temple.ts)
+    const m = LAIR_TEMPLE.on ? makeLairTempleArt().mouth(a !== 'y') : lairMouth(a !== 'y');
     return { under: m.under, over: m.over } satisfies MouthWay;
   }
   if (kind === 'town' && a === 'ways') {
@@ -234,7 +334,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     const f = townArrives();
     return { fps: f.fps, jolts: [...f.jolts], back: f.back, front: f.front, lift: [...f.lift] } satisfies ShaftFilm;
   }
-  if (kind === 'up') return floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
+  // (FLOOR 1 AS THE KING'S TOMB, TOMB: the town's stairs coming down in the tomb's stone and the town's daylight: art/tomb.ts)
+  if (kind === 'up') return TOMB.on ? makeTombArt().stairsUp(b !== 'y') : floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
   // (a piece in a wall: where it stands and the room's zone, onward:<floor>:<dir>:<x>:<y>:<zone>)
   const [, , , ax, ay, az] = key.split(':');
   const at = ax !== undefined && ay !== undefined ? { x: Number(ax), y: Number(ay) } : undefined;
@@ -245,6 +346,26 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     // (its block's four tumbling frames and the one lying; its boulder's eight; its stomp's four cracks: as render/act1_fx/unfinished.ts asks for them)
     return { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };
   }
+  // (THE HIGH CITY, FLOOR 16: what the Princess casts and sends, as render/act1_fx/princess.ts asks for it)
+  if (kind === 'things' && a === 'princess') return princessThings();
+  // (FLOOR 9: the deer's hedge of bramble, as render/act1_fx/deer.ts asks for it)
+  if (kind === 'things' && a === 'deer') return deerThings();
+  // (FLOOR 10: the Drowned's slick, as render/act1_fx/drowned.ts asks for it)
+  if (kind === 'things' && a === 'drowned') return drownedThings();
+  // (FLOOR 9: the Hollow Stag's wall, as render/act1_fx/stag.ts asks for it)
+  if (kind === 'things' && a === 'stag') return stagThings();
+  // (FLOOR 11: the watch's burning oil, as render/act1_fx/watch.ts asks for it)
+  if (kind === 'things' && a === 'watch') return watchThings();
+  // (FLOOR 13: the reapers' sickle and its curve, as render/act1_fx/fieldhand.ts asks for them)
+  if (kind === 'things' && a === 'fieldhand') return fieldThings();
+  // (FLOOR 14: the orderly's gurney, as render/act1_fx/orderly.ts asks for it)
+  if (kind === 'things' && a === 'orderly') return orderlyThings();
+  // (FLOOR 14: the Physician's instruments, as render/act1_fx/physician.ts asks for them)
+  if (kind === 'things' && a === 'physician') return physicianThings();
+  // (FLOOR 16: the groom's horse, as render/act1_fx/groom.ts asks for it)
+  if (kind === 'things' && a === 'groom') return groomThings();
+  // (FLOOR 19: the king's knight's banner, as render/act1_fx/kknight.ts asks for it)
+  if (kind === 'things' && a === 'kknight') return kknightThings();
   if (kind === 'shaft') {
     if (a === 'down') {
       const f = cageDown();

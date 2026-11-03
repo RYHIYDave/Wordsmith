@@ -319,12 +319,17 @@ test('5. THE ROLL: rolled at its pace, a turn or two; whoever it rolls over stru
     assert.equal(m.a1!.turns, 1, 'one turn');
     const x0 = m.x;
     let ended = -1;
+    let xEnd = m.x;
     let k = 0;
     run(g, 3, () => {
       k++;
-      if (ended < 0 && m.state !== 'act') ended = k / 60;
+      if (ended < 0 && m.state !== 'act') {
+        ended = k / 60;
+        xEnd = m.x;
+      }
     });
-    near(m.x - x0, ROLL_TURN, 0.3, 'rolled one turn');
+    // (where it uncurled: after that it walks again)
+    near(xEnd - x0, ROLL_TURN, 0.3, 'rolled one turn');
     near(ended, C.curl + C.turn + C.uncurl, 0.05, 'and uncurled from there');
   }
   {

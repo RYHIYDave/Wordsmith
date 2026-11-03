@@ -12,7 +12,8 @@
 //   - the sizes the game goes by (the bar over a head, a finger on a monster) fit the pictures;
 //   - the flat-colour copies of frames that a hit or an ailment asks for cannot fill a phone's memory.
 // (Written before THE MONSTERS' ATTACKS of Version 19.8, it holds them off, rules and pictures: the
-// monsters here have their one attack, as they had then. tests/monster_attacks.test.ts has them on.)
+// monsters here have their one attack, as they had then. tests/monster_attacks.test.ts has them on. So with the floors' more action
+// (ACTION_F1 to F4), which is some of their attacks once on.)
 //   run: tsx --test tests/monsters.test.ts
 
 // @ts-ignore
@@ -21,7 +22,7 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import type { ActorArt, AnimSet, Clip } from '../src/art/actor_types';
-import { FIGURE_SIZE, MONSTER_FIGURES, figureOf, makeBestiary, useMonsterAttacks } from '../src/art/bestiary';
+import { FIGURE_SIZE, MONSTER_FIGURES, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks } from '../src/art/bestiary';
 import type { ClassicFigure as MonsterFigure } from '../src/art/bestiary';
 import { CLIP_FPS, GRAIN, IDLE_FRAMES, KAX, KAY, KH, KW, RIM_ALPHA, WALK_FRAMES } from '../src/art/kit';
 import { DEATH_FPS, DEATH_TIME, ENEMY_RIM, onGrid, strike } from '../src/art/mkit';
@@ -50,6 +51,12 @@ const assert: Assert = nodeAssert;
 
 paintWithoutCanvas();
 useMonsterAttacks(false);
+// (and the floors' more action, which takes the place of some of their one attacks, rules and pictures: the cultist's fire sigil,
+// the green troll's rampage, the dagger's frenzy: tests/action_f1_game.test.ts to action_f4 have them on)
+useActionF1(false);
+useActionF2(false);
+useActionF3(false);
+useActionF4(false);
 
 const BEASTS = makeBestiary();
 const VIEWS = ['front', 'back'] as const;

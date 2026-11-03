@@ -18,11 +18,13 @@
 // who stands off, along a line marked on the floor while she is up out of sight (she cannot be struck up there),
 // striking where it ends; her call, her biggest and slowest: her flock comes, never more than a few of it alive.
 
+import { QA_DIVE, QA_ECLIPSE, QA_GUST, QA_RAKE, QUEEN_ACTION } from '../../art/carrion_queen_action';
+import { diveStrikes, gustShove, gustStrikes, inPool, poolsAt, rakeStrikes } from '../../art/carrion_queen_action_fx';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { MSG, TUNE } from '../defs';
 import { backView, flipped, fromFigure } from '../facing';
 import { act1Ready } from '../act1_mobs';
-import type { Level, Monster } from '../state';
+import type { Level, Monster, Peril } from '../state';
 import type { MonsterKind } from '../types';
 import type { Act1Rules } from './types';
 
@@ -94,6 +96,35 @@ export const QN_ACTS: readonly ActDef[] = [
 // HER SPOT: on the eyrie's edge, the drop behind her
 
 /** The four ways round of her picture (art: from in front and behind, each turned over or not: game/facing.ts), by the floor's way each faces: from in front, not turned over, along the floor's x; turned over, its y; from behind, turned over, -x; not, -y. */
+/**
+ * HER MOVES DONE THE ACTION WAY (the art chat's art/carrion_queen_action.ts behind QUEEN_ACTION, his yes there to each, 2 Nov 2026,
+ * the dive twice as wide at his word, “The carrion queen’s dive should be a much bigger AOE, and really sell it with dirt and dust on
+ * the impact.”): her rake (a wedge out to QA_RAKE.to, rakeStrikes), her gust (out to QA_GUST.far, shoving straight away from her
+ * gustShove(fwd) tiles over pushFor, never nearer the drop than he was), her dive (QA_DIVE.r round where her talons strike, up out of
+ * reach QA_DIVE.up; the rock bursting, 'queen:burst'), her call as it was; and THE ECLIPSE ('queen:eclipse', her new act): from her
+ * wings' sweep the ledge goes dark for QA_ECLIPSE.dark but for three pools of light drifting over it (poolsAt round where she
+ * stood); while the hero is outside every pool, a vulture of her flock dives at him every QA_ECLIPSE.every ('queen:vdive', its line
+ * marked QA_ECLIPSE.warn first, from QA_ECLIPSE.from tiles off to where he stood: struck within hitR of there and along the last
+ * `tail` of its line, `half` to either side); in the dark she keeps to her spot and her rake.
+ */
+export const QN2_ACTS: readonly ActDef[] = [
+  { id: 'queen:rake', clip: 'attack', long: QA_RAKE.long, hit: QA_RAKE.hit, dmg: 1, cooldown: 0, first: 0, after: 0.35, near: 0, far: QA_RAKE.to },
+  { id: 'queen:gust', clip: 'gust', long: QA_GUST.long, hit: QA_GUST.hit, dmg: 0.5, cooldown: 8, first: 3, after: 0.4, near: 0, far: QA_GUST.far - 1 },
+  { id: 'queen:dive', clip: 'dive', long: QA_DIVE.long, hit: QA_DIVE.hit, dmg: 1.6, cooldown: 7, first: 4, after: 0.5, near: 2.0, far: QA_DIVE.at + 1.5 },
+  { id: 'queen:call', clip: 'call', long: 1.7, hit: 0.8, dmg: 0, cooldown: 18, first: 5, after: 0.5, near: 0, far: 16 },
+  { id: 'queen:eclipse', clip: 'eclipse', long: QA_ECLIPSE.long, hit: QA_ECLIPSE.hit, dmg: 0.9, cooldown: 30, first: 12, after: 0.5, near: 0, far: 16 },
+  { id: 'queen:home', clip: 'dive', long: QA_DIVE.long, hit: QA_DIVE.hit, dmg: 1.6, cooldown: 0, first: 0, after: 0.5, near: 0, far: 99, forced: true },
+];
+/** Her acts now: the action way's with its switch, else as they were. */
+export const qnActs = (): readonly ActDef[] => (QUEEN_ACTION.on ? QN2_ACTS : QN_ACTS);
+export const ECLIPSE_PERIL = 'queen:eclipse';
+export const VDIVE_PERIL = 'queen:vdive';
+export const BURST_PERIL = 'queen:burst';
+/** The pools of her Eclipse round where she stood, `p.t` seconds into it (its clock her act's). */
+export const eclipsePools = (p: Peril): ReturnType<typeof poolsAt> => poolsAt(p.t, 8.5, 10, p.b).map((q) => ({ ...q, x: q.x + p.x, y: q.y + p.y }));
+/** Her Eclipse now on her floor, if one is. */
+export const eclipseNow = (perils: readonly Peril[]): Peril | null => perils.find((p) => p.a1 === ECLIPSE_PERIL) ?? null;
+
 export const QN_VIEWS: readonly { fx: number; fy: number }[] = [
   { fx: 1, fy: 0 },
   { fx: 0, fy: 1 },
@@ -278,9 +309,12 @@ function anyReady(R: BossRules, m: Monster, dist: number): boolean {
   const g = R.g;
   const los = dist < 16 && g.sees(m.x, m.y, g.hero.x, g.hero.y);
   // (not her flight home, QUEEN_ROAM's: that is made only when it must be, BossRules.forcedAct)
-  return los && QN_ACTS.some((a, i) => !a.forced && m.moveCd![i] <= 0 && dist >= a.near && dist <= a.far && canAct(R, m, a));
+  return los && qnActs().some((a, i) => !a.forced && m.moveCd![i] <= 0 && dist >= a.near && dist <= a.far && canAct(R, m, a));
 }
 function canAct(R: BossRules, m: Monster, a: ActDef): boolean {
+  // (QUEEN_ACTION: in her Eclipse's dark, her rake alone; and never two Eclipses at once)
+  const dark = eclipseNow(R.g.perils);
+  if (dark && a.id !== 'queen:rake' && !a.forced) return false;
   if (a.id === 'queen:call') return flockAlive(R, m) <= QN.call.most - 2;
   return true;
 }
@@ -300,7 +334,9 @@ const offSpot = (m: Monster): number => {
 
 export const RULES: Act1Rules | null = {
   gait: QN_GAIT,
-  acts: QN_ACTS,
+  get acts() {
+    return qnActs();
+  },
 
   bossAt(L) {
     const p = perchOf(L);
@@ -330,7 +366,7 @@ export const RULES: Act1Rules | null = {
     }
     if (m.state === 'act') return false;
     if (!m.gait) m.gait = { mode: 'stand', t: 0 };
-    if (!m.moveCd || m.moveCd.length !== QN_ACTS.length) m.moveCd = QN_ACTS.map((a) => a.first * g.rng.range(0.7, 1.2));
+    if (!m.moveCd || m.moveCd.length !== qnActs().length) m.moveCd = qnActs().map((a) => a.first * g.rng.range(0.7, 1.2));
     for (let i = 0; i < m.moveCd.length; i++) m.moveCd[i] -= dt;
     m.state = 'chase';
     // OFF HER SPOT: she hops back onto it (her round ends as she stands: she stops as it comes round, there)
@@ -392,7 +428,7 @@ export const RULES: Act1Rules | null = {
   },
 
   start(R, m, a) {
-    if (a.id === 'queen:dive' || a.id === 'queen:gust' || a.id === 'queen:home') R.g.sfx('bossRoar', 0.4);
+    if (a.id === 'queen:dive' || a.id === 'queen:gust' || a.id === 'queen:home' || a.id === 'queen:eclipse') R.g.sfx('bossRoar', 0.4);
   },
 
   end(R, m, a) {
@@ -423,6 +459,7 @@ export const RULES: Act1Rules | null = {
     const act = m.act!;
     const at = (T: number): boolean => t0 < T && t1 >= T;
     const rel = (): { fwd: number; left: number } => fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);
+    if (QUEEN_ACTION.on && actingNew(R, m, a, t0, t1, at, rel)) return;
     switch (a.id) {
       case 'queen:rake': {
         if (at(QN.rake.land)) g.sfx('slam', 0.3);
@@ -578,9 +615,165 @@ export const RULES: Act1Rules | null = {
     fall();
   },
 
+  peril(R, p) {
+    stepPeril(R, p);
+  },
+
   reachable(m) {
     // (up out of sight in her dive, nothing reaches her; nor in her dive home)
-    const D = QN.dive;
+    const D = QUEEN_ACTION.on ? QA_DIVE : QN.dive;
     return !(m.act && (m.act.id === 'queen:dive' || m.act.id === 'queen:home') && m.act.t >= D.up[0] && m.act.t < D.up[1]);
   },
 };
+
+// ---------------------------------------------------------------------------------------------
+// (QUEEN_ACTION) HER MOVES DONE THE ACTION WAY
+
+/** How far a floor point is from the drop (tiles, as far as `far`: further counts as `far`): the eyrie's open ground's edge. */
+function fromDrop(R: BossRules, x: number, y: number, far = 4): number {
+  const g = R.g;
+  for (let d = 0.25; d <= far; d += 0.25) {
+    for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2;
+      if (!g.isOpen(x + Math.cos(a) * d, y + Math.sin(a) * d)) return d;
+    }
+  }
+  return far;
+}
+
+/** Her rake, gust, dive and Eclipse the action way. False: it is none of these (her call, her flight home: as they were). */
+function actingNew(R: BossRules, m: Monster, a: ActDef, t0: number, t1: number, at: (T: number) => boolean, rel: () => { fwd: number; left: number }): boolean {
+  const g = R.g;
+  const h = g.hero;
+  const act = m.act!;
+  switch (a.id) {
+    case 'queen:rake': {
+      if (!at(a.hit)) return true;
+      const r = rel();
+      if (rakeStrikes(r.fwd, r.left)) {
+        R.blow(m, a.dmg);
+        g.knockHero(m.x, m.y, 0.5);
+      }
+      g.emit({ t: 'shake', amount: 3 });
+      g.sfx('swing', 0.8);
+      return true;
+    }
+    case 'queen:gust': {
+      const G = QA_GUST;
+      const k = keptOf(m);
+      if (at(a.hit)) {
+        g.sfx('gust', 1);
+        g.emit({ t: 'shake', amount: 3 });
+        const r = rel();
+        if (gustStrikes(r.fwd, r.left)) {
+          R.blow(m, a.dmg);
+          if (h.invuln <= 0 && !h.move && !g.over) {
+            // (shoved straight away from her: harder the nearer she is)
+            act.b = 1;
+            act.a = gustShove(Math.max(0, r.fwd));
+            const dx = h.x - m.x;
+            const dy = h.y - m.y;
+            const d = Math.hypot(dx, dy) || 1;
+            k.gx = dx / d;
+            k.gy = dy / d;
+          }
+        }
+      }
+      if (act.b === 1 && t1 > a.hit && t0 < a.hit + G.pushFor && !g.over) {
+        const span = Math.min(t1, a.hit + G.pushFor) - Math.max(t0, a.hit);
+        const step = (act.a * span) / G.pushFor;
+        // (never nearer the drop than he was: his “Yes, no drop-pushes (Recommended)”, 31 Oct)
+        const x0 = h.x;
+        const y0 = h.y;
+        const was = fromDrop(R, x0, y0);
+        g.slide(h, TUNE.heroRadius, k.gx * step, k.gy * step, g.level.walk);
+        if (was < 4 && fromDrop(R, h.x, h.y) < was - 1e-6) {
+          h.x = x0;
+          h.y = y0;
+          act.b = 0;
+        }
+      }
+      return true;
+    }
+    case 'queen:dive':
+    case 'queen:home': {
+      // (her flight home: up out of sight, set down over her perch, as it was, then the dive the action way)
+      if (a.id === 'queen:home' && at((QA_DIVE.up[0] + QA_DIVE.up[1]) / 2)) {
+        const p = perchOf(g.level);
+        const k = keptOf(m);
+        if (p) {
+          m.x = p.x;
+          m.y = p.y;
+          m.fx = p.fx;
+          m.fy = p.fy;
+          k.hx = p.x;
+          k.hy = p.y;
+          k.views = p.views;
+        }
+        k.homing = 1;
+      }
+      if (!at(a.hit)) return true;
+      const r = rel();
+      if (diveStrikes(r.fwd, r.left)) {
+        R.blow(m, a.dmg);
+        g.knockHero(m.x + m.fx * QA_DIVE.at, m.y + m.fy * QA_DIVE.at, 1);
+      }
+      // (the rock bursts where she strikes: its own, the floor's, while she rips free and beats home)
+      R.peril(m, 'act1', m.x, m.y, { a1: BURST_PERIL, dur: Math.max(QA_DIVE.dust, QA_DIVE.crater) + 0.2, b: Math.atan2(m.fy, m.fx) });
+      g.emit({ t: 'shake', amount: QA_DIVE.shake });
+      g.sfx('slam', 1);
+      return true;
+    }
+    case 'queen:eclipse': {
+      // (her Eclipse, from her first scream: the dark round where she stands)
+      if (at(1e-4)) R.peril(m, 'act1', m.x, m.y, { a1: ECLIPSE_PERIL, dur: QA_ECLIPSE.hit + QA_ECLIPSE.dark + QA_ECLIPSE.back, b: g.rng.int(0, 999), c: QA_ECLIPSE.hit + QA_ECLIPSE.first, dmg: g.rollMonsterDmg(m) * a.dmg, a: m.id });
+      if (at(a.hit)) {
+        g.sfx('bossRoar', 0.9);
+        g.emit({ t: 'shake', amount: 3 });
+      }
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+/** A step of her Eclipse (its dives sent while he is outside every pool) and of a dive of her flock. */
+function stepPeril(R: BossRules, p: Peril): void {
+  const g = R.g;
+  const h = g.hero;
+  const E = QA_ECLIPSE;
+  if (p.a1 === ECLIPSE_PERIL) {
+    // (`c`: when the next dive may come)
+    if (p.t < p.c || p.t > E.hit + E.dark - E.warn) return;
+    if (inPool(eclipsePools(p), h.x, h.y) || h.move || g.over) return;
+    p.c = p.t + E.every;
+    // (from out of the dark, `from` tiles off, to where he stands now)
+    const a = g.rng.range(0, Math.PI * 2);
+    const dive: Peril = {
+      kind: 'act1', a1: VDIVE_PERIL, x: h.x, y: h.y, fx: 1, fy: 0, t: -E.warn, hit: 0, dur: 0.6, dmg: p.dmg, el: p.el, words: p.words, from: p.from,
+      done: 0, a: 0, b: h.x + Math.cos(a) * E.from, c: h.y + Math.sin(a) * E.from, d: 0, hand: 1,
+    };
+    if (p.half) dive.half = p.half;
+    g.perils.push(dive);
+    return;
+  }
+  if (p.a1 === VDIVE_PERIL) {
+    if (p.done || p.t < 0) return;
+    p.done = 1;
+    // (it strikes where he stood, and along the last of its line)
+    const dx = p.x - p.b;
+    const dy = p.y - p.c;
+    const L = Math.hypot(dx, dy) || 1;
+    const ux = dx / L;
+    const uy = dy / L;
+    const along = (h.x - p.b) * ux + (h.y - p.c) * uy;
+    const across = Math.abs(-(h.x - p.b) * uy + (h.y - p.c) * ux);
+    const struck = Math.hypot(h.x - p.x, h.y - p.y) <= E.hitR || (along >= L - E.tail && along <= L && across <= E.half);
+    if (struck && !h.move && h.invuln <= 0 && !g.over) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    g.sfx('swing', 0.6);
+  }
+}
+
+/** Its switch, for game/enemy_moves.ts (the new enemy moves of floors 5 to 19 switched on together). */
+export { QUEEN_ACTION };

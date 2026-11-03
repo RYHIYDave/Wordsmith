@@ -57,7 +57,7 @@ function room(): Game {
 }
 /** Steps of the game with nobody at the controls; how many shots at the hero were loosed in them. */
 function steps(g: Game, n: number): number {
-  const seen = new Set<unknown>(g.projectiles);
+  const seen = new Set<unknown>([...g.projectiles, ...g.perils]);
   let shots = 0;
   for (let k = 0; k < n; k++) {
     g.events.length = 0;
@@ -66,6 +66,13 @@ function steps(g: Game, n: number): number {
       if (seen.has(p)) continue;
       seen.add(p);
       if (p.hostile) shots++;
+    }
+    // (FLOOR 2, MORE ACTION, ACTION_F2, on since 2 Nov 2026 at his “Switch them all on (Recommended)”: a cultist casts its fire
+    // sigil at the hero in place of its bolt: each cast is its shot)
+    for (const p of g.perils) {
+      if (seen.has(p)) continue;
+      seen.add(p);
+      if (p.a1 === 'cultist:sigil') shots++;
     }
   }
   return shots;
@@ -117,7 +124,8 @@ test('a ranged monster still comes for a hero who is out of its reach, and stops
     const y0 = m.y;
     const shots = steps(g, 420);
     assert.ok(Math.hypot(m.x - x0, m.y - y0) < 0.01, `with the hero come up to it, it has not moved (${Math.hypot(m.x - x0, m.y - y0).toFixed(3)})`);
-    assert.ok(shots >= 2, `and has shot ${shots} times`);
+    // (a cultist's fire sigil, ACTION_F2, is slower to cast than its bolt was: once in the seven seconds will do)
+    assert.ok(shots >= (kind === 'cultist' ? 1 : 2), `and has shot ${shots} times`);
   }
 });
 

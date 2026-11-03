@@ -27,6 +27,8 @@ export default async function (page, snap) {
     g.hero.x = b.x + 4.2; g.hero.y = b.y + 4.2;
     g.bossMet = true;
     g.level.explored.fill(1);
+    // (woken as meeting him wakes him: game.ts meetOutdoorBoss)
+    if (b.state === 'sleep') g.wakeUp(b);
     return { boss: b.kind, at: [b.x, b.y] };
   }, seed);
   log('floor 10', JSON.stringify(info));

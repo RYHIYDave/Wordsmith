@@ -95,6 +95,8 @@ export const DOORS = { on: true, share: 0.2 };
 export function hasDoor(f: Floor, r: Room): boolean {
   // (and THE MIX's two rooms next door: the door between them is what they are)
   if (r.kind === 'treasure' || r.kind === 'guardian' || r.nextDoor) return true;
+  // (FLOOR 2 AS THE PRISON'S GROUNDS: a courtyard is come into through a gateway, an arch with no door: game/grounds_way.ts)
+  if (r.court) return false;
   let h = (Math.imul(f.seed | 0, 0x9e3779b1) ^ Math.imul(f.depth | 0, 0x85ebca6b) ^ Math.imul((r.id + 1) | 0, 0xc2b2ae35)) | 0;
   h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
   h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
@@ -175,6 +177,38 @@ function stepsFromStart(f: Floor): Int32Array {
 }
 
 /**
+ * EVERY FLOOR OPEN, LINEAR OR COMBO: whether room `r` can be come to from the start without passing its way in `d`: a room on
+ * one of a combo floor's ways round (game/dungeon.ts COMBO), which has a way out on the far side that leads round to the start.
+ * A door holds what is in its room out of the hero's reach while it is shut (game.ts, `shutIn`), which is only so where nothing
+ * in it can come at him but through the door: so such a room has no door, its way in open as before there were doors. (Its gates
+ * stand, where it has them; a floor with no way round has no such room, and is laid as it was.)
+ */
+export function onALoop(f: Floor, r: Room, d: DoorSpot): boolean {
+  const shut = new Set(doorTiles(f, d));
+  const seen = new Uint8Array(f.w * f.h);
+  const sx = Math.floor(f.start.x);
+  const sy = Math.floor(f.start.y);
+  const queue: number[] = [sy * f.w + sx];
+  seen[queue[0]] = 1;
+  for (let q = 0; q < queue.length; q++) {
+    const i = queue[q];
+    const x = i % f.w;
+    const y = (i - x) / f.w;
+    if (x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h) return true;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= f.w || ny >= f.h) continue;
+      const j = ny * f.w + nx;
+      if (seen[j] || f.tiles[j] !== T_FLOOR || shut.has(j)) continue;
+      seen[j] = 1;
+      queue.push(j);
+    }
+  }
+  return false;
+}
+
+/**
  * LAY THE DOORS OF A LEVEL (the map-maker's last step, if `DOORS.on`): in the way in of a room
  * that has one (`hasDoor`: every vault and lair, and about one in five of the rest, since Version
  * 18.8; until then every room but the first), a door; in the boss hall's, the boss's gate. A
@@ -208,7 +242,7 @@ export function layDoors(f: Floor): DoorSpot[] {
         // (THE TRAPS: a sealed door, whatever the share of rooms with a door)
         d.kind = 'worddoor';
         d.word = r.sealed;
-      } else if (!hasDoor(f, r)) continue; // (a room with no door: its way in is open, as before there were doors)
+      } else if (!hasDoor(f, r) || onALoop(f, r, d)) continue; // (a room with no door: its way in is open, as before there were doors)
       out.push(d);
     }
   }
@@ -274,6 +308,8 @@ export interface DoorInst {
   want: 0 | 1;
   /** (THE MIX) A lever's gate, and (THE TRAPS) a sealed door: the hero has been told of it (a line on the screen, the first time it is seen from near). */
   told?: boolean;
+  /** (The boss's gate) the game's time it began to fall: the Headsman's yard's own gate falls by its own beat (art/yard_gate.ts). */
+  fell?: number;
 }
 
 /** The doors of a level as a run begins: every door shut, the boss's gate up; (THE MIX) a lever's gate down, the gates of a room that locks up. */

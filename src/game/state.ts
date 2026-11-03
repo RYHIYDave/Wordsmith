@@ -1,6 +1,14 @@
 // Data shapes for a running game: the hero, monsters, projectiles and everything else in a level.
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
+import type { VetState } from './veteran';
+import type { PrisonChannel } from './prison_way';
+import type { ChapelPlan } from './chapel_way';
+import type { GroundsPlan } from './grounds_way';
+import type { LairPlan } from './lair_way';
+import type { CompanionGroup, CompanionKind } from './companions';
+import type { Royal } from './royal_cards';
+import type { PunchName } from './brawler';
 import type { Sfx } from '../engine/audio';
 import type { Limit, SkillId, SkillKind } from './defs';
 import type { DoorInst } from './doors';
@@ -251,6 +259,11 @@ export interface Hero {
   stillK?: number;
   /** BINDING on monsters: seconds left rooted (he walks nowhere), and before a monster's Binding may root him again. */
   rootT?: number;
+  /** FROZEN IN PLACE (floor 10, the Drowned's frost grab, DROWNED_RETCH: game/act1_rules/drowned.ts): seconds left that he neither walks nor dodges. */
+  iceT?: number;
+  /** (THE HIGH CITY, FLOOR 19) Slowed by an enemy's ground (the King's Hush's grey fog): by this share of his pace while slowT lasts. */
+  slowT?: number;
+  slowBy?: number;
   rootAgain?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
@@ -264,7 +277,21 @@ export interface Hero {
   /** A leap or a roll in progress. */
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
-  move: null | { kind: 'leap' | 'roll'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[] };
+  /** (THE WARLOCK, game/warlock.ts: 'smoke', a smoke step, his or the demon's (`demon`): `hit`, whom it has passed through, each once. THE TINKERER, game/tinkerer.ts: 'blast', her blast jump, flying.) */
+  move: null | { kind: 'leap' | 'roll' | 'smoke' | 'blast' | 'slip'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[]; demon?: boolean };
+  /**
+   * THE WARLOCK (game/warlock.ts): which he is, a man or the demon (absent: a man); his pact (0 to WARLOCK_TUNE.pact.full;
+   * full, a tap on him changes him); and the change he is in the middle of, to the demon or back to a man (nothing harms
+   * him and he does nothing else meanwhile), or null.
+   */
+  form?: 'man' | 'demon';
+  pact?: number;
+  change?: { to: 'demon' | 'man'; t: number; dur: number } | null;
+  /** (HIS TREE, game/talents.ts) Bloodlust: the kills the demon has made since it came out (its rakes the quicker); Hellwave: its rakes so far, every third a wave. */
+  lust?: number;
+  rakes?: number;
+  /** THE BRAWLER (game/brawler.ts): the combo so far (its presses, T a tap, H a hold), the punch it last made, and when it landed (the game's clock). */
+  punch?: { run: string; name: PunchName; at: number } | null;
   /**
    * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): whether the wordsmith's ring is lit for this hero,
    * so that he can wordsmith (always, with the switch off and for a hero saved before it); and the
@@ -281,6 +308,14 @@ export interface Hero {
   meld: 'stone' | 'open' | null;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
+  /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
+  pets?: Partial<Record<CompanionGroup, CompanionKind>>;
+  /** THE VETERAN (game/veteran.ts, behind VETERAN): his globes, the move he is playing and those to come. Not kept in a save. */
+  vet?: VetState;
+  /** THE ROYAL CARDS (game/royal_cards.ts, the High City's): the royals' cards he holds, kept for good (absent: none). */
+  cards?: Partial<Record<Royal, number>>;
+  /** (THE SKILL TREES) A talent's pick of two, where it has one (talents.ts TalentDef.pick): by the talent's id, the one picked (absent: its first). */
+  picks?: Record<string, string>;
   d: Derived;
 }
 
@@ -322,6 +357,8 @@ export interface Monster {
   half?: WordId[];
   /** The words it will give up when it dies: the rune stones over its head. Most monsters have none. */
   carries: WordId[];
+  /** THE ROYAL CARDS (game/royal_cards.ts): the royal who touched its pack, whose crest it wears and whose card it drops (absent: none). */
+  royal?: Royal;
   state: MonsterState;
   /** Time left in the current state. */
   t: number;
@@ -396,7 +433,7 @@ export interface Monster {
   move?: number;
   moveCd?: number[];
   /** The red troll's charge: the line he runs along (from where he stood to where he will stop), and whether he has run the hero down on it yet. */
-  charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean };
+  charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean; run?: number };
   /** THE NEW MONSTERS (game/defs.ts SPEAR): the Boneward's spear is out of its hand (flying, or lying where it fell: Game.spears). */
   bare?: boolean;
   /** THE NEW MONSTERS (game/defs.ts RALLY): a minion's seconds left of its leader's words whole, since the skeleton champion's cry. */
@@ -425,6 +462,17 @@ export interface Monster {
   a1?: Record<string, number>;
   /** ACT 1: seconds since it was last struck (its `reel` picture plays from it: render/figure.ts gaitFrame). */
   struckT?: number;
+  /** (FLOOR 3, MORE ACTION: the Boneward behind its shield) Seconds since a blow glanced off its shield (it plays `glance`), and since it raised its shield again after picking its spear up. */
+  glanceT?: number;
+  raisedT?: number;
+  /** (FLOOR 4, MORE ACTION: the dagger cultist's frenzy) Where it began and the way he faced: his stabs drive on that way, whatever he turns to. */
+  frenzy?: { x: number; y: number; fx: number; fy: number; went: number };
+  /** FLOOR 3, MORE ACTION: the green troll's rampage: where he began it and the way he faced, how far it has carried him, and the middle of its ring once marked (NaN till then). */
+  rampage?: { x: number; y: number; fx: number; fy: number; went: number; rx: number; ry: number };
+  /** FLOOR 3, MORE ACTION: how far his bull rush's stop has carried him on (while he stops). */
+  rushStop?: number;
+  /** AM_ACTION: a bone mite's seconds left before it crumbles, untouched. */
+  crumbleT?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -443,6 +491,16 @@ export interface Monster {
    */
   bleedT?: number;
   bleedDps?: number;
+  /**
+   * THE WARLOCK (game/warlock.ts): burning in his hellfire (the Hellfire Bolt's), and cursed (the Curse's smoulder): each its
+   * seconds left and its harm a second. A cursed one dying spreads every burn on it to those near it.
+   */
+  hellT?: number;
+  hellDps?: number;
+  curseT?: number;
+  curseDps?: number;
+  /** (HIS TREE: Terrible Roar) seconds it runs from him yet. */
+  fleeT?: number;
   cracks?: number;
   thrown?: { vx: number; vy: number; t: number; ice?: boolean };
 }
@@ -470,7 +528,7 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great';
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great' | 'hellbolt';
   pierce: boolean;
   /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
   pierceN?: number;
@@ -552,6 +610,8 @@ export interface Zone {
   dmg: number;
   slow: number;
   tick: number;
+  /** A 'warn' that only marks where a blow will land, its blow its monster's own: it does nothing as it ends (FLOOR 3, MORE ACTION: the green troll's ring). */
+  mark?: boolean;
   /** 'warn' zones are monster attacks about to land. */
   hostile: boolean;
   skill: number;
@@ -592,9 +652,10 @@ export interface Riser {
    * THE FIRST FIVE FLOORS (game/bosses.ts): how it comes. Absent, the Warden's way: it crawls out of the
    * ground (and so the mini fleshmancer's dead, out of the ground where a cultist's body lay). 'gather':
    * the Fleshmancer's way: its bones are snatched up off a heap and slam together (after `stir` seconds
-   * of his fire on the heap). `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
+   * of his fire on the heap). 'form' (AM_ACTION): a bone mite pulling itself together where its skull burst (its `form`
+   * pictures), out in `rise`. `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
    */
-  way?: 'gather';
+  way?: 'gather' | 'form';
   rise?: number;
 }
 
@@ -731,6 +792,167 @@ export interface OrbInst {
 }
 
 /**
+ * THE TINKERER'S CONTRAPTION (game/tinkerer.ts): a little mortar thrown down. `t` from leaving her hand: in the air and
+ * springing open until TINKER_TUNE.contraption.set, then set up, lobbing a vial every so often; `broke` from when it is put
+ * out of action (a fourth thrown, or its time up), until it has fallen apart.
+ */
+export interface Contraption {
+  id: number;
+  /** Where it was thrown from (her hand), and where it comes to rest. */
+  x0: number;
+  y0: number;
+  x: number;
+  y: number;
+  t: number;
+  /** Seconds until its next shot; how long ago its last; which way it last lobbed. */
+  next: number;
+  shotAge: number;
+  fx: number;
+  fy: number;
+  /** Seconds since it was put out of action (-1: it stands). */
+  broke: number;
+  /** "of Echoes": a weaker vial it lobs with its first shot (its share of the hit; 0, none). */
+  echo: number;
+  /** Whether its first vial has been lobbed (that one leaves, where it bursts, what the words behind it leave). */
+  woke: boolean;
+  skill: number;
+  frac: number;
+}
+/** A VIAL of hers in the air, from a Contraption's mouth to where it bursts. */
+export interface Vial {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  t: number;
+  flight: number;
+  skill: number;
+  frac: number;
+  /** The first of its Contraption's: it leaves what the words behind it leave. */
+  wake: boolean;
+  /** (HER SKILL TREE) Cluster Vials: one of the little ones a vial bursts into. The Big One: every fifth vial, a big one. Mad Mixture: the brew it carries. */
+  little?: boolean;
+  big?: boolean;
+  brew?: Brew;
+  /** (her tree's CONTRAPTION, its pick BOMBS) a little bomb in place of a vial: it lands, hops, and goes off `fuse` seconds after it lands. */
+  bomb?: boolean;
+  fuse?: number;
+}
+/** (HER SKILL TREE: Mad Mixture) a brew a vial of hers carries, on top of its own words. */
+export type Brew = 'burn' | 'freeze' | 'poison';
+/** (HER SKILL TREE: Tar) a puddle of tar her vial left, `t` seconds old: whatever walks in it is slowed to a crawl. */
+export interface Tar {
+  x: number;
+  y: number;
+  r: number;
+  t: number;
+}
+/**
+ * THE TINKERER'S GOLEM (game/tinkerer.ts): always with her once whistled out. `act`, what it is doing and for how long it
+ * has; `did`, whether that act's blow has landed.
+ */
+/** (THE WARLOCK's tree: a wave of Hellwave going on ahead: where its front is, which way, how far it has yet to go, whom it has struck, its share of the rake's hit.) */
+export interface HellWave { x: number; y: number; dx: number; dy: number; left: number; hit: number[]; frac: number }
+/** (THE WARLOCK's tree: a soul of Damned Souls, flying from where one died to the one it goes for (`id`), the hit its burns are made from.) */
+export interface Soul { x: number; y: number; id: number; t: number; dmg: number }
+/**
+ * (THE WARLOCK's tree: BOUND DEMON, torn out of him to fight at his side till the pact runs dry.) Where it is and faces; what
+ * it is doing (`arrive` torn out, `stand`, `walk`, `rake`, `out` burning out) and for how long; the one it is after; whether
+ * its rake has landed; how far it has walked (its stride); the time before it may rake again.
+ */
+export interface BoundDemon { x: number; y: number; fx: number; fy: number; act: 'arrive' | 'stand' | 'walk' | 'rake' | 'out'; actT: number; target: number; did: boolean; walked: number; rakeCd: number }
+
+/**
+ * THE RANGER'S COMPANION (game/companions.ts): one of his animals at his side. `act`: standing, going, or biting (its blow at
+ * COMPANION_TUNE.bite.hit); `target` the enemy it bites (its id); `cd` seconds until it may bite again; `walked` how far it has
+ * gone (its frames go by it); `seat` the side of him it keeps (the hunting one at his right hand, the wild one at his left).
+ */
+export interface Pet {
+  kind: CompanionKind;
+  group: CompanionGroup;
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  act: 'arrive' | 'stand' | 'walk' | 'bite';
+  actT: number;
+  did: boolean;
+  target: number;
+  cd: number;
+  walked: number;
+  seat: number;
+}
+
+/**
+ * (THE GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET: art/golem_rocket_fx.ts) its blast off and its landing, for what is laid there:
+ * where it took off (`x0`, `y0`) and comes down (`x1`, `y1`); which way it faces (its picture's); its gun arm; its flight in
+ * frames of the screen (30 a second: ROCKET.flight, half that in her tree's Overdrive).
+ */
+export interface GolemRocketAt {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  fx: number;
+  fy: number;
+  gun: 'cannon' | 'tesla';
+  flight: number;
+}
+
+export interface Golem {
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  act: 'arrive' | 'stand' | 'walk' | 'punch' | 'cannon' | 'pound' | 'charge' | 'down' | 'jump';
+  actT: number;
+  did: boolean;
+  /** (ITS ROCKET JUMP) Where it took off from (its landing is `ax`, `ay`), and seconds until it may jump again. */
+  jx?: number;
+  jy?: number;
+  jumpCd?: number;
+  /** The enemy it goes for (its id), and where the blow of its act is aimed. */
+  target: number;
+  ax: number;
+  ay: number;
+  /** Seconds until it may punch again, and fire again. */
+  punchCd: number;
+  cannonCd: number;
+  /** How far it has walked (its frames go by it, as a hero's run does). */
+  walked: number;
+  skill: number;
+  /**
+   * (HER SKILL TREE) Which of her Golems it is (0, the first; 1, Mark II's second), the side of her it keeps; seconds left
+   * in Overdrive and grown by Growth Serum; seconds until its Tesla Coil zaps again.
+   */
+  seat: number;
+  overT: number;
+  growT: number;
+  zapT: number;
+  /**
+   * (HER TREE'S GUN ARM) Its charged shot: how long her hold was held (-1 while she holds it still), its might as she began it,
+   * and how far its shot has thrown it back so far (tiles).
+   */
+  held?: number;
+  chFrac?: number;
+  skid?: number;
+}
+
+/**
+ * A DECOY: what the enemies within `r` of it go after in place of the hero, for `t` seconds more. They walk to it and swing
+ * at it; their blows on it do nothing. `size`, how far its body reaches from its middle. `golem`: a Golem of the
+ * Tinkerer's it goes with while that stands (her tree's Lightning Rod); else it keeps its spot (Game.decoys, Game.decoyFor).
+ */
+export interface Decoy {
+  x: number;
+  y: number;
+  t: number;
+  r: number;
+  size: number;
+  golem?: Golem;
+}
+
+/**
  * A familiar, the mage's slow attack (the owner: "a small energy sprite for a few seconds that
  * shoots small projectiles"). It keeps a place beside the hero and shoots at the nearest enemy
  * that is awake and in its sight.
@@ -762,11 +984,13 @@ export interface Drop {
   x: number;
   y: number;
   /** (WORDMELDING: 'dust', runedust, as much as `gold` says; 'stone', the Meldstone) */
-  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone';
+  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card';
   gold: number;
   item: Item | null;
   word: WordId | null;
   age: number;
+  /** (THE ROYAL CARDS: 'card', a royal's card, game/royal_cards.ts) Whose card it is. */
+  royal?: Royal;
 }
 
 /**
@@ -937,10 +1161,14 @@ export interface Meta {
  *           THE DEFAULT since Version 12.2.1 (the owner, 4 Oct 2026, 22:26, having played it:
  *           "When playing on mobile, let's put auto-aim as the default setting").
  * A mouse always aims with its pointer.
+ * 'one':  ONE HAND (the owner, 1 Nov 2026, 10:50: “And I think I want an option to play one handed.  Like you can just move and
+ *           swipe and the attacks will happen automatically”; of the slow attack, his pick “Tap to throw it (Recommended)”). One
+ *           thumb anywhere: resting or dragged, it is the stick (he walks); a quick tap throws the slow attack, at the enemy auto
+ *           aim picks; a quick swipe is the evasive move. The quick attack goes by itself at the nearest enemy awake and in reach.
  */
-export type AimMode = 'face' | 'tap' | 'auto';
+export type AimMode = 'face' | 'tap' | 'auto' | 'one';
 /** In the order the switch in OPTIONS goes through them: the way the game starts out first. */
-export const AIM_MODES: readonly AimMode[] = ['auto', 'tap', 'face'];
+export const AIM_MODES: readonly AimMode[] = ['auto', 'tap', 'face', 'one'];
 
 export interface PropInst {
   kind: PropType;
@@ -988,12 +1216,25 @@ export interface Level {
   pier: Uint8Array | null;
   /** (and where a door is still shut, 1 in the grid; null on a level with no door. A shut door holds monsters, and its tile is shut in `open`: game/doors.ts, `shutGrid`.) */
   shut: Uint8Array | null;
+  /**
+   * A FENCE across the floor that is no wall of its tiles (floor 9, the Hollow Stag's wood closing in: game/act1_rules/stag.ts): whether
+   * a body of radius `r` may stand at (x, y) for it. Asked by `free` for every body and everything that flies; absent: none.
+   */
+  fence?: ((x: number, y: number, r: number) => boolean) | null;
   /** (THE TRAPS, game/traps.ts) The level's spike floors and dart walls, and where each is in its beat. None unless laid. */
   hazards: HazardInst[];
   /** (THE WAYS, game/ways.ts, behind WAYS) The stairwell down, the waypoint and the gate of the way; null where they are off. */
   ways: Ways | null;
   /** THE FIRST FIVE FLOORS: what the floor is laid with in its walls and its floor, and where its moments play (game/first5.ts); absent elsewhere. */
   dress?: Dress | null;
+  /** FLOOR 3, PRISON: the fire channel down each cell block (game/prison_way.ts). */
+  channels?: PrisonChannel[];
+  /** FLOOR 4, CHAPEL: the way in from floor 3 and the walls the miners broke through (game/chapel_way.ts). */
+  chapel?: ChapelPlan;
+  /** FLOOR 2 AS THE PRISON'S GROUNDS (game/grounds_way.ts, behind GROUNDS): its courtyards, the ways between them, the long walk, the stair down from floor 1, the chapel. */
+  grounds?: GroundsPlan;
+  /** FLOOR 5, LAIR_TEMPLE: the mine and the temple, the thresholds between, the rails and the rift's cracks (game/lair_way.ts). */
+  lair?: LairPlan;
   /**
    * ACT 1, THE DESCENT (game/act1_layout.ts): a floor of open ground, not a dungeon's rooms: what only it
    * has (the drop, the river, the boardwalks, its strongholds), for the painter of its ground and its rules;
@@ -1023,7 +1264,7 @@ export type GameEvent =
    * 'shock' is the knock of a Power hit on the enemies around its target; 'ruin' is a rune going off.
    * `words`, `n`, `echo` as for a swing.
    */
-  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId }
+  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl' | 'vial' | 'pound' | 'bomb'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId }
   /** An ability leaves the hero: where from, which way, the words in front of it and behind it. */
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */
@@ -1164,6 +1405,95 @@ export type GameEvent =
   | { t: 'heal'; amount: number }
   /** A monster catches fire / freezes solid / its ice breaks. */
   | { t: 'ignite'; x: number; y: number }
+  /**
+   * THE WARLOCK (game/warlock.ts). `hellOn`: one set burning in his hellfire. `curse`: the Curse cast from him, its chains
+   * to each it cursed. `spread`: a cursed one died and its burns leapt to those near it. `damning`: the ground erupting
+   * under each it struck. `smoke`: a smoke step from one place to another (the demon's: `demon`). `change`: he begins to
+   * change into the demon or back. `roar`: the demon formed, roaring. `pactFull`: his pact is full (his arm blazes).
+   */
+  | { t: 'hellOn'; id: number; x: number; y: number }
+  | { t: 'curse'; x: number; y: number; r: number; to: readonly { id: number; x: number; y: number }[]; n?: number; echo?: boolean }
+  | { t: 'spread'; x: number; y: number; to: readonly { id: number; x: number; y: number }[] }
+  | { t: 'damning'; x: number; y: number; at: readonly { id: number; x: number; y: number }[]; n?: number; echo?: boolean }
+  | { t: 'smoke'; x0: number; y0: number; x1: number; y1: number; demon: boolean; echo?: boolean }
+  /**
+   * (HIS TREE, game/talents.ts) `hexLeap`: Hex Chain's bolt leaping from one cursed to the next. `blaze`: Blazing Arm's bolt
+   * bursting. `pyre`: a cursed one bursting in his hellfire as it dies. `hellwave`: a wave of hellfire thrown on ahead off a
+   * rake, from (x, y) along (dx, dy) for `far` tiles at `speed`. `soul`: Damned Souls', a burning soul rising out of one the
+   * demon killed and flying to the one it goes for (`id`); `soulIn`, it goes into it. `bound`: the Bound Demon torn out of
+   * him beside him; `boundRake`, its claws raked; `boundOut`, it burns out.
+   */
+  | { t: 'hexLeap'; x0: number; y0: number; x1: number; y1: number }
+  | { t: 'blaze'; x: number; y: number; r: number }
+  | { t: 'pyre'; x: number; y: number; r: number }
+  | { t: 'hellwave'; x: number; y: number; dx: number; dy: number; far: number; speed: number }
+  | { t: 'soul'; x: number; y: number; id: number }
+  | { t: 'soulIn'; x: number; y: number }
+  | { t: 'bound'; x: number; y: number }
+  | { t: 'boundRake'; x: number; y: number; dx: number; dy: number }
+  | { t: 'boundOut'; x: number; y: number }
+  /** (HIS TREE: Phantom Step) his shadow left where he stood, for `secs`. */
+  | { t: 'phantom'; x: number; y: number; secs: number }
+  // (THE TINKERER, game/tinkerer.ts: her Contraption thrown, a vial lobbed out of it and bursting, a Contraption put out
+  // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
+  | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }
+  /** (a vial lobbed: `id` the Contraption's that lobbed it, or -1 thrown from her hand, her Vial Toss) */
+  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean; little?: boolean; big?: boolean; bomb?: number }
+  | { t: 'vialBurst'; x: number; y: number; r: number; little?: boolean; big?: boolean; brew?: Brew; bomb?: boolean }
+  /** (her tree's CONTRAPTION, its pick ENERGY) a bolt of energy from Contraption `id` at (x0, y0) to (x1, y1), there after `flight`. */
+  | { t: 'contraptionBolt'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number }
+  | { t: 'contraptionEnd'; id: number; x: number; y: number }
+  /** (`rocket`: its ROCKET JUMP landing there, behind GOLEM_ROCKET: art/golem_rocket_fx.ts, its landing laid in place of its drop-in's) */
+  | { t: 'golemArrive'; x: number; y: number; rocket?: GolemRocketAt }
+  // (THE RANGER'S COMPANIONS, game/companions.ts: one at his side, and its bite landing on `id`)
+  | { t: 'petArrive'; kind: CompanionKind; x: number; y: number }
+  | { t: 'petBite'; kind: CompanionKind; id: number; x: number; y: number; dx: number; dy: number }
+  // (THE ROYAL CARDS, game/royal_cards.ts: a royal's card taken off the floor)
+  | { t: 'cardGot'; royal: Royal; x: number; y: number }
+  | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
+  | { t: 'golemShot'; x0: number; y0: number; x1: number; y1: number; flight: number }
+  /** (HER TREE'S GUN ARM) Its charged shot fired: the cannon's great shell from (x0, y0) bursting at (x1, y1) `r` round after `flight`; or the tesla coil's beam from (x0, y0) to (x1, y1); `power` 0 to 1, how long she held it. */
+  | { t: 'golemCharged'; kind: 'shell' | 'beam'; x0: number; y0: number; x1: number; y1: number; flight: number; r: number; power: number }
+  /** (HER TREE'S GUN ARM) It begins to charge, at (x, y). */
+  | { t: 'golemCharge'; x: number; y: number }
+  | { t: 'golemPound'; x: number; y: number; r: number; n?: number; echo?: boolean }
+  | { t: 'golemDown'; x: number; y: number }
+  | { t: 'blastJump'; x0: number; y0: number; x1: number; y1: number; r: number }
+  | { t: 'blastLand'; x: number; y: number }
+  // (HER SKILL TREE: Bombs Away's second bomb where she lands; a puddle of Tar; Shrapnel bursting where the Golem's shot
+  // lands; the Tesla Coil's spark leaping from the Golem's back from one to the next; a Golem grown by Growth Serum; a Golem
+  // in Overdrive)
+  /** (`rocket`: the Golem's ROCKET JUMP blasting off there, behind GOLEM_ROCKET: art/golem_rocket_fx.ts, its take-off and trail laid in place of the bomb's) */
+  | { t: 'bombsAway'; x: number; y: number; r: number; rocket?: GolemRocketAt }
+  | { t: 'tar'; x: number; y: number; r: number; secs: number }
+  | { t: 'shrapnel'; x: number; y: number; r: number }
+  | { t: 'teslaZap'; x: number; y: number; to: readonly { x: number; y: number }[]; grown?: boolean }
+  | { t: 'golemGrow'; x: number; y: number }
+  | { t: 'overdrive'; x: number; y: number }
+  /** (a DECOY struck: an enemy's blow on it, doing nothing; `golem`, it is a Golem of the Tinkerer's) */
+  | { t: 'decoyStruck'; x: number; y: number; golem: boolean }
+  // (THE BRAWLER, game/brawler.ts: a punch of his landing, its name floating over him (`big`, how big); one he has launched
+  // flying down the line, bowling over each it meets; his slip, and the counter as he comes up)
+  | { t: 'punch'; name: PunchName; x: number; y: number; dx: number; dy: number; big: 0 | 1 | 2; n: number; echo?: boolean; hit: boolean }
+  | { t: 'cannonball'; id: number; x: number; y: number; dx: number; dy: number }
+  | { t: 'bowled'; x: number; y: number }
+  | { t: 'slip'; x0: number; y0: number; x1: number; y1: number }
+  // (THE BRAWLER'S TREE, game/talents.ts BRAWLER_TREE: Big Uppercut's throw up and its coming down, stunned `secs`; Knockout's;
+  // Pinball's knock into another; Shockwave's wave of air, `far` tiles on ahead at `speed`; Bob and Weave's slip ready again;
+  // Slip Reflex's slip; Set-Up's next press made ready)
+  | { t: 'popUp'; id: number; x: number; y: number }
+  | { t: 'comeDown'; id: number; x: number; y: number; secs: number }
+  | { t: 'knockout'; id: number; x: number; y: number; boss: boolean }
+  | { t: 'pinball'; x: number; y: number }
+  | { t: 'shockwave'; x: number; y: number; dx: number; dy: number; far: number; speed: number }
+  | { t: 'slipReady'; x: number; y: number }
+  | { t: 'slipReflex'; x: number; y: number }
+  | { t: 'setUp'; x: number; y: number }
+  /** (THE WARLOCK: one struck by a smoke step passing through it; `n` 1 for Twin's second, `echo` the echo's) */
+  | { t: 'smokeHit'; id: number; x: number; y: number; n: number; echo: boolean }
+  | { t: 'change'; to: 'demon' | 'man'; x: number; y: number }
+  | { t: 'roar'; x: number; y: number; r: number }
+  | { t: 'pactFull'; x: number; y: number }
   | { t: 'freeze'; x: number; y: number }
   | { t: 'shatter'; x: number; y: number }
   /** A monster has been killed. (`fx`, `fy`: the way it was facing: its fall is played, and its body lies, that way round.) */
@@ -1174,6 +1504,8 @@ export type GameEvent =
   | { t: 'quip'; text: string; boss: boolean }
   /** (BOSS_INTRO) the boss's gate has fallen: he says his line (or none) and his name comes up, for `secs` */
   | { t: 'bossIntro'; name: string; line: string | null; x: number; y: number; secs: number }
+  /** (THE HIGH CITY, FLOOR 16: the Princess's one whisper as she falls, game/act1_rules/princess.ts) a boss says a line, over her as BOSS_INTRO's line is shown, for `secs`, without her name coming up; `lift`: how far over her floor point (game pixels: one on her knees is low) */
+  | { t: 'bossSay'; text: string; x: number; y: number; secs: number; lift?: number; /** (game/boss_calls.ts) said in this boss's own voice */ voice?: MonsterKind }
   /** (FLOOR_NAMES) the hero has come into a floor: its name, and its level under it */
   /** THE FIRST FIVE FLOORS: the stairwell has begun to break open, its middle here (its film is the renderer's to play: render/dress.ts). */
   | { t: 'stairOpens'; x: number; y: number }
@@ -1235,6 +1567,8 @@ export interface Controls {
   evadeY: number;
   potion: boolean;
   interact: boolean;
+  /** THE WARLOCK (game/warlock.ts): he was tapped (clicked) on: with his pact full, he changes into the demon. */
+  change?: boolean;
 }
 
 export function emptyControls(): Controls {

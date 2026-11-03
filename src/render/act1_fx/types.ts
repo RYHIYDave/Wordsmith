@@ -25,7 +25,7 @@ export interface Act1FxCtx {
   t: number;
   bestiary: Bestiary;
   /** A picture to stand among the figures: its depth (x + y, tiles), its sprite, where its floor point is on the screen. */
-  stand: (depth: number, s: Sprite, sx: number, sy: number) => void;
+  stand: (depth: number, s: Sprite, sx: number, sy: number, alpha?: number) => void;
   /** A light in the dark, on the screen: where, how wide, how strong. */
   spot: (x: number, y: number, r: number, a: number) => void;
   /** A film the painter has made for this floor (art/films.ts: its key; one of the kind's `films`), or null: not yet, or never (then the kind paints its own). */
@@ -38,8 +38,12 @@ export interface Act1Fx {
   ground?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   standing?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   air?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
+  /** Over everything, AFTER THE DARK is laid (what shines in it, as the lights of what glows: the Physician's spotlight, his beam, his instruments). */
+  glow?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   /** Its picture this frame in place of the one its gait and acts give (`set`: its pictures seen the way it faces); null: as they give. Turned over as every monster's is, after. */
   sprite?(m: Monster, art: ActorArt, set: AnimSet): Sprite | null;
+  /** How strongly it flashes white as a blow lands (0 to 1; 1 if not said): a body that fills the screen, fainter. */
+  flash?: number;
   /** How far up off the floor it is drawn (game pixels): up in the air. */
   lift?(m: Monster): number;
   /** Drawn later than its depth would have it (over the hero it has latched on to): how much is added to its depth. */

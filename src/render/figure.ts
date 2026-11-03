@@ -43,6 +43,12 @@ export interface FigureState {
   holdSoon?: boolean;
   /** How far through a roll, 0..1, or absent or -1 when not rolling. A figure with a picture of its own for it (`clips.roll`) shows that. */
   rollK?: number;
+  /** THE WARLOCK: how far through changing out of the form the figure is of, 0..1, or absent or -1 when not (`clips.change`). */
+  changeK?: number;
+  /** THE BRAWLER: the run of presses his combo has come to (T a tap, H a hold), while he punches: its punch (`clips.punches`). */
+  punch?: string;
+  /** The ability the hero's tap is now (a skill's id): a figure with a picture of its own for that tap (`clips.tapAs`) shows it. */
+  tapAs?: string;
   /**
    * How long ago the hero's life ran out, in seconds, or absent or less than 0 while they live. A
    * figure with a fall of its own (`clips.fall`) is shown falling, and then as its last frame
@@ -230,6 +236,11 @@ export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
       return more?.summon;
     case 'bolts':
       return clips?.heavy ?? clips?.attack;
+    // (FLOOR 1, MORE ACTION: the archer's arrow rain and the Warden's Lockdown, the art chat's: art/monster_bones.ts, art/monster_warden.ts)
+    case 'rain':
+      return more?.rain;
+    case 'lockdown':
+      return more?.lockdown;
     default:
       return clips?.attack;
   }
@@ -545,17 +556,24 @@ export class Figure {
     // (a hero whose life has run out: the fall, and then how it leaves them, whatever they were doing)
     const fall = down ? set.clips?.fall : undefined;
     this.gone = fall ? Math.min(1, (st.fallT as number) / Math.max(0.1, (fall.frames.length - 1) / fall.fps)) : 0;
+    const changing = st.changeK !== undefined && st.changeK >= 0 ? set.clips?.change : undefined;
     if (fall) {
       s = frameOf(fall, st.fallT as number);
       this.sinceHeld = -1;
       this.sinceLand = -1;
+    } else if (changing) {
+      // (THE WARLOCK changing: by how far through it he is, whatever else)
+      s = changing.frames[Math.max(0, Math.min(changing.frames.length - 1, Math.floor((st.changeK as number) * changing.frames.length)))];
+      this.sinceHeld = -1;
+      this.sinceLand = -1;
+      this.doing = 0;
     } else if (tumble) {
       s = tumble.frames[Math.max(0, Math.min(tumble.frames.length - 1, Math.floor(st.rollK as number * tumble.frames.length)))];
     } else if (st.leapK >= 0 && (set.clips?.leap || set.leap)) {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];
     } else if (anim === 'attack') {
-      let c = (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? set.clips?.attack;
+      let c = (st.punch !== undefined ? set.clips?.punches?.[st.punch] : undefined) ?? (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? (st.tapAs !== undefined ? set.clips?.tapAs?.[st.tapAs] : undefined) ?? set.clips?.attack;
       // MADE WALKING (clips.attackWalk, heavyWalk): the one for the way the hero goes as they face
       // their mark, as the picture has them (the view from behind is a mirror, and so is a figure
       // turned to screen-left: what is the figure's left in the picture is the world's right in each)

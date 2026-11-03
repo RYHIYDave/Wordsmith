@@ -127,7 +127,7 @@ export class FloorPieces {
    * What is set in the faces of wall tile `i` (its top corner at (px, py) on the screen, its depth `s`):
    * its pieces, and a moment that plays there. Called for every wall tile whose faces are drawn.
    */
-  wall(game: Game, i: number, faces: number, s: number, px: number, py: number, t: number, stage: Stage): void {
+  wall(game: Game, i: number, faces: number, s: number, px: number, py: number, t: number, stage: Stage, alpha = 1): void {
     const list = this.walls.get(i);
     const pm = this.moments.find((m) => m.host.i === i);
     if (!list && !pm) return;
@@ -142,8 +142,9 @@ export class FloorPieces {
       const sp = frames[Math.floor(t * LOOP_FPS + i) % frames.length];
       const x = w.side === 0 ? px - 8 : px + 8;
       const y = py + 12;
-      stage.stand(s + 1.01, sp, x, y);
-      if (sp.lights) stage.lit(sp, x, y);
+      // (`alpha`: as solid as the wall it is set in, seen through as it is: render/walls.ts WHOLE_WALLS)
+      stage.stand(s + 1.01, sp, x, y, alpha);
+      if (sp.lights && alpha > 0.5) stage.lit(sp, x, y);
       // (a piece with a heap of its own: the heap stands on the floor tile before it)
       if (this.set?.heaps.includes(w.name) && p.frames && p.frames[0]) {
         const f = game.level.floor;

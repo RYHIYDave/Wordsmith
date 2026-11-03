@@ -34,6 +34,11 @@ import type { Attr, ClassId, Item, WeaponKind } from '../src/game/types';
 import { attacksGrownBy, listed, resolveSkill, weaponLines } from '../src/game/words';
 import { attackClip } from '../src/render/figure';
 import { seasoned, land } from './helpers';
+import { OWN_MOVES } from '../src/game/defs';
+import { DEMON_KIT } from '../src/game/warlock';
+// (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
+// weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
+OWN_MOVES.on = false;
 
 const DT = 1 / 60;
 
@@ -116,10 +121,11 @@ function ready(g: Game, skill: 0 | 1): void {
   g.hero.skills[skill].cd = 0;
 }
 
-const TAP: Record<WeaponKind, SkillId> = { sword: 'strike', greatsword: 'strike', bow: 'shot', staff: 'wave', wand: 'familiar' };
-const HOLD: Record<WeaponKind, SkillId> = { sword: 'slam', greatsword: 'whirlwind', bow: 'volley', staff: 'orb', wand: 'beam' };
-const GROWS: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
-const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp' };
+// (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: the wraps as the greatsword, the tome as the wand, the wrench as the sword, growing with Dexterity)
+const TAP: Record<WeaponKind, SkillId> = { sword: 'strike', greatsword: 'strike', bow: 'shot', staff: 'wave', wand: 'familiar', wraps: 'strike', tome: 'familiar', wrench: 'strike' };
+const HOLD: Record<WeaponKind, SkillId> = { sword: 'slam', greatsword: 'whirlwind', bow: 'volley', staff: 'orb', wand: 'beam', wraps: 'whirlwind', tome: 'beam', wrench: 'slam' };
+const GROWS: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex' };
+const SWIPE: Record<ClassId, SkillId> = { warrior: 'leap', ranger: 'trap', mage: 'warp', warlock: 'smokestep', tinkerer: 'blastjump', brawler: 'slip' };
 
 // =============================================================================================
 // The table
@@ -137,7 +143,11 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
   assert.equal(holdSkill(null), 'slam');
   assert.equal(weaponAttr(null), 'str');
   // every attack there is is brought by a weapon or a class
-  const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade)]);
+  // (and since 28 Oct 2026 the classes' own, OWN_MOVES: the warlock's, and his demon's: game/warlock.ts; and the Tinkerer's
+  // Contraption, her tree's swap for her Vial Toss)
+  const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade), ...Object.values(CLASSES).flatMap((c) => [c.tap, c.hold, c.evade]), ...DEMON_KIT, 'contraption',
+    // (THE VETERAN's own three, the Brawler made again, behind game/veteran.ts VETERAN: game/defs.ts skillsFor)
+    'vpunch', 'vkick', 'vjump']);
   assert.deepEqual([...brought].sort(), Object.keys(SKILLS).sort(), 'no attack is left that nothing gives');
   // the staff and the wand share neither attack (the owner: "Let's get a different skill for staff on Tap")
   assert.equal(new Set([...WEAPON_SKILLS.staff, ...WEAPON_SKILLS.wand]).size, 4);
@@ -149,7 +159,7 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
 });
 
 test('each class begins with its own weapon: the warrior the two-handed sword, the mage the staff with Wave and Orb', () => {
-  const begins: Record<ClassId, [WeaponKind, SkillId[]]> = {
+  const begins: Record<Exclude<ClassId, 'warlock' | 'tinkerer' | 'brawler'>, [WeaponKind, SkillId[]]> = {
     warrior: ['greatsword', ['strike', 'whirlwind', 'leap']],
     ranger: ['bow', ['shot', 'volley', 'trap']],
     mage: ['staff', ['wave', 'orb', 'warp']],

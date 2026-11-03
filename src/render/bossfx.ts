@@ -26,7 +26,16 @@ import { TILE3, handAt } from '../art/new_mobs3';
 import type { GameView } from '../art/skin';
 import { flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { AMALGAM, CHAINED, FLESHMANCER, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
+import { AMALGAM, AM_ACTION, CHAINED, CO2, CO_ACTION, FLESHMANCER, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
+import { BALL_LAND, BALL_LET, HOOK_LET, WHIRL_SPIN, actBallPath, actCollarAt, actCuffAt, actHookPath } from '../art/chained_action';
+import { CHAINED_LOOK, LOOK_K, lookBallPath, lookHookPath } from '../art/chained_look';
+/** (THE CHAINED ONE'S NEW BODY, CHAINED_LOOK: art/chained_look.ts) His hook and ball out from his hands as big as he now is, and his cuff and collar 1.2 times as far out. */
+const coHook = (t: number, reach?: number) => (CHAINED_LOOK.on ? lookHookPath(t, reach) : actHookPath(t, reach));
+const coBall = (t: number) => (CHAINED_LOOK.on ? lookBallPath(t) : actBallPath(t));
+const grown = (v: readonly number[]): [number, number, number] => (CHAINED_LOOK.on ? [v[0] * LOOK_K, v[1] * LOOK_K, v[2] * LOOK_K] : [v[0], v[1], v[2]]);
+const coCuff = (move: string, t: number): [number, number, number] => grown(actCuffAt(move, t));
+const coCollar = (move: string, t: number): [number, number, number] => grown(actCollarAt(move, t));
+import { BIG_ARM_FPS, BIG_ARM_FRAMES, BIG_ARM_TIME, makeBigArmArt } from '../art/amalgam_action_fx';
 import type { GaitedKind } from '../game/bosses';
 import { backView, beside, flipped } from '../game/facing';
 import type { Game } from '../game/game';
@@ -41,7 +50,8 @@ const smooth01 = (u: number): number => {
 };
 
 /** A sprite to stand among the figures: where its floor point is on the floor (tiles, for its depth) and on the screen. */
-export type StandFn = (depth: number, s: Sprite, sx: number, sy: number) => void;
+/** What stands among the figures: its depth, its picture, its floor point on the screen; how much of it is seen (1 whole: THE KING's knights of fog rising and fading). */
+export type StandFn = (depth: number, s: Sprite, sx: number, sy: number, alpha?: number) => void;
 /** A light in the dark: where on the screen, how wide, how strong. */
 export type SpotFn = (x: number, y: number, r: number, a: number) => void;
 
@@ -70,6 +80,7 @@ export class BossFx {
   private balls: Record<GameView, Sprite[]> | null = null;
   private lefts: Record<string, Sprite> = {};
   private arms: Sprite[] | null = null;
+  private bigArms: Sprite[] | null = null;
   private skulls: Record<GameView, Sprite[]> | null = null;
   private hands: Sprite[][] | null = null;
   private axeFrom: readonly [number, number, number] | null = null;
@@ -156,6 +167,24 @@ export class BossFx {
         }
         case 'hook': {
           const H = CHAINED.hook;
+          // (THE CHAINED ONE'S MOVES DONE THE ACTION WAY: his hook's own way, aimed as he holds it; then dragged along the floor)
+          if (m.kind === 'chained' && CO_ACTION.on) {
+            const from = coHook(HOOK_LET + 1e-4, act.a);
+            const left = from ? from.at[1] : H.from[1];
+            if (T < HOOK_LET) {
+              const e = B(act.a, left * 0.3);
+              const s = B(0.6, left);
+              drawAimLine(g, at, s.x, s.y, e.x, e.y, clamp01((T - 0.9) / (HOOK_LET - 0.9)), t);
+            } else {
+              const p = coHook(T, act.a);
+              if (p && !p.flying) {
+                const w = B(p.at[0], p.at[1]);
+                const far = B(act.a, left * 0.3);
+                drawScrape(g, at, w.x, w.y, far.x, far.y, 1);
+              }
+            }
+            break;
+          }
           if (T < H.let) {
             // (he points: the line it will fly along)
             const e = B(act.a, H.toLeft);
@@ -172,10 +201,25 @@ export class BossFx {
           break;
         }
         case 'whirl':
+          // (the action way: his chains' reach marked round him as he gathers them, till he spins)
+          if (m.kind === 'chained' && CO_ACTION.on) {
+            if (T < WHIRL_SPIN) drawSweepRing(g, mat, m.x, m.y, CO2.whirl.reach, clamp01((T - 0.3) / (WHIRL_SPIN - 0.3 - 0.05)), t);
+            break;
+          }
           if (T < CHAINED.whirl.from) drawSweepRing(g, mat, m.x, m.y, CHAINED.whirl.reach, clamp01((T - CHAINED.whirl.warnFrom) / (CHAINED.whirl.from - CHAINED.whirl.warnFrom - 0.05)), t);
           break;
         case 'ball': {
           const Bl = CHAINED.ball;
+          // (the action way: its shadow as it flies, its ring marked by the rules' red circle; dragged back along the floor)
+          if (m.kind === 'chained' && CO_ACTION.on) {
+            if (T >= BALL_LET && T < BALL_LAND) drawBallShadow(g, at, act.x, act.y, 0.15 + 0.85 * ((T - BALL_LET) / (BALL_LAND - BALL_LET)));
+            const b = coBall(T);
+            if (b && !b.flying) {
+              const w = B(b.at[0], b.at[1]);
+              drawScrape(g, at, w.x, w.y, act.x, act.y, 1);
+            }
+            break;
+          }
           if (T >= Bl.warnFrom && T < Bl.land) drawBallShadow(g, at, act.x, act.y, T < Bl.let ? 0.15 * Math.min(1, (T - Bl.warnFrom) / 0.4) : 0.15 + 0.85 * ((T - Bl.let) / (Bl.land - Bl.let)));
           const b = coBallPath(T);
           if (b && !b.flying) {
@@ -186,6 +230,8 @@ export class BossFx {
         }
         case 'devour': {
           const D = AMALGAM.devour;
+          // (the action way: its cone and its rake are render/act1_fx/amalgam.ts's, its claws' gouges in its own pictures)
+          if (m.kind === 'amalgam' && AM_ACTION.on) break;
           if (T < D.from) break;
           // (its claws gouge the floor along the way they rake, from where they came down to where they are)
           const k = T < D.to ? 1 : 1 - (T - D.to) / 1.2;
@@ -225,7 +271,7 @@ export class BossFx {
           drawVaultSlam(g, at, p.x, p.y, p.fx, p.fy, p.t);
           break;
         case 'arm':
-          drawArmCrack(g, at, p.x, p.y, p.t - p.hit, FLOOR_ARM_TIME);
+          drawArmCrack(g, at, p.x, p.y, p.t - p.hit, p.d === 1 ? BIG_ARM_TIME : FLOOR_ARM_TIME);
           break;
         case 'skull':
           if (!p.done) drawSkullShadow(g, at, p.x, p.y, this.skullHigh(p), p.b);
@@ -300,15 +346,18 @@ export class BossFx {
         const [sx, sy] = at(w.x, w.y);
         stand(w.x + w.y, turned(set[Math.floor((T * 3.2 * AXE_SHOT_FRAMES) % AXE_SHOT_FRAMES)]), sx, sy - high);
       } else if (act.id === 'hook') {
-        const p = hookAt(T, act.a);
+        // (the action way: its own path, art/chained_action.ts actHookPath)
+        const co = m.kind === 'chained' && CO_ACTION.on;
+        const q = co ? coHook(T, act.a) : null;
+        const p = co ? (q ? { fwd: q.at[0], left: q.at[1], flying: q.flying } : null) : hookAt(T, act.a);
         if (!p) continue;
         const w = B(p.fwd, p.left);
-        const high = hookHigh(T);
+        const high = q ? q.at[2] : hookHigh(T);
         const set = (this.hooks ?? (this.hooks = { front: makeHookShotArt('front'), back: makeHookShotArt('back') }))[view];
         const [sx, sy] = at(w.x, w.y);
         stand(w.x + w.y, turned(p.flying ? set[Math.floor((T * 2.5 * HOOK_SHOT_FRAMES) % HOOK_SHOT_FRAMES)] : set[HOOK_SHOT_FRAMES]), sx, sy - high);
       } else if (act.id === 'ball') {
-        const b = coBallPath(T);
+        const b = m.kind === 'chained' && CO_ACTION.on ? coBall(T) : coBallPath(T);
         if (!b) continue;
         const w = B(b.at[0], b.at[1]);
         const set = (this.balls ?? (this.balls = { front: makeBallShotArt('front'), back: makeBallShotArt('back') }))[view];
@@ -318,7 +367,14 @@ export class BossFx {
     }
     for (const p of game.perils) {
       if (p.t < 0 || !here(p.x, p.y)) continue;
-      if (p.kind === 'arm') {
+      if (p.kind === 'arm' && p.d === 1) {
+        // (the Amalgamation's arms done the action way: four to a hole, half as big again, art/amalgam_action_fx.ts)
+        const u = p.t - p.hit;
+        if (u < 0 || u >= BIG_ARM_TIME) continue;
+        const set = this.bigArms ?? (this.bigArms = makeBigArmArt('front'));
+        const [sx, sy] = at(p.x, p.y);
+        stand(p.x + p.y, set[Math.min(BIG_ARM_FRAMES - 1, Math.floor(u * BIG_ARM_FPS + 1e-6))], sx, sy);
+      } else if (p.kind === 'arm') {
         const u = p.t - p.hit;
         if (u < 0 || u >= FLOOR_ARM_TIME) continue;
         const set = this.arms ?? (this.arms = makeFloorArmArt('front'));
@@ -370,19 +426,23 @@ export class BossFx {
       const T = actClock(actDef(m), act.t);
       const B = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
       if (act.id === 'hook') {
-        const p = hookAt(T, act.a);
+        // (the action way: its own path, and the chain out from his cuff as his new pictures have it)
+        const co = m.kind === 'chained' && CO_ACTION.on;
+        const q = co ? coHook(T, act.a) : null;
+        const p = co ? (q ? { fwd: q.at[0], left: q.at[1], flying: q.flying } : null) : hookAt(T, act.a);
         if (!p) continue;
         const w = B(p.fwd, p.left);
         const [sx, sy] = at(w.x, w.y);
-        const c = coCuffAt('hook', T);
+        const c = co ? coCuff('hook', T) : coCuffAt('hook', T);
         const [cx, cy] = this.onPicture(at, m, c[0] / TILE3, c[1] / TILE3, c[2] / 2);
-        drawChainOut(g, cx, cy, sx, sy - hookHigh(T), p.flying ? 6 : 1);
+        drawChainOut(g, cx, cy, sx, sy - (q ? q.at[2] : hookHigh(T)), p.flying ? 6 : 1);
       } else if (act.id === 'ball') {
-        const b = coBallPath(T);
+        const co = m.kind === 'chained' && CO_ACTION.on;
+        const b = co ? coBall(T) : coBallPath(T);
         if (!b) continue;
         const w = B(b.at[0], b.at[1]);
         const [sx, sy] = at(w.x, w.y);
-        const c = coCollarAt('ball', T);
+        const c = co ? coCollar('ball', T) : coCollarAt('ball', T);
         const [cx, cy] = this.onPicture(at, m, c[0] / TILE3, c[1] / TILE3, c[2] / 2);
         drawChainOut(g, cx, cy, sx, sy - b.at[2], b.flying ? 8 : 2);
       } else if (act.id === 'fire' || act.id === 'miniFire') {
@@ -459,7 +519,7 @@ export class BossFx {
    * ACT 1, THE DESCENT: what each of its own kinds draws in this layer (render/act1_fx/): for each of them on
    * the floor, and for each of their perils.
    */
-  private act1Layer(layer: 'ground' | 'standing' | 'air', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
+  private act1Layer(layer: 'ground' | 'standing' | 'air' | 'glow', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
     let c: Act1FxCtx | null = null;
     const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]), film: this.films });
     for (const m of game.monsters) {
@@ -476,6 +536,11 @@ export class BossFx {
       if (!fx || !f || !here(p.x, p.y)) continue;
       f.call(fx, ctx(), null, p);
     }
+  }
+
+  /** OVER EVERYTHING, after the dark: what of ACT 1 and 2's kinds shines in it (render/act1_fx/types.ts `glow`). */
+  glow(g: CanvasRenderingContext2D, at: FloorAt, game: Game, here: (x: number, y: number) => boolean): void {
+    this.act1Layer('glow', g, at, game, game.time, here, null);
   }
 
   /** What of all that lights the dark. (Called as the dark is laid: after everything has been drawn.) */

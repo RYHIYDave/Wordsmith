@@ -46,7 +46,7 @@ const fr = (t: number): number => t - Math.floor(t);
 /** Its height (the knight's bones are 58): half as tall again as the knight, a heavy among the small ones. */
 export const QG_TALL = 88;
 /** (its moves were first set for a golem 78 tall: their reaches grow with it) */
-const K = QG_TALL / 78;
+export const K = QG_TALL / 78;
 /** Its body: squat and broad; limbs as thick as a man. */
 export const QG_BODY: Build = buildOf(QG_TALL, 0.85, { shoulders: 1.75, chest: 1.6, depth: 1.45, waist: 1.3, hips: 1.35, legs: 0.7, arms: 1.22, trunk: 1.0, limbs: 2.4, pad: 4 });
 const B = QG_BODY;
@@ -60,7 +60,7 @@ export const CHAIN: Ramp = ['#26222e', '#26222e', '#625e72', '#aaa7b6', '#aaa7b6
 export const QG_CANVAS: MobCanvas = { w: 340, h: 312, ax: 170, ay: 222 };
 
 /** A face of a cut block: the masons' dressed face, the claw's fine tooling in rows, a chipped arris here and there; `mark`: the cult's skull burning on it. */
-function cutFace(seed: number, mark?: (face: number, a: number, b: number) => string | null): FaceSkin {
+export function cutFace(seed: number, mark?: (face: number, a: number, b: number) => string | null): FaceSkin {
   return (face, a, b, tone) => {
     const m = mark?.(face, a, b);
     if (m) return m;
@@ -97,7 +97,7 @@ function ironRound(put: Put, part: string, piece: string, c: V3, u: V3, v: V3, n
 }
 
 /** How it stands: hunched, its knees bent under the weight, its long block arms hanging, its fists near the floor. */
-const QG_HANG = -(B.upperArm + B.foreArm) * 0.96;
+export const QG_HANG = -(B.upperArm + B.foreArm) * 0.96;
 export const QG_REST: Bones = {
   ...standing(B),
   pz: -4, pitch: 3, bend: 5, faceUp: 0,
@@ -366,7 +366,7 @@ function qgHammer(): Motion {
 }
 /** The warning: the mark flaring as it holds its fists up. */
 const qgGlint = (t: number): number => (t < 0.3 ? 0 : t < 0.6 ? (t - 0.3) / 0.3 : t < QG_HIT ? 1 : t < QG_HIT + 0.12 ? 1 - (t - QG_HIT) / 0.12 : 0);
-const qgShaken = (since: number): number => (since >= 0 && since < 0.7 ? since + 0.001 : 0);
+export const qgShaken = (since: number): number => (since >= 0 && since < 0.7 ? since + 0.001 : 0);
 
 /**
  * ITS THROW, "a chunk torn off its body and thrown" (the planning chat's, kept with his yes): its left hand

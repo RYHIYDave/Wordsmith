@@ -8,8 +8,9 @@
 
 import { BEYOND } from '../art/floorkit';
 import { stairKey } from '../art/films';
-import type { CaveWayFilm, MouthWay, ShaftFilm, StairFilm, StartArt, TownWaysArt, WayArt } from '../art/films';
+import type { CaveWayFilm, ExitFilm, MouthWay, ShaftFilm, StairFilm, StartArt, TownWaysArt, WayArt } from '../art/films';
 import { CAVE4 } from '../art/cave4';
+import { CHAPEL, gradeSprite as chapelGrade } from '../art/chapel';
 import { CRYPT_FLOORS } from '../art/crypt';
 import { wallFacePixels } from '../art/ground';
 import { GRAIN } from '../art/kit';
@@ -18,6 +19,9 @@ import { TOWN_WAYS, riderUnder } from '../art/town_ways';
 import { A1_WAYS } from '../art/act1_ways';
 import { A2_WAYS } from '../art/act2_ways';
 import { doorFace, doorTiles } from '../game/doors';
+import { EXIT_FRAMES, PRISON_EXIT, exitDoorAt } from '../art/prison_exit';
+import { prisonDoorAnchor, prisonDoorTiles } from '../game/prison_way';
+import type { PrisonDoor } from '../game/prison_way';
 import type { DoorSpot } from '../game/types';
 import { floorLook } from '../art/floors';
 import { riderDark, shaftStill } from '../art/shaft';
@@ -96,6 +100,24 @@ export class FloorDress {
   caveFilm(game: Game): CaveWayFilm | null {
     const cv = game.level.ways?.cave;
     return EXITS.on && CAVE4.on && cv ? this.film<CaveWayFilm>(`cave:${cv.spot.alongX ? 'x' : 'y'}`) : null;
+  }
+  /** (FLOOR 3, PRISON_EXIT: art/prison_exit.ts) The door out the back of his hall and the passage behind it, as its film has it; null until it is made (the painter's: until then the hall's wall stands whole there). */
+  exitFilm(game: Game): ExitFilm | null {
+    const ex = game.level.ways?.exit;
+    return PRISON_EXIT.on && ex ? this.film<ExitFilm>(`exit:${ex.alongX ? 'x' : 'y'}`) : null;
+  }
+  /** The frame of the door's film now: 0 while he lives, then from his fall at 30 a second, the last once open. */
+  static exitFrame(ex: PrisonDoor, n: number): number {
+    return ex.state === 'shut' ? 0 : ex.state === 'open' ? n - 1 : Math.max(0, Math.min(n - 1, Math.floor(ex.t * 30)));
+  }
+  /** The door's film's last frame played (its jolts kick the screen once each). */
+  private exitF = -1;
+  /** (until its film is made: the door open, painted here the first time it is wanted, along x and along y) */
+  private exitStill = new Map<boolean, Sprite>();
+  /** Is the door drawn in place of its two tiles of wall: its film made, or (without it) once it is open? */
+  exitShown(game: Game): boolean {
+    const ex = game.level.ways?.exit;
+    return !!ex && PRISON_EXIT.on && (ex.state === 'open' || !!this.exitFilm(game));
   }
   /** (EXITS) The town's stairs, shaft's head and gate's bars; null until made. */
   townWays(game: Game): TownWaysArt | null {
@@ -189,6 +211,14 @@ export class FloorDress {
       const on = this.onwardNow(game);
       if (on && on.under) g.drawImage(on.under.img, Math.round(wx(stage.cam, on.x, on.y)) - on.under.ax, Math.round(wy(stage.cam, on.x, on.y)) - on.under.ay, on.under.w, on.under.h);
     }
+    // (FLOOR 3, PRISON_EXIT: the passage behind the door out the back of his hall, its baskets flickering: with the floor)
+    const ex = W?.exit;
+    const ef = ex ? this.exitFilm(game) : null;
+    if (ex && ef && exitSeen(game, ex)) {
+      const u = ef.under[Math.floor(game.time * 6) % ef.under.length];
+      const A = prisonDoorAnchor(ex);
+      g.drawImage(u.img, Math.round(wx(stage.cam, A.x, A.y)) - u.ax, Math.round(wy(stage.cam, A.x, A.y)) - u.ay, u.w, u.h);
+    }
     const sh = game.level.ways?.shaft;
     if (!sh || !game.level.explored[sh.y * game.level.floor.w + sh.x]) return;
     stage.shadow(g, wx(stage.cam, sh.x + 0.5, sh.y + 0.5), wy(stage.cam, sh.x + 0.5, sh.y + 0.5), SHAFT_SHADOW);
@@ -240,6 +270,39 @@ export class FloorDress {
       const m = L.ways.mouth;
       const mouth = m ? this.film<MouthWay>(`mouth:${m.alongX ? 'x' : 'y'}`) : null;
       if (m && mouth && seen(game, m)) standAt(stage, mouth.over, m);
+    }
+    // (FLOOR 3, PRISON_EXIT: the door out the back of his hall, shut while he lives, then unbarring and swinging open, its jolts
+    // kicking the screen; stood at the wall's face, so that whoever stands in the hall is drawn after it)
+    const ex = L.ways?.exit;
+    const ef = ex ? this.exitFilm(game) : null;
+    if (ex && ef && exitSeen(game, ex)) {
+      const k = FloorDress.exitFrame(ex, ef.frames.length);
+      if (ex.state !== 'opening') this.exitF = ex.state === 'open' ? k : -1;
+      else {
+        for (let f = this.exitF + 1; f <= k; f++) {
+          const j = ef.jolts.indexOf(f);
+          if (j >= 0) this.kicked.push({ amount: ef.kicks[j] ?? 1, vol: Math.min(1, 0.35 + (ef.kicks[j] ?? 1) * 0.15) });
+        }
+        this.exitF = k;
+      }
+      const s = ef.frames[k];
+      const A = prisonDoorAnchor(ex);
+      const x = Math.round(wx(stage.cam, A.x, A.y));
+      const y = Math.round(wy(stage.cam, A.x, A.y));
+      const d = A.x + A.y - 0.99;
+      stage.stand(d, s, x, y, stage.veil(s, x, y, d));
+      if (s.lights) stage.lit(s, x, y);
+    }
+    // (until its film is made, the hall's wall stands whole there while it is shut; once open, the door open, painted now)
+    if (ex && !ef && PRISON_EXIT.on && ex.state === 'open' && exitSeen(game, ex)) {
+      let s = this.exitStill.get(ex.alongX);
+      if (!s) this.exitStill.set(ex.alongX, (s = exitDoorAt(ex.alongX, EXIT_FRAMES - 1)));
+      const A = prisonDoorAnchor(ex);
+      const x = Math.round(wx(stage.cam, A.x, A.y));
+      const y = Math.round(wy(stage.cam, A.x, A.y));
+      const d = A.x + A.y - 0.99;
+      stage.stand(d, s, x, y, stage.veil(s, x, y, d));
+      if (s.lights) stage.lit(s, x, y);
     }
     // (EXITS, floors 6 to 10: the piece he came out of behind the start, and the way on, shut, opening and open; each seen
     // through while he is behind it)
@@ -348,7 +411,8 @@ function wallStill(alongX: boolean): Sprite {
     const ty = ay - 24 + 16 * j;
     face.blit(w.p, tx - w.ax, ty - w.ay);
   }
-  const s = face.sprite(ax, ay, GRAIN);
+  // (FLOOR 4 AS THE BURIED CHAPEL, CHAPEL: in look A's colours, as its own cave film is)
+  const s = CHAPEL.on ? chapelGrade(face.sprite(ax, ay, GRAIN)) : face.sprite(ax, ay, GRAIN);
   walls.set(alongX, s);
   return s;
 }
@@ -364,6 +428,12 @@ function seen(game: Game, s: DoorSpot): boolean {
     if (L.explored[i] === 1) return true;
   }
   return false;
+}
+/** (FLOOR 3, PRISON_EXIT) Has the door, or the floor before it, been seen? */
+function exitSeen(game: Game, ex: PrisonDoor): boolean {
+  const L = game.level;
+  const f = L.floor;
+  return prisonDoorTiles(f, ex).some((i) => L.explored[i] === 1 || L.explored[ex.alongX ? i + f.w : i + 1] === 1);
 }
 /** (EXITS) Where the art chat's pictures of a doorway are anchored: the foot of its wall's face, under the middle of its middle tile. */
 function anchorOf(s: DoorSpot): [number, number] {

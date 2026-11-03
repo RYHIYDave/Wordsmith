@@ -192,29 +192,32 @@ test('floor 11: the slate set apart from the street (darker and bluer than any s
 });
 
 test('floor 11: a house walked into stands whole over the street behind it, never over the street before it', () => {
-  const L = floorOf(11, 5);
-  const land = L.land!;
-  const f = L.floor;
-  const open = landTerrain(land, f, true);
-  const mk = shellMaker(gateWardLand(land, f, true), open, true);
+  // (over three layings: since the pigeons' row, GW_PIGEON_ROW, a laying may have few houses walked into with a street behind)
   let behindAll = 0;
-  for (let n = 0; n < mk.count; n++) {
-    const h = land.houses![n];
-    const sh = mk.make(n);
-    const D = houseDepth(h);
-    let behind = 0;
-    let before = 0;
-    for (let i = 0; i < sh.w * sh.h; i++) {
-      if (!sh.rgba[i * 4 + 3]) continue;
-      const [x, y] = worldOf(sh.x0 + (i % sh.w), sh.y0 + Math.floor(i / sh.w));
-      if (!open.ground(x, y)) continue;
-      const inIt = x >= h.room[0] - 0.01 && y >= h.room[1] - 0.01 && x <= Math.max(h.room[2], h.front.along === 'y' ? h.front.at + 1 : 0) && y <= Math.max(h.room[3], h.front.along === 'x' ? h.front.at + 1 : 0);
-      if (inIt) continue;
-      if (x + y < D - 1) behind++;
-      if (x + y > D + 0.5) before++;
+  for (const seed of [5, 6, 7]) {
+    const L = floorOf(11, seed);
+    const land = L.land!;
+    const f = L.floor;
+    const open = landTerrain(land, f, true);
+    const mk = shellMaker(gateWardLand(land, f, true), open, true);
+    for (let n = 0; n < mk.count; n++) {
+      const h = land.houses![n];
+      const sh = mk.make(n);
+      const D = houseDepth(h);
+      let behind = 0;
+      let before = 0;
+      for (let i = 0; i < sh.w * sh.h; i++) {
+        if (!sh.rgba[i * 4 + 3]) continue;
+        const [x, y] = worldOf(sh.x0 + (i % sh.w), sh.y0 + Math.floor(i / sh.w));
+        if (!open.ground(x, y)) continue;
+        const inIt = x >= h.room[0] - 0.01 && y >= h.room[1] - 0.01 && x <= Math.max(h.room[2], h.front.along === 'y' ? h.front.at + 1 : 0) && y <= Math.max(h.room[3], h.front.along === 'x' ? h.front.at + 1 : 0);
+        if (inIt) continue;
+        if (x + y < D - 1) behind++;
+        if (x + y > D + 0.5) before++;
+      }
+      assert.equal(before, 0, `seed ${seed}, house ${n}: nothing of it over the street before it`);
+      behindAll += behind;
     }
-    assert.equal(before, 0, `house ${n}: nothing of it over the street before it`);
-    behindAll += behind;
   }
   assert.ok(behindAll > 200, `the houses' roofs over the streets behind them (${behindAll} pixels)`);
 });

@@ -1,0 +1,16 @@
+import { bitePainted, oilPainted, lanternFlying, biteAt, lobFrom, CHOP, POOL } from '../src/art/action_f11_watch';
+import { sicklePainted, curvePainted, boomAt, boomCurve, BOOM } from '../src/art/action_f11_field';
+import { gurneyPainted, crashPainted, GURNEY, blowAt } from '../src/art/action_f11_orderly';
+import { bookPainted, BARRAGE, slamAt9 } from '../src/art/action_f11_warden';
+const time = (name: string, n: number, f: (i: number) => unknown) => { const t0 = performance.now(); for (let i = 0; i < n; i++) f(i); console.log(name, ((performance.now() - t0) / n).toFixed(2), 'ms'); };
+time('bite floor', 10, (i) => bitePainted(0.05 + i * 0.1, 'floor', 1, 0));
+time('bite air', 10, (i) => bitePainted(0.05 + i * 0.1, 'air', 1, 0));
+time('oil floor', 10, (i) => oilPainted(0.2 + i * 0.5, 'floor'));
+time('oil air', 10, (i) => oilPainted(0.2 + i * 0.5, 'air'));
+time('lantern', 10, (i) => lanternFlying(i * 0.05));
+time('sickle', 10, (i) => sicklePainted(1 + i * 0.05, 'front'));
+time('curve', 10, (i) => curvePainted(i / 10, 'front'));
+time('gurney', 10, (i) => gurneyPainted(1 + i * 0.05, 'front'));
+time('crash', 10, (i) => crashPainted(i * 0.1, 'floor'));
+time('book', 10, (i) => bookPainted(i * 0.3, i % 3));
+console.log('bite', biteAt(), 'lob', JSON.stringify(lobFrom()), 'blow', blowAt(), 'slam', slamAt9(), JSON.stringify(GURNEY), JSON.stringify(BARRAGE), JSON.stringify(BOOM), JSON.stringify(boomAt(1.2)));

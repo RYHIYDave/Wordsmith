@@ -29,6 +29,26 @@ export interface HeroLook {
    * during the character select screen.  that way its something different when you select them").
    */
   card?: boolean;
+  /** THE WARLOCK (art/warlock_art.ts): he is the demon; his pact is full (his arm blazes). */
+  demon?: boolean;
+  blaze?: boolean;
+  /**
+   * THE BRAWLER AS THE VETERAN (art/veteran_art.ts): given, whether he is (the painter's worker, which has no switch of its
+   * own, says so); absent, as game/veteran.ts VETERAN is.
+   */
+  vet?: boolean;
+}
+
+/**
+ * WHICH OF A HERO'S PICTURES the side painter paints ahead (render/painter.ts): in town, in a dungeon; and the warlock's
+ * others (art/warlock_art.ts): the demon's, and his with his arm blazing; and (28 Oct 2026) the new classes on their class
+ * cards, too heavy for the start screen to paint as it draws them (`card`).
+ */
+export type HeroPlace = 'town' | 'dungeon' | 'demon' | 'blaze' | 'card';
+/** The look each of those is. */
+export function lookOfPlace(place: HeroPlace): HeroLook {
+  if (place === 'card') return { twoHanded: true, town: true, card: true };
+  return { twoHanded: true, town: place === 'town', ...(place === 'demon' ? { demon: true } : place === 'blaze' ? { blaze: true } : {}) };
 }
 
 export interface HeroArt {
@@ -43,7 +63,7 @@ export interface HeroArt {
    */
   warm(cls: ClassId, look: HeroLook): boolean;
   /** (The heroes painted over the bones: a frame painted by the painter's worker, taken in: art/heroes3.ts.) */
-  give?(cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite): boolean;
+  give?(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean): boolean;
 }
 
 export const PLAIN: HeroLook = { twoHanded: false };

@@ -192,6 +192,53 @@ function attach(rng: RNG, plan: Plan, host: number, side: Side, w: number, h: nu
   return { room, join };
 }
 
+/**
+ * COMBO (his pick for floor 14 among open, linear and combo: “combo”): the house's main way and its side rooms, and up to
+ * HQ_COMBO.loops ways round besides: a straight hall between two rooms that face each other across the rock, two places or
+ * more apart along the main way (never the entrance, the vestibule, the theatre or the room beyond it: the start one way out,
+ * the theatre one way in; nor the lair, a store or the chapel: dead ends with what they hold), clear of every other room and hall.
+ * A floor with fewer than `least` is laid again (half of them had none: a combo floor has a way round).
+ */
+export const HQ_COMBO = { on: true, loops: 2, least: 1 };
+
+function waysRound(rng: RNG, plan: Plan, mainCount: number): number {
+  // (the dead ends stay dead ends: the lair, the stores and the chapel; and the start, the vestibule, the theatre, beyond it)
+  const fixed: HouseRole[] = ['entrance', 'vestibule', 'theatre', 'beyond', 'lair', 'store', 'chapel'];
+  // (where a room is along the main way: its own place, or its host's)
+  const along = (i: number): number => (plan.rooms[i].path >= 0 ? plan.rooms[i].path : along(plan.rooms[i].parent));
+  void mainCount;
+  const cands: Join[] = [];
+  for (let a = 0; a < plan.rooms.length; a++) {
+    for (let b = a + 1; b < plan.rooms.length; b++) {
+      const A = plan.rooms[a];
+      const B = plan.rooms[b];
+      if (fixed.includes(A.role) || fixed.includes(B.role) || Math.abs(along(a) - along(b)) < 2 || plan.joins.some((K) => (K.a === a && K.b === b) || (K.a === b && K.b === a))) continue;
+      for (const alongX of [true, false]) {
+        // (facing across: their sides overlap enough for a hall a tile in from each corner, and the rock between is 3 to 14)
+        const lo = alongX ? Math.max(A.y, B.y) + 1 : Math.max(A.x, B.x) + 1;
+        const hi = alongX ? Math.min(A.y + A.h, B.y + B.h) - CW - 1 : Math.min(A.x + A.w, B.x + B.w) - CW - 1;
+        if (hi < lo) continue;
+        const [L, R] = alongX ? (A.x < B.x ? [A, B] : [B, A]) : A.y < B.y ? [A, B] : [B, A];
+        const gap = alongX ? R.x - (L.x + L.w) : R.y - (L.y + L.h);
+        if (gap < 3 || gap > 20) continue;
+        const c = rng.int(lo, hi);
+        const J: Join = alongX ? { x: L.x + L.w, y: c, w: gap, h: CW, a, b, alongX } : { x: c, y: L.y + L.h, w: CW, h: gap, a, b, alongX };
+        if (plan.rooms.some((r, j) => j !== a && j !== b && near(J, r, CLEAR))) continue;
+        if (plan.joins.some((K) => near(J, K, CLEAR))) continue;
+        cands.push(J);
+      }
+    }
+  }
+  let n = 0;
+  for (const J of rng.shuffle(cands)) {
+    if (n >= HQ_COMBO.loops) break;
+    if (plan.joins.some((K) => near(J, K, CLEAR))) continue;
+    plan.joins.push(J);
+    n++;
+  }
+  return n;
+}
+
 /** A room's two sides for a step: its length along the way it is entered (`alongWay`) or across it. */
 function sidesOf(rng: RNG, role: HouseRole, side: Side, alongWay: boolean): { w: number; h: number } {
   const s = SIZE[role];
@@ -343,6 +390,8 @@ export function generate(depth: number, seed: number): Laid | null {
   const stores = rng.int(1, 2);
   for (let n = 0; n < stores; n++) growSide(rng, plan, 'store', rng.shuffle([0, ...anyHost]));
   if (rng.chance(0.5)) growSide(rng, plan, 'apothecary', rng.shuffle([...anyHost]));
+  // (COMBO, his pick for floor 14: ways round, halls between rooms of the main way that face each other, not one after the other)
+  if (HQ_COMBO.on && waysRound(rng, plan, mainCount) < HQ_COMBO.least) return null;
 
   // THE BOUNDS: everything moved MARGIN in from the map's edge
   let x0 = Infinity;

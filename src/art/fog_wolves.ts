@@ -64,17 +64,17 @@ const bump = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 
 // takes it, its heart churning dark; its fangs bone-white; its eyes the enemy's pink burning to gold (FLAME). Nothing
 // of it cyan.
 
-const FOG: Ramp = ['#3a3846', '#5a5768', '#7e7a8a', '#a6a2b0', '#cac6d0'];
+export const FOG: Ramp = ['#3a3846', '#5a5768', '#7e7a8a', '#a6a2b0', '#cac6d0'];
 const DEEP: Ramp = ['#14121c', '#1e1c28', '#2a2836', '#3a3848', '#4c4960'];
-const FANG: Ramp = ['#4a4440', '#7a7068', '#a89c90', '#d0c6b8', '#ece4d8'];
+export const FANG: Ramp = ['#4a4440', '#7a7068', '#a89c90', '#d0c6b8', '#ece4d8'];
 /** Its loose fog: the wisps that stream off it, palest as they leave it, greyer as they thin. */
-const WISP = ['#dcd8e2', '#cac6d0', '#b4b0bc', '#a6a2b0', '#8e8a9a'];
+export const WISP = ['#dcd8e2', '#cac6d0', '#b4b0bc', '#a6a2b0', '#8e8a9a'];
 
 // ---------------------------------------------------------------------------------------------
 // ITS BODY, in picture units (the knight stands 58 high, his hip about 30 up). x forward, y to its left, z up; its own
 // frame has its floor point under its middle at the origin. Lean and hip-high: the top of its ruff about 31 up.
 
-const PIVOT: V3 = [0, 0, 22];
+export const PIVOT: V3 = [0, 0, 22];
 /** Where each leg leaves its body: its right fore, left fore, right hind, left hind. */
 const LEG_TOP: V3[] = [
   [10, -3.4, 19.5],
@@ -103,7 +103,7 @@ export const WOLF_HABITS = { growl: [0.7, 1.55], glance: [1.7, 2.3] } as const;
 
 /** The canvas it is painted on, and its floor point on it. */
 export const WOLF_CANVAS = { w: 200, h: 160, ax: 96, ay: 118 };
-const WOLF_AURA = { x: WOLF_CANVAS.ax, y: WOLF_CANVAS.ay - 18, r: 30, color: '#ff3a78', a: 0.08 };
+export const WOLF_AURA = { x: WOLF_CANVAS.ax, y: WOLF_CANVAS.ay - 18, r: 30, color: '#ff3a78', a: 0.08 };
 
 // ITS MOVES (his design doc's: "A bite. They circle to come at you from behind."; his picks: “A ghostly glide”, “A
 // lunge out of the fog (Recommended)”, “It blows apart into fog (Recommended)”)
@@ -122,7 +122,7 @@ export const WOLF_DIE = { long: 1.4, freeze: 0.08, burst: 0.12, gone: 0.7, out: 
 // ---------------------------------------------------------------------------------------------
 // ITS POSES
 
-interface WolfPose {
+export interface WolfPose {
   x: number;
   y: number;
   z: number;
@@ -186,9 +186,9 @@ function standPose(t0: number): WolfPose {
   };
 }
 
-const STAND0 = standPose(0);
+export const STAND0 = standPose(0);
 /** A pose as numbers, to be blended. */
-type Key = Record<string, number>;
+export type Key = Record<string, number>;
 const FIELDS = ['x', 'y', 'z', 'yaw', 'pitch', 'roll', 'neck', 'gape', 'snarl', 'ears', 'tail', 'eyes', 'solid', 'tear', 'fade'] as const;
 function keyOf(P: WolfPose): Key {
   const k: Key = {};
@@ -198,9 +198,9 @@ function keyOf(P: WolfPose): Key {
   P.bend.forEach((v, i) => (k[`b${i}`] = v));
   return k;
 }
-const K0 = keyOf(STAND0);
-const keyed = (d: Key): Key => ({ ...K0, ...d });
-function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
+export const K0 = keyOf(STAND0);
+export const keyed = (d: Key): Key => ({ ...K0, ...d });
+export function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
   if (t <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) {
     const [t1, k1, ease] = keys[i];
@@ -214,7 +214,7 @@ function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
   }
   return keys[keys.length - 1][1];
 }
-function fromKey(K: Key, churn: number): WolfPose {
+export function fromKey(K: Key, churn: number): WolfPose {
   return {
     ...REST,
     x: K.x, y: K.y, z: K.z, yaw: K.yaw, pitch: K.pitch, roll: K.roll, neck: K.neck, gape: K.gape, snarl: K.snarl, ears: K.ears, tail: K.tail, eyes: K.eyes, solid: K.solid, tear: K.tear, fade: K.fade,
@@ -224,7 +224,7 @@ function fromKey(K: Key, churn: number): WolfPose {
     churn,
   };
 }
-const plus = (K: Key, d: Key): Key => {
+export const plus = (K: Key, d: Key): Key => {
   const o = { ...K };
   for (const f of Object.keys(d)) o[f] = (o[f] ?? 0) + d[f];
   return o;
@@ -255,11 +255,11 @@ function glidePose(t: number): WolfPose {
 }
 
 // --- ITS BITE ---
-const B_CROUCH = keyed({ x: -4.5, z: -1.6, pitch: 5, neck: 12, h1: 8, h0: 0, h2: 0, gape: 0.3, snarl: 1, ears: -55, tail: -6, eyes: 2.1, solid: 0.35, s0: -14, s1: -12, s2: 18, s3: 16, b0: 40, b1: 38, b2: 48, b3: 46 });
-const B_WIDE = keyed({ x: 12, z: 1.8, pitch: -5, neck: -12, h1: -12, h0: 0, h2: 0, gape: 1, snarl: 1, ears: -60, tail: 14, eyes: 2.2, solid: 1, s0: 38, s1: 34, s2: -32, s3: -30, b0: 10, b1: 12, b2: 20, b3: 22 });
-const B_SNAP = keyed({ x: 16, z: 1.2, pitch: -1, neck: -8, h1: 2, h0: 0, h2: 0, gape: 0, snarl: 1, ears: -60, tail: 16, eyes: 2.2, solid: 1, s0: 30, s1: 28, s2: -26, s3: -24, b0: 18, b1: 20, b2: 26, b3: 28 });
-const B_TUG = keyed({ x: 13, z: 0.6, pitch: 2, neck: 4, h1: 8, h0: 0, h2: 0, gape: 0, snarl: 1, ears: -50, tail: 10, eyes: 1.9, solid: 1, s0: 12, s1: 10, s2: -8, s3: -6, b0: 24, b1: 24, b2: 30, b3: 30 });
-const B_BACK = keyed({ x: -1.5, z: 0.4, pitch: 0, neck: 2, h1: 3, gape: 0.08, snarl: 0.3, ears: -20, eyes: 1.4, solid: 0 });
+export const B_CROUCH = keyed({ x: -4.5, z: -1.6, pitch: 5, neck: 12, h1: 8, h0: 0, h2: 0, gape: 0.3, snarl: 1, ears: -55, tail: -6, eyes: 2.1, solid: 0.35, s0: -14, s1: -12, s2: 18, s3: 16, b0: 40, b1: 38, b2: 48, b3: 46 });
+export const B_WIDE = keyed({ x: 12, z: 1.8, pitch: -5, neck: -12, h1: -12, h0: 0, h2: 0, gape: 1, snarl: 1, ears: -60, tail: 14, eyes: 2.2, solid: 1, s0: 38, s1: 34, s2: -32, s3: -30, b0: 10, b1: 12, b2: 20, b3: 22 });
+export const B_SNAP = keyed({ x: 16, z: 1.2, pitch: -1, neck: -8, h1: 2, h0: 0, h2: 0, gape: 0, snarl: 1, ears: -60, tail: 16, eyes: 2.2, solid: 1, s0: 30, s1: 28, s2: -26, s3: -24, b0: 18, b1: 20, b2: 26, b3: 28 });
+export const B_TUG = keyed({ x: 13, z: 0.6, pitch: 2, neck: 4, h1: 8, h0: 0, h2: 0, gape: 0, snarl: 1, ears: -50, tail: 10, eyes: 1.9, solid: 1, s0: 12, s1: 10, s2: -8, s3: -6, b0: 24, b1: 24, b2: 30, b3: 30 });
+export const B_BACK = keyed({ x: -1.5, z: 0.4, pitch: 0, neck: 2, h1: 3, gape: 0.08, snarl: 0.3, ears: -20, eyes: 1.4, solid: 0 });
 /** Its bite: it crouches, drawn back into its fog, its eyes flaring and its fangs bared, and holds there trembling (the warning); it surges in, its jaws thrown wide and its head and jaws coming solid; THE SNAP; it tugs, shaking its head, and falls back into its fog. */
 function bitePose(t: number): WolfPose {
   const B = WOLF_BITE;
@@ -319,7 +319,7 @@ function deathPose(t: number): WolfPose {
   return P;
 }
 
-function basePose(which: string, t: number): WolfPose {
+export function basePose(which: string, t: number): WolfPose {
   if (which === 'stand') return standPose(t);
   if (which === 'walk') return glidePose(t);
   const tt = Math.max(0, t);
@@ -351,20 +351,20 @@ function turn(v: V3, yaw: number, pitch: number, roll: number): V3 {
   const r2: V3 = [r1[0] * cp + r1[2] * sp, r1[1], -r1[0] * sp + r1[2] * cp];
   return [r2[0] * cy - r2[1] * sy, r2[0] * sy + r2[1] * cy, r2[2]];
 }
-function worldOf(P: WolfPose, p: V3): V3 {
+export function worldOf(P: WolfPose, p: V3): V3 {
   return add(add([P.x, P.y, P.z], PIVOT), turn(sub(p, PIVOT), P.yaw, P.pitch, P.roll));
 }
 function turned(P: WolfPose, v: V3): V3 {
   return turn(v, P.yaw, P.pitch, P.roll);
 }
-interface HeadFrame {
+export interface HeadFrame {
   at: V3;
   f: V3;
   l: V3;
   u: V3;
   p: (v: V3) => V3;
 }
-function headFrame(P: WolfPose): HeadFrame {
+export function headFrame(P: WolfPose): HeadFrame {
   const root = worldOf(P, NECK_ROOT);
   const along = turned(P, turn(norm(NECK_REST), 0, P.neck, 0));
   const at = add(root, mul(along, NECK_LONG));
@@ -406,14 +406,14 @@ const EYE_SKIN: Skin = (u) => {
 };
 
 const VIEWS = new Map<GameView, V3>();
-function eyeOf(view: GameView): V3 {
+export function eyeOf(view: GameView): V3 {
   let e = VIEWS.get(view);
   if (!e) VIEWS.set(view, (e = stage(view, 0, 0, { w: 2, h: 2 }).eye));
   return e;
 }
 
 /** Each leg, at one moment: its top, its middle joint and the end of it (fog, short of the floor). */
-function legOf(P: WolfPose, i: number): [V3, V3, V3] {
+export function legOf(P: WolfPose, i: number): [V3, V3, V3] {
   const top = worldOf(P, LEG_TOP[i]);
   const fore = i < 2;
   const sw = P.swing[i];
@@ -426,7 +426,7 @@ function legOf(P: WolfPose, i: number): [V3, V3, V3] {
 }
 
 /** THE WOLF AS SOLIDS. */
-function wolfBits(P: WolfPose, put: Put, view: GameView): void {
+export function wolfBits(P: WolfPose, put: Put, view: GameView): void {
   const W = (p: V3): V3 => worldOf(P, p);
   const axes = (a: V3, b: V3, c: V3): [V3, V3, V3] => [turned(P, a), turned(P, b), turned(P, c)];
   const ch = P.churn;
@@ -534,7 +534,7 @@ function bitsOf(which: string, t: number, view: GameView): { P: WolfPose; bits: 
 // ---------------------------------------------------------------------------------------------
 // ITS LOOSE FOG: wisps streaming off it, and its fog low on the ground round it, laid grain by grain over its picture
 
-type Grain = [V3, string, number];
+export type Grain = [V3, string, number];
 /** How long a wisp lives, for a move: gliding, a whole number of them to its round, so that its loop closes. */
 function lifeFor(which: string, life: number): number {
   if (which !== 'walk') return life;
@@ -549,7 +549,7 @@ function windOf(which: string): V3 {
  * round, so that its loop closes), leaving from where the place was when it left (so that, moving, it trails them),
  * drifting `drift` a second and spreading, thinning and greying as they go. Dying, nothing leaves it after it bursts.
  */
-function stream(which: string, t: number, from: (P: WolfPose) => V3, n: number, life0: number, drift0: V3, spread: number, seed: number): Grain[] {
+function stream(which: string, t: number, from: (P: WolfPose) => V3, n: number, life0: number, drift0: V3, spread: number, seed: number, base: (w: string, t: number) => WolfPose = basePose): Grain[] {
   const out: Grain[] = [];
   const life = lifeFor(which, life0);
   const drift = add(drift0, windOf(which));
@@ -557,7 +557,7 @@ function stream(which: string, t: number, from: (P: WolfPose) => V3, n: number, 
     const age = fr((t + (life * i) / n + 0.13 * life * hash(i, 1, seed)) / life) * life;
     if (which === 'dying' && t - age > WOLF_DIE.burst) continue;
     const k = age / life;
-    const P = basePose(which, t - age);
+    const P = base(which, t - age);
     const a = hash(i, 2, seed) * TAU;
     const b = (hash(i, 3, seed) - 0.5) * 2;
     const q = add(add(from(P), mul(drift, age)), [Math.cos(a) * spread * age, Math.sin(a) * spread * age, b * spread * 0.4 * age]);
@@ -611,24 +611,24 @@ function blown(P: WolfPose, t: number, t0: number, n: number, seed: number, spee
   return out;
 }
 /** All of its loose fog at one moment. */
-function grainsOf(which: string, t: number): Grain[] {
+export function grainsOf(which: string, t: number, base: (w: string, t: number) => WolfPose = basePose): Grain[] {
   const legEnd = (i: number) => (P: WolfPose): V3 => legOf(P, i)[2];
   const out: Grain[] = [];
-  const P = basePose(which, t);
-  for (let i = 0; i < 4; i++) out.push(...stream(which, t, legEnd(i), 8, 0.6, [-6, 0, -8], 3.5, 31 + i));
-  out.push(...stream(which, t, (Q) => worldOf(Q, [-30, 0, 15]), 7, 0.8, [-9, 0, 3], 4, 41));
-  out.push(...stream(which, t, (Q) => worldOf(Q, [-19, 0, 26]), 5, 0.6, [-8, 0, 4], 4, 43));
-  for (let j = 0; j < 4; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [12 - j * 6, 0, 30.5 - j]), 3, 0.8, [-6, 0, 6], 2.5, 45 + j * 7));
-  out.push(...stream(which, t, (Q) => worldOf(Q, [-3, 0, 17]), 4, 0.6, [-4, 0, -8], 3, 47));
+  const P = base(which, t);
+  for (let i = 0; i < 4; i++) out.push(...stream(which, t, legEnd(i), 8, 0.6, [-6, 0, -8], 3.5, 31 + i, base));
+  out.push(...stream(which, t, (Q) => worldOf(Q, [-30, 0, 15]), 7, 0.8, [-9, 0, 3], 4, 41, base));
+  out.push(...stream(which, t, (Q) => worldOf(Q, [-19, 0, 26]), 5, 0.6, [-8, 0, 4], 4, 43, base));
+  for (let j = 0; j < 4; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [12 - j * 6, 0, 30.5 - j]), 3, 0.8, [-6, 0, 6], 2.5, 45 + j * 7, base));
+  out.push(...stream(which, t, (Q) => worldOf(Q, [-3, 0, 17]), 4, 0.6, [-4, 0, -8], 3, 47, base));
   // (its outline fraying: wisps leaving it from all over its body and drifting back off it)
   for (let j = 0; j < 22; j++) {
     const on = onBody(j, 53);
-    out.push(...stream(which, t, (Q) => worldOf(Q, on), 1, 0.6, [-7, 0, 2.5], 2.5, 60 + j));
+    out.push(...stream(which, t, (Q) => worldOf(Q, on), 1, 0.6, [-7, 0, 2.5], 2.5, 60 + j, base));
   }
   // (its breath, as it growls or bites: fog from its jaws, rolling down)
-  out.push(...stream(which, t, (Q) => headFrame(Q).p([10, 0, -2]), 6, 0.6, [6, 0, -6], 4, 49).filter((g, i) => {
+  out.push(...stream(which, t, (Q) => headFrame(Q).p([10, 0, -2]), 6, 0.6, [6, 0, -6], 4, 49, base).filter((g, i) => {
     void g;
-    const Q = basePose(which, t - (i / 6) * lifeFor(which, 0.6));
+    const Q = base(which, t - (i / 6) * lifeFor(which, 0.6));
     return Q.snarl + Q.gape > 0.35 && Q.fade === 0;
   }));
   out.push(...groundFog(which, t, -2, 34, 51, P.fade));
@@ -652,11 +652,11 @@ function grainsOf(which: string, t: number): Grain[] {
     out.push([add(tip, [Math.cos(a) * 1.8 * hash(j, 2, 57) - j * 0.35, Math.sin(a) * 1.2, (hash(j, 3, 57) - 0.5) * 2.4]), WISP[j % 4], j < 5 ? 2 : 1]);
   }
   // (fog pouring off it: down from its belly and chest to the ground, and back off its back in a long trail)
-  for (let j = 0; j < 5; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [12 - j * 6, (j % 2 ? 1 : -1) * 2, 16 + 0.6 * j]), 6, 0.6, [-3, 0, -14], 3, 71 + j));
-  for (let j = 0; j < 3; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [-14 - j * 3, (j - 1) * 2.5, 26 - j]), 6, 0.8, [-11, 0, 3], 4.5, 81 + j));
+  for (let j = 0; j < 5; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [12 - j * 6, (j % 2 ? 1 : -1) * 2, 16 + 0.6 * j]), 6, 0.6, [-3, 0, -14], 3, 71 + j, base));
+  for (let j = 0; j < 3; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [-14 - j * 3, (j - 1) * 2.5, 26 - j]), 6, 0.8, [-11, 0, 3], 4.5, 81 + j, base));
   // (its eyes burning: embers of their fire streaming back off them, while they burn)
   for (const s of [1, -1]) {
-    const em = stream(which, t, (Q) => headFrame(Q).p([4, s * 3.6, 2.2]), 4, 0.3, [-12, 0, 5], 3, s > 0 ? 91 : 93);
+    const em = stream(which, t, (Q) => headFrame(Q).p([4, s * 3.6, 2.2]), 4, 0.3, [-12, 0, 5], 3, s > 0 ? 91 : 93, base);
     if (P.eyes > 0.05) em.forEach((g, i) => out.push([g[0], [FLAME[4], FLAME[3], FLAME[3], FLAME[2]][i], 1]));
   }
   // (struck: wisps torn off it; dying: it bursts apart into fog, and what is left of it is torn away after)
@@ -699,7 +699,7 @@ function noise2(x: number, y: number, seed: number): number {
  * head, more and more toward its haunch and tail and under its belly, fraying its outline where they reach it. Its eyes
  * and its fangs stay whole (only they are solid).
  */
-function thinned(px: Px, st: Stage, P: WolfPose): void {
+export function thinned(px: Px, st: Stage, P: WolfPose): void {
   const H = headFrame(P);
   const [hx, hy] = st.at(H.p([2, 0, 0.5]));
   const [tx, ty] = st.at(worldOf(P, [-24, 0, 21]));
@@ -773,7 +773,7 @@ export function wolfPainted(which: string, t: number, view: GameView = 'front'):
   return { px, lights };
 }
 /** A grain laid on a finished picture (after its pink edge, so that it frays the wolf rather than being outlined), on whole game pixels. */
-function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
+export function laid(px: Px, st: Stage, p: V3, col: string, size: number): void {
   const [x, y] = st.at(p);
   const xi = Math.round(x - size / 2);
   const yi = Math.round(y - size / 2);

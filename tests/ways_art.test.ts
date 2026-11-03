@@ -74,7 +74,8 @@ test('1. both switches on (his yes); only the films, the dress and the renderer 
       if (/^art\/(cave4|town_ways)$/.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].sort().join(' '), 'art/films.ts render/dress.ts', 'game files that import them');
+  // (and the first five floors' new looks and the castle hall, the art chat's, 2 Nov 2026: each lays the way's pictures in its own stone)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/castle_hall.ts art/chapel.ts art/films.ts art/lair_temple.ts art/tomb.ts render/dress.ts', 'game files that import them');
 });
 
 test('2. THE CAVE: the film both ways round, every frame painted, its jolts in it, its last frame the cave as it stands; nothing cyan', () => {

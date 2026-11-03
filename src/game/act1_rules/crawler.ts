@@ -36,6 +36,8 @@ export const CRAWLER = {
   leap: { hit: 0.72, at: 0.85, r: 0.8, from: 0.82, to: 1.3, drag: 1.6 },
   /** Toward the drop, if there is one within this many tiles of the hero. */
   dropNear: 5,
+  /** Whether its grab drags toward the drop (as it was) or back with it (his “Yes, no drop-pushes (Recommended)”, 31 Oct 2026). */
+  toDrop: false,
   /** Under the lip: one that comes into the world within `near` tiles of the drop waits there; it is let down `below` game pixels under the floor until it springs (`spring`, the leap's, from its crouch to its landing); the pack come up one after another, within `stagger` seconds. */
   lip: { near: 5, below: 18, spring: [0.35, 0.72] as const, stagger: 0.7 },
 };
@@ -215,7 +217,9 @@ export const RULES: Act1Rules | null = {
             k.grab = 1;
             k.ox = h.x;
             k.oy = h.y;
-            const drop = dropNear(R, h.x, h.y, CRAWLER.dropNear);
+            // (back with it as it hops back, never toward the drop: his pick of 31 Oct to the art chat, “Yes, no drop-pushes
+            // (Recommended)”, offered as: the crawler drags you to itself; CRAWLER.toDrop keeps the old way, off)
+            const drop = CRAWLER.toDrop ? dropNear(R, h.x, h.y, CRAWLER.dropNear) : null;
             let dx = drop ? drop.x - h.x : -m.fx;
             let dy = drop ? drop.y - h.y : -m.fy;
             const d = Math.hypot(dx, dy) || 1;

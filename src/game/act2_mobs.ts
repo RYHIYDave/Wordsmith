@@ -10,8 +10,13 @@
 // A lair's guardian pack is the floor's medium kind (the descent's was the brute: an Act 1 kind).
 
 import type { RNG } from '../engine/rng';
-import { act2Floor } from './act1';
+import { cityFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
+import { KNIGHT_TUNE } from './act1_rules/kknight';
+import { HUSH_TUNE } from './act1_rules/hshape';
+import { RIME_TUNE } from './act1_rules/rshade';
+import { RIME_SHADE_ON } from '../art/rime_shade';
+import { SWAN } from './act1_rules/swan';
 import { PACK_BY_SIZE, sizeOf } from './defs';
 import type { MonsterKind } from './types';
 
@@ -50,9 +55,48 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     // (the city's own on every floor of the Hush, as told him on 19 Oct: "floor 11's Hushed townsfolk on later floors too")
     { kind: 'hushed', weight: 1 },
   ],
+  // ACT 2, PART TWO, THE HIGH CITY (game/act1.ts HIGH_CITY): floor 16, the Swan Gardens (his doc: "the Hushed gardeners and
+  // grooms, the palace guard, and the swans"); nothing of the Hush's floors (his "let’s keep the acts separate" held for the
+  // two parts too: the High City's Hushed are the court's own)
+  16: [
+    { kind: 'swan', weight: 5 },
+    { kind: 'gardener', weight: 4 },
+    { kind: 'groom', weight: 4 },
+    { kind: 'pguard', weight: 3 },
+  ],
+  // floor 17, the Masque (his doc: "masked dancers who waltz until they notice you, footmen, and the Silent Order among the
+  // guests"): the dancers the most, in crowds
+  17: [
+    { kind: 'dancer', weight: 6 },
+    { kind: 'footman', weight: 3 },
+    { kind: 'order', weight: 3 },
+  ],
+  // floor 18, the Glass Gallery (his doc: "ladies-in-waiting, the queen's guard, and your own reflections, which step out of
+  // the mirrors and fight with your class's moves")
+  18: [
+    { kind: 'reflection', weight: 4 },
+    { kind: 'lady', weight: 5 },
+    { kind: 'qguard', weight: 3 },
+  ],
+  // floor 19, the Keep (his doc: "the king's knights, still loyal and silent in their armour, crossbowmen on the walls, and the
+  // Silent Order's last"): the knights few (his word to the art chat: “huge and slow, one or two at a time”)
+  19: [
+    { kind: 'xbow', weight: 5 },
+    { kind: 'order', weight: 4 },
+    { kind: 'kknight', weight: 2 },
+  ],
+  // floor 20, the Quiet Tower (his doc: "the Hush in its own shapes, the Silent Order's last masks, and shadows of the four
+  // royals"): the Hush's shapes the most, in swarms (the art's brief: "about the knight's size, in swarms")
+  20: [
+    { kind: 'hshape', weight: 6 },
+    { kind: 'order', weight: 3 },
+    { kind: 'rshadow', weight: 3 },
+    // (the Rime Shade, behind RIME_SHADE_ON: two or three together, so that their lines cross, the art chat's word)
+    { kind: 'rshade', weight: 4 },
+  ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
-export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden' };
+export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden', 16: 'pguard', 17: 'footman', 18: 'qguard', 19: 'kknight', 20: 'rshadow' };
 /** The tiny ones, never a yellow pack (they are not led). */
 const TINY = new Set<MonsterKind>(['rat']);
 
@@ -64,14 +108,23 @@ export function act2Ready(k: MonsterKind): boolean {
 function standIn(k: MonsterKind): MonsterKind {
   return act2Ready(k) ? k : act2Ready('hushed') ? 'hushed' : 'dagger';
 }
-
 /** A pack for a floor of the Hush: its kind, and how many. A lair's is its guardian's: one big one and its own. */
 export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'champion'): { kind: MonsterKind; size: number } {
-  const n = act2Floor(depth) || 11;
-  if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: rng.int(3, 4) };
-  const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)));
+  const n = cityFloor(depth) || 11;
+  // (THE HIGH CITY, FLOOR 19: the king's knights come one at a time, his pick to the art chat, “Huge and slow, one each”; their
+  // lair, the barracks, two: game/act1_rules/kknight.ts KNIGHT_TUNE)
+  const knight = (k: MonsterKind): boolean => k === 'kknight' && act2Ready('kknight');
+  if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: knight(ACT2_GUARD[n]) ? KNIGHT_TUNE.lair : rng.int(3, 4) };
+  const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)) && (m.kind !== 'rshade' || RIME_SHADE_ON.on));
   const pick = rng.weighted(list, (m) => m.weight);
   const kind = standIn(pick.kind);
-  const [lo, hi] = PACK_BY_SIZE[sizeOf(kind)];
+  // (THE HIGH CITY, FLOOR 16: the swans come in flocks, his “Knee-high, in flocks”: a pack of them bigger than another small
+  // kind's, SWAN.flock, game/act1_rules/swan.ts)
+  if (knight(kind)) return { kind, size: KNIGHT_TUNE.pack };
+  // (FLOOR 20: the Hush's shapes come in swarms, the art's brief: game/act1_rules/hshape.ts HUSH_TUNE)
+  if (kind === 'hshape') return { kind, size: rng.int(HUSH_TUNE.swarm[0], HUSH_TUNE.swarm[1]) };
+  // (the Rime Shades two or three together: game/act1_rules/rshade.ts RIME_TUNE)
+  if (kind === 'rshade') return { kind, size: rng.int(RIME_TUNE.pack[0], RIME_TUNE.pack[1]) };
+  const [lo, hi] = kind === 'swan' ? SWAN.flock : PACK_BY_SIZE[sizeOf(kind)];
   return { kind, size: rng.int(lo, hi) };
 }

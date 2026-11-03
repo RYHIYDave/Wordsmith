@@ -892,6 +892,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   globe(g, lifeX, lifeY, 14, h.life / d.maxLife, THEME.life, THEME.lifeHi, lifeRim);
   drawText(g, `${Math.ceil(h.life)}`, lifeX, lifeY - 3, P.white, { align: 'center', font: 'small', shadow: P.ink });
   ui.mark('life', lifeX - 15, lifeY - 15, 31, 31);
+  // (THE WARLOCK'S PACT is a bar over his head, at his pick: render/render.ts)
   // (mana is only there to be seen when it is what limits the slow abilities)
   if (byMana) {
     globe(g, W - 20, gy, 14, h.mana / d.maxMana, THEME.mana, THEME.manaHi, THEME.edgeHi);

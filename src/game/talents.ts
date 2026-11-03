@@ -30,6 +30,7 @@
 //             yes to TECHNIQUE as this chat listed it: "Yes, as listed (Recommended)".)
 
 import type { ClassId, StatKey, WordId } from './types';
+import { VETERAN } from './veteran';
 
 /**
  * THE SWITCH: off, there are no talents and no page for them (the game as it was). ON since Version
@@ -87,6 +88,13 @@ export interface TalentDef {
    * switch off.
    */
   now?: { text: string; name?: string; word?: WordId | null };
+  /**
+   * A pick of two that comes with it (the Tinkerer's Gun Arm and Contraption, his “On the talent itself (Recommended)”, 31 Oct
+   * 2026): the first is hers as she takes it; on its card, the other's button switches to it. Game.pickOf says which.
+   */
+  pick?: { ids: readonly [string, string]; names: readonly [string, string] };
+  /** (on a drafted tree, `draft`) this one is made to work already. */
+  works?: boolean;
 }
 
 export interface TalentPath {
@@ -97,10 +105,19 @@ export interface TalentPath {
   label: { node: string; side: 'left' | 'right' | 'above' | 'below' };
 }
 
-/** A faint picture behind a tree, so that its shape reads: a patch filled between talents, or a sword drawn through them. */
+/**
+ * A faint picture behind a tree, so that its shape reads: a patch filled between talents, or a sword drawn through them; (the
+ * new classes' trees, 28 Oct 2026) a talon drawn along talents to a hooked point past the last; a gear's ring and teeth through
+ * talents round a hub talent; a rounded block round talents (the fist's fingers, its back, its thumb).
+ */
 export type TalentFigure =
   | { kind: 'fill'; path: string; ids: readonly string[] }
-  | { kind: 'sword'; path: string; pommel: string; guard: string; tip: string; quillons: readonly [string, string] };
+  | { kind: 'sword'; path: string; pommel: string; guard: string; tip: string; quillons: readonly [string, string] }
+  | { kind: 'talon'; path: string; ids: readonly string[]; width: number; hook: number }
+  | { kind: 'gear'; path: string; hub: string; ring: readonly string[]; spokes: number }
+  | { kind: 'round'; path: string; ids: readonly string[]; pad: number /* in the shape's own units */ }
+  // (the Veteran's: a globe of glass through the talents round its rim, and over it, round the talent `fire`, its flames)
+  | { kind: 'globe'; path: string; ids: readonly string[]; fire?: string };
 
 export interface TalentTree {
   cls: ClassId;
@@ -112,6 +129,12 @@ export interface TalentTree {
   root?: readonly [number, number];
   /** The faint pictures behind it (the arrow's feathers and head, the two swords). */
   figures?: readonly TalentFigure[];
+  /** Laid out as round as it is drawn (the gear, the fist), not stretched to the page's room. */
+  square?: boolean;
+  /** The box its shape is laid out in (left, top, right, bottom, in its own units), where that is more than its talents span (room for the claw's points). */
+  room?: readonly [number, number, number, number];
+  /** Its talents' cards say what they will do, but none of them does it yet (a tree drafted, shown to the owner first). */
+  draft?: boolean;
 }
 
 // ---- the mage: three paths ---------------------------------------------------------------------
@@ -154,6 +177,25 @@ const SHAFT = '#c8a070';
 const TRAPS = '#b0e05a';
 const ARROWS = '#9cc8ff';
 
+/** A page built to show the Ranger's companions says so (esbuild's define). */
+declare const __COMPANIONS__: boolean | undefined;
+/**
+ * THE RANGER'S COMPANIONS (the main chat, from 28 Oct 2026, 23:09): the owner's words, “I’d like the ranger to have a passive
+ * that summons a hawk companion that applies PRECISE on hit, a snake companion, that applies “of POISON”, and a third
+ * something I need help with”; 23:10, “And that should be an Or for those companions.  You pick one, not all three”; his
+ * picks, the hawk “It marks its prey (Recommended)”, “One at a time, I pick”, “Any time in town (Recommended)”; and to the
+ * third, offered the wolf, the bat, the fox and the tortoise: “Okay maybe we have two separate passive with three each cause I
+ * love all of these.  Let’s put them opposite each other on the tree so if you want one companion that’s fine but if you want
+ * two it’s going to take some investment.  So we need 6 total”. So two talents on his tree, one on each feather, opposite
+ * each other: the HUNTING COMPANION (the hawk, the snake or the wolf) and the WILD COMPANION (the bat, the fox or the
+ * tortoise), each three points from where the tree begins, both six. Off until he has seen them and said yes.
+ */
+export const COMPANIONS = { on: typeof __COMPANIONS__ !== 'undefined' && __COMPANIONS__ === true };
+const COMPANION_TALENTS: TalentDef[] = [
+  { id: 'wildcompanion', name: 'Wild Companion', big: true, path: 'wind', at: [1.6, 0.3], from: ['windrunner'], text: 'A bat, a fox or a tortoise fights at your side. Pick it in town.' },
+  { id: 'huntcompanion', name: 'Hunting Companion', big: true, path: 'eye', at: [1.6, 3.7], from: ['venom'], text: 'A hawk, a snake or a wolf fights at your side. Pick it in town.' },
+];
+
 const RANGER: TalentTree = {
   cls: 'ranger',
   shape: 'an arrow',
@@ -184,10 +226,12 @@ const RANGER: TalentTree = {
     { id: 'farsight', name: 'Far Sight', big: true, path: 'shaft', at: [7.8, 2], from: ['minefield', 'hail', 'piercing'], text: 'The further the enemy, the harder you hit: up to +50% at eight tiles.', now: { text: 'An arrow that has flown past eight tiles is a certain critical.' } },
     // the nock, between the feathers: a third way onto the shaft
     { id: 'steadyaim', name: 'Steady Aim', big: false, path: 'shaft', at: [0.15, 2], from: ['fleet', 'keeneye'], text: 'Standing still, your attacks hit 15% harder.', now: { text: 'Stand still for a second, and your next arrow goes through every enemy in its line.' } },
+    // (THE RANGER'S COMPANIONS: one on each feather, opposite each other; off until his yes)
+    ...(COMPANIONS.on ? COMPANION_TALENTS : []),
   ],
   figures: [
-    { kind: 'fill', path: 'wind', ids: ['fleet', 'windrunner', 'quickdraw', 'steadyaim'] },
-    { kind: 'fill', path: 'eye', ids: ['keeneye', 'venom', 'quickdraw', 'steadyaim'] },
+    { kind: 'fill', path: 'wind', ids: COMPANIONS.on ? ['fleet', 'wildcompanion', 'quickdraw', 'steadyaim'] : ['fleet', 'windrunner', 'quickdraw', 'steadyaim'] },
+    { kind: 'fill', path: 'eye', ids: COMPANIONS.on ? ['keeneye', 'huntcompanion', 'quickdraw', 'steadyaim'] : ['keeneye', 'venom', 'quickdraw', 'steadyaim'] },
     { kind: 'fill', path: 'shaft', ids: ['huntersmark', 'widetraps', 'minefield', 'farsight', 'hail', 'splitshot'] },
   ],
 };
@@ -231,7 +275,246 @@ const WARRIOR: TalentTree = {
   ],
 };
 
-export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE };
+// ---- THE NEW CLASSES' TREES (the main chat, 28 Oct 2026; drafted, then every talent made to work and filmed for him, his
+// yes to each tree in play by 19:43: the Tinkerer's, “Good, keep going (Recommended)”). Shown to him as a page, “Three New Skill Trees” (https://claude.ai/artifact/GhWB8vecSeRyHxDGQQWKHA,
+// its source docs/talents/new_classes/index.html), his answers by 17:47 (Eastern): the Warlock's, “Yes, keep it
+// (Recommended)”; the Tinkerer's, “Yes, keep it (Recommended)”; the Brawler's, “Keep it, except change the names of “one
+// target” and “crowd””, then “Speed and Power”.
+// His words to the main chat that day, asked what next with the three in the game: “Skill trees first”; the
+// paths, the Warlock's, “Man and Demon”; the Tinkerer's, “I think for her I’d like her to start with golem and a vial toss.
+// Then in the skill tree you can swap the vial toss to a contraption that throws the vials”, then, of her paths, “Vials and
+// Golem” (offered as: two paths, with the gold talents mixed into both); the Brawler's, “One target and Crowd”; their shapes,
+// “Claw, gear, fist (Recommended)”. His ideas from before, each in: the Tinkerer's gold (28 Oct, by 00:07: “For future
+// reference I’d like some of her skill tree to be gold based like increased % damage based on 1% gold stash amount or
+// something like that”: FORTUNE); her Golem's tesla coil (by 00:50: “Maybe put a cannon or a tesla coil on his other arm or
+// whatever”: the cannon picked, the coil here); the Brawler's (24 Oct, 20:42: “once we build his skill tree, it will have
+// increased uppercut or body blows always bleed, something like that”: BIG UPPERCUT, BLEEDERS; 25 Oct, 06:57: “Then let’s
+// have a spot on the skill tree that after a successful counter you’re next attack is the final hit in the combo, either
+// uppercut or haymaker”: SET-UP).
+
+// ---- the warlock: a demon's claw ---------------------------------------------------------------------
+//   His talents at work filmed in the game for him (warlock_tree_film.mp4), his word by 19:03 (Eastern): “Looks good”; Phantom
+//   Step filmed (phantom_film.mp4), by 19:41: “Yes, keep it (Recommended)”.
+//   Reaching right from the wrist: the DEMON from the back of the hand (its spur up off it), the MAN from the heel of it (the
+//   thumb down off it); they meet at the knuckle, the pact's, where the three talons come out: the demon's on top, the pact's
+//   in the middle, the man's below, each hooking down at its point.
+const MAN = '#b49cff';
+const DEMON = '#ff5a3c';
+const PACT = '#9a78c8';
+
+const WARLOCK_TREE: TalentTree = {
+  cls: 'warlock',
+  shape: 'a demon’s claw',
+  room: [0, 0, 5.6, 4.2],
+  paths: [
+    { id: 'demon', name: 'DEMON', color: DEMON, label: { node: 'hunger', side: 'above' } },
+    { id: 'man', name: 'MAN', color: MAN, label: { node: 'branded', side: 'below' } },
+    { id: 'pact', name: '', color: PACT, label: { node: 'blazingarm', side: 'above' } },
+  ],
+  talents: [
+    // THE DEMON: the back of the hand, its spur, the top talon
+    { id: 'hunger', name: 'Hunger', big: false, works: true, path: 'demon', at: [0, 0.6], from: [], text: 'Every kill the demon makes puts two seconds back on its pact.' },
+    { id: 'terribleroar', name: 'Terrible Roar', big: false, works: true, path: 'demon', at: [1.1, 1.0], from: ['hunger'], text: 'The change’s roar curses everything it throws back, and they run from him for two seconds.' },
+    { id: 'feast', name: 'Feast', big: false, works: true, path: 'demon', at: [1.65, 0.0], from: ['terribleroar'], text: 'Every kill the demon makes heals him a tenth of his life.' },
+    { id: 'bloodlust', name: 'Bloodlust', big: false, works: true, path: 'demon', at: [3.2, 0.95], from: ['blazingarm'], text: 'Every kill makes the demon’s rakes quicker, up to twice as quick, until it burns out.' },
+    { id: 'hellwave', name: 'Hellwave', big: false, works: true, path: 'demon', at: [4.2, 0.8], from: ['bloodlust'], text: 'Every third rake throws a wave of hellfire on ahead, through everything in its way.' },
+    { id: 'damnedsouls', name: 'Damned Souls', big: true, works: true, path: 'demon', at: [5.1, 1.35], from: ['hellwave'], text: 'Every enemy the demon kills rises as a burning soul that flies into the nearest enemy, cursing it and setting it alight.' },
+    // THE MAN: the heel of the hand, the thumb, the bottom talon
+    { id: 'branded', name: 'Branded', big: false, works: true, path: 'man', at: [0, 3.4], from: [], text: 'Every Hellfire Bolt curses what it hits.' },
+    { id: 'hexchain', name: 'Hex Chain', big: false, works: true, path: 'man', at: [1.1, 3.0], from: ['branded'], text: 'A bolt that hits a cursed enemy leaps on to the next cursed one near it, up to three times, burning each.' },
+    { id: 'phantomstep', name: 'Phantom Step', big: true, works: true, path: 'man', at: [1.65, 4.0], from: ['hexchain'], text: 'His Smoke Step leaves his shadow where he stood: for two seconds, the enemies go after it instead of him.' },
+    { id: 'withering', name: 'Withering', big: false, works: true, path: 'man', at: [3.2, 3.05], from: ['blazingarm'], text: 'Cursed enemies move and strike at half speed.' },
+    { id: 'pyre', name: 'Pyre', big: false, works: true, path: 'man', at: [4.2, 3.25], from: ['withering'], text: 'A cursed enemy that dies bursts in hellfire, striking everything near it.' },
+    { id: 'bounddemon', name: 'Bound Demon', big: true, works: true, path: 'man', at: [5.0, 3.95], from: ['pyre'], text: 'The demon no longer takes him over: it tears out and fights at his side until the pact runs dry, while he fights on as a man.' },
+    // THE PACT: the knuckle, both the demon's and the man's, and the middle talon
+    { id: 'blazingarm', name: 'Blazing Arm', big: true, works: true, path: 'pact', at: [2.2, 2.0], from: ['terribleroar', 'hexchain'], text: 'While his pact is full and he has not changed, his arm blazes: every Hellfire Bolt bursts, cursing and burning all near it.' },
+    { id: 'souldebt', name: 'Soul Debt', big: false, works: true, path: 'pact', at: [3.4, 2.0], from: ['blazingarm'], text: 'Every cursed enemy that dies fills a tenth of his pact.' },
+    { id: 'lastrites', name: 'Last Rites', big: true, works: true, path: 'pact', at: [4.4, 2.4], from: ['souldebt'], text: 'As the demon burns out, Damning goes off by itself: every cursed or burning enemy near him pays all its burns at once.' },
+  ],
+  figures: [
+    { kind: 'fill', path: 'pact', ids: ['hunger', 'terribleroar', 'blazingarm', 'hexchain', 'branded'] },
+    { kind: 'talon', path: 'demon', ids: ['terribleroar', 'feast'], width: 3, hook: 0 },
+    { kind: 'talon', path: 'man', ids: ['hexchain', 'phantomstep'], width: 3, hook: 0 },
+    { kind: 'talon', path: 'demon', ids: ['blazingarm', 'bloodlust', 'hellwave', 'damnedsouls'], width: 6, hook: 0.9 },
+    { kind: 'talon', path: 'pact', ids: ['blazingarm', 'souldebt', 'lastrites'], width: 6, hook: 0.9 },
+    { kind: 'talon', path: 'man', ids: ['blazingarm', 'withering', 'pyre', 'bounddemon'], width: 6, hook: 0.9 },
+  ],
+};
+
+// ---- the tinkerer: a gear -------------------------------------------------------------------------------
+//   Twelve teeth round a hub. From the left tooth (her blast jump's, both paths') the VIALS go round over the top and the
+//   GOLEM round under the bottom, to meet at the right tooth; the hub is her gold (FORTUNE, off the left tooth); the spoke
+//   down from the top tooth is the swap to the CONTRAPTION (reached from the top tooth or the hub); the spoke up from the
+//   bottom tooth, her second Golem. Her talents at work filmed for him (tinkerer_tree_film.mp4), by 19:43: “Good, keep going
+//   (Recommended)”.
+const VIALS = '#7ae0c0';
+const GOLEMS = '#e8a858';
+const WORKS = '#b8c0d0';
+const GOLD = '#ffd448';
+const R3 = Math.sqrt(3);
+
+const TINKERER_TREE: TalentTree = {
+  cls: 'tinkerer',
+  shape: 'a gear',
+  square: true,
+  paths: [
+    { id: 'vials', name: 'VIALS', color: VIALS, label: { node: 'tar', side: 'left' } },
+    { id: 'golem', name: 'GOLEM', color: GOLEMS, label: { node: 'shrapnel', side: 'left' } },
+    { id: 'works', name: '', color: WORKS, label: { node: 'bombsaway', side: 'left' } },
+    { id: 'gold', name: '', color: GOLD, label: { node: 'fortune', side: 'below' } },
+  ],
+  talents: [
+    // the left tooth: both paths'
+    { id: 'bombsaway', name: 'Bombs Away', big: false, works: true, path: 'works', at: [-2, 0], from: [], text: 'As she comes down from her Blast Jump, a second bomb goes off where she lands.' },
+    // the hub: her gold (his idea)
+    { id: 'fortune', name: 'Fortune', big: false, works: true, path: 'gold', at: [0, 0], from: ['bombsaway'], text: 'She hits harder the more gold she carries: 1% of her gold, as a percent. 1,000 gold, 10% more.' },
+    // THE VIALS, round over the top
+    { id: 'clustervials', name: 'Cluster Vials', big: false, works: true, path: 'vials', at: [-R3, -1], from: ['bombsaway'], text: 'Every vial bursts into three little ones that bounce out and burst again.' },
+    { id: 'tar', name: 'Tar', big: false, works: true, path: 'vials', at: [-1, -R3], from: ['clustervials'], text: 'Her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl.' },
+    { id: 'madmixture', name: 'Mad Mixture', big: true, works: true, path: 'vials', at: [0, -2], from: ['tar'], text: 'Every vial carries a brew at random, burning, freezing or poisoning, on top of its own words.' },
+    // (THE CONTRAPTION'S PICK, his word to the art chat, 31 Oct, 00:04: “And have the same option when swapping vial to
+    // contraption”, “Energy bolts, and let’s make the contraption throw little bombs.  She’s marketed as a demolitionist and we
+    // need to fit that in better”; picked on the talent, his “On the talent itself (Recommended)”)
+    { id: 'contraptions', name: 'Contraption', big: true, works: true, path: 'vials', at: [0, -1], from: ['madmixture', 'fortune'], text: 'Her tap sets down a Contraption in place of the Vial Toss, three at once. It fires her pick: little bombs (Dexterity) or energy bolts (Int).', pick: { ids: ['bombs', 'energy'], names: ['BOMBS', 'ENERGY'] } },
+    { id: 'alchemy', name: 'Alchemy', big: false, works: true, path: 'vials', at: [1, -R3], from: ['madmixture'], text: 'An enemy her vials kill always drops gold.' },
+    { id: 'thebigone', name: 'The Big One', big: true, works: true, path: 'vials', at: [R3, -1], from: ['alchemy'], text: 'Every fifth vial is a big one: it bursts three times as wide and knocks everything down.' },
+    // THE GOLEM, round under the bottom
+    { id: 'lightningrod', name: 'Lightning Rod', big: false, works: true, path: 'golem', at: [-R3, 1], from: ['bombsaway'], text: 'For three seconds after its ground pound, every enemy near the Golem goes after it instead of her.' },
+    { id: 'shrapnel', name: 'Shrapnel', big: false, works: true, path: 'golem', at: [-1, R3], from: ['lightningrod'], text: 'The Golem’s blows burst where they land, striking everything near.' },
+    // (THE GUN ARM in place of the Tesla Coil, his word to the art chat, 30 Oct, 23:55: “maybe we want a passive that makes him
+    // ranged where his hold becomes a big charged shot”, and 31 Oct, 00:00, “I want both”: “Yes, one pick, two arms
+    // (Recommended)”; to the main chat, 31 Oct: where, “Turn Tesla Coil into it (Recommended)”; let go early, “A weaker shot
+    // fires”)
+    { id: 'gunarm', name: 'Gun Arm', big: false, works: true, path: 'golem', at: [0, 2], from: ['shrapnel'], text: 'The Golem fights from range with a gun arm, her pick: cannon (Dexterity) or tesla coil (Int). Her hold charges a great shot.', pick: { ids: ['cannon', 'tesla'], names: ['CANNON', 'TESLA COIL'] } },
+    { id: 'markii', name: 'Mark II', big: true, works: true, path: 'golem', at: [0, 1], from: ['gunarm'], text: 'She can whistle out a second Golem: two at once.' },
+    { id: 'prospector', name: 'Prospector', big: false, works: true, path: 'golem', at: [1, R3], from: ['gunarm'], text: 'Every ground pound digs up a handful of gold.' },
+    { id: 'overdrive', name: 'Overdrive', big: true, works: true, path: 'golem', at: [R3, 1], from: ['prospector'], text: 'Her whistle sends the Golem into overdrive for five seconds: it moves and strikes twice as fast.' },
+    // the right tooth: both paths'
+    { id: 'growthserum', name: 'Growth Serum', big: true, works: true, path: 'works', at: [2, 0], from: ['thebigone', 'overdrive'], text: 'A vial of hers that bursts by her Golem makes it grow: twice as big and twice as strong for five seconds.' },
+  ],
+  figures: [
+    { kind: 'gear', path: 'works', hub: 'fortune', ring: ['bombsaway', 'clustervials', 'tar', 'madmixture', 'alchemy', 'thebigone', 'growthserum', 'overdrive', 'prospector', 'gunarm', 'shrapnel', 'lightningrod'], spokes: 4 },
+  ],
+};
+
+// ---- the brawler: a fist ----------------------------------------------------------------------------------
+//   Punching right, seen from the side: the wrist on the left (SPEED's start above, POWER's below), the back of the hand, the
+//   four fingers curled into a column of knuckles at the front (SPEED's two on top, POWER's two below), and across the middle
+//   of them the thumb, both paths' (his slip and counter), from its root where the two meet. The paths were drafted as ONE
+//   TARGET and CROWD, his words; shown the tree, 28 Oct 2026, by 17:47 (Eastern): “Keep it, except change the names of “one
+//   target” and “crowd””, and asked which, “Speed and Power”. His talents at work filmed for him (brawler_tree_film.mp4), by
+//   19:41: “Good, keep going (Recommended)”.
+const SPEED = '#ff7a50';
+const POWER = '#5ab0ff';
+const COUNTER = '#e8d090';
+
+const BRAWLER_TREE: TalentTree = {
+  cls: 'brawler',
+  shape: 'a fist',
+  square: true,
+  room: [-0.35, -0.5, 4.0, 4.5],
+  paths: [
+    { id: 'speed', name: 'SPEED', color: SPEED, label: { node: 'doublejab', side: 'left' } },
+    { id: 'power', name: 'POWER', color: POWER, label: { node: 'widecross', side: 'left' } },
+    { id: 'counter', name: '', color: COUNTER, label: { node: 'bobweave', side: 'above' } },
+  ],
+  talents: [
+    // SPEED (the taps, for one enemy): the wrist's top, the back of the hand, the top two fingers
+    { id: 'doublejab', name: 'Double Jab', big: false, works: true, path: 'speed', at: [0, 1.0], from: [], text: 'His jab is two quick jabs.' },
+    { id: 'tenderize', name: 'Tenderize', big: false, works: true, path: 'speed', at: [1.0, 0.7], from: ['doublejab'], text: 'Every punch he lands on the same enemy makes it take 5% more from him, up to 50%, until he hits another.' },
+    { id: 'heavyhands', name: 'Heavy Hands', big: false, works: true, path: 'speed', at: [2.3, 0], from: ['tenderize'], text: 'Heavy no longer slows his taps.', word: 'heavy' },
+    { id: 'biguppercut', name: 'Big Uppercut', big: true, works: true, path: 'speed', at: [3.4, 0], from: ['heavyhands'], text: 'His uppercut hits twice as hard and throws the enemy up: it comes down stunned for two seconds.' },
+    { id: 'flurry', name: 'Flurry', big: false, works: true, path: 'speed', at: [2.45, 1.0], from: ['tenderize'], text: 'After the uppercut lands, his next tap is a hook again: hook, uppercut, hook, uppercut, without a break.' },
+    { id: 'knockout', name: 'Knockout', big: true, works: true, path: 'speed', at: [3.55, 1.0], from: ['flurry'], text: 'His uppercut knocks out any enemy below a fifth of its life (a boss is stunned three seconds).' },
+    // POWER (the holds, for a crowd): the wrist's bottom, the back of the hand, the bottom two fingers
+    { id: 'widecross', name: 'Wide Cross', big: false, works: true, path: 'power', at: [0, 3.0], from: [], text: 'His cross strikes every enemy in front of him, not only the first.' },
+    { id: 'bleeders', name: 'Bleeders', big: false, works: true, path: 'power', at: [1.0, 3.3], from: ['widecross'], text: 'Body blows always make them bleed: each one it hits loses half the blow again over three seconds.' },
+    { id: 'ironchin', name: 'Iron Chin', big: false, works: true, path: 'power', at: [2.45, 3.0], from: ['bleeders'], text: 'Winding up a hold, nothing can knock him back or stagger him, and he takes a third less harm.' },
+    { id: 'tenpins', name: 'Ten Pins', big: true, works: true, path: 'power', at: [3.55, 3.0], from: ['ironchin'], text: 'Every enemy the haymaker’s cannonball bowls over is launched too, and bowls over more down the line.' },
+    { id: 'pinball', name: 'Pinball', big: false, works: true, path: 'power', at: [2.3, 4.0], from: ['bleeders'], text: 'An enemy he knocks back hurts what it is knocked into, and knocks that back too.' },
+    { id: 'shockwave', name: 'Shockwave', big: true, works: true, path: 'power', at: [3.4, 4.0], from: ['pinball'], text: 'His holds send a wave of air on ahead: it strikes everything in a line three tiles long.' },
+    // the thumb, from its root: both paths', his slip and counter
+    { id: 'bobweave', name: 'Bob and Weave', big: false, works: true, path: 'counter', at: [1.45, 2.0], from: ['tenderize', 'bleeders'], text: 'When his counter lands, his slip is ready again at once.' },
+    { id: 'slipreflex', name: 'Slip Reflex', big: false, works: true, path: 'counter', at: [2.4, 2.0], from: ['bobweave'], text: 'Once every six seconds, a blow that would hit him is slipped by itself, and he counters.' },
+    { id: 'setup', name: 'Set-Up', big: true, works: true, path: 'counter', at: [3.45, 2.05], from: ['slipreflex'], text: 'After a counter lands, his next press is the combo’s last punch: a tap the uppercut, a hold the haymaker.' },
+  ],
+  figures: [
+    { kind: 'round', path: 'counter', ids: ['doublejab', 'widecross'], pad: 0.32 },
+    { kind: 'round', path: 'counter', ids: ['tenderize', 'bobweave', 'bleeders'], pad: 0.55 },
+    { kind: 'round', path: 'speed', ids: ['heavyhands', 'biguppercut'], pad: 0.44 },
+    { kind: 'round', path: 'speed', ids: ['flurry', 'knockout'], pad: 0.44 },
+    { kind: 'round', path: 'counter', ids: ['slipreflex', 'setup'], pad: 0.4 },
+    { kind: 'round', path: 'power', ids: ['ironchin', 'tenpins'], pad: 0.44 },
+    { kind: 'round', path: 'power', ids: ['pinball', 'shockwave'], pad: 0.44 },
+  ],
+};
+
+// ---- the Veteran: three globes (game/veteran.ts VETERAN; his 3 Nov 2026, 09:18: “And redo the skill tree to better match his
+//   new style”) ----------------------------------------------------------------------------------------------------------
+//   His three globes over his head, as they are over him in a fight: PUNCH (green, a tap), JUMP (white, a swipe)
+//   and KICK (hot orange, a hold), side by side. Each globe is four talents round its rim, begun at its bottom, up either
+//   side to its top; over the punch and the kick globes, their fire (a swipe then a tap, the flying uppercut; a swipe then a
+//   hold, the flying knee and the spinning jump kick); over the jump globe, the lock that joins all three, reached from any
+//   globe's top. Nothing of the old Brawler's. Shown to him as a draft (the page “The Veteran's Tree”, https://claude.ai/artifact/6u1Xx6DLPByUGWrPf9menQ), his
+//   pick by 09:42: “Yes, build it (Recommended)”; every talent made to work as its card says (game.ts, “THE VETERAN”; numbers,
+//   game/veteran.ts VET_TALENTS).
+// (his punches green, his words, 3 Nov 2026, 10:44: “the brawler is Str/dex, so I think we change the color of the globe for a
+// punch to green and the kicks stay orange/red”: the art chat's emerald, #18c060)
+const VET_PUNCH = '#18c060';
+const VET_KICK = '#e8561a';
+const VET_JUMP = '#e8eef8';
+
+const VETERAN_TREE: TalentTree = {
+  cls: 'brawler',
+  shape: 'three globes',
+  square: true,
+  room: [-1.35, -1.05, 7.95, 3.45],
+  paths: [
+    { id: 'punch', name: 'PUNCH', color: VET_PUNCH, label: { node: 'vstiffjab', side: 'below' } },
+    { id: 'jump', name: 'JUMP', color: VET_JUMP, label: { node: 'vlightfeet', side: 'below' } },
+    { id: 'kick', name: 'KICK', color: VET_KICK, label: { node: 'vswitchkick', side: 'below' } },
+  ],
+  talents: [
+    // THE PUNCH GLOBE (his taps: the jab, the cross, the hook, the spinning elbow), and over it its fire, the flying uppercut
+    { id: 'vstiffjab', name: 'Stiff Jab', big: false, works: true, path: 'punch', at: [0, 3], from: [], text: 'His jab breaks off whatever an enemy is winding up: it has to start again.' },
+    // (his elemental upgrades, picked in the art chat, “Both (Recommended)”: a few in his tree, his examples a viper jab and a
+    // thunder knee; swapped in at his “Swap two in (Recommended)”, 3 Nov, by 09:53: Viper Jab for One-Two, Thunder Knee for Lights Out)
+    { id: 'vviperjab', name: 'Viper Jab', big: false, works: true, path: 'punch', at: [-1, 2], from: ['vstiffjab'], word: 'poison', text: 'His jab poisons whatever it hits.' },
+    { id: 'vguardup', name: 'Guard Up', big: false, works: true, path: 'punch', at: [1, 2], from: ['vstiffjab'], text: 'Between blows he keeps his fists up: a blow from in front of him does half harm.' },
+    { id: 'vknockdown', name: 'Knockdown', big: true, works: true, path: 'punch', at: [0, 1], from: ['vviperjab', 'vguardup'], text: 'The third punch of a combo knocks everything it hits off its feet: down for two seconds.' },
+    { id: 'vlauncher', name: 'Launcher', big: true, works: true, path: 'punch', at: [0, -0.3], from: ['vknockdown'], text: 'His flying uppercut throws up everything in its cone; while they hang in the air, his blows on them land twice as hard.' },
+    // THE JUMP GLOBE (his swipe: the dodge jump, and the jump spent on every fire globe)
+    { id: 'vlightfeet', name: 'Light Feet', big: false, works: true, path: 'jump', at: [3.3, 3], from: [], text: 'His jump comes back a third sooner: two fire globes in a combo, more often.' },
+    { id: 'vfirestarter', name: 'Fire Starter', big: false, works: true, path: 'jump', at: [2.3, 2], from: ['vlightfeet'], text: 'Landing from a dodge jump, his next tap or hold comes out in fire, the uppercut or the spin kick, and spends no jump.' },
+    { id: 'vstoke', name: 'Stoke', big: false, works: true, path: 'jump', at: [4.3, 2], from: ['vlightfeet'], text: 'Each fire move that lands takes two seconds off his jump’s wait.' },
+    { id: 'vhangtime', name: 'Hang Time', big: true, works: true, path: 'jump', at: [3.3, 1], from: ['vfirestarter', 'vstoke'], text: 'In the air nothing touches him: through every jump and every fire move, from take-off to landing.' },
+    // (the lock that joins the three globes, from any globe's top)
+    { id: 'vfullset', name: 'The Full Set', big: true, works: true, path: 'jump', at: [3.3, -0.3], from: ['vknockdown', 'vhangtime', 'vaftershock'], text: 'A combo locked with a punch, a kick and a fire globe in it ends in a finisher: its last blow lands three times as hard and throws them.' },
+    // THE KICK GLOBE (his holds: the round kick, the push kick), and over it its fire, the flying knee and the spinning jump kick
+    { id: 'vswitchkick', name: 'Switch Kick', big: false, works: true, path: 'kick', at: [6.6, 3], from: [], text: 'A hold straight after a tap is a switch kick: his round kick with half its wind-up.' },
+    { id: 'vlonglegs', name: 'Long Legs', big: false, works: true, path: 'kick', at: [5.6, 2], from: ['vswitchkick'], text: 'His kicks reach a tile further: 3½ tiles; the push kick and the spinning jump kick 4½.' },
+    { id: 'vwallslam', name: 'Wall Slam', big: false, works: true, path: 'kick', at: [7.6, 2], from: ['vswitchkick'], text: 'An enemy his kick drives into a wall, or into another enemy, is stunned for two seconds.' },
+    { id: 'vaftershock', name: 'Aftershock', big: true, works: true, path: 'kick', at: [6.6, 1], from: ['vlonglegs', 'vwallslam'], text: 'Every kick that lands sends a ring of force through the floor round the one he kicked: everything within a tile and a half of it falls.' },
+    { id: 'vthunderknee', name: 'Thunder Knee', big: true, works: true, path: 'kick', at: [6.6, -0.3], from: ['vaftershock'], word: 'lightning', text: 'His flying knee and spinning jump kick crack with lightning: it jumps on to three more enemies near each one they hit, and stuns them.' },
+  ],
+  figures: [
+    { kind: 'globe', path: 'punch', ids: ['vstiffjab', 'vviperjab', 'vknockdown', 'vguardup'], fire: 'vlauncher' },
+    { kind: 'globe', path: 'jump', ids: ['vlightfeet', 'vfirestarter', 'vhangtime', 'vstoke'] },
+    { kind: 'globe', path: 'kick', ids: ['vswitchkick', 'vlonglegs', 'vaftershock', 'vwallslam'], fire: 'vthunderknee' },
+  ],
+};
+
+export const TREES: Record<ClassId, TalentTree> = {
+  warrior: WARRIOR,
+  ranger: RANGER,
+  mage: MAGE,
+  warlock: WARLOCK_TREE,
+  tinkerer: TINKERER_TREE,
+  // (the Brawler made again as the Veteran: his tree, while VETERAN is on)
+  get brawler(): TalentTree {
+    return VETERAN.on ? VETERAN_TREE : BRAWLER_TREE;
+  },
+};
 
 /** What the talents do, in numbers: starting numbers, as their words on the cards say them (his to change). */
 export const TALENT_TUNE = {
@@ -410,6 +693,11 @@ export function talentMods(cls: ClassId, taken: readonly string[]): { stat: Stat
 }
 
 /** A taken list made safe (an old save, a damaged one): only this class's talents, each once, in an order that could have been taken, no more than the level gives. */
+/** A talent of class `cls`'s tree, by its id (undefined: none such). */
+export function talentById(cls: ClassId, id: string): TalentDef | undefined {
+  return TREES[cls]?.talents.find((t) => t.id === id);
+}
+
 export function cleanTalents(cls: ClassId, level: number, list: unknown): string[] {
   if (!Array.isArray(list)) return [];
   const out: string[] = [];

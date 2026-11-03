@@ -21,7 +21,7 @@
 // it on the cliffs: his rule) is for the eye alone: render/act1_pieces.ts lays it from the painted ground.
 
 import { RNG } from '../engine/rng';
-import { act1Floor, act2Floor } from './act1';
+import { act1Floor, cityFloor } from './act1';
 import { dressAct2 } from './act2_dress';
 import { blobDist, laneDist } from './act1_layout';
 import type { Land } from './act1_layout';
@@ -72,7 +72,151 @@ export interface Act1Dress {
    * floor's own dresser had laid the rest (game/act2_dress.ts); played by render/act1_pieces.ts as he comes near and sees it.)
    */
   moments?: HushMoment[];
+  /** (ACT1_SCENES) The scenes laid, each at its place: for the pictures and the tests. */
+  scenes?: { x: number; y: number; name: string }[];
 }
+
+/**
+ * ACT1_SCENES: A FLOOR'S THINGS WHERE THEY BELONG, as the first five floors' are (game/first5.ts SCENES). His words, 1 Nov 2026,
+ * 10:05: “Can you make sure the doodads go in places that seem proper as opposed to randomly?  I know we’ve talked about this a
+ * little with the camp sites and the markets”; when, “With each floor (Recommended)”. On a floor laid so, an open area's things
+ * stand together as one of its floor's scenes, in its outer band (his 17 Oct rule: “a little thinner in density and spread
+ * towards the edges”), and what stands at the far cliffs' feet is a scene of its own; nothing stands about at random but in
+ * the boss's ground. `floors`: those laid so, each shown to him first as pictures from the game.
+ */
+export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7, 8, 9, 10] };
+
+/** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
+interface Part {
+  dx: number;
+  dy: number;
+  name: string;
+  solid: boolean;
+  kind?: 'barrel' | 'urn';
+  /** It stands against the cliff (rock behind it, up and to the left on the screen); `alt`, the other place along the cliff it may take. */
+  wall?: boolean;
+  alt?: [number, number];
+}
+/** A scene of a floor of the descent: its name, its parts (the first `need` of them must all be laid for it to be laid at all), and how many a floor has at most. */
+interface Act1Scene {
+  name: string;
+  need: number;
+  most: number;
+  parts: Part[];
+}
+const S = (dx: number, dy: number, name: string): Part => ({ dx, dy, name, solid: true });
+const Ly = (dx: number, dy: number, name: string): Part => ({ dx, dy, name, solid: false });
+const Br = (dx: number, dy: number, kind: 'barrel' | 'urn'): Part => ({ dx, dy, name: kind, solid: true, kind });
+/** Against the cliff, along x by `d` or else along y by `d`. */
+const Wl = (d: number, name: string): Part => ({ dx: d, dy: 0, name, solid: false, wall: true, alt: [0, d] });
+/**
+ * THE SCENES OF EACH FLOOR OF THE DESCENT (in its open areas; turned any of four ways as they are laid). `face`: the scenes at
+ * the far cliffs' feet, the face's own piece at their place (its foot, the face up and to the left of it on the screen).
+ */
+export const ACT1_SCENE_SETS: Readonly<Record<number, { open: readonly Act1Scene[]; face: readonly Act1Scene[] }>> = {
+  6: {
+    open: [
+      // THE BLOCK YARD: cut blocks stacked in a row, two more set down before them, the sledge on its rollers at the row's end
+      // to drag them off, chippings, a water barrel
+      { name: 'the block yard', need: 3, most: 2, parts: [S(0, 0, 'stacked blocks'), S(2, 0, 'stacked blocks'), S(4, 0, 'stacked blocks'), S(1, 2, 'cut block'), S(3, 2, 'cut block'), S(6, 1, 'sledge on rollers'), Ly(2, 3, 'chippings'), Br(-2, 1, 'barrel')] },
+      // THE SPLITTING: a block marked to split and one split from the bed beside it, the splitting tools between them, chippings
+      // round them, a basket of chippings
+      { name: 'the splitting', need: 2, most: 2, parts: [S(0, 0, 'block marked to split'), S(2, 0, 'block split from the bed'), Ly(1, 1, 'splitting tools'), Ly(0, 2, 'chippings'), Ly(3, 2, 'chippings'), Br(-2, 0, 'urn')] },
+      // THE CRANE: the crane, a cut block waiting under its arm, blocks stacked by it, a cart of rubble
+      { name: 'the crane', need: 2, most: 1, parts: [S(0, 0, 'the crane'), S(2, 1, 'cut block'), S(-2, 2, 'stacked blocks'), S(3, -2, 'cart of rubble'), Ly(1, 3, 'chippings')] },
+      // THE OBELISK: the great obelisk being cut, its scaffolding beside it, the splitting tools and chippings at its foot
+      { name: 'the obelisk', need: 2, most: 1, parts: [S(0, 0, 'the great obelisk'), S(2, 0, 'scaffolding'), Ly(0, 2, 'splitting tools'), Ly(2, 2, 'chippings'), Br(-2, 1, 'barrel')] },
+      // THE CARTS: an empty cart and one of rubble left side by side, rubble tipped out by them
+      { name: 'the carts', need: 2, most: 1, parts: [S(0, 0, 'empty cart'), S(2, 0, 'cart of rubble'), Ly(1, 2, 'chippings'), Ly(3, 1, 'chippings')] },
+    ],
+    face: [
+      // THE GREAT FACE: the face half carved in the cliff, a ladder up the cliff beside it, scaffolding before it, the splitting
+      // tools and chippings at its foot
+      { name: 'the great face', need: 1, most: 1, parts: [Ly(0, 0, 'the great face, half carved'), Wl(3, 'ladder against the face'), S(2, 2, 'scaffolding'), Ly(1, 1, 'splitting tools'), Ly(0, 2, 'chippings')] },
+      // THE GREAT HAND: the hand half carved, a ladder, a rope and bucket let down, chippings
+      { name: 'the great hand', need: 1, most: 1, parts: [Ly(0, 0, 'the great hand, half carved'), Wl(3, 'ladder against the face'), Wl(-3, 'rope and bucket'), Ly(1, 1, 'chippings')] },
+      // THE WORKING FACE: a ladder, a rope and bucket, a block split from the bed at its foot
+      { name: 'the working face', need: 1, most: 3, parts: [Ly(0, 0, 'ladder against the face'), Wl(2, 'rope and bucket'), S(2, 2, 'block split from the bed'), Ly(1, 1, 'splitting tools')] },
+    ],
+  },
+  7: {
+    open: [
+      // THE LOST CARAVAN: the cult's supply cart gone over, its pack mule picked clean beside it, the rockfall that took them,
+      // bones and feathers where the flock fed
+      { name: 'the lost caravan', need: 2, most: 1, parts: [S(0, 0, "the cult's supply cart, gone over"), S(2, 1, 'a pack mule, picked clean'), S(-2, -1, 'rockfall'), Ly(1, 3, 'bones and feathers'), Ly(3, -1, 'snow drift')] },
+      // THE FLOCK'S CAGE: the cult's cage for the flock, its feather standard by it, a dead vulture and feathers about it
+      { name: "the flock's cage", need: 2, most: 1, parts: [S(0, 0, "the cult's cage for the flock"), S(2, -1, "the cult's feather standard"), Ly(2, 1, 'a dead vulture'), Ly(-1, 2, 'bones and feathers')] },
+      // THE FEEDING PERCH: the cult's perch, its feather standard, what was fed to the flock below it
+      { name: 'the feeding perch', need: 2, most: 2, parts: [S(0, 0, "the cult's perch"), S(2, 0, "the cult's feather standard"), Ly(0, 2, 'bones and feathers'), Ly(1, 1, 'a dead vulture')] },
+      // THE NEST ON THE ROCK: a vulture's nest on a perching rock, a dead snag, bones below
+      { name: 'the nest on the rock', need: 2, most: 1, parts: [S(0, 0, "a vulture's nest"), S(2, 1, 'a perching rock'), S(-2, 1, 'a dead snag'), Ly(1, 2, 'bones and feathers')] },
+      // THE WAYMARK: a cairn by the trail, a dead snag, snow drifted against them
+      { name: 'the waymark', need: 1, most: 2, parts: [S(0, 0, 'cairn'), S(2, 1, 'a dead snag'), Ly(1, 1, 'snow drift')] },
+      // THE FALL: rock come down across the trail's edge, a perching rock in it, snow over it
+      { name: 'the fall', need: 2, most: 2, parts: [S(0, 0, 'rockfall'), S(2, 0, 'a perching rock'), Ly(1, 1, 'snow drift'), Ly(-1, 1, 'bones and feathers')] },
+    ],
+    face: [
+      // THE NESTING CLIFF: a nest in the wall, a second along the cliff, bones and feathers below them
+      { name: 'the nesting cliff', need: 1, most: 2, parts: [Ly(0, 0, 'a nest in the wall'), Wl(3, 'a nest in the wall'), Ly(1, 1, 'bones and feathers')] },
+      // THE TETHERS: iron rings in the wall where the cult ties its birds, its perch before them
+      { name: 'the tethers', need: 1, most: 2, parts: [Ly(0, 0, 'iron rings in the wall'), S(2, 2, "the cult's perch"), Ly(1, 1, 'a dead vulture')] },
+      // THE ICE: icicles down the cliff, snow drifted at its foot
+      { name: 'the ice', need: 1, most: 3, parts: [Ly(0, 0, 'icicles in the wall'), Wl(2, 'icicles in the wall'), Ly(1, 1, 'snow drift')] },
+    ],
+  },
+  8: {
+    open: [
+      // THE CONVOY: the cult's wagon and behind it the obelisk on its dray, its stores and meal set down by them
+      { name: 'the convoy', need: 2, most: 1, parts: [S(0, 0, "the cult's wagon"), S(3, 0, 'an obelisk on its dray'), Br(1, 2, 'barrel'), Br(-1, 2, 'urn'), Ly(2, 2, 'sagebrush')] },
+      // THE BROKEN WAGON: the cult's wagon broken down against the boulder it struck, its meal spilled, driftwood
+      { name: 'the broken wagon', need: 2, most: 1, parts: [S(0, 0, "the cult's wagon, broken down"), S(-2, -1, 'red boulder'), Br(2, 1, 'urn'), Ly(1, 2, 'driftwood')] },
+      // THE GREAT HORN: the cult's great horn, a frame of its bells by it, singing stones about them
+      { name: 'the great horn', need: 2, most: 1, parts: [S(0, 0, "the cult's great horn"), S(2, 1, "a frame of the cult's bells"), S(-2, 1, 'singing stones'), Ly(0, 2, 'sagebrush')] },
+      // THE SINGING STONES: three singing stones standing in a ring, sagebrush between them
+      { name: 'the singing stones', need: 3, most: 2, parts: [S(0, 0, 'singing stones'), S(2, 1, 'singing stones'), S(0, 2, 'singing stones'), Ly(1, 1, 'sagebrush')] },
+      // THE DRY GROVE: a juniper, one dead beside it, a yucca and a red boulder, sagebrush and driftwood about them
+      { name: 'the dry grove', need: 2, most: 3, parts: [S(0, 0, 'juniper'), S(2, 0, 'dead juniper'), S(1, 2, 'yucca'), S(-2, 1, 'red boulder'), Ly(3, 2, 'sagebrush'), Ly(-1, 3, 'driftwood')] },
+    ],
+    face: [
+      // THE CHANT: the cult's chant carved in the canyon wall, a frame of its bells before it
+      { name: 'the chant', need: 1, most: 2, parts: [Ly(0, 0, 'the chant carved in the wall'), S(2, 2, "a frame of the cult's bells"), Ly(1, 1, 'sagebrush')] },
+      // THE HOIST: the cult's hoist up the cliff, its stores at its foot
+      { name: 'the hoist', need: 1, most: 2, parts: [Ly(0, 0, "the cult's hoist"), Br(2, 1, 'barrel'), Br(1, 2, 'urn')] },
+      // THE SEEP: water seeping from the rock, a juniper grown by it, sagebrush
+      { name: 'the seep', need: 1, most: 3, parts: [Ly(0, 0, 'a seep in the wall'), S(2, 2, 'juniper'), Ly(1, 1, 'sagebrush')] },
+    ],
+  },
+  9: {
+    open: [
+      // THE SIEGE WORKS: the cult's siege tent, a battering ram half built beside it, siege ladders, barrels of pitch
+      { name: 'the siege works', need: 2, most: 1, parts: [S(0, 0, "the cult's siege tent"), S(3, 0, 'a battering ram, half built'), S(1, 2, 'siege ladders'), Br(-2, 1, 'barrel'), Br(3, 2, 'barrel')] },
+      // THE FELLING: pines felled and stacked, the stumps they were cut from, the woodpile
+      { name: 'the felling', need: 2, most: 2, parts: [S(0, 0, 'felled pines, stacked'), S(3, 1, 'stump'), S(2, -2, 'stump'), Br(-2, 1, 'urn'), Ly(1, 2, 'ferns')] },
+      // THE HUNTER'S CAMP: the hunter's drying rack, a stag's skull and antlers by it, his woodpile, ferns
+      { name: "the hunter's camp", need: 1, most: 2, parts: [S(0, 0, "the hunter's drying rack"), Ly(1, 1, "a stag's skull and antlers"), Br(2, 0, 'urn'), Ly(-1, 2, 'ferns'), Ly(2, 2, 'bilberries')] },
+      // THE WINDFALL: a pine come down, the snag it broke from, a mossy boulder, toadstools and ferns on the dead wood
+      { name: 'the windfall', need: 2, most: 2, parts: [S(0, 0, 'fallen pine'), S(-2, 1, 'pine snag'), S(3, 1, 'mossy boulder'), Ly(1, 2, 'toadstools'), Ly(-1, 3, 'ferns')] },
+      // THE GLADE: young pines coming up by a mossy boulder, bilberries and ferns under them
+      { name: 'the glade', need: 2, most: 3, parts: [S(0, 0, 'young pine'), S(2, 1, 'young pine'), S(-1, 2, 'mossy boulder'), Ly(1, 2, 'bilberries'), Ly(3, 3, 'ferns')] },
+    ],
+    face: [],
+  },
+  10: {
+    open: [
+      // THE RUIN: a broken stair going up to nothing, a broken column by it, its drums fallen, mossy stones
+      { name: 'the ruin', need: 2, most: 1, parts: [S(0, 0, 'a broken stair'), S(3, 0, 'a broken column'), S(2, 2, 'fallen column drums'), Ly(-1, 2, 'mossy stones'), Ly(4, 2, 'sedge tussock')] },
+      // THE STATUE: a statue's head sunk in the mud, the drums of its column fallen by it, sedge about them
+      { name: 'the statue', need: 2, most: 2, parts: [S(0, 0, "a sunken statue's head"), S(2, 1, 'fallen column drums'), Ly(1, 2, 'sedge tussock'), Ly(-1, 1, 'mossy stones')] },
+      // THE BEAST'S BONES: a drowned beast's ribs, pale toadstools grown on them, a dead swamp tree over them
+      { name: "the beast's bones", need: 2, most: 1, parts: [S(0, 0, "a drowned beast's ribs"), S(3, -1, 'dead swamp tree'), Ly(1, 2, 'pale toadstools'), Ly(-1, 2, 'sedge tussock')] },
+      // THE CULT'S MARK: a marker post where the cult leaves its offerings, the cage of offerings, its supply crates
+      { name: "the cult's mark", need: 2, most: 2, parts: [S(0, 0, 'a marker post'), Br(2, 0, 'urn'), Br(1, 2, 'barrel'), Ly(-1, 1, 'pale toadstools')] },
+      // THE DEAD WOOD: arching roots of a tree long drowned, a drowned stump, a dead swamp tree, sedge and toadstools
+      { name: 'the dead wood', need: 2, most: 2, parts: [S(0, 0, 'arching roots'), S(3, 1, 'drowned stump'), S(-2, 1, 'dead swamp tree'), Ly(1, 2, 'sedge tussock'), Ly(2, 3, 'pale toadstools')] },
+    ],
+    face: [],
+  },
+};
 
 /** A FLOOR'S PIECES BY WHAT THE GAME DOES WITH THEM (their names the art's; tests/act1_floors.test.ts holds each to the art's own list). */
 export interface Act1Set {
@@ -201,6 +345,66 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: [],
   },
+  // (THE HIGH CITY, FLOOR 16: THE SWAN GARDENS, dressed by its own dresser, game/act2/swangardens.ts; named here for the game's
+  // barrels and urns, drawn as its two breakables, the art's: a gardener's barrow, an urn of roses, each whole and broken)
+  16: {
+    things: ['a yew cone', 'a topiary swan', 'a stone swan on its plinth', 'a sundial', 'a bay tree in its tub', 'a lantern on a post'],
+    big: ['the still fountain'],
+    lying: ['swan feathers', 'clippings and shears'],
+    wallFoot: [],
+    breakables: ["a gardener's barrow", 'an urn of roses'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
+  // (THE HIGH CITY, FLOOR 17: THE MASQUE, until its own dresser lays it room by room: game/act2/masque.ts; the game's barrels
+  // and urns drawn as its two breakables, the art's: a gilt chair, a footman's tray)
+  17: {
+    things: ['a gilt candelabrum', 'a fainting couch', 'a harpsichord', 'a viol and its stand', 'a folding screen of arabesques'],
+    big: ['a buffet of a feast gone cold'],
+    lying: ['masks dropped on the floor', 'gilt ornaments, scattered', 'royal cards, scattered', 'wine spilled'],
+    wallFoot: [],
+    breakables: ['a gilt chair', "a footman's tray"],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
+  // (THE HIGH CITY, FLOOR 18: THE GLASS GALLERY, until its own dresser lays it room by room: game/act2/glassgallery.ts; its
+  // trap the art's skylight (his doc's "skylights to fall through"): whole, cracking under a step, broken through)
+  18: {
+    things: ['a silver candelabrum', 'a velvet banquette', 'a dressing screen', 'a bust on a plinth'],
+    big: ['a wardrobe of gowns'],
+    lying: ["a mirror's shards", 'a jewel box, spilled', 'a hand mirror, dropped', 'a pane fallen from the roof'],
+    wallFoot: [],
+    breakables: ['a console table', 'an orchid in its pot, dead'],
+    trap: { name: 'a skylight', tiles: 1 },
+    tile: null,
+    edge: [],
+  },
+  // (THE HIGH CITY, FLOOR 19: THE KEEP, until its own dresser lays it room by room: game/act2/keep.ts; its trap the art's murder
+  // hole (his doc's "murder holes that drop pitch"): still, the warning, pouring, its pool)
+  19: {
+    things: ['a brazier', 'a weapon rack', 'a crossbow rack', 'a long table'],
+    big: ['barracks bunks'],
+    lying: [],
+    wallFoot: [],
+    breakables: ['barrels', 'a suit of armour on its stand'],
+    trap: { name: 'a murder hole', tiles: 1 },
+    tile: null,
+    edge: [],
+  },
+  // (THE HIGH CITY, FLOOR 20: THE QUIET TOWER, until its own dresser lays it room by room: game/act2/quiettower.ts; its trap the
+  // art's Hush's dust (the Moth's wing-dust, the Hush itself): lying, stirring, sprung in a grey cloud to a man's waist)
+  20: {
+    things: ["a copyist's desk", 'a press of blank books', 'guttering candles', 'moth silk, strung from a fallen beam'],
+    big: ['the empty bell frame'],
+    lying: ['a shed wing', 'grey dust, drifted', 'a fallen mask of the Order', 'a heap of torn pages'],
+    wallFoot: [],
+    breakables: ['a chest of blank quires', "a copyist's stool"],
+    trap: { name: "the Hush's dust", tiles: 1 },
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */
@@ -241,7 +445,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   const land = L.land;
   if (!n || !land) return null;
   // (ACT 2, THE HUSH: a floor with a dresser of its own is dressed by it: game/act2_dress.ts)
-  if (act2Floor(depth)) {
+  if (cityFloor(depth)) {
     const own = dressAct2(L, depth, seed);
     if (own) return own;
   }
@@ -423,7 +627,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
 
   // ---- THE CULT'S CAMP: in one of the main way's areas (not the first two), its tents, fire and crates
   // (ACT 2: no camp of the cult in the Hush: the descent's cult is not there)
-  const campArea = act2Floor(depth) ? [] : land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
+  const campArea = cityFloor(depth) ? [] : land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
   const camp = campArea.length ? rng.pick(campArea) : null;
   // (DRESS_EDGES: a camp round its watchfire: the fire near the middle of one of those areas that has the room for it, its
   // tents and things in a ring round it, its crates and bedrolls just inside the ring; where none has, as before)
@@ -513,11 +717,73 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     for (const [tx, ty] of list) if (beds < 2 && free(tx, ty, false)) { put(rng.pick(CAMP.lying), tx, ty, false); beds++; }
   }
 
+  // ---- ACT1_SCENES: each open area's things together as one of the floor's scenes, in its outer band
+  const scened = ACT1_SCENES.on && ACT1_SCENES.floors.includes(n) && !!ACT1_SCENE_SETS[n];
+  const used = new Map<string, number>();
+  const usedScene = (name: string): number => used.get(name) ?? 0;
+  const turnOf = (k: number, dx: number, dy: number): [number, number] => (k === 0 ? [dx, dy] : k === 1 ? [-dy, dx] : k === 2 ? [-dx, -dy] : [dy, -dx]);
+  /** Lay scene `sc` with its place at (x, y), turned `k`: false (and nothing laid) if its first `need` parts cannot all be. */
+  const layScene = (sc: Act1Scene, x: number, y: number, k: number, foot: boolean): boolean => {
+    const rock = (tx: number, ty: number): boolean => f.tiles[(ty - 1) * W + tx] === T_WALL || f.tiles[ty * W + tx - 1] === T_WALL;
+    const at = sc.parts.map((p) => {
+      const [dx, dy] = foot ? [p.dx, p.dy] : turnOf(k, p.dx, p.dy);
+      // (what stands against the cliff: where there is rock behind it, along x or else along y)
+      if (p.wall && p.alt && !rock(x + dx, y + dy)) return [x + p.alt[0], y + p.alt[1]] as [number, number];
+      return [x + dx, y + dy] as [number, number];
+    });
+    const fits = (i: number): boolean => {
+      const p = sc.parts[i];
+      const [tx, ty] = at[i];
+      // (the face's own piece at the foot of the cliff: the tile is free, nothing more asked)
+      if (foot && i === 0) return whole(tx, ty) && !keep[ty * W + tx] && !taken[ty * W + tx];
+      if (p.wall && !rock(tx, ty)) return false;
+      return free(tx, ty, p.solid) && !at.some((q, j) => j < i && q[0] === tx && q[1] === ty);
+    };
+    for (let i = 0; i < sc.need; i++) if (!fits(i)) return false;
+    sc.parts.forEach((p, i) => {
+      if (i >= sc.need && !fits(i)) return;
+      const [tx, ty] = at[i];
+      if (p.kind) {
+        L.props.push({ kind: p.kind, tx, ty, x: tx + 0.5, y: ty + 0.5, solid: true, state: 0, variant: rng.int(0, 2) });
+        taken[ty * W + tx] = 1;
+        L.walk[ty * W + tx] = 0;
+      } else if ((foot && i === 0) || p.wall) put(p.name, tx, ty, false, 0, { x: tx + 0.12, y: ty + 0.12 });
+      else put(p.name, tx, ty, p.solid, rng.int(0, 3));
+      if (p.solid && !p.kind) for (const [ex, ey] of [[1, 0], [0, 1]]) keep[(ty + ey) * W + tx + ex] = 1;
+    });
+    (out.scenes ??= []).push({ x: x + 0.5, y: y + 0.5, name: sc.name });
+    used.set(sc.name, (used.get(sc.name) ?? 0) + 1);
+    return true;
+  };
+  if (scened) {
+    const set6 = ACT1_SCENE_SETS[n];
+    for (const a of rng.shuffle([...land.areas])) {
+      if (a.role === 'yard' || a.role === 'start' || a.role === 'boss') continue;
+      const band = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) > DRESS_EDGES.from && blobDist(a.blob, x, y) < DRESS_EDGES.to - 0.1);
+      // (the big scenes first, while there is room; then the others in an order of the dice's; a big area takes two)
+      const order = [...set6.open.filter((q) => q.most === 1), ...rng.shuffle(set6.open.filter((q) => q.most > 1))];
+      const want = band.length > 90 ? 2 : 1;
+      let laid = 0;
+      for (const sc of order) {
+        if (laid >= want) break;
+        if ((used.get(sc.name) ?? 0) >= sc.most) continue;
+        let done = false;
+        for (const [tx, ty] of band.slice(0, 60)) {
+          for (let k = 0; k < 4 && !done; k++) done = layScene(sc, tx, ty, (k + rng.int(0, 3)) % 4, false);
+          if (done) break;
+        }
+        if (done) laid++;
+      }
+    }
+  }
+
   // ---- THE OPEN AREAS: a big thing or two on the floor, its things that stand, its small things that lie about
   let bigs = 0;
   for (const a of rng.shuffle([...land.areas])) {
     if (a.role === 'yard' || a.role === 'start') continue;
     const boss = a.role === 'boss';
+    // (ACT1_SCENES: a floor laid so has no things standing about at random but in the boss's ground)
+    if (scened && !boss) continue;
     const edgy = DRESS_EDGES.on && !boss;
     const inner = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) < (boss ? 0.86 : edgy ? DRESS_EDGES.to : 0.78) && blobDist(a.blob, x, y) > (boss ? 0.62 : edgy ? DRESS_EDGES.from : 0.15));
     // (DRESS_EDGES: as many things as before for the area as a whole, fewer, in its outer band)
@@ -564,7 +830,22 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     rng.shuffle(feet);
     const used: [number, number][] = [];
     let face = 0;
-    for (const [tx, ty] of feet) {
+    // (ACT1_SCENES: at the far cliffs' feet, the floor's scenes of the face, each a way along the cliff from the next)
+    if (scened) {
+      const faces = ACT1_SCENE_SETS[n].face;
+      for (const [tx, ty] of feet) {
+        if (used.length >= Math.ceil(feet.length / 9)) break;
+        if (used.some(([x, y]) => Math.hypot(x - tx, y - ty) < 9)) continue;
+        for (const sc of faces) {
+          if (usedScene(sc.name) >= sc.most) continue;
+          if (layScene(sc, tx, ty, 0, true)) {
+            used.push([tx, ty]);
+            break;
+          }
+        }
+      }
+    }
+    for (const [tx, ty] of scened ? [] : feet) {
       if (used.length >= Math.ceil(feet.length / 9)) break;
       if (used.some(([x, y]) => Math.hypot(x - tx, y - ty) < 7)) continue;
       // (the great face once a floor; the rest as they come)
