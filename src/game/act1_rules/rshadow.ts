@@ -15,14 +15,18 @@
 //   fan, six tiles out, each striking where it passes him).
 // - THE QUEEN'S: the comb (its basic: a stab before her, carrying her on); THE BLINK (into her hand mirror where she stands, out of
 //   it behind him, stabbing as she comes out).
-// - THE KING'S: the great sword's sweep (its basic: round before him); THE CROWN (a leap at him, carried 2.5 tiles, a slam where he
-//   lands, its ring rolling out four tiles).
+// - THE KING'S, as the King's own were made new (the art chat's mockup/king and mockup/royal-shadows, handed over 31 Oct 18:00 with
+//   his yes; brought in at his word of 2 Nov, “All of it in this one”): THE CHARGE (its basic: braced, it runs SHADOW_CHARGE.most
+//   tiles along its forward at SHADOW_CHARGE.pace, a wall stopping it; a line of sparks left where it ran, which strikes everything
+//   within SHADOW_CHARGE.reach of it as they burst, 2.43 to 2.8 s into the move); THE CROWN'S WEIGHT (its crown sent up off its head
+//   at KG_WEIGHT.send, flown out over him, following him at SHADOW_WEIGHT.pace till KG_WEIGHT.hold[0], held trembling, dropped: it
+//   strikes within SHADOW_WEIGHT.r of where it lands, KG_WEIGHT.hit; lying a moment; home onto its head; the shadow stands still).
 // Their warnings on the floor and their big moves' pictures: render/act1_fx/rshadow.ts.
 
 import { BLINK, ROYALS, ROYAL_IDS } from '../../art/royal_shadows';
 import type { RoyalId } from '../../art/royal_shadows';
-import { MASKS_SHADOW_FLIGHT, SHADOW_CROWN, SHADOW_MASKS, SHADOW_SNARE } from '../../art/royal_shadows_fx';
-import { KG_CROWN, KG_SWEEP } from '../../art/king_moves';
+import { MASKS_SHADOW_FLIGHT, SHADOW_CHARGE, SHADOW_MASKS, SHADOW_SNARE, SHADOW_WEIGHT, shadowCrownAt } from '../../art/royal_shadows_fx';
+import { KG_CHARGE, KG_WEIGHT } from '../../art/king_moves';
 import { PC_MASKS, PC_THRUST } from '../../art/prince_moves';
 import { PR_LASH, PR_SNARE } from '../../art/princess_moves';
 import { QN_COMB } from '../../art/queen_moves';
@@ -39,8 +43,8 @@ export const SHADOW_TUNE = {
   masks: { ways: [-MASKS_FX.spread, 0, MASKS_FX.spread] as const, speed: MASKS_FX.speed, reach: SHADOW_MASKS.reach, hit: 0.6, dmg: 0.8, cd: 6 },
   comb: { reach: 2.9 * ROYALS.queen.k + 0.2, half: 0.6, lunge: 1.6 * ROYALS.queen.k },
   blink: { behind: 3.4 * ROYALS.queen.k, reach: 1.9 * ROYALS.queen.k + 0.4, half: 0.8, cd: 8 },
-  sweep: { reach: 3.0, half: 1.9 },
-  crown: { carry: SHADOW_CROWN.carry, slam: 1.3, ring: 4, ringFor: 0.8, ringWide: 0.55, ringDmg: 0.7, cd: 7 },
+  charge: { hit: [2.43, 2.8] as const, lies: 3.15, near: 0, far: 6.5 },
+  weight: { dmg: 1.3, cd: 8 },
 } as const;
 
 /** Which royal a shadow is. */
@@ -51,12 +55,12 @@ const ACTS: readonly ActDef[] = [
   { id: 'rshadow:lash', clip: 'attack', long: PR_LASH.long, hit: PR_LASH.hit, dmg: 1, cooldown: 0, first: 0.4, after: 0.6, near: 0, far: SHADOW_TUNE.lash.reach - 0.5 },
   { id: 'rshadow:thrust', clip: 'attack', long: PC_THRUST.long, hit: PC_THRUST.hit, dmg: 1, cooldown: 0, first: 0.4, after: 0.3, near: 0, far: SHADOW_TUNE.thrust.reach - 0.3 },
   { id: 'rshadow:comb', clip: 'attack', long: QN_COMB.long, hit: QN_COMB.hit, dmg: 1, cooldown: 0, first: 0.4, after: 0.4, near: 0, far: SHADOW_TUNE.comb.reach - 0.2 },
-  { id: 'rshadow:sweep', clip: 'attack', long: KG_SWEEP.long, hit: KG_SWEEP.hit, dmg: 1.2, cooldown: 0, first: 0.4, after: 0.6, near: 0, far: SHADOW_TUNE.sweep.reach - 0.3 },
+  { id: 'rshadow:charge', clip: 'attack', long: KG_CHARGE.long, hit: SHADOW_TUNE.charge.hit[0], dmg: 1.2, cooldown: 0, first: 0.4, after: 0.6, near: SHADOW_TUNE.charge.near, far: SHADOW_TUNE.charge.far },
   // (each royal's one big move)
   { id: 'rshadow:snare', clip: 'snare', long: PR_SNARE.long, hit: PR_SNARE.hit, dmg: SHADOW_TUNE.snare.dmg, cooldown: SHADOW_TUNE.snare.cd, first: 2.5, after: 0.5, near: 0, far: 7 },
   { id: 'rshadow:masks', clip: 'masks', long: PC_MASKS.long, hit: PC_MASKS.hit, dmg: SHADOW_TUNE.masks.dmg, cooldown: SHADOW_TUNE.masks.cd, first: 2.5, after: 0.4, near: 2, far: SHADOW_TUNE.masks.reach - 0.5 },
   { id: 'rshadow:blinkIn', clip: 'blinkIn', long: BLINK.into, hit: BLINK.strikeIn[1], dmg: 0, cooldown: SHADOW_TUNE.blink.cd, first: 2.5, after: 0, near: 3, far: 9 },
-  { id: 'rshadow:crown', clip: 'crown', long: KG_CROWN.long, hit: KG_CROWN.hit, dmg: SHADOW_TUNE.crown.slam, cooldown: SHADOW_TUNE.crown.cd, first: 2.5, after: 0.6, near: 2.5, far: 6 },
+  { id: 'rshadow:weight', clip: 'weight', long: KG_WEIGHT.long, hit: KG_WEIGHT.hit, dmg: SHADOW_TUNE.weight.dmg, cooldown: SHADOW_TUNE.weight.cd, first: 2.5, after: 0.6, near: 0, far: 7 },
   { id: 'rshadow:blinkOut', clip: 'blinkOut', long: BLINK.out, hit: BLINK.strikeOut[1], dmg: 1, cooldown: 0, first: 0, after: 0.4, near: 0, far: 999, forced: true },
 ];
 /** Each royal's acts (ids). */
@@ -64,7 +68,7 @@ const OWN: Readonly<Record<RoyalId, readonly string[]>> = {
   princess: ['rshadow:lash', 'rshadow:snare'],
   prince: ['rshadow:thrust', 'rshadow:masks'],
   queen: ['rshadow:comb', 'rshadow:blinkIn', 'rshadow:blinkOut'],
-  king: ['rshadow:sweep', 'rshadow:crown'],
+  king: ['rshadow:charge', 'rshadow:weight'],
 };
 const BLINK_OUT = ACTS.findIndex((a) => a.id === 'rshadow:blinkOut');
 
@@ -96,8 +100,17 @@ export function pictureWay(fx: number, fy: number): { fx: number; fy: number } {
   const flip = fx - fy < 0;
   return back ? (flip ? { fx: -1, fy: 0 } : { fx: 0, fy: -1 }) : flip ? { fx: 0, fy: 1 } : { fx: 1, fy: 0 };
 }
-/** How far out the crown's ring has rolled `t` seconds after the slam. */
-export const ringAt = (t: number): number => SHADOW_TUNE.crown.ring * Math.min(1, Math.max(0, t) / SHADOW_TUNE.crown.ringFor);
+/** THE KING'S SHADOW'S CHARGE: where it set off and the way it ran (Monster.a1 cx, cy, sx, sy), how far it ran (`lane`), and whether its line has struck (`hit`). */
+export function chargeLine(m: Monster): { x: number; y: number; fx: number; fy: number; lane: number } | null {
+  const k = m.a1;
+  if (!k || k.sx === undefined) return null;
+  return { x: k.sx, y: k.sy, fx: k.cx, fy: k.cy, lane: k.lane ?? 0 };
+}
+/** THE KING'S SHADOW'S CROWN: where the floor point under it is (Monster.a1 wx, wy). */
+export function crownPoint(m: Monster): { x: number; y: number } | null {
+  const k = m.a1;
+  return k && k.wx !== undefined ? { x: k.wx, y: k.wy } : null;
+}
 
 export const RULES: Act1Rules | null = {
   // (paced each by its royal as it comes into the world: `spawned`; this its gait's, between the four)
@@ -125,13 +138,21 @@ export const RULES: Act1Rules | null = {
   },
   start(R, m, a) {
     if (a.id === 'rshadow:blinkIn') R.g.sfx('shatter', 0.25);
-    if (a.id === 'rshadow:crown') {
-      // (where it leaps to: toward him, carried SHADOW_TUNE.crown.carry tiles)
-      const h = R.g.hero;
-      const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
-      const k = a1Of(m);
-      k.cx = (h.x - m.x) / d;
-      k.cy = (h.y - m.y) / d;
+    const k = a1Of(m);
+    if (a.id === 'rshadow:charge') {
+      // (the way it will run: the way it faces, at him)
+      k.cx = m.fx;
+      k.cy = m.fy;
+      k.sx = m.x;
+      k.sy = m.y;
+      k.lane = 0;
+      k.hit = 0;
+    }
+    if (a.id === 'rshadow:weight') {
+      // (its crown on its head till it is sent)
+      k.wx = m.x;
+      k.wy = m.y;
+      k.hit = 0;
     }
   },
   end(R, m, a) {
@@ -156,6 +177,13 @@ export const RULES: Act1Rules | null = {
       return;
     }
     if (a.id === 'rshadow:blinkOut') k.out = 0;
+    if (a.id === 'rshadow:charge') k.sx = undefined as unknown as number;
+    if (a.id === 'rshadow:weight') k.wx = undefined as unknown as number;
+  },
+  died(_R, m) {
+    const k = a1Of(m);
+    k.sx = undefined as unknown as number;
+    k.wx = undefined as unknown as number;
   },
   acting(R, m, a, t0, t1) {
     const g = R.g;
@@ -178,10 +206,69 @@ export const RULES: Act1Rules | null = {
         if (at(QN_COMB.strike[0])) g.sfx('swing', 0.5);
         if (at(a.hit) && d <= T.comb.reach && ang <= T.comb.half) R.blow(m, a.dmg);
         return;
-      case 'rshadow:sweep':
-        if (at(KG_SWEEP.strike[0])) g.sfx('swing', 0.8);
-        if (at(a.hit) && d <= T.sweep.reach && ang <= T.sweep.half) R.blow(m, a.dmg);
+      case 'rshadow:charge': {
+        // (braced, then carried along its way at its pace, a wall stopping it; its line of sparks bursting, striking all near it)
+        const k = a1Of(m);
+        const [r0, r1] = KG_CHARGE.run;
+        if (at(KG_CHARGE.strike[0])) g.sfx('swing', 0.7);
+        if (t1 > r0 && t0 < r1) {
+          const step = SHADOW_CHARGE.pace * (Math.min(t1, r1) - Math.max(t0, r0));
+          const x0 = m.x;
+          const y0 = m.y;
+          carry(R, m, k.cx, k.cy, step);
+          k.lane = (k.lane ?? 0) + Math.hypot(m.x - x0, m.y - y0);
+        }
+        if (at(KG_CHARGE.burst)) g.sfx('slam', 0.5);
+        if (!k.hit && t1 >= T.charge.hit[0] && t0 <= T.charge.hit[1]) {
+          // (within its reach of the line it ran)
+          const L = k.lane ?? 0;
+          const u = Math.max(0, Math.min(L, (h.x - k.sx) * k.cx + (h.y - k.sy) * k.cy));
+          const px = k.sx + k.cx * u;
+          const py = k.sy + k.cy * u;
+          if (Math.hypot(h.x - px, h.y - py) <= SHADOW_CHARGE.reach && !h.move) {
+            k.hit = 1;
+            R.blow(m, a.dmg);
+          }
+        }
         return;
+      }
+      case 'rshadow:weight': {
+        // (its crown: sent off its head, flown out over him, following him, held, dropped; it lies, and goes home; the shadow stands)
+        const k = a1Of(m);
+        const W = KG_WEIGHT;
+        const tc = t1 - W.send;
+        if (at(W.send)) g.sfx('whirl', 0.35);
+        if (tc >= 0) {
+          const w = shadowCrownAt(tc);
+          if (w.phase === 'fly') {
+            k.wx = m.x + (h.x - m.x) * w.lerp;
+            k.wy = m.y + (h.y - m.y) * w.lerp;
+          } else if (w.phase === 'follow') {
+            const dx = h.x - k.wx;
+            const dy = h.y - k.wy;
+            const d = Math.hypot(dx, dy);
+            const step = Math.min(d, SHADOW_WEIGHT.pace * (t1 - t0));
+            if (d > 1e-6) {
+              k.wx += (dx / d) * step;
+              k.wy += (dy / d) * step;
+            }
+          } else if (w.phase === 'home') {
+            if (k.hx === undefined) {
+              k.hx = k.wx;
+              k.hy = k.wy;
+            }
+            k.wx = k.hx + (m.x - k.hx) * w.lerp;
+            k.wy = k.hy + (m.y - k.hy) * w.lerp;
+          }
+        }
+        if (at(a.hit)) {
+          k.hx = undefined as unknown as number;
+          g.sfx('slam', 0.7);
+          g.emit({ t: 'shake', amount: 2 });
+          if (Math.hypot(h.x - k.wx, h.y - k.wy) <= SHADOW_WEIGHT.r && !h.move) R.blow(m, a.dmg);
+        }
+        return;
+      }
       case 'rshadow:snare':
         // (as her held hands' warning ends: where he stands is where the vines will burst)
         if (at(PR_SNARE.warn[1])) R.peril(m, 'act1', h.x, h.y, { a1: 'rshadow:snare', t: -(a.hit - PR_SNARE.warn[1]), hit: 0, dur: SHADOW_SNARE.long, dmg: g.rollMonsterDmg(m) * a.dmg });
@@ -197,20 +284,6 @@ export const RULES: Act1Rules | null = {
         if (at(BLINK.strikeOut[0])) g.sfx('shatter', 0.35);
         if (at(a.hit) && d <= T.blink.reach && ang <= T.blink.half) R.blow(m, a.dmg);
         return;
-      case 'rshadow:crown': {
-        const k = a1Of(m);
-        const [u0, u1] = KG_CROWN.air;
-        const u = (t: number): number => Math.max(0, Math.min(1, (t - u0) / (u1 - u0)));
-        const step = T.crown.carry * (u(t1) - u(t0));
-        if (step > 0) carry(R, m, k.cx ?? m.fx, k.cy ?? m.fy, step);
-        if (at(a.hit)) {
-          g.sfx('slam', 0.6);
-          g.emit({ t: 'shake', amount: 2 });
-          if (Math.hypot(h.x - m.x, h.y - m.y) <= 1.2) R.blow(m, a.dmg);
-          R.peril(m, 'act1', m.x, m.y, { a1: 'rshadow:ring', dur: 1.25, hit: 0, dmg: g.rollMonsterDmg(m) * T.crown.ringDmg });
-        }
-        return;
-      }
     }
   },
   peril(R, p: Peril) {
@@ -239,15 +312,6 @@ export const RULES: Act1Rules | null = {
         return;
       }
       return;
-    }
-    if (p.a1 === 'rshadow:ring') {
-      // (the crown's ring rolling out: it strikes him as it passes under him, once)
-      const r = ringAt(p.t);
-      if (p.t > T.crown.ringFor || r < 1.2) return;
-      if (Math.abs(Math.hypot(h.x - p.x, h.y - p.y) - r) <= T.crown.ringWide && !h.move) {
-        p.done = 1;
-        g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
-      }
     }
   },
 };

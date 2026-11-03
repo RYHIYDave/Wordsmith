@@ -130,7 +130,7 @@ test('3. the shadows: each royal its own acts; all four come; the masks fan out;
   assert.deepEqual([...forms].sort(), [0, 1, 2, 3], 'all four royals');
   const R = g.bosses;
   const m = g.spawn('rshadow', h.x + 3, h.y, 970, 0, false, g.rng) as Monster;
-  const own: Record<string, string[]> = { princess: ['lash', 'snare'], prince: ['thrust', 'masks'], queen: ['comb', 'blinkIn', 'blinkOut'], king: ['sweep', 'crown'] };
+  const own: Record<string, string[]> = { princess: ['lash', 'snare'], prince: ['thrust', 'masks'], queen: ['comb', 'blinkIn', 'blinkOut'], king: ['charge', 'weight'] };
   for (let f = 0; f < 4; f++) {
     m.form = f;
     const can = SHADOW!.acts.filter((a) => SHADOW!.can!(R, m, a, 3, true)).map((a) => a.id.split(':')[1]);
