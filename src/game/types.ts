@@ -245,10 +245,11 @@ export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | Cla
 export const WEAPONS: readonly WeaponKind[] = ['sword', 'greatsword', 'bow', 'wand', 'staff'];
 /**
  * THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS, CLASS_WEAPON): the Veteran's brawler's wraps (two hands, nothing in
- * the other), the Warlock's grimoire (one hand, a focus beside it), the Tinkerer's wrench (one hand, a shield beside it).
+ * the other), the Warlock's demonic tome (one hand, a focus beside it), the Tinkerer's wrench (one hand, a shield beside it).
+ * (The tome was the 'grimoire' until the art came: a saved piece of one loads as the tome, items.ts migrateItem.)
  */
-export type ClassWeaponKind = 'wraps' | 'grimoire' | 'wrench';
-export const CLASS_WEAPONS: readonly ClassWeaponKind[] = ['wraps', 'grimoire', 'wrench'];
+export type ClassWeaponKind = 'wraps' | 'tome' | 'wrench';
+export const CLASS_WEAPONS: readonly ClassWeaponKind[] = ['wraps', 'tome', 'wrench'];
 /** Every kind of weapon there is: the five, and the new classes' own (a saved piece of any of them loads back as itself). */
 export const ALL_WEAPONS: readonly WeaponKind[] = [...WEAPONS, ...CLASS_WEAPONS];
 
@@ -260,13 +261,14 @@ export type OffhandKind = 'shield' | 'quiver' | 'focus';
 
 /**
  * Which 16x16 picture an item uses. (The old weapons keep their pictures: an old save may still show one for a moment.)
- * The new classes' weapons ('wraps', 'grimoire', 'wrench') have stand-in pictures until the art chat's (art/icons.ts).
+ * The new classes' weapons ('wraps', 'tome', 'wrench') have stand-in pictures in art/icons.ts, shown while ITEMS_A is off; with it
+ * on, every item's picture is the art chat's (art/items_a.ts, asked for through art/icons.ts itemPic).
  */
 export type IconKey = WeaponKind | OldWeaponKind | OffhandKind | 'helm' | 'hood' | 'armor' | 'robe' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet';
 export const ICON_KEYS: readonly IconKey[] = [
   'sword', 'axe', 'mace', 'greatsword', 'maul', 'bow', 'longbow', 'wand', 'staff', 'shield', 'quiver', 'focus',
   'helm', 'hood', 'armor', 'robe', 'gloves', 'belt', 'boots', 'ring', 'amulet',
-  'wraps', 'grimoire', 'wrench',
+  'wraps', 'tome', 'wrench',
 ];
 
 export interface Affix {

@@ -13,6 +13,7 @@ import { makeHeroArt3, THRUST } from './art/heroes3';
 import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt } from './art/icons';
+import { ITEMS_A } from './art/items_a';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -2332,8 +2333,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     talents2: TALENTS2,
     /** THE VETERAN (game/veteran.ts), the Brawler made again, off until his yes: `veteran.on` (his tree, and his moves as they are built). */
     veteran: VETERAN,
-    /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's grimoire, the Tinkerer's wrench; stand-in pictures). */
+    /** THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS), off until his yes: `newWeapons.on` (the Veteran's wraps, the Warlock's demonic tome, the Tinkerer's wrench; stand-in pictures while `itemsA` is off). */
     newWeapons: NEW_WEAPONS,
+    /** THE NEW ITEM PICTURES (art/items_a.ts ITEMS_A, the art chat's), off until his yes: `itemsA.on` (every item's picture by its kind and rarity: art/icons.ts itemPic). */
+    itemsA: ITEMS_A,
     /** A GAME CONTROLLER's switch (engine/gamepad.ts), on since Version 20.1; and the pad as read (its pointer). */
     gamepad: GAMEPAD,
     pad: () => ({ connected: pad.connected, live: pad.live(), pointer: padPointer, px: pad.px, py: pad.py }),
@@ -2363,8 +2366,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       if (game) game.refresh();
     },
-    /** A piece of gear made to order (playtests of crafting want a white, a blue and a yellow one of a kind they choose). */
-    item: (slot: Slot, rarity: Rarity, ilvl = 5, seed = 1): Item => rollItem(ilvl, new RNG(seed), { slot, rarity }),
+    /** A piece of gear made to order (playtests of crafting want a white, a blue and a yellow one of a kind they choose). `cls`: rolled as for a hero of that class (with NEW_WEAPONS on, his own weapon may be among them). */
+    item: (slot: Slot, rarity: Rarity, ilvl = 5, seed = 1, cls?: ClassId): Item => rollItem(ilvl, new RNG(seed), { slot, rarity, cls }),
     invUi,
     lexUi,
     titleUi,

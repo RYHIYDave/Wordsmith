@@ -148,12 +148,13 @@ function asIf(like: WeaponKind, kind: ClassWeaponKind, names: Three<string>): We
  * THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, defs.ts; off): each one class's own (defs.ts CLASS_WEAPON), and found only by
  * a hero of that class (pickBase), as often as each other kind is. Its numbers are another weapon's, all of them: the Veteran's
  * brawler's wraps the greatsword's (two hands, and nothing goes in the other: no off-hand piece pairs with them); the
- * Warlock's grimoire the wand's (a focus beside it); the Tinkerer's wrench the sword's (a shield beside it). Their names are a
- * proposal, his to change. Their bases are apart from ITEM_BASES (CLASS_BASES).
+ * Warlock's demonic tome the wand's (a focus beside it); the Tinkerer's wrench the sword's (a shield beside it). Their names are
+ * a proposal, his to change (the plainest tome is called as he called it, a demonic tome). Their bases are apart from
+ * ITEM_BASES (CLASS_BASES).
  */
 const CLASS_WEAPON_DEFS: readonly WeaponDef[] = [
   asIf('greatsword', 'wraps', ["Brawler's Wraps", 'Studded Wraps', 'War Wraps']),
-  asIf('wand', 'grimoire', ['Chained Grimoire', 'Black Grimoire', 'Pact Grimoire']),
+  asIf('wand', 'tome', ['Demonic Tome', 'Chained Tome', 'Pact Tome']),
   asIf('sword', 'wrench', ['Iron Wrench', 'Steel Wrench', 'War Wrench']),
 ];
 
@@ -162,6 +163,13 @@ const CLASS_WEAPON_DEFS: readonly WeaponDef[] = [
  * saved item of one of these becomes that kind, keeping its level, its affixes and its word.
  */
 const OLD_WEAPON: Record<OldWeaponKind, WeaponKind> = { axe: 'sword', mace: 'sword', maul: 'greatsword', longbow: 'bow' };
+
+/**
+ * THE NEW CLASSES' WEAPONS renamed before they were ever on: the Warlock's was the 'grimoire' until the art chat painted it as
+ * his demonic tome ('tome'). The switch was never on in a release, so no save should hold one; a piece that does loads as the
+ * tome of the same name tier (migrateItem), as an old weapon does.
+ */
+const RENAMED_WEAPON: Readonly<Record<string, ClassWeaponKind>> = { grimoire: 'tome' };
 
 interface OffhandDef {
   /** Also the id stem and the icon: the three bases are kind + 1, 2, 3 (e.g. 'shield2'). */
@@ -172,11 +180,11 @@ interface OffhandDef {
   implicit: readonly ImplicitLine[];
 }
 
-// (THE NEW CLASSES' WEAPONS: a shield goes with the Tinkerer's wrench too, a focus with the Warlock's grimoire; nothing with the wraps)
+// (THE NEW CLASSES' WEAPONS: a shield goes with the Tinkerer's wrench too, a focus with the Warlock's demonic tome; nothing with the wraps)
 const OFFHAND_KINDS: readonly OffhandDef[] = [
   { kind: 'shield', pairsWith: ['sword', 'wrench'], names: ['Iron Buckler', 'Steel Shield', 'War Shield'], implicit: [{ stat: 'armor', at1: 7, perLevel: 4.5 }, { stat: 'maxLife', at1: 5, perLevel: 2 }] },
   { kind: 'quiver', pairsWith: ['bow'], names: ['Hide Quiver', 'Leather Quiver', 'Studded Quiver'], implicit: [{ stat: 'critChance', tiers: [3, 4, 5] }, { stat: 'atkSpeed', tiers: [2, 3, 4] }] },
-  { kind: 'focus', pairsWith: ['wand', 'grimoire'], names: ['Glass Focus', 'Crystal Focus', 'Runed Focus'], implicit: [{ stat: 'maxMana', at1: 8, perLevel: 2.5 }, { stat: 'cdr', tiers: [2, 3, 4] }] },
+  { kind: 'focus', pairsWith: ['wand', 'tome'], names: ['Glass Focus', 'Crystal Focus', 'Runed Focus'], implicit: [{ stat: 'maxMana', at1: 8, perLevel: 2.5 }, { stat: 'cdr', tiers: [2, 3, 4] }] },
 ];
 
 /** Gear any class can wear. */
@@ -1001,7 +1009,7 @@ export function rollItem(ilvl: number, rng: RNG, opts: RollOpts = {}): Item {
   return makeItem(base, level, rarity, affixes, nameFor(base, rarity, affixes, rng));
 }
 
-const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: CLASS_WEAPON_NAME.wraps, grimoire: CLASS_WEAPON_NAME.grimoire, wrench: CLASS_WEAPON_NAME.wrench };
+const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: CLASS_WEAPON_NAME.wraps, tome: CLASS_WEAPON_NAME.tome, wrench: CLASS_WEAPON_NAME.wrench };
 const OFFHAND_KIND_NAME: Record<OffhandKind, string> = { shield: 'Shield', quiver: 'Quiver', focus: 'Focus' };
 const SLOT_KIND_NAME: Record<Slot, string> = { mainhand: 'Weapon', offhand: 'Off hand', helm: 'Helmet', chest: 'Armour', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', amulet: 'Amulet', ring: 'Ring' };
 
@@ -1034,6 +1042,8 @@ export function plainWeapon(kind: WeaponKind, ilvl = 1): Item {
  * those becomes the sword, the greatsword or the bow of the same name tier and item level, with
  * that weapon's own speed and damage; its affixes, its words and its rarity stay as they were.
  * Since Version 13.2 the one word a piece could hold (`imbue`) is the first of a list (`imbues`).
+ * And the Warlock's own weapon, the 'grimoire' while the new weapons were being made, is his demonic tome ('tome',
+ * RENAMED_WEAPON): a piece of one becomes the tome of the same name tier, keeping all the rest.
  * Anything already up to date comes back unchanged.
  */
 export function migrateItem(it: Item): Item {
@@ -1048,11 +1058,12 @@ export function migrateItem(it: Item): Item {
   if (!Array.isArray(it.affixes)) it.affixes = [];
   if (it.rarity < 3) it.rarity = Math.max(it.rarity, rarityFor(it.affixes.length + it.imbues.length)) as Rarity;
   const was = it.weapon as string | null;
-  if (was !== null && Object.prototype.hasOwnProperty.call(OLD_WEAPON, was)) {
-    const kind = OLD_WEAPON[was as OldWeaponKind];
+  const own = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+  if (was !== null && (own(OLD_WEAPON, was) || own(RENAMED_WEAPON, was))) {
+    const kind: WeaponKind = own(OLD_WEAPON, was) ? OLD_WEAPON[was as OldWeaponKind] : RENAMED_WEAPON[was];
     const digit = Number.parseInt(String(it.baseId).slice(-1), 10);
     const tier = Number.isFinite(digit) ? Math.max(0, Math.min(2, digit - 1)) : 0;
-    const base = ITEM_BASES.find((b) => b.id === `${kind}${tier + 1}`) ?? ITEM_BASES.find((b) => b.weapon === kind);
+    const base = ALL_BASES.find((b) => b.id === `${kind}${tier + 1}`) ?? ALL_BASES.find((b) => b.weapon === kind);
     if (base) {
       if (typeof it.name === 'string' && typeof it.baseName === 'string' && it.name.includes(it.baseName)) it.name = it.name.replace(it.baseName, base.name);
       it.baseId = base.id;
@@ -1070,7 +1081,7 @@ export function migrateItem(it: Item): Item {
 /**
  * True when the off-hand piece can be worn together with that main-hand weapon: a shield needs a
  * one-handed sword; a quiver a bow; a focus a wand. Never with empty hands. (THE NEW CLASSES' WEAPONS:
- * a shield goes with a wrench too, a focus with a grimoire; nothing with the brawler's wraps.)
+ * a shield goes with a wrench too, a focus with a demonic tome; nothing with the brawler's wraps.)
  */
 export function canPair(main: Item | null, off: Item): boolean {
   if (main === null || main.weapon === null || off.offhand === null) return false;

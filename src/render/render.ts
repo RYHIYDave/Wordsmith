@@ -9,7 +9,7 @@ import type { ActorArt } from '../art/actor_types';
 import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
-import { WORD_COLOR } from '../art/icons';
+import { WORD_COLOR, itemPic } from '../art/icons';
 import type { IconArt } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { SPELL_TONES } from '../art/spells';
@@ -3186,7 +3186,8 @@ export class Renderer {
       // (WORDMELDING, behind MELD: runedust and the Meldstone)
       else if (dr.kind === 'dust') sp = art.icons.runedust;
       else if (dr.kind === 'stone') sp = art.icons.meldstone;
-      else if (dr.item) sp = art.icons.item[dr.item.icon];
+      // (the same picture as in the bag, at its rarity: with ITEMS_A on the art chat's, painted finer than a game pixel; stand draws it at its size)
+      else if (dr.item) sp = itemPic(art.icons, dr.item.icon, dr.item.rarity);
       else continue;
       if (dr.kind === 'orb') {
         // a life orb beats like a heart

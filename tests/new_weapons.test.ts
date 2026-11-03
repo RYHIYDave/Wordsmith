@@ -1,13 +1,15 @@
-// THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS, off): the Veteran's brawler's wraps, the Warlock's grimoire, the
+// THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS, off): the Veteran's brawler's wraps, the Warlock's demonic tome, the
 // Tinkerer's wrench. The owner, 3 Nov 2026, 09:43: “Get the new items and item sprites into the game as well.  New weapon
 // items for the 3 new classes”; his pick at 09:46, “Grimoire and wrench (Recommended)”; of the Veteran's, in the art chat:
-// “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.”
+// “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.” And to the art chat, 09:39: “I need
+// fighters wraps, a demonic tome, and something for the tinkerer’s weapon as items”: so the Warlock's is the kind 'tome' (the
+// art's key), the plainest called a Demonic Tome; it was the 'grimoire' until the art came.
 //   run: tsx --test tests/new_weapons.test.ts
 //
 // Off: nothing changes; no hero ever finds, is sold or wins one. On: each is its own class's only: he starts with it, it
 // drops for him alone (as often as each other kind of weapon), his vendor stocks it for him alone, the stranger offers it
-// to him alone; the wraps take two hands and nothing in the other, the grimoire a focus, the wrench a shield; a piece of
-// any of them is saved and loads back as itself.
+// to him alone; the wraps take two hands and nothing in the other, the tome a focus, the wrench a shield; a piece of
+// any of them is saved and loads back as itself; a saved piece of the old 'grimoire' loads as the tome.
 
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -16,7 +18,7 @@ import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
 import { CLASSES, CLASS_WEAPON, GAMBLE_KINDS, NEW_WEAPONS, OWN_MOVES, TUNE, VENDORS, VENDOR_IDS, WEAPON_ATTR, WEAPON_SKILLS, classWeapon, gambleKinds, vendorStock } from '../src/game/defs';
 import { Game } from '../src/game/game';
-import { CLASS_BASES, ITEM_BASES, canPair, imbueItem, kindName, plainWeapon, rollItem, starterWeapon } from '../src/game/items';
+import { CLASS_BASES, ITEM_BASES, canPair, imbueItem, kindName, migrateItem, plainWeapon, rollItem, starterWeapon } from '../src/game/items';
 import type { RollOpts } from '../src/game/items';
 import { makeIconArt } from '../src/art/icons';
 import { P } from '../src/art/palette';
@@ -29,7 +31,7 @@ paintWithoutCanvas();
 /** The brief: each new class's own, and what its numbers are. */
 const OWN: Record<ClassWeaponKind, { cls: ClassId; like: WeaponKind; hands: 1 | 2; attr: 'str' | 'dex' | 'int'; name: string; vendor: 'armourer' | 'mystic' }> = {
   wraps: { cls: 'brawler', like: 'greatsword', hands: 2, attr: 'str', name: "Brawler's Wraps", vendor: 'armourer' },
-  grimoire: { cls: 'warlock', like: 'wand', hands: 1, attr: 'int', name: 'Grimoire', vendor: 'mystic' },
+  tome: { cls: 'warlock', like: 'wand', hands: 1, attr: 'int', name: 'Demonic Tome', vendor: 'mystic' },
   wrench: { cls: 'tinkerer', like: 'sword', hands: 1, attr: 'dex', name: 'Wrench', vendor: 'armourer' },
 };
 /** What each class started with before the new weapons, and still does with the switch off. */
@@ -145,9 +147,82 @@ test('on: each new class has its own weapon, and starts with it; the first three
       assert.equal(classWeapon(cls), null, cls);
       assert.equal(CLASSES[cls].starts, STARTS[cls], cls);
     }
-    // the Veteran's first one is called as he called it
+    // the Veteran's first one is called as he called it, and so is the Warlock's
     assert.equal(plainWeapon('wraps').name, "Brawler's Wraps");
+    assert.equal(plainWeapon('tome').name, 'Demonic Tome');
   });
+});
+
+test('the Warlock\'s is the demonic tome: its kind the art\'s key, its names in the vein of the others, no grimoire left', () => {
+  assert.deepEqual([...CLASS_WEAPONS], ['wraps', 'tome', 'wrench']);
+  assert.ok(!(CLASS_WEAPONS as readonly string[]).includes('grimoire'));
+  assert.ok(!(ICON_KEYS as readonly string[]).includes('grimoire'), 'no picture key for the grimoire');
+  assert.ok(ICON_KEYS.includes('tome'));
+  assert.equal(CLASS_WEAPON.warlock, 'tome');
+  assert.deepEqual(CLASS_BASES.filter((b) => b.weapon === 'tome').map((b) => [b.id, b.name, b.icon]), [
+    ['tome1', 'Demonic Tome', 'tome'],
+    ['tome2', 'Chained Tome', 'tome'],
+    ['tome3', 'Pact Tome', 'tome'],
+  ]);
+  assert.ok([...ITEM_BASES, ...CLASS_BASES].every((b) => !/grimoire/i.test(b.name) && !/grimoire/i.test(b.id)), 'no base of the old name');
+  assert.equal(kindName(plainWeapon('tome')), 'Demonic Tome', 'over a tome on the floor, and at the stranger\'s');
+  // what a Warlock with a sword in hand is told of a focus
+  withNew(true, () => {
+    const w = new Game('warlock', 3);
+    w.hero.bag = w.hero.bag.map(() => null);
+    w.hero.gear.mainhand = plainWeapon('sword');
+    w.hero.gear.offhand = null;
+    let focus: Item | null = null;
+    const rng = new RNG(5);
+    while (!focus) {
+      const it = rollItem(1, rng, { slot: 'offhand', weapons: ['wand'] });
+      if (it.offhand === 'focus') focus = it;
+    }
+    w.hero.bag[0] = focus;
+    assert.equal(w.equipFromBag(0), 'Needs a wand or a demonic tome');
+  });
+});
+
+test('a saved piece of the old grimoire loads as the demonic tome of the same name tier, keeping all the rest', () => {
+  /** A tome made to look as a grimoire of that tier was saved. */
+  const asGrimoire = (it: Item, tier: number): Item => {
+    const was = ['Chained Grimoire', 'Black Grimoire', 'Pact Grimoire'][tier];
+    const out = JSON.parse(JSON.stringify(it)) as Record<string, unknown>;
+    out.name = it.name.replace(it.baseName, was);
+    out.baseName = was;
+    out.baseId = `grimoire${tier + 1}`;
+    out.weapon = 'grimoire';
+    out.icon = 'grimoire';
+    return out as unknown as Item;
+  };
+  const rng = new RNG(77);
+  for (let tier = 0; tier < 3; tier++) {
+    const base = CLASS_BASES.find((b) => b.id === `tome${tier + 1}`)!;
+    // a magic one with a word burned in, of this tier
+    let it: Item | null = null;
+    for (let k = 0; k < 4000 && !it; k++) {
+      const r = withNew(true, () => rollItem([3, 8, 14][tier], rng, { slot: 'mainhand', rarity: 1, cls: 'warlock' }));
+      if (r.baseId === base.id && r.name.includes(r.baseName)) it = r;
+    }
+    assert.ok(it, `a ${base.name} to save`);
+    assert.ok(imbueItem(it!, 'fire', rng));
+    const old = asGrimoire(it!, tier);
+    assert.ok(old.name.includes('Grimoire'), old.name);
+    const back = migrateItem(JSON.parse(JSON.stringify(old)) as Item);
+    assert.deepEqual(bare(back), bare(it), `${old.name} loads as ${it!.name}`);
+    assert.equal(back.weapon, 'tome');
+    assert.equal(back.icon, 'tome');
+    assert.equal(back.baseId, base.id);
+    // and through a save, the switch off as it would be
+    const g = new Game('warlock', 13);
+    g.hero.bag[0] = old;
+    const run = JSON.parse(JSON.stringify(g.save()));
+    const loaded = Game.restore(run).hero.bag[0]!;
+    assert.deepEqual(bare(loaded), bare(it), `${old.name}, saved and loaded`);
+  }
+  // one already up to date comes back as it was
+  const tome = plainWeapon('tome', 3);
+  assert.deepEqual(bare(migrateItem(JSON.parse(JSON.stringify(tome)) as Item)), bare(tome));
 });
 
 test('on: its numbers are another weapon\'s, all of them; and nothing breaks with OWN_MOVES off', () => {
@@ -223,7 +298,7 @@ test('on: each drops only for a hero of its class, about as often as each other 
   });
 });
 
-test('on: the wraps take both hands and leave the off hand empty; the grimoire takes a focus, the wrench a shield', () => {
+test('on: the wraps take both hands and leave the off hand empty; the tome takes a focus, the wrench a shield', () => {
   withNew(true, () => {
     const offs = (g: Game): Record<'shield' | 'quiver' | 'focus', Item> => {
       const find = (weapons: WeaponKind[]): Item => {
@@ -255,10 +330,10 @@ test('on: the wraps take both hands and leave the off hand empty; the grimoire t
       assert.equal(v.hero.gear.offhand, null);
       assert.equal(v.hero.bag[0], off);
     }
-    // the Warlock: a focus beside his grimoire, nothing else
+    // the Warlock: a focus beside his demonic tome, nothing else
     const w = new Game('warlock', 3);
     const wo = offs(w);
-    assert.equal(w.hero.gear.mainhand!.weapon, 'grimoire');
+    assert.equal(w.hero.gear.mainhand!.weapon, 'tome');
     assert.equal(w.hero.gear.mainhand!.hands, 1);
     assert.deepEqual(Object.entries(wo).filter(([, o]) => canPair(w.hero.gear.mainhand, o)).map(([k]) => k), ['focus']);
     w.hero.bag[0] = wo.shield;
@@ -371,7 +446,7 @@ test('on and off: a piece of any new kind is saved and loads back as itself', ()
   }
 });
 
-test('their pictures: a stand-in for each, in today\'s size, and nothing pink or gold on them', () => {
+test('their pictures with ITEMS_A off: a stand-in for each, in today\'s size, and nothing pink or gold on them (on: the art\'s, tests/items_a_game.test.ts)', () => {
   const art = makeIconArt();
   for (const kind of CLASS_WEAPONS) {
     assert.ok(ICON_KEYS.includes(kind), kind);

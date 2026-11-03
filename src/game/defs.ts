@@ -263,17 +263,20 @@ export const OWN_MOVES = { on: true };
  * THE NEW CLASSES' WEAPONS. The owner, 3 Nov 2026, 09:43, to the main chat: “Get the new items and item sprites into the
  * game as well.  New weapon items for the 3 new classes”; and at 09:46 his pick, “Grimoire and wrench (Recommended)”
  * (offered as the Warlock a pact grimoire, chained shut; the Tinkerer a heavy wrench). The Veteran's (class 'brawler'), his
- * words in the art chat: “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.”
+ * words in the art chat: “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.” And the
+ * Warlock's is a demonic tome, as he named it to the art chat, 3 Nov 2026, 09:39: “I need fighters wraps, a demonic tome, and
+ * something for the tinkerer’s weapon as items” (its kind 'tome', the art's key: it was 'grimoire' until the art came).
  * On: each of the three classes has a weapon of its own (CLASS_WEAPON): he starts with it, it drops only for a hero of his
  * class (as often as each other kind of weapon does for him), his class's vendor stocks it for him alone (vendorStock), and
  * the stranger offers it to him alone (gambleKinds). Its numbers are another weapon's (game/items.ts CLASS_WEAPON_DEFS): the
- * wraps the greatsword's (two hands, nothing in the other), the grimoire the wand's (a focus beside it), the wrench the
- * sword's (a shield beside it). Its pictures are stand-ins until the art chat's (art/icons.ts). Off: no hero ever sees one.
+ * wraps the greatsword's (two hands, nothing in the other), the tome the wand's (a focus beside it), the wrench the
+ * sword's (a shield beside it). Its pictures are the art chat's with ITEMS_A on (art/items_a.ts), else stand-ins
+ * (art/icons.ts). Off: no hero ever sees one.
  */
 export const NEW_WEAPONS = { on: false };
 
 /** NEW_WEAPONS: each new class's own weapon. */
-export const CLASS_WEAPON: Readonly<Partial<Record<ClassId, ClassWeaponKind>>> = { brawler: 'wraps', warlock: 'grimoire', tinkerer: 'wrench' };
+export const CLASS_WEAPON: Readonly<Partial<Record<ClassId, ClassWeaponKind>>> = { brawler: 'wraps', warlock: 'tome', tinkerer: 'wrench' };
 
 /** NEW_WEAPONS: the weapon that is this class's own, while the switch is on; else null (always, for the first three). */
 export function classWeapon(cls: ClassId | null | undefined): ClassWeaponKind | null {
@@ -312,18 +315,18 @@ export const WEAPON_SKILLS: Record<WeaponKind, readonly [SkillId, SkillId]> = {
   staff: ['wave', 'orb'],
   wand: ['familiar', 'beam'],
   // (THE NEW CLASSES' WEAPONS, NEW_WEAPONS: whatever OWN_MOVES says their classes fight with their own moves; these are only
-  // so that nothing breaks with it off: the wraps as the greatsword, the grimoire as the wand, the wrench as the sword)
+  // so that nothing breaks with it off: the wraps as the greatsword, the tome as the wand, the wrench as the sword)
   wraps: ['strike', 'whirlwind'],
-  grimoire: ['familiar', 'beam'],
+  tome: ['familiar', 'beam'],
   wrench: ['strike', 'slam'],
 };
 /** With empty hands: a blow of the fist, and a slam of it. */
 const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
 /**
  * The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand
- * with Intelligence (the new classes' own, NEW_WEAPONS: the wraps with Strength, the grimoire Intelligence, the wrench Dexterity).
+ * with Intelligence (the new classes' own, NEW_WEAPONS: the wraps with Strength, the tome Intelligence, the wrench Dexterity).
  */
-export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', grimoire: 'int', wrench: 'dex' };
+export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int', wraps: 'str', tome: 'int', wrench: 'dex' };
 
 /**
  * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
@@ -1426,8 +1429,8 @@ export const VENDORS: Record<VendorId, { name: string; weapons: readonly WeaponK
 };
 export const VENDOR_IDS: readonly VendorId[] = ['armourer', 'mystic'];
 
-/** NEW_WEAPONS: who stocks each new class's own weapon: the armourer the wraps and the wrench, the mystic the grimoire. */
-export const CLASS_WEAPON_VENDOR: Readonly<Record<ClassWeaponKind, VendorId>> = { wraps: 'armourer', wrench: 'armourer', grimoire: 'mystic' };
+/** NEW_WEAPONS: who stocks each new class's own weapon: the armourer the wraps and the wrench, the mystic the demonic tome. */
+export const CLASS_WEAPON_VENDOR: Readonly<Record<ClassWeaponKind, VendorId>> = { wraps: 'armourer', wrench: 'armourer', tome: 'mystic' };
 
 /**
  * What a vendor deals in for a hero of this class (game.ts rollShop): VENDORS's, and with NEW_WEAPONS on, his class's own
@@ -1475,7 +1478,7 @@ export const GAMBLE_KINDS: readonly GambleKind[] = [
 ];
 
 /** NEW_WEAPONS: what each new class's own weapon is called, at the stranger's and over loot on the floor (items.ts, kindName). */
-export const CLASS_WEAPON_NAME: Readonly<Record<ClassWeaponKind, string>> = { wraps: "Brawler's Wraps", grimoire: 'Grimoire', wrench: 'Wrench' };
+export const CLASS_WEAPON_NAME: Readonly<Record<ClassWeaponKind, string>> = { wraps: "Brawler's Wraps", tome: 'Demonic Tome', wrench: 'Wrench' };
 
 /**
  * What the stranger offers a hero of this class (game.ts gamble): GAMBLE_KINDS, and with NEW_WEAPONS on his class's own
@@ -2298,7 +2301,7 @@ export const QUIPS: {
     staff: ['Staff meeting adjourned.', 'Walk softly.'],
     // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: proposals, his to change)
     wraps: ['Wrapped up.', 'Knuckle down.'],
-    grimoire: ['By the book.', 'Read the small print.'],
+    tome: ['By the book.', 'Read the small print.'],
     wrench: ['Spanner in the works.', 'Tightened up.'],
   },
   /** By the hero's highest attribute (gear counted), whatever their class. */
