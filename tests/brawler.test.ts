@@ -15,6 +15,13 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster } from '../src/game/state';
 import { BRAWLER, BRAWL_TUNE, PUNCHES, punchFor } from '../src/game/brawler';
 import { playableClasses } from '../src/game/warlock';
+import { VETERAN } from '../src/game/veteran';
+import { NEW_WEAPONS } from '../src/game/defs';
+// (THE BRAWLER AS HE WAS: since 3 Nov 2026 he is made again as the Veteran, game/veteran.ts VETERAN, on at his yes; these hold the
+// old Brawler's rules, his switch off for them)
+VETERAN.on = false;
+// (and with the weapons he had then: NEW_WEAPONS, on since 3 Nov 2026, starts the Brawler with the wraps)
+NEW_WEAPONS.on = false;
 
 const DT = 1 / 60;
 type Inner = { rng: RNG; waveT: number; spawn: (k: string, x: number, y: number, pack: number, rank: number, boss: boolean, rng: RNG) => Monster; wakeUp: (m: Monster) => void };

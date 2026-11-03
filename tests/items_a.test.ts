@@ -52,8 +52,8 @@ const pic = (k: ItemAKind, r: 0 | 1 | 2 | 3): Px => {
 const has = (p: Px, x: number, y: number): boolean => x >= 0 && y >= 0 && x < p.w && y < p.h && p.d[(y * p.w + x) * 4 + 3] > 0;
 const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
 
-test('the switch is off, and the game asks for the new pictures only through art/icons.ts itemPic', () => {
-  assert.equal(ITEMS_A.on, false, 'ITEMS_A is on');
+test('the switch is ON at his yes of 3 Nov 2026, and the game asks for the new pictures only through art/icons.ts itemPic', () => {
+  assert.equal(ITEMS_A.on, true, 'ITEMS_A is on');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/items_a.ts') continue;
     const src = fs.readFileSync(`src/${f}`, 'utf8');

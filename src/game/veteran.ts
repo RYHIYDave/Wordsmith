@@ -39,9 +39,11 @@ import { VET_BAKED } from './veteran_baked';
 /**
  * THE SWITCH: off, the Brawler is as he was (and he is left out of the release besides: game/brawler.ts BRAWLER, his
  * 22:52, 2 Nov, “Leave him out for now (Recommended)”); on, the Brawler is the Veteran: his tree (game/talents.ts
- * VETERAN_TREE), his moves and his globes. Off until he has seen him in play and said yes.
+ * VETERAN_TREE), his moves and his globes. ON: shown him in play (veteran_in_game.mp4), asked whether to switch him on in 25.0 in
+ * place of the old Brawler, his words, 3 Nov 2026, by 12:06 (Eastern): “Yes, he’s still the brawler tho.  Veteran was just the
+ * look I picked”; and of his class card, “Brawler (Recommended)” (the class the Brawler; the Veteran his look).
  */
-export const VETERAN = { on: false };
+export const VETERAN = { on: true };
 
 /** His moves, by the art's own names (src/dev/veteran_moves.ts VET_MOTIONS). */
 export type VetMoveId = 'stand' | 'run' | 'dodge' | 'jab' | 'cross' | 'hook' | 'roundkick' | 'push' | 'elbow' | 'uppercut' | 'spinkick' | 'spinkickClose' | 'knee' | 'hurt' | 'fall';

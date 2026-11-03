@@ -21,8 +21,11 @@ import type { Sprite } from '../engine/px';
 import type { Rarity } from '../game/types';
 import { RARITY_COLOR } from './palette';
 
-/** The switch: off until he has said yes to them in the game. */
-export const ITEMS_A = { on: false };
+/**
+ * The switch: ON. Shown them in the game (every kind at its four rarities, the demonic tome, the wrench, the wraps, loot on the
+ * floor), his pick, 3 Nov 2026, by 12:06 (Eastern): “Yes, switch them on (Recommended)”.
+ */
+export const ITEMS_A = { on: true };
 
 export const ITEM_A_KINDS = [
   'sword', 'greatsword', 'bow', 'wand', 'staff', 'wraps', 'tome', 'wrench', 'shield', 'quiver', 'focus',

@@ -15,6 +15,13 @@ import { BRAWL_TUNE } from '../src/game/brawler';
 import type { PunchName } from '../src/game/brawler';
 import { HEAVY } from '../src/game/defs';
 import { TREES } from '../src/game/talents';
+import { VETERAN } from '../src/game/veteran';
+import { NEW_WEAPONS } from '../src/game/defs';
+// (THE BRAWLER AS HE WAS: since 3 Nov 2026 he is made again as the Veteran, game/veteran.ts VETERAN, on at his yes; these hold the
+// old Brawler's rules, his switch off for them)
+VETERAN.on = false;
+// (and with the weapons he had then: NEW_WEAPONS, on since 3 Nov 2026, starts the Brawler with the wraps)
+NEW_WEAPONS.on = false;
 
 const DT = 1 / 60;
 const T = BRAWL_TUNE.talents;

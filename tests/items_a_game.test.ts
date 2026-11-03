@@ -110,7 +110,9 @@ test('the empty slot\'s ghost is drawn at its size in game pixels, as ui.slot dr
 // Off
 
 test('off: every place shows today\'s picture, the very same one, at every rarity', () => {
-  assert.equal(ITEMS_A.on, false, 'ITEMS_A is off');
+  assert.equal(ITEMS_A.on, true, 'ON at his yes of 3 Nov 2026; off for this test');
+  ITEMS_A.on = false;
+  try {
   for (const key of everyKey()) {
     for (const r of RARS) assert.ok(itemPic(art, key, r) === art.item[key], `${key} (rarity ${r}) is today's picture`);
     const s = art.item[key];
@@ -121,6 +123,9 @@ test('off: every place shows today\'s picture, the very same one, at every rarit
   }
   // the new classes' weapons: their stand-ins
   for (const kind of CLASS_WEAPONS) assert.ok(itemPic(art, kind, 2) === art.item[kind], `${kind}: the stand-in, off`);
+  } finally {
+    ITEMS_A.on = true;
+  }
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -146,7 +151,8 @@ test('on: every place asks for the art\'s itemArt(kind, rarity); the old weapons
       for (const r of RARS) assert.ok(itemPic(art, old as IconKey, r) === itemArt(now, r), `${old} shows the ${now}`);
     }
   });
-  assert.ok(itemPic(art, 'sword', 3) === art.item.sword, 'and off again: today\'s');
+  // (and as it was again after: ON, at his yes of 3 Nov 2026)
+  assert.ok(itemPic(art, 'sword', 3) === itemArt('sword', 3), 'and on again, as it is in the game');
 });
 
 test('every kind, the wraps, the demonic tome and the wrench too, has a picture at each rarity, each rarity its own', () => {

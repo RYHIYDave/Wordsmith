@@ -26,6 +26,13 @@ import { drawPunchAt } from '../src/dev/brawler_fx';
 import { brawlerFights, strikes, struck } from '../src/dev/brawler_punches';
 import { brawlerFall, drawFallAt } from '../src/dev/brawler_fall';
 import { brawlerLurch, brawlerReel, drawStruckAt } from '../src/dev/brawler_hits';
+import { VETERAN } from '../src/game/veteran';
+import { NEW_WEAPONS } from '../src/game/defs';
+// (THE BRAWLER AS HE WAS: since 3 Nov 2026 he is made again as the Veteran, game/veteran.ts VETERAN, on at his yes; these hold the
+// old Brawler's rules, his switch off for them)
+VETERAN.on = false;
+// (and with the weapons he had then: NEW_WEAPONS, on since 3 Nov 2026, starts the Brawler with the wraps)
+NEW_WEAPONS.on = false;
 
 /** Every move of his: standing, running, each punch from his guard, each of his eight combos and his swipe, the slip and counter (dev/brawler_punches.ts); and his fall, down on his knees (dev/brawler_fall.ts); and struck, hard and from behind (dev/brawler_hits.ts). */
 const ALL = [...brawlerMoves(), ...brawlerFights(), brawlerFall(), brawlerReel(), brawlerLurch()];

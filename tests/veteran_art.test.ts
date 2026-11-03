@@ -122,7 +122,9 @@ test('the game turns him as it turns heroes, and lays his effects as the art\'s 
 
 test('the Brawler is the Veteran while his switch is on (and where the painter is told so), and his lists are the painter\'s', () => {
   const A = makeHeroArt3();
-  assert.equal(VETERAN.on, false, 'off until his yes');
+  assert.equal(VETERAN.on, true, 'ON at his yes of 3 Nov 2026; off for this test');
+  VETERAN.on = false;
+  try {
   // (the Brawler as he was, on his card: his whole set takes seconds to make)
   const old = A.of('brawler', lookOfPlace('card'));
   const vet = A.of('brawler', { ...lookOfPlace('dungeon'), vet: true });
@@ -147,6 +149,9 @@ test('the Brawler is the Veteran while his switch is on (and where the painter i
   const knight = A.of('warrior', lookOfPlace('dungeon'));
   const k = heroLists(knight.front);
   for (let i = 0; i < k.length; i++) if (i >= k.length - 2 * VET_LISTS.length) assert.equal(k[i].length, 0, 'his places empty for the others');
+  } finally {
+    VETERAN.on = true;
+  }
 });
 
 test('his action lines as frames: the art’s own, where it has them (the jab’s cone out at 14, the hook’s crescent, the push kick’s cone on the floor, the spinning kick’s crescent), cyan a punch and hot orange a kick, never pink or gold', () => {

@@ -271,9 +271,10 @@ export const OWN_MOVES = { on: true };
  * the stranger offers it to him alone (gambleKinds). Its numbers are another weapon's (game/items.ts CLASS_WEAPON_DEFS): the
  * wraps the greatsword's (two hands, nothing in the other), the tome the wand's (a focus beside it), the wrench the
  * sword's (a shield beside it). Its pictures are the art chat's with ITEMS_A on (art/items_a.ts), else stand-ins
- * (art/icons.ts). Off: no hero ever sees one.
+ * (art/icons.ts). Off: no hero ever sees one. ON: shown them in the game (the items' pictures from the game), asked whether to
+ * switch them on for 25.0, his pick, 3 Nov 2026, by 12:06 (Eastern): “Yes, switch them on (Recommended)”.
  */
-export const NEW_WEAPONS = { on: false };
+export const NEW_WEAPONS = { on: true };
 
 /** NEW_WEAPONS: each new class's own weapon. */
 export const CLASS_WEAPON: Readonly<Partial<Record<ClassId, ClassWeaponKind>>> = { brawler: 'wraps', warlock: 'tome', tinkerer: 'wrench' };

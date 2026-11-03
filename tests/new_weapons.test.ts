@@ -69,7 +69,9 @@ function rollCases(): RollOpts[] {
 // Off
 
 test('the switch is off, and off nothing is anyone\'s own', () => {
-  assert.equal(NEW_WEAPONS.on, false);
+  assert.equal(NEW_WEAPONS.on, true, 'ON at his yes of 3 Nov 2026; off for this test');
+  NEW_WEAPONS.on = false;
+  try {
   for (const cls of ALL_CLASS_IDS) {
     assert.equal(classWeapon(cls), null, cls);
     assert.equal(CLASSES[cls].starts, STARTS[cls], `${cls} starts with what he always has`);
@@ -82,9 +84,14 @@ test('the switch is off, and off nothing is anyone\'s own', () => {
   assert.ok(ITEM_BASES.every((b) => !isNew(b.weapon)), 'ITEM_BASES holds none of them');
   assert.deepEqual([...new Set(CLASS_BASES.map((b) => b.weapon))], [...CLASS_WEAPONS]);
   assert.deepEqual([...WEAPONS], ['sword', 'greatsword', 'bow', 'wand', 'staff'], 'the five any hero may find');
+  } finally {
+    NEW_WEAPONS.on = true;
+  }
 });
 
 test('off: a roll for a hero of any class is the very roll it was, and never one of the new kinds', () => {
+  NEW_WEAPONS.on = false;
+  try {
   for (const cls of ALL_CLASS_IDS) {
     for (const opts of rollCases()) {
       for (let seed = 1; seed <= 12; seed++) {
@@ -97,9 +104,14 @@ test('off: a roll for a hero of any class is the very roll it was, and never one
       }
     }
   }
+  } finally {
+    NEW_WEAPONS.on = true;
+  }
 });
 
 test('off: no new kind ever drops, is stocked, or is won at the stranger\'s', () => {
+  NEW_WEAPONS.on = false;
+  try {
   for (const cls of ALL_CLASS_IDS) {
     const g = new Game(cls, 11);
     const drop = (g as unknown as { rollGear(q: number): Item }).rollGear.bind(g);
@@ -120,6 +132,9 @@ test('off: no new kind ever drops, is stocked, or is won at the stranger\'s', ()
       assert.equal(g.gamble(k), null);
       assert.ok(!isNew(g.hero.bag[g.won]!.weapon), `${cls}: a throw for ${GAMBLE_KINDS[k].name}`);
     }
+  }
+  } finally {
+    NEW_WEAPONS.on = true;
   }
 });
 

@@ -25,7 +25,9 @@ export function load(name) {
  * THE BRAWLER LEFT OUT: his words, 2 Nov 2026, 22:52, “Let’s go it’s good.  The brawler is getting completely reworked so it’ll be
  * a while before he’ll be ready”, and his pick, “Leave him out for now (Recommended)”: he comes in when his rework is done.
  */
-export const RELEASE_DEFINES = { __WARLOCK__: 'true', __TINKERER__: 'true', __COMPANIONS__: 'true' };
+// THE BRAWLER IN AGAIN, made again as the Veteran (game/veteran.ts VETERAN): shown him in play, his words, 3 Nov 2026, by 12:06
+// (Eastern): “Yes, he’s still the brawler tho.  Veteran was just the look I picked”.
+export const RELEASE_DEFINES = { __WARLOCK__: 'true', __TINKERER__: 'true', __COMPANIONS__: 'true', __BRAWLER__: 'true' };
 
 export async function bundle(entry, { minify = false, define = {} } = {}) {
   const esbuild = load('esbuild');
