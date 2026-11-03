@@ -1,4 +1,4 @@
-// THE HIGH CITY, FLOOR 20: THE QUIET TOWER'S OWN (behind HIGH_CITY, off): the Hush in its own shapes (game/act1_rules/hshape.ts),
+// THE HIGH CITY, FLOOR 20: THE QUIET TOWER'S OWN (behind HIGH_CITY, off): the Hush in its own shapes (game/act1_rules/hshape.ts: going round him and swooping, the art chat's new rhythm),
 // the shadows of the four royals (rshadow.ts), the Order's last masks (order.ts, Monster.form 2 there), and the Moth (moth.ts). Here:
 //   1. built: their rules, pictures and effects; the Hush's drift the art's; each royal its own acts; the Moth's acts;
 //   2. the Hush's grip: shut before it, holding him, his words dark; its dart four tiles on;
@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 import { HIGH_CITY } from '../src/game/act1';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { HUSH_TUNE, RULES as HUSH, gripPoint } from '../src/game/act1_rules/hshape';
+import { HS_CIRCLE } from '../src/art/hush_shapes_moves';
 import { RULES as SHADOW, maskAt, pictureWay, royalOf } from '../src/game/act1_rules/rshadow';
 import { MOTH_TUNE, RULES as MOTH, bookOf, inBeams, inGust, mothPhase, perched } from '../src/game/act1_rules/moth';
 import { act1Fig } from '../src/art/act1_figs/index';
@@ -50,12 +51,12 @@ function floor20(seed = 4): Game {
 test('1. built: rules, pictures, effects', () => high(() => {
   for (const k of ['hshape', 'rshadow', 'moth'] as const) assert.ok(act1Rules(k) && act1Fig(k) && act1Fx(k), k);
   assert.equal(HUSH!.gait.pace, HS_PACE);
-  assert.deepEqual(HUSH!.acts.map((a) => a.id), ['hshape:grip', 'hshape:dart']);
+  assert.deepEqual(HUSH!.acts.map((a) => a.id), ['hshape:grip', 'hshape:glideL', 'hshape:glideR', 'hshape:glideLF', 'hshape:glideRF', 'hshape:swoopL', 'hshape:swoopR']);
   assert.equal(act1Fig('rshadow')!.looks!.length, 3, 'four royals: its own and three looks');
   assert.deepEqual(MOTH!.acts.map((a) => a.id), ['moth:buffet', 'moth:dust', 'moth:swarm', 'moth:eyes', 'moth:beat', 'moth:land']);
 }));
 
-test('2. the Hush: its grip shuts before it, holds him, darkens his words; its dart carries it four tiles', () => high(() => {
+test('2. the Hush: its grip shuts before it, holds him, darkens his words; it circles him, closing, and swoops square before him', () => high(() => {
   const g = floor20();
   const h = g.hero;
   const m = g.spawn('hshape', h.x - 1.5, h.y, 970, 0, false, g.rng) as Monster;
@@ -72,11 +73,49 @@ test('2. the Hush: its grip shuts before it, holds him, darkens his words; its d
   assert.ok(h.life < before, 'struck');
   assert.ok(g.hushT > 0, 'his words dark');
   assert.ok((h.slowT ?? 0) > 0 && (h.slowBy ?? 0) >= HUSH_TUNE.grip.slow, 'held');
-  // (the dart: four tiles on, so far as the floor lets it)
-  const x0 = m.x;
-  HUSH!.end!(R, m, HUSH!.acts[1]);
-  assert.ok(m.x - x0 > 1, 'carried on');
-  assert.ok(m.x - x0 <= HUSH_TUNE.dart.carry + 1e-6);
+  // (the new rhythm: one four tiles off him, in sight, goes round him on its ring, closing, and in time swoops)
+  m.dead = true;
+  h.slowT = 0;
+  g.hushT = 0;
+  let best: { m: Monster; d: number } | null = null;
+  for (const [dx, dy] of [[4, 0], [0, 4], [-4, 0], [0, -4], [3, 3], [-3, -3]]) {
+    if (!g.isOpen(h.x + dx, h.y + dy)) continue;
+    best = { m: g.spawn('hshape', h.x + dx, h.y + dy, 970, 0, false, g.rng) as Monster, d: 4 };
+    break;
+  }
+  assert.ok(best, 'room for one four tiles off');
+  const q = best!.m;
+  q.words = [];
+  q.seen = true;
+  const a0 = Math.atan2(q.y - h.y, q.x - h.x);
+  let swooped = '';
+  let least = 99;
+  let went = 0;
+  let prev = a0;
+  const hx = h.x;
+  const hy = h.y;
+  for (let k = 0; k < 30 * 14 && !swooped; k++) {
+    h.x = hx;
+    h.y = hy;
+    h.life = h.d.maxLife;
+    g.update(1 / 30, emptyControls());
+    const d = Math.hypot(q.x - h.x, q.y - h.y);
+    least = Math.min(least, d);
+    const a = Math.atan2(q.y - h.y, q.x - h.x);
+    let da = a - prev;
+    if (da > Math.PI) da -= 2 * Math.PI;
+    if (da < -Math.PI) da += 2 * Math.PI;
+    went += Math.abs(da);
+    prev = a;
+    if (q.act && q.act.id.startsWith('hshape:swoop')) swooped = q.act.id;
+  }
+  assert.ok(went > 1.5, `it went round him (${went.toFixed(2)} radians)`);
+  assert.ok(least <= HS_CIRCLE.fast.ring + 0.3, `its ring closed to the near ring (${least.toFixed(2)})`);
+  assert.ok(swooped, 'it swooped');
+  // (its swoop's last turn ends square before him: its picture faces one of the four ways)
+  const fx = q.fx;
+  const fy = q.fy;
+  assert.ok(Math.min(Math.abs(fx), Math.abs(fy)) < 0.12, `square before him (${fx.toFixed(2)}, ${fy.toFixed(2)})`);
 }));
 
 test('3. the shadows: each royal its own acts; all four come; the masks fan out; the Queen behind him', () => high(() => {

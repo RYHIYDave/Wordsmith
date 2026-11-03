@@ -1,14 +1,14 @@
 // ACT 2, PART TWO, THE HIGH CITY: FLOOR 20, THE QUIET TOWER: THE HUSH IN ITS OWN SHAPES: what they do, drawn (render/act1_fx/
-// types.ts). Their drift, dart and grip are in their own pictures (art/hush_shapes_moves.ts); here:
+// types.ts). Their drift, their circling glides, their swoop and grip are in their own pictures (art/hush_shapes_moves.ts); here:
 // - THE GRIP'S COILS round whoever it caught (or where it shut on nothing), the art's gripPainted: its far half under him, its near
-//   half over him (GRIP_FX, 0.8 s from the blow);
-// - THEIR WARNINGS through each wind-up, in the enemy's pink: the dart's line (four tiles), the grip's round.
+//   half over him (GRIP_FX, 0.8 s from the blow), after its grip or its swoop;
+// - THEIR WARNINGS, in the enemy's pink: the round its arms will shut on, through the grip's wind-up and the swoop's held shiver.
 import { GRIP_CANVAS, gripPainted } from '../../art/hush_shapes';
-import { HS_DART, HS_GRIP } from '../../art/hush_shapes_moves';
+import { HS_GRIP, HS_SWOOP } from '../../art/hush_shapes_moves';
 import { toSprite } from '../../art/kit';
 import type { Sprite } from '../../engine/px';
 import { HUSH_TUNE, gripPoint } from '../../game/act1_rules/hshape';
-import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
+import { drawFanWarn, warnK } from './garden_warn';
 import type { Act1Fx } from './types';
 
 const FPS = 30;
@@ -27,11 +27,9 @@ export const FX: Act1Fx | null = {
   ground(c, m) {
     if (!c.g || !m || !m.act) return;
     const w = { x: m.x, y: m.y, fx: m.fx, fy: m.fy, hand: m.act.hand };
-    if (m.act.id === 'hshape:dart') {
-      const k = warnK(m.act.t, HS_DART.warn[0] - 0.1, HS_DART.strike[0]);
-      if (k >= 0) drawStripWarn(c.g, c.at, w, 0.3, HUSH_TUNE.dart.carry, -0.45, 0.45, k, c.t);
-    } else if (m.act.id === 'hshape:grip') {
-      const k = warnK(m.act.t, HS_GRIP.warn[0] - 0.15, HS_GRIP.hit);
+    const swoop = m.act.id === 'hshape:swoopL' || m.act.id === 'hshape:swoopR';
+    if (m.act.id === 'hshape:grip' || swoop) {
+      const k = swoop ? warnK(m.act.t, HS_SWOOP.warn[0], HS_SWOOP.hit) : warnK(m.act.t, HS_GRIP.warn[0] - 0.15, HS_GRIP.hit);
       const P = gripPoint(m);
       if (k >= 0) drawFanWarn(c.g, c.at, { ...w, x: P.x, y: P.y }, -Math.PI, Math.PI, HUSH_TUNE.grip.r, k, c.t);
     }
