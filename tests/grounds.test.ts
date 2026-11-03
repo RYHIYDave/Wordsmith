@@ -61,14 +61,16 @@ const isLight = (r: number, g: number, b: number): boolean => {
   return (h >= 8 && h <= 75 && s > 0.35 && v > 0.3) || isFire(r, g, b);
 };
 
-test('the grounds: off, and nothing of the game imports it (no game file changed for it)', () => {
+// (brought into the game by the main chat, 2 Nov 2026, behind the same switch: the files that bring it in may import it)
+const BROUGHT = ['art/floors.ts', 'game/grounds_way.ts', 'main.ts', 'render/grounds.ts', 'render/render.ts'].map((f) => join('src', f));
+test('the grounds: off, and nothing of the game imports it but the files that bring it in', () => {
   assert.ok(GROUNDS.on === false, 'GROUNDS is off');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(`${join('src', 'dev')}`) && !p.endsWith(join('art', 'grounds.ts')) && /from '\.\.?\/(art\/)?grounds'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(`${join('src', 'dev')}`) && !p.endsWith(join('art', 'grounds.ts')) && !BROUGHT.includes(p) && /from '\.\.?\/(art\/)?grounds'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

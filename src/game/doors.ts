@@ -95,6 +95,8 @@ export const DOORS = { on: true, share: 0.2 };
 export function hasDoor(f: Floor, r: Room): boolean {
   // (and THE MIX's two rooms next door: the door between them is what they are)
   if (r.kind === 'treasure' || r.kind === 'guardian' || r.nextDoor) return true;
+  // (FLOOR 2 AS THE PRISON'S GROUNDS: a courtyard is come into through a gateway, an arch with no door: game/grounds_way.ts)
+  if (r.court) return false;
   let h = (Math.imul(f.seed | 0, 0x9e3779b1) ^ Math.imul(f.depth | 0, 0x85ebca6b) ^ Math.imul((r.id + 1) | 0, 0xc2b2ae35)) | 0;
   h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
   h = Math.imul(h ^ (h >>> 15), 0x846ca68b);

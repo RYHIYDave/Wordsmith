@@ -3,6 +3,7 @@
 
 import type { PrisonChannel } from './prison_way';
 import type { ChapelPlan } from './chapel_way';
+import type { GroundsPlan } from './grounds_way';
 import type { LairPlan } from './lair_way';
 import type { CompanionGroup, CompanionKind } from './companions';
 import type { Royal } from './royal_cards';
@@ -1211,6 +1212,8 @@ export interface Level {
   channels?: PrisonChannel[];
   /** FLOOR 4, CHAPEL: the way in from floor 3 and the walls the miners broke through (game/chapel_way.ts). */
   chapel?: ChapelPlan;
+  /** FLOOR 2 AS THE PRISON'S GROUNDS (game/grounds_way.ts, behind GROUNDS): its courtyards, the ways between them, the long walk, the stair down from floor 1, the chapel. */
+  grounds?: GroundsPlan;
   /** FLOOR 5, LAIR_TEMPLE: the mine and the temple, the thresholds between, the rails and the rift's cracks (game/lair_way.ts). */
   lair?: LairPlan;
   /**

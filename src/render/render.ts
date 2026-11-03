@@ -79,6 +79,7 @@ import { ChapelView } from './chapel';
 import { LairView } from './lair';
 import { TombView } from './tomb';
 import { CastleView } from './castle';
+import { GroundsView } from './grounds';
 import type { TinkererFx } from './tinkerer_fx';
 import { TOMB_GATE, tombGateDropAt, tombGateSlam } from '../art/tomb_gate';
 import type { LookView } from './looks';
@@ -492,11 +493,15 @@ export class Renderer {
   readonly chapel = new ChapelView();
   /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
   readonly lair = new LairView();
+  /** FLOOR 2, THE PRISON'S GROUNDS AT NIGHT (render/grounds.ts, behind GROUNDS). */
+  readonly grounds = new GroundsView();
+  /** (FLOOR 2, THE PRISON'S GROUNDS: this frame's level while the sky is over one of its courtyards: only what is not behind its far walls is drawn) */
+  private groundsOnly: Game['level'] | null = null;
   /** THE FIRST FIVE FLOORS' NEW LOOKS (render/looks.ts): the one of the floor being drawn, if any (set as each frame's floor is drawn). */
   private lookNow: LookView | null = null;
   /** The new look of this level's floor, if it has one on. */
   lookOf(L: Game['level']): LookView | null {
-    for (const v of [this.castle, this.tomb, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
   }
   /** A picture of the game's own walls (a slanting wall) in the look of the floor being drawn: the prison's colours on floor 3. */
@@ -1964,9 +1969,11 @@ export class Renderer {
     /** Is the ground at this place the kind this pass draws on? */
     const hs = f.height;
     const yo = this.yardOnly;
+    const go = this.groundsOnly;
     const here = (x: number, y: number): boolean => {
       // (THE HEADSMAN'S YARD: from in it, nothing of what lies behind its far walls)
       if (yo && !this.yard.shows(yo, Math.floor(x), Math.floor(y))) return false;
+      if (go && !this.grounds.shows(go, Math.floor(x), Math.floor(y))) return false;
       if (pass < 0 || !top) return true;
       const tx = Math.floor(x);
       const ty = Math.floor(y);
@@ -2738,6 +2745,10 @@ export class Renderer {
     const prisonOn = look === this.prison;
     this.yardOnly = yardOut ? f : null;
     if (yardOut) this.yard.back(g, cam, f, W, H);
+    // (FLOOR 2, THE PRISON'S GROUNDS: under the sky in a courtyard, the night sky and the tower over its far walls: render/grounds.ts)
+    const groundsSky = look === this.grounds ? this.grounds.skyOver(L, h.x, h.y, yardOut) : null;
+    this.groundsOnly = groundsSky ? L : null;
+    if (groundsSky) this.grounds.drawSky(g, cam, W, H);
     // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
     if (look?.back) {
       for (const q of look.back(L, t)) {
@@ -2771,6 +2782,7 @@ export class Renderer {
         if (hallNow && (tx < hallNow.inside.x - 1 || ty < hallNow.inside.y - 1 || tx > hallNow.inside.x + hallNow.inside.w || ty > hallNow.inside.y + hallNow.inside.h)) continue;
         // (THE HEADSMAN'S YARD: from in it, only it, its walls and its way in: behind its far walls, the sky)
         if (yardOut && !this.yard.shows(f, tx, ty)) continue;
+        if (groundsSky && !this.grounds.shows(L, tx, ty)) continue;
         const idx = ty * f.w + tx;
         if (!L.explored[idx]) continue;
         const kind = f.tiles[idx];
@@ -2939,6 +2951,7 @@ export class Renderer {
       if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
       // (THE HEADSMAN'S YARD: its scaffold and its gallows, in strips each in its place; what stands on their other tiles is nothing to see)
       if (yardOut && !this.yard.shows(f, p.tx, p.ty)) continue;
+      if (groundsSky && !this.grounds.shows(L, p.tx, p.ty)) continue;
       const big = yardOn && p.kind === 'piece' ? this.yard.owns(p.name) : null;
       if (big === 'foot') continue;
       if (big === 'piece') {
@@ -4710,7 +4723,10 @@ export class Renderer {
     // the screen are shadowy whatever is lit there (what GLOWS is drawn after the dark, and still shines)
     // (THE HEADSMAN'S YARD: the sky over its far walls lit by its moon, and the edges of the screen less dark under the open sky)
     if (yardSky) this.yard.skyLift(dg, cam, f, YARD_SKY_LIFT);
-    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? (this.lookNow?.vignette ?? VIGNETTE_TOWN) : yardSky ? YARD_VIGNETTE : VIGNETTE), 0, 0);
+    // (FLOOR 2, THE PRISON'S GROUNDS: the sky's own light over a courtyard's far walls; under the sky, his yard's vignette)
+    const groundsOut = look === this.grounds && this.grounds.outdoors();
+    if (look === this.grounds) this.grounds.skyLift(dg, cam);
+    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? (this.lookNow?.vignette ?? VIGNETTE_TOWN) : yardSky ? YARD_VIGNETTE : groundsOut ? (this.grounds.vignette ?? VIGNETTE) : VIGNETTE), 0, 0);
   }
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {

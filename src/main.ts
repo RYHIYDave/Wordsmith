@@ -4,6 +4,7 @@
 import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
+import { GROUNDS } from './art/grounds';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
 import { DOOR_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
@@ -2674,6 +2675,10 @@ useEnemyMoves(ENEMY_MOVES.on);
 useFloorLooks(FLOOR_LOOKS.on);
 // (THE ONE RELEASE, ALL OF IT: the High City, floors 16 to 20, his “All of it in this one”, 2 Nov 2026: game/all_of_it.ts)
 useAllOfIt(ALL_OF_IT.on);
+// (FLOOR 2 AS THE PRISON'S GROUNDS AT NIGHT, behind GROUNDS: off in the game until his yes to it in play; on only in a page built to
+// show it to him (its build sets __GROUNDS_TRY__): art/grounds.ts, game/grounds_way.ts, render/grounds.ts)
+declare const __GROUNDS_TRY__: boolean | undefined;
+if (typeof __GROUNDS_TRY__ !== 'undefined' && __GROUNDS_TRY__ === true) GROUNDS.on = true;
 
 // (THE PAINTER: the same script, started as the painter's worker, paints and does nothing else)
 if ((globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) paintWorkerMain();

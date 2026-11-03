@@ -14,6 +14,7 @@ import { dress } from './first5';
 import { act1Floor } from './act1';
 import { makeAct1Level } from './act1_level';
 import { beforeStretch, chapelHere, layChapel, placeChapel } from './chapel_way';
+import { beforeGrounds, layGrounds, planGrounds } from './grounds_way';
 import { lairHere, layLair, openLairDoors, planLair } from './lair_way';
 import { layTomb, tombHere } from './tomb_way';
 import { CASTLE_HALL } from '../art/castle_hall';
@@ -852,6 +853,12 @@ export function makeDungeon(depth: number, seed: number): Level {
   const chapel = chapelHere(depth) ? placeChapel(floor) : null;
   if (chapel?.wayIn) floor.start = insideDoorway(chapel.wayIn);
   if (chapel) floor.props = floor.props.filter((p) => ![chapel.wayIn, ...chapel.breaks].some((st) => st && beforeStretch(st, p.x, p.y)));
+  // (FLOOR 2 AS THE PRISON'S GROUNDS: its courtyards, the ways through the blocks, the long walk; the stair down from floor 1 in a back
+  // wall of the gaoler's room, the hero a tile and a half before it; the chapel's front in a block: game/grounds_way.ts. Their tiles
+  // stay wall; what stood before them is taken away.)
+  const grounds = planGrounds(floor);
+  if (grounds?.wayIn) floor.start = insideDoorway(grounds.wayIn);
+  if (grounds) floor.props = floor.props.filter((p) => !beforeGrounds(grounds, p.x, p.y));
   // (FLOOR 5, LAIR_TEMPLE: the ways from the mine into the temple left open, its threshold standing in each: game/lair_way.ts)
   if (lairHere(depth)) openLairDoors(floor);
   // (FLOOR 3, PRISON_EXIT: its way down is a door out the back of his hall, not a stairwell: game/prison_way.ts. What stood or
@@ -913,10 +920,13 @@ export function makeDungeon(depth: number, seed: number): Level {
   if (mouth) level.ways.mouth = mouth;
   if (door) level.ways.exit = door;
   if (chapel) level.chapel = chapel;
+  if (grounds) level.grounds = grounds;
   // (THE FIRST FIVE FLOORS: the floor laid with its own pieces, last, by dice of its own: game/first5.ts)
   level.dress = dress(level, depth, seed);
   // (FLOOR 4, CHAPEL: its own things, after the floor's: the rock before the break-ins, candles, his hall's piers and altar)
   if (chapel) layChapel(level);
+  // (FLOOR 2, GROUNDS: the wells, the tumbrils, the braziers before the chapel, after the floor's things: game/grounds_way.ts)
+  if (grounds) layGrounds(level);
   // (FLOOR 1, TOMB: the king's tomb's own tombs, after the floor's things: game/tomb_way.ts)
   if (tombHere(depth)) layTomb(level);
   // (FLOOR 5, LAIR_TEMPLE: which of it is the mine and which the temple, the thresholds between, the rails and the rift's cracks;

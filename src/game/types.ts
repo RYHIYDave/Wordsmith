@@ -379,6 +379,8 @@ export interface Room {
    */
   block?: boolean;
   cell?: boolean;
+  /** FLOOR 2 AS THE PRISON'S GROUNDS (game/grounds_way.ts, behind GROUNDS; absent where it is off): a courtyard of its grid, under the sky. */
+  court?: boolean;
   /**
    * (THE TRAPS, game/traps.ts) A SEALED DOOR stands in its way in, a rune of this word on it: it
    * opens only to a hit from an attack that carries the word (`DoorSpot.word`).

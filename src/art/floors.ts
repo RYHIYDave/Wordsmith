@@ -8,6 +8,7 @@ import { CHAPEL, makeChapelArt } from './chapel';
 import { TOMB, makeTombArt } from './tomb';
 import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { PRISON, makePrisonArt } from './prison';
+import { GROUNDS, makeGroundsArt } from './grounds';
 import { FIRST5 } from '../game/ways';
 import { cryptFloor, cryptGround, cryptProps, cryptWays } from './crypt';
 import type { WaypointArt } from './crypt_ways';
@@ -66,7 +67,8 @@ export function lookPieces(k: number): Map<string, Piece> {
     // (FLOOR 4, THE BURIED CHAPEL, behind CHAPEL: floor 4's own pieces in look A's colours, and the chapel's own: art/chapel.ts;
     // FLOOR 5, THE MINE AND THE TEMPLE, behind LAIR_TEMPLE: floor 5's own in look A's colours, and the place's own: art/lair_temple.ts)
     // (FLOOR 1, THE KING'S TOMB, behind TOMB: floor 1's own pieces in look B's colours, and the place's own: art/tomb.ts)
-    const list = k === 1 ? (TOMB.on ? makeTombArt().pieces : wardenPieces()) : k === 2 ? headsmanPieces() : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? (CHAPEL.on ? makeChapelArt().pieces : ossuaryPieces()) : LAIR_TEMPLE.on ? makeLairTempleArt().pieces : lairPieces();
+    // (FLOOR 2, THE PRISON'S GROUNDS, behind GROUNDS: floor 2's own pieces in the night's colours, and the grounds' own: art/grounds.ts)
+    const list = k === 1 ? (TOMB.on ? makeTombArt().pieces : wardenPieces()) : k === 2 ? (GROUNDS.on ? makeGroundsArt().pieces : headsmanPieces()) : k === 3 ? (PRISON.on ? makePrisonArt().pieces : chainedPieces()) : k === 4 ? (CHAPEL.on ? makeChapelArt().pieces : ossuaryPieces()) : LAIR_TEMPLE.on ? makeLairTempleArt().pieces : lairPieces();
     PIECES.set(k, (m = new Map(list.map((p) => [p.name, p]))));
   }
   return m;
