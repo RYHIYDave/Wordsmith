@@ -225,7 +225,7 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
-Version 23.0 (24.3 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Version 23.0 (25.0 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
 Ward (the Crier), the Undercity (the Rat King), the Millrace (the Scraper and the Quill), the House of Quiet (the Physician) and the
 Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
 others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
@@ -267,6 +267,14 @@ Version 24.3: floor 15's boss, the Censor, fights in one phase and inks the floo
 where you are heading, lines of ink run across his room, and every bar he slams stays where it lands and hurts you while you
 stand on it, more of his room under it the lower his health, the oldest drying away. He strikes through twice in a row and
 redacts in turns (one way, both ways, the whole page struck out), and walks off his own ink to clean floor, so the fight moves.
+Version 25.0: the High City, floors 16 to 20 (the Swan Gardens, the Masque, the Glass Gallery, the Keep and the Quiet Tower, with
+the Princess, the Prince, the Queen, the King and the Moth), the Royal Cards, and two new heroes: the Warlock, who burns into
+his demon form, and the Tinkerer, with her contraptions and her Golem, which rocket-jumps and lands fist first. The Brawler is
+made again: a tap is a punch, a hold a kick, a swipe his jump, three blows to a combo and his jump setting the last one in fire,
+with a new skill tree. The ranger has a companion: a hawk, a snake, or a third. Every enemy moves the new way (a big wind-up, a
+lightning-quick blow, a big wind-down), floors 1 to 5 have new looks and the first town is the castle's hall. New pictures for
+every item and three new weapons (wraps, a demonic tome, a wrench). On floor 20, the Rime Shade's breath sends a line of rime
+creeping over the floor that freezes you if it reaches you.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
