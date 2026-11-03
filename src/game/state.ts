@@ -884,9 +884,13 @@ export interface Golem {
   y: number;
   fx: number;
   fy: number;
-  act: 'arrive' | 'stand' | 'walk' | 'punch' | 'cannon' | 'pound' | 'charge' | 'down';
+  act: 'arrive' | 'stand' | 'walk' | 'punch' | 'cannon' | 'pound' | 'charge' | 'down' | 'jump';
   actT: number;
   did: boolean;
+  /** (ITS ROCKET JUMP) Where it took off from (its landing is `ax`, `ay`), and seconds until it may jump again. */
+  jx?: number;
+  jy?: number;
+  jumpCd?: number;
   /** The enemy it goes for (its id), and where the blow of its act is aimed. */
   target: number;
   ax: number;

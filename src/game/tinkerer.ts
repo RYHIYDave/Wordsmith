@@ -84,9 +84,17 @@ export const TINKER_TUNE = {
      * How fast it knuckles along (tiles a second; her run is 4.6), and how near her it keeps when nothing is to be fought. As fast
      * as she runs since his word, 30 Oct 2026, 23:55 (to the art chat, on the board): “The golem needs work.  It's too slow and
      * not aggressive enough.  It needs to run at the enemies.”; “No he just needs more movespeed and by run I just mean he's
-     * always trying to be in melee range.” (it was 3.0)
+     * always trying to be in melee range.” (it was 3.0). And faster than she runs since his word of 2 Nov 2026, 21:29: “And the
+     * golem is gonna need that rocket jump for positioning, and probably more movespeed” (it was 4.6).
      */
-    speed: 4.6,
+    speed: 5.5,
+    /**
+     * ITS ROCKET JUMP (the same word of 2 Nov 2026): further than `from` tiles from where it is going (what it fights, or her side),
+     * seen, it blasts off from its stacks and comes down there, at most `most` tiles on, `long` seconds in the air, `high` game
+     * pixels at the top; for getting there, not for striking; `wait` seconds between jumps. (Its pictures the art chat's to draw:
+     * until then its own stand, lifted, its take-off her bomb's blast and its landing its drop-in's.)
+     */
+    jump: { from: 5, most: 8, long: 0.7, high: 46, wait: 3.5 },
     near: 1.7,
     /** Further from her than this, it is whistled up beside her again. */
     lost: 12,

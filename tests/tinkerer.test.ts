@@ -220,7 +220,7 @@ test('her Golem punches what is near it, and runs at what is further off to punc
   assert.ok(hurt(near) > 0);
   // (his word, 30 Oct 2026: “It needs to run at the enemies.”; “always trying to be in melee range”: as fast as she runs, at it)
   assert.equal(GOLEM_CANNON.on, false, 'its cannon off for now');
-  assert.equal(G.speed, 4.6, 'as fast as she runs');
+  assert.equal(G.speed, 5.5, 'faster than she runs (his word of 2 Nov 2026, 21:29)');
   const g2 = room(5);
   use(g2, 1, 3, 0);
   wait(g2, G.arrive + 0.1);
@@ -329,6 +329,30 @@ test('its uppercut: its blow up close lands at the uppercut’s own moment and s
   } finally {
     GOLEM_LOOK.uppercut = true;
   }
+});
+
+test('ITS ROCKET JUMP (his word, 2 Nov 2026, 21:29: “And the golem is gonna need that rocket jump for positioning, and probably more movespeed”): far from what it goes for, it blasts off and comes down by it; not again at once', () => {
+  const g = room(5);
+  use(g, 1, 3, 0);
+  wait(g, G.arrive + 0.1);
+  const gm = g.golem!;
+  // (it stands a little behind her; what it will go for is eight tiles off it, within her leash)
+  gm.x = g.hero.x - 0.5;
+  gm.y = g.hero.y - 1.5;
+  const far = dummy(g, 0, 6.5);
+  const from = { x: gm.x, y: gm.y };
+  let jumped = false;
+  let landedAt = 1e9;
+  for (let k = 0; k < 60; k++) {
+    const ev = wait(g, 1 / 30);
+    if (ev.some((e) => e.t === 'bombsAway')) jumped = true;
+    if (jumped && g.golem && g.golem.act !== 'jump' && landedAt === 1e9) landedAt = Math.hypot(g.golem.x - far.x, g.golem.y - far.y);
+  }
+  assert.ok(jumped, 'it blasts off');
+  assert.ok(landedAt < 3.5, `and comes down by it (${landedAt.toFixed(2)} tiles off)`);
+  assert.ok(Math.hypot(g.golem!.x - from.x, g.golem!.y - from.y) > 3, 'it went');
+  assert.ok((g.golem!.jumpCd ?? 0) > 0 || g.golem!.act !== 'jump', 'not again at once');
+  assert.equal(G.jump.from, 5);
 });
 
 test('left far behind, her Golem is whistled up beside her again; when she falls, it winds down where it stands and is gone', () => {

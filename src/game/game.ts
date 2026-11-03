@@ -5954,6 +5954,7 @@ export class Game {
     g.actT += gdt;
     g.punchCd = Math.max(0, g.punchCd - gdt);
     g.cannonCd = Math.max(0, g.cannonCd - gdt);
+    g.jumpCd = Math.max(0, (g.jumpCd ?? 0) - gdt);
     if (g.act === 'down') {
       if (g.actT >= G.down && !this.over) gone();
       return;
@@ -5985,6 +5986,21 @@ export class Game {
     if (arm === 'tesla' && g.act !== 'charge') this.teslaCoil(g, gdt);
     if (g.act === 'charge') {
       this.stepCharge(g, gdt);
+      return;
+    }
+    if (g.act === 'jump') {
+      // (ITS ROCKET JUMP: carried through the air from where it took off to where it comes down; down, a thud of steam and dust)
+      const J = G.jump;
+      const u = Math.min(1, g.actT / J.long);
+      g.x = (g.jx ?? g.x) + (g.ax - (g.jx ?? g.x)) * u;
+      g.y = (g.jy ?? g.y) + (g.ay - (g.jy ?? g.y)) * u;
+      if (u >= 1) {
+        this.emit({ t: 'golemArrive', x: g.x, y: g.y });
+        this.emit({ t: 'shake', amount: 2 });
+        this.sfx('slam', 0.6);
+        g.jumpCd = J.wait;
+        this.golemIdle(g);
+      }
       return;
     }
     // (GROWTH SERUM: grown, its fist reaches twice as far)
@@ -6119,6 +6135,31 @@ export class Game {
       stop = 0.5;
     }
     const d = Math.hypot(gx - g.x, gy - g.y);
+    // (ITS ROCKET JUMP: far from where it is going, and seeing it, it blasts off there)
+    if (d - stop > G.jump.from && (g.jumpCd ?? 0) <= 0 && this.sees(g.x, g.y, gx, gy)) {
+      const go = Math.min(G.jump.most, d - stop);
+      let lx = g.x + ((gx - g.x) / d) * go;
+      let ly = g.y + ((gy - g.y) / d) * go;
+      // (where it comes down: open floor, else a little short of it)
+      for (let k = 0; k < 8 && !this.isOpen(lx, ly); k++) {
+        lx -= ((gx - g.x) / d) * 0.5;
+        ly -= ((gy - g.y) / d) * 0.5;
+      }
+      if (this.isOpen(lx, ly) && Math.hypot(lx - g.x, ly - g.y) > 2) {
+        face(gx, gy);
+        g.jx = g.x;
+        g.jy = g.y;
+        g.ax = lx;
+        g.ay = ly;
+        g.act = 'jump';
+        g.actT = 0;
+        g.did = false;
+        this.emit({ t: 'bombsAway', x: g.x, y: g.y, r: 1 });
+        this.emit({ t: 'shake', amount: 1.5 });
+        this.sfx('explode', 0.45);
+        return;
+      }
+    }
     if (d > stop) {
       const step = Math.min(d - stop, G.speed * gdt);
       const was = { x: g.x, y: g.y };

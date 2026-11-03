@@ -1399,8 +1399,10 @@ export class Renderer {
         }
         else if (g.act === 'down' && clips.fall) sp = at(clips.fall, g.actT);
         else sp = set.idle[0];
-        // (whistled out: it drops in, landing heavy)
-        const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : 0;
+        // (whistled out: it drops in, landing heavy; ITS ROCKET JUMP, up over the floor in its arc, its stand lifted (the art chat's
+        // pictures of it to come))
+        const J = TINKER_TUNE.golem.jump;
+        const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : g.act === 'jump' ? Math.sin(Math.PI * Math.min(1, g.actT / J.long)) * J.high : 0;
         // (her tree: GROWTH SERUM, twice as big, growing and shrinking back over a quarter of a second; OVERDRIVE, her cyan
         // pulsing over it; LIGHTNING ROD, her cyan flickering over it while the enemies go after it)
         const grow = g.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - g.growT) / 0.25, g.growT / 0.25)) : 1;
@@ -2353,7 +2355,7 @@ export class Renderer {
       if (!here(gm.x, gm.y)) continue;
       const GS = TINKER_TUNE.talents.growth;
       const grow = gm.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - gm.growT) / 0.25, gm.growT / 0.25)) : 1;
-      const come = gm.act === 'arrive' ? Math.min(1, gm.actT / 0.25) : 1;
+      const come = gm.act === 'arrive' ? Math.min(1, gm.actT / 0.25) : gm.act === 'jump' ? 1 - 0.45 * Math.sin(Math.PI * Math.min(1, gm.actT / TINKER_TUNE.golem.jump.long)) : 1;
       this.shadow(g, wx(cam, gm.x, gm.y), wy(cam, gm.x, gm.y), GOLEM_SHADOW * grow * (0.6 + 0.4 * come), Math.min(1, SHADOW * 1.2) * come);
     }
     // (CON_SEEN, a mock-up: the friend's cyan ring round each of her Contraptions set up)
