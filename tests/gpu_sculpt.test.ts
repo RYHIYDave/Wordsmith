@@ -19,6 +19,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { GPU_SCULPT, GPU_SCULPT_TEST } from '../src/dev/gpu_sculpt';
 import { hashSprite, listsOf } from '../tools/cheap_heroes';
 import type { FrameList, Who } from '../tools/cheap_heroes';
+import { VETERAN } from '../src/game/veteran';
 
 const PINNED = JSON.parse(readFileSync(new URL('./cheap_heroes.hashes.json', import.meta.url), 'utf8')) as { lists: Record<string, string[]> };
 
@@ -39,7 +40,17 @@ function picked(): { name: string; i: number; frames: FrameList['frames'] }[] {
   const by = new Map<Who, FrameList[]>();
   const out: { name: string; i: number; frames: FrameList['frames'] }[] = [];
   for (const [who, name, is] of PICKS) {
-    if (!by.has(who)) by.set(who, listsOf(who));
+    // (the Brawler as he was, the pinned pictures: since 25.0 he is the Veteran (game/veteran.ts VETERAN, on at his yes of 3 Nov
+    // 2026), and the old one is held here with the switch off, as tests/cheap_heroes.test.ts holds him)
+    if (!by.has(who)) {
+      const was = VETERAN.on;
+      if (who === 'brawler') VETERAN.on = false;
+      try {
+        by.set(who, listsOf(who));
+      } finally {
+        VETERAN.on = was;
+      }
+    }
     const l = (by.get(who) as FrameList[]).find((x) => x.name === name);
     if (!l) throw new Error(`${name}: not there`);
     for (const i of is) out.push({ name, i, frames: l.frames });
