@@ -24,32 +24,33 @@ const cell = (play: Play, G: number, name: string, label: string, view = 0, ahea
 };
 // EVERY MOVE: its own play from the film (the first thirteen parts), at its key moments (frames of the move)
 const MOMENTS: [number[], string[]][] = [
-  [[0, 7, 37], ['down in the bounce', 'up on his toes', 'rolling his shoulders']],
+  [[0, 7, 37], ['down in the bounce, in his guard', 'up on his toes', 'rolling his shoulders']],
   [[0, 3, 6], ['a stride', 'both feet off the floor', 'the next stride']],
   [[11, 18, 29], ['the wind-up, held', 'up and away', 'down deep in the dust']],
   [[11, 12, 20], ['the wind-up, held', 'the strike (1 frame)', 'the wind-down']],
   [[12, 14, 22], ['the wind-up, held', 'the strike (2 frames)', 'the wind-down']],
   [[13, 15, 23], ['the wind-up, held', 'the strike (2 frames)', 'carried on round']],
   [[14, 16, 23], ['the knee cocked, held', 'the strike (2 frames)', 'carried round']],
-  [[12, 14, 22], ['coiled, held', 'the strike (2 frames)', 'round to his stance']],
+  [[15, 17, 22], ['the knee chambered, held', 'the heel out (2 frames)', 'the cone of force']],
+  [[18, 20, 27], ['the coil, held', 'the elbow in (2 frames)', 'the turn in light']],
   [[13, 15, 31], ['coiled low, held', 'the strike (2 frames)', 'down hard in the dust']],
   [[14, 18, 30], ['coiled, held', 'the leg round (each 2 frames)', 'down in a ring of dust']],
-  [[13, 15, 27], ['the lunge, held', 'the strike (2 frames)', 'dropped down']],
+  [[19, 21, 35], ['the lunge, held', 'the knee in (2 frames)', 'landed heavy']],
   [[0, 3, 6], ['before', 'the blow lands', 'driven back']],
   [[7, 30, 58], ['staggering back', 'down on one knee', 'one last fist']],
 ];
-VET_FILM.slice(0, 13).forEach((part, i) => {
+VET_FILM.slice(0, MOMENTS.length).forEach((part, i) => {
   const [fs, labels] = MOMENTS[i];
-  rows.push({ title: part.title, line: part.line, cells: fs.map((f, k) => cell(part.play, part.play.lead + f, `m${i}_${k}`, labels[k])) });
+  rows.push({ title: part.title, line: part.line, cells: fs.map((f, k) => cell(part.play, part.play.lead + f, `m${i}_${k}`, labels[k], 0, part.play.steps[0].m.id === 'push' ? 34 : 12)) });
 });
 // EACH COMBO: the globes over him as it is put in (the film's combo parts), at each move's blow
-VET_FILM.slice(13, 19).forEach((part, i) => {
+VET_FILM.slice(MOMENTS.length, MOMENTS.length + 6).forEach((part, i) => {
   const p = part.play;
   let t = p.lead;
   const cells: { file: string; label: string }[] = [];
   p.steps.forEach((st, k) => {
     const s = st.m.strikes[0];
-    const f = s ? Math.max(s.at, ...s.hits.map((h) => h.f)) : 18;
+    const f = s ? (s.cone ? s.at + 4 : Math.max(s.at, ...s.hits.map((h) => h.f))) : 18;
     cells.push(cell(p, t + f, `c${i}_${k}`, `${k + 1}. ${st.input === 'tap' ? 'tap' : st.input === 'hold' ? 'hold' : st.input === 'swipe' ? 'swipe' : st.input === 'swipeTap' ? 'swipe, then tap' : 'swipe, then hold'}: ${st.m.name.replace(/^The /, '').toLowerCase()}`, 0, 22));
     t += st.m.long;
   });

@@ -13,9 +13,9 @@ import { INK } from '../art/kit';
 import { VET_CANVAS, paintVeteran } from './sculpt_veteran';
 import { VET_STAND, carryAt, placeOf, poseAt, skel, vetAt, worldOf } from './veteran_moves';
 import type { Input, Reaction, VetMotion } from './veteran_moves';
-import { FOE_CANVAS, REACT_LONG, REACT_STAYS, SWING_HIT, foeHit, foeSwing, paintFoe } from './veteran_foe';
+import { FOE_CANVAS, REACT_LONG, REACT_STAYS, REACT_VEER, SWING_HIT, foeHit, foeSwing, paintFoe } from './veteran_foe';
 import type { FoeState } from './veteran_foe';
-import { FX_KICK, FX_PUNCH, dust, floorRing, ghost, impact, put, rnd, shadow, smear, speedLines, stars } from './veteran_fx';
+import { FX_KICK, FX_PUNCH, coneBlast, dust, floorRing, ghost, impact, put, rnd, shadow, smear, speedLines, stars } from './veteran_fx';
 import { GLOBES_H, GLOBES_W, paintGlobes } from './veteran_globes';
 import type { Globe, GlobeRow } from './veteran_globes';
 
@@ -91,31 +91,64 @@ interface Ev {
   kind: 'punch' | 'kick' | 'foe';
   at: V3;
   step: number;
+  /** How big its burst (1 as a heavy or light blow has it), and how many frames after the blow it bursts. */
+  big: number;
+  late?: number;
 }
 const EVS = new WeakMap<Play, Ev[]>();
 function eventsOf(p: Play): Ev[] {
   const have = EVS.get(p);
   if (have) return have;
   const out: Ev[] = [];
+  // (while they are worked out, where a foe is goes by the blows found so far: a cone looks where they stand before it)
+  EVS.set(p, out);
   let t = p.lead;
   p.steps.forEach((st, k) => {
     const at = stepAt(p, t);
     for (const s of st.m.strikes) {
+      if (s.cone) {
+        // A BLOW THAT HITS EVERYONE IN A CONE in front of him: every foe of the play standing in it (where he stands then),
+        // the near ones first, a frame for each tile out
+        const cone = s.cone;
+        const heel = vetWorld(at, skel(poseAt(st.m, s.at))[s.joint] as V3, s.at);
+        const fwd = vetWorld(at, [1, 0, 0], s.at);
+        const o = vetWorld(at, [0, 0, 0], s.at);
+        const way = Math.atan2(fwd[1] - o[1], fwd[0] - o[0]);
+        p.foes.forEach((_, foe) => {
+          const f0 = foeAt(p, foe, t + s.at - 1, [heel[0], heel[1]]);
+          const dx = f0.x - heel[0];
+          const dy = f0.y - heel[1];
+          const r = Math.hypot(dx, dy);
+          let a = Math.atan2(dy, dx) - way;
+          a = Math.atan2(Math.sin(a), Math.cos(a));
+          if (r > cone.reach + 6 || Math.abs(a) > ((cone.deg / 2) * Math.PI) / 180) return;
+          const f = s.at + Math.floor(r / 40);
+          out.push({ G: t + f, foe, react: cone.react, from: [heel[0], heel[1]], heavy: false, kind: s.kind, at: [f0.x, f0.y, 26], step: k, big: 0.9 });
+        });
+        continue;
+      }
       for (const h of s.hits) {
         const foe = st.foe ?? h.foe;
         if (foe >= p.foes.length) continue;
         const pel = vetWorld(at, skel(poseAt(st.m, h.f)).pelvis, h.f);
-        const j = vetWorld(at, skel(poseAt(st.m, h.f))[s.joint] as V3, h.f);
-        out.push({ G: t + h.f, foe, react: st.react ?? h.react, from: [pel[0], pel[1]], heavy: s.heavy, kind: s.kind, at: j, step: k });
+        const j0 = vetWorld(at, skel(poseAt(st.m, h.f))[s.joint] as V3, h.f);
+        // (the burst where it meets him: a little on from the striking limb toward him)
+        const fo = p.foes[foe];
+        const dd = Math.hypot(fo[0] - j0[0], fo[1] - j0[1]) || 1;
+        const on = Math.min(5, dd * 0.5);
+        const j: V3 = [j0[0] + ((fo[0] - j0[0]) / dd) * on, j0[1] + ((fo[1] - j0[1]) / dd) * on, j0[2]];
+        out.push({ G: t + h.f, foe, react: st.react ?? h.react, from: [pel[0], pel[1]], heavy: s.heavy, kind: s.kind, at: j, step: k, big: s.burst ?? 1, late: s.under ? 1 : 0 });
       }
     }
-    for (const sw of st.m.foeSwing ?? []) out.push({ G: t + sw.f, foe: sw.foe, react: 'swing', from: [0, 0], heavy: false, kind: 'foe', at: [0, 0, 0], step: k });
+    for (const sw of st.m.foeSwing ?? []) out.push({ G: t + sw.f, foe: sw.foe, react: 'swing', from: [0, 0], heavy: false, kind: 'foe', at: [0, 0, 0], step: k, big: 1 });
     t += st.m.long;
   });
   out.sort((a, b) => a.G - b.G);
-  EVS.set(p, out);
   return out;
 }
+
+/** Every blow that lands in a play (for the checks): when (play frame), on which foe, and how. */
+export const blowsOf = (p: Play): { G: number; foe: number; react: string }[] => eventsOf(p).map((e) => ({ G: e.G, foe: e.foe, react: e.react }));
 
 /** A foe at a frame of a play: where (the scene's floor, unturned), which way he faces, his pose. */
 function foeAt(p: Play, i: number, G: number, vet: [number, number]): { x: number; y: number; face: number; st: FoeState } {
@@ -130,7 +163,7 @@ function foeAt(p: Play, i: number, G: number, vet: [number, number]): { x: numbe
   for (const e of evs) {
     if (e.react === 'swing' || e === last) continue;
     if (REACT_STAYS[e.react]) {
-      const d = Math.atan2(home[1] + by - e.from[1], home[0] + bx - e.from[0]);
+      const d = Math.atan2(home[1] + by - e.from[1], home[0] + bx - e.from[0]) + (REACT_VEER[e.react] * Math.PI) / 180;
       const b = foeHit(e.react, REACT_LONG[e.react]).back;
       bx += Math.cos(d) * b;
       by += Math.sin(d) * b;
@@ -139,7 +172,7 @@ function foeAt(p: Play, i: number, G: number, vet: [number, number]): { x: numbe
   if (last && last.react === 'swing') {
     st = foeSwing(G - last.G);
   } else if (last) {
-    const d = Math.atan2(home[1] + by - last.from[1], home[0] + bx - last.from[0]);
+    const d = Math.atan2(home[1] + by - last.from[1], home[0] + bx - last.from[0]) + (REACT_VEER[last.react as Reaction] * Math.PI) / 180;
     face = d + Math.PI;
     st = foeHit(last.react as Reaction, Math.min(G - last.G, REACT_LONG[last.react as Reaction]));
     return { x: home[0] + bx + Math.cos(d) * st.back, y: home[1] + by + Math.sin(d) * st.back, face: (face * 180) / Math.PI, st };
@@ -305,7 +338,7 @@ export function scene(p: Play, G: number, shot: Shot): Px {
   }
   // SHOCKWAVE RINGS along the floor, under the heavy blows
   for (const e of evs) {
-    if (e.react === 'swing' || !e.heavy) continue;
+    if (e.react === 'swing' || !e.heavy || e.react === 'shove') continue;
     const age = G - e.G;
     if (age < 0 || age > 9) continue;
     const fo = p.foes[e.foe];
@@ -330,24 +363,96 @@ export function scene(p: Play, G: number, shot: Shot): Px {
       t += st.m.long;
     });
     for (const e of evs) {
-      if (e.react !== 'fly' && e.react !== 'launch' && e.react !== 'knock') continue;
-      const land = e.G + (e.react === 'fly' ? 15 : e.react === 'launch' ? 28 : 3);
+      if (e.react !== 'fly' && e.react !== 'launch' && e.react !== 'knock' && e.react !== 'kneed' && e.react !== 'aside' && e.react !== 'shove') continue;
+      const land = e.G + (e.react === 'fly' || e.react === 'kneed' ? 15 : e.react === 'launch' ? 28 : e.react === 'shove' ? 4 : 3);
       const age = G - land;
       if (age < 0 || age > 14) continue;
       const fo = foeAt(p, e.foe, land, [0, 0]);
-      dusts.push([...scr(toScene([fo.x, fo.y, 0])), Math.floor(age), e.react !== 'knock', e.foe * 7 + 3]);
+      dusts.push([...scr(toScene([fo.x, fo.y, 0])), Math.floor(age), e.react !== 'knock' && e.react !== 'aside', e.foe * 7 + 3]);
     }
   }
   for (const d of dusts) if (d[1] < fs[1]) dust(px, d[0], d[1], d[2], d[3], d[4]);
-
-  // THE FIGURES, far to near
-  type Fig = { y: number; draw: () => void };
-  const figs: Fig[] = [];
+  // HIS HEAVY LANDINGS: a ring of force along the floor round his feet
+  {
+    let t = p.lead;
+    for (const st of p.steps) {
+      for (const qf of st.m.quake ?? []) {
+        const age = G - (t + qf);
+        if (age < 0 || age > 9) continue;
+        const a0 = stepAt(p, t + qf);
+        const c = vetWorld(a0, skel(poseAt(st.m, qf)).pelvis, qf);
+        const q = scr(toScene([c[0], c[1], 0]));
+        floorRing(px, q[0], q[1], Math.floor(age), ['#2a2438', '#6e6886', '#958fab', '#bcb6cc', '#f0eeff'], 1.7);
+      }
+      t += st.m.long;
+    }
+  }
+  // THE PUSH KICK'S BLAST OF FORCE: a cone along the floor from his heel
+  {
+    let t = p.lead;
+    for (const st of p.steps) {
+      for (const sk of st.m.strikes) {
+        if (!sk.cone) continue;
+        const age = G - (t + sk.at);
+        if (age < 0 || age > 14) continue;
+        const a0 = stepAt(p, t + sk.at);
+        const heel = vetWorld(a0, skel(poseAt(st.m, sk.at))[sk.joint] as V3, sk.at);
+        const o = vetWorld(a0, [0, 0, 0], sk.at);
+        const fw = vetWorld(a0, [1, 0, 0], sk.at);
+        const way = Math.atan2(fw[1] - o[1], fw[0] - o[0]);
+        const cone = sk.cone;
+        coneBlast(px, (r, a) => {
+          const w = way + (a * Math.PI) / 180;
+          return scr(toScene([heel[0] + Math.cos(w) * r, heel[1] + Math.sin(w) * r, 0]));
+        }, cone.deg, cone.reach, Math.floor(age), FX_KICK, t + sk.at);
+      }
+      t += st.m.long;
+    }
+  }
+  // A WHOLE TURN DRAWN IN LIGHT round him (the spinning elbow): its stretches behind him painted now, before him
+  const arcOf = (): { path: [number, number][]; behind: boolean[]; w: number; cols: readonly string[]; show: number } | null => {
+    const a = at.m.arc;
+    if (!a || at.f < a.from) return null;
+    const show = at.f <= a.to ? 1 : Math.max(0, 1 - (at.f - a.to) / 5);
+    if (show <= 0) return null;
+    const until = Math.min(at.f, a.to);
+    const path: [number, number][] = [];
+    const behind: boolean[] = [];
+    if (until <= a.from) return null;
+    for (let g = a.from; g <= until + 1e-6; g += 0.2) {
+      // (out round him a little beyond the elbow: a great ring at head height, its head just past the point of the elbow)
+      const sk = skel(poseAt(at.m, g));
+      const j = vetWorld(at, sk[a.joint] as V3, g);
+      const c = vetWorld(at, sk.neck, g);
+      const dx = j[0] - c[0];
+      const dy = j[1] - c[1];
+      const dn = Math.hypot(dx, dy) || 1;
+      const w: V3 = [j[0] + (dx / dn) * (a.out ?? 0), j[1] + (dy / dn) * (a.out ?? 0), j[2]];
+      path.push(scr(toScene(w)));
+      behind.push(scr(toScene([w[0], w[1], 0]))[1] < fs[1]);
+    }
+    return { path, behind, w: a.w, cols: a.kind === 'kick' ? FX_KICK : FX_PUNCH, show };
+  };
+  const arc = arcOf();
+  if (arc) smear(px, arc.path, arc.w, arc.cols, arc.show, arc.behind);
   const strikesNow = at.m.strikes.filter((s) => {
     const lastHit = Math.max(s.at, ...s.hits.map((h) => h.f));
     return at.f > s.from && at.f <= lastHit + 4;
   });
   const kindCols = (k: 'punch' | 'kick'): readonly string[] => (k === 'kick' ? FX_KICK : FX_PUNCH);
+  const smearOf = (s: (typeof strikesNow)[number]): void => {
+    const lastHit = Math.max(s.at, ...s.hits.map((h) => h.f));
+    const until = Math.min(at.f, lastHit);
+    const path: [number, number][] = [];
+    for (let g = s.from - 0.5; g <= until + 1e-6; g += 0.1) path.push(scr(toScene(vetWorld(at, skel(poseAt(at.m, g))[s.joint] as V3, g))));
+    const show = at.f <= lastHit ? 1 : Math.max(0, 1 - (at.f - lastHit) / 4);
+    smear(px, path, s.w ?? (s.heavy ? 13 : 9), kindCols(s.kind), show);
+  };
+  for (const s of strikesNow) if (s.under) smearOf(s);
+
+  // THE FIGURES, far to near
+  type Fig = { y: number; draw: () => void };
+  const figs: Fig[] = [];
   figs.push({
     y: fs[1],
     draw: () => {
@@ -383,6 +488,8 @@ export function scene(p: Play, G: number, shot: Shot): Px {
   figs.sort((a, b) => a.y - b.y);
   for (const fg of figs) fg.draw();
   for (const d of dusts) if (d[1] >= fs[1]) dust(px, d[0], d[1], d[2], d[3], d[4]);
+  // (the turn in light: its stretches in front of him)
+  if (arc) smear(px, arc.path, arc.w, arc.cols, arc.show, arc.behind.map((b) => !b));
 
   // SPEED LINES behind him as he flies
   {
@@ -392,14 +499,10 @@ export function scene(p: Play, G: number, shot: Shot): Px {
     const air = vetLift > 3;
     if (air || at.m.id === 'run') speedLines(px, a[0], a[1] - 4, (a[0] - b[0]) * 1.4, (a[1] - b[1]) * 1.4, 14, Math.floor(G / 2) * 13, ['', '', '#6a64b0', '#b4b0e6', '#f0eeff']);
   }
-  // THE SMEARS along his blows
+  // THE SMEARS along his blows (those that go under him were painted before him)
   for (const s of strikesNow) {
-    const lastHit = Math.max(s.at, ...s.hits.map((h) => h.f));
-    const until = Math.min(at.f, lastHit);
-    const path: [number, number][] = [];
-    for (let g = s.from - 0.5; g <= until + 1e-6; g += 0.1) path.push(scr(toScene(vetWorld(at, skel(poseAt(at.m, g))[s.joint] as V3, g))));
-    const show = at.f <= lastHit ? 1 : Math.max(0, 1 - (at.f - lastHit) / 4);
-    smear(px, path, s.heavy ? 13 : 9, kindCols(s.kind), show);
+    if (s.under) continue;
+    smearOf(s);
   }
   // THE IMPACTS where blows land (his, and a foe's on him)
   for (const e of evs) {
@@ -412,8 +515,17 @@ export function scene(p: Play, G: number, shot: Shot): Px {
       impact(px, head[0], head[1], hitAge, [INK, '#7a1e34', '#d23c5a', '#ffc4cc', '#ffffff'], true, e.G);
       continue;
     }
+    // (a blow whose limb must be seen landing bursts the frame after it lands)
     const q = scr(toScene(e.at));
-    impact(px, q[0], q[1], age, kindCols(e.kind as 'punch' | 'kick'), e.heavy, e.G * 3 + e.foe);
+    impact(px, q[0], q[1], age - (e.late ?? 0), kindCols(e.kind as 'punch' | 'kick'), e.heavy, e.G * 3 + e.foe, e.big);
+  }
+  // (a cone's blow: its burst at the heel as it lands)
+  for (const s of at.m.strikes) {
+    if (!s.cone) continue;
+    const age = Math.floor(at.f - s.at);
+    if (age < 0 || age > 6) continue;
+    const q = scr(toScene(vetWorld(at, skel(poseAt(at.m, s.at))[s.joint] as V3, s.at)));
+    impact(px, q[0], q[1], age, kindCols(s.kind), s.heavy, s.at * 7, s.burst ?? 1);
   }
   // STARS round a stunned foe's head
   for (const fo of foes) {

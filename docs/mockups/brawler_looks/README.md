@@ -246,11 +246,12 @@ The moves, frame by frame (30 a second; the wind-up's last frame is held, the st
 | The cross | tap | 28 (0.93 s) | 0–12, wound right back, the rear fist past his ear | 14 (two frames) | hips, shoulders and rear heel thrown round, the fist driven straight through, palm down; reels them |
 | The hook | tap | 32 (1.07 s) | 0–13, his weight on his lead leg, wound left, the elbow drawn up | 15, and 16 on the second | everything whipped round, the lead foot pivoting on its ball, the elbow level, the fist flat across, palm down, through two of them side by side; carried on round |
 | The round kick | hold | 36 (1.2 s) | 0–14: the switch (the lead foot hops back, down at 5), the knee hauled up and cocked | 16 (two frames) | the hips turned right over, the support foot pivoting on its ball till its heel points at them, the shin whipped round flat into the ribs; knocks them back; landed back in his stance by 36 |
-| The spinning elbow | tap | 34 (1.13 s) | 0–12, his weight over his lead foot, coiled, the rear arm folded, eyes on them over his shoulder | 14 (two frames) | a whole turn on the ball of his lead foot, the elbow round flat at head height; knocks them back to make room |
+| The push kick (new, 3 Nov) | hold, the first of the three kicks | 44 (1.47 s) | 0–15: the rear knee chambered high, the foot cocked, the toes back (held 10–15) | 17 (two frames) | the foot driven straight out heel first, his support foot flat, his body leaning back, fists guarding; a blast of force fans out from his heel along the floor and shoves back EVERYONE IN A CONE in front of him (60 degrees wide, 2.5 tiles long), the near ones first (a frame for each tile out); re-chambered; set down by 36 |
+| The spinning elbow (made again, 3 Nov) | tap | 50 (1.67 s) | 0–18: a big coil, his hips turned round till his back is nearly to them, his chest wound hard against it (50 degrees), the rear arm folded tight across his chest, eyes on them over his shoulder (held 12–18) | 20 (two frames) | a whole turn on the ball of his lead foot (his weight right over it), his chest whipped round past his hips, the ELBOW leading at head height and pointing straight at them as it lands; the turn drawn as a great arc of light round him at head height (18–34, dying away by 39); the burst at the elbow; knocks them aside; round, and plainly back in his guard by 42, held to 50 |
 | The flying uppercut | swipe, then tap | 46 (1.53 s) | 0–13, dropped right down low, the fist by his knee | 15 (two frames), as he leaves the floor | driven up through the chin and on over his head, his feet 27 over the floor, launching them into the air, stunned (stars); hangs at the top; down at 31 |
 | The spinning jump kick | swipe, then hold | 50 (1.67 s) | 0–14, sunk low on his toes, wound the other way | the leg out by 16; the four round him caught at 16, 18, 20 and 22 | off the floor (15–29, his feet up to 31 over it) into TWO WHOLE TURNS, the leg whipping round flat at head height through everyone round him, each in his turn; flung away; down in a ring of dust |
 | The spinning jump kick, closing in | swipe, then hold, first | 52 (1.73 s) | 0–14 | the leg out by 16, caught at 24 | the same, leaping 1.8 tiles in at them as he turns |
-| The flying knee | tap, tap, swipe and hold | 46 (1.53 s) | 0–13, a low lunge, both hands reaching | 15 (two frames) | leaping in 0.9 of a tile, 21 over the floor, and the knee driven up into them, hands pulling them down onto it; flung away to their knees; down at 27 |
+| The flying knee (made again, 3 Nov) | tap, tap, swipe and hold | 58 (1.93 s) | 0–19: a long step in onto his lead foot, sunk low (his hips 14.5 down) and leaning hard over it, his rear leg stretched back on its toes, both hands reaching up for their head (held 12–19) | 21 (two frames) | the leap (a tile in) and the KNEE DRIVEN UP into their chest and face, 43 over the floor: his thigh level, his shin tucked under it, the knee the leading point, both hands pulling their head down onto it, the other leg trailing; the burst at the knee; they are snapped back and flung to their knees; a HEAVY landing at 34 (deep, dust, a ring of force along the floor round his feet); up by 58 |
 | Struck | — | 16 (0.53 s) | | the blow lands at 2 | his head snapped round and back, his weight driven onto his back foot; shaken off by 16 |
 | His fall | — | 96 (3.2 s) | | the last blow at 2 | snapped round; two staggering steps back; down on one knee at 30, a fist on the floor; he pushes up and lifts that fist once more (58–66); it sinks, his head drops, the light goes out (66–92). He never lies down |
 
@@ -260,8 +261,9 @@ locked when three are in; a swipe and then a tap or a hold sets that globe in cy
 1. tap, tap, tap: the jab, the cross, the hook. Steady damage; the hook catches two side by side.
 2. tap, tap, swipe and hold: the jab, the cross, the FLYING KNEE. The strongest single blow.
 3. tap, tap, swipe and tap: the jab, the cross, the FLYING UPPERCUT. Launches one into the air, stunned.
-4. hold, hold, swipe and hold: the round kick, the round kick, the SPINNING JUMP KICK. Hits all round, for when he is
-   surrounded.
+4. hold, hold, swipe and hold: the PUSH KICK, the round kick, the SPINNING JUMP KICK (his pick of 3 Nov, “Push kick, then
+   round”). The push kick shoves back everyone in a cone in front of him; the spinning jump kick hits all round, for when
+   he is surrounded.
 5. hold, tap, hold: the round kick, the SPINNING ELBOW, the round kick (his 22:27). Knocks them back to make room.
 6. A swipe first: the dodging jump; a swipe and hold first: a spinning jump kick that closes the distance.
 
@@ -271,8 +273,9 @@ scale with a stand-in foe; his six combos in a row with the globes over him; the
 
 The stand-in foe (`src/dev/veteran_foe.ts`) is only something for his blows to land on: a plain hooded brute in sackcloth
 with the enemy's pink rim, not a design for the game. He swings a haymaker, and is hit: his head snapped back (the jab),
-reeling (the cross, the hook), knocked back sliding (the round kick, the elbow), launched up and down stunned (the
-uppercut), flung away to his knees (the knee, the spinning kick).
+reeling (the cross, the hook), knocked back sliding (the round kick), knocked aside (the spinning elbow), shoved back
+doubled over (the push kick), launched up and down stunned (the uppercut), flung away to his knees (the spinning kick),
+snapped back off his feet onto his knees (the flying knee).
 
 How it is made: `src/dev/veteran_moves.ts` (every move: its keys, its strikes, its foes; his six combos), `veteran_fx.ts`
 (the action lines), `veteran_foe.ts` (the stand-in), `veteran_scene.ts` (a picture of the arena at a frame),
@@ -304,3 +307,62 @@ Choices made for the film that he may want to call:
   bursts white and red. Never gold.
 - The foe stands a little to his left (about 15 degrees off straight ahead) so that, from in front, the foe does not hide
   him; from behind is the same scene turned a quarter, truly (no mirror).
+
+### His word on the moves, and the fixes (3 Nov 2026)
+
+His words, 3 Nov 2026, 00:34: “I’m digging it.  I think his elbows are out a little too much in his stance.  And the knee and
+elbow need a little work.  But it looks great and I think we’re on the right track.” Asked what is off with the flying knee
+and the spinning elbow, his pick: “Read better (Recommended)”, offered as: the knee driven up clearly into them and the
+elbow's swing plain to see, with bigger wind-ups and hits. At 00:36: “And the 3 kick combo seemed like two of the same
+kicks”; asked what the second kick should be, his pick: “Push kick, then round”, offered as: first a straight push kick that
+shoves them back, then the round kick, then the spin. At 00:37: “Push kick hits in a cone in front of”.
+
+What changed:
+
+- HIS STANCE: a fighter's guard. His elbows IN, tucked down in front of his ribs (each pointed down and a little forward,
+  `GUARD_ELBOW` in `sculpt_veteran.ts`); his forearms up guarding his face; his fists by his cheeks (the lead one a little
+  further out); still up on his toes, bouncing, muscled. In the old stance his elbows stood out 7 to 9 beyond his
+  shoulders; now they are inside them (about 7 out from his middle, his shoulders 10.3). Every move that starts or ends in
+  his stance follows, and every guarding fist inside a move (the jab's, the cross's and the hook's rear guard, the round
+  kick's, the push kick's, the spinning jump kick's) has its elbow tucked the same way (the hook's rear fist rides up by
+  his temple, out of the way of the lead fist swung across).
+- THE FLYING KNEE, made again to read at a glance (in the table above): a longer, lower lunge held 7 frames; the leap; the
+  knee driven up into their chest and face (thigh level, shin tucked under, the knee leading, both hands pulling their head
+  down onto it); its smear 22 wide at the game's size (13 before), painted under him so that the knee is seen leading it;
+  the burst at the knee the frame after it lands; they are snapped back off their feet; a heavy landing with a ring of
+  force along the floor.
+- THE SPINNING ELBOW, made again so that the swing is plain to see (in the table above): a bigger coil; a whole turn whose
+  path is drawn as a great arc of light round him at head height (10 wide at the game's size, just beyond the point of his elbow), the elbow
+  its leading point, the forearm folded tight across his chest; the strike's smear 18 wide, under him; the burst at the
+  elbow the frame after it lands; they are knocked aside (sent off 40 degrees to the side of straight back); a clear return
+  to his guard, held.
+- THE PUSH KICK, new, the first of the three kicks of combo 4 (in the table above). FOR THE MAIN CHAT: it hits everyone in
+  a CONE in front of him: 60 degrees wide (30 either side of straight ahead) and 2.5 tiles long (98 of his measure; a tile
+  is 39.2), measured from his heel at full stretch along the way he faces; each foe in it is shoved back (up to 38 of his
+  measure, a little under a tile) and comes back in; the near ones are hit first, a frame later for each tile out
+  (`PUSH_CONE` in `veteran_moves.ts`). Drawn as a blast of force along the floor from his heel: a hot orange glow over the
+  whole wedge, its two edges, eleven streaks racing out to its front, a fan of dust rolled up along the front; out to its
+  full length in 7 frames, gone by 14. The film shows it with three foes in the cone and one outside it (not hit).
+- COMBO 4 is now push kick, round kick, spinning jump kick (in the film with three round him and two more in the cone in
+  front). A single hold on its own is still the round kick.
+- The film and the sheet made again: the push kick in the moves; the knee and the elbow made again; the half-speed parts
+  now the push kick, the spinning elbow, the flying knee and the spinning jump kick (58.8 s in all).
+
+Pictures: `pictures/veteran_fixes.png` (1200 wide): his stance before and now, from in front (down and up in the bounce)
+and from behind; the flying knee and the spinning elbow before and now at their key moments (the wind-up held, the blow,
+just after, the end); combo 4 before (two round kicks the same) and now (push kick, round kick, spinning jump kick), at each
+kick. `pictures/veteran_moves.mp4` and `pictures/veteran_moves_sheet.png` made again (the same parts as before, the push
+kick added). `pictures/veteran.png` made again for the new guard. Made with `tools/veteran_fixes.ts` (run once in the old
+version's files and once in these) and `tools/veteran_fixes.py`.
+
+Checks (`tests/veteran.test.ts`, every frame of every move from in front and from behind, his joint rule now in
+`tests/veteran_checks.ts` so that tools can use it too): all as before, with the push kick among the moves; and new: his
+stance's elbows tucked inside his shoulders and below his fists, the fists by his cheeks; the push kick's cone 60 degrees and
+2.5 tiles, every foe in it hit and none outside it; the knee at the blow level with his hip and leading (the furthest
+forward of him), the elbow at the blow at head height and pointing at the foe; combo 4 three different kicks.
+
+One thing for the owner or the main chat: a first hold is the push kick in combo 4 (hold, hold, swipe and hold) but the
+round kick in combo 5 (hold, tap, hold), and on its own. The game cannot know which combo is coming at the first hold, so
+in the game the first hold must be one of the two: either the push kick starts every kick combo (combo 5 would become push
+kick, spinning elbow, round kick), or the round kick does and the push kick is the second hold. Pictures only so far; his
+call.

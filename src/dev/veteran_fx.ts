@@ -44,15 +44,20 @@ function disc(px: Px, x: number, y: number, r: number, c: string, sy = 1): void 
  * thread at its tail; inked round, its outer colour, its edge, its glow, a white-hot core toward the head. `show` is how
  * much of it is still there, from its head back (1 all, 0 none), as it dies away after the blow.
  */
-export function smear(px: Px, path: [number, number][], w: number, cols: readonly string[], show = 1): void {
+export function smear(px: Px, path: [number, number][], w: number, cols: readonly string[], show = 1, keep?: boolean[]): void {
   if (path.length < 2 || show <= 0) return;
-  // (resampled evenly, a point a pixel)
+  // (resampled evenly, a point a pixel; `keep`, if given, says which stretches of it are painted now: a band that goes
+  // round him is painted behind him where it is behind him and in front where it is in front)
   const pts: [number, number][] = [path[0]];
+  const on: boolean[] = [keep ? keep[0] : true];
   for (let i = 1; i < path.length; i++) {
     const [ax, ay] = path[i - 1];
     const [bx, by] = path[i];
     const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) * 2));
-    for (let k = 1; k <= n; k++) pts.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+    for (let k = 1; k <= n; k++) {
+      pts.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+      on.push(keep ? keep[k * 2 < n ? i - 1 : i] : true);
+    }
   }
   const N = pts.length;
   const from = Math.floor(N * (1 - show));
@@ -63,6 +68,7 @@ export function smear(px: Px, path: [number, number][], w: number, cols: readonl
   const layers: [number, string][] = [[1.6, cols[0]], [0.8, cols[1]], [0, cols[2]], [-1.3, cols[3]], [-2.6, cols[4]]];
   for (const [grow, c] of layers) {
     for (let i = from; i < N; i++) {
+      if (!on[i]) continue;
       const r = rad(i) + grow * Math.min(1, rad(i) / 2.5);
       if (r <= 0.3) continue;
       disc(px, pts[i][0], pts[i][1], r, c);
@@ -92,9 +98,9 @@ export function rnd(n: number): number {
  * AN IMPACT BURST where a blow lands, `age` frames after (0: the frame it lands): a jagged star of white-hot spikes, inked,
  * its colour round it, flung out big on the first frame and breaking into lines as it goes; a ring round it, growing.
  */
-export function impact(px: Px, x: number, y: number, age: number, cols: readonly string[], heavy: boolean, seed: number): void {
+export function impact(px: Px, x: number, y: number, age: number, cols: readonly string[], heavy: boolean, seed: number, big = 1): void {
   if (age < 0 || age > 6) return;
-  const R = heavy ? 26 : 16;
+  const R = (heavy ? 26 : 16) * big;
   const n = heavy ? 11 : 8;
   // the star
   if (age <= 2) {
@@ -106,12 +112,12 @@ export function impact(px: Px, x: number, y: number, age: number, cols: readonly
         const steps = Math.ceil(len * 2);
         for (let s = 0; s <= steps; s++) {
           const t = s / steps;
-          const r = (heavy ? 3.2 : 2.2) * (1 - t) * k + grow * (1 - t * 0.5);
+          const r = (heavy ? 3.2 : 2.2) * Math.sqrt(big) * (1 - t) * k + grow * (1 - t * 0.5);
           if (r <= 0.2) continue;
           disc(px, x + Math.cos(a) * len * t, y + Math.sin(a) * len * t * 0.8, r, c);
         }
       }
-      disc(px, x, y, (heavy ? 7 : 5) * k + grow, c);
+      disc(px, x, y, (heavy ? 7 : 5) * Math.sqrt(big) * k + grow, c);
     }
   } else {
     // (broken into lines flying out)
@@ -123,7 +129,7 @@ export function impact(px: Px, x: number, y: number, age: number, cols: readonly
     }
   }
   // the ring round it
-  const rr = (heavy ? 10 : 7) + age * (heavy ? 6 : 4);
+  const rr = ((heavy ? 10 : 7) + age * (heavy ? 6 : 4)) * Math.sqrt(big);
   const thick = Math.max(1, (heavy ? 3 : 2) - Math.floor(age / 2));
   for (let a = 0; a < Math.PI * 2; a += 0.5 / rr) {
     for (let t = 0; t < thick; t++) put(px, x + Math.cos(a) * (rr + t), y + Math.sin(a) * (rr + t) * 0.85, t === thick - 1 && thick > 1 ? cols[2] : cols[4]);
@@ -205,5 +211,72 @@ export function shadow(px: Px, x: number, y: number, half: number, lift: number)
       const dy = (yy + 0.5 - y) / ry;
       if (dx * dx + dy * dy <= 1) put(px, xx, yy, '#0c0a18');
     }
+  }
+}
+
+/**
+ * THE PUSH KICK'S BLAST OF FORCE (his “Push kick hits in a cone in front of”): a cone spreading out from the heel along the
+ * floor, `age` frames after the blow: its two edges drawn out from the heel, a wedge of hot orange streaks racing out
+ * inside it to its front, and a fan of dust rolled up along that front. `at(r, a)`: the picture's point on the floor `r`
+ * out from the heel, `a` degrees off the line of the kick. It reaches `reach` out (his measure) in seven frames and dies
+ * away by fourteen.
+ */
+export function coneBlast(px: Px, at: (r: number, a: number) => [number, number], deg: number, reach: number, age: number, cols: readonly string[], seed: number): void {
+  if (age < 0 || age > 14) return;
+  const u = Math.min(1, age / 7);
+  const front = reach * (1 - (1 - u) * (1 - u));
+  const half = deg / 2;
+  const line = (r0: number, r1: number, a: number, c: string, thick = 0): void => {
+    const [x0, y0] = at(r0, a);
+    const [x1, y1] = at(r1, a);
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+    for (let k = 0; k <= n; k++) {
+      const x = x0 + ((x1 - x0) * k) / n;
+      const y = y0 + ((y1 - y0) * k) / n;
+      put(px, x, y, c);
+      if (thick) put(px, x, y + 1, c);
+    }
+  };
+  // (the cone itself, laid on the floor: a glow of hot orange through the whole wedge out to its front, every other pixel,
+  // thinning as it dies)
+  if (age <= 10) {
+    const seen = new Set<number>();
+    for (let r = 3; r <= front; r += 0.6) {
+      const step = Math.max(0.4, (0.6 / Math.max(1, r)) * (180 / Math.PI));
+      for (let a = -half; a <= half; a += step) {
+        const [x, y] = at(r, a);
+        const X = Math.round(x);
+        const Y = Math.round(y);
+        const k = Y * 100000 + X;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const near = r / Math.max(1, front);
+        if ((X + Y) % 2 !== 0 && !(age <= 4 && near > 0.7)) continue;
+        if (age > 6 && (X * 3 + Y) % 4 !== 0) continue;
+        put(px, X, Y, near > 0.82 && age <= 6 ? cols[2] : cols[1]);
+      }
+    }
+  }
+  // (the two edges of the cone: from the heel to its front, bright, then dimming)
+  if (age <= 11) for (const a of [-half, half]) line(2, front, a, age < 6 ? cols[3] : cols[2], age < 6 ? 1 : 0);
+  // (the streaks: each its own angle across the cone, a stroke racing out behind the front, white-hot at its head)
+  if (age <= 10) {
+    const n = 11;
+    for (let i = 0; i < n; i++) {
+      const a = -half * 0.92 + (deg * 0.92 * (i + 0.5 * rnd(seed + i))) / n;
+      const lead = front * (0.82 + 0.18 * rnd(seed + 11 + i));
+      const tail = lead * (0.42 + 0.2 * rnd(seed + 23 + i)) * (age > 6 ? 1.3 : 1);
+      if (lead - tail < 2) continue;
+      line(tail, lead, a, cols[0], 1);
+      line(tail + (lead - tail) * 0.1, lead, a, cols[2], 1);
+      line(tail + (lead - tail) * 0.55, lead, a, age < 7 ? cols[4] : cols[3], 1);
+    }
+  }
+  // (the front itself, an arc across the cone; and the fan of dust rolled up along it)
+  if (age <= 9) for (let a = -half; a <= half; a += 2) put(px, ...at(front, a), age < 5 ? cols[4] : cols[3]);
+  for (let i = 0; i < 6; i++) {
+    const a = -half * 0.85 + (deg * 0.85 * i) / 5;
+    const [x, y] = at(front * (0.9 + 0.1 * rnd(seed + 41 + i)), a);
+    dust(px, x, y, Math.max(0, age - 2), i % 2 === 0, seed + 53 + i * 7);
   }
 }

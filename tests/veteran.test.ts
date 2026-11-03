@@ -178,110 +178,19 @@ test('the globes: crisp; cyan a punch, hot orange a kick, white the jump; never 
 
 import { VET_CANVAS } from '../src/dev/sculpt_veteran';
 import type { VetPose } from '../src/dev/sculpt_veteran';
-import { VET_MOTIONS, closeKickOf, inAir, kneeOf, placeOf, poseAt, skel, spinAt, upperOf, vetAt, worldOf } from '../src/dev/veteran_moves';
+import { PUSH_CONE, VET_COMBOS, VET_MOTIONS, VET_TILE, closeKickOf, inAir, kneeOf, motionById, placeOf, poseAt, skel, spinAt, upperOf, vetAt, worldOf } from '../src/dev/veteran_moves';
 import type { VetMotion } from '../src/dev/veteran_moves';
 import { project } from '../src/art/skeleton';
 import type { Skeleton, V3 } from '../src/art/skeleton';
 import { Px } from '../src/engine/px';
 import { smear } from '../src/dev/veteran_fx';
 import { FX_KICK, FX_PUNCH } from '../src/dev/veteran_fx';
-import { globesAt } from '../src/dev/veteran_scene';
+import { blowsOf, globesAt } from '../src/dev/veteran_scene';
+import { cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
 import { VET_FILM } from '../src/dev/veteran_plays';
 
-const MOVES_ALL: VetMotion[] = [...VET_MOTIONS, kneeOf(30, 'kneeC'), upperOf(20, 'uppercutC'), closeKickOf(48, 'spinkickC')];
+const MOVES_ALL: VetMotion[] = [...VET_MOTIONS, kneeOf(27, 'kneeC'), upperOf(20, 'uppercutC'), closeKickOf(48, 'spinkickC')];
 const framesOf = (m: VetMotion): number[] => Array.from({ length: m.long + (m.loops ? 0 : 1) }, (_, i) => i);
-const sub3 = (a: readonly number[], b: readonly number[]): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const dot3 = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const len3 = (a: readonly number[]): number => Math.hypot(a[0], a[1], a[2]);
-const unit = (a: readonly number[]): V3 => {
-  const n = len3(a) || 1;
-  return [a[0] / n, a[1] / n, a[2] / n];
-};
-const cross3 = (a: readonly number[], b: readonly number[]): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const perp = (v: readonly number[], to: readonly number[]): V3 => {
-  const u = unit(to);
-  const k = dot3(v, u);
-  return [v[0] - u[0] * k, v[1] - u[1] * k, v[2] - u[2] * k];
-};
-const angleAt = (a: readonly number[], mid: readonly number[], b: readonly number[]): number => {
-  const u = unit(sub3(a, mid));
-  const v = unit(sub3(b, mid));
-  return (Math.acos(Math.max(-1, Math.min(1, dot3(u, v)))) * 180) / Math.PI;
-};
-/** How far a joint sticks out from the line between its two ends (the way it bends), and how bent it is. */
-const poleOf = (a: readonly number[], mid: readonly number[], b: readonly number[]): V3 => {
-  const ab = sub3(b, a);
-  const t = dot3(sub3(mid, a), ab) / (dot3(ab, ab) || 1);
-  return sub3(mid, [a[0] + ab[0] * t, a[1] + ab[1] * t, a[2] + ab[2] * t]);
-};
-
-/** EVERY JOINT INSIDE WHAT A BODY CAN DO, in one pose of him. */
-export function jointFindings(s: Skeleton, p: VetPose): string[] {
-  const out: string[] = [];
-  const b = { twist: 0, bend: 0, side: 0, ...p.bones } as { twist: number; bend: number; side: number; hunch?: number };
-  for (const side of ['L', 'R'] as const) {
-    const hip = side === 'L' ? s.hipL : s.hipR;
-    const knee = side === 'L' ? s.kneeL : s.kneeR;
-    const ank = side === 'L' ? s.ankleL : s.ankleR;
-    const toe = side === 'L' ? s.toeL : s.toeR;
-    const heel = side === 'L' ? s.heelL : s.heelR;
-    // THE KNEE: folds no tighter than a knee does, never past straight, and only toward where the toes point
-    const kA = angleAt(hip, knee, ank);
-    if (kA < 25) out.push(`${side} knee folded to ${kA.toFixed(0)}°`);
-    const foot = sub3(toe, heel);
-    const aA0 = angleAt(knee, ank, toe);
-    if (kA < 168 && aA0 < 125) {
-      const pole = unit(poleOf(hip, knee, ank));
-      const ff = unit(perp(foot, sub3(ank, knee)));
-      if (dot3(pole, ff) < -0.1) out.push(`${side} knee bends against its foot (${dot3(pole, ff).toFixed(2)})`);
-    }
-    // THE ANKLE: the foot tipped no further than a foot goes, up toward the shin or down to a point
-    const aA = angleAt(knee, ank, toe);
-    if (aA < 55 || aA > 172) out.push(`${side} ankle at ${aA.toFixed(0)}°`);
-    // THE FOOT never facing backwards from his hips
-    const hf = s.hips[0];
-    const fh = unit([foot[0], foot[1], 0]);
-    const hh = unit([hf[0], hf[1], 0]);
-    const fa = (Math.acos(Math.max(-1, Math.min(1, dot3(fh, hh)))) * 180) / Math.PI;
-    if (fa > 110 && Math.min(toe[2], heel[2]) < 6) out.push(`${side} foot turned ${fa.toFixed(0)}° from his hips`);
-  }
-  const [cf, cl] = s.chest;
-  for (const side of ['L', 'R'] as const) {
-    const sh = side === 'L' ? s.shoulderL : s.shoulderR;
-    const el = side === 'L' ? s.elbowL : s.elbowR;
-    const ha = side === 'L' ? s.handL : s.handR;
-    // THE ELBOW: folds no tighter than an arm does, never past straight; never bent backward (pointing forward as the
-    // fist reaches forward), never pointing into his own body
-    const eA = angleAt(sh, el, ha);
-    if (eA < 20) out.push(`${side} elbow folded to ${eA.toFixed(0)}°`);
-    if (eA < 165) {
-      const pole = unit(poleOf(sh, el, ha));
-      void cf;
-      const inward = side === 'L' ? [-cl[0], -cl[1], -cl[2]] : cl;
-      if (dot3(pole, inward) > 0.85) out.push(`${side} elbow points into his body`);
-      // THE FIST: turned as a forearm turns (palm toward the biceps, in, or away; never turned out past that)
-      const d = unit(sub3(ha, el));
-      const ant = unit(perp(sub3(sh, el), d));
-      const lat = side === 'R' ? cross3(d, ant) : cross3(ant, d);
-      const palm = (side === 'L' ? p.palmL : p.palmR) as V3;
-      if (palm && dot3(unit(perp(palm, d)), lat) > 0.55) out.push(`${side} fist turned past what a forearm turns (${dot3(unit(perp(palm, d)), lat).toFixed(2)})`);
-    }
-  }
-  // THE SPINE AND NECK: never twisted, bent or tipped past what a back does; the head turned no further than a neck turns
-  if (Math.abs(b.twist) > 62) out.push(`spine twisted ${b.twist.toFixed(0)}°`);
-  if (b.bend < -36 || b.bend > 52) out.push(`spine bent ${b.bend.toFixed(0)}°`);
-  if (Math.abs(b.side) > 32) out.push(`spine bent over sideways ${b.side.toFixed(0)}°`);
-  if ((b.hunch ?? 0) > 30) out.push(`back hunched ${b.hunch}°`);
-  const nf = unit([s.face[0][0], s.face[0][1], 0]);
-  const uf = unit([s.upper[0][0], s.upper[0][1], 0]);
-  const neck = (Math.acos(Math.max(-1, Math.min(1, dot3(nf, uf)))) * 180) / Math.PI;
-  if (neck > 95) out.push(`head turned ${neck.toFixed(0)}° from his chest`);
-  // LEFT IS LEFT: his left shoulder and hip on his left
-  if (dot3(sub3(s.shoulderL, s.shoulderR), s.upper[1]) <= 0) out.push('shoulders swapped');
-  if (dot3(sub3(s.hipL, s.hipR), s.hips[1]) <= 0) out.push('hips swapped');
-  return out;
-}
-
 /** No solid of him flattened to nothing (a muscle whose ways have folded onto each other paints as a slab). */
 function flattened(sc: { prims: readonly { k: string; axes?: readonly (readonly number[])[]; piece: string; tag?: string }[] }): string[] {
   const out: string[] = [];
@@ -455,3 +364,59 @@ test('his moves, his film and its pieces: nothing of the game imports them, and 
   assert.ok(!/brawler/i.test(fs.readFileSync('tools/veteran_film.ts', 'utf8').split('\n').filter((l) => l.startsWith('import')).join('\n')), 'the film tool imports a Brawler file');
 });
 void VET_CANVAS;
+
+// =============================================================================================
+// HIS WORD ON THE MOVES, 3 Nov 2026, 00:34: “I’m digging it.  I think his elbows are out a little too much in his stance.  And
+// the knee and elbow need a little work.  But it looks great and I think we’re on the right track.”; his pick “Read better
+// (Recommended)”; at 00:36: “And the 3 kick combo seemed like two of the same kicks”, his pick “Push kick, then round”; at
+// 00:37: “Push kick hits in a cone in front of”.
+
+test('his stance: a fighter’s guard, the elbows tucked in (inside his shoulders, below his fists), the fists up by his cheeks', () => {
+  for (const p of [VET_STANCE, VET_STANCE_UP]) {
+    const s = sculptVeteran(p, 0).s;
+    const [, cl, cu] = s.chest;
+    const mid: number[] = [(s.shoulderL[0] + s.shoulderR[0]) / 2, (s.shoulderL[1] + s.shoulderR[1]) / 2, (s.shoulderL[2] + s.shoulderR[2]) / 2];
+    const out = (q: readonly number[]): number => Math.abs(dot3(sub3(q, mid), cl));
+    const up = (q: readonly number[]): number => dot3(sub3(q, mid), cu);
+    for (const side of ['L', 'R'] as const) {
+      const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+      const el = side === 'L' ? s.elbowL : s.elbowR;
+      const ha = side === 'L' ? s.handL : s.handR;
+      assert.ok(out(el) < out(sh) - 1.5, `${p.id}: the ${side} elbow ${out(el).toFixed(1)} out, the shoulder ${out(sh).toFixed(1)}`);
+      assert.ok(up(el) < up(ha) - 8, `${p.id}: the ${side} elbow not well below its fist`);
+      assert.ok(out(ha) < 8 && up(ha) > up(s.neck) - 1, `${p.id}: the ${side} fist not up by his cheek (${out(ha).toFixed(1)} out, ${up(ha).toFixed(1)} up)`);
+    }
+  }
+});
+
+test('the push kick hits everyone in a cone in front of him, 60 degrees wide and 2.5 tiles long, and no one outside it; combo 4 is three different kicks', () => {
+  assert.ok(PUSH_CONE.deg === 60 && Math.abs(PUSH_CONE.reach - 2.5 * VET_TILE) < 1e-9, 'the cone');
+  const part = VET_FILM.find((x) => x.title.startsWith('THE PUSH KICK ·'));
+  assert.ok(part, 'the push kick in the film');
+  if (!part) return;
+  const hit = new Set(blowsOf(part.play).filter((b) => b.react === 'shove').map((b) => b.foe));
+  assert.deepEqual([...hit].sort(), [0, 1, 2], 'the three in the cone shoved, the one outside it not');
+  const c4 = VET_COMBOS.find((c) => c.n === 4);
+  assert.deepEqual(c4?.steps.map((x) => x.move), ['push', 'roundkick', 'spinkick']);
+  assert.ok(new Set(c4?.steps.map((x) => x.move)).size === 3, 'three different kicks');
+});
+
+test('the flying knee at the blow: the thigh near level, the knee leading (the furthest forward of him) at their chest; the spinning elbow at the blow at head height, pointing at them', () => {
+  for (const m of [motionById('knee'), kneeOf(27, 'kneeC')]) {
+    const s = m.strikes[0];
+    const k = skel(poseAt(m, s.at));
+    const thigh = sub3(k.kneeR, k.hipR);
+    assert.ok(Math.abs(thigh[2]) < 0.35 * len3(thigh), `${m.id}: the thigh not near level`);
+    for (const j of ['handL', 'handR', 'toeL', 'toeR', 'head', 'ankleR'] as const) assert.ok(k.kneeR[0] >= k[j][0] - 3.5, `${m.id}: the ${j} further forward than the knee`);
+    assert.ok(k.kneeR[2] > 36, `${m.id}: the knee ${k.kneeR[2].toFixed(1)} over the floor`);
+  }
+  const e = motionById('elbow');
+  const s = e.strikes[0];
+  const el = worldOf(e, s.at, skel(poseAt(e, s.at)).elbowR);
+  const head = worldOf(e, s.at, skel(poseAt(e, s.at)).head);
+  assert.ok(Math.abs(el[2] - head[2]) < 6, `the elbow ${el[2].toFixed(1)} high, his head ${head[2].toFixed(1)}`);
+  const foe = e.foes[0];
+  const a = Math.atan2(el[1] - head[1], el[0] - head[0]);
+  const b = Math.atan2(foe[1] - head[1], foe[0] - head[0]);
+  assert.ok(Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) < (25 * Math.PI) / 180, 'the elbow not pointing at them');
+});

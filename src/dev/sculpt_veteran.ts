@@ -23,7 +23,7 @@
 import type { Ramp } from '../art/kit';
 import { CYAN } from '../art/kit';
 import type { GameView } from '../art/skin';
-import { about, add, buildOf, cross, dot, len, lerp3, mul, norm, solve, standing, sub, trunkOf } from '../art/skeleton';
+import { about, add, buildOf, cross, dot, elbowFor, len, lerp3, mul, norm, solve, standing, sub, trunkOf } from '../art/skeleton';
 import type { Bones, Build, Posed, Skeleton, V3 } from '../art/skeleton';
 import { Sculpt, draw, onBall, onCone, primDist } from './sculpt';
 import type { Cone, Drawn, Ell, Prim } from './sculpt';
@@ -101,21 +101,38 @@ export interface VetPose {
 
 /**
  * HIS STANCE, BOUNCING ON HIS TOES (his “Bouncing on his toes”): side-on, up on the balls of both feet, heels off the floor,
- * knees soft, fists up; chest out (an action hero's), a little rounded at the top of the back with age. Two moments of the
- * bounce: DOWN (sunk into his knees, heels nearer the floor) and UP (risen high on his toes, legs longer).
+ * knees soft; chest out (an action hero's), a little rounded at the top of the back with age. Two moments of the bounce:
+ * DOWN (sunk into his knees, heels nearer the floor) and UP (risen high on his toes, legs longer).
+ *
+ * A FIGHTER'S GUARD (his word on the moves, 3 Nov 2026: “I think his elbows are out a little too much in his stance”):
+ * the elbows IN, tucked down in front of his ribs; the forearms up guarding his face; the fists by his cheeks, the lead
+ * one a little further out. (Each elbow is pointed down and a little forward, as the pose has it: `guardElbows`.)
  */
 const STANCE_BONES: Partial<Bones> = {
   yaw: -24, twist: 6, bend: 6, pitch: 0, hunch: 5, shrug: 0.2, faceTurn: -32, faceUp: 4,
   lfx: 6.4, lfy: 3.0, lft: 16, lk: 20,
   rfx: -6.0, rfy: -3.4, rft: -36, rk: -24,
-  lhIn: 0, lhx: 10.5, lhy: 0.6, lhz: 3.8, le: 14,
-  rhIn: 0, rhx: 7.0, rhy: 0.6, rhz: 3.2, re: 6,
+  lhIn: 0, lhx: 10.4, lhy: -4.8, lhz: 6.0,
+  rhIn: 0, rhx: 7.4, rhy: 4.8, rhz: 5.5,
 };
+/** Where a guarding elbow points (along his chest: forward, left, up): down, tucked in front of his ribs. */
+export const GUARD_ELBOW: V3 = [0.3, 0, -1];
+/** The `le` and `re` that tuck his elbows in, down in front of his ribs, in a pose (his fighter's guard). */
+export function guardElbows(bones: Partial<Bones>, which: 'L' | 'R' | 'both' = 'both'): { le?: number; re?: number } {
+  const q = { ...standing(VET_BUILD), ...bones, lhIn: 0, rhIn: 0 } as Posed;
+  const [cf, cl, cu] = solve(VET_BUILD, q).chest;
+  const fig: V3 = [cf[0] * GUARD_ELBOW[0] + cl[0] * GUARD_ELBOW[1] + cu[0] * GUARD_ELBOW[2], cf[1] * GUARD_ELBOW[0] + cl[1] * GUARD_ELBOW[1] + cu[1] * GUARD_ELBOW[2], cf[2] * GUARD_ELBOW[0] + cl[2] * GUARD_ELBOW[1] + cu[2] * GUARD_ELBOW[2]];
+  const out: { le?: number; re?: number } = {};
+  if (which !== 'R') out.le = elbowFor(VET_BUILD, q, true, fig, bones.le ?? 0);
+  if (which !== 'L') out.re = elbowFor(VET_BUILD, q, false, fig, bones.re ?? 0);
+  return out;
+}
+const guarded = (b: Partial<Bones>): Partial<Bones> => ({ ...b, ...guardElbows(b) });
 /** The bounce, down: sunk into soft knees, still up on his toes. */
 export const VET_STANCE: VetPose = {
   id: 'stance',
   name: 'his stance, bouncing: down',
-  bones: { ...STANCE_BONES, pz: -5.6, bend: 8, lfp: 24, lfz: 2.25, rfp: 24, rfz: 2.25, lk: 26, rk: -30 },
+  bones: guarded({ ...STANCE_BONES, pz: -5.6, bend: 8, lfp: 24, lfz: 2.25, rfp: 24, rfz: 2.25, lk: 26, rk: -30 }),
   trail: [-0.85, 0.2, -0.45],
   ripple: 1.2,
   phase: 0.4,
@@ -124,7 +141,7 @@ export const VET_STANCE: VetPose = {
 export const VET_STANCE_UP: VetPose = {
   id: 'stanceUp',
   name: 'his stance, bouncing: up',
-  bones: { ...STANCE_BONES, pz: 0.6, bend: 6, lfp: 46, lfz: 3.85, rfp: 46, rfz: 3.85, lk: 12, rk: -16 },
+  bones: guarded({ ...STANCE_BONES, pz: 0.6, bend: 6, lfp: 46, lfz: 3.85, rfp: 46, rfz: 3.85, lk: 12, rk: -16 }),
   trail: [-0.8, 0.2, -0.65],
   ripple: 1.4,
   phase: 1.6,

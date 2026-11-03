@@ -18,7 +18,7 @@
 
 import { elbowFor, solve, standing } from '../art/skeleton';
 import type { Bones, Posed, Skeleton, V3 } from '../art/skeleton';
-import { VET_BUILD, VET_STANCE, VET_STANCE_UP } from './sculpt_veteran';
+import { GUARD_ELBOW, VET_BUILD, VET_STANCE, VET_STANCE_UP } from './sculpt_veteran';
 import type { VetPose } from './sculpt_veteran';
 
 export const VFPS = 30;
@@ -42,9 +42,9 @@ export interface Key {
   /** How it eases into this key from the one before. */
   e?: Ease;
 }
-export type Joint = 'handL' | 'handR' | 'elbowL' | 'elbowR' | 'ankleL' | 'ankleR' | 'kneeL' | 'kneeR' | 'toeL' | 'toeR';
+export type Joint = 'handL' | 'handR' | 'elbowL' | 'elbowR' | 'ankleL' | 'ankleR' | 'kneeL' | 'kneeR' | 'toeL' | 'toeR' | 'heelL' | 'heelR';
 /** What a foe does when a blow lands on him. */
-export type Reaction = 'snap' | 'reel' | 'knock' | 'launch' | 'fly';
+export type Reaction = 'snap' | 'reel' | 'knock' | 'launch' | 'fly' | 'kneed' | 'aside' | 'shove';
 export interface Strike {
   /** The last frame of the held wind-up, and the frame the blow lands: one or two frames apart (Movement 9). */
   from: number;
@@ -55,6 +55,17 @@ export interface Strike {
   heavy: boolean;
   /** Which foes it lands on, and when (each its own frame: the hook catches two side by side, the spinning kick all round). */
   hits: { foe: number; f: number; react: Reaction }[];
+  /** How wide its smear is, and how big its impact burst (if not as a heavy or a light blow has them). */
+  w?: number;
+  burst?: number;
+  /** Its smear painted under him (behind his body), so that the limb that strikes is seen leading it. */
+  under?: boolean;
+  /**
+   * A BLOW THAT HITS EVERYONE IN A CONE in front of him (his push kick: “Push kick hits in a cone in front of”): how wide
+   * the cone is (degrees, all of it) and how far it reaches (his own measure), from the striking foot along his forward.
+   * Every foe in it is hit, the near ones first (a frame for each tile out).
+   */
+  cone?: { deg: number; reach: number; react: Reaction };
 }
 export interface VetMotion {
   id: string;
@@ -93,6 +104,13 @@ export interface VetMotion {
   out?: (f: number) => number;
   /** A shake of the whole picture: frames from and to. */
   shake?: [number, number][];
+  /**
+   * THE PATH OF A WHOLE TURN DRAWN IN LIGHT (the spinning elbow: his “the elbow's swing plain to see”): the path a joint
+   * takes from a frame to a frame, drawn as a great band round him, its head at the joint; dying away after.
+   */
+  arc?: { joint: Joint; from: number; to: number; w: number; kind: 'punch' | 'kick'; out?: number };
+  /** Frames he lands heavily: a ring of force along the floor round his feet. */
+  quake?: number[];
   /** A key put in between two, as they have it, with a palm of its own (a fist turning over in the strike). */
   turn?: { f: number; palmL?: V3; palmR?: V3 };
 }
@@ -125,6 +143,49 @@ const vdot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 export function skel(q: Q): Skeleton {
   return solve(B, { ...BASE, ...q, lhIn: 0, rhIn: 0 } as Posed);
 }
+/**
+ * THE `le` (or `re`) THAT POINTS AN ELBOW ALONG `want` (the figure's own axes): the skeleton's own answer, checked; where
+ * the hand is so near the line of the arm's natural hang that the answer is measured from another place than the one
+ * the arm is solved from (its elbow would flip right over), the swing that comes nearest is found by trying round.
+ */
+function aimElbow(q: Q, left: boolean, want: V3, near: number): number {
+  const posed = { ...BASE, ...q, lhIn: 0, rhIn: 0 } as Posed;
+  const first = elbowFor(B, posed, left, want, near);
+  const fit = (e: number): number => {
+    const s = solve(B, { ...posed, [left ? 'le' : 're']: e } as Posed);
+    const sh = left ? s.shoulderL : s.shoulderR;
+    const el = left ? s.elbowL : s.elbowR;
+    const ha = left ? s.handL : s.handR;
+    const d = vnorm([ha[0] - sh[0], ha[1] - sh[1], ha[2] - sh[2]]);
+    const flat = (v: V3): V3 => {
+      const k = vdot(v, d);
+      return [v[0] - d[0] * k, v[1] - d[1] * k, v[2] - d[2] * k];
+    };
+    return vdot(vnorm(flat([el[0] - sh[0], el[1] - sh[1], el[2] - sh[2]])), vnorm(flat(want)));
+  };
+  if (fit(first) > 0.97) return first;
+  let best = first;
+  let bestFit = fit(first);
+  for (let a = -180; a < 180; a += 10) {
+    const e = first + a;
+    const v = fit(e);
+    if (v > bestFit) {
+      best = e;
+      bestFit = v;
+    }
+  }
+  for (const step of [4, 2, 1, 0.5]) {
+    for (const e of [best - step, best + step]) {
+      const v = fit(e);
+      if (v > bestFit) {
+        best = e;
+        bestFit = v;
+      }
+    }
+  }
+  return best - 360 * Math.round((best - near) / 360);
+}
+
 /**
  * His palm's way in a pose, as given; or (not given) as a forearm hangs when nothing turns it: facing in, square to the
  * bend of his elbow (the thumb toward his biceps); with the arm near straight, toward his middle.
@@ -203,7 +264,7 @@ function keyed(keys: Key[], f: number): Q {
       const fig: V3 = [cf[0] * v[0] + cl[0] * v[1] + cu[0] * v[2], cf[1] * v[0] + cl[1] * v[1] + cu[1] * v[2], cf[2] * v[0] + cl[2] * v[1] + cu[2] * v[2]];
       const key = side === 'L' ? 'le' : 're';
       const near = num(a.q, key) + (num(b.q, key) - num(a.q, key)) * k;
-      (out as Record<string, number>)[key] = elbowFor(B, { ...BASE, ...q, lhIn: 0, rhIn: 0 } as Posed, side === 'L', fig, near);
+      (out as Record<string, number>)[key] = aimElbow(q, side === 'L', fig, near);
     }
   }
   // (the palms: each key's own, or as it faces in that key; turned smoothly from the one to the other)
@@ -369,15 +430,22 @@ function elbows(q: Q, L?: V3, R?: V3): Q {
   const fig = (v: V3): V3 => [cf[0] * v[0] + cl[0] * v[1] + cu[0] * v[2], cf[1] * v[0] + cl[1] * v[1] + cu[1] * v[2], cf[2] * v[0] + cl[2] * v[1] + cu[2] * v[2]];
   const out: Q = { ...q };
   const posed = { ...BASE, ...q, lhIn: 0, rhIn: 0 } as Posed;
-  if (L) out.le = elbowFor(B, posed, true, fig(L), q.le ?? 0);
-  if (R) out.re = elbowFor(B, posed, false, fig(R), q.re ?? 0);
+  void posed;
+  if (L) out.le = aimElbow(q, true, fig(L), q.le ?? 0);
+  if (R) out.re = aimElbow(q, false, fig(R), q.re ?? 0);
   return out;
 }
 /** A guard: both fists up before his face, as in his stance (along his chest). */
 const GUARD: Q = { lhx: S0.lhx, lhy: S0.lhy, lhz: S0.lhz, le: S0.le, rhx: S0.rhx, rhy: S0.rhy, rhz: S0.rhz, re: S0.re };
-/** The rear fist tight to his chin, guarding (along his chest). */
-const CHIN_R: Q = { rhx: 7.0, rhy: 1.6, rhz: 4.8, re: 6 };
-const CHIN_L: Q = { lhx: 10.5, lhy: -0.6, lhz: 4.4, le: 14 };
+/** Each fist by his cheek, guarding, as in his stance (along his chest); its elbow tucked in (`tucked`). */
+const CHIN_R: Q = { rhx: S0.rhx, rhy: S0.rhy, rhz: S0.rhz, re: S0.re };
+const CHIN_L: Q = { lhx: S0.lhx, lhy: S0.lhy, lhz: S0.lhz, le: S0.le };
+/** The rear fist up by his temple (the hook's, out of the way of the lead fist swung across). */
+const CHIN_RH: Q = { rhx: 4.4, rhy: 2.0, rhz: 8.4 };
+/** A pose with its guarding elbows tucked in, down in front of his ribs (his fighter's guard, 3 Nov 2026). */
+function tucked(q: Q, side: 'L' | 'R' | 'both' = 'both'): Q {
+  return elbows(q, side !== 'R' ? GUARD_ELBOW : undefined, side !== 'L' ? GUARD_ELBOW : undefined);
+}
 /** Palms: down; toward him; facing in. */
 const DOWN: V3 = [0, 0, -1];
 
@@ -515,12 +583,12 @@ const HOOK: VetMotion = {
   line: 'His weight rocked onto his lead leg, wound left, the lead elbow drawn up, held; then everything whips round, the lead foot pivoting, the fist swung flat across and through two of them side by side; carried on round; back to guard.',
   keys: [
     { f: 0, q: P({}) },
-    { f: 10, q: elbows(P({ px: 2.5, pz: -9.0, yaw: -6, twist: 34, bend: 10, side: -8, pitch: 2, faceTurn: -22, lk: 24, lft: 20, ...CHIN_R, lhx: -2.0, lhy: 6.0, lhz: 4.5, le: 78 }), [-0.3, 1, 0.5], undefined), e: 'out' },
-    { f: 13, q: elbows(P({ px: 2.7, pz: -9.6, yaw: -4, twist: 38, bend: 10, side: -9, pitch: 2, faceTurn: -22, lk: 24, lft: 20, ...CHIN_R, lhx: -2.6, lhy: 6.6, lhz: 4.8, le: 80 }), [-0.3, 1, 0.5], undefined), e: 'io' },
-    { f: 15, q: elbows(P({ px: 5.0, pz: -8.0, yaw: -46, twist: -34, bend: 12, side: 6, pitch: 6, faceTurn: -30, lft: -28, lfp: 44, lfz: 3.6, lk: -12, rfp: 30, rk: -34, ...CHIN_R, lhx: 10.0, lhy: -11.0, lhz: 2.5, le: 84, palmL: DOWN }), [0.1, 1, 0.12], undefined), e: 'lin' },
-    { f: 16, q: elbows(P({ px: 5.2, pz: -8.0, yaw: -54, twist: -42, bend: 12, side: 6, pitch: 6, faceTurn: -38, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_R, lhx: 6.5, lhy: -15.0, lhz: 2.5, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'lin' },
-    { f: 18, q: elbows(P({ px: 5.2, pz: -8.1, yaw: -55, twist: -43, bend: 12, side: 6, pitch: 6, faceTurn: -38, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_R, lhx: 6.2, lhy: -15.3, lhz: 2.4, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'out' },
-    { f: 23, q: elbows(P({ px: 3.5, pz: -7.0, yaw: -62, twist: -48, bend: 10, side: 4, pitch: 4, faceTurn: -36, lft: -34, lfp: 44, lfz: 3.6, lk: -18, rfp: 30, rk: -36, ...CHIN_R, lhx: 2.0, lhy: -14.0, lhz: 0.0, le: 70, palmL: DOWN }), [0.2, 1, -0.2], undefined), e: 'out' },
+    { f: 10, q: elbows(P({ px: 2.5, pz: -9.0, yaw: -6, twist: 34, bend: 10, side: -8, pitch: 2, faceTurn: -22, lk: 24, lft: 20, ...CHIN_RH, lhx: -2.0, lhy: 6.0, lhz: 4.5, le: 78 }), [-0.3, 1, 0.5], undefined), e: 'out' },
+    { f: 13, q: elbows(P({ px: 2.7, pz: -9.6, yaw: -4, twist: 38, bend: 10, side: -9, pitch: 2, faceTurn: -22, lk: 24, lft: 20, ...CHIN_RH, lhx: -2.6, lhy: 6.6, lhz: 4.8, le: 80 }), [-0.3, 1, 0.5], undefined), e: 'io' },
+    { f: 15, q: elbows(P({ px: 5.0, pz: -8.0, yaw: -46, twist: -34, bend: 12, side: 6, pitch: 6, faceTurn: -30, lft: -28, lfp: 44, lfz: 3.6, lk: -12, rfp: 30, rk: -34, ...CHIN_RH, lhx: 10.0, lhy: -11.0, lhz: 2.5, le: 84, palmL: DOWN }), [0.1, 1, 0.12], undefined), e: 'lin' },
+    { f: 16, q: elbows(P({ px: 5.2, pz: -8.0, yaw: -54, twist: -42, bend: 12, side: 6, pitch: 6, faceTurn: -38, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_RH, lhx: 6.5, lhy: -15.0, lhz: 2.5, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'lin' },
+    { f: 18, q: elbows(P({ px: 5.2, pz: -8.1, yaw: -55, twist: -43, bend: 12, side: 6, pitch: 6, faceTurn: -38, lft: -34, lfp: 46, lfz: 3.8, lk: -18, rfp: 32, rk: -36, ...CHIN_RH, lhx: 6.2, lhy: -15.3, lhz: 2.4, le: 86, palmL: DOWN }), [0.15, 1, 0.12], undefined), e: 'out' },
+    { f: 23, q: elbows(P({ px: 3.5, pz: -7.0, yaw: -62, twist: -48, bend: 10, side: 4, pitch: 4, faceTurn: -36, lft: -34, lfp: 44, lfz: 3.6, lk: -18, rfp: 30, rk: -36, ...CHIN_RH, lhx: 2.0, lhy: -14.0, lhz: 0.0, le: 70, palmL: DOWN }), [0.2, 1, -0.2], undefined), e: 'out' },
     { f: 32, q: P({}) },
   ],
   plants: [['L', 0, 32], ['R', 0, 32]],
@@ -540,13 +608,13 @@ function VET_KICK_W(): Partial<Bones> {
   return { px: -2.0, pz: -1.0, yaw: -16, twist: 12, bend: 4, pitch: -10, hunch: 4, shrug: 0.25, faceTurn: -20, faceUp: 4,
     lfx: 2.4, lfy: 2.6, lfz: 21, lft: 20, lk: 16, lkUp: 52, lfp: 60,
     rfx: -2.4, rfy: -2.0, rft: -40, rk: -34, rfp: 26, rfz: 2.0,
-    lhIn: 0, lhx: 8.6, lhy: 0.6, lhz: 4.0, le: 16, rhIn: 0, rhx: 7.0, rhy: 0.6, rhz: 4.4, re: 10 };
+    lhIn: 0, lhx: 10.4, lhy: -4.8, lhz: 6.0, le: 16, rhIn: 0, rhx: 7.4, rhy: 4.8, rhz: 5.5, re: 10 };
 }
 function VET_KICK_S(): Partial<Bones> {
   return { px: -1.6, pz: -1.4, yaw: -82, twist: 24, bend: -6, pitch: -18, roll: 12, hunch: 4, shrug: 0.2, faceTurn: -6, faceUp: 4,
     lfx: 27.5, lfy: -3.0, lfz: 31, lft: -8, lk: -16, lkUp: 74, lfp: 38,
     rfx: -1.4, rfy: -1.6, rft: -150, rk: -148, rfp: 24, rfz: 1.8,
-    lhIn: 1, lhx: -9, lhy: 9, lhz: -11, le: -10, rhIn: 0, rhx: 5.6, rhy: 0.6, rhz: 5.4, re: 10 };
+    lhIn: 1, lhx: -9, lhy: 9, lhz: -11, le: -10, rhIn: 0, rhx: 7.4, rhy: 4.8, rhz: 5.5, re: 10 };
 }
 const RK: VetMotion = {
   id: 'roundkick', name: 'The round kick', input: 'hold', long: 36,
@@ -572,58 +640,66 @@ const RK: VetMotion = {
   shake: [[16, 19]],
 };
 
-// THE SPINNING ELBOW (tap, between two round kicks: it knocks them back to make room). Wind-up: his weight shifted over
-// his lead foot, his trunk wound left, the rear arm folded tight across his chest, his head turned to look back over his
-// right shoulder at them; held. Strike: he spins right round on the ball of his lead foot, his rear foot swinging round
-// off the floor, and the elbow comes round flat at head height behind the turn; the stop; he carries on round and plants
-// the foot back where it was, in his stance.
+// THE SPINNING ELBOW (tap, between two round kicks: it knocks them back to make room). His word, 3 Nov 2026: “the knee
+// and elbow need a little work”; his pick “Read better (Recommended)”: the elbow's swing plain to see, with bigger wind-ups
+// and hits. So: A BIG COIL, held: his hips turned right round away from them till his back is nearly to them, his chest
+// wound hard against it, the rear arm folded tight across his chest, his eyes on them over his right shoulder; then A WHOLE
+// TURN on the ball of his lead foot, his chest whipped round past his hips, and the ELBOW is the leading point: the forearm
+// folded tight across his chest, the elbow out at head height, and at the blow pointing straight at them; the path of the
+// turn drawn as a great arc of light round him (`arc`); the burst at the elbow; they are knocked aside; he carries on round
+// and comes back plainly to his guard, held.
 // (the turn is of the whole of him about the ball of his lead foot, which stays where it is: his rear foot is off the
 // floor while he goes round; the rest is his pose, coiled and uncoiled)
 const ELB_PIVOT = ((): [number, number] => {
   const t = skel(P({})).toeL;
   return [t[0], t[1]];
 })();
-const elbowSpin = (f: number): number => track(f, [[0, 0], [12, 0], [14, -150], [16, -170], [22, -250], [30, -352], [32, -360], [34, -360]], 'io');
+const ELB_LONG = 50;
+/** The coil from 0 to 12, held to 18; the strike 18 to 20; the stop to 23; round to 32; his guard again by 42, held. */
+const elbowSpin = (f: number): number => track(f, [[0, 0], [18, 0], [20, -186], [23, -208], [32, -300], [42, -356], [50, -360]], 'io');
 function elbowAt(f: number): Q {
-  const yaw = track(f, [[0, -24], [9, -66], [12, -72], [14, -110], [16, -116], [22, -104], [30, -36], [34, -24]]);
+  const yaw = track(f, [[0, -24], [12, -96], [18, -100], [20, -104], [23, -108], [32, -64], [42, -28], [50, -24]]);
   const d = yaw - -24;
   // (his weight out over his lead foot as he turns on it, and back)
-  const over = track(f, [[0, 0], [9, 0.55], [26, 0.6], [34, 0]]);
-  const fold = track(f, [[0, 0], [9, 1], [20, 1], [30, 0]]);
-  const elbowUp = track(f, [[0, 0], [5, 0], [9, 0.55], [12, 0.62], [14, 1], [18, 1], [28, 0.5], [34, 0]]);
-  const swing = track(f, [[11, 0], [13, 1], [28, 1], [33, 0]]);
+  const over = track(f, [[0, 0], [12, 0.85], [20, 0.95], [34, 0.95], [46, 0]]);
+  const fold = track(f, [[0, 0], [10, 1], [30, 1], [40, 0]]);
+  const elbowUp = track(f, [[0, 0], [8, 0.4], [12, 0.75], [18, 0.8], [20, 1], [27, 1], [36, 0.3], [42, 0]]);
+  const swing = track(f, [[17, 0], [20, 1], [36, 1], [44, 0]]);
   const q: Q = {
     ...S0,
-    px: ELB_PIVOT[0] * over, py: (ELB_PIVOT[1] + 0) * over * 0.55,
-    pz: (S0.pz ?? 0) + track(f, [[0, 0], [9, -3.5], [12, -4.0], [14, -1.0], [22, -1.0], [30, -4.0], [34, 0]]),
-    yaw, twist: track(f, [[0, 6], [9, 38], [12, 42], [14, -12], [16, -16], [22, -8], [30, 4], [34, 6]]),
-    bend: track(f, [[0, 8], [9, 12], [14, 8], [22, 8], [34, 8]]), side: track(f, [[0, 0], [9, -4], [14, 6], [22, 2], [34, 0]]),
-    hunch: 5, shrug: 0.2,
-    // (his eyes on them over his shoulder as he coils; the head whipped round ahead of the turn)
-    faceTurn: track(f, [[0, -32], [9, -12], [12, -10], [14, 74], [16, 80], [22, 64], [30, -24], [34, -32]]),
-    faceUp: 6, faceTilt: track(f, [[0, 0], [9, 10], [14, -8], [22, 0]]),
+    px: ELB_PIVOT[0] * over, py: ELB_PIVOT[1] * over,
+    pz: (S0.pz ?? 0) + track(f, [[0, 0], [12, -5.5], [18, -6.2], [20, -1.0], [27, -1.0], [36, -4.0], [44, 0]]),
+    yaw, twist: track(f, [[0, 6], [12, 46], [18, 50], [20, -20], [23, -24], [32, -8], [42, 4], [50, 6]]),
+    bend: track(f, [[0, 8], [12, 14], [18, 15], [20, 6], [27, 6], [42, 8]]), side: track(f, [[0, 0], [12, -6], [18, -7], [20, 8], [27, 6], [40, 0]]),
+    hunch: 5, shrug: track(f, [[0, 0.2], [12, 0.45], [20, 0.1], [30, 0.2]]),
+    // (his eyes on them over his shoulder as he coils; the head whipped round ahead of the turn, on them at the blow)
+    faceTurn: track(f, [[0, -32], [12, -4], [18, -2], [20, 64], [23, 70], [32, 30], [42, -30], [50, -32]]),
+    faceUp: 6, faceTilt: track(f, [[0, 0], [12, 12], [18, 12], [20, -8], [27, 0]]),
     // his lead foot turns on its ball with his hips; his rear foot comes up off the floor and is set back down where it was
-    lft: (S0.lft ?? 0) + d, lk: (S0.lk ?? 0) + d, lfp: (S0.lfp ?? 0) + 10 * fold, lfz: (S0.lfz ?? 0) + 0.8 * fold,
-    rfx: (S0.rfx ?? 0) + 6 * swing, rfy: (S0.rfy ?? 0) + 2 * swing, rfz: (S0.rfz ?? 0) + 9 * swing, rfp: (S0.rfp ?? 0) + 24 * swing,
+    lft: (S0.lft ?? 0) + d, lk: (S0.lk ?? 0) + d, lfp: (S0.lfp ?? 0) + 12 * fold, lfz: (S0.lfz ?? 0) + 1.0 * fold,
+    rfx: (S0.rfx ?? 0) + 6 * swing, rfy: (S0.rfy ?? 0) + 2 * swing, rfz: (S0.rfz ?? 0) + 10 * swing, rfp: (S0.rfp ?? 0) + 26 * swing,
     rft: (S0.rft ?? 0) + d * 0.6, rk: (S0.rk ?? 0) + d * 0.6,
-    // the rear arm folded tight, the fist by his chest, the elbow flung up and out level with his shoulder
-    rhx: (S0.rhx ?? 0) + (5.5 - (S0.rhx ?? 0)) * fold, rhy: (S0.rhy ?? 0) + (2.6 - (S0.rhy ?? 0)) * fold, rhz: (S0.rhz ?? 0) + (2.4 - (S0.rhz ?? 0)) * fold,
+    // THE REAR ARM FOLDED TIGHT ACROSS HIS CHEST: the fist on his left breast, the forearm flat across him
+    rhx: (S0.rhx ?? 0) + (4.6 - (S0.rhx ?? 0)) * fold, rhy: (S0.rhy ?? 0) + (9.6 - (S0.rhy ?? 0)) * fold, rhz: (S0.rhz ?? 0) + (-1.2 - (S0.rhz ?? 0)) * fold,
     re: S0.re,
-    lhx: (S0.lhx ?? 0) * (1 - fold) + 6.0 * fold, lhy: (S0.lhy ?? 0) * (1 - fold) - 3.5 * fold, lhz: (S0.lhz ?? 0) * (1 - fold) + 6.5 * fold, le: (S0.le ?? 0) + 10 * fold,
+    // (the lead fist keeps his guard at his face)
+    lhx: S0.lhx, lhy: S0.lhy, lhz: S0.lhz, le: S0.le,
   };
-  // (the elbow from where it is in his guard to flung out level with his shoulder, pointing out to his right: turned
-  // toward it the short way)
-  const out = elbows({ ...q, re: S0.re }, undefined, [-0.25, -1, 0.15]).re ?? 0;
-  return { ...q, re: (S0.re ?? 0) + (out - (S0.re ?? 0)) * elbowUp };
+  // (the elbow from tucked in his guard to flung out at head height, pointing out to his right: turned toward it the short
+  // way; the lead elbow kept tucked)
+  const t = tucked(q);
+  const out = elbows({ ...q, re: S0.re }, undefined, [0.12, -1, 0.3]).re ?? 0;
+  return { ...q, le: t.le, re: (t.re ?? 0) + (out - (t.re ?? 0)) * elbowUp };
 }
 const ELBOW: VetMotion = {
-  id: 'elbow', name: 'The spinning elbow', input: 'tap (between two round kicks)', long: 34, fn: elbowAt, spin: elbowSpin, pivot: ELB_PIVOT,
-  line: 'His weight over his lead foot, coiled, the rear arm folded across his chest, eyes on them over his shoulder, held; then a whole turn on the ball of that foot and the elbow comes round flat at head height; round to his stance.',
-  plants: [['L', 0, 34], ['R', 0, 11], ['R', 33, 34, 'end']],
-  strikes: [{ from: 12, at: 14, joint: 'elbowR', kind: 'punch', heavy: true, hits: [{ foe: 0, f: 14, react: 'knock' }] }],
-  foes: [[32, 4]],
-  dust: [{ f: 12, at: 'L' }, { f: 30, at: 'R' }],
-  shake: [[14, 17]],
+  id: 'elbow', name: 'The spinning elbow', input: 'tap (between two round kicks)', long: ELB_LONG, fn: elbowAt, spin: elbowSpin, pivot: ELB_PIVOT,
+  line: 'A big coil: his back turned nearly to them, his chest wound hard against it, the rear arm folded tight across it, eyes on them over his shoulder, held; then a whole turn on the ball of his lead foot, drawn in light round him, the elbow leading at head height into them; round, and back to his guard.',
+  plants: [['L', 0, ELB_LONG], ['R', 0, 17], ['R', 44, ELB_LONG, 'end']],
+  strikes: [{ from: 18, at: 20, joint: 'elbowR', kind: 'punch', heavy: true, w: 18, burst: 0.8, under: true, hits: [{ foe: 0, f: 20, react: 'aside' }] }],
+  arc: { joint: 'elbowR', from: 18, to: 34, w: 10, kind: 'punch', out: 7 },
+  foes: [[35, 11]],
+  dust: [{ f: 18, at: 'L', big: true }, { f: 44, at: 'R' }],
+  shake: [[20, 24]],
 };
 
 // THE DODGE (a swipe on its own): sunk deep into his knees, his arms swung back, gathering all that weight, held; then
@@ -720,7 +796,7 @@ function VET_JK_W(): Partial<Bones> {
   return { px: 0.6, pz: -11, yaw: -16, twist: -34, bend: 22, pitch: 10, hunch: 6, shrug: 0.3, faceTurn: -14, faceUp: 14,
     lfx: 5.0, lfy: 3.0, lft: 20, lk: 28, lfp: 28, lfz: 1.9,
     rfx: -5.0, rfy: -3.4, rft: -24, rk: -28, rfp: 36, rfz: 2.4,
-    lhIn: 0, lhx: 8.6, lhy: 1.0, lhz: 2.6, le: 14, rhIn: 1, rhx: -7, rhy: -9, rhz: -3, re: -10 };
+    lhIn: 0, lhx: 10.4, lhy: -4.8, lhz: 6.0, le: 14, rhIn: 1, rhx: -7, rhy: -9, rhz: -3, re: -10 };
 }
 /** In the air, the leg out: his back to where it points, the right leg whipped out flat at head height, the left tucked under him. */
 const jkS = chestHands({ px: 1.0, pz: 20, yaw: 120, twist: 10, bend: -4, pitch: -12, roll: -10, hunch: 4, shrug: 0.2, faceTurn: 30, faceUp: 4,
@@ -728,7 +804,7 @@ const jkS = chestHands({ px: 1.0, pz: 20, yaw: 120, twist: 10, bend: -4, pitch: 
   rfx: 30, rfy: 2.0, rfz: 47, rft: 30, rk: 30, rkUp: 30, rfp: 30,
   lhIn: 1, lhx: 4, lhy: 9, lhz: 4, le: -20, rhIn: 1, rhx: -6, rhy: -10, rhz: -6, re: -10 });
 /** The landing, deep: as the wind-up (his feet where they were: he has come a whole two turns round). */
-const jkLand = P({ ...jkW, pz: -14, bend: 26, twist: 0, pitch: 12, faceTurn: -14, faceUp: 18, rhIn: 0, ...GUARD, lhz: 1, rhz: 1 });
+const jkLand = tucked(P({ ...jkW, pz: -14, bend: 26, twist: 0, pitch: 12, faceTurn: -14, faceUp: 18, rhIn: 0, ...GUARD, lhz: 3.5, rhz: 3.0 }));
 // the whole of him turned in the air (about the floor point under him): none while his feet are down; a little as he goes
 // up (the rest of the first turn is his own, his hips whipped round); then round at a quarter turn every two frames, each
 // foe round him caught in his turn (the leg points along his own forward at the strike, his back to it); on round as he
@@ -750,8 +826,8 @@ function jkSpinOf(sweepEnd: number, land: number): (f: number) => number {
 function jkKeysOf(sweepEnd: number, land: number): Key[] {
   return [
     { f: 0, q: P({}) },
-    { f: 10, q: P(jkW), e: 'out' },
-    { f: 14, q: P({ ...jkW, pz: (jkW.pz ?? 0) - 1.2, bend: (jkW.bend ?? 0) + 2 }), e: 'io' },
+    { f: 10, q: tucked(P(jkW), 'L'), e: 'out' },
+    { f: 14, q: tucked(P({ ...jkW, pz: (jkW.pz ?? 0) - 1.2, bend: (jkW.bend ?? 0) + 2 }), 'L'), e: 'io' },
     { f: 16, q: P(jkS), e: 'lin' },
     { f: sweepEnd, q: P({ ...jkS, pz: 23, lfz: 35, rfz: 50 }), e: 'lin' },
     { f: land, q: jkLand, e: 'in' },
@@ -785,50 +861,103 @@ export function closeKickOf(go = 70, id = 'spinkickClose'): VetMotion {
 }
 const SPINKICK_CLOSE = closeKickOf();
 
-// THE FLYING KNEE (tap, tap, then swipe and hold: the strongest single blow). Wind-up: he lunges in low, leaning hard over
-// his lead foot, his rear knee drawn back, both hands reaching for them; held. Strike: he leaps in off the floor and drives
-// that knee up into their chest, both hands out to grab their head and pull it down onto it, the other leg trailing; he
-// drops, lands, dust, and is up.
-const kneeW = chestHands(VET_KNEE_W());
-const kneeS = chestHands(VET_KNEE_S());
+// THE FLYING KNEE (tap, tap, then swipe and hold: the strongest single blow). His word, 3 Nov 2026: “the knee and elbow
+// need a little work”; his pick “Read better (Recommended)”: the knee driven up clearly into them, with bigger wind-ups and
+// hits. So: A BIG LUNGE, HELD LONG: a long step in onto his lead foot, sunk low and leaning hard over it, his rear leg
+// stretched back on its toes, both hands reaching up for their head. Then THE LEAP, and THE KNEE DRIVEN UP into their chest
+// and face: his thigh near level, his shin tucked under it, the knee the leading point; both hands pulling their head down
+// onto it; his other leg trailing; the burst at the knee, they are snapped back. He drops, lands HEAVY (deep, dust, a ring
+// of force along the floor), and is up.
+const KNEE_LONG = 58;
 function VET_KNEE_W(): Partial<Bones> {
-  return { px: 3.0, pz: -10.5, yaw: -18, twist: 4, bend: 24, pitch: 18, hunch: 8, shrug: 0.3, faceTurn: -14, faceUp: 18,
-    lfx: 9.5, lfy: 3.0, lft: 12, lk: 26, lfp: 16, lfz: 1.2,
-    rfx: -10.5, rfy: -3.4, rft: -20, rk: -14, rfp: 52, rfz: 4.0,
-    lhIn: 1, lhx: 13, lhy: 4, lhz: 1, le: 10, rhIn: 1, rhx: 13, rhy: -2, rhz: 2, re: 10 };
+  return { px: 6.5, pz: -13.5, yaw: -10, twist: 2, bend: 20, pitch: 22, hunch: 10, shrug: 0.35, faceTurn: -6, faceUp: 24,
+    lfx: 15.5, lfy: 3.2, lft: 6, lk: 6, lfp: 6, lfz: 0.4,
+    rfx: -15.0, rfy: -3.6, rft: -16, rk: -10, rfp: 58, rfz: 4.6,
+    lhIn: 1, lhx: 15.5, lhy: -4.0, lhz: 2.5, le: 10, rhIn: 1, rhx: 15.0, rhy: 4.0, rhz: 3.0, re: 10 };
 }
+/** At the top: the right thigh level out in front, the shin tucked under it, both hands pulling their head down onto it. */
 function VET_KNEE_S(): Partial<Bones> {
-  return { px: 3.0, pz: 21, yaw: -16, twist: -8, bend: -8, pitch: -14, hunch: 4, shrug: 0.2, faceTurn: -12, faceUp: 4,
-    lfx: -9.5, lfy: 2.4, lfz: 24, lft: 10, lk: 4, lkUp: -10, lfp: 58,
-    rfx: 5.0, rfy: -2.8, rfz: 43, rft: -10, rk: -6, rkUp: 66, rfp: 72,
-    lhIn: 1, lhx: 16, lhy: 4.5, lhz: 7, le: 4, rhIn: 1, rhx: 16, rhy: -1.5, rhz: 8, re: 4 };
+  return { px: 4.0, pz: 14.5, yaw: -6, twist: 4, bend: 8, pitch: -18, hunch: 8, shrug: 0.4, faceTurn: -4, faceUp: -2,
+    lfx: -8.5, lfy: 0.4, lfz: 17.5, lft: 6, lk: 4, lkUp: -8, lfp: 62,
+    rfx: 10.8, rfy: 0.4, rfz: 32.0, rft: -4, rk: -2, rkUp: 42, rfp: 44,
+    lhIn: 1, lhx: 17.0, lhy: -5.0, lhz: -5.5, le: 16, rhIn: 1, rhx: 17.0, rhy: 5.0, rhz: -5.5, re: 16 };
 }
+const kneeW = chestHands(VET_KNEE_W());
+/** The reaching arms' elbows: down and a little out (along his chest), as they come up out of his guard. */
+const REACH_L: V3 = [0.1, 0.35, -1];
+const REACH_R: V3 = [0.1, -0.35, -1];
+const kneeS = chestHands(VET_KNEE_S());
+/** The landing, heavy: deep in his knees, his feet where his stance has them. */
+const KNEE_LAND: Q = P({ px: 1.0, pz: -15.5, yaw: -18, bend: 28, pitch: 14, hunch: 14, faceTurn: -14, faceUp: 20, lfx: 6.6, lfy: 3.0, lfz: 0.2, lft: 14, lk: 30, lfp: 10, rfx: -5.6, rfy: -3.4, rfz: 0.2, rft: -30, rk: -30, rfp: 30, lhx: 9, lhy: 5, lhz: -3, le: 24, rhx: 8, rhy: -4, rhz: -3, re: 20 });
 /** The flying knee, leaping `go` in to land it (his own measure). */
-export function kneeOf(go = 34, id = 'knee'): VetMotion {
+export function kneeOf(go = 40, id = 'knee'): VetMotion {
   const KNEE_GO = go;
+  const carry = (f: number): [number, number] => [KNEE_GO * track(f, [[19, 0], [22, 0.72], [26, 0.86], [34, 1]], 'out'), 0];
+  // (they stand where the knee meets them: just past where it is at the blow)
+  const k = skel(P(kneeS)).kneeR;
   return {
-  id, name: 'The flying knee', input: 'tap, tap, then swipe and hold', long: 46,
-  line: 'A low lunge in, both hands reaching, the rear knee drawn back, held; then a leap in and the knee driven up into them, both hands out to pull them down onto it; dropped down, dust, up.',
+  id, name: 'The flying knee', input: 'tap, tap, then swipe and hold', long: KNEE_LONG,
+  line: 'A long lunge in, sunk low over his lead foot, both hands reaching for their head, held; then a leap and the knee driven up into them, thigh level, shin tucked, both hands pulling their head down onto it; snapped back; landed heavy, up.',
   keys: [
     { f: 0, q: P({}) },
-    { f: 9, q: P(kneeW), e: 'out' },
-    { f: 13, q: P({ ...kneeW, pz: (kneeW.pz ?? 0) - 0.8, rfx: (kneeW.rfx ?? 0) - 0.6 }), e: 'io' },
-    { f: 15, q: P(kneeS), e: 'lin' },
-    { f: 17, q: P({ ...kneeS, pz: 22, lfz: 25, rfz: 44 }), e: 'out' },
-    { f: 21, q: P({ ...kneeS, pz: 18, lfz: 21, rfz: 35, rkUp: 50, lhz: 2, rhz: 3, lhx: 12, rhx: 12 }), e: 'io' },
-    { f: 27, q: P({ px: 3.0, pz: -6, yaw: -18, bend: 14, pitch: 6, hunch: 8, faceTurn: -14, faceUp: 10, lfx: 7.0, lfy: 3.0, lfz: 0.5, lft: 14, lk: 24, lfp: 16, rfx: -3.5, rfy: -3.2, rfz: 0.5, rft: -24, rk: -26, rfp: 30, lhx: 9, lhy: 3, lhz: 2, le: 22, rhx: 8, rhy: -2, rhz: 3, re: 18 }), e: 'in' },
-    { f: 31, q: P({ px: 3.0, pz: -14.5, yaw: -16, bend: 26, pitch: 12, hunch: 14, faceTurn: -14, faceUp: 18, lfx: 7.0, lfy: 3.0, lfz: 0.2, lft: 14, lk: 30, lfp: 10, rfx: -3.5, rfy: -3.2, rfz: 0.2, rft: -24, rk: -30, rfp: 34, lhx: 9, lhy: 5, lhz: -2, le: 24, rhx: 8, rhy: -4, rhz: -2, re: 20 }), e: 'out' },
-    { f: 46, q: P({}) },
+    { f: 6, q: tucked(P({ px: 3.0, pz: -9.5, yaw: -16, bend: 14, pitch: 10, hunch: 8, faceTurn: -12, faceUp: 14, lfx: 11.0, lfy: 3.1, lfz: 6.5, lft: 10, lk: 24, lfp: 20, rfp: 40, rk: -16 })), e: 'io' },
+    { f: 12, q: elbows(P(kneeW), REACH_L, REACH_R), e: 'out' },
+    { f: 19, q: elbows(P({ ...kneeW, pz: (kneeW.pz ?? 0) - 1.0, px: (kneeW.px ?? 0) + 0.4, rfx: (kneeW.rfx ?? 0) - 0.4 }), REACH_L, REACH_R), e: 'io' },
+    { f: 21, q: P(kneeS), e: 'lin' },
+    { f: 22, q: P({ ...kneeS, pz: 15.5, lfz: 18.5, rfz: 33.0, rkUp: 44 }), e: 'out' },
+    { f: 26, q: P({ ...kneeS, pz: 13.5, lfz: 16.5, rfz: 29.5, rkUp: 34, bend: 12, lhz: (kneeS.lhz ?? 0) - 3, rhz: (kneeS.rhz ?? 0) - 3 }), e: 'io' },
+    { f: 34, q: KNEE_LAND, e: 'in' },
+    { f: 38, q: P({ ...KNEE_LAND, pz: -16.2, bend: 30 }), e: 'out' },
+    { f: KNEE_LONG, q: P({}) },
   ],
-  plants: [['L', 0, 14], ['R', 0, 13], ['L', 27, 46, 'end'], ['R', 27, 46, 'end']],
-  carry: (f) => [KNEE_GO * track(f, [[13, 0], [16, 0.7], [27, 1]], 'out'), 0],
-  strikes: [{ from: 13, at: 15, joint: 'kneeR', kind: 'kick', heavy: true, hits: [{ foe: 0, f: 15, react: 'fly' }] }],
-  foes: [[KNEE_GO * 0.67 + 22, 4]],
-  dust: [{ f: 14, at: 'both', big: true }, { f: 27, at: 'both', big: true }],
-  shake: [[15, 19], [27, 29]],
+  plants: [['L', 0, 2], ['R', 0, 19], ['L', 11, 19, 'end'], ['L', 34, KNEE_LONG, 'end'], ['R', 34, KNEE_LONG, 'end']],
+  carry,
+  strikes: [{ from: 19, at: 21, joint: 'kneeR', kind: 'kick', heavy: true, w: 22, burst: 0.85, under: true, hits: [{ foe: 0, f: 21, react: 'kneed' }] }],
+  foes: [[carry(21)[0] + k[0] + 9, k[1]]],
+  dust: [{ f: 3, at: 'L' }, { f: 19, at: 'both', big: true }, { f: 34, at: 'both', big: true }],
+  shake: [[21, 25], [34, 37]],
+  quake: [34],
 };
 }
 const KNEE = kneeOf();
+
+// THE PUSH KICK (hold, the first of the three kicks): his word, 3 Nov 2026, 00:36: “And the 3 kick combo seemed like two of
+// the same kicks”; his pick “Push kick, then round”; and at 00:37: “Push kick hits in a cone in front of”. So: the rear
+// knee CHAMBERED HIGH in front of him and held, the foot cocked under it, the toes pulled back; then the foot DRIVEN STRAIGHT
+// OUT heel first into their middle, his hips thrown in behind it, his body leaning back over his support foot, which stays
+// FLAT on the floor; his fists guarding his face. It shoves back everyone in a cone in front of him: a blast of force
+// spreading out from his heel along the floor, 60 degrees wide and two and a half tiles long. Re-chambered; set down; guard.
+const PUSH_LONG = 44;
+/** The push kick's cone: 60 degrees wide, two and a half tiles long (his own measure). */
+export const PUSH_CONE = { deg: 60, reach: 2.5 * VET_TILE, react: 'shove' as Reaction };
+const pushChamber: Q = P({ px: 0.5, pz: -3.0, yaw: -4, twist: -2, bend: 4, pitch: -6, hunch: 6, faceTurn: -6, faceUp: 6,
+  lfx: 3.0, lfy: 2.8, lft: 10, lk: 12, lfp: 0, lfz: 0,
+  rfx: 7.5, rfy: -2.6, rfz: 21.0, rft: -6, rk: -4, rkUp: 62, rfp: -14,
+  ...GUARD });
+const pushOut: Q = P({ px: 1.0, pz: -3.6, yaw: -2, twist: -4, bend: -6, pitch: -22, hunch: 4, faceTurn: -4, faceUp: 12,
+  lfx: 3.0, lfy: 2.8, lft: 10, lk: 16, lfp: 0, lfz: 0,
+  rfx: 26.0, rfy: -2.2, rfz: 23.0, rft: -4, rk: -4, rkUp: 50, rfp: -22,
+  ...GUARD });
+const PUSH: VetMotion = {
+  id: 'push', name: 'The push kick', input: 'hold (the first of the three kicks)', long: PUSH_LONG,
+  line: 'The rear knee chambered high, the foot cocked, the toes back, held; then the foot driven straight out heel first, his support foot flat: a blast of force fanning out from his heel shoves back everyone in a cone in front of him; set down; guard.',
+  keys: [
+    { f: 0, q: P({}) },
+    { f: 4, q: P({ px: 0.0, pz: -7.0, yaw: -12, lfx: 4.5, lfy: 3.0, lft: 12, lk: 18, lfp: 6, lfz: 0.3, rfx: -2.5, rfz: 5.0, rfp: 40, rk: -14, rkUp: 20 }), e: 'io' },
+    { f: 10, q: pushChamber, e: 'out' },
+    { f: 15, q: P({ ...pushChamber, rfz: 21.6, rkUp: 64, pz: -3.4 }), e: 'io' },
+    { f: 17, q: pushOut, e: 'lin' },
+    { f: 21, q: P({ ...pushOut, rfx: 26.3, pitch: -23 }), e: 'out' },
+    { f: 27, q: P({ ...pushChamber, rfz: 18.0, rkUp: 52 }), e: 'io' },
+    { f: 34, q: P({ px: 0.2, pz: -6.0, yaw: -18, lfx: 5.0, lfy: 3.0, lft: 14, lk: 18, lfp: 12, lfz: 0.8, rfx: -5.0, rfz: 4.5, rfp: 30, rk: -24 }), e: 'io' },
+    { f: PUSH_LONG, q: P({}) },
+  ],
+  plants: [['L', 0, PUSH_LONG], ['R', 0, 2], ['R', 36, PUSH_LONG, 'end']],
+  strikes: [{ from: 15, at: 17, joint: 'heelR', kind: 'kick', heavy: true, w: 16, burst: 0.8, under: true, cone: PUSH_CONE, hits: [{ foe: 0, f: 17, react: 'shove' }] }],
+  foes: [[47, -8], [76, 15], [96, -31]],
+  dust: [{ f: 17, at: 'L', big: true }, { f: 36, at: 'R' }],
+  shake: [[17, 20]],
+};
 
 // STRUCK (a blow lands on him, on the second frame): his head snapped round and back, his chest thrown back and over, his
 // weight driven onto his back foot; he shakes it off and is back up on his toes, fists up.
@@ -909,11 +1038,21 @@ aim(HOOK, [16, 18], 'L', [29, -4, 43], [-1, 0.5, 0.4]);
 function guardElbow(m: VetMotion, at: number[], side: 'L' | 'R', dir: V3): void {
   for (const k of m.keys ?? []) if (at.includes(k.f)) k.q = elbows(k.q, side === 'L' ? dir : undefined, side === 'R' ? dir : undefined);
 }
-guardElbow(CROSS, [9, 12, 14, 16, 22], 'L', polesOf(P({}))[0]);
+guardElbow(CROSS, [9, 12, 14, 16, 22], 'L', GUARD_ELBOW);
 guardElbow(FALL, [50, 58, 66, 80, 96], 'R', [0.3, -0.4, -1]);
+// HIS GUARD THROUGH HIS MOVES (his “I think his elbows are out a little too much in his stance”): wherever a fist is up
+// guarding his face, its elbow is tucked in, down in front of his ribs
+guardElbow(JAB, [8, 11, 12, 14, 19, 22, 24], 'R', GUARD_ELBOW);
+guardElbow(JAB, [22, 24], 'L', GUARD_ELBOW);
+guardElbow(HOOK, [10, 13, 15, 16, 18, 23], 'R', GUARD_ELBOW);
+guardElbow(RK, [3, 5, 11, 14], 'L', GUARD_ELBOW);
+guardElbow(RK, [3, 5, 11, 14, 15, 16, 18, 23, 26, 29], 'R', GUARD_ELBOW);
+guardElbow(PUSH, [4, 10, 15, 17, 21, 27, 34], 'L', GUARD_ELBOW);
+guardElbow(PUSH, [4, 10, 15, 17, 21, 27, 34], 'R', GUARD_ELBOW);
+guardElbow(CROSS, [22], 'R', GUARD_ELBOW);
 
 // (the keys put in between, with their palms)
-for (const m of [JAB, CROSS, HOOK, RK, DODGE, UPPER, KNEE, HURT, FALL]) {
+for (const m of [JAB, CROSS, HOOK, RK, DODGE, UPPER, KNEE, PUSH, HURT, FALL]) {
   if (!m.turn || !m.keys) continue;
   const at = m.turn.f;
   const i = m.keys.findIndex((k) => k.f > at);
@@ -924,7 +1063,7 @@ export const VET_STAND: VetMotion = { id: 'stand', name: 'Standing', input: 'sta
 export const VET_RUN: VetMotion = { id: 'run', name: 'Running', input: 'moving', long: RUN_LONG, loops: true, fn: runAt, strikes: [], foes: [], carry: (f) => [RUN_CARRY * f, 0], line: 'An action hero’s run: low and driving, knees high, fists pumping, both feet off the floor between strides.' };
 
 /** EVERY MOVE OF HIS, in the order the film shows them. */
-export const VET_MOTIONS: VetMotion[] = [VET_STAND, VET_RUN, DODGE, JAB, CROSS, HOOK, RK, ELBOW, UPPER, SPINKICK, SPINKICK_CLOSE, KNEE, HURT, FALL];
+export const VET_MOTIONS: VetMotion[] = [VET_STAND, VET_RUN, DODGE, JAB, CROSS, HOOK, RK, PUSH, ELBOW, UPPER, SPINKICK, SPINKICK_CLOSE, KNEE, HURT, FALL];
 export const motionById = (id: string): VetMotion => {
   const m = VET_MOTIONS.find((x) => x.id === id);
   if (!m) throw new Error(`no move ${id}`);
@@ -947,7 +1086,8 @@ export const VET_COMBOS: Combo[] = [
   { n: 1, name: 'Jab, cross, hook', inputs: 'tap, tap, tap', steps: [{ input: 'tap', move: 'jab' }, { input: 'tap', move: 'cross' }, { input: 'tap', move: 'hook' }], line: 'Steady damage; the hook catches two side by side.' },
   { n: 2, name: 'Jab, cross, flying knee', inputs: 'tap, tap, swipe and hold', steps: [{ input: 'tap', move: 'jab' }, { input: 'tap', move: 'cross' }, { input: 'swipeHold', move: 'knee' }], line: 'The strongest single blow.' },
   { n: 3, name: 'Jab, cross, flying uppercut', inputs: 'tap, tap, swipe and tap', steps: [{ input: 'tap', move: 'jab' }, { input: 'tap', move: 'cross' }, { input: 'swipeTap', move: 'uppercut' }], line: 'Launches one into the air, stunned.' },
-  { n: 4, name: 'Round kick, round kick, spinning jump kick', inputs: 'hold, hold, swipe and hold', steps: [{ input: 'hold', move: 'roundkick' }, { input: 'hold', move: 'roundkick' }, { input: 'swipeHold', move: 'spinkick' }], line: 'Hits all round, for when he is surrounded.' },
+  // (his pick, 3 Nov 2026: “Push kick, then round”: the three kicks are three different kicks)
+  { n: 4, name: 'Push kick, round kick, spinning jump kick', inputs: 'hold, hold, swipe and hold', steps: [{ input: 'hold', move: 'push' }, { input: 'hold', move: 'roundkick' }, { input: 'swipeHold', move: 'spinkick' }], line: 'The push kick shoves back all in a cone in front; the spinning jump kick hits all round.' },
   { n: 5, name: 'Round kick, spinning elbow, round kick', inputs: 'hold, tap, hold', steps: [{ input: 'hold', move: 'roundkick' }, { input: 'tap', move: 'elbow' }, { input: 'hold', move: 'roundkick' }], line: 'Knocks them back to make room.' },
   { n: 6, name: 'A swipe first', inputs: 'swipe; or swipe and hold', steps: [{ input: 'swipe', move: 'dodge' }, { input: 'swipeHold', move: 'spinkickClose' }], line: 'A swipe on its own is the dodging jump; a swipe and hold first, a spinning jump kick that closes the distance.' },
 ];

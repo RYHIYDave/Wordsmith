@@ -50,8 +50,10 @@ export interface FoeState {
   down: boolean;
 }
 /** How long each reaction plays (frames), and whether he ends where he started (he comes back in) or stays down. */
-export const REACT_LONG: Record<Reaction, number> = { snap: 14, reel: 24, knock: 34, launch: 60, fly: 46 };
-export const REACT_STAYS: Record<Reaction, boolean> = { snap: false, reel: false, knock: false, launch: true, fly: true };
+export const REACT_LONG: Record<Reaction, number> = { snap: 14, reel: 24, knock: 34, launch: 60, fly: 46, kneed: 46, aside: 34, shove: 34 };
+export const REACT_STAYS: Record<Reaction, boolean> = { snap: false, reel: false, knock: false, launch: true, fly: true, kneed: true, aside: false, shove: false };
+/** Which way a blow sends him, turned from straight away from the Veteran (degrees to the left): the spinning elbow knocks him ASIDE. */
+export const REACT_VEER: Record<Reaction, number> = { snap: 0, reel: 0, knock: 0, launch: 0, fly: 0, kneed: 0, aside: -40, shove: 0 };
 
 /** Him, `g` frames after a blow of a kind landed (g >= 0). */
 export function foeHit(kind: Reaction, g: number): FoeState {
@@ -92,6 +94,28 @@ export function foeHit(kind: Reaction, g: number): FoeState {
         back: tr(g, [[0, 0], [15, 46], [24, 56], [46, 58]]), lift: air, stars: false, down: true,
       };
     }
+    case 'kneed': {
+      // PULLED DOWN ONTO THE KNEE (doubled over, his face to it), then SNAPPED BACK, flung back off his feet, down on his knees
+      const air = tr(g, [[0, 0], [3, 9], [8, 12], [15, 0]]);
+      return {
+        pose: g < 15
+          ? { ...G, pz: tr(g, [[0, -5], [3, -2]]), pitch: tr(g, [[0, 12], [2, -40], [8, -30], [14, -10]]), bend: tr(g, [[0, 16], [2, -24], [8, -14], [14, 16]]), faceUp: tr(g, [[0, -14], [2, 46], [8, 36], [14, 0]]), faceTilt: tr(g, [[0, 0], [3, -14], [14, 0]]), lfx: tr(g, [[0, 4.5], [4, 9]]), lfz: tr(g, [[0, 0], [4, 8], [14, 0]]), lk: 30, lkUp: 20, rfx: tr(g, [[0, -4.5], [4, 2]]), rfz: tr(g, [[0, 0], [4, 12], [14, 0]]), rk: -30, rkUp: 20, lhx: tr(g, [[0, 6], [3, -4]]), lhy: tr(g, [[0, -1], [3, 13]]), lhz: tr(g, [[0, -4], [3, 8]]), le: 30, rhx: tr(g, [[0, 6], [3, -4]]), rhy: tr(g, [[0, 1], [3, -13]]), rhz: tr(g, [[0, -4], [3, 8]]), re: 30 }
+          : { ...G, pz: tr(g, [[15, -8], [20, -15], [46, -15.5]]), bend: tr(g, [[15, 20], [22, 38], [46, 40]]), pitch: tr(g, [[15, 8], [22, 16], [46, 16]]), faceUp: tr(g, [[15, 0], [24, -24], [46, -26]]), lfx: 6, lfy: 3, lk: 30, rfx: -2, rfy: -3, rk: -30, lhx: 5, lhy: 3, lhz: -20, le: 10, rhx: 5, rhy: -3, rhz: -20, re: 10 },
+        back: tr(g, [[0, 0], [3, 12], [15, 48], [24, 56], [46, 58]]), lift: air, stars: false, down: true,
+      };
+    }
+    case 'aside':
+      // KNOCKED ASIDE: his head and trunk wrenched round, thrown off sideways, stumbling; he comes back
+      return {
+        pose: { ...G, pz: tr(g, [[0, -3.5], [4, -8], [18, -7], [34, -3.5]]), yaw: tr(g, [[0, -10], [3, -46], [16, -30], [34, -10]]), twist: tr(g, [[0, 4], [3, -40], [14, -20], [34, 4]]), side: tr(g, [[0, 0], [3, 22], [14, 10], [34, 0]]), pitch: tr(g, [[0, 2], [3, -10], [12, 8], [34, 2]]), bend: tr(g, [[0, 10], [3, -8], [14, 20], [34, 10]]), faceTurn: tr(g, [[0, -4], [3, -64], [16, -20], [34, -4]]), faceUp: tr(g, [[0, 6], [3, 26], [14, -4], [34, 6]]), faceTilt: tr(g, [[0, 0], [3, 30], [16, 8], [34, 0]]), lhx: tr(g, [[0, 9.5], [4, 0], [20, 6], [34, 9.5]]), lhy: tr(g, [[0, -1], [4, 12], [34, -1]]), lhz: tr(g, [[0, 2], [4, 6], [20, -4], [34, 2]]), rhx: tr(g, [[0, 8.5], [4, -2], [20, 6], [34, 8.5]]), rhy: tr(g, [[0, 1], [4, -12], [34, 1]]), rhz: tr(g, [[0, 1], [4, 2], [20, -5], [34, 1]]), lfx: tr(g, [[0, 4.5], [8, 9], [34, 4.5]]), lfy: tr(g, [[0, 2.5], [8, -2], [34, 2.5]]) },
+        back: tr(g, [[0, 0], [6, 30], [14, 34], [22, 28], [34, 0]]), lift: 0, stars: false, down: false,
+      };
+    case 'shove':
+      // SHOVED BACK: doubled over round the heel in his middle, driven back skidding; he comes back
+      return {
+        pose: { ...G, pz: tr(g, [[0, -3.5], [3, -7], [12, -8], [34, -3.5]]), pitch: tr(g, [[0, 2], [2, 20], [12, 14], [34, 2]]), bend: tr(g, [[0, 10], [2, 36], [12, 28], [34, 10]]), faceUp: tr(g, [[0, 6], [2, -14], [12, 0], [34, 6]]), lhx: tr(g, [[0, 9.5], [3, 5], [20, 7], [34, 9.5]]), lhy: tr(g, [[0, -1], [3, -4], [34, -1]]), lhz: tr(g, [[0, 2], [3, -8], [20, -2], [34, 2]]), rhx: tr(g, [[0, 8.5], [3, 5], [20, 7], [34, 8.5]]), rhy: tr(g, [[0, 1], [3, 4], [34, 1]]), rhz: tr(g, [[0, 1], [3, -8], [20, -2], [34, 1]]), lfx: tr(g, [[0, 4.5], [3, 9], [14, 6], [34, 4.5]]), rfx: tr(g, [[0, -4.5], [3, 0], [14, -3], [34, -4.5]]) },
+        back: tr(g, [[0, 0], [3, 16], [8, 34], [14, 38], [20, 36], [34, 0]]), lift: 0, stars: false, down: false,
+      };
   }
 }
 /** His haymaker: `g` frames from its start; it lands at 16. */
