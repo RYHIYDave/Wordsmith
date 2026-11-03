@@ -65,6 +65,7 @@ import { PACK_MARKS, drawPackMark } from './pack_marks';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
+import { VeteranFx } from './veteran_fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting, shiftM3, tickM3, tintM3 } from './melds3';
 import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
@@ -578,6 +579,8 @@ export class Renderer {
   private fallenFor: unknown = null;
   /** The hero as a moving figure: which frame, the scarf and the feather, what they do when left standing. */
   readonly figure = new Figure();
+  /** THE VETERAN (game/veteran.ts, behind VETERAN): his frame while a move plays, and what his blows throw off (render/veteran_fx.ts). */
+  readonly vetFx = new VeteranFx();
   /** Which hero the figure was last asked for (a new character starts over). */
   private figureOf = '';
   /** The hero's life as a bar over their head: when it is there and what it shows (lifebar.ts). */
@@ -2373,6 +2376,8 @@ export class Renderer {
     g.globalAlpha = 1;
     // (the effects that lie flat are drawn once, over the last floor to be drawn)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
+    // (THE VETERAN's that lie on the floor: the push kick's cone, the crescents' traces, rings, dust behind him: render/veteran_fx.ts)
+    if ((pass < 0 || pass === 1) && !this.skip.has('fx')) this.vetFx.drawGround(g, cam, game);
 
     // (THE NEW MONSTERS: a Boneward's spear lying where it came down, till it is picked up)
     for (const sp of game.spears) if (L.explored[Math.floor(sp.y) * f.w + Math.floor(sp.x)] && here(sp.x, sp.y)) drawSpearLying(g, this.floorAt, sp.x, sp.y, sp.fx, sp.fy);
@@ -2397,7 +2402,9 @@ export class Renderer {
     }
     if (here(h.x, h.y)) {
       // (a hero in the air is further from their shadow: it is smaller and fainter at the top of a leap)
-      const up = h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
+      // (THE VETERAN off the floor in a move: as high as the art has him, render/veteran_fx.ts)
+      const vetUp = this.vetFx.liftOf(game);
+      const up = vetUp > 0 ? Math.min(1, vetUp / 40) : h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
@@ -2732,6 +2739,8 @@ export class Renderer {
     // (THE WARLOCK's effects read the burning and the cursed off the monsters: render/warlock_fx.ts)
     fx.warlock.game = game;
     fx.brawler.game = game;
+    // (THE VETERAN, behind a switch that is off: his moves' effects and his globes, render/veteran_fx.ts)
+    this.vetFx.step(game, fx, pace / 60);
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
     if (WORDS3.on) tick3(pace / 60, game, fx);
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts)
@@ -3390,6 +3399,7 @@ export class Renderer {
       if (who !== this.figureOf) {
         this.figureOf = who;
         fig.reset();
+        this.vetFx.clear();
         this.lifeBar.reset();
         this.reelT = -1;
         this.lifeWas = h.life;
@@ -3442,7 +3452,10 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      let sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, changeK, punch: h.punch && h.anim === 'attack' ? h.punch.run : undefined, tapAs: h.skills[0]?.id, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      // (THE VETERAN in a move: its frame, turned as he faced as it began: render/veteran_fx.ts. Not narrowed in a turn.)
+      const vetSp = this.vetFx.shown(game, heroArt);
+      if (vetSp) sp = vetSp;
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -3480,8 +3493,10 @@ export class Renderer {
       for (const gh of this.slipGhosts) this.stand(gh.x + gh.y - 0.02, silhouette(gh.s, '#22d0e0'), wx(cam, gh.x, gh.y), wy(cam, gh.x, gh.y), null, 0, 1, 0.55 * (1 - gh.t / 0.3));
       if (ride) this.stand(ride.d, ride.sp, sx, sy - ride.up);
       else if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
+        // (THE VETERAN: what is behind him at height, and his after-images along a strike, just behind him: render/veteran_fx.ts)
+        for (const b of this.vetFx.behind(game, heroArt, Math.round(sx), Math.round(sy), cam, top)) this.stand(h.x + h.y + b.dd, b.s, b.x, b.y);
         // (WORDMELDING's looks, behind a switch that is off: standing in Scald's steam, the hero is hidden, seen faint through it)
-        this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, (coming > 0 ? 1 - coming * coming * 0.85 : 1) * (MELD3.on ? heroAlphaM3(t) : 1), fig, coming);
+        this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, (coming > 0 ? 1 - coming * coming * 0.85 : 1) * (MELD3.on ? heroAlphaM3(t) : 1), vetSp ? null : fig, coming);
         // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
         const copies = WORDS3.on ? heroCopies3(t) : null;
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
@@ -4112,6 +4127,8 @@ export class Renderer {
     if (BINDING3.on && !this.skip.has('fx')) airB3(g, cam, t, game);
     if (VOLATILE3.on && !this.skip.has('fx')) airV3(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
+    // (THE VETERAN's over everything: his smears, his force, the bursts of his blows; his globes: render/veteran_fx.ts)
+    if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
     this.drawWordDrops(g, W, H, game, t);
