@@ -12233,9 +12233,9 @@ export class Game {
     const slot = it.slot === 'ring' && (want === 'ring1' || want === 'ring2') ? want : this.slotFor(it);
     if (!slot) return 'Cannot be worn';
     if (it.slot === 'offhand' && !canPair(h.gear.mainhand, it)) {
-      // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: a shield goes with the Tinkerer's wrench too, a focus with the Warlock's grimoire)
+      // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: a shield goes with the Tinkerer's wrench too, a focus with the Warlock's demonic tome)
       const own = classWeapon(h.cls);
-      return it.offhand === 'shield' ? (own === 'wrench' ? 'Needs a one-handed sword or a wrench' : 'Needs a one-handed sword') : it.offhand === 'quiver' ? 'Needs a bow' : own === 'grimoire' ? 'Needs a wand or a grimoire' : 'Needs a wand';
+      return it.offhand === 'shield' ? (own === 'wrench' ? 'Needs a one-handed sword or a wrench' : 'Needs a one-handed sword') : it.offhand === 'quiver' ? 'Needs a bow' : own === 'tome' ? 'Needs a wand or a demonic tome' : 'Needs a wand';
     }
     const old = h.gear[slot];
     // A new main hand may not suit the current off hand: that piece goes back to the bag.

@@ -1,8 +1,9 @@
 # New item pictures
 
 Style A, painted, picked by him: every item at its four rarities, each rarer one finer, with a thin rim of its rarity's colour
-round the item itself. Pictures first: game-ready behind a switch that is off (`ITEMS_A = { on: false }`, `src/art/items_a.ts`),
-and nothing of the game imports it yet (`tests/items_a.test.ts` checks it).
+round the item itself. Pictures first: in the game behind a switch that is off (`ITEMS_A = { on: false }`, `src/art/items_a.ts`),
+asked for only through art/icons.ts `itemPic` (`tests/items_a.test.ts` and `tests/items_a_game.test.ts` check it; below,
+"Brought in").
 
 ## His words, in order
 
@@ -129,6 +130,21 @@ the Veteran's. What they do (hands, speed, the quick attack, who can carry them,
    and if he wants it, the Warlock the tome and the Tinkerer the wrench). The Veteran is on `art/brawler-looks`.
 4. **Unique items** (his next step): one picture per kind serves every Unique of it. A named unique can have a picture of its
    own: a painter added to `items_a.ts` under its own key, asked for by the item's `icon`.
+
+### Brought in (the main chat, branch `items-in`, still behind ITEMS_A, off)
+
+- `itemPic(icons, key, rarity)` (art/icons.ts) is the one place the game asks for an item's picture: ITEMS_A on, `itemArt(key,
+  rarity)`; off, today's `icons.item[key]`, the very same picture. Every place above calls it with the rarity it knows (the
+  stranger's throws Normal); the ghost is the kind's Normal, drawn at `ghost.w, ghost.h`. Loot on the floor is the same picture.
+- The Warlock's weapon kind is `'tome'` (it was `'grimoire'`): “Demonic Tome”, “Chained Tome”, “Pact Tome” by tier; a saved
+  grimoire loads as the tome (items.ts `migrateItem`). With ITEMS_A on the wraps, the tome and the wrench are the art's; the
+  stand-ins in art/icons.ts are only for it off.
+- `__dbg.itemsA` is the switch. `tests/items_a_game.test.ts` checks every place, off and on.
+- `pictures/in_game/`: the game itself, both switches on, on an iPhone 16 held sideways (`node tools/build_brawler_to.mjs
+  dist/items.html`, then `node tools/playtest.mjs --file dist/items.html --touch --size 852x393 --dpr 3 --scenario
+  tools/scenarios/items_a_look.mjs --out shots/items_a_look/items`): a Warrior's bag of every kind at mixed rarities; the
+  Warlock with his demonic tome, the Tinkerer with her wrench, the Veteran with his wraps (each with the other three rarities of
+  it in the bag); loot on a dungeon floor at all four rarities; the armourer's shelf.
 
 ## How the pictures are made
 

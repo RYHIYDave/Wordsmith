@@ -60,7 +60,7 @@
 //     or dragged there.
 // There is no game to go back to by pressing it: DONE closes both.
 
-import { WORD_COLOR } from '../art/icons';
+import { WORD_COLOR, itemPic } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
@@ -378,7 +378,7 @@ export function dollAt(slot: EquipSlot, pitch: number): [number, number] {
 export function dollHeight(pitch: number): number {
   return (DOLL_ROWS - 1) * pitch + CELL;
 }
-/** What an empty slot shows, faintly: the kind of thing that goes there. */
+/** What an empty slot shows, faintly: the kind of thing that goes there (with ITEMS_A on, the art chat's picture of it at Normal). */
 const GHOST: Record<EquipSlot, IconKey> = { mainhand: 'sword', offhand: 'shield', helm: 'helm', chest: 'armor', gloves: 'gloves', belt: 'belt', boots: 'boots', amulet: 'amulet', ring1: 'ring', ring2: 'ring' };
 
 /** The figure on the GEAR page: it stands in its loop and now and then does what its class does when left standing, as on the class cards. */
@@ -1228,12 +1228,13 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const bad = it && c.sel.kind === 'bag' && game.useProblem(it) !== null;
     g.globalAlpha = worn ? 1 : dimBag;
     const edge = waiting || looked || aim ? THEME.accent : ok ? (blink ? THEME.accent : THEME.accentLo) : it ? RARITY_COLOR[it.rarity] : THEME.edge;
-    ui.slot(c.r.x, c.r.y, CELL, it && !away ? art.icons.item[it.icon] : null, edge, lit);
+    ui.slot(c.r.x, c.r.y, CELL, it && !away ? itemPic(art.icons, it.icon, it.rarity) : null, edge, lit);
     if (!it && c.sel.kind === 'gear') {
-      // an empty slot on the hero shows, faintly, the kind of thing that goes in it
-      const ghost = art.icons.item[GHOST[c.sel.slot]];
+      // an empty slot on the hero shows, faintly, the kind of thing that goes in it (at its size in game pixels: the new
+      // pictures, ITEMS_A, are painted two to a game pixel)
+      const ghost = itemPic(art.icons, GHOST[c.sel.slot], 0);
       g.globalAlpha = 0.3;
-      g.drawImage(ghost.img, c.r.x + Math.floor((CELL - ghost.w) / 2), c.r.y + Math.floor((CELL - ghost.h) / 2));
+      g.drawImage(ghost.img, c.r.x + Math.floor((CELL - ghost.w) / 2), c.r.y + Math.floor((CELL - ghost.h) / 2), ghost.w, ghost.h);
       g.globalAlpha = 1;
     }
     // (the four places it has for properties: what it came with, the words burned in, and the room left)
@@ -1742,7 +1743,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
   // and so does a piece of gear (a finger hides what is under it: the piece floats above the finger)
   if (carryAt && carried) {
-    const icon = art.icons.item[carried.icon];
+    const icon = itemPic(art.icons, carried.icon, carried.rarity);
     const cx = Math.round(carryAt.x - CELL / 2);
     const cyy = Math.round(carryAt.y - (T ? CELL + 8 : CELL / 2));
     g.globalAlpha = 0.95;

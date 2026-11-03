@@ -11,11 +11,12 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { P } from './palette';
 import { ALL_WORD_IDS, MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, VOLT_MELD_IDS } from '../game/types';
-import type { AbilityId, Element, IconKey, MeldId, WordId } from '../game/types';
+import type { AbilityId, Element, IconKey, MeldId, Rarity, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
+import { ITEMS_A, itemAKind, itemArt } from './items_a';
 
 export interface IconArt {
-  /** 16x16, anchor (8, 8). */
+  /** 16x16, anchor (8, 8). Today's item pictures, one for every rarity: ask for an item's picture with itemPic (below), never here. */
   item: Record<IconKey, Sprite>;
   /** Sixteen game pixels square, anchor in the middle, painted two picture pixels to a game pixel (art/ability_icons.ts): draw them at their size in game pixels (`w` by `h`). The UI draws its own dark frame behind these. */
   ability: Record<AbilityId, Sprite>;
@@ -594,10 +595,29 @@ function beltIcon(): Sprite {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Item icons: THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, game/defs.ts; off).
+// THE PICTURE OF AN ITEM, wherever the game shows one: the bag and the hero's gear (ui/inventory.ts), the stash and the
+// vendors' shelves (ui/town.ts), the stranger's throws (ui/trades.ts) and loot lying on the floor (render/render.ts).
+//
+// The new item pictures (art/items_a.ts, the art chat's, style A: his picks, 3 Nov 2026, “A, painted” and “Finer and a rim”)
+// are one picture per kind AND rarity, each rarer one finer, with a thin rim of its rarity's colour. They show only with their
+// switch on (ITEMS_A, off until he has seen them in the game and said yes); off, every place shows today's picture, the same
+// one at every rarity, exactly as it always has (tests/items_a_game.test.ts).
 
 /**
- * STAND-IN, until the art chat's picture (its branch art/items-look): the Veteran's brawler's wraps, a pair of fists bound
+ * An item's picture by its picture key (`it.icon`) at its rarity: with ITEMS_A on the art chat's (16 by 16 game pixels, painted
+ * two picture pixels to a game pixel: draw it at its size, `w` by `h`, as ui.slot and the floor's `stand` do); off, today's
+ * (`icons.item[key]`, the very same picture).
+ */
+export function itemPic(icons: IconArt, key: IconKey, rarity: Rarity): Sprite {
+  return ITEMS_A.on && itemAKind(key) ? itemArt(key, rarity) : icons.item[key];
+}
+
+// ---------------------------------------------------------------------------------------------
+// Item icons: THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, game/defs.ts; off). With ITEMS_A on, their pictures are the art
+// chat's (itemPic, above); these stand-ins are only for ITEMS_A off.
+
+/**
+ * STAND-IN, shown only while ITEMS_A is off (on, the art chat's: itemPic): the Veteran's brawler's wraps, a pair of fists bound
  * in plain linen (1..3), a band of the wrapping across each, the back fist's loose end trailing. Nothing glows.
  */
 function wrapsIcon(): Sprite {
@@ -622,11 +642,11 @@ function wrapsIcon(): Sprite {
 }
 
 /**
- * STAND-IN, until the art chat's picture: the Warlock's grimoire, a dark book seen from the front (its cover 1..3, its
- * spine 6, its pages' edge 4), a steel chain across it and a small lock. Nothing glows.
+ * STAND-IN, shown only while ITEMS_A is off (on, the art chat's demonic tome: itemPic): the Warlock's tome, a dark book seen
+ * from the front (its cover 1..3, its spine 6, its pages' edge 4), a steel chain across it and a small lock. Nothing glows.
  */
-function grimoireIcon(): Sprite {
-  return icon(grid('grimoire', [
+function tomeIcon(): Sprite {
+  return icon(grid('tome', [
     '................',
     '................',
     '...61111111114..',
@@ -647,7 +667,7 @@ function grimoireIcon(): Sprite {
 }
 
 /**
- * STAND-IN, until the art chat's picture: the Tinkerer's wrench, all steel, on the diagonal as the other weapons lie, its
+ * STAND-IN, shown only while ITEMS_A is off (on, the art chat's: itemPic): the Tinkerer's wrench, all steel, on the diagonal as the other weapons lie, its
  * handle at the bottom left and its open jaw at the top right. Nothing glows.
  */
 function wrenchIcon(): Sprite {
@@ -696,9 +716,9 @@ function makeItemIcons(): Record<IconKey, Sprite> {
     boots: bootsIcon(),
     ring: ringIcon(),
     amulet: amuletIcon(),
-    // (THE NEW CLASSES' WEAPONS, NEW_WEAPONS: stand-ins until the art chat's pictures)
+    // (THE NEW CLASSES' WEAPONS, NEW_WEAPONS: stand-ins, for ITEMS_A off; on, the art chat's, itemPic)
     wraps: wrapsIcon(),
-    grimoire: grimoireIcon(),
+    tome: tomeIcon(),
     wrench: wrenchIcon(),
   };
 }

@@ -1,6 +1,6 @@
-// THE NEW ITEM PICTURES, STYLE A, PAINTED, GAME-READY behind ITEMS_A (off until he has seen them in the game and said yes).
-// Nothing of the game imports this file yet (tests/items_a.test.ts says so); the README of the new item pictures (docs/mockups) says what the
-// main chat changes to bring it in.
+// THE NEW ITEM PICTURES, STYLE A, PAINTED, IN THE GAME behind ITEMS_A (off until he has seen them in the game and said yes).
+// The game asks for them in one place only, art/icons.ts itemPic, and only with the switch on (tests/items_a.test.ts and
+// tests/items_a_game.test.ts say so); the README of the new item pictures (docs/mockups) says how they were brought in.
 //
 // The owner, 2 Nov 2026, 19:53: “I’d like new item sprites I think.  They’re pretty old art.  Then I guess get ready for unique
 // items.” Of the Veteran: “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.” His picks, 3 Nov:

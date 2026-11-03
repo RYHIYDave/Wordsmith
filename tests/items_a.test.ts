@@ -1,6 +1,7 @@
 // THE NEW ITEM PICTURES, STYLE A, GAME-READY (src/art/items_a.ts), behind ITEMS_A, off. His picks, 3 Nov 2026: “A, painted”;
 // “Finer and a rim”. So:
-//   1. the switch is off, and nothing of the game imports the pictures yet;
+//   1. the switch is off, and the game asks for the pictures in one place only, art/icons.ts itemPic (main.ts holds the switch
+//      for its __dbg hook, nothing more; tests/items_a_game.test.ts checks each place that shows an item);
 //   2. every kind at every rarity: 32 by 32 picture pixels (16 game pixels), every pixel crisp, the item inside its frame with a
 //      clear pixel all round (nothing cut off, the rim clear of the slot's frame), big enough to read;
 //   3. the rim: a thin line, one picture pixel, of the rarity's own colour (the game's RARITY_COLOR) all round the item's ink;
@@ -51,11 +52,21 @@ const pic = (k: ItemAKind, r: 0 | 1 | 2 | 3): Px => {
 const has = (p: Px, x: number, y: number): boolean => x >= 0 && y >= 0 && x < p.w && y < p.h && p.d[(y * p.w + x) * 4 + 3] > 0;
 const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
 
-test('the switch is off, and nothing of the game imports the new pictures yet', () => {
+test('the switch is off, and the game asks for the new pictures only through art/icons.ts itemPic', () => {
   assert.equal(ITEMS_A.on, false, 'ITEMS_A is on');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/items_a.ts') continue;
-    assert.ok(!/items_a['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports art/items_a`);
+    const src = fs.readFileSync(`src/${f}`, 'utf8');
+    if (f === 'art/icons.ts') {
+      assert.ok(/import \{ ITEMS_A, itemAKind, itemArt \} from '\.\/items_a';/.test(src), 'art/icons.ts asks for them (itemPic)');
+      continue;
+    }
+    if (f === 'main.ts') {
+      assert.ok(/import \{ ITEMS_A \} from '\.\/art\/items_a';/.test(src), 'main.ts: the switch, for __dbg');
+      assert.equal(src.match(/items_a['"]/g)?.length, 1, 'main.ts imports the switch alone');
+      continue;
+    }
+    assert.ok(!/items_a['"]/.test(src), `src/${f} imports art/items_a`);
   }
 });
 

@@ -65,9 +65,9 @@ const assert: Assert = nodeAssert;
 // works fine"; "lets have the warrior start with the two handed sword".
 const STARTS: Record<ClassId, WeaponKind> = { warrior: 'greatsword', ranger: 'bow', mage: 'staff', warlock: 'wand', tinkerer: 'wand', brawler: 'sword' };
 const WEAPON_KINDS: WeaponKind[] = ['sword', 'greatsword', 'bow', 'wand', 'staff'];
-// (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: the wraps as the greatsword, the grimoire as the wand, the wrench as the sword; tests/new_weapons.test.ts)
-const APS: Record<WeaponKind, number> = { sword: 1.3, greatsword: 1.05, bow: 1.4, wand: 1.5, staff: 1.0, wraps: 1.05, grimoire: 1.5, wrench: 1.3 };
-const HANDS: Record<WeaponKind, 1 | 2> = { sword: 1, wand: 1, greatsword: 2, bow: 2, staff: 2, wraps: 2, grimoire: 1, wrench: 1 };
+// (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: the wraps as the greatsword, the tome as the wand, the wrench as the sword; tests/new_weapons.test.ts)
+const APS: Record<WeaponKind, number> = { sword: 1.3, greatsword: 1.05, bow: 1.4, wand: 1.5, staff: 1.0, wraps: 1.05, tome: 1.5, wrench: 1.3 };
+const HANDS: Record<WeaponKind, 1 | 2> = { sword: 1, wand: 1, greatsword: 2, bow: 2, staff: 2, wraps: 2, tome: 1, wrench: 1 };
 /** What each weapon was until Version 12 turned it into another: a saved item of the old kind becomes the new. */
 const OLD_KINDS: Record<string, WeaponKind> = { axe: 'sword', mace: 'sword', maul: 'greatsword', longbow: 'bow' };
 /**

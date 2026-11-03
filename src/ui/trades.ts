@@ -19,6 +19,7 @@
 // costs is said, with the button that pays for it. What comes is in the bag at once, and is named
 // here in the colour of what it is; the kind stays picked, so that the next throw is one press.
 
+import { itemPic } from '../art/icons';
 import { RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { TUNE, WORDS } from '../game/defs';
@@ -271,7 +272,8 @@ export function gambleSide(ui: Ui, game: Game, art: Art, st: Panels, inv: InvUi,
       const p = picked();
       for (const c of cells) {
         const on = !!p && p.id === c.id;
-        ui.slot(c.r.x, c.r.y, CELL, art.icons.item[c.kind.icon], on ? THEME.accent : THEME.edge, on || (!T && ui.hover(c.r.x, c.r.y, CELL, CELL)));
+        // (a kind of thing, not yet a piece: it has no rarity until it is thrown for, so its picture is the Normal one)
+        ui.slot(c.r.x, c.r.y, CELL, itemPic(art.icons, c.kind.icon, 0), on ? THEME.accent : THEME.edge, on || (!T && ui.hover(c.r.x, c.r.y, CELL, CELL)));
         if (h.gold < game.gamblePrice(c.k)) {
           g.globalAlpha = 0.45;
           g.fillStyle = THEME.ink;
