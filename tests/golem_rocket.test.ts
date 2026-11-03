@@ -145,16 +145,16 @@ test('the rocket jump: slick (its fist and its eye never leap, stall or turn str
   assert.deepEqual(found, []);
 });
 
-test('the rocket jump’s numbers: in the air 0.7 s (21 frames), 46 game pixels up at the top, flung up fast and falling like a stone; the blast and the slam each a flash; it starts and ends standing as it stands', () => {
+test('the rocket jump’s numbers: in the air 0.7 s (21 frames), 92 game pixels up at the top (his “Yes, but higher”: twice the stand-in’s 46), flung up fast and falling like a stone; the blast and the slam each a flash; it starts and ends standing as it stands', () => {
   assert.equal(ROCKET.flight, 21);
   assert.equal(ROCKET.land, ROCKET.blast + ROCKET.flight);
-  assert.equal(ROCKET_ARC.high, 46);
+  assert.equal(ROCKET_ARC.high, 92);
   const ups = Array.from({ length: ROCKET.flight + 1 }, (_, k) => rocketUp(k));
   assert.equal(ups[0], 0);
   assert.equal(ups[ROCKET.flight], 0);
   const top = Math.max(...Array.from({ length: 2101 }, (_, i) => rocketUp(i / 100)));
-  assert.ok(Math.abs(top - 46) < 0.01, `its top ${top}`);
-  assert.ok(ups[1] >= 10, `flung up ${ups[1].toFixed(1)} game pixels in its first frame`);
+  assert.ok(Math.abs(top - 92) < 0.01, `its top ${top}`);
+  assert.ok(ups[1] >= 20, `flung up ${ups[1].toFixed(1)} game pixels in its first frame`);
   // (falling: faster every frame from its top to the floor)
   const topK = Math.ceil(ROCKET_ARC.top * ROCKET.flight);
   for (let k = topK + 1; k < ROCKET.flight; k++) assert.ok(ups[k] - ups[k + 1] > ups[k - 1] - ups[k] - 1e-9, `falls faster at ${k}`);

@@ -11,8 +11,9 @@
 //                 and lock (frame 8), it holds, its stacks' fire flaring
 //   15            THE BLAST (ROCKET.blast): it leaves the floor. Its flight's frame k = f - 15
 //   15 .. 35      THE FLIGHT, 21 frames (0.7 s, the stand-in's J.long): the game carries it from where it took off to where it
-//                 comes down, rocketAlong(k) of the way (steady, as the stand-in), lifted rocketUp(k) game pixels (46 at the
-//                 top, the stand-in's J.high; up fast, down like a stone)
+//                 comes down, rocketAlong(k) of the way (steady, as the stand-in), lifted rocketUp(k) game pixels (92 at the
+//                 top: the stand-in's J.high of 46 made twice as high at his answer of 3 Nov, “Yes, but higher
+//                 (Recommended)”; up fast, down like a stone)
 //   36            THE LANDING (ROCKET.land): its feet and fist slam down. The stand-in's golemArrive and shake go here
 //   36 .. 56      it takes the blow and stands up again (ROCKET.end): its stacks swing back up and lock (frame 51)
 //
@@ -169,31 +170,17 @@ export function golemRunFrames(view: GameView, gun: GolemGun = 'cannon'): Sprite
 // ---- EVERYTHING AT IT ----------------------------------------------------------------------------------------------------------
 
 /** Its canvas (picture pixels) and the Golem's floor point on it. */
-export const AT_CANVAS = { w: 248, h: 300, ax: 124, ay: 196 } as const;
+export const AT_CANVAS = { w: 260, h: 350, ax: 130, ay: 196 } as const;
 /** EVERYTHING AT THE GOLEM at frame `f`: its floor's, what is behind it, what is over it (lifted with it in the air). */
 export function rocketAtPiece(view: GameView, f: number): { floor: Piece; behind: Piece; over: Piece } {
   const { w, h, ax, ay } = AT_CANVAS;
   const ly = rocketLayers();
   if (f >= 1 && f <= ROCKET.end) rocketAtGolem(ly, rocketAtOf(f, view, screenOf(ax, ay)), f, view === 'front');
-  // (lifted with it: what is at it is painted up with it on its canvas; laid at its floor point lifted the same, so here put back down)
-  const lift = liftOf(f);
-  const drop = (px: Px): Px => {
-    if (!lift) return px;
-    const out = new Px(w, h);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const sy = y - lift;
-      if (sy < 0 || sy >= h) continue;
-      const i = (sy * w + x) * 4;
-      if (!px.d[i + 3]) continue;
-      const j = (y * w + x) * 4;
-      for (let c = 0; c < 4; c++) out.d[j + c] = px.d[i + c];
-    }
-    return out;
-  };
+  // (painted at its floor point; laid there lifted with it, as its picture is: its column of fire reaching down to the floor)
   return {
     floor: { px: layRocketFloor(w, h, ly), ax, ay },
-    behind: { px: drop(layRocketAir(w, h, ly.behind)), ax, ay },
-    over: { px: drop(layRocketAir(w, h, ly.over)), ax, ay },
+    behind: { px: layRocketAir(w, h, ly.behind), ax, ay },
+    over: { px: layRocketAir(w, h, ly.over), ax, ay },
   };
 }
 const atKept = new Map<GameView, { floor: Sprite[]; behind: Sprite[]; over: Sprite[] }>();
@@ -368,7 +355,8 @@ export function golemLandFx(view: GameView): { floor: Sprite[]; air: Sprite[] } 
  * min(1, SHADOW x 1.2)), shrinking and fading as it rises: `r` times its size on the floor, `a` times its strength.
  */
 export function rocketShadow(k: number, flight: number = ROCKET.flight): { r: number; a: number } {
-  const come = 1 - 0.45 * (rocketUp(k, flight) / ROCKET_ARC.high);
+  // (twice as high as the stand-in flew: shrinking and fading further at its top than the stand-in's 0.45)
+  const come = 1 - 0.6 * (rocketUp(k, flight) / ROCKET_ARC.high);
   return { r: 0.6 + 0.4 * come, a: come };
 }
 

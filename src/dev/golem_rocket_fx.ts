@@ -80,7 +80,7 @@ export interface RocketAt {
   /** Its feet on the floor and its giant fist. */
   grip: V3[];
   fist: V3;
-  /** How high it is drawn over the floor (picture pixels): what is at it is drawn this much up; the floor this much below it. */
+  /** How high it is drawn over the floor (picture pixels): what is at it is painted at its floor point (the game lifts it with it); the floor is this much below it. */
   lift: number;
 }
 
@@ -174,7 +174,8 @@ export function rocketAtGolem(ly: RocketLayers, at: RocketAt, f: number, front: 
   const k = f - R.blast;
   const t = f / 30;
   const fireL = front ? ly.behind : ly.over;
-  const S = (p: V3): [number, number] => at.S(up(p, at.lift));
+  // (painted at its floor point as it is drawn; the game lifts the piece with it: the floor is `at.lift` below it)
+  const S = at.S;
   const { len, wide } = stackFire(f);
   at.mouths.forEach((m, i) => {
     const way = at.ways[i];

@@ -16,7 +16,14 @@ The main chat's request on the board, 2 Nov 2026, 21:35: “PLEASE DRAW THE GOLE
 take-off, the flight, the landing), from in front and behind, to those numbers or yours, pictures to him first, then
 game-ready pieces as golem_shots_fx were.” Its stand-in in the game (work-f4): further than 5 tiles from where it is going,
 seeing it, the Golem blasts off and comes down there, at most 8 tiles on, 0.7 s in the air, 46 game pixels up at the top,
-striking nothing, 3.5 s between jumps; its pace 5.5 tiles a second (was 4.6). Drawn to those numbers.
+striking nothing, 3.5 s between jumps; its pace 5.5 tiles a second (was 4.6). Drawn to those numbers, and then twice as high
+at his answer below.
+
+His answer on the first pictures, 3 Nov 2026, asked whether the rocket jump was good (it flew about one and a half times its
+own height), offered as the same jump flying about twice as high so it reads bigger: “Yes, but higher (Recommended)”. So
+its top is now 92 game pixels (was 46), about three times its own height; the take-off, the 0.7 s in the air and the
+landing as they were; its shadow shrinking and fading further as it rises; its trail and the jump across the arena
+redrawn to match. THE STAND-IN'S 46 (game/tinkerer.ts `golem.jump.high`) BECOMES 92.
 
 ## The pictures (`pictures/`)
 
@@ -42,17 +49,18 @@ hips going with its body so its knees bend; each left out, the Golem is drawn ex
    column of white-hot fire out of its stacks driven into the floor, a white flash, fire splashed over the floor, a ring of
    dust blown out 1.8 tiles, stone flung up, a column of smoke rolling up, the floor scorched with glowing cracks; it is
    flung up, its legs thrown straight, an after-image of it where it crouched (its outline in the friend's cyan, then darker, two frames).
-2. THE FLIGHT (frames 15 to 36: 21 frames, 0.7 s). Up 11 game pixels in its first frame, 46 at the top (at 55% of its
+2. THE FLIGHT (frames 15 to 36: 21 frames, 0.7 s). Up 22 game pixels in its first frame, 92 at the top (at 55% of its
    flight), riding its stacks, long flames streaming back and down out of them, embers shed, a trail of smoke puffs
    hanging where it passed; leaning into its flight, its legs tucked and braced under it, its giant fist thrust out ahead.
    Over the top its fire sputters out (frames 27 to 31) and smoke wisps off its stacks; it hauls its fist up over its
-   shoulder, its legs reach down, and it falls like a stone, faster every frame (9 game pixels in its last frame).
+   shoulder, its legs reach down, and it falls like a stone, faster every frame (19 game pixels in its last frame).
 3. THE LANDING (frame 36, a flash of two frames): its feet and its giant fist SLAM down together, its body crushed down into
    its knees; the floor cracked open in a crater (0.75 tiles round, its cracks running out 1.5), a ring of dust blown out 2
    tiles, stone flung up, dust billowing; it takes the blow (deepest at 39), heaves itself back up (48), its stacks swing
    back up and lock (51), steam hissing out of them, and it stands as it was (52). Done at 56. The crater fades away over
    its last half second (gone 2 s after the slam).
-4. ITS SHADOW, all the way: the main chat's soft shadow, shrinking and fading as it rises (`rocketShadow`, the stand-in's
+4. ITS SHADOW, all the way: the main chat's soft shadow, shrinking and fading as it rises, further than the stand-in's as it
+   flies twice as high (`rocketShadow`: at its top 0.76 of its size and 0.4 of its strength, the stand-in's 0.82 and 0.55; the stand-in's
    own sizes and strength).
 5. ITS RUN at 5.5 tiles a second (`GRUN`, `golemRun`). Its walk shown at that pace would be six rounds a second (a scurry;
    and, as the game shows it now, its stride 22% longer than its feet cover). So a run of its own, A GALLOP: a round of 16
@@ -91,7 +99,7 @@ Where its stacks, feet and fist are at each frame is baked into `src/art/golem_r
 - Landed, it stands up till `ROCKET.end` (56, 0.67 s after it lands); it may be let go into a punch from about frame 44 if
   that is wanted (it is crouched over its braced fist then). Its wait of 3.5 s from when it lands, as now.
 - render.ts: its picture `golemRocketFrames(view, gun)[f]` in place of `set.idle[0]`, lifted
-  `rocketUp(f - ROCKET.blast)` in place of `Math.sin(...) * J.high` (up fast, down like a stone; the same 46 at the top and
+  `rocketUp(f - ROCKET.blast)` in place of `Math.sin(...) * J.high` (up fast, down like a stone; 92 at the top, the stand-in's 46 made twice as high, and the same
   0.7 s); `golemRocketFx(view)`: `behind[f]` and `over[f]` with it, `floor[f]` under it; its shadow with `rocketShadow`.
 - tinkerer_fx.ts: on its blast, `golemLaunchFx(view, gun)` at `jx, jy` and the trail; on its landing `golemLandFx(view)` at
   `ax, ay` (in place of its drop-in's burst and ring).
@@ -107,7 +115,7 @@ Where its stacks, feet and fist are at each frame is baked into `src/art/golem_r
   it); its giant arm and its stacks, swung down, clear of the rest of it.
 - Slick (its fist and its eye never leap, stall or turn straight back at speed, as they go up and down with it) but for the
   blast and the slam; its fist braced still through its crouch and as it takes the blow; still at its start and its end.
-- Its numbers: 21 frames in the air, 46 game pixels at the top, at least 10 up in its first frame, falling faster every
+- Its numbers: 21 frames in the air, 92 game pixels at the top, at least 20 up in its first frame, falling faster every
   frame from its top; it starts and ends standing as it stands; with its new numbers naught it is the Golem it was, to the
   pixel.
 - Its run: every frame through the checks (in a bound it may be a little off the floor), eight turns, both views; its fist
@@ -122,5 +130,4 @@ Where its stacks, feet and fist are at each frame is baked into `src/art/golem_r
 - Its stacks swinging down to be its rocket (and back up after): the read of “from its stacks”.
 - The half second's crouch before it blasts off (a big held wind-up, his Movement 9) and the two thirds of a second it takes
   to stand up after: the jump is now 1.2 s from deciding to landing for 8 tiles (6.8 tiles a second, faster than its run).
-- Its height: 46 game pixels as the game has it, about one and a half times its own height. Higher would read bigger.
 - The gallop for its run.

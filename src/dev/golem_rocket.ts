@@ -35,8 +35,12 @@ import { UNITS_PER_TILE } from '../art/moves3';
  * its stacks back up and standing as it was at `stand`; done (the last of the steam) at `end`.
  */
 export const ROCKET = { crouch: 6, lock: 8, blast: 15, flight: 21, land: 36, absorb: 39, rise: 48, stand: 52, end: 56 };
-/** How high it goes (game pixels at the top of its arc, the game's), and when it is there (of its flight). */
-export const ROCKET_ARC = { high: 46, top: 0.55 };
+/**
+ * How high it goes (game pixels at the top of its arc), and when it is there (of its flight). Twice the stand-in's 46 at his
+ * answer, 3 Nov 2026, asked whether it was good (it flew about one and a half times its own height): “Yes, but higher
+ * (Recommended)”, offered as the same jump flying about twice as high, so it reads bigger: about three times its own height.
+ */
+export const ROCKET_ARC = { high: 92, top: 0.55 };
 /** Picture pixels to a game pixel (the heroes' grain). */
 export const ROCKET_GRAIN = 2;
 /** The blast and the slam, each a flash (his rulebook's Movement 9): not judged frame by frame. */
@@ -200,8 +204,8 @@ export function golemRocket(f: number): RocketPose {
     to = [REST_FIST[0] + (24 - REST_FIST[0]) * u, REST_FIST[1]];
   } else if (f < R.land) {
     to = [
-      smooth([[R.blast - 1, 24], [R.blast, 21], [R.blast + 2, 25], [R.blast + 7, 40], [R.blast + 11, 38], [R.land - 4, 18], [R.land - 2, 16], [R.land - 1, 26], [R.land, 30]], f),
-      smooth([[R.blast - 1, 12.8], [R.blast, 13.2], [R.blast + 2, 16], [R.blast + 7, 30], [R.blast + 11, 52], [R.land - 4, 82], [R.land - 2, 86], [R.land - 1, 46], [R.land, 12.8]], f),
+      smooth([[R.blast - 1, 24], [R.blast, 21], [R.blast + 2, 25], [R.blast + 7, 40], [R.blast + 10, 30], [R.land - 7, 28], [R.land - 2, 16], [R.land - 1, 26], [R.land, 30]], f),
+      smooth([[R.blast - 1, 12.8], [R.blast, 13.2], [R.blast + 2, 16], [R.blast + 7, 30], [R.blast + 10, 50], [R.land - 7, 82], [R.land - 2, 88], [R.land - 1, 46], [R.land, 12.8]], f),
     ];
   } else if (f <= R.rise - 4) to = [30, 12.8];
   else {
