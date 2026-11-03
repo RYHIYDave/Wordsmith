@@ -451,14 +451,16 @@ const BRAWLER_TREE: TalentTree = {
 
 // ---- the Veteran: three globes (game/veteran.ts VETERAN; his 3 Nov 2026, 09:18: “And redo the skill tree to better match his
 //   new style”) ----------------------------------------------------------------------------------------------------------
-//   His three globes over his head, as they are over him in a fight: PUNCH (the friend's cyan, a tap), JUMP (white, a swipe)
+//   His three globes over his head, as they are over him in a fight: PUNCH (green, a tap), JUMP (white, a swipe)
 //   and KICK (hot orange, a hold), side by side. Each globe is four talents round its rim, begun at its bottom, up either
 //   side to its top; over the punch and the kick globes, their fire (a swipe then a tap, the flying uppercut; a swipe then a
 //   hold, the flying knee and the spinning jump kick); over the jump globe, the lock that joins all three, reached from any
 //   globe's top. Nothing of the old Brawler's. Shown to him as a draft (the page “The Veteran's Tree”, https://claude.ai/artifact/6u1Xx6DLPByUGWrPf9menQ), his
 //   pick by 09:42: “Yes, build it (Recommended)”; every talent made to work as its card says (game.ts, “THE VETERAN”; numbers,
 //   game/veteran.ts VET_TALENTS).
-const VET_PUNCH = '#22d0e0';
+// (his punches green, his words, 3 Nov 2026, 10:44: “the brawler is Str/dex, so I think we change the color of the globe for a
+// punch to green and the kicks stay orange/red”: the art chat's emerald, #18c060)
+const VET_PUNCH = '#18c060';
 const VET_KICK = '#e8561a';
 const VET_JUMP = '#e8eef8';
 

@@ -17,12 +17,13 @@
 // THE RULES HERE are the main chat's reading of his words and the art chat's table of his combos (VET_COMBOS in
 // src/dev/veteran_moves.ts): his moves' frames, blows and reach are the art's own, every one (a test holds them to it).
 //
-// HOW A COMBO GOES. Three globes over him. Each press fills the next: a TAP a punch (cyan), a HOLD a kick (hot orange), a
-// SWIPE the jump (white). Three in and the combo is LOCKED: nothing more goes in until it has been played out. Presses go in
+// HOW A COMBO GOES. Three globes over him. Each press fills the next: a TAP a punch (green, at his word of 3 Nov, 10:44: “the brawler is Str/dex, so I think we
+// change the color of the globe for a punch to green and the kicks stay orange/red”), a HOLD a kick (hot orange), a SWIPE the
+// jump (white). Three in and the combo is LOCKED: nothing more goes in until it has been played out. Presses go in
 // as fast as they are made (his “hopefully you’ve learned the character and will be able to input the combos faster”) and
 // are played in turn, each move whole: its held wind-up, its blow, its wind-down. A swipe is the dodging jump; a TAP OR A
 // HOLD MADE WHILE A SWIPE'S JUMP HAS NOT YET LEFT THE FLOOR (or before it has begun) sets that globe in FIRE instead: a tap
-// the flying uppercut (cyan fire), a hold the flying knee after two punches, else the spinning jump kick (orange fire; as
+// the flying uppercut (green fire), a hold the flying knee after two punches, else the spinning jump kick (orange fire; as
 // the combo's first, the spinning jump kick that closes in). Every swipe spends the jump (his “Swipes spend the jump”): with
 // it not ready, a swipe does nothing. The combo is over when its last move is played and nothing more is pressed for
 // VET_TUNE.gap seconds; the globes go out.
@@ -48,7 +49,7 @@ export type VetMoveId = 'stand' | 'run' | 'dodge' | 'jab' | 'cross' | 'hook' | '
 export type VetBlowId = Exclude<VetMoveId, 'stand' | 'run' | 'hurt' | 'fall'>;
 /** What a press is. */
 export type VetInput = 'tap' | 'hold' | 'swipe' | 'swipeTap' | 'swipeHold';
-/** What a globe is filled with: a punch (cyan), a kick (hot orange), the jump (white), or set in fire, cyan or orange. */
+/** What a globe is filled with: a punch (green), a kick (hot orange), the jump (white), or set in fire, green or orange. */
 export type VetGlobe = 'punch' | 'kick' | 'jump' | 'punchFire' | 'kickFire';
 /** How a foe takes a blow (the art's reactions). */
 export type VetReact = 'snap' | 'reel' | 'knock' | 'launch' | 'fly' | 'kneed' | 'aside' | 'shove';

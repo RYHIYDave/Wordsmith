@@ -9,8 +9,8 @@
 // the move's frame, and on after it ends for its dust and its force to die away. What changes with who is struck is painted
 // here, as the art's film has it: a BURST on each one his blow strikes, a SHOCKWAVE RING under a heavy blow, STARS round one
 // his uppercut has launched; his AFTER-IMAGES along a strike; the screen shaken on his heavy blows (the game's own shake). And
-// THE GLOBES over his head (dev/veteran_globes.ts): three, empty until filled, cyan a punch, hot orange a kick, white the
-// jump; locked, the rims white and a bar joining them, when three are in; cyan or orange fire for a swipe's flying blow. Never
+// THE GLOBES over his head (dev/veteran_globes.ts): three, empty until filled, green a punch (his 10:44, 3 Nov 2026), hot orange a kick, white the
+// jump; locked, the rims white and a bar joining them, when three are in; green or orange fire for a swipe's flying blow. Never
 // pink, never gold.
 //
 // Where: what lies on the floor under everyone, with the floor's effects (drawGround); what is behind him at height, and his
