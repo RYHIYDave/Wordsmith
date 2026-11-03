@@ -33,6 +33,11 @@ redrawn to match. THE STAND-IN'S 46 (game/tinkerer.ts `golem.jump.high`) BECOMES
   three times as big, from in front and from behind.
 - `golem_rocket_sheet.png` (1200 wide): the take-off, the flight and the landing, key moments from in front and from
   behind; the jump across the arena at the game's size; its run.
+- IN THE GAME (the main chat's helper, 3 Nov 2026, branch `golem-rocket-in`: brought in as “Bringing it in” says, behind the
+  switch, turned on for the film only): `golem_rocket_in_game.mp4` (1200 wide, 30 frames a second, 12 s, captioned, at the
+  game's own speed), in the practice room on a phone's screen: its rocket jump at skeletons from in front, then back from
+  behind, then its gallop up the screen and down it; and three moments of it, `golem_rocket_in_game_blast.png`,
+  `golem_rocket_in_game_behind.png`, `golem_rocket_in_game_slam.png`. Made with tools/scenarios/golem_rocket_film.mjs.
 
 ## What it does (frames are 30 a second; `src/dev/golem_rocket.ts` ROCKET)
 

@@ -71,7 +71,8 @@ import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
-import type { Brew, Decoy, Tar } from './state';
+import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
+import type { Brew, Decoy, GolemRocketAt, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
 import { BOSS_CALLS, bossCall } from './boss_calls';
 
@@ -5988,6 +5989,10 @@ export class Game {
       this.stepCharge(g, gdt);
       return;
     }
+    if (g.act === 'jump' && GOLEM_ROCKET.on) {
+      this.stepRocket(g, gdt, fast);
+      return;
+    }
     if (g.act === 'jump') {
       // (ITS ROCKET JUMP: carried through the air from where it took off to where it comes down; down, a thud of steam and dust)
       const J = G.jump;
@@ -6154,6 +6159,8 @@ export class Game {
         g.act = 'jump';
         g.actT = 0;
         g.did = false;
+        // (THE ART CHAT'S ROCKET JUMP: it crouches where it stands first; its blast half a second on: stepRocket)
+        if (GOLEM_ROCKET.on) return;
         this.emit({ t: 'bombsAway', x: g.x, y: g.y, r: 1 });
         this.emit({ t: 'shake', amount: 1.5 });
         this.sfx('explode', 0.45);
@@ -6323,6 +6330,39 @@ export class Game {
       if (TALENTS.on) dmg *= this.talentHitMult(m);
       this.damageMonster(m, Math.max(1, Math.round(dmg)), 'lightning', false, g.skill);
     }
+  }
+
+  /**
+   * (THE ART CHAT'S ROCKET JUMP, behind GOLEM_ROCKET: art/golem_rocket_fx.ts and its README's “Bringing it in”) Golem `g` in its
+   * rocket jump, each step, by its frames (30 a second of its own time, from deciding to jump): held where it stands, crouched,
+   * its stacks swung down and flaring, until ROCKET.blast (half a second); THE BLAST there (the stand-in's bomb going off, its
+   * shake and its sound, moved to this moment), and it is carried through the air ROCKET.flight frames (the stand-in's 0.7 s)
+   * to where it comes down; THE LANDING at ROCKET.land (the stand-in's slam), its wait for its next jump from then; it stands
+   * up again until ROCKET.end. `fast`: her tree's Overdrive (its time `gdt` that many times the screen's).
+   */
+  private stepRocket(g: Golem, gdt: number, fast: number): void {
+    const J = TINKER_TUNE.golem.jump;
+    const x0 = g.jx ?? g.x;
+    const y0 = g.jy ?? g.y;
+    // (a hair over, as render.ts counts its frames: its blast on the frame its picture blasts off)
+    const f = g.actT * 30 + 1e-6;
+    const was = (g.actT - gdt) * 30 + 1e-6;
+    const at = (): GolemRocketAt => ({ x0, y0, x1: g.ax, y1: g.ay, fx: g.fx, fy: g.fy, gun: this.armOf() === 'tesla' ? 'tesla' : 'cannon', flight: ROCKET.flight / fast });
+    const u = rocketAlong(f - ROCKET.blast);
+    g.x = x0 + (g.ax - x0) * u;
+    g.y = y0 + (g.ay - y0) * u;
+    if (was < ROCKET.blast && f >= ROCKET.blast) {
+      this.emit({ t: 'bombsAway', x: x0, y: y0, r: 1, rocket: at() });
+      this.emit({ t: 'shake', amount: 1.5 });
+      this.sfx('explode', 0.45);
+    }
+    if (was < ROCKET.land && f >= ROCKET.land) {
+      this.emit({ t: 'golemArrive', x: g.x, y: g.y, rocket: at() });
+      this.emit({ t: 'shake', amount: 2 });
+      this.sfx('slam', 0.6);
+      g.jumpCd = J.wait;
+    }
+    if (f >= ROCKET.end) this.golemIdle(g);
   }
 
   /** The Golem back to standing, ready for its next act. */

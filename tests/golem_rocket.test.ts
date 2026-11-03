@@ -3,7 +3,7 @@
 // body's, its giant arm clear of the rest of it), from in front and behind, turned eight ways; its stacks clear of its body;
 // slick but for the blast and the slam (each a flash, his rulebook's Movement 9); its numbers the game's; its run's fist and
 // feet gripping the floor at 5.5 tiles a second; its pieces crisp, the friend's cyan, no pink, no gold, nothing cut off, gone
-// when done; the baked points the sculpture's own; nothing of the game importing it.
+// when done; the baked points the sculpture's own; nothing of the game importing it but what brings it in, behind its switch.
 
 // @ts-ignore
 import nodeTest from 'node:test';
@@ -344,17 +344,21 @@ test('the baked points (art/golem_rocket_points.ts) are the sculpture’s own', 
   }
 });
 
-test('behind its switch, off; and nothing of the game imports it (but for its own pieces)', () => {
+test('behind its switch, off; and nothing of the game imports it but what brings it in (the main chat, 3 Nov 2026, behind the switch)', () => {
   assert.equal(GOLEM_ROCKET.on, false);
+  // (brought in by the main chat as its README's “Bringing it in” says, every use of it behind GOLEM_ROCKET: its rules, its
+  // pictures, what it leaves where it took off and came down, its switch for playtests; tests/tinkerer.test.ts its rules)
+  const BRINGS = ['src/game/game.ts', 'src/game/tinkerer.ts', 'src/render/render.ts', 'src/render/tinkerer_fx.ts', 'src/main.ts'];
   const walk = (dir: string): string[] => readdirSync(dir).flatMap((n: string) => {
     const p = `${dir}/${n}`;
     return statSync(p).isDirectory() ? walk(p) : p.endsWith('.ts') ? [p] : [];
   });
   const found: string[] = [];
   for (const file of walk('src')) {
-    if (file.startsWith('src/dev/') || file === 'src/art/golem_rocket_fx.ts' || file === 'src/art/golem_rocket_points.ts') continue;
+    if (file.startsWith('src/dev/') || file === 'src/art/golem_rocket_fx.ts' || file === 'src/art/golem_rocket_points.ts' || BRINGS.includes(file)) continue;
     const text = readFileSync(file, 'utf8');
-    if (/golem_rocket/.test(text)) found.push(file);
+    // (what imports it: a word of it in a note is no import)
+    if (/from ['"][^'"]*golem_rocket/.test(text)) found.push(file);
   }
   assert.deepEqual(found, []);
 });
