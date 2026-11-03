@@ -237,9 +237,20 @@ export const RARITY_NAMES = ['Normal', 'Magic', 'Rare', 'Unique'] as const;
  * a sword (one-handed) and its two-handed variant; a bow (two-handed, but it takes a quiver); a
  * wand (one-handed) and its two-handed variant, the staff. Any character can use any of them, and
  * the weapon decides the quick attack (defs.ts, WEAPON_TAP).
+ * THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, game/defs.ts, off): each new class's own, found only by a hero of that
+ * class (ClassWeaponKind).
  */
-export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff';
+export type WeaponKind = 'sword' | 'greatsword' | 'bow' | 'wand' | 'staff' | ClassWeaponKind;
+/** The five any hero may find (every list of weapons the game had before the new classes' own). */
 export const WEAPONS: readonly WeaponKind[] = ['sword', 'greatsword', 'bow', 'wand', 'staff'];
+/**
+ * THE NEW CLASSES' WEAPONS (game/defs.ts NEW_WEAPONS, CLASS_WEAPON): the Veteran's brawler's wraps (two hands, nothing in
+ * the other), the Warlock's grimoire (one hand, a focus beside it), the Tinkerer's wrench (one hand, a shield beside it).
+ */
+export type ClassWeaponKind = 'wraps' | 'grimoire' | 'wrench';
+export const CLASS_WEAPONS: readonly ClassWeaponKind[] = ['wraps', 'grimoire', 'wrench'];
+/** Every kind of weapon there is: the five, and the new classes' own (a saved piece of any of them loads back as itself). */
+export const ALL_WEAPONS: readonly WeaponKind[] = [...WEAPONS, ...CLASS_WEAPONS];
 
 /** Weapons that were in the game until Version 12. A saved item of one of these becomes the kind that took its place (items.ts, migrateItem). */
 export type OldWeaponKind = 'axe' | 'mace' | 'maul' | 'longbow';
@@ -247,11 +258,15 @@ export type OldWeaponKind = 'axe' | 'mace' | 'maul' | 'longbow';
 /** Off-hand pieces: a shield goes with a one-handed sword, a quiver with a bow, a focus with a wand. */
 export type OffhandKind = 'shield' | 'quiver' | 'focus';
 
-/** Which 16x16 picture an item uses. (The old weapons keep their pictures: an old save may still show one for a moment.) */
+/**
+ * Which 16x16 picture an item uses. (The old weapons keep their pictures: an old save may still show one for a moment.)
+ * The new classes' weapons ('wraps', 'grimoire', 'wrench') have stand-in pictures until the art chat's (art/icons.ts).
+ */
 export type IconKey = WeaponKind | OldWeaponKind | OffhandKind | 'helm' | 'hood' | 'armor' | 'robe' | 'gloves' | 'belt' | 'boots' | 'ring' | 'amulet';
 export const ICON_KEYS: readonly IconKey[] = [
   'sword', 'axe', 'mace', 'greatsword', 'maul', 'bow', 'longbow', 'wand', 'staff', 'shield', 'quiver', 'focus',
   'helm', 'hood', 'armor', 'robe', 'gloves', 'belt', 'boots', 'ring', 'amulet',
+  'wraps', 'grimoire', 'wrench',
 ];
 
 export interface Affix {

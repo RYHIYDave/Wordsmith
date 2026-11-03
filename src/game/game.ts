@@ -14,8 +14,8 @@ import { RAMPAGE, RING, ringStrikes } from '../art/action_f3_fx';
 import { rampageTravel, rushStopTravel } from '../art/monster_brute';
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
-import type { Limit, MonsterDef, MonsterMove, SkillId } from './defs';
+import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
@@ -564,7 +564,7 @@ export class Game {
       const kind = CLASSES[h.cls].starts;
       for (const slot of EQUIP_SLOTS) {
         for (let k = 0; k < 24; k++) {
-          const it = rollItem(ilvl, rng, { slot: slot === 'ring1' || slot === 'ring2' ? 'ring' : slot, rarity: 1, forWeapon: kind });
+          const it = rollItem(ilvl, rng, { slot: slot === 'ring1' || slot === 'ring2' ? 'ring' : slot, rarity: 1, forWeapon: kind, cls: h.cls });
           if (this.useProblem(it) !== null) continue;
           if (slot === 'mainhand' && it.weapon !== kind) continue;
           if (slot === 'offhand' && !canPair(h.gear.mainhand, it)) continue;
@@ -615,7 +615,7 @@ export class Game {
     const own = CLASSES[h.cls].starts;
     for (const slot of EQUIP_SLOTS) {
       for (let k = 0; k < 24; k++) {
-        const it = rollItem(PRACTICE.ilvl, rng, { slot: slot === 'ring1' || slot === 'ring2' ? 'ring' : slot, rarity: 1, forWeapon: own });
+        const it = rollItem(PRACTICE.ilvl, rng, { slot: slot === 'ring1' || slot === 'ring2' ? 'ring' : slot, rarity: 1, forWeapon: own, cls: h.cls });
         if (this.useProblem(it) !== null) continue;
         if (slot === 'mainhand' && it.weapon !== own) continue;
         if (slot === 'offhand' && !canPair(h.gear.mainhand, it)) continue;
@@ -1397,7 +1397,8 @@ export class Game {
   /**
    * Stock the two vendors for this visit. The same run at the same point always gets the same
    * stock. Each has, first, a plain weapon of each of its kinds (always: a character can always
-   * change to another weapon), and then a rolled piece for each slot it deals in (VENDORS).
+   * change to another weapon), and then a rolled piece for each slot it deals in (VENDORS; for a hero of a new class, with
+   * NEW_WEAPONS on, defs.ts vendorStock).
    */
   rollShop(): void {
     const rng = new RNG((Math.imul(this.seed, 40503) ^ (this.depth * 9973 + this.cleared * 613)) >>> 0);
@@ -1406,12 +1407,13 @@ export class Game {
     const level = Math.max(1, this.power);
     this.sold = [];
     for (const id of VENDOR_IDS) {
-      const v = VENDORS[id];
+      // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: his class's own weapon too, at its vendor's, defs.ts vendorStock)
+      const v = vendorStock(id, this.hero.cls);
       const stock: (Item | null)[] = v.weapons.map((kind) => plainWeapon(kind, level));
       v.slots.forEach((slot, i) => {
         // (what a vendor has grows with the dungeons as what drops does: plain and magic early, a
         // rare piece now and then; the last two on each shelf are a level better)
-        stock.push(rollItem(level + (i >= v.slots.length - 2 ? 1 : 0), rng, { luck: TUNE.shopLuck, slot, forWeapon: held, weapons: v.weapons }));
+        stock.push(rollItem(level + (i >= v.slots.length - 2 ? 1 : 0), rng, { luck: TUNE.shopLuck, slot, forWeapon: held, weapons: v.weapons, cls: this.hero.cls }));
       });
       this.shops[id] = stock;
     }
@@ -10916,7 +10918,8 @@ export class Game {
    */
   private rollGear(quality: 0 | 1 | 2 | 3 | 4 = 0): Item {
     const mf = this.hero.d.stats.magicFind + 25 * this.dungeonWords.length;
-    const opts: RollOpts = { forWeapon: this.weapon(), magicFind: mf };
+    // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: his class's own weapon is among what may drop, for him alone)
+    const opts: RollOpts = { forWeapon: this.weapon(), magicFind: mf, cls: this.hero.cls };
     if (quality === 1) opts.luck = TUNE.betterLuck;
     if (quality >= 2) opts.luck = TUNE.hoardLuck;
     if (quality === 3) opts.atLeast = 1;
@@ -11613,9 +11616,17 @@ export class Game {
 
   // ---- the stranger's gamble (Version 14.5: "a shady guy in the corner that will let you gamble for a random item") ----
 
-  /** Stranger: what a throw for kind `k` (GAMBLE_KINDS) costs: so many times a plain piece of that kind at the vendors'. */
+  /**
+   * Stranger: the kinds of thing he offers this hero: GAMBLE_KINDS, and with NEW_WEAPONS on, his class's own weapon too
+   * (defs.ts gambleKinds). `k` below is a place in this list.
+   */
+  gambleKinds(): readonly GambleKind[] {
+    return gambleKinds(this.hero.cls);
+  }
+
+  /** Stranger: what a throw for kind `k` (gambleKinds) costs: so many times a plain piece of that kind at the vendors'. */
   gamblePrice(k: number): number {
-    const kind = GAMBLE_KINDS[k];
+    const kind = this.gambleKinds()[k];
     return kind ? Math.max(1, Math.round(plainValue(kind.slot, Math.max(1, this.power)) * TUNE.gambleMult)) : 0;
   }
 
@@ -11626,7 +11637,7 @@ export class Game {
    */
   gamble(k: number): string | null {
     const h = this.hero;
-    const kind = GAMBLE_KINDS[k];
+    const kind = this.gambleKinds()[k];
     if (!kind) return 'Nothing there';
     const price = this.gamblePrice(k);
     if (h.gold < price) return 'Not enough gold';
@@ -11635,7 +11646,7 @@ export class Game {
     const roll = this.rng.next();
     const odds = TUNE.gambleOdds;
     const rarity: Rarity = roll < odds.rare ? 2 : roll < odds.rare + odds.magic ? 1 : 0;
-    const it = rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined });
+    const it = rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined, cls: h.cls });
     h.gold -= price;
     h.bag[free] = it;
     this.won = free;
@@ -11674,7 +11685,7 @@ export class Game {
     h.cards = cards;
     this.wonHand = [];
     for (let k = 0; k < pays.n; k++) {
-      const it = rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity });
+      const it = rollItem(Math.max(1, this.power) + pays.plus, this.rng, { rarity: pays.rarity, cls: h.cls });
       h.bag[free[k]] = it;
       this.wonHand.push(free[k]);
     }
@@ -12181,7 +12192,9 @@ export class Game {
     const slot = it.slot === 'ring' && (want === 'ring1' || want === 'ring2') ? want : this.slotFor(it);
     if (!slot) return 'Cannot be worn';
     if (it.slot === 'offhand' && !canPair(h.gear.mainhand, it)) {
-      return it.offhand === 'shield' ? 'Needs a one-handed sword' : it.offhand === 'quiver' ? 'Needs a bow' : 'Needs a wand';
+      // (THE NEW CLASSES' WEAPONS, behind NEW_WEAPONS: a shield goes with the Tinkerer's wrench too, a focus with the Warlock's grimoire)
+      const own = classWeapon(h.cls);
+      return it.offhand === 'shield' ? (own === 'wrench' ? 'Needs a one-handed sword or a wrench' : 'Needs a one-handed sword') : it.offhand === 'quiver' ? 'Needs a bow' : own === 'grimoire' ? 'Needs a wand or a grimoire' : 'Needs a wand';
     }
     const old = h.gear[slot];
     // A new main hand may not suit the current off hand: that piece goes back to the bag.

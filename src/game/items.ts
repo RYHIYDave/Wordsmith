@@ -19,8 +19,8 @@
 // table), so a deliberate rule change needs the same change there.
 
 import type { RNG } from '../engine/rng';
-import { CLASSES } from './defs';
-import type { Affix, BaseWordId, ClassId, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
+import { CLASSES, CLASS_WEAPON_NAME, classWeapon } from './defs';
+import type { Affix, BaseWordId, ClassId, ClassWeaponKind, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
 import { MELD_OF, RANK_OF, SLOTS } from './types';
 
 type Range = readonly [number, number];
@@ -138,6 +138,25 @@ const WEAPON_KINDS: readonly WeaponDef[] = [
   { kind: 'staff', hands: 2, aps: 1.0, dps: STAFF_DPS, names: ['Walking Staff', 'Carved Staff', 'Runed Staff'], extra: [{ stat: 'maxMana', at1: 10, perLevel: 2.5 }] },
 ];
 
+/** A weapon's numbers (its hands, its speed, its damage, what is built into it), under another kind and other names. */
+function asIf(like: WeaponKind, kind: ClassWeaponKind, names: Three<string>): WeaponDef {
+  const w = WEAPON_KINDS.find((d) => d.kind === like) as WeaponDef;
+  return { ...w, kind, names };
+}
+
+/**
+ * THE NEW CLASSES' WEAPONS (behind NEW_WEAPONS, defs.ts; off): each one class's own (defs.ts CLASS_WEAPON), and found only by
+ * a hero of that class (pickBase), as often as each other kind is. Its numbers are another weapon's, all of them: the Veteran's
+ * brawler's wraps the greatsword's (two hands, and nothing goes in the other: no off-hand piece pairs with them); the
+ * Warlock's grimoire the wand's (a focus beside it); the Tinkerer's wrench the sword's (a shield beside it). Their names are a
+ * proposal, his to change. Their bases are apart from ITEM_BASES (CLASS_BASES).
+ */
+const CLASS_WEAPON_DEFS: readonly WeaponDef[] = [
+  asIf('greatsword', 'wraps', ["Brawler's Wraps", 'Studded Wraps', 'War Wraps']),
+  asIf('wand', 'grimoire', ['Chained Grimoire', 'Black Grimoire', 'Pact Grimoire']),
+  asIf('sword', 'wrench', ['Iron Wrench', 'Steel Wrench', 'War Wrench']),
+];
+
 /**
  * Weapons that were in the game until Version 12, and the kind that took the place of each: a
  * saved item of one of these becomes that kind, keeping its level, its affixes and its word.
@@ -153,10 +172,11 @@ interface OffhandDef {
   implicit: readonly ImplicitLine[];
 }
 
+// (THE NEW CLASSES' WEAPONS: a shield goes with the Tinkerer's wrench too, a focus with the Warlock's grimoire; nothing with the wraps)
 const OFFHAND_KINDS: readonly OffhandDef[] = [
-  { kind: 'shield', pairsWith: ['sword'], names: ['Iron Buckler', 'Steel Shield', 'War Shield'], implicit: [{ stat: 'armor', at1: 7, perLevel: 4.5 }, { stat: 'maxLife', at1: 5, perLevel: 2 }] },
+  { kind: 'shield', pairsWith: ['sword', 'wrench'], names: ['Iron Buckler', 'Steel Shield', 'War Shield'], implicit: [{ stat: 'armor', at1: 7, perLevel: 4.5 }, { stat: 'maxLife', at1: 5, perLevel: 2 }] },
   { kind: 'quiver', pairsWith: ['bow'], names: ['Hide Quiver', 'Leather Quiver', 'Studded Quiver'], implicit: [{ stat: 'critChance', tiers: [3, 4, 5] }, { stat: 'atkSpeed', tiers: [2, 3, 4] }] },
-  { kind: 'focus', pairsWith: ['wand'], names: ['Glass Focus', 'Crystal Focus', 'Runed Focus'], implicit: [{ stat: 'maxMana', at1: 8, perLevel: 2.5 }, { stat: 'cdr', tiers: [2, 3, 4] }] },
+  { kind: 'focus', pairsWith: ['wand', 'grimoire'], names: ['Glass Focus', 'Crystal Focus', 'Runed Focus'], implicit: [{ stat: 'maxMana', at1: 8, perLevel: 2.5 }, { stat: 'cdr', tiers: [2, 3, 4] }] },
 ];
 
 /** Gear any class can wear. */
@@ -683,6 +703,8 @@ interface BaseGroup {
   /** Off-hand groups: the weapon kinds the piece goes with. */
   pairsWith: readonly WeaponKind[];
   tiers: ItemBase[];
+  /** THE NEW CLASSES' WEAPONS: a weapon that is one class's own (CLASS_WEAPON_DEFS), found only by a hero of that class. */
+  own?: true;
 }
 
 /** Value of one built-in bonus for a name tier (0-2) at an item level. */
@@ -712,7 +734,7 @@ function weaponDamage(w: WeaponDef, tier: number, ilvl: number): StatMod[] {
 
 function buildBaseGroups(): BaseGroup[] {
   const groups: BaseGroup[] = [];
-  for (const w of WEAPON_KINDS) {
+  const weaponGroup = (w: WeaponDef): BaseGroup => {
     const tiers = w.names.map(
       (name, tier): ItemBase => ({
         id: `${w.kind}${tier + 1}`,
@@ -731,8 +753,9 @@ function buildBaseGroups(): BaseGroup[] {
         },
       }),
     );
-    groups.push({ slot: 'mainhand', weapon: w.kind, pairsWith: [], tiers });
-  }
+    return { slot: 'mainhand', weapon: w.kind, pairsWith: [], tiers };
+  };
+  for (const w of WEAPON_KINDS) groups.push(weaponGroup(w));
   for (const o of OFFHAND_KINDS) {
     const tiers = o.names.map(
       (name, tier): ItemBase => ({
@@ -769,12 +792,19 @@ function buildBaseGroups(): BaseGroup[] {
     );
     groups.push({ slot: g.slot, weapon: null, pairsWith: [], tiers });
   }
+  // (THE NEW CLASSES' WEAPONS: last, so that every other group keeps its place)
+  for (const w of CLASS_WEAPON_DEFS) groups.push({ ...weaponGroup(w), own: true });
   return groups;
 }
 
 const BASE_GROUPS: readonly BaseGroup[] = buildBaseGroups();
 
-export const ITEM_BASES: readonly ItemBase[] = BASE_GROUPS.flatMap((g) => g.tiers);
+/** Every base any hero may find (the new classes' own weapons are apart: CLASS_BASES). */
+export const ITEM_BASES: readonly ItemBase[] = BASE_GROUPS.filter((g) => !g.own).flatMap((g) => g.tiers);
+/** THE NEW CLASSES' WEAPONS (NEW_WEAPONS): their bases, three names to each, found only by a hero of the class they belong to. */
+export const CLASS_BASES: readonly ItemBase[] = BASE_GROUPS.filter((g) => g.own).flatMap((g) => g.tiers);
+/** Every base there is, for finding one by its id or its kind. */
+const ALL_BASES: readonly ItemBase[] = [...ITEM_BASES, ...CLASS_BASES];
 
 /** Base id -> name tier (0, 1 or 2). */
 const BASE_TIER = new Map<string, number>();
@@ -798,6 +828,12 @@ export interface RollOpts {
   weapons?: readonly WeaponKind[];
   /** The hero's magic find in %, used only when the rarity is rolled. */
   magicFind?: number;
+  /**
+   * THE NEW CLASSES' WEAPONS: the class of the hero the piece is for. With NEW_WEAPONS on, his class's own weapon (defs.ts
+   * CLASS_WEAPON) is then one of the kinds a main-hand piece may be, as likely as each other kind. Left out, or any other
+   * class, or with the switch off: never.
+   */
+  cls?: ClassId | null;
 }
 
 let nextUid = 1;
@@ -856,8 +892,10 @@ function rollRarity(rng: RNG, ilvl: number, magicFind: number, luck: readonly [n
   return rolled < least ? least : rolled;
 }
 
-function pickBase(slot: Slot, ilvl: number, rng: RNG, forWeapon?: WeaponKind | null, weapons?: readonly WeaponKind[]): ItemBase {
-  let groups = BASE_GROUPS.filter((g) => g.slot === slot);
+function pickBase(slot: Slot, ilvl: number, rng: RNG, forWeapon?: WeaponKind | null, weapons?: readonly WeaponKind[], cls?: ClassId | null): ItemBase {
+  // (THE NEW CLASSES' WEAPONS: one is a kind among the rest only for a hero of its class, and only while NEW_WEAPONS is on)
+  const mine = classWeapon(cls);
+  let groups = BASE_GROUPS.filter((g) => g.slot === slot && (!g.own || g.weapon === mine));
   if ((slot === 'mainhand' || slot === 'offhand') && weapons && weapons.length > 0) {
     const own = groups.filter((g) => (g.weapon !== null && weapons.includes(g.weapon)) || g.pairsWith.some((w) => weapons.includes(w)));
     if (own.length > 0) groups = own;
@@ -956,14 +994,14 @@ function rareNameGroup(base: ItemBase): RareNameGroup {
 export function rollItem(ilvl: number, rng: RNG, opts: RollOpts = {}): Item {
   const level = cleanLevel(ilvl);
   const slot = opts.slot !== undefined && SLOTS.includes(opts.slot) ? opts.slot : rollSlot(rng);
-  const base = pickBase(slot, level, rng, opts.forWeapon, opts.weapons);
+  const base = pickBase(slot, level, rng, opts.forWeapon, opts.weapons, opts.cls);
   // Unique (3) is reserved for hand-made items and is never rolled; asking for it gives a Rare.
   const rarity: Rarity = opts.rarity === undefined ? rollRarity(rng, level, opts.magicFind ?? 0, opts.luck, opts.atLeast) : opts.rarity >= 2 ? 2 : opts.rarity === 1 ? 1 : 0;
   const affixes = rollAffixes(slot, level, rarity, rng);
   return makeItem(base, level, rarity, affixes, nameFor(base, rarity, affixes, rng));
 }
 
-const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff' };
+const WEAPON_KIND_NAME: Record<WeaponKind, string> = { sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: CLASS_WEAPON_NAME.wraps, grimoire: CLASS_WEAPON_NAME.grimoire, wrench: CLASS_WEAPON_NAME.wrench };
 const OFFHAND_KIND_NAME: Record<OffhandKind, string> = { shield: 'Shield', quiver: 'Quiver', focus: 'Focus' };
 const SLOT_KIND_NAME: Record<Slot, string> = { mainhand: 'Weapon', offhand: 'Off hand', helm: 'Helmet', chest: 'Armour', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', amulet: 'Amulet', ring: 'Ring' };
 
@@ -986,7 +1024,7 @@ export function starterWeapon(cls: ClassId): Item {
 
 /** The plainest weapon of a kind: Normal rarity, its weakest name, item level 1. */
 export function plainWeapon(kind: WeaponKind, ilvl = 1): Item {
-  const base = ITEM_BASES.find((b) => b.weapon === kind && b.minIlvl === BASE_TIER_MIN_ILVL[0]) ?? ITEM_BASES[0];
+  const base = ALL_BASES.find((b) => b.weapon === kind && b.minIlvl === BASE_TIER_MIN_ILVL[0]) ?? ITEM_BASES[0];
   return makeItem(base, cleanLevel(ilvl), 0, [], base.name);
 }
 
@@ -1031,7 +1069,8 @@ export function migrateItem(it: Item): Item {
 
 /**
  * True when the off-hand piece can be worn together with that main-hand weapon: a shield needs a
- * one-handed sword; a quiver a bow; a focus a wand. Never with empty hands.
+ * one-handed sword; a quiver a bow; a focus a wand. Never with empty hands. (THE NEW CLASSES' WEAPONS:
+ * a shield goes with a wrench too, a focus with a grimoire; nothing with the brawler's wraps.)
  */
 export function canPair(main: Item | null, off: Item): boolean {
   if (main === null || main.weapon === null || off.offhand === null) return false;
