@@ -387,6 +387,8 @@ function shrapnelShot(): void {
     const g = taken ? take(room(), 'shrapnel') : take(room());
     golemOut(g);
     g.golem!.punchCd = 1e9;
+    // (its rocket jump held: on since 3 Nov 2026, its landing its fist slam, which would strike them all)
+    g.golem!.jumpCd = 1e9;
     const target = dummy(g, 6, 0);
     const by = [dummy(g, 6.5, 0.9), dummy(g, 6.6, -0.9)];
     let shot: Extract<GameEvent, { t: 'golemShot' }> | undefined;

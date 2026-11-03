@@ -5832,11 +5832,12 @@ export class Game {
   }
 
   /** A Golem's ground pound landing at (x, y): everything within the ability's radius struck and thrown (`g`, the Golem's). */
-  private golemPounds(i: number, x: number, y: number, frac: number, n: number, echo: boolean, g?: Golem): void {
+  private golemPounds(i: number, x: number, y: number, frac: number, n: number, echo: boolean, g?: Golem, landing = false): void {
     const s = this.hero.skills[i];
     if (!s) return;
     const rad = SKILLS[s.id].radius * s.r.size;
-    this.emit({ t: 'golemPound', x, y, r: rad, n, echo: echo || undefined });
+    // (`landing`: the rocket jump's slam, its crater and dust its landing's own pictures)
+    if (!landing) this.emit({ t: 'golemPound', x, y, r: rad, n, echo: echo || undefined });
     this.emit({ t: 'shake', amount: n > 0 || echo ? 2.5 : 5 });
     this.sfx('slam', n > 0 || echo ? 0.6 : 1);
     // (GROWTH SERUM: grown, it strikes twice as hard)
@@ -6358,8 +6359,10 @@ export class Game {
     }
     if (was < ROCKET.land && f >= ROCKET.land) {
       this.emit({ t: 'golemArrive', x: g.x, y: g.y, rocket: at() });
-      this.emit({ t: 'shake', amount: 2 });
-      this.sfx('slam', 0.6);
+      // (ITS FIST SLAM: it lands as its ground pound strikes, everything round where it comes down struck and thrown; his
+      // words, 3 Nov 2026, shown it in the game: “The jump needs to include the fist slam.  Thats kinda the whole point”.
+      // The crater and the dust are its landing's own: golemLandFx)
+      this.golemPounds(g.skill, g.x, g.y, this.golemFrac(g), 0, false, g, true);
       g.jumpCd = J.wait;
     }
     if (f >= ROCKET.end) this.golemIdle(g);

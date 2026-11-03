@@ -344,8 +344,8 @@ test('the baked points (art/golem_rocket_points.ts) are the sculpture’s own', 
   }
 });
 
-test('behind its switch, off; and nothing of the game imports it but what brings it in (the main chat, 3 Nov 2026, behind the switch)', () => {
-  assert.equal(GOLEM_ROCKET.on, false);
+test('behind its switch, ON at his “Yes, switch it on (Recommended)”, 3 Nov 2026; and nothing of the game imports it but what brings it in', () => {
+  assert.equal(GOLEM_ROCKET.on, true);
   // (brought in by the main chat as its README's “Bringing it in” says, every use of it behind GOLEM_ROCKET: its rules, its
   // pictures, what it leaves where it took off and came down, its switch for playtests; tests/tinkerer.test.ts its rules)
   const BRINGS = ['src/game/game.ts', 'src/game/tinkerer.ts', 'src/render/render.ts', 'src/render/tinkerer_fx.ts', 'src/main.ts'];

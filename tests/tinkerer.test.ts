@@ -390,8 +390,9 @@ function rocketRun(seconds: number, keepFar = false): { from: { x: number; y: nu
   return out;
 }
 
-test("ITS ROCKET JUMP, THE ART CHAT'S (art/golem_rocket_fx.ts, behind GOLEM_ROCKET, off): held where it stands for its half second's take-off; its blast at frame 15, carried through the air to its landing at 36, standing up till 56; its next jump 3.5 s from its landing", () => {
-  assert.equal(GOLEM_ROCKET.on, false, 'off until he has seen it in the game and said yes');
+test("ITS ROCKET JUMP, THE ART CHAT'S (art/golem_rocket_fx.ts, behind GOLEM_ROCKET, ON at his yes of 3 Nov 2026): held where it stands for its half second's take-off; its blast at frame 15, carried through the air to its landing at 36, standing up till 56; its next jump 3.5 s from its landing", () => {
+  assert.equal(GOLEM_ROCKET.on, true, 'on at his “Yes, switch it on (Recommended)”');
+  GOLEM_ROCKET.on = false;
   assert.equal(G.jump.high, 46, "off, the stand-in's height");
   GOLEM_ROCKET.on = true;
   try {
@@ -425,7 +426,11 @@ test("ITS ROCKET JUMP, THE ART CHAT'S (art/golem_rocket_fx.ts, behind GOLEM_ROCK
     const l = lands[0];
     assert.ok(Math.abs(since(l.t) - ROCKET.land / 30) <= DT + 1e-9, `its landing ${since(l.t).toFixed(3)} s after it decided (frame ${(since(l.t) * 30).toFixed(1)})`);
     assert.ok(l.e.t === 'golemArrive' && l.e.rocket && Math.hypot(l.e.x - r.to.x, l.e.y - r.to.y) < 1e-9, 'where it comes down, its rocket');
-    assert.ok(r.events.some((q) => q.t === l.t && q.e.t === 'shake' && q.e.amount === 2), 'its shake, with its landing');
+    // (ITS FIST SLAM: it lands as its ground pound strikes: his “The jump needs to include the fist slam.  Thats kinda the whole
+    // point”, 3 Nov 2026: the one it came down by struck, the pound's shake)
+    assert.ok(r.events.some((q) => q.t === l.t && q.e.t === 'shake' && q.e.amount === 5), 'its ground pound’s shake, with its landing');
+    assert.ok(r.events.some((q) => q.t === l.t && q.e.t === 'hit' && !q.e.onHero), 'its fist slam strikes the one it came down by');
+    assert.ok(!r.events.some((q) => q.e.t === 'golemPound'), 'its crater and dust its landing’s own pictures, not the pound’s');
     assert.equal(r.steps.find((s) => s.t === l.t)!.cd, G.jump.wait, 'its wait from its landing');
     // (STANDING UP till frame 56, where it came down; then itself again)
     const up = r.steps.filter((s) => s.t > l.t && s.act === 'jump');
@@ -440,6 +445,7 @@ test("ITS ROCKET JUMP, THE ART CHAT'S (art/golem_rocket_fx.ts, behind GOLEM_ROCK
   } finally {
     GOLEM_ROCKET.on = false;
   }
+  try {
   // (off, the stand-in as it was: its blast as it decides, down 0.7 s on, itself again then)
   const r = rocketRun(1.5);
   const t0 = r.decide[0];
@@ -449,6 +455,9 @@ test("ITS ROCKET JUMP, THE ART CHAT'S (art/golem_rocket_fx.ts, behind GOLEM_ROCK
   assert.ok(l && Math.abs(l.t - t0 - G.jump.long) <= DT + 1e-9 && l.e.t === 'golemArrive' && !l.e.rocket, `off: down ${(l.t - t0).toFixed(3)} s on`);
   assert.ok(r.steps.find((s) => s.t === l.t)!.act !== 'jump', 'off: itself again as it lands');
   assert.ok(r.steps.some((s) => s.t > t0 && s.t < l.t && Math.hypot(s.x - r.from.x, s.y - r.from.y) > 0.5), 'off: on its way at once');
+  } finally {
+    GOLEM_ROCKET.on = true;
+  }
 });
 
 test('left far behind, her Golem is whistled up beside her again; when she falls, it winds down where it stands and is gone', () => {

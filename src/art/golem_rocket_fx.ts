@@ -58,8 +58,12 @@ import { ROCKET_POINTS } from './golem_rocket_points';
 
 export { ROCKET, ROCKET_ARC, GRUN, rocketUp, rocketAlong, LAUNCH_N, LAND_N, PUFF_LIFE };
 
-/** THE SWITCH: off until he has seen the pictures and said yes (CLAUDE.md, PICTURES FIRST). */
-export const GOLEM_ROCKET = { on: false };
+/**
+ * THE SWITCH: ON. Shown it in the game (golem_rocket_in_game.mp4), his words, 3 Nov 2026: “The jump needs to include the fist
+ * slam.  Thats kinda the whole point” (its landing made its ground pound: game.ts stepRocket); shown that
+ * (golem_rocket_slam_in_game.mp4), by 11:17 (Eastern): “Yes, switch it on (Recommended)”.
+ */
+export const GOLEM_ROCKET = { on: true };
 
 const T = UNITS_PER_TILE;
 /** Picture pixels to a game pixel. */
