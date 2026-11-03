@@ -309,6 +309,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   hshape: { top: 30, half: 10 },
   rshadow: { top: 33, half: 9 },
   moth: { top: 322, half: 70 },
+  // (the Rime Shade hunched, its crown 1.25 of the knight's (straightened 1.45): art/rime_shade.ts)
+  rshade: { top: 37, half: 11 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

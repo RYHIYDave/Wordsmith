@@ -388,6 +388,8 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   hshape: ['#5c586c', '#8a8699', '#bab6c6', '#e9e5ed'],
   rshadow: ['#303034', '#6a6a6d', '#a4a19d', '#e6e0d3'],
   moth: ['#35313a', '#77717a', '#958c7e', '#e3dccd'],
+  // (the Rime Shade: its fog and its frost, art/rime_shade.ts RS_FOG, RS_FROST)
+  rshade: ['#3a3d44', '#6f737b', '#9ca6b8', '#eef2f6'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };

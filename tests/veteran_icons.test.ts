@@ -127,3 +127,12 @@ test('7. hooked up: three ability ids of their own, painted by art/ability_icons
   assert.match(ab, /vetpunch: vetPunchIcon, vetkick: vetKickIcon, vetjump: vetJumpIcon/);
   assert.match(ab, /from '\.\/veteran_icons'/);
 });
+
+// (BROUGHT IN BY THE MAIN CHAT for 25.0: shown him on the phone's buttons, his yes to the art chat, “Yes, hand them over
+// (Recommended)”: the Brawler's three buttons show them)
+import { SKILLS } from '../src/game/defs';
+test('8. the Brawler\'s three buttons show them: Punch, Kick, Jump', () => {
+  assert.equal(SKILLS.vpunch.icon, 'vetpunch');
+  assert.equal(SKILLS.vkick.icon, 'vetkick');
+  assert.equal(SKILLS.vjump.icon, 'vetjump');
+});

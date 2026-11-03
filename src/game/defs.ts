@@ -204,11 +204,12 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   jab: { id: 'jab', name: 'Jab', kind: 'punch', icon: 'jab', dmg: 1.0, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'Quick and light: a jab, then a hook, then an uppercut that pops it up stunned. Mix in holds for other combos.', verb: 'JAB', windup: 4 / 30, follow: 8 / 30 },
   cross: { id: 'cross', name: 'Cross', kind: 'punch', icon: 'cross', dmg: 1.0, cooldown: 0, mana: 0, range: 1.9, radius: 1.9, speed: 0, sockets: true, desc: 'Slow and heavy, every blow knocking back: a cross, a body blow that staggers all round you, and after two holds a haymaker that fires one down the line.', verb: 'CROSS', windup: 10 / 30, follow: 14 / 30 },
   slip: { id: 'slip', name: 'Slip and Counter', kind: 'slip', icon: 'slip', dmg: 1.0, cooldown: 4.0, mana: 0, range: 6, radius: 1.9, speed: 0, sockets: true, desc: 'Bob and weave to a spot, untouchable, and come up with a counter hook into whatever is there.', verb: 'SLIP', windup: 0, follow: 0 },
-  // (THE VETERAN: his three; the icons the old Brawler's until the art chat's are in. His blows' shares of the hit are each
+  // (THE VETERAN: his three; their icons the art chat's, art/veteran_icons.ts, nothing of the old Brawler's (shown him on the
+  // phone's buttons, his yes to the art chat, 3 Nov 2026: “Yes, hand them over (Recommended)”). His blows' shares of the hit are each
   // move's own, game/veteran.ts VET_MOVES; his jump's wait one fire globe a combo, as a rule: his “Swipes spend the jump”)
-  vpunch: { id: 'vpunch', name: 'Punch', kind: 'vblow', icon: 'jab', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A tap fills a green globe: the jab, the cross, the hook, the spinning elbow, as his combo comes to them.', verb: 'PUNCH', windup: 0, follow: 0 },
-  vkick: { id: 'vkick', name: 'Kick', kind: 'vblow', icon: 'cross', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A hold fills an orange globe: the round kick, then the push kick.', verb: 'KICK', windup: 0, follow: 0 },
-  vjump: { id: 'vjump', name: 'Jump', kind: 'vjump', icon: 'slip', dmg: 1.0, cooldown: 4.0, mana: 0, range: 1, radius: 0, speed: 0, sockets: true, desc: 'A swipe is his dodging jump. A swipe then a tap or a hold sets the globe in fire: the flying uppercut, the flying knee, the spinning jump kick.', verb: 'JUMP', windup: 0, follow: 0 },
+  vpunch: { id: 'vpunch', name: 'Punch', kind: 'vblow', icon: 'vetpunch', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A tap fills a green globe: the jab, the cross, the hook, the spinning elbow, as his combo comes to them.', verb: 'PUNCH', windup: 0, follow: 0 },
+  vkick: { id: 'vkick', name: 'Kick', kind: 'vblow', icon: 'vetkick', dmg: 1.0, cooldown: 0, mana: 0, range: 2.5, radius: 0, speed: 0, sockets: true, desc: 'A hold fills an orange globe: the round kick, then the push kick.', verb: 'KICK', windup: 0, follow: 0 },
+  vjump: { id: 'vjump', name: 'Jump', kind: 'vjump', icon: 'vetjump', dmg: 1.0, cooldown: 4.0, mana: 0, range: 1, radius: 0, speed: 0, sockets: true, desc: 'A swipe is his dodging jump. A swipe then a tap or a hold sets the globe in fire: the flying uppercut, the flying knee, the spinning jump kick.', verb: 'JUMP', windup: 0, follow: 0 },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -830,6 +831,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // MOTH_PACE 3, its buffet across the top)
   hshape: { kind: 'hshape', name: 'Hush', life: 30, dmgMin: 11, dmgMax: 16, speed: 1.5, radius: 0.34, range: 1.6, windup: 0.6, cooldown: 2.2, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   rshadow: { kind: 'rshadow', name: 'Royal Shadow', life: 72, dmgMin: 17, dmgMax: 23, speed: 2.5, radius: 0.42, range: 2.0, windup: 0.7, cooldown: 2.3, xp: 26, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (THE RIME SHADE, floor 20's frost creature (his “Rime Shade (Recommended)”, 3 Nov 2026; “In 25.0 too”): a small mob of the
+  // tower, as the Hush's shapes, at its drift's pace, RS_PACE 1.8; one attack, the Rime Breath: its wind-up its breathing out,
+  // RS_BREATH.hit 0.833 s; its reach how far off it breathes, its line running on to 6.45 tiles: game/act1_rules/rshade.ts)
+  rshade: { kind: 'rshade', name: 'Rime Shade', life: 30, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.34, range: 5.6, windup: 25 / 30, cooldown: 2.5, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   moth: { kind: 'moth', name: 'The Moth', life: 780, dmgMin: 27, dmgMax: 38, speed: 3.0, radius: 1.4, range: 8.0, windup: 0.9, cooldown: 2.2, xp: 1250, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };

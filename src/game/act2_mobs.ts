@@ -14,6 +14,8 @@ import { cityFloor } from './act1';
 import { act1Rules } from './act1_rules/index';
 import { KNIGHT_TUNE } from './act1_rules/kknight';
 import { HUSH_TUNE } from './act1_rules/hshape';
+import { RIME_TUNE } from './act1_rules/rshade';
+import { RIME_SHADE_ON } from '../art/rime_shade';
 import { SWAN } from './act1_rules/swan';
 import { PACK_BY_SIZE, sizeOf } from './defs';
 import type { MonsterKind } from './types';
@@ -89,6 +91,8 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'hshape', weight: 6 },
     { kind: 'order', weight: 3 },
     { kind: 'rshadow', weight: 3 },
+    // (the Rime Shade, behind RIME_SHADE_ON: two or three together, so that their lines cross, the art chat's word)
+    { kind: 'rshade', weight: 4 },
   ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */
@@ -111,7 +115,7 @@ export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'ch
   // lair, the barracks, two: game/act1_rules/kknight.ts KNIGHT_TUNE)
   const knight = (k: MonsterKind): boolean => k === 'kknight' && act2Ready('kknight');
   if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: knight(ACT2_GUARD[n]) ? KNIGHT_TUNE.lair : rng.int(3, 4) };
-  const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)));
+  const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)) && (m.kind !== 'rshade' || RIME_SHADE_ON.on));
   const pick = rng.weighted(list, (m) => m.weight);
   const kind = standIn(pick.kind);
   // (THE HIGH CITY, FLOOR 16: the swans come in flocks, his “Knee-high, in flocks”: a pack of them bigger than another small
@@ -119,6 +123,8 @@ export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'ch
   if (knight(kind)) return { kind, size: KNIGHT_TUNE.pack };
   // (FLOOR 20: the Hush's shapes come in swarms, the art's brief: game/act1_rules/hshape.ts HUSH_TUNE)
   if (kind === 'hshape') return { kind, size: rng.int(HUSH_TUNE.swarm[0], HUSH_TUNE.swarm[1]) };
+  // (the Rime Shades two or three together: game/act1_rules/rshade.ts RIME_TUNE)
+  if (kind === 'rshade') return { kind, size: rng.int(RIME_TUNE.pack[0], RIME_TUNE.pack[1]) };
   const [lo, hi] = kind === 'swan' ? SWAN.flock : PACK_BY_SIZE[sizeOf(kind)];
   return { kind, size: rng.int(lo, hi) };
 }

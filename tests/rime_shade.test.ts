@@ -136,8 +136,11 @@ for (const view of VIEWS) {
 }
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(3)}`;
 
-test('1. the switch is off, and nothing of the game imports it', () => {
-  assert.equal(RIME_SHADE_ON.on, false, 'RIME_SHADE_ON is off');
+// (BROUGHT IN BY THE MAIN CHAT, 3 Nov 2026, for 25.0 at his word, “In 25.0 too”: the game reaches it through its own files
+// only: its rules, its figure, what its breath does drawn, and floor 20's list of kinds, which draws it only while it is on)
+const BROUGHT_IN = ['art/act1_figs/rshade.ts', 'game/act1_rules/rshade.ts', 'game/act2_mobs.ts', 'render/act1_fx/rshade.ts'];
+test('1. its switch, and the game reaches it through its own files only', () => {
+  assert.equal(typeof RIME_SHADE_ON.on, 'boolean', 'RIME_SHADE_ON');
   const users: string[] = [];
   const theirs = /^art\/rime_shade(_moves|_fx)?$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -149,7 +152,7 @@ test('1. the switch is off, and nothing of the game imports it', () => {
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal(users.length, 0, `game files that import it: ${users.join(', ')}`);
+  assert.deepEqual([...new Set(users)].sort(), BROUGHT_IN, `game files that import it: ${users.join(', ')}`);
 });
 
 test('2. EVERY MOVE THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
