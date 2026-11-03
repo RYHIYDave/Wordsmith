@@ -97,3 +97,120 @@ classes' films are), and one still of him mid-kick; then all of it again at the 
 
 Made by `src/dev/sculpt_brawler_looks.ts` (`BETTER_FIGHTERS`; each look's `kick` is its still, `close` its close pass) and
 `node tools/preview.mjs src/dev/preview_brawler_looks.ts docs/mockups/brawler_looks/pictures/fighters_better.png 1200 100 better`.
+
+## The Veteran (his pick, built new; pictures first)
+
+### His words, in order (2 Nov 2026)
+
+- 19:59: “Or we might have to do a rework of the brawler.  He’s not really what I’m looking for”; then “I think it can go
+  two ways.  More of an old timey boxer.  Longer wind ups for hits so you have time for inputting combos.  Or an actual
+  fighter, tap for punch, hold for kick, and swipe for jump to insert the swipe into the combo for jump kicks or flying
+  uppercuts”; “Give me some possible looks, 10 for each”; “Just some rough ideas, don’t need some fully animated sprites
+  or whatever”; “Show me a better 7, 2, and 1 of the fighters”; of the three: “7, the Veteran”.
+- 21:41: “I’d like a headband that flows out behind him”. Told that with the eye patch and grey beard a flowing headband
+  would make him look like a famous game character, his pick to keep him original: “Blind scarred eye (Recommended)”,
+  offered as: no patch: a milky blind eye with the scar running through it, a long faded red headband streaming behind,
+  his grey moustache and beard, a worn leather vest.
+- How he fights: “If there’s going to be skins, then we want to just keep it clean” (punches and kicks only; other looks
+  may become skins sharing his moves).
+- How he moves: “So what I want is three empty globes above him.  Cyan is punch, pink is kick, and yellow is jump.  As you
+  tap or hold, the globes fill and it locks in your combo.  And early swipe just does a jump, like inputting a dodge.  A
+  swipe then an input puts the globe in either pink or cyan fire, and that’s the uppercut or jump kick.  I don’t want
+  anything reused from the original brawler, we need a totally new look.  Going to have to be heavy and weighty so you
+  have time to react and input to the situation.  As your attack speed goes up, hopefully you’ve learned the character
+  and will be able to input the combos faster”
+- Told that pink and gold glows are the enemy's by his rulebook, his pick: “Keep the rule (Recommended)”, offered as: cyan
+  punch, hot orange kick, white jump; the fires cyan and orange.
+- 22:06: “I gotta say it, follow all the rules.  I want him to look and play like an action movie hero.  Muscly, Bouncing
+  on his toes”
+- 22:09: “Here’s a gif of a jab cross uppercut hook.  Hook for regular punch, uppercut for jump punch.  Obviously we want
+  it more exaggerated than this, but you get the basic idea before it gets all actioned up” (his reference: two men at pad
+  work; used only for how the body turns and the fist travels, no one traced).
+- 22:18: “Basic kick form”, with a picture of a switch kick (eyes on the target, the near fist guarding the face, the hips
+  turned right over, striking with the shin, the support foot pivoted on its ball, heel toward the target; used only for
+  the form, no one traced).
+- 22:18: “No the jump kick will be different”; asked which (a flying side kick, a spinning jump kick, a flying knee, a drop
+  kick): “Spinning jump probably, with a flying knee if it comes after two punches”.
+
+### The picture
+
+`pictures/veteran.png` (1200 by 4548): him three times the game's size beside the knight, bouncing on his toes (down and
+up), from behind and from the side, and all of it at the game's size; his six key poses, each its big held wind-up and its
+strike, from the side as he fights toward the right of the screen, a pale streak showing the path of each blow, a shadow
+under him when he is in the air, each pair again at the game's size; the combo globes over his head, three times the
+game's size beside the knight (locked: punch, punch, kick) and in each of their eight states with him under them at the
+game's size. Still pictures only: nothing is animated, nothing is in the game.
+
+### What is new (nothing of the old Brawler)
+
+He is built fresh in his own file: not the old Brawler's body, head, beard, fists, stance, clothes or any of his files
+(nothing of `src/dev/sculpt_classes.ts`, the twenty looks or any brawler file, by a test that follows every import of his
+files to the end). Only the shared tools every sculpted figure is drawn with: the sculptor (`src/dev/sculpt.ts`), the
+heroes' bones (`src/art/skeleton.ts`) and the colours' kit. His own:
+
+- AN ACTION-MOVIE HERO'S BUILD (his own; no actor's likeness, no known hero's): 58 tall, shoulders 1.4 and chest 1.36 times
+  a usual man's over a waist of 0.84, limbs 1.3 times as thick; a head 1.72 times life so his face reads. Each muscle a
+  shape of its own, melted only a little into the next so the cuts read: square breast muscles, the groove between them,
+  six blocks down his belly, the obliques, the lats flaring, round shoulders, a peaked biceps, a horseshoe of triceps,
+  forearms thick and veined (a dark line that wanders, a lit pixel on its crest), quads and flexed calves; the front of his
+  chest and belly lifted a tone (as his face is) so the muscles read though he is turned from the light.
+- HIS FACE: a big square skull, a block of a jaw, a jutting brow, a nose broken flat, one thickened ear; a short grey crop,
+  heavy grey brows, a grey walrus moustache hanging past the corners of his mouth and a short grey beard, lifted light so
+  they read on his tan; his right eye dark under its brow; HIS LEFT EYE MILKY AND BLIND, a dull grey-white (no glow), the
+  scar running down through it from his brow (a notch of scar in the brow) to his cheek, a pale line with a dark edge.
+  No eye patch.
+- THE HEADBAND: long, faded red (a red gone dull, never pink), round his brow and knotted at the back; its two tails (about
+  20 and 26 long) are ribbons of real shape that twist as they go, rippling more toward their frayed ends, streaming the way
+  the air pushes them against how his head moves: back in his stance, swinging out as he winds up, flung straight back in a
+  hook, whipping round with his hips in the kicks, trailing below him as he rises, spiralling up in the spinning kick.
+  Kept clear of his body (a test).
+- HIS CLOTHES: a worn brown leather vest open down his front over his scarred chest (two old pale scars with their
+  shadows), its edges rolled and stitched, scuffed, a patch sewn on its back; slate trousers hacked off below the knee,
+  the hem cut flat with tatters hanging; a broad black-brown belt, a dull iron buckle; his right shin bound in grey linen,
+  his left bare and scarred across; linen round the arch of each foot and the ankle, toes and heel bare; leather bracers
+  laced up the inside; BIG FISTS (7.4 across, four fifths of his head's 9.4), the fingers rolled under, the knuckles a ridge,
+  the thumb locked over, a black-brown strap round the knuckles, across the back of the hand and round the wrist.
+- HIS STANCE, BOUNCING ON HIS TOES: side-on, up on the balls of both feet, the toes flat on the floor and the heels up off
+  it, knees soft, fists up, chest out. Two moments of the bounce: down (his hips 23.4 over the floor, heels 3.3 up) and up
+  (hips 29.6, heels 6.0 up).
+
+### His six key poses (each a big held wind-up, then the strike)
+
+1. THE PUNCH, A HOOK (tap): wound right round away from them, weight back, the right elbow drawn back and up; then the hips
+   and shoulders whip round through, the elbow high and bent, the fist swung round flat, the back heel spun up.
+2. THE KICK, A ROUND KICK WITH THE SHIN (hold): a switch kick, his form picture's: the front knee hauled up and cocked on
+   the ball of the back foot; then the hips turned right over, the leg whipped round flat at rib height landing with the
+   shin, the support foot pivoted on its ball, heel toward them, the kicking arm swung down and back, the other fist up at
+   his face.
+3. THE JUMP, HIS DODGE (a swipe on its own): sunk deep, arms swung back; then up off the floor (his lowest 16 over it),
+   knees tucked, fists up.
+4. THE FLYING UPPERCUT, HIS JUMP PUNCH (swipe, then tap): dropped right down low, the right shoulder dipped, the fist by his
+   knee; then driven up off the floor (13 over it), the fist rising past his face and over his head, the knee up.
+5. THE JUMP KICK, A SPINNING JUMP KICK (swipe, then hold): sunk low, shoulders wound the other way; then off the floor (21
+   over it) into a full turn, his back come round to them, the leg whipped round flat at head height, the other tucked; the
+   streak an arc right round him.
+6. THE FLYING KNEE (the jump kick when it comes after two punches): a low lunge in, both hands reaching; then leaping in
+   (10 over the floor), the knee driven up into the chest or face, both hands out to grab.
+
+### The combo globes (`src/dev/veteran_globes.ts`)
+
+Three glass globes over his head, painted pixel by pixel at the game's size (each 11 across, 3 apart, room for fire over
+them): EMPTY (dark glass, a pale rim, a glint); CYAN a punch (a tap; the friend's own cyan, `#22d0e0`); HOT ORANGE a kick
+(a hold; a red-orange kept well off gold, `#e8561a`); WHITE the jump (a swipe on its own). Each fills from the bottom with
+a bright top to it. Three in and the combo LOCKS: the rims go white and a white bar joins them. A swipe then a tap puts the
+globe in CYAN FIRE (the flying uppercut); a swipe then a hold in ORANGE FIRE (the jump kick; after two punches, the flying
+knee): three tongues of flame licking up round it, dark at their tips, hottest at the globe, inked round. Never pink, never
+gold (a test).
+
+### How it is made, and its checks
+
+- `src/dev/sculpt_veteran.ts`: him (`VET_BUILD`, `VET_STANCE`, `VET_STANCE_UP`, `VET_MOVES`, `sculptVeteran`,
+  `paintVeteran`); `src/dev/veteran_globes.ts`: the globes; `src/dev/preview_veteran.ts`: the sheet, made with
+  `node tools/preview.mjs src/dev/preview_veteran.ts docs/mockups/brawler_looks/pictures/veteran.png 1200 100`.
+- `tests/veteran.test.ts`: nothing of the game imports them; nothing of the old Brawler is in him or his globes (their
+  whole import closure) or imported by his sheet; every pose from in front, from behind and from the side crisp, edged in
+  the friend's cyan, no pink, nothing cut off, nothing in the floor, his arms clear of his trunk and his legs of each other;
+  up on his toes at both moments of the bounce, the bounce more than 4 high; his leaps off the floor, his other poses on
+  it; the tails two, each 18 long or more, never through him, their ends behind his face, moving with him from wind-up to
+  strike; big fists; no patch, the milky eye; the six moves; the globes crisp, cyan and hot orange, never pink or gold.
+- Not in the game: no switch, no moves in the game's moves, no animation. That comes after his yes.
