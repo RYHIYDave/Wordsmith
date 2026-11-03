@@ -31,6 +31,8 @@ export interface GlobeRow {
   globes: readonly [Globe, Globe, Globe];
   /** Three in: the combo locked. */
   locked?: boolean;
+  /** Where the fire is in its flicker (a frame number; the film's flames lick and leap). */
+  flick?: number;
 }
 
 /** Their size, in the picture's pixels at the game's size: each globe's radius, the gap between two, and room above for the fire. */
@@ -81,7 +83,8 @@ export function paintGlobes(row: GlobeRow): Px {
     if (fireOf) {
       const F = rampOf(fireOf);
       const flip = fireOf === 'kick' ? -1 : 1;
-      const tongues = [[-3 * flip, fire - 2], [0, fire + 1], [3 * flip, fire - 3], [-5 * flip, 3], [5 * flip, 4]] as const;
+      const fl = (k: number): number => (row.flick === undefined ? 0 : Math.round(2.2 * Math.sin(row.flick * 1.9 + k * 2.3)));
+      const tongues = [[-3 * flip, fire - 2 + fl(0)], [0, fire + 1 + fl(1)], [3 * flip, fire - 3 + fl(2)], [-5 * flip, 3 + fl(3) * 0.5], [5 * flip, 4 + fl(4) * 0.5]] as const;
       const W0 = 2 * r + 7;
       const H0 = r * 2 + fire + 4;
       const ox = cx - r - 3;

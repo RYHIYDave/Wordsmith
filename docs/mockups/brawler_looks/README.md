@@ -134,7 +134,7 @@ Made by `src/dev/sculpt_brawler_looks.ts` (`BETTER_FIGHTERS`; each look's `kick`
 
 ### The picture
 
-`pictures/veteran.png` (1200 by 4548): him three times the game's size beside the knight, bouncing on his toes (down and
+`pictures/veteran.png` (1200 by 4536; made again with his moves, for the two small changes to his figure below): him three times the game's size beside the knight, bouncing on his toes (down and
 up), from behind and from the side, and all of it at the game's size; his six key poses, each its big held wind-up and its
 strike, from the side as he fights toward the right of the screen, a pale streak showing the path of each blow, a shadow
 under him when he is in the air, each pair again at the game's size; the combo globes over his head, three times the
@@ -214,3 +214,93 @@ gold (a test).
   it; the tails two, each 18 long or more, never through him, their ends behind his face, moving with him from wind-up to
   strike; big fists; no patch, the milky eye; the six moves; the globes crisp, cyan and hot orange, never pink or gold.
 - Not in the game: no switch, no moves in the game's moves, no animation. That comes after his yes.
+
+### His moves (pictures first: a film and a sheet; nothing in the game, no switch yet)
+
+His word on him as drawn, 2 Nov 2026: “Pretty good.  Those action lines will probably need to be bigger.  Remember, I’d
+rather have to pull back from a 10 then build up from a 1.  In terms of awesome looking animations”. His rulebook's
+Animations 1 (10 Oct): “Put in the ruleset that I want animations as big and wild and kinetic and weighty as possible.  I’d
+rather it be a notch too high than a notch too low.” At 22:06: “I gotta say it, follow all the rules.  I want him to look
+and play like an action movie hero.  Muscly, Bouncing on his toes”; and of his combos at 22:27: “Give me kick, spinning
+elbow, kick for hold, tap, hold”. At 22:43: “Make sure his limbs all face the correct way, don’t make mistakes”; at
+22:44: “It can be over the top, I just don’t want his foot facing backwards or something”.
+
+So every move is his own, keyed on his own bones at 30 frames a second, each as his Movement 9 has it: a BIG HELD WIND-UP
+you can read, the STRIKE IN ONE OR TWO FRAMES, a stop on the blow (its weight), a BIG WIND-DOWN, back up on his toes. His
+feet grip the floor (a foot down stays where its ball is; a pivot turns on the ball). His headband's tails are blown by how
+his head moves (whipping on a strike, trailing a leap, spiralling round a spin). And THE ACTION LINES ARE MUCH BIGGER than
+the stills' streak: a great sweeping smear along every blow (13 pixels wide at the game's size on the heavy blows, 9 on the
+jab, white-hot at its head; cyan for a punch, hot orange for a kick, as his globes are), after-images of him along the
+strike, an impact burst where it lands (a jagged star, its spikes up to 26 pixels long on a heavy blow, a ring flung out round it), a
+shockwave ring along the floor under every heavy blow, the whole picture shaken on the heavy hits, dust thrown off the floor
+on every take-off and landing, speed lines behind every leap, stars round a stunned foe.
+
+The moves, frame by frame (30 a second; the wind-up's last frame is held, the strike lands one or two frames later):
+
+| Move | Put in | Frames (seconds) | The wind-up, held | The strike lands | What it does |
+|---|---|---|---|---|---|
+| Standing, bouncing on his toes | — | a 60-frame round (2.0 s) | | | four bounces, up high on his toes and sunk into his knees; fists circling; a roll of his shoulders and a tip of his head on the third; feet never leave where their balls are |
+| Running | — | a 12-frame round (0.4 s), at the game's hero pace (4.6 tiles a second) | | | low and driving, knees high, heels flicked up, fists pumping hard by his sides, both feet off the floor for 7 of the 12 frames |
+| The dodge jump | swipe | 40 (1.33 s) | 0–11, sunk deep, arms swung back | off the floor at 13 | a spring up and away a tile, his feet 27 over the floor (half his height), knees tucked, fists up; down at 25 deep in the dust; up on his toes by 40 |
+| The jab | tap | 28 (0.93 s) | 0–11, coiled back, the fist cocked by his cheek | 12 (one frame) | a stamping step in and the lead fist shot straight out, palm down; stepped back out by 28 |
+| The cross | tap | 28 (0.93 s) | 0–12, wound right back, the rear fist past his ear | 14 (two frames) | hips, shoulders and rear heel thrown round, the fist driven straight through, palm down; reels them |
+| The hook | tap | 32 (1.07 s) | 0–13, his weight on his lead leg, wound left, the elbow drawn up | 15, and 16 on the second | everything whipped round, the lead foot pivoting on its ball, the elbow level, the fist flat across, palm down, through two of them side by side; carried on round |
+| The round kick | hold | 36 (1.2 s) | 0–14: the switch (the lead foot hops back, down at 5), the knee hauled up and cocked | 16 (two frames) | the hips turned right over, the support foot pivoting on its ball till its heel points at them, the shin whipped round flat into the ribs; knocks them back; landed back in his stance by 36 |
+| The spinning elbow | tap | 34 (1.13 s) | 0–12, his weight over his lead foot, coiled, the rear arm folded, eyes on them over his shoulder | 14 (two frames) | a whole turn on the ball of his lead foot, the elbow round flat at head height; knocks them back to make room |
+| The flying uppercut | swipe, then tap | 46 (1.53 s) | 0–13, dropped right down low, the fist by his knee | 15 (two frames), as he leaves the floor | driven up through the chin and on over his head, his feet 27 over the floor, launching them into the air, stunned (stars); hangs at the top; down at 31 |
+| The spinning jump kick | swipe, then hold | 50 (1.67 s) | 0–14, sunk low on his toes, wound the other way | the leg out by 16; the four round him caught at 16, 18, 20 and 22 | off the floor (15–29, his feet up to 31 over it) into TWO WHOLE TURNS, the leg whipping round flat at head height through everyone round him, each in his turn; flung away; down in a ring of dust |
+| The spinning jump kick, closing in | swipe, then hold, first | 52 (1.73 s) | 0–14 | the leg out by 16, caught at 24 | the same, leaping 1.8 tiles in at them as he turns |
+| The flying knee | tap, tap, swipe and hold | 46 (1.53 s) | 0–13, a low lunge, both hands reaching | 15 (two frames) | leaping in 0.9 of a tile, 21 over the floor, and the knee driven up into them, hands pulling them down onto it; flung away to their knees; down at 27 |
+| Struck | — | 16 (0.53 s) | | the blow lands at 2 | his head snapped round and back, his weight driven onto his back foot; shaken off by 16 |
+| His fall | — | 96 (3.2 s) | | the last blow at 2 | snapped round; two staggering steps back; down on one knee at 30, a fist on the floor; he pushes up and lifts that fist once more (58–66); it sinks, his head drops, the light goes out (66–92). He never lies down |
+
+His six combos, each in the film in a row with the globes filling over him (cyan a tap, hot orange a hold, white a swipe;
+locked when three are in; a swipe and then a tap or a hold sets that globe in cyan or orange fire):
+
+1. tap, tap, tap: the jab, the cross, the hook. Steady damage; the hook catches two side by side.
+2. tap, tap, swipe and hold: the jab, the cross, the FLYING KNEE. The strongest single blow.
+3. tap, tap, swipe and tap: the jab, the cross, the FLYING UPPERCUT. Launches one into the air, stunned.
+4. hold, hold, swipe and hold: the round kick, the round kick, the SPINNING JUMP KICK. Hits all round, for when he is
+   surrounded.
+5. hold, tap, hold: the round kick, the SPINNING ELBOW, the round kick (his 22:27). Knocks them back to make room.
+6. A swipe first: the dodging jump; a swipe and hold first: a spinning jump kick that closes the distance.
+
+Pictures: `pictures/veteran_moves.mp4` (the film: every move from in front and from behind side by side, at the arena's
+scale with a stand-in foe; his six combos in a row with the globes over him; the biggest blows again at half speed);
+`pictures/veteran_moves_sheet.png` (the key moments of every move, wind-up, strike and wind-down, and each combo's globes).
+
+The stand-in foe (`src/dev/veteran_foe.ts`) is only something for his blows to land on: a plain hooded brute in sackcloth
+with the enemy's pink rim, not a design for the game. He swings a haymaker, and is hit: his head snapped back (the jab),
+reeling (the cross, the hook), knocked back sliding (the round kick, the elbow), launched up and down stunned (the
+uppercut), flung away to his knees (the knee, the spinning kick).
+
+How it is made: `src/dev/veteran_moves.ts` (every move: its keys, its strikes, its foes; his six combos), `veteran_fx.ts`
+(the action lines), `veteran_foe.ts` (the stand-in), `veteran_scene.ts` (a picture of the arena at a frame),
+`veteran_plays.ts` (the film's parts and captions); `tools/veteran_film.ts` makes the film
+(`npx tsx tools/veteran_film.ts docs/mockups/brawler_looks/pictures/veteran_moves.mp4`), `tools/veteran_sheet.ts` and
+`tools/veteran_sheet.py` the sheet. Two small changes to his figure (`sculpt_veteran.ts`): a palm way of its own for each
+fist (a hook's palm down, an uppercut's toward him), and the muscles on his upper arm kept square to each other (pointed
+straight out to his side, they had flattened into a slab).
+
+Its checks (`tests/veteran.test.ts`), every frame of every move, from in front and from behind: crisp, the friend's cyan
+edge, no pink, nothing cut off, nothing in the floor, his arms clear of his trunk and his legs of each other, no solid
+flattened; slick (nothing leaps, stalls or turns straight back at speed but the strike itself, a landing's jolt and a
+whirl faster than 40 degrees a frame); a foot down on the floor never sliding. EVERY JOINT INSIDE WHAT A BODY CAN DO (his
+22:43): every knee folded no tighter than a knee folds and never past straight, bending toward where its toes point; every
+ankle within what an ankle does; no standing foot turned more than 110 degrees from his hips (never backwards); every elbow
+folded no tighter than an arm and never past straight, never pointing into his own body; every fist turned as a forearm
+turns it (palm toward the biceps, in, or away, never past); the spine never twisted past 62 degrees or bent past what a
+back bends; the head never turned more than 95 degrees from his chest; his left shoulder and hip always on his left, and
+each hand and foot nearer where it was a frame before than where its fellow was (never swapped). Each strike one or two
+frames from the held wind-up, its smear at least 150 pixels; the wind-up held (its last two frames barely move); the
+globes in every frame of the film never pink or gold; nothing of the game imports any of it, and nothing of the old
+Brawler is in any of it.
+
+Choices made for the film that he may want to call:
+
+- The hook in the moves is thrown with his LEAD (left) fist, so that jab (lead), cross (rear), hook (lead) flows as one
+  combo; the still of the hook showed the rear fist.
+- A punch's lines are cyan and a kick's hot orange, as his globes are (tap cyan, hold hot orange); the enemy's blow on him
+  bursts white and red. Never gold.
+- The foe stands a little to his left (about 15 degrees off straight ahead) so that, from in front, the foe does not hide
+  him; from behind is the same scene turned a quarter, truly (no mirror).

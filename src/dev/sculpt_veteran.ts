@@ -91,6 +91,12 @@ export interface VetPose {
   phase: number;
   /** Off the floor (a leap): how high his feet are is the pose's own. */
   air?: boolean;
+  /**
+   * WHICH WAY EACH PALM FACES (his “Make sure his limbs all face the correct way”), along his own forward, left and up: a
+   * hook's palm down, an uppercut's toward him. Not given: the palm faces in, toward his middle.
+   */
+  palmL?: V3;
+  palmR?: V3;
 }
 
 /**
@@ -434,9 +440,14 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
     const out = mul(l, side === 'L' ? 1 : -1);
     const ud = norm(sub(el, shd));
     const uo = norm(sub(out, mul(ud, dot(out, ud))), f);
-    // (the front of the upper arm: the way he faces, made square to the arm; up, if the arm points ahead)
-    const ufr = norm(sub(f, mul(ud, dot(f, ud))), u);
-    sc.ell(skin, piece, add(shd, add(mul(u, -0.2), mul(uo, 1.2))), [mul(f, 3.6), mul(uo, 3.3), mul(u, 3.4)], 1.2, { tag: 'delt' });
+    // (the front of the upper arm: the way he faces, made square to the arm; up, if the arm points ahead; and square to its
+    // outside too, so that the muscles on it are never flattened to nothing when the arm points straight out to his side)
+    const ufr0 = norm(sub(f, mul(ud, dot(f, ud))), u);
+    const ufr = norm(sub(ufr0, mul(uo, dot(ufr0, uo))), norm(cross(ud, uo)));
+    // (the shoulder's own three ways, square to each other: the way he faces, out, and up)
+    const dOut = norm(sub(uo, mul(f, dot(uo, f))), out);
+    const dUp = norm(cross(f, dOut), u);
+    sc.ell(skin, piece, add(shd, add(mul(u, -0.2), mul(uo, 1.2))), [mul(f, 3.6), mul(dOut, 3.3), mul(dot(dUp, u) < 0 ? mul(dUp, -1) : dUp, 3.4)], 1.2, { tag: 'delt' });
     sc.cone(skin, piece, shd, el, 3.1, 2.3, 1.4, { tag: 'upper' });
     sc.ell(skin, piece, add(lerp3(shd, el, 0.54), mul(ufr, 1.25)), [mul(ud, 3.5), mul(uo, 2.5), mul(ufr, 2.5)], 0.9, { tag: 'bicep' });
     sc.ell(skin, piece, add(lerp3(shd, el, 0.42), mul(ufr, -1.0)), [mul(ud, 3.8), mul(uo, 2.4), mul(ufr, 2.3)], 0.9, { tag: 'tricep' });
@@ -708,7 +719,7 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
     const el = side === 'L' ? s.elbowL : s.elbowR;
     const ha = side === 'L' ? s.handL : s.handR;
     const d = norm(sub(ha, el));
-    const inw0 = mul(l, side === 'L' ? -1 : 1);
+    const inw0 = (side === 'L' ? p.palmL : p.palmR) ?? mul(l, side === 'L' ? -1 : 1);
     const inw = norm(sub(inw0, mul(d, dot(inw0, d))), u);
     // (the thumb's side of the fist: up, when the palm faces in and the knuckles forward)
     const top = side === 'R' ? norm(cross(d, inw)) : norm(cross(inw, d));
@@ -770,7 +781,7 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
   const solids: Prim[] = sc.prims.filter((pr) => !pr.carve);
   const clear = (pt: V3, want: number): V3 => {
     let out = pt;
-    for (let pass = 0; pass < 3; pass++) {
+    for (let pass = 0; pass < 5; pass++) {
       let d = Infinity;
       for (const pr of solids) d = Math.min(d, primDist(pr, out));
       if (d >= want) break;
