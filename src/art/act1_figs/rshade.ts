@@ -8,6 +8,6 @@ import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
   make: () => makeRimeShadeArt3(),
-  size: { top: 37, half: 11 },
+  size: { top: 32, half: 11 },
   switches: [RIME_SHADE_ON],
 };

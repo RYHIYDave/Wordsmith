@@ -154,13 +154,13 @@ test('the Brawler is the Veteran while his switch is on (and where the painter i
   }
 });
 
-test('his action lines as frames: the art’s own, where it has them (the jab’s cone out at 14, the hook’s crescent, the push kick’s cone on the floor, the spinning kick’s crescent), cyan a punch and hot orange a kick, never pink or gold', () => {
-  const picks: [string, number, 'ground' | 'behind' | 'front', 'cyan' | 'orange'][] = [
-    ['jab', 14, 'front', 'cyan'],
-    ['hook', 17, 'front', 'cyan'],
+test('his action lines as frames: the art’s own, where it has them (the jab’s cone out at 14, the hook’s crescent, the push kick’s cone on the floor, the spinning kick’s crescent), green a punch (his word, 3 Nov: “...the brawler is Str/dex, so I think we change the color of the globe for a punch to green and the kicks stay orange/red.”) and hot orange a kick, never pink or gold', () => {
+  const picks: [string, number, 'ground' | 'behind' | 'front', 'green' | 'orange'][] = [
+    ['jab', 14, 'front', 'green'],
+    ['hook', 17, 'front', 'green'],
     ['push', 20, 'ground', 'orange'],
     ['spinkick', 21, 'front', 'orange'],
-    ['elbow', 26, 'behind', 'cyan'],
+    ['elbow', 26, 'behind', 'green'],
   ];
   for (const [id, f, layer, want] of picks) {
     for (const v of ['front', 'back'] as const) {
@@ -169,6 +169,7 @@ test('his action lines as frames: the art’s own, where it has them (the jab’
       assert.equal(unlike(s, want2), 0, `${v} ${id} ${f} ${layer}: painted as made`);
       const px = paintingOf(s);
       let cyan = 0;
+      let green = 0;
       let orange = 0;
       for (let i = 0; i < px.d.length; i += 4) {
         if (!px.d[i + 3]) continue;
@@ -176,9 +177,11 @@ test('his action lines as frames: the art’s own, where it has them (the jab’
         assert.ok(!(h >= 290 && h <= 352 && sat > 0.4 && val > 0.4), `${v} ${id} ${f}: pink`);
         assert.ok(!(h >= 38 && h <= 64 && sat > 0.45 && val > 0.55), `${v} ${id} ${f}: gold`);
         if (h >= 170 && h <= 200 && sat > 0.4) cyan++;
+        if (h >= 120 && h <= 165 && sat > 0.4) green++;
         if (h >= 8 && h <= 30 && sat > 0.5) orange++;
       }
-      assert.ok((want === 'cyan' ? cyan : orange) > 40, `${v} ${id} ${f} ${layer}: ${want} (${cyan} cyan, ${orange} orange)`);
+      assert.ok((want === 'green' ? green : orange) > 40, `${v} ${id} ${f} ${layer}: ${want} (${green} green, ${cyan} cyan, ${orange} orange)`);
+      assert.ok(cyan <= 4, `${v} ${id} ${f} ${layer}: no friend's cyan in his lines (${cyan})`);
     }
   }
   // (nothing before the blow but dust, and nothing long after the move)
