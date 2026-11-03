@@ -1,6 +1,7 @@
 // Data shapes for a running game: the hero, monsters, projectiles and everything else in a level.
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
+import type { VetState } from './veteran';
 import type { PrisonChannel } from './prison_way';
 import type { ChapelPlan } from './chapel_way';
 import type { GroundsPlan } from './grounds_way';
@@ -309,6 +310,8 @@ export interface Hero {
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
   pets?: Partial<Record<CompanionGroup, CompanionKind>>;
+  /** THE VETERAN (game/veteran.ts, behind VETERAN): his globes, the move he is playing and those to come. Not kept in a save. */
+  vet?: VetState;
   /** THE ROYAL CARDS (game/royal_cards.ts, the High City's): the royals' cards he holds, kept for good (absent: none). */
   cards?: Partial<Record<Royal, number>>;
   /** (THE SKILL TREES) A talent's pick of two, where it has one (talents.ts TalentDef.pick): by the talent's id, the one picked (absent: its first). */
