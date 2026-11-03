@@ -24,7 +24,10 @@ export default async function (page, snap) {
     const D = Math.PI / 180;
     const f = Math.cos(aim * D) * 4.6; const l = Math.sin(aim * D) * 4.6;
     g.hero.x = b.x + (f + l) * Math.SQRT1_2; g.hero.y = b.y + (f - l) * Math.SQRT1_2;
+    // (met by hand, woken as meeting him wakes him: game.ts meetOutdoorBoss. On the open ground, SEE_OVER_ROCK, a sleeper wakes
+    // only in a line to its middle, and his ring's stones hide his middle from where the hero stands)
     g.bossMet = true; g.level.explored.fill(1);
+    if (b.state === 'sleep') g.wakeUp(b);
     d.fx.messages.length = 0;
   }, aim);
   // (his pictures painted first)
