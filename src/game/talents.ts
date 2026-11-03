@@ -30,6 +30,7 @@
 //             yes to TECHNIQUE as this chat listed it: "Yes, as listed (Recommended)".)
 
 import type { ClassId, StatKey, WordId } from './types';
+import { VETERAN } from './veteran';
 
 /**
  * THE SWITCH: off, there are no talents and no page for them (the game as it was). ON since Version
@@ -114,7 +115,9 @@ export type TalentFigure =
   | { kind: 'sword'; path: string; pommel: string; guard: string; tip: string; quillons: readonly [string, string] }
   | { kind: 'talon'; path: string; ids: readonly string[]; width: number; hook: number }
   | { kind: 'gear'; path: string; hub: string; ring: readonly string[]; spokes: number }
-  | { kind: 'round'; path: string; ids: readonly string[]; pad: number /* in the shape's own units */ };
+  | { kind: 'round'; path: string; ids: readonly string[]; pad: number /* in the shape's own units */ }
+  // (the Veteran's: a globe of glass through the talents round its rim, and over it, round the talent `fire`, its flames)
+  | { kind: 'globe'; path: string; ids: readonly string[]; fire?: string };
 
 export interface TalentTree {
   cls: ClassId;
@@ -446,7 +449,69 @@ const BRAWLER_TREE: TalentTree = {
   ],
 };
 
-export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE, warlock: WARLOCK_TREE, tinkerer: TINKERER_TREE, brawler: BRAWLER_TREE };
+// ---- the Veteran: three globes (game/veteran.ts VETERAN; his 3 Nov 2026, 09:18: “And redo the skill tree to better match his
+//   new style”) ----------------------------------------------------------------------------------------------------------
+//   His three globes over his head, as they are over him in a fight: PUNCH (the friend's cyan, a tap), JUMP (white, a swipe)
+//   and KICK (hot orange, a hold), side by side. Each globe is four talents round its rim, begun at its bottom, up either
+//   side to its top; over the punch and the kick globes, their fire (a swipe then a tap, the flying uppercut; a swipe then a
+//   hold, the flying knee and the spinning jump kick); over the jump globe, the lock that joins all three, reached from any
+//   globe's top. Nothing of the old Brawler's. A draft, shown to him first: none of it works yet.
+const VET_PUNCH = '#22d0e0';
+const VET_KICK = '#e8561a';
+const VET_JUMP = '#e8eef8';
+
+const VETERAN_TREE: TalentTree = {
+  cls: 'brawler',
+  shape: 'three globes',
+  square: true,
+  draft: true,
+  room: [-1.35, -1.05, 7.95, 3.45],
+  paths: [
+    { id: 'punch', name: 'PUNCH', color: VET_PUNCH, label: { node: 'vstiffjab', side: 'below' } },
+    { id: 'jump', name: 'JUMP', color: VET_JUMP, label: { node: 'vlightfeet', side: 'below' } },
+    { id: 'kick', name: 'KICK', color: VET_KICK, label: { node: 'vswitchkick', side: 'below' } },
+  ],
+  talents: [
+    // THE PUNCH GLOBE (his taps: the jab, the cross, the hook, the spinning elbow), and over it its fire, the flying uppercut
+    { id: 'vstiffjab', name: 'Stiff Jab', big: false, path: 'punch', at: [0, 3], from: [], text: 'His jab breaks off whatever an enemy is winding up: it has to start again.' },
+    // (his elemental upgrades, picked in the art chat, “Both (Recommended)”: a few in his tree, his examples a viper jab and a
+    // thunder knee; swapped in at his “Swap two in (Recommended)”, 3 Nov, by 09:53: Viper Jab for One-Two, Thunder Knee for Lights Out)
+    { id: 'vviperjab', name: 'Viper Jab', big: false, path: 'punch', at: [-1, 2], from: ['vstiffjab'], word: 'poison', text: 'His jab poisons whatever it hits.' },
+    { id: 'vguardup', name: 'Guard Up', big: false, path: 'punch', at: [1, 2], from: ['vstiffjab'], text: 'Between blows he keeps his fists up: a blow from in front of him does half harm.' },
+    { id: 'vknockdown', name: 'Knockdown', big: true, path: 'punch', at: [0, 1], from: ['vviperjab', 'vguardup'], text: 'The third punch of a combo knocks everything it hits off its feet: down for two seconds.' },
+    { id: 'vlauncher', name: 'Launcher', big: true, path: 'punch', at: [0, -0.3], from: ['vknockdown'], text: 'His flying uppercut throws up everything in its cone; while they hang in the air, his blows on them land twice as hard.' },
+    // THE JUMP GLOBE (his swipe: the dodge jump, and the jump spent on every fire globe)
+    { id: 'vlightfeet', name: 'Light on His Feet', big: false, path: 'jump', at: [3.3, 3], from: [], text: 'His jump comes back a third sooner: two fire globes in a combo, more often.' },
+    { id: 'vfirestarter', name: 'Fire Starter', big: false, path: 'jump', at: [2.3, 2], from: ['vlightfeet'], text: 'Landing from a dodge jump, his next tap or hold is already in fire, the uppercut or the spinning jump kick, without spending the jump.' },
+    { id: 'vstoke', name: 'Stoke', big: false, path: 'jump', at: [4.3, 2], from: ['vlightfeet'], text: 'Each fire move that lands takes two seconds off his jump’s wait.' },
+    { id: 'vhangtime', name: 'Hang Time', big: true, path: 'jump', at: [3.3, 1], from: ['vfirestarter', 'vstoke'], text: 'In the air nothing touches him: through every jump and every fire move, from take-off to landing.' },
+    // (the lock that joins the three globes, from any globe's top)
+    { id: 'vfullset', name: 'The Full Set', big: true, path: 'jump', at: [3.3, -0.3], from: ['vknockdown', 'vhangtime', 'vaftershock'], text: 'A combo that locks with a punch, a kick and a fire globe in it ends in a finisher: its last blow lands three times as hard and throws them across the floor.' },
+    // THE KICK GLOBE (his holds: the round kick, the push kick), and over it its fire, the flying knee and the spinning jump kick
+    { id: 'vswitchkick', name: 'Switch Kick', big: false, path: 'kick', at: [6.6, 3], from: [], text: 'A hold straight after a tap is a switch kick: his round kick with half its wind-up.' },
+    { id: 'vlonglegs', name: 'Long Legs', big: false, path: 'kick', at: [5.6, 2], from: ['vswitchkick'], text: 'His kicks reach a tile further: 3½ tiles; the push kick and the spinning jump kick 4½.' },
+    { id: 'vwallslam', name: 'Wall Slam', big: false, path: 'kick', at: [7.6, 2], from: ['vswitchkick'], text: 'An enemy his kick drives into a wall, or into another enemy, is stunned for two seconds.' },
+    { id: 'vaftershock', name: 'Aftershock', big: true, path: 'kick', at: [6.6, 1], from: ['vlonglegs', 'vwallslam'], text: 'Every kick that lands sends a ring of force through the floor round the one he kicked: everything within a tile and a half of it falls.' },
+    { id: 'vthunderknee', name: 'Thunder Knee', big: true, path: 'kick', at: [6.6, -0.3], from: ['vaftershock'], word: 'lightning', text: 'His flying knee and spinning jump kick crack with lightning: it jumps on to three more enemies near each one they hit, and stuns them.' },
+  ],
+  figures: [
+    { kind: 'globe', path: 'punch', ids: ['vstiffjab', 'vviperjab', 'vknockdown', 'vguardup'], fire: 'vlauncher' },
+    { kind: 'globe', path: 'jump', ids: ['vlightfeet', 'vfirestarter', 'vhangtime', 'vstoke'] },
+    { kind: 'globe', path: 'kick', ids: ['vswitchkick', 'vlonglegs', 'vaftershock', 'vwallslam'], fire: 'vthunderknee' },
+  ],
+};
+
+export const TREES: Record<ClassId, TalentTree> = {
+  warrior: WARRIOR,
+  ranger: RANGER,
+  mage: MAGE,
+  warlock: WARLOCK_TREE,
+  tinkerer: TINKERER_TREE,
+  // (the Brawler made again as the Veteran: his tree, while VETERAN is on)
+  get brawler(): TalentTree {
+    return VETERAN.on ? VETERAN_TREE : BRAWLER_TREE;
+  },
+};
 
 /** What the talents do, in numbers: starting numbers, as their words on the cards say them (his to change). */
 export const TALENT_TUNE = {

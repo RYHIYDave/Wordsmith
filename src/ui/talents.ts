@@ -65,6 +65,11 @@ const IMPACT: readonly string[] = ['X..X..X', '.X.X.X.', '..XoX..', '.X.X.X.', '
 const KNUCKLE: readonly string[] = ['..X....', '.XX....', 'XXXXXXo', '.XX...X', '..X..X.'];
 // (the Ranger's companions, 28 Oct 2026: a paw)
 const PAW: readonly string[] = ['..X.X..', 'X.....X', '..XXX..', '.XXoXX.', '..XXX..'];
+// (the Veteran's globes, 3 Nov 2026: a fist, a kick, a leap; and the fire over the punch and the kick globes)
+const FIST: readonly string[] = ['.XXXXX.', 'XoXoXoX', 'XXXXXXX', 'XXXXXX.', '.XXXX..'];
+const KICK: readonly string[] = ['X......', '.X.....', '..X....', '..XXXXo', '..XXXX.'];
+const LEAP: readonly string[] = ['...X...', '..XoX..', '.X.X.X.', '...X...', 'X.X.X.X'];
+const FLAME: readonly string[] = ['...X...', '..XX.X.', '.XXoXX.', '.XoooX.', '..XXX..'];
 /** A rune and its two colours. */
 interface Rune {
   rows: readonly string[];
@@ -97,6 +102,9 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   speed: (c) => ({ rows: QUICK, color: c, glow: P.white }),
   power: (c) => ({ rows: IMPACT, color: c, glow: P.white }),
   counter: (c) => ({ rows: KNUCKLE, color: c, glow: P.white }),
+  punch: (c) => ({ rows: FIST, color: c, glow: P.white }),
+  kick: (c) => ({ rows: KICK, color: c, glow: P.white }),
+  jump: (c) => ({ rows: LEAP, color: c, glow: P.white }),
 };
 /** The rune a talent's stone carries: its word's, if it works with one; else its path's. */
 function runeOf(tree: TalentTree, t: TalentDef): Rune {
@@ -106,6 +114,8 @@ function runeOf(tree: TalentTree, t: TalentDef): Rune {
   const color = path ? path.color : THEME.text;
   // (the Ranger's companions carry a paw)
   if (t.id === 'huntcompanion' || t.id === 'wildcompanion') return { rows: PAW, color, glow: P.white };
+  // (the Veteran's fire: the globes over his punch and his kick set in fire)
+  if (tree.figures?.some((f) => f.kind === 'globe' && f.fire === t.id)) return { rows: FLAME, color, glow: P.white };
   return (PATH_RUNE[t.path] ?? ((c: string) => ({ rows: ARROW, color: c, glow: P.white })))(color);
 }
 function drawRune(g: CanvasRenderingContext2D, rune: Rune, cx: number, cy: number, alpha: number): void {
@@ -261,6 +271,58 @@ function drawGear(g: CanvasRenderingContext2D, hub: TalentAt, ring: readonly Tal
 }
 
 /** A ROUNDED BLOCK round the talents `ns`, `pad` pixels out from their middles (the fist's fingers, its back, its thumb). */
+/**
+ * THE VETERAN'S GLOBE: a ball of glass through the talents round its rim (their middle its middle), faintly filled with its
+ * colour, its rim drawn round, a glint on its upper left; and with `fire`, round that talent over it, three tongues of flame
+ * licking up in its colour, as a globe in fire is over him in a fight.
+ */
+function drawGlobe(g: CanvasRenderingContext2D, ns: readonly TalentAt[], fire: TalentAt | null, color: string): void {
+  const cx = ns.reduce((s, n) => s + n.cx, 0) / ns.length;
+  const cy = ns.reduce((s, n) => s + n.cy, 0) / ns.length;
+  const rad = ns.reduce((s, n) => s + Math.hypot(n.cx - cx, n.cy - cy), 0) / ns.length;
+  g.globalAlpha = 0.08;
+  g.fillStyle = color;
+  g.beginPath();
+  g.arc(cx, cy, rad, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+  const seg = (r: number, a0: number, a1: number, alpha: number, steps: number): void => {
+    for (let i = 0; i < steps; i++) {
+      const a = a0 + ((a1 - a0) * i) / steps;
+      const b = a0 + ((a1 - a0) * (i + 1)) / steps;
+      line(g, cx + Math.cos(a) * r, cy + Math.sin(a) * r, cx + Math.cos(b) * r, cy + Math.sin(b) * r, color, alpha);
+    }
+  };
+  // (its rim, and a fainter one just inside: glass has a thickness)
+  seg(rad, 0, Math.PI * 2, 0.4, 48);
+  seg(rad - 2, 0, Math.PI * 2, 0.15, 48);
+  // (the glint)
+  seg(rad * 0.72, Math.PI * 1.08, Math.PI * 1.38, 0.5, 6);
+  seg(rad * 0.6, Math.PI * 1.12, Math.PI * 1.26, 0.35, 3);
+  if (!fire) return;
+  // (its fire: three tongues round the talent over it, the middle one tallest, each a little flame shape, fading to its tip)
+  const fx = fire.cx;
+  const crown = ns.reduce((a, n) => (n.cy < a.cy ? n : a), ns[0]);
+  const base = crown.r.y - 2;
+  const top = fire.r.y - 9;
+  for (const [dx, k] of [[-0.62, 0.62], [0, 1], [0.62, 0.7]] as const) {
+    const x0 = fx + dx * rad * 0.55;
+    const y1 = base - (base - top) * k;
+    const w = rad * 0.2;
+    g.globalAlpha = 0.14;
+    g.fillStyle = color;
+    g.beginPath();
+    g.moveTo(x0 - w, base);
+    g.quadraticCurveTo(x0 - w * 1.1, (base + y1) / 2, x0 + dx * w * 0.6, y1);
+    g.quadraticCurveTo(x0 + w * 1.1, (base + y1) / 2, x0 + w, base);
+    g.closePath();
+    g.fill();
+    g.globalAlpha = 1;
+    line(g, x0 - w, base, x0 + dx * w * 0.6, y1, color, 0.35);
+    line(g, x0 + w, base, x0 + dx * w * 0.6, y1, color, 0.35);
+  }
+}
+
 function drawRound(g: CanvasRenderingContext2D, ns: readonly TalentAt[], pad: number, color: string): void {
   const x0 = Math.min(...ns.map((n) => n.cx)) - pad;
   const x1 = Math.max(...ns.map((n) => n.cx)) + pad;
@@ -470,7 +532,7 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   const isTaken = (id: string): boolean => taken.includes(id);
   // the faint pictures behind the tree, so that its shape reads (the arrow's feathers and head, the swords); the new classes'
   // (a claw's talons, a gear, a fist) kept to the page
-  const keep = (tree.figures ?? []).some((f) => f.kind === 'talon' || f.kind === 'gear' || f.kind === 'round');
+  const keep = (tree.figures ?? []).some((f) => f.kind === 'talon' || f.kind === 'gear' || f.kind === 'round' || f.kind === 'globe');
   g.save();
   if (keep) {
     g.beginPath();
@@ -499,6 +561,9 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
     } else if (f.kind === 'round') {
       const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
       if (ns.length) drawRound(g, ns, f.pad * lay.unit, color);
+    } else if (f.kind === 'globe') {
+      const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
+      if (ns.length >= 3) drawGlobe(g, ns, f.fire ? at.get(f.fire) ?? null : null, color);
     } else {
       const P0 = at.get(f.pommel);
       const G = at.get(f.guard);

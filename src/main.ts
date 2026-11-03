@@ -21,6 +21,7 @@ import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
 import { TALENTS, TALENTS2 } from './game/talents';
+import { VETERAN } from './game/veteran';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
@@ -2328,6 +2329,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     talents: TALENTS,
     /** THE TREES REMADE (game/talents.ts TALENTS2), on with his yes of 17 Oct: `talents2.on`. */
     talents2: TALENTS2,
+    /** THE VETERAN (game/veteran.ts), the Brawler made again, off until his yes: `veteran.on` (his tree, and his moves as they are built). */
+    veteran: VETERAN,
     /** A GAME CONTROLLER's switch (engine/gamepad.ts), on since Version 20.1; and the pad as read (its pointer). */
     gamepad: GAMEPAD,
     pad: () => ({ connected: pad.connected, live: pad.live(), pointer: padPointer, px: pad.px, py: pad.py }),
