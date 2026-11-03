@@ -500,3 +500,80 @@ Checks (`tests/veteran.test.ts`, all passing): the globes green a punch, hot ora
 or cyan, in the states shown him and in every frame of the film; the force, smear and burst of a punch green and of a kick
 hot orange, never pink, gold or cyan; the green itself an emerald (hue 135 to 155), at least 20 degrees of hue from the
 poison's greens, the Contagion meld's, the friend's cyan and the kick's orange, and bright enough to read.
+
+### His knees inside his trousers (3 Nov 2026)
+
+His words, 3 Nov 2026, 18:07: “Well first off the brawlers knees are clipping through his pants which is against the
+rules which I reminded you to follow multiple times”.
+
+His art rules: nothing passes through the body, and cloth follows the body it covers. His reminders on this figure, 2 Nov
+2026, 22:43: “Make sure his limbs all face the correct way, don’t make mistakes”; 22:44: “It can be over the top, I just
+don’t want his foot facing backwards or something”.
+
+THE CAUSE (`src/dev/sculpt_veteran.ts`, the trousers): each trouser leg was ONE STRAIGHT ROD of cloth, from the hip to past
+the knee. Standing nearly straight it held his leg; but the moment a knee bent, the knee and the bulk of the thigh above it
+left that straight line and stuck out of the cloth: his bare knee and thigh showed through his trousers in nearly every
+frame of every move (the new check below found his skin through them in 2176 of the 2184 pictures of 1937bce: his key
+poses and every frame of every move, each from in front, from behind and from the side; up to 269 pixels in one), worst
+where a knee comes up or he sinks low: the round kick's and the push kick's knees coming up, the jump's crouch, the
+spinning elbow's coil, the flying knee's and the uppercut's landings, the spinning jump kick's tucked legs.
+
+THE FIX: each trouser leg is now BUILT OVER HIS LEG, a cloth's thickness and some slack outside the leg's own shapes, at
+every bend:
+
+- THE THIGH: from the hip (and the seat over it) to the knee, laid over his thigh and over its great front muscle (the
+  same shapes as his leg, a length bigger all round), ending at the knee.
+- THE KNEE: a bag of cloth round the knee joint, a little bigger than the knee with the cloth's thickness, so however far
+  the knee bends (to the round kick's chamber, the flying knee, his deepest crouch) it stays inside.
+- THE SHIN: from the knee down to the ragged hem (0.14 of the way from the knee to the ankle, as before), over the shin and
+  the top of the calf, cut off flat there; the tatters hang from the hem as before.
+- FOLDS in the crook behind a bent knee: dark lines fanning round it, a lit edge beside each (only when the knee bends);
+  the long twisting folds down the leg and the frayed dark hem as before.
+
+THE OTHER PLACES CLOTH OR GEAR COVERS HIM, each checked the same way (every frame of every move and the stand, from in
+front, from behind and from the side), and fixed where the body showed through:
+
+- The bracers: the swell of his forearm's muscle near the elbow (and here and there the forearm itself) showed through
+  the leather (in 1989 of the 2184 pictures of 1937bce, up to 11 pixels). The bracer is now laced on over that swell too,
+  and a little thicker (from 2.85 to 3.05 at the elbow end, 2.2 to 2.4 at the wrist end).
+- The knuckle straps: the ends of his curled fingers and the corners of the block of his hand showed past the strap (in
+  938, up to 4 pixels). The strap now winds round the fingers' ends and the block of the hand.
+- The wrist straps: the corners of the block of his hand showed through the strap round the wrist (in 1351, up to 7
+  pixels). The strap now takes the hand's shape where the hand begins.
+- The shin wrap: the swell of his calf showed through it (in 622, up to 3 pixels). The wrap now winds on over the calf,
+  its stripes running round both.
+- The foot wraps: the top of his instep showed through (in 54, up to 2 pixels). The wrap now winds up over the instep,
+  and is a little wider and taller.
+- The belt and the seat: one pixel of his side showed below the belt in 9 pictures (the push kick and the spinning elbow,
+  from the side); with the new trousers, none.
+- The vest (chest and back, however he twists), the ankle wraps and the headband: nothing of him through them, before or
+  now.
+
+THE NEW CHECK (`coverFindings` in `tests/veteran_checks.ts`): in each picture of him, every pixel of his skin (and of his
+grey crop, under the headband) is put back where it is on him (the point of him the eye sees there), and asked which part
+of him it is and whether something he wears covers that part there. Where a garment covers him, not one pixel of him may
+show, through the cloth or past its outline: the trousers over the whole thigh, the knee and the shin down to the hem
+(only below the hem, through the tatters' gaps, may the shin show); the belt and the seat over his trunk below the vest's
+hem; the vest over his trunk all round but its open V down his front; the shin wrap, the ankle and foot wraps; the
+bracers; the knuckle and wrist straps (the thumb lies over them); the headband between its two slanting lines. Each
+zone's edges are where the garment is cut (the numbers are the design's, `COVERS`), kept 0.45 inside them.
+
+In `tests/veteran.test.ts`: every key pose from in front, from behind and from the side; every frame of every move and
+the stand from in front and from behind (with the figure's other checks) and, in a test of its own for each move, from
+the side; and a test that the check sees a bare knee (his trousers taken off his thigh and knee in the round kick's
+chamber, it finds his skin there). RUN AGAINST 1937bce (the version he saw), all 34 of these tests fail; now all 89 tests
+of `tests/veteran.test.ts` pass, his joint rule among them, every one as before.
+
+Pictures: `pictures/brawler_knees.png` (new, 1200 wide): before and now, three times the game's size, from the game's view,
+at the frame in each of eight moves where the most of his skin showed through his trousers in 1937bce (found by the check):
+standing (frame 44 of the stand), the jump sunk deep (frame 10), the round kick's knee hauled up (frame 7), the push
+kick's knee coming up (frame 5), the flying knee landed low (frame 43), the spinning jump kick in the air, legs tucked
+(frame 29), the spinning elbow's coil (frame 17), the flying uppercut landed low (frame 36); before, 177 to 269 pixels
+of his skin through the cloth in each; now none. Made by `tools/veteran_knees.ts` (run once in 1937bce's files, which
+finds the frames, and once in these) and `tools/veteran_knees.py`. Made again with the new trousers: `pictures/veteran.png`,
+`pictures/veteran_moves.mp4`, `pictures/veteran_moves_sheet.png` and `pictures/veteran_reach.png` (its BEFORE made again
+from 66660fc, as before, with the punch's green and now these trousers, so before and now still differ only in reach).
+
+FOR THE MAIN CHAT: his frames baked into the game (`game/veteran_baked.ts`, `tools/bake_veteran.ts` on `work-f4`) are
+from 1937bce and have his knees through his trousers: bake them again from this branch. Only what he wears changed (as
+above); his moves, timings, reach, globes and colours are as they were.

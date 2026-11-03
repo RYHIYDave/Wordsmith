@@ -18,7 +18,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { primDist } from '../src/dev/sculpt';
+import { draw, primDist } from '../src/dev/sculpt';
 import { VET_ALL, VET_BUILD, VET_FIST, VET_MOVES, VET_STANCE, VET_STANCE_UP, paintVeteran, sculptVeteran } from '../src/dev/sculpt_veteran';
 import { GLOBE_GREEN, GLOBE_ORANGE, GLOBE_STATES, paintGlobes } from '../src/dev/veteran_globes';
 import { P } from '../src/art/palette';
@@ -70,11 +70,11 @@ test('built fresh: nothing of the original Brawler is in the Veteran or his glob
   assert.deepEqual(direct, [], 'the sheet imports a Brawler file');
 });
 
-test('every pose, from in front, from behind and from the side: crisp, edged in the friend’s cyan, no pink, nothing cut off, in no floor, arms clear of his trunk', () => {
+test('every pose, from in front, from behind and from the side: crisp, edged in the friend’s cyan, no pink, nothing cut off, in no floor, arms clear of his trunk, nothing of him through what he wears', () => {
   for (const p of VET_ALL) {
     for (const turn of [0, 90, 45]) {
       const d = paintVeteran(p, turn);
-      const found = [...pictureFindings(d.px), ...bodyFindings(d.fig.sc, true).filter((x) => !(p.air && x.startsWith('standing on nothing')))];
+      const found = [...pictureFindings(d.px), ...bodyFindings(d.fig.sc, true).filter((x) => !(p.air && x.startsWith('standing on nothing'))), ...coverFindings(d, turn, VET_CANVAS.ax, VET_CANVAS.ay)];
       assert.deepEqual(found, [], `${p.id} turned ${turn}`);
     }
   }
@@ -209,7 +209,7 @@ import { Px } from '../src/engine/px';
 import { crescent, impact, shockCone, smear } from '../src/dev/veteran_fx';
 import { FX_KICK, FX_PUNCH } from '../src/dev/veteran_fx';
 import { blowsOf, globesAt, playLong } from '../src/dev/veteran_scene';
-import { cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
+import { coverFindings, cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
 import { VET_FILM } from '../src/dev/veteran_plays';
 
 const MOVES_ALL: VetMotion[] = [...VET_MOTIONS, closeKickOf(1.25 * VET_TILE, 'spinkickC')];
@@ -245,13 +245,14 @@ function jolts(m: VetMotion): number[] {
 }
 
 for (const m of MOVES_ALL) {
-  test(`${m.name} (${m.id}): every frame, from in front and from behind: crisp, the friend’s edge, no pink, nothing cut off, nothing in the floor, his body clean, no solid flattened`, () => {
+  test(`${m.name} (${m.id}): every frame, from in front and from behind: crisp, the friend’s edge, no pink, nothing cut off, nothing in the floor, his body clean, no solid flattened, nothing of him through what he wears`, () => {
     const found: string[] = [];
     for (const f of framesOf(m)) {
       const p = vetAt(m, f);
       for (const view of [0, 90]) {
         const d = paintVeteran(p, view + placeOf(m, f).turn);
         for (const x of pictureFindings(d.px)) found.push(`f${f} ${view}: ${x}`);
+        for (const x of coverFindings(d, view + placeOf(m, f).turn, VET_CANVAS.ax, VET_CANVAS.ay)) found.push(`f${f} ${view}: ${x}`);
         for (const x of bodyFindings(d.fig.sc, true)) if (!(p.air && x.startsWith('standing on nothing'))) found.push(`f${f} ${view}: ${x}`);
         if (view === 0) for (const x of flattened(d.fig.sc as never)) found.push(`f${f}: ${x}`);
       }
@@ -321,6 +322,36 @@ for (const m of MOVES_ALL) {
     assert.deepEqual([...new Set(found)], []);
   });
 }
+
+// HIS WORD, 3 Nov 2026, 18:07: “Well first off the brawlers knees are clipping through his pants which is against the rules
+// which I reminded you to follow multiple times”. Every frame of every move, from in front and from behind (above, with the
+// figure's checks) AND FROM THE SIDE (here): wherever the trousers cover his legs (from the hip down to the ragged hem), the
+// belt and the seat his waist, the vest his trunk, the wraps his shin, ankles and feet, the bracers his forearms, the straps
+// his hands and the headband his head, not one pixel of him shows through or past them (tests/veteran_checks.ts).
+for (const m of MOVES_ALL) {
+  test(`${m.name} (${m.id}): every frame, from the side: nothing of him through what he wears (his knees never through his trousers)`, () => {
+    const found: string[] = [];
+    for (const f of framesOf(m)) {
+      const turn = 45 + placeOf(m, f).turn;
+      for (const x of coverFindings(paintVeteran(vetAt(m, f), turn), turn, VET_CANVAS.ax, VET_CANVAS.ay)) found.push(`f${f}: ${x}`);
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}
+
+test('the check sees a knee through the trousers: his trousers taken off his thigh and knee in the round kick’s chamber, it finds his skin there', () => {
+  const p = motionById('roundkick');
+  const pose = vetAt(p, p.strikes[0].from);
+  const d0 = paintVeteran(pose, 0);
+  assert.deepEqual(coverFindings(d0, 0, VET_CANVAS.ax, VET_CANVAS.ay), [], 'clean as he is');
+  // (the same figure, the cloth over his thighs and knees left off: what the check must catch)
+  const fig = sculptVeteran(pose, 0);
+  const keep = fig.sc.prims.filter((q) => !(q.piece.startsWith('leg') && ['leg', 'thighFold', 'kneeBag'].includes(q.tag ?? '')));
+  fig.sc.prims.length = 0;
+  fig.sc.prims.push(...keep);
+  const d1 = { ...draw(fig.sc, 'front', VET_CANVAS.ax, VET_CANVAS.ay, VET_CANVAS, undefined, '#22d0e0'), fig };
+  assert.ok(coverFindings(d1, 0, VET_CANVAS.ax, VET_CANVAS.ay).some((x) => x.includes('through the trousers')), 'a bare knee not seen');
+});
 
 test('every strike is one or two frames from its held wind-up to the blow, and SMEARED: a great band along its path, much bigger than the stills’ streak', () => {
   for (const m of MOVES_ALL) {
