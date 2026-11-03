@@ -497,8 +497,9 @@ test('OVERDRIVE: her whistle sends the Golem into overdrive for five seconds: it
     let ev = use(g, 1, 3, 0);
     if (taken) assert.equal(of(ev, 'overdrive').length, 1);
     wait(g, G.arrive + 0.05);
-    // (she is off ahead: it knuckles after her)
+    // (she is off ahead: it knuckles after her; its rocket jump held, his word of 2 Nov 2026, 21:29: its pace on its feet is measured)
     const gm = g.golem!;
+    gm.jumpCd = 99;
     g.hero.x += 6;
     const x0 = gm.x;
     wait(g, 0.5);
