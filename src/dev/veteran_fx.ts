@@ -3,17 +3,18 @@
 // His word on the stills, 2 Nov 2026: “Those action lines will probably need to be bigger.  Remember, I’d rather have to
 // pull back from a 10 then build up from a 1.” So, painted pixel by pixel (crisp: every pixel there or not), much bigger
 // than the stills' streak: GREAT SWEEPING SMEARS along every blow (a broad band along the path the fist, shin, knee or
-// elbow travels, white-hot at its head, cyan for a punch and hot orange for a kick, as his globes are, inked round),
+// elbow travels, white-hot at its head, green for a punch and hot orange for a kick, as his globes are, inked round),
 // AFTER-IMAGES of him along the strike, IMPACT BURSTS where a blow lands (a jagged star, a ring round it), SHOCKWAVE RINGS
 // along the floor on the heavy hits, DUST kicked off the floor on take-offs and landings, SPEED LINES behind a leap, the
-// STARS of a stunned foe. Never the enemy's pink or gold on his.
+// STARS of a stunned foe. Never the enemy's pink or gold on his. His punches green (his 3 Nov, 10:44: “the brawler is Str/dex,
+// so I think we change the color of the globe for a punch to green and the kicks stay orange/red”), his kicks hot orange.
 
 import { Px, rgba } from '../engine/px';
-import { CYAN, INK } from '../art/kit';
-import { GLOBE_ORANGE } from './veteran_globes';
+import { INK } from '../art/kit';
+import { GLOBE_GREEN, GLOBE_ORANGE } from './veteran_globes';
 
-/** The colours of a punch's lines (his tap, cyan) and a kick's (his hold, hot orange): ink, outer, edge, glow, core. */
-export const FX_PUNCH = [INK, CYAN[0], CYAN[2], CYAN[3], '#ffffff'] as const;
+/** The colours of a punch's lines (his tap, green) and a kick's (his hold, hot orange): ink, outer, edge, glow, core. */
+export const FX_PUNCH = [INK, GLOBE_GREEN[0], GLOBE_GREEN[2], GLOBE_GREEN[3], '#ffffff'] as const;
 export const FX_KICK = [INK, GLOBE_ORANGE[1], GLOBE_ORANGE[2], GLOBE_ORANGE[4], '#ffffff'] as const;
 const DUST = ['#2a2438', '#4a4460', '#6e6886', '#958fab', '#bcb6cc'];
 
@@ -284,7 +285,7 @@ export function coneBlast(px: Px, at: (r: number, a: number) => [number, number]
 
 // =============================================================================================
 // HIS REACH (his word, 3 Nov 2026: “I’d like all of his moves to have more reach”; his pick “Both”): THE FORCE PAST THE FIST
-// OR FOOT, a blast of air and light in the blow's colour (cyan a punch, hot orange a kick; never pink, never gold).
+// OR FOOT, a blast of air and light in the blow's colour (green a punch, hot orange a kick; never pink, never gold).
 
 type V3 = readonly [number, number, number] | readonly number[];
 /** The picture's point for a point of the scene (his measure, along the floor and up). */

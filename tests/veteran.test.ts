@@ -5,7 +5,9 @@
 // VETERAN); nothing of the original Brawler's art is in him (his files and everything they import); every pose is
 // crisp, edged in the friend's cyan, never the enemy's pink, nothing cut off, nothing in the floor, arms never through his
 // trunk; up on his toes; in the air when he leaps; the headband's two long tails stream, follow and never pass through
-// him; big fists; no eye patch, the blind eye milky; the globes cyan, hot orange and white, never pink or gold.
+// him; big fists; no eye patch, the blind eye milky; the globes green (a punch), hot orange (a kick) and white (the jump),
+// never pink or gold, never the friend's cyan: his words, 3 Nov 2026, 10:44, “I think we change the color of the globe for a
+// punch to green and the kicks stay orange/red”.
 //   run: tsx --test tests/veteran.test.ts
 
 // @ts-ignore
@@ -19,7 +21,8 @@ import nodePath from 'node:path';
 
 import { primDist } from '../src/dev/sculpt';
 import { VET_ALL, VET_BUILD, VET_FIST, VET_MOVES, VET_STANCE, VET_STANCE_UP, paintVeteran, sculptVeteran } from '../src/dev/sculpt_veteran';
-import { GLOBE_CYAN, GLOBE_STATES, paintGlobes } from '../src/dev/veteran_globes';
+import { GLOBE_GREEN, GLOBE_ORANGE, GLOBE_STATES, paintGlobes } from '../src/dev/veteran_globes';
+import { P } from '../src/art/palette';
 import { bodyFindings, pictureFindings } from './sculpt_checks';
 import { hsv } from './floor_checks';
 
@@ -162,9 +165,14 @@ test('the six key poses: the hook, the round kick, the jump, the flying uppercut
   assert.deepEqual(VET_MOVES.map((m) => !!m.strike.air), [false, false, true, true, true, true]);
 });
 
-test('the globes: crisp; cyan a punch, hot orange a kick, white the jump; never pink, never gold', () => {
-  assert.ok(GLOBE_CYAN[2] === '#22d0e0', 'the punch is the friend\u2019s cyan');
-  let sawCyan = false;
+/** A punch's green (an emerald), a kick's hot orange, and the friend's cyan (his rim, never a blow's), by hue. */
+const isGreen = (h: number, s: number, v: number): boolean => h >= 135 && h <= 155 && s > 0.5 && v > 0.35;
+const isOrange = (h: number, s: number, v: number): boolean => h >= 10 && h <= 32 && s > 0.5 && v > 0.5;
+const isCyan = (h: number, s: number, v: number): boolean => h >= 175 && h <= 195 && s > 0.5 && v > 0.35;
+
+test('the globes: crisp; green a punch, hot orange a kick, white the jump; never pink, never gold, never cyan', () => {
+  assert.ok(GLOBE_GREEN[2] === '#18c060', 'the punch is his green');
+  let sawGreen = false;
   let sawOrange = false;
   for (const st of GLOBE_STATES) {
     const px = paintGlobes(st.row);
@@ -175,11 +183,26 @@ test('the globes: crisp; cyan a punch, hot orange a kick, white the jump; never 
       const [h, s, v] = hsv(px.d[i], px.d[i + 1], px.d[i + 2]);
       assert.ok(!(h >= 290 && h <= 352 && s > 0.4 && v > 0.4), `${st.title}: pink`);
       assert.ok(!(h >= 38 && h <= 64 && s > 0.45 && v > 0.55), `${st.title}: gold`);
-      if (h >= 175 && h <= 195 && s > 0.5) sawCyan = true;
-      if (h >= 10 && h <= 32 && s > 0.5 && v > 0.5) sawOrange = true;
+      assert.ok(!isCyan(h, s, v), `${st.title}: the friend's cyan in a globe`);
+      if (isGreen(h, s, v)) sawGreen = true;
+      if (isOrange(h, s, v)) sawOrange = true;
     }
   }
-  assert.ok(sawCyan && sawOrange, 'cyan and hot orange both shown');
+  assert.ok(sawGreen && sawOrange, 'green and hot orange both shown');
+});
+
+test('the punch’s green: an emerald, strong and clear, kept off the poison’s green, the friend’s cyan and the kick’s orange', () => {
+  const hue = (c: string): [number, number, number] => hsv(parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16));
+  const off = (a: number, b: number): number => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+  // (the game's poison, the venom ramp; the Contagion meld's electric green, render/melds3.ts; the friend's cyan; the kick)
+  const others: [string, string][] = [['poison', P.vn4], ['poison', P.vn3], ['poison', P.vn5], ['Contagion', '#62ff5a'], ['Contagion', '#22a02c'], ['cyan', '#22d0e0'], ['the kick', GLOBE_ORANGE[2]]];
+  for (const c of GLOBE_GREEN.slice(1, 4)) {
+    const [h, s, v] = hue(c);
+    assert.ok(isGreen(h, s, v), `${c}: hue ${h.toFixed(0)}, not the emerald`);
+    for (const [name, o] of others) assert.ok(off(h, hue(o)[0]) >= 20, `${c} too near ${name} (${o}): ${off(h, hue(o)[0]).toFixed(0)} degrees`);
+  }
+  // (strong and clear: the body and its light bright enough to read on the dark floors)
+  assert.ok(hue(GLOBE_GREEN[2])[2] >= 0.7 && hue(GLOBE_GREEN[3])[2] >= 0.9, 'bright enough');
 });
 
 // =============================================================================================
@@ -200,7 +223,7 @@ import type { VetMotion } from '../src/dev/veteran_moves';
 import { project } from '../src/art/skeleton';
 import type { Skeleton, V3 } from '../src/art/skeleton';
 import { Px } from '../src/engine/px';
-import { crescent, shockCone, smear } from '../src/dev/veteran_fx';
+import { crescent, impact, shockCone, smear } from '../src/dev/veteran_fx';
 import { FX_KICK, FX_PUNCH } from '../src/dev/veteran_fx';
 import { blowsOf, globesAt, playLong } from '../src/dev/veteran_scene';
 import { cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
@@ -352,7 +375,7 @@ test('the Veteran held off the floor only where he leaps; a held wind-up before 
   }
 });
 
-test('the globes over him as each combo is put in: crisp, cyan, hot orange and white, never pink, never gold, in every frame of the film', () => {
+test('the globes over him as each combo is put in: crisp, green, hot orange and white, never pink, never gold, never cyan, in every frame of the film', () => {
   for (const part of VET_FILM) {
     if (!part.play.globes) continue;
     for (let G = 0; G < part.long; G++) {
@@ -366,6 +389,7 @@ test('the globes over him as each combo is put in: crisp, cyan, hot orange and w
         const [h, s, v] = hsv(px.d[i], px.d[i + 1], px.d[i + 2]);
         assert.ok(!(h >= 290 && h <= 352 && s > 0.4 && v > 0.4), `${part.title} ${G}: pink`);
         assert.ok(!(h >= 38 && h <= 64 && s > 0.45 && v > 0.55), `${part.title} ${G}: gold`);
+        assert.ok(!isCyan(h, s, v), `${part.title} ${G}: cyan`);
       }
     }
   }
@@ -550,12 +574,14 @@ test('the spinning jump kick is not the Whirlwind: one crescent thrown off his l
   assert.ok([...per.values()].every((n) => n === 1) && per.size === 4, `each of the four hit once: ${JSON.stringify([...per])}`);
 });
 
-test('the force past the fist or foot: cyan for a punch, hot orange for a kick, crisp, never pink, never gold', () => {
-  for (const [cols, want] of [[FX_PUNCH, 'cyan'], [FX_KICK, 'orange']] as const) {
+test('the force past the fist or foot, its smear and its burst: green for a punch, hot orange for a kick, crisp, never pink, never gold, never cyan', () => {
+  for (const [cols, want] of [[FX_PUNCH, 'green'], [FX_KICK, 'orange']] as const) {
     const px = new Px(220, 160);
     const to = (q: readonly number[]): [number, number] => [40 + 0.82 * (q[0] + q[1]), 110 + 0.41 * (q[0] - q[1]) - q[2]];
     shockCone(px, to, [0, 0, 40], 0.2, 0, 0.3, 60, 2, 3, cols, 5);
     crescent(px, to, [0, 0, 30], -0.6, 0.6, 70, 14, cols, 0, 9, undefined, 20);
+    smear(px, [[20, 30], [60, 20], [110, 24]], 13, cols);
+    impact(px, 170, 40, 0, cols, true, 3);
     let saw = false;
     for (let i = 0; i < px.d.length; i += 4) {
       const a = px.d[i + 3];
@@ -564,8 +590,9 @@ test('the force past the fist or foot: cyan for a punch, hot orange for a kick, 
       const [h, sat, v] = hsv(px.d[i], px.d[i + 1], px.d[i + 2]);
       assert.ok(!(h >= 290 && h <= 352 && sat > 0.4 && v > 0.4), `${want}: pink`);
       assert.ok(!(h >= 38 && h <= 64 && sat > 0.45 && v > 0.55), `${want}: gold`);
-      if (want === 'cyan' && h >= 175 && h <= 195 && sat > 0.5) saw = true;
-      if (want === 'orange' && h >= 10 && h <= 32 && sat > 0.5 && v > 0.5) saw = true;
+      assert.ok(!isCyan(h, sat, v), `${want}: the friend's cyan`);
+      if (want === 'green' && isGreen(h, sat, v)) saw = true;
+      if (want === 'orange' && isOrange(h, sat, v)) saw = true;
     }
     assert.ok(saw, `${want} shown`);
   }

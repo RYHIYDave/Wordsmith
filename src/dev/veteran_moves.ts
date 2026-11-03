@@ -50,7 +50,7 @@ export interface Strike {
   from: number;
   at: number;
   joint: Joint;
-  /** A punch's lines are cyan, a kick's hot orange (as his globes: tap cyan, hold orange). */
+  /** A punch's lines are green, a kick's hot orange (as his globes: tap green, hold orange). */
   kind: 'punch' | 'kick';
   heavy: boolean;
   /** Which foes it lands on, and when (each its own frame: the hook catches two side by side, the spinning kick all round). */

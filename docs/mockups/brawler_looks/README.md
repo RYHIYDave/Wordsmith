@@ -120,7 +120,8 @@ Made by `src/dev/sculpt_brawler_looks.ts` (`BETTER_FIGHTERS`; each look's `kick`
   have time to react and input to the situation.  As your attack speed goes up, hopefully you’ve learned the character
   and will be able to input the combos faster”
 - Told that pink and gold glows are the enemy's by his rulebook, his pick: “Keep the rule (Recommended)”, offered as: cyan
-  punch, hot orange kick, white jump; the fires cyan and orange.
+  punch, hot orange kick, white jump; the fires cyan and orange. (The punch since made GREEN, his words of 3 Nov: see “His
+  punches green” at the end.)
 - 22:06: “I gotta say it, follow all the rules.  I want him to look and play like an action movie hero.  Muscly, Bouncing
   on his toes”
 - 22:09: “Here’s a gif of a jab cross uppercut hook.  Hook for regular punch, uppercut for jump punch.  Obviously we want
@@ -195,10 +196,11 @@ heroes' bones (`src/art/skeleton.ts`) and the colours' kit. His own:
 ### The combo globes (`src/dev/veteran_globes.ts`)
 
 Three glass globes over his head, painted pixel by pixel at the game's size (each 11 across, 3 apart, room for fire over
-them): EMPTY (dark glass, a pale rim, a glint); CYAN a punch (a tap; the friend's own cyan, `#22d0e0`); HOT ORANGE a kick
+them): EMPTY (dark glass, a pale rim, a glint); GREEN a punch (a tap; an emerald, `#18c060`, his 3 Nov: see “His punches
+green” at the end; it was the friend's cyan); HOT ORANGE a kick
 (a hold; a red-orange kept well off gold, `#e8561a`); WHITE the jump (a swipe on its own). Each fills from the bottom with
 a bright top to it. Three in and the combo LOCKS: the rims go white and a white bar joins them. A swipe then a tap puts the
-globe in CYAN FIRE (the flying uppercut); a swipe then a hold in ORANGE FIRE (the jump kick; after two punches, the flying
+globe in GREEN FIRE (the flying uppercut); a swipe then a hold in ORANGE FIRE (the jump kick; after two punches, the flying
 knee): three tongues of flame licking up round it, dark at their tips, hottest at the globe, inked round. Never pink, never
 gold (a test).
 
@@ -212,7 +214,8 @@ gold (a test).
   the friend's cyan, no pink, nothing cut off, nothing in the floor, his arms clear of his trunk and his legs of each other;
   up on his toes at both moments of the bounce, the bounce more than 4 high; his leaps off the floor, his other poses on
   it; the tails two, each 18 long or more, never through him, their ends behind his face, moving with him from wind-up to
-  strike; big fists; no patch, the milky eye; the six moves; the globes crisp, cyan and hot orange, never pink or gold.
+  strike; big fists; no patch, the milky eye; the six moves; the globes crisp, green and hot orange, never pink or gold,
+  never cyan.
 - Not in the game: no switch, no moves in the game's moves, no animation. That comes after his yes.
 
 ### His moves (pictures first: a film and a sheet; nothing in the game, no switch yet)
@@ -230,7 +233,7 @@ you can read, the STRIKE IN ONE OR TWO FRAMES, a stop on the blow (its weight), 
 feet grip the floor (a foot down stays where its ball is; a pivot turns on the ball). His headband's tails are blown by how
 his head moves (whipping on a strike, trailing a leap, spiralling round a spin). And THE ACTION LINES ARE MUCH BIGGER than
 the stills' streak: a great sweeping smear along every blow (13 pixels wide at the game's size on the heavy blows, 9 on the
-jab, white-hot at its head; cyan for a punch, hot orange for a kick, as his globes are), after-images of him along the
+jab, white-hot at its head; green for a punch, hot orange for a kick, as his globes are), after-images of him along the
 strike, an impact burst where it lands (a jagged star, its spikes up to 26 pixels long on a heavy blow, a ring flung out round it), a
 shockwave ring along the floor under every heavy blow, the whole picture shaken on the heavy hits, dust thrown off the floor
 on every take-off and landing, speed lines behind every leap, stars round a stunned foe.
@@ -255,8 +258,8 @@ The moves, frame by frame (30 a second; the wind-up's last frame is held, the st
 | Struck | — | 16 (0.53 s) | | the blow lands at 2 | his head snapped round and back, his weight driven onto his back foot; shaken off by 16 |
 | His fall | — | 96 (3.2 s) | | the last blow at 2 | snapped round; two staggering steps back; down on one knee at 30, a fist on the floor; he pushes up and lifts that fist once more (58–66); it sinks, his head drops, the light goes out (66–92). He never lies down |
 
-His six combos, each in the film in a row with the globes filling over him (cyan a tap, hot orange a hold, white a swipe;
-locked when three are in; a swipe and then a tap or a hold sets that globe in cyan or orange fire):
+His six combos, each in the film in a row with the globes filling over him (green a tap, hot orange a hold, white a swipe;
+locked when three are in; a swipe and then a tap or a hold sets that globe in green or orange fire):
 
 1. tap, tap, tap: the jab, the cross, the hook. Steady damage; the hook catches two side by side.
 2. tap, tap, swipe and hold: the jab, the cross, the FLYING KNEE. The strongest single blow.
@@ -303,7 +306,7 @@ Choices made for the film that he may want to call:
 
 - The hook in the moves is thrown with his LEAD (left) fist, so that jab (lead), cross (rear), hook (lead) flows as one
   combo; the still of the hook showed the rear fist.
-- A punch's lines are cyan and a kick's hot orange, as his globes are (tap cyan, hold hot orange); the enemy's blow on him
+- A punch's lines are green and a kick's hot orange, as his globes are (tap green, hold hot orange); the enemy's blow on him
   bursts white and red. Never gold.
 - The foe stands a little to his left (about 15 degrees off straight ahead) so that, from in front, the foe does not hide
   him; from behind is the same scene turned a quarter, truly (no mirror).
@@ -386,7 +389,7 @@ So every blow reaches both ways:
   spinning elbow he slides in on the ball of his pivot foot as he turns; the leaps carry him further. His feet are held on
   the floor of the scene however far he is carried (a foot down never moves; a foot only slides where he drives, forward,
   with dust: a test).
-- FORCE FLIES PAST THE FIST OR FOOT, out along the blow's line: cyan for a punch, hot orange for a kick (never pink, never
+- FORCE FLIES PAST THE FIST OR FOOT, out along the blow's line: green for a punch, hot orange for a kick (never pink, never
   gold: a test). On the straight blows (jab, cross, uppercut, knee) a SHOCK CONE of air and light: rings of air, the
   front one inked and white at its heart, its body lit, streaks racing along its skin. On the round blows (hook, round
   kick, elbow) a CRESCENT of force flung out flat at the height of the blow, thick in its middle, its horns tapering,
@@ -449,7 +452,7 @@ or foot; the push kick's cone and the spinning kick's crescent 3.5; he steps in 
 punch and the elbow, a tile a kick, the leaps 1.5 to 2), at least 60% of it by the blow and none of it before the wind-up is
 let go; a foot slides only where he drives in, forward, with dust; the foes stand between 2 and 2.5 tiles out and are hit,
 and every blow of every part of the film lands on someone; the spinning jump kick one blow, each foe hit once, its crescent
-never more than 200 degrees long nor round again; the force cyan or hot orange, crisp, never pink or gold; a first hold
+never more than 200 degrees long nor round again; the force green or hot orange, crisp, never pink or gold; a first hold
 the round kick everywhere.
 
 Choices made that he or the main chat may want to call:
@@ -462,3 +465,38 @@ Choices made that he or the main chat may want to call:
   leap is shorter (1.25 tiles) so that he lands at them, not on them: in the game it could leap to the foe, up to 2 tiles.
 - The force of a blow drives a foe back for good (a punch three quarters of a tile, a kick a tile) so combos keep finding
   them; before, a foe came back in to where he stood.
+
+### His punches green (3 Nov 2026)
+
+His words, 3 Nov 2026, 10:44: “I think we want the demonic tome to be orange.  The warlock is Str/Int, which is kinda red and blue, cyan fire in the demonic hand, red/orange fire on the tome.  In that same vein, the brawler is Str/dex, so I think we change the color of the globe for a punch to green and the kicks stay orange/red.  I think that’s a good thematic change”. Asked whether to write stats-as-colours into his art rulebook for every class: “It can be case by case, but right now these changes would lock everyone into that theme for now”. So no rulebook change; just these (the tome's fire is on `art/items-look`).
+
+So EVERYTHING OF HIS THAT IS A PUNCH'S COLOUR IS GREEN: the punch globe (a tap) filling, the punch fire (swipe then tap: the
+flying uppercut's globe), and the punches' action lines, smears, after-images, impact stars, shock cones and crescents and
+the rings on the floor under them, on the jab, the cross, the hook, the spinning elbow and the flying uppercut. THE KICKS STAY
+HOT ORANGE-RED (the round kick, the push kick, the flying knee, the spinning jump kick, their globe and fire); the jump's
+globe stays white; his rim stays the friend's cyan, as the game draws every hero.
+
+THE GREEN (`GLOBE_GREEN` in `src/dev/veteran_globes.ts`; `FX_PUNCH` in `veteran_fx.ts` is made from it): an EMERALD, hue
+about 145, strong and clear: `#0c6a38` deep (the lines' outer band), `#12a050` (the liquid's shadow, the flame's edge),
+`#18c060` its body, `#76f4ae` its light (the lines' glow), `#d4ffe6` its top (the hottest of the fire), white-hot at the
+heart of a blow. Why this green:
+
+- Clear of the game's poison: the venom's green is a yellow-green (`vn4` `#b4cc24`, hue about 68, art/palette.ts) and the
+  Contagion meld's an electric lime (`#62ff5a`, hue about 117, render/melds3.ts); his is a blue-leaning emerald, at least
+  20 degrees of hue from all of them (a test).
+- Clear of the friend's cyan (hue 186), which stays his rim, and of the enemy's glows, pink and gold.
+- Clear of the floors: the mosses and greens on the floors are dull and dark; his is bright and saturated (its body at 75%
+  brightness, its light at 96%), so it reads on the dark floors at a phone's size (look at the sheets and the film).
+- The nearest colours in the game are friends' (the kit's `LEAF` in the ability icons and the Guarding word's jade): he
+  shares their side.
+
+Pictures made again: `pictures/veteran.png` (the globes: green a punch, green fire for the uppercut), `pictures/veteran_moves.mp4`
+(every punch green, every kick hot orange), `pictures/veteran_moves_sheet.png`, and `pictures/veteran_reach.png` (the hook's
+rows; its BEFORE made again from the version before his reach, 66660fc, with only the punch's colour changed to the green,
+so before and now differ only in reach; the push kick's NOW cone a little denser, as the code at a57b9d7 already draws it).
+`pictures/veteran_fixes.png` is left as it was, a record of the fixes (its spinning elbow still in the old cyan).
+
+Checks (`tests/veteran.test.ts`, all passing): the globes green a punch, hot orange a kick, white the jump, never pink, gold
+or cyan, in the states shown him and in every frame of the film; the force, smear and burst of a punch green and of a kick
+hot orange, never pink, gold or cyan; the green itself an emerald (hue 135 to 155), at least 20 degrees of hue from the
+poison's greens, the Contagion meld's, the friend's cyan and the kick's orange, and bright enough to read.

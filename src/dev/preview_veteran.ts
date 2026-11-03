@@ -280,7 +280,7 @@ const build = (): void => {
 
   // ---- C: THE COMBO GLOBES ----
   text('The combo globes: three globes over his head', 16, y, '800 26px system-ui, sans-serif', GOLD);
-  para('Cyan is a punch (a tap), hot orange a kick (a hold), white the jump (a swipe). Three in and the combo locks. A swipe, then a tap or a hold, puts the globe in cyan or orange fire. Never pink, never gold (the enemy’s).', 16, y + 36, W - 32, '500 19px system-ui, sans-serif', SOFT, 26);
+  para('Green is a punch (a tap), hot orange a kick (a hold), white the jump (a swipe). Three in and the combo locks. A swipe, then a tap or a hold, puts the globe in green or orange fire. Never pink, never gold (the enemy’s).', 16, y + 36, W - 32, '500 19px system-ui, sans-serif', SOFT, 26);
   y += 104;
   const headTop = (d: typeof down): [number, number] => {
     // (the top of his head, and the middle of it across, on his painting)

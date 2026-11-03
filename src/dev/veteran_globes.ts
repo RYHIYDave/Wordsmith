@@ -5,19 +5,26 @@
 // jump.  As you tap or hold, the globes fill and it locks in your combo.  And early swipe just does a jump, like inputting
 // a dodge.  A swipe then an input puts the globe in either pink or cyan fire, and that’s the uppercut or jump kick.”; told
 // that pink and gold glows are the enemy's by his rulebook, his pick: “Keep the rule (Recommended)”, offered as: cyan
-// punch, hot orange kick, white jump; the fires cyan and orange.
+// punch, hot orange kick, white jump; the fires cyan and orange. Then, 3 Nov 2026, 10:44: “In that same vein, the brawler is
+// Str/dex, so I think we change the color of the globe for a punch to green and the kicks stay orange/red.  I think that’s a
+// good thematic change”.
 //
-// So: three glass globes over his head, painted pixel by pixel (crisp, no smoothing), each empty, filling or full: CYAN a
+// So: three glass globes over his head, painted pixel by pixel (crisp, no smoothing), each empty, filling or full: GREEN a
 // punch (a tap), HOT ORANGE a kick (a hold), WHITE a jump (a swipe); three in and the combo LOCKS (their rims go bright,
-// a bar joins them); a swipe then a tap puts the globe in CYAN FIRE (the flying uppercut), a swipe then a hold in ORANGE
-// FIRE (the jump kick). Never pink, never gold.
+// a bar joins them); a swipe then a tap puts the globe in GREEN FIRE (the flying uppercut), a swipe then a hold in ORANGE
+// FIRE (the jump kick). Never pink, never gold, never the friend's cyan (that is his rim, as every hero's).
 
 import { Px, rgba } from '../engine/px';
 import type { Ramp } from '../art/kit';
-import { CYAN, INK } from '../art/kit';
+import { INK } from '../art/kit';
 
-/** The punch's cyan (the friend's own). */
-export const GLOBE_CYAN: Ramp = CYAN;
+/**
+ * The punch's green (his 3 Nov: “the globe for a punch to green”): an EMERALD, hue about 145, strong and clear: deep, deep,
+ * its body, its light, its top. Kept clear of the game's poison (the yellow-green venom, art/palette.ts vn, hue about 68, and
+ * the Contagion meld's electric lime, hue about 117), of the friend's cyan (hue 186, his rim), of the enemy's pink and gold,
+ * and of the floors' dull mosses; bright enough to read on the dark floors at a phone's size.
+ */
+export const GLOBE_GREEN: Ramp = ['#0c6a38', '#12a050', '#18c060', '#76f4ae', '#d4ffe6'];
 /** The kick's hot orange: a red-orange, kept well off gold. */
 export const GLOBE_ORANGE: Ramp = ['#5a1606', '#a8340a', '#e8561a', '#ff7c2e', '#ffb486'];
 /** The jump's white. */
@@ -41,7 +48,7 @@ export const GLOBE = { r: 5, gap: 3, fire: 8, pad: 2 };
 export const GLOBES_W = GLOBE.pad * 2 + 3 * (GLOBE.r * 2 + 1) + 2 * GLOBE.gap;
 export const GLOBES_H = GLOBE.pad * 2 + GLOBE.fire + GLOBE.r * 2 + 1 + 2;
 
-const rampOf = (k: GlobeKind | 'punchFire' | 'kickFire'): Ramp => (k === 'punch' || k === 'punchFire' ? GLOBE_CYAN : k === 'kick' || k === 'kickFire' ? GLOBE_ORANGE : GLOBE_WHITE);
+const rampOf = (k: GlobeKind | 'punchFire' | 'kickFire'): Ramp => (k === 'punch' || k === 'punchFire' ? GLOBE_GREEN : k === 'kick' || k === 'kickFire' ? GLOBE_ORANGE : GLOBE_WHITE);
 
 /** A little hash for the flames' tongues (the same every time: a still picture). */
 const hash = (n: number): number => {
@@ -165,11 +172,11 @@ export function paintGlobes(row: GlobeRow): Px {
 /** THE STATES TO SHOW HIM (a picture of the idea), in order, each with its line in plain words. */
 export const GLOBE_STATES: { row: GlobeRow; title: string; line: string }[] = [
   { row: { globes: [{ kind: 'empty' }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Empty', line: 'Three empty globes over his head: nothing put in yet.' },
-  { row: { globes: [{ kind: 'punch', level: 0.6 }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Tap: a punch', line: 'A tap fills the first globe cyan.' },
+  { row: { globes: [{ kind: 'punch', level: 0.6 }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Tap: a punch', line: 'A tap fills the first globe green.' },
   { row: { globes: [{ kind: 'kick', level: 0.7 }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Hold: a kick', line: 'A hold fills it hot orange.' },
   { row: { globes: [{ kind: 'jump', level: 1 }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Swipe first: the jump', line: 'A swipe on its own fills it white: the jump, his dodge.' },
   { row: { globes: [{ kind: 'punch', level: 1 }, { kind: 'punch', level: 1 }, { kind: 'kick', level: 1 }], locked: true }, title: 'Locked: punch, punch, kick', line: 'Three in and the combo locks: the rims go white, a bar joins them.' },
-  { row: { globes: [{ kind: 'fire', of: 'punch' }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Swipe, then tap', line: 'The globe in cyan fire: the flying uppercut.' },
+  { row: { globes: [{ kind: 'fire', of: 'punch' }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Swipe, then tap', line: 'The globe in green fire: the flying uppercut.' },
   { row: { globes: [{ kind: 'fire', of: 'kick' }, { kind: 'empty' }, { kind: 'empty' }] }, title: 'Swipe, then hold', line: 'The globe in orange fire: the jump kick.' },
   { row: { globes: [{ kind: 'punch', level: 1 }, { kind: 'punch', level: 1 }, { kind: 'fire', of: 'kick' }], locked: true }, title: 'After two punches', line: 'Punch, punch, then swipe and hold: locked, ending in the flying knee.' },
 ];
