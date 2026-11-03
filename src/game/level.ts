@@ -15,6 +15,7 @@ import { act1Floor } from './act1';
 import { makeAct1Level } from './act1_level';
 import { beforeStretch, chapelHere, layChapel, placeChapel } from './chapel_way';
 import { lairHere, layLair, openLairDoors, planLair } from './lair_way';
+import { layTomb, tombHere } from './tomb_way';
 import { beforePrisonDoor, channelOpen, placeChannels, placePrisonDoor, prisonChannelsHere, prisonDoorHere } from './prison_way';
 import { EXITS, FIRST5, TOWN_SHAFT, TOWN_STAIR, TOWN_WAY, WAYS, beforeGate, openGate, placeCave, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, stairTiles, townGate } from './ways';
 import { yardBlocks } from './yard';
@@ -912,6 +913,8 @@ export function makeDungeon(depth: number, seed: number): Level {
   level.dress = dress(level, depth, seed);
   // (FLOOR 4, CHAPEL: its own things, after the floor's: the rock before the break-ins, candles, his hall's piers and altar)
   if (chapel) layChapel(level);
+  // (FLOOR 1, TOMB: the king's tomb's own tombs, after the floor's things: game/tomb_way.ts)
+  if (tombHere(depth)) layTomb(level);
   // (FLOOR 5, LAIR_TEMPLE: which of it is the mine and which the temple, the thresholds between, the rails and the rift's cracks;
   // its own things, after the floor's: game/lair_way.ts)
   if (lairHere(depth)) {

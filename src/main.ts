@@ -31,6 +31,8 @@ import { CHAPEL } from './art/chapel';
 import { CHAPEL_GATE, makeChapelGateArt } from './art/chapel_gate';
 import { LAIR_TEMPLE } from './art/lair_temple';
 import { LAIR_GATE, makeLairGateArt } from './art/lair_gate';
+import { TOMB } from './art/tomb';
+import { TOMB_GATE, makeTombGateArt } from './art/tomb_gate';
 import { PRISON } from './art/prison';
 import { FLOOR_SETS } from './game/first5';
 import { FIRST5 } from './game/ways';
@@ -1838,7 +1840,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (FLOOR 3, THE BLACK IRON PRISON with its own gate, behind PRISON and PRISON_GATE: art/prison_gate.ts; FLOOR 4, THE BURIED
         // CHAPEL with its bone grille, behind CHAPEL and CHAPEL_GATE: art/chapel_gate.ts; FLOOR 5, THE TEMPLE with its hooked bars,
         // behind LAIR_TEMPLE and LAIR_GATE: art/lair_gate.ts)
-        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : crypt === 4 && CHAPEL.on && CHAPEL_GATE.on ? makeChapelGateArt() : crypt === 5 && LAIR_TEMPLE.on && LAIR_GATE.on ? makeLairGateArt() : lookGates(crypt)) : vault.gates;
+        art.gates = own ? (crypt === 2 && YARD.on && YARD_GATE.on ? makeYardGateArt() : crypt === 3 && PRISON.on && PRISON_GATE.on ? makePrisonGateArt() : crypt === 4 && CHAPEL.on && CHAPEL_GATE.on ? makeChapelGateArt() : crypt === 5 && LAIR_TEMPLE.on && LAIR_GATE.on ? makeLairGateArt() : crypt === 1 && TOMB.on && TOMB_GATE.on ? makeTombGateArt() : lookGates(crypt)) : vault.gates;
         art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
         forgetPieces(crypt);
         cryptShown = crypt;

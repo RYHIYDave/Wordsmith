@@ -75,6 +75,7 @@ import { kknightThings } from './act1_figs/kknight';
 import { CAVE_FRAMES, caveFilm, lairMouth } from './cave4';
 import { CHAPEL, chapelCave } from './chapel';
 import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
+import { TOMB, TOMB_THEME, makeTombArt } from './tomb';
 import { EXIT_KICKS, exitArt } from './prison_exit';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
@@ -296,7 +297,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
   }
   if (kind === 'stair') {
     const floor = Number(a);
-    const theme = floor === 5 ? LAIR : CRYPT_FLOORS[Math.max(1, Math.min(4, floor)) - 1];
+    // (FLOOR 1 AS THE KING'S TOMB, TOMB: its stairwell in the tomb's stone, art/tomb.ts TOMB_THEME)
+    const theme = floor === 5 ? LAIR : floor === 1 && TOMB.on ? TOMB_THEME : CRYPT_FLOORS[Math.max(1, Math.min(4, floor)) - 1];
     const m = stairwellOpens(theme, b === 'y' ? 'y' : 'x', [Number(c) || 0, Number(d) || 0]);
     return { fps: m.fps, jolts: [...m.jolts], kicks: [...stairwellKicks(m)], frames: m.frames };
   }
@@ -332,7 +334,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     const f = townArrives();
     return { fps: f.fps, jolts: [...f.jolts], back: f.back, front: f.front, lift: [...f.lift] } satisfies ShaftFilm;
   }
-  if (kind === 'up') return floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
+  // (FLOOR 1 AS THE KING'S TOMB, TOMB: the town's stairs coming down in the tomb's stone and the town's daylight: art/tomb.ts)
+  if (kind === 'up') return TOMB.on ? makeTombArt().stairsUp(b !== 'y') : floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
   // (a piece in a wall: where it stands and the room's zone, onward:<floor>:<dir>:<x>:<y>:<zone>)
   const [, , , ax, ay, az] = key.split(':');
   const at = ax !== undefined && ay !== undefined ? { x: Number(ax), y: Number(ay) } : undefined;

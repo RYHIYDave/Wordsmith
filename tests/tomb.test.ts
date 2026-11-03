@@ -105,14 +105,16 @@ const sameShape = (a: Sprite, b: Sprite): number => {
   return n;
 };
 
-test("the king's tomb and his gate: off, and nothing of the game imports them", () => {
+// (brought into the game by the main chat, 2 Nov 2026, behind the same two switches: the files that bring it in may import it)
+const BROUGHT = ['art/films.ts', 'art/floors.ts', 'game/tomb_way.ts', 'main.ts', 'render/render.ts', 'render/tomb.ts'].map((f) => join('src', f));
+test("the king's tomb and his gate: off, and nothing of the game imports them but the files that bring them in", () => {
   assert.ok(TOMB.on === false && TOMB_GATE.on === false, 'TOMB and TOMB_GATE are off');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'tomb.ts')) && !p.endsWith(join('art', 'tomb_gate.ts')) && /from '\.\.?\/(art\/)?tomb(_gate)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'tomb.ts')) && !p.endsWith(join('art', 'tomb_gate.ts')) && !BROUGHT.includes(p) && /from '\.\.?\/(art\/)?tomb(_gate)?'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

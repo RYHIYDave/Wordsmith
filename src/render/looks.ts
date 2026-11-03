@@ -22,10 +22,13 @@ export interface LookStand {
   y: number;
   s: Sprite;
   d?: number;
+  /** Drawn added to what is under it ('lighter'), as light is: floor 1's daylight. */
+  add?: boolean;
 }
 export interface LookView {
-  /** The dark between its lights (the Crypt's is FAR_DARK, 0.88). */
+  /** The dark between its lights (the Crypt's is FAR_DARK, 0.88), and its colour if not the Crypt's (6, 4, 14). */
   readonly dark: number;
+  readonly tint?: readonly [number, number, number];
   /** Is this look to be drawn on this level? */
   on(L: Level): boolean;
   /** Make its pictures now (as the floor is come into). */
@@ -46,6 +49,8 @@ export interface LookView {
   lights(L: Level): readonly LookLight[];
   /** What it stands on the floor, at clock `t`. */
   stands(L: Level, t: number): readonly LookStand[];
+  /** What it lays flat over the floor, after the floor's tiles and before anything stands (floor 1's pools of daylight). */
+  flats?(L: Level, t: number): readonly LookStand[];
 }
 
 /** One of the game's own pictures with each of its colours put through `grade` (a canvas the page paints on; where there is none, the picture as it is). */

@@ -77,6 +77,8 @@ import { YARD_DARK, YARD_SKY_LIFT, YARD_VIGNETTE, YardView } from './yard';
 import { PrisonView } from './prison';
 import { ChapelView } from './chapel';
 import { LairView } from './lair';
+import { TombView } from './tomb';
+import { TOMB_GATE, tombGateDropAt, tombGateSlam } from '../art/tomb_gate';
 import type { LookView } from './looks';
 import { prisonDoorAnchor, prisonDoorTiles } from '../game/prison_way';
 import { YARD_GATE, yardGateDropAt, yardGateSlam } from '../art/yard_gate';
@@ -212,6 +214,8 @@ interface Stand {
   scale: number;
   /** 1 = solid; less for phantoms and afterimages. */
   alpha: number;
+  /** Drawn added to what is under it ('lighter'), as light is (floor 1's daylight: render/tomb.ts). */
+  add?: boolean;
   /** The hero: the scarf and the feather that fly from the figure are drawn with it, behind and in front. */
   figure: Figure | null;
   /**
@@ -468,6 +472,8 @@ export class Renderer {
   readonly yard: YardView;
   /** FLOOR 3, THE BLACK IRON PRISON (render/prison.ts, behind PRISON). */
   readonly prison = new PrisonView();
+  /** FLOOR 1, THE KING'S TOMB (render/tomb.ts, behind TOMB). */
+  readonly tomb = new TombView();
   /** FLOOR 4, THE BURIED CHAPEL OF BONES (render/chapel.ts, behind CHAPEL). */
   readonly chapel = new ChapelView();
   /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
@@ -476,7 +482,7 @@ export class Renderer {
   private lookNow: LookView | null = null;
   /** The new look of this level's floor, if it has one on. */
   lookOf(L: Game['level']): LookView | null {
-    for (const v of [this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    for (const v of [this.tomb, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
   }
   /** A picture of the game's own walls (a slanting wall) in the look of the floor being drawn: the prison's colours on floor 3. */
@@ -843,12 +849,14 @@ export class Renderer {
         const chapelGate = boss && d.want === 0 && d.fell !== undefined && CHAPEL_GATE.on && this.chapel.on(L);
         // (FLOOR 5, THE TEMPLE's hooked bars, LAIR_GATE: the same beat, the skull alight: art/lair_gate.ts)
         const lairGate = boss && d.want === 0 && d.fell !== undefined && LAIR_GATE.on && this.lair.on(L);
-        const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : prisonGate ? prisonGateDropAt((game.time - d.fell!) * 30) : chapelGate ? chapelGateDropAt((game.time - d.fell!) * 30) : lairGate ? lairGateDropAt((game.time - d.fell!) * 30) : null;
+        // (FLOOR 1, THE KING'S TOMB's gate, TOMB_GATE: the same beat, the lock alight: art/tomb_gate.ts)
+        const tombGate = boss && d.want === 0 && d.fell !== undefined && TOMB_GATE.on && this.tomb.on(L);
+        const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : prisonGate ? prisonGateDropAt((game.time - d.fell!) * 30) : chapelGate ? chapelGateDropAt((game.time - d.fell!) * 30) : lairGate ? lairGateDropAt((game.time - d.fell!) * 30) : tombGate ? tombGateDropAt((game.time - d.fell!) * 30) : null;
         if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, drop ? drop.raise : d.open * GATE_UP), -wide, wide);
         strips(A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
         if (drop && drop.slam >= 0) {
           const [x, y] = at(1.5, wide);
-          put(x + y + 0.3, prisonGate ? prisonGateSlam(s.alongX, drop.slam) : chapelGate ? chapelGateSlam(s.alongX, drop.slam) : lairGate ? lairGateSlam(s.alongX, drop.slam) : yardGateSlam(s.alongX, drop.slam), x, y);
+          put(x + y + 0.3, prisonGate ? prisonGateSlam(s.alongX, drop.slam) : chapelGate ? chapelGateSlam(s.alongX, drop.slam) : lairGate ? lairGateSlam(s.alongX, drop.slam) : tombGate ? tombGateSlam(s.alongX, drop.slam) : yardGateSlam(s.alongX, drop.slam), x, y);
           if (drop.slam < 4) fx.shake = Math.max(fx.shake, 2);
         }
         // (EXITS, the town's gate: barred until the Fleshmancer is beaten, its bars struck off the first time he comes in
@@ -1440,8 +1448,8 @@ export class Renderer {
     this.stand(b.x + b.y + 0.02, sp, sx, sy, null, 0, 1, alpha);
   }
 
-  private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0): void {
-    this.stands.push({ d, q: this.stands.length, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase });
+  private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0, add = false): void {
+    this.stands.push({ d, q: this.stands.length, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase, ...(add ? { add } : {}) });
   }
 
   // =============================================================================================
@@ -1915,6 +1923,17 @@ export class Renderer {
     // (THE WAYS, game/ways.ts: the level's own stairwell and waypoint)
     if (L.ways && pass <= 0) this.flatWays(g, L, t, game);
     if (L.ways && pass <= 0) this.dress.flat(g, game, this.stage);
+    // (THE FIRST FIVE FLOORS' NEW LOOKS: what each lays flat, added where it is light: floor 1's pools of daylight: render/looks.ts)
+    if (this.lookNow?.flats && pass <= 0) {
+      for (const q of this.lookNow.flats(L, this.clockNow)) {
+        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
+        const sx = Math.round(wx(this.cam, q.x, q.y));
+        const sy = Math.round(wy(this.cam, q.x, q.y));
+        if (q.add) g.globalCompositeOperation = 'lighter';
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+        g.globalCompositeOperation = 'source-over';
+      }
+    }
     if (this.dressed) this.pieces.shadows(g, game, this.stage, here);
     for (const p of L.props) {
       if ((!L.explored[p.ty * f.w + p.tx] && !this.openGround) || !here(p.x, p.y)) continue;
@@ -2920,7 +2939,8 @@ export class Renderer {
         const sy = Math.round(wy(cam, q.x, q.y));
         if (sx < -160 || sx > W + 160 || sy < -40 || sy > H + 260) continue;
         const d = q.d ?? q.x + q.y;
-        this.stage.stand(d, q.s, sx, sy, this.stage.veil(q.s, sx, sy, d));
+        if (q.add) this.stand(d, q.s, sx, sy, null, 0, 1, 1, null, 0, true);
+        else this.stage.stand(d, q.s, sx, sy, this.stage.veil(q.s, sx, sy, d));
         if (q.s.lights) this.stage.lit(q.s, sx, sy);
       }
     }
@@ -3477,6 +3497,14 @@ export class Renderer {
         cut = true;
       }
       if (st.alpha !== 1) g.globalAlpha = Math.max(0, st.alpha);
+      // (light, drawn added to what is under it: floor 1's daylight in the air)
+      if (st.add) {
+        g.globalCompositeOperation = 'lighter';
+        g.drawImage(s.img, st.x - s.ax, st.y - s.ay, s.w, s.h);
+        g.globalCompositeOperation = 'source-over';
+        g.globalAlpha = 1;
+        continue;
+      }
       // (ACT 2: a bit of a wall standing whole, seen through round whoever is behind it)
       if (st.holes) {
         drawHoled(g, s.img as HTMLCanvasElement, st.x - s.ax, st.y - s.ay, s.w, s.h, st.holes, WINDOW_FAINT);
@@ -4413,7 +4441,7 @@ export class Renderer {
     // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.8: art/prison.ts PRISON_LIGHTS)
     const look = this.lookNow;
     const prisonOn = look === this.prison;
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
+    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
     // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
