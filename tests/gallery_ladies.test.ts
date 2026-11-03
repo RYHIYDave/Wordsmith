@@ -121,7 +121,7 @@ const smearIn = (p: Painted): number => {
   return n;
 };
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+test('1. the switch is off, and of the game only floor 18\'s own files for them import them', () => {
   assert.equal(LADIES_ON.on, false, 'LADIES_ON is off');
   const users: string[] = [];
   const hers = /^art\/gallery_ladies(_moves|_fx)?$/;
@@ -134,7 +134,8 @@ test('1. the switch is off, and nothing of the game imports them', () => {
       if (hers.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal([...new Set(users)].join(' '), '', 'game files that import them');
+  // (brought into the game by the main chat, 2 Nov 2026, at his word “All of it in this one”: their figure, rules and effects)
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/lady.ts game/act1_rules/lady.ts render/act1_fx/lady.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF HERS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
