@@ -108,7 +108,7 @@ export default async function (page, snap) {
   // (its pictures painted meanwhile)
   await page.waitForTimeout(4000);
   const c0 = await page.evaluate(() => { const d = window.__dbg; d.slowmo = 1e-6; window.__rf.film = window.__rf.t; return d.clock(); });
-  const slow = 0.05;
+  const slow = Number(process.env.SLOW || 0.12);
   const total = Math.round(seconds * FPS);
   for (let i = 0; i < total; i++) {
     await page.evaluate((slow) => { window.__dbg.slowmo = slow; }, slow);

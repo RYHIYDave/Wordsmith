@@ -20,6 +20,7 @@ import { makeHeroArt3 } from '../src/art/heroes3';
 import { lookOfPlace } from '../src/art/heroes';
 import { hashSprite, listsOf } from '../tools/cheap_heroes';
 import type { Who } from '../tools/cheap_heroes';
+import { VETERAN } from '../src/game/veteran';
 
 declare const process: { env: Record<string, string | undefined> };
 const PINNED = JSON.parse(readFileSync(new URL('./cheap_heroes.hashes.json', import.meta.url), 'utf8')) as { lists: Record<string, string[]> };
@@ -27,7 +28,16 @@ const ALL = process.env.CHEAP_HEROES === 'all';
 
 for (const who of ['warlock', 'tinkerer', 'tinkerer-kit', 'brawler'] as Who[]) {
   test(`${who}: every list there was, as long as it was, and its frames the very same pictures`, () => {
-    const lists = listsOf(who);
+    // (the Brawler as he was, the pinned pictures: since 25.0 he is the Veteran, his look the art chat's (game/veteran.ts VETERAN,
+    // on at his yes of 3 Nov 2026), and the old one is held here with the switch off)
+    const was = VETERAN.on;
+    if (who === 'brawler') VETERAN.on = false;
+    let lists: ReturnType<typeof listsOf>;
+    try {
+      lists = listsOf(who);
+    } finally {
+      VETERAN.on = was;
+    }
     const prefix = who === 'tinkerer-kit' ? /^(golem|contraption):/ : new RegExp(`^${who}:`);
     const pinned = Object.keys(PINNED.lists).filter((k) => prefix.test(k));
     assert.deepEqual(lists.map((l) => l.name).sort(), pinned.sort(), `${who}: the same lists`);

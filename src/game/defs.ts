@@ -2294,9 +2294,9 @@ export const QUIPS: {
     cross: ['Right down the middle.', 'Down for the count.'],
     slip: ['Saw that coming.', 'Not even close.'],
     // (THE VETERAN)
-    vpunch: ['Lights out.', 'Down you go.', 'Should have ducked.'],
-    vkick: ['Out of my way.', 'Too slow.', 'Next.'],
-    vjump: ['Missed me.', 'Up here.'],
+    vpunch: ['Should have ducked.', 'Hands up next time.', 'One-two. Done.'],
+    vkick: ['Out of my way.', 'Felt that one.', 'Shin meets face.'],
+    vjump: ['Up here.', 'From above.'],
   },
   /** By the weapon in hand. */
   weapon: {
