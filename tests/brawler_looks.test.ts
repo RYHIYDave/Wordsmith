@@ -12,7 +12,7 @@ import nodeFs from 'node:fs';
 
 import { paintMove3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
-import { OLD_BOXERS, REAL_FIGHTERS, sculptLook } from '../src/dev/sculpt_brawler_looks';
+import { BETTER_FIGHTERS, OLD_BOXERS, REAL_FIGHTERS, sculptLook } from '../src/dev/sculpt_brawler_looks';
 import { HEIGHT } from './sculpt_checks';
 
 const test: (name: string, fn: () => void) => void = nodeTest;
@@ -35,8 +35,18 @@ test('ten old-timey boxers and ten fighters, each numbered 1 to 10, each with it
 
 test('each is painted, a hero about the knight’s height', () => {
   const knight = HEIGHT(paintMove3(MOVES3.ktown, 0, 'front').px);
-  for (const l of [...OLD_BOXERS, ...REAL_FIGHTERS]) {
+  for (const l of [...OLD_BOXERS, ...REAL_FIGHTERS, ...BETTER_FIGHTERS]) {
     const h = HEIGHT(sculptLook(l, 'front').px);
     assert.ok(h > knight * 0.75 && h < knight * 1.3, `${l.kind} ${l.n}, ${l.name}: ${h} high, the knight ${knight}`);
+  }
+});
+
+test('the better three (his “Show me a better 7, 2, and 1 of the fighters”): 7, 2 and 1, each with his kick, painted', () => {
+  assert.deepEqual(BETTER_FIGHTERS.map((l) => l.n), [7, 2, 1]);
+  for (const l of BETTER_FIGHTERS) {
+    assert.ok(!!l.kick && !!l.kickName, `${l.name} has his kick`);
+    const stand = sculptLook(l, 'front').px;
+    const kick = sculptLook(l, 'front', 0, true).px;
+    assert.ok(stand.w === kick.w && HEIGHT(kick) > 0, `${l.name}: his kick is painted`);
   }
 });

@@ -8,9 +8,10 @@ import { MOVES3 } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import type { Px } from '../engine/px';
 import { sculptBrawler } from './sculpt_classes';
-import { OLD_BOXERS, REAL_FIGHTERS, sculptLook } from './sculpt_brawler_looks';
+import { BETTER_FIGHTERS, OLD_BOXERS, REAL_FIGHTERS, sculptLook } from './sculpt_brawler_looks';
 
-const which = decodeURIComponent(location.hash.slice(1)) === 'fighters' ? 'fighters' : 'boxers';
+const hashArg = decodeURIComponent(location.hash.slice(1));
+const which = hashArg === 'fighters' ? 'fighters' : 'boxers';
 const S = 3;
 const W = 1200;
 const BG = '#17142e';
@@ -117,5 +118,90 @@ const build = (): void => {
   });
   (window as unknown as { __ready: boolean }).__ready = true;
 };
-if (document.readyState === 'complete') setTimeout(build, 50);
-else window.addEventListener('load', () => setTimeout(build, 50));
+/**
+ * THE BETTER THREE (his “Show me a better 7, 2, and 1 of the fighters”, 2 Nov): each standing in his fighting stance from in
+ * front and truly from behind, and a still of his kick, three times the game's size beside the knight; and all of it again
+ * small, at the game's own size.
+ */
+const better = (): void => {
+  const knight = paintMove3(MOVES3.ktown, 0, 'front').px;
+  const BUP = 100;
+  const BDOWN = 12;
+  const half = [26, 34, 34, 46];
+  const figH = (BUP + BDOWN) * S;
+  const TOP = 92;
+  const HEADER = 186;
+  const SMALL = BUP + BDOWN + 26;
+  const BLOCK = HEADER + figH + 30 + SMALL + 24;
+  const cv = document.createElement('canvas');
+  for (const el of [document.documentElement, document.body]) {
+    el.style.height = 'auto';
+    el.style.overflow = 'visible';
+  }
+  document.body.style.margin = '0';
+  document.body.style.background = BG;
+  cv.style.display = 'block';
+  document.body.appendChild(cv);
+  cv.width = W;
+  cv.height = TOP + BETTER_FIGHTERS.length * BLOCK;
+  const g = cv.getContext('2d') as CanvasRenderingContext2D;
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  g.imageSmoothingEnabled = false;
+  g.textBaseline = 'top';
+  g.fillStyle = GOLD;
+  g.font = '800 30px system-ui, sans-serif';
+  g.fillText('The fighters you asked for, made better: 7, 2 and 1', 16, 14);
+  g.fillStyle = SOFT;
+  g.font = '500 19px system-ui, sans-serif';
+  g.fillText('Each in his stance from the front and from behind, and mid-kick; 3 times the game size beside the knight, then at game size.', 16, 54);
+  const put = (px: Px, hf: number, x: number, y: number, k: number): void => {
+    g.drawImage(px.toCanvas(), CANVAS3.ax - hf, CANVAS3.ay - BUP, hf * 2, BUP + BDOWN, x, y, hf * 2 * k, (BUP + BDOWN) * k);
+  };
+  BETTER_FIGHTERS.forEach((look, i) => {
+    const y0 = TOP + i * BLOCK;
+    const pics = [knight, sculptLook(look, 'front'), sculptLook(look, 'front', 90), sculptLook(look, 'front', 0, true)].map((d, j) => (j === 0 ? (d as Px) : (d as { px: Px }).px));
+    g.fillStyle = PANEL[0];
+    g.fillRect(10, y0, W - 20, BLOCK - 14);
+    g.fillStyle = GOLD;
+    g.font = '900 48px system-ui, sans-serif';
+    g.fillText(String(look.n), 22, y0 + 10);
+    g.font = '800 30px system-ui, sans-serif';
+    g.fillText(look.name, 80, y0 + 18);
+    g.fillStyle = TEXT;
+    g.font = '500 21px system-ui, sans-serif';
+    wrap(g, look.line, W - 120).forEach((ln, k) => g.fillText(ln, 80, y0 + 58 + k * 28));
+    // three times the game's size
+    const yb = y0 + HEADER;
+    let x = 24;
+    const names = ['the knight', 'his stance', 'from behind', look.kickName ?? 'mid-kick'];
+    pics.forEach((px, j) => {
+      g.fillStyle = PANEL[1];
+      g.fillRect(x - 4, yb, half[j] * 2 * S + 8, figH);
+      put(px, half[j], x, yb, S);
+      g.strokeStyle = '#3a3676';
+      g.beginPath();
+      g.moveTo(x - 4, yb + BUP * S + 1);
+      g.lineTo(x + half[j] * 2 * S + 4, yb + BUP * S + 1);
+      g.stroke();
+      g.fillStyle = SOFT;
+      g.font = '600 18px system-ui, sans-serif';
+      g.fillText(names[j], x + 4, yb + figH + 6);
+      x += half[j] * 2 * S + 16;
+    });
+    // at the game's own size
+    const ys = yb + figH + 36;
+    g.fillStyle = SOFT;
+    g.font = '600 18px system-ui, sans-serif';
+    g.fillText('At the game size:', 24, ys + 40);
+    let xs = 200;
+    pics.forEach((px, j) => {
+      put(px, half[j], xs, ys, 1);
+      xs += half[j] * 2 + 10;
+    });
+  });
+  (window as unknown as { __ready: boolean }).__ready = true;
+};
+const go = hashArg === 'better' ? better : build;
+if (document.readyState === 'complete') setTimeout(go, 50);
+else window.addEventListener('load', () => setTimeout(go, 50));

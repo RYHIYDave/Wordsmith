@@ -70,3 +70,30 @@ big (his “His hands are tiny compared to his body”), original designs. No po
   (and `fighters` for the other).
 - `tests/brawler_looks.test.ts`: nothing of the game imports them; ten of each numbered 1 to 10; each painted about the
   knight's height. Rough, at his word: the full character checks (every pixel, eight turns) are for the one he picks.
+
+## The better three (his pick of the fighters)
+
+His words, 2 Nov 2026: “Show me a better 7, 2, and 1 of the fighters”. So the rework goes the real-fighter way. Each of
+the three worked close: a face with character, whiskers and hair that read, clothes that hang and fold, wraps on shins,
+feet and fists, the muscles drawn on the bare chests, fists bigger. Each is shown three times the game's size beside the
+knight: standing in his fighting stance from in front (the game's three-quarter view), from behind (truly, turned, as the
+classes' films are), and one still of him mid-kick; then all of it again at the game's own size. Still pictures only.
+
+- `pictures/fighters_better.png`: the three, numbered 7, 2 and 1 as he named them, a line each.
+
+7. The Veteran: a black leather patch over one eye, a pale scar down the other cheek, grey hair cropped, a grey walrus
+   moustache and short beard, heavy brows; an old olive-drab vest hanging open on his chest; grey trousers hacked off at the
+   knee, their hem ragged and their cloth creased; his right shin bound, his left bare and scarred; leather bracers, his
+   knuckles strapped; his feet wrapped round the arch, toes and heels bare. His kick: a jumping knee driven up into
+   whoever he has by the head, his hands reaching out to grab.
+2. The Pit Kicker: his head shaved to a shadow at the sides under a tall crest of black spikes swept back; a goatee, a
+   brass ring in his ear; bare chest with the belly's muscles drawn; short green trunks with an ochre stripe and a wide
+   ochre waistband; cords round both arms; his shins and feet bound in grey; fists taped. His kick: a high kick out to the
+   side, his rear arm flung back.
+1. The Wandering Monk: shaven, a long drooping grey moustache and a short grey beard, heavy grey brows; an ochre wrap
+   crossed over his chest, folded, tied with a maroon sash whose ends hang; big wooden beads; baggy grey trousers in folds,
+   bunched where cream wraps bind them at the shins; his feet wrapped; his fists wrapped in cream. His kick: a flying
+   kick, off the ground, his rear leg tucked under him.
+
+Made by `src/dev/sculpt_brawler_looks.ts` (`BETTER_FIGHTERS`; each look's `kick` is its still, `close` its close pass) and
+`node tools/preview.mjs src/dev/preview_brawler_looks.ts docs/mockups/brawler_looks/pictures/fighters_better.png 1200 100 better`.

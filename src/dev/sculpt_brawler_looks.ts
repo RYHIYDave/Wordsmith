@@ -55,7 +55,7 @@ const sk = (r: Ramp, k: number): string => shadeOf(r, k);
 // ---------------------------------------------------------------------------------------------
 // What each look is
 
-type Hair = 'bald' | 'fringe' | 'slick' | 'crop' | 'curly' | 'topknot' | 'crest' | 'ponytail' | 'cap' | 'wrap' | 'tied';
+type Hair = 'spikes' | 'bald' | 'fringe' | 'slick' | 'crop' | 'curly' | 'topknot' | 'crest' | 'ponytail' | 'cap' | 'wrap' | 'tied';
 type Tash = 'none' | 'handlebar' | 'walrus' | 'pencil' | 'drooping';
 type Beard = 'none' | 'chops' | 'full' | 'goatee' | 'stubble' | 'forked' | 'short';
 type Fists = 'wraps' | 'bare' | 'gloves' | 'straps' | 'tape';
@@ -87,13 +87,18 @@ export interface BrawlerLook2 {
   /** His stance: the old ring's upright stance, or a fighter's, light on his feet (a knee lifted to kick). */
   stance: 'classic' | 'tucked' | 'reach' | 'fight' | 'chamber' | 'low' | 'tall';
   pose?: Partial<Bones>;
+  /** HIS KICK, a still of it (the better three, his “Show me a better 7, 2, and 1 of the fighters”): the stance changed so. */
+  kick?: (t: number) => Partial<Bones>;
+  kickName?: string;
+  /** A close pass (the better three): his mouth, his muscles drawn, an earring, a brow of three pixels. */
+  close?: { mouth?: string; abs?: boolean; earring?: Ramp; browW?: number; cheekScar?: boolean; grey?: boolean; patchSide?: number };
   dress: (k: Kit) => void;
 }
 
 // ---------------------------------------------------------------------------------------------
 // Stances
 
-function stanceOf(look: BrawlerLook2, B: Build): Bones {
+function stanceOf(look: BrawlerLook2, B: Build, kick = false): Bones {
   const t = B.tall / 57;
   const base = boxerStance(B);
   let q: Bones;
@@ -128,7 +133,7 @@ function stanceOf(look: BrawlerLook2, B: Build): Bones {
       q = { ...q, pz: -5.2 * t, bend: 18, faceUp: 6, lfx: 6.6 * t, lfy: 5.6 * t, rfx: -5.6 * t, rfy: -5.6 * t, rfp: 10, rfz: 0.4 * t, lk: 34, rk: -30, lhx: 10 * t, lhy: 2.4 * t, lhz: -1.0 * t, le: 20, rhx: 9 * t, rhy: -2.6 * t, rhz: -0.6 * t, re: 18 };
     }
   }
-  return { ...q, ...(look.pose ?? {}) };
+  return { ...q, ...(look.pose ?? {}), ...(kick && look.kick ? look.kick(t) : {}) };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -139,7 +144,15 @@ export interface Kit {
   w: Who;
   t: ReturnType<typeof tailorFor>;
   /** Tights or trousers from the hip to `to` (1 the knee, 2 the ankle), `loose` off the leg, `high` up over the belly; stripes. */
-  legs(ramp: Ramp, to: number, loose: number, high?: number, stripes?: 'down' | 'round' | 'side' | null, stripe?: Ramp): void;
+  legs(ramp: Ramp, to: number, loose: number, high?: number, stripes?: 'down' | 'round' | 'side' | null, stripe?: Ramp, cloth?: { folds?: boolean; frayed?: boolean }): void;
+  /** Wraps round the arch of each foot and up round the ankle, the toes and heel bare (a fighter's foot wraps). */
+  footWraps(ramp: Ramp): void;
+  /** Leather bracers laced on each forearm. */
+  bracers(ramp: Ramp): void;
+  /** An open sleeveless vest, its fronts hanging apart over his bare chest. */
+  openVest(ramp: Ramp, trim?: Ramp): void;
+  /** A gathered fold of cloth over each knee and at each ankle where loose trousers are bound (they hang, not tubes). */
+  bagginess(ramp: Ramp, at: number): void;
   /** Cloth over the trunk: a vest (sleeveless, `neck` how far below the root of the neck it is cut), stripes round it. */
   top(ramp: Ramp, neck: number, stripes?: boolean, stripe?: Ramp, shoulders?: boolean, sleeves?: 'none' | 'short' | 'long'): void;
   sash(ramp: Ramp, tails?: boolean): void;
@@ -163,9 +176,10 @@ export interface Kit {
 const WOODB: Ramp = ['#1a0c08', '#341a10', '#5a3018', '#84502a', '#aa7440'];
 
 /** One of the twenty, sculpted standing, in a view (`turn`: truly turned, degrees to his left). */
-export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 0): Drawn {
+export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 0, kick = false): Drawn {
   const B = buildOf(look.tall, HEAD_B * look.head, look.shape);
-  const s = solve(B, stanceOf(look, B) as Posed);
+  const s = solve(B, stanceOf(look, B, kick) as Posed);
+  const cl = look.close ?? {};
   const w: Who = { s, B, view, spin: turn };
   const sc = new Sculpt();
   sc.spin = turn;
@@ -192,6 +206,17 @@ export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 
         if ((h.x + 2 * h.y) % 5 < 2 || (tg === 'fore' && h.y % 4 === 0)) return h.tone >= 2 ? INK_BLUE : '#1a2048';
       }
       if (mk.tattoos && tg === 'pec' && (h.x + 2 * h.y) % 7 < 2) return INK_BLUE;
+      if (cl.abs && h.prim.piece === 'torso' && h.prim.k !== 'cone') {
+        const b = onBall(h.prim as Ell, h.p);
+        if (tg === 'belly' && b[0] > 0.3) {
+          // the belly's muscles: a groove down the middle, two across, the light on each
+          if (Math.abs(b[1]) < 0.09 && b[2] > -0.75) return sk(SK, h.tone - 1);
+          if ((Math.abs(b[2] - 0.15) < 0.07 || Math.abs(b[2] + 0.3) < 0.07) && Math.abs(b[1]) < 0.42) return sk(SK, h.tone - 1);
+        }
+        // the foot of each breast muscle, and the groove of the spine down his back
+        if (tg === 'pec' && b[2] < -0.72 && b[0] > 0) return sk(SK, h.tone - 1);
+        if ((tg === 'ribs' || tg === 'belly') && b[0] < -0.75 && Math.abs(b[1]) < 0.08) return sk(SK, h.tone - 1);
+      }
       if (mk.shinScar && h.prim.piece === 'legL' && (tg === 'shin' || tg === 'calf') && (h.x + h.y) % 4 === 0) return sk(SK, h.tone + 1);
       return far ? sk(SK, h.tone - 1) : null;
     },
@@ -275,6 +300,21 @@ export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 
         sc.ell(hairM, 'head', at(0.55 - i * 0.36, 0, 0.76 - Math.abs(a) * 0.3 - (i > 3 ? 0.2 : 0)), [mul(hf, 1.3), mul(hl, 0.75), mul(hu, 1.25)], 0.8, { tag: 'hair' });
       }
       break;
+    case 'spikes': {
+      // the sides shaved to a shadow, a tall crest of stiffened hair in spikes from his brow to the nape, swept back
+      shell(0.1, [above(0.42, 0.12)], 'shadow', sc.mat({ ramp: SK, paint: (h) => ((h.x + h.y) % 2 === 0 ? sk(HR, 2) : sk(SK, h.tone - 1)) }));
+      const n = 6;
+      for (let i = 0; i < n; i++) {
+        const k = i / (n - 1);
+        const fw = 0.62 - k * 1.45;
+        const up = 0.72 - Math.max(0, -fw - 0.2) * 0.5 + (fw > 0.4 ? -0.08 : 0);
+        const root = at(fw, 0, up);
+        const tall = 2.6 - Math.abs(k - 0.4) * 1.6;
+        const tip = add(root, add(mul(hu, tall), mul(hf, -1.4 - k * 0.8)));
+        sc.cone(hairM, 'head', root, tip, 1.05, 0.25, 0.7, { tag: 'hair' });
+      }
+      break;
+    }
     case 'ponytail':
     case 'tied':
       shell(0.5, [above(0.42, 0.06)]);
@@ -350,14 +390,28 @@ export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 
   for (const side of [1, -1]) {
     const out = side > 0 ? 0 : -1;
     sc.mark(at(0.84, side * 0.38, 0.04), sk(SK, 1), 2, 1, out);
-    if (mk.patch && side < 0) {
+    if (mk.patch && !cl.patchSide && side < 0) {
       sc.mark(at(0.86, side * 0.36, 0.06), '#0a0610', 2, 2, out);
     } else sc.mark(at(0.86, side * 0.34, 0.06), '#140a18');
-    sc.mark(at(0.86, side * 0.42, 0.28), brow, 2, 1, out);
+    sc.mark(at(0.86, side * 0.42, 0.28), brow, cl.browW ?? 2, 1, out);
     sc.mark(at(0.92, side * 0.16, 0.2), brow);
   }
+  // (the close pass: a hard mouth, set; the light on his cheekbones; a scar down his cheek)
+  if (cl.mouth) sc.mark(at(0.96, 0.02, -0.56), cl.mouth, 2, 1, -1);
+  if (cl.cheekScar) for (let i = 0; i < 4; i++) sc.mark(at(0.8, -(cl.patchSide ?? -1) * (0.46 - i * 0.03), 0.3 - i * 0.24), sk(SK, 4));
+  if (cl.earring) {
+    const ear = sc.mat({ ramp: cl.earring });
+    sc.ell(ear, 'head', at(-0.05, 1.0, -0.42), [mul(hf, 0.55), mul(hl, 0.3), mul(hu, 0.7)], 0.05, { tag: 'earring' });
+  }
   if (mk.scar) for (let i = 0; i < 3; i++) sc.mark(at(0.82, 0.5 - i * 0.02, 0.4 - i * 0.22), sk(SK, 4));
-  if (mk.patch) {
+  if (mk.patch && cl.patchSide) {
+    // (the close pass: a patch of black leather over the eye, sculpted, its string slanting round his head)
+    const ps = cl.patchSide;
+    const pm = sc.mat({ ramp: BLACKHIDE });
+    sc.ell(pm, 'patch', at(0.82, ps * 0.36, 0.08), [mul(hf, 0.55), mul(hl, 1.05), mul(hu, 1.0)], 0.2, { tag: 'patch' });
+    sc.cone(pm, 'patch', at(0.8, ps * 0.66, 0.22), at(-0.2, ps * 0.98, 0.42), 0.3, 0.3, 0.1, { tag: 'string' });
+    sc.cone(pm, 'patch', at(0.8, -ps * 0.1, 0.3), at(0.5, -ps * 0.7, 0.62), 0.3, 0.3, 0.1, { tag: 'string' });
+  } else if (mk.patch) {
     // the patch's string round his head
     sc.cone(sc.mat({ ramp: BLACKHIDE }), 'head', at(0.6, -0.8, 0.22), at(-0.6, -0.9, 0.48), 0.32, 0.32, 0.1, { tag: 'string' });
   }
@@ -418,11 +472,23 @@ export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 
     sc,
     w,
     t,
-    legs(ramp, to, loose, high = 0, stripes = null, stripe) {
+    legs(ramp, to, loose, high = 0, stripes = null, stripe, cloth = {}) {
       const sr = stripe ?? CREAM;
       t.legsIn(sc.mat({
         ramp,
         paint: (h) => {
+          if (h.prim.k === 'cone' && (cloth.folds || cloth.frayed)) {
+            const { t: tt, around } = onCone(h.prim as Cone, h.p, f);
+            const lower = h.prim.tag === 'shin' || to <= 1.15;
+            // a ragged hem where it was cut off at the knee
+            if (cloth.frayed && lower && tt > 0.86 && (h.x * 3 + h.y) % 3 !== 0) return sk(ramp, h.tone - 2);
+            // the folds of loose cloth: creases running down it, the light on the crest of each
+            if (cloth.folds) {
+              const c = Math.sin(around * 3 + tt * 2.2);
+              if (c > 0.8) return sk(ramp, h.tone - 1);
+              if (c < -0.85) return sk(ramp, h.tone + 1);
+            }
+          }
           if (stripes === 'round' && Math.floor(h.p[2] / 1.6) % 2 === 0) return sk(sr, h.tone);
           if (stripes === 'down' && h.x % 4 === 0) return sk(sr, h.tone - 1);
           if (stripes === 'side' && h.prim.k === 'cone') {
@@ -505,6 +571,54 @@ export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 
     bareFeet(sandal) {
       t.boots(sandal ? sc.mat({ ramp: SK, paint: (h) => (h.prim.tag === 'sole' ? sk(sandal, h.tone) : null) }) : skin, false, null);
     },
+    footWraps(ramp) {
+      const m = sc.mat({
+        ramp,
+        paint: (h) => {
+          if (h.prim.tag === 'foot' || h.prim.tag === 'sole') {
+            const b = onBall(h.prim as Ell, h.p);
+            // the toes and the heel bare; the wraps round the arch, slanting
+            if (b[0] > 0.45 || b[0] < -0.62) return h.prim.tag === 'sole' ? sk(SK, h.tone - 1) : sk(SK, h.tone);
+            if ((h.x + h.y) % 3 === 0) return sk(ramp, h.tone - 1);
+          }
+          if (h.prim.k === 'cone' && Math.floor(onCone(h.prim as Cone, h.p, u).t * 5 + onCone(h.prim as Cone, h.p, u).around / 1.6) % 2 === 0) return sk(ramp, h.tone - 1);
+          return null;
+        },
+      });
+      t.boots(m, false, null);
+    },
+    bracers(ramp) {
+      const m = sc.mat({ ramp, paint: (h) => (h.prim.k === 'cone' && Math.abs(onCone(h.prim as Cone, h.p, u).around) < 0.35 && (h.y % 2 === 0) ? sk(CREAM, h.tone - 1) : null) });
+      for (const side of ['L', 'R'] as const) {
+        const el = side === 'L' ? s.elbowL : s.elbowR;
+        const ha = side === 'L' ? s.handL : s.handR;
+        sc.cone(m, `arm${side}`, lerp3(el, ha, 0.3), lerp3(el, ha, 0.74), 2.15 * look.bulk + 0.45, 1.6 * look.bulk + 0.45, 0.5, { tag: 'bracer' });
+      }
+    },
+    openVest(ramp, trim) {
+      const m = sc.mat({ ramp, paint: (h) => (h.prim.tag === 'vestEdge' && trim ? sk(trim, h.tone) : (h.x * 2 + h.y) % 7 === 0 ? sk(ramp, h.tone - 1) : null) });
+      const down: V3 = [0, 0, -1];
+      t.overTrunk(m, 0.95, [{ n: down, o: -(belly.c[2] - belly.h[2] * 0.75) }], 'vest', true);
+      // (open down the front: a slot cut out of it down his chest and belly, its edges turned)
+      sc.box(m, 'torso', add(lerp3(belly.c, ribs.c, 0.5), mul(f, ribs.h[0] + 2.0)), [mul(f, ribs.h[0] * 0.9 + 1.8), mul(l, ribs.h[1] * 0.42), mul(u, ribs.h[2] * 2.6)], 0.3, 0.6, { carve: true });
+      for (const side of [1, -1]) {
+        const top = add(s.neck, add(mul(l, side * 2.6), mul(f, 0.6)));
+        const foot = t.front(side * 0.5, -ribs.h[2] * 1.6, 1.2);
+        sc.cone(m, 'torso', top, foot, 0.8, 0.7, 0.4, { tag: 'vestEdge' });
+      }
+    },
+    bagginess(ramp, at) {
+      const m = sc.mat({ ramp, paint: (h) => ((h.x + Math.floor(h.y / 2)) % 3 === 0 ? sk(ramp, h.tone - 1) : null) });
+      for (const side of ['L', 'R'] as const) {
+        const knee = side === 'L' ? s.kneeL : s.kneeR;
+        const ankle = side === 'L' ? s.ankleL : s.ankleR;
+        const [, lK, lA] = B.legR;
+        // the cloth bunched where the wraps bind it, bellying out over them
+        const p = lerp3(knee, ankle, at);
+        const d = norm(sub(ankle, knee));
+        sc.ell(m, `leg${side}`, add(p, mul(d, -1.2)), [mul(d, 2.0), mul(norm(cross(d, f)), lK + (lA - lK) * at + 1.9), mul(norm(cross(d, norm(cross(d, f)))), lK + (lA - lK) * at + 1.9)], 0.8, { tag: 'bunch' });
+      }
+    },
     capOnFloor(ramp) {
       // his flat cap, set down on the floor beside him
       const m = sc.mat({ ramp, paint: (h) => (h.prim.tag === 'brim' ? sk(ramp, h.tone - 1) : null) });
@@ -577,7 +691,8 @@ export function sculptLook(look: BrawlerLook2, view: GameView = 'front', turn = 
     },
     tunic(ramp, trim) {
       // a sleeveless tunic crossed over at the chest, its skirts split to the hip at each side
-      const m = sc.mat({ ramp, paint: (h) => (h.prim.tag === 'lapel' ? sk(trim, h.tone) : null) });
+      // (its folds: creases slanting down across him from the crossing, the light on the crest of each)
+      const m = sc.mat({ ramp, paint: (h) => (h.prim.tag === 'lapel' ? sk(trim, h.tone) : (h.x * 2 + h.y) % 7 === 0 ? sk(ramp, h.tone - 1) : (h.x * 2 + h.y) % 7 === 1 ? sk(ramp, h.tone + 1) : null) });
       t.overTrunk(m, 0.7, [], 'shirt', true);
       t.strapOver(sc.mat({ ramp: trim }), t.shoulderTop(-1, 1.4), t.hipFront(0.7), 0.7, 0.55, 'lapel');
       for (const side of [1, -1]) {
@@ -773,4 +888,88 @@ export const REAL_FIGHTERS: BrawlerLook2[] = [
 ];
 
 export const BRAWLER_LOOKS_2: BrawlerLook2[] = [...OLD_BOXERS, ...REAL_FIGHTERS];
+
+/** Olive drab: an old soldier's vest. */
+const DRAB: Ramp = ['#10120a', '#20241a', '#363c2a', '#525a3e', '#727c56'];
+
+/**
+ * THE BETTER THREE: his pick of the fighters, 2 Nov 2026: “Show me a better 7, 2, and 1 of the fighters”. Each worked close:
+ * a face with character, whiskers and hair that read, clothes that hang and fold, wraps on shins, feet and fists, the
+ * muscles drawn, fists big; and each with a still of his kick.
+ */
+export const BETTER_FIGHTERS: BrawlerLook2[] = [
+  {
+    n: 7, kind: 'fighter', name: 'The Veteran',
+    line: 'An old soldier who fights dirty: one eye under a patch, a scar down the other cheek, a grey walrus moustache and beard; an old drab vest open on his scarred chest, trousers hacked off at the knee, one shin bound, the other bare and scarred, leather bracers, knuckles strapped. His kick: a knee driven up into whoever he has by the head.',
+    kickName: 'mid-kick: the knee, driven up',
+    tall: 57, head: 1.16, shape: { shoulders: 1.22, chest: 1.18, waist: 0.98, hips: 0.96, depth: 1.08, limbs: 1.1, arms: 1.02, pad: 1.0 }, bulk: 1.14,
+    skin: SKIN_BROWN, hair: 'crop', hairRamp: GREY_C, tash: 'walrus', beard: 'short', whiskers: H_GREY, brow: H_GREY[3],
+    marks: { patch: true, shinScar: true },
+    close: { mouth: '#2a1410', browW: 3, cheekScar: true, abs: true, patchSide: 1 },
+    fists: 'straps', fistRamp: HIDE, fistK: 1.3, stance: 'fight',
+    kick: (t) => ({
+      pz: 3 * t, pitch: -4, bend: 6, yaw: 50, twist: 10, faceTurn: -10, faceUp: -4,
+      rfx: 12 * t, rfy: -1.0 * t, rfz: 34 * t, rfp: 72, rk: -2, rkUp: 85,
+      lfx: 2.4 * t, lfy: 2.6 * t, lfz: 1.0 * t, lfp: 24, lk: 18,
+      lhIn: 0, lhx: 12.5 * t, lhy: -1.4 * t, lhz: 0.4 * t, le: 6, rhIn: 0, rhx: 12.5 * t, rhy: 1.6 * t, rhz: 0.4 * t, re: 6,
+    }),
+    dress: (k) => {
+      k.openVest(DRAB, HIDE);
+      k.legs(GREY_C, 1.08, 1.2, 0.6, null, undefined, { folds: true, frayed: true });
+      const m = k.sc.mat({ ramp: WRAP, paint: (h) => (h.prim.k === 'cone' && Math.floor(onCone(h.prim as Cone, h.p, k.t.u).t * 7 + onCone(h.prim as Cone, h.p, k.t.u).around / 1.6) % 2 === 0 ? sk(WRAP, h.tone - 1) : null) });
+      const s = k.w.s;
+      k.sc.cone(m, 'legR', lerp3(s.kneeR, s.ankleR, 0.08), lerp3(s.kneeR, s.ankleR, 0.95), k.w.B.legR[1] * 0.92 + 0.6, k.w.B.legR[2] + 0.6, 0.6, { tag: 'binding' });
+      k.belt(HIDE, 1.2, BRASS, true);
+      k.bracers(HIDE);
+      k.footWraps(WRAP);
+    },
+  },
+  {
+    n: 2, kind: 'fighter', name: 'The Pit Kicker',
+    line: 'A kickboxer of the fighting pits: his head shaved at the sides under a tall crest of black spikes, a goatee, a brass ring in his ear; bare chest, short green trunks with an ochre stripe and a wide ochre waistband, cords knotted round his arms, his shins and feet bound in grey, fists taped. His kick: a high kick to the head.',
+    kickName: 'mid-kick: a high kick',
+    tall: 57, head: 1.12, shape: { shoulders: 1.2, chest: 1.12, waist: 0.84, hips: 0.88, legs: 1.08, depth: 1.02, limbs: 1.06, pad: 1.0 }, bulk: 1.1,
+    skin: SKIN_DEEP, hair: 'spikes', hairRamp: H_BLACK, tash: 'none', beard: 'goatee', whiskers: H_BLACK, brow: '#0a0608',
+    close: { mouth: '#140a08', earring: BRASS, abs: true },
+    fists: 'tape', fistRamp: WRAP, fistK: 1.28, stance: 'fight',
+    kick: (t) => ({
+      pz: -1.0 * t, pitch: -14, bend: -2, yaw: 30, twist: 20, faceTurn: -14, faceUp: 2,
+      lfx: 20 * t, lfy: 3.0 * t, lfz: 44 * t, lfp: 46, lk: 8, lkUp: 46,
+      rfx: -3.0 * t, rfy: -2.4 * t, rfz: 1.0 * t, rfp: 24, rk: -16,
+      lhIn: 0, lhx: 7.5 * t, lhy: 1.6 * t, lhz: 3.4 * t, le: 26, rhIn: 0, rhx: -3.0 * t, rhy: -3.0 * t, rhz: -8.5 * t, re: 34,
+    }),
+    dress: (k) => {
+      k.legs(GREEN, 0.5, 0.95, 0.4, 'side', OCHRE, { folds: true });
+      k.belt(OCHRE, 1.4);
+      k.wraps(WRAP, 0.05, false);
+      k.footWraps(WRAP);
+      k.armBand(MAROON, 'L', 0.32);
+      k.armBand(MAROON, 'R', 0.32);
+    },
+  },
+  {
+    n: 1, kind: 'fighter', name: 'The Wandering Monk',
+    line: 'A shaven old monk off the roads: a long drooping grey moustache and a short grey beard, heavy grey brows; an ochre wrap crossed over his chest and tied with a maroon sash, big wooden beads, baggy grey trousers bound at the shins with cream wraps, his feet wrapped, his fists wrapped. His kick: a flying kick off the ground.',
+    kickName: 'mid-kick: a flying kick',
+    tall: 57, head: 1.14, shape: { shoulders: 1.16, chest: 1.1, waist: 0.88, hips: 0.92, depth: 1.04, limbs: 1.06, pad: 1.0 }, bulk: 1.08,
+    skin: SKIN_BROWN, hair: 'bald', hairRamp: H_GREY, tash: 'drooping', beard: 'short', whiskers: H_GREY, brow: H_GREY[3],
+    close: { mouth: '#2a1410', browW: 3, abs: true },
+    fists: 'wraps', fistRamp: CREAM, fistK: 1.26, stance: 'fight',
+    kick: (t) => ({
+      pz: 10 * t, pitch: -10, bend: 4, yaw: 30, twist: 14, faceTurn: -12, faceUp: 0,
+      lfx: 20 * t, lfy: 2.0 * t, lfz: 50 * t, lfp: 30, lk: 6, lkUp: 26,
+      rfx: -1.0 * t, rfy: -2.0 * t, rfz: 18 * t, rfp: 52, rk: -10, rkUp: 24,
+      lhIn: 0, lhx: 6.5 * t, lhy: 0.4 * t, lhz: 2.6 * t, le: 30, rhIn: 0, rhx: 4.0 * t, rhy: 1.4 * t, rhz: -2.4 * t, re: 40,
+    }),
+    dress: (k) => {
+      k.tunic(OCHRE, MAROON);
+      k.legs(GREY_C, 1.7, 1.6, 0.4, null, undefined, { folds: true });
+      k.bagginess(GREY_C, 0.45);
+      k.wraps(CREAM, 0.45, false);
+      k.footWraps(CREAM);
+      k.beads(WOODB);
+      k.sash(MAROON, true);
+    },
+  },
+];
 void RED;
