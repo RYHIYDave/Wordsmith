@@ -4,7 +4,7 @@
 //   - THE FLOOR: the tomb's flags; the roots out from the feet of the walls (a run a tile at a time, a bend, an end), two or three a
 //     room and more in his hall, out of its middle; a puddle here and there, water dripping into it; moss on a tile in ten; fallen
 //     leaves; the grave slabs in pairs down the rooms;
-//   - THE DAYLIGHT: many small shafts, one to every eight to twelve tiles of floor in every room, a few in his hall; each a pool on
+//   - THE DAYLIGHT: a shaft in every room, two in a big one and in his hall (thinned at his word: below); each a pool on
 //     the floor and a column of lit air, both drawn added, as light is; and the town's daylight down the stairs onto the first room;
 //   - THE WALLS: the tomb's bays, his hall's own; THE ARCHWAYS in every doorway left open between the rooms, the wall either side of
 //     its way its own;
@@ -191,23 +191,31 @@ export class TombView implements LookView {
         tiles.set(y1 * W + x1, this.tileNamed(`a grave slab ${w}, its foot`));
       }
     }
-    // THE DAYLIGHT: many small shafts in every room, a few in his hall off its middle; leaves and earth under some
+    // THE DAYLIGHT: a shaft in every room, two in a big one, two in his hall off its middle; leaves and earth under some. (The art
+    // chat laid one to every eight to twelve tiles of floor; his word, shown it, 2 Nov 2026, 19:51: “That might be too many rays
+    // coming down unless you’re just showing me what it’s capable of”: thinned so, a sixth as many seen. The daylight they let in
+    // stays: where each of the others fell, the floor is lit as it was, without its ray.)
     const shafts: { x: number; y: number; size: Size }[] = [];
+    const unseen: { x: number; y: number; size: Size }[] = [];
     for (const r of f.rooms) {
       const area = r.w * r.h;
-      const want = r === hall ? 3 + Math.floor(hash(r.x, r.y, 6215) * 2) : Math.max(1, Math.round(area / (8 + hash(r.x, r.y, 6217) * 4)));
+      const all = r === hall ? 3 + Math.floor(hash(r.x, r.y, 6215) * 2) : Math.max(1, Math.round(area / (8 + hash(r.x, r.y, 6217) * 4)));
+      const want = r === hall ? 2 : area >= 100 ? 2 : 1;
       const spots: [number, number][] = [];
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (isFloor(x, y) && !solidAt.has(y * W + x) && !(r === hall && nearBoss(x, y))) spots.push([x, y]);
       spots.sort((p, q) => hash(p[0], p[1], 6219) - hash(q[0], q[1], 6219));
       const laid: [number, number][] = [];
       for (const [x, y] of spots) {
-        if (laid.length >= want) break;
+        if (laid.length >= all) break;
         if (laid.some(([u, v]) => Math.hypot(u - x, v - y) < 2.6)) continue;
         laid.push([x, y]);
         const h = hash(x, y, 6221);
         const size: Size = h < 0.47 ? 'small' : h < 0.92 ? 'middle' : 'large';
-        shafts.push({ x: x + 0.5, y: y + 0.5, size });
-        if (free(x, y) && hash(x, y, 6223) < 0.35) tiles.set(y * W + x, this.tileNamed('fallen leaves and earth'));
+        const seen = shafts.filter((q) => q.x >= r.x && q.x < r.x + r.w && q.y >= r.y && q.y < r.y + r.h);
+        if (seen.length < want && !seen.some((q) => Math.hypot(q.x - x - 0.5, q.y - y - 0.5) < 4)) {
+          shafts.push({ x: x + 0.5, y: y + 0.5, size });
+          if (free(x, y) && hash(x, y, 6223) < 0.35) tiles.set(y * W + x, this.tileNamed('fallen leaves and earth'));
+        } else unseen.push({ x: x + 0.5, y: y + 0.5, size });
       }
     }
     // PUDDLES with water dripping into them; MOSS on a tile in ten; FALLEN LEAVES about
@@ -239,6 +247,7 @@ export class TombView implements LookView {
       lights.push({ x: q.x, y: q.y, up: 0, r: SH[q.size].r, strength: SH[q.size].strength, glow: { ...SH.glow } });
       lights.push({ x: q.x, y: q.y, up: SH.column.up, dx: -10, r: SH.column.r, strength: SH.column.strength, glow: null });
     }
+    for (const q of unseen) lights.push({ x: q.x, y: q.y, up: 0, r: SH[q.size].r, strength: SH[q.size].strength, glow: null });
     for (const p of L.props) {
       if (p.kind === 'piece' && p.name === 'cresset') {
         const C = TOMB_LIGHTS.cresset;
