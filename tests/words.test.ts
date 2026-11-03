@@ -32,6 +32,11 @@ import { land } from './helpers';
 import { OWN_MOVES } from '../src/game/defs';
 import { WARLOCK_TUNE } from '../src/game/warlock';
 import { TINKER_TUNE } from '../src/game/tinkerer';
+import { VETERAN } from '../src/game/veteran';
+// (the Brawler as he was: his tap, hold and swipe through the generic use here, as every class's skills are used. Since 25.0 he
+// is the Veteran (game/veteran.ts VETERAN, on at his yes of 3 Nov 2026), whose blows are pressed into globes and played by his
+// own rules; the words on them are checked in tests/veteran_words.test.ts)
+VETERAN.on = false;
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;
