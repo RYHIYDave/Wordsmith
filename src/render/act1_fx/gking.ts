@@ -15,7 +15,7 @@
 // Nothing cyan: the enemy's pink, the Hush's grey and fog, steel and stone, the bird's gold and silver.
 
 import { toSprite } from '../../art/kit';
-import { BIRD, BIRD_CANVAS, DECREE_FX, FACE_CANVAS, FX_CANVAS, KN_CANVAS, WEIGHT_FX, birdPainted, facePainted, knightPainted, sparksPainted, weightPainted } from '../../art/king_fx';
+import { BIRD, BIRD_CANVAS, DECREE_FX, FACE_CANVAS, FX_CANVAS, KN_CANVAS, WEIGHT_CANVAS, WEIGHT_FX, birdPainted, facePainted, knightPainted, sparksPainted, weightPainted } from '../../art/king_fx';
 import type { BirdState } from '../../art/king_fx';
 import { hash } from '../../art/kit';
 import type { GameView } from '../../art/skin';
@@ -107,7 +107,7 @@ function weight(c: Act1FxCtx, p: Peril, part: 'floor' | 'crown'): void {
   if (p.t >= WEIGHT_FX.long) return;
   const k = Math.floor(p.t * FPS);
   const view = viewOf(p.fx, p.fy);
-  const sp = made(`weight:${part}:${k}:${view}`, flipped(p.fx, p.fy), () => toSprite(weightPainted(k / FPS, view, part), null, FX_CANVAS.ax, FX_CANVAS.ay));
+  const sp = made(`weight:${part}:${k}:${view}`, flipped(p.fx, p.fy), () => toSprite(weightPainted(k / FPS, view, part), null, WEIGHT_CANVAS.ax, WEIGHT_CANVAS.ay));
   const [sx, sy] = c.at(p.x, p.y);
   if (part === 'floor') c.g!.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
   else c.stand(p.x + p.y + 2, sp, sx, sy);
@@ -122,7 +122,7 @@ function paintAhead(m: Monster): void {
   while (aheadAt < 2 * n && performance.now() - t0 < 3) {
     const part = aheadAt < n ? 'crown' : 'floor';
     const k = aheadAt % n;
-    made(`weight:${part}:${k}:${view}`, false, () => toSprite(weightPainted(k / FPS, view, part), null, FX_CANVAS.ax, FX_CANVAS.ay));
+    made(`weight:${part}:${k}:${view}`, false, () => toSprite(weightPainted(k / FPS, view, part), null, WEIGHT_CANVAS.ax, WEIGHT_CANVAS.ay));
     aheadAt++;
   }
 }
