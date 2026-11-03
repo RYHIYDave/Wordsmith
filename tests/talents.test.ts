@@ -14,6 +14,7 @@ import type { TalentDef, TalentFigure } from '../src/game/talents';
 import { ALL_CLASS_IDS, CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
+import { VETERAN } from '../src/game/veteran';
 import { seasoned } from './helpers';
 
 /** With the switch held on (or off) for a while, and as it was again after. */
@@ -96,6 +97,11 @@ function figureIds(f: TalentFigure): string[] {
 }
 
 test('THE NEW CLASSES\' TREES (28 Oct 2026): fifteen each in his shapes, every one reachable, his paths, his ideas in', () => {
+  // (the Brawler's tree as it was, his of 28 Oct: since 25.0 he is the Veteran with a tree of his own (game/talents.ts VETERAN_TREE,
+  // on with VETERAN at his yes of 3 Nov 2026), held below; this one is checked with the switch off)
+  const was = VETERAN.on;
+  VETERAN.on = false;
+  try {
   const NEW: readonly ClassId[] = ['warlock', 'tinkerer', 'brawler'];
   for (const cls of NEW) {
     const tree = TREES[cls];
@@ -144,6 +150,30 @@ test('THE NEW CLASSES\' TREES (28 Oct 2026): fifteen each in his shapes, every o
   assert.deepEqual([...by('brawler', 'bobweave').from].sort(), ['bleeders', 'tenderize']);
   assert.deepEqual(TREES.tinkerer.talents.filter((t) => !t.from.length).map((t) => t.id), ['bombsaway']);
   assert.deepEqual([...by('tinkerer', 'growthserum').from].sort(), ['overdrive', 'thebigone']);
+  } finally {
+    VETERAN.on = was;
+  }
+});
+
+test('THE BRAWLER AS THE VETERAN (3 Nov 2026): fifteen on his three globes, every one reachable, each id his own, every card fits', () => {
+  assert.equal(VETERAN.on, true);
+  const tree = TREES.brawler;
+  assert.ok(!tree.draft);
+  assert.deepEqual(tree.talents.filter((t) => !t.works).map((t) => t.id), [], 'every talent at work');
+  assert.equal(tree.talents.length, 15);
+  const ids = tree.talents.map((t) => t.id);
+  assert.equal(new Set(ids).size, 15);
+  for (const other of ALL_CLASS_IDS) if (other !== 'brawler') for (const id of ids) assert.ok(!TREES[other].talents.some((t) => t.id === id), `${id} is not ${other}'s too`);
+  for (const t of tree.talents) {
+    for (const f of t.from) assert.ok(ids.includes(f), `${t.id} comes from ${f}`);
+    assert.ok(tree.paths.some((p) => p.id === t.path), `${t.id} on a path`);
+    if (t.word) assert.ok(WORD_IDS.includes(t.word));
+    assert.ok(wrapText(t.text, 136 - 10).length <= 6, `${t.id}'s card takes ${wrapText(t.text, 136 - 10).length} lines`);
+    assert.ok(t.name.length <= 14, `${t.name} is short`);
+  }
+  const reach = new Set(tree.talents.filter((t) => !t.from.length).map((t) => t.id));
+  for (let n = 0; n < 20; n++) for (const t of tree.talents) if (t.from.some((f) => reach.has(f))) reach.add(t.id);
+  assert.equal(reach.size, 15, 'every talent reachable');
 });
 
 test('the shapes: the mage three paths of five from her rune; the arrow two feathers to start from; the swords two pommels and a crossing that is both', () => {
