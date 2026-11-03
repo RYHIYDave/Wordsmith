@@ -70,7 +70,7 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
-import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetCarryAt, vetFireFor, vetLocked, vetMoveFor, vetReach } from './veteran';
+import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetCarryAt, vetFacing, vetFireFor, vetLeft, vetLocked, vetMoveFor, vetReach } from './veteran';
 import type { VetBlowId, VetMoveDef, VetPlaying } from './veteran';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
@@ -5209,18 +5209,13 @@ export class Game {
       const dx = q.tx - h.x;
       const dy = q.ty - h.y;
       const l = Math.hypot(dx, dy);
-      if (l > 0.3) {
-        fx = -dx / l;
-        fy = -dy / l;
-      }
+      if (l > 0.3) [fx, fy] = vetFacing(-dx, -dy);
+      else [fx, fy] = vetFacing(fx, fy);
     } else {
       const dx = c.aimX - h.x;
       const dy = c.aimY - h.y;
-      const l = Math.hypot(dx, dy);
-      if (l > 0.3) {
-        fx = dx / l;
-        fy = dy / l;
-      }
+      // (his four ways: the nearest to what he aims at, game/veteran.ts vetFacing)
+      [fx, fy] = Math.hypot(dx, dy) > 0.3 ? vetFacing(dx, dy) : vetFacing(fx, fy);
     }
     h.fx = fx;
     h.fy = fy;
@@ -5248,11 +5243,12 @@ export class Game {
     const m = VET_MOVES[mv.id];
     mv.f += dt * VET_FPS * this.vetPace(mv.id);
     // (carried: the art's step, slid along the floor; walls stop him)
-    const [cf, cl] = vetCarryAt(m, Math.min(mv.f, m.long));
+    const [cf, cl] = vetCarryAt(mv.id, Math.min(mv.f, m.long));
     const df = cf - mv.carried[0];
     const dl = cl - mv.carried[1];
     mv.carried = [cf, cl];
-    if (df || dl) this.slide(h, TUNE.heroRadius, mv.fx * df + mv.fy * dl, mv.fy * df - mv.fx * dl, this.level.walk);
+    const [lx, ly] = vetLeft(mv.fx, mv.fy);
+    if (df || dl) this.slide(h, TUNE.heroRadius, mv.fx * df + lx * dl, mv.fy * df + ly * dl, this.level.walk);
     // (his dodging jump: nothing touches him while he is off the floor; THE VETERAN'S TREE: Hang Time, nor through any move of his in the air)
     if (m.air && (mv.id === 'dodge' || this.has('vhangtime')) && mv.f >= m.air[0] && mv.f <= m.air[1]) h.invuln = Math.max(h.invuln, 0.06);
     h.anim = 'attack';
@@ -5317,6 +5313,8 @@ export class Game {
     }
     if (first) {
       this.landed(i);
+      // (what the words behind it leave, his blow leaves where it first lands, once a move)
+      this.wake(i, o.x, o.y, 1, 1);
       const heavy = m.strike!.kind === 'kick' || m.share >= 1;
       this.sfx(heavy ? 'slam' : 'hit', heavy ? 0.8 : 0.6);
       if (m.share >= 1.5) this.emit({ t: 'shake', amount: 3.5 });

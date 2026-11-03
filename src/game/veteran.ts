@@ -33,6 +33,8 @@
 // the flying uppercut. A swipe and a hold: as the first, the spinning jump kick that closes in; after two punches the flying
 // knee; else the spinning jump kick.
 
+import { VET_BAKED } from './veteran_baked';
+
 /**
  * THE SWITCH: off, the Brawler is as he was (and he is left out of the release besides: game/brawler.ts BRAWLER, his
  * 22:52, 2 Nov, “Leave him out for now (Recommended)”); on, the Brawler is the Veteran: his tree (game/talents.ts
@@ -259,8 +261,9 @@ export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number;
   if (F.shape !== 'round') {
     // (its line: his forward, turned `dir` degrees to his left; on the game's floor his left is (fy, -fx))
     const a = ((F.dir ?? 0) * Math.PI) / 180;
-    const ux = p.fx * Math.cos(a) + p.fy * Math.sin(a);
-    const uy = p.fy * Math.cos(a) - p.fx * Math.sin(a);
+    const [lx, ly] = vetLeft(p.fx, p.fy);
+    const ux = p.fx * Math.cos(a) + lx * Math.sin(a);
+    const uy = p.fy * Math.cos(a) + ly * Math.sin(a);
     const along = dx * ux + dy * uy;
     if (along <= -r) return null;
     const off = Math.abs(Math.atan2(dx * uy - dy * ux, along));
@@ -272,23 +275,33 @@ export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number;
   return from + F.long * (1 - Math.cbrt(1 - u));
 }
 
-/** How far a move has carried him by a frame (tiles along his forward and to his left): the art's carry, eased the way the art's goes (most of it by the blow). */
-export function vetCarryAt(m: VetMoveDef, f: number): [number, number] {
-  const [cf, cl] = m.carry;
-  if (!cf && !cl) return [0, 0];
-  const S = m.strike;
-  // (a driving step: none of it before the wind-up is let go, most of it in the strike's frame or two, the rest settling after)
-  const go = S ? S.from : m.air ? m.air[0] : 0;
-  const by = S ? S.at : m.air ? m.air[1] : m.long;
-  const end = m.air ? Math.max(by, m.air[1]) : Math.min(m.long, by + 8);
-  let k: number;
-  if (f <= go) k = 0;
-  else if (f <= by) k = 0.7 * ((f - go) / Math.max(1, by - go));
-  else if (f <= end) k = 0.7 + 0.3 * (1 - Math.pow(1 - (f - by) / Math.max(1, end - by), 3));
-  else k = 1;
-  if (m.air && !S) {
-    // (the dodge: carried through the air, from take-off to landing)
-    k = f <= m.air[0] ? 0 : f >= m.air[1] ? 1 : (f - m.air[0]) / (m.air[1] - m.air[0]);
-  }
-  return [cf * k, cl * k];
+/**
+ * WHERE THE FLOOR POINT UNDER HIM IS, a frame into a move (tiles along his forward and to his left as it began): the art's own,
+ * baked (game/veteran_baked.ts `place`: its carry, and the swing of the spinning elbow's turn about its pivot foot), between
+ * its frames as they come. Carried there, his picture (drawn from his floor point) is where the art has him, his feet held.
+ */
+export function vetCarryAt(id: VetBlowId, f: number): [number, number] {
+  const B = VET_BAKED[id];
+  const P = B.place;
+  const k = Math.max(0, Math.min(B.long, f));
+  const i = Math.min(B.long - 1, Math.floor(k));
+  const u = k - i;
+  const a = P[i];
+  const b = P[Math.min(B.long, i + 1)];
+  return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+}
+
+/**
+ * HIS FOUR WAYS: he is drawn facing one of the four ways the game draws heroes (art/veteran_art.ts: down the screen to the
+ * right, +x; down to the left, +y, mirrored; up to the right, -y; up to the left, -x, mirrored), so a move faces the nearest
+ * of them to what he aims at, and its force goes out the way his picture throws it.
+ */
+export function vetFacing(dx: number, dy: number): [number, number] {
+  if (Math.abs(dx) >= Math.abs(dy)) return [dx >= 0 ? 1 : -1, 0];
+  return [0, dy >= 0 ? 1 : -1];
+}
+
+/** His left on the game's floor, facing (fx, fy): (fy, -fx); on a picture drawn mirrored (fx - fy < 0), the world's other side, as the picture has it. */
+export function vetLeft(fx: number, fy: number): [number, number] {
+  return fx - fy < 0 ? [-fy, fx] : [fy, -fx];
 }
