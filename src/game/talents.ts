@@ -455,7 +455,9 @@ const BRAWLER_TREE: TalentTree = {
 //   and KICK (hot orange, a hold), side by side. Each globe is four talents round its rim, begun at its bottom, up either
 //   side to its top; over the punch and the kick globes, their fire (a swipe then a tap, the flying uppercut; a swipe then a
 //   hold, the flying knee and the spinning jump kick); over the jump globe, the lock that joins all three, reached from any
-//   globe's top. Nothing of the old Brawler's. A draft, shown to him first: none of it works yet.
+//   globe's top. Nothing of the old Brawler's. Shown to him as a draft (the page “The Veteran's Tree”, https://claude.ai/artifact/6u1Xx6DLPByUGWrPf9menQ), his
+//   pick by 09:42: “Yes, build it (Recommended)”; every talent made to work as its card says (game.ts, “THE VETERAN”; numbers,
+//   game/veteran.ts VET_TALENTS).
 const VET_PUNCH = '#22d0e0';
 const VET_KICK = '#e8561a';
 const VET_JUMP = '#e8eef8';
@@ -464,7 +466,6 @@ const VETERAN_TREE: TalentTree = {
   cls: 'brawler',
   shape: 'three globes',
   square: true,
-  draft: true,
   room: [-1.35, -1.05, 7.95, 3.45],
   paths: [
     { id: 'punch', name: 'PUNCH', color: VET_PUNCH, label: { node: 'vstiffjab', side: 'below' } },

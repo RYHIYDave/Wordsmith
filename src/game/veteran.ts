@@ -132,6 +132,37 @@ export const VET_TUNE = {
   swipeWaits: 0.35,
 };
 
+/**
+ * HIS TREE'S NUMBERS (game/talents.ts VETERAN_TREE; their rules in game.ts, “THE VETERAN”): starting numbers, as the cards say
+ * them, his to try and change.
+ */
+export const VET_TALENTS = {
+  /** Viper Jab: how much poison his jab leaves, as a share of its hit, over the poison's time. */
+  viperJab: { dose: 0.6 },
+  /** Guard Up: how much less a blow from in front does between his blows, and how far round counts as in front (the cosine). */
+  guardUp: { less: 0.5, cos: 0.35 },
+  /** Knockdown: seconds the third punch of a combo knocks them down. */
+  knockdown: { down: 2 },
+  /** Launcher: how much harder his blows land on one hanging in the air. */
+  launcher: { mult: 2 },
+  /** Switch Kick: how much of the round kick's wind-up is skipped. */
+  switchKick: { skip: 0.5 },
+  /** Long Legs: tiles more his kicks reach. */
+  longLegs: { more: 1 },
+  /** Wall Slam: seconds stunned. */
+  wallSlam: { stun: 2 },
+  /** Aftershock: how far round the one he kicked everything falls (tiles), and for how long. */
+  aftershock: { r: 1.5, down: 1 },
+  /** Thunder Knee: how many more the lightning jumps on to, how far, its share of the blow, seconds stunned. */
+  thunderKnee: { n: 3, far: 3.5, share: 0.5, stun: 1.5 },
+  /** Light on His Feet: his jump's wait, as a share of what it was. */
+  lightFeet: { wait: 2 / 3 },
+  /** Stoke: seconds off his jump's wait for a fire move that lands. */
+  stoke: { secs: 2 },
+  /** The Full Set: how much harder the finisher lands, and how far it throws them (tiles). */
+  fullSet: { mult: 3, throw: 3 },
+};
+
 /** A move being played: which, how far through it (frames, at his pace), where he stood and the way he faced as it began, whom its blow has struck. */
 export interface VetPlaying {
   id: VetBlowId;
@@ -160,6 +191,8 @@ export interface VetState {
   done: VetBlowId[];
   /** Seconds since the last move was played out with nothing to follow it (the combo is over at VET_TUNE.gap). */
   idle: number;
+  /** (Fire Starter) Landed from his dodge jump: his next tap or hold is in fire. */
+  fireReady?: boolean;
 }
 export const newVet = (): VetState => ({ globes: [], queue: [], move: null, done: [], idle: 0 });
 
@@ -212,10 +245,11 @@ export interface VetReachAt {
  * where he stood as the move began (x0, y0), along the way he faced then (fx, fy): in its cone or crescent within its reach;
  * the round crescent all round him (its front rolled out to him). Its front goes out over `long` frames, fast then slowing.
  */
-export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number; fy: number }, px: number, py: number, r: number): number | null {
-  const F = m.force;
+export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number; fy: number }, px: number, py: number, r: number, more = 0): number | null {
+  const F0 = m.force;
   const S = m.strike;
-  if (!F || !S) return null;
+  if (!F0 || !S) return null;
+  const F = more ? { ...F0, reach: F0.reach + more } : F0;
   const from = F.from ?? S.at;
   const dx = px - p.x0;
   const dy = py - p.y0;

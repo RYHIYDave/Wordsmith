@@ -70,7 +70,7 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
-import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TUNE, isVetPunch, newVet, vetCarryAt, vetFireFor, vetLocked, vetMoveFor, vetReach } from './veteran';
+import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetCarryAt, vetFireFor, vetLocked, vetMoveFor, vetReach } from './veteran';
 import type { VetBlowId, VetMoveDef, VetPlaying } from './veteran';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import type { Brew, Decoy, Tar } from './state';
@@ -5149,13 +5149,24 @@ export class Game {
       }
       s.charges--;
       s.uses++;
-      if (s.cd <= 0) s.cd = s.r.cooldown;
+      // (THE VETERAN'S TREE: Light on His Feet, his jump comes back a third sooner)
+      if (s.cd <= 0) s.cd = s.r.cooldown * (this.has('vlightfeet') ? VET_TALENTS.lightFeet.wait : 1);
+      v.fireReady = false;
       v.globes.push('jump');
       v.queue.push({ id: 'dodge', globe: v.globes.length - 1, tx: sx, ty: sy });
       v.idle = 0;
       return true;
     }
     const i = kind === 'tap' ? 0 : 1;
+    // (THE VETERAN'S TREE: Fire Starter, landed from a dodge jump, his next tap or hold is in fire already, the jump not spent)
+    if (v.fireReady && !vetLocked(v)) {
+      v.fireReady = false;
+      v.globes.push(kind === 'tap' ? 'punchFire' : 'kickFire');
+      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, tx: 0, ty: 0 });
+      h.skills[i].uses++;
+      v.idle = 0;
+      return true;
+    }
     // (set in fire: the swipe's jump waiting its turn, or begun and not yet off the floor)
     const lastQ = v.queue.length ? v.queue[v.queue.length - 1] : null;
     const jumping = !lastQ && v.move && v.move.id === 'dodge' && v.move.f < VET_MOVES.dodge.air![0] ? v.move : null;
@@ -5210,7 +5221,11 @@ export class Game {
     }
     h.fx = fx;
     h.fy = fy;
-    v.move = { id: q.id, f: 0, x0: h.x, y0: h.y, fx, fy, carried: [0, 0], hit: [], globe: q.globe };
+    // (THE VETERAN'S TREE: Switch Kick, a round kick straight after a punch with half its wind-up: begun half way through it)
+    const prev = v.done.length ? v.done[v.done.length - 1] : null;
+    const switched = q.id === 'roundkick' && !!prev && isVetPunch(prev) && v.idle < VET_TUNE.gap && this.has('vswitchkick');
+    const f0 = switched ? Math.floor(VET_MOVES.roundkick.strike!.from * VET_TALENTS.switchKick.skip) : 0;
+    v.move = { id: q.id, f: f0, x0: h.x, y0: h.y, fx, fy, carried: [0, 0], hit: [], globe: q.globe };
     // (the attack's words: what a use gives him, Swiftness, the frenzy, a shield)
     if (q.id !== 'dodge') this.boons(isVetPunch(q.id) ? 0 : 1);
   }
@@ -5235,14 +5250,16 @@ export class Game {
     const dl = cl - mv.carried[1];
     mv.carried = [cf, cl];
     if (df || dl) this.slide(h, TUNE.heroRadius, mv.fx * df + mv.fy * dl, mv.fy * df - mv.fx * dl, this.level.walk);
-    // (his dodging jump: nothing touches him while he is off the floor)
-    if (m.air && mv.id === 'dodge' && mv.f >= m.air[0] && mv.f <= m.air[1]) h.invuln = Math.max(h.invuln, 0.06);
+    // (his dodging jump: nothing touches him while he is off the floor; THE VETERAN'S TREE: Hang Time, nor through any move of his in the air)
+    if (m.air && (mv.id === 'dodge' || this.has('vhangtime')) && mv.f >= m.air[0] && mv.f <= m.air[1]) h.invuln = Math.max(h.invuln, 0.06);
     h.anim = 'attack';
     if (m.strike && mv.f >= m.strike.at) this.vetStrike(mv, m);
     if (mv.f >= m.long) {
       v.done.push(mv.id);
       v.move = null;
       v.idle = 0;
+      // (THE VETERAN'S TREE: Fire Starter, landed from his dodge jump: his next tap or hold is in fire)
+      if (mv.id === 'dodge' && this.has('vfirestarter')) v.fireReady = true;
       // (the combo locked and played out: its globes go out)
       if (vetLocked(v) && !v.queue.length) {
         v.globes = [];
@@ -5260,7 +5277,8 @@ export class Game {
     let k = 0;
     for (const o of this.monsters) {
       if (o.dead || mv.hit.includes(o.id) || this.shutIn(o)) continue;
-      const at = vetReach(m, mv, o.x, o.y, o.r);
+      // (THE VETERAN'S TREE: Long Legs, his kicks reach a tile further)
+      const at = vetReach(m, mv, o.x, o.y, o.r, m.strike!.kind === 'kick' && this.has('vlonglegs') ? VET_TALENTS.longLegs.more : 0);
       if (at === null || mv.f < at) continue;
       mv.hit.push(o.id);
       this.vetHit(o, mv, m, k++);
@@ -5269,10 +5287,31 @@ export class Game {
 
   /** One of his blows landing on a monster: its share of the hit; driven back for good, staggered, stunned or thrown up, as the blow is. */
   private vetHit(o: Monster, mv: VetPlaying, m: VetMoveDef, n: number): void {
+    const h = this.hero;
+    const v = h.vet!;
+    const T = VET_TALENTS;
     const i = isVetPunch(mv.id) ? 0 : 1;
     const R = VET_REACT[m.force!.react];
     const first = mv.hit.length === 1;
-    this.hitMonster(o, i, m.share, n >= 3);
+    const fire = m.globe === 'punchFire' || m.globe === 'kickFire';
+    let share = m.share;
+    // (THE VETERAN'S TREE: Launcher, his blows on one hanging in the air land twice as hard)
+    if (this.has('vlauncher') && this.brawl.up.some((u) => u.id === o.id)) share *= T.launcher.mult;
+    // (The Full Set: the last blow of a combo locked with a punch, a kick and a fire globe in it, a finisher)
+    const finisher = mv.globe === 2 && this.has('vfullset') && v.globes.includes('punch') && v.globes.includes('kick') && v.globes.some((g) => g === 'punchFire' || g === 'kickFire');
+    if (finisher) share *= T.fullSet.mult;
+    this.hitMonster(o, i, share, n >= 3);
+    // (Stoke: a fire move that lands takes two seconds off his jump's wait)
+    if (first && fire && this.has('vstoke')) {
+      const s = h.skills[2];
+      if (s.charges < s.maxCharges) s.cd = Math.max(0.01, s.cd - T.stoke.secs);
+    }
+    // (Thunder Knee: his flying knee and spinning jump kicks crack with lightning, on to three more near each one they hit)
+    if ((mv.id === 'knee' || mv.id === 'spinkick' || mv.id === 'spinkickClose') && this.has('vthunderknee')) this.vetThunder(o, mv, m);
+    if (finisher) {
+      this.emit({ t: 'shake', amount: 5 });
+      if (!o.dead) this.throwMonster(o, mv.x0, mv.y0, T.fullSet.throw, 0.3);
+    }
     if (first) {
       this.landed(i);
       const heavy = m.strike!.kind === 'kick' || m.share >= 1;
@@ -5281,13 +5320,68 @@ export class Game {
       else if (heavy) this.emit({ t: 'shake', amount: 1.8 });
     }
     if (o.dead) return;
+    // (Viper Jab: his jab poisons; Stiff Jab: it breaks off what the one it hits is winding up)
+    if (mv.id === 'jab' && this.has('vviperjab')) {
+      const hit = ((h.d.dmgMin + h.d.dmgMax) / 2) * h.skills[0].r.dmgMult * share;
+      this.poisonMonster(o, (hit * T.viperJab.dose) / TUNE.poisonTime, 0);
+    }
+    if (mv.id === 'jab' && this.has('vstiffjab')) this.breakOff(o);
+    // (Aftershock: every kick that lands knocks down everything near the one it hit)
+    if (m.strike!.kind === 'kick' && this.has('vaftershock')) this.vetAftershock(o);
     if (R.up && this.popUp(o)) {
       o.stunT = BRAWL_TUNE.talents.bigUppercut.up + (R.stun ?? 0);
       return;
     }
-    if (R.back) this.throwMonster(o, mv.x0, mv.y0, R.back, VET_TUNE.driveSecs);
+    if (R.back && !finisher) {
+      // (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
+      if (m.strike!.kind === 'kick' && this.has('vwallslam') && this.vetSlams(o, mv, R.back)) o.stunT = Math.max(o.stunT, T.wallSlam.stun);
+      this.throwMonster(o, mv.x0, mv.y0, R.back, VET_TUNE.driveSecs);
+    }
     if (R.stagger) o.staggerT = Math.max(o.staggerT, R.stagger);
     if (R.stun) o.stunT = Math.max(o.stunT, R.stun);
+    // (Knockdown: the third punch of a combo knocks it off its feet)
+    if (mv.globe === 2 && isVetPunch(mv.id) && this.has('vknockdown') && !o.boss) o.stunT = Math.max(o.stunT, T.knockdown.down);
+  }
+
+  /** (Wall Slam) Is the way it is driven blocked by a wall or another monster, within how far it is driven? */
+  private vetSlams(o: Monster, mv: VetPlaying, back: number): boolean {
+    const dx = o.x - mv.x0;
+    const dy = o.y - mv.y0;
+    const l = Math.hypot(dx, dy) || 1;
+    const ux = dx / l;
+    const uy = dy / l;
+    for (let d = 0.25; d <= back + 0.01; d += 0.25) {
+      const x = o.x + ux * d;
+      const y = o.y + uy * d;
+      if (!this.free(this.level.walk, x, y, Math.min(o.r, 0.42))) return true;
+      if (this.monsters.some((q) => q !== o && !q.dead && Math.hypot(q.x - x, q.y - y) < q.r + o.r * 0.8)) return true;
+    }
+    return false;
+  }
+
+  /** (Aftershock) A ring of force through the floor round the one he kicked: everything near it falls. */
+  private vetAftershock(o: Monster): void {
+    const A = VET_TALENTS.aftershock;
+    this.emit({ t: 'burst', x: o.x, y: o.y, r: A.r, el: 'phys', style: 'shock' });
+    for (const q of this.monsters) {
+      if (q === o || q.dead || q.boss || this.shutIn(q)) continue;
+      if (Math.hypot(q.x - o.x, q.y - o.y) <= A.r + q.r) q.stunT = Math.max(q.stunT, A.down);
+    }
+  }
+
+  /** (Thunder Knee) Lightning off the one his fire kick hit, on to the three nearest it: struck and stunned. */
+  private vetThunder(o: Monster, mv: VetPlaying, m: VetMoveDef): void {
+    const K = VET_TALENTS.thunderKnee;
+    const near = this.monsters
+      .filter((q) => q !== o && !q.dead && !mv.hit.includes(q.id) && !this.shutIn(q) && Math.hypot(q.x - o.x, q.y - o.y) <= K.far)
+      .sort((a, b) => Math.hypot(a.x - o.x, a.y - o.y) - Math.hypot(b.x - o.x, b.y - o.y))
+      .slice(0, K.n);
+    for (const q of near) {
+      this.emit({ t: 'arc', x0: o.x, y0: o.y, x1: q.x, y1: q.y });
+      this.hitMonster(q, 1, m.share * K.share, true);
+      if (!q.dead && !q.boss) q.stunT = Math.max(q.stunT, K.stun);
+    }
+    if (!o.dead && !o.boss) o.stunT = Math.max(o.stunT, K.stun);
   }
 
   // ---- THE BRAWLER (game/brawler.ts) -----------------------------------------------------------
@@ -8793,6 +8887,13 @@ export class Game {
     if (this.now('thickskin') && h.life < h.d.maxLife * TALENT_TUNE.thickSkin2.below) dmg *= 1 - TALENT_TUNE.thickSkin2.less;
     // (THE BRAWLER'S TREE: Iron Chin, winding up a hold he takes a third less)
     if (this.ironChin()) dmg *= 1 - BRAWL_TUNE.talents.ironChin.less;
+    // (THE VETERAN'S TREE: Guard Up, between his blows his fists are up: a blow from in front of him does half harm)
+    if (this.vetOn() && !this.hero.vet?.move && this.has('vguardup')) {
+      const gx = fromX - h.x;
+      const gy = fromY - h.y;
+      const gl = Math.hypot(gx, gy);
+      if (gl < 0.01 || (gx * h.fx + gy * h.fy) / gl >= VET_TALENTS.guardUp.cos) dmg *= 1 - VET_TALENTS.guardUp.less;
+    }
     dmg = Math.max(1, Math.round(dmg));
     // (Bitter Cold: what strikes him is chilled)
     if (src && !src.dead && this.now('bittercold')) {
