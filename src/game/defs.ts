@@ -2222,6 +2222,10 @@ export const QUIPS: {
     jab: ['Sharp.', 'One-two.'],
     cross: ['Right down the middle.', 'Down for the count.'],
     slip: ['Saw that coming.', 'Not even close.'],
+    // (THE VETERAN)
+    vpunch: ['Lights out.', 'Down you go.', 'Should have ducked.'],
+    vkick: ['Out of my way.', 'Too slow.', 'Next.'],
+    vjump: ['Missed me.', 'Up here.'],
   },
   /** By the weapon in hand. */
   weapon: {

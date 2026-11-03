@@ -129,7 +129,6 @@ test('Stiff Jab breaks off a wind-up; Viper Jab poisons', () =>
     const m = dummy(g, 2.2, 0);
     taking(['vstiffjab', 'vviperjab'], g, () => {
       m.state = 'windup';
-      m.windup = 0.6;
       presses(g, 't', m.x, m.y, 0.8);
       assert.ok(m.poisonT > 0, 'poisoned');
       assert.notEqual(m.state, 'windup', 'its wind-up broken off');
