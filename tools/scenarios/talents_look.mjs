@@ -61,7 +61,9 @@ export default async function (page, snap) {
       return { taken: [...g.hero.talents], left: g.talentsLeft(), stones: marks.filter((m) => m.startsWith('talent:')).length, card: marks.includes('talent-card'), take: marks.includes('button:TAKE'), page: d.invUi.page, d: { fire: g.hero.d.stats.firePct, light: g.hero.d.stats.lightPct, move: g.hero.d.stats.moveSpeed, atk: g.hero.d.stats.atkSpeed, dmg: g.hero.d.stats.dmgPct } };
     });
     let s = await st();
-    check(`${cls}: 1. the TALENTS page, fifteen talents, two points to spend`, s.page === 'talents' && s.stones === 15 && s.left === 2, `${s.stones} stones, ${s.left} left`);
+    // (the ranger's two of his companions, COMPANIONS, his idea of 28 Oct 2026, on in the game from Version 25.0: seventeen on his tree)
+    const stones = cls === 'ranger' && (await page.evaluate(() => window.__dbg.game()?.hero?.cls === 'ranger')) ? [15, 17] : [15];
+    check(`${cls}: 1. the TALENTS page, fifteen talents (the ranger seventeen), two points to spend`, s.page === 'talents' && stones.includes(s.stones) && s.left === 2, `${s.stones} stones, ${s.left} left`);
     // 2. a talent that can be taken now, pressed and read
     await hands.press(`talent:${b.take}`);
     await page.waitForTimeout(300);

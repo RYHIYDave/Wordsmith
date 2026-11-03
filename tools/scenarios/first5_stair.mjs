@@ -21,12 +21,15 @@ export default async function (page, snap) {
     g.monsters = g.monsters.filter((m) => m.boss);
     const boss = g.monsters[0];
     const st = L.ways.stairs[0];
+    // (Version 25.0: floor 3's way down is the door out the back of his hall, PRISON_EXIT, floor 4's the cave: no stairwell there)
+    if (!st) return { none: true, exit: !!L.ways.exit, cave: !!L.ways.cave };
     // (the boss put a few tiles off the opening, so that it opens where it most likely will; the hero beside him)
     boss.x = st.x + 1.2; boss.y = st.y + 5.5;
     g.hero.x = st.x + 4.5; g.hero.y = st.y + 4.5; g.hero.fx = -0.7; g.hero.fy = -0.7;
     return { stairs: L.ways.stairs.map((s) => [s.x, s.y, s.way]), boss: boss.kind };
   }, depth);
   log('floor', depth, JSON.stringify(at));
+  if (at.none) { log('no stairwell on this floor: its way down is its own', JSON.stringify(at)); return; }
   for (let i = 0; i < 160; i++) {
     const st = await page.evaluate(() => ({ films: Object.keys(window.__dbg.painter.stats.films), busy: window.__dbg.painter.busy() }));
     if (st.films.some((k) => k.startsWith('stair:'))) { log('films', JSON.stringify(st.films)); break; }

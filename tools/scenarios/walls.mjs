@@ -116,6 +116,9 @@ export default async function (page, snap) {
   // ---- a level, lit, asleep and empty -----------------------------------------------------------
   const begin = (seed, depth) => page.evaluate(([cls, seed, depth]) => {
     const d = window.__dbg; d.saving(false);
+    // (Version 25.0: the first five floors' new looks, the first town as the castle's hall and every wall standing are his; under them
+    // the walls' own rules are as they were: read here with those looks off, __dbg.newLooks; floor 2 laid open now, floor 3 read)
+    if (d.newLooks) d.newLooks(false);
     d.run(cls, seed); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
     const g = d.game();
     if (depth > 0) { g.depth = depth; g.enterDungeon(); }
@@ -226,11 +229,11 @@ export default async function (page, snap) {
   // ---- a dungeon that has every kind of place ---------------------------------------------------
   let found = null;
   for (let seed = 1; seed < 41 && !found; seed++) {
-    await begin(seed, 2);
+    await begin(seed, 3);
     const s = await sites();
     if (s.back && s.raised && s.near && s.notch && s.door) found = { seed, ...s };
   }
-  check('a dungeon with a back wall, a wall behind raised floor, a side toward the eye, a back doorway and a near doorway to read', !!found, found ? `game seed ${found.seed}, Dungeon 2` : 'none in forty seeds');
+  check('a dungeon with a back wall, a wall behind raised floor, a side toward the eye, a back doorway and a near doorway to read', !!found, found ? `game seed ${found.seed}, Dungeon 3` : 'none in forty seeds');
   if (!found) return;
   await page.waitForTimeout(500);
 
@@ -316,7 +319,7 @@ export default async function (page, snap) {
   let band = null;
   let hall = null;
   for (let seed = 1; seed < 41 && !(band && hall); seed++) {
-    await begin(seed, 2);
+    await begin(seed, 3);
     const got = await page.evaluate(() => {
       const f = window.__dbg.game().level.floor;
       const inRoom = (x, y) => f.rooms.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h);

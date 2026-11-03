@@ -28,17 +28,20 @@ export default async function (page, snap) {
     d.endless(true);
     const g = d.game();
     g.mode = 'normal';
-    g.depth = 15; g.cleared = 14; g.wayDepth = 15;
+    // (the last floor built: 15, or 20 with the High City, Version 25.0)
+    const last = d.lastFloor ? d.lastFloor() : 15;
+    window.__last = last;
+    g.depth = last; g.cleared = last - 1; g.wayDepth = last;
     g.enterDungeon();
     window.__dbg.fx.messages.length = 0;
     g.takeWay('on');
-    return { town: !!g.level.town, endless: g.endless, floor: g.endlessFloor };
+    return { town: !!g.level.town, endless: g.endless, floor: g.endlessFloor, last };
   });
   // (the last floor's own card, come up as he went in a moment before, gone: as in play)
   await page.waitForTimeout(5200);
   if (!touch) await page.mouse.move(4, 4);
   await snap('01_town_endless_open');
-  check('1. the last floor beaten: home, the endless levels open', opened.town && opened.endless === 1 && opened.floor >= 1 && opened.floor <= 14, JSON.stringify(opened));
+  check('1. the last floor beaten: home, the endless levels open', opened.town && opened.endless === 1 && opened.floor >= 1 && opened.floor <= opened.last - 1, JSON.stringify(opened));
 
   // ---- 2. the town's waypoint ----------------------------------------------------------------------
   const hint = await page.evaluate(() => {

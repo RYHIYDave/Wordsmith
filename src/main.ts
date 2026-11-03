@@ -5,9 +5,9 @@ import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
-import { DOOR_WALLS } from './render/walls';
+import { DOOR_WALLS, WHOLE_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
-import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
+import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
@@ -67,7 +67,7 @@ import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
-import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, OWN_MOVES, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { ALTAR_GOES } from './game/act1_holds';
 import { DRESS_EDGES } from './game/act1_dress';
@@ -79,7 +79,7 @@ import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } fr
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
-import { ACT2, HIGH_CITY } from './game/act1';
+import { ACT2, HIGH_CITY, lastFloor } from './game/act1';
 import { BOSS_CALLS } from './game/boss_calls';
 import { chimeNow } from './game/act2/masque_rules';
 import { MELD, RANK2, STONE_RISE, VOLT_MELDS, savedMeta } from './game/melds';
@@ -2218,6 +2218,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      * floor it would be), as if he had beaten the last floor built and come so far; level 0, the endless levels opened to him in
      * town, as when the last floor is beaten.
      */
+    /** (the playtests of the Crypt's own walls, heights and room shapes, Version 25.0) The first five floors' new looks and every wall
+     * standing (game/floor_looks.ts, render/walls.ts WHOLE_WALLS) off, or on again: the rules under them are as they were. */
+    newLooks: (on: boolean) => {
+      useFloorLooks(on);
+      WHOLE_WALLS.on = on;
+    },
+    /** The last floor built (game/act1.ts lastFloor): the playtests go by it. */
+    lastFloor: () => lastFloor(),
     endless: (on: boolean, level = -1, floor = 0) => {
       ENDLESS.on = on;
       if (!game || level < 0) return;
@@ -2512,6 +2520,21 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      * the new moves): on and off for playtests and films, and the monsters painted again. `monsterAttacks()`
      * says whether they are on.
      */
+    /**
+     * THE FLOORS' MORE ACTION (game/defs.ts ACTION_F1 to ACTION_F4, the art chat's, on since Version 25.0 at his “Switch them all on
+     * (Recommended)”): off for the playtests of the monsters' moves as they were before it, and on again; the monsters painted again.
+     */
+    /** EVERYONE'S OWN MOVES (game/defs.ts OWN_MOVES, his pick of 28 Oct 2026): off for the playtests of Version 12's rule, both attacks the weapon's, and on again. */
+    ownMoves: (on: boolean) => {
+      OWN_MOVES.on = on;
+    },
+    floorAction: (on: boolean) => {
+      useActionF1(on);
+      useActionF2(on);
+      useActionF3(on);
+      useActionF4(on);
+      art.bestiary = makeBestiary();
+    },
     monsterAttacks: (on?: boolean): boolean => {
       if (on !== undefined) {
         useMonsterAttacks(on);

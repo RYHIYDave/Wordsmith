@@ -247,7 +247,11 @@ export default async function (page, snap) {
   // (the switch goes round: auto aim, where you tap, the way you face. Auto aim is where the game starts out, since Version 12.2.1.)
   await tapMark('button:ATTACKS: THE WAY YOU FACE');
   s = await st();
-  check('pressing it goes round to auto aim', s.aim === 'auto' && !!(await mark('button:ATTACKS: AUTO AIM')), `aim is "${s.aim}"`);
+  // (ONE HAND, a fourth way, after the way the hero faces: Version 25.0)
+  check('pressing it goes on to ONE HAND', s.aim === 'one' && !!(await mark('button:ATTACKS: ONE HAND')), `aim is "${s.aim}"`);
+  await tapMark('button:ATTACKS: ONE HAND');
+  s = await st();
+  check('and round to auto aim', s.aim === 'auto' && !!(await mark('button:ATTACKS: AUTO AIM')), `aim is "${s.aim}"`);
   await tapMark('button:ATTACKS: AUTO AIM');
   s = await st();
   check('and once more to the old way', s.aim === 'tap' && !!(await mark('button:ATTACKS: WHERE YOU TAP')), `aim is "${s.aim}"`);
@@ -296,6 +300,9 @@ export default async function (page, snap) {
   check('OPTIONS goes on to the next way: the way the hero faces', s.aim === 'face' && !!(await mark('button:ATTACKS: THE WAY YOU FACE')), `aim is "${s.aim}"`);
   await snap('11_options_new_way');
   await tapMark('button:ATTACKS: THE WAY YOU FACE');
+  s = await st();
+  check('then to ONE HAND', s.aim === 'one' && !!(await mark('button:ATTACKS: ONE HAND')), `aim is "${s.aim}"`);
+  await tapMark('button:ATTACKS: ONE HAND');
   s = await st();
   check('and then to auto aim', s.aim === 'auto' && !!(await mark('button:ATTACKS: AUTO AIM')), `aim is "${s.aim}"`);
   await tapMark('button:ATTACKS: AUTO AIM');

@@ -394,7 +394,7 @@ DEPTH=4 run first5_cult4 --scenario $S/first5_cult.mjs &
 DEPTH=5 run first5_cult5 $P --scenario $S/first5_cult.mjs &
 wait
 DEPTH=1 run first5_stair1 --scenario $S/first5_stair.mjs &
-DEPTH=3 run first5_stair3_phone $P --scenario $S/first5_stair.mjs &
+DEPTH=2 run first5_stair2_phone $P --scenario $S/first5_stair.mjs &   # (Version 25.0: floor 3 has no stairwell now, its door out the back of his hall)
 run first5_shaft --scenario $S/first5_shaft.mjs &
 run first5_shaft_upright $U --scenario $S/first5_shaft.mjs &
 run first5_titles --scenario $S/first5_titles.mjs &

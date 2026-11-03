@@ -272,6 +272,10 @@ export default async function (page, snap) {
   check('then to the way the hero faces', s.aim === 'face' && !!(await mark('button:ATTACKS: THE WAY YOU FACE')), `aim is "${s.aim}"`);
   await tapMark('button:ATTACKS: THE WAY YOU FACE');
   s = await st();
+  // (ONE HAND, a fourth way, after the way the hero faces: Version 25.0)
+  check('then to ONE HAND', s.aim === 'one' && !!(await mark('button:ATTACKS: ONE HAND')), `aim is "${s.aim}"`);
+  await tapMark('button:ATTACKS: ONE HAND');
+  s = await st();
   check('and round to AUTO AIM again', s.aim === 'auto' && !!(await mark('button:ATTACKS: AUTO AIM')), `aim is "${s.aim}"`);
   await tapMark('button:Resume');
   await page.waitForTimeout(200);

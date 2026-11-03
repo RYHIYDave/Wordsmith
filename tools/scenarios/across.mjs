@@ -115,7 +115,7 @@ export default async function (page, snap) {
     let out = null;
     for (let seed = 1; seed < 41 && !out; seed++) {
       d.run(cls, seed); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
-      const g = d.game(); g.depth = 2; g.enterDungeon();
+      /* (Version 25.0: floor 2 is the prison's grounds, laid open and level; the Crypt's sunken floor and its corridors across the screen are looked for on floor 3, the new looks and every wall standing off for it: __dbg.newLooks) */ if (d.newLooks) d.newLooks(false); const g = d.game(); g.depth = 3; g.enterDungeon();
       const f = g.level.floor;
       if (!f.cut) continue;
       const inRoom = (x, y) => f.rooms.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h);
