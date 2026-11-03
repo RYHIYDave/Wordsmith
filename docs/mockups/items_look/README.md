@@ -22,6 +22,8 @@ rarer ones get gears, gauges and glowing cores.
 3 Nov 2026, of the tome's fire: “Cyan, his hellfire (Recommended)”, offered as: the tome burns in the Warlock's own cyan
 hellfire, matching him and your rule. And of the items as a whole: “Yes, hand them over (Recommended)”.
 
+3 Nov 2026, 10:44, and so the tome's fire is the demon's red-orange again: “I think we want the demonic tome to be orange.  The warlock is Str/Int, which is kinda red and blue, cyan fire in the demonic hand, red/orange fire on the tome.  In that same vein, the brawler is Str/dex, so I think we change the color of the globe for a punch to green and the kicks stay orange/red.  I think that’s a good thematic change”. Asked whether to write stats-as-colours into his art rulebook for every class: “It can be case by case, but right now these changes would lock everyone into that theme for now”. So no rulebook change; just these. (The punch's green is the Veteran's, on `art/brawler-looks`.)
+
 ## What he is shown
 
 `pictures/items_a_sheet.png` (1200 by 4795): every item in a row of its four rarities, Normal, Magic, Rare, Unique, each in a
@@ -48,7 +50,7 @@ stones.
 | Wand | wood, iron collar | carved ivory, blue stone at its foot | gold collar and claws up the crystal, yellow stone | blackened, a gold spiral, orange stones |
 | Staff | gnarled wood, iron band | blue ribbon, blue stone | gold band, gold caps, yellow stone | blackened wood, gilded prongs, orange stones |
 | Brawler's wraps (the Veteran's) | plain linen fists | blue straps and bands, steel knuckle studs, blue stones | gold studs and bands, yellow stones | dyed deep red, gilded, orange stones |
-| Demonic tome (the Warlock's) | red leather and iron, an iron horned face, pages edged in his cyan hellfire | chained, steel face, blue stones in the clasps | gold face and corners, its third eye open, hellfire licking out | blackened and gilded, its eyes burning, a burning sigil, gilded chain, orange stones |
+| Demonic tome (the Warlock's) | red leather and iron, an iron horned face, pages edged in the demon's red-orange fire | chained, steel face, blue stones in the clasps | gold face and corners, its third eye open, flames licking out | blackened and gilded, its eyes burning, a burning sigil, gilded chain, orange stones |
 | Tinkerer's wrench | plain steel, leather grip, rivets | blue grip, a brass gear | a gold gear and a gauge, gold rivets, yellow stone | blackened and gilded, two gears, a glowing cyan core, orange stones |
 | Shield | planks and a steel rim | blue field, steel chevron, blue stone | red field, gold chevron, yellow stone | blackened field, gold rim, orange stones |
 | Quiver | leather, white fletching | blue fletching, strap and stone | gold mouth, tooled in gold, yellow stone | black leather, gold mouth and foot, orange stone |
@@ -69,9 +71,10 @@ notch between two parts it is ink, so it only ever goes round the outside. The i
 picture pixel clear of the picture's edge and a game pixel and a half clear of the slot's own frame: the two lines of the same
 colour sit apart, the slot's frame and, inside it, the item's rim (look at the phone pictures).
 
-**Nothing glows** but the tome's fire, the Warlock's own cyan hellfire (his pick, “Cyan, his hellfire (Recommended)”: his
-`HELL`, dev/sculpt_warlock.ts, deep teal at its ragged edge, the friend's cyan, ice-white, white at its heart), and the core of
-the Unique wrench, the friend's cyan too: both are a friend's. None of the enemy's pink or gold.
+**Nothing glows** but the demon's fire on the tome, red and orange (his words, 10:44: “cyan fire in the demonic hand,
+red/orange fire on the tome”; the ramp `fire` in `items_a.ts`, deep red to orange to a pale flame-white, as before his cyan pick:
+not the enemy's pink flame, not a gold glow), and the core of the Unique wrench, the friend's cyan (hers is a friend's). The
+Warlock's own hellfire, in his hand, stays cyan.
 
 ### The new kinds
 
@@ -79,8 +82,9 @@ the Unique wrench, the friend's cyan too: both are a friend's. None of the enemy
   Magic up), a strap across the back one's fingers, the loose ends trailing.
 - **Demonic tome** (the Warlock's): a heavy book standing, leaning a little, bound in his own red book's leather and iron
   (`BOOKRED`, dev/sculpt_warlock.ts), a horned demon's face raised on its cover, two clasps over the pages' edge, the pages edged
-  in his cyan hellfire, a ribbon marker hanging from its foot. Rarer, more demonic: chained (Magic, Unique); a third eye open on
-  its brow (Rare, Unique); hellfire licking out of the pages (Rare, Unique); blackened, its eyes burning, a burning sigil (Unique).
+  in the demon's red-orange fire, a ribbon marker hanging from its foot. Rarer, more demonic: chained (Magic, Unique); a third eye
+  open on its brow (Rare, Unique); flames licking out of the pages (Rare, Unique); blackened, its eyes burning, a burning sigil
+  (Unique).
 - **Tinkerer's wrench**: her big wrench as she carries it (dev/sculpt_tinkerer.ts, `wrenchIn`: a steel shaft, a broad jaw with its
   gap), on the diagonal, its gap to the upper right, a wrapped grip. Rarer: a gear at its throat (Magic up), a gauge on its shaft
   (Rare up), rivets, and the Unique's glowing cyan core set in its jaw.
@@ -147,9 +151,9 @@ way to see them in the real game before it asks for them by rarity: not the way 
 the rim one picture pixel thick, of the rarity's own colour, all round the ink and only on the outside, at least 50 pixels of
 it; the four rarities of each kind all different, the Magic with blue, the Rare with gold or a yellow stone, the Unique with
 orange stones and more finery than the Normal; no two kinds' silhouettes overlapping by four fifths or more at any rarity (the
-closest: the tome and the shield, 0.77 to 0.78); none of the enemy's colours anywhere, the friend's cyan only in the tome's
-hellfire and the Unique wrench's core; `itemArt` 16 by 16 game pixels, anchor (8, 8), density 2, each made once, and the old weapons showing what they
-became. `tsc` is clean; `tests/items_look.test.ts` (the three styles) still passes.
+closest: the tome and the shield, 0.77 to 0.78); none of the enemy's colours anywhere, the friend's cyan only in the Unique
+wrench's core; the tome at every rarity burning in the demon's red-orange fire (at least 15 pixels of its ramp), none of it
+cyan; `itemArt` 16 by 16 game pixels, anchor (8, 8), density 2, each made once, and the old weapons showing what they became. `tsc` is clean; `tests/items_look.test.ts` (the three styles) still passes.
 
 ## Before: the three styles (`pictures/items_sheet.png`)
 

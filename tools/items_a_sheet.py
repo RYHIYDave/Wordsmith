@@ -28,7 +28,7 @@ HOW = {
     'wand': 'Wood, an iron collar; carved ivory, a blue stone at its foot; gold claws up the crystal, a yellow stone; blackened, a gold spiral, orange stones.',
     'staff': 'Gnarled wood, an iron band; a blue ribbon and stone; a gold band and caps, a yellow stone; blackened wood, gilded prongs, orange stones.',
     'wraps': 'The Veteran’s two-handed weapon. Plain linen; blue straps, steel studs, blue stones; gold studs and bands, yellow stones; deep red, gilded, orange stones.',
-    'tome': 'The Warlock’s. Red leather and iron, a horned demon’s face, pages edged in his cyan hellfire; chained; its third eye open, hellfire licking out; blackened and gilded, its eyes burning, a burning sigil.',
+    'tome': 'The Warlock’s. Red leather and iron, a horned demon’s face, pages edged in fire; chained; its third eye open, flames licking out; blackened and gilded, its eyes burning, a burning sigil.',
     'wrench': 'The Tinkerer’s big wrench. Plain steel; a blue grip, a brass gear; a gold gear and a gauge, a yellow stone; blackened and gilded, two gears, a glowing core.',
     'shield': 'Planks and steel; a blue field, a steel chevron, a blue stone; a red field, a gold chevron, a yellow stone; blackened, a gold rim, orange stones.',
     'quiver': 'Leather, white feathers; blue feathers, strap and stone; a gold mouth, tooled in gold, a yellow stone; black leather, gold mouth and foot, an orange stone.',
@@ -102,7 +102,7 @@ def items_block():
             if i % 2 == 1:
                 d.rectangle([8, yy - 4, W - 8, yy + ROWH - 6], fill=PANEL)
             d.text((22, yy + 4), NAME[k], font=name_f, fill=GOLD)
-            for j, ln in enumerate(wrap(d, HOW[k], tiny, LABEL - 30)[:6]):
+            for j, ln in enumerate(wrap(d, HOW[k], tiny, LABEL - 30)[:5]):
                 d.text((22, yy + 32 + j * 17), ln, font=tiny, fill=TEXT)
             for r in range(4):
                 pic = Image.open(os.path.join(src, f'A_{k}_{r}.png')).convert('RGBA')
