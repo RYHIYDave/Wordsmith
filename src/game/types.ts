@@ -29,7 +29,10 @@ export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley'
   // (THE TINKERER, game/tinkerer.ts: her Vial Toss, her Contraption, her Golem and her blast jump)
   | 'vialtoss' | 'contraption' | 'golem' | 'blastjump'
   // (THE BRAWLER, game/brawler.ts: his tap, his tap and hold, his slip and counter)
-  | 'jab' | 'cross' | 'slip';
+  | 'jab' | 'cross' | 'slip'
+  // (THE VETERAN, behind VETERAN: his Punch (a tap), his Kick (a hold), his Jump (a swipe); art/veteran_icons.ts, a first pass
+  // to show him)
+  | 'vetpunch' | 'vetkick' | 'vetjump';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
 export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding';
