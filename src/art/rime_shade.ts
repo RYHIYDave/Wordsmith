@@ -30,8 +30,11 @@ import type { Ring, Skin, Stage } from './skin';
 import { add, buildOf, cross, dot, elbowFor, len, lerp3, mul, norm, standing, sub } from './skeleton';
 import type { Bones, Build, Posed, Skeleton, V3 } from './skeleton';
 
-/** THE SWITCH, OFF. Nothing of the game reads this file. */
-export const RIME_SHADE_ON = { on: false };
+/**
+ * THE SWITCH, ON for 25.0: brought into the game by the main chat (game/act1_rules/rshade.ts) and shown him from the game on floor 20
+ * (docs/mockups/rime_shade/pictures/rime_shade_in_game.mp4), his yes, 3 Nov 2026, by 13:07: “Yes, switch it on (Recommended)”.
+ */
+export const RIME_SHADE_ON = { on: true };
 
 const TAU = Math.PI * 2;
 const D = Math.PI / 180;

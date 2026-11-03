@@ -17,7 +17,7 @@ const PLAN = [
   { name: 'HE STEPS OUT OF IT', line: 'Seeing the mark, he steps out to the side: the rime creeps past him.', long: 4.6, foes: [[-4.2, 0]], does: [[1.1, 'side', 0.36]] },
   { name: 'HE OUTRUNS IT', line: 'It creeps slower than he runs: away down the line, it never reaches him.', long: 4.6, foes: [[-2.6, 0]], does: [[1.4, 'run', 1.6]] },
   { name: 'THREE TOGETHER', line: 'Two or three to a pack: their lines cross. Frozen once, he is not frozen again at once.', long: 6.4, foes: [[-4.2, 0], [2.4, 3.6], [2.6, -3.4]], does: [] },
-  { name: 'STRUCK DOWN', line: 'Struck, its frost cracks; killed, it comes apart into fog.', long: 4.2, foes: [[-1.3, 0]], does: [[0.1, 'hit', 4]], weak: true },
+  { name: 'STRUCK DOWN', line: 'Struck, its frost cracks; killed, it comes apart into fog.', long: 5.0, foes: [[-1.3, 0]], does: [[0.1, 'hit', 4]], weak: true },
 ];
 
 export default async function (page, snap) {
@@ -71,11 +71,27 @@ export default async function (page, snap) {
             f.ids = [];
             g.perils.length = 0;
             h.x = f.home[0]; h.y = f.home[1]; h.fx = -1; h.fy = 0; h.iceT = 0; h.slowT = 0;
-            for (const [a, b] of p.foes) {
+            // (each where it is set, or, where that is no open floor in sight of him, the nearest open spot round him as far off)
+            const taken = [];
+            for (const [a0, b0] of p.foes) {
+              const r0 = Math.hypot(a0, b0);
+              const t0 = Math.atan2(b0, a0);
+              let a = a0;
+              let b = b0;
+              for (let k = 0; k < 72; k++) {
+                const t = t0 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 36);
+                const x = h.x + Math.cos(t) * r0;
+                const y = h.y + Math.sin(t) * r0;
+                if (!g.isOpen(x, y) || !g.sees(x, y, h.x, h.y) || taken.some(([u, v]) => Math.hypot(u - x, v - y) < 2.5)) continue;
+                a = x - h.x;
+                b = y - h.y;
+                break;
+              }
+              taken.push([h.x + a, h.y + b]);
               const m = g.spawn('rshade', h.x + a, h.y + b, 970, 0, false, g.rng);
               g.wakeUp(m);
               m.seen = true;
-              if (p.weak) { m.life = m.maxLife = 40; }
+              if (p.weak) { m.life = m.maxLife = 18; }
               const q = Math.hypot(h.x - m.x, h.y - m.y) || 1; m.fx = (h.x - m.x) / q; m.fy = (h.y - m.y) / q;
               f.ids.push(m.id);
             }
