@@ -23,7 +23,7 @@
 //                                   after, both lifted with it and turned over with it.
 //   golemLaunchFx(view, gun)        WHERE IT TOOK OFF, by k from the blast (LAUNCH_N frames): `floor` its scorch and glowing
 //                                   cracks; `air` its flash, fire splashed over the floor, the ring of dust, stone, smoke, and
-//                                   its after-image where it crouched (k 1 and 2). At the take-off floor point, turned over
+//                                   its after-image where it crouched (its outline, k 1 and 2). At the take-off floor point, turned over
 //                                   with the Golem's picture as it took off.
 //   rocketPuffFx()                  THE PUFFS OF ITS TRAIL: three of them, each PUFF_LIFE frames of its life;
 //   rocketTrail(view, flip, dx, dy, k)

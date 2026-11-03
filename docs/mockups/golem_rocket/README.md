@@ -41,7 +41,7 @@ hips going with its body so its knees bend; each left out, the Golem is drawn ex
    floor, grit hopping round its feet; a flash at their mouths (frame 14). THE BLAST, frame 15, a flash of two frames: a
    column of white-hot fire out of its stacks driven into the floor, a white flash, fire splashed over the floor, a ring of
    dust blown out 1.8 tiles, stone flung up, a column of smoke rolling up, the floor scorched with glowing cracks; it is
-   flung up, its legs thrown straight, an after-image of it in dark cyan where it crouched (two frames).
+   flung up, its legs thrown straight, an after-image of it where it crouched (its outline in the friend's cyan, then darker, two frames).
 2. THE FLIGHT (frames 15 to 36: 21 frames, 0.7 s). Up 11 game pixels in its first frame, 46 at the top (at 55% of its
    flight), riding its stacks, long flames streaming back and down out of them, embers shed, a trail of smoke puffs
    hanging where it passed; leaning into its flight, its legs tucked and braced under it, its giant fist thrust out ahead.
@@ -71,7 +71,7 @@ Every list is lazyFrames (painted when first asked for). `view` is the Golem's p
 | `golemRocketFrames(view, gun)` | 0 to 56 by `f` | ITS PICTURE, at its floor point, lifted `rocketUp(f - 15)` game pixels in the air (as the stand-in lifts its stand); turned over with `turned`. |
 | `golemRocketFx(view)` → `{ floor, behind, over }` | 0 to 56 by `f` | EVERYTHING AT IT, at its floor point, turned over with it. `floor` under what stands (only while it crouches); `behind` just before its picture and `over` just after it, both lifted with it. (From in front its stacks' fire is behind it; from behind, over it.) |
 | `golemLaunchFx(view, gun)` → `{ floor, air }` | `LAUNCH_N` = 42 from the blast | WHERE IT TOOK OFF (the stand-in's `jx, jy`), turned over as it was. `floor` under what stands; `air` as a thing standing there (depth a hair behind the take-off point from in front, a hair before it from behind, so that the Golem flying at the eye is over it and flying away is under it). |
-| `rocketPuffFx()` and `rocketTrail(view, flip, dx, dy, k)` | puffs `PUFF_LIFE` = 22 frames each; the trail from `k` 1 to 42 | ITS TRAIL: `rocketTrail` lists the puffs to lay `k` frames after it left the floor (dx, dy = `ax - jx`, `ay - jy`): lay `rocketPuffFx()[p.v][p.age]` at `(jx + p.x, jy + p.y)` lifted `p.up` game pixels, over what stands. |
+| `rocketPuffFx()` and `rocketTrail(view, flip, dx, dy, k)` | puffs `PUFF_LIFE` = 22 frames each; the trail from `k` 1 to 37 | ITS TRAIL: `rocketTrail` lists the puffs to lay `k` frames after it left the floor (dx, dy = `ax - jx`, `ay - jy`): lay `rocketPuffFx()[p.v][p.age]` at `(jx + p.x, jy + p.y)` lifted `p.up` game pixels, over what stands. |
 | `golemLandFx(view)` → `{ floor, air }` | `LAND_N` = 60 from the slam | WHERE IT LANDS (`ax, ay`), turned over with it. `floor` (the crater, fading over the last 16) under what stands; `air` (dust, stone) as a thing standing there, a hair before it. |
 | `golemRunFrames(view, gun)` and `RUN_STRIDE` | 16 | ITS RUN in place of its walk: `set.walk` these, `walkStride` `RUN_STRIDE` (2.93 tiles), shown by the floor it covers as now. |
 | `rocketShadow(k)` | | its shadow's size and strength in the air: `GOLEM_SHADOW * grow * r`, `min(1, SHADOW * 1.2) * a`. |
