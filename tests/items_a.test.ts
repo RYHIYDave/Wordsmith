@@ -7,7 +7,8 @@
 //   4. each rarer one finer: the four all different, Magic with a touch of blue, Rare with gold or a yellow stone, Unique with
 //      orange stones, and more finery (gold, stones) than the Normal;
 //   5. no two kinds' silhouettes alike, at any rarity (the closest pair is printed);
-//   6. no enemy's colours anywhere; the friend's cyan only in the core of the Tinkerer's wrench;
+//   6. no enemy's colours anywhere; the friend's cyan only in the tome's fire (the Warlock's hellfire: his pick, 3 Nov, “Cyan,
+//      his hellfire (Recommended)”) and the core of the Unique wrench;
 //   7. itemArt: 16 by 16 game pixels, anchor the middle, painted two to a game pixel; the old weapons show the kind they became.
 //   run: tsx --test tests/items_a.test.ts
 
@@ -147,7 +148,7 @@ test('no two kinds look alike: no two silhouettes overlap by four fifths or more
   }
 });
 
-test('no enemy’s colours anywhere; the friend’s cyan only in the core of the Tinkerer’s wrench', () => {
+test('no enemy’s colours anywhere; the friend’s cyan only in the tome’s hellfire and the core of the Tinkerer’s wrench', () => {
   for (const k of ITEM_A_KINDS) for (const r of RARS) {
     const p = pic(k, r);
     let cyan = 0;
@@ -157,7 +158,8 @@ test('no enemy’s colours anywhere; the friend’s cyan only in the core of the
       assert.ok(!ENEMY.has(key(c)), `${k} (rarity ${r}): the enemy's colour ${c} at ${x},${y}`);
       if (GLOW.has(key(c))) cyan++;
     }
-    if (k === 'wrench' && r === 3) assert.ok(cyan >= 3, `the Unique wrench's core shows only ${cyan} pixels of cyan`);
+    if (k === 'tome') assert.ok(cyan >= 10, `the tome (rarity ${r}): its pages' hellfire shows only ${cyan} pixels of cyan`);
+    else if (k === 'wrench' && r === 3) assert.ok(cyan >= 3, `the Unique wrench's core shows only ${cyan} pixels of cyan`);
     else assert.equal(cyan, 0, `${k} (rarity ${r}): the friend's glow`);
   }
 });

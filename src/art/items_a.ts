@@ -12,8 +12,8 @@
 // (Normal plain; Magic a touch of blue; Rare gold and a yellow stone; Unique blackened or gilded, with orange stones), and a thin
 // RIM of its rarity's colour (the game's own, RARITY_COLOR) round the item's own outline, in the bag and lying on the floor.
 // 32 by 32 picture pixels at the heroes' grain: the 16 game pixels today's item pictures fill, anchor the middle.
-// The light comes from the upper left. Nothing glows but the demon's fire on the tome (orange and red) and the core of the
-// Tinkerer's wrench (the friend's cyan: hers is a friend's).
+// The light comes from the upper left. Nothing glows but the tome's fire, the Warlock's own cyan hellfire (his pick, 3 Nov:
+// “Cyan, his hellfire (Recommended)”), and the core of the Tinkerer's wrench, the friend's cyan too: both are a friend's.
 
 import { Px, mix } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -82,8 +82,8 @@ const M = {
   shadow: ['#06050e', '#0a0816', '#120e22', '#1a1630', '#24203e'],
   /** the Warlock's red book (dev/sculpt_warlock.ts BOOKRED) */
   bookred: ['#22040c', '#420a16', '#6e1420', '#a02a2c', '#c84a3e'],
-  /** the demon's fire: orange and red (not the enemy's pink flame, not a gold glow) */
-  fire: ['#4a0806', '#8e1a0a', '#d8401a', '#ff8a2c', '#ffd49a'],
+  /** the Warlock's hellfire (dev/sculpt_warlock.ts HELL: deep teal at its ragged edge, the friend's cyan, ice-white, white at its heart) */
+  fire: ['#0c6a80', '#0c6a80', '#22d0e0', '#b8fff8', '#ffffff'],
   /** the Tinkerer's glowing core: the friend's cyan */
   core: ['#0c6a80', '#127e94', '#22d0e0', '#8af6f0', '#e8fffc'],
 } satisfies Record<string, Ramp>;
@@ -584,7 +584,7 @@ function wraps(r: Rar): Part[] {
 
 /**
  * THE DEMONIC TOME, the Warlock's: a heavy book standing, bound in the Warlock's dark red leather (his own red book's) and iron, a
- * horned demon's face on its cover, clasps over its pages' edge, the pages edged in the demon's fire. Rarer, more demonic: chains
+ * horned demon's face on its cover, clasps over its pages' edge, the pages edged in his cyan hellfire. Rarer, more demonic: chains
  * across it; a third eye open on the brow; and the finest blackened and gilded, its eyes burning, a burning sigil under the face.
  */
 function tome(r: Rar): Part[] {
@@ -595,11 +595,11 @@ function tomeParts(r: Rar): Part[] {
   const parts: Part[] = [];
   const cover: Mat = r === 3 ? 'black' : 'bookred';
   const iron: Mat = r >= 2 ? 'gold' : 'steel';
-  // the back board, behind; the pages, edged in fire, showing at its right and its foot; the front board
+  // the back board, behind; the pages, edged in his hellfire, showing at its right and its foot; the front board
   parts.push({ s: poly([8.4, 4.4], [27.4, 4.0], [27.8, 28.8], [9.0, 29.6]), m: cover, sh: { k: 'flat', bev: 1 }, bias: -0.3 });
   const fireMarks: Mark[] = [];
-  for (let y = 5.2; y < 27.6; y += 1.4) fireMarks.push({ a: [26.6, y], t: '#ff8a2c' }, { a: [26.6, y + 0.7], t: '#d8401a' });
-  for (let x = 9.8; x < 26; x += 1.4) fireMarks.push({ a: [x, 28.2], t: '#ff8a2c' }, { a: [x + 0.7, 28.2], t: '#d8401a' });
+  for (let y = 5.2; y < 27.6; y += 1.4) fireMarks.push({ a: [26.6, y], t: '#22d0e0' }, { a: [26.6, y + 0.7], t: '#0c6a80' });
+  for (let x = 9.8; x < 26; x += 1.4) fireMarks.push({ a: [x, 28.2], t: '#22d0e0' }, { a: [x + 0.7, 28.2], t: '#0c6a80' });
   parts.push({ s: poly([8.6, 3.6], [26.8, 3.4], [27.0, 28.4], [9.0, 28.8]), m: 'linen', sh: { k: 'flat', bev: 0.6 }, bias: -0.1, marks: [{ a: [25.4, 4.6], b: [25.6, 27.0], t: 1 }, { a: [10.4, 27.6], b: [25.2, 27.4], t: 1 }, ...fireMarks] });
   const front = poly([4.6, 2.6], [24.8, 2.2], [25.2, 26.4], [5.0, 27.4]);
   parts.push({
@@ -631,7 +631,7 @@ function tomeParts(r: Rar): Part[] {
     parts.push({ s: ell([fc[0], fc[1] - 2.6], 1.5, 1.0), m: r === 3 ? 'amber' : 'topaz', sh: { k: 'dome', c: [fc[0], fc[1] - 2.6], r: 1.5, ry: 1 }, shine: true, marks: [{ a: [fc[0], fc[1] - 3.4], b: [fc[0], fc[1] - 1.8], t: 0 }] });
   }
   if (r === 3) {
-    // a burning sigil under the face: a ring and its cross-strokes, in fire
+    // a burning sigil under the face: a ring and its cross-strokes, in his hellfire
     const sc: V = [14.8, 22.8];
     parts.push({ s: ell(sc, 2.4, 1.6), cut: [ell(sc, 1.5, 0.8)], m: 'fire', sh: { k: 'flat' }, shine: true, flush: true, bias: 0.4 });
     parts.push({ s: path([[sc[0] - 3.2, sc[1] + 1.0], [sc[0], sc[1] - 1.8], [sc[0] + 3.2, sc[1] + 1.0]], [0.5, 0.5, 0.5]), m: 'fire', sh: { k: 'flat' }, shine: true, flush: true, bias: 0.6 });
@@ -651,7 +651,7 @@ function tomeParts(r: Rar): Part[] {
     parts.push(STONE[r] ? gem([26.0, y], 0.95, STONE[r]!) : stud([26.0, y], 0.7, 'steel'));
   }
   if (r >= 2) {
-    // fire licking up out of the pages' edge
+    // his hellfire licking up out of the pages' edge
     for (const [x, y, h] of (r === 3 ? [[27.6, 12.4, 3.0], [27.8, 16.4, 2.4], [27.6, 25.0, 2.6]] : [[27.6, 14.4, 2.2]]) as [number, number, number][]) {
       parts.push({ s: path([[x - 0.6, y + 1.2], [x + 0.8, y], [x + 1.2 + h * 0.3, y - h]], [0.9, 0.7, 0.3]), m: 'fire', sh: { k: 'flat' }, shine: true, bias: 0.3 });
     }
