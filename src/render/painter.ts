@@ -94,6 +94,8 @@ type Ask =
   | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean }
   | { t: 'film'; key: string; pri: number }
   | { t: 'drop'; figure: MonsterFigure }
+  // (A BOSS'S DEATH PAINTED NEXT: its fall, as it nears it, before the rest of its frames still to come: Painter.dieFirst)
+  | { t: 'dieFirst'; figure: MonsterFigure }
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
   | { t: 'ground'; id: number; floor: Floor; land: Land; walls: number }
   | { t: 'piece'; id: number; i: number; j: number; pri: number }
@@ -236,6 +238,7 @@ export class Painter {
       lane.open = Math.max(0, lane.open - 1);
     }
     this.sideFigures.clear();
+    this.dieAsked.clear();
     for (const film of this.films.values()) eachSprite(film, releaseSprite);
     this.films.clear();
     this.asked.clear();
@@ -272,6 +275,26 @@ export class Painter {
       if (was.left !== 0) this.finished(lane);
     }
     this.bestiary().forget(figure);
+  }
+
+  /**
+   * A FIGURE'S DEATH PAINTED NEXT (a boss nearing its end: render/render.ts). Its frames are painted in the order the game
+   * would paint them ahead, its death last (bestiary paintOrder): a boss with many moves had not had its death painted by the
+   * time it died, and every frame of its fall was painted where the game is played as it was shown, seconds of the game
+   * crawling (measured 3 Nov 2026: two to ten seconds of painting in the eight after a boss of floors 2 to 20 died, on this
+   * machine; 24.3's the same). So, asked once a figure: whatever worker paints it paints its death before the rest of it.
+   */
+  dieFirst(figure: MonsterFigure): void {
+    if (this.state !== 'on' || this.dieAsked.has(figure)) return;
+    if (!this.figures.has(figure) && !this.sideFigures.has(figure)) return;
+    this.dieAsked.add(figure);
+    for (const lane of [...this.lanes, this.groundLane]) lane?.worker.postMessage({ t: 'dieFirst', figure } satisfies Ask);
+  }
+  private dieAsked = new Set<MonsterFigure>();
+
+  /** Is this figure's painting the painter's (a boss's, or another monster's by the side worker)? Its frames not painted yet may be left to it. */
+  paints(figure: MonsterFigure): boolean {
+    return this.state === 'on' && (this.figures.has(figure) || this.sideFigures.has(figure));
   }
 
   /** How many of a figure's frames the painter has still to hand over (0: all are here, or it was never asked for; -1: not begun). */
@@ -709,6 +732,7 @@ export class Painter {
     // (the figures are the game's to paint now; it is told so by `mob` and `side` saying false)
     this.figures.clear();
     this.sideFigures.clear();
+    this.dieAsked.clear();
   }
 }
 
@@ -865,7 +889,7 @@ export function paintWorkerMain(): void {
   const scope = self as unknown as { postMessage(m: Tell, transfer?: Transferable[]): void; onmessage: ((e: MessageEvent<Ask>) => void) | null };
   const bestiary = makeBestiary();
   interface Job {
-    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' }>;
+    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' } | { t: 'dieFirst' }>;
     seq: number;
     run?: Generator<void, void, void>;
   }
@@ -1106,17 +1130,28 @@ export function paintWorkerMain(): void {
     scope.postMessage({ t: 'heroFrames', cls: 'warlock', place: 'dungeon', list: [], left: 0 });
   }
 
+  /** The figures whose death is to be painted next (Painter.dieFirst). */
+  const dieSoon = new Set<MonsterFigure>();
   /** A figure's frames, painted and handed over a few at a time. */
   function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
     const lists = [framesOf(art.front), framesOf(art.back)];
-    const order = paintOrder(art);
+    let order = paintOrder(art);
+    let soon = false;
     const sent = new Map<Sprite, [number, number, number]>();
     let list: Given[] = [];
     let transfer: Transferable[] = [];
     let t0 = performance.now();
     if (order.length === 0) scope.postMessage({ t: 'frames', figure, list, left: 0 });
     for (let n = 0; n < order.length; n++) {
+      // (its death wanted next: what is left of it, its death's frames first)
+      if (!soon && dieSoon.has(figure)) {
+        soon = true;
+        const dies = [art.front.clips?.die?.frames, art.back.clips?.die?.frames].map((f, v) => (f ? lists[v].indexOf(f as Sprite[]) : -1));
+        const rest = order.slice(n);
+        const first = rest.filter(([v, l]) => l === dies[v]);
+        order = [...order.slice(0, n), ...first, ...rest.filter(([v, l]) => l !== dies[v])];
+      }
       const [v, l, i] = order[n];
       // (reading it is what paints it)
       const s = lists[v][l][i];
@@ -1231,6 +1266,12 @@ export function paintWorkerMain(): void {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }
       for (let i = jobs.length - 1; i >= 0; i--) if (jobs[i].ask.t === 'piece') jobs.splice(i, 1);
+      return;
+    }
+    if (ask.t === 'dieFirst') {
+      dieSoon.add(ask.figure);
+      // (and the figure's own job, if it waits behind others, first)
+      for (const j of jobs) if (j.ask.t === 'mob' && j.ask.figure === ask.figure) j.ask.pri = Math.min(j.ask.pri, 0);
       return;
     }
     if (ask.t === 'drop') {

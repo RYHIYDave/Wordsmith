@@ -326,6 +326,8 @@ export interface Bestiary {
    * begin their attacks together would each want thirty new frames).
    */
   warm(figures: ReadonlyArray<MonsterFigure>): boolean;
+  /** A BOSS NEARING ITS END (render/render.ts): its death, of what is still to be painted ahead, painted next. */
+  dieFirst(figure: MonsterFigure): void;
   /**
    * THE FIRST FIVE FLOORS: let go of a figure's pictures (the boss of a floor that has been left: tens of
    * megabytes each). They are made again, frame by frame as they are wanted, if it is ever asked for again.
@@ -415,13 +417,13 @@ export function makeBestiary(): Bestiary {
    * first thing seen of a monster), walking, then its attacks from start to finish. The last of
    * `left` is the next to paint.
    */
-  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt }>();
-  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt } => {
+  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt; dies?: Set<() => Sprite> }>();
+  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt; dies?: Set<() => Sprite> } => {
     const art = of(figure);
     let list = todo.get(figure);
     // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, or the archer's, ARCHER3, was thrown)
     if (!list || list.art !== art) {
-      list = { left: [], done: 0, art };
+      list = { left: [], done: 0, art, dies: new Set() };
       // (and last its death: by the time one of them is killed, how it falls is painted; and before
       // it, a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves.
       // Each pick gives lists of frames, which are only counted here, never read: READING A FRAME IS
@@ -442,7 +444,13 @@ export function makeBestiary(): Bestiary {
       ];
       for (const pick of picks) {
         for (const set of [art.front, art.back]) {
-          for (const frames of pick(set)) for (let i = 0; i < frames.length; i++) list.left.push(() => (warmed = frames[i]));
+          for (const frames of pick(set)) {
+            for (let i = 0; i < frames.length; i++) {
+              const one = (): Sprite => (warmed = frames[i]);
+              list.left.push(one);
+              if (frames === set.clips?.die?.frames) list.dies!.add(one);
+            }
+          }
         }
       }
       list.left.reverse();
@@ -452,6 +460,16 @@ export function makeBestiary(): Bestiary {
   };
   return {
     of,
+    dieFirst(figure: MonsterFigure): void {
+      // (its death's frames still to be painted ahead, painted next: they are taken from the end of the list)
+      const list = listOf(figure);
+      const dies = list.dies;
+      if (!dies || !dies.size) return;
+      const rest = list.left.filter((f) => !dies.has(f));
+      const first = list.left.filter((f) => dies.has(f));
+      list.left = [...rest, ...first];
+      dies.clear();
+    },
     warm(figures: ReadonlyArray<MonsterFigure>): boolean {
       // Whichever of them has had the fewest painted goes next: so all of them can stand and
       // walk (forty frames each) before any of them has every frame of its attack.

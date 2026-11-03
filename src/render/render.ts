@@ -2,7 +2,7 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
-import { HEAVY } from '../art/kit';
+import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
 import type { ActorArt } from '../art/actor_types';
@@ -204,6 +204,8 @@ const VIGNETTE_TOWN = 0.4;
 const WARM_MS = 2;
 /** Where there is no painter (render/painter.ts): one frame of a heavy figure is painted every this many times the world is drawn. */
 const HEAVY_EVERY = 4;
+/** A boss below this share of its life has its death painted next by the painter (Painter.dieFirst). */
+const DIE_SOON = 0.6;
 const WARM_ENTER_MS = 90;
 
 /** A light on a monster's picture lights the floor too if it is at least this big, in game pixels. */
@@ -475,6 +477,9 @@ export class Renderer {
   private heavy: MonsterFigure[] = [];
   /** THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (render/painter.ts), if the game has one. */
   painter: Painter | null = null;
+  /** The bosses whose death has been asked to be painted next (Painter.dieFirst, Bestiary.dieFirst); begun again with each floor. */
+  private dieSoon = new Set<MonsterFigure>();
+  private dieSoonFor: unknown = null;
   /** THE FIRST FIVE FLOORS, drawn: the mine shaft and its cage, the stairwell's opening (render/dress.ts). */
   readonly dress: FloorDress;
   /** What the renderer lends it. */
@@ -2451,10 +2456,20 @@ export class Renderer {
     // changes in that instant and a pause is not seen: then up to WARM_ENTER_MS is spent on it.
     const figs = this.figures;
     figs.length = 0;
+    if (this.dieSoonFor !== game.level) {
+      this.dieSoon.clear();
+      this.dieSoonFor = game.level;
+    }
     for (const m of game.monsters) {
       if (m.dead) continue;
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
+      // (A BOSS NEARING ITS END: its death painted next by the painter, so that its fall is not painted here as it is shown)
+      if (m.boss && m.life < m.maxLife * DIE_SOON && !this.dieSoon.has(f)) {
+        this.dieSoon.add(f);
+        this.painter?.dieFirst(f);
+        this.art.bestiary.dieFirst(f);
+      }
       // (THE MONSTERS' ATTACKS: the Warden calls up skeletons: their crawling out of the ground is painted ahead)
       if (m.boss && movesOf(m) && !figs.includes('skeleton')) figs.push('skeleton');
     }
@@ -2618,7 +2633,16 @@ export class Renderer {
     if (!clip || clip.frames.length === 0) return null;
     const last = clip.frames.length - 1;
     const i = Math.floor(f.t * clip.fps);
-    const sp = clip.frames[Math.min(last, i)];
+    // (a frame of its fall not painted yet, the painter painting it: the nearest of the fall that is shown meanwhile, never
+    // painted here as it is shown: art/kit.ts LEFT_TO_PAINTER. Where the painter is not painting it, as before.)
+    const left = LEFT_TO_PAINTER.on;
+    if (this.painter?.paints(f.figure)) LEFT_TO_PAINTER.on = true;
+    let sp: Sprite;
+    try {
+      sp = clip.frames[Math.min(last, i)];
+    } finally {
+      LEFT_TO_PAINTER.on = left;
+    }
     // (`since`: how long it has lain, in seconds)
     return { sp: f.flip ? flipSprite(sp) : sp, lying: i >= last, since: f.t - last / clip.fps };
   }
