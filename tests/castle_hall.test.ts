@@ -105,14 +105,16 @@ function plane(strips: Strip[], alongX: boolean): Map<string, string> {
   return out;
 }
 
-test('the castle hall and its owl: off, and nothing of the game imports them', () => {
+// (brought into the game by the main chat, 2 Nov 2026, behind the same switch: the files that bring it in may import it)
+const BROUGHT = ['game/castle_way.ts', 'game/level.ts', 'main.ts', 'render/castle.ts'].map((f) => join('src', f));
+test('the castle hall and its owl: off, and nothing of the game imports them but the files that bring them in', () => {
   assert.ok(CASTLE_HALL.on === false, 'CASTLE_HALL is off');
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
       if (statSync(p).isDirectory()) walk(p);
-      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'castle_hall.ts')) && !p.endsWith(join('art', 'hall_owl.ts')) && /from '\.\.?\/(art\/)?(castle_hall|hall_owl)'/.test(readFileSync(p, 'utf8'))) found.push(p);
+      else if (p.endsWith('.ts') && !p.includes(join('src', 'dev')) && !p.endsWith(join('art', 'castle_hall.ts')) && !p.endsWith(join('art', 'hall_owl.ts')) && !BROUGHT.includes(p) && /from '\.\.?\/(art\/)?(castle_hall|hall_owl)'/.test(readFileSync(p, 'utf8'))) found.push(p);
     }
   };
   walk('src');

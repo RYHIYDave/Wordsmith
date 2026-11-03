@@ -11,7 +11,10 @@
 //   4. switched on, all seven switches of floors 3 to 5 together, as the game starts (game/floor_looks.ts);
 //   5. FLOOR 1, THE KING'S TOMB (game/tomb_way.ts, the art chat's art/tomb.ts behind TOMB): up to four chained tombs in his hall
 //      against its back walls (the walls toward the eye where its back is taken; none where its stairs fill it), in most halls; a
-//      tomb of the court in some rooms; each solid on open floor; nothing cut off; off, none.
+//      tomb of the court in some rooms; each solid on open floor; nothing cut off; off, none;
+//   6. THE FIRST TOWN AS THE CASTLE'S HALL (game/castle_way.ts, the art chat's art/castle_hall.ts behind CASTLE_HALL): its pots
+//      where its picture has them, each blocking its tile, none on a station's tile nor beside it, nothing of the town cut off;
+//      off, none.
 //   run: tsx --test tests/floor_looks_game.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -24,7 +27,9 @@ import { FLOOR_LOOKS, FLOOR_LOOK_SWITCHES, useFloorLooks } from '../src/game/flo
 import { LAIR_PART, LAIR_TEMPLE } from '../src/art/lair_temple';
 import { stretchTiles } from '../src/game/chapel_way';
 import { TOMB } from '../src/art/tomb';
-import { makeDungeon } from '../src/game/level';
+import { CASTLE_HALL } from '../src/art/castle_hall';
+import { CASTLE_POTS, POT_NAMES } from '../src/game/castle_way';
+import { makeDungeon, makeTown } from '../src/game/level';
 import type { Level } from '../src/game/state';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 
@@ -193,5 +198,22 @@ test("5. FLOOR 1, THE KING'S TOMB: the chained tombs in his hall, a tomb of the 
     }
     assert.ok(court >= 2, `tombs of the court on the floors (${court})`);
     assert.ok(halls >= SEEDS.length * 0.75 && all >= SEEDS.length * 1.5, `chained tombs in most of his halls (${halls} halls, ${all} tombs)`);
+  });
+});
+
+test("6. THE FIRST TOWN AS THE CASTLE'S HALL: its pots, each blocking its tile, none by a station; nothing cut off", () => {
+  if (!CASTLE_HALL.on) assert.ok(!makeTown(31).props.some((p) => p.kind === 'piece'), 'off, none');
+  on(CASTLE_HALL, () => {
+    const L = makeTown(31);
+    const f = L.floor;
+    const pots = L.props.filter((p) => p.kind === 'piece' && POT_NAMES.has(p.name ?? ''));
+    assert.ok(pots.length >= CASTLE_POTS.length - 3, `the pots (${pots.length} of ${CASTLE_POTS.length})`);
+    for (const p of pots) {
+      assert.ok(CASTLE_POTS.some(([n, x, y]) => n === p.name && x === p.x && y === p.y), 'where its picture has it');
+      assert.equal(f.tiles[p.ty * f.w + p.tx], T_FLOOR);
+      assert.equal(L.walk[p.ty * f.w + p.tx], 0, 'blocking its tile');
+      for (const s of L.stations ?? []) assert.ok(Math.abs(p.tx - Math.floor(s.x)) + Math.abs(p.ty - Math.floor(s.y)) > 1, `not by the ${s.kind}`);
+    }
+    assert.equal(cutOff(L, /pot/), 0, 'nothing of the town cut off');
   });
 });

@@ -1,6 +1,7 @@
-// THE FIRST FIVE FLOORS' NEW LOOKS, AS THE RENDERER ASKS THEM (render.ts): floor 3's black iron prison (render/prison.ts), floor 4's
-// buried chapel of bones (render/chapel.ts), floor 5's mine that becomes his temple (render/lair.ts): the art chat's, each behind
-// its switch, off until his yes to it in play. Each draws its floor in place of the Crypt's: its flags and its own tiles, its
+// THE FIRST FIVE FLOORS' NEW LOOKS, AS THE RENDERER ASKS THEM (render.ts): floor 1's king's tomb (render/tomb.ts), floor 3's black
+// iron prison (render/prison.ts), floor 4's buried chapel of bones (render/chapel.ts), floor 5's mine that becomes his temple
+// (render/lair.ts); and the first town's castle hall (render/castle.ts): the art chat's, each behind its switch, off until his yes
+// to it in play. Each draws its floor in place of the Crypt's: its flags and its own tiles, its
 // walls, its dark and its lights, and what it stands on the floor of its own.
 
 import type { Sprite } from '../engine/px';
@@ -15,6 +16,8 @@ export interface LookLight {
   r: number;
   strength: number;
   glow: { r: number; color: string; a: number } | null;
+  /** A steady light, the day's (no flicker, as a fire has). */
+  still?: boolean;
 }
 /** What a look stands on the floor: a floor point, its picture, its depth (x + y if none). */
 export interface LookStand {
@@ -29,6 +32,8 @@ export interface LookView {
   /** The dark between its lights (the Crypt's is FAR_DARK, 0.88), and its colour if not the Crypt's (6, 4, 14). */
   readonly dark: number;
   readonly tint?: readonly [number, number, number];
+  /** Its vignette, if not the game's (the first town's castle hall: a day's, 0.26). */
+  readonly vignette?: number;
   /** Is this look to be drawn on this level? */
   on(L: Level): boolean;
   /** Make its pictures now (as the floor is come into). */
@@ -49,8 +54,10 @@ export interface LookView {
   lights(L: Level): readonly LookLight[];
   /** What it stands on the floor, at clock `t`. */
   stands(L: Level, t: number): readonly LookStand[];
-  /** What it lays flat over the floor, after the floor's tiles and before anything stands (floor 1's pools of daylight). */
+  /** What it lays flat over the floor, after the floor's tiles and what lies on them, before anything stands (floor 1's pools of daylight, the town's slats of sun). */
   flats?(L: Level, t: number): readonly LookStand[];
+  /** What it draws behind everything, before the floor (the first town's roof over the dark above its back walls). */
+  back?(L: Level, t: number): readonly LookStand[];
 }
 
 /** One of the game's own pictures with each of its colours put through `grade` (a canvas the page paints on; where there is none, the picture as it is). */

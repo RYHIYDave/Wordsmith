@@ -14,7 +14,7 @@ import { makeIconArt, useMeldArt } from './art/icons';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
-import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
+import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, edgesOf, makeGroundArt, setWallLook } from './art/ground';
 import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
@@ -32,6 +32,7 @@ import { CHAPEL_GATE, makeChapelGateArt } from './art/chapel_gate';
 import { LAIR_TEMPLE } from './art/lair_temple';
 import { LAIR_GATE, makeLairGateArt } from './art/lair_gate';
 import { TOMB } from './art/tomb';
+import { CASTLE_THEME } from './art/castle_hall';
 import { TOMB_GATE, makeTombGateArt } from './art/tomb_gate';
 import { PRISON } from './art/prison';
 import { FLOOR_SETS } from './game/first5';
@@ -286,6 +287,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // made the first time it is reached; the prison town's kept for going back to it)
   let campShown = false;
   let hallTown = art.town;
+  // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: whether its own things are the town's now, and its floor's edges)
+  let hallShown = false;
+  let hallEdges: ReturnType<typeof edgesOf> | null = null;
   let cityArt: { town: typeof art.town; props: typeof art.props } | null = null;
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
@@ -1848,7 +1852,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const campNow = isCamp(g.level);
       if (campNow !== campShown) {
         if (campNow) {
-          hallTown = art.town;
+          if (!hallShown) hallTown = art.town;
           cityArt ??= { town: makeTownProps(CITY), props: makeDungeonProps(CITY) };
           art.town = cityArt.town;
           art.props = cityArt.props;
@@ -1857,6 +1861,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           art.props = crypt ? lookProps(crypt) : vault.props;
         }
         campShown = campNow;
+      }
+      // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: the town's own things in the castle's stone and timber, its
+      // braziers, barrels, urn and pillars; its floor's edges toward the eye in its stone: art/castle_hall.ts, render/castle.ts)
+      const hallNow = renderer.castle.on(g.level);
+      if (hallNow !== hallShown) {
+        if (hallNow) {
+          const A = renderer.castle.A();
+          art.town = A.town;
+          hallEdges ??= edgesOf(CASTLE_THEME);
+          art.ground = { ...vault.ground, ...hallEdges };
+          const pillar = A.pieces.find((p) => p.name === 'a pillar of the hall')?.frames?.[0] ?? vault.props.pillar;
+          art.props = { ...vault.props, brazier: A.props.brazier, barrel: A.props.barrel, urn: A.props.urn, pillar };
+        } else {
+          art.ground = crypt ? lookGround(crypt) : vault.ground;
+          if (!campNow) {
+            art.town = hallTown;
+            art.props = crypt ? lookProps(crypt) : vault.props;
+          }
+        }
+        hallShown = hallNow;
       }
       // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
       // workers ended; this one's are asked for as it is drawn)
@@ -2430,6 +2454,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       hallTown = art.town;
       cityArt = null;
       campShown = false;
+      hallShown = false;
     },
     /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
     clock: () => clock,

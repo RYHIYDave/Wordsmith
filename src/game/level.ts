@@ -16,6 +16,8 @@ import { makeAct1Level } from './act1_level';
 import { beforeStretch, chapelHere, layChapel, placeChapel } from './chapel_way';
 import { lairHere, layLair, openLairDoors, planLair } from './lair_way';
 import { layTomb, tombHere } from './tomb_way';
+import { CASTLE_HALL } from '../art/castle_hall';
+import { layCastle } from './castle_way';
 import { beforePrisonDoor, channelOpen, placeChannels, placePrisonDoor, prisonChannelsHere, prisonDoorHere } from './prison_way';
 import { EXITS, FIRST5, TOWN_SHAFT, TOWN_STAIR, TOWN_WAY, WAYS, beforeGate, openGate, placeCave, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, stairTiles, townGate } from './ways';
 import { yardBlocks } from './yard';
@@ -283,6 +285,8 @@ export function makeTown(seed: number): Level {
   if (TUNE.tradesOpen) level.stations.push({ kind: 'stranger', x: stranger.x, y: stranger.y });
   // (the trader behind the table can be reached by nobody: the place to stand is in front of the table)
   void mystic;
+  // (THE FIRST TOWN AS THE CASTLE'S HALL, behind CASTLE_HALL: its pots, each blocking its tile: game/castle_way.ts)
+  if (CASTLE_HALL.on) layCastle(level);
   return level;
 }
 

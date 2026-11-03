@@ -78,6 +78,7 @@ import { PrisonView } from './prison';
 import { ChapelView } from './chapel';
 import { LairView } from './lair';
 import { TombView } from './tomb';
+import { CastleView } from './castle';
 import { TOMB_GATE, tombGateDropAt, tombGateSlam } from '../art/tomb_gate';
 import type { LookView } from './looks';
 import { prisonDoorAnchor, prisonDoorTiles } from '../game/prison_way';
@@ -474,6 +475,8 @@ export class Renderer {
   readonly prison = new PrisonView();
   /** FLOOR 1, THE KING'S TOMB (render/tomb.ts, behind TOMB). */
   readonly tomb = new TombView();
+  /** THE FIRST TOWN AS THE CASTLE'S HALL (render/castle.ts, behind CASTLE_HALL). */
+  readonly castle = new CastleView();
   /** FLOOR 4, THE BURIED CHAPEL OF BONES (render/chapel.ts, behind CHAPEL). */
   readonly chapel = new ChapelView();
   /** FLOOR 5, THE MINE THAT BECOMES HIS TEMPLE (render/lair.ts, behind LAIR_TEMPLE). */
@@ -482,7 +485,7 @@ export class Renderer {
   private lookNow: LookView | null = null;
   /** The new look of this level's floor, if it has one on. */
   lookOf(L: Game['level']): LookView | null {
-    for (const v of [this.tomb, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
+    for (const v of [this.castle, this.tomb, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
   }
   /** A picture of the game's own walls (a slanting wall) in the look of the floor being drawn: the prison's colours on floor 3. */
@@ -720,13 +723,17 @@ export class Renderer {
     // (THE FIRST FIVE FLOORS: while its opening is played from its film, the film is the stairwell: render/dress.ts)
     if (st && st.open && L.explored[st.y * L.floor.w + st.x] && !this.dress.stairPlaying(game)) {
       // (EXITS: the town's stairs down, the art chat's, three tiles by two, once made)
-      const sp = (L.town ? this.dress.townWays(game)?.stairs : null) ?? art.stair[st.way];
+      // (THE FIRST TOWN AS THE CASTLE'S HALL: its own stairs down, the hall's stone turning to floor 1's: art/castle_hall.ts)
+      const sp = (L.town ? (this.castle.on(L) ? this.castle.A().stairs(st.way) : this.dress.townWays(game)?.stairs) : null) ?? art.stair[st.way];
       g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
     }
     // (EXITS: floor 1's stairs up to the town, seen through its gate's arch, with the floor: anchored as the arch's strips are)
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: through its gate the passage through the castle's wall and the day beyond, the road out
+    // to the Quarry, anchored so too: art/castle_hall.ts)
+    const hall = this.castle.on(L) ? this.castle.A().gate : null;
     for (const d of L.doors) {
       const s = d.spot;
-      const sp = s.kind === 'waygate' ? this.dress.stairsUp(game, s) : null;
+      const sp = s.kind === 'waygate' ? (hall && L.doors[W.gate] === d ? hall.beyond(s.alongX) : this.dress.stairsUp(game, s)) : null;
       if (!sp || !doorTiles(L.floor, s).some((i) => L.explored[i] === 1)) continue;
       const face = doorFace(s);
       const wide = PILLAR / 32;
@@ -749,9 +756,12 @@ export class Renderer {
   /** THE WAYS' PICTURES for this level: its floor's; the town's the first floor's (THE CAMP, game/camp.ts: its waypoint in the city's grey stone, art/hub2.ts CITY). */
   private waysOf(L: Game['level']): ReturnType<typeof lookWays> {
     if (isCamp(L)) return (this.cityWays ??= { stair: lookWays(1).stair, way: makeWaypointArt(CITY) });
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: its waypoint's dais in the castle's stone: art/castle_hall.ts)
+    if (this.castle.on(L)) return (this.hallWays ??= { stair: lookWays(1).stair, way: this.castle.A().way });
     return lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
   }
   private cityWays: ReturnType<typeof lookWays> | null = null;
+  private hallWays: ReturnType<typeof lookWays> | null = null;
   /** (THE CAMP) Its three people's pictures, painted once each as they are first wanted. */
   private folkFrames = new Map<string, Sprite>();
 
@@ -838,7 +848,10 @@ export class Renderer {
         // (the boss's, heavy and carved; or a plain one: a lever's, a locking room's)
         const boss = s.kind === 'bossgate';
         const wide = PILLAR / 32;
-        const pillar = A.pillar(boss);
+        // (THE FIRST TOWN AS THE CASTLE'S HALL: the town's gate in the castle's stone, its quoins and its ring of voussoirs; the
+        // portcullis and the bars the game's own: art/castle_hall.ts)
+        const hallGate = this.castle.on(L) && L.ways && L.doors[L.ways.gate] === d ? this.castle.A().gate : null;
+        const pillar = hallGate ? hallGate.pillar : A.pillar(boss);
         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
         // (EXITS: floor 1's gate is the stairs up to the town, the art chat's, drawn with the floor: its portcullis is gone)
         // (THE HEADSMAN'S YARD's own gate, YARD_GATE: it falls by its own beat, held juddering, dropped, a bounce; the mark on its
@@ -853,7 +866,7 @@ export class Renderer {
         const tombGate = boss && d.want === 0 && d.fell !== undefined && TOMB_GATE.on && this.tomb.on(L);
         const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : prisonGate ? prisonGateDropAt((game.time - d.fell!) * 30) : chapelGate ? chapelGateDropAt((game.time - d.fell!) * 30) : lairGate ? lairGateDropAt((game.time - d.fell!) * 30) : tombGate ? tombGateDropAt((game.time - d.fell!) * 30) : null;
         if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, drop ? drop.raise : d.open * GATE_UP), -wide, wide);
-        strips(A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
+        strips(hallGate ? hallGate.arch(s.alongX) : A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
         if (drop && drop.slam >= 0) {
           const [x, y] = at(1.5, wide);
           put(x + y + 0.3, prisonGate ? prisonGateSlam(s.alongX, drop.slam) : chapelGate ? chapelGateSlam(s.alongX, drop.slam) : lairGate ? lairGateSlam(s.alongX, drop.slam) : tombGate ? tombGateSlam(s.alongX, drop.slam) : yardGateSlam(s.alongX, drop.slam), x, y);
@@ -1923,17 +1936,6 @@ export class Renderer {
     // (THE WAYS, game/ways.ts: the level's own stairwell and waypoint)
     if (L.ways && pass <= 0) this.flatWays(g, L, t, game);
     if (L.ways && pass <= 0) this.dress.flat(g, game, this.stage);
-    // (THE FIRST FIVE FLOORS' NEW LOOKS: what each lays flat, added where it is light: floor 1's pools of daylight: render/looks.ts)
-    if (this.lookNow?.flats && pass <= 0) {
-      for (const q of this.lookNow.flats(L, this.clockNow)) {
-        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
-        const sx = Math.round(wx(this.cam, q.x, q.y));
-        const sy = Math.round(wy(this.cam, q.x, q.y));
-        if (q.add) g.globalCompositeOperation = 'lighter';
-        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
-        g.globalCompositeOperation = 'source-over';
-      }
-    }
     if (this.dressed) this.pieces.shadows(g, game, this.stage, here);
     for (const p of L.props) {
       if ((!L.explored[p.ty * f.w + p.tx] && !this.openGround) || !here(p.x, p.y)) continue;
@@ -1979,6 +1981,19 @@ export class Renderer {
           if (st.lights) this.propLit.push({ s: st, x: Math.round(x), y: Math.round(y) });
           if (Math.random() < 0.15 * amb) fx.mote(p.x + STONE_BY[0], p.y + STONE_BY[1], [P.white, '#b8fff8', '#22d0e0']);
         }
+      }
+    }
+    // (THE FIRST FIVE FLOORS' NEW LOOKS: what each lays flat, added where it is light, over what lies on the floor: floor 1's pools
+    // of daylight, the castle hall's slats of sun: render/looks.ts)
+    if (this.lookNow?.flats && pass <= 0) {
+      for (const q of this.lookNow.flats(L, this.clockNow)) {
+        if (!L.explored[Math.floor(q.y) * L.floor.w + Math.floor(q.x)]) continue;
+        const sx = Math.round(wx(this.cam, q.x, q.y));
+        const sy = Math.round(wy(this.cam, q.x, q.y));
+        if (sx - q.s.ax > W || sx - q.s.ax + q.s.w < 0 || sy - q.s.ay > H || sy - q.s.ay + q.s.h < 0) continue;
+        if (q.add) g.globalCompositeOperation = 'lighter';
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+        g.globalCompositeOperation = 'source-over';
       }
     }
     // (THE TRAPS) a spike floor's holes, glinting in the moment before its spikes come up; a dart wall's plate
@@ -2655,6 +2670,15 @@ export class Renderer {
     const prisonOn = look === this.prison;
     this.yardOnly = yardOut ? f : null;
     if (yardOut) this.yard.back(g, cam, f, W, H);
+    // (THE FIRST TOWN AS THE CASTLE'S HALL: the castle's stone above its walls and its roof, behind everything: render/castle.ts)
+    if (look?.back) {
+      for (const q of look.back(L, t)) {
+        const sx = Math.round(wx(cam, q.x, q.y));
+        const sy = Math.round(wy(cam, q.x, q.y));
+        if (sx - q.s.ax > W || sx - q.s.ax + q.s.w < 0 || sy - q.s.ay > H || sy - q.s.ay + q.s.h < 0) continue;
+        g.drawImage(q.s.img, sx - q.s.ax, sy - q.s.ay, q.s.w, q.s.h);
+      }
+    }
 
     // ---- floor, and collect walls -------------------------------------------------------------
     this.pitTiles.length = 0;
@@ -3764,8 +3788,8 @@ export class Renderer {
         if (!q.glow || !L3.explored[Math.floor(q.y) * L3.floor.w + Math.floor(q.x)]) continue;
         const gx = wx(this.cam, q.x, q.y) + (q.dx ?? 0);
         const gy = wy(this.cam, q.x, q.y) - q.up;
-        if (gx < -60 || gx > W + 60 || gy < -60 || gy > H + 60) continue;
-        drawGlow(g, gx, gy, q.glow.r + Math.sin(t * 9 + q.y * 5) * 1.5, q.glow.color, q.glow.a);
+        if (gx < -q.glow.r || gx > W + q.glow.r || gy < -q.glow.r || gy > H + q.glow.r) continue;
+        drawGlow(g, gx, gy, q.still ? q.glow.r : q.glow.r + Math.sin(t * 9 + q.y * 5) * 1.5, q.glow.color, q.glow.a);
       }
       const ex = L3.ways?.exit;
       const ef = ex ? this.dress.exitFilm(game) : null;
@@ -4441,7 +4465,7 @@ export class Renderer {
     // (FLOOR 3, THE BLACK IRON PRISON: look B's deep shadow between its fires, 0.8: art/prison.ts PRISON_LIGHTS)
     const look = this.lookNow;
     const prisonOn = look === this.prison;
-    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
+    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town && !look ? 'rgba(8,5,14,0.45)' : `rgba(${look?.tint && !yardSky ? look.tint.join(',') : '6,4,14'},${yardSky ? YARD_DARK : look ? look.dark : FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     // (FLOOR 7, THE CARRION QUEEN'S ECLIPSE, QUEEN_ACTION: her flock over the ledge, dark but for its pools of light: the rock at a
     // third of its light, art/carrion_queen_action_fx.ts DARK_FLOOR; the hero's own light taken in with it)
@@ -4513,7 +4537,7 @@ export class Renderer {
         const lx = wx(cam, q.x, q.y) + (q.dx ?? 0);
         const ly = wy(cam, q.x, q.y) - q.up;
         if (lx < -q.r || lx > W + q.r || ly < -q.r || ly > H + q.r) continue;
-        spot(lx, ly, q.r + Math.sin(t * 7 + q.x * 3) * 2, q.strength);
+        spot(lx, ly, q.still ? q.r : q.r + Math.sin(t * 7 + q.x * 3) * 2, q.strength);
       }
     }
     if (prisonOn) {
@@ -4618,7 +4642,7 @@ export class Renderer {
     // the screen are shadowy whatever is lit there (what GLOWS is drawn after the dark, and still shines)
     // (THE HEADSMAN'S YARD: the sky over its far walls lit by its moon, and the edges of the screen less dark under the open sky)
     if (yardSky) this.yard.skyLift(dg, cam, f, YARD_SKY_LIFT);
-    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? VIGNETTE_TOWN : yardSky ? YARD_VIGNETTE : VIGNETTE), 0, 0);
+    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? (this.lookNow?.vignette ?? VIGNETTE_TOWN) : yardSky ? YARD_VIGNETTE : VIGNETTE), 0, 0);
   }
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {
