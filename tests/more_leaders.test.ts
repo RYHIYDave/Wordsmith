@@ -56,8 +56,8 @@ import { makeArcherArt3 } from '../src/art/monster_bones3';
 import { BANNER, CHIEF_DIE_TIME, SWING_HIT, makeBruteArt, makeChieftainArt, makeGuardianArt } from '../src/art/monster_brute';
 import { CENSER_HIT, MASK, PRIEST_DIE_TIME, PROCESSION_FPS, SMOKE, makeCultistArt, makeHighPriestArt, paintCultist, paintHighPriest } from '../src/art/monster_cultist';
 import { MARKSMAN, MK_PIERCE_HIT, MK_SHOT_HIT, MK_SNAP, MK_WOOD, NEW_MOBS, NEW_MOBS_LIST, TILE3, deathOfMob, makeMarksmanArt3, paintMob, skeletonAt, walkFpsAt } from '../src/art/new_mobs3';
-import { NEW_MONSTERS } from '../src/game/defs';
-import '../src/art/bestiary';
+import { ACTION_F2, ACTION_F3, NEW_MONSTERS } from '../src/game/defs';
+import { useActionF2, useActionF3 } from '../src/art/bestiary';
 import { P } from '../src/art/palette';
 import { rgba } from '../src/engine/px';
 import type { Px, Sprite } from '../src/engine/px';
@@ -174,9 +174,24 @@ function allFrames(name: string, art: { front: AnimSet; back: AnimSet }): void {
 
 const MK = makeMarksmanArt3();
 const HP = makeHighPriestArt();
-const CU = makeCultistArt();
+/** (the cultists and trolls as they were when their leaders were made from them: the art chat's floor 2 and 3 action, ACTION_F2 and
+ * ACTION_F3, on since 2 Nov 2026 at his “Switch them all on (Recommended)”, gave them a fire sigil and a rampage of their own; their
+ * leaders keep the bolt and the slam they were made with) */
+const asWere = <T>(make: () => T): T => {
+  const a = ACTION_F2.on;
+  const b = ACTION_F3.on;
+  useActionF2(false);
+  useActionF3(false);
+  try {
+    return make();
+  } finally {
+    useActionF2(a);
+    useActionF3(b);
+  }
+};
+const CU = asWere(makeCultistArt);
 const CH = makeChieftainArt();
-const BR = makeBruteArt();
+const BR = asWere(makeBruteArt);
 const GU = makeGuardianArt();
 
 test('their switch goes with the rules\' (Version 19.9), and only the bestiary makes them', () => {

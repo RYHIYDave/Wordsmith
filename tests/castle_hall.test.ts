@@ -106,7 +106,7 @@ function plane(strips: Strip[], alongX: boolean): Map<string, string> {
 }
 
 // (brought into the game by the main chat, 2 Nov 2026, behind the same switch: the files that bring it in may import it)
-const BROUGHT = ['game/castle_way.ts', 'game/level.ts', 'main.ts', 'render/castle.ts'].map((f) => join('src', f));
+const BROUGHT = ['game/castle_way.ts', 'game/level.ts', 'game/floor_looks.ts', 'main.ts', 'render/castle.ts'].map((f) => join('src', f));
 test('the castle hall and its owl: off, and nothing of the game imports them but the files that bring them in', () => {
   assert.ok(CASTLE_HALL.on === false, 'CASTLE_HALL is off');
   const found: string[] = [];

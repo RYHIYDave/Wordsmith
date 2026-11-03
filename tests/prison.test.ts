@@ -83,7 +83,7 @@ test('the prison, his gate and the door out of his hall: off; brought into the g
   assert.ok(PRISON.on === false && PRISON_GATE.on === false && PRISON_EXIT.on === false, 'PRISON, PRISON_GATE and PRISON_EXIT are off');
   // (2 Nov 2026, his “New looks for the first 5 floors are almost done.  We want those in the release as well”: the main chat brought
   // them in behind their switches, off until his yes to them in play: the floor's look, its gate, the door and the fire channel)
-  const BROUGHT = ['art/prison.ts', 'art/prison_gate.ts', 'art/prison_exit.ts', 'art/films.ts', 'art/floors.ts', 'game/first5.ts', 'game/prison_way.ts', 'main.ts', 'render/dress.ts', 'render/prison.ts', 'render/render.ts'].map((f) => join('src', f));
+  const BROUGHT = ['art/prison.ts', 'art/prison_gate.ts', 'art/prison_exit.ts', 'art/films.ts', 'art/floors.ts', 'game/first5.ts', 'game/prison_way.ts', 'game/floor_looks.ts', 'main.ts', 'render/dress.ts', 'render/prison.ts', 'render/render.ts'].map((f) => join('src', f));
   const found: string[] = [];
   const walk = (d: string): void => {
     for (const f of readdirSync(d)) {

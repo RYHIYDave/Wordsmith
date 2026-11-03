@@ -221,7 +221,10 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // combo: the Scraper's snap, rush and scour and its strip; the Quill's stab and ink lines, its Overwrite and its swoop.
       // The combo and the Overwrite are made by the pair (forced); the Quill's taking off, flying and landing are its way there)
       const PAIR_MOVES = new Set(['scraper:strip', 'quill:swoop', 'quill:write']);
-      const chosenIds = acts ? [...new Set(acts.filter((a) => (!a.forced || PAIR_MOVES.has(a.id)) && a.id !== 'h2:dashL' && a.id !== 'h2:dashR').map((a) => a.id.replace(/Wall$/, '')))] : [];
+      // (FLOOR 20, THE HUSH'S SHAPES, the art chat's of 31 Oct 2026: their grip, and their swoop, made by the swarm one after another
+      // (forced, either way round: one move); their glides round him are their way there)
+      const SWARM_MOVE = /^hshape:swoop[LR]$/;
+      const chosenIds = acts ? [...new Set(acts.filter((a) => (!a.forced || PAIR_MOVES.has(a.id) || SWARM_MOVE.test(a.id)) && a.id !== 'h2:dashL' && a.id !== 'h2:dashR').map((a) => a.id.replace(/Wall$/, '').replace(SWARM_MOVE, 'hshape:swoop')))] : [];
       const n = kind === 'eye' ? Math.max(...[0, 1, 2].map((p) => chosenIds.filter((id) => EYE_PHASE_OF[id]?.includes(p)).length)) : acts ? chosenIds.length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;

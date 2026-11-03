@@ -8920,7 +8920,9 @@ export class Game {
       // `mdt`; what is done to it, burning, chill, stun and the rest, runs out as ever, by `dt`)
       const mdt = dt * this.timeOf(m);
       m.animT += mdt;
-      // (AM_ACTION: a bone mite left alone crumbles, its death played; nothing is gained by it)
+      // (AM_ACTION: a bone mite left alone crumbles, its death played; nothing is gained by it. Once the Amalgamation is dead, every
+      // mite of its crumbles with it, one after another within a second: nothing of his harms the hero long after)
+      if (m.kind === 'mite' && !this.monsters.some((q) => q.kind === 'amalgam' && !q.dead)) m.crumbleT = Math.min(m.crumbleT ?? Infinity, 0.15 + (Math.abs(Math.floor(m.x * 7 + m.y * 13)) % 8) * 0.1);
       if (m.crumbleT !== undefined) {
         m.crumbleT -= dt;
         if (m.crumbleT <= 0) {
