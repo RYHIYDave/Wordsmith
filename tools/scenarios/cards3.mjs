@@ -23,12 +23,13 @@ export default async function (page, snap) {
   check(`five or six cards, three to a row, in two rows (${s.w} by ${s.h})`, (s.cards.length === 5 || s.cards.length === 6) && rows.length === 2 && s.cards.filter((c) => c.y === rows[0]).length === 3 && s.cards.filter((c) => c.y === rows[1]).length === s.cards.length - 3, JSON.stringify(s.cards.map((c) => [c.id, c.x, c.y, c.w, c.h])));
   check('the cards clear of the buttons at the foot', s.cards.every((c) => c.y + c.h <= s.confirm.y - 2), JSON.stringify(s.confirm));
   await snap('0_none_chosen');
-  await hands.press('class:warlock');
+  // (stay: the hands' press of a card otherwise goes on to CONFIRM, as every other playtest wants: lib.mjs makeHands)
+  await hands.press('class:warlock', 0, true);
   await page.waitForTimeout(600);
   s = await marks();
   check('a card pressed: nothing starts', !s.game);
   await snap('1_warlock_chosen');
-  await hands.press('class:mage');
+  await hands.press('class:mage', 0, true);
   await page.waitForTimeout(400);
   await hands.press('button:CONFIRM');
   await page.waitForTimeout(4000);

@@ -20,6 +20,9 @@ import { liveDone, liveFrom } from './live';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const FPS = 30;
+/** How often a line's pictures are painted afresh (each a canvas the size of the floor it may cover: painting them at the game's
+ * thirty a second cost about a third of a frame for three lines on a two-processor machine; fifteen halves it). */
+const PAINT_FPS = 15;
 type View = 'front' | 'back';
 
 /**
@@ -68,7 +71,7 @@ function ground(c: Act1FxCtx, p: Peril): void {
   const n = nameOf(p);
   const C = FX_CANVAS;
   const [sx, sy] = c.at(p.x, p.y);
-  const stamp = `${Math.floor(p.t * FPS + 1e-6)}`;
+  const stamp = `${Math.floor(p.t * PAINT_FPS + 1e-6)}`;
   // (the mark: from RS_BREATH.mark until the rime has crept to its end)
   if (p.t < RIME_LINE.long / RIME_LINE.pace + 0.1) {
     const s = liveFrom(`${n}:mark`, stamp, C.ax, C.ay, () => ({ px: markPainted(p.t + RS_BREATH.hit, view, turn) }));
@@ -97,7 +100,7 @@ function standing(c: Act1FxCtx, p: Peril): void {
   const n = nameOf(p);
   const C = FX_CANVAS;
   const [sx, sy] = c.at(p.x, p.y);
-  const stamp = `${Math.floor(p.t * FPS + 1e-6)}`;
+  const stamp = `${Math.floor(p.t * PAINT_FPS + 1e-6)}`;
   const h = c.game.hero;
   const r = onLine(p, h.x, h.y);
   const end = RIME_LINE.from + RIME_LINE.long;
