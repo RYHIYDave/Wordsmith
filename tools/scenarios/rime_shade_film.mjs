@@ -14,7 +14,7 @@ const FPS = 30;
  */
 const PLAN = [
   { name: 'ONE BREATHES; HE STANDS', line: 'The line is marked, the rime creeps down it, and where it reaches him he is frozen.', long: 6.2, foes: [[-4.2, 0]], does: [] },
-  { name: 'HE STEPS OUT OF IT', line: 'Seeing the mark, he steps out to the side: the rime creeps past him.', long: 4.6, foes: [[-4.2, 0]], does: [[1.0, 'side', 0.36]] },
+  { name: 'HE STEPS OUT OF IT', line: 'Seeing the mark, he steps out to the side: the rime creeps past him.', long: 4.6, foes: [[-4.2, 0]], does: [[1.1, 'side', 0.36]] },
   { name: 'HE OUTRUNS IT', line: 'It creeps slower than he runs: away down the line, it never reaches him.', long: 4.6, foes: [[-2.6, 0]], does: [[1.4, 'run', 1.6]] },
   { name: 'THREE TOGETHER', line: 'Two or three to a pack: their lines cross. Frozen once, he is not frozen again at once.', long: 6.4, foes: [[-4.2, 0], [2.4, 3.6], [2.6, -3.4]], does: [] },
   { name: 'STRUCK DOWN', line: 'Struck, its frost cracks; killed, it comes apart into fog.', long: 4.2, foes: [[-1.3, 0]], does: [[0.1, 'hit', 4]], weak: true },

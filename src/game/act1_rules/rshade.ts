@@ -39,7 +39,7 @@ export const ICE_PERIL = 'rshade:ice';
 export const RIME_TUNE = { far: 5.6, stopAt: 3.2, grace: 1.0, slow: 0.4, pack: [2, 3] as const } as const;
 
 const ACTS: readonly ActDef[] = [
-  { id: 'rshade:breath', clip: 'attack', long: RS_BREATH.long, hit: RS_BREATH.hit, dmg: 1, cooldown: 0, first: 0.6, after: 1.0, near: 0, far: RIME_TUNE.far },
+  { id: 'rshade:breath', clip: 'attack', long: RS_BREATH.long, hit: RS_BREATH.hit, dmg: 1, cooldown: 0, first: 0.6, after: 2.0, near: 0, far: RIME_TUNE.far },
 ];
 
 /** The hero's place on a line: tiles along it from where it was breathed, and to its side. */
@@ -53,7 +53,8 @@ export function onLine(p: { x: number; y: number; fx: number; fy: number }, x: n
 const freed = new WeakMap<object, number>();
 
 export const RULES: Act1Rules | null = {
-  gait: { pace: RS_PACE, cycle: RS_DRIFT.frames / RS_DRIFT.fps, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: RIME_TUNE.stopAt, slack: 0.8, trueBack: true },
+  // (it stops at any frame of its drift, its feet never on the floor: the art checks its drift from any step into its stand)
+  gait: { pace: RS_PACE, cycle: 1 / RS_DRIFT.fps, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: RIME_TUNE.stopAt, slack: 0.8, trueBack: true },
   acts: ACTS,
   acting(R, m, a, t0, t1) {
     const g = R.g;
