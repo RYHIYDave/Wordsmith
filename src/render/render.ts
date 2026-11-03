@@ -185,6 +185,15 @@ export interface Art {
  * dark it is in the corners (in a dungeon, in town).
  */
 const SHADOW = 0.7;
+/**
+ * HER CONTRAPTIONS MADE EASIER TO SEE. His word, 2 Nov 2026, 21:13: “And it’s really hard to see the contraptions once you get the
+ * passive skill” (her tree's Contraption: each a little tripod mortar 15 game pixels high, dark brass on the dark floor). Shown
+ * three ways in play (con_options.png: a cyan ring, twice as big, both), his pick: “A: cyan ring only”. `ring`: the friend's cyan
+ * ring on the floor round each set up; `scale`: drawn so many times as big (1: as painted).
+ */
+export const CON_SEEN = { on: true, ring: true, scale: 1 };
+/** How wide the Tinkerer's Golem's shadow is (tiles round, as a monster's `r`): its broad feet and its fist planted. */
+const GOLEM_SHADOW = 0.6;
 const FAR_DARK = 0.88;
 const NEAR_POOL = 380;
 const NEAR_LIFT = 0.36;
@@ -1360,7 +1369,7 @@ export class Renderer {
       const sx = wx(cam, x, y);
       const sy = wy(cam, x, y);
       if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 60) continue;
-      this.stand(x + y + 0.01, turned(c.fx, c.fy, sp), sx, sy - lift);
+      this.stand(x + y + 0.01, turned(c.fx, c.fy, sp), sx, sy - lift, null, 0, CON_SEEN.on ? CON_SEEN.scale : 1);
     }
     // (her Golems: one; two with her tree's Mark II)
     const GS = TINKER_TUNE.talents.growth;
@@ -2338,6 +2347,28 @@ export class Renderer {
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
+    // (THE TINKERER'S GOLEMS: a soft shadow under each, as under everyone, growing with it under her Growth Serum, coming in as it
+    // drops in. His word, 2 Nov 2026, 21:05: “And the golem needs a shadow”)
+    for (const gm of game.golems) {
+      if (!here(gm.x, gm.y)) continue;
+      const GS = TINKER_TUNE.talents.growth;
+      const grow = gm.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - gm.growT) / 0.25, gm.growT / 0.25)) : 1;
+      const come = gm.act === 'arrive' ? Math.min(1, gm.actT / 0.25) : 1;
+      this.shadow(g, wx(cam, gm.x, gm.y), wy(cam, gm.x, gm.y), GOLEM_SHADOW * grow * (0.6 + 0.4 * come), Math.min(1, SHADOW * 1.2) * come);
+    }
+    // (CON_SEEN, a mock-up: the friend's cyan ring round each of her Contraptions set up)
+    if (CON_SEEN.on && CON_SEEN.ring) {
+      for (const c of game.contraptions) {
+        if (!here(c.x, c.y) || c.broke >= 0 || c.t < 22 / 30) continue;
+        const cx = Math.round(wx(cam, c.x, c.y));
+        const cy = Math.round(wy(cam, c.x, c.y));
+        const k = Math.min(1, (c.t - 22 / 30) / 0.2);
+        ellipse(g, cx, cy, 0.5 * CON_SEEN.scale, '#22d0e0', 0.14 * k);
+        g.globalAlpha = k;
+        ringDots(g, cx, cy, 0.46 * CON_SEEN.scale, '#7af4ff');
+        g.globalAlpha = 1;
+      }
+    }
     // (the Meldstone hanging over the floor has a shadow too, smaller and fainter the higher it is: art/meld_drops.ts)
     if (MELD_DROPS.on) {
       for (const dr of game.drops) {

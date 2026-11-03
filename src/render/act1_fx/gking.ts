@@ -15,7 +15,7 @@
 // Nothing cyan: the enemy's pink, the Hush's grey and fog, steel and stone, the bird's gold and silver.
 
 import { toSprite } from '../../art/kit';
-import { BIRD, BIRD_CANVAS, DECREE_FX, FACE_CANVAS, KN_CANVAS, birdPainted, facePainted, knightPainted } from '../../art/king_fx';
+import { BIRD, BIRD_CANVAS, DECREE_FX, FACE_CANVAS, FX_CANVAS, KN_CANVAS, WEIGHT_FX, birdPainted, facePainted, knightPainted, sparksPainted, weightPainted } from '../../art/king_fx';
 import type { BirdState } from '../../art/king_fx';
 import { hash } from '../../art/kit';
 import type { GameView } from '../../art/skin';
@@ -29,6 +29,7 @@ import { drawFanWarn, drawStripWarn, warnK } from './garden_warn';
 import type { Act1Fx, Act1FxCtx } from './types';
 
 const D = Math.PI / 180;
+const FPS = 30;
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (a: number, b: number, t: number): number => {
   const u = clamp01((t - a) / (b - a));
@@ -90,230 +91,39 @@ const C = KING_TUNE.charge;
 const W = KING_TUNE.weight;
 const HF = KING_TUNE.hush.fog;
 
-/** THE LINE OF SPARKS cut by his blade from where he set off (p.x, p.y) to where he is (p.a, p.b): glowing hotter until it bursts. */
+/** THE LINE OF SPARKS (the art's sparksPainted, at the King's size): cut 1.75 tiles behind him from where he set off as he runs,
+ * its sparks shooting off and popping 0.6 s after he stops, lying a second; laid where he set off, turned as he ran. */
 function sparks(c: Act1FxCtx, p: Peril): void {
-  const g = c.g!;
-  const dx = p.a - p.x;
-  const dy = p.b - p.y;
-  const len = Math.hypot(dx, dy);
-  if (len < 0.05) return;
-  const burstAt = p.d ? p.d + C.burst : Infinity;
-  const was = g.globalAlpha;
-  const heat = p.d ? clamp01((p.t - p.d) / C.burst) : 0.2;
-  const after = p.t - burstAt;
-  const fade = after > 0 ? 1 - clamp01(after / 0.45) : 1;
-  if (fade <= 0) return;
-  const n = Math.ceil(len / 0.05);
-  for (let i = 0; i <= n; i++) {
-    const u = i / n;
-    const x = p.x + dx * u;
-    const y = p.y + dy * u;
-    // (the cut itself, a dark groove with a hot edge)
-    const [sx, sy] = c.at(x, y);
-    g.globalAlpha = was * fade;
-    dot(g, sx, sy + 1, CRACK, 2);
-    const hot = hash(i, Math.floor(c.t * 12), 7901);
-    dot(g, sx, sy, hot < 0.3 + 0.5 * heat ? SPARK[1] : SPARK[2]);
-    if (after > 0) {
-      // (it bursts: a row of flares thrown up along it)
-      const up = 3 + 14 * hash(i, 1, 7902) * (1 - fade * 0.3);
-      if (hash(i, 2, 7903) < 0.6) dot(g, sx, sy - up * (1 - fade) - 2, SPARK[hash(i, 3, 7904) < 0.4 ? 0 : 1], 2, 2);
-    } else if (hash(i, Math.floor(c.t * 20), 7905) < 0.05 + 0.25 * heat) {
-      // (sparks spitting up off it, more as it nears the burst)
-      dot(g, sx + (hash(i, 4, 7906) - 0.5) * 4, sy - 2 - 6 * hash(i, Math.floor(c.t * 20), 7907), SPARK[0]);
-    }
-  }
-  g.globalAlpha = was;
+  const k = Math.floor(p.t * FPS);
+  const lane = Math.round(Math.min(C.most, Math.hypot(p.a - p.x, p.b - p.y)) * 4) / 4;
+  const view = viewOf(p.fx, p.fy);
+  const sp = made(`sparks:${k}:${view}:${lane}`, flipped(p.fx, p.fy), () => toSprite(sparksPainted(k / FPS, view, lane), null, FX_CANVAS.ax, FX_CANVAS.ay));
+  const [sx, sy] = c.at(p.x, p.y);
+  c.g!.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
 }
 
-/** The crown's weight's moments: flying off his head till `fly`; hanging over the hero, following, till `follow`; rising and trembling till `rise`; dropping till `slam`. */
-const CW = { fly: W.fly, follow: W.follow, rise: W.follow + W.hold, slam: W.follow + W.hold + W.drop };
-/** How high the crown hangs over the floor (screen pixels). */
-const CROWN_UP = 40;
-/** Where the crown is on the floor (tiles) at peril time `t`: flying off his head, then over the hero (the peril's own place). */
-function crownFloor(p: Peril): { x: number; y: number } {
-  const u = smooth(0, CW.fly, p.t);
-  return { x: p.a + (p.x - p.a) * u, y: p.b + (p.y - p.b) * u };
+/** THE CROWN'S WEIGHT (the art's weightPainted): `'floor'`, under the figures (its shadow, its warning ring, the slam's crack and dust), and `'crown'`, over them, at the floor point under it, seen as he faced as he sent it. */
+function weight(c: Act1FxCtx, p: Peril, part: 'floor' | 'crown'): void {
+  if (p.t >= WEIGHT_FX.long) return;
+  const k = Math.floor(p.t * FPS);
+  const view = viewOf(p.fx, p.fy);
+  const sp = made(`weight:${part}:${k}:${view}`, flipped(p.fx, p.fy), () => toSprite(weightPainted(k / FPS, view, part), null, FX_CANVAS.ax, FX_CANVAS.ay));
+  const [sx, sy] = c.at(p.x, p.y);
+  if (part === 'floor') c.g!.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
+  else c.stand(p.x + p.y + 2, sp, sx, sy);
 }
-
-/** Where the crown's weight hangs, its shadow under it (darkening as it comes), and where it slammed: a ring of dust and the stones cracked. */
-function weightGround(c: Act1FxCtx, p: Peril): void {
-  const g = c.g!;
-  const was = g.globalAlpha;
-  if (p.t < CW.slam) {
-    // (its shadow on the floor: wider and darker as it nears its drop; the enemy's pink edge round where it will strike)
-    const f = crownFloor(p);
-    const k = clamp01(p.t / CW.rise);
-    const [sx, sy] = c.at(f.x, f.y);
-    const rx = 8 + 10 * k;
-    g.globalAlpha = was * (0.25 + 0.4 * k);
-    g.fillStyle = '#05040a';
-    g.beginPath();
-    g.ellipse(sx, sy, rx, rx * 0.5, 0, 0, Math.PI * 2);
-    g.fill();
-    g.globalAlpha = was;
-    if (p.t >= CW.fly) drawFanWarn(g, c.at, { x: p.x, y: p.y, fx: 1, fy: 0, hand: 1 }, -Math.PI, Math.PI, W.r, 0.2 + 0.8 * k, c.t * (p.t > CW.follow ? 2.5 : 1));
-    return;
-  }
-  const t = p.t - CW.slam;
-  // (a ring of dust and air thrown out from it, past its reach)
-  if (t < 0.35) {
-    const R = W.r * (0.3 + 1.2 * smooth(0, 0.35, t));
-    const n = Math.ceil(R * 40);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const rr = R * (0.92 + 0.08 * hash(i, 1, 7931));
-      const [sx, sy] = c.at(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
-      g.globalAlpha = was * (1 - t / 0.35);
-      dot(g, sx, sy - 2 * hash(i, 2, 7932), i % 3 ? GOLD[3] : '#f4f0ff', 2, 1);
-    }
-  }
-  // (the stones cracked out from under it, fading)
-  const cf = 1 - smooth(1.0, W.home + 0.8, t);
-  for (let j = 0; j < 12; j++) {
-    let a = (j / 12) * Math.PI * 2 + hash(j, 1, 7911);
-    const long = W.r * (0.5 + 0.55 * hash(j, 2, 7911)) * smooth(0, 0.06, t);
-    for (let r = 0.1; r < long; r += 0.05) {
-      if (hash(j, Math.round(r * 20), 7912) > cf) continue;
-      const [sx, sy] = c.at(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
-      g.globalAlpha = was;
-      dot(g, sx, sy, CRACK, r < long * 0.4 ? 2 : 1);
-      a += (hash(j, Math.round(r * 20), 7913) - 0.5) * 0.14;
-    }
-  }
-  // (dust thrown up, settling)
-  if (t < 0.6) {
-    for (let i = 0; i < 40; i++) {
-      const a = hash(i, 3, 7933) * Math.PI * 2;
-      const r = W.r * hash(i, 4, 7934) * smooth(0, 0.3, t);
-      const up = 14 * hash(i, 5, 7935) * Math.sin(Math.min(1, t / 0.6) * Math.PI);
-      const [sx, sy] = c.at(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
-      g.globalAlpha = was * (1 - t / 0.6) * 0.8;
-      dot(g, sx, sy - up, i % 2 ? '#4a4658' : '#6a6678', 2, 2);
-    }
-  }
-  g.globalAlpha = was;
-}
-
-/**
- * THE CROWN in the game's pixels (a stand-in until the art chat's), in the game's own world (his word, 31 Oct 2026: “It’s not
- * on the plane of the game, like it’s flat to the screen.”): a ring of gold lying level as the floor does, seen from above at
- * the floor's own angle, its band standing up off it and five points rising from the band with pearls on their tips, turned
- * round `spin` (radians) as it hangs; the far side of the ring drawn first, darker, seen past the near side; stones set in the
- * band's near side. (`fx`, `fy`): over which point of the floor (tiles); `lift`: how high it hangs (screen pixels); `size`
- * times its own.
- */
-function crownAt(c: Act1FxCtx, fx: number, fy: number, lift: number, alpha: number, spin = 0, size = 1): void {
-  if (alpha <= 0) return;
-  const g = c.g!;
-  const was = g.globalAlpha;
-  const R = 0.36 * size;
-  const band = Math.max(3, Math.round(4 * size));
-  const tall = 7 * size;
-  // (a point of the ring at angle `a`: where its foot is on the screen, and how near the eye it is)
-  const ring = (a: number): { x: number; y: number; near: number } => {
-    const [x, y] = c.at(fx + Math.cos(a) * R, fy + Math.sin(a) * R);
-    return { x, y: y - lift, near: Math.cos(a) + Math.sin(a) };
-  };
-  const N = 48;
-  const pts = Array.from({ length: N }, (_, i) => ({ a: (i / N) * Math.PI * 2, ...ring((i / N) * Math.PI * 2) }));
-  // (its glow, faint: the enemy's gold)
-  const [gx, gy] = c.at(fx, fy);
-  g.globalAlpha = was * alpha * 0.07;
-  g.fillStyle = GOLD[3];
-  g.beginPath();
-  g.ellipse(gx, gy - lift - band, 22 * size, 14 * size, 0, 0, Math.PI * 2);
-  g.fill();
-  g.globalAlpha = was * alpha;
-  const pointAt = (k: number): { a: number; near: number } => {
-    const a = spin + (k / 5) * Math.PI * 2;
-    return { a, near: Math.cos(a) + Math.sin(a) };
-  };
-  const drawPoint = (a: number, near: number): void => {
-    const p = ring(a);
-    const l = ring(a - 0.32);
-    const r = ring(a + 0.32);
-    const lit = near > 0;
-    g.fillStyle = lit ? GOLD[2] : GOLD[1];
-    g.beginPath();
-    g.moveTo(l.x, l.y - band + 1);
-    g.lineTo(p.x, p.y - band - tall);
-    g.lineTo(r.x, r.y - band + 1);
-    g.closePath();
-    g.fill();
-    if (lit) {
-      g.fillStyle = GOLD[3];
-      g.fillRect(Math.round(p.x - 0.5), Math.round(p.y - band - tall * 0.75), 1, Math.round(tall * 0.6));
-    }
-    g.fillStyle = lit ? '#f4f0ff' : '#8a86a2';
-    const pr = Math.max(1, Math.round(1.2 * size));
-    g.fillRect(Math.round(p.x - pr / 2), Math.round(p.y - band - tall - pr), pr + 1, pr + 1);
-  };
-  // (the far side: its points, then the inside of the band, dark)
-  for (let k = 0; k < 5; k++) {
-    const q = pointAt(k);
-    if (q.near <= 0) drawPoint(q.a, q.near);
-  }
-  for (const p of pts) {
-    if (p.near > 0) continue;
-    g.fillStyle = GOLD[0];
-    g.fillRect(Math.round(p.x), Math.round(p.y - band), 2, band);
-  }
-  // (the near side of the band, lit from above: its rim bright, shading to its foot)
-  for (const p of pts) {
-    if (p.near <= 0) continue;
-    for (let y = 0; y < band; y++) {
-      g.fillStyle = y === 0 ? GOLD[3] : y < band * 0.5 ? GOLD[2] : y < band - 1 ? GOLD[1] : GOLD[0];
-      g.fillRect(Math.round(p.x), Math.round(p.y - band + y), 2, 1);
-    }
-  }
-  // (stones set in its near side, between the points)
-  for (let k = 0; k < 5; k++) {
-    const a = spin + ((k + 0.5) / 5) * Math.PI * 2;
-    if (Math.cos(a) + Math.sin(a) <= 0.3) continue;
-    const p = ring(a);
-    g.fillStyle = k % 2 ? '#c0204a' : '#2a3a9a';
-    g.fillRect(Math.round(p.x - 1), Math.round(p.y - band * 0.7), 2, 2);
-  }
-  // (the near points over all)
-  for (let k = 0; k < 5; k++) {
-    const q = pointAt(k);
-    if (q.near > 0) drawPoint(q.a, q.near);
-  }
-  g.globalAlpha = was;
-}
-
-/** THE CROWN in the air: off his head and out over the hero; hanging, turning slowly, following him; rising and trembling as it stops; dropping, a heavy slam; then flying home to his head. */
-function weightAir(c: Act1FxCtx, p: Peril): void {
-  const size = 1.6;
-  if (p.t < CW.fly) {
-    // (lifted off his head, arcing out over the hero)
-    const f = crownFloor(p);
-    const u = smooth(0, CW.fly, p.t);
-    crownAt(c, f.x, f.y, 58 + (CROWN_UP - 58) * u + 22 * Math.sin(u * Math.PI), 1, p.t * 9, size);
-    return;
-  }
-  if (p.t < CW.follow) {
-    // (hanging, turning slowly, bobbing)
-    crownAt(c, p.x, p.y, CROWN_UP + 2 * Math.sin(c.t * 4), 1, p.t * 1.6, size);
-  } else if (p.t < CW.rise) {
-    // (it stops, rises, and trembles: the drop is coming)
-    const u = smooth(CW.follow, CW.rise, p.t);
-    const shake = (hash(Math.floor(c.t * 40), 1, 7941) - 0.5) * 0.08 * u;
-    crownAt(c, p.x + shake, p.y - shake, CROWN_UP + 12 * u, 1, CW.follow * 1.6, size * (1 + 0.1 * u));
-  } else if (p.t < CW.slam) {
-    // (dropping, fast)
-    const u = (p.t - CW.rise) / (CW.slam - CW.rise);
-    crownAt(c, p.x, p.y, (CROWN_UP + 12) * (1 - u * u), 1, CW.follow * 1.6, size);
-  } else {
-    // (struck down: a bounce on the stones, then flying home to his head, turning)
-    const t = p.t - CW.slam;
-    const king = c.game.monsters.find((q) => q.kind === 'gking' && !q.dead);
-    const home = king ?? { x: p.a, y: p.b };
-    const u = smooth(0.2, W.home, t);
-    const bounce = t < 0.2 ? 6 * Math.sin((t / 0.2) * Math.PI) : 0;
-    // (home on his head: gone into his own picture's)
-    crownAt(c, p.x + (home.x - p.x) * u, p.y + (home.y - p.y) * u, bounce + 58 * u + 26 * Math.sin(u * Math.PI), (king ? 1 : 1 - u) * (1 - smooth(W.home, W.home + 0.12, t)), t * 10, size);
+/** The crown's frames painted ahead a little at a time while he stands in his hall (each is heavy to paint), so that none is painted as it is shown. */
+let aheadAt = 0;
+function paintAhead(m: Monster): void {
+  if (aheadAt >= 2 * Math.ceil(WEIGHT_FX.long * FPS)) return;
+  const t0 = performance.now();
+  const n = Math.ceil(WEIGHT_FX.long * FPS);
+  const view = viewOf(m.fx, m.fy);
+  while (aheadAt < 2 * n && performance.now() - t0 < 3) {
+    const part = aheadAt < n ? 'crown' : 'floor';
+    const k = aheadAt % n;
+    made(`weight:${part}:${k}:${view}`, false, () => toSprite(weightPainted(k / FPS, view, part), null, FX_CANVAS.ax, FX_CANVAS.ay));
+    aheadAt++;
   }
 }
 
@@ -436,6 +246,7 @@ function warnings(c: Act1FxCtx, m: Monster): void {
   if (act.id === 'gking:charge') {
     // (the lane he will run, as far as he will go)
     const k = warnK(act.t, 0, C.warn);
+    // (its line of sparks, and where they will strike, is the art's: drawn from the line itself)
     if (k >= 0) drawStripWarn(c.g!, c.at, w, 0.4, Math.max(0.6, act.a), -0.65, 0.65, k, c.t);
   }
 }
@@ -446,20 +257,20 @@ export const FX: Act1Fx | null = {
     if (m && m.act) warnings(c, m);
     if (!p) return;
     if (p.a1 === 'gking:sparks') sparks(c, p);
-    else if (p.a1 === 'gking:weight') weightGround(c, p);
+    else if (p.a1 === 'gking:weight') weight(c, p, 'floor');
     else if (p.a1 === 'gking:fog') fog(c, p);
     else if (p.a1 === 'gking:hush' && !p.c && p.b === HUSH_MOVE.grab) arms(c, p, true);
   },
   air(c, m, p) {
     void m;
     if (!c.g || !p) return;
-    if (p.a1 === 'gking:weight') weightAir(c, p);
-    else if (p.a1 === 'gking:hush' && !p.c && p.b === HUSH_MOVE.grab) arms(c, p, false);
+    if (p.a1 === 'gking:hush' && !p.c && p.b === HUSH_MOVE.grab) arms(c, p, false);
   },
   standing(c, m, p) {
-    void m;
+    if (m) paintAhead(m);
     if (!p) return;
-    if (p.a1 === 'gking:decree') decree(c, p);
+    if (p.a1 === 'gking:weight') weight(c, p, 'crown');
+    else if (p.a1 === 'gking:decree') decree(c, p);
     else if (p.a1 === 'gking:faces') faces(c, p);
     else if (p.a1 === 'gking:hush') hush(c, p);
     else if (p.a1 === 'gking:bird') songbird(c, p);

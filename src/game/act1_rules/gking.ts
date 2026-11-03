@@ -16,17 +16,21 @@
 // have so many bosses that do that already”; of four offered, “Grab and drag (Recommended),Shields the King,Grey fog”. The art
 // chat draws them (its pictures stand in until then: the sweep's for the charge, the Curtains' for the crown's weight); the
 // timings here are the main chat's, to be fitted to the art's.
-// - THE CHARGE (his basic, KING_TUNE.charge): squared on the hero (the warning: the lane he will run marked on the floor), he
-//   charges along it at 12 tiles a second, as far as 1.5 tiles past where the hero stood or 9 tiles, so far as the floor lets him,
-//   his sword dragged behind him; whoever he runs into is struck (his blow). The blade cuts A LINE OF SPARKS in the stones the
-//   whole way, which bursts 0.6 s after he stops: whoever stands on it then is struck (a share of his blow).
+// - THE CHARGE (his basic, KING_TUNE.charge; the art chat's, mockup/king 7eb52c3, his “Yes, that's it (Recommended)”, fitted to its
+//   numbers at his word of 2 Nov 2026, “All of it in this one”): turned on the hero (the warning: the lane he will run marked on the
+//   floor), braced, he charges along it at 12 tiles a second for 0.75 s, his full 9 tiles (only a wall stops him), his sword
+//   dragged behind him; whoever he runs into is struck (his blow). The blade cuts A LINE OF SPARKS in the stones, 1.75 tiles behind
+//   him the whole way (the art's sparksPainted); 0.6 s after he stops its sparks shoot off it, and as they pop, 0.28 to 0.65 s
+//   later, whoever is within 2.6 tiles of it is struck, once (a share of his blow: his “bigger AOE” for the slower wind-ups).
 // - THE DECREE (KG_DECREE, 2.8 s; the sword driven into the stones at 1.33 s): three lines of his knights rise behind him and
 //   march across the hall before him at 2.4 tiles a second, a line every 3.2 tiles, a knight every 1.25 tiles across its whole
 //   width, two gaps two knights wide in each line (DECREE_GAPS) to slip through; a knight who walks into him strikes him (once a
 //   line). Laid to the hall: they rise at the wall behind him and fade at the wall before him; none where the floor is wall.
-// - THE CROWN'S WEIGHT (KING_TUNE.weight): he sends his crown up, and it hangs over the hero, its shadow on the floor under it,
-//   following him at 3.2 tiles a second (he runs at 4.6: he can get out from under it, if he keeps going) for 2.4 s; it stops
-//   (0.45 s, the shadow darkening), and slams down: whoever is within 1.7 tiles of it is struck hard. Then it flies home.
+// - THE CROWN'S WEIGHT (KING_TUNE.weight; the art chat's weight, its own move, 5.6 s, and its pictures, weightPainted): he sends his
+//   crown up (1.1 s), it flies out and hangs over the hero, its shadow on the floor under it, following him at 3.2 tiles a second
+//   (he runs at 4.6: he can get out from under it, if he keeps going) for 2.4 s; it stops, rising and trembling (0.533 s, its
+//   warning ring lit), and slams down in two frames: whoever is within 1.7 tiles of it is struck hard. It lies 0.4 s, then flies
+//   home onto his head; he stands and steers it the whole while.
 // - THE CURTAINS (KG_CURTAINS, 2.5 s; his hand flung at 1.1 s): the faces of his deeds stream out of three hangings behind him at
 //   where the hero stood as his hand was flung (curtainFaces: one from each every 0.09 s for 1.5 s, 11 tiles a second); a face
 //   that passes through him strikes him (a small share of his blow, no more often than KING_TUNE.faces.gap).
@@ -45,8 +49,8 @@
 //   rights itself and sings (BIRD; a peril, 'gking:bird', in place of the floor's broken one); the way on opens (the game's ways).
 // What his blows leave and send, and the Hush and the bird, drawn: render/act1_fx/gking.ts.
 
-import { CURTAINS_FX, DECREE_FX, KG_REACH, curtainFaces, decreeKnights } from '../../art/king_fx';
-import { HUSH_BESIDE, KG_CLIMB, KG_CURTAINS, KG_DECREE, KG_PACE, KG_WALK } from '../../art/king_moves';
+import { CHARGE_FX, CURTAINS_FX, DECREE_FX, KG_REACH, WEIGHT_FX, curtainFaces, decreeKnights, weightAt } from '../../art/king_fx';
+import { HUSH_BESIDE, KG_CHARGE, KG_CLIMB, KG_CURTAINS, KG_DECREE, KG_PACE, KG_WALK, KG_WEIGHT } from '../../art/king_moves';
 import { TILE3 } from '../../art/new_mobs3';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { backView, beside, flipped, fromFigure, handOf } from '../facing';
@@ -55,12 +59,12 @@ import type { Act1Rules } from './types';
 
 /** His numbers (tiles; seconds; shares of his blow). */
 export const KING_TUNE = {
-  /** The charge: its warning (s), how long he runs (s) and how fast (tiles a second), at most how far, how far past where the hero stood; how near he must pass to strike him; the line of sparks: how long after he stops it bursts, how near it one must stand to be struck, its share of his blow; the whole act (s). */
-  charge: { warn: 0.8, run: 0.75, pace: 12, most: 9, past: 1.5, hit: 1.1, burst: 0.6, line: 0.75, sparks: 0.7, long: 2.3 },
+  /** The charge (the art's KG_CHARGE): its warning (s), how long he runs (s) and how fast (tiles a second), how far; how near he must pass to strike him; the line of sparks: how far behind him it is cut, how long after he stops its sparks shoot off, when they strike after that (s) and how near the line, its share of his blow; the whole act (s). */
+  charge: { warn: KG_CHARGE.run[0], run: KG_CHARGE.run[1] - KG_CHARGE.run[0], pace: KG_CHARGE.pace, most: KG_CHARGE.most, hit: 1.1, tail: KG_CHARGE.tail, burst: KG_CHARGE.burstAfter, pop: CHARGE_FX.fly, line: CHARGE_FX.reach, sparks: 0.7, long: KG_CHARGE.long },
   /** The Decree: how near a knight's line (tiles before or behind it) and how near a knight across it he must be to be struck; a knight's share of his blow. */
   decree: { fwd: 0.55, side: 0.85, dmg: 0.8 },
-  /** The crown's weight: when in his move it goes up (s), the whole move (s); how long it takes to fly off his head to over the hero; how long it follows the hero (from going up) and how fast (tiles a second), how long it hangs still, rising and trembling, before it drops, how long its drop takes, how far round it the slam strikes, how long it takes to fly home. */
-  weight: { send: 1.1, long: 1.6, fly: 0.45, follow: 2.4, pace: 3.2, hold: 0.55, drop: 0.08, r: 1.7, home: 0.7 },
+  /** The crown's weight (the art's KG_WEIGHT; its moments after it is sent, WEIGHT_FX): when in his move it goes up (s), the whole move (s); how fast it follows the hero (tiles a second), how far round it the slam strikes. */
+  weight: { send: KG_WEIGHT.send, long: KG_WEIGHT.long, pace: KG_WEIGHT.pace, r: KG_WEIGHT.r },
   /** The faces: how near one must pass him to strike him, its share of his blow, no more often than `gap`, and no more than `most` of them a cast. */
   faces: { hit: 0.6, dmg: 0.3, gap: 0.3, most: 4 },
   /** His last phase comes at this share of his life. */
@@ -142,6 +146,18 @@ export function facesNow(p: Peril): { x: number; y: number; z: number; kind: num
 /** How long the faces fly (seconds from his hand being flung). */
 export const FACES_LONG = CURTAINS_FX.long + (KG_REACH.curtains * 1.6) / CURTAINS_FX.pace + 0.3;
 
+/** HIS CHARGE'S LINE OF SPARKS: cut 1.75 tiles behind him, from behind where he set off (the peril's x, y) to behind where he is or stopped (a, b), along the way he ran (fx, fy). */
+export function sparksLine(p: Peril): { x0: number; y0: number; x1: number; y1: number; lane: number } {
+  const t = KING_TUNE.charge.tail;
+  return { x0: p.x - p.fx * t, y0: p.y - p.fy * t, x1: p.a - p.fx * t, y1: p.b - p.fy * t, lane: Math.hypot(p.a - p.x, p.b - p.y) };
+}
+/** He has stopped (or his charge is cut short): its sparks shoot off 0.6 s on, and the picture lies a second after. */
+function stopSparks(p: Peril): void {
+  const C = KING_TUNE.charge;
+  p.d = Math.max(1e-3, p.t);
+  p.dur = p.d + C.burst + CHARGE_FX.long + 0.1;
+}
+
 /** Where the Hush stands at his side (world). */
 export function hushSpot(m: Monster): { x: number; y: number } {
   return beside(m.x, m.y, m.fx, m.fy, handOf(true, m.fx, m.fy), KING_TUNE.hush.fwd, KING_TUNE.hush.left);
@@ -154,7 +170,7 @@ const W = KING_TUNE.weight;
 const ACTS: readonly ActDef[] = [
   { id: 'gking:charge', clip: 'attack', long: C.long, hit: C.warn, dmg: 1, cooldown: 0, first: 0, after: 0.9, near: 0, far: 10 },
   { id: 'gking:decree', clip: 'decree', long: KG_DECREE.long, hit: KG_DECREE.hit, dmg: KING_TUNE.decree.dmg, cooldown: 15, first: 8, after: 0.5, near: 0, far: 30 },
-  { id: 'gking:weight', clip: 'curtains', long: W.long, hit: W.send, dmg: 1.4, cooldown: 11, first: 4, after: 0.5, near: 0, far: 14 },
+  { id: 'gking:weight', clip: 'weight', long: W.long, hit: W.send, dmg: 1.4, cooldown: 11, first: 4, after: 0.5, near: 0, far: 14 },
   { id: 'gking:curtains', clip: 'curtains', long: KG_CURTAINS.long, hit: KG_CURTAINS.hit, dmg: KING_TUNE.faces.dmg, cooldown: 13, first: 11, after: 0.5, near: 3, far: 16 },
   { id: 'gking:climb', clip: 'climbOff', long: KG_CLIMB.long, hit: KG_CLIMB.down[1], dmg: 0, cooldown: 0, first: 0, after: 0.4, near: 0, far: 999, forced: true },
 ];
@@ -315,11 +331,16 @@ function hushStep(R: BossRules, m: Monster, p: Peril, dt: number): void {
   }
 }
 
-/** Where his crown's weight is going to (its peril), the hero's way: following him at its pace until it stops. */
+/** Where his crown's weight is (its peril: its floor point; `a`, `b` where he stands, its home; `done` once it has slammed): flying out over the hero, following him at its pace, held, dropped, lying, flying home (the art's weightAt, its moments); the slam as it lands. */
 function weightStep(R: BossRules, p: Peril, dt: number): void {
   const g = R.g;
   const h = g.hero;
-  if (p.t < W.follow) {
+  const w = weightAt(p.t);
+  if (w.phase === 'fly') {
+    // (off his head, out to over him)
+    p.x = p.a + (h.x - p.a) * w.lerp;
+    p.y = p.b + (h.y - p.b) * w.lerp;
+  } else if (w.phase === 'follow') {
     const dx = h.x - p.x;
     const dy = h.y - p.y;
     const d = Math.hypot(dx, dy);
@@ -328,14 +349,19 @@ function weightStep(R: BossRules, p: Peril, dt: number): void {
       p.x += (dx / d) * go;
       p.y += (dy / d) * go;
     }
-    return;
+  } else if (w.phase === 'home') {
+    // (home onto his head from where it lay, as far as the art's way home has come: `c`, how far it had come last step)
+    const k = Math.max(0, Math.min(1, (w.lerp - p.c) / Math.max(1e-6, 1 - p.c)));
+    p.x += (p.a - p.x) * k;
+    p.y += (p.b - p.y) * k;
+    p.c = w.lerp;
   }
-  if (!p.c && p.t >= W.follow + W.hold + W.drop) {
+  if (!p.done && p.t >= WEIGHT_FX.drop[1]) {
     // (it slams down)
-    p.c = 1;
+    p.done = 1;
     g.sfx('explode', 0.8);
     g.emit({ t: 'shake', amount: 6 });
-    if (Math.hypot(h.x - p.x, h.y - p.y) <= W.r) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    if (Math.hypot(h.x - p.x, h.y - p.y) <= W.r && !h.move) g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
   }
 }
 
@@ -374,10 +400,8 @@ export const RULES: Act1Rules | null = {
     if (a.id !== 'gking:climb' && a.id !== 'gking:charge') squareOn(m);
     if (!m.act) return;
     if (a.id === 'gking:charge') {
-      // (the lane he will run: from him through where the hero stands, on past him; so far as the floor lets him)
-      const d = Math.hypot(g.hero.x - m.x, g.hero.y - m.y);
-      const want = Math.min(C.most, d + C.past);
-      m.act.a = Math.min(want, openFor(g, m.x, m.y, m.fx, m.fy, want + 0.5) - 0.4);
+      // (the lane he will run: from him through where the hero stands, his full length on; only a wall stops him)
+      m.act.a = Math.max(0.5, Math.min(C.most, openFor(g, m.x, m.y, m.fx, m.fy, C.most + 0.5) - 0.4));
       m.act.b = 0;
       keep(m).struck = 0;
       keep(m).stopped = 0;
@@ -398,10 +422,7 @@ export const RULES: Act1Rules | null = {
     if (a.id === 'gking:charge') {
       // (cut short: the line of sparks still bursts)
       const sp = g.perils.find((q) => q.a1 === 'gking:sparks' && !q.d && q.from === m.name);
-      if (sp) {
-        sp.d = sp.t;
-        sp.dur = sp.t + C.burst + 0.5;
-      }
+      if (sp) stopSparks(sp);
     }
     // (his waits shorter each phase)
     const i = ACTS.findIndex((q) => q.id === a.id);
@@ -441,7 +462,7 @@ export const RULES: Act1Rules | null = {
       if (at(r0)) {
         // (he sets off: the line of sparks begins under him)
         g.sfx('swing', 0.9);
-        R.peril(m, 'act1', m.x, m.y, { a1: 'gking:sparks', dur: 99, hit: 0, a: m.x, b: m.y, c: 0, d: 0, dmg: g.rollMonsterDmg(m) * C.sparks });
+        R.peril(m, 'act1', m.x, m.y, { a1: 'gking:sparks', dur: 99, hit: 0, a: m.x, b: m.y, c: 0, d: 0, fx: m.fx, fy: m.fy, dmg: g.rollMonsterDmg(m) * C.sparks });
       }
       if (t1 > r0 && t0 < r1 && act.b < act.a) {
         // (running: as far as his lane, at his pace; whoever he runs into is struck, once)
@@ -464,10 +485,7 @@ export const RULES: Act1Rules | null = {
         // (he stops: the line bursts a moment after)
         keep(m).stopped = 1;
         const sp = g.perils.find((p) => p.a1 === 'gking:sparks' && !p.d && p.from === m.name);
-        if (sp) {
-          sp.d = Math.max(1e-3, sp.t);
-          sp.dur = sp.d + C.burst + 0.5;
-        }
+        if (sp) stopSparks(sp);
       }
       return;
     }
@@ -486,8 +504,8 @@ export const RULES: Act1Rules | null = {
       if (!at(a.hit)) return;
       // (his crown goes up, and hangs over the hero)
       g.sfx('echo', 0.6);
-      // (from his head (`a`, `b`, where he stood) out over the hero)
-      R.peril(m, 'act1', h.x, h.y, { a1: 'gking:weight', dur: W.follow + W.hold + W.drop + W.home + 0.8, hit: 0, a: m.x, b: m.y, c: 0, dmg: g.rollMonsterDmg(m) * a.dmg });
+      // (from his head (`a`, `b`, where he stood) out over the hero; its moments the art's, from its sending: WEIGHT_FX)
+      R.peril(m, 'act1', m.x, m.y, { a1: 'gking:weight', dur: WEIGHT_FX.long, hit: 0, a: m.x, b: m.y, c: 0, d: 0, fx: m.fx, fy: m.fy, dmg: g.rollMonsterDmg(m) * a.dmg });
       return;
     }
     if (a.id === 'gking:curtains') {
@@ -504,11 +522,17 @@ export const RULES: Act1Rules | null = {
     const g = R.g;
     const h = g.hero;
     if (p.a1 === 'gking:sparks') {
-      // (the line of sparks bursts a moment after he stops: whoever stands on it is struck, once)
-      if (!p.d || p.c || p.t < p.d + C.burst) return;
-      p.c = 1;
-      g.sfx('fire', 0.6);
-      if (offLine(p.x, p.y, p.a, p.b, h.x, h.y) <= C.line) g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+      // (its sparks shoot off it a moment after he stops, and as they pop whoever is near the line is struck, once; the line cut
+      // 1.75 tiles behind him)
+      if (!p.d || p.c) return;
+      const off = p.t - (p.d + C.burst);
+      if (off >= 0 && off - dt < 0) g.sfx('fire', 0.6);
+      if (off < C.pop[0] || off > C.pop[1]) return;
+      const L = sparksLine(p);
+      if (offLine(L.x0, L.y0, L.x1, L.y1, h.x, h.y) <= C.line && !h.move) {
+        p.c = 1;
+        g.hurtHero(p.dmg, p.el, p.words, null, p.from, h.x, h.y, p.half);
+      }
       return;
     }
     if (p.a1 === 'gking:weight') {

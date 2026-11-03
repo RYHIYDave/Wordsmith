@@ -3,8 +3,10 @@
 //      rulebook: a boss four), the charge first (his word of 31 Oct: the sweep and the leap replaced), each bigger one waiting
 //      longer; shorter waits each phase;
 //   2. the Decree's lines with their gaps; his blows square to the way his picture faces; the Hush's arms and the line test;
-//   3. THE CHARGE: he runs at the hero, strikes him, and the line of sparks behind him bursts under one who stands on it;
-//   4. THE CROWN'S WEIGHT: it follows the hero; one who stands still under it is struck, one who keeps running gets out;
+//   3. THE CHARGE (the art's numbers, 2 Nov): he runs at the hero, strikes him, and the line of sparks behind him bursts under one
+//      who stands near it;
+//   4. THE CROWN'S WEIGHT (the art's, its own move, 5.6 s): it follows the hero; one who stands still under it is struck, one who
+//      keeps running gets out;
 //   5. in a fight in his hall: he makes every one of his blows; at a third of his life the Hush climbs off him (nothing hurts him
 //      while it does) and stands at his side, he the King alone after; THE HUSH'S THREE MOVES: it grabs the hero and drags him
 //      before the King; it shields him (his blows on it, none on him) until struck off; its grey fog slows the hero;
@@ -155,7 +157,7 @@ test('4. THE CROWN\'S WEIGHT: it follows the hero; one who stands still under it
     const start = { x: h.x, y: h.y };
     let crown: { x: number; y: number } | null = null;
     let dir = 1;
-    for (let k = 0; k < (W.long + W.follow + W.hold + 0.3) / DT; k++) {
+    for (let k = 0; k < (W.long + 0.3) / DT; k++) {
       // (stopping the King from doing more than this)
       if (m.act && m.act.id !== 'gking:weight') m.act = undefined;
       if (runs && g.perils.some((p) => p.a1 === 'gking:weight')) {
