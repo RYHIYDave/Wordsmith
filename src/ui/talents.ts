@@ -28,7 +28,7 @@ export interface TalentUi {
   /** The talent being read. */
   sel: string | null;
   /** The card as it was drawn last frame, and its TAKE or UNDO (a press on it is answered next frame). */
-  card: { r: Rect; take: Rect | null; undo?: Rect | null; picks?: { r: Rect; kind: CompanionKind }[] } | null;
+  card: { r: Rect; take: Rect | null; undo?: Rect | null; picks?: { r: Rect; id: string }[]; pets?: { r: Rect; kind: CompanionKind }[] } | null;
   /** A talent just taken, and how long ago: it flares. */
   flash: { id: string; t: number } | null;
 }
@@ -419,12 +419,19 @@ export function talentPresses(ui: Ui, game: Game, st: TalentUi, lay: TalentLayou
     if (why) say = why;
     else st.flash = { id, t: 0 };
   }
+  // (a talent with a pick of two, taken: the other's button switches to it)
+  for (const p of card?.picks ?? []) {
+    if (!st.sel || !ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) continue;
+    const why = game.choosePick(st.sel, p.id);
+    if (why) say = why;
+    else st.flash = { id: st.sel, t: 0 };
+  }
   if (card && card.undo && st.sel && ui.pressIn(card.undo.x, card.undo.y, card.undo.w, card.undo.h)) {
     const why = game.unlearnTalent(st.sel);
     if (why) say = why;
   }
   // (THE RANGER'S COMPANIONS: in town, one of its three picked)
-  for (const p of card?.picks ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCompanion(p.kind);
+  for (const p of card?.pets ?? []) if (ui.pressIn(p.r.x, p.r.y, p.r.w, p.r.h)) game.pickCompanion(p.kind);
   // (a press anywhere else on the card is the card's: it does not close the inventory)
   if (card && ui.press && !ui.used && inside(card.r, ui.press.x, ui.press.y)) ui.used = true;
   const pad = ui.touch ? 3 : 1;
@@ -631,7 +638,9 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   // (THE RANGER'S COMPANIONS, taken, in town: a row of its three to pick from; shown him, by 23:37, 28 Oct, “Yes, like this (Recommended)”)
   const group = COMPANIONS.on ? groupOfTalent(def.id) : null;
   const picking = !!group && took && game.level.town;
-  const ch = 5 + textH + 3 + (picking ? bh + 3 : 0) + bh + 5;
+  // (a pick of two, once taken: a row of its two over the TAKEN row, the one picked lit)
+  const pickRow = took && def.pick ? bh + 3 : 0;
+  const ch = 5 + textH + 3 + (picking ? bh + 3 : 0) + pickRow + bh + 5;
   const cr = cardRect(panel, sel, ch, ui.w, ui.h, words);
   // (a companion's card with its picker, beside the page: it stands up from its stone, clear of what is under it on a phone)
   if (picking && panel.y <= 0) cr.y = Math.max(2, Math.min(cr.y, sel.cy + 16 - cr.h));
@@ -646,6 +655,17 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
   const by = cr.y + cr.h - 5 - bh;
   let take: Rect | null = null;
   let undo: Rect | null = null;
+  const picks: { r: Rect; id: string }[] = [];
+  if (pickRow && def.pick) {
+    const now = game.pickOf(def.id);
+    const pw = Math.floor((cr.w - 10 - 3) / 2);
+    def.pick.ids.forEach((id, k) => {
+      const r = { x: cr.x + 5 + k * (pw + 3), y: by - pickRow, w: pw, h: bh };
+      ui.drawButton(r.x, r.y, r.w, r.h, def.pick!.names[k], { primary: now === id });
+      ui.mark(`button:${def.pick!.names[k]}`, r.x, r.y, r.w, r.h);
+      if (now !== id) picks.push({ r, id });
+    });
+  }
   if (took) {
     // taken: and in town, undone for gold (his rulebook), if nothing taken hangs on it alone
     drawText(g, 'TAKEN', cr.x + 5, by + Math.floor((bh - 8) / 2) + 1, THEME.good);
@@ -661,7 +681,7 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
     ui.drawButton(take.x, take.y, take.w, take.h, 'TAKE  (1 POINT)', { primary: true });
     ui.mark('button:TAKE', take.x, take.y, take.w, take.h);
   } else drawText(g, why.toUpperCase(), cr.x + 5, by + Math.floor((bh - 6) / 2) + 1, THEME.dim, { font: 'small' });
-  const picks: { r: Rect; kind: CompanionKind }[] = [];
+  const pets: { r: Rect; kind: CompanionKind }[] = [];
   if (picking && group) {
     const kinds = COMPANION_GROUPS[group].kinds;
     const now = pickedIn(game.hero.pets, group);
@@ -672,9 +692,9 @@ export function drawTalentCard(ui: Ui, game: Game, st: TalentUi, lay: TalentLayo
       const label = COMPANION_INFO[k].name.toUpperCase();
       // (a name too long for its button in the game's letters, in the small ones)
       ui.drawButton(pr.x, pr.y, pr.w, pr.h, label, { lit: k === now, primary: k === now, small: textWidth(label) > pr.w - 4 });
-      picks.push({ r: pr, kind: k });
+      pets.push({ r: pr, kind: k });
     });
   }
   ui.mark('talent-card', cr.x, cr.y, cr.w, cr.h);
-  st.card = { r: cr, take, undo, picks };
+  st.card = { r: cr, take, undo, picks, pets };
 }

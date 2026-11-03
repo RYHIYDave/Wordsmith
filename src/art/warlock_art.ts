@@ -111,11 +111,31 @@ const byName = <M extends { name: string }>(list: readonly M[], start: string): 
   return m;
 };
 
+/**
+ * WHAT IS PAINTED ONCE FOR EVERY PLACE HE IS SHOWN IN (the art chat's helper, 1 Nov 2026; docs/cheap_heroes.md): a list of
+ * frames of his that is the same in a dungeon, in town and on his class card (standing, running, his spells, struck, his
+ * fall: the very same pictures, made by the very same calls), and the change, the same with his arm blazing or not, is made
+ * once and kept here, and every place's set holds that one list. So too every list of his that is the same with his arm
+ * blazing (all but his standing and running: the only moves of his that blaze, `blazing`). Before, each place had lists of its
+ * own: the frames he was painted in in town were painted all over again as he went down into a dungeon (a tenth of a second
+ * or so each, 610 of them), and his spells, his smoke step, struck, his fall and the change all twice over, as a man and blazing
+ * (522 frames, the change's a third of a second to three quarters each). One of these for each of the game's HeroArt (art/heroes3.ts
+ * makeHeroArt3); none, nothing is shared.
+ */
+export type WarlockShare = Map<string, unknown>;
+function shared<T>(share: WarlockShare | undefined, key: string, make: () => T): T {
+  if (!share) return make();
+  if (!share.has(key)) share.set(key, make());
+  return share.get(key) as T;
+}
+/** A clip of a shared one: its own, but its frames the same list. */
+const own = (c: Clip): Clip => ({ ...c });
+
 /** A blazing copy of a move of his (his pact full: the demon arm blazes, as his “Arm blazes cyan (Recommended)”). */
 const blazing = (m: WarlockMove): WarlockMove => ({ ...m, blaze: [[0, 1], [m.long, 1]] });
 
 /** HIM, a man: one view. */
-function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean): AnimSet {
+function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean, share?: WarlockShare): AnimSet {
   const [stand0, run0] = warlockMoves();
   const stand = blaze ? blazing(stand0) : stand0;
   const run = blaze ? blazing(run0) : run0;
@@ -125,35 +145,40 @@ function manSet(view: GameView, place: WarlockLook['place'], blaze: boolean): An
   const step = byName(spells, 'Swipe: the smoke step');
   const reel = warlockReel();
   const lurch = warlockLurch();
-  const idle = round(STAND_LONG, IDLE_FPS, (t) => manAt(stand, t, view), HEAVY_MAN);
-  const walk = round(RUN_ROUND, RUN_FPS, (t) => manAt(run, t, view), HEAVY_MAN);
-  const attack = clip(0, bolt.long, CLIP_FPS, (t) => manAt(bolt, t, view), BOLT_HIT, true, HEAVY_MAN);
-  const heavy = clip(0, curse.long, CLIP_FPS, (t) => manAt(curse, t, view), CURSE_HIT, true, HEAVY_MAN);
+  // (the same in every place: made once, `share`; and, but for his standing and running, the only moves of his that blaze, the
+  // same with his arm blazing or not: the very same moves, drawn by the very same calls)
+  const man = `man:${view}:`;
+  const idle = shared(share, `${man}${blaze ? 'blaze:' : ''}idle`, () => round(STAND_LONG, IDLE_FPS, (t) => manAt(stand, t, view), HEAVY_MAN));
+  const walk = shared(share, `${man}${blaze ? 'blaze:' : ''}walk`, () => round(RUN_ROUND, RUN_FPS, (t) => manAt(run, t, view), HEAVY_MAN));
+  const attack = shared(share, man + 'attack', () => clip(0, bolt.long, CLIP_FPS, (t) => manAt(bolt, t, view), BOLT_HIT, true, HEAVY_MAN));
+  const heavy = shared(share, man + 'heavy', () => clip(0, curse.long, CLIP_FPS, (t) => manAt(curse, t, view), CURSE_HIT, true, HEAVY_MAN));
   // (the smoke step: from bursting into smoke to the first of his forming, over the step; his forming after)
-  const leap = spread(STEP_GONE[0] - 1 * FR, STEP_GONE[1] + 1 * FR, STEP_FRAMES, (t) => manAt(step, t, view), HEAVY_MAN);
-  const land = clip(STEP_GONE[1] + 1 * FR, STEP_LONG, CLIP_FPS, (t) => manAt(step, t, view), undefined, false, HEAVY_MAN);
-  const struck = clip(0, reel.long, CLIP_FPS, (t) => manAt(reel, t, view), undefined, false, HEAVY_MAN);
-  const struckBehind = clip(0, lurch.long, CLIP_FPS, (t) => manAt(lurch, t, view), undefined, false, HEAVY_MAN);
+  const leap = shared(share, man + 'leap', () => spread(STEP_GONE[0] - 1 * FR, STEP_GONE[1] + 1 * FR, STEP_FRAMES, (t) => manAt(step, t, view), HEAVY_MAN));
+  const land = shared(share, man + 'land', () => clip(STEP_GONE[1] + 1 * FR, STEP_LONG, CLIP_FPS, (t) => manAt(step, t, view), undefined, false, HEAVY_MAN));
+  const struck = shared(share, man + 'reel', () => clip(0, reel.long, CLIP_FPS, (t) => manAt(reel, t, view), undefined, false, HEAVY_MAN));
+  const struckBehind = shared(share, man + 'lurch', () => clip(0, lurch.long, CLIP_FPS, (t) => manAt(lurch, t, view), undefined, false, HEAVY_MAN));
   // (HIS FALL: art/warlock_fall.ts, the main chat's first pass, to be shown to him)
-  const down = warlockFall();
-  const fall = clip(0, down.long, CLIP_FPS, (t) => manAt(down, t, view), undefined, false, HEAVY_MAN);
+  const fall = shared(share, man + 'fall', () => {
+    const down = warlockFall();
+    return clip(0, down.long, CLIP_FPS, (t) => manAt(down, t, view), undefined, false, HEAVY_MAN);
+  });
   const set: AnimSet = {
     idle,
     walk,
-    attack: three(attack),
-    heavy: three(heavy),
+    attack: shared(share, man + 'attack3', () => three(attack)),
+    heavy: shared(share, man + 'heavy3', () => three(heavy)),
     idleFps: IDLE_FPS,
     walkFps: RUN_FPS,
     walkStride: GRIP_SPEED * RUN_ROUND,
-    clips: { attack, heavy, leap, land, reel: struck, lurch: struckBehind, fall },
+    clips: { attack: own(attack), heavy: own(heavy), leap: own(leap), land: own(land), reel: own(struck), lurch: own(struckBehind), fall: own(fall) },
   };
   if (place !== 'dungeon') {
     // (on his class card, picked: his arm blazes up; to be made his own and shown to him)
     if (place === 'card' && view === 'front') set.clips!.ready = clip(0, 1.4, CLIP_FPS, (t) => manAt(blazing(stand0), t, view));
     return set;
   }
-  // (CHANGING INTO THE DEMON: the change laid over the rules' time for it)
-  set.clips!.change = spread(0, CHANGE_ALL, CHANGE_FRAMES, (t) => asSprite(changeFrame(view, t).d.px, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay), HEAVY_ART);
+  // (CHANGING INTO THE DEMON: the change laid over the rules' time for it; the same with his arm blazing or not)
+  set.clips!.change = own(shared(share, `change:${view}`, () => spread(0, CHANGE_ALL, CHANGE_FRAMES, (t) => asSprite(changeFrame(view, t).d.px, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay), HEAVY_ART)));
   return set;
 }
 
@@ -183,6 +208,11 @@ function demonSet(view: GameView): AnimSet {
   const SAG = BURN_OUT_LONG;
   const CRUMBLE = 0.9;
   const total = SAG + CRUMBLE + BACK_LONG;
+  // (as it crumbles it is the very same picture of it, sagged its last, that crumbles, and the same picture of him on one knee
+  // under it: each painted once, not again for every frame of its crumbling (the art chat's helper, 1 Nov 2026))
+  const SAGGED = SAG - 1e-3;
+  let sagged: Px | null = null;
+  let kneeling: Px | null = null;
   const burnOut = spread(0, total, BURN_FRAMES, (t) => {
     const scene = new Px(CHANGE_SCENE.w, CHANGE_SCENE.h);
     const put = (px: Px, ax: number, ay: number): void => {
@@ -205,8 +235,9 @@ function demonSet(view: GameView): AnimSet {
     };
     if (t < SAG + CRUMBLE) {
       // (him on one knee, under it, seen as it crumbles away)
-      if (t > SAG) put(drawWarlockAt(view, back, 0).px, CANVAS3.ax, CANVAS3.ay);
-      const d = drawDemonAt(view, burn, Math.min(t, SAG - 1e-3)).px;
+      if (t > SAG) put((kneeling ??= drawWarlockAt(view, back, 0).px), CANVAS3.ax, CANVAS3.ay);
+      const at = Math.min(t, SAGGED);
+      const d = at === SAGGED ? (sagged ??= drawDemonAt(view, burn, SAGGED).px) : drawDemonAt(view, burn, at).px;
       put(t > SAG ? crumble(d, (t - SAG) / CRUMBLE) : d, RIG_CANVAS.ax, RIG_CANVAS.ay);
     } else put(drawWarlockAt(view, back, t - SAG - CRUMBLE).px, CANVAS3.ax, CANVAS3.ay);
     return asSprite(scene, AURA_SCENE, CHANGE_SCENE.ax, CHANGE_SCENE.ay);
@@ -224,8 +255,8 @@ function demonSet(view: GameView): AnimSet {
   };
 }
 
-/** The warlock's pictures, both views. */
-export function makeWarlockArt(look: WarlockLook): ActorArt {
+/** The warlock's pictures, both views (`share`: what is the same in every place, made once for all of them: WarlockShare). */
+export function makeWarlockArt(look: WarlockLook, share?: WarlockShare): ActorArt {
   if (look.form === 'demon') return { front: demonSet('front'), back: demonSet('back') };
-  return { front: manSet('front', look.place, !!look.blaze), back: manSet('back', look.place, !!look.blaze) };
+  return { front: manSet('front', look.place, !!look.blaze, share), back: manSet('back', look.place, !!look.blaze, share) };
 }

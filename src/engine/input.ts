@@ -39,6 +39,8 @@ export class Input {
   /** True once the player has touched the screen; false again when they use a mouse. */
   touchMode = false;
   stick = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, moved: 0 };
+  /** ONE HAND (game/state.ts AimMode 'one'): one thumb is the stick, a tap and a swipe. */
+  oneHand = false;
   /** The right thumb while it is down. `held` turns true once it has stayed put long enough to be a hold. */
   aim = { active: false, id: -1, x: 0, y: 0, sx: 0, sy: 0, t0: 0, moved: 0, held: false };
   /** Where the game's aim help has locked on (game pixels), for the reticle. Set by the game each frame. */
@@ -130,6 +132,11 @@ export class Input {
       if (!this.hold.active) this.hold = { active: true, id: e.pointerId, x: p.x, y: p.y };
       return;
     }
+    // (ONE HAND: a thumb anywhere is first a touch that may be a tap or a swipe; held on, it becomes the stick: beginFrame)
+    if (this.oneHand) {
+      if (!this.aim.active && !this.stick.active) this.aim = { active: true, id: e.pointerId, x: p.x, y: p.y, sx: p.x, sy: p.y, t0: performance.now(), moved: 0, held: false };
+      return;
+    }
     if (p.x < this.viewW() * 0.4 && !this.stick.active) {
       this.stick = { active: true, id: e.pointerId, ox: p.x, oy: p.y, dx: 0, dy: 0, t0: performance.now(), moved: 0 };
     } else if (!this.aim.active) {
@@ -204,6 +211,21 @@ export class Input {
   /** Call once per frame before reading: decides when a resting finger becomes a hold. */
   beginFrame(): void {
     const a = this.aim;
+    // (ONE HAND: a thumb kept down past a tap's or a swipe's time is the stick, from where it came down)
+    if (this.oneHand && a.active && performance.now() - a.t0 > FLICK_MS) {
+      let dx = (a.x - a.sx) / STICK_RADIUS;
+      let dy = (a.y - a.sy) / STICK_RADIUS;
+      const len = Math.hypot(dx, dy);
+      if (len > 1) {
+        dx /= len;
+        dy /= len;
+      }
+      this.stick = { active: true, id: a.id, ox: a.sx, oy: a.sy, dx, dy, t0: a.t0, moved: a.moved };
+      this.aim = { ...a, active: false, held: false };
+      return;
+    }
+    // (and never a hold: one thumb has no hold of its own)
+    if (this.oneHand) return;
     if (a.active && !a.held) {
       const ms = performance.now() - a.t0;
       if ((ms > HOLD_MS && a.moved < FLICK_MOVE) || ms > FLICK_MS) a.held = true;

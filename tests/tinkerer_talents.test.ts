@@ -196,8 +196,9 @@ test('CLUSTER VIALS: every vial bursts into three little ones that bounce out an
   const g2 = withContraption(room(), 'clustervials');
   dummy(g2, 5, 0);
   use(g2, 0, 2, 0);
-  const ev2 = wait(g2, TINKER_TUNE.contraption.set + TINKER_TUNE.contraption.first + TINKER_TUNE.contraption.flight + T.cluster.flight + 0.2);
-  assert.equal(of(ev2, 'vialBurst').filter((b) => b.little).length, 3, 'a Contraption’s vial bursts into three as well');
+  // (its pick, BOMBS, the first: a bomb bursts as her vials do, a moment after it lands: the Gun Arm's talk, 31 Oct)
+  const ev2 = wait(g2, TINKER_TUNE.contraption.set + TINKER_TUNE.contraption.first + TINKER_TUNE.contraption.bombFlight + TINKER_TUNE.contraption.bombFuse + T.cluster.flight + 0.2);
+  assert.equal(of(ev2, 'vialBurst').filter((b) => b.little).length, 3, 'a Contraption’s bomb bursts into three as well');
 });
 
 test('TAR: her vials leave a puddle of tar for three seconds: whatever walks in it is slowed to a crawl', () => {
@@ -401,8 +402,9 @@ function shrapnelShot(): void {
   }
 }
 
-test('TESLA COIL: a coil on the Golem’s back zaps the enemy nearest it every second, the spark leaping on to two more', () => {
-  const g = take(room(), 'teslacoil');
+test('GUN ARM, THE TESLA COIL (in place of the Tesla Coil, 31 Oct): its coil zaps the enemy nearest it every second, the spark leaping on to two more', () => {
+  const g = take(room(), 'lightningrod', 'shrapnel', 'gunarm');
+  g.choosePick('gunarm', 'tesla');
   golemOut(g, true);
   const gm = g.golem!;
   const ox = gm.x - g.hero.x;

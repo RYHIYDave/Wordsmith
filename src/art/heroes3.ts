@@ -26,9 +26,10 @@ import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
-import { makeTinkererArt } from './tinkerer_art';
-import { makeBrawlerArt } from './brawler_art';
+import { makeTinkererArt, makeTinkererCardArt } from './tinkerer_art';
+import { PRESS_RUNS, makeBrawlerArt, makeBrawlerCardArt } from './brawler_art';
 import { makeWarlockArt } from './warlock_art';
+import type { WarlockShare } from './warlock_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -351,7 +352,7 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
  * then the rest; what a hero does when left standing is painted as it is shown, which is slowly enough): each of these
  * a list of frames of one side of the hero.
  */
-const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
+const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...PRESS_RUNS.map((key) => (a: AnimSet) => a.clips?.punches?.[key]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
           (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? []),
           // (THE WARLOCK's changing, art/warlock_art.ts; and every hero's fall, last)
           (a) => a.clips?.change?.frames ?? [], (a) => a.clips?.fall?.frames ?? []];
@@ -368,6 +369,8 @@ export let painted3: Sprite | undefined;
 export function makeHeroArt3(): HeroArt {
   const made = new Map<string, ActorArt>();
   const todo = new Map<ActorArt, (() => Sprite)[]>();
+  // (the warlock's lists that are the same in every place he is shown in, made once: art/warlock_art.ts WarlockShare)
+  const warlockShare: WarlockShare = new Map();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -378,26 +381,29 @@ export function makeHeroArt3(): HeroArt {
       const wkey = `warlock:${place}:${form}:${blaze ? 1 : 0}`;
       let wart = made.get(wkey);
       if (!wart) {
-        wart = makeWarlockArt({ form, place, blaze });
+        wart = makeWarlockArt({ form, place, blaze }, warlockShare);
         made.set(wkey, wart);
       }
       return wart;
     }
     // (THE BRAWLER: sculpted, art/brawler_art.ts; one set of him for every place, as yet)
+    // (on a class card, only what a card shows, made at once: makeBrawlerCardArt; the same for the Tinkerer)
     if (cls === 'brawler') {
-      let bart = made.get('brawler');
+      const bkey = place === 'card' ? 'brawler:card' : 'brawler';
+      let bart = made.get(bkey);
       if (!bart) {
-        bart = makeBrawlerArt();
-        made.set('brawler', bart);
+        bart = place === 'card' ? makeBrawlerCardArt() : makeBrawlerArt();
+        made.set(bkey, bart);
       }
       return bart;
     }
     // (THE TINKERER: sculpted, art/tinkerer_art.ts; one set of her for every place, as yet)
     if (cls === 'tinkerer') {
-      let tart = made.get('tinkerer');
+      const tkey = place === 'card' ? 'tinkerer:card' : 'tinkerer';
+      let tart = made.get(tkey);
       if (!tart) {
-        tart = makeTinkererArt();
-        made.set('tinkerer', tart);
+        tart = place === 'card' ? makeTinkererCardArt() : makeTinkererArt();
+        made.set(tkey, tart);
       }
       return tart;
     }

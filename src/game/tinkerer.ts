@@ -67,6 +67,17 @@ export const TINKER_TUNE = {
     life: 12,
     /** Broken (put out of action, or its time up): seconds it takes to fall apart (CDOWN.end). */
     broke: 56 / 30,
+    /**
+     * HER TREE'S CONTRAPTION PICK (the art: dev/contraption_shots.ts BOMB_FX, BOLT_FX): BOMBS, its little bomb in the air
+     * `bombFlight`, going off `bombFuse` after it lands (a hop between); ENERGY, a bolt at the nearest enemy within `boltReach`,
+     * `boltSpeed` tiles a second, one every `boltEvery`, its hit `boltShare` of the vial's.
+     */
+    bombFlight: 16 / 30,
+    bombFuse: 12 / 30,
+    boltReach: 8,
+    boltSpeed: 30,
+    boltEvery: 0.8,
+    boltShare: 1.2,
   },
   golem: {
     /**
@@ -93,6 +104,18 @@ export const TINKER_TUNE = {
      * good hit” (it was lead 8, long 50, hit 25 frames: its blow 1.1 seconds after her whistle; now 13 frames, 0.43).
      */
     pound: { lead: 2 / 30, long: 33 / 30, hit: 11 / 30 },
+    /**
+     * ITS CHARGED SHOT, her hold with her tree's GUN ARM (the art: dev/golem_moves.ts GCHARGE, GCHARGE_SHELL, GCHARGE_BEAM; its
+     * effects dev/golem_charge_fx.ts SHELL_FX, BEAM_FX): braced and charging for `build` (the art's 30 frames); held at its full
+     * as long as she holds, `most` at the longest; let go, it fires (let go before its full, it fires once braced, weaker: his
+     * “A weaker shot fires”, from `least` of its might at no charge to all of it at full); then its wind-down, `shellEnd` or
+     * `beamEnd` after it fires. THE SHELL flies `speed` tiles a second and bursts `blast` round (from `blastLeast` of that at no
+     * charge), its hit `shell` of the Golem's; THE BEAM strikes `beam` tiles before it, `wide` across, everything along it once,
+     * `beamShare` of the Golem's hit each. Each throws it back `skid` tiles.
+     */
+    charge: { build: 30 / 30, most: 6, least: 0.3, shellEnd: 40 / 30, beamEnd: 42 / 30, speed: 20, blast: 2.5, blastLeast: 0.6, shell: 2.4, beam: 8, wide: 1.0, beamShare: 1.8, skid: { shell: 1.0, beam: 0.5 } },
+    /** With her tree's GUN ARM it stands off and fires: its tesla coil's zap reaches this far (its cannon, `cannon.far`). */
+    zapFar: 7,
     /** Whistled out: it drops in beside her in a burst of steam, ready after this long. */
     arrive: 0.6,
     /** Winding down when she falls (GDOWN.end). */

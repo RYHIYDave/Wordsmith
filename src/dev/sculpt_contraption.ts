@@ -62,10 +62,16 @@ export const CONTRAPTION_TWO: { id: ContraptionBuild; name: string }[] = [
 /** A unit at right angles to `a`. */
 const perp = (a: V3): V3 => norm(cross(a, Math.abs(a[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
 
-/** The Contraption sculpted, set down on the floor (its middle on the floor point), in one of the game's views. */
-export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, turn = 0): Drawn {
+/**
+ * The Contraption sculpted, set down on the floor (its middle on the floor point), in one of the game's views. The tripod's
+ * last two, optional (dev/contraption_shots.ts): what it throws, `ammo` (her vials, as he picked it, unless asked), and its
+ * shot's pose, `shot`. Left out, every picture is as it was, to the pixel.
+ */
+export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, turn = 0, ammo: ContraptionAmmo = 'vials', shot: ShotPose = NO_SHOT): Drawn {
   const sc = new Sculpt();
   sc.spin = turn;
+  CONTRAPTION_SHOT_AT.fuse = null;
+  CONTRAPTION_SHOT_AT.coil = null;
   // ITS STUFFS
   const brass = sc.mat({
     ramp: BRASS,
@@ -394,11 +400,14 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
     const legOut = ease3((pose.open - 0.1) / 0.7);
     // (BROKEN, `broke`: its legs giving way, splayed out flat under it, its body sunk down between them)
     const bk = ease3(pose.broke);
-    const hub = P(0, 0, 0.9 + (7 - 0.9) * legOut - 4.2 * bk);
+    // (A SHOT'S SQUAT, dev/contraption_shots.ts: sunk down on its legs, its knees splayed out, as it winds up (1); sprung up
+    // past standing as it throws (below 0). Its feet stay where they grip.)
+    const sq = build === 'tripod' ? shot.squat : 0;
+    const hub = P(0, 0, 0.9 + (7 - 0.9) * legOut - 4.2 * bk - 3.2 * sq);
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2 + 0.6;
       const dir: V3 = [Math.cos(a), Math.sin(a), 0];
-      const kneeOpen = P(Math.cos(a) * (4.6 + 2.2 * bk), Math.sin(a) * (4.6 + 2.2 * bk), 4.6 - 2.6 * bk);
+      const kneeOpen = P(Math.cos(a) * (4.6 + 2.2 * bk + 1.2 * sq), Math.sin(a) * (4.6 + 2.2 * bk + 1.2 * sq), 4.6 - 2.6 * bk - 1.7 * sq);
       const ankleOpen: V3 = [Math.cos(a) * (6.6 + 2.6 * bk) * K, Math.sin(a) * (6.6 + 2.6 * bk) * K, 1.4];
       if (legOut >= 1) {
         sc.cone(steel, 'legs', add(hub, [0, 0, -1]), kneeOpen, 0.9 * K, 0.75 * K, 0.4, { tag: 'leg' });
@@ -427,7 +436,16 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
     }
     const pot = add(hub, P(0, 0, 2.2));
     // (its mortar drooping over to one side as it breaks)
-    const aim = norm(lerp3(norm(lerp3([0, 0, 1], norm([0.35, 1, 1.05]), ease3((pose.open - 0.55) / 0.4))), norm([0.9, 0.9, -0.1]), 0.75 * bk));
+    // (its ENERGY kind's coil aimed lower than its mortar, at what it fires on: a bolt flies straight)
+    const sights: V3 = build === 'tripod' && ammo === 'energy' ? [0.35, 1, 0.42] : [0.35, 1, 1.05];
+    let aim = norm(lerp3(norm(lerp3([0, 0, 1], norm(sights), ease3((pose.open - 0.55) / 0.4))), norm([0.9, 0.9, -0.1]), 0.75 * bk));
+    // (A SHOT'S TIP: its mortar or coil tipped back up, away from what it throws at, as it winds up (1); over forward past
+    // its aim as it throws (below 0))
+    if (build === 'tripod' && shot.tip) {
+      const h = Math.hypot(aim[0], aim[1]);
+      const e = Math.min(80 * D, Math.atan2(aim[2], h) + shot.tip * 28 * D);
+      aim = [(aim[0] / h) * Math.cos(e), (aim[1] / h) * Math.cos(e), Math.sin(e)];
+    }
     const u = perp(aim);
     const v = norm(cross(aim, u));
     if (build === 'tripod') {
@@ -438,19 +456,83 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
       // the mortar on its trunnions, flared, banded (sliding up out of its dome as it opens; kicked back down it as it fires)
       const slide = ease3((pose.open - 0.4) / 0.35);
       const b0 = add(add(pot, P(0.4, 0, 1.6 - 3.6 * (1 - slide))), mul(aim, -1.4 * K * pose.kick));
-      barrel(copper, 'barrel', b0, aim, (4.6 + 3.6 * slide) * K, 2.0 * K, 1.75 * K, 2.3 * K);
-      CONTRAPTION_MOUTH.p = add(b0, mul(aim, (4.6 + 3.6 * slide + 2.3) * K));
+      // (what is made only for a shot of the new kinds: its iron, its fuse, its spark, its coil, made after all the rest)
+      const iron = ammo === 'vials' ? -1 : sc.mat({ ramp: IRON5 });
+      const cord = ammo === 'vials' ? -1 : sc.mat({ ramp: HIDE });
+      const spark = ammo === 'vials' ? -1 : sc.mat({ ramp: CYAN, paint: (h) => (h.tone >= 2 ? '#e8ffff' : CYAN[2]) });
+      /** A little bomb of hers, its middle `c`, `R` round: round black iron, a brass cap, a short fuse out of it along `up`; its fuse lit (`lit`). */
+      const bomb = (piece: string, c: V3, upw: V3, R: number, lit: boolean): V3 => {
+        const w = norm(upw);
+        const s = perp(w);
+        sc.ell(iron, piece, c, [[R, 0, 0], [0, R, 0], [0, 0, R]], 0.15, { tag: 'bomb' });
+        sc.cone(brass, piece, add(c, mul(w, R * 0.7)), add(c, mul(w, R * 1.12)), R * 0.46, R * 0.4, 0.15, { tag: 'cap' });
+        const tip = add(c, add(mul(w, R * 1.62), mul(s, R * 0.34)));
+        sc.cone(cord, piece, add(c, mul(w, R * 1.05)), tip, R * 0.2, R * 0.17, 0.1, { tag: 'fuse' });
+        if (lit) sc.ell(spark, piece, tip, [mul(w, R * 0.3), mul(s, R * 0.3), mul(cross(w, s), R * 0.3)], 0.05, { tag: 'spark' });
+        return tip;
+      };
+      if (ammo === 'energy') {
+        // ITS ENERGY KIND: in place of its mortar, a little TESLA COIL on its trunnions (as the Golem's): a brass housing, a
+        // collar of steel, a coil of copper wound tight (its windings lit from its foot to its tip as it charges, `charge`),
+        // two steel collars round it, a steel ring at its tip and a ball of the friend's cyan in it
+        const coilMat = coilOf(sc, shot.charge);
+        const at = (k: number): V3 => add(b0, mul(aim, k * K));
+        const len = 0.45 + 0.55 * slide;
+        sc.cone(brass, 'barrel', at(-0.6), at(2.3 * len), 2.0 * K, 2.3 * K, 0.4, { tag: 'coilbase' });
+        sc.box(steel, 'barrel', at(2.5 * len), [mul(aim, 0.3 * K), mul(u, 2.1 * K), mul(v, 2.1 * K)], 1.8 * K, 0.2, { tag: 'collar' });
+        sc.cone(coilMat, 'barrel', at(2.6 * len), at(7.0 * len), 1.75 * K, 1.35 * K, 0.3, { tag: 'coil' });
+        sc.box(steel, 'barrel', at(4.9 * len), [mul(aim, 0.22 * K), mul(u, 1.75 * K), mul(v, 1.75 * K)], 1.5 * K, 0.1, { tag: 'collar' });
+        sc.cone(steel, 'barrel', at(6.9 * len), at(7.6 * len), 0.6 * K, 0.5 * K, 0.2, { tag: 'post' });
+        sc.ell(steel, 'barrel', at(7.45 * len), [mul(aim, 0.4 * K), mul(u, 2.0 * K), mul(v, 2.0 * K)], 0.2, { tag: 'ring' });
+        sc.ell(spark, 'barrel', at(7.9 * len), [mul(aim, 1.25 * K), mul(u, 1.25 * K), mul(v, 1.25 * K)], 0.05, { tag: 'terminal' });
+        CONTRAPTION_MOUTH.p = at(7.9 * len);
+        CONTRAPTION_SHOT_AT.coil = [at(2.6 * len), at(7.0 * len)];
+      } else {
+        barrel(copper, 'barrel', b0, aim, (4.6 + 3.6 * slide) * K, 2.0 * K, 1.75 * K, 2.3 * K);
+        CONTRAPTION_MOUTH.p = add(b0, mul(aim, (4.6 + 3.6 * slide + 2.3) * K));
+        // (ITS BOMB KIND: a bomb fed up its bore and sat in its mouth, `load`, its fuse lit, `fuse`; sunk out of sight in it at naught)
+        if (ammo === 'bombs' && shot.load > 0) {
+          const R = 1.35 * K;
+          const m = add(b0, mul(aim, (4.6 + 3.6 * slide) * K));
+          CONTRAPTION_SHOT_AT.fuse = bomb('barrel', add(m, mul(aim, R * 0.3 - (1 - shot.load) * R * 2.6)), aim, R, shot.fuse > 0);
+        }
+      }
       CONTRAPTION_MOUTH.way = aim;
       for (const k of [1, -1]) sc.cone(steel, 'barrel', add(b0, mul(u, k * 2.0 * K)), add(b0, mul(u, k * 3.2 * K)), 0.8 * K, 0.8 * K, 0.2, { tag: 'pin' });
-      // the magazine of vials on its back: a curved brass case, three vials standing in it
       const mag = add(pot, P(0, -3.0, 2.6));
-      sc.box(brass, 'magazine', mag, [P(2.7, 0, 0), P(0, 1.5, 0), P(0, 0, 1.5)], 1.1 * K, 0.6, { tag: 'band' });
-      for (let i = 0; i < 3; i++) vial(i, 'magazine', add(mag, P((i - 1) * 1.6, 0, 1.2)), [0, 0, 1], 2.3 * K, 0.65 * K);
-      // the gear and its crank, on its side
+      if (ammo === 'bombs') {
+        // ITS BOMBS ON ITS BACK in place of her vials: a brass tray, and three little bombs piled in it, two and one on them
+        sc.box(brass, 'magazine', add(mag, P(0, 0, -0.5)), [P(2.8, 0, 0), P(0, 1.6, 0), P(0, 0, 0.8)], 0.7 * K, 0.6, { tag: 'band' });
+        const R = 1.3 * K;
+        for (const [x, z, lean] of [[-1.35, 1.05, -0.35], [1.35, 1.05, 0.35], [0, 3.15, 0]] as const) bomb('magazine', add(mag, P(x, 0, z)), [lean, -0.25, 1], R, false);
+      } else if (ammo === 'energy') {
+        // ITS DYNAMO ON ITS BACK in place of her vials: a drum of copper windings lying in a brass cradle, brass caps on its
+        // ends, a steel axle through it (its windings lit as its coil's are, as it charges)
+        const coilMat = coilOf(sc, shot.charge);
+        sc.box(brass, 'magazine', add(mag, P(0, 0, -0.6)), [P(2.5, 0, 0), P(0, 1.4, 0), P(0, 0, 0.7)], 0.6 * K, 0.6, { tag: 'band' });
+        const dc = add(mag, P(0, 0, 1.2));
+        sc.cone(coilMat, 'magazine', add(dc, P(-2.0, 0, 0)), add(dc, P(2.0, 0, 0)), 1.55 * K, 1.55 * K, 0.3, { tag: 'coil' });
+        for (const k of [1, -1]) disc(brass, 'magazine', add(dc, P(k * 2.15, 0, 0)), [1, 0, 0], 1.8 * K, 0.35 * K, 'band');
+        sc.cone(steel, 'magazine', add(dc, P(-2.9, 0, 0)), add(dc, P(2.9, 0, 0)), 0.42 * K, 0.42 * K, 0.1, { tag: 'axle' });
+      } else {
+        // the magazine of vials on its back: a curved brass case, three vials standing in it
+        sc.box(brass, 'magazine', mag, [P(2.7, 0, 0), P(0, 1.5, 0), P(0, 0, 1.5)], 1.1 * K, 0.6, { tag: 'band' });
+        for (let i = 0; i < 3; i++) vial(i, 'magazine', add(mag, P((i - 1) * 1.6, 0, 1.2)), [0, 0, 1], 2.3 * K, 0.65 * K);
+      }
+      // the gear and its crank, on its side (WOUND ROUND as a shot winds up, `wind` turns)
       const g = add(pot, P(4.1, -0.6, 0.2));
-      gear('gear', g, [1, 0, 0], 2.1 * K, 0.5 * K);
-      sc.cone(steel, 'gear', add(g, P(0.5, 0, 0)), add(g, P(1.7, -0.4, 1.8)), 0.45 * K, 0.4 * K, 0.2, { tag: 'crank' });
-      sc.cone(oak, 'gear', add(g, P(1.7, -0.4, 1.8)), add(g, P(2.9, -0.4, 1.8)), 0.55 * K, 0.55 * K, 0.2, { tag: 'grip' });
+      if (!shot.wind) {
+        gear('gear', g, [1, 0, 0], 2.1 * K, 0.5 * K);
+        sc.cone(steel, 'gear', add(g, P(0.5, 0, 0)), add(g, P(1.7, -0.4, 1.8)), 0.45 * K, 0.4 * K, 0.2, { tag: 'crank' });
+        sc.cone(oak, 'gear', add(g, P(1.7, -0.4, 1.8)), add(g, P(2.9, -0.4, 1.8)), 0.55 * K, 0.55 * K, 0.2, { tag: 'grip' });
+      } else {
+        const th = shot.wind * Math.PI * 2;
+        const rx = (x: number, y: number, z: number): V3 => P(x, y * Math.cos(th) - z * Math.sin(th), y * Math.sin(th) + z * Math.cos(th));
+        sc.ell(gearMat, 'gear', g, [P(0.5, 0, 0), rx(0, -2.1, 0), rx(0, 0, -2.1)], 0.1, { tag: 'gear' });
+        sc.cone(steel, 'gear', add(g, [-(0.5 * K + 0.2), 0, 0]), add(g, [0.5 * K + 0.4, 0, 0]), 0.35, 0.35, 0.1, { tag: 'axle' });
+        sc.cone(steel, 'gear', add(g, P(0.5, 0, 0)), add(g, rx(1.7, -0.4, 1.8)), 0.45 * K, 0.4 * K, 0.2, { tag: 'crank' });
+        sc.cone(oak, 'gear', add(g, rx(1.7, -0.4, 1.8)), add(g, rx(2.9, -0.4, 1.8)), 0.55 * K, 0.55 * K, 0.2, { tag: 'grip' });
+      }
       if (pose.lit > 0) lamp('body', add(pot, P(2.6, 2.2, 0.6)), 0.75 * K);
       else sc.ell(steel, 'body', add(pot, P(2.6, 2.2, 0.6)), [P(0.75, 0, 0), P(0, 0.75, 0), P(0, 0, 0.75)], 0.1, { tag: 'lamp' });
       void o;
@@ -560,6 +642,7 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
       }
       CONTRAPTION_MOUTH.p = rot(CONTRAPTION_MOUTH.p);
       CONTRAPTION_MOUTH.way = rot(CONTRAPTION_MOUTH.way);
+      shotAtBy(rot);
     }
     let low = Infinity;
     for (const pr of sc.prims) if (!pr.carve) low = Math.min(low, primLow(pr));
@@ -573,12 +656,78 @@ export function sculptContraptionBuild(view: GameView, build: ContraptionBuild, 
       else sc.prims[i] = { ...pr, c: m(pr.c), cuts } as typeof pr;
     }
     CONTRAPTION_MOUTH.p = m(CONTRAPTION_MOUTH.p);
+    shotAtBy(m);
   }
   // (shut, it is smaller: it springs out to its size as it opens, its parts telescoping)
   const grow = build === 'tripod' ? 0.62 + 0.38 * ease3((CONTRAPTION_POSE.open - 0.15) / 0.75) : 1;
   scaleBy(sc, CONTRAPTION_SCALE * grow);
   CONTRAPTION_MOUTH.p = mul(CONTRAPTION_MOUTH.p, CONTRAPTION_SCALE * grow);
+  shotAtBy((q) => mul(q, CONTRAPTION_SCALE * grow));
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
+}
+
+// ---- ITS TWO NEW KINDS (the art chat's helper, 31 Oct 2026; dev/contraption_shots.ts). His words, 31 Oct, 00:04: “And have
+// the same option when swapping vial to contraption”; asked what its energy kind should do: “Energy bolts, and let’s make the
+// contraption throw little bombs.  She’s marketed as a demolitionist and we need to fit that in better”.
+
+/**
+ * WHAT A CONTRAPTION THROWS: her VIALS (as he picked it, and as the game has it); LITTLE BOMBS, its solid shot (Dexterity):
+ * a pile of them on its back in place of her vials, one fed up into its mortar's mouth and its fuse lit before each throw;
+ * or ENERGY BOLTS (Intelligence): its mortar a little tesla coil, its vials a dynamo. Nothing of the game asks for any but
+ * 'vials'.
+ */
+export type ContraptionAmmo = 'vials' | 'bombs' | 'energy';
+export const CONTRAPTION_AMMO: { id: ContraptionAmmo; name: string }[] = [
+  { id: 'vials', name: 'Her vials (as it is)' },
+  { id: 'bombs', name: 'Little bombs (solid shot)' },
+  { id: 'energy', name: 'Energy bolts' },
+];
+/**
+ * A SHOT'S POSE (dev/contraption_shots.ts): `squat` (0 standing; 1 sunk down on its legs; below 0 sprung up past standing),
+ * `tip` (0 at its aim; 1 tipped back up; below 0 over forward), `load` (0 nothing in its mouth; 1 a bomb sat in it),
+ * `fuse` (its loaded bomb's fuse lit), `charge` (0 to 1: its coil's windings lit from foot to tip), `wind` (its crank wound
+ * round, in turns).
+ */
+export interface ShotPose {
+  squat: number;
+  tip: number;
+  load: number;
+  fuse: number;
+  charge: number;
+  wind: number;
+}
+export const NO_SHOT: Readonly<ShotPose> = Object.freeze({ squat: 0, tip: 0, load: 0, fuse: 0, charge: 0, wind: 0 });
+/** Where the last drawn tripod's loaded bomb's fuse spits (or null), and its coil's foot and tip (or null): as built, before it is turned. */
+export const CONTRAPTION_SHOT_AT: { fuse: V3 | null; coil: [V3, V3] | null } = { fuse: null, coil: null };
+function shotAtBy(f: (q: V3) => V3): void {
+  if (CONTRAPTION_SHOT_AT.fuse) CONTRAPTION_SHOT_AT.fuse = f(CONTRAPTION_SHOT_AT.fuse);
+  if (CONTRAPTION_SHOT_AT.coil) CONTRAPTION_SHOT_AT.coil = [f(CONTRAPTION_SHOT_AT.coil[0]), f(CONTRAPTION_SHOT_AT.coil[1])];
+}
+/** Her bombs' iron (as her blast jump's bomb, dev/sculpt_tinkerer.ts bombSculpt). */
+const IRON5: Ramp = ['#08070c', '#16141e', '#28263a', '#46445e', '#6e6c8c'];
+/** What glows on its coil as it charges: the friend's cyan, darkest to white-hot (as the Golem's coil). */
+const LIT = ['#0c6a80', '#22d0e0', '#b8fff8', '#e8ffff'];
+/** How lit a winding is (0 dark to 3 white-hot), `at` of the way along the coil, it charged `charge` (as the Golem's coil). */
+function litOf(charge: number, at: number): number {
+  if (charge >= 0.999) return 3;
+  const w = (charge - at * 0.9) / 0.12;
+  return w >= 1 ? 2 : w > 0 ? 1 : 0;
+}
+/** Copper wound tight in windings along a rod, the light between them lit from its foot up as it is charged `charge`. */
+function coilOf(sc: Sculpt, charge: number): number {
+  return sc.mat({
+    ramp: COPPER,
+    paint: (h) => {
+      if (h.prim.k !== 'cone') return null;
+      const t = onCone(h.prim as Cone, h.p, [0, 0, 1]).t;
+      const gap = Math.floor(t * 7) % 2 === 0;
+      if (charge > 0 && gap) {
+        const lit = litOf(charge, (Math.floor(t * 7) + 0.5) / 7);
+        if (lit > 0) return LIT[Math.min(3, lit + (h.tone >= 3 ? 1 : 0))];
+      }
+      return gap ? shadeOf(COPPER, h.tone - 1) : shadeOf(COPPER, h.tone + 1);
+    },
+  });
 }
 
 /** THE TRIPOD AS SHE THROWS IT DOWN: how far open (0 shut, 1 set up), how far its mortar is kicked back by a shot, its lamp lit; and how far broken (0 whole, 1 its legs given way: dev/contraption_fx.ts its end). Set up, as it stands, when nothing says otherwise. */

@@ -310,6 +310,8 @@ export interface Hero {
   pets?: Partial<Record<CompanionGroup, CompanionKind>>;
   /** THE ROYAL CARDS (game/royal_cards.ts, the High City's): the royals' cards he holds, kept for good (absent: none). */
   cards?: Partial<Record<Royal, number>>;
+  /** (THE SKILL TREES) A talent's pick of two, where it has one (talents.ts TalentDef.pick): by the talent's id, the one picked (absent: its first). */
+  picks?: Record<string, string>;
   d: Derived;
 }
 
@@ -828,6 +830,9 @@ export interface Vial {
   little?: boolean;
   big?: boolean;
   brew?: Brew;
+  /** (her tree's CONTRAPTION, its pick BOMBS) a little bomb in place of a vial: it lands, hops, and goes off `fuse` seconds after it lands. */
+  bomb?: boolean;
+  fuse?: number;
 }
 /** (HER SKILL TREE: Mad Mixture) a brew a vial of hers carries, on top of its own words. */
 export type Brew = 'burn' | 'freeze' | 'poison';
@@ -879,7 +884,7 @@ export interface Golem {
   y: number;
   fx: number;
   fy: number;
-  act: 'arrive' | 'stand' | 'walk' | 'punch' | 'cannon' | 'pound' | 'down';
+  act: 'arrive' | 'stand' | 'walk' | 'punch' | 'cannon' | 'pound' | 'charge' | 'down';
   actT: number;
   did: boolean;
   /** The enemy it goes for (its id), and where the blow of its act is aimed. */
@@ -900,6 +905,13 @@ export interface Golem {
   overT: number;
   growT: number;
   zapT: number;
+  /**
+   * (HER TREE'S GUN ARM) Its charged shot: how long her hold was held (-1 while she holds it still), its might as she began it,
+   * and how far its shot has thrown it back so far (tiles).
+   */
+  held?: number;
+  chFrac?: number;
+  skid?: number;
 }
 
 /**
@@ -1125,10 +1137,14 @@ export interface Meta {
  *           THE DEFAULT since Version 12.2.1 (the owner, 4 Oct 2026, 22:26, having played it:
  *           "When playing on mobile, let's put auto-aim as the default setting").
  * A mouse always aims with its pointer.
+ * 'one':  ONE HAND (the owner, 1 Nov 2026, 10:50: “And I think I want an option to play one handed.  Like you can just move and
+ *           swipe and the attacks will happen automatically”; of the slow attack, his pick “Tap to throw it (Recommended)”). One
+ *           thumb anywhere: resting or dragged, it is the stick (he walks); a quick tap throws the slow attack, at the enemy auto
+ *           aim picks; a quick swipe is the evasive move. The quick attack goes by itself at the nearest enemy awake and in reach.
  */
-export type AimMode = 'face' | 'tap' | 'auto';
+export type AimMode = 'face' | 'tap' | 'auto' | 'one';
 /** In the order the switch in OPTIONS goes through them: the way the game starts out first. */
-export const AIM_MODES: readonly AimMode[] = ['auto', 'tap', 'face'];
+export const AIM_MODES: readonly AimMode[] = ['auto', 'tap', 'face', 'one'];
 
 export interface PropInst {
   kind: PropType;
@@ -1396,8 +1412,10 @@ export type GameEvent =
   // of action; her Golem arriving, punching, firing, pounding, winding down; her blast jump going off and coming down)
   | { t: 'contraption'; id: number; x0: number; y0: number; x: number; y: number }
   /** (a vial lobbed: `id` the Contraption's that lobbed it, or -1 thrown from her hand, her Vial Toss) */
-  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean; little?: boolean; big?: boolean }
-  | { t: 'vialBurst'; x: number; y: number; r: number; little?: boolean; big?: boolean; brew?: Brew }
+  | { t: 'vial'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number; n: number; echo?: boolean; little?: boolean; big?: boolean; bomb?: number }
+  | { t: 'vialBurst'; x: number; y: number; r: number; little?: boolean; big?: boolean; brew?: Brew; bomb?: boolean }
+  /** (her tree's CONTRAPTION, its pick ENERGY) a bolt of energy from Contraption `id` at (x0, y0) to (x1, y1), there after `flight`. */
+  | { t: 'contraptionBolt'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number }
   | { t: 'contraptionEnd'; id: number; x: number; y: number }
   | { t: 'golemArrive'; x: number; y: number }
   // (THE RANGER'S COMPANIONS, game/companions.ts: one at his side, and its bite landing on `id`)
@@ -1407,6 +1425,10 @@ export type GameEvent =
   | { t: 'cardGot'; royal: Royal; x: number; y: number }
   | { t: 'golemPunch'; x: number; y: number; dx: number; dy: number }
   | { t: 'golemShot'; x0: number; y0: number; x1: number; y1: number; flight: number }
+  /** (HER TREE'S GUN ARM) Its charged shot fired: the cannon's great shell from (x0, y0) bursting at (x1, y1) `r` round after `flight`; or the tesla coil's beam from (x0, y0) to (x1, y1); `power` 0 to 1, how long she held it. */
+  | { t: 'golemCharged'; kind: 'shell' | 'beam'; x0: number; y0: number; x1: number; y1: number; flight: number; r: number; power: number }
+  /** (HER TREE'S GUN ARM) It begins to charge, at (x, y). */
+  | { t: 'golemCharge'; x: number; y: number }
   | { t: 'golemPound'; x: number; y: number; r: number; n?: number; echo?: boolean }
   | { t: 'golemDown'; x: number; y: number }
   | { t: 'blastJump'; x0: number; y0: number; x1: number; y1: number; r: number }

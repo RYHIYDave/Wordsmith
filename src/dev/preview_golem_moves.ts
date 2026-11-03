@@ -1,17 +1,21 @@
 // Dev page: HER GOLEM'S MOVES, frame by frame (dev/golem_moves.ts), as the game draws it. NOT IN THE GAME.
 //   node tools/preview.mjs src/dev/preview_golem_moves.ts previews/golem_punch.png 1600 900 "punch:45:4:2"
-//   hash = <move: punch | pound | walk | rest>:<turn: 45 front, 135 back>:<screen pixels to a picture pixel>:<every nth frame>
+//   hash = <move: punch | upper | pound | walk | rest | shell | beam>:<turn: 45 front, 135 back>:<screen pixels to a picture pixel>:<every nth frame>
+//   (shell, beam: its charged shots, dev/golem_moves.ts GCHARGE_SHELL and GCHARGE_BEAM, with the cannon and the tesla coil)
 import { CANVAS3 } from '../art/skin';
-import { GP, GPUNCH, GUPPER, GWALK, golemPunch, golemUppercut, golemWalk, groundPound } from './golem_moves';
+import { GCHARGE_BEAM, GCHARGE_SHELL, GP, GPUNCH, GUPPER, GWALK, golemChargeBeam, golemChargeShell, golemPunch, golemUppercut, golemWalk, groundPound } from './golem_moves';
 import { GOLEM_GUN, GOLEM_PICK, GOLEM_POSE, sculptGolemBuild } from './sculpt_golem';
+import type { GolemGun } from './sculpt_golem';
 
 const [moveArg = 'punch', turnArg = '45', scaleArg = '4', everyArg = '2'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const S = Number(scaleArg) || 4;
 const EVERY = Math.max(1, Number(everyArg) || 2);
 const TURN = Number(turnArg) || 45;
 
-type Pose = Partial<typeof GOLEM_POSE>;
-const MOVES: Record<string, { end: number; at: (f: number) => Pose; hit?: number }> = {
+type Pose = Partial<typeof GOLEM_POSE> & { aim?: number; kick?: number; charge?: number; gunLevel?: number };
+const MOVES: Record<string, { end: number; at: (f: number) => Pose; hit?: number; gun?: GolemGun }> = {
+  shell: { end: GCHARGE_SHELL.end, at: golemChargeShell, hit: GCHARGE_SHELL.fire, gun: 'cannon' },
+  beam: { end: GCHARGE_BEAM.end, at: golemChargeBeam, hit: GCHARGE_BEAM.fire, gun: 'tesla' },
   punch: { end: GPUNCH.end, at: golemPunch, hit: GPUNCH.hit },
   upper: { end: GUPPER.end, at: golemUppercut, hit: GUPPER.hit },
   pound: { end: GP.end, at: groundPound, hit: GP.hit },
@@ -49,8 +53,9 @@ const build = (): void => {
     g.fillRect(x, y + 18, paneW, paneH);
     g.fillStyle = f === mv.hit ? '#ffd860' : '#d8d4ff';
     g.fillText(`f${f}${f === mv.hit ? ' BLOW' : ''}`, x + 4, y + 14);
-    Object.assign(GOLEM_POSE, REST, mv.at(f));
-    const d = sculptGolemBuild('front', GOLEM_PICK.build, TURN, -14, GOLEM_PICK.giant, GOLEM_GUN.gun, 0, 0);
+    const q = mv.at(f);
+    Object.assign(GOLEM_POSE, REST, q);
+    const d = sculptGolemBuild('front', GOLEM_PICK.build, TURN, -14, GOLEM_PICK.giant, mv.gun ?? GOLEM_GUN.gun, q.aim ?? 0, q.kick ?? 0, q.charge ?? 0, q.gunLevel ?? 0);
     Object.assign(GOLEM_POSE, REST);
     const feetX = x + (TURN > 90 ? 64 : 52) * S;
     const feetY = y + 18 + paneH - 22 * S;
