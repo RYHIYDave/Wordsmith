@@ -45,6 +45,15 @@
 //                     shot's to the half tile); THE TESLA COIL'S BEAM from its coil's ball, with the Golem as it is pushed back
 //   vialBurst bomb    her Contraption's little bomb going off (2 tiles)
 //   contraptionBolt   her Contraption's bolt of energy from its ball to what it strikes, crackling there
+//
+// THE GOLEM'S ROCKET JUMP, THE ART CHAT'S GAME-READY PIECES (art/golem_rocket_fx.ts and its README's “Bringing it in”), BEHIND
+// GOLEM_ROCKET (off until he has seen it in the game and said yes), in place of the stand-in's bomb and drop-in:
+//   bombsAway rocket  WHERE IT TOOK OFF: its scorch and glowing cracks on the floor; its flash, fire splashed over the floor, the
+//                     ring of dust, stone, smoke and its after-image standing there (rocketStands, laid by render.ts among what
+//                     stands); and ITS TRAIL of smoke puffs over what stands, hanging where it passed
+//   golemArrive rocket WHERE IT LANDS: the crater on the floor, fading; its dust and stone standing there (rocketStands)
+//   rocketing         the light of its stacks' fire on the floor under it and grit hopping, while it crouches (render.ts sets
+//                     `rocketing` each frame); its frames painted ahead while she has it out (`rocketGun`)
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -60,6 +69,8 @@ import type { Brew } from '../game/state';
 import { GEARS, SPARKS, gears, sparks } from '../dev/golem_down_fx';
 import { BOMB_FX, bombSprite, layShotAir, shotLayers } from '../dev/contraption_shots';
 import { STUFF, crackStar, drawCrack } from '../dev/demon_fx';
+import { GOLEM_ROCKET, LAND_N, LAUNCH_N, PUFF_LIFE, golemLandFx, golemLaunchFx, golemRocketFrames, golemRocketFx, golemRunFrames, paintRocketAhead, rocketPuffFx, rocketTrail } from '../art/golem_rocket_fx';
+import type { GolemRocketAt } from '../game/state';
 import { BEAM_FRAMES, contraptionBoltFx, contraptionBombBlastFx, golemBeamFx, golemChargeFx, golemShellBlastFx, golemShellFlightFx, golemSkid, paintAhead } from '../art/golem_shots_fx';
 import type { Layered, ShotGun } from '../art/golem_shots_fx';
 import { flipSprite } from '../engine/px';
@@ -252,6 +263,19 @@ export class TinkererFx {
   private beams: { x: number; y: number; ux: number; uy: number; frames: Sprite[]; t: number }[] = [];
   private bigBlasts: { x: number; y: number; fx: Layered<Sprite[]>; t: number }[] = [];
   private conBolts: { x: number; y: number; frames: Sprite[]; t: number }[] = [];
+  /**
+   * (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET) Each Golem in its rocket jump this frame: its floor point, as its picture is
+   * drawn (from behind or in front, turned over or not), its frame (art/golem_rocket_fx.ts, 0 to ROCKET.end) and its size (her
+   * tree's Growth Serum). Set by render.ts.
+   */
+  rocketing: { x: number; y: number; view: 'front' | 'back'; flip: boolean; f: number; grow: number }[] = [];
+  /** (behind GOLEM_ROCKET) Her Golems' gun arm while she has one out (its rocket jump and its run painted ahead), else null. Set by render.ts. */
+  rocketGun: 'cannon' | 'tesla' | null = null;
+  /** (behind GOLEM_ROCKET) where its rocket jumps took off (and their trails), and where they came down. */
+  private launches: { x: number; y: number; view: 'front' | 'back'; flip: boolean; gun: 'cannon' | 'tesla'; dx: number; dy: number; flight: number; t: number }[] = [];
+  private lands: { x: number; y: number; view: 'front' | 'back'; flip: boolean; t: number }[] = [];
+  /** (behind GOLEM_ROCKET) the gun arms whose rocket jump and run are all painted. */
+  private rocketPainted = new Set<string>();
 
   handle(e: GameEvent): void {
     switch (e.t) {
@@ -287,6 +311,11 @@ export class TinkererFx {
         break;
       }
       case 'bombsAway':
+        // (behind GOLEM_ROCKET: the Golem's rocket jump blasting off, its take-off and its trail in place of her bomb's)
+        if (e.rocket) {
+          this.launches.push({ x: e.x, y: e.y, ...rocketFacing(e.rocket), gun: e.rocket.gun, dx: e.rocket.x1 - e.rocket.x0, dy: e.rocket.y1 - e.rocket.y0, flight: e.rocket.flight, t: 0 });
+          break;
+        }
         this.blasts.push({ x: e.x, y: e.y, t: 0 });
         this.scorches.push({ x: e.x, y: e.y, t: 0 });
         break;
@@ -316,6 +345,11 @@ export class TinkererFx {
         this.sparks.push({ x: e.x, y: e.y, t: 0, size: 0 });
         break;
       case 'golemArrive':
+        // (behind GOLEM_ROCKET: its rocket jump landing, its crater, dust and stone in place of its drop-in's steam and ring)
+        if (e.rocket) {
+          this.lands.push({ x: e.x, y: e.y, ...rocketFacing(e.rocket), t: 0 });
+          break;
+        }
         this.arrives.push({ x: e.x, y: e.y, t: 0 });
         break;
       case 'golemPunch':
@@ -415,6 +449,38 @@ export class TinkererFx {
       const b = golemShellBlastFx();
       paintAhead([b.floor, b.air], 4);
     }
+    // (behind GOLEM_ROCKET: its take-offs, trails and landings run their course; and, she has it out, its rocket jump and its run
+    // painted ahead a little each frame, its run first (wanted as soon as it moves), so that none is painted as it is shown)
+    for (const l of this.launches) l.t += dt;
+    this.launches = this.launches.filter((l) => Math.floor(l.t * 30) < Math.max(LAUNCH_N, Math.ceil(l.flight) + PUFF_LIFE + 1));
+    for (const l of this.lands) l.t += dt;
+    this.lands = this.lands.filter((l) => Math.floor(l.t * 30) < LAND_N);
+    if (GOLEM_ROCKET.on && this.rocketGun && !this.rocketPainted.has(this.rocketGun) && paintRocketAhead(rocketLists(this.rocketGun), ROCKET_PAINT_MS)) this.rocketPainted.add(this.rocketGun);
+  }
+
+  /** (behind GOLEM_ROCKET) Whether anything of a rocket jump's take-off or landing is still to be laid. */
+  rocketLeft(): boolean {
+    return this.launches.length > 0 || this.lands.length > 0;
+  }
+
+  /**
+   * (behind GOLEM_ROCKET) WHAT OF ITS TAKE-OFFS AND LANDINGS STANDS AMONG WHAT STANDS, for render.ts to lay: its depth, its
+   * picture, its floor point. Where it took off, a hair behind the Golem there from in front and a hair before it from behind
+   * (so that flying at the eye it is over it, and flying away under it); where it lands, a hair before the Golem there.
+   */
+  rocketStands(): { d: number; s: Sprite; x: number; y: number }[] {
+    const out: { d: number; s: Sprite; x: number; y: number }[] = [];
+    for (const l of this.launches) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLaunchFx(l.view, l.gun).air;
+      if (k < L.length) out.push({ d: l.x + l.y + 0.02 + (l.view === 'front' ? -0.005 : 0.005), s: l.flip ? flipSprite(L[k]) : L[k], x: l.x, y: l.y });
+    }
+    for (const l of this.lands) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLandFx(l.view).air;
+      if (k < L.length) out.push({ d: l.x + l.y + 0.025, s: l.flip ? flipSprite(L[k]) : L[k], x: l.x, y: l.y });
+    }
+    return out;
   }
 
   clear(): void {
@@ -442,6 +508,10 @@ export class TinkererFx {
     this.beams = [];
     this.bigBlasts = [];
     this.conBolts = [];
+    this.rocketing = [];
+    this.rocketGun = null;
+    this.launches = [];
+    this.lands = [];
   }
 
   /** What lies on the floor: scorches, the pounds' cracks and rings, the thuds of dust, lamps lit. */
@@ -487,12 +557,39 @@ export class TinkererFx {
       const k = Math.floor(b.t * 30);
       if (k < b.fx.floor.length) put(b.fx.floor[k], b.x, b.y);
     }
+    // (behind GOLEM_ROCKET, the art chat's: where its rocket jumps took off, scorched and cracked, glowing; where they came down,
+    // cracked open; under a Golem crouched to take off, the light of its stacks' fire and grit hopping, turned and grown with it)
+    for (const l of this.launches) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLaunchFx(l.view, l.gun).floor;
+      if (k < L.length) put(l.flip ? flipSprite(L[k]) : L[k], l.x, l.y);
+    }
+    for (const l of this.lands) {
+      const k = Math.floor(l.t * 30);
+      const L = golemLandFx(l.view).floor;
+      if (k < L.length) put(l.flip ? flipSprite(L[k]) : L[k], l.x, l.y);
+    }
+    for (const q of this.rocketing) {
+      const L = golemRocketFx(q.view).floor;
+      if (q.f < 0 || q.f >= L.length) continue;
+      const s = q.flip ? flipSprite(L[q.f]) : L[q.f];
+      const X = Math.round(wx(c, q.x, q.y));
+      const Y = Math.round(wy(c, q.x, q.y));
+      if (q.grow === 1) drawSprite(g, s, X, Y);
+      else g.drawImage(s.img, Math.round(X - s.ax * q.grow), Math.round(Y - s.ay * q.grow), Math.round(s.w * q.grow), Math.round(s.h * q.grow));
+    }
   }
 
   /** What is over everything: her vials in the air and bursting, her bomb, the Golem's steam, flashes, shots, sparks. */
   drawAir(g: CanvasRenderingContext2D, c: Cam): void {
     const at = (list: Sprite[], k: number): Sprite => list[Math.max(0, Math.min(list.length - 1, Math.floor(k * list.length)))];
     const put = (s: Sprite, x: number, y: number, up = 0): void => drawSprite(g, s, Math.round(wx(c, x, y)), Math.round(wy(c, x, y) - up));
+    // (behind GOLEM_ROCKET, the art chat's: the Golem's rocket trail, its puffs born out of its stacks' fire where it passed, hanging there)
+    for (const l of this.launches) {
+      const k = Math.floor(l.t * 30);
+      const P = rocketPuffFx();
+      for (const p of rocketTrail(l.view, l.flip, l.dx, l.dy, k, l.flight)) put(P[p.v][p.age], l.x + p.x, l.y + p.y, p.up);
+    }
     // (the puffs of her bomb's smoke along the way she flew, thinning)
     const pu = puffFrames();
     for (const p of this.trails) {
@@ -639,6 +736,23 @@ export class TinkererFx {
       if (sp) put(sp, b.x, b.y);
     }
   }
+}
+
+/** (behind GOLEM_ROCKET) How long a frame may spend painting the Golem's rocket jump and run ahead (thousandths of a second). */
+const ROCKET_PAINT_MS = 6;
+/** (behind GOLEM_ROCKET) Every list of its rocket jump and its run, with its gun arm, in the order they are painted ahead: its run first, then from in front, then from behind. */
+function rocketLists(gun: 'cannon' | 'tesla'): readonly (readonly Sprite[])[] {
+  const of = (view: 'front' | 'back'): Sprite[][] => {
+    const at = golemRocketFx(view);
+    const off = golemLaunchFx(view, gun);
+    const down = golemLandFx(view);
+    return [golemRocketFrames(view, gun), at.floor, at.behind, at.over, off.floor, off.air, down.floor, down.air];
+  };
+  return [golemRunFrames('front', gun), golemRunFrames('back', gun), ...of('front'), ...rocketPuffFx(), ...of('back')];
+}
+/** (behind GOLEM_ROCKET) Which way its pictures were drawn as it took off or came down: as render.ts picks them, by its facing. */
+function rocketFacing(r: GolemRocketAt): { view: 'front' | 'back'; flip: boolean } {
+  return { view: r.fx + r.fy < -0.2 ? 'back' : 'front', flip: r.fx - r.fy < 0 };
 }
 
 /** Which way a thing faces that fires along (dx, dy), as render.ts picks its picture: from behind or in front, turned over or not. */

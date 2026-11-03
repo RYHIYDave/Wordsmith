@@ -88,6 +88,9 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
   const sc = new Sculpt();
   GOLEM_VENTS.pts = [];
   GOLEM_VENTS.ways = [];
+  GOLEM_STACKS.pts = [];
+  GOLEM_STACKS.ways = [];
+  GOLEM_STACKS.feet = [];
   // (a few are best seen from the side: the ram charging)
   const yaw = yaw0 + (YAW_OF[build] ?? 0);
   sc.spin = turn;
@@ -194,10 +197,32 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     sc.ell(heart, piece, add(c, mul(n, 0.8)), [mul(n, 1.1), mul(s1, r), mul(s2, r)], 0.1, { tag: 'window' });
   };
   /** A stack on its back: copper, banded, a brass cap. */
-  const stackAt = (piece: string, base: V3, top: V3, r: number): void => {
+  // (ITS ROCKET JUMP, dev/golem_rocket.ts: GOLEM_POSE.stacks, degrees, its stacks swung back and down on their feet like a
+  // rocket's nozzles, their caps and mouths with them; GOLEM_POSE.flare, 0 to 1, their mouths lit with the fire in them, the
+  // friend's cyan to white-hot. Both left out as it always stands: then drawn as they always were)
+  const swing = (GOLEM_POSE.stacks ?? 0) * D;
+  const splay = (GOLEM_POSE.splay ?? 0) * D;
+  const flareK = GOLEM_POSE.flare ?? 0;
+  const fireMat = flareK > 0 ? sc.mat({ ramp: CYAN, paint: (h) => STACK_FIRE[Math.max(0, Math.min(3, Math.round(flareK * 3) - (h.tone <= 1 ? 1 : 0)))] }) : dark;
+  /** `v` (a way from a stack's foot) swung back and down by the stacks' swing, about its side-to-side; then splayed out to its own side (`side`) by the stacks' splay. */
+  const swung = (v: V3, side: number): V3 => {
+    if (!swing && !splay) return v;
+    const f0 = dot3(v, F) * Math.cos(swing) - v[2] * Math.sin(swing);
+    const u0 = dot3(v, F) * Math.sin(swing) + v[2] * Math.cos(swing);
+    const l0 = dot3(v, L);
+    const s = side * splay;
+    return add(add(mul(F, f0), mul(L, l0 * Math.cos(s) - u0 * Math.sin(s))), mul(U, l0 * Math.sin(s) + u0 * Math.cos(s)));
+  };
+  const stackAt = (piece: string, base: V3, top0: V3, r: number): void => {
+    const side = Math.sign(dot3(base, L));
+    const top = swing || splay ? add(base, swung(sub(top0, base), side)) : top0;
+    const ax = swung(U, side);
     sc.cone(copper, piece, base, top, r, r * 1.12, 0.4, { tag: 'stack' });
-    sc.cone(brass, piece, add(top, mul(U, -0.4)), add(top, mul(U, 0.6)), r * 1.5, r * 1.5, 0.2, { tag: 'cap' });
-    sc.cone(dark, piece, add(top, mul(U, 0.5)), add(top, mul(U, 0.9)), r * 0.85, r * 0.85, 0, { tag: 'mouth' });
+    sc.cone(brass, piece, add(top, mul(ax, -0.4)), add(top, mul(ax, 0.6)), r * 1.5, r * 1.5, 0.2, { tag: 'cap' });
+    sc.cone(fireMat, piece, add(top, mul(ax, 0.5)), add(top, mul(ax, 0.9)), r * 0.85, r * 0.85, 0, { tag: 'mouth' });
+    GOLEM_STACKS.pts.push(add(top, mul(ax, 0.9)));
+    GOLEM_STACKS.ways.push(ax);
+    GOLEM_STACKS.feet.push(base);
   };
   /** A HUGE FIST: its knuckles out along `d`, its thumb toward `th`; `R` its half-size (bigger than a hero's head). */
   // (GIANT: his “I like the one big arm.  Can I get the one big arm on a bunch of golems”, 24 Oct, by 08:55: its own arms
@@ -289,6 +314,16 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
         const kf = -8 + (kf0 + 8) * c;
         const ku = 15 + (ku0 - 15) * c;
         legOf(side > 0 ? 'legL' : 'legR', P(hf, side * 9, hu), P(kf, side * 12, ku), P(-13, side * 12, 5), 4.4, 6.5);
+        continue;
+      }
+      if (GOLEM_POSE.hips) {
+        // (ITS HIPS GOING WITH ITS BODY, GOLEM_POSE.hips (its rocket jump's crouch and flight, its run): each hip where its
+        // leaning, bobbing body takes it, its foot where `feet` puts it, its knee bent forward between them)
+        const la = (GOLEM_POSE.lean * Math.PI) / 180;
+        const hf = -7 - 5 * Math.cos(la);
+        const hu = 28 + 5 * Math.sin(la) + GOLEM_POSE.bob;
+        const [kf, ku] = kneeFor([hf, hu], [-13 + df, 5 + dz], 13.9, 11.2);
+        legOf(side > 0 ? 'legL' : 'legR', P(hf, side * 9, hu), P(kf, side * 12, ku), P(-13 + df, side * 12, 5 + dz), 4.4, 6.5, Math.max(0, dz));
         continue;
       }
       if (!df && !dz) {
@@ -1008,11 +1043,16 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
     GOLEM_MUZZLE.way = tv(GOLEM_MUZZLE.way);
     GOLEM_VENTS.pts = GOLEM_VENTS.pts.map(mv);
     GOLEM_VENTS.ways = GOLEM_VENTS.ways.map(tv);
+    GOLEM_STACKS.pts = GOLEM_STACKS.pts.map(mv);
+    GOLEM_STACKS.ways = GOLEM_STACKS.ways.map(tv);
+    GOLEM_STACKS.feet = GOLEM_STACKS.feet.map(mv);
   }
   const k = GOLEM_SIZE[build] ?? GOLEM_TOP / topOf(sc);
   scaleBy(sc, k);
   GOLEM_MUZZLE.p = mul(GOLEM_MUZZLE.p, k);
   GOLEM_VENTS.pts = GOLEM_VENTS.pts.map((p) => mul(p, k));
+  GOLEM_STACKS.pts = GOLEM_STACKS.pts.map((p) => mul(p, k));
+  GOLEM_STACKS.feet = GOLEM_STACKS.feet.map((p) => mul(p, k));
   GOLEM_FIST.c = mul(GOLEM_FIST.c, k);
   return draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, undefined, FRIEND_RIM);
 }
@@ -1022,7 +1062,28 @@ export function sculptGolemBuild(view: GameView, build: GolemBuild, turn = 0, ya
  * (degrees), its forearm folded in at the elbow (degrees), its body leaning forward about its hips (degrees) and bobbed up.
  * All naught as it stands, as he picked it.
  */
-export const GOLEM_POSE = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0] as [number, number, number, number], level: 0, dim: 0, crumple: 0 };
+export const GOLEM_POSE: {
+  swing: number;
+  fold: number;
+  lean: number;
+  bob: number;
+  feet: [number, number, number, number];
+  level: number;
+  dim: number;
+  crumple: number;
+  /** (its rocket jump, dev/golem_rocket.ts) Its stacks swung back and down, degrees; left out, as they stand. */
+  stacks?: number;
+  /** (its rocket jump) Its stacks splayed out, each to its own side, degrees; left out, not. */
+  splay?: number;
+  /** (its rocket jump) Its stacks' mouths lit with the fire in them, 0 to 1; left out, dark. */
+  flare?: number;
+  /** (its rocket jump and its run) 1: its hips go with its body (its lean and bob), its knees bending between them and its feet; left out, its legs stand where they stand. */
+  hips?: number;
+} = { swing: 0, fold: 0, lean: 0, bob: 0, feet: [0, 0, 0, 0], level: 0, dim: 0, crumple: 0 };
+/** Where the last drawn Golem's stacks' mouths are (as it was built, before it is turned), the way each points (out of its mouth), and each one's foot (where it swings). */
+export const GOLEM_STACKS: { pts: V3[]; ways: V3[]; feet: V3[] } = { pts: [], ways: [], feet: [] };
+/** The fire in its stacks' mouths as they flare (its rocket jump): the friend's cyan, darkest to white-hot. */
+const STACK_FIRE = ['#0c6a80', '#22d0e0', '#b8fff8', '#e8ffff'];
 /**
  * Its eye and its heart as its light goes out (`dim` 0 lit, as it stands, to 1 out): a step down the friend's cyan, two,
  * and dark glass; `hot` 1 for the brightest of it (the heart of its eye, its furnace), 0 for the rest.

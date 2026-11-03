@@ -123,6 +123,8 @@ import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
 import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
 import { golemCharge, makeContraptionArt, makeGolemArt } from '../art/tinkerer_art';
+// (THE GOLEM'S ROCKET JUMP AND ITS RUN, the art chat's, behind GOLEM_ROCKET: off until he has seen them in the game and said yes)
+import { GOLEM_ROCKET, ROCKET, RUN_STRIDE, golemRocketFrames, golemRocketFx, golemRunFrames, rocketShadow, rocketUp } from '../art/golem_rocket_fx';
 import { chargeFrame } from '../dev/golem_moves';
 import type { ContraptionArt } from '../art/tinkerer_art';
 // (THE RANGER'S COMPANIONS: their pictures, the art chat's, behind COMPANIONS_ART_ON)
@@ -195,6 +197,8 @@ const SHADOW = 0.7;
 export const CON_SEEN = { on: true, ring: true, scale: 1 };
 /** How wide the Tinkerer's Golem's shadow is (tiles round, as a monster's `r`): its broad feet and its fist planted. */
 const GOLEM_SHADOW = 0.6;
+/** (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET) The frame of its rocket jump (30 a second from deciding to jump, art/golem_rocket_fx.ts) `actT` seconds into it. */
+const rocketFrame = (actT: number): number => Math.max(0, Math.min(ROCKET.end, Math.floor(actT * 30 + 1e-6)));
 const FAR_DARK = 0.88;
 const NEAR_POOL = 380;
 const NEAR_LIFT = 0.36;
@@ -1341,7 +1345,7 @@ export class Renderer {
   private conArt = new Map<string, { front: ContraptionArt; back: ContraptionArt }>();
 
   /** Her Contraptions (in the air, springing open, set up, kicked by a shot, broken) and her Golem, stood among the rest. */
-  private drawTinkerers(game: Game, cam: Cam, t: number, W: number, H: number): void {
+  private drawTinkerers(game: Game, cam: Cam, t: number, W: number, H: number, tfx: TinkererFx): void {
     /** Her brew's cyan (dev/contraption_fx.ts BREW): what glows on a friend. */
     const BREW_CYAN = '#22d0e0';
     const art = (this.tinkerArt ??= { golem: makeGolemArt(), con: makeContraptionArt() });
@@ -1393,11 +1397,21 @@ export class Renderer {
         const back = g.fx + g.fy < -0.2;
         const set = back ? golemArt.back : golemArt.front;
         const clips = set.clips ?? {};
+        // (THE ART CHAT'S ROCKET JUMP, behind GOLEM_ROCKET: its own frames through it, by its frame from deciding to jump)
+        const view = back ? 'back' : 'front';
+        const gun = arm === 'tesla' ? 'tesla' : 'cannon';
+        const rocket = GOLEM_ROCKET.on && g.act === 'jump';
+        const rf = rocketFrame(g.actT);
         let sp: Sprite;
-        if (g.act === 'walk') {
+        if (g.act === 'walk' && GOLEM_ROCKET.on) {
+          // (ITS RUN, the art chat's gallop, by the floor it covers: RUN_STRIDE tiles a round, so that its fist and feet grip)
+          const run = golemRunFrames(view, gun);
+          sp = run[Math.floor((g.walked / RUN_STRIDE) * run.length) % run.length];
+        } else if (g.act === 'walk') {
           const stride = set.walkStride ?? 1;
           sp = set.walk[Math.floor((g.walked / stride) * set.walk.length) % set.walk.length];
-        } else if (g.act === 'punch' && clips.attack) sp = at(clips.attack, g.actT);
+        } else if (rocket) sp = golemRocketFrames(view, gun)[rf];
+        else if (g.act === 'punch' && clips.attack) sp = at(clips.attack, g.actT);
         else if (g.act === 'cannon' && clips.attack2) sp = at(clips.attack2, g.actT);
         else if (g.act === 'pound' && clips.heavy && g.actT >= 0) sp = at(clips.heavy, g.actT);
         else if (g.act === 'charge') {
@@ -1411,17 +1425,43 @@ export class Renderer {
         else sp = set.idle[0];
         // (whistled out: it drops in, landing heavy; ITS ROCKET JUMP, up over the floor in its arc, its stand lifted (the art chat's
         // pictures of it to come))
+        // (behind GOLEM_ROCKET, the art chat's: up fast, down like a stone, 92 game pixels at the top, in place of the stand-in's arc)
         const J = TINKER_TUNE.golem.jump;
-        const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : g.act === 'jump' ? Math.sin(Math.PI * Math.min(1, g.actT / J.long)) * J.high : 0;
+        const drop = g.act === 'arrive' ? Math.max(0, 1 - g.actT / 0.25) * 40 : rocket ? rocketUp(rf - ROCKET.blast) : g.act === 'jump' ? Math.sin(Math.PI * Math.min(1, g.actT / J.long)) * J.high : 0;
         // (her tree: GROWTH SERUM, twice as big, growing and shrinking back over a quarter of a second; OVERDRIVE, her cyan
         // pulsing over it; LIGHTNING ROD, her cyan flickering over it while the enemies go after it)
         const grow = g.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - g.growT) / 0.25, g.growT / 0.25)) : 1;
         let glow = g.overT > 0 && g.act !== 'down' ? 0.22 + 0.14 * Math.sin(t * 12) : 0;
         if (game.decoys.some((d) => d.golem === g) && Math.floor(t * 15) % 4 === 0) glow = Math.max(glow, 0.55);
         const pic = turned(g.fx, g.fy, sp);
+        // (behind GOLEM_ROCKET: everything at it, its stacks' fire and steam, laid just before its picture and just after it, lifted
+        // and turned over with it: from in front its stacks' fire is behind it, from behind over it)
+        const atIt = rocket ? golemRocketFx(view) : null;
+        if (atIt) this.stand(g.x + g.y + 0.02, turned(g.fx, g.fy, atIt.behind[rf]), sx, sy - drop, null, 0, grow);
         this.stand(g.x + g.y + 0.02, pic, sx, sy - drop, glow > 0 ? silhouette(pic, BREW_CYAN) : null, glow, grow);
+        if (atIt) this.stand(g.x + g.y + 0.02, turned(g.fx, g.fy, atIt.over[rf]), sx, sy - drop, null, 0, grow);
       }
     }
+    // (behind GOLEM_ROCKET: what of its take-offs and landings stands among what stands, its flash, fire, dust and stone)
+    for (const q of tfx.rocketStands()) {
+      const sx = wx(cam, q.x, q.y);
+      const sy = wy(cam, q.x, q.y);
+      if (sx < -200 || sx > W + 200 || sy < -200 || sy > H + 200) continue;
+      this.stand(q.d, q.s, sx, sy);
+    }
+  }
+
+  /** (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET) Each Golem in its rocket jump: where, which way its picture is drawn, its frame, its size. */
+  private golemsRocketing(game: Game): TinkererFx['rocketing'] {
+    const GS = TINKER_TUNE.talents.growth;
+    return game.golems.filter((g) => g.act === 'jump').map((g) => ({
+      x: g.x,
+      y: g.y,
+      view: g.fx + g.fy < -0.2 ? ('back' as const) : ('front' as const),
+      flip: g.fx - g.fy < 0,
+      f: rocketFrame(g.actT),
+      grow: g.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - g.growT) / 0.25, g.growT / 0.25)) : 1,
+    }));
   }
 
   /** (HER TREE'S GUN ARM) The frame of its charged shot a Golem shows: the wind-up, the loop round and round while she holds, then on from the shot (dev/golem_moves.ts chargeFrame). */
@@ -2368,7 +2408,9 @@ export class Renderer {
       const GS = TINKER_TUNE.talents.growth;
       const grow = gm.growT > 0 ? 1 + (GS.big - 1) * Math.max(0, Math.min(1, (GS.secs - gm.growT) / 0.25, gm.growT / 0.25)) : 1;
       const come = gm.act === 'arrive' ? Math.min(1, gm.actT / 0.25) : gm.act === 'jump' ? 1 - 0.45 * Math.sin(Math.PI * Math.min(1, gm.actT / TINKER_TUNE.golem.jump.long)) : 1;
-      this.shadow(g, wx(cam, gm.x, gm.y), wy(cam, gm.x, gm.y), GOLEM_SHADOW * grow * (0.6 + 0.4 * come), Math.min(1, SHADOW * 1.2) * come);
+      // (behind GOLEM_ROCKET, the art chat's: shrinking and fading further as it flies twice as high)
+      const rk = GOLEM_ROCKET.on && gm.act === 'jump' ? rocketShadow(rocketFrame(gm.actT) - ROCKET.blast) : { r: 0.6 + 0.4 * come, a: come };
+      this.shadow(g, wx(cam, gm.x, gm.y), wy(cam, gm.x, gm.y), GOLEM_SHADOW * grow * rk.r, Math.min(1, SHADOW * 1.2) * rk.a);
     }
     // (CON_SEEN, a mock-up: the friend's cyan ring round each of her Contraptions set up)
     if (CON_SEEN.on && CON_SEEN.ring) {
@@ -2766,6 +2808,10 @@ export class Renderer {
     this.clockNow = t;
     // (HER TREE'S GUN ARM: each Golem charging, as its picture will be drawn, for the art chat's steam and light round it: render/tinkerer_fx.ts)
     fx.tinkerer.charging = game.golems.length ? this.golemsCharging(game) : [];
+    // (HER GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET: each Golem in it, for what is laid on the floor under it; and, her Golem out, its
+    // frames painted ahead a little each frame, so that none is painted as it is shown)
+    fx.tinkerer.rocketing = GOLEM_ROCKET.on && game.golems.length ? this.golemsRocketing(game) : [];
+    fx.tinkerer.rocketGun = GOLEM_ROCKET.on && game.golems.length ? (game.armOf() === 'tesla' ? 'tesla' : 'cannon') : null;
     const prisonOn = look === this.prison;
     this.yardOnly = yardOut ? f : null;
     if (yardOut) this.yard.back(g, cam, f, W, H);
@@ -3527,7 +3573,7 @@ export class Renderer {
     }
 
     // THE TINKERER'S CONTRAPTIONS AND HER GOLEM (game/tinkerer.ts; their pictures art/tinkerer_art.ts)
-    if (game.golems.length || game.contraptions.length) this.drawTinkerers(game, cam, t, W, H);
+    if (game.golems.length || game.contraptions.length || fx.tinkerer.rocketLeft()) this.drawTinkerers(game, cam, t, W, H, fx.tinkerer);
     // THE RANGER'S COMPANIONS (game/companions.ts), at his side; their pictures the art chat's (art/companions_art.ts): only with
     // COMPANIONS on (game/talents.ts) are there any, so the pictures go on with them, as the art chat's README asks
     if (game.pets.length) this.drawPets(g, game, cam, t, W, H);

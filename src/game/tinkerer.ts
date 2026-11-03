@@ -33,6 +33,7 @@
 // its blast. (The hits are hers, made with that ability's words, as the mage's familiars' are.)
 
 import type { ClassId } from './types';
+import { GOLEM_ROCKET, ROCKET_ARC } from '../art/golem_rocket_fx';
 
 /** A page built to try her out says so (esbuild's define): the Tinkerer offered from the start. */
 declare const __TINKERER__: boolean | undefined;
@@ -93,8 +94,20 @@ export const TINKER_TUNE = {
      * seen, it blasts off from its stacks and comes down there, at most `most` tiles on, `long` seconds in the air, `high` game
      * pixels at the top; for getting there, not for striking; `wait` seconds between jumps. (Its pictures the art chat's to draw:
      * until then its own stand, lifted, its take-off her bomb's blast and its landing its drop-in's.)
+     * THE ART CHAT'S ROCKET JUMP (art/golem_rocket_fx.ts), behind GOLEM_ROCKET (off until he has seen it in the game and said
+     * yes): its take-off held where it stands for half a second (ROCKET.blast), then `long` in the air, then two thirds of a
+     * second standing up (game.ts stepRocket); its `high` twice the stand-in's 46 at his answer of 3 Nov 2026 to the art chat's
+     * pictures, “Yes, but higher (Recommended)”.
      */
-    jump: { from: 5, most: 8, long: 0.7, high: 46, wait: 3.5 },
+    jump: {
+      from: 5,
+      most: 8,
+      long: 0.7,
+      get high(): number {
+        return GOLEM_ROCKET.on ? ROCKET_ARC.high : 46;
+      },
+      wait: 3.5,
+    },
     near: 1.7,
     /** Further from her than this, it is whistled up beside her again. */
     lost: 12,

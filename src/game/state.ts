@@ -883,6 +883,22 @@ export interface Pet {
   seat: number;
 }
 
+/**
+ * (THE GOLEM'S ROCKET JUMP, behind GOLEM_ROCKET: art/golem_rocket_fx.ts) its blast off and its landing, for what is laid there:
+ * where it took off (`x0`, `y0`) and comes down (`x1`, `y1`); which way it faces (its picture's); its gun arm; its flight in
+ * frames of the screen (30 a second: ROCKET.flight, half that in her tree's Overdrive).
+ */
+export interface GolemRocketAt {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  fx: number;
+  fy: number;
+  gun: 'cannon' | 'tesla';
+  flight: number;
+}
+
 export interface Golem {
   x: number;
   y: number;
@@ -1427,7 +1443,8 @@ export type GameEvent =
   /** (her tree's CONTRAPTION, its pick ENERGY) a bolt of energy from Contraption `id` at (x0, y0) to (x1, y1), there after `flight`. */
   | { t: 'contraptionBolt'; id: number; x0: number; y0: number; x1: number; y1: number; flight: number }
   | { t: 'contraptionEnd'; id: number; x: number; y: number }
-  | { t: 'golemArrive'; x: number; y: number }
+  /** (`rocket`: its ROCKET JUMP landing there, behind GOLEM_ROCKET: art/golem_rocket_fx.ts, its landing laid in place of its drop-in's) */
+  | { t: 'golemArrive'; x: number; y: number; rocket?: GolemRocketAt }
   // (THE RANGER'S COMPANIONS, game/companions.ts: one at his side, and its bite landing on `id`)
   | { t: 'petArrive'; kind: CompanionKind; x: number; y: number }
   | { t: 'petBite'; kind: CompanionKind; id: number; x: number; y: number; dx: number; dy: number }
@@ -1446,7 +1463,8 @@ export type GameEvent =
   // (HER SKILL TREE: Bombs Away's second bomb where she lands; a puddle of Tar; Shrapnel bursting where the Golem's shot
   // lands; the Tesla Coil's spark leaping from the Golem's back from one to the next; a Golem grown by Growth Serum; a Golem
   // in Overdrive)
-  | { t: 'bombsAway'; x: number; y: number; r: number }
+  /** (`rocket`: the Golem's ROCKET JUMP blasting off there, behind GOLEM_ROCKET: art/golem_rocket_fx.ts, its take-off and trail laid in place of the bomb's) */
+  | { t: 'bombsAway'; x: number; y: number; r: number; rocket?: GolemRocketAt }
   | { t: 'tar'; x: number; y: number; r: number; secs: number }
   | { t: 'shrapnel'; x: number; y: number; r: number }
   | { t: 'teslaZap'; x: number; y: number; to: readonly { x: number; y: number }[]; grown?: boolean }

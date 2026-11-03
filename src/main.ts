@@ -10,6 +10,7 @@ import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
+import { GOLEM_ROCKET } from './art/golem_rocket_fx';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt } from './art/icons';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
@@ -2577,6 +2578,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     thrust: (on: boolean) => {
       THRUST.on = on;
       art.heroes = makeHeroArt3();
+    },
+    /**
+     * THE TINKERER'S GOLEM'S ROCKET JUMP AND ITS RUN (art/golem_rocket_fx.ts GOLEM_ROCKET, the art chat's; game/game.ts stepRocket;
+     * render/render.ts and render/tinkerer_fx.ts lay its pieces), on or off: off until he has seen them in the game and said yes.
+     * For playtests and films.
+     */
+    golemRocket: (on: boolean) => {
+      GOLEM_ROCKET.on = on;
     },
     /** For films of a hero's habits: the hero does one of the two things they do when left standing (1 or 2) now, whatever the wait. */
     habit: (which: 1 | 2) => renderer.figure.play(which),
