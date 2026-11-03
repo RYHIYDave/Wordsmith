@@ -6,15 +6,13 @@
 // items.” Of the Veteran: “Oh and we need sprites for his weapon, hand wraps, or brawler’s wraps.  2 handed obv.” His picks, 3 Nov:
 // “A, painted”; “Finer and a rim”. And, 3 Nov, 09:39: “I need fighters wraps, a demonic tome, and something for the tinkerer’s
 // weapon as items”; of the Tinkerer's: “Her big wrench (Recommended)”.
-// The Warlock's book is the kind 'grimoire' (was 'tome'), as the main chat's game side names his new weapon (his pick there, 3 Nov:
-// “Grimoire and wrench (Recommended)”); its picture is the same.
 //
 // So every item kind at every rarity: lit and shaded like the new heroes (five tones to a material, dark seams where one part
 // meets another, a shadow cast where one part lies over another, a bold ink outline), each rarer one FINER in its own way
 // (Normal plain; Magic a touch of blue; Rare gold and a yellow stone; Unique blackened or gilded, with orange stones), and a thin
 // RIM of its rarity's colour (the game's own, RARITY_COLOR) round the item's own outline, in the bag and lying on the floor.
 // 32 by 32 picture pixels at the heroes' grain: the 16 game pixels today's item pictures fill, anchor the middle.
-// The light comes from the upper left. Nothing glows but the demon's fire on the grimoire (orange and red: his words, 3 Nov 2026,
+// The light comes from the upper left. Nothing glows but the demon's fire on the tome (orange and red: his words, 3 Nov 2026,
 // 10:44, “cyan fire in the demonic hand, red/orange fire on the tome”) and the core of the Tinkerer's wrench (the friend's cyan:
 // hers is a friend's).
 
@@ -27,13 +25,13 @@ import { RARITY_COLOR } from './palette';
 export const ITEMS_A = { on: false };
 
 export const ITEM_A_KINDS = [
-  'sword', 'greatsword', 'bow', 'wand', 'staff', 'wraps', 'grimoire', 'wrench', 'shield', 'quiver', 'focus',
+  'sword', 'greatsword', 'bow', 'wand', 'staff', 'wraps', 'tome', 'wrench', 'shield', 'quiver', 'focus',
   'helm', 'hood', 'armor', 'robe', 'gloves', 'belt', 'boots', 'ring', 'amulet',
 ] as const;
 export type ItemAKind = (typeof ITEM_A_KINDS)[number];
 /** The names he knows them by. */
 export const ITEM_A_NAME: Record<ItemAKind, string> = {
-  sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: 'Brawler’s wraps', grimoire: 'Demonic grimoire',
+  sword: 'Sword', greatsword: 'Greatsword', bow: 'Bow', wand: 'Wand', staff: 'Staff', wraps: 'Brawler’s wraps', tome: 'Demonic tome',
   wrench: 'Tinkerer’s wrench', shield: 'Shield', quiver: 'Quiver', focus: 'Focus', helm: 'Helmet', hood: 'Hood', armor: 'Armour',
   robe: 'Robe', gloves: 'Gloves', belt: 'Belt', boots: 'Boots', ring: 'Ring', amulet: 'Amulet',
 };
@@ -586,15 +584,15 @@ function wraps(r: Rar): Part[] {
 }
 
 /**
- * THE DEMONIC GRIMOIRE, the Warlock's: a heavy book standing, bound in the Warlock's dark red leather (his own red book's) and iron, a
+ * THE DEMONIC TOME, the Warlock's: a heavy book standing, bound in the Warlock's dark red leather (his own red book's) and iron, a
  * horned demon's face on its cover, clasps over its pages' edge, the pages edged in the demon's fire. Rarer, more demonic: chains
  * across it; a third eye open on the brow; and the finest blackened and gilded, its eyes burning, a burning sigil under the face.
  */
-function grimoire(r: Rar): Part[] {
+function tome(r: Rar): Part[] {
   // (drawn on the square, then made a book's shape, narrower than it is tall, and stood leaning a little: not a shield's)
-  return squeeze(grimoireParts(r), 0.7, 0.86, 12);
+  return squeeze(tomeParts(r), 0.7, 0.86, 12);
 }
-function grimoireParts(r: Rar): Part[] {
+function tomeParts(r: Rar): Part[] {
   const parts: Part[] = [];
   const cover: Mat = r === 3 ? 'black' : 'bookred';
   const iron: Mat = r >= 2 ? 'gold' : 'steel';
@@ -971,7 +969,7 @@ function amulet(r: Rar): Part[] {
 }
 
 type Painter = (r: Rar) => Part[];
-const PAINTERS: Record<ItemAKind, Painter> = { sword, greatsword, bow, wand, staff, wraps, grimoire, wrench, shield, quiver, focus, helm, hood, armor, robe, gloves, belt, boots, ring, amulet };
+const PAINTERS: Record<ItemAKind, Painter> = { sword, greatsword, bow, wand, staff, wraps, tome, wrench, shield, quiver, focus, helm, hood, armor, robe, gloves, belt, boots, ring, amulet };
 
 /** One item at one rarity: a 32 by 32 picture (two picture pixels to a game pixel). */
 export function paintItemA(kind: ItemAKind, rarity: Rarity): Px {
@@ -987,7 +985,7 @@ export function itemAKind(key: string): ItemAKind | null {
 
 const made = new Map<string, Sprite>();
 /**
- * THE PICTURE OF AN ITEM, for the UI and the floor: its kind (an item's `icon`, or 'wraps', 'grimoire', 'wrench') at its rarity, 16 by
+ * THE PICTURE OF AN ITEM, for the UI and the floor: its kind (an item's `icon`, or 'wraps', 'tome', 'wrench') at its rarity, 16 by
  * 16 game pixels painted two picture pixels to a game pixel, anchor the middle (8, 8), as art/icons.ts' item pictures are drawn.
  * Draw it at its size in game pixels (`w` by `h`), as `ui.slot` and the floor's `stand` already do. Made once and kept.
  */

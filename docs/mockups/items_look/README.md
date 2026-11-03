@@ -19,10 +19,10 @@ picture, plus a thin rim of the rarity's colour round the item itself, in the ba
 Tinkerer's should be, his pick: “Her big wrench (Recommended)”, offered as: the heavy wrench she already carries, as an item;
 rarer ones get gears, gauges and glowing cores.
 
-3 Nov 2026, of the grimoire's fire: “Cyan, his hellfire (Recommended)”, offered as: the grimoire burns in the Warlock's own cyan
+3 Nov 2026, of the tome's fire: “Cyan, his hellfire (Recommended)”, offered as: the tome burns in the Warlock's own cyan
 hellfire, matching him and your rule. And of the items as a whole: “Yes, hand them over (Recommended)”.
 
-3 Nov 2026, 10:44, and so the grimoire's fire is the demon's red-orange again: “I think we want the demonic tome to be orange.  The warlock is Str/Int, which is kinda red and blue, cyan fire in the demonic hand, red/orange fire on the tome.  In that same vein, the brawler is Str/dex, so I think we change the color of the globe for a punch to green and the kicks stay orange/red.  I think that’s a good thematic change”. Asked whether to write stats-as-colours into his art rulebook for every class: “It can be case by case, but right now these changes would lock everyone into that theme for now”. So no rulebook change; just these. (The punch's green is the Veteran's, on `art/brawler-looks`.)
+3 Nov 2026, 10:44, and so the tome's fire is the demon's red-orange again: “I think we want the demonic tome to be orange.  The warlock is Str/Int, which is kinda red and blue, cyan fire in the demonic hand, red/orange fire on the tome.  In that same vein, the brawler is Str/dex, so I think we change the color of the globe for a punch to green and the kicks stay orange/red.  I think that’s a good thematic change”. Asked whether to write stats-as-colours into his art rulebook for every class: “It can be case by case, but right now these changes would lock everyone into that theme for now”. So no rulebook change; just these. (The punch's green is the Veteran's, on `art/brawler-looks`.)
 
 ## What he is shown
 
@@ -50,7 +50,7 @@ stones.
 | Wand | wood, iron collar | carved ivory, blue stone at its foot | gold collar and claws up the crystal, yellow stone | blackened, a gold spiral, orange stones |
 | Staff | gnarled wood, iron band | blue ribbon, blue stone | gold band, gold caps, yellow stone | blackened wood, gilded prongs, orange stones |
 | Brawler's wraps (the Veteran's) | plain linen fists | blue straps and bands, steel knuckle studs, blue stones | gold studs and bands, yellow stones | dyed deep red, gilded, orange stones |
-| Demonic grimoire (the Warlock's) | red leather and iron, an iron horned face, pages edged in the demon's red-orange fire | chained, steel face, blue stones in the clasps | gold face and corners, its third eye open, flames licking out | blackened and gilded, its eyes burning, a burning sigil, gilded chain, orange stones |
+| Demonic tome (the Warlock's) | red leather and iron, an iron horned face, pages edged in the demon's red-orange fire | chained, steel face, blue stones in the clasps | gold face and corners, its third eye open, flames licking out | blackened and gilded, its eyes burning, a burning sigil, gilded chain, orange stones |
 | Tinkerer's wrench | plain steel, leather grip, rivets | blue grip, a brass gear | a gold gear and a gauge, gold rivets, yellow stone | blackened and gilded, two gears, a glowing cyan core, orange stones |
 | Shield | planks and a steel rim | blue field, steel chevron, blue stone | red field, gold chevron, yellow stone | blackened field, gold rim, orange stones |
 | Quiver | leather, white fletching | blue fletching, strap and stone | gold mouth, tooled in gold, yellow stone | black leather, gold mouth and foot, orange stone |
@@ -71,21 +71,16 @@ notch between two parts it is ink, so it only ever goes round the outside. The i
 picture pixel clear of the picture's edge and a game pixel and a half clear of the slot's own frame: the two lines of the same
 colour sit apart, the slot's frame and, inside it, the item's rim (look at the phone pictures).
 
-**Nothing glows** but the demon's fire on the grimoire, red and orange (his words, 10:44: “cyan fire in the demonic hand,
+**Nothing glows** but the demon's fire on the tome, red and orange (his words, 10:44: “cyan fire in the demonic hand,
 red/orange fire on the tome”; the ramp `fire` in `items_a.ts`, deep red to orange to a pale flame-white, as before his cyan pick:
 not the enemy's pink flame, not a gold glow), and the core of the Unique wrench, the friend's cyan (hers is a friend's). The
 Warlock's own hellfire, in his hand, stays cyan.
 
 ### The new kinds
 
-Its key is `'grimoire'` (was `'tome'`), to match the main chat's game side, which names the Warlock's new weapon 'grimoire'
-(his pick to the main chat, 3 Nov 2026: “Grimoire and wrench (Recommended)”, offered as: the Warlock a pact grimoire, chained
-shut). Only the name changed: its picture is the same, pixel for pixel, at every rarity. The pictures in `pictures/` were made
-before the rename and still call it the tome in their captions.
-
 - **Brawler's wraps** (the Veteran's, two-handed): a pair of fists bound in linen, the front one studded on its knuckles (from
   Magic up), a strap across the back one's fingers, the loose ends trailing.
-- **Demonic grimoire** (the Warlock's): a heavy book standing, leaning a little, bound in his own red book's leather and iron
+- **Demonic tome** (the Warlock's): a heavy book standing, leaning a little, bound in his own red book's leather and iron
   (`BOOKRED`, dev/sculpt_warlock.ts), a horned demon's face raised on its cover, two clasps over the pages' edge, the pages edged
   in the demon's red-orange fire, a ribbon marker hanging from its foot. Rarer, more demonic: chained (Magic, Unique); a third eye
   open on its brow (Rare, Unique); flames licking out of the pages (Rare, Unique); blackened, its eyes burning, a burning sigil
@@ -94,13 +89,13 @@ before the rename and still call it the tome in their captions.
   gap), on the diagonal, its gap to the upper right, a wrapped grip. Rarer: a gear at its throat (Magic up), a gauge on its shaft
   (Rare up), rivets, and the Unique's glowing cyan core set in its jaw.
 
-The Warlock and the Tinkerer start with a wand today: the grimoire and the wrench would be their own weapon kinds, as the wraps are
+The Warlock and the Tinkerer start with a wand today: the tome and the wrench would be their own weapon kinds, as the wraps are
 the Veteran's. What they do (hands, speed, the quick attack, who can carry them, how they drop) is the main chat's rules.
 
 ## Game-ready: `src/art/items_a.ts`
 
 - `ITEMS_A = { on: false }`: the switch. Until he has said yes to them in the game, today's pictures when off.
-- `itemArt(key, rarity): Sprite`: the picture of an item by its picture key (an item's `icon`, or `'wraps'`, `'grimoire'`,
+- `itemArt(key, rarity): Sprite`: the picture of an item by its picture key (an item's `icon`, or `'wraps'`, `'tome'`,
   `'wrench'`) at its rarity: 16 by 16 game pixels painted two picture pixels to a game pixel (`density` 2), anchor the middle
   (8, 8), as art/icons.ts' item pictures are drawn (`IconArt.item`: “16x16, anchor (8, 8)”). Made once and kept (80 pictures,
   painted as they are first asked for).
@@ -127,11 +122,11 @@ the Veteran's. What they do (hands, speed, the quick attack, who can carry them,
 2. **The empty slot's ghost** (ui/inventory.ts, `GHOST`, about line 1236) calls `g.drawImage(ghost.img, x, y)` without a size: it
    must pass `ghost.w, ghost.h`, or a picture painted two to a game pixel comes out twice as big. (Its picture: the kind's Normal,
    faint, rim and all; or keep today's ghosts, which are the plainer hint.)
-3. **The new kinds** (`'wraps'`, `'grimoire'`, `'wrench'`): each a `WeaponKind` (game/types.ts: `WeaponKind`, `WEAPONS`, `IconKey`,
+3. **The new kinds** (`'wraps'`, `'tome'`, `'wrench'`): each a `WeaponKind` (game/types.ts: `WeaponKind`, `WEAPONS`, `IconKey`,
    `ICON_KEYS`), with its bases by tier in items.ts (`ITEM_BASES`, its `icon` the kind), its name (`WEAPON_KIND_NAME`), its quick
    attack (defs.ts `WEAPON_TAP`), its hands (the wraps two-handed: his “2 handed obv”; no off-hand pairs with them, `canPair`),
    its slot (`mainhand`) and how it drops (`pickBase`); and the class it starts with (`CLASSES[cls].starts`: the Veteran the wraps,
-   and if he wants it, the Warlock the grimoire and the Tinkerer the wrench). The Veteran is on `art/brawler-looks`.
+   and if he wants it, the Warlock the tome and the Tinkerer the wrench). The Veteran is on `art/brawler-looks`.
 4. **Unique items** (his next step): one picture per kind serves every Unique of it. A named unique can have a picture of its
    own: a painter added to `items_a.ts` under its own key, asked for by the item's `icon`.
 
@@ -156,8 +151,8 @@ way to see them in the real game before it asks for them by rarity: not the way 
 the rim one picture pixel thick, of the rarity's own colour, all round the ink and only on the outside, at least 50 pixels of
 it; the four rarities of each kind all different, the Magic with blue, the Rare with gold or a yellow stone, the Unique with
 orange stones and more finery than the Normal; no two kinds' silhouettes overlapping by four fifths or more at any rarity (the
-closest: the grimoire and the shield, 0.77 to 0.78); none of the enemy's colours anywhere, the friend's cyan only in the Unique
-wrench's core; the grimoire at every rarity burning in the demon's red-orange fire (at least 15 pixels of its ramp), none of it
+closest: the tome and the shield, 0.77 to 0.78); none of the enemy's colours anywhere, the friend's cyan only in the Unique
+wrench's core; the tome at every rarity burning in the demon's red-orange fire (at least 15 pixels of its ramp), none of it
 cyan; `itemArt` 16 by 16 game pixels, anchor (8, 8), density 2, each made once, and the old weapons showing what they became. `tsc` is clean; `tests/items_look.test.ts` (the three styles) still passes.
 
 ## Before: the three styles (`pictures/items_sheet.png`)

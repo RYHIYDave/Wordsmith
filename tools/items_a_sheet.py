@@ -28,7 +28,7 @@ HOW = {
     'wand': 'Wood, an iron collar; carved ivory, a blue stone at its foot; gold claws up the crystal, a yellow stone; blackened, a gold spiral, orange stones.',
     'staff': 'Gnarled wood, an iron band; a blue ribbon and stone; a gold band and caps, a yellow stone; blackened wood, gilded prongs, orange stones.',
     'wraps': 'The Veteran’s two-handed weapon. Plain linen; blue straps, steel studs, blue stones; gold studs and bands, yellow stones; deep red, gilded, orange stones.',
-    'grimoire': 'The Warlock’s. Red leather and iron, a horned demon’s face, pages edged in fire; chained; its third eye open, flames licking out; blackened and gilded, its eyes burning, a burning sigil.',
+    'tome': 'The Warlock’s. Red leather and iron, a horned demon’s face, pages edged in fire; chained; its third eye open, flames licking out; blackened and gilded, its eyes burning, a burning sigil.',
     'wrench': 'The Tinkerer’s big wrench. Plain steel; a blue grip, a brass gear; a gold gear and a gauge, a yellow stone; blackened and gilded, two gears, a glowing core.',
     'shield': 'Planks and steel; a blue field, a steel chevron, a blue stone; a red field, a gold chevron, a yellow stone; blackened, a gold rim, orange stones.',
     'quiver': 'Leather, white feathers; blue feathers, strap and stone; a gold mouth, tooled in gold, a yellow stone; black leather, gold mouth and foot, an orange stone.',
@@ -79,7 +79,7 @@ blocks = []
 def head_block():
     text = ('Your pick, “A, painted”, with “Finer and a rim”: every item, each rarer one finer in its own way, and a thin line of its '
             'rarity’s colour round the item itself, in the bag and on the floor. With the Veteran’s brawler’s wraps, the Warlock’s '
-            'demonic grimoire and the Tinkerer’s big wrench. Each is shown in a slot as the game draws one, three times as big as your '
+            'demonic tome and the Tinkerer’s big wrench. Each is shown in a slot as the game draws one, three times as big as your '
             'phone shows it; below, the bag and the floor on your phone at their real size. Not in the game yet.')
     lines = wrap(probe, text, small, W - 36)
     h = 62 + 25 * len(lines) + 14
@@ -130,7 +130,7 @@ blocks.append(head_block())
 blocks.append(items_block())
 blocks.append(shot_block('Your gear and your bag, on an iPhone 16 held sideways, real size',
                          'Drawn by the game itself. Each slot’s frame is the rarity’s colour, as today; the thin line round each item is the new rim. '
-                         'In the bag: the brawler’s wraps (first row, fifth; second row, fifth), the demonic grimoire (first row, sixth; second row, sixth) '
+                         'In the bag: the brawler’s wraps (first row, fifth; second row, fifth), the demonic tome (first row, sixth; second row, sixth) '
                          'and the wrench (first row, seventh; second row, seventh).', inv))
 blocks.append(shot_block('Lying on the floor as loot, real size',
                          'Each named in its rarity’s colour above it, as today, with the rim of that colour round the piece itself.', floor))

@@ -6,16 +6,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// what each slot holds: [kind, rarity]. The wraps, the grimoire and the wrench are not kinds in the game yet: each is made as the
+// what each slot holds: [kind, rarity]. The wraps, the tome and the wrench are not kinds in the game yet: each is made as the
 // nearest kind (gloves, a wand) and shown with its own picture.
 const GEAR = { mainhand: ['sword', 3], offhand: ['shield', 2], helm: ['helm', 1], chest: ['armor', 2], gloves: ['gloves', 0], belt: ['belt', 1], boots: ['boots', 3], amulet: ['amulet', 2], ring1: ['ring', 3], ring2: ['ring', 0] };
 const BAG = [
-  ['greatsword', 2], ['bow', 1], ['wand', 3], ['staff', 0], ['wraps', 3], ['grimoire', 2], ['wrench', 3], ['quiver', 1],
-  ['focus', 2], ['hood', 3], ['robe', 1], ['boots', 0], ['wraps', 0], ['grimoire', 3], ['wrench', 1], ['amulet', 0],
+  ['greatsword', 2], ['bow', 1], ['wand', 3], ['staff', 0], ['wraps', 3], ['tome', 2], ['wrench', 3], ['quiver', 1],
+  ['focus', 2], ['hood', 3], ['robe', 1], ['boots', 0], ['wraps', 0], ['tome', 3], ['wrench', 1], ['amulet', 0],
   ['shield', 1], ['helm', 0], ['armor', 3], ['gloves', 2], ['belt', 0], ['sword', 1], ['ring', 2], null,
 ];
 const FLOOR = [['greatsword', 3], ['helm', 2], ['ring', 1], ['boots', 0], ['shield', 1], ['bow', 2], ['amulet', 3], ['armor', 0]];
-const SLOT_OF = { sword: 'mainhand', greatsword: 'mainhand', bow: 'mainhand', wand: 'mainhand', staff: 'mainhand', wraps: 'gloves', grimoire: 'mainhand', wrench: 'mainhand', shield: 'offhand', quiver: 'offhand', focus: 'offhand', helm: 'helm', hood: 'helm', armor: 'chest', robe: 'chest', gloves: 'gloves', belt: 'belt', boots: 'boots', ring: 'ring', amulet: 'amulet' };
+const SLOT_OF = { sword: 'mainhand', greatsword: 'mainhand', bow: 'mainhand', wand: 'mainhand', staff: 'mainhand', wraps: 'gloves', tome: 'mainhand', wrench: 'mainhand', shield: 'offhand', quiver: 'offhand', focus: 'offhand', helm: 'helm', hood: 'helm', armor: 'chest', robe: 'chest', gloves: 'gloves', belt: 'belt', boots: 'boots', ring: 'ring', amulet: 'amulet' };
 
 export default async function (page, snap) {
   const dir = path.resolve(process.env.ITEMS_OUT || 'shots/items_a');
