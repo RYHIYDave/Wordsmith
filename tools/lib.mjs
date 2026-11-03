@@ -22,8 +22,10 @@ export function load(name) {
  * three new characters, the Brawler, the Warlock and the Tinkerer (game/brawler.ts, warlock.ts, tinkerer.ts), and the ranger's
  * companions (game/talents.ts COMPANIONS). His word, 2 Nov 2026, asked whether to keep them for the release after this one, with
  * the High City: “All of it in this one”. The unit tests, which bundle nothing, see each off, as its file has it.
+ * THE BRAWLER LEFT OUT: his words, 2 Nov 2026, 22:52, “Let’s go it’s good.  The brawler is getting completely reworked so it’ll be
+ * a while before he’ll be ready”, and his pick, “Leave him out for now (Recommended)”: he comes in when his rework is done.
  */
-export const RELEASE_DEFINES = { __WARLOCK__: 'true', __TINKERER__: 'true', __BRAWLER__: 'true', __COMPANIONS__: 'true' };
+export const RELEASE_DEFINES = { __WARLOCK__: 'true', __TINKERER__: 'true', __COMPANIONS__: 'true' };
 
 export async function bundle(entry, { minify = false, define = {} } = {}) {
   const esbuild = load('esbuild');

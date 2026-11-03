@@ -19,7 +19,8 @@ export default async function (page, snap) {
   });
   let s = await marks();
   const rows = [...new Set(s.cards.map((c) => c.y))];
-  check(`six cards, three to a row, in two rows (${s.w} by ${s.h})`, s.cards.length === 6 && rows.length === 2 && rows.every((y) => s.cards.filter((c) => c.y === y).length === 3), JSON.stringify(s.cards.map((c) => [c.id, c.x, c.y, c.w, c.h])));
+  // (five while the Brawler is left out of the release, his 22:52 of 2 Nov 2026: the second row two; six with him)
+  check(`five or six cards, three to a row, in two rows (${s.w} by ${s.h})`, (s.cards.length === 5 || s.cards.length === 6) && rows.length === 2 && s.cards.filter((c) => c.y === rows[0]).length === 3 && s.cards.filter((c) => c.y === rows[1]).length === s.cards.length - 3, JSON.stringify(s.cards.map((c) => [c.id, c.x, c.y, c.w, c.h])));
   check('the cards clear of the buttons at the foot', s.cards.every((c) => c.y + c.h <= s.confirm.y - 2), JSON.stringify(s.confirm));
   await snap('0_none_chosen');
   await hands.press('class:warlock');
