@@ -70,7 +70,7 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
-import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetCarryAt, vetFacing, vetFireFor, vetLeft, vetLocked, vetMoveFor, vetReach } from './veteran';
+import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetBlowLeft, vetCarryAt, vetFacing, vetFireFor, vetLeft, vetLocked, vetMoveFor, vetReach } from './veteran';
 import type { VetBlowId, VetMoveDef, VetPlaying } from './veteran';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
@@ -5099,11 +5099,34 @@ export class Game {
     const h = this.hero;
     const v = (h.vet ??= newVet());
     const I = this.vetIn;
+    // (THE COMBO CANCELLED: a touch on his globes or on him (main.ts), a pad's right bumper, or R: the move being played is cut short
+    // where it is and the rest let go, the globes out; his jump, if he is in the air, comes down as it was going. His word, 3 Nov
+    // 2026, 19:3x: “There needs to be a way to cancel the combo.  How about if you tap the globes?”)
+    if (c.change && (v.globes.length || v.move || v.queue.length)) {
+      if (v.move && v.move.id !== 'dodge') v.move = null;
+      v.queue = [];
+      v.globes = [];
+      v.done = [];
+      v.fireReady = false;
+      I.tap = false;
+      I.hold = false;
+      I.swipe = null;
+      I.fireWas = c.fire;
+      I.castWas = c.cast;
+      this.sfx('click', 0.5);
+    }
     // (a press goes in as it is made; one made while the combo is locked waits, while it is still held, for the combo's end)
     if (c.fire && !I.fireWas) I.tap = true;
+    // (AN ATTACK ASKED FOR AND NOT YET MADE: the press goes in. A tap on a phone asks for its attack until it has been made (main.ts
+    // `order`), so a tap that came while the last one's ask was still standing never rose from nothing, and went in never, nor did any
+    // tap after it while they came within three seconds of each other: 25.0's “the tap stopped working”, “tapping didn’t do anything
+    // to fill the globes until I input a kick”. And an attack held (ONE HAND's by itself while he stands with an enemy in reach, a
+    // pad's trigger, the mouse held down) goes on: another each time the last has gone in and begun, as taps in time would play it)
+    else if (c.fire && !I.tap && !v.queue.length && !vetLocked(v)) I.tap = true;
     if (!c.fire) I.tap = false;
     I.fireWas = c.fire;
     if (c.cast && !I.castWas) I.hold = true;
+    else if (c.cast && !I.hold && !v.queue.length && !vetLocked(v)) I.hold = true;
     if (!c.cast) I.hold = false;
     I.castWas = c.cast;
     if (c.evade) I.swipe = { x: c.evadeX, y: c.evadeY, t: VET_TUNE.swipeWaits };
@@ -5139,8 +5162,12 @@ export class Game {
     const h = this.hero;
     const v = h.vet!;
     const before: VetBlowId[] = [...v.done, ...(v.move ? [v.move.id] : []), ...v.queue.map((q) => q.id)];
+    // (THE FIRST LEVELS: the hold and the swipe not before their levels, as every hero's: the press is spent on nothing)
+    if (kind === 'hold' && !this.moveOpen(1)) return true;
+    if (kind === 'swipe' && !this.moveOpen(2)) return true;
     if (kind === 'swipe') {
-      if (vetLocked(v)) return false;
+      // (his jump in the air already: not another on top of it)
+      if (vetLocked(v) && v.move && v.move.id === 'dodge') return false;
       const s = h.skills[2];
       if (s.charges < 1) {
         if (this.denyT <= 0) {
@@ -5149,6 +5176,15 @@ export class Game {
           this.emit({ t: 'text', x: h.x, y: h.y, text: 'No jump', color: '#8c8090' });
         }
         return true;
+      }
+      // (A SWIPE BREAKS A LOCKED COMBO: the move being played is cut short where it is, the rest let go, and he jumps out at once,
+      // the start of a combo of its own. 25.0.1, his word: “Can’t cancel a combo” while he is “getting wailed on”)
+      if (vetLocked(v)) {
+        v.move = null;
+        v.queue = [];
+        v.globes = [];
+        v.done = [];
+        v.fireReady = false;
       }
       s.charges--;
       s.uses++;
@@ -5165,7 +5201,7 @@ export class Game {
     if (v.fireReady && !vetLocked(v)) {
       v.fireReady = false;
       v.globes.push(kind === 'tap' ? 'punchFire' : 'kickFire');
-      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, tx: 0, ty: 0 });
+      v.queue.push({ id: vetFireFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c) });
       h.skills[i].uses++;
       v.idle = 0;
       return true;
@@ -5178,11 +5214,11 @@ export class Game {
       const prior = before.slice(0, before.lastIndexOf('dodge'));
       const id = vetFireFor(kind, prior);
       v.globes[g] = kind === 'tap' ? 'punchFire' : 'kickFire';
-      if (lastQ) lastQ.id = id;
+      if (lastQ) Object.assign(lastQ, { id }, this.vetAimOf(c));
       else {
         // (begun as the dodge's crouch: it is the fire move from its own start, at what he aims at)
         v.move = null;
-        v.queue.unshift({ id, globe: g, tx: 0, ty: 0 });
+        v.queue.unshift({ id, globe: g, ...this.vetAimOf(c) });
         this.vetStart(c);
       }
       h.skills[i].uses++;
@@ -5191,7 +5227,7 @@ export class Game {
     }
     if (vetLocked(v)) return false;
     v.globes.push(kind === 'tap' ? 'punch' : 'kick');
-    v.queue.push({ id: vetMoveFor(kind, before), globe: v.globes.length - 1, tx: 0, ty: 0 });
+    v.queue.push({ id: vetMoveFor(kind, before), globe: v.globes.length - 1, ...this.vetAimOf(c) });
     h.skills[i].uses++;
     v.idle = 0;
     return true;
@@ -5211,11 +5247,24 @@ export class Game {
       const l = Math.hypot(dx, dy);
       if (l > 0.3) [fx, fy] = vetFacing(-dx, -dy);
       else [fx, fy] = vetFacing(fx, fy);
-    } else {
-      const dx = c.aimX - h.x;
-      const dy = c.aimY - h.y;
-      // (his four ways: the nearest to what he aims at, game/veteran.ts vetFacing)
-      [fx, fy] = Math.hypot(dx, dy) > 0.3 ? vetFacing(dx, dy) : vetFacing(fx, fy);
+    }
+    // (A BLOW: at what he aimed at as he pressed for it (where it is now; fallen, the nearest enemy in his reach and sight; none,
+    // the point aimed at), turned the nearest of his four ways to it, its force going out straight at it)
+    let ax = fx;
+    let ay = fy;
+    if (q.id !== 'dodge') {
+      const at = this.vetAimAt(q, c);
+      const dx = at.x - h.x;
+      const dy = at.y - h.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 0.3) {
+        [fx, fy] = vetFacing(dx, dy);
+        ax = dx / l;
+        ay = dy / l;
+      } else {
+        [fx, fy] = vetFacing(fx, fy);
+        [ax, ay] = [fx, fy];
+      }
     }
     h.fx = fx;
     h.fy = fy;
@@ -5223,9 +5272,39 @@ export class Game {
     const prev = v.done.length ? v.done[v.done.length - 1] : null;
     const switched = q.id === 'roundkick' && !!prev && isVetPunch(prev) && v.idle < VET_TUNE.gap && this.has('vswitchkick');
     const f0 = switched ? Math.floor(VET_MOVES.roundkick.strike!.from * VET_TALENTS.switchKick.skip) : 0;
-    v.move = { id: q.id, f: f0, x0: h.x, y0: h.y, fx, fy, carried: [0, 0], hit: [], globe: q.globe };
+    v.move = { id: q.id, f: f0, x0: h.x, y0: h.y, fx, fy, ax, ay, carried: [0, 0], hit: [], globe: q.globe };
     // (the attack's words: what a use gives him, Swiftness, the frenzy, a shield)
     if (q.id !== 'dodge') this.boons(isVetPunch(q.id) ? 0 : 1);
+  }
+
+  /** What a press of his aims at (25.0.1): the point aimed at, and the enemy there if there is one (kept until its move begins). */
+  private vetAimOf(c: Controls): { tx: number; ty: number; aimed: true; tid?: number } {
+    let tid: number | undefined;
+    let best = Infinity;
+    for (const o of this.monsters) {
+      if (o.dead) continue;
+      const d = Math.hypot(o.x - c.aimX, o.y - c.aimY) - o.r;
+      if (d <= 0.9 && d < best) [best, tid] = [d, o.id];
+    }
+    return tid === undefined ? { tx: c.aimX, ty: c.aimY, aimed: true } : { tx: c.aimX, ty: c.aimY, aimed: true, tid };
+  }
+
+  /** Where a move of his goes as it begins: the enemy its press aimed at, where it is now; that one fallen, the nearest in reach and in sight; else the point aimed at. */
+  private vetAimAt(q: { tx: number; ty: number; aimed?: boolean; tid?: number }, c: Controls): { x: number; y: number } {
+    const h = this.hero;
+    if (q.tid !== undefined) {
+      const o = this.monsters.find((m) => m.id === q.tid && !m.dead);
+      if (o) return { x: o.x, y: o.y };
+      let near: Monster | null = null;
+      let nd = VET_TUNE.retarget;
+      for (const m of this.monsters) {
+        if (m.dead || m.state === 'sleep' || this.shutIn(m)) continue;
+        const d = Math.hypot(m.x - h.x, m.y - h.y) - m.r;
+        if (d < nd && this.sees(h.x, h.y, m.x, m.y)) [near, nd] = [m, d];
+      }
+      if (near) return { x: near.x, y: near.y };
+    }
+    return q.aimed ? { x: q.tx, y: q.ty } : { x: c.aimX, y: c.aimY };
   }
 
   /** How fast his move is played: his attack speed against his weapon's (Swiftness, the frenzy), as any attack of his quickens. */
@@ -5277,7 +5356,9 @@ export class Game {
     for (const o of this.monsters) {
       if (o.dead || mv.hit.includes(o.id) || this.shutIn(o)) continue;
       // (THE VETERAN'S TREE: Long Legs, his kicks reach a tile further)
-      const at = vetReach(m, mv, o.x, o.y, o.r, m.strike!.kind === 'kick' && this.has('vlonglegs') ? VET_TALENTS.longLegs.more : 0);
+      const ax = mv.ax ?? mv.fx;
+      const ay = mv.ay ?? mv.fy;
+      const at = vetReach(m, { x0: mv.x0, y0: mv.y0, fx: ax, fy: ay }, o.x, o.y, o.r, m.strike!.kind === 'kick' && this.has('vlonglegs') ? VET_TALENTS.longLegs.more : 0, vetBlowLeft(mv.fx, mv.fy, ax, ay));
       if (at === null || mv.f < at) continue;
       mv.hit.push(o.id);
       this.vetHit(o, mv, m, k++);

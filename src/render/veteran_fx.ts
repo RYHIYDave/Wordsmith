@@ -116,6 +116,8 @@ export class VeteranFx {
   private drain: { slots: { kind: VetGlobe; t0: number }[]; t0: number } | null = null;
   /** Where the hero is drawn this frame (game pixels), the top of the bar of his life over him, and his pictures. */
   private heroAt: { x: number; y: number } | null = null;
+  /** Where his globes were last drawn (screen game pixels), for a touch on them (main.ts: it cancels his combo); null, not drawn. */
+  globesAt: { x: number; y: number; w: number; h: number } | null = null;
   private barY = 0;
   private art: ActorArt | null = null;
   /** After-images made, by the frame they are of and their colours. */
@@ -385,6 +387,7 @@ export class VeteranFx {
 
   /** THE GLOBES over his head: three, filled as his combo is put in, locked when three are in, a swipe's in fire. */
   private drawGlobes(g: CanvasRenderingContext2D, game: Game): void {
+    this.globesAt = null;
     if (game.level.town || game.over || !this.heroAt) return;
     const h = game.hero;
     const flick = Math.floor(this.clock * 30);
@@ -433,5 +436,6 @@ export class VeteranFx {
     im.data.set(gl.d);
     c.putImageData(im, 0, 0);
     g.drawImage(cv, bx, by, GLOBES_W / G2, GLOBES_H / G2);
+    this.globesAt = { x: bx, y: by, w: GLOBES_W / G2, h: GLOBES_H / G2 };
   }
 }

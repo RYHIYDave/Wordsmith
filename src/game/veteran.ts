@@ -133,8 +133,10 @@ export const VET_TUNE = {
   body: 0.3,
   /** Seconds a foe that is driven back takes to be carried there. */
   driveSecs: 0.18,
-  /** Seconds a swipe made while his combo is locked waits to go in. */
+  /** Seconds a swipe waits to go in (his jump in the air already). */
   swipeWaits: 0.35,
+  /** (25.0.1) The enemy a press aimed at fallen before its move begins: the move goes at the nearest within this (tiles, near side) and in his sight. */
+  retarget: 3.5,
 };
 
 /**
@@ -176,6 +178,13 @@ export interface VetPlaying {
   y0: number;
   fx: number;
   fy: number;
+  /**
+   * The way his blow goes out: straight at what he aimed at as the move began (his picture faces the nearest of his four ways to
+   * it, `fx`, `fy`, and he is carried as it is drawn). Not given: his picture's way. (25.0.1, his word: “the auto aim is really
+   * bad, I spend most of the time attacking the wrong direction”.)
+   */
+  ax?: number;
+  ay?: number;
   /** How far the game has carried him so far (tiles along his forward and to his left): the rest is carried as the frames go. */
   carried: [number, number];
   /** The monsters its blow has struck (each once). */
@@ -189,7 +198,7 @@ export interface VetState {
   /** The globes filled so far in this combo, in order (none to three). */
   globes: VetGlobe[];
   /** The presses whose globes are filled and whose moves are still to be played, in turn: each the move it makes, its globe, and for a swipe where it was swiped to. */
-  queue: { id: VetBlowId; globe: number; tx: number; ty: number }[];
+  queue: { id: VetBlowId; globe: number; tx: number; ty: number; aimed?: boolean; tid?: number }[];
   /** The move being played. */
   move: VetPlaying | null;
   /** The moves of this combo played or playing, in order (for which move a press makes). */
@@ -250,7 +259,7 @@ export interface VetReachAt {
  * where he stood as the move began (x0, y0), along the way he faced then (fx, fy): in its cone or crescent within its reach;
  * the round crescent all round him (its front rolled out to him). Its front goes out over `long` frames, fast then slowing.
  */
-export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number; fy: number }, px: number, py: number, r: number, more = 0): number | null {
+export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number; fy: number }, px: number, py: number, r: number, more = 0, left?: readonly [number, number]): number | null {
   const F0 = m.force;
   const S = m.strike;
   if (!F0 || !S) return null;
@@ -264,7 +273,7 @@ export function vetReach(m: VetMoveDef, p: { x0: number; y0: number; fx: number;
   if (F.shape !== 'round') {
     // (its line: his forward, turned `dir` degrees to his left; on the game's floor his left is (fy, -fx))
     const a = ((F.dir ?? 0) * Math.PI) / 180;
-    const [lx, ly] = vetLeft(p.fx, p.fy);
+    const [lx, ly] = left ?? vetLeft(p.fx, p.fy);
     const ux = p.fx * Math.cos(a) + lx * Math.sin(a);
     const uy = p.fy * Math.cos(a) + ly * Math.sin(a);
     const along = dx * ux + dy * uy;
@@ -307,4 +316,9 @@ export function vetFacing(dx: number, dy: number): [number, number] {
 /** His left on the game's floor, facing (fx, fy): (fy, -fx); on a picture drawn mirrored (fx - fy < 0), the world's other side, as the picture has it. */
 export function vetLeft(fx: number, fy: number): [number, number] {
   return fx - fy < 0 ? [-fy, fx] : [fy, -fx];
+}
+
+/** His left about the way his blow goes out (ax, ay), on the side his picture (facing fx, fy) has it: mirrored as it is drawn mirrored. */
+export function vetBlowLeft(fx: number, fy: number, ax: number, ay: number): [number, number] {
+  return fx - fy < 0 ? [-ay, ax] : [ay, -ax];
 }
