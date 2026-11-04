@@ -15,7 +15,7 @@ import { VET_LISTS, VET_RUN_STRIDE, VET_TURN, makeVeteranArt, vetHalvesOf } from
 import { toSprite } from '../src/art/kit';
 import { GRID } from '../src/art/skeleton';
 import { VET_CANVAS, paintVeteran } from '../src/dev/sculpt_veteran';
-import { VET_MOTIONS, VET_TILE, carryAt, motionById, placeOf, spinAt, vetAt } from '../src/dev/veteran_moves';
+import { VET_MOTIONS, VET_RUN, VET_TILE, carryAt, motionById, placeOf, spinAt, vetAt } from '../src/dev/veteran_moves';
 import { VET_BAKED } from '../src/game/veteran_baked';
 import { VETERAN, VET_MOVES } from '../src/game/veteran';
 import { vetView } from '../src/render/veteran_fx';
@@ -33,7 +33,7 @@ test('every list of his as long as the art\'s move: his stance, his run, every m
     assert.equal(set.walk.length, motionById('run').long, `${v}: his run`);
     assert.equal(set.idleFps, 30);
     assert.equal(set.walkFps, 30);
-    assert.ok(Math.abs((set.walkStride ?? 0) - 4.6 * (12 / 30)) < 1e-9, `${v}: his run's round covers ${set.walkStride} tiles at the hero's pace`);
+    assert.ok(Math.abs((set.walkStride ?? 0) - 4.6 * (VET_RUN.long / 30)) < 1e-9, `${v}: his run's round covers ${set.walkStride} tiles at the hero's pace`);
     for (const id of VET_LISTS) {
       const c = set.clips?.vet?.[id];
       assert.ok(c, `${v} ${id}: a list`);
@@ -48,7 +48,7 @@ test('every list of his as long as the art\'s move: his stance, his run, every m
   }
   // (every move of the rules has its list)
   assert.deepEqual([...VET_LISTS].sort(), Object.keys(VET_MOVES).sort());
-  assert.equal(VET_RUN_STRIDE, carryAt(motionById('run'), 12)[0] / VET_TILE);
+  assert.equal(VET_RUN_STRIDE, carryAt(motionById('run'), VET_RUN.long)[0] / VET_TILE);
 });
 
 test('a frame of his is the art\'s pose at that frame, painted as the art paints it (from in front and from behind, his turns too)', () => {

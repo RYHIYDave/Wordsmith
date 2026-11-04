@@ -187,6 +187,18 @@ export const TINKER_TUNE = {
  * shot's burst, bursts from its punches meanwhile.
  */
 export const GOLEM_CANNON = { on: false };
+/**
+ * HER GOLEM'S COMBO, AND HER HOLD'S ROCKET JUMP. His words, 3 Nov 2026, 22:07: “He still can’t make it close in the fight.  I
+ * think he needs a basic melee hit combo that includes the slam, and the rocket jump on the hold button.”; asked, “Yes, that's
+ * it (Recommended)” to: “his own punch, punch, SLAM combo, and once he's out, her hold rocket-jumps him onto what she aims at
+ * (the first hold still whistles him out)”. So its blows in a fight go punch, punch, SLAM (its ground pound's own blow, in a
+ * smaller ring, `slam.size` of the ability's), `between` between them and its punch's `wait` after the slam; a combo let lie
+ * `lapse` seconds starts again. Her whistle once it is out: each Golem rocket-jumps onto where she points (no nearer than
+ * `jumpFrom`: nearer, it pounds where it stands, as before), landing as its pound (Twin, a second); with her tree's GUN ARM,
+ * her whistle is its charged shot, as before.
+ */
+export const GOLEM_COMBO = { on: true };
+export const COMBO_TUNE = { between: 0.12, lapse: 2.0, slam: { share: 0.8, size: 0.7 }, jumpFrom: 2.2 };
 
 /** How long the Golem's blow up close takes, and when it lands: its punch's, or its uppercut's (GOLEM_LOOK). */
 export function golemBlow(): { long: number; hit: number } {

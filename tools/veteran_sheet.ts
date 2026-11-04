@@ -9,7 +9,17 @@ import type { Play } from '../src/dev/veteran_scene';
 import { VET_FILM } from '../src/dev/veteran_plays';
 import { VET_COMBOS } from '../src/dev/veteran_moves';
 import { png } from './king_png';
-import { scaled } from '../src/dev/king_scene';
+import { Px } from '../src/engine/px';
+
+/** A picture made `k` times as big, whole pixels (its own: the king's scene would bring in the whole game). */
+function scaled(src: Px, k: number): Px {
+  const out = new Px(src.w * k, src.h * k);
+  for (let y = 0; y < out.h; y++) for (let x = 0; x < out.w; x++) {
+    const si = (Math.floor(y / k) * src.w + Math.floor(x / k)) * 4;
+    out.d.set(src.d.subarray(si, si + 4), (y * out.w + x) * 4);
+  }
+  return out;
+}
 
 const [dir = 'shots/veteran_sheet'] = process.argv.slice(2);
 mkdirSync(dir, { recursive: true });
@@ -27,7 +37,7 @@ const cell = (play: Play, G: number, name: string, label: string, view = 0, ahea
 // EVERY MOVE: its own play from the film (the first thirteen parts), at its key moments (frames of the move)
 const MOMENTS: [number[], string[]][] = [
   [[0, 7, 37], ['down in the bounce, in his guard', 'up on his toes', 'rolling his shoulders']],
-  [[0, 3, 6], ['a stride', 'both feet off the floor', 'the next stride']],
+  [[0, 2, 5], ['a ball down on its spot, heel up', 'sunk into the spring, guard up', 'sprung: both feet off the floor']],
   [[11, 18, 29], ['the wind-up, held', 'up and away', 'down deep in the dust']],
   [[11, 13, 20], ['the wind-up, held', 'a stamping step, the fist: its cone', 'the wind-down']],
   [[12, 15, 22], ['the wind-up, held', 'a stamping step, the fist: its cone', 'the wind-down']],

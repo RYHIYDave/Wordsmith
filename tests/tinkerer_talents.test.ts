@@ -473,7 +473,8 @@ test('PROSPECTOR: every ground pound digs up a handful of gold, about an ordinar
   const before = goldDrops(g);
   let dug = -1;
   let worth = 0;
-  use(g, 1, 2, 0);
+  // (held by it, not 2 tiles off from her: farther from it than GOLEM_COMBO's jumpFrom, her hold rocket-jumps it since 3 Nov 2026)
+  use(g, 1, g.golem!.x - g.hero.x + 0.5, g.golem!.y - g.hero.y);
   wait(g, G.pound.lead + G.pound.long, emptyControls(), (e) => {
     if (dug < 0 && of(e, 'golemPound').length) {
       const gold = g.drops.filter((d) => d.kind === 'gold');
@@ -488,7 +489,7 @@ test('PROSPECTOR: every ground pound digs up a handful of gold, about an ordinar
   const g2 = take(room());
   g2.practice = false;
   golemOut(g2, true);
-  use(g2, 1, 2, 0);
+  use(g2, 1, g2.golem!.x - g2.hero.x + 0.5, g2.golem!.y - g2.hero.y);
   wait(g2, G.pound.lead + G.pound.hit + 0.05);
   assert.equal(goldDrops(g2), 0);
 });
@@ -540,6 +541,8 @@ test('GROWTH SERUM: a vial of hers that bursts by her Golem makes it grow: twice
   // (an enemy by its fist: one punch of it ungrown, and its hit)
   const m = dummy(g, gm.x - g.hero.x + 1.3, gm.y - g.hero.y);
   const punch = (): number => {
+    // (a punch each: not the third blow of its combo, its slam, GOLEM_COMBO)
+    gm.combo = 0;
     gm.punchCd = 0;
     const was = hurt(m);
     let n = 0;
@@ -559,6 +562,7 @@ test('GROWTH SERUM: a vial of hers that bursts by her Golem makes it grow: twice
   // (twice as big: its fist reaches twice as far)
   m.x = gm.x + G.punch.reach * 1.6;
   m.y = gm.y;
+  gm.combo = 0;
   gm.punchCd = 0;
   ev = wait(g, 0.2);
   assert.equal(gm.act, 'punch', 'grown, it reaches one too far for it before');

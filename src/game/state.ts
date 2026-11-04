@@ -911,6 +911,11 @@ export interface Golem {
   jx?: number;
   jy?: number;
   jumpCd?: number;
+  /** (GOLEM_COMBO) Which blow of its combo comes next (0, 1: a punch; 2: its slam), and how long since its last. */
+  combo?: number;
+  comboT?: number;
+  /** (her hold's rocket jump) How many pounds it lands with: Twin, two. */
+  twin?: number;
   /** The enemy it goes for (its id), and where the blow of its act is aimed. */
   target: number;
   ax: number;

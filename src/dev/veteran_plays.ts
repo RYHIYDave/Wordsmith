@@ -35,7 +35,8 @@ const wide = (title: string, line: string, play: Play): FilmPart => ({ ...both(t
 /** EVERY MOVE, from in front and behind. */
 const MOVES: FilmPart[] = [
   both('STANDING · bouncing on his toes', 'Up on his toes in a fighter’s guard: elbows tucked in, fists by his cheeks; a roll of his shoulders', { steps: [{ m: VET_STAND }], foes: [[44, 20]], lead: 0, tail: 0 }),
-  both('RUNNING · an action hero’s run', 'Low and driving, knees high, fists pumping, both feet off the floor between strides', { steps: [{ m: VET_RUN }, { m: VET_RUN }], foes: [], lead: 0, tail: 0 }),
+  // (his run made new, his pick of 3 Nov 2026: “Fighter's bounce”; three rounds of it, six springs)
+  both('RUNNING · the fighter’s bounce', 'Light springs on the balls of his feet, both feet off the floor; guard up, elbows tucked, chin down', { steps: [{ m: VET_RUN }, { m: VET_RUN }, { m: VET_RUN }], foes: [], lead: 0, tail: 0 }),
   both('THE DODGE JUMP · a swipe', 'Sunk deep, held; a spring up and away out of the blow, knees tucked; down deep in the dust', solo('dodge', [[38, 10]], 8, 8)),
   wide('THE JAB · tap', 'Cocked, held; a stamping step and the fist shot out: a cone of force on to 2½ tiles', own('jab')),
   wide('THE CROSS · tap', 'Wound back, held; a stamping step, the fist driven through: its force on to 2½ tiles', own('cross')),

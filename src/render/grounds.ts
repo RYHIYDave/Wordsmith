@@ -33,6 +33,15 @@ import { wx, wyFlat } from './fx';
 import type { LookLight, LookStand, LookView } from './looks';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wholeFaces } from './walls';
 
+/** Does tile (tx, ty) lie behind courtyard `r`'s far walls on the screen (past their line, in the band they hide)? */
+export function behindOf(r: GroundsRect, tx: number, ty: number): boolean {
+  const x0 = r.x;
+  const y0 = r.y;
+  const x1 = r.x + r.w - 1;
+  const u = tx - ty;
+  return (tx < x0 - 1 && u >= x0 - (r.y + r.h - 1) - 1 && u <= x0 - y0) || (ty < y0 - 1 && u >= x0 - y0 && u <= x1 - y0 + 1);
+}
+
 /** A small hash of a tile, 0 to 1. */
 function hash(x: number, y: number, k: number): number {
   let h = Math.imul(x * 374761393 + y * 668265263 + k * 2147483647, 1274126177);
@@ -107,6 +116,16 @@ export class GroundsView implements LookView {
     const y = Math.floor(hy);
     const here = L.floor.rooms.find((r) => r.kind !== 'boss' && r.kind !== 'start' && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
     if (here) this.sky = { x: here.x, y: here.y, w: here.w, h: here.h };
+    else if (this.sky) {
+      // (out of every courtyard: the last one's sky only while he is in the ways out of it on its near side, a few tiles; through a
+      // way in its far walls, or farther off, none, and everything drawn. It had stayed over wherever he went, the halls and the
+      // rooms behind that courtyard's far walls left undrawn round him, and the sky's picture, laid along walls far off, short of
+      // the screen. His words, 3 Nov 2026, 22:15: “The ground in level 2 isn’t loading properly so rooms and hallways are filled
+      // with the sky, and the sky will sometimes be half black”.)
+      const r = this.sky;
+      const near = x >= r.x - THROUGH && x < r.x + r.w + THROUGH && y >= r.y - THROUGH && y < r.y + r.h + THROUGH;
+      if (!near || behindOf(r, x, y)) this.sky = null;
+    }
     return this.sky;
   }
   /** Is the sky over a courtyard this frame (and so the yard's dark, its vignette)? */
@@ -120,10 +139,7 @@ export class GroundsView implements LookView {
     if (!r) return true;
     const x0 = r.x;
     const y0 = r.y;
-    const x1 = r.x + r.w - 1;
-    const u = tx - ty;
-    const behind = (tx < x0 - 1 && u >= x0 - (r.y + r.h - 1) - 1 && u <= x0 - y0) || (ty < y0 - 1 && u >= x0 - y0 && u <= x1 - y0 + 1);
-    if (!behind) return true;
+    if (!behindOf(r, tx, ty)) return true;
     for (const g of L.grounds?.gates ?? []) {
       if (!g.alongX && g.line === x0 && ty >= g.a - 1 && ty <= g.a + 3 && tx >= x0 - 1 - THROUGH && tx < x0) return true;
       if (g.alongX && g.line === y0 && tx >= g.a - 1 && tx <= g.a + 3 && ty >= y0 - 1 - THROUGH && ty < y0) return true;
