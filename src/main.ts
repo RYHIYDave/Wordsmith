@@ -5,7 +5,8 @@ import { actsOf } from './game/bosses';
 import { ENEMY_MOVES, useEnemyMoves } from './game/enemy_moves';
 import { FLOOR_LOOKS, useFloorLooks } from './game/floor_looks';
 import { ALL_OF_IT, useAllOfIt } from './game/all_of_it';
-import { DOOR_WALLS, WHOLE_WALLS } from './render/walls';
+import { DOOR_WALLS, WHOLE_WALLS, BACK_STAND } from './render/walls';
+import { GROUNDS_ALL } from './render/grounds';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useActionF1, useActionF2, useActionF3, useActionF4, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
@@ -2287,6 +2288,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     wordHalf: WORD_HALF,
     /** (HIS OWN LEXICON, behind WORD_LEX in ui/inventory.ts) Its switch. */
     wordLex: WORD_LEX,
+    /** (A BACK WALL NEVER SEEN THROUGH, render/walls.ts BACK_STAND; NOTHING LEFT UNDRAWN BEHIND A COURTYARD, render/grounds.ts GROUNDS_ALL) Their switches. */
+    backStand: BACK_STAND,
+    groundsAll: GROUNDS_ALL,
     /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
     exitLabels: EXIT_LABELS,
     /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */

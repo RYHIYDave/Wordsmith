@@ -145,6 +145,15 @@ export function wallFaces(f: Floor, idx: number): number {
 // on, his answer, 2 Nov 2026, 18:38: “I’m going to go with this for now, but I’m not sure how I feel about it.  I’ll test in game and
 // see”. Read as: on, in this release; he plays it and says.)
 export const WHOLE_WALLS = { on: true, across: 96, faint: 0.2, secs: 0.2 };
+/**
+ * A BACK WALL NEVER SEEN THROUGH (behind this switch, on at his yes to pictures of it). His words, 3 Nov 2026, 23:48, of two
+ * pictures from floor 2: “One is how bad the sky is coming through and the other is the back walls disappearing which they absolutely
+ * should not be doing”. WHOLE_WALLS faded every wall deeper on the screen than him within its wide stretch, and so the walls of the
+ * room he is in that run down the screen from him, behind him (his face toward their faces), went faint too, and the sky behind
+ * them showed. So a wall whose painted face looks out over the ground he (or the monster) stands on, is never faded for him.
+ */
+export const BACK_STAND = { on: true };
+// (on: shown it, his “Yes, put it in and live (Recommended)”, 4 Nov 2026, by 00:40)
 
 /**
  * (WHOLE_WALLS) THE FACES OF A WALL BLOCK THAT ARE PAINTED when every wall stands: those with floor before them (`wallFaces`), and
