@@ -106,7 +106,7 @@ import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
 import { guideAttack, guideBanner } from './ui/guide';
-import { WORD_HALF, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
+import { WORD_FOLD, WORD_HALF, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
 import { LOW_STACKS } from './art/low_stacks';
 import { FLOW } from './art/flowing';
@@ -2285,6 +2285,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     wordRoom: WORD_ROOM,
     /** (EVERY WORD ON THE OTHER HALF, behind WORD_HALF in ui/inventory.ts) Its switch. */
     wordHalf: WORD_HALF,
+    /** (THE WORDS' PANEL FOLDED, behind WORD_FOLD in ui/inventory.ts) Its switch. */
+    wordFold: WORD_FOLD,
     /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
     exitLabels: EXIT_LABELS,
     /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */
