@@ -42,6 +42,16 @@ export function behindOf(r: GroundsRect, tx: number, ty: number): boolean {
   return (tx < x0 - 1 && u >= x0 - (r.y + r.h - 1) - 1 && u <= x0 - y0) || (ty < y0 - 1 && u >= x0 - y0 && u <= x1 - y0 + 1);
 }
 
+/**
+ * NOTHING LEFT UNDRAWN BEHIND A COURTYARD'S FAR WALLS (behind this switch, on at his yes to pictures of it). His words, 3 Nov
+ * 2026, 23:48, of two pictures from floor 2: “One is how bad the sky is coming through and the other is the back walls disappearing
+ * which they absolutely should not be doing”. Under the sky, what lay behind the courtyard's far walls on the screen was left
+ * undrawn for the sky: the halls, the rooms and the walls beyond cut off along a line, black where the sky's picture did not reach.
+ * So everything is drawn, and the sky (drawn first) shows only where there is nothing: over the prison's edges.
+ */
+export const GROUNDS_ALL = { on: true };
+// (on: shown it, his “Yes, put it in and live (Recommended)”, 4 Nov 2026, by 00:40)
+
 /** A small hash of a tile, 0 to 1. */
 function hash(x: number, y: number, k: number): number {
   let h = Math.imul(x * 374761393 + y * 668265263 + k * 2147483647, 1274126177);
@@ -136,7 +146,7 @@ export class GroundsView implements LookView {
   /** While the sky is over courtyard `r`, is tile (tx, ty) drawn? Not what lies behind its far walls on the screen, but a few tiles through the ways in them. */
   shows(L: Level, tx: number, ty: number): boolean {
     const r = this.sky;
-    if (!r) return true;
+    if (!r || GROUNDS_ALL.on) return true;
     const x0 = r.x;
     const y0 = r.y;
     if (!behindOf(r, tx, ty)) return true;

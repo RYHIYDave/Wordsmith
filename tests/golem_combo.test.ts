@@ -107,7 +107,8 @@ test('her hold, the Golem out: it rocket-jumps onto where she points, and lands 
   const ev = run(g, 3, () => {
     if (!down && gm.act !== 'jump') down = { x: gm.x, y: gm.y };
   });
-  assert.ok(down && Math.hypot(down.x - tx, down.y - ty) < 1, `it came down where she pointed (${JSON.stringify(down)})`);
+  const at = down as { x: number; y: number } | null;
+  assert.ok(at && Math.hypot(at.x - tx, at.y - ty) < 1, `it came down where she pointed (${JSON.stringify(at)})`);
   assert.ok(ev.some((e) => e.t === 'golemArrive'), 'it lands');
 });
 

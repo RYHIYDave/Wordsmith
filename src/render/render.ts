@@ -19,7 +19,7 @@ import type { GateArt, Strip } from '../art/gates';
 import { SPIKE_SPOTS, SPIKE_STEPS } from '../art/hazards';
 import type { HazardArt } from '../art/hazards';
 import { WALL_LOOK } from '../art/ground';
-import { DOOR_WALLS, WHOLE_WALLS, wholeFaces, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
+import { BACK_STAND, DOOR_WALLS, WHOLE_WALLS, wholeFaces, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
@@ -648,9 +648,16 @@ export class Renderer {
   private wallVeil(game: Game, idx: number, px: number, py: number, depth: number, t: number): number {
     const W = WHOLE_WALLS;
     const tall = WALL_LOOK.tall;
-    // (how much of the wall is wanted, for a figure at (fx, fy) at depth d, `half` pixels either side of it)
-    const want = (fx: number, fy: number, d: number, half: number, full: number): number => {
+    // (BACK_STAND: the wall's painted faces, and its tile, to tell a wall he looks at from one between him and the eye)
+    const f = game.level.floor;
+    const back = BACK_STAND.on ? wallFaces(f, idx) : 0;
+    const tx = idx % f.w;
+    const ty = (idx - tx) / f.w;
+    // (how much of the wall is wanted, for a figure at (fx, fy) at depth d (at (ox, oy) on the floor), `half` pixels either side of it)
+    const want = (fx: number, fy: number, d: number, half: number, full: number, ox: number, oy: number): number => {
       if (d >= depth - 0.5) return 1;
+      // (BACK_STAND: a face of it looks out over the ground the figure stands on: a back wall to it, never seen through)
+      if ((back & FACE_LEFT && oy >= ty + 1) || (back & FACE_RIGHT && ox >= tx + 1)) return 1;
       if (py - tall > fy + 30 || py + 16 < fy - 72) return 1;
       const off = Math.max(0, Math.abs(px - fx) - 16);
       if (off >= half) return 1;
@@ -659,11 +666,11 @@ export class Renderer {
     };
     let a = 1;
     const at = this.wallHero;
-    if (at) a = Math.min(a, want(at.x, at.y, at.d, W.across, 0.6));
+    if (at) a = Math.min(a, want(at.x, at.y, at.d, W.across, 0.6, at.hx, at.hy));
     if (a > W.faint) {
       for (const m of game.monsters) {
         if (m.dead || !m.seen) continue;
-        a = Math.min(a, want(wx(this.cam, m.x, m.y), wy(this.cam, m.x, m.y), m.x + m.y, 30, 0.5));
+        a = Math.min(a, want(wx(this.cam, m.x, m.y), wy(this.cam, m.x, m.y), m.x + m.y, 30, 0.5, m.x, m.y));
         if (a <= W.faint) break;
       }
     }
@@ -1188,7 +1195,7 @@ export class Renderer {
   /** (THE WALLS' LOOK) This frame's walls toward the eye (`lowWalls`), for the painters of single tiles. */
   private lowNow: Uint8Array | null = null;
   /** (THE WALLS' LOOK) Where the hero's feet are on the screen this frame, and their depth. */
-  private wallHero: { x: number; y: number; d: number } | null = null;
+  private wallHero: { x: number; y: number; d: number; hx: number; hy: number } | null = null;
 
   /**
    * (THE WALLS' LOOK) Is a wall block whose tile's top corner is at (px, py) on the
@@ -2781,7 +2788,7 @@ export class Renderer {
     const lowGrid = this.lowWalls(L);
     this.lowNow = lowGrid;
     // (THE WALLS' LOOK: where the hero is on the screen, for the walls that are seen through while they stand over them)
-    this.wallHero = { x: wx(cam, h.x, h.y), y: wy(cam, h.x, h.y), d: h.x + h.y };
+    this.wallHero = { x: wx(cam, h.x, h.y), y: wy(cam, h.x, h.y), d: h.x + h.y, hx: h.x, hy: h.y };
 
     g.fillStyle = P.black;
     g.fillRect(0, 0, W, H);

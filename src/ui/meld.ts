@@ -13,7 +13,7 @@ import { P } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { WORDS } from '../game/defs';
 import type { Game } from '../game/game';
-import { MELD, MELD_DUST_COLOR, MELD_TUNE, RANK2, isMeld, isRank, rankUp } from '../game/melds';
+import { MELD, MELD_DUST_COLOR, MELD_TUNE, RANK2, VOLT_MELDS, isMeld, isRank, rankUp } from '../game/melds';
 import type { Meta } from '../game/state';
 import type { WordId } from '../game/types';
 import type { Art } from '../render/render';
@@ -96,7 +96,11 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
     if ((h.words[w] ?? 0) <= laid) return laid ? 'No second one to give' : 'No spare word';
     if (isRank(w)) return 'Rank II is the top, for now';
     if (isMeld(w)) return 'A melded word melds no further';
-    if (WORDS[w].kind !== 'damage') return 'Only damage words meld';
+    // (VOLATILE'S MELDS: Volatile goes in too. The rules had it since Version 23.9, but this page let in damage words only; his
+    // words, 4 Nov 2026, 00:18: “They’re already in the game but I can’t meld them”)
+    const volt = VOLT_MELDS.on && w === 'volatile';
+    if (WORDS[w].kind !== 'damage' && !volt) return VOLT_MELDS.on ? 'Only damage words and Volatile meld' : 'Only damage words meld';
+    if (volt && st.meldIn.includes(w)) return 'Volatile melds with a damage word';
     if (st.meldIn.includes(w) && !RANK2.on) return 'Two different words';
     if (!next) return 'Both hollows are full';
     return null;
@@ -142,7 +146,7 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
     wordProblem: (w) => problem(w),
     wordDrop: (w) => lay(w),
     wordRead: (w) => [{ text: `Let go, and ${WORDS[w].name} is laid in to be melded.`, color: THEME.accent, small: true }],
-    wordHint: (w) => (WORDS[w].kind === 'damage' ? (RANK2.on ? 'The wordsmith melds two damage words into one, or two of one word into its next rank.' : 'The wordsmith melds two damage words into one.') : null),
+    wordHint: (w) => (VOLT_MELDS.on && w === 'volatile' ? 'The wordsmith melds Volatile with a damage word into one.' : WORDS[w].kind === 'damage' ? (RANK2.on ? 'The wordsmith melds two damage words into one, or two of one word into its next rank.' : 'The wordsmith melds two damage words into one.') : null),
     wordButtons: (w) => [{ label: 'TO THE MELD', act: () => lay(w), lit: problem(w) === null, disabled: problem(w) !== null }],
 
     draw(over: SideOver): void {
