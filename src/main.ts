@@ -1064,6 +1064,23 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (onHim && (h.pact ?? 0) >= WARLOCK_TUNE.pact.full && h.form !== 'demon') c.change = true;
     }
     if (h.cls === 'warlock' && input.pressed('KeyR')) c.change = true;
+    // THE BRAWLER (game/veteran.ts): a touch or a click on his globes, or on him, while a combo of his is going, cancels it, and is
+    // no attack (his word, 3 Nov 2026: “There needs to be a way to cancel the combo.  How about if you tap the globes?”); on a
+    // keyboard, R as well; on a pad, the right bumper (padControls). Generous: a thumb is wide and the globes small.
+    if (VETERAN.on && h.cls === 'brawler' && poke && !spot && h.vet && (h.vet.globes.length > 0 || h.vet.move)) {
+      const hx = isoSX(h.x, h.y) + cam.ox;
+      const hy = isoSY(h.x, h.y) + cam.oy;
+      const r = renderer.vetFx.globesAt;
+      const onGlobes = !!r && poke.x >= r.x - 10 && poke.x <= r.x + r.w + 10 && poke.y >= r.y - 10 && poke.y <= r.y + r.h + 6;
+      const onHimself = Math.abs(poke.x - hx) <= 12 && poke.y >= hy - 44 && poke.y <= hy + 6 && !monsterAt(g, poke.x, poke.y);
+      if (onGlobes || onHimself) {
+        c.change = true;
+        input.tap = null;
+        input.poke = null;
+        input.lpress = null;
+      }
+    }
+    if (h.cls === 'brawler' && input.pressed('KeyR')) c.change = true;
 
     if (!input.touchMode) {
       // aim a little below the cursor: characters and shots are drawn above the floor
@@ -1161,7 +1178,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const touched = input.tap ?? (input.poke && !spot && monsterAt(g, input.poke.x, input.poke.y) ? input.poke : null);
       // (ONE HAND: the quick attack goes by itself at the enemy picked, once it is in reach, and the hero is not walked to it; a tap
       // throws the slow attack, below)
-      if (one && !order && aims.quick && (melee ? g.quickReaches(aims.quick) : Math.hypot(aims.quick.x - h.x, aims.quick.y - h.y) <= Math.max(3, SKILLS[quick.id].range || 8))) {
+      // (THE BRAWLER: not while the thumb walks him, for his blows hold him where he stands until they are played out: so he can walk away)
+      const vetWalks = VETERAN.on && h.cls === 'brawler' && moving;
+      if (one && !order && !vetWalks && aims.quick && (melee ? g.quickReaches(aims.quick) : Math.hypot(aims.quick.x - h.x, aims.quick.y - h.y) <= Math.max(3, SKILLS[quick.id].range || 8))) {
         const a = placedAim(g, aims.quick, SKILLS[quick.id].kind);
         c.aimX = a.x;
         c.aimY = a.y;

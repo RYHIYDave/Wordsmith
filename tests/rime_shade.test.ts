@@ -153,7 +153,7 @@ test('1. its switch, and the game reaches it through its own files only', () => 
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.deepEqual([...new Set(users)].sort(), BROUGHT_IN, `game files that import it: ${users.join(', ')}`);
+  assert.equal(JSON.stringify([...new Set(users)].sort()), JSON.stringify(BROUGHT_IN), `game files that import it: ${users.join(', ')}`);
 });
 
 test('2. EVERY MOVE THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

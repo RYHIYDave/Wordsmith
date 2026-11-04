@@ -67,7 +67,7 @@ function breathing(g: Game, d = 3): { m: Monster; p: Peril } {
     m.fy = -uy;
     const a = RULES!.acts[0];
     m.state = 'act';
-    m.act = { id: a.id, t: RS_BREATH.mark, hand: 1 } as Monster['act'];
+    m.act = { id: a.id, t: RS_BREATH.mark, hand: 1 } as unknown as Monster['act'];
     RULES!.acting(g.bosses, m, a, RS_BREATH.mark - 0.01, RS_BREATH.mark + 0.01, 0.02);
     const p = g.perils.find((q) => q.a1 === LINE_PERIL)!;
     return { m, p };
@@ -218,7 +218,7 @@ test('5. never a lock: a second line just after he is let go strikes him, but do
   const m2 = g.spawn('rshade', h.x + 0.6 * 1.6, h.y + 0.8 * 1.6, 970, 0, false, g.rng) as Monster;
   m2.words = [];
   m2.state = 'act';
-  m2.act = { id: 'rshade:breath', t: RS_BREATH.mark, hand: 1 } as Monster['act'];
+  m2.act = { id: 'rshade:breath', t: RS_BREATH.mark, hand: 1 } as unknown as Monster['act'];
   RULES!.acting(g.bosses, m2, RULES!.acts[0], RS_BREATH.mark - 0.01, RS_BREATH.mark + 0.01, 0.02);
   const life = h.life;
   let frozen = false;
@@ -262,7 +262,7 @@ test('7. in a fight: two of them breathe at him; their lines laid; he is frozen 
   for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4], [3, 3], [-3, -3]]) {
     if (n >= 2 || !g.isOpen(h.x + dx, h.y + dy)) continue;
     const m = g.spawn('rshade', h.x + dx, h.y + dy, 970, 0, false, g.rng) as Monster;
-    g.wakeUp(m);
+    (g as unknown as { wakeUp(m: Monster): void }).wakeUp(m);
     n++;
   }
   assert.equal(n, 2, 'room for two');

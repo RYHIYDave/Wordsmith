@@ -289,3 +289,113 @@ test('an attack held: his punches keep going in, combo after combo, as taps in t
     assert.ok(hurt(m) > 0, 'and they landed');
   }
 }));
+
+// (25.0.1: what he found playing 25.0, 3 Nov 2026, 19:05 to 20:02: “the tap stopped working”; “tapping didn’t do anything to fill
+// the globes until I input a kick”; “It happened when I took a lot of damage”; “Can’t cancel a combo” while “getting wailed on”;
+// “the auto aim is really bad, I spend most of the time attacking the wrong direction”)
+const vin = (g: Game): { tap: boolean; hold: boolean; fireWas: boolean; castWas: boolean } => (g as unknown as { vetIn: { tap: boolean; hold: boolean; fireWas: boolean; castWas: boolean } }).vetIn;
+const ctl = (ax: number, ay: number, more: Partial<Controls> = {}): Controls => ({ ...emptyControls(), aimX: ax, aimY: ay, castX: ax, castY: ay, ...more });
+
+test('25.0.1: a tap still asked for when the last one went in, with no frame between them, goes in (it went in never)', () => withVet(() => {
+  const g = room();
+  const m = dummy(g, 1.6, 0);
+  // (the attack asked for, unbroken from the last ask: as a phone's tap that came while the one before it still stood)
+  vin(g).fireWas = true;
+  vin(g).tap = false;
+  const u0 = g.hero.skills[0].uses;
+  g.update(DT, ctl(m.x, m.y, { fire: true }));
+  assert.equal(g.hero.skills[0].uses, u0 + 1, 'it went in');
+  assert.deepEqual(g.hero.vet!.globes, ['punch']);
+}));
+
+test('25.0.1: a touch on his globes (c.change) cancels his combo, locked or not: the move cut short, the rest let go, the globes out', () => withVet(() => {
+  const g = room();
+  const m = dummy(g, 1.6, 0);
+  presses(g, 'ttt', m.x, m.y, 0.1);
+  const v = g.hero.vet!;
+  assert.equal(v.globes.length, 3, 'locked');
+  assert.ok(v.move && v.move.id !== 'dodge', 'a blow being played');
+  g.update(DT, ctl(m.x, m.y, { change: true }));
+  assert.equal(v.move, null, 'cut short');
+  assert.equal(v.queue.length, 0);
+  assert.equal(v.globes.length, 0, 'the globes out');
+  // (and he is free: a tap now is the first of a new combo)
+  presses(g, 't', m.x, m.y, 0.05);
+  assert.deepEqual(v.globes, ['punch']);
+}));
+
+test('25.0.1: a swipe with his jump ready breaks a locked combo and he jumps out at once; with none, “No jump” and the combo goes on', () => withVet(() => {
+  {
+    const g = room();
+    const m = dummy(g, 1.6, 0);
+    presses(g, 'ttt', m.x, m.y, 0.1);
+    const v = g.hero.vet!;
+    assert.equal(v.globes.length, 3);
+    const charges = g.hero.skills[2].charges;
+    g.update(DT, ctl(m.x, m.y, { evade: true, evadeX: g.hero.x - 3, evadeY: g.hero.y }));
+    assert.equal(v.move?.id, 'dodge', 'jumping out now');
+    assert.deepEqual(v.globes, ['jump']);
+    assert.equal(g.hero.skills[2].charges, charges - 1, 'the jump spent');
+  }
+  {
+    const g = room();
+    const m = dummy(g, 1.6, 0);
+    presses(g, 'ttt', m.x, m.y, 0.1);
+    const v = g.hero.vet!;
+    g.hero.skills[2].charges = 0;
+    g.hero.skills[2].cd = 9;
+    const was = v.move?.id;
+    g.update(DT, ctl(m.x, m.y, { evade: true, evadeX: g.hero.x - 3, evadeY: g.hero.y }));
+    assert.equal(v.globes.length, 3, 'still locked');
+    assert.equal(v.move?.id, was, 'its blow goes on');
+  }
+}));
+
+test('25.0.1: each blow goes straight at what it was aimed at, though his picture faces the nearest of his four ways', () => withVet(() => {
+  // (an enemy forty degrees off the nearest of his ways, a tile and a half off: struck)
+  for (const deg of [-40, -25, 25, 40]) {
+    const g = room();
+    const a = (deg * Math.PI) / 180;
+    const m = dummy(g, 1.5 * Math.cos(a), 1.5 * Math.sin(a));
+    presses(g, 't', m.x, m.y, 1.0);
+    assert.ok(hurt(m) > 0, `${deg} degrees off: the jab lands`);
+    const mv = g.hero.vet!;
+    void mv;
+  }
+  // (the second and third of a combo at where their enemy is now, not the way he happened to face)
+  const g = room();
+  const m = dummy(g, 1.6, 0);
+  presses(g, 't', m.x, m.y, 0.02);
+  presses(g, 't', m.x, m.y, 0.02);
+  // (it is carried round to his other side before the cross begins)
+  m.x = g.hero.x - 1.2;
+  m.y = g.hero.y + 1.0;
+  const before = hurt(m);
+  presses(g, '', m.x, m.y, 1.5);
+  assert.ok(hurt(m) > before, 'the cross went round to it, where it is now');
+  // (its enemy fallen before its move begins: it goes at the nearest in his reach)
+  const g2 = room();
+  const a2 = dummy(g2, 1.6, 0, 1);
+  const b2 = dummy(g2, -1.4, 0.6);
+  presses(g2, 'tt', a2.x, a2.y, 2.0);
+  assert.ok(a2.dead || a2.life <= 0, 'the first one down');
+  assert.ok(hurt(b2) > 0, 'the cross went on to the other one');
+}));
+
+test('25.0.1: the first levels: his hold and swipe not before their levels, as every hero\'s', () => withVet(() => {
+  const g = room();
+  const m = dummy(g, 1.6, 0);
+  const open = g as unknown as { moveOpen(i: number): boolean };
+  const was = open.moveOpen.bind(g);
+  open.moveOpen = (i: number) => i === 0;
+  try {
+    const k0 = g.hero.skills[1].uses;
+    g.update(DT, ctl(m.x, m.y, { cast: true }));
+    g.update(DT, ctl(m.x, m.y));
+    g.update(DT, ctl(m.x, m.y, { evade: true, evadeX: g.hero.x - 3, evadeY: g.hero.y }));
+    assert.equal(g.hero.skills[1].uses, k0, 'no kick');
+    assert.deepEqual(g.hero.vet!.globes, [], 'no globe');
+  } finally {
+    open.moveOpen = was;
+  }
+}));
