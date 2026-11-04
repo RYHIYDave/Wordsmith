@@ -101,3 +101,27 @@ test('on: courtyards, the blocks between them six deep, ways three wide through 
     GROUNDS.on = false;
   }
 });
+
+// (25.0.2: his word, 3 Nov 2026, 21:51: “The waypoint in floor two is gone”: the grounds' gaoler's room, small and furnished, left
+// none of the waypoint's usual places clear; it goes now to the nearest clear place walked to from where he comes in)
+import { Game as Game2502 } from '../src/game/game';
+test('25.0.2: floor 2 as the grounds always has its waypoint, walked to from where he comes in', () => {
+  const was = GROUNDS.on;
+  GROUNDS.on = true;
+  try {
+    for (let seed = 1; seed <= 16; seed++) {
+      const g = new Game2502('warrior', seed);
+      g.depth = 2;
+      g.cleared = 1;
+      g.wayDepth = 2;
+      g.enterDungeon();
+      assert.ok(g.level.grounds, `seed ${seed}: the grounds`);
+      const w = g.level.ways?.way;
+      assert.ok(w, `seed ${seed}: a waypoint`);
+      const s = g.level.floor.start;
+      assert.ok(Math.hypot(w!.x - s.x, w!.y - s.y) <= 6.01, `seed ${seed}: near where he comes in`);
+    }
+  } finally {
+    GROUNDS.on = was;
+  }
+});
