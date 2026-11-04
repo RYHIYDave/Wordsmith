@@ -17,8 +17,8 @@
 //   rows of tiles under a deck 1.6 tiles wide; over one that runs on the slant, a staircase two tiles thick, every one of its
 //   tiles' middles under the deck (a body's middle stays within 0.7 of the axis: the deck reaches 0.8).
 
-/** THE SWITCH: off until he has seen the pictures and said yes. */
-export const F8F9_FIX = { on: false };
+/** THE SWITCH: on, shown the pictures, his “Yes, hand them over (Recommended)” to the art chat, 4 Nov 2026 (by 11:30), brought in by the main chat. */
+export const F8F9_FIX = { on: true };
 
 /**
  * THE FOOTBRIDGE'S MEASURES (tiles): the deck reaches `half` from the stream's middle along its axis (the water 0.55, its
