@@ -10,7 +10,7 @@
 //
 // HIS LISTS:
 //   idle              his stance, bouncing on his toes: the art's 60-frame round, 30 a second
-//   walk              his run: its 12-frame round, shown by the floor it covers at the hero's pace (walkStride)
+//   walk              his run: its 16-frame round (the fighter's bounce since 3 Nov 2026: VET_RUN.long), shown by the floor it covers at the hero's pace (walkStride)
 //   clips.vet         each move a press makes, by the art's id (game/veteran.ts VetBlowId): `long` frames, frame f the art's
 //                     frame f (the game shows Math.floor(vet.move.f))
 //   clips.vetHalves   each strike's half-frames, from its held wind-up's last frame to its last blow (its after-images: the

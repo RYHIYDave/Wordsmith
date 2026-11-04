@@ -72,7 +72,7 @@ import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
 import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetBlowLeft, vetCarryAt, vetFacing, vetFireFor, vetLeft, vetLocked, vetMoveFor, vetReach, vetWalkable } from './veteran';
 import type { VetBlowId, VetMoveDef, VetPlaying } from './veteran';
-import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
+import { COMBO_TUNE, GOLEM_CANNON, GOLEM_COMBO, TINKER_TUNE, golemBlow } from './tinkerer';
 import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
 import type { Brew, Decoy, GolemRocketAt, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
@@ -81,6 +81,12 @@ import { BOSS_CALLS, bossCall } from './boss_calls';
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
 /** Seconds before "of Echoes" repeats an ability. */
 const ECHO_DELAY = 0.8;
+/** (roundCorner) How much farther to one side than its own half width a body is slipped round a corner (tiles). */
+export const CORNER_SLACK = 0.3;
+/** (wayRound) How far about itself a body looks for its way round (tiles). */
+export const WAY_ROUND = 14;
+/** Her Golem's half width as it walks (tiles). */
+export const GOLEM_R = 0.45;
 /** A volley's arrows are announced to the effects this long before each lands, so that it is seen falling. */
 const VOLLEY_SEEN = 0.3;
 /** "of Echoes" behind an attack that is held: the phantom's beam or whirl bites this many times. */
@@ -3598,6 +3604,142 @@ export class Game {
   }
 
   /**
+   * ROUNDING A CORNER. His words, 3 Nov 2026, 22:07: “The collision in this game sucks.  I’m constantly stuck on stuff.  So is
+   * the golem.”; stuck most on “Furniture and props,Wall corners, doorways”. After a step: where a wall or a thing that stands
+   * refused the way it was walking along x (or y), and the other half of the step was refused too or there was none, and a
+   * place no more than `r` + CORNER_SLACK to one side would have let it through, the body is moved toward it at the pace of
+   * that step: it slips round the corner of a crate, a table, a wall's end or a doorway's side instead of stopping dead
+   * against it. Never back against the way it was walking along the other.
+   */
+  roundCorner(b: { x: number; y: number }, r: number, dx: number, dy: number, wasX: number, wasY: number, grid: Uint8Array = this.level.walk): void {
+    // (only a body stopped dead: one the step, the ledges' help or the doors' moved at all is not slipped further)
+    if (b.x !== wasX || b.y !== wasY) return;
+    const help = r + CORNER_SLACK;
+    const ease = (alongX: boolean): void => {
+      const want = alongX ? dx : dy;
+      const other = alongX ? dy : dx;
+      if (Math.abs(want) < 1e-7 || b.x !== wasX || b.y !== wasY) return;
+      const ax = alongX ? b.x + want : b.x;
+      const ay = alongX ? b.y : b.y + want;
+      let best = 0;
+      let bestS = Infinity;
+      for (const side of Math.abs(other) > 1e-7 ? [Math.sign(other)] : [1, -1]) {
+        for (let s = 0.04; s <= help + 1e-9; s += 0.04) {
+          const ox = alongX ? 0 : side * s;
+          const oy = alongX ? side * s : 0;
+          // (the way to one side must be clear as well)
+          if (!this.free(grid, b.x + ox, b.y + oy, r)) break;
+          if (!this.free(grid, ax + ox, ay + oy, r)) continue;
+          if (s < bestS) {
+            bestS = s;
+            best = side * Math.min(Math.abs(want), s);
+          }
+          break;
+        }
+      }
+      if (best === 0) return;
+      const nx = b.x + (alongX ? 0 : best);
+      const ny = b.y + (alongX ? best : 0);
+      if (this.free(grid, nx, ny, r)) {
+        b.x = nx;
+        b.y = ny;
+      }
+    };
+    ease(true);
+    ease(false);
+  }
+
+  /**
+   * CAUGHT INSIDE SOMETHING (the same words): a body that lies over ground it may not (a tile that has become wall or been
+   * taken under it while it stood there, a landing short of open floor) can take no step at all, every step from there lying
+   * over it still. It is set at once on the nearest place within `most` where it may stand. (A body astride a ledge is not
+   * caught: it walks off it as it goes: slide.) True if it was moved.
+   */
+  popOut(b: { x: number; y: number }, r: number, most = 0.9, grid: Uint8Array = this.level.walk): boolean {
+    // (astride a ledge is no wall: slide lets such a body walk off it, the way it is going)
+    if (this.free(grid, b.x, b.y, r, true)) return false;
+    for (let d = 0.05; d <= most + 1e-9; d += 0.05) {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const x = b.x + Math.cos(a) * d;
+        const y = b.y + Math.sin(a) * d;
+        if (this.free(grid, x, y, r)) {
+          b.x = x;
+          b.y = y;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * THE WAY ROUND (the same words, of her Golem: “So is the golem.  He still can’t make it close in the fight.”): where a body
+   * of radius `r` going to (gx, gy) could not walk straight there, the place it should walk to next: along the shortest way over
+   * the walk grid (no farther than WAY_ROUND tiles about it), the farthest point on that way it could walk straight to. null
+   * where it can walk straight there, or no way is found.
+   */
+  wayRound(x: number, y: number, gx: number, gy: number, r: number): { x: number; y: number } | null {
+    if (this.clearFor(x, y, gx, gy, r)) return null;
+    const L = this.level;
+    const f = L.floor;
+    const sx = Math.floor(x);
+    const sy = Math.floor(y);
+    const tx = Math.floor(gx);
+    const ty = Math.floor(gy);
+    const R = WAY_ROUND;
+    if (Math.abs(tx - sx) > R || Math.abs(ty - sy) > R) return null;
+    const S = 2 * R + 1;
+    const prev = new Int32Array(S * S).fill(-2);
+    const at = (px: number, py: number): number => (py - sy + R) * S + (px - sx + R);
+    const s0 = at(sx, sy);
+    prev[s0] = -1;
+    const q: number[] = [s0];
+    let found = -1;
+    for (let qi = 0; qi < q.length && found < 0; qi++) {
+      const c = q[qi];
+      const cx = (c % S) - R + sx;
+      const cy = Math.floor(c / S) - R + sy;
+      for (const [ddx, ddy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + ddx;
+        const ny = cy + ddy;
+        if (Math.abs(nx - sx) > R || Math.abs(ny - sy) > R || nx < 0 || ny < 0 || nx >= f.w || ny >= f.h) continue;
+        const n = at(nx, ny);
+        if (prev[n] !== -2) continue;
+        // (the goal's own tile may be where what it fights stands: taken however it lies)
+        if (!(nx === tx && ny === ty) && L.walk[ny * f.w + nx] !== 1) continue;
+        prev[n] = c;
+        if (nx === tx && ny === ty) {
+          found = n;
+          break;
+        }
+        q.push(n);
+      }
+    }
+    if (found < 0) return null;
+    const path: { x: number; y: number }[] = [];
+    for (let c = found; c !== -1 && c !== s0; c = prev[c]) path.push({ x: (c % S) - R + sx + 0.5, y: Math.floor(c / S) - R + sy + 0.5 });
+    path.reverse();
+    // (the farthest of the next few tiles of the way it can walk straight to)
+    let next = path[0];
+    for (let k = 1; k < Math.min(path.length, 8); k++) if (this.clearFor(x, y, path[k].x, path[k].y, r)) next = path[k];
+    return next ?? null;
+  }
+
+  /** Could a body of radius `r` walk straight from one place to the other over the walk grid (nothing standing in the way)? */
+  private clearFor(x0: number, y0: number, x1: number, y1: number, r: number): boolean {
+    const d = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(1, Math.ceil(d / 0.2));
+    for (let k = 1; k <= n; k++) {
+      const x = x0 + ((x1 - x0) * k) / n;
+      const y = y0 + ((y1 - y0) * k) / n;
+      if (k === n && Math.floor(x) === Math.floor(x1) && Math.floor(y) === Math.floor(y1) && d > 0.5) break;
+      if (!this.free(this.level.walk, x, y, r)) return false;
+    }
+    return true;
+  }
+
+  /**
    * On a level with ledges, after a hero's step: where the rules of height (and nothing else)
    * refused the way they were walking, and a place a little to one side would have let them
    * through, they are moved toward it. So a hero walking at a flight of stairs a little out of
@@ -3994,11 +4136,14 @@ export class Game {
       // (THE SKILL TREES REMADE: Fleet, an arrow loosed slows him no longer)
       else if (h.attackT > 0 && h.attackAge < TUNE.attackSlowTime && !(this.now('fleet') && this.arrowSkill(h.attackSkill))) sp *= TUNE.attackSlow;
       const k = Math.min(1, len);
+      // (caught inside something: set on the nearest place he may stand: popOut)
+      this.popOut(h, TUNE.heroRadius);
       const wasX = h.x;
       const wasY = h.y;
       this.slide(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, this.level.walk);
       this.intoLine(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
       this.intoDoor(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
+      this.roundCorner(h, TUNE.heroRadius, (mx / len) * sp * k * dt, (my / len) * sp * k * dt, wasX, wasY);
       // (FLOOR 1, MORE ACTION: the Warden's bars, while they stand, a cage his walking does not cross: game/action_f1.ts)
       if (this.perils.length) cageHero(this, h, TUNE.heroRadius, wasX, wasY);
       if (h.attackT <= 0 && !c.face) {
@@ -5375,6 +5520,7 @@ export class Game {
       this.slide(h, TUNE.heroRadius, dx, dy, this.level.walk);
       this.intoLine(h, TUNE.heroRadius, dx, dy, wasX, wasY);
       this.intoDoor(h, TUNE.heroRadius, dx, dy, wasX, wasY);
+      this.roundCorner(h, TUNE.heroRadius, dx, dy, wasX, wasY);
       if (this.perils.length) cageHero(this, h, TUNE.heroRadius, wasX, wasY);
       mv.wx = (mv.wx ?? 0) + (h.x - wasX);
       mv.wy = (mv.wy ?? 0) + (h.y - wasY);
@@ -6272,8 +6418,13 @@ export class Game {
       this.overdrive();
       return;
     }
+    // (GOLEM_COMBO: each rocket-jumps onto where she points, landing as its pound; Twin, a second. Nearer than `jumpFrom`, or
+    // nowhere to come down, it pounds where it stands, as before)
+    const jumped = GOLEM_COMBO.on ? up.filter((g) => g.act !== 'jump' && this.holdJump(g, i, tx, ty, count)) : [];
     // (each turns to where she pointed and pounds the floor before it; Twin, a second pound after)
     for (const g of up) {
+      if (jumped.includes(g) || (GOLEM_COMBO.on && g.act === 'jump')) continue;
+      g.combo = 0;
       const d = Math.hypot(tx - g.x, ty - g.y);
       if (d > 0.3) {
         g.fx = (tx - g.x) / d;
@@ -6288,6 +6439,38 @@ export class Game {
     this.overdrive();
   }
 
+  /** (GOLEM_COMBO) Her hold: Golem `g` rocket-jumps onto (tx, ty), if it is far enough off and there is floor to come down on. */
+  private holdJump(g: Golem, i: number, tx: number, ty: number, count: number): boolean {
+    const d = Math.hypot(tx - g.x, ty - g.y);
+    if (d < COMBO_TUNE.jumpFrom) return false;
+    const go = Math.min(TINKER_TUNE.golem.jump.most, d);
+    let lx = g.x + ((tx - g.x) / d) * go;
+    let ly = g.y + ((ty - g.y) / d) * go;
+    for (let k = 0; k < 12 && !this.isOpen(lx, ly); k++) {
+      lx -= ((tx - g.x) / d) * 0.4;
+      ly -= ((ty - g.y) / d) * 0.4;
+    }
+    if (!this.isOpen(lx, ly) || Math.hypot(lx - g.x, ly - g.y) < COMBO_TUNE.jumpFrom * 0.6) return false;
+    g.fx = (tx - g.x) / d;
+    g.fy = (ty - g.y) / d;
+    g.jx = g.x;
+    g.jy = g.y;
+    g.ax = lx;
+    g.ay = ly;
+    g.act = 'jump';
+    g.actT = 0;
+    g.did = false;
+    g.skill = i;
+    g.twin = count;
+    g.combo = 0;
+    if (!GOLEM_ROCKET.on) {
+      this.emit({ t: 'bombsAway', x: g.x, y: g.y, r: 1 });
+      this.emit({ t: 'shake', amount: 1.5 });
+      this.sfx('explode', 0.45);
+    }
+    return true;
+  }
+
   /** Her tree's OVERDRIVE: her whistle sends her Golems into overdrive, moving and striking twice as fast. */
   private overdrive(): void {
     if (!this.has('overdrive')) return;
@@ -6298,10 +6481,12 @@ export class Game {
   }
 
   /** A Golem's ground pound landing at (x, y): everything within the ability's radius struck and thrown (`g`, the Golem's). */
-  private golemPounds(i: number, x: number, y: number, frac: number, n: number, echo: boolean, g?: Golem, landing = false): void {
+  private golemPounds(i: number, x: number, y: number, frac: number, n: number, echo: boolean, g?: Golem, landing = false, size = 1): void {
     const s = this.hero.skills[i];
     if (!s) return;
-    const rad = SKILLS[s.id].radius * s.r.size;
+    // (`size` below 1: its combo's slam (GOLEM_COMBO), a smaller ring, and no ground pound for her tree's Lightning Rod and Prospector)
+    const slam = size < 1;
+    const rad = SKILLS[s.id].radius * s.r.size * size;
     // (`landing`: the rocket jump's slam, its crater and dust its landing's own pictures)
     if (!landing) this.emit({ t: 'golemPound', x, y, r: rad, n, echo: echo || undefined });
     this.emit({ t: 'shake', amount: n > 0 || echo ? 2.5 : 5 });
@@ -6310,9 +6495,9 @@ export class Game {
     this.blast(i, x, y, rad, frac * (g ? this.golemMight(g) : 1), 'pound', n, echo, n === 0 && !echo);
     for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - x, m.y - y) <= rad + m.r) this.throwMonster(m, x, y, 1.2, 0.2);
     // (her tree's LIGHTNING ROD: for a while after, every enemy near the Golem goes after it instead of her)
-    if (g && this.has('lightningrod')) this.lightningRod(g);
+    if (g && !slam && this.has('lightningrod')) this.lightningRod(g);
     // (PROSPECTOR: it digs up a handful of gold)
-    if (this.has('prospector')) this.digGold(x, y, g);
+    if (!slam && this.has('prospector')) this.digGold(x, y, g);
   }
 
   /** Her tree's LIGHTNING ROD: Golem `g` a decoy for a while, every enemy near it going after it instead of her. */
@@ -6471,6 +6656,15 @@ export class Game {
         this.emit({ t: 'shake', amount: 2 });
         this.sfx('slam', 0.6);
         g.jumpCd = J.wait;
+        // (GOLEM_COMBO, her hold's jump, the stand-in's: it lands as its pound; Twin, a second)
+        if (g.twin) {
+          for (let k = 0; k < g.twin; k++) {
+            const at0 = { x: g.x, y: g.y };
+            if (k === 0) this.golemPounds(g.skill, at0.x, at0.y, this.golemFrac(g), 0, false, g);
+            else this.after(G.pound.long * k, () => g.act !== 'down' && this.golems.includes(g) && this.golemPounds(g.skill, at0.x, at0.y, this.golemFrac(g), k, false, g));
+          }
+          g.twin = undefined;
+        }
         this.golemIdle(g);
       }
       return;
@@ -6495,7 +6689,12 @@ export class Game {
         }
       }
       if (g.actT >= blow.long) {
-        g.punchCd = G.punch.wait;
+        // (GOLEM_COMBO: the next of its combo comes quick)
+        if (GOLEM_COMBO.on) {
+          g.combo = (g.combo ?? 0) + 1;
+          g.comboT = 0;
+          g.punchCd = COMBO_TUNE.between;
+        } else g.punchCd = G.punch.wait;
         this.golemIdle(g);
       }
       return;
@@ -6529,12 +6728,22 @@ export class Game {
       return;
     }
     if (g.act === 'pound') {
+      // (GOLEM_COMBO: the slam that ends its combo, its pound's blow in a smaller ring)
+      const slam = GOLEM_COMBO.on && (g.combo ?? 0) >= 2;
       if (!g.did && g.actT >= G.pound.hit) {
         g.did = true;
         // (the fist comes down a pace before it)
-        this.golemPounds(g.skill, g.x + g.fx * 0.9, g.y + g.fy * 0.9, this.golemFrac(g), 0, false, g);
+        if (slam) this.golemPounds(g.skill, g.x + g.fx * 0.9, g.y + g.fy * 0.9, this.golemFrac(g) * COMBO_TUNE.slam.share, 0, false, g, false, COMBO_TUNE.slam.size);
+        else this.golemPounds(g.skill, g.x + g.fx * 0.9, g.y + g.fy * 0.9, this.golemFrac(g), 0, false, g);
       }
-      if (g.actT >= G.pound.long) this.golemIdle(g);
+      if (g.actT >= G.pound.long) {
+        if (slam) {
+          g.combo = 0;
+          g.comboT = 0;
+          g.punchCd = G.punch.wait;
+        }
+        this.golemIdle(g);
+      }
       return;
     }
     // STANDING OR WALKING: what to go for, if anything (awake, near her, seen by it)
@@ -6556,12 +6765,17 @@ export class Game {
         g.fy = (y - g.y) / d;
       }
     };
+    // (GOLEM_COMBO: a combo let lie starts again)
+    g.comboT = (g.comboT ?? 0) + gdt;
+    if ((g.comboT ?? 0) > COMBO_TUNE.lapse) g.combo = 0;
     if (best && bd <= reach && g.punchCd <= 0) {
       face(best.x, best.y);
       g.act = 'punch';
       g.actT = 0;
       g.did = false;
       g.target = best.id;
+      // (GOLEM_COMBO: the third blow of its combo its slam, drawn and timed as its pound)
+      if (GOLEM_COMBO.on && (g.combo ?? 0) >= 2) g.act = 'pound';
       return;
     }
     // (its cannon off for now, his word: it closes on what it fights, always: GOLEM_CANNON; with her tree's GUN ARM, the
@@ -6637,7 +6851,14 @@ export class Game {
     if (d > stop) {
       const step = Math.min(d - stop, G.speed * gdt);
       const was = { x: g.x, y: g.y };
-      this.slide(g, 0.45, ((gx - g.x) / d) * step, ((gy - g.y) / d) * step, this.level.walk);
+      // (caught inside something, set free; where it cannot walk straight there, the way round: wayRound, roundCorner)
+      this.popOut(g, GOLEM_R);
+      const via = this.wayRound(g.x, g.y, gx, gy, GOLEM_R);
+      const vx = via ? via.x - g.x : gx - g.x;
+      const vy = via ? via.y - g.y : gy - g.y;
+      const vd = Math.hypot(vx, vy) || 1;
+      this.slide(g, GOLEM_R, (vx / vd) * step, (vy / vd) * step, this.level.walk);
+      this.roundCorner(g, GOLEM_R, (vx / vd) * step, (vy / vd) * step, was.x, was.y);
       const went = Math.hypot(g.x - was.x, g.y - was.y);
       g.walked += went;
       if (went > 1e-4) face(gx, gy);
@@ -6830,6 +7051,10 @@ export class Game {
       // The crater and the dust are its landing's own: golemLandFx)
       this.golemPounds(g.skill, g.x, g.y, this.golemFrac(g), 0, false, g, true);
       g.jumpCd = J.wait;
+      // (GOLEM_COMBO, her hold's jump: Twin, a second pound where it came down)
+      const at0 = { x: g.x, y: g.y };
+      for (let k = 1; k < (g.twin ?? 1); k++) this.after(TINKER_TUNE.golem.pound.long * k, () => g.act !== 'down' && this.golems.includes(g) && this.golemPounds(g.skill, at0.x, at0.y, this.golemFrac(g), k, false, g));
+      g.twin = undefined;
     }
     if (f >= ROCKET.end) this.golemIdle(g);
   }

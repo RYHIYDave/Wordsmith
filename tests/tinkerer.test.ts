@@ -291,7 +291,8 @@ test('its ground pound comes down quickly: its blow under half a second after he
   const g = room();
   use(g, 1, 3, 0);
   wait(g, G.arrive + 0.1);
-  use(g, 1, 3, 0);
+  // (by it: farther from it, her hold rocket-jumps it since 3 Nov 2026, GOLEM_COMBO)
+  use(g, 1, g.golem!.x - g.hero.x + 0.5, g.golem!.y - g.hero.y);
   let t = 0;
   let pounded = false;
   while (!pounded && t < 2) {
