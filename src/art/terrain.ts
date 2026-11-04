@@ -38,6 +38,8 @@
 // hangs below it a little way (`hang`).
 
 import { cutAt, intoWall } from '../game/cut';
+// (F8F9_FIX, his “I should be able to see the walls of the canyons when points of the plateau jut out”: game/f8f9.ts)
+import { F8F9_FIX } from '../game/f8f9';
 import type { Floor } from '../game/types';
 import { T_FLOOR } from '../game/types';
 import { hash } from './kit';
@@ -149,6 +151,20 @@ export interface TerrainLook {
   lip?: (c: RGB) => RGB;
   /** The cliff's face hanging below an edge that looks toward the eye over the drop: how far down it shows at most (picture pixels; its foot wanders), and its colour `v` picture pixels down. */
   hang?: { tall: number; at(v: number, px: number, py: number, shade: number): RGB };
+  /**
+   * THE CANYON'S WALLS SEEN (with F8F9_FIX on; his words, 4 Nov 2026, 08:20: “The perspective of the side walls is still off.  I
+   * should be able to see the walls of the canyons when points of the plateau jut out”). Without it, where a cliff stands in front
+   * of the floor within `rise` (a point of the plateau jutting toward the eye), that near cliff's top, cut away over the floor,
+   * still stood over the FAR cliff's face behind the floor, so the face was lost and the canyon read flat. With it the near cliff
+   * is cut away over that face too: every edge of a top that looks down the screen has its face drawn down to the floor below it.
+   */
+  downFaces?: boolean;
+  /**
+   * (F8F9_FIX, floor 8's strongholds: his “it’s like it’s floating.  Overlapping the top plateau section.”) WALLS CUT STRAIGHT for
+   * a door carved into them: the floor's edge exactly along x at `y` from `x0` to `x1` (the floor on its greater-y side), so the
+   * cliff's face over it is one flat plane for the door; and its apron, the rectangle `apron` [x0, y0, x1, y1], floor whole.
+   */
+  cutIn?: readonly { x0: number; x1: number; y: number; apron: readonly [number, number, number, number] }[];
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -237,7 +253,17 @@ export function terrainOf(floor: Floor, look: TerrainLook): Terrain {
     // never so far as to lose a tile's middle, or to grow one where there is none
     return Math.max(0.34, Math.min(0.66, e));
   };
-  const ground = (x: number, y: number): boolean => field(x, y) > edge(x, y);
+  const cutIn = look.cutIn;
+  const ground = !cutIn?.length
+    ? (x: number, y: number): boolean => field(x, y) > edge(x, y)
+    : (x: number, y: number): boolean => {
+        for (const c of cutIn) {
+          const a = c.apron;
+          if (x >= a[0] && x <= a[2] && y >= a[1] && y <= a[3]) return true;
+          if (x >= c.x0 && x <= c.x1 && y > c.y - 1.6 && y < c.y + 0.6) return y >= c.y;
+        }
+        return field(x, y) > edge(x, y);
+      };
   // HOW FAR UP THE TOP HAS CLIMBED: how far from the walkable floor (a chamfer distance over the field's cells), over `climb` tiles
   let climbAt: ((x: number, y: number) => number) | undefined;
   if (look.climb) {
@@ -428,6 +454,8 @@ export function paintTerrain(T: Terrain, x0: number, y0: number, w: number, h: n
   const hang = L.drop ? L.hang : undefined;
   const lip = L.drop ? L.lip : undefined;
   const HT = hang ? hang.tall : 0;
+  // (F8F9_FIX: every far face drawn down to the floor below it, the near cliff cut away over it: TerrainLook.downFaces)
+  const whole = F8F9_FIX.on && !!L.downFaces && !hang;
   // the kinds are worked out from 8 above (the shade at a face's foot looks 7 up) to N below (a near face looks N down)
   const kA = y0 - 8;
   const kB = y0 + h - 1 + N + 1;
@@ -495,6 +523,18 @@ export function paintTerrain(T: Terrain, x0: number, y0: number, w: number, h: n
         const s0 = lastSolid[wi];
         v = wi - s0;
         k = s0 >= 0 && v <= hangHere ? TK.Hang : TK.Drop;
+      } else if (whole) {
+        // the face of the rock over the next floor down, if that floor is within the rock's height; else the top (cut away
+        // if there is floor over it within H, as before)
+        const nf = nextFloor[wi];
+        if (nf - wi <= H) {
+          k = TK.Face;
+          v = nf - 1 - wi;
+        } else {
+          const f = lastFloor[wi - 1];
+          k = f >= 0 && wi - f <= H ? TK.Cut : TK.Top;
+          v = H;
+        }
       } else {
         const rr = D[wi] ? lastRock[Math.min(wi + H, nextFloor[wi] - 1)] : lastRock[wi + H];
         v = rr - wi;
@@ -602,5 +642,16 @@ export function clearOfFloor(T: Terrain, px: number, py: number, hw: number, tal
   }
   // and its foot on a top: the rock at its own height there
   const [fx, fy] = worldOf(px, py + T.look.rise);
-  return !T.ground(fx, fy);
+  if (T.ground(fx, fy)) return false;
+  // (F8F9_FIX, TerrainLook.downFaces: and on a top as it is painted, not on a face: no floor within the rock's height under its foot,
+  // across its width; else it would stand in the air over the far face, a point of the plateau's tree drawn up in front of it)
+  if (F8F9_FIX.on && T.look.downFaces && !T.look.drop) {
+    for (let xx = px - hw; xx <= px + hw; xx += 3) {
+      for (let yy = py + 1; yy <= py + T.look.rise + 1; yy += 3) {
+        const [x, y] = worldOf(xx, yy);
+        if (T.ground(x, y)) return false;
+      }
+    }
+  }
+  return true;
 }

@@ -22,6 +22,7 @@ import { WORD_COLOR } from '../src/art/icons';
 import { TK, paintTerrain, pictureOf, terrainOf, worldOf } from '../src/art/terrain';
 import type { RGB, Terrain } from '../src/art/terrain';
 import { CUT_FAR, CUT_NEAR, T_FLOOR, T_WALL } from '../src/game/types';
+import { F8F9_FIX } from '../src/game/f8f9';
 import type { Floor } from '../src/game/types';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
@@ -67,6 +68,8 @@ function canyonFloor(): Floor {
   return { depth: 8, seed: 8, w, h, tiles, cut, variant: new Uint8Array(w * h), rooms: [], start: { x: 18, y: 24 } } as unknown as Floor;
 }
 
+// (the canyon's look as it was before floors 8 and 9's mends: F8F9_FIX off here; tests/f8f9.test.ts has it on)
+F8F9_FIX.on = false;
 const FLOOR = canyonFloor();
 const T: Terrain = terrainOf(FLOOR, CANYON_LOOK);
 const [ax] = pictureOf(0, FLOOR.h);

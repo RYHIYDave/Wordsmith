@@ -427,4 +427,7 @@ export const CANYON_LOOK: TerrainLook = {
   foot: [0.36, 0.2],
   // the near wall felt where the canyon turns across the screen (the mock-up's 1.6 tiles)
   nearShadow: { reach: 1.6, dark: [0.38, 0.24] },
+  // (F8F9_FIX, off: his “I should be able to see the walls of the canyons when points of the plateau jut out”: every far wall's face
+  // drawn down to the riverbed below it, the jutting near cliff cut away over it as over the bed: art/terrain.ts)
+  downFaces: true,
 };
