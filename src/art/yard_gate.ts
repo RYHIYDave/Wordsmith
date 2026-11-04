@@ -678,6 +678,10 @@ export function yardGateDropAt(frame: number): { raise: number; slam: number; li
 // =================================================================================================
 
 let made: GateArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /**
  * THE YARD'S DOORS AND GATES (a GateArt, as art/gates.ts's): the boss's pillar, arch and portcullis its own (above);
  * everything else floor 2's (art/floor2.ts, headsmanGates): its doors of black oak, its plain gates, its levers, its seals.

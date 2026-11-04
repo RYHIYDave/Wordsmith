@@ -1605,6 +1605,10 @@ export const TRUSS_DEPTH = 0.05;
 
 const four = [0, 1, 2, 3];
 let made: CastleHallArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The hall's pictures, made the first time they are asked for and kept (the heavy ones when first asked for). */
 export function makeCastleHallArt(): CastleHallArt {
   if (made) return made;

@@ -476,6 +476,10 @@ export function chapelGateDropAt(frame: number): { raise: number; slam: number; 
 // =================================================================================================
 
 let made: GateArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /**
  * FLOOR 4'S DOORS AND GATES WITH HIS OWN (a GateArt, as art/gates.ts's): the boss's pillar, arch and drop his gate's (above);
  * everything else floor 4's own (art/floor4.ts, ossuaryGates), in look A's colours: its doors, its plain gates, its levers, its

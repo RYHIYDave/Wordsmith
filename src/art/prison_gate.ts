@@ -449,6 +449,10 @@ export function prisonGateDropAt(frame: number): { raise: number; slam: number; 
 // =================================================================================================
 
 let made: GateArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /**
  * FLOOR 3'S DOORS AND GATES WITH HIS OWN (a GateArt, as art/gates.ts's): the boss's pillar, arch and portcullis his gate's
  * (above); everything else floor 3's own (art/floor3.ts, chainedGates): its cell doors, its plain gates, its levers, its seals.

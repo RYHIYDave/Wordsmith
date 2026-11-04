@@ -1255,7 +1255,11 @@ export function gradedA(c: string): string {
   return toHex((l + (r0 - l) * 0.3) * 1.04 + 5, (l + (g0 - l) * 0.3) * 0.98 + 2, (l + (b0 - l) * 0.3) * 0.86 - 2);
 }
 /** And what of the enemy's own was in them stays: his pink in the cave's far glow is a shine of his (art/floor4.ts PINK). */
-const gradedMemo = new WeakMap<Sprite, Sprite>();
+let gradedMemo = new WeakMap<Sprite, Sprite>();
+/** The game's pictures graded in this look, let go (let go with its floor's look: render.ts forgetLooks; his “it’s crashing every couple of levels”). */
+export function forgetGraded(): void {
+  gradedMemo = new WeakMap();
+}
 export function gradeSprite(s: Sprite): Sprite {
   const hit = gradedMemo.get(s);
   if (hit) return hit;
@@ -1381,6 +1385,10 @@ export const CHAPEL_OWN = [
 
 const four = [0, 1, 2, 3];
 let made: ChapelArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The chapel's pictures, made the first time they are asked for and kept (the stretches and the cave when first asked for). */
 export function makeChapelArt(): ChapelArt {
   if (made) return made;

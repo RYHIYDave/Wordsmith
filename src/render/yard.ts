@@ -10,8 +10,8 @@
 //     be; the flat puddles; the torches on the far walls, and their light.
 //   - `dark`: under the open sky the yard's dark is the moon's (the art's preview lays it at 0.42), while the hero is in it.
 
-import { YARD, makeYardArt } from '../art/yard';
-import { YARD_GATE } from '../art/yard_gate';
+import { YARD, forgetMade as forgetYardMade, makeYardArt } from '../art/yard';
+import { YARD_GATE, forgetMade as forgetYardGateMade } from '../art/yard_gate';
 import type { YardArt } from '../art/yard';
 import type { Sprite } from '../engine/px';
 import { YARD_FOOT, inYard } from '../game/yard';
@@ -58,6 +58,16 @@ export class YardView {
   private laid = new Map<number, Sprite>();
   private laidFor: Floor | null = null;
   private strips = new Map<Sprite, { s: Sprite; u: number }[]>();
+
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    forgetYardMade();
+    forgetYardGateMade();
+    this.art = null;
+    this.laid = new Map();
+    this.laidFor = null;
+    this.strips = new Map();
+  }
 
   /** Is the yard to be drawn on this floor? */
   on(f: Floor): boolean {

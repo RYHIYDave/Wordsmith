@@ -1138,7 +1138,11 @@ export function gradeColour(c: string, part: LairPart): string {
   const wb = 0.86 * (1 - t) + 1.04 * t;
   return toHex((l + (r0 - l) * keep) * wr + 3, (l + (g0 - l) * keep) * wg + 1, (l + (b0 - l) * keep) * wb);
 }
-const gradedMemo = { mine: new WeakMap<Sprite, Sprite>(), temple: new WeakMap<Sprite, Sprite>() };
+let gradedMemo = { mine: new WeakMap<Sprite, Sprite>(), temple: new WeakMap<Sprite, Sprite>() };
+/** The game's pictures graded in this look, let go (let go with its floor's look: render.ts forgetLooks; his “it’s crashing every couple of levels”). */
+export function forgetGraded(): void {
+  gradedMemo = { mine: new WeakMap(), temple: new WeakMap() };
+}
 /** A picture of floor 5's own in look A's colours for a part (its shape, its anchor and its lights as they were). */
 export function gradeSprite(s: Sprite, part: LairPart): Sprite {
   const hit = gradedMemo[part].get(s);
@@ -1250,6 +1254,10 @@ export const CRACK_TILES: readonly (readonly [string, Edge, Edge | null, boolean
 
 const four = [0, 1, 2, 3];
 let made: LairArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The place's pictures, made the first time they are asked for and kept (the threshold and the mouth when first asked for). */
 export function makeLairTempleArt(): LairArt {
   if (made) return made;

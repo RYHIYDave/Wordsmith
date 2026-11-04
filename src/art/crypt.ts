@@ -462,7 +462,11 @@ const PROPS = new Map<number, DungeonProps>();
 /** The floor and walls of the Crypt's floor `k` (1 to 4). */
 export function cryptGround(k: number): GroundArt {
   let g = GROUNDS.get(k);
-  if (!g) GROUNDS.set(k, (g = makeGroundArt(CRYPT_FLOORS[k - 1])));
+  // (only the floor in hand kept: another's pictures let go as this one's are made; his “it’s crashing every couple of levels”)
+  if (!g) {
+    GROUNDS.clear();
+    GROUNDS.set(k, (g = makeGroundArt(CRYPT_FLOORS[k - 1])));
+  }
   return g;
 }
 /** What stands and lies on the Crypt's floor `k` (1 to 4). */
@@ -472,6 +476,7 @@ export function cryptProps(k: number): DungeonProps {
     const theme = CRYPT_FLOORS[k - 1];
     const base = makeDungeonProps(theme);
     p = { ...base, rubble: litterOf(k, base, theme), pillar: k === 4 ? makeProp(theme) : base.pillar };
+    PROPS.clear();
     PROPS.set(k, p);
   }
   return p;
@@ -482,6 +487,7 @@ export function cryptWays(k: number): { stair: Record<'x' | 'y', Sprite>; way: W
   let w = WAYS.get(k);
   if (!w) {
     const theme = CRYPT_FLOORS[k - 1];
+    WAYS.clear();
     WAYS.set(k, (w = { stair: { x: makeStairwell(theme, 'x'), y: makeStairwell(theme, 'y') }, way: makeWaypointArt(theme) }));
   }
   return w;

@@ -9,6 +9,7 @@
 //   - THE LIGHT: its lantern-lit dark, 0.8; each lantern, each lantern post and each brazier, the mine's rock lit low between them,
 //     the rift's glowing cracks, the rift itself, his hall's cracked wall.
 
+import { forgetGraded as forgetLairGraded } from '../art/lair_temple';
 import { LAIR_LIGHTS, LAIR_TEMPLE, gradeColour, makeLairTempleArt } from '../art/lair_temple';
 import type { LairArt } from '../art/lair_temple';
 import { floorLook } from '../art/floors';
@@ -41,6 +42,15 @@ export class LairView implements LookView {
   private cache: Laid | null = null;
   private cacheFor: Level | null = null;
   private gradedMemo = new WeakMap<Sprite, Sprite>();
+
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    forgetLairGraded();
+    this.art = null;
+    this.cache = null;
+    this.cacheFor = null;
+    this.gradedMemo = new WeakMap();
+  }
 
   on(L: Level): boolean {
     return LAIR_TEMPLE.on && !L.town && L.floor.depth >= 1 && floorLook(L.floor.depth) === 5 && !!L.dress && !!L.lair;

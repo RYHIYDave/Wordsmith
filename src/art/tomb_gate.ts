@@ -495,6 +495,10 @@ export function tombGateDropAt(frame: number): { raise: number; slam: number; li
 // =================================================================================================
 
 let made: GateArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /**
  * FLOOR 1'S DOORS AND GATES WITH HIS OWN (a GateArt, as art/gates.ts's): the boss's pillar, arch and drop his gate's (above);
  * everything else floor 1's own (art/floor1.ts, wardenGates: its doors of old timber bound in iron, its plain gates with the

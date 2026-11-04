@@ -18,6 +18,7 @@
 //     tower (his yard's), and what lies behind those walls not drawn there but a few tiles through its ways (render.ts).
 // Where the courtyards, the ways, the walk, the chapel and the stair are is the rules' (game/grounds_way.ts).
 
+import { forgetGraded as forgetGroundsGraded } from '../art/grounds';
 import { BLOCK_KINDS, GROUNDS, GROUNDS_LIGHTS, makeGroundsArt } from '../art/grounds';
 import type { GroundsArt } from '../art/grounds';
 import { STRIP } from '../art/gates';
@@ -86,6 +87,14 @@ export class GroundsView implements LookView {
   private sky: GroundsRect | null = null;
   /** Whether the hero is indoors this frame (the gaoler's room and the passage out through his house). */
   private indoors = false;
+
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    forgetGroundsGraded();
+    this.art = null;
+    this.cache = null;
+    this.cacheFor = null;
+  }
 
   get dark(): number {
     return this.indoors ? GROUNDS_LIGHTS.gaol.a : GROUNDS_LIGHTS.dark.a;
