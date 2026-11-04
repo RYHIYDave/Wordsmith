@@ -32,7 +32,7 @@ import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPa
 import type { Hand, Royal } from './royal_cards';
 import type { CompanionGroup, CompanionKind } from './companions';
 import type { HazardInst } from './traps';
-import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
+import { LANE_HELP, STAIR_HELP, STEP_E, STEP_N, STEP_S, STEP_W, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, bossPace, gaitOf } from './bosses';
@@ -2038,6 +2038,7 @@ export class Game {
           L.walk[i] = 1;
           L.open[i] = 1;
         }
+        this.joinSteps(doorTiles(L.floor, cv.spot));
         this.msg('A cave behind the wall. The way down.', MSG.good);
       }
     }
@@ -2052,6 +2053,7 @@ export class Game {
       if (ex.t >= DOOR_OPENING) {
         ex.state = 'open';
         for (const i of prisonDoorTiles(L.floor, ex)) L.walk[i] = 1;
+        this.joinSteps(prisonDoorTiles(L.floor, ex));
         this.msg('The door behind his hall stands open. The way down.', MSG.good);
       }
     }
@@ -3472,6 +3474,33 @@ export class Game {
     if (this.free(grid, b.x + sx, b.y + sy, r, false, held)) {
       b.x += sx;
       b.y += sy;
+    }
+  }
+
+  /**
+   * A WAY OPENED THROUGH A WALL ON A FLOOR WITH HEIGHTS (floor 3's door out the back of his hall, floor 4's cave): the rules of
+   * height (L.step, game/height.ts) were laid when its tiles were wall, and know no step onto them, so a body was held off them
+   * at the wall's line though the walk grid had them open. His words, 3 Nov 2026, 22:31: “I can’t use floor 3s door out after
+   * the boss.  I am stuck”. So: each of them joined to the others and to every tile walked on beside it that is not a stair.
+   */
+  private joinSteps(tiles: number[]): void {
+    const L = this.level;
+    const step = L.step;
+    if (!step) return;
+    const f = L.floor;
+    const set = new Set(tiles);
+    for (const i of tiles) {
+      const x = i % f.w;
+      const y = Math.floor(i / f.w);
+      for (const [dx, dy, out, back] of [[1, 0, STEP_E, STEP_W], [-1, 0, STEP_W, STEP_E], [0, 1, STEP_S, STEP_N], [0, -1, STEP_N, STEP_S]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= f.w || ny >= f.h) continue;
+        const n = ny * f.w + nx;
+        if (!set.has(n) && (L.walk[n] !== 1 || f.tiles[n] !== T_FLOOR || (f.stair && f.stair[n] !== 0))) continue;
+        step[i] |= out;
+        step[n] |= back;
+      }
     }
   }
 

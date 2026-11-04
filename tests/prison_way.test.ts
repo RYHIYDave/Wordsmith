@@ -198,3 +198,52 @@ test('5. the door\'s film: 90 frames from his fall, the passage\'s four, five jo
   assert.equal(film.kicks.length, 5);
   assert.equal(film.fps, 30);
 });
+
+// (25.0.2: his words, 3 Nov 2026, 22:31: “I can’t use floor 3s door out after the boss.  I am stuck”. Test 3 set him down on the
+// door; walked to it, the rules of height (the floor has its channels) held him off its tiles at the wall's line: game.ts joinSteps)
+function walkInto(g: Game, tiles: number[], label: string): void {
+  const L = g.level;
+  const f = L.floor;
+  // (from the floor walked on before the door, two tiles out, straight at it)
+  const set = new Set(tiles);
+  let from: { x: number; y: number; dx: number; dy: number } | null = null;
+  for (const i of tiles) {
+    const x = i % f.w;
+    const y = Math.floor(i / f.w);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = (y + dy) * f.w + x + dx;
+      const n2 = (y + 2 * dy) * f.w + x + 2 * dx;
+      if (!set.has(n) && L.walk[n] === 1 && L.walk[n2] === 1 && f.tiles[n] === T_FLOOR) from = { x: x + 2 * dx + 0.5, y: y + 2 * dy + 0.5, dx: -dx, dy: -dy };
+    }
+  }
+  assert.ok(from, `${label}: floor before it`);
+  g.hero.x = from!.x;
+  g.hero.y = from!.y;
+  const c = emptyControls();
+  c.mx = from!.dx;
+  c.my = from!.dy;
+  const d0 = g.depth;
+  let k = 0;
+  for (; k < 240 && g.depth === d0; k++) {
+    g.events.length = 0;
+    g.update(DT, c);
+  }
+  assert.notEqual(g.depth, d0, `${label}: walked into it, he goes on (stopped at ${g.hero.x.toFixed(2)}, ${g.hero.y.toFixed(2)})`);
+}
+test('6. (25.0.2) walked into, not set down on: the open door takes him down, on every seed', () =>
+  on(() => {
+    for (const seed of SEEDS) {
+      const g = new Game('warrior', seed);
+      g.hero.invuln = 1e9;
+      g.depth = 3;
+      g.cleared = 2;
+      g.enterDungeon();
+      const e = g.level.ways!.exit!;
+      for (const m of g.monsters) if (!m.boss) m.life = 0;
+      g.monsters = g.monsters.filter((m) => m.boss);
+      killBoss(g);
+      until(g, DOOR_OPENING + 1, () => e.state === 'open');
+      walkInto(g, prisonDoorTiles(g.level.floor, e), `seed ${seed}`);
+      assert.equal(g.depth, 4);
+    }
+  }));

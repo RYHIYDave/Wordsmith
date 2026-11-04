@@ -308,7 +308,7 @@ export const SWAP_W = 22;
  */
 export const WORD_HALF = { on: true };
 /**
- * HIS OWN LEXICON (behind this switch, off until his yes to a picture of it). Shown the words' panel with a fold, his words,
+ * HIS OWN LEXICON (behind this switch, on at his yes to its picture). Shown the words' panel with a fold, his words,
  * 3 Nov 2026, by 22:15 (Eastern): “No I think what you want is a lexicon button near the gold and the level and keep the little
  * bar of wards above the inventory.  When it gets so you can’t see what words you have, you can hit the button to expand the
  * full lexicon with all your words.  I know you’re going to ask about the lexicon in the town.  This is separate.  A personal
@@ -317,7 +317,8 @@ export const WORD_HALF = { on: true };
  * stones), the line over the bag staying where it is; pressed again, put away. As he leaves it, from one opening to the next.
  * At a service, as it was (WORD_ROOM). On the TALENTS page, no bag, no line, no lexicon (his “The bag covers the tree”).
  */
-export const WORD_LEX = { on: false };
+export const WORD_LEX = { on: true };
+// (on: shown its picture, his “Yes, switch it on (Recommended)”, 3 Nov 2026, by 22:25)
 /** (WORD_HALF) How far in from the game half's edges the words' panel's lines are, and the room its words have there: how wide, and how many lines. */
 export const HALF_M = 6;
 export function halfRoom(gameR: Rect): { w: number; lines: number } {
