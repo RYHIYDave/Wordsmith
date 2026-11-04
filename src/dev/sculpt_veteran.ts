@@ -659,17 +659,48 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
   vestShells([backCut]);
 
   // ---- TROUSERS hacked off below the knee, the hem ragged; a broad old belt ----
+  // THE TROUSERS FOLLOW HIS LEGS (his words, 3 Nov 2026, 18:07: “Well first off the brawlers knees are clipping through
+  // his pants which is against the rules which I reminded you to follow multiple times”). Each leg was one straight rod of
+  // cloth from the hip to below the knee: when the knee bent, the knee and the thigh above it stuck out of it. Now each leg
+  // is laid over the leg's own shapes, a cloth's thickness and some slack outside them, at every bend: the thigh (and its
+  // great front muscle) from the hip to the knee; the knee in a bag of cloth of its own; the shin (and the top of the calf)
+  // from the knee down to the ragged hem. Where the knee bends, the cloth folds in the crook behind it.
+  /** Each leg's own measure: its hip, knee and ankle; the thigh's and shin's ways; the hem; how far the knee is bent. */
+  const legOf = (side: 'L' | 'R') => {
+    const hip = side === 'L' ? s.hipL : s.hipR;
+    const knee = side === 'L' ? s.kneeL : s.kneeR;
+    const ankle = side === 'L' ? s.ankleL : s.ankleR;
+    const td = norm(sub(knee, hip));
+    const d = norm(sub(ankle, knee));
+    /** (into the crook behind the knee, between the thigh running back and the shin running down; nothing when straight) */
+    const crook = sub(d, td);
+    return { hip, knee, ankle, td, d, hem: lerp3(knee, ankle, 0.14), crook: len(crook) > 0.2 ? norm(crook) : null, bend: Math.acos(Math.max(-1, Math.min(1, dot(td, d)))) };
+  };
+  const legs = { L: legOf('L'), R: legOf('R') };
   const clothM = sc.mat({
     ramp: VET_CLOTH,
     paint: (h) => {
       const tg = h.prim.tag ?? '';
       if (tg === 'tatter') return sh(VET_CLOTH, h.tone - 1);
-      if (h.prim.k === 'cone' && tg === 'leg') {
-        const { t, around } = onCone(h.prim as Cone, h.p, f);
-        if (t > 0.9 && (h.x * 3 + h.y) % 3 !== 0) return sh(VET_CLOTH, h.tone - 1);
-        const c = Math.sin(around * 3 + t * 2.6);
-        if (c > 0.82) return sh(VET_CLOTH, h.tone - 1);
-        if (c < -0.88) return sh(VET_CLOTH, h.tone + 1);
+      const lg = h.prim.piece === 'legL' ? legs.L : h.prim.piece === 'legR' ? legs.R : null;
+      if (lg) {
+        const v = sub(h.p, lg.knee);
+        // the frayed edge at the hem: darker, broken
+        if ((tg === 'shank' || tg === 'kneeBag') && dot(sub(h.p, lg.hem), lg.d) > -1.1 && (h.x * 3 + h.y) % 3 !== 0) return sh(VET_CLOTH, h.tone - 1);
+        // the folds in the crook of a bent knee: dark lines fanning round it, a lit edge beside each
+        if (lg.crook && lg.bend > 0.5 && dot(v, lg.crook) > 0.6 && len(v) < B.legR[1] * 1.06 + 2.6) {
+          const ang = Math.atan2(dot(v, lg.d), -dot(v, lg.td));
+          const w = Math.sin(ang * 7 + 0.6);
+          if (w > 0.62) return sh(VET_CLOTH, h.tone - 1);
+          if (w < -0.85) return sh(VET_CLOTH, h.tone + 1);
+        }
+        // the long folds down the trouser leg, twisting round it
+        if (h.prim.k === 'cone' && (tg === 'leg' || tg === 'shank')) {
+          const { t, around } = onCone(h.prim as Cone, h.p, f);
+          const c = Math.sin(around * 3 + (tg === 'leg' ? t : 1 + t * 0.3) * 2.6);
+          if (c > 0.82) return sh(VET_CLOTH, h.tone - 1);
+          if (c < -0.88) return sh(VET_CLOTH, h.tone + 1);
+        }
       }
       if ((h.x * 7 + h.y * 3) % 17 === 0) return sh(VET_CLOTH, h.tone - 1);
       return farArm(h.prim.piece) ? sh(VET_CLOTH, h.tone - 1) : null;
@@ -678,15 +709,36 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
   sc.ell(clothM, 'hips', pel.c, [mul(pel.r[0], pel.h[0] + 0.9), mul(pel.r[1], pel.h[1] + 0.8), mul(pel.r[2], pel.h[2] + 0.5)], 1.6, { tag: 'seat' });
   sc.ell(clothM, 'hips', add(belly.c, mul(belly.r[2], -belly.h[2] * 0.55)), [mul(belly.r[0], belly.h[0] * 0.95 + 0.6), mul(belly.r[1], belly.h[1] * 0.95 + 0.6), mul(belly.r[2], belly.h[2] * 0.5)], 1.2, { tag: 'seat' });
   for (const side of ['L', 'R'] as const) {
-    const hip = side === 'L' ? s.hipL : s.hipR;
-    const knee = side === 'L' ? s.kneeL : s.kneeR;
-    const ankle = side === 'L' ? s.ankleL : s.ankleR;
+    const { hip, knee, ankle, td, d, hem } = legs[side];
+    const piece = `leg${side}`;
     const [lH, lK] = B.legR;
     const top = add(hip, mul(s.hips[2], 1.0));
-    const hem = lerp3(knee, ankle, 0.14);
-    const d = norm(sub(ankle, knee));
-    // (cut off flat at the hem: the cloth stops there, it does not round off down his shin)
-    sc.cone(clothM, `leg${side}`, top, add(hem, mul(d, 2)), lH * 1.08 + 0.8, lK * 1.06 + 1.1, 1.4, { tag: 'leg', cuts: [keepBelow(d, hem)] });
+    /** (the cloth: how far outside the leg's own skin it stands; the knee's bag a little more, a knee bulging in it) */
+    const slack = 1.0;
+    const kneeR = lK * 1.06 + 1.25;
+    // THE THIGH: from the hip to the knee, over the leg's own thigh and its front muscle, ending at the knee (the knee's
+    // bag takes it on round the joint, however far it bends)
+    const atKnee = keepBelow(td, knee);
+    sc.cone(clothM, piece, top, knee, lH * 1.08 + 0.85, lK * 1.02 + slack + 0.1, 1.4, { tag: 'leg', cuts: [atKnee] });
+    sc.cone(clothM, piece, hip, knee, lH * 1.08 + slack, lK * 1.02 + slack + 0.1, 1.4, { tag: 'leg', cuts: [atKnee] });
+    {
+      const to = norm(sub(f, mul(td, dot(f, td))), [1, 0, 0]);
+      sc.ell(clothM, piece, add(lerp3(hip, knee, 0.42), mul(to, 1.2)), [mul(td, 4.8 + slack), mul(to, 2.8 + slack), mul(norm(cross(td, to)), 3.0 + slack)], 1.6, { tag: 'thighFold', cuts: [atKnee] });
+    }
+    // THE KNEE: a bag of cloth round it, a little bigger than the knee, cut off where the trousers end
+    const hemCut = keepBelow(d, hem);
+    {
+      // (its own three ways: along the thigh; square to it, toward the shin as the knee bends; and across the knee)
+      const k2 = norm(sub(d, mul(td, dot(d, td))), norm(sub(f, mul(td, dot(f, td))), [1, 0, 0]));
+      const k3 = norm(cross(td, k2), l);
+      sc.ell(clothM, piece, knee, [mul(td, kneeR), mul(k2, kneeR), mul(k3, kneeR * 0.96)], 1.2, { tag: 'kneeBag', cuts: [hemCut] });
+    }
+    // THE SHIN: from the knee down to the hem, cut off flat there (the cloth stops, it does not round off down his shin)
+    sc.cone(clothM, piece, knee, add(hem, mul(d, 2)), lK * 1.06 + 1.1, lK * 1.06 + 1.1, 1.4, { tag: 'shank', cuts: [hemCut] });
+    {
+      const so = norm(sub(f, mul(d, dot(f, d))), [1, 0, 0]);
+      sc.ell(clothM, piece, add(lerp3(knee, ankle, 0.3), mul(so, -1.2)), [mul(d, 3.6 + slack), mul(so, 2.4 + slack), mul(norm(cross(d, so)), 2.3 + slack)], 1.2, { tag: 'shank', cuts: [hemCut] });
+    }
     // the ragged ends where he cut them: tatters hanging off the hem
     const a1 = norm(sub(f, mul(d, dot(f, d))), [1, 0, 0]);
     const a2 = norm(cross(d, a1));
@@ -705,11 +757,13 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
   sc.box(ironM, 'hips', add(beltC, add(mul(belly.r[0], belly.h[0] * 0.95 + 1.8), mul(belly.r[1], -0.6))), [mul(belly.r[0], 0.5), mul(belly.r[1], 1.5), mul(belly.r[2], 1.5)], 0.4, 0.2, { tag: 'buckle' });
 
   // ---- LINEN: his right shin bound; both feet wrapped round the arch, toes and heels bare ----
+  /** The shin's binding (its stripes run on round the calf, as one strip wound round both). */
+  let bindRod: Cone | null = null;
   const linenM = sc.mat({
     ramp: VET_LINEN,
     paint: (h) => {
-      if (h.prim.k === 'cone') {
-        const { t, around } = onCone(h.prim as Cone, h.p, f);
+      if (h.prim.k === 'cone' || (h.prim.tag === 'binding' && bindRod)) {
+        const { t, around } = onCone(h.prim.tag === 'binding' && bindRod ? bindRod : (h.prim as Cone), h.p, f);
         if (Math.floor(t * (h.prim.tag === 'binding' ? 7 : 3) + around / 1.7) % 2 === 0) return sh(VET_LINEN, h.tone - 1);
       } else if ((h.x + h.y) % 3 === 0) return sh(VET_LINEN, h.tone - 1);
       return farArm(h.prim.piece) ? sh(VET_LINEN, h.tone - 1) : null;
@@ -720,12 +774,20 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
     const ankle = s.ankleR;
     const [, lK, lA] = B.legR;
     const dd = norm(sub(ankle, knee));
-    sc.cone(linenM, 'legR', lerp3(knee, ankle, 0.22), lerp3(knee, ankle, 0.97), lK * 0.98 + 0.55, lA * 0.98 + 0.6, 0.5, { tag: 'binding', cuts: [keepBelow(mul(dd, -1), lerp3(knee, ankle, 0.3)), FLOOR_CUT] });
+    const bindCuts = [keepBelow(mul(dd, -1), lerp3(knee, ankle, 0.3)), FLOOR_CUT];
+    bindRod = sc.cone(linenM, 'legR', lerp3(knee, ankle, 0.22), lerp3(knee, ankle, 0.97), lK * 0.98 + 0.55, lA * 0.98 + 0.6, 0.5, { tag: 'binding', cuts: bindCuts });
+    // (wound on over the swell of his calf too, so the calf never shows through it)
+    const so = norm(sub(f, mul(dd, dot(f, dd))), [1, 0, 0]);
+    sc.ell(linenM, 'legR', add(lerp3(knee, ankle, 0.3), mul(so, -1.2)), [mul(dd, 3.6 + 0.5), mul(so, 2.4 + 0.5), mul(norm(cross(dd, so)), 2.3 + 0.5)], 0.6, { tag: 'binding', cuts: bindCuts });
   }
   for (const ft of feet) {
     const ankle = ft.side === 'L' ? s.ankleL : s.ankleR;
     const piece = `leg${ft.side}`;
-    sc.box(linenM, piece, add(ft.c, mul(ft.fd, -0.2)), [mul(ft.fd, ft.half * 0.32), mul(ft.fs, 1.95), mul(ft.up, 1.3)], 0.9, 0.3, { tag: 'footwrap', cuts: [FLOOR_CUT] });
+    const wc = add(ft.c, mul(ft.fd, -0.2));
+    sc.box(linenM, piece, wc, [mul(ft.fd, ft.half * 0.32), mul(ft.fs, 2.1), mul(ft.up, 1.45)], 0.9, 0.3, { tag: 'footwrap', cuts: [FLOOR_CUT] });
+    // (wound up over the top of his instep, where it rises into the ankle, so the instep never shows through it)
+    const band = [keepBelow(ft.fd, add(wc, mul(ft.fd, ft.half * 0.32))), keepBelow(mul(ft.fd, -1), add(wc, mul(ft.fd, -ft.half * 0.32))), FLOOR_CUT];
+    sc.cone(linenM, piece, ankle, add(ft.c, mul(ft.fd, -ft.half * 0.3)), B.legR[2] * 0.95 + 0.35, 1.6 + 0.35, 0.3, { tag: 'footwrapTop', cuts: band });
     sc.cone(linenM, piece, add(ankle, [0, 0, 1.0]), add(ankle, [0, 0, -0.2]), B.legR[2] + 0.4, B.legR[2] + 0.4, 0.3, { tag: 'anklewrap', cuts: [FLOOR_CUT] });
   }
 
@@ -777,7 +839,14 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
     const ha = side === 'L' ? s.handL : s.handR;
     const piece = `arm${side}`;
     // the bracer, from below the elbow to the wrist
-    sc.cone(bracerM, piece, lerp3(el, ha, 0.24), lerp3(el, ha, 0.86), 2.85, 2.2, 0.4, { tag: 'bracer', cuts: [keepBelow(mul(d, -1), lerp3(el, ha, 0.3)), keepBelow(d, lerp3(el, ha, 0.8))] });
+    const bracerCuts = [keepBelow(mul(d, -1), lerp3(el, ha, 0.3)), keepBelow(d, lerp3(el, ha, 0.8))];
+    sc.cone(bracerM, piece, lerp3(el, ha, 0.24), lerp3(el, ha, 0.86), 3.05, 2.4, 0.4, { tag: 'bracer', cuts: bracerCuts });
+    {
+      // (laced on over the swell of his forearm's muscle too, so it never shows through the leather)
+      const out = mul(l, side === 'L' ? 1 : -1);
+      const fo = norm(sub(out, mul(d, dot(out, d))), f);
+      sc.ell(bracerM, piece, add(lerp3(el, ha, 0.25), mul(fo, 0.6)), [mul(d, 3.2 + 0.6), mul(fo, 2.6 + 0.6), mul(norm(cross(d, fo)), 2.4 + 0.6)], 0.5, { tag: 'bracer', cuts: bracerCuts });
+    }
     // the wrist into the hand
     sc.cone(fistM, piece, lerp3(el, ha, 0.82), add(ha, mul(d, 0.6 * F)), 1.95, 2.2 * F, 0.9, { tag: 'wrist' });
     // the fist: a heavy block of a hand, the fingers rolled under, the knuckles a ridge, the thumb locked over them
@@ -790,8 +859,15 @@ export function sculptVeteran(p: VetPose, turn = 0): VetFigure {
     sc.cone(fistM, piece, add(ha, add(mul(d, 0.9 * F), add(mul(top, 2.4 * F), mul(inw, 0.6 * F)))), add(ha, add(mul(d, 2.9 * F), add(mul(top, 1.5 * F), mul(inw, 1.75 * F)))), 0.95 * F, 0.85 * F, 0.5, { tag: 'thumb' });
     // the strap: round the knuckles, across the back of the hand, round the wrist
     sc.box(strapM, piece, add(ha, add(mul(d, 1.95 * F), mul(inw, -0.1 * F))), [mul(d, 0.42 * F), mul(top, 2.78 * F), mul(inw, 2.22 * F)], 0.4 * F, 0.15, { tag: 'strap' });
+    // (wound on round the curled fingers' ends too, so no finger shows through it)
+    const knuckleBand = [keepBelow(d, add(ha, mul(d, (1.95 + 0.42) * F))), keepBelow(mul(d, -1), add(ha, mul(d, (1.95 - 0.42) * F)))];
+    sc.cone(strapM, piece, add(ha, add(mul(d, 2.7 * F), add(mul(inw, 0.75 * F), mul(top, 1.9 * F)))), add(ha, add(mul(d, 2.7 * F), add(mul(inw, 0.75 * F), mul(top, -2.0 * F)))), 1.25 * F + 0.3, 1.15 * F + 0.3, 0.15, { tag: 'strap', cuts: knuckleBand });
+    sc.box(strapM, piece, add(ha, mul(d, 1.5 * F)), [mul(d, 2.0 * F + 0.3), mul(top, 2.65 * F + 0.3), mul(inw, 2.05 * F + 0.3)], 1.25 * F, 0.15, { tag: 'strap', cuts: knuckleBand });
     sc.cone(strapM, piece, add(ha, add(mul(d, 0.0), add(mul(inw, -2.0 * F), mul(top, -1.6 * F)))), add(ha, add(mul(d, 2.2 * F), add(mul(inw, -2.15 * F), mul(top, 1.5 * F)))), 0.5, 0.5, 0.15, { tag: 'strap' });
     sc.cone(strapM, piece, add(ha, mul(d, -0.3 * F)), add(ha, mul(d, 0.5 * F)), 2.3 * F, 2.35 * F, 0.15, { tag: 'strap' });
+    // (round the wrist it takes the block of his hand's shape where the hand begins, so no corner of it shows through)
+    const wristBand = [keepBelow(d, add(ha, mul(d, 0.5 * F))), keepBelow(mul(d, -1), add(ha, mul(d, -0.3 * F)))];
+    sc.box(strapM, piece, add(ha, mul(d, 1.5 * F)), [mul(d, 2.0 * F + 0.3), mul(top, 2.65 * F + 0.3), mul(inw, 2.05 * F + 0.3)], 1.25 * F, 0.15, { tag: 'strap', cuts: wristBand });
   }
 
   // ---- THE TAILS: streaming out behind him, rippling, never through him ----

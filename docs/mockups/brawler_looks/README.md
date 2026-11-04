@@ -243,7 +243,7 @@ The moves, frame by frame (30 a second; the wind-up's last frame is held, the st
 | Move | Put in | Frames (seconds) | The wind-up, held | The strike lands | What it does |
 |---|---|---|---|---|---|
 | Standing, bouncing on his toes | — | a 60-frame round (2.0 s) | | | four bounces, up high on his toes and sunk into his knees; fists circling; a roll of his shoulders and a tip of his head on the third; feet never leave where their balls are |
-| Running | — | a 12-frame round (0.4 s), at the game's hero pace (4.6 tiles a second) | | | low and driving, knees high, heels flicked up, fists pumping hard by his sides, both feet off the floor for 7 of the 12 frames |
+| Running, THE FIGHTER'S BOUNCE (made new, 3 Nov: see “His run made new” at the end) | — | a 16-frame round (0.53 s), two springs, at the game's hero pace (4.6 tiles a second) | | | light springs on the balls of his feet, heels never down, both feet off the floor on each spring; his guard up, elbows tucked, chin down; his shoulders weaving |
 | The dodge jump | swipe | 40 (1.33 s) | 0–11, sunk deep, arms swung back | off the floor at 13 | a spring up and away a tile, his feet 27 over the floor (half his height), knees tucked, fists up; down at 25 deep in the dust; up on his toes by 40 |
 | The jab | tap | 28 (0.93 s) | 0–11, coiled back, the fist cocked by his cheek | 12 (one frame) | a stamping step in and the lead fist shot straight out, palm down; stepped back out by 28 |
 | The cross | tap | 28 (0.93 s) | 0–12, wound right back, the rear fist past his ear | 14 (two frames) | hips, shoulders and rear heel thrown round, the fist driven straight through, palm down; reels them |
@@ -500,3 +500,164 @@ Checks (`tests/veteran.test.ts`, all passing): the globes green a punch, hot ora
 or cyan, in the states shown him and in every frame of the film; the force, smear and burst of a punch green and of a kick
 hot orange, never pink, gold or cyan; the green itself an emerald (hue 135 to 155), at least 20 degrees of hue from the
 poison's greens, the Contagion meld's, the friend's cyan and the kick's orange, and bright enough to read.
+
+### His knees inside his trousers (3 Nov 2026)
+
+His words, 3 Nov 2026, 18:07: “Well first off the brawlers knees are clipping through his pants which is against the
+rules which I reminded you to follow multiple times”.
+
+His art rules: nothing passes through the body, and cloth follows the body it covers. His reminders on this figure, 2 Nov
+2026, 22:43: “Make sure his limbs all face the correct way, don’t make mistakes”; 22:44: “It can be over the top, I just
+don’t want his foot facing backwards or something”.
+
+THE CAUSE (`src/dev/sculpt_veteran.ts`, the trousers): each trouser leg was ONE STRAIGHT ROD of cloth, from the hip to past
+the knee. Standing nearly straight it held his leg; but the moment a knee bent, the knee and the bulk of the thigh above it
+left that straight line and stuck out of the cloth: his bare knee and thigh showed through his trousers in nearly every
+frame of every move (the new check below found his skin through them in 2176 of the 2184 pictures of 1937bce: his key
+poses and every frame of every move, each from in front, from behind and from the side; up to 269 pixels in one), worst
+where a knee comes up or he sinks low: the round kick's and the push kick's knees coming up, the jump's crouch, the
+spinning elbow's coil, the flying knee's and the uppercut's landings, the spinning jump kick's tucked legs.
+
+THE FIX: each trouser leg is now BUILT OVER HIS LEG, a cloth's thickness and some slack outside the leg's own shapes, at
+every bend:
+
+- THE THIGH: from the hip (and the seat over it) to the knee, laid over his thigh and over its great front muscle (the
+  same shapes as his leg, a length bigger all round), ending at the knee.
+- THE KNEE: a bag of cloth round the knee joint, a little bigger than the knee with the cloth's thickness, so however far
+  the knee bends (to the round kick's chamber, the flying knee, his deepest crouch) it stays inside.
+- THE SHIN: from the knee down to the ragged hem (0.14 of the way from the knee to the ankle, as before), over the shin and
+  the top of the calf, cut off flat there; the tatters hang from the hem as before.
+- FOLDS in the crook behind a bent knee: dark lines fanning round it, a lit edge beside each (only when the knee bends);
+  the long twisting folds down the leg and the frayed dark hem as before.
+
+THE OTHER PLACES CLOTH OR GEAR COVERS HIM, each checked the same way (every frame of every move and the stand, from in
+front, from behind and from the side), and fixed where the body showed through:
+
+- The bracers: the swell of his forearm's muscle near the elbow (and here and there the forearm itself) showed through
+  the leather (in 1989 of the 2184 pictures of 1937bce, up to 11 pixels). The bracer is now laced on over that swell too,
+  and a little thicker (from 2.85 to 3.05 at the elbow end, 2.2 to 2.4 at the wrist end).
+- The knuckle straps: the ends of his curled fingers and the corners of the block of his hand showed past the strap (in
+  938, up to 4 pixels). The strap now winds round the fingers' ends and the block of the hand.
+- The wrist straps: the corners of the block of his hand showed through the strap round the wrist (in 1351, up to 7
+  pixels). The strap now takes the hand's shape where the hand begins.
+- The shin wrap: the swell of his calf showed through it (in 622, up to 3 pixels). The wrap now winds on over the calf,
+  its stripes running round both.
+- The foot wraps: the top of his instep showed through (in 54, up to 2 pixels). The wrap now winds up over the instep,
+  and is a little wider and taller.
+- The belt and the seat: one pixel of his side showed below the belt in 9 pictures (the push kick and the spinning elbow,
+  from the side); with the new trousers, none.
+- The vest (chest and back, however he twists), the ankle wraps and the headband: nothing of him through them, before or
+  now.
+
+THE NEW CHECK (`coverFindings` in `tests/veteran_checks.ts`): in each picture of him, every pixel of his skin (and of his
+grey crop, under the headband) is put back where it is on him (the point of him the eye sees there), and asked which part
+of him it is and whether something he wears covers that part there. Where a garment covers him, not one pixel of him may
+show, through the cloth or past its outline: the trousers over the whole thigh, the knee and the shin down to the hem
+(only below the hem, through the tatters' gaps, may the shin show); the belt and the seat over his trunk below the vest's
+hem; the vest over his trunk all round but its open V down his front; the shin wrap, the ankle and foot wraps; the
+bracers; the knuckle and wrist straps (the thumb lies over them); the headband between its two slanting lines. Each
+zone's edges are where the garment is cut (the numbers are the design's, `COVERS`), kept 0.45 inside them.
+
+In `tests/veteran.test.ts`: every key pose from in front, from behind and from the side; every frame of every move and
+the stand from in front and from behind (with the figure's other checks) and, in a test of its own for each move, from
+the side; and a test that the check sees a bare knee (his trousers taken off his thigh and knee in the round kick's
+chamber, it finds his skin there). RUN AGAINST 1937bce (the version he saw), all 34 of these tests fail; now all 89 tests
+of `tests/veteran.test.ts` pass, his joint rule among them, every one as before.
+
+Pictures: `pictures/brawler_knees.png` (new, 1200 wide): before and now, three times the game's size, from the game's view,
+at the frame in each of eight moves where the most of his skin showed through his trousers in 1937bce (found by the check):
+standing (frame 44 of the stand), the jump sunk deep (frame 10), the round kick's knee hauled up (frame 7), the push
+kick's knee coming up (frame 5), the flying knee landed low (frame 43), the spinning jump kick in the air, legs tucked
+(frame 29), the spinning elbow's coil (frame 17), the flying uppercut landed low (frame 36); before, 177 to 269 pixels
+of his skin through the cloth in each; now none. Made by `tools/veteran_knees.ts` (run once in 1937bce's files, which
+finds the frames, and once in these) and `tools/veteran_knees.py`. Made again with the new trousers: `pictures/veteran.png`,
+`pictures/veteran_moves.mp4`, `pictures/veteran_moves_sheet.png` and `pictures/veteran_reach.png` (its BEFORE made again
+from 66660fc, as before, with the punch's green and now these trousers, so before and now still differ only in reach).
+
+FOR THE MAIN CHAT: his frames baked into the game (`game/veteran_baked.ts`, `tools/bake_veteran.ts` on `work-f4`) are
+from 1937bce and have his knees through his trousers: bake them again from this branch. Only what he wears changed (as
+above); his moves, timings, reach, globes and colours are as they were.
+
+### His run made new: the fighter's bounce (3 Nov 2026)
+
+His words, 3 Nov 2026, 18:08: “And his running animation is reused which I explicitly said not to do”. His word of 2 Nov:
+“I don’t want anything reused from the original brawler, we need a totally new look.” Asked what his new run should be,
+his pick: “Fighter's bounce”, offered as: light and springy on his toes, guard up as he goes, as if he's always ready to
+strike. And his word on him, 2 Nov, 22:06: “I gotta say it, follow all the rules.  I want him to look and play like an
+action movie hero.  Muscly, Bouncing on his toes”.
+
+THE CAUSE: his run (`runAt` in `src/dev/veteran_moves.ts`, 2 Nov) was built on the old Brawler's run (`brawlerRun` in
+`src/dev/brawler_moves.ts`): the same structure (each foot a phase through the round, down on the floor for a share of it,
+`RUN_ON` 0.3 against the Brawler's 0.32, then eased forward through the air the same way), the same carry (the hero pace
+by the same sum), the same round of 12 frames, the same swing of the hips with the legs and the chest against them, and
+the same fists pumping at his sides. Nothing of the old Brawler's files was imported (the test of that passed), but the
+run was the old one written out again, so it looked the same. It is gone.
+
+THE NEW RUN, WRITTEN FROM SCRATCH (nothing copied or adapted from `brawlerRun` or the old `runAt`; `bounceAt`, `ballAt`
+and `ankleFor` in `veteran_moves.ts`). He goes in SPRINGS, one off each foot. For each spring the BALL of one foot is set
+down on a spot of the floor and held on that spot while the game carries him over it (his heel never comes down: he is
+on his toes the whole way); he sinks a little into the spring and rolls right up onto his toes, and is off it; then BOTH
+FEET ARE OFF THE FLOOR, going up with him, while he flies to the next spot, which the other foot's ball comes down on. Each
+ball is worked out where it is (on its spot, or on its way through the air), and his ankle is put where that ball needs
+it, the foot tipped as it is then. His upper body rides steady in his GUARD, his stance's own, all the way: elbows tucked
+to his ribs, fists by his cheeks (they give a touch as he sinks), chin down, eyes straight ahead; his shoulders weave a
+little from side to side, over each foot in turn; his hips turn with his legs and his chest turns back against them, so
+that the guard stays put. His headband's tails stream out behind him with his speed. A small puff of dust off each ball
+as he springs off it.
+
+Its numbers (his measure: he is 58 tall; a tile is 39.2):
+
+- A ROUND OF 16 FRAMES (0.53 s): two springs of 8, one off each foot. Why 16: at the game's hero pace (4.6 tiles a
+  second, as before) a spring of 8 frames carries him 48 of his measure, 1.23 tiles: long, light bounds with real time in
+  the air; that is 3.75 springs a second, nearly twice his stand's bounce (a bounce every 15 frames, 2 a second), so it
+  reads as going somewhere, not bouncing on the spot; and two springs (one off each foot) is the least round that loops.
+  (12 frames would make springs of 0.92 tiles at 5 a second, a scurry; 20, leaps of 1.5 tiles at 3 a second, floaty.)
+  A round carries him 2.45 tiles.
+- EACH BALL ON THE FLOOR 3 FRAMES of its spring (0.1 s, a quick touch on the toes; it is down in 4 of the 8 pictures of
+  a spring, from the one it lands in to the one it springs off in); BOTH FEET OFF THE FLOOR the other 5 (frames 4 to 7
+  and 12 to 15). Each ball comes down 9 of his measure ahead of the point under him and 4.2 out to its side (a fighter's
+  base: his feet never cross), and is held on that spot while he is carried 18 (0.46 tiles) over it: NO SLIDE.
+- ON THE BALLS OF HIS FEET: each foot comes down tipped 32 degrees up onto its ball, sinks to 24 as he takes his weight,
+  rolls up to 54 as he springs off; his heels never lower than 3.3 over the floor.
+- THE SPRING: his hips from 26.8 over the floor (sunk into the touch) to 32.4 (in the air), 5.6 up and down each spring.
+- IN THE AIR a ball peels up behind him, swings through under him (up to 8.2 off the floor, going up with him), reaches on
+  ahead of its next spot and paws back onto it at the floor's own speed, so it comes down without a scuff.
+- HIS GUARD in every frame (as his stance: `GUARD_ELBOW`); his chest turned 14 degrees (lead shoulder forward, 11 to 17
+  as he weaves), his hips turning 1 to 15 with his legs; his shoulders weaving 5 degrees to each side; his chin down 5
+  degrees; his eyes straight ahead along his way in every frame.
+
+How it reads against the old: the old Brawler's run and his old one leant in low and drove, fists pumping by their
+sides, heels flung up behind, landing flat, a quick 12-frame round; the new one is up on his toes in bigger, springier
+bounds, his fists never leave his face, chin tucked, and his shoulders weave; and unlike his stand's bounce it travels.
+
+Pictures:
+
+- `pictures/brawler_run.png` (new, 1200 by 1748): the old Brawler's run, his old run and his new run, side by side at the
+  same four moments (a foot comes down; on it; springing off it; in the air), each from in front and from behind, three
+  times the game's size. Made by `tools/veteran_runs.ts` (the old Brawler's run; his old run, run in the files of 92c4a95;
+  his new run, run in these) and `tools/veteran_runs.py`.
+- `pictures/veteran_moves.mp4` made again: the run is now “RUNNING · the fighter’s bounce”, three rounds (six springs, 1.6
+  s), from in front and from behind (58.6 s in all). `pictures/veteran_moves_sheet.png` made again: the run's row (a ball
+  down on its spot, heel up; sunk into the spring, guard up; sprung, both feet off the floor). (The sheet's tool now scales
+  its pictures itself instead of bringing in the king's scene, which brought in the whole game, old Brawler and all.)
+
+Checks (`tests/veteran.test.ts`, all passing): his run through everything every move goes through, every frame from in
+front and from behind (crisp, the friend's edge, no pink, nothing cut off, nothing in the floor, his body clean, nothing of
+him through what he wears) and from the side (nothing through what he wears, `coverFindings`); his joint rule every frame
+(`tests/veteran_checks.ts`); slick, a foot down never moving. And new for the run: WRITTEN NEW (no file of his, his film or
+his sheet brings in `brawler_moves.ts` or any Brawler file, and none of the old run's names, its round, its carry, its
+foot's share on the floor, its dwell or heel kick, is in it); on the balls of his feet the whole way (no heel ever within
+3 of the floor, sampled four times a frame; each ball down 3 frames a spring); both feet off the floor on each spring, the
+hips lowest in the touch and highest in the air; A BALL DOWN NEVER SLIDES (each ball, sampled every tenth of a frame
+through two rounds and round the loop, stays within 0.02 of its spot), its spots a spring apart, at the hero pace; his
+guard up in every frame (elbows tucked inside his shoulders and below his fists, fists by his cheeks), chin down, eyes
+ahead; the tails streaming back behind him in every frame and never through him; it travels (1.23 tiles a spring, 3.75
+springs a second; his stand does not travel).
+
+FOR THE MAIN CHAT: bake him again from this branch. His run is now a round of 16 frames (it was 12), carried at the same
+hero pace, so a round now covers 2.45 tiles (4.6 × 16 / 30; it was 1.84): his `walk` list is 16 long and its
+`walkStride` is the run's own `carryAt(VET_RUN, VET_RUN.long)`. On `work-f4`, `tests/veteran_art.test.ts` says 12 in two
+places (`4.6 * (12 / 30)` and `carryAt(motionById('run'), 12)`): they become the run's own `long`; and the comment in
+`src/art/veteran_art.ts` (“its 12-frame round”) becomes 16. Run `tools/bake_veteran.ts` again (the run's carry is listed
+frame by frame, now 0 to 16). Nothing else of his changed: his stance, moves, timings, reach, globes and colours are as
+they were.

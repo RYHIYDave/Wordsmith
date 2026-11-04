@@ -19,7 +19,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { primDist } from '../src/dev/sculpt';
+import { draw, primDist } from '../src/dev/sculpt';
 import { VET_ALL, VET_BUILD, VET_FIST, VET_MOVES, VET_STANCE, VET_STANCE_UP, paintVeteran, sculptVeteran } from '../src/dev/sculpt_veteran';
 import { GLOBE_GREEN, GLOBE_ORANGE, GLOBE_STATES, paintGlobes } from '../src/dev/veteran_globes';
 import { P } from '../src/art/palette';
@@ -87,11 +87,11 @@ test('built fresh: nothing of the original Brawler is in the Veteran or his glob
   assert.deepEqual(direct, [], 'the sheet imports a Brawler file');
 });
 
-test('every pose, from in front, from behind and from the side: crisp, edged in the friend’s cyan, no pink, nothing cut off, in no floor, arms clear of his trunk', () => {
+test('every pose, from in front, from behind and from the side: crisp, edged in the friend’s cyan, no pink, nothing cut off, in no floor, arms clear of his trunk, nothing of him through what he wears', () => {
   for (const p of VET_ALL) {
     for (const turn of [0, 90, 45]) {
       const d = paintVeteran(p, turn);
-      const found = [...pictureFindings(d.px), ...bodyFindings(d.fig.sc, true).filter((x) => !(p.air && x.startsWith('standing on nothing')))];
+      const found = [...pictureFindings(d.px), ...bodyFindings(d.fig.sc, true).filter((x) => !(p.air && x.startsWith('standing on nothing'))), ...coverFindings(d, turn, VET_CANVAS.ax, VET_CANVAS.ay)];
       assert.deepEqual(found, [], `${p.id} turned ${turn}`);
     }
   }
@@ -226,7 +226,7 @@ import { Px } from '../src/engine/px';
 import { crescent, impact, shockCone, smear } from '../src/dev/veteran_fx';
 import { FX_KICK, FX_PUNCH } from '../src/dev/veteran_fx';
 import { blowsOf, globesAt, playLong } from '../src/dev/veteran_scene';
-import { cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
+import { coverFindings, cross3, dot3, jointFindings, len3, sub3 } from './veteran_checks';
 import { VET_FILM } from '../src/dev/veteran_plays';
 
 const MOVES_ALL: VetMotion[] = [...VET_MOTIONS, closeKickOf(1.25 * VET_TILE, 'spinkickC')];
@@ -262,13 +262,14 @@ function jolts(m: VetMotion): number[] {
 }
 
 for (const m of MOVES_ALL) {
-  test(`${m.name} (${m.id}): every frame, from in front and from behind: crisp, the friend’s edge, no pink, nothing cut off, nothing in the floor, his body clean, no solid flattened`, () => {
+  test(`${m.name} (${m.id}): every frame, from in front and from behind: crisp, the friend’s edge, no pink, nothing cut off, nothing in the floor, his body clean, no solid flattened, nothing of him through what he wears`, () => {
     const found: string[] = [];
     for (const f of framesOf(m)) {
       const p = vetAt(m, f);
       for (const view of [0, 90]) {
         const d = paintVeteran(p, view + placeOf(m, f).turn);
         for (const x of pictureFindings(d.px)) found.push(`f${f} ${view}: ${x}`);
+        for (const x of coverFindings(d, view + placeOf(m, f).turn, VET_CANVAS.ax, VET_CANVAS.ay)) found.push(`f${f} ${view}: ${x}`);
         for (const x of bodyFindings(d.fig.sc, true)) if (!(p.air && x.startsWith('standing on nothing'))) found.push(`f${f} ${view}: ${x}`);
         if (view === 0) for (const x of flattened(d.fig.sc as never)) found.push(`f${f}: ${x}`);
       }
@@ -338,6 +339,36 @@ for (const m of MOVES_ALL) {
     assert.deepEqual([...new Set(found)], []);
   });
 }
+
+// HIS WORD, 3 Nov 2026, 18:07: “Well first off the brawlers knees are clipping through his pants which is against the rules
+// which I reminded you to follow multiple times”. Every frame of every move, from in front and from behind (above, with the
+// figure's checks) AND FROM THE SIDE (here): wherever the trousers cover his legs (from the hip down to the ragged hem), the
+// belt and the seat his waist, the vest his trunk, the wraps his shin, ankles and feet, the bracers his forearms, the straps
+// his hands and the headband his head, not one pixel of him shows through or past them (tests/veteran_checks.ts).
+for (const m of MOVES_ALL) {
+  test(`${m.name} (${m.id}): every frame, from the side: nothing of him through what he wears (his knees never through his trousers)`, () => {
+    const found: string[] = [];
+    for (const f of framesOf(m)) {
+      const turn = 45 + placeOf(m, f).turn;
+      for (const x of coverFindings(paintVeteran(vetAt(m, f), turn), turn, VET_CANVAS.ax, VET_CANVAS.ay)) found.push(`f${f}: ${x}`);
+    }
+    assert.deepEqual([...new Set(found)], []);
+  });
+}
+
+test('the check sees a knee through the trousers: his trousers taken off his thigh and knee in the round kick’s chamber, it finds his skin there', () => {
+  const p = motionById('roundkick');
+  const pose = vetAt(p, p.strikes[0].from);
+  const d0 = paintVeteran(pose, 0);
+  assert.deepEqual(coverFindings(d0, 0, VET_CANVAS.ax, VET_CANVAS.ay), [], 'clean as he is');
+  // (the same figure, the cloth over his thighs and knees left off: what the check must catch)
+  const fig = sculptVeteran(pose, 0);
+  const keep = fig.sc.prims.filter((q) => !(q.piece.startsWith('leg') && ['leg', 'thighFold', 'kneeBag'].includes(q.tag ?? '')));
+  fig.sc.prims.length = 0;
+  fig.sc.prims.push(...keep);
+  const d1 = { ...draw(fig.sc, 'front', VET_CANVAS.ax, VET_CANVAS.ay, VET_CANVAS, undefined, '#22d0e0'), fig };
+  assert.ok(coverFindings(d1, 0, VET_CANVAS.ax, VET_CANVAS.ay).some((x) => x.includes('through the trousers')), 'a bare knee not seen');
+});
 
 test('every strike is one or two frames from its held wind-up to the blow, and SMEARED: a great band along its path, much bigger than the stills’ streak', () => {
   for (const m of MOVES_ALL) {
@@ -604,4 +635,154 @@ test('a first hold is the round kick: on its own, first in combo 4 (round kick, 
     if (first && c.steps[0].input === 'hold') assert.ok(first.move === 'roundkick', `combo ${c.n} starts with ${first.move}`);
   }
   assert.ok(motionById('roundkick').input === 'hold', 'a lone hold');
+});
+
+// =============================================================================================
+// HIS RUN, THE FIGHTER'S BOUNCE. His words, 3 Nov 2026, 18:08: “And his running animation is reused which I explicitly said
+// not to do”; his of 2 Nov: “I don’t want anything reused from the original brawler, we need a totally new look.” His pick for
+// the new one: “Fighter's bounce” (light and springy on his toes, guard up as he goes, as if he's always ready to strike).
+// So: written new (nothing of the old Brawler's run, dev/brawler_moves.ts, in it or brought in by it); on the balls of his
+// feet the whole way, never his heels; springing, both feet off the floor on each spring; a ball down on the floor held on
+// its spot however the game carries him (never a slide, sampled between frames too, round the loop); his guard up in every
+// frame; his tails streaming back, never through him; at the hero pace; and it travels (not his stand's bounce).
+import { VET_BOUNCE, VET_RUN } from '../src/dev/veteran_moves';
+
+/** The run's own lines in his moves (from its heading to the next). */
+const runSource = (): string => {
+  const src = fs.readFileSync('src/dev/veteran_moves.ts', 'utf8');
+  const a = src.indexOf('// HIS RUN: THE FIGHTER');
+  const b = src.indexOf('// THE MOVES.', a);
+  assert.ok(a > 0 && b > a, 'his run found in his moves');
+  return src.slice(a, b);
+};
+
+test('his run is written new: nothing of the old Brawler’s run in it (no file of his brings in dev/brawler_moves.ts; none of its run’s names or its foot cycle)', () => {
+  // (no file of his, nor anything they bring in, is a Brawler file: his moves, film, sheet and their pieces)
+  for (const f of ['src/dev/veteran_moves.ts', 'src/dev/veteran_scene.ts', 'src/dev/veteran_plays.ts', 'tools/veteran_film.ts', 'tools/veteran_sheet.ts']) {
+    const bad = [...closureOf(f)].filter((x) => /brawler_moves|brawler/i.test(x));
+    assert.deepEqual(bad, [], `${f} brings in an old Brawler file`);
+  }
+  // (none of the old run's own names: its round, its carry, its foot's time on the floor, its dwell and heel kick, its maker)
+  const run = runSource();
+  for (const name of ['brawlerRun', 'RUN_ROUND', 'RUN_CARRY', 'RUN_ON', 'RUN_LONG', 'DWELL', 'KICK', 'runAt', 'BRAWLER']) assert.ok(!new RegExp(`\\b${name}\\b`).test(run), `the run uses the old run's ${name}`);
+  // (and it is not shaped as the old one was: not a round of 12 with fists pumping at his sides)
+  assert.ok(VET_RUN.long === 16 && VET_RUN.fn !== undefined, 'a round of 16, worked out frame by frame');
+});
+
+test('his run is on the balls of his feet the whole way: no heel ever down, a ball down on its spot once a spring', () => {
+  const m = VET_RUN;
+  let downs = 0;
+  for (let f = 0; f < m.long; f += 0.25) {
+    const s = skel(poseAt(m, f));
+    for (const side of ['L', 'R'] as const) {
+      const heel = side === 'L' ? s.heelL : s.heelR;
+      const toe = side === 'L' ? s.toeL : s.toeR;
+      assert.ok(heel[2] > 3, `f${f}: the ${side} heel ${heel[2].toFixed(2)} over the floor`);
+      assert.ok(toe[2] > -0.05, `f${f}: the ${side} ball in the floor (${toe[2].toFixed(2)})`);
+      if (toe[2] < 0.05) downs++;
+    }
+  }
+  // (each ball is down TOUCH frames a round: 3 of 16, sampled four times a frame, the frame it lands and lifts both)
+  assert.ok(downs >= 2 * VET_BOUNCE.touch * 4 && downs <= 2 * (VET_BOUNCE.touch * 4 + 1), `${downs} samples with a ball down`);
+});
+
+test('his run springs: both feet off the floor on each spring (5 frames of its 8), one foot down the rest; the hips lowest in the touch and highest in the air', () => {
+  const m = VET_RUN;
+  const air: number[] = [];
+  const hips: number[] = [];
+  for (let f = 0; f < m.long; f++) {
+    const s = skel(poseAt(m, f));
+    const down = [s.toeL[2] < 0.05, s.toeR[2] < 0.05];
+    assert.ok(!(down[0] && down[1]), `f${f}: both feet down`);
+    if (!down[0] && !down[1]) air.push(f);
+    hips.push(s.pelvis[2]);
+  }
+  assert.deepEqual(air, [4, 5, 6, 7, 12, 13, 14, 15], 'both feet off the floor 4 to 7 and 12 to 15 (and between the frames up to the next touch)');
+  const lo = Math.min(...hips);
+  const hi = Math.max(...hips);
+  assert.ok(hi - lo > 4, `the spring: his hips ${lo.toFixed(1)} to ${hi.toFixed(1)}`);
+  assert.ok(hips[1] < hips[0] && hips[5] > hips[3], 'sinks into the touch, rises into the air');
+});
+
+test('his run: a ball down on the floor is held on its spot as the game carries him (no slide, sampled a tenth of a frame apart, round the loop); at the hero pace', () => {
+  const m = VET_RUN;
+  // (the game's hero pace, 4.6 tiles a second, art/moves3.ts GRIP_SPEED: what the game carries him at)
+  assert.ok(Math.abs((carryAt(m, m.long)[0] / VET_TILE) * (30 / m.long) - 4.6) < 1e-9, 'at the hero pace');
+  for (const side of ['L', 'R'] as const) {
+    let spot: V3 | null = null;
+    let spots = 0;
+    // (two rounds, carried on: the second round's spots are a round's floor on from the first's)
+    for (let i = 0; i <= 2 * m.long * 10; i++) {
+      const f = i / 10;
+      const s = skel(poseAt(m, f));
+      const b = worldOf(m, f, side === 'L' ? s.toeL : s.toeR);
+      if (b[2] < 0.05) {
+        if (!spot) {
+          spot = b;
+          spots++;
+        }
+        assert.ok(Math.hypot(b[0] - spot[0], b[1] - spot[1]) < 0.02, `${side} f${f.toFixed(1)}: the ball slid ${Math.hypot(b[0] - spot[0], b[1] - spot[1]).toFixed(3)} off its spot`);
+      } else spot = null;
+    }
+    assert.ok(spots >= 2, `${side}: down on ${spots} spots in two rounds`);
+  }
+  // (and its spots a spring apart, along his way: each spring carries him a round's floor over two)
+  const spotsOf = (side: 'L' | 'R'): number[] => {
+    const xs: number[] = [];
+    let was = false;
+    for (let i = 0; i <= 3 * m.long * 10; i++) {
+      const s = skel(poseAt(m, i / 10));
+      const b = worldOf(m, i / 10, side === 'L' ? s.toeL : s.toeR);
+      if (b[2] < 0.05 && !was) xs.push(b[0]);
+      was = b[2] < 0.05;
+    }
+    return xs;
+  };
+  const L = spotsOf('L');
+  const R = spotsOf('R');
+  assert.ok(Math.abs(L[1] - L[0] - carryAt(m, m.long)[0]) < 0.05 && Math.abs(R[0] - L[0] - carryAt(m, m.long)[0] / 2) < 0.05, `the spots: left ${L.map((x) => x.toFixed(1))}, right ${R.map((x) => x.toFixed(1))}`);
+});
+
+test('his run: his guard up in every frame (fists by his cheeks, elbows tucked in below them, inside his shoulders), his chin down, his eyes on where he is going', () => {
+  const m = VET_RUN;
+  for (let f = 0; f < m.long; f++) {
+    const s = skel(poseAt(m, f));
+    const [, cl, cu] = s.chest;
+    const mid: number[] = [(s.shoulderL[0] + s.shoulderR[0]) / 2, (s.shoulderL[1] + s.shoulderR[1]) / 2, (s.shoulderL[2] + s.shoulderR[2]) / 2];
+    const out = (q: readonly number[]): number => Math.abs(dot3(sub3(q, mid), cl));
+    const up = (q: readonly number[]): number => dot3(sub3(q, mid), cu);
+    for (const side of ['L', 'R'] as const) {
+      const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+      const el = side === 'L' ? s.elbowL : s.elbowR;
+      const ha = side === 'L' ? s.handL : s.handR;
+      assert.ok(out(el) < out(sh) - 1.5, `f${f}: the ${side} elbow ${out(el).toFixed(1)} out, the shoulder ${out(sh).toFixed(1)}`);
+      assert.ok(up(el) < up(ha) - 8, `f${f}: the ${side} elbow not well below its fist`);
+      assert.ok(out(ha) < 8 && up(ha) > up(s.neck) - 1.5, `f${f}: the ${side} fist not up by his cheek`);
+      assert.ok(len3(sub3(ha, s.head)) < 13, `f${f}: the ${side} fist ${len3(sub3(ha, s.head)).toFixed(1)} from his head`);
+    }
+    const [fw] = s.face;
+    assert.ok(fw[2] < 0 && fw[2] > -0.2, `f${f}: his chin not down (${fw[2].toFixed(2)})`);
+    assert.ok(Math.abs(Math.atan2(fw[1], fw[0])) < (8 * Math.PI) / 180, `f${f}: his eyes off where he is going`);
+  }
+});
+
+test('his run: the headband’s tails stream back behind him with his speed in every frame, and never pass through him', () => {
+  const m = VET_RUN;
+  for (let f = 0; f < m.long; f++) {
+    const fig = sculptVeteran(vetAt(m, f), 0);
+    const body = fig.sc.prims.filter((q) => !q.carve && !['tailA', 'tailB', 'band'].includes(q.piece));
+    for (const t of fig.tails) {
+      for (const pt of t.slice(2)) assert.ok(Math.min(...body.map((q) => primDist(q, pt))) > 0.4, `f${f}: a tail through him`);
+      const end = t[t.length - 1];
+      assert.ok(end[0] < fig.s.head[0] - 12, `f${f}: a tail's end only ${(fig.s.head[0] - end[0]).toFixed(1)} behind his head`);
+    }
+  }
+});
+
+test('his run travels, and reads apart from his stand: carried 1.23 tiles a spring at 3.75 springs a second (his stand bounces 2 a second, on the spot)', () => {
+  const spring = carryAt(VET_RUN, VET_BOUNCE.spring)[0] / VET_TILE;
+  assert.ok(Math.abs(spring - 1.2266) < 0.01, `a spring carries him ${spring.toFixed(3)} tiles`);
+  assert.ok(Math.abs(30 / VET_BOUNCE.spring - 3.75) < 1e-9, 'springs a second');
+  const stand = motionById('stand');
+  assert.ok(!stand.carry && Math.abs(carryAt(stand, stand.long)[0]) < 1e-9, 'his stand does not travel');
 });
