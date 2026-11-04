@@ -16,6 +16,7 @@
 // The gate's pillars, arch and the day through it, the stairs down, the waypoint, the town's own things, its braziers, barrels,
 // urn and pillars are drawn where the game draws them (render.ts, main.ts).
 
+import { forgetMade as forgetCastleMade } from '../art/castle_hall';
 import { AIR_DEPTH, CASTLE_HALL, CASTLE_LIGHTS, CASTLE_OWL_AT, GATE_AT, HALL, SUN_WINDOWS, TRUSSES_X, TRUSSES_Y, TRUSS_DEPTH, dayLights, makeCastleHallArt } from '../art/castle_hall';
 import type { CastleHallArt } from '../art/castle_hall';
 import type { Sprite } from '../engine/px';
@@ -46,6 +47,7 @@ export class CastleView implements LookView {
 
   /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
   forget(): void {
+    forgetCastleMade();
     this.art = null;
     this.laidAt = null;
     this.laidMemo = new Map();

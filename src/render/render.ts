@@ -5,15 +5,12 @@
 import { forgetMade as forget_tomb } from '../art/tomb';
 import { forgetMade as forget_tomb_gate } from '../art/tomb_gate';
 import { forgetMade as forget_grounds } from '../art/grounds';
-import { forgetMade as forget_yard } from '../art/yard';
-import { forgetMade as forget_yard_gate } from '../art/yard_gate';
 import { forgetMade as forget_prison } from '../art/prison';
 import { forgetMade as forget_prison_gate } from '../art/prison_gate';
 import { forgetMade as forget_chapel } from '../art/chapel';
 import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
 import { forgetMade as forget_lair_gate } from '../art/lair_gate';
-import { forgetMade as forget_castle_hall } from '../art/castle_hall';
 import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
@@ -543,14 +540,13 @@ export class Renderer {
       this.lookGrounds.delete(v);
     }
     if (!L.floor.yard) this.yard.forget();
-    // (and the art's own made copies: each floor's look and its gate; the town's hall)
+    // (and the art's own made copies: each floor's look and its gate; the town's hall and the yard's, by their own views' forget)
     const groups: [LookView, (() => void)[]][] = [
       [this.tomb, [forget_tomb, forget_tomb_gate]],
-      [this.grounds, [forget_grounds, forget_yard, forget_yard_gate]],
+      [this.grounds, [forget_grounds]],
       [this.prison, [forget_prison, forget_prison_gate]],
       [this.chapel, [forget_chapel, forget_chapel_gate]],
       [this.lair, [forget_lair_temple, forget_lair_gate]],
-      [this.castle, [forget_castle_hall]],
     ];
     for (const [v, fns] of groups) if (v !== keep) for (const fn of fns) fn();
   }
