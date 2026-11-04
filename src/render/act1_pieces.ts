@@ -63,6 +63,9 @@ import type { Cam } from './fx';
 import { PIECE } from './outdoor';
 // (THE RIVERS FLOWING and the livelier wheel, the art chat's, behind FLOW)
 import { FLOW } from '../art/flowing';
+// (FLOORS 8 AND 9 FROM HIS PHONE, behind F8F9_FIX, off: the Pinewood's footbridges whole, Echo Canyon's door carved into its wall)
+import { F8F9_FIX } from '../game/f8f9';
+import { bridgeOf, doorOf, forgetMade as forgetF8F9Made } from '../art/f8f9';
 import type { Painter } from './painter';
 
 const MAPS = new Map<number, Map<string, Piece>>();
@@ -208,6 +211,8 @@ export class Act1Pieces {
     this.beatOf.clear();
     this.stands.clear();
     this.played = (this.dress?.moments ?? []).map((host) => ({ host, state: 'wait', t0: 0, last: -1, shown: false }));
+    // (F8F9_FIX: the last floor's bridges and door let go: made again for this one if it has them)
+    forgetF8F9Made();
     if (!this.dress) {
       this.map = null;
       return false;
@@ -236,6 +241,31 @@ export class Act1Pieces {
       const p = this.piece(t.name);
       const sp = p?.frames?.[t.frame % (p.frames.length || 1)];
       if (sp) g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
+    }
+    // (F8F9_FIX: each footbridge's deck, whole, square to the stream: its rails stand in depth, standBridges)
+    if (F8F9_FIX.on) {
+      for (const [k, b] of (this.land?.bridges ?? []).entries()) {
+        if (b.ang === undefined || b.x === undefined || b.y === undefined) continue;
+        const [sx, sy] = wxy(b.x, b.y);
+        if (sx < -160 || sx > W + 160 || sy < -100 || sy > H + 100) continue;
+        const sp = bridgeOf(b.ang, b.len ?? 2.84, b.wide ?? 1.6, k + 1).deck;
+        g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
+      }
+    }
+  }
+
+  /**
+   * (F8F9_FIX) THE FOOTBRIDGES' RAILS, in depth: each span of rail with its posts stood at the place along its own side, so that a body
+   * on the deck is in front of the far rail and behind the near one, and one on the bank behind the bridge behind both.
+   */
+  standBridges(cam: Cam, W: number, H: number, stand: (d: number, s: Sprite, x: number, y: number) => void): void {
+    if (!F8F9_FIX.on) return;
+    for (const [k, b] of (this.land?.bridges ?? []).entries()) {
+      if (b.ang === undefined || b.x === undefined || b.y === undefined) continue;
+      const sx = wx(cam, b.x, b.y);
+      const sy = wy(cam, b.x, b.y);
+      if (sx < -160 || sx > W + 160 || sy < -100 || sy > H + 140) continue;
+      for (const r of bridgeOf(b.ang, b.len ?? 2.84, b.wide ?? 1.6, k + 1).rails) stand(b.x + r.dx + b.y + r.dy, r.s, Math.round(sx), Math.round(sy));
     }
   }
 
@@ -267,6 +297,8 @@ export class Act1Pieces {
     }
     if (bell !== null) return fr[bell % fr.length] ?? fr[0];
     if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
+    // (F8F9_FIX: Echo Canyon's way in, carved into its wall: art/f8f9.ts)
+    if (F8F9_FIX.on && p.name === "the waystation's gate" && this.dress.floor === 8 && !(p.variant & 1)) return doorOf(p.state === 1);
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
     // (THE HIGH CITY, FLOOR 17: THE GREAT EBONY CLOCK, its six frames for the way it stands (its variant the first): its pendulum's
     // four over and over at its slow beat, a swing each 0.6 s; at its chime (its state 1: game/act2/masque_rules.ts) the hammer
@@ -346,6 +378,8 @@ export class Act1Pieces {
   shadowOf(p: PropInst): number {
     if (p.kind === 'barrel' || p.kind === 'urn') return p.state === 0 ? 0.24 : 0;
     if (p.kind !== 'piece' || !p.name) return 0;
+    // (F8F9_FIX: the door carved into the canyon's wall casts no shadow out on the floor)
+    if (F8F9_FIX.on && p.name === "the waystation's gate" && this.dress?.floor === 8) return 0;
     return this.piece(p.name)?.shadow ?? 0;
   }
 

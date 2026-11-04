@@ -16,6 +16,8 @@
 // the ground's speed (the art chat's note: "lay the sky behind the ground and slide it slower").
 
 import { CANYON_LOOK } from '../art/canyon';
+// (FLOORS 8 AND 9 FROM HIS PHONE, behind F8F9_FIX, off: game/f8f9.ts)
+import { F8F9_FIX } from '../game/f8f9';
 import { fenLook } from '../art/fen';
 import { SKY_WRAP, cloudBelow, ledgeLook, paintSky } from '../art/ledge';
 import { paintTown } from '../art/ledge_town';
@@ -282,6 +284,9 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
+      // (F8F9_FIX: each stronghold's door carved into a wall cut straight along its yard's back line, its apron of flags on the floor
+      // before it: art/terrain.ts cutIn, art/f8f9.ts carvedDoor; game/act1_dress.ts lays the court 6 by 3 from (gx - 3, gy))
+      if (F8F9_FIX.on && land.holds.length) return { ...CANYON_LOOK, cutIn: land.holds.map((q) => ({ x0: q.gx - 3.3, x1: q.gx + 3.3, y: q.gy, apron: [q.gx - 3, q.gy, q.gx + 3, q.gy + 3] as const })) };
       return CANYON_LOOK;
     case 'ledge': {
       const drop = land.drop;
