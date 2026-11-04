@@ -137,7 +137,22 @@ export const VET_TUNE = {
   swipeWaits: 0.35,
   /** (25.0.1) The enemy a press aimed at fallen before its move begins: the move goes at the nearest within this (tiles, near side) and in his sight. */
   retarget: 3.5,
+  /**
+   * (25.0.2) His pace while he winds up a blow or winds down from it, as a share of his walking pace (his word, 3 Nov 2026: “can i
+   * get the ability to move around during the windups and wind downs of the hits?  that would probably help”). Not while the blow
+   * goes out, nor in the air, nor in his dodging jump.
+   */
+  walk: 0.6,
 };
+
+/** (25.0.2) Whether he may walk himself `f` frames into move `id`: in its wind-up or its wind-down, not as its blow goes out, nor in the air. */
+export function vetWalkable(id: VetBlowId, f: number): boolean {
+  const m = VET_MOVES[id];
+  if (id === 'dodge' || !m.strike || !m.force) return false;
+  if (m.air && f >= m.air[0] - 1 && f <= m.air[1] + 1) return false;
+  const end = (m.force.from ?? m.strike.at) + m.force.long;
+  return f < m.strike.from || f > end + 1;
+}
 
 /**
  * HIS TREE'S NUMBERS (game/talents.ts VETERAN_TREE; their rules in game.ts, “THE VETERAN”): starting numbers, as the cards say
@@ -185,6 +200,11 @@ export interface VetPlaying {
    */
   ax?: number;
   ay?: number;
+  /** (25.0.2) The enemy it was aimed at, if any: as its blow begins it goes straight at where that one is then. */
+  tid?: number;
+  /** (25.0.2) How far he has walked himself while it was being played (tiles): his blow goes out from where he is. */
+  wx?: number;
+  wy?: number;
   /** How far the game has carried him so far (tiles along his forward and to his left): the rest is carried as the frames go. */
   carried: [number, number];
   /** The monsters its blow has struck (each once). */
