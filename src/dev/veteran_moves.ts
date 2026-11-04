@@ -788,43 +788,102 @@ function standAt(f: number): Q {
 }
 
 // ---------------------------------------------------------------------------------------------
-// HIS RUN: an action hero's run, light and fast. Twelve frames round (two strides), at the game's hero pace; low and
-// driving, leaning into it, his knees coming up high in front and his heels flicked up behind; his fists pumping hard,
-// close by his sides, elbows bent; chin up; both feet off the floor between strides; each foot down stays where it is
-// (the game carries him; a foot down goes back under him just as fast).
-const RUN_LONG = 12;
-const RUN_CARRY = (HERO_PACE * VET_TILE) / VFPS;
-const RUN_ON = 0.3;
-function runAt(f: number): Q {
-  const P0 = RUN_LONG;
-  const S = RUN_CARRY * P0;
-  const A = (S * RUN_ON) / 2;
-  const C = 2.5;
-  const foot = (phase: number): { x: number; z: number; p: number } => {
-    const q = ((phase % 1) + 1) % 1;
-    if (q < RUN_ON) return { x: C + A - S * q, z: 0, p: 10 };
-    const v = (q - RUN_ON) / (1 - RUN_ON);
-    const go = v * v * (3 - 2 * v);
-    const z = 16 * Math.sin(Math.PI * v) * (v < 0.5 ? 1 : 1);
-    const p = v < 0.35 ? 10 + 60 * Math.sin((Math.PI / 2) * (v / 0.35)) : v < 0.85 ? 70 - 70 * ((v - 0.35) / 0.5) : 10 * ((v - 0.85) / 0.15);
-    return { x: C + A + S * go - S * q, z, p };
+// HIS RUN: THE FIGHTER'S BOUNCE. His words, 3 Nov 2026, 18:08: “And his running animation is reused which I explicitly
+// said not to do” (his word of 2 Nov: “I don’t want anything reused from the original brawler, we need a totally new
+// look.”). Asked what his run should be, his pick: “Fighter's bounce”, offered as: light and springy on his toes, guard up
+// as he goes, as if he's always ready to strike.
+//
+// WRITTEN NEW, NOTHING OF THE OLD RUN'S (which was built on the old Brawler's: its foot cycle, its carry, its pumping arms;
+// a test keeps them apart). How it is made here: he goes in SPRINGS, one off each foot. For each spring the BALL of one foot
+// is set down on a spot of the floor of the scene (his heel never comes down: he is on his toes the whole way) and is held
+// on that spot while the game carries him over it; he sinks into the spring and rolls up onto his toes, and is off it; then
+// BOTH FEET ARE OFF THE FLOOR while he flies to the next spot, which the other foot's ball comes down on. Each foot's ball is
+// worked out where it is (on its spot, or on its way through the air to the next), and his ankle put where that ball needs
+// it, foot tipped as it is then. His upper body rides steady in his GUARD, his stance's own (elbows tucked to his ribs,
+// fists by his cheeks), chin down, eyes on where he is going; his shoulders weave a little from side to side, over each
+// foot in turn; his hips turn with his legs and his chest turns back against them, so that the guard stays put. His
+// headband's tails stream out behind him with his speed (vetAt: the wind of his head going forward).
+//
+// THE NUMBERS. A round of 16 frames (0.53 s): two springs of 8 frames each. At the game's hero pace (4.6 tiles a second)
+// each spring carries him 48 of his measure, 1.23 tiles: long, light bounds. Each ball is on the floor 3 frames of its
+// spring (0.1 s, a quick touch on the toes) and BOTH FEET ARE OFF THE FLOOR the other 5. That is 3.75 springs a second,
+// nearly twice his stand's bounce (2 a second): it reads as going somewhere, not bouncing on the spot.
+const BOUNCE_LONG = 16;
+/** One spring: eight frames, a foot's touch and the flight off it. */
+const SPRING = BOUNCE_LONG / 2;
+/** How far the game carries him a frame at the hero pace (his measure): his feet keep to it. */
+const BOUNCE_PACE = (HERO_PACE * VET_TILE) / VFPS;
+/** How long a ball is on the floor, each spring (frames); and where, ahead of the floor point under him, it comes down. */
+const TOUCH = 3;
+const SPOT = (BOUNCE_PACE * TOUCH) / 2;
+/** How far out to each side his balls come down (a fighter's base, his feet never crossing). */
+const LANE = 4.2;
+/** How high a ball is carried through the air between its spots; how far each foot is turned out. */
+const CARRY_UP = 5.5;
+const TOE_OUT = 6;
+/** His hips (from where they are standing straight) as a ball comes down and leaves, sunk lowest in the touch, highest in the air. */
+const LANDS = -0.8;
+const SUNK = -2.2;
+const FLOWN = 3.4;
+/**
+ * WHERE THE BALL OF A FOOT IS, `t` frames since it came down on its spot (his own measure: along his forward, and up), and
+ * how far the foot is tipped up onto its toes. ON ITS SPOT (the first `TOUCH` frames): held where it came down on the floor
+ * of the scene (so in his measure it goes back under him exactly as fast as the game carries him on), the foot tipped down
+ * as he sinks into the spring and rolled right up onto the toes as he springs off; the heel never down. IN THE AIR (the
+ * rest): it peels up behind, swings through under his hips a little off the floor, reaches on ahead of its next spot, and
+ * paws back onto it as it comes down, at the floor's own speed (so it comes down without a scuff).
+ */
+function ballAt(t: number): { x: number; z: number; tip: number } {
+  if (t <= TOUCH) return { x: SPOT - BOUNCE_PACE * t, z: 0, tip: track(t, [[0, 32], [1.3, 24], [TOUCH, 54]]) };
+  const air = BOUNCE_LONG - TOUCH;
+  const u = (t - TOUCH) / air;
+  // (a curve from the spot it left to the next, leaving and arriving at the floor's own speed)
+  const go = -BOUNCE_PACE * air;
+  const x = -SPOT * (2 * u * u * u - 3 * u * u + 1) + go * (u * u * u - 2 * u * u + u) + SPOT * (3 * u * u - 2 * u * u * u) + go * (u * u * u - u * u);
+  const z = CARRY_UP * Math.sin(Math.PI * Math.pow(u, 0.8));
+  return { x, z, tip: track(u, [[0, 54], [0.2, 58], [0.8, 30], [1, 32]]) };
+}
+/** The ankle that puts a foot's ball at a point, the foot tipped `tip` and turned `turn` (degrees): the skeleton's own foot. */
+function ankleFor(ball: V3, tip: number, turn: number): V3 {
+  const p = (tip * Math.PI) / 180;
+  const a = (turn * Math.PI) / 180;
+  const fx = B.ball * Math.cos(p) - B.ankle * Math.sin(p);
+  const fz = -B.ball * Math.sin(p) - B.ankle * Math.cos(p);
+  return [ball[0] - fx * Math.cos(a), ball[1] - fx * Math.sin(a), ball[2] - fz];
+}
+function bounceAt(f: number): Q {
+  const g = ((f % BOUNCE_LONG) + BOUNCE_LONG) % BOUNCE_LONG;
+  // (the left ball comes down at 0, the right at 8)
+  const tL = g;
+  const tR = (g + SPRING) % BOUNCE_LONG;
+  const bl = ballAt(tL);
+  const br = ballAt(tR);
+  // THE SPRING: down onto the ball and sunk a little into it through the touch (lowest half way), then flung up and on,
+  // highest half way through the air between
+  const t = g % SPRING;
+  const sink = t <= TOUCH ? Math.sin((Math.PI * t) / TOUCH) : 0;
+  const v = (t - TOUCH) / (SPRING - TOUCH);
+  const rise = t > TOUCH ? 4 * v * (1 - v) : 0;
+  // (in the air his feet go up with him, tucked a little under him: never both legs hanging straight)
+  const up = (FLOWN - LANDS) * rise * 0.9;
+  const aL = ankleFor([bl.x, LANE, bl.z + up], bl.tip, TOE_OUT);
+  const aR = ankleFor([br.x, -LANE, br.z + up], br.tip, -TOE_OUT);
+  // THE WEAVE: over his left foot as it takes him, over his right as it does (once a round)
+  const w = Math.cos(((2 * Math.PI) / BOUNCE_LONG) * (g - 1.5));
+  // (his hips turn with his legs, the left hip forward as the left foot reaches out to its spot)
+  const hips = -8 - 7 * Math.cos(((2 * Math.PI) / BOUNCE_LONG) * g);
+  const chest = -14 + 3 * Math.sin(((2 * Math.PI) / BOUNCE_LONG) * (g - 1.5));
+  const side = -5 * w;
+  const q: Q = {
+    px: 0.5, py: 0.8 * w, pz: LANDS - (LANDS - SUNK) * sink + (FLOWN - LANDS) * rise, yaw: hips, pitch: 3, roll: 2.5 * w, twist: chest - hips, bend: 6, side, hunch: 7, shrug: 0.3,
+    // (chin down, eyes on where he is going; his head goes with the weave a little)
+    faceTurn: 0, faceUp: -5, faceTilt: 0.3 * side,
+    lfx: aL[0], lfy: aL[1] - B.stance, lfz: aL[2] - B.ankle, lfp: bl.tip, lft: TOE_OUT, lk: 4, lkUp: 0,
+    rfx: aR[0], rfy: aR[1] + B.stance, rfz: aR[2] - B.ankle, rfp: br.tip, rft: -TOE_OUT, rk: -4, rkUp: 0,
+    // HIS GUARD, his stance's own, held as he goes: the fists by his cheeks (giving a touch as he lands), elbows tucked in
+    lhx: S0.lhx, lhy: S0.lhy, lhz: (S0.lhz ?? 0) - 0.6 * sink + 0.3 * rise, rhx: S0.rhx, rhy: S0.rhy, rhz: (S0.rhz ?? 0) - 0.6 * sink + 0.3 * rise,
   };
-  const ph = f / P0;
-  const l = foot(ph);
-  const r = foot(ph + 0.5);
-  const sw = Math.cos((ph - RUN_ON / 2) * Math.PI * 2);
-  const k = (1 - sw) / 2;
-  const bob = Math.cos((ph - RUN_ON / 2) * Math.PI * 4);
-  return {
-    px: 3, py: 0, pz: -3.2 - 1.6 * bob, yaw: -4 * sw, pitch: 14, roll: 2 * sw, twist: 8 * sw, bend: 8, side: 0, hunch: 4, shrug: 0.1,
-    faceTurn: 0, faceUp: 14, faceTilt: 0,
-    lfx: l.x, lfy: 1.5, lfz: l.z, lfp: l.p, lft: 4, lk: 4, lkUp: 0,
-    rfx: r.x, rfy: -1.5, rfz: r.z, rfp: r.p, rft: -4, rk: -4, rkUp: 0,
-    // (the fists pumping, opposite to the legs: forward up to his chin, back past his hip; elbows bent hard)
-    lhx: -6 + 15 * (1 - k), lhy: -1.5, lhz: -14 + 13 * (1 - k), le: 14,
-    rhx: -6 + 15 * k, rhy: 1.5, rhz: -14 + 13 * k, re: 14,
-    palmL: [0, -1, 0.2], palmR: [0, 1, 0.2],
-  };
+  return tucked(q);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1422,7 +1481,10 @@ export function readied(m: VetMotion): VetMotion {
 }
 
 export const VET_STAND: VetMotion = { id: 'stand', name: 'Standing', input: 'standing ready', long: STAND_LONG, loops: true, fn: standAt, strikes: [], foes: [], plants: [], line: 'Bouncing on his toes, cocky, ready: his fists circling, a roll of his shoulders, his chin up.' };
-export const VET_RUN: VetMotion = { id: 'run', name: 'Running', input: 'moving', long: RUN_LONG, loops: true, fn: runAt, strikes: [], foes: [], carry: (f) => [RUN_CARRY * f, 0], line: 'An action hero’s run: low and driving, knees high, fists pumping, both feet off the floor between strides.' };
+/** HIS RUN, THE FIGHTER'S BOUNCE (his pick, 3 Nov 2026): a round of two springs; a puff of dust off each ball as he springs off it. */
+export const VET_RUN: VetMotion = { id: 'run', name: 'Running', input: 'moving', long: BOUNCE_LONG, loops: true, fn: bounceAt, strikes: [], foes: [], carry: (f) => [BOUNCE_PACE * f, 0], dust: [{ f: TOUCH, at: 'L' }, { f: SPRING + TOUCH, at: 'R' }], line: 'The fighter’s bounce: light, springy bounds on the balls of his feet, both feet off the floor on each spring; his guard up, elbows tucked, chin down; his shoulders weaving.' };
+/** His run's numbers (for its tests and the pictures): its round, a spring, how long a ball is down, the pace, a ball's spot. */
+export const VET_BOUNCE = { long: BOUNCE_LONG, spring: SPRING, touch: TOUCH, pace: BOUNCE_PACE, spot: SPOT, lane: LANE };
 
 /** EVERY MOVE OF HIS, in the order the film shows them. */
 export const VET_MOTIONS: VetMotion[] = [VET_STAND, VET_RUN, DODGE, JAB, CROSS, HOOK, RK, PUSH, ELBOW, UPPER, SPINKICK, SPINKICK_CLOSE, KNEE, HURT, FALL];
