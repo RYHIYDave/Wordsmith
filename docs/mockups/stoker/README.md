@@ -185,9 +185,11 @@ names here are the art's own, for the main chat to match or rename.)
     the same as art/prison.ts's; the made copies let go by `forgetMade`.
 
 Also passing: tests/bosses.test.ts, tests/new_mobs3.test.ts, tests/palace_hands.test.ts, tests/princess.test.ts,
-tests/prison.test.ts, tests/rime_shade.test.ts; `tsc --noEmit` clean. Changed outside its own files: only the two import checks,
-`tests/bosses.test.ts` (its list of mock-ups it skips) and `tests/new_mobs3.test.ts` (its list of mock-ups built on the new
-monsters), each told of the Stoker's files as of every mock-up before them. No shared engine file touched.
+tests/prison.test.ts, tests/rime_shade.test.ts; `tsc --noEmit` clean. Changed outside its own files: only the import checks,
+`tests/bosses.test.ts` (tests 1 and 12: its lists of mock-ups built on the bosses' own footwork and checks) and
+`tests/new_mobs3.test.ts` (its list of mock-ups built on the new monsters), each told of the Stoker's files as of every mock-up
+before them. No shared engine file touched; art/prison.ts and art/prison_gate.ts are not imported by the room (their colours and
+the gateway's way are said again in it, and tested to be the same), so floor 3's own import check stands as it was.
 
 ## Tools
 
