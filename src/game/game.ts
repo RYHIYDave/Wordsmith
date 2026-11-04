@@ -9123,10 +9123,9 @@ export class Game {
   /** The run ends. Only the Lexicon and the stash (this.meta) go on to the next character. */
   private die(): void {
     if (this.over) return;
-    if (this.practice || (this.guide && this.depth === 1 && this.cleared === 0)) {
-      // The practice room only knocks the wind out of you. So does the first dungeon, for as long
-      // as its prompts are running: nobody should lose their first character before they have
-      // set their first word.
+    if (this.practice) {
+      // The practice room only knocks the wind out of you. (Until 25.0.1 the first dungeon did too, while its prompts ran; his
+      // word, 3 Nov 2026, asked whether to keep that: “Only the practice room”: the first dungeon can kill you, as any other.)
       this.hero.life = this.hero.d.maxLife;
       this.hero.invuln = 1.5;
       this.emit({ t: 'text', x: this.hero.x, y: this.hero.y, text: 'UP AGAIN', color: '#ffe070' });

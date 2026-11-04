@@ -553,21 +553,13 @@ test('the first word set in town (or anywhere there is nothing to fight) ends th
   assert.ok(meta.taught);
 });
 
-test('nobody loses their first character while the prompts are running; after them, death is death', () => {
+test('death is death in the first dungeon too, its prompts running or not (his “Only the practice room”, 3 Nov 2026: until 25.0.1 nobody lost their first character while they ran)', () => {
   for (const cls of CLASS_IDS) {
     const g = toFirstFloor(Game.forFirstRun(cls, 15));
-    const h = g.hero;
     g.events.length = 0;
     g.hurtHero(1e9, 'phys', [], null, 'a test');
-    assert.equal(g.over, false, 'knocked down, not out');
-    assert.equal(h.life, h.d.maxLife);
-    assert.ok(g.events.some((e) => e.t === 'text' && e.text === 'UP AGAIN'));
-    assert.equal(g.meta.deaths, 0);
-    // the prompts over: an ordinary run
-    g.endGuide();
-    h.invuln = 0;
-    g.hurtHero(1e9, 'phys', [], null, 'a test');
-    assert.equal(g.over, true);
+    assert.equal(g.over, true, 'fallen, the prompts running');
+    assert.ok(!g.events.some((e) => e.t === 'text' && e.text === 'UP AGAIN'), 'no UP AGAIN');
     assert.equal(g.slainBy, 'a test');
     // a later character has no such net, first dungeon or not
     const next = new Game(cls, 16, g.meta);
@@ -635,6 +627,12 @@ for (const cls of CLASS_IDS) {
     for (; t < 600 && g.guide; t += DT) {
       const searched = g.bodySearched;
       const fighting = g.inFight();
+      // (25.0.1: the first dungeon can kill now; the newcomer here drinks before the blow that would, as a newcomer is told to:
+      // counted as a knock-down, as UP AGAIN was)
+      if (g.hero.life < g.hero.d.maxLife * 0.25) {
+        g.hero.life = g.hero.d.maxLife;
+        knocked++;
+      }
       botStep(g, c, bot, DT);
       // A newcomer does what the prompts say, and the bot does not read them. Shown a word lying
       // on the floor ("A power word: ..."), they walk to it. The bot by itself walks on the moment

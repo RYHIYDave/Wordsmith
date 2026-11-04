@@ -184,7 +184,7 @@ test('the first dungeon: its fallen wordsmith is there to be searched again', ()
   });
 });
 
-test('nobody wakes in the practice room, or in the first dungeon while its prompts run', () => {
+test('nobody wakes in the practice room; in the first dungeon a Normal hero falls and wakes, as anywhere (his “Only the practice room”, 25.0.1)', () => {
   modes(true, () => {
     const p = Game.forPractice('mage', 3);
     p.mode = 'normal';
@@ -194,7 +194,8 @@ test('nobody wakes in the practice room, or in the first dungeon while its promp
     const f = toFirstFloor(Game.forFirstRun('warrior', 9));
     f.mode = 'normal';
     killed(f);
-    assert.equal(f.over, false, 'UP AGAIN, as ever');
+    assert.equal(f.over, true, 'fallen: no UP AGAIN out of the practice room');
+    assert.equal(f.wakes, true, 'a Normal hero wakes in town');
   });
 });
 
