@@ -885,6 +885,10 @@ export interface PrisonArt {
 }
 
 let made: PrisonArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The prison's pictures, made the first time they are asked for and kept. */
 export function makePrisonArt(): PrisonArt {
   if (made) return made;

@@ -44,6 +44,15 @@ export class CastleView implements LookView {
   private lit: LookLight[] | null = null;
   private suns: LookStand[] | null = null;
 
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    this.art = null;
+    this.laidAt = null;
+    this.laidMemo = new Map();
+    this.lit = null;
+    this.suns = null;
+  }
+
   on(L: Level): boolean {
     return CASTLE_HALL.on && L.town && !L.act1;
   }

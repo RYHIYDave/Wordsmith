@@ -405,6 +405,10 @@ export function lairGateDropAt(frame: number): { raise: number; slam: number; li
 // =================================================================================================
 
 let made: GateArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /**
  * FLOOR 5'S DOORS AND GATES WITH HIS OWN (a GateArt, as art/gates.ts's): the boss's pillar, arch and drop his gate's (above);
  * everything else floor 5's own (art/floor5.ts, lairGates), in look A's colours: its doors of lashed logs and their frames, its

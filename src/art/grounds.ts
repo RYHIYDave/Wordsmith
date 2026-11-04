@@ -1166,7 +1166,11 @@ export function gradeColour(c: string): string {
   gradeMemo.set(lc, out);
   return out;
 }
-const gradedMemo = new WeakMap<Sprite, Sprite>();
+let gradedMemo = new WeakMap<Sprite, Sprite>();
+/** The game's pictures graded in this look, let go (let go with its floor's look: render.ts forgetLooks; his “it’s crashing every couple of levels”). */
+export function forgetGraded(): void {
+  gradedMemo = new WeakMap();
+}
 /** A picture of floor 2's own under the moon (its shape, its anchor and its lights as they were). */
 export function gradeSprite(s: Sprite): Sprite {
   const hit = gradedMemo.get(s);
@@ -1260,6 +1264,10 @@ export interface GroundsArt {
 }
 
 let made: GroundsArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The grounds' pictures, made the first time they are asked for and kept. */
 export function makeGroundsArt(): GroundsArt {
   if (made) return made;

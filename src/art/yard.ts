@@ -758,6 +758,10 @@ export interface YardArt {
 }
 
 let made: YardArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The yard's pictures, made the first time they are asked for and kept. */
 export function makeYardArt(): YardArt {
   if (made) return made;

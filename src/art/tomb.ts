@@ -1255,7 +1255,11 @@ export function gradeColour(c: string): string {
   gradeMemo.set(lc, out);
   return out;
 }
-const gradedMemo = new WeakMap<Sprite, Sprite>();
+let gradedMemo = new WeakMap<Sprite, Sprite>();
+/** The game's pictures graded in this look, let go (let go with its floor's look: render.ts forgetLooks; his “it’s crashing every couple of levels”). */
+export function forgetGraded(): void {
+  gradedMemo = new WeakMap();
+}
 /** A picture of floor 1's own in look B's colours (its shape, its anchor and its lights as they were). */
 export function gradeSprite(s: Sprite): Sprite {
   const hit = gradedMemo.get(s);
@@ -1364,6 +1368,10 @@ export const SLAB_TILES: readonly (readonly [string, boolean, boolean])[] = [
 
 const four = [0, 1, 2, 3];
 let made: TombArt | null = null;
+/** Its pictures let go (its floor left: render.ts forgetLooks; his “it’s crashing every couple of levels”), made again if wanted. */
+export function forgetMade(): void {
+  made = null;
+}
 /** The place's pictures, made the first time they are asked for and kept (the archway, the stairs and the stairwell when first asked for). */
 export function makeTombArt(): TombArt {
   if (made) return made;

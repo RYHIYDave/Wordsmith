@@ -36,6 +36,8 @@ export interface LookView {
   readonly vignette?: number;
   /** Is this look to be drawn on this level? */
   on(L: Level): boolean;
+  /** Let its pictures go (another floor is come into). */
+  forget?(): void;
   /** Make its pictures now (as the floor is come into). */
   warm(): void;
   /** One of its own floor tiles at (tx, ty), or null (`t` the clock). */

@@ -59,6 +59,14 @@ export class YardView {
   private laidFor: Floor | null = null;
   private strips = new Map<Sprite, { s: Sprite; u: number }[]>();
 
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    this.art = null;
+    this.laid = new Map();
+    this.laidFor = null;
+    this.strips = new Map();
+  }
+
   /** Is the yard to be drawn on this floor? */
   on(f: Floor): boolean {
     return YARD.on && !!f.yard;

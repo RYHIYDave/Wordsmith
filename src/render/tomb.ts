@@ -12,6 +12,7 @@
 //     braziers; the stone of every wall that stands lit low.
 // What stands of its own (the tombs) is the rules' (game/tomb_way.ts).
 
+import { forgetGraded as forgetTombGraded } from '../art/tomb';
 import { ROOT_TILES, SHAFTS, TOMB, TOMB_LIGHTS, gradeColour, makeTombArt } from '../art/tomb';
 import type { TombArt } from '../art/tomb';
 import { floorLook } from '../art/floors';
@@ -53,6 +54,15 @@ export class TombView implements LookView {
   private cache: Laid | null = null;
   private cacheFor: Level | null = null;
   private gradedMemo = new WeakMap<Sprite, Sprite>();
+
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    forgetTombGraded();
+    this.art = null;
+    this.cache = null;
+    this.cacheFor = null;
+    this.gradedMemo = new WeakMap();
+  }
 
   on(L: Level): boolean {
     return TOMB.on && !L.town && L.floor.depth >= 1 && floorLook(L.floor.depth) === 1 && !!L.dress;

@@ -2,6 +2,18 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { forgetMade as forget_tomb } from '../art/tomb';
+import { forgetMade as forget_tomb_gate } from '../art/tomb_gate';
+import { forgetMade as forget_grounds } from '../art/grounds';
+import { forgetMade as forget_yard } from '../art/yard';
+import { forgetMade as forget_yard_gate } from '../art/yard_gate';
+import { forgetMade as forget_prison } from '../art/prison';
+import { forgetMade as forget_prison_gate } from '../art/prison_gate';
+import { forgetMade as forget_chapel } from '../art/chapel';
+import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
+import { forgetMade as forget_lair_temple } from '../art/lair_temple';
+import { forgetMade as forget_lair_gate } from '../art/lair_gate';
+import { forgetMade as forget_castle_hall } from '../art/castle_hall';
 import { HEAVY, LEFT_TO_PAINTER } from '../art/kit';
 /** HEAVY FRAMES (art/kit.ts HEAVY) left to the side painter while the world is drawn: on in the game; off, every frame painted when first shown. */
 export const PAINT_DEFER = { on: true };
@@ -513,6 +525,34 @@ export class Renderer {
   lookOf(L: Game['level']): LookView | null {
     for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) if (v.on(L)) return v;
     return null;
+  }
+  /** (forgetLooks) The level the looks were last sorted for. */
+  private lookedFor: Game['level'] | null = null;
+  /**
+   * EACH FLOOR'S PICTURES LET GO AS ANOTHER IS COME INTO. Every look made its pictures the first time its floor was drawn and kept
+   * them for good, about twenty megabytes of canvases a floor, floors 1 to 5 together near three times what the game begins with;
+   * a phone's browser closes the page past its own limit for them. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is
+   * getting to hot or whatever but it’s crashing every couple of levels”. So every look but this floor's lets its pictures go (and
+   * the game's own ground in its colours), made again if its floor is come back to.
+   */
+  private forgetLooks(L: Game['level'], keep: LookView | null): void {
+    this.lookedFor = L;
+    for (const v of [this.castle, this.tomb, this.grounds, this.prison, this.chapel, this.lair] as LookView[]) {
+      if (v === keep) continue;
+      v.forget?.();
+      this.lookGrounds.delete(v);
+    }
+    if (!L.floor.yard) this.yard.forget();
+    // (and the art's own made copies: each floor's look and its gate; the town's hall)
+    const groups: [LookView, (() => void)[]][] = [
+      [this.tomb, [forget_tomb, forget_tomb_gate]],
+      [this.grounds, [forget_grounds, forget_yard, forget_yard_gate]],
+      [this.prison, [forget_prison, forget_prison_gate]],
+      [this.chapel, [forget_chapel, forget_chapel_gate]],
+      [this.lair, [forget_lair_temple, forget_lair_gate]],
+      [this.castle, [forget_castle_hall]],
+    ];
+    for (const [v, fns] of groups) if (v !== keep) for (const fn of fns) fn();
   }
   /** A picture of the game's own walls (a slanting wall) in the look of the floor being drawn: the prison's colours on floor 3. */
   private lookGrade(sp: Sprite): Sprite {
@@ -2819,6 +2859,7 @@ export class Renderer {
     // ---- FLOOR 3, THE BLACK IRON PRISON (render/prison.ts): its flags, its own tiles and his hall's floor; its walls ----
     const look = this.lookOf(L);
     this.lookNow = look;
+    if (this.lookedFor !== L) this.forgetLooks(L, look);
     this.wholeNow = this.wholeHere(L);
     this.gameNow = game;
     this.clockNow = t;

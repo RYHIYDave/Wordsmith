@@ -63,6 +63,14 @@ export class PrisonView implements LookView {
   private cache: Laid | null = null;
   private cacheFor: Level | null = null;
 
+  /** Its pictures let go (another floor is come into): made again if it is come back to. His words, 4 Nov 2026, 08:12: “I don’t know if my phone is getting to hot or whatever but it’s crashing every couple of levels” (render.ts forgetLooks). */
+  forget(): void {
+    this.art = null;
+    this.cache = null;
+    this.cacheFor = null;
+    this.gradedMemo = new WeakMap();
+  }
+
   /** Is the prison to be drawn on this floor (floor 3 of the dungeon, PRISON on)? */
   on(L: Level): boolean {
     return PRISON.on && !L.town && L.floor.depth >= 1 && floorLook(L.floor.depth) === 3 && !!L.dress;
