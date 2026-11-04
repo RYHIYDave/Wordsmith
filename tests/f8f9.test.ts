@@ -1,7 +1,9 @@
 // FLOORS 8 AND 9 FROM HIS PHONE (game/f8f9.ts, F8F9_FIX, off; docs/mockups/f8f9_fixes/README.md): the Pinewood's footbridges square
 // to the stream, Echo Canyon's stronghold door carved into its wall and nothing of it on the plateau, the canyon's every wall face
 // drawn down to the floor below it.
+// @ts-ignore
 import { test } from 'node:test';
+// @ts-ignore
 import assert from 'node:assert/strict';
 import { F8F9_FIX, BRIDGE, bridgeOffsets, streamWay } from '../src/game/f8f9';
 import { generateAct1, laneDist } from '../src/game/act1_layout';

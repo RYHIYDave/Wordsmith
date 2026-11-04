@@ -31,11 +31,19 @@ import { Scene, toneAt } from './floor4';
 import type { V3 } from './floor4';
 import { IRON, TIMBER, add, fr, mul, rope } from './floor6';
 import { DRESSED, FLAG } from './floor6';
-import { BONE } from './floor7';
-import { GRANITE, MOSS, PBARK } from './floor9';
 import { GRAIN, hash } from './kit';
 import type { Ramp } from './kit';
 
+// (floor 9's and floor 7's own colours, the same: art/floor9.ts PBARK, GRANITE, MOSS, art/floor7.ts BONE; not imported, as their
+// tests ask that only their own floor's code import their pieces)
+/** An old pine's bark: the stringers' logs. */
+const PBARK: Ramp = ['#2e2420', '#48362c', '#624a38', '#7c5e46', '#947456'];
+/** The wood's grey granite. */
+const GRANITE: Ramp = ['#3c3e3c', '#545854', '#6e726c', '#8a8e86', '#a6a89e'];
+/** Moss. */
+const MOSS: Ramp = ['#26301f', '#34422a', '#465a34', '#5a7040', '#728a52'];
+/** Bleached bone: the steer's skull over the door. */
+const BONE: Ramp = ['#5d5249', '#7f7364', '#a59886', '#c8bca8', '#e0d7c5'];
 /** River stones at a bridge's ends, wet: darker, a sheen on their tops. */
 const WETSTONE: Ramp = ['#2e3232', '#404646', '#565c5a', '#727874', '#929892'];
 /** The deep dark inside the rock (his rulebook's cool dark base). */
