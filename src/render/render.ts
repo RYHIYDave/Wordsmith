@@ -3176,6 +3176,8 @@ export class Renderer {
     // (ACT 2, THE HUSH: its floor's moment around the hero, in depth at its anchor or over every figure, the surge shown over its
     // channel's run alone; its candles' light, and the chandelier drawn again over that light while it hangs and falls, as the
     // Meldstone is, so that its own eighteen flames do not wash it out (the wreck's two left burning do not): render/act1_pieces.ts)
+    // (F8F9_FIX, off: the Pinewood's footbridges' rails, in depth: render/act1_pieces.ts)
+    if (this.act1Dressed && this.openGround) this.act1.standBridges(cam, W, H, (d, s, x, y) => this.stand(d, s, x, y));
     if (this.act1Dressed) {
       this.act1.standMoments(game, this.painter, cam, W, H, (d, s, x, y, columns) => {
         if (columns) this.stands.push({ d, q: this.stands.length, s, x, y, over: null, overA: 0, scale: 1, alpha: 1, figure: null, phase: 0, clip0: columns[0], clip1: columns[1] });

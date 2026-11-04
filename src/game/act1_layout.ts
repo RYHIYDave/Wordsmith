@@ -32,6 +32,7 @@
 // river, the boardwalks, the strongholds), for the painter of the ground and for the rules that are theirs.
 // Everything is by the floor's own dice: the same depth and seed give the same floor, here and in the worker.
 
+import { F8F9_FIX, squareBridge } from './f8f9';
 import { RNG } from '../engine/rng';
 import { act1Def } from './act1';
 import { act1Pack } from './act1_mobs';
@@ -145,6 +146,16 @@ export interface Hold {
 export interface Bridge {
   tiles: number[];
   alongX: boolean;
+  /**
+   * (F8F9_FIX, game/f8f9.ts: his “The bridges don’t line up but they also just look bad.”) A bridge laid square to the stream,
+   * drawn whole by the art (art/f8f9.ts) in place of its tiles' planks: its middle (world), its axis's angle (world radians), its
+   * length and width (tiles). Absent: the bridge of before, its tiles planked one by one.
+   */
+  x?: number;
+  y?: number;
+  ang?: number;
+  len?: number;
+  wide?: number;
 }
 
 /** (ACT 2, THE HUSH: what only its floors have, game/act2_types.ts) */
@@ -1159,6 +1170,12 @@ function bridgesOf(plan: Plan, river: [number, number][], W: number): Bridge[] {
     }
   }
   for (const c of crossings) {
+    // (F8F9_FIX: square to the stream where it crosses, whatever way it runs on the grid: game/f8f9.ts)
+    if (F8F9_FIX.on) {
+      const sq = squareBridge(river, c.x, c.y, W);
+      out.push({ tiles: sq.tiles, alongX: Math.abs(Math.cos(sq.ang)) >= Math.abs(Math.sin(sq.ang)), x: sq.x, y: sq.y, ang: sq.ang, len: sq.len, wide: sq.wide });
+      continue;
+    }
     // (the bridge goes across the river: along x where the river runs more along y, else along y)
     const alongX = Math.abs(Math.sin(c.rh)) > Math.abs(Math.cos(c.rh));
     const tiles: number[] = [];

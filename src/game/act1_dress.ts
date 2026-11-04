@@ -20,6 +20,7 @@
 // WHAT STANDS ON THE TOPS (the cliffs', the forest's, the water's: never on the walkable floor, and never over
 // it on the cliffs: his rule) is for the eye alone: render/act1_pieces.ts lays it from the painted ground.
 
+import { F8F9_FIX } from './f8f9';
 import { RNG } from '../engine/rng';
 import { act1Floor, cityFloor } from './act1';
 import { dressAct2 } from './act2_dress';
@@ -532,10 +533,19 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     // (the altar stands over the corner of two tiles: both are its)
     taken[(q.gy + 1) * W + q.gx - 1] = 1;
     L.walk[(q.gy + 1) * W + q.gx - 1] = 0;
-    put(HOLD.brazier, q.gx - 3, q.gy + 1, true, 1, { x: q.gx - 2.3, y: q.gy + 1.1 });
-    put(HOLD.brazier, q.gx + 2, q.gy + 1, true, 3, { x: q.gx + 2.3, y: q.gy + 1.1 });
-    put(HOLD.banner, q.gx - 3, q.gy + 2, true, 0, { x: q.gx - 2.6, y: q.gy + 2.7 });
-    put(HOLD.banner, q.gx + 2, q.gy + 2, true, 2, { x: q.gx + 2.6, y: q.gy + 2.7 });
+    if (F8F9_FIX.on && n === 8) {
+      // (F8F9_FIX: Echo Canyon's door is carved into the wall (art/f8f9.ts): its braziers and banners stand against the wall either
+      // side of it, on the canyon floor, so that none stands before the door on the screen)
+      put(HOLD.brazier, q.gx - 2, q.gy, true, 1, { x: q.gx - 1.75, y: q.gy + 0.6 });
+      put(HOLD.brazier, q.gx + 1, q.gy, true, 3, { x: q.gx + 1.75, y: q.gy + 0.6 });
+      put(HOLD.banner, q.gx - 3, q.gy, true, 0, { x: q.gx - 2.8, y: q.gy + 0.45 });
+      put(HOLD.banner, q.gx + 2, q.gy, true, 2, { x: q.gx + 2.8, y: q.gy + 0.45 });
+    } else {
+      put(HOLD.brazier, q.gx - 3, q.gy + 1, true, 1, { x: q.gx - 2.3, y: q.gy + 1.1 });
+      put(HOLD.brazier, q.gx + 2, q.gy + 1, true, 3, { x: q.gx + 2.3, y: q.gy + 1.1 });
+      put(HOLD.banner, q.gx - 3, q.gy + 2, true, 0, { x: q.gx - 2.6, y: q.gy + 2.7 });
+      put(HOLD.banner, q.gx + 2, q.gy + 2, true, 2, { x: q.gx + 2.6, y: q.gy + 2.7 });
+    }
     // the hall: the ring of magic and the obelisk in it, at its middle; braziers in its far corners; hangings on its back walls are drawn with the walls
     const r = q.inside;
     const cx = Math.floor(r.x + r.w / 2);
@@ -552,7 +562,8 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   }
 
   // ---- FLOOR TILES: the Quarry's rails, the Pinewood's footbridges, the Fen's boardwalks, the floor's own here and there
-  if (n === 9) for (const b of land.bridges ?? []) for (const i of b.tiles) if (f.tiles[i] === T_FLOOR) layTile(i, 'footbridge', b.alongX ? 0 : 1);
+  // (F8F9_FIX: a bridge laid square to the stream is drawn whole, not planked tile by tile: render/act1_pieces.ts, art/f8f9.ts)
+  if (n === 9) for (const b of land.bridges ?? []) if (b.ang === undefined) for (const i of b.tiles) if (f.tiles[i] === T_FLOOR) layTile(i, 'footbridge', b.alongX ? 0 : 1);
   if (n === 10) {
     for (const i of land.boards ?? []) {
       const c = f.cut ? f.cut[i] : 0;
