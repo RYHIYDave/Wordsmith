@@ -271,3 +271,21 @@ test('his moves\' numbers: every blow reaches 2.5 tiles (the push kick and the s
   const top = Object.entries(VET_MOVES).sort((a, b) => b[1].share - a[1].share)[0][0];
   assert.equal(top, 'knee');
 });
+
+// (25.0's “the tap stopped working”: the quick attack HELD, as ONE HAND throws it by itself while an enemy is in reach, or a pad's
+// trigger or the mouse held down, went in once and no more)
+test('an attack held: his punches keep going in, combo after combo, as taps in time would; a kick held likewise', () => withVet(() => {
+  for (const [what, i] of [['fire', 0], ['cast', 1]] as const) {
+    const g = room();
+    const m = dummy(g, 1.6, 0);
+    for (let k = 0; k < 60 * 5; k++) {
+      const c = emptyControls();
+      c.aimX = c.castX = m.x;
+      c.aimY = c.castY = m.y;
+      c[what] = true;
+      g.update(DT, c);
+    }
+    assert.ok(g.hero.skills[i].uses >= 5, `${what} held five seconds: ${g.hero.skills[i].uses} went in`);
+    assert.ok(hurt(m) > 0, 'and they landed');
+  }
+}));

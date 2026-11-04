@@ -5101,9 +5101,14 @@ export class Game {
     const I = this.vetIn;
     // (a press goes in as it is made; one made while the combo is locked waits, while it is still held, for the combo's end)
     if (c.fire && !I.fireWas) I.tap = true;
+    // (AN ATTACK HELD: the quick attack ONE HAND throws by itself while an enemy is in reach, a pad's trigger or the mouse held
+    // down: another goes in each time the last has gone in and begun, his combo played on as taps in time would play it. It was
+    // one punch and no more while held, 25.0's “the tap stopped working”)
+    else if (c.fire && !I.tap && !v.queue.length && !vetLocked(v)) I.tap = true;
     if (!c.fire) I.tap = false;
     I.fireWas = c.fire;
     if (c.cast && !I.castWas) I.hold = true;
+    else if (c.cast && !I.hold && !v.queue.length && !vetLocked(v)) I.hold = true;
     if (!c.cast) I.hold = false;
     I.castWas = c.cast;
     if (c.evade) I.swipe = { x: c.evadeX, y: c.evadeY, t: VET_TUNE.swipeWaits };
