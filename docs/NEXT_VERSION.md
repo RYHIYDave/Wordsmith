@@ -4457,4 +4457,4 @@ THE BOARD READ AT ABOUT 18:55, 2 Nov: ONE NEW POST (written here at the rule):
   - THE AIM: only the first blow of a combo turned to its enemy, the second and third the way he happened to face; and a blow went out along the nearest of his four drawn ways, up to 45 degrees off. Now each press keeps what it aimed at, its move turns to where that enemy is as it begins (fallen, the nearest in reach and sight), and the blow goes straight at it, his picture the nearest of his four ways.
   - THE FIRST LEVELS: his hold and swipe were open from level 1; now, as every hero's, not before their levels (2 and 5).
 - HIS HP REFILLING AT 0: the game's own rule, not his: in the practice room, and in a new hero's first dungeon while its lessons run (game.ts die(): “UP AGAIN”), a hero cannot be lost. Told him; asked whether to keep it.
-- Live: gh-pages 3ef14b4 (V25.0.1).
+- LIVE on both links: the claude.ai page "Version 76" (1793756144-5e4a); gh-pages 3ef14b4 (V25.0.1).
