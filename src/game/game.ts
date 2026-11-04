@@ -32,7 +32,7 @@ import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPa
 import type { Hand, Royal } from './royal_cards';
 import type { CompanionGroup, CompanionKind } from './companions';
 import type { HazardInst } from './traps';
-import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
+import { LANE_HELP, STAIR_HELP, STEP_E, STEP_N, STEP_S, STEP_W, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, bossPace, gaitOf } from './bosses';
@@ -70,7 +70,7 @@ import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rank
 import { resolveSkill, socketProblem } from './words';
 import { BRAWL_TUNE, COMBO_GAP, PUNCHES, newBrawl, punchFor } from './brawler';
 import type { BrawlState, PunchName } from './brawler';
-import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetBlowLeft, vetCarryAt, vetFacing, vetFireFor, vetLeft, vetLocked, vetMoveFor, vetReach } from './veteran';
+import { VETERAN, VET_FPS, VET_MOVES, VET_REACT, VET_TALENTS, VET_TUNE, isVetPunch, newVet, vetBlowLeft, vetCarryAt, vetFacing, vetFireFor, vetLeft, vetLocked, vetMoveFor, vetReach, vetWalkable } from './veteran';
 import type { VetBlowId, VetMoveDef, VetPlaying } from './veteran';
 import { GOLEM_CANNON, TINKER_TUNE, golemBlow } from './tinkerer';
 import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
@@ -2038,6 +2038,7 @@ export class Game {
           L.walk[i] = 1;
           L.open[i] = 1;
         }
+        this.joinSteps(doorTiles(L.floor, cv.spot));
         this.msg('A cave behind the wall. The way down.', MSG.good);
       }
     }
@@ -2052,6 +2053,7 @@ export class Game {
       if (ex.t >= DOOR_OPENING) {
         ex.state = 'open';
         for (const i of prisonDoorTiles(L.floor, ex)) L.walk[i] = 1;
+        this.joinSteps(prisonDoorTiles(L.floor, ex));
         this.msg('The door behind his hall stands open. The way down.', MSG.good);
       }
     }
@@ -3475,6 +3477,33 @@ export class Game {
     }
   }
 
+  /**
+   * A WAY OPENED THROUGH A WALL ON A FLOOR WITH HEIGHTS (floor 3's door out the back of his hall, floor 4's cave): the rules of
+   * height (L.step, game/height.ts) were laid when its tiles were wall, and know no step onto them, so a body was held off them
+   * at the wall's line though the walk grid had them open. His words, 3 Nov 2026, 22:31: “I can’t use floor 3s door out after
+   * the boss.  I am stuck”. So: each of them joined to the others and to every tile walked on beside it that is not a stair.
+   */
+  private joinSteps(tiles: number[]): void {
+    const L = this.level;
+    const step = L.step;
+    if (!step) return;
+    const f = L.floor;
+    const set = new Set(tiles);
+    for (const i of tiles) {
+      const x = i % f.w;
+      const y = Math.floor(i / f.w);
+      for (const [dx, dy, out, back] of [[1, 0, STEP_E, STEP_W], [-1, 0, STEP_W, STEP_E], [0, 1, STEP_S, STEP_N], [0, -1, STEP_N, STEP_S]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= f.w || ny >= f.h) continue;
+        const n = ny * f.w + nx;
+        if (!set.has(n) && (L.walk[n] !== 1 || f.tiles[n] !== T_FLOOR || (f.stair && f.stair[n] !== 0))) continue;
+        step[i] |= out;
+        step[n] |= back;
+      }
+    }
+  }
+
   /** DOORS: does a body lie over the tile of a door that is shut? */
   private overShut(shut: Uint8Array, x: number, y: number, r: number): boolean {
     const f = this.level.floor;
@@ -3958,16 +3987,7 @@ export class Game {
 
     const len = Math.hypot(mx, my);
     if (len > 0.01) {
-      let sp = d.moveSpeed * (1 + h.haste / 100) * (1 + this.talentSpeed() / 100);
-      if (h.chillT > 0) sp *= 1 - h.chill;
-      // (THE HIGH CITY, FLOOR 19: slowed in the King's Hush's grey fog: game/act1_rules/gking.ts)
-      if ((h.slowT ?? 0) > 0) sp *= 1 - (h.slowBy ?? 0);
-      // (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: game/act2/garden_rules.ts)
-      if (this.level.land?.garden) sp *= nettleSlow(h);
-      // (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
-      if ((h.rootT ?? 0) > 0) sp = 0;
-      // (FROZEN IN PLACE by the Drowned's frost grab: he walks nowhere, nor dodges)
-      if ((h.iceT ?? 0) > 0) sp = 0;
+      let sp = this.walkPace();
       // (an attack slows the hero for a moment from when it is begun, as it always has; one that is
       // being held slows them for as long as it is: a beam to a walk, a whirlwind hardly at all)
       if (h.channel) sp *= SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? TUNE.whirlWalk : TUNE.beamWalk;
@@ -5086,6 +5106,22 @@ export class Game {
     }
   }
 
+  /** The hero's walking pace now (tiles a second): his own, quickened and slowed as he is, nothing if he is rooted or frozen. */
+  private walkPace(): number {
+    const h = this.hero;
+    let sp = h.d.moveSpeed * (1 + h.haste / 100) * (1 + this.talentSpeed() / 100);
+    if (h.chillT > 0) sp *= 1 - h.chill;
+    // (THE HIGH CITY, FLOOR 19: slowed in the King's Hush's grey fog: game/act1_rules/gking.ts)
+    if ((h.slowT ?? 0) > 0) sp *= 1 - (h.slowBy ?? 0);
+    // (THE HIGH CITY, FLOOR 16: slowed in the nettles, and a moment after: game/act2/garden_rules.ts)
+    if (this.level.land?.garden) sp *= nettleSlow(h);
+    // (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
+    if ((h.rootT ?? 0) > 0) sp = 0;
+    // (FROZEN IN PLACE by the Drowned's frost grab: he walks nowhere, nor dodges)
+    if ((h.iceT ?? 0) > 0) sp = 0;
+    return sp;
+  }
+
   // ---- THE VETERAN (game/veteran.ts, behind VETERAN) ----------------------------------------------
   // How a combo goes, which move a press makes, and his moves' numbers: game/veteran.ts. Here, what the game makes of them.
 
@@ -5140,7 +5176,7 @@ export class Game {
     }
     if (!v.move && v.queue.length && !stuck) this.vetStart(c);
     if (v.move) {
-      this.vetPlay(dt);
+      this.vetPlay(dt, c);
       return true;
     }
     if (v.globes.length) {
@@ -5273,6 +5309,11 @@ export class Game {
     const switched = q.id === 'roundkick' && !!prev && isVetPunch(prev) && v.idle < VET_TUNE.gap && this.has('vswitchkick');
     const f0 = switched ? Math.floor(VET_MOVES.roundkick.strike!.from * VET_TALENTS.switchKick.skip) : 0;
     v.move = { id: q.id, f: f0, x0: h.x, y0: h.y, fx, fy, ax, ay, carried: [0, 0], hit: [], globe: q.globe };
+    if (q.id !== 'dodge') {
+      const at = this.vetAimAt(q, c);
+      const o = this.monsters.find((m) => !m.dead && Math.hypot(m.x - at.x, m.y - at.y) < 0.05);
+      if (o) v.move.tid = o.id;
+    }
     // (the attack's words: what a use gives him, Swiftness, the frenzy, a shield)
     if (q.id !== 'dodge') this.boons(isVetPunch(q.id) ? 0 : 1);
   }
@@ -5315,12 +5356,42 @@ export class Game {
   }
 
   /** A step of the move being played: he is carried as the art carries him, his blow lands on each its force comes to, and it ends. */
-  private vetPlay(dt: number): void {
+  private vetPlay(dt: number, c: Controls): void {
     const h = this.hero;
     const v = h.vet!;
     const mv = v.move!;
     const m = VET_MOVES[mv.id];
+    const f0 = mv.f;
     mv.f += dt * VET_FPS * this.vetPace(mv.id);
+    // (25.0.2: HE WALKS HIMSELF in a blow's wind-up and wind-down, at a share of his pace, still facing as it faces; not as it goes
+    // out, nor in the air. His word: “can i get the ability to move around during the windups and wind downs of the hits?”)
+    const want = Math.hypot(c.mx, c.my);
+    if (want > 0.1 && vetWalkable(mv.id, mv.f)) {
+      const sp = this.walkPace() * VET_TUNE.walk * Math.min(1, want);
+      const wasX = h.x;
+      const wasY = h.y;
+      const dx = (c.mx / want) * sp * dt;
+      const dy = (c.my / want) * sp * dt;
+      this.slide(h, TUNE.heroRadius, dx, dy, this.level.walk);
+      this.intoLine(h, TUNE.heroRadius, dx, dy, wasX, wasY);
+      this.intoDoor(h, TUNE.heroRadius, dx, dy, wasX, wasY);
+      if (this.perils.length) cageHero(this, h, TUNE.heroRadius, wasX, wasY);
+      mv.wx = (mv.wx ?? 0) + (h.x - wasX);
+      mv.wy = (mv.wy ?? 0) + (h.y - wasY);
+    }
+    // (as its blow begins to go out: straight at where its enemy is then, from where he is)
+    if (m.strike && f0 < m.strike.from && mv.f >= m.strike.from && mv.tid !== undefined) {
+      const o = this.monsters.find((q) => q.id === mv.tid && !q.dead);
+      if (o) {
+        const dx = o.x - h.x;
+        const dy = o.y - h.y;
+        const l = Math.hypot(dx, dy);
+        if (l > 0.3) {
+          mv.ax = dx / l;
+          mv.ay = dy / l;
+        }
+      }
+    }
     // (carried: the art's step, slid along the floor; walls stop him)
     const [cf, cl] = vetCarryAt(mv.id, Math.min(mv.f, m.long));
     const df = cf - mv.carried[0];
@@ -5358,7 +5429,7 @@ export class Game {
       // (THE VETERAN'S TREE: Long Legs, his kicks reach a tile further)
       const ax = mv.ax ?? mv.fx;
       const ay = mv.ay ?? mv.fy;
-      const at = vetReach(m, { x0: mv.x0, y0: mv.y0, fx: ax, fy: ay }, o.x, o.y, o.r, m.strike!.kind === 'kick' && this.has('vlonglegs') ? VET_TALENTS.longLegs.more : 0, vetBlowLeft(mv.fx, mv.fy, ax, ay));
+      const at = vetReach(m, { x0: mv.x0 + (mv.wx ?? 0), y0: mv.y0 + (mv.wy ?? 0), fx: ax, fy: ay }, o.x, o.y, o.r, m.strike!.kind === 'kick' && this.has('vlonglegs') ? VET_TALENTS.longLegs.more : 0, vetBlowLeft(mv.fx, mv.fy, ax, ay));
       if (at === null || mv.f < at) continue;
       mv.hit.push(o.id);
       this.vetHit(o, mv, m, k++);
@@ -5390,7 +5461,7 @@ export class Game {
     if ((mv.id === 'knee' || mv.id === 'spinkick' || mv.id === 'spinkickClose') && this.has('vthunderknee')) this.vetThunder(o, mv, m);
     if (finisher) {
       this.emit({ t: 'shake', amount: 5 });
-      if (!o.dead) this.throwMonster(o, mv.x0, mv.y0, T.fullSet.throw, 0.3);
+      if (!o.dead) this.throwMonster(o, mv.x0 + (mv.wx ?? 0), mv.y0 + (mv.wy ?? 0), T.fullSet.throw, 0.3);
     }
     if (first) {
       this.landed(i);
@@ -5417,7 +5488,7 @@ export class Game {
     if (R.back && !finisher) {
       // (Wall Slam: one his kick drives into a wall or into another enemy is stunned)
       if (m.strike!.kind === 'kick' && this.has('vwallslam') && this.vetSlams(o, mv, R.back)) o.stunT = Math.max(o.stunT, T.wallSlam.stun);
-      this.throwMonster(o, mv.x0, mv.y0, R.back, VET_TUNE.driveSecs);
+      this.throwMonster(o, mv.x0 + (mv.wx ?? 0), mv.y0 + (mv.wy ?? 0), R.back, VET_TUNE.driveSecs);
     }
     if (R.stagger) o.staggerT = Math.max(o.staggerT, R.stagger);
     if (R.stun) o.stunT = Math.max(o.stunT, R.stun);
@@ -5427,8 +5498,8 @@ export class Game {
 
   /** (Wall Slam) Is the way it is driven blocked by a wall or another monster, within how far it is driven? */
   private vetSlams(o: Monster, mv: VetPlaying, back: number): boolean {
-    const dx = o.x - mv.x0;
-    const dy = o.y - mv.y0;
+    const dx = o.x - (mv.x0 + (mv.wx ?? 0));
+    const dy = o.y - (mv.y0 + (mv.wy ?? 0));
     const l = Math.hypot(dx, dy) || 1;
     const ux = dx / l;
     const uy = dy / l;
@@ -9123,10 +9194,9 @@ export class Game {
   /** The run ends. Only the Lexicon and the stash (this.meta) go on to the next character. */
   private die(): void {
     if (this.over) return;
-    if (this.practice || (this.guide && this.depth === 1 && this.cleared === 0)) {
-      // The practice room only knocks the wind out of you. So does the first dungeon, for as long
-      // as its prompts are running: nobody should lose their first character before they have
-      // set their first word.
+    if (this.practice) {
+      // The practice room only knocks the wind out of you. (Until 25.0.1 the first dungeon did too, while its prompts ran; his
+      // word, 3 Nov 2026, asked whether to keep that: “Only the practice room”: the first dungeon can kill you, as any other.)
       this.hero.life = this.hero.d.maxLife;
       this.hero.invuln = 1.5;
       this.emit({ t: 'text', x: this.hero.x, y: this.hero.y, text: 'UP AGAIN', color: '#ffe070' });

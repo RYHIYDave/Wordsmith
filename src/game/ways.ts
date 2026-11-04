@@ -627,16 +627,52 @@ export function stairMiddle(s: StairWay): { x: number; y: number } {
 export function placeWay(f: Floor, free: (i: number) => boolean): WayPoint | null {
   const sx = f.start.x;
   const sy = f.start.y;
-  for (const [dx, dy] of [[-1.5, -1.5], [-2, 0], [0, -2], [1.5, -1.5], [-1.5, 1.5], [-3, 0], [0, -3]]) {
-    const x = sx + dx;
-    const y = sy + dy;
-    let ok = true;
-    for (let ty = Math.floor(y - 0.75); ty <= Math.floor(y + 0.75) && ok; ty++) {
-      for (let tx = Math.floor(x - 0.75); tx <= Math.floor(x + 0.75) && ok; tx++) ok = plain(f, tx, ty) && free(ty * f.w + tx);
+  const clear = (x: number, y: number): boolean => {
+    for (let ty = Math.floor(y - 0.75); ty <= Math.floor(y + 0.75); ty++) {
+      for (let tx = Math.floor(x - 0.75); tx <= Math.floor(x + 0.75); tx++) if (!plain(f, tx, ty) || !free(ty * f.w + tx)) return false;
     }
-    if (ok) return { x, y, awake: false, warpAt: null };
+    return true;
+  };
+  for (const [dx, dy] of [[-1.5, -1.5], [-2, 0], [0, -2], [1.5, -1.5], [-1.5, 1.5], [-3, 0], [0, -3]]) {
+    if (clear(sx + dx, sy + dy)) return { x: sx + dx, y: sy + dy, awake: false, warpAt: null };
   }
-  return null;
+  // (25.0.2: NONE OF THOSE CLEAR, the nearest place round him that is, out to six tiles, on whole or half tiles as the others are.
+  // Floor 2 as the Prison's grounds, its gaoler's room small and furnished, had none: “The waypoint in floor two is gone”, his word,
+  // 3 Nov 2026)
+  // (walked to from where he comes in, not through a wall: the floor's steps from there, out to ten)
+  const W = f.w;
+  const steps = new Int16Array(W * f.h).fill(-1);
+  const s0 = Math.floor(sy) * W + Math.floor(sx);
+  const q = [s0];
+  steps[s0] = 0;
+  for (let k = 0; k < q.length; k++) {
+    const i = q[k];
+    if (steps[i] >= 10) continue;
+    const tx = i % W;
+    const ty = (i - tx) / W;
+    for (const [ex, ey] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = tx + ex;
+      const ny = ty + ey;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= f.h) continue;
+      const j = ny * W + nx;
+      if (steps[j] >= 0 || !plain(f, nx, ny) || !free(j)) continue;
+      steps[j] = steps[i] + 1;
+      q.push(j);
+    }
+  }
+  let best: { x: number; y: number; d: number } | null = null;
+  for (let oy = -12; oy <= 12; oy++) {
+    for (let ox = -12; ox <= 12; ox++) {
+      const d = Math.hypot(ox, oy) / 2;
+      if (d < 1.5 || d > 6 || (best && d >= best.d)) continue;
+      const x = sx + ox / 2;
+      const y = sy + oy / 2;
+      const at = Math.floor(y) * W + Math.floor(x);
+      if (at < 0 || at >= W * f.h || steps[at] < 0) continue;
+      if (clear(x, y)) best = { x, y, d };
+    }
+  }
+  return best ? { x: best.x, y: best.y, awake: false, warpAt: null } : null;
 }
 
 /**

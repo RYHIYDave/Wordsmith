@@ -14,7 +14,7 @@ import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, Monster } from '../src/game/state';
 import { BRAWLER } from '../src/game/brawler';
-import { VETERAN, VET_MOVES, vetMoveFor } from '../src/game/veteran';
+import { VETERAN, VET_MOVES, vetMoveFor, vetWalkable } from '../src/game/veteran';
 import type { VetBlowId, VetInput } from '../src/game/veteran';
 
 const DT = 1 / 60;
@@ -147,7 +147,7 @@ test('three taps: three cyan globes, locked; the jab, the cross and the hook, ea
     assert.deepEqual(g.hero.vet!.globes, [], 'played out: the globes go out');
   }));
 
-test('heavy: a move is played whole, its wind-up held; he does not walk while it is played', () =>
+test('heavy: a move is played whole, its wind-up held; he walks himself in it only at a share of his pace (25.0.2, his word: until then not at all)', () =>
   withVet(() => {
     const g = room();
     const m = dummy(g, 2.2, 0);
@@ -159,7 +159,8 @@ test('heavy: a move is played whole, its wind-up held; he does not walk while it
     c.aimX = m.x;
     c.aimY = m.y;
     for (let t = 0; t < 0.2; t += DT) g.update(DT, c);
-    assert.ok(Math.abs(g.hero.y - 15.5) < 0.01, 'not walked');
+    const walked = g.hero.y - 15.5;
+    assert.ok(walked > 0.05 && walked < 0.2 * 4.6 * 0.8, `walked a little in its wind-up: ${walked.toFixed(2)} tiles`);
     assert.ok(hurt(m) === 0 && Math.abs(g.hero.x - x0) < 0.01, 'the jab still held back at 0.2 s (its blow at frame 12 of 30 a second)');
     for (let t = 0; t < 0.3; t += DT) g.update(DT, c);
     assert.ok(hurt(m) > 0, 'landed by 0.5 s');
@@ -398,4 +399,35 @@ test('25.0.1: the first levels: his hold and swipe not before their levels, as e
   } finally {
     open.moveOpen = was;
   }
+}));
+
+// (25.0.2: his word, 3 Nov 2026, 20:52: “can i get the ability to move around during the windups and wind downs of the hits?  that
+// would probably help”)
+test('25.0.2: he walks himself in a blow\'s wind-up and wind-down, at a share of his pace, not as it goes out; and it goes out from where he is', () => withVet(() => {
+  const S = VET_MOVES.jab.strike!;
+  // (frames: walkable before its strike, not as it goes out, walkable after; never in the dodge, nor in the air)
+  assert.ok(vetWalkable('jab', S.from - 1) && !vetWalkable('jab', S.from) && !vetWalkable('jab', S.at + 1) && vetWalkable('jab', VET_MOVES.jab.long - 1));
+  assert.ok(!vetWalkable('dodge', 5));
+  const air = VET_MOVES.knee.air!;
+  assert.ok(!vetWalkable('knee', (air[0] + air[1]) / 2));
+  // (an enemy out of his jab's reach where he stands: walked toward through its wind-up, it is struck; standing, it is not)
+  const out = (walk: boolean): number => {
+    const g = room();
+    const m = dummy(g, 3.6, 0);
+    const c0 = ctl(m.x, m.y, { fire: true });
+    g.update(DT, c0);
+    for (let k = 0; k < 60; k++) g.update(DT, ctl(m.x, m.y, walk ? { mx: 1, my: 0 } : {}));
+    return hurt(m);
+  };
+  assert.equal(out(false), 0, 'standing: out of reach');
+  assert.ok(out(true) > 0, 'walked in through its wind-up: struck');
+  // (walking during its strike frames carries him no further than the art's own step)
+  const g = room();
+  const m = dummy(g, 1.6, 0);
+  g.update(DT, ctl(m.x, m.y, { fire: true }));
+  const mv = g.hero.vet!.move!;
+  while (mv.f < S.from) g.update(DT, ctl(m.x, m.y));
+  const wx0 = mv.wx ?? 0;
+  for (let k = 0; k < 3; k++) g.update(DT, ctl(m.x, m.y, { mx: 0, my: 1 }));
+  assert.equal(mv.wx ?? 0, wx0, 'not walked as it goes out');
 }));

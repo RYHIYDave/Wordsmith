@@ -158,6 +158,9 @@ export class VeteranFx {
       if (mv && p.key === key && p.live) {
         if (dt > 0 && mv.f > p.f) p.rate = Math.max(10, Math.min(120, (mv.f - p.f) / dt));
         p.f = mv.f;
+        // (25.0.2: he walks himself in its wind-up and wind-down: his move's lines go with him)
+        p.x0 = mv.x0 + (mv.wx ?? 0);
+        p.y0 = mv.y0 + (mv.wy ?? 0);
       } else {
         p.live = false;
         p.f += p.rate * dt;

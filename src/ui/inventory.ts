@@ -140,6 +140,8 @@ export interface InvUi {
   /** (WORD_ROOM) What the bottom shows, as he last chose it while the inventory is open (null: as the page has it); a piece of gear carried over the BAG tile, and for how long. */
   bottom?: 'words' | 'bag' | null;
   swap?: number | null;
+  /** (WORD_LEX) His own lexicon open over the game's half: as he last left it (kept from one opening to the next). */
+  lex?: boolean;
   /** THE SKILL TREES' page (ui/talents.ts): the talent being read, its card, a flare. */
   talents: TalentUi;
   /**
@@ -305,6 +307,18 @@ export const SWAP_W = 22;
  * stones here, always.
  */
 export const WORD_HALF = { on: true };
+/**
+ * HIS OWN LEXICON (behind this switch, on at his yes to its picture). Shown the words' panel with a fold, his words,
+ * 3 Nov 2026, by 22:15 (Eastern): “No I think what you want is a lexicon button near the gold and the level and keep the little
+ * bar of wards above the inventory.  When it gets so you can’t see what words you have, you can hit the button to expand the
+ * full lexicon with all your words.  I know you’re going to ask about the lexicon in the town.  This is separate.  A personal
+ * lexicon in the inventory”. So, away from a service: the line of words over the bag as before WORD_HALF (no ALL tile); under
+ * the gold and the level, LEXICON; pressed, every word in a panel of its own over the game's half (WORD_HALF's, as their rune
+ * stones), the line over the bag staying where it is; pressed again, put away. As he leaves it, from one opening to the next.
+ * At a service, as it was (WORD_ROOM). On the TALENTS page, no bag, no line, no lexicon (his “The bag covers the tree”).
+ */
+export const WORD_LEX = { on: true };
+// (on: shown its picture, his “Yes, switch it on (Recommended)”, 3 Nov 2026, by 22:25)
 /** (WORD_HALF) How far in from the game half's edges the words' panel's lines are, and the room its words have there: how wide, and how many lines. */
 export const HALF_M = 6;
 export function halfRoom(gameR: Rect): { w: number; lines: number } {
@@ -530,20 +544,24 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const pouchRoom = Math.max(1, Math.min(3, Math.floor((R.h - fixedH - PAGE_ROOM + 2) / LINE)));
   const pouchX = X0;
   // (WORD_HALF: every word over the game's half, and the panel's bottom the bag alone)
-  const half = WORD_HALF.on && !side;
+  // (WORD_LEX: his own lexicon, over the game's half while he has it open; the line over the bag stays)
+  const lexOn = WORD_LEX.on && !side;
+  const half = lexOn ? !!st.lex && page !== 'talents' : WORD_HALF.on && !side;
+  /** (WORD_HALF) Every word over the game's half instead of the line over the bag. */
+  const noLine = half && !lexOn;
   /**
    * (THE SKILL TREES' page: no bag at its foot; the tree has the panel down to its bottom. His words, 31 Oct 2026, 00:23: "Dude
    * fix the bag so I can allocate passives in the classes test", and asked what happens: "The bag covers the tree".)
    */
-  const bare = half && page === 'talents';
-  const stripH = bare ? 0 : (half ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
+  const bare = page === 'talents' && (half || lexOn);
+  const stripH = bare ? 0 : (noLine ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
   const stripY = R.y + R.h - stripH;
   // (WORD_ROOM: the bottom shows the bag, with the line of words over it, or every word in the room both take)
   const sideWants: 'words' | 'bag' | null = side ? (side.pieceDrop || side.bagButton || side.bagQuick ? 'bag' : side.wordDrop ? 'words' : null) : null;
-  const allWords = !half && WORD_ROOM.on && (st.bottom ?? sideWants ?? (page === 'attacks' ? 'words' : 'bag')) === 'words';
+  const allWords = !half && !lexOn && WORD_ROOM.on && (st.bottom ?? sideWants ?? (page === 'attacks' ? 'words' : 'bag')) === 'words';
   const wordsRoom = allWords ? Math.max(pouchRoom, Math.floor((stripH - CAP - 2 + 2) / LINE)) : pouchRoom;
   /** The tile that turns the bottom from the bag to every word and back, at the end of the words' first line. */
-  const swapR: Rect | null = WORD_ROOM.on && !half ? { x: X0 + bodyW - SWAP_W, y: stripY + CAP, w: SWAP_W, h: TH } : null;
+  const swapR: Rect | null = WORD_ROOM.on && !half && !lexOn ? { x: X0 + bodyW - SWAP_W, y: stripY + CAP, w: SWAP_W, h: TH } : null;
   // (WORD_HALF: the words' panel over the game's half, at its foot, as tall as its words want: its lines `HALF_M` in from the edges)
   const { w: halfW, lines: halfLines } = halfRoom(gameR);
   const pouchW = half ? halfW : bodyW - (swapR ? SWAP_W + GAP : 0);
@@ -554,8 +572,21 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const pouchY = halfR ? halfR.y + 4 + CAP : stripY + CAP;
   const pouchLeft = halfR ? halfR.x + 4 : pouchX;
   const bagX = X0;
-  const bagY = half ? stripY + CAP : pouchY + (pouchRoom * LINE - 2) + 3 + CAP;
-  const pouch = lay.cells.map((c) => ({ r: { x: pouchLeft + c.x, y: pouchY + c.line * LINE, w: c.w, h: TH }, w: c.word }));
+  const bagY = noLine ? stripY + CAP : stripY + CAP + (pouchRoom * LINE - 2) + 3 + CAP;
+  // (WORD_LEX, open: the line over the bag laid as it is with the lexicon put away)
+  const lineLay = half && lexOn && !bare ? layPouch(pouchWords, (w) => h.words[w], bodyW, pouchRoom, GAP, false) : null;
+  const pouch = [
+    ...lay.cells.map((c) => ({ r: { x: pouchLeft + c.x, y: pouchY + c.line * LINE, w: c.w, h: TH }, w: c.word, bare: lay.bare, stone: lay.stones })),
+    ...(lineLay ? lineLay.cells.map((c) => ({ r: { x: pouchX + c.x, y: stripY + CAP + c.line * LINE, w: c.w, h: TH }, w: c.word, bare: lineLay.bare, stone: lineLay.stones })) : []),
+  ];
+  /** (WORD_LEX) LEXICON, under the gold and the level beside the bag. */
+  const lexR: Rect | null = (() => {
+    if (!lexOn || bare) return null;
+    const ix = bagX + bagW + 8;
+    const iw = X0 + bodyW - ix;
+    const bh = T ? 18 : 15;
+    return iw >= 30 ? { x: ix, y: bagY + bagH - bh, w: Math.min(iw, 64), h: bh } : null;
+  })();
   const pageY = top + headH + 2;
   const pageH = stripY - 3 - pageY;
   // the names of the pages, and DONE
@@ -673,6 +704,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   for (const c of gear) ui.mark(c.sel.kind === 'bag' ? `bag:${c.sel.i}` : `gear:${c.sel.slot}`, c.r.x, c.r.y, c.r.w, c.r.h);
   for (const tb of tabs) ui.mark(`tab:${tb.page}`, tb.r.x, tb.r.y, tb.r.w, tb.r.h);
   if (swapR) ui.mark(allWords ? 'button:BAG' : 'button:ALL WORDS', swapR.x, swapR.y, swapR.w, swapR.h);
+  if (lexR) ui.mark('button:LEXICON', lexR.x, lexR.y, lexR.w, lexR.h);
   ui.mark(`page:${page}`, X0, pageY, bodyW, pageH);
 
   // ---- what may go where ------------------------------------------------------------------------
@@ -817,6 +849,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     st.bottom = allWords ? 'bag' : 'words';
     st.swap = null;
   }
+  // (WORD_LEX: LEXICON opens his own lexicon over the game's half, and puts it away)
+  if (lexR && ui.pressIn(lexR.x, lexR.y, lexR.w, lexR.h)) st.lex = !st.lex;
   for (const c of pouch) {
     if (!ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h)) continue;
     // a word is pressed: it is in hand (to be read), and may be dragged from here
@@ -1276,7 +1310,11 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     ui.panel(halfR.x, halfR.y, halfR.w, halfR.h);
     ui.mark('words', halfR.x, halfR.y, halfR.w, halfR.h);
   }
-  cap(halfR ? `YOUR WORDS  ${pouchWords.length}` : 'YOUR WORDS', pouchLeft, pouchY - CAP);
+  cap(halfR ? `${lexOn ? 'LEXICON' : 'YOUR WORDS'}  ${pouchWords.length}` : 'YOUR WORDS', pouchLeft, pouchY - CAP);
+  if (lineLay) {
+    cap('YOUR WORDS', pouchX, stripY);
+    if (lineLay.hidden > 0) drawText(g, `+${lineLay.hidden} MORE`, pouchX + bodyW, stripY, THEME.dim, { align: 'right', font: 'small' });
+  }
   // (the owner, 5 Oct 2026, 22:36: "none to spare under words to empty"; THE FIRST LEVELS: before the ring is lit, what opens wordsmithing)
   const dark = !h.ring ? (h.quest ? `Slots open at the wordsmith: bring him ${QUEST_ITEM.the}.` : 'No word slots until his ring is lit.') : null;
   if (!pouchWords.length) drawText(g, dark ?? 'empty', pouchLeft, pouchY + Math.floor((TH - 5) / 2), dark ? THEME.dim : THEME.faint, { font: 'small' });
@@ -1284,7 +1322,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const sel = st.word === c.w || (!!st.pending && st.pending.word === c.w);
     const hot = ui.hover(c.r.x, c.r.y, c.r.w, c.r.h);
     const gone = (!!dragAt || !!st.pending) && sel && h.words[c.w] <= 1;
-    if (!gone) drawWordTile(ui, art, c.r.x, c.r.y - (sel ? 1 : 0), c.r.w, c.r.h, c.w, 'name', { lit: sel || hot, edge: sel ? THEME.accent : undefined, count: h.words[c.w], bare: lay.bare, stone: lay.stones });
+    if (!gone) drawWordTile(ui, art, c.r.x, c.r.y - (sel ? 1 : 0), c.r.w, c.r.h, c.w, 'name', { lit: sel || hot, edge: sel ? THEME.accent : undefined, count: h.words[c.w], bare: c.bare, stone: c.stone });
     // (the arrow at a new player's first word stands beside the tile: above it is the caption)
     if (first && coach && coach.word === c.w && !hand && !st.pending) arrow(g, c.r.x + c.r.w + 2, c.r.y + Math.floor(c.r.h / 2), t, THEME.accent, 'left');
   }
@@ -1301,6 +1339,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
   // (the card of the talent being read, over all of that: above the words' own panel, never under it; his words, 30 Oct 2026,
   // 08:31: “The rune pouch covers the talent tree descriptions and allocation button”)
+  if (lexR) ui.drawButton(lexR.x, lexR.y, lexR.w, lexR.h, 'LEXICON', { lit: !!st.lex || ui.hover(lexR.x, lexR.y, lexR.w, lexR.h) });
   if (tlay) drawTalentCard(ui, game, st.talents, tlay, R, halfR);
 
   // ---- draw: what is being read -----------------------------------------------------------------------

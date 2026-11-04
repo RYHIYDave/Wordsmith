@@ -291,3 +291,49 @@ test('on, the cage\'s ride up from floor 5 ends in the town\'s corner: he does n
     void newGuide;
     void CURTAIN_SECS;
   }));
+
+// (25.0.2: his words, 3 Nov 2026, 22:31: “I can’t use floor 3s door out after the boss.  I am stuck”: on a floor with heights the
+// opened wall's tiles had no step onto them (game.ts joinSteps). Floor 4's cave, walked into from its hall, not set down on.)
+test('25.0.2: floor 4\'s cave, walked into from the hall once open, takes him down, on every seed', () =>
+  exitsSet(true, () => {
+    for (const seed of [3, 17, 29, 53, 101]) {
+      const g = new Game('warrior', seed);
+      g.hero.invuln = 1e9;
+      g.depth = 4;
+      g.cleared = 3;
+      g.enterDungeon();
+      g.monsters = g.monsters.filter((m) => m.boss);
+      const cv = g.level.ways!.cave!;
+      killBoss(g);
+      until(g, CAVE_OPENING + 1, () => cv.state === 'open');
+      const L = g.level;
+      const f = L.floor;
+      const tiles = doorTiles(f, cv.spot);
+      const set = new Set(tiles);
+      let from: { x: number; y: number; dx: number; dy: number } | null = null;
+      for (const i of tiles) {
+        const x = i % f.w;
+        const y = Math.floor(i / f.w);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const n = (y + dy) * f.w + x + dx;
+          const n2 = (y + 2 * dy) * f.w + x + 2 * dx;
+          if (!set.has(n) && L.walk[n] === 1 && L.walk[n2] === 1) from = { x: x + 2 * dx + 0.5, y: y + 2 * dy + 0.5, dx: -dx, dy: -dy };
+        }
+      }
+      assert.ok(from, `seed ${seed}: the hall before it`);
+      g.hero.x = from!.x;
+      g.hero.y = from!.y;
+      const c = emptyControls();
+      c.mx = from!.dx;
+      c.my = from!.dy;
+      assert.ok(until2(g, 4, c, () => g.depth === 5), `seed ${seed}: walked into it, down to floor 5 (stopped at ${g.hero.x.toFixed(2)}, ${g.hero.y.toFixed(2)})`);
+    }
+  }));
+function until2(g: Game, secs: number, c: ReturnType<typeof emptyControls>, done: () => boolean): boolean {
+  for (let k = 0; k < secs / DT; k++) {
+    if (done()) return true;
+    g.events.length = 0;
+    g.update(DT, c);
+  }
+  return done();
+}
