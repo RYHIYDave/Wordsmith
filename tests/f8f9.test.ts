@@ -31,9 +31,20 @@ const on = <T>(f: () => T): T => {
   }
 };
 
-test('the switch is off: nothing changes until he has seen the pictures', () => {
-  assert.equal(F8F9_FIX.on, false);
-  const { land } = generateAct1(9, 5);
+const off = <T>(f: () => T): T => {
+  const was = F8F9_FIX.on;
+  F8F9_FIX.on = false;
+  try {
+    return f();
+  } finally {
+    F8F9_FIX.on = was;
+  }
+};
+
+// (on since 25.0.6, his “Yes, hand them over (Recommended)” to the pictures; off, the floors as they were)
+test('the switch is on, at his yes; off, nothing changes', () => {
+  assert.equal(F8F9_FIX.on, true);
+  const { land } = off(() => generateAct1(9, 5));
   for (const b of land.bridges ?? []) assert.equal(b.ang, undefined, 'a bridge of before, its tiles planked one by one');
 });
 
@@ -191,7 +202,7 @@ test('THE CANYON WALLS: a cliff face drawn down to the floor under every edge of
     const T = terrainOf(floor, CANYON_LOOK);
     for (let k = 0; k < land.way.length; k++) {
       const [x, y] = land.way[k];
-      const before = facesDown(windowAt(T, x, y), CANYON_LOOK.rise);
+      const before = off(() => facesDown(windowAt(T, x, y), CANYON_LOOK.rise));
       lostBefore += before.edges - before.whole;
       const after = on(() => facesDown(windowAt(T, x, y), CANYON_LOOK.rise));
       assert.equal(after.whole, after.edges, `seed ${seed}, at ${x.toFixed(1)}, ${y.toFixed(1)}: ${after.edges - after.whole} of ${after.edges} edges without their face`);
