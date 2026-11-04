@@ -140,8 +140,6 @@ export interface InvUi {
   /** (WORD_ROOM) What the bottom shows, as he last chose it while the inventory is open (null: as the page has it); a piece of gear carried over the BAG tile, and for how long. */
   bottom?: 'words' | 'bag' | null;
   swap?: number | null;
-  /** (WORD_FOLD) The words' own panel over the game's half folded down to its name: as he last left it (kept from one opening to the next). */
-  fold?: boolean;
   /** THE SKILL TREES' page (ui/talents.ts): the talent being read, its card, a flare. */
   talents: TalentUi;
   /**
@@ -307,16 +305,6 @@ export const SWAP_W = 22;
  * stones here, always.
  */
 export const WORD_HALF = { on: true };
-/**
- * THE WORDS' PANEL FOLDED (behind this switch, off until his yes to a picture of it). His words, 3 Nov 2026, 22:03 (Eastern):
- * “The bag of words needs to be collapsible in the inventory”. So the words' own panel over the game's half (WORD_HALF) has
- * HIDE at the end of its name's line; a press on that line folds it down to the line alone (YOUR WORDS, how many, SHOW), the
- * game seen over the rest, and a press on it again opens it. It stays as he left it from one opening to the next; it is open
- * while a new player's first word is being put in (its lesson points at the word).
- */
-export const WORD_FOLD = { on: false };
-/** (WORD_FOLD) The width of HIDE and SHOW at the end of the panel's line. */
-export const FOLD_W = 26;
 /** (WORD_HALF) How far in from the game half's edges the words' panel's lines are, and the room its words have there: how wide, and how many lines. */
 export const HALF_M = 6;
 export function halfRoom(gameR: Rect): { w: number; lines: number } {
@@ -559,10 +547,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // (WORD_HALF: the words' panel over the game's half, at its foot, as tall as its words want: its lines `HALF_M` in from the edges)
   const { w: halfW, lines: halfLines } = halfRoom(gameR);
   const pouchW = half ? halfW : bodyW - (swapR ? SWAP_W + GAP : 0);
-  // (WORD_FOLD: the words' panel folded down to its name's line: no words laid in it)
-  const folded = half && WORD_FOLD.on && !!st.fold && !first;
-  const lay = layPouch(folded ? [] : pouchWords, (w) => h.words[w], pouchW, half ? halfLines : wordsRoom, GAP, half);
-  const pouchH = (folded ? 0 : half ? lay.lines : wordsRoom) * LINE - 2;
+  const lay = layPouch(pouchWords, (w) => h.words[w], pouchW, half ? halfLines : wordsRoom, GAP, half);
+  const pouchH = (half ? lay.lines : wordsRoom) * LINE - 2;
   /** (WORD_HALF) The words' own panel. */
   const halfR: Rect | null = half ? { x: gameR.x + HALF_M - 4, y: gameR.y + gameR.h - HALF_M - pouchH - CAP - 8, w: halfW + 8, h: pouchH + CAP + 8 + 2 } : null;
   const pouchY = halfR ? halfR.y + 4 + CAP : stripY + CAP;
@@ -570,8 +556,6 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const bagX = X0;
   const bagY = half ? stripY + CAP : pouchY + (pouchRoom * LINE - 2) + 3 + CAP;
   const pouch = lay.cells.map((c) => ({ r: { x: pouchLeft + c.x, y: pouchY + c.line * LINE, w: c.w, h: TH }, w: c.word }));
-  /** (WORD_FOLD) The line of the words' panel that folds it and opens it: all of it pressed, HIDE or SHOW drawn at its end. */
-  const foldR: Rect | null = halfR && WORD_FOLD.on && !first ? { x: halfR.x, y: halfR.y, w: halfR.w, h: CAP + 6 } : null;
   const pageY = top + headH + 2;
   const pageH = stripY - 3 - pageY;
   // the names of the pages, and DONE
@@ -689,7 +673,6 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   for (const c of gear) ui.mark(c.sel.kind === 'bag' ? `bag:${c.sel.i}` : `gear:${c.sel.slot}`, c.r.x, c.r.y, c.r.w, c.r.h);
   for (const tb of tabs) ui.mark(`tab:${tb.page}`, tb.r.x, tb.r.y, tb.r.w, tb.r.h);
   if (swapR) ui.mark(allWords ? 'button:BAG' : 'button:ALL WORDS', swapR.x, swapR.y, swapR.w, swapR.h);
-  if (foldR) ui.mark(folded ? 'button:SHOW WORDS' : 'button:HIDE WORDS', foldR.x, foldR.y, foldR.w, foldR.h);
   ui.mark(`page:${page}`, X0, pageY, bodyW, pageH);
 
   // ---- what may go where ------------------------------------------------------------------------
@@ -834,8 +817,6 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     st.bottom = allWords ? 'bag' : 'words';
     st.swap = null;
   }
-  // (WORD_FOLD: a press on the words' panel's line folds it, or opens it)
-  if (foldR && ui.pressIn(foldR.x, foldR.y, foldR.w, foldR.h)) st.fold = !folded;
   for (const c of pouch) {
     if (!ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h)) continue;
     // a word is pressed: it is in hand (to be read), and may be dragged from here
@@ -1298,11 +1279,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   cap(halfR ? `YOUR WORDS  ${pouchWords.length}` : 'YOUR WORDS', pouchLeft, pouchY - CAP);
   // (the owner, 5 Oct 2026, 22:36: "none to spare under words to empty"; THE FIRST LEVELS: before the ring is lit, what opens wordsmithing)
   const dark = !h.ring ? (h.quest ? `Slots open at the wordsmith: bring him ${QUEST_ITEM.the}.` : 'No word slots until his ring is lit.') : null;
-  if (foldR) {
-    const hot = ui.hover(foldR.x, foldR.y, foldR.w, foldR.h);
-    drawText(g, folded ? 'SHOW' : 'HIDE', foldR.x + foldR.w - 4, pouchY - CAP, hot ? THEME.text : THEME.accent, { align: 'right', font: 'small' });
-  }
-  if (!pouchWords.length && !folded) drawText(g, dark ?? 'empty', pouchLeft, pouchY + Math.floor((TH - 5) / 2), dark ? THEME.dim : THEME.faint, { font: 'small' });
+  if (!pouchWords.length) drawText(g, dark ?? 'empty', pouchLeft, pouchY + Math.floor((TH - 5) / 2), dark ? THEME.dim : THEME.faint, { font: 'small' });
   for (const c of pouch) {
     const sel = st.word === c.w || (!!st.pending && st.pending.word === c.w);
     const hot = ui.hover(c.r.x, c.r.y, c.r.w, c.r.h);
@@ -1311,7 +1288,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     // (the arrow at a new player's first word stands beside the tile: above it is the caption)
     if (first && coach && coach.word === c.w && !hand && !st.pending) arrow(g, c.r.x + c.r.w + 2, c.r.y + Math.floor(c.r.h / 2), t, THEME.accent, 'left');
   }
-  if (lay.hidden > 0) drawText(g, `+${lay.hidden} MORE`, pouchLeft + pouchW - (foldR ? FOLD_W + 4 : 0), pouchY - CAP, THEME.dim, { align: 'right', font: 'small' });
+  if (lay.hidden > 0) drawText(g, `+${lay.hidden} MORE`, pouchLeft + pouchW, pouchY - CAP, THEME.dim, { align: 'right', font: 'small' });
   // (WORD_ROOM: the tile that turns the bottom: ALL, and how many words he holds; or BAG, and how full it is)
   if (swapR) {
     const hot = ui.hover(swapR.x, swapR.y, swapR.w, swapR.h) || (st.swap ?? 0) > 0;
