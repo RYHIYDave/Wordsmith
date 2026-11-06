@@ -342,7 +342,8 @@ test('7. every blow by Movement 9: a big wind-up HELD, the strike in two frames,
   for (const [m, held, hit] of [[WU_STRIKE3, WU_STRIKE_HELD, WU_STRIKE_HIT], [WU_SLASH3, WU_STRIKE_HELD, WU_STRIKE_HIT], [WU_SLAM3, WU_SLAM_HELD, WU_SLAM_HIT]] as const) {
     const tip = (f: number): [number, number, number] => {
       const q = bonesAt(m.motion.keys, m.rest, f / 30);
-      return wuSword(solve(m.build, q), q).tip;
+      const p = wuSword(solve(m.build, q), q).tip;
+      return [p[0], p[1], p[2]];
     };
     const step = (f: number): number => Math.hypot(...(tip(f + 1).map((x, i) => x - tip(f)[i]) as [number, number, number]));
     // held: the wind-up's last frames barely move

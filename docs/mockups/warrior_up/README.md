@@ -23,11 +23,14 @@ guard: a player knows him at a glance); how well he is drawn and how he moves br
 
 ## The pictures (`pictures/`)
 
-- `warrior_up_sheet.png` (1200 wide): before beside now, three times as big, from in front and from behind: his stance, his
+- `warrior_up_sheet.png` (1200 by 7362): before beside now, three times as big, from in front and from behind: his stance, his
   run, his class card's ready, the key moments of each attack (the held wind-up, the smeared strike, the wind-down), his fall;
   and at the game's own size.
-- `warrior_up.mp4` (30 frames a second, H.264): every list before and now side by side, both ways round, three times as big
-  and at the game's own size; each strike again at half speed; his class card's standing loop before and now, side by side.
+- `warrior_up.mp4` (42 s, 30 frames a second, H.264, 1100 by 1060): every list before and now side by side, both ways round,
+  three times as big and at the game's own size, each captioned; each strike (both swings of Strike, the Slam, the Lunge)
+  again at half speed; his class card's standing loop before and now, side by side. Before and now play side by side, at
+  once, rather than one after the other, so that each list is seen against the other at the same moment and the film stays
+  under a minute.
 
 His scarf's two ends are not in his frames: the game hangs them from where each frame fixes them and moves them itself
 (`engine/tails.ts`), so they follow everything he does, in the world. In the pictures they are moved the same way.
@@ -156,7 +159,21 @@ land: the owner's to weigh (below).
 Every frame the game holds of him, in a dungeon, in town and on his class card, both ways round (`tools/warrior_up_measure.ts`;
 this machine: 2 cores, shared and busy):
 
-MEASURES_TABLE
+| | Before | Now |
+|---|---|---|
+| Lists the game holds of him (all three places, both ways) | 88 | 142 (his stops and setting off added; a list shared by two places counted in each) |
+| Frames in them | 1,450 (a dungeon 422, town 514, his card 514) | 2,634 (a dungeon 762, town 936, his card 936) |
+| Pictures held (each painted once) | 1,396 | 1,254: fewer, because a list the same in two places is now one list |
+| Different pictures among them | 609 | 1,221 |
+| Memory, decoded at the game's grain (4 bytes a picture pixel, each cut to the box round him) | 19.7 MB | 17.3 MB |
+| Packed as picture files would be (his pixels deflated, as a PNG's are): what baking him adds to the download, near enough | 1.26 MB | 1.36 MB |
+| Time to paint a frame (each list painted whole in one run; this machine) | 4.0 thousandths of a second | 31.7 |
+| Time to paint every picture of him | 5.6 s | 39.7 s |
+
+A frame of his costs about eight times what it did (the sculptor's march, as the Veteran's, which costs a few tenths of a
+second a frame), so his pictures want baking into files when the game is built (25.0.9), as the main chat is doing for the
+heroes; once baked, painting costs nothing on the phone. Memory and download stay about as they were: more frames, but each
+list is held once for every place that shows it.
 
 ## How the main chat brings him in
 
