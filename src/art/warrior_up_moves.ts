@@ -229,7 +229,7 @@ export const WU_SLAM_HELD: readonly [number, number] = [11, 13];
  */
 function slamDown(): Motion {
   const up = onToes(30);
-  const top: Partial<Bones> = { pz: 2.8, yaw: -8, twist: -2, pitch: -4, bend: -12, faceUp: -6, lfp: 30, lfz: up, rfp: 30, rfz: up, rfx: -9, rfy: -1.5, ...hilt(12, 1, 16), wAz: 180, wEl: 40 };
+  const top: Partial<Bones> = { pz: 2.8, yaw: -8, twist: -2, pitch: -4, bend: -12, faceUp: -6, lfp: 30, lfz: up, rfp: 30, rfz: up, rfx: -9, rfy: -1.5, ...hilt(14, 1, 19), wAz: 180, wEl: 52 };
   const low: Partial<Bones> = {
     px: 11, pz: -9.2, yaw: 6, pitch: 15, twist: 2, bend: 30, faceUp: -45,
     lfx: 21, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, rfx: -9.5, rfy: -1, rfp: 38, rfz: onToes(38), rft: -10, rk: -4,
@@ -243,7 +243,7 @@ function slamDown(): Motion {
       { at: 6 * FR, pose: { pz: 0.6, yaw: -18, twist: -6, bend: -4, faceUp: -6, lfp: 14, lfz: onToes(14), rfp: 14, rfz: onToes(14), rfx: -9, rfy: -1.5, ...hilt(10, 3, 8), wAz: -130, wEl: 66 }, ease: 'io', as: { wAz: 230 } },
       // (... and on up over his head and back, up onto his toes: the top)
       { at: 11 * FR, pose: top, ease: 'io' },
-      { at: 13 * FR, pose: { ...top, pz: 3.1, pitch: -5, bend: -13.5, wEl: 35, faceUp: -14 }, ease: 'io' },
+      { at: 13 * FR, pose: { ...top, pz: 3.1, pitch: -5, bend: -13.5, wEl: 48, faceUp: -10 }, ease: 'io' },
       // THE STRIKE: the hips first, tipping him forward off his toes, the chest still arched back ...
       { at: 14 * FR, pose: { ...top, px: 5.5, pz: 0.5, yaw: 4, pitch: 14, bend: -8, lfx: 16, lfz: 3.6, lfp: 6, rfp: 34, rfz: onToes(34), ...hilt(8.5, 3, 14), wEl: 138 }, ease: 'in' },
       { at: 15 * FR, pose: low, ease: 'lin' },

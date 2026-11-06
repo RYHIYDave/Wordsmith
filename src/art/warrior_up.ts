@@ -187,39 +187,55 @@ export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, 
   const lagC: V3 = lagLen > 7 ? mul(lagFlat, 7 / lagLen) : lagFlat;
   const waistRing = girdle(trunkOf(B, s)[2], 0.55, 1.6);
   const wind = around.wind ?? 0;
-  const PANELS: { side: 'L' | 'R'; at: number }[] = [
-    { side: 'L', at: 35 }, { side: 'L', at: 100 }, { side: 'L', at: 160 },
-    { side: 'R', at: -35 }, { side: 'R', at: -100 }, { side: 'R', at: -160 },
-  ];
+  // (eight panels round him, front and back hanging between his legs, the rest round the sides: each hangs PLUMB from the
+  // belt to the knee and flares out, pushed out only where a thigh comes against it, so the skirt reads as a skirt, split, and
+  // never as trousers; and it is left behind by how far his hips have come over the last few frames)
+  const PANELS = [0, 45, 90, 135, 180, -135, -90, -45];
   // (closed at the hips: a ring of cloth from the belt to below the seat, round both hip joints)
   const hipMid = mid(s.hipL, s.hipR);
   sc.ell(red, 'skirt', add(hipMid, mul(hu, -1.4)), [mul(hf, B.pelvisDeep + 2.6), mul(hl, B.pelvisHalf + 2.9), mul(hu, 4.2)], 1.6, { tag: 'skirt' });
-  for (const p of PANELS) {
-    const hip = p.side === 'L' ? s.hipL : s.hipR;
-    const knee = p.side === 'L' ? s.kneeL : s.kneeR;
-    const a = p.at * D;
-    // the way out from the thigh this panel hangs on: round the hips' own forward and left
+  const hem = Math.max(3.5, hipMid[2] - B.thigh * 0.64);
+  for (const at of PANELS) {
+    const a = at * D;
     const outH = norm(add(mul(hf, Math.cos(a)), mul(hl, Math.sin(a))));
-    const td = norm(sub(knee, hip));
-    const outT = fr(outH, td, 1);
+    const outFlat = norm([outH[0], outH[1], 0], [1, 0, 0]);
     const top = add(waistRing.c, add(mul(norm(waistRing.u), Math.cos(a) * len(waistRing.u)), mul(norm(waistRing.v), Math.sin(a) * len(waistRing.v))));
-    const flutter = Math.sin((wind + p.at / 360) * Math.PI * 2) * 0.5;
-    const lowK = 0.86;
-    const low0 = add(lerp3(hip, knee, lowK), mul(outT, lK + 2.0));
-    // (hangs plumb from the hips more than it follows the knee, and is left behind)
-    const plumb = add(top, [0, 0, -len(sub(low0, top))]);
-    const low = add(lerp3(low0, plumb, 0.25), add(lagC, mul(outT, flutter)));
+    // how far out it hangs at the hem: as wide as the hips and a flare, or further where a knee or thigh comes against it
+    let out = Math.hypot(len(waistRing.u) * Math.cos(a), len(waistRing.v) * Math.sin(a)) + 1.6;
+    const centre: V3 = [hipMid[0], hipMid[1], 0];
+    for (const [hip, knee] of [[s.hipL, s.kneeL], [s.hipR, s.kneeR]] as const) {
+      for (const k of [0.55, 0.8, 1.0]) {
+        const pt = lerp3(hip, knee, k);
+        if (pt[2] < hem - 3) continue;
+        // (how far out along this panel's way the thigh's skin reaches, if it is in front of the panel's face)
+        const rel: V3 = [pt[0] - centre[0], pt[1] - centre[1], 0];
+        const radial = dot(rel, outFlat);
+        const across = Math.abs(dot(rel, [-outFlat[1], outFlat[0], 0]));
+        if (across < 4.8 + lK) out = Math.max(out, radial + lK + 1.9);
+      }
+    }
+    const flutter = Math.sin((wind + at / 360) * Math.PI * 2) * 0.5;
+    let low: V3 = add([centre[0] + outFlat[0] * out, centre[1] + outFlat[1] * out, hem], add(lagC, mul(outFlat, flutter)));
+    // (with his hips tipped far over, in a dive or a lunge, the panels lie along his thighs rather than hang plumb from them)
+    const tilt = Math.max(0, Math.min(1, (1 - Math.max(0, hu[2]) - 0.12) / 0.3));
+    if (tilt > 0) {
+      const sa = Math.sin(a);
+      const knee = Math.abs(sa) < 0.3 ? mid(s.kneeL, s.kneeR) : sa > 0 ? s.kneeL : s.kneeR;
+      const hip = Math.abs(sa) < 0.3 ? hipMid : sa > 0 ? s.hipL : s.hipR;
+      const onThigh = add(lerp3(hip, knee, 0.85), mul(outH, lK + 1.6));
+      low = lerp3(low, onThigh, tilt);
+    }
     const lowC: V3 = [low[0], low[1], Math.max(2.2, low[2])];
     const along = sub(lowC, top);
     const L = len(along);
-    const [dn, outP, acr] = frame(along, outT);
-    const wTop = 3.0;
-    const wLow = 2.6;
+    const [dn, outP, acr] = frame(along, outFlat);
+    const wTop = 2.6;
+    const wLow = 2.9;
     const c = lerp3(top, lowC, 0.5);
-    sc.box(red, 'skirt', c, [mul(outP, 0.6), mul(acr, (wTop + wLow) / 2), mul(dn, L / 2)], 0.5, 1.2, { tag: 'panel' });
-    // its point
-    const tip = add(lowC, mul(dn, 2.6 + 0.6 * Math.sin((p.at + wind * 360) * D)));
-    sc.tri(red, 'skirt', add(lowC, mul(acr, wLow)), add(lowC, mul(acr, -wLow)), [tip[0], tip[1], Math.max(0.6, tip[2])], 0.55, 0.9, { tag: 'point' });
+    sc.box(red, 'skirt', c, [mul(outP, 0.55), mul(acr, (wTop + wLow) / 2), mul(dn, L / 2)], 0.5, 1.3, { tag: 'panel' });
+    // its point, the hem cut into points as his always was
+    const tip = add(lowC, mul(dn, 2.4 + 0.7 * Math.sin((at + wind * 360) * D)));
+    sc.tri(red, 'skirt', add(lowC, mul(acr, wLow)), add(lowC, mul(acr, -wLow)), [tip[0], tip[1], Math.max(0.6, tip[2])], 0.5, 0.9, { tag: 'point' });
   }
   // the belt over the tabard at his waist, its buckle in front
   sc.ell(plum, 'belt', waistRing.c, [mul(hf, len(waistRing.u) + 0.5), mul(hl, len(waistRing.v) + 0.5), mul(hu, 1.25)], 0.4, { tag: 'belt' });
@@ -259,8 +275,10 @@ export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, 
   }
 
   // ---- THE SCARF wound round his neck, thick, over the top of the tabard; its knot behind (the game moves its two ends) ----
-  sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 0.4), mul(cu, -0.2))), [mul(cf, 4.4), mul(cl, 6.1), mul(cu, 2.4)], 1.4, { tag: 'wrap' });
-  sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 0.9), mul(cu, 1.2))), [mul(cf, 3.6), mul(cl, 4.6), mul(cu, 1.7)], 1.2, { tag: 'wrap' });
+  sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 0.9), mul(cu, -0.3))), [mul(cf, 5.0), mul(cl, 6.3), mul(cu, 2.6)], 1.4, { tag: 'wrap' });
+  sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 1.5), mul(cu, 1.4))), [mul(cf, 4.0), mul(cl, 4.8), mul(cu, 1.9)], 1.2, { tag: 'wrap' });
+  // (its folds hanging over the top of his chest in front)
+  sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 4.2), mul(cu, -2.6))), [mul(cf, 1.6), mul(cl, 3.4), mul(cu, 2.4)], 1.0, { tag: 'wrap' });
   const knot = add(s.neck, add(mul(cf, -4.2), mul(cu, 1.2)));
   sc.ell(wine, 'scarf', knot, [mul(cf, 1.6), mul(cl, 2.0), mul(cu, 1.6)], 0.8, { tag: 'knot' });
 
