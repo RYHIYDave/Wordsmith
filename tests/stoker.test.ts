@@ -139,8 +139,9 @@ for (const view of VIEWS) {
 }
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(3)}`;
 
-test('1. the switch is off, and nothing of the game imports him or his room', () => {
-  assert.equal(STOKER_ON.on, false, 'STOKER_ON');
+// (BROUGHT IN, 6 Nov 2026, his “Yes, hand it over (Recommended)”: his switch now goes with the descent's figures (art/bestiary.ts
+// useAct1Figs, as every figure of the art chat's does), and the game has him through these, and these only, the quest line's)
+test('1. his switch goes with the descent\'s figures, and the game has him through his figure, his rules, his fire, his room and the quest', () => {
   const users: string[] = [];
   const theirs = /^art\/stoker(_moves|_fx|_room)?$/;
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -152,7 +153,8 @@ test('1. the switch is off, and nothing of the game imports him or his room', ()
       if (theirs.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal(users.length, 0, `game files that import it: ${users.join(', ')}`);
+  assert.equal([...new Set(users)].sort().join(', '), ['art/act1_figs/stoker.ts', 'game/act1_rules/stoker.ts', 'game/game.ts', 'render/act1_fx/stoker.ts', 'render/render.ts'].join(', '), 'the game files that import it');
+  void STOKER_ON;
 });
 
 test('2. EVERY MOVE THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

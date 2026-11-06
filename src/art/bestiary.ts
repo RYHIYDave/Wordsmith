@@ -311,6 +311,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   moth: { top: 322, half: 70 },
   // (the Rime Shade hunched, its head where its picture has it: tests/first5_bosses.test.ts 10)
   rshade: { top: 32, half: 11 },
+  // (floor 3's Stoker twice the knight, his firebox broad: art/stoker.ts)
+  stoker: { top: 58, half: 18 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS, ...HIGH_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

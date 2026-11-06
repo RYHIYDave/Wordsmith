@@ -147,7 +147,9 @@ export type MonsterKind =
   // 'order'); the Moth)
   | 'hshape' | 'rshadow' | 'moth'
   // (floor 20's frost creature, the art chat's, behind RIME_SHADE_ON: game/act1_rules/rshade.ts)
-  | 'rshade';
+  | 'rshade'
+  // (floor 3's side boss, the furnace's keeper, the art chat's: game/act1_rules/stoker.ts, the quest line's, game/quests15.ts)
+  | 'stoker';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -159,7 +161,7 @@ export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 
  */
 export const FIRST5_KINDS: readonly MonsterKind[] = ['headsman', 'chained', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm'];
 /** ACT 1, THE DESCENT (game/act1.ts): the cult's two new kinds, the floors' own creatures and the five bosses, the art chat's. */
-export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem', 'rubbling', 'vulture', 'crawler', 'scorpion', 'devil', 'deer', 'wolf', 'drowned', 'leech', 'spawn', 'unfinished', 'queen', 'cantor', 'stag', 'eye'];
+export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem', 'rubbling', 'vulture', 'crawler', 'scorpion', 'devil', 'deer', 'wolf', 'drowned', 'leech', 'spawn', 'unfinished', 'queen', 'cantor', 'stag', 'eye', 'stoker'];
 /** ACT 2, THE HUSH (game/act1.ts ACT2): floors 11 to 15's own mobs and their five bosses, the art chat's (its branches mockup/act2-gateward to mockup/act2-library). */
 export const ACT2_MOBS: readonly MonsterKind[] = ['hushed', 'watch', 'scribe', 'hound', 'rat', 'dredger', 'fieldhand', 'carter', 'patient', 'orderly', 'inkling', 'bookwarden'];
 export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor', 'scraper', 'quill'];

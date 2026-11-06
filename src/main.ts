@@ -105,6 +105,7 @@ import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { BakedHeroes } from './render/baked';
+import { QUESTS15 } from './game/quests15';
 import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
@@ -2210,6 +2211,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const dbg = {
     /** THE HEROES BAKED (render/baked.ts): what has been taken in from the bake, and what failed (null: no bake on this page). */
     baked: () => (painter.baked ? { ...painter.baked.stats } : null),
+    /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts QUESTS15): off until his yes in play; its pictures and playtests switch it on (`quests15.on`). */
+    quests15: QUESTS15,
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,

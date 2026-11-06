@@ -12,19 +12,24 @@ import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
 import type { Element } from '../src/game/types';
 import { EXITS } from '../src/game/ways';
+import { STOKER_ON } from '../src/art/stoker';
+import { FIRE_GONE } from '../src/game/quests15';
+import { GEAR_PERIL } from '../src/game/act1_rules/stoker';
+import { ST_DIES } from '../src/art/stoker_moves';
 
 const DT = 1 / 60;
 type Inner = { handIn: () => boolean; damageMonster: (m: Monster, dmg: number, el: Element, crit: boolean, skill: number) => void };
 const inner = (g: Game): Inner => g as unknown as Inner;
 
-function on<T>(run: () => T, q = true): T {
-  const was = [QUESTS15.on, EXITS.on];
+function on<T>(run: () => T, q = true, stoker = false): T {
+  const was = [QUESTS15.on, EXITS.on, STOKER_ON.on];
   QUESTS15.on = q;
   EXITS.on = true;
+  STOKER_ON.on = stoker;
   try {
     return run();
   } finally {
-    [QUESTS15.on, EXITS.on] = was;
+    [QUESTS15.on, EXITS.on, STOKER_ON.on] = was;
   }
 }
 function at(g: Game, kind: string): void {
@@ -164,3 +169,76 @@ test('save and load keep the quest\'s step and the ask', () =>
     assert.equal(g2.hero.furnace, 'gear');
     assert.equal(g2.hero.meldAsk, true);
   }));
+
+test('THE STOKER (his art in): his arena at the end of an open hallway; he fights; his gear lies and is taken; the crank; the fire goes out, the way opens', () =>
+  on(() => {
+    const g = new Game('warrior', 7);
+    const h = g.hero;
+    h.ring = true;
+    h.furnace = 'asked';
+    down3(g);
+    const L = g.level;
+    const F = L.furnace!;
+    const A = L.arena!;
+    assert.ok(A && F && F.spot, 'the arena, the furnace in its wall');
+    const keeper = g.monsters.find((m) => m.id === F.keeper)!;
+    assert.equal(keeper.kind, 'stoker');
+    assert.ok(keeper.x >= A.room.x && keeper.x < A.room.x + A.room.w && keeper.y >= A.room.y && keeper.y < A.room.y + A.room.h, 'he stands in it');
+    // (the way to him open from where the floor begins, through the floor's doors (each opens as it is walked up to) and the hallway)
+    const W = L.floor.w;
+    const ways = new Uint8Array(L.walk);
+    for (const dd of L.doors) if (dd.spot.kind !== 'bossgate') for (const i of doorTiles(L.floor, dd.spot)) ways[i] = 1;
+    const seen = new Uint8Array(L.walk.length);
+    const q = [Math.floor(L.floor.start.y) * W + Math.floor(L.floor.start.x)];
+    seen[q[0]] = 1;
+    while (q.length) {
+      const i = q.pop()!;
+      for (const j of [i + 1, i - 1, i + W, i - W]) if (ways[j] === 1 && !seen[j]) {
+        seen[j] = 1;
+        q.push(j);
+      }
+    }
+    assert.equal(seen[Math.floor(keeper.y) * W + Math.floor(keeper.x)], 1, 'he can be walked to');
+    // (the hall's way barred by the fire, its portcullis up)
+    const d = L.doors[F.gate];
+    steps(g, 2);
+    for (const i of doorTiles(L.floor, d.spot)) assert.equal(L.walk[i], 0, 'barred by the fire');
+    // (he fights: a hero five tiles off, kept alive, sees his fire)
+    h.x = keeper.x + 4;
+    h.y = keeper.y;
+    h.invuln = 0;
+    let fire = 0;
+    for (let k = 0; k < 60 * 12; k++) {
+      g.update(DT, emptyControls());
+      h.life = h.d.maxLife;
+      if (g.perils.some((p) => p.a1 === 'stoker:coals' || p.a1 === 'stoker:rake')) fire++;
+      if (g.over) break;
+    }
+    assert.ok(fire > 0, 'his coals or his rake');
+    // (killed: his gear lies, and is taken once it lies still)
+    h.invuln = 1e9;
+    h.x = A.room.x + 0.6;
+    h.y = A.room.y + 0.6;
+    inner(g).damageMonster(keeper, 1e9, 'phys', false, 0);
+    steps(g, 2);
+    const gear = g.perils.find((p) => p.a1 === GEAR_PERIL);
+    assert.ok(gear, 'his gear');
+    assert.notEqual(h.furnace, 'gear', 'not his till it is taken');
+    steps(g, Math.ceil(ST_DIES.gearStill * 60) + 5);
+    h.x = gear!.x;
+    h.y = gear!.y;
+    steps(g, 3);
+    assert.equal(h.furnace, 'gear', 'taken');
+    // (the crank: turned; the fire goes out; the way open after)
+    h.x = F.crank.x + 0.6;
+    h.y = F.crank.y;
+    steps(g, 3);
+    assert.equal(h.furnace, 'out');
+    assert.equal(F.out, true);
+    for (const i of doorTiles(L.floor, d.spot)) assert.equal(L.walk[i], 0, 'still burning as it goes out');
+    h.x = A.room.x + 0.6;
+    h.y = A.room.y + 0.6;
+    steps(g, Math.ceil(FIRE_GONE * 60) + 10);
+    assert.ok(F.gone);
+    for (const i of doorTiles(L.floor, d.spot)) assert.equal(L.walk[i], 1, 'the way open');
+  }, true, true));
