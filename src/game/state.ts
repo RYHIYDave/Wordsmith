@@ -306,6 +306,9 @@ export interface Hero {
    */
   dust: number;
   meld: 'stone' | 'open' | null;
+  /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts, QUESTS15): where the hero stands in the armourer's furnace quest; whether the wordsmith has asked for the Meldstone. */
+  furnace?: 'asked' | 'gear' | 'out' | 'done';
+  meldAsk?: boolean;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
@@ -1213,6 +1216,8 @@ export interface Level {
   portal: PropInst | null;
   /** A character's first dungeon: the fallen wordsmith whose satchel holds their first word. */
   body: PropInst | null;
+  /** (QUESTS15, floor 3) The furnace room: its crank, its keeper (by id), the hall's portcullis held down by its fire (index in doors, -1 none), and what has been said. */
+  furnace?: { crank: PropInst; keeper: number; gate: number; told: boolean; toldCrank: boolean; fireT: number; out: boolean; room: { x: number; y: number; w: number; h: number } } | null;
   /** Town only: where the services are. */
   stations: StationSpot[];
   /** DOORS AND GATES (game/doors.ts): what stands in the level's doorways, and how far open each is. None unless the map-maker laid them. */

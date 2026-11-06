@@ -65,6 +65,7 @@ import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { FIRE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -130,6 +131,9 @@ export interface RunSave {
   body?: boolean;
   /** EXITS: the wordsmith has given the quest for the master rune-stone (game/ways.ts). */
   asked?: boolean;
+  /** QUESTS15 (game/quests15.ts): the furnace quest's step; the wordsmith's ask for the Meldstone. */
+  furnace?: 'asked' | 'gear' | 'out' | 'done';
+  meldAsk?: boolean;
   /** The voice chosen for this character. */
   voice?: VoiceId;
   /** How far the first dungeon's prompts have got (absent once they are over). */
@@ -917,6 +921,7 @@ export class Game {
       ...(ENDLESS.on && this.endless > 0 ? { endless: this.endless, endlessFloor: this.endlessFloor } : {}),
       // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
       ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
+      ...(QUESTS15.on ? { furnace: h.furnace, meldAsk: h.meldAsk } : {}),
     };
     // (ACT 2, THE HUSH: a word the Physician holds is the hero's in the save, where it would go back to: game/act1_rules/physician.ts)
     inTheSave(run, this.monsters);
@@ -975,6 +980,9 @@ export class Game {
     // (WORDMELDING: nothing of it in a save made with MELD off)
     h.dust = Math.max(0, Math.floor(num(s.dust, 0)));
     h.meld = s.meld === 'stone' || s.meld === 'open' ? s.meld : null;
+    // (QUESTS15: the furnace quest's step, and the wordsmith's ask)
+    h.furnace = s.furnace === 'asked' || s.furnace === 'gear' || s.furnace === 'out' || s.furnace === 'done' ? s.furnace : undefined;
+    h.meldAsk = s.meldAsk === true ? true : undefined;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
@@ -1497,6 +1505,8 @@ export class Game {
       // along its main path, and so on until he is found.)
       this.placeBody();
     }
+    // (QUESTS15: floor 3's furnace room, its keeper and crank, and its fire before the Chained One's hall)
+    if (this.depth === 3) this.furnaceMade();
     this.updateVision(1);
     // (FLOOR_NAMES: the floor's own name comes up across the screen, its level under it, in place of the line)
     // (ENDLESS MODE: on an endless level, the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
@@ -1906,6 +1916,8 @@ export class Game {
     if (TALENTS.on) this.updateTalents(dt, walked);
     this.updateVision(dt);
     this.updateDoors(dt);
+    // (QUESTS15: floor 3's furnace, its fire and its keeper's gear)
+    if (this.level.furnace) this.furnaceStep(dt);
     this.meetOutdoorBoss();
     if (this.level.holds) this.updateHolds();
     if (this.level.bells) this.updateBells(dt);
@@ -2194,7 +2206,8 @@ export class Game {
       const from = this.depth;
       // (ACT 1, THE DESCENT: the Prison cleared, the town's waypoint takes him on to the first floor of the descent)
       const wasBarred = this.wayDepth < 6;
-      if (ACT1.on && from === 5) this.wayDepth = Math.max(this.wayDepth, 6);
+      // (QUESTS15: the gate down the mountain unbarred when the Meldstone is brought to the wordsmith, not here: takeMeldstone)
+      if (ACT1.on && from === 5 && !(QUESTS15.on && this.hero.meld !== 'open')) this.wayDepth = Math.max(this.wayDepth, 6);
       // (EXITS: up into the hall's corner, in the cage; the gate in the back wall unbarred, the way out to the Quarry)
       this.enterTown(EXITS.on ? 'cage' : null);
       this.cameT = 0;
@@ -11604,7 +11617,11 @@ export class Game {
     }
     // (THE MIX) a lever: walk up, and it is pulled
     for (const p of this.level.props) {
-      if (p.kind === 'lever' && p.state === 0 && Math.hypot(p.x - h.x, p.y - h.y) < LEVER_NEAR) this.pullLever(p);
+      if (p.kind === 'lever' && p.state === 0 && Math.hypot(p.x - h.x, p.y - h.y) < LEVER_NEAR) {
+        // (QUESTS15: the forge crank is turned, not pulled)
+        if (this.level.furnace && p === this.level.furnace.crank) this.turnCrank(p);
+        else this.pullLever(p);
+      }
     }
     // the fallen wordsmith: walk up, and the satchel is searched
     const b = this.level.body;
@@ -11676,11 +11693,181 @@ export class Game {
    * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
    * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
    */
-  handInNear(): 'stone' | 'meldstone' | 'quest' | null {
-    if (!HAND_IN.on || !this.level.town || this.stationNear() !== 'wordsmith') return null;
+  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | null {
+    if (!HAND_IN.on || !this.level.town) return null;
+    const st = this.stationNear();
+    // (QUESTS15: the armourer's furnace quest, given and rewarded)
+    if (QUESTS15.on && st === 'armourer') return this.armourerDue();
+    if (st !== 'wordsmith') return null;
     // (WORDMELDING: the Meldstone, to the wordsmith too)
     // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
-    return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : this.questDue() ? 'quest' : null;
+    // (QUESTS15: and once the furnace is out and the armourer has rewarded it, his ask for the Meldstone)
+    return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : this.questDue() ? 'quest' : this.meldAskDue() ? 'meldAsk' : null;
+  }
+
+  /** QUESTS15: what the armourer has for this hero: the furnace quest (his ring lit, the furnace burning), or its reward (the furnace out). */
+  armourerDue(): 'furnace' | 'reward' | null {
+    const h = this.hero;
+    if (!QUESTS15.on || this.practice || !h.ring) return null;
+    if (h.furnace === 'out') return 'reward';
+    if (h.furnace === undefined && this.furnaceBurns()) return 'furnace';
+    return null;
+  }
+
+  /** QUESTS15: the wordsmith asks for the Meldstone: the furnace quest done, the Meldstone neither carried nor brought, not yet asked. */
+  meldAskDue(): boolean {
+    const h = this.hero;
+    return QUESTS15.on && !this.practice && h.furnace === 'done' && !h.meldAsk && h.meld === null && this.wayDepth < 6;
+  }
+
+  /** QUESTS15: floor 3's furnace still burns for this hero (a hero who has been down past floor 3 already has it out). */
+  furnaceBurns(): boolean {
+    const h = this.hero;
+    if (!QUESTS15.on || this.practice || h.furnace === 'out' || h.furnace === 'done') return false;
+    return !(this.cleared >= 3 || this.wayDepth >= 4);
+  }
+
+  /**
+   * QUESTS15: FLOOR 3'S FURNACE ROOM, made as the floor is come into while the furnace burns: the room farthest from both the
+   * way in and the Chained One's hall (a side room), the forge crank at its back, its keeper in its middle; the hall's
+   * portcullis held down by the fire (laid before it as the floor is drawn: furnaceStep).
+   */
+  private furnaceMade(): void {
+    const L = this.level;
+    const f = L.floor;
+    L.furnace = null;
+    if (!this.furnaceBurns()) return;
+    const boss = f.rooms.find((r) => r.kind === 'boss');
+    const start = f.rooms.find((r) => r.kind === 'start');
+    if (!boss) return;
+    const mid = (r: { x: number; y: number; w: number; h: number }): { x: number; y: number } => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+    let best: (typeof f.rooms)[number] | null = null;
+    let bd = -1;
+    for (const r of f.rooms) {
+      if (r === boss || r === start || r.w < 4 || r.h < 4) continue;
+      const m = mid(r);
+      const d = Math.min(start ? Math.hypot(m.x - mid(start).x, m.y - mid(start).y) : 99, Math.hypot(m.x - mid(boss).x, m.y - mid(boss).y));
+      if (d > bd) {
+        bd = d;
+        best = r;
+      }
+    }
+    if (!best) return;
+    // (the crank at the room's back: the open tile nearest its far corner, nothing standing on it)
+    let ct = -1;
+    let cd = Infinity;
+    for (let y = best.y; y < best.y + best.h; y++) {
+      for (let x = best.x; x < best.x + best.w; x++) {
+        const i = y * f.w + x;
+        if (L.walk[i] !== 1 || L.props.some((p) => p.tx === x && p.ty === y)) continue;
+        const d = Math.hypot(x - (best.x + 1), y - (best.y + 1));
+        if (d < cd) {
+          cd = d;
+          ct = i;
+        }
+      }
+    }
+    if (ct < 0) return;
+    const cx = ct % f.w;
+    const cy = Math.floor(ct / f.w);
+    const crank: PropInst = { kind: 'lever', tx: cx, ty: cy, x: cx + 0.5, y: cy + 0.5, solid: false, state: 0, variant: 0, name: 'crank' };
+    L.props.push(crank);
+    // (its keeper: a stand-in until the art chat's flame boss, a champion of fire of many lives)
+    const m = mid(best);
+    const keeper = this.spawn(KEEPER.kind, m.x, m.y, -3, 2, false, this.rng);
+    keeper.maxLife *= KEEPER.life;
+    keeper.life = keeper.maxLife;
+    const gate = L.doors.findIndex((d) => d.spot.kind === 'bossgate');
+    L.furnace = { crank, keeper: keeper.id, gate, told: false, toldCrank: false, fireT: 0, out: false, room: { x: best.x, y: best.y, w: best.w, h: best.h } };
+    // (the hall's portcullis held down while the fire burns before it)
+    if (gate >= 0) {
+      const d = L.doors[gate];
+      d.want = 0;
+      for (const i of doorTiles(f, d.spot)) {
+        L.walk[i] = 0;
+        L.open[i] = 0;
+      }
+    }
+  }
+
+  /** QUESTS15, each frame on floor 3: the fire laid afresh before the hall's way, said the first time it is near; the keeper's gear. */
+  private furnaceStep(dt: number): void {
+    const L = this.level;
+    const F = L.furnace;
+    if (!F) return;
+    const h = this.hero;
+    // (the keeper fallen: his gear, the crank's)
+    if (h.furnace !== 'gear' && h.furnace !== 'out' && h.furnace !== 'done') {
+      const k = this.monsters.find((q) => q.id === F.keeper);
+      if (!k || k.dead) {
+        const at = k ?? { x: F.crank.x, y: F.crank.y };
+        h.furnace = 'gear';
+        this.emit({ t: 'quest', x: at.x, y: at.y });
+        this.sfx('rare');
+        this.msg(QUEST_TEXT.gearTaken, MSG.word);
+      }
+    }
+    if (F.out || F.gate < 0) return;
+    const d = L.doors[F.gate];
+    const at = doorMiddle(d.spot);
+    F.fireT -= dt;
+    if (F.fireT <= 0) {
+      F.fireT = FIRE.every;
+      // (the stand-in fire: the Fire word's burning ground, across the way, on the side he comes from)
+      const ox = d.spot.alongX ? 0 : -d.spot.out * 0.9;
+      const oy = d.spot.alongX ? -d.spot.out * 0.9 : 0;
+      for (const k of [-0.8, 0, 0.8]) {
+        const x = at.x + ox + (d.spot.alongX ? k : 0);
+        const y = at.y + oy + (d.spot.alongX ? 0 : k);
+        this.emit({ t: 'zone', kind: 'burn', x, y, r: 0.9, el: 'fire', dur: FIRE.lies });
+      }
+    }
+    if (!F.told && Math.hypot(at.x - h.x, at.y - h.y) < TUNE.aggroRadius) {
+      F.told = true;
+      this.msg(QUEST_TEXT.fireSeen, MSG.omen);
+    }
+  }
+
+  /** QUESTS15: the forge crank, walked up to: with its gear, turned (the furnace out, the hall's way open); without, said once. */
+  private turnCrank(p: PropInst): void {
+    const L = this.level;
+    const F = L.furnace;
+    const h = this.hero;
+    if (!F) return;
+    if (h.furnace !== 'gear') {
+      if (!F.toldCrank) this.msg(QUEST_TEXT.crankNoGear, MSG.omen);
+      F.toldCrank = true;
+      return;
+    }
+    p.state = 1;
+    h.furnace = 'out';
+    F.out = true;
+    if (F.gate >= 0) this.raiseGate(L.doors[F.gate]);
+    this.emit({ t: 'spark', x: p.x, y: p.y, el: 'fire', n: 10 });
+    this.emit({ t: 'shake', amount: 2 });
+    this.sfx('door', 0.9);
+    this.msg(QUEST_TEXT.furnaceOut, MSG.good);
+    this.visionT = 0;
+  }
+
+  /** QUESTS15: the armourer gives the furnace quest, or its reward (a word, by class). */
+  private armourerHandIn(what: 'furnace' | 'reward', x: number, y: number): void {
+    const h = this.hero;
+    if (what === 'furnace') {
+      h.furnace = 'asked';
+      this.emit({ t: 'questGiven', x, y });
+      this.sfx('power', 0.6);
+      this.msg(QUEST_TEXT.furnaceAsk, MSG.word);
+      return;
+    }
+    h.furnace = 'done';
+    const w = FURNACE_WORD[h.cls];
+    h.words[w]++;
+    if (!this.practice) this.meta.known[w].found = true;
+    this.refresh();
+    this.emit({ t: 'wordGot', word: w });
+    this.sfx('rare');
+    this.msg(QUEST_TEXT.reward(WORDS[w].name.toUpperCase()), MSG.word);
   }
 
   /** EXITS: the wordsmith has a quest to give this hero: his ring is dark, the stone not found, the quest not yet given. */
@@ -11700,10 +11887,23 @@ export class Game {
   private handIn(): boolean {
     const what = this.handInNear();
     const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+    // (QUESTS15: the armourer's)
+    if (what === 'furnace' || what === 'reward') {
+      const ar = this.level.stations.find((s) => s.kind === 'armourer');
+      if (!ar) return false;
+      this.armourerHandIn(what, ar.x, ar.y);
+      return true;
+    }
     if (!what || !st) return false;
     if (what === 'meldstone') this.takeMeldstone(st.x, st.y);
     else if (what === 'quest') this.giveQuest(st.x, st.y);
-    else this.lightRing(st.x, st.y);
+    else if (what === 'meldAsk') {
+      // (QUESTS15: the wordsmith asks for the Meldstone)
+      this.hero.meldAsk = true;
+      this.emit({ t: 'questGiven', x: st.x, y: st.y });
+      this.sfx('power', 0.6);
+      this.msg(QUEST_TEXT.meldAsk, MSG.word);
+    } else this.lightRing(st.x, st.y);
     return true;
   }
 
@@ -11716,6 +11916,28 @@ export class Game {
     this.emit({ t: 'text', x, y, text: 'MELDING', color: MELD_DUST_COLOR });
     this.sfx('rare');
     this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.word);
+    // (QUESTS15: two words to meld, and his lesson; and the gate down the mountain unbarred)
+    if (QUESTS15.on && !this.practice) {
+      const [a, b] = MELDSTONE_WORDS;
+      h.words[a]++;
+      h.words[b]++;
+      this.meta.known[a].found = true;
+      this.meta.known[b].found = true;
+      this.refresh();
+      this.emit({ t: 'wordGot', word: a });
+      this.msg(QUEST_TEXT.meldWords(WORDS[a].name.toUpperCase(), WORDS[b].name.toUpperCase()), MSG.word);
+      for (const line of QUEST_TEXT.lesson) this.msg(line, MSG.word);
+      if (this.wayDepth < 6) {
+        this.wayDepth = 6;
+        const W = this.level.ways;
+        if (EXITS.on && W) {
+          W.barred = true;
+          W.unbar = -1;
+          this.toldBarred = true;
+        }
+        this.msg(QUEST_TEXT.gateUnbarred, MSG.good);
+      }
+    }
   }
 
   /** The town service within reach of the hero, if any (the nearest when several are). */
@@ -11750,7 +11972,7 @@ export class Game {
       if (!st) return null;
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
-      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : HAND_IN.prompt;
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : HAND_IN.prompt;
       return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     const p = this.level.portal;
