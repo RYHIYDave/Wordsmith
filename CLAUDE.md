@@ -41,9 +41,16 @@ directs and playtests, and Claude writes and tests everything.
   as the game is built: `tools/bake_heroes.mjs`).
 - `node tools/build.mjs` makes the release; `node tools/build_to.mjs dist/<name>.html` makes a
   page to look at and leaves the game alone.
-- `tsc --noEmit -p tsconfig.json`; the unit tests, `tsx --test tests/*.test.ts`; a browser
-  playtest, `node tools/playtest.mjs --scenario tools/scenarios/<name>.mjs`; all of them,
-  `tools/regress.sh`.
+- `tsc --noEmit -p tsconfig.json`; the unit tests, `node tools/unit.mjs` (never `tsx --test
+  tests/*.test.ts` as one run); a browser playtest, `node tools/playtest.mjs --scenario
+  tools/scenarios/<name>.mjs`; all of them, `tools/regress.sh`.
+- THE UNIT SUITE IS RUN ONCE, NOT AGAIN. His words, 6 Nov 2026, 18:21: “This always happens and you
+  always have to rerun checks so I need you to figure out a way to not have that happen”. So:
+  commit first, then `node tools/unit.mjs` (in the background). It tests a frozen copy of the commit,
+  each file on its own, keeps each result as it goes (stopped, it is run again and goes on where it
+  stopped, never from the start), and tries a failed file again alone (one that passes alone failed
+  only because the machine was busy). Do nothing heavy beside it (no bake, no build, no playtests),
+  and read its last line, `UNIT DONE ...`, and `.unit/<commit>/summary.txt`.
 - A version goes live only after the whole unit suite, the full regression on a frozen copy, and
   the published page's own playtests. The handoff and section 8 of the design notes say how.
 
