@@ -16,16 +16,13 @@ import nodePath from 'node:path';
 import { Px } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { makeHeroArt3 } from '../src/art/heroes3';
-import { ST_CANVAS } from '../src/art/stoker';
+import { ST_CANVAS, turnedPoint, turnedShape } from '../src/art/stoker';
 import { GEAR_REST, STOKER, ST_BURST, ST_COALS, ST_DIES, ST_PACE, ST_RAKE, ST_REEL, ST_STAND_LONG, stokerBonesOf, stokerShovelAt } from '../src/art/stoker_moves';
 import { COALS, COAL_FIRE, FX_CANVAS, RAKE_FIRE, RING, coalAt, coalInAir, coalLands, coalsFloor, fxAt, fxPainted, rakeFloor, ringFloor } from '../src/art/stoker_fx';
 import { CRANK_CANVAS, CRANK_TURN, FIRE_WALL, FURNACE, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../src/art/stoker_room';
 import { TILE3, deathOfMob, momentOf, paintBits, paintMob } from '../src/art/new_mobs3';
-import type { Shape } from '../src/art/new_mobs3';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { stage } from '../src/art/skin';
-import type { Ring } from '../src/art/skin';
-import type { V3 } from '../src/art/skeleton';
 import type { Painted } from '../src/art/kit';
 import { makePrisonArt } from '../src/art/prison';
 import { makePrisonGateArt } from '../src/art/prison_gate';
@@ -689,28 +686,8 @@ function sheet(out: string): void {
 // picture flipped), and moments of his moves from in front. Painted once on the body as it was (before) and once as it is
 // (now); tools/stoker_body_sheet.py puts the two side by side with their captions.
 
-/** A point or a line of him turned `deg` to his left about the upright through his floor point. */
-const turnV = (v: V3, deg: number): V3 => {
-  const a = (deg * Math.PI) / 180;
-  return [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
-};
-function turnShape(sh: Shape, deg: number): Shape {
-  const T = (v: V3): V3 => turnV(v, deg);
-  const R = (r: Ring): Ring => ({ c: T(r.c), u: T(r.u), v: T(r.v), ...(r.pts ? { pts: r.pts.map(T) } : {}) });
-  switch (sh.k) {
-    case 'rod': return { ...sh, a: T(sh.a), b: T(sh.b) };
-    case 'ball': return { ...sh, c: T(sh.c), ax: [T(sh.ax[0]), T(sh.ax[1]), T(sh.ax[2])] };
-    case 'cloth': return { ...sh, rings: sh.rings.map(R) };
-    case 'band': return { ...sh, ring: R(sh.ring) };
-    case 'panel': return { ...sh, c: T(sh.c), u: T(sh.u), v: T(sh.v) };
-    case 'thread': return { ...sh, a: T(sh.a), b: T(sh.b) };
-    case 'dot': return { ...sh, p: T(sh.p), facing: T(sh.facing) };
-    case 'teeth': return { ...sh, pts: sh.pts.map(T), facing: sh.facing.map(T) };
-    case 'mote': return { ...sh, p: T(sh.p) };
-    case 'glow': return { ...sh, p: T(sh.p) };
-    case 'greatsword': return { ...sh, grip: T(sh.grip), point: T(sh.point) };
-  }
-}
+const turnV = turnedPoint;
+const turnShape = turnedShape;
 /** HIM TRULY TURNED `deg` to his left (45: his right side square to the eye, -135 his left), painted from in front, his pink edge round him. */
 function stokerTurned(move: string, t: number, deg: number): Px {
   const st = stage('front', ST_CANVAS.ax, ST_CANVAS.ay, ST_CANVAS);

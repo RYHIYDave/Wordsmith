@@ -15,9 +15,8 @@
 //   9. what his fire does on the floor, painted: crisp, no cyan, marked in pink before it comes, fire after;
 //  11. NOTHING OF HIM THROUGH WHAT HE WEARS (his pick of 6 Nov 2026, “Reshape his body first (Recommended)”: forged iron plates
 //      over real muscle; his rulebook: plates and cloth over what they cover, no limb poking through a plate): every pixel of his
-//      muscle that is seen, in every frame of every move both ways round, put back where it is on him: no more than a sliver
-//      (30 pixels) anywhere a plate or his skirt covers it (art/stoker.ts `coverOf`; see the test for what the strict check still
-//      finds); and the check sees one (a plate taken off);
+//      muscle that is seen, in every frame of every move, from in front, behind and either side, put back where it is on him: not
+//      one where a plate or his skirt covers it (art/stoker.ts `coverOf`); and the check sees one (a plate taken off);
 //  10. THE FURNACE ROOM'S PIECES: every picture painted, crisp, no cyan but the crank's handle when it is ready; the furnace lit and
 //      out, the crank without its gear and with it, the gear's icon at the items' size with its white rim, the fire and its going out;
 //      their made copies let go by `forgetMade`.
@@ -41,9 +40,9 @@ import type { Bit, Mob, Moment, Shape } from '../src/art/new_mobs3';
 import { canvasOf, deathOfMob, dyingMoment, momentOf, paintBits, paintMob, paintViewOf, partOrder } from '../src/art/new_mobs3';
 import { stage } from '../src/art/skin';
 import type { Sheet, Stage } from '../src/art/skin';
-import { len, sub } from '../src/art/skeleton';
+import { add, len, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
-import { ST_CANVAS, ST_SMEAR, STOKER_ON, coverOf, shovelOf } from '../src/art/stoker';
+import { ST_CANVAS, ST_SMEAR, STOKER_ON, armBody, armPlates, coverOf, hemOf, legBody, shovelOf, turnedPoint, turnedShape } from '../src/art/stoker';
 import { GEAR_REST, STOKER, ST_BURST, ST_COALS, ST_DIES, ST_PACE, ST_RAKE, ST_SHAPE, ST_STRIKES, smearedAt, stokerBonesOf, stokerNumbersAt } from '../src/art/stoker_moves';
 import { COALS, COAL_FIRE, COAL_SPOTS, FX_PINK, RAKE_FIRE, RING, coalLands, fxPainted, inGap, rakePasses, ringAt } from '../src/art/stoker_fx';
 import { CRANK_TURN, FIRE_WALL, FURNACE, FURNACE_OUT, GEAR_GLINT, ROOM_IRON, ROOM_RUST, ROOM_SPRING, ROOM_STONE, STOKER_ROOM, forgetMade, paintCrank, paintGearIcon } from '../src/art/stoker_room';
@@ -393,60 +392,69 @@ test('10. THE FURNACE ROOM: the furnace lit and out, the crank, the gear, the fi
 // =============================================================================================
 // 11. NOTHING OF HIM THROUGH WHAT HE WEARS
 
-/** A frame painted part by part (as the painter paints it), and for each pixel of his muscle that is seen (the nearest there of all his parts), the point of him it is. */
-function muscleSeen(move: string, t: number, view: (typeof VIEWS)[number], drop?: string): { part: string; p: V3 }[] {
+/** The four ways he is seen for this check: from in front and from behind (the game's two), and from either side (his solids truly turned, his right side square to the eye, then his left). */
+const COVER_VIEWS: ReadonlyArray<readonly [(typeof VIEWS)[number], number, string]> = [['front', 0, 'front'], ['back', 0, 'back'], ['front', 45, 'his right side'], ['front', -135, 'his left side']];
+/** A frame painted part by part (as the painter paints it), and for each pixel of his muscle that is seen (the nearest there of all his parts), the point of him it is, as he is posed. */
+function muscleSeen(move: string, t: number, view: (typeof VIEWS)[number], deg: number, drop?: string): { part: string; p: V3 }[] {
   const can = canvasOf(MOB);
   const st = stage(paintViewOf(MOB, view), can.ax, can.ay, can);
   const m = at(move, t);
-  const bits = MOB.bits(st, m).filter((b) => !drop || b.part !== drop);
+  const bits = MOB.bits(st, m).filter((b) => !drop || b.part !== drop).map((b) => (deg ? { ...b, shape: turnedShape(b.shape, deg) } : b));
   const names = partOrder(bits);
   const sheets: Sheet[] = [];
-  paintBits({ ...st, part: (w) => { const sh = st.part(w); sheets.push(sh); return sh; } }, bits, m.s.pelvis);
+  paintBits({ ...st, part: (w) => { const sh = st.part(w); sheets.push(sh); return sh; } }, bits, turnedPoint(m.s.pelvis, deg));
+  const flesh = sheets.map((_, i) => /^(arm|leg)[LR]$/.test(names[i] ?? ''));
   const out: { part: string; p: V3 }[] = [];
   const { w, h } = sheets[0];
   const b = st.back;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let best = -Infinity;
-      let win = -1;
-      for (let i = 0; i < sheets.length; i++) {
-        const z = sheets[i].nearAt(x, y);
-        if (z >= best && z > -Infinity) {
-          best = z;
-          win = i;
-        }
+  const seen = new Uint8Array(w * h);
+  sheets.forEach((sh, i) => {
+    if (!flesh[i]) return;
+    for (let k = 0; k < w * h; k++) if (sh.d[k * 4 + 3]) seen[k] = 1;
+  });
+  for (let k = 0; k < w * h; k++) {
+    if (!seen[k]) continue;
+    const x = k % w;
+    const y = (k - x) / w;
+    let best = -Infinity;
+    let win = -1;
+    for (let i = 0; i < sheets.length; i++) {
+      const z = sheets[i].nearAt(x, y);
+      if (z >= best && z > -Infinity) {
+        best = z;
+        win = i;
       }
-      if (win < 0 || !/^(arm|leg)[LR]$/.test(names[win] ?? '')) continue;
-      const sx = x + 0.5 - can.ax;
-      const sy = y + 0.5 - can.ay;
-      out.push({ part: names[win], p: [b[0][0] * sx + b[0][1] * sy + b[0][2] * best, b[1][0] * sx + b[1][1] * sy + b[1][2] * best, b[2][0] * sx + b[2][1] * sy + b[2][2] * best] });
     }
+    if (win < 0 || !flesh[win]) continue;
+    const sx = x + 0.5 - can.ax;
+    const sy = y + 0.5 - can.ay;
+    const q: V3 = [b[0][0] * sx + b[0][1] * sy + b[0][2] * best, b[1][0] * sx + b[1][1] * sy + b[1][2] * best, b[2][0] * sx + b[2][1] * sy + b[2][2] * best];
+    out.push({ part: names[win], p: turnedPoint(q, -deg) });
   }
   return out;
 }
-function coverFaults(move: string, t: number, view: (typeof VIEWS)[number], drop?: string): string[] {
-  const s = at(move, t).s;
+function coverFaults(move: string, t: number, view: (typeof VIEWS)[number], deg: number, said2: string, drop?: string): string[] {
+  const cover = coverOf(at(move, t).s);
   const found = new Map<string, number>();
-  for (const { part, p } of muscleSeen(move, t, view, drop)) {
-    const by = coverOf(s, part.startsWith('arm') ? 'arm' : 'leg', part.endsWith('L') ? 'L' : 'R', p);
+  for (const { part, p } of muscleSeen(move, t, view, deg, drop)) {
+    const by = cover(part.startsWith('arm') ? 'arm' : 'leg', part.endsWith('L') ? 'L' : 'R', p);
     if (by) found.set(`${part} through ${by}`, (found.get(`${part} through ${by}`) ?? 0) + 1);
   }
-  // (a pixel or two at a plate's very edge is its rolled rim meeting the muscle, not the muscle through it)
-  return [...found].filter(([, n]) => n > 2).map(([k, n]) => `${said(move, view, t)}: ${k} (${n} pixels)`);
+  return [...found].map(([k, n]) => `${move} ${said2} @${t.toFixed(3)}: ${k} (${n} pixels)`);
 }
 
-test('11. NOTHING OF HIM THROUGH WHAT HE WEARS: no more than a sliver of his muscle where a plate or his skirt covers it, every frame, both ways round', () => {
+test('11. NOTHING OF HIM THROUGH WHAT HE WEARS: not one pixel of his muscle where a plate or his skirt covers it, every frame, from in front, behind and either side', () => {
   // (the points put back are where they are on him: each seen pixel of muscle is on his muscle's skin)
   const can = canvasOf(MOB);
   const st = stage(paintViewOf(MOB, 'front'), can.ax, can.ay, can);
-  const seen = muscleSeen('stand', 0, 'front');
+  const seen = muscleSeen('stand', 0, 'front', 0);
   assert.ok(seen.length > 300, `his muscle seen: ${seen.length} pixels`);
   for (const { p } of seen.slice(0, 50)) {
     const [x, y] = st.at(p);
     assert.ok(Math.abs(x - Math.floor(x) - 0.5) < 1e-3 && Math.abs(y - Math.floor(y) - 0.5) < 1e-3, 'put back where it was seen');
   }
   const faults: string[] = [];
-  for (const view of VIEWS) for (const move of [...LIVING, 'dying']) for (const t of framesOf(MOB, move)) faults.push(...coverFaults(move, t, view));
+  for (const [view, deg, name] of COVER_VIEWS) for (const move of [...LIVING, 'dying']) for (const t of framesOf(MOB, move)) faults.push(...coverFaults(move, t, view, deg, name));
   // (said by what came through what: in how many frames, and the worst)
   const kinds = new Map<string, { n: number; worst: string; most: number }>();
   for (const f of faults) {
@@ -456,15 +464,16 @@ test('11. NOTHING OF HIM THROUGH WHAT HE WEARS: no more than a sliver of his mus
     if (Number(px) > k.most) Object.assign(k, { most: Number(px), worst: f });
     kinds.set(what, k);
   }
-  // (AS A GUARD, 6 Nov 2026: no frame shows more than a sliver of muscle through any one plate or the skirt. The strict check,
-  // not a pixel at all, still finds slivers at the edges of the plates laid round a limb as a tube and of the skirt, where the
-  // painter's depth for such a tube is near enough but not exact: 141 slivers (a frame and a plate), at most 27 pixels (his right thigh at
-  // the skirt's hem from behind as he drags the rake), the rest 13 or fewer. To be taken to nothing.)
-  const SLIVER = 30;
-  const worst = Math.max(0, ...[...kinds.values()].map((k) => k.most));
-  assert.ok(worst <= SLIVER, [...kinds].map(([what, k]) => `${what}: ${k.n} frames, worst ${k.worst}`).join('; '));
-  assert.ok(faults.length <= 150, `${faults.length} slivers: ${[...kinds].map(([what, k]) => `${what}: ${k.n} frames, worst ${k.worst}`).join('; ')}`);
-  // (and the check sees muscle through a plate: his right pauldron's cop taken off, and his skirt)
-  assert.ok(coverFaults('stand', 0, 'front', 'paulR').some((f) => f.includes('armR through the pauldron')), 'a bare shoulder seen');
-  assert.ok(coverFaults('stand', 0, 'front', 'skirt').some((f) => f.includes('through the skirt')), 'bare thighs seen');
+  assert.equal(faults.length, 0, [...kinds].map(([what, k]) => `${what}: ${k.n} frames, worst ${k.worst}`).join('; '));
+  // (and the check sees muscle through a plate: his shoulder swollen out past the top of his pauldron's cop is found, and not
+  // under it; a point of his thigh above his skirt's hem is one the skirt covers (his thighs are painted only below it, and a
+  // little up under it), and his legs below its hem are seen)
+  const s0 = at('stand', 0).s;
+  const cop = armPlates(armBody(s0, 'R'), 'R')[0];
+  const top = (k: number): V3 => add(cop.e.c, [cop.e.ax[2][0] * -k, cop.e.ax[2][1] * -k, cop.e.ax[2][2] * -k]);
+  assert.equal(coverOf(s0)('arm', 'R', top(1.08)), 'the pauldron', 'muscle out past the cop');
+  assert.equal(coverOf(s0)('arm', 'R', top(0.9)), null, 'muscle under the cop');
+  const quad = legBody(s0, 'R').upper[0];
+  assert.equal(coverOf(s0)('leg', 'R', add(quad.c, quad.ax[0])), 'the skirt', 'the front of his thigh, above the hem, is under the skirt');
+  assert.ok(seen.filter((q) => q.part.startsWith('leg') && q.p[2] < hemOf(s0)).length > 50, 'his legs seen below the hem');
 });

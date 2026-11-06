@@ -39,7 +39,7 @@ import type { ActorArt } from './actor_types';
 import { footwork, kneelHips, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
-import { DOOR, FLUE_R, GEAR, SHOVEL, ST_BODY, ST_CANVAS, ST_REST, bellyOf, domeOf, doorFrameOf, flueOf, mouthOf, pauldronOf, shovelOf, stokerPainter } from './stoker';
+import { DOOR, FLUE_R, GEAR, SHOVEL, ST_BODY, ST_CANVAS, ST_REST, bellyOf, domeOf, doorFrameOf, flueOf, helmOf, mouthOf, pauldronOf, shovelOf, stokerPainter } from './stoker';
 import type { StokerSay } from './stoker';
 import { TILE3, mobSet } from './new_mobs3';
 import type { Mob, MobMove, Moment } from './new_mobs3';
@@ -780,7 +780,7 @@ export function makeStokerArt(mob: Mob = STOKER, pace = mob.pace): ActorArt {
 // HIM AS THE CHECKS SEE HIM (art/boss_checks.ts)
 
 const len3 = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
-/** His outside as painted: his arms, his legs, his boots and his neck as limbs; his head, his firebox, its dome, his pauldrons, his skirt and his flue as solids. */
+/** His outside as painted: his arms, his legs, his boots and his neck (the gorget) as limbs; his head (the helm, as low and as big as it is painted), his firebox, its dome, his skirt and his flue as solids. */
 export function stokerSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } {
   const [r0, r1] = B.armR;
   const [l0, l1, l2] = B.legR;
@@ -795,15 +795,18 @@ export function stokerSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLum
       { name: `foot${side}`, a: add(L ? s.heelL : s.heelR, [0, 0, 3]), b: add(L ? s.toeL : s.toeR, [0, 0, 3]), r: l2 * 1.2 },
     );
   }
-  limbs.push({ name: 'neck', a: s.neck, b: lerp3(s.neck, s.head, 0.5), r: 6.5 });
+  // (the gorget, thick, flaring down into his shoulders)
+  limbs.push({ name: 'neck', a: s.neck, b: lerp3(s.neck, s.head, 0.5), r: 8.0 });
   const fl = flueOf(s);
   for (let i = 1; i < fl.length; i++) limbs.push({ name: 'flue', a: fl[i - 1], b: fl[i], r: FLUE_R });
   const bl = bellyOf(s);
   const dm = domeOf(s);
+  const hm = helmOf(s);
   const pl = pauldronOf(s, 'L');
   const pr = pauldronOf(s, 'R');
   const lumps: CheckLump[] = [
-    { name: 'head', c: s.head, rot: s.face, h: [B.headR[0] * 1.2, B.headR[1] * 1.4, B.headR[2] * 1.06] },
+    // (the helm as it is painted: from its crest to under its jaw, set low between his shoulders; art/stoker.ts `helmOf`, `HELM`)
+    { name: 'head', c: add(add(hm.c, mul(hm.u, -1.5)), mul(hm.f, 0.7)), rot: s.face, h: [10.0, 11.2, 11.0] },
     { name: 'firebox', c: bl.c, rot: s.belly, h: bl.r },
     { name: 'dome', c: dm.c, rot: s.chest, h: [len3(dm.ax[0]), len3(dm.ax[1]), len3(dm.ax[2])] },
     { name: 'hips', c: add(s.pelvis, mul(s.hips[2], 2)), rot: s.hips, h: [B.pelvisDeep + 5, B.pelvisHalf + 5.5, 6] },
