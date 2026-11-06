@@ -6133,7 +6133,13 @@ export class Game {
     const def = SKILLS[this.hero.skills[i].id];
     const p = Math.hypot(tx - ox, ty - oy) < 0.6 ? this.reachPoint(ox + this.hero.fx * 2, oy + this.hero.fy * 2, def.range) : this.reachPoint(tx, ty, def.range);
     const standing = this.contraptions.filter((q) => q.broke < 0);
+    // (HER WORDS ON THE CONTRAPTION: a fourth put out the oldest even before it had fired, so tapping fast, or Swift or
+    // Frenzied on her tap, broke them before they set up: Swift's did nothing at all. His words, 4 Nov 2026, 19:01: “After
+    // taking the passive for contraption, I don’t think the words are working as intended.” Now one not yet past its first
+    // shot is never put out: with three such standing, nothing more is thrown; Swift and Frenzied quicken their shots.)
+    const ready = C.set + C.first;
     while (standing.length >= C.most) {
+      if (standing[0].t < ready) return;
       const old = standing.shift() as Contraption;
       this.breakContraption(old);
     }
@@ -6584,7 +6590,9 @@ export class Game {
         c.echo = 0;
         this.after(0.2, () => c.broke < 0 && (energy ? this.contraptionBolt(c, share, true) : this.lobVial(c, share, true)));
       }
-      c.next = shot ? (energy ? C.boltEvery : C.every) : 0.2;
+      // (her tap's Swift, and her Frenzied pace, quicken its shots: throwing them faster no longer helps)
+      const pace = (s.r.rate || 1) * this.frenzyPace();
+      c.next = shot ? (energy ? C.boltEvery : C.every) / pace : 0.2;
     }
     // (HER VIALS: each bursts where it comes down; Cluster Vials' little ones, thrown out as one bursts, come down after)
     for (let k = this.vials.length - 1; k >= 0; k--) {
