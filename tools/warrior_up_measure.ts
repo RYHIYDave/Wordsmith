@@ -10,6 +10,8 @@
 
 // @ts-ignore - node typings are not part of this project
 import { writeFileSync } from 'node:fs';
+// @ts-ignore
+import { deflateSync } from 'node:zlib';
 import type { Sprite } from '../src/engine/px';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { lookOfPlace } from '../src/art/heroes';
@@ -71,6 +73,7 @@ function main(): void {
   const pictures = new Set<string>();
   let frames = 0;
   let bytes = 0;
+  let packed = 0;
   let ms = 0;
   let painted = 0;
   const per: Record<string, { n: number; ms: number }> = {};
@@ -87,6 +90,8 @@ function main(): void {
         seen.add(s);
         const p = paintingOf(s);
         bytes += p.w * p.h * 4;
+        // (packed as a picture file would be: its pixels deflated, as a PNG's are; a guide to what baking him adds to the download)
+        packed += deflateSync(p.d, { level: 9 }).length + 60;
         ms += took;
         painted++;
         mine++;
@@ -105,6 +110,7 @@ function main(): void {
     held: seen.size,
     pictures: pictures.size,
     memoryMB: +(bytes / 1024 / 1024).toFixed(2),
+    packedMB: +(packed / 1024 / 1024).toFixed(2),
     paintMs: Math.round(ms),
     msPerFrame: +(ms / Math.max(1, painted)).toFixed(1),
   };
