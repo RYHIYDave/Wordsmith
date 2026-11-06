@@ -17,6 +17,9 @@ directs and playtests, and Claude writes and tests everything.
 
 ## The owner's standing rules
 
+- THIS IS NOT A BROWSER GAME. It will be a game in an app. Not everything has to be made in code:
+  the game may carry files made for it, art and music among them. His words, 6 Nov 2026, 16:32:
+  “I’d like you to put somewhere in the rule sets or at the top of the chats that this is not a browser game.  It will be a game in an app.  So not everything needs to be done and coded in Java.  We can have files and create things that go into the game like music and art”.
 - He does no coding. Never ask him to run a command or edit a file.
 - Plain language. Short messages. No menus of options where a recommendation will do.
 - Every question to him goes as a pop-up with options to tap, our pick first and marked, his own
@@ -33,8 +36,9 @@ directs and playtests, and Claude writes and tests everything.
 
 ## How the game is built and tested
 
-- TypeScript, bundled by esbuild into one file, `Play.html`. All art is painted in code: there are
-  no art files.
+- TypeScript, bundled by esbuild into one file, `Play.html`. The art is painted in code; since his
+  word of 6 Nov 2026 (above) files may go into the game too (the heroes' pictures baked into files
+  as the game is built: `tools/bake_heroes.mjs`).
 - `node tools/build.mjs` makes the release; `node tools/build_to.mjs dist/<name>.html` makes a
   page to look at and leaves the game alone.
 - `tsc --noEmit -p tsconfig.json`; the unit tests, `tsx --test tests/*.test.ts`; a browser
