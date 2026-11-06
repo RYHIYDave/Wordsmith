@@ -187,9 +187,14 @@ test('three Contraptions at once: a fourth puts the oldest out of action, and ea
   for (let i = 0; i < 3; i++) use(g, 0, 2, i - 1);
   assert.equal(standing(g), 3);
   const first = g.contraptions[0].id;
+  // (6 Nov 2026: none put out before its first shot: a fourth thrown at once is not thrown; his “I don’t think the words are working as intended”)
+  use(g, 0, 2, 2);
+  assert.equal(standing(g), C.most, 'still three');
+  assert.ok(g.contraptions[0].id === first && g.contraptions[0].broke < 0, 'the oldest kept, not yet fired');
+  wait(g, C.set + C.first + 0.1);
   const ev = use(g, 0, 2, 2);
   assert.equal(standing(g), C.most, 'still three');
-  assert.ok(ev.some((e) => e.t === 'contraptionEnd' && e.id === first), 'the oldest put out of action');
+  assert.ok(ev.some((e) => e.t === 'contraptionEnd' && e.id === first), 'past its first shot, the oldest put out of action');
   wait(g, C.set + C.life + C.broke + 0.5);
   assert.equal(g.contraptions.length, 0, 'their time up, they fall apart and are gone');
 });

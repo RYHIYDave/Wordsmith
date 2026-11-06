@@ -39,6 +39,7 @@ import {
   setNextUid,
   starterWeapon,
   statView,
+  statGroup,
 } from '../src/game/items';
 import { derive } from '../src/game/stats';
 import type { ItemBase, RollOpts } from '../src/game/items';
@@ -1182,7 +1183,9 @@ test('imbueItem adds one modifier in range; a word never gives what the piece al
         const have = new Set(carriedStats(item));
         const room = ITEM_ROOM - item.affixes.length - item.imbues.length;
         assert.equal(itemRoom(item), room, where);
-        const expected = room > 0 ? imbueOptions(word, slot, ilvl).filter((o) => !have.has(o.stat)) : [];
+        // (THE SAME MOD TWICE, 6 Nov 2026: nor anything of a group the piece has: statGroup)
+        const groups = new Set([...have].map(statGroup));
+        const expected = room > 0 ? imbueOptions(word, slot, ilvl).filter((o) => !have.has(o.stat) && !groups.has(statGroup(o.stat))) : [];
         const options = imbueOptionsFor(item, word);
         assert.deepEqual(options, expected, where);
         const count = item.imbues.length;
