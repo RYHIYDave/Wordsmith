@@ -617,9 +617,37 @@ export function modLines(mods: readonly StatMod[], limit: Limit): string[] {
     merged.set(Math.min(minAt[k], maxAt[k]), `Adds ${lo}-${hi} Damage`);
     hidden.add(Math.max(minAt[k], maxAt[k]));
   }
+  // (THE SAME MOD TWICE: lines that read the same, a piece rolled before statGroup, shown as one, their values added)
   const lines: string[] = [];
+  const same = new Map<string, number>();
   mods.forEach((m, i) => {
-    if (!hidden.has(i)) lines.push(merged.get(i) ?? modText(m, limit));
+    if (hidden.has(i)) return;
+    const pair = merged.get(i);
+    if (pair) {
+      lines.push(pair);
+      return;
+    }
+    const known = STAT_INFO[m.stat] as StatInfo | undefined;
+    if (!known) {
+      lines.push(modText(m, limit));
+      return;
+    }
+    const info = statView(m.stat, limit);
+    const key = `${info.label}|${info.pct}|${info.less}`;
+    const at = same.get(key);
+    if (at === undefined) {
+      same.set(key, lines.length);
+      lines.push(modText(m, limit));
+      return;
+    }
+    // (added to the line already there: its value read back from the mods that made it)
+    const sum = mods.reduce((t, q, j) => {
+      if (hidden.has(j) || merged.has(j) || !(STAT_INFO[q.stat] as StatInfo | undefined)) return t;
+      const v = statView(q.stat, limit);
+      return `${v.label}|${v.pct}|${v.less}` === key ? t + q.value * v.mult : t;
+    }, 0);
+    const sign = sum < 0 !== info.less ? '-' : '+';
+    lines[at] = `${sign}${Math.abs(sum).toFixed(info.dp)}${info.pct ? '%' : ''} ${info.label}`;
   });
   return lines;
 }
@@ -954,13 +982,27 @@ function rollAffix(f: FamilyDef, ilvl: number, rng: RNG): Affix {
 }
 
 /** Pick `count` different families of one kind that are allowed on the slot. */
-function pickFamilies(kind: 'prefix' | 'suffix', slot: Slot, count: number, rng: RNG): FamilyDef[] {
-  const pool = AFFIX_FAMILIES.filter((f) => f.kind === kind && f.slots.includes(slot));
+/**
+ * THE SAME MOD TWICE: stats that read as one line on gear count as one. His words, 4 Nov 2026, 19:13: “And I really hate seeing
+ * the same mod twice like cooldown reduction.  Seems to be the biggest culprit.” Max Mana and Mana Regen are written as Cooldown
+ * Recovery for a hero whose abilities wait on cooldowns (MANA_AS_CDR), so an item could roll two or three of them. Now they
+ * are one group: a piece rolls at most one of it, a word crafts none of it onto a piece that has one, and old pieces show it
+ * as one line (modLines).
+ */
+export function statGroup(stat: StatKey): string {
+  return stat === 'maxMana' || stat === 'manaRegen' || stat === 'cdr' ? 'cdr' : stat;
+}
+
+function pickFamilies(kind: 'prefix' | 'suffix', slot: Slot, count: number, rng: RNG, taken: Set<string> = new Set()): FamilyDef[] {
+  const pool = AFFIX_FAMILIES.filter((f) => f.kind === kind && f.slots.includes(slot) && !taken.has(statGroup(f.stat as StatKey)));
   const picked: FamilyDef[] = [];
   while (picked.length < count && pool.length > 0) {
     const i = rng.weightedIndex(pool.map((f) => f.weight));
-    picked.push(pool[i]);
-    pool.splice(i, 1); // taken out, so the same family cannot come up twice
+    const f = pool[i];
+    picked.push(f);
+    taken.add(statGroup(f.stat as StatKey));
+    // (taken out, so the same family cannot come up twice; and the others of its group with it)
+    for (let k = pool.length - 1; k >= 0; k--) if (pool[k] === f || statGroup(pool[k].stat as StatKey) === statGroup(f.stat as StatKey)) pool.splice(k, 1);
   }
   return picked;
 }
@@ -978,7 +1020,9 @@ function rollAffixes(slot: Slot, ilvl: number, rarity: Rarity, rng: RNG): Affix[
     if (rng.chance(RARE_FOUR_AFFIX_CHANCE)) [prefixes, suffixes] = [2, 2];
     else [prefixes, suffixes] = rng.chance(ODD_AFFIX_IS_PREFIX_CHANCE) ? [2, 1] : [1, 2];
   }
-  const families = [...pickFamilies('prefix', slot, prefixes, rng), ...pickFamilies('suffix', slot, suffixes, rng)];
+  // (a group taken by a prefix is not rolled again by a suffix: statGroup)
+  const taken = new Set<string>();
+  const families = [...pickFamilies('prefix', slot, prefixes, rng, taken), ...pickFamilies('suffix', slot, suffixes, rng, taken)];
   return families.map((f) => rollAffix(f, ilvl, rng));
 }
 
@@ -1153,7 +1197,9 @@ function carried(item: Item): Set<StatKey> {
 export function imbueOptionsFor(item: Item, word: WordId): ImbueOption[] {
   if (itemRoom(item) <= 0) return [];
   const have = carried(item);
-  return imbueOptions(word, item.slot, item.ilvl).filter((o) => !have.has(o.stat));
+  // (nor anything of the same group: statGroup)
+  const groups = new Set([...have].map(statGroup));
+  return imbueOptions(word, item.slot, item.ilvl).filter((o) => !have.has(o.stat) && !groups.has(statGroup(o.stat)));
 }
 
 /** Why this word cannot be burned into this piece, or null if it can. */

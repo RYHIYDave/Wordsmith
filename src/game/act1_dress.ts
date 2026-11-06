@@ -87,6 +87,15 @@ export interface Act1Dress {
  */
 export const ACT1_SCENES: { on: boolean; floors: number[] } = { on: true, floors: [6, 7, 8, 9, 10] };
 
+/**
+ * THE SMALL THINGS WALKED THROUGH (floors 6 to 10). His words, 4 Nov 2026, 19:02: “There’s still too much shit in the walk paths
+ * of these levels.  I don’t know if you want to make the player phase through all these doodads but just running around can be
+ * pretty annoying.” So the things that stand about an area one tile each, and the standing parts of its scenes, no longer bar
+ * the way: he (and what hunts him) walks through them. What still stands in the way: the big ones, the barrels and urns (the
+ * game's breakables), carts, the cult's camp, the strongholds' pieces, walls and cliffs.
+ */
+export const DOODADS_THROUGH = { on: true };
+
 /** One thing of a scene: where from its place (tiles), its name, whether it stands (solid); a barrel or urn is the game's own breakable. */
 interface Part {
   dx: number;
@@ -759,7 +768,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
         taken[ty * W + tx] = 1;
         L.walk[ty * W + tx] = 0;
       } else if ((foot && i === 0) || p.wall) put(p.name, tx, ty, false, 0, { x: tx + 0.12, y: ty + 0.12 });
-      else put(p.name, tx, ty, p.solid, rng.int(0, 3));
+      else put(p.name, tx, ty, p.solid && !DOODADS_THROUGH.on, rng.int(0, 3));
       if (p.solid && !p.kind) for (const [ex, ey] of [[1, 0], [0, 1]]) keep[(ty + ey) * W + tx + ex] = 1;
     });
     (out.scenes ??= []).push({ x: x + 0.5, y: y + 0.5, name: sc.name });
@@ -814,7 +823,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     for (const [tx, ty] of inner) {
       if (placed >= things) break;
       if (!free(tx, ty, true)) continue;
-      put(rng.pick(set.things), tx, ty, true, rng.int(0, 3));
+      put(rng.pick(set.things), tx, ty, !DOODADS_THROUGH.on, rng.int(0, 3));
       // (a little room round each)
       keep[ty * W + tx + 1] = 1;
       keep[(ty + 1) * W + tx] = 1;

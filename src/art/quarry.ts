@@ -246,4 +246,7 @@ export const QUARRY_LOOK: TerrainLook = {
   brow: (c) => mixc(c, [255, 250, 240], 0.35),
   foot: [0.36, 0.2],
   nearShadow: { reach: 1.3, dark: [0.36, 0.22] },
+  // (F8F9_FIX: every far wall's face drawn down to the floor below it, as floor 8's canyon (art/terrain.ts); his words, 4 Nov 2026,
+  // 12:47, of the art chat's note that floor 6 could take it too: “I do want it”)
+  downFaces: true,
 };
