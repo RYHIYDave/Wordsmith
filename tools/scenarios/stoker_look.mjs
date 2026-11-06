@@ -36,12 +36,17 @@ export default async function (page, snap) {
     await page.waitForTimeout(wait);
   };
   const A = info.A;
+  const G = info.gate;
   // 1. THE HALLWAY: standing in the room it comes out of, looking down it
   const hx = A.dx ? (A.dx < 0 ? A.hall.x + A.hall.w + 0.5 : A.hall.x - 0.5) : A.hall.x + 1.5;
   const hy = A.dy ? (A.dy < 0 ? A.hall.y + A.hall.h + 0.5 : A.hall.y - 0.5) : A.hall.y + 1.5;
-  await page.evaluate(() => { window.__dbg.game().monsters.forEach((m) => { if (m.kind !== 'stoker') m.life = 0; }); });
-  await place(hx - A.dx * 1.5, hy - A.dy * 1.5, A.dx || 0.001, A.dy || 0.001, 20000);
+  // (the floor's other monsters taken away: the pictures are of him and his room)
+  await page.evaluate(() => { const g = window.__dbg.game(); const keep = g.monsters.filter((m) => m.kind === 'stoker'); g.monsters.length = 0; g.monsters.push(...keep); });
+  await place(hx - A.dx * 2, hy - A.dy * 2, A.dx || 0.001, A.dy || 0.001, 20000);
   await snap('1_hallway');
+  // (and from half way down it)
+  await place(hx + A.dx * 3, hy + A.dy * 3, A.dx || 0.001, A.dy || 0.001, 600);
+  await snap('1b_in_hallway');
   // 2. IN THE ARENA, in the hallway's mouth: him, the furnace, the crank
   await place(A.keeper.x - A.dx * 4.2, A.keeper.y - A.dy * 4.2, A.dx || 0.001, A.dy || 0.001, 400);
   await snap('2_arena');
@@ -51,18 +56,49 @@ export default async function (page, snap) {
     await page.waitForTimeout(1300);
     await snap(`3_fight_${i}`);
   }
-  // 4. HIS DEATH and the gear
-  await page.evaluate(() => { const g = window.__dbg.game(); const k = g.monsters.find((m) => m.kind === 'stoker'); g.damageMonster(k, 1e9, 'phys', false, 0); });
-  for (const [i, ms] of [[0, 900], [1, 900], [2, 1500], [3, 2500]]) {
+  // 5. THE CHAINED ONE'S GATEWAY, the fire in it
+  if (G) {
+    const mx = G.alongX ? G.a + 1.5 : G.plane + 2.5 * G.out;
+    const my = G.alongX ? G.plane + 2.5 * G.out : G.a + 1.5;
+    await place(mx, my, 0.7, 0.7, 1500);
+    await snap('5_fire_gate');
+    await place(info.keeper.x - A.dx * 4.2, info.keeper.y - A.dy * 4.2, A.dx || 0.001, A.dy || 0.001, 600);
+  }
+  // 4. HIS DEATH and the gear (the hero stood off to one side of him, clear of where it lands). First brought low, as a fight
+  // brings him, and kept there while the painter paints his death ahead (render.ts DIE_SOON), as it does in a fight.
+  await page.evaluate(() => { const g = window.__dbg.game(); const k = g.monsters.find((m) => m.kind === 'stoker'); k.life = Math.round(k.maxLife * 0.1); });
+  for (let i = 0; i < 40; i++) {
+    await page.waitForTimeout(1000);
+    await page.evaluate(() => { const g = window.__dbg.game(); const k = g.monsters.find((m) => m.kind === 'stoker'); k.life = Math.round(k.maxLife * 0.1); g.hero.life = g.hero.d.maxLife; });
+  }
+  await snap('3_burst_low');
+  await page.evaluate(() => {
+    const g = window.__dbg.game();
+    const k = g.monsters.find((m) => m.kind === 'stoker');
+    const h = g.hero;
+    h.x = k.x - k.fy * 4.5;
+    h.y = k.y + k.fx * 4.5;
+    g.damageMonster(k, 1e9, 'phys', false, 0);
+  });
+  for (const [i, ms] of [[0, 1500], [1, 300], [2, 600], [3, 1200], [4, 2500]]) {
     await page.waitForTimeout(ms);
     await snap(`4_death_${i}`);
   }
-  // 5. THE CHAINED ONE'S GATEWAY, the fire in it
-  const G = info.gate;
+  // (walked onto the gear: taken)
+  await page.evaluate(() => { const g = window.__dbg.game(); const p = g.perils.find((q) => q.a1 === 'stoker:gear'); if (p) { g.hero.x = p.x; g.hero.y = p.y; } });
+  await page.waitForTimeout(800);
+  await snap('4_gear_taken');
+  // (the crank, turned)
+  await page.evaluate(() => { const g = window.__dbg.game(); const c = g.level.furnace.crank; g.hero.x = c.x + 0.7; g.hero.y = c.y + 0.7; });
+  await page.waitForTimeout(700);
+  await snap('4b_crank_turning');
+  await page.waitForTimeout(2200);
+  await snap('4c_furnace_out');
+  // 6. THE GATEWAY AGAIN: the fire gone, a bed of ash, the way open
   if (G) {
-    const mx = G.alongX ? G.a + 1.5 : G.plane + 2.5 * G.out * -1;
-    const my = G.alongX ? G.plane + 2.5 * G.out * -1 : G.a + 1.5;
+    const mx = G.alongX ? G.a + 1.5 : G.plane + 2.5 * G.out;
+    const my = G.alongX ? G.plane + 2.5 * G.out : G.a + 1.5;
     await place(mx, my, 0.7, 0.7, 1500);
-    await snap('5_fire_gate');
+    await snap('6_gate_open');
   }
 }

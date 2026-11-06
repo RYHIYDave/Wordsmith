@@ -2621,7 +2621,7 @@ export class Renderer {
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
       // (A BOSS NEARING ITS END: its death painted next by the painter, so that its fall is not painted here as it is shown)
-      if (m.boss && m.life < m.maxLife * DIE_SOON && !this.dieSoon.has(f)) {
+      if ((m.boss || m.kind === 'stoker') && m.life < m.maxLife * DIE_SOON && !this.dieSoon.has(f)) {
         this.dieSoon.add(f);
         this.painter?.dieFirst(f);
         this.art.bestiary.dieFirst(f);
