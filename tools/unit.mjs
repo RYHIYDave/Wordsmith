@@ -49,10 +49,12 @@ fs.mkdirSync(logs, { recursive: true });
 if (!fs.existsSync(path.join(copy, 'package.json'))) {
   try { git('worktree', 'prune'); } catch { /* none */ }
   fs.rmSync(copy, { recursive: true, force: true });
-  git('worktree', 'add', '--detach', copy, commit);
+  git('worktree', 'add', '--quiet', '--detach', copy, commit);
 }
+// (its node_modules the work copy's, where it has any: the tests need none but node's own and tsx)
 const nm = path.join(copy, 'node_modules');
-if (!fs.existsSync(nm)) fs.symlinkSync(fs.realpathSync(path.join(ROOT, 'node_modules')), nm);
+const theirs = path.join(ROOT, 'node_modules');
+if (!fs.existsSync(nm) && fs.existsSync(theirs)) fs.symlinkSync(fs.realpathSync(theirs), nm);
 
 const files = fs.readdirSync(path.join(copy, 'tests')).filter((f) => f.endsWith('.test.ts')).sort();
 const keptOf = (f) => path.join(results, `${f}.json`);
