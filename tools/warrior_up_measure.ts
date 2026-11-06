@@ -121,5 +121,8 @@ function main(): void {
   }
 }
 
-paintWithoutCanvas();
-main();
+// (run as a tool only: the tests import warriorLists from here)
+if ((process.argv[1] ?? '').replace(/\\/g, '/').endsWith('tools/warrior_up_measure.ts')) {
+  paintWithoutCanvas();
+  main();
+}

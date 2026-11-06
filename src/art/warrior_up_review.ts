@@ -12,6 +12,9 @@ import { onBack } from './carried';
 import { add, mul, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { wuSmeared } from './warrior_up_art';
+import { WU_MAIL } from './warrior_up';
+import type { WuFrame } from './warrior_up';
+import { primDist } from '../dev/sculpt';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_STRIKE_POISE, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, swingCarried } from './warrior_up_moves';
 
 const FR = 1 / 30;
@@ -125,4 +128,43 @@ export function warriorReview(): { mob: Mob; shape: BossShape; moves: string[] }
     handovers,
   };
   return { mob, shape, moves: Object.keys(WU_REVIEWED) };
+}
+
+// ---------------------------------------------------------------------------------------------
+// NOTHING OF HIM THROUGH WHAT HE WEARS (as tests/veteran_checks.ts coverFindings): in one picture of him, every pixel of his MAIL
+// (what he wears under the rest: his thighs, his upper arms, his coif) is put back where it is on him (the point of him the eye
+// sees there), and asked whether it lies INSIDE something worn over it: the tabard on his trunk, its skirt closed round his hips
+// and its panels, each pauldron's lames, the scarf round his neck. A pixel of mail seen from inside one of those is mail come
+// through it. Not one may be.
+
+/** How far inside a thing worn a point of mail must be to be through it (the figure's own lengths: past the melt of their edges). */
+export const WU_THROUGH = 0.6;
+const COVERING = new Set(['ribs', 'belly', 'pelvis', 'skirt', 'panel', 'cap', 'wrap', 'knot']);
+
+/** For one picture of him (art/warrior_up.ts paintWarriorUp's): for each thing worn, how many pixels of his mail show from inside it (and where the first is). */
+export function wuCoverFindings(f: WuFrame, ax: number, ay: number): string[] {
+  const d = f.drawn;
+  const w = d.px.w;
+  const mail = f.sc.mats.findIndex((m) => m.ramp === WU_MAIL);
+  const covers = f.sc.prims.filter((q) => !q.carve && COVERING.has(q.tag ?? '') && (q.tag !== 'lame' || q.piece.startsWith('pauld')));
+  const found = new Map<string, { n: number; first: string }>();
+  for (let k = 0; k < d.stuff.length; k++) {
+    if (d.stuff[k] !== mail || d.px.d[k * 4 + 3] === 0) continue;
+    const x = k % w;
+    const y = (k - x) / w;
+    const sx = x + 0.5 - ax;
+    const sy = y + 0.5 - ay;
+    const t = d.z[k];
+    const bk = d.st.back;
+    const p: V3 = [bk[0][0] * sx + bk[0][1] * sy + bk[0][2] * t, bk[1][0] * sx + bk[1][1] * sy + bk[1][2] * t, bk[2][0] * sx + bk[2][1] * sy + bk[2][2] * t];
+    for (const q of covers) {
+      if (primDist(q, p) >= -WU_THROUGH) continue;
+      const by = q.piece.startsWith('pauld') ? 'a pauldron' : q.piece === 'scarf' ? 'his scarf' : q.piece === 'skirt' ? 'the skirt of his tabard' : 'his tabard';
+      const e = found.get(by);
+      if (e) e.n++;
+      else found.set(by, { n: 1, first: `at ${x},${y}` });
+      break;
+    }
+  }
+  return [...found].map(([by, e]) => `${e.n} pixels of mail through ${by} (${e.first})`);
 }
