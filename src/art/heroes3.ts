@@ -32,6 +32,9 @@ import { VET_LISTS, makeVeteranArt, makeVeteranCardArt } from './veteran_art';
 import { VETERAN } from '../game/veteran';
 import { makeWarlockArt } from './warlock_art';
 import type { WarlockShare } from './warlock_art';
+// (THE WARRIOR BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/warrior_up.ts)
+import { WARRIOR_UP } from './warrior_up';
+import { makeWarriorUpArt } from './warrior_up_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
@@ -378,6 +381,8 @@ export function makeHeroArt3(): HeroArt {
   const todo = new Map<ActorArt, (() => Sprite)[]>();
   // (the warlock's lists that are the same in every place he is shown in, made once: art/warlock_art.ts WarlockShare)
   const warlockShare: WarlockShare = new Map();
+  // (the Warrior brought up: his lists that are the same in every place, made once)
+  const warriorShare = new Map<string, Sprite[]>();
   const of = (cls: ClassId, look: HeroLook): ActorArt => {
     // (one figure of each hero in each place: the knight with the great sword, whatever he carries, until he is painted with a sword and a shield)
     const place = look.card ? 'card' : look.town ? 'town' : 'dungeon';
@@ -424,6 +429,17 @@ export function makeHeroArt3(): HeroArt {
         made.set(tkey, tart);
       }
       return tart;
+    }
+    // (THE WARRIOR BROUGHT UP, while art/warrior_up.ts WARRIOR_UP is on: sculpted, every list at 30 a second, his blows by
+    // Movement 9: art/warrior_up_art.ts. Off, he is as he was, every frame the same: tests/warrior_up.test.ts)
+    if (cls === 'warrior' && WARRIOR_UP.on) {
+      const ukey = `warriorup:${place}`;
+      let uart = made.get(ukey);
+      if (!uart) {
+        uart = makeWarriorUpArt(place, warriorShare);
+        made.set(ukey, uart);
+      }
+      return uart;
     }
     const key = `${cls}:${place}`;
     let art = made.get(key);
