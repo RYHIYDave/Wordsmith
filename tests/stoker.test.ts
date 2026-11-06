@@ -48,7 +48,7 @@ import { stage } from '../src/art/skin';
 import type { Sheet, Stage } from '../src/art/skin';
 import { add, len, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
-import { ST_CANVAS, ST_SMEAR, STOKER_ON, armBody, armPlates, coverOf, domeOf, flueOf, hemOf, inEgg, legBody, lowestOf, shovelOf, turnedPoint, turnedShape } from '../src/art/stoker';
+import { ST_CANVAS, ST_SMEAR, STOKER_ON, armBody, armPlates, coverOf, domeOf, flueOf, hemOf, inEgg, legBody, lowestPainted, shovelOf, turnedPoint, turnedShape } from '../src/art/stoker';
 import { GEAR_REST, STOKER, ST_BURST, ST_COALS, ST_DIES, ST_PACE, ST_RAKE, ST_SHAPE, ST_STRIKES, smearedAt, stokerBonesOf, stokerNumbersAt } from '../src/art/stoker_moves';
 import { BLAST, COALS, COAL_FIRE, COAL_SPOTS, FX_PINK, RAKE_FIRE, RING, blastAt, coalLands, fxPainted, inGap, rakePasses, ringAt } from '../src/art/stoker_fx';
 import { CRANK_TURN, FIRE_WALL, FURNACE, FURNACE_OUT, GEAR_GLINT, ROOM_IRON, ROOM_RUST, ROOM_SPRING, ROOM_STONE, STOKER_ROOM, forgetMade, paintCrank, paintGearIcon } from '../src/art/stoker_room';
@@ -218,14 +218,10 @@ test('5. NOTHING CUT OFF: in every frame, both ways round, all of him inside his
   assert.equal(faults.length, 0, faults.slice(0, 10).join('; '));
 });
 
+/** How far what is painted of a solid goes into the floor (of a plate, its iron: art/stoker.ts `lowestPainted`; of anything else, all of it). */
 function under(sh: Shape): number {
-  let z = Infinity;
-  if (sh.k === 'rod') z = Math.min(sh.a[2] - sh.ra, sh.b[2] - sh.rb);
-  else if (sh.k === 'ball') z = sh.c[2] - Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]);
-  else if (sh.k === 'band') z = sh.ring.c[2] - Math.hypot(sh.ring.u[2], sh.ring.v[2]);
-  else if (sh.k === 'cloth') for (const r of sh.rings) z = Math.min(z, r.c[2] - Math.hypot(r.u[2], r.v[2]), ...(r.pts ?? []).map((p: V3) => p[2]));
-  else if (sh.k === 'panel') z = sh.c[2] - Math.abs(sh.u[2]) - Math.abs(sh.v[2]);
-  return Math.max(0, -z);
+  const z = lowestPainted(sh);
+  return Number.isFinite(z) ? Math.max(0, -z) : 0;
 }
 test('6. NOTHING OF HIM IN THE FLOOR: nothing he is made of, nor his shovel, nor his sparks and smoke, in any frame', () => {
   const faults: string[] = [];
@@ -582,7 +578,7 @@ function piecesAt(t: number): Map<string, Bit[]> {
   }
   return out;
 }
-const lowOfBits = (bits: ReadonlyArray<Bit>): number => Math.min(...bits.map((b) => lowestOf(b.shape)));
+const lowOfBits = (bits: ReadonlyArray<Bit>): number => Math.min(...bits.map((b) => lowestPainted(b.shape)));
 const whereOf = (bits: ReadonlyArray<Bit>): string => bits.map((b) => JSON.stringify(b.shape, (k, v) => (k === 'skin' ? undefined : typeof v === 'number' ? Math.round(v * 100) / 100 : v))).join('|');
 
 test('13. HIS DEATH, THE FURNACE EXPLODES: held, then the burst in two frames; nothing of his body left; every piece of him down and lying still; no pink or gold; the blast on the floor', () => {
@@ -632,7 +628,8 @@ test('13. HIS DEATH, THE FURNACE EXPLODES: held, then the burst in two frames; n
     }
     before = now;
   }
-  assert.ok(n >= 30, `his pieces lying scattered: ${n}`);
+  // (each a whole thing of him: two pauldrons, gauntlets, couters, poleyns and boots; his helm, gorget, flue and door; a dozen shards of his firebox; his shovel; the gear)
+  assert.ok(n >= 28, `his pieces lying scattered: ${n}`);
   // (his fire an honest orange-white: no pink or gold from the overload on, in his pictures or their lights; the fireball as he bursts)
   const PG = [FLAME[0], FLAME[1], FLAME[2], FLAME[3], FLAME[4]].map(keyOf);
   for (const view of VIEWS) {

@@ -3,8 +3,9 @@
 // furnace room the pictures stand in), the knight beside him for size.
 //   npx tsx tools/stoker_pics.ts look <out dir> [move]      frames of each move, both ways round (for looking at)
 //   npx tsx tools/stoker_pics.ts big <out dir> <move:t,t>   moments of a move, both ways round, three times as big
-//   npx tsx tools/stoker_pics.ts sheet <out dir>            the sheet's pieces (PNG) and sheet.json; tools/rime_shade_sheet.py
-//                                                          puts it together with its captions
+//   npx tsx tools/stoker_pics.ts sheet <out dir>            the sheets' pieces (PNG), sheet.json and two/sheet.json;
+//                                                          tools/rime_shade_sheet.py puts each together with its captions
+//                                                          (<out dir> → stoker_sheet.png, <out dir>/two → stoker_sheet2.png)
 //   npx tsx tools/stoker_pics.ts film <out dir> [parts]     the film's frames (PNG) and their captions (film.json);
 //                                                          tools/hush_shapes_film.py puts them together
 // @ts-ignore
@@ -511,17 +512,23 @@ function film(out: string, only?: string): void {
   // HIS DEATH: THE FURNACE EXPLODES; and the burst again at half speed
   const deathNote = (t: number): string =>
     t < ST_DIES.stiff ? 'Struck: he staggers, the shovel slipping from his fist' : t < ST_DIES.strike[0] ? 'He stiffens upright: his firebox overloading, white-hot, rivets popping, steam jetting, shaking' : t <= ST_DIES.hit + 1e-6 ? 'THE BURST: two frames' : t < ST_DIES.down ? 'Blown apart: his plates, his helm, his shovel and his iron flung out; the gear spinning out of the fire' : 'Scattered, smoking; the gear lies glinting where it fell';
+  // (he dies further into the room than he stands, so that every piece of him comes down on its floor, none past its walls or its edge)
+  const DIES_AT = (view: View): [number, number] => (view === 'front' ? [AT_F[0] + 0.7, AT_F[1]] : [AT_B[0], AT_B[1] - 1.8]);
+  const dyingShot = (view: View, sh: Omit<Shot, 'view' | 'at' | 'knight'>): Pic => {
+    const at = DIES_AT(view);
+    return shot(FW, FH, view === 'front' ? CAM_F : CAM_B, { view, at, knight: view === 'front' ? [at[0] + 4, at[1]] : [at[0], at[1] - 4], ...sh });
+  };
   for (const view of want('death') ? (['front', 'back'] as const) : []) {
-    const end = view === 'front' ? ST_DIES.long + 0.6 : ST_DIES.long;
+    const end = view === 'front' ? ST_DIES.long + 0.2 : ST_DIES.long;
     for (let T = 0; T <= end + 1e-9; T += 1 / 30) {
       const t = Math.min(T, ST_DIES.long);
-      save(close(view, { move: 'dying', t, fx: { which: 'blast', t: T }, gear: T >= ST_DIES.long }), { title: `HIS DEATH · ${vName(view)}`, note: deathNote(t) });
+      save(dyingShot(view, { move: 'dying', t, fx: { which: 'blast', t: T }, gear: T >= ST_DIES.long }), { title: `HIS DEATH · ${vName(view)}`, note: deathNote(t) });
     }
   }
   if (want('death')) {
-    for (let T = ST_DIES.hit - 0.45; T <= ST_DIES.hit + 0.6 + 1e-9; T += 1 / 60) {
+    for (let T = ST_DIES.hit - 0.35; T <= ST_DIES.hit + 0.55 + 1e-9; T += 1 / 60) {
       const t = Math.round(T * 30) / 30;
-      save(close('front', { move: 'dying', t, fx: { which: 'blast', t } }), { title: 'HIS DEATH · the burst at half speed', note: deathNote(t) });
+      save(dyingShot('front', { move: 'dying', t, fx: { which: 'blast', t } }), { title: 'HIS DEATH · the burst at half speed', note: deathNote(t) });
     }
   }
   // THE GEAR SET IN, THE CRANK TURNED, THE FURNACE GOING OUT; THE FIRE IN THE CHAINED ONE'S WAY GOING OUT
@@ -628,29 +635,76 @@ function sheet(out: string): void {
     save(side(crop(one(1.6, 'coals', 'attack', [8, 4.3], [4.5, 0.3]), 300, 130, 600, 320), crop(one(ST_COALS.hit + coalLands(6) + 0.6, 'coals', 'attack', [8, 4.3], [4.5, 0.3]), 300, 130, 600, 320)), { file: 's6_coals.png', title: 'THE COALS, OVER THE WHOLE ROOM', note: `Held high, where his ${COALS.n} coals will come down is marked round the knight (left); they come down, each a fire ${COAL_FIRE.r * 2} tiles across burning ${COAL_FIRE.burns} s (right). The gaps between are the way out.` });
     save(side(crop(one(ST_RAKE.drag[1] + 0.4, 'rake', 'rake', [4.6, 8.6]), 300, 130, 600, 320), crop(one(ST_BURST.hit + 0.35, 'ring', 'burst', [6.6, 2.0]), 300, 130, 600, 320)), { file: 's7_rake_ring.png', title: 'THE RAKE’S FIRE, AND THE FURNACE’S RING', note: `The rake (left): a band of fire ${RAKE_FIRE.r0} to ${RAKE_FIRE.r1} tiles before him, burning ${RAKE_FIRE.burns} s. The burst (right): a ring rolling out to ${RING.r1} tiles at ${RING.pace} a second, three gaps in it the way through.` });
   }
-  // 7. STRUCK, AND HIS DEATH: THE FURNACE EXPLODES; the gear
+  // 7. STRUCK, AND HIS DEATH: THE FURNACE EXPLODES; the gear. Each moment in a cell of its own, big enough to hold all of it
+  // (him, his shovel, the blast on the floor, the fireball and the smoke, every piece of him): measured, and checked
   {
-    const CW = 300;
-    const CH = 230;
-    const list: [string, number, string][] = [['reel', 0.1, 'struck'], ['dying', 1.2, 'white-hot, held'], ['dying', ST_DIES.hit, 'the burst'], ['dying', 1.75, 'the fireball'], ['dying', 2.0, 'flung apart'], ['dying', ST_DIES.long, 'scattered; the gear']];
-    const pic = dark(CW * 2, CH * 3);
-    const labels: { x: number; y: number; text: string }[] = [];
-    list.forEach(([move, t, say], i) => {
-      const cell = dark(CW, CH);
-      const ox = CW * 0.5;
-      const oy = CH - 40;
+    const MARGIN = 8;
+    const LABEL = 14;
+    const paintAt = (into: Pic, move: string, t: number, ox: number, oy: number): void => {
       if (move === 'dying' && t >= ST_DIES.hit) {
-        const fx = new Px(CW, CH);
+        const fx = new Px(into.w, into.h);
         blastFloor(fx, ox, oy, t, 'front');
-        cell.lay(fx, 0, 0, 0, 0, 1);
+        into.lay(fx, 0, 0, 0, 0, 1);
       }
-      layStoker(cell, stokerAt(move, t, 'front'), ox, oy, 1, move !== 'dying' || t < ST_DIES.hit);
-      const x0 = CW * (i % 2);
-      const y0 = CH * Math.floor(i / 2);
-      for (let y = 0; y < CH; y++) pic.d.set(cell.d.subarray(y * CW * 4, (y + 1) * CW * 4), ((y + y0) * pic.w + x0) * 4);
-      labels.push({ x: 2 * (x0 + 4), y: 2 * y0 + 4, text: say });
-    });
-    save(pic.scaled(2), { file: 's8_death.png', title: 'STRUCK, AND HIS DEATH: THE FURNACE EXPLODES', note: `Struck: jolted back. His death (${ST_DIES.long} s): he staggers and stiffens upright as his firebox overloads, held ${(ST_DIES.strike[0] - ST_DIES.build[0]).toFixed(2)} s (white-hot, rivets popping, steam jetting, shaking; the shovel let fall); THE BURST in two frames at ${ST_DIES.hit} s: a fireball, a shockwave over the floor out to ${BLAST.r1} tiles, his plates, his helm, his shovel and his iron flung out; all down and still by ${ST_DIES.down} s, scattered and smoking on a scorch; THE GEAR spun out of the fire, lying glinting where it fell.`, labels });
+      layStoker(into, stokerAt(move, t, 'front'), ox, oy, 1, move !== 'dying' || t < ST_DIES.hit);
+    };
+    // (what a moment covers, from its floor point: left, top, right, bottom)
+    const boxOf = (move: string, t: number): [number, number, number, number] => {
+      const W = 900;
+      const H = 900;
+      const p = new Pic(W, H);
+      paintAt(p, move, t, 450, 600);
+      let x0 = W;
+      let y0 = H;
+      let x1 = -1;
+      let y1 = -1;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (p.d[(y * W + x) * 4 + 3]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      if (x0 === 0 || y0 === 0 || x1 === W - 1 || y1 === H - 1) throw new Error(`${move} @${t}: too big to measure`);
+      return [x0 - 450, y0 - 600, x1 - 450, y1 - 600];
+    };
+    const rows: [string, number, string][][] = [
+      [['reel', 0.1, 'struck'], ['dying', 1.2, 'white-hot, held']],
+      [['dying', ST_DIES.hit, 'the burst'], ['dying', 1.75, 'the fireball']],
+      [['dying', 2.0, 'flung apart']],
+      [['dying', ST_DIES.long, 'scattered; the gear']],
+    ];
+    const W2 = 600;
+    const cells: { move: string; t: number; say: string; x: number; y: number; w: number; h: number; ox: number; oy: number }[] = [];
+    let y = 0;
+    for (const row of rows) {
+      const w = W2 / row.length;
+      const boxes = row.map(([move, t]) => boxOf(move, t));
+      const up = Math.max(...boxes.map((q) => -q[1]));
+      const down = Math.max(...boxes.map((q) => q[3]));
+      const h = Math.ceil(up + down + 1 + 2 * MARGIN + LABEL);
+      row.forEach(([move, t, say], i) => {
+        const [x0, , x1] = boxes[i];
+        if (x1 - x0 + 1 > w - 2 * MARGIN) throw new Error(`${say}: ${x1 - x0 + 1} px across, too wide for its cell of ${w}`);
+        cells.push({ move, t, say, x: w * i, y, w, h, ox: Math.round(w / 2 - (x0 + x1) / 2), oy: Math.round(MARGIN + LABEL + up) });
+      });
+      y += h;
+    }
+    const pic = dark(W2, y);
+    const labels: { x: number; y: number; text: string }[] = [];
+    for (const c of cells) {
+      const cell = new Pic(c.w, c.h);
+      paintAt(cell, c.move, c.t, c.ox, c.oy);
+      // (nothing cut off: all of it inside its cell, MARGIN from every edge, clear of its label)
+      for (let yy = 0; yy < c.h; yy++) for (let xx = 0; xx < c.w; xx++) {
+        if (!cell.d[(yy * c.w + xx) * 4 + 3]) continue;
+        if (xx < MARGIN || xx >= c.w - MARGIN || yy < MARGIN + LABEL || yy >= c.h - MARGIN) throw new Error(`${c.say}: painted at ${xx},${yy} of its ${c.w} by ${c.h} cell`);
+      }
+      const bg = dark(c.w, c.h);
+      paintAt(bg, c.move, c.t, c.ox, c.oy);
+      for (let yy = 0; yy < c.h; yy++) pic.d.set(bg.d.subarray(yy * c.w * 4, (yy + 1) * c.w * 4), ((yy + c.y) * pic.w + c.x) * 4);
+      labels.push({ x: 2 * (c.x + 4), y: 2 * c.y + 4, text: c.say });
+    }
+    // (a dark line between the cells)
+    for (const c of cells) {
+      for (let xx = c.x; xx < c.x + c.w; xx++) pic.over(xx, c.y, 12, 11, 15, 255);
+      for (let yy = c.y; yy < c.y + c.h; yy++) pic.over(c.x, yy, 12, 11, 15, 255);
+    }
+    save(pic.scaled(2), { file: 's8_death.png', title: 'STRUCK, AND HIS DEATH: THE FURNACE EXPLODES', note: `Struck: jolted back. His death (${ST_DIES.long} s): he staggers and stiffens upright as his firebox overloads, held ${(ST_DIES.strike[0] - ST_DIES.build[0]).toFixed(2)} s (white-hot, rivets popping, steam jetting, shaking; the shovel let fall); THE BURST in two frames at ${ST_DIES.hit} s: a white-hot flash, then a billowing fireball rolling up into soot and smoke, a shockwave over the floor out to ${BLAST.r1} tiles; his pauldrons, gauntlets, couters, poleyns and boots, his helm, gorget, flue and door, and shards of his firebox flung out all round, tumbling, trailing smoke and sparks; all down and still by ${ST_DIES.down} s, each lying as the thing it was, smoking, on a scorch; THE GEAR spun out of the fire, lying glinting where it fell.`, labels });
   }
   // 8. THE FURNACE, LIT AND OUT; THE FIRE IN THE CHAINED ONE'S WAY, BURNING AND GOING OUT
   {
@@ -686,8 +740,13 @@ function sheet(out: string): void {
     layS(pic, STOKER_ROOM.gearDropped(2), 525, 150, 2);
     save(pic.scaled(2), { file: 's10_crank_gear.png', title: 'THE FORGE CRANK, AND THE GEAR', note: 'Its middle gear missing; set in (the handle glows the player’s cyan, as floor 3’s levers do); turned. The gear as an item (a quest item, a plain white rim), and where it fell.', labels: [...states.map(([, , say], i) => ({ x: 2 * (150 * i + 6), y: 6, text: say })), { x: 2 * 456, y: 6, text: 'the item' }] });
   }
-  fs.writeFileSync(path.join(out, 'sheet.json'), JSON.stringify({ pieces }));
-  console.log('sheet', pieces.length, 'pieces');
+  // (two sheets, each short enough for his phone: him, his moves and his fire on the floor; his death, the furnace and the gear.
+  // The second's pieces are in two/, its files the ones beside it)
+  const two = pieces.findIndex((p) => p.file === 's8_death.png');
+  fs.writeFileSync(path.join(out, 'sheet.json'), JSON.stringify({ pieces: pieces.slice(0, two) }));
+  fs.mkdirSync(path.join(out, 'two'), { recursive: true });
+  fs.writeFileSync(path.join(out, 'two', 'sheet.json'), JSON.stringify({ pieces: pieces.slice(two).map((p) => ({ ...p, file: `../${p.file}` })) }));
+  console.log('sheet', two, 'pieces, and', pieces.length - two, 'in two/');
 }
 
 // =============================================================================================

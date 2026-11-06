@@ -31,6 +31,11 @@ HERE IS IN THE GAME: nothing of the game imports it (its test proves it), and it
   (Recommended)”, offered as: his firebox swells white-hot, plates bulging and rivets popping, then he bursts in a blast of fire
   and flying iron. The gear spins out of the fireball and clangs down.
 
+- 6 Nov 2026, 15:18, his rule for everything drawn: “Everything drawn should not just look like shapes.  That’s the rule”. Every
+  effect of his death is held to it, with the same care as his body: the fireball, its smoke, the sparks, the rivets popping, the
+  steam, the shockwave's ring, the scorch, and every piece of him flying and lying must read as the real thing (see THE BURST,
+  REMADE below).
+
 ## His body reshaped (6 Nov 2026, “Reshape his body first (Recommended)”)
 
 Only his body changed (src/art/stoker.ts): his firebox chest, flue, shovel, colours, every move's timing and pose
@@ -68,21 +73,42 @@ Only his body changed (src/art/stoker.ts): his firebox chest, flue, shovel, colo
   them), rivets round it; set lower, on a thick iron GORGET of three lames flaring down into his shoulders, so that his head is
   sunk between them. Top-heavy: the shoulders high and broad.
 
+## THE BURST, REMADE (6 Nov 2026; his rule, 15:18: “Everything drawn should not just look like shapes.  That’s the rule”)
+
+Only his death's burst and after changed (src/art/stoker.ts `explosion`, `steamJet`, `blastBits`, `shardSkin`, `hollowSkin`,
+`aimsOf`, `layOf`); his body, his moves, their timings, the shockwave's ring and the scorch on the floor (stoker_fx.ts) and the room
+are as they were. What was there, and what is there now:
+
+- THE FIREBALL was circles and flat bands of colour, and its smoke a flat grey disc with holes: now a white-hot
+  flash with jagged spikes, then billows of fire heaped on one another, lit from within, creased under each, tongues licking off
+  it, soot rolling over its top in billows lit red beneath; then billowing smoke rolling over and out at its top, lit and
+  shadowed, soft at its edge, thinning into wisps (THE FIREBALL, below).
+- THE PIECES were his plates each flying alone, stuck on the fireball's face, lying as grey lumps (his boots like ribbed grubs):
+  now each thing whole (a pauldron with its lames, a boot with its foot), flung clear of the fireball all round, trailing sparks
+  and smoke, and lying as the thing it was; the shards jagged torn plate, not ovals (FLUNG APART, below).
+- THE STEAM was a few grey specks: now jets driven out of his gaps, swelling into billows (THE OVERLOAD, HELD, below). THE RIVETS
+  were single specks: now heads torn off white-hot, sparks streaming, a white-hot hole left.
+
 ## The pictures (docs/mockups/stoker/pictures/)
 
 - `stoker_body.png` (1200 by 6185, new, 6 Nov; made again on the plates as true solids): HIS BODY BEFORE AND NOW, side by side: standing from in front, from behind and
   from the side (his right, truly turned, not flipped), three times the game's size; at the game's own size from in front and
   from behind; and six moments of his moves from in front, twice the game's size (walking, the coals into his firebox, the coals
   held high, the rake held up, the burst held, struck).
-- `stoker_sheet.png` (1200 by 8202, made again on his new body, on the plates as true solids, and on his new death): him beside the knight from in front and from behind, three times
-  as big; in his furnace room at the game's size (one phone screen); the key moments of each attack from in front and behind; the
-  coals' marks and fires, the rake's sheet of fire and the furnace's ring over the whole room; struck and HIS DEATH, THE FURNACE
-  EXPLODING (white-hot and held, the burst, the fireball and the shockwave, flung apart, scattered with the gear); the furnace lit and out; the fire in the Chained One's way burning and going out; the crank without its gear, with
-  it, turned; the gear as an item.
-- `stoker.mp4` (made again on his new body, on the plates as true solids, and on his new death; 1200 by 872, 30 fps, H.264 yuv420p, captioned, 60.4 s): his stand, his walk, each
+- THE SHEET, IN TWO, each short enough for his phone (made again for THE BURST, REMADE):
+  - `stoker_sheet.png` (1200 by 5346): him beside the knight from in front and from behind, three times as big; in his furnace
+    room at the game's size (one phone screen); the key moments of each attack from in front and behind; the coals' marks and
+    fires, the rake's sheet of fire and the furnace's ring over the whole room.
+  - `stoker_sheet2.png` (1200 by 3864): struck and HIS DEATH, THE FURNACE EXPLODING (struck; white-hot and held, the steam
+    jetting; the burst; the fireball and the shockwave; flung apart, the full width; scattered with the gear, the full width),
+    each moment in a cell measured to hold all of it (nothing cut off: the tool stops if anything of a moment would come within 8
+    of the game's pixels of its cell's edge, or under its label); the furnace lit and out; the fire in the Chained One's way burning and going
+    out; the crank without its gear, with it, turned; the gear as an item.
+- `stoker.mp4` (made again for THE BURST, REMADE; 1200 by 872, 30 fps, H.264 yuv420p, captioned, 59.7 s): his stand, his walk, each
   attack from in front and behind in a stand-in furnace room on floor 3's own floor and walls with the knight; the coals and the
   rake over the whole room; each strike at half speed; struck; HIS DEATH, THE FURNACE EXPLODING, from in front and from behind,
-  with the shockwave and the scorch on the floor, and the burst again at half speed; the crank (gear missing, set
+  with the shockwave and the scorch on the floor, and the burst again at half speed (he dies a little further into the stand-in
+  room than he stands, 0.7 tiles from in front and 1.8 from behind, so that every piece of him comes down on its floor); the crank (gear missing, set
   in, turned), the furnace going out, the fire in the Chained One's way going out.
 
 ## What he is (src/art/stoker.ts)
@@ -169,11 +195,11 @@ lines of the arms), a big wind-down; and its area marked on the floor in the ene
 |---|---|
 | struck | jolted back (0.1 s); staggering, his fire flaring; **the shovel let fall from his fist at 0.4 s**: it drops at his right and lies along the floor |
 | HE STIFFENS UPRIGHT | by **0.6 s**: knees locked straight, chest thrown out, head flung back, arms rigid out from his sides, fists clenched; his feet never leave the floor |
-| THE OVERLOAD, HELD | **0.3 to 1.45 s** (a second and more, the warning): his grate and every seam and band of his firebox glowing orange to white-hot (`heat` to 1.6), his firebox and its dome bulging (to 9 in 100 larger, throbbing), 22 rivets popping off its bands in sparks, steam and smoke jetting harder and harder from his flue, his shoulders, over his door and his hips, all of him above his knees shaking (`ST_SHAKE_DEATH`: 1.1 of his lengths, 15 a second); his eyes white-hot (no pink, no gold: an honest fire) |
+| THE OVERLOAD, HELD | **0.3 to 1.45 s** (a second and more, the warning): his grate and every seam and band of his firebox glowing orange to white-hot (`heat` to 1.6), his firebox and its dome bulging (to 9 in 100 larger, throbbing), 22 rivets popping off its bands (each head torn off white-hot where it sheared, sparks streaming off it, a white-hot hole left where it was), JETS OF STEAM driven harder and harder out of his flue, his shoulders, over his door and his hips (`steamJet`: tight and white at the gap, swelling as they go into billows that slow and rise, each lit on its top and grey under, their edges soft and dithered, thinning to nothing), all of him above his knees shaking (`ST_SHAKE_DEATH`: 1.1 of his lengths, 15 a second); his eyes white-hot (no pink, no gold: an honest fire) |
 | THE BURST | **two frames: 1.45 to 1.55 s** (Movement 9): the first his firebox cracking open white, a flash; the second, at **1.55 s** (`hit`), the blast |
-| THE FIREBALL | from 1.55 s: already great in the frame he bursts (some 37 of his lengths round), swelling to 60 and rising, white at its heart, orange, red, breaking up into smoke by **2.7 s**; sparks and burning bits flung out of it; then a column of smoke where he stood, thinning to the end |
+| THE FIREBALL | from 1.55 s, painted pixel by pixel over all of him (`explosion`), so that every piece of him in it is hidden in it and seen only as it is flung out of it: A WHITE-HOT FLASH, jagged spikes of flame shooting out of it, white at their roots, orange to their tips (to **1.71 s**); then A BILLOWING FIREBALL, swelling and rising: 16 billows of fire of many sizes heaped on one another, each swelling out of the one behind it, their edges billowed again, smaller, rolling (no circle, no flat band), lit from within (white-yellow at its heart and at the middle and top of each billow, orange, red-orange at their edges, a dark crease under each billow where it rolls over the next), tongues of flame licking up off it, waving along their length and fraying at their tips; SOOT rolling over its top in billows, its underside lit red by the fire under it, eating in from its edges as it burns down; dark red and gone by **2.55 s**. THE SMOKE: a cloud of billows of many sizes climbing off the fire and rolling over and out at its top as a blast's smoke does (a roll each side: up its middle, out over its top, down its sides), each billow lit on its top and grey under, a dark crease where one rolls over another, the fire's red on their undersides while it burns, its edge soft and dithered, embers in it; a stem of billows climbing out of the fire into it; thinning from its edges in as it climbs and breaking up into wisps, **gone by 4.15 s**. Sparks streaking out of the blast, white-hot heads going red |
 | THE SHOCKWAVE (art/stoker_fx.ts `BLAST`, `blastFloor`, `blastAt`) | a ring of fire and dust rolling out over the floor from 0.5 to **3 tiles** at 10 tiles a second (0.25 s), 0.5 tiles deep; the main chat may make it hurt or not (a hero within `deep` of its front as it passes). Where he stood the floor is left scorched, **1.2 tiles round**, to the end and after |
-| FLUNG APART | **every piece a real piece of him** (`blastBits`): his pauldrons' cops and every lame, the bands round his arms, his couters, vambraces and gauntlets, his poleyns and their lames, his boots and his feet, his helm, his gorget, his flue, his fire-door, his shovel (blown from where it lay), and 12 chunks of his firebox's iron, torn: each flung out from the blast, 1 to 2.7 tiles away and 14 to 48 of his lengths above where it starts (his boots and feet 0.4 to 1.1 tiles and lower, his helm up to 3 tiles and 60 high), tumbling end over end once to thrice, landing, hopping and sliding, then lying as such a piece lies (a cop on its back, a cup on its rim, a tube on its side, a shard flat, the rest along their length), smoking for 2.4 s. **Every piece down and still by 2.9 s** (`down`). His muscle, his leather and his skirt burn in the blast: **nothing of his body is left standing**, only the scorch and the scattered iron |
+| FLUNG APART | **every piece a real piece of him, and each WHOLE, the thing it was on him** (`blastBits`, `wholeOf`): each pauldron with its three lames, each gauntlet with its vambrace, each couter with the band from his upper arm, each poleyn with its lames, each boot with its foot; his helm (its grille and eye-slits gone dark), his gorget, his flue, his fire-door (its grate going dark); his shovel, blown from where it lay; and **12 SHARDS of his firebox's iron**, torn out of it (`shardSkin`: a jagged plate, straight edges between sharp corners and torn notches, never round, a band and its rivets across it, the side that tore glowing as it flies and going dark). Each flung clear out of the fireball, all round it (`aimsOf`: spread round the blast in the order they were on him, each its own way and distance, so that none comes down on another; a clear way kept either side of the shovel, none on the gear), 28 to 59 of his lengths above where it starts, tumbling end over end once to thrice, TRAILING SPARKS AND SMOKE (pale close behind it, darker, wider and thinning behind), landing, hopping and sliding, **2.4 to 4.5 tiles from where he stood** (the shards 1.7 to 3.3, the shovel 3.4); then lying as the thing it was, seen from above (`layOf`): a pauldron, couter or poleyn rolled onto its side, the curve of its iron, its ridge and its rim up, its hollow beside; a boot fallen on its side, shaft and foot; his helm on the back of its crown, its brow, eye-slits and grille up; his door and the shards flat; the flue, the gorget and the shovel along their length, out from the blast. Through an open end the hollow of a plate is seen (`hollowSkin`: the inside of its wall lit on one side, going down into the dark, never a flat black lid; through a narrow band or lame, the floor, as through a ring). Smoking for 2.4 s. **Every piece down and still by 2.9 s** (`down`). His muscle, his leather and his skirt burn in the blast: **nothing of his body is left standing**, only the scorch and the scattered iron |
 | THE GEAR | spinning out of the fireball as he bursts (1.55 s), flung high, clanging down onto its edge (0.7 s later), bouncing twice, rolled over flat and **lying glinting at `GEAR_REST` by 2.85 s** (88 of his lengths forward, 14 to his left: **2.25 tiles before him**, as before) |
 
 ## What his fire does on the floor (src/art/stoker_fx.ts)
@@ -276,7 +302,7 @@ show through it from any side.
     him;
 13. HIS DEATH, THE FURNACE EXPLODES (new, 6 Nov): the overload held a second and more, the burst in two of his death's frames,
     landing on one; whole till the burst, nothing of his body after it; his right fist on the shovel's grip till he lets it go
-    (0.4 s), then the shovel lying still on the floor till the burst; every piece of him (46, the gear among them) down by
+    (0.4 s), then the shovel lying still on the floor till the burst; every piece of him (28: the 14 whole things he flies apart into, the 12 shards, his shovel and the gear) down by
     2.9 s, lying on the floor (its lowest point within a length of it) and still to the end; no pink or gold in his death's
     pictures or their lights from the overload on, both ways round; the fireball as he bursts; the blast on the floor (its ring
     of fire as it rolls, its scorch at the end, no fire left in it) crisp, no cyan. His death also goes through every boss check
@@ -299,7 +325,9 @@ the gateway's way are said again in it, and tested to be the same), so floor 3's
 - `npx tsx tools/stoker_pics.ts body <dir>`: the pieces of `stoker_body.png` on the body as it is (painted once on the body as it
   was, from `c440351e`, into another dir); then `python3 tools/stoker_body_sheet.py <before dir> <now dir> stoker_body.png`.
 - `npx tsx tools/stoker_pics.ts look|big <dir> [...]`: frames to look at; `sheet <dir>` then `python3 tools/rime_shade_sheet.py
-  <dir> stoker_sheet.png`; `film <dir> [parts]` then `python3 tools/hush_shapes_film.py <dir> stoker.mp4`.
+  <dir> stoker_sheet.png` and `python3 tools/rime_shade_sheet.py <dir>/two stoker_sheet2.png` (the sheet in two, each short enough
+  for his phone; the death's cells are measured to hold all of each moment, and it stops if anything would be cut off);
+  `film <dir> [parts]` then `python3 tools/hush_shapes_film.py <dir> stoker.mp4`.
 
 ## For him to decide (the art chat's to ask)
 
