@@ -349,18 +349,32 @@ export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, 
           const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
           if (k > 0.45 && hash(x, y, 7) < (k - 0.45) * 1.6) fan.erase(x, y);
         }
-        // the after-images: the blade where it was, a third and two thirds of the way back, in its darker light, under him
+        // THE AFTER-IMAGES: GHOSTS OF THE BLADE ITSELF, a third and two thirds of the way back along the swing, each the blade's own
+        // shape (its two edges and its point, a lit line down its middle) in a fading copy of its light, laid ON the arc it has
+        // just swept (from the arc's inner edge at that moment out to the point, as the arc is), painted on the arc's own sheet so
+        // the two are one motion. Never a bar of its own: nothing of them lies off the arc.
         for (const k of [0.34, 0.67]) {
-          const i = Math.min(n - 1, Math.round(k * (n - 1)));
-          const [g0, g1] = trail[i];
-          const [ax0, ay0] = st.at(g0);
-          const [ax1, ay1] = st.at(g1);
-          const steps = Math.ceil(Math.hypot(ax1 - ax0, ay1 - ay0));
-          for (let j = 0; j <= steps; j++) {
-            const x = Math.round(ax0 + ((ax1 - ax0) * j) / Math.max(1, steps));
-            const y = Math.round(ay0 + ((ay1 - ay0) * j) / Math.max(1, steps));
-            for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [-1, 0]] as const) st.under.set(x + dx, y + dy, k < 0.5 ? BLADE[2] : BLADE[1]);
-          }
+          const i = Math.min(n - 1, Math.max(1, Math.round(k * (n - 1))));
+          const age = i / (n - 1);
+          const e = trail[i];
+          const [x0, y0] = st.at(inner(e, age));
+          const [x1, y1] = st.at(e[1]);
+          const L = Math.hypot(x1 - x0, y1 - y0);
+          if (L < 6) continue;
+          const dx = (x1 - x0) / L;
+          const dy = (y1 - y0) / L;
+          const w = k < 0.5 ? 2.2 : 1.7;
+          const tipBack = Math.min(L * 0.3, 4);
+          const body = k < 0.5 ? BLADE[3] : BLADE[2];
+          const core = k < 0.5 ? BLADE[4] : BLADE[3];
+          fan.poly([
+            [x0 - dy * w, y0 + dx * w],
+            [x1 - dx * tipBack - dy * w, y1 - dy * tipBack + dx * w],
+            [x1, y1],
+            [x1 - dx * tipBack + dy * w, y1 - dy * tipBack - dx * w],
+            [x0 + dy * w, y0 - dx * w],
+          ], body);
+          fan.line(Math.round(x0 + dx), Math.round(y0 + dy), Math.round(x1 - dx * (tipBack + 1)), Math.round(y1 - dy * (tipBack + 1)), core);
         }
         const [lx, ly] = st.at(mid(trail[1][0], trail[1][1], 0.8));
         lights.push({ x: lx, y: ly, r: 15, color: BLADE[3], a: 0.34 });
