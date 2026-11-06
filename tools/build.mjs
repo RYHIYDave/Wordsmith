@@ -6,7 +6,7 @@ import { RELEASE_DEFINES, bundle, fragment, page, write } from './lib.mjs';
 
 const dev = process.argv.includes('--dev');
 // (shown small in a corner of the starting screen, so the owner can tell which version a page is showing)
-const VERSION = 'V25.0.6';
+const VERSION = 'V25.0.7';
 const stamp = `${VERSION} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
 const js = await bundle('src/main.ts', { minify: !dev, define: { ...RELEASE_DEFINES, __BUILD__: JSON.stringify(stamp), __DEV__: String(dev) } });
 const out = write('Play.html', page(js));

@@ -68,7 +68,8 @@ const BUDGET = 5;
 const LATE = 150;
 /** How many pieces past the screen's edge are painted ahead, and kept. */
 const AHEAD = 2;
-const KEEP = 5;
+// (3, was 5: the pieces held round the screen were a third of floor 10's pictures; his “Crashing pretty often in level 10.”)
+const KEEP = 3;
 /** The sky's height, in picture pixels, and where its horizon sits down the screen (picture pixels: the art chat's page had it at 232). */
 const SKY_H = 468;
 const HORIZON = 232;

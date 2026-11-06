@@ -33,6 +33,12 @@ export const TOPS_CACHE = {
 };
 /** Chunks kept that have not been near the screen for this many frames are let go of. */
 const KEEP_FRAMES = 240;
+/**
+ * THE MOST ITS PICTURES MAY HOLD (bytes). Kept by frames alone, a walk about the Pinewood held 120 to 190 MB of them at a phone's
+ * size where the frames come slowly, and the phone's browser closes the page past its limit for pictures. His words, 4 Nov 2026,
+ * 19:00: “Crashing pretty often in level 10.” Past this, the pictures longest unseen are let go first (made again if come back to).
+ */
+export const TOPS_BUDGET = 40e6;
 
 /** A tree as the chunk holds it: where it is drawn relative to the camera (game pixels), its depth, and the game's order. */
 export interface CachedTree {
@@ -80,6 +86,8 @@ export class TopsCache {
   /** The runs made, by column and first and last slab. */
   private runs = new Map<string, Chunk>();
   private owner: unknown = null;
+  /** The bytes its pictures hold now (TOPS_BUDGET). */
+  bytes = 0;
   /** The slab and column the chunks held were cut to. */
   private cut = '';
   /** For measuring: chunks made, drawn as pictures and drawn as their trees this frame; trees drawn one by one this frame. */
@@ -100,13 +108,14 @@ export class TopsCache {
   }
 
   clear(): void {
-    for (const r of this.runs.values()) drop(r);
+    for (const r of this.runs.values()) this.bytes -= drop(r);
     this.runs.clear();
     for (const ch of this.chunks.values()) {
-      for (const sub of ch.subs ?? []) drop(sub);
-      drop(ch);
+      for (const sub of ch.subs ?? []) this.bytes -= drop(sub);
+      this.bytes -= drop(ch);
     }
     this.chunks.clear();
+    this.bytes = 0;
     this.owner = null;
     this.stats.held = 0;
   }
@@ -174,6 +183,7 @@ export class TopsCache {
       const trees: CachedTree[] = [];
       for (const m of members) trees.push(...m.trees);
       r = { key: -2, s: a.s, c: a.c, trees, sp: { img: cv, w: a.w, h: y1 - y0, ax: 0, ay: 0, density: res }, x0: a.x0, y0, w: a.w, h: y1 - y0, used: frame, depth: a.depth, subs: null, members, last: b.s };
+      this.bytes += cv.width * cv.height * 4;
       this.runs.set(key, r);
       this.stats.runs++;
       this.stats.ms += performance.now() - t0;
@@ -198,16 +208,43 @@ export class TopsCache {
       g.drawImage(sp.img, t.x0 - ch.x0, t.y0 - ch.y0, sp.w, sp.h);
     }
     ch.sp = { img: cv, w: ch.w, h: ch.h, ax: 0, ay: 0, density: res };
+    this.bytes += cv.width * cv.height * 4;
     this.stats.made++;
     this.stats.ms += performance.now() - t0;
     this.stats.held++;
+  }
+
+  /**
+   * (TOPS_BUDGET) Past the most its pictures may hold, the pictures longest unseen let go of (runs first, then chunks' layers and
+   * chunks; a chunk itself kept, its trees, to be painted again if come back to), none drawn this frame.
+   */
+  trim(frame: number): void {
+    if (this.bytes <= TOPS_BUDGET) return;
+    const goal = TOPS_BUDGET * 0.75;
+    const runs = [...this.runs.entries()].filter(([, r]) => r.used < frame).sort((a, b) => a[1].used - b[1].used);
+    for (const [key, r] of runs) {
+      if (this.bytes <= goal) return;
+      this.bytes -= drop(r);
+      this.runs.delete(key);
+    }
+    const pics: Chunk[] = [];
+    for (const ch of this.chunks.values()) {
+      if (ch.sp && ch.used < frame) pics.push(ch);
+      for (const sub of ch.subs ?? []) if (sub.sp && sub.used < frame) pics.push(sub);
+    }
+    pics.sort((a, b) => a.used - b.used);
+    for (const ch of pics) {
+      if (this.bytes <= goal) return;
+      if (ch.sp) this.stats.held--;
+      this.bytes -= drop(ch);
+    }
   }
 
   /** Let go of the chunks that have not been near the screen for a while. */
   forget(frame: number): void {
     for (const [key, r] of this.runs) {
       if (frame - r.used <= KEEP_FRAMES / 2) continue;
-      drop(r);
+      this.bytes -= drop(r);
       this.runs.delete(key);
     }
     for (const [key, ch] of this.chunks) {
@@ -215,17 +252,17 @@ export class TopsCache {
       if (ch.subs && ch.subs.every((sub) => frame - sub.used > KEEP_FRAMES)) {
         for (const sub of ch.subs) {
           if (sub.sp) this.stats.held--;
-          drop(sub);
+          this.bytes -= drop(sub);
         }
         ch.subs = null;
       }
       if (frame - ch.used <= KEEP_FRAMES) continue;
       for (const sub of ch.subs ?? []) {
         if (sub.sp) this.stats.held--;
-        drop(sub);
+        this.bytes -= drop(sub);
       }
       if (ch.sp) this.stats.held--;
-      drop(ch);
+      this.bytes -= drop(ch);
       this.chunks.delete(key);
     }
   }
@@ -244,9 +281,12 @@ function made(key: number, s: number, c: number, trees: CachedTree[], depth: num
   return { key, s, c, trees, sp: null, x0: c * w, y0: top, w, h: trees.length ? Math.ceil(y1) - top : 0, used: frame, depth, subs: null };
 }
 
-function drop(ch: Chunk): void {
-  if (!ch.sp) return;
+/** Let go of a chunk's picture (its room given back at once); the bytes it held. */
+function drop(ch: Chunk): number {
+  if (!ch.sp) return 0;
+  const n = ch.sp.img.width * ch.sp.img.height * 4;
   ch.sp.img.width = 0;
   ch.sp.img.height = 0;
   ch.sp = null;
+  return n;
 }

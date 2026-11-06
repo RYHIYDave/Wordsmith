@@ -4471,6 +4471,8 @@ export class Renderer {
       }
     }
     if (frame % 60 === 0) tc.forget(frame);
+    // (and past the most its pictures may hold, those longest unseen: TOPS_BUDGET)
+    tc.trim(frame);
     // (the tops of pieces far away let go of, as the ground's pieces are)
     const pi0 = Math.floor((relX * 2) / GROUND_PIECE) - 1;
     const pi1 = Math.floor(((relX + W) * 2) / GROUND_PIECE) + 1;
