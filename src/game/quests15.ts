@@ -1,4 +1,4 @@
-// THE QUEST LINE OF FLOORS 1 TO 5 (behind QUESTS15, off until his yes in play with the art chat's pictures).
+// THE QUEST LINE OF FLOORS 1 TO 5 (behind QUESTS15: ON since his yes, 6 Nov 2026, “Yes, put it in (Recommended)”).
 //
 // His words, 4 Nov 2026, 00:27 (Eastern): “I want a quest given to go to the chained one’s area and turn off the furnace.  Maybe
 // by the armorer when you turn in the first runestone quest.  You go down to level 3, and there will be a side area you go into,
@@ -32,7 +32,9 @@
 
 import type { ClassId, MonsterKind, WordId } from './types';
 
-export const QUESTS15 = { on: false };
+// ON, at his yes, 6 Nov 2026, shown the Stoker in the game (stoker_in_game.png), asked whether the whole quest line should go in the
+// next update with him in it: “Yes, put it in (Recommended)”.
+export const QUESTS15 = { on: true };
 
 /** Where the hero stands in the furnace quest: asked; carrying the gear; the furnace put out; rewarded. */
 export type FurnaceStep = 'asked' | 'gear' | 'out' | 'done';
