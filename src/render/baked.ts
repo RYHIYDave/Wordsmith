@@ -1,0 +1,217 @@
+// THE HEROES' PICTURES BAKED: painted once when the game is built (tools/bake_heroes.mjs), shipped with the game's page as sheets
+// of pictures in files beside it (heroes/<mark>/: one page alone may not be over 16 MB where it is published, and so a hero's
+// sheets are fetched only when he is played), and taken in when a hero is first shown, in place of painting them while the
+// game is played. His words, 4 Nov 2026, 19:22 (Eastern): “And something was said about storing drawings so that loading is easier.
+// I’m into that if I can be implemented.  Unless it’s a last step kind of thing since it would make the game bigger to load or
+// whatever”; asked how, 6 Nov 2026, his pick: “Inside the game file”.
+//
+// The pictures are the very ones the painter's worker paints (render/painter.ts, hero), the same lists in the same places
+// (art/heroes3.ts heroLists), handed in the same way (HeroArt.give). Wherever the baked pictures are not to be had (a page
+// built without them or opened from a file, a sheet that will not load, a hero whose lists are not as they were baked), the
+// game paints them as it did before: nothing is lost but time.
+
+import { heroLists } from '../art/heroes3';
+import { lookOfPlace } from '../art/heroes';
+import type { HeroArt, HeroPlace } from '../art/heroes';
+import type { AnimSet } from '../art/actor_types';
+import type { Sprite } from '../engine/px';
+import type { ClassId } from '../game/types';
+
+declare const __HERO_BAKE__: string | undefined;
+
+/** The switch: off, the heroes are painted while the game is played, as before. */
+export const BAKED = { on: true };
+
+/** The folder beside the page the bakes are in, each in a folder of its own named by its mark (tools/build.mjs). */
+export const BAKE_DIR = 'heroes';
+
+/** The bake this build of the game was made with ('' : none). */
+export function bakeMark(): string {
+  return typeof __HERO_BAKE__ === 'string' ? __HERO_BAKE__ : '';
+}
+
+/** One hero in one place, as the painter asks for him (render/painter.ts, hero). */
+export interface BakeKey {
+  cls: ClassId;
+  place: HeroPlace;
+  vet: boolean;
+}
+
+/**
+ * THE BAKE'S GROUPS, each loaded whole: every hero's class card (the title's), and each hero in all of his places (a run needs
+ * them all: the town, the dungeon, and the Warlock's demon and his arm blazing). `vet`: the Brawler as the Veteran
+ * (game/veteran.ts VETERAN), as the painter asks for him.
+ */
+export function bakeGroups(vet: boolean): Record<string, BakeKey[]> {
+  const classes: ClassId[] = ['warrior', 'ranger', 'mage', 'warlock', 'tinkerer', 'brawler'];
+  const k = (cls: ClassId, place: HeroPlace): BakeKey => ({ cls, place, vet: cls === 'brawler' && vet });
+  const out: Record<string, BakeKey[]> = { cards: classes.map((c) => k(c, 'card')) };
+  for (const c of classes) out[c] = c === 'warlock' ? (['town', 'dungeon', 'demon', 'blaze'] as HeroPlace[]).map((p) => k(c, p)) : [k(c, 'town'), k(c, 'dungeon')];
+  return out;
+}
+
+export function keyName(k: BakeKey): string {
+  return `${k.cls}:${k.place}${k.vet ? ':vet' : ''}`;
+}
+
+/**
+ * Where a hero's baked frames go, as [side, list, frame] (side 0 the front, 1 the back; lists as heroLists has them), in the
+ * order they are wanted: standing and running first, then the first frame of every other list, then the rest. On a class
+ * card only what a card shows, the front standing and running (render/painter.ts, hero).
+ */
+export function bakedPlaces(front: AnimSet, back: AnimSet, card: boolean): [number, number, number][] {
+  const lists = [heroLists(front), heroLists(back)];
+  const most = [lists[0].indexOf(front.idle), lists[0].indexOf(front.walk)].filter((l) => l >= 0);
+  const out: [number, number, number][] = [];
+  if (card) {
+    for (const l of most) for (let i = 0; i < lists[0][l].length; i++) out.push([0, l, i]);
+    return out;
+  }
+  for (const l of most) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) out.push([v, l, i]);
+  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < 2; v++) if (lists[v][l].length) out.push([v, l, 0]);
+  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < 2; v++) for (let i = 1; i < lists[v][l].length; i++) out.push([v, l, i]);
+  return out;
+}
+
+/** The lengths of a hero's lists, both sides (to know the baked pictures are of the hero as the game has him now). */
+export function listLengths(front: AnimSet, back: AnimSet): number[][] {
+  return [heroLists(front).map((l) => l.length), heroLists(back).map((l) => l.length)];
+}
+
+/** A group's file: its sheets, its frames on them, and where each hero's frames go. */
+export interface BakeFile {
+  mark: string;
+  group: string;
+  /** Each sheet's file (a PNG), beside this one. */
+  sheets: string[];
+  /** Each frame: [sheet, x, y, width, height, the index of its other parts in `parts`]. */
+  frames: [number, number, number, number, number, number][];
+  /** A frame's other parts (Sprite without its picture: its size, anchor, lights...), shared by the frames that have the same. */
+  parts: Omit<Sprite, 'img'>[];
+  /** Each hero of the group: the lengths of his lists, and his frames' places, flat, as side, list, frame, the frame's index. */
+  keys: { cls: ClassId; place: HeroPlace; vet: boolean; lens: number[][]; at: number[] }[];
+}
+
+type Give = (cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean) => boolean;
+
+/** How many of a sheet's frames are cut from it at a time. */
+const AT_ONCE = 48;
+
+/**
+ * THE BAKED PICTURES, TAKEN IN (render/painter.ts, Painter.baked): a group is fetched the first time one of its heroes is asked
+ * for, a sheet at a time (a sheet is let go of once its frames are cut from it), and every frame handed to the hero's art where
+ * it is still unpainted.
+ */
+export class BakedHeroes {
+  private state = new Map<string, 'loading' | 'done' | 'failed'>();
+  private readonly groups: Record<string, BakeKey[]>;
+  private readonly groupOf = new Map<string, string>();
+  /** For measuring: frames taken in, frames not wanted (painted already), how long each group took (ms), and what failed. */
+  readonly stats = { given: 0, unwanted: 0, ms: {} as Record<string, number>, failed: [] as string[] };
+
+  constructor(
+    private readonly mark: string,
+    private readonly art: () => HeroArt,
+    private readonly give: Give,
+    vet: boolean,
+    private readonly get: (name: string) => Promise<Response> = (name) => fetch(`${BAKE_DIR}/${mark}/${name}`),
+  ) {
+    this.groups = bakeGroups(vet);
+    for (const [g, keys] of Object.entries(this.groups)) for (const k of keys) this.groupOf.set(keyName(k), g);
+  }
+
+  /** The baked pictures for this page, or null where there are none to be had (no bake in this build, a page opened from a file). */
+  static make(art: () => HeroArt, give: Give, vet: boolean): BakedHeroes | null {
+    const mark = bakeMark();
+    if (!BAKED.on || !mark) return null;
+    if (typeof fetch !== 'function' || typeof createImageBitmap !== 'function' || typeof location === 'undefined') return null;
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return null;
+    return new BakedHeroes(mark, art, give, vet);
+  }
+
+  /** The group a hero in a place is baked in (null: he is not baked). */
+  group(cls: ClassId, place: HeroPlace, vet: boolean): string | null {
+    return this.groupOf.get(keyName({ cls, place, vet })) ?? null;
+  }
+
+  /**
+   * This hero's pictures in this place from the bake: true if they are coming (or have come), and the painter need not paint
+   * them; false if they cannot (then they are painted, as before).
+   */
+  take(cls: ClassId, place: HeroPlace, vet: boolean): boolean {
+    if (!BAKED.on) return false;
+    const g = this.group(cls, place, vet);
+    if (!g) return false;
+    const st = this.state.get(g);
+    if (st === 'failed') return false;
+    if (!st) void this.load(g);
+    return true;
+  }
+
+  /** Has the group come whole? */
+  done(group: string): boolean {
+    return this.state.get(group) === 'done';
+  }
+
+  private async load(g: string): Promise<void> {
+    this.state.set(g, 'loading');
+    const t0 = performance.now();
+    try {
+      const r = await this.get(`${g}.json`);
+      if (!r.ok) throw new Error(`${g}.json: ${r.status}`);
+      const f = (await r.json()) as BakeFile;
+      if (f.mark !== this.mark || f.group !== g) throw new Error(`${g}: of another bake`);
+      // (each hero's lists as the game has them now, against the bake's)
+      const art = this.art();
+      const wants = new Map<number, [BakeFile['keys'][number], number, number, number][]>();
+      for (const k of f.keys) {
+        const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
+        if (JSON.stringify(listLengths(a.front, a.back)) !== JSON.stringify(k.lens)) throw new Error(`${keyName(k)}: its lists are not as baked`);
+        for (let n = 0; n + 3 < k.at.length; n += 4) {
+          const fi = k.at[n + 3];
+          let w = wants.get(fi);
+          if (!w) wants.set(fi, (w = []));
+          w.push([k, k.at[n], k.at[n + 1], k.at[n + 2]]);
+        }
+      }
+      // (a sheet at a time, in the order they were baked: the frames wanted first are on the first)
+      for (let s = 0; s < f.sheets.length; s++) {
+        const rs = await this.get(f.sheets[s]);
+        if (!rs.ok) throw new Error(`${f.sheets[s]}: ${rs.status}`);
+        const sheet = await createImageBitmap(await rs.blob(), { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+        try {
+          const mine: number[] = [];
+          for (let fi = 0; fi < f.frames.length; fi++) if (f.frames[fi][0] === s) mine.push(fi);
+          for (let n = 0; n < mine.length; n += AT_ONCE) {
+            const part = mine.slice(n, n + AT_ONCE);
+            const bmps = await Promise.all(part.map((fi) => {
+              const [, x, y, w, h] = f.frames[fi];
+              return createImageBitmap(sheet, x, y, w, h, { premultiplyAlpha: 'default', colorSpaceConversion: 'none' });
+            }));
+            for (let q = 0; q < part.length; q++) {
+              const fi = part[q];
+              const sprite = { ...f.parts[f.frames[fi][5]], img: bmps[q] as unknown as HTMLCanvasElement } as Sprite;
+              let took = false;
+              for (const [k, v, l, i] of wants.get(fi) ?? []) {
+                if (this.give(k.cls, k.place, v, l, i, sprite, k.vet)) took = true;
+              }
+              if (took) this.stats.given++;
+              else {
+                this.stats.unwanted++;
+                bmps[q].close();
+              }
+            }
+          }
+        } finally {
+          sheet.close();
+        }
+      }
+      this.state.set(g, 'done');
+      this.stats.ms[g] = Math.round(performance.now() - t0);
+    } catch (e) {
+      this.state.set(g, 'failed');
+      this.stats.failed.push(`${g}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+}
+

@@ -50,6 +50,7 @@ import type { Rows } from '../art/low_stacks';
 // (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
 import { shellMaker } from './act2_houses';
 import { releaseSprite } from '../engine/px';
+import type { BakedHeroes } from './baked';
 import type { Light, Sprite } from '../engine/px';
 
 /** The words that say a script is this one (looked for in the text the worker is to be made from). */
@@ -195,6 +196,8 @@ export class Painter {
   private heroWatch: ReturnType<typeof setTimeout> | null = null;
   /** The hero's frames taken in from the worker, for measuring. */
   heroFrames = 0;
+  /** THE HEROES BAKED (render/baked.ts): their pictures painted when the game was built, taken in here (null: none to be had). */
+  baked: BakedHeroes | null = null;
   /**
    * THE FLOOR'S OTHER MONSTERS (all but the heavy ones, which have a worker of their own): their pictures painted ahead by
    * the side worker too, once it is up, in place of the game painting them ahead a little each frame (a monster's frame
@@ -371,6 +374,9 @@ export class Painter {
    * game need not paint them ahead itself); false: the game goes on painting them ahead as before.
    */
   hero(cls: ClassId, place: HeroPlace): boolean {
+    // (THE HEROES BAKED, render/baked.ts: where this hero in this place is baked, his pictures are taken from the bake, and
+    // the worker is not asked to paint them; where they cannot be had, they are painted, as before)
+    if (this.baked && this.baked.take(cls, place, cls === 'brawler' && VETERAN.on)) return true;
     if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
     // (THE WARLOCK, as a man in a dungeon, his arm blazing, or the demon: all three in one order, the order he needs them in
     // (his lag, 30 Oct 2026): the first frame of each of his lists soon, before the floor's monsters (a frame of theirs is a

@@ -5,3 +5,5 @@ dist/
 previews/
 node_modules/
 node_modules
+# the heroes baked (tools/bake_heroes.mjs), made again whenever their art changes
+.bake/

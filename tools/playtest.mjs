@@ -7,6 +7,7 @@
 //     Version 12.2.1): the first dungeon is played through that way on every layout.
 //                           [--scenario tools/scenarios/look.mjs]     (a script that drives the page itself)
 //                           [--file dist/artifact_test.html]          (a page other than Play.html)
+//                           [--serve]                                 (served over the web from its folder, not opened as a file)
 // --hash bot=<class> lets the built-in test bot play. Screenshot times are seconds after load.
 import { load, ROOT } from './lib.mjs';
 import path from 'node:path';
@@ -35,7 +36,23 @@ page.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('[
 page.on('pageerror', (e) => { errors++; console.log('[page error]', e.message, (e.stack || '').split('\n').slice(0, 4).join(' | ')); });
 const file = path.resolve(ROOT, opt('file', 'Play.html'));
 if (!fs.existsSync(file)) { console.error('Play.html not found: run node tools/build.mjs first'); process.exit(1); }
-await page.goto('file://' + file + (hash ? '#' + hash : ''));
+// --serve: the page served over the web from its own folder, as the published game is, not opened from a file (what is beside
+// it can then be fetched: the heroes baked, render/baked.ts, dist/heroes/)
+let server = null;
+if (flag('serve')) {
+  const http = await import('node:http');
+  const dir = path.dirname(file);
+  const types = { '.html': 'text/html', '.json': 'application/json', '.png': 'image/png', '.js': 'text/javascript' };
+  server = http.createServer((req, res) => {
+    const at = path.join(dir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    if (!at.startsWith(dir) || !fs.existsSync(at) || fs.statSync(at).isDirectory()) { res.writeHead(404); res.end(); return; }
+    res.writeHead(200, { 'content-type': types[path.extname(at)] || 'application/octet-stream' });
+    fs.createReadStream(at).pipe(res);
+  });
+  await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
+  server.unref();
+}
+await page.goto((server ? `http://127.0.0.1:${server.address().port}/${encodeURIComponent(path.basename(file))}` : 'file://' + file) + (hash ? '#' + hash : ''));
 await page.waitForFunction('window.__ready === true', null, { timeout: 15000 });
 const aim = process.env.AIM ?? 'tap';
 if (flag('touch') && aim !== 'default') await page.evaluate((a) => window.__dbg.setAim(a), aim);
