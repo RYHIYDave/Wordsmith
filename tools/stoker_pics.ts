@@ -18,7 +18,7 @@ import type { Sprite } from '../src/engine/px';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { ST_CANVAS, turnedPoint, turnedShape } from '../src/art/stoker';
 import { GEAR_REST, STOKER, ST_BURST, ST_COALS, ST_DIES, ST_PACE, ST_RAKE, ST_REEL, ST_STAND_LONG, stokerBonesOf, stokerShovelAt } from '../src/art/stoker_moves';
-import { COALS, COAL_FIRE, FX_CANVAS, RAKE_FIRE, RING, coalAt, coalInAir, coalLands, coalsFloor, fxAt, fxPainted, rakeFloor, ringFloor } from '../src/art/stoker_fx';
+import { BLAST, COALS, COAL_FIRE, FX_CANVAS, RAKE_FIRE, RING, blastFloor, coalAt, coalInAir, coalLands, coalsFloor, fxAt, fxPainted, rakeFloor, ringFloor } from '../src/art/stoker_fx';
 import { CRANK_CANVAS, CRANK_TURN, FIRE_WALL, FURNACE, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../src/art/stoker_room';
 import { TILE3, deathOfMob, momentOf, paintBits, paintMob } from '../src/art/new_mobs3';
 import { ENEMY_RIM } from '../src/art/mkit';
@@ -174,7 +174,7 @@ function look(out: string, only?: string): void {
     ['rake', [0, 0.2, 0.42, 0.9, 0.967, 1.0, 1.1, 1.27, 1.5, 1.8, 2.4]],
     ['burst', [0, 0.24, 0.55, 1.0, 1.4, 1.433, 1.467, 1.75, 2.2, 2.6]],
     ['reel', [0, 0.1, 0.2, 0.3]],
-    ['dying', [0, 0.2, 0.45, 0.7, 1.0, 1.3, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2]],
+    ['dying', [0, 0.1, 0.4, 0.8, 1.2, 1.5, 1.55, 1.7, 1.9, 2.2, 2.9, 4.2]],
   ];
   const CW = 210;
   const CH = 250;
@@ -280,7 +280,7 @@ interface Shot {
   knight: [number, number] | null;
   kFrame?: number;
   /** His fire on the floor: which, and how far into his move. */
-  fx?: { which: 'coals' | 'rake' | 'ring'; t: number; aim?: readonly [number, number] };
+  fx?: { which: 'coals' | 'rake' | 'ring' | 'blast'; t: number; aim?: readonly [number, number] };
   furnace?: Strip[];
   crank?: Sprite | null;
   gear?: boolean;
@@ -295,7 +295,7 @@ function shot(w: number, h: number, cam: Cam, sh: Shot): Pic {
   // HIM
   draws.push({ d: sh.at[0] + sh.at[1], f: () => {
     const p = stokerAt(sh.move, sh.t, sh.view);
-    layStoker(pic0, p, sx, sy, 1, sh.move !== 'dying' || sh.t < ST_DIES.long);
+    layStoker(pic0, p, sx, sy, 1, sh.move !== 'dying' || sh.t < ST_DIES.hit);
     for (const l of p.lights) lights.push({ x: l.x - ST_CANVAS.ax + sx, y: l.y - ST_CANVAS.ay + sy, r: l.r, c: rgb(l.color), a: l.a });
     // (his own light, as a boss's: the game's aura)
     if (sh.move !== 'dying') lights.push({ x: sx, y: sy - 60, r: 90, c: rgb(EMBER[2]), a: 0.25 });
@@ -341,6 +341,7 @@ function shot(w: number, h: number, cam: Cam, sh: Shot): Pic {
       const px = new Px(w, h);
       if (sh.fx.which === 'coals') coalsFloor(px, sx, sy, sh.fx.t, sh.view, sh.fx.aim ?? [4, 0], fxl);
       else if (sh.fx.which === 'rake') rakeFloor(px, sx, sy, sh.fx.t, sh.view, fxl);
+      else if (sh.fx.which === 'blast') blastFloor(px, sx, sy, sh.fx.t, sh.view, fxl);
       else ringFloor(px, sx, sy, sh.fx.t, sh.view, undefined, fxl);
       pic.lay(px, 0, 0, 0, 0, 1);
     }
@@ -507,13 +508,20 @@ function film(out: string, only?: string): void {
   for (const view of want('reel') ? (['front', 'back'] as const) : []) {
     for (let i = 0; i < 3; i++) for (let T = 0; T <= ST_REEL + 1e-9; T += 1 / 30) save(close(view, { move: 'reel', t: T }), { title: `STRUCK · ${vName(view)}`, note: 'Jolted back, his door banged open, sparks burst out' });
   }
-  // HIS DEATH, and the gear
+  // HIS DEATH: THE FURNACE EXPLODES; and the burst again at half speed
+  const deathNote = (t: number): string =>
+    t < ST_DIES.stiff ? 'Struck: he staggers, the shovel slipping from his fist' : t < ST_DIES.strike[0] ? 'He stiffens upright: his firebox overloading, white-hot, rivets popping, steam jetting, shaking' : t <= ST_DIES.hit + 1e-6 ? 'THE BURST: two frames' : t < ST_DIES.down ? 'Blown apart: his plates, his helm, his shovel and his iron flung out; the gear spinning out of the fire' : 'Scattered, smoking; the gear lies glinting where it fell';
   for (const view of want('death') ? (['front', 'back'] as const) : []) {
-    const end = view === 'front' ? ST_DIES.long + 0.8 : ST_DIES.long;
+    const end = view === 'front' ? ST_DIES.long + 0.6 : ST_DIES.long;
     for (let T = 0; T <= end + 1e-9; T += 1 / 30) {
       const t = Math.min(T, ST_DIES.long);
-      const note = t < 0.6 ? 'His fire flares, his door bursts open' : t < ST_DIES.knees ? 'The shovel flung down; to his knees' : t < ST_DIES.gear ? 'His fire going out' : t < ST_DIES.gearStill ? 'THE GEAR clatters out of his grate' : 'Cold, black iron and ash: the crank’s gear lies before him';
-      save(close(view, { move: 'dying', t, gear: T >= ST_DIES.long }), { title: `HIS DEATH · ${vName(view)}`, note });
+      save(close(view, { move: 'dying', t, fx: { which: 'blast', t: T }, gear: T >= ST_DIES.long }), { title: `HIS DEATH · ${vName(view)}`, note: deathNote(t) });
+    }
+  }
+  if (want('death')) {
+    for (let T = ST_DIES.hit - 0.45; T <= ST_DIES.hit + 0.6 + 1e-9; T += 1 / 60) {
+      const t = Math.round(T * 30) / 30;
+      save(close('front', { move: 'dying', t, fx: { which: 'blast', t } }), { title: 'HIS DEATH · the burst at half speed', note: deathNote(t) });
     }
   }
   // THE GEAR SET IN, THE CRANK TURNED, THE FURNACE GOING OUT; THE FIRE IN THE CHAINED ONE'S WAY GOING OUT
@@ -620,26 +628,29 @@ function sheet(out: string): void {
     save(side(crop(one(1.6, 'coals', 'attack', [8, 4.3], [4.5, 0.3]), 300, 130, 600, 320), crop(one(ST_COALS.hit + coalLands(6) + 0.6, 'coals', 'attack', [8, 4.3], [4.5, 0.3]), 300, 130, 600, 320)), { file: 's6_coals.png', title: 'THE COALS, OVER THE WHOLE ROOM', note: `Held high, where his ${COALS.n} coals will come down is marked round the knight (left); they come down, each a fire ${COAL_FIRE.r * 2} tiles across burning ${COAL_FIRE.burns} s (right). The gaps between are the way out.` });
     save(side(crop(one(ST_RAKE.drag[1] + 0.4, 'rake', 'rake', [4.6, 8.6]), 300, 130, 600, 320), crop(one(ST_BURST.hit + 0.35, 'ring', 'burst', [6.6, 2.0]), 300, 130, 600, 320)), { file: 's7_rake_ring.png', title: 'THE RAKE’S FIRE, AND THE FURNACE’S RING', note: `The rake (left): a band of fire ${RAKE_FIRE.r0} to ${RAKE_FIRE.r1} tiles before him, burning ${RAKE_FIRE.burns} s. The burst (right): a ring rolling out to ${RING.r1} tiles at ${RING.pace} a second, three gaps in it the way through.` });
   }
-  // 7. STRUCK, AND HIS DEATH; the gear before him
+  // 7. STRUCK, AND HIS DEATH: THE FURNACE EXPLODES; the gear
   {
-    const CW = 200;
-    const CH = 178;
-    const list: [string, number, string][] = [['reel', 0.1, 'struck'], ['dying', 0.45, 'his fire flares'], ['dying', 1.3, 'to his knees'], ['dying', 1.75, 'the gear falls out'], ['dying', ST_DIES.long, 'cold; the gear']];
-    const pic = dark(CW * 3, CH * 2);
+    const CW = 300;
+    const CH = 230;
+    const list: [string, number, string][] = [['reel', 0.1, 'struck'], ['dying', 1.2, 'white-hot, held'], ['dying', ST_DIES.hit, 'the burst'], ['dying', 1.75, 'the fireball'], ['dying', 2.0, 'flung apart'], ['dying', ST_DIES.long, 'scattered; the gear']];
+    const pic = dark(CW * 2, CH * 3);
     const labels: { x: number; y: number; text: string }[] = [];
     list.forEach(([move, t, say], i) => {
-      const ox = CW * (i % 3) + CW * 0.36;
-      const oy = CH * Math.floor(i / 3) + CH - 22;
-      if (i === 4) {
-        const [gx, gy] = fxAt('front', GEAR_REST[0] / TILE3, GEAR_REST[1] / TILE3);
-        layS(pic, STOKER_ROOM.gearDropped(2), ox + gx, oy + gy, 1);
+      const cell = dark(CW, CH);
+      const ox = CW * 0.5;
+      const oy = CH - 40;
+      if (move === 'dying' && t >= ST_DIES.hit) {
+        const fx = new Px(CW, CH);
+        blastFloor(fx, ox, oy, t, 'front');
+        cell.lay(fx, 0, 0, 0, 0, 1);
       }
-      layStoker(pic, stokerAt(move, t, 'front'), ox, oy, 1, move !== 'dying' || t < 1);
-      labels.push({ x: 2 * (CW * (i % 3) + 4), y: 2 * CH * Math.floor(i / 3) + 4, text: say });
+      layStoker(cell, stokerAt(move, t, 'front'), ox, oy, 1, move !== 'dying' || t < ST_DIES.hit);
+      const x0 = CW * (i % 2);
+      const y0 = CH * Math.floor(i / 2);
+      for (let y = 0; y < CH; y++) pic.d.set(cell.d.subarray(y * CW * 4, (y + 1) * CW * 4), ((y + y0) * pic.w + x0) * 4);
+      labels.push({ x: 2 * (x0 + 4), y: 2 * y0 + 4, text: say });
     });
-    layS(pic, STOKER_ROOM.gearDropped(2), CW * 2.5, CH * 1.55, 3);
-    labels.push({ x: 2 * (CW * 2 + 4), y: 2 * CH + 4, text: 'the gear, close' });
-    save(pic.scaled(2), { file: 's8_death.png', title: 'STRUCK, AND HIS DEATH', note: `Struck: jolted back, sparks out of his door. His death (${ST_DIES.long} s): his fire flares, the shovel flung down, to his knees; his fire goes out, cooling to black iron and ash; THE GEAR clatters out of his grate and lies before him.`, labels });
+    save(pic.scaled(2), { file: 's8_death.png', title: 'STRUCK, AND HIS DEATH: THE FURNACE EXPLODES', note: `Struck: jolted back. His death (${ST_DIES.long} s): he staggers and stiffens upright as his firebox overloads, held ${(ST_DIES.strike[0] - ST_DIES.build[0]).toFixed(2)} s (white-hot, rivets popping, steam jetting, shaking; the shovel let fall); THE BURST in two frames at ${ST_DIES.hit} s: a fireball, a shockwave over the floor out to ${BLAST.r1} tiles, his plates, his helm, his shovel and his iron flung out; all down and still by ${ST_DIES.down} s, scattered and smoking on a scorch; THE GEAR spun out of the fire, lying glinting where it fell.`, labels });
   }
   // 8. THE FURNACE, LIT AND OUT; THE FIRE IN THE CHAINED ONE'S WAY, BURNING AND GOING OUT
   {
@@ -711,7 +722,7 @@ const BODY_MOMENTS: [string, number, string][] = [
   ['attack', 1.6, 'the coals: held high'],
   ['rake', 0.7, 'the rake: held up'],
   ['burst', 1.0, 'the burst: held, roaring'],
-  ['dying', 1.3, 'to his knees'],
+  ['reel', 0.1, 'struck'],
 ];
 function body(out: string): void {
   const W = 360;

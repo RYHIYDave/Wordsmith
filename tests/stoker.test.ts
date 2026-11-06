@@ -17,6 +17,12 @@
 //      over real muscle; his rulebook: plates and cloth over what they cover, no limb poking through a plate): every pixel of his
 //      muscle that is seen, in every frame of every move, from in front, behind and either side, put back where it is on him: not
 //      one where a plate or his skirt covers it (art/stoker.ts `coverOf`); and the check sees one (a plate taken off);
+//  12. NOTHING OF HIM FLOATING (6 Nov 2026, the flue seen floating clear of him as he slumped in his death): his flue's foot set
+//      in his firebox and its pixels joined to his firebox's, in every frame of every move both ways round, till he bursts;
+//  13. HIS DEATH, THE FURNACE EXPLODES (his pick of 6 Nov 2026, “Furnace explodes (Recommended)”): the overload held a second
+//      and more, the burst in two frames; whole till then, nothing of his body after; his shovel in his fist till he lets it go,
+//      then lying still; every piece of him down by `down`, lying on the floor and still to the end; no pink or gold in his
+//      death's fire or its lights; the blast on the floor (the shockwave, the scorch) crisp, no cyan;
 //  10. THE FURNACE ROOM'S PIECES: every picture painted, crisp, no cyan but the crank's handle when it is ready; the furnace lit and
 //      out, the crank without its gear and with it, the gear's icon at the items' size with its white rim, the fire and its going out;
 //      their made copies let go by `forgetMade`.
@@ -42,9 +48,9 @@ import { stage } from '../src/art/skin';
 import type { Sheet, Stage } from '../src/art/skin';
 import { add, len, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
-import { ST_CANVAS, ST_SMEAR, STOKER_ON, armBody, armPlates, coverOf, hemOf, legBody, shovelOf, turnedPoint, turnedShape } from '../src/art/stoker';
+import { ST_CANVAS, ST_SMEAR, STOKER_ON, armBody, armPlates, coverOf, domeOf, flueOf, hemOf, inEgg, legBody, lowestOf, shovelOf, turnedPoint, turnedShape } from '../src/art/stoker';
 import { GEAR_REST, STOKER, ST_BURST, ST_COALS, ST_DIES, ST_PACE, ST_RAKE, ST_SHAPE, ST_STRIKES, smearedAt, stokerBonesOf, stokerNumbersAt } from '../src/art/stoker_moves';
-import { COALS, COAL_FIRE, COAL_SPOTS, FX_PINK, RAKE_FIRE, RING, coalLands, fxPainted, inGap, rakePasses, ringAt } from '../src/art/stoker_fx';
+import { BLAST, COALS, COAL_FIRE, COAL_SPOTS, FX_PINK, RAKE_FIRE, RING, blastAt, coalLands, fxPainted, inGap, rakePasses, ringAt } from '../src/art/stoker_fx';
 import { CRANK_TURN, FIRE_WALL, FURNACE, FURNACE_OUT, GEAR_GLINT, ROOM_IRON, ROOM_RUST, ROOM_SPRING, ROOM_STONE, STOKER_ROOM, forgetMade, paintCrank, paintGearIcon } from '../src/art/stoker_room';
 import { IRON, RUST, STONE } from '../src/art/prison';
 import { PG_SPRING, prisonInWay } from '../src/art/prison_gate';
@@ -476,4 +482,182 @@ test('11. NOTHING OF HIM THROUGH WHAT HE WEARS: not one pixel of his muscle wher
   const quad = legBody(s0, 'R').upper[0];
   assert.equal(coverOf(s0)('leg', 'R', add(quad.c, quad.ax[0])), 'the skirt', 'the front of his thigh, above the hem, is under the skirt');
   assert.ok(seen.filter((q) => q.part.startsWith('leg') && q.p[2] < hemOf(s0)).length > 50, 'his legs seen below the hem');
+});
+
+// =============================================================================================
+// 12. NOTHING OF HIM FLOATING: HIS FLUE JOINED TO HIS BACK, HIS SHOVEL IN HIS FIST OR ON THE FLOOR
+
+/** A frame painted part by part: each part's pixels, by its name. */
+function partsOf(move: string, t: number, view: (typeof VIEWS)[number], mob: Mob = MOB): { names: string[]; sheets: Sheet[] } {
+  const can = canvasOf(MOB);
+  const st = stage(paintViewOf(MOB, view), can.ax, can.ay, can);
+  const m = at(move, t);
+  const bits = mob.bits(st, m);
+  const names = partOrder(bits);
+  const sheets: Sheet[] = [];
+  paintBits({ ...st, part: (w) => { const sh = st.part(w); sheets.push(sh); return sh; } }, bits, m.s.pelvis);
+  return { names, sheets };
+}
+/** How many of the flue's pixels are not joined to his firebox (8 ways round, through his own parts: not his shovel, his coals or the gear). */
+function flueApart(move: string, t: number, view: (typeof VIEWS)[number], mob: Mob = MOB): number {
+  const { names, sheets } = partsOf(move, t, view, mob);
+  const { w, h } = sheets[0];
+  const his = new Uint8Array(w * h);
+  const flue = new Uint8Array(w * h);
+  const seen = new Uint8Array(w * h);
+  const stack: number[] = [];
+  sheets.forEach((sh, i) => {
+    const name = names[i] ?? '';
+    if (name === 'shovel' || name === 'coals' || name === 'gear') return;
+    for (let k = 0; k < w * h; k++) {
+      if (!sh.d[k * 4 + 3]) continue;
+      his[k] = 1;
+      if (name === 'flue') flue[k] = 1;
+      if (name === 'belly' && !seen[k]) {
+        seen[k] = 1;
+        stack.push(k);
+      }
+    }
+  });
+  while (stack.length) {
+    const k = stack.pop() as number;
+    const x = k % w;
+    const y = (k - x) / w;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const X = x + dx;
+      const Y = y + dy;
+      if (X < 0 || Y < 0 || X >= w || Y >= h) continue;
+      const q = Y * w + X;
+      if (his[q] && !seen[q]) {
+        seen[q] = 1;
+        stack.push(q);
+      }
+    }
+  }
+  let apart = 0;
+  let any = 0;
+  for (let k = 0; k < w * h; k++) {
+    if (!flue[k]) continue;
+    any++;
+    if (!seen[k]) apart++;
+  }
+  return any ? apart : -1;
+}
+
+test('12. NOTHING OF HIM FLOATING: his flue fixed in his back in every frame of every move while he stands, both ways round', () => {
+  const faults: string[] = [];
+  // (the flue's foot set in his firebox's domed top, in every frame; and painted, joined to his firebox; till he bursts)
+  for (const move of [...LIVING, 'dying']) {
+    for (const t of framesOf(MOB, move)) {
+      if (move === 'dying' && t >= ST_DIES.hit - 1e-9) continue;
+      const s = at(move, t).s;
+      const d = domeOf(s);
+      const u = inEgg({ c: d.c, ax: d.ax }, flueOf(s)[0]);
+      if (Math.hypot(u[0], u[1], u[2]) > 0.95) faults.push(`${move} @${t.toFixed(2)}: the flue's foot out of his back (${Math.hypot(u[0], u[1], u[2]).toFixed(2)})`);
+      for (const view of VIEWS) {
+        const n = flueApart(move, t, view);
+        if (n !== 0) faults.push(`${said(move, view, t)}: ${n < 0 ? 'no flue painted' : `${n} pixels of the flue apart from him`}`);
+      }
+    }
+  }
+  // (and the check sees a flue come away: lifted clear of his back by 24 of his lengths, it is found apart from him from in front;
+  // from behind it would still lie over his back in the picture, which is why its foot is held in his firebox as well)
+  const lift = (p: V3): V3 => [p[0], p[1], p[2] + 24];
+  const lifted: Mob = { ...MOB, id: 'stoker (flue lifted)', bits: (st, m) => MOB.bits(st, m).map((b) => (b.part !== 'flue' ? b : b.shape.k === 'rod' ? { ...b, shape: { ...b.shape, a: lift(b.shape.a), b: lift(b.shape.b) } } : b.shape.k === 'band' ? { ...b, shape: { ...b.shape, ring: { ...b.shape.ring, c: lift(b.shape.ring.c) } } } : b)) };
+  assert.ok(flueApart('stand', 0, 'front', lifted) > 50, 'a flue lifted clear of him seen apart');
+  assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
+});
+
+// =============================================================================================
+// 13. HIS DEATH: THE FURNACE EXPLODES
+
+/** His pieces at a moment of his death (what is painted, by piece; not the fire or its light). */
+function piecesAt(t: number): Map<string, Bit[]> {
+  const out = new Map<string, Bit[]>();
+  for (const b of MOB.bits(stageOf(), at('dying', t)) as Bit[]) {
+    if (b.piece === 'fire' || b.shape.k === 'glow') continue;
+    const g = out.get(b.piece) ?? [];
+    g.push(b);
+    out.set(b.piece, g);
+  }
+  return out;
+}
+const lowOfBits = (bits: ReadonlyArray<Bit>): number => Math.min(...bits.map((b) => lowestOf(b.shape)));
+const whereOf = (bits: ReadonlyArray<Bit>): string => bits.map((b) => JSON.stringify(b.shape, (k, v) => (k === 'skin' ? undefined : typeof v === 'number' ? Math.round(v * 100) / 100 : v))).join('|');
+
+test('13. HIS DEATH, THE FURNACE EXPLODES: held, then the burst in two frames; nothing of his body left; every piece of him down and lying still; no pink or gold; the blast on the floor', () => {
+  const D0 = ST_DIES;
+  const faults: string[] = [];
+  // (the build held a second and more; the burst in two of his death's frames, landing on the second)
+  assert.ok(D0.strike[0] - D0.build[0] >= 1.0, 'the overload held a second and more');
+  assert.equal(Math.round((D0.strike[1] - D0.strike[0]) * 20), 2, 'the burst in two frames');
+  assert.equal(D0.hit, D0.strike[1]);
+  assert.ok(framesOf(MOB, 'dying').some((t) => Math.abs(t - D0.hit) < 1e-6), 'the burst lands on a frame of his death');
+  // (whole until he bursts; from the burst, nothing of his body: only the pieces he flies apart into)
+  const body = /^(arm|leg)[LR]$|^(skirt|belly)$/;
+  for (const t of framesOf(MOB, 'dying')) {
+    const parts = new Set((MOB.bits(stageOf(), at('dying', t)) as Bit[]).map((b) => b.part));
+    const has = [...parts].filter((p) => body.test(p));
+    if (t < D0.hit - 1e-6 && has.length < 6) faults.push(`dying @${t.toFixed(2)}: not whole before the burst (${has.join(',')})`);
+    if (t >= D0.hit - 1e-6 && has.length) faults.push(`dying @${t.toFixed(2)}: his body left after the burst (${has.join(',')})`);
+  }
+  // (his shovel in his fist until he lets it go; then lying still on the floor until the burst)
+  let was: string | null = null;
+  for (const t of framesOf(MOB, 'dying')) {
+    if (t < D0.drop) {
+      const s = stokerBonesOf('dying' as 'stand', t);
+      const v = stokerNumbersAt('dying' as 'stand', t);
+      if (len(sub(s.handR, [v.gx, v.gy, v.gz])) > 0.6) faults.push(`dying @${t.toFixed(2)}: his right fist ${len(sub(s.handR, [v.gx, v.gy, v.gz])).toFixed(1)} off the grip`);
+      if (len(sub(shovelOf(s, [v.fx, v.fy, v.fz], v.hold).grip, s.handR)) > 1e-6) faults.push(`dying @${t.toFixed(2)}: the shovel not in his fist`);
+    } else if (t >= D0.drop + 0.7 && t < D0.hit - 1e-6) {
+      const sh = piecesAt(t).get('shovel') ?? [];
+      const low = lowOfBits(sh);
+      if (!sh.length || low < 0 || low > 1) faults.push(`dying @${t.toFixed(2)}: the shovel not lying on the floor (${low.toFixed(2)})`);
+      const w = whereOf(sh);
+      if (was !== null && w !== was) faults.push(`dying @${t.toFixed(2)}: the shovel moving as it lies`);
+      was = w;
+    }
+  }
+  // (every piece of him down by `down`, lying on the floor, still, to the end)
+  let before: Map<string, Bit[]> | null = null;
+  let n = 0;
+  for (const t of framesOf(MOB, 'dying')) {
+    if (t < D0.down) continue;
+    const now = piecesAt(t);
+    n = now.size;
+    for (const [piece, bits] of now) {
+      const low = lowOfBits(bits);
+      if (low < 0 || low > 1.0) faults.push(`dying @${t.toFixed(2)}: ${piece} not lying on the floor (lowest ${low.toFixed(2)})`);
+      if (before && whereOf(bits) !== whereOf(before.get(piece) ?? [])) faults.push(`dying @${t.toFixed(2)}: ${piece} moving after it is down`);
+    }
+    before = now;
+  }
+  assert.ok(n >= 30, `his pieces lying scattered: ${n}`);
+  // (his fire an honest orange-white: no pink or gold from the overload on, in his pictures or their lights; the fireball as he bursts)
+  const PG = [FLAME[0], FLAME[1], FLAME[2], FLAME[3], FLAME[4]].map(keyOf);
+  for (const view of VIEWS) {
+    for (const t of framesOf(MOB, 'dying')) {
+      if (t < D0.build[0]) continue;
+      const p = deathOfMob(MOB, t / MOB.dieTime, view);
+      const pg = countOf(p.px, [FLAME[0], FLAME[1], FLAME[2], FLAME[3], FLAME[4]]);
+      if (pg) faults.push(`dying ${view} @${t.toFixed(2)}: ${pg} pixels of pink or gold`);
+      if (p.lights.some((l) => PG.includes(keyOf(l.color)))) faults.push(`dying ${view} @${t.toFixed(2)}: a pink or gold light`);
+    }
+    const blast = deathOfMob(MOB, D0.hit / MOB.dieTime, view);
+    assert.ok(countOf(blast.px, [EMBER[3], EMBER[4]]) > 400, `the fireball as he bursts (${view})`);
+  }
+  // (the blast on the floor: the shockwave out to its tiles, fire then the scorch; crisp, no cyan)
+  assert.equal(blastAt(-0.01), null);
+  assert.ok(Math.abs((blastAt(0) as number) - BLAST.r0) < 1e-9 && BLAST.r1 >= 2.5, 'the shockwave out to three tiles');
+  for (const view of VIEWS) {
+    const ring = fxPainted('blast', D0.hit + 0.12, view);
+    const end = fxPainted('blast', D0.long, view);
+    for (const [p, what] of [[ring, 'rolling'], [end, 'scorched']] as const) {
+      if (crisp(p.px)) faults.push(`the blast ${view} ${what}: not crisp`);
+      if (cyanIn(p.px, p.lights)) faults.push(`the blast ${view} ${what}: cyan`);
+    }
+    if (countOf(ring.px, [EMBER[1], EMBER[2], EMBER[3], EMBER[4]]) < 300) faults.push(`the blast ${view}: its ring of fire ${countOf(ring.px, EMBER)}`);
+    if (solid(end.px) < 200 || countOf(end.px, [EMBER[2], EMBER[3], EMBER[4]]) > 0) faults.push(`the blast ${view}: its scorch at the end`);
+  }
+  assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
 });

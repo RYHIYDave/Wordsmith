@@ -23,7 +23,7 @@ import { EMBER } from './props';
 import { TILE3 } from './new_mobs3';
 import { GRID } from './skeleton';
 import type { V3 } from './skeleton';
-import { RAKE_ARC, ST_BURST, ST_COALS, ST_RAKE } from './stoker_moves';
+import { RAKE_ARC, ST_BURST, ST_COALS, ST_DIES, ST_RAKE } from './stoker_moves';
 import { ST_ASH, ST_CRUST, ST_SMOKE, noise2 } from './stoker';
 
 const TAU = Math.PI * 2;
@@ -368,14 +368,65 @@ export function ringFloor(px: Px, ox: number, oy: number, t: number, view: FxVie
   for (const p of pts) flames(px, ox + p.x, oy + p.y, 15, k, since, p.i + 51, p.i % 4 === 0 ? lights : undefined);
 }
 
+// =============================================================================================
+// HIS DEATH'S BLAST ON THE FLOOR (his pick of 6 Nov 2026, “Furnace explodes (Recommended)”): as he bursts (art/stoker.ts
+// `ST_DEATH.hit`) a SHOCKWAVE rolls out over the floor from where he stood, a ring of fire and dust, out to `r1` tiles at `pace`
+// tiles a second (the main chat may make it hurt or not: a hero within `deep` of its front as it passes); and where he stood the
+// floor is left SCORCHED, `scorch` tiles round, embers dying in it and smoke going up, to the end of his death and after.
+
+/** The shockwave: from `r0` to `r1` tiles round him at `pace` tiles a second, `deep` tiles deep; the scorch where he stood, `scorch` tiles round. */
+export const BLAST = { r0: 0.5, r1: 3.0, pace: 10, deep: 0.5, scorch: 1.2 } as const;
+/** How far out the shockwave's front is (tiles) `since` seconds after he bursts, or null before it and once it has passed `r1`. */
+export function blastAt(since: number): number | null {
+  if (since < 0) return null;
+  const r = BLAST.r0 + BLAST.pace * since;
+  return r > BLAST.r1 + BLAST.deep ? null : r;
+}
+export function blastFloor(px: Px, ox: number, oy: number, t: number, view: FxView, lights?: Light[]): void {
+  const since = t - ST_DIES.hit;
+  if (since < 0) return;
+  // the scorch where he stood: soot, embers dying in it, smoke going up
+  const grow = clamp01(since / 0.15);
+  for (let r = 0; r <= BLAST.scorch * grow; r += 0.4) {
+    const n = Math.max(1, Math.round((TAU * r) / 0.45));
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + r;
+      const [x, y] = fxAt(view, r * Math.cos(a), r * Math.sin(a));
+      scorch(px, ox + x, oy + y, 12, since + i * 0.13, Math.round(a * 11 + r * 17) + 7, 1);
+    }
+  }
+  if (since < 0.8) flames(px, ox, oy, 26 * (1 - since / 0.8) + 6, 1 - since / 0.8, since, 61, lights);
+  // the shockwave: a ring of fire and dust rolling out over the floor, thinning as it goes
+  const front = blastAt(since);
+  if (front === null) return;
+  const k = 1 - 0.7 * clamp01((front - BLAST.r0) / (BLAST.r1 - BLAST.r0));
+  const pts: { x: number; y: number; i: number }[] = [];
+  const step = (0.55 / front) / D;
+  let i = 0;
+  for (let a = 0; a < 360; a += step, i++) {
+    const [x, y] = fxAt(view, front * Math.cos(a * D), front * Math.sin(a * D));
+    pts.push({ x, y, i });
+  }
+  pts.sort((p, q) => p.y - q.y);
+  for (const p of pts) flames(px, ox + p.x, oy + p.y, 9, k, since, p.i + 71, p.i % 5 === 0 ? lights : undefined);
+  // (dust thrown up in a band behind its front)
+  for (let j = 0; j < 90; j++) {
+    const a = hash(j, 1, 231) * TAU;
+    const r = Math.max(BLAST.r0, front - BLAST.deep * hash(j, 2, 231) * 1.6);
+    const [x, y] = fxAt(view, r * Math.cos(a), r * Math.sin(a));
+    px.set(Math.round(ox + x), Math.round(oy + y - 3 - 8 * hash(j, 3, 231) * k), ST_SMOKE[j % 3 === 0 ? 1 : 2]);
+  }
+}
+
 /** The painted canvases the film and the sheet lay these on (and the game would): his floor point at (ax, ay). */
 export const FX_CANVAS: FxCanvas = { w: 900, h: 560, ax: 450, ay: 260 };
-/** Each of the three, painted alone on its own canvas, his floor point at its anchor (for the sheet, the tests and the game). */
-export function fxPainted(which: 'coals' | 'rake' | 'ring', t: number, view: FxView, aim: readonly [number, number] = [4, 0]): { px: Px; lights: Light[] } {
+/** Each of the four (the coals, the rake, the burst's ring, his death's blast), painted alone on its own canvas, his floor point at its anchor (for the sheet, the tests and the game). */
+export function fxPainted(which: 'coals' | 'rake' | 'ring' | 'blast', t: number, view: FxView, aim: readonly [number, number] = [4, 0]): { px: Px; lights: Light[] } {
   const px = new Px(FX_CANVAS.w, FX_CANVAS.h);
   const lights: Light[] = [];
   if (which === 'coals') coalsFloor(px, FX_CANVAS.ax, FX_CANVAS.ay, t, view, aim, lights);
   else if (which === 'rake') rakeFloor(px, FX_CANVAS.ax, FX_CANVAS.ay, t, view, lights);
+  else if (which === 'blast') blastFloor(px, FX_CANVAS.ax, FX_CANVAS.ay, t, view, lights);
   else ringFloor(px, FX_CANVAS.ax, FX_CANVAS.ay, t, view, undefined, lights);
   return { px, lights };
 }

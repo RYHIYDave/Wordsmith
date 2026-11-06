@@ -26,6 +26,11 @@ HERE IS IN THE GAME: nothing of the game imports it (its test proves it), and it
   real shapes, never circles and squares slapped together; one body, muscle melted into muscle; nothing passing through the body
   (plates and cloth over what they cover: no limb poking through a plate).
 
+- 6 Nov 2026, asked how his death should end: “No man, too many death animations are fall to knees, then fall forward, elbows
+  out.  Make him explode in fire or completely burn to ash or something”. Offered three; his pick: “Furnace explodes
+  (Recommended)”, offered as: his firebox swells white-hot, plates bulging and rivets popping, then he bursts in a blast of fire
+  and flying iron. The gear spins out of the fireball and clangs down.
+
 ## His body reshaped (6 Nov 2026, “Reshape his body first (Recommended)”)
 
 Only his body changed (src/art/stoker.ts): his firebox chest, flue, shovel, colours, every move's timing and pose
@@ -65,18 +70,19 @@ Only his body changed (src/art/stoker.ts): his firebox chest, flue, shovel, colo
 
 ## The pictures (docs/mockups/stoker/pictures/)
 
-- `stoker_body.png` (1200 by 6139, new, 6 Nov; made again on the plates as true solids): HIS BODY BEFORE AND NOW, side by side: standing from in front, from behind and
+- `stoker_body.png` (1200 by 6185, new, 6 Nov; made again on the plates as true solids): HIS BODY BEFORE AND NOW, side by side: standing from in front, from behind and
   from the side (his right, truly turned, not flipped), three times the game's size; at the game's own size from in front and
   from behind; and six moments of his moves from in front, twice the game's size (walking, the coals into his firebox, the coals
-  held high, the rake held up, the burst held, to his knees).
-- `stoker_sheet.png` (1200 by 7478, made again on his new body, and again on the plates as true solids): him beside the knight from in front and from behind, three times
+  held high, the rake held up, the burst held, struck).
+- `stoker_sheet.png` (1200 by 8202, made again on his new body, on the plates as true solids, and on his new death): him beside the knight from in front and from behind, three times
   as big; in his furnace room at the game's size (one phone screen); the key moments of each attack from in front and behind; the
-  coals' marks and fires, the rake's sheet of fire and the furnace's ring over the whole room; struck and his death, the gear
-  before him; the furnace lit and out; the fire in the Chained One's way burning and going out; the crank without its gear, with
+  coals' marks and fires, the rake's sheet of fire and the furnace's ring over the whole room; struck and HIS DEATH, THE FURNACE
+  EXPLODING (white-hot and held, the burst, the fireball and the shockwave, flung apart, scattered with the gear); the furnace lit and out; the fire in the Chained One's way burning and going out; the crank without its gear, with
   it, turned; the gear as an item.
-- `stoker.mp4` (made again on his new body, and again on the plates as true solids; 1200 by 872, 30 fps, H.264 yuv420p, captioned, under 60 s): his stand, his walk, each
+- `stoker.mp4` (made again on his new body, on the plates as true solids, and on his new death; 1200 by 872, 30 fps, H.264 yuv420p, captioned, 60.4 s): his stand, his walk, each
   attack from in front and behind in a stand-in furnace room on floor 3's own floor and walls with the knight; the coals and the
-  rake over the whole room; each strike at half speed; struck; his death and the gear falling out; the crank (gear missing, set
+  rake over the whole room; each strike at half speed; struck; HIS DEATH, THE FURNACE EXPLODING, from in front and from behind,
+  with the shockwave and the scorch on the floor, and the burst again at half speed; the crank (gear missing, set
   in, turned), the furnace going out, the fire in the Chained One's way going out.
 
 ## What he is (src/art/stoker.ts)
@@ -91,7 +97,10 @@ hulking figure fused with the furnace:
   own embers), brighter to white as he winds up (`heat`); the iron about it glowing a dull red (`ST_HOT`). Hinged on his left: it
   swings open (112 degrees) on its own as he scoops, bursts and dies, the fire within seen through it.
 - HIS FLUE: a stove-pipe out of his back behind his left shoulder, banded, capped, up past his head, venting smoke and sparks
-  (more as he breathes out, pouring out of him when he is spent).
+  (more as he breathes out, pouring out of him when he is spent). FIXED IN HIS BACK (6 Nov, after it was seen floating clear of him as
+  he slumped in his old death): every point of it is fixed in the firebox's own frame (`FLUE`, `flueOf`), its foot set in the iron
+  of the firebox's domed top, so that it tilts and moves with him whatever he does; standing, it is where it always was. As he
+  bursts it is flung off with the rest of him.
 - HIS ARMS AND LEGS, SCULPTED: muscle in wrapped leather under iron plates shaped to it: the pauldrons (a cop and three lames),
   a band round each upper arm, couters, vambraces, gauntlets; the skirt over his thighs, poleyns at his knees, iron boots with a
   toe and a heel (see "His body reshaped" above).
@@ -153,11 +162,19 @@ lines of the arms), a big wind-down; and its area marked on the floor in the ene
 | spent | to 2.2 s, heaving, his fire burnt low, smoke pouring out of him (the moment to hit him); the door clanged shut 2.55 to 2.75 s; at his stand by 3.4 s |
 
 - STRUCK (`ST_REEL`, 0.4 s): jolted back, his door banged open a crack, sparks burst out of it.
-- HIS DEATH (`ST_DIES`, **3.2 s**): struck; his fire flares white and his door bursts open as he rears back (to 0.6 s); the shovel
-  flung down at **0.7 s** (it falls and lies at his right: `fall`); he sinks to his knees by **1.3 s** and slumps (1.9 s); his fire
-  goes out, cooling to black iron and ash (0.7 to 2.7 s), smoke rising thin off him; **THE GEAR** clatters out of his open grate at
-  **1.55 s**, falls, bounces twice, rolls over flat and lies still before him by **2.45 s**, at `GEAR_REST` (88 of his lengths
-  forward, 14 to his left: **2.25 tiles before him**).
+- HIS DEATH: THE FURNACE EXPLODES (`ST_DIES`, the same as art/stoker.ts `ST_DEATH`; **4.2 s**, shown at the game's 20 frames a
+  second; his pick of 6 Nov, “Furnace explodes (Recommended)”). No kneeling, no falling forward:
+
+| | |
+|---|---|
+| struck | jolted back (0.1 s); staggering, his fire flaring; **the shovel let fall from his fist at 0.4 s**: it drops at his right and lies along the floor |
+| HE STIFFENS UPRIGHT | by **0.6 s**: knees locked straight, chest thrown out, head flung back, arms rigid out from his sides, fists clenched; his feet never leave the floor |
+| THE OVERLOAD, HELD | **0.3 to 1.45 s** (a second and more, the warning): his grate and every seam and band of his firebox glowing orange to white-hot (`heat` to 1.6), his firebox and its dome bulging (to 9 in 100 larger, throbbing), 22 rivets popping off its bands in sparks, steam and smoke jetting harder and harder from his flue, his shoulders, over his door and his hips, all of him above his knees shaking (`ST_SHAKE_DEATH`: 1.1 of his lengths, 15 a second); his eyes white-hot (no pink, no gold: an honest fire) |
+| THE BURST | **two frames: 1.45 to 1.55 s** (Movement 9): the first his firebox cracking open white, a flash; the second, at **1.55 s** (`hit`), the blast |
+| THE FIREBALL | from 1.55 s: already great in the frame he bursts (some 37 of his lengths round), swelling to 60 and rising, white at its heart, orange, red, breaking up into smoke by **2.7 s**; sparks and burning bits flung out of it; then a column of smoke where he stood, thinning to the end |
+| THE SHOCKWAVE (art/stoker_fx.ts `BLAST`, `blastFloor`, `blastAt`) | a ring of fire and dust rolling out over the floor from 0.5 to **3 tiles** at 10 tiles a second (0.25 s), 0.5 tiles deep; the main chat may make it hurt or not (a hero within `deep` of its front as it passes). Where he stood the floor is left scorched, **1.2 tiles round**, to the end and after |
+| FLUNG APART | **every piece a real piece of him** (`blastBits`): his pauldrons' cops and every lame, the bands round his arms, his couters, vambraces and gauntlets, his poleyns and their lames, his boots and his feet, his helm, his gorget, his flue, his fire-door, his shovel (blown from where it lay), and 12 chunks of his firebox's iron, torn: each flung out from the blast, 1 to 2.7 tiles away and 14 to 48 of his lengths above where it starts (his boots and feet 0.4 to 1.1 tiles and lower, his helm up to 3 tiles and 60 high), tumbling end over end once to thrice, landing, hopping and sliding, then lying as such a piece lies (a cop on its back, a cup on its rim, a tube on its side, a shard flat, the rest along their length), smoking for 2.4 s. **Every piece down and still by 2.9 s** (`down`). His muscle, his leather and his skirt burn in the blast: **nothing of his body is left standing**, only the scorch and the scattered iron |
+| THE GEAR | spinning out of the fireball as he bursts (1.55 s), flung high, clanging down onto its edge (0.7 s later), bouncing twice, rolled over flat and **lying glinting at `GEAR_REST` by 2.85 s** (88 of his lengths forward, 14 to his left: **2.25 tiles before him**, as before) |
 
 ## What his fire does on the floor (src/art/stoker_fx.ts)
 
@@ -209,20 +226,22 @@ names here are the art's own, for the main chat to match or rename.)
   out; a hero within `RING.deep` of it as it passes, and not in a gap (`inGap`, degrees off his forward), is struck once.
 - Draw each with the painters above at his floor point (the ring's far and near halves can be split, `ringFloor(..., half)`, to
   sort with the hero).
-- HIS DEATH: play `die`; at its end lay the gear (`gearDropped`) at `GEAR_REST` as the thing to pick up; carried, it is the
-  item `gearIcon()`.
+- HIS DEATH: play `die` (4.2 s); under it, at his floor point, lay his death's blast on the floor (`blastFloor`, from his
+  death's start: it begins at `ST_DIES.hit`); if the shockwave is to hurt, a hero within `BLAST.deep` of `blastAt(since)` as it
+  passes. At its end lay the gear (`gearDropped`) at `GEAR_REST` as the thing to pick up (his death's last frame shows it lying
+  there); the scattered pieces lie in his death's last frame for the game to fade; carried, the gear is the item `gearIcon()`.
 - THE ROOM: the furnace lit in the side area's wall; the crank beside it, `missing` until the hero brings the gear, then `set`
   (ready, glowing); used: `turning` (1.2 s), then `turned`; then the furnace `going` (1.6 s) and `out`; and in the Chained One's
   gateway the fire `going` (1.5 s) and `gone` (the way open).
 
-## The checks (tests/stoker.test.ts, 11; all pass, the 11th at nothing)
+## The checks (tests/stoker.test.ts, 13; all pass, the 11th at nothing)
 
 1. the switch off; nothing of the game imports any of the four files;
 2. EVERY MOVE THROUGH EVERY BOSS CHECK (art/boss_checks.ts `checkBoss`: SLIDE, FLOOR, ARM, THROUGH, JERK, JUMP, BLOW, HIPS, ALIVE,
    STRIKE), every frame of all seven moves, from in front and truly from behind, and every handover: **nothing found**;
 3. HIS LIGHTNING STRIKES: each of the three in two frames, landing on the second; smeared then and in no other frame;
 4. every frame both ways round: nothing cyan, the pink rim while he lives and none as he dies, crisp;
-5. nothing cut off; 6. nothing of him in the floor (his boots on their toes, his shins as he kneels, the gear as it rolls flat);
+5. nothing cut off; 6. nothing of him in the floor (his boots on their toes, every piece of him as it flies and lies, the gear as it rolls flat);
 7. the shovel in his fist in every frame he holds it, his left fist on its haft when it holds it; his eyes the enemy's pink; his
    fire an honest orange; the coals blazing on the shovel held high;
 8. his size (twice the knight), his walk, each attack held a third of a second and more, each marked before it comes; the coals',
@@ -250,6 +269,19 @@ the forearm, into the gauntlet), the poleyn's cup and its lames above and below 
 His skirt is laid over his thighs as they are posed (never closer in than their muscle and 3.2 of his lengths of slack), and his
 thighs are painted only below its hem (and a little up under it): what the skirt covers is not painted, so nothing of them can
 show through it from any side.
+
+12. NOTHING OF HIM FLOATING (new, 6 Nov; his rules: nothing floating, nothing detached, loose things follow): in every frame of
+    every move till he bursts, his flue's foot set in his firebox's domed top, and, painted part by part from in front and from
+    behind, every pixel of his flue joined to his firebox through his own parts; the check is shown to see a flue lifted clear of
+    him;
+13. HIS DEATH, THE FURNACE EXPLODES (new, 6 Nov): the overload held a second and more, the burst in two of his death's frames,
+    landing on one; whole till the burst, nothing of his body after it; his right fist on the shovel's grip till he lets it go
+    (0.4 s), then the shovel lying still on the floor till the burst; every piece of him (46, the gear among them) down by
+    2.9 s, lying on the floor (its lowest point within a length of it) and still to the end; no pink or gold in his death's
+    pictures or their lights from the overload on, both ways round; the fireball as he bursts; the blast on the floor (its ring
+    of fire as it rolls, its scorch at the end, no fire left in it) crisp, no cyan. His death also goes through every boss check
+    (2: struck, staggering and stiffening, his feet gripping, nothing jerky), and through 4, 5 and 6 (crisp, no rim as he dies,
+    nothing cut off, nothing in the floor) in every frame.
 
 **The boss checks' head** (`stokerSolids`, art/stoker_moves.ts): the head is now the helm as it is painted (`helmOf`: its middle
 1.5 below the helm's own and 0.7 forward, 10 deep, 11.2 wide, 11 high), and the neck the gorget (8 thick, was 6.5). Every boss check

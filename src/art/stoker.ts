@@ -41,6 +41,10 @@ const D = Math.PI / 180;
 const fr = (t: number): number => t - Math.floor(t);
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 const tone5 = (v: number): number => Math.max(0, Math.min(4, Math.round(v)));
+const smooth = (a: number, b: number, t: number): number => {
+  const u = clamp01((t - a) / (b - a));
+  return u * u * (3 - 2 * u);
+};
 
 // =============================================================================================
 // HIS COLOURS: floor 3's (torchlit dark, black iron, ember orange, soot and rust); fire an honest orange; the enemy's pink and gold
@@ -132,7 +136,35 @@ export function shovelOf(s: Skeleton, faceHint: V3, hold: number = SHOVEL.grip):
 // =============================================================================================
 // WHAT A MOMENT OF A MOVE SAYS OVER AND ABOVE THE BONES (art/stoker_moves.ts says it)
 
+/**
+ * HIS DEATH: THE FURNACE EXPLODES (his pick of 6 Nov 2026, “Furnace explodes (Recommended)”). Struck, he staggers and STIFFENS
+ * UPRIGHT as his firebox overloads (`build`: held and readable: his grate and every seam glowing orange to white-hot, his plates
+ * bulging, rivets popping off in sparks, steam and smoke jetting from his flue and his joints, his shovel let fall from his fist
+ * at `drop`, his body shaking); then THE BURST in two frames (`strike`, landing at `hit`: his rulebook's Movement 9): a blast of
+ * fire and smoke, a shockwave over the floor (art/stoker_fx.ts `BLAST`), his plates, his pauldrons' lames, his helm, his shovel and
+ * chunks of his firebox flung out spinning, every one a real piece of him, bouncing and clattering down to lie scattered and
+ * smoking by `down`; THE GEAR spinning out of the fireball, clanging down and lying glinting at `GEAR_REST` by `gearStill`. Nothing
+ * of his body is left standing. Seconds; the game shows his death at 20 frames a second.
+ */
+export const ST_DEATH = {
+  long: 4.2,
+  jolt: 0.1,
+  stiff: 0.6,
+  drop: 0.4,
+  build: [0.3, 1.45] as const,
+  strike: [1.45, 1.55] as const,
+  hit: 1.55,
+  fire: 1.15,
+  down: 2.9,
+  gear: 1.55,
+  gearStill: 2.85,
+} as const;
+/** How hard he shakes as his firebox overloads (his lengths), and how fast. */
+export const ST_SHAKE_DEATH = { amp: 1.1, hz: 15 } as const;
+
 export interface StokerSay {
+  /** His bones at a moment of his death (for the pieces he flies apart into, cut from him as he is at the burst). */
+  bonesAt?: (t: number) => Skeleton;
   /** His fire: 0 out; 0.6 or so as he breathes; 1 roaring as he winds up; 1.5 white-hot. */
   heat: (m: Moment) => number;
   /** His fire-door: 0 shut, 1 flung wide (110 degrees). */
@@ -206,14 +238,24 @@ export function doorOf(s: Skeleton, k: number): { c: V3; u: V3; v: V3; hinge: V3
 export function mouthOf(s: Skeleton): V3 {
   return doorFrameOf(s).c;
 }
-/** His flue: a stove-pipe out of his back behind his left shoulder, up past his head, bent back at an elbow; its points, foot to cap. */
+/**
+ * His flue: a stove-pipe out of his back behind his left shoulder, up past his head, bent back at an elbow; its points, foot to
+ * cap. IT IS PART OF HIS FIREBOX: every point of it is fixed in the firebox's own frame (its domed top's middle, the chest's
+ * forward, left and up), so that it never comes away from his back, and tilts and sinks with him as he slumps and kneels. Its foot
+ * is set in the dome (`FLUE[0]`, inside its skin: the pipe comes up out of the iron); the rest are where his standing flue always
+ * was (his standing pose's own, worked out once: 6 Nov 2026, after the flue was seen floating clear of him as he slumped in his
+ * death, its foot having been set off the curl of his back rather than on the firebox).
+ */
+export const FLUE: ReadonlyArray<V3> = [
+  [-13.9, 5.9, 4.4],
+  [-28.42, 9.5, 10.94],
+  [-25.95, 12.0, 37.0],
+  [-27.99, 12.0, 46.64],
+];
 export function flueOf(s: Skeleton): V3[] {
-  const [uf, ul, uu] = s.upper;
-  const foot = add(add(add(lerp3(s.back, s.neck, 0.45), mul(uf, -(B.ribDeep + 2.0))), mul(ul, 9.5)), mul(uu, 0));
-  const a = add(foot, add(mul(uf, -6.5), mul(uu, 2.5)));
-  const b = add(a, add(add(mul(uu, 26), mul(uf, -3)), mul(ul, 2.5)));
-  const c = add(b, add(mul(uu, 9), mul(uf, -4)));
-  return [foot, a, b, c];
+  const [cf, cl, cu] = s.chest;
+  const c = domeOf(s).c;
+  return FLUE.map(([f, l, u]) => add(add(add(c, mul(cf, f)), mul(cl, l)), mul(cu, u)));
 }
 export const FLUE_R = 4.4;
 
@@ -243,7 +285,7 @@ export function coalAt(heat: number, n: number): string {
 }
 
 /** HIS FIREBOX: cast iron, two riveted bands round it, a seam down its front and its back, soot streaked up it; the iron about the door glowing red with the heat; within the door's frame (when it is open) the fire. */
-function bellySkin(s: Skeleton, heat: number, door: number, cold: number, t: number): Skin {
+function bellySkin(s: Skeleton, heat: number, door: number, cold: number, t: number, seams = 0): Skin {
   const b = bellyOf(s);
   const iron = ironOf(cold);
   return (u, tone) => {
@@ -270,6 +312,8 @@ function bellySkin(s: Skeleton, heat: number, door: number, cold: number, t: num
     if (x > 0.4 && fx < 2.2 && fy < 2.2 && (fx > -0.6 || fy > -0.6)) return iron[tone5(tone + 1)];
     // the bands: at a third up and a third down, riveted
     const band = Math.abs(Math.abs(up) - 9.5) < 1.6;
+    // (overloading as he dies: every seam and band glowing, orange to white-hot)
+    if (seams > 0.02 && (band || Math.abs(Math.abs(up) - 9.5) < 2.3 || (Math.abs(y) < 0.04 && x < 0.2)) && noise2(across * 0.4 + t * 6, up * 0.4, 151) < 0.25 + seams) return EMBER[Math.min(4, 1 + Math.floor(seams * 3.4))];
     if (band) {
       const ang = Math.atan2(y, x);
       const rivet = Math.abs(fr(ang / (TAU / 22)) - 0.5) < 0.12 && Math.abs(Math.abs(up) - 9.5) < 0.8;
@@ -291,10 +335,10 @@ function bellySkin(s: Skeleton, heat: number, door: number, cold: number, t: num
   };
 }
 /** The firebox's domed top: plain cast iron, a ring of rivets round its foot, soot. */
-function domeSkin(cold: number): Skin {
+function domeSkin(cold: number, seams = 0, t = 0): Skin {
   const iron = ironOf(cold);
   return (u, tone) => {
-    if (Math.abs(u[2] - 0.22) < 0.07) return fr(Math.atan2(u[1], u[0]) / (TAU / 26)) < 0.3 ? iron[tone5(tone + 1)] : iron[tone5(tone - 1)];
+    if (Math.abs(u[2] - 0.22) < 0.07) return seams > 0.02 && noise2(u[0] * 5 + t * 6, u[1] * 5, 153) < 0.25 + seams ? EMBER[Math.min(4, 1 + Math.floor(seams * 3.4))] : fr(Math.atan2(u[1], u[0]) / (TAU / 26)) < 0.3 ? iron[tone5(tone + 1)] : iron[tone5(tone - 1)];
     if (cold > 0.55 && noise2(u[0] * 4, u[1] * 4, 57) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
     return iron[tone5(tone - (noise2(u[0] * 2.5 + 3, u[1] * 2.5, 59) > 0.7 ? 1 : 0))];
   };
@@ -807,7 +851,7 @@ function armBits(put: Put, s: Skeleton, side: 'L' | 'R', haft: { top: V3; way: V
   for (const e of A.forearm) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(A.fore, e, seed + 1, cold, 4.2) });
   // THE PLATES, each laid round the muscle under it: the pauldron (its cop over the shoulder, riveted, its three lames shingled
   // down the arm), the band round the upper arm, the couter's cup over the elbow, the vambrace narrowing to the wrist
-  for (const pl of armPlates(A, side)) put(pl.part, `paul${side}`, { k: 'ball', c: pl.e.c, ax: pl.e.ax, skin: plateSkin(pl, cold) });
+  for (const pl of armPlates(A, side)) put(pl.part, pl.part, { k: 'ball', c: pl.e.c, ax: pl.e.ax, skin: plateSkin(pl, cold) });
   // (the couter's fan, out over the side of the elbow)
   {
     const el = A.up.b;
@@ -843,7 +887,7 @@ function legBits(put: Put, s: Skeleton, side: 'L' | 'R', cold: number): void {
   for (const e of G.upper) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(G.thigh, e, seed, cold, 5.4, hemOf(s) + 0.5) });
   for (const e of G.lower) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(G.shin, e, seed + 1, cold, 4.8) });
   // THE PLATES: the poleyn (a cup fitting the front of the knee, a lame above it on the thigh and one below on the shin), the boot's cuff up the calf, flared at its top
-  for (const pl of legPlates(G, side)) put(pl.part, `knee${side}`, { k: 'ball', c: pl.e.c, ax: pl.e.ax, skin: plateSkin(pl, cold) });
+  for (const pl of legPlates(G, side)) put(pl.part, pl.part, { k: 'ball', c: pl.e.c, ax: pl.e.ax, skin: plateSkin(pl, cold) });
   {
     const knee = G.thigh.b;
     const along = norm(cross(G.ko, G.kf), [0, 0, 1]);
@@ -918,11 +962,12 @@ export function helmOf(s: Skeleton): HelmBody {
   return { c, f: ff, l: fl, u: fu, rings, brow, crest, eyes: [eye(-1), eye(1)] };
 }
 /** A slit for an eye: dark, the enemy's pink burning deep in it (gold as he winds up). */
-function slitSkin(cold: number, heat: number): PanelSkin {
+function slitSkin(cold: number, heat: number, ember = false): PanelSkin {
   return (a, b, front) => {
     if (!front) return null;
     if (Math.abs(b) > 0.95 || Math.abs(a) > 2.7) return INK;
     if (cold > 0.5) return INK;
+    if (ember) return Math.abs(b) < 0.45 ? EMBER[4] : EMBER[3];
     return Math.abs(b) < 0.45 ? (heat > 0.95 ? FLAME[3] : FLAME[2]) : FLAME[1];
   };
 }
@@ -953,7 +998,7 @@ function helmRivets(h: HelmBody, put: Put, cold: number): void {
 }
 
 /** HIS HEAD, PAINTED: on a thick neck (an iron gorget flaring down into his shoulders), the helm: a crown with a crest, a heavy brow, the jaw with the grille. */
-function headBits(put: Put, s: Skeleton, heat: number, cold: number, t: number): void {
+function headBits(put: Put, s: Skeleton, heat: number, cold: number, t: number, dying = false): void {
   const iron = ironOf(cold);
   const [, , uu] = s.upper;
   const H = helmOf(s);
@@ -977,7 +1022,7 @@ function headBits(put: Put, s: Skeleton, heat: number, cold: number, t: number):
   for (const p of H.eyes) {
     const out = norm(sub(p, add(H.c, mul(H.u, dot(sub(p, H.c), H.u)))), H.f);
     const across = norm(cross(H.u, out));
-    put('head', 'head', { k: 'panel', c: add(p, mul(out, 0.5)), u: mul(across, -3.2), v: mul(H.u, -1.1), skin: slitSkin(cold, heat) });
+    put('head', 'head', { k: 'panel', c: add(p, mul(out, 0.5)), u: mul(across, -3.2), v: mul(H.u, -1.1), skin: slitSkin(cold, heat, dying) });
   }
   {
     const down = norm(add(mul(H.u, -4.2), mul(H.f, 0.9)));
@@ -985,9 +1030,9 @@ function headBits(put: Put, s: Skeleton, heat: number, cold: number, t: number):
   }
   helmRivets(H, put, cold);
   if (cold < 0.5) {
-    const eye = heat > 0.95 ? ST_EYE_HOT : ST_EYE;
+    const eye = dying ? EMBER[4] : heat > 0.95 ? ST_EYE_HOT : ST_EYE;
     for (const p of H.eyes) put('head', 'eye', { k: 'dot', p: add(p, mul(H.f, 1.0)), c: eye, facing: s.face[0], c2: eye });
-    if (heat > 0.9) put('glint', 'glint', { k: 'glow', p: add(lerp3(H.eyes[0], H.eyes[1], 0.5), mul(s.face[0], 2)), c: FLAME[3], r: 8 + 6 * (heat - 0.9), a: 0.3 });
+    if (heat > 0.9) put('glint', 'glint', { k: 'glow', p: add(lerp3(H.eyes[0], H.eyes[1], 0.5), mul(s.face[0], 2)), c: dying ? EMBER[3] : FLAME[3], r: 8 + 6 * (heat - 0.9), a: 0.3 });
   }
 }
 
@@ -998,14 +1043,23 @@ function headBits(put: Put, s: Skeleton, heat: number, cold: number, t: number):
 const MORE = new WeakMap<Moment, [V3, string, number][]>();
 
 function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
+  const D0 = ST_DEATH;
+  // (HIS DEATH, from the burst: what he flies apart into)
+  if (m.dying && m.t >= D0.hit - 1e-9) return blastBits(st, m, say);
   const { s } = m;
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
   const t = m.t;
-  const heat = Math.max(0, say.heat(m));
+  const dying = m.dying === true;
+  // (his firebox overloading as he dies: `sw` how far, and in the strike's frame cracking open white)
+  const sw = dying ? smooth(D0.build[0], D0.strike[0], t) : 0;
+  const cracking = dying && t > D0.strike[0] + 1e-6;
+  const heat = cracking ? 1.9 : Math.max(0, say.heat(m));
   const door = clamp01(say.door(m));
   const cold = clamp01(say.cold(m));
   const iron = ironOf(cold);
+  const seams = cracking ? 1 : sw;
+  const bulge = 1 + sw * (0.06 + 0.025 * Math.sin(t * 45)) + (cracking ? 0.05 : 0);
   // HIS LEGS: thick thighs under his skirt, a shaped knee under its poleyn, calves swelling and tapering into iron boots
   legBits(put, s, 'L', cold);
   legBits(put, s, 'R', cold);
@@ -1043,13 +1097,15 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
   }
   // HIS FIREBOX: the great iron belly; its domed top; the collar round his neck
   const bl = bellyOf(s);
-  put('belly', 'belly', { k: 'ball', c: bl.c, ax: bl.ax, skin: bellySkin(s, heat, door, cold, t) });
+  put('belly', 'belly', { k: 'ball', c: bl.c, ax: [mul(bl.ax[0], bulge), mul(bl.ax[1], bulge), mul(bl.ax[2], bulge)], skin: bellySkin(s, heat, door, cold, t, seams) });
   const dm = domeOf(s);
-  put('belly', 'dome', { k: 'ball', c: dm.c, ax: dm.ax, skin: domeSkin(cold) });
-  // THE FIRE-DOOR, its grate glowing; hinged on his left
-  const dr = doorOf(s, door);
+  put('belly', 'dome', { k: 'ball', c: dm.c, ax: [mul(dm.ax[0], bulge), mul(dm.ax[1], bulge), mul(dm.ax[2], bulge)], skin: domeSkin(cold, seams, t) });
+  // THE FIRE-DOOR, its grate glowing; hinged on his left (pushed out as his firebox bulges)
+  const dr0 = doorOf(s, door);
+  const pushed = mul(s.belly[0], bl.r[0] * (bulge - 1));
+  const dr = { ...dr0, c: add(dr0.c, pushed), handle: add(dr0.handle, pushed) };
   put('door', 'door', { k: 'panel', c: dr.c, u: dr.u, v: dr.v, skin: doorSkin(heat, cold, t) });
-  put('door', 'latch', { k: 'rod', a: add(dr.handle, mul(dr.v, -0.25)), b: add(dr.handle, mul(dr.v, 0.25)), ra: 1.2, rb: 1.2, ramp: iron });
+  put('door', 'door', { k: 'rod', a: add(dr.handle, mul(dr.v, -0.25)), b: add(dr.handle, mul(dr.v, 0.25)), ra: 1.2, rb: 1.2, ramp: iron });
   if (cold < 0.5 && heat > 0.05) put('glow', 'glow', { k: 'glow', p: add(doorFrameOf(s).c, mul(s.belly[0], 6)), c: EMBER[2], r: 30 + 30 * Math.min(1.5, heat) + 24 * door, a: Math.min(0.5, 0.18 + 0.22 * heat + 0.1 * door) });
   // HIS FLUE out of his back
   const fl = flueOf(s);
@@ -1067,11 +1123,14 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
     armBits(put, s, 'R', haft, cold);
   }
   // HIS HEAD: the furnace mask's helm on a thick neck sunk between his shoulders
-  headBits(put, s, heat, cold, t);
+  headBits(put, s, heat, cold, t, dying);
   // THE GREAT SHOVEL, in his right fist (dropped as he dies: its own piece, `shovel`, falls as the game's dying monsters' pieces
   // fall, new_mobs3 `fallApart`, which lets the piece go from the moment it falls and lays it on the floor)
   const grains: [V3, string, number][] = [];
-  {
+  if (dying && t >= D0.drop) {
+    // (let fall from his fist as his firebox overloads: lying where it fell)
+    for (const b of shovelLying(st, m, say, t)) bits.push(b);
+  } else {
     const sv = shovelOf(s, say.face(m), say.hold(m));
     const ld = say.load(m);
     put('shovel', 'shovel', { k: 'rod', a: sv.top, b: sv.socket, ra: 1.7, rb: 1.9, ramp: iron });
@@ -1217,6 +1276,17 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
       }
     });
   }
+  // HIS FIREBOX OVERLOADING as he dies: rivets popping off it in sparks, steam and smoke jetting from his flue and his joints, a
+  // white flash in the strike's frame; and all of him above his knees shaking
+  if (dying && sw > 0.01) {
+    overloadGrains(grains, s, t, sw, cracking);
+    if (cracking) put('glow', 'glow', { k: 'glow', p: bl.c, c: EMBER[4], r: 140, a: 0.6 });
+    const sh = shakeAt('dying', t);
+    if (len(sh) > 1e-6) {
+      const still = /^(leg|knee|kneeA|kneeB|boot|bootB|foot)[LR]$|^shovel$|^glow$/;
+      for (let i = 0; i < bits.length; i++) if (!still.test(bits[i].part)) bits[i] = { ...bits[i], shape: shifted(bits[i].shape, sh) };
+    }
+  }
   MORE.set(m, grains);
   return bits;
 }
@@ -1274,6 +1344,413 @@ export function turnedShape(sh: Shape, deg: number): Shape {
 }
 /** A point of him turned as `turnedShape` turns him. */
 export const turnedPoint = (v: V3, deg: number): V3 => [v[0] * Math.cos(deg * D) - v[1] * Math.sin(deg * D), v[0] * Math.sin(deg * D) + v[1] * Math.cos(deg * D), v[2]];
+
+// =============================================================================================
+// HIS DEATH: THE FURNACE EXPLODES (`ST_DEATH`)
+
+/** How far all of him above his knees is shaken, at a moment of a move (his lengths): only as his firebox overloads in his death. */
+export function shakeAt(move: string, t: number): V3 {
+  if (move !== 'dying') return [0, 0, 0];
+  const D0 = ST_DEATH;
+  if (t >= D0.hit) return [0, 0, 0];
+  const k = ST_SHAKE_DEATH.amp * smooth(D0.build[0] + 0.2, D0.strike[0] - 0.1, t);
+  const w = ST_SHAKE_DEATH.hz * TAU;
+  return [k * Math.sin(w * t), k * Math.cos(w * t * 1.31 + 0.7), 0];
+}
+/** A solid of him moved by `d`. */
+function shifted(sh: Shape, d: V3): Shape {
+  return movedShape(sh, (v) => v, [0, 0, 0], d);
+}
+/** A solid of him turned by `rot` about `c0` and set down at `c1`. */
+function movedShape(sh: Shape, rot: (v: V3) => V3, c0: V3, c1: V3): Shape {
+  const P = (p: V3): V3 => add(c1, rot(sub(p, c0)));
+  switch (sh.k) {
+    case 'rod':
+    case 'thread':
+      return { ...sh, a: P(sh.a), b: P(sh.b) };
+    case 'ball':
+      return { ...sh, c: P(sh.c), ax: [rot(sh.ax[0]), rot(sh.ax[1]), rot(sh.ax[2])] };
+    case 'cloth':
+      return { ...sh, rings: sh.rings.map((r) => ({ c: P(r.c), u: rot(r.u), v: rot(r.v), ...(r.pts ? { pts: r.pts.map(P) } : {}) })) };
+    case 'band':
+      return { ...sh, ring: { c: P(sh.ring.c), u: rot(sh.ring.u), v: rot(sh.ring.v) } };
+    case 'panel':
+      return { ...sh, c: P(sh.c), u: rot(sh.u), v: rot(sh.v) };
+    case 'dot':
+      return { ...sh, p: P(sh.p), facing: rot(sh.facing) };
+    case 'teeth':
+      return { ...sh, pts: sh.pts.map(P), facing: sh.facing.map(rot) };
+    case 'mote':
+    case 'glow':
+      return { ...sh, p: P(sh.p) };
+    case 'greatsword':
+      return { ...sh, grip: P(sh.grip), point: rot(sh.point) };
+  }
+}
+/** The lowest a solid comes (its lowest point's height above the floor); Infinity for what has no body (a light, a speck, a dot). */
+export function lowestOf(sh: Shape): number {
+  if (sh.k === 'rod') return Math.min(sh.a[2] - sh.ra, sh.b[2] - sh.rb);
+  if (sh.k === 'ball') return sh.c[2] - Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]);
+  if (sh.k === 'band') return sh.ring.c[2] - Math.hypot(sh.ring.u[2], sh.ring.v[2]);
+  if (sh.k === 'cloth') return Math.min(...sh.rings.map((r) => Math.min(r.c[2] - Math.hypot(r.u[2], r.v[2]), ...(r.pts ?? []).map((q) => q[2]))));
+  if (sh.k === 'panel') return sh.c[2] - Math.abs(sh.u[2]) - Math.abs(sh.v[2]);
+  return Infinity;
+}
+/** The middle of what a piece is made of. */
+function middleOfBits(bits: ReadonlyArray<Bit>): V3 {
+  let sum: V3 = [0, 0, 0];
+  let n = 0;
+  for (const b of bits) {
+    const sh = b.shape;
+    const c = sh.k === 'rod' ? lerp3(sh.a, sh.b, 0.5) : sh.k === 'ball' || sh.k === 'panel' ? sh.c : sh.k === 'band' ? sh.ring.c : sh.k === 'cloth' ? sh.rings[Math.floor(sh.rings.length / 2)].c : null;
+    if (!c) continue;
+    sum = add(sum, c);
+    n++;
+  }
+  return n ? mul(sum, 1 / n) : [0, 0, 0];
+}
+/** A turn as a line about which, and how far (degrees); `frameTurn` the turn that takes `a1` to `b1` and `a2` (made square to it) as near to `b2` as it goes. */
+interface Turn3 {
+  axis: V3;
+  deg: number;
+}
+function frameTurn(a1: V3, b1: V3, a2: V3, b2: V3): Turn3 {
+  const e1 = norm(a1);
+  const e2 = norm(sub(a2, mul(e1, dot(a2, e1))), norm(cross(e1, [0, 0, 1]), [1, 0, 0]));
+  const e3 = cross(e1, e2);
+  const f1 = norm(b1);
+  const f2 = norm(sub(b2, mul(f1, dot(b2, f1))), norm(cross(f1, [1, 0, 0]), [0, 1, 0]));
+  const f3 = cross(f1, f2);
+  // (the turn as a table: R = F Eᵀ)
+  const R = (i: number, j: number): number => f1[i] * e1[j] + f2[i] * e2[j] + f3[i] * e3[j];
+  const tr = R(0, 0) + R(1, 1) + R(2, 2);
+  const ang = Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2)));
+  if (ang < 1e-4) return { axis: [0, 0, 1], deg: 0 };
+  if (Math.PI - ang < 1e-3) {
+    // (half a turn round: the line it turns about from the table's diagonal)
+    const x = Math.sqrt(Math.max(0, (R(0, 0) + 1) / 2));
+    const y = Math.sqrt(Math.max(0, (R(1, 1) + 1) / 2)) * (R(0, 1) >= 0 ? 1 : -1);
+    const z = Math.sqrt(Math.max(0, (R(2, 2) + 1) / 2)) * (R(0, 2) >= 0 ? 1 : -1);
+    return { axis: norm([x, y, z], [0, 0, 1]), deg: 180 };
+  }
+  const axis = norm([R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1)], [0, 0, 1]);
+  return { axis, deg: ang / D };
+}
+/** How a piece of him flies when he bursts (or falls from his fist): the way it goes over the floor, how far, how high above where it starts, how many times it tumbles end over end, its hop and its slide as it lands, and how it lies once it is down. */
+interface Flight {
+  way: V3;
+  dist: number;
+  up: number;
+  turns: number;
+  hop: number;
+  slide: number;
+  lay: Turn3;
+}
+const FLIGHT_G = 900;
+/** A piece (its solids as they were when it let go, `c0` their middle) `tau` seconds into its flight: where its solids are, where it comes to rest, and when it is still. */
+function flown(bits0: ReadonlyArray<Bit>, c0: V3, F: Flight, tau: number): { bits: Bit[]; rest: V3; still: number } {
+  const g = FLIGHT_G;
+  const lay = (k: number) => (v: V3): V3 => about(v, F.lay.axis, F.lay.deg * k);
+  const tumbleAxis = norm(cross(F.way, [0, 0, 1]), [0, 1, 0]);
+  const at = (k: number) => (v: V3): V3 => lay(k)(about(v, tumbleAxis, 360 * F.turns * k));
+  // (as it lies: its lowest point on the floor)
+  let low = Infinity;
+  for (const b of bits0) low = Math.min(low, lowestOf(movedShape(b.shape, lay(1), c0, [0, 0, 0])));
+  if (!Number.isFinite(low)) low = 0;
+  const zRest = -low + 0.3;
+  const vz = Math.sqrt(2 * g * Math.max(0, F.up));
+  const T = (vz + Math.sqrt(vz * vz + 2 * g * Math.max(0, c0[2] - zRest))) / g;
+  const hopT = 2 * Math.sqrt((2 * Math.max(0.01, F.hop)) / g);
+  let k = 1;
+  let c1: V3;
+  const xy = (d: number): V3 => [c0[0] + F.way[0] * d, c0[1] + F.way[1] * d, 0];
+  if (tau < T) {
+    k = tau / T;
+    const q = xy(F.dist * k);
+    c1 = [q[0], q[1], c0[2] + vz * tau - (g * tau * tau) / 2];
+  } else if (tau < T + hopT) {
+    const v = (tau - T) / hopT;
+    const q = xy(F.dist + F.slide * v);
+    c1 = [q[0], q[1], zRest + F.hop * Math.sin(Math.PI * v)];
+  } else {
+    const q = xy(F.dist + F.slide);
+    c1 = [q[0], q[1], zRest];
+  }
+  let bits = bits0.map((b) => ({ ...b, shape: movedShape(b.shape, at(k), c0, c1) }));
+  // (never into the floor on its way down)
+  const lowNow = Math.min(...bits.map((b) => lowestOf(b.shape)));
+  if (Number.isFinite(lowNow) && lowNow < 0.15) bits = bits.map((b) => ({ ...b, shape: shifted(b.shape, [0, 0, 0.15 - lowNow]) }));
+  const r = xy(F.dist + F.slide);
+  return { bits, rest: [r[0], r[1], zRest], still: T + hopT };
+}
+/** A piece's flight as he bursts, from where it is to the middle of the blast (`o`): out from it, high, tumbling; then lying as the piece lies (`lay`). */
+function blastFlight(piece: string, c0: V3, o: V3, lay: Turn3, heavy = 1): Flight {
+  const h = (k: number): number => {
+    let x = 0;
+    for (let i = 0; i < piece.length; i++) x = (x * 31 + piece.charCodeAt(i)) | 0;
+    return hash(x, k, 171);
+  };
+  let w = [c0[0] - o[0], c0[1] - o[1], 0] as V3;
+  if (len(w) < 3) w = [Math.cos(h(1) * TAU), Math.sin(h(1) * TAU), 0];
+  const way = norm(about(norm(w), [0, 0, 1], (h(2) - 0.5) * 50), [1, 0, 0]);
+  return { way, dist: (34 + 62 * h(3)) / heavy, up: (14 + 34 * h(4)) / heavy, turns: 1 + Math.floor(2.4 * h(5)), hop: 2 + 4 * h(6), slide: 3 + 6 * h(7), lay };
+}
+/** How each piece of him lies once it is down: a plate on its back, a cup on its rim, a tube on its side, a shard flat; the rest along their length or as they are. */
+function layOf(piece: string, bits0: ReadonlyArray<Bit>, way: V3): Turn3 {
+  const ball = bits0.find((b) => b.shape.k === 'ball')?.shape as Extract<Shape, { k: 'ball' }> | undefined;
+  const across = norm(about(way, [0, 0, 1], 90));
+  if (ball && /^paul[LR]$/.test(piece)) return frameTurn(ball.ax[2], [0, 0, 1], ball.ax[0], across);
+  if (ball && /^(couter|knee|lame|band|vam|boot|bootB|kneeA|kneeB)[LR]\d?$/.test(piece)) return frameTurn(ball.ax[0], [0, 0, -1], ball.ax[2], across);
+  if (ball && /^chunk/.test(piece)) return frameTurn(ball.ax[2], [0, 0, 1], ball.ax[0], across);
+  const panel = bits0.find((b) => b.shape.k === 'panel')?.shape as Extract<Shape, { k: 'panel' }> | undefined;
+  if (panel && piece === 'door') {
+    const n = norm(cross(panel.u, panel.v));
+    return frameTurn(n, [0, 0, 1], panel.u, across);
+  }
+  if (/^(foot[LR]|collar)$/.test(piece)) return { axis: [0, 0, 1], deg: 0 };
+  // (along its length: its two furthest points laid level)
+  const pts: V3[] = [];
+  for (const b of bits0) {
+    const sh = b.shape;
+    if (sh.k === 'rod') pts.push(sh.a, sh.b);
+    else if (sh.k === 'ball' || sh.k === 'panel') pts.push(sh.c);
+    else if (sh.k === 'cloth') for (const r of sh.rings) pts.push(r.c);
+  }
+  let a: V3 = [0, 0, 1];
+  let best = -1;
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+    const d = len(sub(pts[i], pts[j]));
+    if (d > best) {
+      best = d;
+      a = norm(sub(pts[j], pts[i]));
+    }
+  }
+  const flat = norm([a[0], a[1], 0], way);
+  const ax = cross(a, flat);
+  const sn = len(ax);
+  if (sn < 1e-5) return { axis: [0, 0, 1], deg: 0 };
+  return { axis: mul(ax, 1 / sn), deg: Math.atan2(sn, dot(a, flat)) / D };
+}
+
+/** The pieces of him that fly as he bursts (each a real piece of him): his plates, his pauldrons' lames, his helm and his gorget, his flue, his fire-door, his gauntlets and his boots. */
+const FLIES = /^(paul|lame|band|couter|vam|hand|knee|kneeA|kneeB|boot|bootB|foot)[LR]\d?$|^(head|collar|flue|door)$/;
+/** Him as he is the moment before he bursts, and his shovel as it left his fist (each worked out once: they are cut from him so). */
+let BURST: { bits: Bit[]; o: V3; s: Skeleton } | null = null;
+let DROPPED: Bit[] | null = null;
+function burstOf(st: Stage, m: Moment, say: StokerSay): { bits: Bit[]; o: V3; s: Skeleton } {
+  if (!BURST) {
+    const t0 = ST_DEATH.hit - 1e-4;
+    const s0 = (say.bonesAt as (t: number) => Skeleton)(t0);
+    const m0: Moment = { ...m, s: s0, t: t0 };
+    BURST = { bits: stokerBits(st, m0, say), o: bellyOf(s0).c, s: s0 };
+  }
+  return BURST;
+}
+function droppedOf(st: Stage, m: Moment, say: StokerSay): Bit[] {
+  if (!DROPPED) {
+    const t0 = ST_DEATH.drop - 1e-4;
+    const m0: Moment = { ...m, s: (say.bonesAt as (t: number) => Skeleton)(t0), t: t0 };
+    DROPPED = stokerBits(st, m0, say).filter((b) => b.piece === 'shovel');
+  }
+  return DROPPED;
+}
+/** HIS SHOVEL, let fall from his fist as his firebox overloads: it drops at his right and lies along the floor. */
+const SHOVEL_FALL: Flight = { way: norm([0.25, -1, 0]), dist: 10, up: 2, turns: 0, hop: 2.2, slide: 3, lay: { axis: [0, 0, 1], deg: 0 } };
+function shovelFall(st: Stage, m: Moment, say: StokerSay): { bits0: Bit[]; c0: V3; F: Flight } {
+  const bits0 = droppedOf(st, m, say);
+  const c0 = middleOfBits(bits0);
+  return { bits0, c0, F: { ...SHOVEL_FALL, lay: layOf('shovel', bits0, SHOVEL_FALL.way) } };
+}
+function shovelLying(st: Stage, m: Moment, say: StokerSay, t: number): Bit[] {
+  const { bits0, c0, F } = shovelFall(st, m, say);
+  return flown(bits0, c0, F, t - ST_DEATH.drop).bits;
+}
+/** A shard of his firebox's iron, torn: its edge glowing as it flies, going dark as it lies. */
+function shardSkin(age: number, seed: number): Skin {
+  return (u, tone) => {
+    const r = Math.hypot(u[0], u[1]);
+    const n = noise2(u[0] * 3 + seed, u[1] * 3, 173);
+    if (r > 0.92 - 0.25 * n) return null;
+    if (r > 0.72 - 0.2 * n) return age < 0.5 ? EMBER[3] : age < 1.4 ? EMBER[1] : ST_CRUST[1];
+    if (Math.abs(u[1] - 0.3) < 0.08 && fr(u[0] * 3 + seed * 0.3) < 0.3) return ST_IRON[4];
+    return ST_IRON[tone5(tone - (n > 0.66 ? 1 : 0))];
+  };
+}
+/** Fire, `age` seconds after the burst: white at its heart, orange, red, going to smoke and breaking up. */
+function fireSkin(age: number, seed: number, life: number): Skin {
+  return (u, tone) => {
+    const k = clamp01(age / life);
+    const n = noise2(u[0] * 2.4 + seed + age * 3, u[1] * 2.4 - age * 5 + u[2] * 1.7, 177);
+    const edge = Math.hypot(u[0], u[1], u[2]);
+    if (n < k * 1.15 - 0.25 + 0.2 * edge) return null;
+    const v = n + 0.25 * (tone - 2) / 2 - k * 1.1 - 0.2 * edge;
+    if (k > 0.55 && v < 0.05) return ST_SMOKE[Math.min(3, Math.floor((0.05 - v) * 6))];
+    if (v > 0.55) return EMBER[4];
+    if (v > 0.32) return EMBER[3];
+    if (v > 0.12) return EMBER[2];
+    if (v > -0.05) return EMBER[1];
+    return k > 0.35 ? ST_SMOKE[1] : EMBER[0];
+  };
+}
+/** THE BURST AND AFTER: the fireball, the pieces of him flying and lying smoking, his shovel blown away, the gear. */
+function blastBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
+  const D0 = ST_DEATH;
+  const t = m.t;
+  const tau = t - D0.hit;
+  const bits: Bit[] = [];
+  const grains: [V3, string, number][] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const B0 = burstOf(st, m, say);
+  const o = B0.o;
+  const smokeOff = (rest: V3, still: number, j: number): void => {
+    // (each piece smoking where it lies, thinning)
+    const since = tau - still;
+    if (since < 0 || since > 2.4) return;
+    for (let i = 0; i < 3; i++) {
+      const life = fr(t * 0.6 + i / 3 + 0.37 * hash(i, j, 179));
+      if (life > 0.85 * (1 - since / 2.4)) continue;
+      grains.push([add(rest, [Math.sin(life * 5 + j) * 2 - 4 * life, Math.cos(life * 4 + i) * 2, 3 + 22 * life]), ST_SMOKE[Math.min(3, 1 + Math.floor(life * 3))], 1]);
+    }
+  };
+  // THE PIECES OF HIM, flung out spinning from the blast, bouncing and clattering down to lie scattered and smoking
+  const groups = new Map<string, Bit[]>();
+  for (const b of B0.bits) {
+    if (!FLIES.test(b.piece) || b.shape.k === 'glow' || b.shape.k === 'dot') continue;
+    const g = groups.get(b.piece) ?? [];
+    g.push(b);
+    groups.set(b.piece, g);
+  }
+  let j = 0;
+  for (const [piece, bits0] of groups) {
+    const c0 = middleOfBits(bits0);
+    const heavy = /^(boot|bootB|foot)[LR]$/.test(piece) ? 2.2 : piece === 'head' ? 0.8 : 1;
+    const F0 = blastFlight(piece, c0, o, { axis: [0, 0, 1], deg: 0 }, heavy);
+    const F = { ...F0, lay: layOf(piece, bits0, F0.way) };
+    // (his fire-door's grate going dark as it flies and lies)
+    const cooled = piece !== 'door' ? bits0 : bits0.map((b) => (b.shape.k === 'panel' ? { ...b, shape: { ...b.shape, skin: doorSkin(Math.max(0, 1.3 - 1.1 * tau), clamp01((tau - 0.6) / 1.4), t) } } : b));
+    const f = flown(cooled, c0, F, tau);
+    for (const b of f.bits) bits.push({ part: `p_${b.part}`, piece, shape: b.shape });
+    smokeOff(f.rest, f.still, j++);
+  }
+  // CHUNKS OF HIS FIREBOX, torn out of it
+  {
+    const s0 = B0.s;
+    const bl = bellyOf(s0);
+    const [bf, blf, bu] = s0.belly;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU + hash(i, 1, 181) * 0.4;
+      const h = (hash(i, 2, 181) - 0.5) * 1.4;
+      const out = norm(add(mul(bf, Math.cos(a)), mul(blf, Math.sin(a))));
+      const c = add(add(bl.c, mul(out, (bl.r[0] + bl.r[1]) / 2 * Math.sqrt(1 - h * h * 0.5))), mul(bu, h * bl.r[2]));
+      const t1 = norm(cross(bu, out));
+      const t2 = norm(cross(out, t1));
+      const e: Egg = { c, ax: [mul(t1, 6 + 3 * hash(i, 3, 181)), mul(t2, 5 + 3 * hash(i, 4, 181)), mul(out, 1.7)] };
+      const bits0: Bit[] = [{ part: `chunk${i}`, piece: `chunk${i}`, shape: { k: 'ball', c: e.c, ax: e.ax, skin: shardSkin(tau, i) } }];
+      const F0 = blastFlight(`chunk${i}`, c, o, { axis: [0, 0, 1], deg: 0 }, 0.85);
+      const f = flown(bits0, c, { ...F0, lay: layOf(`chunk${i}`, bits0, F0.way) }, tau);
+      for (const b of f.bits) bits.push(b);
+      smokeOff(f.rest, f.still, 40 + i);
+    }
+  }
+  // HIS SHOVEL, blown from where it lay
+  {
+    const { bits0, c0, F } = shovelFall(st, m, say);
+    const lying = flown(bits0, c0, F, 99);
+    const c1 = middleOfBits(lying.bits);
+    const F0 = blastFlight('shovel', c1, o, { axis: [0, 0, 1], deg: 0 }, 1.3);
+    const f = flown(lying.bits, c1, { ...F0, turns: 1, lay: { axis: [0, 0, 1], deg: 0 } }, tau);
+    for (const b of f.bits) bits.push({ part: 'shovel', piece: 'shovel', shape: b.shape });
+    smokeOff(f.rest, f.still, 60);
+  }
+  // THE FIREBALL: blooming white out of his firebox in the frame he bursts, rising, going orange and red, breaking up into smoke
+  if (tau < D0.fire) {
+    const life = D0.fire;
+    // (lightning quick: already great in the frame he bursts, swelling on)
+    const R = 54 * (1 - Math.exp(-(tau + 0.06) * 14)) + 6;
+    const core: V3 = [o[0], o[1], Math.max(o[2] + 26 * tau, R * 0.8 + 0.4)];
+    put('fire', 'fire', { k: 'ball', c: core, ax: [[R, 0, 0], [0, R, 0], [0, 0, R * 0.8]], skin: fireSkin(tau, 1, life) });
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * TAU + hash(i, 1, 183);
+      const e = 0.2 + 0.7 * hash(i, 2, 183);
+      const way: V3 = [Math.cos(a) * Math.cos(e), Math.sin(a) * Math.cos(e), Math.sin(e)];
+      const r = (14 + 8 * hash(i, 3, 183)) * (1 - 0.5 * tau / life) + 4;
+      const d = R * 0.9 + 46 * tau;
+      const c = add(core, mul(way, d));
+      put('fire', 'fire', { k: 'ball', c: [c[0], c[1], Math.max(c[2], r * 0.8 + 0.4)], ax: [[r, 0, 0], [0, r, 0], [0, 0, r * 0.8]], skin: fireSkin(tau + 0.08 * i / 9, 3 + i, life) });
+    }
+    put('glow', 'glow', { k: 'glow', p: core, c: EMBER[3], r: 70 + 120 * (1 - tau / life), a: Math.min(0.7, 0.75 * (1 - tau / life)) });
+  }
+  // sparks and burning bits flung out of it; then a column of smoke going up where he stood, thinning
+  for (let i = 0; i < 46; i++) {
+    const T = tau * (0.8 + 0.4 * hash(i, 1, 185));
+    if (T > 0.8) continue;
+    const a = hash(i, 2, 185) * TAU;
+    const e = (hash(i, 3, 185) - 0.2) * 1.3;
+    const v = 120 + 160 * hash(i, 4, 185);
+    const p = add(o, [Math.cos(a) * Math.cos(e) * v * T, Math.sin(a) * Math.cos(e) * v * T, Math.sin(e) * v * T - 260 * T * T]);
+    if (p[2] < 0.5) continue;
+    grains.push([p, ST_SPARK[i % 3], T < 0.25 ? 2 : 1]);
+  }
+  if (tau > 0.3 && tau < D0.long - D0.hit) {
+    const thin = 1 - smooth(1.2, D0.long - D0.hit, tau);
+    for (let i = 0; i < 16; i++) {
+      const life = fr(t * 0.45 + i / 16 + 0.3 * hash(i, 1, 187));
+      if (life > 0.9 * thin) continue;
+      const a = hash(i, 2, 187) * TAU;
+      const r = 6 + 16 * life;
+      grains.push([[o[0] + Math.cos(a) * r - 10 * life, o[1] + Math.sin(a) * r, 20 + 90 * life], ST_SMOKE[Math.min(3, Math.floor(life * 4))], life < 0.5 ? 2 : 1]);
+    }
+  }
+  // THE GEAR, spinning out of the fireball, clanging down, lying glinting
+  const gr = say.gear(m);
+  if (gr) gearBits(put, gr.c, gr.up, gr.spin, 0);
+  MORE.set(m, grains);
+  return bits;
+}
+/** As his firebox overloads: rivets popping off its bands in sparks; steam and smoke jetting from his flue, his shoulders, his door and his hips. */
+function overloadGrains(grains: [V3, string, number][], s: Skeleton, t: number, sw: number, cracking: boolean): void {
+  const D0 = ST_DEATH;
+  const bl = bellyOf(s);
+  const [bf, blf, bu] = s.belly;
+  // (rivets: each pops off at its moment, flies with a spark trail)
+  for (let i = 0; i < 22; i++) {
+    const tp = D0.build[0] + 0.15 + (D0.strike[0] - D0.build[0] - 0.2) * hash(i, 1, 191);
+    const T = t - tp;
+    if (T < 0 || T > 0.4) continue;
+    const a = hash(i, 2, 191) * TAU;
+    const out = norm(add(mul(bf, Math.cos(a)), mul(blf, Math.sin(a))));
+    const p0 = add(add(bl.c, mul(out, (bl.r[0] + bl.r[1]) / 2)), mul(bu, (i % 2 ? 1 : -1) * 9.5));
+    const v = add(mul(out, 60 + 40 * hash(i, 3, 191)), [0, 0, 40]);
+    const p = add(add(p0, mul(v, T)), [0, 0, -300 * T * T]);
+    if (p[2] < 0.5) continue;
+    grains.push([p, ST_IRON[4], 1]);
+    for (let k = 1; k <= 3; k++) {
+      const Tk = Math.max(0, T - k * 0.02);
+      grains.push([add(add(p0, mul(v, Tk)), [0, 0, -300 * Tk * Tk]), ST_SPARK[Math.min(2, k - 1)], 1]);
+    }
+    if (T < 0.05) grains.push([p0, EMBER[4], 2]);
+  }
+  // (jets of steam and smoke out of the gaps of him, harder as he swells)
+  const STEAM = ['#e2dad0', '#c4bbb2', '#a39a92', '#857d77'] as const;
+  const fl = flueOf(s);
+  const jets: [V3, V3][] = [
+    [fl[fl.length - 1], norm(sub(fl[fl.length - 1], fl[fl.length - 2]))],
+    [add(s.shoulderL, mul(s.upper[2], 7)), norm(add(s.upper[1], mul(s.upper[2], 0.8)))],
+    [add(s.shoulderR, mul(s.upper[2], 7)), norm(add(mul(s.upper[1], -1), mul(s.upper[2], 0.8)))],
+    [add(doorFrameOf(s).c, mul(bu, DOOR.high + 1)), norm(add(bf, mul(bu, 0.6)))],
+    [add(s.pelvis, mul(s.hips[2], 8)), norm(add(mul(s.hips[0], -1), mul(s.hips[2], 0.3)))],
+  ];
+  jets.forEach(([p0, way], jn) => {
+    const n = Math.round((jn === 0 ? 12 : 7) * (0.3 + sw) * (cracking ? 1.6 : 1));
+    for (let i = 0; i < n; i++) {
+      const life = fr(t * (2.2 + jn * 0.3) + i / n + 0.3 * hash(i, jn, 193));
+      const reach = (jn === 0 ? 34 : 22) * (0.4 + sw);
+      const side = (hash(i, jn + 5, 193) - 0.5) * 6 * life;
+      const p = add(add(p0, mul(way, reach * life)), [side, -side * 0.5, 10 * life * life]);
+      grains.push([p, STEAM[Math.min(3, Math.floor(life * 4))], life < 0.45 ? 2 : 1]);
+    }
+  });
+}
 
 /** HIM AS THE PAINTER TAKES HIM. */
 export function stokerPainter(say: StokerSay): {

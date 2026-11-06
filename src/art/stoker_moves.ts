@@ -39,7 +39,7 @@ import type { ActorArt } from './actor_types';
 import { footwork, kneelHips, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
-import { DOOR, FLUE_R, GEAR, SHOVEL, ST_BODY, ST_CANVAS, ST_REST, bellyOf, domeOf, doorFrameOf, flueOf, helmOf, mouthOf, pauldronOf, shovelOf, stokerPainter } from './stoker';
+import { DOOR, FLUE_R, GEAR, SHOVEL, ST_BODY, ST_CANVAS, ST_DEATH, ST_REST, bellyOf, domeOf, doorFrameOf, flueOf, helmOf, mouthOf, pauldronOf, shovelOf, stokerPainter } from './stoker';
 import type { StokerSay } from './stoker';
 import { TILE3, mobSet } from './new_mobs3';
 import type { Mob, MobMove, Moment } from './new_mobs3';
@@ -456,46 +456,35 @@ function reelPlan(): Plan {
   return { long: ST_REEL, keys: [[0, {}], [0.1, JOLT], [0.24, { body: { pz: R.pz - 1, px: -2, pitch: 1, bend: 0, hunch: 10, faceUp: 6 }, grip: [R.rhx - 1, R.rhy - 1, R.rhz + 1.5], left: [-3, 9, -47] }], [ST_REEL, {}]] };
 }
 /**
- * His death: struck (the jolt); his fire flaring white and his door bursting open as he rears back; the shovel flung down (`drop`);
- * to his knees (`knees`); slumped (`slump`), his fire going out (`cold`); the gear clattering out of his grate (`gear`), bouncing,
- * lying still on the floor before him by `gearStill`.
+ * HIS DEATH: THE FURNACE EXPLODES (his pick of 6 Nov 2026, “Furnace explodes (Recommended)”; its timings art/stoker.ts
+ * `ST_DEATH`). Struck (the jolt), he staggers, and STIFFENS UPRIGHT as his firebox overloads: his knees locked straight, his chest
+ * thrown out, his head flung back, his arms rigid out from his sides, his fists clenched (the shovel let fall at `drop`); held,
+ * swelling more, to the strike; then he bursts (art/stoker.ts `blastBits`: nothing of his body is painted from the burst, only
+ * the pieces he flies apart into). His feet never leave the floor.
  */
-export const ST_DIES = { long: 3.2, flare: [0.08, 0.6] as const, open: [0.3, 0.46] as const, drop: 0.7, knees: 1.3, slump: 1.9, cold: [0.7, 2.7] as const, gear: 1.55, gearStill: 2.45 } as const;
+export const ST_DIES = ST_DEATH;
 /** Where the gear lies when it is still, from his floor point (his own lengths: forward, to his left), flat on the floor. */
 export const GEAR_REST: readonly [number, number] = [88, 14];
-const TUCK = 52;
 const KNEE_Z = B.legR[1] * 1.12;
-const KNEEL_L: Plant = plantBy(L0, -6, 0, 0);
-const KNEEL_R: Plant = plantBy(R0, -6, 0, 0);
-const kneeling = (lean: number, body: P): P => ({ ...kneelHips(B, R, { L: KNEEL_L, R: KNEEL_R }, TUCK, KNEE_Z, lean), ...body });
 function diesPlan(): Plan {
   const K = ST_DIES;
-  const DOWN = kneeling(4, { yaw: 2, pitch: 5, roll: 2, twist: 0, bend: 5, side: 1, hunch: 22, shrug: 0.6, faceTurn: 6, faceUp: -20, faceTilt: 10, lk: 8, rk: -8 });
-  const SLUMP = kneeling(8, { yaw: 3, pitch: 8, roll: 3, twist: 0, bend: 9, side: 2, hunch: 34, shrug: 0.7, faceTurn: 10, faceUp: -38, faceTilt: 14, lk: 8, rk: -8 });
+  const STIFF: StKey = { body: { pz: R.pz + 3.0, px: -1.5, pitch: -5, bend: -9, roll: 0, yaw: 0, twist: 0, hunch: 3, shrug: 0.85, faceUp: 26, faceTilt: 0, faceTurn: 0 }, grip: [6, -52, 60], az: -100, el: -8, hold: 10, face: [1, 0, 0.3], left: [0, 23, -27], wl: [-0.3, 0.8, -0.5], wr: [-0.3, -0.8, -0.5] };
+  const SWELL: StKey = { body: { pz: R.pz + 3.6, px: -2, pitch: -6.5, bend: -12, roll: 0, yaw: 0, twist: 0, hunch: 1, shrug: 1.0, faceUp: 32, faceTilt: 0, faceTurn: 0 }, grip: [5, -56, 64], az: -100, el: -6, hold: 10, face: [1, 0, 0.3], left: [-1, 27, -24], wl: [-0.3, 0.8, -0.5], wr: [-0.3, -0.8, -0.5] };
   return {
     long: K.long,
     keys: [
       [0, {}],
-      [0.1, { body: { pz: R.pz + 1, px: -5, pitch: -6, bend: -7, hunch: 6, faceUp: 18 }, grip: [R.rhx - 3, R.rhy - 2, R.rhz + 4], left: [-6, 12, -42] }],
-      // rearing back, his fire flaring, the shovel flung out from him
-      [0.45, { body: { pz: R.pz + 2, px: -6, pitch: -10, bend: -14, hunch: 0, shrug: 0, faceUp: 32, faceTilt: -8 }, grip: [-2, -58, 84], az: -100, el: 10, hold: 10, face: [1, 0, 0.3], left: [-4, 33, -2], wl: [-0.3, 0.8, -0.5], wr: [-0.3, -0.8, -0.5] }],
-      [K.drop, { body: { pz: R.pz - 2, px: -3, pitch: -2, bend: -4, hunch: 10, faceUp: 14, faceTilt: -4 }, grip: [0, -54, 70], az: -100, el: -2, hold: 10, face: [1, 0, 0.3], left: [-4, 30, -24] }],
-      // to his knees
-      [1.0, { body: { ...DOWN, pz: (DOWN.pz as number) + 9, pitch: 8, bend: 6, faceUp: 0 }, grip: [20, -47, 52], az: -100, el: -10, hold: 10, left: [-2, 14, -44] }],
-      [K.knees, { body: DOWN, grip: [36, -42, 34], left: [2, 9, -40] }],
-      // slumped, going out, cooling
-      [K.slump, { body: SLUMP, grip: [40, -40, 26], left: [6, 6, -38] }],
-      [K.long, { body: { ...SLUMP, pz: (SLUMP.pz as number) - 0.5, faceUp: -40 }, grip: [40, -40, 25], left: [6, 6, -38] }],
+      // struck: jolted back
+      [K.jolt, { body: { pz: R.pz + 1, px: -5, pitch: -6, bend: -7, hunch: 6, faceUp: 18 }, grip: [R.rhx - 3, R.rhy - 2, R.rhz + 4], left: [-6, 12, -42] }],
+      // staggering, his fire flaring, the shovel slipping from his fist
+      [0.32, { body: { pz: R.pz - 1, px: -3, pitch: 2, bend: 1, roll: 3, hunch: 13, faceUp: 6, faceTilt: 6 }, grip: [R.rhx + 2, R.rhy - 8, R.rhz + 6], az: -100, el: -6, hold: 10, face: [1, 0, 0.3], left: [-4, 16, -38], wl: [-0.3, 0.8, -0.5], wr: [-0.3, -0.8, -0.5] }],
+      // STIFFENED UPRIGHT as his firebox overloads, and held, swelling, to the burst
+      [K.stiff, STIFF],
+      [K.strike[0], SWELL],
+      [K.long, SWELL],
     ],
   };
 }
-function diesFeet(): (t: number) => P {
-  return footwork(B, {
-    L: { start: L0, moves: [{ t0: 0.75, t1: 1.05, to: { ...KNEEL_L, pitch: TUCK }, lift: 2.5 }] },
-    R: { start: R0, moves: [{ t0: 0.8, t1: 1.12, to: { ...KNEEL_R, pitch: TUCK }, lift: 2.5 }] },
-  });
-}
-
 // =============================================================================================
 // WHAT A MOMENT SAYS OVER AND ABOVE THE BONES
 
@@ -506,7 +495,7 @@ export const ST_NAMES = {
   rake: 'The fire rake',
   burst: 'The furnace bursts',
   reel: 'The Stoker is struck',
-  dying: 'His fire goes out',
+  dying: 'His furnace explodes',
 } as const;
 type MoveName = keyof typeof ST_NAMES;
 const byName: Record<string, MoveName> = Object.fromEntries(Object.entries(ST_NAMES).map(([k, v]) => [v, k as MoveName]));
@@ -547,7 +536,7 @@ export function heatAt(move: string, t: number): number {
     return 0.6 + 1.0 * smooth(0.2, K.warn[0], t) + 0.25 * smooth(K.warn[0], K.warn[1], t) - 1.6 * smooth(K.hit + 0.1, K.spent, t) + 0.45 * smooth(K.spent + 0.3, K.long, t);
   }
   if (move === 'reel') return 0.6 + 0.6 * Math.sin(Math.PI * clamp01(t / ST_REEL));
-  if (move === 'dying') return (0.6 + 1.0 * smooth(ST_DIES.flare[0], 0.3, t)) * (1 - smooth(ST_DIES.flare[1], 2.1, t));
+  if (move === 'dying') return 0.6 + 0.35 * smooth(0, 0.25, t) + 0.65 * smooth(ST_DIES.build[0], ST_DIES.strike[0], t);
   return 0.6;
 }
 /** His fire-door through a move (0 shut, 1 flung wide). */
@@ -555,7 +544,7 @@ export function doorAt(move: string, t: number): number {
   if (move === 'attack') return smooth(ST_COALS.open[0], ST_COALS.open[1], t) * (1 - smooth(ST_COALS.shut[0], ST_COALS.shut[1], t));
   if (move === 'burst') return smooth(ST_BURST.open[0], ST_BURST.open[1], t) * (1 - smooth(ST_BURST.shut[0], ST_BURST.shut[1], t));
   if (move === 'reel') return 0.28 * Math.sin(Math.PI * clamp01(t / 0.3));
-  if (move === 'dying') return smooth(ST_DIES.open[0], ST_DIES.open[1], t) * (1 - 0.15 * smooth(2.2, ST_DIES.long, t));
+  if (move === 'dying') return 0.1 * smooth(ST_DIES.build[0], ST_DIES.strike[0], t);
   return 0;
 }
 /** The coals on his shovel through the move of coals: scooped as it is in his firebox, heaped, flung. */
@@ -571,7 +560,7 @@ function burstAt(move: string, t: number): { k: number; since: number } | null {
   if (move === 'attack') return at(ST_COALS.shut[1], 0.9) ?? at(ST_COALS.open[0] + 0.06, 1.0);
   if (move === 'burst') return at(ST_BURST.open[0] + 0.06, 1.2);
   if (move === 'reel') return at(0.02, 0.8);
-  if (move === 'dying') return at(ST_DIES.open[0] + 0.04, 1.4);
+  if (move === 'dying') return at(0.02, 0.9);
   return null;
 }
 /** The fire belching out of his open door in the burst: from the hit, a gout out to 3 tiles, dying away. */
@@ -591,46 +580,49 @@ function stampAt(move: string, t: number): { L: number; R: number } {
 }
 /** His fire going out as he dies (0 alive, 1 black iron and ash). */
 export function coldAt(move: string, t: number): number {
-  return move === 'dying' ? smooth(ST_DIES.cold[0], ST_DIES.cold[1], t) : 0;
+  void move;
+  void t;
+  return 0;
 }
-/** THE GEAR as he dies: out of his open grate at `gear`, falling, bouncing twice, rolled flat to GEAR_REST by `gearStill`. */
+/** THE GEAR as he dies: spinning out of the fireball as he bursts (`gear`), flung high, clanging down onto its edge, bouncing twice, rolled over flat and lying still at GEAR_REST by `gearStill`. */
 export function gearAt(move: string, t: number, s: Skeleton): { c: V3; up: V3; spin: number } | null {
   if (move !== 'dying' || t < ST_DIES.gear) return null;
-  const from = add(doorFrameOf(s).c, mul(s.belly[0], 2));
+  const from = bellyOf(s).c;
   const u = t - ST_DIES.gear;
   const rest: V3 = [GEAR_REST[0], GEAR_REST[1], 0.3];
-  // (out and down: falling to the floor in 0.26 s, a bounce of 0.18 s, a little one of 0.12 s, then rolled over flat)
-  const T1 = 0.26;
-  const T2 = 0.18;
+  // (flung up out of the fire and down onto its edge in 0.7 s, a bounce of 0.2 s, a little one of 0.12 s, then rolled over flat)
+  const g = 900;
+  const T1 = 0.7;
+  const T2 = 0.2;
   const T3 = 0.12;
   const total = ST_DIES.gearStill - ST_DIES.gear;
+  const vz = (GEAR.r - from[2] + (g * T1 * T1) / 2) / T1;
   const xy = (k: number): [number, number] => [from[0] + (rest[0] - from[0]) * k, from[1] + (rest[1] - from[1]) * k];
   let z: number;
   let k: number;
   if (u < T1) {
-    k = 0.55 * (u / T1);
-    z = from[2] + (GEAR.r - from[2]) * (u / T1) ** 2 + 6 * (u / T1) * (1 - u / T1);
+    k = 0.8 * (u / T1);
+    z = from[2] + vz * u - (g * u * u) / 2;
   } else if (u < T1 + T2) {
     const v = (u - T1) / T2;
-    k = 0.55 + 0.25 * v;
+    k = 0.8 + 0.12 * v;
     z = GEAR.r + 9 * 4 * v * (1 - v);
   } else if (u < T1 + T2 + T3) {
     const v = (u - T1 - T2) / T3;
-    k = 0.8 + 0.12 * v;
+    k = 0.92 + 0.05 * v;
     z = GEAR.r + 3 * 4 * v * (1 - v);
   } else {
-    k = 0.92 + 0.08 * smooth(T1 + T2 + T3, total, u);
+    k = 0.97 + 0.03 * smooth(T1 + T2 + T3, total, u);
     z = GEAR.r;
   }
-  // (on its edge as it falls and bounces, turning over; rolled down flat on the floor at the last)
+  // (on its edge as it flies and bounces, spinning; rolled down flat on the floor at the last)
   const lay = smooth(T1 + T2 + T3 - 0.02, total, u);
   const [x, y] = xy(Math.min(1, k));
   const edgeUp: V3 = norm([0.2, 1, 0.15]);
   const up = norm(lerp3(edgeUp, [0, 0, 1], lay));
-  // (resting on its rim as it rolls down flat: never into the floor)
   const rim = GEAR.r * Math.sqrt(Math.max(0, 1 - up[2] * up[2])) + GEAR.thick / 2 + 0.4;
   const zz = Math.max(z * (1 - lay) + (GEAR.thick / 2 + 0.6) * lay, rim);
-  return { c: [x, y, zz], up, spin: 400 * (1 - Math.exp(-u * 4)) };
+  return { c: [x, y, zz], up, spin: 1100 * (1 - Math.exp(-u * 2.6)) };
 }
 
 /** HIS STRIKES (his rulebook's Movement 9): from the last frame of each wind-up to the frame it lands on. */
@@ -689,13 +681,14 @@ export const ST_SAY: StokerSay = {
   hold: (m) => numbersAt(moveOfMoment(m), m.t).hold,
   load: (m) => loadAt(moveOfMoment(m), m.t),
   held: (m) => !(m.dying && m.t > ST_DIES.drop + 1e-6),
+  bonesAt: (t) => bonesOf('dying', t),
   cold: (m) => coldAt(moveOfMoment(m), m.t),
   burst: (m) => burstAt(moveOfMoment(m), m.t),
   smoke: (m) => {
     const move = moveOfMoment(m);
     if (move === 'stand') return 0.6 + 0.6 * Math.max(0, -Math.sin((m.t / ST_STAND_LONG) * TAU));
     if (move === 'burst') return 1 + 1.4 * smooth(ST_BURST.hit, ST_BURST.spent, m.t);
-    if (move === 'dying') return 1.2 * (1 - smooth(1.8, ST_DIES.long, m.t)) + 0.3;
+    if (move === 'dying') return 0.9 + 1.6 * smooth(ST_DIES.build[0], ST_DIES.strike[0], m.t);
     return 0.9;
   },
   gout: (m) => goutAt(moveOfMoment(m), m.t),
@@ -734,7 +727,7 @@ const STOKER_MOVES: Record<MoveName, MobMove> = {
   rake: mv('rake', { feet: rakeFeet() }),
   burst: mv('burst', { feet: burstFeet() }),
   reel: mv('reel'),
-  dying: mv('dying', { feet: diesFeet() }),
+  dying: mv('dying'),
 };
 function stokerMob(): Mob {
   const paint = stokerPainter(ST_SAY);
@@ -765,10 +758,8 @@ function stokerMob(): Mob {
     bits: paint.bits,
     grains: paint.grains,
     // (the shovel flung down from his fist as he dies, and lying on the floor at his right)
-    fall(piece) {
-      if (piece === 'shovel') return { from: ST_DIES.drop, to: [10, -26], spin: -12, lay: 'axis', hop: 1.0 };
-      return null;
-    },
+    // (nothing of him falls as the game's dying monsters' pieces fall: he lets his shovel fall and flies apart himself, art/stoker.ts `blastBits`)
+    fall: () => null,
   };
 }
 export const STOKER: Mob = stokerMob();
