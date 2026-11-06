@@ -20,7 +20,12 @@ import { ST_CANVAS } from '../src/art/stoker';
 import { GEAR_REST, STOKER, ST_BURST, ST_COALS, ST_DIES, ST_PACE, ST_RAKE, ST_REEL, ST_STAND_LONG, stokerBonesOf, stokerShovelAt } from '../src/art/stoker_moves';
 import { COALS, COAL_FIRE, FX_CANVAS, RAKE_FIRE, RING, coalAt, coalInAir, coalLands, coalsFloor, fxAt, fxPainted, rakeFloor, ringFloor } from '../src/art/stoker_fx';
 import { CRANK_CANVAS, CRANK_TURN, FIRE_WALL, FURNACE, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../src/art/stoker_room';
-import { TILE3, deathOfMob, paintMob } from '../src/art/new_mobs3';
+import { TILE3, deathOfMob, momentOf, paintBits, paintMob } from '../src/art/new_mobs3';
+import type { Shape } from '../src/art/new_mobs3';
+import { ENEMY_RIM } from '../src/art/mkit';
+import { stage } from '../src/art/skin';
+import type { Ring } from '../src/art/skin';
+import type { V3 } from '../src/art/skeleton';
 import type { Painted } from '../src/art/kit';
 import { makePrisonArt } from '../src/art/prison';
 import { makePrisonGateArt } from '../src/art/prison_gate';
@@ -677,10 +682,91 @@ function sheet(out: string): void {
   console.log('sheet', pieces.length, 'pieces');
 }
 
+// =============================================================================================
+// HIS BODY, BEFORE AND NOW (his pick of 6 Nov 2026, “Reshape his body first (Recommended)”): the pieces of
+// stoker_body.png, as big as the game paints him, each on its own dark picture with his floor point at the same place: him
+// standing from in front, from behind and FROM THE SIDE (his solids truly turned about the floor point under him, not his
+// picture flipped), and moments of his moves from in front. Painted once on the body as it was (before) and once as it is
+// (now); tools/stoker_body_sheet.py puts the two side by side with their captions.
+
+/** A point or a line of him turned `deg` to his left about the upright through his floor point. */
+const turnV = (v: V3, deg: number): V3 => {
+  const a = (deg * Math.PI) / 180;
+  return [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
+};
+function turnShape(sh: Shape, deg: number): Shape {
+  const T = (v: V3): V3 => turnV(v, deg);
+  const R = (r: Ring): Ring => ({ c: T(r.c), u: T(r.u), v: T(r.v), ...(r.pts ? { pts: r.pts.map(T) } : {}) });
+  switch (sh.k) {
+    case 'rod': return { ...sh, a: T(sh.a), b: T(sh.b) };
+    case 'ball': return { ...sh, c: T(sh.c), ax: [T(sh.ax[0]), T(sh.ax[1]), T(sh.ax[2])] };
+    case 'cloth': return { ...sh, rings: sh.rings.map(R) };
+    case 'band': return { ...sh, ring: R(sh.ring) };
+    case 'panel': return { ...sh, c: T(sh.c), u: T(sh.u), v: T(sh.v) };
+    case 'thread': return { ...sh, a: T(sh.a), b: T(sh.b) };
+    case 'dot': return { ...sh, p: T(sh.p), facing: T(sh.facing) };
+    case 'teeth': return { ...sh, pts: sh.pts.map(T), facing: sh.facing.map(T) };
+    case 'mote': return { ...sh, p: T(sh.p) };
+    case 'glow': return { ...sh, p: T(sh.p) };
+    case 'greatsword': return { ...sh, grip: T(sh.grip), point: T(sh.point) };
+  }
+}
+/** HIM TRULY TURNED `deg` to his left (45: his right side square to the eye, -135 his left), painted from in front, his pink edge round him. */
+function stokerTurned(move: string, t: number, deg: number): Px {
+  const st = stage('front', ST_CANVAS.ax, ST_CANVAS.ay, ST_CANVAS);
+  const mv = move === 'stand' || move === 'walk' || move === 'attack' || move === 'reel' ? MOB[move] : (MOB.more ?? {})[move];
+  const m = momentOf(MOB, mv as NonNullable<typeof mv>, t, move === 'attack' ? MOB.hit : mv?.blurAt);
+  const bits = MOB.bits(st, m).map((b) => ({ ...b, shape: turnShape(b.shape, deg) }));
+  paintBits(st, bits, turnV(m.s.pelvis, deg));
+  const px = st.whole(ENEMY_RIM);
+  for (const [p, c, size] of MOB.grains?.(st, m) ?? []) {
+    const [x, y] = st.at(turnV(p, deg));
+    const xi = Math.round(x - size / 2);
+    const yi = Math.round(y - size / 2);
+    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) if (xi + dx >= 0 && yi + dy >= 0 && xi + dx < px.w && yi + dy < px.h) px.set(xi + dx, yi + dy, c);
+  }
+  return px;
+}
+/** The pieces: `stand_front`, `stand_back`, `stand_side` (his right side square to the eye, the shovel's: turned 45, the game's eye being 45 to his right), and each moment from in front. */
+const BODY_MOMENTS: [string, number, string][] = [
+  ['walk', 0.3, 'walking'],
+  ['attack', 0.6, 'the coals: into his firebox'],
+  ['attack', 1.6, 'the coals: held high'],
+  ['rake', 0.7, 'the rake: held up'],
+  ['burst', 1.0, 'the burst: held, roaring'],
+  ['dying', 1.3, 'to his knees'],
+];
+function body(out: string): void {
+  const W = 360;
+  const H = 300;
+  const FX = 180;
+  const FY = 232;
+  const one = (px: Px | null, painted: Painted | null, file: string): void => {
+    const pic = new Pic(W, H);
+    for (let i = 0; i < W * H; i++) pic.d.set([26, 24, 30, 255], i * 4);
+    pic.shadow(FX, FY, MOB.shadow, 0.5);
+    pic.lay(px ?? (painted as Painted).px, ST_CANVAS.ax, ST_CANVAS.ay, FX, FY, 1);
+    fs.writeFileSync(path.join(out, file), pic.png());
+  };
+  one(null, stokerAt('stand', 0, 'front'), 'stand_front.png');
+  one(null, stokerAt('stand', 0, 'back'), 'stand_back.png');
+  one(stokerTurned('stand', 0, 45), null, 'stand_side.png');
+  one(stokerTurned('stand', 0, -135), null, 'stand_side_left.png');
+  BODY_MOMENTS.forEach(([move, t], i) => one(null, stokerAt(move, t, 'front'), `m${i}_${move}.png`));
+  // (and the knight, for size, on the same picture)
+  const k = new Pic(W, H);
+  for (let i = 0; i < W * H; i++) k.d.set([26, 24, 30, 255], i * 4);
+  laySprite(k, knightIdle('front'), FX, FY, 1);
+  fs.writeFileSync(path.join(out, 'knight.png'), k.png());
+  fs.writeFileSync(path.join(out, 'body.json'), JSON.stringify({ W, H, FX, FY, moments: BODY_MOMENTS }));
+  console.log('body', out);
+}
+
 const [mode = 'look', out = 'shots/stoker', arg] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
 if (mode === 'look') look(out, arg);
 else if (mode === 'big') big(out, arg ?? 'stand:0');
 else if (mode === 'sheet') sheet(out);
 else if (mode === 'film') film(out, arg);
-else console.log('modes: look, big, sheet, film');
+else if (mode === 'body') body(out);
+else console.log('modes: look, big, sheet, film, body');

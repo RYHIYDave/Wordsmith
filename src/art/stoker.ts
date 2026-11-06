@@ -177,13 +177,11 @@ export function domeOf(s: Skeleton): { c: V3; ax: [V3, V3, V3] } {
   const c = add(add(lerp3(s.ribs, s.neck, 0.62), mul(cf, 1.6)), mul(cu, -1.0));
   return { c, ax: [mul(cf, B.ribDeep + 1.8), mul(cl, B.ribHalf + 1.2), mul(cu, 9.5)] };
 }
-/** A pauldron over a shoulder. */
+/** A pauldron over a shoulder: its cop, laid round the deltoid (art/stoker.ts `armBody`, `PAULDRON`). */
 export function pauldronOf(s: Skeleton, side: 'L' | 'R'): { c: V3; ax: [V3, V3, V3] } {
-  const [uf, ul, uu] = s.upper;
-  const sh = side === 'L' ? s.shoulderL : s.shoulderR;
-  const out = mul(ul, side === 'L' ? 1 : -1);
-  const c = add(add(sh, mul(uu, 2.6)), mul(out, 1.4));
-  return { c, ax: [mul(uf, 10.5), mul(out, 9.5), mul(uu, 7.4)] };
+  const d = armBody(s, side).deltoid;
+  const k = PAULDRON.cop.k;
+  return { c: d.c, ax: [mul(d.ax[0], k), mul(d.ax[1], k), mul(d.ax[2], k)] };
 }
 /** His fire-door: its middle as it lies shut, the way out of it (the firebox's forward), across it (to his left) and up; its half-width and half-height. */
 export const DOOR = { half: 10, high: 10.5, down: 3.0, proud: 1.6, open: 112 } as const;
@@ -292,20 +290,6 @@ function bellySkin(s: Skeleton, heat: number, door: number, cold: number, t: num
     return iron[tone5(tone - (soot > 0.66 ? 1 : 0))];
   };
 }
-/** Plain riveted iron: plates, their seams dark, a rivet at their corners; soot. */
-function plateSkin(seed: number, cold: number, k = 2.2): Skin {
-  const iron = ironOf(cold);
-  return (u, tone) => {
-    const a = u[0] * k + 7;
-    const b = u[1] * k + 7;
-    const c = u[2] * k + 7;
-    const ex = Math.min(fr(a), 1 - fr(a), fr(b), 1 - fr(b), fr(c), 1 - fr(c));
-    if (ex < 0.05) return iron[tone5(tone - 1)];
-    if (ex < 0.14 && hash(Math.floor(a) + 3 * Math.floor(c), Math.floor(b), seed) > 0.6) return iron[tone5(tone + 1)];
-    if (cold > 0.55 && noise2(u[0] * 4 + seed, u[2] * 4, 53) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
-    return iron[tone5(tone - (noise2(u[0] * 3 + seed, u[2] * 3 + u[1], 55) > 0.7 ? 1 : 0))];
-  };
-}
 /** The firebox's domed top: plain cast iron, a ring of rivets round its foot, soot. */
 function domeSkin(cold: number): Skin {
   const iron = ironOf(cold);
@@ -313,50 +297,6 @@ function domeSkin(cold: number): Skin {
     if (Math.abs(u[2] - 0.22) < 0.07) return fr(Math.atan2(u[1], u[0]) / (TAU / 26)) < 0.3 ? iron[tone5(tone + 1)] : iron[tone5(tone - 1)];
     if (cold > 0.55 && noise2(u[0] * 4, u[1] * 4, 57) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
     return iron[tone5(tone - (noise2(u[0] * 2.5 + 3, u[1] * 2.5, 59) > 0.7 ? 1 : 0))];
-  };
-}
-/** Scorched leather: its grain, burns dark across it. */
-function leatherSkin(seed: number, cold: number): Skin {
-  return (u, tone) => {
-    const burn = noise2(u[0] * 3 + seed, u[2] * 3 + u[1] * 2, 61) > 0.7;
-    if (cold > 0.55 && noise2(u[0] * 5, u[2] * 5 + seed, 63) > 0.75) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
-    return ST_LEATHER[tone5(tone - (burn ? 1 : 0))];
-  };
-}
-
-/**
- * HIS FURNACE MASK: a squat iron head, riveted; a GRILLE for a mouth, bars across it and the fire behind them; two slits for eyes,
- * the enemy's pink deep in them (dots: art/new_mobs3 `dot`, laid by the painter), gold as he winds up. From behind, iron only.
- */
-function headSkin(s: Skeleton, heat: number, cold: number, t: number): Skin {
-  const [ff, fl, fu] = s.face;
-  const iron = ironOf(cold);
-  return (u, tone) => {
-    const n = norm(u, [1, 0, 0]);
-    const w = add(add(mul(ff, n[0]), mul(fl, n[1])), mul(fu, n[2]));
-    const f = dot(w, ff);
-    const a = dot(w, fl);
-    const b = dot(w, fu);
-    if (f > 0.42) {
-      // the grille: four slots across the mouth, the fire behind them
-      if (b < -0.06 && b > -0.66 && Math.abs(a) < 0.5) {
-        const row = fr((b + 0.66) / 0.15);
-        if (row > 0.45) {
-          const flick = noise2(a * 6 + t * 5, b * 4, 71);
-          return cold > 0.6 ? ST_DEEP : coalAt(Math.max(0.2, heat), 0.5 + 0.5 * flick);
-        }
-        return iron[tone5(tone + 1)];
-      }
-      // the slits for eyes: the enemy's pink burning in them (gold as he winds up), the eyes laid in them
-      if (b > 0.14 && b < 0.34 && Math.abs(a) > 0.1 && Math.abs(a) < 0.56) return cold > 0.5 ? INK : Math.abs(b - 0.24) < 0.05 ? (heat > 0.95 ? FLAME[3] : FLAME[2]) : FLAME[1];
-      // a brow ridge over them
-      if (b >= 0.34 && b < 0.46 && Math.abs(a) < 0.62) return iron[tone5(tone + 1)];
-    }
-    // rivets in a ring round the face, a ridge over the crown
-    if (Math.abs(a) < 0.08 && b > 0.5 && f < 0.6) return iron[tone5(tone + 1)];
-    const ring = Math.abs(f - 0.3) < 0.05;
-    if (ring && fr(Math.atan2(b, a) / (TAU / 14)) < 0.3) return iron[tone5(tone + 2)];
-    return iron[tone5(tone - (noise2(n[0] * 3, n[2] * 3 + n[1], 73) > 0.72 ? 1 : 0))];
   };
 }
 /** THE DOOR: a frame of iron, bars across it upright, the coals glowing between them (white-hot as he roars); a latch on its free edge. */
@@ -389,6 +329,626 @@ function scoopSkin(cold: number, glowLip: number, length: number): PanelSkin {
 }
 
 // =============================================================================================
+// HIS BODY, SCULPTED. His pick of 6 Nov 2026, shown the Stoker and told his arms and legs read like pipes with ball joints:
+// “Reshape his body first (Recommended)”, offered as sculpted arms and legs: forged iron plates over real muscle and joints, his
+// shoulders and knees shaped, not balls. So no limb is a tube and no joint a ball: each limb is MUSCLE (eggs of scorched leather
+// laid along the bone, swelling and tapering as a body does, all of one part, so that they melt into one another with no seam
+// between them), and over it IRON PLATES SHAPED TO IT: each plate is laid round the muscle under it, worked out from that muscle
+// (`outFrom`), so that it follows its curve and nothing of the limb comes through it (tests/stoker.test.ts, the coverage check).
+
+/** A muscle (or anything shaped as an egg): its middle and its three half-lengths, each along its own line. */
+export interface Egg {
+  c: V3;
+  ax: [V3, V3, V3];
+}
+/** A limb's own frame: from `a` to `b` (`L` long), `d` along it, `f` its front (the way given, made square to it), `o` its outside (away from his middle). */
+export interface LimbFrame {
+  a: V3;
+  b: V3;
+  L: number;
+  d: V3;
+  f: V3;
+  o: V3;
+}
+/** A limb's frame; `left`: his left arm or leg (its outside is to his left), so that its outside never flips over however it turns. */
+export function limbFrame(a: V3, b: V3, front: V3, left: boolean): LimbFrame {
+  const L = len(sub(b, a));
+  const d = norm(sub(b, a), [0, 0, -1]);
+  const f0 = sub(front, mul(d, dot(front, d)));
+  const f = len(f0) > 1e-3 ? norm(f0) : norm(cross(d, Math.abs(d[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
+  return { a, b, L, d, f, o: mul(norm(cross(d, f)), left ? -1 : 1) };
+}
+/** A point of a limb: `t` of the way along it, `f` to its front and `o` to its outside. */
+export const onLimb = (k: LimbFrame, t: number, f: number, o: number): V3 => add(add(add(k.a, mul(k.d, t * k.L)), mul(k.f, f)), mul(k.o, o));
+/** A muscle on a limb: its middle `t` along it, `f` to the front and `o` out; its half-lengths to the front, out and along. */
+export const eggOn = (k: LimbFrame, t: number, f: number, o: number, rf: number, ro: number, rd: number): Egg => ({ c: onLimb(k, t, f, o), ax: [mul(k.f, rf), mul(k.o, ro), mul(k.d, rd)] });
+/** An egg made `k` times as big about its own middle. */
+const grown = (e: Egg, k: number): Egg => ({ c: e.c, ax: [mul(e.ax[0], k), mul(e.ax[1], k), mul(e.ax[2], k)] });
+/** Where on an egg a point is, in its own half-lengths (inside it if the three together are under 1). */
+export function inEgg(e: Egg, p: V3): V3 {
+  const q = sub(p, e.c);
+  return [dot(q, e.ax[0]) / dot(e.ax[0], e.ax[0]), dot(q, e.ax[1]) / dot(e.ax[1], e.ax[1]), dot(q, e.ax[2]) / dot(e.ax[2], e.ax[2])];
+}
+/** The lowest point of an egg, above the floor. */
+const lowOf = (e: Egg): number => e.c[2] - Math.hypot(e.ax[0][2], e.ax[1][2], e.ax[2][2]);
+/** An egg kept out of the floor (a knee kneeling on it rests on it, not in it). */
+const offFloor = (e: Egg): Egg => (lowOf(e) < 0.15 ? { c: add(e.c, [0, 0, 0.15 - lowOf(e)]), ax: e.ax } : e);
+
+/** How far out from `o` along `dir` (a unit) the outside of these muscles is: where a ray from within them last leaves them (0 if it leaves none). */
+export function outFrom(eggs: ReadonlyArray<Egg>, o: V3, dir: V3): number {
+  let best = 0;
+  for (const e of eggs) {
+    const q = sub(o, e.c);
+    let A = 0;
+    let Bq = 0;
+    let C = -1;
+    for (const a of e.ax) {
+      const l2 = dot(a, a);
+      const dq = dot(q, a) / l2;
+      const dd = dot(dir, a) / l2;
+      A += dd * dd;
+      Bq += 2 * dq * dd;
+      C += dq * dq;
+    }
+    const disc = Bq * Bq - 4 * A * C;
+    if (disc < 0) continue;
+    best = Math.max(best, (-Bq + Math.sqrt(disc)) / (2 * A));
+  }
+  return best;
+}
+/** A ring laid round muscles at `c` (square to `f` and `o`), `off` outside their skin all the way round, never closer in than `min`: a band of iron, a cuff, a plate's edge, following the muscle under it. */
+export function ringOver(eggs: ReadonlyArray<Egg>, c: V3, f: V3, o: V3, off: number, min = 0, n = 20): Ring {
+  const pts: V3[] = [];
+  const rs: number[] = [];
+  let rf = 0;
+  let ro = 0;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU;
+    const dir = add(mul(f, Math.cos(a)), mul(o, Math.sin(a)));
+    const r = Math.max(min, outFrom(eggs, c, dir)) + off;
+    const p = add(c, mul(dir, r));
+    pts.push([p[0], p[1], Math.max(0.2, p[2])]);
+    rf = Math.max(rf, Math.abs(r * Math.cos(a)));
+    ro = Math.max(ro, Math.abs(r * Math.sin(a)));
+    rs.push(r);
+  }
+  // (its oval, which says how near the eye each of its points is, made as big as all of them: so that it is never painted behind the muscle it lies over)
+  const k = Math.max(1, ...rs.map((r, i) => r / Math.hypot(rf * Math.cos((i / n) * TAU), ro * Math.sin((i / n) * TAU))));
+  return { c, u: mul(f, rf * k), v: mul(o, ro * k), pts };
+}
+
+/** HIS ARMS AND SHOULDERS, as worked out from his bones: the frames of his upper arm and forearm, the shoulder's (which his pauldron rides on), and his muscles. */
+export interface ArmBody {
+  up: LimbFrame;
+  fore: LimbFrame;
+  /** The shoulder's frame: `d` down over the shoulder (the arm's way, a little of the chest's down, a little out: the pauldron rides up with the arm as it is raised), `f` forward, `o` out. */
+  sh: LimbFrame;
+  /** Which way the elbow's point is. */
+  pole: V3;
+  deltoid: Egg;
+  /** The upper arm's muscles (biceps, triceps, the brachialis, above the elbow), the forearm's (thick at the top, narrowing to the wrist). */
+  upper: Egg[];
+  forearm: Egg[];
+  /** The fist: its grip's line (the haft's, when it holds it), the way the forearm comes into it, and the back of the hand. */
+  grip: { at: V3; g: V3; w: V3; n: V3 };
+}
+/**
+ * THE PAULDRON: its COP, a shell laid round the top of the deltoid (`k` times as big as it, from its top down to `to` of its own
+ * half-lengths, and round to `inside` toward his neck), riveted, a ridge over it; and its LAMES, three bands of iron round the
+ * shoulder and the top of the arm, each laid round the muscle under it (`ringOver`), flaring at its foot, and each over the top of
+ * the next (shingled down the arm): where each is (from and to, the deltoid's own half-lengths down), how far off the muscle at its
+ * top and at its flared foot.
+ */
+export const PAULDRON = {
+  cop: { k: 1.2, to: -0.02, inside: -0.55 },
+  lames: [
+    { from: -0.24, to: 0.22, top: 1.0, foot: 2.6 },
+    { from: 0.04, to: 0.5, top: 0.9, foot: 2.3 },
+    { from: 0.32, to: 0.74, top: 0.8, foot: 2.0 },
+  ],
+} as const;
+export function armBody(s: Skeleton, side: 'L' | 'R', haft?: { top: V3; way: V3 }): ArmBody {
+  const L = side === 'L';
+  const sh = L ? s.shoulderL : s.shoulderR;
+  const el = L ? s.elbowL : s.elbowR;
+  const hand = L ? s.handL : s.handR;
+  const [uf, ul, uu] = s.upper;
+  const out = mul(ul, L ? 1 : -1);
+  // (the elbow's point: the way the pose put it, in the chest's own space)
+  const pole0 = L ? s.poleL : s.poleR;
+  const pole = norm(add(add(mul(s.chest[0], pole0[0]), mul(s.chest[1], pole0[1])), mul(s.chest[2], pole0[2])), mul(uf, -1));
+  const up = limbFrame(sh, el, mul(pole, -1), L);
+  const fore = limbFrame(el, hand, mul(pole, -1), L);
+  // THE SHOULDER: the pauldron rides on it, between the chest and the arm
+  const shDown = norm(add(add(mul(uu, -0.45), up.d), mul(out, 0.4)));
+  const shF = limbFrame(sh, add(sh, shDown), uf, L);
+  const deltoid: Egg = { c: add(add(sh, mul(shDown, 1.2)), mul(shF.o, 2.4)), ax: [mul(shF.f, 9.6), mul(shF.o, 8.8), mul(shF.d, 12.2)] };
+  // THE UPPER ARM: a swelling biceps before, the great triceps behind, the brachialis out, all running down into the elbow
+  const upper = [
+    eggOn(up, 0.52, 2.8, 0.3, 5.2, 5.8, 9.4),
+    eggOn(up, 0.47, -2.5, 0.9, 5.8, 6.4, 10.6),
+    eggOn(up, 0.7, 0.4, 2.2, 5.0, 4.6, 7.2),
+    eggOn(up, 0.88, 0.2, 0, 5.6, 6.0, 5.0),
+  ];
+  // THE FOREARM: thick at the top (the extensors over its back and out, the flexors before), narrowing to the wrist
+  const forearm = [
+    eggOn(fore, 0.12, 0, 0, 5.8, 6.0, 4.6),
+    eggOn(fore, 0.24, -1.4, 1.5, 6.2, 6.4, 8.4),
+    eggOn(fore, 0.28, 1.6, -0.7, 5.6, 5.6, 8.6),
+    eggOn(fore, 0.58, 0, 0, 4.8, 5.0, 8.8),
+  ];
+  // THE FIST: round the haft when it holds it (the haft's line), or closed on nothing, its knuckles across the forearm
+  let g = norm(cross(fore.d, fore.o), [0, 0, 1]);
+  if (haft) {
+    const ab = haft.way;
+    const k = dot(sub(hand, haft.top), ab);
+    const off = len(sub(hand, add(haft.top, mul(ab, k))));
+    const on = clamp01((7 - off) / 5);
+    const h = dot(g, ab) < 0 ? mul(ab, -1) : ab;
+    g = norm(add(mul(g, 1 - on), mul(h, on)), g);
+  }
+  const w = norm(sub(fore.d, mul(g, dot(fore.d, g))), fore.d);
+  const n = mul(norm(cross(g, w)), L ? -1 : 1);
+  return { up, fore, sh: shF, pole, deltoid, upper, forearm, grip: { at: hand, g, w, n } };
+}
+
+/** HIS LEGS, as worked out from his bones: the thigh's and the shin's frames (their front the knee's), and his muscles. */
+export interface LegBody {
+  thigh: LimbFrame;
+  shin: LimbFrame;
+  /** The knee's front, and across it (out). */
+  kf: V3;
+  ko: V3;
+  upper: Egg[];
+  lower: Egg[];
+}
+export function legBody(s: Skeleton, side: 'L' | 'R'): LegBody {
+  const L = side === 'L';
+  const hip = L ? s.hipL : s.hipR;
+  const knee = L ? s.kneeL : s.kneeR;
+  const ankle = L ? s.ankleL : s.ankleR;
+  const heel = L ? s.heelL : s.heelR;
+  const toe = L ? s.toeL : s.toeR;
+  // (the knee's front: the way it is bent, and where the foot points while it is all but straight)
+  const ab = sub(ankle, hip);
+  const kk = dot(sub(knee, hip), ab) / Math.max(1e-6, dot(ab, ab));
+  const bend = sub(knee, add(hip, mul(ab, kk)));
+  const foot = norm([toe[0] - heel[0], toe[1] - heel[1], 0], s.hips[0]);
+  const front = norm(add(bend, mul(foot, 5)), s.hips[0]);
+  const thigh = limbFrame(hip, knee, front, L);
+  const shin = limbFrame(knee, ankle, front, L);
+  const kf = norm(add(thigh.f, shin.f), thigh.f);
+  const ko = norm(add(thigh.o, shin.o), thigh.o);
+  // THE THIGH: thick, the quadriceps before, the hamstrings behind; above the knee the two heads of the quadriceps swelling either side
+  const upper = [
+    eggOn(thigh, 0.42, 2.2, 0.4, 7.0, 8.6, 12.4),
+    eggOn(thigh, 0.42, -2.0, 0, 6.4, 8.2, 11.4),
+    eggOn(thigh, 0.74, 1.2, 3.0, 5.6, 5.0, 8.0),
+    eggOn(thigh, 0.8, 2.0, -2.6, 5.4, 4.8, 6.4),
+    eggOn(thigh, 0.92, 0.3, 0, 6.6, 7.6, 5.0),
+  ].map(offFloor);
+  // THE SHIN: the calf's two heads swelling behind, the shin's muscle before, tapering into the boot
+  const lower = [
+    eggOn(shin, 0.07, 0, 0, 6.6, 7.4, 5.0),
+    eggOn(shin, 0.28, -3.3, 1.9, 5.0, 4.6, 9.0),
+    eggOn(shin, 0.3, -3.1, -2.1, 5.2, 4.8, 9.6),
+    eggOn(shin, 0.34, 1.5, 0.5, 4.9, 5.3, 10.6),
+    eggOn(shin, 0.62, -0.6, 0, 5.0, 5.2, 9.0),
+  ].map(offFloor);
+  return { thigh, shin, kf, ko, upper, lower };
+}
+/** Where the boot's cuff comes up to on the shin; the vambrace's top and foot on the forearm; the upper arm's band. */
+export const BOOT_TOP = 0.56;
+export const VAMBRACE = [0.42, 0.8] as const;
+export const ARM_BAND = 0.62;
+
+/** SCORCHED LEATHER WRAPPED ROUND A LIMB: strips wound round it, their edges dark, a lit edge beside, burns across them; `pitch` how far down the limb each turn goes. */
+function wrapSkin(k: LimbFrame, e: Egg, seed: number, cold: number, pitch = 4.6): Skin {
+  return (u, tone) => {
+    const p = add(add(add(e.c, mul(e.ax[0], u[0])), mul(e.ax[1], u[1])), mul(e.ax[2], u[2]));
+    const q = sub(p, k.a);
+    const along = dot(q, k.d);
+    const ang = Math.atan2(dot(q, k.o), dot(q, k.f));
+    const ph = fr(along / pitch + ang / TAU + 0.37 * seed);
+    if (cold > 0.55 && noise2(along * 0.5 + seed, ang * 2, 63) > 0.75) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
+    if (ph < 0.11) return ST_LEATHER[Math.max(0, tone - 2)];
+    if (ph < 0.22 && tone >= 2) return ST_LEATHER[Math.min(4, tone + 1)];
+    const burn = noise2(along * 0.35 + seed, ang * 1.6 + along * 0.1, 61) > 0.7;
+    return ST_LEATHER[tone5(tone - (burn ? 1 : 0))];
+  };
+}
+/** FORGED IRON: soot, a hammer's dints, going grey as he dies. */
+function forgedSkin(seed: number, cold: number): Skin {
+  const iron = ironOf(cold);
+  return (u, tone) => {
+    if (cold > 0.55 && noise2(u[0] * 4 + seed, u[2] * 4, 53) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
+    return iron[tone5(tone - (noise2(u[0] * 3 + seed, u[2] * 3 + u[1], 55) > 0.7 ? 1 : 0))];
+  };
+}
+/** A PLATE OF THE PAULDRON (or any plate cut from an egg round the muscle): only between `from` and `to` of its own down (u[2]) and out from `inside` (u[1]); its lower edge rolled (dark under, lit over), a row of rivets under the plate above, the cop's ridge. */
+function plateCut(cold: number, from: number, to: number, inside: number, seed: number, ridge: boolean): Skin {
+  const iron = ironOf(cold);
+  return (u, tone) => {
+    if (u[2] < from || u[2] > to || u[1] < inside) return null;
+    const ang = Math.atan2(u[1], u[0]);
+    if (to - u[2] < 0.05 || u[1] - inside < 0.05) return iron[0];
+    if (to - u[2] < 0.11) return iron[Math.min(4, tone + 1)];
+    if (from > -0.9 && u[2] - from < 0.12 && u[2] - from > 0.04 && fr(ang / (TAU / 11) + seed * 0.13) < 0.2) return iron[4];
+    if (ridge && Math.abs(u[0]) < 0.07 && u[1] > 0) return iron[Math.min(4, tone + 1)];
+    if (cold > 0.55 && noise2(u[0] * 4 + seed, u[2] * 4, 53) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
+    return iron[tone5(tone - (noise2(u[0] * 2.6 + seed, u[2] * 2.6 + u[1], 55) > 0.72 ? 1 : 0))];
+  };
+}
+/** A CUP OF IRON over a joint (a couter at the elbow, a poleyn at the knee): only its front (u[0] above `open`), a ridge down its middle, its rim rolled, rivets either side. */
+function cupSkin(cold: number, open: number, seed: number): Skin {
+  const iron = ironOf(cold);
+  return (u, tone) => {
+    if (u[0] < open) return null;
+    if (u[0] - open < 0.08) return iron[0];
+    if (u[0] - open < 0.16) return iron[Math.min(4, tone + 1)];
+    if (Math.abs(u[1]) < 0.09 && u[0] > 0.45) return iron[Math.min(4, tone + 1)];
+    if (Math.abs(Math.abs(u[1]) - 0.62) < 0.1 && Math.abs(u[2]) < 0.12) return iron[4];
+    if (cold > 0.55 && noise2(u[1] * 4 + seed, u[2] * 4, 53) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
+    return iron[tone5(tone - (noise2(u[1] * 2.4 + seed, u[2] * 2.4, 55) > 0.72 ? 1 : 0))];
+  };
+}
+/** THE FAN of a couter or a poleyn, out over the side of the joint: a shell of iron fluted from its root. */
+function fanSkin(cold: number): Skin {
+  const iron = ironOf(cold);
+  return (u, tone) => {
+    const r = Math.hypot(u[0], u[2]);
+    if (r > 0.86) return iron[0];
+    const flute = Math.abs(fr((Math.atan2(u[2], u[0]) / TAU) * 9) - 0.5) < 0.12;
+    return iron[tone5(tone + (flute ? -1 : u[1] > 0 ? 0 : -1))];
+  };
+}
+/** THE GAUNTLET'S FIST: the back of the hand a plate, riveted; the fingers four plates curled round what it holds (their seams across it), the knuckles a ridge. */
+function fistSkin(at: V3, g: V3, w: V3, n: V3, e: Egg, cold: number): Skin {
+  const iron = ironOf(cold);
+  return (u, tone) => {
+    const p = add(add(add(e.c, mul(e.ax[0], u[0])), mul(e.ax[1], u[1])), mul(e.ax[2], u[2]));
+    const q = sub(p, at);
+    const across = dot(q, g);
+    const fwd = dot(q, w);
+    const back = dot(q, n);
+    if (fwd > -1.6) {
+      // the fingers: four, their seams across the fist (dark), each lit along its knuckle
+      const f4 = (across + 6.2) / 3.1;
+      if (f4 > 0.2 && f4 < 3.8 && Math.abs(fr(f4) - 0) < 0.13) return iron[0];
+      if (back > 1.2 && fwd > -0.6 && fwd < 1.4) return iron[Math.min(4, tone + 1)];
+      return iron[tone5(tone - (fr(f4) > 0.6 ? 1 : 0))];
+    }
+    // the back of the hand: a plate, rivets at its corners
+    if (back > 0 && Math.abs(Math.abs(across) - 3.2) < 0.7 && Math.abs(fwd + 3.6) < 0.7) return iron[4];
+    return iron[tone5(tone - (noise2(across * 0.6, fwd * 0.6, 57) > 0.72 ? 1 : 0))];
+  };
+}
+
+/** A LAME OF THE PAULDRON: a band cut from an egg laid round the muscle under it, its foot the egg's widest (so that it flares), its top `LAME_TOP` of the way up the egg (u[2]), as big as it must be to go round the muscle at its top, its middle and its foot. */
+export const LAME_TOP = -0.6;
+export function lameOf(A: ArmBody, l: { from: number; to: number; top: number; foot: number }): Egg {
+  const under = [A.deltoid, ...A.upper];
+  const dl = len(A.deltoid.ax[2]);
+  const at = (w: number): V3 => add(A.deltoid.c, mul(A.sh.d, dl * w));
+  const top = ringOver(under, at(l.from), A.sh.f, A.sh.o, l.top);
+  const mid = ringOver(under, at((l.from + l.to) / 2), A.sh.f, A.sh.o, (l.top + l.foot) / 2);
+  const foot = ringOver(under, at(l.to), A.sh.f, A.sh.o, l.foot);
+  const k = Math.sqrt(1 - LAME_TOP * LAME_TOP);
+  const km = Math.sqrt(1 - (LAME_TOP / 2) * (LAME_TOP / 2));
+  const rf = Math.max(len(top.u) / k, len(mid.u) / km, len(foot.u));
+  const ro = Math.max(len(top.v) / k, len(mid.v) / km, len(foot.v));
+  return { c: foot.c, ax: [mul(A.sh.f, rf), mul(A.sh.o, ro), mul(A.sh.d, ((l.to - l.from) * dl) / -LAME_TOP)] };
+}
+/** A lame's iron: only its band (from `LAME_TOP` to its foot); its foot rolled (dark under, lit over); a row of rivets along its top, under the plate above. */
+function lameSkin(cold: number, seed: number): Skin {
+  const iron = ironOf(cold);
+  return (u, tone) => {
+    if (u[2] < LAME_TOP || u[2] > 0.05) return null;
+    if (u[2] > -0.03) return iron[0];
+    if (u[2] > -0.11) return iron[Math.min(4, tone + 1)];
+    if (u[2] < LAME_TOP + 0.16 && u[2] > LAME_TOP + 0.06 && fr(Math.atan2(u[1], u[0]) / (TAU / 12) + seed * 0.21) < 0.22) return iron[4];
+    if (cold > 0.55 && noise2(u[0] * 4 + seed, u[2] * 4, 53) > 0.74) return ST_ASH[Math.max(0, Math.min(2, 3 - tone))];
+    return iron[tone5(tone - (noise2(u[0] * 2.6 + seed, u[1] * 2.6 + u[2], 55) > 0.72 ? 1 : 0))];
+  };
+}
+
+/**
+ * NOTHING OF HIM THROUGH WHAT HE WEARS (his rulebook: nothing passing through the body; plates and cloth over what they cover, no
+ * limb poking through a plate). What covers a point of his muscle (`p`, of his arm or his leg, `side`) as he is posed, or null
+ * where it is bare: the pauldron's cop and its lames, the band round the upper arm, the couter, the vambrace and the gauntlet's
+ * cuff; the skirt (everything of his thigh above its hem), the poleyn, the boot. Each zone is kept `margin` (his lengths, or the
+ * share of a plate's own half-lengths) inside its edges, where the plate's own edge is drawn. tests/stoker.test.ts puts every
+ * pixel of his muscle that is seen back where it is on him and asks this: none may be where something covers it.
+ */
+export function coverOf(s: Skeleton, limb: 'arm' | 'leg', side: 'L' | 'R', p: V3, margin = 0.6): string | null {
+  const M = margin;
+  const within = (eggs: ReadonlyArray<Egg>, c: V3, way: V3, off: number): boolean => {
+    const q = sub(p, c);
+    const r0 = sub(q, mul(way, dot(q, way)));
+    const r = len(r0);
+    return r < 1e-6 || r < outFrom(eggs, c, mul(r0, 1 / r)) + off + 0.4;
+  };
+  if (limb === 'arm') {
+    const A = armBody(s, side);
+    // the cop: over the top of the deltoid, round to the inside as far as it is cut
+    const cop = inEgg(grown(A.deltoid, PAULDRON.cop.k), p);
+    const cn = norm(cop, [0, 0, 1]);
+    if (cn[2] < PAULDRON.cop.to - 0.12 && cn[1] > PAULDRON.cop.inside + 0.12) return 'the pauldron';
+    // its lames, round the shoulder and the top of the arm
+    // (each lame an egg's band, painted as it truly is: muscle seen inside it is seen through its open end; muscle OUTSIDE it, at its height, comes through it)
+    for (const l of PAULDRON.lames) {
+      const u = inEgg(lameOf(A, l), p);
+      if (u[2] > LAME_TOP + 0.08 && u[2] < -0.06 && Math.hypot(u[0], u[1], u[2]) > 1.02) return 'the pauldron';
+    }
+    // the band round the upper arm
+    const tu = dot(sub(p, A.up.a), A.up.d) / A.up.L;
+    if (Math.abs(tu - ARM_BAND) < 0.04 - M / A.up.L && within([...A.upper, A.deltoid], onLimb(A.up, tu, 0, 0), A.up.d, 1.6)) return 'the band';
+    // the couter's cup, over the point of the elbow
+    {
+      const el = A.up.b;
+      const along0 = norm(add(A.up.d, A.fore.d), A.up.d);
+      const along = norm(sub(along0, mul(A.pole, dot(along0, A.pole))), A.up.d);
+      const across = norm(cross(A.pole, along), A.up.o);
+      const u = inEgg({ c: add(el, mul(A.pole, 2.6)), ax: [mul(A.pole, 5.6), mul(across, 6.6), mul(along, 7.6)] }, p);
+      if (u[0] > -0.12 + 0.2 && Math.hypot(u[1], u[2]) < 0.8) return 'the couter';
+    }
+    // the vambrace and the gauntlet's cuff, down the forearm to the fist
+    const tf = dot(sub(p, A.fore.a), A.fore.d) / A.fore.L;
+    if (tf > VAMBRACE[0] + M / A.fore.L && within(A.forearm, onLimb(A.fore, Math.min(1, tf), 0, 0), A.fore.d, 1.8)) return tf < VAMBRACE[1] ? 'the vambrace' : 'the gauntlet';
+    return null;
+  }
+  const G = legBody(s, side);
+  // the skirt: all of his thighs above its hem
+  if (p[2] > (s.kneeL[2] + s.kneeR[2]) / 2 + 7 + M + 0.4) return 'the skirt';
+  // the poleyn's cup, over the front of the knee
+  {
+    const knee = G.thigh.b;
+    const along = norm(cross(G.ko, G.kf), [0, 0, 1]);
+    const u = inEgg(offFloor({ c: add(knee, mul(G.kf, 2.4)), ax: [mul(G.kf, 6.0), mul(G.ko, 8.8), mul(along, 8.8)] }), p);
+    if (u[0] > -0.1 + 0.2 && Math.hypot(u[1], u[2]) < 0.8) return 'the poleyn';
+  }
+  // the boot, from its cuff down
+  const ts = dot(sub(p, G.shin.a), G.shin.d) / G.shin.L;
+  if (ts > BOOT_TOP + M / G.shin.L && within(G.lower, onLimb(G.shin, Math.min(1, ts), 0, 0), G.shin.d, 1.8)) return 'the boot';
+  return null;
+}
+
+/** HIS ARM, PAINTED: the muscle (one part, melted), the pauldron's plates over the shoulder, a band shaped to the upper arm, the couter, the vambrace, the gauntlet. */
+function armBits(put: Put, s: Skeleton, side: 'L' | 'R', haft: { top: V3; way: V3 } | undefined, cold: number): void {
+  const L = side === 'L';
+  const A = armBody(s, side, haft);
+  const iron = ironOf(cold);
+  const flesh = `arm${side}`;
+  const seed = L ? 3 : 5;
+  // THE MUSCLE: the deltoid, the upper arm, the forearm, all of one part
+  put(flesh, flesh, { k: 'ball', c: A.deltoid.c, ax: A.deltoid.ax, skin: wrapSkin(A.sh, A.deltoid, seed, cold, 5.2) });
+  for (const e of A.upper) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(A.up, e, seed, cold) });
+  for (const e of A.forearm) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(A.fore, e, seed + 1, cold, 4.2) });
+  // THE PAULDRON: a cop over the shoulder, riveted, and three lames shingled down the arm, each laid round the muscle under it
+  {
+    const cop = grown(A.deltoid, PAULDRON.cop.k);
+    put(`paul${side}`, `paul${side}`, { k: 'ball', c: cop.c, ax: cop.ax, skin: plateCut(cold, -1, PAULDRON.cop.to, PAULDRON.cop.inside, seed, true) });
+    const under = [A.deltoid, ...A.upper];
+    const dl = len(A.deltoid.ax[2]);
+    PAULDRON.lames.forEach((l, i) => {
+      const e = lameOf(A, l);
+      put(`lame${side}${i}`, `paul${side}`, { k: 'ball', c: e.c, ax: e.ax, skin: lameSkin(cold, seed + i) });
+    });
+  }
+  // AN IRON BAND round the upper arm over the swell of its muscle, shaped to it
+  {
+    const all = [...A.upper, A.deltoid];
+    const at = (t: number): V3 => onLimb(A.up, t, 0, 0);
+    const rings = [ARM_BAND - 0.04, ARM_BAND, ARM_BAND + 0.04].map((t, i) => ringOver(all, at(t), A.up.f, A.up.o, i === 1 ? 2.0 : 1.6));
+    put(`band${side}`, `band${side}`, { k: 'cloth', rings, ramp: iron, look: { lift: 0.1 } });
+  }
+  // THE COUTER: a cup of iron over the point of the elbow, a fan out over its side, hinged to the arm by a lame above and below
+  {
+    const el = A.up.b;
+    // (down the arm at the elbow: between the upper arm's way and the forearm's, made square to the elbow's point)
+    const along0 = norm(add(A.up.d, A.fore.d), A.up.d);
+    const along = norm(sub(along0, mul(A.pole, dot(along0, A.pole))), A.up.d);
+    const across = norm(cross(A.pole, along), A.up.o);
+    const cup: Egg = { c: add(el, mul(A.pole, 2.6)), ax: [mul(A.pole, 5.6), mul(across, 6.6), mul(along, 7.6)] };
+    put(`couter${side}`, `couter${side}`, { k: 'ball', c: cup.c, ax: cup.ax, skin: cupSkin(cold, -0.12, seed) });
+    const o = norm(add(A.up.o, A.fore.o), A.up.o);
+    const fan: Egg = { c: add(add(el, mul(o, 6.2)), mul(A.pole, 1.4)), ax: [mul(A.pole, 4.0), mul(o, 1.2), mul(along, 4.8)] };
+    put(`couter${side}`, `couter${side}`, { k: 'ball', c: fan.c, ax: fan.ax, skin: fanSkin(cold) });
+  }
+  // THE VAMBRACE: iron round the forearm from below its swell to the wrist, laid round the muscle and narrowing with it
+  {
+    const ts = [0, 0.25, 0.5, 0.75, 1].map((k) => VAMBRACE[0] + (VAMBRACE[1] - VAMBRACE[0]) * k);
+    const rings = ts.map((t, i) => ringOver(A.forearm, onLimb(A.fore, t, 0, 0), A.fore.f, A.fore.o, i === 0 ? 2.2 : 1.8, 4.6));
+    put(`vam${side}`, `vam${side}`, { k: 'cloth', rings, ramp: iron, look: { lift: 0.05 } });
+    put(`vam${side}`, `vam${side}`, { k: 'band', ring: { c: rings[0].c, u: mul(rings[0].u, 1.04), v: mul(rings[0].v, 1.04) }, ramp: iron, rows: 2 });
+  }
+  // THE GAUNTLET: a flared cuff over the wrist, the fist closed (round the haft, when it holds it): the back of the hand a plate, four fingers curled, the knuckles a ridge, the thumb over them
+  {
+    const { at, g, w, n } = A.grip;
+    const wrist = add(at, mul(A.fore.d, -6.2));
+    put(`hand${side}`, `hand${side}`, { k: 'rod', a: add(wrist, mul(A.fore.d, -5.0)), b: wrist, ra: 6.6, rb: 5.6, ramp: iron });
+    put(`hand${side}`, `hand${side}`, { k: 'band', ring: { c: add(wrist, mul(A.fore.d, -4.4)), u: mul(A.fore.f, 6.7), v: mul(A.fore.o, 6.7) }, ramp: iron, rows: 2 });
+    const fist: Egg = { c: add(add(at, mul(w, -0.8)), mul(n, 0.6)), ax: [mul(g, 6.6), mul(w, 6.2), mul(n, 5.6)] };
+    put(`hand${side}`, `hand${side}`, { k: 'ball', c: fist.c, ax: fist.ax, skin: fistSkin(at, g, w, n, fist, cold) });
+    put(`hand${side}`, `hand${side}`, { k: 'ball', c: add(add(at, mul(w, 1.8)), mul(n, 4.0)), ax: [mul(g, 6.4), mul(w, 2.2), mul(n, 2.0)], skin: forgedSkin(seed + 7, cold) });
+    const th0 = add(add(add(at, mul(w, -3.4)), mul(n, -3.2)), mul(g, 3.6));
+    const th1 = add(add(add(at, mul(w, 1.4)), mul(n, -4.4)), mul(g, 2.2));
+    put(`hand${side}`, `hand${side}`, { k: 'rod', a: th0, b: th1, ra: 2.2, rb: 1.7, ramp: iron });
+  }
+}
+
+/** HIS LEG, PAINTED: the muscle (thigh and calf, one part), the poleyn over the knee with its fan and its lames, the iron boot with its toe and its heel. */
+function legBits(put: Put, s: Skeleton, side: 'L' | 'R', cold: number): void {
+  const L = side === 'L';
+  const G = legBody(s, side);
+  const iron = ironOf(cold);
+  const seed = L ? 7 : 9;
+  const flesh = `leg${side}`;
+  for (const e of G.upper) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(G.thigh, e, seed, cold, 5.4) });
+  for (const e of G.lower) put(flesh, flesh, { k: 'ball', c: e.c, ax: e.ax, skin: wrapSkin(G.shin, e, seed + 1, cold, 4.8) });
+  // THE POLEYN: a cup fitting the front of the knee, a fan out over its side, a lame above it on the thigh and one below on the shin
+  {
+    const knee = G.thigh.b;
+    const along = norm(cross(G.ko, G.kf), [0, 0, 1]);
+    const cup = offFloor({ c: add(knee, mul(G.kf, 2.4)), ax: [mul(G.kf, 6.0), mul(G.ko, 8.8), mul(along, 8.8)] });
+    put(`knee${side}`, `knee${side}`, { k: 'ball', c: cup.c, ax: cup.ax, skin: cupSkin(cold, -0.1, seed) });
+    const fan = offFloor({ c: add(add(knee, mul(G.ko, 8.2)), mul(G.kf, 1.0)), ax: [mul(G.kf, 5.4), mul(G.ko, 1.4), mul(along, 6.6)] });
+    put(`knee${side}`, `knee${side}`, { k: 'ball', c: fan.c, ax: fan.ax, skin: fanSkin(cold) });
+    for (const [k, t0, t1] of [[G.thigh, 0.8, 0.88], [G.shin, 0.1, 0.18]] as const) {
+      const muscle = k === G.thigh ? G.upper : G.lower;
+      const rings = [t0, t1].map((t) => ringOver(muscle, onLimb(k, t, 0, 0), k.f, k.o, 1.0));
+      put(`knee${side}`, `knee${side}`, { k: 'cloth', rings, ramp: iron, look: { lift: 0.1, arc: [-100, 100] } });
+    }
+  }
+  // THE BOOT: an iron cuff up the calf laid round its muscle, flared at its top; the foot shaped, its heel and its toe, a sole under it
+  {
+    const ankle = G.shin.b;
+    const heel = L ? s.heelL : s.heelR;
+    const toe = L ? s.toeL : s.toeR;
+    const ts = [BOOT_TOP, BOOT_TOP + 0.07, 0.7, 0.84, 0.98];
+    const cuff = ts.map((t, i) => ringOver(G.lower, onLimb(G.shin, t, 0, 0), G.shin.f, G.shin.o, i === 0 ? 2.4 : 1.8, i < 2 ? 0 : 5.6));
+    put(`boot${side}`, `boot${side}`, { k: 'cloth', rings: cuff, ramp: iron, look: { lift: 0.08 } });
+    put(`boot${side}`, `boot${side}`, { k: 'band', ring: { c: cuff[0].c, u: mul(cuff[0].u, 1.02), v: mul(cuff[0].v, 1.02) }, ramp: iron, rows: 2 });
+    const along = norm(sub(toe, heel), [1, 0, 0]);
+    const across = norm(cross([0, 0, 1], along), [0, 1, 0]);
+    const up = norm(cross(along, across), [0, 0, 1]);
+    // (the foot's rings, from behind the heel to the toe's tip: where along it from the heel, how high its middle, half its height and its width)
+    const FOOT: [number, number, number, number][] = [[-2.6, 3.4, 3.1, 4.4], [0.4, 4.6, 4.6, 5.8], [5.0, 5.0, 5.0, 6.4], [11.0, 3.8, 3.8, 6.8], [16.0, 2.9, 2.9, 6.0], [19.4, 2.4, 2.2, 4.2], [20.6, 2.2, 1.2, 2.4]];
+    const ring = (x: number, z: number, hh: number, hw: number): Ring => ({ c: add(add(heel, mul(along, x)), mul(up, z)), u: mul(up, hh), v: mul(across, hw) });
+    const rings = FOOT.map(([x, z, hh, hw]) => ring(x, z, hh, hw));
+    const sole = FOOT.map(([x, , , hw]) => ring(x, 1.0, 1.0, hw + 0.5));
+    const low = Math.min(...[...rings, ...sole].map((r) => r.c[2] - Math.hypot(r.u[2], r.v[2])));
+    const lift: V3 = [0, 0, Math.max(0, 0.1 - low)];
+    const raise = (r: Ring): Ring => ({ c: add(r.c, lift), u: r.u, v: r.v });
+    put(`boot${side}`, `boot${side}`, { k: 'cloth', rings: rings.map(raise), ramp: iron, look: { lift: 0.04 } });
+    put(`boot${side}`, `boot${side}`, { k: 'cloth', rings: sole.map(raise), ramp: [ST_CRUST[0], ST_CRUST[0], ST_LEATHER[1], ST_LEATHER[2], ST_LEATHER[2]], look: { lift: 0 } });
+    // (the toe's plates: lames across the instep; the heel's block)
+    for (const x of [7.4, 10.6, 13.8]) {
+      const r = ring(x, 0, 0, 0);
+      const k = Math.max(0, Math.min(FOOT.length - 2, FOOT.findIndex((q) => q[0] > x) - 1));
+      const a = FOOT[k];
+      const b = FOOT[k + 1];
+      const m = (x - a[0]) / (b[0] - a[0]);
+      const z = a[1] + (b[1] - a[1]) * m;
+      const hh = a[2] + (b[2] - a[2]) * m + 0.3;
+      const hw = a[3] + (b[3] - a[3]) * m + 0.3;
+      put(`boot${side}`, `boot${side}`, { k: 'band', ring: { c: add(add(r.c, mul(up, z)), lift), u: mul(up, hh), v: mul(across, hw) }, ramp: iron, rows: 1 });
+    }
+    void ankle;
+  }
+}
+
+/**
+ * THE FURNACE MASK'S HELM, as worked out from his bones: one shape of iron from its crown to its jaw (rings round it, `HELM`: how
+ * far up from its middle, how far it is put forward, its half-depth and its half-width): a domed crown, straight sides, the jaw
+ * flaring out wider than the crown and jutting before the face, closing under the chin; a heavy brow over the slits for his eyes;
+ * a crest over the crown; the grille set in the jaw's front.
+ */
+export const HELM: ReadonlyArray<readonly [number, number, number, number]> = [
+  [9.0, -0.6, 2.4, 2.8],
+  [7.6, -0.4, 6.4, 7.0],
+  [4.6, 0, 8.6, 9.2],
+  [0.6, 0.3, 8.8, 9.4],
+  [-3.4, 1.3, 9.4, 10.6],
+  [-7.6, 2.2, 9.4, 11.2],
+  [-10.6, 2.2, 8.0, 9.8],
+  [-12.0, 1.6, 4.8, 6.0],
+];
+export interface HelmBody {
+  /** Its middle and its frame (the face's). */
+  c: V3;
+  f: V3;
+  l: V3;
+  u: V3;
+  rings: Ring[];
+  brow: Egg;
+  crest: Egg;
+  eyes: [V3, V3];
+}
+export function helmOf(s: Skeleton): HelmBody {
+  const [ff, fl, fu] = s.face;
+  const c = add(add(s.head, mul(fu, -2.2)), mul(ff, -0.8));
+  const rings: Ring[] = HELM.map(([z, fwd, hd, hw]) => ({ c: add(add(c, mul(fu, z)), mul(ff, fwd)), u: mul(ff, hd), v: mul(fl, hw) }));
+  const crest: Egg = { c: add(add(c, mul(fu, 8.4)), mul(ff, -0.6)), ax: [mul(ff, 7.6), mul(fl, 1.5), mul(fu, 2.0)] };
+  const brow: Egg = { c: add(add(c, mul(ff, 8.2)), mul(fu, 3.2)), ax: [mul(ff, 2.6), mul(fl, 9.6), mul(fu, 1.9)] };
+  const eye = (k: number): V3 => add(add(add(c, mul(ff, 9.0)), mul(fl, 3.8 * k)), mul(fu, 1.2));
+  return { c, f: ff, l: fl, u: fu, rings, brow, crest, eyes: [eye(-1), eye(1)] };
+}
+/** A slit for an eye: dark, the enemy's pink burning deep in it (gold as he winds up). */
+function slitSkin(cold: number, heat: number): PanelSkin {
+  return (a, b, front) => {
+    if (!front) return null;
+    if (Math.abs(b) > 0.95 || Math.abs(a) > 2.7) return INK;
+    if (cold > 0.5) return INK;
+    return Math.abs(b) < 0.45 ? (heat > 0.95 ? FLAME[3] : FLAME[2]) : FLAME[1];
+  };
+}
+/** The grille set in the jaw: a frame, bars across it, his fire behind them. */
+function grilleSkin(heat: number, cold: number, t: number): PanelSkin {
+  const iron = ironOf(cold);
+  return (a, b, front, tone) => {
+    if (!front) return iron[1];
+    if (Math.abs(a) > 5.6 || Math.abs(b) > 3.6) return iron[0];
+    if (Math.abs(a) > 4.8 || Math.abs(b) > 2.9) return iron[Math.min(4, tone + 1)];
+    if (fr((b + 2.9) / 1.45) < 0.45) return iron[Math.min(4, tone + 1)];
+    const flick = noise2(a * 0.9 + t * 5, b * 0.8, 71);
+    return cold > 0.6 ? ST_DEEP : coalAt(Math.max(0.2, heat), 0.5 + 0.5 * flick);
+  };
+}
+/** The helm's rivets: a row round its sides under the brow, and round the jaw's flare. */
+function helmRivets(h: HelmBody, put: Put, cold: number): void {
+  const iron = ironOf(cold);
+  for (const [z, fwd, hd, hw] of [[-3.0, 1.2, 9.5, 10.7], [-9.0, 2.2, 9.1, 10.9]] as const) {
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * TAU;
+      if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.7) continue;
+      const out = norm(add(mul(h.f, Math.cos(a)), mul(h.l, Math.sin(a))));
+      const p = add(add(add(h.c, mul(h.u, z)), mul(h.f, fwd)), add(mul(h.f, Math.cos(a) * hd * 1.02), mul(h.l, Math.sin(a) * hw * 1.02)));
+      put('head', 'head', { k: 'dot', p, c: iron[4], facing: out });
+    }
+  }
+}
+
+/** HIS HEAD, PAINTED: on a thick neck (an iron gorget flaring down into his shoulders), the helm: a crown with a crest, a heavy brow, the jaw with the grille. */
+function headBits(put: Put, s: Skeleton, heat: number, cold: number, t: number): void {
+  const iron = ironOf(cold);
+  const [, , uu] = s.upper;
+  const H = helmOf(s);
+  // THE NECK: a thick gorget of iron, three lames, flaring down into the firebox between his shoulders
+  {
+    const top = lerp3(s.neck, s.skull, 0.55);
+    const [cf, cl] = s.upper;
+    const rings: Ring[] = [
+      { c: add(s.neck, mul(uu, -5)), u: mul(cf, 11.4), v: mul(cl, 12.4) },
+      { c: add(s.neck, mul(uu, -1)), u: mul(cf, 10.2), v: mul(cl, 11.0) },
+      { c: lerp3(s.neck, top, 0.5), u: mul(cf, 8.8), v: mul(cl, 9.4) },
+      { c: top, u: mul(cf, 8.0), v: mul(cl, 8.4) },
+    ];
+    put('collar', 'collar', { k: 'cloth', rings, ramp: iron, look: { lift: 0.3 } });
+    for (const r of [rings[1], rings[2]]) put('collar', 'collar', { k: 'band', ring: { c: add(r.c, mul(uu, 0.4)), u: mul(r.u, 1.03), v: mul(r.v, 1.03) }, ramp: iron, rows: 1 });
+  }
+  put('head', 'head', { k: 'cloth', rings: H.rings, ramp: iron, look: { lift: 0.06 } });
+  put('head', 'head', { k: 'ball', c: H.crest.c, ax: H.crest.ax, skin: forgedSkin(19, cold) });
+  put('head', 'head', { k: 'ball', c: H.brow.c, ax: H.brow.ax, skin: forgedSkin(23, cold) });
+  // (the slits for his eyes, each laid on the helm where it is, under the brow; the grille in the jaw's front, tipped as it juts)
+  for (const p of H.eyes) {
+    const out = norm(sub(p, add(H.c, mul(H.u, dot(sub(p, H.c), H.u)))), H.f);
+    const across = norm(cross(H.u, out));
+    put('head', 'head', { k: 'panel', c: add(p, mul(out, 0.5)), u: mul(across, -3.2), v: mul(H.u, -1.1), skin: slitSkin(cold, heat) });
+  }
+  {
+    const down = norm(add(mul(H.u, -4.2), mul(H.f, 0.9)));
+    put('head', 'head', { k: 'panel', c: add(add(H.c, mul(H.u, -5.6)), mul(H.f, 11.4)), u: mul(H.l, -5.6), v: mul(down, 3.6), skin: grilleSkin(heat, cold, t) });
+  }
+  helmRivets(H, put, cold);
+  if (cold < 0.5) {
+    const eye = heat > 0.95 ? ST_EYE_HOT : ST_EYE;
+    for (const p of H.eyes) put('head', 'eye', { k: 'dot', p: add(p, mul(H.f, 1.0)), c: eye, facing: s.face[0], c2: eye });
+    if (heat > 0.9) put('glint', 'glint', { k: 'glow', p: add(lerp3(H.eyes[0], H.eyes[1], 0.5), mul(s.face[0], 2)), c: FLAME[3], r: 8 + 6 * (heat - 0.9), a: 0.3 });
+  }
+}
+
+// =============================================================================================
 // PAINTING HIM
 
 /** What a moment paints over and above its solids (laid after his edge): sparks, smoke, soot, his smear. */
@@ -403,51 +963,9 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
   const door = clamp01(say.door(m));
   const cold = clamp01(say.cold(m));
   const iron = ironOf(cold);
-  // HIS LEGS: thick, in scorched leather, iron at the knees, iron-shod boots
-  for (const side of ['L', 'R'] as const) {
-    const L = side === 'L';
-    const hip = L ? s.hipL : s.hipR;
-    const knee = L ? s.kneeL : s.kneeR;
-    const ankle = L ? s.ankleL : s.ankleR;
-    const heel = L ? s.heelL : s.heelR;
-    const toe = L ? s.toeL : s.toeR;
-    const [r0, r1, r2] = B.legR;
-    put(`leg${side}`, `leg${side}`, { k: 'rod', a: hip, b: knee, ra: r0 * 1.06, rb: Math.min(r1 * 1.08, knee[2] - 0.3), ramp: ST_LEATHER });
-    // (a shin kneeling on the floor rests on it, not in it)
-    const shinB = lerp3(knee, ankle, 0.85);
-    put(`leg${side}`, `leg${side}`, { k: 'rod', a: knee, b: shinB, ra: Math.min(r1 * 1.08, knee[2] - 0.3), rb: Math.min(r2 * 1.0, shinB[2] - 0.3), ramp: ST_LEATHER });
-    // (the iron at the knee: a cop over its front, riveted)
-    const kf = norm(sub(lerp3(hip, ankle, 0.5), knee), [1, 0, 0]);
-    const out = norm(sub(knee, mul(kf, -1)), [1, 0, 0]);
-    void out;
-    const shin = norm(sub(ankle, knee), [0, 0, -1]);
-    const fwdK = norm(sub(mul(add(norm(sub(hip, knee)), shin), -1), [0, 0, 0]), [1, 0, 0]);
-    {
-      const kax: [V3, V3, V3] = [mul(fwdK, r1 * 0.75), mul(norm(cross(shin, fwdK), [0, 1, 0]), r1 * 1.05), mul(norm(sub(hip, ankle)), r1 * 1.0)];
-      const kc0 = add(knee, mul(fwdK, r1 * 0.55));
-      const kc = add(kc0, [0, 0, Math.max(0, Math.hypot(kax[0][2], kax[1][2], kax[2][2]) + 0.1 - kc0[2])]);
-      put(`leg${side}`, `knee${side}`, { k: 'ball', c: kc, ax: kax, skin: plateSkin(L ? 11 : 13, cold, 1.6) });
-    }
-    // (the greave down the shin's front)
-    const ga = add(lerp3(knee, ankle, 0.22), mul(fwdK, r1 * 0.45));
-    const gb = add(lerp3(knee, ankle, 0.9), mul(fwdK, r2 * 0.5));
-    put(`leg${side}`, `greave${side}`, { k: 'rod', a: ga, b: gb, ra: Math.min(r1 * 0.78, ga[2] - 0.3), rb: Math.min(r2 * 0.9, gb[2] - 0.3), ramp: iron });
-    // THE BOOT: iron-shod, broad, its sole on the floor
-    const along = norm(sub(toe, heel), [1, 0, 0]);
-    const across = norm(cross([0, 0, 1], along), [0, 1, 0]);
-    const up = norm(cross(along, across), [0, 0, 1]);
-    const footLen = len(sub(toe, heel));
-    const bc0 = add(lerp3(heel, toe, 0.5), add(mul(up, 3.6), mul(along, 1.2)));
-    const bax: [V3, V3, V3] = [mul(along, footLen * 0.5 + 3.2), mul(across, r2 * 1.45), mul(up, 3.6)];
-    // (on its toe, tipped up, the boot held up off the floor by its own lowest point)
-    const low = Math.hypot(bax[0][2], bax[1][2], bax[2][2]);
-    const lift = Math.max(0, low + 0.1 - bc0[2]);
-    const bc = add(bc0, [0, 0, lift]);
-    put(`boot${side}`, `boot${side}`, { k: 'ball', c: bc, ax: bax, skin: plateSkin(L ? 15 : 17, cold, 1.4) });
-    const sa = add(ankle, add(mul(up, 1.6), [0, 0, lift]));
-    const sb = add(lerp3(heel, toe, 0.4), add(mul(up, 7.4), [0, 0, lift]));
-    put(`boot${side}`, `boot${side}`, { k: 'rod', a: sa, b: sb, ra: Math.min(6.2, sa[2] - 0.2), rb: Math.min(6.8, sb[2] - 0.2), ramp: iron });
-  }
+  // HIS LEGS: thick thighs under his skirt, a shaped knee under its poleyn, calves swelling and tapering into iron boots
+  legBits(put, s, 'L', cold);
+  legBits(put, s, 'R', cold);
   // HIS SKIRT of scorched leather, from under his belly over his thighs to above his knees, its hem burnt ragged
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
@@ -455,17 +973,28 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
     const top = add(s.pelvis, mul(s.hips[2], 3));
     const knees = add(lerp3(s.kneeL, s.kneeR, 0.5), [0, 0, 7]);
     const apart = Math.abs(dot(sub(s.kneeL, s.kneeR), f));
-    const levels: [number, V3][] = [[1, knees], [0.55, lerp3(top, knees, 0.55)], [0, top]];
+    const levels: [number, V3][] = [1, 0.9, 0.8, 0.65, 0.5, 0.3, 0].map((k): [number, V3] => [k, lerp3(top, knees, k)]);
+    // (laid over his thighs as they are posed: never closer in than their muscle and a little slack, so that no thigh comes through it)
+    const thighs = [...legBody(s, 'L').upper, ...legBody(s, 'R').upper];
     const rings: Ring[] = levels.map(([k, c], i) => {
       const deep = B.pelvisDeep + 5 + 4 * k + 0.5 * apart * k;
       const wide = B.pelvisHalf + 5.5 + 4.5 * k;
       const pts: V3[] = [];
+      const rs: number[] = [];
+      let rf = deep;
+      let rl = wide;
       for (let j = 0; j < 20; j++) {
         const a = (j / 20) * TAU;
         const drop = i === 0 ? 1.6 * noise2(j * 1.3, 2, 101) : 0;
-        pts.push(add(c, add(add(mul(f, Math.cos(a) * deep), mul(l, Math.sin(a) * wide)), [0, 0, -drop])));
+        const dir = add(mul(f, Math.cos(a)), mul(l, Math.sin(a)));
+        const r = Math.max(Math.hypot(Math.cos(a) * deep, Math.sin(a) * wide), outFrom(thighs, c, dir) + 3.2);
+        rf = Math.max(rf, Math.abs(r * Math.cos(a)));
+        rl = Math.max(rl, Math.abs(r * Math.sin(a)));
+        pts.push(add(add(c, mul(dir, r)), [0, 0, -drop]));
+        rs.push(r);
       }
-      return { c, u: mul(f, deep), v: mul(l, wide), pts };
+      const kk = Math.max(1, ...rs.map((r, j) => r / Math.hypot(rf * Math.cos((j / 20) * TAU), rl * Math.sin((j / 20) * TAU))));
+      return { c, u: mul(f, rf * kk), v: mul(l, rl * kk), pts };
     });
     put('skirt', 'skirt', { k: 'cloth', rings, ramp: ST_LEATHER, look: { folds: [0, 30, -30, 70, -70, 115, -115, 160, -160], lift: 0.02 } });
   }
@@ -474,7 +1003,6 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
   put('belly', 'belly', { k: 'ball', c: bl.c, ax: bl.ax, skin: bellySkin(s, heat, door, cold, t) });
   const dm = domeOf(s);
   put('belly', 'dome', { k: 'ball', c: dm.c, ax: dm.ax, skin: domeSkin(cold) });
-  put('collar', 'collar', { k: 'rod', a: add(s.neck, mul(s.upper[2], -2.5)), b: add(s.neck, mul(s.upper[2], 3.2)), ra: 7.6, rb: 6.6, ramp: iron });
   // THE FIRE-DOOR, its grate glowing; hinged on his left
   const dr = doorOf(s, door);
   put('door', 'door', { k: 'panel', c: dr.c, u: dr.u, v: dr.v, skin: doorSkin(heat, cold, t) });
@@ -487,56 +1015,16 @@ function stokerBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
   const capA = fl[fl.length - 1];
   const capWay = norm(sub(fl[fl.length - 1], fl[fl.length - 2]));
   put('flue', 'cap', { k: 'rod', a: add(capA, mul(capWay, 1.5)), b: add(capA, mul(capWay, 4.5)), ra: FLUE_R + 2.6, rb: 1.2, ramp: iron });
-  // HIS PAULDRONS, HIS ARMS: leather-wrapped upper arms, iron bracers, iron fists
-  for (const side of ['L', 'R'] as const) {
-    const L = side === 'L';
-    const sh = L ? s.shoulderL : s.shoulderR;
-    const el = L ? s.elbowL : s.elbowR;
-    const hand = L ? s.handL : s.handR;
-    const [r0, r1, r2] = B.armR;
-    const part = `arm${side}`;
-    put(part, part, { k: 'rod', a: sh, b: el, ra: r0 * 1.05, rb: r1 * 1.0, ramp: ST_LEATHER });
-    {
-      // (the bulge of his upper arm, under the wraps)
-      const w = norm(sub(el, sh));
-      const e1 = norm(cross(w, [0, 0, 1]), [1, 0, 0]);
-      const e2 = norm(cross(w, e1));
-      put(part, part, { k: 'ball', c: lerp3(sh, el, 0.45), ax: [mul(w, len(sub(el, sh)) * 0.36), mul(e1, r0 * 1.22), mul(e2, r0 * 1.28)], skin: leatherSkin(L ? 3 : 5, cold) });
-    }
-    // (wraps of leather round it: bands)
-    for (const k of [0.38, 0.62, 0.84]) {
-      const at = lerp3(sh, el, k);
-      const w = norm(sub(el, sh));
-      const e1 = norm(cross(w, [0, 0, 1]), [1, 0, 0]);
-      const e2 = norm(cross(w, e1));
-      const r = r0 * (1.05 - 0.1 * k) + 0.6;
-      put(part, `${part}wrap`, { k: 'band', ring: { c: at, u: mul(e1, r), v: mul(e2, r) }, ramp: ST_LEATHER, rows: 2 });
-    }
-    put(part, part, { k: 'ball', c: el, ax: sphere(r1 * 1.08), skin: plateSkin(L ? 31 : 33, cold, 1.5) });
-    const wrist = lerp3(el, hand, 0.86);
-    put(part, `${part}bracer`, { k: 'rod', a: lerp3(el, hand, 0.12), b: wrist, ra: r1 * 1.12, rb: r2 * 1.32, ramp: iron });
-    const fore = norm(sub(hand, el), [0, 0, -1]);
-    const e1 = norm(cross(fore, [0, 0, 1]), [1, 0, 0]);
-    const e2 = norm(cross(fore, e1));
-    put(part, `${part}fist`, { k: 'ball', c: add(hand, mul(fore, 1.4)), ax: [mul(fore, r2 * 1.35), mul(e1, r2 * 1.35), mul(e2, r2 * 1.2)], skin: plateSkin(L ? 35 : 37, cold, 1.3) });
-    const pd = pauldronOf(s, side);
-    put(part, `${part}pauldron`, { k: 'ball', c: pd.c, ax: pd.ax, skin: plateSkin(L ? 41 : 43, cold, 1.2) });
-  }
-  // HIS HEAD: the furnace mask
+  // HIS ARMS: a great deltoid under a riveted pauldron of overlapping plates, the upper arm swelling and tapering under its wraps
+  // and an iron band, the couter at the elbow, the forearm thick at the top and narrowing into a vambrace, gauntleted fists
   {
-    const [ff, fl2, fu] = s.face;
-    const hr = B.headR;
-    const c = add(s.head, mul(fu, -0.8));
-    put('head', 'head', { k: 'ball', c, ax: [mul(ff, hr[0] * 1.22), mul(fl2, hr[1] * 1.42), mul(fu, hr[2] * 1.08)], skin: headSkin(s, heat, cold, t) });
-    if (cold < 0.5) {
-      const eye = heat > 0.95 ? ST_EYE_HOT : ST_EYE;
-      for (const k of [-1, 1]) {
-        const p = add(add(c, mul(ff, hr[0] * 1.21)), add(mul(fl2, k * hr[1] * 1.42 * 0.34), mul(fu, hr[2] * 1.08 * 0.24)));
-        put('head', 'eye', { k: 'dot', p, c: eye, facing: ff, c2: eye });
-      }
-      if (heat > 0.9) put('glint', 'glint', { k: 'glow', p: add(c, mul(ff, hr[0] * 1.4)), c: FLAME[3], r: 8 + 6 * (heat - 0.9), a: 0.3 });
-    }
+    const sv0 = shovelOf(s, say.face(m), say.hold(m));
+    const haft = say.held(m) ? { top: sv0.top, way: sv0.haftWay } : undefined;
+    armBits(put, s, 'L', haft, cold);
+    armBits(put, s, 'R', haft, cold);
   }
+  // HIS HEAD: the furnace mask's helm on a thick neck sunk between his shoulders
+  headBits(put, s, heat, cold, t);
   // THE GREAT SHOVEL, in his right fist (dropped as he dies: its own piece, `shovel`, falls as the game's dying monsters' pieces
   // fall, new_mobs3 `fallApart`, which lets the piece go from the moment it falls and lays it on the floor)
   const grains: [V3, string, number][] = [];

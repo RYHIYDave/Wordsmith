@@ -20,16 +20,63 @@ HERE IS IN THE GAME: nothing of the game imports it (its test proves it), and it
   weighty as possible.  I’d rather it be a notch too high than a notch too low.”), and “I’d rather have to pull back from a 10 then
   build up from a 1.”
 
+- 6 Nov 2026, shown the Stoker and told that his arms and legs read like pipes with ball joints, too close to the circles-and-squares
+  look his rules forbid; his pick: “Reshape his body first (Recommended)”, offered as: sculpted arms and legs: forged iron plates
+  over real muscle and joints, his shoulders and knees shaped, not balls. His moves and the room stay as they are. His rulebook:
+  real shapes, never circles and squares slapped together; one body, muscle melted into muscle; nothing passing through the body
+  (plates and cloth over what they cover: no limb poking through a plate).
+
+## His body reshaped (6 Nov 2026, “Reshape his body first (Recommended)”)
+
+Only his body changed (src/art/stoker.ts): his firebox chest, flue, shovel, colours, every move's timing and pose
+(src/art/stoker_moves.ts), his effects (stoker_fx.ts) and the room (stoker_room.ts) are as they were.
+
+- WAS: each arm a leather tube with a ball for a shoulder (a round pauldron), a ball for an elbow, a straight iron bracer and a
+  ball for a fist; each leg a straight rod, a ball at the knee, a round boot; the head a sphere on a short rod of a collar.
+- NOW, NO TUBES AND NO BALLS: each limb is MUSCLE (eggs of scorched leather laid along the bone, swelling and tapering as a body
+  does, `armBody`, `legBody`), all of one part so that they melt into each other with no seam, the leather WRAPPED round them in
+  strips (`wrapSkin`: their edges dark, a lit edge beside, burns); and over it IRON PLATES SHAPED TO IT: each plate is worked out
+  from the muscle under it (`outFrom`, `ringOver`: a ring laid round the muscle a set way off its skin all the way round), so that
+  it follows its curve.
+- THE SHOULDER: a heavy rounded deltoid (it rides between his chest and his arm, up with the arm as it is raised) under a forged
+  PAULDRON (`PAULDRON`): a COP over the top of the shoulder, a shell laid round the deltoid 1.2 times its size, riveted, a ridge
+  over it; and three LAMES shingled down the arm, each a band laid round the muscle under it, flaring at its foot and over the
+  top of the next, a row of rivets along each under the plate above (`lameOf`).
+- THE UPPER ARM: biceps before, the great triceps behind, the brachialis out, swelling and tapering into the elbow; an iron BAND
+  round it over the swell of the muscle (`ARM_BAND`), shaped to it.
+- THE ELBOW: a hinged iron COUTER, a cup over the point of the elbow with a ridge and rivets, a fluted fan out over its side.
+- THE FOREARM: thick at the top (the extensors over its back, the flexors before), narrowing to the wrist into an iron VAMBRACE
+  laid round it (`VAMBRACE`, 0.42 to 0.8 of the forearm), its top rim rolled.
+- THE HANDS: heavy gauntlets: a flared cuff, the fist closed round the haft (round nothing when it lets go, turning smoothly from
+  one to the other), the back of the hand a riveted plate, four fingers curled with their seams across, a ridge of knuckles, the
+  thumb over them.
+- THE LEGS: thick thighs (the quadriceps, the hamstrings, the two heads swelling above the knee) under the leather skirt, which is
+  now laid over his thighs as they are posed (never closer in than their muscle and a little slack), so no thigh comes through it;
+  the knee under an iron POLEYN (a cup fitting the front of the knee, a fan over its side, a lame above it on the thigh and one
+  below on the shin); the calves' two heads swelling behind and tapering into IRON BOOTS: a cuff up the calf laid round its
+  muscle (`BOOT_TOP`), flared at its top; the foot shaped from behind its heel to its toe (`FOOT` in the painter), lames across the
+  instep, a sole.
+- THE HEAD: not a sphere: the furnace mask's HELM (`HELM`, `helmOf`), one shape of iron from its crown to its jaw: a domed crown
+  with a crest, straight sides, a heavy brow over the slits for his eyes (the enemy's pink burning deep in them, gold as he winds
+  up), the jaw flaring out wider than the crown and jutting before the face with the GRILLE set in it (bars, his fire behind
+  them), rivets round it; set lower, on a thick iron GORGET of three lames flaring down into his shoulders, so that his head is
+  sunk between them. Top-heavy: the shoulders high and broad.
+
 ## The pictures (docs/mockups/stoker/pictures/)
 
-- `stoker_sheet.png` (1200 by 7478): him beside the knight from in front and from behind, three times as big; in his furnace room
-  at the game's size (one phone screen); the key moments of each attack from in front and behind; the coals' marks and fires, the
-  rake's sheet of fire and the furnace's ring over the whole room; struck and his death, the gear before him; the furnace lit and
-  out; the fire in the Chained One's way burning and going out; the crank without its gear, with it, turned; the gear as an item.
-- `stoker.mp4` (1200 by 872, 30 fps, H.264 yuv420p, captioned, under 60 s): his stand, his walk, each attack from in front and
-  behind in a stand-in furnace room on floor 3's own floor and walls with the knight; the coals and the rake over the whole room;
-  each strike at half speed; struck; his death and the gear falling out; the crank (gear missing, set in, turned), the furnace
-  going out, the fire in the Chained One's way going out.
+- `stoker_body.png` (1200 by 6139, new, 6 Nov): HIS BODY BEFORE AND NOW, side by side: standing from in front, from behind and
+  from the side (his right, truly turned, not flipped), three times the game's size; at the game's own size from in front and
+  from behind; and six moments of his moves from in front, twice the game's size (walking, the coals into his firebox, the coals
+  held high, the rake held up, the burst held, to his knees).
+- `stoker_sheet.png` (1200 by 7478, made again on his new body): him beside the knight from in front and from behind, three times
+  as big; in his furnace room at the game's size (one phone screen); the key moments of each attack from in front and behind; the
+  coals' marks and fires, the rake's sheet of fire and the furnace's ring over the whole room; struck and his death, the gear
+  before him; the furnace lit and out; the fire in the Chained One's way burning and going out; the crank without its gear, with
+  it, turned; the gear as an item.
+- `stoker.mp4` (made again on his new body; 1200 by 872, 30 fps, H.264 yuv420p, captioned, under 60 s): his stand, his walk, each
+  attack from in front and behind in a stand-in furnace room on floor 3's own floor and walls with the knight; the coals and the
+  rake over the whole room; each strike at half speed; struck; his death and the gear falling out; the crank (gear missing, set
+  in, turned), the furnace going out, the fire in the Chained One's way going out.
 
 ## What he is (src/art/stoker.ts)
 
@@ -44,10 +91,11 @@ hulking figure fused with the furnace:
   swings open (112 degrees) on its own as he scoops, bursts and dies, the fire within seen through it.
 - HIS FLUE: a stove-pipe out of his back behind his left shoulder, banded, capped, up past his head, venting smoke and sparks
   (more as he breathes out, pouring out of him when he is spent).
-- His arms huge: the upper arms wrapped in scorched leather (`ST_LEATHER`) over a bulging muscle, iron bracers, fists of iron.
-- HIS FURNACE MASK: a squat iron head, riveted, a brow; a GRILLE for a mouth, the fire behind its bars; two slits for eyes in which
-  the enemy's pink burns (gold, `FLAME[3]`, as he winds up). From behind, iron only.
-- A heavy skirt of scorched leather over his thighs, its hem burnt ragged; iron cops at his knees, greaves; iron-shod boots.
+- HIS ARMS AND LEGS, SCULPTED: muscle in wrapped leather under iron plates shaped to it: the pauldrons (a cop and three lames),
+  a band round each upper arm, couters, vambraces, gauntlets; the skirt over his thighs, poleyns at his knees, iron boots with a
+  toe and a heel (see "His body reshaped" above).
+- HIS FURNACE MASK: the helm, its crown and crest, its heavy brow, the slits for his eyes, the jaw jutting with the GRILLE, the
+  fire behind its bars, on a thick gorget sunk between his shoulders. From behind, iron only.
 - THE GREAT SHOVEL (`SHOVEL`): an iron haft 60 from its D-grip to its socket, a broad scoop 27 long and 23 across with walls on
   three sides, bent up 22 degrees off the haft; its lip glowing from the fire. Always in his right fist (his fist runs down the
   haft to choke up on it, `hold`); his left fist takes the haft or lets it go smoothly, never leaping (worked out every frame).
@@ -166,7 +214,7 @@ names here are the art's own, for the main chat to match or rename.)
   (ready, glowing); used: `turning` (1.2 s), then `turned`; then the furnace `going` (1.6 s) and `out`; and in the Chained One's
   gateway the fire `going` (1.5 s) and `gone` (the way open).
 
-## The checks (tests/stoker.test.ts, 10; all pass)
+## The checks (tests/stoker.test.ts, 11; all pass, the 11th as a guard: see it)
 
 1. the switch off; nothing of the game imports any of the four files;
 2. EVERY MOVE THROUGH EVERY BOSS CHECK (art/boss_checks.ts `checkBoss`: SLIDE, FLOOR, ARM, THROUGH, JERK, JUMP, BLOW, HIPS, ALIVE,
@@ -182,7 +230,19 @@ names here are the art's own, for the main chat to match or rename.)
    fire yet), fire after, burnt out at the last;
 10. the furnace room: every picture painted and crisp, no cyan but the crank's handle when it is ready; the furnace lit and out and
     going out (dying down), the fire in the way and its going out and gone; the icon 32 by 32 with its white rim; floor 3's colours
-    the same as art/prison.ts's; the made copies let go by `forgetMade`.
+    the same as art/prison.ts's; the made copies let go by `forgetMade`;
+11. NOTHING OF HIM THROUGH WHAT HE WEARS (new, 6 Nov; the Veteran's check, done for a figure of solids): every frame of every
+    move, both ways round, painted part by part; every pixel of his muscle that is seen (the nearest there of all his parts) put
+    back where it is on him and asked what covers that point of him (art/stoker.ts `coverOf`, the plates' own geometry, each zone
+    kept inside its edges): the pauldron's cop and lames, the band, the couter, the vambrace and the gauntlet's cuff, the skirt
+    (all of his thighs above its hem), the poleyn, the boot. No more than a stray pixel or two of muscle may show where a plate or
+    the skirt covers it. And the check is shown to see it: his right pauldron taken off, a bare shoulder is found; his skirt taken
+    off, bare thighs. NOT YET NOTHING: held as a guard (no frame with more than 30 pixels of muscle through any one plate, and
+    no more than 150 slivers in all). The strict check (not one pixel) still finds 141 slivers (a frame and a plate): at most 27
+    pixels (his right thigh at the skirt's hem, from behind, as he drags the rake), the rest 13 or fewer, at the edges of the
+    plates laid round a limb as a tube (the band, the vambraces, the boots' cuffs) and the couters, where the painter's depth for
+    a tube is near enough but not exact. To be taken to nothing (the plates painted as true solids, as the pauldron's lames now
+    are).
 
 Also passing: tests/bosses.test.ts, tests/new_mobs3.test.ts, tests/palace_hands.test.ts, tests/princess.test.ts,
 tests/prison.test.ts, tests/rime_shade.test.ts; `tsc --noEmit` clean. Changed outside its own files: only the import checks,
@@ -193,6 +253,8 @@ the gateway's way are said again in it, and tested to be the same), so floor 3's
 
 ## Tools
 
+- `npx tsx tools/stoker_pics.ts body <dir>`: the pieces of `stoker_body.png` on the body as it is (painted once on the body as it
+  was, from `c440351e`, into another dir); then `python3 tools/stoker_body_sheet.py <before dir> <now dir> stoker_body.png`.
 - `npx tsx tools/stoker_pics.ts look|big <dir> [...]`: frames to look at; `sheet <dir>` then `python3 tools/rime_shade_sheet.py
   <dir> stoker_sheet.png`; `film <dir> [parts]` then `python3 tools/hush_shapes_film.py <dir> stoker.mp4`.
 
