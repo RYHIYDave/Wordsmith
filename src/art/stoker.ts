@@ -797,6 +797,8 @@ function plateBall(pl: Plate, skin: Skin): Shape {
 /** The lowest point of what is painted of a solid (of a plate, its iron only; of anything else, all of it); Infinity for what has no body. */
 export function lowestPainted(sh: Shape): number {
   if (sh.k === 'panel' && CAPS.has(sh)) return sh.c[2] - Math.hypot(sh.u[2], sh.v[2]);
+  const cut = SHARD_OF.get(sh);
+  if (cut && sh.k === 'ball') return shardLowest(sh, cut);
   const pl = PLATE_OF.get(sh);
   if (!pl || sh.k !== 'ball') return lowestOf(sh);
   let low = Infinity;
@@ -1431,6 +1433,8 @@ function movedShape(sh: Shape, rot: (v: V3) => V3, c0: V3, c1: V3): Shape {
   const pl = PLATE_OF.get(sh);
   if (pl) PLATE_OF.set(out, pl);
   if (CAPS.has(sh)) CAPS.add(out);
+  const cut = SHARD_OF.get(sh);
+  if (cut) SHARD_OF.set(out, cut);
   return out;
 }
 function movedShape0(sh: Shape, rot: (v: V3) => V3, c0: V3, c1: V3): Shape {
@@ -1593,7 +1597,8 @@ function layOf(whole: string, bits0: ReadonlyArray<Bit>, way: V3, screenX: V3 = 
   const cup = /^(poleyn|couter)/.test(whole) ? plate('cup') : undefined;
   if (cup) return frameTurn(cup.ax[0], mul(tilt(76), -1), cup.ax[2], deep);
   if (ball && /^band[LR]$/.test(whole)) return frameTurn(ball.ax[2], [0, 0, 1], ball.ax[0], across);
-  if (ball && /^chunk/.test(whole)) return frameTurn(ball.ax[2], [0, 0, 1], ball.ax[0], across);
+  // (a shard rocked on its curve, each tipped its own way)
+  if (ball && /^chunk/.test(whole)) return frameTurn(ball.ax[2], about([0, 0, 1], across, (hash(Number(whole.slice(5)), 9, 341) - 0.5) * 44), ball.ax[0], across);
   if (/^boot[LR]$/.test(whole)) {
     const foot = bits0.find((b) => b.shape.k === 'cloth' && b.shape.rings.length === 7)?.shape as Extract<Shape, { k: 'cloth' }> | undefined;
     // (fallen on its side, its shaft out to the side, its toe across: a boot, shaft and foot, seen from above)
@@ -1664,49 +1669,198 @@ function shovelLying(st: Stage, m: Moment, say: StokerSay, t: number): Bit[] {
   const { bits0, c0, F } = shovelFall(st, m, say);
   return flown(bits0, c0, F, t - ST_DEATH.drop).bits;
 }
-/** A SHARD OF HIS FIREBOX'S IRON, torn out of it: a jagged plate (its edge a torn line of sharp corners, never round), a band of it
- * and its rivets across it, its curve lit, its torn edge glowing as it flies and going dark as it lies. */
-function shardSkin(age: number, seed: number): Skin {
-  // (its outline: a torn polygon, straight edges between sharp corners, deep notches torn into it)
-  const n = 7 + Math.floor(3 * hash(seed, 9, 175));
-  const corners: [number, number][] = [];
-  const steps = Array.from({ length: n }, (_, i) => 0.7 + 0.6 * hash(seed, i, 179));
+/**
+ * A SHARD OF HIS FIREBOX'S IRON, torn out of it: a piece of its curved plate (cut from an egg as big as the bend it has, so its
+ * curve is truly shaded), its outline a torn polygon (one edge the straight seam it was riveted along, a short row of rivet
+ * heads inside it; the rest torn, jagged with bites), its thickness a second skin under it showing along its near edges, sooted,
+ * dusted with ash, its torn edges glowing as it flies and dying to a dull ember glow, here and there, as it lies.
+ */
+interface ShardCut {
+  /** Its size (half across, in his lengths), the bend it has across and along, how thick it is. */
+  s: number;
+  bend: number;
+  along: number;
+  thick: number;
+  /** Its outline (in units of `s`), the first edge the seam; and the rivets along the seam. */
+  poly: [number, number][];
+  rivets: [number, number][];
+  seed: number;
+}
+const SHARD_CUT = new Map<number, ShardCut>();
+function shardCut(i: number): ShardCut {
+  let c = SHARD_CUT.get(i);
+  if (c) return c;
+  const h = (k: number): number => hash(i, k, 341);
+  const s = 8 + 9 * h(1);
+  const n = 5 + Math.floor(4 * h(2));
+  // (the seam: a long straight edge, corners 0 and 1; the torn rest round from 1 back to 0, its corners in and out)
+  const a0 = h(3) * TAU;
+  const gap = 1.3 + 0.5 * h(4);
+  const poly: [number, number][] = [[Math.cos(a0), Math.sin(a0)], [Math.cos(a0 + gap), Math.sin(a0 + gap)]];
+  const steps = Array.from({ length: n - 1 }, (_, k) => 0.6 + 0.8 * hash(i, k, 343));
   const sum = steps.reduce((p, q) => p + q, 0);
-  let a = hash(seed, 10, 175) * TAU;
-  for (let i = 0; i < n; i++) {
-    const r = i % 2 ? 0.45 + 0.25 * hash(seed, i, 177) : 0.82 + 0.18 * hash(seed, i, 177);
-    corners.push([r * Math.cos(a), r * Math.sin(a)]);
-    a += (TAU * steps[i]) / sum;
+  let a = a0 + gap;
+  for (let k = 0; k < n - 2; k++) {
+    a += ((TAU - gap) * steps[k]) / sum;
+    const r = k % 2 ? 0.92 + 0.08 * hash(i, k, 345) : 0.5 + 0.32 * hash(i, k, 345);
+    poly.push([r * Math.cos(a), r * Math.sin(a)]);
   }
-  const edgeAt = (dx: number, dy: number): number => {
-    const th = Math.atan2(dy, dx);
-    for (let i = 0; i < n; i++) {
-      const P = corners[i];
-      const Q = corners[(i + 1) % n];
-      const aP = Math.atan2(P[1], P[0]);
-      const span = (((Math.atan2(Q[1], Q[0]) - aP) % TAU) + TAU) % TAU;
-      const d = (((th - aP) % TAU) + TAU) % TAU;
-      if (d > span) continue;
-      const E: [number, number] = [Q[0] - P[0], Q[1] - P[1]];
-      const den = Math.cos(th) * E[1] - Math.sin(th) * E[0];
-      return Math.abs(den) < 1e-6 ? Math.hypot(P[0], P[1]) : (P[0] * E[1] - P[1] * E[0]) / den;
+  const rivets: [number, number][] = [];
+  const [p0, p1] = poly;
+  const mid: [number, number] = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
+  const nr = 3 + Math.floor(2 * h(5));
+  for (let k = 0; k < nr; k++) {
+    const f = 0.18 + (0.64 * k) / (nr - 1);
+    const x = p0[0] + (p1[0] - p0[0]) * f;
+    const y = p0[1] + (p1[1] - p0[1]) * f;
+    rivets.push([x - mid[0] * 0.24, y - mid[1] * 0.24]);
+  }
+  c = { s, bend: s * (1.05 + 1.1 * h(6)), along: s * (1.7 + 3.2 * h(7)), thick: 1.2 + 0.6 * h(8), poly, rivets, seed: i };
+  SHARD_CUT.set(i, c);
+  return c;
+}
+/** Where a point of a shard's plane (`x`, `y`, in units of its size) is against its outline: outside (null), or how far in from its seam and from its torn edges. */
+function inShard(c: ShardCut, x: number, y: number): { seam: number; torn: number; along: number } | null {
+  const P = c.poly;
+  let inside = false;
+  for (let k = 0, m = P.length - 1; k < P.length; m = k++) {
+    const [xi, yi] = P[k];
+    const [xj, yj] = P[m];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  if (!inside) return null;
+  let seam = 9;
+  let torn = 9;
+  let along = 0;
+  for (let k = 0; k < P.length; k++) {
+    const [ax, ay] = P[k];
+    const [bx, by] = P[(k + 1) % P.length];
+    const ex = bx - ax;
+    const ey = by - ay;
+    const L = Math.hypot(ex, ey);
+    const f = Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / (L * L)));
+    const d = Math.hypot(x - ax - ex * f, y - ay - ey * f);
+    if (k === 0) seam = d;
+    else {
+      // (torn: bitten into, jagged teeth along it)
+      const q = f * L * 7 + k * 1.7 + c.seed;
+      const bite = 0.09 * (fr(q) < 0.5 ? fr(q) * 2 : 2 - fr(q) * 2) + 0.12 * noise2(q * 0.3, k, 347) ** 2;
+      if (d - bite < torn) {
+        torn = d - bite;
+        along = f * L + k;
+      }
     }
-    return 0.6;
-  };
-  // (the side of it that tore, glowing as it flies)
-  const torn = hash(seed, 11, 175) * TAU;
+  }
+  if (torn < 0) return null;
+  return { seam, torn, along };
+}
+/** Its glow, `age` seconds after he burst: white-hot as it flies, dying to a dull red here and there along its torn edges as it lies. */
+function emberAt(age: number, k: number): string | null {
+  const g = Math.exp(-age / 2.2) * k;
+  if (age < 0.4 && k > 0.4) return EMBER[3];
+  return g > 0.8 ? EMBER[2] : g > 0.58 ? EMBER[1] : g > 0.4 ? ST_HOT[3] : g > 0.24 ? ST_HOT[2] : null;
+}
+/** A shard's plate (`under`: its thickness, the skin under it). */
+function shardSkin(c: ShardCut, age: number, under: boolean): Skin {
   return (u, tone) => {
-    const r = Math.hypot(u[0], u[1]);
-    const edge = edgeAt(u[0], u[1]);
-    if (r > edge) return null;
-    const onTorn = Math.cos(Math.atan2(u[1], u[0]) - torn) > 0.1;
-    if (edge - r < 0.1) return onTorn ? (age < 0.5 ? EMBER[3] : age < 1.2 ? EMBER[1] : ST_IRON[0]) : ST_IRON[tone5(tone + 1)];
-    if (edge - r < 0.18 && onTorn) return ST_IRON[0];
-    const band = Math.abs(u[1] + 0.2 - 0.1 * u[0]) < 0.16;
-    if (band && Math.abs(fr(u[0] * 2.2 + seed * 0.37) - 0.5) < 0.16 && Math.abs(u[1] + 0.2 - 0.1 * u[0]) < 0.09) return ST_IRON[4];
-    if (band) return ST_IRON[tone5(tone + 1)];
-    return ST_IRON[tone5(tone - (noise2(u[0] * 3 + seed, u[1] * 3, 173) > 0.66 ? 1 : 0))];
+    if (u[2] <= 0) return null;
+    const x = (u[0] * c.bend) / c.s;
+    const y = (u[1] * c.along) / c.s;
+    const at = inShard(c, x, y);
+    if (!at) return null;
+    const glow = (k: number): string | null => emberAt(age, k * (0.35 + 0.95 * noise2(at.along * 2.2 + c.seed * 3, c.seed, 349)));
+    if (under) return (at.torn < 0.12 && glow(1 - at.torn / 0.12)) || ST_IRON[at.seam < 0.08 ? 1 : 0];
+    // (its torn edge: dark iron, the ember glow dying along it)
+    if (at.torn < 0.075) return glow(1 - at.torn / 0.075) ?? ST_IRON[0];
+    if (at.torn < 0.13) return glow(0.6 * (1 - at.torn / 0.13)) ?? ST_IRON[Math.max(0, tone - 2)];
+    // (its seam: the plate's edge rolled, lit; the rivets inside it)
+    if (at.seam < 0.06) return ST_IRON[0];
+    if (at.seam < 0.11) return ST_IRON[Math.min(4, tone)];
+    for (const [rx, ry] of c.rivets) {
+      const dx = (x - rx) * c.s;
+      const dy = (y - ry) * c.s;
+      const r = Math.hypot(dx, dy);
+      if (r < 2.1) return r < 1.0 ? ST_IRON[4] : dx + dy > 0.4 ? ST_IRON[0] : ST_IRON[3];
+    }
+    // (sooted, dusted with ash, the curve of it shaded)
+    const soot = noise2(x * 2.2 + c.seed, y * 2.2, 351);
+    if (hash(Math.floor(x * c.s * 1.6), Math.floor(y * c.s * 1.6) + c.seed * 31, 353) < 0.05) return ST_ASH[soot > 0.5 ? 2 : 1];
+    // (a dull sheen along the top of its bend, where it is not sooted)
+    if (tone >= 4 && soot < 0.3) return ST_IRON[3];
+    return ST_IRON[Math.max(0, Math.min(3, tone - 1 - (soot > 0.6 ? 1 : 0)))];
   };
+}
+/** A shard's two skins as solids: the plate, and under it its thickness (`top`: its middle on the plate, `n` out of it, `t1` across its bend). */
+function shardBits(key: string, c: ShardCut, top: V3, n: V3, t1: V3, age: number): Bit[] {
+  const t2 = norm(cross(n, t1));
+  const Rd = c.bend * 0.9;
+  const egg = (lift: number, under: boolean): Shape => {
+    const sh: Shape = { k: 'ball', c: add(top, mul(n, -Rd - lift)), ax: [mul(t1, c.bend), mul(t2, c.along), mul(n, Rd)], skin: shardSkin(c, age, under) };
+    SHARD_OF.set(sh, c);
+    return sh;
+  };
+  return [{ part: key, piece: key, shape: egg(0, false) }, { part: key, piece: key, shape: egg(c.thick, true) }];
+}
+/** Which shard a ball of him is (so that what is painted of it, not the egg it is cut from, is what lies on the floor). */
+const SHARD_OF = new WeakMap<object, ShardCut>();
+/** The lowest point of a shard's plate: round its outline. */
+function shardLowest(sh: Extract<Shape, { k: 'ball' }>, c: ShardCut): number {
+  const R0 = len(sh.ax[0]);
+  const R1 = len(sh.ax[1]);
+  let low = Infinity;
+  const P = c.poly;
+  for (let k = 0; k < P.length; k++) {
+    const [ax, ay] = P[k];
+    const [bx, by] = P[(k + 1) % P.length];
+    for (let f = 0; f <= 1; f += 0.125) {
+      const u0 = ((ax + (bx - ax) * f) * c.s) / R0;
+      const u1 = ((ay + (by - ay) * f) * c.s) / R1;
+      const u2 = Math.sqrt(Math.max(0, 1 - u0 * u0 - u1 * u1));
+      low = Math.min(low, sh.c[2] + sh.ax[0][2] * u0 + sh.ax[1][2] * u1 + sh.ax[2][2] * u2);
+    }
+  }
+  return low;
+}
+/** Iron of him as it flies and lies after the blast: his own soot-black iron (a shade darker than he stood, lying face up to the light), dusted with ash, the ember glow dying on its open edges. */
+const LYING = (r: Ramp): Ramp => [r[0], r[0], r[1], r[2], r[3]];
+function lyingSkin(skin: Skin, seed: number, pl: Plate | undefined, age: number): Skin {
+  if (typeof skin !== 'function') return LYING(skin);
+  return (u, tone, x, y) => {
+    const c = skin(u, Math.max(0, tone - 1), x, y);
+    if (!c) return c;
+    if (pl) {
+      // (its open edges: the glow dying along them)
+      let e = 9;
+      if (pl.hi < 1) e = Math.min(e, pl.hi - u[2]);
+      if (pl.lo > -1) e = Math.min(e, u[2] - pl.lo);
+      if (pl.open > -1) e = Math.min(e, u[0] - pl.open);
+      if (pl.inside > -1) e = Math.min(e, u[1] - pl.inside);
+      if (e < 0.08) {
+        const g = emberAt(age, (1 - e / 0.08) * (0.25 + 0.9 * noise2(Math.atan2(u[1], u[0]) * 2.4 + seed, u[2] * 3, 355)));
+        if (g) return g;
+      }
+    }
+    if (hash(Math.floor(u[0] * 14 + seed), Math.floor(u[1] * 14 + u[2] * 9), 357) < 0.045) return ST_ASH[noise2(u[0] * 3 + seed, u[2] * 3, 359) > 0.5 ? 2 : 1];
+    return c;
+  };
+}
+function lyingBits(bits0: ReadonlyArray<Bit>, age: number): Bit[] {
+  return bits0.map((b, i) => {
+    const sh = b.shape;
+    let out: Shape = sh;
+    if (sh.k === 'ball') out = { ...sh, skin: lyingSkin(sh.skin, i * 7.3, PLATE_OF.get(sh), age) };
+    else if (sh.k === 'cloth' || sh.k === 'band' || sh.k === 'rod') out = { ...sh, ramp: LYING(sh.ramp) };
+    else if (sh.k === 'panel' && !CAPS.has(sh)) {
+      const skin = sh.skin;
+      const darker: PanelSkin = (a, bb, front, tone) => skin(a, bb, front, Math.max(0, tone - 1));
+      out = { ...sh, skin: darker };
+    }
+    if (out === sh) return b;
+    const pl = PLATE_OF.get(sh);
+    if (pl) PLATE_OF.set(out, pl);
+    if (CAPS.has(sh)) CAPS.add(out);
+    return { ...b, shape: out };
+  });
 }
 /**
  * THE EXPLOSION, PAINTED PIXEL BY PIXEL ON THE PICTURE (laid over him as sparks and smoke are, so that every piece of him inside it
@@ -1982,14 +2136,21 @@ function blastBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
   const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
   const B0 = burstOf(st, m, say);
   const o = B0.o;
-  const smokeOff = (rest: V3, still: number, j: number): void => {
-    // (each piece smoking where it lies, thinning)
+  // (a few of them smoking where they lie: a thin wisp rising off each, swaying, curling, thinning as it goes up, to the end)
+  const wisp = (rest: V3, still: number, j: number): void => {
     const since = tau - still;
-    if (since < 0 || since > 2.4) return;
-    for (let i = 0; i < 3; i++) {
-      const life = fr(t * 0.6 + i / 3 + 0.37 * hash(i, j, 179));
-      if (life > 0.85 * (1 - since / 2.4)) continue;
-      grains.push([add(rest, [Math.sin(life * 5 + j) * 2 - 4 * life, Math.cos(life * 4 + i) * 2, 3 + 22 * life]), ST_SMOKE[Math.min(3, 1 + Math.floor(life * 3))], 1]);
+    if (since < 0) return;
+    const k = clamp01(since / 0.35) * (1 - 0.35 * clamp01(since / 2.5));
+    const ph = hash(j, 1, 337) * TAU;
+    for (let i = 0; i < 30; i++) {
+      const h = 1.5 + i * 1.2;
+      const sway = Math.sin(h * 0.17 - t * 2.1 + ph) * (0.4 + h * 0.1);
+      const p = add(rest, [sway * 0.62 + h * 0.08, sway * 0.62 + h * 0.08, h + 1.5]);
+      const dens = k * (1.15 - h / 36) * (0.62 + 0.38 * Math.sin(h * 0.42 - t * 5.5 + ph));
+      if (hash(i, j, 339) > dens) continue;
+      grains.push([p, ST_SMOKE[Math.min(3, Math.floor(h / 9))], 1]);
+      // (thicker where it leaves the iron)
+      if (h < 9 && hash(i, j, 341) < dens) grains.push([add(p, [0.6, -0.6, 0]), ST_SMOKE[1], 1]);
     }
   };
   // (a trail of smoke and sparks behind a piece as it flies)
@@ -2040,10 +2201,12 @@ function blastBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
     const h = (hash(i, 2, 181) - 0.5) * 1.4;
     const out = norm(add(mul(bf, Math.cos(a)), mul(blf, Math.sin(a))));
     const c = add(add(bl.c, mul(out, ((bl.r[0] + bl.r[1]) / 2) * Math.sqrt(1 - h * h * 0.5))), mul(bu, h * bl.r[2]));
-    const t1 = norm(cross(bu, out));
-    const t2 = norm(cross(out, t1));
-    const e: Egg = { c, ax: [mul(t1, 12 + 6 * hash(i, 3, 181)), mul(t2, 9 + 4 * hash(i, 4, 181)), mul(out, 1.3)] };
-    return { key: `chunk${i}`, c, e };
+    // (bent round his firebox as it was, each a little its own way)
+    const ta = norm(cross(bu, out));
+    const tb = norm(cross(out, ta));
+    const ph = (hash(i, 5, 181) - 0.5) * 1.4;
+    const t1 = add(mul(ta, Math.cos(ph)), mul(tb, Math.sin(ph)));
+    return { key: `chunk${i}`, c, out, t1 };
   });
   const sh0 = shovelFall(st, m, say);
   const shovelLaid = flown(sh0.bits0, sh0.c0, sh0.F, 99);
@@ -2057,20 +2220,21 @@ function blastBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
     const heavy = /^boot[LR]$/.test(whole) ? 1.7 : whole === 'head' ? 0.85 : /^(pauldron|gauntlet)/.test(whole) ? 1.1 : 1;
     const F0 = blastFlight(whole, c0, o, { axis: [0, 0, 1], deg: 0 }, heavy, aims.get(whole));
     const F = { ...F0, lay: layOf(whole, bits0, F0.way, [st.back[0][0], st.back[1][0], st.back[2][0]]) };
-    const f = flown(cooledOf(whole, bits0, tau, t), c0, F, tau);
+    const f = flown(lyingBits(cooledOf(whole, bits0, tau, t), tau), c0, F, tau);
     for (const b of f.bits) bits.push({ part: `p_${b.part}`, piece: whole, shape: b.shape });
     trail(bits0, c0, F, j);
-    smokeOff(f.rest, f.still, j++);
+    if (j % 3 === 0) wisp(f.rest, f.still, j);
+    j++;
   }
   // SHARDS OF HIS FIREBOX, torn out of it
-  shards.forEach(({ key, c, e }, i) => {
-    const bits0: Bit[] = [{ part: key, piece: key, shape: { k: 'ball', c: e.c, ax: e.ax, skin: shardSkin(tau, i) } }];
+  shards.forEach(({ key, c, out, t1 }, i) => {
+    const bits0 = shardBits(key, shardCut(i), c, out, t1, tau);
     const F0 = blastFlight(key, c, o, { axis: [0, 0, 1], deg: 0 }, 0.85, aims.get(key));
     const F = { ...F0, lay: layOf(key, bits0, F0.way) };
     const f = flown(bits0, c, F, tau);
     for (const b of f.bits) bits.push(b);
     trail(bits0, c, F, 40 + i);
-    smokeOff(f.rest, f.still, 40 + i);
+    if (i % 4 === 1) wisp(f.rest, f.still, 40 + i);
   });
   // HIS SHOVEL, blown from where it lay
   {
@@ -2089,10 +2253,9 @@ function blastBits(st: Stage, m: Moment, say: StokerSay): Bit[] {
       lay = frameTurn(d, w, n, n[2] >= 0 ? [0, 0, 1] : [0, 0, -1]);
     }
     const F2: Flight = { ...F0, turns: 1, lay };
-    const f = flown(lying.bits, c1, F2, tau);
+    const f = flown(lyingBits(lying.bits, tau), c1, F2, tau);
     for (const b of f.bits) bits.push({ part: 'shovel', piece: 'shovel', shape: b.shape });
     trail(lying.bits, c1, F2, 60);
-    smokeOff(f.rest, f.still, 60);
   }
   // sparks and burning bits flung out of the blast
   for (let i = 0; i < 46; i++) {
