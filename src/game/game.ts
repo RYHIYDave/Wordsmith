@@ -6212,12 +6212,72 @@ export class Game {
       const skill = c.skill;
       this.after(flight, () => {
         const t = this.monsters.find((q) => q.id === id && !q.dead);
-        if (t) this.hitMonster(t, skill, frac * C.boltShare, n > 0);
+        if (t) this.boltStrikes(t, skill, frac * C.boltShare, n > 0, false);
       });
     }
     c.shotAge = 0;
     this.sfx('zap', echo ? 0.25 : 0.4);
     return true;
+  }
+
+  /**
+   * HER ENERGY BOLT STRIKING, and what her tree's vial talents do with it as they do with a vial. Asked whether Energy should
+   * have versions of them, his words, 6 Nov 2026: “Why can’t energy do what the bombs do?” So: MAD MIXTURE, a brew at random on
+   * what it strikes; THE BIG ONE, every fifth a big one, bursting three times the ability's size round it and knocking down
+   * what it catches; TAR, a puddle where it strikes; GROWTH SERUM, striking by her Golem, it grows; CLUSTER VIALS, it leaps on
+   * to as many more near it, little ones, as a vial's little ones; ALCHEMY, what it kills drops gold.
+   */
+  private boltStrikes(t: Monster, skill: number, frac: number, second: boolean, little: boolean): void {
+    const T = TINKER_TUNE.talents;
+    const s = this.hero.skills[skill];
+    let rad = s ? SKILLS[s.id].radius * s.r.size : 1;
+    if (little) rad *= T.cluster.size;
+    const big = !little && this.has('thebigone') && ++this.vialsThrown % T.bigOne.every === 0;
+    const brew: Brew | null = this.has('madmixture') ? this.rng.pick<Brew>(['burn', 'freeze', 'poison']) : null;
+    const x = t.x;
+    const y = t.y;
+    // (ALCHEMY: what it kills drops gold, as a vial's: `brewing`, dropLoot)
+    this.brewing = true;
+    this.hitMonster(t, skill, little ? frac * T.cluster.share : frac, second);
+    if (big) {
+      this.blast(skill, x, y, rad * T.bigOne.wide, frac, 'bomb', 0, false, false);
+      this.emit({ t: 'shake', amount: 4 });
+      this.sfx('slam', 0.8);
+    }
+    this.brewing = false;
+    const caught = big ? this.monsters.filter((m) => !m.dead && !this.shutIn(m) && Math.hypot(m.x - x, m.y - y) <= rad * T.bigOne.wide + m.r) : [t];
+    if (brew) this.brewOn(caught, brew, skill, frac);
+    if (big) {
+      for (const m of caught) {
+        if (m.dead) continue;
+        this.throwMonster(m, x, y, T.bigOne.far, 0.2);
+        this.stunMonster(m, T.bigOne.down);
+      }
+    }
+    if (!little && this.has('tar')) {
+      const r = rad * T.tar.size;
+      this.tars.push({ x, y, r, t: 0 });
+      this.emit({ t: 'tar', x, y, r, secs: T.tar.secs });
+    }
+    if (this.has('growthserum')) {
+      for (const g of this.golemsUp()) if (Math.hypot(g.x - x, g.y - y) <= rad + this.golemBody(g) + T.growth.near) this.growGolem(g);
+    }
+    if (!little && this.has('clustervials')) {
+      const K = T.cluster;
+      const next = this.monsters
+        .filter((m) => m !== t && !m.dead && !this.shutIn(m) && Math.hypot(m.x - x, m.y - y) <= K.far + 1.5 && this.sees(x, y, m.x, m.y))
+        .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
+        .slice(0, K.n);
+      for (const m of next) {
+        const flight = Math.hypot(m.x - x, m.y - y) / TINKER_TUNE.contraption.boltSpeed;
+        this.emit({ t: 'contraptionBolt', id: -1, x0: x, y0: y, x1: m.x, y1: m.y, flight });
+        const id = m.id;
+        this.after(flight, () => {
+          const q = this.monsters.find((z) => z.id === id && !z.dead);
+          if (q) this.boltStrikes(q, skill, frac, true, true);
+        });
+      }
+    }
   }
 
   /** A vial lobbed out of a Contraption at the nearest enemy awake within its reach (as many as Twin says, at as many). */
