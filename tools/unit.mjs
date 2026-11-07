@@ -3,6 +3,7 @@
 //   node tools/unit.mjs              every test file, on a frozen copy of the last commit
 //   node tools/unit.mjs --jobs 1     one file at a time (default: one per core)
 //   node tools/unit.mjs --again      forget what is kept for this commit and run it all
+//   node tools/unit.mjs --changed    only what changed since the commit last checked, and the core (a small update: his pick)
 // Why it was run again and again: the whole suite as one run under one time limit, cut off part way on a slow machine with
 // nothing to show for what had passed; files changed and heavy work (a bake) done while it ran; nothing kept from a run to
 // the next. So:
@@ -103,7 +104,42 @@ function carryOver() {
   console.log(`carried over from ${before.c}: ${carried} files whose every part is unchanged since (${changed.size} files changed)`);
 }
 
-const todo = files.filter((f) => !fs.existsSync(keptOf(f)));
+// ONLY WHAT CHANGED (`--changed`): his pick, 6 Nov 2026, 21:01, asked how much is checked before a small update goes live: “Only
+// what changed (Recommended)”, offered as: the checks for the parts that changed plus a core set; the whole suite only for a big
+// version. So: the test files changed since the commit last checked (`--since`, else the latest that has a summary here), those
+// that import a changed file of the game's themselves, and CORE (the game's main ways, a few minutes); the rest not run, and said so.
+const CORE = ['items', 'melds', 'talents_rules', 'talents', 'doors', 'exits', 'first_levels', 'town', 'quests15', 'monster_attacks', 'first5_floors', 'relief', 'level_kinds', 'words3', 'new_words', 'word_kinds', 'boss_calls', 'first5_bosses', 'heroes3', 'gamepad', 'baked', 'collision', 'same_mod'].map((n) => `${n}.test.ts`);
+let only = null;
+if (args.includes('--changed')) {
+  let since = opt('since', null);
+  if (!since) {
+    const units = path.join(ROOT, '.unit');
+    let best = null;
+    for (const c of fs.readdirSync(units)) {
+      if (c === commit || !fs.existsSync(path.join(units, c, 'summary.txt'))) continue;
+      try { git('merge-base', '--is-ancestor', c, commit); } catch { continue; }
+      const when = Number(git('log', '-1', '--format=%ct', c));
+      if (!best || when > best.when) best = { c, when };
+    }
+    since = best ? best.c : null;
+  }
+  if (!since) {
+    console.log('--changed: no commit checked before to go from: the whole suite');
+  } else {
+    const changed = new Set(git('diff', '--name-only', since, commit).split('\n').filter(Boolean));
+    only = new Set(CORE.filter((f) => files.includes(f)));
+    for (const f of files) {
+      if (changed.has(`tests/${f}`)) only.add(f);
+      const src = fs.readFileSync(path.join(copy, 'tests', f), 'utf8');
+      for (const m of src.matchAll(/from ['"](\.\.?\/[^'"]+)['"]/g)) {
+        const to = path.relative(copy, path.resolve(copy, 'tests', m[1])).replace(/\\/g, '/');
+        if (changed.has(`${to}.ts`) || changed.has(to)) only.add(f);
+      }
+    }
+    console.log(`--changed since ${since}: ${changed.size} files changed; ${only.size} test files to check (the core ${CORE.length}, and those that test what changed); ${files.length - only.size} not run`);
+  }
+}
+const todo = files.filter((f) => !fs.existsSync(keptOf(f)) && (!only || only.has(f)));
 console.log(`UNIT ${commit}: ${files.length} files, ${files.length - todo.length} kept from before, ${todo.length} to run, ${JOBS} at a time`);
 
 /** Run one file; its result: passed, failed, how many tests each way, how long, and its failures' names. */
@@ -152,7 +188,7 @@ await pool(todo, JOBS, (r) => {
 });
 
 // EACH FAILURE ALONE, nothing else running
-const all = files.map((f) => JSON.parse(fs.readFileSync(keptOf(f), 'utf8')));
+const all = files.filter((f) => fs.existsSync(keptOf(f)) && (!only || only.has(f))).map((f) => JSON.parse(fs.readFileSync(keptOf(f), 'utf8')));
 let busy = 0;
 for (const r of all.filter((q) => !q.ok && !q.alone)) {
   const again = await runOne(r.file);
@@ -160,12 +196,12 @@ for (const r of all.filter((q) => !q.ok && !q.alone)) {
   fs.writeFileSync(keptOf(r.file), JSON.stringify(kept));
   console.log(`  ${r.file} run again alone: ${again.ok ? 'PASSED (it failed only for the machine being busy)' : 'FAILED again'}`);
 }
-const final = files.map((f) => JSON.parse(fs.readFileSync(keptOf(f), 'utf8')));
+const final = files.filter((f) => fs.existsSync(keptOf(f)) && (!only || only.has(f))).map((f) => JSON.parse(fs.readFileSync(keptOf(f), 'utf8')));
 const bad = final.filter((r) => !r.ok);
 busy = final.filter((r) => r.busy).length;
 const tests = final.reduce((n, r) => n + r.pass + r.fail, 0);
 const lines = [
-  `UNIT ${commit}, ${new Date().toISOString()}: ${final.length} files, ${tests} tests`,
+  `UNIT ${commit}, ${new Date().toISOString()}: ${final.length} files, ${tests} tests${only ? ` (only what changed and the core: ${files.length - final.length} files not run)` : ''}`,
   `passed: ${final.length - bad.length} files${busy ? ` (${busy} only when run alone: ${final.filter((r) => r.busy).map((r) => r.file).join(', ')})` : ''}`,
   `failed: ${bad.length} files`,
   ...bad.map((r) => `  ${r.file}${r.timedOut ? ' (out of time)' : ''}: ${r.failed.join(' | ')}  (log: .unit/${commit}/logs/${r.file}.log)`),
