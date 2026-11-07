@@ -217,7 +217,8 @@ export interface Hero {
    */
   attackAge: number;
   attackWind: number;
-  windup: { skill: number; tx: number; ty: number; t: number } | null;
+  /** `tid`: the enemy the press was aimed at (a quick attack's), followed until it goes off (game.ts TRACK_AIM). */
+  windup: { skill: number; tx: number; ty: number; t: number; tid?: number } | null;
   /** An attack that is going on while its button is held (Whirlwind, Beam), or null. */
   channel: Channel | null;
   /** A slow attack asked for while another attack was still being made: it follows at once. */

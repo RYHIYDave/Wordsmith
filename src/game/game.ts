@@ -26,7 +26,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { COMPANIONS, TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem } from './talents';
+import { COMPANIONS, TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentById, talentMods, talentPoints, unlearnProblem } from './talents';
 import { COMPANION_GROUPS, COMPANION_GROUP_IDS, COMPANION_TUNE, cleanPicks, pickedIn } from './companions';
 import { ROYALS, ROYAL_NAMES, ROYAL_TUNE, canMake, cleanCards, handCards, handPays, royalFloor } from './royal_cards';
 import type { Hand, Royal } from './royal_cards';
@@ -82,6 +82,7 @@ import { COMBO_TUNE, GOLEM_CANNON, GOLEM_COMBO, TINKER_TUNE, golemBlow } from '.
 import { GOLEM_ROCKET, ROCKET, rocketAlong } from '../art/golem_rocket_fx';
 import type { Brew, Decoy, GolemRocketAt, Tar } from './state';
 import { DEMON_KIT, WARLOCK_TUNE } from './warlock';
+import { leadPoint } from './lock';
 import { BOSS_CALLS, bossCall } from './boss_calls';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -251,6 +252,19 @@ export type ItemRef = { kind: 'gear'; slot: EquipSlot } | { kind: 'bag'; i: numb
 
 /** THE DESCENT'S CLIFFS SEEN OVER (updateVision): on, at his word of 1 Nov 2026 on the Ledge Road. */
 export const SEE_OVER_ROCK = { on: true };
+
+/**
+ * A QUICK ATTACK FOLLOWS THE ENEMY IT WAS AIMED AT. His words, 7 Nov 2026, 15:12: “I think something happened to the ranger’s
+ * aim in auto aim.  Especially his tap.” Since 25.2.0 the Ranger's draw is held (Movement 9: about a quarter of a second with
+ * his first bow, where it was 0.16), and his arrow went the way he had turned as he pressed: at where the enemy had been. So a
+ * quick attack pressed at an enemy (auto aim, the lock, or a tap on it: one within `near` tiles of the point) follows it: as it
+ * goes off he turns to where it is now, and an arrow or a wave to where it will be as it gets there (lock.ts leadPoint). Pressed
+ * at nothing, or the enemy fallen or out of sight, it goes as before: the way he faces.
+ */
+/** IN PRACTICE, EVERY TALENT POINT: his words, 7 Nov 2026, 15:12: “And can I get all the talent points in practice mode?” (Game.talentLevel). */
+export const PRACTICE_TALENTS = { on: true };
+
+export const TRACK_AIM = { on: true, near: 0.9 };
 
 export class Game {
   /** (SEE_OVER_ROCK) Whether the hero's eye passed over the rock this time it looked (updateVision). */
@@ -4612,6 +4626,11 @@ export class Game {
     h.attackT = wind + follow;
     h.animT = 0;
     h.windup = { skill: i, tx, ty, t: wind };
+    // (TRACK_AIM: a quick attack pressed at an enemy follows it through the wind-up)
+    if (TRACK_AIM.on && i === 0) {
+      const m = this.monsterNear(tx, ty, TRACK_AIM.near);
+      if (m) h.windup.tid = m.id;
+    }
     // (his voice, now and then, as he attacks: engine/audio.ts heroVoice)
     this.emit({ t: 'voice', who: h.cls, cry: 'attack' });
     if (wind <= 0) this.release();
@@ -4631,6 +4650,17 @@ export class Game {
       if (def.kind === 'melee') this.sfx('swing', 0.8);
       else if (def.kind === 'projectile') this.sfx('shot', 0.8);
       else if (def.kind === 'wave') this.sfx('wave', 0.8);
+      // (TRACK_AIM: pressed at an enemy, he turns to where it is now as it goes off, and an arrow or a wave to where it will be
+      // as it gets there)
+      if (TRACK_AIM.on && w.tid !== undefined && (def.kind === 'projectile' || def.kind === 'wave' || def.kind === 'melee')) {
+        const m = this.monsters.find((q) => q.id === w.tid && !q.dead && q.seen);
+        if (m) {
+          const far = Math.hypot(m.x - h.x, m.y - h.y);
+          const speed = s.r.projSpeed > 0 ? s.r.projSpeed : def.speed;
+          const at = def.kind === 'melee' || speed <= 0 ? { x: m.x, y: m.y } : leadPoint(this, m, far / speed);
+          if (Math.hypot(at.x - h.x, at.y - h.y) > 0.05) this.face(at.x, at.y);
+        }
+      }
       // (the quick attack goes the way the hero faces, from wherever they have got to; THE TINKERER's vial and Contraption,
       // thrown, to where it was aimed)
       if (def.kind === 'contraption' || def.kind === 'vialtoss') this.deliver(0, h.x, h.y, w.tx, w.ty, 1, true);
@@ -12960,7 +12990,15 @@ export class Game {
   /** THE SKILL TREES (game/talents.ts): why this talent cannot be taken now, or null if it can. */
   talentProblem(id: string): string | null {
     if (!TALENTS.on) return 'No talents yet';
-    return takeProblem(this.hero.cls, this.hero.level, this.hero.talents, id);
+    return takeProblem(this.hero.cls, this.talentLevel(), this.hero.talents, id);
+  }
+
+  /**
+   * The level his talent points are counted by: his own; in practice, every point (PRACTICE_TALENTS: his words, 7 Nov 2026, 15:12,
+   * “And can I get all the talent points in practice mode?”).
+   */
+  talentLevel(): number {
+    return this.practice && PRACTICE_TALENTS.on ? TALENT_MAX * TALENT_EVERY : this.hero.level;
   }
 
   /** Take a talent with a point: why not, or null when it is taken. */
@@ -13025,7 +13063,7 @@ export class Game {
 
   /** How many talent points are waiting to be spent. */
   talentsLeft(): number {
-    return TALENTS.on ? Math.max(0, talentPoints(this.hero.level) - this.hero.talents.length) : 0;
+    return TALENTS.on ? Math.max(0, talentPoints(this.talentLevel()) - this.hero.talents.length) : 0;
   }
 
   /** THE SKILL TREES: whether this hero has taken talent `id` (never while their switch is off). */
