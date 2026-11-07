@@ -29,7 +29,7 @@ import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { TILE3 } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import {
-  ARM_ALONE, ARM_ROOTS, ARMS_RISEN, ARMS_UNDER, C_TILE, COLOSSUS, EYE2, EYE_OPEN, EYE_SHUT, MAT, STONE, TONGUE_OPEN, TONGUE_SHUT,
+  ARM_ALONE, ARM_ROOTS, ARMS_RISEN, ARMS_UNDER, C_TILE, COLOSSUS, EYE2, EYE_OPEN, EYE_SHUT, EYE_UNDER, MAT, STONE, TONGUE_OPEN, TONGUE_SHUT, TONGUE_UNDER,
   armClearances, costOf, headParts, meltParts, paintColossus, poseArm, poseRisen, poseUnder, tubeSmoothness,
 } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
@@ -165,6 +165,13 @@ test('5. his head splits down its seam; his eye is on the end of his tongue', ()
     assert.ok(Math.hypot(last[0] - E[0], last[1] - E[1], last[2] - E[2]) < COLOSSUS.eyeR, 'its tip swollen into the eye');
   }
   assert.equal(TONGUE_SHUT.length, TONGUE_OPEN.length, 'the same tongue shut and open (so that it can move between)');
+  assert.equal(TONGUE_UNDER.length, TONGUE_SHUT.length, 'and under the water');
+  assert.ok(EYE_UNDER[2] + COLOSSUS.eyeR < COLOSSUS.sunk - 20 && TONGUE_UNDER.every((q) => q[2] + q[3] < COLOSSUS.sunk - 20), 'under the water, his tongue and eye under it too');
+  // (phase 1: all of his head under the black water, only his arms out of it)
+  const under = PICS[3][1];
+  let above = 0;
+  for (let k = 0; k < under.kind.length; k++) if (under.kind[k] === 1 && under.mat[k] !== MAT.arm) above++;
+  assert.ok(COLOSSUS.sunk > COLOSSUS.tall + 10 && above === 0, `under the water, his crown ${COLOSSUS.sunk - COLOSSUS.tall} of his lengths under it, nothing of his head above it (${above})`);
 });
 
 test('6. his tentacles and his tongue: one smooth taper each, no bands, no joints, no steps', () => {

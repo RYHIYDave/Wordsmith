@@ -50,15 +50,15 @@ const COS30 = Math.sqrt(3) / 2;
 
 export const COLOSSUS = {
   /** His head, shut: across at its widest (his cheeks), and over the water at his crown. */
-  wide: 640,
-  tall: 362,
+  wide: 600,
+  tall: 430,
   /** The eye on the end of his tongue: its radius. */
   eyeR: 50,
   /** The hinge his two halves swing on, at the back of his skull (toward the camera from his middle), and how far each swings, torn wide (radians). */
   hinge: -176,
   swing: 0.56,
   /** How deep he lies in phase 1, under the water (his crown a little below it). */
-  sunk: 392,
+  sunk: 452,
   /** And how far back out in the water he lies then (so that what is seen of him is seen in the water, not under the stone). */
   sunkBack: 330,
   /** How deep under the water anything of him is still seen; his eye's fire, deeper. */
@@ -242,6 +242,8 @@ export interface ColossusPose {
   /** The way his eye looks (his own space). */
   gaze: readonly [number, number, number];
   arms: ReadonlyArray<ArmPose>;
+  /** Under the water (phase 1), his tongue reared up the front of him, the eye on it between his two arms. */
+  tongue?: 'under';
 }
 
 /** The picture of him: its pixels (two to a game pixel), where the water under his middle is on it, and his lights. */
@@ -822,6 +824,13 @@ export const TONGUE_OPEN: ReadonlyArray<readonly [number, number, number, number
   [22, 154, 366, 14], [4, 164, 404, 13], [-18, 168, 428, 15], [-24, 172, 440, 18], [-24, 174, 446, 20],
 ];
 export const EYE_OPEN: readonly [number, number, number] = [-24, 178, 462];
+/** Under the water (phase 1): his tongue out of his seam and reared up the front of him in an S, the eye on it looking up at you
+ *  between his two arms, all of it under the water. */
+export const TONGUE_UNDER: ReadonlyArray<readonly [number, number, number, number]> = [
+  [0, -84, 96, 24], [0, 60, 66, 23], [0, 150, 54, 21], [-12, 200, 52, 20], [-30, 226, 80, 19], [-24, 236, 120, 17],
+  [8, 240, 160, 15], [22, 240, 200, 14], [6, 238, 236, 13], [-6, 236, 262, 15], [-4, 236, 276, 18],
+];
+export const EYE_UNDER: readonly [number, number, number] = [-2, 238, 296];
 
 /** The way he looks at you (toward the camera, a little down at the hero). */
 export const GAZE_AT_YOU: readonly [number, number, number] = [0.05, 0.95, 0.22];
@@ -872,8 +881,8 @@ class Scene {
     // HIS TONGUE: between its shut and its open lie, as far as he is open
     const o = this.open;
     const lerp = (a: readonly number[], b: readonly number[]): number[] => a.map((v, i) => v + (b[i] - v) * o);
-    const path = TONGUE_SHUT.map((q, i) => lerp(q, TONGUE_OPEN[i]));
-    const e = lerp(EYE_SHUT, EYE_OPEN);
+    const path = pose.tongue === 'under' ? TONGUE_UNDER : TONGUE_SHUT.map((q, i) => lerp(q, TONGUE_OPEN[i]));
+    const e = pose.tongue === 'under' ? EYE_UNDER : lerp(EYE_SHUT, EYE_OPEN);
     this.eyeC = [e[0], e[1], e[2]];
     this.tongue = pose.body ? armOf({ path, r: 30, belly: [0, 0, -1], seed: 9 }, 120, 30, false) : null;
     if (!pose.body) return;
@@ -1948,7 +1957,7 @@ export function poseRisen(maw = 0, view: 'front' | 'back' = 'front'): ColossusPo
   return { view, drop: 0, body: true, maw, gaze: GAZE_AT_YOU, arms: ARMS_RISEN };
 }
 export function poseUnder(): ColossusPose {
-  return { view: 'front', drop: COLOSSUS.sunk, back: COLOSSUS.sunkBack, body: true, maw: 0, gaze: [0, 0.87, 0.5], arms: ARMS_UNDER };
+  return { view: 'front', drop: COLOSSUS.sunk, back: COLOSSUS.sunkBack, body: true, maw: 0, gaze: [0, 0.87, 0.5], arms: ARMS_UNDER, tongue: 'under' };
 }
 export function poseArm(): ColossusPose {
   return { view: 'front', drop: 0, body: false, maw: 0, gaze: GAZE_AT_YOU, arms: ARM_ALONE };

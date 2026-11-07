@@ -22,7 +22,7 @@ import { paintTerrain, terrainOf } from '../src/art/terrain';
 import type { Terrain } from '../src/art/terrain';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
-import { ARMS_UNDER, ARMS_RISEN, COLOSSUS, STONE, armClearances, costOf, headParts, paintColossus, poseArm, poseRisen, poseUnder, tubeSmoothness, TONGUE_SHUT, EYE_SHUT } from '../src/art/eye_colossus';
+import { ARMS_UNDER, ARMS_RISEN, COLOSSUS, STONE, armClearances, costOf, headParts, paintColossus, poseArm, poseRisen, poseUnder, tubeSmoothness, TONGUE_SHUT, EYE_SHUT, EYE_UNDER } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose, Frame } from '../src/art/eye_colossus';
 
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
@@ -441,7 +441,7 @@ if (mode === 'look') {
     stands.push({ d: VC, f: () => layHim(pic, under, 600, 270) });
     stands.push(layHero(pic, cam, 3.2, ARENA.quay + 2.2, true));
     stands.sort((p, q) => p.d - q.d).forEach((s) => s.f());
-    save('look_under.png', pic, 'UNDER THE WATER (PHASE 1)', `Only his eye's fire and the dark dome of his head seen through the black water: his crown ${COLOSSUS.sunk - COLOSSUS.tall} under it, his eye ${Math.round(COLOSSUS.sunk - 226)} down, looking up at you; he lies further out than he rises.`);
+    save('look_under.png', pic, 'UNDER THE WATER (PHASE 1)', `Only his eye's fire and the dark dome of his head seen through the black water: his crown ${COLOSSUS.sunk - COLOSSUS.tall} under it, his eye on his tongue ${Math.round(COLOSSUS.sunk - EYE_UNDER[2])} down, looking up at you; he lies further out than he rises.`);
   }
   // 7. FROM BEHIND, small (half the game's size)
   {

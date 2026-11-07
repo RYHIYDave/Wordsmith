@@ -61,7 +61,7 @@ def plan():
     TL = 32 / (2 / 3) ** 0.5
     across, deep, edge = 17, 11, 310 / TL
     root_y = 256 / TL
-    top, bottom = -3.2, edge + deep + 1.6
+    top, bottom = -5.3, edge + deep + 1.6
     Wp, Hp = W, int((bottom - top) * T) + 40
     im = Image.new('RGB', (Wp, Hp), BG)
     d = ImageDraw.Draw(im, 'RGBA')
@@ -108,7 +108,9 @@ def plan():
     d.text((X(across / 2) + 26, Y(edge) + 30), '17 tiles across,', font=small, fill=GREY)
     d.text((X(across / 2) + 26, Y(edge) + 56), '11 deep', font=small, fill=GREY)
     d.text((X(-13) + 6, Y(top) + 4), 'the black water', font=small, fill=GREY)
-    d.text((X(-13) + 6, Y(edge) - 28), 'his middle %.1f tiles out' % edge, font=small, fill=GREY)
+    d.text((X(-13) + 6, Y(edge) + 4), 'his middle', font=small, fill=GREY)
+    d.text((X(-13) + 6, Y(edge) + 30), '%.1f tiles' % edge, font=small, fill=GREY)
+    d.text((X(-13) + 6, Y(edge) + 56), 'out', font=small, fill=GREY)
     return im
 
 mode = sys.argv[1]
@@ -139,5 +141,5 @@ else:
     parts.append(block('TODAY (LEFT) AND NEW (RIGHT), SMALL', 'Left, the game today: the pool in the middle of the round ring, the Eye lying in it, about as tall as the hero, seen from above. Right, the new arena: the stone a rectangle, the water across the top, him risen and filling it.', row))
     p = spec['arena_mid.png']
     parts.append(block(p['title'], p['note'], img('arena_mid.png')))
-    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. His tentacles rise in the water just off the stone: phase 1 at a third and two thirds along it (1); phases 2 and 3 left, middle and right (2/3). A slam: 6 tiles along the stone toward the hero, 1.2 wide (orange). The three pillars of phase 3, where they could stand (pink, not drawn yet). The hero cyan.', plan()))
+    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. His head where it meets the water, his seam down its middle; his tongue out of it, the eye on its tip (pink). His tentacles rise in the water just off the stone: phase 1 at a third and two thirds along it (1); phases 2 and 3 left, middle and right (2/3). A slam: 6 tiles along the stone toward the hero, 1.2 wide (orange). The three pillars of phase 3, where they could stand (pink, not drawn yet). The hero cyan.', plan()))
     stack(parts, sys.argv[4])
