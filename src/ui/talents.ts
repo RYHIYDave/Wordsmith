@@ -519,7 +519,7 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   if (st.sel && !tree.talents.some((q) => q.id === st.sel)) st.sel = null;
 
   // the line over the tree: what it is, and the points
-  const next = nextTalentLevel(h.level);
+  const next = nextTalentLevel(game.talentLevel());
   const pts = left > 0 ? `${left} ${left === 1 ? 'POINT' : 'POINTS'} TO SPEND` : next !== null ? `NEXT POINT AT LEVEL ${next}` : 'ALL TEN SPENT';
   // (what the tree is, where there is room for it beside the points)
   const what = `TALENTS: ${tree.shape.toUpperCase()}`;
