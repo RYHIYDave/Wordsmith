@@ -20,7 +20,7 @@ import { paintTerrain, terrainOf } from '../src/art/terrain';
 import type { Terrain } from '../src/art/terrain';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
-import { ARMS_UNDER, COLOSSUS, costOf, paintColossus, poseArm, poseRisen, poseUnder } from '../src/art/eye_colossus';
+import { ARMS_UNDER, COLOSSUS, STONE, armClearances, costOf, paintColossus, poseArm, poseRisen, poseUnder } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
@@ -153,7 +153,9 @@ const C: [number, number] = [30, 30];
 const UC = C[0] - C[1];
 const VC = C[0] + C[1];
 /** The arena, in u and v from his middle: the stone from the water's edge (`quay`) down `deep`, `half` either way across. */
-export const ARENA = { half: 15, quay: 8.4, deep: 17 } as const;
+// (the main chat's stone, 17 tiles across and 11 deep, a tile being √2 of u or v; its edge STONE.edge of his lengths before his
+// middle: a length toward the camera is 0.577 of a picture pixel down, 16 of which are one of v)
+export const ARENA = { half: (STONE.across * Math.SQRT2) / 2, quay: (STONE.edge * 0.5773502691896258) / 16, deep: STONE.deep * Math.SQRT2 } as const;
 const onStone = (x: number, y: number): boolean => Math.abs(x - y - UC) <= ARENA.half && x + y - VC >= ARENA.quay && x + y - VC <= ARENA.quay + ARENA.deep;
 // (the Eye's pool look over all the water before the stone: deep and near black; its own painted rings left out, his ripples are his)
 const poolD = (x: number, y: number): number => (x + y - VC >= ARENA.quay ? 9 : 0.5);
@@ -256,9 +258,9 @@ function dressing(pic: Pic, cam: Cam): Stand[] {
   put('cattails', ARENA.half + 1.8, ARENA.quay + 2.5, 1);
   put('cattails', -ARENA.half - 2.6, ARENA.quay + 6, 1);
   put('sedge tussock', ARENA.half + 2.6, ARENA.quay + 7, 0);
-  put('mossy stones', -9, ARENA.quay + 9.5, 0);
-  put('fallen column drums', 11.5, ARENA.quay + 11, 0, 22);
-  put('mossy stones', 7, ARENA.quay + 1.4, 0);
+  put('mossy stones', -8, ARENA.quay + 9.5, 0);
+  put('fallen column drums', 9, ARENA.quay + 11, 0, 22);
+  put('mossy stones', 4, ARENA.quay + 1.4, 0);
   put('lily pads', -12, ARENA.quay - 1.5, 0);
   put('lily pads', 13, ARENA.quay - 2.2, 0);
   return out;
@@ -386,11 +388,11 @@ if (mode === 'look') {
   {
     const under = timed('under', () => paintColossus({ ...poseUnder(), arms: [] }, RISEN_FRAME));
     const w = 1200;
-    const h = 460;
-    const cam = camAt(600, 300);
+    const h = 520;
+    const cam = camAt(600, 270);
     const pic = groundPic(w, h, cam);
     const stands = dressing(pic, cam);
-    stands.push({ d: VC, f: () => layHim(pic, under, 600, 300) });
+    stands.push({ d: VC, f: () => layHim(pic, under, 600, 270) });
     stands.push(layHero(pic, cam, 3.2, ARENA.quay + 2.2, true));
     stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
     save('look_under.png', pic, 'UNDER THE WATER (PHASE 1)', `Only his eye's fire and the dark hill of him seen through the black water: his crown ${COLOSSUS.sunk - COLOSSUS.tall} under it, his eye ${COLOSSUS.sunk - COLOSSUS.eye.z} down, looking up at you; he lies further out than he rises.`);
@@ -401,7 +403,7 @@ if (mode === 'look') {
   const SH = 468;
   // (where his middle at the water is on the screen: the camera leaned toward him so that the hero stands low, as the Moth's does)
   const HX = 507;
-  const HY = 214;
+  const HY = 171;
   const heroAt: [number, number] = [-1.5, ARENA.quay + 3.0];
   const shot = (c: ColossusPicture, name: string, title: string, note: string): void => {
     const cam = camAt(HX, HY);
@@ -437,6 +439,10 @@ if (mode === 'look') {
     save('arena_mid.png', pic, 'THE CAMERA AS IT SITS WHEN THE HERO STANDS IN THE MIDDLE OF THE STONE (PHASE 2, NO LEAN)', 'The game\'s own camera, the hero in the middle of the screen: all this stone is his to fight on; across the top, the black water, his lower body and his three arms rising out of it.');
   }
   process.stdout.write(`  plan: the stone ${ARENA.half * 2} across (u) by ${ARENA.deep} down (v): ${(ARENA.half * 2 / Math.SQRT2).toFixed(1)} x ${(ARENA.deep / Math.SQRT2).toFixed(1)} floor tiles; quay ${ARENA.quay} below his middle\n`);
+  for (const [n, pose] of [['risen', poseRisen()], ['torn open', poseRisen(1)], ['under', poseUnder()]] as const) {
+    const cl = armClearances(pose);
+    process.stdout.write(`  arms ${n}: ${cl.body.toFixed(1)} clear of him, ${cl.stone.toFixed(1)} clear of the stone, roots in the water: ${cl.rootsInWater}\n`);
+  }
   const c = costOf(30, 1);
   process.stdout.write(`  cost: a frame 900 x 610: ${c.frameMB.toFixed(2)} MB; at 30 a second ${c.perSecondMB.toFixed(1)} MB a second\n`);
 }

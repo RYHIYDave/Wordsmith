@@ -102,6 +102,8 @@ export const CO_BARNACLE = ramp('#2a2a28', '#46443e', '#6a665c', '#8e897c', '#b2
 export const CO_LEECH = ramp('#0a070a', '#1a1016', '#2e1a24', '#4a2a36', '#6e4250');
 /** His lids' raw rims and his gums: wet, red, not glowing. */
 export const CO_RAW = ramp('#200a0c', '#3e1216', '#5e1e20', '#7e302e', '#a04840');
+/** His lips: rotten, swollen, wet, dark. */
+export const CO_LIP = ramp('#0c070a', '#1c1016', '#2e1c22', '#46282e', '#62403e');
 /** His maw within: a deep wet violet-red. */
 export const CO_MAW = ramp('#0a050a', '#180a14', '#2a1020', '#40182c', '#5a2638');
 /** His teeth: old, yellowed, brown at the root. */
@@ -138,6 +140,9 @@ const M_LEECH = 10;
 const M_ARM = 11;
 const M_BARN = 12;
 const M_BOIL = 13;
+const M_GUM = 16;
+const M_TONGUE = 17;
+const M_THROAT = 18;
 const M_SORE = 14;
 const M_WOOD = 15;
 const mixRGB = (a: RGB, b: RGB, k: number): RGB => [Math.round(a[0] + (b[0] - a[0]) * k), Math.round(a[1] + (b[1] - a[1]) * k), Math.round(a[2] + (b[2] - a[2]) * k)];
@@ -358,18 +363,43 @@ interface Found {
   armPhi: number;
   armS: number;
   armR: number;
+  /** On a tooth: how far from its root to its tip (0 to 1), and whether it is broken. */
+  toothT: number;
+  broken: boolean;
 }
 
-/** His maw: half its width; its upper lip's line (up from the water); how far down its jaw drops when torn open. */
-const MAW = { half: 112, top: 86, drop: 58 } as const;
+/** His maw: half its width; its upper lip's line (up from the water); how far down its jaw drops and its upper lip peels up when torn open. */
+const MAW = { half: 116, top: 86, drop: 64, peel: 12 } as const;
 /** The front of his face at the maw's height, at x across (how far toward the camera). */
 const frontAt = (x: number): number => 166 - 0.0026 * x * x;
-/** His upper lip's line: corners dragged down. */
-const mouthUp = (x: number): number => MAW.top - 0.0016 * x * x;
-/** His lower jaw's edge: shut, just under the lip; torn open, dropped most at the middle. */
-const mouthLow = (o: number, x: number): number => mouthUp(x) - 3 - o * MAW.drop * Math.max(0, 1 - Math.abs(x) / (MAW.half + 8));
-/** How far either side of the middle the split runs at height z: a seam shut, wide open. */
-const splitAt = (o: number, z: number): number => 2 + o * (12 + 0.25 * Math.max(0, z + 30));
+/** The seam of his lips: ragged, its corners dragged down. */
+const mouthUp = (x: number): number => MAW.top - 0.0016 * x * x + (vn(x * 0.045, 0, 0, 120) - 0.5) * 9;
+/** His lower jaw's edge: shut, just under the seam; torn open, dropped, most at the middle. */
+const mouthLow = (o: number, x: number): number => mouthUp(x) - 3 - o * MAW.drop * Math.max(0, 1 - (Math.abs(x) / (MAW.half + 10)) ** 1.6);
+/** How deep his gape runs into him at x across (back from the front of his face), torn open: into his throat at the middle. */
+const throatBack = (x: number): number => 20 + 100 * Math.max(0, 1 - (Math.abs(x) / 70) ** 2);
+
+/** A tooth: its root, a bend and its tip (x, y, z, radius at each), whether it is broken, and a box round it. */
+interface Tooth {
+  p: number[];
+  broken: boolean;
+  box: [number, number, number, number, number, number];
+}
+function toothOf(root: number[], dir: number[], len: number, r: number, bend: number[], broken: boolean): Tooth {
+  const L = broken ? len * 0.45 : len;
+  const mid = [root[0] + dir[0] * L * 0.55 + bend[0] * L * 0.12, root[1] + dir[1] * L * 0.55 + bend[1] * L * 0.12, root[2] + dir[2] * L * 0.55 + bend[2] * L * 0.12];
+  const tip = [root[0] + dir[0] * L + bend[0] * L * 0.42, root[1] + dir[1] * L + bend[1] * L * 0.42, root[2] + dir[2] * L + bend[2] * L * 0.42];
+  const rt = broken ? r * 0.62 : 0.5;
+  const p = [root[0], root[1], root[2], r, mid[0], mid[1], mid[2], r * (broken ? 0.75 : 0.62), tip[0], tip[1], tip[2], rt];
+  const box: [number, number, number, number, number, number] = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+  for (let k = 0; k < 12; k += 4) {
+    for (let c = 0; c < 3; c++) {
+      box[c] = Math.min(box[c], p[k + c] - r - 1);
+      box[c + 3] = Math.max(box[c + 3], p[k + c] + r + 1);
+    }
+  }
+  return { p, broken, box };
+}
 
 class Scene {
   readonly arms: Arm[];
@@ -380,10 +410,11 @@ class Scene {
   readonly lid: number;
   readonly gaze: readonly [number, number, number];
   readonly flip: number;
-  /** The teeth: root x, y, z, tip x, y, z, root radius. */
-  readonly teeth: number[] = [];
-  /** The maw's lips: for each side, its points (x, y, z). */
+  /** His teeth. */
+  readonly teeth: Tooth[] = [];
+  /** His lips, upper and lower, and his gums: each a line of points (x, y, z, radius). */
   readonly lips: number[][] = [];
+  readonly gums: number[][] = [];
   constructor(pose: ColossusPose) {
     this.arms = pose.arms.map(armOf);
     this.drop = pose.drop;
@@ -395,53 +426,58 @@ class Scene {
     const gl = Math.hypot(g[0], g[1], g[2]) || 1;
     this.gaze = [g[0] / gl, g[1] / gl, g[2] / gl];
     this.flip = pose.view === 'back' ? -1 : 1;
-    // HIS MAW: a wide gash across his lower face, its lower jaw split down the middle. Shut, a long seam of fangs locked over each
-    // other and a seam down his chin; torn open, the jaw's two halves drop and part sideways into a great gape, fangs all round it
+    // HIS MAW: a wide ragged seam of rotten, swollen lips, crooked fangs of every size over it, some long and curved, some broken.
+    // Torn open, his jaw drops and his lips peel back from his gums: rows of fangs running back into a dark wet throat
     const o = this.maw;
     const M = MAW;
-    // (the upper lip along the mouth's line; each half of the lower jaw along its edge and down the split)
+    // (his lips: swollen and lumpy along the seam, the upper peeling up and the lower dropping as he opens)
     const up: number[] = [];
-    for (let k = 0; k <= 10; k++) {
-      const x = -M.half + (k / 10) * 2 * M.half;
-      up.push(x, frontAt(x) - 4, mouthUp(x) + 5);
+    const low: number[] = [];
+    const gumU: number[] = [];
+    const gumL: number[] = [];
+    for (let k = 0; k <= 16; k++) {
+      const x = -M.half - 4 + (k / 16) * (2 * M.half + 8);
+      const sw = 7 + 6 * vn(x * 0.06, 1, 0, 121);
+      up.push(x, frontAt(x) - 4, mouthUp(x) + sw * 0.7 + o * M.peel, sw);
+      const sl = 8 + 6 * vn(x * 0.055, 2, 0, 122);
+      low.push(x, frontAt(x) - 4 - o * 8, mouthLow(o, x) - sl * 0.6, sl);
+      gumU.push(x, frontAt(x) - 9, mouthUp(x) - 1 + o * M.peel * 0.6, 7);
+      gumL.push(x, frontAt(x) - 11 - o * 8, mouthLow(o, x) + 1, 7);
     }
-    this.lips.push(up);
-    for (const side of [-1, 1]) {
-      const low: number[] = [];
-      for (let k = 0; k <= 7; k++) {
-        const x = side * (splitAt(o, mouthLow(o, 0)) + (k / 7) * (M.half - splitAt(o, mouthLow(o, 0))));
-        low.push(x, frontAt(x) - 4, mouthLow(o, x) - 5);
+    this.lips.push(up, low);
+    this.gums.push(gumU, gumL);
+    // (the fangs: crooked, of every size, spaced unevenly; two long and curved, three broken; the lower front row jutting up over
+    // the upper lip at its corners; two rows more behind each, smaller, running back into his throat)
+    const fang = (x: number, upper: boolean, row: number, i: number): void => {
+      const seed = (upper ? 0 : 50) + row * 17 + i;
+      const long = row === 0 && (upper ? i === 1 || i === 6 : i === 0 || i === 6);
+      const broken = row === 0 && (upper ? i === 4 || i === 8 : i === 3);
+      // (shut, the lower ones short of the upper lip but for the long ones at its corners, jutting up over it)
+      const len = (long ? 34 + 10 * h3(seed, 1, 0, 130) : (row === 0 ? (upper ? 16 : 9) : 9 - row) + (upper ? 14 : 8) * h3(seed, 2, 0, 131)) * (1 + o * (upper ? 0.15 : 0.6));
+      const r = (long ? 6.5 : row === 0 ? 4.6 + 2 * h3(seed, 3, 0, 132) : 3.6 - row * 0.4) * 1.0;
+      const back = row * (14 + 26 * o);
+      // (the front rows, shut, hang out over the seam in front of the other lip)
+      const y = frontAt(x) - 8 - back + (row === 0 ? 12 * (1 - o) : 0);
+      const z = upper ? mouthUp(x) + o * M.peel * 0.6 - (row ? 2 : 0) : mouthLow(o, x) + 1 + (row ? 2 : 0);
+      const tilt = (h3(seed, 4, 0, 133) - 0.5) * 0.6 + (long ? Math.sign(-x || 1) * 0.18 : 0);
+      const fwd = row === 0 ? 0.12 + 0.25 * (1 - o) : 0.08;
+      const dir = upper ? [tilt, fwd, -1] : [tilt, fwd, 1];
+      const dl = Math.hypot(dir[0], dir[1], dir[2]);
+      const bend = long ? [Math.sign(-x || 1) * 0.5, 0.5, 0] : [(h3(seed, 5, 0, 134) - 0.5) * 0.5, 0.2, 0];
+      this.teeth.push(toothOf([x, y, z], [dir[0] / dl, dir[1] / dl, dir[2] / dl], len, r, bend, broken));
+    };
+    const rowXs = (n: number, seed: number, half: number): number[] => {
+      const xs: number[] = [];
+      for (let i = 0; i < n; i++) xs.push(-half + ((i + 0.5 + (h3(i, seed, 0, 135) - 0.5) * 0.7) / n) * 2 * half);
+      return xs;
+    };
+    rowXs(9, 1, M.half - 10).forEach((x, i) => fang(x, true, 0, i));
+    rowXs(7, 2, M.half - 16).forEach((x, i) => fang(x, false, 0, i));
+    if (o > 0.3) {
+      for (const row of [1, 2]) {
+        rowXs(9 - row, 3 + row, (M.half - 18) * (1 - row * 0.22)).forEach((x, i) => fang(x, true, row, i));
+        rowXs(8 - row, 6 + row, (M.half - 22) * (1 - row * 0.24)).forEach((x, i) => fang(x, false, row, i));
       }
-      this.lips.push(low.reverse().reduce<number[]>((acc, _v, i, arr) => (i % 3 === 0 ? acc.concat([arr[i + 2], arr[i + 1], arr[i]]) : acc), []));
-      const split: number[] = [];
-      for (let k = 0; k <= 4; k++) {
-        const z = mouthLow(o, 0) - (k / 4) * (mouthLow(o, 0) + 30);
-        const x = side * (splitAt(o, z) + 5);
-        split.push(x, frontAt(x) - 4, z);
-      }
-      this.lips.push(split);
-      // the fangs along this half of the lower jaw, pointing up; and along the split, pointing in
-      for (let i = 0; i < 7; i++) {
-        const x = side * (splitAt(o, mouthLow(o, 0)) + 12 + i * ((M.half - 22 - splitAt(o, mouthLow(o, 0))) / 6));
-        const len = 12 + 8 * h3(i, 1, side + 3, 77) + o * 6;
-        const zr = mouthLow(o, x) - 1;
-        this.teeth.push(x, frontAt(x) - 7, zr, x + side * 2, frontAt(x) - 5, zr + len, 3.6);
-      }
-      if (o > 0.3) {
-        for (let i = 0; i < 4; i++) {
-          const z = mouthLow(o, 0) - 8 - i * ((mouthLow(o, 0) + 10) / 4);
-          const x = side * (splitAt(o, z) + 1);
-          const len = 10 + 7 * h3(i, 2, side + 3, 78);
-          this.teeth.push(x, frontAt(x) - 7, z, x - side * len, frontAt(x) - 5, z - 3, 3.2);
-        }
-      }
-    }
-    // the fangs along his upper lip, pointing down, longest at the middle
-    for (let i = 0; i < 15; i++) {
-      const x = -M.half + 12 + i * ((2 * M.half - 24) / 14);
-      const len = 16 + 10 * h3(i, 0, 3, 79) + 8 * (1 - Math.abs(x) / M.half) + o * 6;
-      const zr = mouthUp(x) + 1;
-      this.teeth.push(x, frontAt(x) - 6 + 6 * (1 - o), zr, x + (h3(i, 0, 4, 80) - 0.5) * 6, frontAt(x) - 3 + 7 * (1 - o), zr - len, 4.4);
     }
   }
 
@@ -536,28 +572,57 @@ class Scene {
     }
     // HIS MAW
     const o = this.maw;
-    if (Math.abs(x) < MAW.half + 30 && y > 80 && z < mouthUp(0) + 30) {
-      // (the gape: from his upper lip down to the jaw's halves, and down the split between them; cut back into him)
-      const zu = mouthUp(x);
-      const zl = mouthLow(o, x);
-      const inGape = Math.max(z - zu, zl - z, Math.abs(x) - MAW.half);
-      const inSplit = Math.max(Math.abs(x) - splitAt(o, z), z - zl - 2, -30 - z);
-      const cav = Math.max(Math.min(inGape, inSplit), 96 - y);
-      d = smax(d, -cav, 6);
-      let lipD = Infinity;
-      for (const lip of this.lips) {
-        for (let k = 0; k + 3 < lip.length; k += 3) lipD = Math.min(lipD, cone(x, y, z, lip[k], lip[k + 1], lip[k + 2], lip[k + 3], lip[k + 4], lip[k + 5], 7.5, 7.5));
+    if (Math.abs(x) < MAW.half + 34 && y > 30 && z < MAW.top + 40 && z > -40) {
+      // (the gape, torn open: from his upper gums down to his lower, back into his throat, which narrows and folds)
+      if (o > 0.05) {
+        const zu = mouthUp(x) + o * MAW.peel * 0.6 - 2;
+        const zl = mouthLow(o, x) + 2;
+        const back = frontAt(x) - throatBack(x) * o;
+        const folds = Math.sin(y * 0.3 + x * 0.04) * 2.2 * sm01(150, 110, y);
+        const cav = Math.max(z - zu, zl - z, Math.abs(x) - MAW.half + 6, back - y) + folds;
+        d = smax(d, -cav, 7);
+        if (f && cav < 3) f.mat = y < frontAt(x) - 30 ? M_THROAT : M_MAW;
+        // his tongue, on the floor of his mouth
+        const tg = ell(x, y, z, 0, frontAt(0) - 52, zl + 6, 46, 50, 13) - (vn(x * 0.08, y * 0.08, 0, 136) - 0.5) * 3;
+        if (tg < d) {
+          d = smin(d, tg, 4);
+          if (f && tg < d + 2) f.mat = M_TONGUE;
+        }
       }
+      // his lips, swollen and lumpy, and his gums where they curl back
+      let lipD = Infinity;
+      for (const lip of this.lips) for (let k = 0; k + 4 < lip.length; k += 4) lipD = Math.min(lipD, cone(x, y, z, lip[k], lip[k + 1], lip[k + 2], lip[k + 4], lip[k + 5], lip[k + 6], lip[k + 3], lip[k + 7]));
+      lipD -= (vn(x * 0.12, y * 0.12, z * 0.12, 137) - 0.5) * 4;
+      let gumD = Infinity;
+      for (const gum of this.gums) for (let k = 0; k + 4 < gum.length; k += 4) gumD = Math.min(gumD, cone(x, y, z, gum[k], gum[k + 1], gum[k + 2], gum[k + 4], gum[k + 5], gum[k + 6], gum[k + 3], gum[k + 7]));
       const was = d;
+      if (gumD < d) {
+        d = smin(d, gumD, 4);
+        if (f && gumD < was) f.mat = M_GUM;
+      }
+      const was2 = d;
       d = smin(d, lipD, 8);
-      if (f && lipD < was + 3) f.mat = M_LIP;
-      if (f && cav < 3 && f.mat !== M_LIP) f.mat = M_MAW;
-      let td = Infinity;
-      const T = this.teeth;
-      if (y > 120) for (let i = 0; i < T.length; i += 7) td = Math.min(td, cone(x, y, z, T[i], T[i + 1], T[i + 2], T[i + 3], T[i + 4], T[i + 5], T[i + 6], 0.5));
-      if (td < d) {
-        d = td;
-        if (f) f.mat = M_TOOTH;
+      if (f && lipD < was2 + 2) f.mat = M_LIP;
+      // his fangs
+      for (const T of this.teeth) {
+        const b = T.box;
+        if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) continue;
+        const P = T.p;
+        const a1 = cone(x, y, z, P[0], P[1], P[2], P[4], P[5], P[6], P[3], P[7]);
+        const a2 = cone(x, y, z, P[4], P[5], P[6], P[8], P[9], P[10], P[7], P[11]);
+        const td = Math.min(a1, a2);
+        if (td < d) {
+          d = td;
+          if (f) {
+            f.mat = M_TOOTH;
+            f.broken = T.broken;
+            // (how far along it: from its root to its tip)
+            const L1 = Math.hypot(P[4] - P[0], P[5] - P[1], P[6] - P[2]);
+            const L2 = Math.hypot(P[8] - P[4], P[9] - P[5], P[10] - P[6]);
+            const along = a1 <= a2 ? Math.min(1, Math.hypot(x - P[0], y - P[1], z - P[2]) / (L1 || 1)) * (L1 / (L1 + L2)) : L1 / (L1 + L2) + Math.min(1, Math.hypot(x - P[4], y - P[5], z - P[6]) / (L2 || 1)) * (L2 / (L1 + L2));
+            f.toothT = along;
+          }
+        }
       }
     }
     // HIS EYE
@@ -589,7 +654,7 @@ class Scene {
       }
     }
     // BARNACLES crusting him at the water
-    if (z < 70 && d < 8) {
+    if (z < 70 && d < 8 && !(Math.abs(x) < 160 && y > 110)) {
       const S = 10;
       const ix = Math.floor(x / S);
       const iy = Math.floor(y / S);
@@ -876,6 +941,8 @@ class Found0 implements Found {
   armPhi = 0;
   armS = 0;
   armR = 0;
+  toothT = 0;
+  broken = false;
 }
 const ARM_F = new Found0();
 
@@ -1185,17 +1252,27 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         col = de < COLOSSUS.eyeR + 7 ? CO_RAW[Math.min(4, tn)] : CO_FLESH[tn];
         gloss = 0.9;
       } else if (mat === M_LIP) {
-        const zu = mouthUp(fx);
-        const zl = mouthLow(S.maw, fx);
-        const gape = (fz < zu + 1 && fz > zl - 1) || Math.abs(fx) < splitAt(S.maw, fz) + 1;
-        col = (gape ? CO_RAW : CO_BRUISE)[Math.max(0, tn - (gape ? 1 : 0))];
-        gloss = 0.9;
+        // his lips: rotten, swollen, wet and dark
+        col = CO_LIP[Math.max(0, Math.min(4, tn))];
+        gloss = 1.4;
+      } else if (mat === M_GUM) {
+        col = CO_RAW[Math.max(0, Math.min(3, tn))];
+        gloss = 1.4;
       } else if (mat === M_TOOTH) {
-        col = CO_TOOTH[Math.min(4, tn + 1)];
-        gloss = 0.6;
-      } else if (mat === M_MAW) {
-        col = CO_MAW[Math.max(0, tn - 1)];
-        gloss = 1.0;
+        // yellowed, brown toward the root; a broken one's end dark and chipped
+        const t2 = f.toothT;
+        const step = t2 < 0.22 ? -2 : t2 < 0.45 ? -1 : 0;
+        col = f.broken && t2 > 0.85 ? CO_TOOTH[Math.max(0, tn - 2)] : CO_TOOTH[Math.max(0, Math.min(4, tn + 1 + step))];
+        gloss = 0.7;
+      } else if (mat === M_TONGUE) {
+        col = tn >= 3 ? CO_RAW[2] : CO_MAW[Math.max(0, Math.min(3, tn))];
+        gloss = 1.4;
+      } else if (mat === M_THROAT || mat === M_MAW) {
+        // his throat: dark and wet, lit faintly from within by his eye's pink-gold, the deeper the more
+        const deep = sm01(frontAt(fx) - 40, frontAt(fx) - 120, fy) * sm01(70, 10, Math.abs(fx)) + bayer(i, j) * 0.2;
+        const base = CO_MAW[Math.max(0, Math.min(2, tn - 1))];
+        col = deep > 0.92 ? mixRGB(CO_MAW[1], CO_IRIS[3], 0.32) : deep > 0.68 ? mixRGB(CO_MAW[1], CO_IRIS[1], 0.26) : base;
+        gloss = 1.2;
       } else if (mat === M_BONE) {
         col = CO_BONE[tn];
         gloss = 0.2;
@@ -1386,10 +1463,12 @@ function hangings(px: Px, near: Float32Array, kind: Uint8Array, zh: Float32Array
     put(i - 1, j + len + 1, FOAM[2], n);
     put(i + 1, j + len + 1, FOAM[2], n);
   };
-  const string = (i: number, j: number, len: number, n: number, seed: number): void => {
+  const string = (i: number, j: number, len: number, n: number, seed: number, jaw = false): void => {
     for (let s = 1; s <= len; s++) {
       const bead = h3(i, s, 3, seed) < 0.06;
-      if (!put(i, j + s, s % 6 === 2 ? CO_SHEEN : CO_SLIME[bead ? 3 : 2], n)) return;
+      // (between his jaws: a string stops where it meets the jaw below)
+      if (jaw && j + s < h && kind[(j + s) * w + i] === 1 && near[(j + s) * w + i] > n - 25) return;
+      if (!put(i, j + s, s % 9 === 2 ? CO_SHEEN : CO_SLIME[bead ? 3 : 2], n)) return;
       if (bead) put(i + 1, j + s, CO_SLIME[1], n);
     }
     put(i, j + len + 1, CO_SLIME[3], n);
@@ -1407,16 +1486,16 @@ function hangings(px: Px, near: Float32Array, kind: Uint8Array, zh: Float32Array
       if (m === M_EYE) continue;
       const toWater = Math.max(0, zh[k]) * zoom;
       const roll = h3(i, j, 0, 101);
-      if (m === M_TOOTH || m === M_LIP || m === M_MAW) {
-        // drool
-        if (roll < 0.32) string(i, j, Math.round(toWater * (0.35 + 0.65 * h3(i, j, 1, 102))), near[k], 103);
+      if (m === M_TOOTH || m === M_LIP || m === M_MAW || m === M_GUM || m === M_TONGUE || m === M_THROAT) {
+        // drool, and slime strung between his jaws
+        if (roll < (m === M_LIP || m === M_TOOTH ? 0.16 : 0.03)) string(i, j, Math.round(toWater * (0.35 + 0.65 * h3(i, j, 1, 102))), near[k], 103, true);
       } else if (m === M_ARM) {
         if (roll < 0.05) string(i, j, Math.round(Math.min(toWater, (8 + 26 * h3(i, j, 1, 104)) * zoom)), near[k], 105);
       } else {
         const clump = vn(i * 0.07 / zoom, j * 0.05 / zoom, 0, 107);
         const p = clump > 0.58 ? 0.2 : 0.025;
         if (roll < p) weed(i, j, Math.round(toWater * (0.3 + 0.7 * h3(i, j, 1, 106))), near[k], 108);
-        else if (roll < p + 0.04) string(i, j, Math.round(toWater * (0.2 + 0.6 * h3(i, j, 1, 109))), near[k], 110);
+        else if (roll < p + 0.02) string(i, j, Math.round(toWater * (0.2 + 0.6 * h3(i, j, 1, 109))), near[k], 110);
       }
     }
   }
@@ -1428,19 +1507,30 @@ function hangings(px: Px, near: Float32Array, kind: Uint8Array, zh: Float32Array
 /** Looking at you (toward the camera, a little down at the hero). */
 export const GAZE_AT_YOU: readonly [number, number, number] = [0, 0.95, 0.22];
 
-/** HIS THREE ARMS RISEN (phase 2): out of the water before him, one either side curling up and over, one low before him, coiled to strike. */
+/**
+ * THE ARENA HE LIES BEFORE (the main chat's, 7 Nov: the stone 17 tiles across the screen by 11 deep, its far long edge open on the
+ * water): how far toward the camera from his middle at the water the stone's edge is, in his lengths. His word, 7 Nov, “he needs to
+ * slide back a little so the tentacles don’t clip through him or the stage”: 310, 7.9 tiles (it was 233, 5.9: he slid back 2 tiles),
+ * so that each arm rises in open water between him and the stone, its root clear of both.
+ */
+export const STONE = { across: 17, deep: 11, edge: 310 } as const;
+/** Where his arms rise (his lengths across, and toward the camera from his middle): just off the stone's edge, in the water. Phase 1 at a third and two thirds along it; phases 2 and 3 left, middle and right. */
+export const ARM_ROOTS = {
+  under: [-111, 111] as const,
+  risen: [-222, 0, 222] as const,
+  y: 256,
+} as const;
+
+/** HIS THREE ARMS RISEN (phases 2 and 3): out of the water just off the stone, left, middle and right; the outer two reared up in an S, their tips curling; the middle one lower, coiled aside off his maw. */
 export const ARMS_RISEN: ReadonlyArray<ArmPose> = [
-  // (before his left shoulder: reared up out of the water in an S, leaning in over the stone, its whip of a tip curling)
-  { path: [[-262, 228, -30], [-296, 236, 50], [-290, 246, 130], [-246, 256, 186], [-232, 266, 246], [-262, 274, 290], [-306, 278, 300], [-332, 278, 282], [-330, 278, 264], [-316, 278, 262], [-312, 278, 270]], r: 44, belly: [0.6, 0.5, -0.4], seed: 1 },
-  // (before his right shoulder: leaning out, then back in, its tip curled to lash)
-  { path: [[282, 222, -30], [320, 230, 46], [326, 240, 118], [292, 252, 172], [262, 262, 222], [274, 270, 266], [312, 274, 280], [338, 276, 262], [334, 276, 244], [320, 276, 244], [318, 276, 252]], r: 42, belly: [-0.6, 0.5, -0.3], seed: 2 },
-  // (before him, off his maw: lower, reared like a snake about to strike, its tip hooked)
-  { path: [[-150, 220, -30], [-178, 236, 30], [-172, 254, 92], [-134, 270, 128], [-98, 286, 136], [-74, 298, 122], [-72, 304, 104], [-84, 306, 98], [-90, 306, 106]], r: 32, belly: [0.2, 0.4, -0.9], seed: 3 },
+  { path: [[-222, 256, -30], [-252, 262, 50], [-250, 272, 130], [-212, 282, 188], [-200, 292, 246], [-230, 300, 288], [-272, 304, 298], [-298, 304, 280], [-296, 304, 262], [-282, 304, 260], [-278, 304, 268]], r: 42, belly: [0.6, 0.5, -0.4], seed: 1 },
+  { path: [[0, 256, -30], [22, 264, 28], [84, 274, 62], [126, 286, 98], [120, 298, 130], [88, 304, 126], [80, 306, 108], [90, 306, 98], [98, 306, 104]], r: 36, belly: [-0.2, 0.4, -0.9], seed: 3 },
+  { path: [[222, 256, -30], [258, 262, 46], [264, 272, 118], [232, 284, 172], [204, 294, 222], [214, 302, 266], [252, 306, 280], [278, 308, 262], [274, 308, 244], [260, 308, 244], [258, 308, 252]], r: 42, belly: [-0.6, 0.5, -0.3], seed: 2 },
 ];
-/** HIS TWO ARMS BURST UP (phase 1): out of the water while he lies under it. */
+/** HIS TWO ARMS BURST UP (phase 1): out of the water just off the stone, at a third and two thirds along it, while he lies under it. */
 export const ARMS_UNDER: ReadonlyArray<ArmPose> = [
-  { path: [[-236, 214, -30], [-270, 222, 50], [-264, 232, 130], [-220, 242, 186], [-206, 252, 246], [-236, 260, 290], [-280, 264, 300], [-306, 264, 282], [-304, 264, 264], [-290, 264, 262], [-286, 264, 270]], r: 42, belly: [0.6, 0.5, -0.4], seed: 4 },
-  { path: [[236, 220, -30], [274, 228, 46], [280, 238, 118], [246, 250, 172], [216, 260, 222], [228, 268, 266], [266, 272, 280], [292, 274, 262], [288, 274, 244], [274, 274, 244], [272, 274, 252]], r: 42, belly: [-0.6, 0.5, -0.3], seed: 5 },
+  { path: [[-111, 256, -30], [-141, 262, 50], [-139, 272, 130], [-101, 282, 188], [-89, 292, 246], [-119, 300, 288], [-161, 304, 298], [-187, 304, 280], [-185, 304, 262], [-171, 304, 260], [-167, 304, 268]], r: 42, belly: [0.6, 0.5, -0.4], seed: 4 },
+  { path: [[111, 256, -30], [147, 262, 46], [153, 272, 118], [121, 284, 172], [93, 294, 222], [103, 302, 266], [141, 306, 280], [167, 308, 262], [163, 308, 244], [149, 308, 244], [147, 308, 252]], r: 42, belly: [-0.6, 0.5, -0.3], seed: 5 },
 ];
 /** ONE ARM ALONE (its close-up): risen out of the water and curled over. */
 export const ARM_ALONE: ReadonlyArray<ArmPose> = [
@@ -1455,6 +1545,35 @@ export function poseUnder(): ColossusPose {
 }
 export function poseArm(): ColossusPose {
   return { view: 'front', drop: 0, body: false, maw: 0, lid: 1, gaze: GAZE_AT_YOU, arms: ARM_ALONE };
+}
+
+// =============================================================================================
+// HIS ARMS CLEAR OF HIM AND OF THE STONE
+
+/**
+ * How clear his arms are, along every one of them (his lengths): of his body (the least gap between an arm's skin and his, where
+ * they are nearest), and of the stone (the least gap, toward the camera, between any part of an arm low enough to meet the stone and
+ * the stone's edge; parts higher than the stone are over it, in the air); and whether every root is under the water before the stone.
+ */
+export function armClearances(pose: ColossusPose): { body: number; stone: number; rootsInWater: boolean } {
+  const S = new Scene(pose);
+  let body = Infinity;
+  let stone = Infinity;
+  let rootsInWater = true;
+  for (const A of S.arms) {
+    const P = A.p;
+    for (let k = 0; k < A.n; k++) {
+      const x = P[k * 4];
+      const y = P[k * 4 + 1];
+      const z = P[k * 4 + 2];
+      const r = P[k * 4 + 3];
+      if (S.body) body = Math.min(body, S.bodyAt(x, y + S.back, z + S.drop, null) - r);
+      // (low enough to meet the stone: its underside below the stone's top, at the water's height, or within a few lengths of it)
+      if (z - r < 4) stone = Math.min(stone, STONE.edge - (y + r));
+    }
+    if (!(P[2] < 0 && P[1] + P[3] < STONE.edge)) rootsInWater = false;
+  }
+  return { body, stone, rootsInWater };
 }
 
 // =============================================================================================

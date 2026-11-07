@@ -5,7 +5,9 @@
 //   2. his pictures (risen from in front and from behind, his maw torn open, under the water, a tentacle alone) are painted:
 //      nothing cyan (no colour of the friend's, nothing at the friend's hue), the enemy's pink edge round him while he lives,
 //      his eye's iris the enemy's pink and gold;
-//   3. his measures: his lengths the game's (TILE3 to a tile), what a frame of him costs.
+//   3. his measures: his lengths the game's (TILE3 to a tile), what a frame of him costs;
+//   4. his word of 7 Nov, “he needs to slide back a little so the tentacles don’t clip through him or the stage”: every arm's root
+//      under the water before the stone, no arm in his body, none in the stone or its edge (risen, torn open, and under the water).
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -18,7 +20,7 @@ import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { TILE3 } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
-import { C_TILE, COLOSSUS, EYE2, costOf, paintColossus, poseArm, poseRisen, poseUnder } from '../src/art/eye_colossus';
+import { ARM_ROOTS, C_TILE, COLOSSUS, EYE2, STONE, armClearances, costOf, paintColossus, poseArm, poseRisen, poseUnder } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 
 interface Assert {
@@ -109,4 +111,21 @@ test('3. his measures: his lengths the game\'s; a frame\'s cost', () => {
   assert.ok(COLOSSUS.eyeR * 2 > 2 * 58, 'his eye is wider than the knight is tall (58), twice over');
   const c = costOf(30, 1, { w: 1000, h: 500 });
   assert.ok(Math.abs(c.frameMB - (1000 * 500 * 4) / 1048576) < 1e-9 && Math.abs(c.perSecondMB - c.frameMB * 30) < 1e-9, 'a frame at 4 bytes a pixel, 30 a second');
+});
+
+test('4. his arms clear of him and of the stone: roots in the water before the stone, none through him, none through the stone', () => {
+  for (const [name, pose] of [['risen', poseRisen()], ['torn open', poseRisen(1)], ['under the water', poseUnder()]] as const) {
+    const c = armClearances(pose);
+    assert.ok(c.rootsInWater, `${name}: every root under the water before the stone`);
+    assert.ok(c.body > 5, `${name}: no arm through his body (${c.body.toFixed(1)} of his lengths clear)`);
+    assert.ok(c.stone > 5, `${name}: no arm through the stone or its edge (${c.stone.toFixed(1)} clear)`);
+  }
+  // (the main chat's stone, and where the arms rise along its edge: a third and two thirds; left, middle and right)
+  assert.equal(`${STONE.across} x ${STONE.deep}`, '17 x 11', 'the stone 17 tiles across by 11 deep');
+  const third = (STONE.across / 6) * C_TILE;
+  assert.ok(ARM_ROOTS.under.every((x, i) => Math.abs(x - (i ? third : -third)) < 1.5), 'phase 1 at a third and two thirds along the edge');
+  assert.ok(Math.abs(ARM_ROOTS.risen[0] + 2 * third) < 1.5 && ARM_ROOTS.risen[1] === 0 && Math.abs(ARM_ROOTS.risen[2] - 2 * third) < 1.5, 'phases 2 and 3 left, middle, right');
+  poseRisen().arms.forEach((a, i) => assert.ok(a.path[0][0] === ARM_ROOTS.risen[i] && a.path[0][1] === ARM_ROOTS.y, `risen arm ${i} rises where its root is said to`));
+  poseUnder().arms.forEach((a, i) => assert.ok(a.path[0][0] === ARM_ROOTS.under[i] && a.path[0][1] === ARM_ROOTS.y, `phase 1 arm ${i} rises where its root is said to`));
+  assert.ok(STONE.edge / C_TILE > 7.5, `his middle ${(STONE.edge / C_TILE).toFixed(1)} tiles out from the stone`);
 });

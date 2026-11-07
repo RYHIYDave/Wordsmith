@@ -56,47 +56,57 @@ def stack(parts, out):
     print(out, sheet.size)
 
 def plan():
-    # top down: across (tiles) and down the screen (tiles) from his middle at the water
-    T = 26
-    tiles_w, quay, deep = 30 / 2 ** 0.5, 8.4 / 2 ** 0.5, 17 / 2 ** 0.5
-    Wp, Hp = W, int((quay + deep + 3.8 + 1.4) * T) + 44
+    # top down, a tile a square: across the screen and down it (tiles) from his middle at the water (art/eye_colossus.ts STONE, ARM_ROOTS)
+    T = 22
+    TL = 32 / (2 / 3) ** 0.5
+    across, deep, edge = 17, 11, 310 / TL
+    root_y = 256 / TL
+    top, bottom = -3.2, edge + deep + 1.6
+    Wp, Hp = W, int((bottom - top) * T) + 40
     im = Image.new('RGB', (Wp, Hp), BG)
-    d = ImageDraw.Draw(im)
-    ox, oy = Wp // 2, int(3.8 * T) + 8
+    d = ImageDraw.Draw(im, 'RGBA')
+    ox, oy = Wp // 2, int(-top * T) + 6
     X = lambda u: ox + u * T
     Y = lambda v: oy + v * T
-    # the water
-    d.rectangle([X(-tiles_w / 2 - 1.2), Y(-3.7), X(tiles_w / 2 + 1.2), Y(quay)], fill=(12, 20, 16))
-    # him: his hill across the water, his eye
-    d.ellipse([X(-9.7), Y(-3.4), X(9.7), Y(4.3)], fill=(40, 46, 34), outline=(120, 60, 90))
-    d.ellipse([X(-0.5), Y(2.2), X(0.5), Y(2.9)], fill=(255, 79, 138))
-    d.text((X(-1.2), Y(0.6)), 'him', font=mid, fill=PALE)
+    # the black water before the stone, the fen's water round it
+    d.rectangle([X(-13), Y(top), X(13), Y(edge)], fill=(12, 20, 16))
+    d.rectangle([X(-13), Y(edge), X(-across / 2), Y(bottom - 0.4)], fill=(18, 28, 22))
+    d.rectangle([X(across / 2), Y(edge), X(13), Y(bottom - 0.4)], fill=(18, 28, 22))
+    # him: the front of his hill, his eye
+    d.ellipse([X(-9.7), Y(-6.6), X(9.7), Y(5.0)], fill=(40, 46, 34), outline=(120, 60, 90))
+    d.ellipse([X(-0.5), Y(2.4), X(0.5), Y(3.1)], fill=(255, 79, 138))
+    d.text((X(-1.0), Y(0.0)), 'him', font=mid, fill=PALE)
     # the stone, a tile grid
-    d.rectangle([X(-tiles_w / 2), Y(quay), X(tiles_w / 2), Y(quay + deep)], fill=(78, 74, 86), outline=(160, 156, 170), width=2)
-    k = -tiles_w / 2
-    while k <= tiles_w / 2 + 1e-6:
-        d.line([X(k), Y(quay), X(k), Y(quay + deep)], fill=(92, 88, 100)); k += 1
-    k = quay
-    while k <= quay + deep + 1e-6:
-        d.line([X(-tiles_w / 2), Y(k), X(tiles_w / 2), Y(k)], fill=(92, 88, 100)); k += 1
-    # the obelisks
-    for (u, v) in [(-tiles_w / 2 - 0.6, quay + 5.5), (tiles_w / 2 + 0.6, quay + 5.5), (0, quay + deep + 0.7)]:
-        d.rectangle([X(u) - 7, Y(v) - 7, X(u) + 7, Y(v) + 7], fill=(255, 79, 138))
-    # the tentacles: where each rises (his lengths / 39.19 to a tile)
-    TL = 32 / (2 / 3) ** 0.5
-    marks = [('1', [(-236, 214), (236, 220)], (236, 220, 214)), ('2', [(-262, 228), (282, 222), (-150, 220)], (255, 176, 112)), ('3', [(-230, 360), (230, 360), (0, 400)], (255, 79, 138))]
-    for lab, pts, col in marks:
-        for (x, y) in pts:
-            u, v = x / TL, y / TL
-            off = {'1': (0, -0.6), '2': (0, 0.45), '3': (0, 0)}[lab]
-            cx, cy = X(u + off[0]), Y(v + off[1])
-            d.ellipse([cx - 13, cy - 13, cx + 13, cy + 13], outline=col, width=3, fill=BG if lab != '2' else (60, 40, 20))
-            d.text((cx - 6, cy - 12), lab, font=mid, fill=col)
-    # the hero, at the middle of the stone
-    hx, hy = X(0), Y(quay + deep / 2)
-    d.polygon([(hx, hy - 12), (hx + 9, hy + 8), (hx - 9, hy + 8)], fill=(40, 220, 240))
-    d.text((X(-tiles_w / 2), Y(quay + deep) + 30), 'the stone: 21 tiles across, 12 deep', font=small, fill=GREY)
-    d.text((X(-tiles_w / 2 - 1.1), Y(-3.6)), 'the black water', font=small, fill=GREY)
+    d.rectangle([X(-across / 2), Y(edge), X(across / 2), Y(edge + deep)], fill=(78, 74, 86), outline=(160, 156, 170), width=2)
+    for k in range(1, across):
+        d.line([X(-across / 2 + k), Y(edge), X(-across / 2 + k), Y(edge + deep)], fill=(92, 88, 100))
+    for k in range(1, deep):
+        d.line([X(-across / 2), Y(edge + k), X(across / 2), Y(edge + k)], fill=(92, 88, 100))
+    hero = (0, edge + deep / 2)
+    # a slam: from a root, 6 tiles along the stone toward the hero, 1.2 wide
+    for rx in (-222 / TL, 0, 222 / TL):
+        dx, dy = hero[0] - rx, hero[1] - root_y
+        L = (dx * dx + dy * dy) ** 0.5
+        ux, uy = dx / L, dy / L
+        px, py = -uy * 0.6, ux * 0.6
+        a = (rx, root_y + 0.0)
+        b = (rx + ux * 6, root_y + uy * 6)
+        d.polygon([(X(a[0] + px), Y(a[1] + py)), (X(b[0] + px), Y(b[1] + py)), (X(b[0] - px), Y(b[1] - py)), (X(a[0] - px), Y(a[1] - py))], fill=(255, 176, 112, 70), outline=(255, 176, 112, 160))
+    # where they rise: phase 1 (1), phases 2 and 3 (2/3)
+    for lab, xs, col in [('1', (-111, 111), (236, 220, 214)), ('2/3', (-222, 0, 222), (255, 176, 112))]:
+        for x in xs:
+            cx, cy = X(x / TL), Y(root_y)
+            d.ellipse([cx - 12, cy - 12, cx + 12, cy + 12], outline=col, width=3, fill=BG)
+            d.text((cx - (6 if lab == '1' else 16), cy - 34), lab, font=mid, fill=col)
+    # the pillars for phase 3 (not drawn yet): round the stone
+    for (u, v) in [(-across / 2 - 0.9, edge + deep * 0.55), (across / 2 + 0.9, edge + deep * 0.55), (0, edge + deep + 0.9)]:
+        d.rectangle([X(u) - 8, Y(v) - 8, X(u) + 8, Y(v) + 8], fill=(255, 79, 138))
+    d.polygon([(X(hero[0]), Y(hero[1]) - 12), (X(hero[0]) + 9, Y(hero[1]) + 8), (X(hero[0]) - 9, Y(hero[1]) + 8)], fill=(40, 220, 240))
+    d.text((X(across / 2) + 26, Y(edge) + 4), 'the stone:', font=small, fill=GREY)
+    d.text((X(across / 2) + 26, Y(edge) + 30), '17 tiles across,', font=small, fill=GREY)
+    d.text((X(across / 2) + 26, Y(edge) + 56), '11 deep', font=small, fill=GREY)
+    d.text((X(-13) + 6, Y(top) + 4), 'the black water', font=small, fill=GREY)
+    d.text((X(-13) + 6, Y(edge) - 28), 'his middle %.1f tiles out' % edge, font=small, fill=GREY)
     return im
 
 mode = sys.argv[1]
@@ -127,5 +137,5 @@ else:
     parts.append(block('TODAY (LEFT) AND NEW (RIGHT), SMALL', 'Left, the game today: the pool in the middle of the round ring, the Eye lying in it, about as tall as the hero, seen from above. Right, the new arena: the stone a rectangle, the water across the top, him risen and filling it.', row))
     p = spec['arena_mid.png']
     parts.append(block(p['title'], p['note'], img('arena_mid.png')))
-    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. Where the tentacles rise: phase 1 (1), phase 2 (2); phase 3, a suggestion (3): up through the stone. The cult\'s three obelisks pink; the hero cyan.', plan()))
+    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. His tentacles rise in the water just off the stone: phase 1 at a third and two thirds along it (1); phases 2 and 3 left, middle and right (2/3). A slam: 6 tiles along the stone toward the hero, 1.2 wide (orange). The three pillars of phase 3, where they could stand (pink, not drawn yet). The hero cyan.', plan()))
     stack(parts, sys.argv[4])

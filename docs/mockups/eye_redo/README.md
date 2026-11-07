@@ -15,6 +15,8 @@ stills, for his yes before anything is animated.
 - 00:13: “just scrap his look and start fresh.  big ancient gross eldritch horror swamp monster with tentacles and a big eye.”
 - Asked which take to draw first, his pick: “Swamp colossus (Recommended)”, offered as: “A rotting hill of moss-grown flesh filling the top of the screen; one huge bloodshot eye under a heavy brow; a split maw of teeth below; slime, weed and old bones on it; thick slimy tentacles.”
 
+- His answer on b0b6fef2, 7 Nov, asked whether to build the fight on this look and arena: “His mouth is bad and he needs to slide back a little so the tentacles don’t clip through him or the stage”.
+
 ## The pictures (`pictures/`)
 
 - `eye_look.png`: his look. Risen, from in front, at the game's size, the Warrior on the stone before him twice (from behind
@@ -44,8 +46,12 @@ beast's skull on his left shoulder, the great ribs of something across his right
 waterline; leeches. Curtains of weed and strings of slime hang from every overhang down into the water, and drool from his
 maw. Darker toward his edges; his eye the brightest thing on him, its pink-gold glow lighting the folds round it. At his heart
 one huge eye under a brow that juts out over it like a cliff: yellowed, bloodshot, its iris the enemy's pink burning to gold round a black slit, set between thick
-raw-rimmed lids, looking at you. Below it his maw: a wide gash, its lower jaw split down the middle; shut, a row of fangs
-locked over his lip and a seam down his chin; torn open, the jaw's two halves drop and part, fangs all round the gape. His
+raw-rimmed lids, looking at you. Below it his maw (made again on his word of 7 Nov, “His mouth is bad”): shut, a wide ragged seam of rotten,
+swollen lips, wet and dark, crooked yellowed fangs of every size hanging out over it, two long and curved, three broken, the
+lower ones jutting up over it at its corners, brown at their roots, drool hanging in strings, gums showing where the lip curls
+back; torn open, his lower jaw drops and his lips peel back from his gums, rows of fangs, smaller and smaller, running back
+into a dark, wet throat that narrows and folds, a tongue on its floor, the throat lit faintly from within by his eye's
+pink-gold, strings of slime between his jaws. Nothing even: the fangs spaced, sized, tilted and bent each its own way. His
 tentacles: smooth muscle, no rings, thick at the water and tapering to a thin whip of a tip; reared in an S, leaning, the tip
 curling; dark along the back shading to pale beneath, long wet highlights along their length; suckers in two rows along the
 underside, each a cupped ring with a lit rim and a dark middle, smaller toward the tip; a few old scars; slime dripping off
@@ -58,28 +64,53 @@ tile), looked at ray by ray as the game's camera looks (from above at 30 degrees
 from the upper left in five tones a material, with the light's own shadow (his brow shades his eye) and the dark of every
 fold; the indigo seam where one part ends before another; what of him is under the water seen through it, darker the deeper.
 
+## Slid back (his word of 7 Nov)
+
+He lies further out in the water: the stone's edge is now 310 of his lengths before his middle at the water, 7.9 tiles (it was
+233, 5.9 tiles): he slid back 2 tiles. Each tentacle rises in open water between him and the stone, its root under the water
+just off the stone's edge: at least 20 of his lengths clear of his body (half a tile; 30 with his maw shut) and 10 clear of the
+stone, everywhere along it (`armClearances`, held by `tests/eye_colossus.test.ts`). In the leaned views the camera leans the
+most it may (70 game pixels, as the Moth's) so that his brow, eye and maw are still on the screen over the hero; more of his
+crown runs off the top than before (about 116 game pixels).
+
+## For the main chat
+
+- The stone: 17 tiles across the screen by 11 deep (your post of 7 Nov), its far long edge open on the water. Its other three
+  edges lie on the fen's water too.
+- His distance out: his middle at the water 7.9 tiles out from the stone's edge (310 of his lengths). You had about 3; the art
+  had 5.9; his “slide back a little” needed 7.9, so that his arms rise between him and the stone without touching either. The
+  front of his body is 2.9 tiles back from the stone's edge (his hill is about 19 tiles across, wider than the stone).
+- The tentacles' roots: in the water 1.4 tiles out from the stone's edge (6.5 tiles before his middle). Phase 1 at a third and
+  two thirds along the edge (2.8 tiles either side of the middle); phases 2 and 3 left, middle and right (5.7 tiles either side,
+  and the middle). Each is 2.2 tiles thick at the water and 1 tile thick half way along, and rises about 300 of his lengths
+  (7.7 tiles' length) over the water. Its root is clear of his body and of the stone, with the stone open before it to slam
+  forward onto.
+- A slam of 6 tiles along the stone toward the hero, 1.2 wide, is narrower than a tentacle near its root (2.2 tiles). His rule
+  for enemies (28 Oct) asks for bigger areas, not smaller: I would make the slam's area 2.2 wide at its root end, narrowing to
+  1.2 at its far end. Yours to say.
+- The three pillars of phase 3, where they could stand (not drawn yet): one at the middle of each short side of the stone,
+  just off it, half way down; one at the middle of the near long edge, just off it. On the plan in eye_arena.png.
+- The arena view with the game's own camera (the hero in the middle of the stone, no lean) shows mostly stone, his arms and his
+  lower body across the top. For his face to be on the screen while the hero fights near the water, the camera wants the
+  Moth's lean (`render.ts` MOTH_LEAN), here at its most.
+
 ## His numbers
 
 - The phone's screen: 507 x 234 game pixels (`engine/screen.ts`; the game's own playtest logs it on a phone held
   sideways). That is 15.8 tiles across and 14.6 tiles top to bottom (a tile 32 x 16 game pixels); along the floor, about 22
   tiles across and 21 deep.
-- Him risen, with his arms, horns and hanging weed: 441 x 298 game pixels (882 x 595 picture pixels): seven eighths of the
+- Him risen, with his arms, horns and hanging weed: 441 x 305 game pixels (882 x 609 picture pixels): seven eighths of the
   screen's width. Over the water, to the top of what grows out of his crown, he stands 201 game pixels; the knight stands 29. His eye 66 of his lengths in radius: about 76 game
   pixels across, two and a half times the knight's height.
 - Today he is about 127 x 61 game pixels on the same screen (measured from the game, `tools/scenarios/eye_today.mjs`), his
   eye about 32 across.
-- The arena (`tools/eye_redo_pics.ts` ARENA): the stone a rectangle the width of the screen and on down past its foot; the
-  black water across the top from 8.4 half-tiles (134 picture pixels) below his middle. In the pictures the camera leans
-  toward him 69 game pixels, as it leans toward the Moth (`render/render.ts` MOTH_LEAN: at most 0.3 of the screen, 70), so
-  the hero stands low on the screen; even so the top of his crown and what grows out of it run off the top of the screen,
-  about 95 game pixels: his eye and brow and maw are in it.
-- The plan: the stone 21 tiles across and 12 deep (along the floor), a tile a square; the black water before it, about 6
-  tiles from its edge to his middle. In phase 1 his two arms rise 6 tiles either side of his middle, in the water just before
-  the stone; in phase 2 his three at 7 to his left, 7 to his right and 4 to his left; for phase 3 a suggestion, three up
-  through the stone 3 tiles in, 6 either side and one before the hero. The cult's three obelisks on the stone's two sides and
-  at its back.
+- The arena (`tools/eye_redo_pics.ts` ARENA, from `STONE`): the stone 17 tiles across and 11 deep, three quarters of the
+  screen's width; the black water across the top, its edge 7.9 tiles before his middle. In the leaned pictures the camera leans
+  toward him 70 game pixels, as it leans toward the Moth (`render/render.ts` MOTH_LEAN: at most 0.3 of the screen, 70), so
+  the hero stands low on the screen; the top of his crown and what grows out of it run off the top of the screen, about 116
+  game pixels: his brow, eye and maw are on it.
 - Under the water (phase 1) he lies 384 of his lengths down (what grows from his crown just under the surface) and 330
-  further out, so that his eye's glow is seen in the water before the stone.
+  further back than when risen, so that his eye's glow is seen in the water before the stone.
 
 ## Why the fight today is not scary (the audit)
 
@@ -140,5 +171,6 @@ shown at the game's own camera with the hero in the middle of the stone, and as 
 
 `tests/eye_colossus.test.ts`: the switch off and nothing of the game importing him, nothing of the old Eye in him; his
 pictures (risen from in front and from behind, his maw torn open, under the water, a tentacle alone) with nothing cyan, the
-pink edge round him, his iris pink burning to gold; his lengths the game's, a frame's cost. `tsc --noEmit` clean. Stage 1
+pink edge round him, his iris pink burning to gold; his lengths the game's, a frame's cost; his arms clear of him and of the
+stone, their roots under the water before it, where the main chat's layout puts them. `tsc --noEmit` clean. Stage 1
 only: no moves, so the boss checks (`art/boss_checks.ts`) come with his moves.
