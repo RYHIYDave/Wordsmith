@@ -311,7 +311,8 @@ the main chat is doing for the heroes; once baked, painting costs nothing on the
    loosed in one frame; the after-image only on the release, and there; the string hand flying back past 8.
 9. His face at the game's size: two dark eyes on his lit face, the brown of his moustache under them, through his breathing.
 
-tsc clean. The heroes' tests: OTHERS_RESULT. `tests/bosses.test.ts`'s check that nothing of the game imports the bosses'
+tsc clean (the whole project). The heroes' tests pass, 57 of 57 (`tests/heroes3.test.ts`, `tests/bosses.test.ts`,
+`tests/cheap_heroes.test.ts`, `tests/grip_runs.test.ts`, `tests/heroes.test.ts`). `tests/bosses.test.ts`'s check that nothing of the game imports the bosses'
 checks now also skips `art/ranger_up_review.ts` (his review), the one change to an existing test. The Warrior's files are
 exactly as on `art/warrior-up` (9057f94b); of the game, only `src/art/heroes3.ts` changed (16 lines: the switch).
 
