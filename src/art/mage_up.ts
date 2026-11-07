@@ -35,7 +35,7 @@
 import type { Light } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
 import { book, bookShut, mageLight } from './hero_mage';
-import { BROWN, CYAN, INDIGO, INK, MAIL, PINK, PLUM, ROBE, SKIN4, SPARK, STEEL, TEAL, hash } from './kit';
+import { BROWN, CYAN, INDIGO, INK, MAIL, PINK, PLUM, ROBE, SPARK, STEEL, TEAL, hash } from './kit';
 import type { Painted, Ramp } from './kit';
 import { STAFF_DOWN, STAFF_UP, WILD } from './moves3';
 import { CANVAS3, eyesToward, girdle, mid, stage, tippedFrom } from './skin';
@@ -66,7 +66,12 @@ export const MU_HOSE: Ramp = five(MAIL);
 export const MU_BROWN: Ramp = five(BROWN);
 export const MU_STEEL: Ramp = five(STEEL);
 export const MU_WOOD: Ramp = five(INDIGO);
-export const MU_SKIN: Ramp = five([SKIN4[0], SKIN4[1], SKIN4[2], SKIN4[3], SKIN4[3]]);
+/** Her skin: warm and lit, the Tinkerer's own (dev/sculpt_tinkerer.ts SKIN_F), as the sculpted heroes' faces are (the art chat,
+ * 7 Nov: her face in the game's cool grey read as a mask at six times). */
+export const MU_SKIN: Ramp = ['#42203a', '#7a4658', '#bc7c7c', '#e8b09c', '#ffdcc4'];
+/** The warmth on her cheeks, and her mouth. */
+const BLUSH = '#ec9a92';
+const LIPS = '#b85a68';
 export const MU_CYAN: Ramp = five(CYAN);
 /** Her gloves: her plum a step darker. */
 export const MU_GLOVE: Ramp = [PLUM[0], PLUM[0], MU_PLUM[1], PLUM[2], MU_PLUM[3]];
@@ -213,30 +218,80 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
   } });
   const silver = sc.mat({ ramp: MU_STEEL, crease: 0.3, paint: (h) => MU_STEEL[Math.max(1, Math.min(4, h.tone + (h.prim.tag === 'horn' ? 1 : 0)))] });
   const glove = sc.mat({ ramp: MU_GLOVE, crease: 0.35, paint: (h) => dim(h, h.p, MU_GLOVE) });
-  // (HER FACE lifted a tone, as a hero's face is, so that it reads at the game's size though it is turned from the light)
-  const skin = sc.mat({ ramp: MU_SKIN, crease: 0.16, paint: (h) => (h.prim.piece === 'head' ? MU_SKIN[Math.min(4, Math.max(2, h.tone + 1))] : null) });
-  // (her hair: pink, as it always was; her braids plaited, each crossing of the plait lit on its crown and dark in its seam)
-  const headAt: { c: V3; f: V3; l: V3; u: V3; r: number } = { c: [0, 0, 0], f: [1, 0, 0], l: [0, 1, 0], u: [0, 0, 1], r: 1 };
+  // (where the brim of her hat is, for its shadow on her face and hair; and her face's own frame, for its shading: set as they are
+  // laid, read as the figure is drawn)
+  const brimAt: { c: V3; u: V3 } = { c: [0, 0, 1e3], u: [0, 0, 1] };
+  const faceAt: { c: V3; f: V3; l: V3; u: V3; r: V3 } = { c: [0, 0, 0], f: [1, 0, 0], l: [0, 1, 0], u: [0, 0, 1], r: [1, 1, 1] };
+  /** How far below the brim a point is (a length of her: less than 0 above it). */
+  const underBrim = (p: V3): number => dot(sub(brimAt.c, p), brimAt.u);
+  // HER FACE, WARM AND LIT: lifted a tone, as a hero's face is, so that it reads at the game's size; the brim's soft shadow across
+  // her brow (a band, dithered at its foot); the shadowed side of her nose and the hollow under it; warmth on her cheeks. Her neck
+  // a tone down, and darker at her nape under her hair.
+  const skin = sc.mat({ ramp: MU_SKIN, crease: 0.2, paint: (h) => {
+    const tg = h.prim.tag ?? '';
+    if (h.prim.piece === 'neck') {
+      const t = Math.max(0, Math.min(3, h.tone));
+      return underBrim(h.p) < 4.2 ? MU_SKIN[Math.max(0, t - 1)] : MU_SKIN[t];
+    }
+    if (h.prim.piece !== 'head') return null;
+    let t = Math.min(4, Math.max(2, h.tone + 1));
+    const d = underBrim(h.p);
+    if (d > -0.2 && (d < 1.1 || (d < 1.7 && (h.x + h.y) % 2 === 0))) t = Math.max(1, t - 1);
+    if (tg === 'nose' && h.tone <= 2) t = Math.max(1, t - 1);
+    const v = sub(h.p, faceAt.c);
+    const fw = dot(v, faceAt.f) / faceAt.r[0];
+    const lat = Math.abs(dot(v, faceAt.l)) / faceAt.r[1];
+    const up = dot(v, faceAt.u) / faceAt.r[2];
+    // (under her nose, the hollow above her lip)
+    if (fw > 0.75 && lat < 0.16 && up < -0.2 && up > -0.36) t = Math.max(1, t - 1);
+    // (her cheeks, a pixel or two under her eyes, never beside them)
+    if (fw > 0.45 && lat > 0.4 && lat < 0.74 && up < -0.42 && up > -0.64 && t >= 3) return BLUSH;
+    return MU_SKIN[t];
+  } });
+  // (her hair: pink, as it always was)
+  const headAt: { c: V3; f: V3; l: V3; u: V3; r: V3 } = { c: [0, 0, 0], f: [1, 0, 0], l: [0, 1, 0], u: [0, 0, 1], r: [1, 1, 1] };
+  /** Where the plaits begin behind her ears, in her head's own frame (a share of its half-sizes): out to each side, and down. */
+  const ROOT_OUT = 0.78;
+  const ROOT_DOWN = -0.55;
   const hair = sc.mat({ ramp: MU_PINK, crease: 0.3, meld: true, paint: (h) => {
     const tg = h.prim.tag ?? '';
-    const t = farOf(h.p) ? h.tone - 1 : h.tone;
+    let t = farOf(h.p) ? h.tone - 1 : h.tone;
+    // (the brim's shadow on her hair, just under it)
+    if (underBrim(h.p) > -0.2 && underBrim(h.p) < 1.3) t = Math.max(0, t - 1);
     if (tg === 'plait') {
-      // (the seam between two crossings, dark; the crown of each, a tone lighter)
-      const seam = h.prim.k === 'ell' ? len(sub(h.p, h.prim.c)) / (len(h.prim.axes[0]) || 1) : 0;
-      if (seam > 0.86) return MU_PINK[Math.max(0, t - 1)];
-      return MU_PINK[Math.max(1, Math.min(4, t + 1))];
+      // HER PLAITS, WOVEN: each crossing a lobe of hair laid slantwise over the last, lit on its crown, dark in the seam where it
+      // goes under the next
+      const p = h.prim;
+      if (p.k === 'ell') {
+        const a = p.axes[0];
+        const along = dot(sub(h.p, p.c), a) / (dot(a, a) || 1);
+        if (Math.abs(along) > 0.62) return MU_PINK[Math.max(0, t - 1)];
+        if (Math.abs(along) < 0.3) return MU_PINK[Math.max(2, Math.min(4, t + 1))];
+      }
+      return MU_PINK[Math.max(1, Math.min(4, t))];
     }
-    if (tg === 'hair') {
-      // (on her head: parted down the back, the hair drawn from the parting to each side, down to her braids behind her ears:
-      // the parting dark; strands, a lit one and a dark one in turn, running out from it; lit where the light is on her crown)
+    if (tg === 'hair' || tg === 'gather') {
+      // ON HER HEAD: parted down the back; the hair drawn from the parting out and down to her plaits behind her ears, in
+      // strands (a dark one, a mid one, a lit one in turn, each running from the parting to the plait); a sheen across the
+      // round of her head where the light is on it
       const v = sub(h.p, headAt.c);
-      const across = dot(v, headAt.l);
-      const back = -dot(v, headAt.f);
-      const up = dot(v, headAt.u);
-      if (back > 0.2 && Math.abs(across) < 0.38 && up > -headAt.r * 0.6) return MU_PINK[0];
-      const strand = Math.floor((Math.abs(across) * 1.5 + up * 0.55 + 20) % 3);
-      if (strand === 0) return MU_PINK[Math.max(0, t - 1)];
-      if (strand === 2 && t >= 2) return MU_PINK[Math.min(4, t + 1)];
+      const across = dot(v, headAt.l) / headAt.r[1];
+      const back = -dot(v, headAt.f) / headAt.r[0];
+      const up = dot(v, headAt.u) / headAt.r[2];
+      if (back > 0.05 && up > ROOT_DOWN) {
+        // (the parting: dark, the hair either side of it drawn up from it and catching the light)
+        if (Math.abs(across) < 0.2) return MU_PINK[0];
+        if (Math.abs(across) < 0.36) return MU_PINK[Math.min(4, t + 2)];
+      }
+      const a = Math.abs(across) / ROOT_OUT;
+      if (back > -0.2 && a < 0.97) {
+        const u0 = ROOT_DOWN + (up - ROOT_DOWN) / (1 - a);
+        const strand = ((Math.floor(u0 * 4) % 3) + 3) % 3;
+        // (strong enough to read on her shadowed side as on her lit one: a dark strand, a mid one, a lit one)
+        if (strand === 0) return MU_PINK[Math.max(0, t - 1)];
+        if (u0 > 0.35 && u0 < 0.75) return MU_PINK[Math.min(4, t + 2)];
+        if (strand === 2) return MU_PINK[Math.min(4, t + 1)];
+      }
     }
     return MU_PINK[Math.max(0, Math.min(4, t))];
   } });
@@ -457,7 +512,8 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
       const fold = FOLD[i];
       // (its front edges fall a little in toward her middle, as an open cape's do)
       const edge = i === 0 || i === COLS - 1 ? 0.6 : 0;
-      grid[0].push(at(c0, r0, deg, 0));
+      // (its collar falls away at the back, so her nape and the start of her plaits are seen under her hair)
+      grid[0].push(add(at(c0, r0, deg, 0.3 * Math.max(0, -Math.cos(deg * D))), mul(cu, -1.7 * Math.max(0, -Math.cos(deg * D)) ** 1.5)));
       grid[1].push(clear(at(c1, r1, deg, fold * 0.15 - edge * 0.3), 0.6));
       // (it hangs longer down her back than over her arms)
       const longer = 1.9 * Math.max(0, -Math.cos(deg * D));
@@ -503,7 +559,7 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
   headAt.f = ff;
   headAt.l = fl;
   headAt.u = fu;
-  headAt.r = R[2];
+  headAt.r = R;
   sc.cone(skin, 'neck', s.neck, add(HC, mul(fu, -R[2] * 0.55)), 1.55, 1.5, 1.0, { tag: 'neck' });
   sc.ell(skin, 'head', add(HC, add(mul(ff, -R[0] * 0.08), mul(fu, R[2] * 0.06))), [mul(ff, R[0] * 0.9), mul(fl, R[1] * 0.92), mul(fu, R[2] * 0.82)], 1.2, { tag: 'skull' });
   const eyes = eyesToward(st0, s);
@@ -511,11 +567,19 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
   const F = norm(add(mul(ff, Math.cos(midTurn)), mul(fl, Math.sin(midTurn))));
   const Lf = norm(cross(fu, F));
   const atF = (f: number, l: number, u: number): V3 => add(HC, add(mul(F, f * R[0]), add(mul(Lf, l * R[1]), mul(fu, u * R[2]))));
+  faceAt.c = HC;
+  faceAt.f = F;
+  faceAt.l = Lf;
+  faceAt.u = fu;
+  faceAt.r = R;
   // (a small soft chin and cheeks, one skin with the skull; a short straight nose)
   sc.ell(skin, 'head', atF(0.3, 0, -0.42), [mul(F, R[0] * 0.55), mul(Lf, R[1] * 0.62), mul(fu, R[2] * 0.42)], 1.5, { tag: 'jaw' });
   sc.cone(skin, 'head', atF(0.84, 0, 0.0), atF(1.0, 0, -0.18), 0.42, 0.55, 0.6, { tag: 'nose' });
-  // her hair over the back and crown of her head, its edge back off her brow and behind her ears
-  sc.ell(hair, 'head', add(HC, add(mul(ff, -R[0] * 0.12), mul(fu, R[2] * 0.1))), [mul(ff, R[0] * 0.92 + 0.5), mul(fl, R[1] * 0.94 + 0.5), mul(fu, R[2] * 0.84 + 0.5)], 0.5, { tag: 'hair', cuts: [{ n: norm(add(ff, mul(fu, -0.35))), o: dot(norm(add(ff, mul(fu, -0.35))), HC) - R[0] * 0.22 }] });
+  // her hair over the back and crown of her head, its edge back off her brow and behind her ears, and cut off at her nape (her
+  // neck shows under it, between her plaits); gathered behind each ear where her plaits begin
+  const hairCut = norm(add(ff, mul(fu, -0.35)));
+  const nape = [{ n: hairCut, o: dot(hairCut, HC) - R[0] * 0.22 }, { n: mul(fu, -1), o: -dot(fu, add(HC, mul(fu, -R[2] * 0.5))) }];
+  sc.ell(hair, 'head', add(HC, add(mul(ff, -R[0] * 0.12), mul(fu, R[2] * 0.1))), [mul(ff, R[0] * 0.92 + 0.5), mul(fl, R[1] * 0.94 + 0.5), mul(fu, R[2] * 0.84 + 0.5)], 0.5, { tag: 'hair', cuts: nape });
   // HER EYES: dark, two pixels tall, a dark brow over each, on the lit skin under the brim; and her mouth, a touch of rose
   for (const k of [1, -1]) {
     const p = atF(0.86, k * 0.36, 0.02);
@@ -528,25 +592,32 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
   }
   {
     const p = atF(0.92, 0, -0.5);
-    if (dot(sub(p, HC), eye) > 0.6) sc.mark(p, MU_PLUM[3], 1, 1, 0, 0, 4, skin);
+    if (dot(sub(p, HC), eye) > 0.6) sc.mark(p, LIPS, 1, 1, 0, 0, 4, skin);
   }
 
   // ---- HER BRAIDS: from behind each ear, plaited, forward over her collar bone; from there the game hangs the rest of each
   // (engine/tails.ts), so it really moves ----
   const tailsAt: { id: string; p: V3 }[] = [];
   for (const sg of [-1, 1]) {
-    const p0 = add(add(HC, mul(fl, sg * R[1] * 0.78)), add(mul(ff, -R[0] * 0.5), mul(fu, -R[2] * 0.55)));
+    const p0 = add(add(HC, mul(fl, sg * R[1] * ROOT_OUT)), add(mul(ff, -R[0] * 0.5), mul(fu, R[2] * ROOT_DOWN)));
+    // (the hair gathered into it behind her ear: one with the hair of her head)
+    sc.ell(hair, 'head', add(p0, add(mul(fu, R[2] * 0.22), mul(ff, -R[0] * 0.12))), [mul(ff, 1.4), mul(fl, 1.2), mul(fu, 1.6)], 0.6, { tag: 'gather' });
     const p1 = add(s.neck, add(mul(cf, B.ribDeep * 0.9 + 1.5), add(mul(cl, sg * B.shoulderHalf * 0.78), mul(cu, -2.2))));
     // (it comes down behind the ear and round the side of her neck, over the front of her shoulder: a curve, not a rod)
     const pull = add(mid(p0, p1), add(mul(cl, sg * 1.3), add(mul(cf, -0.5), mul(cu, -0.6))));
-    const N = 5;
+    // (woven: each crossing a lobe laid slantwise, the next slanting the other way, each a little over the last)
+    const N = 6;
     for (let i = 0; i < N; i++) {
       const k = (i + 0.5) / N;
       const c = bez(p0, pull, p1, k);
       const dir = norm(sub(bez(p0, pull, p1, Math.min(1, k + 0.1)), bez(p0, pull, p1, Math.max(0, k - 0.1))));
       const [a1, a2, a3] = frame(dir, cf);
-      const wob = (i % 2 === 0 ? 1 : -1) * 0.3;
-      sc.ell(hair, `braid${sg}`, add(c, mul(a2, wob)), [mul(a1, 1.05), mul(a2, 1.4 - 0.08 * i), mul(a3, 1.3 - 0.08 * i)], 0.3, { tag: 'plait' });
+      const sl = (i % 2 === 0 ? 1 : -1) * 34 * D;
+      const along = add(mul(a1, Math.cos(sl)), mul(a2, Math.sin(sl)));
+      const over = add(mul(a2, Math.cos(sl)), mul(a1, -Math.sin(sl)));
+      const wob = (i % 2 === 0 ? 1 : -1) * 0.35;
+      const w = 1.3 - 0.06 * i;
+      sc.ell(hair, `braid${sg}`, add(c, mul(a2, wob)), [mul(along, 1.15), mul(over, w), mul(a3, w * 0.92)], 0.25, { tag: 'plait' });
     }
     tailsAt.push({ id: sg < 0 ? 'm-braid-a' : 'm-braid-b', p: add(p1, [0, 0, -0.6]) });
   }
@@ -558,6 +629,8 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
     const Fh = norm(sub(ff, mul(U, dot(ff, U))), ff);
     const Lh = cross(U, Fh);
     const C0 = add(HC, mul(fu, R[2] * 1.08));
+    brimAt.c = C0;
+    brimAt.u = U;
     const wide = MU_BRIM * B.tall;
     // the brim: a felt plate, its edge a little thicker, drooping a little at the sides
     const SEG = 20;
@@ -644,7 +717,9 @@ export function paintMageUp(s: Skeleton, q: Posed, side: MuSide, B: Build, aroun
     const burn = Math.max(1 + q.draw, gale > 0.6 ? 3 : 1);
     const gem = st.part(st.near(gem3) + 0.6);
     const half = 2.3 + 0.4 * Math.min(2, burn - 1);
-    const long = 14.5 + 1.2 * Math.min(2, burn - 1);
+    // (as long as the stone is, seen: a crystal that points at the eye is seen from its point, short, and hides no more of the
+    // pole than it should)
+    const long = (14.5 + 1.2 * Math.min(2, burn - 1)) * Math.max(0.4, Math.min(1, ul));
     const z = st.near(gem3) + 0.6;
     // (a hexagonal stone: pointed at the top, a shorter point at its foot; `b` along it from its middle, `a` across)
     const inside = (a: number, b: number, grow = 0): boolean => {

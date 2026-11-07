@@ -130,7 +130,8 @@ def look(dir, out):
              'two braids brought forward over her shoulders; the ragged teal cape; the purple bodice closed on a line of light; the '
              'short purple robe with its hem of light; the brown belt and the pouch at her hip; steel on her forearms; tall plum '
              'boots; her staff with its long crystal over a bar of steel. What changes is how she is drawn: one body with a real '
-             'outline, cloth that hangs in folds, in place of balls and rods each ringed in ink. Every glow on her is cyan.')
+             'outline, cloth that hangs in folds, in place of balls and rods each ringed in ink; her face warm and lit; her staff '
+             'carried at her side so it is seen from every side. Every glow on her is cyan.')
     for ln in wrap(d, intro, S.small, W - 48):
         d.text((24, S.y), ln, font=S.small, fill=DIM)
         S.y += 25
@@ -153,15 +154,16 @@ def look(dir, out):
     S.y += 34 + fh + 30
 
     # ---- her head ----
-    S.title('HER HEAD, SIX TIMES AS BIG', 'In front, side-on and toward you. The game only ever drew her from in front and from behind (flipped for the other way); '
-            'before, side-on and toward you, is the old drawing turned to that side, to compare. Now her face is bigger and lit, '
-            'her hat sits higher so its brim is off her eyes, her eyes are dark with a brow and a lash, and her braids begin behind '
-            'her ears, plaited.')
+    S.title('HER HEAD, SIX TIMES AS BIG', 'In front, side-on, toward you and from behind. The game only ever drew her from in front and from behind (flipped for the other way); '
+            'before, side-on and toward you, is the old drawing turned to that side, to compare. Now her face is warm and lit and a '
+            'little bigger, the brim\'s shadow soft across her brow, her nose and cheeks shaded, her eyes dark with a brow and a lash; '
+            'her hat sits higher so its brim is off her eyes. From behind, her hair is parted, drawn in strands to two woven plaits '
+            'that begin behind her ears, her nape under it.')
     K = 6
-    cols = ['front', 'side', 'toward']
-    titles = {'front': 'in front', 'side': 'side-on', 'toward': 'toward you'}
+    cols = ['front', 'side', 'toward', 'away']
+    titles = {'front': 'in front', 'side': 'side-on', 'toward': 'toward you', 'away': 'from behind'}
     hw = 38 * K
-    gap = (W - 48 - 3 * hw - 110) // 2
+    gap = (W - 48 - 4 * hw - 110) // 3
     y0 = S.y + 30
     for r, who in enumerate(['before', 'now']):
         yy = y0 + r * (40 * K + 30)

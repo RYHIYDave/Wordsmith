@@ -22,7 +22,14 @@ export const MU_GAME = MOVES3;
  */
 export const MU_GUARD_SEEN: Bones = MOVES3.mstand.rest;
 export const MU_GUARD_LEGS = { lfx: 14.5, lfy: 2.5, lk: -4, lft: 2, rfx: -13.5, rfy: -4.5, rk: -23, rft: -18 } as const;
-export const MU_GUARD: Bones = { ...MU_GUARD_SEEN, ...MU_GUARD_LEGS };
+/**
+ * HER STAFF SEEN FROM EVERY SIDE (the art chat, 7 Nov 2026: from toward you her staff pointed at the eye, only its crystal seen):
+ * held as the game holds it, level in both hands and pointed at what is ahead, but carried out at her right side (her hands 5.5
+ * further out; it was across her front, at her hip) and swung a little out (4 degrees) and laid level (2 degrees up; it was 14):
+ * a clear length of its pole, and its crystal, from all eight sides (tests/mage_up.test.ts).
+ */
+export const MU_GUARD_STAFF = { rhy: -5, wAz: 176, wEl: 178 } as const;
+export const MU_GUARD: Bones = { ...MU_GUARD_SEEN, ...MU_GUARD_LEGS, ...MU_GUARD_STAFF };
 
 /** HER GUARD, ALIVE: the game's own (two breaths, her weight going over and back, twice in the round the crystal surging and a
  * gust off it), on her new legs. Its keys move her hips, back and crystal only: her feet stay where her guard has them. */

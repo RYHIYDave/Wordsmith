@@ -36,10 +36,10 @@ crystal on her staff”), and the art rulebook's mage has “cape and braids fly
 she is the battle mage here. The two share her hat, her face and her purple; the crescent of the one in robes is remembered in
 the horns of her staff's new cross-bar (below). The art chat should say if the one in robes was meant.
 
-## The picture (`pictures/mage_look.png`, 1200 by 3474)
+## The picture (`pictures/mage_look.png`, 1200 by 3524)
 
 1. Standing in a fight, three times as big: before beside now, in front and from behind (one moment of her breathing stance).
-2. Her head six times as big, before and now, in front, side-on and toward you. (The game only ever drew her from in front and
+2. Her head six times as big, before and now, in front, side-on, toward you and from behind. (The game only ever drew her from in front and
    from behind, flipped for the left: before, side-on and toward you, is the old drawing turned to that side, to compare.)
 3. Her staff raised in a held cast, now, in front; beside it her legs measured (below).
 4. Now from all eight sides, standing, three times as big, each laid as she faces on the screen.
@@ -61,9 +61,9 @@ the same way and with the same care, one body with a real outline, inked only wh
   for her knee.
 - MIRRORED: two sides only, in front and from behind; for the left she is flipped, so her staff changes hands, her pouch changes
   hips and her braids change shoulders.
-- WHERE THE STAFF HIDES: the old drawing has no other sides to hide it from; from her eight true sides (now) her staff in her
-  guard points at whoever looks from toward the camera, its pole end-on (3 to 5 game pixels of it), its crystal clear (23 or
-  more). Stage 2 should look at whether to cant it in her guard as the Ranger's bow was.
+- WHERE THE STAFF HIDES: the old drawing has no other sides to hide it from. Drawn from her eight true sides as the game holds
+  it in her guard (level in both hands across her front, 14 degrees up), it points at whoever looks from toward the camera:
+  its pole end-on, 4 to 7 game pixels of it, behind its crystal and her hands. Now carried at her side (below).
 - HER FRAME RATES: her stance 24 pictures at 10 a second (2.4 s); her two habits at 20 a second (her light 73 pictures, the power
   getting away 37); her casts, struck and her fall at 30; her run gripping at 60 (23 pictures).
 - HER CASTS, for stage 2: the Wave goes on its sixth frame after a coil of three and a half, never held (Movement 9 asks a big
@@ -83,17 +83,25 @@ gloves; dark hose and tall plum boots with a turned cuff; her staff of indigo wo
 steel. Her stance, breath and staff are the game's own.
 
 MADE NEW (the same pieces, better drawn):
-- HER FACE POPS: her head 1.22 times the build's and set a little up her neck, lit a tone, her hair drawn back off her brow;
-  her hat set higher on it, so its brim is off her eyes and its lit top is seen (tipped 18 degrees from the eye; it was 22,
-  and sat low enough to hide them); two dark eyes, each two pixels tall, a dark pink brow a pixel above each and a lash at its
-  outer corner; a touch of rose for her mouth. A test holds two eyes on her lit face from in front,
+- HER FACE POPS, WARM AND LIT (the art chat, 7 Nov: at six times her face in the game's cool grey skin read as a pale mask):
+  her skin the warm tones of the sculpted heroes' faces (the Tinkerer's own), lifted a tone; her head 1.22 times the build's
+  and set a little up her neck, her hair drawn back off her brow; her hat set higher on it, so its brim is off her eyes and its
+  lit top is seen (tipped 18 degrees from the eye; it was 22, and sat low enough to hide them); the brim's soft shadow across
+  her brow, dithered at its foot; her nose shaded on its far side, the hollow under it; warmth on her cheeks under her eyes;
+  two dark eyes, each two pixels tall, a dark pink brow a pixel above each and a lash at its outer corner; a touch of rose for
+  her mouth; her neck a tone down, darker at her nape. A test holds two eyes on her lit face from in front,
   toward you and from down and to the left, one side-on.
 - HER HAT: a felt cone that truly bends over near its top, a darker crease where it folds, its tip fallen back and a little to
   her left (left behind as she moves, nodding in the wind); its brim a soft felt plate drooping a little at the sides, its edge
   turned and lit; the band of light round its foot.
-- HER HAIR: parted down the back of her head, drawn out to each side in strands; her braids plaited (each crossing lit on its
-  crown, dark in its seam), coming down from behind her ears round the side of her neck to the front of her shoulders, where the
-  game's own braids hang on from.
+- HER HAIR, FROM BEHIND (the art chat, 7 Nov: it still read as a flat pink-red block): parted down the back of her head, the
+  parting dark and the hair either side of it catching the light; drawn from the parting out and down to her plaits in strands,
+  a dark one, a mid one and a lit one in turn, strong enough to read on her shadowed side; a sheen across the round of her head;
+  the brim's shadow on it just under the hat; cut off at her nape, her neck seen under it between her plaits (the cape's collar
+  falls away at the back to show it); gathered behind each ear where a plait begins. HER PLAITS WOVEN: six crossings each, each
+  a lobe laid slantwise over the last and the next slanting the other way, lit on its crown, dark in the seam where it goes
+  under the next; down from behind her ears round the side of her neck to the front of her shoulders, where the game's own
+  braids hang on from.
 - HER CAPE: real cloth from the root of her neck over her shoulders and round her back, in folds that open out as they fall, its
   hem cut into ragged points each its own length, hanging longer down her back than over her arms; OPEN DOWN THE FRONT from a
   clasp at her throat (a cord and a boss of steel), so that her bodice and its line of light show (it went all round her and hid
@@ -110,6 +118,23 @@ MADE NEW (the same pieces, better drawn):
   cyan edge round it, so it reads as a stone and not a blot of light (it was a flat diamond with no edge). It swells and whitens
   as it burns, as before; its light and its charge (the crackle) as before.
 
+## Her staff, seen from every side (`MU_GUARD_STAFF`)
+
+Held as the game holds it, level in both hands and pointed at what is ahead, but CARRIED OUT AT HER RIGHT SIDE (her hands 5.5
+further out; it was across her front, at her hip), swung a little out (4 degrees) and laid level (2 degrees up; it was 14). And
+its crystal is drawn as long as it is seen: pointed at the eye, it is seen from its point, short, and no longer covers the pole
+behind it. (Searched over the ways of holding it: raised, its pole hides behind the crystal and her arms from toward you;
+swung across, it points at the eye from down and to the left; lowered, its crystal goes behind her hat from straight behind.)
+
+The least seen, of every moment of her breathing looked at (game pixels; test 4 asks at least 10 of the pole and 12 of the
+crystal from every side):
+
+| | front | toward | frontL | sideL | backL | away | back | side |
+|---|---|---|---|---|---|---|---|---|
+| its pole, as the game holds it (one moment of her breath) | 33 | 7 | 19 | 34 | 23 | 34 | 36 | 49 |
+| its pole, now | **31** | **18** | **23** | **39** | **19** | **25** | **37** | **58** |
+| its crystal, now | 22 | 14 | 23 | 23 | 19 | 13 | 21 | 23 |
+
 ## Her eight sides
 
 As the Warrior's and the Ranger's (`WU_SPIN`; `wuFacing` chooses among them): each truly painted, none mirrored. Her staff in her
@@ -119,8 +144,8 @@ across her canvas, as theirs.
 
 ## Her legs, made true (`src/art/mage_up_moves.ts` `MU_GUARD`)
 
-Her body, arms, staff and the depth of her crouch as the game has them (a test holds them); only her feet and knees placed
-again: her front foot further forward (14.5; it was 7) and a little out (2.5), its knee over it; her back foot further back
+Her body, arms and the depth of her crouch as the game has them (a test holds them; her staff carried at her side, above); only
+her feet and knees placed again: her front foot further forward (14.5; it was 7) and a little out (2.5), its knee over it; her back foot further back
 (-13.5; it was -7.5) and a little out (-4.5), its knee less turned in (-23; it was -32), the foot less turned out (-18; it was
 -46). A longer guard, as low. Her breathing is the game's own (it moves her hips, back and crystal only).
 
@@ -141,11 +166,11 @@ her boot top, 9.6 from there to the sole; now 0.4 and 9.7, the hem at her knee a
    the game paints of her (130 lists, 2,022 frames) the same picture, by hash (`tests/mage_up.hashes.json`, made from her as she
    is at 46584c7c; `MAGE_UP_ALL=1` for every frame).
 2. Her legs: every frame of her breathing guard from all eight sides at 1.05 or more (bones), and as painted; the game's guard
-   short (under 0.75 from in front, 0.65 toward); her body, arms and staff the game's.
+   short (under 0.75 from in front, 0.65 toward); her body and arms the game's.
 3. Every picture of the still (six moments of her stance and the held cast, from all eight sides): crisp, the friend's cyan edge,
    nothing of the enemy's rim, nothing cut off, both braids fixed, her crystal's charge handed back, every light of hers cyan.
-4. Her staff seen from every side in her stance: at least 20 game pixels of it, 12 of them its crystal (the least of all of it,
-   28, toward the camera, where its pole is end-on; of its crystal, 12, from straight behind her, where her hat is before it).
+4. Her staff seen from every side in her stance: at least 10 game pixels of its pole and 12 of its crystal (the table above);
+   and the test sees a hidden pole: as the game holds it, from toward you, under 10.
 5. Her face at the game's size (above).
 
 tsc clean (the whole project). Of what was there, two files changed, no file of the game:
@@ -166,6 +191,8 @@ Made with: `npx tsx tools/mage_up_pics.ts look <dir>` and `python3 tools/mage_up
 - HER CAPE OPEN IN FRONT from a clasp at her throat, so her bodice and its line of light show: a change to how it falls.
 - HER ROBE A LITTLE LONGER, to her knee.
 - HER STAFF'S HEAD: the bar curved up into horns round the crystal, the crystal cut.
+- HER STAFF CARRIED AT HER SIDE in her guard, level, so it is seen from every side.
+- HER SKIN WARM (the sculpted heroes' tones) where the game's heroes have a cool grey.
 - HER GUARD IS LONGER (her legs true): her feet further apart front to back.
 - Stage 2, on his yes: every list at 30 a second from all eight sides, the Wave and the Orb by Movement 9, her run checked
   against the prance check, her town stance's legs, her fall, the film and the measures.

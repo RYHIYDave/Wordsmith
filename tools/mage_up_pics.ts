@@ -3,7 +3,7 @@
 // with her braids hung and moved as the game moves them (engine/tails.ts), and writes each picture as an RGBA PNG;
 // tools/mage_up_pics.py lays them out with their captions. Nothing of the game imports it.
 //   npx tsx tools/mage_up_pics.ts look <dir>      (stage 1, the still: her stance before beside now, in front and from behind;
-//                                                 her head six times as big; a held cast; her eight sides; at the game's size;
+//                                                 her head six times as big (and from behind); a held cast; her eight sides; at the game's size;
 //                                                 her legs measured)
 
 // @ts-ignore - node typings are not part of this project
@@ -215,7 +215,8 @@ function look(dir: string): void {
   // her stance, before beside now, from in front and from behind
   out.stance = (['front', 'back'] as const).map((v) => ({ view: v, before: put(`stance_before_${v}`, stillOf('before', before, T, v)), now: put(`stance_now_${v}`, stillOf('now', now, T, v)) }));
   // her head, before and now, from in front, side-on and toward the camera
-  out.head = (['front', 'side', 'toward'] as const).map((v) => ({ view: v, before: put(`head_before_${v}`, stillOf('before', before, T, v, 0.5, true)), now: put(`head_now_${v}`, stillOf('now', now, T, v)) }));
+  // (and from behind: before, the game's own view from behind; now, straight behind her)
+  out.head = (['front', 'side', 'toward', 'away'] as const).map((v) => ({ view: v, before: put(`head_before_${v}`, stillOf('before', before, T, v, 0.5, v !== 'away')), now: put(`head_now_${v}`, stillOf('now', now, T, v)) }));
   // a held cast, now, from in front
   out.cast = put('cast_now_front', stillOf('now', MU_MOVES.cast, 0.3, 'front', 0.3));
   // her eight sides, standing

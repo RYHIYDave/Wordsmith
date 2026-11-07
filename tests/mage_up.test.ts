@@ -5,11 +5,12 @@
 //      (each list's first, middle and last frame against the hashes made from the game's Mage as she is, 46584c7c:
 //      tests/mage_up.hashes.json; MAGE_UP_ALL=1 for every frame);
 //   2. HER LEGS TRUE in her stance: every frame of her breathing guard, from all eight sides, at 1.05 or more below the knee to
-//      above it (on her bones; and as painted, each leg whose shin is seen); the game's guard read short; her body, arms and staff
-//      as the game's, only her feet and knees placed again;
+//      above it (on her bones; and as painted, each leg whose shin is seen); the game's guard read short; her body and arms as
+//      the game's, only her feet and knees placed again (and her staff carried at her side, 4);
 //   3. every picture of the still from every side: crisp, the friend's cyan edge, nothing of the enemy's rim, nothing cut off, both
 //      braids fixed, her crystal's charge handed back, every light of hers the friend's cyan;
-//   4. HER STAFF SEEN FROM EVERY SIDE in her stance: its wood and steel and its crystal;
+//   4. HER STAFF SEEN FROM EVERY SIDE in her stance: at least 10 game pixels of its pole and 12 of its crystal (the art chat,
+//      7 Nov: from toward you, as the game holds it, only its crystal showed);
 //   5. HER FACE at the game's size: two dark eyes on her lit face from in front, toward you and from down and to the left; one
 //      side-on.
 //   run: tsx --test tests/mage_up.test.ts          MAGE_UP_ALL=1 tsx --test tests/mage_up.test.ts
@@ -25,7 +26,7 @@ import * as nodePath from 'node:path';
 
 import { MAGE_UP, MU_SKIN } from '../src/art/mage_up';
 import { paintMuMove } from '../src/art/mage_up_art';
-import { MU_CAST_HELD3, MU_GUARD, MU_GUARD_LEGS, MU_STAND3 } from '../src/art/mage_up_moves';
+import { MU_CAST_HELD3, MU_GUARD, MU_GUARD_LEGS, MU_GUARD_STAFF, MU_STAND3 } from '../src/art/mage_up_moves';
 import { WU_RIM, WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 import { WU_LEG_SEEN, wuLegs } from '../src/art/warrior_up_review';
@@ -98,8 +99,8 @@ test('2. her legs read true in her stance: every frame of her breathing guard fr
   // (the game's guard, as it is: short from in front and from toward the camera)
   assert.ok(least(MOVES3.mstand, 0.6, 'front') < 0.75, 'the game\'s guard from in front');
   assert.ok(least(MOVES3.mstand, 0.6, 'toward') < 0.65, 'the game\'s guard from toward the camera');
-  // (her body, arms and staff as the game's: only her feet and knees placed again)
-  const legKeys = new Set(Object.keys(MU_GUARD_LEGS));
+  // (her body and arms as the game's: only her feet and knees placed again, and her staff carried out at her side, test 4)
+  const legKeys = new Set([...Object.keys(MU_GUARD_LEGS), ...Object.keys(MU_GUARD_STAFF)]);
   for (const [k, v] of Object.entries(MU_GUARD)) if (!legKeys.has(k)) assert.equal(v, (MOVES3.mstand.rest as unknown as Record<string, number>)[k], `${k} as the game's`);
   assert.equal(MU_STAND3.motion, MOVES3.mstand.motion, 'her breathing the game\'s own');
 });
@@ -159,7 +160,7 @@ test('3. every picture of the still, from every side: crisp, the friend\'s cyan 
 
 // --- 4. her staff seen -------------------------------------------------------------------------------------------------------
 
-test('4. her staff is seen from every side in her stance: its wood and steel, and its crystal', () => {
+test('4. her staff is seen from every side in her stance: at least 10 game pixels of its pole, and 12 of its crystal', () => {
   const faults: string[] = [];
   const least: Record<string, [number, number]> = {};
   for (const t of LOOKED) for (const v of WU_SIDES) {
@@ -174,18 +175,27 @@ test('4. her staff is seen from every side in her stance: its wood and steel, an
       let b = 0;
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         const k = st[(y + dy) * W + x + dx];
-        if (f.staffMats.includes(k)) a++;
+        if (k === f.staffMats[0]) a++;
         if (k === 1000) b++;
       }
       if (a >= 2) staff++;
       if (b >= 2) gem++;
     }
     const e = (least[v] ??= [Infinity, Infinity]);
-    e[0] = Math.min(e[0], staff + gem);
+    e[0] = Math.min(e[0], staff);
     e[1] = Math.min(e[1], gem);
-    if (staff + gem < 20 || gem < 12) faults.push(`${t} ${v}: ${staff} of its wood and steel, ${gem} of its crystal`);
+    if (staff < 10 || gem < 12) faults.push(`${t} ${v}: ${staff} of its pole, ${gem} of its crystal`);
   }
-  console.log('# her staff, the least seen from each side (all of it / its crystal), game pixels:', JSON.stringify(least));
+  console.log('# her staff, the least seen from each side (its pole / its crystal), game pixels:', JSON.stringify(least));
+  // (and the test sees a hidden pole: as the game holds it, from toward you, under 10)
+  const g = paintMuMove({ ...MU_STAND3, rest: { ...MU_GUARD, ...Object.fromEntries(Object.keys(MU_GUARD_STAFF).map((k) => [k, (MOVES3.mstand.rest as unknown as Record<string, number>)[k]])) } }, 0.6, 'toward');
+  let was = 0;
+  for (let y = 0; y + 1 < g.px.h; y += 2) for (let x = 0; x + 1 < g.px.w; x += 2) {
+    let a = 0;
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) if (g.drawn.stuff[(y + dy) * g.px.w + x + dx] === g.staffMats[0]) a++;
+    if (a >= 2) was++;
+  }
+  assert.ok(was < 10, `as the game holds it, from toward you: ${was} of its pole`);
   assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
 });
 
