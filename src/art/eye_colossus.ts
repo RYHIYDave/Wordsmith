@@ -8,21 +8,21 @@
 // (Recommended)”. Then, shown 3e7b6844: “Eh.  Still not quite it.  Let’s keep the tentacles, they’re still split up into sections.
 // But let’s scrap the body.  I want the eye as the end of the tongue and the whole head to split open down the center for the maw.
 // Spittle and goo all over the place.  And have him like constantly melting and dripping”; and, 11:17: “And the eye waves around
-// like its own tentacle”.
+// like its own tentacle”. Shown the splitting head (bfb16ba3): “That’s pretty good, I like the direction, but I have a drawing of
+// what I was kinda thinking”; he sent his drawing (docs/ref/eye_drawing_from_owner_2026-11-07.jpg), and, 12:45: “Not EXACTLY like
+// that but that’s kinda what I meant about the maw splitting and the tongue eye”.
 //
-// WHAT HE IS, AS PAINTED: no body any more: A HUGE HEAD risen out of the black water across the top of the screen, ancient and
-// gross, the head itself the creature, no face. Two great lobes of rotting grey-green flesh either side of A SEAM down his middle
-// from crown to chin, wet and leaking drool, hooked fangs locked across it. THE WHOLE HEAD SPLITS OPEN down that seam: its two
-// halves swing apart sideways like great jaws hinged at the back of his skull, rows of hooked teeth along both inner edges from top
-// to bottom, between them his wet ribbed throat glowing faintly pink-gold deep inside, strings of spittle stretched across the gap.
-// HIS EYE IS ON THE END OF HIS TONGUE: a long, thick, slimy tongue, as supple as a tentacle, its tip swollen into the huge bloodshot
-// eye (the iris the enemy's pink burning to gold round a black slit); shut, it snakes out through the seam low on his head and rears
-// in an S, the eye at its tip watching you; open, it rises out of his throat and waves above the split. SPITTLE AND GOO EVERYWHERE:
-// drool in strings and ropes, goo sheeting down him, bubbles, slime webbed across every gap, foam where it hits the water. HE IS
-// MELTING: his flesh sags and runs like wax, in runs down him that end in fat drips, gobs hanging off his overhangs and falling into
-// the water, the outline of him always running down. His TENTACLES as they were, each now one continuous smooth taper from root to
-// tip, no bands, no joints, no steps, the suckers in two rows along the underside all the way. An enemy: the pink edge round him,
-// pink and gold his only glow; nothing cyan.
+// WHAT HE IS, AS PAINTED (his drawing taken as the idea): he rises out of the black water ALREADY SPLIT WIDE OPEN, from the water
+// up, in a deep V: a vast maw. Its two halves are great jaws pried apart, tall and pointed, each leaning out to its peak (his left
+// the lower and further out, his right the taller and sharper): rotting grey-green flesh melting off them like wax, drips running
+// down them into the water, heaps of it slumped round them at the water. Down both inner edges of the V, rows of crooked hooked
+// teeth set in raw gum; inside it his wet ribbed throat, glowing faintly pink-gold low down, spittle strung across. Out of the bottom
+// of the V HIS TONGUE rises in a long S, thick at the root and tapering, smooth wet flesh, towering over his jaws; ON ITS TIP, THE
+// HIGHEST OF ALL OF HIM, HIS EYE: lying on its side, wider than tall, in a bulb of the tongue's flesh drawn to a point at each
+// corner like a lens, raw lids parted in an almond round it, the iris the enemy's pink burning to gold round a tall black slit.
+// SPITTLE AND GOO EVERYWHERE: drool in strings and ropes, goo sheeting down him, bubbles, foam where it hits the water. His
+// TENTACLES as they were, each one continuous smooth taper from root to tip, the suckers in two rows along the underside all the
+// way. An enemy: the pink edge round him, pink and gold his only glow; nothing cyan.
 //
 // HOW HE IS PAINTED: his own solids, smooth-joined, in his own space (across the screen X, toward the camera Y, up Z; his own
 // lengths, as the game's figures', TILE3 to a tile), looked at as the game's camera looks (from above at 30 degrees: a length across
@@ -49,22 +49,18 @@ const COS30 = Math.sqrt(3) / 2;
 // HIS MEASURES (his own lengths; a tile is C_TILE of them)
 
 export const COLOSSUS = {
-  /** His head, shut: across at its widest (his cheeks), and over the water at his crown. */
-  wide: 600,
-  tall: 430,
-  /** The eye on the end of his tongue: its radius. */
-  eyeR: 50,
-  /** The hinge his two halves swing on, at the back of his skull (toward the camera from his middle), and how far each swings, torn wide (radians). */
-  hinge: -176,
-  swing: 0.56,
-  /** How deep he lies in phase 1, under the water (his crown a little below it). */
-  sunk: 452,
+  /** His eye on the tip of his tongue, lying on its side: half its width, half its height, half its depth. */
+  eyeW: 58,
+  eyeH: 24,
+  eyeD: 30,
+  /** How deep he lies in phase 1, under the water (his jaws' peaks a little below it). */
+  sunk: 215,
   /** And how far back out in the water he lies then (so that what is seen of him is seen in the water, not under the stone). */
   sunkBack: 330,
   /** How deep under the water anything of him is still seen; his eye's fire, deeper. */
   seenDeep: 70,
-  /** And while he lies under it (phase 1): his dark head seen faintly further down. */
-  seenDeepSunk: 160,
+  /** And while he lies under it (phase 1): his dark jaws seen faintly further down. */
+  seenDeepSunk: 130,
 } as const;
 
 // =============================================================================================
@@ -237,12 +233,10 @@ export interface ColossusPose {
   drop: number;
   back?: number;
   body: boolean;
-  /** His head: 0 shut (the seam closed, his tongue snaking out of it), 1 split wide open (his tongue risen out of his throat). */
-  maw: number;
   /** The way his eye looks (his own space). */
   gaze: readonly [number, number, number];
   arms: ReadonlyArray<ArmPose>;
-  /** Under the water (phase 1), his tongue reared up the front of him, the eye on it between his two arms. */
+  /** Under the water (phase 1), his tongue reared forward before him in the water, the eye on it between his two arms. */
   tongue?: 'under';
 }
 
@@ -540,66 +534,143 @@ function sagging(a: readonly number[], b: readonly number[], sag: number, r: num
 }
 
 // =============================================================================================
-// HIS HEAD (his own space, shut: across X, toward the camera Y, up Z, from the water under his middle)
+// HIS JAWS (his own space: across X, toward the camera Y, up Z, from the water under his middle)
+//
+// His drawing of 7 Nov: he rises out of the water ALREADY SPLIT WIDE OPEN in a deep V from the water up: two tall pointed halves like
+// great jaws pried apart, each leaning out to a peak (his left the lower and further out, his right the taller and sharper); teeth
+// down both inner edges of the V; his throat inside it, glowing low down; his tongue up out of the bottom of it in a long S, the eye
+// on its tip the highest of all. Each jaw is his own flesh, sculpted, melting and running; its inner side the V's face, cut by a
+// plane leaning out from the line the two faces meet along (under the water, at the back of him) and turned a little toward you,
+// hollowed and ribbed inside its rim of raw gum, the teeth set along that rim.
 
-/** The crack of his seam, shut (half its width). */
+/** The crack between his jaws where they meet, under the water at the back of the V (half its width). */
 const CRACK = 0.8;
-/** Where his tongue snakes out through his seam, shut: the slit's middle (up from the water), its half height and half width. */
-const SLIT = { z: 60, h: 40, w: 25 } as const;
-/** His seam wanders a little as it runs down him: how far across it is at a height. */
-const seamX = (z: number): number => 5 * Math.sin(z * 0.019 + 0.6) + (vn(z * 0.025, 3, 1, 250) - 0.5) * 8;
-/** The slit's half width at a height (0 outside it). */
-const slitW = (z: number): number => {
-  const q = 1 - ((z - SLIT.z) / SLIT.h) ** 2;
-  return q > 0 ? SLIT.w * Math.pow(q, 0.6) : 0;
-};
+/** The line the V's two faces meet along: under the water (ZP), its back end (Y0); how far each face is turned toward you (radians). */
+const ZP = -12;
+const Y0 = -60;
+const TURN = 0.08;
 
-/** HIS SKULL, whole and shut, before what slides, runs and drips off him. */
-function skull(x: number, y: number, z: number): number {
-  // two great swollen lobes of his crown either side of the seam, overhanging what is below them; the left heaved higher, the right
-  // slumped lower and further out
-  let d = ell(x, y, z, -78, -44, 262, 150, 138, 150);
-  d = smin(d, ell(x, y, z, 92, -34, 236, 156, 142, 140), 44);
-  // the mass of his head beneath them, widest at his middle
-  d = smin(d, ell(x, y, z, 0, -10, 160, 200, 158, 128), 48);
-  // bulging forward low, toward his chin
-  d = smin(d, ell(x, y, z, 0, 52, 84, 128, 108, 84), 40);
-  // his jowls sagging, drooping down toward the water, the right the lower
-  d = smin(d, ell(x, y, z, -170, 18, 96, 96, 108, 84), 34);
-  d = smin(d, ell(x, y, z, 176, 8, 76, 100, 108, 76), 34);
-  // his neck under it all, going down into the black water
-  d = smin(d, ell(x, y, z, 0, -24, 16, 186, 156, 72), 42);
-  // flesh run off him and slumped at the water in heaps
-  d = smin(d, ell(x, y, z, -212, 4, 6, 74, 80, 36), 28);
-  d = smin(d, ell(x, y, z, 226, -18, 0, 80, 90, 32), 28);
-  d = smin(d, ell(x, y, z, -106, 92, 6, 62, 58, 26), 24);
-  d = smin(d, ell(x, y, z, 118, 84, 2, 70, 60, 26), 24);
-  // tumours swelling out of his crown
-  d = smin(d, ell(x, y, z, -168, -56, 322, 46, 42, 38), 24);
-  d = smin(d, ell(x, y, z, 64, -78, 338, 54, 50, 40), 24);
-  d = smin(d, ell(x, y, z, 226, -36, 246, 46, 44, 42), 22);
+/**
+ * EACH JAW, as his right one is (his left mirrored, X = -x, and made differently): its spine from deep in the water up through its
+ * mass to its peak (x, y, z, its thickness: round across, deeper front to back), the heaps of his flesh slumped at the water round
+ * it and what bulges out of it (ellipsoids: x, y, z, rx, ry, rz).
+ */
+interface JawMake {
+  spine: ReadonlyArray<readonly [number, number, number, number]>;
+  lumps: ReadonlyArray<readonly [number, number, number, number, number, number, number]>;
+  /** Where it leans round (for what runs down it: an upright line through it), and a box round all of it. */
+  ax: number;
+  box: readonly [number, number, number, number, number, number];
+}
+/** How far each face of the V leans out from upright (radians): his left the further. */
+const TILT: readonly [number, number] = [0.77, 0.68];
+/** Each jaw's peak, up from the water and back from his middle (his left the lower), and its x worked out to sit on its face's edge. */
+const PEAK_Z: readonly [number, number] = [138, 158];
+const PEAK_Y = -22;
+const peakX = (k: number): number => {
+  const t = TILT[k];
+  // (the face's x at the peak's height and depth, a hair inside the jaw: see faceOf)
+  const ct = Math.cos(t);
+  const st = Math.sin(t);
+  return (CRACK + 3 + ct * Math.sin(TURN) * (PEAK_Y - Y0) + st * (PEAK_Z[k] - ZP)) / (ct * Math.cos(TURN));
+};
+/** A jaw, as his right one is: from deep in the water up out of the narrow trunk he rises from, tall, leaning and flaring a little
+ *  out to its peak `px`, `pz` (on its face's edge), tapering to a point. */
+const fang = (px: number, pz: number, fat: number): Array<[number, number, number, number]> => [
+  [px - 132, 40, -70, 112 * fat], [px - 124, 34, -10, 108 * fat], [px - 96, 22, pz * 0.25, 88 * fat], [px - 60, 8, pz * 0.5, 62 * fat],
+  [px - 30, -4, pz * 0.72, 38 * fat], [px - 10, -14, pz * 0.88, 16 * fat], [px, PEAK_Y, pz, 2],
+];
+const JAW_MAKE: readonly [JawMake, JawMake] = [
+  // HIS LEFT: the lower, leaning further out; heavier, sagging
+  {
+    spine: fang(peakX(0), PEAK_Z[0], 1.08),
+    lumps: [
+      // the flesh run off him slumped at the water round him, wide and low, in heaps; a jowl of melting flesh sagging off his outer
+      // flank, hanging out over the water; tumours bulging out of him
+      [128, 24, -16, 166, 124, 40, 32], [244, -6, -6, 92, 88, 26, 24], [74, 118, -4, 70, 46, 22, 20], [200, 80, -2, 60, 46, 20, 18],
+      [190, 30, 60, 34, 42, 26, 20], [150, 60, 36, 24, 22, 20, 12], [150, -20, 90, 22, 24, 18, 12],
+    ],
+    ax: 90,
+    box: [-90, -170, -200, 350, 190, 150],
+  },
+  // HIS RIGHT: the taller and sharper
+  {
+    spine: fang(peakX(1), PEAK_Z[1], 1),
+    lumps: [
+      [122, 22, -16, 158, 120, 38, 32], [234, -4, -4, 88, 86, 26, 24], [70, 116, -2, 68, 46, 22, 20], [192, 78, -2, 58, 46, 20, 18],
+      [178, 26, 72, 30, 38, 24, 20], [140, 56, 46, 22, 20, 18, 12], [140, -18, 108, 20, 22, 16, 12],
+    ],
+    ax: 86,
+    box: [-90, -170, -200, 340, 190, 172],
+  },
+];
+/** Each jaw's peak (his own space): the end of its spine. */
+export const PEAKS: readonly [readonly [number, number, number], readonly [number, number, number]] = [
+  [-JAW_MAKE[0].spine[6][0], JAW_MAKE[0].spine[6][1], JAW_MAKE[0].spine[6][2]],
+  [JAW_MAKE[1].spine[6][0], JAW_MAKE[1].spine[6][1], JAW_MAKE[1].spine[6][2]],
+];
+
+/**
+ * EACH JAW'S FACE ON THE V: a plane through the line under the water, leaning out by its tilt and turned a little toward you; above
+ * where it leaves the jaw, the jaw's horn runs on up and out to its peak. Its frame: `n` into the jaw, `b` along the face toward you, `c` along the face up the
+ * V's edge; and each jaw's tilt.
+ */
+interface Face {
+  n: [number, number, number];
+  b: [number, number, number];
+  c: [number, number, number];
+  tilt: number;
+}
+function faceOf(side: number, tilt: number): Face {
+  const ct = Math.cos(tilt);
+  const st = Math.sin(tilt);
+  const cp = Math.cos(TURN);
+  const sp = Math.sin(TURN);
+  return { n: [side * ct * cp, -ct * sp, -st], b: [side * sp, cp, 0], c: [side * st * cp, -st * sp, ct], tilt };
+}
+/** How deep into a face's jaw a point is (less than 0 out in the V). */
+const faceDepth = (F: Face, x: number, y: number, z: number): number => F.n[0] * x + F.n[1] * (y - Y0) + F.n[2] * (z - ZP);
+export const FACES: readonly [Face, Face] = [faceOf(-1, TILT[0]), faceOf(1, TILT[1])];
+/** The face wanders a little as it runs up the V (how far, by how far up it). */
+const wander = (c: number): number => 3 * Math.sin(c * 0.021 + 0.6) + (vn(c * 0.03, 3, 1, 250) - 0.5) * 5;
+
+/** A JAW'S MASS (before what slides, runs and drips off it): `side` -1 his left, 1 his right. */
+function jawBase(side: number, x: number, y: number, z: number): number {
+  const J = JAW_MAKE[side < 0 ? 0 : 1];
+  const X = x * side;
+  // (thinner front to back than across: a slab of a jaw, not a dome; his own space stretched toward you, the distance shrunk to match)
+  const KY = 1.25;
+  const Y = y * KY;
+  const S = J.spine;
+  let d = Infinity;
+  for (let k = 0; k + 1 < S.length; k++) {
+    d = Math.min(d, cone(X, Y, z, S[k][0], S[k][1] * KY, S[k][2], S[k + 1][0], S[k + 1][1] * KY, S[k + 1][2], S[k][3], S[k + 1][3]) / KY);
+  }
+  for (const L of J.lumps) d = smin(d, ell(X, y, z, L[0], L[1], L[2], L[3], L[4], L[5]), L[6]);
   return d;
 }
 
-/** The hollow of his mouth inside him (each half's inner side), its wet ribs: less than 0 inside it. */
-function cavity(x: number, y: number, z: number): number {
-  const c = ell(x, y, z, 0, -14, 150, 136, 146, 134);
+/** The hollow of a jaw behind its face (the inside of his mouth, wet and ribbed, curved as the jaw is): less than 0 inside it. `a`
+ *  how deep into the jaw from its face. */
+function hollow(side: number, x: number, y: number, z: number, a: number): number {
+  const c = Math.max(jawBase(side, x, y, z) + 19 + (vn(x * 0.03, y * 0.03, z * 0.03, 175) - 0.5) * 14, a - 130);
   if (c > 12) return c;
   // (ribbed across, like the roof of a mouth)
-  return c + 2.4 * Math.sin(z * 0.16 + vn(x * 0.02, y * 0.02, z * 0.01, 171) * 3.0) * sm01(10, 30, z);
+  return c + 2.4 * Math.sin(z * 0.16 + vn(x * 0.02, y * 0.02, z * 0.01, 171) * 3.0) * sm01(6, 26, z);
 }
 
 /**
- * HIS FLESH SLIDING OFF HIM LIKE MELTING WAX: two sheets of it slid down over him, the upper the thicker, each one's lower edge running
- * down in drips of every length, each drip a tongue of flesh necked where it leaves the sheet and swelling to a fat end; the height
- * of each sheet's edge (round him it wanders), how thick it lies on what is under it, how wide a drip may be, and how far one may run.
+ * HIS FLESH SLIDING OFF HIM LIKE MELTING WAX: two sheets of it slid down over each jaw, the upper the thicker, each one's lower edge
+ * running down in drips of every length, each drip a tongue of flesh necked where it leaves the sheet and swelling to a fat end; the
+ * height of each sheet's edge (round him it wanders), how thick it lies on what is under it, how wide a drip may be, and how far one
+ * may run. They run straight down, as wax does, however his jaws lean.
  */
 const SHEETS: ReadonlyArray<{ z: number; t: number; W: number; L: number }> = [
-  { z: 292, t: 18, W: 40, L: 190 },
-  { z: 178, t: 11, W: 30, L: 120 },
+  { z: 104, t: 12, W: 24, L: 80 },
+  { z: 48, t: 8, W: 18, L: 44 },
 ];
 /** A sheet's edge between its drips, at u round him. */
-const hemOf = (k: number, u: number): number => SHEETS[k].z + (vn(u * 0.007 + k * 7.3, k * 3.1, 0.5, 230) - 0.5) * 56;
+const hemOf = (k: number, u: number): number => SHEETS[k].z + (vn(u * 0.009 + k * 7.3, k * 3.1, 0.5, 230) - 0.5) * 40;
 /** A sheet's drip in a cell round him: where (u), how wide at its top and at its fat end, how far down it has run (0 none). */
 function sheetDrip(k: number, cell: number): [number, number, number, number] {
   const sh = SHEETS[k];
@@ -607,7 +678,7 @@ function sheetDrip(k: number, cell: number): [number, number, number, number] {
   const wb = sh.W * (0.2 + 0.16 * h3(cell, k, 1, 241));
   const wt = wb * (0.6 + 0.25 * h3(cell, k, 2, 242));
   const uc = (cell + 0.5 + (h3(cell, k, 3, 243) - 0.5) * (1 - (2 * (wb + 2)) / sh.W)) * sh.W;
-  const L = 14 + sh.L * h3(cell, k, 4, 244) ** 1.3;
+  const L = 12 + sh.L * h3(cell, k, 4, 244) ** 1.3;
   return [uc, wt, wb, L];
 }
 /** Where a sheet is, round him and up him (a flat map: u round, z up): less than 0 on it. Its edge, its drips, and how near a drip's fat end. */
@@ -639,35 +710,15 @@ const END = [0];
  * THIN RUNS OF GOO down him: here and there a strip of it standing out of him, from where it wells out to a fat bead where it has run
  * to. How far a run stands out at a point (his lengths), 0 off them. Round him by his azimuth (u, a length round him).
  */
-/** Drool leaking out of his seam, running down beside it, over all of him: how far it stands out. */
-function seamLeak(u: number, z: number): number {
-  if (z < 6) return 0;
-  {
-    let v = 0;
-    for (let i = 0; i < SEAM_LEAKS.length; i += 4) {
-      const [uc, top, end, w] = [SEAM_LEAKS[i], SEAM_LEAKS[i + 1], SEAM_LEAKS[i + 2], SEAM_LEAKS[i + 3]];
-      const du = (u - uc) / w;
-      if (Math.abs(du) < 1.2 && z > end - w * 2 && z < top + 2) {
-        const q = Math.max(0, 1 - du * du);
-        let r = z > end ? q * q * sm01(top + 2, top - 10, z) : 0;
-        const b = 1 - ((u - uc) / (w * 1.15)) ** 2 - ((z - end) / (w * 1.3)) ** 2;
-        if (b > 0) r = Math.max(r, 1.4 * b * b);
-        v = Math.max(v, r * w * 0.6);
-      }
-    }
-    return v;
-  }
-}
-
 function runAt(u: number, z: number): number {
-  if (z < 6 || Math.abs(u) < 16) return 0;
-  const W = 23;
+  if (z < 6) return 0;
+  const W = 21;
   const cell = Math.floor(u / W);
   if (h3(cell, 9, 0, 164) > 0.5) return 0;
-  const w = 3.5 + 3 * h3(cell, 9, 1, 165);
+  const w = 3.2 + 2.8 * h3(cell, 9, 1, 165);
   const uc = (cell + 0.5 + (h3(cell, 9, 2, 166) - 0.5) * (1 - (2 * (w + 1)) / W)) * W;
-  const top = 110 + 230 * h3(cell, 9, 3, 167);
-  const end = Math.max(12, top - 50 - 200 * h3(cell, 9, 4, 168));
+  const top = 50 + 100 * h3(cell, 9, 3, 167);
+  const end = Math.max(10, top - 30 - 90 * h3(cell, 9, 4, 168));
   const hgt = w * 0.6;
   const du = (u - uc) / w;
   let v = 0;
@@ -682,36 +733,37 @@ function runAt(u: number, z: number): number {
   return v * hgt;
 }
 
-/** Drool leaking out of his seam: where round him (just beside it), from how high to how low, how wide. */
-const SEAM_LEAKS = [-17, 330, 262, 4, 16, 300, 214, 3.5, -16, 240, 168, 4, 18, 196, 120, 3.5, -18, 150, 112, 3.2, 17, 352, 300, 3];
-
-/** HIS FLESH: his skull with the sheets slid down it and the runs (no seam yet); `m[0]` says whether it is running goo there. */
-function fleshAt(x: number, y: number, z: number, m: number[] | null): number {
-  const base = skull(x, y, z);
-  if (base > 50) return base - 30;
-  const u = Math.atan2(x, y + 20) * 232;
+/** A JAW'S FLESH: its mass with the sheets slid down it and the runs (its face not cut yet); `m[0]` says whether it is running goo there. */
+function fleshAt(side: number, x: number, y: number, z: number, m: number[] | null): number {
+  const base = jawBase(side, x, y, z);
+  // (far from it: a bound, far enough out that the water's rings round him never meet the step)
+  if (base > 100) return base - 25;
+  const J = JAW_MAKE[side < 0 ? 0 : 1];
+  const u = Math.atan2((x - side * J.ax) * side, y + 10) * 150;
   const run = runAt(u, z);
   let d = base - run;
   let melt = run > 1.5 ? 1 : 0;
   for (let k = 0; k < SHEETS.length; k++) {
-    if (z < SHEETS[k].z - 40 - SHEETS[k].L - SHEETS[k].W) continue;
+    if (z < SHEETS[k].z - 30 - SHEETS[k].L - SHEETS[k].W) continue;
     const map = sheetMap(k, u, z, END);
     // (the sheet over him, its drips' fat ends standing out further)
     const sd = smax(base - SHEETS[k].t * (1 + 0.7 * END[0] * END[0]), map, 6);
     if (sd < d) melt = map > -8 || END[0] > 0.2 ? 1 : 0;
     d = Math.min(d, sd);
   }
-  if (Math.abs(u) < 26) {
-    const leak = seamLeak(u, z);
-    if (leak > 0.6) melt = 1;
-    d -= leak;
-  }
   if (m) m[0] = melt;
   return d;
 }
 const MELT = [0];
+/** A jaw whole: its flesh, its face cut (the V). */
+function jawCut(side: number, x: number, y: number, z: number): number {
+  const F = FACES[side < 0 ? 0 : 1];
+  const a = faceDepth(F, x, y, z);
+  const c = F.c[0] * x + F.c[1] * (y - Y0) + F.c[2] * (z - ZP);
+  return smax(fleshAt(side, x, y, z, null), CRACK + wander(c) - a, 16);
+}
 
-/** What is placed on his head once (in the head's own space): drips off his overhangs, gobs falling off, his teeth, the front of his seam. */
+/** What is placed on him once: drips off his overhangs, gobs falling off, his teeth, the edges of his jaws' faces. */
 interface Placed {
   /** Drips hanging off his overhangs: top x, y, z, how far down, its radius at the top and at its bulb. */
   drips: number[];
@@ -719,118 +771,150 @@ interface Placed {
   gobs: number[];
   /** Splashes where they hit the water: x, y, size. */
   splashes: number[];
-  /** His teeth, along each half's inner edge: [left, right]. */
+  /** His teeth, along each jaw's inner edge: [left, right]. */
   teeth: [Tooth[], Tooth[]];
-  /** The front of his head at the seam, by height (every 2 of his lengths, from 0): how far toward the camera. */
-  front: Float64Array;
+  /** Along each jaw's edge on the V, from low at the front up to its peak: points of its raw rim (x, y, z). */
+  rims: [number[][], number[][]];
 }
 let PLACED: Placed | null = null;
-/** How far toward the camera the front of his head is at the seam, at a height. */
-const frontAt = (z: number): number => {
-  const F = placed().front;
-  const i = Math.max(0, Math.min(F.length - 2, Math.floor(z / 2)));
-  const t = Math.max(0, Math.min(1, z / 2 - i));
-  return F[i] + (F[i + 1] - F[i]) * t;
-};
+/** How far a point is from his tongue's skin, risen or under the water (its spine taken as a chain of round cones): nothing of him
+ *  may pass through it. */
+function tongueGap(x: number, y: number, z: number): number {
+  let d = Infinity;
+  for (const T of [TONGUE_RISEN, TONGUE_UNDER]) {
+    for (let k = 0; k + 1 < T.length; k++) d = Math.min(d, cone(x, y, z, T[k][0], T[k][1], T[k][2], T[k + 1][0], T[k + 1][1], T[k + 1][2], T[k][3], T[k + 1][3]));
+  }
+  return d;
+}
 function placed(): Placed {
   if (PLACED) return PLACED;
-  const body = (x: number, y: number, z: number): number => fleshAt(x, y, z, null);
-  // THE FRONT OF HIS SEAM, by height
-  const front = new Float64Array(200);
-  for (let i = 0; i < 200; i++) {
-    const z = i * 2;
-    let y = 260;
-    while (y > -260 && body(7, y, z) > 0) y -= 2;
-    front[i] = y;
-  }
+  const body = (x: number, y: number, z: number): number => Math.min(jawCut(-1, x, y, z), jawCut(1, x, y, z));
   // DRIPS HANGING OFF HIS OVERHANGS: where, looking up from under him, he is over the air (not the water), a drip hangs down
   const drips: number[] = [];
   const gobs: number[] = [];
   const splashes: number[] = [];
-  for (let gx = -40; gx <= 40; gx++) {
-    for (let gy = -24; gy <= 24; gy++) {
+  for (let gx = -42; gx <= 42; gx++) {
+    for (let gy = -26; gy <= 24; gy++) {
       const x = gx * 8 + (h3(gx, gy, 0, 180) - 0.5) * 6;
       const y = gy * 9 + (h3(gx, gy, 1, 180) - 0.5) * 6;
-      if (Math.abs(x) < 24) continue;
-      if (h3(gx, gy, 2, 181) > 0.34) continue;
+      if (Math.abs(x) < 20) continue;
+      if (h3(gx, gy, 2, 181) > 0.4) continue;
+      // (up through any heap of him at the water, up through the air over it, to what overhangs it)
       let z = 4;
-      while (z < 330 && body(x, y, z) > 0) z += 2;
-      if (z >= 330 || z < 40) continue;
+      while (z < 200 && body(x, y, z) < 0) z += 2;
+      const air = z;
+      while (z < 200 && body(x, y, z) > 0) z += 2;
+      if (z >= 200 || z < 26 || z - air < 16) continue;
       // (only from what overhangs: open air for a good way under it)
-      if (body(x, y, z - 14) < 6 || body(x, y, z - 30) < 10) continue;
+      if (body(x, y, z - 10) < 4) continue;
       const big = h3(gx, gy, 9, 188) < 0.3;
-      const len = big ? 40 + 80 * h3(gx, gy, 3, 182) : 12 + 40 * h3(gx, gy, 3, 182);
-      const r0 = big ? 6 + 4 * h3(gx, gy, 4, 183) : 3.2 + 2.2 * h3(gx, gy, 4, 183);
+      const len = big ? 30 + 60 * h3(gx, gy, 3, 182) : 10 + 30 * h3(gx, gy, 3, 182);
+      const r0 = big ? 5 + 3.5 * h3(gx, gy, 4, 183) : 3 + 2 * h3(gx, gy, 4, 183);
       const rb = r0 * (1.4 + 0.5 * h3(gx, gy, 5, 184));
-      drips.push(x, y, z + 3, Math.min(len, z - 12), r0, rb);
+      drips.push(x, y, z + 3, Math.min(len, z - air - 4), r0, rb);
       // (some have let go: a gob falling below, and where it will hit the water, a splash)
       if (h3(gx, gy, 6, 185) < 0.55) {
-        const gz = z - len - 16 - (z - len) * 0.6 * h3(gx, gy, 7, 186);
-        if (gz > 14) gobs.push(x, y, gz, rb * 0.95, 1.6 + 0.6 * h3(gx, gy, 8, 187));
+        const gz = z - len - 14 - (z - len - air) * 0.6 * h3(gx, gy, 7, 186);
+        if (gz > air + 10) gobs.push(x, y, gz, rb * 0.95, 1.6 + 0.6 * h3(gx, gy, 8, 187));
         splashes.push(x, y, 5 + rb);
       }
     }
   }
-  // HIS TEETH: rows of hooked fangs along each half's inner edge, top to bottom, set into the raw ring of gum between his outside
-  // and the hollow of his mouth; pointing across at the other half, each hooked back toward his throat; crooked, of every size
+  // HIS TEETH: rows of hooked fangs along each jaw's inner edge, from the water up to its peak and down its back, set into the raw
+  // rim of gum between its outside and its hollow; pointing across the V at the other jaw, each hooked back toward his throat;
+  // crooked, of every size, the front row the bigger
   const teeth: [Tooth[], Tooth[]] = [[], []];
+  const rims: [number[][], number[][]] = [[], []];
   for (const side of [-1, 1]) {
+    const F = FACES[side < 0 ? 0 : 1];
     const list = teeth[side < 0 ? 0 : 1];
+    const rim = rims[side < 0 ? 0 : 1];
+    const on = (b: number, c: number, a: number): number[] => {
+      const w = wander(c);
+      return [
+        F.n[0] * (CRACK + w + a) + F.b[0] * b + F.c[0] * c,
+        Y0 + F.n[1] * (CRACK + w + a) + F.b[1] * b + F.c[1] * c,
+        ZP + F.n[2] * (CRACK + w + a) + F.b[2] * b + F.c[2] * c,
+      ];
+    };
+    // (the middle of its face over the water, in the face's own frame: along it toward you, and up it)
+    let B0 = 0;
+    let C0 = 0;
+    let nIn = 0;
+    for (let b = 0; b <= 400; b += 8) {
+      for (let c = 0; c <= 320; c += 8) {
+        const q = on(b, c, 1);
+        if (q[2] > 4 && fleshAt(side, q[0], q[1], q[2], null) < 0) {
+          B0 += b;
+          C0 += c;
+          nIn++;
+        }
+      }
+    }
+    B0 /= nIn || 1;
+    C0 /= nIn || 1;
+    // (where the peak is round the middle of the face: the teeth run up the front edge of the V to it)
+    const PK = PEAKS[side < 0 ? 0 : 1];
+    const phiPeak = Math.atan2(F.c[0] * PK[0] + F.c[1] * (PK[1] - Y0) + F.c[2] * (PK[2] - ZP) - C0, F.b[0] * PK[0] + F.b[1] * (PK[1] - Y0) + F.b[2] * (PK[2] - ZP) - B0);
     for (const row of [0, 1]) {
-      let phi = -1.28 + h3(row, side + 2, 0, 190) * 0.06;
+      let phi = -1.5 + h3(row, side + 2, 0, 190) * 0.1;
       let i = 0;
-      while (phi < 1.9) {
-        const cy = Math.cos(phi);
-        const cz = Math.sin(phi);
-        // (along the ray from the hollow's middle in the plane of the seam: his outside, and the hollow's)
-        let r = 60;
-        while (r < 340 && body(side * 7, -14 + cy * r, 150 + cz * r) < 0) r += 2;
-        const rOut = r;
+      while (phi < phiPeak - (row ? 0.14 : 0.02)) {
+        const cb = Math.cos(phi);
+        const cc = Math.sin(phi);
+        // (out along the face from its middle to the jaw's outside)
+        let r = 10;
+        while (r < 360) {
+          const q = on(B0 + cb * r, C0 + cc * r, 1);
+          if (fleshAt(side, q[0], q[1], q[2], null) > 0) break;
+          r += 2;
+        }
         const seed = side * 1000 + row * 100 + i;
-        const step = (row ? 0.075 : 0.1) * (0.8 + 0.4 * h3(seed, 0, 0, 191));
+        // (spaced by how far out the rim is, so that they stand as thick along it everywhere; the front row the sparser and bigger)
+        const step = ((row ? 13 : 17) / Math.max(40, r)) * (0.7 + 0.6 * h3(seed, 0, 0, 191));
         phi += step;
         i++;
-        const depth = row ? 30 : 13;
-        const rr = rOut - depth;
-        const ry = -14 + cy * rr;
-        const rz = 150 + cz * rr;
-        if (rz < 12 || cavity(0, ry, rz) < 4) continue;
-        const long = row === 0 && h3(seed, 1, 0, 192) < 0.22;
-        const broken = row === 0 && !long && h3(seed, 2, 0, 193) < 0.14;
-        const len = row ? 12 + 12 * h3(seed, 3, 0, 194) : long ? 38 + 12 * h3(seed, 3, 0, 194) : 18 + 16 * h3(seed, 4, 0, 195);
-        const rad = row ? 3.2 + 1.4 * h3(seed, 5, 0, 196) : long ? 6.4 : 4.4 + 2 * h3(seed, 6, 0, 197);
-        // (across at the other half; a little toward his front and crooked; hooked back toward his throat, the hollow's middle)
-        const tilt = (h3(seed, 7, 0, 198) - 0.5) * 0.5;
-        const dir = [-side, 0.25 + tilt * 0.4, tilt];
+        const depth = row ? 26 : 10;
+        const root = on(B0 + cb * (r - depth), C0 + cc * (r - depth), 1);
+        if (root[2] < 6) continue;
+        if (row === 0) rim.push(on(B0 + cb * (r - 3), C0 + cc * (r - 3), 0));
+        if (row === 1 && h3(seed, 9, 0, 199) < 0.35) continue;
+        const long = row === 0 && h3(seed, 1, 0, 192) < 0.26;
+        const broken = row === 0 && !long && h3(seed, 2, 0, 193) < 0.12;
+        // (smaller toward the peak)
+        const up = 1 - 0.5 * sm01(0.45, 1, root[2] / PK[2]);
+        const len = (row ? 12 + 12 * h3(seed, 3, 0, 194) : long ? 44 + 18 * h3(seed, 3, 0, 194) : 18 + 20 * h3(seed, 4, 0, 195)) * up;
+        const rad = (row ? 3.2 + 1.4 * h3(seed, 5, 0, 196) : long ? 7.4 : 4.6 + 2.6 * h3(seed, 6, 0, 197)) * (0.4 + 0.6 * up);
+        // (across the V at the other jaw, a little toward you and crooked; hooked back toward his throat, the middle of the face)
+        const tilt = (h3(seed, 7, 0, 198) - 0.5) * 0.7;
+        const dir = [-F.n[0] + F.b[0] * (0.25 + tilt * 0.4) + F.c[0] * tilt, -F.n[1] + F.b[1] * (0.25 + tilt * 0.4) + F.c[1] * tilt, -F.n[2] + F.b[2] * (0.25 + tilt * 0.4) + F.c[2] * tilt];
         const dl = Math.hypot(dir[0], dir[1], dir[2]);
-        const bend = [-side * 0.1, -cy * 0.9, -cz * 0.9];
-        list.push(toothOf([side * (CRACK + 1) + seamX(rz), ry, rz], [dir[0] / dl, dir[1] / dl, dir[2] / dl], len, rad, bend, broken));
+        const bend = [-F.n[0] * 0.1 - (F.b[0] * cb + F.c[0] * cc) * 0.9, -F.n[1] * 0.1 - (F.b[1] * cb + F.c[1] * cc) * 0.9, -F.n[2] * 0.1 - (F.b[2] * cb + F.c[2] * cc) * 0.9];
+        const T = toothOf(root, [dir[0] / dl, dir[1] / dl, dir[2] / dl], len, rad, bend, broken);
+        // (never through his tongue)
+        if (tongueGap(T.p[4], T.p[5], T.p[6]) < T.p[7] + 5 || tongueGap(T.p[8], T.p[9], T.p[10]) < 6) continue;
+        list.push(T);
       }
     }
   }
-  PLACED = { drips, gobs, splashes, teeth, front };
+  PLACED = { drips, gobs, splashes, teeth, rims };
   return PLACED;
 }
 
-/** HIS TONGUE, as supple as a tentacle, the eye on its tip: shut, snaking out through his seam low on his head and reared in an S;
- *  open, risen out of his throat in an S, waving above the split. Its spine (x, y, z, radius); the eye's middle at its end. */
-export const TONGUE_SHUT: ReadonlyArray<readonly [number, number, number, number]> = [
-  [0, -84, 96, 24], [0, 60, 66, 23], [0, 150, 54, 21], [-12, 200, 42, 20], [-44, 214, 40, 19], [-78, 214, 66, 17],
-  [-84, 212, 100, 15], [-60, 210, 126, 14], [-48, 210, 150, 13], [-66, 210, 174, 14], [-86, 210, 192, 18],
+/** HIS TONGUE, as supple as a tentacle, the eye on its tip: out of his gullet at the bottom of the V and up in a long S, towering
+ *  over his jaws, the eye on its tip the highest of all of him. Its spine (x, y, z, radius); the eye's middle at its end. */
+export const TONGUE_RISEN: ReadonlyArray<readonly [number, number, number, number]> = [
+  [0, -52, 28, 19], [0, -32, 24, 22], [3, -10, 32, 24], [10, 8, 54, 23], [30, 18, 86, 21], [44, 26, 118, 19], [34, 32, 146, 17],
+  [2, 36, 162, 16], [-32, 40, 176, 15], [-50, 42, 188, 14], [-42, 44, 200, 14], [-24, 45, 208, 15], [-10, 46, 212, 18],
 ];
-export const EYE_SHUT: readonly [number, number, number] = [-92, 210, 218];
-export const TONGUE_OPEN: ReadonlyArray<readonly [number, number, number, number]> = [
-  [0, -100, 118, 24], [0, -64, 148, 23], [-10, -6, 188, 21], [-32, 56, 228, 19], [-26, 108, 276, 17], [8, 138, 326, 15],
-  [22, 154, 366, 14], [4, 164, 404, 13], [-18, 168, 428, 15], [-24, 172, 440, 18], [-24, 174, 446, 20],
-];
-export const EYE_OPEN: readonly [number, number, number] = [-24, 178, 462];
-/** Under the water (phase 1): his tongue out of his seam and reared up the front of him in an S, the eye on it looking up at you
+export const EYE_RISEN: readonly [number, number, number] = [-6, 46, 224];
+/** Under the water (phase 1): his tongue out of the V and reared forward in the water before him, the eye on it looking up at you
  *  between his two arms, all of it under the water. */
 export const TONGUE_UNDER: ReadonlyArray<readonly [number, number, number, number]> = [
-  [0, -84, 96, 24], [0, 60, 66, 23], [0, 150, 54, 21], [-12, 200, 52, 20], [-30, 226, 80, 19], [-24, 236, 120, 17],
-  [8, 240, 160, 15], [22, 240, 200, 14], [6, 238, 236, 13], [-6, 236, 262, 15], [-4, 236, 276, 18],
+  [0, -52, 28, 19], [0, -32, 24, 22], [2, -6, 24, 24], [0, 26, 28, 23], [-6, 66, 38, 22], [-12, 106, 50, 21], [-10, 146, 64, 19],
+  [0, 184, 78, 18], [8, 208, 90, 17], [6, 222, 98, 16], [0, 230, 102, 16], [-2, 234, 106, 17], [-2, 236, 108, 19],
 ];
-export const EYE_UNDER: readonly [number, number, number] = [-2, 238, 296];
+export const EYE_UNDER: readonly [number, number, number] = [-2, 240, 120];
 
 /** The way he looks at you (toward the camera, a little down at the hero). */
 export const GAZE_AT_YOU: readonly [number, number, number] = [0.05, 0.95, 0.22];
@@ -843,28 +927,20 @@ class Scene {
   readonly drop: number;
   readonly back: number;
   readonly body: boolean;
-  /** How far he is split open (0 to 1), and each half's swing. */
-  readonly open: number;
-  readonly c: number;
-  readonly s: number;
   readonly gaze: readonly [number, number, number];
   readonly flip: number;
-  /** His eye's own across and up (its lids part round its gaze). */
+  /** His eye's own across and up (it lies on its side across his gaze). */
   readonly eyeA: [number, number, number];
   readonly eyeV: [number, number, number];
-  /** Spittle and drool, in his head's space. */
+  /** Spittle and drool, in his own space. */
   readonly strands: Strand[] = [];
-  /** Where what falls off him hits the water (x, y, size), in his head's space. */
+  /** Where what falls off him hits the water (x, y, size), in his own space. */
   readonly splashes: number[] = [];
   constructor(pose: ColossusPose) {
     this.arms = pose.arms.map((a) => armOf(a));
     this.drop = pose.drop;
     this.back = pose.back ?? 0;
     this.body = pose.body;
-    this.open = Math.max(0, Math.min(1, pose.maw));
-    const th = this.open * COLOSSUS.swing;
-    this.c = Math.cos(th);
-    this.s = Math.sin(th);
     const g = pose.gaze;
     const gl = Math.hypot(g[0], g[1], g[2]) || 1;
     this.gaze = [g[0] / gl, g[1] / gl, g[2] / gl];
@@ -878,69 +954,51 @@ class Scene {
       this.eyeA = A;
       this.eyeV = V;
     }
-    // HIS TONGUE: between its shut and its open lie, as far as he is open
-    const o = this.open;
-    const lerp = (a: readonly number[], b: readonly number[]): number[] => a.map((v, i) => v + (b[i] - v) * o);
-    const path = pose.tongue === 'under' ? TONGUE_UNDER : TONGUE_SHUT.map((q, i) => lerp(q, TONGUE_OPEN[i]));
-    const e = pose.tongue === 'under' ? EYE_UNDER : lerp(EYE_SHUT, EYE_OPEN);
+    const path = pose.tongue === 'under' ? TONGUE_UNDER : TONGUE_RISEN;
+    const e = pose.tongue === 'under' ? EYE_UNDER : EYE_RISEN;
     this.eyeC = [e[0], e[1], e[2]];
     this.tongue = pose.body ? armOf({ path, r: 30, belly: [0, 0, -1], seed: 9 }, 120, 30, false) : null;
     if (!pose.body) return;
     const P = placed();
-    // (a point on a half, from its own space into his)
-    const world = (side: number, x: number, y: number, z: number, r: number): number[] => {
-      const Y = y - COLOSSUS.hinge;
-      return [x * this.c + side * Y * this.s, -side * x * this.s + Y * this.c + COLOSSUS.hinge, z, r];
-    };
-    if (o < 0.3) {
-      // SHUT: slime webbed across his seam, every so often from crown to chin; drool hanging from the slit and his chin in ropes
-      for (let z = 40, i = 0; z < 336; z += 30 + 30 * h3(i, 0, 0, 200), i++) {
-        if (slitW(z) > 0 || slitW(z + 8) > 0 || slitW(z - 8) > 0) continue;
-        const yf = frontAt(z) - 4 - 6 * h3(i, 1, 0, 201);
-        const dz = (h3(i, 2, 0, 202) - 0.5) * 10;
-        this.strands.push(strandOf(sagging([-CRACK - 12 + seamX(z), yf, z + dz], [CRACK + 12 + seamX(z), yf - 2, z - dz], 7 + 7 * h3(i, 3, 0, 203), 1.9, i)));
-      }
-      // (across the slit, from its lips to his tongue)
-      for (let i = 0; i < 5; i++) {
-        const z = SLIT.z - SLIT.h * 0.6 + i * SLIT.h * 0.3;
-        const side = i % 2 ? 1 : -1;
-        const yf = frontAt(z) - 6;
-        this.strands.push(strandOf(sagging([side * (slitW(z) + 6) + seamX(z), yf, z + 4], [side * 8 + seamX(z), yf + 6, z - 4], 5, 1.5, 20 + i)));
-      }
-      const ropes: [number, number, number][] = [[-10, frontAt(SLIT.z - SLIT.h) - 4, SLIT.z - SLIT.h + 2], [9, frontAt(SLIT.z - SLIT.h + 6) - 4, SLIT.z - SLIT.h + 6], [-3, frontAt(26) - 3, 26]];
-      ropes.forEach(([x, y, z], i) => this.drool(x + seamX(z), y, z, 3.6, i));
-    } else {
-      // OPEN: strings of spittle stretched across the gap between his halves, top to bottom, some snapped and hanging
-      for (let z = 40, i = 0; z < 320; z += 16 + 16 * h3(i, 0, 0, 210), i++) {
-        const yf = frontAt(z) - 22 - 60 * h3(i, 1, 0, 211);
-        if (cavity(0, yf, z) < -6) continue;
-        const a = world(-1, -CRACK - 1 + seamX(z), yf, z + (h3(i, 2, 0, 212) - 0.5) * 16, 0);
-        const b = world(1, CRACK + 1 + seamX(z), yf + (h3(i, 3, 0, 213) - 0.5) * 24, z + (h3(i, 4, 0, 214) - 0.5) * 16, 0);
-        const span = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
-        const r = 1.3 + 1.3 * h3(i, 5, 0, 215);
-        if (h3(i, 6, 0, 216) < 0.2) {
-          // (snapped: hanging from one half)
-          const from = h3(i, 7, 0, 217) < 0.5 ? a : b;
-          const to = [from[0] + (a === from ? 1 : -1) * span * 0.2, from[1], from[2] - span * 0.3];
-          this.strands.push(strandOf(sagging(from, to, -span * 0.05, r, 40 + i, 8)));
-        } else this.strands.push(strandOf(sagging(a, b, span * (0.1 + 0.16 * h3(i, 8, 0, 218)), r, 40 + i)));
-      }
-      // drool in ropes off his halves' lower front edges into the water
-      for (const side of [-1, 1]) {
-        for (let i = 0; i < 2; i++) {
-          const z = 30 + 26 * i;
-          const q = world(side, side * (CRACK + 14 + 10 * i) + seamX(z), frontAt(z) - 8, z, 0);
-          this.drool(q[0], q[1], q[2], 3.2, side * 10 + i);
-        }
+    // SPITTLE strung across the V between his jaws' inner edges, here and there, at every height and slant, sagging each its own way,
+    // some snapped and hanging; never through his tongue
+    const [RL, RR] = P.rims;
+    let made = 0;
+    for (let i = 0; i < RL.length && made < 9; i++) {
+      const a = RL[i];
+      if (a[2] < 18 || a[2] > 120 || h3(i, 0, 0, 210) > 0.42) continue;
+      const want = a[2] + (h3(i, 1, 0, 211) - 0.5) * 70;
+      let b = RR[0];
+      for (const q of RR) if (Math.abs(q[2] - want) < Math.abs(b[2] - want)) b = q;
+      // (a little back into the V, or out toward you)
+      const dy = -6 - 46 * h3(i, 2, 0, 212);
+      const A2 = [a[0], a[1] + dy * (0.5 + h3(i, 3, 0, 213)), a[2]];
+      const B2 = [b[0], b[1] + dy * (0.5 + h3(i, 4, 0, 214)), b[2]];
+      const span = Math.hypot(B2[0] - A2[0], B2[1] - A2[1], B2[2] - A2[2]);
+      const r = 1.1 + 1.4 * h3(i, 5, 0, 215);
+      let pts: number[][];
+      if (h3(i, 6, 0, 216) < 0.3) {
+        // (snapped: hanging from one jaw, curling down)
+        const from = h3(i, 7, 0, 217) < 0.5 ? A2 : B2;
+        const sgn = from === A2 ? 1 : -1;
+        const to = [from[0] + sgn * span * (0.1 + 0.15 * h3(i, 9, 0, 209)), from[1], from[2] - span * (0.2 + 0.25 * h3(i, 10, 0, 208))];
+        pts = sagging(from, to, -span * 0.06, r, 40 + i, 8);
+      } else pts = sagging(A2, B2, span * (0.06 + 0.3 * h3(i, 8, 0, 218) ** 1.5), r, 40 + i);
+      if (this.tongue && pts.some((q) => this.armAt(200, q[0], q[1], q[2], null, this.tongue as Arm, true) < 3)) continue;
+      this.strands.push(strandOf(pts));
+      made++;
+    }
+    // drool in ropes off his jaws' low front edges, into the water
+    for (const [s, R] of [[-1, RL], [1, RR]] as const) {
+      let n = 0;
+      for (let i = 0; i < R.length && n < 2; i++) {
+        const q = R[i];
+        if (q[2] < 26 || q[2] > 70 || h3(i, s + 3, 0, 219) > 0.4) continue;
+        this.drool(q[0] - s * 3, q[1] + 2, q[2], 3.2, s * 10 + n);
+        n++;
       }
     }
-    // the gobs falling off him hit the water: there, splashes
-    for (let i = 0; i < P.splashes.length; i += 3) {
-      const x = P.splashes[i];
-      const side = x < 0 ? -1 : 1;
-      const q = o > 0 ? world(side, x, P.splashes[i + 1], 0, 0) : [x, P.splashes[i + 1]];
-      this.splashes.push(q[0], q[1], P.splashes[i + 2]);
-    }
+    for (let i = 0; i < P.splashes.length; i++) this.splashes.push(P.splashes[i]);
   }
 
   /** A rope of drool from (x, y, z) down to the water, swaying a little, beads on it, a gob at its end where it meets the water. */
@@ -957,51 +1015,43 @@ class Scene {
     this.splashes.push(x, y + 3, 6 + r);
   }
 
-  /** How far apart his halves' lips are at his seam (half), at a point of a half's own space. */
-  parting(y: number, z: number): number {
-    const w = slitW(z);
-    return CRACK + (w > 0 ? w * (1 - this.open) * sm01(70, 130, y) : 0);
-  }
-
-  /** ONE HALF OF HIS HEAD (`side` -1 his left, 1 his right; 0 both, shut), at a point of his head's space. */
-  halfAt(side: number, x: number, y: number, z: number, f: Found | null): number {
-    let xl = x;
-    let yl = y;
-    if (side !== 0) {
-      const Y = y - COLOSSUS.hinge;
-      xl = x * this.c - side * Y * this.s;
-      yl = side * x * this.s + Y * this.c + COLOSSUS.hinge;
-    }
-    // (well clear of him: how far, as a bound)
-    const out = ell(xl, yl, z, 0, -24, 160, 370, 260, 270);
-    if (out > 24) return out - 6;
-    let h = fleshAt(xl, yl, z, f ? MELT : null);
-    const sx = side === 0 ? (xl < 0 ? -1 : 1) : side;
+  /** ONE JAW (`side` -1 his left, 1 his right), at a point of his own space. */
+  halfAt(side: number, x: number, y: number, z: number, f: Found | null, exact = false): number {
+    const J = JAW_MAKE[side < 0 ? 0 : 1];
+    const Bx = J.box;
+    // (well clear of it: how far, as a bound; `exact`, no bound, for the water's rings round him)
+    const X = x * side;
+    const ox = Math.max(Bx[0] - X, 0, X - Bx[3]);
+    const oy = Math.max(Bx[1] - y, 0, y - Bx[4]);
+    const oz = Math.max(Bx[2] - z, 0, z - Bx[5]);
+    const out = Math.hypot(ox, oy, oz);
+    if (out > 24 && !exact) return out - 6;
+    let h = fleshAt(side, x, y, z, f ? MELT : null);
     if (f) {
       f.mat = M_FLESH;
-      f.lx = xl;
-      f.ly = yl;
+      f.lx = x;
+      f.ly = y;
       f.lz = z;
     }
     const P = placed();
-    if (h < 34) {
+    if (h < 34 && !exact) {
       // HIS HIDE: ancient, wrinkled, lumpy; rolls of it sagging down
-      const w = vn(xl * 0.011, yl * 0.011, z * 0.006, 11);
-      const roll = Math.sin(z * 0.075 + w * 6.5 + xl * 0.004);
-      h -= roll * 3.6 * sm01(30, 90, z);
-      h -= (vn(xl * 0.024, yl * 0.024, z * 0.024, 13) - 0.5) * 13;
-      h -= (vn(xl * 0.06, yl * 0.06, z * 0.03, 14) - 0.5) * 3;
+      const w = vn(x * 0.011, y * 0.011, z * 0.006, 11);
+      const roll = Math.sin(z * 0.085 + w * 6.5 + x * 0.004);
+      h -= roll * 3.2 * sm01(20, 60, z);
+      h -= (vn(x * 0.024, y * 0.024, z * 0.024, 13) - 0.5) * 12;
+      h -= (vn(x * 0.06, y * 0.06, z * 0.03, 14) - 0.5) * 3;
       // MELTING: where his flesh runs like wax, it is goo
       if (f && MELT[0]) f.mat = M_GOO;
       // boils and open sores; bubbles in the goo
-      if (z > 30) {
+      if (z > 20) {
         const S2 = 16;
-        const ix = Math.floor(xl / S2);
-        const iy = Math.floor(yl / S2);
+        const ix = Math.floor(x / S2);
+        const iy = Math.floor(y / S2);
         const iz = Math.floor(z / S2);
         const roll2 = h3(ix, iy, iz, 41);
         if (roll2 < 0.064) {
-          const rr = Math.hypot(xl - (ix + 0.3 + 0.4 * h3(ix, iy, iz, 42)) * S2, yl - (iy + 0.3 + 0.4 * h3(ix, iy, iz, 43)) * S2, z - (iz + 0.3 + 0.4 * h3(ix, iy, iz, 44)) * S2);
+          const rr = Math.hypot(x - (ix + 0.3 + 0.4 * h3(ix, iy, iz, 42)) * S2, y - (iy + 0.3 + 0.4 * h3(ix, iy, iz, 43)) * S2, z - (iz + 0.3 + 0.4 * h3(ix, iy, iz, 44)) * S2);
           const bubble = roll2 < 0.05;
           const br = bubble ? 2.4 + 2 * h3(ix, iy, iz, 45) : 4.5 + 3.5 * h3(ix, iy, iz, 45);
           if (rr < br && (!bubble || MELT[0] > 0)) {
@@ -1011,11 +1061,11 @@ class Scene {
           }
         }
       }
-      // VEINS standing out of him, branching out from his seam
-      if (z > 40) {
-        const vq = Math.abs(vn(xl * 0.026, yl * 0.026, z * 0.026, 140) - 0.5);
-        const vq2 = Math.abs(vn(xl * 0.06, yl * 0.06, z * 0.06, 141) - 0.5);
-        const near = 1 - sm01(20, 120, Math.abs(xl));
+      // VEINS standing out of him, branching out from the V
+      if (z > 24) {
+        const vq = Math.abs(vn(x * 0.026, y * 0.026, z * 0.026, 140) - 0.5);
+        const vq2 = Math.abs(vn(x * 0.06, y * 0.06, z * 0.06, 141) - 0.5);
+        const near = 1 - sm01(30, 150, Math.abs(x));
         const wv = 0.002 + 0.0045 * near;
         if (vq < wv || (vq2 < wv * 0.45 && near > 0.6)) {
           h -= 1.8;
@@ -1023,16 +1073,16 @@ class Scene {
         }
       }
       // BARNACLES crusting him at the water: he is very old
-      if (z < 64 && Math.abs(xl) > 30) {
+      if (z < 50 && Math.abs(x) > 30) {
         const S = 10;
-        const ix = Math.floor(xl / S);
-        const iy = Math.floor(yl / S);
+        const ix = Math.floor(x / S);
+        const iy = Math.floor(y / S);
         const iz = Math.floor(z / S);
-        if (h3(ix, iy, iz, 31) < 0.3 - z / 220) {
+        if (h3(ix, iy, iz, 31) < 0.3 - z / 170) {
           const cx = (ix + 0.25 + 0.5 * h3(ix, iy, iz, 32)) * S;
           const cy = (iy + 0.25 + 0.5 * h3(ix, iy, iz, 33)) * S;
           const cz = (iz + 0.25 + 0.5 * h3(ix, iy, iz, 34)) * S;
-          const rr = Math.hypot(xl - cx, yl - cy, z - cz);
+          const rr = Math.hypot(x - cx, y - cy, z - cz);
           if (rr < 5.5) {
             const bump = 3.4 * (1 - rr / 5.5) - (rr < 1.6 ? 2.2 : 0);
             h -= bump;
@@ -1043,15 +1093,15 @@ class Scene {
       // DRIPS hanging off his overhangs, swelling to a bulb
       const D = P.drips;
       for (let i = 0; i < D.length; i += 6) {
-        if ((D[i] < 0 ? -1 : 1) !== sx && side !== 0) continue;
-        const dx = xl - D[i];
-        const dy = yl - D[i + 1];
+        if ((D[i] < 0 ? -1 : 1) !== side) continue;
+        const dx = x - D[i];
+        const dy = y - D[i + 1];
         if (dx * dx + dy * dy > (D[i + 5] + 8) ** 2) continue;
         const z0 = D[i + 2];
         const len = D[i + 3];
         if (z > z0 + 8 || z < z0 - len - D[i + 5] * 2) continue;
-        let dd = cone(xl, yl, z, D[i], D[i + 1], z0 + 4, D[i], D[i + 1], z0 - len + D[i + 5] * 0.6, D[i + 4], D[i + 5] * 0.7);
-        dd = Math.min(dd, ell(xl, yl, z, D[i], D[i + 1], z0 - len, D[i + 5], D[i + 5], D[i + 5] * 1.25));
+        let dd = cone(x, y, z, D[i], D[i + 1], z0 + 4, D[i], D[i + 1], z0 - len + D[i + 5] * 0.6, D[i + 4], D[i + 5] * 0.7);
+        dd = Math.min(dd, ell(x, y, z, D[i], D[i + 1], z0 - len, D[i + 5], D[i + 5], D[i + 5] * 1.25));
         if (dd < h + 4) {
           const was = h;
           h = smin(h, dd, 6);
@@ -1059,54 +1109,53 @@ class Scene {
         }
       }
     }
-    // HIS SEAM: the head split down its middle, its lips swollen and rounded; and the hollow of his mouth inside
-    const p = this.parting(yl, z);
-    const sxz = seamX(z);
-    const cut = side === 0 ? p - Math.abs(xl - sxz) : p - side * (xl - sxz);
-    let d = smax(h, cut, 16);
-    const cv = cavity(xl, yl, z);
+    // ITS FACE ON THE V: cut, its rim of raw gum rounded; and its hollow behind it
+    const F = FACES[side < 0 ? 0 : 1];
+    const a = faceDepth(F, x, y, z);
+    const c = F.c[0] * x + F.c[1] * (y - Y0) + F.c[2] * (z - ZP);
+    // (the raw gum lumpy and wet, never flat)
+    const cut = CRACK + wander(c) - a - (vn(x * 0.09, y * 0.09, z * 0.09, 173) - 0.5) * 5;
+    let d = smax(h, cut, 14);
+    const cv = hollow(side, x, y, z, a - CRACK);
     d = smax(d, -cv, 8);
     if (f) {
-      if (-cv > Math.max(h, cut) - 2) f.mat = yl < -70 ? M_THROAT : M_MAW;
+      if (-cv > Math.max(h, cut) - 2) f.mat = M_MAW;
       else if (cut > h - 2) f.mat = cut > h + 5 ? M_GUM : M_LIP;
     }
+    if (exact) return d;
     // GOBS fallen off him, in the air below his overhangs
     const G = P.gobs;
     for (let i = 0; i < G.length; i += 5) {
-      if ((G[i] < 0 ? -1 : 1) !== sx && side !== 0) continue;
+      if ((G[i] < 0 ? -1 : 1) !== side) continue;
       const r = G[i + 3];
       const gz = z - G[i + 2];
-      if (Math.abs(gz) > r * G[i + 4] + 2 || Math.abs(xl - G[i]) > r + 2 || Math.abs(yl - G[i + 1]) > r + 2) continue;
+      if (Math.abs(gz) > r * G[i + 4] + 2 || Math.abs(x - G[i]) > r + 2 || Math.abs(y - G[i + 1]) > r + 2) continue;
       // (a drop: round below, drawn out to a point above)
       const k = gz > 0 ? G[i + 4] : 1;
       const rr = gz > 0 ? r * (1 - 0.55 * (gz / (r * G[i + 4]))) : r;
-      const gd = (Math.hypot(xl - G[i], yl - G[i + 1], gz / k) - rr) * Math.min(1, 1 / k + 0.3);
+      const gd = (Math.hypot(x - G[i], y - G[i + 1], gz / k) - rr) * Math.min(1, 1 / k + 0.3);
       if (gd < d) {
         d = gd;
         if (f) f.mat = M_GOB;
       }
     }
-    // HIS TEETH along the inner edge of each half
-    if (Math.abs(xl) < 70 && z > 0) {
-      for (const which of side === 0 ? [0, 1] : [side < 0 ? 0 : 1]) {
-        for (const T of P.teeth[which]) {
-          const b = T.box;
-          if (xl < b[0] || yl < b[1] || z < b[2] || xl > b[3] || yl > b[4] || z > b[5]) continue;
-          const Pt = T.p;
-          // (shut, his fangs are locked away inside his seam)
-          if (this.open < 0.3) break;
-          const a1 = cone(xl, yl, z, Pt[0], Pt[1], Pt[2], Pt[4], Pt[5], Pt[6], Pt[3], Pt[7]);
-          const a2 = cone(xl, yl, z, Pt[4], Pt[5], Pt[6], Pt[8], Pt[9], Pt[10], Pt[7], Pt[11]);
-          const td = Math.min(a1, a2);
-          if (td < d) {
-            d = td;
-            if (f) {
-              f.mat = M_TOOTH;
-              f.broken = T.broken;
-              const L1 = Math.hypot(Pt[4] - Pt[0], Pt[5] - Pt[1], Pt[6] - Pt[2]);
-              const L2 = Math.hypot(Pt[8] - Pt[4], Pt[9] - Pt[5], Pt[10] - Pt[6]);
-              f.toothT = a1 <= a2 ? Math.min(1, Math.hypot(xl - Pt[0], yl - Pt[1], z - Pt[2]) / (L1 || 1)) * (L1 / (L1 + L2)) : L1 / (L1 + L2) + Math.min(1, Math.hypot(xl - Pt[4], yl - Pt[5], z - Pt[6]) / (L2 || 1)) * (L2 / (L1 + L2));
-            }
+    // HIS TEETH along its inner edge
+    if (a < 80) {
+      for (const T of P.teeth[side < 0 ? 0 : 1]) {
+        const b = T.box;
+        if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) continue;
+        const Pt = T.p;
+        const a1 = cone(x, y, z, Pt[0], Pt[1], Pt[2], Pt[4], Pt[5], Pt[6], Pt[3], Pt[7]);
+        const a2 = cone(x, y, z, Pt[4], Pt[5], Pt[6], Pt[8], Pt[9], Pt[10], Pt[7], Pt[11]);
+        const td = Math.min(a1, a2);
+        if (td < d) {
+          d = td;
+          if (f) {
+            f.mat = M_TOOTH;
+            f.broken = T.broken;
+            const L1 = Math.hypot(Pt[4] - Pt[0], Pt[5] - Pt[1], Pt[6] - Pt[2]);
+            const L2 = Math.hypot(Pt[8] - Pt[4], Pt[9] - Pt[5], Pt[10] - Pt[6]);
+            f.toothT = a1 <= a2 ? Math.min(1, Math.hypot(x - Pt[0], y - Pt[1], z - Pt[2]) / (L1 || 1)) * (L1 / (L1 + L2)) : L1 / (L1 + L2) + Math.min(1, Math.hypot(x - Pt[4], y - Pt[5], z - Pt[6]) / (L2 || 1)) * (L2 / (L1 + L2));
           }
         }
       }
@@ -1114,21 +1163,35 @@ class Scene {
     return d;
   }
 
-  /** WHAT STAYS WHEN HE SPLITS (hidden inside him while he is shut): the back of his throat, a wall of wet ribbed flesh between his
-   *  halves, his gullet a dark hole in it going down and back, glowing deep inside; and the floor of his mouth. */
+  /** HIS THROAT, inside the V between his jaws: the floor of his mouth low at the water; across the back of the V a wall of wet ribbed
+   *  flesh, its top sagging between his jaws; his gullet a dark hole in it going down and back, glowing deep inside. */
   coreAt(x: number, y: number, z: number, f: Found | null): number {
-    let d = ell(x, y, z, 0, -124, 150, 100, 56, 140);
-    d = smin(d, ell(x, y, z, 0, -10, 0, 118, 150, 48), 30);
+    let d = Infinity;
+    {
+      // (the back of his throat: a wall between his jaws' faces, sunk into each, its top sagging between them below their peaks)
+      const aL = faceDepth(FACES[0], x, y, z);
+      const aR = faceDepth(FACES[1], x, y, z);
+      const top = 40 + 0.42 * Math.abs(x);
+      // (its foot sloping forward low in the V, under his tongue's root, to the water at the front of his jaws: the floor of his mouth;
+      // its back rounded, the back of his throat between his jaws seen from behind)
+      const yF = -21 + 124 * sm01(56, -6, z);
+      const back = ell(x, y, z, 0, -24, -10, 240, 40, 150);
+      let w = smax(Math.max(back, y - yF), Math.max(aL, aR) - 22, 8);
+      w = smax(w, z - top, 20);
+      w = smax(w, -40 - z, 10);
+      d = w;
+    }
     if (d > 20) return d;
-    const g = ell(x, y, z, 0, -86, 132, 40, 66, 70);
-    d = smax(d, -g, 12);
-    // (ribbed across)
-    d -= 2.6 * Math.sin(z * 0.17 + Math.abs(x) * 0.012) * sm01(-150, -90, y);
-    d -= (vn(x * 0.05, y * 0.05, z * 0.05, 172) - 0.5) * 3;
+    const g = ell(x, y, z, 0, -40, 30, 22, 30, 22);
+    d = smax(d, -g, 8);
+    // (ribbed across, and lumpy)
+    d -= 2.6 * Math.sin(z * 0.2 + y * 0.12 + Math.abs(x) * 0.012 + vn(x * 0.03, y * 0.03, z * 0.03, 174) * 2.5);
+    d -= (vn(x * 0.05, y * 0.05, z * 0.05, 172) - 0.5) * 4;
     if (f) {
-      f.mat = z < 46 && y > -60 ? M_MAW : M_THROAT;
-      // (deep in his gullet it glows; round its rim, faintly)
-      f.glowK = g < 3 ? 0.35 + 0.65 * sm01(-90, -146, y) : 0.4 * sm01(26, 0, g);
+      // (inside him, wet; at its back, seen from behind, his hide)
+      f.mat = y < -46 ? M_FLESH : z < 8 && y > -16 ? M_MAW : M_THROAT;
+      // (deep in his gullet it glows; round its rim, faintly; and the throat round it, faintly, low down)
+      f.glowK = g < 3 ? 0.4 + 0.6 * sm01(-30, -60, y) : Math.max(0.5 * sm01(22, 0, g), 0.46 * sm01(64, 4, z));
       f.lx = x;
       f.ly = y;
       f.lz = z;
@@ -1136,31 +1199,41 @@ class Scene {
     return d;
   }
 
-  /** His tongue, and the eye on its tip in a cup of raw flesh. */
+  /** His tongue, and the eye on its tip: an eye lying on its side, wider than tall, in a bulb of his tongue's flesh pointed at its
+   *  corners like a lens, its raw lids parted in an almond round it. */
   tongueAt(x: number, y: number, z: number, f: Found | null, exact = false): number {
     const E = this.eyeC;
-    const R = COLOSSUS.eyeR;
     const g = this.gaze;
+    const A = this.eyeA;
+    const V = this.eyeV;
     const qx = x - E[0];
     const qy = y - E[1];
     const qz = z - E[2];
+    const W = COLOSSUS.eyeW;
+    const H = COLOSSUS.eyeH;
+    const Dp = COLOSSUS.eyeD;
     const ql = Math.hypot(qx, qy, qz);
-    // (his eye)
-    const de = ql - R;
-    if (de > 60 && this.tongue && !exact) {
+    if (ql - W - 14 > 60 && this.tongue && !exact) {
       const b = this.tongue.box;
-      if (x < b[0] - 30 || y < b[1] - 30 || z < b[2] - 30 || x > b[3] + 30 || y > b[4] + 30 || z > b[5] + 30) return Math.min(de - 8, Math.max(b[0] - x, x - b[3], b[1] - y, y - b[4], b[2] - z, z - b[5]));
+      if (x < b[0] - 30 || y < b[1] - 30 || z < b[2] - 30 || x > b[3] + 30 || y > b[4] + 30 || z > b[5] + 30) return Math.min(ql - W - 22, Math.max(b[0] - x, x - b[3], b[1] - y, y - b[4], b[2] - z, z - b[5]));
     }
-    // (the bulb his tongue's tip swells into round it, its lids parted in an almond round his gaze, their rims raw)
-    const fw = qx * g[0] + qy * g[1] + qz * g[2];
-    const A = this.eyeA;
-    const V = this.eyeV;
-    const au = Math.atan2(qx * A[0] + qy * A[1] + qz * A[2], fw);
-    const av = Math.atan2(qx * V[0] + qy * V[1] + qz * V[2], fw);
-    const lidOpen = Math.hypot(au / 0.98, av / 0.62) - 1;
-    let cup = ql - (R + 5);
-    cup = smax(cup, -lidOpen * R * 0.5, 5);
-    const along = lidOpen < 0.3 ? 1 : 0;
+    // (in the eye's own frame: across it, out of it toward its gaze, up it)
+    const u = qx * A[0] + qy * A[1] + qz * A[2];
+    const w = qx * g[0] + qy * g[1] + qz * g[2];
+    const v = qx * V[0] + qy * V[1] + qz * V[2];
+    // his eye: a ball wider than tall
+    const de = ell(u, w, v, 0, 0, 0, W, Dp, H);
+    // the bulb of his tongue's tip round it: rounder in the middle, drawn to a point at each corner (a lens)
+    const Rw = W + 6;
+    const Rh = H + 6;
+    const R = (Rw * Rw + Rh * Rh) / (2 * Rh);
+    const K = R - Rh;
+    let bulb = ell(u, w + 3, v, 0, 0, 0, W + 8, Dp + 4, H + 7);
+    bulb = smax(bulb, Math.max(Math.hypot(u, w * 0.8, v + K) - R, Math.hypot(u, w * 0.8, v - K) - R), 5);
+    // its lids parted in an almond in front, pointed at its corners
+    const ho = (H - 1.5) * Math.max(0, 1 - (u / (W + 2)) ** 2);
+    const hole = Math.max(Math.abs(v) - ho, -(w + 8));
+    const cup = smax(bulb, -hole, 4);
     let d = Math.min(de, cup);
     let tg = Infinity;
     if (this.tongue) {
@@ -1172,7 +1245,7 @@ class Scene {
       if (de <= d + 0.01) f.mat = M_EYE;
       else {
         if (tg < cup) Object.assign(f, TONGUE_F);
-        f.mat = cup < tg + 4 && along > 0 ? M_LID : M_TONGUE;
+        f.mat = cup < tg + 4 && hole < 7 && w > -12 ? M_LID : M_TONGUE;
       }
       // (all of it his, not an arm)
       f.arm = -1;
@@ -1195,20 +1268,16 @@ class Scene {
     return d;
   }
 
-  /** HIS HEAD's distance at a point of his own space (before his drop), and what is nearest (`f`). */
+  /** ALL OF HIM BUT HIS ARMS: his distance at a point of his own space (before his drop), and what is nearest (`f`). */
   bodyAt(x: number, y: number, z: number, f: Found | null, exact = false): number {
-    let d: number;
-    if (this.open === 0) d = this.halfAt(0, x, y, z, f);
-    else {
-      const a = this.halfAt(-1, x, y, z, f ? F_A : null);
-      const b = this.halfAt(1, x, y, z, f ? F_B : null);
-      d = Math.min(a, b);
-      if (f) Object.assign(f, a < b ? F_A : F_B);
-      const c = this.coreAt(x, y, z, f ? F_C : null);
-      if (c < d) {
-        if (f && c < d) Object.assign(f, F_C);
-        d = Math.min(d, c);
-      }
+    const a = this.halfAt(-1, x, y, z, f ? F_A : null, exact);
+    const b = this.halfAt(1, x, y, z, f ? F_B : null, exact);
+    let d = Math.min(a, b);
+    if (f) Object.assign(f, a < b ? F_A : F_B);
+    const c = this.coreAt(x, y, z, f ? F_C : null);
+    if (c < d) {
+      if (f) Object.assign(f, F_C);
+      d = c;
     }
     const t = this.tongueAt(x, y, z, f ? F_T : null, exact);
     if (t < d) {
@@ -1222,7 +1291,6 @@ class Scene {
     }
     return d;
   }
-
   /** A tube's distance (an arm `i`, or his tongue), and where on it. */
   armAt(i: number, x: number, y: number, z: number, f: Found | null, A: Arm = this.arms[i], exact = false): number {
     const b = A.box;
@@ -1344,8 +1412,12 @@ class Scene {
     if (this.body) {
       const z = this.drop;
       const yb = y + this.back;
-      const out = ell(x, yb, z, 0, -20, 60, 470, 310, 330);
-      d = Math.min(d, out > 100 ? out : this.bodyAt(x, yb, z, null, true));
+      const out = ell(x, yb, z, 0, 0, 40, 440, 330, 300);
+      if (out > 100) d = Math.min(d, out);
+      else {
+        // (his jaws, his tongue, his drool: his throat is inside his V)
+        d = Math.min(d, this.halfAt(-1, x, yb, z, null, true), this.halfAt(1, x, yb, z, null, true), this.tongueAt(x, yb, z, null, true), this.strandsAt(x, yb, z, true));
+      }
     }
     return d;
   }
@@ -1365,8 +1437,8 @@ class Scene {
     if (this.body) {
       const z = Z + this.drop;
       const yb = y + this.back;
-      // (well clear of his head: how far, as a bound)
-      const out = ell(x, yb, z, 0, -10, 230, 480, 360, 430);
+      // (well clear of all of him: how far, as a bound)
+      const out = ell(x, yb, z, 0, 0, 60, 440, 340, 320);
       if (out > 30) d = out;
       else d = this.bodyAt(x, yb, z, f);
     }
@@ -1581,7 +1653,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       const mat = f.mat;
       const onHead = f.arm < 0 && mat !== M_EYE && mat !== M_STRAND;
       // (into the dark toward his edges: the further from the middle of him, the darker)
-      const far = S.body && pose.view === 'front' ? sm01(170, 440, Math.hypot(fx, (fz + 0) - 150)) : sm01(200, 420, Math.hypot(x, z - 120));
+      const far = S.body && pose.view === 'front' ? sm01(170, 380, Math.hypot(fx, fz - 50)) : sm01(200, 420, Math.hypot(x, z - 80));
       const tube = mat === M_ARM || mat === M_TONGUE;
       // (his eye and the tongue it is on are never lost in the dark: it is the brightest thing on him)
       const own = mat === M_EYE || mat === M_LID || mat === M_TONGUE ? 0 : 1;
@@ -1592,45 +1664,36 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       let gloss = 0.5;
       let glow = false;
       if (mat === M_EYE) {
-        // HIS EYE: yellowed and bloodshot, his iris the enemy's fire round a black slit, looking where his gaze is
+        // HIS EYE: lying on its side, wider than tall; yellowed and bloodshot, his iris a round of the enemy's fire burning from pink
+        // at its rim to gold at a tall black slit, looking where his gaze is
         const ex = fx - E[0];
         const ey = fy - E[1];
         const ez = fz - E[2];
-        const el = Math.hypot(ex, ey, ez) || 1;
-        const ux = ex / el;
-        const uy = ey / el;
-        const uz = ez / el;
         const g = S.gaze;
-        const ca = ux * g[0] + uy * g[1] + uz * g[2];
-        const A = (Math.acos(Math.max(-1, Math.min(1, ca))) * 180) / Math.PI;
-        // (across and up the iris)
-        let ax0 = g[1];
-        let ay0 = -g[0];
-        const al = Math.hypot(ax0, ay0) || 1;
-        ax0 /= al;
-        ay0 /= al;
-        const vxu = -g[2] * ay0;
-        const vyu = g[2] * ax0;
-        const vzu = g[0] * ay0 - g[1] * ax0;
-        const au = (Math.asin(Math.max(-1, Math.min(1, ux * ax0 + uy * ay0))) * 180) / Math.PI;
-        const av = (Math.asin(Math.max(-1, Math.min(1, -(ux * vxu + uy * vyu + uz * vzu)))) * 180) / Math.PI;
-        const IR = 29;
-        if (A < IR) {
-          const slit = 4.6 * Math.sqrt(Math.max(0, 1 - (av / (IR - 2)) ** 2));
-          const stria = vn(Math.atan2(av, au) * 7, A * 0.18, 0, 61);
+        const EA = S.eyeA;
+        const EV = S.eyeV;
+        const au = ex * EA[0] + ey * EA[1] + ez * EA[2];
+        const aw = ex * g[0] + ey * g[1] + ez * g[2];
+        const av = ex * EV[0] + ey * EV[1] + ez * EV[2];
+        const rI = Math.hypot(au, av);
+        const IR = COLOSSUS.eyeH - 1;
+        if (rI < IR && aw > 0) {
+          const slit = 4.4 * Math.sqrt(Math.max(0, 1 - (av / (IR - 1)) ** 2));
+          const stria = vn(Math.atan2(av, au) * 7, rI * 0.22, 0, 61);
           if (Math.abs(au) < slit) col = PUPIL;
-          else if (Math.abs(au) < slit + 1.6) col = CO_IRIS[0];
+          else if (Math.abs(au) < slit + 1.4) col = CO_IRIS[0];
           else {
-            const band = A > IR - 2.5 ? 0 : A > IR - 7 ? 1 : A > IR - 13 ? 2 : A > 7 ? 3 : 4;
+            const band = rI > IR - 2.2 ? 0 : rI > IR - 6 ? 1 : rI > IR - 11 ? 2 : rI > 6.5 ? 3 : 4;
             const b2 = Math.max(0, Math.min(4, band + (stria > 0.68 ? 1 : stria < 0.3 ? -1 : 0)));
             col = CO_IRIS[Math.max(0, b2 - (lit < 0.05 ? 1 : 0))];
           }
           glow = true;
           gloss = 1.2;
         } else {
-          // the white, veined; redder toward the cup round it
-          const vein = Math.abs(vn(ux * 11, uy * 11, uz * 11, 62) - 0.5) < 0.03 + (A / 90) * 0.05 || Math.abs(vn(ux * 23, uy * 23, uz * 23, 63) - 0.5) < 0.018 + (A / 90) * 0.03;
-          const ramp0 = vein ? CO_VEIN : A > 56 && hp(i, j, 64) < (A - 56) / 30 ? CO_VEIN : CO_SCLERA;
+          // the white, veined; redder toward its corners and the lids round it
+          const k = Math.hypot(au / COLOSSUS.eyeW, av / COLOSSUS.eyeH);
+          const vein = Math.abs(vn(au * 0.19, av * 0.19, aw * 0.19, 62) - 0.5) < 0.03 + k * 0.05 || Math.abs(vn(au * 0.4, av * 0.4, aw * 0.4, 63) - 0.5) < 0.018 + k * 0.03;
+          const ramp0 = vein ? CO_VEIN : k > 0.66 && hp(i, j, 64) < (k - 0.66) / 0.4 ? CO_VEIN : CO_SCLERA;
           col = ramp0[Math.max(vein ? 1 : 0, Math.min(4, tn))];
           gloss = 1.0;
         }
@@ -1650,7 +1713,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         const under = Math.max(0, -Nz) + bayer(i, j) * 0.5;
         col = CO_TONGUE[Math.max(0, Math.min(4, tn + (under > 0.55 ? 1 : 0)))];
         const ed = Math.hypot(fx - E[0], fy - E[1], fz - E[2]);
-        if (ed < COLOSSUS.eyeR + 10) {
+        if (ed < COLOSSUS.eyeW + 10) {
           const vq = Math.abs(vn(fx * 0.09, fy * 0.09, fz * 0.09, 66) - 0.5);
           const vq2 = Math.abs(vn(fx * 0.2, fy * 0.2, fz * 0.2, 67) - 0.5);
           if (vq < 0.035 || vq2 < 0.02) col = CO_VEIN[Math.max(0, Math.min(2, tn - 1))];
@@ -1666,7 +1729,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         gloss = 1.4;
       } else if (mat === M_GUM) {
         // the raw ring his teeth are set in; shut, the deep of his seam, dark and running with drool
-        col = S.open < 0.3 ? (hp(i, j, 85) < 0.2 + 0.4 * Math.max(0, lit) ? CO_SLIME[3] : CO_MAW[Math.max(0, Math.min(1, tn))]) : CO_RAW[Math.max(0, Math.min(3, tn))];
+        col = CO_RAW[Math.max(0, Math.min(3, tn))];
         gloss = 1.8;
       } else if (mat === M_TOOTH) {
         // yellowed, brown toward the root; a broken one's end dark and chipped
@@ -1677,7 +1740,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       } else if (mat === M_THROAT || mat === M_MAW) {
         // inside him: dark and wet, ribbed; his throat lit faintly from within, pink burning to gold, the deeper the more
         const deepIn = f.glowK + bayer(i, j) * 0.22;
-        const base = CO_MAW[Math.max(0, Math.min(3, tn))];
+        const base = CO_MAW[Math.max(0, Math.min(3, tn - 1))];
         col = deepIn > 0.85 ? mixRGB(CO_MAW[1], CO_IRIS[3], 0.45) : deepIn > 0.55 ? mixRGB(CO_MAW[1], CO_IRIS[2], 0.36) : deepIn > 0.3 ? mixRGB(base, CO_IRIS[0], 0.3) : base;
         if (deepIn > 0.55) glow = true;
         gloss = 1.3;
@@ -1741,7 +1804,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         const ez = E[2] - fz;
         const el = Math.hypot(ex, ey, ez) || 1;
         const facing = (Nx * S.flip * ex + Ny * S.flip * ey + Nz * ez) / el;
-        const g = facing * Math.max(0, 1 - (el - COLOSSUS.eyeR) / 150) + bayer(i, j) * 0.12;
+        const g = facing * Math.max(0, 1 - (el - COLOSSUS.eyeH * 1.6) / 150) + bayer(i, j) * 0.12;
         if (g > 0.62) col = mixRGB(col, CO_IRIS[3], 0.28);
         else if (g > 0.4) col = mixRGB(col, CO_IRIS[1], 0.2);
       }
@@ -1834,13 +1897,13 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       }
     }
   }
-  // HIS LIGHTS: his eye's fire (the game draws it over the dark); open, his throat's
+  // HIS LIGHTS: his eye's fire (the game draws it over the dark); risen, his throat's, low in the V
   const lights: Light[] = [];
   if (pose.body && pose.view === 'front') {
     const zz = E[2] - pose.drop;
     const yy = E[1] - (pose.back ?? 0);
     lights.push({ x: ax + E[0] * SEEN * zoom, y: ay + zoom * (yy * SIN30 * SEEN - zz), r: 110 * zoom, color: FLAME[2], a: zz < 0 ? 0.35 : 0.22 });
-    if (S.open > 0.3) lights.push({ x: ax, y: ay + zoom * ((-90 - (pose.back ?? 0)) * SIN30 * SEEN - (130 - pose.drop)), r: 90 * zoom, color: FLAME[3], a: 0.14 * S.open });
+    if (pose.drop < 60) lights.push({ x: ax, y: ay + zoom * ((-40 - (pose.back ?? 0)) * SIN30 * SEEN - (30 - pose.drop)), r: 70 * zoom, color: FLAME[3], a: 0.16 });
   }
   for (let k = 0; k < w * h; k++) if (kind[k] !== 1 && kind[k] !== 2) mt[k] = 0;
   return { px, ax, ay, lights, near, kind, mat: mt };
@@ -1929,6 +1992,12 @@ function hangings(px: Px, near: Float32Array, kind: Uint8Array, zh: Float32Array
  * between him and the stone, its root clear of both.
  */
 export const STONE = { across: 17, deep: 11, edge: 310 } as const;
+/**
+ * THE PHASE 2 VIEW (the pictures' camera, leaned toward him as the Moth's is, so that the hero stands at the foot of the screen): the
+ * phone's screen (engine/screen.ts, held sideways) in game pixels, and how far down it his middle at the water sits. His eye, the
+ * highest of all of him, must be on it.
+ */
+export const LEANED = { w: 507, h: 234, waterAt: 125 } as const;
 /** Where his arms rise (his lengths across, and toward the camera from his middle): just off the stone's edge, in the water. Phase 1 at a third and two thirds along it; phases 2 and 3 left, middle and right. */
 export const ARM_ROOTS = {
   under: [-111, 111] as const,
@@ -1952,15 +2021,15 @@ export const ARM_ALONE: ReadonlyArray<ArmPose> = [
   { path: [[0, 0, -30], [-34, 8, 50], [-28, 18, 130], [16, 28, 186], [30, 38, 246], [0, 46, 290], [-44, 50, 300], [-70, 50, 282], [-68, 50, 264], [-54, 50, 262], [-50, 50, 270]], r: 44, belly: [0.6, 0.5, -0.4], seed: 6 },
 ];
 
-/** Him risen: his head shut (`maw` 0) or split open (1), from in front or behind. */
-export function poseRisen(maw = 0, view: 'front' | 'back' = 'front'): ColossusPose {
-  return { view, drop: 0, body: true, maw, gaze: GAZE_AT_YOU, arms: ARMS_RISEN };
+/** Him risen, his maw split wide open in its V as his drawing has him, his tongue towering out of it: from in front or behind. */
+export function poseRisen(view: 'front' | 'back' = 'front'): ColossusPose {
+  return { view, drop: 0, body: true, gaze: GAZE_AT_YOU, arms: ARMS_RISEN };
 }
 export function poseUnder(): ColossusPose {
-  return { view: 'front', drop: COLOSSUS.sunk, back: COLOSSUS.sunkBack, body: true, maw: 0, gaze: [0, 0.87, 0.5], arms: ARMS_UNDER, tongue: 'under' };
+  return { view: 'front', drop: COLOSSUS.sunk, back: COLOSSUS.sunkBack, body: true, gaze: [0, 0.87, 0.5], arms: ARMS_UNDER, tongue: 'under' };
 }
 export function poseArm(): ColossusPose {
-  return { view: 'front', drop: 0, body: false, maw: 0, gaze: GAZE_AT_YOU, arms: ARM_ALONE };
+  return { view: 'front', drop: 0, body: false, gaze: GAZE_AT_YOU, arms: ARM_ALONE };
 }
 
 // =============================================================================================
@@ -1986,7 +2055,13 @@ export function armClearances(pose: ColossusPose): { body: number; stone: number
       const z = P[k * 4 + 2];
       const r = P[k * 4 + 3];
       if (S.body) {
-        const b = S.bodyAt(x, y + S.back, z + S.drop, null, true) - r;
+        const yb = y + S.back;
+        const zb = z + S.drop;
+        let b = S.bodyAt(x, yb, zb, null, true) - r;
+        // (and what hangs off him: the drips off his overhangs, the gobs falling)
+        const P = placed();
+        for (let i = 0; i < P.drips.length; i += 6) b = Math.min(b, cone(x, yb, zb, P.drips[i], P.drips[i + 1], P.drips[i + 2], P.drips[i], P.drips[i + 1], P.drips[i + 2] - P.drips[i + 3], P.drips[i + 5], P.drips[i + 5]) - r);
+        for (let i = 0; i < P.gobs.length; i += 5) b = Math.min(b, Math.hypot(x - P.gobs[i], yb - P.gobs[i + 1], zb - P.gobs[i + 2]) - P.gobs[i + 3] * P.gobs[i + 4] - r);
         if (b < body) {
           body = b;
           where = [x, y, z, r];
@@ -2040,13 +2115,27 @@ export function meltParts(): { drips: number; gobs: number; splashes: number; sh
   return { drips: P.drips.length / 6, gobs: P.gobs.length / 5, splashes: P.splashes.length / 3, sheetDrips, longest };
 }
 
-/** Where his eye is (his own space), shut and open; and how far his halves are apart at his front, torn open (his lengths). */
-export function headParts(maw: number): { eye: readonly [number, number, number]; gap: number; frontShut: number } {
-  const S = new Scene(poseRisen(maw));
-  const zF = 160;
-  const yF = frontAt(zF);
-  const Y = yF - COLOSSUS.hinge;
-  return { eye: S.eyeC, gap: 2 * (Y * S.s + CRACK * S.c), frontShut: yF };
+/**
+ * HIS MAW'S MEASURES (his own lengths): where his eye is; each jaw's peak, and how far each face of the V leans out (degrees); how
+ * wide the V is at the water at its front and between his peaks; how high over the water his eye's top is and his peaks are.
+ */
+export function mawParts(): { eye: readonly [number, number, number]; peaks: typeof PEAKS; tiltDeg: [number, number]; vAtWater: number; vAtPeaks: number; eyeTop: number; teeth: number; toothToTongue: number } {
+  // (a face's x at a height and a depth toward you: where it meets the V)
+  const faceX = (side: number, y: number, z: number): number => {
+    const F = FACES[side < 0 ? 0 : 1];
+    return (CRACK - F.n[1] * (y - Y0) - F.n[2] * (z - ZP)) / F.n[0];
+  };
+  return {
+    eye: EYE_RISEN,
+    peaks: PEAKS,
+    tiltDeg: [(FACES[0].tilt * 180) / Math.PI, (FACES[1].tilt * 180) / Math.PI],
+    vAtWater: faceX(1, 60, 0) - faceX(-1, 60, 0),
+    vAtPeaks: PEAKS[1][0] - PEAKS[0][0],
+    eyeTop: EYE_RISEN[2] + COLOSSUS.eyeH + 6,
+    teeth: placed().teeth[0].length + placed().teeth[1].length,
+    // (the nearest any tooth's bend or tip comes to his tongue's skin, risen or under the water)
+    toothToTongue: Math.min(...placed().teeth.flat().map((T) => Math.min(tongueGap(T.p[4], T.p[5], T.p[6]) - T.p[7], tongueGap(T.p[8], T.p[9], T.p[10])))),
+  };
 }
 
 // =============================================================================================

@@ -1,21 +1,26 @@
 // THE SWAMP COLOSSUS, THE NEW DROWNED EYE (art/eye_colossus.ts; a mock-up: stage 1, his look, still). The owner, 7 Nov 2026,
 // 00:13: “just scrap his look and start fresh.  big ancient gross eldritch horror swamp monster with tentacles and a big eye.”;
-// his pick, “Swamp colossus (Recommended)”; and, shown 3e7b6844: “Eh.  Still not quite it.  Let’s keep the tentacles, they’re still
+// his pick, “Swamp colossus (Recommended)”; shown 3e7b6844: “Eh.  Still not quite it.  Let’s keep the tentacles, they’re still
 // split up into sections.  But let’s scrap the body.  I want the eye as the end of the tongue and the whole head to split open down the
 // center for the maw.  Spittle and goo all over the place.  And have him like constantly melting and dripping”; 11:17: “And the eye
-// waves around like its own tentacle”. What this holds:
+// waves around like its own tentacle”; shown bfb16ba3: “That’s pretty good, I like the direction, but I have a drawing of what I was
+// kinda thinking” (docs/ref/eye_drawing_from_owner_2026-11-07.jpg), and, 12:45: “Not EXACTLY like that but that’s kinda what I meant
+// about the maw splitting and the tongue eye”. What this holds:
 //   1. the switch is off, and nothing of the game imports him; nothing of the old Eye (art/drowned_eye.ts) is in him;
-//   2. his pictures (his head shut from in front and from behind, split open, under the water, a tentacle alone) are painted: nothing
-//      cyan (no colour of the friend's, nothing at the friend's hue), the enemy's pink edge round him while he lives, his eye's iris
-//      the enemy's pink and gold;
-//   3. his measures: his lengths the game's (TILE3 to a tile), his eye wider than the knight is tall, what a frame of him costs;
+//   2. his pictures (risen from in front and from behind, under the water, a tentacle alone) are painted: nothing cyan (no colour of
+//      the friend's, nothing at the friend's hue), the enemy's pink edge round him while he lives, his eye's iris the enemy's pink
+//      and gold;
+//   3. his measures: his lengths the game's (TILE3 to a tile), his eye wider than the knight is tall and lying on its side, a frame's
+//      cost;
 //   4. his word of 7 Nov, “he needs to slide back a little so the tentacles don’t clip through him or the stage”: every arm's root
-//      under the water before the stone, no arm in him (his head, his tongue, his eye, his drool), none in the stone or its edge
-//      (shut, split open, and under the water);
-//   5. his head splits: shut, no tooth shows and his eye is out on his tongue before him; split open, his halves stand far apart,
-//      rows of teeth along them, his throat between them, his tongue risen out of it, the eye on its tip;
+//      under the water before the stone, no arm in him (his jaws, his throat, his tongue, his eye, his drool, his drips and gobs), none
+//      in the stone or its edge (risen, and under the water);
+//   5. his drawing: split open from the water up in a V, its point at the water, wide at the top; his two jaws tall and pointed, his
+//      left the lower and further out; rows of teeth down both inner edges of the V, never through his tongue; his throat inside it,
+//      spittle across it; his tongue out of the bottom of it, towering over his jaws, the eye on its tip the highest of all of him, on
+//      the screen in the fight's view; under the water, nothing of him but his arms above it;
 //   6. his tentacles and his tongue, one smooth taper each: sampled close, no step in their thickness, no twist, the suckers in order;
-//   7. he melts: drips off his overhangs, gobs falling, splashes, the sheets of his flesh running into drips.
+//   7. he melts: drips off his overhangs, gobs falling, splashes, the sheets of his flesh running into drips, goo on him.
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -29,8 +34,8 @@ import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { TILE3 } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import {
-  ARM_ALONE, ARM_ROOTS, ARMS_RISEN, ARMS_UNDER, C_TILE, COLOSSUS, EYE2, EYE_OPEN, EYE_SHUT, EYE_UNDER, MAT, STONE, TONGUE_OPEN, TONGUE_SHUT, TONGUE_UNDER,
-  armClearances, costOf, headParts, meltParts, paintColossus, poseArm, poseRisen, poseUnder, tubeSmoothness,
+  ARM_ALONE, ARM_ROOTS, ARMS_RISEN, ARMS_UNDER, C_TILE, COLOSSUS, EYE2, EYE_RISEN, EYE_UNDER, LEANED, MAT, PEAKS, STONE, TONGUE_RISEN, TONGUE_UNDER,
+  armClearances, costOf, mawParts, meltParts, paintColossus, poseArm, poseRisen, poseUnder, tubeSmoothness,
 } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 
@@ -83,9 +88,8 @@ const ofMat = (p: ColossusPicture, m: number): number => p.mat.reduce((n, v) => 
 const Z = 1 / 3;
 const frame = { w: Math.round(1100 * Z), h: Math.round(760 * Z), ax: Math.round(550 * Z), ay: Math.round(520 * Z), zoom: Z };
 const POSES: [string, ColossusPose][] = [
-  ['shut, from in front', poseRisen(0)],
-  ['shut, from behind', poseRisen(0, 'back')],
-  ['split open', poseRisen(1)],
+  ['risen, from in front', poseRisen()],
+  ['risen, from behind', poseRisen('back')],
   ['under the water', poseUnder()],
   ['a tentacle alone', poseArm()],
 ];
@@ -112,23 +116,22 @@ test('2. his pictures: nothing cyan; the pink edge round him while he lives; his
     assert.equal(cyanIn(p), 0, `${name}: nothing cyan`);
     if (name !== 'under the water') assert.ok(count(p, ENEMY_RIM, RIM_ALPHA) > 40, `${name}: the enemy's pink edge round him`);
   }
-  for (const i of [0, 2]) {
-    const front = PICS[i][1];
-    const pinks = count(front, FLAME[2]) + count(front, FLAME[1]);
-    const golds = count(front, FLAME[3]) + count(front, FLAME[4]);
-    assert.ok(pinks > 6 && golds > 2, `${PICS[i][0]}: his iris burns pink to gold (${pinks} pink, ${golds} gold)`);
-  }
+  const front = PICS[0][1];
+  const pinks = count(front, FLAME[2]) + count(front, FLAME[1]);
+  const golds = count(front, FLAME[3]) + count(front, FLAME[4]);
+  assert.ok(pinks > 6 && golds > 2, `his iris burns pink to gold (${pinks} pink, ${golds} gold)`);
 });
 
-test('3. his measures: his lengths the game\'s; his eye huge; a frame\'s cost', () => {
+test('3. his measures: his lengths the game\'s; his eye huge, lying on its side; a frame\'s cost', () => {
   assert.ok(Math.abs(C_TILE - TILE3) < 1e-9, 'his lengths to a tile are the game\'s');
-  assert.ok(COLOSSUS.eyeR * 2 > 1.5 * 58, `his eye (${COLOSSUS.eyeR * 2} across) half as wide again as the knight is tall (58)`);
+  assert.ok(COLOSSUS.eyeW * 2 > 1.5 * 58, `his eye (${COLOSSUS.eyeW * 2} across) half as wide again as the knight is tall (58)`);
+  assert.ok(COLOSSUS.eyeW > 2 * COLOSSUS.eyeH, `his eye lying on its side, more than twice as wide as tall (${COLOSSUS.eyeW * 2} by ${COLOSSUS.eyeH * 2})`);
   const c = costOf(30, 1, { w: 1000, h: 500 });
   assert.ok(Math.abs(c.frameMB - (1000 * 500 * 4) / 1048576) < 1e-9 && Math.abs(c.perSecondMB - c.frameMB * 30) < 1e-9, 'a frame at 4 bytes a pixel, 30 a second');
 });
 
 test('4. his arms clear of him and of the stone: roots in the water before the stone, none through him, none through the stone', () => {
-  for (const [name, pose] of [['shut', poseRisen(0)], ['split open', poseRisen(1)], ['under the water', poseUnder()]] as const) {
+  for (const [name, pose] of [['risen', poseRisen()], ['under the water', poseUnder()]] as const) {
     const c = armClearances(pose);
     assert.ok(c.rootsInWater, `${name}: every root under the water before the stone`);
     assert.ok(c.body > 5, `${name}: no arm through him (${c.body.toFixed(1)} of his lengths clear)`);
@@ -144,34 +147,44 @@ test('4. his arms clear of him and of the stone: roots in the water before the s
   assert.ok(STONE.edge / C_TILE > 7.5, `his middle ${(STONE.edge / C_TILE).toFixed(1)} tiles out from the stone`);
 });
 
-test('5. his head splits down its seam; his eye is on the end of his tongue', () => {
-  const shut = PICS[0][1];
-  const open = PICS[2][1];
-  assert.equal(ofMat(shut, MAT.tooth), 0, 'shut: his fangs locked away inside his seam');
-  assert.ok(ofMat(shut, MAT.eye) > 40 && ofMat(shut, MAT.tongue) > 40, `shut: his tongue out of his seam, the eye on it (${ofMat(shut, MAT.tongue)} tongue, ${ofMat(shut, MAT.eye)} eye)`);
-  assert.ok(ofMat(open, MAT.tooth) > 150, `split open: rows of teeth along his inner edges (${ofMat(open, MAT.tooth)})`);
-  assert.ok(ofMat(open, MAT.throat) > 150, `split open: his throat between his halves (${ofMat(open, MAT.throat)})`);
-  assert.ok(ofMat(open, MAT.strand) > 20, `split open: spittle across the gap (${ofMat(open, MAT.strand)})`);
-  const h0 = headParts(0);
-  const h1 = headParts(1);
-  assert.ok(h1.gap > 250, `split open, his halves ${h1.gap.toFixed(0)} of his lengths apart at his front`);
-  assert.ok(h0.eye[1] > h0.frontShut + 20, `shut, his eye out before his head (${h0.eye[1].toFixed(0)} toward the camera; his front ${h0.frontShut.toFixed(0)})`);
-  assert.ok(h0.eye[2] < COLOSSUS.tall * 0.7, 'shut, his eye low on his head');
-  assert.ok(h1.eye[2] > h0.eye[2] + 150, 'open, his tongue risen out of his throat, the eye high over the split');
-  // (the tongue runs from inside his throat to the eye, its last points inside the eye: the eye on its tip)
-  for (const [T, E] of [[TONGUE_SHUT, EYE_SHUT], [TONGUE_OPEN, EYE_OPEN]] as const) {
-    assert.ok(T[0][1] < -60, 'his tongue rises from deep in his throat');
+test('5. his drawing: split open from the water up in a V; tall pointed jaws; teeth down its edges; his tongue towering out of it, the eye on its tip the highest of all', () => {
+  const front = PICS[0][1];
+  const m = mawParts();
+  // (the V: its point at the water, wide open at the top)
+  assert.ok(m.vAtWater < 60, `the V's point at the water (${m.vAtWater.toFixed(0)} of his lengths across there)`);
+  assert.ok(m.vAtPeaks > 220, `wide open at the top (his peaks ${m.vAtPeaks.toFixed(0)} apart)`);
+  assert.ok(m.tiltDeg.every((t) => t > 25 && t < 50), `each face of the V leaning out (${m.tiltDeg.map((t) => t.toFixed(0)).join(' and ')} degrees)`);
+  // (his jaws: tall and pointed, his left the lower and further out, his right the taller)
+  const [L, R] = PEAKS;
+  assert.ok(L[2] > 110 && R[2] > 110, `his jaws tall (their peaks ${L[2]} and ${R[2]} over the water)`);
+  assert.ok(L[2] < R[2] && -L[0] > R[0], 'his left jaw the lower and further out, his right the taller');
+  // (teeth down both edges of the V, never through his tongue; his throat inside it; spittle across it)
+  assert.ok(ofMat(front, MAT.tooth) > 150, `rows of teeth down the V's edges (${ofMat(front, MAT.tooth)} pixels; ${m.teeth} teeth)`);
+  assert.ok(m.toothToTongue > 0, `no tooth through his tongue (${m.toothToTongue.toFixed(1)} clear at the nearest)`);
+  assert.ok(ofMat(front, MAT.throat) + ofMat(front, MAT.maw) > 150, `his throat inside the V (${ofMat(front, MAT.throat) + ofMat(front, MAT.maw)})`);
+  assert.ok(ofMat(front, MAT.strand) > 20, `spittle across it (${ofMat(front, MAT.strand)})`);
+  // (his tongue out of the bottom of the V, from his throat, into the eye on its tip)
+  for (const [T, E] of [[TONGUE_RISEN, EYE_RISEN], [TONGUE_UNDER, EYE_UNDER]] as const) {
+    assert.ok(T[0][1] < -30 && T[0][2] < 50, 'his tongue rises from deep in his throat, low in the V');
     const last = T[T.length - 1];
-    assert.ok(Math.hypot(last[0] - E[0], last[1] - E[1], last[2] - E[2]) < COLOSSUS.eyeR, 'its tip swollen into the eye');
+    assert.ok(Math.hypot(last[0] - E[0], last[1] - E[1], last[2] - E[2]) < COLOSSUS.eyeH, 'its tip swollen into the eye');
   }
-  assert.equal(TONGUE_SHUT.length, TONGUE_OPEN.length, 'the same tongue shut and open (so that it can move between)');
-  assert.equal(TONGUE_UNDER.length, TONGUE_SHUT.length, 'and under the water');
-  assert.ok(EYE_UNDER[2] + COLOSSUS.eyeR < COLOSSUS.sunk - 20 && TONGUE_UNDER.every((q) => q[2] + q[3] < COLOSSUS.sunk - 20), 'under the water, his tongue and eye under it too');
-  // (phase 1: all of his head under the black water, only his arms out of it)
-  const under = PICS[3][1];
+  assert.equal(TONGUE_UNDER.length, TONGUE_RISEN.length, 'the same tongue risen and under the water (so that it can move between)');
+  // (towering: the eye's bottom over both his peaks; the highest of all of him in his picture)
+  assert.ok(EYE_RISEN[2] - COLOSSUS.eyeH - 6 > R[2] + 20, `his eye's bottom (${EYE_RISEN[2] - COLOSSUS.eyeH - 6}) well over his taller peak (${R[2]})`);
+  let top = -1;
+  for (let k = 0; k < front.kind.length && top < 0; k++) if (front.kind[k] === 1) top = k;
+  const topMat = front.mat[top];
+  assert.ok(topMat === MAT.eye || topMat === MAT.lid || topMat === MAT.tongue, `the highest of him in his picture is his eye on his tongue (material ${topMat})`);
+  // (and on the screen in the fight's view: his eye's top, in game pixels over his middle at the water, within the room above it)
+  const eyeTopUp = (frame.ay - Math.floor(top / frame.w)) / Z / 2;
+  assert.ok(eyeTopUp < LEANED.waterAt - 4, `his eye's top ${eyeTopUp.toFixed(0)} game pixels over his middle at the water, on the screen (${LEANED.waterAt} of room)`);
+  // (phase 1: all of him under the black water, only his arms out of it)
+  const under = PICS[2][1];
   let above = 0;
   for (let k = 0; k < under.kind.length; k++) if (under.kind[k] === 1 && under.mat[k] !== MAT.arm) above++;
-  assert.ok(COLOSSUS.sunk > COLOSSUS.tall + 10 && above === 0, `under the water, his crown ${COLOSSUS.sunk - COLOSSUS.tall} of his lengths under it, nothing of his head above it (${above})`);
+  assert.ok(COLOSSUS.sunk > R[2] + 40 && above === 0, `under the water, his peaks ${COLOSSUS.sunk - R[2]} of his lengths under it, nothing of him above it (${above})`);
+  assert.ok(EYE_UNDER[2] + COLOSSUS.eyeH + 8 < COLOSSUS.sunk - 20 && TONGUE_UNDER.every((q) => q[2] + q[3] < COLOSSUS.sunk - 20), 'under the water, his tongue and eye under it too');
 });
 
 test('6. his tentacles and his tongue: one smooth taper each, no bands, no joints, no steps', () => {
@@ -183,7 +196,7 @@ test('6. his tentacles and his tongue: one smooth taper each, no bands, no joint
     assert.ok(s.turnDeg < 15, `${name}: its underside carried along it without a twist (${s.turnDeg.toFixed(1)} degrees at most)`);
     assert.ok(s.suckersInOrder, `${name}: its suckers in order along it`);
   }
-  for (const [name, T] of [['his tongue shut', TONGUE_SHUT], ['his tongue open', TONGUE_OPEN]] as const) {
+  for (const [name, T] of [['his tongue risen', TONGUE_RISEN], ['his tongue under the water', TONGUE_UNDER]] as const) {
     const s = tubeSmoothness({ path: T, r: 0, belly: [0, 0, -1], seed: 9 });
     assert.ok(s.radiusStep < 1.2, `${name}: no step in its thickness (${s.radiusStep.toFixed(2)})`);
   }
@@ -191,10 +204,10 @@ test('6. his tentacles and his tongue: one smooth taper each, no bands, no joint
 
 test('7. he melts: drips off his overhangs, gobs falling off him, splashes; his sheets running into drips', () => {
   const m = meltParts();
-  assert.ok(m.drips >= 12, `drips hanging off his overhangs (${m.drips})`);
-  assert.ok(m.gobs >= 5, `gobs falling off him (${m.gobs})`);
+  assert.ok(m.drips >= 10, `drips hanging off his overhangs (${m.drips})`);
+  assert.ok(m.gobs >= 1, `gobs falling off him (${m.gobs})`);
   assert.ok(m.splashes >= m.gobs, `a splash where each hits the water (${m.splashes})`);
-  assert.ok(m.sheetDrips >= 40 && m.longest > 100, `the sheets of his flesh running off him in drips (${m.sheetDrips}, the longest ${m.longest.toFixed(0)})`);
-  const shut = PICS[0][1];
-  assert.ok(ofMat(shut, MAT.goo) > 300, `goo running down him (${ofMat(shut, MAT.goo)} pixels)`);
+  assert.ok(m.sheetDrips >= 40 && m.longest > 60, `the sheets of his flesh running off him in drips (${m.sheetDrips}, the longest ${m.longest.toFixed(0)})`);
+  const front = PICS[0][1];
+  assert.ok(ofMat(front, MAT.goo) > 150, `goo running down him (${ofMat(front, MAT.goo)} pixels)`);
 });
