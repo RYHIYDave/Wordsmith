@@ -124,18 +124,21 @@ test('each bell rung chips the Hush back, calls a tough one (a leader, tougher e
   for (let i = 0; i < B.plan.bells.length; i++) {
     const left = B.left;
     const before = g.monsters.length;
+    const coming = new Set(g.risers.map((r) => r.m));
     const b = B.plan.bells[i];
     (g as unknown as Inside).bellsStruck(b.x, b.y, 0.6);
+    // (what it calls: those already among the monsters, and those still coming up out of their rifts, game/arrivals.ts)
+    const called = [...g.monsters.slice(before), ...g.risers.filter((r) => !coming.has(r.m)).map((r) => r.m)];
     assert.ok(B.rung[i]);
     assert.equal(L.props[B.props[i]].state, 2, 'rung');
     assert.ok(B.left <= left, 'the Hush chipped back');
     assert.equal(B.mask[Math.floor(b.y) * L.floor.w + Math.floor(b.x)], 0, 'none of it left at the bell');
     if (i < B.plan.bells.length - 1) {
-      const tough = g.monsters.slice(before).find((m) => m.elite);
+      const tough = called.find((m) => m.elite);
       assert.ok(tough, `a tough one at bell ${i + 1}`);
       lifeOf.push(tough!.maxLife);
       // (and what comes with it, a sergeant's brace of hounds, is the Hush's too: counted, awake, and falling with it)
-      for (const m of g.monsters.slice(before)) {
+      for (const m of called) {
         assert.ok(B.ids.includes(m.id), `bell ${i + 1}: the ${m.kind} that came with the tough one is the Hush's`);
         assert.equal(m.state, 'chase');
       }
