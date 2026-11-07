@@ -25,8 +25,10 @@ function withArrivals<T>(fn: () => T): T {
   }
 }
 
-test('off, as in the game: the Hush raises its own straight among the monsters', () => {
-  assert.equal(ARRIVALS.on, false);
+test('off: the Hush raises its own straight among the monsters', () => {
+  const was = ARRIVALS.on;
+  ARRIVALS.on = false;
+  try {
   const g = seasoned(new Game('warrior', 3), 28);
   (g as unknown as { god: boolean }).god = true;
   g.depth = 11;
@@ -40,6 +42,9 @@ test('off, as in the game: the Hush raises its own straight among the monsters',
   for (let k = 0; k < 60; k++) g.update(1 / 30, emptyControls());
   assert.equal(g.risers.length, 0);
   assert.ok(g.monsters.some((m) => !m.dead && !m.boss), 'the Hush has raised some');
+  } finally {
+    ARRIVALS.on = was;
+  }
 });
 
 test('on: the Hush raises its own up out of rifts; among the monsters once out; counted toward its most meanwhile', () => {

@@ -28,8 +28,10 @@ function on<T>(run: () => T): T {
   }
 }
 
-test('off, as in the game: the mystic has nothing to ask, and the Queen falls with no scene', () => {
-  assert.equal(QUESTS610.on, false);
+test('off: the mystic has nothing to ask, and the Queen falls with no scene', () => {
+  const was = QUESTS610.on;
+  QUESTS610.on = false;
+  try {
   const g = seasoned(new Game('warrior', 9), 20);
   g.wayDepth = 7;
   assert.equal(g.mysticDue(), null);
@@ -40,6 +42,9 @@ test('off, as in the game: the mystic has nothing to ask, and the Queen falls wi
   inner(g).kill(q);
   assert.equal(g.scene, null);
   assert.equal(g.hero.feather, undefined);
+  } finally {
+    QUESTS610.on = was;
+  }
 });
 
 test("the mystic asks for the Queen's feather once the way down the mountain is open, and not before", () => {

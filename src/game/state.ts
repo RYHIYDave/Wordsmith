@@ -2,6 +2,7 @@
 // These are plain objects (no methods) so they can be saved and inspected easily.
 
 import type { VetState } from './veteran';
+import type { Pillar } from './quests610';
 import type { PrisonChannel } from './prison_way';
 import type { ChapelPlan } from './chapel_way';
 import type { GroundsPlan } from './grounds_way';
@@ -1281,6 +1282,8 @@ export interface Level {
   holds?: HoldState[];
   /** ACT 2, THE HUSH: its Bells as they stand now (game/bells.ts), where Land.bells laid them. */
   bells?: BellsState;
+  /** (QUESTS610, PILLARS) Floor 10: the cult's three obelisks feeding the siege in the Drowned Eye's last phase (game/quests610.ts). */
+  pillars?: Pillar[];
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */

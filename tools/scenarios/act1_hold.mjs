@@ -70,7 +70,8 @@ export default async function (page, snap) {
     const g = window.__dbg.game();
     const st = g.level.holds[0];
     const ids = [st.pack, ...(st.packs ?? [])];
-    const pack = g.monsters.filter((m) => !m.dead && ids.includes(m.packId));
+    // (with ARRIVALS, those of the wave still coming up out of their rifts too)
+    const pack = [...g.monsters, ...(g.risers ?? []).map((r) => r.m)].filter((m) => !m.dead && ids.includes(m.packId));
     return { hero: [g.hero.x, g.hero.y], entered: st.entered, wave: st.wave ?? 0, won: !!st.won, pack: pack.map((m) => [m.kind, m.name, m.rarity, m.words, m.life]) };
   });
   const inside = await hall();
@@ -81,9 +82,10 @@ export default async function (page, snap) {
   await snap('e_hall');
   await page.waitForTimeout(1500);
   await snap('f_hall_fight');
-  // (every one in the hall killed, wave after wave, until it falls)
+  // (every one in the hall killed, wave after wave, until it falls; with ARRIVALS, a wave comes up out of its rifts over a second or
+  // two, so what is still coming is killed on the next round: rounds enough for two to a wave)
   let seen = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 16; i++) {
     const now = await hall();
     if (now.won) break;
     if (now.wave) seen.push(now.wave);
