@@ -11,19 +11,18 @@
 // along the eye's own line and is foreshortened. His near leg read 8.4 game pixels from hip to knee and 5.5 from knee to the
 // floor.
 //
-// THE MEND: the same crouch, as low (his hips where they were), his body and arms as they were; but his front foot a little further
-// forward (11, where it was 6.8) with its knee bent out over it to his left (40 degrees, where it was 12), and his back foot
-// further back (12, where it was 5.2) with its leg longer and its knee turned a little to his left (20, where it was -20); each foot
-// turned with its knee. Neither shin now slants along the eye's line. His near leg reads 8.3 game pixels from hip to knee and 9.1
-// from knee to floor (1.10 times); his far leg never less than 1.07 times; through every frame of his breathing (a test holds
-// both at 1 or more).
+// THE MEND (made again for all eight sides: the first mend, his front knee out, read true from in front but 0.45 from toward the
+// camera): a longer, wider archer's guard, as low (his hips where they were), his body and arms as they were: his front foot
+// forward 14.1 and out to his left 8.4, its knee bent out over it (37.7 degrees to his left); his back foot back 19.7, its knee
+// a little in (-10.8), the foot turned out (-36.7). From every one of his eight sides each leg now reads at least 1.06 from knee
+// to floor to hip to knee, through every frame of his breathing (tools/legs_measure.ts; the test holds it).
 
 import { MOVES3 } from './moves3';
 import type { Move3 } from './moves3';
 import type { Bones, Motion } from './skeleton';
 
 /** His crouch, mended (the game's own is moves3.ts BATTLE, his rest in a fight). */
-export const RU_BATTLE: Bones = { ...MOVES3.rstand.rest, lfx: 11, lk: 40, lft: 24, rfx: -12, rk: 20, rft: -20 };
+export const RU_BATTLE: Bones = { ...MOVES3.rstand.rest, lfx: 14.1, lfy: 8.4, lk: 37.7, lft: 2.2, rfx: -19.7, rfy: -0.4, rk: -10.8, rft: -36.7 };
 
 /**
  * A STANCE THAT IS ALIVE (as moves3.ts `alive`): two breaths, and the weight going over onto the front foot and back between

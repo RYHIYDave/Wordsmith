@@ -75,6 +75,8 @@ const CAP_UP = 0.66;
 /** His head: how much bigger than the build's, and how far up his neck it is set. */
 const HEAD_K = 1.1;
 const HEAD_UP = 0.6;
+/** How high on the back of his head his cap's back edge sits (a length of him above the middle of his head, at its back). */
+const CAP_NAPE = 2.4;
 
 /** What a frame is painted in the light of. */
 export interface RuAround {
@@ -91,6 +93,9 @@ export interface RuFrame extends Painted {
   sc: Sculpt;
   s: Skeleton;
   spin: number;
+  /** Where on his canvas the floor point under him is (WU_SPIN's `ax`: 98 for the three sides that face left), and its height. */
+  ax: number;
+  ay: number;
 }
 
 /** `v` made square to the unit `w` (the way the foot points, square to the shin). */
@@ -103,14 +108,14 @@ const bez = (a: V3, c: V3, b: V3, k: number): V3 => add(add(mul(a, (1 - k) * (1 
  * where the feather's quill is stuck in his cap (the game moves the feather).
  */
 export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, around: RuAround = {}, rim: string | null = WU_RIM): RuFrame {
-  const { spin, camera: view } = WU_SPIN[side];
+  const { spin, camera: view, ax } = WU_SPIN[side];
   const sc = new Sculpt();
   sc.spin = spin;
   const trunk = trunkOf(B, s);
   const [ribs, belly, pel] = trunk;
   const [cf, cl, cu] = s.chest;
   const [hf, hl, hu] = s.hips;
-  const st0 = turnedStage(stage(view), spin);
+  const st0 = turnedStage(stage(view, ax), spin);
   const eye: V3 = st0.eye;
   const farOf = (p: V3): boolean => dot(sub(p, s.pelvis), eye) < -2.4;
   const dim = (h: { tone: number }, p: V3, r: Ramp): string | null => (farOf(p) ? r[Math.max(0, h.tone - 1)] : null);
@@ -186,10 +191,34 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
     const v = sub(p, spineB);
     return sub(v, mul(spineD, dot(v, spineD)));
   };
+  const hoodAt: { c: V3; f: V3; l: V3; u: V3 } = { c: [0, 0, 0], f: [1, 0, 0], l: [0, 1, 0], u: [0, 0, 1] };
+  const capAt: { n: V3 | null; o: number } = { n: null, o: 0 };
+  /** How far a point of the cloak stands out in its fold (-1 the deepest hollow, 1 the highest ridge), set as the cloak is laid. */
+  let cloakFold: (p: V3) => number = () => 0;
   const teal = sc.mat({ ramp: RU_TEAL, crease: 0.42, paint: (h) => {
     const tg = h.prim.tag ?? '';
     const t = farOf(h.p) ? h.tone - 1 : h.tone;
     if (tg === 'cloak' && dot(h.n, outFromSpine(h.p)) < 0) return RU_TEAL[Math.max(0, Math.min(2, t - 1))];
+    // (its folds read as folds whatever the light: the hollow of each a tone darker, the ridge of each, where the light is on
+    // it, a tone lighter; strongest at the hem, where they are deepest, gathered to nothing at his shoulders)
+    if (tg === 'cloak') {
+      const k = cloakFold(h.p);
+      if (k < -0.32) return RU_TEAL[Math.max(0, Math.min(3, t - 1))];
+      if (k > 0.55 && t >= 2) return RU_TEAL[Math.min(4, t + 1)];
+      return RU_TEAL[Math.max(0, Math.min(4, t))];
+    }
+    // (the back edge of his cap, where it sits on his head above his hair: a dark line)
+    if (h.prim.piece === 'cap' && capAt.n && dot(h.p, capAt.n) > capAt.o - 0.7) return RU_TEAL[1];
+    // (his hood: a tone lighter than the cloak it lies on, so it stands off it)
+    if (tg === 'hoodPoint') return RU_TEAL[Math.max(1, Math.min(4, t + 1))];
+    // (the hood's open mouth, round his neck: dark inside, its lip lit)
+    if (tg === 'hood') {
+      const v = sub(h.p, hoodAt.c);
+      const up = dot(v, hoodAt.u) / 2.8;
+      const fw = dot(v, hoodAt.f) / 2.5;
+      if (up > 0.3 && fw > -0.6) return up > 0.72 ? RU_TEAL[Math.min(4, t + 1)] : RU_TEAL[0];
+      return RU_TEAL[Math.max(1, Math.min(4, t + 1))];
+    }
     if (tg === 'band') return RU_TEAL[Math.max(0, Math.min(2, t - 1))];
     // (his cap as bright a teal as it always was: lifted a step where the light is on it)
     if (h.prim.piece === 'cap') return RU_TEAL[Math.max(0, Math.min(4, t >= 2 ? t + 1 : t))];
@@ -210,10 +239,19 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
     if (h.prim.tag === 'nock') return RU_TEAL[Math.min(4, t + 1)];
     return RU_WOOD[Math.max(0, Math.min(4, t))];
   } });
+  // (the quiver: stitched leather, a darker seam running down it, its rim rolled and lit)
+  const quivAt: { a: V3; b: V3 } = { a: [0, 0, 0], b: [0, 0, 1] };
   const quiv = sc.mat({ ramp: RU_PLUM, crease: 0.4, paint: (h) => {
     if (h.prim.tag === 'rim') return RU_PLUM[Math.min(4, h.tone + 1)];
-    return null;
+    const ax0 = sub(quivAt.b, quivAt.a);
+    const k = dot(sub(h.p, quivAt.a), ax0) / (dot(ax0, ax0) || 1);
+    // (two stitched bands round it)
+    if (Math.abs(k - 0.33) < 0.035 || Math.abs(k - 0.7) < 0.035) return RU_PLUM[Math.max(0, h.tone - 2)];
+    return farOf(h.p) ? RU_PLUM[Math.max(0, h.tone - 1)] : null;
   } });
+  // (the arrows in it: light wood, as the game's flying arrow; their fletchings glow the friend's cyan, as his always did)
+  const shaftM = sc.mat({ ramp: ['#5a3a20', '#7a5230', '#a06c3c', '#c08a55', '#dcae7a'] });
+  const fletch = sc.mat({ ramp: [CYAN[0], CYAN[0], CYAN[2], CYAN[3], CYAN[4]], crease: 0.2 });
 
   // ---- THE LEGS: dark hose; tall soft boots with a turned cuff below the knee ----
   for (const sd of ['L', 'R'] as const) {
@@ -349,14 +387,19 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
     sc.ell(pink, 'kerchief', add(front, add(mul(cl, -1.9), mul(cu, 1.4))), [mul(cf, 1.0), mul(cl, 1.2), mul(cu, 1.0)], 0.5, { tag: 'knot' });
   }
 
-  // ---- THE CLOAK: short, from his shoulders round his back down to his hips; his arms come out from under its front edges.
-  // It is cloth: panels melted into one sheet, folded, its hem left behind by how far he has come (it follows) and stirred by
-  // the wind; its lining a tone darker where it turns from him. Where an elbow is drawn back close behind him, it goes round. ----
+  // ---- THE CLOAK, REAL CLOTH (the coordinator, 7 Nov 2026: from behind it read as a striped block): one sheet of teal cloth
+  // hung from his shoulders (it lies over their tops, his arms coming out from under its front edges) down his back to his hips,
+  // falling a little wider than his back (an A, as cloth falls), in FOLDS that are gathered at his shoulders and open out as they
+  // fall, each breaking the hem where it ends (a ridge hangs lower, a hollow higher); its lining a tone darker where it turns from
+  // him; its hem left behind by how far his hips have come over the last three frames (it follows) and stirred by the wind.
+  // Where an elbow is drawn back close behind him it goes round it, as the old cloak did. Over it at the neck, HIS HOOD, down:
+  // a cowl of the same cloth heaped behind his neck, its open mouth dark, its point falling between his shoulder blades. ----
+  const cloakTop = { z: 0 };
   {
     const f = norm([cf[0], cf[1], 0], [1, 0, 0]);
     const l = norm([cl[0], cl[1], 0], [0, 1, 0]);
     const full = B.shoulderHalf + aS + 0.9;
-    let deep = B.ribDeep + 2.4;
+    let deep = B.ribDeep + 2.2;
     const reach: [number, number] = [full, full];
     for (const el of [s.elbowL, s.elbowR]) {
       const d = sub(el, s.ribs);
@@ -368,44 +411,96 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
       if (inside >= B.shoulderHalf * 0.7) reach[sideK >= 0 ? 0 : 1] = Math.min(reach[sideK >= 0 ? 0 : 1], inside);
       else deep = Math.max(deep, (back + aE + 1.1) / Math.sqrt(Math.max(0.2, 1 - (out / full) ** 2)));
     }
-    const fly = 1.4 + Math.sin(wind * Math.PI * 2) * 1.1;
+    const fly = 1.0 + Math.sin(wind * Math.PI * 2) * 0.9;
     const lean = (reach[0] - reach[1]) / 2;
     const wide = (reach[0] + reach[1]) / 2;
-    const ringAt = (c: V3, u: number, v: number, deg: number): V3 => add(c, add(mul(f, Math.cos(deg * D) * u), mul(l, Math.sin(deg * D) * v)));
-    const topC = add(s.neck, add(mul(cu, -0.6), mul(f, -0.4)));
-    const midC = add(add(mid(s.waist, s.ribs), mul(f, -0.6)), add(mul(l, lean), mul(lagC, 0.4)));
-    const lowC = add([s.pelvis[0], s.pelvis[1], Math.max(3, s.pelvis[2] - B.thigh * 0.18)], add(mul(f, -1.0 - fly), add(mul(l, lean), lagC)));
-    const ARC = [96, 116, 136, 158, 180, 202, 224, 244, 264];
-    ARC.forEach((deg, i) => {
-      // (each panel a fold: every other one stands out a little, so the cloth hangs in folds, not as a plate)
-      const fold = i % 2 ? 0.6 : 0;
-      const sway = Math.sin((wind + i / ARC.length) * Math.PI * 2) * 0.35;
-      const p0 = ringAt(topC, B.ribDeep + 1.7, B.shoulderHalf + aS + 0.5, deg);
-      const p1 = ringAt(midC, deep + fold * 0.5, wide + fold * 0.3, deg);
-      const p2 = add(ringAt(lowC, deep - 0.6 + fold, wide - 0.4 + fold * 0.4 + sway, deg), [0, 0, (i % 3) * -0.6]);
-      const step = 22 * D;
-      const halfW = (r: number): number => Math.max(1.1, r * step * 0.62);
-      for (const [a, b, r] of [[p0, p1, B.shoulderHalf + aS], [p1, p2, wide]] as const) {
-        const along = sub(b, a);
-        const out = norm(sub(mid(a, b), add(mid(topC, lowC), mul(f, 0))), mul(f, -1));
-        const [dn, outP, acr] = frame(along, out);
-        sc.box(teal, 'cloak', mid(a, b), [mul(outP, 0.45), mul(acr, halfW(r)), mul(dn, len(along) / 2 + 0.4)], 0.4, 1.3, { tag: 'cloak' });
-      }
-    });
-    // ---- THE QUIVER, slung on his back outside the cloak, its mouth above his right shoulder; three glowing fletchings ----
-    const q0 = add(s.ribs, add(mul(cf, -deep - 1.4), add(mul(cl, -B.shoulderHalf * 0.55), mul(cu, B.chest + 3.2))));
-    const q1 = add(s.ribs, add(mul(cf, -deep - 2.2), add(mul(cl, B.shoulderHalf * 0.3), mul(cu, -4.5))));
-    sc.cone(quiv, 'quiver', q1, q0, 1.75, 2.0, 0.6, { tag: 'quiver' });
+    /** A point of the cloak: on a ring round `c`, `deg` round from his front (180 straight behind him), `u` deep and `v` wide,
+     * along `ff` and `ll` (his chest's own, where it lies on him; level, where it hangs). */
+    const ringAt = (c: V3, u: number, v: number, deg: number, ff: V3 = f, ll: V3 = l): V3 => add(c, add(mul(ff, Math.cos(deg * D) * u), mul(ll, Math.sin(deg * D) * v)));
+    // (the four rings it hangs through: round the root of his neck on his shoulders and across his shoulder blades, where it
+    // lies on him and goes as his chest goes; at his waist and its hem, where it hangs)
+    const c0 = add(s.neck, mul(cu, 0.6));
+    const c1 = add(lerp3(s.neck, s.ribs, 0.55), mul(l, lean * 0.3));
+    cloakTop.z = c0[2];
+    const c2 = add(add(mid(s.waist, s.ribs), mul(f, -0.6)), add(mul(l, lean), mul(lagC, 0.4)));
+    const c3 = add([s.pelvis[0], s.pelvis[1], Math.max(3, s.pelvis[2] - B.thigh * 0.2)], add(mul(f, -0.8 - fly), add(mul(l, lean), lagC)));
+    // (its folds, round it from his left side to his right: how far each stands out at the hem; gathered to nothing at his
+    // shoulders, opening out as they fall; four deep folds and the hollows between, none quite the same)
+    const COLS = [92, 110, 127, 143, 158, 172, 186, 201, 216, 232, 249, 268];
+    const FOLD = [0, 1.0, -0.6, 1.4, -0.45, 0.9, -0.7, 1.3, -0.5, 1.15, -0.25, 0];
+    const ROWS = [
+      { c: c0, u: B.ribDeep + 1.1, v: B.shoulderHalf * 0.8 + aS + 0.3, k: 0, on: true },
+      { c: c1, u: B.ribDeep + 1.7, v: B.shoulderHalf + aS + 0.6, k: 0.3, on: true },
+      { c: c2, u: deep, v: wide + 0.3, k: 0.75, on: false },
+      { c: c3, u: deep + 0.5, v: wide + 1.3, k: 1.25, on: false },
+    ];
+    const grid: V3[][] = ROWS.map((r, ri) => COLS.map((deg, ci) => {
+      const fold = FOLD[ci] * r.k * 1.5;
+      const sway = ri === 3 ? Math.sin((wind + ci / COLS.length) * Math.PI * 2) * 0.4 : 0;
+      // (out along the way that point faces from the middle of him, by its fold)
+      const p = ringAt(r.c, r.u + fold, r.v + fold * 0.6 + sway, deg, r.on ? cf : f, r.on ? cl : l);
+      // (at the hem, a ridge hangs a little lower than a hollow: the hem breaks where each fold ends)
+      return ri === 3 ? add(p, [0, 0, -Math.max(0, FOLD[ci]) * 0.9 + Math.max(0, -FOLD[ci]) * 0.5]) : p;
+    }));
+    cloakFold = (p: V3): number => {
+      const v = sub(p, s.pelvis);
+      const deg = ((Math.atan2(dot(v, l), dot(v, f)) / D) + 360) % 360;
+      // (how far down the cloak: 0 at its top, 1 at its hem)
+      const down = Math.max(0, Math.min(1, (c0[2] - p[2]) / Math.max(1, c0[2] - c3[2])));
+      let i = 0;
+      while (i + 1 < COLS.length - 1 && COLS[i + 1] < deg) i++;
+      const k = Math.max(0, Math.min(1, (deg - COLS[i]) / (COLS[i + 1] - COLS[i])));
+      const fold = FOLD[i] + (FOLD[i + 1] - FOLD[i]) * k;
+      return (fold / 1.4) * Math.min(1, down * 1.6);
+    };
+    for (let ri = 0; ri + 1 < grid.length; ri++) for (let ci = 0; ci + 1 < COLS.length; ci++) {
+      const a = grid[ri][ci];
+      const b = grid[ri][ci + 1];
+      const c = grid[ri + 1][ci];
+      const d = grid[ri + 1][ci + 1];
+      sc.tri(teal, 'cloak', a, b, d, 0.42, 0.9, { tag: 'cloak' });
+      sc.tri(teal, 'cloak', a, d, c, 0.42, 0.9, { tag: 'cloak' });
+    }
+    // HIS HOOD, down: heaped behind his neck on the cloak's top, its mouth open upward round his neck (dark inside), its point
+    // falling a little way down between his shoulder blades
+    const hoodC = add(s.neck, add(mul(cf, -(B.ribDeep + 2.0)), mul(cu, -0.4)));
+    sc.ell(teal, 'hood', hoodC, [mul(cf, 2.4), mul(cl, 5.2), mul(cu, 2.6)], 0.6, { tag: 'hood' });
+    // (its point: a V of the cloth lying down his back over the cloak, to between his shoulder blades)
+    const hp = add(hoodC, add(mul(cf, -1.4), mul(cu, -1.2)));
+    sc.tri(teal, 'hood', add(hp, mul(cl, 3.6)), add(hp, mul(cl, -3.6)), add(hp, add(mul(cu, -6.4), mul(cf, -0.9))), 0.55, 0.9, { tag: 'hoodPoint' });
+    hoodAt.c = hoodC;
+    hoodAt.f = cf;
+    hoodAt.l = cl;
+    hoodAt.u = cu;
+    // ---- THE QUIVER, slung on his back outside the cloak, its mouth above his right shoulder: a tube of stitched leather, a
+    // rolled rim at its mouth, a cap at its foot; three arrows in it, their shafts and their fletchings, which glow ----
+    const q0 = add(s.ribs, add(mul(cf, -B.ribDeep - 3.6), add(mul(cl, -B.shoulderHalf * 1.1), mul(cu, B.chest - 1.8))));
+    const q1 = add(s.ribs, add(mul(cf, -B.ribDeep - 3.6), add(mul(cl, B.shoulderHalf * 0.35), mul(cu, -6.0))));
+    sc.cone(quiv, 'quiver', q1, q0, 1.45, 2.1, 0.6, { tag: 'quiver' });
     const qd = norm(sub(q0, q1));
-    sc.ell(quiv, 'quiver', q0, [mul(qd, 0.7), mul(cl, 2.35), mul(norm(cross(qd, cl)), 2.35)], 0.2, { tag: 'rim' });
-    for (const k of [-1, 0, 1]) {
-      const base = add(q0, add(mul(cl, k * 0.9), mul(qd, 0.4)));
-      const tip = add(base, add(mul(cl, k * 0.6), mul(qd, 4.0 + (k === 0 ? 0.9 : 0))));
-      sc.mark(lerp3(base, tip, 0.5), CYAN[2], 1, 1, 0, 0, 3);
-      sc.mark(tip, CYAN[4], 1, 1, 0, 0, 3);
-      sc.mark(lerp3(base, tip, 0.8), CYAN[3], 1, 1, 0, 0, 3);
+    const qs = norm(cross(qd, cf), cl);
+    const qo = norm(cross(qd, qs));
+    quivAt.a = q1;
+    quivAt.b = q0;
+    sc.ell(quiv, 'quiver', q0, [mul(qd, 0.7), mul(qs, 2.45), mul(qo, 2.45)], 0.2, { tag: 'rim' });
+    sc.ell(quiv, 'quiver', q1, [mul(qd, 0.6), mul(qs, 1.7), mul(qo, 1.7)], 0.2, { tag: 'rim' });
+    // (five arrows fanned in its mouth, their fletchings out over his right shoulder: from behind, the first thing of him seen)
+    for (const [k, longer] of [[-1.3, 0.2], [-0.6, 0.9], [0, 0.4], [0.7, 1.1], [1.35, 0]] as const) {
+      const base = add(q0, add(mul(qs, k * 0.8), mul(qd, -0.4)));
+      const tip = add(base, add(mul(qs, k * 0.9), add(mul(qo, 0.3 * Math.abs(k)), mul(qd, 5.4 + longer))));
+      sc.cone(shaftM, 'arrows', base, tip, 0.3, 0.28, 0.1, { tag: 'shaft' });
+      // (its fletching: two vanes, each a little blade of feather, from the nock down a little over half the way out)
+      const v0 = lerp3(base, tip, 0.42);
+      const along = norm(sub(tip, base));
+      const flat = norm(cross(along, qo), qs);
+      for (const sg of [1, -1]) {
+        const side = add(mul(flat, sg * 1.3), mul(qo, sg * 0.4));
+        sc.tri(fletch, 'arrows', v0, add(tip, mul(along, -0.2)), add(lerp3(v0, tip, 0.3), side), 0.3, 0.1, { tag: 'vane' });
+      }
     }
   }
+  // (the hood's mouth: dark where it opens upward round his neck)
+  void cloakTop;
 
   // ---- THE HEAD: his own bare face in the light, a lean jaw, a straight nose, a brown moustache; brown hair behind; the cap
   // over it all. The eyes, the brows and the moustache are drawn where the game has always put a face's middle (two thirds of
@@ -457,12 +552,18 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
   const wu = norm(add(mul(wu1, Math.cos(COCK)), mul(wl1, Math.sin(COCK))));
   const wl = cross(wu, wf);
   const capC = add(add(HC, mul(fu, R[2] * (CAP_UP - 0.1 * slump))), mul(wf0, -R[0] * (0.16 + 0.25 * slump)));
+  // (its back sits up on the back of his head, above his hair: seen from behind, his brown hair and his neck show under it, not a
+  // ball of teal. A cut that leaves the front of the cap as it was)
+  const capBack = norm(sub(mul(fu, -1), mul(wf0, 0.25)));
+  const capCut = [{ n: capBack, o: dot(capBack, add(HC, mul(fu, CAP_NAPE))) }];
+  capAt.n = capBack;
+  capAt.o = capCut[0].o;
   // (the cap itself: a wide soft puff of cloth, broader than his head every way, flat on top)
-  sc.ell(teal, 'cap', capC, [mul(wf, R[0] * (1.46 - 0.22 * slump)), mul(wl, R[1] * (1.9 - 0.4 * slump)), mul(wu, R[2] * 0.54)], 1.4, { tag: 'crown' });
-  // (its slump: the soft cloth fallen over to his right and behind, hanging down past the band)
-  sc.ell(teal, 'cap', add(capC, add(mul(wf, -R[0] * 1.1), add(mul(wl, -R[1] * 0.6), mul(wu, -R[2] * 0.25)))), [mul(wf, R[0] * 0.98), mul(wl, R[1] * 1.06), mul(wu, R[2] * 0.62)], 1.8, { tag: 'crown' });
+  sc.ell(teal, 'cap', capC, [mul(wf, R[0] * (1.46 - 0.22 * slump)), mul(wl, R[1] * (1.9 - 0.4 * slump)), mul(wu, R[2] * 0.54)], 1.4, { tag: 'crown', cuts: capCut });
+  // (its slump: the soft cloth fallen over to his right and a little behind, hanging down past the band)
+  sc.ell(teal, 'cap', add(capC, add(mul(wf, -R[0] * 0.55), add(mul(wl, -R[1] * 0.95), mul(wu, -R[2] * 0.18)))), [mul(wf, R[0] * 0.95), mul(wl, R[1] * 0.95), mul(wu, R[2] * 0.58)], 1.8, { tag: 'crown', cuts: capCut });
   // (the band round its foot, where it sits on his head: a tone darker)
-  sc.ell(teal, 'cap', add(capC, mul(wu, -R[2] * 0.3)), [mul(wf, R[0] * 1.18), mul(wl, R[1] * 1.42), mul(wu, R[2] * 0.16)], 0.3, { tag: 'band' });
+  sc.ell(teal, 'cap', add(capC, mul(wu, -R[2] * 0.3)), [mul(wf, R[0] * 1.18), mul(wl, R[1] * 1.42), mul(wu, R[2] * 0.16)], 0.3, { tag: 'band', cuts: capCut });
   const quillAt = add(capC, add(mul(wf, -R[0] * 0.15), add(mul(wl, -R[1] * 0.5), mul(wu, R[2] * 0.5))));
 
   // ---- THE BOW, in his left hand: two limbs of indigo wood curving back from a leather grip, each tip curled forward
@@ -564,13 +665,13 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
     } else thread(nocks[0], nocks[1], CYAN[3]);
   };
   let tails: TailRoot[] = [];
-  const drawn = draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, (raw) => {
+  const drawn = draw(sc, view, ax, CANVAS3.ay, CANVAS3, (raw) => {
     extras(raw);
     const st = turnedStage(raw, spin);
     const [qx, qy] = st.at(quillAt);
     tails = [{ id: 'r-feather', x: qx, y: qy, over: true }];
   }, rim);
-  return { px: drawn.px, lights, tails, drawn, sc, s, spin };
+  return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax, ay: CANVAS3.ay };
 }
 
 // ---------------------------------------------------------------------------------------------
