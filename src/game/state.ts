@@ -309,6 +309,9 @@ export interface Hero {
   /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts, QUESTS15): where the hero stands in the armourer's furnace quest; whether the wordsmith has asked for the Meldstone. */
   furnace?: 'asked' | 'gear' | 'out' | 'done';
   meldAsk?: boolean;
+  /** THE QUEST LINE OF FLOORS 6 TO 10 (game/quests610.ts, QUESTS610): the mystic's feather quest; whether he has seen the town from the eyrie. */
+  feather?: 'asked' | 'got' | 'given';
+  citySeen?: boolean;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */

@@ -122,6 +122,7 @@ import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { holdShows, inHold } from '../game/act1_layout';
 import { risenBy, risingSprite } from './arrivals';
+import { EYRIE_SCENE } from '../game/quests610';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -2725,6 +2726,13 @@ export class Renderer {
       const up = m.a1?.perched ? MOTH_LEAN.perched : MOTH_LEAN.up;
       tx = Math.max(-W * MOTH_LEAN.most, Math.min(W * MOTH_LEAN.most, ((m.x - m.y - (h.x - h.y)) * 16) * MOTH_LEAN.share));
       ty = Math.max(-H * MOTH_LEAN.most, Math.min(H * MOTH_LEAN.most, ((m.x + m.y - (h.x + h.y)) * 8 - up) * MOTH_LEAN.share));
+    }
+    // (QUESTS610, THE EYRIE'S SCENE: the picture panned out over the drop toward the town far below, and back: game/quests610.ts)
+    if (game.scene) {
+      const pan = game.scenePan();
+      this.lean.x = game.scene.side * Math.min(W * EYRIE_SCENE.share, EYRIE_SCENE.most) * pan;
+      this.lean.y = -H * 0.1 * pan;
+      return this.lean;
     }
     const k = 1 - Math.exp(-dt * MOTH_LEAN.glide);
     this.lean.x += (tx - this.lean.x) * k;

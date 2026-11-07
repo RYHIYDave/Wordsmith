@@ -56,6 +56,7 @@ import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
 import { ARRIVALS, riftSize } from './arrivals';
+import { EYRIE_LINES, EYRIE_SCENE, QUEST610_TEXT, QUESTS610 } from './quests610';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
@@ -135,6 +136,8 @@ export interface RunSave {
   asked?: boolean;
   /** QUESTS15 (game/quests15.ts): the furnace quest's step; the wordsmith's ask for the Meldstone. */
   furnace?: 'asked' | 'gear' | 'out' | 'done';
+  feather?: 'asked' | 'got' | 'given';
+  citySeen?: boolean;
   meldAsk?: boolean;
   /** The voice chosen for this character. */
   voice?: VoiceId;
@@ -924,6 +927,7 @@ export class Game {
       // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
       ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
       ...(QUESTS15.on ? { furnace: h.furnace, meldAsk: h.meldAsk } : {}),
+      ...(QUESTS610.on ? { feather: h.feather, citySeen: h.citySeen } : {}),
     };
     // (ACT 2, THE HUSH: a word the Physician holds is the hero's in the save, where it would go back to: game/act1_rules/physician.ts)
     inTheSave(run, this.monsters);
@@ -985,6 +989,8 @@ export class Game {
     // (QUESTS15: the furnace quest's step, and the wordsmith's ask)
     h.furnace = s.furnace === 'asked' || s.furnace === 'gear' || s.furnace === 'out' || s.furnace === 'done' ? s.furnace : undefined;
     h.meldAsk = s.meldAsk === true ? true : undefined;
+    h.feather = s.feather === 'asked' || s.feather === 'got' || s.feather === 'given' ? s.feather : undefined;
+    h.citySeen = s.citySeen === true ? true : undefined;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
@@ -1272,6 +1278,7 @@ export class Game {
     this.traps = [];
     this.volleys = [];
     this.risers = [];
+    this.scene = null;
     this.perils = [];
     this.corpses = [];
     this.spears = [];
@@ -1911,6 +1918,8 @@ export class Game {
     const py = this.hero.y;
     // (THE WAYS: on his way out of the level he does nothing more in it)
     if (this.leaving || this.arriving()) c = emptyControls();
+    // (QUESTS610: a short scene playing: the player's hands off, the hero walked where it takes him)
+    if (this.scene) c = this.sceneStep(dt);
     this.cameT += dt;
     this.updateHero(dt, c);
     if (this.over) return;
@@ -2791,6 +2800,137 @@ export class Game {
 
   // ===========================================================================================
   // ACT 2, THE HUSH: THE BELLS (game/bells.ts: his design, the planning chat's picks, and their numbers)
+
+  // ===========================================================================================
+  // THE QUEST LINE OF FLOORS 6 TO 10 (game/quests610.ts, QUESTS610): THE EYRIE'S SCENE
+
+  /**
+   * (QUESTS610) A short scene playing: the eyrie's, the town far below seen from its edge. `phase`: waiting for her death to play
+   * out, walking him to the edge, the picture panning out over the drop, holding on the town (his line said), panning back. `side`:
+   * which way across the screen the drop lies (+1 to the right), for the picture's pan (render.ts sceneLean).
+   */
+  scene: { kind: 'eyrie'; phase: 'wait' | 'walk' | 'out' | 'hold' | 'back'; t: number; to: { x: number; y: number }; side: number; said: boolean } | null = null;
+
+  /** (QUESTS610) How far out the picture is panned now, 0 to 1 (render.ts). */
+  scenePan(): number {
+    const S = this.scene;
+    if (!S) return 0;
+    const ease = (k: number): number => k * k * (3 - 2 * k);
+    if (S.phase === 'out') return ease(Math.min(1, S.t / EYRIE_SCENE.out));
+    if (S.phase === 'hold') return 1;
+    if (S.phase === 'back') return 1 - ease(Math.min(1, S.t / EYRIE_SCENE.back));
+    return 0;
+  }
+
+  /**
+   * (QUESTS610) THE EYRIE: the Queen fallen the first time for this hero: a feather plucked from her, and her ground's edge found
+   * (the drop nearest her ground's middle, as render/outdoor.ts lays the town past it), and the scene begun.
+   */
+  private queenDown(m: Monster): void {
+    const h = this.hero;
+    if (!QUESTS610.on || this.practice || m.kind !== 'queen') return;
+    if (h.feather !== 'got' && h.feather !== 'given') {
+      h.feather = 'got';
+      this.emit({ t: 'text', x: m.x, y: m.y, text: 'A FEATHER', color: '#e8dcc0' });
+      this.msg(QUEST610_TEXT.featherGot, MSG.word);
+    }
+    if (h.citySeen) return;
+    const L = this.level;
+    const land = L.land;
+    const f = L.floor;
+    const area = land?.areas.find((a) => a.role === 'boss');
+    if (!land || !land.drop || !area) return;
+    const bx = area.blob.x;
+    const by = area.blob.y;
+    let ex = -1;
+    let ey = -1;
+    let best = Infinity;
+    for (let ty = Math.floor(by - 14); ty <= by + 14; ty++) {
+      for (let tx = Math.floor(bx - 14); tx <= bx + 14; tx++) {
+        if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h || land.drop[ty * f.w + tx] !== 1) continue;
+        const d = Math.hypot(tx + 0.5 - bx, ty + 0.5 - by);
+        if (d < best) {
+          best = d;
+          ex = tx + 0.5;
+          ey = ty + 0.5;
+        }
+      }
+    }
+    if (ex < 0) return;
+    // (where he stops: on the walkable ground nearest the drop's edge there, short of it)
+    let to = { x: h.x, y: h.y };
+    let bd = Infinity;
+    for (let ty = Math.floor(ey - 6); ty <= ey + 6; ty++) {
+      for (let tx = Math.floor(ex - 6); tx <= ex + 6; tx++) {
+        if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h || L.walk[ty * f.w + tx] !== 1) continue;
+        const d = Math.hypot(tx + 0.5 - ex, ty + 0.5 - ey);
+        if (d >= EYRIE_SCENE.short && d < bd) {
+          bd = d;
+          to = { x: tx + 0.5, y: ty + 0.5 };
+        }
+      }
+    }
+    const side = Math.sign(ex - ey - (bx - by)) || 1;
+    this.scene = { kind: 'eyrie', phase: 'wait', t: 0, to, side, said: false };
+  }
+
+  /** (QUESTS610) A step of the scene playing; what the player would do is set aside, and what it has him do given instead. */
+  private sceneStep(dt: number): Controls {
+    const S = this.scene!;
+    const h = this.hero;
+    const c = emptyControls();
+    h.invuln = Math.max(h.invuln, 0.2);
+    S.t += dt;
+    if (S.phase === 'wait') {
+      if (S.t >= EYRIE_SCENE.after) {
+        S.phase = 'walk';
+        S.t = 0;
+      }
+      return c;
+    }
+    if (S.phase === 'walk') {
+      const dx = S.to.x - h.x;
+      const dy = S.to.y - h.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 0.25 && S.t < EYRIE_SCENE.walk) {
+        c.mx = (dx / d) * EYRIE_SCENE.pace;
+        c.my = (dy / d) * EYRIE_SCENE.pace;
+        c.aimX = S.to.x;
+        c.aimY = S.to.y;
+        return c;
+      }
+      // (there: he turns to the drop, and the picture pans out over it)
+      const ux = S.side;
+      h.fx = ux * Math.SQRT1_2;
+      h.fy = -ux * Math.SQRT1_2;
+      S.phase = 'out';
+      S.t = 0;
+      return c;
+    }
+    if (S.phase === 'out') {
+      if (S.t >= EYRIE_SCENE.out) {
+        S.phase = 'hold';
+        S.t = 0;
+      }
+      return c;
+    }
+    if (S.phase === 'hold') {
+      if (!S.said && S.t >= EYRIE_SCENE.say) {
+        S.said = true;
+        this.emit({ t: 'quip', text: EYRIE_LINES[h.cls], boss: false });
+      }
+      if (S.t >= EYRIE_SCENE.hold) {
+        S.phase = 'back';
+        S.t = 0;
+      }
+      return c;
+    }
+    if (S.t >= EYRIE_SCENE.back) {
+      h.citySeen = true;
+      this.scene = null;
+    }
+    return c;
+  }
 
   /** (ACT 2, THE BELLS) While the Hush raises its own: what rises comes up awake and at him (none of floor 14's patients lies down in a bed). */
   risingInHush = false;
@@ -9219,6 +9359,8 @@ export class Game {
       }
       this.boss = null;
       this.emit({ t: 'shake', amount: 6 });
+      // (QUESTS610: the Queen fallen: her feather, and the town seen from her eyrie's edge)
+      this.queenDown(m);
       // (THE WAYS: the stairwell down opens in his hall, clear of where he fell; where the floor has none, the portal home as before)
       const W = this.level.ways;
       const st = W ? stairFor(W.stairs, m.x, m.y, this.hero.x, this.hero.y) : null;
@@ -11825,9 +11967,11 @@ export class Game {
    * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
    * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
    */
-  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | null {
+  handInNear(): 'stone' | 'meldstone' | 'quest' | 'furnace' | 'reward' | 'meldAsk' | 'featherAsk' | 'featherGive' | null {
     if (!HAND_IN.on || !this.level.town) return null;
     const st = this.stationNear();
+    // (QUESTS610: the mystic's feather quest, given and brought)
+    if (QUESTS610.on && st === 'mystic') return this.mysticDue();
     // (QUESTS15: the armourer's furnace quest, given and rewarded)
     if (QUESTS15.on && st === 'armourer') return this.armourerDue();
     if (st !== 'wordsmith') return null;
@@ -11835,6 +11979,30 @@ export class Game {
     // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
     // (QUESTS15: and once the furnace is out and the armourer has rewarded it, his ask for the Meldstone)
     return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : this.questDue() ? 'quest' : this.meldAskDue() ? 'meldAsk' : null;
+  }
+
+  /** QUESTS610: what the mystic has for this hero: the feather quest (the gate down the mountain open), or the feather taken from him. */
+  mysticDue(): 'featherAsk' | 'featherGive' | null {
+    const h = this.hero;
+    if (!QUESTS610.on || this.practice) return null;
+    if (h.feather === 'got') return 'featherGive';
+    if (h.feather === undefined && this.wayDepth >= 6) return 'featherAsk';
+    return null;
+  }
+
+  /** QUESTS610: the mystic, at (x, y), asks for the Queen's feather, or takes it and tells what she saw. */
+  private mysticHandIn(what: 'featherAsk' | 'featherGive', x: number, y: number): void {
+    const h = this.hero;
+    this.emit({ t: 'questGiven', x, y });
+    if (what === 'featherAsk') {
+      h.feather = 'asked';
+      this.sfx('power', 0.6);
+      this.msg(QUEST610_TEXT.featherAsk, MSG.word);
+      return;
+    }
+    h.feather = 'given';
+    this.sfx('rare');
+    this.msg(QUEST610_TEXT.featherGiven, MSG.word);
   }
 
   /** QUESTS15: what the armourer has for this hero: the furnace quest (his ring lit, the furnace burning), or its reward (the furnace out). */
@@ -12077,6 +12245,13 @@ export class Game {
   private handIn(): boolean {
     const what = this.handInNear();
     const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+    // (QUESTS610: the mystic's)
+    if (what === 'featherAsk' || what === 'featherGive') {
+      const my = this.level.stations.find((s) => s.kind === 'mystic');
+      if (!my) return false;
+      this.mysticHandIn(what, my.x, my.y);
+      return true;
+    }
     // (QUESTS15: the armourer's)
     if (what === 'furnace' || what === 'reward') {
       const ar = this.level.stations.find((s) => s.kind === 'armourer');
@@ -12162,7 +12337,7 @@ export class Game {
       if (!st) return null;
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
-      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : HAND_IN.prompt;
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : HAND_IN.prompt;
       return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     const p = this.level.portal;
