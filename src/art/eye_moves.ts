@@ -219,7 +219,7 @@ export function entranceGlow(k: number): number {
 /** His tongue drawn down into him (a path down out of his gullet into the dark under the water). */
 const DRAWN_IN: number[][] = TONGUE_RISEN.map((q, i) => [0, -52 - i * 1.2, 28 - i * 19, q[3]]);
 /** His tongue, its tip just out of his gullet, curled like a fern; then rearing, its tip uncurling, taller than it stands. */
-const UNFURL_CURLED: number[][] = [[0, -52, 28], [0, -36, 24], [2, -14, 30], [6, 8, 44], [10, 26, 62], [12, 40, 82], [10, 48, 102], [4, 50, 116], [-4, 46, 124], [-10, 38, 124], [-12, 30, 116], [-10, 26, 106], [-6, 26, 98]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
+const UNFURL_CURLED: number[][] = [[0, -52, 28], [0, -38, 26], [1, -24, 38], [3, -12, 54], [5, -2, 72], [6, 6, 92], [5, 12, 112], [2, 14, 128], [-3, 12, 140], [-7, 6, 144], [-9, 0, 140], [-8, -4, 132], [-5, -4, 124]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
 const UNFURL_REARED: number[][] = [[0, -52, 28], [0, -30, 24], [3, -6, 32], [10, 12, 54], [22, 22, 84], [28, 30, 116], [22, 34, 148], [8, 36, 176], [-8, 36, 198], [-18, 36, 214], [-20, 38, 228], [-16, 40, 238], [-10, 42, 242]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
 /** A curve through keys (each a path), at `u` between key `i` and `i + 1` (Catmull-Rom, point by point). */
 function through(keys: number[][][], i: number, u: number): number[][] {
@@ -236,14 +236,14 @@ const tipEye = (path: number[][]): [number, number, number] => {
 };
 /** His tongue at a frame of his entrance: the lurk's, drawn down into him as he shuts; none while he rises and roars; unfurling out
  *  of his throat; then his stand's. With the eye's middle, its gaze and its lids. Null: drawn in. */
-export function entranceTongue(k: number): { path: number[][]; eye: [number, number, number]; gaze: [number, number, number]; lids: number } | null {
+export function entranceTongue(k: number): { path: number[][]; eye: [number, number, number]; gaze: [number, number, number]; lids: number; roll: number; swell: number } | null {
   if (k < 22) {
     const L = lurkTongue(k / EYE_FPS);
     const w = sm(2, 21, k);
     const path = L.path.map((q, i) => q.map((v, c) => lerp(v, DRAWN_IN[i][c], w)));
     const n = path.length - 1;
     const eye: [number, number, number] = [L.eye[0] + path[n][0] - L.path[n][0], L.eye[1] + path[n][1] - L.path[n][1], L.eye[2] + path[n][2] - L.path[n][2]];
-    return { path, eye, gaze: norm([0, 0.87 - w * 0.5, 0.5 - w * 0.9]), lids: 1 - sm(3, 12, k) };
+    return { path, eye, gaze: norm([0, 0.87 - w * 0.5, 0.5 - w * 0.9]), lids: 1 - sm(3, 12, k), roll: 0, swell: 1 };
   }
   if (k < E.stalk[0]) return null;
   if (k >= E.stalk[1]) return null;
@@ -257,11 +257,17 @@ export function entranceTongue(k: number): { path: number[][]; eye: [number, num
   const path = through(keys, i, i === 0 ? 1 - (1 - u) ** 1.6 : sm(0, 1, u) * 0.5 + u * 0.5);
   const eye = tipEye(path);
   // (its eye shut, tucked down, then lifting to the hero; snapping open)
-  const look = sm(E.stalk[0] + 14, E.lids[0], k);
+  // (lying on its side as it always does, its lids shut, a little down at first; lifting to stare at the hero as it opens)
+  const look = sm(E.stalk[0] + 8, E.lids[0], k);
   const g = gazeAt(eye);
-  const gaze = norm([g[0] * look, lerp(0.2, g[1], look), lerp(-0.95, g[2], look)]);
+  const gaze = norm([g[0], g[1], g[2] - 0.45 * (1 - look)]);
   const lids = k < E.lids[0] ? 0 : [0.3, 0.72, 1][Math.min(2, k - E.lids[0])];
-  return { path, eye, gaze, lids };
+  // (up on its edge as it comes up out of his throat between his jaws, where they are narrowest; lying down on its side as it rears
+  // clear of them)
+  const roll = (Math.PI / 2) * (1 - sm(96, 150, eye[2]));
+  // (squeezed small as it comes up out of his throat, swelling to its size as it clears his jaws)
+  const swell = 0.42 + 0.58 * sm(30, 130, eye[2]);
+  return { path, eye, gaze, lids, roll, swell };
 }
 
 /** HIS TENTACLES' OWN MOVE, THEIR BURST UP OUT OF THE WATER (at his entrance; to be used again at the start of each phase): coiled
@@ -280,7 +286,8 @@ export function armBurst(i: number, k: number, t: number): ArmPose | null {
   const coil = (lift: number): number[][] => R.path.map((_, j) => {
     const a = (j / n) * 4.2 + i;
     const rr = 46 * (1 - (j / n) * 0.5);
-    return [x0 + rr * Math.cos(a) * 0.9, y0 + 8 + rr * Math.sin(a) * 0.5, -40 - j * 6 - 70 * (1 - lift)];
+    // (back from the stone's foot under the water: never into it)
+    return [x0 + rr * Math.cos(a) * 0.9, y0 - 26 + rr * Math.sin(a) * 0.5, -40 - j * 6 - 70 * (1 - lift)];
   });
   // (burst up: tall, straight, leaning a little out, its tip hooked)
   const up: number[][] = R.path.map((_, j) => {
@@ -444,7 +451,9 @@ export function eyeFrame(move: 'stand' | 'lurk' | 'entrance', k: number): EyeFra
   const tore = entranceClock(E.tear[0]);
   const knit = entranceClock(E.stalk[1]);
   const st = standAnim(t);
-  const base: ColossusAnim = { ...st, open, glow, tore, knit };
+  // (his tongue as it is at his entrance: drawn in, or unfurling; his spittle that his tongue holds goes with it)
+  const TE = k < E.stalk[1] ? entranceTongue(k) : null;
+  const base: ColossusAnim = k < E.stalk[1] ? { ...st, open, glow, tore, knit, tongue: TE ? TE.path : null, eye: TE ? TE.eye : st.eye, gaze: TE ? TE.gaze : st.gaze, lids: TE ? TE.lids : 0, roll: TE ? TE.roll : 0, swell: TE ? TE.swell : 1 } : { ...st, open, glow, tore, knit };
   // (his stand's own layers at the frame of it his entrance has come to: it ends on the frame before the stand's first)
   const SL = standLayers(mod(k - E.frames, EYE_STAND.frames));
   // (his jaws: closing under the water in ten steps; the shut mound, painted once, rising; each frame of his strain, his tear and his
@@ -468,10 +477,7 @@ export function eyeFrame(move: 'stand' | 'lurk' | 'entrance', k: number): EyeFra
   // (his tongue)
   let tongue: EyeLayer | null = null;
   if (k >= E.stalk[1]) tongue = SL.tongue;
-  else {
-    const T = entranceTongue(k);
-    if (T) tongue = { key: `T.e.${pad(k)}`, pose: { ...body({ ...base, tongue: T.path, eye: T.eye, gaze: T.gaze, lids: T.lids, parts: 'tongue' }, k < E.rise[0] ? at.drop : 0, k < E.rise[0] ? at.back : 0), gaze: T.gaze }, drop: 0, back: 0 };
-  }
+  else if (TE) tongue = { key: `T.e.${pad(k)}`, pose: { ...body({ ...base, parts: 'tongue' }, k < E.rise[0] ? at.drop : 0, k < E.rise[0] ? at.back : 0), gaze: TE.gaze }, drop: 0, back: 0 };
   // (his tentacles: each its burst, then his stand's)
   const arms: Array<EyeLayer | null> = [];
   const smear: Array<EyeLayer | null> = [];

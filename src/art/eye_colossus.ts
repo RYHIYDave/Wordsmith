@@ -261,6 +261,11 @@ export interface ColossusAnim {
   gaze: readonly [number, number, number];
   /** His eye's lids: 0 shut, 1 open. */
   lids: number;
+  /** His eye turned up on its edge (radians about the way it looks): 0 lying on its side, as it always does; π/2, its long way up
+   *  (as it comes up out of his throat between his jaws, where it is narrowest). */
+  roll?: number;
+  /** How big his eye is (1 as drawn): squeezed small as it comes up out of his throat, swelling to its size as it clears his jaws. */
+  swell?: number;
   /** His throat's glow: 1 as drawn, more as it flares. */
   glow: number;
   /** When (his clock) his jaws tore apart at his entrance: the strings of flesh and spittle across his seam hold before it and snap as
@@ -1271,7 +1276,7 @@ function spitList(): Spit[] {
     }
     return true;
   };
-  for (let n = 0; n < RL.length * 3 && out.length < 12; n++) {
+  for (let n = 0; n < RL.length * 3 && out.length < 9; n++) {
     // (each rim point of his left jaw tried against three heights on his right)
     const i = n % RL.length;
     const try3 = Math.floor(n / RL.length);
@@ -1288,8 +1293,8 @@ function spitList(): Spit[] {
     const A = [a[0], a[1] + dyA, a[2]];
     const B = [b[0], b[1] + dyB, b[2]];
     const span0 = Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
-    const r = 1.1 + 1.3 * h3(i, 5, 0, 285);
-    const sag = 0.06 + 0.26 * h3(i, 8, 0, 286) ** 1.5;
+    const r = 0.8 + 1.0 * h3(i, 5, 0, 285);
+    const sag = 0.08 + 0.34 * h3(i, 8, 0, 286) ** 1.3;
     // (clear of all his tongue may weave through, sagging as much as it ever does, and its halves hanging)
     const pts = sagging(A, B, span0 * sag * 1.3, r, 0, 12);
     if (!pts.every((q) => clearOfTongue(q) && clearOfTongue([q[0], q[1], q[2] - span0 * 0.25, q[3]]))) continue;
@@ -1303,7 +1308,7 @@ function spitList(): Spit[] {
     let bi = 0;
     for (let j = 0; j < R.length; j++) if (Math.abs(R[j][2] - T[2] - 6) < Math.abs(R[bi][2] - T[2] - 6)) bi = j;
     const b = R[bi];
-    const r0 = 1.2 + 0.8 * h3(tg, side + 2, 0, 296);
+    const r0 = 0.9 + 0.7 * h3(tg, side + 2, 0, 296);
     const sag0 = 0.12 + 0.12 * h3(tg, side + 2, 1, 297);
     if (tg < 4) continue;
     const clear = TS.every((W, wi) => {
@@ -1340,11 +1345,6 @@ function spitList(): Spit[] {
   SPITS = out;
   return out;
 }
-/** How many strands of spittle are strung across his V as he stands, and how many strings across his seam tear at his entrance. */
-export function spitCounts(): { across: number; seam: number; seamFlesh: number } {
-  const L = spitList();
-  return { across: L.filter((q) => !q.tear).length, seam: L.filter((q) => q.tear).length, seamFlesh: L.filter((q) => q.tear && q.flesh).length };
-}
 /** Where a strand is in its round now: whole (`neck`: how far it has necked at its middle), or snapped (`half`: how long each half
  *  still is, of half its span; `fall`: how far down it has whipped); neither, gone. */
 function spitState(S: Spit, an: ColossusAnim): { whole: boolean; neck: number; half: number; fall: number } {
@@ -1358,6 +1358,12 @@ function spitState(S: Spit, an: ColossusAnim): { whole: boolean; neck: number; h
     return { whole: false, neck: 0, half: sm01(0.8, 1, p), fall: 0.3 * (1 - sm01(0.88, 1, p)) };
   };
   if (an.tore === undefined) return S.tear ? { whole: false, neck: 0, half: 0, fall: 0 } : cycle();
+  const none = { whole: false, neck: 0, half: 0, fall: 0 };
+  if (S.tg !== undefined) {
+    // (at his entrance, his tongue's strands come only once it is out, and on their own round once `knit` has passed)
+    const n0 = Math.ceil((an.knit ?? 0) / P - S.ph - 0.8 - 1e-9);
+    return t < (n0 + 0.8 - S.ph) * P ? none : cycle();
+  }
   // (his entrance: whole across his seam until his jaws tear apart; then each snaps in its turn, the flesh last; the halves drip away)
   const snap = an.tore + (S.flesh ? 0.04 + 0.3 * S.u : 0.02 + 0.14 * S.u);
   if (t < snap) return { whole: true, neck: sm01(snap - 0.1, snap, t), half: 0, fall: 0 };
@@ -1458,6 +1464,8 @@ class Scene {
   /** A frame of a move: what of him it holds, how his jaws stand, what runs on him now (null: the still). */
   readonly now: Now | null = null;
   readonly lids: number = 1;
+  /** How big his eye is now (1 as drawn). */
+  readonly eyeK: number = 1;
   constructor(pose: ColossusPose) {
     this.arms = pose.arms.map((a) => armOf(a));
     this.drop = pose.drop;
@@ -1468,6 +1476,7 @@ class Scene {
       this.now = nowOf(an);
       NOW = this.now;
       this.lids = an.lids;
+      this.eyeK = an.swell ?? 1;
     } else NOW = null;
     const g = an ? an.gaze : pose.gaze;
     const gl = Math.hypot(g[0], g[1], g[2]) || 1;
@@ -1479,7 +1488,14 @@ class Scene {
       const A: [number, number, number] = [G[1] / al, -G[0] / al, 0];
       let V: [number, number, number] = [A[1] * G[2] - A[2] * G[1], A[2] * G[0] - A[0] * G[2], A[0] * G[1] - A[1] * G[0]];
       if (V[2] < 0) V = [-V[0], -V[1], -V[2]];
-      this.eyeA = A;
+      const ro = an?.roll ?? 0;
+      if (ro) {
+        const c = Math.cos(ro);
+        const s = Math.sin(ro);
+        const A2: [number, number, number] = [A[0] * c + V[0] * s, A[1] * c + V[1] * s, A[2] * c + V[2] * s];
+        V = [V[0] * c - A[0] * s, V[1] * c - A[1] * s, V[2] * c - A[2] * s];
+        this.eyeA = A2;
+      } else this.eyeA = A;
       this.eyeV = V;
     }
     const path = an ? an.tongue : pose.tongue === 'under' ? TONGUE_UNDER : TONGUE_RISEN;
@@ -1874,9 +1890,9 @@ class Scene {
     const qx = x - E[0];
     const qy = y - E[1];
     const qz = z - E[2];
-    const W = COLOSSUS.eyeW;
-    const H = COLOSSUS.eyeH;
-    const Dp = COLOSSUS.eyeD;
+    const W = COLOSSUS.eyeW * this.eyeK;
+    const H = COLOSSUS.eyeH * this.eyeK;
+    const Dp = COLOSSUS.eyeD * this.eyeK;
     const ql = Math.hypot(qx, qy, qz);
     if (ql - W - 14 > 60 && this.tongue && !exact) {
       const b = this.tongue.box;
@@ -2374,7 +2390,7 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         const aw = ex * g[0] + ey * g[1] + ez * g[2];
         const av = ex * EV[0] + ey * EV[1] + ez * EV[2];
         const rI = Math.hypot(au, av);
-        const IR = COLOSSUS.eyeH - 1;
+        const IR = COLOSSUS.eyeH * S.eyeK - 1;
         if (rI < IR && aw > 0) {
           const slit = 4.4 * Math.sqrt(Math.max(0, 1 - (av / (IR - 1)) ** 2));
           const stria = vn(Math.atan2(av, au) * 7, rI * 0.22, 0, 61);
@@ -2389,7 +2405,7 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
           gloss = 1.2;
         } else {
           // the white, veined; redder toward its corners and the lids round it
-          const k = Math.hypot(au / COLOSSUS.eyeW, av / COLOSSUS.eyeH);
+          const k = Math.hypot(au / (COLOSSUS.eyeW * S.eyeK), av / (COLOSSUS.eyeH * S.eyeK));
           const vein = Math.abs(vn(au * 0.19, av * 0.19, aw * 0.19, 62) - 0.5) < 0.03 + k * 0.05 || Math.abs(vn(au * 0.4, av * 0.4, aw * 0.4, 63) - 0.5) < 0.018 + k * 0.03;
           const ramp0 = vein ? CO_VEIN : k > 0.66 && hp(i, j, 64) < (k - 0.66) / 0.4 ? CO_VEIN : CO_SCLERA;
           col = ramp0[Math.max(vein ? 1 : 0, Math.min(4, tn))];
@@ -2411,7 +2427,7 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         const under = Math.max(0, -Nz) + bayer(i, j) * 0.5;
         col = CO_TONGUE[Math.max(0, Math.min(4, tn + (under > 0.55 ? 1 : 0)))];
         const ed = Math.hypot(fx - E[0], fy - E[1], fz - E[2]);
-        if (ed < COLOSSUS.eyeW + 10) {
+        if (ed < COLOSSUS.eyeW * S.eyeK + 10) {
           const vq = Math.abs(vn(fx * 0.09, fy * 0.09, fz * 0.09, 66) - 0.5);
           const vq2 = Math.abs(vn(fx * 0.2, fy * 0.2, fz * 0.2, 67) - 0.5);
           if (vq < 0.035 || vq2 < 0.02) col = CO_VEIN[Math.max(0, Math.min(2, tn - 1))];
@@ -2496,8 +2512,8 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
       }
       // (wet: where the light is thrown straight back, a glint)
       if (gloss > 0.4 && Math.pow(spec, 26) * gloss * (0.75 + bayer(i, j)) > 0.5 && lit > 0.2 && mat !== M_EYE && f.armR === 0) col = CO_SHEEN;
-      // HIS EYE'S GLOW on what is round it: pink, and gold nearest
-      if (S.body && pose.view === 'front' && mat !== M_EYE && onHead) {
+      // HIS EYE'S GLOW on what is round it: pink, and gold nearest (while he moves, only while it is out and open)
+      if (S.body && pose.view === 'front' && mat !== M_EYE && onHead && (!pose.anim || (pose.anim.tongue && pose.anim.lids > 0.3))) {
         const ex = E[0] - fx;
         const ey = E[1] - fy;
         const ez = E[2] - fz;
@@ -2843,6 +2859,23 @@ export function poseArm(): ColossusPose {
 // =============================================================================================
 // HIS ARMS CLEAR OF HIM AND OF THE STONE; HIS PARTS
 
+/** How many strands of spittle are strung across his V as he stands, and how many strings across his seam tear at his entrance. */
+export function spitCounts(): { across: number; seam: number; seamFlesh: number } {
+  const L = spitList();
+  return { across: L.filter((q) => !q.tear).length, seam: L.filter((q) => q.tear).length, seamFlesh: L.filter((q) => q.tear && q.flesh).length };
+}
+/** How many strands of his spittle are whole and how many snapped (hanging) in a frame of a move. */
+export function spitStates(an: ColossusAnim): { whole: number; snapped: number } {
+  let whole = 0;
+  let snapped = 0;
+  for (const S of spitList()) {
+    if (S.tg !== undefined && !an.tongue) continue;
+    const st = spitState(S, an);
+    if (st.whole) whole++;
+    else if (st.half > 0.05) snapped++;
+  }
+  return { whole, snapped };
+}
 /**
  * How clear his arms are, along every one of them (his lengths): of his head and all of him (the least gap between an arm's skin and
  * his, where they are nearest), and of the stone (the least gap, toward the camera, between any part of an arm low enough to meet the
@@ -2912,6 +2945,8 @@ export function bodyClearances(pose: ColossusPose, deep = 20): { tongue: number;
         const r = P[k * 4 + 3];
         // (its root in his gullet is his throat's own; under the water deeper than `deep`, not seen)
         if (T.s[k] < 40 || z + r < -deep) continue;
+        // (down his gullet, the way into him at the bottom of his throat that it is drawn down into: his own)
+        if (P[k * 4 + 2] < 40 && Math.abs(x) < 30 && y < -20) continue;
         // (his tongue's spine is in his own space, as his jaws are)
         const jb = jaws(x, y, P[k * 4 + 2]) - r;
         if (jb < tongue) {
@@ -2941,20 +2976,22 @@ export function bodyClearances(pose: ColossusPose, deep = 20): { tongue: number;
         for (let b = 1; b < 8; b++) {
           const th = (a / 16) * Math.PI * 2;
           const ph = (b / 8) * Math.PI - Math.PI / 2;
-          const u = Math.cos(ph) * Math.cos(th) * (COLOSSUS.eyeW + 8);
-          const w = Math.cos(ph) * Math.sin(th) * (COLOSSUS.eyeD + 4) - 3;
-          const v = Math.sin(ph) * (COLOSSUS.eyeH + 7);
+          const u = Math.cos(ph) * Math.cos(th) * (COLOSSUS.eyeW * S.eyeK + 8);
+          const w = Math.cos(ph) * Math.sin(th) * (COLOSSUS.eyeD * S.eyeK + 4) - 3;
+          const v = Math.sin(ph) * (COLOSSUS.eyeH * S.eyeK + 7);
           const x = E[0] + A[0] * u + g[0] * w + V[0] * v;
           const y = E[1] + A[1] * u + g[1] * w + V[1] * v;
           const z = E[2] + A[2] * u + g[2] * w + V[2] * v;
           if (z - S.drop < -deep) continue;
+          // (still down his gullet, coming up out of him)
+          if (z < 40 && Math.abs(x) < 30 && y < -20) continue;
           eye = Math.min(eye, jaws(x, y, z));
         }
       }
     }
     // (his two jaws: the skin of each sampled where it faces the other, against the other)
     let jj = Infinity;
-    if (S.now && S.now.open > 0.02) {
+    if (S.now) {
       for (let z = 4; z <= 150; z += 6) {
         for (let y = -80; y <= 140; y += 8) {
           // (along x from the middle out, the first point of his left jaw, then is it in his right?)

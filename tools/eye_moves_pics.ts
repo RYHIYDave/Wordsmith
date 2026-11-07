@@ -320,7 +320,12 @@ const LAYER = { w: 1100, h: 520, ax: 550, ay: 300, raw: true } as const;
 // (kept on the machine's memory disk, packed: only what of him there is, in the box round it)
 const CACHE = process.env.EYE_CACHE || '/dev/shm/eye_moves/cache';
 fs.mkdirSync(CACHE, { recursive: true });
-const SRC = crypto.createHash('sha1').update(fs.readFileSync('src/art/eye_colossus.ts')).digest('hex');
+// (what paints him: art/eye_colossus.ts up to its checks, which paint nothing)
+const SRC = ((): string => {
+  const all = new TextDecoder().decode(fs.readFileSync('src/art/eye_colossus.ts'));
+  const cut = all.indexOf('// HIS ARMS CLEAR OF HIM AND OF THE STONE; HIS PARTS');
+  return crypto.createHash('sha1').update(cut > 0 ? all.slice(0, cut) : all).digest('hex');
+})();
 const fileOf = (L: EyeLayer): string => path.join(CACHE, `${L.key.replace(/[^A-Za-z0-9.]/g, '_')}_${crypto.createHash('sha1').update(SRC + JSON.stringify(L.pose) + JSON.stringify(LAYER)).digest('hex').slice(0, 14)}.bin`);
 /** A layer: the box round what of him there is (x0, y0, w, h, on his picture), and in it each pixel's kind, colour, nearness, height
  *  over the water, fire, outline and material; his lights. */
