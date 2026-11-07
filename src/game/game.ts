@@ -693,6 +693,8 @@ export class Game {
     this.waveT -= dt;
     let alive = 0;
     for (const m of this.monsters) if (!m.dead) alive++;
+    // (ARRIVALS: those still coming up out of their rifts are counted)
+    alive += this.risers.length;
     if (alive <= PRACTICE.refillAt && this.waveT <= 0) {
       this.spawnWave();
       this.waveT = 2.5;
@@ -716,6 +718,7 @@ export class Game {
     const n = this.waveN++;
     const kinds: MonsterKind[] = ['skeleton', 'skeleton', 'skeleton', 'archer', 'cultist', 'bat'];
     const spots = scatter(this.level.walk, f.w, f.h, cx, cy, PRACTICE.packSize, rng);
+    const from = this.monsters.length;
     spots.forEach((s, i) => {
       // every third pack is led by a brute, every other one by an elite carrying a word
       const brute = n % 3 === 2 && i === 0;
@@ -724,6 +727,8 @@ export class Game {
       m.xp = 0;
       this.wakeUp(m);
     });
+    // (ARRIVALS: the proving ground's packs come up out of rifts too)
+    this.arriveFrom(from);
   }
 
   // ===========================================================================================
