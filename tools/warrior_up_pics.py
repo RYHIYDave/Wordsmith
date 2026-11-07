@@ -164,6 +164,33 @@ def draw_row(img, d, y, W, label, paths, box, rows, small, tiny):
     return y + 14
 
 
+def strip_scale(box, W):
+    """How big a stride strip's eight pictures can be, side by side across the sheet."""
+    return max(1, min(3, (W - 48 - 7 * 8) // (8 * (box[2] - box[0]))))
+
+
+def strip_height(box, W):
+    return 28 + 20 + (box[3] - box[1]) * strip_scale(box, W) + 24 + 14
+
+
+def draw_strip(img, d, y, W, label, paths, box, thighs, small, tiny):
+    """A whole stride: eight moments evenly through a turn of his run, side by side, and under each how far up from straight
+    down a swinging thigh is."""
+    d.text((24, y), label, font=small, fill=INK)
+    y += 28
+    k = strip_scale(box, W)
+    bw = (box[2] - box[0]) * k
+    x0 = (W - (8 * bw + 7 * 8)) // 2
+    for i, p in enumerate(paths):
+        x = x0 + i * (bw + 8)
+        d.text((x + 2, y), f'{i + 1} of 8', font=tiny, fill=DIM)
+        fig = figure(p, box, k)
+        img.paste(fig, (x, y + 20))
+        th = thighs[i]
+        d.text((x + 2, y + 20 + fig.height + 2), f'thigh {th}°' if th else 'both feet down', font=tiny, fill=SALMON if th > 50 else CYAN)
+    return y + 20 + (box[3] - box[1]) * k + 24 + 14
+
+
 def sheet(dir, out):
     spec = json.load(open(os.path.join(dir, 'sheet.json')))
     W = 1440
@@ -188,6 +215,11 @@ def sheet(dir, out):
             box = union_box(paths)
             bw = box[2] - box[0]
             blocks.append(('row', row['label'], paths, box, 1 if 4 * bw * 3 + 3 * 12 <= W - 24 else 2))
+        strips = sec.get('strips') or []
+        if strips:
+            sbox = union_box([os.path.join(dir, f) for st in strips for f in st['files']])
+            for st in strips:
+                blocks.append(('strip', st['label'], [os.path.join(dir, f) for f in st['files']], sbox, st['thighs']))
     blocks.append(('title', 'At the game\'s own size (each of his pixels one pixel here)'))
     blocks.append(('small', spec['small']))
     # measure
@@ -202,6 +234,8 @@ def sheet(dir, out):
         elif b[0] == 'row':
             box = b[3]
             hgt += row_height(box, b[4])
+        elif b[0] == 'strip':
+            hgt += strip_height(b[3], W)
         else:
             hgt += 22 + 170 + 30
     img = Image.new('RGB', (W, hgt + 20), BG)
@@ -224,6 +258,9 @@ def sheet(dir, out):
         elif b[0] == 'row':
             _, label, paths, box, rows = b
             y = draw_row(img, d, y, W, label, paths, box, rows, small, tiny)
+        elif b[0] == 'strip':
+            _, label, paths, box, thighs = b
+            y = draw_strip(img, d, y, W, label, paths, box, thighs, small, tiny)
         else:
             y += 22
             x = 24
@@ -287,7 +324,8 @@ def film(dir, out):
                 d.text((x, top), name, font=lab, fill=CYAN if name == 'NOW' else DIM)
                 img.paste(g, (x, top + 28))
         else:
-            names = [('BEFORE · in front', 0), ('NOW · in front', 1), ('BEFORE · from behind', 2), ('NOW · from behind', 3)]
+            labels = fr.get('names') or ['BEFORE · in front', 'NOW · in front', 'BEFORE · from behind', 'NOW · from behind']
+            names = [(labels[j], j) for j in range(4)]
             for name, j in names:
                 col, row = j % 2, j // 2
                 x = 20 + col * (bw + 14)
@@ -308,7 +346,7 @@ def film(dir, out):
                 g.paste(im, (0, 0), im)
                 x = gx + col * (g.width + 14)
                 yy = top + 30 + row * (g.height + 30)
-                d.text((x, yy), ['BEFORE', 'NOW', 'BEFORE', 'NOW'][j], font=tiny, fill=CYAN if j % 2 else DIM)
+                d.text((x, yy), ('WAS' if fr.get('names') else 'BEFORE') if j % 2 == 0 else 'NOW', font=tiny, fill=CYAN if j % 2 else DIM)
                 img.paste(g, (x, yy + 18))
         proc.stdin.write(img.tobytes())
     proc.stdin.close()

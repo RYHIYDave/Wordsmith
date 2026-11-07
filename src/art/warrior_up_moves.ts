@@ -83,11 +83,11 @@ export function plantedFeet(): Partial<Bones> {
 }
 /** The first moment of the skip: both feet just off the floor (the front foot lifting, the back pushing up off its ball). */
 function lightFeet(): Partial<Bones> {
-  return { lfx: 10.6 + DF, lfz: 1.6, lfp: -6, lft: 3, lk: 4, rfx: -9 + DB, rfp: 20, rfz: onToes(20) + 1.3, rft: -40, rk: -24 };
+  return { lfx: 10.6 + DF, lfz: 1.1, lfp: -6, lft: 3, lk: 4, rfx: -9 + DB, rfp: 20, rfz: onToes(20) + 1.3, rft: -40, rk: -24 };
 }
 /** Both feet off the floor for the skip-step the game's step carries him on (TUNE.swingStep in TUNE.swingStepTime). */
 function skipFeet(): Partial<Bones> {
-  return { lfx: 11 + DF, lfz: 2.6, lfp: -10, lft: 2, lk: 4, rfx: -9 + DB, rfp: 30, rfz: onToes(30) + 1.8, rft: -24, rk: -10 };
+  return { lfx: 11 + DF, lfz: 1.3, lfp: -10, lft: 2, lk: 4, rfx: -9 + DB, rfp: 30, rfz: onToes(30) + 1.8, rft: -24, rk: -10 };
 }
 const hilt = (x: number, y: number, z: number): Partial<Bones> => ({ rhIn: 0, rhx: x, rhy: y, rhz: z });
 
@@ -133,24 +133,22 @@ function townAlive(): Motion {
 export const WU_TOWN3: Move3 = { ...KNIGHT_TOWN3, name: 'The knight in town, alive', rest: WU_TOWN_REST, motion: townAlive() };
 
 // ---------------------------------------------------------------------------------------------
-// RUNNING: his own run, made to grip (moves3.ts gripping): a turn of it in 27 sixtieths of a second, its foot on the floor going
-// back under him exactly as fast as the game carries him (4.6 tiles a second). Driving, heavier and lower than before.
+// RUNNING: his own run, a heavy armoured man's (below, `wuHeavyRun`): a turn of it in 27 sixtieths of a second, its foot on the
+// floor going back under him exactly as fast as the game carries him (4.6 tiles a second), as moves3.ts gripping's.
 
 const RUN_PERIOD = 27 / 60;
-/**
- * WHERE HIS FOOT IS ON THE FLOOR, his legs made true: each foot now comes down further before him (18 of the stride's 21, where it
- * was 9) and leaves the floor as it passes under him, so that while it bears him its shin stands up over it and is not seen end-on
- * from any of his sides (the stride as long, the foot on the floor going back as fast, his knees as they were).
- */
+/** THE RUN AS THE OWNER SAW IT (90de9707) AND SAID “why is he high stepping with his knees up?”: moves3.ts's run made to grip,
+ * its foot set down 18 of 21 before him (after gripping, 25 of 29), carried 9.5 high (after gripping, 11): its swinging thigh came
+ * up past level. Kept for the pictures and for the check that sees a prance (tests/warrior_up.test.ts 11). */
 const RUN_REACH = 18;
-const GAIT: Gait = {
-  reach: RUN_REACH, push: 21 - RUN_REACH, kick: 9.5, lean: 13, hunch: 6, sink: 2.8, bob: 1.9, hips: 10, counter: -0.55, yaw: -16, twist: -10,
+export const WU_GAIT: Gait = {
+  reach: 0, push: 0, kick: 0, lean: 13, hunch: 6, sink: 2.07, bob: 0.9, hips: 10, counter: -0.55, yaw: -16, twist: -10,
   // (his sword carried as his guard carries it, so that it is seen from every side: his hands up by his right breast, the blade
   // level behind him and out to his right, steadier than it was; it was hands 6.2, 3.5, -12.1, the blade -160 round and 31 down)
   arms: (swing, step) => ({ rhIn: 0, rhx: 3 + swing * 0.5, rhy: -3.5, rhz: -4, lhIn: 3, lhx: -5.2, lhy: 0, lhz: 0, wAz: -127.5 + swing * 1.5, wEl: -0.5 + 1.5 * Math.cos(step * Math.PI * 2), le: 10, re: 6 }),
 };
-const TOWN_GAIT: Gait = {
-  reach: RUN_REACH, push: 21 - RUN_REACH, kick: 8.5, lean: 10, hunch: 4, sink: 2.4, bob: 1.7, hips: 9, counter: 0.6, yaw: 0, twist: 0,
+export const WU_TOWN_GAIT: Gait = {
+  reach: 0, push: 0, kick: 0, lean: 10, hunch: 4, sink: 2.07, bob: 0.9, hips: 9, counter: 0.6, yaw: 0, twist: 0,
   arms: (swing) => {
     // (as moves3.ts looseArms: an empty hand swinging low under its shoulder, each forward as the other leg is)
     const L = B.upperArm + B.foreArm;
@@ -160,13 +158,166 @@ const TOWN_GAIT: Gait = {
     return { rhIn: 1, rhx: r[0], rhy: -1.8, rhz: r[1], re: 0, lhIn: 1, lhx: l[0], lhy: 1.8, lhz: l[1], le: 0 };
   },
 };
-function gripRun(g: Gait, more: Partial<Bones> = {}): Motion {
-  const m = run(gripping(g, RUN_PERIOD), RUN_PERIOD);
-  if (!Object.keys(more).length) return m;
-  return { ...m, keys: m.keys.map((k) => ({ ...k, pose: { ...more, ...k.pose } })) };
+/**
+ * HOW HIS FEET GO IN HIS RUN, A HEAVY ARMOURED MAN'S (the owner, 7 Nov 2026, of the run before this: “all that time and you
+ * screwed up his run.  why is he high stepping with his knees up?”). Driving and grounded: each foot comes down a little before
+ * him heel first, rolls flat under him and goes back exactly as fast as the game carries him, and leaves the floor off its toes
+ * well behind him, the leg straightened; then its heel tucks up behind him as it recovers, and it comes through LOW, close to the
+ * floor, its knee lifting only a little, and reaches forward to be set down. Its thigh never more than about 40 degrees from
+ * hanging straight down (art/warrior_up_review.ts WU_THIGH_MOST; tests/warrior_up.test.ts holds it).
+ */
+export interface HeavyFeet {
+  /** How much of a turn each foot is on the floor. */
+  stance: number;
+  /** How far before his hips (the ankle, the foot flat) it comes down, heel first. */
+  reach: number;
+  /** How far through its time on the floor it is flat (from, to): after it the heel rises, until it leaves off its toes `off` up. */
+  flat: readonly [number, number];
+  off: number;
+  /** How the heel rises after it (the power of the time since: 1 at an even pace; below 1 quickly at first). */
+  rise?: number;
+  /** How high the heel is tucked up behind him as it recovers (its lowest point off the floor), and when (how far through its
+   * time off the floor it is highest). */
+  tuck: number;
+  tuckAt: number;
+  /** How far through its time off the floor the foot is level again. */
+  level?: number;
+  /** How far its toes are up as it is set down, heel first (degrees; below 0). */
+  land?: number;
+  /** When in a foot's time on the floor he is lowest (0 as it comes down, 1 as it leaves; 0.5 by default, half way). */
+  lowAt?: number;
+  /** How high its lowest point is as it passes under him, and as it reaches forward to be set down. */
+  clear: number;
 }
-export const WU_RUN3: Move3 = { name: 'The knight runs, great sword, gripping', held: 'greatsword', build: B, rest: WU_REST, motion: gripRun(GAIT), stride: GRIP_SPEED * RUN_PERIOD };
-export const WU_TOWN_RUN3: Move3 = { name: 'The knight runs in town, gripping', held: 'greatsword', build: B, rest: WU_TOWN_REST, motion: gripRun(TOWN_GAIT, { py: 0, stow: 1 }), stride: GRIP_SPEED * RUN_PERIOD };
+export const WU_RUN_FEET: HeavyFeet = { stance: 0.37, reach: 10.72, flat: [0.02, 0.05], off: 45.4, rise: 0.52, tuck: 4.1, tuckAt: 0.18, level: 0.45, clear: 1.29, land: -2.34, lowAt: 0.47 };
+/** The way of his body in the run (the moves3.ts Gait's, of which its feet are not used: they are `HeavyFeet`). */
+export function wuHeavyRun(g: Gait, f: HeavyFeet = WU_RUN_FEET, more: Partial<Bones> = {}): Motion {
+  const period = RUN_PERIOD;
+  const n = Math.round(period * 60);
+  const travel = GRIP_SPEED * UNITS_PER_TILE * f.stance * period;
+  const S = f.stance;
+  // (a foot pitched `deg` (heel up; toe up below 0): how far its ankle must move for the point it would stand on (its toe; its
+  // heel) to be where that point of it is when it is flat: the foot's own shape, wherever it is)
+  const shape = new Map<number, { dx: number; dz: number }>();
+  const lifted = (deg: number): { dx: number; dz: number } => {
+    const key = Math.round(deg * 100) / 100;
+    let r = shape.get(key);
+    if (!r) {
+      const at = { ...WU_REST, lfx: 0, lfz: 0, lfp: 0 } as Posed;
+      const flat = solve(B, at);
+      const tip = solve(B, { ...at, lfp: key } as Posed);
+      const a = key < 0 ? flat.heelL : flat.toeL;
+      const b = key < 0 ? tip.heelL : tip.toeL;
+      shape.set(key, (r = { dx: a[0] - b[0], dz: a[2] - b[2] }));
+    }
+    return r;
+  };
+  const LAND = f.land ?? -7;
+  const [f0, f1] = f.flat;
+  // (where its ankle is, relative to the hips, for a moment of the turn: the left foot comes down at the start)
+  const foot = (phase: number): { x: number; z: number; pitch: number } => {
+    const ph = ((phase % 1) + 1) % 1;
+    if (ph < S) {
+      // ON THE FLOOR: heel first, rolled flat, the heel rising as it goes back behind him; the point it stands on going back
+      // exactly as fast as the game carries him
+      const u = ph / S;
+      const pitch = u < f0 ? LAND * (1 - smooth01(u / f0)) : u <= f1 ? 0 : f.off * ((u - f1) / (1 - f1)) ** (f.rise ?? 2);
+      const k = lifted(pitch);
+      return { x: f.reach - travel * u + k.dx, z: k.dz, pitch };
+    }
+    // OFF THE FLOOR: the heel tucked up behind as it recovers; through low under him; reaching forward to be set down heel first
+    const v = (ph - S) / (1 - S);
+    // (its toes hanging behind him as the heel tucks up; the foot level by the time it comes through under him, so that it can
+    // pass low; its toes up as it is set down, heel first)
+    const level = f.level ?? 0.5;
+    const pitch = v < f.tuckAt ? f.off + (70 - f.off) * smooth01(v / f.tuckAt) : v < level ? 70 * (1 - smooth01((v - f.tuckAt) / (level - f.tuckAt))) : LAND * smooth01((v - level) / (1 - level));
+    const leave = lifted(f.off);
+    const land = lifted(LAND);
+    const from = f.reach - travel + leave.dx;
+    const to = f.reach + land.dx;
+    const x = from + (to - from) * smooth01(v);
+    // (its lowest point: up behind him, then low as it comes through, and down to the floor as it is set down)
+    const tuck = f.tuck * Math.sin(Math.PI * Math.min(1, v / (2 * f.tuckAt))) ** 2;
+    // (off the floor at once, and set down at once: a heavy footfall, never a foot dragged along the floor)
+    const low = f.clear * Math.min(1, v / 0.012, (1 - v) / 0.012);
+    const h = Math.max(v < 2 * f.tuckAt ? tuck : 0, low);
+    return { x, z: h + lifted(pitch).dz, pitch };
+  };
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const ph = i / n;
+    const turn = Math.cos(ph * Math.PI * 2);
+    const step = (ph * 2) % 1;
+    const l = foot(ph);
+    const r = foot(ph + 0.5);
+    keys.push({
+      at: ph * period,
+      ease: 'lin',
+      pose: {
+        ...more,
+        pz: -g.sink - g.bob * Math.cos((2 * ph - 2 * S * (f.lowAt ?? 0.5)) * Math.PI * 2),
+        yaw: g.yaw - g.hips * turn, pitch: g.lean, roll: 2 * Math.cos((ph - S / 2) * Math.PI * 2),
+        twist: g.twist + (1 + g.counter) * g.hips * turn, bend: g.hunch + 1.2 * Math.cos(ph * Math.PI * 4), side: 0,
+        faceTurn: 0, faceUp: g.look ?? -2,
+        lfx: l.x, lfy: -1.2, lfz: l.z, lfp: l.pitch, lft: 2, lk: 2,
+        rfx: r.x, rfy: 1.2, rfz: r.z, rfp: r.pitch, rft: -2, rk: -2,
+        ...g.arms(turn, step),
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+function smooth01(k: number): number {
+  const c = Math.max(0, Math.min(1, k));
+  return c * c * (3 - 2 * c);
+}
+export const WU_RUN_SEEN: Move3 = {
+  name: 'The knight runs, as he saw it (high-stepping)', held: 'greatsword', build: B, rest: WU_REST, stride: GRIP_SPEED * RUN_PERIOD,
+  motion: run(gripping({ ...WU_GAIT, reach: RUN_REACH, push: 21 - RUN_REACH, kick: 9.5, sink: 2.8, bob: 1.9 }, RUN_PERIOD), RUN_PERIOD),
+};
+export const WU_RUN3: Move3 = { name: 'The knight runs, great sword, gripping', held: 'greatsword', build: B, rest: WU_REST, motion: wuHeavyRun(WU_GAIT), stride: GRIP_SPEED * RUN_PERIOD };
+export const WU_TOWN_RUN3: Move3 = { name: 'The knight runs in town, gripping', held: 'greatsword', build: B, rest: WU_TOWN_REST, motion: wuHeavyRun(WU_TOWN_GAIT, WU_RUN_FEET, { py: 0, stow: 1 }), stride: GRIP_SPEED * RUN_PERIOD };
+
+/**
+ * COMING TO A STAND OUT OF HIS RUN, from a moment of its turn (`phase`) into a stance (as moves3.ts settle: the foot off the floor
+ * steps first, to where the stance has it, then the other if it must; the body half way into the stance as the first comes down),
+ * a heavy man's: each foot carried LOW to its place (`lift` above the floor, where moves3.ts lifts it 3.2), so that no knee comes
+ * up as he pulls up into his long guard.
+ */
+export function wuSettle(runMove: Move3, phase: number, to: Bones, long = 0.24, lift = WU_STEP_LIFT): Motion {
+  const { keys, loop } = runMove.motion;
+  const span = keys[keys.length - 1].at - (loop ?? 0);
+  const p = bonesAt(keys, runMove.rest, (loop ?? 0) + span * (((phase % 1) + 1) % 1)) as Posed;
+  const from: Partial<Bones> = { ...p };
+  for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (from as Record<string, unknown>)[k];
+  const leftFirst = p.lfz > p.rfz;
+  const half = (a: number, b: number): number => (a + b) / 2;
+  const foot = (left: boolean, where: 'run' | 'up' | 'stance'): Partial<Bones> => {
+    if (where === 'run') return left ? { lfx: p.lfx, lfy: p.lfy, lfz: p.lfz, lfp: p.lfp, lft: p.lft } : { rfx: p.rfx, rfy: p.rfy, rfz: p.rfz, rfp: p.rfp, rft: p.rft };
+    if (where === 'stance') return left ? { lfx: to.lfx, lfy: to.lfy, lfz: to.lfz, lfp: to.lfp, lft: to.lft } : { rfx: to.rfx, rfy: to.rfy, rfz: to.rfz, rfp: to.rfp, rft: to.rft };
+    // (carried low, half way from where it was in the run to where it goes, its toe a little down)
+    return left
+      ? { lfx: half(p.lfx, to.lfx), lfy: half(p.lfy, to.lfy), lfz: lift, lfp: 6, lft: half(p.lft, to.lft) }
+      : { rfx: half(p.rfx, to.rfx), rfy: half(p.rfy, to.rfy), rfz: lift, rfp: 6, rft: half(p.rft, to.rft) };
+  };
+  const second = !leftFirst;
+  const far = Math.hypot((second ? p.lfx : p.rfx) - (second ? to.lfx : to.rfx), (second ? p.lfy : p.rfy) - (second ? to.lfy : to.rfy)) > 1.5;
+  const mid: Partial<Bones> = {};
+  for (const f of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt'] as const) mid[f] = (p[f] + to[f]) / 2;
+  // (as the first foot comes through, he draws himself up a little over it: his weight checked, his leg not folded under him)
+  const up = { pz: Math.max(p.pz, to.pz) + WU_STEP_RISE };
+  const steps: Key3[] = [
+    { at: 0, pose: from },
+    { at: long * 0.22, pose: { ...from, ...up, ...foot(leftFirst, 'up'), ...foot(second, 'run') }, ease: 'out' },
+    { at: long * 0.45, pose: { ...mid, ...foot(leftFirst, 'stance'), ...foot(second, 'run') }, ease: 'io' },
+  ];
+  if (far) steps.push({ at: long * 0.7, pose: { pz: to.pz + WU_STEP_RISE, ...foot(leftFirst, 'stance'), ...foot(second, 'up') }, ease: 'io' });
+  steps.push({ at: long, pose: {}, ease: 'io' });
+  return { keys: steps };
+}
+/** How high a foot is carried as he steps into a stance out of his run, and how far he draws himself up over it. */
+export const WU_STEP_LIFT = 1.4;
+const WU_STEP_RISE = 1.5;
 
 // ---------------------------------------------------------------------------------------------
 // STRIKE: THE TWO SWINGS, BY MOVEMENT 9
@@ -306,7 +457,7 @@ function slamDown(): Motion {
       { at: 17 * FR, pose: { ...low, pz: -10.6, bend: 33 }, ease: 'out' },
       { at: 24 * FR, pose: { ...low, pz: -8.4, pitch: 12, bend: 24, faceUp: -36 }, ease: 'io', as: { wAz: 0, wEl: -34 } },
       // (and he steps back into his guard: the front foot lifted and brought home, then the back foot turned and set)
-      { at: 29 * FR, pose: { px: 4, pz: -6, pitch: 8, bend: 12, faceUp: -12, lfx: 15 + DF, lfz: 2.6, lfp: -6, lft: 3, rfx: -9.5 + DB, rfy: -1, rfp: 38, rfz: onToes(38), rft: -10, rk: -4, rhIn: 2, rhx: 3, rhy: -13, rhz: 27, wAz: -105, wEl: -24 }, ease: 'in' },
+      { at: 29 * FR, pose: { px: 4, pz: -5, pitch: 8, bend: 12, faceUp: -12, lfx: 15 + DF, lfz: 1.9, lfp: 0, lft: 3, rfx: -9.5 + DB, rfy: -1, rfp: 38, rfz: onToes(38), rft: -10, rk: -4, rhIn: 2, rhx: 3, rhy: -13, rhz: 27, wAz: -105, wEl: -24 }, ease: 'in' },
       { at: 31 * FR, pose: { px: 1, pz: -4.6, pitch: 5, bend: 8, rfx: -9.5 + DB, rfy: -1, rfz: 2.2, rfp: 6, rft: -40, rk: -30, rhIn: 2, rhx: -5, rhy: -18, rhz: 30.5, wAz: -132, wEl: -8 }, ease: 'lin' },
       { at: 34 * FR, pose: {}, ease: 'out' },
     ],
@@ -338,7 +489,7 @@ function whirlBig(): Motion {
       yaw, twist: 8, pitch: lean * Math.cos(away), roll: -lean * Math.sin(away), bend: 0,
       faceTurn: yaw + 34, faceUp: -3,
       lfx: 0, lfy: 0, lfz: onToes(28), lfp: 28, lft: yaw + 30, lk: yaw + 35,
-      rfx: Math.cos(a) * 10, rfy: Math.sin(a) * 10 + B.stance, rfz: 3.4, rfp: 10, rft: yaw - 40, rk: yaw - 40,
+      rfx: Math.cos(a) * 10, rfy: Math.sin(a) * 10 + B.stance, rfz: 2.6, rfp: 10, rft: yaw - 40, rk: yaw - 40,
       rhIn: 0, rhx: 17.5, rhy: 6.3, rhz: -3.0, wAz: blade, wEl: -2, le: 0, re: 0,
     };
     // (the left foot put so that its ball is on the pivot: where it lands, worked out on the figure)
@@ -382,7 +533,7 @@ function thrustBig(): Motion {
     { at: 0.5 + 2 * FR, pose: low, ease: 'out' },
     { at: 0.5 + 6 * FR, pose: { ...low, pz: -12.2, bend: 19 }, ease: 'io' },
     // (the wind-down: drawn back, and his front foot lifted and brought home as he rises; the back foot follows)
-    { at: 0.5 + 10 * FR, pose: { ...back, lfx: 13, lfz: 2.6, lfp: -6, rfx: (from.rfx as number), rfz: (from.rfz as number) }, ease: 'in' },
+    { at: 0.5 + 10 * FR, pose: { ...back, pz: -6, lfx: 13, lfz: 1.9, lfp: 0, rfx: (from.rfx as number), rfz: (from.rfz as number) }, ease: 'in' },
     { at: 0.5 + 12.5 * FR, pose: { ...back, px: 2, pz: -6, pitch: 10, bend: 9, lfx: R.lfx, lfy: R.lfy, lfz: 0, lfp: 0, lft: R.lft, rfx: R.rfx + 1.5, rfz: 2.6, rfp: 0, rft: -30, rhIn: 2, rhx: 1, rhy: -9, rhz: 20, wAz: -105, wEl: 4 }, ease: 'lin' },
     { at: 0.5 + 15 * FR, pose: {}, ease: 'out' },
   ];
@@ -475,8 +626,8 @@ function lurchBig(from: Bones): Motion {
   return {
     keys: [
       { at: 0, pose: {} },
-      { at: 3 * FR, pose: { px: from.px + 5, pz: from.pz - 1.8, pitch: from.pitch + 10, bend: from.bend + 18, faceUp: 11, lfx: from.lfx + 3.5, lfz: 2.6, lfp: -6, rhx: from.rhx + 5 } },
-      { at: 4.5 * FR, pose: { px: from.px + 6, pz: from.pz - 3.2, pitch: from.pitch + 7, bend: from.bend + 11, faceUp: -14, lfx: from.lfx + 4, lfz: 2.2, lfp: -6, rhx: from.rhx + 6 }, ease: 'io' },
+      { at: 3 * FR, pose: { px: from.px + 5, pz: from.pz - 0.6, pitch: from.pitch + 10, bend: from.bend + 18, faceUp: 11, lfx: from.lfx + 3.5, lfz: 1.3, lfp: -6, rhx: from.rhx + 5 } },
+      { at: 4.5 * FR, pose: { px: from.px + 6, pz: from.pz - 1.6, pitch: from.pitch + 7, bend: from.bend + 11, faceUp: -14, lfx: from.lfx + 4, lfz: 1.1, lfp: -6, rhx: from.rhx + 6 }, ease: 'io' },
       { at: 7 * FR, pose: {}, ease: 'io' },
     ],
   };
@@ -639,7 +790,7 @@ function drawMended(): Motion {
   const high4 = { ...high2, pose: { ...high2.pose, ...backSet } };
   // (into his guard: his sword where his guard has it now, the blade the same way round as it comes down behind him)
   const guard = { ...k[6], pose: { ...k[6].pose, ...guardSword(), lfx: R.lfx, lfy: R.lfy, lft: R.lft, lk: R.lk, ...backSet }, as: { wAz: R.wAz } };
-  const step = { at: 27.5 * FR, ease: 'io' as const, pose: { ...mixPose({ ...high4.pose }, { ...guard.pose, wAz: R.wAz + 360 }, 0.5, T), lfz: 2.6, lfp: -6 } };
+  const step = { at: 27.5 * FR, ease: 'io' as const, pose: { ...mixPose({ ...high4.pose }, { ...guard.pose, wAz: R.wAz + 360 }, 0.5, T), lfz: 1.3, lfp: -6 } };
   return {
     keys: [k[0], { at: 6 * FR, pose: reach, ease: 'io' }, half, { at: 11 * FR, pose: { ...taken, stow: 0 }, ease: 'out' }, { at: 15 * FR, pose: { ...lifted, stow: 0 }, ease: 'in' }, high3, high4, step, guard, { at: 36 * FR, pose: { ...R, pz: R.pz - 0.8, bend: R.bend + 1.5, wEl: R.wEl + 2, rhz: R.rhz + 0.3 }, ease: 'io' }, { at: 41 * FR, pose: { ...R }, ease: 'io' }],
   };

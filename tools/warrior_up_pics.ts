@@ -20,8 +20,9 @@ import { WARRIOR_TAILS } from '../src/art/hero_warrior';
 import type { Painted } from '../src/art/kit';
 import { CANVAS3 } from '../src/art/skin';
 import { paintWu, wuFacing } from '../src/art/warrior_up_art';
-import { WU_MOVES, WU_REST_SEEN, swingCarried } from '../src/art/warrior_up_moves';
-import { wuLegs } from '../src/art/warrior_up_review';
+import { WU_MOVES, WU_REST_SEEN, WU_RUN_SEEN, swingCarried } from '../src/art/warrior_up_moves';
+import { wuLegs, wuThighs } from '../src/art/warrior_up_review';
+import { wuPosed } from '../src/art/warrior_up_art';
 import { WU_SPIN, turnedStage } from '../src/art/warrior_up';
 import { stage } from '../src/art/skin';
 import type { V3 } from '../src/art/skeleton';
@@ -81,8 +82,9 @@ function pngRGBA(px: Px): Uint8Array {
 }
 
 type View = WuSide;
-/** before: the game's knight; approved: brought up, as the owner saw and approved him (his legs as they were); after: now. */
-type Who = 'before' | 'after' | 'approved';
+/** before: the game's knight; approved: brought up, as the owner saw and approved him (his legs as they were); seen: his run as
+ * the owner last saw it (high-stepping, 90de9707); after: now. */
+type Who = 'before' | 'after' | 'approved' | 'seen';
 /** THE PICTURES' CANVAS: the game's hero canvas with room on either side, his feet at (PAX, PAY), so that a side that faces left
  * (its anchor the other way on his own canvas: art/warrior_up.ts WU_SPIN) has as much room before him as one that faces right. */
 const W = CANVAS3.w + 16;
@@ -108,7 +110,7 @@ function placed(f: Painted & { ax?: number }): Painted {
 /** A moment of one of his moves, as it was (before: in front or behind only) or as it is now (after: from any of his eight sides). */
 function paintOf(who: Who, key: string, t: number, view: View): Painted {
   if (who === 'before') return paintMove3(MOVES3[key], t, view === 'back' ? 'back' : 'front');
-  return paintWu(who === 'approved' ? approvedMove(key) : WU_MOVES[key], t, view);
+  return paintWu(who === 'approved' ? approvedMove(key) : who === 'seen' ? WU_RUN_SEEN : WU_MOVES[key], t, view);
 }
 /** His guard as the owner approved it brought up: the same move on his stance's legs as they were (moves3.ts REAR3's). */
 const APPROVED = new Map<string, Move3>();
@@ -241,7 +243,7 @@ function still(who: Who, key: string, t: number, view: View): Px {
   const rig = new Rig(view);
   const runs = key.includes('run');
   // (from a second before, in a loop; from its start, else)
-  const loop = (who === 'before' ? MOVES3[key] : WU_MOVES[key]).motion.loop !== undefined;
+  const loop = (who === 'before' ? MOVES3[key] : who === 'seen' ? WU_RUN_SEEN : WU_MOVES[key]).motion.loop !== undefined;
   const from = loop ? t - 1.2 : -0.5;
   let px: Px | null = null;
   for (let u = from; u <= t + 1e-6; u += 1 / 60) {
@@ -250,9 +252,19 @@ function still(who: Who, key: string, t: number, view: View): Px {
   return px as Px;
 }
 
-const SHEET: { title: string; second?: boolean; rows: { label: string; key: string; before: number; after: number }[] }[] = [
+/** A stride strip: 8 moments evenly through a turn of a run, from one side, as the owner last saw it or now. */
+interface Strip {
+  label: string;
+  who: 'seen' | 'after';
+  key: string;
+  view: View;
+}
+const SHEET: { title: string; second?: boolean; rows: { label: string; key: string; before: number; after: number }[]; strips?: Strip[] }[] = [
   { title: 'Standing in his guard', rows: [{ label: 'his guard (now he breathes, shifts his weight, and has a habit of his own)', key: 'rear', before: 0, after: 1.3 }] },
-  { title: 'Running', rows: [{ label: 'a stride (now his feet grip the floor)', key: 'krun', before: 0.1, after: 0.1 }] },
+  { title: 'Running', rows: [{ label: 'a stride (now a heavy man\'s run: his feet grip the floor, his knee lifts only a little)', key: 'krun', before: 0.1, after: 0.1 }], strips: [
+    { label: 'A whole stride, side-on, AS YOU LAST SAW IT: his knee came up past his belt', who: 'seen', key: 'krun', view: 'side' },
+    { label: 'A whole stride, side-on, NOW: leaning in, his foot passing low, his knee only a little up, the leg behind him straightening as it pushes', who: 'after', key: 'krun', view: 'side' },
+  ] },
   { title: 'His class card: drawing his sword when picked', rows: [{ label: 'ready in his guard (now his feet step into it, never slide)', key: 'kdraw', before: 33 / 30, after: 33 / 30 }] },
   { title: 'Strike, the first swing (a rising cut)', rows: [
     { label: 'the wind-up (now big, and held)', key: 'strike', before: 2 / 30, after: 7 / 30 },
@@ -315,8 +327,8 @@ function legsPanel(dir: string): { file: string; who: Who; view: View; legs: { l
 }
 
 /** The before-and-now rows of the sheet (or of the second sheet's part of it), painted into `dir`. */
-function sheetRows(dir: string, second: boolean, pre: string): { title: string; rows: { label: string; files: string[] }[] }[] {
-  const spec: { title: string; rows: { label: string; files: string[] }[] }[] = [];
+function sheetRows(dir: string, second: boolean, pre: string): { title: string; rows: { label: string; files: string[] }[]; strips?: { label: string; files: string[]; thighs: number[] }[] }[] {
+  const spec: { title: string; rows: { label: string; files: string[] }[]; strips?: { label: string; files: string[]; thighs: number[] }[] }[] = [];
   let n = 0;
   for (const sec of SHEET.filter((x) => !!x.second === second)) {
     const rows: { label: string; files: string[] }[] = [];
@@ -332,7 +344,22 @@ function sheetRows(dir: string, second: boolean, pre: string): { title: string; 
       }
       rows.push({ label: r.label, files });
     }
-    spec.push({ title: sec.title, rows });
+    // (the stride strips: eight moments evenly through a turn, and how far up each swinging thigh is, from straight down)
+    const strips = (sec.strips ?? []).map((st) => {
+      const m = st.who === 'seen' ? WU_RUN_SEEN : WU_MOVES[st.key];
+      const period = (m.stride as number) / GRIP_SPEED;
+      const files: string[] = [];
+      const thighs: number[] = [];
+      for (let i = 0; i < 8; i++) {
+        const t = Math.round(((i * period) / 8) * 60) / 60;
+        const f = `${pre}${String(n++).padStart(3, '0')}_${st.who}_strip.png`;
+        writeFileSync(`${dir}/${f}`, pngRGBA(still(st.who, st.key, t, st.view)));
+        files.push(f);
+        thighs.push(Math.max(0, ...wuThighs(wuPosed(m, t).s).filter((x) => x.swinging).map((x) => Math.round(x.deg))));
+      }
+      return { label: st.label, files, thighs };
+    });
+    spec.push({ title: sec.title, rows, ...(strips.length ? { strips } : {}) });
   }
   return spec;
 }
@@ -369,10 +396,13 @@ interface Part {
   slow?: number;
   /** Only from in front, the card's: before and after side by side, bigger. */
   card?: boolean;
+  /** His run as the owner last saw it (high-stepping) beside now, side-on and from in front, in place of the game's knight. */
+  seen?: boolean;
 }
 const FILM: Part[] = [
   { caption: 'STANDING IN HIS GUARD · before: 10 pictures a second, still · now: 30, breathing, shifting his weight, a habit of his own', key: 'rear', seconds: 4 },
-  { caption: 'RUNNING · now his feet grip the floor (they slid before)', key: 'krun', seconds: 2.2 },
+  { caption: 'RUNNING · now a heavy armoured man\'s run: leaning in, long and low, his knee lifting only a little; his feet grip the floor', key: 'krun', seconds: 2.2 },
+  { caption: 'RUNNING · AS YOU LAST SAW IT (his knee up past his belt) BESIDE NOW, side-on and from in front', key: 'krun', seconds: 2.2, seen: true },
   { caption: 'STRIKE, THE FIRST SWING · now a big held wind-up, a strike of two frames smeared, a big wind-down', key: 'strike', seconds: 1.5 },
   { caption: 'STRIKE, THE SECOND SWING · the same', key: 'kslash', seconds: 1.2 },
   { caption: 'SLAM · up on his toes and held, then two frames into the floor', key: 'slam', seconds: 1.4 },
@@ -382,7 +412,7 @@ const FILM: Part[] = [
   { caption: 'STRUCK FROM BEHIND', key: 'klurch', seconds: 0.6 },
   { caption: 'HIS FALL · now he pushes up once more on his sword before the light goes out', key: 'kfall', seconds: 2.2 },
   { caption: 'IN TOWN, STANDING · before: 10 pictures a second · now: 30, alive', key: 'ktown', seconds: 2.6 },
-  { caption: 'IN TOWN, RUNNING · now his feet grip the floor', key: 'ktownrun', seconds: 1.8 },
+  { caption: 'IN TOWN, RUNNING · the same heavy run, his hands free; his feet grip the floor', key: 'ktownrun', seconds: 1.8 },
   { caption: 'IN TOWN, LOOKING ABOUT HIM · before: 20 pictures a second · now: 30', key: 'klook', seconds: 3.7 },
   { caption: "HIS CLASS CARD, DRAWING HIS SWORD WHEN PICKED · now his feet step, never slide", key: 'kdraw', seconds: 1.6 },
   { caption: 'STRIKE, THE FIRST SWING, AT HALF SPEED', key: 'strike', seconds: 1.3, slow: 2 },
@@ -396,30 +426,31 @@ function film(dir: string): void {
   mkdirSync(dir, { recursive: true });
   // (first, what is new since he saw him: his eight facings, at the game's size)
   const turned = scenes(dir, 0);
-  const frames: { caption: string; file: string; card: boolean; part: number }[] = [];
+  const frames: { caption: string; file: string; card: boolean; part: number; names?: string[] }[] = [];
   let n = 0;
   FILM.forEach((p, pi) => {
     const L = lists(p.key);
-    const rigs = { 'before:front': new Rig('front'), 'before:back': new Rig('back'), 'after:front': new Rig('front'), 'after:back': new Rig('back') };
+    const order: [Who, View][] = p.seen ? [['seen', 'side'], ['after', 'side'], ['seen', 'front'], ['after', 'front']] : [['before', 'front'], ['after', 'front'], ['before', 'back'], ['after', 'back']];
+    const rigs: Record<string, Rig> = Object.fromEntries(order.map(([who, view]) => [`${who}:${view}`, new Rig(view)]));
+    const timing = (who: Who): Shown => L[who === 'before' ? 'before' : 'after'];
     const total = Math.round(p.seconds * (p.slow ?? 1) * 30);
     // (a moment's warm-up for the scarf, so it hangs as it would)
     for (const [k, rig] of Object.entries(rigs)) {
       const [who, view] = k.split(':') as [Who, View];
-      for (let i = 0; i < 30; i++) rig.frame(paintOf(who, p.key, 0, view), 1 / 30, L[who as 'before' | 'after'].runs ? RUN_STEP : 0);
+      for (let i = 0; i < 30; i++) rig.frame(paintOf(who, p.key, 0, view), 1 / 30, timing(who).runs ? RUN_STEP : 0);
     }
     for (let i = 0; i < total; i++) {
       const t = i / 30 / (p.slow ?? 1);
       const strip = new Px(W * 4, H);
-      const order: ['before' | 'after', View][] = [['before', 'front'], ['after', 'front'], ['before', 'back'], ['after', 'back']];
       order.forEach(([who, view], j) => {
-        const s = L[who];
+        const s = timing(who);
         const u = shown(s, t);
-        const px = rigs[`${who}:${view}` as keyof typeof rigs].frame(paintOf(who, p.key, u, view), 1 / 30 / (p.slow ?? 1), s.runs ? RUN_STEP / (p.slow ?? 1) : 0);
+        const px = rigs[`${who}:${view}`].frame(paintOf(who, p.key, u, view), 1 / 30 / (p.slow ?? 1), s.runs ? RUN_STEP / (p.slow ?? 1) : 0);
         for (let y = 0; y < H; y++) strip.d.set(px.d.subarray(y * W * 4, (y + 1) * W * 4), (y * strip.w + j * W) * 4);
       });
       const f = `f${String(n++).padStart(4, '0')}.png`;
       writeFileSync(`${dir}/${f}`, pngRGBA(strip));
-      frames.push({ caption: p.caption, file: f, card: !!p.card, part: pi });
+      frames.push({ caption: p.caption, file: f, card: !!p.card, part: pi, ...(p.seen ? { names: ['AS YOU SAW IT · side-on', 'NOW · side-on', 'AS YOU SAW IT · in front', 'NOW · in front'] } : {}) });
     }
   });
   writeFileSync(`${dir}/film.json`, JSON.stringify({ scenes: turned, frames }, null, 0));

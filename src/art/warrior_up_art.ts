@@ -17,7 +17,7 @@
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, lightsOut, toSprite } from './kit';
-import { SETTLES, settle, startOf } from './moves3';
+import { SETTLES, startOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import { add, bonesAt, mul, solve } from './skeleton';
@@ -26,7 +26,7 @@ import { GREAT_BLADE } from './moves3';
 import { paintWarriorUp, wuOnBack } from './warrior_up';
 import type { WuFrame, WuSide } from './warrior_up';
 import { WU_SIDES } from './warrior_up';
-import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3 } from './warrior_up_moves';
+import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, wuSettle } from './warrior_up_moves';
 
 const FPS = 30;
 const GRIP_FPS = 60;
@@ -184,7 +184,7 @@ function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
     clips: { attack, attack2, heavy },
   };
   // (coming to a stand out of the run, from 8 moments of its turn; and setting off from the stance into it)
-  set.stops = Array.from({ length: SETTLES }, (_, i) => clip({ ...stand, name: `${stand.name}: coming to a stand ${i}`, motion: settle(runM, i / SETTLES, stand.rest) }, FPS));
+  set.stops = Array.from({ length: SETTLES }, (_, i) => clip({ ...stand, name: `${stand.name}: coming to a stand ${i}`, motion: wuSettle(runM, i / SETTLES, stand.rest) }, FPS));
   const start = startOf(runM, stand.rest);
   set.start = clip({ ...runM, name: `${runM.name}: setting off`, motion: start.motion, stride: undefined }, GRIP_FPS);
   set.startAt = start.phase;

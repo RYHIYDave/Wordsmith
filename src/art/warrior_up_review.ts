@@ -365,3 +365,36 @@ export function wuBladeFaults(key: string | undefined, name: string, frame: numb
   if (b.seen >= WU_BLADE_LEAST && b.point) return [];
   return [`${what} ${frame} ${side}: ${b.seen} of the blade's light seen${b.point ? '' : ', its point hidden'}`];
 }
+
+// ---------------------------------------------------------------------------------------------
+// HIS RUN, A HEAVY MAN'S: NO KNEE COMES UP (the owner, 7 Nov 2026, of his run as it was: “all that time and you screwed up his run.
+// why is he high stepping with his knees up?”). In every frame of his runs, his stops out of them and his setting off into them,
+// each leg whose foot is off the floor: its thigh no more than WU_THIGH_MOST degrees from hanging straight down.
+
+/** The most a swinging thigh may be from hanging straight down in his runs (the run made for it keeps under 40). */
+export const WU_THIGH_MOST = 50;
+/** Each of his thighs: how many degrees it is from hanging straight down (from the hip joint to the knee joint, as he truly is: the
+ * same from every side he is seen from), and whether its foot is off the floor (its heel and its toe both above it). */
+export function wuThighs(s: Skeleton): { leg: 'L' | 'R'; deg: number; swinging: boolean }[] {
+  return (['L', 'R'] as const).map((leg) => {
+    const h = leg === 'L' ? s.hipL : s.hipR;
+    const k = leg === 'L' ? s.kneeL : s.kneeR;
+    const v: V3 = [k[0] - h[0], k[1] - h[1], k[2] - h[2]];
+    const deg = (Math.acos(Math.max(-1, Math.min(1, -v[2] / (Math.hypot(...v) || 1)))) * 180) / Math.PI;
+    const toe = leg === 'L' ? s.toeL : s.toeR;
+    const heel = leg === 'L' ? s.heelL : s.heelR;
+    return { leg, deg, swinging: Math.min(toe[2], heel[2]) > 0.6 };
+  });
+}
+/** Whether a moment is one of his runs: the move's short name (his run, his run in town), or a stop out of one or a setting off
+ * into one (known by its name). */
+export function wuRunning(key: string | undefined, name: string): boolean {
+  return key === 'krun' || key === 'ktownrun' || /: coming to a stand|: setting off/.test(name);
+}
+/** What is wrong with his knees in one moment of a run: a swinging thigh come up too far. */
+export function wuThighFaults(key: string | undefined, name: string, frame: number, s: Skeleton, side: WuSide): string[] {
+  if (!wuRunning(key, name)) return [];
+  return wuThighs(s)
+    .filter((t) => t.swinging && t.deg > WU_THIGH_MOST)
+    .map((t) => `${name} ${frame} ${side}: his ${t.leg === 'L' ? 'left' : 'right'} thigh ${t.deg.toFixed(1)} degrees from straight down`);
+}

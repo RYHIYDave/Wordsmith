@@ -27,6 +27,8 @@ The Warrior (the knight) only; the Ranger and the Mage come after, the same way.
 - 6 Nov 2026, 20:45: “Are you actually painting 8 drawings or flipping some?”. Told five were painted and three mirrored, and
   that what is on one side of a hero swaps when he is mirrored (his sword hand, the Brawler's blind eye), his pick: “Paint
   all 8 (Recommended)” (offered as: every facing true; the sword, the bow and the blind eye stay put).
+- 7 Nov 2026, just after midnight, shown the pictures of 90de9707 (his sword seen from every side): “all that time and you
+  screwed up his run.  why is he high stepping with his knees up?”
 
 So: his look and flavour kept (his pig-faced helm, brought back as he asked; his red tabard and its pointed skirt, his dark
 red scarf whose two ends fly, his steel and mail, his plum gloves and belt with its cyan buckle, his glowing great sword, his
@@ -35,22 +37,24 @@ Brawler in his Veteran look.
 
 ## The pictures (`pictures/`)
 
-- `warrior_up_sheet.png` (1440 by 6866): at its top, HIS LEGS, MADE TRUE: his guard from in front and from straight toward
+- `warrior_up_sheet.png` (1440 by 7336): at its top, HIS LEGS, MADE TRUE: his guard from in front and from straight toward
   you, as he approved him beside now, three times as big, each leg marked as the screen shows it (hip to knee in yellow, knee
   to the floor in green, a tick at each) and its ratio written, knee to floor over hip to knee (a leg whose shin is hidden
-  from that side drawn dim). Then before beside now, three times as big, from in front and from behind: his stance, his run,
-  his class card's ready, the key moments of each attack (the held wind-up, the smeared strike, the wind-down); and at the
+  from that side drawn dim). Then before beside now, three times as big, from in front and from behind: his stance, his run
+  (and under it A WHOLE STRIDE SIDE-ON, eight moments evenly through a turn, as the owner last saw it and now, each with how
+  far up from hanging straight down its swinging thigh is), his class card's ready, the key moments of each attack (the held wind-up, the smeared strike, the wind-down); and at the
   game's own size. (His fall's rows are on the second sheet, so that this one stays under 7500 pixels tall.)
-- `warrior_up_sheet2.png` (1440 by 7054): HIS HELM six times as big, before (the game's, in front and from behind)
+- `warrior_up_sheet2.png` (1440 by 7027): HIS HELM six times as big, before (the game's, in front and from behind)
   and now (from each of his eight sides), and the same at the game's own size; HIS EIGHT FACINGS, each truly painted and laid
   where he faces (down and to the right at the bottom right, and so round, a key of the eight ways in the middle): his stance,
   a stride of his run, Strike's smeared blow and his town stance (his sword on his back, point up), three times as big, and
   all four at the game's own size, so that his sword is seen from every side (below, "His sword, seen from every side"); and his fall,
   before beside now.
-- `warrior_up.mp4` (57 s, 30 frames a second, H.264, 1100 by 1060): first, his eight facings at the game's own size
+- `warrior_up.mp4` (59 s, 30 frames a second, H.264, 1100 by 1060): first, his eight facings at the game's own size
   with him three times as big beside it, each truly painted: running once round a circle at the game's pace through all eight,
   then Strike's first swing each of the eight ways in turn (the game's step on each swing carrying him). Then every list
-  before and now side by side, from in front and from behind, three times as big and at the game's own size, each captioned;
+  before and now side by side, from in front and from behind, three times as big and at the game's own size, each captioned
+  (after his run, his run as the owner last saw it beside now, side-on and from in front);
   each strike (both swings of Strike, the Slam, the Lunge) again at half speed; his class card's standing loop before and now,
   side by side. Before and now play side by side, at once, so that each list is seen against the other at the same moment
   and the film stays under a minute.
@@ -126,11 +130,11 @@ each of the game's steps). Keys eased in and out. Every move through every boss 
   never move.
 - IN TOWN AND ON HIS CARD, ALIVE (2.4 s, 72): two breaths, his weight settling onto his left leg, a roll of his shoulders, a
   look along the street; his arms folded, his sword point up on his back (below).
-- RUNNING: his own run made to grip (a turn of it in 27 sixtieths of a second, each foot on the floor going back exactly as
-  fast as the game carries him), driving lower and harder, his hands up by his right breast and the blade level behind him
-  (below); in town the same, his hands free. And now, as the Ranger and the Mage have: eight
-  ways of COMING TO A STAND out of it (each foot set down where his stance has it, lifted to get there), and SETTING OFF
-  into it.
+- RUNNING: A HEAVY ARMOURED MAN'S RUN (below, "His run, a heavy man's"), made to grip (a turn of it in 27 sixtieths of a
+  second, each foot on the floor going back exactly as fast as the game carries him): leaning in, long and low, his knee
+  lifting only a little, his hands up by his right breast and the blade level behind him (below); in town the same, his hands
+  free. And now, as the Ranger and the Mage have: eight ways of COMING TO A STAND out of it (each foot carried low to where
+  his stance has it), and SETTING OFF into it.
 - STRIKE, THE FIRST SWING (a rising cut), BY MOVEMENT 9: a skip-step in as the game's step carries him (both feet off the
   floor); the WIND-UP, big: sunk deep on his back leg, wound right round away, the hilt drawn back past his hip and the blade
   swung back and up behind him, its point high over his right shoulder; HELD (frames 6 to 8); THE STRIKE in two frames,
@@ -274,8 +278,8 @@ frame of the pose, of each leg whose shin is seen from that side (at least half 
 | the Slam's landing | 0.97 → **hidden** | 1.13 → **1.25** | 1.05 → **1.18** | 1.04 → **1.08** | 1.01 → **1.13** | 0.78 → **1.13** | 1.01 → **1.14** | 1.01 → **1.05** |
 | the Lunge's landing | hidden | 1.03 → **1.22** | 0.89 → **1.07** | 0.88 → **1.03** | 1.10 → **1.10** | 1.08 → **1.08** | 1.13 → **1.13** | 1.14 → **1.03** |
 | the kneel in his fall | 1.03 → **hidden** | 1.39 → **1.34** | 1.17 → **1.12** | 1.02 → **1.01** | 1.18 → **1.17** | 0.93 → **1.74** | 1.21 → **1.31** | 0.99 → **1.01** |
-| his run (a foot flat on the floor) | 0.74 → **1.04** | 0.44 → **1.13** | 0.74 → **1.03** | 1.07 → **1.03** | 1.67 → **1.46** | 3.07 → **hidden** | 1.67 → **1.45** | 1.06 → **1.03** |
-| his run in town (a foot flat) | 0.74 → **1.01** | 0.45 → **1.10** | 0.76 → **1.03** | 1.07 → **1.04** | 1.73 → **1.38** | 2.70 → **hidden** | 1.74 → **1.24** | 1.07 → **1.03** |
+| his run (a foot flat on the floor; his heavy run, below) | 0.74 → **1.07** | 0.44 → **1.08** | 0.74 → **1.07** | 1.07 → **1.12** | 1.67 → **1.37** | 3.07 → **1.29** | 1.67 → **1.22** | 1.06 → **1.13** |
+| his run in town (a foot flat) | 0.74 → **1.06** | 0.45 → **1.07** | 0.76 → **1.07** | 1.07 → **1.13** | 1.73 → **1.22** | 2.70 → **1.30** | 1.74 → **1.38** | 1.07 → **1.12** |
 
 WHY THEY READ SHORT: the game's camera looks down on him; a crouch bent his knees toward it, so each shin was seen end-on and
 the thigh above it at its whole length (as the Ranger's helper found for every hero). From the sides of him the camera had
@@ -291,9 +295,10 @@ THE MEND, only where his feet and knees go (his body, arms, sword, hits and timi
   knee a little less over its foot. The Slam's landing: his front foot stamped on from his longer guard, a little further
   (31; it was 21), its knee straight over it. The Lunge's landing: his front foot a little further on, its knee over it. The
   kneel: his front foot planted a little further back, the foot he kneels on a little further forward.
-- HIS RUN: each foot comes down further before him (18 of the stride's 21; it was 9) and leaves the floor as it passes under
-  him, so that while it bears him its shin stands up over it (the stride as long, the foot on the floor going back as fast as
-  the game carries him, his knees as they were).
+- HIS RUN: each foot came down further before him (18 of the stride's 21; it was 9) and left the floor as it passed under
+  him, so that while it bore him its shin stood up over it. That brought his knee up past his belt as it came through (the
+  owner: “why is he high stepping with his knees up?”): his run is now made anew (below, "His run, a heavy man's"), its legs
+  still true where a foot bears him.
 
 THE TEST (`tests/warrior_up.test.ts`, 9): every frame of his stances (his guard, town, looking about him, his card's ready)
 and of every pose he holds (Strike's held wind-ups and its sword held up, the Slam's held wind-up and landing, the Lunge's
@@ -337,7 +342,7 @@ seen; 0 where none is, or its point is hidden). BEFORE → **NOW**:
 
 | | `front` | `toward` | `frontL` | `sideL` | `backL` | `away` | `back` | `side` |
 |---|---|---|---|---|---|---|---|---|
-| every list | 0 → **18** | 0 → **16** | 0 → **11** | 13 → **14** | 8 → **13** | 7 → **11** | 4 → **12** | 0 → **15** |
+| every list | 0 → **18** | 0 → **16** | 0 → **11** | 13 → **13** | 8 → **13** | 7 → **11** | 4 → **11** | 0 → **16** |
 
 List by list (the least of its frames; "point hidden" where its light was seen but not its point):
 
@@ -345,10 +350,10 @@ List by list (the least of its frames; "point hidden" where its light was seen b
 |---|---|---|---|---|---|---|---|---|
 | his guard | 18 → **28** | 4 → **16** | 0 → **12** | 18 → **16** | 20 → **31** | 26 → **16** | 24 → **12** | 16 → **20** |
 | his town stance | 0 → **21** | 0 → **18** | 16 → **21** | 27 → **25** | 25 → **20** | 19 → **21** | 16 → **21** | 16 (point hidden) → **20** |
-| his run | 20 → **30** | 3 → **21** | 0 → **13** | 13 → **14** | 19 → **29** | 21 → **21** | 22 → **12** | 22 → **15** |
-| his run in town | 3 (point hidden) → **21** | 1 (point hidden) → **20** | 3 → **15** | 27 → **29** | 30 → **28** | 24 → **26** | 17 → **21** | 14 → **21** |
-| his stops and setting off, in a dungeon | 14 → **20** | 3 → **16** | 0 → **11** | 14 → **14** | 18 → **23** | 21 → **17** | 20 → **12** | 23 → **16** |
-| his stops and setting off, in town | 2 (point hidden) → **18** | 0 → **20** | 4 → **16** | 24 → **26** | 26 → **24** | 17 → **21** | 16 → **17** | 15 (point hidden) → **18** |
+| his run | 20 → **29** | 3 → **21** | 0 → **11** | 13 → **13** | 19 → **27** | 21 → **21** | 22 → **11** | 22 → **16** |
+| his run in town | 3 (point hidden) → **22** | 1 (point hidden) → **19** | 3 → **16** | 27 → **29** | 30 → **27** | 24 → **23** | 17 → **22** | 14 → **21** |
+| his stops and setting off, in a dungeon | 14 → **26** | 3 → **17** | 0 → **11** | 14 → **15** | 18 → **27** | 21 → **17** | 20 → **12** | 23 → **17** |
+| his stops and setting off, in town | 2 (point hidden) → **19** | 0 → **17** | 4 → **15** | 24 → **25** | 26 → **22** | 17 → **20** | 16 → **15** | 15 (point hidden) → **20** |
 | Strike's held wind-up | 25 → **25** | 26 → **30** | 14 → **18** | 21 → **23** | 19 → **17** | 12 → **11** | 4 → **13** | 18 → **18** |
 | the first swing held up, waiting (its poise) | 32 → **32** | 26 → **26** | 28 → **28** | 25 → **25** | 22 → **22** | 25 → **25** | 27 → **27** | 26 → **26** |
 | the second swing's held wind-up | 25 → **29** | 26 → **34** | 24 → **23** | 21 → **20** | 8 → **13** | 7 → **11** | 21 → **17** | 25 → **23** |
@@ -384,6 +389,66 @@ WHAT CHANGED: only how the sword and his sword arm sit (his body, his feet and h
   toward where it swings the blade round (it stalled); the Lunge's first picture is his guard exactly (the game cuts into it
   from his stance), its drive-off elbow a little further out (-38, it was -30), and its wind-down's sword level as it comes
   home. Every blow's timing, hits and lengths as before (test 7).
+
+## His run, a heavy man's (the owner's “why is he high stepping with his knees up?”)
+
+THE FAULT: the run he saw (90de9707; kept as `WU_RUN_SEEN` for the pictures and the check) was moves3.ts's run made to grip,
+its foot set down 18 of the stride's 21 before him, which gripping stretched to 25 of 29: further than his leg reaches, so the
+leg was thrown out straight; and the foot was carried 11 high as it came through, under hips sunk low. As it came through
+and reached, his thigh came up PAST LEVEL, 102 degrees from hanging straight down, the knee by his belt: from behind, a hop
+with one leg up. Its stops and its setting off took the same frames, up to 103.
+
+NOW (`src/art/warrior_up_moves.ts` `wuHeavyRun`, `WU_RUN_FEET`; his body as before, his sword as before): a heavy armoured
+man's run, driving and grounded, made from how a man runs in armour (a short flight, a long, firm time on each foot):
+- he leans in (his pelvis tipped 13 degrees, his back over it), sits a little low (2 under his height standing) and rises and
+  falls a little (0.9 either way: lowest as his weight comes over the foot under him, highest in the air);
+- each foot is on the floor 37 hundredths of a turn (it was 36): its ankle comes down 10.7 before the point under him (it was
+  25), heel first and only just (its toes up 2 degrees), flat at once, and goes back under him exactly as fast as the game
+  carries him; its heel rises as he passes over it and the leg straightens out behind him, and it leaves the floor off its
+  toes, 45 degrees up, its ankle 19 behind him;
+- off the floor, its heel tucks up behind him (the foot's lowest point 4 off the floor, its toes hanging), and it comes
+  through LOW (its lowest point 1.3 off the floor, the foot level by half way), its knee lifting only a little, and reaches
+  forward to be set down;
+- the stride as long as before (2.07 tiles a turn, the game's `walkStride`), the same 27 pictures at 60 a second;
+- in town the same, his hands free.
+His swinging thigh now comes up at most 38 degrees from hanging straight down (it was 102); the most anywhere in his runs, his
+stops and his setting off, 43 (it was 103).
+
+HIS STOPS (`wuSettle`, his own, as moves3.ts settle but for a heavy man): the foot off the floor is carried low to where his
+stance has it (1.4 off the floor, where moves3.ts lifts it 3.2) and he draws himself up a little over it (1.5), so that
+neither knee comes up as he pulls up into his long guard. Setting off (moves3.ts startOf) takes the new run as it is.
+
+THE CHECK (`tests/warrior_up.test.ts`, 11; `src/art/warrior_up_review.ts` `wuThighs`, `WU_THIGH_MOST`): in every frame of his
+run, his run in town, his sixteen stops and his two settings off, from each of his eight sides, each leg whose foot is off the
+floor (heel and toe both above it): its thigh, from the hip joint to the knee joint, at most 50 degrees from hanging straight
+down (measured on him as he truly is, and so the same from every side); and now none past 45. The check sees the run he saw
+fail it (102). And each foot flat on the floor in some frame of each step: grounded, not run on its toes.
+
+KEPT: his feet grip (each foot on the floor goes back as fast as the game carries him: test 5; and every boss check from all
+eight sides: test 3), `walkStride`, his eight true sides, his sword seen from every side (test 10: at least 11 of the blade's
+light in every frame of his runs, stops and setting off), his legs true where a foot bears him (test 9: 1.06 or more from
+every side, where at least 1 is asked).
+
+HIS SWINGING THIGHS, THE MOST IN ANY FRAME (degrees from hanging straight down; a leg whose foot is off the floor), AS HE SAW
+THEM → **NOW**:
+
+| List | as he saw it | now |
+|---|---|---|
+| his run | 102 | **38** |
+| his run in town | 95 | **37** |
+| coming to a stand, in a dungeon (each of 8) | 59 to 103 | **36 to 43** |
+| coming to a stand, in town (each of 8) | 49 to 89 | **19 to 36** |
+| setting off, in a dungeon / in town | 101 / 72 | **35 / 37** |
+
+EVERY OTHER LIST, LOOKED AT FOR A KNEE COME UP WHERE IT SHOULD NOT BE (the most, of a foot off the floor, its knee before
+him), AS HE SAW THEM → **NOW**: his guard 35 → **35**; Strike's skip-step in 57 → **46** and the second swing's 58 → **51**
+(the front foot lifted 1.3 off the floor, not 2.6); the Slam's step back into his guard 66 → **56** (lifted 1.9, his hips a
+little higher); the Whirlwind's swung foot 53 → **51** (2.6 off the floor, not 3.4); struck from behind, his stagger forward
+69 → **56** (his hips dropping less); his fall 49 → **49**; his card's step into his guard 50 → **44**; looking about him and
+in town 19 → **19**. The Lunge: its dive 63 (a leap, his legs drawn up under him, as a leap has them) and the first frame his
+front foot lifts out of its deep landing to come home 78 → **70** (the landing itself, a deep lunge with that foot flat on
+the floor, has the thigh at 81, as it always had): neither is a knee drawn up. HIS ATTACKS MADE WALKING: the game makes those
+only for the Ranger with his bow (moves3.ts walkingOf, with his stances on); the Warrior has none, now as before.
 
 ## The measures
 
@@ -463,6 +528,9 @@ painting costs nothing on the phone.
 10. His sword seen from every side (above): in every frame of every list he holds or runs in, from all eight sides (his
    card's from in front), at least 10 game pixels of the blade's light, its point among them; and the measure sees his
    guard's sword as it was, hidden from down and to the left.
+11. His run a heavy man's (above): in every frame of his runs, stops and setting off, from all eight sides, no swinging thigh
+   more than 50 degrees from hanging straight down (none past 45); each foot flat on the floor in some frame of each step;
+   and the check sees the run he saw prance (102).
 
 tsc clean; the heroes' tests pass (`tests/heroes3.test.ts`, `tests/warrior_thrust.test.ts`, `tests/wild.test.ts`,
 `tests/grip_runs.test.ts`, `tests/heroes.test.ts`, `tests/cheap_heroes.test.ts`, `tests/bosses.test.ts`).
@@ -482,9 +550,14 @@ tsc clean; the heroes' tests pass (`tests/heroes3.test.ts`, `tests/warrior_thrus
   never as trousers, and lets his legs move; his look otherwise as it was.
 - HIS FACE FROM BEHIND: from `back`, `backL` and `away` his head hides the snout and its slit, as it would.
 - HIS STANCE IS LONGER: his legs made true widen his guard (his feet 35.5 apart front to back, where they were 19.5) and his
-  town stance (feet further apart to each side); his run's foot comes down further before him. His look otherwise as it was:
+  town stance (feet further apart to each side). His look otherwise as it was:
   the owner should see the first sheet's top before it goes in.
 - THE LUNGE'S LANDING AND THE KNEEL, SIDE-ON, read 1.01 to 1.03, not 1.05 (above): only lifting his hips would mend it.
+- HIS RUN IS NEW (above, "His run, a heavy man's"): leaning in, long and low, his knee lifting only a little, his feet still
+  gripping. The owner should see the first sheet's stride strips and the film's run before it goes in.
+- HIS FEET IN HIS GUARD: his guard's feet (18.5 before him, 17 behind) are a little further than his legs reach (by 1.2 and
+  0.8): his legs are drawn straight toward them and his feet stand that much nearer him than the numbers say. It reads true
+  (the legs test measures his legs as drawn), but the main chat may want the numbers brought in to where his feet truly are.
 - HIS SWORD IS CARRIED DIFFERENTLY, so that it is seen from every side (above): level behind him in his guard and his run
   (its point no longer low by the floor), a little higher in the held wind-ups, and in town and on his card point up on his
   back, over his right shoulder. The owner should see the second sheet's facings before it goes in. Ten game pixels from
