@@ -23,7 +23,6 @@ import { GRIP_SPEED, MOVES3, RANGER_BODY, UNITS_PER_TILE, runWaysOf, startOf } f
 import type { Move3 } from './moves3';
 import { add, aimFor, along, bonesAt, chestOf, elbowFor, norm, solve } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
-import { wuSettle } from './warrior_up_moves';
 
 const FR = 1 / 30;
 
@@ -313,10 +312,48 @@ export function ruRunWays(): Move3[] {
 
 
 
-/** Coming to a stand out of a run, from a moment of its turn (the Warrior's way: each foot carried LOW to its place). */
+/**
+ * Coming to a stand out of a run, from a moment of its turn (the Warrior's way: each foot carried LOW to its place). The way is
+ * the Warrior's as art/warrior_up_moves.ts had it at 9057f94b (its wuSettle), kept here for him: the Warrior moves as the game
+ * did again (7b95f7b6, his words of 7 Nov) and has it no more.
+ */
 export function ruSettle(runMove: Move3, phase: number, to: Bones): Motion {
-  return wuSettle(runMove, phase, to, 0.24, 0.8);
+  return settleOutOfRun(runMove, phase, to, 0.24, 0.8);
 }
+function settleOutOfRun(runMove: Move3, phase: number, to: Bones, long = 0.24, lift = RU_STEP_LIFT): Motion {
+  const { keys, loop } = runMove.motion;
+  const span = keys[keys.length - 1].at - (loop ?? 0);
+  const p = bonesAt(keys, runMove.rest, (loop ?? 0) + span * (((phase % 1) + 1) % 1)) as Posed;
+  const from: Partial<Bones> = { ...p };
+  for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (from as Record<string, unknown>)[k];
+  const leftFirst = p.lfz > p.rfz;
+  const half = (a: number, b: number): number => (a + b) / 2;
+  const foot = (left: boolean, where: 'run' | 'up' | 'stance'): Partial<Bones> => {
+    if (where === 'run') return left ? { lfx: p.lfx, lfy: p.lfy, lfz: p.lfz, lfp: p.lfp, lft: p.lft } : { rfx: p.rfx, rfy: p.rfy, rfz: p.rfz, rfp: p.rfp, rft: p.rft };
+    if (where === 'stance') return left ? { lfx: to.lfx, lfy: to.lfy, lfz: to.lfz, lfp: to.lfp, lft: to.lft } : { rfx: to.rfx, rfy: to.rfy, rfz: to.rfz, rfp: to.rfp, rft: to.rft };
+    // (carried low, half way from where it was in the run to where it goes, its toe a little down)
+    return left
+      ? { lfx: half(p.lfx, to.lfx), lfy: half(p.lfy, to.lfy), lfz: lift, lfp: 6, lft: half(p.lft, to.lft) }
+      : { rfx: half(p.rfx, to.rfx), rfy: half(p.rfy, to.rfy), rfz: lift, rfp: 6, rft: half(p.rft, to.rft) };
+  };
+  const second = !leftFirst;
+  const far = Math.hypot((second ? p.lfx : p.rfx) - (second ? to.lfx : to.rfx), (second ? p.lfy : p.rfy) - (second ? to.lfy : to.rfy)) > 1.5;
+  const mid: Partial<Bones> = {};
+  for (const f of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt'] as const) mid[f] = (p[f] + to[f]) / 2;
+  // (as the first foot comes through, he draws himself up a little over it: his weight checked, his leg not folded under him)
+  const up = { pz: Math.max(p.pz, to.pz) + RU_STEP_RISE };
+  const steps: Key3[] = [
+    { at: 0, pose: from },
+    { at: long * 0.22, pose: { ...from, ...up, ...foot(leftFirst, 'up'), ...foot(second, 'run') }, ease: 'out' },
+    { at: long * 0.45, pose: { ...mid, ...foot(leftFirst, 'stance'), ...foot(second, 'run') }, ease: 'io' },
+  ];
+  if (far) steps.push({ at: long * 0.7, pose: { pz: to.pz + RU_STEP_RISE, ...foot(leftFirst, 'stance'), ...foot(second, 'up') }, ease: 'io' });
+  steps.push({ at: long, pose: {}, ease: 'io' });
+  return { keys: steps };
+}
+/** How high a foot is carried as he steps into a stance out of his run, and how far he draws himself up over it. */
+const RU_STEP_LIFT = 1.4;
+const RU_STEP_RISE = 1.5;
 /** Setting off from a stance into a run (moves3.ts startOf, on his runs). */
 export function ruStart(runMove: Move3, stance: Bones): { motion: Motion; phase: number } {
   return startOf(runMove, stance);

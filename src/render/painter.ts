@@ -33,6 +33,7 @@ import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { ActorArt, AnimSet } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
+import { heroSides } from '../art/sides';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroPlace } from '../art/heroes';
 import { paintTerrain, terrainOf } from '../art/terrain';
@@ -948,7 +949,9 @@ export function paintWorkerMain(): void {
   function* hero(cls: ClassId, place: HeroPlace, soon = false, vet = false): Generator<void, void, void> {
     heroArt ??= makeHeroArt3();
     const art = heroArt.of(cls, { ...lookOfPlace(place), vet });
-    const lists = [heroLists(art.front), heroLists(art.back)];
+    // (every side he has: two, or for a hero painted from eight (art/sides.ts), eight)
+    const lists = heroSides(art).map((s) => heroLists(s));
+    const V = lists.length;
     const order: [number, number, number][] = [];
     if (vet && place !== 'card') {
       // THE VETERAN (art/veteran_art.ts): every frame of his a few tenths of a second to paint. SOON: the first frame of his
@@ -964,7 +967,7 @@ export function paintWorkerMain(): void {
       const after = [idx(art.front.clips?.reel?.frames), idx(art.front.clips?.fall?.frames), ...VET_LISTS.map((id) => idx(art.front.clips?.vetHalves?.[id]?.frames))].filter((l) => l >= 0);
       const all = [...stand, ...moves, ...after];
       if (soon) {
-        for (const l of [...stand, ...moves]) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+        for (const l of [...stand, ...moves]) for (let v = 0; v < V; v++) if (lists[v][l].length) order.push([v, l, 0]);
       } else {
         const seen = new Set<string>();
         const add = (v: number, l: number, i: number): void => {
@@ -972,17 +975,17 @@ export function paintWorkerMain(): void {
           seen.add(`${v}:${l}:${i}`);
           order.push([v, l, i]);
         };
-        for (const l of all) for (let v = 0; v < 2; v++) if (lists[v][l].length) add(v, l, 0);
+        for (const l of all) for (let v = 0; v < V; v++) if (lists[v][l].length) add(v, l, 0);
         // (his run whole: it is seen the most; then his stance and every move a frame in eight; his action lines whole, a tenth
         // of his frames' time to paint (a frame of them not here yet is not shown at all where the game is played); then the
         // stance and the moves a frame in four, in two, the rest)
         const walk = stand.length > 1 ? [stand[1]] : [];
-        for (const l of walk) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+        for (const l of walk) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
         for (const step of [8, 4, 2, 1]) {
-          for (const l of [...stand, ...moves]) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i += step) add(v, l, i);
-          if (step === 8) for (const l of fx) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+          for (const l of [...stand, ...moves]) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i += step) add(v, l, i);
+          if (step === 8) for (const l of fx) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
         }
-        for (const l of after) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
+        for (const l of after) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) add(v, l, i);
       }
     } else if (soon) {
       // (SOON: the first frame of each of his combos, both ways, by how often they are thrown: one press, two, three; a hold first)
@@ -990,7 +993,7 @@ export function paintWorkerMain(): void {
       const keys = Object.keys(punches ?? {}).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
       for (const key of keys) {
         const l = lists[0].indexOf(punches![key].frames);
-        if (l >= 0) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
+        if (l >= 0) for (let v = 0; v < V; v++) if (lists[v][l].length) order.push([v, l, 0]);
       }
     } else if (place === 'card') {
       // ON A CLASS CARD (ui/panels.ts; the owner, 31 Oct 2026, 18:23: "Can you animate the tinkerer and the brawler on the
@@ -1015,9 +1018,9 @@ export function paintWorkerMain(): void {
       // word, 1 Nov 2026, 10:19: “I had some stutter issues with the brawler loading his hold ability”)
       // (standing and running whole before anything: what is seen most)
       const seenMost = [lists[0].indexOf(art.front.idle), lists[0].indexOf(art.front.walk)].filter((l) => l >= 0);
-      for (const l of seenMost) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
-      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < 2; v++) if (lists[v][l].length) order.push([v, l, 0]);
-      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < 2; v++) for (let i = 1; i < lists[v][l].length; i++) order.push([v, l, i]);
+      for (const l of seenMost) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) order.push([v, l, 0]);
+      for (let l = 0; l < lists[0].length; l++) if (!seenMost.includes(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) order.push([v, l, i]);
     }
     const sent = new Set<Sprite>();
     let list: Given[] = [];

@@ -137,8 +137,8 @@ function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: 
 
 // --- 1. the switch, and the game's knight unchanged while it is off ------------------------------------------------------
 
-test('1. the switch is off; of the game only art/heroes3.ts imports the new files, and only to go through the switch', () => {
-  assert.equal(WARRIOR_UP.on, false, 'WARRIOR_UP is off');
+test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts imports the new files to paint him, and only through the switch (and the game\'s figure and sides their eight facings: render/figure.ts, art/sides.ts)', () => {
+  assert.equal(WARRIOR_UP.on, true, 'WARRIOR_UP is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('art/warrior_up')) continue;
@@ -146,7 +146,10 @@ test('1. the switch is off; of the game only art/heroes3.ts imports the new file
     if (/from ['"][^'"]*warrior_up(_moves|_art|_review)?['"]/.test(text)) users.push(f);
   }
   // (and the Ranger's mock-up, brought up after him on his pieces, behind its own switch; nothing of the game imports it)
-  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_moves.ts art/ranger_up_review.ts', 'what imports them');
+  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_moves.ts art/ranger_up_review.ts art/sides.ts render/figure.ts', 'what imports them');
+  // (the figure, only for the eight facings: wuFacing, wuTailsFacing and the sides' names; the sides, only their names' type)
+  const fig = fs.readFileSync('src/render/figure.ts', 'utf8');
+  assert.ok(!/paintWarriorUp|makeWarriorUpArt/.test(fig), 'the figure paints nothing of him');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (art/heroes3.ts reaches the Ranger's mock-up only through its own switch, RANGER_UP: tests/ranger_up.test.ts holds that)
     if (!f.endsWith('.ts') || f.startsWith('art/ranger_up') || f === 'art/heroes3.ts') continue;

@@ -37,6 +37,7 @@ import { WARRIOR_UP } from './warrior_up';
 import { makeWarriorUpArt } from './warrior_up_art';
 // (THE RANGER BROUGHT UP TO THE BRAWLER'S LEVEL, behind its switch, off: art/ranger_up.ts)
 import { RANGER_UP } from './ranger_up';
+import { heroSides } from './sides';
 import { makeRangerUpArt } from './ranger_up_art';
 import type { HeroArt, HeroLook, HeroPlace } from './heroes';
 import { lookOfPlace } from './heroes';
@@ -475,7 +476,8 @@ export function makeHeroArt3(): HeroArt {
     give(cls: ClassId, place: HeroPlace, v: number, l: number, i: number, s: Sprite, vet?: boolean): boolean {
       // (`vet`: painted as the Veteran, whatever the switch is now: art/veteran_art.ts)
       const art = of(cls, { ...lookOfPlace(place), vet: !!vet });
-      const frames = heroLists(v === 0 ? art.front : art.back)[l];
+      const side = heroSides(art)[v];
+      const frames = side ? heroLists(side)[l] : undefined;
       if (!frames || i < 0 || i >= frames.length) return false;
       const d = Object.getOwnPropertyDescriptor(frames, i);
       if (!d || typeof d.get !== 'function') return false;
@@ -491,7 +493,7 @@ export function makeHeroArt3(): HeroArt {
         // a hero does when left standing is painted as it is shown, which is slowly enough)
         const picks = HERO_PICKS;
         for (const pick of picks) {
-          for (const set of [art.front, art.back]) {
+          for (const set of heroSides(art)) {
             const frames = pick(set);
             for (let i = 0; i < frames.length; i++) list.push(() => (painted3 = frames[i]));
           }

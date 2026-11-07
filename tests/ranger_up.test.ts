@@ -66,8 +66,8 @@ const KEY_OF = new Map<Move3, string>(Object.entries(RU_MOVES).map(([k, m]) => [
 
 // --- 1. the switch, and the game's Ranger unchanged while it is off ----------------------------------------------------------
 
-test('1. the switch is off; of the game only art/heroes3.ts reaches the new files, and only through it; nothing imports his review', () => {
-  assert.equal(RANGER_UP.on, false, 'RANGER_UP is off');
+test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts reaches the new files, and only through it; nothing imports his review', () => {
+  assert.equal(RANGER_UP.on, true, 'RANGER_UP is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('art/ranger_up')) continue;
@@ -83,20 +83,26 @@ test('1. the switch is off; of the game only art/heroes3.ts reaches the new file
 
 test('1. with the switch off, every frame the game paints of the Ranger is the very same picture (the hashes made from him as he is)', () => {
   const pinned = JSON.parse(fs.readFileSync('tests/ranger_up.hashes.json', 'utf8')) as { lists: Record<string, string[]> };
-  const lists = rangerLists();
-  assert.deepEqual(lists.map((l) => l.name).sort(), Object.keys(pinned.lists).sort(), 'the same lists');
-  const all = !!process.env.RANGER_UP_ALL;
-  let n = 0;
-  for (const l of lists) {
-    const want = pinned.lists[l.name];
-    assert.equal(l.frames.length, want.length, `${l.name}: as many frames`);
-    const picks = all ? want.map((_, i) => i) : [...new Set([0, Math.floor(want.length / 2), want.length - 1])];
-    for (const i of picks) {
-      assert.equal(hashSprite(l.frames[i]), want[i], `${l.name}[${i}]: the very same picture`);
-      n++;
+  const was = RANGER_UP.on;
+  RANGER_UP.on = false;
+  try {
+    const lists = rangerLists();
+    assert.deepEqual(lists.map((l) => l.name).sort(), Object.keys(pinned.lists).sort(), 'the same lists');
+    const all = !!process.env.RANGER_UP_ALL;
+    let n = 0;
+    for (const l of lists) {
+      const want = pinned.lists[l.name];
+      assert.equal(l.frames.length, want.length, `${l.name}: as many frames`);
+      const picks = all ? want.map((_, i) => i) : [...new Set([0, Math.floor(want.length / 2), want.length - 1])];
+      for (const i of picks) {
+        assert.equal(hashSprite(l.frames[i]), want[i], `${l.name}[${i}]: the very same picture`);
+        n++;
+      }
     }
+    assert.ok(n > 300, `${n} frames held to their hashes`);
+  } finally {
+    RANGER_UP.on = was;
   }
-  assert.ok(n > 300, `${n} frames held to their hashes`);
 });
 
 // --- 2. the lists -------------------------------------------------------------------------------------------------------------

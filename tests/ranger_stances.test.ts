@@ -17,6 +17,8 @@ import { GRIP, MAGE_STANCES, MOVES3, RANGER_STANCES, SETTLES, UNITS_PER_TILE, WI
 import type { Move3 } from '../src/art/moves3';
 import { bonesAt, solve } from '../src/art/skeleton';
 import { RANGER_ARROW } from '../src/game/defs';
+import { RANGER_UP } from '../src/art/ranger_up';
+import { RU_SHOT3, RU_SHOT_HIT, RU_VOLLEY3, RU_VOLLEY_HIT } from '../src/art/ranger_up_moves';
 import type { Sprite } from '../src/engine/px';
 import { Figure } from '../src/render/figure';
 import type { FigureState } from '../src/render/figure';
@@ -126,12 +128,13 @@ test('he shoots from the crouch without moving his feet, and the arrow is gone f
   });
 });
 
-test('the game\'s arrows leave from where the picture\'s are', () => {
+test('the game\'s arrows leave from where the picture\'s are (the Ranger brought up, art/ranger_up.ts RANGER_UP, on since 7 Nov 2026: from his)', () => {
   on(() => {
     for (const [key, from, height] of [['shot', RANGER_ARROW.from, RANGER_ARROW.height], ['volley', RANGER_ARROW.volleyFrom, RANGER_ARROW.volleyHeight]] as const) {
-      const m = MOVES3[key];
+      const m = RANGER_UP.on ? (key === 'shot' ? RU_SHOT3 : RU_VOLLEY3) : MOVES3[key];
+      const hit = RANGER_UP.on ? (key === 'shot' ? RU_SHOT_HIT : RU_VOLLEY_HIT) : (m.motion.hit as number);
       // (the frame shown before the blow)
-      const tip = arrowTip(m, Math.round((m.motion.hit as number) * 30 - 1) / 30);
+      const tip = arrowTip(m, Math.round(hit * 30 - 1) / 30);
       assert.ok(Math.abs(tip[0] / UNITS_PER_TILE - from) < 0.01, `${key}: ${(tip[0] / UNITS_PER_TILE).toFixed(3)} tiles ahead, the game has ${from}`);
       assert.ok(Math.abs(tip[2] / 2 - height) < 0.2, `${key}: ${(tip[2] / 2).toFixed(2)} game px up, the game has ${height}`);
     }

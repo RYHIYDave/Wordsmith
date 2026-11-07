@@ -45,8 +45,12 @@ import type { Build, Posed, Skeleton, V3 } from './skeleton';
 import { Sculpt, draw } from '../dev/sculpt';
 import type { Drawn } from '../dev/sculpt';
 
-/** THE SWITCH: off. On, the game's knight is this one (art/heroes3.ts, `makeHeroArt3`). The main chat's to turn on, on his yes to the pictures. */
-export const WARRIOR_UP = { on: false };
+/**
+ * THE SWITCH: ON. On, the game's knight is this one (art/heroes3.ts, `makeHeroArt3`). Handed to the main chat with his yes (the
+ * art chat's post of 7 Nov 2026, 07:47: shown him, “Yes, hand him over (Recommended)”), switched on by the main chat with the
+ * Ranger, 7 Nov, as he sent the Ranger on to it (“Ranger is sent to you”, 11:27).
+ */
+export const WARRIOR_UP = { on: true };
 
 /** The edge of light round what is the player's (as art/hero3_knight.ts FRIEND_RIM). */
 export const WU_RIM = '#22d0e0';

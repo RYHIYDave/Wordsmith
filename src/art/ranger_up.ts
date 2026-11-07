@@ -45,8 +45,11 @@ import type { Drawn } from '../dev/sculpt';
 import { WU_RIM, WU_SIDES, WU_SPIN, five, frame, turnedStage } from './warrior_up';
 import type { WuSide } from './warrior_up';
 
-/** THE SWITCH: off. The main chat's to turn on, on his yes to the pictures (and once his moves are brought up as well). */
-export const RANGER_UP = { on: false };
+/**
+ * THE SWITCH: ON. Handed to the main chat with his yes (the art chat's post of 7 Nov 2026, 11:16: his legs mended, shown him,
+ * “Yes thank you better”), switched on by the main chat at his word to it, 7 Nov, 11:27: “Ranger is sent to you”.
+ */
+export const RANGER_UP = { on: true };
 
 /** His sides: the Warrior's five (art/warrior_up.ts). */
 export type RuSide = WuSide;
