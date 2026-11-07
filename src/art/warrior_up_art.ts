@@ -125,8 +125,10 @@ export function paintWu(m: Move3, t: number, view: WuSide, rim: string | null | 
 export function wuSprite(m: Move3, t: number, view: WuSide): Sprite {
   const f = paintWu(m, t, view);
   const out = wuPosed(m, t).q.out;
-  const pool = out >= 0.98 ? null : out > 0.01 ? { ...AURA, a: (AURA.a ?? 1) * (1 - out) } : AURA;
-  return toSprite(f, pool, CANVAS3.ax, CANVAS3.ay);
+  // (his pool of light where it is under every hero, by his feet: on a side that faces left, as far the other way)
+  const aura = { ...AURA, x: f.ax + (f.ax === CANVAS3.ax ? AURA.x - CANVAS3.ax : CANVAS3.ax - AURA.x) };
+  const pool = out >= 0.98 ? null : out > 0.01 ? { ...aura, a: (aura.a ?? 1) * (1 - out) } : aura;
+  return toSprite(f, pool, f.ax, f.ay);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -221,29 +223,29 @@ export function makeWarriorUpArt(place: 'dungeon' | 'town' | 'card', shared: Sha
 }
 
 /**
- * HIS PICTURES FROM ALL FIVE SIDES (art/warrior_up.ts WuSide): `front` and `back` as the game has always held a hero, and
- * `side`, `toward` and `away` beside them, each an AnimSet of the very same lists. The game, while it knows only front and
- * back, reads those two and nothing else; to show him in eight facings it chooses among the five (docs/mockups/warrior_up/
- * README.md, "Eight facings").
+ * HIS PICTURES FROM ALL EIGHT SIDES (art/warrior_up.ts WuSide), each an AnimSet of the very same lists, each truly painted:
+ * `front` and `back` where the game has always looked for a hero's two (`back` now truly turned, his sword in his right hand),
+ * and `toward`, `frontL`, `sideL`, `backL`, `away` and `side` beside them. The game, while it knows only front and back, reads
+ * those two and mirrors as it always has; to show him in eight facings it takes the side `wuFacing` gives and never mirrors it
+ * (docs/mockups/warrior_up/README.md, "His eight facings").
  */
-export type WuActorArt = ActorArt & { side: AnimSet; toward: AnimSet; away: AnimSet };
+export type WuActorArt = ActorArt & { toward: AnimSet; frontL: AnimSet; sideL: AnimSet; backL: AnimSet; away: AnimSet; side: AnimSet };
 
 /**
- * THE SIDE AND THE MIRROR FOR A FACING, as the game should choose them for eight (the main chat's to wire in; while it is not,
- * the game chooses front or back and mirrors as it always has): (fx, fy) the way he faces on the game's floor.
+ * THE SIDE FOR A FACING, as the game should choose it for eight (the main chat's to wire in; while it is not, the game chooses
+ * front or back and mirrors as it always has): (fx, fy) the way he faces on the game's floor. Never a mirror: each of the eight
+ * is painted.
  */
-export function wuFacing(fx: number, fy: number): { side: WuSide; flip: boolean } {
+export function wuFacing(fx: number, fy: number): WuSide {
   const a = (Math.atan2(fy, fx) * 180) / Math.PI;
   const k = ((Math.round(a / 45) % 8) + 8) % 8;
   // (0: down and to the right; then round by 45 degrees: down, down-left, left, up-left, up, up-right, right)
-  return ([
-    { side: 'front', flip: false },
-    { side: 'toward', flip: false },
-    { side: 'front', flip: true },
-    { side: 'side', flip: true },
-    { side: 'back', flip: true },
-    { side: 'away', flip: false },
-    { side: 'back', flip: false },
-    { side: 'side', flip: false },
-  ] as const)[k];
+  return (['front', 'toward', 'frontL', 'sideL', 'backL', 'away', 'back', 'side'] as const)[k];
+}
+
+/** The way the game's tails (his scarf's ends, engine/tails.ts) should take him to face for a side: +1 to the right of the screen,
+ * -1 to the left (straight up or down the screen: +1, as the game has it where fx - fy is 0). His frame's roots are never
+ * mirrored now: each side's are where that side is painted. */
+export function wuTailsFacing(side: WuSide): 1 | -1 {
+  return side === 'frontL' || side === 'sideL' || side === 'backL' ? -1 : 1;
 }

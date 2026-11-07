@@ -27,10 +27,9 @@
 // rivets at the visor's pivots, rows of breathing holes, and the slit cut dark across the top of the snout, its upper lip lit
 // and its lower edge in shadow, so that it reads at the game's size from every side that shows his face.
 //
-// HIS FIVE SIDES (`WuSide`), as he said yes to drawing him from eight sides: in front and from behind as the game has always
-// had a hero (front, back), and turned 45 degrees each way from in front: side-on (`side`, facing right across the screen),
-// straight toward the camera (`toward`, facing down the screen) and straight away from it (`away`, up the screen). Mirrored,
-// they give his eight facings (art/warrior_up_art.ts wuFacing).
+// HIS EIGHT SIDES (`WuSide`), each him truly turned before the game's camera, 45 degrees apart: as he said yes to drawing him
+// from eight sides, and then, asked whether some were only mirrored, “Paint all 8 (Recommended)”: every facing true, his
+// sword in his right hand whichever way he faces (art/warrior_up_art.ts wuFacing).
 
 import type { Light } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
@@ -56,13 +55,13 @@ export const WU_RIM = '#22d0e0';
 // His colours: his own three tones of each (kit.ts, hero_warrior.ts), with a tone between each two, so the sculpted surfaces
 // turn smoothly in the light; his darkest and lightest exactly his. Nothing glows but the blade and the buckle's cyan.
 
-function between(a: string, b: string): string {
+export function between(a: string, b: string): string {
   const v = (h: string, i: number): number => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
   const f = (i: number): string => Math.round((v(a, i) + v(b, i)) / 2).toString(16).padStart(2, '0');
   return '#' + f(0) + f(1) + f(2);
 }
 /** A five-tone ramp from one of his three-tone ramps (dark, dark, mid, light, light): dark, between, mid, between, light. */
-function five(r: Ramp): Ramp {
+export function five(r: Ramp): Ramp {
   return [r[0], between(r[1], r[2]), r[2], between(r[2], r[3]), r[4]];
 }
 export const WU_STEEL: Ramp = five(STEEL);
@@ -77,24 +76,39 @@ const HELM: V3 = [1.18, 1.26, 1.12];
 const FLOOR = { n: [0, 0, -1] as V3, o: 0 };
 
 /**
- * HIS FIVE SIDES (Heroes 7, “Truly turned, eight ways”; his pick of 6 Nov 2026, “Yes, 8 sides now (Recommended)”): the two the
- * game has always had, and three more, each him truly turned; the game mirrors four of them for the other four facings.
- *   front    facing down the screen and to the right (as always: the game's own camera)
- *   back     facing up the screen and to the right, seen from behind as the game always has (its picture the mirror's: his
- *            sword in his left hand)
- *   side     side-on, facing straight to the right of the screen (the camera's, him turned 45 degrees to his left)
- *   toward   facing straight down the screen, at the camera (him turned 45 degrees to his right)
- *   away     facing straight up the screen, away from the camera (him turned 135 degrees to his left)
+ * HIS EIGHT SIDES (Heroes 7, “Truly turned, eight ways”; his picks of 6 Nov 2026, “Yes, 8 sides now (Recommended)” and “Paint all
+ * 8 (Recommended)”): him truly turned before the game's own camera, 45 degrees apart, none of them a mirror, so that his great
+ * sword is in his right hand and his scarf where it is on him whichever way he faces. By the way he faces on the screen:
+ *   front    down and to the right (as the game has always drawn a hero in front)
+ *   toward   straight down the screen, at the camera (him turned 45 degrees to his right)
+ *   frontL   down and to the left (90 to his right)
+ *   sideL    side-on, straight to the left (135 to his right)
+ *   backL    up and to the left, seen from behind (turned right round)
+ *   away     straight up the screen, away from the camera (135 to his left)
+ *   back     up and to the right, seen from behind (90 to his left: truly, his sword in his right hand; the game's own view from
+ *            behind is a mirror of this, his sword in his left)
+ *   side     side-on, straight to the right (45 to his left)
  */
-export type WuSide = 'front' | 'back' | 'side' | 'toward' | 'away';
-export const WU_SIDES: readonly WuSide[] = ['front', 'back', 'side', 'toward', 'away'];
-/** How far each side turns him to his left (degrees), under which of the game's two cameras. */
-export const WU_SPIN: Readonly<Record<WuSide, { spin: number; camera: GameView }>> = {
-  front: { spin: 0, camera: 'front' },
-  back: { spin: 0, camera: 'back' },
-  side: { spin: 45, camera: 'front' },
-  toward: { spin: -45, camera: 'front' },
-  away: { spin: 135, camera: 'front' },
+export type WuSide = 'front' | 'toward' | 'frontL' | 'sideL' | 'backL' | 'away' | 'back' | 'side';
+export const WU_SIDES: readonly WuSide[] = ['front', 'toward', 'frontL', 'sideL', 'backL', 'away', 'back', 'side'];
+/**
+ * How far each side turns him to his left (degrees), under the game's camera (from in front, always: no side is a mirror); and
+ * where on his canvas the floor point under him is laid (`ax`): the game's hero canvas puts it a little left of the middle,
+ * leaving more room before a hero who faces right; a side that faces left has it as far the other way, so that his Lunge and his
+ * Whirlwind have room before him (each picture is cut to the box round him: the game sees no difference but his anchor).
+ */
+/** (a side facing left: the floor point under him 98 across his canvas, where facing right it is 84: his Lunge reaches 90 before
+ * him, its blade's glow a little more) */
+const LEFT_AX = 98;
+export const WU_SPIN: Readonly<Record<WuSide, { spin: number; camera: GameView; ax: number }>> = {
+  front: { spin: 0, camera: 'front', ax: CANVAS3.ax },
+  toward: { spin: -45, camera: 'front', ax: CANVAS3.ax },
+  frontL: { spin: -90, camera: 'front', ax: LEFT_AX },
+  sideL: { spin: -135, camera: 'front', ax: LEFT_AX },
+  backL: { spin: 180, camera: 'front', ax: LEFT_AX },
+  away: { spin: 135, camera: 'front', ax: CANVAS3.ax },
+  back: { spin: 90, camera: 'front', ax: CANVAS3.ax },
+  side: { spin: 45, camera: 'front', ax: CANVAS3.ax },
 };
 /** A direction or point of him turned `deg` to his left about the floor point under him. */
 export function spun(p: V3, deg: number): V3 {
@@ -105,7 +119,7 @@ export function spun(p: V3, deg: number): V3 {
   return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]];
 }
 /** A stage that takes points of him as he is built and sees them as he is turned (for what is drawn of the old kind with him). */
-function turnedStage(st: Stage, deg: number): Stage {
+export function turnedStage(st: Stage, deg: number): Stage {
   if (!deg) return st;
   const R = (p: V3): V3 => spun(p, deg);
   return {
@@ -142,11 +156,14 @@ export interface WuFrame extends Painted {
   s: Skeleton;
   /** How far he was turned for the side he was seen from (degrees to his left). */
   spin: number;
+  /** Where on his canvas the floor point under him is (WU_SPIN's `ax`, and the game's own height). */
+  ax: number;
+  ay: number;
 }
 
 const fr = (v: V3, w: V3, k: number): V3 => norm(sub(v, mul(w, dot(v, w) * k)), [1, 0, 0]);
 /** Three lines square to each other: `a`, then `b` made square to it, then the third. (A ball's axes must be square to each other.) */
-function frame(a: V3, b: V3): [V3, V3, V3] {
+export function frame(a: V3, b: V3): [V3, V3, V3] {
   const x = norm(a, [1, 0, 0]);
   let y = sub(b, mul(x, dot(b, x)));
   if (len(y) < 1e-4) y = Math.abs(x[2]) < 0.9 ? cross([0, 0, 1], x) : cross([0, 1, 0], x);
@@ -167,7 +184,7 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
   const [hf, hl, hu] = s.hips;
   // (the game's camera for this view, only for its sums: the way to the eye, how near a point is. Its sheets are not used: the
   // sculptor's own stage paints the frame)
-  const st0 = turnedStage(stage(view), spin);
+  const st0 = turnedStage(stage(view, WU_SPIN[side].ax), spin);
   const eye: V3 = st0.eye;
   const farOf = (p: V3): boolean => dot(sub(p, s.pelvis), eye) < -2.4;
   const dim = (h: { tone: number }, p: V3, r: Ramp): string | null => (farOf(p) ? r[Math.max(0, h.tone - 1)] : null);
@@ -534,6 +551,6 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
       { id: 'w-scarf-a', x: tx, y: ty - 1, over: !behind },
     ];
   };
-  const drawn = draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, extras, rim);
-  return { px: drawn.px, lights, tails, drawn, sc, s, spin };
+  const drawn = draw(sc, view, WU_SPIN[side].ax, CANVAS3.ay, CANVAS3, extras, rim);
+  return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax: WU_SPIN[side].ax, ay: CANVAS3.ay };
 }

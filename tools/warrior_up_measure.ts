@@ -6,10 +6,10 @@
 // how long each took to paint. With WARRIOR_UP off it is the game's knight as he is; with `up`, the switch is turned on first.
 //
 //   npx tsx tools/warrior_up_measure.ts hash <out.json> [up]     every frame's hash, and the counts, to a file
-//   npx tsx tools/warrior_up_measure.ts count [up] [five]        the counts, memory and times only (painting every frame)
+//   npx tsx tools/warrior_up_measure.ts count [up] [eight]       the counts, memory and times only (painting every frame)
 //
-// With `five` (and `up`), his three turned sides too (side, toward, away: art/warrior_up_art.ts WuActorArt), as the game would
-// hold them to show him in eight facings.
+// With `eight` (and `up`), from all eight of his sides (art/warrior_up_art.ts WuActorArt), as the game would hold them to show him
+// in eight facings, each truly painted; and each place's own share (in play only the place he is in need be held).
 
 // @ts-ignore - node typings are not part of this project
 import { writeFileSync } from 'node:fs';
@@ -21,7 +21,7 @@ import { lookOfPlace } from '../src/art/heroes';
 import type { HeroPlace } from '../src/art/heroes';
 import { hashSprite } from './cheap_heroes';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
-import { WARRIOR_UP } from '../src/art/warrior_up';
+import { WARRIOR_UP, WU_SIDES } from '../src/art/warrior_up';
 
 declare const process: { argv: string[]; exit(code: number): never };
 
@@ -56,13 +56,13 @@ function listsOfSet(set: unknown, prefix: string, out: WarriorList[]): void {
 export const PLACES: HeroPlace[] = ['dungeon', 'town', 'card'];
 
 /** Every list of the Warrior's, in every place the game shows him, both ways round (one HeroArt for all, as the game has); with
- * `five`, from each of his five sides (those of them his art has). */
-export function warriorLists(five = false): WarriorList[] {
+ * `eight`, from each of his eight sides (those of them his art has). */
+export function warriorLists(eight = false): WarriorList[] {
   const art = makeHeroArt3();
   const out: WarriorList[] = [];
   for (const place of PLACES) {
     const a = art.of('warrior', lookOfPlace(place)) as unknown as Record<string, unknown>;
-    for (const side of five ? ['front', 'back', 'side', 'toward', 'away'] : ['front', 'back']) if (a[side]) listsOfSet(a[side], `warrior:${place}/${side}`, out);
+    for (const side of eight ? WU_SIDES : ['front', 'back']) if (a[side]) listsOfSet(a[side], `warrior:${place}/${side}`, out);
   }
   return out;
 }
@@ -70,7 +70,8 @@ export function warriorLists(five = false): WarriorList[] {
 function main(): void {
   const [mode, ...args] = process.argv.slice(2);
   if (args.includes('up')) WARRIOR_UP.on = true;
-  const lists = warriorLists(args.includes('five'));
+  const lists = warriorLists(args.includes('eight'));
+  const cost = new Map<Sprite, { bytes: number; packed: number }>();
   const hashes: Record<string, string[]> = {};
   const seen = new Set<Sprite>();
   const pictures = new Set<string>();
@@ -94,7 +95,9 @@ function main(): void {
         const p = paintingOf(s);
         bytes += p.w * p.h * 4;
         // (packed as a picture file would be: its pixels deflated, as a PNG's are; a guide to what baking him adds to the download)
-        packed += deflateSync(p.d, { level: 9 }).length + 60;
+        const pk = deflateSync(p.d, { level: 9 }).length + 60;
+        packed += pk;
+        cost.set(s, { bytes: p.w * p.h * 4, packed: pk });
         ms += took;
         painted++;
         mine++;
@@ -121,7 +124,16 @@ function main(): void {
   console.log(JSON.stringify(report));
   for (const place of PLACES) {
     const mine = lists.filter((l) => l.name.startsWith(`warrior:${place}/`));
-    console.log(`${place}: ${mine.length} lists, ${mine.reduce((a, l) => a + l.frames.length, 0)} frames`);
+    // (that place alone: each picture its lists hold, once)
+    const own = new Set<Sprite>();
+    for (const l of mine) for (let i = 0; i < l.frames.length; i++) own.add(l.frames[i]);
+    let b = 0;
+    let k = 0;
+    for (const sp of own) {
+      b += cost.get(sp)?.bytes ?? 0;
+      k += cost.get(sp)?.packed ?? 0;
+    }
+    console.log(`${place}: ${mine.length} lists, ${mine.reduce((a, l) => a + l.frames.length, 0)} frames, ${own.size} pictures held, ${(b / 1024 / 1024).toFixed(2)} MB decoded, ${(k / 1024 / 1024).toFixed(2)} MB packed`);
   }
   if (mode === 'hash') {
     writeFileSync(args[0], JSON.stringify({ report, lists: hashes }, null, 0));

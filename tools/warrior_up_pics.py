@@ -1,5 +1,6 @@
 # THE WARRIOR BROUGHT UP: THE SHEET AND THE FILM, LAID OUT WITH THEIR CAPTIONS (the art chat's helper, 6 Nov 2026).
-# From the pictures tools/warrior_up_pics.ts paints (RGBA, his canvas: 176 by 176, his feet at 84, 132).
+# From the pictures tools/warrior_up_pics.ts paints (RGBA, his picture: 192 by 176, his feet at 92, 132: the game's hero canvas
+# with room on either side, so that he has as much before him facing left as facing right).
 #   python3 tools/warrior_up_pics.py sheet <dir> <out.png>
 #   python3 tools/warrior_up_pics.py sheet2 <dir> <out.png>     (his helm close, and his eight facings)
 #   python3 tools/warrior_up_pics.py film <dir> <out.mp4>
@@ -17,7 +18,8 @@ FLOOR = (30, 28, 62)
 INK = (232, 230, 255)
 DIM = (170, 166, 210)
 CYAN = (34, 208, 224)
-AX, AY = 84, 132
+AX, AY = 92, 132
+PW, PH = 192, 176
 
 
 def font(path, size):
@@ -64,12 +66,107 @@ def union_box(paths, pad=4):
         b = Image.open(p).getbbox()
         if b:
             bb = [min(bb[0], b[0]), min(bb[1], b[1]), max(bb[2], b[2]), max(bb[3], b[3])]
-    return (max(0, bb[0] - pad), max(0, bb[1] - pad), min(176, bb[2] + pad), min(176, bb[3] + pad + 2))
+    return (max(0, bb[0] - pad), max(0, bb[1] - pad), min(PW, bb[2] + pad), min(PH, bb[3] + pad + 2))
+
+
+UP, LOW, SALMON = (255, 214, 102), (120, 230, 140), (255, 140, 120)
+
+
+def draw_legs(d, leg, box, k, x0, y0, w):
+    """Over a figure: one leg as the screen shows it, hip to knee (yellow), knee to ankle to the floor (green), a tick at each."""
+    P = [(x0 + (p[0] - box[0]) * k, y0 + (p[1] - box[1]) * k) for p in leg['pts']]
+    seen = leg['seen'] >= 0.5
+    up, low = (UP, LOW) if seen else ((150, 140, 110), (110, 140, 120))
+    d.line([P[0], P[1]], fill=up, width=w)
+    d.line([P[1], P[2], P[3]], fill=low, width=w)
+    for q in (P[0], P[1], P[3]):
+        r = w + 2
+        d.ellipse((q[0] - r, q[1] - r, q[0] + r, q[1] + r), fill=INK, outline=(20, 20, 40))
+
+
+def legs_panel(dir, spec, W, fonts, measure_only=False, img=None, d=None, y0=0):
+    """HIS LEGS, MADE TRUE: his guard from in front and toward the camera, as approved and now, the legs marked, the ratios written."""
+    big, mid, small, tiny = fonts
+    probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
+    intro = ('His guard, three times as big, from in front and from straight toward you: as you approved him, beside now. Over '
+             'each leg, as the screen shows it: hip to knee (yellow), knee to the floor (green), and below, knee to floor over '
+             'hip to knee. Standing straight his lower leg is a little longer than his thigh, as on a real person; in his crouch '
+             'his knees were bent toward you, so each shin was seen end-on and looked short. Now the same low guard, his body, '
+             'arms and sword as they were: his front foot further forward, his back foot further back, a longer, lower '
+             'guard. A leg drawn dim is one whose shin is hidden from that side. The same holds for every pose he holds, '
+             'from all eight sides (a test).')
+    lines = wrap(probe, intro, small, W - 48)
+    paths = [os.path.join(dir, e['file']) for e in spec]
+    box = union_box(paths)
+    K = 3
+    fw, fh = (box[2] - box[0]) * K, (box[3] - box[1]) * K
+    per = 4 if 4 * fw + 3 * 18 <= W - 48 else 2
+    rows = 4 // per
+    cell_h = 26 + 22 + fh + 10 + 24 * 2 + 16
+    h = 22 + 34 + len(lines) * 24 + 16 + rows * cell_h + 10
+    if measure_only:
+        return h
+    y = y0 + 22
+    d.text((24, y), "HIS LEGS, MADE TRUE (his word: “long upper legs and short legs below the knee”)", font=mid, fill=CYAN)
+    y += 34
+    for ln in lines:
+        d.text((24, y), ln, font=small, fill=DIM)
+        y += 24
+    y += 16
+    names = {'approved': 'AS YOU APPROVED HIM', 'after': 'NOW, HIS LEGS TRUE'}
+    views = {'front': 'in front', 'toward': 'toward you'}
+    gap = (W - 48 - per * fw) // max(1, per - 1) if per > 1 else 0
+    for i, (e, p) in enumerate(zip(spec, paths)):
+        r, c = i // per, i % per
+        x = 24 + c * (fw + gap)
+        yy = y + r * cell_h
+        d.text((x + 2, yy), names[e['who']], font=tiny, fill=CYAN if e['who'] == 'after' else DIM)
+        d.text((x + 2, yy + 22), views[e['view']], font=tiny, fill=DIM)
+        fig = figure(p, box, K)
+        img.paste(fig, (x, yy + 48))
+        for leg in e['legs']:
+            draw_legs(d, leg, box, K, x, yy + 48, 3)
+        ty = yy + 48 + fh + 10
+        for leg in e['legs']:
+            name = 'left leg' if leg['leg'] == 'L' else 'right leg'
+            seen = leg['seen'] >= 0.5
+            col = (CYAN if leg['ratio'] >= 1.05 else SALMON) if seen else DIM
+            txt = f"{name} {leg['lower']:.1f}/{leg['thigh']:.1f} = {leg['ratio']:.2f}" + ('' if seen else ', hidden')
+            f15 = font(B, 15)
+            tx = min(x + 2, W - 12 - d.textlength(txt, font=f15))
+            d.text((tx, ty), txt, font=f15, fill=col)
+            ty += 24
+    return y + rows * cell_h + 10 - y0
+
+
+def row_height(box, rows):
+    return 28 + 20 + (box[3] - box[1]) * 3 * rows + (rows - 1) * 30 + 14
+
+
+def draw_row(img, d, y, W, label, paths, box, rows, small, tiny):
+    d.text((24, y), label, font=small, fill=INK)
+    y += 28
+    names = ['BEFORE · from in front', 'NOW · from in front', 'BEFORE · from behind', 'NOW · from behind']
+    per = 4 // rows
+    bw = (box[2] - box[0]) * 3
+    bh = (box[3] - box[1]) * 3
+    gap = 12
+    x0 = (W - (per * bw + (per - 1) * gap)) // 2
+    for r in range(rows):
+        for i in range(per):
+            j = r * per + i
+            x = x0 + i * (bw + gap)
+            d.text((x + 2, y), names[j], font=tiny, fill=CYAN if 'NOW' in names[j] else DIM)
+            img.paste(figure(paths[j], box, 3), (x, y + 20))
+        y += 20 + bh + (30 if r < rows - 1 else 0)
+        if r < rows - 1:
+            y -= 10
+    return y + 14
 
 
 def sheet(dir, out):
     spec = json.load(open(os.path.join(dir, 'sheet.json')))
-    W = 1200
+    W = 1440
     big, mid, small = font(B, 34), font(B, 23), font(R, 18)
     tiny = font(B, 15)
     blocks = []
@@ -82,6 +179,8 @@ def sheet(dir, out):
              'two-frame strike and a big wind-down, his feet gripping the floor). His scarf\'s two ends are moved by the game '
              'as before. His helm close and his eight facings: the second sheet. Pictures only: not in the game.')
     blocks.append(('head', head, wrap(probe, intro, small, W - 48)))
+    if spec.get('legs'):
+        blocks.append(('legs', spec['legs']))
     for sec in spec['sections']:
         blocks.append(('title', sec['title']))
         for row in sec['rows']:
@@ -96,11 +195,13 @@ def sheet(dir, out):
     for b in blocks:
         if b[0] == 'head':
             hgt += 20 + 46 + len(b[2]) * 24 + 16
+        elif b[0] == 'legs':
+            hgt += legs_panel(dir, b[1], W, (big, mid, small, tiny), measure_only=True)
         elif b[0] == 'title':
             hgt += 22 + 34
         elif b[0] == 'row':
             box = b[3]
-            hgt += 28 + 20 + (box[3] - box[1]) * 3 * b[4] + (b[4] - 1) * 30 + 14
+            hgt += row_height(box, b[4])
         else:
             hgt += 22 + 170 + 30
     img = Image.new('RGB', (W, hgt + 20), BG)
@@ -114,30 +215,15 @@ def sheet(dir, out):
                 d.text((24, y), ln, font=small, fill=DIM)
                 y += 24
             y += 16
+        elif b[0] == 'legs':
+            y += legs_panel(dir, b[1], W, (big, mid, small, tiny), img=img, d=d, y0=y)
         elif b[0] == 'title':
             y += 22
             d.text((24, y), b[1], font=mid, fill=CYAN)
             y += 34
         elif b[0] == 'row':
             _, label, paths, box, rows = b
-            d.text((24, y), label, font=small, fill=INK)
-            y += 28
-            names = ['BEFORE · from in front', 'NOW · from in front', 'BEFORE · from behind', 'NOW · from behind']
-            per = 4 // rows
-            bw = (box[2] - box[0]) * 3
-            bh = (box[3] - box[1]) * 3
-            gap = 12
-            x0 = (W - (per * bw + (per - 1) * gap)) // 2
-            for r in range(rows):
-                for i in range(per):
-                    j = r * per + i
-                    x = x0 + i * (bw + gap)
-                    d.text((x + 2, y), names[j], font=tiny, fill=CYAN if 'NOW' in names[j] else DIM)
-                    img.paste(figure(paths[j], box, 3), (x, y + 20))
-                y += 20 + bh + (30 if r < rows - 1 else 0)
-                if r < rows - 1:
-                    y -= 10
-            y += 14
+            y = draw_row(img, d, y, W, label, paths, box, rows, small, tiny)
         else:
             y += 22
             x = 24
@@ -161,7 +247,7 @@ def film(dir, out):
     spec = json.load(open(os.path.join(dir, 'film.json')))
     cap, lab, tiny = font(B, 24), font(B, 18), font(B, 14)
     W, H = 1100, 1060
-    box = (26, 14, 150, 162)
+    box = (34, 14, 158, 162)
     bw, bh = (box[2] - box[0]) * 3, (box[3] - box[1]) * 3
     probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
     proc = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}', '-r', '30', '-i', '-',
@@ -181,7 +267,7 @@ def film(dir, out):
         proc.stdin.write(scene_frame(dir, fr, W, H, cap, lab, tiny, probe).tobytes())
     for fr in spec['frames']:
         strip = Image.open(os.path.join(dir, fr['file'])).convert('RGBA')
-        cells = [strip.crop((i * 176, 0, (i + 1) * 176, 176)) for i in range(4)]
+        cells = [strip.crop((i * PW, 0, (i + 1) * PW, PH)) for i in range(4)]
         img = Image.new('RGB', (W, H), BG)
         d = ImageDraw.Draw(img)
         y = 14
@@ -193,7 +279,7 @@ def film(dir, out):
             # (his class card: before and now, from in front, side by side, bigger)
             for i, (c, name) in enumerate([(cells[0], 'BEFORE'), (cells[1], 'NOW')]):
                 k = 4
-                bx = (40, 20, 136, 156)
+                bx = (48, 20, 144, 156)
                 im = c.crop(bx).resize(((bx[2] - bx[0]) * k, (bx[3] - bx[1]) * k), Image.NEAREST)
                 g = ground(im.width, im.height, k, (AX - bx[0]) * k, (AY - bx[1]) * k)
                 g.paste(im, (0, 0), im)
@@ -216,7 +302,7 @@ def film(dir, out):
             d.text((gx, top), "AT THE GAME'S SIZE", font=lab, fill=INK)
             for j in range(4):
                 col, row = j % 2, j // 2
-                sb = (34, 24, 134, 156)
+                sb = (42, 24, 142, 156)
                 im = cells[j].crop(sb)
                 g = ground(im.width, im.height, 1, AX - sb[0], AY - sb[1])
                 g.paste(im, (0, 0), im)
@@ -266,7 +352,7 @@ def scene_frame(dir, fr, W, H, cap, lab, tiny, probe):
     d.text((20, top), "AT THE GAME'S SIZE", font=lab, fill=INK)
     img.paste(floor, (20, top + 28))
     # three times as big, beside it
-    box = (26, 14, 150, 162)
+    box = (34, 14, 158, 162)
     k = 3
     cell = Image.open(os.path.join(dir, fr['cell'])).convert('RGBA').crop(box)
     cell = cell.resize((cell.width * k, cell.height * k), Image.NEAREST)
@@ -293,9 +379,10 @@ def sheet2(dir, out):
              'pig\'s face), forged: a crisp ridge down the snout, rivets at its pivots, rows of breathing holes, the steel lit '
              'as armour, and the slit cut dark across the top of the snout, its upper lip lit and its lower edge in shadow, the '
              'faint cyan of his eyes in it. Seen from behind, the snout is hidden by his head. '
-             'HIS EIGHT FACINGS: five sides drawn (in front, behind, side-on, toward you, away from you), mirrored to make eight. '
-             'Each picture below sits where he faces: down and to the right at the bottom right, and so round. Pictures only: '
-             'not in the game.')
+             'HIS EIGHT FACINGS: each truly painted, none of them a mirror, so that his sword is in his right hand whichever way he '
+             'faces, as he asked. '
+             'Each picture below sits where he faces: down and to the right at the bottom right, and so round. At the foot, his '
+             'fall before and now (the first sheet\'s top now holds his legs, made true). Pictures only: not in the game.')
     lines = wrap(probe, intro, small, W - 48)
     helm = spec['helm']
     K = 6
@@ -311,10 +398,19 @@ def sheet2(dir, out):
     def grid_h(box, k):
         return 3 * ((box[3] - box[1]) * k + 40) + 2 * gap
     hgt = 20 + 46 + len(lines) * 24 + 16
-    hgt += 22 + 34 + 2 * (24 + hh + 20) + 24 + 70
+    hgt += 22 + 34 + 3 * (24 + hh + 20) + 24 + 70
     for sec, paths, box in grids:
         hgt += 22 + 34 + grid_h(box, 3) + 10
     hgt += 22 + 34 + max(grid_h(box, 1) for _, _, box in grids) + 30
+    more = []
+    for sec in spec.get('sections', []):
+        hgt += 22 + 34
+        for row in sec['rows']:
+            paths = [os.path.join(dir, f) for f in row['files']]
+            box = union_box(paths)
+            nrow = 1 if 4 * (box[2] - box[0]) * 3 + 3 * 12 <= W - 24 else 2
+            more.append((sec['title'], row['label'], paths, box, nrow))
+            hgt += row_height(box, nrow)
     img = Image.new('RGB', (W, hgt + 20), BG)
     d = ImageDraw.Draw(img)
     y = 20
@@ -328,7 +424,7 @@ def sheet2(dir, out):
     y += 22
     d.text((24, y), 'His helm, six times as big: before (the game today) and now, at his guard', font=mid, fill=CYAN)
     y += 34
-    for row in (helm[:2], helm[2:]):
+    for row in (helm[:2], helm[2:6], helm[6:]):
         x = 24
         for h in row:
             im = Image.open(os.path.join(dir, h['file'])).convert('RGBA').crop(tuple(h['box']))
@@ -391,6 +487,15 @@ def sheet2(dir, out):
         w = compass(sec, paths, box, 1, x, y + 14, labels=False)
         x += w + 40
     y += max(grid_h(box, 1) for _, _, box in grids) + 30
+    # (and the rows of before and now that the first sheet has no room for)
+    titled = set()
+    for title, label, paths, box, nrow in more:
+        if title not in titled:
+            titled.add(title)
+            y += 22
+            d.text((24, y), title + ': before and now (from the first sheet)', font=mid, fill=CYAN)
+            y += 34
+        y = draw_row(img, d, y, W, label, paths, box, nrow, small, tiny)
     img = img.crop((0, 0, W, min(img.height, y + 10)))
     img.save(out)
     print(out, img.size)

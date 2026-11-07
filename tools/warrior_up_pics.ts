@@ -2,7 +2,7 @@
 // Paints him BEFORE (the game's knight as he is: art/heroes3.ts paintMove3, his moves in art/moves3.ts) and AFTER (art/warrior_up*.ts),
 // both ways round, with his scarf's two ends hung and moved as the game moves them (engine/tails.ts), and writes each picture
 // as an RGBA PNG; tools/warrior_up_pics.py lays out the sheets and the film with their captions. Nothing of the game imports it.
-// The second sheet: his helm close, before and now, and his eight facings (his five sides, mirrored as the game mirrors).
+// The second sheet: his helm close, before and now, and his eight facings (his eight sides, each truly painted).
 //   npx tsx tools/warrior_up_pics.ts sheet <dir>      npx tsx tools/warrior_up_pics.ts sheet2 <dir>
 //   npx tsx tools/warrior_up_pics.ts film <dir>
 
@@ -20,7 +20,11 @@ import { WARRIOR_TAILS } from '../src/art/hero_warrior';
 import type { Painted } from '../src/art/kit';
 import { CANVAS3 } from '../src/art/skin';
 import { paintWu, wuFacing } from '../src/art/warrior_up_art';
-import { WU_MOVES, swingCarried } from '../src/art/warrior_up_moves';
+import { WU_MOVES, WU_REST_SEEN, swingCarried } from '../src/art/warrior_up_moves';
+import { wuLegs } from '../src/art/warrior_up_review';
+import { WU_SPIN, turnedStage } from '../src/art/warrior_up';
+import { stage } from '../src/art/skin';
+import type { V3 } from '../src/art/skeleton';
 import { WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 import { GRIP_SPEED, UNITS_PER_TILE } from '../src/art/moves3';
@@ -77,41 +81,54 @@ function pngRGBA(px: Px): Uint8Array {
 }
 
 type View = WuSide;
-type Who = 'before' | 'after';
-const W = CANVAS3.w;
+/** before: the game's knight; approved: brought up, as the owner saw and approved him (his legs as they were); after: now. */
+type Who = 'before' | 'after' | 'approved';
+/** THE PICTURES' CANVAS: the game's hero canvas with room on either side, his feet at (PAX, PAY), so that a side that faces left
+ * (its anchor the other way on his own canvas: art/warrior_up.ts WU_SPIN) has as much room before him as one that faces right. */
+const W = CANVAS3.w + 16;
 const H = CANVAS3.h;
-
-/** A moment of one of his moves, as it was (before: in front or behind only) or as it is now (after: from any of his five sides). */
-function paintOf(who: Who, key: string, t: number, view: View): Painted {
-  if (who === 'before') return paintMove3(MOVES3[key], t, view === 'back' ? 'back' : 'front');
-  return paintWu(WU_MOVES[key], t, view);
-}
-
-/** The way on the game's floor (fx, fy) that each side shows him facing, unmirrored (art/warrior_up_art.ts wuFacing). */
-const FACES: Record<View, [number, number]> = { front: [1, 0], back: [0, -1], side: [Math.SQRT1_2, -Math.SQRT1_2], toward: [Math.SQRT1_2, Math.SQRT1_2], away: [-Math.SQRT1_2, -Math.SQRT1_2] };
-
-/** Pixels a mirrored frame would put off its picture (there should be none). */
-const LOST = { n: 0 };
-/** A frame mirrored as the game mirrors a figure that faces left: about his feet, its scarf's roots with it. */
-function mirrored(f: Painted): Painted {
+const PAX = CANVAS3.ax + 8;
+const PAY = CANVAS3.ay;
+/** A frame laid on the pictures' canvas, its feet at (PAX, PAY), its scarf's roots with it. */
+function placed(f: Painted & { ax?: number }): Painted {
+  const ax = f.ax ?? CANVAS3.ax;
+  const dx = PAX - ax;
   const px = new Px(W, H);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const X = 2 * CANVAS3.ax - x;
-    const si = (y * W + x) * 4;
+  for (let y = 0; y < f.px.h; y++) for (let x = 0; x < f.px.w; x++) {
+    const si = (y * f.px.w + x) * 4;
     if (f.px.d[si + 3] === 0) continue;
-    if (X < 0 || X >= W) {
-      LOST.n++;
-      continue;
-    }
+    const X = x + dx;
+    if (X < 0 || X >= W) continue;
     const di = (y * W + X) * 4;
     for (let c = 0; c < 4; c++) px.d[di + c] = f.px.d[si + c];
   }
-  return { ...f, px, tails: (f.tails ?? []).map((r) => ({ ...r, x: 2 * CANVAS3.ax - r.x })) };
+  return { ...f, px, tails: (f.tails ?? []).map((r) => ({ ...r, x: r.x + dx })) };
 }
+
+/** A moment of one of his moves, as it was (before: in front or behind only) or as it is now (after: from any of his eight sides). */
+function paintOf(who: Who, key: string, t: number, view: View): Painted {
+  if (who === 'before') return paintMove3(MOVES3[key], t, view === 'back' ? 'back' : 'front');
+  return paintWu(who === 'approved' ? approvedMove(key) : WU_MOVES[key], t, view);
+}
+/** His guard as the owner approved it brought up: the same move on his stance's legs as they were (moves3.ts REAR3's). */
+const APPROVED = new Map<string, Move3>();
+function approvedMove(key: string): Move3 {
+  let m = APPROVED.get(key);
+  if (!m) {
+    if (key !== 'rear') throw new Error(`no approved legs for ${key}`);
+    APPROVED.set(key, (m = { ...WU_MOVES.rear, name: `${WU_MOVES.rear.name} (his legs as approved)`, rest: WU_REST_SEEN }));
+  }
+  return m;
+}
+
+/** The way on the game's floor (fx, fy) that each side shows him facing (art/warrior_up_art.ts wuFacing): his forward, turned as
+ * the side turns him (the game's floor: fx along the figure's x, fy against its y). */
+const FACES = Object.fromEntries(WU_SIDES.map((v) => [v, [Math.cos((WU_SPIN[v].spin * Math.PI) / 180), -Math.sin((WU_SPIN[v].spin * Math.PI) / 180)]])) as Record<View, [number, number]>;
 
 /**
  * HIS SCARF'S TWO ENDS, hung from where a frame fixes them and moved as the game moves them (engine/tails.ts), for one figure
- * facing (fx, fy) on the game's floor (mirrored, as the game draws him, if that is to the left of the screen).
+ * facing (fx, fy) on the game's floor: the side truly painted that way, never a mirror; the tails told he faces left of the
+ * screen if he does (art/warrior_up_art.ts wuTailsFacing).
  */
 class Rig {
   tails = new Tails(WARRIOR_TAILS);
@@ -119,18 +136,15 @@ class Rig {
   oy = 0;
   fx: number;
   fy: number;
-  flip = false;
-  constructor(view: View, flip = false, at: [number, number] = [0, 0]) {
+  constructor(view: View, at: [number, number] = [0, 0]) {
     this.fx = 0;
     this.fy = 0;
-    this.face(view, flip);
+    this.face(view);
     [this.ox, this.oy] = at;
   }
-  /** Turn him to the way a side shows him (mirrored or not); his scarf goes on as it was. */
-  face(view: View, flip: boolean): void {
+  /** Turn him to the way a side shows him; his scarf goes on as it was. */
+  face(view: View): void {
     [this.fx, this.fy] = FACES[view];
-    if (flip) [this.fx, this.fy] = [this.fy, this.fx];
-    this.flip = flip;
   }
   /**
    * Step the scarf on by `dt` to this frame and lay the frame with it: the figure carried `move` tiles on the way he faces
@@ -138,8 +152,8 @@ class Rig {
    * down), or put at `to` (game pixels) if given.
    */
   frame(f0: Painted, dt: number, move = 0, to?: [number, number]): Px {
-    const f = this.flip ? mirrored(f0) : f0;
-    // (as the game has it: a figure is turned to the left, mirrored, when it goes left across the screen)
+    const f = placed(f0);
+    // (as the game has it: left of the screen where fx - fy is below 0; straight up or down the screen, +1)
     const facing = this.fx - this.fy < -1e-6 ? -1 : 1;
     if (to) [this.ox, this.oy] = to;
     else {
@@ -147,13 +161,13 @@ class Rig {
       this.oy += (this.fx + this.fy) * 8 * move;
     }
     const roots: TailRoot[] = (f.tails ?? []).map((r) => ({ ...r, x: r.x / 2, y: r.y / 2 }));
-    this.tails.step(dt, roots, CANVAS3.ax / 2, CANVAS3.ay / 2, facing, this.ox, this.oy);
+    this.tails.step(dt, roots, PAX / 2, PAY / 2, facing, this.ox, this.oy);
     const out = new Px(W, H);
     const lay = (over: boolean): void => {
       const buf = new Uint8ClampedArray(TAIL_PW * TAIL_PH * 4);
       if (!this.tails.paint(buf, over)) return;
-      const dx = CANVAS3.ax - TAIL_HW;
-      const dy = CANVAS3.ay - TAIL_UP;
+      const dx = PAX - TAIL_HW;
+      const dy = PAY - TAIL_UP;
       for (let y = 0; y < TAIL_PH; y++) for (let x = 0; x < TAIL_PW; x++) {
         const si = (y * TAIL_PW + x) * 4;
         if (buf[si + 3] === 0) continue;
@@ -223,8 +237,8 @@ function lists(key: string): { before: Shown; after: Shown } {
 // THE SHEET: the key moments, each painted with the scarf hung by playing the move up to it
 
 /** Him at a moment of a move, his scarf's ends hung as they would be (the move played from its start up to it, the floor going by if he runs). */
-function still(who: Who, key: string, t: number, view: View, flip = false): Px {
-  const rig = new Rig(view, flip);
+function still(who: Who, key: string, t: number, view: View): Px {
+  const rig = new Rig(view);
   const runs = key.includes('run');
   // (from a second before, in a loop; from its start, else)
   const loop = (who === 'before' ? MOVES3[key] : WU_MOVES[key]).motion.loop !== undefined;
@@ -236,7 +250,7 @@ function still(who: Who, key: string, t: number, view: View, flip = false): Px {
   return px as Px;
 }
 
-const SHEET: { title: string; rows: { label: string; key: string; before: number; after: number }[] }[] = [
+const SHEET: { title: string; second?: boolean; rows: { label: string; key: string; before: number; after: number }[] }[] = [
   { title: 'Standing in his guard', rows: [{ label: 'his guard (now he breathes, shifts his weight, and has a habit of his own)', key: 'rear', before: 0, after: 1.3 }] },
   { title: 'Running', rows: [{ label: 'a stride (now his feet grip the floor)', key: 'krun', before: 0.1, after: 0.1 }] },
   { title: 'His class card: drawing his sword when picked', rows: [{ label: 'ready in his guard (now his feet step into it, never slide)', key: 'kdraw', before: 33 / 30, after: 33 / 30 }] },
@@ -260,7 +274,8 @@ const SHEET: { title: string; rows: { label: string; key: string; before: number
     { label: 'the dive', key: 'kthrust', before: 0.25, after: 0.25 },
     { label: 'the point punched out as he lands', key: 'kthrust', before: 0.5, after: 0.5 },
   ] },
-  { title: 'His fall', rows: [
+  // (on the second sheet: the first holds his legs at its top, and stays under 7500 pixels tall)
+  { title: 'His fall', second: true, rows: [
     { label: 'now: once more he pushes up on the hilt', key: 'kfall', before: 33 / 30, after: 31 / 30 },
     { label: 'the end: kneeling, the light gone out', key: 'kfall', before: 46 / 30, after: 46 / 30 },
   ] },
@@ -273,18 +288,44 @@ const SMALL = [
   { label: 'his fall', key: 'kfall', before: 46 / 30, after: 46 / 30 },
 ];
 
-function sheet(dir: string): void {
-  mkdirSync(dir, { recursive: true });
+/** HIS LEGS, as he approved him and now, his guard from in front and toward the camera: each leg's hip, knee, ankle and the
+ * floor under it where the picture has them, and how long each reads (game pixels), with how much of its shin is seen. */
+function legsPanel(dir: string): { file: string; who: Who; view: View; legs: { leg: string; pts: number[][]; thigh: number; lower: number; ratio: number; seen: number }[] }[] {
+  const out: ReturnType<typeof legsPanel> = [];
+  const t = 1.3;
+  for (const view of ['front', 'toward'] as const) {
+    for (const who of ['approved', 'after'] as const) {
+      const m = who === 'approved' ? approvedMove('rear') : WU_MOVES.rear;
+      const f = paintWu(m, t, view);
+      const { spin, camera } = WU_SPIN[view];
+      const st = turnedStage(stage(camera, WU_SPIN[view].ax), spin);
+      const s = f.s as unknown as Record<string, V3>;
+      const legs = wuLegs(f.s, view, undefined, { z: f.drawn.z, w: f.px.w, h: f.px.h }).map((l) => {
+        const ankle = s[`ankle${l.leg}`];
+        // (where on the pictures' canvas: its feet at PAX, his own at his side's anchor)
+        const pts = [s[`hip${l.leg}`], s[`knee${l.leg}`], ankle, [ankle[0], ankle[1], ankle[2] - m.build.ankle] as V3].map((p) => [st.at(p)[0] + PAX - f.ax, st.at(p)[1]]);
+        return { leg: l.leg, pts, thigh: +l.thigh.toFixed(1), lower: +l.lower.toFixed(1), ratio: +l.ratio.toFixed(2), seen: +l.seen.toFixed(2) };
+      });
+      const file = `legs_${who}_${view}.png`;
+      writeFileSync(`${dir}/${file}`, pngRGBA(still(who, 'rear', t, view)));
+      out.push({ file, who, view, legs });
+    }
+  }
+  return out;
+}
+
+/** The before-and-now rows of the sheet (or of the second sheet's part of it), painted into `dir`. */
+function sheetRows(dir: string, second: boolean, pre: string): { title: string; rows: { label: string; files: string[] }[] }[] {
   const spec: { title: string; rows: { label: string; files: string[] }[] }[] = [];
   let n = 0;
-  for (const sec of SHEET) {
+  for (const sec of SHEET.filter((x) => !!x.second === second)) {
     const rows: { label: string; files: string[] }[] = [];
     for (const r of sec.rows) {
       const files: string[] = [];
       for (const view of ['front', 'back'] as const) {
         for (const who of ['before', 'after'] as const) {
           const px = still(who, r.key, who === 'before' ? r.before : r.after, view);
-          const f = `s${String(n++).padStart(3, '0')}_${who}_${view}.png`;
+          const f = `${pre}${String(n++).padStart(3, '0')}_${who}_${view}.png`;
           writeFileSync(`${dir}/${f}`, pngRGBA(px));
           files.push(f);
         }
@@ -293,6 +334,15 @@ function sheet(dir: string): void {
     }
     spec.push({ title: sec.title, rows });
   }
+  return spec;
+}
+
+function sheet(dir: string): void {
+  mkdirSync(dir, { recursive: true });
+  let n = 0;
+  const legs = legsPanel(dir);
+  const spec = sheetRows(dir, false, 's');
+  n = spec.reduce((a, sec) => a + sec.rows.length * 4, 0);
   const small: { label: string; files: string[] }[] = [];
   for (const r of SMALL) {
     const files: string[] = [];
@@ -303,7 +353,7 @@ function sheet(dir: string): void {
     }
     small.push({ label: r.label, files });
   }
-  writeFileSync(`${dir}/sheet.json`, JSON.stringify({ sections: spec, small }, null, 1));
+  writeFileSync(`${dir}/sheet.json`, JSON.stringify({ legs, sections: spec, small }, null, 1));
   console.log(`${n} pictures in ${dir}`);
 }
 
@@ -355,12 +405,12 @@ function film(dir: string): void {
     // (a moment's warm-up for the scarf, so it hangs as it would)
     for (const [k, rig] of Object.entries(rigs)) {
       const [who, view] = k.split(':') as [Who, View];
-      for (let i = 0; i < 30; i++) rig.frame(paintOf(who, p.key, 0, view), 1 / 30, L[who].runs ? RUN_STEP : 0);
+      for (let i = 0; i < 30; i++) rig.frame(paintOf(who, p.key, 0, view), 1 / 30, L[who as 'before' | 'after'].runs ? RUN_STEP : 0);
     }
     for (let i = 0; i < total; i++) {
       const t = i / 30 / (p.slow ?? 1);
       const strip = new Px(W * 4, H);
-      const order: [Who, View][] = [['before', 'front'], ['after', 'front'], ['before', 'back'], ['after', 'back']];
+      const order: ['before' | 'after', View][] = [['before', 'front'], ['after', 'front'], ['before', 'back'], ['after', 'back']];
       order.forEach(([who, view], j) => {
         const s = L[who];
         const u = shown(s, t);
@@ -373,7 +423,7 @@ function film(dir: string): void {
     }
   });
   writeFileSync(`${dir}/film.json`, JSON.stringify({ scenes: turned, frames }, null, 0));
-  console.log(`${turned.length} + ${n} frames in ${dir} (${((turned.length + n) / 30).toFixed(1)} s); ${LOST.n} pixels lost off a mirrored picture`);
+  console.log(`${turned.length} + ${n} frames in ${dir} (${((turned.length + n) / 30).toFixed(1)} s)`);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -385,7 +435,7 @@ const EIGHT = Array.from({ length: 8 }, (_, k) => {
   const fx = Math.cos(a);
   const fy = Math.sin(a);
   const names = ['down and to the right', 'down (toward you)', 'down and to the left', 'to the left', 'up and to the left', 'up (away from you)', 'up and to the right', 'to the right'];
-  return { k, fx, fy, name: names[k], ...wuFacing(fx, fy) };
+  return { k, fx, fy, name: names[k], side: wuFacing(fx, fy) };
 });
 
 /** Where his head is in a picture (its top, its middle across), the blade above him passed over by its colour. */
@@ -394,7 +444,7 @@ function headOf(px: Px): [number, number] {
     const k = (y * W + x) * 4;
     if (px.d[k + 3] === 255 && !(px.d[k + 2] > 200 && px.d[k] < 160)) return [x, y];
   }
-  return [CANVAS3.ax, 20];
+  return [PAX, 20];
 }
 
 function sheet2(dir: string): void {
@@ -405,7 +455,7 @@ function sheet2(dir: string): void {
     writeFileSync(`${dir}/${f}`, pngRGBA(px));
     return f;
   };
-  // HIS HELM: before (the game's knight, in front and behind) and now (his five sides), at his guard, cut round his head
+  // HIS HELM: before (the game's knight, in front and behind) and now (his eight sides), at his guard, cut round his head
   const helm: { label: string; now: boolean; file: string; box: [number, number, number, number] }[] = [];
   const HW = 34;
   const HH = 26;
@@ -417,22 +467,23 @@ function sheet2(dir: string): void {
     const px = still('before', 'rear', 0, view);
     helm.push({ label: `BEFORE · ${view === 'front' ? 'in front' : 'from behind'}`, now: false, file: write(px), box: cut(px) });
   }
-  const SIDE_NAMES: Record<View, string> = { front: 'in front', back: 'from behind', side: 'side-on', toward: 'toward you', away: 'away from you' };
+  const SIDE_NAMES: Record<View, string> = { front: 'in front', toward: 'toward you', frontL: 'in front, left', sideL: 'side-on, left', backL: 'behind, left', away: 'away from you', back: 'from behind', side: 'side-on' };
   for (const view of WU_SIDES) {
     const px = still('after', 'rear', 1.3, view);
     helm.push({ label: `NOW · ${SIDE_NAMES[view]}`, now: true, file: write(px), box: cut(px) });
   }
   // HIS EIGHT FACINGS: his stance, a stride of his run, Strike's smeared blow
-  const turn: { title: string; cells: { k: number; name: string; side: string; flip: boolean; file: string }[] }[] = [];
+  const turn: { title: string; cells: { k: number; name: string; side: string; file: string }[] }[] = [];
   for (const [title, key, t] of [['Standing in his guard', 'rear', 1.3], ['Running: a stride', 'krun', 0.1], ['Strike: the blow, smeared', 'strike', 10 / 30]] as const) {
     const cells = EIGHT.map((e) => {
-      const px = still('after', key, t, e.side, e.flip);
-      return { k: e.k, name: e.name, side: `${SIDE_NAMES[e.side]}${e.flip ? ', mirrored' : ''}`, flip: e.flip, file: write(px) };
+      const px = still('after', key, t, e.side);
+      return { k: e.k, name: e.name, side: `${e.side} (${SIDE_NAMES[e.side]})`, file: write(px) };
     });
     turn.push({ title, cells });
   }
-  writeFileSync(`${dir}/sheet2.json`, JSON.stringify({ helm, turn }, null, 1));
-  console.log(`${n} pictures in ${dir}; ${LOST.n} pixels lost off a mirrored picture`);
+  const rows = sheetRows(dir, true, 'f');
+  writeFileSync(`${dir}/sheet2.json`, JSON.stringify({ helm, turn, sections: rows }, null, 1));
+  console.log(`${n} pictures in ${dir}`);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -457,8 +508,8 @@ interface SceneFrame {
 /** A frame of a scene: him laid at `at` (picture pixels in the scene) from his frame with its scarf `px`. */
 function laid(px: Px, at: [number, number]): Px {
   const out = new Px(SCENE_W, SCENE_H);
-  const dx = Math.round(at[0]) - CANVAS3.ax;
-  const dy = Math.round(at[1]) - CANVAS3.ay;
+  const dx = Math.round(at[0]) - PAX;
+  const dy = Math.round(at[1]) - PAY;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const si = (y * W + x) * 4;
     if (px.d[si + 3] === 0) continue;
@@ -479,7 +530,7 @@ function scenes(dir: string, start: number): SceneFrame[] {
     writeFileSync(`${dir}/${f}`, pngRGBA(px));
     return f;
   };
-  const SIDE_NAMES: Record<View, string> = { front: 'his front side', back: 'his back side', side: 'his side-on side', toward: 'his side toward you', away: 'his side away from you' };
+  const SIDE_NAMES: Record<View, string> = { front: 'front: in front', toward: 'toward: toward you', frontL: 'frontL: in front, to the left', sideL: 'sideL: side-on, to the left', backL: 'backL: from behind, to the left', away: 'away: away from you', back: 'back: from behind', side: 'side: side-on' };
   const centre: [number, number] = [SCENE_W / 2, SCENE_H / 2 + 50];
   // RUNNING ROUND A CIRCLE: once round (clockwise as seen on the screen) at the game's pace, 4.6 tiles a second
   {
@@ -495,26 +546,26 @@ function scenes(dir: string, start: number): SceneFrame[] {
       // (going round: his way is the circle's own, a quarter turn on from where he is)
       const fx = -Math.sin(ph);
       const fy = Math.cos(ph);
-      const { side, flip } = wuFacing(fx, fy);
+      const side = wuFacing(fx, fy);
       const [sx, sy] = onScreen(X, Y);
       const at: [number, number] = [centre[0] + sx, centre[1] + sy];
       // (one scarf for him all the way round: the side he is drawn from changes, the scarf goes on)
       if (!rig) {
-        rig = new Rig(side, flip, [at[0] / 2, at[1] / 2]);
+        rig = new Rig(side, [at[0] / 2, at[1] / 2]);
         for (let w = 0; w < 30; w++) rig.frame(paintOf('after', 'krun', (w / 30) % period, side), 1 / 30, 0, [at[0] / 2, at[1] / 2]);
       }
-      rig.face(side, flip);
+      rig.face(side);
       const u = Math.floor(((t % period) * 60) + 1e-6) / 60;
       const px = rig.frame(paintOf('after', 'krun', u, side), 1 / 30, 0, [at[0] / 2, at[1] / 2]);
       const e = EIGHT[((Math.round((Math.atan2(fy, fx) * 180) / Math.PI / 45) % 8) + 8) % 8];
-      out.push({ caption: 'NOW: RUNNING ROUND A CIRCLE, THROUGH ALL EIGHT FACINGS · at the game\'s size, and three times as big', scene: write(laid(px, at), 'c'), cell: write(px, 'd'), at, facing: e.name, side: `${SIDE_NAMES[side]}${flip ? ', mirrored' : ''}`, path: { r } });
+      out.push({ caption: 'NOW: RUNNING ROUND A CIRCLE, THROUGH ALL EIGHT FACINGS · at the game\'s size, and three times as big', scene: write(laid(px, at), 'c'), cell: write(px, 'd'), at, facing: e.name, side: `his side ${SIDE_NAMES[side]}`, path: { r } });
     }
   }
   // STRIKING EACH OF THE EIGHT WAYS: the first swing of Strike, once each way round from down and to the right
   {
     const len = 36 / 30;
     for (const e of EIGHT) {
-      const rig = new Rig(e.side, e.flip, [centre[0] / 2, centre[1] / 2]);
+      const rig = new Rig(e.side, [centre[0] / 2, centre[1] / 2]);
       for (let w = 0; w < 20; w++) rig.frame(paintOf('after', 'strike', 0, e.side), 1 / 30, 0, [centre[0] / 2, centre[1] / 2]);
       for (let i = 0; i < Math.round(len * 30); i++) {
         const t = i / 30;
@@ -523,7 +574,7 @@ function scenes(dir: string, start: number): SceneFrame[] {
         const [sx, sy] = onScreen(e.fx * step, e.fy * step);
         const at: [number, number] = [centre[0] + sx, centre[1] + sy];
         const px = rig.frame(paintOf('after', 'strike', t, e.side), 1 / 30, 0, [at[0] / 2, at[1] / 2]);
-        out.push({ caption: 'NOW: STRIKE, EACH OF THE EIGHT WAYS · at the game\'s size, and three times as big', scene: write(laid(px, at), 'c'), cell: write(px, 'd'), at, facing: e.name, side: `${SIDE_NAMES[e.side]}${e.flip ? ', mirrored' : ''}`, way: e.k });
+        out.push({ caption: 'NOW: STRIKE, EACH OF THE EIGHT WAYS · at the game\'s size, and three times as big', scene: write(laid(px, at), 'c'), cell: write(px, 'd'), at, facing: e.name, side: `his side ${SIDE_NAMES[e.side]}`, way: e.k });
       }
     }
   }

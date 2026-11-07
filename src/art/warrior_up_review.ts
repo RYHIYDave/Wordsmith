@@ -12,7 +12,8 @@ import { onBack } from './carried';
 import { add, mul, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { wuSmeared } from './warrior_up_art';
-import { WU_MAIL, WU_SPIN, spun } from './warrior_up';
+import { WU_MAIL, WU_SPIN, spun, turnedStage } from './warrior_up';
+import { stage } from './skin';
 import type { WuSide } from './warrior_up';
 import type { WuFrame } from './warrior_up';
 import { primDist } from '../dev/sculpt';
@@ -23,6 +24,8 @@ const B = KNIGHT_BODY;
 const mv = (m: Move3): MobMove => ({ name: m.name, motion: m.motion, rest: m.rest });
 const walking = (m: Move3): MobMove => ({ ...mv(m), ground: GRIP_SPEED * UNITS_PER_TILE, period: (m.stride ?? 1) / GRIP_SPEED });
 
+/** His class card's lists: painted from in front only (art/warrior_up_art.ts setOf), and so held to every check from there. */
+export const WU_FRONT_ONLY: readonly string[] = ['kdraw', 'klook'];
 /** His moves under the review's names (the stand, walk, attack, reel and dying, and the rest by the game's own short names). */
 export const WU_REVIEWED: Readonly<Record<string, Move3>> = {
   stand: WU_REAR3, walk: WU_RUN3, attack: WU_STRIKE3, reel: WU_REEL3, dying: WU_FALL3,
@@ -143,7 +146,9 @@ export function warriorReview(side: WuSide = 'front'): { mob: Mob; shape: BossSh
     carried: (which, t) => (which === 'attack' || which === 'kslash' ? swingCarried(t) : 0),
     handovers,
   };
-  return { mob, shape, moves: Object.keys(WU_REVIEWED) };
+  // (his class card's lists, drawing his sword and looking about him, are painted from in front only, as the card shows him:
+  // art/warrior_up_art.ts setOf. From every other side the review looks at the rest)
+  return { mob, shape, moves: Object.keys(WU_REVIEWED).filter((k) => side === 'front' || !WU_FRONT_ONLY.includes(k)) };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -184,4 +189,114 @@ export function wuCoverFindings(f: WuFrame, ax: number, ay: number): string[] {
     }
   }
   return [...found].map(([by, e]) => `${e.n} pixels of mail through ${by} (${e.first})`);
+}
+
+// ---------------------------------------------------------------------------------------------
+// HIS LEGS AS THE SCREEN SHOWS THEM (the owner, 6 Nov 2026, of the Ranger: “Can you make sure his leg ratio is correct cause it
+// seems like all these guys have long upper legs and short legs below the knee”; tools/legs_measure.ts)
+
+/** Each of his legs as one of his sides draws it, in game pixels (two picture pixels to one): hip to knee, and knee to the floor
+ * (the shin to the ankle, and the ankle's own height above the sole under it); and how near the eye its knee is. */
+export interface WuLeg {
+  leg: 'L' | 'R';
+  thigh: number;
+  lower: number;
+  /** lower / thigh. */
+  ratio: number;
+  /** How much of its shin the picture shows (0 to 1): points down it from the knee to the ankle not hidden behind something
+   * nearer the eye (the other leg, his body, his sword); 1 when no picture is given. */
+  seen: number;
+}
+/** How thick a shin is in its greave (its radius, and its calf). */
+const SHIN_SKIN = 3.8;
+const legStages = new Map<WuSide, (p: V3) => readonly [number, number]>();
+export function wuLegs(s: Skeleton, side: WuSide, ankleUp = KNIGHT_BODY.ankle, picture?: { z: Float32Array; w: number; h: number }): WuLeg[] {
+  let at = legStages.get(side);
+  if (!at) {
+    const { spin, camera } = WU_SPIN[side];
+    const st = turnedStage(stage(camera, WU_SPIN[side].ax), spin);
+    at = (p: V3) => st.at(p);
+    legStages.set(side, at);
+  }
+  const d = (a: V3, b: V3): number => {
+    const [x0, y0] = (at as (p: V3) => readonly [number, number])(a);
+    const [x1, y1] = (at as (p: V3) => readonly [number, number])(b);
+    return Math.hypot(x1 - x0, y1 - y0) / 2;
+  };
+  const { spin, camera } = WU_SPIN[side];
+  const st = turnedStage(stage(camera, WU_SPIN[side].ax), spin);
+  const seenOf = (knee: V3, ankle: V3): number => {
+    if (!picture) return 1;
+    // (a shin seen along its length shows its face further toward the eye than its middle: by its greave's thickness over the
+    // sine of the angle it makes with the eye's line)
+    const long = Math.hypot(ankle[0] - knee[0], ankle[1] - knee[1], ankle[2] - knee[2]) || 1;
+    const along = Math.min(0.95, Math.abs(st.near(ankle) - st.near(knee)) / long);
+    const skin = SHIN_SKIN / Math.sqrt(1 - along * along) + 1.5;
+    let n = 0;
+    const N = 7;
+    for (let i = 1; i <= N; i++) {
+      const p: V3 = [knee[0] + ((ankle[0] - knee[0]) * i) / (N + 1), knee[1] + ((ankle[1] - knee[1]) * i) / (N + 1), knee[2] + ((ankle[2] - knee[2]) * i) / (N + 1)];
+      const [x, y] = st.at(p);
+      const X = Math.round(x);
+      const Y = Math.round(y);
+      if (X < 0 || Y < 0 || X >= picture.w || Y >= picture.h) continue;
+      // (the shin's own skin is nearer the eye than its middle by its greave's thickness: anything nearer still hides it)
+      if (picture.z[Y * picture.w + X] <= st.near(p) + skin) n++;
+    }
+    return n / N;
+  };
+  const leg = (name: 'L' | 'R', hip: V3, knee: V3, ankle: V3): WuLeg => {
+    const thigh = d(hip, knee);
+    const lower = d(knee, ankle) + d(ankle, [ankle[0], ankle[1], ankle[2] - ankleUp]);
+    return { leg: name, thigh, lower, ratio: lower / thigh, seen: seenOf(knee, ankle) };
+  };
+  return [leg('L', s.hipL, s.kneeL, s.ankleL), leg('R', s.hipR, s.kneeR, s.ankleR)];
+}
+
+/**
+ * WHERE HIS LEGS MUST READ TRUE: every frame of his stances, and of each pose he holds (frames, at 30 a second), at 1.05 or more
+ * (his lower leg on the screen at least 1.05 times his thigh; side-on, a pose whose thigh lies level, 1); his runs (at 60 a
+ * second) at 1 or more wherever a foot is flat on the floor, bearing him. Each leg from each of his eight sides where at least half its shin is seen.
+ */
+export const WU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: number; to: number; sideOn?: number }> = [
+  { key: 'rear', what: 'his guard', from: 0, to: 59 },
+  { key: 'ktown', what: 'his town stance', from: 0, to: 71 },
+  { key: 'klook', what: 'looking about him in town', from: 0, to: 108 },
+  { key: 'kdraw', what: "his card's ready, in his guard", from: 31, to: 41 },
+  { key: 'strike', what: "Strike's held wind-up", from: 6, to: 8 },
+  { key: 'strike', what: 'the first swing held up, waiting', from: 20, to: 21 },
+  { key: 'kslash', what: "the second swing's held wind-up", from: 6, to: 8 },
+  { key: 'slam', what: "the Slam's held wind-up", from: 11, to: 13 },
+  { key: 'slam', what: "the Slam's landing", from: 15, to: 17 },
+  // (two poses whose front thigh lies level by their nature, the Lunge's deep landing and the kneel: seen side-on, the game's
+  // camera, looking down, draws a level length 1.15 times as long as an upright one, so a level thigh over an upright shin reads
+  // about as long as it, and no place of the feet or knees changes that, only lifting his hips would. Held there to 1)
+  { key: 'kthrust', what: "the Lunge's landing", from: 17, to: 21, sideOn: 1 },
+  { key: 'kfall', what: 'the kneel in his fall', from: 21, to: 46, sideOn: 1 },
+];
+export const WU_LEGS_RUNS: readonly string[] = ['krun', 'ktownrun'];
+/** At least this much of a shin seen, for its leg to be held to the measure from that side. */
+export const WU_LEG_SEEN = 0.5;
+export const WU_LEG_HELD_LEAST = 1.05;
+export const WU_LEG_RUN_LEAST = 1;
+/** What is wrong with his legs in one picture of him: the move's short name, and the frame (at 30 a second; a run's at 60). */
+export function wuLegFaults(key: string, frame: number, f: WuFrame, side: WuSide): string[] {
+  const held = WU_LEGS_HELD.filter((h) => h.key === key && frame >= h.from && frame <= h.to);
+  const runs = WU_LEGS_RUNS.includes(key);
+  if (!held.length && !runs) return [];
+  const out: string[] = [];
+  for (const l of wuLegs(f.s, side, KNIGHT_BODY.ankle, { z: f.drawn.z, w: f.px.w, h: f.px.h })) {
+    if (l.seen < WU_LEG_SEEN) continue;
+    if (runs) {
+      const toe = l.leg === 'L' ? f.s.toeL : f.s.toeR;
+      const heel = l.leg === 'L' ? f.s.heelL : f.s.heelR;
+      if (Math.max(toe[2], heel[2]) > 0.6) continue;
+      if (l.ratio < WU_LEG_RUN_LEAST) out.push(`${key} ${frame}/60 ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg, bearing him, ${l.ratio.toFixed(2)}`);
+    } else {
+      const sideOn = side === 'side' || side === 'sideL';
+      const least = Math.min(...held.map((h) => (sideOn && h.sideOn !== undefined ? h.sideOn : WU_LEG_HELD_LEAST)));
+      if (l.ratio < least) out.push(`${key} ${frame} (${held[0].what}) ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg ${l.ratio.toFixed(2)}`);
+    }
+  }
+  return out;
 }
