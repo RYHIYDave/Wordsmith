@@ -22,7 +22,7 @@ import type { Skeleton, V3 } from '../src/art/skeleton';
 import type { Move3 } from '../src/art/moves3';
 import { paintRuMove as paintRu } from '../src/art/ranger_up_art';
 import type { RuSide } from '../src/art/ranger_up';
-import { RU_MOVES, RU_SHOT_HIT, RU_SHOT_LONG } from '../src/art/ranger_up_moves';
+import { RU_BATTLE_WIDE, RU_MOVES, RU_SHOT_HIT, RU_SHOT_LONG } from '../src/art/ranger_up_moves';
 import { WU_SIDES } from '../src/art/warrior_up';
 import { wuFacing } from '../src/art/warrior_up_art';
 import { wuLegs, wuThighs } from '../src/art/warrior_up_review';
@@ -201,7 +201,7 @@ function look(dir: string): void {
 const NOW = RU_MOVES;
 /** The lists of the sheet: a caption, the move before and now, and the moments (seconds) of each. */
 const SHEET: { title: string; rows: { label: string; key: string; before: number; now: number }[] }[] = [
-  { title: 'Standing in a fight', rows: [{ label: 'his guard (now his legs true from every side, alive, his bow canted so it shows)', key: 'rstand', before: 0.6, now: 0.6 }] },
+  { title: 'Standing in a fight', rows: [{ label: 'his guard (his feet as far apart as the game\'s, alive, his bow canted so it shows)', key: 'rstand', before: 0.6, now: 0.6 }] },
   { title: 'Running', rows: [{ label: 'a stride (now a hunter\'s run, his foot passing low, never a high-step; his bow a little further out at his side)', key: 'rrun', before: 0.1, now: 0.1 }] },
   { title: 'The Shot', rows: [
     { label: 'the held draw (now held three frames, the string to his cheek)', key: 'shot', before: 4 / 30, now: 8 / 30 },
@@ -240,10 +240,13 @@ function sheet(dir: string): void {
       return { label: r.label, files };
     }),
   }));
-  // the legs panel: his guard from in front, before and now, the near leg's hip, knee and floor
+  // the legs panel: his guard as the game has it, last night's wide one and now, from in front (the near leg's hip, knee and
+  // floor marked) and from behind; how far apart his feet are; and how his legs read at their worst from all eight sides
+  // (the owner, 7 Nov 2026, 07:10: “You just need to fix the rangers wide leg stance, that’s all that’s weird”)
   const legs: Record<string, unknown>[] = [];
-  for (const who of ['before', 'now'] as const) {
-    const m = (who === 'before' ? MOVES3 : NOW).rstand;
+  const WIDE: Move3 = { ...NOW.rstand, rest: RU_BATTLE_WIDE };
+  for (const who of ['before', 'wide', 'now'] as const) {
+    const m = who === 'before' ? MOVES3.rstand : who === 'wide' ? WIDE : NOW.rstand;
     const T = 0.6;
     const s0 = solve(m.build, bonesAt(m.motion.keys, m.rest, T)) as Skeleton & Record<string, V3>;
     const st = stage('front');
@@ -255,8 +258,16 @@ function sheet(dir: string): void {
     const ankle = s0[`ankle${sd}`];
     const [Hh, K, A, F] = [at(s0[`hip${sd}`]), at(s0[`knee${sd}`]), at(ankle), at([ankle[0], ankle[1], ankle[2] - m.build.ankle])];
     const d = (a: [number, number], b: [number, number]): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
-    const least = Math.min(...WU_SIDES.map((v) => Math.min(...wuLegs(s0, v, m.build.ankle).map((l) => l.ratio))));
-    legs.push({ who, file: write(stillMv(who, m, T, 'front')), hip: Hh, knee: K, floor: F, thigh: +(d(Hh, K) / 2).toFixed(1), lower: +((d(K, A) + d(A, F)) / 2).toFixed(1), least: +least.toFixed(2) });
+    // (the least through his guard, every frame of its 2.4 s, from all eight sides, of either leg)
+    let least = Infinity;
+    for (let i = 0; i <= 72; i++) {
+      const si = solve(m.build, bonesAt(m.motion.keys, m.rest, i / 30));
+      for (const v of WU_SIDES) for (const l of wuLegs(si, v, m.build.ankle)) least = Math.min(least, l.ratio);
+    }
+    const painter = who === 'before' ? 'before' : 'now';
+    const apart = +(s0.ankleL[0] - s0.ankleR[0]).toFixed(1);
+    const side = +Math.abs(s0.ankleL[1] - s0.ankleR[1]).toFixed(1);
+    legs.push({ who, file: write(stillMv(painter, m, T, 'front')), behind: write(stillMv(painter, m, T, 'back')), hip: Hh, knee: K, floor: F, thigh: +(d(Hh, K) / 2).toFixed(1), lower: +((d(K, A) + d(A, F)) / 2).toFixed(1), least: +least.toFixed(2), apart, side });
   }
   // the stride strip: eight frames of his run side-on (`side`), before and now, each with its swinging thigh's angle
   const strip: Record<string, unknown>[] = [];
@@ -326,7 +337,7 @@ function laid(px: Px, at: [number, number]): Px {
   return out;
 }
 const FILM: { caption: string; key: string; seconds: number; slow?: number }[] = [
-  { caption: 'STANDING IN A FIGHT · now his legs true from every side, alive (two breaths, his weight shifting, a glance away)', key: 'rstand', seconds: 2.4 },
+  { caption: 'STANDING IN A FIGHT · his feet as far apart as the game\'s, alive (two breaths, his weight shifting, a glance away)', key: 'rstand', seconds: 2.4 },
   { caption: 'RUNNING · now a hunter\'s run, light and low, the foot passing close to the floor', key: 'rrun', seconds: 1.7 },
   { caption: 'THE SHOT · a big held draw, the release in one frame with its after-image, a big follow-through', key: 'shot', seconds: 1.0 },
   { caption: 'THE VOLLEY · down on his knee, a held draw at the sky, the release in one frame', key: 'volley', seconds: 1.15 },

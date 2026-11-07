@@ -44,30 +44,40 @@ function clean(p: Posed | Partial<Bones>): Partial<Bones> {
 }
 
 // ---------------------------------------------------------------------------------------------
-// HIS GUARD, HIS LEGS TRUE FROM ALL EIGHT SIDES
+// HIS GUARD, AT THE GAME'S WIDTH
 //
-// WHY THEY READ SHORT (tools/legs_measure.ts): the bones are a real person's (art/skeleton.ts buildOf: the knee at 0.285 of his
+// WHY HIS LEGS READ SHORT (tools/legs_measure.ts): the bones are a real person's (art/skeleton.ts buildOf: the knee at 0.285 of his
 // height, the hip at 0.53); standing straight his lower leg reads 1.14 times his thigh on the screen from every side. But the
 // game's camera looks down on him, and in his crouch (moves3.ts CROUCH) each knee was bent toward one of his sides: from there
 // that shin was seen end-on and the thigh over it at its whole length. From in front his near leg read 0.65; from toward the
 // camera 0.43.
 //
-// THE MEND: a longer, wider archer's guard, as low (his hips where they were), his body, arms and bow as they were: his front
-// foot forward 14.1 and out to his left 12, its knee bent out over it (45 degrees to his left); his back foot back 19.7, its
-// knee a little in (-10.8), the foot turned out (-36.7). From every one of his eight sides each leg now reads at least 1.08 from
-// knee to floor to hip to knee, through every frame of his breathing (the test holds 1.05).
+// The first mend (7 Nov) stood him wide, his feet 33.5 apart fore and aft and 19 to the side, so that his legs were nearly
+// straight and read 1.08 or more from every side. The owner, 7 Nov, 07:10: “You just need to fix the rangers wide leg stance,
+// that’s all that’s weird”. So his feet are back at the game's width (12 apart fore and aft, 9.6 to the side; the game's 12 and 9),
+// his crouch as deep as the game's, in a hunter's way: his front foot ahead, its knee over it; his weight on his back foot, under
+// his hips, turned out as an archer's is, its knee bent the way the foot points. At that width and depth his legs bend, and no
+// way of placing them reads 1.05 from every side (the best, searched: 0.79 at 12 apart, 0.79 at 15, 0.78 at 18; legs straight
+// enough to read true need his feet 30 or more apart): from in front and from his right, where the back knee points, 0.81 and
+// 0.78; from every other side 0.91 to 1.69. The game's crouch read 0.43 at its worst.
 
 /** His crouch as the game has it (moves3.ts BATTLE): the owner's “I want him to stay crouched when he stops in battle”. */
 export const RU_BATTLE_SEEN: Bones = MOVES3.rstand.rest;
-export const RU_BATTLE_LEGS = { lfx: 14.1, lfy: 12, lk: 45, lft: 2.2, rfx: -19.7, rfy: -0.4, rk: -10.8, rft: -36.7 } as const;
-/** His guard: his crouch, its legs true. */
+export const RU_BATTLE_LEGS = { lfx: 11, lfy: -1, lk: 0, lft: 2, rfx: -1, rfy: -4, rk: -78, rft: -75 } as const;
+/** Last night's wide guard (stage 2, 46584c7c), kept for the pictures and for the kneels that were placed on its feet. */
+export const RU_BATTLE_LEGS_WIDE = { lfx: 14.1, lfy: 12, lk: 45, lft: 2.2, rfx: -19.7, rfy: -0.4, rk: -10.8, rft: -36.7 } as const;
+/** His guard: his crouch, at the game's width. */
 /** (and his bow canted further over in his hand, 70 degrees where it was 18, as a hunter's is: so that from straight behind him
  * one limb of it stands out past his side, where held nearly upright before him his body hid it) */
 export const RU_BOW_CANT = 70;
 export const RU_BATTLE: Bones = { ...RU_BATTLE_SEEN, ...RU_BATTLE_LEGS, wRoll: RU_BOW_CANT };
-/** In town, upright (moves3.ts RANGER_TOWN): his front foot a step forward (13.1, it was 4.8), the other drawn in under him. */
+export const RU_BATTLE_WIDE: Bones = { ...RU_BATTLE_SEEN, ...RU_BATTLE_LEGS_WIDE, wRoll: RU_BOW_CANT };
+/** In town, upright (moves3.ts RANGER_TOWN), at about the game's width (7.2 apart fore and aft; the game's 5.6, last night's
+ * 13.9): his front foot a little further on, on its toes as the game has it, its knee out over it; his back foot under him. Its
+ * legs read 0.95 at their worst (the game's 0.85). */
 export const RU_TOWN_SEEN: Bones = MOVES3.rtown.rest;
-export const RU_TOWN: Bones = { ...RU_TOWN_SEEN, lfx: 13.1, lfy: 2.6, lk: 22.5, lft: 22.4, rfy: 5.5, rk: -7, rft: -16.3 };
+export const RU_TOWN: Bones = { ...RU_TOWN_SEEN, lfx: 6.4, lfy: 3, lk: 45, lft: 35, rfx: -0.8, rfy: -1, rk: -20, rft: -20 };
+export const RU_TOWN_WIDE: Bones = { ...RU_TOWN_SEEN, lfx: 13.1, lfy: 2.6, lk: 22.5, lft: 22.4, rfy: 5.5, rk: -7, rft: -16.3 };
 
 /**
  * A STANCE THAT IS ALIVE (as moves3.ts `alive`, and more, as the Brawler's is: never still): two breaths, his weight going over
@@ -130,8 +140,10 @@ function ruHoldOnBack(body: Pick<Bones, 'yaw' | 'pitch' | 'roll' | 'twist' | 'be
 // Nothing slides: the toes the back foot turns on stay where they are (art/boss_checks.ts, SLIDE).
 
 const GUARD_SK = solve(B, RU_BATTLE);
-/** His back foot pitched `p` degrees up onto its toes, the toes kept at `toe` (his guard's, unless given). */
-export function ruOnToes(p: number, toe: V3 = GUARD_SK.toeR, turn: number = RU_BATTLE.rft): Partial<Bones> {
+/** Where his kneels put his back foot's toes, as they were placed (on the wide guard's back foot): a step back from his guard. */
+const KNEEL_SK = solve(B, RU_BATTLE_WIDE);
+/** His back foot pitched `p` degrees up onto its toes, the toes kept at `toe` (where his kneels put them, unless given). */
+export function ruOnToes(p: number, toe: V3 = KNEEL_SK.toeR, turn: number = RU_BATTLE_WIDE.rft): Partial<Bones> {
   const D = Math.PI / 180;
   const c = Math.cos(p * D);
   const sn = Math.sin(p * D);
@@ -143,7 +155,7 @@ export function ruOnToes(p: number, toe: V3 = GUARD_SK.toeR, turn: number = RU_B
 }
 /** Knelt: his hips let down and back over his back knee (its knee 1.7 above the floor), that foot up on its toes. */
 export const RU_KNEEL = { px: -2, pz: -16, rk: 0, toes: 40 } as const;
-/** His legs and hips `k` of the way down from his guard (0) to knelt (1). */
+/** His legs and hips `k` of the way down from his guard (0) to knelt (1), his back foot where his kneels put it. */
 export function ruKnelt(k: number, from: Bones = RU_BATTLE): Partial<Bones> {
   const at = (a: number, b: number): number => a + (b - a) * k;
   return { ...only(from, LEGS), px: at(from.px, RU_KNEEL.px), pz: at(from.pz, RU_KNEEL.pz), rk: at(from.rk, RU_KNEEL.rk), ...ruOnToes(RU_KNEEL.toes * k) };
@@ -398,9 +410,12 @@ const VOLLEY_ON = [1.6, 0.9, -18.5] as const;
 /** The Volley's kneel: his front foot stepped in before him (so that, its thigh level, his leg still reads true from every side). */
 const VOLLEY_KNEEL = { pz: -15.5, lfx: 14, lfy: 2, lk: 15 } as const;
 /** How far his front foot has stepped in at each key, and how high it is lifted. */
-const VOLLEY_STEP: Readonly<Record<number, readonly [number, number]>> = { 2: [0.5, 2.6], 4: [1, 0], 7: [1, 0], 9: [1, 0], 11: [1, 0], 12: [1, 0], 15: [1, 0], 22: [1, 0], 26: [1, 0], 29: [0.5, 2.6] };
+const VOLLEY_STEP: Readonly<Record<number, readonly [number, number]>> = { 1: [0, 0], 2: [0, 0], 3: [0, 0], 4: [0.5, 2.6], 5: [1, 0], 6: [1, 0], 7: [1, 0], 8: [1, 0], 9: [1, 0], 11: [1, 0], 12: [1, 0], 15: [1, 0], 22: [1, 0], 23: [1, 0], 24: [1, 0], 25: [1, 0], 26: [1, 0], 27: [0.7, 2.2], 28: [0.25, 2.2], 29: [0, 0], 30: [0, 0], 31: [0, 0] };
+/** ... and his back foot: how far it has stepped back from his guard to where the kneel turns on it, and how high it is lifted
+ * (his guard's back foot is under him, where the kneel's was a step behind). */
+const VOLLEY_BACK: Readonly<Record<number, readonly [number, number]>> = { 1: [0.2, 1.8], 2: [0.7, 2.6], 3: [1, 0], 4: [1, 0], 5: [1, 0], 6: [1, 0], 7: [1, 0], 8: [1, 0], 9: [1, 0], 11: [1, 0], 12: [1, 0], 15: [1, 0], 22: [1, 0], 23: [1, 0], 24: [1, 0], 25: [1, 0], 26: [1, 0], 27: [1, 0], 28: [1, 0], 29: [0.75, 2.2], 30: [0.3, 2.2], 31: [0, 0] };
 /** How far down onto his knee he is at each of the Volley's keys (frames). */
-const VOLLEY_DOWN: Readonly<Record<number, number>> = { 2: 0.25, 4: 0.65, 7: 1, 9: 1, 11: 1, 12: 1, 15: 1, 22: 1, 26: 0.6, 29: 0.2 };
+const VOLLEY_DOWN: Readonly<Record<number, number>> = { 1: 0, 2: 0.08, 3: 0.3, 4: 0.5, 5: 0.75, 6: 0.9, 7: 1, 8: 1, 9: 1, 11: 1, 12: 1, 15: 1, 22: 1, 23: 0.95, 24: 0.84, 25: 0.7, 26: 0.6, 27: 0.47, 28: 0.33, 29: 0.2, 30: 0.13, 31: 0.07 };
 export const RU_VOLLEY3: Move3 = {
   ...MOVES3.volley,
   name: 'Volley (Movement 9)',
@@ -426,24 +441,54 @@ export const RU_VOLLEY3: Move3 = {
 // rises; the game's kneel slid his feet)
 {
   const keys = RU_VOLLEY3.motion.keys;
-  const at = (f: number): Partial<Bones> => clean(bonesAt(keys, RU_VOLLEY3.rest, f * FR));
-  const more = [2, 4, 7].map((f) => ({ at: f * FR, pose: at(f), ease: f === 7 ? ('out' as const) : ('lin' as const) }));
-  const all = [...keys, ...more].sort((a, b) => a.at - b.at);
+  const at = (f: number): Partial<Bones> => sampledPose(keys, RU_VOLLEY3.rest, f * FR);
+  // (a key at every frame where his feet step, each the very pose the Volley passes through then: so that only his legs change)
+  const have = new Set(keys.map((k) => Math.round(k.at / FR)));
+  const frames = [1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+  const more = frames.filter((f) => !have.has(f)).map((f) => ({ at: f * FR, pose: at(f), ease: 'lin' as const }));
+  const all = [...keys, ...more].sort((a, b) => a.at - b.at).map((k) => (frames.includes(Math.round(k.at / FR)) ? { ...k, ease: 'lin' as const } : k));
   RU_VOLLEY3.motion.keys = all.map((k) => {
     const f = Math.round(k.at / FR);
     const legs = volleyLegs(f);
     return legs ? { ...k, pose: { ...k.pose, ...legs } } : k;
   });
+  // (his string hand eased through the moment its way round his side begins, measured from its shoulder throughout)
+  const ks = RU_VOLLEY3.motion.keys as Key3[];
+  const i0 = ks.findIndex((k) => Math.round(k.at / FR) === 25);
+  smoothKeys(ks, i0 + 1, i0 + 3, ['rhx', 'rhy', 'rhz'], 1);
+}
+/** The pose a motion passes through at `t`, as a key of its own: a hand that is going from one way of being measured to another
+ * there (bonesAt's lh2, rh2) put where it is, measured from its shoulder (`lhIn` 1). */
+function sampledPose(keys: readonly Key3[], rest: Bones, t: number): Partial<Bones> {
+  const q = bonesAt(keys, rest, t);
+  const p = clean(q);
+  const sk = solve(B, q);
+  if (q.lh2) Object.assign(p, { lhIn: 1, lhx: sk.handL[0] - sk.shoulderL[0], lhy: sk.handL[1] - sk.shoulderL[1], lhz: sk.handL[2] - sk.shoulderL[2] });
+  if (q.rh2) Object.assign(p, { rhIn: 1, rhx: sk.handR[0] - sk.shoulderR[0], rhy: sk.handR[1] - sk.shoulderR[1], rhz: sk.handR[2] - sk.shoulderR[2] });
+  // (and each elbow swung to where the motion has it then: between two keys an elbow goes its own way, not by the swing)
+  const own = { ...rest, ...p } as unknown as Posed;
+  p.le = elbowFor(B, own, true, [sk.elbowL[0] - sk.shoulderL[0], sk.elbowL[1] - sk.shoulderL[1], sk.elbowL[2] - sk.shoulderL[2]], q.le);
+  p.re = elbowFor(B, own, false, [sk.elbowR[0] - sk.shoulderR[0], sk.elbowR[1] - sk.shoulderR[1], sk.elbowR[2] - sk.shoulderR[2]], q.re);
+  return p;
 }
 /** His legs at a key of the Volley (frames), or nothing (his guard's, at its first and last). */
 function volleyLegs(f: number): Partial<Bones> | null {
   const down = VOLLEY_DOWN[f];
   const step = VOLLEY_STEP[f];
-  if (down === undefined || step === undefined) return null;
+  const back = VOLLEY_BACK[f];
+  if (down === undefined || step === undefined || back === undefined) return null;
   const G = RU_BATTLE;
   const mix = (a: number, b: number, k: number): number => a + (b - a) * k;
+  // (his back foot: from where his guard has it, lifted, to where the kneel turns on its toes, as it was placed)
+  const kneel = ruOnToes(RU_KNEEL.toes * down);
+  const flat = ruOnToes(0);
+  const backFoot: Partial<Bones> = back[0] >= 1
+    ? kneel
+    : { rfx: mix(G.rfx, flat.rfx as number, back[0]), rfy: mix(G.rfy, flat.rfy as number, back[0]), rft: mix(G.rft, flat.rft as number, back[0]), rfz: back[1] + (back[1] > 0 ? (kneel.rfz as number) * back[0] : 0), rfp: back[1] > 0 ? (kneel.rfp as number) * back[0] : 0 };
   return {
     ...ruKnelt(down),
+    ...backFoot,
+    rk: mix(G.rk, RU_KNEEL.rk, back[0]),
     pz: mix(G.pz, VOLLEY_KNEEL.pz, down),
     lfx: mix(G.lfx, VOLLEY_KNEEL.lfx, step[0]),
     lfy: mix(G.lfy, VOLLEY_KNEEL.lfy, step[0]),
@@ -480,6 +525,11 @@ function ruBall(theta: number, R: number): Partial<Bones> {
     rhIn: 2, rhx: hx + kx, rhy: -4, rhz: pelvisZ + kz,
   };
 }
+/** How far (on his chest: forward, out to his left, up) his bow is lifted on its way out to the ball and back before him, over his
+ * knees and his front foot (his guard's feet, under him, are in its way); and over how many frames his arms come back. */
+const ROLL_ARC = [0, 5, 6] as const;
+const ROLL_RISE_ARMS = 6;
+const ROLL_RISE_ARC = [0, 0, 6] as const;
 function ruRollKeys(): Key3[] {
   const game = MOVES3.roll.motion.keys;
   const END = game[game.length - 1].at / FR;
@@ -551,6 +601,9 @@ function ruRollKeys(): Key3[] {
     pose.lhIn = 0;
     pose.rhIn = 0;
     [pose.lhx, pose.lhy, pose.lhz] = mixV(HL0, HL_BALL, rk);
+    // (the bow lifted on its way out to his side, over his drawn-up knees)
+    pose.lhy += ROLL_ARC[1] * Math.sin(Math.PI * rk);
+    pose.lhz += ROLL_ARC[2] * Math.sin(Math.PI * rk);
     // (the right hand out before his chest on its way down to his shin)
     [pose.rhx, pose.rhy, pose.rhz] = mixV(HR0, HR_BALL, rk);
     pose.rhx += 4 * Math.sin(Math.PI * rk);
@@ -574,12 +627,15 @@ function ruRollKeys(): Key3[] {
   const RISE = ['px', 'pz', 'pitch', 'yaw', 'twist', 'bend', 'faceTurn', 'faceUp', 'lkUp', 'rkUp'] as const;
   for (let f = LAND + 1; f < END; f++) {
     const g = S((f - LAND) / (END - LAND));
-    const h = S((f - LAND) / 6);
+    const h = S((f - LAND) / ROLL_RISE_ARMS);
     const pose: Record<string, number> = { ...L };
     for (const k of RISE) pose[k] = mix(L[k], G[k], g);
     pose.lhIn = 0;
     pose.rhIn = 0;
     [pose.lhx, pose.lhy, pose.lhz] = mixV(HL_BALL, HL0, h);
+    // (the bow lifted as it comes round before him, over his front foot stepping out)
+    pose.lhy += ROLL_RISE_ARC[1] * Math.sin(Math.PI * h);
+    pose.lhz += ROLL_RISE_ARC[2] * Math.sin(Math.PI * h);
     [pose.rhx, pose.rhy, pose.rhz] = mixV(HR_BALL, HR0, h);
     for (const k of ['wAz', 'wEl', 'wRoll', 'draw'] as const) pose[k] = mix(L[k] ?? G[k], G[k], h);
     pose.le = mix(LE_BALL, G.le, h);
@@ -666,7 +722,7 @@ export const RU_LURCH3: Move3 = { ...MOVES3.rlurch, name: 'The ranger is struck 
  * His front foot never moves; his hips are kept within its reach.
  */
 /** Where the toes of his back foot are set down, a step back from his guard. */
-const FALL_TOE: V3 = [GUARD_SK.toeR[0] - 4, GUARD_SK.toeR[1], GUARD_SK.toeR[2]];
+const FALL_TOE: V3 = [KNEEL_SK.toeR[0] - 4, KNEEL_SK.toeR[1], KNEEL_SK.toeR[2]];
 /** A pose with his hips let down until both his feet are within his legs' reach (so that neither is dragged). */
 function withinReach(p: Partial<Bones>): Partial<Bones> {
   const q: Partial<Bones> = { ...p };
@@ -723,23 +779,7 @@ function remadeAll(m: Move3, rest: Bones, legsFrom: Bones, which: (at: number) =
 
 // ---- LEFT STANDING: the squirrel and the sighting, in a fight and in town; his card's unslinging ----
 export const RU_SQUIRREL3: Move3 = { ...MOVES3.squirrel, name: 'The ranger and his squirrel (brought up)', rest: RU_BATTLE };
-export const RU_SIGHTING3: Move3 = {
-  ...MOVES3.sighting,
-  name: 'The ranger sights along an arrow (brought up)',
-  rest: RU_BATTLE,
-  // (he rises a little less as he sights, so that his long back leg is never stretched off the floor)
-  motion: {
-    ...MOVES3.sighting.motion,
-    keys: MOVES3.sighting.motion.keys.map((k) => {
-      const p: Partial<Bones> = { ...k.pose };
-      if ('pz' in p) p.pz = RU_BATTLE.pz + 0.25;
-      // (the bow let down low by his side held well out before his front leg, and less steeply, clear of that leg, which his
-      // guard puts further out than the game's crouch did)
-      if (p.lhIn === 0 && p.lhz !== undefined && p.lhz < -10) Object.assign(p, { lhy: (p.lhy ?? 0) - 2, lhx: (p.lhx ?? 0) + 10, wEl: -12 });
-      return { ...k, pose: p };
-    }),
-  },
-};
+export const RU_SIGHTING3: Move3 = { ...MOVES3.sighting, name: 'The ranger sights along an arrow (brought up)', rest: RU_BATTLE };
 export const RU_TSQUIRREL3: Move3 = { ...MOVES3.tsquirrel, name: 'The ranger and his squirrel, in town (brought up)', rest: RU_TOWN };
 export const RU_TSIGHTING3: Move3 = { ...MOVES3.tsighting, name: 'The ranger sights along an arrow, in town (brought up)', rest: RU_TOWN };
 /** His card's ready: the bow off his back (from his town stance), an arrow on the string, and down into his guard. */

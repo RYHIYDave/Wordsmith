@@ -6,7 +6,7 @@ truly painted sides, his sword in sight, his grounded run) merged in. A mock-up 
 (`tests/ranger_up.test.ts`). With it on, `art/heroes3.ts` gives his new lists in the very shape it gave the old.
 
 THE WHOLE JOB (stage 2, on his yes): his look sculpted, his cloak from behind made cloth, all eight sides painted (none
-mirrored), his legs true from every side, his bow seen from every side, his run a hunter's and never a high-step, every list at
+mirrored), his legs truer (his guard at the game's width, 7 Nov, at his word), his bow seen from every side, his run a hunter's and never a high-step, every list at
 30 a second, the Shot and the Volley by Movement 9, the measures, the pictures, the film, the tests.
 
 ## His words
@@ -32,6 +32,8 @@ mirrored), his legs true from every side, his bow seen from every side, his run 
   check back in the morning”.
 - 7 Nov 2026, of the Warrior's re-posed run: “all that time and you screwed up his run.  why is he high stepping with his
   knees up?”
+- 7 Nov 2026, 07:10, having seen him brought up: “You just need to fix the rangers wide leg stance, that’s all that’s weird”.
+  Done (below): his feet back at the game's width, all else as it was.
 - Kept from before: 7 Oct, of his face, “10 for ranger but a brown mustache”; 6 Oct, of the Volley, “The rogue drops to a
   knee when he fires Volley”; 6 Oct, of his run, “i like where the bow is at tho”.
 
@@ -40,19 +42,22 @@ and head read at a glance at the game's size.
 
 ## The pictures (`pictures/`)
 
-- `ranger_up_sheet.png` (1200 by 7338) and `ranger_up_sheet_2.png` (1200 by 6206, its continuation; one sheet would be 13,500
-  tall): at the top, HIS LEGS (before beside now from in front, three times as big, the hip, knee and floor of the near leg
-  marked with the two lengths in game pixels, and the least ratio from all eight sides) and HIS RUN SIDE-ON, eight frames of a
+- `ranger_up_sheet.png` (1200 by 6450) and `ranger_up_sheet_2.png` (1200 by 7218, its continuation; one sheet would be 13,600
+  tall): at the top, HIS GUARD (the game's, last night's wide one and now, side by side from in front and from behind, three
+  times as big; from in front the hip, knee and floor of the near leg marked, with the two lengths in game pixels; under each how
+  far apart his feet are, and his legs' least ratio through his guard from all eight sides) and HIS RUN SIDE-ON, eight frames of a
   stride before and now, the swinging thigh's angle from hanging under each. Then BEFORE beside NOW for every list, three
   times as big, from in front and from behind: his guard, his run, the Shot (the held draw, the release with its after-image,
   the follow-through), the Volley (the same, on his knee), his roll (over in a ball; down on his feet), struck from in front and
   from behind, his fall, the
   squirrel, the sighting, his town stance and run, his card's ready. At the foot, each again at the game's own size.
-- `ranger_up_sheet2.png` (1440 by 3210): HIS HEAD six times as big in his guard, before (in front, behind) and now from each of
+- `ranger_up_sheet2.png` (1440 by 3150): HIS HEAD six times as big in his guard, before (in front, behind) and now from each of
   his eight sides; then HIS EIGHT FACINGS, twice as big, each laid where he faces: his guard, a stride of his run, and the
   Shot's release with its after-image.
 - `ranger_up.mp4` (39.9 s, 1100 by 1060, 30 a second): running a circle through all eight facings; shooting each of the eight
-  ways; then before and now for every list, in front and behind; the Shot and the Volley again at half speed.
+  ways; then before and now for every list, in front and behind; the Shot and the Volley again at half speed. MADE BEFORE HIS
+  GUARD CAME BACK TO THE GAME'S WIDTH (7 Nov): where he stands in it, it still shows last night's wide guard. The two sheets show
+  him as he is now.
 - `ranger_look.png`: the stage-1 still (before, his first sculpt, his legs true), kept as it was.
 
 LOOKED AT CLOSE, at the game's size: his face (two dark eyes on his lit face, the brown moustache under them, from every side
@@ -117,12 +122,12 @@ teal cloak; his quiver of glowing fletchings; his long indigo bow, its string th
   release frame carries its after-image, ghosts of the real thing (the string where it was, dithered in the friend's cyan, and
   the arrow in fading tones along its flight), never bars; then a big follow-through, his string hand flying back past his ear
   (more than 8 across), and a slow wind-down to his guard (26 frames in all).
-- THE VOLLEY THE SAME, BIGGER, ON HIS KNEE: down onto his back knee on his own feet as he draws up at the sky (his back foot
-  turning up onto its toes where they are, his front foot stepped in before him, lifted clear), the string to his cheek and
+- THE VOLLEY THE SAME, BIGGER, ON HIS KNEE: down onto his back knee as he draws up at the sky (his back foot lifted and set a
+  little back and out from his guard, then turning up onto its toes there; his front foot stepped in before him, lifted clear), the string to his cheek and
   held (9 to 11), his string hand a little out from his face so its forearm clears his head; loosed at frame 12 with its
   after-image, his string hand flung straight down past his ear to his chest (a fall seen as far from every side; flying back
   along the arrow it was end-on from some), on down a little after, held; then his arms back into his guard, the string hand
-  round his side, and up off his knee, his front foot stepped back out (32 frames in all).
+  round his side, and up off his knee, his front foot stepped back out, then his back foot lifted back in (32 frames in all).
 - HIS ROLL, MADE AGAIN (0.68 s, as the game's; the game carries him its first 0.4): off both feet at once, a dive; over in a
   ball (the game's own ball, a little higher so his head never goes into the floor), his bow held out at his left side, its
   limbs along his way and clear of him, his other hand on his right shin, his elbows out; down on his feet in a squat the
@@ -134,10 +139,9 @@ teal cloak; his quiver of glowing fletchings; his long indigo bow, its string th
 - HIS FALL, MADE AGAIN (46 frames, as the game's; not to his knees and then forward): thrown back, his back foot lifted and
   set down a step behind him to keep his feet; then down onto that knee on his own feet, his bow upright at his left side
   outside his leg, let down till its lower limb rests on the floor; his head bowing as the light goes out of him.
-- The squirrel and the sighting, in a fight and in town: on his new guard and town stance; in the sighting, the bow he lets
-  down by his side is held out before his front leg, clear of it.
+- The squirrel and the sighting, in a fight and in town: on his guard and town stance; the sighting is the game's own motion.
 - His card's ready: from his town stance he takes his bow off his back where it lies, brings it round outside his left side (it
-  went through him), two steps into his wide guard, each foot lifted clear, an arrow on the string, the bow canted as his guard
+  went through him), two steps into his guard, each foot lifted clear, an arrow on the string, the bow canted as his guard
   holds it.
 - His stops (eight settles out of the run) and his setting off, from his guard and from his town stance; his run's other ways
   (across, both ways, and backing away: his run turned back on itself, his body upright).
@@ -192,29 +196,49 @@ WHY THEY READ SHORT: the bones are a real person's (standing straight his lower 
 But the game's camera looks down on him, and in his crouch each knee was bent toward one of his sides: from there that shin
 was seen end-on and the thigh over it at its whole length.
 
-THE MEND (`RU_BATTLE`, `RU_TOWN`): his body, arms and the bow's aim as they were (a test holds them; only the bow's cant in his hand changed, above), only his legs re-posed. His guard
-longer and wider, as low: his front foot forward 14.1 and out to his left 12, its knee bent out over it (45 degrees to his
-left); his back foot back 19.7, its knee a little in (-10.8), the foot turned out (-36.7). His town stance: his front foot a
-step forward (13.1, it was 4.8), the other drawn in under him. Every move that starts or ends in them follows them.
+THE FIRST MEND (6 Nov) made his guard longer and wider, so his legs stood straighter and read 1.09 or more from every side: his
+feet 33.5 apart fore and aft and 18.9 to the side (the game's 12.0 and 9.0), his town stance 13.9 fore and aft (the game's 5.6).
+The owner, 7 Nov, 07:10: “You just need to fix the rangers wide leg stance, that’s all that’s weird”.
+
+NOW (`RU_BATTLE`, `RU_TOWN`; last night's kept as `RU_BATTLE_WIDE`, `RU_TOWN_WIDE` for the pictures): his feet back at the
+game's width, in the game's low hunter's crouch, as deep as the game's (a test holds both). His guard: his front foot 12.0 ahead
+of his back one, 9.6 apart to the side; its knee bent in line with it; his weight on his back leg, that foot turned out across his
+line, its knee bent out over it. His town stance: 7.2 fore and aft, 10.6 to the side. His body, arms and the bow's aim as the
+game's (a test holds them; only the bow's cant in his hand changed, above). Every move that starts or ends in them follows them
+(his stops, his setting off, the Shot, his card's ready, struck, his roll); his kneels kneel where they did: in the Volley his back
+foot steps back there, lifted clear, and in again; his fall steps back as it did. (Feet apart at rest, fore and aft / to the side:
+his guard, the game's 12.0 / 9.0, last night's 33.5 / 18.9, now 12.0 / 9.6; his town stance, the game's 5.6 / 8.5, last
+night's 13.9 / 3.8, now 7.2 / 10.6.)
+
+WHY NOT 1.05 FROM EVERY SIDE: at the game's crouch with his feet that close both knees bend, and from whichever side looks along a
+bent knee that shin is foreshortened. Only legs nearly straight (his feet 30 or more apart) read 1.05 from every side. Searched
+over every natural stance (each foot ahead or behind, out or in, knees in line with the feet), the best any reaches at its worst
+side, on the bones: 0.79 with his feet 12 apart (the game's), 0.79 at 15, 0.78 at 18. So he stays at the game's 12. Through his
+guard, every frame, painted (the same on the bones): 0.81 front, 0.99 toward, 0.95 frontL, 1.04 sideL, 1.69 backL, 1.19 away,
+0.91 back, 0.78 side (the game's: 0.65, 0.43, 0.84, 1.00, 1.47, 1.76, 1.30, 1.03; at worst 0.43, now 0.78). Better than the
+game's from front, toward, frontL, sideL and backL; worse from away, back and side (from his right his back knee points at the
+eye).
 
 Knee to floor ÷ hip to knee on the screen, the least through each pose, of either leg, from each of his eight sides (game pixels;
-`tools/legs_measure.ts`; at least 1.05 held, runs at least 1 where a foot bears him):
+`tools/legs_measure.ts`; at least 1.05 held, runs at least 1 where a foot bears him; his guard and what stands in it, at the game's
+width, held to at least 0.75 (and to the game's worst plus 0.2); his town stance and what stands in it to at least 0.92):
 
 | Pose | front | toward | frontL | sideL | backL | away | back | side |
 |---|---|---|---|---|---|---|---|---|
-| his guard | 0.65 → **1.09** | 0.43 → **1.13** | 0.84 → **1.15** | 1.00 → **1.13** | 1.47 → **1.09** | 1.76 → **1.13** | 1.30 → **1.14** | 1.03 → **1.15** |
-| his town stance | 0.93 → **1.08** | 0.85 → **1.12** | 0.91 → **1.12** | 1.01 → **1.08** | 1.22 → **1.16** | 1.26 → **1.19** | 1.23 → **1.20** | 1.12 → **1.18** |
-| the squirrel | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.47 → **1.14** | 1.87 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
-| sighting along an arrow | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.46 → **1.14** | 1.80 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
-| the squirrel, in town | 0.95 → **1.10** | 0.86 → **1.12** | 0.92 → **1.12** | 1.02 → **1.10** | 1.25 → **1.16** | 1.29 → **1.19** | 1.25 → **1.20** | 1.14 → **1.18** |
-| sighting, in town | 0.95 → **1.10** | 0.86 → **1.12** | 0.92 → **1.12** | 1.02 → **1.10** | 1.25 → **1.16** | 1.29 → **1.19** | 1.25 → **1.20** | 1.14 → **1.18** |
-| his card's ready, in his guard | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.47 → **1.14** | 1.87 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
-| the Shot's held draw | 0.67 → **1.11** | 0.46 → **1.13** | 0.85 → **1.17** | 1.03 → **1.14** | 1.47 → **1.12** | 1.82 → **1.13** | 1.31 → **1.14** | 1.04 → **1.15** |
+| his guard | 0.65 → **0.81** | 0.43 → **0.99** | 0.84 → **0.95** | 1.00 → **1.04** | 1.47 → **1.69** | 1.76 → **1.19** | 1.30 → **0.91** | 1.03 → **0.78** |
+| his town stance | 0.93 → **0.95** | 0.85 → **0.95** | 0.91 → **0.96** | 1.01 → **0.96** | 1.22 → **1.08** | 1.26 → **1.25** | 1.23 → **1.20** | 1.12 → **1.08** |
+| the squirrel | 0.66 → **0.81** | 0.46 → **1.00** | 0.88 → **0.99** | 1.01 → **1.05** | 1.47 → **1.69** | 1.87 → **1.20** | 1.32 → **0.91** | 1.03 → **0.78** |
+| sighting along an arrow | 0.66 → **0.81** | 0.46 → **1.00** | 0.88 → **0.99** | 1.01 → **1.05** | 1.46 → **1.68** | 1.80 → **1.20** | 1.32 → **0.91** | 1.03 → **0.78** |
+| the squirrel, in town | 0.95 → **1.04** | 0.86 → **0.97** | 0.92 → **0.96** | 1.02 → **0.96** | 1.25 → **1.08** | 1.29 → **1.30** | 1.25 → **1.21** | 1.14 → **1.11** |
+| sighting, in town | 0.95 → **1.04** | 0.86 → **0.97** | 0.92 → **0.96** | 1.02 → **0.96** | 1.25 → **1.08** | 1.29 → **1.30** | 1.25 → **1.21** | 1.14 → **1.11** |
+| his card's ready, in his guard | 0.66 → **0.81** | 0.46 → **1.00** | 0.88 → **0.99** | 1.01 → **1.05** | 1.47 → **1.69** | 1.87 → **1.20** | 1.32 → **0.91** | 1.03 → **0.78** |
+| the Shot's held draw | 0.67 → **0.82** | 0.46 → **0.97** | 0.85 → **0.96** | 1.03 → **1.06** | 1.47 → **1.72** | 1.82 → **1.19** | 1.31 → **0.92** | 1.04 → **0.81** |
 | the Volley's held draw (the leg he stands on) | 1.12 → **1.13** | 1.67 → **1.94** | 1.20 → **1.56** | 1.01 → **1.03** | 1.33 → **1.10** | 2.33 → **1.73** | 1.42 → **1.47** | 1.00 → **1.03** |
 | his run (a foot bearing him) | 0.80 → **1.04** | 0.53 → **1.02** | 0.75 → **1.02** | 1.05 → **1.12** | 1.67 → **1.21** | 2.96 → **1.27** | 1.72 → **1.21** | 1.05 → **1.13** |
 | his run in town (a foot bearing him) | 0.84 → **1.05** | 0.64 → **1.03** | 0.80 → **1.03** | 1.09 → **1.12** | 1.42 → **1.21** | 1.86 → **1.25** | 1.43 → **1.21** | 1.09 → **1.14** |
 
-(Bones only, every frame. The test measures the same as painted, and leaves out a shin less than half seen.) THE VOLLEY'S KNEEL:
+(Bones only, every frame. The test measures the same as painted, and leaves out a shin less than half seen. Last night's wide
+guard read 1.09 to 1.15 from every side; his town stance 1.08 to 1.20.) THE VOLLEY'S KNEEL:
 the knee he is down on lies on the floor, its shin along it, and is not held to the measure; the leg he stands on has its thigh
 level by the kneel's nature, and seen side-on (sideL, side) the game's camera draws a level length longer than an upright one,
 so it reads 1.03 there: held to 1 from those two sides, as the Warrior's kneel is. (His front foot is stepped in before him for
@@ -243,6 +267,10 @@ behind, 5 / 0 from up and to the right.
   seen end-on, 6 pixels, its string and arrow 5 or more. No one cant shows it both from behind and from there (a flat thing is
   edge-on from somewhere); the sheet2 turnaround shows how it reads.
 - IN HIS RUN: where he carries it (above), its string end-on from most sides; its wood at least 7 from every side.
+- ONE FRAME SHORT, REPORTED AND LEFT AS IT IS (the rule of 7 Nov: never move a weapon, a pose or a gait to pass a check): with his
+  feet back at the game's width, one frame of his setting off from his guard (frame 4 of 60 a second), seen from behind, shows 6
+  of the bow's wood and 1 of its string (7 of the wood wanted), the bow passing behind his back on its way from his guard to where
+  he carries it. Last night's wide guard showed 7 there. `RU_BOW_SHORT` in his review holds it to what it shows.
 - IN TOWN: slung nearly level across his back (above), its ends past him on either side; its wood at least 7 from every side.
 
 ## His run, a hunter's (the owner's “why is he high stepping with his knees up?”)
@@ -326,9 +354,11 @@ the main chat is doing for the heroes; once baked, painting costs nothing on the
 2. With it on: every list at 30 a second (his gripping runs at 60), from all eight sides, in every place.
 3. Every frame of every list of his through every boss check, from all eight sides (85 reviews of his moves), with the game's
    handovers between them: no finding.
-4. His legs (the table above), every frame, as painted, from all eight sides; and the measure: standing straight a man's
-   ratio, the game's crouch short from in front and toward, his guard true, his body, arms and aim the game's.
-5. His bow seen from every side, in every list he stands, runs or holds in (above).
+4. His legs (the table above), every frame, as painted, from all eight sides; and the measure: his guard's feet as far apart as
+   the game's (within 1 fore and aft, 1.5 to the side), his town stance's within 2, his crouch as deep, his legs at their worst
+   better than the game's crouch at its worst, his body, arms and aim the game's.
+5. His bow seen from every side, in every list he stands, runs or holds in (above; one frame of his setting off reported, not
+   mended, below).
 6. No prancing: every frame of his runs, their other ways, his stops and setting off: no swinging thigh past 50 (none past 48);
    the game's run, as it was, past 60.
 7. Every picture from every side: crisp, the friend's cyan edge, nothing of the enemy's rim, nothing cut off, the feather
@@ -353,7 +383,8 @@ Made with: `npx tsx tools/ranger_up_pics.ts sheet|sheet2|film <dir>` and `python
   second, not a sixth. Keep his rate of fire as it is (his follow-through cut short when he shoots again)? (Recommended) / Let
   him fire a little slower (about 1.5 shots a second, not 2)”.
 - HIS BOW CANTED 70 DEGREES in his guard (it was 18), so it shows from behind; seen from his right it is end-on.
-- HIS GUARD IS WIDER AND LONGER (his legs true): the owner should see the first sheet's top before it goes in.
+- HIS GUARD AT THE GAME'S WIDTH (7 Nov, at his word): from in front and from his right his legs there read 0.81 and 0.78, not
+  1.05 (above); no stance at that width reads true from every side.
 - THE VOLLEY'S KNEEL, SIDE-ON, reads 1.03, held to 1 there as the Warrior's kneel is (above); his front foot now steps in for it.
 - HIS RUN IS NEW: the owner should see the stride strip and the film's run before it goes in. His bow in it is carried 6 units
   further out from his side than the game's, so that it is seen from behind.

@@ -7,8 +7,9 @@
 //   3. THE BOSSES' REVIEW (art/boss_checks.ts checkBoss), from each of his eight sides: EVERY LIST passes every check (his guard,
 //      his run, the Shot, the Volley, his roll, struck both ways, his fall, his town stance and run, the squirrel and the sighting
 //      in a fight and in town, his card's unslinging), with the game's handovers between them;
-//   4. HIS LEGS TRUE: every stance and held pose from every side at 1.05 or more below the knee to above it (the Volley's kneeling
-//      leg excepted, its shin along the floor), his runs at 1 where a foot bears him;
+//   4. HIS LEGS: every stance and held pose from every side held below the knee to above it (his guard and town stance back at the
+//      game's width, as the owner asked, held to what that width gives, 0.75 and 0.92; the Volley's standing leg at 1.05, its
+//      kneeling leg excepted), his runs at 1 where a foot bears him; his feet as far apart as the game's;
 //   5. HIS BOW SEEN FROM EVERY SIDE: in every list he stands, runs or holds in (his runs, their other ways and his town lists
 //      too), a good length of its wood and of its string and arrow, or, where the string is end-on, of its wood alone;
 //   6. NO PRANCING: in every frame of his runs, their other ways, his stops and his setting off, no swinging thigh past 50 degrees
@@ -30,8 +31,8 @@ import * as nodePath from 'node:path';
 
 import { RANGER_UP, RU_BROWN, RU_SKIN } from '../src/art/ranger_up';
 import { paintRuMove as paintRu, ruPosed, ruSmeared, ruStartOf, ruStops } from '../src/art/ranger_up_art';
-import { RU_BATTLE, RU_MOVES, RU_RUN3, ruRunWays, RU_SHOT3, RU_SHOT_HELD, RU_SHOT_HIT, RU_SHOT_LONG, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_VOLLEY3, RU_VOLLEY_HELD, RU_VOLLEY_HIT, RU_VOLLEY_LONG } from '../src/art/ranger_up_moves';
-import { RU_BOW_LEAST, RU_BOW_WOOD_ALONE, RU_FRONT_ONLY, RU_LEGS_HELD, rangerReview, ruBowFaults, ruBowHeld, ruBowSeen, ruLegFaults, ruRunning, ruThighFaults } from '../src/art/ranger_up_review';
+import { RU_BATTLE, RU_TOWN, RU_MOVES, RU_RUN3, ruRunWays, RU_SHOT3, RU_SHOT_HELD, RU_SHOT_HIT, RU_SHOT_LONG, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_VOLLEY3, RU_VOLLEY_HELD, RU_VOLLEY_HIT, RU_VOLLEY_LONG } from '../src/art/ranger_up_moves';
+import { RU_BOW_LEAST, RU_BOW_SHORT, RU_BOW_WOOD_ALONE, RU_FRONT_ONLY, RU_LEG_GUARD_LEAST, RU_LEG_HELD_LEAST, RU_LEGS_HELD, rangerReview, ruBowFaults, ruBowHeld, ruBowSeen, ruLegFaults, ruRunning, ruThighFaults } from '../src/art/ranger_up_review';
 import { WU_RIM, WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 import { wuLegs, wuThighs } from '../src/art/warrior_up_review';
@@ -43,6 +44,7 @@ import { ENEMY_RIM } from '../src/art/mkit';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { lookOfPlace } from '../src/art/heroes';
 import { bonesAt, solve } from '../src/art/skeleton';
+import type { Bones } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import { hashSprite } from '../tools/cheap_heroes';
 import { rangerLists } from '../tools/ranger_up_measure';
@@ -225,7 +227,7 @@ function sweep(): NonNullable<typeof swept> {
 
 // --- 4. his legs ----------------------------------------------------------------------------------------------------------------
 
-test('4. his legs read true: every stance and held pose from every side at 1.05 or more below the knee to above it, his runs at 1 where a foot bears him', () => {
+test('4. his legs: every stance and held pose from every side held below the knee to above it (his guard and town stance at the game\'s width, held to what it gives), his runs at 1 where a foot bears him', () => {
   const s = sweep();
   assert.ok(s.legsSeen > 1000, `${s.legsSeen} pictures looked at`);
   assert.equal(s.legs.length, 0, s.legs.slice(0, 12).join('; '));
@@ -235,18 +237,32 @@ test('4. his legs read true: every stance and held pose from every side at 1.05 
     const m = RU_MOVES[h.key];
     for (let i = h.from; i <= Math.min(h.to, Math.round(endOf(m) * 30)); i++) {
       const sk = solve(m.build, bonesAt(m.motion.keys, m.rest, i / 30));
-      for (const v of WU_SIDES) for (const l of wuLegs(sk, v, RANGER_BODY.ankle)) if (l.ratio < 1.05) faults.push(`${h.key} ${i} ${v} ${l.leg} ${l.ratio.toFixed(2)}`);
+      for (const v of WU_SIDES) for (const l of wuLegs(sk, v, RANGER_BODY.ankle)) if (l.ratio < (h.least ?? RU_LEG_HELD_LEAST)) faults.push(`${h.key} ${i} ${v} ${l.leg} ${l.ratio.toFixed(2)}`);
     }
   }
   assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
 });
 
-test('4. ... the measure: standing straight his bones read a man\'s legs; the game\'s crouch read short from in front, his guard reads true', () => {
+test('4. ... the measure: his guard at the game\'s width (the owner: “You just need to fix the rangers wide leg stance, that’s all that’s weird”), its legs at their worst reading better than the game\'s crouch at its worst', () => {
   const B = RANGER_BODY;
   const legsAt = (m: Move3, t: number, v: WuSide): number => Math.min(...wuLegs(solve(m.build, bonesAt(m.motion.keys, m.rest, t)), v, B.ankle).map((l) => l.ratio));
   assert.ok(legsAt(MOVES3.rstand, 0.6, 'front') < 0.75, 'the game\'s crouch from in front');
   assert.ok(legsAt(MOVES3.rstand, 0.6, 'toward') < 0.6, 'the game\'s crouch from toward the camera');
-  for (const v of WU_SIDES) assert.ok(legsAt(RU_STAND3, 0.6, v) >= 1.05, `his guard from ${v}`);
+  // (his feet as far apart as the game's, fore and aft and to the side, not as last night's wide guard)
+  const feet = (q: Bones): [number, number] => {
+    const s = solve(B, q);
+    return [s.ankleL[0] - s.ankleR[0], Math.abs(s.ankleL[1] - s.ankleR[1])];
+  };
+  const [gx, gy] = feet(MOVES3.rstand.rest);
+  const [nx, ny] = feet(RU_BATTLE);
+  assert.ok(Math.abs(nx - gx) < 1 && Math.abs(ny - gy) < 1.5, `his feet ${nx.toFixed(1)} apart fore and aft, ${ny.toFixed(1)} to the side; the game's ${gx.toFixed(1)}, ${gy.toFixed(1)}`);
+  const [tx] = feet(MOVES3.rtown.rest);
+  const [ux] = feet(RU_TOWN);
+  assert.ok(Math.abs(ux - tx) < 2, `in town ${ux.toFixed(1)} apart fore and aft; the game's ${tx.toFixed(1)}`);
+  // (his crouch as deep as the game's)
+  assert.equal(RU_BATTLE.pz, MOVES3.rstand.rest.pz, 'his crouch as deep as the game\'s');
+  const worstGame = Math.min(...WU_SIDES.map((v) => legsAt(MOVES3.rstand, 0.6, v)));
+  for (const v of WU_SIDES) assert.ok(legsAt(RU_STAND3, 0.6, v) >= Math.max(RU_LEG_GUARD_LEAST, worstGame + 0.2), `his guard from ${v}: ${legsAt(RU_STAND3, 0.6, v).toFixed(2)}`);
   // (his body, arms and bow as the game's: only his legs re-posed)
   for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'rhz', 'wEl', 'draw'] as const) assert.equal(RU_BATTLE[k], MOVES3.rstand.rest[k], `${k} as the game's`);
 });
@@ -258,7 +274,9 @@ test('5. his bow is seen from every side in every list he stands, runs or holds 
   assert.equal(s.bow.length, 0, s.bow.slice(0, 12).join('; '));
   for (const v of WU_SIDES) {
     assert.ok(s.least[v] && s.least[v].wood >= RU_BOW_LEAST, `${v}: ${JSON.stringify(s.least[v])}`);
-    assert.ok(s.carried[v] && s.carried[v].wood >= RU_BOW_WOOD_ALONE, `${v}, carried: ${JSON.stringify(s.carried[v])}`);
+    // (less only where it is reported, RU_BOW_SHORT, and by no more than it reports)
+    const short = Math.min(RU_BOW_WOOD_ALONE, ...RU_BOW_SHORT.filter((x) => x.side === v).map((x) => x.wood));
+    assert.ok(s.carried[v] && s.carried[v].wood >= short, `${v}, carried: ${JSON.stringify(s.carried[v])}`);
   }
 });
 

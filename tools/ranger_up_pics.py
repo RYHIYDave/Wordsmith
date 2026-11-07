@@ -146,8 +146,8 @@ def sheet(dir, out):
     probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
     intro = ('Before (the Ranger in the game today) beside now, three times as big, from in front and from behind. His look kept: '
              'his soft teal cap and its feather, his face and moustache, his pink neckerchief, green jerkin, teal cloak and hood, '
-             'his quiver and his long indigo bow. Now sculpted as one body; every list 30 pictures a second; his legs true from '
-             'every side; his run a hunter\'s, never a high-step; the Shot and the Volley a big held draw, a one-frame release '
+             'his quiver and his long indigo bow. Now sculpted as one body; every list 30 pictures a second; his guard\'s feet as '
+             'far apart as the game\'s; his run a hunter\'s, never a high-step; the Shot and the Volley a big held draw, a one-frame release '
              'with its after-image, a big follow-through. Pictures only: not in the game.')
     lines = wrap(probe, intro, small, W - 48)
     blocks = []
@@ -159,7 +159,7 @@ def sheet(dir, out):
         blocks.append((sec['title'], rows))
     def row_h(box):
         return 28 + 2 * (20 + (box[3] - box[1]) * 3 + 10) + 24
-    legs_h = 40 + 96 * 3 + 70
+    legs_h = 40 + 2 * (96 * 3 + 30) + 120
     strip_h = 60 + 2 * (24 + 92 * 2 + 30) + 10
     hgt = 20 + 46 + len(lines) * 24 + 20 + legs_h + strip_h
     for title, rows in blocks:
@@ -174,23 +174,31 @@ def sheet(dir, out):
         d.text((24, y), ln, font=small, fill=DIM)
         y += 24
     y += 20
-    # --- the legs panel
-    d.text((24, y), 'HIS LEGS: hip to knee (yellow), knee to floor (green), the leg nearer you, game pixels', font=mid, fill=CYAN)
+    # --- the legs panel: his guard as the game has it, last night's wide one and now, from in front and from behind
+    d.text((24, y), 'HIS GUARD: the game\'s, last night\'s wide one, and now', font=mid, fill=CYAN)
     y += 40
+    names = {'before': 'THE GAME\'S', 'wide': 'LAST NIGHT\'S, WIDE', 'now': 'NOW'}
+    cols = {'before': DIM, 'wide': (255, 140, 120), 'now': CYAN}
+    box = (AX - 50, 44, AX + 70, 140)
     x = 24
     for lg in spec['legs']:
-        p = os.path.join(dir, lg['file'])
-        box = (AX - 50, 44, AX + 70, 140)
-        g = figure(p, box, 3)
-        img.paste(g, (x + 60, y))
-        legs_mark(d, x + 50, y, 3, lg, box, tiny)
+        g = figure(os.path.join(dir, lg['file']), box, 3)
+        img.paste(g, (x + 50, y))
+        legs_mark(d, x + 44, y, 3, lg, box, tiny, label=lg['who'] == 'before')
+        col = cols[lg['who']]
         ratio = lg['lower'] / lg['thigh']
-        name = 'BEFORE (the game today)' if lg['who'] == 'before' else 'NOW'
-        col = CYAN if lg['who'] == 'now' else (255, 140, 120)
-        d.text((x + 60, y + g.height + 4), f"{name}: from in front {ratio:.2f} times", font=tiny, fill=col)
-        d.text((x + 60, y + g.height + 24), f"from all eight sides, at least {lg['least']:.2f} times", font=tiny, fill=col)
-        x += 590
-    y += legs_h - 40
+        d.text((x + 50, y + g.height + 2), names[lg['who']], font=tiny, fill=col)
+        d.text((x + 50, y + g.height + 20), f"feet {lg['apart']:.0f} apart, {lg['side']:.0f} to the side", font=tiny, fill=col)
+        d.text((x + 50, y + g.height + 38), f"legs {ratio:.2f} from in front, {lg['least']:.2f} at worst", font=tiny, fill=col)
+        x += 390
+    y += 96 * 3 + 64
+    x = 24
+    for lg in spec['legs']:
+        g = figure(os.path.join(dir, lg['behind']), box, 3)
+        img.paste(g, (x + 50, y))
+        d.text((x + 50, y + g.height + 2), names[lg['who']] + ' · from behind', font=tiny, fill=cols[lg['who']])
+        x += 390
+    y += 96 * 3 + 40
     # --- the stride strip
     d.text((24, y), 'HIS RUN SIDE-ON, EIGHT FRAMES OF A STRIDE: the swinging thigh, degrees from hanging straight down (the check: 50 at most)', font=mid, fill=CYAN)
     y += 44

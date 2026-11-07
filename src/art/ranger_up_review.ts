@@ -139,15 +139,22 @@ export function rangerReview(side: WuSide = 'front'): { mob: Mob; shape: BossSha
 // and short legs below the knee”): every frame of his stances and held poses at 1.05 or more from all eight sides, each leg whose
 // shin is seen; his runs at 1 where a foot is flat on the floor, bearing him.
 
-export const RU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: number; to: number; kneel?: boolean; sideOn?: number }> = [
-  { key: 'rstand', what: 'his guard', from: 0, to: 71 },
-  { key: 'rtown', what: 'his town stance', from: 0, to: 71 },
-  { key: 'squirrel', what: 'the squirrel', from: 0, to: 108 },
-  { key: 'sighting', what: 'sighting along an arrow', from: 0, to: 108 },
-  { key: 'tsquirrel', what: 'the squirrel, in town', from: 0, to: 108 },
-  { key: 'tsighting', what: 'sighting along an arrow, in town', from: 0, to: 108 },
-  { key: 'rdraw', what: "his card's ready, in his guard", from: 26, to: 41 },
-  { key: 'shot', what: "the Shot's held draw", from: 7, to: 9 },
+// (HIS GUARD AND HIS TOWN STANCE AT THE GAME'S WIDTH: the owner, 7 Nov, 07:10, of the wide guard that read true, “You just need
+// to fix the rangers wide leg stance, that’s all that’s weird”. At the game's width and crouch his legs bend, and no way of
+// placing them reads 1.05 from every side (ranger_up_moves.ts, HIS GUARD): what stands in his guard is held to what that width
+// gives, RU_LEG_GUARD_LEAST, its worst from his right, where his back knee points, 0.78; what stands in his town stance to
+// RU_LEG_TOWN_LEAST, its worst 0.95. The game's crouch read 0.43 at its worst, its town stance 0.85.)
+export const RU_LEG_GUARD_LEAST = 0.75;
+export const RU_LEG_TOWN_LEAST = 0.92;
+export const RU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: number; to: number; kneel?: boolean; sideOn?: number; least?: number }> = [
+  { key: 'rstand', what: 'his guard', from: 0, to: 71, least: RU_LEG_GUARD_LEAST },
+  { key: 'rtown', what: 'his town stance', from: 0, to: 71, least: RU_LEG_TOWN_LEAST },
+  { key: 'squirrel', what: 'the squirrel', from: 0, to: 108, least: RU_LEG_GUARD_LEAST },
+  { key: 'sighting', what: 'sighting along an arrow', from: 0, to: 108, least: RU_LEG_GUARD_LEAST },
+  { key: 'tsquirrel', what: 'the squirrel, in town', from: 0, to: 108, least: RU_LEG_TOWN_LEAST },
+  { key: 'tsighting', what: 'sighting along an arrow, in town', from: 0, to: 108, least: RU_LEG_TOWN_LEAST },
+  { key: 'rdraw', what: "his card's ready, in his guard", from: 26, to: 41, least: RU_LEG_GUARD_LEAST },
+  { key: 'shot', what: "the Shot's held draw", from: 7, to: 9, least: RU_LEG_GUARD_LEAST },
   // (the Volley is loosed from one knee, as the owner asked of it: “The rogue drops to a knee when he fires Volley”. The shin of
   // the knee he is down on lies along the floor, and a shin along the floor is seen end-on from some side whatever is done; that
   // leg is not held to the measure (its knee is within 2.5 of the floor); his other leg, the one he stands on, is. That leg's
@@ -174,7 +181,7 @@ export function ruLegFaults(key: string, frame: number, f: RuFrame, side: WuSide
     } else {
       if (held.some((h) => h.kneel) && knee[2] < 2.5) continue;
       const sideOn = side === 'side' || side === 'sideL';
-      const least = Math.min(...held.map((h) => (sideOn && h.sideOn !== undefined ? h.sideOn : RU_LEG_HELD_LEAST)));
+      const least = Math.min(...held.map((h) => (sideOn && h.sideOn !== undefined ? h.sideOn : h.least ?? RU_LEG_HELD_LEAST)));
       if (l.ratio < least) out.push(`${key} ${frame} (${held[0].what}) ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg ${l.ratio.toFixed(2)}`);
     }
   }
@@ -235,11 +242,19 @@ export function ruBowHeld(key: string | undefined, name: string, frame: number, 
 export function ruBowEnough(b: { wood: number; string: number }): boolean {
   return (b.wood >= RU_BOW_LEAST && b.string >= RU_STRING_LEAST) || b.wood >= RU_BOW_WOOD_ALONE;
 }
+/** REPORTED, NOT MENDED (the rule of 7 Nov 2026, “BRINGING A HERO UP CHANGES ONLY WHAT HE ASKED”: never move a weapon, a pose or
+ * a gait to pass a check; report it with the numbers and leave the motion alone). With his feet back at the game's width, one
+ * frame of his setting off from his guard, seen from behind, shows one pixel less of the bow than the run's 7: the bow passing
+ * behind his back on its way from his guard to where he carries it (6 of its wood, 1 of its string). Held to what it shows. */
+export const RU_BOW_SHORT: ReadonlyArray<{ name: string; frame: number; side: WuSide; wood: number }> = [
+  { name: 'The ranger runs (brought up): setting off', frame: 4, side: 'away', wood: 6 },
+];
 export function ruBowFaults(key: string | undefined, name: string, frame: number, f: RuFrame, side: WuSide): string[] {
   const what = ruBowHeld(key, name, frame, side);
   if (!what) return [];
   const b = ruBowSeen(f);
   if (ruBowEnough(b)) return [];
+  if (RU_BOW_SHORT.some((x) => x.name === name && x.frame === frame && x.side === side && b.wood >= x.wood)) return [];
   return [`${what} ${frame} ${side}: ${b.wood} of the bow's wood seen, ${b.string} of its string and arrow`];
 }
 
