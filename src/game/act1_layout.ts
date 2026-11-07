@@ -140,6 +140,30 @@ export interface Hold {
   inside: { x: number; y: number; w: number; h: number };
   entry: { x: number; y: number };
   fight: { x: number; y: number };
+  /** (HOLD_HALLWAY) The little hallway into the hall: its floor, out from the middle of the hall's near side; he comes in at its far end, and goes out by it. */
+  way?: { x: number; y: number; w: number; h: number };
+}
+
+/**
+ * A LITTLE HALLWAY INTO EACH STRONGHOLD'S HALL. His words, 7 Nov 2026, 00:05 (Eastern): “add a little halway to strongholds”;
+ * as the Stoker's arena was given one at his word of 6 Nov, 16:29 (game/furnace_arena.ts). So, `on`: through the door he comes in
+ * at the far end of a short hallway (`long` tiles, `wide` across), open into the hall at the middle of its near side; the
+ * threshold he goes out by is at the hallway's far end. Off until he has seen it (PICTURES FIRST).
+ */
+export const HOLD_HALLWAY = { on: false, long: 4, wide: 3 };
+
+/** Is (x, y) in a stronghold's hall or its hallway, `m` tiles round them counted in. */
+export function inHold(q: Hold, x: number, y: number, m = 1): boolean {
+  const inRect = (r: { x: number; y: number; w: number; h: number }): boolean => x >= r.x - m && y >= r.y - m && x <= r.x + r.w + m && y <= r.y + r.h + m;
+  return inRect(q.inside) || (!!q.way && inRect(q.way));
+}
+
+/** Is tile (tx, ty) one of a stronghold's hall's or hallway's own, or a wall round them (what is drawn while he is in it)? */
+export function holdShows(q: Hold, tx: number, ty: number): boolean {
+  const r = q.inside;
+  if (tx >= r.x - 1 && ty >= r.y - 1 && tx <= r.x + r.w && ty <= r.y + r.h) return true;
+  const w = q.way;
+  return !!w && tx >= w.x - 1 && ty >= w.y - 1 && tx <= w.x + w.w && ty <= w.y + w.h;
 }
 
 /** A bridge over the Pinewood's river: its tiles (whole floor), along x or along y. */
@@ -728,6 +752,11 @@ export const MARGIN = 14;
 const COURT = { half: 3, deep: 3 };
 /** A stronghold's hall inside. */
 const HALL = { w: 13, h: 11 };
+/** (HOLD_HALLWAY) A hall's hallway: its floor, out from the middle of its near side (greater y). */
+function wayOf(r: { x: number; y: number; w: number; h: number }): { x: number; y: number; w: number; h: number } {
+  const wide = HOLD_HALLWAY.wide;
+  return { x: Math.round(r.x + r.w / 2 - wide / 2), y: r.y + r.h, w: wide, h: HOLD_HALLWAY.long };
+}
 
 export interface Laid {
   floor: Floor;
@@ -900,6 +929,14 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
       tiles[ty * W + tx] = T_FLOOR;
       cut[ty * W + tx] = 0;
     }
+    // (HOLD_HALLWAY: its hallway, out from the middle of its near side toward the eye, along y)
+    if (HOLD_HALLWAY.on) {
+      const way = wayOf({ x: hx, y: hy, w: HALL.w, h: HALL.h });
+      for (let ty = way.y; ty < way.y + way.h; ty++) for (let tx = way.x; tx < way.x + way.w; tx++) {
+        tiles[ty * W + tx] = T_FLOOR;
+        cut[ty * W + tx] = 0;
+      }
+    }
   });
 
   // THE START AND THE BOSS
@@ -914,6 +951,7 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
     const x = i % W;
     const y = (i - x) / W;
     if (hallRects.some((r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h)) continue;
+    if (HOLD_HALLWAY.on && hallRects.some((r) => { const w = wayOf(r); return x >= w.x && y >= w.y && x < w.x + w.w && y < w.y + w.h; })) continue;
     // (a half tile is kept if a whole one reached is beside it)
     if (cut[i] !== 0 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => { const j = (y + b) * W + x + a; return j >= 0 && j < W * H && got[j] === 1; })) continue;
     tiles[i] = T_WALL;
@@ -985,9 +1023,11 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
       ],
       hall: hallRoom[n],
       inside: r,
-      // (in by the middle of its near side toward the eye, along y: the hall's door is its way out too)
-      entry: { x: r.x + r.w / 2, y: r.y + r.h - 1.5 },
+      // (in by the middle of its near side toward the eye, along y: the hall's door is its way out too; HOLD_HALLWAY, in at the
+      // far end of its hallway, and out by it)
+      entry: HOLD_HALLWAY.on ? { x: r.x + r.w / 2, y: r.y + r.h + HOLD_HALLWAY.long - 1.5 } : { x: r.x + r.w / 2, y: r.y + r.h - 1.5 },
       fight: { x: r.x + r.w / 2, y: r.y + r.h / 2 - 0.5 },
+      ...(HOLD_HALLWAY.on ? { way: wayOf(r) } : {}),
     };
   });
 

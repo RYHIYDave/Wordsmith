@@ -54,7 +54,7 @@ import { PAIR, partnerOf } from './act1_rules/pair';
 // (ACT 2, THE HUSH: a word the Physician has drawn out of the hero is never lost: given back as a level is left or the hero falls, and written into the save)
 import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
-import { blobDist } from './act1_layout';
+import { blobDist, inHold } from './act1_layout';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
@@ -3096,8 +3096,8 @@ export class Game {
         this.sfx('door', 0.6);
         return;
       }
-      // (out by the hall's threshold, the middle of its near side)
-      const r = q.inside;
+      // (out by the hall's threshold, the middle of its near side; HOLD_HALLWAY, the far end of its hallway)
+      const r = q.way ?? q.inside;
       if (h.x >= r.x && h.x < r.x + r.w && h.y >= r.y && h.y < r.y + r.h && h.y > r.y + r.h - HOLD_TUNE.out && Math.abs(h.x - (r.x + r.w / 2)) < 1.3) {
         this.holdGoing = q.n;
         this.leave('holdOut');
@@ -3177,8 +3177,9 @@ export class Game {
     if (inward) {
       h.x = q.entry.x;
       h.y = q.entry.y;
-      h.fx = -Math.SQRT1_2;
-      h.fy = -Math.SQRT1_2;
+      // (facing into the hall: up its hallway, where there is one)
+      h.fx = q.way ? 0 : -Math.SQRT1_2;
+      h.fy = q.way ? -1 : -Math.SQRT1_2;
       if (!st.entered) {
         st.entered = true;
         this.holdFight(q.n);
@@ -9659,7 +9660,7 @@ export class Game {
     // (THE DESCENT'S OPEN GROUND, floors 6 to 10: its cliffs and drops are seen over, not walls to the eye. His words, 1 Nov
     // 2026, of the Ledge Road: “The cliff edge hides enemies like a wall but it should be wide open to line of sight.” Shots and
     // the monsters' own sight still stop at the rock; inside a stronghold's hall its walls are walls.)
-    const over = (this.overRock = SEE_OVER_ROCK.on && !!L.land && !cityFloor(f.depth) && !L.land.holds.some((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1));
+    const over = (this.overRock = SEE_OVER_ROCK.on && !!L.land && !cityFloor(f.depth) && !L.land.holds.some((q) => inHold(q, h.x, h.y)));
     for (let k = 0; k < rays; k++) {
       const a = (k / rays) * Math.PI * 2;
       const dx = Math.cos(a);

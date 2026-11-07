@@ -120,6 +120,7 @@ import { act1Fx } from './act1_fx/index';
 import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
+import { holdShows, inHold } from '../game/act1_layout';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -2836,7 +2837,7 @@ export class Renderer {
     const f = L.floor;
     const h = game.hero;
     // (ACT 1: inside a stronghold's hall the floor and walls are the redoubt's stone: art/redoubt.ts)
-    const inHall = !!L.land && L.land.holds.some((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1);
+    const inHall = !!L.land && L.land.holds.some((q) => inHold(q, h.x, h.y));
     const art = inHall ? { ...this.art, ground: redoubtGround() } : this.art;
     // (magic with no element word on it is violet, where a blade's blow is steel: a mage's, and
     // anyone's who carries a staff or a wand)
@@ -2896,7 +2897,7 @@ export class Renderer {
     // ---- ACT 1, THE DESCENT: the open ground, painted in pieces, under everything (render/outdoor.ts) ----
     // (inside a stronghold's hall the screen is a dungeon's room in the dark: its tiles and walls as any dungeon's, in the redoubt's stone)
     const land = L.land;
-    const hallNow = land ? land.holds.find((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1) ?? null : null;
+    const hallNow = land ? land.holds.find((q) => inHold(q, h.x, h.y)) ?? null : null;
     this.openGround = !!land && !hallNow;
     this.act1Dressed = this.act1.begin(L);
     // (ACT 2, THE HUSH: a step of its floor's moment around the hero: render/act1_pieces.ts)
@@ -2966,7 +2967,7 @@ export class Renderer {
         const ty = (s - df) >> 1;
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
         // (ACT 1: in a stronghold's hall, only the hall's own tiles and its walls)
-        if (hallNow && (tx < hallNow.inside.x - 1 || ty < hallNow.inside.y - 1 || tx > hallNow.inside.x + hallNow.inside.w || ty > hallNow.inside.y + hallNow.inside.h)) continue;
+        if (hallNow && !holdShows(hallNow, tx, ty)) continue;
         // (THE HEADSMAN'S YARD: from in it, only it, its walls and its way in: behind its far walls, the sky)
         if (yardOut && !this.yard.shows(f, tx, ty)) continue;
         if (groundsSky && !this.grounds.shows(L, tx, ty)) continue;

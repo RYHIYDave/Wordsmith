@@ -488,6 +488,7 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     for (let ty = q.gy - 1; ty < q.gy + 5; ty++) for (let tx = q.gx - 4; tx < q.gx + 4; tx++) if (tx >= 0 && ty >= 0 && tx < W && ty < H) keep[ty * W + tx] = 1;
     // (and the hall inside, but for what is laid in it below)
     for (let ty = q.inside.y; ty < q.inside.y + q.inside.h; ty++) for (let tx = q.inside.x; tx < q.inside.x + q.inside.w; tx++) keep[ty * W + tx] = 1;
+    if (q.way) for (let ty = q.way.y; ty < q.way.y + q.way.h; ty++) for (let tx = q.way.x; tx < q.way.x + q.way.w; tx++) keep[ty * W + tx] = 1;
   }
   for (const l of land.lanes) for (let k = 0; k < l.pts.length; k++) {
     // (a lane's middle line, and its width but a tile: the ways through stay open)
@@ -567,7 +568,9 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     put(HOLD.brazier, r.x + r.w - 2, r.y + r.h - 3, true, 3);
     // (the way out: the threshold at the middle of its near side, the court's worn flagstones: Game's strongholds)
     const mid = Math.floor(r.x + r.w / 2);
-    for (const tx of [mid - 1, mid]) layTile((r.y + r.h - 1) * W + tx, HOLD.court, 2);
+    // (HOLD_HALLWAY: at the far end of its hallway, across it)
+    if (q.way) for (let tx = q.way.x; tx < q.way.x + q.way.w; tx++) layTile((q.way.y + q.way.h - 1) * W + tx, HOLD.court, 2);
+    else for (const tx of [mid - 1, mid]) layTile((r.y + r.h - 1) * W + tx, HOLD.court, 2);
   }
 
   // ---- FLOOR TILES: the Quarry's rails, the Pinewood's footbridges, the Fen's boardwalks, the floor's own here and there
