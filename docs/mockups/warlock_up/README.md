@@ -24,7 +24,7 @@ from all eight sides, his run's legs from every side, the demon, the film, the b
   scholar (Recommended)”, “Hunched and pained”, “Heavy cyan hellfire (Recommended)”; of his run, “Lurching, pained
   (Recommended)”; from behind, 25 Oct: “Isn’t from behind the wrong arm?  Isnt his left are the demonic one”.
 
-## The picture (`pictures/warlock_look.png`, 1200 by 3359)
+## The picture (`pictures/warlock_look.png`, 1200 by 3384)
 
 1. Standing, three times as big: before beside now, in front and from behind (one moment of his stand, 0.6 s in: breathing).
 2. His legs: his near leg from in front, before and now, hip to knee and knee to floor marked, and where his coat's edge falls
@@ -34,8 +34,9 @@ from all eight sides, his run's legs from every side, the demon, the film, the b
 5. At the game's own size: before and now, in front and from behind; then his eight sides.
 
 Looked at close beside the Mage's still (`docs/mockups/mage_up/pictures/mage_look.png`): he is his own sculpture as the owner
-passed it, painted by its own painter, so drawn with the same care as before; what is new on him (his boots to the knee, his
-coat over the longer stance) is sculpted the same way. The boots are the newest thing seen on him (below, to decide).
+passed it, painted by its own painter, so drawn with the same care as before; what is new on him (his boots, his coat over the
+longer stance) is sculpted the same way, and was made again after the art chat's look at the first hand-over (7 Nov): the boots
+read as smooth tan cylinders, a light colour he never passed; the coat from behind as a bell, a wide smooth cone.
 
 ## The audit: where he fell short (before)
 
@@ -71,12 +72,23 @@ HIS LOOK IS THE SAME SCULPTURE, painted by its own painter (dev/sculpt_warlock.t
   feet placed again, in every key alike: his lead foot (the left, the demon's side) further forward (12.84; it was 2.4), his
   back foot further back (-11.88; it was -2). A longer stance, as low and as hunched; his stumble step goes on from his new
   lead foot and back to it.
-- HIS COAT HANGING OVER THE LONGER STANCE: standing, still closed and open down the front below the belt; its foot drawn back
-  over his back leg and flared just enough that the leg is inside it, never through it, and the opening down its front widened
-  to let his front leg through (a test holds his back leg inside it).
-- HIS BOOTS TO THE KNEE: the same boots of hide, their tops brought up from below the middle of his shin to just under his
-  knee, over his trousers. In his run, where his coat flies open, the knee the eye sees is now 1.1 game pixels below the joint
-  (it was 6.3).
+- HIS COAT, STANDING, HUNG AS A HEAVY COAT (`heavyCoat`; the art chat, 7 Nov: from behind it read as a bell): the game's one
+  smooth cone and the slit carved in it taken away below his hips (its top kept, rounded over his hips and belt as it was), and
+  in its place one sheet of the same black wool hung from there, 28 columns round him: folds that open out as they fall (each
+  column standing out as a ridge or falling in as a hollow, none quite the same), a ridge hanging lower than a hollow and each
+  its own length, so the hem breaks ragged and uneven; every column as far out as a leg under it needs, so no leg goes through
+  it (a test holds every point of his legs under it); open down the front where his front leg comes through, piped in red as
+  before; SPLIT UP THE BACK IN A VENT over his back leg, its edges piped in red, so that leg and its boot show through; the
+  lower cloth swinging behind as he moves; its red lining at the hem as before. On the coat over his back, four long folds
+  from his shoulder blades down to his waist, a hollow each with its edge lit. Narrow and hunched at the top as before.
+  Running, his coat flies open in panels, the game's own, unchanged.
+- HIS BOOTS, REAL BOOTS TO THE KNEE (`realBoots`; the art chat, 7 Nov: they read as smooth tan cylinders, a light colour he
+  never passed): the game's boots were already brown hide (dev/sculpt_classes.ts HIDE), so the same brown, darker in the
+  shade (its lightest tone never used; its second lightest only where the light catches an edge); brought up to just under
+  his knee over his trousers; a turned cuff at the top, its lip lit; the shin's curve and the calf's swell behind; creases
+  across it at the ankle; a heel of stacked leather and a dark sole; the shin's ridge and the toe worn and lit. In his
+  stance, the boot's top is at his knee (the legs panel); in his run, where his coat flies open, the knee the eye sees is
+  1.1 game pixels below the joint (it was 6.3).
 - HIS RUN, NO KNEE COME UP (`WL_RUN`; the stride the still shows): his limp as it was, the demon side a long heavy step that
   stays down, the other a quick hop kicked up behind as high as before; only that quick foot comes through under him lower
   (its height there 0.35 of what it was). Its thigh at most 41 degrees (it was 54). Nothing else of the run moves.
@@ -105,7 +117,8 @@ Near leg from in front at the still's moment: before 7.9 hip to knee, 7.7 knee t
 4. Every picture of the still and of his run from all eight sides: crisp, the friend's cyan edge, nothing of the enemy's rim,
    nothing cut off.
 5. Truly turned: the demon arm on his left from every side; the fire in its claws seen from every side (at least 8 game pixels
-   as he breathes, 5 folded over it as it gutters); his back leg inside his coat.
+   as he breathes, 5 folded over it as it gutters); no leg through his coat where it hangs (every point of either leg under
+   the cloth, 232 of them in the moments looked at, inside it by the leg's thickness; his back leg through the vent).
 
 tsc clean (the whole project); the Warrior's, the Ranger's and the Mage's import tests still pass. No file of the game changed,
 nor any shared file.
@@ -115,9 +128,9 @@ with `npx tsx tools/warlock_up_measure.ts hash tests/warlock_up.hashes.json`.
 
 ## For the owner or the art chat to decide
 
-- HIS BOOTS TO THE KNEE, brown hide, now seen below his coat in his longer stance and in his run: the one thing new on him to
-  look at. (Before, his coat hid them all but his toes.)
-- HIS STANCE LONGER, his coat hanging wider over it at the back and opening wider at the front.
+- HIS BOOTS TO THE KNEE, in the game's own brown hide worn dark, now seen below his coat in his longer stance and in his run.
+- HIS COAT: hung in folds with a ragged hem, split up the back in a vent over his back leg; a little wider at the back over the
+  longer stance, opening wider at the front.
 - Stage 2, on his yes: every list at 30 a second (his stand from 10, the demon's stand from 10, the change from 13.7, the
   burning out from 7.8) from all eight sides, the demon from all eight; his run's legs from every side where a foot bears him
   (front, toward the camera and down to the left read short, before and now); the prance check on every run and stop; the boss

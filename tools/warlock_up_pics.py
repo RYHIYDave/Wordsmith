@@ -132,12 +132,13 @@ def look(dir, out):
     d = S.d
     d.text((24, S.y), 'THE WARLOCK, BROUGHT UP: A FIRST LOOK', font=S.big, fill=INK)
     S.y += 48
-    intro = ('A still of him, as with the Ranger and the Mage, before the whole job. His look stays exactly as you passed it: the big '
+    intro = ('A still of him, as with the Ranger and the Mage, before the whole job. His look stays as you passed it: the big '
              'man in the long dark coat, hunched and pained; the horned hood and two points of cyan for eyes; the spiked pauldron; '
              'his demon arm with the cyan fire in its claws, his right hand clamped on it; the red book chained at his hip. What '
-             'changes: his feet are set further apart so his lower legs read longer than his thighs from every side, his coat '
-             'hanging over the longer stance; his boots come up to his knee; and he is painted from all eight sides, none flipped, '
-             'his demon arm always his left.')
+             'changes: his feet are set further apart so his lower legs read longer than his thighs from every side; his coat hangs '
+             'as a heavy coat over the longer stance, in folds from his shoulders that break at a ragged hem, split up the back over '
+             'his back leg; his boots are real boots to the knee in his own dark brown; and he is painted from all eight sides, none '
+             'flipped, his demon arm always his left.')
     for ln in wrap(d, intro, S.small, W - 48):
         d.text((24, S.y), ln, font=S.small, fill=DIM)
         S.y += 25
@@ -213,7 +214,7 @@ def look(dir, out):
     S.y = ty + 20
 
     # ---- his eight sides ----
-    S.title('NOW, FROM ALL EIGHT SIDES, STANDING, THREE TIMES AS BIG', 'Each side truly painted, none flipped: the demon arm always his left, the spiked pauldron on it, the book at his right hip. Each is laid as he faces on the screen.')
+    S.title('NOW, FROM ALL EIGHT SIDES, STANDING, THREE TIMES AS BIG', 'Each side truly painted, none flipped: the demon arm always his left, the spiked pauldron on it, the book at his right hip. From behind, the vent up his coat shows his back leg. Each is laid as he faces on the screen.')
     K = 3
     sfiles = [P(x['file']) for x in J['sides']]
     sb = union_box(sfiles)
@@ -237,7 +238,7 @@ def look(dir, out):
             'how far the leg in the air has its thigh up from hanging straight down (more than 50 fails: no prancing). Before, the '
             f"quick foot came through high, its knee up to {run['most']['before']:.0f} degrees; now it comes through low, at most "
             f"{run['most']['now']:.0f}. Before is the game's run turned side-on (the game drew him only in front and from behind); "
-            'now his boots come to his knee, so the knee you see is his knee.')
+            'now his boots come to his knee, so the knee you see is his knee. (Running, his coat flies open as the game has it.)')
     rf = [P(f['file']) for f in run['before'] + run['now']]
     rb = union_box(rf)
     K = 2

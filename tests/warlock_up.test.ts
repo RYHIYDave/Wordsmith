@@ -11,7 +11,7 @@
 //      his run the game's;
 //   4. every picture of the still from every side: crisp, the friend's cyan edge, nothing of the enemy's rim, nothing cut off;
 //   5. TRULY TURNED, NONE FLIPPED: the demon arm on his left from every side; the fire in its claws
-//      seen from every side; his back leg inside his coat, never through it.
+//      seen from every side; no leg through his coat where it hangs (his back leg shows through the vent up its back).
 //   run: tsx --test tests/warlock_up.test.ts          WARLOCK_UP_ALL=1 tsx --test tests/warlock_up.test.ts
 
 // @ts-ignore
@@ -187,10 +187,11 @@ test('4. every picture of the still, from every side: crisp, the friend\'s cyan 
 
 // --- 5. truly turned ------------------------------------------------------------------------------------------------------------
 
-test('5. truly turned, none flipped: the demon arm his left from every side; the fire in its claws seen; his back leg in his coat', () => {
+test('5. truly turned, none flipped: the demon arm his left from every side; the fire in its claws seen; no leg through his coat', () => {
   const hell = new Set(HELL.map((c) => rgba(c).slice(0, 3).join(',')));
   const faults: string[] = [];
   const fire: Record<string, number> = {};
+  let held = 0;
   for (const t of LOOKED) for (const v of WU_SIDES) {
     const f = paintWarlockUp(WL_STAND, t, v);
     const st = turnedStage(stage('front', WU_SPIN[v].ax), WU_SPIN[v].spin);
@@ -229,15 +230,40 @@ test('5. truly turned, none flipped: the demon arm his left from every side; the
     const k = folded ? `${v} folded` : v;
     fire[k] = Math.min(fire[k] ?? Infinity, hot);
     if (hot < (folded ? 5 : 8)) faults.push(`${t} ${v}: ${hot} of his fire seen`);
-    // his back leg inside his coat: its ankle within the coat's skirt where it hangs (standing, closed)
-    const skirt = f.sc.prims.find((p) => p.k === 'cone' && p.piece === 'skirt' && p.tag === 'skirt') as { a: V3; b: V3; rb: number } | undefined;
-    if (skirt) {
-      const fw: V3 = [f.s.hips[0][0], f.s.hips[0][1], 0];
-      const back = dot(sub(f.s.ankleL, f.s.ankleR), fw) < 0 ? f.s.ankleL : f.s.ankleR;
-      const off = Math.hypot(back[0] - skirt.b[0], back[1] - skirt.b[1]);
-      if (off + WL_BODY.legR[2] > skirt.rb + 1e-6) faults.push(`${t} ${v}: his back ankle ${off.toFixed(1)} out from his coat's foot, its reach ${skirt.rb.toFixed(1)}`);
+    // NO LEG THROUGH HIS COAT: wherever the coat hangs (not the opening down its front, not the vent up its back), every point of
+    // either leg under it is inside the cloth by the leg's own thickness
+    const c = f.coat;
+    if (!c) faults.push(`${t} ${v}: his coat not hung`);
+    else {
+      const [lH, lK, lA] = WL_BODY.legR;
+      const pts: [V3, number][] = [];
+      for (const [hip, knee, ankle] of [[f.s.hipL, f.s.kneeL, f.s.ankleL], [f.s.hipR, f.s.kneeR, f.s.ankleR]] as const) {
+        for (let i = 1; i <= 6; i++) pts.push([[hip[0] + ((knee[0] - hip[0]) * i) / 6, hip[1] + ((knee[1] - hip[1]) * i) / 6, hip[2] + ((knee[2] - hip[2]) * i) / 6], lH + ((lK - lH) * i) / 6]);
+        for (let i = 1; i <= 6; i++) pts.push([[knee[0] + ((ankle[0] - knee[0]) * i) / 6, knee[1] + ((ankle[1] - knee[1]) * i) / 6, knee[2] + ((ankle[2] - knee[2]) * i) / 6], lK + ((lA - lK) * i) / 6]);
+      }
+      const rows = c.centre.length;
+      for (const [p, r] of pts) {
+        for (let ri = 0; ri + 1 < rows; ri++) {
+          const z0 = c.centre[ri][2];
+          const z1 = c.centre[ri + 1][2];
+          if (!(p[2] <= z0 && p[2] >= z1)) continue;
+          const u = (z0 - p[2]) / Math.max(1e-6, z0 - z1);
+          const cen: V3 = [c.centre[ri][0] + (c.centre[ri + 1][0] - c.centre[ri][0]) * u, c.centre[ri][1] + (c.centre[ri + 1][1] - c.centre[ri][1]) * u, 0];
+          const rel: V3 = [p[0] - cen[0], p[1] - cen[1], 0];
+          let col = 0;
+          for (let i = 1; i < c.out.length; i++) if (dot(rel, c.out[i]) > dot(rel, c.out[col])) col = i;
+          if (!c.hangs(ri, col) || !c.hangs(ri + 1, col)) continue;
+          const reach = (k: number): number => Math.hypot(c.rings[k][col][0] - c.centre[k][0], c.rings[k][col][1] - c.centre[k][1]);
+          const R = reach(ri) + (reach(ri + 1) - reach(ri)) * u;
+          const radial = dot(rel, c.out[col]);
+          held++;
+          if (radial + r > R + 0.25) faults.push(`${t} ${v}: a leg ${(radial + r - R).toFixed(1)} through his coat at ${p[2].toFixed(1)} up`);
+        }
+      }
     }
   }
   console.log('# the fire in his claws, the least seen from each side, breathing and folded (game pixels):', JSON.stringify(fire));
+  console.log(`# points of his legs held inside his coat where it hangs: ${held}`);
+  assert.ok(held > 150, `${held} points of his legs under his coat looked at`);
   assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
 });
