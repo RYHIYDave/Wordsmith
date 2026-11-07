@@ -30,7 +30,7 @@ import type { Light } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
 import { BROWN, CYAN, INDIGO, INK, LEAF, MAIL, PINK, PLUM, SKIN4, TEAL, hash } from './kit';
 import type { Painted, Ramp } from './kit';
-import { onBack } from './carried';
+import { ruOnBack } from './ranger_up_moves';
 import { ARROW_LONG, BOW_BRACE, BOW_HALF, WILD } from './moves3';
 import { SQ_BUNCH, SQ_FLICK, SQ_RUN, SQ_SIT, squirrel } from './hero_ranger';
 import { squirrelOn } from './hero3_ranger';
@@ -575,7 +575,7 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
   // ---- THE BOW, in his left hand: two limbs of indigo wood curving back from a leather grip, each tip curled forward
   // (a recurve), light nocks; its string the friend's cyan, to his fingers when it is drawn; the arrow on it ----
   const away = q.stow > 0.5;
-  const carried = away ? onBack(B, s, 'bow') : { grip: s.handL, point: s.point, across: s.across };
+  const carried = away ? ruOnBack(s) : { grip: s.handL, point: s.point, across: s.across };
   const grip = carried.grip;
   const p3 = carried.point;
   const ac = carried.across;

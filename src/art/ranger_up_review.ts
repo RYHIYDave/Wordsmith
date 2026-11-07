@@ -12,11 +12,10 @@ import { add, mul, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { WU_SPIN, spun } from './warrior_up';
 import type { WuSide } from './warrior_up';
-import { onBack } from './carried';
 import { ruSmeared } from './ranger_up_art';
 import type { RuFrame } from './ranger_up';
 import { wuLegs, wuThighs, WU_LEG_SEEN, WU_THIGH_MOST } from './warrior_up_review';
-import { RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_RUN3, RU_SHOT3, RU_SHOT_HIT, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_VOLLEY_HIT } from './ranger_up_moves';
+import { ruOnBack, RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_ROLL_CARRY, RU_RUN3, RU_SHOT3, RU_SHOT_HIT, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_VOLLEY_HIT } from './ranger_up_moves';
 
 const FR = 1 / 30;
 const B = RANGER_BODY;
@@ -59,7 +58,7 @@ export function ruBody(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } 
 /** His bow at a moment: its grip and its two tips, in his hand or on his back. */
 export function ruBow(s: Skeleton, q: Posed): { grip: V3; tips: [V3, V3]; away: boolean } {
   const away = q.stow > 0.5;
-  const c = away ? onBack(B, s, 'bow') : { grip: s.handL, point: s.point, across: s.across };
+  const c = away ? ruOnBack(s) : { grip: s.handL, point: s.point, across: s.across };
   const tip = (sgn: 1 | -1): V3 => add(c.grip, add(mul(c.across, sgn * BOW_HALF * (1 - 0.13 * q.draw)), mul(c.point, -(BOW_BRACE + 0.05 * B.tall * q.draw))));
   return { grip: c.grip, tips: [tip(1), tip(-1)], away };
 }
@@ -127,6 +126,8 @@ export function rangerReview(side: WuSide = 'front'): { mob: Mob; shape: BossSha
     tip: (which, _t, s) => (shot.has(which) ? spun(s.handR, turn) : null),
     ...(turn ? { follow: (_w: string, _t: number, s: Skeleton) => ({ head: spun(s.head, turn), chest: spun(s.ribs, turn), pelvis: spun(s.pelvis, turn), handL: spun(s.handL, turn), handR: spun(s.handR, turn), elbowL: spun(s.elbowL, turn), elbowR: spun(s.elbowR, turn), kneeL: spun(s.kneeL, turn), kneeR: spun(s.kneeR, turn), toeL: spun(s.toeL, turn), toeR: spun(s.toeR, turn), heelL: spun(s.heelL, turn), heelR: spun(s.heelR, turn) }) } : {}),
     strikes: { attack: [RU_SHOT_HIT - FR, RU_SHOT_HIT], volley: [RU_VOLLEY_HIT - FR, RU_VOLLEY_HIT] },
+    // (his roll: the game carries him along the floor through its first `tumble`, so a foot down then goes back with the floor)
+    carried: (which, t) => (which === 'roll' ? RU_ROLL_CARRY * Math.min(1, t / (RU_ROLL3.tumble ?? Infinity)) : 0),
     smeared: (which, t) => ruSmeared(RU_REVIEWED[which], t),
     handovers,
   };
@@ -205,39 +206,40 @@ export function ruBowSeen(f: RuFrame): { wood: number; string: number } {
   return { wood, string };
 }
 /** Where his bow must be seen: every list he stands, runs or holds in (frames at 30 a second; a run's at 60), from all eight sides
- * (those painted from in front only, from there); and his settles and his setting off, every frame. */
-/** (`notYet`: lists whose bow is not yet clearly seen from every side, and are counted, not held: his runs, where he carries it
- * level at his side as the owner liked it, “i like where the bow is at tho”, and in town, where it is slung across his back.
- * docs/mockups/ranger_up/README.md has their numbers) */
-export const RU_BOW_HELD: ReadonlyArray<{ key: string; what: string; from?: number; to?: number; front?: boolean; notYet?: boolean }> = [
+ * (those painted from in front only, from there): his guard, his town stance, his runs and their other ways, the held draws, his
+ * habits left standing in a fight and in town, his card's ready, and every frame of his settles and his setting off. */
+export const RU_BOW_HELD: ReadonlyArray<{ key: string; what: string; from?: number; to?: number; front?: boolean }> = [
   { key: 'rstand', what: 'his guard' },
-  { key: 'rtown', what: 'his town stance', notYet: true },
-  { key: 'rrun', what: 'his run', notYet: true },
-  { key: 'rtownrun', what: 'his town run', notYet: true },
+  { key: 'rtown', what: 'his town stance' },
+  { key: 'rrun', what: 'his run' },
+  { key: 'rtownrun', what: 'his town run' },
   { key: 'shot', what: "the Shot's held draw", from: 7, to: 9 },
   { key: 'volley', what: "the Volley's held draw", from: 9, to: 11 },
   { key: 'squirrel', what: 'the squirrel', front: true },
   { key: 'sighting', what: 'sighting along an arrow', front: true },
-  { key: 'tsquirrel', what: 'the squirrel, in town', front: true, notYet: true },
-  { key: 'tsighting', what: 'sighting along an arrow, in town', front: true, notYet: true },
+  { key: 'tsquirrel', what: 'the squirrel, in town', front: true },
+  { key: 'tsighting', what: 'sighting along an arrow, in town', front: true },
   { key: 'rdraw', what: "his card's ready", from: 26, to: 41, front: true },
 ];
-/** His stops in a fight: from this frame on (of 7) the bow is up out of his run's carry into his guard, and held to be seen; before
- * it, as in his run, counted. */
-export const RU_STOP_BOW_UP = 3;
-export function ruBowHeld(key: string | undefined, name: string, frame: number, side: WuSide, counted = false): string | null {
-  // (his stops and settings off: held in a fight, where they end in his guard, once the bow is up; counted the rest, in town and
-  // setting off into a run)
-  if (key === undefined) return /: coming to a stand/.test(name) && !/in town/.test(name) && frame >= RU_STOP_BOW_UP ? name : counted && /: coming to a stand|: setting off/.test(name) ? name : null;
+/** Where the string is seen end-on (his runs, where he carries the bow level at his side as the owner liked it, “i like where the
+ * bow is at tho”; in town, where it is slung across his back), the wood alone: at least this many game pixels of it. */
+export const RU_BOW_WOOD_ALONE = 7;
+export function ruBowHeld(key: string | undefined, name: string, frame: number, side: WuSide): string | null {
+  // (his stops, his setting off and his run's other ways: every frame)
+  if (key === undefined) return /: coming to a stand|: setting off|backing away|going across/.test(name) ? name : null;
   const h = RU_BOW_HELD.find((x) => x.key === key && (x.from === undefined || (frame >= x.from && frame <= (x.to as number))));
-  if (!h || (h.front && side !== 'front') || (h.notYet && !counted)) return null;
+  if (!h || (h.front && side !== 'front')) return null;
   return h.what;
+}
+/** Whether enough of the bow is seen: a good length of its wood and of its string and arrow, or, the string end-on, of its wood. */
+export function ruBowEnough(b: { wood: number; string: number }): boolean {
+  return (b.wood >= RU_BOW_LEAST && b.string >= RU_STRING_LEAST) || b.wood >= RU_BOW_WOOD_ALONE;
 }
 export function ruBowFaults(key: string | undefined, name: string, frame: number, f: RuFrame, side: WuSide): string[] {
   const what = ruBowHeld(key, name, frame, side);
   if (!what) return [];
   const b = ruBowSeen(f);
-  if (b.wood >= RU_BOW_LEAST && b.string >= RU_STRING_LEAST) return [];
+  if (ruBowEnough(b)) return [];
   return [`${what} ${frame} ${side}: ${b.wood} of the bow's wood seen, ${b.string} of its string and arrow`];
 }
 

@@ -202,7 +202,7 @@ const NOW = RU_MOVES;
 /** The lists of the sheet: a caption, the move before and now, and the moments (seconds) of each. */
 const SHEET: { title: string; rows: { label: string; key: string; before: number; now: number }[] }[] = [
   { title: 'Standing in a fight', rows: [{ label: 'his guard (now his legs true from every side, alive, his bow canted so it shows)', key: 'rstand', before: 0.6, now: 0.6 }] },
-  { title: 'Running', rows: [{ label: 'a stride (now a hunter\'s run, his foot passing low, never a high-step)', key: 'rrun', before: 0.1, now: 0.1 }] },
+  { title: 'Running', rows: [{ label: 'a stride (now a hunter\'s run, his foot passing low, never a high-step; his bow a little further out at his side)', key: 'rrun', before: 0.1, now: 0.1 }] },
   { title: 'The Shot', rows: [
     { label: 'the held draw (now held three frames, the string to his cheek)', key: 'shot', before: 4 / 30, now: 8 / 30 },
     { label: 'the release (now one frame, the string snapped, its after-image)', key: 'shot', before: 5 / 30, now: 10 / 30 },
@@ -210,14 +210,14 @@ const SHEET: { title: string; rows: { label: string; key: string; before: number
   ] },
   { title: 'The Volley', rows: [
     { label: 'the held draw at the sky, on his knee', key: 'volley', before: 5 / 30, now: 10 / 30 },
-    { label: 'the release (one frame) and its after-image', key: 'volley', before: 6 / 30, now: 12 / 30 },
+    { label: 'the release (one frame), its after-image, his string hand flung down past his ear', key: 'volley', before: 6 / 30, now: 12 / 30 },
   ] },
-  { title: 'His roll', rows: [{ label: 'over in a ball', key: 'roll', before: 0.2, now: 0.2 }] },
+  { title: 'His roll', rows: [{ label: 'over in a ball, his bow held out at his side', key: 'roll', before: 0.2, now: 0.2 }, { label: 'down on his feet as the game stops carrying him (now in a squat, then stepping out into his guard)', key: 'roll', before: 0.43, now: 0.43 }] },
   { title: 'Struck', rows: [{ label: 'from in front', key: 'rreel', before: 3 / 30, now: 3 / 30 }, { label: 'from behind', key: 'rlurch', before: 3 / 30, now: 3 / 30 }] },
-  { title: 'His fall', rows: [{ label: 'the end: on his knee, his bow laid down, the light gone out', key: 'rfall', before: 45 / 30, now: 45 / 30 }] },
+  { title: 'His fall', rows: [{ label: 'the end: (now) down on one knee, his bow upright at his side, the light gone out', key: 'rfall', before: 45 / 30, now: 45 / 30 }] },
   { title: 'Left standing', rows: [{ label: 'the squirrel on his shoulder', key: 'squirrel', before: 0.6, now: 0.6 }, { label: 'sighting along an arrow', key: 'sighting', before: 1.6, now: 1.6 }] },
   { title: 'In town and on his card', rows: [
-    { label: 'standing in town', key: 'rtown', before: 0.6, now: 0.6 },
+    { label: 'standing in town (now his bow slung nearly level across his back, seen from in front)', key: 'rtown', before: 0.6, now: 0.6 },
     { label: 'running in town', key: 'rtownrun', before: 0.1, now: 0.1 },
     { label: 'his card: ready in his guard after unslinging his bow', key: 'rdraw', before: 30 / 30, now: 30 / 30 },
   ] },
@@ -330,10 +330,10 @@ const FILM: { caption: string; key: string; seconds: number; slow?: number }[] =
   { caption: 'RUNNING · now a hunter\'s run, light and low, the foot passing close to the floor', key: 'rrun', seconds: 1.7 },
   { caption: 'THE SHOT · a big held draw, the release in one frame with its after-image, a big follow-through', key: 'shot', seconds: 1.0 },
   { caption: 'THE VOLLEY · down on his knee, a held draw at the sky, the release in one frame', key: 'volley', seconds: 1.15 },
-  { caption: 'HIS ROLL', key: 'roll', seconds: 0.75 },
+  { caption: 'HIS ROLL · a dive, over in a ball, up into his guard', key: 'roll', seconds: 0.75 },
   { caption: 'STRUCK FROM IN FRONT', key: 'rreel', seconds: 0.4 },
   { caption: 'STRUCK FROM BEHIND', key: 'rlurch', seconds: 0.4 },
-  { caption: 'HIS FALL · thrown back, down on one knee, his bow laid down', key: 'rfall', seconds: 1.8 },
+  { caption: 'HIS FALL · thrown back, a step, down on one knee, his bow upright at his side', key: 'rfall', seconds: 1.8 },
   { caption: 'LEFT STANDING · the squirrel', key: 'squirrel', seconds: 3.6 },
   { caption: 'LEFT STANDING · sighting along an arrow', key: 'sighting', seconds: 3.6 },
   { caption: 'IN TOWN, STANDING', key: 'rtown', seconds: 2.4 },

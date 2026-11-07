@@ -40,12 +40,13 @@ and head read at a glance at the game's size.
 
 ## The pictures (`pictures/`)
 
-- `ranger_up_sheet.png` (1200 by 6812) and `ranger_up_sheet_2.png` (1200 by 6188, its continuation; one sheet would be 12,900
+- `ranger_up_sheet.png` (1200 by 7338) and `ranger_up_sheet_2.png` (1200 by 6206, its continuation; one sheet would be 13,500
   tall): at the top, HIS LEGS (before beside now from in front, three times as big, the hip, knee and floor of the near leg
   marked with the two lengths in game pixels, and the least ratio from all eight sides) and HIS RUN SIDE-ON, eight frames of a
   stride before and now, the swinging thigh's angle from hanging under each. Then BEFORE beside NOW for every list, three
   times as big, from in front and from behind: his guard, his run, the Shot (the held draw, the release with its after-image,
-  the follow-through), the Volley (the same, on his knee), his roll, struck from in front and from behind, his fall, the
+  the follow-through), the Volley (the same, on his knee), his roll (over in a ball; down on his feet), struck from in front and
+  from behind, his fall, the
   squirrel, the sighting, his town stance and run, his card's ready. At the foot, each again at the game's own size.
 - `ranger_up_sheet2.png` (1440 by 3210): HIS HEAD six times as big in his guard, before (in front, behind) and now from each of
   his eight sides; then HIS EIGHT FACINGS, twice as big, each laid where he faces: his guard, a stride of his run, and the
@@ -96,6 +97,11 @@ teal cloak; his quiver of glowing fletchings; his long indigo bow, its string th
   Held canted 70 degrees in his guard (it was 18), as a hunter holds one, so that from straight behind him its upper limb
   stands out past his side.
 - HIS ARROW ON THE STRING: the game's light shaft and pale steel head, two cyan vanes at its nock.
+- HIS BOW IN HIS RUN: carried level at his left side as the game has it (the owner: “i like where the bow is at tho”), 6
+  units further out from his side, so that from behind him his cloak no longer hides it.
+- HIS BOW IN TOWN: slung across his back as the game slings it, between his shoulder blades outside his cloak and quiver, but
+  lying further over, its upper limb toward his left shoulder 80 degrees from plumb where the game's leans 30 (nearly level):
+  its two ends stand out past him on either side, so that it is seen from in front of him too.
 
 ### How he moves (`src/art/ranger_up_moves.ts`, `src/art/ranger_up_art.ts`)
 
@@ -111,12 +117,28 @@ teal cloak; his quiver of glowing fletchings; his long indigo bow, its string th
   release frame carries its after-image, ghosts of the real thing (the string where it was, dithered in the friend's cyan, and
   the arrow in fading tones along its flight), never bars; then a big follow-through, his string hand flying back past his ear
   (more than 8 across), and a slow wind-down to his guard (26 frames in all).
-- THE VOLLEY THE SAME, BIGGER, ON HIS KNEE: down onto one knee, the bow up at the sky, held three frames (9 to 11), loosed at
-  frame 12 with its after-image, a bigger follow-through (32 frames in all).
-- His roll, struck (reel and lurch), his fall: the game's moves at 30 a second, their legs following his new guard.
+- THE VOLLEY THE SAME, BIGGER, ON HIS KNEE: down onto his back knee on his own feet as he draws up at the sky (his back foot
+  turning up onto its toes where they are, his front foot stepped in before him, lifted clear), the string to his cheek and
+  held (9 to 11), his string hand a little out from his face so its forearm clears his head; loosed at frame 12 with its
+  after-image, his string hand flung straight down past his ear to his chest (a fall seen as far from every side; flying back
+  along the arrow it was end-on from some), on down a little after, held; then his arms back into his guard, the string hand
+  round his side, and up off his knee, his front foot stepped back out (32 frames in all).
+- HIS ROLL, MADE AGAIN (0.68 s, as the game's; the game carries him its first 0.4): off both feet at once, a dive; over in a
+  ball (the game's own ball, a little higher so his head never goes into the floor), his bow held out at his left side, its
+  limbs along his way and clear of him, his other hand on his right shin, his elbows out; down on his feet in a squat the
+  moment the game stops carrying him; up into his guard, his front foot lifted and set down, then his back foot. Every frame
+  worked out from smooth curves, so nothing of him leaps.
+- STRUCK, MADE AGAIN (7 frames each, as the game's): rocked back, his back foot lifted clear, set down a step behind him and
+  lifted back; struck from behind, thrown forward over a step of his front foot, settling into his guard. His other foot never
+  moves, his hips kept within its reach.
+- HIS FALL, MADE AGAIN (46 frames, as the game's; not to his knees and then forward): thrown back, his back foot lifted and
+  set down a step behind him to keep his feet; then down onto that knee on his own feet, his bow upright at his left side
+  outside his leg, let down till its lower limb rests on the floor; his head bowing as the light goes out of him.
 - The squirrel and the sighting, in a fight and in town: on his new guard and town stance; in the sighting, the bow he lets
   down by his side is held out before his front leg, clear of it.
-- His card's ready: from his town stance he unslings his bow, two lifted steps into his wide guard, an arrow on the string.
+- His card's ready: from his town stance he takes his bow off his back where it lies, brings it round outside his left side (it
+  went through him), two steps into his wide guard, each foot lifted clear, an arrow on the string, the bow canted as his guard
+  holds it.
 - His stops (eight settles out of the run) and his setting off, from his guard and from his town stance; his run's other ways
   (across, both ways, and backing away: his run turned back on itself, his body upright).
 
@@ -188,41 +210,47 @@ Knee to floor ÷ hip to knee on the screen, the least through each pose, of eith
 | sighting, in town | 0.95 → **1.10** | 0.86 → **1.12** | 0.92 → **1.12** | 1.02 → **1.10** | 1.25 → **1.16** | 1.29 → **1.19** | 1.25 → **1.20** | 1.14 → **1.18** |
 | his card's ready, in his guard | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.47 → **1.14** | 1.87 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
 | the Shot's held draw | 0.67 → **1.11** | 0.46 → **1.13** | 0.85 → **1.17** | 1.03 → **1.14** | 1.47 → **1.12** | 1.82 → **1.13** | 1.31 → **1.14** | 1.04 → **1.15** |
-| the Volley's held draw (the leg he stands on) | 1.12 → **1.12** | 1.67 → **1.67** | 1.20 → **1.20** | 1.01 → **1.01** | 1.33 → **1.33** | 2.33 → **2.33** | 1.42 → **1.42** | 1.00 → **1.00** |
+| the Volley's held draw (the leg he stands on) | 1.12 → **1.13** | 1.67 → **1.94** | 1.20 → **1.56** | 1.01 → **1.03** | 1.33 → **1.10** | 2.33 → **1.73** | 1.42 → **1.47** | 1.00 → **1.03** |
 | his run (a foot bearing him) | 0.80 → **1.04** | 0.53 → **1.02** | 0.75 → **1.02** | 1.05 → **1.12** | 1.67 → **1.21** | 2.96 → **1.27** | 1.72 → **1.21** | 1.05 → **1.13** |
 | his run in town (a foot bearing him) | 0.84 → **1.05** | 0.64 → **1.03** | 0.80 → **1.03** | 1.09 → **1.12** | 1.42 → **1.21** | 1.86 → **1.25** | 1.43 → **1.21** | 1.09 → **1.14** |
 
 (Bones only, every frame. The test measures the same as painted, and leaves out a shin less than half seen.) THE VOLLEY'S KNEEL:
 the knee he is down on lies on the floor, its shin along it, and is not held to the measure; the leg he stands on has its thigh
 level by the kneel's nature, and seen side-on (sideL, side) the game's camera draws a level length longer than an upright one,
-so it reads 1.00 to 1.01 there: held to 1 from those two sides, as the Warrior's kneel is. Only lifting his hips would mend it.
+so it reads 1.03 there: held to 1 from those two sides, as the Warrior's kneel is. (His front foot is stepped in before him for
+the kneel, 2 out from his middle where his guard has it 12, its knee forward: kneeling on his guard's own feet that leg read
+1.01 to 1.03 from in front and from up and to the left.)
 
 ## His bow, seen from every side
 
-`ruBowSeen` counts, at the game's size, the game pixels of the bow's wood and of its string and the arrow on it. Held in every
-frame of his guard, his stops into it (from their fourth frame, once the bow is up out of the run's carry), the Shot's and the
-Volley's held draws, and his card's lists (from in front): at least 5 of wood and 4 of string and arrow, from every side. The
-least, from each side:
+`ruBowSeen` counts, at the game's size, the game pixels of the bow's wood and of its string and the arrow on it. HELD IN EVERY
+LIST HE STANDS, RUNS OR HOLDS IN, every frame, from all eight sides (those painted from in front only, from there): his guard,
+his town stance, his run and his town run and their other ways, his stops and setting off, the Shot's and the Volley's held
+draws, the squirrel and the sighting in a fight and in town, his card's ready. Enough of it is seen when at least 5 of its wood
+and 4 of its string and arrow are, or, where the string is end-on (as it is from most sides when he carries the bow level in his
+run, or slung across his back), at least 7 of its wood alone (the whole bow, side-on, is 20 to 30). The least from each side:
 
 | | front | toward | frontL | sideL | backL | away | back | side |
 |---|---|---|---|---|---|---|---|---|
-| held (wood / string and arrow) | 8 / 9 | 24 / 4 | 26 / 19 | 23 / 19 | 14 / 10 | 8 / 4 | 6 / 12 | 6 / 13 |
-| NOT YET HELD: his runs, his town stance and run, the town squirrel and sighting, the first three frames of his stops | 3 / 0 | 5 / 0 | 7 / 2 | 8 / 5 | 10 / 0 | 3 / 0 | 5 / 0 | 7 / 0 |
+| his guard, his stops in a fight, the held draws, his habits, his card (wood / string and arrow) | 7 / 1 | 8 / 1 | 22 / 3 | 21 / 7 | 13 / 0 | 8 / 1 | 7 / 0 | 6 / 5 |
+| carried: his runs and their other ways, his town stance, town run and habits, his town stops and setting off | 8 / 0 | 8 / 1 | 9 / 1 | 9 / 0 | 16 / 1 | 7 / 0 | 7 / 0 | 7 / 0 |
+
+Before (stage 2's first hand-over), in his runs and town: 3 / 0 from in front, 5 / 0 toward the camera, 3 / 0 from straight
+behind, 5 / 0 from up and to the right.
 
 - THE CANT: held nearly upright before him (18 degrees), his body hid the bow from behind (`away` 5 to 7 of wood); canted 70,
-  its upper limb stands out past his side (`away`, the least through his guard: 13 of wood, 6 of string and arrow). The cost: from his right (`side`)
-  and behind him on the right (`back`) its limbs point nearly at the eye, so the wood is seen end-on, 5 or 6 pixels, its string
-  and arrow 12 to 18. No one cant shows it both from behind and from there (a flat thing is edge-on from somewhere); the
-  sheet2 turnaround shows how it reads.
-- NOT YET: in his runs he carries the bow level at his side (as the owner liked it: “i like where the bow is at tho”) and its
-  string is edge-on from most sides; in town it is slung across his back. Counted, not held: they are the next thing to do if
-  the owner wants the bow clear there too.
+  its upper limb stands out past his side. The cost: from his right (`side`) its limbs point nearly at the eye, so the wood is
+  seen end-on, 6 pixels, its string and arrow 5 or more. No one cant shows it both from behind and from there (a flat thing is
+  edge-on from somewhere); the sheet2 turnaround shows how it reads.
+- IN HIS RUN: where he carries it (above), its string end-on from most sides; its wood at least 7 from every side.
+- IN TOWN: slung nearly level across his back (above), its ends past him on either side; its wood at least 7 from every side.
 
 ## His run, a hunter's (the owner's “why is he high stepping with his knees up?”)
 
 Low over his feet, leaning in; each foot comes down a little before him and goes back under him exactly as fast as the game
 carries him (it grips), leaves the floor off its toes with the leg straightening behind him, its heel flicked up a little,
-and comes through LOW, its knee lifting only a little. His body, arms and bow as the game's run has them, moment for moment.
+and comes through LOW, its knee lifting only a little. His body, arms and bow as the game's run has them, moment for moment
+(the bow carried a little further out from his side: above).
 
 The swinging thigh, degrees from hanging straight down, the most in any frame (the Warrior's check: past 50 fails):
 
@@ -238,24 +266,22 @@ The sheet's stride strip shows eight frames of each side-on: before 14, 43, 70, 
 
 ## The bosses' checks (`checkBoss`, from each of his eight sides)
 
-PASSING, every frame, from all eight sides, held by the test: his guard (alive: his chest rises and falls, his weight shifts), his
-run, the Shot, his town stance and run, the squirrel and the sighting, in a fight and in town, with the game's handovers
-between them.
+EVERY LIST, EVERY FRAME, FROM ALL EIGHT SIDES, NO FINDING (`rangerReview(side)` through `checkBoss`, held by the test): his feet
+grip, nothing of him or his gear goes through him (his bow and his arms go round him), nothing in the floor, nothing jerks or
+jumps, every blow drawn back, held, a one-frame flash and carried through, alive when still, with the game's handovers between
+his lists (his guard into each and back). Findings summed over the eight sides:
 
-COUNTED, NOT YET CLEAN (`rangerReview(side)` through `checkBoss`, every move; the main chat's call whether to hold them):
-findings summed over the eight sides (each side's frames reviewed apart):
+| List | Before | Now | What there was |
+|---|---|---|---|
+| his fall | 1,136 | **0** | his feet sliding as he went down (1,088), the bow through his left leg (40), a knee in the floor (8) |
+| his roll | 1,207 | **0** | his feet sliding (448), his left arm in his ribs (328), the bow through his belly (224), joints jerking (143), the floor (64) |
+| the Volley | 688 | **0** | his right foot sliding as he knelt (480), his right forearm in his head as he drew (144), joints jerking (40), the release not a flash (16), a toe in the floor (8) |
+| his card's ready | 131 | **0** | his feet sliding as he stepped into his guard (128), the bow through him (3) |
+| struck (`rlurch`; `rreel`) | 48; 32 | **0; 0** | starting at full speed (48); a toe sliding (32) |
+| his guard, run, Shot, town stance and run, the squirrel and the sighting (in a fight and in town) | 0 | **0** | |
 
-| Move | Findings | What they are |
-|---|---|---|
-| his fall | 1,136 | his feet sliding as he goes down (1,088), the bow through his left leg (40), a knee in the floor (8) |
-| his roll | 1,207 | his feet sliding (448), his left arm in his ribs (328), the bow through his belly (224), joints jerking (143), the floor (64) |
-| the Volley | 688 | his right foot sliding as he kneels (480), his right forearm in his head as he draws (144), joints jerking (40), the release not yet a flash by the check's measure (16: the slowest step of its flash 3.4 to 4.2 game pixels, where the check asks twice the fastest of its wind-up and wind-down, 3.6 to 4.5), a toe in the floor (8) |
-| his card's ready | 131 | his feet sliding as he steps into his guard (128), the bow through him (3) |
-| struck (`rlurch`, `rreel`) | 48; 32 | starting at full speed (48); a toe sliding (32) |
-
-His roll, his fall and struck are the game's own moves at 30 a second, their legs following his new guard; they are not yet
-re-keyed to the checks, as his guard, run and Shot are. The Volley passes the test's own Movement 9 checks (above) but not yet
-every boss check.
+(His roll is reviewed as the game shows it: the game carries him along the floor through its first 0.4 s, so a foot down then
+goes back with the floor: `carried` in his review.)
 
 ## The measures
 
@@ -298,11 +324,11 @@ the main chat is doing for the heroes; once baked, painting costs nothing on the
    his review. With it off every frame the game paints of him (166 lists, 2,602 frames) the same picture, by hash
    (`tests/ranger_up.hashes.json`, made from d31abc22; `RANGER_UP_ALL=1` for every frame).
 2. With it on: every list at 30 a second (his gripping runs at 60), from all eight sides, in every place.
-3. Every frame of his guard, run, Shot, town stance and run, the squirrel and the sighting through every boss check, from all
-   eight sides.
+3. Every frame of every list of his through every boss check, from all eight sides (85 reviews of his moves), with the game's
+   handovers between them: no finding.
 4. His legs (the table above), every frame, as painted, from all eight sides; and the measure: standing straight a man's
    ratio, the game's crouch short from in front and toward, his guard true, his body, arms and aim the game's.
-5. His bow seen from every side (above).
+5. His bow seen from every side, in every list he stands, runs or holds in (above).
 6. No prancing: every frame of his runs, their other ways, his stops and setting off: no swinging thigh past 50 (none past 48);
    the game's run, as it was, past 60.
 7. Every picture from every side: crisp, the friend's cyan edge, nothing of the enemy's rim, nothing cut off, the feather
@@ -328,7 +354,9 @@ Made with: `npx tsx tools/ranger_up_pics.ts sheet|sheet2|film <dir>` and `python
   him fire a little slower (about 1.5 shots a second, not 2)”.
 - HIS BOW CANTED 70 DEGREES in his guard (it was 18), so it shows from behind; seen from his right it is end-on.
 - HIS GUARD IS WIDER AND LONGER (his legs true): the owner should see the first sheet's top before it goes in.
-- THE VOLLEY'S KNEEL, SIDE-ON, reads 1.00 to 1.01, not 1.05 (above): only lifting his hips would mend it.
-- HIS RUN IS NEW: the owner should see the stride strip and the film's run before it goes in.
-- NOT YET: his bow in his runs and in town is not clearly seen from every side (above); and the boss checks still count
-  findings in the Volley, his roll, his fall, his card's ready and struck (above).
+- THE VOLLEY'S KNEEL, SIDE-ON, reads 1.03, held to 1 there as the Warrior's kneel is (above); his front foot now steps in for it.
+- HIS RUN IS NEW: the owner should see the stride strip and the film's run before it goes in. His bow in it is carried 6 units
+  further out from his side than the game's, so that it is seen from behind.
+- HIS BOW IN TOWN lies nearly level across his back (80 degrees from plumb; the game's 30), so that it shows from in front.
+- HIS ROLL, STRUCK AND HIS FALL ARE NEW (above): the roll ends in a squat and steps out into his guard; his fall is down on one
+  knee, his bow upright at his side. The owner should see them in the film before they go in.

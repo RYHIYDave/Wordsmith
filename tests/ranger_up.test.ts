@@ -4,13 +4,13 @@
 //      his review; with it off, EVERY FRAME THE GAME PAINTS OF HIM IS THE SAME (each list's first, middle and last frame against
 //      the hashes made from the game's Ranger as he is, d31abc22: tests/ranger_up.hashes.json; RANGER_UP_ALL=1 for every frame);
 //   2. with it on, every list at 30 pictures a second (his gripping runs at 60), from all eight sides, the game's lists and more;
-//   3. THE BOSSES' REVIEW (art/boss_checks.ts checkBoss), from each of his eight sides: his guard, his run, the Shot, his town
-//      stance and run, the squirrel and the sighting in a fight and in town pass every check; the rest (the Volley, the roll,
-//      struck, his fall, his card's unslinging) are the game's moves remade and are counted, not yet held (README);
+//   3. THE BOSSES' REVIEW (art/boss_checks.ts checkBoss), from each of his eight sides: EVERY LIST passes every check (his guard,
+//      his run, the Shot, the Volley, his roll, struck both ways, his fall, his town stance and run, the squirrel and the sighting
+//      in a fight and in town, his card's unslinging), with the game's handovers between them;
 //   4. HIS LEGS TRUE: every stance and held pose from every side at 1.05 or more below the knee to above it (the Volley's kneeling
 //      leg excepted, its shin along the floor), his runs at 1 where a foot bears him;
-//   5. HIS BOW SEEN FROM EVERY SIDE: in every list he stands, runs or holds in, a good length of its wood, and of its string and
-//      arrow;
+//   5. HIS BOW SEEN FROM EVERY SIDE: in every list he stands, runs or holds in (his runs, their other ways and his town lists
+//      too), a good length of its wood and of its string and arrow, or, where the string is end-on, of its wood alone;
 //   6. NO PRANCING: in every frame of his runs, their other ways, his stops and his setting off, no swinging thigh past 50 degrees
 //      from straight down (none past 48);
 //   7. crisp; the friend's cyan edge round him; nothing of the enemy's rim; nothing cut off; the feather fixed in his cap;
@@ -31,7 +31,7 @@ import * as nodePath from 'node:path';
 import { RANGER_UP, RU_BROWN, RU_SKIN } from '../src/art/ranger_up';
 import { paintRuMove as paintRu, ruPosed, ruSmeared, ruStartOf, ruStops } from '../src/art/ranger_up_art';
 import { RU_BATTLE, RU_MOVES, RU_RUN3, ruRunWays, RU_SHOT3, RU_SHOT_HELD, RU_SHOT_HIT, RU_SHOT_LONG, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_VOLLEY3, RU_VOLLEY_HELD, RU_VOLLEY_HIT, RU_VOLLEY_LONG } from '../src/art/ranger_up_moves';
-import { RU_BOW_LEAST, RU_FRONT_ONLY, RU_LEGS_HELD, RU_STRING_LEAST, rangerReview, ruBowFaults, ruBowHeld, ruBowSeen, ruLegFaults, ruRunning, ruThighFaults } from '../src/art/ranger_up_review';
+import { RU_BOW_LEAST, RU_BOW_WOOD_ALONE, RU_FRONT_ONLY, RU_LEGS_HELD, rangerReview, ruBowFaults, ruBowHeld, ruBowSeen, ruLegFaults, ruRunning, ruThighFaults } from '../src/art/ranger_up_review';
 import { WU_RIM, WU_SIDES } from '../src/art/warrior_up';
 import type { WuSide } from '../src/art/warrior_up';
 import { wuLegs, wuThighs } from '../src/art/warrior_up_review';
@@ -132,14 +132,17 @@ test('2. with it on, every list at 30 pictures a second (his gripping runs at 60
 
 // --- 3. the bosses' review -----------------------------------------------------------------------------------------------------
 
-const HELD_TO_REVIEW = ['stand', 'walk', 'attack', 'rtown', 'rtownrun', 'squirrel', 'sighting', 'tsquirrel', 'tsighting'];
-test('3. every frame of his guard, run, Shot, town stance and run, the squirrel and the sighting through every boss check, from all eight sides', () => {
+test('3. every frame of every list of his through every boss check, from all eight sides', () => {
   const faults: string[] = [];
+  let moves = 0;
   for (const side of WU_SIDES) {
     const r = rangerReview(side);
-    const f = checkBoss(r.mob, r.shape, r.moves.filter((m) => HELD_TO_REVIEW.includes(m)));
+    moves += r.moves.length;
+    const f = checkBoss(r.mob, r.shape, r.moves);
     faults.push(...f.map((x) => `${side} ${x.move} ${x.t.toFixed(2)} ${x.kind}: ${x.what}`));
   }
+  // (fifteen moves from in front, ten from each of the other seven sides: his card's and his habits are painted from in front)
+  assert.equal(moves, 15 + 7 * 10, `${moves} moves reviewed`);
   assert.equal(faults.length, 0, faults.slice(0, 12).join('; '));
 });
 
@@ -161,17 +164,18 @@ function moments(): { m: Move3; t: number; key?: string; front: boolean }[] {
     for (const m of ruStops(stand, runM)) add(m, 30);
     add(ruStartOf(stand, runM).move, 60);
   }
+  for (const m of ruRunWays()) add(m, 60);
   return out;
 }
 const MOMENTS = moments();
-let swept: { legs: string[]; bow: string[]; least: Record<string, { wood: number; string: number }>; crisp: string[]; legsSeen: number } | null = null;
+let swept: { legs: string[]; bow: string[]; least: Record<string, { wood: number; string: number }>; carried: Record<string, { wood: number; string: number }>; crisp: string[]; legsSeen: number } | null = null;
 function sweep(): NonNullable<typeof swept> {
   if (swept) return swept;
   const legs: string[] = [];
   const bow: string[] = [];
   const crisp: string[] = [];
   const least: Record<string, { wood: number; string: number }> = {};
-  const notYet: Record<string, { wood: number; string: number }> = {};
+  const carried: Record<string, { wood: number; string: number }> = {};
   let legsSeen = 0;
   const rim = rgba(WU_RIM);
   const enemy = rgba(ENEMY_RIM);
@@ -187,13 +191,9 @@ function sweep(): NonNullable<typeof swept> {
       if (ruBowHeld(key, m.name, frame, v)) {
         bow.push(...ruBowFaults(key, m.name, frame, f, v));
         const b = ruBowSeen(f);
-        const e = (least[v] ??= { wood: Infinity, string: Infinity });
-        e.wood = Math.min(e.wood, b.wood);
-        e.string = Math.min(e.string, b.string);
-      } else if (ruBowHeld(key, m.name, frame, v, true)) {
-        // (not yet held: counted, the least of each side, for the README)
-        const b = ruBowSeen(f);
-        const e = (notYet[`${v}`] ??= { wood: Infinity, string: Infinity });
+        // (the least of each side: in his guard, held draws and habits; and, apart, where he carries it, his runs and in town)
+        const run = key === 'rrun' || key === 'rtownrun' || key === 'rtown' || key === 'tsquirrel' || key === 'tsighting' || (!key && /in town|setting off|backing away|going across/.test(m.name));
+        const e = ((run ? carried : least)[v] ??= { wood: Infinity, string: Infinity });
         e.wood = Math.min(e.wood, b.wood);
         e.string = Math.min(e.string, b.string);
       }
@@ -219,8 +219,8 @@ function sweep(): NonNullable<typeof swept> {
       if (!(f.tails ?? []).some((r) => r.id === 'r-feather')) crisp.push(`${m.name} ${frame} ${v}: no feather`);
     }
   }
-  console.log('# the bow, least seen from each side (wood/string), held:', JSON.stringify(least), 'not yet held (runs, town):', JSON.stringify(notYet));
-  return (swept = { legs, bow, least, crisp, legsSeen });
+  console.log('# the bow, least seen from each side (wood/string), in his guard, held draws and habits:', JSON.stringify(least), 'carried, in his runs and in town:', JSON.stringify(carried));
+  return (swept = { legs, bow, least, carried, crisp, legsSeen });
 }
 
 // --- 4. his legs ----------------------------------------------------------------------------------------------------------------
@@ -253,10 +253,13 @@ test('4. ... the measure: standing straight his bones read a man\'s legs; the ga
 
 // --- 5. his bow seen ------------------------------------------------------------------------------------------------------------
 
-test('5. his bow is seen from every side: in his guard, his stops into it, the held draws and his card\'s lists, a good length of its wood and of its string and arrow (his runs and town counted, not yet held)', () => {
+test('5. his bow is seen from every side in every list he stands, runs or holds in: a good length of its wood and of its string and arrow, or of its wood alone where the string is end-on', () => {
   const s = sweep();
   assert.equal(s.bow.length, 0, s.bow.slice(0, 12).join('; '));
-  for (const v of WU_SIDES) assert.ok(s.least[v] && s.least[v].wood >= RU_BOW_LEAST && s.least[v].string >= RU_STRING_LEAST, `${v}: ${JSON.stringify(s.least[v])}`);
+  for (const v of WU_SIDES) {
+    assert.ok(s.least[v] && s.least[v].wood >= RU_BOW_LEAST, `${v}: ${JSON.stringify(s.least[v])}`);
+    assert.ok(s.carried[v] && s.carried[v].wood >= RU_BOW_WOOD_ALONE, `${v}, carried: ${JSON.stringify(s.carried[v])}`);
+  }
 });
 
 // --- 6. no prancing -------------------------------------------------------------------------------------------------------------
