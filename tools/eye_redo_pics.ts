@@ -155,7 +155,8 @@ const VC = C[0] + C[1];
 /** The arena, in u and v from his middle: the stone from the water's edge (`quay`) down `deep`, `half` either way across. */
 export const ARENA = { half: 15, quay: 8.4, deep: 17 } as const;
 const onStone = (x: number, y: number): boolean => Math.abs(x - y - UC) <= ARENA.half && x + y - VC >= ARENA.quay && x + y - VC <= ARENA.quay + ARENA.deep;
-const poolD = (x: number, y: number): number => (x + y - VC >= ARENA.quay ? 9 : Math.hypot((x - y - UC) / 44, (x + y - VC) / 30));
+// (the Eye's pool look over all the water before the stone: deep and near black; its own painted rings left out, his ripples are his)
+const poolD = (x: number, y: number): number => (x + y - VC >= ARENA.quay ? 9 : 0.5);
 
 function layTiles(shape: (x: number, y: number) => boolean, w: number, h: number): Floor {
   const tiles = new Uint8Array(w * h).fill(T_WALL);
@@ -265,7 +266,19 @@ function dressing(pic: Pic, cam: Cam): Stand[] {
 
 /** Him laid on a picture: his middle at the water at (`sx`, `sy`); his eye's light over it. */
 function layHim(pic: Pic, c: ColossusPicture, sx: number, sy: number): void {
-  pic.lay(c.px, c.ax, c.ay, sx, sy);
+  // (what of him is under the water, and the water's ripples, only where there is water: never over the stone)
+  const d = new Uint8ClampedArray(c.px.d);
+  const cam = camAt(sx, sy);
+  for (let j = 0; j < c.px.h; j++) for (let i = 0; i < c.px.w; i++) {
+    const k = j * c.px.w + i;
+    if (c.kind[k] !== 2 && c.kind[k] !== 3) continue;
+    const X = sx + i - c.ax + 0.5 - cam.ox;
+    const Y = sy + j - c.ay + 0.5 - cam.oy;
+    const wx = (X / 32 + Y / 16) / 2;
+    const wy = (Y / 16 - X / 32) / 2;
+    if (onStone(wx, wy)) d[k * 4 + 3] = 0;
+  }
+  pic.lay({ w: c.px.w, h: c.px.h, d }, c.ax, c.ay, sx, sy);
   for (const l of c.lights) pic.light(sx + l.x - c.ax, sy + l.y - c.ay, l.r, rgb(l.color), l.a);
 }
 
@@ -300,7 +313,7 @@ const timed = <T>(what: string, f: () => T): T => {
 };
 
 /** His risen picture: a window on him big enough for all of him and his arms. */
-const RISEN_FRAME = { w: 1060, h: 600, ax: 530, ay: 360 };
+const RISEN_FRAME = { w: 1060, h: 700, ax: 530, ay: 460 };
 function measureOf(c: ColossusPicture): { x0: number; y0: number; x1: number; y1: number } {
   let x0 = Infinity;
   let y0 = Infinity;
@@ -324,11 +337,11 @@ if (mode === 'look') {
   // 1. RISEN, FRONT, the Warrior before him for size
   {
     const w = 1200;
-    const h = 640;
-    const cam = camAt(600, 392);
+    const h = 680;
+    const cam = camAt(600, 432);
     const pic = groundPic(w, h, cam);
     const stands = dressing(pic, cam);
-    stands.push({ d: VC, f: () => layHim(pic, risen, 600, 392) });
+    stands.push({ d: VC, f: () => layHim(pic, risen, 600, 432) });
     stands.push(layHero(pic, cam, 4.2, ARENA.quay + 2.2, true));
     stands.push(layHero(pic, cam, -4.6, ARENA.quay + 2.0, false));
     stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
@@ -408,8 +421,24 @@ if (mode === 'look') {
   shot(p1, 'arena_p1', 'PHASE 1: HE LIES UNDER THE BLACK WATER; TWO TENTACLES BURST UP', 'The stone a big rectangle across the screen and on down past its foot; the black water across the top, still but for his two arms, his eye\'s fire under it. Kill both.');
   const p2 = timed('phase 2', () => paintColossus(poseRisen(0), RISEN_FRAME));
   shot(p2, 'arena_p2', 'PHASE 2: HE HAS RISEN, FILLING THE TOP OF THE SCREEN, THREE TENTACLES', 'He fills the top of the screen and looms over the hero; his three arms out of the water before him, his body attacking too.');
+  // THE CAMERA WHERE IT SITS WHEN THE HERO STANDS IN THE MIDDLE OF THE STONE (no lean): the hero in the middle of the screen
+  {
+    const mid: [number, number] = [0, ARENA.quay + ARENA.deep / 2];
+    const cam0 = camAt(0, 0);
+    const [hx0, hy0] = P(cam0, ...W(mid[0], mid[1]));
+    const sx = SW / 2 - hx0;
+    const sy = SH / 2 + 24 - hy0;
+    const cam = camAt(sx, sy);
+    const pic = groundPic(SW, SH, cam);
+    const stands = dressing(pic, cam);
+    stands.push({ d: VC, f: () => layHim(pic, p2, sx, sy) });
+    stands.push(layHero(pic, cam, mid[0], mid[1], true));
+    stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
+    save('arena_mid.png', pic, 'THE CAMERA AS IT SITS WHEN THE HERO STANDS IN THE MIDDLE OF THE STONE (PHASE 2, NO LEAN)', 'The game\'s own camera, the hero in the middle of the screen: all this stone is his to fight on; across the top, the black water, his lower body and his three arms rising out of it.');
+  }
+  process.stdout.write(`  plan: the stone ${ARENA.half * 2} across (u) by ${ARENA.deep} down (v): ${(ARENA.half * 2 / Math.SQRT2).toFixed(1)} x ${(ARENA.deep / Math.SQRT2).toFixed(1)} floor tiles; quay ${ARENA.quay} below his middle\n`);
   const c = costOf(30, 1);
-  process.stdout.write(`  cost: a frame 860 x 540: ${c.frameMB.toFixed(2)} MB; at 30 a second ${c.perSecondMB.toFixed(1)} MB a second\n`);
+  process.stdout.write(`  cost: a frame 900 x 610: ${c.frameMB.toFixed(2)} MB; at 30 a second ${c.perSecondMB.toFixed(1)} MB a second\n`);
 }
 fs.writeFileSync(path.join(out, 'sheet.json'), JSON.stringify(sheet, null, 1));
 process.stdout.write(`done in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);

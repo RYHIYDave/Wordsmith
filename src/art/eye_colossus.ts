@@ -49,16 +49,18 @@ const COS30 = Math.sqrt(3) / 2;
  */
 export const COLOSSUS = {
   wide: 760,
-  tall: 255,
+  tall: 310,
   eyeR: 66,
   eye: { y: 100, z: 150 },
   mawTop: 86,
   /** How deep he lies in phase 1, under the water (his crown a little below it). */
-  sunk: 272,
+  sunk: 384,
   /** And how far back out in the water he lies then (so that what is seen of him is seen in the water, not under the stone). */
-  sunkBack: 200,
+  sunkBack: 330,
   /** How deep under the water anything of him is still seen; his eye's fire, deeper. */
   seenDeep: 70,
+  /** And while he lies under it (phase 1): his dark hill seen faintly further down. */
+  seenDeepSunk: 160,
 } as const;
 
 // =============================================================================================
@@ -83,6 +85,17 @@ export const CO_SLIME = ramp('#0c120a', '#162214', '#24361c', '#3c5030', '#8a9a7
 export const CO_BONE = ramp('#24201a', '#433c2e', '#6a6048', '#968a68', '#bfb28a');
 /** The ruin's stone sunk in him (the fen's own old stone: art/floor10.ts RUIN's tones). */
 export const CO_STONE = ramp('#29272e', '#3a3741', '#4e4a56', '#64606c', '#7c7884');
+/** The wet sheen on him: long pale highlights where the light runs along his slime. */
+export const CO_SHEEN: RGB = hex('#aab29a');
+/** A tentacle's back, dark; its flank. */
+export const CO_ARMBACK = ramp('#0b0d0b', '#161a15', '#232a20', '#364030', '#4e5a42');
+export const CO_ARMMID = ramp('#141412', '#262620', '#3c3c30', '#585644', '#7a7660');
+/** Dead wood grown out of his crown (the fen's dead trees: art/floor10.ts DEADWOOD). */
+export const CO_WOOD = ramp('#24222a', '#363339', '#4a4648', '#605a58', '#787068');
+/** His ripples: how far out each thin line is from where he breaks the water (his lengths), further apart further out. */
+const RIPPLES = [7, 15, 26, 41, 60, 84];
+/** Scum on the water where he breaks it. */
+const SCUM: RGB = hex('#4a4a2a');
 /** Barnacles crusting him. */
 export const CO_BARNACLE = ramp('#2a2a28', '#46443e', '#6a665c', '#8e897c', '#b2ac9c');
 /** Leeches: glossy black-violet. */
@@ -125,6 +138,22 @@ const M_LEECH = 10;
 const M_ARM = 11;
 const M_BARN = 12;
 const M_BOIL = 13;
+const M_SORE = 14;
+const M_WOOD = 15;
+const mixRGB = (a: RGB, b: RGB, k: number): RGB => [Math.round(a[0] + (b[0] - a[0]) * k), Math.round(a[1] + (b[1] - a[1]) * k), Math.round(a[2] + (b[2] - a[2]) * k)];
+const sm01 = (a: number, b: number, v: number): number => {
+  const u = Math.max(0, Math.min(1, (v - a) / (b - a)));
+  return u * u * (3 - 2 * u);
+};
+/** How much moss is on him at a point: clumps and mats, on his crown and over his brow only (0 none). */
+function mossAt(x: number, y: number, z: number): number {
+  const crown = sm01(170, 215, z + 0.15 * y);
+  const brow = Math.abs(x) < 190 && y > 105 && y < 200 ? sm01(232, 248, z + 0.0018 * x * x) : 0;
+  const where = Math.max(crown, brow);
+  if (where <= 0) return 0;
+  const c = vn(x * 0.03, y * 0.03, z * 0.03, 91) * 0.75 + vn(x * 0.09, y * 0.09, z * 0.09, 92) * 0.25;
+  return Math.max(0, Math.min(1, (c - 0.5) * 5)) * where;
+}
 
 // =============================================================================================
 // NOISE
@@ -227,6 +256,8 @@ export interface ColossusPicture {
   lights: Light[];
   /** How near the eye each pixel is (for laying things in front of or behind him), NaN where he is not. */
   near: Float32Array;
+  /** What each pixel is: 0 nothing, 1 him over the water, 2 him under it, 3 the water round him, 4 what hangs off him. */
+  kind: Uint8Array;
 }
 
 // =============================================================================================
@@ -264,7 +295,7 @@ function catmull(pts: ReadonlyArray<readonly [number, number, number]>, n: numbe
 }
 
 function armOf(a: ArmPose): Arm {
-  const N = 34;
+  const N = 46;
   const pts = catmull(a.path, N);
   const p = new Float64Array(N * 4);
   const inner = new Float64Array(N * 3);
@@ -274,7 +305,7 @@ function armOf(a: ArmPose): Arm {
   let prevIn = a.belly;
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
-    const r = a.r * Math.pow(1 - t, 0.85) + 2.2;
+    const r = a.r * Math.pow(1 - t, 1.25) + 1.4;
     const q = pts[i];
     p[i * 4] = q[0];
     p[i * 4 + 1] = q[1];
@@ -416,48 +447,62 @@ class Scene {
 
   /** His body's distance at a point of his own space (before his drop), and what is nearest (`f`). */
   bodyAt(x: number, y: number, z: number, f: Found | null): number {
-    // THE HILL: a great mound sagging forward over the water, his shoulders heaved up either side, his face's mass forward of it
-    let d = ell(x, y, z, 0, -70, 60, 285, 170, 195);
-    d = smin(d, ell(x, y, z, -205, -10, 88, 148, 130, 124), 52);
-    d = smin(d, ell(x, y, z, 205, -10, 88, 148, 130, 124), 52);
-    d = smin(d, ell(x, y, z, 0, 60, 125, 180, 105, 135), 42);
-    // his jowls and the rolls of his belly sagging into the water; his chin under the maw
-    d = smin(d, ell(x, y, z, -126, 100, 52, 94, 74, 80), 26);
-    d = smin(d, ell(x, y, z, 126, 100, 52, 94, 74, 80), 26);
-    d = smin(d, ell(x, y, z, 0, 110, 0, 140, 64, 52), 30);
-    d = smin(d, ell(x, y, z, -172, 70, -20, 172, 94, 70), 40);
-    d = smin(d, ell(x, y, z, 172, 70, -20, 172, 94, 70), 40);
-    // HIS BROW: heavy, overhanging his eye, sagging at its ends
+    // THE HILL: hunched; a high back heaved up behind his brow, knotted along its ridge; heavy shoulders lower either side
+    let d = ell(x, y, z, 0, -84, 48, 250, 165, 212);
+    d = smin(d, ell(x, y, z, -150, -60, 214, 64, 60, 52), 30);
+    d = smin(d, ell(x, y, z, -58, -92, 254, 62, 58, 46), 30);
+    d = smin(d, ell(x, y, z, 44, -82, 262, 66, 60, 48), 30);
+    d = smin(d, ell(x, y, z, 136, -52, 222, 58, 56, 46), 30);
+    d = smin(d, ell(x, y, z, -232, 0, 100, 136, 126, 120), 46);
+    d = smin(d, ell(x, y, z, 232, 0, 100, 136, 126, 120), 46);
+    d = smin(d, ell(x, y, z, -296, 34, 112, 78, 88, 84), 34);
+    d = smin(d, ell(x, y, z, 296, 34, 112, 78, 88, 84), 34);
+    d = smin(d, ell(x, y, z, 0, 66, 120, 176, 100, 128), 40);
+    // his jowls sagging down into the water in folds; his chin under the maw; the rolls of his belly
+    d = smin(d, ell(x, y, z, -130, 112, 40, 92, 70, 92), 24);
+    d = smin(d, ell(x, y, z, 130, 112, 40, 92, 70, 92), 24);
+    d = smin(d, ell(x, y, z, -152, 122, -12, 70, 60, 58), 22);
+    d = smin(d, ell(x, y, z, 152, 122, -12, 70, 60, 58), 22);
+    d = smin(d, ell(x, y, z, 0, 118, -6, 130, 60, 50), 28);
+    d = smin(d, ell(x, y, z, -180, 76, -22, 168, 92, 68), 40);
+    d = smin(d, ell(x, y, z, 180, 76, -22, 168, 92, 68), 40);
+    // HIS BROW: a cliff jutting out over his eye, flat beneath, sagging at its ends
     {
-      const cx = Math.max(-168, Math.min(168, x));
-      const cz = 222 - 0.0019 * cx * cx;
-      const r = 45 - 0.00045 * cx * cx;
-      const b = Math.hypot(x - cx, (y - 128) * 0.9, z - cz) - r;
-      d = smin(d, b, 24);
+      const cx = Math.max(-172, Math.min(172, x));
+      const sag = 0.0019 * cx * cx;
+      const cz = 236 - sag;
+      let b = Math.hypot(x - cx, (y - 138) * 0.85, (z - cz) * 1.1) - (50 - 0.0004 * cx * cx);
+      // (cut flat beneath, a cliff over his eye)
+      b = smax(b, cz - 34 - z, 10);
+      d = smin(d, b, 22);
     }
-    // FOLDS: hung down him, rolls sagging across him, the lumps of rot, and boils
+    // FOLDS: hung down him in curtains, rolls sagging across him
     if (d < 30) {
       const w = vn(x * 0.011, y * 0.011, z * 0.006, 11);
       const fold = Math.sin(x * 0.062 + w * 7.0);
       const roll = Math.sin(z * 0.08 + vn(x * 0.008, y * 0.01, z * 0.01, 12) * 6.5);
-      const sm = (a: number, b: number, v: number): number => {
-        const u = Math.max(0, Math.min(1, (v - a) / (b - a)));
-        return u * u * (3 - 2 * u);
-      };
-      const face = 1 - 0.65 * (1 - sm(80, 160, Math.abs(x))) * sm(20, 80, y) * sm(40, 90, z);
-      d -= (fold * 8.5 * (1 - Math.abs(roll) * 0.4) + roll * 6.5) * face;
-      d -= (vn(x * 0.024, y * 0.024, z * 0.024, 13) - 0.5) * 18 + (vn(x * 0.07, y * 0.07, z * 0.07, 14) - 0.5) * 6;
-      if (z > 70 && !BARE) {
-        const S2 = 16;
-        const ix = Math.floor(x / S2);
-        const iy = Math.floor(y / S2);
-        const iz = Math.floor(z / S2);
-        if (h3(ix, iy, iz, 41) < 0.12) {
-          const rr = Math.hypot(x - (ix + 0.3 + 0.4 * h3(ix, iy, iz, 42)) * S2, y - (iy + 0.3 + 0.4 * h3(ix, iy, iz, 43)) * S2, z - (iz + 0.3 + 0.4 * h3(ix, iy, iz, 44)) * S2);
-          const br = 4 + 3 * h3(ix, iy, iz, 45);
-          if (rr < br) {
-            d -= 3.2 * Math.sqrt(1 - (rr / br) ** 2);
-            if (f && rr < br * 0.8) f.mat = M_BOIL;
+      const face = 1 - 0.7 * (1 - sm01(80, 160, Math.abs(x))) * sm01(20, 80, y) * sm01(40, 90, z) * (1 - sm01(200, 240, z));
+      d -= (fold * 9 * (1 - Math.abs(roll) * 0.4) + roll * 6.5) * face;
+      d -= (vn(x * 0.022, y * 0.022, z * 0.022, 13) - 0.5) * 16;
+      // (moss in clumps and mats on his crown and over his brow only)
+      if (!BARE) {
+        const m = mossAt(x, y, z);
+        if (m > 0) d -= m * (2.5 + 3.5 * vn(x * 0.16, y * 0.16, z * 0.16, 15));
+        // boils and open sores
+        if (z > 50) {
+          const S2 = 18;
+          const ix = Math.floor(x / S2);
+          const iy = Math.floor(y / S2);
+          const iz = Math.floor(z / S2);
+          const roll2 = h3(ix, iy, iz, 41);
+          if (roll2 < 0.085 && m <= 0) {
+            const rr = Math.hypot(x - (ix + 0.3 + 0.4 * h3(ix, iy, iz, 42)) * S2, y - (iy + 0.3 + 0.4 * h3(ix, iy, iz, 43)) * S2, z - (iz + 0.3 + 0.4 * h3(ix, iy, iz, 44)) * S2);
+            const br = 4.5 + 3.5 * h3(ix, iy, iz, 45);
+            if (rr < br) {
+              const sore = roll2 < 0.012;
+              d -= sore ? -1.6 * (1 - rr / br) : 3.4 * Math.sqrt(1 - (rr / br) ** 2);
+              if (f && rr < br * 0.85) f.mat = sore ? M_SORE : M_BOIL;
+            }
           }
         }
       }
@@ -656,6 +701,27 @@ class Scene {
         m = M_STONE;
       }
     }
+    // great horns of old bone broken out of his back, a tusk out of his shoulder, and dead wood grown up out of his crown: his outline
+    if (z > 150) {
+      for (const H of PL.spurs) {
+        for (let k = 0; k + 7 < H.length; k += 4) {
+          const sd = cone(x, y, z, H[k], H[k + 1], H[k + 2], H[k + 4], H[k + 5], H[k + 6], H[k + 3], H[k + 7]);
+          if (sd < d) {
+            d = sd;
+            m = M_BONE;
+          }
+        }
+      }
+      for (const H of PL.wood) {
+        for (let k = 0; k + 7 < H.length; k += 4) {
+          const sd = cone(x, y, z, H[k], H[k + 1], H[k + 2], H[k + 4], H[k + 5], H[k + 6], H[k + 3], H[k + 7]);
+          if (sd < d) {
+            d = sd;
+            m = M_WOOD;
+          }
+        }
+      }
+    }
     if (f && d < best) f.mat = m;
     return d;
   }
@@ -688,13 +754,13 @@ class Scene {
       const r = P[k * 4 + 3] + (P[k * 4 + 7] - P[k * 4 + 3]) * t;
       const e = Math.hypot(x - ax - ux * t, y - ay - uy * t, z - az - uz * t) - r;
       if (e < d) {
-        d = Math.min(d, e);
+        d = e;
         bestK = k;
         bestT = t;
-      } else d = smin(d, e, 3);
+      }
     }
     if (d > 16) return d;
-    // ITS SKIN: wrinkled in rings, its suckers in two rows along its inside
+    // ITS SKIN: smooth muscle, its suckers in two rows along its underside
     const k = bestK;
     const t = bestT;
     const cxp = P[k * 4] + (P[k * 4 + 4] - P[k * 4]) * t;
@@ -724,11 +790,11 @@ class Scene {
     const vy = y - cyp;
     const vz = z - czp;
     const phi = Math.atan2(vx * sx + vy * sy + vz * sz, vx * ix + vy * iy + vz * iz);
-    d -= Math.sin(s * 0.34 + vn(s * 0.05, phi, 0, A.seed) * 4) * 0.9 + (vn(s * 0.12, phi * 2.2, 0, A.seed + 1) - 0.5) * 2.4;
+    d -= (vn(s * 0.03, phi * 0.8, 0, A.seed + 1) - 0.5) * 1.6;
     const sr = Math.max(1.6, r * 0.27);
     const space = sr * 2.5;
     let sucker = 0;
-    if (Math.abs(phi) < 1.25 && r > 6) {
+    if (Math.abs(phi) < 1.25 && r > 4.5) {
       for (const row of [-0.48, 0.48]) {
         const off = row > 0 ? 0.5 : 0;
         const c = Math.round(s / space - off) + off;
@@ -749,6 +815,25 @@ class Scene {
       f.armPhi = phi;
       f.armS = s;
       f.armR = sucker;
+    }
+    return d;
+  }
+
+  /** How far a point of the water is from him, truly (no bounds), for its ripples. */
+  waterDist(X: number, Y: number): number {
+    const x = X * this.flip;
+    const y = Y * this.flip;
+    let d = Infinity;
+    for (let i = 0; i < this.arms.length; i++) {
+      const A = this.arms[i];
+      const P = A.p;
+      for (let k = 0; k + 1 < A.n; k++) d = Math.min(d, cone(x, y, 0, P[k * 4], P[k * 4 + 1], P[k * 4 + 2], P[k * 4 + 4], P[k * 4 + 5], P[k * 4 + 6], P[k * 4 + 3], P[k * 4 + 7]));
+    }
+    if (this.body) {
+      const z = this.drop;
+      const yb = y + this.back;
+      const out = ell(x, yb, z, 0, -10, 40, 420, 260, 290);
+      d = Math.min(d, out > 100 ? out : this.bodyAt(x, yb, z, null));
     }
     return d;
   }
@@ -800,8 +885,18 @@ const SKULLS_AT = [-118, 200, 10, -96, 186, 9, 152, 160, 9.5, 286, 74, 10, 196, 
 const LEECHES_AT = [-150, 72, 0.3, 0, -0.95, 10, 96, 28, -0.2, 0, -0.98, 9, -96, 150, 0.9, 0, -0.3, 8, 206, 92, 0.1, 0.2, -0.97, 11, 250, 150, -0.4, 0, -0.9, 9];
 /** Placing what is set in his hide: his bare body only (no bones, no eye, no maw). */
 let BARE = false;
-let PLACED: { skulls: number[]; leeches: number[]; horn: number[]; drum: number[]; slab: number[] } | null = null;
-function placed(): { skulls: number[]; leeches: number[]; horn: number[]; drum: number[]; slab: number[] } {
+interface Placed {
+  skulls: number[];
+  leeches: number[];
+  horn: number[];
+  drum: number[];
+  slab: number[];
+  /** Horns and a tusk of bone, and dead wood: each a line of points (x, y, z, radius). */
+  spurs: number[][];
+  wood: number[][];
+}
+let PLACED: Placed | null = null;
+function placed(): Placed {
   if (PLACED) return PLACED;
   const S = new Scene({ view: 'front', drop: 0, body: true, maw: 0, lid: 1, gaze: [0, 1, 0], arms: [] });
   BARE = true;
@@ -830,8 +925,30 @@ function placed(): { skulls: number[]; leeches: number[]; horn: number[]; drum: 
   const horn = [-196, surfY(-196, 206) - 8, 206];
   const drum = [-78, -58, surfZ(-78, -58) - 3];
   const slab = [104, -30, surfZ(104, -30) + 8];
+  /** A line of points from his hide at (x, y) (each further point given from the one before), radii along it. */
+  const grow = (x: number, y: number, steps: number[][], r: number[]): number[] => {
+    const out: number[] = [];
+    let p = [x, y, surfZ(x, y) - 10];
+    out.push(p[0], p[1], p[2], r[0]);
+    steps.forEach((st, i) => {
+      p = [p[0] + st[0], p[1] + st[1], p[2] + st[2]];
+      out.push(p[0], p[1], p[2], r[i + 1]);
+    });
+    return out;
+  };
+  const spurs = [
+    grow(-120, -64, [[-14, 0, 36], [-26, 4, 30], [-30, 8, 14], [-22, 10, -6]], [12, 10, 7, 4, 1.5]),
+    grow(98, -84, [[10, -2, 40], [24, 0, 30], [30, 4, 8]], [11, 9, 5, 1.5]),
+    grow(270, 30, [[30, 10, 18], [30, 16, 4], [18, 14, -12]], [10, 8, 5, 1.5]),
+    grow(-280, 40, [[-26, 6, 26], [-22, 8, 22]], [8, 6, 1.5]),
+  ];
+  const wood = [
+    grow(-10, -112, [[4, -2, 44], [-10, 0, 30], [-22, 0, 16]], [7, 5.5, 3.5, 1.2]),
+    grow(-6, -112, [[6, -2, 40], [22, 2, 26], [18, 2, 18]], [5, 4, 2.6, 1]),
+    grow(40, -100, [[8, 0, 22], [16, 0, 10]], [4, 2.6, 1]),
+  ];
   BARE = false;
-  PLACED = { skulls, leeches, horn, drum, slab };
+  PLACED = { skulls, leeches, horn, drum, slab, spurs, wood };
   return PLACED;
 }
 
@@ -874,6 +991,9 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
   const near = new Float32Array(w * h).fill(NaN);
   /** 0 nothing; 1 him over the water; 2 him under it; 3 the water's foam round him. */
   const kind = new Uint8Array(w * h);
+  /** How high over the water each pixel of him is (the camera's up), and what it is. */
+  const zh = new Float32Array(w * h);
+  const mt = new Uint8Array(w * h);
   const D = px.d;
   const f = new Found0();
   const T0 = 700;
@@ -905,22 +1025,41 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       // where the ray meets the water
       const wy = sd * SIN30 + (sd * COS30 / EYE_V[2]) * EYE_V[1];
       if (!hit || z < -0.5) {
-        // THE WATER ROUND HIM: foam where he breaks it, rings beyond
-        const wd = S.drop > 60 ? S.armsAt(X, wy, 0) : S.at(X, wy, 0, null);
-        if (wd < 30 && (!hit || z < 0)) {
-          const ring = wd < 5 ? 4 : wd < 10 ? 3 : (wd > 16 && wd < 18.5) || (wd > 27 && wd < 28.6) ? 1 : 0;
-          if (ring) {
-            const sh = hp(i, j, 5);
-            const c = ring >= 3 ? FOAM[sh < 0.55 ? ring : ring - 1] : FOAM[2];
-            if (ring >= 3 || sh < 0.75) {
-              D[k * 4] = c[0];
-              D[k * 4 + 1] = c[1];
-              D[k * 4 + 2] = c[2];
-              D[k * 4 + 3] = ring >= 3 ? 255 : 150;
-              kind[k] = 3;
-              near[k] = wy * EYE_V[1];
-              continue;
+        // THE WATER ROUND HIM, dark and oily: foam and scum where he breaks it; thin broken lines of ripples spreading from it,
+        // further apart further out, catching his eye's glow
+        const wd = S.waterDist(X, wy);
+        if (wd < RIPPLES[RIPPLES.length - 1] + 2) {
+          let c: RGB | null = null;
+          let a = 255;
+          const sh = hp(i, j, 5);
+          if (wd < 3.2 && S.drop < 60 || (S.drop >= 60 && wd < 3.2 && S.armsAt(X, wy, 0) < 3.2)) c = sh < 0.5 ? FOAM[4] : sh < 0.8 ? FOAM[3] : FOAM[1];
+          else if (wd < 10 && sh < 0.07) c = SCUM;
+          else {
+            for (let r = 0; r < RIPPLES.length; r++) {
+              const R = RIPPLES[r];
+              if (Math.abs(wd - R) < 0.55 && vn(X * 0.045 + r * 3.1, wy * 0.02, r, 6) > 0.4) {
+                // (his glow caught in the ripples before him)
+                const pinkK = S.body && S.drop < 60 && r < 4 ? Math.max(0, 1 - Math.abs(X) / 240) : 0;
+                const base = r < 2 ? FOAM[3] : FOAM[2];
+                c = pinkK > 0.35 && hp(i, j, 7) < pinkK ? CO_IRIS[r < 2 ? 1 : 0] : base;
+                a = r < 3 ? 255 : 190;
+                break;
+              }
             }
+          }
+          if (!c && wd < 46) {
+            // (oily dark round him)
+            c = WATER;
+            a = 70;
+          }
+          if (c) {
+            D[k * 4] = c[0];
+            D[k * 4 + 1] = c[1];
+            D[k * 4 + 2] = c[2];
+            D[k * 4 + 3] = a;
+            kind[k] = 3;
+            near[k] = wy * EYE_V[1];
+            if (!hit || a === 255) continue;
           }
         }
       }
@@ -968,12 +1107,15 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       const ry = rl * Ny - L_FIG[1];
       const rz = rl * Nz - L_FIG[2];
       const spec = Math.max(0, rx * EYE_V[0] + ry * EYE_V[1] + rz * EYE_V[2]);
-      const v = lit * 0.92 - 0.06 - occ * 1.3 + bayer(i, j) * 0.16;
-      let tn = tone(v);
       // his own space at the point (for what grows where)
       const fx = x * S.flip;
       const fy = y * S.flip + (f.arm < 0 && S.body ? S.back : 0);
       const fz = z + (f.arm < 0 && S.body ? S.drop : 0);
+      // (into the dark toward his edges: the further from his eye, the darker)
+      const E0 = COLOSSUS.eye;
+      const far = S.body && pose.view === 'front' ? sm01(150, 430, Math.hypot(x, z + S.drop - E0.z)) : sm01(200, 420, Math.hypot(x, z - 120));
+      const v = lit * 0.86 - 0.1 - occ * 1.35 - far * 0.42 + bayer(i, j) * 0.14;
+      let tn = tone(v);
       const upN = Nz;
       let col: RGB;
       let gloss = 0.5;
@@ -1026,17 +1168,16 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         }
         if (spec > 0.985 && lit > 0.2) col = GLINT;
       } else if (mat === M_ARM) {
-        // A TENTACLE: dark and slick along its back, mottled; pale along its inside; its suckers' rims pale, their cups dark
+        // A TENTACLE: smooth muscle, dark along its back shading to pale along its underside; its suckers cupped rings, lit rims
+        // and dark middles; a few old scars across its back
         const phi = f.armPhi;
-        const belly = Math.abs(phi) < 1.35;
-        const mott = vn(f.armS * 0.06, phi * 1.5, f.arm * 7, 71);
-        const scar = Math.abs(vn(f.armS * 0.045, phi * 0.6, f.arm, 72) - 0.5) < 0.022 && !belly;
-        if (f.armR === 1) col = CO_PALE[Math.min(4, tn + 1)];
-        else if (f.armR === 2) col = CO_MAW[Math.max(0, Math.min(3, tn))];
-        else if (scar) col = CO_PALE[Math.min(4, Math.max(2, tn + 1))];
-        else if (belly) col = CO_PALE[tn];
-        else col = (mott > 0.62 ? CO_BRUISE : mott < 0.3 ? CO_SLIME : CO_FLESH)[tn];
-        gloss = 0.9;
+        const under = (Math.cos(phi) + 1) / 2 + bayer(i, j) * 0.3;
+        const scar = Math.abs(vn(f.armS * 0.03, phi * 0.45, f.arm, 72) - 0.5) < 0.012 && under < 0.4;
+        if (f.armR === 1) col = CO_PALE[Math.max(2, Math.min(4, tn + 1))];
+        else if (f.armR === 2) col = CO_MAW[Math.max(0, Math.min(2, tn - 1))];
+        else if (scar) col = CO_ARMMID[Math.min(4, Math.max(2, tn + 1))];
+        else col = (under > 0.78 ? CO_PALE : under > 0.5 ? CO_ARMMID : CO_ARMBACK)[tn];
+        gloss = 1.1;
       } else if (mat === M_LID) {
         // his lids: his hide, their rims raw and wet
         const E = COLOSSUS.eye;
@@ -1056,46 +1197,68 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         col = CO_MAW[Math.max(0, tn - 1)];
         gloss = 1.0;
       } else if (mat === M_BONE) {
-        col = (upN > 0.55 && vn(fx * 0.2, fy * 0.2, fz * 0.2, 81) > 0.6 ? CO_MOSS : CO_BONE)[Math.min(4, tn + (tn < 4 ? 0 : 0))];
+        col = CO_BONE[tn];
         gloss = 0.2;
       } else if (mat === M_STONE) {
-        col = (upN > 0.4 && vn(fx * 0.08, fy * 0.08, fz * 0.08, 82) > 0.45 ? CO_MOSS : CO_STONE)[tn];
+        col = (mossAt(fx, fy, fz + 6) > 0.2 && upN > 0.3 ? CO_MOSS : CO_STONE)[tn];
         gloss = 0.1;
       } else if (mat === M_LEECH) {
         col = CO_LEECH[tn];
         gloss = 1.3;
       } else if (mat === M_BOIL) {
-        col = (tn >= 2 ? CO_PALE : CO_BRUISE)[Math.min(3, tn + 1)];
-        gloss = 1.2;
+        col = (tn >= 2 ? CO_PALE : CO_BRUISE)[Math.min(3, tn)];
+        gloss = 1.6;
+      } else if (mat === M_SORE) {
+        col = CO_RAW[Math.max(0, Math.min(2, tn - 1))];
+        gloss = 1.6;
+      } else if (mat === M_WOOD) {
+        col = CO_WOOD[tn];
+        gloss = 0.1;
       } else if (mat === M_BARN) {
         col = CO_BARNACLE[Math.min(4, tn + (hp(i, j, 83) < 0.3 ? 1 : 0))];
         gloss = 0.1;
       } else {
-        // HIS HIDE: moss on what faces up, slime running down the rest, rot and pale drowned flesh in patches
-        const moss = upN + (vn(fx * 0.035, fy * 0.035, fz * 0.035, 91) - 0.5) * 1.1 + (vn(fx * 0.2, fy * 0.2, fz * 0.2, 92) - 0.5) * 0.35;
-        const slime = vn(fx * 0.13, fy * 0.04, fz * 0.012, 93) > 0.7 && upN < 0.5;
-        const rot = vn(fx * 0.02, fy * 0.02, fz * 0.02, 94);
-        if (moss > 1.0 && fz > 90) {
-          col = CO_MOSS[Math.max(0, Math.min(4, tn - (hp(i, j, 96) < 0.2 ? 1 : 0)))];
+        // HIS HIDE: rotting, wet, sagging; deep dark creases going to bruise; bruising in soft gradients, never patches; slime
+        // running down him; pale, drowned flesh toward the water; moss only in clumps on his crown and over his brow
+        const moss = mossAt(fx, fy, fz);
+        const slime = vn(fx * 0.13, fy * 0.04, fz * 0.012, 93) > 0.72 && upN < 0.45;
+        const bruise = vn(fx * 0.007, fy * 0.007, fz * 0.007, 94) + bayer(i, j) * 0.22;
+        const drowned = sm01(36, 0, fz) + bayer(i, j) * 0.3;
+        if (moss > 0.12 && upN > 0.05) {
+          // (clumps: dark beneath, their lit tips catching the light)
+          const tip = vn(fx * 0.3, fy * 0.3, fz * 0.3, 96);
+          col = CO_MOSS[Math.max(0, Math.min(4, tn + (tip > 0.66 && tn >= 2 ? 1 : tip < 0.3 ? -1 : 0)))];
           gloss = 0.05;
+        } else if (occ > 0.34) {
+          col = CO_BRUISE[Math.max(0, tn - 1)];
+          gloss = 0.6;
         } else if (slime) {
           col = CO_SLIME[tn];
-          gloss = 1.4;
-        } else if (rot > 0.72 || occ > 0.3) {
-          col = CO_BRUISE[tn];
-          gloss = 0.8;
-        } else if (rot < 0.2 || fz < 25) {
+          gloss = 1.6;
+        } else if (drowned > 0.75) {
           col = CO_PALE[Math.max(0, tn - 1)];
-          gloss = 0.7;
+          gloss = 0.9;
+        } else if (bruise > 0.66) {
+          col = CO_BRUISE[tn];
+          gloss = 0.9;
         } else {
           col = CO_FLESH[tn];
-          gloss = 0.7;
+          gloss = 0.75;
         }
       }
       // (wet: where the light is thrown straight back, a glint)
-      if (gloss > 0.4 && Math.pow(spec, 10) * gloss > 0.5 && lit > 0.25 && mat !== M_EYE) {
-        const R4 = mat === M_ARM && f.armPhi * f.armPhi < 1.8 ? CO_PALE : mat === M_FLESH ? CO_SLIME : mat === M_LEECH ? CO_LEECH : null;
-        col = R4 ? R4[4] : col;
+      if (gloss > 0.4 && Math.pow(spec, 26) * gloss * (0.75 + bayer(i, j)) > 0.5 && lit > 0.2 && mat !== M_EYE && f.armR === 0) col = CO_SHEEN;
+      // HIS EYE'S GLOW on the folds round it: pink, and gold nearest
+      if (S.body && pose.view === 'front' && mat !== M_EYE) {
+        const E = COLOSSUS.eye;
+        const ex = 0 - fx;
+        const ey = E.y - fy;
+        const ez = E.z - fz;
+        const el = Math.hypot(ex, ey, ez) || 1;
+        const facing = (Nx * S.flip * ex + Ny * S.flip * ey + Nz * ez) / el;
+        const g = facing * Math.max(0, 1 - el / 200) + bayer(i, j) * 0.12;
+        if (g > 0.42) col = mixRGB(col, CO_IRIS[3], 0.32);
+        else if (g > 0.2) col = mixRGB(col, CO_IRIS[1], 0.24);
       }
       let r0 = col[0];
       let g0 = col[1];
@@ -1105,12 +1268,13 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       if (z < -0.5) {
         // UNDER THE WATER: seen through it, darker and greener the deeper; only his eye's fire is seen deep down
         const deep = -z;
-        const keep = glow ? Math.exp(-deep / 120) : Math.exp(-deep / 15);
+        const sunk = S.drop > 60;
+        const keep = glow ? Math.exp(-deep / 220) : Math.exp(-deep / (sunk ? 40 : 15));
         const m = Math.max(0, Math.min(1, keep));
         r0 = WATER[0] + (r0 - WATER[0]) * m;
         g0 = WATER[1] + (g0 - WATER[1]) * m;
         b0 = WATER[2] + (b0 - WATER[2]) * m;
-        const vis = glow ? Math.min(1, Math.exp(-deep / 160) * 1.4) : Math.max(0, 1 - deep / COLOSSUS.seenDeep);
+        const vis = glow ? Math.min(1, Math.exp(-deep / 280) * 1.5) : Math.max(0, 1 - deep / (sunk ? COLOSSUS.seenDeepSunk : COLOSSUS.seenDeep));
         // (four steps of seeing through, dithered: every pixel crisp)
         const q = Math.max(0, Math.min(4, Math.floor(vis * 4 + bayer(i, j) + 0.5)));
         if (q === 0) continue;
@@ -1123,6 +1287,8 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
       D[k * 4 + 3] = a;
       near[k] = y * EYE_V[1] + z * EYE_V[2];
       kind[k] = kd;
+      zh[k] = z;
+      mt[k] = mat;
     }
   }
   // THE SEAM where one part of him ends in front of another, and round him; THE PINK EDGE outside it (over the water only)
@@ -1154,7 +1320,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
     D[k * 4 + 2] = INK_RGB[2];
   }
   // (weed and slime hanging off his overhangs, before the edge)
-  hangings(S, px, near, kind, w, h, pose);
+  hangings(px, near, kind, zh, mt, w, h, zoom);
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
       const k = j * w + i;
@@ -1182,56 +1348,75 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
     const yy = E.y - (pose.back ?? 0);
     lights.push({ x: ax + 0, y: ay + zoom * (yy * SIN30 * SEEN - zz), r: 120 * zoom, color: FLAME[2], a: zz < 0 ? 0.35 : 0.22 });
   }
-  return { px, ax, ay, lights, near };
+  return { px, ax, ay, lights, near, kind };
 }
 
 /**
- * WEED AND SLIME HANGING OFF HIM: from the lower edge of every overhang of him over the water (his brow, his lids, his jowls, his
- * shoulders' folds, the bones), strands of the fen's weed hang straight down, and drips of slime with a bead at their end.
+ * WEED AND SLIME HANGING OFF HIM: from the lower edge of every overhang of him (his brow, his jowls, his shoulders' folds, the bones),
+ * curtains of the fen's weed hang straight down into the water, thickest in clumps; strings of slime with beads on them; and from
+ * his maw, drool in strings off his lips and teeth. Each hangs as far as the water under where it hangs from.
  */
-function hangings(S: Scene, px: Px, near: Float32Array, kind: Uint8Array, w: number, h: number, pose: ColossusPose): void {
+function hangings(px: Px, near: Float32Array, kind: Uint8Array, zh: Float32Array, mt: Uint8Array, w: number, h: number, zoom: number): void {
   const D = px.d;
-  const put = (i: number, j: number, c: RGB, n: number): void => {
-    if (i < 0 || j < 0 || i >= w || j >= h) return;
+  /** A pixel of something hanging, as near as what it hangs from; false where it stops (his eye, or the edge of the picture). */
+  const put = (i: number, j: number, c: RGB, n: number): boolean => {
+    if (i < 0 || j < 0 || i >= w || j >= h) return false;
     const k = j * w + i;
-    if (kind[k] === 1 && near[k] > n + 1) return;
-    if (kind[k] === 2) return;
+    if (kind[k] === 1 && mt[k] === M_EYE) return false;
+    if (kind[k] === 1 && near[k] > n + 1) return true;
+    if (kind[k] === 2) return false;
     D[k * 4] = c[0];
     D[k * 4 + 1] = c[1];
     D[k * 4 + 2] = c[2];
     D[k * 4 + 3] = 255;
     kind[k] = 4;
+    return true;
   };
-  void S;
-  void pose;
+  const weed = (i: number, j: number, len: number, n: number, seed: number): void => {
+    // (a clump: two or three strands together, the left one lit, ragged where each ends)
+    const thick = len * (0.45 + 0.4 * h3(i, j, 2, seed));
+    const third = len * (0.2 + 0.3 * h3(i, j, 4, seed));
+    for (let s = 1; s <= len; s++) {
+      const x = Math.round(i + Math.sin((s + i * 3) * 0.09) * 1.8 * (s / Math.max(8, len)));
+      const c = WEED[s < len * 0.2 ? 4 : s < len * 0.6 ? 3 : 2];
+      if (!put(x, j + s, c, n)) return;
+      if (s < thick) put(x + 1, j + s, WEED[s < len * 0.4 ? 2 : 1], n);
+      if (s < third) put(x + 2, j + s, WEED[1], n);
+    }
+    put(i - 1, j + len + 1, FOAM[2], n);
+    put(i + 1, j + len + 1, FOAM[2], n);
+  };
+  const string = (i: number, j: number, len: number, n: number, seed: number): void => {
+    for (let s = 1; s <= len; s++) {
+      const bead = h3(i, s, 3, seed) < 0.06;
+      if (!put(i, j + s, s % 6 === 2 ? CO_SHEEN : CO_SLIME[bead ? 3 : 2], n)) return;
+      if (bead) put(i + 1, j + s, CO_SLIME[1], n);
+    }
+    put(i, j + len + 1, CO_SLIME[3], n);
+    put(i + 1, j + len + 1, CO_SLIME[1], n);
+    put(i, j + len + 2, CO_SHEEN, n);
+  };
   for (let i = 1; i < w - 1; i++) {
     for (let j = 2; j < h - 2; j++) {
       const k = j * w + i;
       if (kind[k] !== 1) continue;
       const below = (j + 1) * w + i;
-      // an overhang's lower edge: him here, and below him something well behind, or nothing
-      const under = kind[below] === 0 || kind[below] === 3 || (kind[below] === 1 && near[k] - near[below] > 22);
+      const under = kind[below] === 0 || kind[below] === 3 || (kind[below] === 1 && near[k] - near[below] > 18);
       if (!under) continue;
+      const m = mt[k];
+      if (m === M_EYE) continue;
+      const toWater = Math.max(0, zh[k]) * zoom;
       const roll = h3(i, j, 0, 101);
-      if (roll < 0.11) {
-        // WEED: a strand, swaying, ragged at its end
-        const len = 6 + Math.floor(h3(i, j, 1, 102) * 26);
-        const sway = (h3(i, j, 2, 103) - 0.5) * 0.25;
-        let x = i;
-        for (let s = 1; s <= len; s++) {
-          const xx = Math.round(i + Math.sin(s * 0.35 + i) * 0.8 + sway * s);
-          x = xx;
-          const c = WEED[s < len * 0.3 ? 3 : s > len * 0.8 ? 1 : 2];
-          put(x, j + s, c, near[k]);
-          if (s < len * 0.5 && h3(i, s, 3, 104) < 0.55) put(x + 1, j + s, WEED[1], near[k]);
-        }
-      } else if (roll < 0.2) {
-        // SLIME: a drip with a bead
-        const len = 2 + Math.floor(h3(i, j, 4, 105) * 9);
-        for (let s = 1; s <= len; s++) put(i, j + s, CO_SLIME[s === 1 ? 2 : 1], near[k]);
-        put(i, j + len + 1, CO_SLIME[3], near[k]);
-        put(i + 1, j + len + 1, CO_SLIME[1], near[k]);
-        put(i, j + len + 2, CO_SLIME[1], near[k]);
+      if (m === M_TOOTH || m === M_LIP || m === M_MAW) {
+        // drool
+        if (roll < 0.32) string(i, j, Math.round(toWater * (0.35 + 0.65 * h3(i, j, 1, 102))), near[k], 103);
+      } else if (m === M_ARM) {
+        if (roll < 0.05) string(i, j, Math.round(Math.min(toWater, (8 + 26 * h3(i, j, 1, 104)) * zoom)), near[k], 105);
+      } else {
+        const clump = vn(i * 0.07 / zoom, j * 0.05 / zoom, 0, 107);
+        const p = clump > 0.58 ? 0.2 : 0.025;
+        if (roll < p) weed(i, j, Math.round(toWater * (0.3 + 0.7 * h3(i, j, 1, 106))), near[k], 108);
+        else if (roll < p + 0.04) string(i, j, Math.round(toWater * (0.2 + 0.6 * h3(i, j, 1, 109))), near[k], 110);
       }
     }
   }
@@ -1245,21 +1430,21 @@ export const GAZE_AT_YOU: readonly [number, number, number] = [0, 0.95, 0.22];
 
 /** HIS THREE ARMS RISEN (phase 2): out of the water before him, one either side curling up and over, one low before him, coiled to strike. */
 export const ARMS_RISEN: ReadonlyArray<ArmPose> = [
-  // (before his left shoulder: up out of the water in an S, its tip hooked over and out)
-  { path: [[-262, 228, -30], [-300, 232, 60], [-292, 238, 140], [-252, 246, 200], [-262, 256, 262], [-308, 262, 284], [-344, 264, 256], [-338, 266, 226], [-318, 266, 218]], r: 42, belly: [0.6, 0.5, -0.4], seed: 1 },
-  // (before his right shoulder: lower, coiled in on itself to lash)
-  { path: [[282, 222, -30], [318, 226, 54], [336, 234, 128], [312, 244, 190], [266, 252, 206], [242, 258, 178], [254, 262, 152], [280, 264, 154]], r: 40, belly: [-0.6, 0.5, -0.3], seed: 2 },
-  // (before him, off his maw: reared like a snake about to strike)
-  { path: [[-150, 220, -30], [-170, 236, 30], [-168, 254, 86], [-136, 270, 120], [-100, 288, 118], [-88, 304, 94]], r: 30, belly: [0.2, 0.4, -0.9], seed: 3 },
+  // (before his left shoulder: reared up out of the water in an S, leaning in over the stone, its whip of a tip curling)
+  { path: [[-262, 228, -30], [-296, 236, 50], [-290, 246, 130], [-246, 256, 186], [-232, 266, 246], [-262, 274, 290], [-306, 278, 300], [-332, 278, 282], [-330, 278, 264], [-316, 278, 262], [-312, 278, 270]], r: 44, belly: [0.6, 0.5, -0.4], seed: 1 },
+  // (before his right shoulder: leaning out, then back in, its tip curled to lash)
+  { path: [[282, 222, -30], [320, 230, 46], [326, 240, 118], [292, 252, 172], [262, 262, 222], [274, 270, 266], [312, 274, 280], [338, 276, 262], [334, 276, 244], [320, 276, 244], [318, 276, 252]], r: 42, belly: [-0.6, 0.5, -0.3], seed: 2 },
+  // (before him, off his maw: lower, reared like a snake about to strike, its tip hooked)
+  { path: [[-150, 220, -30], [-178, 236, 30], [-172, 254, 92], [-134, 270, 128], [-98, 286, 136], [-74, 298, 122], [-72, 304, 104], [-84, 306, 98], [-90, 306, 106]], r: 32, belly: [0.2, 0.4, -0.9], seed: 3 },
 ];
 /** HIS TWO ARMS BURST UP (phase 1): out of the water while he lies under it. */
 export const ARMS_UNDER: ReadonlyArray<ArmPose> = [
-  { path: [[-236, 214, -30], [-274, 218, 60], [-266, 224, 140], [-226, 232, 200], [-236, 242, 262], [-282, 248, 284], [-318, 250, 256], [-312, 252, 226], [-292, 252, 218]], r: 40, belly: [0.6, 0.5, -0.4], seed: 4 },
-  { path: [[236, 220, -30], [272, 224, 54], [290, 232, 128], [266, 242, 190], [220, 250, 206], [196, 256, 178], [208, 260, 152], [234, 262, 154]], r: 40, belly: [-0.6, 0.5, -0.3], seed: 5 },
+  { path: [[-236, 214, -30], [-270, 222, 50], [-264, 232, 130], [-220, 242, 186], [-206, 252, 246], [-236, 260, 290], [-280, 264, 300], [-306, 264, 282], [-304, 264, 264], [-290, 264, 262], [-286, 264, 270]], r: 42, belly: [0.6, 0.5, -0.4], seed: 4 },
+  { path: [[236, 220, -30], [274, 228, 46], [280, 238, 118], [246, 250, 172], [216, 260, 222], [228, 268, 266], [266, 272, 280], [292, 274, 262], [288, 274, 244], [274, 274, 244], [272, 274, 252]], r: 42, belly: [-0.6, 0.5, -0.3], seed: 5 },
 ];
 /** ONE ARM ALONE (its close-up): risen out of the water and curled over. */
 export const ARM_ALONE: ReadonlyArray<ArmPose> = [
-  { path: [[0, 0, -30], [-38, 4, 60], [-30, 10, 140], [10, 18, 200], [0, 28, 262], [-46, 34, 284], [-82, 36, 256], [-76, 38, 226], [-56, 38, 218]], r: 42, belly: [0.6, 0.5, -0.4], seed: 6 },
+  { path: [[0, 0, -30], [-34, 8, 50], [-28, 18, 130], [16, 28, 186], [30, 38, 246], [0, 46, 290], [-44, 50, 300], [-70, 50, 282], [-68, 50, 264], [-54, 50, 262], [-50, 50, 270]], r: 44, belly: [0.6, 0.5, -0.4], seed: 6 },
 ];
 
 export function poseRisen(maw = 0.2, view: 'front' | 'back' = 'front'): ColossusPose {
@@ -1275,8 +1460,8 @@ export function poseArm(): ColossusPose {
 // =============================================================================================
 // WHAT HE COSTS
 
-/** A frame of him risen at the game's size (picture pixels, two to a game pixel: what he spans, his arms with him, 848 by 526, and a little room), and what it holds at 4 bytes a pixel. */
-export const COLOSSUS_FRAME = { w: 860, h: 540 } as const;
+/** A frame of him risen at the game's size (picture pixels, two to a game pixel: what he spans, his arms, horns and hanging weed with him, 882 by 595, and a little room), and what it holds at 4 bytes a pixel. */
+export const COLOSSUS_FRAME = { w: 900, h: 610 } as const;
 export function costOf(fps: number, seconds: number, frame: { w: number; h: number } = COLOSSUS_FRAME): { frameMB: number; perSecondMB: number; totalMB: number } {
   const frameMB = (frame.w * frame.h * 4) / (1024 * 1024);
   return { frameMB, perSecondMB: frameMB * fps, totalMB: frameMB * fps * seconds };

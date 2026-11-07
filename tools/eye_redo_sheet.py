@@ -27,7 +27,7 @@ def wrap(text, font, width):
 def block(title, note, img):
     tl = wrap(title, mid, W - 48)
     nl = wrap(note, small, W - 48) if note else []
-    h = 16 + 30 * len(tl) + 26 * len(nl) + 10 + (img.height if img else 0) + 18
+    h = 16 + 30 * len(tl) + 26 * len(nl) + 10 + (img.height if img else 0) + 12
     b = Image.new('RGB', (W, h), BG)
     d = ImageDraw.Draw(b)
     y = 16
@@ -55,6 +55,50 @@ def stack(parts, out):
     sheet.save(out)
     print(out, sheet.size)
 
+def plan():
+    # top down: across (tiles) and down the screen (tiles) from his middle at the water
+    T = 26
+    tiles_w, quay, deep = 30 / 2 ** 0.5, 8.4 / 2 ** 0.5, 17 / 2 ** 0.5
+    Wp, Hp = W, int((quay + deep + 3.8 + 1.4) * T) + 44
+    im = Image.new('RGB', (Wp, Hp), BG)
+    d = ImageDraw.Draw(im)
+    ox, oy = Wp // 2, int(3.8 * T) + 8
+    X = lambda u: ox + u * T
+    Y = lambda v: oy + v * T
+    # the water
+    d.rectangle([X(-tiles_w / 2 - 1.2), Y(-3.7), X(tiles_w / 2 + 1.2), Y(quay)], fill=(12, 20, 16))
+    # him: his hill across the water, his eye
+    d.ellipse([X(-9.7), Y(-3.4), X(9.7), Y(4.3)], fill=(40, 46, 34), outline=(120, 60, 90))
+    d.ellipse([X(-0.5), Y(2.2), X(0.5), Y(2.9)], fill=(255, 79, 138))
+    d.text((X(-1.2), Y(0.6)), 'him', font=mid, fill=PALE)
+    # the stone, a tile grid
+    d.rectangle([X(-tiles_w / 2), Y(quay), X(tiles_w / 2), Y(quay + deep)], fill=(78, 74, 86), outline=(160, 156, 170), width=2)
+    k = -tiles_w / 2
+    while k <= tiles_w / 2 + 1e-6:
+        d.line([X(k), Y(quay), X(k), Y(quay + deep)], fill=(92, 88, 100)); k += 1
+    k = quay
+    while k <= quay + deep + 1e-6:
+        d.line([X(-tiles_w / 2), Y(k), X(tiles_w / 2), Y(k)], fill=(92, 88, 100)); k += 1
+    # the obelisks
+    for (u, v) in [(-tiles_w / 2 - 0.6, quay + 5.5), (tiles_w / 2 + 0.6, quay + 5.5), (0, quay + deep + 0.7)]:
+        d.rectangle([X(u) - 7, Y(v) - 7, X(u) + 7, Y(v) + 7], fill=(255, 79, 138))
+    # the tentacles: where each rises (his lengths / 39.19 to a tile)
+    TL = 32 / (2 / 3) ** 0.5
+    marks = [('1', [(-236, 214), (236, 220)], (236, 220, 214)), ('2', [(-262, 228), (282, 222), (-150, 220)], (255, 176, 112)), ('3', [(-230, 360), (230, 360), (0, 400)], (255, 79, 138))]
+    for lab, pts, col in marks:
+        for (x, y) in pts:
+            u, v = x / TL, y / TL
+            off = {'1': (0, -0.6), '2': (0, 0.45), '3': (0, 0)}[lab]
+            cx, cy = X(u + off[0]), Y(v + off[1])
+            d.ellipse([cx - 13, cy - 13, cx + 13, cy + 13], outline=col, width=3, fill=BG if lab != '2' else (60, 40, 20))
+            d.text((cx - 6, cy - 12), lab, font=mid, fill=col)
+    # the hero, at the middle of the stone
+    hx, hy = X(0), Y(quay + deep / 2)
+    d.polygon([(hx, hy - 12), (hx + 9, hy + 8), (hx - 9, hy + 8)], fill=(40, 220, 240))
+    d.text((X(-tiles_w / 2), Y(quay + deep) + 30), 'the stone: 21 tiles across, 12 deep', font=small, fill=GREY)
+    d.text((X(-tiles_w / 2 - 1.1), Y(-3.6)), 'the black water', font=small, fill=GREY)
+    return im
+
 mode = sys.argv[1]
 src = sys.argv[2]
 spec = {p['file']: p for p in json.load(open(os.path.join(src, 'sheet.json')))}
@@ -74,10 +118,14 @@ else:
         p = spec[name + '.png']
         parts.append(block(p['title'], p['note'], img(name + '.png')))
         a, b = img(name + '_2a.png'), img(name + '_2b.png')
-        parts.append(block('The same, twice the size: its left half', '', a))
-        parts.append(block('and its right half', '', b))
+        both = Image.new('RGB', (a.width, a.height + 6 + b.height), BG)
+        both.paste(a, (0, 0)); both.paste(b, (0, a.height + 6))
+        parts.append(block('The same, twice the size: its left half, then its right half', '', both))
     new_small = img('arena_p2.png').resize((507, 234), Image.NEAREST)
     row = Image.new('RGB', (W, 234), BG)
     row.paste(today, (24, 0)); row.paste(new_small, (W - 24 - 507, 0))
-    parts.append(block('TODAY (LEFT) AND NEW (RIGHT), SMALL', 'Left, the game today, from the game itself: the pool in the middle of the round ring, the Eye lying in it, about as tall as the hero, seen from above. Right, the new arena: the stone a rectangle, the water across the top, him risen and filling it.', row))
+    parts.append(block('TODAY (LEFT) AND NEW (RIGHT), SMALL', 'Left, the game today: the pool in the middle of the round ring, the Eye lying in it, about as tall as the hero, seen from above. Right, the new arena: the stone a rectangle, the water across the top, him risen and filling it.', row))
+    p = spec['arena_mid.png']
+    parts.append(block(p['title'], p['note'], img('arena_mid.png')))
+    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. Where the tentacles rise: phase 1 (1), phase 2 (2); phase 3, a suggestion (3): up through the stone. The cult\'s three obelisks pink; the hero cyan.', plan()))
     stack(parts, sys.argv[4])

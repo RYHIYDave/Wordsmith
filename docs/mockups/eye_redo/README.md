@@ -23,7 +23,10 @@ stills, for his yes before anything is animated.
 - `eye_arena.png`: the new arena as the player sees it, a phone held sideways (the game's own 507 x 234 game pixels, two
   picture pixels to each). Phase 1: the black water across the top, his eye's fire under it, two tentacles up out of it, the
   hero on the stone below. Phase 2: him risen, filling the top of the screen, three tentacles, the hero below. Each again at
-  twice the size, in two halves. At the foot, small: today's fight from the game itself, and the new one beside it.
+  twice the size, in two halves. Then, small: today's fight from the game itself, and the new one beside it. Then the camera
+  as the game sets it when the hero stands in the middle of the stone (no lean): mostly stone, his lower body and arms across
+  the top. Last, a plan of the whole arena from above: its size in tiles, where the tentacles rise in each phase, the
+  obelisks.
 
 Everything round him is the game's own: the fen's paving and black water from the fen's terrain painter (`art/fen.ts`,
 `art/terrain.ts`), the fen's pieces (`art/floor10.ts`: broken columns, cattails, sedge, mossy stones, column drums, lily
@@ -31,16 +34,23 @@ pads), and the Warrior as the game paints him (`art/heroes3.ts`).
 
 ## What he is
 
-A hill of rotting flesh risen out of black water, facing the camera always. Hung in folds and sagging rolls, wet and slick,
-grey-green and bruised violet in his creases; moss on what faces up; slime running down him with a wet glint where the light
-takes it; boils. Old bones grown into his hide: a horned beast's skull on his left shoulder, the great ribs of something across
-his right, the skulls of the drowned; a drum of a fallen column and a broken slab of the fen's ruin sunk in his crown;
-barnacles crusting him at the waterline; leeches; weed and slime hanging off every overhang. At his heart one huge eye under a
-heavy overhanging brow: yellowed, bloodshot, its iris the enemy's pink burning to gold round a black slit, set between thick
+A hunched hill of rotting flesh risen out of black water, facing the camera always: a high back knotted along its ridge,
+heavy shoulders lower either side, jowls sagging in folds into the water. Hung in folds and sagging rolls, wet and slick, his
+deep creases going to a dark bruise; bruising in soft gradients, never patches; slime running down him, long wet highlights
+where the light runs along it; boils and a few open sores. Moss only in clumps and mats on his crown and over his brow, dark
+beneath, its tips lit. His outline broken by what has grown out of him: great horns of old bone out of his back, a tusk out of
+his shoulder, dead wood grown up out of his crown, a drum of a fallen column and a broken slab of the fen's ruin; a horned
+beast's skull on his left shoulder, the great ribs of something across his right, the skulls of the drowned; barnacles at the
+waterline; leeches. Curtains of weed and strings of slime hang from every overhang down into the water, and drool from his
+maw. Darker toward his edges; his eye the brightest thing on him, its pink-gold glow lighting the folds round it. At his heart
+one huge eye under a brow that juts out over it like a cliff: yellowed, bloodshot, its iris the enemy's pink burning to gold round a black slit, set between thick
 raw-rimmed lids, looking at you. Below it his maw: a wide gash, its lower jaw split down the middle; shut, a row of fangs
 locked over his lip and a seam down his chin; torn open, the jaw's two halves drop and part, fangs all round the gape. His
-tentacles: thick, tapering, slick, mottled and scarred along their backs, pale beneath, suckers in two rows along the inside
-of each curl; each an enemy of its own, rising out of the water. An enemy: the pink edge round him; pink and gold his only
+tentacles: smooth muscle, no rings, thick at the water and tapering to a thin whip of a tip; reared in an S, leaning, the tip
+curling; dark along the back shading to pale beneath, long wet highlights along their length; suckers in two rows along the
+underside, each a cupped ring with a lit rim and a dark middle, smaller toward the tip; a few old scars; slime dripping off
+them in strings. Each an enemy of its own, rising out of the water. The water round him dark and oily, foam and scum where he
+breaks it, his ripples thin broken lines, further apart further out, catching his eye's glow. An enemy: the pink edge round him; pink and gold his only
 glow; nothing cyan.
 
 How he is painted: his own solids, smooth-joined, in his own space (his own lengths, as the game's figures', TILE3 to a
@@ -53,16 +63,23 @@ fold; the indigo seam where one part ends before another; what of him is under t
 - The phone's screen: 507 x 234 game pixels (`engine/screen.ts`; the game's own playtest logs it on a phone held
   sideways). That is 15.8 tiles across and 14.6 tiles top to bottom (a tile 32 x 16 game pixels); along the floor, about 22
   tiles across and 21 deep.
-- Him risen, with his arms: 424 x 263 game pixels (848 x 526 picture pixels): five sixths of the screen's width. Over the
-  water at his crown he stands 167 game pixels; the knight stands 29. His eye 66 of his lengths in radius: about 76 game
+- Him risen, with his arms, horns and hanging weed: 441 x 298 game pixels (882 x 595 picture pixels): seven eighths of the
+  screen's width. Over the water, to the top of what grows out of his crown, he stands 201 game pixels; the knight stands 29. His eye 66 of his lengths in radius: about 76 game
   pixels across, two and a half times the knight's height.
 - Today he is about 127 x 61 game pixels on the same screen (measured from the game, `tools/scenarios/eye_today.mjs`), his
   eye about 32 across.
 - The arena (`tools/eye_redo_pics.ts` ARENA): the stone a rectangle the width of the screen and on down past its foot; the
   black water across the top from 8.4 half-tiles (134 picture pixels) below his middle. In the pictures the camera leans
   toward him 69 game pixels, as it leans toward the Moth (`render/render.ts` MOTH_LEAN: at most 0.3 of the screen, 70), so
-  the hero stands low on the screen; even so the top of his crown runs off the top of the screen, about 60 game pixels.
-- Under the water (phase 1) he lies 272 of his lengths down (his crown just under the surface) and 200 further out.
+  the hero stands low on the screen; even so the top of his crown and what grows out of it run off the top of the screen,
+  about 95 game pixels: his eye and brow and maw are in it.
+- The plan: the stone 21 tiles across and 12 deep (along the floor), a tile a square; the black water before it, about 6
+  tiles from its edge to his middle. In phase 1 his two arms rise 6 tiles either side of his middle, in the water just before
+  the stone; in phase 2 his three at 7 to his left, 7 to his right and 4 to his left; for phase 3 a suggestion, three up
+  through the stone 3 tiles in, 6 either side and one before the hero. The cult's three obelisks on the stone's two sides and
+  at its back.
+- Under the water (phase 1) he lies 384 of his lengths down (what grows from his crown just under the surface) and 330
+  further out, so that his eye's glow is seen in the water before the stone.
 
 ## Why the fight today is not scary (the audit)
 
@@ -89,12 +106,12 @@ fold; the indigo seam where one part ends before another; what of him is under t
 
 ## What he costs
 
-- A frame of him risen, his arms with him: about 860 x 540 picture pixels, at 4 bytes a pixel 1,857,600 bytes (1.77 MB).
-- Baked at 30 frames a second: 53.1 MB for each second of him; a stand of 3 seconds, 159 MB; ten moves of about 3 seconds
-  each, about 1.6 GB. Too much to hold whole. Ways to afford him (for the main chat): his body painted once a few times a
+- A frame of him risen, his arms with him: about 900 x 610 picture pixels, at 4 bytes a pixel 2,196,000 bytes (2.09 MB).
+- Baked at 30 frames a second: 62.8 MB for each second of him; a stand of 3 seconds, 188 MB; ten moves of about 3 seconds
+  each, about 1.9 GB. Too much to hold whole. Ways to afford him (for the main chat): his body painted once a few times a
   second and only what moves (his eye, his maw, his arms, each a small picture of its own) at 30; or baked to files and read
   as they are needed (his word of 6 Nov: the game may carry files).
-- Painting a frame, here without a browser: about 36 seconds risen, 23 under the water (this container, one core). Not to be
+- Painting a frame, here without a browser: about 47 seconds risen, 30 under the water (this container, two jobs at once). Not to be
   painted while the game runs: baked.
 
 ## How to make the pictures again
@@ -106,6 +123,18 @@ npx tsx tools/eye_redo_pics.ts arena shots/eye_redo/arena
 python3 tools/eye_redo_sheet.py look shots/eye_redo/look docs/mockups/eye_redo/pictures/eye_look.png
 python3 tools/eye_redo_sheet.py arena shots/eye_redo/arena shots/eye_today/x_risen.png docs/mockups/eye_redo/pictures/eye_arena.png
 ```
+
+## The second pass (the art chat's notes, before he sees it)
+
+The first pass broke his rule of 6 Nov, 15:18 (“Everything drawn should not just look like shapes.  That’s the rule”): its
+tentacles read as banded ram's horns, its moss and markings as flat camouflage, its outline as a smooth green dome, its
+ripples as thick flat bands, and the arena's room was not shown. Redone: the tentacles as above (no rings, no bands, a whip of
+a tip, shading from back to belly, long sheen, cupped suckers); the camouflage gone (moss only in textured clumps on his crown
+and brow; rotting wet flesh with deep creases between; bruising in soft gradients; boils and sores, wet); his outline hunched,
+knotted, his brow a cliff, horns and dead wood and stones breaking it, curtains of weed and strings of slime into the water;
+darker and wetter, his eye the brightest thing and its glow on his folds, darkness toward his edges, drool from his maw; the
+water dark and oily, his ripples thin broken lines (the fen's pool painted without its own rings: his are his); and the arena
+shown at the game's own camera with the hero in the middle of the stone, and as a plan.
 
 ## Checks
 
