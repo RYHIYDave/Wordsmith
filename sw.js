@@ -16,7 +16,12 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(caches.open(KEEP).then(async (c) => {
     const kept = await c.match(page ? './index.html' : req, { ignoreSearch: true });
     const fresh = fetch(req, { cache: 'no-cache' }).then((r) => {
-      if (r && r.ok) c.put(page ? './index.html' : req, r.clone());
+      if (r && r.ok) {
+        c.put(page ? './index.html' : req, r.clone());
+        // (the heroes baked: a bake's pictures kept, the older bakes' let go)
+        const m = /\/heroes\/([0-9a-f]+)\//.exec(req.url);
+        if (m) c.keys().then((ks) => ks.forEach((k) => { const n = /\/heroes\/([0-9a-f]+)\//.exec(k.url); if (n && n[1] !== m[1]) c.delete(k); }));
+      }
       return r;
     }).catch(() => null);
     if (kept) { e.waitUntil(fresh); return kept; }
