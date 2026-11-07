@@ -51,7 +51,14 @@ directs and playtests, and Claude writes and tests everything.
   stopped, never from the start), and tries a failed file again alone (one that passes alone failed
   only because the machine was busy). Do nothing heavy beside it (no bake, no build, no playtests),
   and read its last line, `UNIT DONE ...`, and `.unit/<commit>/summary.txt`.
-- A version goes live only after the whole unit suite, the full regression on a frozen copy, and
+- HOW MUCH IS CHECKED BEFORE AN UPDATE GOES LIVE: for a small update, only what changed and the core,
+  `node tools/unit.mjs --changed` (the tests of what changed since the commit last checked, and a core
+  of the game's main ways, minutes); the whole suite only for a big version. His pick, 6 Nov 2026,
+  21:01, asked after a day of whole runs (“But why did you need to test all that stuff?  We did a
+  massive test before you put out v25 that took hours and now you’ve been testing for hours again”):
+  “Only what changed (Recommended)”.
+- A version goes live only after its checks (below: the whole suite for a big version, only what
+  changed and the core for a small update), the playtests of what it changes on a frozen copy, and
   the published page's own playtests. The handoff and section 8 of the design notes say how.
 
 ## More than one chat
