@@ -5586,6 +5586,26 @@ export class Game {
     const S = m.strike!;
     const from = F.from ?? S.at;
     if (mv.f > from + F.long + 1) return;
+    // (what stands on the floor in its way, once a move, as it is thrown: a bell rung, a barrel broken, a mirror cracked, a sealed
+    // door opened to the word it carries; as a punch's, game/brawler.ts landPunch)
+    if (!mv.props && mv.f >= from) {
+      mv.props = true;
+      const bx = mv.x0 + (mv.wx ?? 0);
+      const by = mv.y0 + (mv.wy ?? 0);
+      const skill = isVetPunch(mv.id) ? 0 : 1;
+      const more = S.kind === 'kick' && this.has('vlonglegs') ? VET_TALENTS.longLegs.more : 0;
+      const reach = F.reach + more;
+      if (F.shape === 'round') this.breakProps(bx, by, reach, skill);
+      else {
+        const a = ((F.dir ?? 0) * Math.PI) / 180;
+        const ax = mv.ax ?? mv.fx;
+        const ay = mv.ay ?? mv.fy;
+        const [lx, ly] = vetBlowLeft(mv.fx, mv.fy, ax, ay);
+        const ux = ax * Math.cos(a) + lx * Math.sin(a);
+        const uy = ay * Math.cos(a) + ly * Math.sin(a);
+        this.breakProps(bx + ux * reach * 0.6, by + uy * reach * 0.6, 0.9, skill);
+      }
+    }
     let k = 0;
     for (const o of this.monsters) {
       if (o.dead || mv.hit.includes(o.id) || this.shutIn(o)) continue;
