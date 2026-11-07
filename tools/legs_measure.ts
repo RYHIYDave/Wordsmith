@@ -12,6 +12,9 @@
 //
 //   npx tsx tools/legs_measure.ts table            the table (JSON lines, then a plain table)
 //   npx tsx tools/legs_measure.ts sheet <dir>      a picture of each, standing, in his stance and running, for looking at
+//   npx tsx tools/legs_measure.ts sides            the Ranger, the game's and now (his knee joint raised, RU_BODY), from each of
+//                                                  his eight sides: knee to floor over hip to knee standing straight, and the
+//                                                  least through his guard and his town stance (on the bones, either leg)
 
 // @ts-ignore - node typings are not part of this project
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -28,8 +31,11 @@ import type { Build, Skeleton, V3 } from '../src/art/skeleton';
 import { paintWu } from '../src/art/warrior_up_art';
 import { WU_MOVES } from '../src/art/warrior_up_moves';
 import { WU_MAIL, WU_RED, WU_STEEL } from '../src/art/warrior_up';
-import { paintRu, RU_HOSE, RU_LEAF, RU_PLUM } from '../src/art/ranger_up';
-import { RU_MOVES } from '../src/art/ranger_up_moves';
+import { RU_HOSE, RU_LEAF, RU_PLUM } from '../src/art/ranger_up';
+import { paintRuMove as paintRu } from '../src/art/ranger_up_art';
+import { RU_BODY, RU_MOVES } from '../src/art/ranger_up_moves';
+import { WU_SIDES } from '../src/art/warrior_up';
+import { wuLegs } from '../src/art/warrior_up_review';
 import { LEAF, MAIL, PLUM } from '../src/art/kit';
 import { WARLOCK_B, drawWarlockAt, warlockMoves, warlockPose } from '../src/dev/warlock_moves';
 import { TINK_B, drawTinkerAt, tinkerMoves, tinkerPose } from '../src/dev/tinkerer_moves';
@@ -115,10 +121,11 @@ function oldStraight(m: Move3): Px {
 function rangerNow(pose: 'straight' | 'stance' | 'run', legs = false): Sample {
   const paint = paintRu;
   const m0 = pose === 'run' ? MOVES3.rrun : legs ? RU_MOVES.rstand : MOVES3.rstand;
-  const m: Move3 = pose === 'straight' ? { ...m0, rest: { ...m0.rest, ...standing(RANGER_BODY) }, motion: { keys: [{ at: 0, pose: {} }] } } : m0;
+  const m1: Move3 = legs ? { ...m0, build: RU_BODY } : m0;
+  const m: Move3 = pose === 'straight' ? { ...m1, rest: { ...m1.rest, ...standing(m1.build) }, motion: { keys: [{ at: 0, pose: {} }] } } : m1;
   const t = pose === 'run' ? endOf(m) * PHASE.k : pose === 'straight' ? 0 : STAND_T;
   const f = paint(m, t, 'front');
-  return { hero: legs ? 'Ranger, legs true' : 'Ranger, now (first sculpt)', pose, B: RANGER_BODY, s: f.s, px: f.px, st: f.drawn.st, cover: byStuff(f.drawn, f.sc.mats, [['over', [RU_LEAF]], ['upper', [RU_HOSE]], ['lower', [RU_PLUM]]]) };
+  return { hero: legs ? 'Ranger, now (his knee joint raised)' : 'Ranger, now (first sculpt)', pose, B: m.build, s: f.s, px: f.px, st: f.drawn.st, cover: byStuff(f.drawn, f.sc.mats, [['over', [RU_LEAF]], ['upper', [RU_HOSE]], ['lower', [RU_PLUM]]]) };
 }
 function warrior(pose: 'straight' | 'stance' | 'run'): Sample {
   const m0 = pose === 'run' ? WU_MOVES.krun : WU_MOVES.rear;
@@ -357,9 +364,35 @@ function table(only?: string[]): void {
   for (const r of rows) console.log(`| ${r.hero} | ${r.pose} | ${n(r.thigh)} | ${n(r.lower)} | ${Number.isFinite(r.lower / r.thigh) ? (r.lower / r.thigh).toFixed(2) : '-'} | ${n(r.eyeThigh)} | ${n(r.eyeLower)} | ${n(r.seenKneeBelow)} |`);
 }
 
+/** THE RANGER FROM EACH OF HIS EIGHT SIDES, the game's and now: knee to floor over hip to knee on the screen (on the bones, the
+ * least of his two legs), standing straight and the least through every frame of his guard and of his town stance (30 a second). */
+export function rangerSides(): { what: string; side: string; game: number; now: number }[] {
+  const least = (m: Move3, side: (typeof WU_SIDES)[number]): number => {
+    const end = endOf(m);
+    let l = Infinity;
+    for (let i = 0; i <= Math.round(end * 30); i++) for (const g of wuLegs(solve(m.build, bonesAt(m.motion.keys, m.rest, i / 30)), side, m.build.ankle)) l = Math.min(l, g.ratio);
+    return l;
+  };
+  const straight = (b: Build, side: (typeof WU_SIDES)[number]): number => Math.min(...wuLegs(solve(b, standing(b) as never), side, b.ankle).map((g) => g.ratio));
+  const out: { what: string; side: string; game: number; now: number }[] = [];
+  for (const side of WU_SIDES) out.push({ what: 'standing straight', side, game: straight(RANGER_BODY, side), now: straight(RU_BODY, side) });
+  for (const [what, game, now] of [['his guard', MOVES3.rstand, RU_MOVES.rstand], ['his town stance', MOVES3.rtown, RU_MOVES.rtown]] as const) {
+    for (const side of WU_SIDES) out.push({ what, side, game: least(game, side), now: least(now, side) });
+  }
+  return out;
+}
+function sides(): void {
+  const rows = rangerSides();
+  console.log(`| | ${WU_SIDES.join(' | ')} |`);
+  for (const what of [...new Set(rows.map((r) => r.what))]) {
+    console.log(`| ${what} | ${rows.filter((r) => r.what === what).map((r) => `${r.game.toFixed(2)} → **${r.now.toFixed(2)}**`).join(' | ')} |`);
+  }
+}
+
 if ((process.argv[1] ?? '').replace(/\\/g, '/').endsWith('tools/legs_measure.ts')) {
   paintWithoutCanvas();
   const [mode, dir] = process.argv.slice(2);
   if (mode === 'sheet') sheet(dir);
+  else if (mode === 'sides') sides();
   else table(dir ? dir.split(',') : undefined);
 }
