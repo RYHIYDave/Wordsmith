@@ -1,35 +1,38 @@
 // THE WARRIOR BROUGHT UP, AS THE GAME HOLDS HIM (the art chat's helper, 6 Nov 2026; behind art/warrior_up.ts WARRIOR_UP, off).
 //
 // The same lists, in the same shape, as art/heroes3.ts gives the knight (so the game, the side painter and the baking need
-// nothing new), from his new moves (art/warrior_up_moves.ts) painted by his sculpted painter (art/warrior_up.ts), EVERY LIST AT
-// 30 PICTURES A SECOND (his run, which grips the floor, at 60 as before: a picture for each of the game's steps):
-//   idle        his rear stance, alive: 60 pictures (2 s)          in town and on his card: his town stance, alive, 72 (2.4 s)
-//   walk        his run, gripping: 27 pictures at 60 (`walkStride` 2.07 tiles)    in town: his town run, gripping, the same
-//   stops       coming to a stand out of the run, 8 of them (0.24 s each)          start: setting off into the run (60 a second)
+// nothing new), from his moves (art/warrior_up_moves.ts) painted by his sculpted painter (art/warrior_up.ts). HE MOVES AS HE
+// USED TO where the owner asked it (7 Nov 2026: “Just make him move like he used to.”; “Nothing about town needed to change.”):
+// his run, his run in town, his town stance and looking about him are THE GAME'S OWN, at the game's own rates and as many
+// pictures (art/heroes3.ts: a run 30 a second by the clock, a standing loop 10, looking about him 20); like the game's knight he
+// has no stops and no setting off. The rest at 30 pictures a second, as the owner approved them (6 Nov):
+//   idle        his rear stance, alive: 60 pictures (2 s) at 30     in town and on his card: the game's town stance, 12 at 10
+//   walk        the game's run: 15 pictures at 30 (0.5 s), by the clock     in town: the game's town run, the same
 //   attack, attack2, heavy    Strike's two swings and the Slam, by Movement 9 (their numbers: warrior_up_moves.ts)
-//   leap, land  the Lunge's dive (16 pictures by how far through) and its landing   whirl: the Whirlwind, once round in 8
+//   leap, land  the Lunge's dive (16 pictures by how far through) and its landing   whirl: the Whirlwind, once round in 12
 //   reel, lurch, fall         struck from in front and from behind (7 frames), his fall (46)
-//   idleA       (from in front, in town and on his card) looking about him: 109 pictures (3.6 s; it was 73, at 20 a second)
-//   ready       (the same) drawing his sword when picked: 41 pictures (to the stance and 0.3 s held)
+//   idleA       (from in front, in town and on his card) looking about him, the game's: 73 pictures at 20 (3.6 s)
+//   ready       (the same) drawing his sword when picked: 41 pictures at 30 (to the stance and 0.3 s held)
 // A list that is the same in a dungeon, in town and on his card (all but standing, running and their stops and start) is ONE
 // list, painted once, as the Warlock's are (docs/cheap_heroes.md): fewer pictures to paint, hold and bake.
 
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, lightsOut, toSprite } from './kit';
-import { SETTLES, startOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import { add, bonesAt, mul, solve } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { GREAT_BLADE } from './moves3';
-import { paintWarriorUp, wuOnBack } from './warrior_up';
+import { onBack } from './carried';
+import { paintWarriorUp } from './warrior_up';
 import type { WuFrame, WuSide } from './warrior_up';
 import { WU_SIDES } from './warrior_up';
-import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, wuSettle } from './warrior_up_moves';
+import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3 } from './warrior_up_moves';
 
 const FPS = 30;
-const GRIP_FPS = 60;
+/** The game's own rates (art/heroes3.ts IDLE_FPS3, RUN_FPS3, GESTURE_FPS3), for the lists that move as the game's do. */
+export const WU_GAME_FPS = { idle: 10, run: 30, gesture: 20 } as const;
 const FRAME = 1 / 30;
 const LEAP_FRAMES = 16;
 const READY_HELD = 0.3;
@@ -87,7 +90,7 @@ function before(m: Move3, t: number, back: number): number {
 /** The blade's guard and point at a moment (on his back, where it is put away). */
 function bladeAt(m: Move3, t: number): readonly [V3, V3] {
   const { q, s } = wuPosed(m, t);
-  const away = q.stow > 0.5 ? wuOnBack(m.build, s) : null;
+  const away = q.stow > 0.5 ? onBack(m.build, s, 'sword') : null;
   const grip = away ? away.grip : s.handR;
   const point = away ? away.point : s.point;
   return [add(grip, mul(point, 1.3)), add(grip, mul(point, 1.3 + GREAT_BLADE))];
@@ -173,21 +176,19 @@ function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
   const attack = clip(WU_STRIKE3, FPS);
   const attack2 = clip(WU_SLASH3, FPS);
   const heavy = clip(WU_SLAM3, FPS);
+  // (his town stance at the game's own rate; his rear stance, alive, at 30; his runs the game's, by the clock, at its 30, with no
+  // stride to grip by and, as the game's knight, no stops and no setting off)
+  const idleFps = town ? WU_GAME_FPS.idle : FPS;
   const set: AnimSet = {
-    idle: round(stand, FPS),
-    walk: round(runM, GRIP_FPS),
+    idle: round(stand, idleFps),
+    walk: round(runM, WU_GAME_FPS.run),
     attack: three(attack),
     heavy: three(heavy),
-    idleFps: FPS,
-    walkFps: GRIP_FPS,
-    walkStride: runM.stride,
+    idleFps,
+    walkFps: WU_GAME_FPS.run,
     clips: { attack, attack2, heavy },
   };
-  // (coming to a stand out of the run, from 8 moments of its turn; and setting off from the stance into it)
-  set.stops = Array.from({ length: SETTLES }, (_, i) => clip({ ...stand, name: `${stand.name}: coming to a stand ${i}`, motion: wuSettle(runM, i / SETTLES, stand.rest) }, FPS));
-  const start = startOf(runM, stand.rest);
-  set.start = clip({ ...runM, name: `${runM.name}: setting off`, motion: start.motion, stride: undefined }, GRIP_FPS);
-  set.startAt = start.phase;
+  if (runM.stride !== undefined) set.walkStride = runM.stride;
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   const until = WU_THRUST3.arc ? WU_THRUST3.arc.until : spanOf(WU_THRUST3).end;
   clips.leap = spread(WU_THRUST3, LEAP_FRAMES, 0, until);
@@ -199,7 +200,7 @@ function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
   clips.reel = clip(WU_REEL3, FPS);
   clips.lurch = clip(WU_LURCH3, FPS);
   if (view === 'front' && town) {
-    clips.idleA = clip(WU_LOOK3, FPS);
+    clips.idleA = clip(WU_LOOK3, WU_GAME_FPS.gesture);
     const end = spanOf(WU_DRAW3).end;
     clips.ready = clip(WU_DRAW3, FPS, 0, Math.min(end, Math.max(READY_LEAST, (WU_DRAW3.ready ?? end) + READY_HELD)));
   }

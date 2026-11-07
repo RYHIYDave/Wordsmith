@@ -229,7 +229,9 @@ function lists(key: string): { before: Shown; after: Shown } {
   const loopN = n.motion.loop !== undefined ? endOf(n) - (n.motion.loop ?? 0) : undefined;
   // (as the game had him: standing at 10 a second, looking about him at 20, the rest at 30; now all at 30, his run at 60)
   const fpsO = key === 'rear' || key === 'ktown' ? 10 : key === 'klook' ? 20 : 30;
-  const fpsN = n.stride !== undefined ? 60 : 30;
+  // (now: the lists that move as the game's at its rates, his town stance at 10 and looking about him at 20; his run, the game's,
+  // at 30 by the clock; the rest at 30)
+  const fpsN = n.stride !== undefined ? 60 : key === 'ktown' ? 10 : key === 'klook' ? 20 : 30;
   const endO = key === 'kdraw' ? 40 / 30 : endOf(o);
   const endN = key === 'kdraw' ? 40 / 30 : endOf(n);
   return { before: { key, fps: fpsO, loop: loopO, end: endO, runs: o.stride !== undefined || key.includes('run') }, after: { key, fps: fpsN, loop: loopN, end: endN, runs: key.includes('run') } };
@@ -255,38 +257,21 @@ function still(who: Who, key: string, t: number, view: View): Px {
 /** A stride strip: 8 moments evenly through a turn of a run, from one side, as the owner last saw it or now. */
 interface Strip {
   label: string;
-  who: 'seen' | 'after';
+  who: 'seen' | 'after' | 'before';
   key: string;
   view: View;
 }
 const SHEET: { title: string; second?: boolean; rows: { label: string; key: string; before: number; after: number }[]; strips?: Strip[] }[] = [
-  { title: 'Standing in his guard', rows: [{ label: 'his guard (now he breathes, shifts his weight, and has a habit of his own)', key: 'rear', before: 0, after: 1.3 }] },
-  { title: 'Running', rows: [{ label: 'a stride (now a heavy man\'s run: his feet grip the floor, his knee lifts only a little)', key: 'krun', before: 0.1, after: 0.1 }], strips: [
-    { label: 'A whole stride, side-on, AS YOU LAST SAW IT: his knee came up past his belt', who: 'seen', key: 'krun', view: 'side' },
-    { label: 'A whole stride, side-on, NOW: leaning in, his foot passing low, his knee only a little up, the leg behind him straightening as it pushes', who: 'after', key: 'krun', view: 'side' },
+  { title: 'Standing in his guard (his rear stance)', rows: [{ label: 'his guard, his sword where the game holds it: both hands low at his right hip, the blade trailing down and back', key: 'rear', before: 0, after: 1.3 }] },
+  { title: 'Running', rows: [{ label: 'a stride: the game\'s own run, frame for frame', key: 'krun', before: 0.1, after: 0.1 }], strips: [
+    { label: 'A whole stride, THE GAME (the game draws him only from in front and from behind: from in front)', who: 'before', key: 'krun', view: 'front' },
+    { label: 'A whole stride, NOW, from in front', who: 'after', key: 'krun', view: 'front' },
+    { label: 'A whole stride, NOW, side-on', who: 'after', key: 'krun', view: 'side' },
   ] },
-  { title: 'His class card: drawing his sword when picked', rows: [{ label: 'ready in his guard (now his feet step into it, never slide)', key: 'kdraw', before: 33 / 30, after: 33 / 30 }] },
-  { title: 'Strike, the first swing (a rising cut)', rows: [
-    { label: 'the wind-up (now big, and held)', key: 'strike', before: 2 / 30, after: 7 / 30 },
-    { label: 'the strike (now two frames, smeared)', key: 'strike', before: 4 / 30, after: 10 / 30 },
-    { label: 'the wind-down', key: 'strike', before: 8 / 30, after: 16 / 30 },
-  ] },
-  { title: 'Strike, the second swing (a downward slash)', rows: [
-    { label: 'the wind-up (now big, and held)', key: 'kslash', before: 2 / 30, after: 7 / 30 },
-    { label: 'the strike (now two frames, smeared)', key: 'kslash', before: 4 / 30, after: 10 / 30 },
-    { label: 'the wind-down', key: 'kslash', before: 8 / 30, after: 18 / 30 },
-  ] },
-  { title: 'Slam', rows: [
-    { label: 'the wind-up (now up on his toes, held)', key: 'slam', before: 5 / 30, after: 12 / 30 },
-    { label: 'the strike (now two frames, smeared)', key: 'slam', before: 7 / 30, after: 15 / 30 },
-    { label: 'the wind-down', key: 'slam', before: 12 / 30, after: 24 / 30 },
-  ] },
-  { title: 'Whirlwind', rows: [{ label: 'going round (now pivoting on one foot, the blade smeared)', key: 'whirl', before: 2 / 30, after: 2 / 30 }] },
-  { title: 'Lunge (the diving thrust)', rows: [
-    { label: 'the dive', key: 'kthrust', before: 0.25, after: 0.25 },
-    { label: 'the point punched out as he lands', key: 'kthrust', before: 0.5, after: 0.5 },
-  ] },
-  // (on the second sheet: the first holds his legs at its top, and stays under 7500 pixels tall)
+  { title: 'In town: standing', rows: [{ label: 'the game\'s own town stance, his arms folded, his sword on his back as the game has it (its hilt over his right shoulder)', key: 'ktown', before: 0.6, after: 0.6 }] },
+  { title: 'In town: running', rows: [{ label: 'the game\'s own town run', key: 'ktownrun', before: 0.1, after: 0.1 }] },
+  { title: 'His class card: drawing his sword when picked', rows: [{ label: 'ready in his guard (his feet step into it, never slide)', key: 'kdraw', before: 33 / 30, after: 33 / 30 }] },
+  // (on the second sheet: the first holds his reference and the lists that move as the game's)
   { title: 'His fall', second: true, rows: [
     { label: 'now: once more he pushes up on the hilt', key: 'kfall', before: 33 / 30, after: 31 / 30 },
     { label: 'the end: kneeling, the light gone out', key: 'kfall', before: 46 / 30, after: 46 / 30 },
@@ -294,10 +279,10 @@ const SHEET: { title: string; second?: boolean; rows: { label: string; key: stri
 ];
 const SMALL = [
   { label: 'standing', key: 'rear', before: 0, after: 1.3 },
-  { label: 'the strike', key: 'strike', before: 4 / 30, after: 10 / 30 },
-  { label: 'the slam', key: 'slam', before: 7 / 30, after: 15 / 30 },
   { label: 'running', key: 'krun', before: 0.1, after: 0.1 },
-  { label: 'his fall', key: 'kfall', before: 46 / 30, after: 46 / 30 },
+  { label: 'in town', key: 'ktown', before: 0.6, after: 0.6 },
+  { label: 'running in town', key: 'ktownrun', before: 0.1, after: 0.1 },
+  { label: 'the strike', key: 'strike', before: 4 / 30, after: 10 / 30 },
 ];
 
 /** HIS LEGS, as he approved him and now, his guard from in front and toward the camera: each leg's hip, knee, ankle and the
@@ -346,12 +331,12 @@ function sheetRows(dir: string, second: boolean, pre: string): { title: string; 
     }
     // (the stride strips: eight moments evenly through a turn, and how far up each swinging thigh is, from straight down)
     const strips = (sec.strips ?? []).map((st) => {
-      const m = st.who === 'seen' ? WU_RUN_SEEN : WU_MOVES[st.key];
-      const period = (m.stride as number) / GRIP_SPEED;
+      const m = st.who === 'seen' ? WU_RUN_SEEN : st.who === 'before' ? MOVES3[st.key] : WU_MOVES[st.key];
+      const period = m.stride !== undefined ? m.stride / GRIP_SPEED : m.motion.keys[m.motion.keys.length - 1].at;
       const files: string[] = [];
       const thighs: number[] = [];
       for (let i = 0; i < 8; i++) {
-        const t = Math.round(((i * period) / 8) * 60) / 60;
+        const t = (i * period) / 8;
         const f = `${pre}${String(n++).padStart(3, '0')}_${st.who}_strip.png`;
         writeFileSync(`${dir}/${f}`, pngRGBA(still(st.who, st.key, t, st.view)));
         files.push(f);
@@ -368,6 +353,11 @@ function sheet(dir: string): void {
   mkdirSync(dir, { recursive: true });
   let n = 0;
   const legs = legsPanel(dir);
+  // (his reference, the owner's picture of the two-handed stances, his “Rear stance”, beside his guard from the side that matches
+  // it: facing to the left, side-on, the blade trailing behind him to the right)
+  const ref = { file: 'ref_guard_sideL.png', view: 'sideL', also: 'ref_guard_front.png' };
+  writeFileSync(`${dir}/${ref.file}`, pngRGBA(still('after', 'rear', 1.3, 'sideL')));
+  writeFileSync(`${dir}/${ref.also}`, pngRGBA(still('before', 'rear', 0, 'front')));
   const spec = sheetRows(dir, false, 's');
   n = spec.reduce((a, sec) => a + sec.rows.length * 4, 0);
   const small: { label: string; files: string[] }[] = [];
@@ -380,7 +370,7 @@ function sheet(dir: string): void {
     }
     small.push({ label: r.label, files });
   }
-  writeFileSync(`${dir}/sheet.json`, JSON.stringify({ legs, sections: spec, small }, null, 1));
+  writeFileSync(`${dir}/sheet.json`, JSON.stringify({ ref, legs, sections: spec, small }, null, 1));
   console.log(`${n} pictures in ${dir}`);
 }
 
@@ -401,8 +391,7 @@ interface Part {
 }
 const FILM: Part[] = [
   { caption: 'STANDING IN HIS GUARD · before: 10 pictures a second, still · now: 30, breathing, shifting his weight, a habit of his own', key: 'rear', seconds: 4 },
-  { caption: 'RUNNING · now a heavy armoured man\'s run: leaning in, long and low, his knee lifting only a little; his feet grip the floor', key: 'krun', seconds: 2.2 },
-  { caption: 'RUNNING · AS YOU LAST SAW IT (his knee up past his belt) BESIDE NOW, side-on and from in front', key: 'krun', seconds: 2.2, seen: true },
+  { caption: 'RUNNING · the game\'s own run, as he used to: the same gait and timing, his sword low at his hip and trailing behind', key: 'krun', seconds: 2.2 },
   { caption: 'STRIKE, THE FIRST SWING · now a big held wind-up, a strike of two frames smeared, a big wind-down', key: 'strike', seconds: 1.5 },
   { caption: 'STRIKE, THE SECOND SWING · the same', key: 'kslash', seconds: 1.2 },
   { caption: 'SLAM · up on his toes and held, then two frames into the floor', key: 'slam', seconds: 1.4 },
@@ -411,9 +400,9 @@ const FILM: Part[] = [
   { caption: 'STRUCK FROM IN FRONT', key: 'kreel', seconds: 0.6 },
   { caption: 'STRUCK FROM BEHIND', key: 'klurch', seconds: 0.6 },
   { caption: 'HIS FALL · now he pushes up once more on his sword before the light goes out', key: 'kfall', seconds: 2.2 },
-  { caption: 'IN TOWN, STANDING · before: 10 pictures a second · now: 30, alive', key: 'ktown', seconds: 2.6 },
-  { caption: 'IN TOWN, RUNNING · the same heavy run, his hands free; his feet grip the floor', key: 'ktownrun', seconds: 1.8 },
-  { caption: 'IN TOWN, LOOKING ABOUT HIM · before: 20 pictures a second · now: 30', key: 'klook', seconds: 3.7 },
+  { caption: 'IN TOWN, STANDING · the game\'s own, his arms folded, his sword on his back as the game has it', key: 'ktown', seconds: 2.6 },
+  { caption: 'IN TOWN, RUNNING · the game\'s own town run', key: 'ktownrun', seconds: 1.8 },
+  { caption: 'IN TOWN, LOOKING ABOUT HIM · the game\'s own', key: 'klook', seconds: 3.7 },
   { caption: "HIS CLASS CARD, DRAWING HIS SWORD WHEN PICKED · now his feet step, never slide", key: 'kdraw', seconds: 1.6 },
   { caption: 'STRIKE, THE FIRST SWING, AT HALF SPEED', key: 'strike', seconds: 1.3, slow: 2 },
   { caption: 'STRIKE, THE SECOND SWING, AT HALF SPEED', key: 'kslash', seconds: 1.0, slow: 2 },
@@ -505,7 +494,7 @@ function sheet2(dir: string): void {
   }
   // HIS EIGHT FACINGS: his stance, a stride of his run, Strike's smeared blow, his town stance (his sword on his back)
   const turn: { title: string; cells: { k: number; name: string; side: string; file: string }[] }[] = [];
-  for (const [title, key, t] of [['Standing in his guard', 'rear', 1.3], ['Running: a stride', 'krun', 0.1], ['Strike: the blow, smeared', 'strike', 10 / 30], ['In town: his sword on his back, point up', 'ktown', 0.6]] as const) {
+  for (const [title, key, t] of [['Standing in his guard', 'rear', 1.3], ['Running: a stride', 'krun', 0.1], ['Strike: the blow, smeared', 'strike', 10 / 30], ['In town: his sword on his back, as the game has it', 'ktown', 0.6]] as const) {
     const cells = EIGHT.map((e) => {
       const px = still('after', key, t, e.side);
       return { k: e.k, name: e.name, side: `${e.side} (${SIDE_NAMES[e.side]})`, file: write(px) };
@@ -569,7 +558,9 @@ function scenes(dir: string, start: number): SceneFrame[] {
     const r = (4.6 * seconds) / (2 * Math.PI);
     let rig: Rig | null = null;
     const m = WU_MOVES.krun;
-    const period = (m.stride as number) / GRIP_SPEED;
+    // (the game's run is played by the clock: half a second a turn, 30 pictures a second)
+    const period = m.stride !== undefined ? m.stride / GRIP_SPEED : m.motion.keys[m.motion.keys.length - 1].at;
+    const runFps = m.stride !== undefined ? 60 : 30;
     for (let i = 0; i < Math.round(seconds * 30); i++) {
       const t = i / 30;
       const ph = (t / seconds) * 2 * Math.PI;
@@ -586,7 +577,7 @@ function scenes(dir: string, start: number): SceneFrame[] {
         for (let w = 0; w < 30; w++) rig.frame(paintOf('after', 'krun', (w / 30) % period, side), 1 / 30, 0, [at[0] / 2, at[1] / 2]);
       }
       rig.face(side);
-      const u = Math.floor(((t % period) * 60) + 1e-6) / 60;
+      const u = Math.floor(((t % period) * runFps) + 1e-6) / runFps;
       const px = rig.frame(paintOf('after', 'krun', u, side), 1 / 30, 0, [at[0] / 2, at[1] / 2]);
       const e = EIGHT[((Math.round((Math.atan2(fy, fx) * 180) / Math.PI / 45) % 8) + 8) % 8];
       out.push({ caption: 'NOW: RUNNING ROUND A CIRCLE, THROUGH ALL EIGHT FACINGS · at the game\'s size, and three times as big', scene: write(laid(px, at), 'c'), cell: write(px, 'd'), at, facing: e.name, side: `his side ${SIDE_NAMES[side]}`, path: { r } });

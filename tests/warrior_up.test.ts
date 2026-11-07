@@ -3,12 +3,12 @@
 //   1. the switch is off; of the game only art/heroes3.ts reaches the new files, and only through it; with it off, EVERY FRAME
 //      THE GAME PAINTS OF HIM IS THE SAME (each list's first, middle and last frame against the hashes made before any of this,
 //      tests/warrior_up.hashes.json; with WARRIOR_UP_ALL=1, every frame);
-//   2. with it on, every list at 30 pictures a second (his run, which grips the floor, at 60);
+//   2. with it on, the game's knight's lists and more: those that move as the game's at its rates and lengths, the rest at 30;
 //   3. EVERY FRAME OF EVERY MOVE THROUGH EVERY BOSS CHECK (art/boss_checks.ts checkBoss), from each of his eight sides (each truly
 //      painted, 45 degrees apart), with the game's own handovers between them;
 //   4. nothing of him through what he wears: no pixel of his mail seen from inside his tabard, its skirt, a pauldron or his scarf
 //      (art/warrior_up_review.ts wuCoverFindings), every frame from all eight sides; and the check sees mail that is through;
-//   5. his feet grip in the run: each foot on the floor goes back under him as fast as the game carries him;
+//   5. his runs the game's own, frame for frame (the owner, 7 Nov 2026: “Just make him move like he used to.”);
 //   6. crisp; the friend's cyan edge round him and his pool of cyan light behind him; nothing of the enemy's pink or gold;
 //   7. his hits and lengths as stated (the main chat's numbers), and Movement 9 in each blow: a held wind-up, a strike of two
 //      smeared frames;
@@ -17,15 +17,12 @@
 //   9. HIS LEGS READ TRUE ON THE SCREEN (the owner, 6 Nov 2026: “Can you make sure his leg ratio is correct cause it seems like
 //      all these guys have long upper legs and short legs below the knee”): in every frame of his stances and of every pose he
 //      holds, from each of his eight sides, each leg whose shin is seen reads at least 1.05 times as long below the knee as above
-//      it; in his runs, at least 1 wherever a foot is flat on the floor bearing him (art/warrior_up_review.ts WU_LEGS_HELD,
-//      wuLegFaults); and the measure sees a short shin (his guard as it was).
-//  10. HIS SWORD SEEN FROM EVERY SIDE (the coordinator, 6 Nov 2026: from down and to the left it vanished behind him; "a hero must
-//      read armed in every facing"): in every frame of every list he holds or runs in, from each of his eight sides (his card's
-//      from in front), at least WU_BLADE_LEAST game pixels of the blade's light, its point among them (art/warrior_up_review.ts
-//      WU_BLADE_HELD, wuBladeSeen); and the measure sees a hidden sword (his guard as it was, from down and to the left).
-//  11. HIS RUN A HEAVY MAN'S, NO KNEE UP (the owner, 7 Nov 2026: “all that time and you screwed up his run.  why is he high stepping
-//      with his knees up?”): in every frame of his runs, his stops and his setting off, from each of his eight sides, no swinging
-//      thigh more than WU_THIGH_MOST (50) degrees from hanging straight down; and the check sees the run he saw prance.
+//      it (art/warrior_up_review.ts WU_LEGS_HELD, wuLegFaults); and the measure sees a short shin (his guard as it was). His runs,
+//      the game's own, are measured and reported (11), not held.
+//  10. HIS SWORD WHERE THE GAME HOLDS IT (the owner, 7 Nov 2026: “His sword is too high and when he runs it's up at his neck.”):
+//      in his guard and his run his hands at or below his belt, the point below the hilt and behind him; in every town list his
+//      sword on his back as the game has it; and how much of it his guard shows from each side, as reported;
+//  11. his runs (the game's) measured as reported: the most a swinging thigh comes up, his legs where a foot bears him.
 //   run: tsx --test tests/warrior_up.test.ts          WARRIOR_UP_ALL=1 tsx --test tests/warrior_up.test.ts
 
 // @ts-ignore
@@ -41,15 +38,15 @@ import { WARRIOR_UP, WU_MAIL, WU_PLUM, WU_RED, WU_RIM, WU_SCARF, WU_SIDES, WU_SP
 import { stage } from '../src/art/skin';
 import type { WuSide } from '../src/art/warrior_up';
 import { RED, SCARF_WINE } from '../src/art/hero_warrior';
-import { paintWu, wuFacing, wuSmeared } from '../src/art/warrior_up_art';
+import { WU_GAME_FPS, paintWu, wuFacing, wuPosed, wuSmeared } from '../src/art/warrior_up_art';
 import type { WuActorArt } from '../src/art/warrior_up_art';
-import { WU_REST, WU_REST_SEEN, WU_RUN_SEEN, WU_TOWN_REST, WU_TOWN_REST_SEEN, wuSettle } from '../src/art/warrior_up_moves';
+import { WU_KNEES_OUT, WU_REST, WU_REST_SEEN, WU_RUN_SEEN, WU_TOWN_REST, WU_TOWN_REST_SEEN } from '../src/art/warrior_up_moves';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_MOVES, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLAM_HELD, WU_SLAM_HIT, WU_SLASH3, WU_STRIKE3, WU_STRIKE_HELD, WU_STRIKE_HIT, WU_STRIKE_POISE, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, swingCarried } from '../src/art/warrior_up_moves';
-import { WU_BLADE_HELD, WU_BLADE_LEAST, WU_THIGH_MOST, wuRunning, wuThighFaults, wuThighs, WU_LEGS_HELD, WU_LEGS_RUNS, WU_LEG_SEEN, WU_THROUGH, warriorReview, wuBladeFaults, wuBladeHeld, wuBladeSeen, wuCoverFindings, wuLegFaults, wuLegs, wuSword } from '../src/art/warrior_up_review';
+import { WU_SWORD_LOW, WU_THIGH_MOST, wuStowedFaults, wuSwordLowFaults, wuThighMost, wuThighs, WU_LEGS_HELD, WU_LEGS_RUNS, WU_LEG_SEEN, WU_THROUGH, warriorReview, wuBladeSeen, wuCoverFindings, wuLegFaults, wuLegs, wuSword } from '../src/art/warrior_up_review';
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { lookOfPlace } from '../src/art/heroes';
-import { GRIP_SPEED, KNIGHT_BODY, SETTLES, THRUST3, UNITS_PER_TILE, startOf } from '../src/art/moves3';
+import { GRIP_SPEED, KNIGHT_BODY, KNIGHT_RUN3, KNIGHT_TOWN3, KNIGHT_TOWN_RUN3, THRUST3, UNITS_PER_TILE } from '../src/art/moves3';
 import type { Move3 } from '../src/art/moves3';
 import { CANVAS3 } from '../src/art/skin';
 import { INK, PINK, PLUM, RIM_ALPHA } from '../src/art/kit';
@@ -72,7 +69,8 @@ const FR = 1 / 30;
 const near = (a: number, b: number, e = 1e-6): boolean => Math.abs(a - b) < e;
 const endOf = (m: Move3): number => m.motion.keys[m.motion.keys.length - 1].at;
 
-/** Every moment of his that the game shows: each move at 30 a second, a run at 60; his settles and his setting off, both places. */
+/** Every moment of his: each move at 30 a second (his town stance and looking about him, shown at 10 and 20, are looked at at 30:
+ * every frame the game shows and more). Like the game's knight he has no stops and no setting off. */
 function moments(): { m: Move3; t: number }[] {
   const out: { m: Move3; t: number }[] = [];
   for (const m of Object.values(WU_MOVES)) {
@@ -81,33 +79,24 @@ function moments(): { m: Move3; t: number }[] {
     const n = Math.round(endOf(m) * fps);
     for (let i = 0; i < (loop ? n : n + 1); i++) out.push({ m, t: i / fps });
   }
-  for (const [stand, runM] of [[WU_REAR3, WU_RUN3], [WU_TOWN3, WU_TOWN_RUN3]] as const) {
-    for (let k = 0; k < SETTLES; k++) {
-      const m: Move3 = { ...stand, name: `${stand.name}: coming to a stand ${k}`, motion: wuSettle(runM, k / SETTLES, stand.rest) };
-      for (let i = 0; i <= Math.round(endOf(m) * 30); i++) out.push({ m, t: i / 30 });
-    }
-    const st = startOf(runM, stand.rest);
-    const m: Move3 = { ...runM, name: `${runM.name}: setting off`, motion: st.motion, stride: undefined };
-    for (let i = 0; i <= Math.round(endOf(m) * 60); i++) out.push({ m, t: i / 60 });
-  }
   return out;
 }
 const MOMENTS = moments();
 
 /** What is wrong in any of his pictures, every moment from every side: painted once, each picture looked at by tests 4 and 6
  * together (and not kept: eight sides of every moment is too many pictures to hold). */
-let swept: { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number; blade: string[]; bladeLeast: Record<string, number>; thighs: string[]; thighMost: number; runFrames: number } | null = null;
+let swept: { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number; low: string[]; lowFrames: number; stowed: string[]; stowedFrames: number; guardBlade: Record<string, number> } | null = null;
 const KEY_OF = new Map<Move3, string>(Object.entries(WU_MOVES).map(([k, m]) => [m, k]));
-function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number; blade: string[]; bladeLeast: Record<string, number>; thighs: string[]; thighMost: number; runFrames: number } {
+function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number; low: string[]; lowFrames: number; stowed: string[]; stowedFrames: number; guardBlade: Record<string, number> } {
   if (swept) return swept;
   const cover: string[] = [];
   const crisp: string[] = [];
   const legs: string[] = [];
-  const blade: string[] = [];
-  const bladeLeast: Record<string, number> = {};
-  const thighs: string[] = [];
-  let thighMost = 0;
-  let runFrames = 0;
+  const low: string[] = [];
+  const stowed: string[] = [];
+  const guardBlade: Record<string, number> = {};
+  let lowFrames = 0;
+  let stowedFrames = 0;
   let legsSeen = 0;
   for (const { m, t } of MOMENTS) {
     const key = KEY_OF.get(m);
@@ -124,19 +113,26 @@ function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: 
         legs.push(...wuLegFaults(key, frame, f, v));
         legsSeen += wuLegs(f.s, v, undefined, { z: f.drawn.z, w: f.px.w, h: f.px.h }).filter((l) => l.seen >= WU_LEG_SEEN).length;
       }
-      if (wuRunning(key, m.name)) {
-        thighs.push(...wuThighFaults(key, m.name, frame, f.s, v));
-        for (const t of wuThighs(f.s)) if (t.swinging) thighMost = Math.max(thighMost, t.deg);
-        runFrames++;
-      }
-      if (wuBladeHeld(key, m.name, frame, v)) {
-        blade.push(...wuBladeFaults(key, m.name, frame, f, v));
+      // (his guard's sword: how much of its light is seen from each side, the least of every frame)
+      if (key === 'rear') {
         const b = wuBladeSeen(f);
-        bladeLeast[v] = Math.min(bladeLeast[v] ?? Infinity, b.point ? b.seen : 0);
+        guardBlade[v] = Math.min(guardBlade[v] ?? Infinity, b.point ? b.seen : 0);
+      }
+    }
+    // (where his sword is: the same whichever side he is seen from)
+    if (key !== undefined) {
+      const { q, s } = wuPosed(m, t);
+      if (WU_SWORD_LOW.includes(key)) {
+        low.push(...wuSwordLowFaults(key, Math.round(t * 30), s, q));
+        lowFrames++;
+      }
+      if (['ktown', 'ktownrun', 'klook', 'kdraw'].includes(key) && q.stow > 0.5) {
+        stowed.push(...wuStowedFaults(key, Math.round(t * 30), s, q));
+        stowedFrames++;
       }
     }
   }
-  return (swept = { cover, crisp, legs, legsSeen, blade, bladeLeast, thighs, thighMost, runFrames });
+  return (swept = { cover, crisp, legs, legsSeen, low, lowFrames, stowed, stowedFrames, guardBlade });
 }
 
 // --- 1. the switch, and the game's knight unchanged while it is off ------------------------------------------------------
@@ -190,32 +186,45 @@ test('1. with the switch off, every frame the game paints of him is the very sam
 
 // --- 2. every list at 30 a second ---------------------------------------------------------------------------------------
 
-test('2. with it on, the game holds him in every list at 30 pictures a second (his gripping run at 60), the same lists as before and more', () => {
+test('2. with it on, the game holds him in the same lists as the game\'s knight and more: the lists that move as the game\'s at the game\'s own rates and lengths, the rest at 30 a second', () => {
+  // (the game's knight, the switch off: his lists, their rates and their lengths)
+  const game = makeHeroArt3();
+  const gameSet = (place: 'dungeon' | 'town' | 'card') => (game.of('warrior', lookOfPlace(place)) as WuActorArt).front;
+  const was: Record<string, ReturnType<typeof gameSet>> = { dungeon: gameSet('dungeon'), town: gameSet('town'), card: gameSet('card') };
   WARRIOR_UP.on = true;
   try {
     const art = makeHeroArt3();
     for (const place of ['dungeon', 'town', 'card'] as const) {
+      const g = was[place];
       for (const v of WU_SIDES) {
         const set = (art.of('warrior', lookOfPlace(place)) as WuActorArt)[v];
-        assert.equal(set.idleFps, 30, `${place} ${v}: standing at 30`);
-        assert.equal(set.idle.length, place === 'dungeon' ? 60 : 72, `${place} ${v}: standing, ${place === 'dungeon' ? 2 : 2.4} s`);
-        assert.equal(set.walkFps, 60, `${place} ${v}: his run at 60`);
-        assert.ok(near(set.walkStride ?? 0, GRIP_SPEED * (27 / 60)), `${place} ${v}: his run grips, its stride`);
-        assert.equal(set.walk.length, 27);
+        // HIS RUN, THE GAME'S: its rate, its length, played by the clock (no stride), and no stops and no setting off, as the game's
+        assert.equal(set.walkFps, g.walkFps, `${place} ${v}: his run at the game's ${g.walkFps}`);
+        assert.equal(set.walkFps, WU_GAME_FPS.run);
+        assert.equal(set.walk.length, g.walk.length, `${place} ${v}: his run, ${g.walk.length} pictures as the game's`);
+        assert.equal(set.walkStride, g.walkStride, `${place} ${v}: by the clock, as the game's`);
+        assert.equal(set.stops, g.stops, `${place} ${v}: no stops, as the game's knight`);
+        assert.equal(set.start, g.start, `${place} ${v}: no setting off, as the game's knight`);
+        // HIS STANCE: in town and on his card the game's, at its rate and length; his rear stance, alive, at 30 (as approved)
+        if (place === 'dungeon') {
+          assert.equal(set.idleFps, 30, `${v}: his rear stance at 30`);
+          assert.equal(set.idle.length, 60, `${v}: his rear stance, 2 s`);
+        } else {
+          assert.equal(set.idleFps, g.idleFps, `${place} ${v}: his town stance at the game's ${g.idleFps}`);
+          assert.equal(set.idle.length, g.idle.length, `${place} ${v}: his town stance, ${g.idle.length} pictures as the game's`);
+        }
         const c = set.clips!;
         for (const [k, clip] of Object.entries(c)) {
-          if (!clip || !('fps' in (clip as object))) continue;
+          if (!clip || !('fps' in (clip as object)) || k === 'idleA') continue;
           const fps = (clip as { fps: number }).fps;
           assert.ok(fps >= 30, `${place} ${v} ${k}: ${fps} a second`);
         }
-        for (const s of set.stops ?? []) assert.equal(s.fps, 30, `${place} ${v}: its stops`);
-        assert.equal(set.stops?.length, SETTLES, `${place} ${v}: coming to a stand`);
-        assert.equal(set.start?.fps, 60, `${place} ${v}: setting off`);
         if (v === 'front' && place !== 'dungeon') {
-          assert.equal(c.idleA?.fps, 30, `${place}: looking about him at 30`);
-          assert.equal(c.idleA?.frames.length, 109);
-          assert.equal(c.ready?.fps, 30, `${place}: his card's ready at 30`);
-          assert.equal(c.ready?.frames.length, 41);
+          // (looking about him and drawing his sword, as the game's: their rates and lengths)
+          assert.equal(c.idleA?.fps, g.clips?.idleA?.fps, `${place}: looking about him at the game's ${g.clips?.idleA?.fps}`);
+          assert.equal(c.idleA?.frames.length, g.clips?.idleA?.frames.length);
+          assert.equal(c.ready?.fps, g.clips?.ready?.fps, `${place}: his card's ready at the game's`);
+          assert.equal(c.ready?.frames.length, g.clips?.ready?.frames.length);
         }
       }
     }
@@ -240,10 +249,18 @@ test('3. every frame of every move through every boss check (art/boss_checks.ts)
     const { mob, shape, moves } = warriorReview(side);
     // (all fourteen of his moves; from his other sides all but his class card's two, painted from in front only)
     assert.equal(moves.length, side === 'front' ? 14 : 12, `${side}: his moves`);
-    const found = checkBoss(mob, shape, moves);
+    const all = checkBoss(mob, shape, moves);
+    // (his runs are the game's own, by the owner's word: the game plays them by the clock as it carries him on, and their feet
+    // creep on the floor as the game's knight's do today; that, and only that, is reported (README), not held)
+    const runs = all.filter((f) => (f.move === 'walk' || f.move === 'ktownrun') && f.kind === 'slide');
+    const found = all.filter((f) => !runs.includes(f));
     assert.equal(found.length, 0, `${side}: ${findingsSaid(found).slice(0, 14).join('; ')}`);
+    assert.ok(Math.max(0, ...runs.map((f) => f.by)) <= GAME_RUN_CREEP + 0.01, `${side}: the game's run creeps ${Math.max(0, ...runs.map((f) => f.by)).toFixed(2)}`);
   }
 });
+/** How far a foot on the floor creeps in the game's knight's run as the game shows it (game pixels, the most of any of his sides),
+ * as the README reports it. */
+const GAME_RUN_CREEP = 3.32;
 
 // --- 4. nothing through what he wears ------------------------------------------------------------------------------------
 
@@ -265,30 +282,21 @@ test('4. ... and the check sees mail that is through (a tabard laid over his thi
 
 // --- 5. feet grip in the run ---------------------------------------------------------------------------------------------
 
-test('5. his feet grip in the run: each foot on the floor goes back under him exactly as fast as the game carries him (4.6 tiles a second)', () => {
-  for (const runM of [WU_RUN3, WU_TOWN_RUN3]) {
-    const period = (runM.stride as number) / GRIP_SPEED;
-    assert.ok(near(period, 27 / 60), `${runM.name}: a turn in 27 sixtieths`);
-    for (const side of ['L', 'R'] as const) {
-      let down: { x: number; y: number } | null = null;
-      let worst = 0;
-      for (let i = 0; i <= 120; i++) {
-        const t = (i / 120) * period;
-        const q = bonesAt(runM.motion.keys, runM.rest, t);
-        const s = solve(runM.build, q);
-        const toe = side === 'L' ? s.toeL : s.toeR;
-        if (toe[2] > 0.6) {
-          down = null;
-          continue;
-        }
-        // (where it is on the floor itself: the game has carried him on by then)
-        const x = toe[0] + GRIP_SPEED * UNITS_PER_TILE * t;
-        if (!down) down = { x, y: toe[1] };
-        else worst = Math.max(worst, Math.hypot(x - down.x, toe[1] - down.y));
+test('5. his runs are the game\'s own, frame for frame: the same keys, the same feet, hips, arms and sword, the same timing; only his knees turned out WU_KNEES_OUT', () => {
+  for (const [now, game] of [[WU_RUN3, KNIGHT_RUN3], [WU_TOWN_RUN3, KNIGHT_TOWN_RUN3]] as const) {
+    assert.equal(now.stride, undefined, `${now.name}: by the clock, as the game's`);
+    assert.equal(now.rest, game.rest, `${now.name}: the game's rest`);
+    assert.equal(now.motion.keys.length, game.motion.keys.length);
+    assert.equal(now.motion.loop, game.motion.loop);
+    now.motion.keys.forEach((k, i) => {
+      const g = game.motion.keys[i];
+      assert.equal(k.at, g.at, `${now.name} key ${i}: its time`);
+      assert.equal(k.ease, g.ease);
+      for (const f of Object.keys({ ...k.pose, ...g.pose }) as (keyof typeof k.pose)[]) {
+        const want = f === 'lk' ? (g.pose.lk as number) + WU_KNEES_OUT : f === 'rk' ? (g.pose.rk as number) - WU_KNEES_OUT : g.pose[f];
+        assert.deepEqual(k.pose[f], want, `${now.name} key ${i}: ${String(f)}`);
       }
-      // (under a game pixel, as the bosses' review has it: SLIDE_MAX; a picture pixel is 0.41 of his lengths along the floor)
-      assert.ok(worst < 2.2, `${runM.name} ${side}: a foot on the floor slides ${worst.toFixed(2)} of his lengths`);
-    }
+    });
   }
 });
 
@@ -388,7 +396,7 @@ test('7. his hits and lengths as stated for the main chat', () => {
   assert.ok(near(endOf(WU_REEL3), 7 / 30) && near(endOf(WU_LURCH3), 7 / 30) && near(endOf(WU_FALL3), 46 / 30));
   // his card's ready at the same moment, and his standing loops
   assert.ok(near(WU_DRAW3.ready ?? -1, 31 / 30) && endOf(WU_DRAW3) >= 40 / 30 - 1e-6, 'ready at 31, his guard held after it');
-  assert.ok(near(endOf(WU_REAR3), 2) && near(endOf(WU_TOWN3), 2.4) && near(endOf(WU_LOOK3), 3.6));
+  assert.ok(near(endOf(WU_REAR3), 2) && near(endOf(WU_TOWN3), endOf(KNIGHT_TOWN3)) && near(endOf(WU_LOOK3), 3.6));
   // the game's step, as each swing has it: a third of a tile by 0.12 s
   assert.ok(near(swingCarried(1), 0.33 * UNITS_PER_TILE));
 });
@@ -479,7 +487,7 @@ test('8. his pig-faced helm: the slit dark across the top of his snout with its 
 
 // --- 9. his legs read true on the screen ------------------------------------------------------------------------------------
 
-test('9. his legs read true: every stance and held pose from every side at 1.05 or more below the knee to above it, his runs at 1 where a foot bears him', () => {
+test('9. his legs read true: every stance and held pose from every side at 1.05 or more below the knee to above it (his runs, the game\'s own, measured in 11)', () => {
   const { legs, legsSeen } = sweep();
   assert.ok(legsSeen > 2000, `${legsSeen} legs measured where they are seen`);
   assert.equal(legs.length, 0, legs.slice(0, 12).join(' | '));
@@ -494,64 +502,71 @@ test('9. ... the measure: standing straight his bones read a man\'s legs; his gu
   assert.ok(least(WU_REST_SEEN, 'front') < 0.8 && least(WU_REST_SEEN, 'toward') < 0.75, 'his guard as he saw it: a shin that reads short');
   assert.ok(least(WU_TOWN_REST_SEEN, 'toward') < 1.0, 'his town stance as he saw it: short');
   for (const side of WU_SIDES) assert.ok(least(WU_REST, side) >= 1.05 && least(WU_TOWN_REST, side) >= 1.05, `now, ${side}`);
-  // his look and his upper body as they were: only his feet and knees are posed anew (and, since, in his guard, how his sword
-  // and his sword arm sit: test 10)
+  // his look, his upper body and his sword as the game has them: only his feet and knees are posed anew
   for (const [now, then] of [[WU_REST, WU_REST_SEEN], [WU_TOWN_REST, WU_TOWN_REST_SEEN]] as const) {
-    for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'lhx', 'lhy', 'lhz'] as const) assert.equal(now[k], then[k], `${k} as it was`);
-  }
-  for (const k of ['rhx', 'rhy', 'rhz', 'wAz', 'wEl'] as const) assert.equal(WU_TOWN_REST[k], WU_TOWN_REST_SEEN[k], `in town, ${k} as it was`);
-});
-
-// --- 10. his sword seen from every side ---------------------------------------------------------------------------------------
-
-test('10. his sword is seen from every side: in every list he holds or runs in, from all eight sides, a good length of its light, its point among it', () => {
-  const { blade, bladeLeast } = sweep();
-  assert.equal(blade.length, 0, `his sword hidden:\n${blade.slice(0, 40).join('\n')}${blade.length > 40 ? `\n... and ${blade.length - 40} more` : ''}`);
-  // (every side was looked at, and every list: none of them is left out by a name that no longer matches)
-  for (const v of WU_SIDES) assert.ok(bladeLeast[v] >= WU_BLADE_LEAST, `${v}: ${bladeLeast[v]}`);
-  for (const h of WU_BLADE_HELD) assert.ok(WU_MOVES[h.key], h.key);
-  assert.ok(MOMENTS.some(({ m }) => wuBladeHeld(undefined, m.name, 0, 'front')), 'his settles and his setting off');
-});
-
-test('10. ... the measure: his guard as the owner saw it hid his sword from down and to the left; his guard now does not', () => {
-  const old = { ...WU_REST, rhIn: WU_REST_SEEN.rhIn, rhx: WU_REST_SEEN.rhx, rhy: WU_REST_SEEN.rhy, rhz: WU_REST_SEEN.rhz, wAz: WU_REST_SEEN.wAz, wEl: WU_REST_SEEN.wEl };
-  const seen = (q: typeof WU_REST, v: WuSide): { seen: number; point: boolean } => wuBladeSeen(paintWu({ ...WU_REAR3, rest: q, motion: { keys: [{ at: 0, pose: {} }] } }, 0, v));
-  const was = seen(old, 'frontL');
-  assert.ok(was.seen < WU_BLADE_LEAST, `as it was, from down and to the left: ${was.seen}`);
-  assert.equal(wuBladeFaults('rear', WU_REAR3.name, 0, paintWu({ ...WU_REAR3, rest: old, motion: { keys: [{ at: 0, pose: {} }] } }, 0, 'frontL'), 'frontL').length, 1);
-  for (const v of WU_SIDES) {
-    const now = seen(WU_REST, v);
-    assert.ok(now.seen >= WU_BLADE_LEAST && now.point, `${v}: ${now.seen}`);
+    for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'lhIn', 'lhx', 'lhy', 'lhz', 'rhIn', 'rhx', 'rhy', 'rhz', 'le', 're', 'wAz', 'wEl', 'wRoll', 'stow'] as const) assert.equal(now[k], then[k], `${k} as it was`);
   }
 });
 
-// --- 11. his run, a heavy man's ---------------------------------------------------------------------------------------------
+// --- 10. his sword where the game holds it ---------------------------------------------------------------------------------
 
-test('11. his run is a heavy man\'s: in every frame of his runs, stops and setting off, from all eight sides, no swinging thigh more than 50 degrees from straight down', () => {
-  const { thighs, thighMost, runFrames } = sweep();
-  assert.equal(thighs.length, 0, `a knee come up:\n${thighs.slice(0, 30).join('\n')}`);
-  // (his runs, his sixteen stops and his two settings off, from eight sides: every frame of them looked at)
-  assert.ok(runFrames > 8 * (27 * 2 + 16 * 7), `${runFrames} frames of running looked at`);
-  assert.ok(thighMost <= 45 && WU_THIGH_MOST === 50, `the most a swinging thigh comes up: ${thighMost.toFixed(1)}`);
+test('10. his sword where the game holds it: in his guard and his run, his hands at or below his belt, the point below the hilt and behind him; in town, on his back as the game has it', () => {
+  const { low, lowFrames, stowed, stowedFrames } = sweep();
+  assert.equal(low.length, 0, `his sword up:\n${low.slice(0, 30).join('\n')}`);
+  assert.ok(lowFrames >= 60 + 15, `${lowFrames} moments of his guard and his run looked at`);
+  assert.equal(stowed.length, 0, `his sword on his back:\n${stowed.slice(0, 30).join('\n')}`);
+  assert.ok(stowedFrames >= 36 + 15 + 109, `${stowedFrames} moments of town looked at`);
+  // (his guard and his run hold it as the game's do: the same hands and the same way of the blade)
+  for (const k of ['rhIn', 'rhx', 'rhy', 'rhz', 'wAz', 'wEl', 'wRoll'] as const) assert.equal(WU_REST[k], WU_REST_SEEN[k], `his guard's ${k}`);
 });
 
-test('11. ... the measure: the run he saw brought a thigh up past level; now none comes past 45', () => {
-  let was = 0;
-  for (let i = 0; i < 27; i++) for (const t of wuThighs(solve(KNIGHT_BODY, bonesAt(WU_RUN_SEEN.motion.keys, WU_RUN_SEEN.rest, i / 60)))) if (t.swinging) was = Math.max(was, t.deg);
-  assert.ok(was > 90, `the run he saw: ${was.toFixed(1)}`);
-  assert.ok(wuThighFaults('krun', WU_RUN_SEEN.name, 5, solve(KNIGHT_BODY, bonesAt(WU_RUN_SEEN.motion.keys, WU_RUN_SEEN.rest, 5 / 60)), 'front').length > 0, 'the check sees it');
-  for (const runM of [WU_RUN3, WU_TOWN_RUN3]) {
-    let now = 0;
-    for (let i = 0; i < 27; i++) for (const t of wuThighs(solve(KNIGHT_BODY, bonesAt(runM.motion.keys, runM.rest, i / 60)))) if (t.swinging) now = Math.max(now, t.deg);
-    assert.ok(now <= 45, `${runM.name}: ${now.toFixed(1)}`);
-    // (and each foot flat on the floor under him in some frame of each step: grounded, not run on its toes)
-    for (const leg of ['L', 'R'] as const) {
-      let flat = 0;
-      for (let i = 0; i < 27; i++) {
-        const s = solve(KNIGHT_BODY, bonesAt(runM.motion.keys, runM.rest, i / 60));
-        if (Math.max(...(leg === 'L' ? [s.toeL[2], s.heelL[2]] : [s.toeR[2], s.heelR[2]])) <= 0.6) flat++;
+test('10. ... the check sees a sword held up (the guard of 90de9707: the blade level at his chest); his town stance\'s is on his back as the game has it', () => {
+  const up = { ...WU_REST, rhIn: 2 as const, rhx: -2.5, rhy: -17.5, rhz: 34.5, wAz: -142, wEl: 0 };
+  const s = solve(KNIGHT_BODY, up);
+  assert.ok(wuSwordLowFaults('rear', 0, s, up).length > 0, 'held up');
+  // (the town stance with the sword's point turned up: its point not down)
+  const q = { ...WU_TOWN_REST };
+  const t = solve(KNIGHT_BODY, q);
+  assert.equal(wuStowedFaults('ktown', 0, t, q).length, 0, 'as the game has it');
+});
+
+test('10. ... how much of his sword is seen in his guard, from each side (reported: held low and trailing behind him, from some sides he hides it)', () => {
+  const { guardBlade } = sweep();
+  for (const v of WU_SIDES) assert.ok(guardBlade[v] !== undefined, v);
+  assert.deepEqual(guardBlade, GUARD_BLADE_SEEN, 'as the README reports it');
+});
+/** The least of his guard's blade seen in any frame, from each side, in game pixels of its light (0: none, or its point hidden), as
+ * the README reports it. */
+const GUARD_BLADE_SEEN: Record<string, number> = { front: 18, toward: 4, frontL: 0, sideL: 18, backL: 20, away: 26, back: 24, side: 16 };
+
+// --- 11. his run, the game's: measured -----------------------------------------------------------------------------------------
+
+test('11. his runs, the game\'s, measured as reported: the most a swinging thigh comes up, and his legs where a foot bears him', () => {
+  // (the measure of a knee come up sees the run that high-stepped)
+  assert.ok(wuThighMost(WU_RUN_SEEN, 60) > 90, `the run that high-stepped: ${wuThighMost(WU_RUN_SEEN, 60).toFixed(1)}`);
+  assert.equal(WU_THIGH_MOST, 50);
+  // (his runs as the game's: as the README reports them)
+  assert.ok(Math.abs(wuThighMost(WU_RUN3, 30) - RUN_THIGH[0]) < 0.05, `his run: ${wuThighMost(WU_RUN3, 30).toFixed(1)}`);
+  assert.ok(Math.abs(wuThighMost(WU_TOWN_RUN3, 30) - RUN_THIGH[1]) < 0.05, `his run in town: ${wuThighMost(WU_TOWN_RUN3, 30).toFixed(1)}`);
+  // (his legs where a foot bears him, flat on the floor, from each side where its shin is seen: the least of every frame)
+  for (const [m, want] of [[WU_RUN3, RUN_LEGS.run], [WU_TOWN_RUN3, RUN_LEGS.town]] as const) {
+    const least: Record<string, number> = {};
+    for (let i = 0; i < 15; i++) for (const v of WU_SIDES) {
+      const f = paintWu(m, i / 30, v);
+      for (const l of wuLegs(f.s, v, undefined, { z: f.drawn.z, w: f.px.w, h: f.px.h })) {
+        const toe = l.leg === 'L' ? f.s.toeL : f.s.toeR;
+        const heel = l.leg === 'L' ? f.s.heelL : f.s.heelR;
+        if (l.seen < WU_LEG_SEEN || Math.max(toe[2], heel[2]) > 0.6) continue;
+        least[v] = Math.min(least[v] ?? Infinity, Math.round(l.ratio * 100) / 100);
       }
-      assert.ok(flat >= 1, `${runM.name} ${leg}: a frame flat on the floor`);
     }
+    assert.deepEqual(least, want, `${m.name}: as the README reports it`);
   }
 });
+/** His legs where a foot bears him in his runs (the game's), the least from each side, as the README reports them. */
+const RUN_LEGS: { run: Record<string, number>; town: Record<string, number> } = {
+  run: { front: 0.8, toward: 0.63, frontL: 0.81, sideL: 1.11, backL: 1.62, away: 1.97, back: 1.46, side: 1.11 },
+  town: { front: 0.79, toward: 0.61, frontL: 0.82, sideL: 1.1, backL: 1.59, away: 2, back: 1.49, side: 1.11 },
+};
+/** The most a swinging thigh comes up in his run and his run in town (the game's), degrees, as the README reports it. */
+const RUN_THIGH = [58.4, 54.8] as const;

@@ -39,7 +39,8 @@ import type { Painted, Ramp } from './kit';
 import { GREAT_BLADE } from './moves3';
 import { CANVAS3, eyesToward, girdle, laidAlong, mid, stage } from './skin';
 import type { GameView, Stage } from './skin';
-import { add, along, cross, dot, len, lerp3, mul, norm, sub, trunkOf } from './skeleton';
+import { onBack } from './carried';
+import { add, cross, dot, len, lerp3, mul, norm, sub, trunkOf } from './skeleton';
 import type { Build, Posed, Skeleton, V3 } from './skeleton';
 import { Sculpt, draw } from '../dev/sculpt';
 import type { Drawn } from '../dev/sculpt';
@@ -109,30 +110,6 @@ export const WU_SPIN: Readonly<Record<WuSide, { spin: number; camera: GameView; 
   back: { spin: 90, camera: 'front', ax: CANVAS3.ax },
   side: { spin: 45, camera: 'front', ax: CANVAS3.ax },
 };
-/**
- * WHERE HIS GREAT SWORD LIES ON HIS BACK (in town, on his card, while it is put away), POINT UP. A blade hung point down behind
- * him, as every hero's is (art/carried.ts backPlace), is hidden by him from in front: from two of his eight sides not a pixel of
- * it was seen. "A hero must read armed in every facing" (the coordinator, 6 Nov 2026). So his hilt is at the small of his back on
- * his right and the blade stands up behind his right shoulder and over his head, leaning a little to his right and out from his
- * back: from every side the top of it, its point among it, stands clear of him. In his chest's own space from the root of his
- * neck (forward, left, up): where his hand takes it (`at`), the way its point goes, and the line across it. `below`: how far
- * under the knight's hilt (over his shoulder) his is; `right`, `out`: how far its point leans to his right and out from his back.
- */
-export const WU_BACK = { below: 14, right: 10, out: 10 };
-export function wuBackPlace(b: Build): { at: V3; point: V3; across: V3 } {
-  const D = Math.PI / 180;
-  const r = WU_BACK.right * D;
-  const o = WU_BACK.out * D;
-  const at: V3 = [-(b.ribDeep + b.pad + 2.2), -b.shoulderHalf * 0.42, 3.2 - WU_BACK.below];
-  const point: V3 = [-Math.sin(o), -Math.sin(r) * Math.cos(o), Math.cos(r) * Math.cos(o)];
-  return { at, point, across: norm(cross([1, 0, 0], point)) };
-}
-/** That place on him as posed: the grip, the way the point goes and the line across it (as art/carried.ts onBack). */
-export function wuOnBack(b: Build, s: Skeleton): { grip: V3; point: V3; across: V3 } {
-  const p = wuBackPlace(b);
-  return { grip: add(s.neck, along(s.chest, p.at)), point: norm(along(s.chest, p.point)), across: norm(along(s.chest, p.across)) };
-}
-
 /** A direction or point of him turned `deg` to his left about the floor point under him. */
 export function spun(p: V3, deg: number): V3 {
   if (!deg) return p;
@@ -478,7 +455,7 @@ export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, ar
   const extras = (raw: Stage): void => {
     // (what is drawn of the old kind is laid as he is turned for this side)
     const st = turnedStage(raw, spin);
-    const carried = away ? wuOnBack(B, s) : { grip: s.handR, point: s.point };
+    const carried = away ? onBack(B, s, 'sword') : { grip: s.handR, point: s.point };
     const guard3 = add(carried.grip, mul(carried.point, 1.3));
     const tip3 = add(guard3, mul(carried.point, GREAT_BLADE));
     const sword = st.part(mid(guard3, tip3, 0.4));

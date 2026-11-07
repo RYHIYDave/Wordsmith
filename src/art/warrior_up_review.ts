@@ -8,11 +8,12 @@ import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './bo
 import type { Mob, MobMove } from './new_mobs3';
 import { GREAT_BLADE, GRIP_SPEED, KNIGHT_BODY, UNITS_PER_TILE } from './moves3';
 import type { Move3 } from './moves3';
-import { add, mul, trunkOf } from './skeleton';
+import { add, bonesAt, mul, solve, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { wuSmeared } from './warrior_up_art';
-import { WU_MAIL, WU_SPIN, spun, turnedStage, wuOnBack } from './warrior_up';
-import { stage } from './skin';
+import { WU_MAIL, WU_SPIN, spun, turnedStage } from './warrior_up';
+import { onBack } from './carried';
+import { girdle, stage } from './skin';
 import type { WuSide } from './warrior_up';
 import type { WuFrame } from './warrior_up';
 import { primDist } from '../dev/sculpt';
@@ -21,7 +22,9 @@ import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, W
 const FR = 1 / 30;
 const B = KNIGHT_BODY;
 const mv = (m: Move3): MobMove => ({ name: m.name, motion: m.motion, rest: m.rest });
-const walking = (m: Move3): MobMove => ({ ...mv(m), ground: GRIP_SPEED * UNITS_PER_TILE, period: (m.stride ?? 1) / GRIP_SPEED });
+/** A run as the game shows it: carried over the floor at the game's pace (4.6 tiles a second), a turn of it in its own time (the
+ * game's knight's run is played by the clock, half a second a turn: it has no stride to grip by). */
+const walking = (m: Move3): MobMove => ({ ...mv(m), ground: GRIP_SPEED * UNITS_PER_TILE, period: m.stride !== undefined ? m.stride / GRIP_SPEED : m.motion.keys[m.motion.keys.length - 1].at });
 
 /** His class card's lists: painted from in front only (art/warrior_up_art.ts setOf), and so held to every check from there. */
 export const WU_FRONT_ONLY: readonly string[] = ['kdraw', 'klook'];
@@ -70,7 +73,7 @@ export function wuBody(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } 
 /** The great sword at a moment: in his hands, or on his back. */
 export function wuSword(s: Skeleton, q: Posed): { grip: V3; guard: V3; tip: V3; away: boolean } {
   const away = q.stow > 0.5;
-  const c = away ? wuOnBack(B, s) : { grip: s.handR, point: s.point };
+  const c = away ? onBack(B, s, 'sword') : { grip: s.handR, point: s.point };
   const guard = add(c.grip, mul(c.point, 1.3));
   return { grip: c.grip, guard, tip: add(guard, mul(c.point, GREAT_BLADE)), away };
 }
@@ -97,8 +100,8 @@ export function warriorReview(side: WuSide = 'front'): { mob: Mob; shape: BossSh
     more,
     idleFrames: 60,
     idleFps: 30,
-    walkFrames: 27,
-    walkFps: 60,
+    walkFrames: 15,
+    walkFps: 30,
     pace: GRIP_SPEED,
     reelTime: 7 * FR,
     hit: WU_STRIKE3.motion.hit ?? 0,
@@ -273,7 +276,10 @@ export const WU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: numb
   { key: 'kthrust', what: "the Lunge's landing", from: 17, to: 21, sideOn: 1 },
   { key: 'kfall', what: 'the kneel in his fall', from: 21, to: 46, sideOn: 1 },
 ];
-export const WU_LEGS_RUNS: readonly string[] = ['krun', 'ktownrun'];
+/** His runs, held to the measure of his legs: none now. His runs are the game's own (art/warrior_up_moves.ts WU_RUN3), and the
+ * owner's word is that they move as they used to: their legs are measured and reported (README, "His run, as he used to"), not
+ * held (`wuRunLegs`). */
+export const WU_LEGS_RUNS: readonly string[] = [];
 /** At least this much of a shin seen, for its leg to be held to the measure from that side. */
 export const WU_LEG_SEEN = 0.5;
 export const WU_LEG_HELD_LEAST = 1.05;
@@ -301,16 +307,12 @@ export function wuLegFaults(key: string, frame: number, f: WuFrame, side: WuSide
 }
 
 // ---------------------------------------------------------------------------------------------
-// HIS SWORD SEEN FROM EVERY SIDE (the coordinator, 6 Nov 2026, before the owner sees him: from down and to the left his sword
-// vanished behind him in his guard and his run, and from toward him only a stub of it showed; "a hero must read armed in every
-// facing"). In every list he holds or runs in, from all eight sides, a good length of the blade's light is seen at the game's
-// size, its point among it.
+// HOW MUCH OF HIS SWORD IS SEEN, at the game's size: a measure, reported (README). Held where the game holds it, low and trailing
+// behind him (below), the blade is hidden by him from some of his sides; the owner's word is that it stays there: “Don't lift
+// the sword”, as the coordinator put it.
 
 /** The blade's light: its two lightest tones (art/kit.ts BLADE: used for nothing else). */
 const GLOW = [[0x8a, 0xf6, 0xf0], [0xff, 0xff, 0xff]] as const;
-/** At least this many game pixels of the blade's light seen (a game pixel two picture pixels across: one counts when half of
- * it or more is the blade's light). The whole blade, side-on, is 25 to 35 of them; this is about a third of its length. */
-export const WU_BLADE_LEAST = 10;
 /** How much of the blade's light is seen in one picture of him: game pixels of it, and whether its point is among them. */
 export function wuBladeSeen(f: WuFrame): { seen: number; point: boolean } {
   const { d, w, h } = f.px;
@@ -333,45 +335,57 @@ export function wuBladeSeen(f: WuFrame): { seen: number; point: boolean } {
 }
 
 /**
- * WHERE HIS SWORD MUST BE SEEN: every list he holds or runs in (frames at 30 a second; a run's at 60), from all eight sides
- * (his card's, painted from in front only, from there); and his settles out of his runs and his setting off into them, every
- * frame, in both places.
+ * HIS SWORD WHERE THE GAME HOLDS IT (the owner, 7 Nov 2026: “His sword is too high and when he runs it's up at his neck.  You have
+ * a picture for sword stances as a reference”; docs/ref/two_handed_stances_from_owner_2026-10-06.jpg, his “Rear stance”: side-on,
+ * both hands low at his right hip, the blade trailing down and back behind him). In his guard and his runs (where his sword is in
+ * his hands): his hands at or below his belt, and the point of the blade below its hilt and behind him.
  */
-export const WU_BLADE_HELD: ReadonlyArray<{ key: string; what: string; from?: number; to?: number; front?: boolean }> = [
-  { key: 'rear', what: 'his guard' },
-  { key: 'ktown', what: 'his town stance' },
-  { key: 'krun', what: 'his run' },
-  { key: 'ktownrun', what: 'his town run' },
-  { key: 'strike', what: "Strike's held wind-up", from: 6, to: 8 },
-  { key: 'strike', what: 'the first swing held up, waiting (its poise)', from: 20, to: 21 },
-  { key: 'kslash', what: "the second swing's held wind-up", from: 6, to: 8 },
-  { key: 'slam', what: "the Slam's held wind-up", from: 11, to: 13 },
-  { key: 'kdraw', what: 'his card: drawing his sword into his guard', front: true },
-  { key: 'klook', what: 'his card and town: looking about him', front: true },
-];
-/** Whether a moment is one his sword must be seen in: `key` the move's short name (none for a settle or a setting off, known by
- * its name), the frame (a run's at 60 a second). */
-export function wuBladeHeld(key: string | undefined, name: string, frame: number, side: WuSide): string | null {
-  if (key === undefined) return /: coming to a stand|: setting off/.test(name) ? name : null;
-  const h = WU_BLADE_HELD.find((x) => x.key === key && (x.from === undefined || (frame >= x.from && frame <= (x.to as number))));
-  if (!h || (h.front && side !== 'front')) return null;
-  return h.what;
+export const WU_SWORD_LOW: readonly string[] = ['rear', 'krun'];
+/** The top of his belt, as he is painted (art/warrior_up.ts: the belt round the tabard at his waist, 1.25 either side of its
+ * middle), and the bottom of his chest (his ribs). */
+export function wuBeltTop(s: Skeleton): number {
+  return girdle(trunkOf(B, s)[2], 0.55, 1.6).c[2] + 1.25;
 }
-/** What is wrong with his sword in one picture of him: too little of its light seen, or its point hidden. */
-export function wuBladeFaults(key: string | undefined, name: string, frame: number, f: WuFrame, side: WuSide): string[] {
-  const what = wuBladeHeld(key, name, frame, side);
-  if (!what) return [];
-  const b = wuBladeSeen(f);
-  if (b.seen >= WU_BLADE_LEAST && b.point) return [];
-  return [`${what} ${frame} ${side}: ${b.seen} of the blade's light seen${b.point ? '' : ', its point hidden'}`];
+export function wuChestBottom(s: Skeleton): number {
+  const [ribs] = trunkOf(B, s);
+  return ribs.c[2] - ribs.h[2];
+}
+/** What is wrong with where his sword is held in one moment: in his guard a hand above his belt; in his run (the game's own, whose
+ * left hand rides on the hilt a little above his belt) a hand up at his chest; and in both the point not below the hilt, or not
+ * behind him (the way his hips face). */
+export function wuSwordLowFaults(key: string, frame: number, s: Skeleton, q: Posed): string[] {
+  if (!WU_SWORD_LOW.includes(key) || q.stow > 0.5) return [];
+  const out: string[] = [];
+  const top = key === 'krun' ? wuChestBottom(s) : wuBeltTop(s);
+  const where = key === 'krun' ? 'up at his chest' : 'above his belt';
+  for (const [name, h] of [['right', s.handR], ['left', s.handL]] as const) if (h[2] > top) out.push(`${key} ${frame}: his ${name} hand ${where} (${(h[2] - top).toFixed(1)})`);
+  const w = wuSword(s, q);
+  if (w.tip[2] >= w.guard[2]) out.push(`${key} ${frame}: the point not below the hilt`);
+  const f = s.hips[0];
+  if ((w.tip[0] - w.guard[0]) * f[0] + (w.tip[1] - w.guard[1]) * f[1] >= 0) out.push(`${key} ${frame}: the point not behind him`);
+  return out;
+}
+
+/** IN TOWN, HIS SWORD ON HIS BACK AS THE GAME HAS IT (art/carried.ts onBack: its hilt up over his right shoulder, its point down
+ * behind him): what is wrong with it in one moment of a town list where it is put away. */
+export function wuStowedFaults(key: string, frame: number, s: Skeleton, q: Posed): string[] {
+  if (q.stow <= 0.5) return [];
+  const w = wuSword(s, q);
+  const game = onBack(B, s, 'sword');
+  const out: string[] = [];
+  if (Math.hypot(w.grip[0] - game.grip[0], w.grip[1] - game.grip[1], w.grip[2] - game.grip[2]) > 1e-6) out.push(`${key} ${frame}: not where the game has it`);
+  if (w.grip[2] < s.shoulderR[2]) out.push(`${key} ${frame}: its hilt below his shoulder`);
+  if (w.tip[2] >= w.grip[2]) out.push(`${key} ${frame}: its point not down`);
+  if ((w.tip[0] - s.neck[0]) * s.chest[0][0] + (w.tip[1] - s.neck[1]) * s.chest[0][1] >= 0) out.push(`${key} ${frame}: its point not behind him`);
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------
-// HIS RUN, A HEAVY MAN'S: NO KNEE COMES UP (the owner, 7 Nov 2026, of his run as it was: “all that time and you screwed up his run.
-// why is he high stepping with his knees up?”). In every frame of his runs, his stops out of them and his setting off into them,
-// each leg whose foot is off the floor: its thigh no more than WU_THIGH_MOST degrees from hanging straight down.
+// A KNEE COME UP (the owner, 7 Nov 2026: “why is he high stepping with his knees up?”): each leg whose foot is off the floor, how
+// far its thigh is from hanging straight down. His runs are the game's own now (the owner: “Just make him move like he used
+// to.”): this measures them, and is reported (README); it does not hold them.
 
-/** The most a swinging thigh may be from hanging straight down in his runs (the run made for it keeps under 40). */
+/** The most a swinging thigh was to be from hanging straight down in a run: the measure the game's run is reported against. */
 export const WU_THIGH_MOST = 50;
 /** Each of his thighs: how many degrees it is from hanging straight down (from the hip joint to the knee joint, as he truly is: the
  * same from every side he is seen from), and whether its foot is off the floor (its heel and its toe both above it). */
@@ -386,15 +400,13 @@ export function wuThighs(s: Skeleton): { leg: 'L' | 'R'; deg: number; swinging: 
     return { leg, deg, swinging: Math.min(toe[2], heel[2]) > 0.6 };
   });
 }
-/** Whether a moment is one of his runs: the move's short name (his run, his run in town), or a stop out of one or a setting off
- * into one (known by its name). */
-export function wuRunning(key: string | undefined, name: string): boolean {
-  return key === 'krun' || key === 'ktownrun' || /: coming to a stand|: setting off/.test(name);
-}
-/** What is wrong with his knees in one moment of a run: a swinging thigh come up too far. */
-export function wuThighFaults(key: string | undefined, name: string, frame: number, s: Skeleton, side: WuSide): string[] {
-  if (!wuRunning(key, name)) return [];
-  return wuThighs(s)
-    .filter((t) => t.swinging && t.deg > WU_THIGH_MOST)
-    .map((t) => `${name} ${frame} ${side}: his ${t.leg === 'L' ? 'left' : 'right'} thigh ${t.deg.toFixed(1)} degrees from straight down`);
+/** The most a swinging thigh comes up in a run (every frame of a turn of it, at `fps`), degrees from hanging straight down. */
+export function wuThighMost(m: Move3, fps: number): number {
+  const end = m.motion.keys[m.motion.keys.length - 1].at;
+  let most = 0;
+  for (let i = 0; i < Math.round(end * fps); i++) {
+    const s = solve(m.build, bonesAt(m.motion.keys, m.rest, i / fps));
+    for (const t of wuThighs(s)) if (t.swinging) most = Math.max(most, t.deg);
+  }
+  return most;
 }

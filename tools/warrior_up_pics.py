@@ -91,10 +91,10 @@ def legs_panel(dir, spec, W, fonts, measure_only=False, img=None, d=None, y0=0):
     intro = ('His guard, three times as big, from in front and from straight toward you: as you approved him, beside now. Over '
              'each leg, as the screen shows it: hip to knee (yellow), knee to the floor (green), and below, knee to floor over '
              'hip to knee. Standing straight his lower leg is a little longer than his thigh, as on a real person; in his crouch '
-             'his knees were bent toward you, so each shin was seen end-on and looked short. Now the same low guard, his body '
-             'as it was: his front foot further forward, his back foot further back, a longer, lower guard (and his sword '
-             'now carried level behind him, so that it is seen from every side: the second sheet). A leg drawn dim is one '
-             'whose shin is hidden from that side. The same holds for every pose he holds, from all eight sides (a test).')
+             'his knees were bent toward you, so each shin was seen end-on and looked short. Now the same low guard, his body, '
+             'arms and sword as they were: his front foot further forward, his back foot further back, a longer, lower guard. '
+             'A leg drawn dim is one whose shin is hidden from that side. The same holds for every pose he holds, from all '
+             'eight sides (a test); his run is the game\'s own, measured and not changed.')
     lines = wrap(probe, intro, small, W - 48)
     paths = [os.path.join(dir, e['file']) for e in spec]
     box = union_box(paths)
@@ -146,7 +146,7 @@ def row_height(box, rows):
 def draw_row(img, d, y, W, label, paths, box, rows, small, tiny):
     d.text((24, y), label, font=small, fill=INK)
     y += 28
-    names = ['BEFORE · from in front', 'NOW · from in front', 'BEFORE · from behind', 'NOW · from behind']
+    names = ['THE GAME · from in front', 'NOW · from in front', 'THE GAME · from behind', 'NOW · from behind']
     per = 4 // rows
     bw = (box[2] - box[0]) * 3
     bh = (box[3] - box[1]) * 3
@@ -162,6 +162,49 @@ def draw_row(img, d, y, W, label, paths, box, rows, small, tiny):
         if r < rows - 1:
             y -= 10
     return y + 14
+
+
+REF = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'docs', 'ref', 'two_handed_stances_from_owner_2026-10-06.jpg')
+# (where his “Rear stance” is in it, its own pixels)
+REF_REAR = (98, 118, 212, 238)
+
+
+def ref_panel(dir, spec, W, fonts, measure_only=False, img=None, d=None, y0=0):
+    """HIS REFERENCE: the owner's picture of the two-handed stances, its rear stance, beside his guard now from the matching side,
+    and the game's guard from in front."""
+    big, mid, small, tiny = fonts
+    probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
+    intro = ('Your picture of the two-handed stances (6 Oct: \u201cRear stance is what I\'m referring to\u201d), its rear stance, beside '
+             'his guard now, from the side that matches it (facing to the left, side-on), three times as big: turned side-on, both '
+             'hands low at his right hip, the blade trailing down and back behind him, its point toward the floor behind. And the '
+             'game\'s guard today, from in front: the same way of holding it.')
+    lines = wrap(probe, intro, small, W - 48)
+    ref = Image.open(REF).convert('RGB').crop(REF_REAR)
+    k = 3
+    ref = ref.resize((ref.width * k, ref.height * k), Image.LANCZOS)
+    paths = [os.path.join(dir, spec['file']), os.path.join(dir, spec['also'])]
+    box = union_box(paths)
+    fh = (box[3] - box[1]) * k
+    h = 22 + 34 + len(lines) * 24 + 12 + 22 + max(ref.height, fh) + 24
+    if measure_only:
+        return h
+    y = y0 + 22
+    d.text((24, y), 'HIS REFERENCE: THE REAR STANCE', font=mid, fill=CYAN)
+    y += 34
+    for ln in lines:
+        d.text((24, y), ln, font=small, fill=DIM)
+        y += 24
+    y += 12
+    x = 24
+    d.text((x, y), 'YOUR PICTURE: THE REAR STANCE', font=tiny, fill=INK)
+    img.paste(ref, (x, y + 22))
+    x += ref.width + 30
+    for p, name in [(paths[0], 'NOW · his guard, side-on (facing left)'), (paths[1], 'THE GAME · his guard, in front')]:
+        fig = figure(p, box, k)
+        d.text((x, y), name, font=tiny, fill=CYAN if name.startswith('NOW') else DIM)
+        img.paste(fig, (x, y + 22))
+        x += max(fig.width, int(d.textlength(name, font=tiny))) + 40
+    return h
 
 
 def strip_scale(box, W):
@@ -199,15 +242,16 @@ def sheet(dir, out):
     blocks = []
     probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
     head = ['THE WARRIOR, BROUGHT UP TO THE BRAWLER\'S LEVEL']
-    intro = ('Before (the Warrior as he is in the game today) beside now, three times as big, from in front and from behind. '
-             'His look is kept: his pig-faced helm (brought back, as he asked), his red tabard and its pointed skirt, his dark red '
-             'scarf, his steel and mail, his glowing great sword. What changes is how he is drawn (sculpted as one body, like the Brawler, not balls and '
-             'tubes) and how he moves (30 pictures a second everywhere, alive when still, every blow a big held wind-up, a '
-             'two-frame strike and a big wind-down, his feet gripping the floor). His scarf\'s two ends are moved by the game '
-             'as before. His helm close and his eight facings: the second sheet. Pictures only: not in the game.')
+    intro = ('THE GAME (the Warrior as he is in the game today) beside NOW, three times as big, from in front and from behind. '
+             'He moves as he used to: his run, his town stance and his town run are the game\'s own, frame for frame; his sword '
+             'where the game holds it, both hands low at his right hip and the blade trailing down and back behind him, as in your '
+             'picture\'s rear stance (at the top); in town on his back as the game has it, its hilt over his right shoulder. What '
+             'changes is how he is drawn (sculpted as one body: his pig-faced helm, his red tabard, his steel and mail), from eight '
+             'true sides, and his legs in his stances. His scarf\'s two ends are moved by the game as before. His helm close and his '
+             'eight facings: the second sheet. Pictures only: not in the game.')
     blocks.append(('head', head, wrap(probe, intro, small, W - 48)))
-    if spec.get('legs'):
-        blocks.append(('legs', spec['legs']))
+    if spec.get('ref'):
+        blocks.append(('ref', spec['ref']))
     for sec in spec['sections']:
         blocks.append(('title', sec['title']))
         for row in sec['rows']:
@@ -220,6 +264,8 @@ def sheet(dir, out):
             sbox = union_box([os.path.join(dir, f) for st in strips for f in st['files']])
             for st in strips:
                 blocks.append(('strip', st['label'], [os.path.join(dir, f) for f in st['files']], sbox, st['thighs']))
+    if spec.get('legs'):
+        blocks.append(('legs', spec['legs']))
     blocks.append(('title', 'At the game\'s own size (each of his pixels one pixel here)'))
     blocks.append(('small', spec['small']))
     # measure
@@ -229,6 +275,8 @@ def sheet(dir, out):
             hgt += 20 + 46 + len(b[2]) * 24 + 16
         elif b[0] == 'legs':
             hgt += legs_panel(dir, b[1], W, (big, mid, small, tiny), measure_only=True)
+        elif b[0] == 'ref':
+            hgt += ref_panel(dir, b[1], W, (big, mid, small, tiny), measure_only=True)
         elif b[0] == 'title':
             hgt += 22 + 34
         elif b[0] == 'row':
@@ -251,6 +299,8 @@ def sheet(dir, out):
             y += 16
         elif b[0] == 'legs':
             y += legs_panel(dir, b[1], W, (big, mid, small, tiny), img=img, d=d, y0=y)
+        elif b[0] == 'ref':
+            y += ref_panel(dir, b[1], W, (big, mid, small, tiny), img=img, d=d, y0=y)
         elif b[0] == 'title':
             y += 22
             d.text((24, y), b[1], font=mid, fill=CYAN)
@@ -270,7 +320,7 @@ def sheet(dir, out):
                     box = (AX - 46, AY - 124, AX + 46, AY + 24)
                     fig = figure(p, box, 1)
                     img.paste(fig, (x, y))
-                    d.text((x + 4, y + fig.height + 2), 'BEFORE' if k == 0 else 'NOW', font=tiny, fill=DIM if k == 0 else CYAN)
+                    d.text((x + 4, y + fig.height + 2), 'THE GAME' if k == 0 else 'NOW', font=tiny, fill=DIM if k == 0 else CYAN)
                     x += fig.width + 4
                 d.text((x - 2 * (92 + 4) + 4, y - 20), item['label'], font=tiny, fill=INK)
                 x += 26
@@ -295,8 +345,8 @@ def film(dir, out):
     for i, ln in enumerate(wrap(td, 'First, new: his eight facings, running round a circle and striking each of the eight ways, '
                                      'at the game\'s size and three times as big; his pig-faced helm brought back. Then before (the '
                                      'game today) beside now, from in front and from behind, three times as big; and on the right, at '
-                                     'the game\'s own size. Every list now 30 pictures a second; every blow a big held wind-up, a '
-                                     'strike of two frames, a big wind-down. Pictures only: not in the game.', font(R, 24), W - 80)):
+                                     'the game\'s own size. His run and his town as the game\'s own; every blow a big held '
+                                     'wind-up, a strike of two frames, a big wind-down. Pictures only: not in the game.', font(R, 24), W - 80)):
         td.text((40, 430 + i * 34), ln, font=font(R, 24), fill=DIM)
     for _ in range(54):
         proc.stdin.write(title.tobytes())
@@ -314,7 +364,7 @@ def film(dir, out):
         top = 110
         if fr['card']:
             # (his class card: before and now, from in front, side by side, bigger)
-            for i, (c, name) in enumerate([(cells[0], 'BEFORE'), (cells[1], 'NOW')]):
+            for i, (c, name) in enumerate([(cells[0], 'THE GAME'), (cells[1], 'NOW')]):
                 k = 4
                 bx = (48, 20, 144, 156)
                 im = c.crop(bx).resize(((bx[2] - bx[0]) * k, (bx[3] - bx[1]) * k), Image.NEAREST)
@@ -324,7 +374,7 @@ def film(dir, out):
                 d.text((x, top), name, font=lab, fill=CYAN if name == 'NOW' else DIM)
                 img.paste(g, (x, top + 28))
         else:
-            labels = fr.get('names') or ['BEFORE · in front', 'NOW · in front', 'BEFORE · from behind', 'NOW · from behind']
+            labels = fr.get('names') or ['THE GAME · in front', 'NOW · in front', 'THE GAME · from behind', 'NOW · from behind']
             names = [(labels[j], j) for j in range(4)]
             for name, j in names:
                 col, row = j % 2, j // 2
@@ -346,7 +396,7 @@ def film(dir, out):
                 g.paste(im, (0, 0), im)
                 x = gx + col * (g.width + 14)
                 yy = top + 30 + row * (g.height + 30)
-                d.text((x, yy), ('WAS' if fr.get('names') else 'BEFORE') if j % 2 == 0 else 'NOW', font=tiny, fill=CYAN if j % 2 else DIM)
+                d.text((x, yy), ('WAS' if fr.get('names') else 'THE GAME') if j % 2 == 0 else 'NOW', font=tiny, fill=CYAN if j % 2 else DIM)
                 img.paste(g, (x, yy + 18))
         proc.stdin.write(img.tobytes())
     proc.stdin.close()
@@ -418,10 +468,9 @@ def sheet2(dir, out):
              'as armour, and the slit cut dark across the top of the snout, its upper lip lit and its lower edge in shadow, the '
              'faint cyan of his eyes in it. Seen from behind, the snout is hidden by his head. '
              'HIS EIGHT FACINGS: each truly painted, none of them a mirror, so that his sword is in his right hand whichever way he '
-             'faces, as he asked. HIS SWORD, SEEN FROM EVERY SIDE: held as it was, point low behind him, from down and to the '
-             'left it was wholly hidden by him and from toward you only a stub showed. Now his guard carries it level behind him, '
-             'pointing back and out to his right, his run with his hands up by his right breast, and in town it rides point up on '
-             'his back, over his right shoulder: from every side a good length of its light, its point among it, is seen. '
+             'faces, as he asked. HIS SWORD where the game holds it: in his guard and his run low at his right hip, the blade '
+             'trailing down and back behind him (from some sides his body hides it, as it would); in town on his back as the game '
+             'has it, its hilt over his right shoulder. His run and his town as the game\'s own. '
              'Each picture below sits where he faces: down and to the right at the bottom right, and so round. At the foot, his '
              'fall before and now (the first sheet\'s top now holds his legs, made true). Pictures only: not in the game.')
     lines = wrap(probe, intro, small, W - 48)
