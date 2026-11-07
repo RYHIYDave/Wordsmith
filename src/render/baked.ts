@@ -14,6 +14,7 @@ import { heroLists } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { HeroArt, HeroPlace } from '../art/heroes';
 import type { AnimSet } from '../art/actor_types';
+import { heroSides } from '../art/sides';
 import type { Sprite } from '../engine/px';
 import type { ClassId } from '../game/types';
 
@@ -55,28 +56,33 @@ export function keyName(k: BakeKey): string {
 }
 
 /**
- * Where a hero's baked frames go, as [side, list, frame] (side 0 the front, 1 the back; lists as heroLists has them), in the
- * order they are wanted: standing and running first, then the first frame of every other list, then the rest. On a class
- * card only what a card shows, the front standing and running (render/painter.ts, hero).
+ * Where a hero's baked frames go, as [side, list, frame] (sides as art/sides.ts numbers them: 0 the front, 1 the back, and for a
+ * hero painted from eight, the six others after; lists as heroLists has them), in the order they are wanted: standing and
+ * running first, then the first frame of every other list, then the rest. On a class card only what a card shows, the front
+ * standing and running (render/painter.ts, hero).
  */
-export function bakedPlaces(front: AnimSet, back: AnimSet, card: boolean): [number, number, number][] {
-  const lists = [heroLists(front), heroLists(back)];
+export function bakedPlaces(sides: readonly AnimSet[], card: boolean): [number, number, number][] {
+  const lists = sides.map((s) => heroLists(s));
+  const front = sides[0];
   const most = [lists[0].indexOf(front.idle), lists[0].indexOf(front.walk)].filter((l) => l >= 0);
   const out: [number, number, number][] = [];
   if (card) {
     for (const l of most) for (let i = 0; i < lists[0][l].length; i++) out.push([0, l, i]);
     return out;
   }
-  for (const l of most) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) out.push([v, l, i]);
-  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < 2; v++) if (lists[v][l].length) out.push([v, l, 0]);
-  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < 2; v++) for (let i = 1; i < lists[v][l].length; i++) out.push([v, l, i]);
+  const V = lists.length;
+  for (const l of most) for (let v = 0; v < V; v++) for (let i = 0; i < lists[v][l].length; i++) out.push([v, l, i]);
+  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < V; v++) if (lists[v][l].length) out.push([v, l, 0]);
+  for (let l = 0; l < lists[0].length; l++) if (!most.includes(l)) for (let v = 0; v < V; v++) for (let i = 1; i < lists[v][l].length; i++) out.push([v, l, i]);
   return out;
 }
 
-/** The lengths of a hero's lists, both sides (to know the baked pictures are of the hero as the game has him now). */
-export function listLengths(front: AnimSet, back: AnimSet): number[][] {
-  return [heroLists(front).map((l) => l.length), heroLists(back).map((l) => l.length)];
+/** The lengths of a hero's lists, every side (to know the baked pictures are of the hero as the game has him now). */
+export function listLengths(sides: readonly AnimSet[]): number[][] {
+  return sides.map((s) => heroLists(s).map((l) => l.length));
 }
+
+export { heroSides };
 
 /** A group's file: its sheets, its frames on them, and where each hero's frames go. */
 export interface BakeFile {
@@ -166,7 +172,7 @@ export class BakedHeroes {
       const wants = new Map<number, [BakeFile['keys'][number], number, number, number][]>();
       for (const k of f.keys) {
         const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
-        if (JSON.stringify(listLengths(a.front, a.back)) !== JSON.stringify(k.lens)) throw new Error(`${keyName(k)}: its lists are not as baked`);
+        if (JSON.stringify(listLengths(heroSides(a))) !== JSON.stringify(k.lens)) throw new Error(`${keyName(k)}: its lists are not as baked`);
         for (let n = 0; n + 3 < k.at.length; n += 4) {
           const fi = k.at[n + 3];
           let w = wants.get(fi);

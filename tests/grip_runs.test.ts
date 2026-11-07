@@ -20,6 +20,10 @@ import type { Sprite } from '../src/engine/px';
 import { Figure } from '../src/render/figure';
 import type { FigureState } from '../src/render/figure';
 
+import { heroesAsBefore } from './helpers';
+// (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
+heroesAsBefore();
+
 // (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
 // MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,
 // and hold them off, as they were then; tests/wild.test.ts and tests/mage_stances.test.ts ask of them on.)

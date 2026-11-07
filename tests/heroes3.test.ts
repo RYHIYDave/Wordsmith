@@ -29,7 +29,10 @@ import type { ClassId } from '../src/game/types';
 import { Figure, heldFrame } from '../src/render/figure';
 import type { Art } from '../src/render/render';
 import { ENTER_OUT, enterLength } from '../src/ui/panels';
-import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
+import { paintWithoutCanvas, paintingOf, unlike, heroesAsBefore } from './helpers';
+
+// (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
+heroesAsBefore();
 
 // (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
 // MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,

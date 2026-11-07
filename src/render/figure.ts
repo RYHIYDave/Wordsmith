@@ -8,6 +8,10 @@
 // and around his shoulders then back under"). The game screen and the class cards both use it.
 
 import type { ActorArt, AnimSet, Clip } from '../art/actor_types';
+import { isEight } from '../art/sides';
+import { WU_SIDES } from '../art/warrior_up';
+import type { WuSide } from '../art/warrior_up';
+import { wuFacing, wuTailsFacing } from '../art/warrior_up_art';
 import { HERO_TAILS } from '../art/heroes';
 import { drawAura, drawGlow, drawLights, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -105,6 +109,13 @@ export const TURN_FLIP = { on: false };
 export const TURN_NARROW = { half: 0.2, quarter: 0.62 };
 /** How far past the line between two sides the hero must face before the picture changes sides (0.16 is about six degrees). */
 export const VIEW_STICK = 0.16;
+
+/**
+ * A HERO PAINTED FROM ALL EIGHT SIDES (art/sides.ts): the side he is shown from is held until his facing is this far past the
+ * line between two eighths (degrees), so that he does not flicker between two sides (docs/mockups/warrior_up/README.md, "His
+ * eight facings": the main chat's to judge in play).
+ */
+export const EIGHT_STICK = 8;
 
 interface View {
   /** Mirrored: the hero faces screen-left. */
@@ -370,6 +381,8 @@ export class Figure {
   /** The side the figure is drawn from just now (null before its first frame), and the side it is turning to (the same, when it is not turning). */
   private view: View | null = null;
   private goal: View = { left: false, away: false };
+  /** For a hero painted from eight sides: the side he is shown from now (null before his first frame). */
+  private side8: WuSide | null = null;
   /**
    * How far through a turn: 0 the old side at full width, 0.5 the narrowest (where the side
    * changes), 1 the new side at full width. `turnDir` -1: the hero thought better of it before
@@ -400,9 +413,21 @@ export class Figure {
     this.runFrom = 0;
     this.gone = 0;
     this.view = null;
+    this.side8 = null;
     this.turnK = 1;
     this.squash = 1;
     this.tails.reset();
+  }
+
+  /** The side of a hero painted from eight for his facing (fx, fy), the one he is shown from held until he is clearly past it. */
+  private eightSide(fx: number, fy: number): WuSide {
+    const want = wuFacing(fx, fy);
+    const was = this.side8;
+    if (!was || was === want) return want;
+    const a = (Math.atan2(fy, fx) * 180) / Math.PI;
+    const c = WU_SIDES.indexOf(was) * 45;
+    const d = Math.abs((((a - c) % 360) + 540) % 360 - 180);
+    return d <= 22.5 + EIGHT_STICK ? was : want;
   }
 
   /** Is the figure in the middle of turning from one side to another? */
@@ -531,8 +556,23 @@ export class Figure {
         };
     // (a hero who turns to strike is round by the time the blow lands)
     const winding = st.anim === 'attack' && st.attackAge < st.attackWind;
-    const { left, away } = this.turnTo(want, dt, winding ? Math.min(TURN_TIME, Math.max(0.05, st.attackWind * 0.8)) : TURN_TIME);
-    const set = away ? art.back : art.front;
+    const turned = this.turnTo(want, dt, winding ? Math.min(TURN_TIME, Math.max(0.05, st.attackWind * 0.8)) : TURN_TIME);
+    let left = turned.left;
+    let away = turned.away;
+    let set = away ? art.back : art.front;
+    let tailsWay: 1 | -1 = left ? -1 : 1;
+    // A HERO PAINTED FROM ALL EIGHT SIDES (art/sides.ts: the Warrior and the Ranger brought up): the side for the way he faces,
+    // drawn as it is painted, never mirrored; held while he spins round in a whirlwind (it turns him itself); turned to the
+    // camera for a thing of his own done standing, as every hero is. His tails (the Warrior's scarf, the Ranger's feather) hang
+    // the way that side faces (docs/mockups/warrior_up/README.md, "His eight facings").
+    if (isEight(art)) {
+      const side: WuSide = this.doing ? 'front' : spins && this.side8 ? this.side8 : this.eightSide(st.fx, st.fy);
+      this.side8 = side;
+      set = art[side];
+      left = false;
+      away = false;
+      tailsWay = wuTailsFacing(side);
+    }
     // (a leap that has come down: see `land`. Anything the hero then does but stand ends it. The
     // rules still call the hero walking in the step the leap ends, as they do all through it:
     // that step is not walking off.)
@@ -672,7 +712,7 @@ export class Figure {
         this.sinceLand = -1;
         this.sinceStop = -1;
         this.tailOf = null;
-        s = this.standingFrame(art, away, st.animT, dt, standing && gestures);
+        s = this.standingFrame(art, set, away, st.animT, dt, standing && gestures);
       }
     }
     // (anything but the attack itself or standing ends its follow-through)
@@ -687,7 +727,7 @@ export class Figure {
     // (in a turn the knots the tails hang from close in on the middle with the figure)
     const q = this.squash;
     const roots = q < 1 && s.tails ? s.tails.map((r) => ({ ...r, x: s.ax + (r.x - s.ax) * q })) : s.tails;
-    this.tails.step(dt, roots, s.ax, s.ay, left ? -1 : 1, ox, oy);
+    this.tails.step(dt, roots, s.ax, s.ay, tailsWay, ox, oy);
     this.last = s;
     return s;
   }
@@ -697,8 +737,7 @@ export class Figure {
    * the view that faces the camera: a hero who stands with their back to us turns round to do
    * theirs, and turns back when it is done.
    */
-  private standingFrame(art: ActorArt, away: boolean, animT: number, dt: number, free: boolean): Sprite {
-    const set = away ? art.back : art.front;
+  private standingFrame(art: ActorArt, set: AnimSet, away: boolean, animT: number, dt: number, free: boolean): Sprite {
     const fps = set.idleFps ?? 2;
     const n = set.idle.length;
     const a = art.front.clips?.idleA;

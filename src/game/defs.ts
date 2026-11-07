@@ -119,8 +119,8 @@ export interface SkillDef {
 }
 
 export const SKILLS: Record<SkillId, SkillDef> = {
-  strike: { id: 'strike', name: 'Strike', kind: 'melee', icon: 'strike', dmg: 1.0, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'Hit one enemy in front of you.', verb: 'STRIKE', windup: 0.12, follow: 0.3 },
-  slam: { id: 'slam', name: 'Slam', kind: 'burst', icon: 'slam', dmg: 1.5, cooldown: 3.0, mana: 10, range: 1.4, radius: 2.0, speed: 0, sockets: true, desc: 'Smash the ground ahead and hit everything near it.', verb: 'SLAM', windup: 0.22, follow: 0.38 },
+  strike: { id: 'strike', name: 'Strike', kind: 'melee', icon: 'strike', dmg: 1.0, cooldown: 0, mana: 0, range: 1.7, radius: 0, speed: 0, sockets: true, desc: 'Hit one enemy in front of you.', verb: 'STRIKE', windup: 0.333, follow: 0.3 },
+  slam: { id: 'slam', name: 'Slam', kind: 'burst', icon: 'slam', dmg: 1.5, cooldown: 3.0, mana: 10, range: 1.4, radius: 2.0, speed: 0, sockets: true, desc: 'Smash the ground ahead and hit everything near it.', verb: 'SLAM', windup: 0.5, follow: 0.38 },
   // WHIRLWIND, the two-handed sword's slow attack (the owner, 4 Oct 2026, 18:52): "let's have
   // greatsword have a whirlwind on tap+hold with a channel that passes through like the Bull
   // stampede". Held: the hero spins, cutting everything within `radius` every `tick` seconds, walks
@@ -131,11 +131,11 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   // (LUNGE, his word of 17 Oct, 15:45 his time: "Yes rename to lunge": the warrior's diving thrust, art/heroes3.ts THRUST; its
   // id is still 'leap', as saved heroes and the rules know it)
   leap: { id: 'leap', name: 'Lunge', kind: 'leap', icon: 'leap', dmg: 0.5, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Dive at a spot, your sword out before you. Nothing can hit you as you go, and the point strikes where you land.', verb: 'LUNGE', windup: 0, follow: 0 },
-  shot: { id: 'shot', name: 'Shot', kind: 'projectile', icon: 'shot', dmg: 1.0, cooldown: 0, mana: 0, range: 11, radius: 0.25, speed: 16, sockets: true, desc: 'Loose an arrow at one enemy.', verb: 'SHOOT', windup: 0.16, follow: 0.32 },
+  shot: { id: 'shot', name: 'Shot', kind: 'projectile', icon: 'shot', dmg: 1.0, cooldown: 0, mana: 0, range: 11, radius: 0.25, speed: 16, sockets: true, desc: 'Loose an arrow at one enemy.', verb: 'SHOOT', windup: 0.333, follow: 0.32 },
   // VOLLEY, the bow's slow attack (the owner, 20:02): "Target an area and the ranger fires a bunch
   // of arrows straight up, then they rain down into the targeted area for a duration". `dmg` is
   // one arrow, `radius` the patch of ground; TUNE.volley* are the rest.
-  volley: { id: 'volley', name: 'Volley', kind: 'volley', icon: 'volley', dmg: 0.7, cooldown: 5.0, mana: 14, range: 9, radius: 2.2, speed: 0, sockets: true, desc: 'Loose arrows at the sky: they rain on the spot you point at for a few seconds.', verb: 'RAIN ARROWS', windup: 0.2, follow: 0.36 },
+  volley: { id: 'volley', name: 'Volley', kind: 'volley', icon: 'volley', dmg: 0.7, cooldown: 5.0, mana: 14, range: 9, radius: 2.2, speed: 0, sockets: true, desc: 'Loose arrows at the sky: they rain on the spot you point at for a few seconds.', verb: 'RAIN ARROWS', windup: 0.4, follow: 0.36 },
   // TRAP, the ranger's evasive move (the owner, 20:02 and 20:04): "Let's move the trap on ranger to
   // the tumble. When you tumble you lay a trap"; "Let's just call tumble trap from now on. You'll
   // still tumble and lay a trap down, and it will still be a dodge, but we'll name it trap".
@@ -1830,8 +1830,11 @@ export const COMBO = { on: true };
  * rules are not changed: an arrow still starts 0.4 tiles ahead of him and hits what it hits.
  * Off, as before Version 19.4: drawn from the start, 10 pixels up, 6 long; a volley from 10 pixels to
  * the right of the feet, 27 up. (tests/ranger_stances.test.ts holds the numbers to the picture's.)
+ * THE RANGER BROUGHT UP (art/ranger_up.ts RANGER_UP, on 7 Nov 2026): measured again from his new release, the frame before it
+ * (tools/ru_arrow_measure.ts: 0.794 tiles ahead and 22.25 up for the Shot, 0.266 and 27.63 for the Volley; before, 0.796, 22.5,
+ * 0.291, 27.6).
  */
-export const RANGER_ARROW = { on: true, from: 0.796, height: 22.5, long: 11, volleyFrom: 0.291, volleyHeight: 27.6 };
+export const RANGER_ARROW = { on: true, from: 0.794, height: 22.25, long: 11, volleyFrom: 0.266, volleyHeight: 27.6 };
 
 export const TUNE = {
   heroRadius: 0.3,

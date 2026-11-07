@@ -7,7 +7,7 @@ import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { lookOfPlace } from '../art/heroes';
 import type { Sprite } from '../engine/px';
 import { VETERAN } from '../game/veteran';
-import { bakeGroups, bakedPlaces, keyName, listLengths } from '../render/baked';
+import { bakeGroups, bakedPlaces, heroSides, keyName, listLengths } from '../render/baked';
 import type { BakeFile } from '../render/baked';
 
 /** A sheet's widest and tallest (a phone takes a picture this big in at once without trouble). */
@@ -44,9 +44,10 @@ function group(name: string): { frames: number; places: number; sheets: { w: num
   let places = 0;
   for (const k of keys) {
     const a = art.of(k.cls, { ...lookOfPlace(k.place), vet: k.vet });
-    const lists = [heroLists(a.front), heroLists(a.back)];
+    const sides = heroSides(a);
+    const lists = sides.map((s) => heroLists(s));
     const at: number[] = [];
-    for (const [v, l, i] of bakedPlaces(a.front, a.back, k.place === 'card')) {
+    for (const [v, l, i] of bakedPlaces(sides, k.place === 'card')) {
       const s = lists[v][l][i];
       const cv = s.img;
       if (!cv || !cv.width || !cv.height) continue;
@@ -74,7 +75,7 @@ function group(name: string): { frames: number; places: number; sheets: { w: num
       at.push(v, l, i, fi);
       places++;
     }
-    outKeys.push({ cls: k.cls, place: k.place, vet: k.vet, lens: listLengths(a.front, a.back), at });
+    outKeys.push({ cls: k.cls, place: k.place, vet: k.vet, lens: listLengths(sides), at });
   }
   // (laid on sheets in rows, in the order they are wanted)
   const sheets: { w: number; h: number }[] = [];

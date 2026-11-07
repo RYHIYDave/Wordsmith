@@ -224,7 +224,9 @@ test('the wind-ups are short: about a quarter of a second at the most, and the e
     // (THE VETERAN's punches and kicks: each move's wind-up is its own held frames, heavy at his word, game/veteran.ts VET_MOVES)
     if (d.kind === 'vblow') continue;
     // (the Brawler's Cross, his hold, "slow and heavy" as he was made and filmed for the owner: a third of a second)
-    const most = d.id === 'cross' ? 10 / 30 : 0.3;
+    // (THE WARRIOR'S AND THE RANGER'S HELD WIND-UPS, Movement 9, with their pictures brought up, 7 Nov 2026: his “Yes, the held
+    // wind-up (Recommended)”: the Strike and the Shot a third of a second, the Volley 0.4, the Slam half a second)
+    const most = d.id === 'cross' ? 10 / 30 : d.id === 'strike' || d.id === 'shot' ? 1 / 3 : d.id === 'volley' ? 0.4 : d.id === 'slam' ? 0.5 : 0.3;
     assert.ok(d.windup > 0 && d.windup <= most, `${d.name}: a wind-up, and a short one (${d.windup} s)`);
     assert.ok(d.follow > 0 && d.follow <= 0.5, `${d.name}: and a short follow-through (${d.follow} s)`);
   }
@@ -507,7 +509,8 @@ test('while one attack is being made no other begins; a slow attack asked for me
     const qd = SKILLS[h.skills[0].id];
     const c = ask(g, 1, 2, 0);
     c.fire = true;
-    const steps = watch(g, c, 1);
+    // (long enough for the slow attack's held wind-up and follow-through and the quick one's held wind-up after: 7 Nov 2026)
+    const steps = watch(g, c, 1.6);
     const b = steps.findIndex((s) => wentOut(s, sd.kind));
     assert.ok(b >= 0 && onTime(steps[b].t, sd.windup), `${cls}: ${sd.name} lands on time whatever else is held`);
     assert.ok(steps.slice(0, b).every((s) => s.winding === 1 && s.uses[0] === 0 && !wentOut(s, qd.kind)), `${cls}: ${qd.name} does not cut in on it`);
@@ -592,9 +595,12 @@ test("a fast weapon's wind-up is cut short: never more than two fifths of the ti
     {
       const g = room(cls);
       const h = g.hero;
-      assert.ok(0.4 / h.skills[0].r.rate > def.windup, `${cls}: an ordinary weapon is slow enough for the whole wind-up`);
+      // (the held wind-ups of 7 Nov 2026 are cut by the same rule where the weapon is quick: the Ranger's bow from the start, his
+      // draw a little shorter than its picture, which is played to fit)
+      const whole = 0.4 / h.skills[0].r.rate > def.windup;
+      assert.ok(whole || def.id === 'shot' || def.id === 'strike', `${cls}: an ordinary weapon is slow enough for the whole wind-up`);
       ask(g, 0, 3, 0);
-      assert.equal(h.attackWind, def.windup);
+      assert.ok(Math.abs(h.attackWind - Math.min(def.windup, 0.4 / h.skills[0].r.rate)) < EPS, `${cls}: the wind-up is the table's, or two fifths of the time between blows`);
     }
     // twice, three and five times as many blows a second as the wind-up leaves room for
     for (const pace of [4, 6, 10]) {
@@ -727,11 +733,13 @@ test('the quick attack goes the way the hero faces, from wherever they have got 
     const g = room('ranger');
     const h = g.hero;
     const y0 = h.y;
+    // (his held draw, 7 Nov 2026, as long as his bow leaves room for: windOf)
+    const wind = windOf(g, 0);
     const c = ask(g, 0, 4, 0);
     c.my = 1;
-    const steps = watch(g, c, 0.3);
+    const steps = watch(g, c, 0.5);
     const k = steps.findIndex((s) => s.shots > 0);
-    assert.ok(k >= 0 && onTime(steps[k].t, SKILLS.shot.windup));
+    assert.ok(k >= 0 && onTime(steps[k].t, wind));
     // (the first arrow in the room: it is the only one)
     assert.equal(g.projectiles.length, 1);
     const p = g.projectiles[0];
@@ -740,7 +748,7 @@ test('the quick attack goes the way the hero faces, from wherever they have got 
     const from = steps[k - 1].y;
     const walked = from - y0;
     assert.ok(walked > 0.1, `the ranger has walked on while the bow was drawn (${walked.toFixed(2)} tiles)`);
-    assert.ok(walked < h.d.moveSpeed * SKILLS.shot.windup * 0.6, 'slowly: an attack is being made');
+    assert.ok(walked < h.d.moveSpeed * wind * 0.6, 'slowly: an attack is being made');
     assert.ok(p.vx > 0 && Math.abs(p.vy) < 1e-6, 'the arrow flies the way the bow was pointed when the shot was asked for');
     // it left the bow where the ranger was when the string was let go, not where the shot was asked for
     assert.ok(Math.abs(p.y - from) < 1e-6, `it left from where the ranger had got to (${(p.y - y0).toFixed(2)} tiles down the room)`);

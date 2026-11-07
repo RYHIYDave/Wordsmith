@@ -27,15 +27,15 @@ test('every hero in every place the painter paints him is in one group, and the 
 test('every frame of a hero has its place once, standing and running first; a card only its front standing and running', () => {
   const front = fake(4);
   const back = fake(4);
-  const lens = listLengths(front, back);
+  const lens = listLengths([front, back]);
   const total = lens.flat().reduce((a, b) => a + b, 0);
-  const at = bakedPlaces(front, back, false);
+  const at = bakedPlaces([front, back], false);
   assert.equal(at.length, total);
   assert.equal(new Set(at.map((p) => p.join(':'))).size, total, 'none twice');
   // (the first: the front's standing, the back's, then the running)
   const idle = lens[0].findIndex((n) => n === 4);
   assert.deepEqual(at[0], [0, idle, 0]);
-  const card = bakedPlaces(front, back, true);
+  const card = bakedPlaces([front, back], true);
   assert.equal(card.length, 4 + 5);
   assert.ok(card.every(([v]) => v === 0));
 });

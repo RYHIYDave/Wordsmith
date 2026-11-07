@@ -33,9 +33,12 @@ import { plainWeapon } from '../src/game/items';
 import { emptyControls } from '../src/game/state';
 import type { Controls, Monster } from '../src/game/state';
 import { Figure, attackClip, attackFrame } from '../src/render/figure';
-import { paintWithoutCanvas } from './helpers';
+import { paintWithoutCanvas, heroesAsBefore } from './helpers';
 import { MAGE_STANCES, WILD, useMageStances, useWild } from '../src/art/moves3';
 import { OWN_MOVES } from '../src/game/defs';
+
+// (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
+heroesAsBefore();
 // (EVERYONE FIGHTS WITH THEIR OWN MOVES, defs.ts OWN_MOVES, since 28 Oct 2026: these tests give a hero his attacks by the
 // weapon in his hand, Version 12's rule, to test the attacks themselves; tests/own_moves.test.ts tests the rule now in force)
 OWN_MOVES.on = false;

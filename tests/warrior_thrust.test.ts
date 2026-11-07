@@ -17,7 +17,10 @@ import { THRUST, makeHeroArt3 } from '../src/art/heroes3';
 import { LEAP3, MOVES3, THRUST3 } from '../src/art/moves3';
 import { CLASS_IDS } from '../src/game/types';
 import { LEAP_LIFT, THRUST_LIFT } from '../src/render/wild';
-import { paintWithoutCanvas, unlike } from './helpers';
+import { paintWithoutCanvas, unlike, heroesAsBefore } from './helpers';
+
+// (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
+heroesAsBefore();
 
 interface Assert {
   ok(value: unknown, message?: string): void;
