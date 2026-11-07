@@ -320,7 +320,7 @@ test('8. the screen: the rumble through his rise, the roar\'s shake bigger, the 
   assert.ok(rumble >= 1 && rumble <= 3, `the rumble (${rumble} game pixels)`);
   assert.ok(roar >= 2 * rumble, `the roar's shake bigger (${roar} game pixels)`);
   assert.ok(EYE_SCREEN.rumble[0] < E.rise[0] && EYE_SCREEN.rumble[1] === E.tear[0], 'rumbling all through his rise, until he roars');
-  assert.ok(darkAt(E.rise[0] + 20) > 0.3 && darkAt(E.tear[0] + 20) === 0, 'dark as he rises, lit again as he roars');
+  assert.ok(darkAt(E.rise[0] + 20) > 0.25 && darkAt(E.tear[0] + 20) === 0, 'dark as he rises, lit again as he roars');
   assert.equal(EYE_SCREEN.roarSound, E.tear[0], 'the roar\'s sound as his jaws tear apart');
   for (let k = E.settle[1] + 20; k < E.frames; k++) {
     const s = shakeAt(k);

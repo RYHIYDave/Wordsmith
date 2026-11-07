@@ -16,7 +16,7 @@ big, mid, small = ImageFont.truetype(B, 30), ImageFont.truetype(B, 22), ImageFon
 probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
 FPS = 30
 # (art/eye_moves.ts EYE_ENTRANCE and EYE_SCREEN: the beats, frames from the first of his entrance)
-STIR, RISE, BREAKS, STRAIN, TEAR, SETTLE, STALK, LIDS, BREATHE, ARMS, END = 0, 30, 40, 108, 129, 133, 156, 186, 192, 222, 270
+STIR, RISE, BREAKS, STRAIN, TEAR, SETTLE, STALK, LIDS, BREATHE, ARMS, END = 0, 30, 38, 108, 129, 133, 156, 186, 192, 222, 270
 BURSTS = {'left': 232, 'right': 237, 'middle': 242}
 
 def wrap(text, font, width):
@@ -55,7 +55,7 @@ def caption_bar(width, title, line, foot):
     d.text((width - 14 - tw, 10), foot, font=small, fill=GREY)
     return bar
 
-CROP = (254, 12, 761, 246)  # him, close: 507 x 234 picture pixels, twice the size fills the screen
+CROP = (254, 8, 761, 242)  # him, close: 507 x 234 picture pixels, twice the size fills the screen
 
 def film(d, out):
     seq = []
@@ -114,7 +114,8 @@ def row(tiles, labels):
 
 def sheet(d, out):
     parts = []
-    hd = Image.new('RGB', (W, 150), BG)
+    hl = wrap('Key frames from the film, as the player sees them: the phone\'s screen at the game\'s own size (two picture pixels to a game pixel), the stone, the Warrior at his spot, the camera leaned toward him; then closer, at twice. His entrance as he set it: rises shut with the screen rumbling and water pouring off; a big roar, more shake; the eye stalk comes out; the moment breathes; the tentacles come up; phase 2.', small, W - 48)
+    hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
     dr = ImageDraw.Draw(hd)
     dr.text((24, 22), 'THE SWAMP COLOSSUS: HIS STAND, HIS LURK, HIS ENTRANCE', font=big, fill=PALE)
     for i, l in enumerate(wrap('Key frames from the film, as the player sees them: the phone\'s screen at the game\'s own size (two picture pixels to a game pixel), the stone, the Warrior at his spot, the camera leaned toward him; then closer, at twice. His entrance as he set it: rises shut with the screen rumbling and water pouring off; a big roar, more shake; the eye stalk comes out; the moment breathes; the tentacles come up; phase 2.', small, W - 48)):
@@ -123,20 +124,22 @@ def sheet(d, out):
     # (his lurk: the whole screen at the game's size)
     parts.append(block('HIS LURK (PHASE 1), THE WHOLE SCREEN AT THE GAME\'S SIZE', 'The dark shape of him deep under the black water, heaving; his eye\'s fire drifting and pulsing up through it; bubbles breaking, the slow swell, slicks of his goo rising. (The two phase 1 tentacles are their own figures, drawn with their own moves later; at the end of phase 1 they are dead.)', frame(d, 'lurk', 30)))
     # (his entrance's beats at the game's size: him and the water round him, two to a row)
-    G = (217, 0, 797, 300)
-    beats = [(20, '1. the eye sinks, his jaws shut, the water stirs'), (52, '1. he breaks the water, shut, rumbling'), (84, '1. rising, water pouring off him'), (118, '2. the strain: his seam splitting'), (130, '2. THE ROAR: torn apart'), (138, '2. the ring slammed out, spray and goo'), (166, '3. the eye stalk unfurls'), (189, '3. its eye snaps open'), (205, '4. the moment breathes'), (229, '5. the water bulges over a tentacle'), (233, '5. the left one bursts up (smeared)'), (262, '6. phase 2: his stand')]
+    G = (217, 0, 797, 316)
+    beats = [(20, '1. the eye sinks, his jaws shut, the water stirs'), (52, '1. he breaks the water, shut, rumbling'), (84, '1. rising, water pouring off him'), (118, '2. the strain: his seam splitting'), (130, '2. THE ROAR: torn apart'), (138, '2. the ring slammed out, spray and goo'), (172, '3. the eye stalk unfurls, its eye shut'), (189, '3. its eye snaps open'), (205, '4. the moment breathes'), (231, '5. the water bulges over a tentacle'), (234, '5. the left one bursts up'), (262, '6. phase 2: his stand')]
     for i in range(0, len(beats), 2):
         two = beats[i:i + 2]
         parts.append(block('HIS ENTRANCE, AT THE GAME\'S SIZE' if i == 0 else '', 'Frames from its first (30 a second): %s.' % ', '.join('%d (%.2f s)' % (k, k / FPS) for k, _ in two) if i == 0 else '', row([frame(d, 'entrance', k).crop(G) for k, _ in two], ['%d: %s' % (k, l) for k, l in two])))
     # (closer: twice the size)
-    T2 = (362, 12, 652, 162)
-    close = [(60, 'rising shut'), (118, 'the strain'), (131, 'the roar'), (178, 'the stalk rearing'), (190, 'staring'), (234, 'a tentacle bursts')]
+    # (each closer view centred on what is happening: x, y on the screen)
+    def near(move, k, cx, cy):
+        return frame(d, move, k).crop((cx - 145, cy - 75, cx + 145, cy + 75)).resize((580, 300), Image.NEAREST)
+    close = [(84, 'rising shut, water pouring off', 507, 150), (124, 'the strain', 507, 150), (131, 'the roar', 507, 190), (172, 'the stalk, its eye shut', 507, 110), (189, 'its eye snaps open', 507, 90), (236, 'a tentacle bursts', 250, 260)]
     for i in range(0, len(close), 2):
         two = close[i:i + 2]
-        parts.append(block('HIS ENTRANCE, TWICE THE SIZE' if i == 0 else '', '', row([frame(d, 'entrance', k).crop(T2).resize((580, 300), Image.NEAREST) for k, _ in two], ['%d: %s' % (k, l) for k, l in two])))
+        parts.append(block('HIS ENTRANCE, TWICE THE SIZE' if i == 0 else '', '', row([near('entrance', k, cx, cy) for k, _, cx, cy in two], ['%d: %s' % (k, l) for k, l, _, _ in two])))
     # (his stand)
     parts.append(block('HIS STAND, AT THE GAME\'S SIZE', 'A loop of 3 s (90 frames) that ends where it begins: his flesh sliding and dripping, his spittle snapping and knitting, his jaws breathing, his throat pulsing, his tongue-eye weaving and watching you; his tentacles swaying at their roots.', row([frame(d, 'stand', k).crop(G) for k in (0, 45)], ['0', '45'])))
-    parts.append(block('HIS STAND, TWICE THE SIZE', '', row([frame(d, 'stand', k).crop(T2).resize((580, 300), Image.NEAREST) for k in (15, 60)], ['15', '60'])))
+    parts.append(block('HIS STAND, TWICE THE SIZE', '', row([near('stand', 15, 507, 110), near('stand', 60, 507, 200)], ['15: his eye weaving, watching you', '60: his maw: teeth, spittle, drips, his throat'])))
     H = sum(p.height for p in parts)
     s = Image.new('RGB', (W, H), BG)
     y = 0

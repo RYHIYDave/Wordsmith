@@ -268,9 +268,11 @@ const SH = LEANED.h * 2;
 const M = 16;
 const CW = SW + 2 * M;
 const CH = SH + 2 * M;
-/** His middle at the water on the canvas (the camera leaned toward him, as the stills have it). */
+/** His middle at the water on the canvas: the camera leaned toward him as the stills have it, but `EASE` game pixels less, so that his eye
+ *  at the top of its weave stays on the screen (for the main chat: his middle at the water 131 game pixels down the screen in phase 2). */
+export const EASE = 6;
 const HX = SW / 2 + M;
-const HY = LEANED.waterAt * 2 + M;
+const HY = (LEANED.waterAt + EASE) * 2 + M;
 const CAM = camAt(HX, HY);
 const HERO_AT: [number, number] = [-1.5, ARENA.quay + 1.4];
 /** A point of his space on the canvas. */
@@ -321,13 +323,18 @@ const LAYER = { w: 1100, h: 520, ax: 550, ay: 300, raw: true } as const;
 // (kept on the machine's memory disk, packed: only what of him there is, in the box round it)
 const CACHE = process.env.EYE_CACHE || '/dev/shm/eye_moves/cache';
 fs.mkdirSync(CACHE, { recursive: true });
-// (what paints him: art/eye_colossus.ts up to its checks, which paint nothing)
-const SRC = ((): string => {
-  const all = new TextDecoder().decode(fs.readFileSync('src/art/eye_colossus.ts'));
-  const cut = all.indexOf('// HIS ARMS CLEAR OF HIM AND OF THE STONE; HIS PARTS');
-  return crypto.createHash('sha1').update(cut > 0 ? all.slice(0, cut) : all).digest('hex');
+// (what paints him: art/eye_colossus.ts up to its checks, which paint nothing; for every layer but his tongue's, without the painting
+// of his tongue and eye, `tongueAt`, which only his tongue's layer asks)
+const PAINTER = ((): { all: string; rest: string } => {
+  const all0 = new TextDecoder().decode(fs.readFileSync('src/art/eye_colossus.ts'));
+  const cut = all0.indexOf('// HIS ARMS CLEAR OF HIM AND OF THE STONE; HIS PARTS');
+  const all = cut > 0 ? all0.slice(0, cut) : all0;
+  const a = all.indexOf('  tongueAt(x: number');
+  const b = all.indexOf('  /** His spittle and drool (`exact`');
+  const rest = a > 0 && b > a ? all.slice(0, a) + all.slice(b) : all;
+  return { all: crypto.createHash('sha1').update(all).digest('hex'), rest: crypto.createHash('sha1').update(rest).digest('hex') };
 })();
-const fileOf = (L: EyeLayer): string => path.join(CACHE, `${L.key.replace(/[^A-Za-z0-9.]/g, '_')}_${crypto.createHash('sha1').update(SRC + JSON.stringify(L.pose) + JSON.stringify(LAYER)).digest('hex').slice(0, 14)}.bin`);
+const fileOf = (L: EyeLayer, src = L.key.startsWith('T') ? PAINTER.all : PAINTER.rest): string => path.join(CACHE, `${L.key.replace(/[^A-Za-z0-9.]/g, '_')}_${crypto.createHash('sha1').update(src + JSON.stringify(L.pose) + JSON.stringify(LAYER)).digest('hex').slice(0, 14)}.bin`);
 /** A layer: the box round what of him there is (x0, y0, w, h, on his picture), and in it each pixel's kind, colour, nearness, height
  *  over the water, fire, outline and material; his lights. */
 interface Layer { x0: number; y0: number; w: number; h: number; px: Uint8Array; kind: Uint8Array; mat: Uint8Array; near: Float32Array; zh: Float32Array; fire: Uint8Array; seam: Uint8Array; lights: ColossusPicture['lights'] }
@@ -527,14 +534,14 @@ function roarFlyers(): Flyer[] {
 /** A TENTACLE'S BURST: the crown of water thrown up round it, droplets arcing out and back. */
 function burstFlyers(x: number, y: number, seed: number): Flyer[] {
   const out: Flyer[] = [];
-  for (let n = 0; n < 160; n++) {
+  for (let n = 0; n < 220; n++) {
     // (a crown: a wall of water thrown nearly straight up all round it, breaking into drops; and drops flung further out)
     const a = h3(n, seed, 1, 410) * TAU;
-    const crown = n < 100;
-    const r = crown ? 34 + 10 * h3(n, seed, 2, 411) : 26 + 22 * h3(n, seed, 2, 411);
-    const sp = crown ? 40 + 60 * h3(n, seed, 3, 412) : 120 + 260 * h3(n, seed, 3, 412);
-    const vz = crown ? 280 + 120 * h3(n, seed, 4, 413) : 220 + 300 * h3(n, seed, 4, 413);
-    out.push({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r * 0.8, z: 2, vx: Math.cos(a) * sp * 0.5, vy: Math.sin(a) * sp * 0.4, vz, t0: ((crown ? 1 : 3) * h3(n, seed, 5, 414)) / EYE_FPS, kind: 2, size: 1 + (h3(n, seed, 6, 415) < 0.25 ? 1 : 0) });
+    const crown = n < 140;
+    const r = crown ? 50 + 16 * h3(n, seed, 2, 411) : 46 + 24 * h3(n, seed, 2, 411);
+    const sp = crown ? 40 + 70 * h3(n, seed, 3, 412) : 120 + 260 * h3(n, seed, 3, 412);
+    const vz = crown ? 320 + 160 * h3(n, seed, 4, 413) : 240 + 320 * h3(n, seed, 4, 413);
+    out.push({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r * 0.8, z: 2, vx: Math.cos(a) * sp * 0.5, vy: Math.sin(a) * sp * 0.4, vz, t0: ((crown ? 1 : 3) * h3(n, seed, 5, 414)) / EYE_FPS, kind: 2, size: 1 + (h3(n, seed, 6, 415) < 0.5 ? 1 : 0) });
   }
   return out;
 }
@@ -753,13 +760,14 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           const d = Math.hypot(X - cx, Y - cy) / R;
           const edge = 1 + (vn(X * 0.08 + s, Y * 0.08, 503) - 0.5) * 0.7;
           if (d > edge) continue;
-          // (dull goo on the black water, thicker in its middle; the light caught along its far edge and in long streaks across it)
-          const rim = d > edge - 0.1 && Y < cy - R * 0.25 && vn(X * 0.3, Y * 0.3, 505) > 0.35;
-          const streak = Math.abs(vn(X * 0.02 + Y * 0.035, s * 3.7, 506) - 0.5) < 0.025 && d < edge - 0.15;
-          if (rim || streak) pic.over(i, j, SHEEN[0], SHEEN[1], SHEEN[2], (rim ? 150 : 90) * fade);
-          else if (bayer(i, j) < 0.45 - 0.5 * d) {
-            const col = vn(X * 0.15, Y * 0.15, 504) > 0.6 ? MELT[1] : SLIME[1];
-            pic.over(i, j, col[0], col[1], col[2], 120 * fade);
+          // (dull oily goo on the black water, thicker in its middle, thinning raggedly to its edge; glints of the light on it, and
+          // along its far edge)
+          const rim = d > edge - 0.12 && Y < cy - R * 0.3 && vn(X * 0.25, Y * 0.25, 505) > 0.5;
+          const glint = d < edge - 0.25 && vn(X * 0.3 + s, Y * 0.5, 506) > 0.78;
+          if (rim || glint) pic.over(i, j, SHEEN[0], SHEEN[1], SHEEN[2], (rim ? 120 : 100) * fade);
+          else if (bayer(i, j) < 0.3 - 0.55 * (d / edge)) {
+            const col = vn(X * 0.15, Y * 0.15, 504) > 0.55 ? SLIME[2] : SLIME[1];
+            pic.over(i, j, col[0], col[1], col[2], 150 * fade);
           }
         }
       }
@@ -868,7 +876,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           // (the dome's top, lit on its upper left; foam breaking over it, more as it swells)
           const ang = Math.atan2(Y - B.y, X - B.x);
           if (Math.abs(d - dome * 0.6) < 1.4 && Math.cos(ang + 2.3) > 0.2) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 230 * u);
-          else if (d < dome && vn(X * 0.35 + t * 5, Y * 0.25, 611) > 0.8 - 0.25 * u) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 220);
+          else if (d < dome && vn(X * 0.35 + t * 5, Y * 0.25, 611) > 0.9 - 0.12 * u) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 220);
         }
       } else if (s >= 0 && s < 50) {
         const ss = s / EYE_FPS;
@@ -1197,6 +1205,19 @@ if (mode === 'paint') {
     fs.writeFileSync(path.join(out, `${mv}_${String(k).padStart(3, '0')}.png`), pic.png());
   }
   process.stdout.write(`${mv} ${a}-${b}: ${b - a + 1} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);
+} else if (mode === 'rekey') {
+  // (layers painted before the marks were split: each but his tongue's moved to its new name; its painting is the same)
+  let moved = 0;
+  for (const mv of Object.keys(MOVES) as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(eyeFrame(mv, k))) {
+    if (L.key.startsWith('T')) continue;
+    const from = fileOf(L, PAINTER.all);
+    const to = fileOf(L);
+    if (from !== to && fs.existsSync(from) && !fs.existsSync(to)) {
+      fs.renameSync(from, to);
+      moved++;
+    }
+  }
+  process.stdout.write(`moved ${moved}\n`);
 } else if (mode === 'count') {
   const want = new Set<string>();
   const byKind = new Map<string, number>();

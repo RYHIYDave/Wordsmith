@@ -1913,7 +1913,9 @@ class Scene {
     let bulb = ell(u, w + 3, v, 0, 0, 0, W + 8, Dp + 4, H + 7);
     bulb = smax(bulb, Math.max(Math.hypot(u, w * 0.8, v + K) - R, Math.hypot(u, w * 0.8, v - K) - R), 5);
     // its lids parted in an almond in front, pointed at its corners
-    const ho = (H - 1.5) * lids * Math.max(0, 1 - (u / (W + 2)) ** 2) - (1 - lids) * 1.5;
+    // (shut, a thin slit between its lids, its fire glimmering through; open, as drawn)
+    const ho0 = (H - 1.5) * lids * Math.max(0, 1 - (u / (W + 2)) ** 2);
+    const ho = lids >= 1 ? ho0 : Math.max(ho0, 1.1 * (1 - lids) * Math.max(0, 1 - (u / (W + 2)) ** 2) - 0.2);
     const hole = Math.max(Math.abs(v) - ho, -(w + 8));
     const cup = smax(bulb, -hole, 4);
     let d = Math.min(de, cup);

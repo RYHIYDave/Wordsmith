@@ -158,7 +158,7 @@ export const EYE_ENTRANCE = {
   stir: [0, 30] as const,
   /** 1. He rises shut, a melting mound, water pouring off him (his top breaks the water at `breaks`). */
   rise: [30, 108] as const,
-  breaks: 40,
+  breaks: 38,
   /** 2. The strain: his seam splitting slowly, strings across it, held. */
   strain: [108, 129] as const,
   /** 2. THE ROAR: his jaws tear apart (four frames). */
@@ -188,10 +188,9 @@ export function entranceAt(k: number): { drop: number; back: number } {
     const g = sm(4, E.rise[0], k);
     return { drop: lerp(L.drop, COLOSSUS.sunk + 14, g), back: lerp(L.back, COLOSSUS.sunkBack - 12, g) };
   }
-  const u = sm(E.rise[0], E.rise[1], k);
-  // (eased so that he rises slowly: a little faster through the middle, slow again as he comes to his height)
-  const e = 0.5 - 0.5 * Math.cos(Math.PI * u);
-  const v = lerp(u, e, 0.6);
+  const u = clamp01((k - E.rise[0]) / (E.rise[1] - E.rise[0]));
+  // (eased so that he rises slowly: from still, a little faster through the middle, slow again as he comes to his height)
+  const v = 0.5 - 0.5 * Math.cos(Math.PI * u);
   return { drop: (COLOSSUS.sunk + 14) * (1 - v), back: (COLOSSUS.sunkBack - 12) * (1 - v) };
 }
 /** How open his jaws are at a frame of his entrance. */
@@ -219,7 +218,7 @@ export function entranceGlow(k: number): number {
 /** His tongue drawn down into him (a path down out of his gullet into the dark under the water). */
 const DRAWN_IN: number[][] = TONGUE_RISEN.map((q, i) => [0, -52 - i * 1.2, 28 - i * 19, q[3]]);
 /** His tongue, its tip just out of his gullet, curled like a fern; then rearing, its tip uncurling, taller than it stands. */
-const UNFURL_CURLED: number[][] = [[0, -52, 28], [0, -38, 26], [1, -24, 38], [3, -12, 54], [5, -2, 72], [6, 6, 92], [5, 12, 112], [2, 14, 128], [-3, 12, 140], [-7, 6, 144], [-9, 0, 140], [-8, -4, 132], [-5, -4, 124]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
+const UNFURL_CURLED: number[][] = [[0, -52, 28], [0, -38, 26], [2, -24, 40], [5, -12, 58], [8, -4, 78], [9, 2, 98], [6, 6, 116], [-2, 8, 128], [-12, 8, 134], [-21, 8, 132], [-26, 8, 124], [-26, 8, 114], [-22, 8, 107]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
 const UNFURL_REARED: number[][] = [[0, -52, 28], [0, -30, 24], [3, -6, 32], [10, 12, 54], [22, 22, 84], [28, 30, 116], [22, 34, 148], [8, 36, 176], [-8, 36, 198], [-18, 36, 214], [-20, 38, 228], [-16, 40, 238], [-10, 42, 242]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
 /** A curve through keys (each a path), at `u` between key `i` and `i + 1` (Catmull-Rom, point by point). */
 function through(keys: number[][][], i: number, u: number): number[][] {
@@ -257,10 +256,10 @@ export function entranceTongue(k: number): { path: number[][]; eye: [number, num
   const path = through(keys, i, i === 0 ? 1 - (1 - u) ** 1.6 : sm(0, 1, u) * 0.5 + u * 0.5);
   const eye = tipEye(path);
   // (its eye shut, tucked down, then lifting to the hero; snapping open)
-  // (lying on its side as it always does, its lids shut, a little down at first; lifting to stare at the hero as it opens)
-  const look = sm(E.stalk[0] + 8, E.lids[0], k);
+  // (its shut lids turned to face you as it comes, a slit of its fire through them; turning to stare at the hero as it snaps open)
   const g = gazeAt(eye);
-  const gaze = norm([g[0], g[1], g[2] - 0.45 * (1 - look)]);
+  const turn = sm(E.lids[0] - 1, E.lids[1] + 1, k);
+  const gaze = norm([g[0] * turn, lerp(0.8, g[1], turn), lerp(0.62, g[2], turn)]);
   const lids = k < E.lids[0] ? 0 : [0.3, 0.72, 1][Math.min(2, k - E.lids[0])];
   // (up on its edge as it comes up out of his throat between his jaws, where they are narrowest; lying down on its side as it rears
   // clear of them)
@@ -326,7 +325,7 @@ export const EYE_SCREEN = {
   roar: [E.tear[0], 7, E.tear[0] + 46] as const,
   jolt: 2,
   joltLong: 6,
-  dark: [4, 36, 0.45, E.tear[0], E.tear[0] + 14] as const,
+  dark: [4, 36, 0.32, E.tear[0], E.tear[0] + 14] as const,
   roarSound: E.tear[0],
   rumbleSound: 18,
 } as const;

@@ -67,11 +67,11 @@ his lurk's last; it ends on the frame before his stand's first (the test holds b
 | Beat | Frames | Seconds | What |
 |---|---|---|---|
 | 1. The rise | 0 to 29 | 0.00 to 0.97 | His eye's fire sinks back into him (his tongue drawn down into his throat, its lids shutting, its glow dying), his jaws shut under the water (painted in ten steps, deep and dim); the water stirs (the swell heaving, bubbles), then boils (foam churning over him). He gathers himself, sinking 14 of his lengths. |
-| 1. He rises shut | 30 to 107 | 1.00 to 3.57 | HE RISES SHUT, his jaws upright and pressed together down his seam (their faces 7 of his lengths apart each side of it, never through each other; his teeth meshed in it), a huge melting mound, slowly: 229 of his lengths up and 318 in toward the stone, never faster than 10.1 of his lengths a frame, slow at the start and the end. His top breaks the water at frame 40 (1.33 s). WATER POURS OFF HIM: runs of it sliding down him faster than he rises, a dark wet film, streams falling off his overhangs into the water, foam where they land, each part of him streaming for about two seconds after it comes out; swells rolling off him; the boil dying away. |
+| 1. He rises shut | 30 to 107 | 1.00 to 3.57 | HE RISES SHUT, his jaws upright and pressed together down his seam (their faces 7 of his lengths apart each side of it, never through each other; his teeth meshed in it), a huge melting mound, slowly: 229 of his lengths up and 318 in toward the stone, never faster than 7.9 of his lengths a frame, slow at the start and the end. His top breaks the water at frame 38 (1.27 s). WATER POURS OFF HIM: runs of it sliding down him faster than he rises, a dark wet film, streams falling off his overhangs into the water, foam where they land, each part of him streaming for about two seconds after it comes out; swells rolling off him; the boil dying away. |
 | 2. The strain (wind-up) | 108 to 128 | 3.60 to 4.27 | HELD: his seam splitting slowly (13 per cent open by its end), strings of his flesh and spittle across it stretching, his throat's glow showing through it (rising to 1.7 of as drawn). |
-| 2. THE ROAR (strike) | 129 to 132 | 4.30 to 4.40 | HE OPENS WITH A BIG ROAR: his jaws TEAR APART down the middle in four frames (36, 68, 95, 111 per cent open), the strings of flesh and spittle across his seam snapping one after another (the spittle first, the flesh last), his teeth unmeshing; his throat FLARES (2.7 of as drawn, a burst of gold light); spray and goo BLASTED out of his maw (280 drops and gobs, arcing down into the water, splashing); the water SLAMMED FLAT in a ring (a wave racing out from him at 330 of his lengths a second, the water flat and black behind it, streaked with foam). MORE SCREEN SHAKE. |
+| 2. THE ROAR (strike) | 129 to 132 | 4.30 to 4.40 | HE OPENS WITH A BIG ROAR: his jaws TEAR APART down the middle in four frames (36, 68, 95, 111 per cent open), the 8 strings across his seam (4 of his raw flesh, 4 of spittle) snapping one after another (the spittle first, the flesh last), his teeth unmeshing; his throat FLARES (2.7 of as drawn, a burst of gold light); spray and goo BLASTED out of his maw (280 drops and gobs, arcing down into the water, splashing); the water SLAMMED FLAT in a ring (a wave racing out from him at 330 of his lengths a second, the water flat and black behind it, streaked with foam). MORE SCREEN SHAKE. |
 | 2. Settling (wind-down) | 133 to 155 | 4.43 to 5.17 | His jaws flung on past open (115 per cent) and settling, wobbling, onto his breath; the snapped strings hanging and dripping away; ropes of drool running down out of him to the water; his throat's glow dying back to his stand's; the spray falling, the ring spreading. |
-| 3. The eye stalk | 156 to 191 | 5.20 to 6.37 | His tongue unfurls out of his throat (its eye squeezed small and up on its edge as it comes up between his jaws where they are narrowest, swelling to its size and lying down on its side as it clears them), curls over like a fern, rears up taller than it stands (its eye 258 of his lengths up) and comes down into his stand's weave; its EYE SNAPS OPEN at frames 186 to 188 (shut, 30, 72, 100 per cent) to stare at the Warrior. |
+| 3. The eye stalk | 156 to 191 | 5.20 to 6.37 | His tongue unfurls out of his throat (its eye squeezed small and up on its edge as it comes up between his jaws where they are narrowest, swelling to its size and lying down on its side as it clears them), curls over to one side, rears up taller than it stands (its eye 258 of his lengths up) and comes down into his stand's weave; all the while its shut lids turned to face you, a slit of its fire glimmering between them; its EYE SNAPS OPEN at frames 186 to 188 (shut, 30, 72, 100 per cent), turning to stare at the Warrior. |
 | 4. The moment breathes | 192 to 221 | 6.40 to 7.37 | A second with nothing new: he looms, melting and dripping, breathing, his tongue-eye weaving, staring at the Warrior; his spittle knitting across his maw again; the water settling. |
 | 5. The tentacles come up | 222 to 269 | 7.40 to 8.97 | His three tentacles, their own move (`armBurst`, for the start of each phase): each coiled deep under the water rising, THE WATER BULGING over it (10 frames, held: a dome of water heaving up, rings running off it, foam breaking on it, its dark shape under it); BURSTING up in two frames (smeared, its last frame behind it), tall and straight, its tip hooked, a crown of water thrown up round it and falling back; curling over into its place with a bounce (20 frames); then swaying as he stands. Left at frame 232, right at 237, middle at 242 (the bursts' first frames). |
 | 6. Phase 2 | 270 | 9.00 | His stand, from its first frame. |
@@ -82,14 +82,25 @@ his lurk's last; it ends on the frame before his stand's first (the test holds b
   moves), weak at first, strongest through the strain; its sound from frame 18.
 - THE ROAR'S SHAKE: from frame 129 (4.30 s), the first frame of the tear, up to 5 game pixels, dying away by frame 162 (5.40 s).
 - A JOLT as each tentacle bursts: 2 game pixels for 6 frames, from frames 232, 237 and 242.
-- THE DARK: from frame 4 the fen's dusk drops toward night (darkest, 45 per cent, from frame 36 (1.20 s)); his eye's fire and his throat's
+- THE DARK: from frame 4 the fen's dusk drops toward night (darkest, 32 per cent darker, from frame 36 (1.20 s)); his eye's fire and his throat's
   glow never darken; it lifts as he roars, from frame 129 to frame 143 (4.77 s).
 - THE ROAR'S SOUND starts at frame 129 (4.30 s), the first frame of the tear.
 - Nothing hurts the hero in the entrance; the main chat's 2.5 s pause between phases is now 9.0 s.
+- THE CAMERA in the film: leaned toward him as the stills have it, but 6 game pixels less (his middle at the water 131 game pixels down
+  the 234 of the screen, not 125), so that his eye at the top of its weave stays on the screen (at the stills' lean it would rise 5 game
+  pixels off its top); the Warrior's feet then 232 down. The main chat's to set in the game.
 
 ### What he costs (`pictures/eye_moves1` as painted here)
 
-@COST@
+- FRAMES: his stand 90 (a loop), his lurk 90 (a loop), his entrance 270: 450 frames at 30 a second. Painted in layers, each its own
+  picture: 970 in all (his jaws and throat 149: his stand's 90, his entrance's own 59, the rest of his entrance his stand's own frames;
+  his spittle 223; his tongue and eye 238; each tentacle 120). His lurk is one painting of his body moved as he heaves, and his tongue's.
+- MEMORY, baked as painted here (two picture pixels to a game pixel, 4 bytes a pixel, each layer in the box round it): a frame of his
+  stand, all of him, 1.9 MB (his jaws 1.0, his spittle 0.2, his tongue 0.2, his tentacles 0.5): 56 MB for each second of him at 30 a
+  second, 169 MB for his stand's loop. All three moves, every layer once: 272 MB (85 MB packed, as kept here). At one picture pixel to
+  a game pixel, a quarter of that: 14 MB a second, 68 MB in all. The water's effects are drawn by the game over him, not baked.
+- Painting, here without a browser: 30 to 45 s a frame of his jaws, 5 s of his tongue, 3 s a tentacle, 1 s his spittle; all of it in
+  about an hour on two workers. Not to be painted while the game runs: baked (his word of 6 Nov: the game may carry files).
 
 ### How the moves are made, and how to make the pictures again
 
@@ -100,7 +111,7 @@ his lurk's last; it ends on the frame before his stand's first (the test holds b
   breathing, shut and turned square to each other), the heaps of him at the water staying where they lie, what slides and drips off him
   running straight down; his sheets sliding, his drips and gobs, his spittle, his tongue and its eye (its lids, how it is turned, how
   big). Without `anim` he is the still exactly as at fe166263 (checked pixel for pixel).
-- `tools/eye_moves_pics.ts` paints each layer once (kept on the machine's memory disk), then lays each frame together in the arena with
+- `tools/eye_moves_pics.ts` paints each layer once (kept on the machine's memory disk, `/dev/shm`, packed: the disk was full), then lays each frame together in the arena with
   the water, the effects, the shakes and the lights; `tools/eye_moves_sheet.py` makes the sheet and the film:
 
 ```
@@ -129,7 +140,20 @@ moves file import him (the smallest change).
 
 ### For the owner to decide (the art chat's to put to him)
 
-@QUESTIONS@
+1. HIS SHUT MOUND. Pressed together, his two jaws stand upright side by side, so that shut he reads as two great rounded lobes of
+   melting flesh with his seam down the middle, his fangs meshed in it (see the rise and the strain in the film). It is his look as
+   drawn, only shut. If it reads wrong to him (too round, too like two lobes), the fix is his shut shape: taller and more pointed, the
+   tips of his jaws meeting in one peak like a closed claw. Not changed without his word.
+2. His entrance is 9.0 s with every beat of his 14:01 word (the main chat planned about 4 s). Shorter is easy: the rise (2.6 s) and the
+   moment that breathes (1 s) are where it would come from.
+3. THE DARK while he rises (the fen's dusk dropping toward night, lifting as he roars) is from the art chat's brief, not in his 14:01
+   words: shown in the film; his to keep or drop.
+4. Shut, his teeth are meshed into his other jaw's gum along his seam (they bite in, hidden in it); as he tears open they pull out of
+   it. Said here because it is the one place anything of him is inside anything else; nothing else of him is.
+5. His tentacles sway at their roots as he stands, and burst up at his entrance (their own move, `armBurst`); their attacks and their
+   phase 1 moves are for later. In his lurk the phase 1 tentacles are left out (they are dead by his entrance).
+6. The spray and goo of his roar, the splashes, the water pouring off him, the swell, the bubbles and the slicks are drawn here as the
+   game would draw them over him (the pictures' tool), not baked into him: the main chat would bring them in as effects.
 
 ## His words, 7 Nov 2026
 
