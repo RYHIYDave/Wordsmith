@@ -1,5 +1,7 @@
 # Wordsmith Sound and Music Rulebook
 
+> **RETIRED, 6 Nov 2026, at his word** (relayed to the main chat by the sound chat, 23:14: “The old sound rulebook (docs/sound/RULEBOOK.md) is retired at his word. The sound chat is writing new rules.”). Kept for the record only; the sound chat's new rules will take its place. Town and quest talking stays as it is for now.
+
 > **APPROVED BY THE OWNER, 9 Oct 2026, by 14:04: “Yes, as it is (Recommended)”.** Every chat that
 > makes sound or music for Wordsmith follows it; it changes only with his yes. Written by the sound
 > chat from his answers (`docs/sound/interview.md` has every question and answer in his exact

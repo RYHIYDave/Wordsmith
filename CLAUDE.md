@@ -13,7 +13,8 @@ directs and playtests, and Claude writes and tests everything.
 - `docs/gameplay/RULEBOOK.md`, `docs/art/RULEBOOK.md` and `docs/sound/RULEBOOK.md`: the game's
   three rulebooks, his. Gameplay follows the first, art the second, sound and music the third;
   each changes only with his yes. The first two were approved 8 Oct 2026; the third 9 Oct 2026
-  (by 14:04), and put here at his word by 16:05: "Yes, add it (Recommended)".
+  (by 14:04), and put here at his word by 16:05: "Yes, add it (Recommended)". THE SOUND RULEBOOK IS
+  RETIRED at his word (6 Nov 2026, from the sound chat); the sound chat is writing new rules.
 
 ## The owner's standing rules
 
