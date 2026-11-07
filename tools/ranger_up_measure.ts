@@ -7,7 +7,8 @@
 // took to paint. The game's Ranger as he is (the game does not reach art/ranger_up.ts).
 //
 //   npx tsx tools/ranger_up_measure.ts hash <out.json>     every frame's hash, and the counts, to a file
-//   npx tsx tools/ranger_up_measure.ts count               the counts, memory and times only (painting every frame)
+//   npx tsx tools/ranger_up_measure.ts count [up] [eight] [dungeon]   the counts, memory and times only (painting every frame):
+//                                                          `up` with RANGER_UP on; `eight` from all eight sides; `dungeon` a dungeon alone
 
 // @ts-ignore - node typings are not part of this project
 import { writeFileSync } from 'node:fs';
@@ -17,6 +18,7 @@ import type { Sprite } from '../src/engine/px';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { lookOfPlace } from '../src/art/heroes';
 import type { HeroPlace } from '../src/art/heroes';
+import { RANGER_UP } from '../src/art/ranger_up';
 import { hashSprite } from './cheap_heroes';
 import { paintWithoutCanvas, paintingOf } from '../tests/helpers';
 
@@ -54,19 +56,20 @@ export const PLACES: HeroPlace[] = ['dungeon', 'town', 'card'];
 
 /** Every list of the Ranger's, in every place the game shows him, both ways round (one HeroArt for all, as the game has); with
  * `five`, from each of the five sides (those of them his art has). */
-export function rangerLists(five = false): RangerList[] {
+export function rangerLists(eight = false, places: HeroPlace[] = PLACES): RangerList[] {
   const art = makeHeroArt3();
   const out: RangerList[] = [];
-  for (const place of PLACES) {
+  for (const place of places) {
     const a = art.of('ranger', lookOfPlace(place)) as unknown as Record<string, unknown>;
-    for (const side of five ? ['front', 'back', 'side', 'toward', 'away'] : ['front', 'back']) if (a[side]) listsOfSet(a[side], `ranger:${place}/${side}`, out);
+    for (const side of eight ? ['front', 'toward', 'frontL', 'sideL', 'backL', 'away', 'back', 'side'] : ['front', 'back']) if (a[side]) listsOfSet(a[side], `ranger:${place}/${side}`, out);
   }
   return out;
 }
 
 function main(): void {
   const [mode, ...args] = process.argv.slice(2);
-  const lists = rangerLists(args.includes('five'));
+  if (args.includes('up')) RANGER_UP.on = true;
+  const lists = rangerLists(args.includes('eight'), args.includes('dungeon') ? ['dungeon'] : PLACES);
   const hashes: Record<string, string[]> = {};
   const seen = new Set<Sprite>();
   const pictures = new Set<string>();

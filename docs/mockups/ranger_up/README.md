@@ -1,11 +1,13 @@
-# The Ranger brought up to the Brawler's level (the art chat's helper, 6 Nov 2026)
+# The Ranger brought up to the Brawler's level (the art chat's helper, 6-7 Nov 2026)
 
-Branch `art/ranger-up`, from `origin/art/warrior-up` (d31abc22), so it builds on the Warrior's work. A mock-up behind a
-switch that is off, `RANGER_UP` (in `src/art/ranger_up.ts`). Nothing of the game imports it: the game's Ranger is exactly as
-he is (every frame the same picture, by hash: `tests/ranger_up.test.ts`).
+Branch `art/ranger-up`, from `origin/art/warrior-up` (d31abc22), with the Warrior's newest (9057f94b: his legs true, his eight
+truly painted sides, his sword in sight, his grounded run) merged in. A mock-up behind a switch that is off, `RANGER_UP` (in
+`src/art/ranger_up.ts`). With it off the game's Ranger is exactly as he is: every frame the same picture, by hash
+(`tests/ranger_up.test.ts`). With it on, `art/heroes3.ts` gives his new lists in the very shape it gave the old.
 
-THIS IS THE FIRST STEP ONLY: his look, sculpted, shown in one still of his stance. His moves (every list at 30 a second, the
-shot and the volley by Movement 9, his five sides and eight facings, the film, the measures) come after, on his yes.
+THE WHOLE JOB (stage 2, on his yes): his look sculpted, his cloak from behind made cloth, all eight sides painted (none
+mirrored), his legs true from every side, his bow seen from every side, his run a hunter's and never a high-step, every list at
+30 a second, the Shot and the Volley by Movement 9, the measures, the pictures, the film, the tests.
 
 ## His words
 
@@ -16,177 +18,316 @@ shot and the volley by Movement 9, his five sides and eight facings, the film, t
   kind of want all that updated to a certain level certain benchmark as the rest of the characters so that they’re all at
   the same level.”
 - 6 Nov 2026, 15:18: “Everything drawn should not just look like shapes.  That’s the rule”
+- 6 Nov 2026, of the Warrior's swing landing later by his wind-up rule: “Yes, the held wind-up (Recommended)”.
 - 6 Nov 2026, of the Warrior brought up: “All of it is good, I just wish the helmet looked a little better.  I really like
   the look of his old pig helmet but it looks old.  And the visor slit never really pops.  And is it worth it to do the 8
   sides during this process in tandem”; then “Yes, 8 sides now (Recommended)”, and “Yes, hand him over (Recommended)”.
 - 6 Nov 2026, 19:21: “Can you show me the ranger redone before you go too crazy with the drawings?”; and “Just a still of
   him”.
-- Having seen the still (not yet a yes to the look): “Can you make sure his leg ratio is correct cause it seems like all these
-  guys have long upper legs and short legs below the knee”.
+- Having seen the still: “Can you make sure his leg ratio is correct cause it seems like all these guys have long upper legs
+  and short legs below the knee”.
+- 6 Nov 2026, of the Ranger's mended still: “Yes, go ahead (Recommended)”; of mending every hero's legs: “Yes, every hero
+  (Recommended)”. He asked, “Are you actually painting 8 drawings or flipping some?”; told five were painted and three
+  mirrored, he picked “Paint all 8 (Recommended)”. At 23:35: “k im going to bed so keep going with the 8 characters and ill
+  check back in the morning”.
+- 7 Nov 2026, of the Warrior's re-posed run: “all that time and you screwed up his run.  why is he high stepping with his
+  knees up?”
+- Kept from before: 7 Oct, of his face, “10 for ranger but a brown mustache”; 6 Oct, of the Volley, “The rogue drops to a
+  knee when he fires Volley”; 6 Oct, of his run, “i like where the bow is at tho”.
 
 So, as with the Warrior: his look and flavour kept, and where a loved piece of it reads old, that same piece made new. His face
-and head must read at a glance at the game's size.
+and head read at a glance at the game's size.
 
-## The picture (`pictures/`)
+## The pictures (`pictures/`)
 
-- `ranger_look.png` (1200 by 746): one still of him standing in a fight (a frame of his breathing stance, 0.6 s into it), from
-  in front, three times as big and at the game's own size: BEFORE (the game's Ranger today), his FIRST SCULPT (the still the
-  owner saw, the same pixels), and NOW with his legs true. Beside each, a line marking the hip, the knee and the floor of the
-  leg nearer the eye, as the screen shows it, with the two lengths along the leg in game pixels and their ratio. His feather is
-  the game's own (`engine/tails.ts`), hung and moved in the picture as the game moves it. (The first still, before beside his
-  first sculpt with what is kept and new, is this file at 30c7c068.)
+- `ranger_up_sheet.png` (1200 by 6812) and `ranger_up_sheet_2.png` (1200 by 6188, its continuation; one sheet would be 12,900
+  tall): at the top, HIS LEGS (before beside now from in front, three times as big, the hip, knee and floor of the near leg
+  marked with the two lengths in game pixels, and the least ratio from all eight sides) and HIS RUN SIDE-ON, eight frames of a
+  stride before and now, the swinging thigh's angle from hanging under each. Then BEFORE beside NOW for every list, three
+  times as big, from in front and from behind: his guard, his run, the Shot (the held draw, the release with its after-image,
+  the follow-through), the Volley (the same, on his knee), his roll, struck from in front and from behind, his fall, the
+  squirrel, the sighting, his town stance and run, his card's ready. At the foot, each again at the game's own size.
+- `ranger_up_sheet2.png` (1440 by 3210): HIS HEAD six times as big in his guard, before (in front, behind) and now from each of
+  his eight sides; then HIS EIGHT FACINGS, twice as big, each laid where he faces: his guard, a stride of his run, and the
+  Shot's release with its after-image.
+- `ranger_up.mp4` (39.9 s, 1100 by 1060, 30 a second): running a circle through all eight facings; shooting each of the eight
+  ways; then before and now for every list, in front and behind; the Shot and the Volley again at half speed.
+- `ranger_look.png`: the stage-1 still (before, his first sculpt, his legs true), kept as it was.
 
-## His legs (the owner's “long upper legs and short legs below the knee”)
+LOOKED AT CLOSE, at the game's size: his face (two dark eyes on his lit face, the brown moustache under them, from every side
+that shows it; a test holds it); his cloak from behind (cloth from the shoulders, folds that break at the hem, the hood);
+his bow from every side (below).
 
-Measured by `tools/legs_measure.ts` for every hero painted on the bones, from in front: standing straight, in the stance
-(the moment the stills show), and through the run (the median of eight strides). Game pixels (two picture pixels to one).
-BONES: on the screen, from the hip joint to the knee joint, and from the knee joint to the floor (the shin, and the ankle's own
-height). EYE: what the eye reads: from where the thigh shows below what hangs over it (skirt, tabard, coat) to where the lower
-leg's covering begins (a boot top, a cuff, a greave, a trouser hem: the knee as it is SEEN), and from there to the sole; and
-how far below the knee joint that seen knee is. Each on the leg nearer the eye.
+## The audit: where he fell short (before)
 
-| Hero | Pose | Bones: hip to knee | knee to floor | lower ÷ upper | Eye: thigh shown | seen knee to sole | seen knee below the joint |
-|---|---|---|---|---|---|---|---|
-| Ranger, before | straight | 7.4 | 8.4 | 1.14 | 4.1 | 8.4 | 1.7 |
-| | stance | 8.4 | 5.5 | 0.65 | 7.3 | 5.8 | 1.6 |
-| | run | 8.2 | 7.2 | 0.88 | 6.7 | 7.6 | 1.6 |
-| Ranger, first sculpt | stance | 8.4 | 5.5 | 0.65 | 5.3 | 6.3 | 1.6 |
-| RANGER, LEGS TRUE | stance | 8.3 | 9.1 | 1.10 | 5.6 | 8.5 | 1.6 |
-| Warrior (brought up) | straight | 7.3 | 8.3 | 1.14 | 3.2 | 9.3 | 1.0 |
-| | stance | 8.2 | 7.3 | 0.89 | 1.1 | 8.0 | 1.1 |
-| | run | 7.9 | 7.3 | 0.92 | 5.0 | 9.9 | -0.9 |
-| Mage | straight | 6.8 | 7.8 | 1.15 | 0.5 | 9.4 | 0.5 |
-| | stance | 7.7 | 6.9 | 0.90 | 2.2 | 9.6 | -0.9 |
-| | run | 7.5 | 6.8 | 0.91 | 1.4 | 9.9 | -0.9 |
-| Warlock | straight | 7.3 | 8.3 | 1.14 | hidden by his coat | | |
-| | stance | 7.9 | 7.7 | 0.97 | hidden by his coat | | |
-| | run (coat open) | 8.1 | 7.8 | 0.96 | 13.8 | 4.0 | 6.3 |
-| Tinkerer | straight | 7.2 | 8.1 | 1.13 | 12.1 | 5.3 | 4.9 |
-| | stance | 8.0 | 6.8 | 0.85 | 12.2 | 4.5 | 4.2 |
-| | run | 8.0 | 7.8 | 0.97 | 12.4 | 5.4 | 4.7 |
-| Brawler (Veteran) | straight | 6.8 | 7.8 | 1.15 | 14.6 | 3.4 | 7.7 |
-| | stance | 7.7 | 5.2 | 0.68 | 12.7 | 4.3 | 5.0 |
-| | run | 7.5 | 6.8 | 0.91 | 10.3 | 7.7 | 2.7 |
+- DRAWN AS SHAPES: balls and rods each ringed in ink (`hero3_ranger.ts`); from behind, his cloak a striped block and his
+  hood a lump; his face hidden under his cap's brim at the game's size.
+- TWO SIDES, MIRRORED: the game draws him from in front or from behind and flips him for the left, his bow changing hands.
+- LEGS SHORT BELOW THE KNEE: in his crouch, from in front 0.65 of the thigh, from toward the camera 0.43 (table below).
+- HIS RUN A HIGH-STEP: the swinging thigh up to 71 degrees from hanging (62 in town).
+- HIS BOW: held nearly upright before him (canted 18 degrees); from straight behind him (a side the game did not draw) his
+  body hid it.
+- HIS SHOT A SNAP: the arrow away at 5 frames (0.167 s), no held draw, no follow-through to speak of; the Volley the same
+  (6 frames).
+- His stance at 10 a second, the squirrel and the sighting at 20.
 
-(The Ranger's run is still the game's: the same 0.88 in all three of him. Each ratio is of the two lengths as shown.)
+## What changed, and why
 
-WHY THEY READ THAT WAY. Not the bones: every hero is built by `art/skeleton.ts` `buildOf`, which puts the knee at 0.285 of the
-height and the hip at 0.53 (a `legs` factor, where a build has one, lengthens thigh and shin alike), and standing straight
-every one of them reads 1.13 to 1.15 below the knee to 1 above it on the screen, a real person's ratio. Two things make them
-read the other way:
+### How he is drawn (`src/art/ranger_up.ts` `paintRangerUp`)
 
-1. THE CROUCH AGAINST THE CAMERA (every hero's stance, and the bent legs of the runs). The game's camera looks down on a hero
-   from in front. In a crouch the knees are bent forward, toward it: each thigh then lies square to the eye and is seen at its
-   whole length (a length square to the eye is even drawn 1.15 times as long as an upright one, `art/skin.ts` SEEN), while each
-   shin slants back from the knee along the eye's own line and is seen end-on, foreshortened. So in the stances the lower leg
-   reads 0.65 (the Ranger) and 0.68 (the Veteran, crouched in his bounce) of the thigh; 0.85 (the Tinkerer), 0.89 (the
-   Warrior), 0.90 (the Mage), 0.97 (the Warlock, whose knees bend least).
-2. WHAT COVERS THE LEG, where the eye's knee falls below the real one. Short boots, or trousers cut low, under cloth of one
-   colour from the hip: the eye takes the boot top or the hem for the knee. The Veteran's trousers end 5 to 7.7 game pixels
-   below his knee (they are drawn longer than his description, “hacked off below the knee”), so his eye-read leg is 12.7 above
-   that line and 4.3 below it; the Tinkerer's boots are ankle boots under navy trousers (her seen knee 4.2 to 4.9 below the
-   joint: 12.2 above, 4.5 below); the Warlock's the same when his coat flies open in the run (6.3 below: 13.8 above, 4.0
-   below). The Ranger's cuffs sit 1.6 below his knee (a little). The Warrior (tabard to the knee, a knee cop at the joint, a
-   greave to the shoe) and the Mage (robe to the knee, boots to the knee with a cuff at it) are the other way about: what covers
-   their legs makes the lower leg read long (8.0 and 9.6 below their seen knee in the stance).
+SCULPTED as the Warrior brought up and the Veteran are (`src/dev/sculpt.ts`): one body with a real outline, each solid melted
+into the next of its stuff, inked only where one stuff meets another or a part passes in front. His look kept: his wide soft
+teal cap and its long glowing feather (the game's own feather, `engine/tails.ts`); his bare face and brown moustache; his pink
+neckerchief; green jerkin with a skirt cut into leaf points; leather bracers and gloves; dark hose and tall soft boots; his
+teal cloak; his quiver of glowing fletchings; his long indigo bow, its string the friend's cyan.
 
-Not causes, measured: a knee drawn below the joint (the Warrior's cop is at it; the Mage's cuff at it; only the Ranger's cuff
-1.6 below); thick thighs on thin shins (every build has the same leg thickness, a radius of 0.056 of the height at the hip,
-0.042 at the knee, 0.032 at the ankle, as a person's tapers).
+- HIS FACE POPS: head 1.1 times the build's and set a little up his neck; cap pushed back off his brow (16 degrees) and cocked
+  (12), so its brim no longer hides his eyes; two dark eyes, each two pixels tall under a dark brow, on lit skin; the
+  moustache full and broad, its ends drooping past his mouth.
+- HIS CLOAK, REAL CLOTH: one sheet hung from his shoulders (its top rows follow his chest as he turns), twelve columns of folds
+  that run down it, alternately standing out and falling in, each fold shaded as cloth is (dark in the hollows, lit on the
+  ridges), breaking at the hem into points; left behind by his hips over the last frames and stirred by the wind.
+- HIS HOOD, A HOOD: a soft cowl lying on his shoulders under his cap, its point hanging down his back, lighter on its point;
+  its mouth dark where it opens round his neck. His cap cut clean at the nape, its back edge dark, so cap and hood read as two
+  things from behind.
+- HIS QUIVER: on his back outside the cloak, its mouth flared over his right shoulder, stitched bands round it, five arrows in
+  it, their cyan vanes standing out of it.
+- HIS BOW: two limbs of indigo wood curving back from a leather grip, the tips curled forward (a recurve) with light nocks.
+  Held canted 70 degrees in his guard (it was 18), as a hunter holds one, so that from straight behind him its upper limb
+  stands out past his side.
+- HIS ARROW ON THE STRING: the game's light shaft and pale steel head, two cyan vanes at its nock.
 
-THE RANGER'S LEGS MADE TRUE (`src/art/ranger_up_moves.ts` `RU_STAND3`, his stance on the mended crouch `RU_BATTLE`). The
-same low crouch: his hips as low, his body, arms, bow and aim exactly as they were (a test holds them), the breathing as the
-game's. Only his legs are posed anew: his front foot 11 forward (it was 6.8), its knee bent out over it to his left
-(40 degrees from where he faces; it was 12); his back foot 12 back (it was 5.2), its leg longer, its knee turned a little to
-his left (20; it was -20, toward the camera); each foot turned with its knee (24 and -20; they were 10 and -30). Now neither
-shin slants along the eye's line: his near leg reads 8.3 to the knee and 9.1 below it (1.10), his far leg never less than 1.07,
-through every frame of his breathing; a test holds both legs at 1.05 or more, standing straight at a real person's ratio, and
-the game's crouch at under 0.75 (so that if the game's ever changes, the test says so). His stance is wider (his feet 23 apart
-front to back, where they were 12): a wide, low archer's stance. His boots are as they were (the eye now reads 5.6 of thigh
-below his skirt and 8.5 from his cuff to the sole).
+### How he moves (`src/art/ranger_up_moves.ts`, `src/art/ranger_up_art.ts`)
 
-FOR THE MAIN CHAT, WHEN THE RANGER IS BROUGHT IN: his stance in a fight is `RU_STAND3` (2.4 s round, as the game's). His
-settles out of the run and his setting off, his shot and volley from the stance, and the run itself (0.88 now) come with
-his moves, the next step; they will be held to the same check.
+- EVERY LIST AT 30 A SECOND (his gripping runs at 60, a picture for each of the game's steps): his guard 72 frames (2.4 s, it
+  was 24 at 10 a second), the squirrel and the sighting 109 (3.6 s, they were 73 at 20).
+- HIS GUARD, ALIVE: two breaths a round (out, his hips sinking 0.6 and his back bending over 5 degrees; in, as his weight goes
+  over onto his front foot, his hips rising 0.55 and his back straightening), his weight going over and back, and once a
+  round a hunter's habit: his head coming round to look along the way he is not facing, then settling on his mark.
+- HIS LEGS TRUE (below).
+- HIS RUN A HUNTER'S (below).
+- THE SHOT BY MOVEMENT 9: a big held draw (the string drawn to his cheek by frame 7, held still three frames, 7 to 9, his bow
+  arm braced, his body leaning into it); the release in ONE frame (frame 10): the string snaps back, the bow arm kicks, and the
+  release frame carries its after-image, ghosts of the real thing (the string where it was, dithered in the friend's cyan, and
+  the arrow in fading tones along its flight), never bars; then a big follow-through, his string hand flying back past his ear
+  (more than 8 across), and a slow wind-down to his guard (26 frames in all).
+- THE VOLLEY THE SAME, BIGGER, ON HIS KNEE: down onto one knee, the bow up at the sky, held three frames (9 to 11), loosed at
+  frame 12 with its after-image, a bigger follow-through (32 frames in all).
+- His roll, struck (reel and lurch), his fall: the game's moves at 30 a second, their legs following his new guard.
+- The squirrel and the sighting, in a fight and in town: on his new guard and town stance; in the sighting, the bow he lets
+  down by his side is held out before his front leg, clear of it.
+- His card's ready: from his town stance he unslings his bow, two lifted steps into his wide guard, an arrow on the string.
+- His stops (eight settles out of the run) and his setting off, from his guard and from his town stance; his run's other ways
+  (across, both ways, and backing away: his run turned back on itself, his body upright).
 
-WHAT THE SAME FIX WOULD TAKE FOR THE OTHERS:
+### His eight sides, each truly painted
 
-- THE WARRIOR (handed to the main chat at d31abc22, `art/warrior-up`): his guard reads 0.89, his run 0.92; his tabard, knee
-  cop and greaves already make the lower leg read long by the eye, so only his poses need it. In `src/art/warrior_up_moves.ts`:
-  his guard (`rear`) and town stance re-keyed with the front knee out over the foot and the back leg longer, as the Ranger's;
-  then every held crouch of his moves the same (Strike's held wind-ups, the Slam's landing, the Lunge's landing, his fall's
-  kneel) and the run's bent strides; and, because he is drawn from five sides, each checked from all five (from `toward` a knee
-  bent forward points straight at the camera, the worst case). His checks and pictures made again. A day's work or so, on his
-  branch or a new one; his look unchanged. The owner should see it before it goes in (it changes how he stands).
-- THE MAGE (0.90 in her stance): her boots already read; her stance's knees re-posed the same way. Small.
-- THE WARLOCK (0.97 standing; his coat hides his legs): nothing standing. In his run, when the coat flies open, his ankle boots
-  under trousers of the coat's cloth put his seen knee 6.3 below the joint: taller boots, or a break at the knee, would mend it.
-- THE TINKERER (0.85 in her stance; by the eye 12.2 above her boot tops and 4.5 below): her stance re-posed; and boots to just
-  below the knee (or a knee patch or crease her trousers show), so the eye finds her knee.
-- THE BRAWLER, VETERAN (0.68 in his stance, the most; by the eye 12.7 and 4.3): his trousers cut off just below the knee, as his
-  description has it, so his bound shin and bare shin read their length; and his bounce re-posed so his knees go out, not
-  toward the camera. He is the benchmark and in the game: pictures first.
-- A CHECK FOR ALL: the same measure as a test for every hero's stance and run (lower leg at least the thigh on the screen, from
-  every side drawn), so a new pose cannot bring it back.
+Every list from all eight (front, toward, frontL, sideL, backL, away, back, side), as the Warrior's, none mirrored. One-sided
+things stay on their own side from every one: the bow in his LEFT hand, the string drawn with his right; the quiver over his
+right shoulder; the knot of his neckerchief; the cock of his cap.
 
-## What is kept
+## His eight facings (FOR THE MAIN CHAT)
 
-His wide soft teal cap with its long glowing feather; his bare face and brown moustache (his pick of 7 Oct, “10 for ranger but
-a brown mustache”); his pink neckerchief; his green jerkin and its skirt cut into points; green sleeves, leather bracers and
-gloves; dark hose and tall soft boots with turned cuffs; his short teal cloak; his quiver of glowing fletchings; his long
-indigo bow, its string the friend's cyan, the arrow on it as the game draws the one that flies (a shaft of light wood, a pale
-steel head); his colours (his own three tones of each, a tone between each two); his lean archer's build and his low crouch
-(the game's own pose, unchanged).
+Exactly the Warrior's (`docs/mockups/warrior_up/README.md`, "His eight facings"): `const side = wuFacing(fx, fy)`, drawn as it is,
+never mirrored. The Ranger needs nothing different but these:
 
-## What is new in his look (`src/art/ranger_up.ts` `paintRangerUp`)
+- HIS FEATHER (`engine/tails.ts`): the frame's roots as the frame gives them; `facing` by `wuTailsFacing(side)` (-1 for frontL,
+  sideL, backL; +1 for the rest).
+- HIS ANCHOR: the three left sides are painted with the floor point 98 across his canvas (84 for the rest), as the Warrior's;
+  each picture carries its own anchor.
+- HIS SHOT AND VOLLEY AIM: the game turns him to the aim; `wuFacing(aim)` chooses the side of the attack's list, so he can
+  shoot each of the eight ways (the film shows them).
+- His card: from in front, as today (its ready and the squirrel and sighting are painted from in front only).
 
-- SCULPTED as the Warrior brought up and the Veteran are (`src/dev/sculpt.ts`): one body with a real outline, each solid
-  melted into the next of its stuff, inked only where one stuff meets another or a part passes in front; not the old painter's
-  balls and rods each on a sheet of its own, ringed in ink (`src/art/hero3_ranger.ts`).
-- HIS FACE MADE TO POP at the game's size: his head drawn a touch bigger (1.1 times the build's) and set a little up his neck,
-  as a hero's is drawn; his face lit a tone; his cap worn pushed back off his brow (16 degrees) and cocked a little to his left
-  (12), so its brim no longer hides his eyes; two dark eyes, each two pixels tall with a dark brow over it, set on the lit
-  skin either side of his nose; his moustache full and broad, lit along its top, its ends drooping past his mouth. A test
-  holds that both eyes sit on his face and the brown of his moustache under them, through his breathing.
-- HIS CAP: his own soft puff of teal cloth, wider than his head every way, its top slumped back, a darker band round its
-  foot; brighter where the light is on it, as it always was. The feather's quill is in it, as before.
-- HIS JERKIN: an archer's chest drawn in to a lean waist, laced up the front (the laces seen when his arm is not across them),
-  the strap of his quiver across it; its top kept below his chin; brighter where lit, so its lime reads as it always did. A
-  dark belt with its cyan buckle. The skirt in ten leaf-cut panels, a tone darker than the chest, each hanging plumb from the
-  hips, pushed out only where a thigh comes against it and riding up over a raised thigh (so his legs are seen), left behind
-  by how far his hips have come over the last three frames (it follows) and stirred by the wind.
-- HIS LEGS AND BOOTS: lean thighs in dark hose; soft leather boots with a turned cuff below the knee, round-toed, flat on the
-  floor and never in it.
-- HIS NECKERCHIEF: wound round his neck, its point hanging on his chest and a knot at its side; brighter, the warm thing
-  under his face.
-- HIS CLOAK: short, from his shoulders round his back to his hips, cloth hanging in folds (panels melted into one sheet, every
-  other one standing out), its lining a tone darker where it turns from him, left behind by his hips and stirred by the wind;
-  it goes round an elbow drawn back close behind him, as the old one did.
-- HIS QUIVER on his back outside the cloak, its mouth above his right shoulder, three glowing fletchings out of it.
-- HIS BOW: two limbs of indigo wood curving back from a leather grip, each tip curled forward (a recurve) with a light nock;
-  the string from nock to nock, to his fingers when drawn. The arrow on it: the game's shaft and pale steel head, the head
-  now drawn to a point, two small cyan vanes at its nock as the fletchings in his quiver have.
+## His numbers (FOR THE MAIN CHAT)
 
-Not yet brought up (the next step): his moves (still the game's, but for his stance in a fight, its legs made true: above),
-his lists at 30 a second, the shot and volley by Movement 9, his fall, and his other sides. Seen from behind, his cloak is not yet right (it
-reads as a block): it is the first thing to mend there.
+What changes in the game's numbers, only with the switch on:
 
-## The checks (`tests/ranger_up.test.ts`, all passing)
+| | Before | Now |
+|---|---|---|
+| The Shot's arrow away | 5 frames, 0.167 s (`SKILLS.shot.windup` 0.16) | 10 frames, 0.333 s: set `SKILLS.shot.windup` to 0.333 with the switch |
+| The Shot's length | 15 frames (0.5 s) | 26 frames (0.867 s) |
+| The Volley's arrows away | 6 frames, 0.2 s (`volley.windup` 0.2) | 12 frames, 0.4 s: set `volley.windup` to 0.4 |
+| The Volley's length | 17 frames (0.567 s) | 32 frames (1.067 s) |
+| His guard | 24 frames at 10 a second (2.4 s) | 72 at 30 (2.4 s) |
+| The squirrel, the sighting | 73 at 20 a second | 109 at 30 |
+| His run | 25 at 60, by how far he has gone (1.92 tiles a stride) | the same stride and speed, gripping |
+| Roll, struck, his fall | | the same lengths, at 30 a second |
 
-1. The switch is off; nothing of the game imports `art/ranger_up.ts` or `art/ranger_up_moves.ts`. Every frame the game paints of the Ranger (166 lists,
-   2,602 frames, every place, both ways) the same as before: each list's first, middle and last frame held to the hashes
-   made from him as he is (`tests/ranger_up.hashes.json`, made from d31abc22 and checked against a clean copy of it;
-   `RANGER_UP_ALL=1` for every frame).
-2. His stance, sculpted, from in front, every frame of its loop at 30 a second, in the game's crouch and in his mended stance: crisp (every pixel whole or empty but his
-   edge), the friend's cyan edge round him, nothing of the enemy's rim, nothing cut off, the feather's quill in his cap.
-3. His face at the game's size, in both: two dark eyes on his lit face, the brown of his moustache under them.
-4. His legs in his mended stance: on the screen, each leg from knee to floor at least 1.05 times hip to knee, every frame of
-   his breathing; standing straight, a real person's ratio (1.1 to 1.2); the game's crouch under 0.75; his body, arms and aim
-   as they were.
+- RATE OF FIRE: the game keeps him busy for `windup + follow`: the Shot 0.16 + 0.32 = 0.48 s (about 2.1 shots a second) before;
+  with `windup` 0.333 and `follow` unchanged, 0.653 s (about 1.5 a second). To keep his rate, `follow` could come down to
+  0.147, and his next shot would cut the follow-through short. The Volley (5 s cooldown) goes from 0.56 s to 0.76 s busy.
+- HIS FOLLOW-THROUGH is 16 frames after the release (0.533 s) for the Shot and 20 (0.667 s) for the Volley, longer than
+  `follow` (0.32, 0.36): if he moves or shoots again before, the game goes to that list and the end of the follow-through is not
+  seen, as with any list.
+- `RANGER_ARROW` (`src/game/defs.ts`: where the flying arrow first shows, `from` 0.796 and `height` 22.5; `volleyFrom`,
+  `volleyHeight`): his draw now leans into the shot and his string hand sits a little further across (about 1.8 units
+  sideways at the release), so the arrow's starting point should be measured again from the new release frame when he comes in.
 
-tsc clean. The Warrior's file `src/art/warrior_up.ts` now exports four of its small helpers (`between`, `five`,
-`turnedStage`, `frame`) so the Ranger can use them: nothing else of it changed.
+## His legs, made true (the owner's “long upper legs and short legs below the knee”)
 
-Made with: `npx tsx tools/ranger_up_pics.ts look <dir>` and `python3 tools/ranger_up_pics.py look <dir> <out.png>`; the hashes
-with `npx tsx tools/ranger_up_measure.ts hash tests/ranger_up.hashes.json`; the legs' table with
-`npx tsx tools/legs_measure.ts table` (or `table ranger-before,ranger-legs` for some; `sheet <dir>` for pictures of each).
+WHY THEY READ SHORT: the bones are a real person's (standing straight his lower leg reads 1.14 times his thigh from every side).
+But the game's camera looks down on him, and in his crouch each knee was bent toward one of his sides: from there that shin
+was seen end-on and the thigh over it at its whole length.
+
+THE MEND (`RU_BATTLE`, `RU_TOWN`): his body, arms and the bow's aim as they were (a test holds them; only the bow's cant in his hand changed, above), only his legs re-posed. His guard
+longer and wider, as low: his front foot forward 14.1 and out to his left 12, its knee bent out over it (45 degrees to his
+left); his back foot back 19.7, its knee a little in (-10.8), the foot turned out (-36.7). His town stance: his front foot a
+step forward (13.1, it was 4.8), the other drawn in under him. Every move that starts or ends in them follows them.
+
+Knee to floor ÷ hip to knee on the screen, the least through each pose, of either leg, from each of his eight sides (game pixels;
+`tools/legs_measure.ts`; at least 1.05 held, runs at least 1 where a foot bears him):
+
+| Pose | front | toward | frontL | sideL | backL | away | back | side |
+|---|---|---|---|---|---|---|---|---|
+| his guard | 0.65 → **1.09** | 0.43 → **1.13** | 0.84 → **1.15** | 1.00 → **1.13** | 1.47 → **1.09** | 1.76 → **1.13** | 1.30 → **1.14** | 1.03 → **1.15** |
+| his town stance | 0.93 → **1.08** | 0.85 → **1.12** | 0.91 → **1.12** | 1.01 → **1.08** | 1.22 → **1.16** | 1.26 → **1.19** | 1.23 → **1.20** | 1.12 → **1.18** |
+| the squirrel | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.47 → **1.14** | 1.87 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
+| sighting along an arrow | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.46 → **1.14** | 1.80 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
+| the squirrel, in town | 0.95 → **1.10** | 0.86 → **1.12** | 0.92 → **1.12** | 1.02 → **1.10** | 1.25 → **1.16** | 1.29 → **1.19** | 1.25 → **1.20** | 1.14 → **1.18** |
+| sighting, in town | 0.95 → **1.10** | 0.86 → **1.12** | 0.92 → **1.12** | 1.02 → **1.10** | 1.25 → **1.16** | 1.29 → **1.19** | 1.25 → **1.20** | 1.14 → **1.18** |
+| his card's ready, in his guard | 0.66 → **1.14** | 0.46 → **1.14** | 0.88 → **1.15** | 1.01 → **1.14** | 1.47 → **1.14** | 1.87 → **1.13** | 1.32 → **1.14** | 1.03 → **1.15** |
+| the Shot's held draw | 0.67 → **1.11** | 0.46 → **1.13** | 0.85 → **1.17** | 1.03 → **1.14** | 1.47 → **1.12** | 1.82 → **1.13** | 1.31 → **1.14** | 1.04 → **1.15** |
+| the Volley's held draw (the leg he stands on) | 1.12 → **1.12** | 1.67 → **1.67** | 1.20 → **1.20** | 1.01 → **1.01** | 1.33 → **1.33** | 2.33 → **2.33** | 1.42 → **1.42** | 1.00 → **1.00** |
+| his run (a foot bearing him) | 0.80 → **1.04** | 0.53 → **1.02** | 0.75 → **1.02** | 1.05 → **1.12** | 1.67 → **1.21** | 2.96 → **1.27** | 1.72 → **1.21** | 1.05 → **1.13** |
+| his run in town (a foot bearing him) | 0.84 → **1.05** | 0.64 → **1.03** | 0.80 → **1.03** | 1.09 → **1.12** | 1.42 → **1.21** | 1.86 → **1.25** | 1.43 → **1.21** | 1.09 → **1.14** |
+
+(Bones only, every frame. The test measures the same as painted, and leaves out a shin less than half seen.) THE VOLLEY'S KNEEL:
+the knee he is down on lies on the floor, its shin along it, and is not held to the measure; the leg he stands on has its thigh
+level by the kneel's nature, and seen side-on (sideL, side) the game's camera draws a level length longer than an upright one,
+so it reads 1.00 to 1.01 there: held to 1 from those two sides, as the Warrior's kneel is. Only lifting his hips would mend it.
+
+## His bow, seen from every side
+
+`ruBowSeen` counts, at the game's size, the game pixels of the bow's wood and of its string and the arrow on it. Held in every
+frame of his guard, his stops into it (from their fourth frame, once the bow is up out of the run's carry), the Shot's and the
+Volley's held draws, and his card's lists (from in front): at least 5 of wood and 4 of string and arrow, from every side. The
+least, from each side:
+
+| | front | toward | frontL | sideL | backL | away | back | side |
+|---|---|---|---|---|---|---|---|---|
+| held (wood / string and arrow) | 8 / 9 | 24 / 4 | 26 / 19 | 23 / 19 | 14 / 10 | 8 / 4 | 6 / 12 | 6 / 13 |
+| NOT YET HELD: his runs, his town stance and run, the town squirrel and sighting, the first three frames of his stops | 3 / 0 | 5 / 0 | 7 / 2 | 8 / 5 | 10 / 0 | 3 / 0 | 5 / 0 | 7 / 0 |
+
+- THE CANT: held nearly upright before him (18 degrees), his body hid the bow from behind (`away` 5 to 7 of wood); canted 70,
+  its upper limb stands out past his side (`away`, the least through his guard: 13 of wood, 6 of string and arrow). The cost: from his right (`side`)
+  and behind him on the right (`back`) its limbs point nearly at the eye, so the wood is seen end-on, 5 or 6 pixels, its string
+  and arrow 12 to 18. No one cant shows it both from behind and from there (a flat thing is edge-on from somewhere); the
+  sheet2 turnaround shows how it reads.
+- NOT YET: in his runs he carries the bow level at his side (as the owner liked it: “i like where the bow is at tho”) and its
+  string is edge-on from most sides; in town it is slung across his back. Counted, not held: they are the next thing to do if
+  the owner wants the bow clear there too.
+
+## His run, a hunter's (the owner's “why is he high stepping with his knees up?”)
+
+Low over his feet, leaning in; each foot comes down a little before him and goes back under him exactly as fast as the game
+carries him (it grips), leaves the floor off its toes with the leg straightening behind him, its heel flicked up a little,
+and comes through LOW, its knee lifting only a little. His body, arms and bow as the game's run has them, moment for moment.
+
+The swinging thigh, degrees from hanging straight down, the most in any frame (the Warrior's check: past 50 fails):
+
+| | Before | Now |
+|---|---|---|
+| his run | 71 | 31 |
+| his run in town | 62 | 31 |
+| his run's other ways | | going across 40 either way; backing away 34 (his run turned back on itself) |
+| his stops (eight settles each) and setting off, in a fight | | 47; 38 |
+| the same in town | | 30; 31 |
+
+The sheet's stride strip shows eight frames of each side-on: before 14, 43, 70, 65 degrees; now 9, 18, 30, 30, 26.
+
+## The bosses' checks (`checkBoss`, from each of his eight sides)
+
+PASSING, every frame, from all eight sides, held by the test: his guard (alive: his chest rises and falls, his weight shifts), his
+run, the Shot, his town stance and run, the squirrel and the sighting, in a fight and in town, with the game's handovers
+between them.
+
+COUNTED, NOT YET CLEAN (`rangerReview(side)` through `checkBoss`, every move; the main chat's call whether to hold them):
+findings summed over the eight sides (each side's frames reviewed apart):
+
+| Move | Findings | What they are |
+|---|---|---|
+| his fall | 1,136 | his feet sliding as he goes down (1,088), the bow through his left leg (40), a knee in the floor (8) |
+| his roll | 1,207 | his feet sliding (448), his left arm in his ribs (328), the bow through his belly (224), joints jerking (143), the floor (64) |
+| the Volley | 688 | his right foot sliding as he kneels (480), his right forearm in his head as he draws (144), joints jerking (40), the release not yet a flash by the check's measure (16: the slowest step of its flash 3.4 to 4.2 game pixels, where the check asks twice the fastest of its wind-up and wind-down, 3.6 to 4.5), a toe in the floor (8) |
+| his card's ready | 131 | his feet sliding as he steps into his guard (128), the bow through him (3) |
+| struck (`rlurch`, `rreel`) | 48; 32 | starting at full speed (48); a toe sliding (32) |
+
+His roll, his fall and struck are the game's own moves at 30 a second, their legs following his new guard; they are not yet
+re-keyed to the checks, as his guard, run and Shot are. The Volley passes the test's own Movement 9 checks (above) but not yet
+every boss check.
+
+## The measures
+
+Every frame the game holds of him (`tools/ranger_up_measure.ts`: `count`, `count up` and `count up eight`; this machine: 2
+cores, shared and busy):
+
+| | Before (the game's Ranger) | Now, two sides | Now, eight sides, every place |
+|---|---|---|---|
+| Lists | 166 | 166 | 640 (a dungeon 314, town 163, his card 163) |
+| Frames in them | 2,602 (a dungeon 1,210, town 696, his card 696) | 3,470 (a dungeon 1,638, town 916, his card 916) | 11,702 (a dungeon 5,898, town 2,902, his card 2,902) |
+| Pictures held (each painted once) | 2,566 | 2,236 | 7,528 |
+| Different pictures among them | 1,545 | 2,173 | 7,289 |
+| Memory, decoded at the game's grain | 27.25 MB | 28.11 MB | 96.7 MB |
+| Packed as picture files would be | 2.25 MB | 2.43 MB | 8.1 MB |
+| Time to paint a frame (this machine) | 3.2 thousandths of a second | 67.6 | 83.4 |
+| Time to paint every picture of him | 8.3 s | 151 s | 628 s |
+
+(The two-sides count was made before the last pose changes, which do not change how many frames there are.) Eight sides hold
+3.4 times the pictures of two. In play only the place he is in need be held. A frame costs twenty to twenty-six times the old painter's
+(the sculptor's march, as the Warrior's and the Veteran's): his pictures want baking into files when the game is built, as
+the main chat is doing for the heroes; once baked, painting costs nothing on the phone.
+
+## How the main chat brings him in
+
+1. Merge `art/ranger-up` (it carries `art/warrior-up` at 9057f94b). Nothing changes while `RANGER_UP.on` is false (the hash
+   test holds every frame).
+2. On the owner's yes to the pictures: set `RANGER_UP.on = true` in `src/art/ranger_up.ts`, and with it `SKILLS.shot.windup`
+   0.333 and `SKILLS.volley.windup` 0.4 in `src/game/defs.ts` (and `follow` as the owner decides, above). `art/heroes3.ts`
+   then gives his new lists (`makeRangerUpArt`) in the very shape it gave the old.
+3. EIGHT FACINGS: as the Warrior's (above). His `RuActorArt` has all eight sides, each made when first asked for.
+4. THE SIDE PAINTER'S WORKER (`render/painter.ts`) makes its own `makeHeroArt3`: it must know the switch, as for the Warrior.
+5. BAKING: from `makeHeroArt3().of('ranger', lookOfPlace(place))` with the switch on, every list of each place for each of his
+   eight sides. A list the same in two places is the same array: bake it once.
+6. `RANGER_ARROW`: measure the arrow's start again from the new release (above).
+7. The tests: `tests/ranger_up.test.ts`; when the switch goes on, its first test and the hash test change with it.
+
+## The checks (`tests/ranger_up.test.ts`, all 11 passing)
+
+1. The switch is off; of the game only `art/heroes3.ts` reaches the new files, and only through the switch; nothing imports
+   his review. With it off every frame the game paints of him (166 lists, 2,602 frames) the same picture, by hash
+   (`tests/ranger_up.hashes.json`, made from d31abc22; `RANGER_UP_ALL=1` for every frame).
+2. With it on: every list at 30 a second (his gripping runs at 60), from all eight sides, in every place.
+3. Every frame of his guard, run, Shot, town stance and run, the squirrel and the sighting through every boss check, from all
+   eight sides.
+4. His legs (the table above), every frame, as painted, from all eight sides; and the measure: standing straight a man's
+   ratio, the game's crouch short from in front and toward, his guard true, his body, arms and aim the game's.
+5. His bow seen from every side (above).
+6. No prancing: every frame of his runs, their other ways, his stops and setting off: no swinging thigh past 50 (none past 48);
+   the game's run, as it was, past 60.
+7. Every picture from every side: crisp, the friend's cyan edge, nothing of the enemy's rim, nothing cut off, the feather
+   fixed in his cap.
+8. The Shot and the Volley by Movement 9: hits 10 and 12, lengths 26 and 32; at full draw and still through the held frames;
+   loosed in one frame; the after-image only on the release, and there; the string hand flying back past 8.
+9. His face at the game's size: two dark eyes on his lit face, the brown of his moustache under them, through his breathing.
+
+tsc clean. The heroes' tests: OTHERS_RESULT. `tests/bosses.test.ts`'s check that nothing of the game imports the bosses'
+checks now also skips `art/ranger_up_review.ts` (his review), the one change to an existing test. The Warrior's files are
+exactly as on `art/warrior-up` (9057f94b); of the game, only `src/art/heroes3.ts` changed (16 lines: the switch).
+
+Made with: `npx tsx tools/ranger_up_pics.ts sheet|sheet2|film <dir>` and `python3 tools/ranger_up_pics.py sheet|sheet2|film
+<dir> <out>`; the measures with `npx tsx tools/ranger_up_measure.ts count [up] [eight]`; the legs with
+`npx tsx tools/legs_measure.ts table`.
+
+## For the owner or the main chat to decide
+
+- THE SHOT LANDS LATER: 0.333 s in place of 0.16 (Movement 9's held draw), the Volley 0.4 in place of 0.2. As with the
+  Warrior's swing, his call. The question to ask him: “The Ranger's Shot now has a held draw: the arrow goes at a third of a
+  second, not a sixth. Keep his rate of fire as it is (his follow-through cut short when he shoots again)? (Recommended) / Let
+  him fire a little slower (about 1.5 shots a second, not 2)”.
+- HIS BOW CANTED 70 DEGREES in his guard (it was 18), so it shows from behind; seen from his right it is end-on.
+- HIS GUARD IS WIDER AND LONGER (his legs true): the owner should see the first sheet's top before it goes in.
+- THE VOLLEY'S KNEEL, SIDE-ON, reads 1.00 to 1.01, not 1.05 (above): only lifting his hips would mend it.
+- HIS RUN IS NEW: the owner should see the stride strip and the film's run before it goes in.
+- NOT YET: his bow in his runs and in town is not clearly seen from every side (above); and the boss checks still count
+  findings in the Volley, his roll, his fall, his card's ready and struck (above).

@@ -138,7 +138,7 @@ export function rangerReview(side: WuSide = 'front'): { mob: Mob; shape: BossSha
 // and short legs below the knee”): every frame of his stances and held poses at 1.05 or more from all eight sides, each leg whose
 // shin is seen; his runs at 1 where a foot is flat on the floor, bearing him.
 
-export const RU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: number; to: number; kneel?: boolean }> = [
+export const RU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: number; to: number; kneel?: boolean; sideOn?: number }> = [
   { key: 'rstand', what: 'his guard', from: 0, to: 71 },
   { key: 'rtown', what: 'his town stance', from: 0, to: 71 },
   { key: 'squirrel', what: 'the squirrel', from: 0, to: 108 },
@@ -149,8 +149,10 @@ export const RU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: numb
   { key: 'shot', what: "the Shot's held draw", from: 7, to: 9 },
   // (the Volley is loosed from one knee, as the owner asked of it: “The rogue drops to a knee when he fires Volley”. The shin of
   // the knee he is down on lies along the floor, and a shin along the floor is seen end-on from some side whatever is done; that
-  // leg is not held to the measure (its knee is within 2.5 of the floor); his other leg, the one he stands on, is)
-  { key: 'volley', what: "the Volley's held draw", from: 9, to: 11, kneel: true },
+  // leg is not held to the measure (its knee is within 2.5 of the floor); his other leg, the one he stands on, is. That leg's
+  // thigh lies level by the kneel's nature: seen side-on, the game's camera, looking down, draws a level length longer than an
+  // upright one, so it is held there to 1, as the Warrior's kneel is (warrior_up_review.ts WU_LEGS_HELD))
+  { key: 'volley', what: "the Volley's held draw", from: 9, to: 11, kneel: true, sideOn: 1 },
 ];
 export const RU_LEGS_RUNS: readonly string[] = ['rrun', 'rtownrun'];
 export const RU_LEG_HELD_LEAST = 1.05;
@@ -170,7 +172,9 @@ export function ruLegFaults(key: string, frame: number, f: RuFrame, side: WuSide
       if (l.ratio < RU_LEG_RUN_LEAST) out.push(`${key} ${frame}/60 ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg, bearing him, ${l.ratio.toFixed(2)}`);
     } else {
       if (held.some((h) => h.kneel) && knee[2] < 2.5) continue;
-      if (l.ratio < RU_LEG_HELD_LEAST) out.push(`${key} ${frame} (${held[0].what}) ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg ${l.ratio.toFixed(2)}`);
+      const sideOn = side === 'side' || side === 'sideL';
+      const least = Math.min(...held.map((h) => (sideOn && h.sideOn !== undefined ? h.sideOn : RU_LEG_HELD_LEAST)));
+      if (l.ratio < least) out.push(`${key} ${frame} (${held[0].what}) ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg ${l.ratio.toFixed(2)}`);
     }
   }
   return out;
@@ -183,8 +187,10 @@ export function ruLegFaults(key: string, frame: number, f: RuFrame, side: WuSide
 // string and the arrow on it (the part drawn first beside the sculpture: stuff 1000) the same.
 
 /** At least this many game pixels of the bow's wood seen; the whole bow, side-on, is 20 to 30 of them. And of its string and
- * arrow together. */
-export const RU_BOW_LEAST = 7;
+ * arrow together. (5: in his guard, canted over as it is so that it shows from behind him, from his right side, `side`, its limbs
+ * point nearly at the eye and the wood is seen end-on, 5 or 6 pixels, its string and arrow 14 or more; no one cant shows it
+ * both from behind and from there: README) */
+export const RU_BOW_LEAST = 5;
 export const RU_STRING_LEAST = 4;
 export function ruBowSeen(f: RuFrame): { wood: number; string: number } {
   const { w, h } = f.px;
@@ -200,23 +206,31 @@ export function ruBowSeen(f: RuFrame): { wood: number; string: number } {
 }
 /** Where his bow must be seen: every list he stands, runs or holds in (frames at 30 a second; a run's at 60), from all eight sides
  * (those painted from in front only, from there); and his settles and his setting off, every frame. */
-export const RU_BOW_HELD: ReadonlyArray<{ key: string; what: string; from?: number; to?: number; front?: boolean }> = [
+/** (`notYet`: lists whose bow is not yet clearly seen from every side, and are counted, not held: his runs, where he carries it
+ * level at his side as the owner liked it, “i like where the bow is at tho”, and in town, where it is slung across his back.
+ * docs/mockups/ranger_up/README.md has their numbers) */
+export const RU_BOW_HELD: ReadonlyArray<{ key: string; what: string; from?: number; to?: number; front?: boolean; notYet?: boolean }> = [
   { key: 'rstand', what: 'his guard' },
-  { key: 'rtown', what: 'his town stance' },
-  { key: 'rrun', what: 'his run' },
-  { key: 'rtownrun', what: 'his town run' },
+  { key: 'rtown', what: 'his town stance', notYet: true },
+  { key: 'rrun', what: 'his run', notYet: true },
+  { key: 'rtownrun', what: 'his town run', notYet: true },
   { key: 'shot', what: "the Shot's held draw", from: 7, to: 9 },
   { key: 'volley', what: "the Volley's held draw", from: 9, to: 11 },
   { key: 'squirrel', what: 'the squirrel', front: true },
   { key: 'sighting', what: 'sighting along an arrow', front: true },
-  { key: 'tsquirrel', what: 'the squirrel, in town', front: true },
-  { key: 'tsighting', what: 'sighting along an arrow, in town', front: true },
+  { key: 'tsquirrel', what: 'the squirrel, in town', front: true, notYet: true },
+  { key: 'tsighting', what: 'sighting along an arrow, in town', front: true, notYet: true },
   { key: 'rdraw', what: "his card's ready", from: 26, to: 41, front: true },
 ];
-export function ruBowHeld(key: string | undefined, name: string, frame: number, side: WuSide): string | null {
-  if (key === undefined) return /: coming to a stand|: setting off/.test(name) ? name : null;
+/** His stops in a fight: from this frame on (of 7) the bow is up out of his run's carry into his guard, and held to be seen; before
+ * it, as in his run, counted. */
+export const RU_STOP_BOW_UP = 3;
+export function ruBowHeld(key: string | undefined, name: string, frame: number, side: WuSide, counted = false): string | null {
+  // (his stops and settings off: held in a fight, where they end in his guard, once the bow is up; counted the rest, in town and
+  // setting off into a run)
+  if (key === undefined) return /: coming to a stand/.test(name) && !/in town/.test(name) && frame >= RU_STOP_BOW_UP ? name : counted && /: coming to a stand|: setting off/.test(name) ? name : null;
   const h = RU_BOW_HELD.find((x) => x.key === key && (x.from === undefined || (frame >= x.from && frame <= (x.to as number))));
-  if (!h || (h.front && side !== 'front')) return null;
+  if (!h || (h.front && side !== 'front') || (h.notYet && !counted)) return null;
   return h.what;
 }
 export function ruBowFaults(key: string | undefined, name: string, frame: number, f: RuFrame, side: WuSide): string[] {

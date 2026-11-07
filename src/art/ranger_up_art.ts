@@ -19,7 +19,7 @@
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { lazyFrames, lightsOut, toSprite } from './kit';
-import { SETTLES, runWaysOf, walkingOf } from './moves3';
+import { SETTLES, walkingOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import { bonesAt, solve } from './skeleton';
@@ -27,7 +27,7 @@ import type { Posed, Skeleton } from './skeleton';
 import { paintRangerUp } from './ranger_up';
 import type { RuFrame, RuSide } from './ranger_up';
 import { WU_SIDES } from './warrior_up';
-import { RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_RUN3, RU_SHOT3, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_SHOT_HIT, RU_VOLLEY_HIT, ruSettle, ruStart } from './ranger_up_moves';
+import { RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_RUN3, RU_SHOT3, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_SHOT_HIT, RU_VOLLEY_HIT, ruRunWays, ruSettle, ruStart } from './ranger_up_moves';
 
 const FPS = 30;
 const GRIP_FPS = 60;
@@ -167,7 +167,7 @@ function setOf(view: RuSide, place: 'dungeon' | 'town' | 'card', shared: Shared)
   set.startAt = start.phase;
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (fights) {
-    set.walkWays = runWaysOf(runM).map((m, i) => list(`way:${i}`, () => {
+    set.walkWays = ruRunWays().map((m, i) => list(`way:${i}`, () => {
       const { end, from } = spanOf(m);
       const t0 = from ?? 0;
       const n = Math.max(1, Math.round((end - t0) * GRIP_FPS));
