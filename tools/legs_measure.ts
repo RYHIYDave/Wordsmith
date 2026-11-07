@@ -39,6 +39,9 @@ import { VET_RUN, VET_STAND, vetAt } from '../src/dev/veteran_moves';
 import type { Drawn, Mat } from '../src/dev/sculpt';
 import { LAST } from '../src/dev/sculpt';
 import { ROBE, CYAN } from '../src/art/kit';
+import { paintMuMove } from '../src/art/mage_up_art';
+import { MU_MOVES } from '../src/art/mage_up_moves';
+import { MU_HOSE, MU_PLUM, MU_ROBE } from '../src/art/mage_up';
 import { paintWithoutCanvas } from '../tests/helpers';
 
 declare const process: { argv: string[] };
@@ -136,6 +139,14 @@ function mage(pose: 'straight' | 'stance' | 'run'): Sample {
   const px = pose === 'straight' ? oldStraight(m) : paintMove3(m, t, 'front').px;
   return { hero: 'Mage', pose, B: MAGE_BODY, s, px, st: stage('front'), cover: mageCover(px) };
 }
+/** THE MAGE BROUGHT UP (art/mage_up.ts; the art chat's helper, 7 Nov 2026): her guard with her legs true (art/mage_up_moves.ts). */
+function mageNow(pose: 'straight' | 'stance' | 'run'): Sample {
+  const m0 = pose === 'run' ? MOVES3.mrun : MU_MOVES.mstand;
+  const m: Move3 = pose === 'straight' ? { ...m0, rest: { ...m0.rest, ...standing(MAGE_BODY) }, motion: { keys: [{ at: 0, pose: {} }] } } : m0;
+  const t = pose === 'run' ? endOf(m) * PHASE.k : pose === 'straight' ? 0 : STAND_T;
+  const f = paintMuMove(m, t, 'front');
+  return { hero: 'Mage, brought up', pose, B: MAGE_BODY, s: f.s, px: f.px, st: f.drawn.st, cover: byStuff(f.drawn, f.sc.mats, [['over', [MU_ROBE]], ['upper', [MU_HOSE]], ['lower', [MU_PLUM]]]) };
+}
 /** (the Mage, in her battle look, the game's: her short robe and its hem of light over dark hose, tall boots to the knee: art/hero3_mage.ts) */
 const mageCover = (px: Px): ((x: number, y: number) => Cover) => byColour(px, [['over', setOf(ROBE, CYAN)], ['upper', setOf(MAIL)], ['lower', setOf(PLUM)]]);
 
@@ -212,6 +223,7 @@ export const HEROES: Record<string, (pose: 'straight' | 'stance' | 'run') => Sam
   'ranger-legs': (p) => rangerNow(p, true),
   warrior,
   mage,
+  'mage-now': mageNow,
   warlock,
   tinkerer,
   veteran,
@@ -234,6 +246,9 @@ export interface Measure {
   eyeLower: number;
   /** Where the eye's knee is below the joint, game pixels down the shin (the top of the boot, cuff or greave). */
   seenKneeBelow: number;
+  /** Where on the picture (picture pixels) the hem over the thigh ends, and the eye's knee is; null where it cannot be told. */
+  hemAt?: [number, number] | null;
+  seenAt?: [number, number] | null;
 }
 
 export function measure(sm: Sample): Measure {
@@ -315,6 +330,8 @@ export function measure(sm: Sample): Measure {
     eyeThigh: +eyeThigh.toFixed(1),
     eyeLower: +lowerSeen.toFixed(1),
     seenKneeBelow: seen >= 0 ? +((along[seen] - along[kneeAt]) / GAME).toFixed(1) : NaN,
+    hemAt: hem >= 0 ? [+path[hem][0].toFixed(1), +path[hem][1].toFixed(1)] : null,
+    seenAt: seen >= 0 ? [+path[seen][0].toFixed(1), +path[seen][1].toFixed(1)] : null,
   };
 }
 

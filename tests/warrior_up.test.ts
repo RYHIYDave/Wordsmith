@@ -149,17 +149,20 @@ test('1. the switch is off; of the game only art/heroes3.ts imports the new file
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*warrior_up(_moves|_art|_review)?['"]/.test(text)) users.push(f);
   }
-  // (and the Ranger's mock-up, brought up after him on his pieces, behind its own switch; nothing of the game imports it)
-  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts', 'what imports them');
+  // (and the Ranger's and the Mage's mock-ups, brought up after him on his pieces, behind their own switches; nothing of the game
+  // imports them: held by their own tests, tests/ranger_up.test.ts and tests/mage_up.test.ts)
+  assert.equal(users.filter((f) => !/^art\/(ranger|mage)_up/.test(f)).sort().join(' '), 'art/heroes3.ts', 'what imports them');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('art/ranger_up')) continue;
+    // (art/heroes3.ts reaches it through its own switch, RANGER_UP: held by tests/ranger_up.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('art/ranger_up') || f === 'art/heroes3.ts') continue;
     assert.ok(!/from ['"][^'"]*ranger_up(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8')), `${f} imports the Ranger's mock-up`);
   }
   const h3 = fs.readFileSync('src/art/heroes3.ts', 'utf8');
   assert.ok(/if \(cls === 'warrior' && WARRIOR_UP\.on\)/.test(h3), 'heroes3 reaches them only through the switch');
   // (and nothing of the game imports the review, which brings in the bosses' checks)
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('art/warrior_up') || f.startsWith('dev/')) continue;
+    // (the Ranger's review is built on it, and is itself nothing of the game's: tests/ranger_up.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('art/warrior_up') || f.startsWith('dev/') || f === 'art/ranger_up_review.ts') continue;
     assert.ok(!/warrior_up_review/.test(fs.readFileSync(path.join('src', f), 'utf8')), `${f} imports the review`);
   }
 });
