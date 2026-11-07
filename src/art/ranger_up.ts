@@ -32,11 +32,12 @@ import { BROWN, CYAN, INDIGO, INK, LEAF, MAIL, PINK, PLUM, SKIN4, TEAL, hash } f
 import type { Painted, Ramp } from './kit';
 import { onBack } from './carried';
 import { ARROW_LONG, BOW_BRACE, BOW_HALF, WILD } from './moves3';
-import type { Move3 } from './moves3';
+import { SQ_BUNCH, SQ_FLICK, SQ_RUN, SQ_SIT, squirrel } from './hero_ranger';
+import { squirrelOn } from './hero3_ranger';
 import { P } from './palette';
 import { CANVAS3, eyesToward, girdle, mid, stage } from './skin';
 import type { Stage } from './skin';
-import { add, bonesAt, cross, dot, len, lerp3, mul, norm, solve, sub, trunkOf } from './skeleton';
+import { add, cross, dot, heading, len, lerp3, mul, norm, sub, trunkOf } from './skeleton';
 import type { Build, Posed, Skeleton, V3 } from './skeleton';
 import { Sculpt, draw } from '../dev/sculpt';
 import type { Drawn } from '../dev/sculpt';
@@ -85,6 +86,8 @@ export interface RuAround {
   past?: Skeleton | null;
   /** Where the wind has got to, 0..1. */
   wind?: number;
+  /** At a release (Movement 9): him the frame before, whose string and arrow are left as the after-image. */
+  ghost?: { q: Posed; s: Skeleton };
 }
 
 /** What a sculpted frame of him is, for the checks: the drawing, and the solids by part. */
@@ -96,6 +99,9 @@ export interface RuFrame extends Painted {
   /** Where on his canvas the floor point under him is (WU_SPIN's `ax`: 98 for the three sides that face left), and its height. */
   ax: number;
   ay: number;
+  /** The material his bow's limbs are (in `drawn.stuff`); its string and the arrow on it are stuff 1000, the first part drawn
+   * beside the sculpture. */
+  bowMat: number;
 }
 
 /** `v` made square to the unit `w` (the way the foot points, square to the shin). */
@@ -601,56 +607,64 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
   const strung = !away && q.draw >= 0.2;
   const extras = (raw: Stage): void => {
     const st = turnedStage(raw, spin);
+    // (the string and the arrow: the first part drawn here, stuff 1000 in the drawing: art/ranger_up_review.ts counts them)
     const line = st.part(grip);
-    const thread = (a: V3, b: V3, c: string, lift = 0.3): void => {
+    const thread = (a: V3, b: V3, c: string, lift = 0.3, on = line, every = 1): void => {
       const [x0, y0] = st.at(a);
       const [x1, y1] = st.at(b);
       const za = st.near(a) + lift;
       const zb = st.near(b) + lift;
       const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
       for (let i = 0; i <= n; i++) {
+        if (every > 1 && i % every === every - 1) continue;
         const k = i / n;
-        line.put(Math.round(x0 + (x1 - x0) * k - 0.5), Math.round(y0 + (y1 - y0) * k - 0.5), c, za + (zb - za) * k);
+        on.put(Math.round(x0 + (x1 - x0) * k - 0.5), Math.round(y0 + (y1 - y0) * k - 0.5), c, za + (zb - za) * k);
       }
     };
-    if (strung) {
-      thread(nocks[0], s.handR, CYAN[3]);
-      thread(s.handR, nocks[1], CYAN[3]);
-      // THE ARROW: as the game draws its own in flight (render/render.ts: a shaft of light wood a game pixel thick and a pale
-      // steel head), so the one on the string and the one that flies are the same arrow; its head drawn to a point, and two
-      // small cyan vanes at its nock as the fletchings in his quiver have
-      const point = add(s.handR, mul(p3, ARROW_LONG * B.tall));
-      const [x0, y0] = st.at(s.handR);
-      const [x1, y1] = st.at(point);
-      const za = st.near(s.handR) + 0.4;
-      const zb = st.near(point) + 0.4;
+    /**
+     * AN ARROW, as the game draws its own in flight (render/render.ts: a shaft of light wood a game pixel thick and a pale steel
+     * head), so that the one on his string and the one that flies are the same arrow; its head drawn to a point, two small cyan
+     * vanes at its nock as the fletchings in his quiver have. `tone`: its colours (the arrow's own, or an after-image's).
+     */
+    const arrowAt = (from: V3, to: V3, on = line, tone: { shaft: string; head: string; tip: string; vane: string; vane2: string } = { shaft: P.wd5, head: P.sl5, tip: '#ffffff', vane: CYAN[2], vane2: CYAN[3] }, every = 1): void => {
+      const [x0, y0] = st.at(from);
+      const [x1, y1] = st.at(to);
+      const za = st.near(from) + 0.4;
+      const zb = st.near(to) + 0.4;
       const L = Math.hypot(x1 - x0, y1 - y0) || 1;
       const ux = (x1 - x0) / L;
       const uy = (y1 - y0) / L;
       const n = Math.max(1, Math.ceil(L));
       for (let i = 0; i <= n - 3; i++) {
+        if (every > 1 && i % every === every - 1) continue;
         const k = i / n;
         const x = Math.round(x0 + (x1 - x0) * k - 1);
         const y = Math.round(y0 + (y1 - y0) * k - 1);
-        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) line.put(x + dx, y + dy, P.wd5, za + (zb - za) * k);
+        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) on.put(x + dx, y + dy, tone.shaft, za + (zb - za) * k);
       }
-      // (the head: a point of pale steel, broad at its foot)
       for (let i = 0; i < 5; i++) {
         const cx = x1 - ux * (4 - i);
         const cy = y1 - uy * (4 - i);
         const half = i < 2 ? 1.6 : i < 4 ? 1.0 : 0.4;
-        for (let w = -half; w <= half + 1e-6; w += 0.5) line.put(Math.round(cx - uy * w - 0.5), Math.round(cy + ux * w - 0.5), i === 4 || Math.abs(w) < 0.5 ? '#ffffff' : P.sl5, zb + 0.1);
+        for (let w = -half; w <= half + 1e-6; w += 0.5) on.put(Math.round(cx - uy * w - 0.5), Math.round(cy + ux * w - 0.5), i === 4 || Math.abs(w) < 0.5 ? tone.tip : tone.head, zb + 0.1);
       }
-      // (the fletchings)
       for (const k of [2, 3, 4]) {
         for (const sg of [1, -1]) {
           const cx = x0 + ux * k;
           const cy = y0 + uy * k;
-          line.put(Math.round(cx - uy * sg * (1 + (k - 2) * 0.5) - 0.5), Math.round(cy + ux * sg * (1 + (k - 2) * 0.5) - 0.5), k === 4 ? CYAN[3] : CYAN[2], za + 0.2);
+          on.put(Math.round(cx - uy * sg * (1 + (k - 2) * 0.5) - 0.5), Math.round(cy + ux * sg * (1 + (k - 2) * 0.5) - 0.5), k === 4 ? tone.vane2 : tone.vane, za + 0.2);
         }
       }
+      return void L;
+    };
+    if (strung) {
+      thread(nocks[0], s.handR, CYAN[3]);
+      thread(s.handR, nocks[1], CYAN[3]);
+      const point = add(s.handR, mul(p3, ARROW_LONG * B.tall));
+      arrowAt(s.handR, point);
       if (WILD.on && q.draw >= 0.85) {
         const PALE = '#e6eef8';
+        const [x1, y1] = st.at(point);
         const x = Math.round(x1 - 0.5);
         const y = Math.round(y1 - 0.5);
         const k = Math.min(1, (q.draw - 0.85) / 0.15);
@@ -663,6 +677,45 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
         lights.push({ x: x1, y: y1, r: 10 + 8 * k, color: PALE, a: 0.45 + 0.3 * k });
       }
     } else thread(nocks[0], nocks[1], CYAN[3]);
+    // THE RELEASE'S AFTER-IMAGE (Movement 9): the string where it was the frame before, drawn back to his cheek, and the arrow
+    // where it lay on it and where it was half way to the bow as it went: ghosts of the real string and arrow, in fading tones,
+    // broken, under the snapped string; never a bar of their own
+    const g = around.ghost;
+    if (!away && g && g.q.draw >= 0.5) {
+      const ghost = st.part(st.near(grip) - 0.6);
+      const gp = g.s.point;
+      const gg = g.s.handL;
+      const gac = g.s.across;
+      const gTip = (sgn: 1 | -1): V3 => add(add(gg, add(mul(gac, sgn * BOW_HALF * (1 - 0.13 * g.q.draw)), mul(gp, -(BOW_BRACE + 0.05 * B.tall * g.q.draw)))), add(mul(gac, sgn * 1.1), mul(gp, 1.5)));
+      thread(gTip(1), g.s.handR, CYAN[2], -0.6, ghost, 3);
+      thread(g.s.handR, gTip(-1), CYAN[2], -0.6, ghost, 3);
+      const long = ARROW_LONG * B.tall;
+      const ghostTone = { shaft: '#a06c3c', head: '#9aa2b8', tip: '#c4cad8', vane: CYAN[1], vane2: CYAN[2] };
+      const fainter = { shaft: '#6e4a2a', head: '#6e7690', tip: '#9aa2b8', vane: CYAN[0], vane2: CYAN[1] };
+      arrowAt(g.s.handR, add(g.s.handR, mul(gp, long)), ghost, fainter, 3);
+      arrowAt(add(g.s.handR, mul(gp, long * 0.55)), add(g.s.handR, mul(gp, long * 1.55)), ghost, ghostTone, 4);
+    }
+    // what he does when left standing: the squirrel on his shoulders (prop 1), or an arrow held before his eye (prop 2)
+    if (q.prop === 1) {
+      const sq = squirrelOn(s, B, q.pt);
+      if (sq) {
+        const layer = st.part(st.near(sq.at) + 1.5);
+        const [x, y] = st.at(sq.at);
+        const rows = sq.doing === 'run' ? (sq.step % 2 === 0 ? SQ_RUN : SQ_BUNCH) : Math.floor(q.pt * 90) % 5 === 1 ? SQ_FLICK : SQ_SIT;
+        squirrel(layer, x, y, st.seen(s.chest[0])[0] * sq.looks >= 0 ? 1 : -1, rows);
+      }
+    }
+    if (q.prop === 2) {
+      const d = heading(q.pAz, q.pEl);
+      const from = add(s.handR, mul(d, -4));
+      const to = add(s.handR, mul(d, 13));
+      arrowAt(from, to);
+      if (q.pt > 0 && q.pt < 1) {
+        const [gx, gy] = st.at(lerp3(from, to, q.pt));
+        st.over.set(Math.round(gx), Math.round(gy), '#ffffff').set(Math.round(gx) + 1, Math.round(gy), '#ffffff');
+        lights.push({ x: gx, y: gy, r: 6, color: CYAN[3], a: 0.5 });
+      }
+    }
   };
   let tails: TailRoot[] = [];
   const drawn = draw(sc, view, ax, CANVAS3.ay, CANVAS3, (raw) => {
@@ -671,43 +724,6 @@ export function paintRangerUp(s: Skeleton, q: Posed, side: RuSide, B: Build, aro
     const [qx, qy] = st.at(quillAt);
     tails = [{ id: 'r-feather', x: qx, y: qy, over: true }];
   }, rim);
-  return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax, ay: CANVAS3.ay };
+  return { px: drawn.px, lights, tails, drawn, sc, s, spin, ax, ay: CANVAS3.ay, bowMat: wood };
 }
 
-// ---------------------------------------------------------------------------------------------
-
-function spanOf(m: Move3): { end: number; from: number | undefined } {
-  const k = m.motion.keys;
-  return { end: k.length ? k[k.length - 1].at : 0, from: m.motion.loop };
-}
-function windOf(m: Move3, t: number): number {
-  const { end, from } = spanOf(m);
-  const long = from !== undefined ? end - from : end;
-  if (long <= 1e-6) return 0;
-  const period = long / Math.max(1, Math.round(long / 1.2));
-  const k = ((t - (from ?? 0)) / period) % 1;
-  return k < 0 ? k + 1 : k;
-}
-function posedAt(m: Move3, t: number): { q: Posed; s: Skeleton } {
-  const { end, from } = spanOf(m);
-  const long = from !== undefined ? end - from : 0;
-  let when = Math.max(0, t);
-  if (from !== undefined && long > 1e-6 && when >= end) when = from + ((when - from) % long);
-  const q = bonesAt(m.motion.keys, m.rest, when);
-  return { q, s: solve(m.build, q) };
-}
-function before(m: Move3, t: number, back: number): number {
-  const { end, from } = spanOf(m);
-  const long = from !== undefined ? end - from : 0;
-  let w = t - back;
-  if (from !== undefined && long > 1e-6 && w < from && end > from) w += long;
-  return Math.max(0, w);
-}
-
-/** HIM AT A MOMENT OF A MOVE, painted: with the figure a frame and three frames before (cloth follows), and the wind. */
-export function paintRu(m: Move3, t: number, view: RuSide, rim: string | null | undefined = undefined): RuFrame {
-  const { q, s } = posedAt(m, t);
-  const prev = posedAt(m, before(m, t, FRAME)).s;
-  const past = posedAt(m, before(m, t, 3 * FRAME)).s;
-  return paintRangerUp(s, q, view, m.build, { prev, past, wind: windOf(m, t) }, rim === undefined ? undefined : rim);
-}

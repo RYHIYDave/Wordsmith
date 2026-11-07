@@ -20,7 +20,7 @@ import { CANVAS3, stage } from '../src/art/skin';
 import { bonesAt, solve } from '../src/art/skeleton';
 import type { Skeleton, V3 } from '../src/art/skeleton';
 import type { Move3 } from '../src/art/moves3';
-import { paintRu } from '../src/art/ranger_up';
+import { paintRuMove as paintRu } from '../src/art/ranger_up_art';
 import type { RuSide } from '../src/art/ranger_up';
 import { RU_MOVES } from '../src/art/ranger_up_moves';
 import { paintWithoutCanvas } from '../tests/helpers';

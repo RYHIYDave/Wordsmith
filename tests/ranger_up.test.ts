@@ -23,7 +23,8 @@ import * as nodeFs from 'node:fs';
 // @ts-ignore
 import * as nodePath from 'node:path';
 
-import { RANGER_UP, RU_BROWN, RU_SKIN, paintRu } from '../src/art/ranger_up';
+import { RANGER_UP, RU_BROWN, RU_SKIN } from '../src/art/ranger_up';
+import { paintRuMove as paintRu } from '../src/art/ranger_up_art';
 import { WU_RIM } from '../src/art/warrior_up';
 import { MOVES3 } from '../src/art/moves3';
 import { RU_STAND3 } from '../src/art/ranger_up_moves';
