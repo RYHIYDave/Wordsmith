@@ -72,10 +72,12 @@ def plan():
     d.rectangle([X(-13), Y(top), X(13), Y(edge)], fill=(12, 20, 16))
     d.rectangle([X(-13), Y(edge), X(-across / 2), Y(bottom - 0.4)], fill=(18, 28, 22))
     d.rectangle([X(across / 2), Y(edge), X(13), Y(bottom - 0.4)], fill=(18, 28, 22))
-    # him: the front of his hill, his eye
-    d.ellipse([X(-9.7), Y(-6.6), X(9.7), Y(5.0)], fill=(40, 46, 34), outline=(120, 60, 90))
-    d.ellipse([X(-0.5), Y(2.4), X(0.5), Y(3.1)], fill=(255, 79, 138))
-    d.text((X(-1.0), Y(0.0)), 'him', font=mid, fill=PALE)
+    # him: his head at the water (his neck and the flesh run off him), his tongue out before him, the eye on its tip
+    d.ellipse([X(-300 / TL), Y(-200 / TL), X(300 / TL), Y(160 / TL)], fill=(40, 46, 34), outline=(120, 60, 90))
+    d.line([X(0), Y(-180 / TL), X(0), Y(160 / TL)], fill=(14, 12, 36), width=3)
+    d.line([X(0), Y(150 / TL), X(-44 / TL), Y(214 / TL), X(-84 / TL), Y(212 / TL)], fill=(110, 70, 72), width=8)
+    d.ellipse([X(-92 / TL) - 9, Y(210 / TL) - 9, X(-92 / TL) + 9, Y(210 / TL) + 9], fill=(255, 79, 138))
+    d.text((X(1.0), Y(-1.6)), 'his head', font=mid, fill=PALE)
     # the stone, a tile grid
     d.rectangle([X(-across / 2), Y(edge), X(across / 2), Y(edge + deep)], fill=(78, 74, 86), outline=(160, 156, 170), width=2)
     for k in range(1, across):
@@ -114,9 +116,9 @@ src = sys.argv[2]
 spec = {p['file']: p for p in json.load(open(os.path.join(src, 'sheet.json')))}
 img = lambda f: Image.open(os.path.join(src, f)).convert('RGB')
 if mode == 'look':
-    parts = [header('THE SWAMP COLOSSUS: HIS LOOK (A MOCK-UP)', [
-        'The new Drowned Eye, from nothing: a rotting hill of moss-grown flesh, one huge bloodshot eye under a heavy brow, a maw split down the middle, slime, weed and old bones on him, thick slimy tentacles. Painted at the game\'s own size (two picture pixels to a game pixel), on the fen\'s own water and stone.'])]
-    for f in ['look_risen.png', 'look_face.png', 'look_arm.png', 'look_under.png', 'look_back.png']:
+    parts = [header('THE SWAMP COLOSSUS: HIS NEW HEAD (A MOCK-UP)', [
+        'His body scrapped. A huge head risen out of the black water, ancient and gross, melting and dripping; it splits open down its middle for his maw; his eye on the end of his tongue, supple as a tentacle; spittle and goo all over him. His tentacles kept, each now one smooth taper. Painted at the game\'s own size (two picture pixels to a game pixel), on the fen\'s own water and stone.'])]
+    for f in ['look_shut.png', 'look_open.png', 'look_shut_2x.png', 'look_open_2x.png', 'look_eye.png', 'look_arm.png', 'look_under.png', 'look_back.png']:
         p = spec[f]
         parts.append(block(p['title'], p['note'], img(f)))
     stack(parts, sys.argv[3])

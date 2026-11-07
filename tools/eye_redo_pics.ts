@@ -11,6 +11,8 @@ import nodeFs from 'node:fs';
 import nodeZlib from 'node:zlib';
 // @ts-ignore
 import nodePath from 'node:path';
+// @ts-ignore
+import nodeCrypto from 'node:crypto';
 import { Px } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { makeHeroArt3 } from '../src/art/heroes3';
@@ -20,13 +22,13 @@ import { paintTerrain, terrainOf } from '../src/art/terrain';
 import type { Terrain } from '../src/art/terrain';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
-import { ARMS_UNDER, COLOSSUS, STONE, armClearances, costOf, paintColossus, poseArm, poseRisen, poseUnder } from '../src/art/eye_colossus';
-import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
+import { ARMS_UNDER, ARMS_RISEN, COLOSSUS, STONE, armClearances, costOf, headParts, paintColossus, poseArm, poseRisen, poseUnder, tubeSmoothness, TONGUE_SHUT, EYE_SHUT } from '../src/art/eye_colossus';
+import type { ColossusPicture, ColossusPose, Frame } from '../src/art/eye_colossus';
 
 (Px.prototype as unknown as { toCanvas: (this: Px) => unknown }).toCanvas = function (this: Px): unknown {
   return this;
 };
-const fs = nodeFs as { mkdirSync(p: string, o: { recursive: boolean }): void; writeFileSync(p: string, d: unknown): void };
+const fs = nodeFs as { mkdirSync(p: string, o: { recursive: boolean }): void; writeFileSync(p: string, d: unknown): void; readFileSync(p: string): Uint8Array & { buffer: ArrayBuffer; byteOffset: number }; existsSync(p: string): boolean };
 const zlib = nodeZlib as { deflateSync(b: Uint8Array, o?: { level: number }): Uint8Array };
 const path = nodePath as { join(...p: string[]): string };
 declare const process: { argv: string[]; exit(n: number): void; stdout: { write(s: string): void } };
@@ -314,15 +316,59 @@ const timed = <T>(what: string, f: () => T): T => {
   return r;
 };
 
-/** His risen picture: a window on him big enough for all of him and his arms. */
-const RISEN_FRAME = { w: 1100, h: 720, ax: 550, ay: 480 };
-function measureOf(c: ColossusPicture): { x0: number; y0: number; x1: number; y1: number } {
+// (a painting of him is kept, so that the look and the arena paint each pose once; made again whenever his file changes)
+const crypto = nodeCrypto as { createHash(a: string): { update(d: Uint8Array): { digest(e: string): string } } };
+const SRC = crypto.createHash('sha1').update(fs.readFileSync('src/art/eye_colossus.ts')).digest('hex').slice(0, 12);
+const CACHE = 'shots/eye_redo/cache';
+fs.mkdirSync(CACHE, { recursive: true });
+function painted(key: string, pose: ColossusPose, fr: Frame): ColossusPicture {
+  const file = path.join(CACHE, `${key}_${SRC}.bin`);
+  const n = fr.w * fr.h;
+  if (fs.existsSync(file)) {
+    const b = fs.readFileSync(file);
+    const u8 = new Uint8Array(b.buffer, b.byteOffset, b.length);
+    const hl = new DataView(u8.buffer, u8.byteOffset).getUint32(0, true);
+    const meta = JSON.parse(new TextDecoder().decode(u8.subarray(4, 4 + hl))) as { lights: ColossusPicture['lights'] };
+    let o = 4 + hl;
+    const px = new Px(fr.w, fr.h);
+    px.d.set(u8.subarray(o, o + n * 4));
+    o += n * 4;
+    const kind = u8.slice(o, o + n);
+    o += n;
+    const mat = u8.slice(o, o + n);
+    o += n;
+    const near = new Float32Array(u8.slice(o, o + n * 4).buffer);
+    return { px, ax: fr.ax, ay: fr.ay, lights: meta.lights, kind, mat, near };
+  }
+  const c = timed(key, () => paintColossus(pose, fr));
+  const meta = new TextEncoder().encode(JSON.stringify({ lights: c.lights }));
+  const all = new Uint8Array(4 + meta.length + n * 4 + n * 2 + n * 4);
+  new DataView(all.buffer).setUint32(0, meta.length, true);
+  all.set(meta, 4);
+  let o = 4 + meta.length;
+  all.set(c.px.d, o);
+  o += n * 4;
+  all.set(c.kind, o);
+  o += n;
+  all.set(c.mat, o);
+  o += n;
+  all.set(new Uint8Array(c.near.buffer.slice(0)), o);
+  fs.writeFileSync(file, all);
+  return c;
+}
+
+/** His risen picture: a window on him big enough for all of him, his arms, and his tongue risen out of his split head. */
+const RISEN_FRAME = { w: 1100, h: 800, ax: 550, ay: 560 };
+function measureOf(c: ColossusPicture, head = false): { x0: number; y0: number; x1: number; y1: number } {
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
   let y1 = -Infinity;
   for (let j = 0; j < c.px.h; j++) for (let i = 0; i < c.px.w; i++) {
-    if (c.px.d[(j * c.px.w + i) * 4 + 3] < 200) continue;
+    const k = j * c.px.w + i;
+    if (c.px.d[k * 4 + 3] < 200) continue;
+    // (his head alone: not his tentacles (11), nor what hangs off him)
+    if (head && (c.kind[k] !== 1 || c.mat[k] === 11)) continue;
     x0 = Math.min(x0, i);
     x1 = Math.max(x1, i);
     y0 = Math.min(y0, j);
@@ -330,63 +376,63 @@ function measureOf(c: ColossusPicture): { x0: number; y0: number; x1: number; y1
   }
   return { x0, y0, x1, y1 };
 }
-
-const mode = process.argv[2];
-if (mode === 'look') {
-  const risen = timed('risen', () => paintColossus(poseRisen(0), RISEN_FRAME));
-  const m = measureOf(risen);
-  process.stdout.write(`  risen spans ${m.x1 - m.x0 + 1} x ${m.y1 - m.y0 + 1} picture pixels (${(m.x1 - m.x0 + 1) / 2} x ${(m.y1 - m.y0 + 1) / 2} game pixels); top ${m.y0 - RISEN_FRAME.ay} from the water\n`);
-  // 1. RISEN, FRONT, the Warrior before him for size
-  {
-    const w = 1200;
-    const h = 720;
-    const cam = camAt(600, 472);
-    const pic = groundPic(w, h, cam);
-    const stands = dressing(pic, cam);
-    stands.push({ d: VC, f: () => layHim(pic, risen, 600, 472) });
+/** Him on the stone at the game's size, the Warrior before him twice (from behind and from in front): the picture, `w` by `h`, his middle at the water at (`sx`, `sy`). */
+function withStone(c: ColossusPicture, w: number, h: number, sx: number, sy: number, heroes: boolean): Pic {
+  const cam = camAt(sx, sy);
+  const pic = groundPic(w, h, cam);
+  const stands = dressing(pic, cam);
+  stands.push({ d: VC, f: () => layHim(pic, c, sx, sy) });
+  if (heroes) {
     stands.push(layHero(pic, cam, 4.2, ARENA.quay + 2.2, true));
     stands.push(layHero(pic, cam, -4.6, ARENA.quay + 2.0, false));
-    stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
-    save('look_risen.png', pic, 'HIM RISEN, FROM IN FRONT, AT THE GAME\'S SIZE', `The Warrior on the stone before him, twice, as the game paints him (from behind and from in front). He is ${Math.round((m.x1 - m.x0 + 1) / 2)} game pixels across with his arms and ${Math.round((risen.ay - m.y0) / 2)} tall over the water: the knight is 29.`);
   }
-  // 2. FROM BEHIND, small (half the game's size)
+  stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
+  return pic;
+}
+
+const mode = process.argv[2];
+const SHUT = () => painted('shut', poseRisen(0), RISEN_FRAME);
+if (mode === 'look') {
+  const shut = SHUT();
+  const open = painted('open', poseRisen(1), RISEN_FRAME);
+  const m = measureOf(shut);
+  const mh = measureOf(shut, true);
+  const mo = measureOf(open, true);
+  process.stdout.write(`  shut, with his arms: ${(m.x1 - m.x0 + 1) / 2} x ${(m.y1 - m.y0 + 1) / 2} game pixels; his head alone ${(mh.x1 - mh.x0 + 1) / 2} x ${(mh.y1 - mh.y0 + 1) / 2}, ${(RISEN_FRAME.ay - mh.y0) / 2} over the water; open, his head ${(mo.x1 - mo.x0 + 1) / 2} x ${(mo.y1 - mo.y0 + 1) / 2}, ${(RISEN_FRAME.ay - mo.y0) / 2} over the water\n`);
+  const W = 1200;
+  const H = 820;
+  const SX = 600;
+  const SY = 560;
+  const headW = Math.round((mh.x1 - mh.x0 + 1) / 2);
+  const headH = Math.round((RISEN_FRAME.ay - mh.y0) / 2);
+  // 1. SHUT, FRONT, the Warrior before him for size
+  const a = withStone(shut, W, H, SX, SY, true);
+  save('look_shut.png', a, 'HIS HEAD SHUT, FROM IN FRONT, AT THE GAME\'S SIZE', `The Warrior on the stone before him, twice, as the game paints him (from behind and from in front). His head alone is ${headW} game pixels across and stands ${headH} over the water; the knight stands 29. The seam down his middle, crown to chin; his tongue snaking out of it low down and reared, the eye on its tip watching you; his flesh melting and running down him in drips; three tentacles.`);
+  // 2. OPEN, the same
+  const b = withStone(open, W, H, SX, SY, true);
+  save('look_open.png', b, 'HIS HEAD SPLIT OPEN, THE SAME SIZE', 'His head split down its seam, the two halves swung apart sideways on the hinge at the back of his skull; hooked teeth in rows along both inner edges, top to bottom; his wet ribbed throat between them glowing pink-gold deep inside; spittle strung across the gap; his tongue risen out of his throat in an S, waving above the split, the eye on its tip.');
+  // 3. EACH AT TWICE THE SIZE (his middle: the seam and his tongue; the split and his throat)
+  save('look_shut_2x.png', a.crop(300, 230, 600, 450), 'SHUT, TWICE THE SIZE (HIS MIDDLE)', 'The seam, wet, slime webbed across it, drool leaking from it; his tongue out of the slit low on it, the eye on its tip in a cup of raw lids; the sheets of his flesh sliding down him like melting wax, each edge running into drips with fat ends.', 2);
+  save('look_open_2x.png', b.crop(300, 80, 600, 450), 'OPEN, TWICE THE SIZE (HIS MIDDLE)', 'The rows of hooked teeth along both inner edges; the raw gums they are set in; the ribbed hollow of each half; strings of spittle across the gap; his gullet glowing pink burning to gold; his tongue rising out of it.', 2);
+  // 4. THE TONGUE-EYE, close (the game's own pixels, three times the size)
   {
-    const back = timed('back', () => paintColossus(poseRisen(0, 'back'), { w: 560, h: 320, ax: 280, ay: 190, zoom: 0.5 }));
-    const pic = groundPic(600, 300, camAt(300, 180));
-    layHim(pic, back, 300, 180);
-    save('look_back.png', pic, 'FROM BEHIND (HALF SIZE)', 'His back: the hill of him, moss and weed over it, the beast\'s skull and the great ribs grown into his shoulders, the stones sunk in his crown; his three arms rising either side.');
+    const ex = SX + Math.round(EYE_SHUT[0] * 2 / Math.sqrt(3));
+    const ey = SY - Math.round(EYE_SHUT[2] - EYE_SHUT[1] * 0.5 * 2 / Math.sqrt(3));
+    save('look_eye.png', a.crop(ex - 120, ey - 70, 240, 230), 'THE EYE ON THE END OF HIS TONGUE, THREE TIMES THE SIZE', 'His tongue, smooth, wet and supple as a tentacle, its tip swollen into the huge bloodshot eye: yellowed, veined, the iris the enemy\'s pink burning to gold round a black slit, set in a cup of raw lids that part round where it looks.', 3);
   }
-  // 3. HIS EYE AND MAW, close: shut, and torn open
-  {
-    const faceWin = { w: 300, h: 290, ax: 150, ay: 190 };
-    const shut = risen;
-    const open = timed('open', () => paintColossus(poseRisen(1), { ...faceWin }));
-    const g = groundPic(300, 290, camAt(150, 190));
-    const a = new Pic(300, 290);
-    a.d.set(g.d);
-    a.lay(shut.px, shut.ax, shut.ay, 150, 190);
-    const b = new Pic(300, 290);
-    b.d.set(g.d);
-    b.lay(open.px, open.ax, open.ay, 150, 190);
-    const both = new Pic(600, 290);
-    both.lay(a, 0, 0, 0, 0);
-    both.lay(b, 0, 0, 300, 0);
-    save('look_face.png', both, 'HIS EYE AND MAW, TWICE THE SIZE: SHUT, AND TORN OPEN', 'His eye under his brow, looking at you: bloodshot, its iris the enemy\'s pink burning to gold round a black slit, between raw red lids. His maw split down the middle: shut, its teeth locked across the split; torn open, its lips pulled apart sideways and the rows of teeth along both.', 2);
-  }
-  // 4. ONE TENTACLE, close
+  // 5. ONE TENTACLE, close
   {
     const arm = timed('arm', () => paintColossus(poseArm(), { w: 260, h: 340, ax: 150, ay: 300 }));
     const cam = camAt(150, 300);
     const pic = groundPic(260, 340, cam);
     pic.lay(arm.px, arm.ax, arm.ay, 150, 300);
-    const two = new Pic(600, 360);
-    const g2 = groundPic(600, 360, camAt(300, 330));
-    two.d.set(g2.d);
-    save('look_arm.png', pic, 'ONE TENTACLE, TWICE THE SIZE', 'Each tentacle an enemy of its own: thick, slick, mottled and scarred along its back; pale beneath, suckers in two rows along the inside of its curl; weed and slime hanging off it; foam where it breaks the water.', 2);
+    const sm = tubeSmoothness(ARMS_RISEN[0]);
+    process.stdout.write(`  a tentacle: ${sm.samples} samples, its thickness changing at most ${sm.radiusStep.toFixed(2)} from one to the next, its underside turning at most ${sm.turnDeg.toFixed(1)} degrees\n`);
+    save('look_arm.png', pic, 'ONE TENTACLE, TWICE THE SIZE', 'One continuous taper of muscle from where it leaves the water to the whip of its tip: no bands, no joints, no steps. Dark along its back, shading smoothly to pale beneath; its suckers in two rows along its underside all the way, smaller toward the tip; wet, slime hanging off it; foam where it breaks the water.', 2);
   }
-  // 5. UNDER THE WATER (phase 1)
+  // 6. UNDER THE WATER (phase 1)
   {
-    const under = timed('under', () => paintColossus({ ...poseUnder(), arms: [] }, RISEN_FRAME));
+    const under = painted('under', { ...poseUnder(), arms: [] }, RISEN_FRAME);
     const w = 1200;
     const h = 520;
     const cam = camAt(600, 270);
@@ -394,8 +440,15 @@ if (mode === 'look') {
     const stands = dressing(pic, cam);
     stands.push({ d: VC, f: () => layHim(pic, under, 600, 270) });
     stands.push(layHero(pic, cam, 3.2, ARENA.quay + 2.2, true));
-    stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
-    save('look_under.png', pic, 'UNDER THE WATER (PHASE 1)', `Only his eye's fire and the dark hill of him seen through the black water: his crown ${COLOSSUS.sunk - COLOSSUS.tall} under it, his eye ${COLOSSUS.sunk - COLOSSUS.eye.z} down, looking up at you; he lies further out than he rises.`);
+    stands.sort((p, q) => p.d - q.d).forEach((s) => s.f());
+    save('look_under.png', pic, 'UNDER THE WATER (PHASE 1)', `Only his eye's fire and the dark dome of his head seen through the black water: his crown ${COLOSSUS.sunk - COLOSSUS.tall} under it, his eye ${Math.round(COLOSSUS.sunk - 226)} down, looking up at you; he lies further out than he rises.`);
+  }
+  // 7. FROM BEHIND, small (half the game's size)
+  {
+    const back = painted('back', poseRisen(0, 'back'), { w: 560, h: 380, ax: 280, ay: 270, zoom: 0.5 });
+    const pic = groundPic(600, 360, camAt(300, 260));
+    layHim(pic, back, 300, 260);
+    save('look_back.png', pic, 'FROM BEHIND (HALF SIZE)', 'The back of his skull, where his two halves are hinged; the sheets of his flesh sliding down him, running off him in drips and falling into the water; his three arms rising before him.');
   }
 } else if (mode === 'arena') {
   // THE PHONE'S SCREEN: 507 x 234 game pixels (engine/screen.ts on a phone held sideways), two picture pixels to each
@@ -419,10 +472,15 @@ if (mode === 'look') {
   };
   const [hx, hy] = P(camAt(HX, HY), ...W(heroAt[0], heroAt[1]));
   process.stdout.write(`  the hero's feet at (${hx}, ${hy}) of ${SW} x ${SH}; the middle of the screen is ${SH / 2 + 24}: the camera leaned ${(hy - SH / 2 - 24) / 2} game pixels\n`);
-  const p1 = timed('phase 1', () => paintColossus({ ...poseUnder(), arms: ARMS_UNDER }, RISEN_FRAME));
+  const p1 = painted('p1', { ...poseUnder(), arms: ARMS_UNDER }, RISEN_FRAME);
   shot(p1, 'arena_p1', 'PHASE 1: HE LIES UNDER THE BLACK WATER; TWO TENTACLES BURST UP', 'The stone a big rectangle across the screen and on down past its foot; the black water across the top, still but for his two arms, his eye\'s fire under it. Kill both.');
-  const p2 = timed('phase 2', () => paintColossus(poseRisen(0), RISEN_FRAME));
-  shot(p2, 'arena_p2', 'PHASE 2: HE HAS RISEN, FILLING THE TOP OF THE SCREEN, THREE TENTACLES', 'He fills the top of the screen and looms over the hero; his three arms out of the water before him, his body attacking too.');
+  const p2 = SHUT();
+  // (how much of him is on the screen, leaned: his eye's top, and how far his crown runs off the top)
+  {
+    const mh = measureOf(p2, true);
+    process.stdout.write(`  leaned: his crown runs ${((p2.ay - mh.y0) - HY) / 2} game pixels off the top of the screen\n`);
+  }
+  shot(p2, 'arena_p2', 'PHASE 2: HE HAS RISEN, FILLING THE TOP OF THE SCREEN, THREE TENTACLES', 'His head fills the top of the screen and looms over the hero, melting; his tongue out of his seam, the eye on its tip watching you; his three arms out of the water before him.');
   // THE CAMERA WHERE IT SITS WHEN THE HERO STANDS IN THE MIDDLE OF THE STONE (no lean): the hero in the middle of the screen
   {
     const mid: [number, number] = [0, ARENA.quay + ARENA.deep / 2];
@@ -436,13 +494,16 @@ if (mode === 'look') {
     stands.push({ d: VC, f: () => layHim(pic, p2, sx, sy) });
     stands.push(layHero(pic, cam, mid[0], mid[1], true));
     stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
-    save('arena_mid.png', pic, 'THE CAMERA AS IT SITS WHEN THE HERO STANDS IN THE MIDDLE OF THE STONE (PHASE 2, NO LEAN)', 'The game\'s own camera, the hero in the middle of the screen: all this stone is his to fight on; across the top, the black water, his lower body and his three arms rising out of it.');
+    save('arena_mid.png', pic, 'THE CAMERA AS IT SITS WHEN THE HERO STANDS IN THE MIDDLE OF THE STONE (PHASE 2, NO LEAN)', 'The game\'s own camera, the hero in the middle of the screen: all this stone is his to fight on; across the top, the black water, the foot of his head, his tongue and his three arms rising out of it.');
   }
   process.stdout.write(`  plan: the stone ${ARENA.half * 2} across (u) by ${ARENA.deep} down (v): ${(ARENA.half * 2 / Math.SQRT2).toFixed(1)} x ${(ARENA.deep / Math.SQRT2).toFixed(1)} floor tiles; quay ${ARENA.quay} below his middle\n`);
-  for (const [n, pose] of [['risen', poseRisen()], ['torn open', poseRisen(1)], ['under', poseUnder()]] as const) {
+  for (const [n, pose] of [['shut', poseRisen(0)], ['split open', poseRisen(1)], ['under', poseUnder()]] as const) {
     const cl = armClearances(pose);
     process.stdout.write(`  arms ${n}: ${cl.body.toFixed(1)} clear of him, ${cl.stone.toFixed(1)} clear of the stone, roots in the water: ${cl.rootsInWater}\n`);
   }
+  const hp0 = headParts(0);
+  const hp1 = headParts(1);
+  process.stdout.write(`  his eye shut at ${hp0.eye.map((v) => v.toFixed(0)).join(', ')}, open at ${hp1.eye.map((v) => v.toFixed(0)).join(', ')}; split open, his halves ${hp1.gap.toFixed(0)} apart at his front; the tongue ${TONGUE_SHUT.length} points\n`);
   const c = costOf(30, 1);
   process.stdout.write(`  cost: a frame 960 x 680: ${c.frameMB.toFixed(2)} MB; at 30 a second ${c.perSecondMB.toFixed(1)} MB a second\n`);
 }
