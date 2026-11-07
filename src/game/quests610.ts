@@ -21,7 +21,7 @@
 
 import type { ClassId } from './types';
 
-export const QUESTS610 = { on: false };
+export const QUESTS610 = { on: true };
 
 /** Where the hero stands in the mystic's feather quest: asked; carrying the feather; brought. */
 export type FeatherStep = 'asked' | 'got' | 'given';

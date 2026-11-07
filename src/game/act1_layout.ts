@@ -150,7 +150,7 @@ export interface Hold {
  * at the far end of a short hallway (`long` tiles, `wide` across), open into the hall at the middle of its near side; the
  * threshold he goes out by is at the hallway's far end. Off until he has seen it (PICTURES FIRST).
  */
-export const HOLD_HALLWAY = { on: false, long: 4, wide: 3 };
+export const HOLD_HALLWAY = { on: true, long: 4, wide: 3 };
 
 /** Is (x, y) in a stronghold's hall or its hallway, `m` tiles round them counted in. */
 export function inHold(q: Hold, x: number, y: number, m = 1): boolean {

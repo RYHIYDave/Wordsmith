@@ -6,7 +6,7 @@
 // (PICTURES FIRST).
 
 export const ARRIVALS = {
-  on: false,
+  on: true,
   /** Seconds from the rift opening to its one being out and in the fight. */
   rise: 1.0,
   /** Of those, how long the rift takes to open before anything comes up out of it. */
