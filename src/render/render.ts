@@ -121,6 +121,7 @@ import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { holdShows, inHold } from '../game/act1_layout';
+import { risenBy, risingSprite } from './arrivals';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -3347,6 +3348,15 @@ export class Renderer {
       const f = game.level.floor;
       if (r.age < 0 || game.level.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] !== 1) continue;
       const art = this.monsterArt(m);
+      // (ARRIVALS: one coming in up out of a rift: its own picture rising out of the floor, dark till it is out: render/arrivals.ts)
+      if (r.way === 'rift') {
+        const up = risenBy(r.age, r.rise ?? 1);
+        const cut = up > 0 ? risingSprite(this.monsterSprite(m), up) : null;
+        if (!cut) continue;
+        const dark = silhouette(cut.sp, '#160a1c');
+        this.stand(m.x + m.y, cut.sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y) + cut.down, dark, 0.85 * (1 - up), 1, Math.min(1, 0.35 + up));
+        continue;
+      }
       // (THE FIRST FIVE FLOORS: one the Fleshmancer raises: its bones snatched up off a heap and slammed together: render/bossfx.ts)
       if (r.way === 'gather') {
         const gs = this.bossFx.gathering(art, m.fx + m.fy < -0.2, r.age);

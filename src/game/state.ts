@@ -658,7 +658,7 @@ export interface Riser {
    * of his fire on the heap). 'form' (AM_ACTION): a bone mite pulling itself together where its skull burst (its `form`
    * pictures), out in `rise`. `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
    */
-  way?: 'gather' | 'form';
+  way?: 'gather' | 'form' | 'rift';
   rise?: number;
 }
 
@@ -1303,6 +1303,8 @@ export type GameEvent =
    * ('won'); the clock run out, the Hush lifting ('lost').
    */
   | { t: 'bells'; what: 'start' | 'ring' | 'rise' | 'won' | 'lost'; x: number; y: number; k?: number; n?: number }
+  /** (ARRIVALS, game/arrivals.ts) One coming up out of a rift in the floor: the rift opens `delay` seconds from now, it is out `secs` after; `r` its size (tiles); 'out', it has stepped out. */
+  | { t: 'arrive'; what: 'open' | 'out'; x: number; y: number; delay: number; secs: number; r: number }
   /** A word was burned into a piece of gear, and this is what it became. */
   | { t: 'burned'; word: WordId; item: string; text: string }
   /** A word has dropped on the floor / has been picked up. */

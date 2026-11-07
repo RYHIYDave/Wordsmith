@@ -44,8 +44,8 @@ test('the Brawler (the Veteran) strikes the Muffled Bell and rings a bell, on ev
     g.depth = depth;
     g.cleared = depth - 1;
     g.enterDungeon();
-    const B = g.level.bells;
-    assert.ok(B, `floor ${depth} has its Bells`);
+    assert.ok(g.level.bells, `floor ${depth} has its Bells`);
+    const B = g.level.bells!;
     g.monsters = g.monsters.filter((m) => m.boss);
     punchAt(g, B.plan.muffled.x, B.plan.muffled.y);
     assert.equal(B.phase, 'on', `floor ${depth}: his punches strike the Muffled Bell`);
@@ -65,8 +65,9 @@ test("the Brawler's kick breaks a barrel", () => {
   const h = g.hero;
   const W = L.floor.w;
   const SIDES = [[-1, 0], [0, 1], [1, 0], [0, -1]] as const;
-  const p = L.props.find((q) => (q.kind === 'barrel' || q.kind === 'urn') && q.state === 0 && SIDES.some(([dx, dy]) => L.walk[(q.ty + dy) * W + q.tx + dx] === 1));
-  assert.ok(p, 'a barrel or an urn on the floor, with a tile beside it to stand on');
+  const found = L.props.find((q) => (q.kind === 'barrel' || q.kind === 'urn') && q.state === 0 && SIDES.some(([dx, dy]) => L.walk[(q.ty + dy) * W + q.tx + dx] === 1));
+  assert.ok(found, 'a barrel or an urn on the floor, with a tile beside it to stand on');
+  const p = found!;
   const [dx, dy] = SIDES.find(([sx, sy]) => L.walk[(p.ty + sy) * W + p.tx + sx] === 1)!;
   h.x = p.tx + dx + 0.5;
   h.y = p.ty + dy + 0.5;

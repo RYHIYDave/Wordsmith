@@ -79,6 +79,7 @@ import type { Limit } from './game/defs';
 import { ALTAR_GOES } from './game/act1_holds';
 import { DRESS_EDGES } from './game/act1_dress';
 import { HOLD_HALLWAY, PINE_PATH } from './game/act1_layout';
+import { ARRIVALS } from './game/arrivals';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
@@ -2318,6 +2319,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     exitLabels: EXIT_LABELS,
     /** (A LITTLE HALLWAY INTO EACH STRONGHOLD'S HALL, behind HOLD_HALLWAY in game/act1_layout.ts) Its switch: set it before the floor is made. */
     holdHallway: HOLD_HALLWAY,
+    /** (ENEMIES COMING IN UP OUT OF RIFTS, behind ARRIVALS in game/arrivals.ts) Its switch. */
+    arrivals: ARRIVALS,
     /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */
     lowStacks: LOW_STACKS,
     /** (THE RIVERS FLOWING and the livelier wheel, behind FLOW in art/flowing.ts) Its switch: set it before the floor is made. */

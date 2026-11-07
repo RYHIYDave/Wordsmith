@@ -55,6 +55,7 @@ import { PAIR, partnerOf } from './act1_rules/pair';
 import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
+import { ARRIVALS, riftSize } from './arrivals';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
@@ -2890,6 +2891,7 @@ export class Game {
     m.life = m.maxLife = Math.round(m.maxLife * (1 + BELLS_TUNE.tough * (k - 1)));
     this.hushOwns(B, from);
     this.emit({ t: 'bells', what: 'rise', x: m.x, y: m.y });
+    this.arriveFrom(from);
   }
 
   /** All rung in time: every bell peals at once, the Hush shatters (what it raised falls), and the Muffled Bell bursts in a big loot explosion. */
@@ -2900,7 +2902,9 @@ export class Game {
     B.phase = 'won';
     B.since = 0;
     for (const k of B.props) if (k >= 0) L.props[k].state = 2;
-    // (what the Hush raised goes down with it: the Hush leaves them, and what each would drop it drops)
+    // (what the Hush raised goes down with it: the Hush leaves them, and what each would drop it drops; ARRIVALS: those still
+    // coming up out of their rifts, back down them)
+    this.risers = this.risers.filter((r) => !B.ids.includes(r.m.id));
     for (const id of B.ids) {
       const m = this.monsters.find((o) => o.id === id && !o.dead);
       if (m) this.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1);
@@ -2953,7 +2957,7 @@ export class Game {
     }
     if (B.t < B.next) return;
     B.next = B.t + gapAt(B.t);
-    B.ids = B.ids.filter((id) => this.monsters.some((m) => m.id === id && !m.dead));
+    B.ids = B.ids.filter((id) => this.monsters.some((m) => m.id === id && !m.dead) || this.risers.some((r) => r.m.id === id));
     const room = BELLS_TUNE.most - B.ids.length;
     if (room <= 0) return;
     const rng = new RNG((Math.imul(this.seed, 131) + Math.floor(B.t * 10) * 7919 + B.risen * 104729) >>> 0);
@@ -2975,6 +2979,8 @@ export class Game {
       this.hushOwns(B, from);
       B.risen++;
       this.emit({ t: 'bells', what: 'rise', x: m.x, y: m.y });
+      // (ARRIVALS: up out of a rift in the Hush's floor)
+      this.arriveFrom(from);
     }
   }
 
@@ -3107,7 +3113,7 @@ export class Game {
       // (HOLD_WAVES: a wave dead, the next comes; the last dead, it is won)
       if (HOLD_WAVES.on && st.entered && !st.won && st.wave) {
         const packs = st.packs ?? [];
-        if (st.coming || this.monsters.some((m) => !m.dead && packs.includes(m.packId))) continue;
+        if (st.coming || this.monsters.some((m) => !m.dead && packs.includes(m.packId)) || this.stillComing(packs)) continue;
         if (st.wave < HOLD_WAVES.n) {
           st.coming = true;
           const n = q.n;
@@ -3116,7 +3122,7 @@ export class Game {
         }
       }
       // (its last fight won: the reward)
-      if (st.entered && !st.won && !(HOLD_WAVES.on && st.wave && st.wave < HOLD_WAVES.n) && !this.monsters.some((m) => !m.dead && (m.packId === st.pack || (st.packs ?? []).includes(m.packId)))) {
+      if (st.entered && !st.won && !(HOLD_WAVES.on && st.wave && st.wave < HOLD_WAVES.n) && !this.monsters.some((m) => !m.dead && (m.packId === st.pack || (st.packs ?? []).includes(m.packId))) && !this.stillComing([st.pack, ...(st.packs ?? [])])) {
         st.won = true;
         const n = st.words.length;
         const at = q.fight;
@@ -3242,6 +3248,7 @@ export class Game {
       this.msg(`Wave ${k} of ${HOLD_WAVES.n}`, MSG.foe);
       this.sfx('bossRoar', 0.5);
     }
+    const from = this.monsters.length;
     make.forEach((pk, j) => {
       const pid = st.pack * 100 + k * 10 + j;
       st.packs!.push(pid);
@@ -3272,6 +3279,8 @@ export class Game {
         m.cd = 0.5 + 0.15 * i;
       });
     });
+    // (ARRIVALS: up out of rifts in the hall's floor)
+    this.arriveFrom(from);
   }
 
   /** (BOSS_INTRO) For tests and playtests that strike the boss down by hand: his wait over, as if the hero had walked into his hall and heard him out (his gate down, his line said). */
@@ -10508,16 +10517,44 @@ export class Game {
     });
   }
 
+  /**
+   * (ARRIVALS, game/arrivals.ts) Every monster come into the world since `from` (Game.monsters' length then) comes up out of a
+   * rift in the floor instead of standing there at once: taken out of the monsters till it is out (a Riser, way 'rift'), each a
+   * little after the one before, turned to the hero. Off: nothing.
+   */
+  private arriveFrom(from: number): void {
+    if (!ARRIVALS.on || from >= this.monsters.length) return;
+    const come = this.monsters.splice(from);
+    const h = this.hero;
+    const base = this.risers.filter((r) => r.way === 'rift' && r.age <= 0).length;
+    come.forEach((m, k) => {
+      const dx = h.x - m.x;
+      const dy = h.y - m.y;
+      const d = Math.hypot(dx, dy) || 1;
+      m.fx = dx / d;
+      m.fy = dy / d;
+      const delay = (base + k) * ARRIVALS.apart;
+      this.risers.push({ m, age: -delay, way: 'rift', rise: ARRIVALS.rise });
+      this.emit({ t: 'arrive', what: 'open', x: m.x, y: m.y, delay, secs: ARRIVALS.rise, r: riftSize(MONSTERS[m.kind]?.size) });
+    });
+  }
+
+  /** (ARRIVALS) Is one of pack `ids` still coming up out of a rift? (So a stronghold's wave is not over, nor won, while it comes.) */
+  private stillComing(packs: readonly number[]): boolean {
+    return this.risers.some((r) => r.way === 'rift' && packs.includes(r.m.packId));
+  }
+
   /** The dead crawling out of the ground: each, once it is out, is one of the monsters. */
   private updateRisers(dt: number): void {
     for (let k = this.risers.length - 1; k >= 0; k--) {
       const r = this.risers[k];
       r.age += dt;
       // (AM_ACTION: a bone mite is out as soon as it has pulled itself together)
-      if (r.age < (r.way === 'form' ? (r.rise ?? SUMMON.rise) : SUMMON.rise)) continue;
+      if (r.age < (r.way === 'form' || r.way === 'rift' ? (r.rise ?? SUMMON.rise) : SUMMON.rise)) continue;
       this.risers.splice(k, 1);
       r.m.animT = 0;
       this.monsters.push(r.m);
+      if (r.way === 'rift') this.emit({ t: 'arrive', what: 'out', x: r.m.x, y: r.m.y, delay: 0, secs: 0, r: riftSize(MONSTERS[r.m.kind]?.size) });
     }
   }
 
