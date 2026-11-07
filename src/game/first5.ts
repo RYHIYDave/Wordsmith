@@ -55,9 +55,10 @@ export interface MomentSite {
  * FLOOR 1'S GUTTERING CANDLES AGAINST A WALL. His words, 7 Nov 2026, 12:38: “I like the guttering candles but they kinda stick
  * out like a sore thumb in a big pile in the middle of the floor”. On, the candles (their moment, MomentSite `byWall`) stand
  * against a wall the eye sees, in a room's corner where one will take them, as a little shrine kept by someone; off, on any open
- * tile of a room, as before. Off until he has seen it (PICTURES FIRST).
+ * tile of a room, as before. ON at his word: shown it (floor1_candles_before_left_after_right.png), asked “Put that in with the
+ * Warrior and Ranger update?”, by 13:35: “Yes, put it in (Recommended)”.
  */
-export const CANDLES_BY_WALL = { on: false };
+export const CANDLES_BY_WALL = { on: true };
 
 /** A FLOOR'S PIECES, by what the game does with them (their names the art's). */
 export interface FloorSet {
