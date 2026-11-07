@@ -58,6 +58,15 @@ directs and playtests, and Claude writes and tests everything.
   21:01, asked after a day of whole runs (“But why did you need to test all that stuff?  We did a
   massive test before you put out v25 that took hours and now you’ve been testing for hours again”):
   “Only what changed (Recommended)”.
+- TEST ONLY WHAT THE CHANGE IS ABOUT, AND STOP ONCE IT IS KNOWN TO WORK. His words, 7 Nov 2026, 15:02,
+  as the whole suite and a wide `--changed` ran for hours over the Warrior and the Ranger brought in:
+  “If we already know that the 8 drawings work, then we’re done testing.  You’re talking about tests for
+  the sunken eye thousands of frames that’s not even going to be game once art is done drawing the new
+  fight.  Sounds like a complete waste of time and a waste of my weekly usage”. So: no whole-suite run
+  and no slow tests of things the change does not touch (above all of what is being redone); a test
+  helper changed goes in a file of its own, so that a change to it does not pull in every test. And
+  15:03: “I don’t even need the pictures.  I got those from art when they drew them.”: art he has
+  already approved in the art chat goes live without pictures again from the main chat.
 - A version goes live only after its checks (below: the whole suite for a big version, only what
   changed and the core for a small update), the playtests of what it changes on a frozen copy, and
   the published page's own playtests. The handoff and section 8 of the design notes say how.
