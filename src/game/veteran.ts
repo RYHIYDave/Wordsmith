@@ -211,6 +211,12 @@ export interface VetPlaying {
   hit: number[];
   /** Which globe it is (0 to 2). */
   globe: number;
+  /**
+   * (25.1.1) Its blow has reached what stands on the floor: a bell, a barrel or an urn, a mirror, a sealed door (Game.breakProps),
+   * once a move. Before, his blows struck monsters only, and he could not ring the Hush's bells (his word, 7 Nov 2026: “fix the hush
+   * encounters with the bells in 11-16”).
+   */
+  props?: boolean;
 }
 
 /** What he keeps going in a fight (Hero.vet). */

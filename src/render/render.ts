@@ -120,6 +120,9 @@ import { act1Fx } from './act1_fx/index';
 import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
+import { holdShows, inHold } from '../game/act1_layout';
+import { risenBy, risingSprite } from './arrivals';
+import { EYRIE_SCENE, QUEST610_TEXT } from '../game/quests610';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -2724,6 +2727,13 @@ export class Renderer {
       tx = Math.max(-W * MOTH_LEAN.most, Math.min(W * MOTH_LEAN.most, ((m.x - m.y - (h.x - h.y)) * 16) * MOTH_LEAN.share));
       ty = Math.max(-H * MOTH_LEAN.most, Math.min(H * MOTH_LEAN.most, ((m.x + m.y - (h.x + h.y)) * 8 - up) * MOTH_LEAN.share));
     }
+    // (QUESTS610, THE EYRIE'S SCENE: the picture panned out over the drop toward the town far below, and back: game/quests610.ts)
+    if (game.scene) {
+      const pan = game.scenePan();
+      this.lean.x = game.scene.side * Math.min(W * EYRIE_SCENE.share, EYRIE_SCENE.most) * pan;
+      this.lean.y = -H * 0.1 * pan;
+      return this.lean;
+    }
     const k = 1 - Math.exp(-dt * MOTH_LEAN.glide);
     this.lean.x += (tx - this.lean.x) * k;
     this.lean.y += (ty - this.lean.y) * k;
@@ -2836,7 +2846,7 @@ export class Renderer {
     const f = L.floor;
     const h = game.hero;
     // (ACT 1: inside a stronghold's hall the floor and walls are the redoubt's stone: art/redoubt.ts)
-    const inHall = !!L.land && L.land.holds.some((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1);
+    const inHall = !!L.land && L.land.holds.some((q) => inHold(q, h.x, h.y));
     const art = inHall ? { ...this.art, ground: redoubtGround() } : this.art;
     // (magic with no element word on it is violet, where a blade's blow is steel: a mage's, and
     // anyone's who carries a staff or a wand)
@@ -2896,7 +2906,7 @@ export class Renderer {
     // ---- ACT 1, THE DESCENT: the open ground, painted in pieces, under everything (render/outdoor.ts) ----
     // (inside a stronghold's hall the screen is a dungeon's room in the dark: its tiles and walls as any dungeon's, in the redoubt's stone)
     const land = L.land;
-    const hallNow = land ? land.holds.find((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1) ?? null : null;
+    const hallNow = land ? land.holds.find((q) => inHold(q, h.x, h.y)) ?? null : null;
     this.openGround = !!land && !hallNow;
     this.act1Dressed = this.act1.begin(L);
     // (ACT 2, THE HUSH: a step of its floor's moment around the hero: render/act1_pieces.ts)
@@ -2966,7 +2976,7 @@ export class Renderer {
         const ty = (s - df) >> 1;
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
         // (ACT 1: in a stronghold's hall, only the hall's own tiles and its walls)
-        if (hallNow && (tx < hallNow.inside.x - 1 || ty < hallNow.inside.y - 1 || tx > hallNow.inside.x + hallNow.inside.w || ty > hallNow.inside.y + hallNow.inside.h)) continue;
+        if (hallNow && !holdShows(hallNow, tx, ty)) continue;
         // (THE HEADSMAN'S YARD: from in it, only it, its walls and its way in: behind its far walls, the sky)
         if (yardOut && !this.yard.shows(f, tx, ty)) continue;
         if (groundsSky && !this.grounds.shows(L, tx, ty)) continue;
@@ -3298,6 +3308,8 @@ export class Renderer {
       // (WORDMELDING, behind MELD: runedust and the Meldstone)
       else if (dr.kind === 'dust') sp = art.icons.runedust;
       else if (dr.kind === 'stone') sp = art.icons.meldstone;
+      // (QUESTS610: a piece of the ward-stone: the Meldstone's picture stands in for it until the art chat draws it)
+      else if (dr.kind === 'piece') sp = art.icons.meldstone;
       // (the same picture as in the bag, at its rarity: with ITEMS_A on the art chat's, painted finer than a game pixel; stand draws it at its size)
       else if (dr.item) sp = itemPic(art.icons, dr.item.icon, dr.item.rarity);
       else continue;
@@ -3316,6 +3328,10 @@ export class Renderer {
       if (dr.kind === 'word' && dr.word && Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [WORD_COLOR[dr.word], P.white]);
       // (WORDMELDING: runedust glitters; the Meldstone is named, and glitters too)
       if (dr.kind === 'dust' && Math.random() < 0.25 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
+      if (dr.kind === 'piece') {
+        this.labels.push({ x: sx, y: sy - 20, text: QUEST610_TEXT.pieceLabel, color: '#e8dcc0' });
+        if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, ['#e8dcc0', P.white]);
+      }
       if (dr.kind === 'stone') {
         this.labels.push({ x: sx, y: sy - 20, text: 'Meldstone', color: MELD_DUST_COLOR });
         if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
@@ -3346,6 +3362,15 @@ export class Renderer {
       const f = game.level.floor;
       if (r.age < 0 || game.level.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] !== 1) continue;
       const art = this.monsterArt(m);
+      // (ARRIVALS: one coming in up out of a rift: its own picture rising out of the floor, dark till it is out: render/arrivals.ts)
+      if (r.way === 'rift') {
+        const up = risenBy(r.age, r.rise ?? 1);
+        const cut = up > 0 ? risingSprite(this.monsterSprite(m), up) : null;
+        if (!cut) continue;
+        const dark = silhouette(cut.sp, '#160a1c');
+        this.stand(m.x + m.y, cut.sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y) + cut.down, dark, 0.85 * (1 - up), 1, Math.min(1, 0.35 + up));
+        continue;
+      }
       // (THE FIRST FIVE FLOORS: one the Fleshmancer raises: its bones snatched up off a heap and slammed together: render/bossfx.ts)
       if (r.way === 'gather') {
         const gs = this.bossFx.gathering(art, m.fx + m.fy < -0.2, r.age);
@@ -4244,10 +4269,11 @@ export class Renderer {
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
-    this.drawWordDrops(g, W, H, game, t);
+    if (!game.scene) this.drawWordDrops(g, W, H, game, t);
     this.drawBeacon(g, game, t);
     this.drawBars(g, game, t);
-    this.drawLabels(g, W);
+    // (QUESTS610: not while a short scene plays: the picture is the town's)
+    if (!game.scene) this.drawLabels(g, W);
     fx.drawText(g, cam);
     return cam;
   }

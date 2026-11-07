@@ -732,9 +732,242 @@ export function sfx(name: Sfx, opts?: { vol?: number; pitch?: number }): void {
       return;
     }
 
+    // (RECORDED, where the sound chat has made it and it has come: one of its takes, else the sound made in code)
+    if (playRecorded(c, bus, name, ms, vol, opts?.pitch)) return;
     start(c, bus, noiseBuf, name, ms, vol, opts?.pitch, recipe);
   } catch (err) {
     report(`sfx '${name}'`, err);
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// RECORDED SOUNDS (the sound chat's, with his yes, 6 Nov 2026: “okay” to the combat sounds at 22:21, “good” to the hero voices at
+// 22:34; the title theme, 23:15: “Throw it in for now”), shipped beside the game's page in sounds/<mark>/ (tools/build.mjs; his
+// rule of 6 Nov: “We can have files and create things that go into the game like music and art”). Each is fetched and decoded
+// once the sound has started; until it has come, or where it cannot (a page opened from a file), the sound made in code plays.
+//   COMBAT: swing, hit, crit, slam, monsterDie and hurt, two takes each, one at random each time, tuned up or down by PITCH_SPREAD.
+//   THE HEROES' VOICES (heroVoice): each hero one voice of his own (his words, 6 Nov, 21:46: “we do want voices, im scrapping the
+//   male/female toggle and i want each character to have a unique sound to their voice”): a cry on about one attack in three or
+//   four; a grunt over the hurt sound, not again for a moment; now and then a line ("That stung"); a cry as he dies.
+//   THE TITLE THEME (titleMusic): from its start once, then round between TITLE_LOOP's two points for ever; let go of (about
+//   60 MB decoded) once the title screen closes.
+
+declare const __SOUNDS__: string | undefined;
+
+/** The switch: off, every sound is made in code, as before. */
+export const RECORDED = { on: true };
+/** The folder beside the page the recorded sounds are in, each set in a folder of its own named by its mark (tools/build.mjs). */
+export const SOUND_DIR = 'sounds';
+/** The set this build of the game was made with ('' : none). */
+export function soundMark(): string {
+  return typeof __SOUNDS__ === 'string' ? __SOUNDS__ : '';
+}
+
+/** The game's sounds that are recorded, and their takes (files, without .mp3). */
+export const RECORDED_SFX: Partial<Record<Sfx, readonly string[]>> = {
+  swing: ['swing_1', 'swing_2'],
+  hit: ['hit_1', 'hit_2'],
+  crit: ['crit_1', 'crit_2'],
+  slam: ['slam_1', 'slam_2'],
+  monsterDie: ['monster_die_1', 'monster_die_2'],
+  hurt: ['hurt_1', 'hurt_2'],
+};
+/** A recorded take plays this loud, before `vol` (the sounds made in code are written to peak at 1 and played at VOICE_GAIN). */
+const RECORDED_GAIN = 0.5;
+
+/** What a hero's voice says, and its takes (<hero>_<take>.mp3). */
+export type VoiceCry = 'attack' | 'hurt' | 'death';
+const CRIES = {
+  attack: ['attack_a_1', 'attack_a_2', 'attack_b_1', 'attack_b_2'],
+  grunt: ['hurt_a_1', 'hurt_a_2'],
+  line: ['hurt_b_1', 'hurt_b_2'],
+  death: ['death_1', 'death_2'],
+} as const;
+/**
+ * How often a hero's voice is heard: on an attack, one in `attackOne` (about one in three or four), never within `attackGap`
+ * seconds of the last; a grunt as he is hurt, never within `gruntGap` of the last; instead of the grunt, rarely, a line (one hurt
+ * in `lineOne`, never within `lineGap`); how loud.
+ */
+export const VOICE_TUNE = { attackOne: 3.5, attackGap: 1.2, gruntGap: 0.7, lineOne: 8, lineGap: 25, vol: 0.9 } as const;
+
+/** THE TITLE THEME: its file, and the stretch it goes round for ever once it has played from its start (seconds). */
+export const TITLE = { file: 'title.mp4', loop: [94.024, 162.275] as const, vol: 0.8 } as const;
+
+/** What has been fetched and decoded (a buffer), is coming (null), or could not be had (false). */
+const recorded = new Map<string, AudioBuffer | null | false>();
+
+function fetchRecorded(c: AudioContext, file: string): void {
+  if (recorded.has(file)) return;
+  const mark = soundMark();
+  if (!RECORDED.on || !mark || typeof fetch !== 'function' || typeof location === 'undefined' || (location.protocol !== 'http:' && location.protocol !== 'https:')) {
+    recorded.set(file, false);
+    return;
+  }
+  recorded.set(file, null);
+  fetch(`${SOUND_DIR}/${mark}/${file}`)
+    .then((r) => {
+      if (!r.ok) throw new Error(`${file}: ${r.status}`);
+      return r.arrayBuffer();
+    })
+    .then((b) => new Promise<AudioBuffer>((ok, no) => {
+      // (the old form, with callbacks, as the oldest Safari has it; the promise where there is one)
+      const p = c.decodeAudioData(b, ok, no) as unknown as Promise<AudioBuffer> | undefined;
+      if (p && typeof p.then === 'function') p.then(ok, no);
+    }))
+    .then((buf) => {
+      if (recorded.get(file) === null) recorded.set(file, buf);
+    })
+    .catch((err) => {
+      recorded.set(file, false);
+      report(`recorded ${file}`, err);
+    });
+}
+
+/** Fetch the combat sounds, and a hero's voice where one is named (the hero played). */
+export function warmRecorded(hero?: Speaker): void {
+  const c = ctx;
+  if (!c || !RECORDED.on) return;
+  for (const takes of Object.values(RECORDED_SFX)) for (const t of takes ?? []) fetchRecorded(c, `${t}.mp3`);
+  if (hero) for (const takes of Object.values(CRIES)) for (const t of takes) fetchRecorded(c, `${hero}_${t}.mp3`);
+}
+
+/** A recorded take, played; false where none of its takes has come (the caller then makes the sound itself). */
+function playTake(c: AudioContext, into: AudioNode, key: string, takes: readonly string[], ms: number, vol: number, asked: number | undefined, spread = true): boolean {
+  const ready = takes.map((t) => recorded.get(`${t}.mp3`)).filter((b): b is AudioBuffer => !!b);
+  if (!ready.length) return false;
+  const last = lastPlayed.get(key);
+  if (last !== undefined && ms - last >= 0 && ms - last < MIN_REPEAT_MS) return true;
+  const t = c.currentTime;
+  let live = 0;
+  for (let i = 0; i < voiceEnds.length; i++) if (voiceEnds[i] > t) voiceEnds[live++] = voiceEnds[i];
+  voiceEnds.length = live;
+  if (live >= MAX_VOICES) return true;
+  lastPlayed.set(key, ms);
+  const buf = ready[Math.floor(Math.random() * ready.length)];
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const pitch = (asked !== undefined && asked > 0 ? Math.max(0.25, Math.min(4, asked)) : 1) * (spread ? 1 + (Math.random() * 2 - 1) * PITCH_SPREAD : 1);
+  src.playbackRate.value = pitch;
+  const g = c.createGain();
+  g.gain.value = Math.min(vol, 4) * RECORDED_GAIN;
+  src.connect(g);
+  g.connect(into);
+  src.onended = () => {
+    try {
+      g.disconnect();
+      src.disconnect();
+    } catch {
+      // already gone
+    }
+  };
+  src.start(t);
+  voiceEnds.push(t + buf.duration / pitch);
+  return true;
+}
+
+function playRecorded(c: AudioContext, into: AudioNode, name: Sfx, ms: number, vol: number, asked: number | undefined): boolean {
+  if (!RECORDED.on) return false;
+  const takes = Object.prototype.hasOwnProperty.call(RECORDED_SFX, name) ? RECORDED_SFX[name] : undefined;
+  if (!takes) return false;
+  for (const t of takes) fetchRecorded(c, `${t}.mp3`);
+  return playTake(c, into, `sfx:${name}`, takes, ms, vol, asked);
+}
+
+const cried = { attack: -1e9, grunt: -1e9, line: -1e9 };
+/** A hero's voice: on an attack, as he is hurt, as he dies (VOICE_TUNE says how often). Does nothing before initAudio or when muted. */
+export function heroVoice(who: Speaker, cry: VoiceCry): void {
+  try {
+    const c = ctx;
+    if (!c || !bus || muted || c.state !== 'running' || !RECORDED.on) return;
+    const s = nowMs() / 1000;
+    const take = (which: readonly string[]): readonly string[] => which.map((t) => `${who}_${t}`);
+    for (const takes of Object.values(CRIES)) for (const t of takes) fetchRecorded(c, `${who}_${t}.mp3`);
+    if (cry === 'attack') {
+      if (s - cried.attack < VOICE_TUNE.attackGap || Math.random() * VOICE_TUNE.attackOne >= 1) return;
+      if (playTake(c, bus, `voice:${who}:attack`, take(CRIES.attack), nowMs(), VOICE_TUNE.vol, undefined, false)) cried.attack = s;
+      return;
+    }
+    if (cry === 'hurt') {
+      if (s - cried.line >= VOICE_TUNE.lineGap && Math.random() * VOICE_TUNE.lineOne < 1 && playTake(c, bus, `voice:${who}:line`, take(CRIES.line), nowMs(), VOICE_TUNE.vol, undefined, false)) {
+        cried.line = s;
+        cried.grunt = s;
+        return;
+      }
+      if (s - cried.grunt < VOICE_TUNE.gruntGap) return;
+      if (playTake(c, bus, `voice:${who}:grunt`, take(CRIES.grunt), nowMs(), VOICE_TUNE.vol, undefined, false)) cried.grunt = s;
+      return;
+    }
+    playTake(c, bus, `voice:${who}:death`, take(CRIES.death), nowMs(), VOICE_TUNE.vol, undefined, false);
+  } catch (err) {
+    report(`voice ${who} ${cry}`, err);
+  }
+}
+
+/** For measuring: the recorded sounds come, coming and failed, and whether the title theme is playing. */
+export function recordedState(): { come: number; coming: number; failed: number; title: boolean } {
+  let come = 0;
+  let coming = 0;
+  let failed = 0;
+  for (const v of recorded.values()) {
+    if (v) come++;
+    else if (v === null) coming++;
+    else failed++;
+  }
+  return { come, coming, failed, title: !!titleSrc };
+}
+
+let titleSrc: AudioBufferSourceNode | null = null;
+let titleGain: GainNode | null = null;
+/**
+ * THE TITLE THEME, on while the title screen is up (call it every frame: it starts it once it has come and the sound is running,
+ * and on `false` stops it and lets its buffer go).
+ */
+export function titleMusic(on: boolean): void {
+  try {
+    const c = ctx;
+    if (!on) {
+      if (titleSrc) {
+        const src = titleSrc;
+        const g = titleGain;
+        titleSrc = null;
+        titleGain = null;
+        try {
+          if (g && c) g.gain.setTargetAtTime(0, c.currentTime, 0.15);
+          src.stop(c ? c.currentTime + 0.6 : 0);
+        } catch {
+          // already stopped
+        }
+        src.onended = () => {
+          try {
+            src.disconnect();
+            g?.disconnect();
+          } catch {
+            // already gone
+          }
+        };
+      }
+      // (let go of it: about 60 MB decoded)
+      if (recorded.get(TITLE.file)) recorded.delete(TITLE.file);
+      return;
+    }
+    if (!c || !master || titleSrc || c.state !== 'running' || !RECORDED.on) return;
+    fetchRecorded(c, TITLE.file);
+    const buf = recorded.get(TITLE.file);
+    if (!buf) return;
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.loopStart = TITLE.loop[0];
+    src.loopEnd = Math.min(TITLE.loop[1], buf.duration);
+    const g = c.createGain();
+    g.gain.value = TITLE.vol;
+    src.connect(g);
+    g.connect(master);
+    src.start(c.currentTime + 0.05);
+    titleSrc = src;
+    titleGain = g;
+  } catch (err) {
+    report('title music', err);
   }
 }
 
@@ -756,6 +989,8 @@ export function sfx(name: Sfx, opts?: { vol?: number; pitch?: number }): void {
 
 export type Speaker = 'warrior' | 'ranger' | 'mage' | 'warlock' | 'tinkerer' | 'brawler';
 export type SpeakerVoice = 'male' | 'female';
+/** Each hero's one voice (the sound chat's, his “good”, 6 Nov 2026, 22:34): men for the Warrior, Ranger, Warlock and Brawler; women for the Mage and Tinkerer. */
+export const HERO_VOICE: Record<Speaker, SpeakerVoice> = { warrior: 'male', ranger: 'male', mage: 'female', warlock: 'male', tinkerer: 'female', brawler: 'male' };
 
 interface VoiceKind {
   /** The voice's own pitch in Hz, and the waveform that gives it its grain. */
@@ -855,9 +1090,11 @@ export function speechPlan(text: string): { at: number; pitch: number; bend: num
 }
 
 /** Say a line in a hero's voice. Does nothing before initAudio, when muted, or where Web Audio is missing. Never throws. */
-export function speak(who: Speaker, voice: SpeakerVoice, text: string, vol = 1): void {
+export function speak(who: Speaker, _voice: SpeakerVoice, text: string, vol = 1): void {
   const kinds = Object.prototype.hasOwnProperty.call(VOICES, who) ? VOICES[who] : undefined;
-  const k = kinds ? (voice === 'female' ? kinds.female : kinds.male) : undefined;
+  // (each hero one voice, his own: the male/female choice gone, his words, 6 Nov 2026, 21:46: “we do want voices, im scrapping the
+  // male/female toggle and i want each character to have a unique sound to their voice”: HERO_VOICE)
+  const k = kinds ? (HERO_VOICE[who] === 'female' ? kinds.female : kinds.male) : undefined;
   if (k) sayIn(k, `voice:${who}`, text, vol);
 }
 

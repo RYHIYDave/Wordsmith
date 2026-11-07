@@ -29,6 +29,9 @@ import type { Art } from '../render/render';
 import { THEME } from './ui';
 import type { Rect, Ui } from './ui';
 
+/** The class screen's VOICE: MALE / FEMALE button: off since his word of 6 Nov 2026 (each hero one voice of his own). */
+export const VOICE_TOGGLE = { on: false };
+
 export type Sel = { kind: 'bag'; i: number } | { kind: 'gear'; slot: EquipSlot };
 
 export interface Panels {
@@ -837,10 +840,12 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
     st.chosen = null;
   }
   // the voice the character will speak with: pressing it changes it, and lets each of the three be heard
+  // (GONE, his words, 6 Nov 2026, 21:46: “we do want voices, im scrapping the male/female toggle and i want each character to have a
+  // unique sound to their voice”: VOICE_TOGGLE off, each hero his own voice, engine/audio.ts HERO_VOICE)
   const voiceLabel = `VOICE: ${opt.voice === 'female' ? 'FEMALE' : 'MALE'}`;
-  const voiceW = Math.max(ui.width('VOICE: FEMALE'), ui.width('VOICE: MALE')) + 16;
+  const voiceW = VOICE_TOGGLE.on ? Math.max(ui.width('VOICE: FEMALE'), ui.width('VOICE: MALE')) + 16 : 0;
   const voiceR: Rect = { x: W - 4 - voiceW, y: H - 22, w: voiceW, h: 18 };
-  if (!entering && ui.pressIn(voiceR.x, voiceR.y, voiceR.w, voiceR.h)) out.voice = true;
+  if (VOICE_TOGGLE.on && !entering && ui.pressIn(voiceR.x, voiceR.y, voiceR.w, voiceR.h)) out.voice = true;
   // NORMAL OR HARDCORE (game/modes.ts): the mode the hero is made in, kept for life. Its button
   // stands between BACK and VOICE, or above them where the three will not fit side by side.
   const heroMode = opt.mode ?? null;
@@ -975,7 +980,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   ui.drawButton(backR.x, backR.y, backR.w, backR.h, 'BACK', {});
   // (CARDS3: CONFIRM, lit once a card is chosen)
   if (confirmR) ui.drawButton(confirmR.x, confirmR.y, confirmR.w, confirmR.h, 'CONFIRM', st.chosen && !entering ? { primary: true, lit: true } : { disabled: true });
-  ui.drawButton(voiceR.x, voiceR.y, voiceR.w, voiceR.h, voiceLabel, { lit: opt.speaking !== null });
+  if (VOICE_TOGGLE.on) ui.drawButton(voiceR.x, voiceR.y, voiceR.w, voiceR.h, voiceLabel, { lit: opt.speaking !== null });
   if (heroMode) {
     // (Hardcore's in the colour of what is lost; and under the cards, what the mode means, unless
     // the warning about a saved hero is up: that is said there instead, above the buttons)

@@ -36,11 +36,14 @@ import { ELEMENT_RAMP, P } from '../art/palette';
 import type { Sfx } from '../engine/audio';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { BODIES, BOSS_INTRO, RANGER_ARROW, WORDS } from '../game/defs';
+import { ARRIVALS } from '../game/arrivals';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 import { meldLookWords, meldOwnsEvent } from './melds3';
 import { ownsEventV3 } from './volatile3';
 import { Wild } from './wild';
+import { RIFT_SMOKE, RIFT_SPARK, drawRift } from './arrivals';
+import type { Rift } from './arrivals';
 
 /** Where the world origin sits on screen this frame. */
 export interface Cam {
@@ -555,6 +558,8 @@ export class Fx {
   falling: { x: number; y: number; t: number; dur: number; colors: readonly string[]; heavy: boolean }[] = [];
   cracks: Crack[] = [];
   decals: Decal[] = [];
+  /** (ARRIVALS, render/arrivals.ts) The rifts in the floor that the enemies coming in come up out of. */
+  rifts: Rift[] = [];
   spikes: Spike[] = [];
   flashes: Flash[] = [];
   wisps: Wisp[] = [];
@@ -649,6 +654,7 @@ export class Fx {
     this.falling = [];
     this.cracks = [];
     this.decals = [];
+    this.rifts = [];
     this.spikes = [];
     this.flashes = [];
     this.wisps = [];
@@ -1324,6 +1330,10 @@ export class Fx {
         // (THE HIGH CITY, FLOOR 16: a boss's line with no name coming up, the Princess's whisper as she falls: game/act1_rules/princess.ts)
         case 'bossSay':
           this.bossSay = { text: e.text, t: 0, x: e.x, y: e.y, lift: e.lift ?? BOSS_SAY_LIFT, secs: e.secs };
+          break;
+        case 'arrive':
+          // (ARRIVALS, render/arrivals.ts: a rift opening in the floor under one coming in)
+          if (e.what === 'open' && this.rifts.length < 40) this.rifts.push({ x: e.x, y: e.y, t: -e.delay, out: e.secs, dur: e.secs + ARRIVALS.close, r: e.r, seed: Math.floor(Math.random() * 1e6) });
           break;
         case 'bells': {
           // (ACT 2, THE BELLS, game/bells.ts: the Hush pouring out of the Muffled Bell; a bell's ring (the friend's cyan: his to
@@ -2078,6 +2088,18 @@ export class Fx {
     age(this.slashes);
     age(this.cracks);
     age(this.decals);
+    // (ARRIVALS: a rift as it opens boils with smoke and spits the enemy's pink; as its one steps out, a puff of the dark)
+    for (const f of this.rifts) {
+      const was = f.t;
+      f.t += dt;
+      if (was < 0 && f.t >= 0) {
+        this.spray(f.x, f.y, 10, RIFT_SMOKE, 0.9, 40, 2);
+        this.spray(f.x, f.y, 6, RIFT_SPARK, 1.6, 70, 2);
+      }
+      if (f.t > 0 && f.t < f.out && Math.random() < 0.5) this.mote(f.x + (Math.random() - 0.5) * f.r, f.y + (Math.random() - 0.5) * f.r, RIFT_SMOKE);
+      if (was < f.out && f.t >= f.out) this.spray(f.x, f.y, 12, RIFT_SMOKE, 1.4, 50, 4);
+    }
+    this.rifts = this.rifts.filter((f) => f.t < f.dur);
     age(this.spikes);
     age(this.flashes);
     age(this.skyBolts);
@@ -2119,6 +2141,7 @@ export class Fx {
 
   /** Flat effects on the floor: scorch and frost, cracks, ice, shockwave rings. Drawn under the characters. */
   drawGround(g: CanvasRenderingContext2D, c: Cam): void {
+    for (const f of this.rifts) drawRift(g, c, f, this.clock);
     this.warlock.drawGround(g, c);
     this.tinkerer.drawGround(g, c);
     // arrows of a volley standing in the floor: a short shaft leaning back the way it fell, its

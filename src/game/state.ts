@@ -309,6 +309,11 @@ export interface Hero {
   /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts, QUESTS15): where the hero stands in the armourer's furnace quest; whether the wordsmith has asked for the Meldstone. */
   furnace?: 'asked' | 'gear' | 'out' | 'done';
   meldAsk?: boolean;
+  /** THE QUEST LINE OF FLOORS 6 TO 10 (game/quests610.ts, QUESTS610): the mystic's feather quest; whether he has seen the town from the eyrie. */
+  feather?: 'asked' | 'got' | 'given';
+  citySeen?: boolean;
+  /** (QUESTS610) The ward-stone's pieces taken, one bit each (1, 2, 4: the Pinewood's side area's, its lair's, the Stag's). */
+  pieces?: number;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
@@ -346,6 +351,8 @@ export interface Monster {
   elite: boolean;
   /** A guardian: the powerful monster at the end of a side branch. Guardians are elite too. */
   champion: boolean;
+  /** (QUESTS610) Which of the ward-stone's pieces it carries, dropped as it dies (game/quests610.ts). */
+  piece?: number;
   boss: boolean;
   /** Power words it has the powers of (elites and bosses), plus any burned into the dungeon. */
   words: WordId[];
@@ -658,7 +665,7 @@ export interface Riser {
    * of his fire on the heap). 'form' (AM_ACTION): a bone mite pulling itself together where its skull burst (its `form`
    * pictures), out in `rise`. `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
    */
-  way?: 'gather' | 'form';
+  way?: 'gather' | 'form' | 'rift';
   rise?: number;
 }
 
@@ -992,8 +999,10 @@ export interface Drop {
   x: number;
   y: number;
   /** (WORDMELDING: 'dust', runedust, as much as `gold` says; 'stone', the Meldstone) */
-  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card';
+  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card' | 'piece';
   gold: number;
+  /** (QUESTS610, 'piece': which of the ward-stone's three pieces, 0 to 2: game/quests610.ts) */
+  piece?: number;
   item: Item | null;
   word: WordId | null;
   age: number;
@@ -1303,6 +1312,8 @@ export type GameEvent =
    * ('won'); the clock run out, the Hush lifting ('lost').
    */
   | { t: 'bells'; what: 'start' | 'ring' | 'rise' | 'won' | 'lost'; x: number; y: number; k?: number; n?: number }
+  /** (ARRIVALS, game/arrivals.ts) One coming up out of a rift in the floor: the rift opens `delay` seconds from now, it is out `secs` after; `r` its size (tiles); 'out', it has stepped out. */
+  | { t: 'arrive'; what: 'open' | 'out'; x: number; y: number; delay: number; secs: number; r: number }
   /** A word was burned into a piece of gear, and this is what it became. */
   | { t: 'burned'; word: WordId; item: string; text: string }
   /** A word has dropped on the floor / has been picked up. */
@@ -1548,6 +1559,8 @@ export type GameEvent =
   | { t: 'spark'; x: number; y: number; el: Element; n: number }
   | { t: 'msg'; text: string; color: string }
   | { t: 'sfx'; name: Sfx; vol?: number }
+  /** A hero's own voice (engine/audio.ts heroVoice: how often each is heard is the sound's to say). */
+  | { t: 'voice'; who: ClassId; cry: 'attack' | 'hurt' | 'death' }
   /** A door has begun to swing open ('open'); the boss's gate has fallen ('fall') or begun to rise ('rise'). At the middle of its doorway. */
   | { t: 'door'; x: number; y: number; kind: 'open' | 'fall' | 'rise' }
   | { t: 'shake'; amount: number }
