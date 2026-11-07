@@ -236,6 +236,9 @@ test('on, floor 4 has a cave in a back wall of its boss\'s hall and no stairwell
 test('on, the cage\'s ride up from floor 5 ends in the town\'s corner: he does nothing until it has opened, and the gate is unbarred', () =>
   exitsSet(true, () => {
     const g = new Game('warrior', 67);
+    // (QUESTS15: since the quest line, the gate is unbarred for the Meldstone, not as he comes up: here the Meldstone given already,
+    // the quest line's own test has the rest, tests/quests15.test.ts)
+    g.hero.meld = 'open';
     g.hero.invuln = 1e9;
     g.depth = 5;
     g.cleared = 4;

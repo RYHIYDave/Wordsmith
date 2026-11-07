@@ -34,7 +34,10 @@ test('the Tinkerer\'s and the Brawler\'s cards made at once; their standing and 
 test('their slow moves made once for both views, and once only', async () => {
   const B = await import('../src/art/brawler_art');
   const T = await import('../src/art/tinkerer_art');
-  // (the first test made each whole set once already: made again, nothing slow is made again)
+  // (each whole set made once (the first test no longer does, for the Brawler: since the Veteran is the Brawler, art/veteran_art.ts,
+  // the game's Brawler is his): made again, nothing slow is made again)
+  B.makeBrawlerArt();
+  T.makeTinkererArt();
   const t0 = performance.now();
   const b = B.makeBrawlerArt();
   const t = T.makeTinkererArt();

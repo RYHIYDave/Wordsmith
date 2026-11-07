@@ -835,6 +835,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // tower, as the Hush's shapes, at its drift's pace, RS_PACE 1.8; one attack, the Rime Breath: its wind-up its breathing out,
   // RS_BREATH.hit 0.833 s; its reach how far off it breathes, its line running on to 6.45 tiles: game/act1_rules/rshade.ts)
   rshade: { kind: 'rshade', name: 'Rime Shade', life: 30, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.34, range: 5.6, windup: 25 / 30, cooldown: 2.5, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // (FLOOR 3'S SIDE BOSS, THE STOKER, the art chat's (art/stoker.ts; his “Yes, hand it over (Recommended)”, 6 Nov 2026): the furnace's
+  // keeper, in its room off floor 3 while the furnace burns (game/quests15.ts). His walk ST_PACE, 1.4 tiles a second; his coals
+  // thrown at a hero up to 8 tiles off: game/act1_rules/stoker.ts)
+  stoker: { kind: 'stoker', name: 'The Stoker', life: 300, dmgMin: 14, dmgMax: 20, speed: 1.4, radius: 0.85, range: 8, windup: 1.833, cooldown: 2.2, xp: 160, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'large' },
   moth: { kind: 'moth', name: 'The Moth', life: 780, dmgMin: 27, dmgMax: 38, speed: 3.0, radius: 1.4, range: 8.0, windup: 0.9, cooldown: 2.2, xp: 1250, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };

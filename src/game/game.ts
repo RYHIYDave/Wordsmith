@@ -65,7 +65,8 @@ import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, BoundDemon, Channel, Contraption, Controls, Corpse, Drop, Familiar, GameEvent, Golem, Guide, GuideRow, GuideStep, HalfWords, HellWave, Hero, Level, Meta, Monster, OrbInst, Peril, Pet, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Soul, Spear, Station, TownVoice, Trap, VendorId, Vial, Volley, WordLore, Zone } from './state';
 import { ALL_CLASS_IDS, ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { FIRE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
+import { FIRE, FIRE_GONE, FURNACE_WORD, KEEPER, MELDSTONE_WORDS, QUESTS15, QUEST_TEXT } from './quests15';
+import { STOKER_ON } from '../art/stoker';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -1454,7 +1455,8 @@ export class Game {
     for (const w of this.dungeonWords) this.learn(w, 'dungeon');
     // (ENDLESS MODE: an endless level laid fresh for its level, though its floor came before)
     const seed = (Math.imul(this.seed, 7919) + this.depth * 104729 + this.cleared * 31 + (this.inEndless ? this.endless * 15485863 : 0)) >>> 0;
-    this.level = makeDungeon(this.depth, seed);
+    // (QUESTS15: floor 3 while its furnace burns has the Stoker's arena laid in it, at the end of a short hallway: game/furnace_arena.ts)
+    this.level = makeDungeon(this.depth, seed, { furnace: this.depth === 3 && this.furnaceBurns() });
     this.inDungeon = true;
     const h = this.hero;
     const f = this.level.floor;
@@ -6212,12 +6214,72 @@ export class Game {
       const skill = c.skill;
       this.after(flight, () => {
         const t = this.monsters.find((q) => q.id === id && !q.dead);
-        if (t) this.hitMonster(t, skill, frac * C.boltShare, n > 0);
+        if (t) this.boltStrikes(t, skill, frac * C.boltShare, n > 0, false);
       });
     }
     c.shotAge = 0;
     this.sfx('zap', echo ? 0.25 : 0.4);
     return true;
+  }
+
+  /**
+   * HER ENERGY BOLT STRIKING, and what her tree's vial talents do with it as they do with a vial. Asked whether Energy should
+   * have versions of them, his words, 6 Nov 2026: “Why can’t energy do what the bombs do?” So: MAD MIXTURE, a brew at random on
+   * what it strikes; THE BIG ONE, every fifth a big one, bursting three times the ability's size round it and knocking down
+   * what it catches; TAR, a puddle where it strikes; GROWTH SERUM, striking by her Golem, it grows; CLUSTER VIALS, it leaps on
+   * to as many more near it, little ones, as a vial's little ones; ALCHEMY, what it kills drops gold.
+   */
+  private boltStrikes(t: Monster, skill: number, frac: number, second: boolean, little: boolean): void {
+    const T = TINKER_TUNE.talents;
+    const s = this.hero.skills[skill];
+    let rad = s ? SKILLS[s.id].radius * s.r.size : 1;
+    if (little) rad *= T.cluster.size;
+    const big = !little && this.has('thebigone') && ++this.vialsThrown % T.bigOne.every === 0;
+    const brew: Brew | null = this.has('madmixture') ? this.rng.pick<Brew>(['burn', 'freeze', 'poison']) : null;
+    const x = t.x;
+    const y = t.y;
+    // (ALCHEMY: what it kills drops gold, as a vial's: `brewing`, dropLoot)
+    this.brewing = true;
+    this.hitMonster(t, skill, little ? frac * T.cluster.share : frac, second);
+    if (big) {
+      this.blast(skill, x, y, rad * T.bigOne.wide, frac, 'bomb', 0, false, false);
+      this.emit({ t: 'shake', amount: 4 });
+      this.sfx('slam', 0.8);
+    }
+    this.brewing = false;
+    const caught = big ? this.monsters.filter((m) => !m.dead && !this.shutIn(m) && Math.hypot(m.x - x, m.y - y) <= rad * T.bigOne.wide + m.r) : [t];
+    if (brew) this.brewOn(caught, brew, skill, frac);
+    if (big) {
+      for (const m of caught) {
+        if (m.dead) continue;
+        this.throwMonster(m, x, y, T.bigOne.far, 0.2);
+        this.stunMonster(m, T.bigOne.down);
+      }
+    }
+    if (!little && this.has('tar')) {
+      const r = rad * T.tar.size;
+      this.tars.push({ x, y, r, t: 0 });
+      this.emit({ t: 'tar', x, y, r, secs: T.tar.secs });
+    }
+    if (this.has('growthserum')) {
+      for (const g of this.golemsUp()) if (Math.hypot(g.x - x, g.y - y) <= rad + this.golemBody(g) + T.growth.near) this.growGolem(g);
+    }
+    if (!little && this.has('clustervials')) {
+      const K = T.cluster;
+      const next = this.monsters
+        .filter((m) => m !== t && !m.dead && !this.shutIn(m) && Math.hypot(m.x - x, m.y - y) <= K.far + 1.5 && this.sees(x, y, m.x, m.y))
+        .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
+        .slice(0, K.n);
+      for (const m of next) {
+        const flight = Math.hypot(m.x - x, m.y - y) / TINKER_TUNE.contraption.boltSpeed;
+        this.emit({ t: 'contraptionBolt', id: -1, x0: x, y0: y, x1: m.x, y1: m.y, flight });
+        const id = m.id;
+        this.after(flight, () => {
+          const q = this.monsters.find((z) => z.id === id && !z.dead);
+          if (q) this.boltStrikes(q, skill, frac, true, true);
+        });
+      }
+    }
   }
 
   /** A vial lobbed out of a Contraption at the nearest enemy awake within its reach (as many as Twin says, at as many). */
@@ -11736,9 +11798,11 @@ export class Game {
   }
 
   /**
-   * QUESTS15: FLOOR 3'S FURNACE ROOM, made as the floor is come into while the furnace burns: the room farthest from both the
-   * way in and the Chained One's hall (a side room), the forge crank at its back, its keeper in its middle; the hall's
-   * portcullis held down by the fire (laid before it as the floor is drawn: furnaceStep).
+   * QUESTS15: FLOOR 3'S FURNACE ROOM, made as the floor is come into while the furnace burns: THE STOKER'S ARENA at the end of its
+   * hallway (game/furnace_arena.ts, laid with the floor), the furnace in its wall, the forge crank beside it, the Stoker in its
+   * middle facing the way in; where the floor had no room for the arena, the room farthest from both the way in and the Chained
+   * One's hall, as before. The fire in the hall's gateway: its portcullis drawn up and the way barred while the furnace burns
+   * (furnaceStep).
    */
   private furnaceMade(): void {
     const L = this.level;
@@ -11749,94 +11813,144 @@ export class Game {
     const start = f.rooms.find((r) => r.kind === 'start');
     if (!boss) return;
     const mid = (r: { x: number; y: number; w: number; h: number }): { x: number; y: number } => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
-    let best: (typeof f.rooms)[number] | null = null;
-    let bd = -1;
-    for (const r of f.rooms) {
-      if (r === boss || r === start || r.w < 4 || r.h < 4) continue;
-      const m = mid(r);
-      const d = Math.min(start ? Math.hypot(m.x - mid(start).x, m.y - mid(start).y) : 99, Math.hypot(m.x - mid(boss).x, m.y - mid(boss).y));
-      if (d > bd) {
-        bd = d;
-        best = r;
-      }
-    }
-    if (!best) return;
-    // (the crank at the room's back: the open tile nearest its far corner, nothing standing on it)
-    let ct = -1;
-    let cd = Infinity;
-    for (let y = best.y; y < best.y + best.h; y++) {
-      for (let x = best.x; x < best.x + best.w; x++) {
-        const i = y * f.w + x;
-        if (L.walk[i] !== 1 || L.props.some((p) => p.tx === x && p.ty === y)) continue;
-        const d = Math.hypot(x - (best.x + 1), y - (best.y + 1));
-        if (d < cd) {
-          cd = d;
-          ct = i;
+    const A = L.arena ?? null;
+    let room: { x: number; y: number; w: number; h: number } | null = A ? A.room : null;
+    if (!room) {
+      let bd = -1;
+      for (const r of f.rooms) {
+        if (r === boss || r === start || r.w < 4 || r.h < 4) continue;
+        const m = mid(r);
+        const d = Math.min(start ? Math.hypot(m.x - mid(start).x, m.y - mid(start).y) : 99, Math.hypot(m.x - mid(boss).x, m.y - mid(boss).y));
+        if (d > bd) {
+          bd = d;
+          room = r;
         }
       }
     }
-    if (ct < 0) return;
-    const cx = ct % f.w;
-    const cy = Math.floor(ct / f.w);
-    const crank: PropInst = { kind: 'lever', tx: cx, ty: cy, x: cx + 0.5, y: cy + 0.5, solid: false, state: 0, variant: 0, name: 'crank' };
+    if (!room) return;
+    const best = room;
+    // (the crank: beside the furnace in the arena; else at the room's back, the open tile nearest its far corner, nothing standing on it)
+    let cx: number;
+    let cy: number;
+    if (A) {
+      cx = A.crank.x;
+      cy = A.crank.y;
+    } else {
+      let ct = -1;
+      let cd = Infinity;
+      for (let y = best.y; y < best.y + best.h; y++) {
+        for (let x = best.x; x < best.x + best.w; x++) {
+          const i = y * f.w + x;
+          if (L.walk[i] !== 1 || L.props.some((p) => p.tx === x && p.ty === y)) continue;
+          const d = Math.hypot(x - (best.x + 1), y - (best.y + 1));
+          if (d < cd) {
+            cd = d;
+            ct = i;
+          }
+        }
+      }
+      if (ct < 0) return;
+      cx = (ct % f.w) + 0.5;
+      cy = Math.floor(ct / f.w) + 0.5;
+    }
+    const crank: PropInst = { kind: 'lever', tx: Math.floor(cx), ty: Math.floor(cy), x: cx, y: cy, solid: false, state: 0, variant: 0, name: 'crank' };
     L.props.push(crank);
-    // (its keeper: a stand-in until the art chat's flame boss, a champion of fire of many lives)
-    const m = mid(best);
-    const keeper = this.spawn(KEEPER.kind, m.x, m.y, -3, 2, false, this.rng);
-    keeper.maxLife *= KEEPER.life;
-    keeper.life = keeper.maxLife;
+    // (its keeper: THE STOKER, the art chat's; where his art is not to be had, the stand-in, a champion of fire of many lives)
+    const m = A ? A.keeper : mid(best);
+    let keeper: Monster;
+    if (STOKER_ON.on) {
+      keeper = this.spawn('stoker', m.x, m.y, -3, 0, false, this.rng);
+      // (as hard as a floor's boss is for its floor's depth; not the floor's boss: his falling opens no way on)
+      keeper.maxLife = Math.round(MONSTERS.stoker.life * (1 + 0.4 * (this.power - 1)) * this.tough);
+      keeper.life = keeper.maxLife;
+      keeper.elite = true;
+      if (A) {
+        keeper.fx = -A.dx;
+        keeper.fy = -A.dy;
+      }
+    } else {
+      keeper = this.spawn(KEEPER.kind, m.x, m.y, -3, 2, false, this.rng);
+      keeper.maxLife *= KEEPER.life;
+      keeper.life = keeper.maxLife;
+    }
     const gate = L.doors.findIndex((d) => d.spot.kind === 'bossgate');
-    L.furnace = { crank, keeper: keeper.id, gate, told: false, toldCrank: false, fireT: 0, out: false, room: { x: best.x, y: best.y, w: best.w, h: best.h } };
-    // (the hall's portcullis held down while the fire burns before it)
+    L.furnace = { crank, keeper: keeper.id, gate, told: false, toldCrank: false, fireT: 0, out: false, room: { x: best.x, y: best.y, w: best.w, h: best.h }, spot: A ? A.furnace : null, turnedAt: -1 };
+    // (the hall's way barred while the fire burns in it: its portcullis drawn up behind the fire, or, with the stand-in fire, held down)
     if (gate >= 0) {
       const d = L.doors[gate];
-      d.want = 0;
-      for (const i of doorTiles(f, d.spot)) {
-        L.walk[i] = 0;
-        L.open[i] = 0;
-      }
+      if (!STOKER_ON.on) d.want = 0;
+      this.furnaceBar(true);
     }
   }
 
-  /** QUESTS15, each frame on floor 3: the fire laid afresh before the hall's way, said the first time it is near; the keeper's gear. */
+  /** QUESTS15: the Chained One's gateway barred by the furnace's fire (`on`), or open again. */
+  private furnaceBar(on: boolean): void {
+    const L = this.level;
+    const F = L.furnace;
+    if (!F || F.gate < 0) return;
+    for (const i of doorTiles(L.floor, L.doors[F.gate].spot)) {
+      L.walk[i] = on ? 0 : 1;
+      if (!STOKER_ON.on) L.open[i] = on ? 0 : 1;
+    }
+  }
+
+  /** QUESTS15: the crank's gear, picked up where it lies (the Stoker fallen: game/act1_rules/stoker.ts). */
+  furnaceGearTaken(x: number, y: number): void {
+    const h = this.hero;
+    if (h.furnace === 'gear' || h.furnace === 'out' || h.furnace === 'done') return;
+    h.furnace = 'gear';
+    this.emit({ t: 'quest', x, y });
+    this.sfx('rare');
+    this.msg(QUEST_TEXT.gearTaken, MSG.word);
+  }
+
+  /**
+   * QUESTS15, each frame on floor 3: the Stoker's gear (his, picked up where it lies: furnaceGearTaken; the stand-in's, given as he
+   * falls); the hall's way barred while the fire burns in it, open once it has gone out after the crank is turned; the fire said
+   * the first time it is near; the stand-in's fire laid afresh.
+   */
   private furnaceStep(dt: number): void {
     const L = this.level;
     const F = L.furnace;
     if (!F) return;
     const h = this.hero;
-    // (the keeper fallen: his gear, the crank's)
-    if (h.furnace !== 'gear' && h.furnace !== 'out' && h.furnace !== 'done') {
-      const k = this.monsters.find((q) => q.id === F.keeper);
-      if (!k || k.dead) {
-        const at = k ?? { x: F.crank.x, y: F.crank.y };
-        h.furnace = 'gear';
-        this.emit({ t: 'quest', x: at.x, y: at.y });
-        this.sfx('rare');
-        this.msg(QUEST_TEXT.gearTaken, MSG.word);
-      }
-    }
-    if (F.out || F.gate < 0) return;
+    const k = this.monsters.find((q) => q.id === F.keeper);
+    // (the stand-in fallen: his gear, at once)
+    if (!STOKER_ON.on && h.furnace !== 'gear' && h.furnace !== 'out' && h.furnace !== 'done' && (!k || k.dead)) this.furnaceGearTaken(k ? k.x : F.crank.x, k ? k.y : F.crank.y);
+    if (F.gate < 0) return;
     const d = L.doors[F.gate];
     const at = doorMiddle(d.spot);
+    // (the fire gone: the way open, once)
+    if (F.out) {
+      if (!F.gone && F.turnedAt !== undefined && F.turnedAt >= 0 && this.time - F.turnedAt >= FIRE_GONE) {
+        F.gone = true;
+        this.furnaceBar(false);
+      }
+      return;
+    }
+    // (burning: the way barred, whatever the door would have it)
+    this.furnaceBar(true);
+    if (STOKER_ON.on && d.want === 0 && d.fell === undefined) d.want = 1;
+    if (!F.told && Math.hypot(at.x - h.x, at.y - h.y) < TUNE.aggroRadius) {
+      F.told = true;
+      this.msg(QUEST_TEXT.fireSeen, MSG.omen);
+    }
+    if (STOKER_ON.on) return;
     F.fireT -= dt;
     if (F.fireT <= 0) {
       F.fireT = FIRE.every;
       // (the stand-in fire: the Fire word's burning ground, across the way, on the side he comes from)
       const ox = d.spot.alongX ? 0 : -d.spot.out * 0.9;
       const oy = d.spot.alongX ? -d.spot.out * 0.9 : 0;
-      for (const k of [-0.8, 0, 0.8]) {
-        const x = at.x + ox + (d.spot.alongX ? k : 0);
-        const y = at.y + oy + (d.spot.alongX ? 0 : k);
+      for (const q of [-0.8, 0, 0.8]) {
+        const x = at.x + ox + (d.spot.alongX ? q : 0);
+        const y = at.y + oy + (d.spot.alongX ? 0 : q);
         this.emit({ t: 'zone', kind: 'burn', x, y, r: 0.9, el: 'fire', dur: FIRE.lies });
       }
     }
-    if (!F.told && Math.hypot(at.x - h.x, at.y - h.y) < TUNE.aggroRadius) {
-      F.told = true;
-      this.msg(QUEST_TEXT.fireSeen, MSG.omen);
-    }
   }
 
-  /** QUESTS15: the forge crank, walked up to: with its gear, turned (the furnace out, the hall's way open); without, said once. */
+  /** QUESTS15: the forge crank, walked up to: with its gear, turned (the furnace out, the fire in the hall's way with it); without, said once. */
   private turnCrank(p: PropInst): void {
     const L = this.level;
     const F = L.furnace;
@@ -11850,7 +11964,13 @@ export class Game {
     p.state = 1;
     h.furnace = 'out';
     F.out = true;
-    if (F.gate >= 0) this.raiseGate(L.doors[F.gate]);
+    F.turnedAt = this.time;
+    // (the stand-in's way: its portcullis raised at once; the Stoker's: the fire going out, the way open once it has: furnaceStep)
+    if (!STOKER_ON.on) {
+      this.furnaceBar(false);
+      if (F.gate >= 0) this.raiseGate(L.doors[F.gate]);
+      F.gone = true;
+    }
     this.emit({ t: 'spark', x: p.x, y: p.y, el: 'fire', n: 10 });
     this.emit({ t: 'shake', amount: 2 });
     this.sfx('door', 0.9);

@@ -2,11 +2,15 @@
 // Order: floor -> things lying on the floor -> everything that stands up (sorted back to front)
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
+import { CRANK_TURN, FIRE_WALL, FURNACE_OUT, FURNACE_ROAR, STOKER_ROOM } from '../art/stoker_room';
+import { STOKER_ON } from '../art/stoker';
+import { CRANK_TIMES } from '../game/quests15';
 import { forgetMade as forget_tomb } from '../art/tomb';
 import { forgetMade as forget_tomb_gate } from '../art/tomb_gate';
 import { forgetMade as forget_grounds } from '../art/grounds';
 import { forgetMade as forget_prison } from '../art/prison';
 import { forgetMade as forget_prison_gate } from '../art/prison_gate';
+import { forgetMade as forget_stoker_room } from '../art/stoker_room';
 import { forgetMade as forget_chapel } from '../art/chapel';
 import { forgetMade as forget_chapel_gate } from '../art/chapel_gate';
 import { forgetMade as forget_lair_temple } from '../art/lair_temple';
@@ -432,6 +436,8 @@ const REEL_TIME = 0.4;
  * fall, faster and faster. Over the drop (`away`) it falls on past the floor into it, fading out by FALL.gone.
  */
 export const FALL = { from: 0.1, to: 0.62, fade: 0.35, gone: 0.8 } as const;
+/** THE STOKER's scattered pieces fade over this long once his death is done (the art chat's: “fade the scattered pieces after the last frame”). */
+export const STOKER_PIECES_FADE = 2.0;
 export function fallenLift(f: { lift?: number; away?: boolean; t: number }): { up: number; alpha: number } {
   const L = f.lift ?? 0;
   const k = Math.max(0, (f.t - FALL.from) / (FALL.to - FALL.from));
@@ -544,7 +550,7 @@ export class Renderer {
     const groups: [LookView, (() => void)[]][] = [
       [this.tomb, [forget_tomb, forget_tomb_gate]],
       [this.grounds, [forget_grounds]],
-      [this.prison, [forget_prison, forget_prison_gate]],
+      [this.prison, [forget_prison, forget_prison_gate, forget_stoker_room]],
       [this.chapel, [forget_chapel, forget_chapel_gate]],
       [this.lair, [forget_lair_temple, forget_lair_gate]],
     ];
@@ -889,7 +895,54 @@ export class Renderer {
    * (The stone on either side of a door is wall, and the walls' own rules draw it or leave it out:
    * render/walls.ts.)
    */
-  private standDoors(L: Game['level'], cam: Cam, game: Game, fx: Fx): void {
+  /**
+   * QUESTS15: THE FURNACE in a back wall of the Stoker's arena (game/furnace_arena.ts), as a gate's strips are laid (art/stoker_room.ts
+   * FURNACE: four tiles of its wall): roaring while it burns; once the crank is turned (and has turned), going out; then cold.
+   */
+  private standFurnace(L: Game['level'], cam: Cam, game: Game, t: number): void {
+    const F = L.furnace;
+    const s = F?.spot;
+    if (!F || !s || !STOKER_ON.on) return;
+    const f = L.floor;
+    let seen = false;
+    for (let k = 0; k < 4 && !seen; k++) {
+      const i = s.alongX ? s.plane * f.w + s.a + k : (s.a + k) * f.w + s.plane;
+      if (L.explored[i] === 1) seen = true;
+    }
+    if (!seen) return;
+    const since = F.out && F.turnedAt !== undefined && F.turnedAt >= 0 ? game.time - F.turnedAt - CRANK_TIMES.turn : -1;
+    const list = F.out && (since >= CRANK_TIMES.furnaceOut || F.turnedAt === undefined || F.turnedAt < 0)
+      ? STOKER_ROOM.furnace(s.alongX, 'out')
+      : since >= 0 ? STOKER_ROOM.furnace(s.alongX, 'going', Math.min(FURNACE_OUT.frames - 1, Math.floor((since / CRANK_TIMES.furnaceOut) * FURNACE_OUT.frames)))
+      : STOKER_ROOM.furnace(s.alongX, 'lit', Math.floor(t * FURNACE_ROAR.fps) % FURNACE_ROAR.frames);
+    const R = this.relief;
+    for (const q of list) {
+      const x = s.alongX ? s.a + q.t : s.plane;
+      const y = s.alongX ? s.plane : s.a + q.t;
+      const sx = wx(cam, x, y);
+      const sy = wy(cam, x, y);
+      this.stand(x + y + 0.01, q.s, sx, sy);
+      if (R) this.hide(x, y, R.lift(x, y));
+      if (q.s.lights) this.propLit.push({ s: q.s, x: Math.round(sx), y: Math.round(sy) });
+    }
+  }
+
+  /** QUESTS15: the forge crank as it stands: its gear missing; set in (the hero carrying it, its handle glowing his cyan); turning; turned. */
+  private crankSprite(game: Game): Sprite | null {
+    const F = game.level.furnace;
+    if (!F || !STOKER_ON.on) return null;
+    const h = game.hero;
+    if (F.out && F.turnedAt !== undefined && F.turnedAt >= 0) {
+      const since = game.time - F.turnedAt;
+      if (since < CRANK_TIMES.turn) return STOKER_ROOM.crank('turning', Math.min(CRANK_TURN.frames - 1, Math.floor((since / CRANK_TIMES.turn) * CRANK_TURN.frames)));
+      return STOKER_ROOM.crank('turned');
+    }
+    if (F.out) return STOKER_ROOM.crank('turned');
+    return STOKER_ROOM.crank(h.furnace === 'gear' ? 'set' : 'missing');
+  }
+
+  private standDoors(L: Game['level'], cam: Cam, game: Game, fx: Fx, t = game.time): void {
+    this.standFurnace(L, cam, game, t);
     if (L.doors.length === 0) return;
     const A = this.art.gates;
     const f = L.floor;
@@ -937,6 +990,14 @@ export class Renderer {
         const tombGate = boss && d.want === 0 && d.fell !== undefined && TOMB_GATE.on && this.tomb.on(L);
         const drop = boss && d.want === 0 && d.fell !== undefined && YARD_GATE.on && this.yard.on(f) ? yardGateDropAt((game.time - d.fell) * 30) : prisonGate ? prisonGateDropAt((game.time - d.fell!) * 30) : chapelGate ? chapelGateDropAt((game.time - d.fell!) * 30) : lairGate ? lairGateDropAt((game.time - d.fell!) * 30) : tombGate ? tombGateDropAt((game.time - d.fell!) * 30) : null;
         if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, drop ? drop.raise : d.open * GATE_UP), -wide, wide);
+        // (QUESTS15: THE FIRE IN THE CHAINED ONE'S WAY while floor 3's furnace burns, at the back of the arch as his portcullis is, the
+        // portcullis drawn up: burning, going out once the crank is turned, a bed of ash: art/stoker_room.ts)
+        const F = L.furnace;
+        if (boss && F && STOKER_ON.on && L.doors[F.gate] === d) {
+          const since = F.out && F.turnedAt !== undefined && F.turnedAt >= 0 ? game.time - F.turnedAt - CRANK_TIMES.turn : -1;
+          const fire = F.gone ? STOKER_ROOM.fireWall(s.alongX, 'gone') : since < 0 ? STOKER_ROOM.fireWall(s.alongX, 'burning', Math.floor(t * FIRE_WALL.fps) % FIRE_WALL.frames) : STOKER_ROOM.fireWall(s.alongX, 'going', Math.min(FIRE_WALL.out - 1, Math.floor((since / CRANK_TIMES.fireOut) * FIRE_WALL.out)));
+          strips(fire, -wide, wide - 0.01);
+        }
         strips(hallGate ? hallGate.arch(s.alongX) : A.arch(s.alongX, boss, boss && d.want === 0 && (!drop || drop.lit)), -wide, 0);
         if (drop && drop.slam >= 0) {
           const [x, y] = at(1.5, wide);
@@ -2413,7 +2474,10 @@ export class Renderer {
       // about, what still stands, and what was dropped, must be the brighter things on the screen)
       // (BODIES: and fades out over the last of its while)
       const going = BODIES.on ? Math.min(1, Math.max(0, (BODIES.life - f.t) / BODIES.fade)) : 1;
-      g.globalAlpha = (1 - (1 - BODY_DIM) * Math.min(1, Math.max(0, shown.since) / BODY_SETTLES)) * going;
+      // (THE STOKER: what is left of him, his scattered iron, fades once his death is done, the gear left lying: render/act1_fx/stoker.ts)
+      const pieces = f.figure === 'stoker' ? Math.min(1, Math.max(0, 1 - shown.since / STOKER_PIECES_FADE)) : 1;
+      if (pieces <= 0) continue;
+      g.globalAlpha = (1 - (1 - BODY_DIM) * Math.min(1, Math.max(0, shown.since) / BODY_SETTLES)) * going * pieces;
       g.drawImage(shown.sp.img, Math.round(sx) - shown.sp.ax, Math.round(sy) - shown.sp.ay, shown.sp.w, shown.sp.h);
     }
     g.globalAlpha = 1;
@@ -2557,7 +2621,7 @@ export class Renderer {
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
       // (A BOSS NEARING ITS END: its death painted next by the painter, so that its fall is not painted here as it is shown)
-      if (m.boss && m.life < m.maxLife * DIE_SOON && !this.dieSoon.has(f)) {
+      if ((m.boss || m.kind === 'stoker') && m.life < m.maxLife * DIE_SOON && !this.dieSoon.has(f)) {
         this.dieSoon.add(f);
         this.painter?.dieFirst(f);
         this.art.bestiary.dieFirst(f);
@@ -3106,7 +3170,9 @@ export class Renderer {
         continue;
       }
       // (THE FIRST FIVE FLOORS: the floor's own pieces, and its own of the game's things: render/pieces.ts)
-      const own = this.dressed ? this.pieces.standing(game, p, t) : undefined;
+      // (QUESTS15: the forge crank in the Stoker's arena, his art's)
+      const crank = L.furnace && p === L.furnace.crank ? this.crankSprite(game) : null;
+      const own = crank ?? (this.dressed ? this.pieces.standing(game, p, t) : undefined);
       if (own !== undefined) sp = own;
       else switch (p.kind) {
         case 'brazier': sp = art.props.brazier[(Math.floor(t * 8) + p.variant) % 4]; break;

@@ -104,6 +104,8 @@ import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, PAINT_DEFER, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
+import { BakedHeroes } from './render/baked';
+import { QUESTS15 } from './game/quests15';
 import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
@@ -326,6 +328,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   renderer.painter = painter;
   // (the hero's pictures painted ahead by the painter's worker, taken in as they come: render/painter.ts)
   painter.toHero = (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet);
+  // (THE HEROES BAKED, render/baked.ts: their pictures painted when the game was built, beside this page, taken in when a hero is
+  // first asked for, in place of the worker painting them; where there are none, as before. His pick, 6 Nov 2026: “Inside the game file”)
+  painter.baked = art.heroes.give ? BakedHeroes.make(() => art.heroes, (cls, place, v, l, i, s, vet) => !!art.heroes.give?.(cls, place, v, l, i, s, vet), VETERAN.on) : null;
   // (the worker is started at once: the hero's pictures are wanted from the first moment)
   painter.warmGround();
   /** The place whose pictures the painter has been asked for (a level, or null: none, the starting screen). */
@@ -1673,7 +1678,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // and until it has, the nearest frame of theirs painted is shown: art/kit.ts LEFT_TO_PAINTER)
       // (its worker started on the start screen, ahead: it takes seconds; while it starts, its frames are waited for too)
       const byPainter: ClassId[] = [];
-      if (painter.warmGround()) {
+      if (painter.baked || painter.warmGround()) {
         for (const k of playableClasses()) {
           if (k !== 'warlock' && k !== 'tinkerer' && k !== 'brawler') continue;
           if (titleUi.page === 'class') painter.hero(k, 'card');
@@ -2204,6 +2209,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     bot = newBot(true);
   }
   const dbg = {
+    /** THE HEROES BAKED (render/baked.ts): what has been taken in from the bake, and what failed (null: no bake on this page). */
+    baked: () => (painter.baked ? { ...painter.baked.stats } : null),
+    /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts QUESTS15): off until his yes in play; its pictures and playtests switch it on (`quests15.on`). */
+    quests15: QUESTS15,
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,

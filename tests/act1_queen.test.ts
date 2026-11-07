@@ -353,6 +353,9 @@ function holdsHerSpot(): void {
   h.x = m.x + m.fx * 3;
   h.y = m.y + m.fy * 3;
   (g as unknown as Hooks).wakeUp(m);
+  // (the hero out of harm's way for the minute: the hero fell part way through it, the game ended there (Game.over) and she was
+  // never stepped again, so that she was never seen to hop back)
+  h.invuln = 1e9;
   const c = emptyControls();
   let most = 0;
   let acts = 0;

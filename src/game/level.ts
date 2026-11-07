@@ -1,5 +1,6 @@
 // Builds the two kinds of level: the town hub and a generated dungeon.
 
+import { carveArena } from './furnace_arena';
 import { RNG } from '../engine/rng';
 import { TUNE } from './defs';
 import { DOORS, doorMiddle, doorTiles, doorWay, layDoors, makeDoors, pierGrid, shutGrid } from './doors';
@@ -821,10 +822,12 @@ export function insideDoorway(s: DoorSpot): { x: number; y: number } {
 }
 
 /** Dungeon number `depth`: one large generated level whose boss room holds the way home. */
-export function makeDungeon(depth: number, seed: number): Level {
+export function makeDungeon(depth: number, seed: number, opts: { furnace?: boolean } = {}): Level {
   // (ACT 1, THE DESCENT: floors 6 to 10 are open ground, laid by a map-maker of their own: game/act1_layout.ts)
   if (act1Floor(depth)) return makeAct1Level(depth, seed);
   const floor = generateFloor(depth, seed);
+  // (QUESTS15, FLOOR 3 WHILE THE FURNACE BURNS: the Stoker's arena, a room of its own at the end of a short open hallway: game/furnace_arena.ts)
+  const arena = opts.furnace ? carveArena(floor) : null;
   // The exit portal stands in the boss room and stays dark until the boss dies.
   if (!WAYS.on) return finish(floor, false, portalAt(floor.boss.x, floor.boss.y, false));
   // THE WAYS (ways.ts, behind WAYS): no portal. The first floor's gate, cut in a back wall of its
@@ -921,6 +924,7 @@ export function makeDungeon(depth: number, seed: number): Level {
   if (door) level.ways.exit = door;
   if (chapel) level.chapel = chapel;
   if (grounds) level.grounds = grounds;
+  if (arena) level.arena = arena;
   // (THE FIRST FIVE FLOORS: the floor laid with its own pieces, last, by dice of its own: game/first5.ts)
   level.dress = dress(level, depth, seed);
   // (FLOOR 4, CHAPEL: its own things, after the floor's: the rock before the break-ins, candles, his hall's piers and altar)

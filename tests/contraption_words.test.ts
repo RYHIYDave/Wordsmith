@@ -13,7 +13,7 @@ import type { WordId } from '../src/game/types';
 const DT = 1 / 60;
 type Inner = { waveT: number; rng: unknown; spawn: (...a: unknown[]) => Monster; wakeUp: (m: Monster) => void };
 
-function dealt(pick: 'bombs' | 'energy', word: WordId | null): number {
+function dealt(pick: 'bombs' | 'energy', word: WordId | null, more: string[] = [], seen?: (e: { t: string; [k: string]: unknown }) => void): number {
   const g = Game.forPractice('tinkerer', 3);
   const a = g as unknown as Inner;
   a.waveT = 1e9;
@@ -24,7 +24,7 @@ function dealt(pick: 'bombs' | 'energy', word: WordId | null): number {
   h.fx = 1;
   h.fy = 0;
   h.invuln = 1e9;
-  h.talents = ['bombsaway', 'fortune', 'contraptions'];
+  h.talents = ['bombsaway', 'fortune', 'contraptions', ...more];
   h.picks = { ...(h.picks ?? {}), contraptions: pick };
   h.skills[0].front = [null, null, null];
   h.skills[0].behind = [null, null, null];
@@ -48,6 +48,7 @@ function dealt(pick: 'bombs' | 'energy', word: WordId | null): number {
     c.aimY = h.y;
     h.mana = h.d.maxMana;
     g.update(DT, c);
+    if (seen) for (const e of g.events) seen(e as unknown as { t: string });
     g.events.length = 0;
   }
   return ms.reduce((t, m) => t + (m.maxLife - m.life), 0);
@@ -63,3 +64,17 @@ for (const pick of ['bombs', 'energy'] as const) {
     }
   });
 }
+
+// (his words, 6 Nov 2026, asked whether Energy should have versions of her vial talents: “Why can’t energy do what the bombs do?”)
+test('energy: her vial talents work on its bolts as on vials: tar, cluster, The Big One, Mad Mixture', () => {
+  const seen: Record<string, number> = {};
+  const more = dealt('energy', null, ['tar', 'clustervials', 'thebigone', 'madmixture'], (e) => {
+    const k = e.t === 'contraptionBolt' && e.id === -1 ? 'leap' : e.t === 'burst' && e.style === 'bomb' ? 'big' : e.t;
+    seen[k] = (seen[k] ?? 0) + 1;
+  });
+  const base = dealt('energy', null);
+  assert.ok((seen.tar ?? 0) > 0, 'tar where they strike');
+  assert.ok((seen.leap ?? 0) > 0, 'cluster: they leap on to more');
+  assert.ok((seen.big ?? 0) > 0, 'The Big One: every fifth bursts');
+  assert.ok(more > base, `more harm with them (${Math.round(more)} against ${Math.round(base)})`);
+});

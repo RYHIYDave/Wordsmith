@@ -22,6 +22,13 @@ import { TK, edgeAngle, nearShows, paintTerrain, pictureOf, terrainOf, worldOf }
 import type { RGB, Terrain, TerrainLook } from '../src/art/terrain';
 import { CUT_LEFT, CUT_NEAR, T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
+import { F8F9_FIX } from '../src/game/f8f9';
+
+// (THE QUARRY'S NEAR FACES, as they were painted before his canyon walls were seen (F8F9_FIX with the Quarry's downFaces, his “I do
+// want it” of 4 Nov 2026, 12:47, in 25.0.8: every far face drawn down to the floor, the near cliff cut away over it, so that there
+// is no near face left to paint). These tests are of the near faces, the way still painted where downFaces is not: so with the
+// switch off here, as tests/canyon.test.ts has it; tests/f8f9.test.ts has the faces drawn down.)
+F8F9_FIX.on = false;
 
 const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as {

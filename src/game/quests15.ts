@@ -1,4 +1,4 @@
-// THE QUEST LINE OF FLOORS 1 TO 5 (behind QUESTS15, off until his yes in play with the art chat's pictures).
+// THE QUEST LINE OF FLOORS 1 TO 5 (behind QUESTS15: ON since his yes, 6 Nov 2026, “Yes, put it in (Recommended)”).
 //
 // His words, 4 Nov 2026, 00:27 (Eastern): “I want a quest given to go to the chained one’s area and turn off the furnace.  Maybe
 // by the armorer when you turn in the first runestone quest.  You go down to level 3, and there will be a side area you go into,
@@ -24,12 +24,17 @@
 //    the gate down the mountain stays barred until it is brought (not when the Fleshmancer falls), and bringing it gives two
 //    words and a lesson in melding.
 // A hero who has been down past floor 3 already has the furnace out; past floor 5 with the Meldstone given, the gate open.
-// The flame boss, his room, the crank, its gear and the fire are the art chat's to draw (asked 4 Nov, 00:55, on the board);
-// until then the stand-ins are the game's own: a fire champion, a lever, the Fire word's burning ground.
+// The flame boss, his room, the crank, its gear and the fire are the art chat's: THE STOKER (art/stoker.ts, his rules
+// game/act1_rules/stoker.ts), handed over 6 Nov 2026, 16:28 (“Yes, hand it over (Recommended)”); his arena at the end of a short
+// open hallway (his word, 16:29: “The stoker and his area is done.  I’d like a little hallway leading to his arena tho.  Not a door
+// into it like a stronghold.”: game/furnace_arena.ts). The stand-ins (a fire champion, the Fire word's burning ground) are
+// what is left where the art is not to be had (its switch off).
 
 import type { ClassId, MonsterKind, WordId } from './types';
 
-export const QUESTS15 = { on: false };
+// ON, at his yes, 6 Nov 2026, shown the Stoker in the game (stoker_in_game.png), asked whether the whole quest line should go in the
+// next update with him in it: “Yes, put it in (Recommended)”.
+export const QUESTS15 = { on: true };
 
 /** Where the hero stands in the furnace quest: asked; carrying the gear; the furnace put out; rewarded. */
 export type FurnaceStep = 'asked' | 'gear' | 'out' | 'done';
@@ -53,12 +58,22 @@ export const KEEPER = { kind: 'firepot' as MonsterKind, life: 9, name: 'THE STOK
 /** How often the stand-in fire before the hall's way is laid afresh, and how long each lies (seconds). */
 export const FIRE = { every: 0.9, lies: 1.3 };
 
+/**
+ * THE CRANK TURNED, IN ORDER (seconds from when it is turned; art/stoker_room.ts): the crank turning (CRANK_TURN.long); then the
+ * furnace going out (FURNACE_OUT.long) and, in the Chained One's gateway, the fire going out (FIRE_WALL.long); the way open once
+ * the fire is gone.
+ */
+export const CRANK_TIMES = { turn: 1.2, furnaceOut: 1.6, fireOut: 1.5 } as const;
+/** The way into the hall is open again this long after the crank is turned. */
+export const FIRE_GONE = CRANK_TIMES.turn + CRANK_TIMES.fireOut;
+
 export const QUEST_TEXT = {
   furnaceAsk: 'The armourer: "The prison\'s furnace roars again, and its fire bars the Chained One\'s hall. Its crank lost a gear. Find it on floor 3 and shut the furnace down."',
   furnaceAskPrompt: 'Armourer: a task',
   fireSeen: 'Fire bars the way into the hall. The furnace feeds it.',
   crankNoGear: 'The forge crank: a gear is missing from it.',
   gearTaken: 'You take the CRANK GEAR. Set it in the forge crank.',
+  stokerSeen: 'THE STOKER tends the furnace. The crank\'s gear is in him.',
   furnaceOut: 'The gear bites. The furnace dies, and the fire with it.',
   rewardPrompt: 'Armourer: the furnace is out',
   reward: (word: string) => `The armourer: "The forge breathes easy again. Take this." He gives you a word: ${word}.`,

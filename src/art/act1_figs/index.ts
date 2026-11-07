@@ -59,6 +59,7 @@ import { FIG as xbow } from './xbow';
 import { FIG as gking } from './gking';
 import { FIG as hshape } from './hshape';
 import { FIG as rshade } from './rshade';
+import { FIG as stoker } from './stoker';
 import { FIG as rshadow } from './rshadow';
 import { FIG as moth } from './moth';
 
@@ -125,6 +126,7 @@ export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> =
   rshadow,
   moth,
   rshade,
+  stoker,
 };
 
 export function act1Fig(kind: string): Act1Fig | null {

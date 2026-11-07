@@ -1217,7 +1217,23 @@ export interface Level {
   /** A character's first dungeon: the fallen wordsmith whose satchel holds their first word. */
   body: PropInst | null;
   /** (QUESTS15, floor 3) The furnace room: its crank, its keeper (by id), the hall's portcullis held down by its fire (index in doors, -1 none), and what has been said. */
-  furnace?: { crank: PropInst; keeper: number; gate: number; told: boolean; toldCrank: boolean; fireT: number; out: boolean; room: { x: number; y: number; w: number; h: number } } | null;
+  /** QUESTS15, floor 3 while the furnace burns: the Stoker's arena and its hallway, laid into the floor (game/furnace_arena.ts). */
+  arena?: import('./furnace_arena').Arena | null;
+  furnace?: {
+    crank: PropInst;
+    keeper: number;
+    gate: number;
+    told: boolean;
+    toldCrank: boolean;
+    fireT: number;
+    out: boolean;
+    room: { x: number; y: number; w: number; h: number };
+    /** (THE STOKER'S ROOM, art/stoker_room.ts) The furnace in its wall, placed as a doorway is (null: none drawn); when the crank was turned (the game's clock: -1 not yet). */
+    spot?: import('./types').DoorSpot | null;
+    turnedAt?: number;
+    /** The fire in the hall's way gone out (the way open again). */
+    gone?: boolean;
+  } | null;
   /** Town only: where the services are. */
   stations: StationSpot[];
   /** DOORS AND GATES (game/doors.ts): what stands in the level's doorways, and how far open each is. None unless the map-maker laid them. */

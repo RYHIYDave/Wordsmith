@@ -5,3 +5,7 @@ dist/
 previews/
 node_modules/
 node_modules
+# the heroes baked (tools/bake_heroes.mjs), made again whenever their art changes
+.bake/
+# the unit suite run by tools/unit.mjs: its frozen copies, its results kept, its logs
+.unit/
