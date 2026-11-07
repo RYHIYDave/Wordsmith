@@ -122,6 +122,7 @@ import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { holdShows, inHold } from '../game/act1_layout';
 import { risenBy, risingSprite } from './arrivals';
+import { drawPillars } from './pillars';
 import { EYRIE_SCENE, QUEST610_TEXT } from '../game/quests610';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
@@ -2488,6 +2489,8 @@ export class Renderer {
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
     // (THE VETERAN's that lie on the floor: the push kick's cone, the crescents' traces, rings, dust behind him: render/veteran_fx.ts)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) this.vetFx.drawGround(g, cam, game);
+    // (QUESTS610, PILLARS: the cult's obelisks round the Drowned Eye's ring, burning or put out: render/pillars.ts)
+    if ((pass < 0 || pass === 1) && L.pillars) drawPillars(g, cam, L.pillars, game.time);
 
     // (THE NEW MONSTERS: a Boneward's spear lying where it came down, till it is picked up)
     for (const sp of game.spears) if (L.explored[Math.floor(sp.y) * f.w + Math.floor(sp.x)] && here(sp.x, sp.y)) drawSpearLying(g, this.floorAt, sp.x, sp.y, sp.fx, sp.fy);

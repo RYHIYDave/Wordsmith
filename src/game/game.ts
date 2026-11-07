@@ -56,7 +56,9 @@ import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
 import { ARRIVALS, riftSize } from './arrivals';
-import { EYRIE_LINES, EYRIE_SCENE, QUEST610_TEXT, QUESTS610, piecesTaken } from './quests610';
+import { EYRIE_LINES, EYRIE_SCENE, PILLARS, QUEST610_TEXT, QUESTS610, lightPillars, pillarsBurning, piecesInHand, piecesTaken } from './quests610';
+import { eyePhase } from './act1_rules/eye';
+import type { Pillar } from './quests610';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
@@ -1972,6 +1974,8 @@ export class Game {
       if (m.anim === 'walk') m.anim = 'idle';
     }
     if (this.risers.length) this.updateRisers(dt);
+    // (QUESTS610, PILLARS: floor 10, the Drowned Eye's last phase begun, the cult's obelisks blaze)
+    if (PILLARS.on && QUESTS610.on && this.depth === 10 && !this.level.pillars && !this.practice) this.pillarsLight();
     this.updateProjectiles(dt);
     this.updateTraps(dt);
     this.updateVolleys(dt);
@@ -2910,6 +2914,71 @@ export class Game {
    * (QUESTS610) THE PINEWOOD (floor 9), come into while he is after the ward-stone: a piece lying in its side area (its chests'),
    * guarded by the area's own; a piece carried by its lair's guardian; and the Stag carrying the third.
    */
+  /** (PILLARS) The Drowned Eye's last phase begun (the siege pulled into him): the cult's obelisks round his ring blaze. */
+  private pillarsLight(): void {
+    const m = this.monsters.find((q) => q.kind === 'eye' && !q.dead);
+    if (!m || eyePhase(m) < 2) return;
+    const at = this.level.props.filter((p) => p.kind === 'piece' && p.name === "the cult's obelisk").map((p) => ({ x: p.x, y: p.y }));
+    if (!at.length) return;
+    this.level.pillars = lightPillars(at);
+    for (const p of this.level.pillars) this.emit({ t: 'spark', x: p.x, y: p.y, el: 'lightning', n: 14 });
+    this.sfx('thunder', 0.6);
+    this.msg(piecesInHand(this.hero.pieces, this.level.pillars) > 0 ? QUEST610_TEXT.pillarsLit : QUEST610_TEXT.pillarsLitNoPiece, MSG.foe);
+  }
+
+  /** (PILLARS) The burning obelisk the hero stands beside with a piece of the ward-stone in hand, if any. */
+  private pillarNear(): Pillar | null {
+    const ps = this.level.pillars;
+    if (!ps || !PILLARS.on || piecesInHand(this.hero.pieces, ps) <= 0) return null;
+    const h = this.hero;
+    let best: Pillar | null = null;
+    let bd = PILLARS.near;
+    for (const p of ps) {
+      if (!p.lit) continue;
+      const d = Math.hypot(p.x - h.x, p.y - h.y);
+      if (d <= bd) {
+        bd = d;
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  /** (PILLARS) A piece of the ward-stone set into a burning obelisk: it goes out. */
+  private setPillarPiece(p: Pillar): void {
+    p.lit = false;
+    p.by = 'piece';
+    this.emit({ t: 'spark', x: p.x, y: p.y, el: 'frost', n: 18 });
+    this.sfx('power', 0.8);
+    this.pillarOut(QUEST610_TEXT.pillarSet(pillarsBurning(this.level.pillars)));
+  }
+
+  /** (PILLARS) A blow landing at (x, y), `rad` round: each burning obelisk whose foot it reaches takes one (no more than one each PILLARS.gap). */
+  private pillarsStruck(x: number, y: number, rad: number): void {
+    for (const p of this.level.pillars ?? []) {
+      if (!p.lit || Math.hypot(p.x - x, p.y - y) > rad + PILLARS.reach) continue;
+      if (this.time - p.last < PILLARS.gap) continue;
+      p.last = this.time;
+      p.hits++;
+      this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 6 });
+      if (p.hits < PILLARS.blows) continue;
+      p.lit = false;
+      p.by = 'blows';
+      this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 16 });
+      this.sfx('hit', 0.8);
+      this.pillarOut(QUEST610_TEXT.pillarBroken(pillarsBurning(this.level.pillars)));
+    }
+  }
+
+  /** (PILLARS) One out: said; the last, the siege broken. */
+  private pillarOut(said: string): void {
+    this.msg(said, MSG.good);
+    if (pillarsBurning(this.level.pillars) > 0) return;
+    this.msg(QUEST610_TEXT.siegeBroken, MSG.good);
+    const m = this.monsters.find((q) => q.kind === 'eye' && !q.dead);
+    if (m) this.emit({ t: 'text', x: m.x, y: m.y, text: 'Siege broken', color: '#7fe8ff' });
+  }
+
   private piecesMade(): void {
     if (!QUESTS610.on || this.practice || this.depth !== 9 || this.hero.feather !== 'given' || piecesTaken(this.hero.pieces) >= 3) return;
     const land = this.level.land;
@@ -9290,6 +9359,14 @@ export class Game {
       }
       return;
     }
+    // (QUESTS610, PILLARS: nor the Drowned Eye while one of the cult's obelisks burns)
+    if (m.kind === 'eye' && pillarsBurning(this.level.pillars) > 0) {
+      if (this.time - this.waitTold > 0.7) {
+        this.waitTold = this.time;
+        this.emit({ t: 'text', x: m.x, y: m.y, text: QUEST610_TEXT.shielded, color: '#ff5fa8' });
+      }
+      return;
+    }
     // (THE HIGH CITY, FLOOR 19: nor one with another wrapped round it, which takes the blow instead: the King's Hush, struck off
     // by enough of them. game/act1_rules/gking.ts)
     if (r1 && r1.absorbs && r1.absorbs(this.bosses, m)) {
@@ -11922,6 +11999,8 @@ export class Game {
     if (this.level.land?.gallery) this.mirrorsStruck(x, y, rad);
     // (ACT 2, THE BELLS: a hit at a bell rings it; at the Muffled Bell, it starts the Hush)
     if (this.level.bells) this.bellsStruck(x, y, rad);
+    // (QUESTS610, PILLARS: a blow at a burning obelisk's foot)
+    if (this.level.pillars) this.pillarsStruck(x, y, rad);
     // (ACT 2, THE HUSH: what a kind of its own has lying on the floor there takes his blow too: the Palimpsest's pages
     // burn under his fire, game/act1_rules/palimpsest.ts; his doc, "Fire words shine here")
     if (this.perils.length) this.bosses.floorBlow(x, y, rad, skill >= 0 ? this.hero.skills[skill]?.r.element ?? 'phys' : 'phys');
@@ -12003,7 +12082,15 @@ export class Game {
         // (HAND_IN: beside the one a quest item is for, using him gives it, in place of his panel)
         const st = this.stationNear();
         if (st && !this.handIn()) this.emit({ t: 'station', kind: st });
-      } else if (!this.wayHere() && this.interactHint() !== null) this.leaveDungeon();
+      } else {
+        // (QUESTS610, PILLARS: beside a burning obelisk, with a piece of the ward-stone in hand, it is set there)
+        const pl = this.pillarNear();
+        if (pl) {
+          this.setPillarPiece(pl);
+          return;
+        }
+        if (!this.wayHere() && this.interactHint() !== null) this.leaveDungeon();
+      }
     }
   }
 
@@ -12409,6 +12496,8 @@ export class Game {
       if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : giving === 'furnace' ? QUEST_TEXT.furnaceAskPrompt : giving === 'reward' ? QUEST_TEXT.rewardPrompt : giving === 'meldAsk' ? QUEST_TEXT.meldAskPrompt : giving === 'featherAsk' ? QUEST610_TEXT.featherAskPrompt : giving === 'featherGive' ? QUEST610_TEXT.featherGivePrompt : HAND_IN.prompt;
       return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
+    // (QUESTS610, PILLARS: beside a burning obelisk, with a piece in hand)
+    if (this.pillarNear()) return QUEST610_TEXT.pillarPrompt;
     const p = this.level.portal;
     const h = this.hero;
     if (!p || p.state !== 1 || Math.hypot(p.x - h.x, p.y - h.y) > 1.8) return null;

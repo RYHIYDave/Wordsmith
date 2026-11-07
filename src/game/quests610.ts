@@ -66,7 +66,69 @@ export const QUEST610_TEXT = {
   pieceGot: (k: number) => `You take a piece of the WARD-STONE (${k} of 3).`,
   piecesWhole: 'All three pieces of the WARD-STONE. The pillars in the Sunken Fen wait.',
   pieceLabel: 'Ward-stone piece',
+  pillarsLit: 'The cult\'s three obelisks blaze with the siege. While one burns, the Drowned Eye cannot be hurt.',
+  pillarsLitNoPiece: 'The cult\'s three obelisks blaze with the siege. While one burns, the Drowned Eye cannot be hurt. Strike them down.',
+  pillarPrompt: 'Obelisk: set a ward-stone piece',
+  pillarSet: (left: number) => (left > 0 ? `The ward-stone piece flares, and the obelisk goes dark. ${left} still burn${left === 1 ? 's' : ''}.` : 'The ward-stone piece flares, and the last obelisk goes dark.'),
+  pillarBroken: (left: number) => (left > 0 ? `The obelisk cracks and goes dark. ${left} still burn${left === 1 ? 's' : ''}.` : 'The last obelisk cracks and goes dark.'),
+  siegeBroken: 'THE SIEGE IS BROKEN. The Drowned Eye can be hurt.',
+  shielded: 'Shielded',
 };
+
+/**
+ * THE PILLARS (his 00:18, “maybe you use them on three pillars during the swamp fight to deactive the seige magic”). Behind
+ * PILLARS.on, OFF, and apart from QUESTS610's own switch: pictures to him first. Built on the Drowned Eye's fight as it stands
+ * (game/act1_rules/eye.ts), the cult's three obelisks round his ring as the pillars, to be carried to his new fight (the art
+ * chat's swamp colossus, his 7 Nov 00:07 to 00:13) when that is built. So:
+ * - AS HIS LAST PHASE BEGINS (the siege pulled into him), the three obelisks BLAZE with it, and while any one burns he cannot be
+ *   hurt ("Shielded");
+ * - beside a burning one, the use button SETS A PIECE of the ward-stone into it, and it goes out (the friend's cyan at its foot);
+ * - a hero with no piece left to set (one who skipped the Pinewood's side areas, or a save from before) can still BREAK one, by
+ *   `blows` blows struck at its foot (no more than one counted each `gap` seconds), a slow way while the fight goes on round him;
+ * - with all three out THE SIEGE IS BROKEN: his call of the siege's bolts, and the bolts in his swell, no more; he can be hurt.
+ * The numbers are the main chat's, for him to change.
+ */
+export const PILLARS = {
+  on: false,
+  /** How near the hero stands to a burning one to set a piece (tiles from its foot). */
+  near: 1.8,
+  /** Blows that break one with no piece set, and the least time between two that count (seconds). */
+  blows: 12,
+  gap: 0.3,
+  /** How near its foot a blow must land to count (tiles, beyond the blow's own reach). */
+  reach: 0.8,
+};
+
+/** One of the pillars, as it stands: where its foot is; whether it burns; how it was put out; blows taken. */
+export interface Pillar {
+  x: number;
+  y: number;
+  lit: boolean;
+  by?: 'piece' | 'blows';
+  hits: number;
+  /** When it last took a blow that counted (Game.time). */
+  last: number;
+}
+
+/** Pillars standing at these feet, all burning. */
+export function lightPillars(at: readonly { x: number; y: number }[]): Pillar[] {
+  return at.map((p) => ({ x: p.x, y: p.y, lit: true, hits: 0, last: -99 }));
+}
+
+/** How many burn. */
+export function pillarsBurning(ps: readonly Pillar[] | undefined): number {
+  return ps ? ps.filter((p) => p.lit).length : 0;
+}
+
+/** Whether the siege is broken: the pillars stood and every one is out. */
+export function siegeBroken(ps: readonly Pillar[] | undefined): boolean {
+  return PILLARS.on && !!ps && ps.length > 0 && ps.every((p) => !p.lit);
+}
+
+/** The pieces a hero still has in hand: taken, less those set into a pillar here. */
+export function piecesInHand(bits: number | undefined, ps: readonly Pillar[] | undefined): number {
+  return Math.max(0, piecesTaken(bits) - (ps ? ps.filter((p) => p.by === 'piece').length : 0));
+}
 
 /** How many of the ward-stone's pieces a hero has taken (Hero.pieces, a bit each). */
 export function piecesTaken(bits: number | undefined): number {

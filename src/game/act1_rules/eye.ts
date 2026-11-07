@@ -43,6 +43,7 @@ import type { ActDef, BossRules } from '../bosses';
 import type { Level, Monster } from '../state';
 import type { Act1Rules } from './types';
 import { RULES as SPAWN_RULES } from './spawn';
+import { siegeBroken } from '../quests610';
 
 const D = Math.PI / 180;
 const cl01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -395,7 +396,9 @@ function swell(R: BossRules, m: Monster, dt: number, dist: number): void {
     if (p) burstAt(R, m, arm, p.x, p.y, n + k);
   }
   const call = EYE_ACTS.find((a) => a.id === 'eye:call')!;
-  for (let k = 0; k < SWELL.bolts[ph]; k++) {
+  // (PILLARS: the siege broken, its bolts no more)
+  const bolts = siegeBroken(g.level.pillars) ? 0 : SWELL.bolts[ph];
+  for (let k = 0; k < bolts; k++) {
     const p = k === 0 ? spotOn(R, m, { x: h.x, y: h.y }, 1.2, SWELL.far) : spotOn(R, m, null, 0, 0);
     if (!p) continue;
     R.peril(m, 'act1', p.x, p.y, { a1: 'eye:bolt', hit: EYE_BOLT.strike, dur: EYE_BOLT.long, dmg: g.rollMonsterDmg(m) * call.dmg, el: 'lightning', c: (n + k) % 3 });
@@ -485,6 +488,8 @@ export const RULES: Act1Rules = {
     const ph = st(m).ph;
     if (!(PHASE_OF[a.id] ?? []).includes(ph)) return false;
     if (a.id === 'eye:spew' && brood(R, m) + EYE_SPEW.eggs.length > SPAWN.most + 1) return false;
+    // (PILLARS, game/quests610.ts: the siege broken, he can call it down no more)
+    if (a.id === 'eye:call' && siegeBroken(R.g.level.pillars)) return false;
     return true;
   },
 
