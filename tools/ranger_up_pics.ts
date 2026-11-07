@@ -2,7 +2,8 @@
 // Paints him BEFORE (the game's ranger as he is: art/heroes3.ts paintMove3, his moves in art/moves3.ts) and NOW
 // (art/ranger_up.ts), with the feather in his cap hung and moved as the game moves it (engine/tails.ts), and writes each
 // picture as an RGBA PNG; tools/ranger_up_pics.py lays them out with their captions. Nothing of the game imports it.
-//   npx tsx tools/ranger_up_pics.ts look <dir>      (his stance, one still: before beside now, from in front)
+//   npx tsx tools/ranger_up_pics.ts look <dir>      (his stance, one still from in front: before, his first sculpt, and now with
+//                                                   his legs true; and where his near leg's hip, knee and floor are in each)
 
 // @ts-ignore - node typings are not part of this project
 import { deflateSync } from 'node:zlib';
@@ -15,9 +16,13 @@ import { paintMove3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
 import { RANGER_TAILS } from '../src/art/hero_ranger';
 import type { Painted } from '../src/art/kit';
-import { CANVAS3 } from '../src/art/skin';
+import { CANVAS3, stage } from '../src/art/skin';
+import { bonesAt, solve } from '../src/art/skeleton';
+import type { Skeleton, V3 } from '../src/art/skeleton';
+import type { Move3 } from '../src/art/moves3';
 import { paintRu } from '../src/art/ranger_up';
 import type { RuSide } from '../src/art/ranger_up';
+import { RU_MOVES } from '../src/art/ranger_up_moves';
 import { paintWithoutCanvas } from '../tests/helpers';
 
 declare const process: { argv: string[] };
@@ -70,14 +75,15 @@ export function pngRGBA(px: Px): Uint8Array {
   return out;
 }
 
-type Who = 'before' | 'now';
+/** Before (the game's), the first `now` he saw (the game's own crouch, sculpted), and now with his legs true (his knees out). */
+type Who = 'before' | 'now' | 'legs';
 const W = CANVAS3.w;
 const H = CANVAS3.h;
 
 /** A moment of one of his moves, as it was (before: in front or behind only) or as it is now (from any of his sides). */
 function paintOf(who: Who, key: string, t: number, view: RuSide): Painted {
   if (who === 'before') return paintMove3(MOVES3[key], t, view === 'back' ? 'back' : 'front');
-  return paintRu(MOVES3[key], t, view);
+  return paintRu(who === 'legs' ? RU_MOVES[key] ?? MOVES3[key] : MOVES3[key], t, view);
 }
 
 /** THE FEATHER IN HIS CAP, hung from where a frame fixes its quill and moved as the game moves it (engine/tails.ts). */
@@ -134,8 +140,26 @@ function still(who: Who, key: string, t: number, view: RuSide): Px {
 function look(dir: string): void {
   mkdirSync(dir, { recursive: true });
   const T = 0.6;
-  for (const who of ['before', 'now'] as const) writeFileSync(`${dir}/look_${who}.png`, pngRGBA(still(who, 'rstand', T, 'front')));
-  console.log(`2 pictures in ${dir}`);
+  const legs: Record<string, unknown> = {};
+  for (const who of ['before', 'now', 'legs'] as const) {
+    writeFileSync(`${dir}/look_${who}.png`, pngRGBA(still(who, 'rstand', T, 'front')));
+    // HIS NEAR LEG ON THE SCREEN (as tools/legs_measure.ts measures it): the hip, the knee, the ankle and the floor under it
+    // (the ankle's own height below it), in picture pixels; and the two lengths along the leg, in game pixels
+    const m: Move3 = who === 'legs' ? RU_MOVES.rstand : MOVES3.rstand;
+    const s = solve(m.build, bonesAt(m.motion.keys, m.rest, T)) as Skeleton & Record<string, V3>;
+    const st = stage('front');
+    const sd = st.near(s.kneeL) >= st.near(s.kneeR) ? 'L' : 'R';
+    const at = (p: V3): [number, number] => {
+      const [x, y] = st.at(p);
+      return [+x.toFixed(2), +y.toFixed(2)];
+    };
+    const ankle = s[`ankle${sd}`];
+    const [H, K, A, F] = [at(s[`hip${sd}`]), at(s[`knee${sd}`]), at(ankle), at([ankle[0], ankle[1], ankle[2] - m.build.ankle])];
+    const d = (a: [number, number], b: [number, number]): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
+    legs[who] = { leg: sd, hip: H, knee: K, ankle: A, floor: F, thigh: +(d(H, K) / 2).toFixed(1), lower: +((d(K, A) + d(A, F)) / 2).toFixed(1) };
+  }
+  writeFileSync(`${dir}/look.json`, JSON.stringify(legs, null, 1));
+  console.log(`3 pictures in ${dir}`, JSON.stringify(legs));
 }
 
 const [mode, dir] = process.argv.slice(2);

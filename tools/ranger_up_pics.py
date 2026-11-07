@@ -63,73 +63,74 @@ def union_box(paths, pad=6):
     return (max(0, bb[0] - pad), max(0, bb[1] - pad), min(176, bb[2] + pad), min(176, bb[3] + pad + 2))
 
 
+def legs_mark(d, x, ty, k, leg, box, font_, label=True):
+    """Beside a figure: a line from his hip down to the floor, ticks at the hip, the knee and the floor (his near leg, as the
+    screen shows it), and the two lengths along the leg in the game's pixels."""
+    def Y(p):
+        return ty + (p[1] - box[1]) * k
+    yh, yk, yf = Y(leg['hip']), Y(leg['knee']), Y(leg['floor'])
+    up, low = (255, 214, 102), (120, 230, 140)
+    w = max(2, k)
+    d.line((x, yh, x, yk), fill=up, width=w)
+    d.line((x, yk, x, yf), fill=low, width=w)
+    for yy in (yh, yk, yf):
+        d.line((x - 3 * w, yy, x + 3 * w, yy), fill=INK, width=max(1, w // 2 + 1))
+    if label:
+        for yy, name in ((yh, 'hip'), (yk, 'knee'), (yf, 'floor')):
+            d.text((x - 8 - d.textlength(name, font=font_), yy - 9), name, font=font_, fill=DIM)
+        d.text((x + 10, (yh + yk) / 2 - 10), f"{leg['thigh']:.1f}", font=font_, fill=up)
+        d.text((x + 10, (yk + yf) / 2 - 10), f"{leg['lower']:.1f}", font=font_, fill=low)
+
+
 def look(dir, out):
+    import json
     W = 1200
-    big, mid, small, tiny = font(B, 36), font(B, 24), font(R, 21), font(B, 18)
+    big, mid, small, tiny = font(B, 34), font(B, 23), font(R, 20), font(B, 17)
     probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
-    paths = [os.path.join(dir, 'look_before.png'), os.path.join(dir, 'look_now.png')]
+    whos = ['before', 'now', 'legs']
+    names = [('BEFORE', 'the game today'), ('FIRST SCULPT', 'the one you saw'), ('NOW', 'his legs true')]
+    paths = [os.path.join(dir, f'look_{w}.png') for w in whos]
+    legs = json.load(open(os.path.join(dir, 'look.json')))
     box = union_box(paths)
     K = 3
     figs = [figure(p, box, K) for p in paths]
     fw, fh = figs[0].size
-    intro = ('Standing in a fight, from in front, three times as big: before (the Ranger in the game today) beside now. '
-             'One still, to show his look. His moves come after, on your yes.')
-    kept = ['His wide soft teal cap and its long glowing feather',
-            'His bare face and brown moustache',
-            'His pink neckerchief, green jerkin and pointed skirt',
-            'His teal cloak, quiver, bracers and boots',
-            'His long indigo bow, its cyan string, the arrow on it',
-            'His colours, his build and his low archer\'s crouch']
-    changed = ['Sculpted as one body, like the Brawler and the Warrior, not balls and tubes',
-               'His face made to read at a glance: his head a touch bigger and lit, the cap pushed back off his brow, both eyes and their brows clear, the moustache full',
-               'His cap a soft puff of cloth, cocked a little, its top slumped back',
-               'A belt with its cyan buckle; the skirt in leaf-cut points that hang and follow',
-               'Boots of soft leather with turned cuffs, a cloak that hangs in folds',
-               'A bow with a leather grip and curled tips; the arrow\'s head drawn to a point']
+    intro = ('Standing in a fight, from in front, three times as big. Beside each, the leg nearer you as it is on the screen: '
+             'hip to knee (yellow) and knee to floor (green), in the game\'s pixels. Standing straight, his lower leg is '
+             'a little longer than his thigh, as on a real person; in his crouch both knees were bent toward the camera, '
+             'so each shin was seen end-on and looked short. Now the same low crouch, his front foot a little further '
+             'forward with its knee bent out over it, his back foot further back: each shin is seen at its length.')
     lines = wrap(probe, intro, small, W - 48)
-    small_box = (AX - 40, box[1], AX + 40, box[3])
+    gap = (W - 48 - 3 * fw) // 3
+    top = 20 + 46 + len(lines) * 26 + 22
+    small_box = (box[0], box[1], box[2], box[3])
     gw, gh = small_box[2] - small_box[0], small_box[3] - small_box[1]
-    # the two notes, side by side under the figures
-    colw = (W - 48 - 40) // 2
-    def block_h(items):
-        return 34 + sum(len(wrap(probe, it, small, colw - 22)) * 27 + 6 for it in items)
-    gap = 160
-    top = 20 + 48 + len(lines) * 28 + 26
-    figs_h = 34 + fh + 22 + 30 + gh
-    H = top + figs_h + 40 + max(block_h(kept), block_h(changed)) + 24
+    H = top + 60 + fh + 30 + 30 + gh + 40
     img = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(img)
     y = 20
-    d.text((24, y), 'THE RANGER, REDONE: A STILL OF HIM', font=big, fill=INK)
-    y += 48
+    d.text((24, y), "THE RANGER'S LEGS, MADE TRUE", font=big, fill=INK)
+    y += 46
     for ln in lines:
         d.text((24, y), ln, font=small, fill=DIM)
-        y += 28
+        y += 26
     y = top
-    x0 = (W - (2 * fw + gap)) // 2
-    for i, (g, p, name) in enumerate(zip(figs, paths, ['BEFORE', 'NOW'])):
-        x = x0 + i * (fw + gap)
-        col = CYAN if name == 'NOW' else DIM
-        d.text((x + 2, y), name, font=mid, fill=col)
-        d.text((x + 2 + d.textlength(name, font=mid) + 10, y + 5), '(the game today)' if name == 'BEFORE' else '(sculpted)', font=tiny, fill=DIM)
-        img.paste(g, (x, y + 34))
-        # the same at the game's own size, under it
-        yy = y + 34 + fh + 22
-        d.text((x + 2, yy), "at the game's own size:", font=tiny, fill=DIM)
-        sg = figure(p, small_box, 1)
-        img.paste(sg, (x + (fw - gw) // 2, yy + 30))
-    y = top + figs_h + 40
-    for j, (title, items) in enumerate((('KEPT', kept), ('NEW', changed))):
-        tx = 24 + j * (colw + 40)
-        yy = y
-        d.text((tx, yy), title, font=mid, fill=CYAN if title == 'NEW' else INK)
-        yy += 34
-        for it in items:
-            d.text((tx, yy), '-', font=small, fill=DIM)
-            for ln in wrap(probe, it, small, colw - 22):
-                d.text((tx + 20, yy), ln, font=small, fill=INK if title == 'NEW' else DIM)
-                yy += 27
-            yy += 6
+    for i, (g, w, (name, sub)) in enumerate(zip(figs, whos, names)):
+        x = 24 + i * ((W - 48) // 3) + 100
+        col = CYAN if w == 'legs' else DIM
+        d.text((x - 80, y), name, font=mid, fill=col)
+        d.text((x - 80, y + 28), sub, font=tiny, fill=DIM)
+        img.paste(g, (x, y + 60))
+        leg = legs[w]
+        legs_mark(d, x - 14, y + 60, K, leg, box, tiny)
+        ratio = leg['lower'] / leg['thigh']
+        d.text((x - 80, y + 60 + fh + 6), f"knee to floor = {ratio:.2f} x hip to knee", font=tiny, fill=CYAN if ratio >= 1 else (255, 140, 120))
+        # at the game's own size, under it
+        yy = y + 60 + fh + 30 + 30
+        sg = figure(paths[i], small_box, 1)
+        img.paste(sg, (x + (fw - gw) // 2, yy))
+        legs_mark(d, x + (fw - gw) // 2 - 6, yy, 1, leg, box, tiny, label=False)
+    d.text((24, top + 60 + fh + 34), "at the game's own size:", font=tiny, fill=DIM)
     img.save(out)
     print(out, img.size)
 

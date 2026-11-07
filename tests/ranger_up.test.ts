@@ -6,7 +6,12 @@
 //      tests/ranger_up.hashes.json; with RANGER_UP_ALL=1, every frame);
 //   2. his stance, sculpted, from in front, every frame of its loop at 30 a second: crisp; the friend's cyan edge round him;
 //      nothing of the enemy's rim; nothing cut off; the feather's quill fixed in his cap;
-//   3. his face reads at the game's size: two dark eyes on his lit face under the cap, and the brown of his moustache under them.
+//   3. his face reads at the game's size: two dark eyes on his lit face under the cap, and the brown of his moustache under them;
+//   4. HIS LEGS READ TRUE in his mended stance (art/ranger_up_moves.ts; the owner, 7 Nov: “Can you make sure his leg ratio is
+//      correct cause it seems like all these guys have long upper legs and short legs below the knee”): on the screen, each leg
+//      from knee to floor at least as long as from hip to knee, every frame of his breathing; standing straight, a real person's
+//      ratio; and in the game's own crouch, as it was, the shin short (what the mend is for).
+//   Checks 2 and 3 hold for his first sculpt (the game's crouch) and for his mended stance alike.
 //   run: tsx --test tests/ranger_up.test.ts          RANGER_UP_ALL=1 tsx --test tests/ranger_up.test.ts
 
 // @ts-ignore
@@ -21,6 +26,10 @@ import * as nodePath from 'node:path';
 import { RANGER_UP, RU_BROWN, RU_SKIN, paintRu } from '../src/art/ranger_up';
 import { WU_RIM } from '../src/art/warrior_up';
 import { MOVES3 } from '../src/art/moves3';
+import { RU_STAND3 } from '../src/art/ranger_up_moves';
+import { bonesAt, solve, standing } from '../src/art/skeleton';
+import type { Skeleton, V3 } from '../src/art/skeleton';
+import { stage } from '../src/art/skin';
 import { INK, RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { rgba } from '../src/engine/px';
@@ -40,7 +49,7 @@ test('1. the switch is off, and nothing of the game imports the new file', () =>
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('art/ranger_up')) continue;
-    if (/from ['"][^'"]*ranger_up['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    if (/from ['"][^'"]*ranger_up(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'what imports it');
 });
@@ -63,8 +72,7 @@ test('1. every frame the game paints of the Ranger is the very same picture (the
   assert.ok(n > 300, `${n} frames held to their hashes`);
 });
 
-test('2. his stance, sculpted, from in front: crisp, the friend\'s cyan edge, nothing of the enemy\'s rim, nothing cut off, the feather fixed', () => {
-  const m = MOVES3.rstand;
+for (const [which, m] of [['the game\'s crouch', MOVES3.rstand], ['his mended stance', RU_STAND3]] as const) test(`2. his stance (${which}), sculpted, from in front: crisp, the friend's cyan edge, nothing of the enemy's rim, nothing cut off, the feather fixed`, () => {
   const end = m.motion.keys[m.motion.keys.length - 1].at;
   const rim = rgba(WU_RIM);
   const enemy = rgba(ENEMY_RIM);
@@ -106,8 +114,7 @@ test('2. his stance, sculpted, from in front: crisp, the friend\'s cyan edge, no
   assert.equal(faults.length, 0, [...new Set(faults)].slice(0, 12).join('; '));
 });
 
-test('3. his face reads at the game\'s size: two dark eyes on his lit face, the brown of his moustache under them', () => {
-  const m = MOVES3.rstand;
+for (const [which, m] of [['the game\'s crouch', MOVES3.rstand], ['his mended stance', RU_STAND3]] as const) test(`3. his face reads at the game's size (${which}): two dark eyes on his lit face, the brown of his moustache under them`, () => {
   const ink = rgba(INK);
   const skin = new Set(RU_SKIN.map((c) => rgba(c).slice(0, 3).join(',')));
   const lit = new Set(RU_SKIN.slice(2).map((c) => rgba(c).slice(0, 3).join(',')));
@@ -129,4 +136,36 @@ test('3. his face reads at the game\'s size: two dark eyes on his lit face, the 
     for (let y = top + 1; y <= top + 6; y++) for (let x = Math.min(...cols) - 3; x <= Math.max(...cols) + 3; x++) if (brown.has(at(x, y))) tash++;
     assert.ok(tash >= 6, `t ${t}: his moustache under his eyes (${tash} pixels of its brown)`);
   }
+});
+
+/** Each leg on the screen, from in front, in game pixels: hip to knee, and knee to the floor (the shin, and the ankle's own height). */
+function legsOnScreen(s: Skeleton, ankleUp: number): { L: [number, number]; R: [number, number] } {
+  const st = stage('front');
+  const d = (a: V3, b: V3): number => {
+    const [x0, y0] = st.at(a);
+    const [x1, y1] = st.at(b);
+    return Math.hypot(x1 - x0, y1 - y0) / 2;
+  };
+  const leg = (hip: V3, knee: V3, ankle: V3): [number, number] => [d(hip, knee), d(knee, ankle) + d(ankle, [ankle[0], ankle[1], ankle[2] - ankleUp])];
+  return { L: leg(s.hipL, s.kneeL, s.ankleL), R: leg(s.hipR, s.kneeR, s.ankleR) };
+}
+
+test('4. his legs read true in his mended stance: knee to floor at least as long as hip to knee, both legs, every frame', () => {
+  const m = RU_STAND3;
+  const end = m.motion.keys[m.motion.keys.length - 1].at;
+  let least = Infinity;
+  for (let i = 0; i < Math.round(end * 30); i++) {
+    const legs = legsOnScreen(solve(m.build, bonesAt(m.motion.keys, m.rest, i / 30)), m.build.ankle);
+    for (const [hipKnee, kneeFloor] of [legs.L, legs.R]) least = Math.min(least, kneeFloor / hipKnee);
+  }
+  assert.ok(least >= 1.05, `the shortest lower leg is ${least.toFixed(2)} times its thigh`);
+  // (standing straight, his bones' own: a real person's, the lower leg a little longer)
+  const straight = legsOnScreen(solve(m.build, standing(m.build)), m.build.ankle);
+  for (const [a, b] of [straight.L, straight.R]) assert.ok(b / a > 1.1 && b / a < 1.2, `standing straight: ${(b / a).toFixed(2)}`);
+  // (and the game's crouch, as it was: the near shin seen end-on, short; this is what the mend is for)
+  const was = MOVES3.rstand;
+  const old = legsOnScreen(solve(was.build, bonesAt(was.motion.keys, was.rest, 0.6)), was.build.ankle);
+  assert.ok(Math.min(old.L[1] / old.L[0], old.R[1] / old.R[0]) < 0.75, 'the game\'s crouch: a shin that reads short');
+  // his look and his upper body as they were: only the legs are posed anew
+  for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'rhz', 'wEl', 'draw'] as const) assert.equal(m.rest[k], was.rest[k], `${k} as it was`);
 });
