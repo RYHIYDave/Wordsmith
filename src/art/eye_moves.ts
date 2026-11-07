@@ -217,8 +217,9 @@ export function entranceGlow(k: number): number {
 
 /** His tongue drawn down into him (a path down out of his gullet into the dark under the water). */
 const DRAWN_IN: number[][] = TONGUE_RISEN.map((q, i) => [0, -52 - i * 1.2, 28 - i * 19, q[3]]);
-/** His tongue, its tip just out of his gullet, curled like a fern; then rearing, its tip uncurling, taller than it stands. */
-const UNFURL_CURLED: number[][] = [[0, -52, 28], [0, -38, 26], [2, -24, 40], [5, -12, 58], [8, -4, 78], [9, 2, 98], [6, 6, 116], [-2, 8, 128], [-12, 8, 134], [-21, 8, 132], [-26, 8, 124], [-26, 8, 114], [-22, 8, 107]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
+/** His tongue, out of his gullet, rising bowed over to one side, its tip hooked over into its eye from the side (as it meets it when it
+ *  stands: the stalk joining under it); then rearing, taller than it stands. */
+const UNFURL_CURLED: number[][] = [[0, -52, 28], [0, -38, 26], [1, -24, 40], [0, -12, 58], [-4, -2, 78], [-10, 4, 98], [-16, 8, 116], [-20, 10, 132], [-20, 10, 146], [-16, 10, 156], [-9, 10, 162], [-1, 10, 165], [7, 10, 166]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
 const UNFURL_REARED: number[][] = [[0, -52, 28], [0, -30, 24], [3, -6, 32], [10, 12, 54], [22, 22, 84], [28, 30, 116], [22, 34, 148], [8, 36, 176], [-8, 36, 198], [-18, 36, 214], [-20, 38, 228], [-16, 40, 238], [-10, 42, 242]].map((q, i) => [...q, TONGUE_RISEN[i][3]]);
 /** A curve through keys (each a path), at `u` between key `i` and `i + 1` (Catmull-Rom, point by point). */
 function through(keys: number[][][], i: number, u: number): number[][] {
@@ -252,14 +253,11 @@ export function entranceTongue(k: number): { path: number[][]; eye: [number, num
   let i = 0;
   while (i < kk.length - 2 && k >= kk[i + 1]) i++;
   const u = clamp01((k - kk[i]) / (kk[i + 1] - kk[i]));
-  // (out fast, slowing as it rears)
-  const path = through(keys, i, i === 0 ? 1 - (1 - u) ** 1.6 : sm(0, 1, u) * 0.5 + u * 0.5);
+  // (out at a steady rush, slowing as it rears)
+  const path = through(keys, i, i === 0 ? u : sm(0, 1, u) * 0.5 + u * 0.5);
   const eye = tipEye(path);
-  // (its eye shut, tucked down, then lifting to the hero; snapping open)
-  // (its shut lids turned to face you as it comes, a slit of its fire through them; turning to stare at the hero as it snaps open)
-  const g = gazeAt(eye);
-  const turn = sm(E.lids[0] - 1, E.lids[1] + 1, k);
-  const gaze = norm([g[0] * turn, lerp(0.8, g[1], turn), lerp(0.62, g[2], turn)]);
+  // (its shut lids turned to you as it comes, as it looks when it stands, his fire leaking through their crease; snapping open)
+  const gaze = gazeAt(eye);
   const lids = k < E.lids[0] ? 0 : [0.3, 0.72, 1][Math.min(2, k - E.lids[0])];
   // (up on its edge as it comes up out of his throat between his jaws, where they are narrowest; lying down on its side as it rears
   // clear of them)

@@ -133,7 +133,7 @@ def sheet(d, out):
     # (each closer view centred on what is happening: x, y on the screen)
     def near(move, k, cx, cy):
         return frame(d, move, k).crop((cx - 145, cy - 75, cx + 145, cy + 75)).resize((580, 300), Image.NEAREST)
-    close = [(84, 'rising shut, water pouring off', 507, 150), (124, 'the strain', 507, 150), (131, 'the roar', 507, 190), (172, 'the stalk, its eye shut', 507, 110), (189, 'its eye snaps open', 507, 90), (236, 'a tentacle bursts', 250, 260)]
+    close = [(84, 'rising shut, water pouring off', 507, 100), (124, 'the strain', 507, 96), (131, 'the roar', 507, 190), (172, 'the stalk, its eye shut', 507, 84), (189, 'its eye snaps open', 507, 90), (236, 'a tentacle bursts', 250, 260)]
     for i in range(0, len(close), 2):
         two = close[i:i + 2]
         parts.append(block('HIS ENTRANCE, TWICE THE SIZE' if i == 0 else '', '', row([near('entrance', k, cx, cy) for k, _, cx, cy in two], ['%d: %s' % (k, l) for k, l, _, _ in two])))

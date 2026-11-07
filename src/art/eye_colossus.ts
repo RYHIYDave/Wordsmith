@@ -109,6 +109,8 @@ export const CO_TOOTH = ramp('#3a3022', '#62563e', '#8e8060', '#b8aa84', '#ddd2a
 /** His eye's white: yellowed, wet. */
 export const CO_SCLERA = ramp('#4a3e30', '#76664e', '#a08c6a', '#c4b08a', '#e2d4ae');
 /** The blood in it. */
+/** His eye's lids shut over it: thin skin over the ball, paler than the raw rim round it. */
+export const CO_SHUTLID = ramp('#2a1618', '#4c2a2a', '#72423e', '#9a6256', '#c08a74');
 export const CO_VEIN = ramp('#2e080c', '#4e0e14', '#741a1c', '#9a2a26', '#b84034');
 /** His iris: the enemy's fire, pink at its rim burning to gold at the slit (art/mkit.ts FLAME). */
 export const CO_IRIS: Ramp5 = FLAME.map(hex) as unknown as Ramp5;
@@ -141,6 +143,8 @@ const M_GOO = 22;
 const M_BUBBLE = 23;
 const M_STRAND = 24;
 const M_GOB = 25;
+/** His eye's lids shut over it (in the almond its lids part in when open). */
+const M_SHUT = 26;
 /** What each pixel of him is made of, as `ColossusPicture.mat` says it (for the checks). */
 export const MAT = { eye: M_EYE, lid: M_LID, lip: M_LIP, tooth: M_TOOTH, maw: M_MAW, arm: M_ARM, gum: M_GUM, tongue: M_TONGUE, throat: M_THROAT, goo: M_GOO, strand: M_STRAND, gob: M_GOB } as const;
 const mixRGB = (a: RGB, b: RGB, k: number): RGB => [Math.round(a[0] + (b[0] - a[0]) * k), Math.round(a[1] + (b[1] - a[1]) * k), Math.round(a[2] + (b[2] - a[2]) * k)];
@@ -711,8 +715,14 @@ interface Now {
   t: number;
   open: number;
   glow: number;
-  /** Each jaw's swing: its own frame to his space (rows), about PIVOT. */
+  /** Each jaw's swing: its own frame to his space (rows), about PIVOT; its inverse; how much shorter a distance in its frame may be. */
   m: [number[], number[]];
+  inv: [number[], number[]];
+  kd: [number, number];
+  /** Pressed (null: only swung): each jaw's swing as a turn only (rows), and where each of its teeth's roots has gone beyond that turn,
+   *  so that its teeth stay as they are, only moved with the gum they are set in. */
+  rigid: [number[], number[]] | null;
+  teethAt: [number[][], number[][]] | null;
   faces: [Face, Face];
   gap: number;
   /** Drips hanging off his overhangs where they hang now (his space): top x, y, z, how far down, radius at the top and at its bulb. */
@@ -730,9 +740,85 @@ let WX = 0;
 let WY = 0;
 let WZ = 0;
 
-/** A jaw's swing for how open he is: about the line under the water (closing, by its own lean out; shut, upright), and turned square
- *  to the other jaw as it shuts. Rows, its own frame to his space. */
+/** How much of his closing is his jaws PRESSED together rather than swung: shut, each jaw's face is pushed upright against the
+ *  other's with every part of it kept at its own height (a lean taken out, not a turn), so that shut he is his own open jaws pressed
+ *  together, two tall peaks meeting over his seam (swung shut, rigid, his outer flanks would rise round over his peaks: two lobes);
+ *  opening, the swing takes over, nothing of him changing shape as it tears apart. 0 from 0.9 open (his breath, his roar). */
+/** How much of the way his jaws swing up as they press shut (the rest pressed upright): none, or his outer flanks rise round over his
+ *  peaks. Instead each stands taller as it is pressed upright, its face as long as it is (as a swing would stand it), every part of it
+ *  rising with it in its own measure, so that his peaks stay his highest. */
+const PRESS_TURN = 0;
+function pressOf(open: number): number {
+  return open >= 0.9 ? 0 : 1 - sm01(0.55, 0.9, open);
+}
+/** A jaw's swing for how open he is, its inverse (rows, his space to its own frame) and how much shorter a distance in its own frame
+ *  may be than in his (its least stretch; 1 while it only turns). */
+interface Swing {
+  m: number[];
+  inv: number[];
+  kd: number;
+  press: number;
+}
+function swingFull(side: number, open: number): Swing {
+  const m0 = swingOf0(side, open);
+  const w = pressOf(open);
+  if (w === 0) return { m: m0, inv: [m0[0], m0[3], m0[6], m0[1], m0[4], m0[7], m0[2], m0[5], m0[8]], kd: 1, press: 0 };
+  // (pressed: swung up part of the way, so that his peaks rise with it as they lean in (`PRESS_TURN`); the rest of its lean taken out
+  // by a shear across, about the line under the water, every height kept; then turned square to the other)
+  const k = side < 0 ? 0 : 1;
+  const sh = Math.max(0, Math.min(1, 1 - open));
+  const tilt = TILT[k];
+  const dr = PRESS_TURN * tilt * sh;
+  const cr = Math.cos(dr);
+  const sr = Math.sin(dr);
+  const ry = [cr, 0, -side * sr, 0, 1, 0, side * sr, 0, cr];
+  const n0 = FACES[k].n;
+  const n1 = [ry[0] * n0[0] + ry[1] * n0[1] + ry[2] * n0[2], ry[3] * n0[0] + ry[4] * n0[1] + ry[5] * n0[2], ry[6] * n0[0] + ry[7] * n0[1] + ry[8] * n0[2]];
+  // (its lean, from what is left after the swing to what it is at this much open)
+  const l1 = tilt - dr;
+  const l2 = tilt * (1 - sh);
+  const a = (n1[2] / n1[0]) * (Math.abs(Math.tan(l1)) > 1e-6 ? 1 - Math.tan(l2) / Math.tan(l1) : 0);
+  // (turned square: its face's way out of it, along the water, turned onto the other's)
+  const phi = Math.atan2(n1[1], n1[0]);
+  let th = (n1[0] >= 0 ? 0 : Math.PI) - phi;
+  th = Math.atan2(Math.sin(th), Math.cos(th)) * sh;
+  const cz = Math.cos(th);
+  const sz = Math.sin(th);
+  // (rows: the turn, after standing taller, after the shear, after the swing)
+  // (and a little more, as tall as he rose swung shut before: his top breaking the water as it did)
+  const tall = (Math.cos(l2) / Math.cos(l1)) * (1 + 0.084 * sh);
+  const sk = [1, 0, a, 0, 1, 0, 0, 0, tall];
+  const rz = [cz, -sz, 0, sz, cz, 0, 0, 0, 1];
+  const mul = (A: number[], B: number[]): number[] => {
+    const o: number[] = [];
+    for (let r = 0; r < 3; r++) for (let q = 0; q < 3; q++) o.push(A[r * 3] * B[q] + A[r * 3 + 1] * B[3 + q] + A[r * 3 + 2] * B[6 + q]);
+    return o;
+  };
+  const ms = mul(rz, mul(sk, ry));
+  const m = m0.map((v, i) => v + (ms[i] - v) * w);
+  // (its inverse)
+  const [A, B, C, D, E, F, G, H, I] = m;
+  const det = A * (E * I - F * H) - B * (D * I - F * G) + C * (D * H - E * G);
+  const inv = [(E * I - F * H) / det, (C * H - B * I) / det, (B * F - C * E) / det, (F * G - D * I) / det, (A * I - C * G) / det, (C * D - A * F) / det, (D * H - E * G) / det, (B * G - A * H) / det, (A * E - B * D) / det];
+  // (the most the inverse stretches: a distance in its own frame is at most that times one in his)
+  let v = [0.3, 0.5, 0.8];
+  let big = 1;
+  for (let it = 0; it < 40; it++) {
+    const u = [inv[0] * v[0] + inv[1] * v[1] + inv[2] * v[2], inv[3] * v[0] + inv[4] * v[1] + inv[5] * v[2], inv[6] * v[0] + inv[7] * v[1] + inv[8] * v[2]];
+    const r = [inv[0] * u[0] + inv[3] * u[1] + inv[6] * u[2], inv[1] * u[0] + inv[4] * u[1] + inv[7] * u[2], inv[2] * u[0] + inv[5] * u[1] + inv[8] * u[2]];
+    const l = Math.hypot(r[0], r[1], r[2]) || 1;
+    big = Math.sqrt(l);
+    v = [r[0] / l, r[1] / l, r[2] / l];
+  }
+  return { m, inv, kd: Math.min(1, 0.97 / big), press: w };
+}
+/** A jaw's swing for how open he is (rows, its own frame to his space): pressed and swung (`swingFull`). */
 function swingOf(side: number, open: number): number[] {
+  return swingFull(side, open).m;
+}
+/** A jaw swung for how open he is: about the line under the water (closing, by its own lean out; shut, upright), and turned square
+ *  to the other jaw as it shuts. Rows, its own frame to his space. */
+function swingOf0(side: number, open: number): number[] {
   const k = side < 0 ? 0 : 1;
   const tilt = TILT[k];
   const d = tilt * (1 - open);
@@ -760,17 +846,26 @@ function jawToHim(m: readonly number[], p: readonly number[], way = false): [num
   return [m[0] * x + m[1] * y + m[2] * z + o[0], m[3] * x + m[4] * y + m[5] * z + o[1], m[6] * x + m[7] * y + m[8] * z + o[2]];
 }
 const J_PT: [number, number, number] = [0, 0, 0];
-/** A point of his space, in a jaw's own frame (into J_PT). */
-function himToJaw(m: readonly number[], x: number, y: number, z: number): void {
+/** A point of his space, in a jaw's own frame (into J_PT), by the swing's inverse (rows). */
+function himToJaw(inv: readonly number[], x: number, y: number, z: number): void {
   const a = x - PIVOT[0];
   const b = y - PIVOT[1];
   const c = z - PIVOT[2];
-  J_PT[0] = m[0] * a + m[3] * b + m[6] * c + PIVOT[0];
-  J_PT[1] = m[1] * a + m[4] * b + m[7] * c + PIVOT[1];
-  J_PT[2] = m[2] * a + m[5] * b + m[8] * c + PIVOT[2];
+  J_PT[0] = inv[0] * a + inv[1] * b + inv[2] * c + PIVOT[0];
+  J_PT[1] = inv[3] * a + inv[4] * b + inv[5] * c + PIVOT[1];
+  J_PT[2] = inv[6] * a + inv[7] * b + inv[8] * c + PIVOT[2];
 }
-function faceNow(F: Face, m: readonly number[]): Face {
-  return { n: jawToHim(m, F.n, true), b: jawToHim(m, F.b, true), c: jawToHim(m, F.c, true), tilt: F.tilt };
+function faceNow(F: Face, W: Swing): Face {
+  const m = W.m;
+  if (!W.press) return { n: jawToHim(m, F.n, true), b: jawToHim(m, F.b, true), c: jawToHim(m, F.c, true), tilt: F.tilt };
+  // (pressed: its face's way out of it by the inverse's transpose, its ways along it by the swing; each its length 1)
+  const iv = W.inv;
+  const unit = (v: number[]): [number, number, number] => {
+    const l = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  const n = unit([iv[0] * F.n[0] + iv[3] * F.n[1] + iv[6] * F.n[2], iv[1] * F.n[0] + iv[4] * F.n[1] + iv[7] * F.n[2], iv[2] * F.n[0] + iv[5] * F.n[1] + iv[8] * F.n[2]]);
+  return { n, b: unit(jawToHim(m, F.b, true)), c: unit(jawToHim(m, F.c, true)), tilt: F.tilt };
 }
 /** What lies slumped round him at the water: a box round all of each jaw's heaps (his space; x as his right jaw's, mirrored). */
 const HEAP_BOX: readonly [number, number, number, number, number, number] = (() => {
@@ -1425,17 +1520,38 @@ function dripsNow(an: ColossusAnim, m: [number[], number[]]): { drips: number[];
 export function meltSplashes(an: ColossusAnim): number[] {
   return dripsNow(an, [swingOf(-1, an.open), swingOf(1, an.open)]).splashes;
 }
+/** While pressed, each jaw's turn alone, and how far each tooth's root has gone beyond it. */
+function teethPressed(open: number, WL: Swing, WR: Swing): { rigid: [number[], number[]] | null; teethAt: [number[][], number[][]] | null } {
+  if (!WL.press && !WR.press) return { rigid: null, teethAt: null };
+  const P = placed();
+  const rigid: [number[], number[]] = [swingOf0(-1, open), swingOf0(1, open)];
+  const W = [WL, WR];
+  const at = [0, 1].map((k) =>
+    P.teeth[k].map((T) => {
+      const R = [T.p[0], T.p[1], T.p[2]];
+      const a = jawToHim(W[k].m, R);
+      const b = jawToHim(rigid[k], R);
+      return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    }),
+  ) as [number[][], number[][]];
+  return { rigid, teethAt: at };
+}
 /** The frame being painted. */
 function nowOf(an: ColossusAnim): Now {
-  const mL = swingOf(-1, an.open);
-  const mR = swingOf(1, an.open);
+  const WL = swingFull(-1, an.open);
+  const WR = swingFull(1, an.open);
+  const mL = WL.m;
+  const mR = WR.m;
   const { drips, gobs } = dripsNow(an, [mL, mR]);
   return {
     t: an.t,
     open: an.open,
     glow: an.glow,
     m: [mL, mR],
-    faces: [faceNow(FACES[0], mL), faceNow(FACES[1], mR)],
+    inv: [WL.inv, WR.inv],
+    kd: [WL.kd, WR.kd],
+    ...teethPressed(an.open, WL, WR),
+    faces: [faceNow(FACES[0], WL), faceNow(FACES[1], WR)],
     gap: SHUT_GAP * sm01(0.15, 0.85, 1 - an.open),
     drips,
     gobs,
@@ -1660,8 +1776,15 @@ class Scene {
     }
   }
 
-  /** ONE JAW (`side` -1 his left, 1 his right), at a point of his own space. */
+  /** ONE JAW (`side` -1 his left, 1 his right), at a point of his own space (pressed, its distance shortened to stay under the truth). */
   halfAt(side: number, x: number, y: number, z: number, f: Found | null, exact = false, nobound = false): number {
+    const d = this.halfAt0(side, x, y, z, f, exact, nobound);
+    const N = this.now;
+    if (!N) return d;
+    const kd = N.kd[side < 0 ? 0 : 1];
+    return kd === 1 ? d : d * kd;
+  }
+  halfAt0(side: number, x: number, y: number, z: number, f: Found | null, exact = false, nobound = false): number {
     const J = JAW_MAKE[side < 0 ? 0 : 1];
     const Bx = J.box;
     const N = this.now;
@@ -1673,7 +1796,7 @@ class Scene {
       WX = x;
       WY = y;
       WZ = z;
-      himToJaw(N.m[side < 0 ? 0 : 1], x, y, z);
+      himToJaw(N.inv[side < 0 ? 0 : 1], x, y, z);
       x = J_PT[0];
       y = J_PT[1];
       z = J_PT[2];
@@ -1819,7 +1942,21 @@ class Scene {
         y -= F.n[1] * gap;
         z -= F.n[2] * gap;
       }
-      for (const T of P.teeth[side < 0 ? 0 : 1]) {
+      const TA = N && N.teethAt ? N.teethAt[side < 0 ? 0 : 1] : null;
+      const MR = N && N.rigid ? N.rigid[side < 0 ? 0 : 1] : null;
+      const TT = P.teeth[side < 0 ? 0 : 1];
+      for (let ti = 0; ti < TT.length; ti++) {
+        const T = TT[ti];
+        if (TA && MR) {
+          // (pressed: each tooth only turned, moved with its gum)
+          const o = TA[ti];
+          const a0 = xw - o[0] - PIVOT[0];
+          const b0 = yw - o[1] - PIVOT[1];
+          const c0 = zw - o[2] - PIVOT[2];
+          x = MR[0] * a0 + MR[3] * b0 + MR[6] * c0 + PIVOT[0] - F.n[0] * gap;
+          y = MR[1] * a0 + MR[4] * b0 + MR[7] * c0 + PIVOT[1] - F.n[1] * gap;
+          z = MR[2] * a0 + MR[5] * b0 + MR[8] * c0 + PIVOT[2] - F.n[2] * gap;
+        }
         const b = T.box;
         if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) continue;
         const Pt = T.p;
@@ -1913,20 +2050,31 @@ class Scene {
     let bulb = ell(u, w + 3, v, 0, 0, 0, W + 8, Dp + 4, H + 7);
     bulb = smax(bulb, Math.max(Math.hypot(u, w * 0.8, v + K) - R, Math.hypot(u, w * 0.8, v - K) - R), 5);
     // its lids parted in an almond in front, pointed at its corners
-    // (shut, a thin slit between its lids, its fire glimmering through; open, as drawn)
-    const ho0 = (H - 1.5) * lids * Math.max(0, 1 - (u / (W + 2)) ** 2);
-    const ho = lids >= 1 ? ho0 : Math.max(ho0, 1.1 * (1 - lids) * Math.max(0, 1 - (u / (W + 2)) ** 2) - 0.2);
-    const hole = Math.max(Math.abs(v) - ho, -(w + 8));
+    let hole: number;
+    let lid = Infinity;
+    if (lids >= 1) hole = Math.max(Math.abs(v) - (H - 1.5) * Math.max(0, 1 - (u / (W + 2)) ** 2), -(w + 8));
+    else {
+      // SHUT (and opening): the same almond as when open, and in it his lids shut over the ball, bulging with it, meeting along a wet
+      // crease a little below its middle; parting along it as it opens
+      const al = Math.max(0, 1 - (u / (W + 2)) ** 2);
+      hole = Math.max(Math.abs(v) - (H - 1.5) * al, -(w + 8));
+      const vc = -0.24 * H * Math.max(0, 1 - (u / W) ** 2) * (1 - lids);
+      const cv = Math.abs(v - vc);
+      lid = ell(u, w, v, 0, 0, 0, W + 1.6, Dp + 1.6, H + 1.6);
+      lid += 1.5 * Math.max(0, 1 - (cv / (2 * this.eyeK + 0.5)) ** 2);
+      lid = Math.max(lid, (H - 1.5) * lids * al - cv);
+    }
     const cup = smax(bulb, -hole, 4);
-    let d = Math.min(de, cup);
+    let d = Math.min(de, cup, lid);
     let tg = Infinity;
     if (this.tongue) {
       const fT = f ? TONGUE_F : null;
       tg = this.armAt(200, x, y, z, fT, this.tongue, exact);
-      d = Math.min(de, smin(cup, tg, 14));
+      d = Math.min(de, lid, smin(cup, tg, 14));
     }
     if (f) {
       if (de <= d + 0.01) f.mat = M_EYE;
+      else if (lid <= d + 0.01) f.mat = M_SHUT;
       else {
         if (tg < cup) Object.assign(f, TONGUE_F);
         f.mat = cup < tg + 4 && hole < 7 && w > -12 ? M_LID : M_TONGUE;
@@ -2439,6 +2587,49 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         // the raw rim of his tongue's tip, cupped round his eye
         col = CO_RAW[Math.max(0, Math.min(4, tn))];
         gloss = 1.3;
+      } else if (mat === M_SHUT) {
+        // HIS LIDS SHUT over his eye: thin wet skin over the ball, paler than the raw rim of the almond round it, bulging with it, veined;
+        // the fold of the upper lid arched over the ball; where they meet, a wet dark crease dipping to its middle; his burning iris
+        // glowing through the thin skin, a round of pink fire under the lids, and leaking pink and gold through the crease over it
+        const ex = fx - E[0];
+        const ey = fy - E[1];
+        const ez = fz - E[2];
+        const EA = S.eyeA;
+        const EV = S.eyeV;
+        const au = ex * EA[0] + ey * EA[1] + ez * EA[2];
+        const av = ex * EV[0] + ey * EV[1] + ez * EV[2];
+        const Wk = COLOSSUS.eyeW * S.eyeK;
+        const Hk = COLOSSUS.eyeH * S.eyeK;
+        const lids = S.lids;
+        const across = Math.max(0, 1 - (au / Wk) ** 2);
+        const vc = -0.24 * Hk * across * (1 - lids);
+        const cv = av - vc;
+        const up = 0.62 * (Hk - vc) * Math.pow(across, 0.7);
+        const lo = -0.5 * (Hk + vc) * Math.pow(across, 0.7);
+        const vein = Math.abs(vn(au * 0.15, av * 0.15, fz * 0.05, 68) - 0.5) < 0.02 + 0.02 * (1 - across) || Math.abs(vn(au * 0.33, av * 0.33, fz * 0.1, 69) - 0.5) < 0.013;
+        const cw = 0.9 + 0.8 * S.eyeK;
+        const tl = Math.max(0, Math.min(4, tn));
+        // (the round of his iris under the lids: how near its middle)
+        const IRk = COLOSSUS.eyeH * S.eyeK - 1;
+        const ri = Math.hypot(au, av) / IRk;
+        const through = ri < 1 ? (1 - ri) ** 0.8 : 0;
+        if (Math.abs(cv) < cw * 0.6 && ri < 1.15 && vn(au * 0.14, 0, 0, 71) > 0.2 + 0.4 * ri) {
+          // (his fire through the crease over his iris, in glints, gold at its middle)
+          col = CO_IRIS[ri < 0.45 ? 4 : ri < 0.8 ? 3 : 2];
+          glow = true;
+        } else if (Math.abs(cv) < cw) col = ri < 1 ? CO_IRIS[0] : CO_RAW[0];
+        else if (through > 0 && hp(i, j, 73) < 0.25 + 0.75 * through) {
+          // (his iris glowing through the thin skin: pink, brighter to its middle)
+          col = CO_IRIS[Math.max(0, Math.min(3, Math.floor(through * 3.2 + bayer(i, j) * 0.8 + (tl > 2 ? 0.5 : 0))))];
+          glow = through > 0.35;
+        }
+        else if (cv > 0 && cv < cw + 1.4) col = CO_SHUTLID[Math.min(4, tl + 1)];
+        else if (Math.abs(cv - up) < 0.8 * S.eyeK + 0.3 && across > 0.1) col = CO_SHUTLID[Math.max(0, tl - 2)];
+        else if (Math.abs(cv - lo) < 0.6 * S.eyeK + 0.2 && across > 0.2) col = CO_SHUTLID[Math.max(0, tl - 1)];
+        else if (vein) col = CO_VEIN[Math.max(1, Math.min(3, tl))];
+        else if (Math.abs(cv) < cw + 4 * S.eyeK && across > 0.3 && hp(i, j, 72) < 0.5 * across) col = CO_IRIS[Math.max(0, Math.min(1, tl - 1))];
+        else col = CO_SHUTLID[Math.max(0, Math.min(4, tl + (cv > 0 && cv < up ? 1 : 0)))];
+        gloss = 1.6;
       } else if (mat === M_LIP) {
         // his seam's lips: rotten, swollen, wet and dark
         col = CO_LIP[Math.max(0, Math.min(4, tn))];
