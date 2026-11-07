@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """THE SWAMP COLOSSUS (the new Drowned Eye), THE SHEETS for the owner's phone (art/eye_colossus.ts; a mock-up, not in the game):
 the pieces tools/eye_redo_pics.ts painted, one under another, 1200 wide, each with its caption over it.
-   python3 tools/eye_redo_sheet.py look <pieces dir> <out.png>
+   python3 tools/eye_redo_sheet.py look <pieces dir> <out.png>          (his drawing: docs/ref/eye_drawing_from_owner_2026-11-07.jpg)
    python3 tools/eye_redo_sheet.py arena <pieces dir> <today's shot (tools/scenarios/eye_today.mjs, x_risen.png)> <out.png>"""
 import json, os, sys
 from PIL import Image, ImageDraw, ImageFont
@@ -72,12 +72,15 @@ def plan():
     d.rectangle([X(-13), Y(top), X(13), Y(edge)], fill=(12, 20, 16))
     d.rectangle([X(-13), Y(edge), X(-across / 2), Y(bottom - 0.4)], fill=(18, 28, 22))
     d.rectangle([X(across / 2), Y(edge), X(13), Y(bottom - 0.4)], fill=(18, 28, 22))
-    # him: his head at the water (his neck and the flesh run off him), his tongue out before him, the eye on its tip
-    d.ellipse([X(-300 / TL), Y(-200 / TL), X(300 / TL), Y(160 / TL)], fill=(40, 46, 34), outline=(120, 60, 90))
-    d.line([X(0), Y(-180 / TL), X(0), Y(160 / TL)], fill=(14, 12, 36), width=3)
-    d.line([X(0), Y(150 / TL), X(-44 / TL), Y(214 / TL), X(-84 / TL), Y(212 / TL)], fill=(110, 70, 72), width=8)
-    d.ellipse([X(-92 / TL) - 9, Y(210 / TL) - 9, X(-92 / TL) + 9, Y(210 / TL) + 9], fill=(255, 79, 138))
-    d.text((X(1.0), Y(-1.6)), 'his head', font=mid, fill=PALE)
+    # him: his two jaws at the water, the V between them opening toward you, his throat at the back of it; his tongue up out of the
+    # bottom of the V, the eye on its tip (pink) (art/eye_colossus.ts JAW_MAKE, FACES, EYE_RISEN)
+    for sx in (-1, 1):
+        pts = [(sx * 20 / TL, 130 / TL), (sx * 40 / TL, -60 / TL), (sx * 120 / TL, -150 / TL), (sx * 250 / TL, -110 / TL), (sx * 300 / TL, 0), (sx * 260 / TL, 110 / TL), (sx * 150 / TL, 150 / TL)]
+        d.polygon([(X(u), Y(v)) for (u, v) in pts], fill=(40, 46, 34), outline=(120, 60, 90))
+    d.polygon([(X(-20 / TL), Y(130 / TL)), (X(20 / TL), Y(130 / TL)), (X(40 / TL), Y(-60 / TL)), (X(-40 / TL), Y(-60 / TL))], fill=(46, 16, 32))
+    d.line([X(0), Y(-40 / TL), X(0), Y(46 / TL)], fill=(110, 70, 72), width=8)
+    d.ellipse([X(-6 / TL) - 16, Y(46 / TL) - 6, X(-6 / TL) + 16, Y(46 / TL) + 6], fill=(255, 79, 138))
+    d.text((X(2.2), Y(-1.4)), 'his jaws', font=mid, fill=PALE)
     # the stone, a tile grid
     d.rectangle([X(-across / 2), Y(edge), X(across / 2), Y(edge + deep)], fill=(78, 74, 86), outline=(160, 156, 170), width=2)
     for k in range(1, across):
@@ -118,16 +121,29 @@ src = sys.argv[2]
 spec = {p['file']: p for p in json.load(open(os.path.join(src, 'sheet.json')))}
 img = lambda f: Image.open(os.path.join(src, f)).convert('RGB')
 if mode == 'look':
-    parts = [header('THE SWAMP COLOSSUS: HIS NEW HEAD (A MOCK-UP)', [
-        'His body scrapped. A huge head risen out of the black water, ancient and gross, melting and dripping; it splits open down its middle for his maw; his eye on the end of his tongue, supple as a tentacle; spittle and goo all over him. His tentacles kept, each now one smooth taper. Painted at the game\'s own size (two picture pixels to a game pixel), on the fen\'s own water and stone.'])]
-    for f in ['look_shut.png', 'look_open.png', 'look_shut_2x.png', 'look_open_2x.png', 'look_eye.png', 'look_arm.png', 'look_under.png', 'look_back.png']:
+    parts = [header('THE SWAMP COLOSSUS: HIS DRAWING, PAINTED (A MOCK-UP)', [
+        'His drawing taken as the idea: he rises out of the black water already split wide open in a deep V, two tall pointed jaws pried apart, teeth down both edges, his throat inside; his tongue twisting up out of it in an S, towering over his jaws, the eye on its tip the highest of all, lying on its side; tentacles curling out on both sides. Melting and dripping, spittle and goo. Painted at the game\'s own size (two picture pixels to a game pixel) unless it says, on the fen\'s own water and stone.'])]
+    # (his drawing beside the still, both the same height)
+    still = img('look_still.png')
+    drawing = Image.open('docs/ref/eye_drawing_from_owner_2026-11-07.jpg').convert('RGB').crop((70, 960, 1110, 1960))
+    H = still.height
+    gap = 16
+    if drawing.width * H / drawing.height + gap + still.width > W - 24:
+        raise SystemExit('the drawing and the still are too wide side by side')
+    dw = round(drawing.width * H / drawing.height)
+    drawing = drawing.resize((dw, H), Image.LANCZOS)
+    row = Image.new('RGB', (dw + gap + still.width, H), BG)
+    row.paste(drawing, (0, 0)); row.paste(still, (dw + gap, 0))
+    p = spec['look_still.png']
+    parts.append(block(p['title'], p['note'], row))
+    for f in ['look_risen.png', 'look_2x.png', 'look_eye.png', 'look_teeth.png', 'look_under.png', 'look_back.png']:
         p = spec[f]
         parts.append(block(p['title'], p['note'], img(f)))
     stack(parts, sys.argv[3])
 else:
     today = Image.open(sys.argv[3]).convert('RGB').resize((507, 234), Image.NEAREST)
     parts = [header('THE NEW ARENA, AS THE PLAYER SEES IT (A MOCK-UP)', [
-        'A phone held sideways: the game\'s screen, 507 by 234 game pixels, at the game\'s own size (two picture pixels to a game pixel). The stone a big rectangle; the black water across the top of the screen; him in it, filling the top of the screen, facing you always. The camera leaned toward him (as it leans toward the Moth) so the hero stands low on the screen.'])]
+        'A phone held sideways: the game\'s screen, 507 by 234 game pixels, at the game\'s own size. The stone a big rectangle; the black water across the top; him in it, facing you. The camera leaned toward him, the hero at the foot of the screen, his eye on it.'])]
     for name in ['arena_p1', 'arena_p2']:
         p = spec[name + '.png']
         parts.append(block(p['title'], p['note'], img(name + '.png')))
@@ -138,8 +154,8 @@ else:
     new_small = img('arena_p2.png').resize((507, 234), Image.NEAREST)
     row = Image.new('RGB', (W, 234), BG)
     row.paste(today, (24, 0)); row.paste(new_small, (W - 24 - 507, 0))
-    parts.append(block('TODAY (LEFT) AND NEW (RIGHT), SMALL', 'Left, the game today: the pool in the middle of the round ring, the Eye lying in it, about as tall as the hero, seen from above. Right, the new arena: the stone a rectangle, the water across the top, him risen and filling it.', row))
+    parts.append(block('TODAY (LEFT) AND NEW (RIGHT), SMALL', 'Left, the game today: the pool in the middle of the round ring, the Eye lying in it, about as tall as the hero, seen from above. Right, the new arena: the stone a rectangle, the water across the top, him risen in it, split open, his eye high on the screen.', row))
     p = spec['arena_mid.png']
     parts.append(block(p['title'], p['note'], img('arena_mid.png')))
-    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. His head where it meets the water, his seam down its middle; his tongue out of it, the eye on its tip (pink). His tentacles rise in the water just off the stone: phase 1 at a third and two thirds along it (1); phases 2 and 3 left, middle and right (2/3). A slam: 6 tiles along the stone toward the hero, 1.2 wide (orange). The three pillars of phase 3, where they could stand (pink, not drawn yet). The hero cyan.', plan()))
+    parts.append(block('THE ARENA FROM ABOVE: A PLAN', 'A tile a square. His jaws at the water, the V between them, his throat at its back, the eye on his tongue (pink). His tentacles rise in the water just off the stone: phase 1 at a third and two thirds along it (1); phases 2 and 3 left, middle and right (2/3). A slam: 6 tiles along the stone toward the hero, 1.2 wide (orange). The three pillars of phase 3, where they could stand (pink, not drawn yet). The hero cyan.', plan()))
     stack(parts, sys.argv[4])

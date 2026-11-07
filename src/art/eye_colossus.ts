@@ -565,7 +565,7 @@ interface JawMake {
 /** How far each face of the V leans out from upright (radians): his left the further. */
 const TILT: readonly [number, number] = [0.77, 0.68];
 /** Each jaw's peak, up from the water and back from his middle (his left the lower), and its x worked out to sit on its face's edge. */
-const PEAK_Z: readonly [number, number] = [138, 158];
+const PEAK_Z: readonly [number, number] = [128, 146];
 const PEAK_Y = -22;
 const peakX = (k: number): number => {
   const t = TILT[k];
@@ -587,7 +587,7 @@ const JAW_MAKE: readonly [JawMake, JawMake] = [
     lumps: [
       // the flesh run off him slumped at the water round him, wide and low, in heaps; a jowl of melting flesh sagging off his outer
       // flank, hanging out over the water; tumours bulging out of him
-      [128, 24, -16, 166, 124, 40, 32], [244, -6, -6, 92, 88, 26, 24], [74, 118, -4, 70, 46, 22, 20], [200, 80, -2, 60, 46, 20, 18],
+      [120, 24, -16, 140, 120, 38, 32], [214, -6, -6, 84, 84, 24, 24], [74, 116, -4, 66, 44, 22, 20], [184, 76, -2, 54, 44, 20, 18],
       [190, 30, 60, 34, 42, 26, 20], [150, 60, 36, 24, 22, 20, 12], [150, -20, 90, 22, 24, 18, 12],
     ],
     ax: 90,
@@ -597,7 +597,7 @@ const JAW_MAKE: readonly [JawMake, JawMake] = [
   {
     spine: fang(peakX(1), PEAK_Z[1], 1),
     lumps: [
-      [122, 22, -16, 158, 120, 38, 32], [234, -4, -4, 88, 86, 26, 24], [70, 116, -2, 68, 46, 22, 20], [192, 78, -2, 58, 46, 20, 18],
+      [114, 22, -16, 134, 116, 36, 32], [206, -4, -4, 80, 82, 24, 24], [70, 114, -2, 64, 44, 22, 20], [178, 74, -2, 52, 44, 20, 18],
       [178, 26, 72, 30, 38, 24, 20], [140, 56, 46, 22, 20, 18, 12], [140, -18, 108, 20, 22, 16, 12],
     ],
     ax: 86,
@@ -904,8 +904,8 @@ function placed(): Placed {
 /** HIS TONGUE, as supple as a tentacle, the eye on its tip: out of his gullet at the bottom of the V and up in a long S, towering
  *  over his jaws, the eye on its tip the highest of all of him. Its spine (x, y, z, radius); the eye's middle at its end. */
 export const TONGUE_RISEN: ReadonlyArray<readonly [number, number, number, number]> = [
-  [0, -52, 28, 19], [0, -32, 24, 22], [3, -10, 32, 24], [10, 8, 54, 23], [30, 18, 86, 21], [44, 26, 118, 19], [34, 32, 146, 17],
-  [2, 36, 162, 16], [-32, 40, 176, 15], [-50, 42, 188, 14], [-42, 44, 200, 14], [-24, 45, 208, 15], [-10, 46, 212, 18],
+  [0, -52, 28, 21], [0, -30, 24, 25], [3, -6, 32, 27], [10, 12, 54, 26], [30, 22, 84, 24], [46, 30, 114, 22], [36, 36, 142, 20],
+  [4, 40, 160, 19], [-30, 42, 174, 18], [-50, 44, 188, 17], [-44, 45, 200, 17], [-26, 46, 208, 18], [-10, 46, 212, 20],
 ];
 export const EYE_RISEN: readonly [number, number, number] = [-6, 46, 224];
 /** Under the water (phase 1): his tongue out of the V and reared forward in the water before him, the eye on it looking up at you
@@ -1191,7 +1191,7 @@ class Scene {
       // (inside him, wet; at its back, seen from behind, his hide)
       f.mat = y < -46 ? M_FLESH : z < 8 && y > -16 ? M_MAW : M_THROAT;
       // (deep in his gullet it glows; round its rim, faintly; and the throat round it, faintly, low down)
-      f.glowK = g < 3 ? 0.4 + 0.6 * sm01(-30, -60, y) : Math.max(0.5 * sm01(22, 0, g), 0.46 * sm01(64, 4, z));
+      f.glowK = g < 3 ? 0.4 + 0.6 * sm01(-30, -60, y) : Math.max(0.5 * sm01(22, 0, g), 0.44 * sm01(44, 0, z));
       f.lx = x;
       f.ly = y;
       f.lz = z;
@@ -1415,8 +1415,9 @@ class Scene {
       const out = ell(x, yb, z, 0, 0, 40, 440, 330, 300);
       if (out > 100) d = Math.min(d, out);
       else {
-        // (his jaws, his tongue, his drool: his throat is inside his V)
-        d = Math.min(d, this.halfAt(-1, x, yb, z, null, true), this.halfAt(1, x, yb, z, null, true), this.tongueAt(x, yb, z, null, true), this.strandsAt(x, yb, z, true));
+        // (his jaws, his tongue, his drool: his throat is inside his V; while he lies deep, his jaws whole, the rings round them smooth)
+        const jaws = this.drop >= 60 ? Math.min(fleshAt(-1, x, yb, z, null), fleshAt(1, x, yb, z, null)) : Math.min(this.halfAt(-1, x, yb, z, null, true), this.halfAt(1, x, yb, z, null, true));
+        d = Math.min(d, jaws, this.tongueAt(x, yb, z, null, true), this.strandsAt(x, yb, z, true));
       }
     }
     return d;
@@ -2142,7 +2143,7 @@ export function mawParts(): { eye: readonly [number, number, number]; peaks: typ
 // WHAT HE COSTS
 
 /** A frame of him risen at the game's size (picture pixels, two to a game pixel: what he spans with his arms and what hangs off him, and a little room), and what it holds at 4 bytes a pixel. */
-export const COLOSSUS_FRAME = { w: 960, h: 680 } as const;
+export const COLOSSUS_FRAME = { w: 800, h: 480 } as const;
 export function costOf(fps: number, seconds: number, frame: { w: number; h: number } = COLOSSUS_FRAME): { frameMB: number; perSecondMB: number; totalMB: number } {
   const frameMB = (frame.w * frame.h * 4) / (1024 * 1024);
   return { frameMB, perSecondMB: frameMB * fps, totalMB: frameMB * fps * seconds };
