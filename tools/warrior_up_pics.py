@@ -91,10 +91,10 @@ def legs_panel(dir, spec, W, fonts, measure_only=False, img=None, d=None, y0=0):
     intro = ('His guard, three times as big, from in front and from straight toward you: as you approved him, beside now. Over '
              'each leg, as the screen shows it: hip to knee (yellow), knee to the floor (green), and below, knee to floor over '
              'hip to knee. Standing straight his lower leg is a little longer than his thigh, as on a real person; in his crouch '
-             'his knees were bent toward you, so each shin was seen end-on and looked short. Now the same low guard, his body, '
-             'arms and sword as they were: his front foot further forward, his back foot further back, a longer, lower '
-             'guard. A leg drawn dim is one whose shin is hidden from that side. The same holds for every pose he holds, '
-             'from all eight sides (a test).')
+             'his knees were bent toward you, so each shin was seen end-on and looked short. Now the same low guard, his body '
+             'as it was: his front foot further forward, his back foot further back, a longer, lower guard (and his sword '
+             'now carried level behind him, so that it is seen from every side: the second sheet). A leg drawn dim is one '
+             'whose shin is hidden from that side. The same holds for every pose he holds, from all eight sides (a test).')
     lines = wrap(probe, intro, small, W - 48)
     paths = [os.path.join(dir, e['file']) for e in spec]
     box = union_box(paths)
@@ -380,7 +380,10 @@ def sheet2(dir, out):
              'as armour, and the slit cut dark across the top of the snout, its upper lip lit and its lower edge in shadow, the '
              'faint cyan of his eyes in it. Seen from behind, the snout is hidden by his head. '
              'HIS EIGHT FACINGS: each truly painted, none of them a mirror, so that his sword is in his right hand whichever way he '
-             'faces, as he asked. '
+             'faces, as he asked. HIS SWORD, SEEN FROM EVERY SIDE: held as it was, point low behind him, from down and to the '
+             'left it was wholly hidden by him and from toward you only a stub showed. Now his guard carries it level behind him, '
+             'pointing back and out to his right, his run with his hands up by his right breast, and in town it rides point up on '
+             'his back, over his right shoulder: from every side a good length of its light, its point among it, is seen. '
              'Each picture below sits where he faces: down and to the right at the bottom right, and so round. At the foot, his '
              'fall before and now (the first sheet\'s top now holds his legs, made true). Pictures only: not in the game.')
     lines = wrap(probe, intro, small, W - 48)
@@ -401,7 +404,15 @@ def sheet2(dir, out):
     hgt += 22 + 34 + 3 * (24 + hh + 20) + 24 + 70
     for sec, paths, box in grids:
         hgt += 22 + 34 + grid_h(box, 3) + 10
-    hgt += 22 + 34 + max(grid_h(box, 1) for _, _, box in grids) + 30
+    # (at the game's own size, the compasses side by side, as many to a line as fit)
+    small_lines = []
+    for sec, paths, box in grids:
+        w = 3 * (box[2] - box[0]) + 2 * gap
+        if not small_lines or small_lines[-1][0] + w > W - 24:
+            small_lines.append([24, []])
+        small_lines[-1][1].append((sec, paths, box, small_lines[-1][0]))
+        small_lines[-1][0] += w + 40
+    hgt += 22 + 34 + sum(max(grid_h(box, 1) for _, _, box, _ in ln) + 30 for _, ln in small_lines)
     more = []
     for sec in spec.get('sections', []):
         hgt += 22 + 34
@@ -481,12 +492,11 @@ def sheet2(dir, out):
     y += 22
     d.text((24, y), "The same at the game's own size", font=mid, fill=CYAN)
     y += 34
-    x = 24
-    for sec, paths, box in grids:
-        d.text((x, y - 4), sec['title'], font=tiny, fill=INK)
-        w = compass(sec, paths, box, 1, x, y + 14, labels=False)
-        x += w + 40
-    y += max(grid_h(box, 1) for _, _, box in grids) + 30
+    for _, ln in small_lines:
+        for sec, paths, box, x in ln:
+            d.text((x, y - 4), sec['title'], font=tiny, fill=INK)
+            compass(sec, paths, box, 1, x, y + 14, labels=False)
+        y += max(grid_h(box, 1) for _, _, box, _ in ln) + 30
     # (and the rows of before and now that the first sheet has no room for)
     titled = set()
     for title, label, paths, box, nrow in more:

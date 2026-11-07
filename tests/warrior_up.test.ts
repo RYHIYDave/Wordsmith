@@ -19,6 +19,10 @@
 //      holds, from each of his eight sides, each leg whose shin is seen reads at least 1.05 times as long below the knee as above
 //      it; in his runs, at least 1 wherever a foot is flat on the floor bearing him (art/warrior_up_review.ts WU_LEGS_HELD,
 //      wuLegFaults); and the measure sees a short shin (his guard as it was).
+//  10. HIS SWORD SEEN FROM EVERY SIDE (the coordinator, 6 Nov 2026: from down and to the left it vanished behind him; "a hero must
+//      read armed in every facing"): in every frame of every list he holds or runs in, from each of his eight sides (his card's
+//      from in front), at least WU_BLADE_LEAST game pixels of the blade's light, its point among them (art/warrior_up_review.ts
+//      WU_BLADE_HELD, wuBladeSeen); and the measure sees a hidden sword (his guard as it was, from down and to the left).
 //   run: tsx --test tests/warrior_up.test.ts          WARRIOR_UP_ALL=1 tsx --test tests/warrior_up.test.ts
 
 // @ts-ignore
@@ -38,7 +42,7 @@ import { paintWu, wuFacing, wuSmeared } from '../src/art/warrior_up_art';
 import type { WuActorArt } from '../src/art/warrior_up_art';
 import { WU_REST, WU_REST_SEEN, WU_TOWN_REST, WU_TOWN_REST_SEEN } from '../src/art/warrior_up_moves';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_MOVES, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLAM_HELD, WU_SLAM_HIT, WU_SLASH3, WU_STRIKE3, WU_STRIKE_HELD, WU_STRIKE_HIT, WU_STRIKE_POISE, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, swingCarried } from '../src/art/warrior_up_moves';
-import { WU_LEGS_HELD, WU_LEGS_RUNS, WU_LEG_SEEN, WU_THROUGH, warriorReview, wuCoverFindings, wuLegFaults, wuLegs, wuSword } from '../src/art/warrior_up_review';
+import { WU_BLADE_HELD, WU_BLADE_LEAST, WU_LEGS_HELD, WU_LEGS_RUNS, WU_LEG_SEEN, WU_THROUGH, warriorReview, wuBladeFaults, wuBladeHeld, wuBladeSeen, wuCoverFindings, wuLegFaults, wuLegs, wuSword } from '../src/art/warrior_up_review';
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { makeHeroArt3 } from '../src/art/heroes3';
 import { lookOfPlace } from '../src/art/heroes';
@@ -89,13 +93,15 @@ const MOMENTS = moments();
 
 /** What is wrong in any of his pictures, every moment from every side: painted once, each picture looked at by tests 4 and 6
  * together (and not kept: eight sides of every moment is too many pictures to hold). */
-let swept: { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number } | null = null;
+let swept: { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number; blade: string[]; bladeLeast: Record<string, number> } | null = null;
 const KEY_OF = new Map<Move3, string>(Object.entries(WU_MOVES).map(([k, m]) => [m, k]));
-function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number } {
+function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: number; blade: string[]; bladeLeast: Record<string, number> } {
   if (swept) return swept;
   const cover: string[] = [];
   const crisp: string[] = [];
   const legs: string[] = [];
+  const blade: string[] = [];
+  const bladeLeast: Record<string, number> = {};
   let legsSeen = 0;
   for (const { m, t } of MOMENTS) {
     const key = KEY_OF.get(m);
@@ -112,9 +118,14 @@ function sweep(): { cover: string[]; crisp: string[]; legs: string[]; legsSeen: 
         legs.push(...wuLegFaults(key, frame, f, v));
         legsSeen += wuLegs(f.s, v, undefined, { z: f.drawn.z, w: f.px.w, h: f.px.h }).filter((l) => l.seen >= WU_LEG_SEEN).length;
       }
+      if (wuBladeHeld(key, m.name, frame, v)) {
+        blade.push(...wuBladeFaults(key, m.name, frame, f, v));
+        const b = wuBladeSeen(f);
+        bladeLeast[v] = Math.min(bladeLeast[v] ?? Infinity, b.point ? b.seen : 0);
+      }
     }
   }
-  return (swept = { cover, crisp, legs, legsSeen });
+  return (swept = { cover, crisp, legs, legsSeen, blade, bladeLeast });
 }
 
 // --- 1. the switch, and the game's knight unchanged while it is off ------------------------------------------------------
@@ -472,8 +483,33 @@ test('9. ... the measure: standing straight his bones read a man\'s legs; his gu
   assert.ok(least(WU_REST_SEEN, 'front') < 0.8 && least(WU_REST_SEEN, 'toward') < 0.75, 'his guard as he saw it: a shin that reads short');
   assert.ok(least(WU_TOWN_REST_SEEN, 'toward') < 1.0, 'his town stance as he saw it: short');
   for (const side of WU_SIDES) assert.ok(least(WU_REST, side) >= 1.05 && least(WU_TOWN_REST, side) >= 1.05, `now, ${side}`);
-  // his look and his upper body as they were: only his feet and knees are posed anew
+  // his look and his upper body as they were: only his feet and knees are posed anew (and, since, in his guard, how his sword
+  // and his sword arm sit: test 10)
   for (const [now, then] of [[WU_REST, WU_REST_SEEN], [WU_TOWN_REST, WU_TOWN_REST_SEEN]] as const) {
-    for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'rhz', 'wAz', 'wEl'] as const) assert.equal(now[k], then[k], `${k} as it was`);
+    for (const k of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'lhx', 'lhy', 'lhz'] as const) assert.equal(now[k], then[k], `${k} as it was`);
+  }
+  for (const k of ['rhx', 'rhy', 'rhz', 'wAz', 'wEl'] as const) assert.equal(WU_TOWN_REST[k], WU_TOWN_REST_SEEN[k], `in town, ${k} as it was`);
+});
+
+// --- 10. his sword seen from every side ---------------------------------------------------------------------------------------
+
+test('10. his sword is seen from every side: in every list he holds or runs in, from all eight sides, a good length of its light, its point among it', () => {
+  const { blade, bladeLeast } = sweep();
+  assert.equal(blade.length, 0, `his sword hidden:\n${blade.slice(0, 40).join('\n')}${blade.length > 40 ? `\n... and ${blade.length - 40} more` : ''}`);
+  // (every side was looked at, and every list: none of them is left out by a name that no longer matches)
+  for (const v of WU_SIDES) assert.ok(bladeLeast[v] >= WU_BLADE_LEAST, `${v}: ${bladeLeast[v]}`);
+  for (const h of WU_BLADE_HELD) assert.ok(WU_MOVES[h.key], h.key);
+  assert.ok(MOMENTS.some(({ m }) => wuBladeHeld(undefined, m.name, 0, 'front')), 'his settles and his setting off');
+});
+
+test('10. ... the measure: his guard as the owner saw it hid his sword from down and to the left; his guard now does not', () => {
+  const old = { ...WU_REST, rhIn: WU_REST_SEEN.rhIn, rhx: WU_REST_SEEN.rhx, rhy: WU_REST_SEEN.rhy, rhz: WU_REST_SEEN.rhz, wAz: WU_REST_SEEN.wAz, wEl: WU_REST_SEEN.wEl };
+  const seen = (q: typeof WU_REST, v: WuSide): { seen: number; point: boolean } => wuBladeSeen(paintWu({ ...WU_REAR3, rest: q, motion: { keys: [{ at: 0, pose: {} }] } }, 0, v));
+  const was = seen(old, 'frontL');
+  assert.ok(was.seen < WU_BLADE_LEAST, `as it was, from down and to the left: ${was.seen}`);
+  assert.equal(wuBladeFaults('rear', WU_REAR3.name, 0, paintWu({ ...WU_REAR3, rest: old, motion: { keys: [{ at: 0, pose: {} }] } }, 0, 'frontL'), 'frontL').length, 1);
+  for (const v of WU_SIDES) {
+    const now = seen(WU_REST, v);
+    assert.ok(now.seen >= WU_BLADE_LEAST && now.point, `${v}: ${now.seen}`);
   }
 });

@@ -23,8 +23,7 @@ import { CANVAS3 } from './skin';
 import { add, bonesAt, mul, solve } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { GREAT_BLADE } from './moves3';
-import { onBack } from './carried';
-import { paintWarriorUp } from './warrior_up';
+import { paintWarriorUp, wuOnBack } from './warrior_up';
 import type { WuFrame, WuSide } from './warrior_up';
 import { WU_SIDES } from './warrior_up';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3 } from './warrior_up_moves';
@@ -88,7 +87,7 @@ function before(m: Move3, t: number, back: number): number {
 /** The blade's guard and point at a moment (on his back, where it is put away). */
 function bladeAt(m: Move3, t: number): readonly [V3, V3] {
   const { q, s } = wuPosed(m, t);
-  const away = q.stow > 0.5 ? onBack(m.build, s, 'sword') : null;
+  const away = q.stow > 0.5 ? wuOnBack(m.build, s) : null;
   const grip = away ? away.grip : s.handR;
   const point = away ? away.point : s.point;
   return [add(grip, mul(point, 1.3)), add(grip, mul(point, 1.3 + GREAT_BLADE))];

@@ -472,9 +472,9 @@ function sheet2(dir: string): void {
     const px = still('after', 'rear', 1.3, view);
     helm.push({ label: `NOW · ${SIDE_NAMES[view]}`, now: true, file: write(px), box: cut(px) });
   }
-  // HIS EIGHT FACINGS: his stance, a stride of his run, Strike's smeared blow
+  // HIS EIGHT FACINGS: his stance, a stride of his run, Strike's smeared blow, his town stance (his sword on his back)
   const turn: { title: string; cells: { k: number; name: string; side: string; file: string }[] }[] = [];
-  for (const [title, key, t] of [['Standing in his guard', 'rear', 1.3], ['Running: a stride', 'krun', 0.1], ['Strike: the blow, smeared', 'strike', 10 / 30]] as const) {
+  for (const [title, key, t] of [['Standing in his guard', 'rear', 1.3], ['Running: a stride', 'krun', 0.1], ['Strike: the blow, smeared', 'strike', 10 / 30], ['In town: his sword on his back, point up', 'ktown', 0.6]] as const) {
     const cells = EIGHT.map((e) => {
       const px = still('after', key, t, e.side);
       return { k: e.k, name: e.name, side: `${e.side} (${SIDE_NAMES[e.side]})`, file: write(px) };

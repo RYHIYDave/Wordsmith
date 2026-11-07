@@ -8,11 +8,10 @@ import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './bo
 import type { Mob, MobMove } from './new_mobs3';
 import { GREAT_BLADE, GRIP_SPEED, KNIGHT_BODY, UNITS_PER_TILE } from './moves3';
 import type { Move3 } from './moves3';
-import { onBack } from './carried';
 import { add, mul, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { wuSmeared } from './warrior_up_art';
-import { WU_MAIL, WU_SPIN, spun, turnedStage } from './warrior_up';
+import { WU_MAIL, WU_SPIN, spun, turnedStage, wuOnBack } from './warrior_up';
 import { stage } from './skin';
 import type { WuSide } from './warrior_up';
 import type { WuFrame } from './warrior_up';
@@ -71,7 +70,7 @@ export function wuBody(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } 
 /** The great sword at a moment: in his hands, or on his back. */
 export function wuSword(s: Skeleton, q: Posed): { grip: V3; guard: V3; tip: V3; away: boolean } {
   const away = q.stow > 0.5;
-  const c = away ? onBack(B, s, 'sword') : { grip: s.handR, point: s.point };
+  const c = away ? wuOnBack(B, s) : { grip: s.handR, point: s.point };
   const guard = add(c.grip, mul(c.point, 1.3));
   return { grip: c.grip, guard, tip: add(guard, mul(c.point, GREAT_BLADE)), away };
 }
@@ -299,4 +298,70 @@ export function wuLegFaults(key: string, frame: number, f: WuFrame, side: WuSide
     }
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// HIS SWORD SEEN FROM EVERY SIDE (the coordinator, 6 Nov 2026, before the owner sees him: from down and to the left his sword
+// vanished behind him in his guard and his run, and from toward him only a stub of it showed; "a hero must read armed in every
+// facing"). In every list he holds or runs in, from all eight sides, a good length of the blade's light is seen at the game's
+// size, its point among it.
+
+/** The blade's light: its two lightest tones (art/kit.ts BLADE: used for nothing else). */
+const GLOW = [[0x8a, 0xf6, 0xf0], [0xff, 0xff, 0xff]] as const;
+/** At least this many game pixels of the blade's light seen (a game pixel two picture pixels across: one counts when half of
+ * it or more is the blade's light). The whole blade, side-on, is 25 to 35 of them; this is about a third of its length. */
+export const WU_BLADE_LEAST = 10;
+/** How much of the blade's light is seen in one picture of him: game pixels of it, and whether its point is among them. */
+export function wuBladeSeen(f: WuFrame): { seen: number; point: boolean } {
+  const { d, w, h } = f.px;
+  const lit = (x: number, y: number): number => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return 0;
+    const i = (y * w + x) * 4;
+    if (d[i + 3] === 0) return 0;
+    return GLOW.some((c) => d[i] === c[0] && d[i + 1] === c[1] && d[i + 2] === c[2]) ? 1 : 0;
+  };
+  let seen = 0;
+  for (let y = 0; y + 1 < h; y += 2) for (let x = 0; x + 1 < w; x += 2) if (lit(x, y) + lit(x + 1, y) + lit(x, y + 1) + lit(x + 1, y + 1) >= 2) seen++;
+  // (its point: the blade's light within three pixels of the last two of its length)
+  const { x0, y0, x1, y1 } = f.blade;
+  const L = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const px = x1 - ((x1 - x0) / L) * 2;
+  const py = y1 - ((y1 - y0) / L) * 2;
+  let n = 0;
+  for (let y = Math.floor(py - 3); y <= Math.ceil(py + 3); y++) for (let x = Math.floor(px - 3); x <= Math.ceil(px + 3); x++) if (Math.hypot(x + 0.5 - px, y + 0.5 - py) <= 3) n += lit(x, y);
+  return { seen, point: n >= 2 };
+}
+
+/**
+ * WHERE HIS SWORD MUST BE SEEN: every list he holds or runs in (frames at 30 a second; a run's at 60), from all eight sides
+ * (his card's, painted from in front only, from there); and his settles out of his runs and his setting off into them, every
+ * frame, in both places.
+ */
+export const WU_BLADE_HELD: ReadonlyArray<{ key: string; what: string; from?: number; to?: number; front?: boolean }> = [
+  { key: 'rear', what: 'his guard' },
+  { key: 'ktown', what: 'his town stance' },
+  { key: 'krun', what: 'his run' },
+  { key: 'ktownrun', what: 'his town run' },
+  { key: 'strike', what: "Strike's held wind-up", from: 6, to: 8 },
+  { key: 'strike', what: 'the first swing held up, waiting (its poise)', from: 20, to: 21 },
+  { key: 'kslash', what: "the second swing's held wind-up", from: 6, to: 8 },
+  { key: 'slam', what: "the Slam's held wind-up", from: 11, to: 13 },
+  { key: 'kdraw', what: 'his card: drawing his sword into his guard', front: true },
+  { key: 'klook', what: 'his card and town: looking about him', front: true },
+];
+/** Whether a moment is one his sword must be seen in: `key` the move's short name (none for a settle or a setting off, known by
+ * its name), the frame (a run's at 60 a second). */
+export function wuBladeHeld(key: string | undefined, name: string, frame: number, side: WuSide): string | null {
+  if (key === undefined) return /: coming to a stand|: setting off/.test(name) ? name : null;
+  const h = WU_BLADE_HELD.find((x) => x.key === key && (x.from === undefined || (frame >= x.from && frame <= (x.to as number))));
+  if (!h || (h.front && side !== 'front')) return null;
+  return h.what;
+}
+/** What is wrong with his sword in one picture of him: too little of its light seen, or its point hidden. */
+export function wuBladeFaults(key: string | undefined, name: string, frame: number, f: WuFrame, side: WuSide): string[] {
+  const what = wuBladeHeld(key, name, frame, side);
+  if (!what) return [];
+  const b = wuBladeSeen(f);
+  if (b.seen >= WU_BLADE_LEAST && b.point) return [];
+  return [`${what} ${frame} ${side}: ${b.seen} of the blade's light seen${b.point ? '' : ', its point hidden'}`];
 }
