@@ -148,7 +148,8 @@ export interface Hold {
  * A LITTLE HALLWAY INTO EACH STRONGHOLD'S HALL. His words, 7 Nov 2026, 00:05 (Eastern): “add a little halway to strongholds”;
  * as the Stoker's arena was given one at his word of 6 Nov, 16:29 (game/furnace_arena.ts). So, `on`: through the door he comes in
  * at the far end of a short hallway (`long` tiles, `wide` across), open into the hall at the middle of its near side; the
- * threshold he goes out by is at the hallway's far end. Off until he has seen it (PICTURES FIRST).
+ * threshold he goes out by is at the hallway's far end. ON at his word: shown its pictures, asked “Put it in the game?”, by
+ * 06:41, 7 Nov 2026: “Yes, put it in (Recommended)”.
  */
 export const HOLD_HALLWAY = { on: true, long: 4, wide: 3 };
 

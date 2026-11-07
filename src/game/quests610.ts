@@ -1,4 +1,5 @@
-// THE QUEST LINE OF FLOORS 6 TO 10 (behind QUESTS610: off; its first part built, the rest to come).
+// THE QUEST LINE OF FLOORS 6 TO 10 (QUESTS610: ON at his word, shown its pictures and its read-back and asked “Put it in?”, by
+// 06:41, 7 Nov 2026: “Yes, put it in (Recommended)”; its pillars, PILLARS below, OFF at his word then, “Wait for the new Eye fight”).
 //
 // His words, 7 Nov 2026, 00:18 (Eastern): “and questing through 6-10.  i need at least a guarenteed camera shot of the town over the
 // vulture nest.  even if its a little in game cut scene where the character walks to the edge and the camera pans over the edge and
@@ -86,7 +87,9 @@ export const QUEST610_TEXT = {
  * - a hero with no piece left to set (one who skipped the Pinewood's side areas, or a save from before) can still BREAK one, by
  *   `blows` blows struck at its foot (no more than one counted each `gap` seconds), a slow way while the fight goes on round him;
  * - with all three out THE SIEGE IS BROKEN: his call of the siege's bolts, and the bolts in his swell, no more; he can be hurt.
- * The numbers are the main chat's, for him to change.
+ * The numbers are the main chat's, for him to change. Shown its pictures, asked “Put them in now on his current fight?”, his
+ * answer by 06:41, 7 Nov 2026: “Wait for the new Eye fight”. So OFF, to go into the art chat's new fight with it; until then the
+ * pieces taken stay in his bag.
  */
 export const PILLARS = {
   on: false,

@@ -2,8 +2,8 @@
 // dramaitc than just spawning into thin air”. So, `on`: one that comes into a fight already begun (the Hush's risings and the
 // tough one a bell calls, floors 11 to 15; a stronghold's waves, floors 6 to 10) comes up out of a RIFT: a dark tear opens in
 // the floor under it, its edge the enemy's pink, and it rises up out of it and steps out; only then is it one of the monsters
-// (game.ts `arriveFrom`, as the Warden's dead crawl out: Riser, way 'rift'). Drawn: render/arrivals.ts. Off until he has seen it
-// (PICTURES FIRST).
+// (game.ts `arriveFrom`, as the Warden's dead crawl out: Riser, way 'rift'). Drawn: render/arrivals.ts. ON at his word: shown
+// its pictures, asked “Put it in the game?”, by 06:41, 7 Nov 2026: “Yes, put it in (Recommended)”.
 
 export const ARRIVALS = {
   on: true,
