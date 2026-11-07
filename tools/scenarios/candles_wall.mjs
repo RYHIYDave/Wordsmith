@@ -21,13 +21,16 @@ export default async function (page, snap) {
         const f = g.level.floor;
         const tx = Math.floor(host.x), ty = Math.floor(host.y);
         const wallBack = f.tiles[(ty - 1) * f.w + tx] === 2 || f.tiles[ty * f.w + tx - 1] === 2;
-        g.hero.x = host.x + 2.2; g.hero.y = host.y + 2.2;
-        return { x: host.x, y: host.y, wallBack };
+        g.hero.x = host.x + 2.6; g.hero.y = host.y + 2.6;
+        const near = [];
+        for (let dy = -2; dy <= 2; dy++) { let row = ''; for (let dx = -2; dx <= 2; dx++) row += f.tiles[(ty + dy) * f.w + tx + dx]; near.push(row); }
+        return { x: host.x, y: host.y, wallBack, near: near.join('/'), cut: g.level.cut ? [g.level.cut[(ty - 1) * f.w + tx], g.level.cut[ty * f.w + tx - 1]] : null };
       });
       log(`seed ${seed} ${on ? 'on' : 'off'}`, JSON.stringify(at));
       if (!at) { log('!! no candles on this floor'); continue; }
       if (on && !at.wallBack) log('!! the candles are not against a wall');
-      await page.waitForTimeout(2500);
+      // (the floor's name gone from the screen first)
+      await page.waitForTimeout(6000);
       await snap(`s${seed}_${on ? 'on' : 'off'}`);
     }
   }
