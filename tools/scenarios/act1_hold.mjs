@@ -81,9 +81,10 @@ export default async function (page, snap) {
   await snap('e_hall');
   await page.waitForTimeout(1500);
   await snap('f_hall_fight');
-  // (every one in the hall killed, wave after wave, until it falls)
+  // (every one in the hall killed, wave after wave, until it falls; with ARRIVALS, a wave comes up out of its rifts over a second or
+  // two, so what is still coming is killed on the next round: rounds enough for two to a wave)
   let seen = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 16; i++) {
     const now = await hall();
     if (now.won) break;
     if (now.wave) seen.push(now.wave);
