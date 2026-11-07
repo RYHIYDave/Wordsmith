@@ -158,7 +158,7 @@ export const EYE_ENTRANCE = {
   stir: [0, 30] as const,
   /** 1. He rises shut, a melting mound, water pouring off him (his top breaks the water at `breaks`). */
   rise: [30, 108] as const,
-  breaks: 44,
+  breaks: 40,
   /** 2. The strain: his seam splitting slowly, strings across it, held. */
   strain: [108, 129] as const,
   /** 2. THE ROAR: his jaws tear apart (four frames). */
@@ -322,8 +322,8 @@ export function armBurst(i: number, k: number, t: number): ArmPose | null {
  * the tear.
  */
 export const EYE_SCREEN = {
-  rumble: [18, E.tear[0], 2.2] as const,
-  roar: [E.tear[0], 6, E.tear[0] + 40] as const,
+  rumble: [18, E.tear[0], 2.4] as const,
+  roar: [E.tear[0], 7, E.tear[0] + 46] as const,
   jolt: 2,
   joltLong: 6,
   dark: [4, 36, 0.45, E.tear[0], E.tear[0] + 14] as const,
@@ -336,13 +336,13 @@ export function shakeAt(k: number): [number, number] {
   let x = 0;
   let y = 0;
   if (k >= S.rumble[0] && k < S.rumble[1]) {
-    const a = S.rumble[2] * (0.25 + 0.75 * sm(S.rumble[0], E.strain[1] - 4, k));
+    const a = S.rumble[2] * (0.45 + 0.55 * sm(S.rumble[0], E.strain[1] - 4, k));
     x += a * wob(k * 0.55, 11);
     y += a * 0.7 * wob(k * 0.55, 12);
   }
   if (k >= S.roar[0] && k < S.roar[2]) {
     const s = k - S.roar[0];
-    const a = S.roar[1] * Math.exp(-s / 10) * (1 - sm(S.roar[2] - 8, S.roar[2], k));
+    const a = S.roar[1] * Math.exp(-s / 13) * (1 - sm(S.roar[2] - 10, S.roar[2], k));
     x += a * Math.cos(s * 1.9 + 0.3) * (0.6 + 0.4 * h1(s, 13));
     y += a * Math.sin(s * 2.7 + 1.1) * (0.6 + 0.4 * h1(s, 14));
   }

@@ -2859,10 +2859,41 @@ export function poseArm(): ColossusPose {
 // =============================================================================================
 // HIS ARMS CLEAR OF HIM AND OF THE STONE; HIS PARTS
 
+/** How many gobs are falling off him in a frame of a move. */
+export function meltGobs(an: ColossusAnim): number {
+  return dripsNow(an, [swingOf(-1, an.open), swingOf(1, an.open)]).gobs.length / 5;
+}
+/** Where gobs off him have landed on what lies slumped round him at the water in a frame of a move (his space: x, y, how high, how
+ *  long ago in seconds, how big): for their splats, painted by the pictures' tool. */
+export function meltLandings(an: ColossusAnim): number[] {
+  const P = placed();
+  const D = P.drips;
+  const m = [swingOf(-1, an.open), swingOf(1, an.open)];
+  const out: number[] = [];
+  const on = sm01(0.45, 0.92, an.open);
+  if (on <= 0.5) return out;
+  for (let i = 0, j = 0; i < D.length; i += 6, j++) {
+    const air = P.dripAir[j];
+    if (air < 10) continue;
+    const top = jawToHim(m[D[i] < 0 ? 0 : 1], [D[i], D[i + 1], D[i + 2]]);
+    const per = [1, 1.5, 3][Math.min(2, Math.floor(h3(j, 0, 0, 260) * 3))];
+    const ph = h3(j, 1, 0, 261);
+    const q = an.t / per + ph;
+    const n1 = Math.floor(q - 0.85);
+    for (const n of [n1, n1 - 1]) {
+      const age = an.t - (n + 0.85 - ph) * per;
+      if (age < 0) continue;
+      const z0 = top[2] - D[i + 3] + D[i + 5] * 0.4;
+      const land = Math.sqrt((2 * Math.max(0, z0 - air - D[i + 5])) / FALL_G);
+      if (age >= land && age - land < 0.4) out.push(top[0], top[1], air, age - land, D[i + 5]);
+    }
+  }
+  return out;
+}
 /** How many strands of spittle are strung across his V as he stands, and how many strings across his seam tear at his entrance. */
-export function spitCounts(): { across: number; seam: number; seamFlesh: number } {
+export function spitCounts(): { across: number; held: number; seam: number; seamFlesh: number } {
   const L = spitList();
-  return { across: L.filter((q) => !q.tear).length, seam: L.filter((q) => q.tear).length, seamFlesh: L.filter((q) => q.tear && q.flesh).length };
+  return { across: L.filter((q) => !q.tear).length, held: L.filter((q) => q.tg !== undefined).length, seam: L.filter((q) => q.tear).length, seamFlesh: L.filter((q) => q.tear && q.flesh).length };
 }
 /** How many strands of his spittle are whole and how many snapped (hanging) in a frame of a move. */
 export function spitStates(an: ColossusAnim): { whole: number; snapped: number } {

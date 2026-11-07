@@ -26,7 +26,7 @@ import { paintTerrain, terrainOf } from '../src/art/terrain';
 import type { Terrain } from '../src/art/terrain';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_WALL } from '../src/game/types';
 import type { Floor } from '../src/game/types';
-import { CO_MELT, CO_SHEEN, CO_SLIME, CO_SPIT, CO_IRIS, EYE_UNDER, FALL_G, LEANED, STONE, meltSplashes, paintColossus } from '../src/art/eye_colossus';
+import { CO_MELT, CO_SHEEN, CO_SLIME, CO_SPIT, CO_IRIS, EYE_UNDER, FALL_G, LEANED, STONE, meltLandings, meltSplashes, paintColossus } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, entranceAt, eyeFrame } from '../src/art/eye_moves';
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
@@ -39,7 +39,7 @@ import { RIM_ALPHA } from '../src/art/kit';
 const fs = nodeFs as { mkdirSync(p: string, o: { recursive: boolean }): void; writeFileSync(p: string, d: unknown): void; readFileSync(p: string): Uint8Array & { buffer: ArrayBuffer; byteOffset: number }; existsSync(p: string): boolean; renameSync(a: string, b: string): void };
 const zlib = nodeZlib as { deflateSync(b: Uint8Array, o?: { level: number }): Uint8Array; inflateSync(b: Uint8Array): Uint8Array };
 const path = nodePath as { join(...p: string[]): string };
-declare const process: { argv: string[]; exit(n: number): void; stdout: { write(s: string): void }; pid: number };
+declare const process: { argv: string[]; exit(n: number): void; stdout: { write(s: string): void }; pid: number; env: Record<string, string | undefined> };
 // @ts-ignore
 const Buf = Buffer as { alloc(n: number): Uint8Array & { writeUInt32BE(v: number, o: number): void }; concat(l: Uint8Array[]): Uint8Array; from(s: string, e?: string): Uint8Array };
 const crypto = nodeCrypto as { createHash(a: string): { update(d: Uint8Array | string): { digest(e: string): string } } };
@@ -255,7 +255,8 @@ const PIECES = fenPieces();
 const piece = (name: string, f = 0): Sprite => {
   const p = PIECES.find((q) => q.name === name);
   if (!p) throw new Error(name);
-  return p.frames[f % p.frames.length];
+  const fr = p.frames ?? [];
+  return fr[f % fr.length];
 };
 const hero = makeHeroArt3().of('warrior', { twoHanded: false });
 
@@ -331,9 +332,9 @@ const fileOf = (L: EyeLayer): string => path.join(CACHE, `${L.key.replace(/[^A-Z
  *  over the water, fire, outline and material; his lights. */
 interface Layer { x0: number; y0: number; w: number; h: number; px: Uint8Array; kind: Uint8Array; mat: Uint8Array; near: Float32Array; zh: Float32Array; fire: Uint8Array; seam: Uint8Array; lights: ColossusPicture['lights'] }
 function save(file: string, c: ColossusPicture): void {
-  const W0 = LAYER.w;
-  let x0 = W0;
-  let y0 = LAYER.h;
+  const W0: number = LAYER.w;
+  let x0: number = W0;
+  let y0: number = LAYER.h;
   let x1 = -1;
   let y1 = -1;
   for (let j = 0; j < LAYER.h; j++) for (let i = 0; i < W0; i++) {
@@ -509,15 +510,16 @@ function landOf(f: Flyer): number {
 /** THE ROAR'S BLAST: spray and goo out of his maw, forward and out, arcing down into the water. */
 function roarFlyers(): Flyer[] {
   const out: Flyer[] = [];
-  for (let n = 0; n < 150; n++) {
-    const a = (h3(n, 1, 0, 400) - 0.5) * 2.3;
-    const up = 0.15 + 0.75 * h3(n, 2, 0, 401);
-    const sp = 300 + 420 * h3(n, 3, 0, 402);
-    const kind = (h3(n, 4, 0, 403) < 0.32 ? 1 : 0) as 0 | 1;
+  for (let n = 0; n < 280; n++) {
+    // (out of his maw toward you and out to both sides, up and arcing down: spray in a burst, goo in gobs and strings)
+    const a = (h3(n, 1, 0, 400) - 0.5) * 2.0;
+    const up = 0.25 + 0.7 * h3(n, 2, 0, 401);
+    const sp = 260 + 460 * h3(n, 3, 0, 402);
+    const kind = (h3(n, 4, 0, 403) < 0.35 ? 1 : 0) as 0 | 1;
     out.push({
-      x: (h3(n, 5, 0, 404) - 0.5) * 60, y: -10 + 50 * h3(n, 6, 0, 405), z: 30 + 70 * h3(n, 7, 0, 406),
-      vx: Math.sin(a) * sp * (1 - up * 0.5), vy: Math.cos(a) * sp * 0.75 * (1 - up * 0.5), vz: sp * up,
-      t0: (h3(n, 8, 0, 407) * 5) / EYE_FPS, kind, size: kind ? 1 + Math.floor(h3(n, 9, 0, 408) * 2.4) : 1,
+      x: (h3(n, 5, 0, 404) - 0.5) * 70, y: 10 + 60 * h3(n, 6, 0, 405), z: 30 + 80 * h3(n, 7, 0, 406),
+      vx: Math.sin(a) * sp * (1 - up * 0.45), vy: Math.cos(a) * sp * 0.85 * (1 - up * 0.45), vz: sp * up,
+      t0: (h3(n, 8, 0, 407) * 6) / EYE_FPS, kind, size: kind ? 2 + Math.floor(h3(n, 9, 0, 408) * 2.2) : 1 + (h3(n, 9, 0, 408) < 0.35 ? 1 : 0),
     });
   }
   return out;
@@ -525,11 +527,14 @@ function roarFlyers(): Flyer[] {
 /** A TENTACLE'S BURST: the crown of water thrown up round it, droplets arcing out and back. */
 function burstFlyers(x: number, y: number, seed: number): Flyer[] {
   const out: Flyer[] = [];
-  for (let n = 0; n < 70; n++) {
+  for (let n = 0; n < 160; n++) {
+    // (a crown: a wall of water thrown nearly straight up all round it, breaking into drops; and drops flung further out)
     const a = h3(n, seed, 1, 410) * TAU;
-    const r = 26 + 22 * h3(n, seed, 2, 411);
-    const sp = 120 + 260 * h3(n, seed, 3, 412);
-    out.push({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r * 0.8, z: 2, vx: Math.cos(a) * sp * 0.5, vy: Math.sin(a) * sp * 0.4, vz: 220 + 300 * h3(n, seed, 4, 413), t0: (h3(n, seed, 5, 414) * 3) / EYE_FPS, kind: 2, size: 1 + (h3(n, seed, 6, 415) < 0.2 ? 1 : 0) });
+    const crown = n < 100;
+    const r = crown ? 34 + 10 * h3(n, seed, 2, 411) : 26 + 22 * h3(n, seed, 2, 411);
+    const sp = crown ? 40 + 60 * h3(n, seed, 3, 412) : 120 + 260 * h3(n, seed, 3, 412);
+    const vz = crown ? 280 + 120 * h3(n, seed, 4, 413) : 220 + 300 * h3(n, seed, 4, 413);
+    out.push({ x: x + Math.cos(a) * r, y: y + Math.sin(a) * r * 0.8, z: 2, vx: Math.cos(a) * sp * 0.5, vy: Math.sin(a) * sp * 0.4, vz, t0: ((crown ? 1 : 3) * h3(n, seed, 5, 414)) / EYE_FPS, kind: 2, size: 1 + (h3(n, seed, 6, 415) < 0.25 ? 1 : 0) });
   }
   return out;
 }
@@ -637,8 +642,10 @@ function frameOf(F: EyeFrame, tf: number): Pic {
     return v;
   };
   const sunk = Wt.sunk;
-  const keepDen = 15 + 25 * sunk;
-  const seenDeep = 70 + 60 * sunk;
+  const ringsK = rose ? sm(EYE_ENTRANCE.rise[1] - 12, EYE_ENTRANCE.rise[1] + 18, k) : 1;
+  // (lurking, the dark shape of him seen further down)
+  const keepDen = 15 + 37 * sunk;
+  const seenDeep = 70 + 95 * sunk;
   // (the roar's ring, slammed out over the water: how far it has gone)
   const roarS = Wt.roar !== null && ent ? (k - Wt.roar) / EYE_FPS : -1;
   const ringR = roarS >= 0 ? 40 + 330 * roarS : -1;
@@ -670,9 +677,11 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       // the roar's ring: the water slammed flat inside it, a wall of foam at its edge
       const flat = ringR > 0 && w < ringR - 6 ? 1 - sm(0.6, 1.4, roarS) : 0;
       const crest = ringR > 0 && roarS < 1.2 ? Math.abs(w - ringR) / (3 + 6 * roarS) : 9;
-      if (crest < 1 && vn(X * 0.06, Y * 0.06 + roarS * 3, 31) > 0.25 + roarS * 0.35 && vn(X * 0.3, Y * 0.2, 32) > 0.25 + 0.5 * crest) {
-        // (the wall of water it pushes out: foam along its crest, broken, brightest at its top)
-        c = w > ringR ? (sh < 0.6 ? FOAM[4] : SPRAY) : sh < 0.5 ? FOAM[3] : FOAM[2];
+      if (crest < 1 && vn(X * 0.05, Y * 0.05 + roarS * 3, 31) > 0.2 + roarS * 0.35) {
+        // (the wave it pushes out: its crest a line of foam, brightest at its leading edge, broken; the dark trough behind it)
+        const lead = (w - ringR) / (3 + 6 * roarS);
+        c = lead > 0.35 ? (sh < 0.55 ? SPRAY : FOAM[4]) : lead > -0.3 ? (sh < 0.4 ? FOAM[4] : FOAM[3]) : WATER;
+        a = lead > -0.3 ? Math.round(255 * (1 - sm(0.7, 1.2, roarS))) : 200;
       } else if (w < 3.4 + 3.4 * vn(X * 0.06 + t * 1.3, Y * 0.06, 8) && seeds) {
         // foam where he breaks it, churning, bubbles in it
         const bb = vn(X * 0.4 + t * 2, Y * 0.4, 9);
@@ -686,7 +695,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           if (Math.abs(w - R) < 0.6 && vn(X * 0.045 + r * 3.1, Y * 0.02, 6 + r) > 0.4 - 0.25 * (1 - u)) {
             const pinkK = Math.max(0, 1 - Math.abs(X) / 240) * (u < 0.5 ? 1 : 0);
             c = pinkK > 0.35 && h3(i, j, 7, 0) < pinkK * 0.5 ? IRIS[u < 0.25 ? 1 : 0] : u < 0.3 ? FOAM[3] : FOAM[2];
-            a = Math.round(255 * (1 - sm(0.6, 1, u)) * sm(0, 0.08, u));
+            // (while he rises, the swells rolling off him instead; his rings come back as he stands)
+            a = Math.round(255 * (1 - sm(0.6, 1, u)) * sm(0, 0.08, u) * ringsK);
             break;
           }
         }
@@ -719,9 +729,10 @@ function frameOf(F: EyeFrame, tf: number): Pic {
         if (Math.abs(v - 0.9) < band && vn(X * 0.09, Y * 0.05, 77) > 0.45 && vn(X * 0.4, Y * 0.2, 78) > 0.35) pic.over(i, j, FOAM[2][0], FOAM[2][1], FOAM[2][2], 150);
       }
       if (flat > 0 && w < ringR - 6) {
-        // (inside the ring the water lies flat and black, flecked)
-        pic.over(i, j, WATER[0], WATER[1], WATER[2], 120 * flat);
-        if (sh < 0.03 * flat) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 200);
+        // (inside the ring the water lies flat and black, its rings knocked out of it; streaks of foam drawn out from him)
+        pic.over(i, j, WATER[0], WATER[1], WATER[2], 150 * flat);
+        const ang = Math.atan2(Y, X);
+        if (vn(ang * 26, w * 0.02 - roarS * 4, 33) > 0.82 && vn(X * 0.3, Y * 0.3, 34) > 0.4) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 170 * flat);
       }
     }
   }
@@ -742,10 +753,14 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           const d = Math.hypot(X - cx, Y - cy) / R;
           const edge = 1 + (vn(X * 0.08 + s, Y * 0.08, 503) - 0.5) * 0.7;
           if (d > edge) continue;
-          const rim = d > edge - 0.14;
-          const lit = rim && Y < cy;
-          const col = lit ? SHEEN : rim ? SLIME[2] : vn(X * 0.2, Y * 0.2, 504) > 0.62 ? MELT[1] : SLIME[1];
-          pic.over(i, j, col[0], col[1], col[2], (lit ? 200 : 150) * fade);
+          // (dull goo on the black water, thicker in its middle; the light caught along its far edge and in long streaks across it)
+          const rim = d > edge - 0.1 && Y < cy - R * 0.25 && vn(X * 0.3, Y * 0.3, 505) > 0.35;
+          const streak = Math.abs(vn(X * 0.02 + Y * 0.035, s * 3.7, 506) - 0.5) < 0.025 && d < edge - 0.15;
+          if (rim || streak) pic.over(i, j, SHEEN[0], SHEEN[1], SHEEN[2], (rim ? 150 : 90) * fade);
+          else if (bayer(i, j) < 0.45 - 0.5 * d) {
+            const col = vn(X * 0.15, Y * 0.15, 504) > 0.6 ? MELT[1] : SLIME[1];
+            pic.over(i, j, col[0], col[1], col[2], 120 * fade);
+          }
         }
       }
     }
@@ -770,14 +785,14 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       if (p < 0.7) {
         // (a dome of a bubble swelling: dark film, its rim lit on the upper left, a glint)
         const r = Math.max(1, Math.round(rr * sm(0, 0.6, p)));
+        // (a clear dome: only its skin seen, lit along its upper left, faint round its lower right; a glint)
         for (let dj = -r; dj <= 0; dj++) for (let di = -r; di <= r; di++) {
           const d = Math.hypot(di, dj * 1.6);
-          if (d > r + 0.3) continue;
-          const rim2 = d > r - 1;
-          const col = rim2 ? (di < 0 || dj < -r / 2 ? FOAM[4] : FOAM[2]) : FOAM[1];
-          pic.over(ii + di, jj + dj, col[0], col[1], col[2], rim2 ? 230 : 150);
+          if (d > r + 0.3 || d < r - 0.9) continue;
+          const lit2 = di - dj * 0.6 < 0;
+          pic.over(ii + di, jj + dj, (lit2 ? FOAM[4] : FOAM[2])[0], (lit2 ? FOAM[4] : FOAM[2])[1], (lit2 ? FOAM[4] : FOAM[2])[2], lit2 ? 220 : 120);
         }
-        if (r >= 2) pic.over(ii - Math.ceil(r / 2), jj - Math.ceil(r / 2), 220, 232, 214, 230);
+        if (r >= 2) pic.over(ii - Math.ceil(r / 2), jj - Math.ceil(r / 2), 220, 232, 214, 240);
         // (a ring of the water round it)
         for (let a2 = 0; a2 < 16; a2++) {
           const ang = (a2 / 16) * TAU;
@@ -812,20 +827,23 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const dy = (Y + at.back - 20) / 200;
       const r = Math.hypot(dx, dy);
       if (r > 1.2) continue;
-      // (where it churns, coarse; in it, the foam broken into curls and flecks, finer, its tops catching the light)
+      // (where it churns, coarse; in it, the crests of little waves running every way, thin broken lines of foam, their tops catching
+      // the light; between them the black water)
       const churn = vn(X * 0.05 + t * 2.1, Y * 0.04 - t * 1.6, 600) * (1 - r / 1.2) * Wt.boil;
-      if (churn > 0.18) {
-        const fine = vn(X * 0.32 + t * 4.3, Y * 0.2 - t * 3.1, 601);
-        const fine2 = vn(X * 0.6 - t * 2.2, Y * 0.45 + t * 2.7, 602);
-        const f2 = fine * 0.65 + fine2 * 0.35;
-        const th = 0.66 - 0.5 * churn;
-        if (f2 > th) {
-          const top = vn(X * 0.32 + t * 4.3, (Y - 3) * 0.2 - t * 3.1, 601) < fine - 0.04;
-          const c2 = top ? FOAM[4] : f2 > th + 0.1 ? FOAM[3] : FOAM[2];
-          pic.over(i, j, c2[0], c2[1], c2[2], top ? 230 : 190);
-        } else if (f2 < th - 0.3 && bayer(i, j) > 0.2) pic.over(i, j, WATER[0], WATER[1], WATER[2], 120);
+      if (churn > 0.16) {
+        const w1 = vn(X * 0.055 + t * 1.7, Y * 0.12 - t * 1.3, 601);
+        const w2 = vn(X * 0.09 - t * 2.3, Y * 0.17 + t * 1.9, 602);
+        const band = 0.012 + 0.03 * churn;
+        const on1 = Math.abs(w1 - 0.5) < band;
+        const on2 = Math.abs(w2 - 0.5) < band * 0.8;
+        if ((on1 || on2) && vn(X * 0.3, Y * 0.5 + t * 3, 603) > 0.3) {
+          const lit = on1 ? vn(X * 0.055 + t * 1.7, (Y - 4) * 0.12 - t * 1.3, 601) > w1 : vn(X * 0.09 - t * 2.3, (Y - 4) * 0.17 + t * 1.9, 602) > w2;
+          const c2 = lit ? SPRAY : FOAM[3];
+          pic.over(i, j, c2[0], c2[1], c2[2], lit ? 235 : 180);
+        } else if (churn > 0.4 && vn(X * 0.4 + t * 6, Y * 0.6, 604) > 0.86) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 200);
       }
-      if (hump > 0 && Math.abs(r - 0.55 * (1 - hump * 0.3)) < 0.035 && bayer(i, j) > -0.2) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 200 * hump);
+      // (the water heaving up over him before he breaks it: its swell's crest catching the light, broken)
+      if (hump > 0 && Math.abs(r - 0.5 * (1 - hump * 0.3) - (vn(X * 0.02, Y * 0.02, 607) - 0.5) * 0.12) < 0.03 && vn(X * 0.1, Y * 0.08 + t, 608) > 0.45 && Math.sin(Math.atan2(dy, dx)) < 0.3) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 200 * hump);
     }
   }
   // HIS TENTACLES' BURSTS: the water bulging over each before it, a crown of it thrown up as it bursts, a ring of foam spreading
@@ -835,14 +853,22 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const [ci, cj] = onCanvas(B.x, B.y, 0);
       if (s >= -EYE_ENTRANCE.bulge && s < 0) {
         const u = (s + EYE_ENTRANCE.bulge) / EYE_ENTRANCE.bulge;
-        // (the water heaving up over it: rings tightening, foam boiling, bubbles)
-        for (let j = Math.floor(cj - 30); j <= cj + 30; j++) for (let i = Math.floor(ci - 60); i <= ci + 60; i++) {
+        // (the water heaving up over it in a dome: rings running off it, the dome's top catching the light, foam breaking on it)
+        const dome = 16 + 22 * u;
+        for (let j = Math.floor(cj - 48); j <= cj + 48; j++) for (let i = Math.floor(ci - 100); i <= ci + 100; i++) {
           if (i < 0 || j < 0 || i >= CW || j >= CH || !S.water[j * CW + i]) continue;
+          if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] > -0.5) continue;
           const [X, Y] = waterAt(i, j);
-          const d = Math.hypot(X - B.x, (Y - B.y) * 0.9);
-          const R = 52 - 20 * u;
-          if (Math.abs(d - R) < 2 && vn(X * 0.1, Y * 0.1, 610 + idx) > 0.35) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 200);
-          else if (d < R - 4 && vn(X * 0.12 + t * 4, Y * 0.12, 611) > 0.62 - 0.2 * u) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 170);
+          const d = Math.hypot(X - B.x, Y - B.y);
+          // (its rings, spreading)
+          for (let r = 0; r < 3; r++) {
+            const R = dome + 8 + frac(s / 5 + r / 3) * 60;
+            if (Math.abs(d - R) < 0.8 && vn(X * 0.06 + r, Y * 0.04, 612 + idx) > 0.35) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 200 * u * (1 - frac(s / 5 + r / 3)));
+          }
+          // (the dome's top, lit on its upper left; foam breaking over it, more as it swells)
+          const ang = Math.atan2(Y - B.y, X - B.x);
+          if (Math.abs(d - dome * 0.6) < 1.4 && Math.cos(ang + 2.3) > 0.2) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 230 * u);
+          else if (d < dome && vn(X * 0.35 + t * 5, Y * 0.25, 611) > 0.8 - 0.25 * u) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 220);
         }
       } else if (s >= 0 && s < 50) {
         const ss = s / EYE_FPS;
@@ -852,8 +878,11 @@ function frameOf(F: EyeFrame, tf: number): Pic {
           if (top.who[j * CW + i] >= 0 && top.z[j * CW + i] > -0.5) continue;
           const [X, Y] = waterAt(i, j);
           const d = Math.hypot(X - B.x, Y - B.y);
-          if (Math.abs(d - R) < 3 + 3 * ss && vn(X * 0.07, Y * 0.07 + ss, 620 + idx) > 0.3 + 0.4 * ss) pic.over(i, j, FOAM[4][0], FOAM[4][1], FOAM[4][2], 230 * (1 - ss / 1.7));
-          else if (d < R - 4 && h3(i, j, s, 621) < 0.05 * (1 - ss)) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 200);
+          const lead = (d - R) / (2 + 3 * ss);
+          if (Math.abs(lead) < 1 && vn(X * 0.07, Y * 0.07 + ss, 620 + idx) > 0.28 + 0.4 * ss) {
+            const c3 = lead > 0.2 ? FOAM[4] : lead > -0.4 ? FOAM[3] : WATER;
+            pic.over(i, j, c3[0], c3[1], c3[2], 230 * (1 - ss / 1.7));
+          } else if (d < R - 4 && d > 30 && vn(Math.atan2(Y - B.y, X - B.x) * 9, d * 0.04 - ss * 3, 621) > 0.84) pic.over(i, j, FOAM[3][0], FOAM[3][1], FOAM[3][2], 150 * (1 - ss / 1.7));
         }
       }
     });
@@ -883,24 +912,25 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const age = (k - ke) / EYE_FPS;
       if (age < 0 || age > 2.2) continue;
       const wet = Math.exp(-age / 0.8);
-      // (sheets: streaks running down him, faster than he rises, catching the light)
       const jp = top.jp[q];
-      // (runs of water, each its own column and its own speed, in broken lengths sliding down him, each with a bright head; a dark wet
-      // film over all of him while he streams)
       const col = h3(i, 0, 0, 704);
-      if (col < 0.5 * wet) {
-        const sp = 5 + 5 * h3(i, 1, 0, 705);
-        const u = (jp - k * sp) * 0.045 + col * 50;
+      // (runs of it: each its own column and speed, in short lengths sliding down him, a bright head and a fading tail; thickest
+      // on what has only just come up out of the water, a sheet of it sliding off)
+      const fresh = age < 0.4 ? 1 - age / 0.4 : 0;
+      if (col < 0.2 * wet + 0.5 * fresh) {
+        const sp = 6 + 6 * h3(i, 1, 0, 705);
+        const u = (jp - k * sp) * 0.07 + col * 50;
         const run = vn(u, i * 0.7, 700);
-        if (run > 0.62) {
-          const head = vn(u + 0.09, i * 0.7, 700) < 0.62;
-          const c = head ? SPRAY : run > 0.72 ? FOAM[3] : FOAM[2];
-          pic.over(i, j, c[0], c[1], c[2], head ? 240 : 170 * wet + 40);
+        const th = 0.64 - 0.14 * fresh;
+        if (run > th) {
+          const head = vn(u + 0.07, i * 0.7, 700) < th;
+          const c = head ? SPRAY : run > th + 0.1 ? FOAM[3] : FOAM[2];
+          pic.over(i, j, c[0], c[1], c[2], head ? 240 : 150 * wet + 30);
         } else if (wet > 0.25) pic.over(i, j, WATER[0], WATER[1], WATER[2], 70 * wet);
       } else if (wet > 0.25) pic.over(i, j, WATER[0], WATER[1], WATER[2], 70 * wet);
       // (streams off where he overhangs the water)
       const below = q + CW;
-      if (j + 1 < CH && !(top.who[below] === 0 && top.z[below] >= -0.5) && h3(i, 0, 0, 701) < 0.32 * wet && top.z[q] > 3) streams.push([i, j, top.z[q]]);
+      if (j + 1 < CH && top.who[below] < 0 && S.water[below] && h3(i, 0, 0, 701) < 0.35 * wet && top.z[q] > 3) streams.push([i, j, top.z[q]]);
     }
     for (const [i, j, z] of streams) {
       const len = Math.round(z);
@@ -953,6 +983,80 @@ function frameOf(F: EyeFrame, tf: number): Pic {
             pic.over(Math.round(di), Math.round(dj), SPRAY[0], SPRAY[1], SPRAY[2], 230);
           }
         }
+      }
+    }
+  }
+  // GOBS OFF HIM SPLATTING on what lies slumped round him at the water: a flattened splash of his goo, flecks thrown out, sinking in
+  if (!(ent && k < EYE_ENTRANCE.tear[0])) {
+    const an = F.jaws.pose.anim;
+    if (an) {
+      const LD = meltLandings(an);
+      for (let s = 0; s < LD.length; s += 5) {
+        const age = LD[s + 3];
+        const u = age / 0.4;
+        const r = LD[s + 4];
+        const [ci, cj] = onCanvas(LD[s], LD[s + 1] - F.jaws.back, LD[s + 2] - F.jaws.drop);
+        const nr = (LD[s + 1] - F.jaws.back) * 0.8660254 + (LD[s + 2] - F.jaws.drop) * 0.5;
+        const wide = r * (1.2 + 1.6 * Math.sqrt(u)) * SEEN;
+        for (let di = -Math.ceil(wide); di <= Math.ceil(wide); di++) {
+          for (let dj = -2; dj <= 1; dj++) {
+            const i = Math.round(ci + di);
+            const j = Math.round(cj + dj);
+            if (i < 0 || j < 0 || i >= CW || j >= CH) continue;
+            const q = j * CW + i;
+            if (top.who[q] >= 0 && top.near[q] > nr + 6) continue;
+            const e = Math.abs(di) / wide;
+            if (e > 1 || (dj < 0 && e > 0.6 - 0.3 * u) || (dj === -2 && e > 0.3)) continue;
+            const c = dj < 0 ? MELT[3] : e > 0.7 ? MELT[1] : MELT[2];
+            pic.over(i, j, c[0], c[1], c[2], 255 * (1 - sm(0.5, 1, u)));
+          }
+        }
+        if (u < 0.5) {
+          for (let f2 = 0; f2 < 4; f2++) {
+            const ang = h3(s, f2, 4, 712) * Math.PI;
+            const fl = 3 + 10 * u;
+            const i = Math.round(ci + Math.cos(ang) * fl * (f2 % 2 ? 1 : -1));
+            const j = Math.round(cj - Math.sin(ang) * fl * 0.8 * (1 - u) * 2);
+            if (i >= 0 && j >= 0 && i < CW && j < CH) pic.over(i, j, MELT[3][0], MELT[3][1], MELT[3][2], 230);
+          }
+        }
+      }
+    }
+  }
+  // DROPS OFF HIM FALLING INTO THE WATER at his foot: each its own round, a bead dropping, a splash, a little ring
+  if (seeds && !(ent && k < EYE_ENTRANCE.tear[0])) {
+    const cells = new Map<number, number>();
+    for (let j = 0; j < CH; j++) for (let i = 0; i < CW; i++) {
+      const q = j * CW + i;
+      if (!S.water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5) || wd[q] < 2.5 || wd[q] > 8) continue;
+      const c = (i >> 3) * 4096 + (j >> 2);
+      if (!cells.has(c)) cells.set(c, q);
+    }
+    for (const [c, q] of cells) {
+      if (h3(c, 0, 0, 720) > 0.2) continue;
+      const per = [1, 1.5, 3][Math.floor(h3(c, 1, 0, 721) * 3)];
+      const p = frac(t / per + h3(c, 2, 0, 722));
+      const i0 = q % CW;
+      const j0 = (q / CW) | 0;
+      const age = p * per;
+      if (age < 0.4) {
+        // (the splash: a ring opening, two drops jumping)
+        const R = 1 + 9 * age;
+        for (let a2 = 0; a2 < 12; a2++) {
+          const ang = (a2 / 12) * TAU;
+          if (h3(c, a2, 3, 723) < 0.3) continue;
+          pic.over(Math.round(i0 + Math.cos(ang) * R), Math.round(j0 + Math.sin(ang) * R * 0.5), FOAM[4][0], FOAM[4][1], FOAM[4][2], 220 * (1 - age / 0.4));
+        }
+        if (age < 0.2) {
+          const up = Math.round(70 * age - 0.5 * FALL_G * 0.5 * age * age);
+          pic.over(i0 - 1, j0 - Math.max(0, up), SPRAY[0], SPRAY[1], SPRAY[2], 240);
+          pic.over(i0 + 2, j0 - Math.max(0, Math.round(up * 0.7)), SPRAY[0], SPRAY[1], SPRAY[2], 220);
+        }
+      } else if (age > per - 0.12) {
+        // (a bead of him dropping into it)
+        const fall = Math.round((per - age) * 90);
+        pic.over(i0, j0 - fall, MELT[2][0], MELT[2][1], MELT[2][2], 255);
+        pic.over(i0, j0 - fall - 1, MELT[3][0], MELT[3][1], MELT[3][2], 255);
       }
     }
   }

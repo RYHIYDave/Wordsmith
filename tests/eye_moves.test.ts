@@ -31,7 +31,7 @@ import nodePath from 'node:path';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { rgba } from '../src/engine/px';
-import { ARMS_RISEN, EYE2, EYE_LOOP, SLIDE, STONE, armClearances, bodyClearances, meltSplashes, paintColossus, spitCounts, spitStates } from '../src/art/eye_colossus';
+import { ARMS_RISEN, EYE2, EYE_LOOP, SLIDE, STONE, armClearances, bodyClearances, meltGobs, meltSplashes, paintColossus, spitCounts, spitStates } from '../src/art/eye_colossus';
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_SCREEN, EYE_STAND, HERO_SPOT, armBurst, armStand, darkAt, entranceAt, entranceOpen, entranceTongue, eyeFrame, lurkAt, lurkTongue, shakeAt, standAnim } from '../src/art/eye_moves';
 import type { EyeFrame } from '../src/art/eye_moves';
@@ -96,7 +96,7 @@ test('1. the switch is off; nothing of the game imports his moves', () => {
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f === 'art/eye_moves.ts') continue;
-    if (/eye_moves/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    if (/from ['"][^'"]*eye_moves['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_moves.ts');
 });
@@ -225,7 +225,7 @@ test('5. nothing through anything: his tongue, eye, spittle and jaws; his tentac
 test('6. never still: his flesh slides, his drips run and let go, his spittle snaps and knits, his jaws breathe, his tongue weaves', () => {
   // (the sheets of his flesh slide down him a loop's time each; the drips off his overhangs let go and splash)
   assert.ok(SLIDE.n >= 3 && (SLIDE.top - SLIDE.bottom) / EYE_LOOP > 20, `his flesh sliding down him at ${((SLIDE.top - SLIDE.bottom) / EYE_LOOP).toFixed(0)} of his lengths a second`);
-  let splashes = 0;
+  let gobs = 0;
   let whole = 0;
   let snapped = 0;
   let openMin = 9;
@@ -236,7 +236,7 @@ test('6. never still: his flesh slides, his drips run and let go, his spittle sn
   let looks = 1;
   for (let k = 0; k < EYE_STAND.frames; k++) {
     const a = standAnim(k / EYE_FPS);
-    splashes += meltSplashes(a).length / 4;
+    gobs += meltGobs(a);
     const s = spitStates(a);
     whole = Math.max(whole, s.whole);
     snapped = Math.max(snapped, s.snapped);
@@ -249,7 +249,7 @@ test('6. never still: his flesh slides, his drips run and let go, his spittle sn
     const hl = Math.hypot(h[0], h[1], h[2]);
     looks = Math.min(looks, (a.gaze[0] * h[0] + a.gaze[1] * h[1] + a.gaze[2] * h[2]) / hl);
   }
-  assert.ok(splashes > 10, `gobs letting go of him and splashing (${splashes} frames of splashes in his loop)`);
+  assert.ok(gobs > 30, `gobs letting go of him, falling and landing (${gobs} gobs in the air in his loop's frames)`);
   const c = spitCounts();
   assert.ok(c.across >= 6 && whole >= 3 && snapped >= 2, `his spittle across his maw (${c.across} strands; at most ${whole} whole and ${snapped} snapped at once)`);
   assert.ok(c.seam >= 6 && c.seamFlesh >= 2, `strings of his flesh and spittle across his seam to snap as he tears open (${c.seam}, ${c.seamFlesh} of flesh)`);
@@ -294,9 +294,14 @@ test('7. no leaps: frame to frame in his loops, and where one move hands over to
   const un = series('entrance', E.stalk[0], E.breathe[0] + 4, eye, false);
   assert.ok(un.worst < 40, `his tongue unfurling: no leap of its eye (${un.worst.toFixed(1)} at the most, at ${un.at})`);
   // (where he is as he lurks, stirs and rises; how open he is outside his tear)
-  let worstRise = 0;
-  for (let k = 0; k < E.rise[1]; k++) worstRise = Math.max(worstRise, Math.hypot(entranceAt(k + 1).drop - entranceAt(k).drop, entranceAt(k + 1).back - entranceAt(k).back));
-  assert.ok(worstRise < 9, `no leap as he gathers and rises (${worstRise.toFixed(1)} of his lengths at the most)`);
+  const riseSteps: number[] = [];
+  for (let k = E.rise[0]; k < E.rise[1]; k++) riseSteps.push(Math.hypot(entranceAt(k + 1).drop - entranceAt(k).drop, entranceAt(k + 1).back - entranceAt(k).back));
+  const riseMean = riseSteps.reduce((a, b) => a + b, 0) / riseSteps.length;
+  const worstRise = Math.max(...riseSteps);
+  assert.ok(worstRise < 1.8 * riseMean, `no leap as he rises (${worstRise.toFixed(1)} of his lengths at the most, ${riseMean.toFixed(1)} the usual)`);
+  let gather = 0;
+  for (let k = 0; k < E.rise[0]; k++) gather = Math.max(gather, Math.hypot(entranceAt(k + 1).drop - entranceAt(k).drop, entranceAt(k + 1).back - entranceAt(k).back));
+  assert.ok(gather < riseMean, `none as he gathers himself (${gather.toFixed(1)})`);
   for (let k = 0; k < E.frames - 1; k++) {
     if (k >= E.tear[0] - 1 && k < E.tear[1]) continue;
     assert.ok(Math.abs(entranceOpen(k + 1) - entranceOpen(k)) < 0.1, `frame ${k}: his jaws never leap outside the tear (${entranceOpen(k).toFixed(3)} to ${entranceOpen(k + 1).toFixed(3)})`);
