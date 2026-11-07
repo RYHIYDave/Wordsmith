@@ -16,6 +16,7 @@ stills, for his yes before anything is animated.
 - Asked which take to draw first, his pick: “Swamp colossus (Recommended)”, offered as: “A rotting hill of moss-grown flesh filling the top of the screen; one huge bloodshot eye under a heavy brow; a split maw of teeth below; slime, weed and old bones on it; thick slimy tentacles.”
 
 - His answer on b0b6fef2, 7 Nov, asked whether to build the fight on this look and arena: “His mouth is bad and he needs to slide back a little so the tentacles don’t clip through him or the stage”.
+- His answer on 7910b3e9, 7 Nov, asked the same: “He’s a little too rectangular.  Less floating island and more eldritch horror.  And there’s a line on the tentacle that kinda cuts it in the middle.”
 
 ## The pictures (`pictures/`)
 
@@ -36,13 +37,18 @@ pads), and the Warrior as the game paints him (`art/heroes3.ts`).
 
 ## What he is
 
-A hunched hill of rotting flesh risen out of black water, facing the camera always: a high back knotted along its ridge,
-heavy shoulders lower either side, jowls sagging in folds into the water. Hung in folds and sagging rolls, wet and slick, his
+A living thing, not a hill (his word of 7 Nov, “Less floating island and more eldritch horror”): a towering, hunched,
+lopsided mass of flesh risen out of black water, facing the camera always. It rises highest off to his right of middle,
+behind his eye, and leans over; a knotted ridge with spines of old horn runs along his crown and down his back; his
+shoulders slope away unevenly into the water, the left long and low, the right heaved higher and swollen with sacs; jowls
+sagging in folds into the water. Smaller tendrils writhe out of his flanks and dangle from under his brow, beside his eye, and
+from his jowls into the water, each a tendril (tapering, suckers beneath). Veins stand out round his eye, the nearest glowing
+faintly with the enemy's pink. Hung in folds and sagging rolls, wet and slick, his
 deep creases going to a dark bruise; bruising in soft gradients, never patches; slime running down him, long wet highlights
-where the light runs along it; boils and a few open sores. Moss only in clumps and mats on his crown and over his brow, dark
-beneath, its tips lit. His outline broken by what has grown out of him: great horns of old bone out of his back, a tusk out of
-his shoulder, dead wood grown up out of his crown, a drum of a fallen column and a broken slab of the fen's ruin; a horned
-beast's skull on his left shoulder, the great ribs of something across his right, the skulls of the drowned; barnacles at the
+where the light runs along it; boils and a few open sores. Moss only in a few clumps high on his crown, dark beneath, its tips lit, so that he reads as flesh. His outline broken by what has grown out of him: great horns of old bone out of his back, a tusk out of
+his shoulder, his spines; a drum of a fallen column and a broken slab of the fen's ruin half sunk in him; a horned beast's
+skull on his left shoulder, the great ribs of something across his right, the skulls of the drowned, each half swallowed by
+his flesh, which creeps up round it; barnacles at the
 waterline; leeches. Curtains of weed and strings of slime hang from every overhang down into the water, and drool from his
 maw. Darker toward his edges; his eye the brightest thing on him, its pink-gold glow lighting the folds round it. At his heart
 one huge eye under a brow that juts out over it like a cliff: yellowed, bloodshot, its iris the enemy's pink burning to gold round a black slit, set between thick
@@ -64,6 +70,17 @@ tile), looked at ray by ray as the game's camera looks (from above at 30 degrees
 from the upper left in five tones a material, with the light's own shadow (his brow shades his eye) and the dark of every
 fold; the indigo seam where one part ends before another; what of him is under the water seen through it, darker the deeper.
 
+## Less island, more horror; the tentacle's line (his word of 7 Nov)
+
+His outline was a wide, flat-topped mound with an island's top of moss and stones. Now: the towering, lopsided, hunched mass
+above, spines and knots along its crown, sacs, veins, tendrils, the bones and stones half swallowed, the moss down to a few
+clumps; the dead wood on his crown taken off (the spines break his outline now); the deepest folds no longer flat black (they
+keep their light and shade, so no flat dark holes). The line along each tentacle was a crease where the noise on its skin met
+itself round the back, and a hard step from its dark back to its pale belly: the skin is now continuous all the way round, and
+the back shades into the belly through the flank's tones by a dither, with no line; its wet sheen comes in broken glints, not a
+stripe; the suckers stay on the belly. His eye, his maw, his place 7.9 tiles out, the stone, the arena, the roots of his arms,
+his colours, his bones and weed and his size on the screen are as they were.
+
 ## Slid back (his word of 7 Nov)
 
 He lies further out in the water: the stone's edge is now 310 of his lengths before his middle at the water, 7.9 tiles (it was
@@ -71,7 +88,7 @@ He lies further out in the water: the stone's edge is now 310 of his lengths bef
 just off the stone's edge: at least 20 of his lengths clear of his body (half a tile; 30 with his maw shut) and 10 clear of the
 stone, everywhere along it (`armClearances`, held by `tests/eye_colossus.test.ts`). In the leaned views the camera leans the
 most it may (70 game pixels, as the Moth's) so that his brow, eye and maw are still on the screen over the hero; more of his
-crown runs off the top than before (about 116 game pixels).
+crown runs off the top than before (about 140 game pixels now that it towers).
 
 ## For the main chat
 
@@ -99,17 +116,18 @@ crown runs off the top than before (about 116 game pixels).
 - The phone's screen: 507 x 234 game pixels (`engine/screen.ts`; the game's own playtest logs it on a phone held
   sideways). That is 15.8 tiles across and 14.6 tiles top to bottom (a tile 32 x 16 game pixels); along the floor, about 22
   tiles across and 21 deep.
-- Him risen, with his arms, horns and hanging weed: 441 x 305 game pixels (882 x 609 picture pixels): seven eighths of the
-  screen's width. Over the water, to the top of what grows out of his crown, he stands 201 game pixels; the knight stands 29. His eye 66 of his lengths in radius: about 76 game
+- Him risen, with his arms, tendrils, horns, spines and hanging weed: 471 x 330 game pixels (941 x 659 picture pixels), a
+  little bigger than before (441 x 305): his hunched crown stands higher and his tendrils reach out of his flanks. Over the
+  water, to the tips of his spines, he stands 225 game pixels; the knight stands 29. His eye 66 of his lengths in radius: about 76 game
   pixels across, two and a half times the knight's height.
 - Today he is about 127 x 61 game pixels on the same screen (measured from the game, `tools/scenarios/eye_today.mjs`), his
   eye about 32 across.
 - The arena (`tools/eye_redo_pics.ts` ARENA, from `STONE`): the stone 17 tiles across and 11 deep, three quarters of the
   screen's width; the black water across the top, its edge 7.9 tiles before his middle. In the leaned pictures the camera leans
   toward him 70 game pixels, as it leans toward the Moth (`render/render.ts` MOTH_LEAN: at most 0.3 of the screen, 70), so
-  the hero stands low on the screen; the top of his crown and what grows out of it run off the top of the screen, about 116
+  the hero stands low on the screen; the top of his hunched crown and its spines run off the top of the screen, about 140
   game pixels: his brow, eye and maw are on it.
-- Under the water (phase 1) he lies 384 of his lengths down (what grows from his crown just under the surface) and 330
+- Under the water (phase 1) he lies 410 of his lengths down (what grows from his crown just under the surface) and 330
   further back than when risen, so that his eye's glow is seen in the water before the stone.
 
 ## Why the fight today is not scary (the audit)
@@ -137,12 +155,12 @@ crown runs off the top than before (about 116 game pixels).
 
 ## What he costs
 
-- A frame of him risen, his arms with him: about 900 x 610 picture pixels, at 4 bytes a pixel 2,196,000 bytes (2.09 MB).
-- Baked at 30 frames a second: 62.8 MB for each second of him; a stand of 3 seconds, 188 MB; ten moves of about 3 seconds
-  each, about 1.9 GB. Too much to hold whole. Ways to afford him (for the main chat): his body painted once a few times a
+- A frame of him risen, his arms with him: about 960 x 680 picture pixels, at 4 bytes a pixel 2,611,200 bytes (2.49 MB).
+- Baked at 30 frames a second: 74.7 MB for each second of him; a stand of 3 seconds, 224 MB; ten moves of about 3 seconds
+  each, about 2.2 GB. Too much to hold whole. Ways to afford him (for the main chat): his body painted once a few times a
   second and only what moves (his eye, his maw, his arms, each a small picture of its own) at 30; or baked to files and read
   as they are needed (his word of 6 Nov: the game may carry files).
-- Painting a frame, here without a browser: about 47 seconds risen, 30 under the water (this container, two jobs at once). Not to be
+- Painting a frame, here without a browser: about a minute risen, 30 seconds under the water (this container, two jobs at once). Not to be
   painted while the game runs: baked.
 
 ## How to make the pictures again

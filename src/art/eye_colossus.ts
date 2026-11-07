@@ -53,8 +53,8 @@ export const COLOSSUS = {
   eyeR: 66,
   eye: { y: 100, z: 150 },
   mawTop: 86,
-  /** How deep he lies in phase 1, under the water (his crown a little below it). */
-  sunk: 384,
+  /** How deep he lies in phase 1, under the water (his crown and spines a little below it). */
+  sunk: 410,
   /** And how far back out in the water he lies then (so that what is seen of him is seen in the water, not under the stone). */
   sunkBack: 330,
   /** How deep under the water anything of him is still seen; his eye's fire, deeper. */
@@ -90,6 +90,8 @@ export const CO_SHEEN: RGB = hex('#aab29a');
 /** A tentacle's back, dark; its flank. */
 export const CO_ARMBACK = ramp('#0b0d0b', '#161a15', '#232a20', '#364030', '#4e5a42');
 export const CO_ARMMID = ramp('#141412', '#262620', '#3c3c30', '#585644', '#7a7660');
+/** His spines: old horn, dark. */
+export const CO_HORN = ramp('#110d0f', '#211a1b', '#362b2a', '#524139', '#74604d');
 /** Dead wood grown out of his crown (the fen's dead trees: art/floor10.ts DEADWOOD). */
 export const CO_WOOD = ramp('#24222a', '#363339', '#4a4648', '#605a58', '#787068');
 /** His ripples: how far out each thin line is from where he breaks the water (his lengths), further apart further out. */
@@ -141,6 +143,9 @@ const M_ARM = 11;
 const M_BARN = 12;
 const M_BOIL = 13;
 const M_GUM = 16;
+const M_SAC = 19;
+const M_VEIN = 20;
+const M_SPINE = 21;
 const M_TONGUE = 17;
 const M_THROAT = 18;
 const M_SORE = 14;
@@ -152,12 +157,10 @@ const sm01 = (a: number, b: number, v: number): number => {
 };
 /** How much moss is on him at a point: clumps and mats, on his crown and over his brow only (0 none). */
 function mossAt(x: number, y: number, z: number): number {
-  const crown = sm01(170, 215, z + 0.15 * y);
-  const brow = Math.abs(x) < 190 && y > 105 && y < 200 ? sm01(232, 248, z + 0.0018 * x * x) : 0;
-  const where = Math.max(crown, brow);
+  const where = sm01(230, 290, z + 0.15 * y);
   if (where <= 0) return 0;
   const c = vn(x * 0.03, y * 0.03, z * 0.03, 91) * 0.75 + vn(x * 0.09, y * 0.09, z * 0.09, 92) * 0.25;
-  return Math.max(0, Math.min(1, (c - 0.5) * 5)) * where;
+  return Math.max(0, Math.min(1, (c - 0.64) * 6)) * where;
 }
 
 // =============================================================================================
@@ -276,6 +279,8 @@ interface Arm {
   n: number;
   box: [number, number, number, number, number, number];
   seed: number;
+  /** How far round it its box reaches (a bound outside it is this less a little). */
+  margin: number;
 }
 
 function catmull(pts: ReadonlyArray<readonly [number, number, number]>, n: number): number[][] {
@@ -299,8 +304,7 @@ function catmull(pts: ReadonlyArray<readonly [number, number, number]>, n: numbe
   return out;
 }
 
-function armOf(a: ArmPose): Arm {
-  const N = 46;
+function armOf(a: ArmPose, N = 46, margin = 36): Arm {
   const pts = catmull(a.path, N);
   const p = new Float64Array(N * 4);
   const inner = new Float64Array(N * 3);
@@ -345,14 +349,14 @@ function armOf(a: ArmPose): Arm {
     inner[i * 3 + 1] = iy / il;
     inner[i * 3 + 2] = iz / il;
     prevIn = [ix / il, iy / il, iz / il];
-    box[0] = Math.min(box[0], q[0] - r - 36);
-    box[1] = Math.min(box[1], q[1] - r - 36);
-    box[2] = Math.min(box[2], q[2] - r - 36);
-    box[3] = Math.max(box[3], q[0] + r + 36);
-    box[4] = Math.max(box[4], q[1] + r + 36);
-    box[5] = Math.max(box[5], q[2] + r + 36);
+    box[0] = Math.min(box[0], q[0] - r - margin);
+    box[1] = Math.min(box[1], q[1] - r - margin);
+    box[2] = Math.min(box[2], q[2] - r - margin);
+    box[3] = Math.max(box[3], q[0] + r + margin);
+    box[4] = Math.max(box[4], q[1] + r + margin);
+    box[5] = Math.max(box[5], q[2] + r + margin);
   }
-  return { p, inner, s, n: N, box, seed: a.seed };
+  return { p, inner, s, n: N, box, seed: a.seed, margin };
 }
 
 /** What a distance found (the solid nearest, and on an arm where along it and round it). */
@@ -403,6 +407,8 @@ function toothOf(root: number[], dir: number[], len: number, r: number, bend: nu
 
 class Scene {
   readonly arms: Arm[];
+  /** The smaller tendrils writhing off him (his own, not enemies): in his body's space. */
+  readonly tendrils: Arm[];
   readonly drop: number;
   readonly back: number;
   readonly body: boolean;
@@ -416,7 +422,8 @@ class Scene {
   readonly lips: number[][] = [];
   readonly gums: number[][] = [];
   constructor(pose: ColossusPose) {
-    this.arms = pose.arms.map(armOf);
+    this.arms = pose.arms.map((a) => armOf(a));
+    this.tendrils = pose.body ? TENDRILS.map((a) => armOf(a, 22, 14)) : [];
     this.drop = pose.drop;
     this.back = pose.back ?? 0;
     this.body = pose.body;
@@ -483,31 +490,47 @@ class Scene {
 
   /** His body's distance at a point of his own space (before his drop), and what is nearest (`f`). */
   bodyAt(x: number, y: number, z: number, f: Found | null): number {
-    // THE HILL: hunched; a high back heaved up behind his brow, knotted along its ridge; heavy shoulders lower either side
-    let d = ell(x, y, z, 0, -84, 48, 250, 165, 212);
-    d = smin(d, ell(x, y, z, -150, -60, 214, 64, 60, 52), 30);
-    d = smin(d, ell(x, y, z, -58, -92, 254, 62, 58, 46), 30);
-    d = smin(d, ell(x, y, z, 44, -82, 262, 66, 60, 48), 30);
-    d = smin(d, ell(x, y, z, 136, -52, 222, 58, 56, 46), 30);
-    d = smin(d, ell(x, y, z, -232, 0, 100, 136, 126, 120), 46);
-    d = smin(d, ell(x, y, z, 232, 0, 100, 136, 126, 120), 46);
-    d = smin(d, ell(x, y, z, -296, 34, 112, 78, 88, 84), 34);
-    d = smin(d, ell(x, y, z, 296, 34, 112, 78, 88, 84), 34);
+    // HIS BULK: a towering, hunched, lopsided mass of flesh, highest off to his right of middle behind his eye and leaning over;
+    // his shoulders sloping away unevenly into the water, the left long and low, the right heaved higher and swollen with sacs
+    const lean = x + 0.22 * Math.max(0, z - 90);
+    let d = ell(lean, y, z, -62, -66, 128, 150, 140, 232);
+    d = smin(d, ell(lean, y, z, -42, -96, 244, 82, 78, 70), 40);
+    d = smin(d, ell(x, y, z, 96, -96, 92, 146, 128, 156), 44);
+    d = smin(d, ell(x, y, z, 196, -40, 196, 74, 68, 62), 30);
+    d = smin(d, ell(x, y, z, -246, -6, 40, 144, 128, 116), 34);
+    d = smin(d, ell(x, y, z, -300, 30, -14, 84, 96, 70), 34);
+    d = smin(d, ell(x, y, z, 226, 4, 100, 128, 118, 130), 32);
+    d = smin(d, ell(x, y, z, 300, 44, 36, 84, 92, 92), 34);
     d = smin(d, ell(x, y, z, 0, 66, 120, 176, 100, 128), 40);
-    // his jowls sagging down into the water in folds; his chin under the maw; the rolls of his belly
+    // his jowls sagging down into the water in folds; his chin under the maw; the rolls of his belly, the left the lower
     d = smin(d, ell(x, y, z, -130, 112, 40, 92, 70, 92), 24);
     d = smin(d, ell(x, y, z, 130, 112, 40, 92, 70, 92), 24);
     d = smin(d, ell(x, y, z, -152, 122, -12, 70, 60, 58), 22);
     d = smin(d, ell(x, y, z, 152, 122, -12, 70, 60, 58), 22);
     d = smin(d, ell(x, y, z, 0, 118, -6, 130, 60, 50), 28);
-    d = smin(d, ell(x, y, z, -180, 76, -22, 168, 92, 68), 40);
-    d = smin(d, ell(x, y, z, 180, 76, -22, 168, 92, 68), 40);
+    d = smin(d, ell(x, y, z, -196, 80, -30, 186, 96, 66), 40);
+    d = smin(d, ell(x, y, z, 176, 72, -16, 160, 90, 70), 40);
+    // a knotted ridge along his crown and down his back, where the spines stand
+    if (!BARE && z > 120) {
+      const K = placed().knobs;
+      for (let i = 0; i < K.length; i += 4) d = smin(d, ell(x, y, z, K[i], K[i + 1], K[i + 2], K[i + 3] * 1.3, K[i + 3] * 1.1, K[i + 3]), 18);
+    }
+    // SACS swelling out of him: on his right shoulder, under his left jowl, on the left of his hump
+    if (!BARE) {
+      let sac = ell(x, y, z, 300, 58, 128, 56, 50, 64);
+      sac = Math.min(sac, ell(x, y, z, -204, 140, 34, 40, 36, 44));
+      sac = Math.min(sac, ell(x, y, z, -196, -30, 222, 46, 44, 52));
+      sac = Math.min(sac, ell(x, y, z, 262, 92, 32, 34, 32, 36));
+      const was = d;
+      d = smin(d, sac, 12);
+      if (f && sac < was) f.mat = M_SAC;
+    }
     // HIS BROW: a cliff jutting out over his eye, flat beneath, sagging at its ends
     {
-      const cx = Math.max(-172, Math.min(172, x));
-      const sag = 0.0019 * cx * cx;
-      const cz = 236 - sag;
-      let b = Math.hypot(x - cx, (y - 138) * 0.85, (z - cz) * 1.1) - (50 - 0.0004 * cx * cx);
+      const cx = Math.max(-150, Math.min(150, x));
+      const sag = 0.0024 * cx * cx;
+      const cz = 236 - sag + (vn(x * 0.03, 7, 0, 143) - 0.5) * 14;
+      let b = Math.hypot(x - cx, (y - 138) * 0.85, (z - cz) * 1.1) - (50 - 0.0006 * cx * cx);
       // (cut flat beneath, a cliff over his eye)
       b = smax(b, cz - 34 - z, 10);
       d = smin(d, b, 22);
@@ -524,6 +547,17 @@ class Scene {
       if (!BARE) {
         const m = mossAt(x, y, z);
         if (m > 0) d -= m * (2.5 + 3.5 * vn(x * 0.16, y * 0.16, z * 0.16, 15));
+        // VEINS standing out of him round his eye, branching out from it
+        const ed = Math.hypot(x, (y - COLOSSUS.eye.y) * 0.6, z - COLOSSUS.eye.z);
+        if (ed < 200 && ed > COLOSSUS.eyeR + 10) {
+          const vq = Math.abs(vn(x * 0.03, y * 0.03, z * 0.03, 140) - 0.5);
+          const vq2 = Math.abs(vn(x * 0.07, y * 0.07, z * 0.07, 141) - 0.5);
+          const wv = 0.016 * (1 - ed / 210);
+          if (vq < wv || (vq2 < wv * 0.6 && ed < 130)) {
+            d -= 2.2 * (1 - ed / 210);
+            if (f) f.mat = M_VEIN;
+          }
+        }
         // boils and open sores
         if (z > 50) {
           const S2 = 18;
@@ -635,8 +669,9 @@ class Scene {
     }
     // OLD BONES AND STONES GROWN INTO HIS HIDE
     if (z > 120 || Math.abs(x) > 170) {
+      // (half swallowed: his flesh creeps up round each)
       const b = this.bones(x, y, z, f, d);
-      if (b < d) d = b;
+      if (b < d + 8) d = smin(d, b, 7);
     }
     // LEECHES on him
     {
@@ -777,6 +812,15 @@ class Scene {
           }
         }
       }
+      for (const H of PL.spines) {
+        for (let k = 0; k + 7 < H.length; k += 4) {
+          const sd = cone(x, y, z, H[k], H[k + 1], H[k + 2], H[k + 4], H[k + 5], H[k + 6], H[k + 3], H[k + 7]);
+          if (sd < d) {
+            d = sd;
+            m = M_SPINE;
+          }
+        }
+      }
       for (const H of PL.wood) {
         for (let k = 0; k + 7 < H.length; k += 4) {
           const sd = cone(x, y, z, H[k], H[k + 1], H[k + 2], H[k + 4], H[k + 5], H[k + 6], H[k + 3], H[k + 7]);
@@ -792,15 +836,14 @@ class Scene {
   }
 
   /** An arm's distance (`i`), and where on it. */
-  armAt(i: number, x: number, y: number, z: number, f: Found | null): number {
-    const A = this.arms[i];
+  armAt(i: number, x: number, y: number, z: number, f: Found | null, A: Arm = this.arms[i]): number {
     const b = A.box;
     if (x < b[0] || y < b[1] || z < b[2] || x > b[3] || y > b[4] || z > b[5]) {
       // (outside its box: how far to the box, as a bound)
       const dx = Math.max(b[0] - x, 0, x - b[3]);
       const dy = Math.max(b[1] - y, 0, y - b[4]);
       const dz = Math.max(b[2] - z, 0, z - b[5]);
-      return Math.hypot(dx, dy, dz) + 30;
+      return Math.hypot(dx, dy, dz) + A.margin - 6;
     }
     const P = A.p;
     let d = Infinity;
@@ -855,7 +898,7 @@ class Scene {
     const vy = y - cyp;
     const vz = z - czp;
     const phi = Math.atan2(vx * sx + vy * sy + vz * sz, vx * ix + vy * iy + vz * iz);
-    d -= (vn(s * 0.03, phi * 0.8, 0, A.seed + 1) - 0.5) * 1.6;
+    d -= (vn(s * 0.03, Math.cos(phi) * 0.8 + 5, Math.sin(phi) * 0.8 + 5, A.seed + 1) - 0.5) * 1.6;
     const sr = Math.max(1.6, r * 0.27);
     const space = sr * 2.5;
     let sucker = 0;
@@ -897,8 +940,12 @@ class Scene {
     if (this.body) {
       const z = this.drop;
       const yb = y + this.back;
-      const out = ell(x, yb, z, 0, -10, 40, 420, 260, 290);
+      const out = ell(x, yb, z, 0, -20, 60, 490, 290, 330);
       d = Math.min(d, out > 100 ? out : this.bodyAt(x, yb, z, null));
+      for (const T of this.tendrils) {
+        const P = T.p;
+        for (let k = 0; k + 1 < T.n; k++) d = Math.min(d, cone(x, yb, z, P[k * 4], P[k * 4 + 1], P[k * 4 + 2], P[k * 4 + 4], P[k * 4 + 5], P[k * 4 + 6], P[k * 4 + 3], P[k * 4 + 7]));
+      }
     }
     return d;
   }
@@ -919,9 +966,19 @@ class Scene {
       const z = Z + this.drop;
       const yb = y + this.back;
       // (well clear of his hill: how far, as a bound)
-      const out = ell(x, yb, z, 0, -10, 40, 420, 260, 290);
+      const out = ell(x, yb, z, 0, -20, 60, 490, 290, 330);
       if (out > 30) d = out;
-      else d = this.bodyAt(x, yb, z, f);
+      else {
+        d = this.bodyAt(x, yb, z, f);
+        // (his tendrils, grown out of him)
+        for (let j = 0; j < this.tendrils.length; j++) {
+          const a = this.armAt(100 + j, x, yb, z, f ? ARM_F : null, this.tendrils[j]);
+          if (a < d) {
+            if (f) Object.assign(f, ARM_F);
+            d = smin(d, a, 6);
+          } else if (a < d + 6) d = smin(d, a, 6);
+        }
+      }
     }
     for (let i = 0; i < this.arms.length; i++) {
       const a = this.armAt(i, x, y, Z, f ? ARM_F : null);
@@ -961,6 +1018,8 @@ interface Placed {
   /** Horns and a tusk of bone, and dead wood: each a line of points (x, y, z, radius). */
   spurs: number[][];
   wood: number[][];
+  spines: number[][];
+  knobs: number[];
 }
 let PLACED: Placed | null = null;
 function placed(): Placed {
@@ -986,12 +1045,12 @@ function placed(): Placed {
     return z;
   };
   const skulls: number[] = [];
-  for (let i = 0; i < SKULLS_AT.length; i += 3) skulls.push(SKULLS_AT[i], surfY(SKULLS_AT[i], SKULLS_AT[i + 1]) - SKULLS_AT[i + 2] * 0.45, SKULLS_AT[i + 1], SKULLS_AT[i + 2]);
+  for (let i = 0; i < SKULLS_AT.length; i += 3) skulls.push(SKULLS_AT[i], surfY(SKULLS_AT[i], SKULLS_AT[i + 1]) - SKULLS_AT[i + 2] * 0.8, SKULLS_AT[i + 1], SKULLS_AT[i + 2]);
   const leeches: number[] = [];
   for (let i = 0; i < LEECHES_AT.length; i += 6) leeches.push(LEECHES_AT[i], surfY(LEECHES_AT[i], LEECHES_AT[i + 1]) + 1.5, LEECHES_AT[i + 1], LEECHES_AT[i + 2], LEECHES_AT[i + 3], LEECHES_AT[i + 4], LEECHES_AT[i + 5]);
-  const horn = [-196, surfY(-196, 206) - 8, 206];
-  const drum = [-78, -58, surfZ(-78, -58) - 3];
-  const slab = [104, -30, surfZ(104, -30) + 8];
+  const horn = [-196, surfY(-196, 190) - 16, 190];
+  const drum = [-150, -40, surfZ(-150, -40) - 24];
+  const slab = [150, -40, surfZ(150, -40) - 30];
   /** A line of points from his hide at (x, y) (each further point given from the one before), radii along it. */
   const grow = (x: number, y: number, steps: number[][], r: number[]): number[] => {
     const out: number[] = [];
@@ -1009,13 +1068,28 @@ function placed(): Placed {
     grow(270, 30, [[30, 10, 18], [30, 16, 4], [18, 14, -12]], [10, 8, 5, 1.5]),
     grow(-280, 40, [[-26, 6, 26], [-22, 8, 22]], [8, 6, 1.5]),
   ];
-  const wood = [
-    grow(-10, -112, [[4, -2, 44], [-10, 0, 30], [-22, 0, 16]], [7, 5.5, 3.5, 1.2]),
-    grow(-6, -112, [[6, -2, 40], [22, 2, 26], [18, 2, 18]], [5, 4, 2.6, 1]),
-    grow(40, -100, [[8, 0, 22], [16, 0, 10]], [4, 2.6, 1]),
-  ];
+  const wood: number[][] = [];
+  // SPINES along his crown and down his back: knotted, curved back, smaller as they go
+  const spines: number[][] = [];
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    const x = -150 + 330 * t;
+    const y = -64 - 30 * Math.sin(t * Math.PI);
+    const len = 38 - 22 * Math.abs(t - 0.3) + 8 * h3(i, 0, 0, 150);
+    const r = 9 - 5 * Math.abs(t - 0.3);
+    const lean = (h3(i, 1, 0, 151) - 0.5) * 0.5;
+    spines.push(grow(x, y, [[len * (0.1 + lean), -len * 0.3, len * 0.55], [len * (0.2 + lean), -len * 0.35, len * 0.35]], [r, r * 0.55, 1.2]));
+  }
+  const knobs: number[] = [];
+  for (let i = 0; i < 7; i++) {
+    const t = (i + 0.5) / 7;
+    const kx = -150 + 330 * t;
+    const ky = -64 - 30 * Math.sin(t * Math.PI);
+    const kr = 18 + 8 * h3(i, 2, 0, 152);
+    knobs.push(kx, ky, surfZ(kx, ky) - kr * 0.45, kr);
+  }
   BARE = false;
-  PLACED = { skulls, leeches, horn, drum, slab, spurs, wood };
+  PLACED = { skulls, leeches, horn, drum, slab, spurs, wood, spines, knobs };
   return PLACED;
 }
 
@@ -1086,7 +1160,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         t += step;
         y -= EYE_V[1] * step;
         z -= EYE_V[2] * step;
-        if (z < -COLOSSUS.seenDeep - 140) break;
+        if (z < -340) break;
       }
       const k = j * w + i;
       // where the ray meets the water
@@ -1238,13 +1312,16 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         // A TENTACLE: smooth muscle, dark along its back shading to pale along its underside; its suckers cupped rings, lit rims
         // and dark middles; a few old scars across its back
         const phi = f.armPhi;
-        const under = (Math.cos(phi) + 1) / 2 + bayer(i, j) * 0.3;
-        const scar = Math.abs(vn(f.armS * 0.03, phi * 0.45, f.arm, 72) - 0.5) < 0.012 && under < 0.4;
+        // (back to belly by a dither through the flank's tones: no line where they meet)
+        const under = (Math.cos(phi) + 1) / 2;
+        const band = Math.max(0, Math.min(2, Math.floor(under * 2.6 - 0.45 + bayer(i, j) * 1.0 + 0.5)));
+        // (a few old scars, short, across it, never along it)
+        const scar = under < 0.3 && h3(Math.floor(f.armS / 40), f.arm, 0, 74) < 0.35 && Math.abs(vn(f.armS * 0.16, Math.cos(phi) * 0.25 + 3, Math.sin(phi) * 0.25 + 3, 72 + f.arm) - 0.5) < 0.03;
         if (f.armR === 1) col = CO_PALE[Math.max(2, Math.min(4, tn + 1))];
         else if (f.armR === 2) col = CO_MAW[Math.max(0, Math.min(2, tn - 1))];
         else if (scar) col = CO_ARMMID[Math.min(4, Math.max(2, tn + 1))];
-        else col = (under > 0.78 ? CO_PALE : under > 0.5 ? CO_ARMMID : CO_ARMBACK)[tn];
-        gloss = 1.1;
+        else col = (band === 2 ? CO_PALE : band === 1 ? CO_ARMMID : CO_ARMBACK)[tn];
+        gloss = vn(f.armS * 0.07, Math.cos(phi) * 2 + 9, Math.sin(phi) * 2 + 9, 73) > 0.52 ? 1.1 : 0.3;
       } else if (mat === M_LID) {
         // his lids: his hide, their rims raw and wet
         const E = COLOSSUS.eye;
@@ -1273,6 +1350,20 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
         const base = CO_MAW[Math.max(0, Math.min(2, tn - 1))];
         col = deep > 0.92 ? mixRGB(CO_MAW[1], CO_IRIS[3], 0.32) : deep > 0.68 ? mixRGB(CO_MAW[1], CO_IRIS[1], 0.26) : base;
         gloss = 1.2;
+      } else if (mat === M_SAC) {
+        // a sac: tight, pale, wet, veined
+        const vq = Math.abs(vn(fx * 0.06, fy * 0.06, fz * 0.06, 142) - 0.5) < 0.018;
+        col = vq ? CO_VEIN[Math.max(0, Math.min(2, tn - 1))] : CO_PALE[Math.max(0, Math.min(4, tn - 1))];
+        gloss = 1.6;
+      } else if (mat === M_VEIN) {
+        // a vein standing out of him; nearest his eye, glowing faintly with the enemy's pink
+        const ed = Math.hypot(fx, (fy - COLOSSUS.eye.y) * 0.6, fz - COLOSSUS.eye.z);
+        const g = (1 - ed / 200) + bayer(i, j) * 0.3;
+        col = pose.view === 'front' && g > 0.72 ? CO_IRIS[1] : pose.view === 'front' && g > 0.5 ? mixRGB(CO_VEIN[1], CO_IRIS[0], 0.5) : CO_VEIN[Math.max(0, Math.min(2, tn - 1))];
+        gloss = 1.2;
+      } else if (mat === M_SPINE) {
+        col = CO_HORN[tn];
+        gloss = 0.5;
       } else if (mat === M_BONE) {
         col = CO_BONE[tn];
         gloss = 0.2;
@@ -1307,7 +1398,7 @@ export function paintColossus(pose: ColossusPose, fr: Frame): ColossusPicture {
           col = CO_MOSS[Math.max(0, Math.min(4, tn + (tip > 0.66 && tn >= 2 ? 1 : tip < 0.3 ? -1 : 0)))];
           gloss = 0.05;
         } else if (occ > 0.34) {
-          col = CO_BRUISE[Math.max(0, tn - 1)];
+          col = CO_BRUISE[tn];
           gloss = 0.6;
         } else if (slime) {
           col = CO_SLIME[tn];
@@ -1521,6 +1612,17 @@ export const ARM_ROOTS = {
   y: 256,
 } as const;
 
+/** HIS TENDRILS: smaller, writhing, his own (not enemies): dangling from under his brow beside his eye and from his jowls into the water, and out of his flanks. In his body's space. */
+export const TENDRILS: ReadonlyArray<ArmPose> = [
+  { path: [[-124, 168, 186], [-130, 184, 156], [-120, 198, 122], [-134, 208, 90], [-124, 216, 58], [-134, 222, 26], [-128, 226, -12]], r: 9, belly: [0.3, 1, 0], seed: 11 },
+  { path: [[126, 166, 182], [134, 182, 150], [126, 196, 116], [140, 206, 84], [130, 214, 50], [138, 220, 18], [132, 224, -12]], r: 8, belly: [-0.3, 1, 0], seed: 12 },
+  { path: [[-176, 160, 44], [-186, 178, 22], [-178, 190, 2], [-188, 196, -20]], r: 8, belly: [0, 1, 0], seed: 13 },
+  { path: [[-322, 20, 110], [-352, 34, 140], [-366, 44, 180], [-350, 50, 212], [-328, 52, 218], [-322, 54, 200], [-332, 56, 192]], r: 12, belly: [0.5, 0.6, -0.4], seed: 14 },
+  { path: [[300, 30, 150], [334, 42, 180], [354, 52, 204], [366, 60, 190], [358, 64, 170], [346, 64, 166]], r: 11, belly: [-0.5, 0.6, -0.4], seed: 15 },
+  { path: [[296, 96, 74], [318, 116, 46], [310, 130, 16], [322, 138, -16]], r: 9, belly: [0, 1, 0], seed: 16 },
+  { path: [[-300, 90, 60], [-322, 112, 34], [-314, 126, 6], [-326, 132, -20]], r: 9, belly: [0, 1, 0], seed: 17 },
+];
+
 /** HIS THREE ARMS RISEN (phases 2 and 3): out of the water just off the stone, left, middle and right; the outer two reared up in an S, their tips curling; the middle one lower, coiled aside off his maw. */
 export const ARMS_RISEN: ReadonlyArray<ArmPose> = [
   { path: [[-222, 256, -30], [-252, 262, 50], [-250, 272, 130], [-212, 282, 188], [-200, 292, 246], [-230, 300, 288], [-272, 304, 298], [-298, 304, 280], [-296, 304, 262], [-282, 304, 260], [-278, 304, 268]], r: 42, belly: [0.6, 0.5, -0.4], seed: 1 },
@@ -1579,8 +1681,8 @@ export function armClearances(pose: ColossusPose): { body: number; stone: number
 // =============================================================================================
 // WHAT HE COSTS
 
-/** A frame of him risen at the game's size (picture pixels, two to a game pixel: what he spans, his arms, horns and hanging weed with him, 882 by 595, and a little room), and what it holds at 4 bytes a pixel. */
-export const COLOSSUS_FRAME = { w: 900, h: 610 } as const;
+/** A frame of him risen at the game's size (picture pixels, two to a game pixel: what he spans, his arms, tendrils, spines and hanging weed with him, 941 by 659, and a little room), and what it holds at 4 bytes a pixel. */
+export const COLOSSUS_FRAME = { w: 960, h: 680 } as const;
 export function costOf(fps: number, seconds: number, frame: { w: number; h: number } = COLOSSUS_FRAME): { frameMB: number; perSecondMB: number; totalMB: number } {
   const frameMB = (frame.w * frame.h * 4) / (1024 * 1024);
   return { frameMB, perSecondMB: frameMB * fps, totalMB: frameMB * fps * seconds };

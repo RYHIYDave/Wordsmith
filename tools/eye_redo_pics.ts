@@ -315,7 +315,7 @@ const timed = <T>(what: string, f: () => T): T => {
 };
 
 /** His risen picture: a window on him big enough for all of him and his arms. */
-const RISEN_FRAME = { w: 1060, h: 700, ax: 530, ay: 460 };
+const RISEN_FRAME = { w: 1100, h: 720, ax: 550, ay: 480 };
 function measureOf(c: ColossusPicture): { x0: number; y0: number; x1: number; y1: number } {
   let x0 = Infinity;
   let y0 = Infinity;
@@ -339,11 +339,11 @@ if (mode === 'look') {
   // 1. RISEN, FRONT, the Warrior before him for size
   {
     const w = 1200;
-    const h = 680;
-    const cam = camAt(600, 432);
+    const h = 720;
+    const cam = camAt(600, 472);
     const pic = groundPic(w, h, cam);
     const stands = dressing(pic, cam);
-    stands.push({ d: VC, f: () => layHim(pic, risen, 600, 432) });
+    stands.push({ d: VC, f: () => layHim(pic, risen, 600, 472) });
     stands.push(layHero(pic, cam, 4.2, ARENA.quay + 2.2, true));
     stands.push(layHero(pic, cam, -4.6, ARENA.quay + 2.0, false));
     stands.sort((a, b) => a.d - b.d).forEach((s) => s.f());
@@ -444,7 +444,7 @@ if (mode === 'look') {
     process.stdout.write(`  arms ${n}: ${cl.body.toFixed(1)} clear of him, ${cl.stone.toFixed(1)} clear of the stone, roots in the water: ${cl.rootsInWater}\n`);
   }
   const c = costOf(30, 1);
-  process.stdout.write(`  cost: a frame 900 x 610: ${c.frameMB.toFixed(2)} MB; at 30 a second ${c.perSecondMB.toFixed(1)} MB a second\n`);
+  process.stdout.write(`  cost: a frame 960 x 680: ${c.frameMB.toFixed(2)} MB; at 30 a second ${c.perSecondMB.toFixed(1)} MB a second\n`);
 }
 fs.writeFileSync(path.join(out, 'sheet.json'), JSON.stringify(sheet, null, 1));
 process.stdout.write(`done in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);
