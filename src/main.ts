@@ -2333,6 +2333,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (THE QUEST LINE OF FLOORS 6 TO 10, behind QUESTS610 in game/quests610.ts) Its switch. */
     quests610: QUESTS610,
     pillars: PILLARS,
+    /** (for the scenarios) A frame's controls with nothing pressed. */
+    emptyControls,
     /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */
     lowStacks: LOW_STACKS,
     /** (THE RIVERS FLOWING and the livelier wheel, behind FLOW in art/flowing.ts) Its switch: set it before the floor is made. */
