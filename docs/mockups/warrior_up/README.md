@@ -21,6 +21,14 @@ The Warrior (the knight) only; the Ranger and the Mage come after, the same way.
   the look of his old pig helmet but it looks old.  And the visor slit never really pops.  And is it worth it to do the 8
   sides during this process in tandem”. Asked whether to draw the heroes from eight sides now: “Yes, 8 sides now
   (Recommended)”.
+- 6 Nov 2026, seeing the Ranger: “Can you make sure his leg ratio is correct cause it seems like all these guys have long
+  upper legs and short legs below the knee”. Asked whether to mend every hero the same way: “Yes, every hero (Recommended)”
+  (offered as: re-pose the Warrior before he goes in, the Warrior first).
+- 6 Nov 2026, 20:45: “Are you actually painting 8 drawings or flipping some?”. Told five were painted and three mirrored, and
+  that what is on one side of a hero swaps when he is mirrored (his sword hand, the Brawler's blind eye), his pick: “Paint
+  all 8 (Recommended)” (offered as: every facing true; the sword, the bow and the blind eye stay put).
+- 7 Nov 2026, just after midnight, shown the pictures of 90de9707 (his sword seen from every side): “all that time and you
+  screwed up his run.  why is he high stepping with his knees up?”
 
 So: his look and flavour kept (his pig-faced helm, brought back as he asked; his red tabard and its pointed skirt, his dark
 red scarf whose two ends fly, his steel and mail, his plum gloves and belt with its cyan buckle, his glowing great sword, his
@@ -29,20 +37,27 @@ Brawler in his Veteran look.
 
 ## The pictures (`pictures/`)
 
-- `warrior_up_sheet.png` (1200 by 7323): before beside now, three times as big, from in front and from behind: his stance, his
-  run, his class card's ready, the key moments of each attack (the held wind-up, the smeared strike, the wind-down), his fall;
-  and at the game's own size.
-- `warrior_up_sheet2.png` (1440 by 4281): HIS HELM six times as big, before (the game's, in front and from behind) and now
-  (from each of his five sides), and the same at the game's own size; and HIS EIGHT FACINGS, each laid where he faces (down
-  and to the right at the bottom right, and so round, a key of the eight ways in the middle): his stance, a stride of his
-  run, and Strike's smeared blow, three times as big; and all three at the game's own size.
-- `warrior_up.mp4` (57 s, 30 frames a second, H.264, 1100 by 1060): first, NEW, his eight facings at the game's own size
-  with him three times as big beside it: running once round a circle at the game's pace through all eight facings, then
-  Strike's first swing each of the eight ways in turn (the game's step on each swing carrying him). Then every list before
-  and now side by side, both ways round, three times as big and at the game's own size, each captioned; each strike (both
-  swings of Strike, the Slam, the Lunge) again at half speed; his class card's standing loop before and now, side by side.
-  Before and now play side by side, at once, rather than one after the other, so that each list is seen against the other
-  at the same moment and the film stays under a minute.
+- `warrior_up_sheet.png` (1440 by 7336): at its top, HIS LEGS, MADE TRUE: his guard from in front and from straight toward
+  you, as he approved him beside now, three times as big, each leg marked as the screen shows it (hip to knee in yellow, knee
+  to the floor in green, a tick at each) and its ratio written, knee to floor over hip to knee (a leg whose shin is hidden
+  from that side drawn dim). Then before beside now, three times as big, from in front and from behind: his stance, his run
+  (and under it A WHOLE STRIDE SIDE-ON, eight moments evenly through a turn, as the owner last saw it and now, each with how
+  far up from hanging straight down its swinging thigh is), his class card's ready, the key moments of each attack (the held wind-up, the smeared strike, the wind-down); and at the
+  game's own size. (His fall's rows are on the second sheet, so that this one stays under 7500 pixels tall.)
+- `warrior_up_sheet2.png` (1440 by 7027): HIS HELM six times as big, before (the game's, in front and from behind)
+  and now (from each of his eight sides), and the same at the game's own size; HIS EIGHT FACINGS, each truly painted and laid
+  where he faces (down and to the right at the bottom right, and so round, a key of the eight ways in the middle): his stance,
+  a stride of his run, Strike's smeared blow and his town stance (his sword on his back, point up), three times as big, and
+  all four at the game's own size, so that his sword is seen from every side (below, "His sword, seen from every side"); and his fall,
+  before beside now.
+- `warrior_up.mp4` (59 s, 30 frames a second, H.264, 1100 by 1060): first, his eight facings at the game's own size
+  with him three times as big beside it, each truly painted: running once round a circle at the game's pace through all eight,
+  then Strike's first swing each of the eight ways in turn (the game's step on each swing carrying him). Then every list
+  before and now side by side, from in front and from behind, three times as big and at the game's own size, each captioned
+  (after his run, his run as the owner last saw it beside now, side-on and from in front);
+  each strike (both swings of Strike, the Slam, the Lunge) again at half speed; his class card's standing loop before and now,
+  side by side. Before and now play side by side, at once, so that each list is seen against the other at the same moment
+  and the film stays under a minute.
 
 His scarf's two ends are not in his frames: the game hangs them from where each frame fixes them and moves them itself
 (`engine/tails.ts`), so they follow everything he does, in the world. In the pictures they are moved the same way.
@@ -110,15 +125,16 @@ heroes are baked into picture files when the game is built, is no longer a reaso
 Every list at 30 pictures a second (his run, which grips the floor, at 60 as the Ranger's and the Mage's are: a picture for
 each of the game's steps). Keys eased in and out. Every move through every boss check (below).
 
-- STANDING, ALIVE (2 s, 60 pictures): two breaths, his weight going over onto his front foot and back, the point stirring
-  behind him; once a round, a habit of his: his chin comes up, his eyes go to his right, his hands roll on the grip. His feet
+- STANDING, ALIVE (2 s, 60 pictures): two breaths, his weight going over onto his front foot and back, the blade stirring
+  level behind him (since his sword was made to be seen from every side: below); once a round, a habit of his: his chin comes up, his eyes go to his right, his hands roll on the grip. His feet
   never move.
 - IN TOWN AND ON HIS CARD, ALIVE (2.4 s, 72): two breaths, his weight settling onto his left leg, a roll of his shoulders, a
-  look along the street.
-- RUNNING: his own run made to grip (a turn of it in 27 sixtieths of a second, each foot on the floor going back exactly as
-  fast as the game carries him), driving lower and harder; in town the same. And now, as the Ranger and the Mage have: eight
-  ways of COMING TO A STAND out of it (each foot set down where his stance has it, lifted to get there), and SETTING OFF
-  into it.
+  look along the street; his arms folded, his sword point up on his back (below).
+- RUNNING: A HEAVY ARMOURED MAN'S RUN (below, "His run, a heavy man's"), made to grip (a turn of it in 27 sixtieths of a
+  second, each foot on the floor going back exactly as fast as the game carries him): leaning in, long and low, his knee
+  lifting only a little, his hands up by his right breast and the blade level behind him (below); in town the same, his hands
+  free. And now, as the Ranger and the Mage have: eight ways of COMING TO A STAND out of it (each foot carried low to where
+  his stance has it), and SETTING OFF into it.
 - STRIKE, THE FIRST SWING (a rising cut), BY MOVEMENT 9: a skip-step in as the game's step carries him (both feet off the
   floor); the WIND-UP, big: sunk deep on his back leg, wound right round away, the hilt drawn back past his hip and the blade
   swung back and up behind him, its point high over his right shoulder; HELD (frames 6 to 8); THE STRIKE in two frames,
@@ -150,30 +166,35 @@ each of the game's steps). Keys eased in and out. Every move through every boss 
   himself up on it, head up; his knees go and he comes down hard on one knee behind it; ONCE MORE HE PUSHES UP on the hilt,
   half rising, his head coming up to whatever killed him; it fails, he sinks back, and his head bows over his hands on the
   hilt as the light goes out of the blade. He is left kneeling behind his sword, upright.
-- HIS CARD'S READY (drawing his sword when picked) and LOOKING ABOUT HIM: as they were, their keys already eased, now at 30
-  a second; the draw's feet mended (his right foot steps back as the blade comes off his back; his left steps out into his
-  guard as it falls behind him), then his guard, alive.
+- HIS CARD'S READY (drawing his sword when picked) and LOOKING ABOUT HIM: their keys eased, now at 30 a second. The draw now
+  takes the sword from where it rides point up on his back (below): his right hand back to the hilt at the small of his back,
+  the sword swung out round his right side still standing up, on up into his high guard, and down into his guard (his right
+  foot stepping back as it comes round; his left stepping out into his guard as it falls behind him), then his guard, alive.
 
-### His five sides, from every check (`src/art/warrior_up.ts` `WuSide`)
+### His eight sides, each truly painted (`src/art/warrior_up.ts` `WuSide`)
 
-Drawn from five sides, each the same man on the same bones turned before the camera (`WU_SPIN`): `front` and `back` as the
-game has always had a hero (`back` is the game's own view from behind, which mirrors him, as today), and three new, turned
-45 degrees from `front` about the floor under him:
+Drawn from eight sides, 45 degrees apart, each the same man on the same bones truly turned before the game's own camera
+(`WU_SPIN`), none of them a mirror: his great sword is in his right hand and his scarf where it is on him whichever way he
+faces, as he asked (“Paint all 8 (Recommended)”).
 
-| Side | Turned | He faces on the screen | Seen |
-|---|---|---|---|
-| `front` | (as today) | down and to the right | his face and his front, three quarters |
-| `back` | (as today) | up and to the right | his back, three quarters (a mirror, as today) |
-| `side` | 45 degrees to his left | right, across the screen | side-on, his face in profile |
-| `toward` | 45 degrees to his right | down, straight toward the camera | his face and his front, full on |
-| `away` | 135 degrees to his left | up, straight away from the camera | his back, full on |
+| Side | Turned | He faces on the screen |
+|---|---|---|
+| `front` | (as always) | down and to the right |
+| `toward` | 45 degrees to his right | straight down, toward the camera |
+| `frontL` | 90 to his right | down and to the left |
+| `sideL` | 135 to his right | straight to the left, side-on |
+| `backL` | right round | up and to the left, his back to you |
+| `away` | 135 to his left | straight up, away from the camera |
+| `back` | 90 to his left | up and to the right, his back to you (truly: the game's own view from behind is a mirror of this, his sword in his left hand) |
+| `side` | 45 to his left | straight to the right, side-on |
 
-Every list of his is made from each (`makeWarriorUpArt` gives `side`, `toward` and `away` beside `front` and `back`, each an
-`AnimSet` of the very same lists: his stance, town, his card's lists, ready, the gripping run, his eight stops, setting off,
-each attack and its smears, the Whirlwind, the Lunge, struck in front and behind, his fall), and every frame of each through
-every check: every boss check from each side (with the game's handovers), nothing through what he wears, crisp and cyan,
-feet that grip, the slit under its lit lip. Each side's smears and the after-images of his blade are painted in that side's
-own frames, so they follow its blade. To pass every check from the turned sides, small mends to his moves (the frames and
+Every list of his is made from each (`makeWarriorUpArt` gives all eight, each an `AnimSet` of the very same lists: his
+stance, town, the gripping run, his eight stops, setting off, each attack and its smears, the Whirlwind, the Lunge, struck in
+front and behind, his fall), and every frame of each through every check: every boss check from each side (with the game's
+handovers), nothing through what he wears, crisp and cyan, feet that grip, his legs true, the slit under its lit lip from
+every side that shows his face. His class card's own lists (drawing his sword, looking about him) are painted from in front
+only, as the card shows him, and checked from there. Each side's smears and the after-images of his blade are painted in that
+side's own frames, so they follow its blade. To pass every check from every side, small mends to his moves (the frames and
 keys of the Whirlwind, the second swing's wind-up, the Slam's rise and its strike, the Lunge, struck from behind, his fall,
 his card's draw); their numbers are unchanged but for the Whirlwind (12 frames a turn).
 
@@ -182,37 +203,37 @@ his card's draw); their numbers are unchanged but for the Whirlwind (12 frames a
 The game draws a hero facing (fx, fy) on its floor (a step along fx goes right and down the screen, along fy left and down,
 as `render.ts` lays it). Today it chooses `back` if fx + fy < -0.2, else `front`, and mirrors him if fx - fy < 0. For eight
 facings, call `wuFacing(fx, fy)` (`src/art/warrior_up_art.ts`): it takes the nearest of the eight ways (each an eighth of the
-circle, 45 degrees wide, centred on its way) and gives the side to draw and whether to mirror it:
+circle, 45 degrees wide, centred on its way) and gives the side to draw. NEVER MIRROR HIM: every facing is its own painting.
 
-| Way he faces (fx, fy) | On the screen | Side | Mirrored |
+| Way he faces (fx, fy) | On the screen | Side | His scarf's tails: `facing` |
 |---|---|---|---|
-| (1, 0) | down and to the right | `front` | no |
-| (0.71, 0.71) | down, toward the camera | `toward` | no |
-| (0, 1) | down and to the left | `front` | yes |
-| (-0.71, 0.71) | left | `side` | yes |
-| (-1, 0) | up and to the left | `back` | yes |
-| (-0.71, -0.71) | up, away from the camera | `away` | no |
-| (0, -1) | up and to the right | `back` | no |
-| (0.71, -0.71) | right | `side` | no |
+| (1, 0) | down and to the right | `front` | +1 |
+| (0.71, 0.71) | straight down, toward the camera | `toward` | +1 |
+| (0, 1) | down and to the left | `frontL` | -1 |
+| (-0.71, 0.71) | straight to the left | `sideL` | -1 |
+| (-1, 0) | up and to the left | `backL` | -1 |
+| (-0.71, -0.71) | straight up, away from the camera | `away` | +1 |
+| (0, -1) | up and to the right | `back` | +1 |
+| (0.71, -0.71) | straight to the right | `side` | +1 |
 
-- SO: `const { side, flip } = wuFacing(fx, fy); const set = art[side];` (art: `WuActorArt`), and draw it mirrored when
-  `flip`, in place of the two tests above (`render/render.ts`, and where his fallen body is laid down, `render/fx.ts`
-  `fallen`). The four ways the game has today come out as they do now (front, front mirrored,
-  back mirrored, back); the four between them are the new sides. A test holds that each of the eight is drawn facing the
-  very way the game sends him.
-- HIS SWORD HAND: as today. A mirrored picture shows the great sword in his other hand, as `front` and `back` mirrored do
-  today; `back` is itself the game's mirror view from behind, as today. `toward` and `away` are never mirrored. `side` is
-  mirrored only to face left.
-- HIS SCARF: the game's tails take `facing` -1 when he is mirrored and +1 when not, as today (`fx - fy < 0`; straight up and
-  straight down are +1), and the frame's roots mirrored with him, as today.
-- HIS ATTACKS AIM: when he strikes, the game turns him to the aim; the same `wuFacing(aim)` chooses the side and the mirror
-  for the attack's list (Strike's two swings, the Slam, the Lunge's dive and landing), so every blow can go any of the eight
-  ways, its smear and after-images with it. The Whirlwind (`turns: true`) goes once round whatever the side: draw it from the
-  side his facing gives, so he starts and ends it facing his way. Struck and his fall: from the side he faces as he is hit.
+- SO: `const side = wuFacing(fx, fy); const set = art[side];` (art: `WuActorArt`), drawn as it is, in place of the two tests
+  above (`render/render.ts`, and where his fallen body is laid down, `render/fx.ts` `fallen`).
+- HIS SWORD HAND: always his right, from every side (no picture of him is mirrored).
+- HIS SCARF (`engine/tails.ts`): the frame's roots as the frame gives them, never mirrored; `facing` as the table has it
+  (`wuTailsFacing(side)`): -1 for the three that face left of the screen, +1 for the rest (straight up or down the screen +1,
+  as the game has it today where fx - fy is 0). The game's `ox`, `oy` (where his feet are) as today.
+- HIS ATTACKS AIM: when he strikes, the game turns him to the aim; the same `wuFacing(aim)` chooses the side for the attack's
+  list (Strike's two swings, the Slam, the Lunge's dive and landing), so every blow can go any of the eight ways, its smear
+  and after-images with it. The Whirlwind (`turns: true`) goes once round whatever the side: draw it from the side his facing
+  gives, so he starts and ends it facing his way. Struck and his fall: from the side he faces as he is hit.
+- HIS CLASS CARD: as today, from in front (its ready and looking about him are painted from in front only).
+- HIS ANCHOR: the three sides that face left are painted with the floor point under him 98 across his canvas (84 for the rest,
+  as every hero), so that his Lunge has as much room before him facing left as facing right. Each picture is cut to the box
+  round him and carries its own anchor, as every sprite does, so the game needs nothing for it.
 - Where his facing hovers on the line between two eighths, the game may want to hold the side it has until the facing is
   a little past the line, so that he does not flicker between two sides; the main chat's to judge in play.
-- THE SIDE PAINTER'S WORKER and BAKING must make the three new sides too (each `AnimSet` of `side`, `toward`, `away`, every
-  place): what that costs is below.
+- THE SIDE PAINTER'S WORKER and BAKING must make all eight sides (each `AnimSet`, every place): what that costs is below. Only
+  the place he is in need be held in play (a dungeon, or town and his card).
 
 ## His numbers (FOR THE MAIN CHAT)
 
@@ -230,34 +251,228 @@ What changes in the game's numbers, only with the switch on:
 | Lunge, struck, his fall | | the same times and lengths: the dive 0.5 s (16 pictures by how far through), the point out at 0.5, the landing 15 frames; 7; 46 |
 | Whirlwind | once round in 8 frames (0.27 s) | once round in 12 frames (0.4 s): he spins two and a half times a second, not three and three quarters |
 | His card's ready | ready at 31 frames | the same (31); the card shows 41 frames, as before |
-| His run | 15 at 30 a second, by the clock | 27 at 60, by how far he has gone (`walkStride` 2.07 tiles), as the Ranger's |
+| His run | 15 at 30 a second, by the clock | 27 at 60, by how far he has gone (`walkStride` 2.07 tiles), as the Ranger's; each foot now comes down further before him (his legs true, below), the stride as long |
 
 His pick on the swing, 6 Nov: “Yes, the held wind-up (Recommended)”. Strike at 0.333 s in place of 0.12 is his Movement 9
 (“Like the wind up and wind down are big but the actual punch is lightning quick”) for his quick attack; the Veteran's jab
 lands at 0.4 s. It makes the Warrior's basic attack slower to land: he has chosen it.
 
+## His legs, made true (the owner's “long upper legs and short legs below the knee”)
+
+Measured as the screen shows each leg (`src/art/warrior_up_review.ts` `wuLegs`; the same measure as `tools/legs_measure.ts`,
+brought here from the Ranger's branch, art/ranger-up): from the hip joint to the knee joint, and from the knee joint to the
+floor (the shin, and the ankle's own height), in game pixels; the ratio knee to floor over hip to knee, the least of every
+frame of the pose, of each leg whose shin is seen from that side (at least half of it not hidden behind something nearer:
+`hidden` where neither is). Standing straight his bones read 1.14 from every side, a man's. AS HE APPROVED HIM → **NOW**:
+
+| Pose (every frame of it) | `front` | `toward` | `frontL` | `sideL` | `backL` | `away` | `back` | `side` |
+|---|---|---|---|---|---|---|---|---|
+| his guard | 0.63 → **1.09** | 0.58 → **1.14** | 0.90 → **1.10** | 1.06 → **1.07** | 1.51 → **1.15** | 1.23 → **1.14** | 1.16 → **1.14** | 0.98 → **1.10** |
+| his town stance | 0.97 → **1.13** | 0.88 → **1.13** | 0.93 → **1.14** | 1.10 → **1.14** | 1.29 → **1.16** | 1.27 → **1.19** | 1.20 → **1.16** | 1.10 → **1.14** |
+| looking about him in town | 0.98 → **1.13** | 0.89 → **1.13** | 0.95 → **1.14** | 1.11 → **1.14** | 1.29 → **1.16** | 1.31 → **1.19** | 1.21 → **1.16** | 1.10 → **1.14** |
+| his card's ready, in his guard | 0.65 → **1.14** | 0.63 → **1.15** | 0.99 → **1.14** | 1.07 → **1.14** | 1.51 → **1.15** | 1.33 → **1.14** | hidden → **1.14** | 0.97 → **1.14** |
+| Strike's held wind-up | 0.90 → **1.08** | 0.31 → **1.24** | 1.06 → **1.17** | 1.08 → **1.13** | 1.56 → **1.32** | 1.73 → **1.10** | 1.18 → **1.07** | 0.99 → **1.17** |
+| the first swing held up, waiting | 0.90 → **1.12** | 0.97 → **1.17** | 0.99 → **1.14** | 1.07 → **1.10** | 1.35 → **1.14** | 1.02 → **1.13** | 1.07 → **1.14** | 1.05 → **1.14** |
+| the second swing's held wind-up | 0.91 → **1.14** | 1.08 → **1.15** | 1.06 → **1.14** | 1.09 → **1.14** | 1.42 → **1.15** | 1.12 → **1.13** | 1.11 → **1.14** | 1.07 → **1.14** |
+| the Slam's held wind-up | 1.14 → **1.14** | 1.13 → **1.14** | 1.13 → **1.14** | 1.15 → **1.14** | 1.17 → **1.15** | 1.16 → **1.14** | 1.15 → **1.14** | 1.14 → **1.14** |
+| the Slam's landing | 0.97 → **hidden** | 1.13 → **1.25** | 1.05 → **1.18** | 1.04 → **1.08** | 1.01 → **1.13** | 0.78 → **1.13** | 1.01 → **1.14** | 1.01 → **1.05** |
+| the Lunge's landing | hidden | 1.03 → **1.22** | 0.89 → **1.07** | 0.88 → **1.03** | 1.10 → **1.10** | 1.08 → **1.08** | 1.13 → **1.13** | 1.14 → **1.03** |
+| the kneel in his fall | 1.03 → **hidden** | 1.39 → **1.34** | 1.17 → **1.12** | 1.02 → **1.01** | 1.18 → **1.17** | 0.93 → **1.74** | 1.21 → **1.31** | 0.99 → **1.01** |
+| his run (a foot flat on the floor; his heavy run, below) | 0.74 → **1.07** | 0.44 → **1.08** | 0.74 → **1.07** | 1.07 → **1.12** | 1.67 → **1.37** | 3.07 → **1.29** | 1.67 → **1.22** | 1.06 → **1.13** |
+| his run in town (a foot flat) | 0.74 → **1.06** | 0.45 → **1.07** | 0.76 → **1.07** | 1.07 → **1.13** | 1.73 → **1.22** | 2.70 → **1.30** | 1.74 → **1.38** | 1.07 → **1.12** |
+
+WHY THEY READ SHORT: the game's camera looks down on him; a crouch bent his knees toward it, so each shin was seen end-on and
+the thigh above it at its whole length (as the Ranger's helper found for every hero). From the sides of him the camera had
+never seen (behind him on either side, side-on from his left) the same crouch read true; from in front and toward you it read
+as short as 0.31.
+
+THE MEND, only where his feet and knees go (his body, arms, sword, hits and timing as they were; a test holds his upper body):
+- HIS GUARD: the same low crouch, his front foot further forward (18.5, it was 10.5), his back foot further back (-17, it
+  was -9), his knees as they were but the front one a little more over its foot: a longer, lower fencer's guard. Every blow
+  that starts from it starts from these feet.
+- IN TOWN: his feet further apart to each side (8.9 and -6.3, they were 1.4 and -1.8), his knees as they were.
+- STRIKE'S HELD WIND-UP: his back foot flat on the floor under his weight (its heel was up), its knee a little in; his front
+  knee a little less over its foot. The Slam's landing: his front foot stamped on from his longer guard, a little further
+  (31; it was 21), its knee straight over it. The Lunge's landing: his front foot a little further on, its knee over it. The
+  kneel: his front foot planted a little further back, the foot he kneels on a little further forward.
+- HIS RUN: each foot came down further before him (18 of the stride's 21; it was 9) and left the floor as it passed under
+  him, so that while it bore him its shin stood up over it. That brought his knee up past his belt as it came through (the
+  owner: “why is he high stepping with his knees up?”): his run is now made anew (below, "His run, a heavy man's"), its legs
+  still true where a foot bears him.
+
+THE TEST (`tests/warrior_up.test.ts`, 9): every frame of his stances (his guard, town, looking about him, his card's ready)
+and of every pose he holds (Strike's held wind-ups and its sword held up, the Slam's held wind-up and landing, the Lunge's
+landing, the kneel), from all eight sides, each leg whose shin is seen: at least 1.05; his runs, where a foot is flat on the
+floor bearing him: at least 1. A new pose in any of them is held to the same. ONE LIMIT, SAID PLAINLY: the Lunge's landing
+and the kneel are held to 1 side-on (`side`, `sideL`), not 1.05. Their front thigh lies level by their nature, and the game's
+camera, looking down, draws a level length 1.15 times as long as an upright one, so from side-on a level thigh over an upright
+shin reads about as long as it (1.01 to 1.03) wherever the feet and knees go; only lifting his hips (his body, not his legs)
+would change it. From every other side they read 1.05 or more.
+
+## His sword, seen from every side
+
+Asked by the coordinator of the art chats, 6 Nov 2026, before the owner sees him: from down and to the left (`frontL`) his
+sword vanished, in his guard and his run wholly behind his body, so that at the game's size he looked unarmed; from toward you
+(`toward`) only a stub of the blade showed. True to how he held it, but "his glowing great sword is his signature, and a hero
+must read armed in every facing". Asked: a good length of the blade, its glowing edge and its point, clearly seen from every
+side in every list he holds or runs in; his look, his feet, his legs (their test still passing) and his sword in his right
+hand kept; only how the sword and his sword arm sit changed.
+
+THE MEASURE (`src/art/warrior_up_review.ts` `wuBladeSeen`): the blade's light is its two lightest tones (`BLADE` 3 and 4,
+`art/kit.ts`: used for nothing else), counted at the game's size: a game pixel (two picture pixels across) counts when half
+of it or more is that light. And its point: the blade's light within three picture pixels of the last two of its length. The
+whole blade, side-on, is 25 to 35 such game pixels.
+
+THE TEST (`tests/warrior_up.test.ts`, 10): AT LEAST **10** GAME PIXELS of the blade's light (`WU_BLADE_LEAST`: about a
+third of the blade's length), ITS POINT AMONG THEM, in every frame of every list he holds or runs in, from all eight sides:
+his guard, his town stance, his run and his run in town, every stop out of them and his setting off into them in both
+places, Strike's held wind-up and its sword held up (its poise), the second swing's held wind-up, the Slam's held wind-up;
+his card's two (drawing his sword into his guard, looking about him) from in front, where they are painted. And the test sees
+a hidden sword: his guard as it was, from down and to the left, shows none.
+
+WHY 10, SAID PLAINLY: a blade near his body is hidden by him from the side of him it points away from, and his sides are only
+45 degrees apart, so whichever way it points, one of them looks along it from behind him. Carried low behind him (its point
+near the floor: "a little out from his body and lower" was the example given), it is always hidden from one of his left-hand
+sides: searched over hundreds of ways of holding it, the most a low carry showed from all eight sides at once was 7.
+Carried level it shows from every side: the most any guard showed from all eight, through its whole breathing loop, was 12,
+his run 12. Ten keeps every list clear, with a little to spare (the least of any list from any side is now 11).
+
+THE LEAST SEEN, of every frame of every one of those lists, from each side (game pixels of the blade's light with its point
+seen; 0 where none is, or its point is hidden). BEFORE → **NOW**:
+
+| | `front` | `toward` | `frontL` | `sideL` | `backL` | `away` | `back` | `side` |
+|---|---|---|---|---|---|---|---|---|
+| every list | 0 → **18** | 0 → **16** | 0 → **11** | 13 → **13** | 8 → **13** | 7 → **11** | 4 → **11** | 0 → **16** |
+
+List by list (the least of its frames; "point hidden" where its light was seen but not its point):
+
+| List (every frame) | `front` | `toward` | `frontL` | `sideL` | `backL` | `away` | `back` | `side` |
+|---|---|---|---|---|---|---|---|---|
+| his guard | 18 → **28** | 4 → **16** | 0 → **12** | 18 → **16** | 20 → **31** | 26 → **16** | 24 → **12** | 16 → **20** |
+| his town stance | 0 → **21** | 0 → **18** | 16 → **21** | 27 → **25** | 25 → **20** | 19 → **21** | 16 → **21** | 16 (point hidden) → **20** |
+| his run | 20 → **29** | 3 → **21** | 0 → **11** | 13 → **13** | 19 → **27** | 21 → **21** | 22 → **11** | 22 → **16** |
+| his run in town | 3 (point hidden) → **22** | 1 (point hidden) → **19** | 3 → **16** | 27 → **29** | 30 → **27** | 24 → **23** | 17 → **22** | 14 → **21** |
+| his stops and setting off, in a dungeon | 14 → **26** | 3 → **17** | 0 → **11** | 14 → **15** | 18 → **27** | 21 → **17** | 20 → **12** | 23 → **17** |
+| his stops and setting off, in town | 2 (point hidden) → **19** | 0 → **17** | 4 → **15** | 24 → **25** | 26 → **22** | 17 → **20** | 16 → **15** | 15 (point hidden) → **20** |
+| Strike's held wind-up | 25 → **25** | 26 → **30** | 14 → **18** | 21 → **23** | 19 → **17** | 12 → **11** | 4 → **13** | 18 → **18** |
+| the first swing held up, waiting (its poise) | 32 → **32** | 26 → **26** | 28 → **28** | 25 → **25** | 22 → **22** | 25 → **25** | 27 → **27** | 26 → **26** |
+| the second swing's held wind-up | 25 → **29** | 26 → **34** | 24 → **23** | 21 → **20** | 8 → **13** | 7 → **11** | 21 → **17** | 25 → **23** |
+| the Slam's held wind-up | 23 → **30** | 49 → **30** | 27 → **23** | 24 → **20** | 13 → **16** | 8 → **15** | 17 → **20** | 24 → **26** |
+| his card: drawing his sword into his guard (from in front) | 1 (point hidden) → **18** | — | — | — | — | — | — | — |
+| his card and town: looking about him (from in front) | 1 (point hidden) → **18** | — | — | — | — | — | — | — |
+
+WHAT CHANGED: only how the sword and his sword arm sit (his body, his feet and his legs as they were; their test passes):
+- HIS GUARD: his hands out by his right hip and a little higher (on the floor's own measure 2.5 back, 17.5 out, 34.5 up; they
+  were 2.5, 11.5, 25), the blade carried LEVEL behind him, pointing back and out to his right (142 round, level; it pointed
+  162 round and 40 down, its point near the floor). Still his rear guard, the blade trailing behind him: from in front
+  it now runs out level to the left of him, where its point was low by his back foot. Every move that starts in his guard
+  starts from it (Strike's first frames come up from it into the coil; the Lunge's first picture), the swings, the Slam and
+  the Lunge end in it, and his card's draw comes down into it.
+- HIS RUN: his hands up by his right breast (they were down by his belly), the blade level behind him and out to his right,
+  steadier (it swung 6 degrees with each stride, now 1.5).
+- THE HELD WIND-UPS: Strike's blade a little higher over his right shoulder and further round (52 up, 166 round; it was 38,
+  148); the second swing's a little more upright over his left shoulder (57 up; it was 42); the Slam's top a little more
+  upright over him (67 up; it was 52), his hands a little higher. Each blow's path, timing and hit as before.
+- IN TOWN AND ON HIS CARD: his great sword rides POINT UP on his back, its hilt at the small of his back on his right, the
+  blade standing up behind his right shoulder and over his head, leaning a little out to his right and back
+  (`src/art/warrior_up.ts` `wuBackPlace`). It hung point down, its hilt over his shoulder: from in front and from toward you
+  not a pixel of it showed. His arms folded as before.
+- HIS CARD'S DRAW: his right hand goes back to the hilt at the small of his back, swings the sword out round his right side
+  still standing up, and on up into his high guard (as before), then down into his guard.
+- AND SO THAT EVERY MOVE STILL PASSES EVERY BOSS CHECK FROM ALL EIGHT SIDES, where the new guard and wind-ups made something
+  leap or turn back: Strike's first two frames come up from the new guard into the coil; the second swing's strike frame
+  a little further down its path (72 round, 57 up; it was 93, 70), its freeze on the blow a little further through (16 round
+  past his front, it was 6), and its wind-down round behind him into his guard at an even pace of its point (gathering pace
+  over three frames, slowing over three) so that it is never near as fast as the strike; the Slam's hands come up from his
+  guard to before his face and on over his head on one smooth curve (`smoothKeys`, as the Lunge's are),
+  and its last two frames bring them back to where his guard holds them; the fall's first frames carry his sword hand in
+  toward where it swings the blade round (it stalled); the Lunge's first picture is his guard exactly (the game cuts into it
+  from his stance), its drive-off elbow a little further out (-38, it was -30), and its wind-down's sword level as it comes
+  home. Every blow's timing, hits and lengths as before (test 7).
+
+## His run, a heavy man's (the owner's “why is he high stepping with his knees up?”)
+
+THE FAULT: the run he saw (90de9707; kept as `WU_RUN_SEEN` for the pictures and the check) was moves3.ts's run made to grip,
+its foot set down 18 of the stride's 21 before him, which gripping stretched to 25 of 29: further than his leg reaches, so the
+leg was thrown out straight; and the foot was carried 11 high as it came through, under hips sunk low. As it came through
+and reached, his thigh came up PAST LEVEL, 102 degrees from hanging straight down, the knee by his belt: from behind, a hop
+with one leg up. Its stops and its setting off took the same frames, up to 103.
+
+NOW (`src/art/warrior_up_moves.ts` `wuHeavyRun`, `WU_RUN_FEET`; his body as before, his sword as before): a heavy armoured
+man's run, driving and grounded, made from how a man runs in armour (a short flight, a long, firm time on each foot):
+- he leans in (his pelvis tipped 13 degrees, his back over it), sits a little low (2 under his height standing) and rises and
+  falls a little (0.9 either way: lowest as his weight comes over the foot under him, highest in the air);
+- each foot is on the floor 37 hundredths of a turn (it was 36): its ankle comes down 10.7 before the point under him (it was
+  25), heel first and only just (its toes up 2 degrees), flat at once, and goes back under him exactly as fast as the game
+  carries him; its heel rises as he passes over it and the leg straightens out behind him, and it leaves the floor off its
+  toes, 45 degrees up, its ankle 19 behind him;
+- off the floor, its heel tucks up behind him (the foot's lowest point 4 off the floor, its toes hanging), and it comes
+  through LOW (its lowest point 1.3 off the floor, the foot level by half way), its knee lifting only a little, and reaches
+  forward to be set down;
+- the stride as long as before (2.07 tiles a turn, the game's `walkStride`), the same 27 pictures at 60 a second;
+- in town the same, his hands free.
+His swinging thigh now comes up at most 38 degrees from hanging straight down (it was 102); the most anywhere in his runs, his
+stops and his setting off, 43 (it was 103).
+
+HIS STOPS (`wuSettle`, his own, as moves3.ts settle but for a heavy man): the foot off the floor is carried low to where his
+stance has it (1.4 off the floor, where moves3.ts lifts it 3.2) and he draws himself up a little over it (1.5), so that
+neither knee comes up as he pulls up into his long guard. Setting off (moves3.ts startOf) takes the new run as it is.
+
+THE CHECK (`tests/warrior_up.test.ts`, 11; `src/art/warrior_up_review.ts` `wuThighs`, `WU_THIGH_MOST`): in every frame of his
+run, his run in town, his sixteen stops and his two settings off, from each of his eight sides, each leg whose foot is off the
+floor (heel and toe both above it): its thigh, from the hip joint to the knee joint, at most 50 degrees from hanging straight
+down (measured on him as he truly is, and so the same from every side); and now none past 45. The check sees the run he saw
+fail it (102). And each foot flat on the floor in some frame of each step: grounded, not run on its toes.
+
+KEPT: his feet grip (each foot on the floor goes back as fast as the game carries him: test 5; and every boss check from all
+eight sides: test 3), `walkStride`, his eight true sides, his sword seen from every side (test 10: at least 11 of the blade's
+light in every frame of his runs, stops and setting off), his legs true where a foot bears him (test 9: 1.06 or more from
+every side, where at least 1 is asked).
+
+HIS SWINGING THIGHS, THE MOST IN ANY FRAME (degrees from hanging straight down; a leg whose foot is off the floor), AS HE SAW
+THEM → **NOW**:
+
+| List | as he saw it | now |
+|---|---|---|
+| his run | 102 | **38** |
+| his run in town | 95 | **37** |
+| coming to a stand, in a dungeon (each of 8) | 59 to 103 | **36 to 43** |
+| coming to a stand, in town (each of 8) | 49 to 89 | **19 to 36** |
+| setting off, in a dungeon / in town | 101 / 72 | **35 / 37** |
+
+EVERY OTHER LIST, LOOKED AT FOR A KNEE COME UP WHERE IT SHOULD NOT BE (the most, of a foot off the floor, its knee before
+him), AS HE SAW THEM → **NOW**: his guard 35 → **35**; Strike's skip-step in 57 → **46** and the second swing's 58 → **51**
+(the front foot lifted 1.3 off the floor, not 2.6); the Slam's step back into his guard 66 → **56** (lifted 1.9, his hips a
+little higher); the Whirlwind's swung foot 53 → **51** (2.6 off the floor, not 3.4); struck from behind, his stagger forward
+69 → **56** (his hips dropping less); his fall 49 → **49**; his card's step into his guard 50 → **44**; looking about him and
+in town 19 → **19**. The Lunge: its dive 63 (a leap, his legs drawn up under him, as a leap has them) and the first frame his
+front foot lifts out of its deep landing to come home 78 → **70** (the landing itself, a deep lunge with that foot flat on
+the floor, has the thigh at 81, as it always had): neither is a knee drawn up. HIS ATTACKS MADE WALKING: the game makes those
+only for the Ranger with his bow (moves3.ts walkingOf, with his stances on); the Warrior has none, now as before.
+
 ## The measures
 
-Every frame the game holds of him, in a dungeon, in town and on his class card (`tools/warrior_up_measure.ts`, `count`,
-`count up` and `count up five`; this machine: 2 cores, shared and busy). Now from his two sides as the game has them today,
-and from all five (what the game must hold to show him in eight facings):
+Every frame the game holds of him (`tools/warrior_up_measure.ts`, `count`, `count up` and `count up eight`; this machine: 2
+cores, shared and busy). From his two sides as the game has them today, and from all eight (what the game must hold to show
+him in eight facings, each painted); and, of the eight, a dungeon alone (in play only the place he is in need be held):
 
-| | Before | Now, two sides (front, back) | Now, five sides |
-|---|---|---|---|
-| Lists the game holds of him (all three places) | 88 | 142 (his stops and setting off added; a list shared by two places counted in each) | 349 |
-| Frames in them | 1,450 (a dungeon 422, town 514, his card 514) | 2,658 (a dungeon 770, town 944, his card 944) | 6,195 (a dungeon 1,925, town 2,135, his card 2,135) |
-| Pictures held (each painted once) | 1,396 | 1,262 (a list the same in two places is one list) | 2,930 |
-| Different pictures among them | 609 | 1,229 | 2,851 |
-| Memory, decoded at the game's grain (4 bytes a picture pixel, each cut to the box round him) | 19.7 MB | 17.5 MB | 38.8 MB |
-| Packed as picture files would be (his pixels deflated, as a PNG's are): what baking him adds to the download, near enough | 1.26 MB | 1.36 MB | 3.05 MB |
-| Time to paint a frame (this machine) | 4.0 thousandths of a second | 35.4 | 32.4 |
-| Time to paint every picture of him | 5.6 s | 44.7 s | 95.1 s |
+| | Before (the game's knight) | Now, two sides | Now, eight sides, every place | Now, eight sides, a dungeon alone |
+|---|---|---|---|---|
+| Lists | 88 | 142 | 556 | 184 |
+| Frames in them | 1,450 | 2,658 (a dungeon 770, town 944, his card 944) | 9,732 (a dungeon 3,080, town 3,326, his card 3,326) | 3,080 |
+| Pictures held (each painted once) | 1,396 | 1,262 | 4,598 | 3,008 |
+| Different pictures among them | 609 | 1,228 | 4,474 | |
+| Memory, decoded at the game's grain (4 bytes a picture pixel, each cut to the box round him) | 19.7 MB | 17.0 MB | 62.6 MB | 44.6 MB |
+| Packed as picture files would be (his pixels deflated, as a PNG's are): what baking him adds to the download, near enough | 1.26 MB | 1.33 MB | 4.79 MB | 3.15 MB |
+| Time to paint a frame (this machine) | 4.0 thousandths of a second | 32.3 | 28.5 | |
+| Time to paint every picture of him | 5.6 s | 40.8 s | 130.9 s | |
 
-Five sides hold 2.3 times the pictures of two (his card's looking about and ready are drawn from in front only, as now). A
-frame of his costs eight to nine times what the old knight's did (the sculptor's march, as the Veteran's), so his pictures
-want baking into files when the game is built (25.0.9), as the main chat is doing for the heroes; once baked, painting costs
-nothing on the phone, and five sides add about 1.7 MB to the download and 21 MB to what is held decoded (less if the game
-decodes a side only when he first faces it). (The whirlwind's 12 frames a turn add 24 frames to the two sides' count.)
+Eight sides hold 3.6 times the pictures of two (his card's looking about him and ready are painted from in front only). In
+play only the place he is in need be held: a dungeon alone, from eight sides, is 3,008 pictures, 44.6 MB decoded and 3.15 MB
+packed (from two sides, 752 pictures, 11.1 MB and 0.80 MB); town and his card share their lists (3,254 pictures, 43.6 MB,
+3.40 MB). A frame of his costs seven to eight times the old knight's to paint (the sculptor's march, as the Veteran's), so
+his pictures want baking into files when the game is built (25.0.9), as the main chat is doing for the heroes; once baked,
+painting costs nothing on the phone.
 
 ## How the main chat brings him in
 
@@ -269,12 +484,15 @@ decodes a side only when he first faces it). (The whirlwind's 12 frames a turn a
    chat sees fit, the first swing now waiting to 0.7 s). `art/heroes3.ts` `makeHeroArt3` then gives his new lists in the very
    shape it gave the old (`makeWarriorUpArt`), so the renderer, the class cards and the side painter (`HERO_PICKS`,
    `heroLists`) need nothing new to show him from his two sides as today.
-   EIGHT FACINGS: the renderer chooses his side and mirror by `wuFacing` (above, "His eight facings"); his `WuActorArt` has
-   `side`, `toward` and `away` beside `front` and `back`, each made when first asked for.
+   EIGHT FACINGS: the renderer chooses his side by `wuFacing` (above, "His eight facings") and never mirrors him; his
+   `WuActorArt` has all eight sides, each made when first asked for. Note that his `back` is now truly painted (his sword in
+   his right hand): if the switch goes on before the eight facings are wired in, the game's old mirroring of `back` for up and
+   to the left puts his sword in his left hand there, as it does today for every hero.
 3. THE SIDE PAINTER'S WORKER (`render/painter.ts`) makes its own `makeHeroArt3`: it must know the switch, as it is told
    `vet` for the Veteran (the worker has no switch of its own), or the lists it paints are the old knight's.
 4. BAKING (25.0.9): bake him from `makeHeroArt3().of('warrior', lookOfPlace(place))` with the switch on, every list of
-   `heroLists(set)` for each place and each of his five sides (`front`, `back`, `side`, `toward`, `away`). A list the same in
+   `heroLists(set)` for each place and each of his eight sides (`front`, `toward`, `frontL`, `sideL`, `backL`, `away`, `back`,
+   `side`). A list the same in
    two places is the same array (his attacks, his Lunge, struck, his fall in every place; his town lists on his card): bake
    it once.
 5. The tests: `tests/warrior_up.test.ts`; when the switch goes on, its first test (the switch off) and the hash test change
@@ -291,18 +509,28 @@ decodes a side only when he first faces it). (The whirlwind's 12 frames a turn a
    the same in two places one list.
 3. EVERY FRAME OF EVERY MOVE THROUGH EVERY BOSS CHECK (`checkBoss`: feet that grip, nothing in the floor, arms clear of his
    body and helm, his sword through nothing of him, nothing jerks or jumps, every blow drawn back, held and carried through
-   with the hips first, each strike a two-frame smeared flash, alive when still), his fourteen moves FROM EACH OF HIS FIVE
-   SIDES, with the game's handovers between them (his stance into each and back, the first swing's poise into the second).
+   with the hips first, each strike a two-frame smeared flash, alive when still), his fourteen moves FROM EACH OF HIS EIGHT
+   SIDES (his card's two from in front, where they are painted), with the game's handovers between them (his stance into each
+   and back, the first swing's poise into the second).
 4. Nothing of him through what he wears: no pixel of his mail seen from inside his tabard, its skirt, a pauldron or his scarf
-   (`wuCoverFindings`), every frame of every move, from all five sides; and the check sees mail that is put through (a test).
+   (`wuCoverFindings`), every frame of every move, from all eight sides; and the check sees mail that is put through (a test).
 5. His feet grip in the run: each foot on the floor goes back as fast as the game carries him (under a game pixel).
-6. From all five sides: crisp (every pixel whole or empty but his edge); the friend's cyan edge round him (out with his light
+6. From all eight sides: crisp (every pixel whole or empty but his edge); the friend's cyan edge round him (out with his light
    as he falls, as every hero's); his pool of cyan light; his lights cyan; nothing of the enemy's pink or gold (his own wine
    scarf and plum are his colours since 6 Oct, not the enemy's: the test knows them); nothing cut off.
 7. His hits and lengths as above; each blow by Movement 9: held, two frames, smeared only then, wound up far.
-8. His eight facings: each of the eight ways (and 20 degrees either side of it) gives the side and mirror above, and that side
-   drawn mirrored or not faces the very way on the screen that the game sends him. His helm: the slit dark under its lit lip
-   at the game's own size, from in front, side-on and toward the camera, standing, running and striking.
+8. His eight facings: each of the eight ways (and 20 degrees either side of it) gives its own side, eight sides in all, each
+   painted under the game's camera from in front (never a mirror) and facing the very way on the screen that the game sends
+   him. His helm: the slit dark under its lit lip at the game's own size, from every side that shows his face, standing,
+   running and striking.
+9. His legs read true (above): every frame of his stances and held poses from all eight sides, his runs where a foot bears
+   him; and the measure sees the short shins of his guard and town stance as he approved them.
+10. His sword seen from every side (above): in every frame of every list he holds or runs in, from all eight sides (his
+   card's from in front), at least 10 game pixels of the blade's light, its point among them; and the measure sees his
+   guard's sword as it was, hidden from down and to the left.
+11. His run a heavy man's (above): in every frame of his runs, stops and setting off, from all eight sides, no swinging thigh
+   more than 50 degrees from hanging straight down (none past 45); each foot flat on the floor in some frame of each step;
+   and the check sees the run he saw prance (102).
 
 tsc clean; the heroes' tests pass (`tests/heroes3.test.ts`, `tests/warrior_thrust.test.ts`, `tests/wild.test.ts`,
 `tests/grip_runs.test.ts`, `tests/heroes.test.ts`, `tests/cheap_heroes.test.ts`, `tests/bosses.test.ts`).
@@ -320,7 +548,20 @@ tsc clean; the heroes' tests pass (`tests/heroes3.test.ts`, `tests/warrior_thrus
   game's lists.
 - His skirt is now eight panels split below the hips (it was one cloth with a ragged hem): it reads as a split skirt and
   never as trousers, and lets his legs move; his look otherwise as it was.
-- HIS FACE FROM BEHIND: from `back` and `away` his head hides the snout and its slit, as it would.
+- HIS FACE FROM BEHIND: from `back`, `backL` and `away` his head hides the snout and its slit, as it would.
+- HIS STANCE IS LONGER: his legs made true widen his guard (his feet 35.5 apart front to back, where they were 19.5) and his
+  town stance (feet further apart to each side). His look otherwise as it was:
+  the owner should see the first sheet's top before it goes in.
+- THE LUNGE'S LANDING AND THE KNEEL, SIDE-ON, read 1.01 to 1.03, not 1.05 (above): only lifting his hips would mend it.
+- HIS RUN IS NEW (above, "His run, a heavy man's"): leaning in, long and low, his knee lifting only a little, his feet still
+  gripping. The owner should see the first sheet's stride strips and the film's run before it goes in.
+- HIS FEET IN HIS GUARD: his guard's feet (18.5 before him, 17 behind) are a little further than his legs reach (by 1.2 and
+  0.8): his legs are drawn straight toward them and his feet stand that much nearer him than the numbers say. It reads true
+  (the legs test measures his legs as drawn), but the main chat may want the numbers brought in to where his feet truly are.
+- HIS SWORD IS CARRIED DIFFERENTLY, so that it is seen from every side (above): level behind him in his guard and his run
+  (its point no longer low by the floor), a little higher in the held wind-ups, and in town and on his card point up on his
+  back, over his right shoulder. The owner should see the second sheet's facings before it goes in. Ten game pixels from
+  every side is about a third of the blade; a low carry cannot be seen from every side at all.
 - Made with: `npx tsx tools/warrior_up_pics.ts sheet <dir>` and `python3 tools/warrior_up_pics.py sheet <dir> <out.png>`;
   the same with `sheet2` for the second sheet and `film` for the film. Measured with
-  `npx tsx tools/warrior_up_measure.ts count [up] [five]`.
+  `npx tsx tools/warrior_up_measure.ts count [up] [eight]`.
