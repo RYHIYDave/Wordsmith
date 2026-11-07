@@ -56,7 +56,7 @@ import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { rallyOf } from './act1_rules/kknight';
 import { blobDist, inHold } from './act1_layout';
 import { ARRIVALS, riftSize } from './arrivals';
-import { EYRIE_LINES, EYRIE_SCENE, QUEST610_TEXT, QUESTS610 } from './quests610';
+import { EYRIE_LINES, EYRIE_SCENE, QUEST610_TEXT, QUESTS610, piecesTaken } from './quests610';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
@@ -138,6 +138,7 @@ export interface RunSave {
   furnace?: 'asked' | 'gear' | 'out' | 'done';
   feather?: 'asked' | 'got' | 'given';
   citySeen?: boolean;
+  pieces?: number;
   meldAsk?: boolean;
   /** The voice chosen for this character. */
   voice?: VoiceId;
@@ -927,7 +928,7 @@ export class Game {
       // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
       ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
       ...(QUESTS15.on ? { furnace: h.furnace, meldAsk: h.meldAsk } : {}),
-      ...(QUESTS610.on ? { feather: h.feather, citySeen: h.citySeen } : {}),
+      ...(QUESTS610.on ? { feather: h.feather, citySeen: h.citySeen, pieces: h.pieces } : {}),
     };
     // (ACT 2, THE HUSH: a word the Physician holds is the hero's in the save, where it would go back to: game/act1_rules/physician.ts)
     inTheSave(run, this.monsters);
@@ -991,6 +992,7 @@ export class Game {
     h.meldAsk = s.meldAsk === true ? true : undefined;
     h.feather = s.feather === 'asked' || s.feather === 'got' || s.feather === 'given' ? s.feather : undefined;
     h.citySeen = s.citySeen === true ? true : undefined;
+    h.pieces = typeof s.pieces === 'number' && s.pieces >= 0 && s.pieces <= 7 ? Math.floor(s.pieces) : undefined;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     // (THE RANGER'S COMPANIONS: the picks, only of their own groups)
     if (COMPANIONS.on && s.pets) h.pets = cleanPicks(s.pets);
@@ -1517,6 +1519,8 @@ export class Game {
     }
     // (QUESTS15: floor 3's furnace room, its keeper and crank, and its fire before the Chained One's hall)
     if (this.depth === 3) this.furnaceMade();
+    // (QUESTS610: the Pinewood's pieces of the ward-stone)
+    if (this.depth === 9) this.piecesMade();
     this.updateVision(1);
     // (FLOOR_NAMES: the floor's own name comes up across the screen, its level under it, in place of the line)
     // (ENDLESS MODE: on an endless level, the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
@@ -2811,6 +2815,15 @@ export class Game {
    */
   scene: { kind: 'eyrie'; phase: 'wait' | 'walk' | 'out' | 'hold' | 'back'; t: number; to: { x: number; y: number }; side: number; said: boolean } | null = null;
 
+  /** (QUESTS610) How far the scene's black bars are in, 0 to 1 (main.ts): in as it begins, out as it ends. */
+  sceneBars(): number {
+    const S = this.scene;
+    if (!S) return 0;
+    if (S.phase === 'wait') return Math.min(1, S.t / 0.6);
+    if (S.phase === 'back') return 1 - Math.min(1, S.t / EYRIE_SCENE.back);
+    return 1;
+  }
+
   /** (QUESTS610) How far out the picture is panned now, 0 to 1 (render.ts). */
   scenePan(): number {
     const S = this.scene;
@@ -2872,6 +2885,47 @@ export class Game {
     }
     const side = Math.sign(ex - ey - (bx - by)) || 1;
     this.scene = { kind: 'eyrie', phase: 'wait', t: 0, to, side, said: false };
+  }
+
+  /** (QUESTS610) Is the hero after the ward-stone's pieces, and has he not yet piece `n`? */
+  private wantsPiece(n: number): boolean {
+    const h = this.hero;
+    return QUESTS610.on && !this.practice && h.feather === 'given' && ((h.pieces ?? 0) & (1 << n)) === 0;
+  }
+
+  /** (QUESTS610) A piece of the ward-stone, lying where it fell (once: none if he has it, or one of it lies already). */
+  private dropPiece(n: number, x: number, y: number): void {
+    if (!this.wantsPiece(n) || this.drops.some((d) => d.kind === 'piece' && d.piece === n)) return;
+    this.addDrop('piece', x, y, 0, null, null);
+    this.drops[this.drops.length - 1].piece = n;
+    this.emit({ t: 'text', x, y, text: 'A PIECE OF THE WARD-STONE', color: '#e8dcc0' });
+  }
+
+  /**
+   * (QUESTS610) THE PINEWOOD (floor 9), come into while he is after the ward-stone: a piece lying in its side area (its chests'),
+   * guarded by the area's own; a piece carried by its lair's guardian; and the Stag carrying the third.
+   */
+  private piecesMade(): void {
+    if (!QUESTS610.on || this.practice || this.depth !== 9 || this.hero.feather !== 'given' || piecesTaken(this.hero.pieces) >= 3) return;
+    const land = this.level.land;
+    if (!land) return;
+    const side = land.areas.find((a) => a.role === 'side');
+    if (side && this.wantsPiece(0)) {
+      this.addDrop('piece', side.blob.x, side.blob.y, 0, null, null);
+      this.drops[this.drops.length - 1].piece = 0;
+    }
+    const lair = land.areas.find((a) => a.role === 'lair');
+    if (lair && this.wantsPiece(1)) {
+      const guard = this.monsters.filter((m) => !m.dead && !m.boss && (m.champion || m.rarity === 'leader')).sort((a, b) => Math.hypot(a.x - lair.blob.x, a.y - lair.blob.y) - Math.hypot(b.x - lair.blob.x, b.y - lair.blob.y))[0];
+      if (guard && Math.hypot(guard.x - lair.blob.x, guard.y - lair.blob.y) < Math.max(lair.blob.rx, lair.blob.ry) + 2) guard.piece = 1;
+      else {
+        this.addDrop('piece', lair.blob.x, lair.blob.y, 0, null, null);
+        this.drops[this.drops.length - 1].piece = 1;
+      }
+    }
+    const stag = this.monsters.find((m) => m.boss && m.kind === 'stag');
+    if (stag && this.wantsPiece(2)) stag.piece = 2;
+    this.msg(QUEST610_TEXT.piecesHere, MSG.omen);
   }
 
   /** (QUESTS610) A step of the scene playing; what the player would do is set aside, and what it has him do given instead. */
@@ -9346,6 +9400,8 @@ export class Game {
     // THE CITY'S WORDS (Version 23.8): one carrying Splitting splits in two at half its life (a minion, of its leader's, too)
     if (wordShare(m, 'splitting') > 0 && !m.split && !m.boss) this.splitMonster(m);
     this.dropLoot(m);
+    // (QUESTS610: a piece of the ward-stone it carried)
+    if (m.piece !== undefined) this.dropPiece(m.piece, m.x, m.y);
     this.gainXp(m.xp);
     this.quip(m);
     if (m.boss) {
@@ -11805,6 +11861,14 @@ export class Game {
         this.emit({ t: 'cardGot', royal: dr.royal, x: dr.x, y: dr.y });
         this.sfx('word', 0.6);
         this.emit({ t: 'text', x: h.x, y: h.y, text: `THE ${ROYAL_NAMES[dr.royal].one.toUpperCase()}'S CARD`, color: '#e8dcc0' });
+      } else if (dr.kind === 'piece') {
+        // (QUESTS610) a piece of the ward-stone
+        h.pieces = (h.pieces ?? 0) | (1 << (dr.piece ?? 0));
+        const k = piecesTaken(h.pieces);
+        this.emit({ t: 'text', x: h.x, y: h.y, text: `WARD-STONE ${k} / 3`, color: '#e8dcc0' });
+        this.sfx('rare');
+        this.msg(QUEST610_TEXT.pieceGot(k), MSG.word);
+        if (k >= 3) this.msg(QUEST610_TEXT.piecesWhole, MSG.good);
       } else if (dr.kind === 'stone') {
         // (WORDMELDING) the Meldstone, to be brought to the wordsmith
         if (h.meld === null) h.meld = 'stone';

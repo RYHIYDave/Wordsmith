@@ -62,4 +62,14 @@ export const QUEST610_TEXT = {
   featherGot: 'You pluck a long black FEATHER from the Queen. Bring it to the mystic.',
   featherGivePrompt: 'Mystic: the Queen\'s feather',
   featherGiven: 'The mystic: "A dome of the cult\'s siege magic, fed from three pillars in the Sunken Fen. Only a ward-stone can put them out, and the cult broke theirs in three. Two pieces are hidden in the Pinewood. The Stag carries the third."',
+  piecesHere: 'The mystic said two pieces of the ward-stone lie in the Pinewood\'s side areas, and the Stag carries the third.',
+  pieceGot: (k: number) => `You take a piece of the WARD-STONE (${k} of 3).`,
+  piecesWhole: 'All three pieces of the WARD-STONE. The pillars in the Sunken Fen wait.',
+  pieceLabel: 'Ward-stone piece',
 };
+
+/** How many of the ward-stone's pieces a hero has taken (Hero.pieces, a bit each). */
+export function piecesTaken(bits: number | undefined): number {
+  const b = bits ?? 0;
+  return (b & 1) + ((b >> 1) & 1) + ((b >> 2) & 1);
+}

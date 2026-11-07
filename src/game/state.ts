@@ -312,6 +312,8 @@ export interface Hero {
   /** THE QUEST LINE OF FLOORS 6 TO 10 (game/quests610.ts, QUESTS610): the mystic's feather quest; whether he has seen the town from the eyrie. */
   feather?: 'asked' | 'got' | 'given';
   citySeen?: boolean;
+  /** (QUESTS610) The ward-stone's pieces taken, one bit each (1, 2, 4: the Pinewood's side area's, its lair's, the Stag's). */
+  pieces?: number;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   /** THE RANGER'S COMPANIONS (game/companions.ts, COMPANIONS): the animal picked for each of his two companion talents (absent: the first of its three). */
@@ -349,6 +351,8 @@ export interface Monster {
   elite: boolean;
   /** A guardian: the powerful monster at the end of a side branch. Guardians are elite too. */
   champion: boolean;
+  /** (QUESTS610) Which of the ward-stone's pieces it carries, dropped as it dies (game/quests610.ts). */
+  piece?: number;
   boss: boolean;
   /** Power words it has the powers of (elites and bosses), plus any burned into the dungeon. */
   words: WordId[];
@@ -995,8 +999,10 @@ export interface Drop {
   x: number;
   y: number;
   /** (WORDMELDING: 'dust', runedust, as much as `gold` says; 'stone', the Meldstone) */
-  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card';
+  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone' | 'card' | 'piece';
   gold: number;
+  /** (QUESTS610, 'piece': which of the ward-stone's three pieces, 0 to 2: game/quests610.ts) */
+  piece?: number;
   item: Item | null;
   word: WordId | null;
   age: number;

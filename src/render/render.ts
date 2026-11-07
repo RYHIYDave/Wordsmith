@@ -122,7 +122,7 @@ import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { holdShows, inHold } from '../game/act1_layout';
 import { risenBy, risingSprite } from './arrivals';
-import { EYRIE_SCENE } from '../game/quests610';
+import { EYRIE_SCENE, QUEST610_TEXT } from '../game/quests610';
 import { onTop } from '../game/act2/quiettower';
 /** (FLOOR 20) The picture's lean toward the Moth: the share of the way to it, at most this much of the screen, how high its body is over its floor point (game pixels, in the air and on the book), how fast it glides. */
 const MOTH_LEAN = { share: 0.5, most: 0.3, up: 120, perched: 60, glide: 3 } as const;
@@ -3308,6 +3308,8 @@ export class Renderer {
       // (WORDMELDING, behind MELD: runedust and the Meldstone)
       else if (dr.kind === 'dust') sp = art.icons.runedust;
       else if (dr.kind === 'stone') sp = art.icons.meldstone;
+      // (QUESTS610: a piece of the ward-stone: the Meldstone's picture stands in for it until the art chat draws it)
+      else if (dr.kind === 'piece') sp = art.icons.meldstone;
       // (the same picture as in the bag, at its rarity: with ITEMS_A on the art chat's, painted finer than a game pixel; stand draws it at its size)
       else if (dr.item) sp = itemPic(art.icons, dr.item.icon, dr.item.rarity);
       else continue;
@@ -3326,6 +3328,10 @@ export class Renderer {
       if (dr.kind === 'word' && dr.word && Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [WORD_COLOR[dr.word], P.white]);
       // (WORDMELDING: runedust glitters; the Meldstone is named, and glitters too)
       if (dr.kind === 'dust' && Math.random() < 0.25 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
+      if (dr.kind === 'piece') {
+        this.labels.push({ x: sx, y: sy - 20, text: QUEST610_TEXT.pieceLabel, color: '#e8dcc0' });
+        if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, ['#e8dcc0', P.white]);
+      }
       if (dr.kind === 'stone') {
         this.labels.push({ x: sx, y: sy - 20, text: 'Meldstone', color: MELD_DUST_COLOR });
         if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
@@ -4263,10 +4269,11 @@ export class Renderer {
     if (!this.skip.has('fx')) this.vetFx.drawAir(g, cam, game);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
-    this.drawWordDrops(g, W, H, game, t);
+    if (!game.scene) this.drawWordDrops(g, W, H, game, t);
     this.drawBeacon(g, game, t);
     this.drawBars(g, game, t);
-    this.drawLabels(g, W);
+    // (QUESTS610: not while a short scene plays: the picture is the town's)
+    if (!game.scene) this.drawLabels(g, W);
     fx.drawText(g, cam);
     return cam;
   }

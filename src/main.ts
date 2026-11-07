@@ -2086,7 +2086,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       // (under the inventory the game's own buttons are not drawn: half of them would be cut off by
       // its edge, and none of them is listening)
-      const hud: HudOut = invOpen ? { inventory: -1, potion: false, interact: false, level: false, pause: false, map: false } : drawHud(ui, g, art, fx, clock, input, hudIn);
+      // (QUESTS610: a short scene playing: no buttons, black bars across the top and the bottom of the screen, as a film's)
+      const inScene = !!g.scene;
+      const hud: HudOut = invOpen || inScene ? { inventory: -1, potion: false, interact: false, level: false, pause: false, map: false } : drawHud(ui, g, art, fx, clock, input, hudIn);
+      if (inScene) {
+        const bar = Math.round(scr.h * 0.11 * g.sceneBars());
+        ui.g.fillStyle = '#000';
+        ui.g.fillRect(0, 0, scr.w, bar);
+        ui.g.fillRect(0, scr.h - bar, scr.w, bar);
+      }
       ui.press = press;
       if (hud.map) {
         panels.open = 'map';
