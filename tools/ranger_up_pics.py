@@ -146,8 +146,8 @@ def sheet(dir, out):
     probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
     intro = ('Before (the Ranger in the game today) beside now, three times as big, from in front and from behind. His look kept: '
              'his soft teal cap and its feather, his face and moustache, his pink neckerchief, green jerkin, teal cloak and hood, '
-             'his quiver and his long indigo bow. Now sculpted as one body; every list 30 pictures a second; his guard\'s feet as '
-             'far apart as the game\'s; his run a hunter\'s, never a high-step; the Shot and the Volley a big held draw, a one-frame release '
+             'his quiver and his long indigo bow. Now sculpted as one body; every list 30 pictures a second; his legs the game\'s own '
+             'in every stance, his knee joint raised a little; his run a hunter\'s, never a high-step; the Shot and the Volley a big held draw, a one-frame release '
              'with its after-image, a big follow-through. Pictures only: not in the game.')
     lines = wrap(probe, intro, small, W - 48)
     blocks = []
@@ -159,8 +159,8 @@ def sheet(dir, out):
         blocks.append((sec['title'], rows))
     def row_h(box):
         return 28 + 2 * (20 + (box[3] - box[1]) * 3 + 10) + 24
-    legs_h = 40 + 2 * (96 * 3 + 30) + 120
-    strip_h = 60 + 2 * (24 + 92 * 2 + 30) + 10
+    legs_h = 40 + 4 * 24 + 12 + 2 * (22 + 96 * 3 + 4 + 2 * 18 + 22) + 22 + 90 + 3 * 24 + 20
+    strip_h = 78 + 2 * (24 + 92 * 2 + 30) + 10
     hgt = 20 + 46 + len(lines) * 24 + 20 + legs_h + strip_h
     for title, rows in blocks:
         hgt += 56 + sum(row_h(b) for _, _, b in rows)
@@ -174,34 +174,72 @@ def sheet(dir, out):
         d.text((24, y), ln, font=small, fill=DIM)
         y += 24
     y += 20
-    # --- the legs panel: his guard as the game has it, last night's wide one and now, from in front and from behind
-    d.text((24, y), 'HIS GUARD: the game\'s, last night\'s wide one, and now', font=mid, fill=CYAN)
-    y += 40
-    names = {'before': 'THE GAME\'S', 'wide': 'LAST NIGHT\'S, WIDE', 'now': 'NOW'}
-    cols = {'before': DIM, 'wide': (255, 140, 120), 'now': CYAN}
+    # --- the legs panel: his guard as the game has it and now, from in front and from behind, three times as big and at the
+    # game's own size; on each leg a thin line from his hip to his foot, and his knee marked, so the eye can see it is not bowed
+    d.text((24, y), "HIS GUARD: the game's, and now", font=mid, fill=CYAN)
+    y += 32
+    bn = spec['bones']
+    sub_ = (f"His legs are the game's own: the same feet, the same knee directions, the same depth of crouch. Only his bones changed: "
+            f"his knee joint raised a little, the hip and the feet where they were (thigh {bn['game']['thigh']:.1f} to {bn['now']['thigh']:.1f}, "
+            f"knee to floor {bn['game']['shin']:.1f} to {bn['now']['shin']:.1f}: standing straight, {bn['game']['ratio']:.2f} to {bn['now']['ratio']:.2f} times the thigh). "
+            "On each leg, a line from his hip to his foot, his knee a dot: a knee outside its line is bowed.")
+    for ln in wrap(probe, sub_, small, W - 48):
+        d.text((24, y), ln, font=small, fill=DIM)
+        y += 24
+    y += 12
+    names = {'before': "THE GAME'S", 'now': 'NOW'}
+    cols = {'before': DIM, 'now': CYAN}
     box = (AX - 50, 44, AX + 70, 140)
+    K = 3
+    LINE = (255, 214, 102)
+    for v in ('front', 'back'):
+        x = 24
+        for who in ('before', 'now'):
+            lg = next(l for l in spec['legs'] if l['who'] == who and l['view'] == v)
+            path = os.path.join(dir, lg['file'])
+            g = figure(path, box, K)
+            dd = ImageDraw.Draw(g)
+            def P(pt):
+                return ((pt[0] - box[0]) * K, (pt[1] - box[1]) * K)
+            for leg in lg['legs']:
+                h, k, f = P(leg['hip']), P(leg['knee']), P(leg['foot'])
+                dd.line((h, f), fill=LINE, width=2)
+                dd.ellipse((k[0] - 4, k[1] - 4, k[0] + 4, k[1] + 4), outline=(255, 255, 255), width=2)
+            img.paste(g, (x, y + 22))
+            d.text((x, y), f"{names[who]} · {'in front' if v == 'front' else 'from behind'}", font=tiny, fill=cols[who])
+            # at the game's own size, beside it
+            sg = figure(path, box, 1)
+            img.paste(sg, (x + g.width + 10, y + 22 + g.height - sg.height))
+            d.text((x + g.width + 10, y + 22 + g.height - sg.height - 20), "game's size", font=tiny, fill=DIM)
+            # each knee: how far outside its line (game pixels)
+            yy = y + 22 + g.height + 4
+            for leg in sorted(lg['legs'], key=lambda l: l['leg']):
+                o = leg['out']
+                what = f"outside its line by {o:.1f} px" if o > 0.05 else ("on its line" if o > -0.05 else f"inside its line by {-o:.1f} px")
+                side = 'his left (front) knee' if leg['leg'] == 'L' else 'his right (back) knee'
+                d.text((x, yy), f"{side}: {what}", font=tiny, fill=cols[who])
+                yy += 18
+            x += 590
+        y += 22 + 96 * K + 4 + 2 * 18 + 22
+    # (the most each knee lies outside its line through his guard, from his eight sides: the game's and now)
+    d.text((24, y), "Through his guard, from each of his eight sides, the most each knee lies outside its line (game pixels, left / right; below 0 inside):", font=tiny, fill=DIM)
+    y += 22
     x = 24
-    for lg in spec['legs']:
-        g = figure(os.path.join(dir, lg['file']), box, 3)
-        img.paste(g, (x + 50, y))
-        legs_mark(d, x + 44, y, 3, lg, box, tiny, label=lg['who'] == 'before')
-        col = cols[lg['who']]
-        ratio = lg['lower'] / lg['thigh']
-        d.text((x + 50, y + g.height + 2), names[lg['who']], font=tiny, fill=col)
-        d.text((x + 50, y + g.height + 20), f"feet {lg['apart']:.0f} apart, {lg['side']:.0f} to the side", font=tiny, fill=col)
-        d.text((x + 50, y + g.height + 38), f"legs {ratio:.2f} from in front, {lg['least']:.2f} at worst", font=tiny, fill=col)
-        x += 390
-    y += 96 * 3 + 64
-    x = 24
-    for lg in spec['legs']:
-        g = figure(os.path.join(dir, lg['behind']), box, 3)
-        img.paste(g, (x + 50, y))
-        d.text((x + 50, y + g.height + 2), names[lg['who']] + ' · from behind', font=tiny, fill=cols[lg['who']])
-        x += 390
-    y += 96 * 3 + 40
+    for i, r in enumerate(spec['bowSides']):
+        t = f"{r['side']}: game {r['game'][0]:.1f} / {r['game'][1]:.1f}, now {r['now'][0]:.1f} / {r['now'][1]:.1f}"
+        d.text((x + (i % 2) * 580, y + (i // 2) * 20), t, font=tiny, fill=CYAN)
+    y += 4 * 20 + 10
+    note = ("His front knee is turned out over its foot in the game's own crouch, as it always was: it lies outside its line by up to 3 "
+            "game pixels, now as then. His back knee is inside its line from every side (this morning's guard had it turned right out).")
+    for ln in wrap(probe, note, small, W - 48):
+        d.text((24, y), ln, font=small, fill=INK)
+        y += 24
+    y += 20
     # --- the stride strip
-    d.text((24, y), 'HIS RUN SIDE-ON, EIGHT FRAMES OF A STRIDE: the swinging thigh, degrees from hanging straight down (the check: 50 at most)', font=mid, fill=CYAN)
-    y += 44
+    d.text((24, y), 'HIS RUN SIDE-ON, EIGHT FRAMES OF A STRIDE', font=mid, fill=CYAN)
+    y += 32
+    d.text((24, y), 'under each, the swinging thigh, degrees from hanging straight down (the check: 50 at most)', font=small, fill=DIM)
+    y += 30
     for who in ('before', 'now'):
         cells = [c for c in spec['strip'] if c['who'] == who]
         d.text((24, y), 'BEFORE (the game\'s run)' if who == 'before' else 'NOW', font=tiny, fill=DIM if who == 'before' else CYAN)

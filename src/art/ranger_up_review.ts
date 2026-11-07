@@ -1,24 +1,25 @@
 // THE RANGER BROUGHT UP, AS THE BOSSES' REVIEW SEES HIM (the art chat's helper, 7 Nov 2026). A MOCK-UP TOOL: nothing of the game
 // imports this file (tests/ranger_up.test.ts holds that). As art/warrior_up_review.ts does the Warrior: his new moves
 // (art/ranger_up_moves.ts) handed to the review every boss and mob goes through (art/boss_checks.ts checkBoss), from each of his
-// eight sides; and the measures the owner's last words asked for: his legs true (warrior_up_review.ts wuLegs, on his build), no
-// knee come up in his runs (wuThighs), and his bow seen from every side.
+// eight sides, on his bones (RU_BODY); and the measures the owner's last words asked for: never bow-legged, no knee come up in
+// his runs (wuThighs), and his bow seen from every side.
 
 import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
 import type { Mob, MobMove } from './new_mobs3';
-import { BOW_BRACE, BOW_HALF, GRIP_SPEED, RANGER_BODY, UNITS_PER_TILE } from './moves3';
+import { BOW_BRACE, BOW_HALF, GRIP_SPEED, MOVES3, RANGER_BODY, UNITS_PER_TILE } from './moves3';
 import type { Move3 } from './moves3';
-import { add, mul, trunkOf } from './skeleton';
+import { add, bonesAt, dot, mul, norm, solve, sub, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
-import { WU_SPIN, spun } from './warrior_up';
+import { WU_SPIN, spun, turnedStage } from './warrior_up';
+import { stage } from './skin';
 import type { WuSide } from './warrior_up';
 import { ruSmeared } from './ranger_up_art';
 import type { RuFrame } from './ranger_up';
-import { wuLegs, wuThighs, WU_LEG_SEEN, WU_THIGH_MOST } from './warrior_up_review';
-import { ruOnBack, RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_ROLL_CARRY, RU_RUN3, RU_SHOT3, RU_SHOT_HIT, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_VOLLEY_HIT } from './ranger_up_moves';
+import { wuThighs, WU_THIGH_MOST } from './warrior_up_review';
+import { ruOnBack, RU_BODY, RU_DRAW3, RU_FALL3, RU_LURCH3, RU_REEL3, RU_ROLL3, RU_ROLL_CARRY, RU_RUN3, RU_SHOT3, RU_SHOT_HIT, RU_SIGHTING3, RU_SQUIRREL3, RU_STAND3, RU_TOWN3, RU_TOWN_RUN3, RU_TSIGHTING3, RU_TSQUIRREL3, RU_VOLLEY3, RU_VOLLEY_HIT } from './ranger_up_moves';
 
 const FR = 1 / 30;
-const B = RANGER_BODY;
+const B = RU_BODY;
 const mv = (m: Move3): MobMove => ({ name: m.name, motion: m.motion, rest: m.rest });
 const walking = (m: Move3): MobMove => ({ ...mv(m), ground: GRIP_SPEED * UNITS_PER_TILE, period: (m.stride ?? 1) / GRIP_SPEED });
 
@@ -63,20 +64,40 @@ export function ruBow(s: Skeleton, q: Posed): { grip: V3; tips: [V3, V3]; away: 
   return { grip: c.grip, tips: [tip(1), tip(-1)], away };
 }
 
-/** THE REVIEW OF HIM from a side of his (as art/warrior_up_review.ts warriorReview). */
-export function rangerReview(side: WuSide = 'front'): { mob: Mob; shape: BossShape; moves: string[] } {
+/** THE GAME'S OWN RANGER by the same names (moves3.ts, on his own bones, RANGER_BODY): reviewed the same way, for what is
+ * reported and not mended (RU_REPORTED: a check that fails on the game's own motion). */
+export const RU_GAME_REVIEWED: Readonly<Record<string, Move3>> = {
+  stand: MOVES3.rstand, walk: MOVES3.rrun, attack: MOVES3.shot, reel: MOVES3.rreel, dying: MOVES3.rfall,
+  volley: MOVES3.volley, roll: MOVES3.roll, rlurch: MOVES3.rlurch, rtown: MOVES3.rtown, rtownrun: MOVES3.rtownrun,
+  squirrel: MOVES3.squirrel, sighting: MOVES3.sighting, tsquirrel: MOVES3.tsquirrel, tsighting: MOVES3.tsighting, rdraw: MOVES3.rdraw,
+};
+/**
+ * REPORTED, NOT MENDED (the rule of 7 Nov 2026: “never move a weapon, a pose or a gait to pass a check. If a check fails on the
+ * game's own motion, REPORT it with the numbers and leave the motion alone”). THE SIGHTING is the game's own motion
+ * (moves3.ts sightingOnString), and his legs are the game's own again: as he holds the arrow before his eye, the bow let down by
+ * his left side (its `lowBow`) passes into his front thigh, as the game's own does on the game's own legs (as deep: about 0.9
+ * game pixels past the thigh's skin, seen from in front, where it is painted). This morning's guard, its front foot set further
+ * over, hid it. Held to no deeper than the game's own (tests/ranger_up.test.ts, 3).
+ */
+export const RU_REPORTED: ReadonlyArray<{ move: string; kind: string; what: string }> = [
+  { move: 'sighting', kind: 'through', what: 'bow in legL' },
+];
+
+/** THE REVIEW OF HIM from a side of his (as art/warrior_up_review.ts warriorReview); or of the game's own Ranger (`game`). */
+export function rangerReview(side: WuSide = 'front', game = false): { mob: Mob; shape: BossShape; moves: string[] } {
+  const R = game ? RU_GAME_REVIEWED : RU_REVIEWED;
   const more: Record<string, MobMove> = {};
-  for (const [k, m] of Object.entries(RU_REVIEWED)) if (!['stand', 'walk', 'attack', 'reel', 'dying'].includes(k)) more[k] = k === 'rtownrun' ? walking(m) : mv(m);
+  for (const [k, m] of Object.entries(R)) if (!['stand', 'walk', 'attack', 'reel', 'dying'].includes(k)) more[k] = k === 'rtownrun' ? walking(m) : mv(m);
   const mob = {
-    id: 'ranger_up',
-    name: 'the Ranger, brought up',
+    id: game ? 'ranger' : 'ranger_up',
+    name: game ? 'the Ranger, as the game has him' : 'the Ranger, brought up',
     size: 'hero',
-    build: B,
-    stand: mv(RU_STAND3),
-    walk: walking(RU_RUN3),
-    attack: mv(RU_SHOT3),
-    reel: mv(RU_REEL3),
-    dying: mv(RU_FALL3),
+    build: game ? RANGER_BODY : B,
+    stand: mv(R.stand),
+    walk: walking(R.walk),
+    attack: mv(R.attack),
+    reel: mv(R.reel),
+    dying: mv(R.dying),
     more,
     idleFrames: 72,
     idleFps: 30,
@@ -128,64 +149,70 @@ export function rangerReview(side: WuSide = 'front'): { mob: Mob; shape: BossSha
     strikes: { attack: [RU_SHOT_HIT - FR, RU_SHOT_HIT], volley: [RU_VOLLEY_HIT - FR, RU_VOLLEY_HIT] },
     // (his roll: the game carries him along the floor through its first `tumble`, so a foot down then goes back with the floor)
     carried: (which, t) => (which === 'roll' ? RU_ROLL_CARRY * Math.min(1, t / (RU_ROLL3.tumble ?? Infinity)) : 0),
-    smeared: (which, t) => ruSmeared(RU_REVIEWED[which], t),
-    handovers,
+    smeared: (which, t) => (game ? false : ruSmeared(RU_REVIEWED[which], t)),
+    handovers: game ? [] : handovers,
   };
-  return { mob, shape, moves: Object.keys(RU_REVIEWED).filter((k) => side === 'front' || !RU_FRONT_ONLY.includes(k)) };
+  return { mob, shape, moves: Object.keys(R).filter((k) => side === 'front' || !RU_FRONT_ONLY.includes(k)) };
 }
 
 // ---------------------------------------------------------------------------------------------
-// HIS LEGS TRUE (the owner: “Can you make sure his leg ratio is correct cause it seems like all these guys have long upper legs
-// and short legs below the knee”): every frame of his stances and held poses at 1.05 or more from all eight sides, each leg whose
-// shin is seen; his runs at 1 where a foot is flat on the floor, bearing him.
+// NEVER BOW-LEGGED (the owner, 7 Nov 2026, of this morning's guard: “Cmon.  He’s not a gunfighter why is he so bow legged.  Just
+// please do it right, I don’t want to have to correct every single one of these because we made a minuscule change to the leg
+// length”). Seen from in front and from behind, each knee lies on or inside the straight line from his hip to his foot, within a
+// game pixel, in every frame of every list he stands in, from all eight sides. The game's own guard already bows a little (his
+// front knee, turned out over its foot): there he is held to no worse than the game's own.
 
-// (HIS GUARD AND HIS TOWN STANCE AT THE GAME'S WIDTH: the owner, 7 Nov, 07:10, of the wide guard that read true, “You just need
-// to fix the rangers wide leg stance, that’s all that’s weird”. At the game's width and crouch his legs bend, and no way of
-// placing them reads 1.05 from every side (ranger_up_moves.ts, HIS GUARD): what stands in his guard is held to what that width
-// gives, RU_LEG_GUARD_LEAST, its worst from his right, where his back knee points, 0.78; what stands in his town stance to
-// RU_LEG_TOWN_LEAST, its worst 0.95. The game's crouch read 0.43 at its worst, its town stance 0.85.)
-export const RU_LEG_GUARD_LEAST = 0.75;
-export const RU_LEG_TOWN_LEAST = 0.92;
-export const RU_LEGS_HELD: ReadonlyArray<{ key: string; what: string; from: number; to: number; kneel?: boolean; sideOn?: number; least?: number }> = [
-  { key: 'rstand', what: 'his guard', from: 0, to: 71, least: RU_LEG_GUARD_LEAST },
-  { key: 'rtown', what: 'his town stance', from: 0, to: 71, least: RU_LEG_TOWN_LEAST },
-  { key: 'squirrel', what: 'the squirrel', from: 0, to: 108, least: RU_LEG_GUARD_LEAST },
-  { key: 'sighting', what: 'sighting along an arrow', from: 0, to: 108, least: RU_LEG_GUARD_LEAST },
-  { key: 'tsquirrel', what: 'the squirrel, in town', from: 0, to: 108, least: RU_LEG_TOWN_LEAST },
-  { key: 'tsighting', what: 'sighting along an arrow, in town', from: 0, to: 108, least: RU_LEG_TOWN_LEAST },
-  { key: 'rdraw', what: "his card's ready, in his guard", from: 26, to: 41, least: RU_LEG_GUARD_LEAST },
-  { key: 'shot', what: "the Shot's held draw", from: 7, to: 9, least: RU_LEG_GUARD_LEAST },
-  // (the Volley is loosed from one knee, as the owner asked of it: “The rogue drops to a knee when he fires Volley”. The shin of
-  // the knee he is down on lies along the floor, and a shin along the floor is seen end-on from some side whatever is done; that
-  // leg is not held to the measure (its knee is within 2.5 of the floor); his other leg, the one he stands on, is. That leg's
-  // thigh lies level by the kneel's nature: seen side-on, the game's camera, looking down, draws a level length longer than an
-  // upright one, so it is held there to 1, as the Warrior's kneel is (warrior_up_review.ts WU_LEGS_HELD))
-  { key: 'volley', what: "the Volley's held draw", from: 9, to: 11, kneel: true, sideOn: 1 },
-];
-export const RU_LEGS_RUNS: readonly string[] = ['rrun', 'rtownrun'];
-export const RU_LEG_HELD_LEAST = 1.05;
-export const RU_LEG_RUN_LEAST = 1;
-export function ruLegFaults(key: string, frame: number, f: RuFrame, side: WuSide): string[] {
-  const held = RU_LEGS_HELD.filter((h) => h.key === key && frame >= h.from && frame <= h.to);
-  const runs = RU_LEGS_RUNS.includes(key);
-  if (!held.length && !runs) return [];
-  const out: string[] = [];
-  for (const l of wuLegs(f.s, side, B.ankle, { z: f.drawn.z, w: f.px.w, h: f.px.h })) {
-    if (l.seen < WU_LEG_SEEN) continue;
-    const knee = l.leg === 'L' ? f.s.kneeL : f.s.kneeR;
-    if (runs) {
-      const toe = l.leg === 'L' ? f.s.toeL : f.s.toeR;
-      const heel = l.leg === 'L' ? f.s.heelL : f.s.heelR;
-      if (Math.max(toe[2], heel[2]) > 0.6) continue;
-      if (l.ratio < RU_LEG_RUN_LEAST) out.push(`${key} ${frame}/60 ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg, bearing him, ${l.ratio.toFixed(2)}`);
-    } else {
-      if (held.some((h) => h.kneel) && knee[2] < 2.5) continue;
-      const sideOn = side === 'side' || side === 'sideL';
-      const least = Math.min(...held.map((h) => (sideOn && h.sideOn !== undefined ? h.sideOn : h.least ?? RU_LEG_HELD_LEAST)));
-      if (l.ratio < least) out.push(`${key} ${frame} (${held[0].what}) ${side}: his ${l.leg === 'L' ? 'left' : 'right'} leg ${l.ratio.toFixed(2)}`);
+/** How far each knee lies OUT TO THE SIDE of the straight line from its hip to its foot (the ankle joint), as one of his sides
+ * shows it, in game pixels (below 0: inside it). Out to the side is along the line through his two hips, away from the other leg:
+ * what is seen of a leg from in front of him and from behind him; each of his eight sides shows as much of it as it shows of that
+ * line (from in front all of it, side-on next to none). A knee bent forward over its foot is not out to the side, however it is
+ * seen. */
+const bowAt = new Map<WuSide, (p: V3) => readonly [number, number]>();
+export function ruBowLegs(s: Skeleton, side: WuSide): { leg: 'L' | 'R'; out: number }[] {
+  let at = bowAt.get(side);
+  if (!at) {
+    const { spin, camera, ax } = WU_SPIN[side];
+    const st = turnedStage(stage(camera, ax), spin);
+    at = (p: V3) => st.at(p);
+    bowAt.set(side, at);
+  }
+  return ruBowLegsBy(s, at);
+}
+/** The same, as any picture's projection shows it (`P`: a point of him to picture pixels). */
+export function ruBowLegsBy(s: Skeleton, P: (p: V3) => readonly [number, number]): { leg: 'L' | 'R'; out: number }[] {
+  return (['L', 'R'] as const).map((leg) => {
+    const hip = leg === 'L' ? s.hipL : s.hipR;
+    const other = leg === 'L' ? s.hipR : s.hipL;
+    const knee = leg === 'L' ? s.kneeL : s.kneeR;
+    const foot = leg === 'L' ? s.ankleL : s.ankleR;
+    const outward = norm(sub(hip, other));
+    const down = norm(sub(foot, hip));
+    const onLine = add(hip, mul(down, dot(sub(knee, hip), down)));
+    const lat = dot(sub(knee, onLine), outward);
+    const [x0, y0] = P(onLine);
+    const [x1, y1] = P(add(onLine, mul(outward, lat)));
+    return { leg, out: (Math.sign(lat) * Math.hypot(x1 - x0, y1 - y0)) / 2 };
+  });
+}
+/** The lists he stands in, by the game's short names: his guard, his town stance, the squirrel and the sighting in a fight and in
+ * town, his card's ready, the Shot and the Volley. */
+export const RU_STANDING: readonly string[] = ['rstand', 'rtown', 'squirrel', 'sighting', 'tsquirrel', 'tsighting', 'rdraw', 'shot', 'volley'];
+/** Within this many game pixels outside the line counts as on it. */
+export const RU_BOW_LEGS_MOST = 1;
+/** The most each knee of a list lies outside its line from one side, through every frame (30 a second). */
+export function ruBowLegsMost(m: Move3, side: WuSide, fps = 30): { L: number; R: number; atL: number; atR: number } {
+  const end = m.motion.keys[m.motion.keys.length - 1].at;
+  const most = { L: -Infinity, R: -Infinity, atL: 0, atR: 0 };
+  for (let i = 0; i <= Math.round(end * fps); i++) {
+    for (const b of ruBowLegs(solve(m.build, bonesAt(m.motion.keys, m.rest, i / fps)), side)) {
+      if (b.out > most[b.leg]) {
+        most[b.leg] = b.out;
+        if (b.leg === 'L') most.atL = i;
+        else most.atR = i;
+      }
     }
   }
-  return out;
+  return most;
 }
 
 // ---------------------------------------------------------------------------------------------

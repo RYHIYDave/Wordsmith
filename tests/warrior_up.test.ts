@@ -150,16 +150,18 @@ test('1. the switch is off; of the game only art/heroes3.ts imports the new file
     if (/from ['"][^'"]*warrior_up(_moves|_art|_review)?['"]/.test(text)) users.push(f);
   }
   // (and the Ranger's mock-up, brought up after him on his pieces, behind its own switch; nothing of the game imports it)
-  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts', 'what imports them');
+  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_moves.ts art/ranger_up_review.ts', 'what imports them');
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('art/ranger_up')) continue;
+    // (art/heroes3.ts reaches the Ranger's mock-up only through its own switch, RANGER_UP: tests/ranger_up.test.ts holds that)
+    if (!f.endsWith('.ts') || f.startsWith('art/ranger_up') || f === 'art/heroes3.ts') continue;
     assert.ok(!/from ['"][^'"]*ranger_up(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8')), `${f} imports the Ranger's mock-up`);
   }
   const h3 = fs.readFileSync('src/art/heroes3.ts', 'utf8');
   assert.ok(/if \(cls === 'warrior' && WARRIOR_UP\.on\)/.test(h3), 'heroes3 reaches them only through the switch');
   // (and nothing of the game imports the review, which brings in the bosses' checks)
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('art/warrior_up') || f.startsWith('dev/')) continue;
+    // (but the Ranger's review, a review itself, which nothing of the game imports: tests/ranger_up.test.ts holds that)
+    if (!f.endsWith('.ts') || f.startsWith('art/warrior_up') || f.startsWith('dev/') || f === 'art/ranger_up_review.ts') continue;
     assert.ok(!/warrior_up_review/.test(fs.readFileSync(path.join('src', f), 'utf8')), `${f} imports the review`);
   }
 });

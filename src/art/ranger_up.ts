@@ -15,7 +15,8 @@
 // face bare under it with a brown moustache, as he asked on 7 Oct: “10 for ranger but a brown mustache”; a pink neckerchief; a
 // green jerkin laced up the front, its skirt cut into points; green sleeves, leather bracers and gloves; dark hose and tall
 // soft boots with turned cuffs; a short teal cloak down his back; a quiver of glowing fletchings over it; his long indigo bow,
-// its string the friend's cyan), on his own lean body (moves3.ts RANGER_BODY), in his own colours. What changes is how he is
+// its string the friend's cyan), on his own lean body (moves3.ts RANGER_BODY, its knee joint raised a little: ranger_up_moves.ts
+// RU_BODY), in his own colours. What changes is how he is
 // drawn: SCULPTED as the Warrior brought up and the Veteran are (dev/sculpt.ts: each solid melted into the next of its stuff,
 // one body with a real outline, inked only where one stuff meets another or one part passes in front of another), in place of
 // the old painter's balls and rods each on a sheet of its own and ringed in ink (art/hero3_ranger.ts).

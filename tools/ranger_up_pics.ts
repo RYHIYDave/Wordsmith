@@ -22,8 +22,10 @@ import type { Skeleton, V3 } from '../src/art/skeleton';
 import type { Move3 } from '../src/art/moves3';
 import { paintRuMove as paintRu } from '../src/art/ranger_up_art';
 import type { RuSide } from '../src/art/ranger_up';
-import { RU_BATTLE_WIDE, RU_MOVES, RU_SHOT_HIT, RU_SHOT_LONG } from '../src/art/ranger_up_moves';
-import { WU_SIDES } from '../src/art/warrior_up';
+import { RU_BODY, RU_MOVES, RU_SHOT_HIT, RU_SHOT_LONG } from '../src/art/ranger_up_moves';
+import { RANGER_BODY } from '../src/art/moves3';
+import { WU_SIDES, WU_SPIN, turnedStage } from '../src/art/warrior_up';
+import { ruBowLegsBy, ruBowLegsMost } from '../src/art/ranger_up_review';
 import { wuFacing } from '../src/art/warrior_up_art';
 import { wuLegs, wuThighs } from '../src/art/warrior_up_review';
 import { paintWithoutCanvas } from '../tests/helpers';
@@ -201,7 +203,7 @@ function look(dir: string): void {
 const NOW = RU_MOVES;
 /** The lists of the sheet: a caption, the move before and now, and the moments (seconds) of each. */
 const SHEET: { title: string; rows: { label: string; key: string; before: number; now: number }[] }[] = [
-  { title: 'Standing in a fight', rows: [{ label: 'his guard (his feet as far apart as the game\'s, alive, his bow canted so it shows)', key: 'rstand', before: 0.6, now: 0.6 }] },
+  { title: 'Standing in a fight', rows: [{ label: 'his guard (his legs the game\'s own, his knee joint raised a little; alive; his bow canted so it shows)', key: 'rstand', before: 0.6, now: 0.6 }] },
   { title: 'Running', rows: [{ label: 'a stride (now a hunter\'s run, his foot passing low, never a high-step; his bow a little further out at his side)', key: 'rrun', before: 0.1, now: 0.1 }] },
   { title: 'The Shot', rows: [
     { label: 'the held draw (now held three frames, the string to his cheek)', key: 'shot', before: 4 / 30, now: 8 / 30 },
@@ -209,7 +211,7 @@ const SHEET: { title: string; rows: { label: string; key: string; before: number
     { label: 'the follow-through (now the string hand flown back past his ear)', key: 'shot', before: 8 / 30, now: 15 / 30 },
   ] },
   { title: 'The Volley', rows: [
-    { label: 'the held draw at the sky, on his knee', key: 'volley', before: 5 / 30, now: 10 / 30 },
+    { label: 'the held draw at the sky, on his knee where the game\'s kneel has him', key: 'volley', before: 5 / 30, now: 10 / 30 },
     { label: 'the release (one frame), its after-image, his string hand flung down past his ear', key: 'volley', before: 6 / 30, now: 12 / 30 },
   ] },
   { title: 'His roll', rows: [{ label: 'over in a ball, his bow held out at his side', key: 'roll', before: 0.2, now: 0.2 }, { label: 'down on his feet as the game stops carrying him (now in a squat, then stepping out into his guard)', key: 'roll', before: 0.43, now: 0.43 }] },
@@ -240,35 +242,40 @@ function sheet(dir: string): void {
       return { label: r.label, files };
     }),
   }));
-  // the legs panel: his guard as the game has it, last night's wide one and now, from in front (the near leg's hip, knee and
-  // floor marked) and from behind; how far apart his feet are; and how his legs read at their worst from all eight sides
-  // (the owner, 7 Nov 2026, 07:10: “You just need to fix the rangers wide leg stance, that’s all that’s weird”)
+  // THE LEGS PANEL: his guard as the game has it and now (his legs the game's own, his knee joint raised a little), from in
+  // front and from behind; on each leg, where its hip, its knee and its foot (the ankle joint) are on the picture, how far the
+  // knee lies outside the straight line from the hip to the foot (game pixels; below 0 inside it) and knee to floor over hip to
+  // knee as the picture shows it (the owner, 7 Nov 2026: “Cmon.  He’s not a gunfighter why is he so bow legged.  Just please do it
+  // right, I don’t want to have to correct every single one of these because we made a minuscule change to the leg length”)
   const legs: Record<string, unknown>[] = [];
-  const WIDE: Move3 = { ...NOW.rstand, rest: RU_BATTLE_WIDE };
-  for (const who of ['before', 'wide', 'now'] as const) {
-    const m = who === 'before' ? MOVES3.rstand : who === 'wide' ? WIDE : NOW.rstand;
-    const T = 0.6;
-    const s0 = solve(m.build, bonesAt(m.motion.keys, m.rest, T)) as Skeleton & Record<string, V3>;
-    const st = stage('front');
-    const sd = st.near(s0.kneeL) >= st.near(s0.kneeR) ? 'L' : 'R';
-    const at = (p: V3): [number, number] => {
-      const [x, y] = st.at(p);
-      return [+x.toFixed(2), +y.toFixed(2)];
-    };
-    const ankle = s0[`ankle${sd}`];
-    const [Hh, K, A, F] = [at(s0[`hip${sd}`]), at(s0[`knee${sd}`]), at(ankle), at([ankle[0], ankle[1], ankle[2] - m.build.ankle])];
-    const d = (a: [number, number], b: [number, number]): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
-    // (the least through his guard, every frame of its 2.4 s, from all eight sides, of either leg)
-    let least = Infinity;
-    for (let i = 0; i <= 72; i++) {
-      const si = solve(m.build, bonesAt(m.motion.keys, m.rest, i / 30));
-      for (const v of WU_SIDES) for (const l of wuLegs(si, v, m.build.ankle)) least = Math.min(least, l.ratio);
+  const T = 0.6;
+  for (const who of ['before', 'now'] as const) {
+    const m = who === 'before' ? MOVES3.rstand : NOW.rstand;
+    for (const v of ['front', 'back'] as const) {
+      const s0 = solve(m.build, bonesAt(m.motion.keys, m.rest, T)) as Skeleton & Record<string, V3>;
+      const st = who === 'before' ? stage(v) : turnedStage(stage(WU_SPIN[v].camera, WU_SPIN[v].ax), WU_SPIN[v].spin);
+      const at = (p: V3): [number, number] => {
+        const [x, y] = st.at(p);
+        return [+x.toFixed(2), +y.toFixed(2)];
+      };
+      const bow = ruBowLegsBy(s0, (p) => st.at(p));
+      const sides = (['L', 'R'] as const).map((L) => {
+        const ankle = s0[`ankle${L}`];
+        const [Hh, K, A, F] = [at(s0[`hip${L}`]), at(s0[`knee${L}`]), at(ankle), at([ankle[0], ankle[1], ankle[2] - m.build.ankle])];
+        const d = (a: [number, number], b: [number, number]): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
+        return { leg: L, hip: Hh, knee: K, foot: A, floor: F, out: +(bow.find((b) => b.leg === L) as { out: number }).out.toFixed(2), ratio: +((d(K, A) + d(A, F)) / d(Hh, K)).toFixed(2) };
+      });
+      legs.push({ who, view: v, file: write(stillMv(who, m, T, v)), legs: sides });
     }
-    const painter = who === 'before' ? 'before' : 'now';
-    const apart = +(s0.ankleL[0] - s0.ankleR[0]).toFixed(1);
-    const side = +Math.abs(s0.ankleL[1] - s0.ankleR[1]).toFixed(1);
-    legs.push({ who, file: write(stillMv(painter, m, T, 'front')), behind: write(stillMv(painter, m, T, 'back')), hip: Hh, knee: K, floor: F, thigh: +(d(Hh, K) / 2).toFixed(1), lower: +((d(K, A) + d(A, F)) / 2).toFixed(1), least: +least.toFixed(2), apart, side });
   }
+  // (his bones, and the most each knee lies outside its line through his guard from each of his eight sides: the game's and now)
+  const shin = (b: typeof RANGER_BODY): number => +((b.ankle + b.shank) / b.thigh).toFixed(2);
+  const bones = { game: { thigh: +RANGER_BODY.thigh.toFixed(2), shin: +(RANGER_BODY.ankle + RANGER_BODY.shank).toFixed(2), ratio: shin(RANGER_BODY) }, now: { thigh: +RU_BODY.thigh.toFixed(2), shin: +(RU_BODY.ankle + RU_BODY.shank).toFixed(2), ratio: shin(RU_BODY) } };
+  const bowSides = WU_SIDES.map((v) => {
+    const g = ruBowLegsMost(MOVES3.rstand, v);
+    const n = ruBowLegsMost(NOW.rstand, v);
+    return { side: SIDE_NAMES[v], game: [+g.L.toFixed(1), +g.R.toFixed(1)], now: [+n.L.toFixed(1), +n.R.toFixed(1)] };
+  });
   // the stride strip: eight frames of his run side-on (`side`), before and now, each with its swinging thigh's angle
   const strip: Record<string, unknown>[] = [];
   for (const who of ['before', 'now'] as const) {
@@ -287,7 +294,7 @@ function sheet(dir: string): void {
     key,
     files: (['before', 'now'] as const).map((who) => write(stillMv(who, (who === 'before' ? MOVES3 : NOW)[key], key === 'shot' ? (who === 'before' ? 4 / 30 : 8 / 30) : key === 'volley' ? (who === 'before' ? 5 / 30 : 10 / 30) : key === 'rfall' ? 45 / 30 : 0.6, 'front'))),
   }));
-  writeFileSync(`${dir}/sheet.json`, JSON.stringify({ sections, legs, strip, small }, null, 1));
+  writeFileSync(`${dir}/sheet.json`, JSON.stringify({ sections, legs, bones, bowSides, strip, small }, null, 1));
   console.log(`${n} pictures in ${dir}`);
 }
 
@@ -337,10 +344,10 @@ function laid(px: Px, at: [number, number]): Px {
   return out;
 }
 const FILM: { caption: string; key: string; seconds: number; slow?: number }[] = [
-  { caption: 'STANDING IN A FIGHT · his feet as far apart as the game\'s, alive (two breaths, his weight shifting, a glance away)', key: 'rstand', seconds: 2.4 },
+  { caption: 'STANDING IN A FIGHT · his legs the game\'s own, his knee joint raised a little; alive (two breaths, his weight shifting, a glance away)', key: 'rstand', seconds: 2.4 },
   { caption: 'RUNNING · now a hunter\'s run, light and low, the foot passing close to the floor', key: 'rrun', seconds: 1.7 },
   { caption: 'THE SHOT · a big held draw, the release in one frame with its after-image, a big follow-through', key: 'shot', seconds: 1.0 },
-  { caption: 'THE VOLLEY · down on his knee, a held draw at the sky, the release in one frame', key: 'volley', seconds: 1.15 },
+  { caption: 'THE VOLLEY · down on his knee where the game\'s kneel has him, a held draw at the sky, the release in one frame', key: 'volley', seconds: 1.15 },
   { caption: 'HIS ROLL · a dive, over in a ball, up into his guard', key: 'roll', seconds: 0.75 },
   { caption: 'STRUCK FROM IN FRONT', key: 'rreel', seconds: 0.4 },
   { caption: 'STRUCK FROM BEHIND', key: 'rlurch', seconds: 0.4 },
