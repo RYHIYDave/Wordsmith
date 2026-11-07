@@ -70,7 +70,8 @@ export default async function (page, snap) {
     const g = window.__dbg.game();
     const st = g.level.holds[0];
     const ids = [st.pack, ...(st.packs ?? [])];
-    const pack = g.monsters.filter((m) => !m.dead && ids.includes(m.packId));
+    // (with ARRIVALS, those of the wave still coming up out of their rifts too)
+    const pack = [...g.monsters, ...(g.risers ?? []).map((r) => r.m)].filter((m) => !m.dead && ids.includes(m.packId));
     return { hero: [g.hero.x, g.hero.y], entered: st.entered, wave: st.wave ?? 0, won: !!st.won, pack: pack.map((m) => [m.kind, m.name, m.rarity, m.words, m.life]) };
   });
   const inside = await hall();
