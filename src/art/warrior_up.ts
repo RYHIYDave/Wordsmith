@@ -56,13 +56,13 @@ export const WU_RIM = '#22d0e0';
 // His colours: his own three tones of each (kit.ts, hero_warrior.ts), with a tone between each two, so the sculpted surfaces
 // turn smoothly in the light; his darkest and lightest exactly his. Nothing glows but the blade and the buckle's cyan.
 
-function between(a: string, b: string): string {
+export function between(a: string, b: string): string {
   const v = (h: string, i: number): number => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
   const f = (i: number): string => Math.round((v(a, i) + v(b, i)) / 2).toString(16).padStart(2, '0');
   return '#' + f(0) + f(1) + f(2);
 }
 /** A five-tone ramp from one of his three-tone ramps (dark, dark, mid, light, light): dark, between, mid, between, light. */
-function five(r: Ramp): Ramp {
+export function five(r: Ramp): Ramp {
   return [r[0], between(r[1], r[2]), r[2], between(r[2], r[3]), r[4]];
 }
 export const WU_STEEL: Ramp = five(STEEL);
@@ -105,7 +105,7 @@ export function spun(p: V3, deg: number): V3 {
   return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]];
 }
 /** A stage that takes points of him as he is built and sees them as he is turned (for what is drawn of the old kind with him). */
-function turnedStage(st: Stage, deg: number): Stage {
+export function turnedStage(st: Stage, deg: number): Stage {
   if (!deg) return st;
   const R = (p: V3): V3 => spun(p, deg);
   return {
@@ -146,7 +146,7 @@ export interface WuFrame extends Painted {
 
 const fr = (v: V3, w: V3, k: number): V3 => norm(sub(v, mul(w, dot(v, w) * k)), [1, 0, 0]);
 /** Three lines square to each other: `a`, then `b` made square to it, then the third. (A ball's axes must be square to each other.) */
-function frame(a: V3, b: V3): [V3, V3, V3] {
+export function frame(a: V3, b: V3): [V3, V3, V3] {
   const x = norm(a, [1, 0, 0]);
   let y = sub(b, mul(x, dot(b, x)));
   if (len(y) < 1e-4) y = Math.abs(x[2]) < 0.9 ? cross([0, 0, 1], x) : cross([0, 1, 0], x);
