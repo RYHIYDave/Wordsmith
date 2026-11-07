@@ -257,6 +257,9 @@ test('a played dungeon with terraces: every monster has a way on foot to where t
     // (dungeons only: floors 6 to 10 are the descent and, since Version 23.0, 11 to 15 the Hush, out of doors, game/act1.ts;
     // past them, dungeons again)
     g.depth = [1, 2, 3, 4, 5, 16, 17, 18][k % 8];
+    // (QUESTS15: floor 3's furnace burning bars the Chained One's hall by design, until its crank is turned: put out here, for the
+    // floor's ways to be what they are)
+    g.hero.furnace = 'done';
     g.enterDungeon();
     const L = g.level;
     const f = L.floor;

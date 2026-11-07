@@ -14,6 +14,7 @@
 // 4. A FAILURE TRIED AGAIN ALONE: when the rest are done, each file that failed is run again with nothing else running. One
 //    that passes alone failed for the machine being busy (a test of how fast something is), and is said to be so; one that
 //    fails again is a real failure.
+// 5. CARRIED OVER: a file that passed on the commit before, nothing it is made of changed since, is not run again (below).
 // It ends with one line: UNIT DONE <commit>: <files> files, <passed> passed, <failed> failed (<busy> passed alone).
 // Its whole account: .unit/<commit>/summary.txt.
 
@@ -21,7 +22,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { ROOT } from './lib.mjs';
+import { ROOT, load } from './lib.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, def) => {
@@ -58,6 +59,50 @@ if (!fs.existsSync(nm) && fs.existsSync(theirs)) fs.symlinkSync(fs.realpathSync(
 
 const files = fs.readdirSync(path.join(copy, 'tests')).filter((f) => f.endsWith('.test.ts')).sort();
 const keptOf = (f) => path.join(results, `${f}.json`);
+
+// 5. CARRIED OVER FROM THE COMMIT BEFORE: a file that passed on an earlier commit (an ancestor of this one, run by this tool) is
+// not run again when nothing it is made of has changed since: none of the files it imports, however deep (as esbuild bundles
+// it), and it reads no file of the game's for itself (a test that reads the sources, as the Stoker's first does, is always run).
+if (!args.includes('--again')) carryOver();
+function carryOver() {
+  const units = path.join(ROOT, '.unit');
+  let before = null;
+  for (const c of fs.readdirSync(units)) {
+    if (c === commit || !fs.existsSync(path.join(units, c, 'summary.txt'))) continue;
+    try {
+      git('merge-base', '--is-ancestor', c, commit);
+    } catch {
+      continue;
+    }
+    const when = Number(git('log', '-1', '--format=%ct', c));
+    if (!before || when > before.when) before = { c, when };
+  }
+  if (!before) return;
+  const changed = new Set(git('diff', '--name-only', before.c, commit).split('\n').filter(Boolean));
+  const esbuild = load('esbuild');
+  let carried = 0;
+  for (const f of files) {
+    if (fs.existsSync(keptOf(f))) continue;
+    const old = path.join(units, before.c, 'results', `${f}.json`);
+    if (!fs.existsSync(old)) continue;
+    const r = JSON.parse(fs.readFileSync(old, 'utf8'));
+    if (!r.ok) continue;
+    const src = fs.readFileSync(path.join(copy, 'tests', f), 'utf8');
+    if (/readFileSync|readdirSync|existsSync/.test(src)) continue;
+    let inputs;
+    try {
+      const meta = esbuild.buildSync({ absWorkingDir: copy, entryPoints: [path.join('tests', f)], bundle: true, write: false, metafile: true, platform: 'node', format: 'esm', logLevel: 'silent', external: ['node:*'] }).metafile;
+      inputs = Object.keys(meta.inputs).map((i) => path.relative(copy, path.resolve(copy, i)).replace(/\\/g, '/'));
+    } catch {
+      continue;
+    }
+    if (inputs.some((i) => changed.has(i))) continue;
+    fs.writeFileSync(keptOf(f), JSON.stringify({ ...r, carried: before.c }));
+    carried++;
+  }
+  console.log(`carried over from ${before.c}: ${carried} files whose every part is unchanged since (${changed.size} files changed)`);
+}
+
 const todo = files.filter((f) => !fs.existsSync(keptOf(f)));
 console.log(`UNIT ${commit}: ${files.length} files, ${files.length - todo.length} kept from before, ${todo.length} to run, ${JOBS} at a time`);
 

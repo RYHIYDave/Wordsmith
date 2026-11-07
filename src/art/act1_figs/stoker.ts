@@ -8,7 +8,7 @@ import type { Act1Fig } from './types';
 
 export const FIG: Act1Fig | null = {
   make: () => makeStokerArt(),
-  size: { top: 58, half: 18 },
+  size: { top: 90, half: 18 },
   heavy: true,
   switches: [STOKER_ON],
 };
