@@ -12,7 +12,8 @@ import { onBack } from './carried';
 import { add, mul, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { wuSmeared } from './warrior_up_art';
-import { WU_MAIL } from './warrior_up';
+import { WU_MAIL, WU_SPIN, spun } from './warrior_up';
+import type { WuSide } from './warrior_up';
 import type { WuFrame } from './warrior_up';
 import { primDist } from '../dev/sculpt';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_STRIKE_POISE, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, swingCarried } from './warrior_up_moves';
@@ -45,6 +46,14 @@ export function wuBody(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLump[] } 
     limbs.push({ name: `fore${side}`, a: side === 'L' ? s.elbowL : s.elbowR, b: side === 'L' ? s.handL : s.handR, r: aE });
   }
   limbs.push({ name: 'neck', a: s.neck, b: s.skull, r: 2.4 });
+  // (the snout of his pig-faced helm, out from his face and a little down: art/warrior_up.ts)
+  {
+    const [hf, , hu] = s.face;
+    const R0 = B.headR;
+    const root = add(s.head, add(mul(hf, R0[0] * 0.5), mul(hu, -R0[2] * 0.2)));
+    const tip = add(s.head, add(mul(hf, R0[0] * 2.65), mul(hu, -R0[2] * 0.6)));
+    limbs.push({ name: 'snout', a: root, b: tip, r: 2.0 });
+  }
   const [ribs, belly, pel] = trunkOf(B, s);
   const R = B.headR;
   const lumps: CheckLump[] = [
@@ -64,8 +73,13 @@ export function wuSword(s: Skeleton, q: Posed): { grip: V3; guard: V3; tip: V3; 
   return { grip: c.grip, guard, tip: add(guard, mul(c.point, GREAT_BLADE)), away };
 }
 
-/** THE REVIEW OF HIM: the mob the review is given, his shape, and which of his moves (every one). */
-export function warriorReview(): { mob: Mob; shape: BossShape; moves: string[] } {
+/**
+ * THE REVIEW OF HIM: the mob the review is given, his shape, and which of his moves (every one). From a SIDE of his other than
+ * the two the game has always had (art/warrior_up.ts WuSide), the review follows him as he is turned for it: what it follows
+ * from frame to frame (his head, chest, hips, hands, elbows, knees and feet) and the point of his sword, turned, so that its
+ * own two views see him from that side; what is in the floor, through him or slides is the same whichever side he is seen from.
+ */
+export function warriorReview(side: WuSide = 'front'): { mob: Mob; shape: BossShape; moves: string[] } {
   const more: Record<string, MobMove> = {};
   for (const [k, m] of Object.entries(WU_REVIEWED)) if (!['stand', 'walk', 'attack', 'reel', 'dying'].includes(k)) more[k] = k === 'ktownrun' ? walking(m) : mv(m);
   const mob = {
@@ -93,6 +107,7 @@ export function warriorReview(): { mob: Mob; shape: BossShape; moves: string[] }
     bits: () => [],
   } as unknown as Mob;
   const swung = new Set(['attack', 'kslash', 'slam', 'whirl', 'kthrust']);
+  const turn = WU_SPIN[side].spin;
   const handovers: Handover[] = [
     // (the game's own: Strike from his stance, the second swing from the first's poise, the rest from his stance and back)
     { from: 'stand', at: 0, to: 'attack', toAt: 0 },
@@ -121,7 +136,8 @@ export function warriorReview(): { mob: Mob; shape: BossShape; moves: string[] }
       for (let i = 0; i <= 8; i++) pts.push(add(w.guard, mul(add(w.tip, mul(w.guard, -1)), i / 8)));
       return [{ name: 'sword', pts, r: 1.2, may: w.away ? ['ribs', 'belly', 'pelvis', 'upperR', 'foreR', 'upperL', 'foreL', 'neck', 'head', 'legL', 'legR'] : ['foreR', 'foreL'] } as CheckThing];
     },
-    tip: (which, _t, s, q) => (swung.has(which) ? wuSword(s, q).tip : null),
+    tip: (which, _t, s, q) => (swung.has(which) ? spun(wuSword(s, q).tip, turn) : null),
+    ...(turn ? { follow: (_w: string, _t: number, s: Skeleton) => ({ head: spun(s.head, turn), chest: spun(s.ribs, turn), pelvis: spun(s.pelvis, turn), handL: spun(s.handL, turn), handR: spun(s.handR, turn), elbowL: spun(s.elbowL, turn), elbowR: spun(s.elbowR, turn), kneeL: spun(s.kneeL, turn), kneeR: spun(s.kneeR, turn), toeL: spun(s.toeL, turn), toeR: spun(s.toeR, turn), heelL: spun(s.heelL, turn), heelR: spun(s.heelR, turn) }) } : {}),
     strikes: { attack: [8 * FR, 10 * FR], kslash: [8 * FR, 10 * FR], slam: [13 * FR, 15 * FR] },
     smeared: (which, t) => wuSmeared(WU_REVIEWED[which], t),
     carried: (which, t) => (which === 'attack' || which === 'kslash' ? swingCarried(t) : 0),
@@ -156,7 +172,8 @@ export function wuCoverFindings(f: WuFrame, ax: number, ay: number): string[] {
     const sy = y + 0.5 - ay;
     const t = d.z[k];
     const bk = d.st.back;
-    const p: V3 = [bk[0][0] * sx + bk[0][1] * sy + bk[0][2] * t, bk[1][0] * sx + bk[1][1] * sy + bk[1][2] * t, bk[2][0] * sx + bk[2][1] * sy + bk[2][2] * t];
+    // (back to him as he is built, from as he was turned for this side)
+    const p: V3 = spun([bk[0][0] * sx + bk[0][1] * sy + bk[0][2] * t, bk[1][0] * sx + bk[1][1] * sy + bk[1][2] * t, bk[2][0] * sx + bk[2][1] * sy + bk[2][2] * t], -f.spin);
     for (const q of covers) {
       if (primDist(q, p) >= -WU_THROUGH) continue;
       const by = q.piece.startsWith('pauld') ? 'a pauldron' : q.piece === 'scarf' ? 'his scarf' : q.piece === 'skirt' ? 'the skirt of his tabard' : 'his tabard';

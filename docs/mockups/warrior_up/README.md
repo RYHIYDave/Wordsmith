@@ -16,21 +16,33 @@ The Warrior (the knight) only; the Ranger and the Mage come after, the same way.
   needs to be done and coded in Java.  We can have files and create things that go into the game like music and art”
 - 6 Nov 2026, 15:18: “Everything drawn should not just look like shapes.  That’s the rule”
 - 6 Nov 2026, of deaths: “too many death animations are fall to knees, then fall forward, elbows out”
+- 6 Nov 2026, having seen him brought up. On his swing, his pick: “Yes, the held wind-up (Recommended)” (Strike's blow at
+  0.333 s, the Slam's wind-up 0.5). Then: “All of it is good, I just wish the helmet looked a little better.  I really like
+  the look of his old pig helmet but it looks old.  And the visor slit never really pops.  And is it worth it to do the 8
+  sides during this process in tandem”. Asked whether to draw the heroes from eight sides now: “Yes, 8 sides now
+  (Recommended)”.
 
-So: his look and flavour kept (his pointed helm, his red tabard and its pointed skirt, his dark red scarf whose two ends fly,
-his steel and mail, his plum gloves and belt with its cyan buckle, his glowing great sword, his broad build and his rear
-guard: a player knows him at a glance); how well he is drawn and how he moves brought up to the Brawler in his Veteran look.
+So: his look and flavour kept (his pig-faced helm, brought back as he asked; his red tabard and its pointed skirt, his dark
+red scarf whose two ends fly, his steel and mail, his plum gloves and belt with its cyan buckle, his glowing great sword, his
+broad build and his rear guard: a player knows him at a glance); how well he is drawn and how he moves brought up to the
+Brawler in his Veteran look.
 
 ## The pictures (`pictures/`)
 
-- `warrior_up_sheet.png` (1200 by 7362): before beside now, three times as big, from in front and from behind: his stance, his
+- `warrior_up_sheet.png` (1200 by 7323): before beside now, three times as big, from in front and from behind: his stance, his
   run, his class card's ready, the key moments of each attack (the held wind-up, the smeared strike, the wind-down), his fall;
   and at the game's own size.
-- `warrior_up.mp4` (42 s, 30 frames a second, H.264, 1100 by 1060): every list before and now side by side, both ways round,
-  three times as big and at the game's own size, each captioned; each strike (both swings of Strike, the Slam, the Lunge)
-  again at half speed; his class card's standing loop before and now, side by side. Before and now play side by side, at
-  once, rather than one after the other, so that each list is seen against the other at the same moment and the film stays
-  under a minute.
+- `warrior_up_sheet2.png` (1440 by 4281): HIS HELM six times as big, before (the game's, in front and from behind) and now
+  (from each of his five sides), and the same at the game's own size; and HIS EIGHT FACINGS, each laid where he faces (down
+  and to the right at the bottom right, and so round, a key of the eight ways in the middle): his stance, a stride of his
+  run, and Strike's smeared blow, three times as big; and all three at the game's own size.
+- `warrior_up.mp4` (57 s, 30 frames a second, H.264, 1100 by 1060): first, NEW, his eight facings at the game's own size
+  with him three times as big beside it: running once round a circle at the game's pace through all eight facings, then
+  Strike's first swing each of the eight ways in turn (the game's step on each swing carrying him). Then every list before
+  and now side by side, both ways round, three times as big and at the game's own size, each captioned; each strike (both
+  swings of Strike, the Slam, the Lunge) again at half speed; his class card's standing loop before and now, side by side.
+  Before and now play side by side, at once, rather than one after the other, so that each list is seen against the other
+  at the same moment and the film stays under a minute.
 
 His scarf's two ends are not in his frames: the game hangs them from where each frame fixes them and moves them itself
 (`engine/tails.ts`), so they follow everything he does, in the world. In the pictures they are moved the same way.
@@ -69,8 +81,14 @@ the old painter can only lay balls and rods each on its own sheet, ringed in ink
 forbids; the sculptor is what made the Veteran read as one body. His frames cost more to paint (below), which, now that the
 heroes are baked into picture files when the game is built, is no longer a reason to hold him back.
 
-- THE HELM: a round skull of steel with a ridge along its crown and a brow band, the visor grown out of it to its point (his
-  pointed helm), the two slots he sees through with a point of light in each, the holes he breathes through.
+- THE HELM, HIS OLD PIG-FACED HELM BROUGHT BACK (as he asked, 6 Nov; the pointed visor is gone): a round steel skull, full
+  at the back, its rim flaring a little over the mail; the visor a snout jutting forward from the whole of his face like a
+  pig's, a plate of its own standing proud of the skull, forged: a crisp ridge down the top of the snout, its crest lit;
+  rivets at the visor's pivots on each side; rows of breathing holes down the snout. THE SLIT POPS: cut dark across the top
+  of the snout and the front of the skull, its upper lip lit bright and its lower edge in shadow, the faint cyan point of his
+  eyes in it (no other glow); the snout a tone lighter than the skull so his pig's face reads though it is turned from the
+  light. It reads at the game's own size from in front, side-on and toward the camera (a test holds it); from behind and
+  away, his head hides it, as it would.
 - THE MAIL: a coif at his neck; his thighs and upper arms in mail, rows of rings drawn on it.
 - THE TABARD: one body of red over the mail, a deep broad chest drawn in to a thick waist; the belt over it with its cyan
   buckle.
@@ -115,13 +133,16 @@ each of the game's steps). Keys eased in and out. Every move through every boss 
   behind him; HELD (11 to 13); THE STRIKE in two frames: his hips tip him forward off his toes, the front foot stamping a
   stride on (14), the blade over and buried in the floor ahead (15); the WIND-DOWN: the weight of him on down after it, drawn
   out and round his right side, and a step back into his guard (34).
-- WHIRLWIND (once round in 8 frames, as before): lower, leaning harder out against the blade's pull, the blade at full
-  stretch and smeared all round; HE PIVOTS ON THE BALL OF HIS LEFT FOOT, which stays on its spot, his right foot swung round
-  off the floor (both feet slid round a ring before).
+- WHIRLWIND (once round in 12 frames, 0.4 s; it was 8: at 45 degrees a frame, his limbs going round seemed, from his turned
+  sides, to leap and turn straight back; at 30 a frame they never do): lower, leaning harder out against the blade's pull,
+  the blade at full stretch and smeared all round; HE PIVOTS ON THE BALL OF HIS LEFT FOOT, which stays on its spot, his right
+  foot swung round off the floor (both feet slid round a ring before).
 - LUNGE (the diving thrust, his leap since 17 Oct; the game carries him through the dive as before): its first picture now
-  his stance's sword (nothing leaps as the game begins it), the blade swung forward as he drives off; coming down, THE POINT
-  DRAWN BACK and HELD as his front foot reaches for the floor, and PUNCHED OUT as he lands (the blow, at 0.5 s as before);
-  the landing deeper and held; his front foot lifted and brought home as he rises.
+  his stance's sword (nothing leaps as the game begins it), the blade swung forward as he drives off, his sword elbow out
+  beside him; coming down, THE POINT DRAWN BACK and HELD as his front foot reaches for the floor, and PUNCHED OUT as he lands
+  (the blow, at 0.5 s as before); the landing deeper and held; his front foot lifted and brought home as he rises. All of it
+  now laid on one smooth curve through its key poses (from his turned sides, the eased keys alone made his knees and elbows
+  leap), his back toe kept on the floor for the first picture as his heel rises, his drive-off key at 0.1 s (was 0.07).
 - STRUCK, from in front and from behind (7 frames, as before): rocked harder, his head snapping after his chest, the foot
   that catches him swung out and back off the floor (it slid before).
 - HIS FALL (46 frames, as before), A HERO'S: not to his knees and then forward. Thrown back, he gives ground two steps, each
@@ -132,6 +153,66 @@ each of the game's steps). Keys eased in and out. Every move through every boss 
 - HIS CARD'S READY (drawing his sword when picked) and LOOKING ABOUT HIM: as they were, their keys already eased, now at 30
   a second; the draw's feet mended (his right foot steps back as the blade comes off his back; his left steps out into his
   guard as it falls behind him), then his guard, alive.
+
+### His five sides, from every check (`src/art/warrior_up.ts` `WuSide`)
+
+Drawn from five sides, each the same man on the same bones turned before the camera (`WU_SPIN`): `front` and `back` as the
+game has always had a hero (`back` is the game's own view from behind, which mirrors him, as today), and three new, turned
+45 degrees from `front` about the floor under him:
+
+| Side | Turned | He faces on the screen | Seen |
+|---|---|---|---|
+| `front` | (as today) | down and to the right | his face and his front, three quarters |
+| `back` | (as today) | up and to the right | his back, three quarters (a mirror, as today) |
+| `side` | 45 degrees to his left | right, across the screen | side-on, his face in profile |
+| `toward` | 45 degrees to his right | down, straight toward the camera | his face and his front, full on |
+| `away` | 135 degrees to his left | up, straight away from the camera | his back, full on |
+
+Every list of his is made from each (`makeWarriorUpArt` gives `side`, `toward` and `away` beside `front` and `back`, each an
+`AnimSet` of the very same lists: his stance, town, his card's lists, ready, the gripping run, his eight stops, setting off,
+each attack and its smears, the Whirlwind, the Lunge, struck in front and behind, his fall), and every frame of each through
+every check: every boss check from each side (with the game's handovers), nothing through what he wears, crisp and cyan,
+feet that grip, the slit under its lit lip. Each side's smears and the after-images of his blade are painted in that side's
+own frames, so they follow its blade. To pass every check from the turned sides, small mends to his moves (the frames and
+keys of the Whirlwind, the second swing's wind-up, the Slam's rise and its strike, the Lunge, struck from behind, his fall,
+his card's draw); their numbers are unchanged but for the Whirlwind (12 frames a turn).
+
+## His eight facings (FOR THE MAIN CHAT: how to choose among them)
+
+The game draws a hero facing (fx, fy) on its floor (a step along fx goes right and down the screen, along fy left and down,
+as `render.ts` lays it). Today it chooses `back` if fx + fy < -0.2, else `front`, and mirrors him if fx - fy < 0. For eight
+facings, call `wuFacing(fx, fy)` (`src/art/warrior_up_art.ts`): it takes the nearest of the eight ways (each an eighth of the
+circle, 45 degrees wide, centred on its way) and gives the side to draw and whether to mirror it:
+
+| Way he faces (fx, fy) | On the screen | Side | Mirrored |
+|---|---|---|---|
+| (1, 0) | down and to the right | `front` | no |
+| (0.71, 0.71) | down, toward the camera | `toward` | no |
+| (0, 1) | down and to the left | `front` | yes |
+| (-0.71, 0.71) | left | `side` | yes |
+| (-1, 0) | up and to the left | `back` | yes |
+| (-0.71, -0.71) | up, away from the camera | `away` | no |
+| (0, -1) | up and to the right | `back` | no |
+| (0.71, -0.71) | right | `side` | no |
+
+- SO: `const { side, flip } = wuFacing(fx, fy); const set = art[side];` (art: `WuActorArt`), and draw it mirrored when
+  `flip`, in place of the two tests above (`render/render.ts`, and where his fallen body is laid down, `render/fx.ts`
+  `fallen`). The four ways the game has today come out as they do now (front, front mirrored,
+  back mirrored, back); the four between them are the new sides. A test holds that each of the eight is drawn facing the
+  very way the game sends him.
+- HIS SWORD HAND: as today. A mirrored picture shows the great sword in his other hand, as `front` and `back` mirrored do
+  today; `back` is itself the game's mirror view from behind, as today. `toward` and `away` are never mirrored. `side` is
+  mirrored only to face left.
+- HIS SCARF: the game's tails take `facing` -1 when he is mirrored and +1 when not, as today (`fx - fy < 0`; straight up and
+  straight down are +1), and the frame's roots mirrored with him, as today.
+- HIS ATTACKS AIM: when he strikes, the game turns him to the aim; the same `wuFacing(aim)` chooses the side and the mirror
+  for the attack's list (Strike's two swings, the Slam, the Lunge's dive and landing), so every blow can go any of the eight
+  ways, its smear and after-images with it. The Whirlwind (`turns: true`) goes once round whatever the side: draw it from the
+  side his facing gives, so he starts and ends it facing his way. Struck and his fall: from the side he faces as he is hit.
+- Where his facing hovers on the line between two eighths, the game may want to hold the side it has until the facing is
+  a little past the line, so that he does not flicker between two sides; the main chat's to judge in play.
+- THE SIDE PAINTER'S WORKER and BAKING must make the three new sides too (each `AnimSet` of `side`, `toward`, `away`, every
+  place): what that costs is below.
 
 ## His numbers (FOR THE MAIN CHAT)
 
@@ -146,49 +227,56 @@ What changes in the game's numbers, only with the switch on:
 | Slam's blow (its `heavy`) | 7 frames, 0.233 s (`slam.windup` 0.22) | 15 frames, 0.5 s: set `slam.windup` to 0.5 |
 | Slam's length | 18 frames | 34 frames (1.13 s) |
 | The game's step on each swing | 0.33 tiles over 0.12 s | the same: he skips in on it (both feet off the floor) before his wind-up |
-| Lunge, Whirlwind, struck, his fall | | the same times and lengths: the dive 0.5 s (16 pictures by how far through), the point out at 0.5, the landing 15 frames; once round in 8; 7; 46 |
+| Lunge, struck, his fall | | the same times and lengths: the dive 0.5 s (16 pictures by how far through), the point out at 0.5, the landing 15 frames; 7; 46 |
+| Whirlwind | once round in 8 frames (0.27 s) | once round in 12 frames (0.4 s): he spins two and a half times a second, not three and three quarters |
 | His card's ready | ready at 31 frames | the same (31); the card shows 41 frames, as before |
 | His run | 15 at 30 a second, by the clock | 27 at 60, by how far he has gone (`walkStride` 2.07 tiles), as the Ranger's |
 
-Strike at 0.333 s in place of 0.12 is his Movement 9 (“Like the wind up and wind down are big but the actual punch is
-lightning quick”) for his quick attack; the Veteran's jab lands at 0.4 s. It makes the Warrior's basic attack slower to
-land: the owner's to weigh (below).
+His pick on the swing, 6 Nov: “Yes, the held wind-up (Recommended)”. Strike at 0.333 s in place of 0.12 is his Movement 9
+(“Like the wind up and wind down are big but the actual punch is lightning quick”) for his quick attack; the Veteran's jab
+lands at 0.4 s. It makes the Warrior's basic attack slower to land: he has chosen it.
 
 ## The measures
 
-Every frame the game holds of him, in a dungeon, in town and on his class card, both ways round (`tools/warrior_up_measure.ts`;
-this machine: 2 cores, shared and busy):
+Every frame the game holds of him, in a dungeon, in town and on his class card (`tools/warrior_up_measure.ts`, `count`,
+`count up` and `count up five`; this machine: 2 cores, shared and busy). Now from his two sides as the game has them today,
+and from all five (what the game must hold to show him in eight facings):
 
-| | Before | Now |
-|---|---|---|
-| Lists the game holds of him (all three places, both ways) | 88 | 142 (his stops and setting off added; a list shared by two places counted in each) |
-| Frames in them | 1,450 (a dungeon 422, town 514, his card 514) | 2,634 (a dungeon 762, town 936, his card 936) |
-| Pictures held (each painted once) | 1,396 | 1,254: fewer, because a list the same in two places is now one list |
-| Different pictures among them | 609 | 1,221 |
-| Memory, decoded at the game's grain (4 bytes a picture pixel, each cut to the box round him) | 19.7 MB | 17.3 MB |
-| Packed as picture files would be (his pixels deflated, as a PNG's are): what baking him adds to the download, near enough | 1.26 MB | 1.36 MB |
-| Time to paint a frame (each list painted whole in one run; this machine) | 4.0 thousandths of a second | 31.7 |
-| Time to paint every picture of him | 5.6 s | 39.7 s |
+| | Before | Now, two sides (front, back) | Now, five sides |
+|---|---|---|---|
+| Lists the game holds of him (all three places) | 88 | 142 (his stops and setting off added; a list shared by two places counted in each) | 349 |
+| Frames in them | 1,450 (a dungeon 422, town 514, his card 514) | 2,658 (a dungeon 770, town 944, his card 944) | 6,195 (a dungeon 1,925, town 2,135, his card 2,135) |
+| Pictures held (each painted once) | 1,396 | 1,262 (a list the same in two places is one list) | 2,930 |
+| Different pictures among them | 609 | 1,229 | 2,851 |
+| Memory, decoded at the game's grain (4 bytes a picture pixel, each cut to the box round him) | 19.7 MB | 17.5 MB | 38.8 MB |
+| Packed as picture files would be (his pixels deflated, as a PNG's are): what baking him adds to the download, near enough | 1.26 MB | 1.36 MB | 3.05 MB |
+| Time to paint a frame (this machine) | 4.0 thousandths of a second | 35.4 | 32.4 |
+| Time to paint every picture of him | 5.6 s | 44.7 s | 95.1 s |
 
-A frame of his costs about eight times what it did (the sculptor's march, as the Veteran's, which costs a few tenths of a
-second a frame), so his pictures want baking into files when the game is built (25.0.9), as the main chat is doing for the
-heroes; once baked, painting costs nothing on the phone. Memory and download stay about as they were: more frames, but each
-list is held once for every place that shows it.
+Five sides hold 2.3 times the pictures of two (his card's looking about and ready are drawn from in front only, as now). A
+frame of his costs eight to nine times what the old knight's did (the sculptor's march, as the Veteran's), so his pictures
+want baking into files when the game is built (25.0.9), as the main chat is doing for the heroes; once baked, painting costs
+nothing on the phone, and five sides add about 1.7 MB to the download and 21 MB to what is held decoded (less if the game
+decodes a side only when he first faces it). (The whirlwind's 12 frames a turn add 24 frames to the two sides' count.)
 
 ## How the main chat brings him in
 
 1. Merge `art/warrior-up`. Nothing changes while `WARRIOR_UP.on` is false (tests/warrior_up.test.ts holds every frame to its
    hash).
-2. On the owner's yes to the pictures: set `WARRIOR_UP.on = true` in `src/art/warrior_up.ts`, and with it the rules' numbers
+2. On the owner's yes to the pictures (his helm and his eight facings included): set `WARRIOR_UP.on = true` in
+   `src/art/warrior_up.ts`, and with it the rules' numbers
    above (`SKILLS.strike.windup` 0.333, `SKILLS.slam.windup` 0.5 in `src/game/defs.ts`; `TUNE.comboWindow` as the main
    chat sees fit, the first swing now waiting to 0.7 s). `art/heroes3.ts` `makeHeroArt3` then gives his new lists in the very
    shape it gave the old (`makeWarriorUpArt`), so the renderer, the class cards and the side painter (`HERO_PICKS`,
-   `heroLists`) need nothing new.
+   `heroLists`) need nothing new to show him from his two sides as today.
+   EIGHT FACINGS: the renderer chooses his side and mirror by `wuFacing` (above, "His eight facings"); his `WuActorArt` has
+   `side`, `toward` and `away` beside `front` and `back`, each made when first asked for.
 3. THE SIDE PAINTER'S WORKER (`render/painter.ts`) makes its own `makeHeroArt3`: it must know the switch, as it is told
    `vet` for the Veteran (the worker has no switch of its own), or the lists it paints are the old knight's.
 4. BAKING (25.0.9): bake him from `makeHeroArt3().of('warrior', lookOfPlace(place))` with the switch on, every list of
-   `heroLists(set)` for each place and both views. A list the same in two places is the same array (his attacks, his
-   Lunge, struck, his fall in every place; his town lists on his card): bake it once.
+   `heroLists(set)` for each place and each of his five sides (`front`, `back`, `side`, `toward`, `away`). A list the same in
+   two places is the same array (his attacks, his Lunge, struck, his fall in every place; his town lists on his card): bake
+   it once.
 5. The tests: `tests/warrior_up.test.ts`; when the switch goes on, its first test (the switch off) and the hash test change
    with it, and `tests/heroes3.test.ts` and `tests/warrior_thrust.test.ts` ask of the old knight's moves (moves3.ts), which
    are not changed.
@@ -203,15 +291,18 @@ list is held once for every place that shows it.
    the same in two places one list.
 3. EVERY FRAME OF EVERY MOVE THROUGH EVERY BOSS CHECK (`checkBoss`: feet that grip, nothing in the floor, arms clear of his
    body and helm, his sword through nothing of him, nothing jerks or jumps, every blow drawn back, held and carried through
-   with the hips first, each strike a two-frame smeared flash, alive when still), his fourteen moves from in front and from
-   behind, with the game's handovers between them (his stance into each and back, the first swing's poise into the second).
+   with the hips first, each strike a two-frame smeared flash, alive when still), his fourteen moves FROM EACH OF HIS FIVE
+   SIDES, with the game's handovers between them (his stance into each and back, the first swing's poise into the second).
 4. Nothing of him through what he wears: no pixel of his mail seen from inside his tabard, its skirt, a pauldron or his scarf
-   (`wuCoverFindings`), every frame of every move, both ways; and the check sees mail that is put through (a test).
+   (`wuCoverFindings`), every frame of every move, from all five sides; and the check sees mail that is put through (a test).
 5. His feet grip in the run: each foot on the floor goes back as fast as the game carries him (under a game pixel).
-6. Crisp (every pixel whole or empty but his edge); the friend's cyan edge round him (out with his light as he falls, as
-   every hero's); his pool of cyan light; his lights cyan; nothing of the enemy's pink or gold (his own wine scarf and plum
-   are his colours since 6 Oct, not the enemy's: the test knows them); nothing cut off.
+6. From all five sides: crisp (every pixel whole or empty but his edge); the friend's cyan edge round him (out with his light
+   as he falls, as every hero's); his pool of cyan light; his lights cyan; nothing of the enemy's pink or gold (his own wine
+   scarf and plum are his colours since 6 Oct, not the enemy's: the test knows them); nothing cut off.
 7. His hits and lengths as above; each blow by Movement 9: held, two frames, smeared only then, wound up far.
+8. His eight facings: each of the eight ways (and 20 degrees either side of it) gives the side and mirror above, and that side
+   drawn mirrored or not faces the very way on the screen that the game sends him. His helm: the slit dark under its lit lip
+   at the game's own size, from in front, side-on and toward the camera, standing, running and striking.
 
 tsc clean; the heroes' tests pass (`tests/heroes3.test.ts`, `tests/warrior_thrust.test.ts`, `tests/wild.test.ts`,
 `tests/grip_runs.test.ts`, `tests/heroes.test.ts`, `tests/cheap_heroes.test.ts`, `tests/bosses.test.ts`).
@@ -222,10 +313,14 @@ tsc clean; the heroes' tests pass (`tests/heroes3.test.ts`, `tests/warrior_thrus
 
 - STRIKE LANDS LATER: 0.333 s in place of 0.12 (Movement 9's held wind-up). The Warrior's quick attack becomes slower to land;
   the main chat may want to look at its damage or attack speed with it.
+- THE WHIRLWIND NOW SPINS SLOWER: once round in 12 frames (0.4 s), not 8, so that from his new sides nothing of him leaps
+  round. The game times the skill itself; only how fast he is drawn turning changes.
 - THE WHIRLWIND'S START AND END: the game cuts straight from his stance into the spin and back (it has no picture of either),
   so the picture jumps there, now as before. A wind-up into it and a wind-down out of it would need a place for them in the
   game's lists.
 - His skirt is now eight panels split below the hips (it was one cloth with a ragged hem): it reads as a split skirt and
   never as trousers, and lets his legs move; his look otherwise as it was.
+- HIS FACE FROM BEHIND: from `back` and `away` his head hides the snout and its slit, as it would.
 - Made with: `npx tsx tools/warrior_up_pics.ts sheet <dir>` and `python3 tools/warrior_up_pics.py sheet <dir> <out.png>`;
-  the same with `film` for the film. Measured with `npx tsx tools/warrior_up_measure.ts count [up]`.
+  the same with `sheet2` for the second sheet and `film` for the film. Measured with
+  `npx tsx tools/warrior_up_measure.ts count [up] [five]`.

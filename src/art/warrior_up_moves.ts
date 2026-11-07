@@ -191,19 +191,22 @@ export const WU_STRIKE3: Move3 = { ...STRIKE3, name: 'Strike, the rising cut (Mo
  */
 function slashDown(): Motion {
   const P = plantedFeet();
-  // (cocked: the hilt up by the left of his head, the blade laid right back over his left shoulder, pointing back and up)
-  const cocked: Partial<Bones> = { ...swordUp(), ...P, px: 1.2, pz: -4.2, yaw: 42, pitch: 0, twist: 44, bend: -2, faceUp: -2, faceTurn: 4, faceTilt: 12, ...hilt(0, 18, 7), wAz: 166, wEl: 36 };
+  // (cocked: his hands up by the left of his head and a little before it, the blade laid back over his left shoulder, pointing
+  // back and up: his hands where they are on the floor's own measure, so that they stay before his head as he winds)
+  const H0 = solve(B, { ...WU_REST, ...swordHeld() } as Posed).handR;
+  const held1: Partial<Bones> = { ...swordHeld(), ...lightFeet(), pz: -5.6, rhIn: 2, rhx: H0[0], rhy: H0[1], rhz: H0[2] };
+  const cocked: Partial<Bones> = { ...swordUp(), ...P, px: 1.2, pz: -4.2, yaw: 30, pitch: 0, twist: 26, bend: -2, faceUp: -2, faceTurn: -4, faceTilt: 6, rhIn: 2, rhx: 4, rhy: 8.5, rhz: 50.5, wAz: 158, wEl: 42 };
   return {
     hit: WU_STRIKE_HIT,
     keys: [
       { at: 0, pose: swordHeld() },
-      { at: 1 * FR, pose: { ...swordHeld(), ...lightFeet(), pz: -5.6 }, ease: 'out' },
-      { at: 2 * FR, pose: { ...swordUp(), ...skipFeet(), px: 2.2, pz: -4.8, yaw: 36, twist: 36, faceTilt: 4, ...hilt(6, 13, 7.5), wAz: 138, wEl: 70 }, ease: 'in' },
+      { at: 1 * FR, pose: held1, ease: 'out' },
+      { at: 2 * FR, pose: { ...mixPose(held1, cocked, 0.2, WU_REST), ...skipFeet() }, ease: 'in' },
       // THE WIND-UP, reached and HELD
       { at: 6 * FR, pose: cocked, ease: 'out' },
-      { at: 8 * FR, pose: { ...cocked, pz: -4.0, wAz: 168, wEl: 33, bend: -3, ...hilt(-0.5, 18.5, 7.4) }, ease: 'io' },
+      { at: 8 * FR, pose: { ...cocked, pz: -4.0, wAz: 160, wEl: 39, bend: -3, rhz: 51 }, ease: 'io' },
       // THE STRIKE
-      { at: 9 * FR, pose: { ...swordUp(), ...P, px: 3, pz: -5.8, yaw: 26, twist: 20, bend: 8, ...hilt(8, 13, 7.5), wAz: 132, wEl: 56 }, ease: 'in' },
+      { at: 9 * FR, pose: { ...swordUp(), ...P, px: 3, pz: -5.8, yaw: 16, twist: 20, bend: 8, ...hilt(9, 6, 4), wAz: 93, wEl: 70 }, ease: 'in' },
       { at: 10 * FR, pose: { ...P, px: 4.4, pz: -6.8, yaw: 4, pitch: 9, twist: -6, bend: 13, faceUp: -4, ...hilt(15, 7.5, -5), wAz: 8, wEl: 12 }, ease: 'lin' },
       // (the freeze on the blow)
       { at: 11 * FR, pose: { ...P, px: 4.4, pz: -7.0, yaw: 0, pitch: 9, twist: -10, bend: 13, faceUp: -4, ...hilt(15, 6, -6), wAz: -6, wEl: 6 }, ease: 'out' },
@@ -240,12 +243,12 @@ function slamDown(): Motion {
     keys: [
       { at: 0, pose: {} },
       // (the hilt up before his face, the blade standing straight up ...)
-      { at: 6 * FR, pose: { pz: 0.6, yaw: -18, twist: -6, bend: -4, faceUp: -6, lfp: 14, lfz: onToes(14), rfp: 14, rfz: onToes(14), rfx: -9, rfy: -1.5, ...hilt(10, 3, 8), wAz: -130, wEl: 66 }, ease: 'io', as: { wAz: 230 } },
+      { at: 3 * FR, pose: { pz: 0.6, yaw: -18, twist: -6, bend: -4, faceUp: -6, lfp: 14, lfz: onToes(14), rfp: 14, rfz: onToes(14), rfx: -9, rfy: -1.5, ...hilt(10, 3, 8), wAz: -130, wEl: 66 }, ease: 'io', as: { wAz: 230 } },
       // (... and on up over his head and back, up onto his toes: the top)
       { at: 11 * FR, pose: top, ease: 'io' },
       { at: 13 * FR, pose: { ...top, pz: 3.1, pitch: -5, bend: -13.5, wEl: 48, faceUp: -10 }, ease: 'io' },
       // THE STRIKE: the hips first, tipping him forward off his toes, the chest still arched back ...
-      { at: 14 * FR, pose: { ...top, px: 5.5, pz: 0.5, yaw: 4, pitch: 14, bend: -8, lfx: 16, lfz: 3.6, lfp: 6, rfp: 34, rfz: onToes(34), ...hilt(8.5, 3, 14), wEl: 138 }, ease: 'in' },
+      { at: 14 * FR, pose: { ...top, px: 9.5, pz: 0.5, yaw: 4, pitch: 14, bend: -8, lfx: 16, lfz: 3.6, lfp: 6, rfp: 34, rfz: onToes(34), ...hilt(14.5, 3, 14), wEl: 148 }, ease: 'in' },
       { at: 15 * FR, pose: low, ease: 'lin' },
       // THE WIND-DOWN
       { at: 17 * FR, pose: { ...low, pz: -10.6, bend: 33 }, ease: 'out' },
@@ -260,11 +263,12 @@ function slamDown(): Motion {
 export const WU_SLAM3: Move3 = { name: 'Slam, great sword (Movement 9)', held: 'greatsword', build: B, rest: WU_REST, motion: slamDown(), at: 'the moment it lands' };
 
 // ---------------------------------------------------------------------------------------------
-// WHIRLWIND: lower, leaning harder out from the blade against its pull, the blade at full stretch; once round in 8 frames, as before.
+// WHIRLWIND: lower, leaning harder out from the blade against its pull, the blade at full stretch; once round in 12 frames (it was
+// 8: at 45 degrees a frame a point going round seemed, from some of his new sides, to turn straight back; at 30 it never does).
 
 function whirlBig(): Motion {
   const keys: Key3[] = [];
-  const N = 8;
+  const N = 12;
   // (THE PIVOT: the ball of his left foot stays on one spot under him, his heel up, the foot turning on it; his right foot is
   // swung round off the floor, out behind him against the pull of the blade. Before, both feet were carried round in a ring
   // on the floor: they slid.)
@@ -306,17 +310,18 @@ function thrustBig(): Motion {
   // (the first picture: the coil, but the blade still where his stance has it, trailing at his hip, so that nothing leaps as
   // the game begins the Lunge; it swings forward as he drives off)
   dive[0] = { ...dive[0], pose: { ...dive[0].pose, rhIn: 2, rhx: R.rhx, rhy: R.rhy, rhz: R.rhz - 4, re: R.re, le: R.le, wAz: -150, wEl: -32 } };
-  // (he drives off at once: the back foot off the floor in the first frames)
-  dive[1] = { ...dive[1], ease: 'in', pose: { ...dive[1].pose, rfz: onToes(60) + 4, rhx: 4, rhz: -10, wAz: -80, wEl: -14 } };
+  // (he drives off at once: the back foot off the floor in the first frames, its leg not thrown straight; his sword elbow
+  // swung out as the blade comes forward, so that it comes round beside him and not over the arm)
+  dive[1] = { ...dive[1], at: 0.1, ease: 'in', pose: { ...dive[1].pose, rfz: onToes(60) + 4, rfx: -17, rhx: 4, rhz: -10, re: -30, wAz: -80, wEl: -14 } };
   dive[0] = { ...dive[0], pose: { ...dive[0].pose, px: -1, pz: -7.5, pitch: 14, bend: 10 } };
   // (coming down, the point is drawn back: HELD back as his front foot reaches for the floor ...)
   const n = dive.length;
-  dive[n - 2] = { ...dive[n - 2], pose: { ...dive[n - 2].pose, rhx: 10.5, re: 22, le: 12 } };
+  dive[n - 2] = { ...dive[n - 2], ease: 'out', pose: { ...dive[n - 2].pose, rhx: 10.5, re: 22, le: 12 } };
   // (... and PUNCHED OUT as he lands: the blow)
   dive[n - 1] = { ...dive[n - 1], ease: 'in', pose: { ...dive[n - 1].pose, rhx: 21 } };
   const from = dive[n - 1].pose;
   const low: Partial<Bones> = { ...from, px: 9.5, pz: -12.6, pitch: 40, bend: 20, rhx: 21.5, rhz: -5.5, wEl: -7 };
-  const back: Partial<Bones> = { ...from, px: 4, pz: -8.5, pitch: 20, bend: 12, twist: -24, yaw: -28, rhIn: 1, rhx: 1.5, rhy: -4, rhz: -12, re: 30, le: 14, wAz: 0, wEl: 8 };
+  const back: Partial<Bones> = { ...from, px: 4, pz: -8.5, pitch: 20, bend: 12, twist: -24, yaw: -28, rhIn: 1, rhx: 3, rhy: -5, rhz: -15, re: 30, le: 14, wAz: 0, wEl: 8 };
   const lunge: Key3[] = [
     { at: 0.5 + 2 * FR, pose: low, ease: 'out' },
     { at: 0.5 + 6 * FR, pose: { ...low, pz: -12.2, bend: 19 }, ease: 'io' },
@@ -325,9 +330,77 @@ function thrustBig(): Motion {
     { at: 0.5 + 12.5 * FR, pose: { ...back, px: 2, pz: -6, pitch: 10, bend: 9, lfx: R.lfx, lfy: R.lfy, lfz: 0, lfp: 0, lft: R.lft, rfx: -12, rfz: 2.6, rfp: 0, rft: -30, rhIn: 2, rhx: 1, rhy: -9, rhz: 20, wAz: -90, wEl: -30 }, ease: 'lin' },
     { at: 0.5 + 15 * FR, pose: {}, ease: 'out' },
   ];
-  return { keys: [...dive, ...lunge], hit: 0.5 };
+  // (and all of it laid on one smooth curve through these keys, so that nothing of him leaps or stalls from any of his sides)
+  const once = smoothKeys([...dive, ...lunge], THRUST3.rest);
+  // (his back toe kept where it stands for the first picture, the heel rising off it, before the foot leaves the floor)
+  const d0 = { ...THRUST3.rest, ...dive[0].pose } as Bones;
+  const rolled: Key3 = { at: FR, pose: { ...bonesAt(once, THRUST3.rest, FR), rfx: d0.rfx + 0.4, rfy: d0.rfy, rft: d0.rft, rfp: 38, rfz: onToes(38) } };
+  return { keys: smoothKeys([dive[0], rolled, ...dive.slice(1), ...lunge], THRUST3.rest), hit: 0.5 };
 }
 export const WU_THRUST3: Move3 = { ...THRUST3, motion: thrustBig() };
+
+/**
+ * A MOVE LAID ON ONE SMOOTH CURVE THROUGH ITS KEYS (a monotone cubic through each number, eased in at its start and out at
+ * its end: never overshooting a key, never drifting where a number holds still, so a foot set down stays down), sampled at
+ * 60 a second. His sword hand is measured from his shoulder at every key (one measure for all), so that it too goes on one
+ * curve and its reach goes smoothly from key to key.
+ */
+function smoothKeys(keys: readonly Key3[], rest: Bones, step = 1 / 60): Key3[] {
+  /* the numbers of a pose that go smoothly from key to key (skeleton.ts SMOOTH3's) */
+  const SMOOTH_FIELDS = ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt', 'lhx', 'lhy', 'lhz', 'rhx', 'rhy', 'rhz', 'le', 're', 'lfx', 'lfy', 'lfz', 'lfp', 'lft', 'rfx', 'rfy', 'rfz', 'rfp', 'rft', 'lk', 'rk', 'lkUp', 'rkUp', 'wAz', 'wEl', 'wRoll', 'draw', 'out', 'gale', 'pt', 'pAz', 'pEl'] as const;
+  const P = keys.map((k) => {
+    const q = { ...rest, ...k.pose } as Bones;
+    const sk = solve(B, q as Posed);
+    const h = [sk.handR[0] - sk.shoulderR[0], sk.handR[1] - sk.shoulderR[1], sk.handR[2] - sk.shoulderR[2]];
+    return { ...q, rhIn: 1 as const, rhx: h[0], rhy: h[1], rhz: h[2] } as Bones & Record<string, number>;
+  });
+  const T = keys.map((k) => k.at);
+  const n = P.length;
+  const tan: Record<string, number[]> = {};
+  for (const f of SMOOTH_FIELDS) {
+    const y = P.map((p) => (p[f] as number) ?? 0);
+    const d = Array.from({ length: n - 1 }, (_, i) => (y[i + 1] - y[i]) / Math.max(1e-9, T[i + 1] - T[i]));
+    const m = y.map((_, i) => (i === 0 || i === n - 1 ? 0 : d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2));
+    for (let i = 0; i < n - 1; i++) {
+      if (Math.abs(d[i]) < 1e-9) {
+        m[i] = 0;
+        m[i + 1] = 0;
+        continue;
+      }
+      const a = m[i] / d[i];
+      const b = m[i + 1] / d[i];
+      const r = a * a + b * b;
+      if (r > 9) {
+        const tau = 3 / Math.sqrt(r);
+        m[i] = tau * a * d[i];
+        m[i + 1] = tau * b * d[i];
+      }
+    }
+    tan[f] = m;
+  }
+  const out: Key3[] = [];
+  const end = T[n - 1];
+  const N = Math.round((end - T[0]) / step);
+  for (let j = 0; j <= N; j++) {
+    const t = Math.min(end, T[0] + j * step);
+    let i = 0;
+    while (i < n - 2 && t > T[i + 1]) i++;
+    const h = T[i + 1] - T[i];
+    const u = h > 0 ? (t - T[i]) / h : 0;
+    const h00 = 2 * u ** 3 - 3 * u ** 2 + 1;
+    const h10 = u ** 3 - 2 * u ** 2 + u;
+    const h01 = -2 * u ** 3 + 3 * u ** 2;
+    const h11 = u ** 3 - u ** 2;
+    const pose: Record<string, number> = { rhIn: 1, lhIn: P[i].lhIn, stow: P[i].stow };
+    for (const f of SMOOTH_FIELDS) {
+      const y0 = (P[i][f] as number) ?? 0;
+      const y1 = (P[i + 1][f] as number) ?? 0;
+      pose[f] = h00 * y0 + h10 * h * tan[f][i] + h01 * y1 + h11 * h * tan[f][i + 1];
+    }
+    out.push({ at: t, pose: pose as Partial<Bones>, ease: 'lin' });
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------------------------
 // STRUCK (7 frames, as before): rocked harder, his head snapping after his chest, a foot going back lifted to catch him.
@@ -346,8 +419,8 @@ function lurchBig(from: Bones): Motion {
   return {
     keys: [
       { at: 0, pose: {} },
-      { at: 2 * FR, pose: { px: from.px + 5, pz: from.pz - 1.8, pitch: from.pitch + 11, bend: from.bend + 19, faceUp: 16, lfx: from.lfx + 3.5, lfz: 2.6, lfp: -6, rhx: from.rhx + 5 } },
-      { at: 4 * FR, pose: { px: from.px + 6, pz: from.pz - 3.2, pitch: from.pitch + 7, bend: from.bend + 11, faceUp: -18, lfx: from.lfx + 4, lfz: 2.2, lfp: -6, rhx: from.rhx + 6 }, ease: 'io' },
+      { at: 3 * FR, pose: { px: from.px + 5, pz: from.pz - 1.8, pitch: from.pitch + 10, bend: from.bend + 18, faceUp: 11, lfx: from.lfx + 3.5, lfz: 2.6, lfp: -6, rhx: from.rhx + 5 } },
+      { at: 4.5 * FR, pose: { px: from.px + 6, pz: from.pz - 3.2, pitch: from.pitch + 7, bend: from.bend + 11, faceUp: -14, lfx: from.lfx + 4, lfz: 2.2, lfp: -6, rhx: from.rhx + 6 }, ease: 'io' },
       { at: 7 * FR, pose: {}, ease: 'io' },
     ],
   };
@@ -379,7 +452,7 @@ function fallProud(): Motion {
       // thrown back: the chest first, the head after it; the back foot lifted to catch him
       { at: 2 * FR, pose: { px: -3.8, pz: -3.6, pitch: -8, bend: -16, faceUp: -10, rfx: -12, rfz: 3.0, rfp: 0, rft: -40 }, ease: 'out' },
       // the first step back (the back foot down), the front foot lifted to follow; the sword swung round low
-      { at: 6 * FR, pose: { px: -5.5, pz: -2.8, yaw: -20, pitch: -3, twist: -4, bend: -3, faceUp: 8, rfx: -13, rfz: 0, rfp: 0, rft: -24, rk: -14, lfx: 4, lfz: 2.4, lfp: -6, rhIn: 0, rhx: 2, rhy: 3, rhz: -12, wAz: -90, wEl: -60 }, ease: 'io' },
+      { at: 6 * FR, pose: { px: -5.5, pz: -2.8, yaw: -20, pitch: -3, twist: -4, bend: -3, faceUp: 8, rfx: -13, rfz: 0, rfp: 0, rft: -24, rk: -14, lfx: 4, lfz: 2.4, lfp: -6, rhIn: 0, rhx: 8, rhy: 3, rhz: -12, wAz: -90, wEl: -60 }, ease: 'io' },
       // the second: the front foot down under him; the point driven into the floor before him, both hands on the hilt
       { at: 11 * FR, pose: { ...stood, pz: -1.4, faceUp: 6, lfz: 0 }, ease: 'io' },
       { at: 15 * FR, pose: { ...stood, pz: -2.4, bend: 11, faceUp: 2, faceTurn: -10, out: 0.1 }, ease: 'io' },
@@ -418,14 +491,19 @@ function drawMended(): Motion {
   const T = WU_TOWN_REST;
   const k = KNIGHT_DRAW3.motion.keys;
   const townLeft: Partial<Bones> = { lfx: T.lfx, lfy: T.lfy, lfz: 0, lfp: 0, lft: T.lft, lk: T.lk };
-  const lifted = { ...k[3], pose: { ...k[3].pose, rfz: 2.8, rfp: 0 } };
-  const high = { ...k[4], pose: { ...k[4].pose, ...townLeft } };
+  // (his elbow carried a little higher as the blade comes up off his back, so that it swings round clear and smooth)
+  const lifted = { ...k[3], pose: { ...k[3].pose, rfz: 2.8, rfp: 0, re: 180 } };
+  // (his hand goes up over his shoulder to the hilt gathering pace and slowing as it takes hold, through a moment half way)
+  const half = { at: 8.5 * FR, ease: 'in' as const, pose: { ...mixPose(k[1].pose, k[2].pose, 0.5, T), re: 70 } };
+  const taken = { ...k[2], ease: 'out' as const };
+  // (his left hand comes to the hilt gathering pace, from where it hung)
+  const high = { ...k[4], ease: 'io' as const, pose: { ...k[4].pose, ...townLeft } };
   const high2 = { ...k[5], pose: { ...k[5].pose, ...townLeft } };
   const guard = k[6];
   const step = { at: 27.5 * FR, ease: 'io' as const, pose: { ...mixPose({ ...k[5].pose, ...townLeft }, guard.pose, 0.5, T), lfx: 6, lfy: 1, lfz: 2.6, lfp: -6 } };
   const R = WU_REST;
   return {
-    keys: [k[0], k[1], k[2], lifted, high, high2, step, guard, { at: 36 * FR, pose: { ...R, pz: R.pz - 0.8, bend: R.bend + 1.5, wEl: R.wEl + 2, rhz: R.rhz + 0.3 }, ease: 'io' }, { at: 41 * FR, pose: { ...R }, ease: 'io' }],
+    keys: [k[0], k[1], half, taken, lifted, high, high2, step, guard, { at: 36 * FR, pose: { ...R, pz: R.pz - 0.8, bend: R.bend + 1.5, wEl: R.wEl + 2, rhz: R.rhz + 0.3 }, ease: 'io' }, { at: 41 * FR, pose: { ...R }, ease: 'io' }],
   };
 }
 export const WU_DRAW3: Move3 = { ...KNIGHT_DRAW3, name: 'The knight draws his sword', motion: drawMended() };

@@ -6,7 +6,10 @@
 // how long each took to paint. With WARRIOR_UP off it is the game's knight as he is; with `up`, the switch is turned on first.
 //
 //   npx tsx tools/warrior_up_measure.ts hash <out.json> [up]     every frame's hash, and the counts, to a file
-//   npx tsx tools/warrior_up_measure.ts count [up]               the counts, memory and times only (painting every frame)
+//   npx tsx tools/warrior_up_measure.ts count [up] [five]        the counts, memory and times only (painting every frame)
+//
+// With `five` (and `up`), his three turned sides too (side, toward, away: art/warrior_up_art.ts WuActorArt), as the game would
+// hold them to show him in eight facings.
 
 // @ts-ignore - node typings are not part of this project
 import { writeFileSync } from 'node:fs';
@@ -52,14 +55,14 @@ function listsOfSet(set: unknown, prefix: string, out: WarriorList[]): void {
 
 export const PLACES: HeroPlace[] = ['dungeon', 'town', 'card'];
 
-/** Every list of the Warrior's, in every place the game shows him, both ways round (one HeroArt for all, as the game has). */
-export function warriorLists(): WarriorList[] {
+/** Every list of the Warrior's, in every place the game shows him, both ways round (one HeroArt for all, as the game has); with
+ * `five`, from each of his five sides (those of them his art has). */
+export function warriorLists(five = false): WarriorList[] {
   const art = makeHeroArt3();
   const out: WarriorList[] = [];
   for (const place of PLACES) {
-    const a = art.of('warrior', lookOfPlace(place));
-    listsOfSet(a.front, `warrior:${place}/front`, out);
-    listsOfSet(a.back, `warrior:${place}/back`, out);
+    const a = art.of('warrior', lookOfPlace(place)) as unknown as Record<string, unknown>;
+    for (const side of five ? ['front', 'back', 'side', 'toward', 'away'] : ['front', 'back']) if (a[side]) listsOfSet(a[side], `warrior:${place}/${side}`, out);
   }
   return out;
 }
@@ -67,7 +70,7 @@ export function warriorLists(): WarriorList[] {
 function main(): void {
   const [mode, ...args] = process.argv.slice(2);
   if (args.includes('up')) WARRIOR_UP.on = true;
-  const lists = warriorLists();
+  const lists = warriorLists(args.includes('five'));
   const hashes: Record<string, string[]> = {};
   const seen = new Set<Sprite>();
   const pictures = new Set<string>();
@@ -105,6 +108,7 @@ function main(): void {
   }
   const report = {
     up: WARRIOR_UP.on,
+    sides: [...new Set(lists.map((l) => l.name.split('/')[1].split('.')[0]))].length,
     lists: lists.length,
     frames,
     held: seen.size,

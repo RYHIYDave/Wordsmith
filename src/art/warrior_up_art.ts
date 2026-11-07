@@ -20,13 +20,13 @@ import { lazyFrames, lightsOut, toSprite } from './kit';
 import { SETTLES, settle, startOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
-import type { GameView } from './skin';
 import { add, bonesAt, mul, solve } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { GREAT_BLADE } from './moves3';
 import { onBack } from './carried';
 import { paintWarriorUp } from './warrior_up';
-import type { WuFrame } from './warrior_up';
+import type { WuFrame, WuSide } from './warrior_up';
+import { WU_SIDES } from './warrior_up';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLASH3, WU_STRIKE3, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3 } from './warrior_up_moves';
 
 const FPS = 30;
@@ -101,7 +101,7 @@ export function wuSmeared(m: Move3, t: number): boolean {
 }
 
 /** HIM AT A MOMENT OF A MOVE, painted: with the figure a frame and three frames before (cloth follows), the wind, and his smear. */
-export function paintWu(m: Move3, t: number, view: GameView, rim: string | null | undefined = undefined): WuFrame {
+export function paintWu(m: Move3, t: number, view: WuSide, rim: string | null | undefined = undefined): WuFrame {
   const { q, s } = wuPosed(m, t);
   const prev = wuPosed(m, before(m, t, FRAME)).s;
   const past = wuPosed(m, before(m, t, 3 * FRAME)).s;
@@ -122,7 +122,7 @@ export function paintWu(m: Move3, t: number, view: GameView, rim: string | null 
 }
 
 /** A frame of a move as the game holds it: cut down to him, with his lights, his pool of light and where his scarf's ends are fixed. */
-export function wuSprite(m: Move3, t: number, view: GameView): Sprite {
+export function wuSprite(m: Move3, t: number, view: WuSide): Sprite {
   const f = paintWu(m, t, view);
   const out = wuPosed(m, t).q.out;
   const pool = out >= 0.98 ? null : out > 0.01 ? { ...AURA, a: (AURA.a ?? 1) * (1 - out) } : AURA;
@@ -134,7 +134,7 @@ export function wuSprite(m: Move3, t: number, view: GameView): Sprite {
 /** The lists, made once for each view and shared by every place that shows the same (one HeroArt's worth). */
 type Shared = Map<string, Sprite[]>;
 
-function setOf(view: GameView, place: 'dungeon' | 'town' | 'card', shared: Shared): AnimSet {
+function setOf(view: WuSide, place: 'dungeon' | 'town' | 'card', shared: Shared): AnimSet {
   const list = (key: string, make: () => Sprite[]): Sprite[] => {
     const k = `${view}:${key}`;
     let l = shared.get(k);
@@ -209,6 +209,41 @@ function setOf(view: GameView, place: 'dungeon' | 'town' | 'card', shared: Share
  * THE WARRIOR'S PICTURES, BROUGHT UP, for a place (a dungeon, town, his class card): what art/heroes3.ts gives in his place while
  * WARRIOR_UP is on. `shared`: one map for every place of one HeroArt, so that a list the same in two places is one list.
  */
-export function makeWarriorUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map()): ActorArt {
-  return { front: setOf('front', place, shared), back: setOf('back', place, shared) };
+export function makeWarriorUpArt(place: 'dungeon' | 'town' | 'card', shared: Shared = new Map()): WuActorArt {
+  const out = {} as Record<WuSide, AnimSet>;
+  // (each side's lists made when first asked for: a set of lists is cheap, its frames are painted when first read)
+  for (const side of WU_SIDES) Object.defineProperty(out, side, { enumerable: true, configurable: true, get: () => {
+    const set = setOf(side, place, shared);
+    Object.defineProperty(out, side, { value: set, enumerable: true });
+    return set;
+  } });
+  return out as WuActorArt;
+}
+
+/**
+ * HIS PICTURES FROM ALL FIVE SIDES (art/warrior_up.ts WuSide): `front` and `back` as the game has always held a hero, and
+ * `side`, `toward` and `away` beside them, each an AnimSet of the very same lists. The game, while it knows only front and
+ * back, reads those two and nothing else; to show him in eight facings it chooses among the five (docs/mockups/warrior_up/
+ * README.md, "Eight facings").
+ */
+export type WuActorArt = ActorArt & { side: AnimSet; toward: AnimSet; away: AnimSet };
+
+/**
+ * THE SIDE AND THE MIRROR FOR A FACING, as the game should choose them for eight (the main chat's to wire in; while it is not,
+ * the game chooses front or back and mirrors as it always has): (fx, fy) the way he faces on the game's floor.
+ */
+export function wuFacing(fx: number, fy: number): { side: WuSide; flip: boolean } {
+  const a = (Math.atan2(fy, fx) * 180) / Math.PI;
+  const k = ((Math.round(a / 45) % 8) + 8) % 8;
+  // (0: down and to the right; then round by 45 degrees: down, down-left, left, up-left, up, up-right, right)
+  return ([
+    { side: 'front', flip: false },
+    { side: 'toward', flip: false },
+    { side: 'front', flip: true },
+    { side: 'side', flip: true },
+    { side: 'back', flip: true },
+    { side: 'away', flip: false },
+    { side: 'back', flip: false },
+    { side: 'side', flip: false },
+  ] as const)[k];
 }

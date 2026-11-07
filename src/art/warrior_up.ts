@@ -9,7 +9,7 @@
 // action rule we kind of want all that updated to a certain level certain benchmark as the rest of the characters so that
 // they’re all at the same level.”
 //
-// THE SAME MAN, BETTER DRAWN: the Scarf Knight he picked (a round steel helm drawn out into a pointed visor, a mail coif, a
+// THE SAME MAN, BETTER DRAWN: the Scarf Knight he picked (his pig-faced helm, a round steel skull with its snouted visor, a mail coif, a
 // red tabard over mail, its skirt cut into points, a dark red scarf whose two ends fly, layered steel pauldrons, couters,
 // vambraces, plum gloves and belt with its cyan buckle, knee cops, greaves and pointed steel shoes, the great sword whose
 // blade glows the friend's cyan), on his own broad body (moves3.ts KNIGHT_BODY), in his own colours. What changes is how he
@@ -20,6 +20,17 @@
 // His scarf's two ends are still the game's own (engine/tails.ts): each frame says where they are fixed and the game hangs and
 // moves them, so they follow everything he does, in the world, and never repeat. His tabard's skirt follows a few frames
 // behind his hips (`Around.past`), its points swinging out on a strike and trailing in a dive.
+//
+// HIS HELM, 6 Nov 2026, as he asked, seeing him brought up: “All of it is good, I just wish the helmet looked a little better.
+// I really like the look of his old pig helmet but it looks old.  And the visor slit never really pops.” So his old pig-faced
+// helm is back (a round skull; the visor a snout jutting forward like a pig's face), forged: a crisp ridge down the snout,
+// rivets at the visor's pivots, rows of breathing holes, and the slit cut dark across the top of the snout, its upper lip lit
+// and its lower edge in shadow, so that it reads at the game's size from every side that shows his face.
+//
+// HIS FIVE SIDES (`WuSide`), as he said yes to drawing him from eight sides: in front and from behind as the game has always
+// had a hero (front, back), and turned 45 degrees each way from in front: side-on (`side`, facing right across the screen),
+// straight toward the camera (`toward`, facing down the screen) and straight away from it (`away`, up the screen). Mirrored,
+// they give his eight facings (art/warrior_up_art.ts wuFacing).
 
 import type { Light } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
@@ -27,7 +38,7 @@ import { blade, bladeLights, KNIGHT_LOOK } from './hero_warrior';
 import { BLADE, CYAN, GLINT, INK, MAIL, PLUM, STEEL, hash } from './kit';
 import type { Painted, Ramp } from './kit';
 import { GREAT_BLADE } from './moves3';
-import { CANVAS3, eyesToward, faces, girdle, laidAlong, mid, stage } from './skin';
+import { CANVAS3, eyesToward, girdle, laidAlong, mid, stage } from './skin';
 import type { GameView, Stage } from './skin';
 import { onBack } from './carried';
 import { add, cross, dot, len, lerp3, mul, norm, sub, trunkOf } from './skeleton';
@@ -63,8 +74,53 @@ export const WU_SCARF: Ramp = five(KNIGHT_LOOK.scarf);
 const D = Math.PI / 180;
 /** The helm: how much bigger than his head, front to back, side to side and in height (his own: hero3_knight.ts HELM). */
 const HELM: V3 = [1.18, 1.26, 1.12];
-const SLOTS = 0.46;
 const FLOOR = { n: [0, 0, -1] as V3, o: 0 };
+
+/**
+ * HIS FIVE SIDES (Heroes 7, “Truly turned, eight ways”; his pick of 6 Nov 2026, “Yes, 8 sides now (Recommended)”): the two the
+ * game has always had, and three more, each him truly turned; the game mirrors four of them for the other four facings.
+ *   front    facing down the screen and to the right (as always: the game's own camera)
+ *   back     facing up the screen and to the right, seen from behind as the game always has (its picture the mirror's: his
+ *            sword in his left hand)
+ *   side     side-on, facing straight to the right of the screen (the camera's, him turned 45 degrees to his left)
+ *   toward   facing straight down the screen, at the camera (him turned 45 degrees to his right)
+ *   away     facing straight up the screen, away from the camera (him turned 135 degrees to his left)
+ */
+export type WuSide = 'front' | 'back' | 'side' | 'toward' | 'away';
+export const WU_SIDES: readonly WuSide[] = ['front', 'back', 'side', 'toward', 'away'];
+/** How far each side turns him to his left (degrees), under which of the game's two cameras. */
+export const WU_SPIN: Readonly<Record<WuSide, { spin: number; camera: GameView }>> = {
+  front: { spin: 0, camera: 'front' },
+  back: { spin: 0, camera: 'back' },
+  side: { spin: 45, camera: 'front' },
+  toward: { spin: -45, camera: 'front' },
+  away: { spin: 135, camera: 'front' },
+};
+/** A direction or point of him turned `deg` to his left about the floor point under him. */
+export function spun(p: V3, deg: number): V3 {
+  if (!deg) return p;
+  const a = (deg * Math.PI) / 180;
+  const c = Math.cos(a);
+  const sn = Math.sin(a);
+  return [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]];
+}
+/** A stage that takes points of him as he is built and sees them as he is turned (for what is drawn of the old kind with him). */
+function turnedStage(st: Stage, deg: number): Stage {
+  if (!deg) return st;
+  const R = (p: V3): V3 => spun(p, deg);
+  return {
+    view: st.view,
+    under: st.under,
+    over: st.over,
+    whole: st.whole,
+    back: st.back,
+    eye: spun(st.eye, -deg),
+    at: (p) => st.at(R(p)),
+    near: (p) => st.near(R(p)),
+    seen: (v) => st.seen(R(v)),
+    part: (where) => st.part(where === undefined || typeof where === 'number' ? where : R(where)),
+  };
+}
 
 /** What a frame is painted in the light of. */
 export interface WuAround {
@@ -84,6 +140,8 @@ export interface WuFrame extends Painted {
   drawn: Drawn;
   sc: Sculpt;
   s: Skeleton;
+  /** How far he was turned for the side he was seen from (degrees to his left). */
+  spin: number;
 }
 
 const fr = (v: V3, w: V3, k: number): V3 => norm(sub(v, mul(w, dot(v, w) * k)), [1, 0, 0]);
@@ -100,14 +158,16 @@ function frame(a: V3, b: V3): [V3, V3, V3] {
  * HIM, SCULPTED, at a pose (`s` solved from `q` on his build), seen in one of the game's views. Returns the painting, its
  * lights (the blade's) and where the scarf's two ends are fixed (the game moves them).
  */
-export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, around: WuAround = {}, rim: string | null = WU_RIM): WuFrame {
+export function paintWarriorUp(s: Skeleton, q: Posed, side: WuSide, B: Build, around: WuAround = {}, rim: string | null = WU_RIM): WuFrame {
+  const { spin, camera: view } = WU_SPIN[side];
   const sc = new Sculpt();
+  sc.spin = spin;
   const [ribs, belly, pel] = trunkOf(B, s);
   const [cf, cl, cu] = s.chest;
   const [hf, hl, hu] = s.hips;
   // (the game's camera for this view, only for its sums: the way to the eye, how near a point is. Its sheets are not used: the
   // sculptor's own stage paints the frame)
-  const st0 = stage(view);
+  const st0 = turnedStage(stage(view), spin);
   const eye: V3 = st0.eye;
   const farOf = (p: V3): boolean => dot(sub(p, s.pelvis), eye) < -2.4;
   const dim = (h: { tone: number }, p: V3, r: Ramp): string | null => (farOf(p) ? r[Math.max(0, h.tone - 1)] : null);
@@ -279,36 +339,102 @@ export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, 
   sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 1.5), mul(cu, 1.4))), [mul(cf, 4.0), mul(cl, 4.8), mul(cu, 1.9)], 1.2, { tag: 'wrap' });
   // (its folds hanging over the top of his chest in front)
   sc.ell(wine, 'scarf', add(s.neck, add(mul(cf, 4.2), mul(cu, -2.6))), [mul(cf, 1.6), mul(cl, 3.4), mul(cu, 2.4)], 1.0, { tag: 'wrap' });
-  const knot = add(s.neck, add(mul(cf, -4.2), mul(cu, 1.2)));
-  sc.ell(wine, 'scarf', knot, [mul(cf, 1.6), mul(cl, 2.0), mul(cu, 1.6)], 0.8, { tag: 'knot' });
+  const knotAt = add(s.neck, add(mul(cf, -4.2), mul(cu, 1.2)));
+  sc.ell(wine, 'scarf', knotAt, [mul(cf, 1.6), mul(cl, 2.0), mul(cu, 1.6)], 0.8, { tag: 'knot' });
 
-  // ---- THE HEAD: the mail coif at his neck, and over all of his head the helm: a round skull of steel, a ridge over its crown,
-  // the brow, and out from where his face is the visor drawn to a point; the slots he sees through, a point of light in each ----
+  // ---- THE HEAD: THE PIG-FACED HELM, his own as the game has always had it (his words, 6 Nov 2026: “I really like the look of
+  // his old pig helmet but it looks old.  And the visor slit never really pops.”), forged anew: the mail coif at his neck; a
+  // rounded skull of steel, drawn up a little to the back of the crown; out from where his face is, THE SNOUT, the visor
+  // jutting forward and a little down like a pig's face, a crisp ridge down its top; a rivet at each pivot of the visor, at his
+  // temples; rows of holes he breathes through on its cheeks; and THE EYE SLIT across the top of the snout where it meets the
+  // skull: deep and dark, its upper lip lit bright and its lower edge in shadow, so it reads at a glance (no glow in it: the
+  // faint cyan point of his eyes he has always had) ----
   const [ff, fl, fu] = s.face;
   const R = B.headR;
   sc.cone(mail, 'coif', s.neck, add(s.skull, mul(fu, -0.6)), 2.7, 2.6, 1.0, { tag: 'coif' });
-  const helmC = add(s.head, mul(fu, R[2] * 0.05));
+  const helmC = add(s.head, mul(fu, R[2] * 0.06));
   sc.ell(steel, 'helm', helmC, [mul(ff, R[0] * HELM[0]), mul(fl, R[1] * HELM[1]), mul(fu, R[2] * HELM[2])], 1.0, { tag: 'skull' });
-  // (the ridge along his crown, front to back)
-  sc.ell(steel, 'helm', add(helmC, mul(fu, R[2] * HELM[2] * 0.82)), [mul(ff, R[0] * HELM[0] * 0.95), mul(fl, 0.9), mul(fu, 1.3)], 0.7, { tag: 'ridge' });
-  // (the brow: a band of steel round the front of the helm above the slots)
-  const browC = add(s.head, add(mul(ff, R[0] * 0.55), mul(fu, R[2] * 0.62)));
-  sc.ell(steel, 'helm', browC, [mul(ff, R[0] * 0.62), mul(fl, R[1] * HELM[1] * 0.98), mul(fu, 1.0)], 0.5, { tag: 'lame' });
+  // (the skull full and round at the back, as his old pig helm's is: no point to its crown, from any side)
+  sc.ell(steel, 'helm', add(helmC, add(mul(fu, R[2] * 0.15), mul(ff, -R[0] * 0.35))), [mul(ff, R[0] * 0.9), mul(fl, R[1] * 1.0), mul(fu, R[2] * 0.95)], 1.2, { tag: 'skull' });
+  // (its rim flaring a little over the mail at the back and the sides)
+  sc.ell(steel, 'helm', add(s.head, add(mul(fu, -R[2] * 0.62), mul(ff, -R[0] * 0.18))), [mul(ff, R[0] * 1.08), mul(fl, R[1] * 1.22), mul(fu, R[2] * 0.36)], 0.8, { tag: 'skull' });
   const eyes = eyesToward(st0, s);
   const midTurn = ((eyes[0] + eyes[1]) / 2) * D;
   const outF = add(mul(ff, Math.cos(midTurn)), mul(fl, Math.sin(midTurn)));
-  const root = add(s.head, add(mul(outF, R[0] * 0.55), mul(fu, -R[2] * 0.22)));
-  const point = add(s.head, add(mul(outF, R[0] * 2.25), mul(fu, -R[2] * 0.5)));
-  sc.cone(steel, 'visor', root, point, 3.3, 0.7, 1.1, { tag: 'visor' });
-  /** A point on the helm's skin: degrees round from his nose, a share of his head's height above its middle. */
+  // THE SNOUT: from the whole of his face, jutting forward and a little down to a blunt point
+  const root = add(s.head, add(mul(outF, R[0] * 0.5), mul(fu, -R[2] * 0.2)));
+  const point = add(s.head, add(mul(outF, R[0] * 2.65), mul(fu, -R[2] * 0.6)));
+  const RA = 3.4;
+  const RB = 1.05;
+  // (a plate of its own over his face: barely melted into the skull, so the seam round it shows where it stands proud)
+  sc.cone(steel, 'visor', root, point, RA, RB, 0.15, { tag: 'visor' });
+  // (its crisp ridge down the top, from the slit to the point)
+  const snoutUp = norm(sub(fu, mul(norm(sub(point, root)), dot(fu, norm(sub(point, root))))), fu);
+  sc.cone(steel, 'visor', add(root, mul(snoutUp, RA * 0.82)), add(point, mul(snoutUp, RB * 0.75)), 0.75, 0.35, 0.35, { tag: 'snoutRidge' });
+  /** A point on the helm's skull: degrees round from where his face is drawn, a share of his head's height above its middle. */
   const onHelm = (az: number, upK: number): V3 => add(s.head, add(add(mul(ff, Math.cos(az * D) * R[0] * HELM[0]), mul(fl, Math.sin(az * D) * R[1] * HELM[1])), mul(fu, upK * R[2])));
-
+  /** A point on the snout's skin: `u` along it from root to point, `round` degrees round it from its top toward his left. */
+  const snoutAxis = norm(sub(point, root));
+  const snoutLeft = norm(cross(snoutUp, snoutAxis), fl);
+  const onSnout = (u: number, round: number): V3 => {
+    const r = RA + (RB - RA) * u;
+    const a = round * D;
+    return add(lerp3(root, point, u), add(mul(snoutUp, Math.cos(a) * r), mul(snoutLeft, -Math.sin(a) * r)));
+  };
+  // THE EYE SLIT, painted on the steel where it crosses the snout's top and the front of the skull: dark, lit above, shaded below
+  const SLIT = 0.2;
+  const facesAt = (p: V3): boolean => dot(sub(p, s.head), eye) > 0;
+  const slitOf = (p: V3): number => {
+    // (how far above the slit's middle a point of the helm is, in shares of his head's height; NaN where the slit does not run)
+    const v = sub(p, s.head);
+    const f = dot(v, outF);
+    const l = dot(v, norm(sub(fl, mul(outF, dot(fl, outF))), fl));
+    if (f < R[0] * 0.25 || Math.abs(Math.atan2(l, f)) > 66 * D) return NaN;
+    return dot(v, fu) / R[2] - SLIT;
+  };
+  const helmPaint = sc.mats[steel].paint;
+  sc.mats[steel].paint = (h) => {
+    const piece = h.prim.piece;
+    if (piece === 'helm' || piece === 'visor') {
+      const up = slitOf(h.p);
+      if (up === up) {
+        if (Math.abs(up) < 0.13) return INK;
+        if (up >= 0.13 && up < 0.3) return WU_STEEL[4];
+        if (up <= -0.13 && up > -0.27) return WU_STEEL[1];
+      }
+      // (the ridge down the snout: its crest lit, its flanks a step darker)
+      if (h.prim.tag === 'snoutRidge') return h.tone >= 2 ? WU_STEEL[4] : WU_STEEL[Math.max(1, h.tone)];
+      // (the snout lifted a tone, as a hero's face is, so that his pig's face reads though it is turned from the light)
+      if (h.prim.tag === 'visor') return WU_STEEL[Math.min(4, Math.max(1, h.tone + 1))];
+    }
+    return helmPaint ? helmPaint(h) : null;
+  };
+  // the faint cyan point of his eyes in the slit (as he has always had), the rivets at the visor's pivots, the breathing holes
+  for (const turn of eyes) {
+    if (!facesAt(onHelm(turn, SLIT))) continue;
+    sc.mark(add(s.head, add(mul(add(mul(ff, Math.cos(turn * D)), mul(fl, Math.sin(turn * D))), R[0] * 1.32), mul(fu, R[2] * SLIT))), GLINT, 1, 1, 0, 0, 3.5);
+  }
+  for (const az of [midTurn / D - 92, midTurn / D + 92]) {
+    const pv = onHelm(az, SLIT - 0.08);
+    if (!facesAt(pv)) continue;
+    sc.mark(pv, WU_STEEL[4], 1, 1, 0, 0, 2.5, steel);
+    sc.mark(pv, INK, 1, 1, 1, 1, 2.5, steel);
+  }
+  for (const [u0, rounds] of [[0.34, [62, 80, 98]], [0.5, [66, 86, 104]], [0.64, [72, 94]]] as const) {
+    for (const rd of rounds) for (const sgn of [1, -1]) {
+      const hp = onSnout(u0, rd * sgn);
+      if (facesAt(hp)) sc.mark(hp, INK, 1, 1, 0, 0, 1.6, steel);
+    }
+  }
+  const knot = add(s.neck, add(mul(cf, -4.2), mul(cu, 1.2)));
 
   // ---- what is drawn of the old kind: the great sword (its glow), its smear, the slots and breaths ----
   const away = q.stow > 0.5;
   const lights: Light[] = [];
   let tails: TailRoot[] = [];
-  const extras = (st: Stage): void => {
+  const extras = (raw: Stage): void => {
+    // (what is drawn of the old kind is laid as he is turned for this side)
+    const st = turnedStage(raw, spin);
     const carried = away ? onBack(B, s, 'sword') : { grip: s.handR, point: s.point };
     const guard3 = add(carried.grip, mul(carried.point, 1.3));
     const tip3 = add(guard3, mul(carried.point, GREAT_BLADE));
@@ -401,16 +527,6 @@ export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, 
       }
       laidAlong(strap, st, a, b, 0.6);
     }
-    // the slots he sees through, a point of light in each, and the holes he breathes through
-    for (const turn of eyes) {
-      if (!faces(st, s, turn)) continue;
-      for (let d = -16; d <= 16; d += 4) sc.mark(onHelm(turn + d, SLOTS), INK, 1, 1, 0, 0, 3);
-      sc.mark(onHelm(turn, SLOTS), GLINT, 1, 1, 0, 0, 3);
-    }
-    if (st.near(outF) > 0.1) {
-      const hole = add(root, mul(sub(point, root), 0.45));
-      for (const [dx, dy] of [[0, 0], [-2, 1], [2, 0], [0, 2]] as const) sc.mark(hole, INK, 1, 1, dx, dy, 3);
-    }
     const [tx, ty] = st.at(knot);
     const behind = st.near(knot) < st.near(s.neck);
     tails = [
@@ -419,5 +535,5 @@ export function paintWarriorUp(s: Skeleton, q: Posed, view: GameView, B: Build, 
     ];
   };
   const drawn = draw(sc, view, CANVAS3.ax, CANVAS3.ay, CANVAS3, extras, rim);
-  return { px: drawn.px, lights, tails, drawn, sc, s };
+  return { px: drawn.px, lights, tails, drawn, sc, s, spin };
 }

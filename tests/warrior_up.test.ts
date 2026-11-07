@@ -4,14 +4,16 @@
 //      THE GAME PAINTS OF HIM IS THE SAME (each list's first, middle and last frame against the hashes made before any of this,
 //      tests/warrior_up.hashes.json; with WARRIOR_UP_ALL=1, every frame);
 //   2. with it on, every list at 30 pictures a second (his run, which grips the floor, at 60);
-//   3. EVERY FRAME OF EVERY MOVE THROUGH EVERY BOSS CHECK (art/boss_checks.ts checkBoss), from in front and from behind, with the
-//      game's own handovers between them;
+//   3. EVERY FRAME OF EVERY MOVE THROUGH EVERY BOSS CHECK (art/boss_checks.ts checkBoss), from each of his five sides (in front,
+//      behind, side-on, toward the camera and away from it), with the game's own handovers between them;
 //   4. nothing of him through what he wears: no pixel of his mail seen from inside his tabard, its skirt, a pauldron or his scarf
-//      (art/warrior_up_review.ts wuCoverFindings), every frame both ways round; and the check sees mail that is through;
+//      (art/warrior_up_review.ts wuCoverFindings), every frame from all five sides; and the check sees mail that is through;
 //   5. his feet grip in the run: each foot on the floor goes back under him as fast as the game carries him;
 //   6. crisp; the friend's cyan edge round him and his pool of cyan light behind him; nothing of the enemy's pink or gold;
 //   7. his hits and lengths as stated (the main chat's numbers), and Movement 9 in each blow: a held wind-up, a strike of two
-//      smeared frames.
+//      smeared frames;
+//   8. his five sides, and the eight facings the game makes of them (art/warrior_up_art.ts wuFacing), each facing the way it is
+//      chosen for; his pig-faced helm's slit dark across his visor, its lip lit above it, from every side.
 //   run: tsx --test tests/warrior_up.test.ts          WARRIOR_UP_ALL=1 tsx --test tests/warrior_up.test.ts
 
 // @ts-ignore
@@ -23,10 +25,11 @@ import * as nodeFs from 'node:fs';
 // @ts-ignore
 import * as nodePath from 'node:path';
 
-import { WARRIOR_UP, WU_MAIL, WU_PLUM, WU_RED, WU_RIM, WU_SCARF, WU_STEEL } from '../src/art/warrior_up';
+import { WARRIOR_UP, WU_MAIL, WU_PLUM, WU_RED, WU_RIM, WU_SCARF, WU_SIDES, WU_SPIN, WU_STEEL, spun } from '../src/art/warrior_up';
+import type { WuSide } from '../src/art/warrior_up';
 import { RED, SCARF_WINE } from '../src/art/hero_warrior';
-import type { WuFrame } from '../src/art/warrior_up';
-import { paintWu, wuSmeared } from '../src/art/warrior_up_art';
+import { paintWu, wuFacing, wuSmeared } from '../src/art/warrior_up_art';
+import type { WuActorArt } from '../src/art/warrior_up_art';
 import { WU_DRAW3, WU_FALL3, WU_LOOK3, WU_LURCH3, WU_MOVES, WU_REAR3, WU_REEL3, WU_RUN3, WU_SLAM3, WU_SLAM_HELD, WU_SLAM_HIT, WU_SLASH3, WU_STRIKE3, WU_STRIKE_HELD, WU_STRIKE_HIT, WU_STRIKE_POISE, WU_THRUST3, WU_TOWN3, WU_TOWN_RUN3, WU_WHIRL3, swingCarried } from '../src/art/warrior_up_moves';
 import { WU_THROUGH, warriorReview, wuCoverFindings, wuSword } from '../src/art/warrior_up_review';
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
@@ -35,9 +38,9 @@ import { lookOfPlace } from '../src/art/heroes';
 import { GRIP_SPEED, SETTLES, THRUST3, UNITS_PER_TILE, settle, startOf } from '../src/art/moves3';
 import type { Move3 } from '../src/art/moves3';
 import { CANVAS3 } from '../src/art/skin';
-import { PINK, PLUM, RIM_ALPHA } from '../src/art/kit';
+import { INK, PINK, PLUM, RIM_ALPHA } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
-import { bonesAt, solve } from '../src/art/skeleton';
+import { bonesAt, project, solve } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import { TUNE } from '../src/game/defs';
 import { hashSprite } from '../tools/cheap_heroes';
@@ -52,7 +55,6 @@ declare const process: { env: Record<string, string | undefined> };
 paintWithoutCanvas();
 
 const FR = 1 / 30;
-const VIEWS = ['front', 'back'] as const;
 const near = (a: number, b: number, e = 1e-6): boolean => Math.abs(a - b) < e;
 const endOf = (m: Move3): number => m.motion.keys[m.motion.keys.length - 1].at;
 
@@ -78,13 +80,23 @@ function moments(): { m: Move3; t: number }[] {
 }
 const MOMENTS = moments();
 
-/** Each moment painted once, both ways round (the tests below share the paintings). */
-const painted = new Map<string, WuFrame>();
-function paintedAt(m: Move3, t: number, view: 'front' | 'back'): WuFrame {
-  const k = `${m.name}@${t.toFixed(4)}@${view}`;
-  let f = painted.get(k);
-  if (!f) painted.set(k, (f = paintWu(m, t, view)));
-  return f;
+/** What is wrong in any of his pictures, every moment from every side: painted once, each picture looked at by tests 4 and 6
+ * together (and not kept: five sides of every moment is too many pictures to hold). */
+let swept: { cover: string[]; crisp: string[] } | null = null;
+function sweep(): { cover: string[]; crisp: string[] } {
+  if (swept) return swept;
+  const cover: string[] = [];
+  const crisp: string[] = [];
+  for (const { m, t } of MOMENTS) {
+    for (const v of WU_SIDES) {
+      const f = paintWu(m, t, v);
+      const at = `${m.name} ${(t * 30).toFixed(1)} ${v}`;
+      const c = wuCoverFindings(f, CANVAS3.ax, CANVAS3.ay);
+      if (c.length) cover.push(`${at}: ${c.join('; ')}`);
+      crisp.push(...crispFaults(f, at, bonesAt(m.motion.keys, m.rest, t).out >= 0.25));
+    }
+  }
+  return (swept = { cover, crisp });
 }
 
 // --- 1. the switch, and the game's knight unchanged while it is off ------------------------------------------------------
@@ -138,8 +150,8 @@ test('2. with it on, the game holds him in every list at 30 pictures a second (h
   try {
     const art = makeHeroArt3();
     for (const place of ['dungeon', 'town', 'card'] as const) {
-      for (const v of VIEWS) {
-        const set = art.of('warrior', lookOfPlace(place))[v];
+      for (const v of WU_SIDES) {
+        const set = (art.of('warrior', lookOfPlace(place)) as WuActorArt)[v];
         assert.equal(set.idleFps, 30, `${place} ${v}: standing at 30`);
         assert.equal(set.idle.length, place === 'dungeon' ? 60 : 72, `${place} ${v}: standing, ${place === 'dungeon' ? 2 : 2.4} s`);
         assert.equal(set.walkFps, 60, `${place} ${v}: his run at 60`);
@@ -176,23 +188,21 @@ test('2. with it on, the game holds him in every list at 30 pictures a second (h
 
 // --- 3. every boss check -----------------------------------------------------------------------------------------------
 
-test('3. every frame of every move through every boss check (art/boss_checks.ts), from in front and from behind, and every handover the game makes', () => {
-  const { mob, shape, moves } = warriorReview();
-  assert.equal(moves.length, 14, 'all fourteen of his moves');
-  const found = checkBoss(mob, shape, moves);
-  assert.equal(found.length, 0, findingsSaid(found).slice(0, 14).join('; '));
+test('3. every frame of every move through every boss check (art/boss_checks.ts), from each of his five sides, and every handover the game makes', () => {
+  // (his front side's review looks at him from in front and from behind, as the game has always shown him: his two sides of
+  // old; each turned side's, from in front of him and behind him as he stands turned)
+  for (const side of ['front', 'side', 'toward', 'away'] as const) {
+    const { mob, shape, moves } = warriorReview(side);
+    assert.equal(moves.length, 14, `${side}: all fourteen of his moves`);
+    const found = checkBoss(mob, shape, moves);
+    assert.equal(found.length, 0, `${side}: ${findingsSaid(found).slice(0, 14).join('; ')}`);
+  }
 });
 
 // --- 4. nothing through what he wears ------------------------------------------------------------------------------------
 
-test('4. nothing of him through what he wears: no pixel of his mail seen from inside his tabard, its skirt, a pauldron or his scarf, in any frame either way round', () => {
-  const faults: string[] = [];
-  for (const { m, t } of MOMENTS) {
-    for (const v of VIEWS) {
-      const f = wuCoverFindings(paintedAt(m, t, v), CANVAS3.ax, CANVAS3.ay);
-      if (f.length) faults.push(`${m.name} ${(t * 30).toFixed(1)} ${v}: ${f.join('; ')}`);
-    }
-  }
+test('4. nothing of him through what he wears: no pixel of his mail seen from inside his tabard, its skirt, a pauldron or his scarf, in any frame from any of his five sides', () => {
+  const faults = sweep().cover;
   assert.equal(faults.length, 0, faults.slice(0, 10).join(' | '));
 });
 
@@ -261,40 +271,39 @@ function enemyPixel(r: number, g: number, b: number): boolean {
   return sat > 0.4 && Math.max(r, g, b) > 140 && (h >= 300 && h <= 352 || (h >= 30 && h <= 60 && Math.max(r, g, b) > 200));
 }
 
-test('6. every frame, both ways round: crisp; the friend\'s cyan edge round him; nothing of the enemy\'s pink or gold; his lights cyan; nothing cut off', () => {
+function crispFaults(f: ReturnType<typeof paintWu>, at: string, out: boolean): string[] {
   const rim = rgba(WU_RIM);
   const faults: string[] = [];
-  for (const { m, t } of MOMENTS) {
-    for (const v of VIEWS) {
-      const { px, lights } = paintedAt(m, t, v);
-      const d = px.d;
-      let edge = 0;
-      let body = 0;
-      const at = `${m.name} ${(t * 30).toFixed(1)} ${v}`;
+  const { px, lights } = f;
+  const d = px.d;
+  let edge = 0;
+  let body = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3];
+    if (a === 0) continue;
+    if (a === RIM_ALPHA) {
+      if (d[i] === rim[0] && d[i + 1] === rim[1] && d[i + 2] === rim[2]) edge++;
       // (as the light goes out of him in his fall, his edge goes out with it: art/kit.ts lightsOut, as every hero's)
-      const out = bonesAt(m.motion.keys, m.rest, t).out >= 0.25;
-      for (let i = 0; i < d.length; i += 4) {
-        const a = d[i + 3];
-        if (a === 0) continue;
-        if (a === RIM_ALPHA) {
-          if (d[i] === rim[0] && d[i + 1] === rim[1] && d[i + 2] === rim[2]) edge++;
-          else if (!out) faults.push(`${at}: an edge pixel not cyan`);
-          else edge++;
-          continue;
-        }
-        if (a !== 255) faults.push(`${at}: a pixel part seen through (${a})`);
-        body++;
-        if (enemyPixel(d[i], d[i + 1], d[i + 2])) faults.push(`${at}: the enemy's pink or gold (${d[i]},${d[i + 1]},${d[i + 2]})`);
-      }
-      if (body < 400 || edge < 60) faults.push(`${at}: ${body} painted, ${edge} of edge`);
-      for (const L of lights) {
-        const [h] = hue(...(rgba(L.color).slice(0, 3) as [number, number, number]));
-        if (h < 160 || h > 205) faults.push(`${at}: a light not cyan (${L.color})`);
-      }
-      for (let x = 0; x < px.w; x++) for (const y of [0, px.h - 1]) if (d[(y * px.w + x) * 4 + 3] > 0) faults.push(`${at}: cut off at the top or bottom`);
-      for (let y = 0; y < px.h; y++) for (const x of [0, px.w - 1]) if (d[(y * px.w + x) * 4 + 3] > 0) faults.push(`${at}: cut off at a side`);
+      else if (!out) faults.push(`${at}: an edge pixel not cyan`);
+      else edge++;
+      continue;
     }
+    if (a !== 255) faults.push(`${at}: a pixel part seen through (${a})`);
+    body++;
+    if (enemyPixel(d[i], d[i + 1], d[i + 2])) faults.push(`${at}: the enemy's pink or gold (${d[i]},${d[i + 1]},${d[i + 2]})`);
   }
+  if (body < 400 || edge < 60) faults.push(`${at}: ${body} painted, ${edge} of edge`);
+  for (const L of lights) {
+    const [h] = hue(...(rgba(L.color).slice(0, 3) as [number, number, number]));
+    if (h < 160 || h > 205) faults.push(`${at}: a light not cyan (${L.color})`);
+  }
+  for (let x = 0; x < px.w; x++) for (const y of [0, px.h - 1]) if (d[(y * px.w + x) * 4 + 3] > 0) faults.push(`${at}: cut off at the top or bottom`);
+  for (let y = 0; y < px.h; y++) for (const x of [0, px.w - 1]) if (d[(y * px.w + x) * 4 + 3] > 0) faults.push(`${at}: cut off at a side`);
+  return faults;
+}
+
+test('6. every frame, from all five sides: crisp; the friend\'s cyan edge round him; nothing of the enemy\'s pink or gold; his lights cyan; nothing cut off', () => {
+  const faults = sweep().crisp;
   assert.equal(faults.length, 0, [...new Set(faults)].slice(0, 12).join('; '));
 });
 
@@ -325,11 +334,11 @@ test('7. his hits and lengths as stated for the main chat', () => {
   assert.ok(near(endOf(WU_STRIKE3), 36 / 30) && near(endOf(WU_SLASH3), 27 / 30), 'the first swing 36 frames, the second 27');
   // Slam: lands at 15 frames (0.5 s), 34 in all
   assert.ok(near(WU_SLAM3.motion.hit ?? -1, WU_SLAM_HIT) && near(WU_SLAM_HIT, 0.5) && near(endOf(WU_SLAM3), 34 / 30));
-  // kept as they were: the Lunge (its dive the game carries him through, 0.5 s, the point out as he lands), the Whirlwind
-  // (once round in 8 frames), struck (7) and his fall (46)
+  // kept as they were: the Lunge (its dive the game carries him through, 0.5 s, the point out as he lands), struck (7) and his
+  // fall (46); the Whirlwind once round in 12 frames (it was 8: from his turned sides, 8 threw his limbs round in leaps)
   assert.ok(near(WU_THRUST3.motion.hit ?? -1, THRUST3.motion.hit ?? -2) && near(WU_THRUST3.arc!.until, THRUST3.arc!.until) && WU_THRUST3.arc!.high === THRUST3.arc!.high);
   assert.ok(near(endOf(WU_THRUST3), endOf(THRUST3)), 'the Lunge as long');
-  assert.ok(near(endOf(WU_WHIRL3), 8 / 30) && WU_WHIRL3.motion.loop === 0);
+  assert.ok(near(endOf(WU_WHIRL3), 12 / 30) && WU_WHIRL3.motion.loop === 0);
   assert.ok(near(endOf(WU_REEL3), 7 / 30) && near(endOf(WU_LURCH3), 7 / 30) && near(endOf(WU_FALL3), 46 / 30));
   // his card's ready at the same moment, and his standing loops
   assert.ok(near(WU_DRAW3.ready ?? -1, 31 / 30) && endOf(WU_DRAW3) >= 40 / 30 - 1e-6, 'ready at 31, his guard held after it');
@@ -360,5 +369,51 @@ test('7. every blow by Movement 9: a big wind-up HELD, the strike in two frames,
     const rest = tip(0);
     const far = Math.hypot(...(tip(held[1]).map((x, i) => x - rest[i]) as [number, number, number]));
     assert.ok(far > 12, `${m.name}: wound up ${far.toFixed(1)} from where it began`);
+  }
+});
+
+// --- 8. his five sides, the eight facings, and his helm ------------------------------------------------------------------
+
+test('8. eight facings from his five sides: each facing the game may give him is drawn facing that very way on the screen', () => {
+  // (the game's floor on the screen, as render.ts has it: a step along fx goes right and down, along fy left and down)
+  const screen = (fx: number, fy: number): [number, number] => [fx - fy, (fx + fy) * 0.5];
+  const want: [WuSide, boolean][] = [['front', false], ['toward', false], ['front', true], ['side', true], ['back', true], ['away', false], ['back', false], ['side', false]];
+  for (let k = 0; k < 8; k++) {
+    const a = (k * 45 * Math.PI) / 180;
+    const [fx, fy] = [Math.cos(a), Math.sin(a)];
+    const { side, flip } = wuFacing(fx, fy);
+    assert.deepEqual([side, flip], want[k], `facing ${k * 45}: ${side}${flip ? ', mirrored' : ''}`);
+    // (a little off the middle of each eighth, the same)
+    for (const d of [-20, 20]) assert.deepEqual(wuFacing(Math.cos(a + (d * Math.PI) / 180), Math.sin(a + (d * Math.PI) / 180)), { side, flip }, `facing ${k * 45 + d}`);
+    // which way he faces as that side is drawn: his forward, turned as the side turns him, seen by its camera, mirrored if so
+    const { spin, camera } = WU_SPIN[side];
+    const p = project(spun([1, 0, 0], spin), camera);
+    const o = project([0, 0, 0], camera);
+    const drawn: [number, number] = [(flip ? -1 : 1) * (p[0] - o[0]), p[1] - o[1]];
+    const [sx, sy] = screen(fx, fy);
+    const cos = (drawn[0] * sx + drawn[1] * sy) / (Math.hypot(...drawn) * Math.hypot(sx, sy));
+    assert.ok(cos > 0.999, `facing ${k * 45}: ${side} drawn facing the way the game has him go (${cos.toFixed(3)})`);
+  }
+});
+
+test('8. his pig-faced helm: the slit dark across the top of his snout with its lip lit above it, from in front, side-on and toward the camera', () => {
+  const key = (c: string): string => rgba(c).slice(0, 3).join(',');
+  const ink = key(INK);
+  const lit = new Set([key(WU_STEEL[4]), key(WU_STEEL[3])]);
+  for (const [m, t] of [[WU_REAR3, 0], [WU_REAR3, 1], [WU_RUN3, 0.2], [WU_STRIKE3, 0.3]] as const) {
+    for (const side of ['front', 'side', 'toward'] as const) {
+      const { px } = paintWu(m, t, side);
+      const d = px.d;
+      const at = (x: number, y: number): string => {
+        const i = (y * px.w + x) * 4;
+        return d[i + 3] === 255 ? `${d[i]},${d[i + 1]},${d[i + 2]}` : '';
+      };
+      let top = px.h;
+      for (let i = 3; i < d.length; i += 4) if (d[i]) top = Math.min(top, Math.floor((i - 3) / 4 / px.w));
+      // (in the head, the top 30 rows of him: a dark pixel of the slit with the lit lip straight above it)
+      let n = 0;
+      for (let y = Math.max(1, top); y < Math.min(px.h, top + 30); y++) for (let x = 0; x < px.w; x++) if (at(x, y) === ink && lit.has(at(x, y - 1))) n++;
+      assert.ok(n >= 10, `${m.name} ${t} ${side}: the slit under its lit lip, ${n} pixels`);
+    }
   }
 });
