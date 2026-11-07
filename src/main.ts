@@ -63,7 +63,7 @@ import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { TITLE_RING, makeRingTitle } from './art/title_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
-import { initAudio, isMuted, setMuted, sfx, speak, speakBoss } from './engine/audio';
+import { heroVoice, initAudio, isMuted, recordedState, setMuted, sfx, speak, speakBoss, titleMusic, warmRecorded } from './engine/audio';
 import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
@@ -353,6 +353,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
   let game: Game | null = null;
   let mode: 'title' | 'play' = 'title';
+  /** The hero whose voice has been fetched (engine/audio.ts warmRecorded). */
+  let warmedFor = '';
   let bot: BotState | null = null;
   let last = performance.now();
   let clock = 0;
@@ -1566,6 +1568,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (RUNEDUST AND THE MELDSTONE's moments, behind a switch that is off: render/meld_drops.ts)
     if (MELD_DROPS.on) renderer.meldDrops.see(g.events, clock, g.hero);
     fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
+    // (the hero's own voice, the sound chat's: engine/audio.ts heroVoice; and his voice and the combat sounds fetched once he plays)
+    for (const e of g.events) if (e.t === 'voice') heroVoice(e.who, e.cry);
+    if (warmedFor !== g.hero.cls) {
+      warmedFor = g.hero.cls;
+      warmRecorded(g.hero.cls);
+    }
     // (the new words' looks, called up by what the rules say happened: render/words3.ts)
     if (WORDS3.on) events3(g.events, g, fx);
     g.events.length = 0;
@@ -1646,6 +1654,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     ui.held = input.hold.active ? { x: input.hold.x, y: input.hold.y } : null;
     ui.release = input.uiRelease;
 
+    // (THE TITLE THEME while the title is up; let go of once it closes: engine/audio.ts titleMusic)
+    titleMusic(mode === 'title' || !game);
     if (mode === 'title' || !game) {
       // (THE PAINTER: no place is being shown: what the last one's pictures took is given back)
       if (paintedFor) {
@@ -2213,6 +2223,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     baked: () => (painter.baked ? { ...painter.baked.stats } : null),
     /** THE QUEST LINE OF FLOORS 1 TO 5 (game/quests15.ts QUESTS15): off until his yes in play; its pictures and playtests switch it on (`quests15.on`). */
     quests15: QUESTS15,
+    /** THE RECORDED SOUNDS (engine/audio.ts): how many have come, are coming, failed; the title theme playing. */
+    sounds: () => recordedState(),
     game: () => game,
     /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
     levelSelect: LEVEL_SELECT,

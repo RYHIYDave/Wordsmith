@@ -4334,6 +4334,8 @@ export class Game {
     h.attackT = wind + follow;
     h.animT = 0;
     h.windup = { skill: i, tx, ty, t: wind };
+    // (his voice, now and then, as he attacks: engine/audio.ts heroVoice)
+    this.emit({ t: 'voice', who: h.cls, cry: 'attack' });
     if (wind <= 0) this.release();
   }
 
@@ -9461,6 +9463,7 @@ export class Game {
     this.emit({ t: 'hit', x: h.x, y: h.y, amount: dmg, crit: false, el, onHero: true });
     this.emit({ t: 'shake', amount: Math.min(5, 1 + dmg / 8) });
     this.sfx('hurt', 0.8);
+    this.emit({ t: 'voice', who: h.cls, cry: 'hurt' });
     if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
       h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (dmg * 0.6 * k('poison')) / TUNE.poisonTime);
@@ -9524,6 +9527,7 @@ export class Game {
     // (ACT 2, THE HUSH: a word the Physician holds is the fallen hero's again)
     giveBackAll(this);
     this.over = true;
+    this.emit({ t: 'voice', who: this.hero.cls, cry: 'death' });
     // (a fallen hero holds nothing: a beam or a whirlwind that was being held ends with them. The
     // rules stop here, so nothing else would end it, and the picture of it would stand over
     // them as they fall.)
