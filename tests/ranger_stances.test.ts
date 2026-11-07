@@ -141,7 +141,12 @@ test('the game\'s arrows leave from where the picture\'s are (the Ranger brought
   });
 });
 
-test('his art has the new pictures with the switch on (the game\'s own), and none of them without', () => {
+test('his art has the new pictures with the switch on (the game\'s own), and none of them without (the Ranger as he was: art/ranger_up.ts RANGER_UP off for this)', () => {
+  const was = RANGER_UP.on;
+  RANGER_UP.on = false;
+  try { body(); } finally { RANGER_UP.on = was; }
+});
+function body(): void {
   const check = (yes: boolean): void => {
     const art = makeHeroArt3();
     const dungeon = art.of('ranger', { twoHanded: false, town: false });
@@ -171,7 +176,7 @@ test('his art has the new pictures with the switch on (the game\'s own), and non
   };
   check(true);
   off(() => check(false));
-});
+}
 
 // ---------------------------------------------------------------------------------------------
 // The game's chooser, with made-up art: frames that are only names

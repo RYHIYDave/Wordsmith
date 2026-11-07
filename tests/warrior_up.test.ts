@@ -146,7 +146,7 @@ test('1. the switch is ON (his yes, 7 Nov 2026); of the game only art/heroes3.ts
     if (/from ['"][^'"]*warrior_up(_moves|_art|_review)?['"]/.test(text)) users.push(f);
   }
   // (and the Ranger's mock-up, brought up after him on his pieces, behind its own switch; nothing of the game imports it)
-  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_moves.ts art/ranger_up_review.ts art/sides.ts render/figure.ts', 'what imports them');
+  assert.equal(users.sort().join(' '), 'art/heroes3.ts art/ranger_up.ts art/ranger_up_art.ts art/ranger_up_review.ts art/sides.ts render/figure.ts', 'what imports them');
   // (the figure, only for the eight facings: wuFacing, wuTailsFacing and the sides' names; the sides, only their names' type)
   const fig = fs.readFileSync('src/render/figure.ts', 'utf8');
   assert.ok(!/paintWarriorUp|makeWarriorUpArt/.test(fig), 'the figure paints nothing of him');

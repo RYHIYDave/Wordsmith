@@ -31,7 +31,10 @@ import { emptyControls } from '../src/game/state';
 import { CLASS_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { Figure, GESTURE_FIRST, attackClip, attackFrame, heldFrame } from '../src/render/figure';
-import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
+import { paintWithoutCanvas, paintingOf, unlike, heroesAsBefore } from './helpers';
+
+// (THE WARRIOR AND THE RANGER BROUGHT UP, on since 7 Nov 2026: this file asks of their pictures as they were, art/moves3.ts, kept)
+heroesAsBefore();
 
 interface Assert {
   ok(value: unknown, message?: string): void;

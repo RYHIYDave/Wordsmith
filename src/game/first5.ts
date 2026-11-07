@@ -45,9 +45,19 @@ export interface MomentSite {
   rails?: boolean;
   /** (the rift's) two tiles along x. */
   two?: boolean;
+  /** (the candles') against a wall the eye sees, in a room's corner first: while CANDLES_BY_WALL is on. */
+  byWall?: boolean;
   /** What stands in for it on a device the film was not made for (a piece of the floor's), or none. */
   standIn?: string;
 }
+
+/**
+ * FLOOR 1'S GUTTERING CANDLES AGAINST A WALL. His words, 7 Nov 2026, 12:38: “I like the guttering candles but they kinda stick
+ * out like a sore thumb in a big pile in the middle of the floor”. On, the candles (their moment, MomentSite `byWall`) stand
+ * against a wall the eye sees, in a room's corner where one will take them, as a little shrine kept by someone; off, on any open
+ * tile of a room, as before. Off until he has seen it (PICTURES FIRST).
+ */
+export const CANDLES_BY_WALL = { on: false };
 
 /** A FLOOR'S PIECES, by what the game does with them (their names the art's). */
 export interface FloorSet {
@@ -102,7 +112,7 @@ export const FLOOR_SETS: readonly FloorSet[] = [
     fire: 'cresset',
     pillar: 'pillar',
     traps: { holes: 'spike grate', plate: 'skull plate', slot: 'dart skull' },
-    moments: [{ at: 'wall' }, { at: 'wall', piece: 'rat hole' }, { at: 'thing', piece: 'candles' }],
+    moments: [{ at: 'wall' }, { at: 'wall', piece: 'rat hole' }, { at: 'thing', piece: 'candles', byWall: true }],
     unlaid: ["the Warden's horn"],
   },
   {
@@ -708,6 +718,39 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
     return rng.shuffle(list);
   };
   const rooms = f.rooms.filter((r) => r.kind !== 'boss');
+  // (CANDLES_BY_WALL: a room's tiles against a wall the eye sees, its corners first; the floor round each plain, free and walked:
+  // nothing hemmed in, no way through closed)
+  const wallSpotsIn = (r: Room): [number, number][] => {
+    const corner: [number, number][] = [];
+    const along: [number, number][] = [];
+    for (let y = r.y; y < r.y + r.h; y++) {
+      for (let x = r.x; x < r.x + r.w; x++) {
+        const backY = y - 1 >= 0 && f.tiles[(y - 1) * W + x] === T_WALL;
+        const backX = x - 1 >= 0 && f.tiles[y * W + x - 1] === T_WALL;
+        if (!backY && !backX) continue;
+        if (!plainAt(f, x, y) || keep[y * W + x] || taken[y * W + x] || L.walk[y * W + x] !== 1 || cuts(x, y)) continue;
+        let ok = true;
+        for (let dy = -1; dy <= 1 && ok; dy++) {
+          for (let dx = -1; dx <= 1 && ok; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const tx = x + dx;
+            const ty = y + dy;
+            if (tx < 0 || ty < 0 || tx >= W || ty >= f.h) {
+              ok = false;
+              continue;
+            }
+            const j = ty * W + tx;
+            if (f.tiles[j] === T_WALL) continue;
+            if (!plainAt(f, tx, ty) || solid[j] || keep[j] || L.walk[j] !== 1) ok = false;
+          }
+        }
+        // (the tile beyond it, out into the room, walked too: it is not set in a narrow way)
+        if (ok && !plainAt(f, x + (backX ? 2 : 0), y + (backY ? 2 : 0))) ok = false;
+        if (ok) (backX && backY ? corner : along).push([x, y]);
+      }
+    }
+    return [...rng.shuffle(corner), ...rng.shuffle(along)];
+  };
 
   // ---- THE HEADSMAN'S YARD: its pieces where the art's picture has them (game/yard.ts laid where; nobody stands on their tiles)
   if (f.yard) {
@@ -782,7 +825,7 @@ export function dress(L: Level, depth: number, seed: number): Dress | null {
       }
       // on the floor: a room's tile, its ring clear (the cart: along x, its rails and the rails' end)
       for (const r of rng.shuffle([...rooms])) {
-        const spot = spotsIn(r, true).find(([x, y]) => {
+        const spot = (site.byWall && CANDLES_BY_WALL.on ? wallSpotsIn(r) : spotsIn(r, true)).find(([x, y]) => {
           if (!farFromUsed(x + 0.5, y + 0.5, by)) return false;
           if (site.two && !freeAt(x + 1, y, true)) return false;
           if (site.rails) {

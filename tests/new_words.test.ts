@@ -356,7 +356,8 @@ test('the frenzy makes the quick attack faster and every cooldown come round fas
   const m = put(g, a, 'skeleton', 1.1, 0);
   swing(g, seen, m);
   const calm = 1 / h.skills[0].r.rate;
-  assert.ok(Math.abs(h.swingT + DT * 2 - calm) < DT * 3, 'without a frenzy, the time between blows is the weapon\'s');
+  // (the time between blows counts from the press: what is left of it as the blow lands, the wind-up gone by, held since 7 Nov 2026)
+  assert.ok(Math.abs(h.swingT + h.attackWind - calm) < DT * 3, 'without a frenzy, the time between blows is the weapon\'s');
   run(g, seen, 1);
   h.frenzy = 5;
   h.frenzyT = 9;

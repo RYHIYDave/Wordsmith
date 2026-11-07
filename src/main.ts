@@ -81,6 +81,7 @@ import { DRESS_EDGES } from './game/act1_dress';
 import { HOLD_HALLWAY, PINE_PATH } from './game/act1_layout';
 import { ARRIVALS } from './game/arrivals';
 import { PILLARS, QUESTS610 } from './game/quests610';
+import { CANDLES_BY_WALL } from './game/first5';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
@@ -2333,6 +2334,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (THE QUEST LINE OF FLOORS 6 TO 10, behind QUESTS610 in game/quests610.ts) Its switch. */
     quests610: QUESTS610,
     pillars: PILLARS,
+    /** (game/first5.ts) Floor 1's guttering candles against a wall: off till his yes. */
+    candlesByWall: CANDLES_BY_WALL,
     /** (for the scenarios) A frame's controls with nothing pressed. */
     emptyControls,
     /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */

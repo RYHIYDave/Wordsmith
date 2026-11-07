@@ -16,7 +16,9 @@ import { CRYPT_LAYOUT, CRYPT_LITTER } from '../src/game/dungeon';
 import type { Game } from '../src/game/game';
 import type { Controls } from '../src/game/state';
 import { EXITS, WAYS } from '../src/game/ways';
-import { GUIDE } from '../src/game/defs';
+import { GUIDE, SKILLS } from '../src/game/defs';
+import { WARRIOR_UP } from '../src/art/warrior_up';
+import { RANGER_UP } from '../src/art/ranger_up';
 import { YARD } from '../src/art/yard';
 
 /** No attack takes this long to land: the slowest wind-up in the game is about a quarter of a second. */
@@ -153,4 +155,19 @@ export function withoutExits<T>(run: () => T): T {
   } finally {
     EXITS.on = was;
   }
+}
+
+/**
+ * THE WARRIOR AND THE RANGER AS THEY WERE (art/warrior_up.ts WARRIOR_UP and art/ranger_up.ts RANGER_UP, on since 7 Nov 2026,
+ * his yeses): for the tests that ask of the old knight's and the old ranger's pictures (art/moves3.ts, art/heroes3.ts PLANS),
+ * which are kept: both switches off, and the wind-ups that went with those pictures (the strike 0.12, the slam 0.22, the shot
+ * 0.16, the volley 0.2). Called at the top of such a test file (each file is run alone).
+ */
+export function heroesAsBefore(): void {
+  WARRIOR_UP.on = false;
+  RANGER_UP.on = false;
+  SKILLS.strike.windup = 0.12;
+  SKILLS.slam.windup = 0.22;
+  SKILLS.shot.windup = 0.16;
+  SKILLS.volley.windup = 0.2;
 }
