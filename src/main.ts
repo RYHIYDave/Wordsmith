@@ -141,6 +141,7 @@ import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3'
 import { BINDING3, demoB3, eventsB3 } from './render/binding3';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
+import { ITEM_WORDS } from './game/items';
 
 declare const __BUILD__: string;
 /** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
@@ -2697,6 +2698,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     fx,
     /** Keep the hero alive (for screenshots of long fights). */
     god: false,
+    /** (SPLITTING AND BINDING, game/items.ts) their switch, for their test pages. */
+    itemWords: ITEM_WORDS,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */

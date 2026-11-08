@@ -16,7 +16,7 @@ import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
-import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
+import { bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
@@ -12805,6 +12805,65 @@ export class Game {
     this.learn(word, 'gear');
     this.sfx('imbue');
     this.emit({ t: 'burned', word, item: it.name, text: modLines(made.mods, this.meta.limit).join(', ') });
+    return null;
+  }
+
+  /**
+   * (SPLITTING AND BINDING, items.ts ITEM_WORDS) Why Splitting or Binding will not change this piece (and, Binding, take `other`
+   * into it), or null. Splitting wants room in the bag for the second piece.
+   */
+  itemWordProblem(ref: ItemRef, word: WordId, other?: ItemRef): string | null {
+    const h = this.hero;
+    if (!h.ring && !this.practice) return DARK_RING;
+    const it = this.itemAt(ref);
+    if (!it) return 'Nothing there';
+    if (!(h.words[word] > 0)) return 'No spare word';
+    if (itemWordOf(word) === 'split') {
+      const why = splitProblem(it);
+      if (why) return why;
+      return h.bag.some((b) => !b) ? null : 'No room in your bag for the second piece';
+    }
+    if (it.rarity === 3) return 'A unique piece will not bind';
+    if (!other) return null;
+    const b = this.itemAt(other);
+    if (!b) return 'Nothing there';
+    return bindProblem(it, b);
+  }
+
+  /** Splitting at the bench: the piece and a second like it in the bag, its properties shared between them at random. */
+  splitPiece(ref: ItemRef): string | null {
+    const why = this.itemWordProblem(ref, 'splitting');
+    if (why) return why;
+    const h = this.hero;
+    const it = this.itemAt(ref)!;
+    const [one, two] = splitItem(it, this.rng);
+    if (ref.kind === 'gear') h.gear[ref.slot] = one;
+    else h.bag[ref.i] = one;
+    h.bag[h.bag.findIndex((b) => !b)] = two;
+    h.words.splitting--;
+    if (ref.kind === 'gear') this.refresh();
+    this.learn('splitting', 'gear');
+    this.sfx('imbue');
+    this.emit({ t: 'burned', word: 'splitting', item: it.name, text: 'Split in two' });
+    return null;
+  }
+
+  /** Binding at the bench: `other` taken into the piece, which keeps its own and as many of the other's as there is room for; the other gone. */
+  bindPieces(ref: ItemRef, other: ItemRef): string | null {
+    const why = this.itemWordProblem(ref, 'binding', other);
+    if (why) return why;
+    const h = this.hero;
+    const it = this.itemAt(ref)!;
+    const made = bindItems(it, this.itemAt(other)!, this.rng);
+    if (ref.kind === 'gear') h.gear[ref.slot] = made;
+    else h.bag[ref.i] = made;
+    if (other.kind === 'gear') h.gear[other.slot] = null;
+    else h.bag[other.i] = null;
+    h.words.binding--;
+    if (ref.kind === 'gear' || other.kind === 'gear') this.refresh();
+    this.learn('binding', 'gear');
+    this.sfx('imbue');
+    this.emit({ t: 'burned', word: 'binding', item: made.name, text: modLines(itemModsOwn(made), this.meta.limit).join(', ') });
     return null;
   }
 

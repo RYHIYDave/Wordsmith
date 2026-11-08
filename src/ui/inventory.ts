@@ -65,8 +65,8 @@ import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import { ATTR_NAME, CLASSES, ELEMENT_NAME, growsWith, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
-import type { Game } from '../game/game';
-import { modLines, statView, flatPair, flatSpan } from '../game/items';
+import type { Game, ItemRef } from '../game/game';
+import { modLines, statView, flatPair, flatSpan, itemWordOf } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import { armorReduction } from '../game/stats';
@@ -126,7 +126,8 @@ export interface InvUi {
   /** The socket whose word is being looked at. */
   look: SlotRef | null;
   /** A word that has been dropped on a piece of gear and is waiting for a yes or a no. */
-  pending: { word: WordId; sel: Sel } | null;
+  /** A word held over a piece, the question asked; (SPLITTING AND BINDING) Binding's second piece, once tapped. */
+  pending: { word: WordId; sel: Sel; with?: Sel } | null;
   note: string;
   noteT: number;
   /** The attack last touched: the one the ATTACKS page reads out. */
@@ -725,6 +726,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     if (!itemOf(to.sel)) return 'Nothing there';
     if (first) return 'Your first word goes on an attack';
     if (h.words[word] <= 0) return 'No spare word';
+    // (SPLITTING AND BINDING: they change the piece, ITEM_WORDS)
+    if (itemWordOf(word)) return game.itemWordProblem(to.sel.kind === 'gear' ? { kind: 'gear', slot: to.sel.slot } : { kind: 'bag', i: to.sel.i }, word);
     // (a piece that is full, or that has what this word gives already)
     return game.imbueProblem(to.sel.kind === 'gear' ? { kind: 'gear', slot: to.sel.slot } : { kind: 'bag', i: to.sel.i }, word);
   };
@@ -759,10 +762,25 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     // (the question is asked where things are read, and STATS has no such place, nor has TALENTS)
     if (page === 'stats' || page === 'talents') nextPage = 'gear';
   };
+  /** The question's yes: BURN IT, or (SPLITTING AND BINDING) SPLIT IT and BIND THEM. */
+  const yesLabel = (p: { word: WordId; with?: Sel }): string => (itemWordOf(p.word) === 'split' ? 'SPLIT IT' : itemWordOf(p.word) === 'bind' ? 'BIND THEM' : 'BURN IT');
   /** Yes: the word is burned into the piece of gear. */
   const commit = (): void => {
     const p = st.pending;
     if (!p) return;
+    // (SPLITTING AND BINDING: the piece split in two, or the second bound into it)
+    const iw = itemWordOf(p.word);
+    if (iw) {
+      if (iw === 'bind' && !p.with) return;
+      st.pending = null;
+      st.word = null;
+      const ref = (sel: Sel): ItemRef => (sel.kind === 'gear' ? { kind: 'gear', slot: sel.slot } : { kind: 'bag', i: sel.i });
+      const why = iw === 'split' ? game.splitPiece(ref(p.sel)) : game.bindPieces(ref(p.sel), ref(p.with as Sel));
+      const it = itemOf(p.sel);
+      if (why) say(why);
+      else if (it) st.result = { word: p.word, item: it.name, text: iw === 'split' ? 'Split in two: the second is in your bag' : modLines(it.affixes.flatMap((a) => a.mods).concat(it.imbues.flatMap((m) => m.mods)), game.meta.limit).join(', '), t: 0 };
+      return;
+    }
     st.pending = null;
     st.word = null;
     const it = itemOf(p.sel);
@@ -834,7 +852,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     for (const b of side.wordButtons(st.word)) if (!b.disabled && cardPress(b.label)) say(b.act());
   }
   if (st.pending) {
-    if (cardPress('BURN IT')) commit();
+    if (cardPress(yesLabel(st.pending))) commit();
     else if (cardPress('CANCEL')) st.pending = null;
   }
   if (tlay) say(talentPresses(ui, game, st.talents, tlay));
@@ -917,6 +935,15 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     if (st.word && press) {
       // a word is in hand: it is burned into this piece
       if (c.item) drop(st.word, { kind: 'item', sel: c.sel });
+      continue;
+    }
+    // (BINDING: the second piece, tapped while the question waits for it)
+    if (press && c.item && st.pending && itemWordOf(st.pending.word) === 'bind' && !sameSel(st.pending.sel, c.sel)) {
+      const p = st.pending;
+      const ref = (sel: Sel): ItemRef => (sel.kind === 'gear' ? { kind: 'gear', slot: sel.slot } : { kind: 'bag', i: sel.i });
+      const why = game.itemWordProblem(ref(p.sel), p.word, ref(c.sel));
+      if (why) say(why);
+      else p.with = c.sel;
       continue;
     }
     st.look = null;
@@ -1473,7 +1500,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     const two = comparing && room >= 200;
     const buttons: { id: string; primary?: boolean; lit?: boolean; disabled?: boolean }[] =
       reading === 'pending'
-        ? [{ id: 'BURN IT', primary: true, lit: blink }, { id: 'CANCEL' }]
+        ? [...(st.pending && itemWordOf(st.pending.word) === 'bind' && !st.pending.with ? [] : [{ id: st.pending ? yesLabel(st.pending) : 'BURN IT', primary: true, lit: blink }]), { id: 'CANCEL' }]
         : mine
           ? [...selButtons.map((b) => ({ id: b.label, lit: !!b.lit })), ...(against ? [{ id: COMPARE, lit: comparing, disabled: !against.length }] : [])]
           : theirs
@@ -1549,6 +1576,27 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         const why = asking ? null : problem(word, { kind: 'item', sel });
         if (why) {
           line(why, THEME.bad, false);
+          return;
+        }
+        // (SPLITTING AND BINDING: what it will do to the piece)
+        const itemWord = itemWordOf(word);
+        if (itemWord === 'split') {
+          const n = it.affixes.length + it.imbues.length;
+          line(`It splits in two: its ${n} properties shared between it and a second like it, at random.`, P.white);
+          line(asking ? 'Which go where is rolled. The word is used up.' : 'Let go to choose', THEME.dim, true);
+          return;
+        }
+        if (itemWord === 'bind') {
+          const other = asking && st.pending && st.pending.with ? itemOf(st.pending.with) : null;
+          if (!other) {
+            line('Now tap the piece to bind into it: another of the same kind.', P.white);
+            line('The other piece is gone after.', THEME.dim, true);
+            return;
+          }
+          put(`+ ${other.name}`, rx, iy, RARITY_COLOR[other.rarity], { shadow: P.ink });
+          iy += 11;
+          line('It keeps its own properties and as many of the other\'s as there is room for, four in all, never two of a kind.', P.white);
+          line('Which of the other\'s is rolled. The other piece and the word are used up.', THEME.dim, true);
           return;
         }
         const opts = game.imbueChoices(sel.kind === 'gear' ? { kind: 'gear', slot: sel.slot } : { kind: 'bag', i: sel.i }, word);
