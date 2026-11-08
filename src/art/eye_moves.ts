@@ -436,6 +436,9 @@ export interface EyeLayer {
   back: number;
   /** Moved across (his lengths; his shovel's layers, painted where they are and laid where he is). */
   dx?: number;
+  /** Laid flipped left to right about his own middle (the painting's own across 0): his shovel at the right end, the left end's paintings
+   *  mirrored (art/eye_shovel.ts `SHOVEL_PAINTED_RIGHT`). */
+  mirror?: boolean;
 }
 /** What the water and the air round him do in a frame (the pictures' tool paints them). */
 export interface EyeWater {

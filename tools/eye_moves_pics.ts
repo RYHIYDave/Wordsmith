@@ -30,8 +30,10 @@ import { CO_MELT, CO_SHEEN, CO_SLIME, CO_SPIT, CO_IRIS, EYE_UNDER, FALL_G, LEANE
 import type { ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { ARM_COLOURS, ARM_SHAKE, CAM_ARMS, CAM_WAVES, CRASH, LINE, SHOTS, STONE_BOX, WAVE, fightFrame, waveFront, waveHigh } from '../src/art/eye_arms';
 import { HERO_SPOT, EYE_ENTRANCE, EYE_FPS, EYE_LURK, EYE_STAND, entranceAt, eyeFrame } from '../src/art/eye_moves';
-import { SHOVEL, SHOVEL_COLOURS, SHOVEL_FRAMES, SNAP, SCRAPERS, pourRope, pourSheet, scoreMarks, scraperAt, scrapeAt, shovelFrame, sideOf } from '../src/art/eye_shovel';
+import { BODY, SHOVEL, SHOVEL_COLOURS, SHOVEL_FRAMES, SHOVEL_PAINTED_RIGHT, SNAP, SCRAPERS, bodyPath, pourRope, pourSheet, scoreMarks, scraperAt, scrapeAt, shovelFrame, sideOf } from '../src/art/eye_shovel';
 import type { End } from '../src/art/eye_shovel';
+import { COLUMN_FALL, PIECES as STONE_PIECES, SHAFT, bodyOf, brokenOf, chipAt, chipPicture, chipsOf, fragAt, partition, pieceHit, piecesFrame } from '../src/art/eye_pieces';
+import type { Chip, Frag, FragAt, Piece, PiecesNow } from '../src/art/eye_pieces';
 import type { ArmFx, EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -522,7 +524,7 @@ function layer(L: EyeLayer): Layer {
 const MOVES = { lurk: EYE_LURK.frames, entrance: EYE_ENTRANCE.frames, stand: EYE_STAND.frames, p1: SHOTS.p1, p2: SHOTS.p2, fan: SHOTS.fan, s1: SHOVEL_FRAMES.s1, s2: SHOVEL_FRAMES.s2 } as const;
 type Move = keyof typeof MOVES;
 /** A frame of a move or of a tentacles' shot. */
-const frameAt = (mv: Move, k: number): EyeFrame => (mv === 's1' || mv === 's2' ? shovelFrame(mv, k) : mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
+const frameAt = (mv: Move, k: number): EyeFrame => (mv === 's1' || mv === 's2' ? piecesFrame(mv, k) : mv === 'p1' || mv === 'p2' || mv === 'fan' ? fightFrame(mv, k) : eyeFrame(mv, k));
 function layersOf(F: EyeFrame): EyeLayer[] {
   return [F.jaws, F.spit, F.tongue, ...F.arms, ...F.smear].filter((L): L is EyeLayer => !!L);
 }
@@ -657,6 +659,7 @@ const STONE_LIT: RGB = hex(ARM_COLOURS.stoneLit);
 const STONE_DARK: RGB = hex(ARM_COLOURS.stoneDark);
 const STONE_MID: RGB = hex(ARM_COLOURS.stoneMid);
 const MOSS6: RGB = hex(ARM_COLOURS.moss);
+const MOSS_LIT: RGB = [96, 118, 64];
 const CRACK_C: RGB = hex(ARM_COLOURS.crack);
 const SPARK_C: RGB[] = SHOVEL_COLOURS.spark.map(hex);
 
@@ -701,7 +704,7 @@ function distanceOnWater(seed: Uint8Array, w: number, h: number): Float32Array {
 
 /** A thing flying through the air (spray, goo, droplets), its path from where and when it was thrown. */
 /** What flies: 0 a drop of his spittle, 1 a gob of his slime, 2 a drop of water, 3 a sheet of his slime, tumbling. */
-interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; size: number; seed?: number }
+interface Flyer { x: number; y: number; z: number; vx: number; vy: number; vz: number; t0: number; kind: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; size: number; seed?: number }
 /** A CHUNK OF THE PAVING (kind 6) flung up by a slam: where it is `s` seconds after it was thrown, tumbling, arcing, bouncing twice on
  *  the stone (each bounce a third as high, sliding on), settling and lying; how far it has turned; whether it has come to rest. */
 function chunkAt(f: Flyer, s: number): { x: number; y: number; z: number; turn: number; rest: boolean } {
@@ -1613,13 +1616,7 @@ function armWaves(pic: Pic, fx: ArmFx, top: Top, water: Uint8Array, t: number): 
 
 /** THE MIRROR TEST (his shovel, the owner's question of 8 Nov): layers of the left end laid flipped left to right about his own middle
  *  at the right end (`dx` the other way), over the right end's own stone, water, Warrior and effects. Nothing is painted for it. */
-const MIRRORED = new Set<EyeLayer>();
-const mirrorLayer = (L: EyeLayer | null): EyeLayer | null => {
-  if (!L) return null;
-  const M: EyeLayer = { ...L, dx: -(L.dx ?? 0) };
-  MIRRORED.add(M);
-  return M;
-};
+const mirrorLayer = (L: EyeLayer | null): EyeLayer | null => (L ? { ...L, dx: -(L.dx ?? 0), mirror: true } : null);
 interface Top { col: Float32Array; near: Float32Array; z: Float32Array; fire: Uint8Array; seam: Uint8Array; kind: Uint8Array; mat: Uint8Array; who: Int8Array; jp: Int16Array }
 /** Each layer where he is now, nearest wins; the smeared after-images behind. */
 function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r: number; c: RGB; a: number; fire: boolean }>; ghost: Float32Array } {
@@ -1635,8 +1632,9 @@ function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r
     const FR = frameFor(L);
     const ox = HX - FR.ax + Math.round((L.dx ?? 0) * SEEN);
     const oy = HY - FR.ay + dj;
-    // (the mirror test: a layer flipped left to right about his own middle, its painting's own `ax`)
-    const MR = MIRRORED.has(L);
+    // (a layer flipped left to right about his own middle, its painting's own `ax`: his shovel's right end, the left end's paintings
+    // mirrored; and the mirror test)
+    const MR = !!L.mirror;
     for (let jb = 0; jb < p.h; jb++) {
       const j = jb + p.y0;
       const cj = j + oy;
@@ -1683,6 +1681,8 @@ function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r
       lights.push({ x: l.x + ox, y: l.y + oy, r: l.r, c: hex(l.color), a: (l.a ?? 0.5) * deep, fire: true });
     }
   };
+  // (EYE_NOHIM: without him, to look at what is round him before his layers are painted)
+  if (process.env.EYE_NOHIM) return { top, lights, ghost };
   lay(F.jaws, 0);
   if (F.spit) lay(F.spit, 1);
   if (F.tongue) lay(F.tongue, 2);
@@ -1691,6 +1691,492 @@ function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r
   return { top, lights, ghost };
 }
 
+// =============================================================================================
+// THE PIECES ON THE STONE, SMASHED BY HIS FIRST SHOVEL (art/eye_pieces.ts): each whole until a hook reaches it; then broken, each
+// fragment its own pixels of its picture (its broken faces dark, the edge over them lit, the moss torn off along them), flung,
+// tumbling, bouncing, settling; a column's shaft toppling off its plinth as a round shaft, landing and breaking across, its broken ends
+// dark; chips of stone; all of it left lying, the rubble, for the rest of the fight. Over it the game's effect: grit, small chunks,
+// moss torn off, dust. Each pixel hidden where he, his tentacles or a nearer piece is in front of it.
+
+/** A fragment's pixels: across and down in its piece's picture, and its colour as broken. */
+interface Shard { f: Frag; px: Array<[number, number, number, number, number]> }
+const SHARDS = new Map<string, Shard[]>();
+const isMoss = (r: number, g: number, b: number): boolean => g > r + 6 && g > b + 4;
+const mixC = (r: number, g: number, b: number, c: RGB, u: number): [number, number, number] => [r + (c[0] - r) * u, g + (c[1] - g) * u, b + (c[2] - b) * u];
+/** A piece's picture (the arena's own, as tools/eye_moves_pics.ts scenery lays it). */
+function pieceImg(P: Piece): { w: number; h: number; d: Uint8ClampedArray } {
+  const sp = piece(P.name, 0);
+  const im = imgOf(sp) as unknown as { w: number; h: number; d: Uint8ClampedArray };
+  const dn = sp.density ?? 1;
+  if (im.w !== P.pic.w || im.h !== P.pic.h || Math.round(sp.ax * dn) !== P.pic.ax || Math.round(sp.ay * dn) !== P.pic.ay) throw new Error(`${P.name}: its picture is not as art/eye_pieces.ts has it`);
+  return im;
+}
+/** A PIECE BROKEN: each fragment's pixels, coloured as broken stone. Where a pixel is by a break (another fragment of the same stone):
+ *  its broken face, dark and rough, against it; the edge over it lit; moss torn off near it, bare stone under. */
+function shardsOf(P: Piece): Shard[] {
+  const got = SHARDS.get(P.id);
+  if (got) return got;
+  const im = pieceImg(P);
+  const w = im.w;
+  const h = im.h;
+  const alpha = new Uint8Array(w * h);
+  for (let q = 0; q < w * h; q++) alpha[q] = im.d[q * 4 + 3] >= 128 ? 1 : 0;
+  const part = partition(P, w, h, alpha);
+  const B = brokenOf(P);
+  const body = B.frags.map((f) => bodyOf(P, f));
+  const breaks = (n: number, m: number): boolean => body[n] >= 0 && body[n] === body[m];
+  const out: Shard[] = B.frags.map((f) => ({ f, px: [] }));
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const q = j * w + i;
+    const n = part[q];
+    if (n < 0) continue;
+    let r = im.d[q * 4];
+    let g = im.d[q * 4 + 1];
+    let b = im.d[q * 4 + 2];
+    let dist = 9;
+    let below = false;
+    for (let dj = -3; dj <= 3; dj++) for (let di = -3; di <= 3; di++) {
+      const ii = i + di;
+      const jj = j + dj;
+      if (ii < 0 || jj < 0 || ii >= w || jj >= h) continue;
+      const m = part[jj * w + ii];
+      if (m < 0 || m === n || !breaks(n, m)) continue;
+      const dd = Math.max(Math.abs(di), Math.abs(dj));
+      if (dd < dist) dist = dd;
+      if (dj > 0) below = true;
+    }
+    const nz = h3(i, j, n, 8101);
+    if (dist <= 4 && isMoss(r, g, b)) {
+      // (moss torn off: the bare stone under it, scraped)
+      const c = nz < 0.15 ? CRACK_C : nz < 0.65 ? STONE_MID : STONE_DARK;
+      [r, g, b] = c;
+    }
+    if (dist === 1) [r, g, b] = nz < 0.3 ? CRACK_C : nz < 0.85 ? STONE_DARK : STONE_MID;
+    else if (dist === 2) [r, g, b] = mixC(r, g, b, nz < 0.2 ? CRACK_C : STONE_DARK, nz < 0.5 ? 0.45 : 0.2);
+    else if (dist === 3 && below) [r, g, b] = mixC(r, g, b, STONE_LIT, 0.45);
+    out[n].px.push([i, j, r, g, b]);
+  }
+  SHARDS.set(P.id, out);
+  return out;
+}
+/** How near each piece's pixel laid this frame is (as his layers' nearness): a nearer piece hides a further one, and the Warrior. */
+const PNEAR = new Float32Array(CW * CH);
+const VIEW = [0, 0.8660254, 0.5] as const;
+/** A pixel of a piece laid, hidden where he, his tentacles or a nearer piece is in front of it. */
+function putPiece(pic: Pic, top: Top, i: number, j: number, r: number, g: number, b: number, nr: number): void {
+  if (i < 0 || j < 0 || i >= CW || j >= CH) return;
+  const q = j * CW + i;
+  if (top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr) return;
+  if (PNEAR[q] > nr) return;
+  PNEAR[q] = nr;
+  pic.d[q * 4] = r;
+  pic.d[q * 4 + 1] = g;
+  pic.d[q * 4 + 2] = b;
+  pic.d[q * 4 + 3] = 255;
+}
+/** A shadow on the stone (hidden where he is over it), `strong` as dark at its middle. */
+function stoneShadow(pic: Pic, top: Top, x: number, y: number, rx: number, strong: number, water: Uint8Array): void {
+  const ry = rx * 0.5;
+  for (let j = Math.floor(y - ry - 1); j <= y + ry + 1; j++) for (let i = Math.floor(x - rx - 1); i <= x + rx + 1; i++) {
+    if (i < 0 || j < 0 || i >= CW || j >= CH) continue;
+    const q = j * CW + i;
+    if (water[q] || (top.who[q] >= 0 && top.z[q] >= -0.5)) continue;
+    const d = Math.hypot((i + 0.5 - x) / rx, (j + 0.5 - y) / ry);
+    if (d < 1) pic.over(i, j, 10, 10, 14, 255 * strong * (1 - d * d));
+  }
+}
+/** Where a piece's foot is on the canvas (as the arena lays it). */
+const footOf = (P: Piece): [number, number] => {
+  const [sx, sy] = onCanvas(P.x, P.y, 0);
+  return [Math.round(sx), Math.round(sy)];
+};
+/** A piece whole, as the arena has it (its shadow under it). */
+function layWhole(pic: Pic, top: Top, P: Piece, water: Uint8Array): void {
+  const im = pieceImg(P);
+  const [sx, sy] = footOf(P);
+  const sh = P.kind === 'column' ? 18 : P.kind === 'drums' ? 22 : 0;
+  if (sh) stoneShadow(pic, top, sx, sy, sh, 0.4, water);
+  for (let j = 0; j < im.h; j++) for (let i = 0; i < im.w; i++) {
+    const s = (j * im.w + i) * 4;
+    if (im.d[s + 3] < 128) continue;
+    putPiece(pic, top, sx - P.pic.ax + i, sy - P.pic.ay + j, im.d[s], im.d[s + 1], im.d[s + 2], P.y * VIEW[1] + (P.pic.ay - j) * 0.5);
+  }
+}
+/** A fragment where it is: its pixels turned about its middle (and, tumbling, foreshortened as it turns over), each picture pixel laid
+ *  as four (so turned it has no holes); over the water, what is under the water's face unseen. Broken loose, it has a thickness: its
+ *  broken side under its top, dark and rough, `ex` pixels deep, the edge of its top over it lit. */
+function layShard(pic: Pic, top: Top, P: Piece, S: Shard, at: FragAt, sq: number, water: Uint8Array, ex: number): void {
+  const [Ci, Cj] = onCanvas(at.x, at.y, at.z);
+  const ca = Math.cos(at.turn);
+  const sa = Math.sin(at.turn);
+  const [cx, cy] = S.f.c;
+  const nr0 = at.y * VIEW[1];
+  const gj = Math.round(Cj + at.z);
+  const got = new Map<number, [number, number, number, number]>();
+  for (const [i, j, r, g, b] of S.px) {
+    for (const su of [-0.25, 0.25]) for (const sv of [-0.25, 0.25]) {
+      const ox = i + 0.5 + su - cx;
+      const oy = (j + 0.5 + sv - cy) * sq;
+      const dx = ca * ox - sa * oy;
+      const dy = sa * ox + ca * oy;
+      const I = Math.floor(Ci + dx);
+      const J = Math.floor(Cj + dy);
+      if (I < 0 || J < 0 || I >= CW || J >= CH) continue;
+      const hgt = at.z - dy;
+      if (hgt < 0 && gj >= 0 && gj < CH && water[gj * CW + I]) continue;
+      got.set(J * CW + I, [r, g, b, nr0 + hgt * 0.5]);
+    }
+  }
+  const t = Math.round(ex);
+  for (const [q, [r, g, b, nr]] of got) {
+    const I = q % CW;
+    const J = (q - I) / CW;
+    // (its broken side, under it where nothing of it is: dark, its foot darkest)
+    if (t > 0 && !got.has(q + CW)) {
+      for (let d = 1; d <= t; d++) {
+        if (got.has(q + d * CW)) break;
+        const nz = h3(I, J + d, S.f.n, 8104);
+        const c = d === t || nz < 0.2 ? CRACK_C : nz < 0.85 ? STONE_DARK : STONE_MID;
+        putPiece(pic, top, I, J + d, c[0], c[1], c[2], nr + 0.2);
+      }
+    }
+    // (the edge of its top, lit)
+    if (t > 0 && !got.has(q - CW) && h3(I, J, S.f.n, 8105) < 0.8) {
+      const [r2, g2, b2] = mixC(r, g, b, STONE_LIT, 0.45);
+      putPiece(pic, top, I, J, r2, g2, b2, nr);
+    } else putPiece(pic, top, I, J, r, g, b, nr);
+  }
+}
+/** A COLUMN'S SHAFT, A ROUND SHAFT: each of its pixels where it is on the shaft turned as it falls and lies (`at.fall`, `at.way`): along
+ *  it as it is turned, across it as its outline is seen (across it and across the way you look), as near as its round face toward you
+ *  there; its broken ends, rough dark discs, their rims lit above, seen where they face you. */
+function layShaft(pic: Pic, top: Top, P: Piece, S: Shard, at: FragAt, water: Uint8Array, n: number): void {
+  const sf = Math.sin(at.fall);
+  const cf = Math.cos(at.fall);
+  const w0 = at.way[0];
+  const w1 = at.way[1];
+  const axis = [w0 * sf, w1 * sf, cf];
+  // (the world's across turned with it, about the line it topples about: which side of it is which)
+  const e1 = [cf + w1 * w1 * (1 - cf), -w0 * w1 * (1 - cf), -w0 * sf];
+  // (across it as seen: across it and across the way you look; looked at end on, the turned across)
+  let eS = [axis[1] * VIEW[2] - axis[2] * VIEW[1], axis[2] * VIEW[0] - axis[0] * VIEW[2], axis[0] * VIEW[1] - axis[1] * VIEW[0]];
+  const vPerp = Math.hypot(eS[0], eS[1], eS[2]);
+  if (vPerp > 0.15) {
+    const sg = (eS[0] * e1[0] + eS[1] * e1[1] + eS[2] * e1[2] < 0 ? -1 : 1) / vPerp;
+    eS = eS.map((v) => v * sg);
+  } else {
+    const n1 = Math.hypot(e1[0], e1[1], e1[2]);
+    eS = e1.map((v) => v / n1);
+  }
+  const R = SHAFT.r;
+  const [, cy] = S.f.c;
+  const put3 = (p: number[], r: number, g: number, b: number, nr: number): void => {
+    const [I0, J0] = onCanvas(p[0], p[1], p[2]);
+    const I = Math.floor(I0);
+    const J = Math.floor(J0);
+    // (under the water's face: unseen)
+    if (p[2] < 0) {
+      const [, gj0] = onCanvas(p[0], p[1], 0);
+      const gj = Math.floor(gj0);
+      if (gj < 0 || gj >= CH || I < 0 || I >= CW || water[gj * CW + I]) return;
+    }
+    putPiece(pic, top, I, J, r, g, b, nr);
+  };
+  for (const [i, j, r, g, b] of S.px) {
+    // (how near its round face toward you is over this pixel: from its middle out along the way you look, to its round)
+    const ac = Math.max(-R, Math.min(R, (i + 0.5 - (SHAFT.x + SHAFT.lean * (SHAFT.plinth - j))) / SEEN));
+    const front = Math.min(40, Math.sqrt(Math.max(0, R * R - ac * ac)) / Math.max(0.15, vPerp));
+    for (const su of [-0.25, 0.25]) for (const sv of [-0.25, 0.25]) {
+      const u = cy - (j + 0.5 + sv);
+      const a = (i + 0.5 + su - SHAFT.x) / SEEN;
+      const p = [at.x + axis[0] * u + eS[0] * a, at.y + axis[1] * u + eS[1] * a, at.z + axis[2] * u + eS[2] * a];
+      put3(p, r, g, b, p[0] * VIEW[0] + p[1] * VIEW[1] + p[2] * VIEW[2] + front);
+    }
+  }
+  // (its broken ends: the shaft's top shown only as it comes down, its own broken top drawn on its picture before)
+  const ys = S.px.map((q) => q[1]);
+  const jTop = Math.min(...ys);
+  const jBot = Math.max(...ys) + 1;
+  const e3 = [axis[1] * eS[2] - axis[2] * eS[1], axis[2] * eS[0] - axis[0] * eS[2], axis[0] * eS[1] - axis[1] * eS[0]];
+  const Rd = R * 0.96;
+  for (const je of [jTop, jBot]) {
+    if (je === jTop && n === 0 && at.fall < 0.6) continue;
+    const u = cy - je;
+    const a = (SHAFT.lean * (SHAFT.plinth - je)) / SEEN;
+    const c0 = [at.x + axis[0] * u + eS[0] * a, at.y + axis[1] * u + eS[1] * a, at.z + axis[2] * u + eS[2] * a];
+    for (let rho = 0.3; rho <= Rd; rho += 0.5) {
+      const m = Math.max(6, Math.ceil((TAU * rho) / 0.5));
+      for (let t2 = 0; t2 < m; t2++) {
+        const th = (t2 / m) * TAU;
+        // (a rough edge: broken, never a true round)
+        const edge = Rd * (0.86 + 0.14 * vn(th * 2.4, je * 0.3 + n, 8102));
+        if (rho > edge) continue;
+        const o = [eS[0] * Math.cos(th) + e3[0] * Math.sin(th), eS[1] * Math.cos(th) + e3[1] * Math.sin(th), eS[2] * Math.cos(th) + e3[2] * Math.sin(th)];
+        const p = [c0[0] + o[0] * rho, c0[1] + o[1] * rho, c0[2] + o[2] * rho];
+        const nz = h3(Math.round(th * 7), Math.round(rho * 1.5), je + n * 31, 8103);
+        // (its rim lit along its top, its face dark and rough, flecked)
+        const up = o[2] - o[1] * 0.58;
+        const rim = rho > edge - 1.1;
+        const c = rim && up > 0.45 ? STONE_MID : rim ? STONE_DARK : nz < 0.22 ? CRACK_C : nz < 0.88 ? STONE_DARK : STONE_MID;
+        put3(p, c[0], c[1], c[2], p[0] * VIEW[0] + p[1] * VIEW[1] + p[2] * VIEW[2] - 0.5);
+      }
+    }
+  }
+}
+/** A chip's picture as pixels to lay (across, down from its middle; its colour). */
+const CHIP_PX = new Map<string, Array<[number, number, RGB]>>();
+const chipPx = (P: Piece, c: Chip): Array<[number, number, RGB]> => {
+  const key = `${P.id}.${c.n}`;
+  let got = CHIP_PX.get(key);
+  if (!got) {
+    got = chipPicture(c).map(([i, j, col]) => [i, j, hex(col)] as [number, number, RGB]);
+    CHIP_PX.set(key, got);
+  }
+  return got;
+};
+/** A chip where it is: turned, foreshortened as it tumbles, laid as four to a pixel. */
+function layChip(pic: Pic, top: Top, P: Piece, c: Chip, s: number): void {
+  const at = chipAt(P, c, s);
+  const [Ci, Cj] = onCanvas(at.x, at.y, at.z);
+  const ca = Math.cos(at.turn);
+  const sa = Math.sin(at.turn);
+  const sq = at.rest ? 1 : 0.55 + 0.45 * Math.abs(Math.cos(at.turn * 0.8));
+  for (const [i, j, col] of chipPx(P, c)) {
+    for (const su of [-0.25, 0.25]) for (const sv of [-0.25, 0.25]) {
+      const ox = i + su;
+      const oy = (j + sv) * sq;
+      const dx = ca * ox - sa * oy;
+      const dy = sa * ox + ca * oy;
+      putPiece(pic, top, Math.floor(Ci + dx + 0.5), Math.floor(Cj + dy + 0.5), col[0], col[1], col[2], at.y * VIEW[1] + (at.z - dy) * 0.5);
+    }
+  }
+}
+/** THE PIECES THIS FRAME: each whole, or broken and its fragments and chips where they are; their shadows on the stone under them. */
+function layPieces(pic: Pic, top: Top, PN: PiecesNow, water: Uint8Array): void {
+  PNEAR.fill(-Infinity);
+  STONE_PIECES.forEach((P, p) => {
+    const s = PN.since[p];
+    if (s < 0) {
+      layWhole(pic, top, P, water);
+      return;
+    }
+    const SH = shardsOf(P);
+    // (their shadows first, on the stone under each: smaller and fainter the higher it is)
+    for (const S of SH) {
+      if (S.f.move === 'stay' || S.f.move === 'fall') continue;
+      const at = fragAt(P, S.f, s);
+      const [gi, gj] = onCanvas(at.x, at.y, 0);
+      stoneShadow(pic, top, gi, gj + 1, S.f.size * 1.3, 0.35 * Math.max(0.2, 1 - at.z / 120), water);
+    }
+    for (const S of SH) {
+      const at = fragAt(P, S.f, s);
+      if (S.f.move === 'stay') {
+        const [sx, sy] = footOf(P);
+        for (const [i, j, r, g, b] of S.px) putPiece(pic, top, sx - P.pic.ax + i, sy - P.pic.ay + j, r, g, b, P.y * VIEW[1] + (P.pic.ay - j) * 0.5);
+      } else if (S.f.move === 'fall') layShaft(pic, top, P, S, at, water, S.f.n - SH.filter((x) => x.f.move !== 'fall').length);
+      else {
+        // (loose, it has a thickness: its broken side seen under it, more of it as it tumbles)
+        const tumble = at.rest || S.f.move === 'roll' ? 0 : Math.abs(Math.sin(at.turn * 0.7));
+        const ex = sm(0, 0.12, s) * Math.max(2, S.f.size * 0.3) * (1 + tumble);
+        layShard(pic, top, P, S, at, at.rest || S.f.move === 'roll' ? 1 : 0.6 + 0.4 * Math.abs(Math.cos(at.turn * 0.7)), water, ex);
+      }
+    }
+    for (const c of chipsOf(P)) layChip(pic, top, P, c, s);
+  });
+}
+/** Dust: a cloud of it in drifting puffs, each ragged (never a round), grainy, thinning and fading as it spreads; hidden where he is in
+ *  front of it. `big` how much. */
+const DUST: RGB = [142, 136, 132];
+const DUST_MOSS: RGB = [112, 120, 92];
+function dustAt(pic: Pic, top: Top, x: number, y: number, z: number, s: number, seed: number, big: number, mossy: boolean): void {
+  const life = 1.1 + 0.6 * big;
+  if (s < 0 || s > life) return;
+  const nPuff = Math.round(5 + 6 * big);
+  for (let n = 0; n < nPuff; n++) {
+    const a = h3(n, seed, 1, 8111) * TAU;
+    const sp = (25 + 55 * h3(n, seed, 2, 8112)) * big;
+    const u = 1 - Math.exp(-s / 0.35);
+    const px = x + Math.cos(a) * sp * u * 0.6;
+    const py = y + Math.sin(a) * sp * u * 0.5;
+    const pz = z + 4 + 26 * big * u * (0.5 + h3(n, seed, 3, 8113));
+    const [ci, cj] = onCanvas(px, py, pz);
+    const R = (4 + 13 * big * Math.sqrt(s / life)) * (0.7 + 0.6 * h3(n, seed, 4, 8114));
+    const dens = 0.75 * (1 - sm(0.25 * life, life, s));
+    const nr = py * VIEW[1] + pz * 0.5;
+    const col = mossy && n % 3 === 0 ? DUST_MOSS : DUST;
+    for (let dj = -Math.ceil(R); dj <= Math.ceil(R); dj++) for (let di = -Math.ceil(R * 1.3); di <= Math.ceil(R * 1.3); di++) {
+      const i = Math.round(ci + di);
+      const j = Math.round(cj + dj);
+      if (i < 0 || j < 0 || i >= CW || j >= CH) continue;
+      const q = j * CW + i;
+      if (top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr) continue;
+      // (ragged: its edge torn by the noise; thinner toward its edge)
+      const d = Math.hypot(di / 1.3, dj) / R;
+      const rag = vn((ci + di) * 0.22 + seed, (cj + dj) * 0.22 - s * 3, 8115);
+      const v = dens * (1 - d) * (0.4 + 0.9 * rag);
+      // (grainy: each grain of it where the noise lets it, never a pattern)
+      if (v <= 0 || v < h3(i, j, Math.floor(s * 12), 8116)) continue;
+      pic.over(i, j, col[0], col[1], col[2], 120 + 60 * rag);
+    }
+  }
+}
+/** WHAT THE GAME DRAWS OVER THE PIECES: each smash's dust (and a column's as its shaft lands; the drums' as they crack), and where the
+ *  next hooks drag over the rubble, a little. */
+function piecesDust(pic: Pic, top: Top, PN: PiecesNow): void {
+  STONE_PIECES.forEach((P, p) => {
+    const s = PN.since[p];
+    if (s < 0 || s > 4) return;
+    const H = pieceHit(P);
+    const at = H ? H.at : [P.x, P.y, 10];
+    const mossy = P.kind !== 'drums';
+    dustAt(pic, top, at[0], at[1], 0, s, p * 17 + 1, P.kind === 'column' ? 1.3 : 1, mossy);
+    if (P.kind === 'column') {
+      for (const f of brokenOf(P).frags) {
+        if (f.move !== 'fall') continue;
+        const a = fragAt(P, f, COLUMN_FALL + 0.01);
+        if (a.gone > 0 || fragAt(P, f, 6).gone > 0) continue;
+        dustAt(pic, top, a.x, a.y, 0, s - COLUMN_FALL, p * 17 + 3 + f.n, 0.8, true);
+      }
+    }
+    if (P.kind === 'drums') for (const f of brokenOf(P).frags) if (f.move === 'roll' && (f.split ?? 1) > 0) {
+      const a = fragAt(P, f, 0.9);
+      dustAt(pic, top, a.x, a.y, 0, s - 0.75, p * 17 + 5 + f.n, 0.45, false);
+    }
+  });
+  for (const e of PN.scatter) dustAt(pic, top, e.x, e.y, 0, e.s, e.seed, 0.25, false);
+}
+/** Thrown from a point so as to come down on the stone (more gently if it would come down off it, in the water). */
+function onStoneThrow(x: number, y: number, z: number, vx: number, vy: number, vz: number): [number, number, number] {
+  let k = 1;
+  for (let t = 0; t < 10; t++) {
+    const land = (vz + Math.sqrt(vz * vz + 2 * FALL_G * Math.max(0, z))) / FALL_G;
+    const lx = x + vx * k * land;
+    const ly = y + vy * k * land;
+    if (lx > STONE_BOX.x0 + 6 && lx < STONE_BOX.x1 - 6 && ly > STONE_BOX.y0 + 6 && ly < STONE_BOX.y1 - 6) break;
+    k *= 0.75;
+  }
+  return [vx * k, vy * k, vz];
+}
+/** THE SMASHES' FLYERS (the game's effect): grit (kind 5) and small chunks (kind 6, gone after a while) flung from where the hook meets
+ *  each piece, moss torn off (kind 9); a column's shaft landing, grit off it; its pieces that go over the edge into the water, a crown
+ *  of water; where the next hooks drag over the rubble, grit. */
+function piecesFlyers(PN: PiecesNow): Array<[Flyer, number]> {
+  const out: Array<[Flyer, number]> = [];
+  STONE_PIECES.forEach((P, p) => {
+    const s = PN.since[p];
+    if (s < 0 || s > 4) return;
+    const H = pieceHit(P);
+    if (!H) return;
+    const [x, y, z] = H.at;
+    const sd = 8200 + p * 101;
+    const nG = P.kind === 'column' ? 48 : 34;
+    for (let n = 0; n < nG + 8 + 10; n++) {
+      const kind = (n < nG ? 5 : n < nG + 8 ? 6 : 9) as 5 | 6 | 9;
+      if (kind === 9 && P.kind === 'drums') continue;
+      const sp = (kind === 6 ? 60 : 50) + (kind === 6 ? 90 : 170) * h3(n, sd, 1, 8121);
+      const a = 0.1 + 1.2 * h3(n, sd, 2, 8122);
+      const vz = (kind === 9 ? 60 : 90) + (kind === 6 ? 150 : 170) * h3(n, sd, 3, 8123);
+      const [vx, vy] = onStoneThrow(x, y, z, H.dir * sp * Math.cos(a) * 0.8 + (h3(n, sd, 4, 8124) - 0.5) * 50, H.inw * sp * Math.sin(a) + (h3(n, sd, 5, 8125) - 0.5) * 40, vz);
+      const size = kind === 6 ? 2.5 + 2 * h3(n, sd, 6, 8126) : kind === 9 ? 1 + Math.floor(2 * h3(n, sd, 6, 8126)) : 1 + Math.floor(1.7 * h3(n, sd, 6, 8126));
+      out.push([{ x, y, z, vx, vy, vz, t0: 0, kind, size, seed: sd * 7 + n }, s]);
+    }
+    if (P.kind === 'column') {
+      for (const f of brokenOf(P).frags) {
+        if (f.move !== 'fall') continue;
+        const L = fragAt(P, f, COLUMN_FALL + 0.01);
+        const s2 = s - COLUMN_FALL;
+        if (s2 < 0) continue;
+        if (fragAt(P, f, 6).gone > 0) {
+          // (into the water: a crown of it thrown up)
+          if (s2 < 1.6) for (const g of burstFlyers(L.x, L.y, 60 + f.n)) out.push([g, s2 - g.t0]);
+          continue;
+        }
+        for (let n = 0; n < 12; n++) {
+          const sd2 = sd + f.n * 13;
+          const a = h3(n, sd2, 1, 8131) * TAU;
+          const sp = 40 + 80 * h3(n, sd2, 2, 8132);
+          const [vx, vy] = onStoneThrow(L.x, L.y, 4, Math.cos(a) * sp, Math.sin(a) * sp * 0.6, 70 + 90 * h3(n, sd2, 3, 8133));
+          out.push([{ x: L.x, y: L.y, z: 4, vx, vy, vz: 70 + 90 * h3(n, sd2, 3, 8133), t0: 0, kind: 5, size: 1, seed: sd2 * 7 + n }, s2]);
+        }
+      }
+    }
+  });
+  for (const e of PN.scatter) {
+    for (let n = 0; n < 4; n++) {
+      const sp = 40 + 70 * h3(n, e.seed, 1, 8141);
+      const [vx, vy] = onStoneThrow(e.x, e.y, 2, e.dir * sp, (h3(n, e.seed, 2, 8142) - 0.5) * 80, 40 + 80 * h3(n, e.seed, 3, 8143));
+      out.push([{ x: e.x, y: e.y, z: 2, vx, vy, vz: 40 + 80 * h3(n, e.seed, 3, 8143), t0: 0, kind: 5, size: 1, seed: e.seed * 5 + n }, e.s]);
+    }
+  }
+  return out;
+}
+
+/** A SCRAPING TENTACLE'S WAKE (the game's, drawn on the water): where its humps' backs break the surface, as they go through the water,
+ *  rings of ripples spreading from where each crest has been over the last half second, broken, fading as they spread (together a wake
+ *  behind each), and the water churned to foam along the backs where they come out of it and go into it. Hidden where he or a tentacle is
+ *  over the water. */
+function bodyWake(pic: Pic, F: EyeFrame, top: Top, water: Uint8Array): void {
+  const e: End = F.move === 's1' ? 'left' : 'right';
+  const k = F.k;
+  const overHim = (q: number): boolean => top.who[q] >= 0 && top.z[q] >= -0.5;
+  for (let i = 0; i < SCRAPERS.length; i++) {
+    for (let g = k - 16; g <= k; g++) {
+      const P = bodyPath(e, i, g);
+      if (P.length < 2) continue;
+      const age = (k - g) / EYE_FPS;
+      // (its crests out of the water: each run of it above the surface, its highest point, and where it comes out and goes in)
+      const runs: Array<{ c: number[]; a: number[]; b: number[] }> = [];
+      let run: number[][] = [];
+      for (const q of [...P, [0, 0, -999, 0]]) {
+        if (q[2] + q[3] > 1) run.push(q);
+        else if (run.length) {
+          let c = run[0];
+          for (const r of run) if (r[2] + r[3] > c[2] + c[3]) c = r;
+          runs.push({ c, a: run[0], b: run[run.length - 1] });
+          run = [];
+        }
+      }
+      for (const R of runs) {
+        const seed = i * 977 + Math.round(R.c[0] / 40) * 13;
+        // (rings from where the crest was: every other frame, spreading, broken)
+        if ((k - g) % 2 === 0 && age > 0) {
+          const rad = R.c[3] * 0.8 + 75 * age;
+          const fade = 1 - sm(0.25, 0.55, age);
+          const [ci, cj] = onCanvas(R.c[0], R.c[1], 0);
+          const n = Math.max(24, Math.ceil(rad * SEEN * TAU * 1.4));
+          for (let m = 0; m < n; m++) {
+            const ang = (m / n) * TAU;
+            if (vn(ang * 3.1 + g * 0.7, rad * 0.05, 7963 + i) < 0.42) continue;
+            const ii = Math.round(ci + Math.cos(ang) * rad * SEEN);
+            const jj = Math.round(cj + Math.sin(ang) * (rad / R3) + 0.6 * Math.sin(ang * 5 + g));
+            if (ii < 0 || jj < 0 || ii >= CW || jj >= CH) continue;
+            const qq = jj * CW + ii;
+            if (!water[qq] || overHim(qq)) continue;
+            const c = age < 0.12 ? FOAM[4] : FOAM[3];
+            pic.over(ii, jj, c[0], c[1], c[2], 190 * fade);
+          }
+        }
+        // (the water churned where its back comes out and goes in, now and trailing behind: lace, thinning)
+        if (age < 0.3) for (const E of [R.a, R.b]) {
+          const [ci, cj] = onCanvas(E[0], E[1], 0);
+          const rr = (E[3] * 0.9 + 10 * age) * (1 - age * 1.5);
+          for (let dj = -Math.ceil(rr / R3) - 1; dj <= Math.ceil(rr / R3) + 1; dj++) for (let di = -Math.ceil(rr * SEEN); di <= Math.ceil(rr * SEEN); di++) {
+            const ii = Math.round(ci + di);
+            const jj = Math.round(cj + dj);
+            if (ii < 0 || jj < 0 || ii >= CW || jj >= CH) continue;
+            const qq = jj * CW + ii;
+            if (!water[qq] || overHim(qq)) continue;
+            const d = Math.hypot(di / SEEN, dj * R3) / Math.max(1, rr);
+            if (d > 1) continue;
+            const [WX, WY] = waterAt(ii, jj);
+            const fl = lace(WX + g * 2.3 + seed, WY - g * 1.7, (1 - d) * (1 - age / 0.3) * 0.9, 7964);
+            if (fl) pic.over(ii, jj, CREAM[fl - 1][0], CREAM[fl - 1][1], CREAM[fl - 1][2], 120 + 25 * fl);
+          }
+        }
+      }
+    }
+  }
+}
 /** THE FRAME: the phone's screen (SW x SH picture pixels), thrown by the shake. `tf` the film's own clock (for the hero's breath). */
 function frameOf(F: EyeFrame, tf: number): Pic {
   const S = scenery();
@@ -1759,20 +2245,38 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       const q = j * CW + i;
       if (!S.water[q]) continue;
       const [X, Y] = waterAt(i, j);
-      const under = top.who[q] >= 0 && top.z[q] < -0.5;
+      // (his shovel: a tentacle under the water seen through it wavering, its outline soft: what is seen here is what is a little aside,
+      // shifting as the water moves)
+      let qs = q;
+      let soft = false;
+      if (F.sfx) {
+        const armU = (r: number): boolean => top.who[r] >= 3 && top.z[r] < -0.5;
+        const wi = Math.round(1.7 * Math.sin(j * 0.29 + t * 7.1 + 5 * vn(i * 0.045, j * 0.07, 7961)));
+        const wj = Math.round(1.1 * Math.sin(i * 0.13 - t * 5.3 + 3 * vn(i * 0.06, j * 0.05, 7962)));
+        const i2 = Math.max(1, Math.min(CW - 2, i + wi));
+        const j2 = Math.max(1, Math.min(CH - 2, j + wj));
+        const q2 = j2 * CW + i2;
+        if (armU(q) || armU(q2)) {
+          qs = armU(q2) ? q2 : -1;
+          if (qs >= 0) soft = !(armU(qs + 1) && armU(qs - 1) && armU(qs + CW) && armU(qs - CW) && armU(qs + 2) && armU(qs - 2));
+        }
+      }
+      const under = qs >= 0 && top.who[qs] >= 0 && top.z[qs] < -0.5;
       if (under) {
         // (him under the water: darker and greener the deeper; only fire seen deep down)
-        const deep = -top.z[q];
-        const fire = top.fire[q];
-        const keep = fire ? Math.exp(-deep / 220) : Math.exp(-deep / keepDen);
-        const vis = fire ? Math.min(1, Math.exp(-deep / 280) * 1.5) * Wt.pulse : Math.max(0, 1 - deep / seenDeep);
+        const deep = -top.z[qs];
+        const fire = top.fire[qs];
+        // (his shovel: a tentacle swimming just under the surface seen through it, darker and greener the deeper, lost by 110 down)
+        const armUnder = !!F.sfx && top.who[qs] >= 3;
+        const keep = fire ? Math.exp(-deep / 220) : Math.exp(-deep / (armUnder ? 38 : keepDen));
+        const vis = (fire ? Math.min(1, Math.exp(-deep / 280) * 1.5) * Wt.pulse : Math.max(0, 1 - deep / (armUnder ? 110 : seenDeep))) * (soft ? 0.55 : 1);
         const qd = Math.max(0, Math.min(4, Math.floor(vis * 4 + bayer(i, j) + 0.5)));
         if (qd > 0) {
           const a = [0, 80, 140, 200, 240][qd];
-          pic.over(i, j, WATER[0] + (top.col[q * 3] - WATER[0]) * keep, WATER[1] + (top.col[q * 3 + 1] - WATER[1]) * keep, WATER[2] + (top.col[q * 3 + 2] - WATER[2]) * keep, a);
+          pic.over(i, j, WATER[0] + (top.col[qs * 3] - WATER[0]) * keep, WATER[1] + (top.col[qs * 3 + 1] - WATER[1]) * keep, WATER[2] + (top.col[qs * 3 + 2] - WATER[2]) * keep, a);
         }
       }
-      if (top.who[q] >= 0 && !under) continue;
+      if (top.who[q] >= 0 && top.z[q] >= -0.5) continue;
       // (the water's face: its marks over what is under it)
       const w = wd[q];
       const sh = h3(i, j, 5, 0);
@@ -1997,6 +2501,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     });
   }
+  // (his shovel: each tentacle's wake where its humps' backs break the water)
+  if (F.sfx) bodyWake(pic, F, top, S.water);
   // WHAT THE GAME DRAWS ON THE STONE AND THE WATER FOR THE TENTACLES, under them: the warnings, the cracks and splats of a slam, its
   // slime trail, the stone wet where a wave has passed, a smash's rings, a dying one's ichor and bubbles
   if (F.fx) armFxUnder(pic, F, top, S.water, t);
@@ -2195,6 +2701,12 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       }
     }
   }
+  // THE PIECES ON THE STONE (his shovel: each whole until a hook reaches it, then smashed; its rubble after), and the dust off them
+  const PN = (F as EyeFrame & { pieces?: PiecesNow }).pieces;
+  if (PN) {
+    layPieces(pic, top, PN, S.water);
+    piecesDust(pic, top, PN);
+  }
   // THE WATER SLAMS' WAVES AND THEIR CRASH, over the stone (in front of what is behind them)
   if (F.fx && (F.fx.waves.length || F.fx.crash !== null)) armWaves(pic, F.fx, top, S.water, t);
   // WHAT FLIES: the roar's slime and spittle; the crowns of water thrown up round his tentacles
@@ -2207,6 +2719,7 @@ function frameOf(F: EyeFrame, tf: number): Pic {
   // (the tentacles' own: what a slam on the stone throws, a smash into the water, his ichor, the crash)
   if (F.fx) for (const [f, s2] of armFlyers(F.fx)) flyers.push([f, s2]);
   if (F.sfx) for (const [f, s2] of shovelFlyers(F)) flyers.push([f, s2]);
+  if (PN) for (const [f, s2] of piecesFlyers(PN)) flyers.push([f, s2]);
   const hiddenAt = (i: number, j: number, nr: number): boolean => {
     if (i < 0 || j < 0 || i >= CW || j >= CH) return true;
     const q = j * CW + i;
@@ -2271,6 +2784,23 @@ function frameOf(F: EyeFrame, tf: number): Pic {
         const j = Math.round(j0 + ((j1 - j0) * q) / m);
         if (hiddenAt(i, j, nr)) continue;
         pic.over(i, j, c[0], c[1], c[2], 255 * (0.45 + 0.55 * (q / m)));
+      }
+      continue;
+    }
+    // (a clump of moss torn off a piece: falling, landing, lying a moment, then gone)
+    if (f.kind === 9) {
+      if (s > land + 1.2) continue;
+      const [x, y, z] = s > land ? flyAt(f, land) : flyAt(f, s);
+      const [ci, cj] = onCanvas(x, y, Math.max(0, z));
+      const nr = y * 0.8660254 + Math.max(0, z) * 0.5;
+      const fadeM = s > land ? 1 - sm(0.6, 1.2, s - land) : 1;
+      for (let dj = -1; dj <= f.size; dj++) for (let di = -1; di <= f.size; di++) {
+        if (h3(di + 2, dj + 2, seed, 8151) < 0.3) continue;
+        const i = Math.round(ci) + di;
+        const j = Math.round(cj) + dj;
+        if (hiddenAt(i, j, nr)) continue;
+        const c = dj < 0 ? MOSS_LIT : MOSS6;
+        pic.over(i, j, c[0], c[1], c[2], 255 * fadeM);
       }
       continue;
     }
@@ -2374,7 +2904,9 @@ function frameOf(F: EyeFrame, tf: number): Pic {
       continue;
     }
     const [x, y, z] = flyAt(f, s);
-    const [x0, y0, z0] = flyAt(f, Math.max(0, s - 1 / EYE_FPS));
+    // (the way it flies: from where it would have been a frame before, along its own flight; at its launch too, so that it is never drawn
+    // with no way at all, as a box)
+    const [x0, y0, z0] = flyAt(f, s - 1 / EYE_FPS);
     const [ci, cj] = onCanvas(x, y, z);
     const [pi, pj] = onCanvas(x0, y0, z0);
     const nr = y * 0.8660254 + z * 0.5;
@@ -2512,6 +3044,8 @@ function frameOf(F: EyeFrame, tf: number): Pic {
         if (one.d[q * 4 + 3] === 0) continue;
         const nr = yHis * 0.8660254 + Math.max(0, Math.round(sy0) - j) * 0.5;
         if (top.who[q] >= 0 && top.z[q] >= -0.5 && top.near[q] > nr) continue;
+        // (and where a piece on the stone, or its rubble, is in front of him)
+        if (PN && PNEAR[q] > nr) continue;
         pic.over(i, j, one.d[q * 4], one.d[q * 4 + 1], one.d[q * 4 + 2], one.d[q * 4 + 3]);
       }
     }
@@ -2582,12 +3116,111 @@ if (mode === 'paint') {
   const b = list ? list[list.length - 1] : Number(process.argv[6] ?? MOVES[mv] - 1);
   fs.mkdirSync(out, { recursive: true });
   const t0 = Date.now();
+  // (EYE_CAM=x,y: the camera put there, to look close at something off the screen)
+  const camOver = process.env.EYE_CAM ? process.env.EYE_CAM.split(',').map(Number) : null;
   for (const k of list ?? Array.from({ length: b - a + 1 }, (_, i) => a + i)) {
-    const F = frameAt(mv, k);
+    const F0 = frameAt(mv, k);
+    const F = camOver ? { ...F0, camX: camOver[0], camY: camOver[1] } : F0;
     const pic = frameOf(F, k / EYE_FPS);
     fs.writeFileSync(path.join(out, `${mv}_${String(k).padStart(3, '0')}.png`), pic.png());
   }
   process.stdout.write(`${mv} ${a}-${b}: ${list ? list.length : b - a + 1} frames in ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);
+} else if (mode === 'prune') {
+  // (the layers kept that none of the moves named uses any more, deleted: those painted before a change)
+  const only = process.argv.slice(3);
+  const want = new Set<string>();
+  for (const mv of Object.keys(MOVES) as Move[]) if (!only.length || only.includes(mv)) for (let k = 0; k < MOVES[mv]; k++) for (const L of layersOf(frameAt(mv, k))) want.add(path.basename(fileOf(L)));
+  const fsx = nodeFs as unknown as { readdirSync(p: string): string[]; unlinkSync(p: string): void };
+  let gone = 0;
+  for (const f of fsx.readdirSync(CACHE)) if (f.endsWith('.bin') && !want.has(f)) {
+    fsx.unlinkSync(path.join(CACHE, f));
+    gone++;
+  }
+  process.stdout.write(`kept ${want.size}, deleted ${gone}\n`);
+} else if (mode === 'bodyRuns') {
+  // (every painting of a scraping tentacle's body in the shovels: the longest straight run, exactly across or up, of its outline where it
+  // is seen (within 40 of the surface, short of where it goes down out of sight) and of its waterline; picture pixels, two to a game
+  // pixel)
+  const seen = new Set<string>();
+  let worst = { o: 0, w: 0, at: '' };
+  for (const mv of ['s1', 's2'] as Move[]) for (let k = 0; k < MOVES[mv]; k++) for (const L of frameAt(mv, k).arms) {
+    if (!L || !L.key.startsWith('AB') || seen.has(L.key)) continue;
+    seen.add(L.key);
+    const p = layer(L);
+    const FR = frameFor(L);
+    const { w, h } = p;
+    const M = (q: number): boolean => p.kind[q] === 1 || p.kind[q] === 4;
+    const vis = (q: number): boolean => M(q) && p.zh[q] >= -40 && ((q % w) + p.x0 - FR.ax) / SEEN < BODY.dive;
+    let o = 0;
+    let wl = 0;
+    for (let j = 0; j < h - 1; j++) {
+      let ro = 0;
+      let rw = 0;
+      for (let i = 0; i < w; i++) {
+        const q = j * w + i;
+        const r = q + w;
+        const edge = M(q) !== M(r) && (vis(q) || vis(r));
+        ro = edge ? ro + 1 : 0;
+        const wat = M(q) && M(r) && (p.zh[q] >= -0.5) !== (p.zh[r] >= -0.5);
+        rw = wat ? rw + 1 : 0;
+        o = Math.max(o, ro);
+        wl = Math.max(wl, rw);
+      }
+    }
+    if (Math.max(o, wl) > Math.max(worst.o, worst.w)) worst = { o, w: wl, at: L.key };
+    else worst = { o: Math.max(worst.o, o), w: Math.max(worst.w, wl), at: worst.at };
+  }
+  process.stdout.write(`${seen.size} bodies: the longest straight run across, its outline ${worst.o / 2} game px, its waterline ${worst.w / 2} (the worst ${worst.at})\n`);
+} else if (mode === 'whoAt') {
+  // (what is at screen pixels of a frame: which layer, how high, how near; and whether it is water)
+  const [, , , mv, kS, ...pts] = process.argv;
+  const F = frameAt(mv as Move, Number(kS));
+  const { top } = merge(F);
+  const W0 = scenery().water;
+  for (const pt of pts) {
+    const [sx, sy] = pt.split(',').map(Number);
+    const i = sx + M + XM + (F.camX ?? 0) - F.shake[0] * 2;
+    const j = sy + M + (F.camY ?? 0) - F.shake[1] * 2;
+    const q = j * CW + i;
+    const L = top.who[q] >= 3 ? F.arms[top.who[q] - 3] : null;
+    process.stdout.write(`${pt}: who ${top.who[q]} ${L ? L.key : ""} z ${top.z[q].toFixed(1)} water ${W0[q]} camX ${F.camX} x ${((i - HX) / SEEN).toFixed(0)} dx ${L ? L.dx : ""}\n`);
+  }
+} else if (mode === 'colz') {
+  // (a frame's layer: the highest of it in each column, every 20th, and where that column is in the world)
+  const [, , , mv, kS, key] = process.argv;
+  const F = frameAt(mv as Move, Number(kS));
+  const L = [...F.arms].find((a) => a && a.key === key) as EyeLayer;
+  const p = layer(L);
+  const FR = frameFor(L);
+  const out: string[] = [];
+  for (let ib = 0; ib < p.w; ib += 40) {
+    let zt = -Infinity;
+    for (let jb = 0; jb < p.h; jb++) if (p.kind[jb * p.w + ib]) zt = Math.max(zt, p.zh[jb * p.w + ib]);
+    out.push(`${((ib + p.x0 - FR.ax) / SEEN).toFixed(0)}:${zt.toFixed(0)}`);
+  }
+  process.stdout.write(out.join(' ') + '\n');
+} else if (mode === 'close') {
+  // (a close-up: the camera on a point of his space (x, y, z), half the screen about it at twice the size, as the phone's screen)
+  const [, , , out, mv, listS, xs, ys, zs] = process.argv;
+  fs.mkdirSync(out, { recursive: true });
+  const [ci, cj] = onCanvas(Number(xs), Number(ys), Number(zs));
+  for (const k of listS.split(',').map(Number)) {
+    const F0 = frameAt(mv as Move, k);
+    const camX = Math.max(-XM - M, Math.min(XM + M, Math.round(ci - HX)));
+    const camY = Math.max(0, Math.min(EXTRA + M, Math.round(cj - M - SH / 2)));
+    const full = frameOf({ ...F0, camX, camY }, k / EYE_FPS);
+    // (where the point is on that screen, the shake left as it is)
+    const px = Math.round(ci - (M + XM + camX)) - Math.floor(SW / 4);
+    const py = Math.round(cj - (M + camY)) - Math.floor(SH / 4);
+    const pic = new Pic(SW, SH);
+    for (let j = 0; j < SH; j++) for (let i = 0; i < SW; i++) {
+      const si = Math.max(0, Math.min(SW - 1, px + (i >> 1)));
+      const sj = Math.max(0, Math.min(SH - 1, py + (j >> 1)));
+      pic.d.set(full.d.subarray((sj * SW + si) * 4, (sj * SW + si) * 4 + 4), (j * SW + i) * 4);
+    }
+    fs.writeFileSync(path.join(out, `close_${mv}_${String(k).padStart(3, '0')}.png`), pic.png());
+  }
+  process.stdout.write(`close ${listS}\n`);
 } else if (mode === 'rekey') {
   // (layers painted before the marks were split: each but his tongue's moved to its new name; its painting is the same)
   let moved = 0;
@@ -2662,6 +3295,8 @@ if (mode === 'paint') {
   }
   process.stdout.write(`moved ${moved}\n`);
 } else if (mode === 'mirror') {
+  // (the mirror test as it was made: the right end's own paintings beside the left end's mirrored)
+  SHOVEL_PAINTED_RIGHT.on = true;
   // (each beat at the right end: as painted, and the left end's layers mirrored onto it; `snap` the left end's snap held clenched, which
   // is painted at the left end only, mirrored)
   const out = process.argv[3];
@@ -2677,6 +3312,19 @@ if (mode === 'paint') {
       fs.writeFileSync(path.join(out, `mirror_${String(k).padStart(3, '0')}${snap ? 's' : ''}_${tag}.png`), frameOf(F, k / EYE_FPS).png());
     }
     process.stdout.write(`${kk} done\n`);
+  }
+} else if (mode === 'pieceDump') {
+  // (the arena's pieces, each alone, to look at)
+  const out = process.argv[3];
+  fs.mkdirSync(out, { recursive: true });
+  for (const name of ['a broken column', 'mossy stones', 'fallen column drums']) {
+    const sp = piece(name, 0);
+    const im = imgOf(sp);
+    const d = sp.density ?? 1;
+    const pic = new Pic(im.w, im.h, false);
+    for (let q = 0; q < im.w * im.h * 4; q++) pic.d[q] = (im as unknown as { d: Uint8ClampedArray }).d[q];
+    fs.writeFileSync(path.join(out, `${name.replace(/ /g, '_')}.png`), pic.png());
+    process.stdout.write(`${name}: ${im.w}x${im.h} ax ${sp.ax} ay ${sp.ay} density ${d}\n`);
   }
 } else if (mode === 'dump') {
   // (a frame's layers whose keys begin so, each on its own, black behind: to look at; and the heights in each)

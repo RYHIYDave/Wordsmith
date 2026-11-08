@@ -16,8 +16,8 @@
 //   THE SHOVEL: tentacles out of the water past the far end, scraping along the stone toward his mouth one after another, one along the
 //     back edge (its tip hooked down on the stone), the next along the near edge (its tip curled up), each leaving its gap at the other
 //     edge; each runs into his maw and is drawn back. Each is drawn as the game would slide it: its head (`headLocal`: its hook and what
-//     of it comes up out of the water over the edge, writhing in a loop of a second, `HEAD_LOOP`) and its body behind it under the water
-//     (`bodyWorld`, writhing in a loop of its own), both slid along the stone together;
+//     of it comes up out of the water over the edge, writhing in a loop of a second, `HEAD_LOOP`) and its body behind it in the water
+//     (`bodyWorld`: the same tube running on, swimming, its humps' backs breaking the surface here and there), both slid along together;
 //   THE SNAP: the Warrior close, his jaws flex wider, held; then lunging up out of the water, leaning out over the stone's end and
 //     slamming shut in two smeared frames; held clenched a beat, his teeth clashed, spittle and spray bursting from between them; then
 //     back and gaping again;
@@ -28,7 +28,7 @@
 // his shovel: the tentacles sweep through where each lies. The pictures' tool leaves them out, and the reeds off the end he comes up at,
 // under him.)
 
-import { GAZE_AT_YOU, STONE, armBelly } from './eye_colossus';
+import { GAZE_AT_YOU, STONE, armBelly, armOf } from './eye_colossus';
 import type { ArmPose, ColossusAnim, ColossusPose } from './eye_colossus';
 import { CAM_ARMS, QUAY, STONE_BOX, UNIT } from './eye_arms';
 import { EYE_FPS, armStandLayer, standAnim, standLayersAt } from './eye_moves';
@@ -196,6 +196,9 @@ export const START_OUT = 70;
 /** Its lane in the water beside the edge (how far out from the edge, how deep its middle, under the water): and its body's thickness
  *  there. Only its hook comes up out of the water, over the edge and across the stone. */
 export const LANE = { out: 34, z: -40, r: 26 } as const;
+/** How deep its head's root is where it joins its body, curving up out of the deep (its middle under the water at 300, 240 and 180 of its
+ *  lengths back from its front): deep enough that, riding up over rubble, it stays under. */
+export const ROOT = [LANE.z - 34, LANE.z - 20, LANE.z + 6] as const;
 /** How far its hook reaches in across the stone from its edge (his lengths: 6.5 tiles), so its gap at the other edge. */
 export const HOOK_IN = 254;
 /** The tentacles of a shovel: each its edge and its first frame. */
@@ -217,12 +220,12 @@ export const HEAD_LOOP = 30;
  *  (`back` 0 to 1) off the stone into its lane in the water. Each point its own thickness: thick at the water, to a whip of a tip. */
 export function headLocal(edge: 'back' | 'near', t: number, back: number): P3[] {
   const ph = TAU * t;
-  // (out of the water in its lane, arching up over the edge, then lying along the stone across it, dragged on it: its height there 0, so
-  // that it lies on the stone (`clearOfStone` sets it on it))
+  // (up out of the deep in its lane, curving up out of the water and arching up over the edge, then lying along the stone across it,
+  // dragged on it: its height there 0, so that it lies on the stone (`clearOfStone` sets it on it))
   const hooked: P3[] = [
-    [300, -LANE.out, LANE.z],
-    [240, -LANE.out, LANE.z],
-    [180, -LANE.out, LANE.z + 10],
+    [300, -LANE.out, ROOT[0]],
+    [240, -LANE.out, ROOT[1]],
+    [180, -LANE.out, ROOT[2]],
     [128, -LANE.out, -10],
     [96, -30, 14],
     [70, -14, 32],
@@ -290,25 +293,53 @@ export function scrapeAt(e: End, edge: 'back' | 'near', t: number, X: number): [
   for (const q of on) if (q[2] - q[3] <= low + 1 && (edge === 'back' ? q[1] > best[1] : q[1] < best[1])) best = q;
   return [best[0], best[1]];
 }
-/** Its body behind its head, in the water: from where its head joins it in its lane, back past the far end (his lengths along its way back
- *  from the head's front, `from` to `to`), going down under the water as it goes (`dive`) and out from the stone (`out`), thickening (to
- *  `rEnd` at its far end: one smooth taper with its head), writhing in a loop of a second (`loop` paintings). */
-export const BODY = { from: 240, to: 1240, out: 18, dive: 40, rEnd: 40, loop: 15 } as const;
+/** Its body behind its head, in the water: the same tube running on from where its head goes down into its lane (his lengths along its way
+ *  back from the head's front, `from` to `to`; on the head's own lane, as thick, to `join`), then swimming: humped, its humps a wave
+ *  running back along it (`wave` his lengths from crest to crest, one wave a second, so that they go on through the water at a little
+ *  over half the speed it slides), each crest's back just breaking the surface (`crest` over it), each hump arched (`arch`), the troughs down under it
+ *  (`trough`), swaying out
+ *  and in from the stone (`sway`); swimming out from the stone as it goes (`out` more than its hook's lane: at the back edge, so that
+ *  the water, not the stone's edge, is in front of it and it is seen through it), going down out of sight from `dive` on (never seen there: past the far end
+ *  of the stone wherever its hook is), as thick as its head's root (one smooth taper with its head; no thicker, so that its humps' backs
+ *  stay round); a painting each frame of its second (`loop`). Its suckers held
+ *  the way its head's face where they meet (`bodyBelly`): one tube, no seam. */
+export const BODY = { from: 240, to: 880, join: 300, out: 52, loop: 30, wave: 211.7, crest: 2.5, trough: 100, arch: 1.6, sway: 7, dive: 740 } as const;
 export function bodyWorld(e: End, edge: 'back' | 'near', X: number, t = 0): P3[] {
   const s = sideOf(e);
   const yE = edge === 'back' ? STONE_BOX.y0 : STONE_BOX.y1;
   const inw = edge === 'back' ? 1 : -1;
   const ph = TAU * t;
   const out: P3[] = [];
-  for (let i = 0; i <= 16; i++) {
-    const u = lerp(BODY.from, BODY.to, i / 16);
-    const a = sm(300, 780, u);
-    const o = LANE.out + BODY.out * a + 8 * a * Math.sin(ph - u / 160);
-    const z = LANE.z - BODY.dive * a + 5 * a * Math.sin(ph - u / 120 + 1.1);
-    const r = LANE.r + (BODY.rEnd - LANE.r) * clamp01((u - BODY.from) / (BODY.to - BODY.from));
+  const N = 64;
+  for (let i = 0; i <= N; i++) {
+    const u = lerp(BODY.from, BODY.to, i / N);
+    // (on its head's root to the join, as deep, going on down; humped from there: each crest's back just breaking the surface, `crest`
+    // over it, the troughs `trough` down, out of sight)
+    const r = LANE.r;
+    const a = sm(BODY.join, BODY.join + 120, u);
+    const w = (TAU * (u - BODY.join)) / BODY.wave - ph - Math.PI / 2;
+    const zC = -(r - BODY.crest);
+    // (each hump arched: rounder over its crest than a swell, `arch`)
+    const zH = -BODY.trough + (zC + BODY.trough) * ((1 + Math.cos(w)) / 2) ** BODY.arch;
+    // (going on down as its root does, easing off)
+    const dRoot = (ROOT[0] - ROOT[1]) / (BODY.join - 240);
+    const zRoot = u <= BODY.join ? ROOT[0] + dRoot * (u - BODY.join) : ROOT[0] + dRoot * 40 * (1 - Math.exp(-(u - BODY.join) / 40));
+    // (and past the far end of the stone, going on down out of sight)
+    const z = lerp(lerp(zRoot, zH, a), -100, sm(BODY.dive, BODY.to, u));
+    // (swaying out and in as it swims)
+    const o = LANE.out + BODY.out * sm(BODY.join - 20, 540, u) + BODY.sway * a * (1 + Math.sin(w));
     out.push([X - s * u, yE - inw * o, z, r]);
   }
   return out;
+}
+/** A scraper's body where it is in the world at frame `k` of the shovel at end `e` (as laid: the painted end's, flipped at the mirrored
+ *  end, slid along, down as far as it is); empty when it is not up. */
+export function bodyPath(e: End, i: number, k: number): P3[] {
+  const A = scraperAt(e, i, k);
+  if (!A) return [];
+  const pe = paintedAt(e);
+  const lf = mod(k, HEAD_LOOP);
+  return bodyWorld(pe, SCRAPERS[i].edge, 0, Math.floor(lf / (HEAD_LOOP / BODY.loop)) / BODY.loop).map((q) => [(pe === e ? q[0] : -q[0]) + A.X, q[1], q[2] - A.drop, q[3]]);
 }
 /** Where a scraper is at frame `k` of the shovel: its head's front (`X`, the world's across), how far down it is (coming up or going under),
  *  how far its hook is drawn back, its writhe's clock, and what it is doing. Null before it comes up and after it has gone under. */
@@ -561,7 +592,7 @@ function heroAt(e: End, k: number): HeroAt {
 const ROLL0: [number, number, number, number] = [0, 0, 0, 0];
 /** His animation at frame `k` at an end: his stand's own clock (his tongue weaving, his flesh sliding, his drips), his jaws as open as
  *  the shovel has them, his eye's gaze on the Warrior, his throat glowing hot as he roars. */
-export function sideAnim(e: End, k: number, snap: boolean): ColossusAnim {
+export function sideAnim(e: End, k: number, snap: boolean, pe: End = e): ColossusAnim {
   const t = k / EYE_FPS;
   const st = standAnim(t);
   const open = openAt(k, snap);
@@ -571,10 +602,13 @@ export function sideAnim(e: End, k: number, snap: boolean): ColossusAnim {
   const root = T0[0];
   const tongue = tin >= 0.92 || open < 0.9 ? null : T0.map((q) => q.map((v, c) => (c < 3 ? lerp(v, root[c], tin) : v)));
   const eye = st.eye.map((v, c) => lerp(v, root[c], tin)) as [number, number, number];
-  // (looking at the Warrior: his gaze in his own space, and a little toward you)
+  // (looking at the Warrior: his gaze in his own space, and a little toward you; painted as at end `pe`, mirrored, the Warrior where the
+  // mirror puts him)
   const h = heroWorld(e, k);
+  const hx = pe === e ? h.x : -h.x;
+  e = pe;
   const at = placeOf(e);
-  const H = toHis(e, [h.x, h.y, 40 + h.lift], at, 0, lungeAt(k, snap));
+  const H = toHis(e, [hx, h.y, 40 + h.lift], at, 0, lungeAt(k, snap));
   const g = [H[0] - eye[0], H[1] - eye[1], H[2] - eye[2]];
   const gl = Math.hypot(g[0], g[1], g[2]) || 1;
   const you = toHis(e, [at[0] + GAZE_AT_YOU[0] * 100, at[1] + GAZE_AT_YOU[1] * 100, GAZE_AT_YOU[2] * 100], at, 0, ROLL0);
@@ -606,6 +640,12 @@ function jawsKey(e: End, k: number, snap: boolean): { key: string; k: number } {
   const lf = mod(k - SHOVEL.roar[1], 30);
   return { key: `VJ.${c}.g.${pad(lf)}`, k: SHOVEL.roar[1] + lf };
 }
+/** THE PAINTED RIGHT END (his word, 8 Nov: “Mirror it but save the old one just in case.”): off, at the right end he and his
+ *  tentacles are the left end's paintings flipped about his own middle (the stone, the water, the hero and the game's effects never
+ *  flipped); on, the right end's own paintings (him turned his own way round there), kept so they can be brought back. */
+export const SHOVEL_PAINTED_RIGHT = { on: false };
+/** The end whose paintings show at end `e`: its own, or at the right end the left's, mirrored. */
+export const paintedAt = (e: End): End => (e === 'right' && !SHOVEL_PAINTED_RIGHT.on ? 'left' : e);
 /** The frames of a shovel: `s1` at the left end (with the snap), `s2` at the right. */
 export const SHOVEL_SHOTS = { s1: { end: 'left' as End, snap: true }, s2: { end: 'right' as End, snap: false } } as const;
 
@@ -613,7 +653,10 @@ export const SHOVEL_SHOTS = { s1: { end: 'left' as End, snap: true }, s2: { end:
 export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
   const { end: e, snap } = SHOVEL_SHOTS[shot];
   const S = SHOVEL;
-  const c = e[0];
+  // (whose paintings: this end's own, or the left end's mirrored)
+  const pe = paintedAt(e);
+  const MR = pe !== e;
+  const c = pe[0];
   const t = k / EYE_FPS;
   const at = placeOf(e);
   const drop = dropAt(k);
@@ -636,19 +679,20 @@ export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
       smear.push(null);
     }
   } else {
-    const an = sideAnim(e, k, snap);
-    const J = jawsKey(e, k, snap);
-    const anJ = J.k === k ? an : sideAnim(e, J.k, snap);
-    const lay = (key: string, pose: ColossusPose): EyeLayer => ({ key, pose, drop: drop + deepAt(k), back: -at[1], dx: at[0] - s * lunge[0] });
-    jaws = lay(J.key, sidePose(e, { ...anJ, tongue: null }, 'jaws', lungeAt(J.k, snap)));
-    if (k >= S.burst[0]) spit = lay(`VS.${c}.${pad(k)}`, sidePose(e, an, 'spit', lunge));
-    if (an.tongue && k >= S.burst[0]) tongue = lay(`VT.${c}.${pad(k)}`, sidePose(e, an, 'tongue', lunge));
+    // (painted as at end `pe`: its own, or the left end's mirrored; laid where he is at this end)
+    const an = sideAnim(e, k, snap, pe);
+    const J = jawsKey(pe, k, snap);
+    const anJ = J.k === k ? an : sideAnim(e, J.k, snap, pe);
+    const lay = (key: string, pose: ColossusPose): EyeLayer => ({ key, pose, drop: drop + deepAt(k), back: -at[1], dx: at[0] - s * lunge[0], ...(MR ? { mirror: true } : {}) });
+    jaws = lay(J.key, sidePose(pe, { ...anJ, tongue: null }, 'jaws', lungeAt(J.k, snap)));
+    if (k >= S.burst[0]) spit = lay(`VS.${c}.${pad(k)}`, sidePose(pe, an, 'spit', lunge));
+    if (an.tongue && k >= S.burst[0]) tongue = lay(`VT.${c}.${pad(k)}`, sidePose(pe, an, 'tongue', lunge));
     // (bursting up and slamming shut: the frame before, smeared behind)
     const f = k - SNAP.at;
     if ((k > S.burst[0] && k < S.burst[1]) || (snap && f >= SNAP.twitch && f < SNAP.twitch + SNAP.strike)) {
-      const Jp = jawsKey(e, k - 1, snap);
+      const Jp = jawsKey(pe, k - 1, snap);
       const pl = lungeAt(k - 1, snap);
-      smear.push({ key: Jp.key, pose: sidePose(e, { ...sideAnim(e, Jp.k, snap), tongue: null }, 'jaws', lungeAt(Jp.k, snap)), drop: dropAt(k - 1), back: -at[1], dx: at[0] - s * pl[0] });
+      smear.push({ key: Jp.key, pose: sidePose(pe, { ...sideAnim(e, Jp.k, snap, pe), tongue: null }, 'jaws', lungeAt(Jp.k, snap)), drop: dropAt(k - 1), back: -at[1], dx: at[0] - s * pl[0], ...(MR ? { mirror: true } : {}) });
     }
   }
   // (the scrapers: each its head and its body)
@@ -669,11 +713,12 @@ export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
     const lf = mod(k, HEAD_LOOP);
     const H = headLocal(Sc.edge, lf / HEAD_LOOP, A.back);
     // (painted with its front at 0 across, laid where it is)
-    const headP = headWorld(e, Sc.edge, H, 0);
+    const headP = headWorld(pe, Sc.edge, H, 0);
     const key = `AH.${c}.${Sc.edge[0]}.${A.back >= 1 ? `b${pad(lf)}` : A.back > 0 ? `r${Math.round(A.back * 6)}.${pad(lf)}` : `h${pad(lf)}`}`;
-    arms.push({ key, pose: scraperPose(headP, k, hookBelly(e, Sc.edge)), drop: A.drop, back: 0, dx: A.X });
+    const mr = MR ? { mirror: true } : {};
+    arms.push({ key, pose: scraperPose(headP, k, hookBelly(pe, Sc.edge)), drop: A.drop, back: 0, dx: A.X, ...mr });
     const bl = Math.floor(lf / (HEAD_LOOP / BODY.loop));
-    arms.push({ key: `AB.${c}.${Sc.edge[0]}.${pad(bl)}`, pose: scraperPose(bodyWorld(e, Sc.edge, 0, bl / BODY.loop), 0, [0, 0, -1]), drop: A.drop, back: 0, dx: A.X });
+    arms.push({ key: `AB.${c}.${Sc.edge[0]}.${pad(bl)}`, pose: scraperPose(bodyWorld(pe, Sc.edge, 0, bl / BODY.loop), 0, bodyBelly(pe, Sc.edge, bl)), drop: A.drop, back: 0, dx: A.X, ...mr });
     smear.push(null);
     smear.push(null);
     if (A.is === 'sweep' && A.drop === 0) {
@@ -726,6 +771,47 @@ export function hookBelly(e: End, edge: 'back' | 'near'): [number, number, numbe
     b = armBelly({ path: headWorld(e, edge, headLocal(edge, 0, 0), 0), r: LANE.r, belly: [0, 0, -1], seed: 41 });
     BELLY.set(key, b);
   }
+  return b;
+}
+/** Which way its BODY's suckers are held (`bodyWorld`), so that where it meets its hook it is painted as its hook is there: the way its
+ *  hook's underside faces at its root (where the body begins, 240 back from its front: as the painter carries it along the hook, from its
+ *  tip's curl), given so that the painter, carrying it along the body from near its far end, brings it there the same way round (within a
+ *  few degrees). For the hook as it lies at `lf` of its writhe. */
+const BODY_BELLY = new Map<string, [number, number, number]>();
+export function bodyBelly(e: End, edge: 'back' | 'near', lf: number): [number, number, number] {
+  const key = `${e}.${edge}.${lf}`;
+  let b = BODY_BELLY.get(key);
+  if (b) return b;
+  const H = headWorld(e, edge, headLocal(edge, lf / HEAD_LOOP, 0), 0);
+  const A = armOf({ path: H, r: LANE.r, belly: hookBelly(e, edge), seed: 41, fixed: true });
+  let best = 0;
+  const d = (i: number): number => Math.hypot(A.p[i * 4] - H[1][0], A.p[i * 4 + 1] - H[1][1], A.p[i * 4 + 2] - H[1][2]);
+  for (let i = 0; i < A.n; i++) if (d(i) < d(best)) best = i;
+  // (the painter sets a tube's underside from what it is given as 0.9 of it and a little up, 0.2: so given back so; and if, carried along
+  // the body's humps and turned at its root, it does not come out the hook's way there, the way that does, of those all round)
+  const g = [A.inner[best * 3], A.inner[best * 3 + 1], A.inner[best * 3 + 2]];
+  const P = bodyWorld(e, edge, 0, lf / BODY.loop);
+  const off = (c: [number, number, number]): number => {
+    const B = armOf({ path: P, r: LANE.r, belly: c, seed: 41, fixed: true });
+    return Math.acos(Math.max(-1, Math.min(1, B.inner[0] * g[0] + B.inner[1] * g[1] + B.inner[2] * g[2])));
+  };
+  b = [g[0] / 0.9, (g[1] - 0.2) / 0.9, g[2] / 0.9];
+  let bo = off(b);
+  if (bo > 0.15) {
+    const n = 240;
+    for (let q = 0; q < n; q++) {
+      const zz = 1 - (2 * (q + 0.5)) / n;
+      const rr = Math.sqrt(1 - zz * zz);
+      const th = q * 2.399963;
+      const c: [number, number, number] = [rr * Math.cos(th), rr * Math.sin(th), zz];
+      const o = off(c);
+      if (o < bo) {
+        bo = o;
+        b = c;
+      }
+    }
+  }
+  BODY_BELLY.set(key, b);
   return b;
 }
 /** A scraper's pose for the painter: a tube of the given points and thicknesses, its suckers held facing `belly`, its clock. */

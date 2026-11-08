@@ -1,10 +1,113 @@
-# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel)
+# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror)
 
 A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look is `src/art/eye_colossus.ts`, behind
 `EYE2 = { on: false }`; nothing of the game imports it (`tests/eye_colossus.test.ts` holds it). Nothing of the old Eye
 (`src/art/drowned_eye.ts`, `art/act1_figs/eye.ts`, `game/act1_rules/eye.ts`) is used in it. Stage 1 (below the moves) was his look,
 in stills; stage 2 is his first moves: his stand, his lurk under the water and his entrance, in `src/art/eye_moves.ts`; stage 3 his
-tentacles' moves, in `src/art/eye_arms.ts`; stage 4 his shovel, in `src/art/eye_shovel.ts`.
+tentacles' moves, in `src/art/eye_arms.ts`; stage 4 his shovel, in `src/art/eye_shovel.ts`; stage 4b the pieces on the stone smashed
+by his first shovel, in `src/art/eye_pieces.ts`, and at the right end the left end's paintings of him mirrored.
+
+## Stage 4b: the pieces on the stone, smashed by his first shovel; his mirror made real
+
+His words, 8 Nov 2026 (by 09:03; HIS WORD ON IT under stage 4): “Mirror it but save the old one just in case.”; asked what becomes of
+the pieces on the stone in the tentacles' way: “Smashed by the first sweep (Recommended)”. The shovel itself is as he passed it (“It’s
+a little stiff but it’ll do.  I took all night so I’m not looking to redo it at this moment”): every beat and number kept.
+
+### The mirror, real
+
+- At the right end he and his tentacles are now the left end's paintings flipped left to right about his own middle
+  (`src/art/eye_shovel.ts` `paintedAt`: each layer there is the left end's, marked `mirror`, slid the other way; the tool lays it
+  flipped). The stone, the water, the Warrior and the game's effects are never flipped. The snap is the first shovel's, at the left end
+  only, as before.
+- THE PAINTED RIGHT END IS KEPT (his “save the old one”): `SHOVEL_PAINTED_RIGHT = { on: false }` in `src/art/eye_shovel.ts`; on, the
+  right end is its own paintings again, turned its own way, as the mirror test showed them.
+- Checked (`tests/eye_shovel.test.ts` 2): in every frame but the snap's, every layer of him and his tentacles at the right end is the
+  left end's own painting, flipped, slid the other way (where his eye looks aside: it follows the Warrior, who weaves his own way at
+  each end); at his place between the ends, the same as at the left; with the switch on, the painted right end still there.
+- THE COST HALVES: for the game (the estimate under stage 4, the main chat's to weigh), his paintings at one end serve both: 538 for
+  the two ends where it was 1,076, about 145 MB raw at two picture pixels to a game pixel (was 290), 37 MB at one (was 73), about 9 MB
+  packed at one (was 18). As painted here (`cost3`): 1,127 new layers where there were 1,484 (239 MB raw where 342, 56 MB packed
+  where 82): his jaws at an end 75 (were 125: the right end's are the left's),
+  the hooks 140 (280), the bodies 30 (60); his drool 451 and his tongue-eye 431 (520 and 499) still a painting each frame, since his
+  eye follows the Warrior, who weaves his own way at each end. His stand at his place as before (357).
+
+### The pieces, smashed
+
+`src/art/eye_pieces.ts` (behind EYE2, off; nothing of the game imports it; `tests/eye_pieces.test.ts`). The pieces lie on the stone at
+the start as the arena lays them: the two broken columns at the back corners, the mossy stones by the back edge and toward the near
+edge, the fallen column drums by the near edge. His first shovel's first tentacle (along the back edge, reaching across to its gap at
+the near edge) smashes each as it reaches it: the hook ploughs in, jolted back against the way it goes (14, 8, 3 and 1 of his lengths
+over four frames, down 5 and up again) and down, never through it whole; the screen jolted. Each breaks its own way:
+
+- A BROKEN COLUMN: its plinth bursts in three, the foot of it left, low and broken; its shaft topples off it, faster and faster
+  (0.42 s), across the screen onto the stone (never away, where it would only seem to shorten; never off the ends or the back edge),
+  a round shaft as it turns, lands (the screen jolted again), breaks across in three where it had cracked, the pieces sliding apart, their
+  broken ends rough dark discs, rims lit above.
+- THE FALLEN DRUMS: the one the hook meets cracks in three and flies; the other two roll on toward you, rocking, and crack in two as they
+  stop, their halves leaning apart.
+- THE MOSSY STONES: each of the three splits in two along a jagged line, the halves flung tumbling, the moss torn off along the break.
+
+Each fragment is its own pixels of the piece's picture: along its breaks its broken face dark and rough, the edge over it lit, the moss
+torn off, bare stone under; loose, it has a thickness (its broken side seen under it, more of it as it tumbles). Chips of stone fly
+with them (irregular, five to seven corners, lit tops, dark faces, some mossy). All of it bounces, slides and comes to rest, and lies
+there for the rest of the fight: THE RUBBLE, low (none higher than 24 of his lengths, 0.6 tiles). Over it, the game's effect: grit, eight
+small chunks (gone after 3 s, as the slams' chunks), moss torn off, dust in ragged grainy puffs (a column's again where its shaft lands,
+the drums' as they crack). The next shovel's hooks ride up over the rubble as they drag over it (at the most 20 of his lengths, 0.51
+tiles), scattering grit and a little dust.
+
+### The numbers, for the main chat (in the game's tiles; frames of the first shovel from his stand, 30 a second)
+
+| piece | hit (frame, s) | where (tiles from the stone's left end, from its back edge) | chunks: pieces + chips, furthest, settled by | rubble spread from where it stood |
+|---|---|---|---|---|
+| a broken column, the far back corner | 99 (3.30 s) | 16.48, 0.61 | 6 + 12, the furthest 3.92 tiles, by 1.23 s | 3.98 tiles |
+| the fallen drums, by the near edge | 105 (3.50 s) | 14.70, 6.72 | 7 + 9, 2.56 tiles, by 0.93 s | 2.87 tiles |
+| the mossy stones by the back edge | 110 (3.67 s) | 11.98, 1.36 | 6 + 7, 2.08 tiles, by 1.27 s | 2.14 tiles |
+| the mossy stones toward the near edge | 133 (4.43 s) | 2.91, 6.53 | 6 + 7, 3.93 tiles, by 1.27 s | 3.97 tiles |
+| a broken column, the back corner by his end | 137 (4.57 s) | 1.24, 0.59 | 6 + 12, 2.39 tiles, by 1.30 s | 2.70 tiles |
+
+All by tentacle 1. The shake: 5 game pixels at each smash, dying away over 8 frames; a column's shaft landing, 4 over 6 frames (13
+frames after its hit). Whether the rubble blocks the Warrior is the main chat's (it is low: a column's pieces lying 22 of his lengths
+high, a drum's 24, the rest 15 or under).
+
+### The pictures
+
+- `pictures/eye_moves4.mp4` (38.5 s, 1,154 frames, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), in the arena as
+  the player sees it: HIS FIRST SHOVEL AT THE LEFT END at full speed (352 frames: the pieces whole at the start, the Warrior weaving,
+  the mossy stones toward the near edge smashed at 133 and the column by his end at 137 on the screen; the far ones smashed off it at
+  99, 105 and 110, so shown after); THE SMASHES CLOSE UP, twice the size, at half speed (each from six frames before its hit until its
+  rubble lies: 450 frames); THE NEXT SHOVEL AT THE RIGHT END (352 frames), him mirrored, his tentacles riding over the rubble.
+- `pictures/eye_moves4.png` (1200 x 5862): the pieces whole at the start; each smash close at twice the size, four beats each (the hook
+  reaching it, breaking, flying, the rubble); the column by his end at the game's size and at twice; the next shovel at the right end,
+  mirrored, over the rubble, at the game's size and at twice.
+- Seen, every frame of both shovels at the game's size (24 to a sheet) and every frame of the five close-ups. Seen and mended on the way:
+  the burst had come from inside the hook's tube (now from where its skin meets the piece); the column's shaft had stood off its middle
+  and been drawn as thick as its plinth (now on its own middle and its own thickness); a column fell straight away from you (seen only
+  shortening) and one over the back edge into the water (now each falls across the screen onto the stone, clear of the hooks and of the
+  Warrior's way); the drums had spun in the picture as they rolled (now they rock on their round); loose pieces were flat cut-outs
+  (now each has its broken side under it). Seen and mended after (fix 2, stage 4): a small square by a hook's tip in some frames (a gob of
+  slime thrown off it, drawn as a box in its first frame), and the body behind each hook (a flat band with a seam).
+- To make them again (the layers on the memory disk, `/dev/shm`; the close-ups' points as `tools/eye_shovel_sheet.py` PIECES has them):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 s1 s2 & npx tsx tools/eye_moves_pics.ts paint 1 2 s1 s2   (79 minutes on two workers)
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/frames s1      (and s2; about 6 minutes each)
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/close/colR s1 93,94,...,143 275 370 30   (and drums, mossB, mossN, colL)
+python3 tools/eye_shovel_sheet.py film4 /dev/shm/eye_moves/frames /dev/shm/eye_moves/close docs/mockups/eye_redo/pictures/eye_moves4.mp4
+python3 tools/eye_shovel_sheet.py sheet4 /dev/shm/eye_moves/frames /dev/shm/eye_moves/close docs/mockups/eye_redo/pictures/eye_moves4.png
+```
+
+### The checks (`tests/eye_pieces.test.ts`, and `tests/eye_shovel.test.ts` 2)
+
+(1) The switch off, nothing of the game importing the pieces' smash; (2) the five pieces on the stone at the start, as the arena lays
+them, each smashed by the first shovel; (3) NO HOOK THROUGH A PIECE WHOLE: before its hit no hook's tube in its body in any frame (the
+nearest 1.7 of his lengths), at its hit jolted back 14, ploughing in at the most 1.0; (4) OVER THE RUBBLE: every hook of both shovels,
+as laid, clear of the rubble at rest under it (riding up at the most 20.0 of his lengths); (5) each its own break (a column's shaft in
+three, falling across onto the stone, faster and faster; the drums, three flying and four rolling; the mossy stones, six halves), every
+pixel of each picture in one fragment; (6) the rubble low (24 of his lengths at the most), on the stone, at rest by 1.6 s; the Warrior
+never through a column's or a drum's pieces (25.3 at the nearest); (7) NOTHING RULED in the fragments' outlines (5.5 game pixels up,
+6.5 across at the longest), their breaks (5.5, 3) or the chips (4, 4); (8) the numbers above. `tests/eye_shovel.test.ts` 2: the right
+end the left flipped, the painted right end kept. `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts`, `tests/eye_arms.test.ts`
+and `tests/eye_shovel.test.ts`: their first checks let `art/eye_pieces.ts` import them.
 
 ## Stage 4: his moves, part 3: his shovel, in pictures and a film
 
@@ -65,7 +168,26 @@ HIS WORD ON IT, 8 Nov 2026 (by 09:03), shown fix 1 (3bb3ca46, `eye_moves3`) and 
   water, the hero and the game's effects never flipped; the light on him then from the right there). THE PAINTED RIGHT END IS KEPT
   (its poses in `src/art/eye_shovel.ts`, its pictures) so it can be brought back.
 - Asked what happens to the pieces on the stone (the broken columns, mossy stones and fallen drums), in the tentacles' way:
-  “Smashed by the first sweep (Recommended)” (offered as: the first shovel breaks them, chunks flying; rubble left after). To draw next.
+  “Smashed by the first sweep (Recommended)” (offered as: the first shovel breaks them, chunks flying; rubble left after). Drawn in
+  stage 4b.
+- 8 Nov (by 10:52), asked “Is the smashing of the stone pieces right (eye_moves4.mp4 and eye_moves4.png)?”:
+  “Yes, it's right (Recommended)”.
+
+FIX 2 (8 Nov, two flaws in the scraping tentacles; every beat and number kept; `eye_moves4` remade): (1) a small square (about 11 by 8
+game pixels) showed by a hook's tip as it scraped: a gob of slime thrown off the tip drawn in the frame it was thrown, before it had a
+way to fly, as a box. Now it is drawn along its own flight from its first frame, a drop drawn out. (2) The BODY behind each hook showed
+as a flat band with a straight top edge along the stone's back edge, and a hard upright seam where the hook's flesh ended. Now it is the
+same tube running on from the hook (`bodyWorld`: from the hook's root, which now curves on down into the deep, `ROOT`; as thick; its
+suckers held the way the hook's face there, `bodyBelly`), swimming: humped, its humps a wave running back along it, each crest's back
+just breaking the surface, the troughs out of sight, swaying, swimming out from the stone so that the water is in front of it; the
+rest of it seen darker and greener through the water, its outline wavering and soft; ripples spreading from each crest as it goes, a
+wake, the water churned where its back comes out and goes in (the tool's `bodyWake`). Checked (`tests/eye_shovel.test.ts` 11): the body
+starts at its hook's root, as thick, going on its way within 20 degrees, its suckers within 15 degrees of the hook's, painted alike
+where they meet, under the water there; its back breaking the surface here and there; no straight run over 12 game pixels, exactly
+across or up, in its outline where it is seen or its waterline (the longest 8.5); and every painted body measured the same way
+(`eye_moves_pics.ts bodyRuns`: the 60 paintings, its outline 12 game pixels at the longest, its waterline 10). Only the hooks and
+the bodies repainted (200 layers, 9 minutes on two workers); `eye_moves4.mp4` and `.png` remade, same layout, every frame of both
+shovels looked at.
 
 ### Each beat, frame by frame (30 a second; frames from his stand; the same at both ends)
 
@@ -224,7 +346,7 @@ change).
 4. THE PIECES ON THE STONE (its two broken columns at the back corners, the mossy stones and the fallen drums) are left out of the
    shovel's film: the tentacles sweep the whole length of the stone, through where each lies. To keep them in the fight, they would have
    to go when he sinks (smashed by the first sweep, or the arena without them): his to see. HIS PICK, 8 Nov: “Smashed by the first
-   sweep (Recommended)”.
+   sweep (Recommended)”. Drawn in stage 4b, above.
 5. The reeds in the water off the end where he comes up are under him there, crushed, from his burst on.
 
 

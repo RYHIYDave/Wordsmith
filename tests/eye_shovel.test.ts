@@ -7,8 +7,10 @@
 // wind-up, a fast smeared strike, a big wind-down), “Action, like a movie”, nothing through anything, nowhere safe (“Yes, nowhere safe
 // (Recommended)”). What this holds:
 //   1. the switch is off and nothing of the game imports the shovel;
-//   2. HIS END VIEWS: at either end, painted at each (not mirrored), his maw on its side, clear of the stone in every frame he is there
-//      (his burst, his roar, his gape, his snap's lunge), and of the tentacles; the Warrior never in him;
+//   2. HIS END VIEWS: at the right end the left end's paintings of him and his tentacles flipped about his own middle (the owner, 8 Nov,
+//      shown the mirror test: “Mirror it but save the old one just in case.”), the painted right end kept behind its own switch, off;
+//      his maw on its side, clear of the stone in every frame he is there (his burst, his roar, his gape, his snap's lunge), and of the
+//      tentacles; the Warrior never in him;
 //   3. NOTHING THROUGH ANYTHING: each tentacle clear of the stone, of each other and of itself (never folding through itself), every frame;
 //   4. NOWHERE SAFE, AND THE GAPS' PATH THROUGH: each tentacle sweeps the stone's whole length to his maw, one along each edge in turn,
 //      reaching across all but its gap at the other edge; the Warrior never on a tentacle but where he is struck;
@@ -23,6 +25,11 @@
 //  10. NOTHING RULED (fix 1, his rule “Everything drawn should not just look like shapes.  That’s the rule”): no straight run over 12
 //      game pixels, exactly across or up, in his maw's inside, in the water pouring off him (its sheets and its ropes), or in the marks
 //      his tentacles' tips score in the stone; and those only where a tip has been.
+//  11. THE BODY BEHIND EACH HOOK (fix 2, 8 Nov): the same tube running on from its hook, no seam (it starts where its hook's root is, as
+//      thick, going on the same way, its suckers held the way the hook's face there, painted alike where they meet, and that under the
+//      water even as the hook rides up over rubble); swimming, its back breaking the surface here and there, the rest under it; nothing
+//      ruled in it at the game's size: its outline where it is seen (within 40 of the surface, short of where it goes down out of sight
+//      past the far end of the stone), its waterline.
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -33,12 +40,12 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 import { BLADE, CYAN, GLINT, SPARK } from '../src/art/kit';
 import { rgba } from '../src/engine/px';
-import { C_TILE, EYE2, MAT, paintColossus, turnedAt, turnedClear } from '../src/art/eye_colossus';
+import { C_TILE, EYE2, MAT, armOf, paintColossus, turnedAt, turnedClear } from '../src/art/eye_colossus';
 import type { ArmPose, ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { EYE_ENTRANCE, EYE_FPS } from '../src/art/eye_moves';
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { STONE_BOX, armStoneGap, armsGap, tubeOf } from '../src/art/eye_arms';
-import { GAPE_SIDE, HOOK_IN, ORIENT, SNAP_CLENCH, pourRope, pourSheet, scoreMarks, scorePath, scrapeAt, SCRAPE, SCRAPERS, SCRAPE_FRAMES, SCRAPE_V, SHOVEL, SHOVEL_COLOURS, SHOVEL_SHAKE, SNAP, SNAP_REACH, START_OUT, STOP_IN, SWEEP, atEnd, dropAt, heroStruck, heroWorld, lungeAt, openAt, placeOf, scraperAt, shovelFrame, sideAnim, sideOf, sidePose } from '../src/art/eye_shovel';
+import { BODY, bodyBelly, GAPE_SIDE, HOOK_IN, LANE, ORIENT, ROOT, SHOVEL_PAINTED_RIGHT, SNAP_CLENCH, bodyWorld, headLocal, headWorld, hookBelly, paintedAt, pourRope, pourSheet, scoreMarks, scorePath, scrapeAt, SCRAPE, SCRAPERS, SCRAPE_FRAMES, SCRAPE_V, SHOVEL, SHOVEL_COLOURS, SHOVEL_SHAKE, SNAP, SNAP_REACH, START_OUT, STOP_IN, SWEEP, atEnd, dropAt, heroStruck, heroWorld, lungeAt, openAt, placeOf, scraperAt, shovelFrame, sideAnim, sideOf, sidePose } from '../src/art/eye_shovel';
 import type { End } from '../src/art/eye_shovel';
 
 interface Assert {
@@ -53,19 +60,26 @@ const path = nodePath as { join(...p: string[]): string };
 
 const SHOTS: Array<['s1' | 's2', End, boolean]> = [['s1', 'left', true], ['s2', 'right', false]];
 const tiles = (v: number): string => (v / C_TILE).toFixed(2);
-/** The tentacles of a frame, laid where they are (the world's: slid along, down as far as they are), each with its layer's key. */
+/** The tentacles of a frame, laid where they are (the world's: slid along, down as far as they are; a layer flipped about his middle,
+ *  the right end's, flipped), each with its layer's key. */
 function tentaclesIn(F: EyeFrame): Array<{ key: string; a: ArmPose }> {
   return F.arms.filter((L): L is EyeLayer => !!L && (L.key.startsWith('AH') || L.key.startsWith('AB'))).map((L) => {
     const a = (L.pose as ColossusPose).arms[0];
-    return { key: L.key, a: { ...a, path: a.path.map((q) => [q[0] + (L.dx ?? 0), q[1], q[2] - L.drop, q[3]]) } };
+    const fx = (x: number): number => (L.mirror ? -x : x) + (L.dx ?? 0);
+    return { key: L.key, a: { ...a, path: a.path.map((q) => [fx(q[0]), q[1], q[2] - L.drop, q[3]]) } };
   });
 }
-/** Him at an end at frame `k`, all of him (his jaws, his drool, his tongue), as the painter takes him; and where his middle is. */
-function himAt(e: End, k: number, snap: boolean): { pose: ColossusPose; at: [number, number] } {
+/** A pose but where his eye looks (at the Warrior, who weaves his own way at each end). */
+const unGazed = (p: unknown): unknown => JSON.parse(JSON.stringify(p), (k, v) => (k === 'gaze' ? undefined : v));
+/** Him at an end at frame `k`, all of him (his jaws, his drool, his tongue), as the painter takes him; and where his middle is. At the
+ *  right end, the left end's painting (`flip`: what is there is seen in it flipped). */
+function himAt(e: End, k: number, snap: boolean): { pose: ColossusPose; at: [number, number]; flip: (p: readonly number[]) => number[] } {
+  const pe = paintedAt(e);
   const L = lungeAt(k, snap);
-  const P = sidePose(e, sideAnim(e, k, snap), 'all', L);
-  const at = placeOf(e);
-  return { pose: { ...P, drop: P.drop + dropAt(k) }, at: [at[0] - sideOf(e) * L[0], at[1]] };
+  const P = sidePose(pe, sideAnim(e, k, snap, pe), 'all', L);
+  const at = placeOf(pe);
+  const flip = (p: readonly number[]): number[] => (pe === e ? [...p] : [-p[0], ...p.slice(1)]);
+  return { pose: { ...P, drop: P.drop + dropAt(k) }, at: [at[0] - sideOf(pe) * L[0], at[1]], flip };
 }
 /** How far his solid comes in over the stone from his end (his lengths; less than 0 none of him), at heights up to `top` over it. */
 function reachOver(e: End, k: number, snap: boolean, top = 320): { x: number; low: number; y0: number; y1: number } {
@@ -73,7 +87,7 @@ function reachOver(e: End, k: number, snap: boolean, top = 320): { x: number; lo
   const pts: number[][] = [];
   for (let x = 0; x <= 240; x += 4) for (let y = STONE_BOX.y0; y <= STONE_BOX.y1; y += 12) for (let z = 2; z <= top; z += 8) pts.push([s * STONE_BOX.x1 - s * x, y, z]);
   const H = himAt(e, k, snap);
-  const v = turnedAt(H.pose, H.at, pts);
+  const v = turnedAt(H.pose, H.at, pts.map(H.flip));
   const r = { x: -1, low: -1, y0: Infinity, y1: -Infinity };
   pts.forEach((p, i) => {
     if (v[i] >= 0) return;
@@ -119,19 +133,50 @@ test('1. the switch is off; nothing of the game imports the shovel', () => {
   assert.equal(EYE2.on, false, 'EYE2 is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f === 'art/eye_shovel.ts') continue;
+    // (the pieces it smashes, art/eye_pieces.ts, its own mock-up's: tests/eye_pieces.test.ts holds that nothing of the game imports it)
+    if (!f.endsWith('.ts') || f === 'art/eye_shovel.ts' || f === 'art/eye_pieces.ts') continue;
     if (/from ['"][^'"]*eye_shovel['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(', '), '', 'nothing of the game imports art/eye_shovel.ts');
 });
 
-test('2. his end views: painted at each end, clear of the stone and of the tentacles; the Warrior never in him', () => {
-  // (each end its own painting, turned its own way: not one mirrored)
-  assert.ok(JSON.stringify(ORIENT.left) !== JSON.stringify(ORIENT.right), 'turned each its own way');
+test('2. his end views: the right end the left flipped (the painted one kept); clear of the stone and of the tentacles; the Warrior never in him', () => {
+  // (THE MIRROR: at the right end, each layer of him and his tentacles the left end's own painting, flipped about his middle, slid the
+  // other way: in every frame but the snap's, which is the first shovel's, at the left end, only; at his place, as there)
+  assert.equal(SHOVEL_PAINTED_RIGHT.on, false, 'the painted right end behind its switch, off');
+  let flipped = 0;
+  for (let k = 0; k < SHOVEL.frames; k++) {
+    if (k >= SNAP.at - 2 && k < SNAP.at + SNAP.frames + 2) continue;
+    const l = shovelFrame('s1', k);
+    const r = shovelFrame('s2', k);
+    const L0 = [l.jaws, l.spit, l.tongue, ...l.arms, ...l.smear];
+    const R0 = [r.jaws, r.spit, r.tongue, ...r.arms, ...r.smear];
+    assert.equal(R0.length, L0.length, `${k}: as many layers at each end`);
+    R0.forEach((R, i) => {
+      const A = L0[i];
+      assert.equal(!!R, !!A, `${k}: layer ${i} at both ends or neither`);
+      if (!R || !A) return;
+      // (at his place, between the ends, him and his tentacles as they are there: the same)
+      if (!/^(V|AH|AB)/.test(A.key)) {
+        assert.equal(JSON.stringify({ ...R, pose: unGazed(R.pose) }), JSON.stringify({ ...A, pose: unGazed(A.pose) }), `${k}: ${A.key} at his place the same`);
+        return;
+      }
+      assert.ok(R.mirror === true && !A.mirror, `${k}: ${R.key} flipped at the right end`);
+      assert.equal(R.key, A.key, `${k}: the left end's painting`);
+      assert.equal(JSON.stringify(unGazed(R.pose)), JSON.stringify(unGazed(A.pose)), `${k}: ${R.key} as painted`);
+      assert.ok(Math.abs((R.dx ?? 0) + (A.dx ?? 0)) < 1e-6 && R.drop === A.drop && R.back === A.back, `${k}: ${R.key} slid the other way (${R.dx}, ${A.dx})`);
+      flipped++;
+    });
+  }
+  // (THE PAINTED RIGHT END, KEPT: its own paintings, turned its own way, behind its switch)
+  assert.ok(JSON.stringify(ORIENT.left) !== JSON.stringify(ORIENT.right), 'the painted right end turned its own way');
+  SHOVEL_PAINTED_RIGHT.on = true;
+  const pr = shovelFrame('s2', 120);
+  SHOVEL_PAINTED_RIGHT.on = false;
   const l = shovelFrame('s1', 120);
-  const r = shovelFrame('s2', 120);
-  assert.ok(l.jaws.key.startsWith('VJ.l') && r.jaws.key.startsWith('VJ.r'), `each end painted (${l.jaws.key}, ${r.jaws.key})`);
-  assert.ok(JSON.stringify((l.jaws.pose as ColossusPose).orient) !== JSON.stringify((r.jaws.pose as ColossusPose).orient), 'from each end, his own way round');
+  assert.ok(pr.jaws.key.startsWith('VJ.r') && !pr.jaws.mirror && pr.arms.every((L) => !L || !/^A[HB]/.test(L.key) || (!L.mirror && L.key.includes('.r.'))), `the painted right end still there (${pr.jaws.key})`);
+  assert.ok(JSON.stringify((l.jaws.pose as ColossusPose).orient) !== JSON.stringify((pr.jaws.pose as ColossusPose).orient), 'from each end, his own way round');
+  process.stdout.write(`  the right end: ${flipped} layers, each the left end's flipped; the painted right end kept (${pr.jaws.key})\n`);
   let worstStone = Infinity;
   let worstTube = Infinity;
   let worstHero = Infinity;
@@ -141,7 +186,7 @@ test('2. his end views: painted at each end, clear of the stone and of the tenta
       const inSnap = snap && k >= SNAP.at - 2 && k < SNAP.at + SNAP.frames;
       if (!(k % 2 === 0 || inSnap || (k >= SHOVEL.burst[0] && k < SHOVEL.burst[1] + 2))) continue;
       const H = himAt(e, k, snap);
-      const tubes = tentaclesIn(shovelFrame(shot, k)).map((t) => t.a.path);
+      const tubes = tentaclesIn(shovelFrame(shot, k)).map((t) => t.a.path.map(H.flip));
       const c = turnedClear(H.pose, H.at, STONE_BOX, tubes);
       worstStone = Math.min(worstStone, c.stone);
       assert.ok(c.stone > 0, `${shot} ${k}: clear of the stone (${c.stone.toFixed(1)} at ${c.where.map((v) => v.toFixed(0)).join(',')})`);
@@ -154,7 +199,7 @@ test('2. his end views: painted at each end, clear of the stone and of the tenta
         const h = heroWorld(e, k);
         const pts: number[][] = [];
         for (const dx of [-14, 0, 14]) for (const dy of [-10, 0, 10]) for (let z = 2; z <= 46; z += 11) pts.push([h.x + dx, h.y + dy, z + h.lift]);
-        const m = Math.min(...turnedAt(H.pose, H.at, pts));
+        const m = Math.min(...turnedAt(H.pose, H.at, pts.map(H.flip)));
         worstHero = Math.min(worstHero, m);
         assert.ok(m > 0, `${shot} ${k}: the Warrior not in him (${m.toFixed(1)})`);
       }
@@ -550,3 +595,112 @@ test('10. nothing ruled: in his maw\'s inside, the water pouring off him, the ma
   assert.ok(marks.across <= RULED && marks.up <= RULED, `the marks scored in the stone, no ruled line (${marks.across / 2} game px across, ${marks.up / 2} up)`);
   process.stdout.write(`  the water off him: sheets ${sheet.up / 2} up, ${sheet.across / 2} across; ropes ${rope.up / 2} up, ${rope.across / 2} across; the marks in the stone ${marks.across / 2} across (game px)\n`);
 });
+
+test('11. the body behind each hook: one tube with it, no seam; its back breaking the surface; nothing ruled', () => {
+  // (WHERE THEY MEET: the body starts at its hook's root, as thick, going on the same way; under the water, deeper than a hook rides up)
+  for (const edge of ['back', 'near'] as const) {
+    const H = headWorld('left', edge, headLocal(edge, 0, 0), 0);
+    for (let n = 0; n < BODY.loop; n++) {
+      const B = bodyWorld('left', edge, 0, n / BODY.loop);
+      assert.ok(Math.hypot(B[0][0] - H[1][0], B[0][1] - H[1][1], B[0][2] - H[1][2]) < 0.5 && Math.abs(B[0][3] - H[1][3]) < 1, `${edge} ${n}: the body starts at its hook's root (${B[0].map((v) => v.toFixed(0))}, ${H[1].map((v) => v.toFixed(0))})`);
+      // (the same way: from its hook's root on, down into the deep, within 20 degrees)
+      const hd = [H[0][0] - H[2][0], H[0][1] - H[2][1], H[0][2] - H[2][2]];
+      const bd = [B[1][0] - B[0][0], B[1][1] - B[0][1], B[1][2] - B[0][2]];
+      const cos = (hd[0] * bd[0] + hd[1] * bd[1] + hd[2] * bd[2]) / (Math.hypot(...hd) * Math.hypot(...bd));
+      assert.ok(cos > Math.cos((20 * Math.PI) / 180), `${edge} ${n}: going on its hook's way (${((Math.acos(cos) * 180) / Math.PI).toFixed(0)} degrees)`);
+      // (swimming: some of its back out of the water, the rest under)
+      const out = B.filter((q) => q[2] + q[3] > 1).length;
+      assert.ok(out > 0 && out < B.length / 3, `${edge} ${n}: its back breaking the surface here and there (${out} of ${B.length})`);
+    }
+    // (its hook's root and its body's front under the water, by more than the most a hook rides up over rubble, 20)
+    const joinTop = Math.max(H[0][2] + H[0][3], H[1][2] + H[1][3], ...bodyWorld('left', edge, 0, 0).filter((q, i, a) => i < a.length && Math.abs(q[0]) <= BODY.join).map((q) => q[2] + q[3]));
+    assert.ok(joinTop < -20 - 4, `${edge}: where they meet, under the water (${joinTop.toFixed(0)})`);
+    assert.ok(ROOT[0] < LANE.z && ROOT[1] < LANE.z, 'the root deeper than the lane');
+  }
+  // (its suckers held the way its hook's face where they meet, within 15 degrees as the painter carries them; in every frame of both
+  // films; laid with its hook)
+  for (const edge of ['back', 'near'] as const) for (let n = 0; n < BODY.loop; n += 5) {
+    const H = headWorld('left', edge, headLocal(edge, n / BODY.loop, 0), 0);
+    const A = armOf({ path: H, r: LANE.r, belly: hookBelly('left', edge), seed: 41, fixed: true });
+    const B = armOf({ path: bodyWorld('left', edge, 0, n / BODY.loop), r: LANE.r, belly: bodyBelly('left', edge, n), seed: 41, fixed: true });
+    let best = 0;
+    const d = (i: number): number => Math.hypot(A.p[i * 4] - B.p[0], A.p[i * 4 + 1] - B.p[1], A.p[i * 4 + 2] - B.p[2]);
+    for (let i = 0; i < A.n; i++) if (d(i) < d(best)) best = i;
+    const c = A.inner[best * 3] * B.inner[0] + A.inner[best * 3 + 1] * B.inner[1] + A.inner[best * 3 + 2] * B.inner[2];
+    assert.ok(c > Math.cos((15 * Math.PI) / 180), `${edge} ${n}: the body's suckers the way its hook's face where they meet (${((Math.acos(Math.min(1, c)) * 180) / Math.PI).toFixed(0)} degrees)`);
+  }
+  for (const shot of ['s1', 's2'] as const) for (let k = 0; k < SHOVEL.frames; k += 3) {
+    const F = shovelFrame(shot, k);
+    SCRAPERS.forEach((Sc, i) => {
+      const hL = F.arms[2 * i];
+      const bL = F.arms[2 * i + 1];
+      if (!hL || !bL || !hL.key.startsWith('AH') || !bL.key.startsWith('AB')) return;
+      const bb = (bL.pose as ColossusPose).arms[0].belly;
+      assert.equal(JSON.stringify(bb), JSON.stringify(bodyBelly('left', Sc.edge, k % BODY.loop)), `${shot} ${k}: tentacle ${i + 1}'s body's suckers held the way its hook's face`);
+      assert.ok(bL.drop === hL.drop && bL.dx === hL.dx && !!bL.mirror === !!hL.mirror, `${shot} ${k}: tentacle ${i + 1}'s body laid with its hook`);
+    });
+  }
+  // PAINTED AT THE GAME'S SIZE, the hook and its body together (the back edge's, and the near edge's at another moment of its swim): where
+  // they meet painted alike; the body's outline and its waterline never ruled
+  let ruled = { across: 0, up: 0 };
+  let wl = { across: 0, up: 0 };
+  let diff = 0;
+  for (const [edge, n] of [['back', 0], ['back', 10], ['back', 20], ['near', 5], ['near', 15], ['near', 25]] as const) {
+    const w = 1700;
+    const h = 600;
+    const ax = 150;
+    const ay = -60;
+    const rows = edge === 'back' ? [40, 340] : [300, 600];
+    const head = paintColossus(scraperPoseOf(headWorld('left', edge, headLocal(edge, n / BODY.loop, 0), 0), hookBelly('left', edge)), { w, h, ax, ay, zoom: 1, raw: true, box: [0, rows[0], 560, rows[1]] });
+    const body = paintColossus(scraperPoseOf(bodyWorld('left', edge, 0, n / BODY.loop), bodyBelly('left', edge, n)), { w, h, ax, ay, zoom: 1, raw: true, box: [380, rows[0], w, rows[1]] });
+    // (where both are painted, round where they meet: alike)
+    let sum = 0;
+    let cnt = 0;
+    const hd = head.px.d;
+    const bd = body.px.d;
+    for (let j = rows[0]; j < rows[1]; j++) for (let i = 380; i < 560; i++) {
+      const q = j * w + i;
+      if (!head.kind[q] || !body.kind[q]) continue;
+      sum += (Math.abs(hd[q * 4] - bd[q * 4]) + Math.abs(hd[q * 4 + 1] - bd[q * 4 + 1]) + Math.abs(hd[q * 4 + 2] - bd[q * 4 + 2])) / 3;
+      cnt++;
+    }
+    assert.ok(cnt > 200, `${edge}: hook and body painted where they meet (${cnt})`);
+    diff = Math.max(diff, sum / cnt);
+    // (alike but for where their suckers fall: held the other way round, as they were, 23 apart)
+    assert.ok(sum / cnt < 14, `${edge}: painted alike where they meet (the colours ${(sum / cnt).toFixed(1)} apart on average)`);
+    // (the body's outline where it is seen, within 40 of the surface (deeper, the water lets less than a tenth of its colour through), and
+    // its waterline: where it comes out of the water and goes in)
+    const M = new Uint8Array(w * h);
+    const A = new Uint8Array(w * h);
+    const zb = body.zh as Float32Array;
+    for (let q = 0; q < w * h; q++) {
+      if (!body.kind[q]) continue;
+      M[q] = 1;
+      A[q] = zb[q] >= -0.5 ? 1 : 0;
+    }
+    const E = edgesOf(M, w, h);
+    // (an edge counts where the body's side of it is seen: within 40 of the surface, short of where it goes down out of sight past the
+    // far end of the stone)
+    const seen = (q: number, d: number): boolean => (M[q] ? zb[q] : zb[q + d]) >= -40 && (q % w) - ax < BODY.dive * (2 / Math.sqrt(3));
+    for (let q = 0; q < w * h - w - 1; q++) {
+      if (E.V[q] && !seen(q, 1)) E.V[q] = 0;
+      if (E.H[q] && !seen(q, w)) E.H[q] = 0;
+    }
+    ruled = { across: Math.max(ruled.across, longestRun(E.H, w, h).across), up: Math.max(ruled.up, longestRun(E.V, w, h).up) };
+    const V = new Uint8Array(w * h);
+    const Hh = new Uint8Array(w * h);
+    for (let j = 0; j < h - 1; j++) for (let i = 0; i < w - 1; i++) {
+      const q = j * w + i;
+      if (M[q] && M[q + 1] && A[q] !== A[q + 1]) V[q] = 1;
+      if (M[q] && M[q + w] && A[q] !== A[q + w]) Hh[q] = 1;
+    }
+    wl = { across: Math.max(wl.across, longestRun(Hh, w, h).across), up: Math.max(wl.up, longestRun(V, w, h).up) };
+  }
+  assert.ok(ruled.across <= RULED && ruled.up <= RULED, `the body's outline where it is seen, no ruled edge (${ruled.up / 2} game px up, ${ruled.across / 2} across)`);
+  assert.ok(wl.across <= RULED && wl.up <= RULED, `its waterline, never ruled (${wl.up / 2} game px up, ${wl.across / 2} across)`);
+  process.stdout.write(`  the body: its outline ${ruled.up / 2} game px up, ${ruled.across / 2} across at the longest; its waterline ${wl.up / 2} up, ${wl.across / 2} across; hook and body ${diff.toFixed(1)} apart in colour where they meet\n`);
+});
+/** A scraper as the shovel paints it: its tube, its suckers held facing `belly`. */
+function scraperPoseOf(P: number[][], belly: [number, number, number]): ColossusPose {
+  return { view: 'front', drop: 0, body: false, gaze: [0, 1, 0], arms: [{ path: P, r: LANE.r, belly, seed: 41, fixed: true } as ArmPose], anim: { t: 0, open: 1, tongue: null, eye: [0, 0, 0], gaze: [0, 1, 0], lids: 1, glow: 1 } } as unknown as ColossusPose;
+}
