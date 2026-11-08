@@ -25,12 +25,12 @@ export default async function (page, snap) {
   await hands.press('button:NEW TALENT');
   await page.waitForTimeout(700);
   await snap('1_clean');
-  for (const id of ['greatsword', 'gswhirlwind', 'battleaxe', 'twinaxes', 'warhammer', 'tremors', 'thickskin']) {
+  for (const id of ['greatsword', 'gswhirlwind', 'honededge', 'mastertop', 'thickskin']) {
     await hands.press(`talent:${id}`);
     await page.waitForTimeout(350);
     await snap(`2_card_${id}`);
   }
-  await page.evaluate(() => { const d = window.__dbg; const g = d.game(); g.hero.talents = ['greatsword', 'sweepingcut', 'gswhirlwind', 'drilledleap', 'thickskin', 'shieldwall']; g.refresh(); d.invUi.talents.sel = null; });
+  await page.evaluate(() => { const d = window.__dbg; const g = d.game(); g.hero.talents = ['greatsword', 'gswhirlwind', 'sweepingcut', 'drilledleap', 'honededge', 'thickskin', 'shieldwall']; g.refresh(); d.invUi.talents.sel = null; });
   await page.waitForTimeout(500);
   await snap('3_taken');
   const n = await page.evaluate(() => [...window.__dbg.ui.marks.keys()].filter((m) => m.startsWith('talent:')).length);

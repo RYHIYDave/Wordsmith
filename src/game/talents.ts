@@ -117,7 +117,9 @@ export type TalentFigure =
   | { kind: 'gear'; path: string; hub: string; ring: readonly string[]; spokes: number }
   | { kind: 'round'; path: string; ids: readonly string[]; pad: number /* in the shape's own units */ }
   // (the Veteran's: a globe of glass through the talents round its rim, and over it, round the talent `fire`, its flames)
-  | { kind: 'globe'; path: string; ids: readonly string[]; fire?: string };
+  | { kind: 'globe'; path: string; ids: readonly string[]; fire?: string }
+  // (the Warrior's new tree, 7 Nov 2026: a shape drawn by its corners, in the tree's own units: a greatsword's blade, an axe's bits)
+  | { kind: 'outline'; path: string; pts: readonly (readonly [number, number])[] };
 
 export interface TalentTree {
   cls: ClassId;
@@ -282,56 +284,86 @@ const WARRIOR: TalentTree = {
 // he could only use one at any given time”. His picks after: the Greatsword; the weapon picked with the first talent point, level 5
 // (the Greatsword till then); “Yes, his weapons change too (Recommended)”; swipes “Each its own (Recommended)”. Of the moves: “All
 // those are good, I’d like whirlwind to start as WHIRL.  One spin, higher base damage than strike.  Then an option to change to
-// whirlwind (more hits, less damage) in the passive tree”; and of the tree, “Show me your idea for the tree and I’ll look at it”.
-// The shape: from the hub his three weapons (only one may be taken, and his first point must take one), each its own row, its
-// hold's other way at the fork (more hits, each for less); IRON, the old tree's guard, under them, open once a weapon is his. The
-// talents kept from the old tree keep their ids and work as they do now; the new ones do nothing yet.
+// whirlwind (more hits, less damage) in the passive tree”. Of the shape, through three drafts: “Let’s scrap iron tree and hit a
+// defensive passive into each of the three trees.  Then center that initial node in the center”; 21:29, “And screw it, make them
+// look like weapons”; then, shown that three whole weapons crowd a phone's page, “Ah I see what you’re saying about each weapon and
+// filling out the tree with points.  Uhhhh I guess put the iron path back in and center the starting node between all 4”; 8 Nov
+// 00:06, “Maybe have them connect at certain points on a node that works with both.  And have some nodes at the very top that they
+// connect to at the end of the tree”; and of the layout, “Paths up to the top (Recommended)”. So: from the start node, low in the
+// middle, four paths up side by side, each drawn as itself standing (the battle axe, the greatsword, the warhammer, IRON as a
+// shield); each weapon's first stone is the weapon (one only; his first point takes one), beside it its hold's other way; between
+// two paths a talent either can take; across the top three big ones, each reached from the top of the two paths under it. IRON
+// opens once a weapon is his. The talents kept from the old tree keep their ids and work as they do now; the new ones do nothing yet.
 export const WARRIOR_TREE2 = { on: false };
 const GSWORD = '#6fa8ff';
 const AXE = '#ff6a50';
 const HAMMER = '#ac8753';
+/** The talents between two paths and across the top: either path's (a star). */
+const JOIN = '#d8c8ff';
+/** Where the four paths stand (x), their rows (y: the weapons, then up), the start node, the shared row, the top. */
+const COL = { axe: 0, sword: 2, hammer: 4, iron: 6 } as const;
+const ROW = { pick: 4.4, change: 3.85, a: 3.4, b: 2.4, c: 1.4, top: 0 } as const;
 
 const WARRIOR2: TalentTree = {
   cls: 'warrior',
-  shape: 'three weapons from one hub, and his iron under them',
+  shape: 'his weapons and his iron, side by side',
   draft: true,
-  root: [0, 1.4],
+  root: [3, 5.5],
+  room: [-1.25, -0.45, 7.0, 5.75],
   paths: [
-    { id: 'gsword', name: 'GREATSWORD', color: GSWORD, label: { node: 'greatsword', side: 'above' } },
-    { id: 'axe', name: 'BATTLE AXE', color: AXE, label: { node: 'battleaxe', side: 'above' } },
-    { id: 'hammer', name: 'WARHAMMER', color: HAMMER, label: { node: 'warhammer', side: 'above' } },
+    { id: 'axe', name: 'BATTLE AXE', color: AXE, label: { node: 'battleaxe', side: 'below' } },
+    { id: 'gsword', name: 'GREATSWORD', color: GSWORD, label: { node: 'greatsword', side: 'below' } },
+    { id: 'hammer', name: 'WARHAMMER', color: HAMMER, label: { node: 'warhammer', side: 'below' } },
     { id: 'iron', name: 'IRON', color: IRON, label: { node: 'thickskin', side: 'below' } },
+    { id: 'join', name: '', color: JOIN, label: { node: 'mastertop', side: 'above' } },
   ],
   talents: [
-    // GREATSWORD
-    { id: 'greatsword', name: 'Greatsword', big: true, path: 'gsword', at: [1, 0], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a greatsword. TAP Strike. HOLD Whirl, one spin, harder than Strike. SWIPE Lunge.' },
-    { id: 'sweepingcut', name: 'Sweeping Cut', big: false, works: true, path: 'gsword', at: [2, 0], from: ['greatsword'], text: 'A melee hit splashes 30% of itself on the enemies beside.', now: { text: 'Your melee swings cleave: every enemy in the arc of the swing is struck, not only the first.' } },
-    { id: 'gswhirlwind', name: 'Whirlwind', big: true, path: 'gsword', at: [3, -0.38], from: ['sweepingcut'], text: 'Whirl becomes WHIRLWIND: you spin round and round, more hits, each for less.' },
-    { id: 'honededge', name: 'Honed Edge', big: false, works: true, path: 'gsword', at: [3, 0.38], from: ['sweepingcut'], text: 'All damage +15%.', mods: [{ stat: 'dmgPct', value: 15 }], now: { text: 'Your critical hits make the enemy bleed: it loses half the hit again over three seconds.' } },
-    { id: 'drilledleap', name: 'Drilled Lunge', big: false, works: true, path: 'gsword', at: [4, 0], from: ['gswhirlwind', 'honededge'], text: 'Lunge is ready again 30% sooner.', now: { text: 'Lunge strikes every enemy you pass on the way, not only where you land.' } },
-    { id: 'masterstroke', name: 'Master Stroke', big: true, works: true, path: 'gsword', at: [5, 0], from: ['drilledleap'], text: 'Every fourth hit you land is a certain critical.' },
-    // BATTLE AXE
-    { id: 'battleaxe', name: 'Battle Axe', big: true, path: 'axe', at: [1, 1.4], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a battle axe. TAP Cleave. HOLD throw your axe; it comes back to you. SWIPE Leaping Chop.' },
-    { id: 'rend', name: 'Rend', big: false, path: 'axe', at: [2, 1.4], from: ['battleaxe'], text: 'Cleave makes the enemy bleed: it loses a third of the hit again over three seconds.' },
-    { id: 'twinaxes', name: 'Twin Axes', big: true, path: 'axe', at: [3, 1.02], from: ['rend'], text: 'You throw two axes, one to each side of your aim, each for less.' },
-    { id: 'redmist', name: 'Red Mist', big: false, path: 'axe', at: [3, 1.78], from: ['rend'], text: 'Each kill: you swing 8% faster for four seconds, up to five kills.' },
-    { id: 'headlong', name: 'Headlong', big: false, path: 'axe', at: [4, 1.4], from: ['twinaxes', 'redmist'], text: 'Every kill makes Leaping Chop ready again at once.' },
-    { id: 'executioner', name: 'Executioner', big: true, path: 'axe', at: [5, 1.4], from: ['headlong'], text: 'Enemies below a quarter of their life take double damage from you.' },
-    // WARHAMMER
-    { id: 'warhammer', name: 'Warhammer', big: true, path: 'hammer', at: [1, 2.8], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a warhammer. TAP Smash. HOLD Earthquake. SWIPE Shoulder Charge.' },
-    { id: 'heavyhead', name: 'Heavy Head', big: false, path: 'hammer', at: [2, 2.8], from: ['warhammer'], text: 'Smash stuns the enemy for half a second.' },
-    { id: 'tremors', name: 'Tremors', big: true, path: 'hammer', at: [3, 2.42], from: ['heavyhead'], text: 'Earthquake becomes TREMORS: the ground shakes three times, each weaker.' },
-    { id: 'bonebreaker', name: 'Bonebreaker', big: false, path: 'hammer', at: [3, 3.18], from: ['heavyhead'], text: 'Stunned enemies take 25% more damage from you.' },
-    { id: 'bulldozer', name: 'Bulldozer', big: false, path: 'hammer', at: [4, 2.8], from: ['tremors', 'bonebreaker'], text: 'Shoulder Charge carries the enemies it hits along with you, and stuns them where you stop.' },
-    { id: 'faultline', name: 'Fault Line', big: true, path: 'hammer', at: [5, 2.8], from: ['bulldozer'], text: 'Smash splits the ground: a crack runs out ahead, stunning everything it passes.' },
-    // IRON (the old tree's, as they work now; open once a weapon is taken)
-    { id: 'thickskin', name: 'Thick Skin', big: false, works: true, path: 'iron', at: [1, 4.2], from: [], text: 'Life +15%.', now: { text: 'Below half your life, you take 30% less damage.' } },
-    { id: 'shieldwall', name: 'Shieldwall', big: true, works: true, path: 'iron', at: [2, 4.2], from: ['thickskin'], text: "Guarding's shield has 100% increased strength.", word: 'guarding', now: { text: "When Guarding's shield breaks, it bursts outward: everything near is thrown back and stunned for a second." } },
-    { id: 'resolute', name: 'Resolute', big: false, works: true, path: 'iron', at: [3, 3.82], from: ['shieldwall'], text: 'Fire, frost and lightning resistance +15%.', mods: [{ stat: 'fireRes', value: 15 }, { stat: 'frostRes', value: 15 }, { stat: 'lightRes', value: 15 }], now: { text: 'Nothing can slow you, freeze you or knock you back.' } },
-    { id: 'secondwind', name: 'Second Wind', big: false, works: true, path: 'iron', at: [3, 4.58], from: ['shieldwall'], text: 'Flasks heal 30% more.', now: { text: 'Drinking a flask throws back everything near you, and nothing can hurt you for a second.' } },
-    { id: 'bulwark', name: 'Bulwark', big: false, works: true, path: 'iron', at: [4, 3.82], from: ['resolute'], text: 'You take 10% less damage.', now: { text: 'The more enemies close round you, the less each blow hurts: 6% less for each one, up to 30%.' } },
-    { id: 'thorns', name: 'Thorns', big: false, works: true, path: 'iron', at: [4, 4.58], from: ['secondwind'], text: 'Enemies that strike you up close take 30% of the blow back.', now: { text: 'An enemy that strikes you up close is thrown back, and takes half the blow itself.' } },
-    { id: 'unbreakable', name: 'Unbreakable', big: true, works: true, path: 'iron', at: [5, 4.2], from: ['bulwark', 'thorns'], text: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.' },
+    // THE BATTLE AXE
+    { id: 'battleaxe', name: 'Battle Axe', big: true, path: 'axe', at: [COL.axe, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a battle axe. TAP Cleave. HOLD throw your axe; it comes back to you. SWIPE Leaping Chop.' },
+    { id: 'twinaxes', name: 'Twin Axes', big: true, path: 'axe', at: [COL.axe + 0.8, ROW.change], from: ['battleaxe'], text: 'Your throw becomes TWIN AXES: two axes, one to each side of your aim, each for less.' },
+    { id: 'rend', name: 'Rend', big: false, path: 'axe', at: [COL.axe, ROW.a], from: ['battleaxe'], text: 'Cleave makes the enemy bleed: it loses a third of the hit again over three seconds.' },
+    { id: 'redmist', name: 'Red Mist', big: false, path: 'axe', at: [COL.axe, ROW.b], from: ['rend'], text: 'Each kill: you swing 8% faster for four seconds, up to five kills.' },
+    { id: 'headlong', name: 'Headlong', big: false, path: 'axe', at: [COL.axe, ROW.c], from: ['redmist'], text: 'Every kill makes Leaping Chop ready again at once.' },
+    // THE GREATSWORD
+    { id: 'greatsword', name: 'Greatsword', big: true, path: 'gsword', at: [COL.sword, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a greatsword. TAP Strike. HOLD Whirl, one spin, harder than Strike. SWIPE Lunge.' },
+    { id: 'gswhirlwind', name: 'Whirlwind', big: true, path: 'gsword', at: [COL.sword + 0.8, ROW.change], from: ['greatsword'], text: 'Whirl becomes WHIRLWIND: you spin round and round, more hits, each for less.' },
+    { id: 'sweepingcut', name: 'Sweeping Cut', big: false, works: true, path: 'gsword', at: [COL.sword, ROW.a], from: ['greatsword'], text: 'A melee hit splashes 30% of itself on the enemies beside.', now: { text: 'Your melee swings cleave: every enemy in the arc of the swing is struck, not only the first.' } },
+    { id: 'drilledleap', name: 'Drilled Lunge', big: false, works: true, path: 'gsword', at: [COL.sword, ROW.b], from: ['sweepingcut'], text: 'Lunge is ready again 30% sooner.', now: { text: 'Lunge strikes every enemy you pass on the way, not only where you land.' } },
+    { id: 'footwork', name: 'Footwork', big: false, works: true, path: 'gsword', at: [COL.sword, ROW.c], from: ['drilledleap'], text: 'Each kill: run 25% faster for a second.', now: { text: 'Every kill makes Lunge ready again at once.' } },
+    // THE WARHAMMER
+    { id: 'warhammer', name: 'Warhammer', big: true, path: 'hammer', at: [COL.hammer, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a warhammer. TAP Smash. HOLD Earthquake. SWIPE Shoulder Charge.' },
+    { id: 'tremors', name: 'Tremors', big: true, path: 'hammer', at: [COL.hammer + 0.8, ROW.change], from: ['warhammer'], text: 'Earthquake becomes TREMORS: the ground shakes three times, each weaker.' },
+    { id: 'heavyhead', name: 'Heavy Head', big: false, path: 'hammer', at: [COL.hammer, ROW.a], from: ['warhammer'], text: 'Smash stuns the enemy for half a second.' },
+    { id: 'bulldozer', name: 'Bulldozer', big: false, path: 'hammer', at: [COL.hammer, ROW.b], from: ['heavyhead'], text: 'Shoulder Charge carries the enemies it hits along with you, and stuns them where you stop.' },
+    { id: 'wideswing', name: 'Wide Swing', big: false, path: 'hammer', at: [COL.hammer, ROW.c], from: ['bulldozer'], text: 'Smash strikes everything in a half circle in front of you.' },
+    // IRON (the old tree's, as they work now; open once a weapon is his)
+    { id: 'thickskin', name: 'Thick Skin', big: false, works: true, path: 'iron', at: [COL.iron, ROW.pick], from: [], text: 'Life +15%.', now: { text: 'Below half your life, you take 30% less damage.' } },
+    { id: 'shieldwall', name: 'Shieldwall', big: true, works: true, path: 'iron', at: [COL.iron, ROW.a], from: ['thickskin'], text: "Guarding's shield has 100% increased strength.", word: 'guarding', now: { text: "When Guarding's shield breaks, it bursts outward: everything near is thrown back and stunned for a second." } },
+    { id: 'secondwind', name: 'Second Wind', big: false, works: true, path: 'iron', at: [COL.iron, ROW.b], from: ['shieldwall'], text: 'Flasks heal 30% more.', now: { text: 'Drinking a flask throws back everything near you, and nothing can hurt you for a second.' } },
+    { id: 'bulwark', name: 'Bulwark', big: false, works: true, path: 'iron', at: [COL.iron, ROW.c], from: ['secondwind'], text: 'You take 10% less damage.', now: { text: 'The more enemies close round you, the less each blow hurts: 6% less for each one, up to 30%.' } },
+    // BETWEEN TWO PATHS: a talent either can take
+    { id: 'honededge', name: 'Honed Edge', big: false, works: true, path: 'join', at: [(COL.axe + COL.sword) / 2, ROW.b], from: ['redmist', 'drilledleap'], text: 'All damage +15%.', mods: [{ stat: 'dmgPct', value: 15 }], now: { text: 'Your critical hits make the enemy bleed: it loses half the hit again over three seconds.' } },
+    { id: 'giantslayer', name: 'Giant Slayer', big: false, works: true, path: 'join', at: [(COL.sword + COL.hammer) / 2, ROW.b], from: ['drilledleap', 'bulldozer'], text: 'Elites and bosses take 25% increased damage from you.', now: { text: 'Each hit on an elite or a boss cracks its guard: it takes 3% more from everything, up to ten cracks.' } },
+    { id: 'resolute', name: 'Resolute', big: false, works: true, path: 'join', at: [(COL.hammer + COL.iron) / 2, ROW.b], from: ['bulldozer', 'secondwind'], text: 'Fire, frost and lightning resistance +15%.', mods: [{ stat: 'fireRes', value: 15 }, { stat: 'frostRes', value: 15 }, { stat: 'lightRes', value: 15 }], now: { text: 'Nothing can slow you, freeze you or knock you back.' } },
+    // ACROSS THE TOP: the ends, each reached from the top of the two paths under it
+    { id: 'executioner', name: 'Executioner', big: true, path: 'join', at: [(COL.axe + COL.sword) / 2, ROW.top], from: ['headlong', 'footwork'], text: 'Enemies below a quarter of their life take double damage from you.' },
+    { id: 'mastertop', name: 'Master Stroke', big: true, works: true, path: 'join', at: [(COL.sword + COL.hammer) / 2, ROW.top], from: ['footwork', 'wideswing'], text: 'Every fourth hit you land is a certain critical.' },
+    { id: 'unbreakable', name: 'Unbreakable', big: true, works: true, path: 'join', at: [(COL.hammer + COL.iron) / 2, ROW.top], from: ['wideswing', 'bulwark'], text: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.' },
+  ],
+  // each path drawn standing, faint behind it: its hilt or haft from below the first stone, its head at the top
+  figures: [
+    // the battle axe: its haft, its blade out to the left at the top
+    { kind: 'outline', path: 'axe', pts: [[-0.09, 4.95], [0.09, 4.95], [0.09, 0.95], [-0.09, 0.95]] },
+    { kind: 'outline', path: 'axe', pts: [[-0.05, 0.95], [-0.55, 0.6], [-1.15, 0.75], [-1.05, 1.4], [-1.15, 2.05], [-0.55, 2.2], [-0.05, 1.85]] },
+    // the greatsword: its grip, its crossguard at the first stone, its blade up to its point
+    { kind: 'outline', path: 'gsword', pts: [[1.92, 5.0], [2.08, 5.0], [2.08, 4.7], [1.92, 4.7]] },
+    { kind: 'outline', path: 'gsword', pts: [[1.35, 4.62], [2.65, 4.62], [2.65, 4.18], [1.35, 4.18]] },
+    { kind: 'outline', path: 'gsword', pts: [[1.72, 4.18], [2.28, 4.18], [2.28, 1.2], [2, 0.55], [1.72, 1.2]] },
+    // the warhammer: its haft, its head across the top
+    { kind: 'outline', path: 'hammer', pts: [[3.91, 4.95], [4.09, 4.95], [4.09, 1.95], [3.91, 1.95]] },
+    { kind: 'outline', path: 'hammer', pts: [[3.35, 1.95], [4.65, 1.95], [4.75, 1.8], [4.75, 1.0], [4.65, 0.85], [3.35, 0.85], [3.25, 1.0], [3.25, 1.8]] },
+    // IRON: a shield, its point down
+    { kind: 'outline', path: 'iron', pts: [[5.4, 0.95], [6.6, 0.95], [6.6, 3.4], [6.3, 4.4], [6.0, 4.95], [5.7, 4.4], [5.4, 3.4]] },
   ],
 };
 
@@ -730,7 +762,7 @@ const WEAPON_PICKS: readonly string[] = ['greatsword', 'battleaxe', 'warhammer']
 function otherWeapon(cls: ClassId, id: string, taken: readonly string[]): boolean {
   return cls === 'warrior' && WARRIOR_TREE2.on && WEAPON_PICKS.includes(id) && WEAPON_PICKS.some((w) => w !== id && taken.includes(w));
 }
-/** (the same) his first point takes his weapon: IRON, the hub's other way, opens once one of the three is his. */
+/** (the same) his first point takes his weapon: IRON, the start node's other way, opens once one of the three is his. */
 function waitsForWeapon(cls: ClassId, t: TalentDef, taken: readonly string[]): boolean {
   return cls === 'warrior' && WARRIOR_TREE2.on && t.path === 'iron' && !t.from.length && !WEAPON_PICKS.some((w) => taken.includes(w));
 }
