@@ -2475,7 +2475,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     talents2: TALENTS2,
     /** THE VETERAN (game/veteran.ts), the Brawler made again, on since his yes of 3 Nov 2026 (25.0): `veteran.on` (his tree and his moves). */
     veteran: VETERAN,
-    /** QUEST MARKERS (game/quest_marks.ts), off until his yes to their picture: `questMarks.on`. */
+    /** QUEST MARKERS (game/quest_marks.ts), on at his yes: `questMarks.on`. */
     questMarks: QUEST_MARKS,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,

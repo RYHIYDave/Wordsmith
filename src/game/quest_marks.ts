@@ -7,11 +7,13 @@
 // "Speak to the wordsmith" (or whoever it is for) and a marker floats over the floor's waypoint home; in town the same marker floats
 // over whoever has a quest to give or to take now (game.ts questGivers), and when one comes due there (the armourer, as the
 // wordsmith's ring is lit) the line says "Speak to the armourer".
-// The marker is the friend's cyan (his rule: what glows on a friend is cyan). OFF until he has seen its picture.
+// The marker is the friend's cyan (his rule: what glows on a friend is cyan). Shown him (quest_marker_1/2/3; then, at his “Why is it
+// right on the wordsmiths head but 10 ft over the armorer’s head?”, over each one's head: marker_wordsmith, marker_armourer), ON at
+// his yes, 8 Nov 2026, by 06:24: “Yes, put it live (Recommended)”.
 
 import type { Station } from './state';
 
-export const QUEST_MARKS = { on: false, secs: 6 };
+export const QUEST_MARKS = { on: true, secs: 6 };
 
 /** What the line at the top says under "Speak to the ...": where they are, or how to get to them. */
 export const SPEAK_WHERE: Partial<Record<Station, string>> = {
