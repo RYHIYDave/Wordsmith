@@ -3,8 +3,12 @@
 // its voice (<family>_aggro as it first notices him, _hurt on a big hit only, _death as it dies, in place of monsterDie), a boss's
 // (<boss>_roar as his fight begins, in place of bossRoar, _hurt, _death), and the sounds of what the silent bosses do (by the act).
 // Each sound is two takes (<name>_1, _2), played by engine/audio.ts sfxNamed; fetched as a floor is come into (soundsOf).
-// Silent by design, given nothing: the Mute Hound, the Silent Order, the Hush shapes, the Hushed, the Hushed Watchman, the Rime
-// Shade (the Hushed and the watch strike with a club, atkClub). The human enemies' voices come later.
+// Silent by design till the third batch (7 Nov 2026, his “I get that they’re supposed to be silent per the Hush but they should
+// probably have SOMETHING anyway”, “Just a boss that makes no sound isn’t the best game design”; “Yes, hand them over
+// (Recommended)”): the Mute Hound, the Silent Order, the Hush shapes, the Hushed (every Hushed kind), the Hushed Watchman and the
+// Rime Shade now have voices with no voice in them (breath, cloth, armour, ink, paper, fog, frost), and the silent bosses roars,
+// hurts and deaths of the same (the Crier, the Palimpsest, the Scraper, the Quill, the Censor, the Princess). The human enemies'
+// voices come later.
 
 import type { MonsterKind } from './types';
 
@@ -57,11 +61,20 @@ export const VOICE: Partial<Record<MonsterKind, string>> = {
   devil: 'devil',
   inkling: 'ink',
   bookwarden: 'book',
+  // (THE THIRD BATCH, the silent ones)
+  hound: 'hound',
+  order: 'order',
+  hshape: 'hshape',
+  hushed: 'hushed', fieldhand: 'hushed', patient: 'hushed', gardener: 'hushed', groom: 'hushed',
+  watch: 'watch',
+  rshade: 'rshade',
 };
 
 /** The bosses that roar: their roar as the fight begins, their hurt, their death. */
 export const BOSS_VOICE: Partial<Record<MonsterKind, string>> = {
   chained: 'chained', stoker: 'stoker', amalgam: 'amalgam', unfinished: 'unfinished', queen: 'cqueen', stag: 'stag', eye: 'eye', ratking: 'ratking',
+  // (THE THIRD BATCH, the silent bosses)
+  crier: 'crier', palimpsest: 'palimpsest', scraper: 'scraper', quill: 'quill', censor: 'censor', princess: 'princess',
 };
 
 /** The silent bosses: the sound of what they do, as each act begins (by the act's id). */
@@ -69,7 +82,7 @@ export const ACT_SOUND: Record<string, string> = {
   'crier:swing': 'crier_slam', 'crier:shout': 'crier_shout', 'crier:toll': 'crier_toll',
   'palimpsest:slam': 'palimpsest_slam', 'palimpsest:leaves': 'palimpsest_whirl', 'palimpsest:cuts': 'palimpsest_whirl',
   'scraper:snap': 'scraper_claw', 'scraper:strip': 'scraper_claw', 'scraper:scour': 'scraper_claw',
-  'quill:stab': 'quill_nib', 'quill:write': 'quill_nib', 'quill:lines': 'quill_nib',
+  'quill:stab': 'quill_nib', 'quill:write': 'quill_nib', 'quill:lines': 'quill_nib', 'quill:swoop': 'quill_swoop',
   'censor:redact': 'censor_stamp', 'censor:blackout': 'censor_stamp', 'censor:strike': 'censor_line', 'censor:slash': 'censor_line',
   'princess:lash': 'princess_vine', 'princess:snare': 'princess_vine',
 };

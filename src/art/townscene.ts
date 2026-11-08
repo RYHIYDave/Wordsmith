@@ -8,7 +8,7 @@ import { COLUMN_FRAMES, FLOOR_FRAMES, FUSE_STEPS, LANDS, RISE_STEPS, SET_STEPS, 
 import type { Blaze, Letter } from './ring3';
 import { SMITH3, darkOf } from './smith3';
 import type { TownProps } from './town';
-import { actAt, townFrame } from './townsfolk';
+import { ACT_FPS, actAt, townFrame } from './townsfolk';
 import type { Facing, Townsfolk } from './townsfolk';
 
 export interface TownArt {
@@ -148,6 +148,20 @@ export function townSprite(art: TownArt, kind: string, variant: number, t: numbe
 
 /** The wordsmith's clock is set this far apart from the others'. */
 const SMITH_PHASE = 6.4;
+
+/** (THE WORLD'S SOUNDS, game/world_sounds.ts) where one of the town's people is in what they do now and then: seconds into it, or -1. */
+export function folkActAt(art: TownArt, kind: string, t: number): number {
+  if (kind === 'wordsmith') return smithAct(art, t);
+  if (kind === 'armourer') return actAt(art.folk.armourer, t, 0);
+  if (kind === 'mystic') return actAt(art.folk.mystic, t, 3.1);
+  if (kind === 'stranger') return actAt(art.folk.stranger, t, 4.7);
+  return -1;
+}
+/** (the same) how long what they do now and then lasts, in seconds. */
+export function folkActLong(art: TownArt, kind: string): number {
+  const m = (art.folk as unknown as Record<string, { act: readonly unknown[] } | undefined>)[kind];
+  return m ? m.act.length / ACT_FPS : 0;
+}
 /** Which way the wordsmith was last turned to someone (townSprite is told each frame he is drawn). */
 let smithTo: Facing | null = null;
 

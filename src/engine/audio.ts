@@ -786,6 +786,11 @@ const SECOND_SFX: readonly Sfx[] = [
   'haymaker', 'hook', 'kick', 'heavyKick', 'punchWhoosh', 'bowDraw', 'arrowHit',
 ];
 
+/** The fourth batch's recordings of the sounds the synth still made (assets/sound/README.md, "Fourth batch"). */
+const FOURTH_SFX: readonly Sfx[] = [
+  'pickup', 'gold', 'word', 'rare', 'potion', 'levelUp', 'portal', 'door', 'gateRise', 'gateFall', 'click', 'equip', 'buy', 'deny',
+  'imbue', 'death', 'echo', 'might', 'orb', 'bossRoar',
+];
 /** The game's sounds that are recorded, and their takes (files, without .mp3). */
 export const RECORDED_SFX: Partial<Record<Sfx, readonly string[]>> = {
   swing: ['swing_1', 'swing_2'],
@@ -797,6 +802,12 @@ export const RECORDED_SFX: Partial<Record<Sfx, readonly string[]>> = {
   // (THE SECOND BATCH, 7 Nov 2026, his “all good”: the spells and skills, two takes each; beamHum stays made in code, as it is
   // played at every bite of a beam and its recording is made to loop)
   ...Object.fromEntries(SECOND_SFX.map((n) => [n, [`${n}_1`, `${n}_2`]])),
+  // (THE FOURTH BATCH, 7 Nov 2026, his “All good, hand over (Recommended)”: the twenty the synth still made, recorded; their files
+  // the sound's name in snake_case, as monster_die)
+  ...Object.fromEntries(FOURTH_SFX.map((n) => {
+    const f = n.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+    return [n, [`${f}_1`, `${f}_2`]];
+  })),
 };
 /** A recorded take plays this loud, before `vol` (the sounds made in code are written to peak at 1 and played at VOICE_GAIN). */
 const RECORDED_GAIN = 0.5;
@@ -847,17 +858,51 @@ function fetchRecorded(c: AudioContext, file: string, soon = true): void {
   pumpFetches();
 }
 
+/**
+ * THE SOUNDS IN PACKS (8 Nov 2026; tools/sound_packs.mjs): the sound chat's batches came to 574 files, more than the game's page on
+ * claude.ai may carry beside it (511 a version), so the build packs the mp3s into a few packs and writes an index of where each
+ * lies. The index is fetched once; a pack the first time one of its sounds is wanted (kept, a few MB at most); each sound decoded
+ * from its own bytes, cut from the pack, as it is wanted. Without an index (an older build), each sound is a file of its own.
+ */
+type SoundAt = { pack?: string; at?: number; len?: number; file?: string };
+let soundIndexP: Promise<Record<string, SoundAt> | null> | null = null;
+const packs = new Map<string, Promise<ArrayBuffer>>();
+function soundIndex(mark: string): Promise<Record<string, SoundAt> | null> {
+  return (soundIndexP ??= fetch(`${SOUND_DIR}/${mark}/index.json`)
+    .then((r) => (r.ok ? (r.json() as Promise<Record<string, SoundAt>>) : null))
+    .catch(() => null));
+}
+async function soundBytes(mark: string, file: string): Promise<ArrayBuffer> {
+  const idx = await soundIndex(mark);
+  const e = idx ? idx[file] : undefined;
+  if (idx && !e) throw new Error(`${file}: not in the sounds' index`);
+  if (e && e.pack && e.at !== undefined && e.len !== undefined) {
+    const name = e.pack;
+    let p = packs.get(name);
+    if (!p) {
+      p = fetch(`${SOUND_DIR}/${mark}/${name}`).then((r) => {
+        if (!r.ok) throw new Error(`${name}: ${r.status}`);
+        return r.arrayBuffer();
+      });
+      packs.set(name, p);
+      p.catch(() => packs.delete(name));
+    }
+    const buf = await p;
+    // (a copy of its own bytes: decoding takes the buffer it is given)
+    return buf.slice(e.at, e.at + e.len);
+  }
+  const r = await fetch(`${SOUND_DIR}/${mark}/${e?.file ?? file}`);
+  if (!r.ok) throw new Error(`${file}: ${r.status}`);
+  return r.arrayBuffer();
+}
+
 /** The next sounds waiting, fetched and decoded, no more than FETCH_AT_ONCE at once. */
 function pumpFetches(): void {
   while (fetching < FETCH_AT_ONCE && waiting.length) {
     const { c, file } = waiting.shift()!;
     const mark = soundMark();
     fetching++;
-    fetch(`${SOUND_DIR}/${mark}/${file}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`${file}: ${r.status}`);
-        return r.arrayBuffer();
-      })
+    soundBytes(mark, file)
       .then((b) => new Promise<AudioBuffer>((ok, no) => {
         // (the old form, with callbacks, as the oldest Safari has it; the promise where there is one)
         const p = c.decodeAudioData(b, ok, no) as unknown as Promise<AudioBuffer> | undefined;
@@ -912,6 +957,142 @@ export function warmRecorded(hero?: Speaker): void {
   if (hero) for (const takes of Object.values(CRIES)) for (const t of takes) fetchRecorded(c, `${hero}_${t}.mp3`, false);
 }
 
+// ---- THE WORLD'S SOUNDS (the sound chat's fourth batch, 7 Nov 2026; his “All good, hand over (Recommended)”) -----------------
+/**
+ * The world's sounds (footsteps, the scene's sounds, the loops) go through a bus of their own, so that on the Hush floors (11 to 15)
+ * they are heard thin and muffled: a low-pass about `hz`, at `vol` (his pick, “Thin and muffled (Recommended)”); the combat sounds
+ * and the voices stay clear there (the sound chat's suggestion).
+ */
+export const HUSH_MUFFLE = { hz: 900, q: 0.5, vol: 0.67 };
+let worldIn: GainNode | null = null;
+let worldLow: BiquadFilterNode | null = null;
+let muffled = false;
+function worldBus(c: AudioContext): AudioNode | null {
+  if (!bus) return null;
+  if (!worldIn) {
+    const g = c.createGain();
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass';
+    f.Q.value = HUSH_MUFFLE.q;
+    g.connect(f);
+    f.connect(bus);
+    worldIn = g;
+    worldLow = f;
+    applyMuffle();
+  }
+  return worldIn;
+}
+function applyMuffle(): void {
+  if (!worldIn || !worldLow) return;
+  worldLow.frequency.value = muffled ? HUSH_MUFFLE.hz : 20000;
+  worldIn.gain.value = muffled ? HUSH_MUFFLE.vol : 1;
+}
+/** The world's sounds heard thin and muffled (on the Hush floors), or clear. */
+export function setMuffled(on: boolean): void {
+  if (muffled === !!on) return;
+  muffled = !!on;
+  applyMuffle();
+}
+
+/** A world sound by name (two takes, <name>_1 and _2): a prop breaking, a chest, a rift, a trap, the town's. `or`: made in code till it has come. */
+export function worldSound(name: string, vol = 1, or?: Sfx): void {
+  try {
+    const c = ctx;
+    if (!c || !bus || muted || c.state !== 'running' || !(vol > 0)) return;
+    const into = worldBus(c);
+    if (!into) return;
+    const takes = [`${name}_1`, `${name}_2`];
+    for (const t of takes) fetchRecorded(c, `${t}.mp3`);
+    if (RECORDED.on && playTake(c, into, `world:${name}`, takes, nowMs(), vol, undefined)) return;
+    if (or) sfx(or, { vol });
+  } catch (err) {
+    report(`worldSound '${name}'`, err);
+  }
+}
+
+/** FOOTSTEPS: the ground underfoot, by the floor (game/footsteps.ts). */
+export type Ground = 'stone' | 'wood' | 'earth' | 'gravel' | 'water' | 'carpet';
+/** How loud a step is (the sound chat: about half a hit, or they wear on you). */
+export const STEP_VOL = 0.5;
+let lastStep = '';
+/** Fetch a ground's four steps (as a floor is come into). */
+export function warmSteps(ground: Ground): void {
+  const c = ctx;
+  if (!c || !RECORDED.on) return;
+  for (let k = 1; k <= 4; k++) fetchRecorded(c, `step_${ground}_${k}.mp3`, false);
+}
+/** A step, as a foot lands: one of the ground's four takes, never the same twice running. Nothing till they have come. */
+export function footstep(ground: Ground, vol = STEP_VOL): void {
+  try {
+    const c = ctx;
+    if (!c || !bus || muted || c.state !== 'running' || !RECORDED.on || !(vol > 0)) return;
+    const into = worldBus(c);
+    if (!into) return;
+    const takes: string[] = [];
+    for (let k = 1; k <= 4; k++) {
+      const t = `step_${ground}_${k}`;
+      fetchRecorded(c, `${t}.mp3`);
+      if (t !== lastStep && recorded.get(`${t}.mp3`)) takes.push(t);
+    }
+    if (!takes.length) return;
+    const t = takes[Math.floor(Math.random() * takes.length)];
+    if (playTake(c, into, 'step', [t], nowMs(), vol, undefined)) lastStep = t;
+  } catch (err) {
+    report('footstep', err);
+  }
+}
+
+/**
+ * THE LOOPS (<name>_loop.wav: fire_small, fire_big, water, ring_hum, bed_hall, bed_camp): each, while wanted, going round for ever,
+ * faded over about a second to the loudness asked (the nearer its fire or water, the louder); let go of once unwanted a while.
+ */
+const loops = new Map<string, { src: AudioBufferSourceNode; g: GainNode; quiet: number }>();
+/** How long a loop unwanted is kept going, silent, before it is let go of (seconds). */
+const LOOP_KEEP = 6;
+export function setLoops(want: Readonly<Record<string, number>>): void {
+  try {
+    const c = ctx;
+    if (!c || !bus || c.state !== 'running' || !RECORDED.on) return;
+    const into = worldBus(c);
+    if (!into) return;
+    const now = c.currentTime;
+    for (const [name, vol] of Object.entries(want)) {
+      if (!(vol > 0.001)) continue;
+      const file = `${name}_loop.wav`;
+      fetchRecorded(c, file, false);
+      if (loops.has(name)) continue;
+      const buf = recorded.get(file);
+      if (!buf) continue;
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const g = c.createGain();
+      g.gain.value = 0;
+      src.connect(g);
+      g.connect(into);
+      src.start();
+      loops.set(name, { src, g, quiet: 0 });
+    }
+    for (const [name, l] of loops) {
+      const v = want[name] ?? 0;
+      l.g.gain.setTargetAtTime(v > 0.001 ? v : 0, now, 0.33);
+      l.quiet = v > 0.001 ? 0 : l.quiet || now;
+      if (l.quiet && now - l.quiet > LOOP_KEEP) {
+        try {
+          l.src.stop();
+          l.src.disconnect();
+          l.g.disconnect();
+        } catch {
+          // already gone
+        }
+        loops.delete(name);
+      }
+    }
+  } catch (err) {
+    report('setLoops', err);
+  }
+}
+
 /** A recorded take, played; false where none of its takes has come (the caller then makes the sound itself). */
 function playTake(c: AudioContext, into: AudioNode, key: string, takes: readonly string[], ms: number, vol: number, asked: number | undefined, spread = true): boolean {
   const ready = takes.map((t) => recorded.get(`${t}.mp3`)).filter((b): b is AudioBuffer => !!b);
@@ -943,8 +1124,11 @@ function playTake(c: AudioContext, into: AudioNode, key: string, takes: readonly
   };
   src.start(t);
   voiceEnds.push(t + buf.duration / pitch);
+  takesPlayed++;
   return true;
 }
+/** How many recorded takes have been played (recordedDetail). */
+let takesPlayed = 0;
 
 function playRecorded(c: AudioContext, into: AudioNode, name: Sfx, ms: number, vol: number, asked: number | undefined): boolean {
   if (!RECORDED.on) return false;
@@ -995,6 +1179,17 @@ export function recordedState(): { come: number; coming: number; failed: number;
     else failed++;
   }
   return { come, coming, failed, title: !!titleSrc };
+}
+
+/** (for the playtests) the recorded sounds come so far, by file, the loops going round, and how many takes have been played. */
+export function recordedDetail(): { come: string[]; failed: string[]; loops: string[]; played: number } {
+  const come: string[] = [];
+  const failed: string[] = [];
+  for (const [k, v] of recorded) {
+    if (v) come.push(k);
+    else if (v === false) failed.push(k);
+  }
+  return { come, failed, loops: [...loops.keys()], played: takesPlayed };
 }
 
 let titleSrc: AudioBufferSourceNode | null = null;
