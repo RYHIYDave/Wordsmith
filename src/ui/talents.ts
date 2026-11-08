@@ -61,6 +61,11 @@ const GOLEM: readonly string[] = ['.XXXXX.', 'XoX.XoX', 'XXXXXXX', 'X.XXX.X', 'X
 const GEAR: readonly string[] = ['.X.X.X.', 'XXXXXXX', '.XXoXX.', 'XXXXXXX', '.X.X.X.'];
 const COIN: readonly string[] = ['..XXX..', '.XoooX.', '.XoXoX.', '.XoooX.', '..XXX..'];
 const QUICK: readonly string[] = ['X..X...', '.X..X..', '..X..Xo', '.X..X..', 'X..X...'];
+// (the Warrior's new tree, drafted 7 Nov 2026: an axe's head and a hammer's, on their hafts)
+const AXEHEAD: readonly string[] = ['....XX.', '....XXX', 'XXXXXoX', '....XXX', '....XX.'];
+const MAUL: readonly string[] = ['....XXX', '....XXX', 'XXXXXoX', '....XXX', '....XXX'];
+/** (the same) a talent either of two paths can take, or one the paths end in: a star. */
+const JOIN_STAR: readonly string[] = ['...X...', '..XXX..', 'XXXoXXX', '..XXX..', '...X...'];
 const IMPACT: readonly string[] = ['X..X..X', '.X.X.X.', '..XoX..', '.X.X.X.', 'X..X..X'];
 const KNUCKLE: readonly string[] = ['..X....', '.XX....', 'XXXXXXo', '.XX...X', '..X..X.'];
 // (the Ranger's companions, 28 Oct 2026: a paw)
@@ -90,6 +95,10 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   traps: (c) => ({ rows: JAWS, color: c, glow: P.white }),
   arrows: (c) => ({ rows: SPLIT, color: c, glow: P.white }),
   technique: (c) => ({ rows: BLADE, color: c, glow: P.white }),
+  gsword: (c) => ({ rows: BLADE, color: c, glow: P.white }),
+  axe: (c) => ({ rows: AXEHEAD, color: c, glow: P.white }),
+  hammer: (c) => ({ rows: MAUL, color: c, glow: P.white }),
+  join: (c) => ({ rows: JOIN_STAR, color: c, glow: P.white }),
   iron: () => wordRune('guarding'),
   cross: () => wordRune('heavy'),
   man: (c) => ({ rows: SIGIL, color: c, glow: P.white }),
@@ -323,6 +332,23 @@ function drawGlobe(g: CanvasRenderingContext2D, ns: readonly TalentAt[], fire: T
   }
 }
 
+/** (the Warrior's new tree, 7 Nov 2026) a shape by its corners on the page: filled faint, its edges a little less so. */
+function drawOutline(g: CanvasRenderingContext2D, pts: readonly [number, number][], color: string): void {
+  g.globalAlpha = 0.1;
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(pts[0][0] + 0.5, pts[0][1] + 0.5);
+  for (const p of pts.slice(1)) g.lineTo(p[0] + 0.5, p[1] + 0.5);
+  g.closePath();
+  g.fill();
+  g.globalAlpha = 1;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    line(g, a[0], a[1], b[0], b[1], color, 0.3);
+  }
+}
+
 function drawRound(g: CanvasRenderingContext2D, ns: readonly TalentAt[], pad: number, color: string): void {
   const x0 = Math.min(...ns.map((n) => n.cx)) - pad;
   const x1 = Math.max(...ns.map((n) => n.cx)) + pad;
@@ -375,6 +401,8 @@ export interface TalentLayout {
   headY: number;
   /** Pixels to one of the shape's own units (across: the smaller, where it is stretched). */
   unit: number;
+  /** A point in the shape's own units, on the page (the figures drawn by their corners: the Warrior's weapons). */
+  toPx?: (x: number, y: number) => [number, number];
 }
 
 /** The tree laid into the page's room `r`, its shape stretched to fill it. */
@@ -423,7 +451,7 @@ export function layTalents(game: Game, r: Rect): TalentLayout {
       }
       return { text: p.name, x: Math.max(r.x, Math.min(r.x + r.w - w, x)), y: Math.max(r.y + 10, Math.min(r.y + r.h - 6, y)), color: p.color };
     });
-  return { tree, nodes, root, labels, headY, unit: Math.min(sx, sy) };
+  return { tree, nodes, root, labels, headY, unit: Math.min(sx, sy), toPx: map };
 }
 
 /**
@@ -532,7 +560,7 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   const isTaken = (id: string): boolean => taken.includes(id);
   // the faint pictures behind the tree, so that its shape reads (the arrow's feathers and head, the swords); the new classes'
   // (a claw's talons, a gear, a fist) kept to the page
-  const keep = (tree.figures ?? []).some((f) => f.kind === 'talon' || f.kind === 'gear' || f.kind === 'round' || f.kind === 'globe');
+  const keep = (tree.figures ?? []).some((f) => f.kind === 'talon' || f.kind === 'gear' || f.kind === 'round' || f.kind === 'globe' || f.kind === 'outline');
   g.save();
   if (keep) {
     g.beginPath();
@@ -561,6 +589,9 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
     } else if (f.kind === 'round') {
       const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
       if (ns.length) drawRound(g, ns, f.pad * lay.unit, color);
+    } else if (f.kind === 'outline') {
+      const to = lay.toPx;
+      if (to && f.pts.length >= 3) drawOutline(g, f.pts.map(([x, y]) => to(x, y)), color);
     } else if (f.kind === 'globe') {
       const ns = f.ids.map((id) => at.get(id)).filter((n): n is TalentAt => !!n);
       if (ns.length >= 3) drawGlobe(g, ns, f.fire ? at.get(f.fire) ?? null : null, color);

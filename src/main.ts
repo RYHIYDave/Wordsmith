@@ -26,7 +26,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { TALENTS, TALENTS2 } from './game/talents';
+import { TALENTS, TALENTS2, WARRIOR_TREE2 } from './game/talents';
 import { QUEST_MARKS } from './game/quest_marks';
 import { VETERAN } from './game/veteran';
 import { RIME_SHADE_ON } from './art/rime_shade';
@@ -2593,6 +2593,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     veteran: VETERAN,
     /** QUEST MARKERS (game/quest_marks.ts), on at his yes: `questMarks.on`. */
     questMarks: QUEST_MARKS,
+    /** THE WARRIOR'S NEW TREE, drafted (game/talents.ts WARRIOR_TREE2: his three weapons), off until his yes: `warriorTree2.on`. */
+    warriorTree2: WARRIOR_TREE2,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
     /** THE LOADING SCREEN BETWEEN FLOORS: whether it is up now (and since how long), and, for a playtest begun without it, the level counted as loaded (so that the next is put up between). */
