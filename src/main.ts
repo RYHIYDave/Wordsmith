@@ -89,6 +89,7 @@ import { ARRIVALS } from './game/arrivals';
 import { PILLARS, QUESTS610 } from './game/quests610';
 import { CANDLES_BY_WALL } from './game/first5';
 import { drawBossCard, drawFloorCard } from './ui/cards';
+import { ENDLESS_FANFARE, drawEndlessCard, drawEndlessSplash } from './ui/endless_fanfare';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { EXITS, WAYS, errandWalk, onwardKey, stairMiddle, startKey, topStep } from './game/ways';
@@ -450,6 +451,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (BOSS_INTRO, FLOOR_NAMES: the boss's name and the floor's, across the screen: ui/cards.ts)
   let bossCard: BossCard | null = null;
   let floorCard: FloorCard | null = null;
+  /** ENDLESS MODE'S FANFARE (ui/endless_fanfare.ts): when the splash began, and when the card came up after it (or null). */
+  let fanfare: { at: number; card: number | null } | null = null;
   /** A class card pressed once while a saved run exists: a second press starts over. */
   let confirm: { cls: ClassId; t: number } | null = null;
   /**
@@ -1548,6 +1551,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (big) fx.freeze = Math.max(fx.freeze, 0.35);
         // (the word is seen and named before any screen opens for it)
         quiet = 0;
+      } else if (e.t === 'endlessOpens') {
+        // (ENDLESS MODE'S FANFARE: the splash, then the card; the game waits under both)
+        if (ENDLESS_FANFARE.on) {
+          fanfare = { at: clock, card: null };
+          panels.open = 'endless';
+        }
       } else if (e.t === 'quip') {
         // the hero has something to say about a big kill: heard in their own voice (it is drawn by the effects)
         speak(g.hero.cls, g.voice, e.text);
@@ -2333,7 +2342,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const shut = drawMap(ui, g, clock);
         if (g.level.town || (shut && clock - mapShownAt > 0.2)) panels.open = 'none';
       } else if (panels.open === 'level') drawLevelUp(ui, g, (code) => input.pressed(code), clock - levelShownAt > 0.45);
-      else if (panels.open === 'pause') {
+      else if (panels.open === 'endless') {
+        // (ENDLESS MODE'S FANFARE: the splash its seconds, or until a press after `skip`; then the card, until GO ON)
+        if (!fanfare) fanfare = { at: clock, card: null };
+        const t = clock - fanfare.at;
+        if (fanfare.card === null) {
+          drawEndlessSplash(cg, t, scr.w, scr.h);
+          if (t >= ENDLESS_FANFARE.splash || (t >= ENDLESS_FANFARE.skip && ui.pressIn(0, 0, scr.w, scr.h))) fanfare.card = clock;
+        } else if (drawEndlessCard(ui, clock - fanfare.card >= ENDLESS_FANFARE.armed, (code) => input.pressed(code))) {
+          panels.open = 'none';
+          fanfare = null;
+          sfx('click');
+        }
+      } else if (panels.open === 'pause') {
         const p = drawPause(ui, isMuted(), turnLabel(), meta.limit, scr.touch ? meta.aim : null, g.practice || g.trial ? 'Leave' : 'End run');
         if (p.resume) panels.open = 'none';
         if (p.mute) setMuted(!isMuted());
@@ -2533,6 +2554,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     moveToast: () => (moveToast ? { skill: moveToast.skill, t: moveToast.t } : null),
     /** The inventory, as the HUD opens it. */
     inv: (focus = -1) => openInventory(focus),
+    // (ENDLESS MODE'S FANFARE: its switch, and the splash and card shown as endless opens, for pictures)
+    fanfare: ENDLESS_FANFARE,
+    endlessFanfare: (): void => {
+      fanfare = { at: clock, card: null };
+      panels.open = 'endless';
+    },
+    fanfareShown: (): 'splash' | 'card' | null => (fanfare ? (fanfare.card === null ? 'splash' : 'card') : null),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
     /** THE SKILL TREES' switch (game/talents.ts), on since Version 20.1: for their pictures and playtests (`talents.on`). */

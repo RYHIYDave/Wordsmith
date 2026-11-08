@@ -1580,6 +1580,8 @@ export type GameEvent =
   | { t: 'dustGot'; x: number; y: number; n: number }
   | { t: 'stoneGot'; x: number; y: number }
   | { t: 'stoneGiven'; x: number; y: number }
+  /** ENDLESS MODE'S FANFARE (ui/endless_fanfare.ts): endless mode has just opened to him, the last floor beaten. */
+  | { t: 'endlessOpens' }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

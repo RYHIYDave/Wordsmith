@@ -37,7 +37,7 @@ export type Sel = { kind: 'bag'; i: number } | { kind: 'gear'; slot: EquipSlot }
 export interface Panels {
   /** The inventory (words, attacks and gear), a choice, the pause menu, the dungeon map, or one of the town's services. */
   /** (Both vendors have the one screen, 'vendor': which of them it is, is the game's `vendor`.) */
-  open: 'none' | 'inv' | 'level' | 'pause' | 'map' | 'vendor' | 'altar' | Exclude<Station, VendorId>;
+  open: 'none' | 'inv' | 'level' | 'pause' | 'map' | 'vendor' | 'altar' | 'endless' | Exclude<Station, VendorId>;
   /** (ACT 1) which stronghold's altar is open ('altar'): game/act1_holds.ts. */
   altar: number;
   sel: Sel | null;
