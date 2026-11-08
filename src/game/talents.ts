@@ -29,6 +29,7 @@
 //             warrior tree is rage.  He’s not a barbarian, he’s all about power and technique."; his
 //             yes to TECHNIQUE as this chat listed it: "Yes, as listed (Recommended)".)
 
+import type { SkillId } from './defs';
 import type { ClassId, StatKey, WordId } from './types';
 import { VETERAN } from './veteran';
 
@@ -307,7 +308,6 @@ const ROW = { pick: 4.4, change: 3.85, a: 3.4, b: 2.4, c: 1.4, top: 0 } as const
 const WARRIOR2: TalentTree = {
   cls: 'warrior',
   shape: 'his weapons and his iron, side by side',
-  draft: true,
   root: [3, 5.5],
   room: [-1.25, -0.45, 7.0, 5.75],
   paths: [
@@ -319,23 +319,23 @@ const WARRIOR2: TalentTree = {
   ],
   talents: [
     // THE BATTLE AXE
-    { id: 'battleaxe', name: 'Battle Axe', big: true, path: 'axe', at: [COL.axe, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a battle axe. TAP Cleave. HOLD throw your axe; it comes back to you. SWIPE Leaping Chop.' },
-    { id: 'twinaxes', name: 'Twin Axes', big: true, path: 'axe', at: [COL.axe + 0.8, ROW.change], from: ['battleaxe'], text: 'Your throw becomes TWIN AXES: two axes, one to each side of your aim, each for less.' },
-    { id: 'rend', name: 'Rend', big: false, path: 'axe', at: [COL.axe, ROW.a], from: ['battleaxe'], text: 'Cleave makes the enemy bleed: it loses a third of the hit again over three seconds.' },
-    { id: 'redmist', name: 'Red Mist', big: false, path: 'axe', at: [COL.axe, ROW.b], from: ['rend'], text: 'Each kill: you swing 8% faster for four seconds, up to five kills.' },
-    { id: 'headlong', name: 'Headlong', big: false, path: 'axe', at: [COL.axe, ROW.c], from: ['redmist'], text: 'Every kill makes Leaping Chop ready again at once.' },
+    { id: 'battleaxe', name: 'Battle Axe', big: true, works: true, path: 'axe', at: [COL.axe, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a battle axe. TAP Cleave. HOLD throw your axe; it comes back to you. SWIPE Leaping Chop.' },
+    { id: 'twinaxes', name: 'Twin Axes', big: true, works: true, path: 'axe', at: [COL.axe + 0.8, ROW.change], from: ['battleaxe'], text: 'Your throw becomes TWIN AXES: two axes, one to each side of your aim, each for less.' },
+    { id: 'rend', name: 'Rend', big: false, works: true, path: 'axe', at: [COL.axe, ROW.a], from: ['battleaxe'], text: 'Cleave makes the enemy bleed: it loses a third of the hit again over three seconds.' },
+    { id: 'redmist', name: 'Red Mist', big: false, works: true, path: 'axe', at: [COL.axe, ROW.b], from: ['rend'], text: 'Each kill: you swing 8% faster for four seconds, up to five kills.' },
+    { id: 'headlong', name: 'Headlong', big: false, works: true, path: 'axe', at: [COL.axe, ROW.c], from: ['redmist'], text: 'Every kill makes Leaping Chop ready again at once.' },
     // THE GREATSWORD
-    { id: 'greatsword', name: 'Greatsword', big: true, path: 'gsword', at: [COL.sword, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a greatsword. TAP Strike. HOLD Whirl, one spin, harder than Strike. SWIPE Lunge.' },
-    { id: 'gswhirlwind', name: 'Whirlwind', big: true, path: 'gsword', at: [COL.sword + 0.8, ROW.change], from: ['greatsword'], text: 'Whirl becomes WHIRLWIND: you spin round and round, more hits, each for less.' },
+    { id: 'greatsword', name: 'Greatsword', big: true, works: true, path: 'gsword', at: [COL.sword, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a greatsword. TAP Strike. HOLD Whirl, one spin, harder than Strike. SWIPE Lunge.' },
+    { id: 'gswhirlwind', name: 'Whirlwind', big: true, works: true, path: 'gsword', at: [COL.sword + 0.8, ROW.change], from: ['greatsword'], text: 'Whirl becomes WHIRLWIND: you spin round and round, more hits, each for less.' },
     { id: 'sweepingcut', name: 'Sweeping Cut', big: false, works: true, path: 'gsword', at: [COL.sword, ROW.a], from: ['greatsword'], text: 'A melee hit splashes 30% of itself on the enemies beside.', now: { text: 'Your melee swings cleave: every enemy in the arc of the swing is struck, not only the first.' } },
     { id: 'drilledleap', name: 'Drilled Lunge', big: false, works: true, path: 'gsword', at: [COL.sword, ROW.b], from: ['sweepingcut'], text: 'Lunge is ready again 30% sooner.', now: { text: 'Lunge strikes every enemy you pass on the way, not only where you land.' } },
     { id: 'footwork', name: 'Footwork', big: false, works: true, path: 'gsword', at: [COL.sword, ROW.c], from: ['drilledleap'], text: 'Each kill: run 25% faster for a second.', now: { text: 'Every kill makes Lunge ready again at once.' } },
     // THE WARHAMMER
-    { id: 'warhammer', name: 'Warhammer', big: true, path: 'hammer', at: [COL.hammer, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a warhammer. TAP Smash. HOLD Earthquake. SWIPE Shoulder Charge.' },
-    { id: 'tremors', name: 'Tremors', big: true, path: 'hammer', at: [COL.hammer + 0.8, ROW.change], from: ['warhammer'], text: 'Earthquake becomes TREMORS: the ground shakes three times, each weaker.' },
-    { id: 'heavyhead', name: 'Heavy Head', big: false, path: 'hammer', at: [COL.hammer, ROW.a], from: ['warhammer'], text: 'Smash stuns the enemy for half a second.' },
-    { id: 'bulldozer', name: 'Bulldozer', big: false, path: 'hammer', at: [COL.hammer, ROW.b], from: ['heavyhead'], text: 'Shoulder Charge carries the enemies it hits along with you, and stuns them where you stop.' },
-    { id: 'wideswing', name: 'Wide Swing', big: false, path: 'hammer', at: [COL.hammer, ROW.c], from: ['bulldozer'], text: 'Smash strikes everything in a half circle in front of you.' },
+    { id: 'warhammer', name: 'Warhammer', big: true, works: true, path: 'hammer', at: [COL.hammer, ROW.pick], from: [], text: 'Your weapon: pick one of three. Every weapon you find will be a warhammer. TAP Smash. HOLD Earthquake. SWIPE Shoulder Charge.' },
+    { id: 'tremors', name: 'Tremors', big: true, works: true, path: 'hammer', at: [COL.hammer + 0.8, ROW.change], from: ['warhammer'], text: 'Earthquake becomes TREMORS: the ground shakes three times, each weaker.' },
+    { id: 'heavyhead', name: 'Heavy Head', big: false, works: true, path: 'hammer', at: [COL.hammer, ROW.a], from: ['warhammer'], text: 'Smash stuns the enemy for half a second.' },
+    { id: 'bulldozer', name: 'Bulldozer', big: false, works: true, path: 'hammer', at: [COL.hammer, ROW.b], from: ['heavyhead'], text: 'Shoulder Charge carries the enemies it hits along with you, and stuns them where you stop.' },
+    { id: 'wideswing', name: 'Wide Swing', big: false, works: true, path: 'hammer', at: [COL.hammer, ROW.c], from: ['bulldozer'], text: 'Smash strikes everything in a half circle in front of you.' },
     // IRON (the old tree's, as they work now; open once a weapon is his)
     { id: 'thickskin', name: 'Thick Skin', big: false, works: true, path: 'iron', at: [COL.iron, ROW.pick], from: [], text: 'Life +15%.', now: { text: 'Below half your life, you take 30% less damage.' } },
     { id: 'shieldwall', name: 'Shieldwall', big: true, works: true, path: 'iron', at: [COL.iron, ROW.a], from: ['thickskin'], text: "Guarding's shield has 100% increased strength.", word: 'guarding', now: { text: "When Guarding's shield breaks, it bursts outward: everything near is thrown back and stunned for a second." } },
@@ -346,7 +346,7 @@ const WARRIOR2: TalentTree = {
     { id: 'giantslayer', name: 'Giant Slayer', big: false, works: true, path: 'join', at: [(COL.sword + COL.hammer) / 2, ROW.b], from: ['drilledleap', 'bulldozer'], text: 'Elites and bosses take 25% increased damage from you.', now: { text: 'Each hit on an elite or a boss cracks its guard: it takes 3% more from everything, up to ten cracks.' } },
     { id: 'resolute', name: 'Resolute', big: false, works: true, path: 'join', at: [(COL.hammer + COL.iron) / 2, ROW.b], from: ['bulldozer', 'secondwind'], text: 'Fire, frost and lightning resistance +15%.', mods: [{ stat: 'fireRes', value: 15 }, { stat: 'frostRes', value: 15 }, { stat: 'lightRes', value: 15 }], now: { text: 'Nothing can slow you, freeze you or knock you back.' } },
     // ACROSS THE TOP: the ends, each reached from the top of the two paths under it
-    { id: 'executioner', name: 'Executioner', big: true, path: 'join', at: [(COL.axe + COL.sword) / 2, ROW.top], from: ['headlong', 'footwork'], text: 'Enemies below a quarter of their life take double damage from you.' },
+    { id: 'executioner', name: 'Executioner', big: true, works: true, path: 'join', at: [(COL.axe + COL.sword) / 2, ROW.top], from: ['headlong', 'footwork'], text: 'Enemies below a quarter of their life take double damage from you.' },
     { id: 'mastertop', name: 'Master Stroke', big: true, works: true, path: 'join', at: [(COL.sword + COL.hammer) / 2, ROW.top], from: ['footwork', 'wideswing'], text: 'Every fourth hit you land is a certain critical.' },
     { id: 'unbreakable', name: 'Unbreakable', big: true, works: true, path: 'join', at: [(COL.hammer + COL.iron) / 2, ROW.top], from: ['wideswing', 'bulwark'], text: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.' },
   ],
@@ -759,6 +759,43 @@ export function takeProblem(cls: ClassId, level: number, taken: readonly string[
 
 /** (the Warrior's new tree, WARRIOR_TREE2) his three weapons: only one may be his. */
 const WEAPON_PICKS: readonly string[] = ['greatsword', 'battleaxe', 'warhammer'];
+/** THE WARRIOR'S THREE WEAPONS (WARRIOR_TREE2): which is his, by his tree's first point; the greatsword till one is picked. */
+export type WarriorWeapon = 'greatsword' | 'battleaxe' | 'warhammer';
+/**
+ * The new talents' numbers (the main chat's starting points): Twin Axes' two axes each `share` of one, `fan` radians each side of
+ * the aim; Rend's bleed, `share` of the hit again over `secs`; Red Mist's 8% faster for `secs` a kill, up to `most`; Tremors'
+ * three shakes `gap` seconds apart, each `share`; Heavy Head's stun; Bulldozer's carry, `ahead` of him, and its stun where he
+ * stops; Executioner's double harm under a quarter of life.
+ */
+export const WARRIOR_TUNE = {
+  twinAxes: { fan: 0.28, share: 0.65 },
+  rend: { share: 1 / 3, secs: 3 },
+  redMist: { each: 0.08, secs: 4, most: 5 },
+  tremors: { n: 3, gap: 0.45, share: 0.55 },
+  heavyHead: { secs: 0.5 },
+  bulldozer: { ahead: 0.9, stun: 0.8 },
+  executioner: { under: 0.25, mult: 2 },
+};
+export function warriorWeapon(taken: readonly string[]): WarriorWeapon {
+  return (WEAPON_PICKS.find((w) => taken.includes(w)) as WarriorWeapon | undefined) ?? 'greatsword';
+}
+/**
+ * Each weapon's tap, hold and swipe (game/defs.ts SKILLS): the greatsword's Strike, Whirl and Lunge; the battle axe's Cleave, Axe
+ * Throw and Leaping Chop; the warhammer's Smash, Earthquake and Shoulder Charge. His choice of 7 Nov, 21:12, “Each its own
+ * (Recommended)”, of the swipe.
+ */
+export const WARRIOR_KITS: Readonly<Record<WarriorWeapon, readonly [SkillId, SkillId, SkillId]>> = {
+  greatsword: ['strike', 'whirl', 'leap'],
+  battleaxe: ['cleave', 'axethrow', 'chop'],
+  warhammer: ['smash', 'quake', 'charge'],
+};
+/** The Warrior's three moves by his weapon, with WARRIOR_TREE2 on (null off: the class's own, as before); the greatsword's Whirl is Whirlwind once that talent is his. */
+export function warriorKit(taken: readonly string[]): SkillId[] | null {
+  if (!WARRIOR_TREE2.on) return null;
+  const k: SkillId[] = [...WARRIOR_KITS[warriorWeapon(taken)]];
+  if (k[1] === 'whirl' && taken.includes('gswhirlwind')) k[1] = 'whirlwind';
+  return k;
+}
 function otherWeapon(cls: ClassId, id: string, taken: readonly string[]): boolean {
   return cls === 'warrior' && WARRIOR_TREE2.on && WEAPON_PICKS.includes(id) && WEAPON_PICKS.some((w) => w !== id && taken.includes(w));
 }
