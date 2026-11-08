@@ -105,6 +105,8 @@ import { LAIR_GATE, lairGateDropAt, lairGateSlam } from '../art/lair_gate';
 import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
 import { floorLook, lookStairs, lookWays } from '../art/floors';
+import { QUEST_MARKS } from '../game/quest_marks';
+import { drawQuestMark } from './quest_mark';
 import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
 // (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them; behind ACT2_WALLS, on at his word)
 import { HERO_WINDOW, WINDOW_FAINT, WallWindows, drawHoled, wallsThick } from './act2_walls';
@@ -163,6 +165,8 @@ export const STATION_NAME: Record<Station, string> = { gate: 'GATE', wordsmith: 
  * there. (The mystic's is over the roof of his tent, measured from the table his service is used
  * at.) The game's own hands read this too: a name is touched like the thing it names (main.ts).
  */
+/** QUEST MARKERS: how far over a floor's waypoint its marker floats (screen pixels, over its dais). */
+const WAY_MARK_LIFT = 40;
 export const NAME_LIFT: Record<Station, number> = { gate: 74, stash: 26, lexicon: 40, mystic: 86, wordsmith: 44, armourer: 50, stranger: 40 };
 
 /** Where the master rune-stone lies beside the fallen wordsmith, from where he lies (tiles): by his reaching hand. */
@@ -1333,6 +1337,8 @@ export class Renderer {
   }
   /** The town service the hero is on the way to (its name is drawn in gold), if any. */
   goal: Station | null = null;
+  /** QUEST MARKERS (game/quest_marks.ts): where each floats this frame (its point; screen pixels). */
+  private questMarks: { x: number; y: number }[] = [];
   /** Touch: the monster the hero is locked onto (its id): a ring is drawn round its feet. Set every frame by the controls. */
   lockId: number | null = null;
   /** THE WARLOCK: what his full pact bar says to do, by what is played with (main.ts sets it each frame). */
@@ -3286,6 +3292,18 @@ export class Renderer {
       const hop = goal ? Math.round(Math.abs(Math.sin(t * 9)) * 2) : 0;
       this.labels.push({ x: wx(cam, st.x, st.y), y: wy(cam, st.x, st.y) - lift - hop, text: STATION_NAME[st.kind], color: goal ? P.gd4 : near ? P.white : P.tl5 });
     }
+    // (QUEST MARKERS, game/quest_marks.ts: over whoever in town has a quest for him now, over his name; over the floor's waypoint
+    // home while he brings something back)
+    this.questMarks.length = 0;
+    if (QUEST_MARKS.on) {
+      if (L.town) {
+        const who = game.questGivers();
+        for (const st of L.stations) if (who.includes(st.kind)) this.questMarks.push({ x: wx(cam, st.x, st.y), y: wy(cam, st.x, st.y) - (st.lift ?? NAME_LIFT[st.kind]) - 4 });
+      } else {
+        const w = L.ways?.way;
+        if (w && game.turnInFor() && L.explored[Math.floor(w.y) * f.w + Math.floor(w.x)]) this.questMarks.push({ x: wx(cam, w.x, w.y), y: wy(cam, w.x, w.y) - WAY_MARK_LIFT });
+      }
+    }
     // (EXIT_LABELS: a floor's way out, once its boss has fallen and it has opened, carries its name as they do: game/exit_labels.ts)
     if (EXIT_LABELS.on) {
       for (const e of exitLabels(L)) {
@@ -4288,6 +4306,7 @@ export class Renderer {
     this.drawBars(g, game, t);
     // (QUESTS610: not while a short scene plays: the picture is the town's)
     if (!game.scene) this.drawLabels(g, W);
+    if (!game.scene) for (const m of this.questMarks) drawQuestMark(g, Math.round(m.x), Math.round(m.y), t);
     fx.drawText(g, cam);
     return cam;
   }

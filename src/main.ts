@@ -27,6 +27,7 @@ import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
 import { TALENTS, TALENTS2 } from './game/talents';
+import { QUEST_MARKS } from './game/quest_marks';
 import { VETERAN } from './game/veteran';
 import { RIME_SHADE_ON } from './art/rime_shade';
 import type { WallLook } from './art/ground';
@@ -115,7 +116,7 @@ import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
-import { guideAttack, guideBanner } from './ui/guide';
+import { guideAttack, guideBanner, questBanner } from './ui/guide';
 import { WORD_HALF, WORD_LEX, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
 import { LOW_STACKS } from './art/low_stacks';
@@ -2105,7 +2106,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // while the floor's name is up, which it would cover. The owner, 12 Oct 2026, 07:45: "One thing
       // I noticed is you cant see the warden level introduction.  It gets hidden by the tap to attack
       // pop up". FLOOR_CARD_FIRST, game/defs.ts)
-      const banner = paused || (floorCard && FLOOR_CARD_FIRST.on) ? null : guideBanner(g, input.touchMode);
+      const banner = paused || (floorCard && FLOOR_CARD_FIRST.on) ? null : guideBanner(g, input.touchMode) ?? questBanner(g);
+      // (QUEST MARKERS: its line's time runs only while it is seen)
+      if (banner && banner.step === 'speak') g.speakSeen(dt);
       // (a fight is on while something awake can be seen on the screen: the attacks written along
       // the bottom are not buttons then, so that a press meant for a monster is never a press on one)
       const fightOn = !paused && g.monsters.some((m) => {
@@ -2472,6 +2475,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     talents2: TALENTS2,
     /** THE VETERAN (game/veteran.ts), the Brawler made again, on since his yes of 3 Nov 2026 (25.0): `veteran.on` (his tree and his moves). */
     veteran: VETERAN,
+    /** QUEST MARKERS (game/quest_marks.ts), off until his yes to their picture: `questMarks.on`. */
+    questMarks: QUEST_MARKS,
     /** THE LOADING SCREEN as a game begins (LOADING in main.ts), on at his yes: `loading.on` (dbg.run and dbg.first begin without it). */
     loading: LOADING,
     /** FLOOR 20'S RIME SHADE (art/rime_shade.ts RIME_SHADE_ON, the art chat's; game/act1_rules/rshade.ts), off until he has seen it in the game and said yes: `rimeShade.on`. */
