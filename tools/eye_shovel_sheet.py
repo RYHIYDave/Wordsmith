@@ -2,6 +2,8 @@
 """THE SWAMP COLOSSUS'S MOVES, PART 3: HIS SHOVEL, FOR THE OWNER'S PHONE (art/eye_shovel.ts; a mock-up, not in the game): from the
 frames tools/eye_moves_pics.ts lays together (the phone's screen, 1014 x 468 picture pixels, two to a game pixel):
    python3 tools/eye_shovel_sheet.py sheet <frames dir> <out.png> <layout.json>   key frames at the game's size and at twice
+   python3 tools/eye_shovel_sheet.py mirror <mirror dir> <out.png>                 the mirror test: at the right end, as painted and the
+                                                                                   left end mirrored (tools/eye_moves_pics.ts mirror)
    python3 tools/eye_shovel_sheet.py film <frames dir> <out.mp4>                   the shovel at the left end, full speed (the Warrior
                                                                                    weaving, hit and knocked toward the mouth, just
                                                                                    escaping the snap); at the right end; the snap close
@@ -140,9 +142,57 @@ def sheet(d, out, items, intro):
     print(out, s.size)
 
 
+# THE MIRROR TEST (the owner, 8 Nov: whether one side of him mirrored would do for the other): each beat at the right end, AS PAINTED
+# and MIRRORED (the left end's layers of him and his tentacles flipped about his own middle, over the right end's own stone, water,
+# Warrior and effects); at the game's size, then closer at twice. [frame, title, note, (x, y) at the game's size, (x, y) at twice]
+MIRROR = [
+    ('059', 'THE BURST (frame 59)', 'Up through the water at the right end, the screen jolted, water pouring off him.', (700, 150), [(720, 110)]),
+    ('074', 'THE ROAR, AT HIS WIDEST (frame 74)', 'His maw on its side gaping its widest, his tongue-eye in it, his throat hot.', (700, 150), [(720, 120)]),
+    ('120', 'HIS GAPE, A TENTACLE SCRAPING (frame 120)', 'His gape with the first tentacle scraping along the back edge toward his maw (closer: his maw, and the tentacle).', (700, 150), [(730, 110), (170, 190)]),
+]
+
+
+def mirror(d, out):
+    parts = []
+    intro = ('The owner asked (8 Nov) whether one side of the Colossus could be drawn and mirrored for the other end. At the right end of '
+             'the stone, each beat AS PAINTED (the right end\'s own paintings, him turned his own way round, lit from the left) beside '
+             'MIRRORED (the left end\'s paintings of him and his tentacles flipped left to right about his own middle, standing where the '
+             'painted one stands, over the right end\'s own stone, water and Warrior, which are not flipped). Nothing repainted. At the '
+             'game\'s size, then closer at twice.')
+    hl = wrap(intro, small, W - 48)
+    hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
+    dr = ImageDraw.Draw(hd)
+    dr.text((24, 22), 'THE SWAMP COLOSSUS: THE MIRROR TEST', font=big, fill=PALE)
+    for i, l in enumerate(hl): dr.text((24, 66 + 26 * i), l, font=small, fill=GREY)
+    parts.append(hd)
+    def game(f, c):
+        x0 = max(0, min(1014 - 500, c[0] - 250)); y0 = max(0, min(468 - 300, c[1] - 150))
+        return Image.open(f).convert('RGB').crop((x0, y0, x0 + 500, y0 + 300))
+    def twice(f, c):
+        x0 = max(0, min(1014 - 270, c[0] - 135)); y0 = max(0, min(468 - 140, c[1] - 70))
+        return Image.open(f).convert('RGB').crop((x0, y0, x0 + 270, y0 + 140)).resize((540, 280), Image.NEAREST)
+    for k, title, note, cg, ct in MIRROR:
+        a = os.path.join(d, 'mirror_%s_a.png' % k)
+        b = os.path.join(d, 'mirror_%s_b.png' % k)
+        parts.append(block(title, note, row([game(a, cg), game(b, cg)], ['AS PAINTED (the right end)', 'MIRRORED (the left end, flipped)'])))
+        for c in ct: parts.append(block('', '', row([twice(a, c), twice(b, c)], ['AS PAINTED, at twice', 'MIRRORED, at twice'])))
+    # (the snap: painted at the left end only; so mirrored only, as it would be at the right end)
+    f = os.path.join(d, 'mirror_208s_b.png')
+    parts.append(block('THE SNAP, HELD CLENCHED (frame 208)', 'Painted at the left end only (the right end in the film has no snap): so MIRRORED only, as it would look at the right end, his teeth clashed, spittle bursting (the Warrior here is the right end\'s own, away at the far side).', row([game(f, (640, 200)), twice(f, (520, 110))], ['MIRRORED (the left end, flipped)', 'MIRRORED, at twice'])))
+    H = sum(p.height for p in parts)
+    s = Image.new('RGB', (W, H), BG)
+    y = 0
+    for p in parts: s.paste(p, (0, y)); y += p.height
+    assert s.height <= 7000, s.height
+    s.save(out, optimize=True)
+    print(out, s.size)
+
+
 if __name__ == '__main__':
     mode, d, out = sys.argv[1], sys.argv[2], sys.argv[3]
-    if mode == 'film':
+    if mode == 'mirror':
+        mirror(d, out)
+    elif mode == 'film':
         film(d, out)
     else:
         import json

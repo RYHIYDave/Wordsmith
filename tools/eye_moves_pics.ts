@@ -1611,6 +1611,15 @@ function armWaves(pic: Pic, fx: ArmFx, top: Top, water: Uint8Array, t: number): 
 // =============================================================================================
 // A FRAME LAID TOGETHER
 
+/** THE MIRROR TEST (his shovel, the owner's question of 8 Nov): layers of the left end laid flipped left to right about his own middle
+ *  at the right end (`dx` the other way), over the right end's own stone, water, Warrior and effects. Nothing is painted for it. */
+const MIRRORED = new Set<EyeLayer>();
+const mirrorLayer = (L: EyeLayer | null): EyeLayer | null => {
+  if (!L) return null;
+  const M: EyeLayer = { ...L, dx: -(L.dx ?? 0) };
+  MIRRORED.add(M);
+  return M;
+};
 interface Top { col: Float32Array; near: Float32Array; z: Float32Array; fire: Uint8Array; seam: Uint8Array; kind: Uint8Array; mat: Uint8Array; who: Int8Array; jp: Int16Array }
 /** Each layer where he is now, nearest wins; the smeared after-images behind. */
 function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r: number; c: RGB; a: number; fire: boolean }>; ghost: Float32Array } {
@@ -1626,12 +1635,14 @@ function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r
     const FR = frameFor(L);
     const ox = HX - FR.ax + Math.round((L.dx ?? 0) * SEEN);
     const oy = HY - FR.ay + dj;
+    // (the mirror test: a layer flipped left to right about his own middle, its painting's own `ax`)
+    const MR = MIRRORED.has(L);
     for (let jb = 0; jb < p.h; jb++) {
       const j = jb + p.y0;
       const cj = j + oy;
       if (cj < 0 || cj >= CH) continue;
       for (let ib = 0; ib < p.w; ib++) {
-        const ci = ib + p.x0 + ox;
+        const ci = (MR ? 2 * FR.ax - 1 - (ib + p.x0) : ib + p.x0) + ox;
         if (ci < 0 || ci >= CW) continue;
         const s = jb * p.w + ib;
         const kd = p.kind[s];
@@ -1664,7 +1675,8 @@ function merge(F: EyeFrame): { top: Top; lights: Array<{ x: number; y: number; r
     // (his shovel: his lights dimming as he goes down out of sight under the water; none on the stone from deep under it)
     const deep = F.sfx ? 1 - sm(330, 450, L.drop) : 1;
     const Sw = scenery().water;
-    if (!smear && deep > 0) for (const l of p.lights) {
+    if (!smear && deep > 0) for (const l0 of p.lights) {
+      const l = MR ? { ...l0, x: 2 * FR.ax - l0.x } : l0;
       const lx = Math.round(l.x + ox);
       const ly = Math.round(l.y + oy);
       if (F.sfx && L.drop > 300 && lx >= 0 && ly >= 0 && lx < CW && ly < CH && !Sw[ly * CW + lx]) continue;
@@ -2649,6 +2661,23 @@ if (mode === 'paint') {
     }
   }
   process.stdout.write(`moved ${moved}\n`);
+} else if (mode === 'mirror') {
+  // (each beat at the right end: as painted, and the left end's layers mirrored onto it; `snap` the left end's snap held clenched, which
+  // is painted at the left end only, mirrored)
+  const out = process.argv[3];
+  fs.mkdirSync(out, { recursive: true });
+  for (const kk of process.argv[4].split(',')) {
+    const snap = kk.endsWith('s');
+    const k = Number(kk.replace('s', ''));
+    const R = shovelFrame('s2', k);
+    const L = shovelFrame('s1', k);
+    const flip = (F: EyeFrame): EyeFrame => ({ ...R, jaws: mirrorLayer(F.jaws) as EyeLayer, spit: mirrorLayer(F.spit), tongue: mirrorLayer(F.tongue), arms: F.arms.map(mirrorLayer), smear: F.smear.map(mirrorLayer), sfx: R.sfx && F.sfx ? { ...R.sfx, snap: F.sfx.snap } : R.sfx });
+    for (const [tag, F] of (snap ? [['b', flip(L)]] : [['a', R], ['b', flip(L)]]) as Array<[string, EyeFrame]>) {
+      for (const Ly of layersOf(F)) if (!fs.existsSync(fileOf(Ly))) throw new Error(`not painted: ${Ly.key} (the mirror test paints nothing)`);
+      fs.writeFileSync(path.join(out, `mirror_${String(k).padStart(3, '0')}${snap ? 's' : ''}_${tag}.png`), frameOf(F, k / EYE_FPS).png());
+    }
+    process.stdout.write(`${kk} done\n`);
+  }
 } else if (mode === 'dump') {
   // (a frame's layers whose keys begin so, each on its own, black behind: to look at; and the heights in each)
   const [, , , mv, kS, pre, out] = process.argv;

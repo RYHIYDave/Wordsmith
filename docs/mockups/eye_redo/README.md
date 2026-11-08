@@ -153,6 +153,17 @@ npx tsx tools/eye_moves_pics.ts cost3                                    (what i
   goes deeper into each gap, reels when struck, falls, gets up and leaps clear of the snap. Fix 1 (above): looked at again, every frame
   of both ends and the close-up, at the game's size and at twice.
 
+- `pictures/eye_mirror.png` (1200 x 3330), THE MIRROR TEST. His words, 8 Nov, 06:05:
+  “He’s mirrored so you just have to draw the one side right?  Thats one time I feel like mirroring is in good faith”;
+  told both ends are painted and that the light (from the left) would come from the wrong side on a flipped him, 06:09:
+  “Well keep going how you’re going then. Work on the two drawings and we’ll see if a mirror would work”.
+  At the right end, each beat AS PAINTED beside MIRRORED (the left end's layers of him and his tentacles
+  flipped left to right about his own middle, over the right end's own stone, water, Warrior and effects; nothing repainted): the burst
+  (59), the roar at his widest (74), his gape with a tentacle scraping (120), at the game's size and at twice; the snap held clenched
+  (208), painted at the left end only, mirrored only. To make it again:
+  `npx tsx tools/eye_moves_pics.ts mirror /dev/shm/eye_moves/mirror 59,74,120,208s` and
+  `python3 tools/eye_shovel_sheet.py mirror /dev/shm/eye_moves/mirror docs/mockups/eye_redo/pictures/eye_mirror.png`.
+
 ### What it costs
 
 - AS PAINTED HERE: 1,484 new layers (his jaws at an end 125, a painting wherever his jaws are the same: his burst, the roar, his gape's
