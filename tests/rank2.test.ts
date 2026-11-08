@@ -119,12 +119,13 @@ test('the wordsmith melds two Poison into Poison II for a meld\'s runedust; one 
   assert.equal(g.meldProblem('poison2', 'poison2'), 'Rank II is the top, for now');
 }));
 
-test('a ranked word goes on attacks only: not burned into gear, not laid on the gate, not kept in the Lexicon', () => ranking(() => {
+// (on gear too since 8 Nov 2026, his words, “Every rune sorry”: tests/runes_on_gear.test.ts)
+test('a ranked word goes on attacks and gear: not laid on the gate, not kept in the Lexicon', () => ranking(() => {
   const g = seasoned(new Game('warrior', 8), 10);
   const h = g.hero;
   h.words.poison2 = 1;
-  assert.equal(g.planProblem('poison2'), 'A ranked word goes on attacks only');
+  assert.equal(g.planProblem('poison2'), 'A ranked word goes on attacks and gear only');
   assert.equal(g.depositWord('poison2'), 'The Lexicon keeps no ranked word');
-  const piece = Object.values(h.gear).find((it) => it) ?? h.bag.find((it) => it);
-  if (piece) assert.equal(imbueProblem(piece, 'poison2'), 'A ranked word goes on attacks only');
+  const piece = Object.values(h.gear).find((it) => it && it.affixes.length + it.imbues.length < 4);
+  if (piece) assert.equal(imbueProblem(piece, 'poison2'), null);
 }));

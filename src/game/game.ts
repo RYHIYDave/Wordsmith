@@ -3321,8 +3321,8 @@ export class Game {
     const st = this.level.holds?.[n];
     if (!st || st.open) return 'The door is open';
     if (!(this.hero.words[word] > 0)) return 'No spare word';
-    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
-    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks only';
+    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks and gear only';
+    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks and gear only';
     if (st.words.length >= HOLD_TUNE.most) return `At most ${HOLD_TUNE.most} words`;
     if (st.words.includes(word)) return 'Already on the altar';
     if (WORDS[word].element && st.words.some((w) => WORDS[w].element)) return 'One element per stronghold';
@@ -12710,9 +12710,10 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (!(this.hero.words[word] > 0)) return 'No spare word';
-    // (WORDMELDING: a melded word is for attacks only, for now, his words; RANK II likewise, as read)
-    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
-    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks only';
+    // (WORDMELDING: a melded word is for attacks only, for now, his words; RANK II likewise, as read. On gear too since
+    // EVERY WORD ON GEAR, his words of 8 Nov 2026, 06:45, “Every rune sorry”: game/items.ts)
+    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks and gear only';
+    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks and gear only';
     // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
     // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
     if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;

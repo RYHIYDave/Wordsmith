@@ -4,6 +4,7 @@
 //   node tools/unit.mjs --jobs 1     one file at a time (default: one per core)
 //   node tools/unit.mjs --again      forget what is kept for this commit and run it all
 //   node tools/unit.mjs --changed    only what changed since the commit last checked, and the core (a small update: his pick)
+//   node tools/unit.mjs --only a,b   only the test files named, and the core (what a change is about, where --changed runs wide)
 // Why it was run again and again: the whole suite as one run under one time limit, cut off part way on a slow machine with
 // nothing to show for what had passed; files changed and heavy work (a bake) done while it ran; nothing kept from a run to
 // the next. So:
@@ -138,6 +139,15 @@ if (args.includes('--changed')) {
     }
     console.log(`--changed since ${since}: ${changed.size} files changed; ${only.size} test files to check (the core ${CORE.length}, and those that test what changed); ${files.length - only.size} not run`);
   }
+}
+// ONLY THESE (`--only a,b,c`: test files by name, with or without .test.ts), and the core: his rule of 7 Nov 2026, 15:02, test
+// only what the change is about. For a change to a file nearly every test imports that touches what few of them test (a line of
+// words in game/game.ts), where `--changed` would run them all.
+if (opt('only', null)) {
+  const want = opt('only', '').split(',').map((n) => n.trim()).filter(Boolean).map((n) => (n.endsWith('.test.ts') ? n : `${n}.test.ts`));
+  for (const n of want) if (!files.includes(n)) throw new Error(`--only: no tests/${n}`);
+  only = new Set([...CORE.filter((f) => files.includes(f)), ...want]);
+  console.log(`--only: ${want.length} test files named, and the core ${CORE.length}: ${only.size} to check; ${files.length - only.size} not run`);
 }
 const todo = files.filter((f) => !fs.existsSync(keptOf(f)) && (!only || only.has(f)));
 console.log(`UNIT ${commit}: ${files.length} files, ${files.length - todo.length} kept from before, ${todo.length} to run, ${JOBS} at a time`);
