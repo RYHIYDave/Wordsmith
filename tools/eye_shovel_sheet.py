@@ -8,7 +8,13 @@ frames tools/eye_moves_pics.ts lays together (the phone's screen, 1014 x 468 pic
                                                                                    weaving, hit and knocked toward the mouth, just
                                                                                    escaping the snap); at the right end; the snap close
                                                                                    up at half speed
-(the beats' frames as art/eye_shovel.ts SHOVEL, SCRAPERS, SCRAPE and SNAP set them)
+   python3 tools/eye_shovel_sheet.py film4 <frames dir> <close dir> <out.mp4>     PART 3B: his first shovel at the left end, full
+                                                                                   speed, the pieces on the stone smashed in turn; the
+                                                                                   smashes close up, half speed; the next shovel at the
+                                                                                   right end, mirrored, over the rubble
+   python3 tools/eye_shovel_sheet.py sheet4 <frames dir> <close dir> <out.png>    its key frames at the game's size and at twice
+(the beats' frames as art/eye_shovel.ts SHOVEL, SCRAPERS, SCRAPE and SNAP set them; the close-ups from tools/eye_moves_pics.ts close,
+each piece's in its own folder of <close dir>)
 """
 import os, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -188,9 +194,118 @@ def mirror(d, out):
     print(out, s.size)
 
 
+# PART 3B: THE PIECES ON THE STONE, SMASHED BY HIS FIRST SHOVEL (art/eye_pieces.ts; the owner, 8 Nov: “Smashed by the first sweep
+# (Recommended)”). Each piece as art/eye_pieces.ts has it, the frame the first shovel's hook reaches it (tests/eye_pieces.test.ts prints
+# them), where its close-up looks (tools/eye_moves_pics.ts close: a point of his space), what it is and how it breaks.
+PIECES = [
+    ('colR', 99, (275, 370, 30), 'THE BROKEN COLUMN AT THE FAR BACK CORNER', 'tentacle 1 ploughs into it: its plinth bursts, its shaft topples toward you, lands and breaks across in three', 44),
+    ('drums', 105, (235, 630, 10), 'THE FALLEN DRUMS BY THE NEAR EDGE', 'the drum tentacle 1 meets cracks in three and flies; the other two roll on, cracking in two as they stop', 34),
+    ('mossB', 110, (140, 380, 10), 'THE MOSSY STONES BY THE BACK EDGE', 'each stone split in two, the halves flung tumbling, the moss torn off, grit and dust', 34),
+    ('mossN', 133, (-216, 590, 10), 'THE MOSSY STONES TOWARD THE NEAR EDGE', 'each stone split in two, the halves flung tumbling, the moss torn off, grit and dust', 34),
+    ('colL', 137, (-270, 375, 30), 'THE BROKEN COLUMN AT THE BACK CORNER BY HIS END', 'tentacle 1 ploughs into it: its plinth bursts, its shaft topples across, lands and breaks in three', 44),
+]
+BEFORE = 6
+
+
+def smashed(k):
+    """What of the pieces is happening at a frame of the first shovel (the left end), and how much it matters."""
+    bs = []
+    for tag, h, _, name, how, _n in PIECES:
+        f = k - h
+        if 0 <= f < 26:
+            off = ' (off the screen to the right: close up after)' if tag in ('colR', 'drums') else ''
+            bs.append((6, 'SMASHED by tentacle 1: %s%s' % (name.lower(), off)))
+    return bs
+
+
+def beat4(k, shot):
+    b = beat(k, shot == 's1')
+    if shot == 's1':
+        sm = smashed(k)
+        if sm: return max(sm)[1]
+        return b
+    # (the next shovel: over the rubble)
+    for i, (edge, k0) in enumerate(SCRAPERS):
+        f = k - k0
+        if UP <= f < UP + SWEEP: return b + '; over the rubble'
+    return b
+
+
+def close_frame(c, tag, k):
+    return Image.open(os.path.join(c, tag, 'close_s1_%03d.png' % k)).convert('RGB')
+
+
+def film4(d, c, out):
+    seq = []
+    for k in range(FRAMES): seq.append((('s1', k), 'HIS FIRST SHOVEL AT THE LEFT END, FULL SPEED', beat4(k, 's1'), 'frame %d  |  %.2f s' % (k, k / FPS)))
+    for tag, h, _, name, how, n in PIECES:
+        for k in range(h - BEFORE, h + n + 1):
+            line = '%s: tentacle 1 sweeping in' % name if k < h else '%s: %s' % (name, how) if k < h + n - 8 else '%s: left lying, rubble for the rest of the fight' % name
+            for _ in range(2): seq.append(((tag, k), 'THE SMASHES, CLOSE UP (twice the size), HALF SPEED', line, 'frame %d  |  %.2f s' % (k, k / FPS)))
+    for k in range(FRAMES): seq.append((('s2', k), 'THE NEXT SHOVEL AT THE RIGHT END: HIM MIRRORED, OVER THE RUBBLE', beat4(k, 's2'), 'frame %d  |  %.2f s' % (k, k / FPS)))
+    w, h = 1014, 468 + 72
+    p = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (w, h), '-framerate', str(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
+    last = None
+    im = None
+    for (key, title, line, foot) in seq:
+        if key != last:
+            im = frame(d, key[0], key[1]) if key[0] in ('s1', 's2') else close_frame(c, key[0], key[1])
+            last = key
+        f = Image.new('RGB', (w, h), BG)
+        f.paste(im, (0, 0))
+        f.paste(caption_bar(w, title, line, foot), (0, 468))
+        p.stdin.write(f.tobytes())
+    p.stdin.close()
+    p.wait()
+    print(out, len(seq), 'frames', '%.1f s' % (len(seq) / FPS))
+
+
+# THE SHEET: [title, note, [(source, frame, x, y, label), ...], at twice]; a source 's1' or 's2' is the film's frame (a tile of it at the
+# game's size round x, y, or at twice); any other is a piece's close-up (already at twice: a tile of it round x, y)
+SHEET4 = []
+
+
+def sheet4(d, c, out):
+    parts = []
+    intro = ('The owner, 8 Nov, asked what becomes of the pieces on the stone in the tentacles\' way: “Smashed by the first sweep '
+             '(Recommended)”. The pieces are back on the stone at the start (the two broken columns at the back corners, the mossy '
+             'stones by the back edge and toward the near edge, the fallen drums by the near edge); his first shovel\'s first tentacle '
+             'smashes each as it reaches it, and the rubble lies there for the rest of the fight; the next shovel\'s tentacles ride '
+             'over it, scattering grit. And at the right end he is now the left end\'s paintings mirrored (“Mirror it but save the '
+             'old one just in case.”). Key frames as the player sees them, at the game\'s size; the smashes close, at twice.')
+    hl = wrap(intro, small, W - 48)
+    hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
+    dr = ImageDraw.Draw(hd)
+    dr.text((24, 22), 'THE SWAMP COLOSSUS: THE PIECES SMASHED', font=big, fill=PALE)
+    for i, l in enumerate(hl): dr.text((24, 66 + 26 * i), l, font=small, fill=GREY)
+    parts.append(hd)
+    def get(src, k, x, y, twice):
+        if src in ('s1', 's2'):
+            return near(d, src, k, x, y) if twice else tile(d, src, k, x, y)
+        im = close_frame(c, src, k)
+        wd, ht = (540, 280) if twice else (500, 300)
+        x0 = max(0, min(1014 - wd, x - wd // 2)); y0 = max(0, min(468 - ht, y - ht // 2))
+        return im.crop((x0, y0, x0 + wd, y0 + ht))
+    for title, note, its, twice in SHEET4:
+        for i in range(0, len(its), 2):
+            two = its[i:i + 2]
+            parts.append(block(title if i == 0 else '', note if i == 0 else '', row([get(*it[:4], twice) for it in two], [it[4] for it in two])))
+    H = sum(p.height for p in parts)
+    s = Image.new('RGB', (W, H), BG)
+    y = 0
+    for p in parts: s.paste(p, (0, y)); y += p.height
+    assert s.height <= 7000, s.height
+    s.save(out, optimize=True)
+    print(out, s.size)
+
+
 if __name__ == '__main__':
     mode, d, out = sys.argv[1], sys.argv[2], sys.argv[3]
-    if mode == 'mirror':
+    if mode == 'film4':
+        film4(d, sys.argv[3], sys.argv[4])
+    elif mode == 'sheet4':
+        sheet4(d, sys.argv[3], sys.argv[4])
+    elif mode == 'mirror':
         mirror(d, out)
     elif mode == 'film':
         film(d, out)

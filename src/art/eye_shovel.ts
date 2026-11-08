@@ -561,7 +561,7 @@ function heroAt(e: End, k: number): HeroAt {
 const ROLL0: [number, number, number, number] = [0, 0, 0, 0];
 /** His animation at frame `k` at an end: his stand's own clock (his tongue weaving, his flesh sliding, his drips), his jaws as open as
  *  the shovel has them, his eye's gaze on the Warrior, his throat glowing hot as he roars. */
-export function sideAnim(e: End, k: number, snap: boolean): ColossusAnim {
+export function sideAnim(e: End, k: number, snap: boolean, pe: End = e): ColossusAnim {
   const t = k / EYE_FPS;
   const st = standAnim(t);
   const open = openAt(k, snap);
@@ -571,10 +571,13 @@ export function sideAnim(e: End, k: number, snap: boolean): ColossusAnim {
   const root = T0[0];
   const tongue = tin >= 0.92 || open < 0.9 ? null : T0.map((q) => q.map((v, c) => (c < 3 ? lerp(v, root[c], tin) : v)));
   const eye = st.eye.map((v, c) => lerp(v, root[c], tin)) as [number, number, number];
-  // (looking at the Warrior: his gaze in his own space, and a little toward you)
+  // (looking at the Warrior: his gaze in his own space, and a little toward you; painted as at end `pe`, mirrored, the Warrior where the
+  // mirror puts him)
   const h = heroWorld(e, k);
+  const hx = pe === e ? h.x : -h.x;
+  e = pe;
   const at = placeOf(e);
-  const H = toHis(e, [h.x, h.y, 40 + h.lift], at, 0, lungeAt(k, snap));
+  const H = toHis(e, [hx, h.y, 40 + h.lift], at, 0, lungeAt(k, snap));
   const g = [H[0] - eye[0], H[1] - eye[1], H[2] - eye[2]];
   const gl = Math.hypot(g[0], g[1], g[2]) || 1;
   const you = toHis(e, [at[0] + GAZE_AT_YOU[0] * 100, at[1] + GAZE_AT_YOU[1] * 100, GAZE_AT_YOU[2] * 100], at, 0, ROLL0);
@@ -606,6 +609,12 @@ function jawsKey(e: End, k: number, snap: boolean): { key: string; k: number } {
   const lf = mod(k - SHOVEL.roar[1], 30);
   return { key: `VJ.${c}.g.${pad(lf)}`, k: SHOVEL.roar[1] + lf };
 }
+/** THE PAINTED RIGHT END (his word, 8 Nov: “Mirror it but save the old one just in case.”): off, at the right end he and his
+ *  tentacles are the left end's paintings flipped about his own middle (the stone, the water, the hero and the game's effects never
+ *  flipped); on, the right end's own paintings (him turned his own way round there), kept so they can be brought back. */
+export const SHOVEL_PAINTED_RIGHT = { on: false };
+/** The end whose paintings show at end `e`: its own, or at the right end the left's, mirrored. */
+export const paintedAt = (e: End): End => (e === 'right' && !SHOVEL_PAINTED_RIGHT.on ? 'left' : e);
 /** The frames of a shovel: `s1` at the left end (with the snap), `s2` at the right. */
 export const SHOVEL_SHOTS = { s1: { end: 'left' as End, snap: true }, s2: { end: 'right' as End, snap: false } } as const;
 
@@ -613,7 +622,10 @@ export const SHOVEL_SHOTS = { s1: { end: 'left' as End, snap: true }, s2: { end:
 export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
   const { end: e, snap } = SHOVEL_SHOTS[shot];
   const S = SHOVEL;
-  const c = e[0];
+  // (whose paintings: this end's own, or the left end's mirrored)
+  const pe = paintedAt(e);
+  const MR = pe !== e;
+  const c = pe[0];
   const t = k / EYE_FPS;
   const at = placeOf(e);
   const drop = dropAt(k);
@@ -636,19 +648,20 @@ export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
       smear.push(null);
     }
   } else {
-    const an = sideAnim(e, k, snap);
-    const J = jawsKey(e, k, snap);
-    const anJ = J.k === k ? an : sideAnim(e, J.k, snap);
-    const lay = (key: string, pose: ColossusPose): EyeLayer => ({ key, pose, drop: drop + deepAt(k), back: -at[1], dx: at[0] - s * lunge[0] });
-    jaws = lay(J.key, sidePose(e, { ...anJ, tongue: null }, 'jaws', lungeAt(J.k, snap)));
-    if (k >= S.burst[0]) spit = lay(`VS.${c}.${pad(k)}`, sidePose(e, an, 'spit', lunge));
-    if (an.tongue && k >= S.burst[0]) tongue = lay(`VT.${c}.${pad(k)}`, sidePose(e, an, 'tongue', lunge));
+    // (painted as at end `pe`: its own, or the left end's mirrored; laid where he is at this end)
+    const an = sideAnim(e, k, snap, pe);
+    const J = jawsKey(pe, k, snap);
+    const anJ = J.k === k ? an : sideAnim(e, J.k, snap, pe);
+    const lay = (key: string, pose: ColossusPose): EyeLayer => ({ key, pose, drop: drop + deepAt(k), back: -at[1], dx: at[0] - s * lunge[0], ...(MR ? { mirror: true } : {}) });
+    jaws = lay(J.key, sidePose(pe, { ...anJ, tongue: null }, 'jaws', lungeAt(J.k, snap)));
+    if (k >= S.burst[0]) spit = lay(`VS.${c}.${pad(k)}`, sidePose(pe, an, 'spit', lunge));
+    if (an.tongue && k >= S.burst[0]) tongue = lay(`VT.${c}.${pad(k)}`, sidePose(pe, an, 'tongue', lunge));
     // (bursting up and slamming shut: the frame before, smeared behind)
     const f = k - SNAP.at;
     if ((k > S.burst[0] && k < S.burst[1]) || (snap && f >= SNAP.twitch && f < SNAP.twitch + SNAP.strike)) {
-      const Jp = jawsKey(e, k - 1, snap);
+      const Jp = jawsKey(pe, k - 1, snap);
       const pl = lungeAt(k - 1, snap);
-      smear.push({ key: Jp.key, pose: sidePose(e, { ...sideAnim(e, Jp.k, snap), tongue: null }, 'jaws', lungeAt(Jp.k, snap)), drop: dropAt(k - 1), back: -at[1], dx: at[0] - s * pl[0] });
+      smear.push({ key: Jp.key, pose: sidePose(pe, { ...sideAnim(e, Jp.k, snap, pe), tongue: null }, 'jaws', lungeAt(Jp.k, snap)), drop: dropAt(k - 1), back: -at[1], dx: at[0] - s * pl[0], ...(MR ? { mirror: true } : {}) });
     }
   }
   // (the scrapers: each its head and its body)
@@ -669,11 +682,12 @@ export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
     const lf = mod(k, HEAD_LOOP);
     const H = headLocal(Sc.edge, lf / HEAD_LOOP, A.back);
     // (painted with its front at 0 across, laid where it is)
-    const headP = headWorld(e, Sc.edge, H, 0);
+    const headP = headWorld(pe, Sc.edge, H, 0);
     const key = `AH.${c}.${Sc.edge[0]}.${A.back >= 1 ? `b${pad(lf)}` : A.back > 0 ? `r${Math.round(A.back * 6)}.${pad(lf)}` : `h${pad(lf)}`}`;
-    arms.push({ key, pose: scraperPose(headP, k, hookBelly(e, Sc.edge)), drop: A.drop, back: 0, dx: A.X });
+    const mr = MR ? { mirror: true } : {};
+    arms.push({ key, pose: scraperPose(headP, k, hookBelly(pe, Sc.edge)), drop: A.drop, back: 0, dx: A.X, ...mr });
     const bl = Math.floor(lf / (HEAD_LOOP / BODY.loop));
-    arms.push({ key: `AB.${c}.${Sc.edge[0]}.${pad(bl)}`, pose: scraperPose(bodyWorld(e, Sc.edge, 0, bl / BODY.loop), 0, [0, 0, -1]), drop: A.drop, back: 0, dx: A.X });
+    arms.push({ key: `AB.${c}.${Sc.edge[0]}.${pad(bl)}`, pose: scraperPose(bodyWorld(pe, Sc.edge, 0, bl / BODY.loop), 0, [0, 0, -1]), drop: A.drop, back: 0, dx: A.X, ...mr });
     smear.push(null);
     smear.push(null);
     if (A.is === 'sweep' && A.drop === 0) {
