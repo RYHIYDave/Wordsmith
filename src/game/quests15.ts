@@ -39,14 +39,18 @@ export const QUESTS15 = { on: true };
 /** Where the hero stands in the furnace quest: asked; carrying the gear; the furnace put out; rewarded. */
 export type FurnaceStep = 'asked' | 'gear' | 'out' | 'done';
 
-/** The armourer's reward, by class: a word already in the game, none the class's first (defs.ts FIRST_WORD). */
+/**
+ * The armourer's reward, by class: a word already in the game, none the class's first (defs.ts FIRST_WORD). (Since the first words
+ * became the prison's six, his 8 Nov 2026: the Mage's, the Tinkerer's and the Brawler's rewards were their new first words, Frost,
+ * Lightning and Swift; each now the first word they had before, Fire, Volatile and Power.)
+ */
 export const FURNACE_WORD: Record<ClassId, WordId> = {
   warrior: 'heavy',
   ranger: 'precise',
-  mage: 'frost',
+  mage: 'fire',
   warlock: 'poison',
-  tinkerer: 'lightning',
-  brawler: 'swift',
+  tinkerer: 'volatile',
+  brawler: 'power',
 };
 
 /** The two words the wordsmith gives for the Meldstone, and the meld they make together (shown in his lesson). */

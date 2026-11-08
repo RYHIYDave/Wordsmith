@@ -16,7 +16,7 @@ import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
 import { ACTION_F2, ACTION_F3, ACTION_F4, AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDOR_IDS, WORDS, classWeapon, gambleKinds, vendorStock, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, attackGrows, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { GambleKind, Limit, MonsterDef, MonsterMove, SkillId } from './defs';
-import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
+import { bindItems, bindProblem, itemModsOwn, itemWordOf, splitItem, splitProblem, canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
@@ -4352,7 +4352,19 @@ export class Game {
     const st = h.d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
     const k = r.dmgMult * (1 + (st.dmgPct + el) / 100);
-    return [Math.max(1, Math.round(h.d.dmgMin * k)), Math.max(1, Math.round(h.d.dmgMax * k))];
+    const [lo, hi] = this.baseFor(r.element);
+    return [Math.max(1, Math.round(lo * k)), Math.max(1, Math.round(hi * k))];
+  }
+
+  /**
+   * (FLAT DAMAGE, game/items.ts FLAT_PAIRS) The least and the most of a hero's hit of element `el` before what multiplies it: his
+   * weapon's and his gear's added damage, and what his gear adds to that element's hits.
+   */
+  baseFor(el: Element | undefined): [number, number] {
+    const d = this.hero.d;
+    const s = d.stats;
+    const [a, b] = el === 'fire' ? [s.fireMin, s.fireMax] : el === 'frost' ? [s.frostMin, s.frostMax] : el === 'lightning' ? [s.lightMin, s.lightMax] : [0, 0];
+    return [d.dmgMin + (a || 0), d.dmgMax + (b || 0)];
   }
 
   /** Average damage of one hit with an ability, used to size ground patches and runes. */
@@ -4361,7 +4373,8 @@ export class Game {
     const r = h.skills[i].r;
     const st = h.d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    return ((h.d.dmgMin + h.d.dmgMax) / 2) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
+    const [lo, hi] = this.baseFor(r.element);
+    return ((lo + hi) / 2) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
   }
 
   // ===========================================================================================
@@ -6836,7 +6849,8 @@ export class Game {
     const X = TINKER_TUNE.talents.mixture;
     const d = this.hero.d;
     const s = this.hero.skills[i];
-    const hit = ((d.dmgMin + d.dmgMax) / 2) * (s ? s.r.dmgMult : 1) * frac;
+    const [lo, hi] = this.baseFor(s ? s.r.element : 'phys');
+    const hit = ((lo + hi) / 2) * (s ? s.r.dmgMult : 1) * frac;
     for (const m of ms) {
       if (m.dead) continue;
       if (brew === 'burn') {
@@ -7546,7 +7560,8 @@ export class Game {
     const s = h.skills[g.skill];
     const frac = this.golemFrac(g) * this.golemMight(g) * Z.share;
     for (const m of hit) {
-      let dmg = this.rng.range(h.d.dmgMin, h.d.dmgMax) * (s ? s.r.dmgMult : 1) * frac * (1 + (st.dmgPct + st.lightPct + h.might) / 100);
+      const [lo, hi] = this.baseFor('lightning');
+      let dmg = this.rng.range(lo, hi) * (s ? s.r.dmgMult : 1) * frac * (1 + (st.dmgPct + st.lightPct + h.might) / 100);
       if (TALENTS.on) dmg *= this.talentHitMult(m);
       this.damageMonster(m, Math.max(1, Math.round(dmg)), 'lightning', false, g.skill);
     }
@@ -9053,7 +9068,8 @@ export class Game {
     const wasFrozen = m.frozenT > 0;
     const st = d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
+    const [lo, hi] = this.baseFor(r.element);
+    let dmg = this.rng.range(lo, hi) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
     // (THE SKILL TREES: what the talents make of a hit)
     if (TALENTS.on) dmg *= this.talentHitMult(m);
     let crit = this.rng.chance(d.critChance / 100) || sure;
@@ -12848,6 +12864,65 @@ export class Game {
     return null;
   }
 
+  /**
+   * (SPLITTING AND BINDING, items.ts ITEM_WORDS) Why Splitting or Binding will not change this piece (and, Binding, take `other`
+   * into it), or null. Splitting wants room in the bag for the second piece.
+   */
+  itemWordProblem(ref: ItemRef, word: WordId, other?: ItemRef): string | null {
+    const h = this.hero;
+    if (!h.ring && !this.practice) return DARK_RING;
+    const it = this.itemAt(ref);
+    if (!it) return 'Nothing there';
+    if (!(h.words[word] > 0)) return 'No spare word';
+    if (itemWordOf(word) === 'split') {
+      const why = splitProblem(it);
+      if (why) return why;
+      return h.bag.some((b) => !b) ? null : 'No room in your bag for the second piece';
+    }
+    if (it.rarity === 3) return 'A unique piece will not bind';
+    if (!other) return null;
+    const b = this.itemAt(other);
+    if (!b) return 'Nothing there';
+    return bindProblem(it, b);
+  }
+
+  /** Splitting at the bench: the piece and a second like it in the bag, its properties shared between them at random. */
+  splitPiece(ref: ItemRef): string | null {
+    const why = this.itemWordProblem(ref, 'splitting');
+    if (why) return why;
+    const h = this.hero;
+    const it = this.itemAt(ref)!;
+    const [one, two] = splitItem(it, this.rng);
+    if (ref.kind === 'gear') h.gear[ref.slot] = one;
+    else h.bag[ref.i] = one;
+    h.bag[h.bag.findIndex((b) => !b)] = two;
+    h.words.splitting--;
+    if (ref.kind === 'gear') this.refresh();
+    this.learn('splitting', 'gear');
+    this.sfx('imbue');
+    this.emit({ t: 'burned', word: 'splitting', item: it.name, text: 'Split in two' });
+    return null;
+  }
+
+  /** Binding at the bench: `other` taken into the piece, which keeps its own and as many of the other's as there is room for; the other gone. */
+  bindPieces(ref: ItemRef, other: ItemRef): string | null {
+    const why = this.itemWordProblem(ref, 'binding', other);
+    if (why) return why;
+    const h = this.hero;
+    const it = this.itemAt(ref)!;
+    const made = bindItems(it, this.itemAt(other)!, this.rng);
+    if (ref.kind === 'gear') h.gear[ref.slot] = made;
+    else h.bag[ref.i] = made;
+    if (other.kind === 'gear') h.gear[other.slot] = null;
+    else h.bag[other.i] = null;
+    h.words.binding--;
+    if (ref.kind === 'gear' || other.kind === 'gear') this.refresh();
+    this.learn('binding', 'gear');
+    this.sfx('imbue');
+    this.emit({ t: 'burned', word: 'binding', item: made.name, text: modLines(itemModsOwn(made), this.meta.limit).join(', ') });
+    return null;
+  }
+
   /** Something has been learned about a word by using it: the Lexicon keeps it. (Not in the practice room.) */
   private learn(word: WordId, use: 'front' | 'behind' | 'gear' | 'dungeon'): void {
     if (this.practice) return;
@@ -13509,7 +13584,8 @@ export class Game {
     const h = this.hero;
     const st = h.d.stats;
     const pct = el === 'fire' ? st.firePct : el === 'frost' ? st.frostPct : el === 'lightning' ? st.lightPct : st.physPct;
-    return Math.max(1, Math.round(((h.d.dmgMin + h.d.dmgMax) / 2) * share * (1 + (st.dmgPct + pct) / 100)));
+    const [lo, hi] = this.baseFor(el);
+    return Math.max(1, Math.round(((lo + hi) / 2) * share * (1 + (st.dmgPct + pct) / 100)));
   }
 
   /** How high Power's and Frenzied's stacks go: five, eight with Cadence. */

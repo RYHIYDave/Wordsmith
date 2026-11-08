@@ -39,8 +39,7 @@ import {
   setNextUid,
   starterWeapon,
   statView,
-  statGroup,
-} from '../src/game/items';
+  statGroup, flatPair } from '../src/game/items';
 import { derive } from '../src/game/stats';
 import type { ItemBase, RollOpts } from '../src/game/items';
 import { CLASS_IDS, EQUIP_SLOTS, ICON_KEYS, SLOTS, STAT_KEYS, WORD_IDS } from '../src/game/types';
@@ -143,12 +142,16 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
   // main hand, gloves, ring and amulet get the offensive version of a word;
   // off-hand, helm, chest, belt and boots the protective one (boots differ for 'swift' only)
   const offence = OFFENCE.includes(slot);
-  const element = (damage: StatKey, resistance: StatKey): ImbuePick[] => {
-    if (slot === 'mainhand') return [['prefix', damage]];
+  // (FLAT DAMAGE, 8 Nov 2026: on a weapon, gloves and a ring a damage word may give flat damage too)
+  const flatToo = slot === 'mainhand' || slot === 'gloves' || slot === 'ring';
+  const element = (damage: StatKey, resistance: StatKey, flat: StatKey): ImbuePick[] => {
+    if (slot === 'mainhand') return [['prefix', damage], ['prefix', flat]];
+    if (flatToo) return [['prefix', damage], ['prefix', flat], ['suffix', resistance]];
     return offence ? [['prefix', damage], ['suffix', resistance]] : [['suffix', resistance]];
   };
   switch (word) {
     case 'power':
+      if (flatToo) return [['prefix', 'physPct'], ['prefix', 'dmgMin'], ['suffix', 'str']];
       return offence ? [['prefix', 'physPct'], ['suffix', 'str']] : [['prefix', 'armor'], ['suffix', 'str']];
     case 'swift':
       if (offence) return [['prefix', 'atkSpeed'], ['suffix', 'dex']];
@@ -156,11 +159,11 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
     case 'twin':
       return offence ? [['prefix', 'critChance'], ['suffix', 'dex']] : [['prefix', 'critMult'], ['suffix', 'dex']];
     case 'fire':
-      return element('firePct', 'fireRes');
+      return element('firePct', 'fireRes', 'fireMin');
     case 'frost':
-      return element('frostPct', 'frostRes');
+      return element('frostPct', 'frostRes', 'frostMin');
     case 'lightning':
-      return element('lightPct', 'lightRes');
+      return element('lightPct', 'lightRes', 'lightMin');
     case 'leech':
       return offence ? [['prefix', 'lifeOnHit'], ['suffix', 'lifeOnKill']] : [['prefix', 'maxLife'], ['suffix', 'lifeRegen']];
     case 'volatile':
@@ -1095,7 +1098,7 @@ test('imbueOptions matches the word x slot table and is never empty', () => {
       for (const ilvl of [1, 2, 7, 15, 30]) {
         const options = imbueOptions(word, slot, ilvl);
         const where = `${word} on ${slot} at ilvl ${ilvl}`;
-        assert.ok(options.length >= 1 && options.length <= 2, `${where}: ${options.length} options`);
+        assert.ok(options.length >= 1 && options.length <= 3, `${where}: ${options.length} options`);
         assert.deepEqual(options.map((o): ImbuePick => [o.kind, o.stat]), expectedImbue(word as BaseWordId, slot), where);
         for (const o of options) {
           assert.ok(o.min > 0 && o.min <= o.max, `${where}: ${o.stat} ${o.min}-${o.max}`);
@@ -1125,6 +1128,8 @@ test('imbues are a little stronger than a same-level affix and scale with item l
       const high = imbueOptions(word, slot, 15);
       low.forEach((o, i) => {
         const where = `${word} on ${slot}: ${o.stat}`;
+        // (FLAT DAMAGE: rolled as the found "adds damage" affix is, its average hit: tests/flat_damage.test.ts)
+        if (flatPair(o.stat)) return;
         const spec = AFFIX_SPEC[o.stat] ?? IMBUE_ONLY[o.stat];
         assert.ok(spec, `${where}: a range for it`);
         for (const [option, range] of [[o, spec.at1], [high[i], spec.at15]] as const) {
@@ -1207,11 +1212,12 @@ test('imbueItem adds one modifier in range; a word never gives what the piece al
         assert.equal(item.imbues.length, count + 1, where);
         assert.equal(item.imbues[count], imbue, 'the returned imbue is the newest on the item');
         assert.equal(imbue.word, word);
-        assert.equal(imbue.mods.length, 1);
+        // (one modifier; FLAT DAMAGE's two, its least and its most, as one property)
+        assert.equal(imbue.mods.length, flatPair(imbue.mods[0].stat) ? 2 : 1);
         const mod = imbue.mods[0];
         const option = options.find((o) => o.stat === mod.stat && o.kind === imbue.kind);
         assert.ok(option, `${where} gave ${imbue.kind} ${mod.stat}, which is not an option`);
-        if (option) assert.ok(mod.value >= option.min && mod.value <= option.max, `${where}: ${mod.stat} ${mod.value} outside ${option.min}-${option.max}`);
+        if (option && !flatPair(mod.stat)) assert.ok(mod.value >= option.min && mod.value <= option.max, `${where}: ${mod.stat} ${mod.value} outside ${option.min}-${option.max}`);
         assert.ok(decimalsOk(mod.stat, mod.value), `${mod.stat} = ${mod.value}`);
         assert.ok(!have.has(mod.stat), `${where}: it already had ${mod.stat}`);
         // the colour follows the count
@@ -1327,6 +1333,8 @@ test('imbueItem uses both options, and the whole range, when there are two', () 
       for (const o of options) {
         const values = seen.get(o.stat) as number[];
         assert.ok(values.length > 400 / options.length / 2, `${word} on ${slot}: ${o.stat} is picked too rarely`);
+        // (FLAT DAMAGE: an average hit rolled and split, its least below the average's range: tests/flat_damage.test.ts)
+        if (flatPair(o.stat)) continue;
         assert.equal(Math.min(...values), o.min, `${word} on ${slot}: lowest ${o.stat}`);
         assert.equal(Math.max(...values), o.max, `${word} on ${slot}: highest ${o.stat}`);
       }

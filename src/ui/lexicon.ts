@@ -15,12 +15,13 @@
 //     you would have access to your inventory on the right side"). The words the hero carries are
 //     the inventory's own, on its half: one of them is pressed there, and its card offers KEEP.
 
+import { itemWordOf } from '../game/items';
 import { WORD_COLOR } from '../art/icons';
 import { P } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { ATTR_NAME, WORDS, growsWith } from '../game/defs';
 import type { Game } from '../game/game';
-import { imbueRules, statView } from '../game/items';
+import { imbueRules, statView, flatPair } from '../game/items';
 import type { Meta } from '../game/state';
 import { RANK_OF, WORD_IDS } from '../game/types';
 import type { Limit, RankId, Slot, StatKey, WordId } from '../game/types';
@@ -51,7 +52,12 @@ const SLOT_NAME: Record<Slot, string> = { mainhand: 'weapon', offhand: 'off hand
 
 /** What a word may become on gear, slot by slot, in plain words (a melded word: two together, "A and B"). */
 export function gearLines(word: WordId, limit: Limit): string[] {
-  const label = (s: StatKey): string => statView(s, limit).label;
+  // (FLAT DAMAGE: a pair named by its least, read as what it adds)
+  const label = (s: StatKey): string => { const f = flatPair(s); return f ? `Adds ${f.label}` : statView(s, limit).label; };
+  // (SPLITTING AND BINDING change the piece at the bench: ITEM_WORDS)
+  const iw = itemWordOf(word);
+  if (iw === 'split') return ['At the bench: one piece made two, its properties shared between them.'];
+  if (iw === 'bind') return ['At the bench: a second piece of the same kind bound into the first, four properties in all.'];
   return imbueRules(word).map((r) => {
     const where = r.slots.map((s) => SLOT_NAME[s]).join(', ');
     const what = r.pairs ? r.pairs.map(([a, b]) => (a === b ? label(a) : `${label(a)} and ${label(b)}`)).join(', or ') : r.stats.map(label).join(' or ');

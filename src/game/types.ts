@@ -60,9 +60,21 @@ export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'f
 /** The city's words (the four of Version 23.8, and Binding), and the first level they are found on (game/defs.ts `wordsAt`; here for the map-maker, which reads no defs). */
 export const DEEP_WORD_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling', 'binding'];
 export const DEEP_WORDS_FROM = 11;
-/** The words that may be found at this level (its depth, or an endless level's power): before floor 11 the thirteen, in their order. */
+/**
+ * WORDS BY FLOOR (his 4 Nov 2026, 19:07: “we should maybe keep just the main damage words for 1-5, then words like leech and twin and
+ * precise and heavy come in 6-10.  Then we get stilling and pulling and all those in 11-15.  Then we need more in 16-20”; offered the
+ * tiers, 8 Nov, by 12:09: “They aren’t perfect but I like that idea.  We need 6 in the prison because we have 6 characters and they
+ * should each get a different word”, and of each hero's first: “I want frost for the mage and fire for the warlock.”). WORD_TIERS:
+ * on `on`, the prison's six (each hero's first word one of them: game/defs.ts FIRST_WORD) on floors 1 to 5; from `mid` the rest of
+ * the first thirteen; from DEEP_WORDS_FROM the city's.
+ */
+export const PRISON_WORD_IDS: readonly WordId[] = ['power', 'poison', 'frost', 'fire', 'lightning', 'swift'];
+export const WORD_TIERS = { on: true, mid: 6 };
+/** The words that may be found at this level (its depth, or an endless level's power), in their order: the prison's six before floor 6 (WORD_TIERS), the thirteen before floor 11, then all. */
 export function wordsAt(power: number): readonly WordId[] {
-  return power >= DEEP_WORDS_FROM ? WORD_IDS : WORD_IDS.filter((w) => !DEEP_WORD_IDS.includes(w));
+  if (power >= DEEP_WORDS_FROM) return WORD_IDS;
+  if (WORD_TIERS.on && power < WORD_TIERS.mid) return WORD_IDS.filter((w) => PRISON_WORD_IDS.includes(w));
+  return WORD_IDS.filter((w) => !DEEP_WORD_IDS.includes(w));
 }
 /** The melded words, in the order of his page "Wordsmith: Word Combinations" (Volatile's five left out, his pick of 13 Oct 2026, 12:36). */
 export const MELD_IDS: readonly MeldId[] = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
@@ -181,6 +193,13 @@ export type StatKey =
   | 'int'
   | 'dmgMin' // flat weapon damage (a weapon's own damage, and "adds X-Y damage" affixes)
   | 'dmgMax'
+  // (FLAT DAMAGE, his 8 Nov 2026 “Craftabke on weapons and gloves and rings”: “adds X-Y fire damage”, to the hero's fire hits; frost's and lightning's the same)
+  | 'fireMin'
+  | 'fireMax'
+  | 'frostMin'
+  | 'frostMax'
+  | 'lightMin'
+  | 'lightMax'
   | 'dmgPct' // % increased damage, all sources
   | 'physPct' // % increased physical damage
   | 'firePct' // % increased fire damage
@@ -209,7 +228,7 @@ export type StatKey =
   | 'pickupPct'; // % further that gold and orbs fly to the hero from (Pulling, burned into gear: Version 23.8)
 
 export const STAT_KEYS: readonly StatKey[] = [
-  'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
+  'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'fireMin', 'fireMax', 'frostMin', 'frostMax', 'lightMin', 'lightMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
   'critChance', 'critMult', 'maxLife', 'lifeRegen', 'lifeOnHit', 'lifeOnKill', 'maxMana', 'manaRegen',
   'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance', 'pickupPct',
 ];

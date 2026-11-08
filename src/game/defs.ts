@@ -1553,13 +1553,13 @@ export interface FirstWord {
 export const FIRST_WORD: Record<ClassId, FirstWord> = {
   warrior: { word: 'power', skill: 0 },
   ranger: { word: 'poison', skill: 2 },
-  mage: { word: 'fire', skill: 0 },
-  // (THE WARLOCK: Leeching on his bolt, the pact's hunger; a proposal, his to change)
-  warlock: { word: 'leech', skill: 0 },
-  // (THE TINKERER: Volatile on her Vial Toss, a bomber's word; a proposal, his to change)
-  tinkerer: { word: 'volatile', skill: 0 },
-  // (THE BRAWLER: Power on his jab; a proposal, his to change)
-  brawler: { word: 'power', skill: 0 },
+  // (EACH HERO A WORD OF HIS OWN, the prison's six (types.ts WORD_TIERS): his 8 Nov 2026, “We need 6 in the prison because we have 6
+  // characters and they should each get a different word”, and “I want frost for the mage and fire for the warlock.” Before: the
+  // Mage Fire, the Warlock Leeching, the Tinkerer Volatile, the Brawler Power)
+  mage: { word: 'frost', skill: 0 },
+  warlock: { word: 'fire', skill: 0 },
+  tinkerer: { word: 'lightning', skill: 0 },
+  brawler: { word: 'swift', skill: 0 },
 };
 
 /**

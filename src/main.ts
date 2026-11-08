@@ -142,6 +142,7 @@ import { BINDING3, demoB3, eventsB3 } from './render/binding3';
 import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
 import { COLOSSUS } from './game/colossus_fight';
+import { ITEM_WORDS } from './game/items';
 
 declare const __BUILD__: string;
 /** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
@@ -2700,6 +2701,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     god: false,
     /** (THE SWAMP COLOSSUS, game/colossus_fight.ts) its switch, for its test pages: on before floor 10 is laid. */
     colossus: COLOSSUS,
+    /** (SPLITTING AND BINDING, game/items.ts) their switch, for their test pages. */
+    itemWords: ITEM_WORDS,
     /** Game steps per frame while the test bot plays. */
     speed: 1,
     /** Time runs this much slower than real (1 = normal). */
