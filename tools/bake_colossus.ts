@@ -21,6 +21,7 @@
 //   npx tsx tools/bake_colossus.ts pack <cache> <out> <half 0|1> [move ...]   the sheets and the manifest; half: at one picture pixel
 //                                                                     to a game pixel (the game's own), not the art's two
 //   npx tsx tools/bake_colossus.ts count [move ...]                    what they want
+//   npx tsx tools/bake_colossus.ts look <cache> <move> <k> <out.png>    one frame, painted where it is not yet, to look at
 //   (`ready` with pack: those of them wholly painted)
 //   (moves: lurk, stand, entrance; a0 to a4 for all of a tentacle's; `body`, `arms`, or all if none named)
 // @ts-ignore
@@ -539,6 +540,43 @@ if (mode === 'count') {
   throw new Error('(counted)');
 }
 const cache = process.argv[3];
+if (mode === 'look') {
+  // (one frame of a move, painted where it is not yet and laid, its hooks with it, for looking at: `look <cache> <move> <k> <out.png>`)
+  const [mv, kk, outPng] = process.argv.slice(4);
+  const { moves, layers } = plan([mv]);
+  const M = moves.find((m) => m.name === mv);
+  if (!M) throw new Error(`no move ${mv}`);
+  const k = Number(kk);
+  const F = M.frames[k];
+  const want = new Set([...F.layers.map((L) => L.key), ...(M.hooks?.[k] ?? []).map((h) => h.key)]);
+  for (const L of layers) {
+    if (!want.has(L.key) || fs.existsSync(fileOf(cache, L.key))) continue;
+    const t = Date.now();
+    const FR = boxOf(L.key, L.pose);
+    keep(fileOf(cache, L.key), rawOf(L.key, paintColossus(L.pose, FR), FR));
+    process.stdout.write(`  painted ${L.key} in ${((Date.now() - t) / 1000).toFixed(1)} s\n`);
+  }
+  const get = (key: string): Raw => kept(fileOf(cache, key), key);
+  const pics = [{ p: layFrame(F, get), dx: 0 }, ...(M.hooks?.[k] ?? []).map((h) => ({ p: layFrame({ layers: [{ key: h.key, drop: h.drop, back: 0, dx: 0 }], sunk: 0.62, pulse: 1 }, get), dx: Math.round(h.dx * SEEN) }))];
+  const x0 = Math.min(...pics.map((q) => q.p.ox + q.dx));
+  const y0 = Math.min(...pics.map((q) => q.p.oy));
+  const x1 = Math.max(...pics.map((q) => q.p.ox + q.dx + q.p.w));
+  const y1 = Math.max(...pics.map((q) => q.p.oy + q.p.h));
+  const W = x1 - x0;
+  const H = y1 - y0;
+  const px = new Uint8Array(W * H * 4);
+  for (let q = 0; q < W * H; q++) px.set([24, 40, 34, 255], q * 4);
+  for (const { p, dx } of pics) for (let j = 0; j < p.h; j++) for (let i = 0; i < p.w; i++) {
+    const o = (j * p.w + i) * 4;
+    const a = p.rgba[o + 3] / 255;
+    if (!a) continue;
+    const d = ((p.oy + j - y0) * W + (p.ox + dx + i - x0)) * 4;
+    for (let c = 0; c < 3; c++) px[d + c] = Math.round(p.rgba[o + c] * a + px[d + c] * (1 - a));
+  }
+  fs.writeFileSync(outPng, encodePng(W, H, px));
+  process.stdout.write(`${mv} frame ${k}: ${W} by ${H}, his middle at ${-x0}, ${-y0}\n`);
+  throw new Error('(looked)');
+}
 if ((mode !== 'paint' && mode !== 'pack') || !cache) throw new Error('usage: paint <cache> <i> <n> [move ...] | pack <cache> <out> <half> [move ...]');
 fs.mkdirSync(cache, { recursive: true });
 const t0 = Date.now();

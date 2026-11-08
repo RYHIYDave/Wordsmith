@@ -34,6 +34,14 @@ export default async function (page, snap) {
     for (let i = 0; i < 5; i++) { await page.waitForTimeout(1000); await snap(`w${side}_${i}`); }
   }
   await page.evaluate(() => { const f = window.__dbg.game().monsters.find((m) => m.boss).a1.fight; f.waterIn = 1e9; });
-  for (let i = 0; i < 8; i++) { await page.waitForTimeout(1000); await snap(`p2_${i}`); }
+  for (let i = 0; i < 4; i++) { await page.waitForTimeout(1000); await snap(`p2_${i}`); }
+  // HIS BODY'S OWN ATTACKS: the bile arc, then the gaze (each as his stand comes round to its frame)
+  for (const kind of ['bile', 'gaze']) {
+    await page.evaluate((k) => { const f = window.__dbg.game().monsters.find((m) => m.boss).a1.fight; f.body2Next = k; f.body2In = 0; }, kind);
+    for (let i = 0; i < 7; i++) { await page.waitForTimeout(1000); await snap(`${kind}_${i}`); }
+  }
+  // HIS SHOVEL, at each end (the hero near the left end the first time: his snap)
+  await page.evaluate(() => { const f = window.__dbg.game().monsters.find((m) => m.boss).a1.fight; f.body2In = 1e9; f.shovelIn = 0; });
+  for (let i = 0; i < 26; i++) { await page.waitForTimeout(600); await snap(`sh_${String(i).padStart(2, '0')}`); }
   console.log('end', JSON.stringify(await info()));
 }
