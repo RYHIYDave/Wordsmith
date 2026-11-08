@@ -24,6 +24,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
 import { CLASSES, MANA_MODE, SKILLS, TUNE, WEAPON_ATTR, WEAPON_SKILLS, holdSkill, skillsFor, tapSkill, weaponAttr } from '../src/game/defs';
+import { WARRIOR_KITS } from '../src/game/talents';
 import type { SkillId } from '../src/game/defs';
 import { Game, cleanMeta, newMeta } from '../src/game/game';
 import { canPair, plainWeapon, rollItem } from '../src/game/items';
@@ -147,7 +148,9 @@ test('the weapon gives both attacks, the character keeps the swipe', () => {
   // Contraption, her tree's swap for her Vial Toss)
   const brought = new Set<SkillId>([...WEAPONS.flatMap((w) => [...WEAPON_SKILLS[w]]), ...CLASS_IDS.map((c) => CLASSES[c].evade), ...Object.values(CLASSES).flatMap((c) => [c.tap, c.hold, c.evade]), ...DEMON_KIT, 'contraption',
     // (THE VETERAN's own three, the Brawler made again, behind game/veteran.ts VETERAN: game/defs.ts skillsFor)
-    'vpunch', 'vkick', 'vjump']);
+    'vpunch', 'vkick', 'vjump',
+    // (THE WARRIOR'S THREE WEAPONS, behind game/talents.ts WARRIOR_TREE2: each weapon's three)
+    ...Object.values(WARRIOR_KITS).flat()]);
   assert.deepEqual([...brought].sort(), Object.keys(SKILLS).sort(), 'no attack is left that nothing gives');
   // the staff and the wand share neither attack (the owner: "Let's get a different skill for staff on Tap")
   assert.equal(new Set([...WEAPON_SKILLS.staff, ...WEAPON_SKILLS.wand]).size, 4);
