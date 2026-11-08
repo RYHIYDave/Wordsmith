@@ -1,11 +1,156 @@
-# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror)
+# The Drowned Eye redone: the Swamp Colossus (stage 1: his look and the new arena; stage 2: his moves, part 1; stage 3: his moves, part 2, his tentacles; stage 4: his moves, part 3, his shovel; stage 4b: the pieces on the stone smashed by it, and his mirror; stage 5: his body's own attacks, the bile arc and the gaze)
 
 A MOCK-UP: NOT IN THE GAME. The art chat's, branch `art/eye-redo`. His new look is `src/art/eye_colossus.ts`, behind
 `EYE2 = { on: false }`; nothing of the game imports it (`tests/eye_colossus.test.ts` holds it). Nothing of the old Eye
 (`src/art/drowned_eye.ts`, `art/act1_figs/eye.ts`, `game/act1_rules/eye.ts`) is used in it. Stage 1 (below the moves) was his look,
 in stills; stage 2 is his first moves: his stand, his lurk under the water and his entrance, in `src/art/eye_moves.ts`; stage 3 his
 tentacles' moves, in `src/art/eye_arms.ts`; stage 4 his shovel, in `src/art/eye_shovel.ts`; stage 4b the pieces on the stone smashed
-by his first shovel, in `src/art/eye_pieces.ts`, and at the right end the left end's paintings of him mirrored.
+by his first shovel, in `src/art/eye_pieces.ts`, and at the right end the left end's paintings of him mirrored; stage 5 his body's own
+attacks, the bile arc and the gaze, in `src/art/eye_body.ts`.
+
+## Stage 5: his body's own attacks in phase 2: the bile arc and the gaze
+
+His words, 8 Nov 2026 (by 10:53), asked “Next is his body's own attacks in phase 2, between the tentacles. The main chat suggested two.
+Draw these?”: “Bile arc and gaze (Recommended)”; told how they would be drawn, 10:54: “That’s good”. The main chat's frame for them
+(board, 7 Nov 00:48): in phase 2 his body cannot be hurt and attacks every 5 s or so; in phase 3 it can be hurt.
+
+THE GAZE AS THE MAIN CHAT'S RULE HAS IT (its board post of 8 Nov 11:42; branch `colossus` 2cb0b495, `src/game/colossus_fight.ts`).
+His phase 3 is new, in his words to the main chat: “Kill the tentacles, and he slides forward to use the eye and you can hit
+him.  Let’s scratch the tentacles for the third phase, and have strictly eye attacks and spells for the final phase?  Does that sound
+like a good idea?” (he was told yes).
+Its gaze, which one painted gaze serves in both phases: “a beam from his eye, laid toward the hero `half` degrees to one side of him
+(the warning, `warn` seconds: the arc it will sweep, the enemy's pink), swept to the other side over `sweep` seconds; `width` tiles
+wide; it hurts the hero once as it crosses him”: `GAZE = { warn: 0.9, sweep: 1.2, half: 32, width: 0.9, long: 2.6 }`. So the gaze
+is drawn as that sweep, not a locked line; at his place now (phase 2); phase 3 (his slide forward, the eye slam, the bolts) has its own
+brief after.
+
+`src/art/eye_body.ts`, behind EYE2 (off); nothing of the game imports it (`tests/eye_body.test.ts`). Both at his place (his middle 7.9
+tiles out from the stone's back edge), each out of his stand and back into it at the frame his stand would be at; his moves are his
+paintings (baked, a layer each: his jaws, his drool, his tongue-eye); the glob, the splash, the pool, the warnings, the beam, the fire,
+the scorch and the shakes are the game's effects drawn over (`BodyFx`; their shapes in `eye_body.ts`, the pictures' tool draws them).
+Movement 9 in each: a big held wind-up, a strike of two smeared frames, a big wind-down.
+
+### The bile arc (`BILE`), frame by frame (30 a second; frames from the attack's first)
+
+| beat | frames | seconds | what |
+|---|---|---|---|
+| THE WIND-UP, HELD | 0 to 26 | 0.9 | He rears back and up, his gullet heaving three times, his jaws flexing wider with each, his throat's glow swelling; bile welling up in his maw and spilling over; his tongue-eye reared up out of the way. The game's warning on the stone where it will land, on the Warrior's spot as it begins: the enemy's pink, a ragged ring crawling round, flaring gold as the glob comes down (to frame 48). |
+| THE STRIKE (smeared) | 27, 28 | 0.07 | He lunges forward and retches, his jaws flung wide, his eye squeezed; the glob leaves his throat on frame 28. |
+| held, retching | 29 to 34 | 0.2 | Gaping, shuddering. |
+| THE WIND-DOWN | 35 to 64 | 1.0 | He settles back into his stand, drooling bile (back in it at 65, 2.17 s). |
+| the glob | 28 to 49 | 0.7 | A huge glob, thick and ropy, sick yellow-green and black, weed and a bone in it, strands trailing, its burning gold; high over the stone, down on the warning. |
+| THE SPLASH | 49 | | Bile flung up and out all round in thick tongues necking into beads (0.45 s), a churned collar where it struck, a burst of fire, 70 gobs and spatter flung out, burning where they fall. |
+| THE BURNING POOL | 49 to 139 | 3.0 | Spreading in 0.2 s, lying 1.2 s, shrinking to nothing by 3 s: dark swirls, scum, its burning gold glowing under it, its rim aflame, bubbles bursting, smoke rising, the stone it ate left black and pitted, fading. |
+
+### The gaze (`GAZE`), frame by frame
+
+| beat | frames | seconds | what |
+|---|---|---|---|
+| THE WIND-UP, HELD (the warning) | 0 to 26 | 0.9 | His tongue-eye rears up out of his maw and forward, fixing on the Warrior where he stands as it begins, its lids narrowing to aim then peeling back, the eye swelling, its iris flaring from his pink to white-gold. On the stone, the arc it will sweep: 32 degrees each side of him, turning about the water under his eye; the stone darkened in it; its sides wavering lines of the enemy's pink marching outward, its first side (where it fires) the brighter, flaring gold at the end; pink motes drifting across it the way the beam will go. |
+| THE STRIKE (smeared) | 27, 28 | 0.07 | His eye whips round to the arc's first side and the beam blasts on (pink to gold, a white-hot core), the eye jolted back, the screen jolted. |
+| THE SWEEP | 27 to 63 | 1.2 | The beam swept evenly across the arc to its other side, the eye shuddering, the stone burning along its line (flames licking up), glowing gold in its joints just behind it, cooling to soot, sparks and chips flung up where it comes down. While it sweeps, the arc still to come stays faintly marked. |
+| guttering out | 63 to 71 | 0.3 | Held at the arc's other side, breaking into gouts, out at 72 (2.4 s). |
+| THE WIND-DOWN | 72 to 101 | 1.0 | His eye sinks back into his stand, blinking twice and smoking (back in it at 102, 3.4 s). The scorch smoulders where the beam passed: soot-black, embers winking out in its cracks, smoke rising, fading 3 s after the beam passed each part. |
+
+HIS EYE'S LOOK, AND HIS MIDDLE TENTACLE. His eye glares out along the beam's way no steeper than 20 degrees below level (aimed
+straight down at the stone it turned its iris away from the Warrior and from you, its lid's dome all that was seen); the beam leaves its
+iris's face and comes down. His middle tentacle stands in the water between his eye and the stone, right in the arc: through the
+wind-up it ducks down under the water (200 of his lengths down, 40 back from the stone's edge, in 22 frames), out of the beam's way,
+and comes back up through the wind-down (the beam passed through it before; now it clears all three, 41 of his lengths at the nearest).
+
+THE WARRIOR in each, twice. The bile: just clear (running out of the warning late, 0.66 tiles past the splash's edge as it lands); caught
+(running too late, knocked flying by the splash). The gaze: just clear (running out of the arc at once, away from the side it starts,
+to a spot just past where it stops: the beam stops 0.30 tiles short of him, his size counted); caught (frozen until the beam is nearly
+on him, then going too late: its edge on him at frame 42, knocked flying out away from his eye and back to the side it has swept,
+left behind it, never under it again). Where he stands here (5.6 tiles from under
+the eye), once going, a Warrior running at 8 of his lengths a frame turns about it faster than the beam does (1.9 degrees a frame
+against its 1.8): it catches only one who goes late or runs the wrong way; further out than 6.6 tiles, it gains on a running Warrior.
+
+### The numbers, for the main chat (in the game's tiles, 39.19 of his lengths; the stone 17 across and 11 deep; places as (tiles from its left end, from its back edge))
+
+- THE BILE: the glob out of his throat (7.79, -7.14), 1.0 tile up, as he lunges; 10.5 tiles to where it lands in 0.70 s (frames 28
+  to 49), 6.1 tiles high over the stone at the top of its arc; it lands on the Warrior's spot as the wind-up began (here (6.71, 3.32)),
+  warned from the wind-up's first frame (1.6 s before). THE SPLASH hits within 2.2 tiles of where it lands, on frame 49. THE POOL: 1.9
+  tiles round where it lands, spread in 0.2 s, at its widest to 1.4 s, gone at 3.0 s (whether it hurts to stand in, and how much, is the
+  main chat's).
+- THE GAZE: the arc turns about the water under his eye, (8.15, -4.28) (4.28 tiles out from the stone's back edge, under his eye as it
+  aims), toward where the Warrior stood as it began, 32 degrees each side (64 in all). The beam 0.9 tiles wide; its line on the stone from
+  the back edge to the far edge or an end, 8.5 to 12.4 tiles long across the arc (17.3 from under his eye at the most); the beam comes
+  down on it as far out as the Warrior stood. Fired on frame 27 (0.9 s) at the arc's first side, swept evenly to its other by frame 63
+  (2.1 s), out at 72 (2.4 s). It hurts as it crosses the Warrior (frames 27 to 63; the main chat's rule, once).
+- THE SHAKES (game pixels, dying away over the frames given): the retch 4 over 8 frames (frame 27); the bile crashing down 8 over 14
+  (frame 49); the beam firing 9 over 6 (frame 27), then a rumble of 2 while it sweeps (to frame 63).
+- NOWHERE SAFE. The gaze: its arc is laid on the Warrior and its line runs the whole stone, so the only way out is out of the arc's side
+  before it gets there (or a dodge through it, the game's). The bile: one glob's splash covers 15 square tiles of the stone's 187 (8 in
+  100), its pool 11 for 3 s; with one every 5 s a Warrior who moves 2.5 tiles (its reach and his size) in the 1.6 s it is warned is
+  always clear. If the main
+  chat wants it to press harder, my suggestion (its to time): a VOLLEY of three, the strike and retch played three times 10 frames apart
+  (0.33 s; his paintings for it are the same, the glob each time), the first on his spot, the next two where he is running (his spot
+  and his way, 0.7 s on), the pools then lying across his way for 3 s.
+- THE MAIN CHAT'S `GAZE.long` (2.6 s): the beam is out at 2.4 s; his wind-down (eye sinking back, smoking) runs to 3.4 s. In phase 2 (an
+  attack every 5 s or so) that fits; for phase 3's pace (`EYE_PACE` rest 0.6 to 1.2 s) the next attack would cut into it: its brief
+  after.
+
+### The pictures
+
+- `pictures/eye_moves5.mp4` (31.3 s, 939 frames, 30 a second, H.264 yuv420p, 1014 x 540, captioned beat by beat), in the arena as
+  the player sees it: THE BILE ARC at full speed twice (the Warrior just clear, then caught by the splash: 180 frames each), THE GAZE at
+  full speed twice (just clear, 150 frames; caught, 101 frames, ending as he gets up); then close up, twice the size, at half speed: his
+  maw through the wind-up and the retch, the splash and the pool (the caught take), his eye through the wind-up and the strike, the beam
+  catching the Warrior, and the beam stopping just short of him.
+- `pictures/eye_moves5.png` (1200 x 5778): each beat of both at the game's size and close at twice: the bile's wind-up and his maw,
+  the strike and the glob, the splash and the pool, the Warrior just clear; the gaze's wind-up with the arc warned and his eye, the strike
+  and the sweep, caught, the wind-down and the scorch.
+- Seen, every frame of all four takes at the game's size and every frame of the five close-ups. Seen and mended on the way: the
+  splash's crown had stood as a solid fence (now thick tongues of bile flung out, necking into beads); smoke too thin to see (now soft
+  ragged billows); the scorch a field of noise (now the stone's own joints glowing behind the beam, cooling to soot); the beam's edges
+  lying straight and its guttering cut square (now crinkled, the gouts tapering); the bile welling in his maw too small to read; his
+  eye cut off at the top of the screen and the Warrior at the bottom (the cameras moved, the Warrior's spot moved in); the beam passing
+  through his middle tentacle (now it ducks under the water); his eye aimed so steeply down that its iris turned away and only its lid
+  was seen (now no steeper than 20 degrees); and in the caught take the Warrior thrown the way the beam swept, so that it crossed him
+  again (now thrown out and back behind it).
+- To make them again (the layers on the memory disk, `/dev/shm`):
+
+```
+npx tsx tools/eye_moves_pics.ts paint 0 2 b1 g1 & npx tsx tools/eye_moves_pics.ts paint 1 2 b1 g1   (about 45 minutes on two workers)
+npx tsx tools/eye_moves_pics.ts frames /dev/shm/eye_moves/f5 b1 0 179      (and b2 0 179, g1 0 149, g2 0 100)
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c5/maw b1 20,21,...,63 -20 0 90
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c5/splash b2 66,...,101 -70 440 30
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c5/eye g1 22,...,61 -13 142 195
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c5/sweep g2 56,...,79 -30 362 20
+npx tsx tools/eye_moves_pics.ts close /dev/shm/eye_moves/c5/clear g1 74,...,93 136 338 20
+npx tsx tools/eye_moves_pics.ts cost5      (what their own layers cost)
+python3 tools/eye_shovel_sheet.py film5 /dev/shm/eye_moves/f5 /dev/shm/eye_moves/c5 docs/mockups/eye_redo/pictures/eye_moves5.mp4
+python3 tools/eye_shovel_sheet.py sheet5 /dev/shm/eye_moves/f5 /dev/shm/eye_moves/c5 docs/mockups/eye_redo/pictures/eye_moves5.png
+```
+
+### What it costs (as painted here: their own layers; his stand's are his stand's)
+
+297 layers: the bile 195 (his jaws 65, 66 MB raw; his drool 65, 14 MB; his tongue-eye 65, 10 MB), the gaze 102 (his tongue-eye only,
+12 MB; his jaws and drool are his stand's; his middle tentacle's ducking is his stand's paintings laid lower, nothing new): 102.5 MB raw at two picture pixels to a game pixel, 32.1 MB packed. At the game's own pixel
+size (as the biggest bosses are painted, his rule of 7 Nov) about a quarter: about 26 MB raw, about 8 MB packed (an estimate: the main
+chat's to weigh). His jaws are most of it (65 of the 102.5 MB): the wind-up's held frames could be painted at 15 a second and doubled
+if the main chat needs the room (his rule is 30; the owner's to say).
+
+### The checks (`tests/eye_body.test.ts`)
+
+(1) The switch off; nothing of the game imports `art/eye_body.ts`. (2) THE BEATS: each wind-up held 0.9 s with its warning all
+through it; the strike two frames, the only smeared ones; out of his stand and back into it as his stand has him at that frame (his
+jaws, his throat's glow, his tongue within 3 of his lengths). (3) NOTHING THROUGH ANYTHING in every frame of both: his tongue and eye
+clear of his jaws and teeth (0.7 of his lengths at the nearest: his tongue's root on the floor of his maw, as in his stand), his
+spittle clear of his tongue (5.2), his jaws of each other (28.5), him clear of the stone (29.3), his tentacles clear of him (32.0), the beam clear of his tentacles (41.5, his middle one ducked) and
+the glob over them (64.9). (4)
+NEVER STILL: him moving in every frame of both takes. (5) NO LEAPS: his eye no more than 12 of his lengths a frame but in the strikes
+(bile 7.1, gaze 11.2; 29.5 in the gaze's whip), his drawing back no more than 5 a frame, the Warrior no faster than a run (8.0) but
+knocked flying. (6) THE CUES: the glob out of his throat on the strike's second frame, high over, down on the warning; the splash as it
+lands; the pool spreading, burning, gone at 3 s; the arc toward where the Warrior stood, 32 degrees each side, warned through the wind-up;
+the beam on from the strike to frame 72, fired at the arc's first side, swept evenly to the other in 1.2 s, 0.9 tiles wide, its line
+the whole stone at every angle; the shakes; the first take of each just clear, the second caught and knocked flying. (7) NOTHING CYAN
+in him as he retches and as he glares, nor in the bile's and the beam's colours. (8) NOTHING RULED (no straight run over 12 game pixels,
+exactly across or up): the glob, the pool, the bile's warning, the beam, the fire along its line, the arc's sides, the scorch's sides
+(the longest straight runs, in game pixels up and across: the glob 8.5, 7; the pool 4.5, 9; the bile's warning 3.5,
+7.5; the beam 10, 0.5; the fire along its line 4.5, 2.5; the arc 3.5, 6.5; the scorch 3, 6.5). (9) The numbers above. `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts` and `tests/eye_arms.test.ts`: their first
+checks let `art/eye_body.ts` import them (the smallest change: its name added to each one's list).
 
 ## Stage 4b: the pieces on the stone, smashed by his first shovel; his mirror made real
 

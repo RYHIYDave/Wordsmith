@@ -500,6 +500,36 @@ export interface ShovelFx {
   /** The end he has come up at (from his burst on: the reeds in the water there are under him, crushed), or none yet. */
   up?: 'left' | 'right' | null;
 }
+/** WHAT THE GAME DRAWS FOR HIS BODY'S OWN ATTACKS (art/eye_body.ts; the pictures' tool draws it), at frame `f` of the attack. THE BILE
+ *  ARC: the warning where it lands (`k` through the wind-up and the flight, 0 to 1; `flare` its gold at the end); the bile welling in his
+ *  maw (0 to 1), drooling off him (0 to 1), his gullet's heave (-1 to 1) and how far he has drawn back and up (his lengths); the glob in
+ *  flight (the world's, its way, seconds since it left him); the splash and its pool (where, seconds since it landed). THE GAZE: the
+ *  arc it sweeps (turning about the water under his eye, `ox`, `oy`; from angle `a0` to `a1`, radians round from straight out over the
+ *  stone toward +x; warned from `from` on; `k` through the wind-up; its first side flaring as it fires); the stone darkened in it (0 to
+ *  1); the beam (its line now at angle `a`, from where it comes onto the stone to where it leaves it, and where it comes down; seconds
+ *  since it fired, how far along the line it has burst, how strong); the scorch (where the beam has passed, from `a0` to `to`, at frame
+ *  `f` of the gaze); his eye (its middle, its gaze, how big), its iris's flare (0 to 1), its smoke (seconds since). */
+export interface BodyFx {
+  kind: 'bile' | 'gaze';
+  shot: string;
+  f: number;
+  warn?: { x: number; y: number; k: number; flare: number };
+  well?: number;
+  drool?: number;
+  heave?: number;
+  lunge?: { back: number; drop: number };
+  glob?: { x: number; y: number; z: number; vx: number; vy: number; vz: number; s: number };
+  splash?: { x: number; y: number; s: number };
+  arc?: { ox: number; oy: number; a0: number; a1: number; from: number; k: number; flare: number };
+  dark?: number;
+  beam?: { sx: number; sy: number; ex: number; ey: number; ax: number; ay: number; a: number; s: number; reach: number; k: number };
+  scorch?: { ox: number; oy: number; a0: number; a1: number; to: number; f: number };
+  eye?: [number, number, number];
+  gaze?: [number, number, number];
+  flare?: number;
+  swell?: number;
+  smoke?: number;
+}
 /** The Warrior in a frame of the tentacles' films: where (the arena's units: across, and onto the stone from the back of the water),
  *  facing him ('back') or the camera ('front'), standing, running or striking, and the frame of it. */
 export interface HeroAt {
@@ -512,7 +542,7 @@ export interface HeroAt {
   lift?: number;
 }
 export interface EyeFrame {
-  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2';
+  move: 'stand' | 'lurk' | 'entrance' | 'p1' | 'p2' | 'fan' | 's1' | 's2' | 'b1' | 'b2' | 'g1' | 'g2';
   /** The tentacles' films: the Warrior, how far the camera has come down from the stills' (picture pixels), and what the game draws
    *  for the tentacles. */
   hero?: HeroAt;
@@ -522,6 +552,8 @@ export interface EyeFrame {
   fx?: ArmFx;
   /** What the game draws for his shovel (art/eye_shovel.ts). */
   sfx?: ShovelFx;
+  /** What the game draws for his body's own attacks (art/eye_body.ts). */
+  bfx?: BodyFx;
   k: number;
   /** His clock (the stand's: 0 at its first frame). */
   t: number;

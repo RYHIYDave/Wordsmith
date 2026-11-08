@@ -13,6 +13,11 @@ frames tools/eye_moves_pics.ts lays together (the phone's screen, 1014 x 468 pic
                                                                                    smashes close up, half speed; the next shovel at the
                                                                                    right end, mirrored, over the rubble
    python3 tools/eye_shovel_sheet.py sheet4 <frames dir> <close dir> <out.png>    its key frames at the game's size and at twice
+   python3 tools/eye_shovel_sheet.py film5 <frames dir> <close dir> <out.mp4>     PART 4: HIS BODY'S OWN ATTACKS (art/eye_body.ts):
+                                                                                   the bile arc twice at full speed (just clear, then
+                                                                                   caught), the gaze twice (the same); each close up at
+                                                                                   half speed
+   python3 tools/eye_shovel_sheet.py sheet5 <frames dir> <close dir> <out.png>    their key frames at the game's size and at twice
 (the beats' frames as art/eye_shovel.ts SHOVEL, SCRAPERS, SCRAPE and SNAP set them; the close-ups from tools/eye_moves_pics.ts close,
 each piece's in its own folder of <close dir>)
 """
@@ -326,9 +331,164 @@ def sheet4(d, c, out):
     print(out, s.size)
 
 
+# =============================================================================================
+# PART 4: HIS BODY'S OWN ATTACKS (art/eye_body.ts BILE, GAZE; each take BODY_TAKE: his stand, the attack from frame LEAD, his stand)
+LEAD = 24
+BILE_WIND, BILE_STRIKE, BILE_RELEASE, BILE_LAND, BILE_RETCH, BILE_FRAMES = 27, 2, 28, 49, 6, 65
+GAZE_WIND, GAZE_FIRE, GAZE_SWEPT, GAZE_OUT, GAZE_FRAMES = 27, 27, 63, 72, 102
+CAUGHT_GAZE = 42  # (the second take: the beam's edge on him; knocked flying the frame after)
+# (the caught gaze ends as the Warrior gets up, the camera still on him where he was thrown; the first shows the gaze back into his stand)
+TAKE_FRAMES = {'b1': 180, 'b2': 180, 'g1': 150, 'g2': 101}
+
+
+def beat5(shot, k):
+    """What is happening at a frame of a take of his body's attacks (the most important thing first)."""
+    f = k - LEAD
+    if shot[0] == 'b':
+        if f < 0: return 'his stand, drooling, never still'
+        if f < BILE_WIND: return 'THE WIND-UP, HELD 0.9 s: he rears back, gullet heaving, bile welling; the warning on the Warrior'
+        if f < BILE_WIND + BILE_STRIKE: return 'THE STRIKE (two frames, smeared): he lunges and retches; the glob hurled out of his throat'
+        if f < BILE_LAND:
+            if shot == 'b1' and f >= 34: return 'the glob arcing high over onto the stone; the Warrior running out of the warning, late'
+            if shot == 'b2' and f >= 41: return 'the glob coming down; the Warrior running too late'
+            return 'the glob arcing high over onto the stone (0.7 s); he gapes, retching, and settles (the wind-down)'
+        if f < BILE_LAND + 8:
+            if shot == 'b2': return 'THE SPLASH: bile flung up and out, gobs flying: the Warrior caught, knocked flying'
+            return 'THE SPLASH: bile flung up and out all round, gobs flying; the Warrior just clear'
+        if f < BILE_LAND + 90: return 'THE BURNING POOL: bubbling, smoking, its rim aflame, eating the stone; shrinking, fading (3 s)'
+        return 'his stand again, drooling; the stone eaten black where the pool lay'
+    if f < 0: return 'his stand, his tongue-eye weaving, never still'
+    if f < GAZE_WIND:
+        if shot == 'g1' and f >= 6: return 'THE WIND-UP, HELD 0.9 s: the arc warned, 32\u00b0 each side; the Warrior runs out of it at once'
+        return 'THE WIND-UP, HELD 0.9 s: his eye rears up, fixing on the Warrior; the arc it will sweep warned'
+    if f < GAZE_FIRE + 2: return 'THE STRIKE (two frames, smeared): his eye whips round to the arc\'s first side; the beam blasts on'
+    if f < GAZE_SWEPT:
+        if shot == 'g2' and f >= CAUGHT_GAZE: return 'THE SWEEP: the Warrior, going too late, caught as it crosses him and knocked flying'
+        if shot == 'g2' and f >= 38: return 'THE SWEEP: the Warrior frozen until it is nearly on him, then going too late'
+        return 'THE SWEEP, 1.2 s: the beam swept across the arc, the stone burning behind it'
+    if f < GAZE_OUT:
+        if shot == 'g1': return 'the beam stops at the arc\'s other side, just short of the Warrior, and gutters out'
+        return 'the beam stops at the arc\'s other side and gutters out'
+    if f < GAZE_FRAMES: return 'THE WIND-DOWN: his eye sinks back, blinking and smoking; the scorch smoulders'
+    return 'his stand again; the scorch fading'
+
+
+# (the close-ups: [folder, take, frames, title]; each made by tools/eye_moves_pics.ts close round a point, twice the size)
+CLOSE5 = [
+    ('maw', 'b1', range(LEAD - 4, LEAD + 40), 'THE BILE CLOSE: HIS MAW (x2, HALF SPEED)'),
+    ('splash', 'b2', range(LEAD + 42, LEAD + 78), 'THE BILE CLOSE: THE SPLASH (x2, HALF SPEED)'),
+    ('eye', 'g1', range(LEAD - 2, LEAD + 38), 'THE GAZE CLOSE: HIS EYE (x2, HALF SPEED)'),
+    ('sweep', 'g2', range(LEAD + 32, LEAD + 56), 'THE GAZE CLOSE: CAUGHT (x2, HALF SPEED)'),
+    ('clear', 'g1', range(LEAD + 50, LEAD + 70), 'THE GAZE CLOSE: JUST CLEAR (x2, HALF SPEED)'),
+]
+TAKE_TITLE = {'b1': 'THE BILE ARC, FULL SPEED: JUST CLEAR', 'b2': 'THE BILE ARC, FULL SPEED: CAUGHT', 'g1': 'THE GAZE, FULL SPEED: JUST CLEAR', 'g2': 'THE GAZE, FULL SPEED: CAUGHT'}
+
+
+def foot5(shot, k):
+    f = k - LEAD
+    return ('attack frame %d  |  %.2f s' % (f, f / FPS)) if f >= 0 else ('frame %d  |  his stand' % k)
+
+
+def film5(d, c, out):
+    seq = []
+    for shot in ('b1', 'b2', 'g1', 'g2'):
+        for k in range(TAKE_FRAMES[shot]): seq.append(((shot, k, None), TAKE_TITLE[shot], beat5(shot, k), foot5(shot, k)))
+    for tag, shot, ks, title in CLOSE5:
+        for k in ks:
+            for _ in range(2): seq.append(((shot, k, tag), title, beat5(shot, k), foot5(shot, k)))
+    w, h = 1014, 468 + 72
+    from eye_moves_sheet import probe
+    for (_, title, line, foot) in seq:
+        assert probe.textlength(title, font=mid) + probe.textlength(foot, font=small) + 50 < w, title
+        assert probe.textlength(line, font=small) + 28 < w, line
+    assert len(seq) / FPS < 60, len(seq)
+    p = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (w, h), '-framerate', str(FPS), '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
+    last = None
+    im = None
+    for (key, title, line, foot) in seq:
+        if key != last:
+            shot, k, tag = key
+            im = frame(d, shot, k) if tag is None else Image.open(os.path.join(c, tag, 'close_%s_%03d.png' % (shot, k))).convert('RGB')
+            last = key
+        f = Image.new('RGB', (w, h), BG)
+        f.paste(im, (0, 0))
+        f.paste(caption_bar(w, title, line, foot), (0, 468))
+        p.stdin.write(f.tobytes())
+    p.stdin.close()
+    p.wait()
+    print(out, len(seq), 'frames', '%.1f s' % (len(seq) / FPS))
+
+
+# THE SHEET: [title, note, [(source, take, frame, x, y, label), ...], at twice]; source 'f' the take's frame (a tile of it at the game's
+# size round x, y, or at twice); any other a close-up folder (already twice the size: a tile of it round x, y)
+SHEET5 = [
+    ('THE BILE ARC: THE WIND-UP, HELD 0.9 s',
+     'He rears back and up, his gullet heaving three times, his jaws flexing wider with each, bile welling in his maw and spilling over; the warning on the stone on the Warrior\'s spot, the enemy\'s pink, flaring gold as the glob comes down.',
+     [('f', 'b1', LEAD + 12, 507, 200, 'attack frame 12: rearing, heaving'), ('f', 'b1', LEAD + 26, 507, 300, '26: held at its height, the warning')], False),
+    ('', 'His maw close, at twice the size.',
+     [('maw', 'b1', LEAD + 12, 507, 234, '12: bile welling, his gullet heaving'), ('maw', 'b1', LEAD + 26, 507, 234, '26: reared back, held')], False),
+    ('THE BILE ARC: THE STRIKE (two frames, smeared) AND THE GLOB',
+     'He lunges forward and retches, his jaws flung wide, his eye squeezed: the glob hurled out of his throat, thick and ropy, sick yellow-green and black, weed and a bone in it, burning gold; it arcs high over onto the stone (0.7 s).',
+     [('maw', 'b1', LEAD + 27, 507, 234, '27: the lunge, smeared'), ('maw', 'b1', LEAD + 29, 507, 234, '29: the glob out, flying'), ('f', 'b1', LEAD + 36, 507, 250, '36: the glob high over'), ('f', 'b1', LEAD + 45, 507, 300, '45: coming down, the Warrior running')], False),
+    ('THE SPLASH, AND THE BURNING POOL',
+     'The glob crashes down and bursts: bile flung up and out all round in thick tongues necking into beads, gobs and spatter flying and burning where they fall; then a pool that lies bubbling and smoking, its rim aflame, eating the stone, shrinking and fading in 3 s. The second take: the Warrior caught and knocked flying. Close, at twice the size.',
+     [('splash', 'b2', LEAD + 49, 507, 234, '49: it lands, bursting'), ('splash', 'b2', LEAD + 52, 507, 234, '52: flung out; the Warrior knocked flying'), ('splash', 'b2', LEAD + 58, 507, 234, '58: gobs flying, the pool spreading'), ('splash', 'b2', LEAD + 76, 507, 234, '76: the pool burning, smoking')], False),
+    ('', 'As the player sees it: the first take, the Warrior just clear; the pool shrinking as he settles, drooling (the wind-down).',
+     [('f', 'b1', LEAD + 51, 507, 300, '51: the Warrior just past the splash'), ('f', 'b1', LEAD + 110, 507, 300, '110: the pool shrinking, fading')], False),
+    ('THE GAZE: THE WIND-UP, HELD 0.9 s, THE ARC WARNED',
+     'His tongue-eye rears up out of his maw and fixes on the Warrior, its lids narrowing then peeling back, its iris flaring from pink to white-gold; on the stone the arc it will sweep (the main chat\'s rule: 32 degrees to each side of him), the stone dark in it, its first side brighter, pink motes running across it the way the beam will go.',
+     [('f', 'g2', LEAD + 12, 470, 400, 'attack frame 12: fixing on him, the arc warned'), ('f', 'g2', LEAD + 25, 470, 400, '25: its first side flaring gold')], False),
+    ('', 'His eye close, at twice the size.',
+     [('eye', 'g1', LEAD + 10, 507, 150, '10: rearing, narrowing to aim'), ('eye', 'g1', LEAD + 25, 507, 150, '25: wide, flared white-gold')], False),
+    ('THE GAZE: THE STRIKE (smeared) AND THE SWEEP, 1.2 s',
+     'His eye whips round to the arc\'s first side and the beam blasts on (pink to gold, a white-hot core); it sweeps across the arc in 1.2 s, the eye shuddering, the stone burning along it and glowing in its joints behind it, sparks and chips flung up; it stops at the other side and gutters out.',
+     [('eye', 'g1', LEAD + 27, 507, 180, '27: the strike, smeared'), ('f', 'g1', LEAD + 36, 507, 320, '36: sweeping'), ('f', 'g1', LEAD + 52, 507, 320, '52: past the middle'), ('f', 'g1', LEAD + 63, 507, 320, '63: at the other side: the Warrior just clear')], False),
+    ('', 'Caught (the second take): frozen until it is nearly on him, then going too late. Close, at twice the size.',
+     [('sweep', 'g2', LEAD + 42, 507, 234, '42: the beam\'s edge reaching him'), ('sweep', 'g2', LEAD + 46, 507, 234, '46: knocked flying')], False),
+    ('THE GAZE: THE WIND-DOWN, THE SCORCH',
+     'The beam gutters out in gouts; his eye sinks back into his stand, blinking and smoking; the stone it swept left scorched black, embers winking out in its cracks, smoke rising, fading in 3 s.',
+     [('f', 'g1', LEAD + 68, 507, 320, '68: guttering out'), ('f', 'g1', LEAD + 78, 470, 400, '78: the scorch smouldering, his eye sinking')], False),
+]
+
+
+def sheet5(d, c, out):
+    parts = []
+    intro = ('His body\'s own attacks in phase 2, between the tentacles. The owner, 8 Nov, asked “Next is his body\'s own attacks in phase 2, '
+             'between the tentacles. The main chat suggested two. Draw these?”: “Bile arc and gaze (Recommended)”; told how they would be '
+             'drawn: “That’s good”. The gaze as the main chat\'s rule has it (8 Nov 11:42): a beam laid 32 degrees to one side of the '
+             'Warrior, warned 0.9 s, swept to the other side in 1.2 s, 0.9 tiles wide. Each from his stand at his place and back into it: a '
+             'big held wind-up, a smeared strike, a big wind-down. Key frames as the player sees them, at the game\'s size; close-ups at twice.')
+    hl = wrap(intro, small, W - 48)
+    hd = Image.new('RGB', (W, 76 + 26 * len(hl) + 10), BG)
+    dr = ImageDraw.Draw(hd)
+    dr.text((24, 22), 'THE SWAMP COLOSSUS: THE BILE ARC AND THE GAZE', font=big, fill=PALE)
+    for i, l in enumerate(hl): dr.text((24, 66 + 26 * i), l, font=small, fill=GREY)
+    parts.append(hd)
+    def get(src, shot, k, x, y):
+        im = frame(d, shot, k) if src == 'f' else Image.open(os.path.join(c, src, 'close_%s_%03d.png' % (shot, k))).convert('RGB')
+        wd, ht = (540, 300)
+        x0 = max(0, min(1014 - wd, x - wd // 2)); y0 = max(0, min(468 - ht, y - ht // 2))
+        return im.crop((x0, y0, x0 + wd, y0 + ht))
+    for title, note, its, _tw in SHEET5:
+        for i in range(0, len(its), 2):
+            two = its[i:i + 2]
+            parts.append(block(title if i == 0 else '', note if i == 0 else '', row([get(*it[:5]) for it in two], [it[5] for it in two])))
+    H = sum(p.height for p in parts)
+    s = Image.new('RGB', (W, H), BG)
+    y = 0
+    for p in parts: s.paste(p, (0, y)); y += p.height
+    assert s.height <= 7000, s.height
+    s.save(out, optimize=True)
+    print(out, s.size)
+
+
 if __name__ == '__main__':
     mode, d, out = sys.argv[1], sys.argv[2], sys.argv[3]
-    if mode == 'film4':
+    if mode == 'film5':
+        film5(d, sys.argv[3], sys.argv[4])
+    elif mode == 'sheet5':
+        sheet5(d, sys.argv[3], sys.argv[4])
+    elif mode == 'film4':
         film4(d, sys.argv[3], sys.argv[4])
     elif mode == 'sheet4':
         sheet4(d, sys.argv[3], sys.argv[4])
