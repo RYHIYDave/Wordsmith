@@ -369,7 +369,11 @@ const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?
           // strike's half-frames, its after-images)
           ...VET_LISTS.map((id) => (a: AnimSet) => a.clips?.vet?.[id]?.frames ?? []), ...VET_LISTS.map((id) => (a: AnimSet) => a.clips?.vetHalves?.[id]?.frames ?? []),
           // (and his action lines, art/veteran_fx_art.ts: each move's three layers)
-          ...VET_LISTS.flatMap((id) => (['ground', 'behind', 'front'] as const).map((k) => (a: AnimSet) => a.clips?.vetFx?.[id]?.[k] ?? []))];
+          ...VET_LISTS.flatMap((id) => (['ground', 'behind', 'front'] as const).map((k) => (a: AnimSet) => a.clips?.vetFx?.[id]?.[k] ?? [])),
+          // (25.2.4: what a hero does standing about, his two gestures (render/figure.ts standingFrame), last, so that every other list
+          // keeps its place: till then never baked nor painted ahead, so painted here as he stood, a second and more for the Warrior
+          // from eight sides on this machine, many on a phone; his “I couldn’t move for maybe 15 seconds”, 7 Nov 2026)
+          (a) => a.clips?.idleA?.frames ?? [], (a) => a.clips?.idleB?.frames ?? []];
 
 /** A hero's lists of frames, in the order they are painted ahead (the painter's worker and the page agree on them by this). */
 export function heroLists(set: AnimSet): Sprite[][] {

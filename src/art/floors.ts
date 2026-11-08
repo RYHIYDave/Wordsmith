@@ -5,7 +5,7 @@
 // does past the fifth, and with FIRST5 off (game/ways.ts) the fifth does too.
 
 import { CHAPEL, makeChapelArt } from './chapel';
-import { TOMB, makeTombArt } from './tomb';
+import { TOMB, makeTombArt, tombStairwell } from './tomb';
 import { LAIR_TEMPLE, makeLairTempleArt } from './lair_temple';
 import { PRISON, makePrisonArt } from './prison';
 import { GROUNDS, makeGroundsArt } from './grounds';
@@ -32,12 +32,23 @@ export function lookProps(k: number): DungeonProps {
   return k === 5 ? lairProps() : cryptProps(k);
 }
 
+/**
+ * FLOOR 1'S STAIRWELL, made once and kept (25.2.4: till then it was made again every frame floor 1 was drawn, and every frame
+ * of the town as it was first drawn, some 40% of floor 1's frame on this machine; render.ts waysOf).
+ */
+let tombStair: Record<'x' | 'y', Sprite> | null = null;
+/** The stairwell (each way down) of look `k` alone (the town's are floor 1's), without making the rest of that floor's pictures. */
+export function lookStairs(k: number): Record<'x' | 'y', Sprite> {
+  if (k === 1 && TOMB.on) return (tombStair ??= { x: tombStairwell('x'), y: tombStairwell('y') });
+  return lookWays(k).stair;
+}
+
 /** The stairwell (each way down) and the waypoint of look `k` (1 to 5; the lair has no stairwell of its own: its way out is the mine shaft). */
 export function lookWays(k: number): { stair: Record<'x' | 'y', Sprite>; way: WaypointArt } {
   // (FLOOR 1, THE KING'S TOMB, behind TOMB: its stairwell in the tomb's stone; its waypoint the Crypt's)
   if (k === 1 && TOMB.on) {
-    const A = makeTombArt();
-    return { stair: { x: A.stairwell('x'), y: A.stairwell('y') }, way: cryptWays(1).way };
+    makeTombArt();
+    return { stair: lookStairs(1), way: cryptWays(1).way };
   }
   if (k !== 5) return cryptWays(Math.max(1, k));
   return { stair: cryptWays(4).stair, way: lairWaypoint() };
