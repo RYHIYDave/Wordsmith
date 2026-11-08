@@ -7,12 +7,12 @@
 // reached; in phase 3 his own (his tentacles beside it). The flasks are refilled between phases (his “flasks reset in between each
 // phase for now”). What is drawn is render/act1_fx/colossus.ts (stand-ins until the art chat's pictures are baked).
 
-import { MSG, TUNE } from '../defs';
+import { MONSTERS, MSG, TUNE } from '../defs';
 import type { BossRules } from '../bosses';
 import type { Level, Monster } from '../state';
 import type { Act1Rules } from './types';
 import { RULES as EYE_RULES } from './eye';
-import { COLOSSUS, ColossusFight, HIS_PLACE, LIFE, SHOVEL, STONE, onStone, rootAt, stoneToWorld, worldToStone } from '../colossus_fight';
+import { ARM, CHANGE3, COLOSSUS, ColossusFight, FORWARD, HIS_PLACE, LIFE, SHOVEL, STONE, eyeHome, onStone, rootAt, stoneToWorld, worldToStone } from '../colossus_fight';
 import type { FightEvent, StoneAt } from '../colossus_fight';
 import type { Game } from '../game';
 
@@ -41,6 +41,15 @@ export function colossusOf(g: Game): Monster | null {
 
 /** Where his body is now: at his place, or at an end as he gapes there in his shovel. */
 function bodyWhere(S: StoneAt, f: ColossusFight): { x: number; y: number } {
+  // (phase 3: slid forward, his eye before him, or lying where it slammed down: where blows reach him)
+  if (f.ph === 3 && f.mode === 'fight') {
+    const at = f.bodyStruck()?.at ?? eyeHome();
+    return stoneToWorld(S, at.u, at.v);
+  }
+  if (f.ph === 2 && f.mode === 'change') {
+    const k = Math.min(1, f.phT / CHANGE3.long);
+    return stoneToWorld(S, HIS_PLACE.u, HIS_PLACE.v + (eyeHome().v - HIS_PLACE.v) * k);
+  }
   const sh = f.shovel;
   if (sh && sh.t >= SHOVEL.burst && sh.t < SHOVEL.back + 0.47) return stoneToWorld(S, sh.end === 'l' ? -SHOVEL.out : STONE.w + SHOVEL.out, STONE.d / 2);
   return stoneToWorld(S, HIS_PLACE.u, HIS_PLACE.v);
@@ -74,6 +83,7 @@ function handle(R: BossRules, m: Monster, S: StoneAt, ev: readonly FightEvent[])
         const ph = f.mode === 'change' ? ((f.ph + 1) as 2 | 3) : f.ph;
         t.maxLife = Math.max(1, Math.round(m.maxLife * LIFE[ph]));
         t.life = t.maxLife;
+        t.r = ARM.r;
         t.fx = -Math.SQRT1_2;
         t.fy = -Math.SQRT1_2;
         colossusOn(t).arm = e.id;
@@ -166,6 +176,7 @@ export const COLOSSUS_RULES: Act1Rules = {
     const at = bodyWhere(S, f);
     m.x = at.x;
     m.y = at.y;
+    m.r = f.ph === 3 ? FORWARD.r : MONSTERS.eye.radius;
     return true;
   },
 

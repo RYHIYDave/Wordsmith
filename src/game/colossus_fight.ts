@@ -93,8 +93,8 @@ export const CRASH = { v: 0.87, r: 2.4, hit: 0.1, surge: [0.35, 3.2] as const, h
 export const BODY = { stand: fr(90) } as const;
 /** His entrance (phase 2's start): 9.0 s from his lurk; his three tentacles burst up from `armsUp`. */
 export const ENTRANCE = { long: fr(270), armsUp: fr(222) } as const;
-/** Phase 3's change (not drawn yet: the art chat's to come): this long, his tentacles bursting up again from `armsUp`. */
-export const CHANGE3 = { long: 4.0, armsUp: 2.8 } as const;
+/** Phase 3's change (not drawn yet: the art chat's to come): HE SLIDES FORWARD to the stone's back edge, this long; no tentacles come up again. */
+export const CHANGE3 = { long: 4.0, armsUp: Infinity } as const;
 /**
  * THE SHOVEL, frames from his stand: he sinks (0 to 21); THE TELL, the water boiling off the end he will come up at (22 to 55);
  * he bursts up there (56 to 59); roars (60 to 83); gapes (84 to 299) as four tentacles scrape along the stone toward his maw,
@@ -141,12 +141,38 @@ export const HOOK = {
 export const SNAP = { deep: 2.35, across: [1.84, 9.8] as const, shut: fr(7), long: fr(31), last: fr(268), again: 0.6 } as const;
 
 // ---------------------------------------------------------------------------------------------
-// PHASE 3 (THE SIEGE'S MAGIC): the main chat's plan of 7 Nov 00:48, the art not drawn yet
+// PHASE 3, HIS EYE AND HIS SPELLS (the art not drawn yet: these numbers stand until its pictures set them). HIS WORDS, 8 Nov 2026
+// (asked how a close-range hero should reach his body in phase 3): “Kill the tentacles, and he slides forward to use the eye and you
+// can hit him.  Let’s scratch the tentacles for the third phase, and have strictly eye attacks and spells for the final phase?”
+// So: no tentacles; he slides forward to the stone's back edge (`FORWARD`), his eye in reach of every hero but while the cult's
+// pillars burn (quests610.ts PILLARS: shielded); the siege's bolts rain on the stone; his eye's two attacks, by turns, the gaze
+// swept across the stone and the eye slammed down on it (lying there a moment: his eye's lowest, the best time to strike it).
+
+/** His place in phase 3, slid forward (his middle at the water); his eye `eye` tiles before his middle, struck within `r` of it. */
+export const FORWARD = { u: 8.5, v: -2.8, eye: 1.2, r: 1.6 } as const;
+/**
+ * THE GAZE: a beam from his eye, laid toward the hero `half` degrees to one side of him (the warning, `warn` seconds: the arc it
+ * will sweep, the enemy's pink), swept to the other side over `sweep` seconds; `width` tiles wide; it hurts the hero once as it
+ * crosses him.
+ */
+export const GAZE = { warn: 0.9, sweep: 1.2, half: 32, width: 0.9, long: 2.6 } as const;
+/**
+ * THE EYE SLAM: his eye reared back (the warning, `warn` seconds: a circle where it will land, where the hero stands, no further
+ * than `reach` tiles from his eye), slammed down on the stone at `hit`, hurting within `r`; lying there to `up` (struck there as
+ * anywhere), back up by `long`.
+ */
+export const EYE_SLAM = { warn: fr(28), hit: fr(28), r: 1.5, reach: 9, up: 2.2, long: 2.8 } as const;
+/** His eye's attacks: the next begun `rest` seconds (a range) after the last ends; the first `first` in. */
+export const EYE_PACE = { rest: [0.6, 1.2] as const, first: 1.5 } as const;
 
 /** The siege's bolts raining down: every `every` seconds `n` of them, the first where the hero stands, the rest `near` to `far` tiles round him; each warned `warn` seconds, hurting within `r` tiles. */
 export const RAIN = { every: 2.6, n: 3, near: 1.5, far: 3.5, warn: 1.1, r: 1.0 } as const;
-/** Where the hero's blows reach him in phase 3: round his middle at his place, or at an end as he gapes there (`r` tiles: his front a third of a tile off the stone's end there). */
+/** (His body as he gapes at an end of the stone in the shovel: `r` tiles round his middle, his front a third of a tile off the stone's end there.) */
 export const BODY_HIT = { r: 4.4 } as const;
+/** Where his eye is in phase 3, slid forward, at its place before him. */
+export function eyeHome(): P2 {
+  return { u: FORWARD.u, v: FORWARD.v + FORWARD.eye };
+}
 /** Where his front is along the stone as he gapes at the left end (less than 0: off the stone's end; the right end the same, flipped). */
 export function bodyStrikeFront(): number {
   return -SHOVEL.out + BODY_HIT.r;
@@ -156,7 +182,7 @@ export function bodyStrikeFront(): number {
 // HOW HARD, HOW OFTEN
 
 /** How hard each hurts, times his own blow (the boss's base blow, as the game reckons it on floor 10). */
-export const HURTS = { slam: 1.2, wave: 1.0, crash: 1.8, scrape: 0.9, snap: 3.0, rain: 1.0 } as const;
+export const HURTS = { slam: 1.2, wave: 1.0, crash: 1.8, scrape: 0.9, snap: 3.0, rain: 1.0, gaze: 1.1, eye: 1.4 } as const;
 export type HurtBy = keyof typeof HURTS;
 /**
  * EACH PHASE (index 1 to 3): a tentacle rests `rest` stand loops (a range) between its moves; the water slams come every
@@ -167,10 +193,10 @@ export type HurtBy = keyof typeof HURTS;
 export const PACE: Readonly<Record<1 | 2 | 3, { rest: readonly [number, number]; water: readonly [number, number] | null; waterFirst: number; shovel: readonly [number, number] | null; shovelFirst: number }>> = {
   1: { rest: [0, 1], water: null, waterFirst: 0, shovel: null, shovelFirst: 0 },
   2: { rest: [1, 2], water: [7, 9], waterFirst: 4, shovel: [14, 18], shovelFirst: 10 },
-  3: { rest: [0, 1], water: [5, 7], waterFirst: 3, shovel: [10, 13], shovelFirst: 8 },
+  3: { rest: [0, 1], water: null, waterFirst: 0, shovel: null, shovelFirst: 0 },
 };
 /** Each tentacle's life and his body's, as shares of a full bar (each phase a bar of its own: his 17 Oct “his HP bar refilled”). */
-export const LIFE = { 1: 1 / 2, 2: 1 / 3, 3: 1 / 4, body: 1 } as const;
+export const LIFE = { 1: 1 / 2, 2: 1 / 3, 3: 1 / 3, body: 1 } as const;
 /** After the last of a phase's tentacles is killed: the flasks refilled at once; his change begins no sooner than this (seconds), as his stand (or lurk) comes round. */
 export const BETWEEN = { least: 1.0 } as const;
 
@@ -330,6 +356,16 @@ export interface Shovel {
   snapEnd: number;
 }
 
+export interface EyeMove {
+  kind: 'gaze' | 'slam';
+  t: number;
+  /** The gaze: its first and last turn (degrees from straight across, + toward the stone's right end). The slam: where it lands. */
+  a0: number;
+  a1: number;
+  at: P2;
+  landed: boolean;
+}
+
 export interface Rain {
   u: number;
   v: number;
@@ -355,6 +391,10 @@ export type FightEvent =
   | { t: 'twitch'; end: 'l' | 'r' }
   | { t: 'snap'; end: 'l' | 'r' }
   | { t: 'back' }
+  | { t: 'gazeWarn'; a0: number; a1: number }
+  | { t: 'gaze' }
+  | { t: 'eyeWarn'; u: number; v: number }
+  | { t: 'eyeSlam'; u: number; v: number }
   | { t: 'rainWarn'; u: number; v: number }
   | { t: 'rain'; u: number; v: number }
   | { t: 'hurt'; by: HurtBy; mult: number; du: number; dv: number; secs: number }
@@ -379,6 +419,10 @@ export class ColossusFight {
   waves: Wave[] = [];
   shovel: Shovel | null = null;
   rains: Rain[] = [];
+  /** (Phase 3) His eye's attack now, and seconds to the next. */
+  eye: EyeMove | null = null;
+  eyeIn = 0;
+  private eyeNext: 'gaze' | 'slam' = 'gaze';
   /** Seconds to the next water slam, and which it is (his order: left, right, both). */
   waterIn = 0;
   waterNext: 'l' | 'r' | 'both' = 'l';
@@ -414,7 +458,8 @@ export class ColossusFight {
     this.waterNext = 'l';
     this.shovelIn = P.shovel ? P.shovelFirst : Infinity;
     this.rainIn = ph === 3 ? RAIN.every : Infinity;
-    if (this.arms.every((a) => a.state === 'dead')) this.raiseArms(ph, ev);
+    this.eyeIn = ph === 3 ? EYE_PACE.first : Infinity;
+    if (ph < 3 && this.arms.every((a) => a.state === 'dead')) this.raiseArms(ph, ev);
     ev.push({ t: 'phase', ph });
   }
 
@@ -443,10 +488,10 @@ export class ColossusFight {
   /** Whether the hero's blows reach his body now, and where it is (phase 3 only, the pillars out). */
   bodyStruck(): { at: P2; r: number } | null {
     if (this.ph !== 3 || this.mode !== 'fight' || this.shielded) return null;
-    const S = this.shovel;
-    if (!S) return { at: { u: HIS_PLACE.u, v: HIS_PLACE.v }, r: BODY_HIT.r };
-    if (S.t >= SHOVEL.gape[0] && S.t < SHOVEL.gape[1]) return { at: { u: S.end === 'l' ? -SHOVEL.out : STONE.w + SHOVEL.out, v: STONE.d / 2 }, r: BODY_HIT.r };
-    return null;
+    // (his eye lying where it slammed down; else at its place before him)
+    const E = this.eye;
+    if (E && E.kind === 'slam' && E.landed && E.t < EYE_SLAM.up) return { at: E.at, r: FORWARD.r };
+    return { at: eyeHome(), r: FORWARD.r };
   }
 
   /** The game: a tentacle's life is gone. */
@@ -513,13 +558,14 @@ export class ColossusFight {
       }
     } else if (this.mode === 'change') {
       const C = this.ph === 1 ? ENTRANCE : CHANGE3;
-      if (this.phT >= C.armsUp && this.phT - dt < C.armsUp) this.raiseArms((this.ph + 1) as 2 | 3, ev);
+      if (C.armsUp < C.long && this.phT >= C.armsUp && this.phT - dt < C.armsUp) this.raiseArms((this.ph + 1) as 2 | 3, ev);
       if (this.phT >= C.long) {
         this.body = 0;
         this.startPhase((this.ph + 1) as 2 | 3, ev);
       }
     } else if (this.mode === 'fight') {
-      this.direct(dt, hero, armRound, bodyRound, ev);
+      if (this.ph === 3) this.stepEye(dt, hero, ev);
+      else this.direct(dt, hero, armRound, bodyRound, ev);
     }
     return ev;
   }
@@ -735,6 +781,62 @@ export class ColossusFight {
       const sh = PACE[this.ph].shovel;
       this.shovelIn = sh ? this.rng.range(sh[0], sh[1]) : Infinity;
     }
+  }
+
+  // ---- phase 3: his eye's attacks, by turns
+  private stepEye(dt: number, hero: HeroOnStone, ev: FightEvent[]): void {
+    const E = this.eye;
+    if (!E) {
+      this.eyeIn -= dt;
+      if (this.eyeIn > 0) return;
+      const home = eyeHome();
+      if (this.eyeNext === 'gaze') {
+        const toward = Math.atan2(hero.u - home.u, hero.v - home.v) / D;
+        const way = this.rng.chance(0.5) ? 1 : -1;
+        this.eye = { kind: 'gaze', t: 0, a0: toward - way * GAZE.half, a1: toward + way * GAZE.half, at: home, landed: false };
+        ev.push({ t: 'gazeWarn', a0: this.eye.a0, a1: this.eye.a1 });
+      } else {
+        const d = Math.hypot(hero.u - home.u, hero.v - home.v);
+        const k = d > EYE_SLAM.reach ? EYE_SLAM.reach / d : 1;
+        const at = { u: home.u + (hero.u - home.u) * k, v: home.v + (hero.v - home.v) * k };
+        this.eye = { kind: 'slam', t: 0, a0: 0, a1: 0, at, landed: false };
+        ev.push({ t: 'eyeWarn', u: at.u, v: at.v });
+      }
+      this.eyeNext = this.eyeNext === 'gaze' ? 'slam' : 'gaze';
+      return;
+    }
+    const was = E.t;
+    E.t += dt;
+    if (E.kind === 'gaze') {
+      if (was < GAZE.warn && E.t >= GAZE.warn) ev.push({ t: 'gaze' });
+      if (!E.landed && E.t >= GAZE.warn && E.t < GAZE.warn + GAZE.sweep) {
+        const k0 = (was - GAZE.warn) / GAZE.sweep;
+        const k1 = (E.t - GAZE.warn) / GAZE.sweep;
+        const deg = Math.atan2(hero.u - E.at.u, hero.v - E.at.v) / D;
+        const lo = E.a0 + (E.a1 - E.a0) * Math.max(0, k0);
+        const hi = E.a0 + (E.a1 - E.a0) * k1;
+        // (the beam crosses him this step: his turn between where it was and where it is, his size counted)
+        const far = Math.hypot(hero.u - E.at.u, hero.v - E.at.v) || 1;
+        const slack = (Math.atan((GAZE.width / 2 + HERO_R) / far) / D);
+        if (deg >= Math.min(lo, hi) - slack && deg <= Math.max(lo, hi) + slack) {
+          E.landed = true;
+          if (!hero.dodging) ev.push({ t: 'hurt', by: 'gaze', mult: HURTS.gaze, du: 0, dv: 0, secs: 0 });
+        }
+      }
+      if (E.t >= GAZE.long) this.endEye();
+    } else {
+      if (!E.landed && E.t >= EYE_SLAM.hit) {
+        E.landed = true;
+        ev.push({ t: 'eyeSlam', u: E.at.u, v: E.at.v });
+        if (!hero.dodging && Math.hypot(hero.u - E.at.u, hero.v - E.at.v) < EYE_SLAM.r + HERO_R) ev.push({ t: 'hurt', by: 'eye', mult: HURTS.eye, du: 0, dv: 0, secs: 0 });
+      }
+      if (E.t >= EYE_SLAM.long) this.endEye();
+    }
+  }
+
+  private endEye(): void {
+    this.eye = null;
+    this.eyeIn = this.rng.range(EYE_PACE.rest[0], EYE_PACE.rest[1]);
   }
 
   // ---- phase 3: the siege's bolts

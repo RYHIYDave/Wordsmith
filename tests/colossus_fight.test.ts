@@ -2,7 +2,7 @@
 // line his tentacles slam along is the art chat's (docs/mockups/eye_redo/README.md, "EACH TURN'S LINE"); nowhere safe (his pick); a
 // slam stepped out of misses; his waves sweep the whole stone, dodged through; both at once crash in the middle; his shovel's gaps,
 // its hit knocking the hero toward his mouth, his snap too near; his maw reaching nothing onto the stone; the phases in his order,
-// the flasks refilled between; phase 3's rain and his body.
+// the flasks refilled between; phase 3 his way (8 Nov): no tentacles, he slides forward, his eye's attacks and the siege's rain.
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
 // @ts-ignore
@@ -11,7 +11,7 @@ import { RNG } from '../src/engine/rng';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import {
-  ColossusFight, COLOSSUS, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH,
+  ColossusFight, COLOSSUS, CHANGE3, ENTRANCE, HOOK, PACE, ROOTS, SHOVEL, SLAM, SNAP, STONE, TURNS, WAVE, CRASH,
   slamLine, turnToward, offLine, waveFront, bodyStrikeFront, stoneToWorld, worldToStone,
 } from '../src/game/colossus_fight';
 import type { FightEvent, HeroOnStone } from '../src/game/colossus_fight';
@@ -287,19 +287,24 @@ test('his maw reaches nothing onto the stone at an end; the hero is never knocke
   void t0;
 });
 
-test('phase 3: his tentacles up again, the siege raining down, his body struck only with the pillars out', () => {
+test('phase 3 (his 8 Nov idea): no tentacles; he slides forward, his eye in every hero\'s reach but while the pillars burn; his gaze and his eye slam by turns, the siege raining', () => {
   const f = inPhase2(29);
   for (const a of [...f.arms]) f.armKilled(a.id);
   f.shielded = true;
-  const got = run(f, 1 + 3 + 4.2, () => ({ u: 8.5, v: 6, dodging: true }));
+  const got = run(f, 1 + 3 + CHANGE3.long + 0.2, () => ({ u: 8.5, v: 6, dodging: true }));
   assert.equal(f.ph, 3);
-  assert.equal(got.filter((e) => e.t === 'armUp').length, 3);
-  const later = run(f, 8, () => ({ u: 8.5, v: 6, dodging: false }));
-  assert.ok(later.filter((e) => e.t === 'rainWarn').length >= 6);
-  assert.ok(hurts(later).some((e) => e.by === 'rain'));
-  assert.equal(f.bodyStruck(), null);
+  assert.equal(got.filter((e) => e.t === 'armUp').length, 0, 'no tentacles in phase 3');
+  const later = run(f, 14, () => ({ u: 8.5, v: 6, dodging: false }));
+  assert.ok(later.some((e) => e.t === 'gazeWarn') && later.some((e) => e.t === 'eyeWarn'), 'his gaze and his eye slam');
+  assert.ok(later.filter((e) => e.t === 'rainWarn').length >= 9, 'the siege raining');
+  const by = new Set(hurts(later).map((e) => e.by));
+  for (const k of ['gaze', 'eye', 'rain']) assert.ok(by.has(k as never), `standing still, hurt by ${k}`);
+  assert.ok(!later.some((e) => e.t === 'warn' || e.t === 'smashWarn' || e.t === 'sink'), 'no slams, waves or shovel');
+  assert.equal(f.bodyStruck(), null, 'shielded while a pillar burns');
   f.shielded = false;
-  if (!f.shovel) assert.ok(f.bodyStruck());
+  const at = f.bodyStruck()!;
+  assert.ok(at, 'his eye struck with the pillars out');
+  // a close-range hero at the stone's back edge reaches his eye where it is before him
+  assert.ok(Math.hypot(at.at.u - 8.5, at.at.v - 0.3) - at.r < 0.6, 'reached from the back edge');
   assert.deepEqual(f.bodyKilled(), [{ t: 'won' }]);
-  void PACE;
 });

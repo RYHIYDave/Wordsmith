@@ -7,7 +7,7 @@
 
 import { colossusOf, colossusOn } from '../../game/act1_rules/colossus';
 import {
-  ARM, CRASH, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
+  ARM, CHANGE3, CRASH, EYE_SLAM, FORWARD, GAZE, HERO_R, HIS_PLACE, HOOK, RAIN, SHOVEL, SLAM, SMASH, SNAP, STONE, WAVE,
   hookFront, rootAt, stoneToWorld, waveFront,
 } from '../../game/colossus_fight';
 import type { Act1Fx, Act1FxCtx } from './types';
@@ -112,7 +112,43 @@ function draw(c: Act1FxCtx): void {
       const v1 = hk.edge === 'back' ? HOOK.reach.back : STONE.d + 0.6;
       poly([[front, v0], [back, v0], [back, v1], [front, v1]], FLESH, PINK, [], 1);
     });
+  } else if (f.ph === 3 || (f.ph === 2 && f.mode === 'change')) {
+    // (phase 3: slid forward to the stone's edge)
+    const k = f.ph === 3 ? 1 : Math.min(1, f.phT / CHANGE3.long);
+    himAt(FORWARD.u, HIS_PLACE.v + (FORWARD.v - HIS_PLACE.v) * k, 1);
   } else if (risen) himAt(HIS_PLACE.u, HIS_PLACE.v, f.mode === 'change' ? Math.min(1, f.phT / 3) : 1);
+
+  // PHASE 3, HIS EYE: the gaze's arc laid and its beam swept; the eye slam's circle, and the eye lying where it came down
+  const E = f.eye;
+  if (E && E.kind === 'gaze') {
+    const ray = (deg: number, len: number): [number, number] => [E.at.u + Math.sin((deg * Math.PI) / 180) * len, E.at.v + Math.cos((deg * Math.PI) / 180) * len];
+    if (E.t < GAZE.warn) {
+      const pts: [number, number][] = [[E.at.u, E.at.v]];
+      for (let i = 0; i <= 12; i++) pts.push(ray(E.a0 + ((E.a1 - E.a0) * i) / 12, 16));
+      poly(pts, 'rgba(30, 6, 24, 0.22)', warnColor(E.t / GAZE.warn), [5, 3]);
+    } else if (E.t < GAZE.warn + GAZE.sweep) {
+      const deg = E.a0 + ((E.a1 - E.a0) * (E.t - GAZE.warn)) / GAZE.sweep;
+      const end = ray(deg, 16);
+      poly(strip(E.at, { u: end[0], v: end[1] }, GAZE.width / 2), 'rgba(255, 120, 170, 0.55)', GOLD);
+    }
+  }
+  if (E && E.kind === 'slam') {
+    if (!E.landed) {
+      const k = E.t / EYE_SLAM.hit;
+      disc(E.at.u, E.at.v, EYE_SLAM.r, null, warnColor(k), [4, 3]);
+      disc(E.at.u, E.at.v, EYE_SLAM.r * Math.min(1, k), 'rgba(255, 61, 139, 0.18)');
+    } else if (E.t < EYE_SLAM.up) {
+      const [x, y] = P(E.at.u, E.at.v);
+      g.fillStyle = PINK;
+      g.beginPath();
+      g.ellipse(x, y - 6, 30, 11, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = GOLD;
+      g.beginPath();
+      g.ellipse(x, y - 6, 7, 9, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
   else {
     const [x, y] = P(HIS_PLACE.u, HIS_PLACE.v + 3);
     g.fillStyle = `rgba(255, 61, 139, ${0.25 + 0.15 * Math.sin(c.t * 2)})`;
