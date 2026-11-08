@@ -50,7 +50,7 @@ def beat(k, snap):
         elif SNAP_AT - 3 <= k < SNAP_AT: bs.append((5, 'the Warrior up, leaping away from the mouth'))
         if 0 <= f < TWITCH: bs.append((8, 'THE SNAP, ITS TWITCH, HELD (the wind-up): the Warrior too close; jaws flexing wider'))
         elif TWITCH <= f < TWITCH + STRIKE: bs.append((9, 'THE SNAP (the strike, 2 smeared frames): slamming shut; the Warrior leaping clear'))
-        elif TWITCH + STRIKE <= f < TWITCH + STRIKE + SHUT: bs.append((8, 'SHUT, HELD: teeth clashed, spittle and spray bursting'))
+        elif TWITCH + STRIKE <= f < TWITCH + STRIKE + SHUT: bs.append((8, 'HELD CLENCHED: his teeth clashed, spittle and spray bursting, splinters flying'))
         elif TWITCH + STRIKE + SHUT <= f < TWITCH + STRIKE + SHUT + OPEN: bs.append((7, 'the wind-down: back, gaping again'))
     if BACK[0] <= k < BACK[1]: bs.append((4, 'HE GOES BACK: sinking at the end'))
     if BACK[1] <= k < RISE[0]: bs.append((4, 'under: going back to his place'))
@@ -61,9 +61,17 @@ def beat(k, snap):
 
 
 def crop_snap(k):
-    """The snap close up (720 x 332 picture pixels, filling the screen at 1.4 times the size): his maw at the left end, all of it as it
-    lunges over the stone, and the Warrior before it."""
-    return (20, 30, 740, 362)
+    """The snap close up, at 1.8 times the size (563 x 260 picture pixels filling the screen): on his maw as it twitches and the Warrior
+    getting up before it; panning with the strike onto its front, his teeth clashed, and the Warrior just clear."""
+    t = max(0.0, min(1.0, (k - (SNAP_AT + TWITCH - 3)) / 5.0))
+    t = t * t * (3 - 2 * t)
+    x0 = round(80 + (270 - 80) * t)
+    # (then down with the Warrior as he runs on toward the near edge; and back over his maw as it gapes again)
+    u = max(0.0, min(1.0, (k - (SNAP_AT + TWITCH + 3)) / 8.0))
+    w = max(0.0, min(1.0, (k - (SNAP_AT + TWITCH + STRIKE + SHUT)) / 10.0))
+    y0 = round(30 + (8 - 30) * t + 34 * u * u * (3 - 2 * u))
+    x0 = round(x0 - 130 * w * w * (3 - 2 * w))
+    return (x0, y0, x0 + 563, y0 + 260)
 
 
 def film(d, out):

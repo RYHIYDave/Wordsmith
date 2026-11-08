@@ -491,7 +491,8 @@ export interface ShovelFx {
   pour: number;
   snap: number | null;
   scrapes: Array<{ x: number; y: number; dir: number; speed: number; seed: number }>;
-  scores: Array<{ y: number; xa: number; xb: number; s: number; seed: number }>;
+  /** Where each tip has scored the stone so far (art/eye_shovel.ts `scorePath`): its points with how long ago (seconds). */
+  scores: Array<{ seed: number; pts: Array<[number, number, number]> }>;
   hit: { x: number; y: number; s: number } | null;
   /** The end he has come up at (from his burst on: the reeds in the water there are under him, crushed), or none yet. */
   up?: 'left' | 'right' | null;

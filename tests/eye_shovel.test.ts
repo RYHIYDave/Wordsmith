@@ -19,7 +19,10 @@
 //      four smeared frames, the screen jolted; the roar; each scrape throwing sparks and grit and scoring the stone; the snap's twitch
 //      held, its two smeared frames, held shut, the screen jolted; the Warrior struck, the screen jolted, knocked toward the mouth; back to
 //      his place and into his stand;
-//   9. THE NUMBERS, in the game's tiles: his maw's reach, the snap's, the gaps, the sweep.
+//   9. THE NUMBERS, in the game's tiles: his maw's reach, the snap's, the gaps, the sweep;
+//  10. NOTHING RULED (fix 1, his rule “Everything drawn should not just look like shapes.  That’s the rule”): no straight run over 12
+//      game pixels, exactly across or up, in his maw's inside, in the water pouring off him (its sheets and its ropes), or in the marks
+//      his tentacles' tips score in the stone; and those only where a tip has been.
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
@@ -30,12 +33,12 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 import { BLADE, CYAN, GLINT, SPARK } from '../src/art/kit';
 import { rgba } from '../src/engine/px';
-import { C_TILE, EYE2, paintColossus, turnedAt, turnedClear } from '../src/art/eye_colossus';
+import { C_TILE, EYE2, MAT, paintColossus, turnedAt, turnedClear } from '../src/art/eye_colossus';
 import type { ArmPose, ColossusPicture, ColossusPose } from '../src/art/eye_colossus';
 import { EYE_ENTRANCE, EYE_FPS } from '../src/art/eye_moves';
 import type { EyeFrame, EyeLayer } from '../src/art/eye_moves';
 import { STONE_BOX, armStoneGap, armsGap, tubeOf } from '../src/art/eye_arms';
-import { GAPE_SIDE, HOOK_IN, ORIENT, SCRAPE, SCRAPERS, SCRAPE_FRAMES, SCRAPE_V, SHOVEL, SHOVEL_COLOURS, SHOVEL_SHAKE, SNAP, SNAP_REACH, START_OUT, STOP_IN, SWEEP, atEnd, dropAt, heroStruck, heroWorld, lungeAt, openAt, placeOf, scraperAt, shovelFrame, sideAnim, sideOf, sidePose } from '../src/art/eye_shovel';
+import { GAPE_SIDE, HOOK_IN, ORIENT, SNAP_CLENCH, pourRope, pourSheet, scoreMarks, scorePath, scrapeAt, SCRAPE, SCRAPERS, SCRAPE_FRAMES, SCRAPE_V, SHOVEL, SHOVEL_COLOURS, SHOVEL_SHAKE, SNAP, SNAP_REACH, START_OUT, STOP_IN, SWEEP, atEnd, dropAt, heroStruck, heroWorld, lungeAt, openAt, placeOf, scraperAt, shovelFrame, sideAnim, sideOf, sidePose } from '../src/art/eye_shovel';
 import type { End } from '../src/art/eye_shovel';
 
 interface Assert {
@@ -386,7 +389,8 @@ test('8. the cues: the sink, the tell held, the burst, the roar, the scrapes, th
   assert.ok(openAt(SNAP.at + SNAP.twitch - 1, true) > GAPE_SIDE.gape + 0.1, 'held wide at its end');
   assert.equal(SNAP.strike, 2, 'the strike two frames');
   for (let f = SNAP.twitch; f < SNAP.twitch + SNAP.strike; f++) assert.ok(shovelFrame('s1', SNAP.at + f).smear.some((L) => L && L.key.startsWith('VJ')), `the strike, frame ${f}: smeared`);
-  for (let f = SNAP.twitch + 1; f < SNAP.twitch + SNAP.strike + SNAP.held; f++) assert.equal(openAt(SNAP.at + f, true), 0, `frame ${f}: shut`);
+  assert.equal(openAt(SNAP.at + SNAP.twitch + 1, true), 0, 'slammed shut on the strike\'s last frame');
+  for (let f = SNAP.twitch + 2; f < SNAP.twitch + SNAP.strike + SNAP.held; f++) assert.equal(openAt(SNAP.at + f, true), SNAP_CLENCH, `frame ${f}: held clenched, his teeth clashed`);
   const clash = Math.max(...shovelFrame('s1', SNAP.at + SNAP.twitch + 1).shake.map(Math.abs));
   assert.ok(clash >= SHOVEL_SHAKE.snap - 1, `the clash jolts the screen (${clash})`);
   // (the Warrior struck: the screen jolted)
@@ -408,4 +412,141 @@ test('9. the numbers, in the game\'s tiles: his maw\'s reach, the snap\'s, the g
   const sweep = SCRAPE_V * EYE_FPS;
   assert.ok(Math.abs(sweep / C_TILE - 12) < 0.01, `the sweep 12 tiles a second (${(sweep / C_TILE).toFixed(2)})`);
   process.stdout.write(`  his place ${tiles(Math.abs(placeOf('left')[0]) - STONE_BOX.x1)} tiles off the end; the snap ${tiles(shut.x)} tiles in over the stone (${tiles(shut.low)} at the Warrior's height), across ${tiles(shut.y0 - STONE_BOX.y0)} to ${tiles(shut.y1 - STONE_BOX.y0)} tiles of its ${tiles(STONE_BOX.y1 - STONE_BOX.y0)}; the sweep ${(sweep / C_TILE).toFixed(1)} tiles a second over ${tiles(STONE_BOX.x1 - STONE_BOX.x0 + START_OUT - STOP_IN)} tiles (${(SWEEP / EYE_FPS).toFixed(2)} s)\n`);
+});
+
+/** The longest straight run (picture pixels) of marked pixels, exactly across (`d` 1) or up (`d` the width), in a mask `w` wide. */
+function longestRun(E: Uint8Array, w: number, h: number): { across: number; up: number } {
+  let across = 0;
+  let up = 0;
+  for (let j = 0; j < h; j++) {
+    let r = 0;
+    for (let i = 0; i < w; i++) {
+      r = E[j * w + i] ? r + 1 : 0;
+      across = Math.max(across, r);
+    }
+  }
+  for (let i = 0; i < w; i++) {
+    let r = 0;
+    for (let j = 0; j < h; j++) {
+      r = E[j * w + i] ? r + 1 : 0;
+      up = Math.max(up, r);
+    }
+  }
+  return { across, up };
+}
+/** The edges of a mask (picture pixels): where it meets what is not it, across (for runs up) and up (for runs across). */
+function edgesOf(M: Uint8Array, w: number, h: number): { V: Uint8Array; H: Uint8Array } {
+  const V = new Uint8Array(w * h);
+  const H = new Uint8Array(w * h);
+  for (let j = 0; j < h - 1; j++) for (let i = 0; i < w - 1; i++) {
+    const q = j * w + i;
+    if (M[q] !== M[q + 1]) V[q] = 1;
+    if (M[q] !== M[q + w]) H[q] = 1;
+  }
+  return { V, H };
+}
+// (12 game pixels: two picture pixels to a game pixel)
+const RULED = 24;
+
+test('10. nothing ruled: in his maw\'s inside, the water pouring off him, the marks scored in the stone', () => {
+  // HIS MAW'S INSIDE (his throat, the hollows of his jaws, their gum), at the game's size: as he roars at the left end, gaping at the
+  // right, twitching before the snap. Its edges with his flesh, and between its own parts or across a line, never a straight run
+  // (teeth, his tongue and what hangs off him are their own shapes)
+  const IN = new Set<number>([MAT.throat, MAT.maw, MAT.gum]);
+  const OWN = new Set<number>([MAT.tooth, MAT.tongue, MAT.strand, MAT.goo, MAT.gob]);
+  for (const [shot, k] of [['s1', 82], ['s2', 120], ['s1', SNAP.at + 3]] as const) {
+    const w = 760;
+    const h = 800;
+    const P = paintColossus(shovelFrame(shot, k).jaws.pose as ColossusPose, { w, h, ax: 360, ay: 460, zoom: 1, raw: true });
+    const V = new Uint8Array(w * h);
+    const H = new Uint8Array(w * h);
+    // (a tooth's own outline, its line drawn round it where it stands in front of the inside, is the tooth's)
+    const near2 = (q: number): boolean => {
+      for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) if (OWN.has(P.mat[q + dj * w + di])) return true;
+      return false;
+    };
+    const own = (q: number): boolean => OWN.has(P.mat[q]) || (!!P.seam && P.seam[q] === 1 && near2(q));
+    for (let j = 2; j < h - 3; j++) for (let i = 2; i < w - 3; i++) {
+      const q = j * w + i;
+      if (!P.kind[q]) continue;
+      for (const [d, E] of [[1, V], [w, H]] as const) {
+        const r = q + d;
+        if (!P.kind[r] || own(q) || own(r)) continue;
+        const a = P.kind[q] === 1 && IN.has(P.mat[q]);
+        const b = P.kind[r] === 1 && IN.has(P.mat[r]);
+        if (!a && !b) continue;
+        const inkA = P.seam ? P.seam[q] : 0;
+        const inkB = P.seam ? P.seam[r] : 0;
+        if (a !== b || P.mat[q] !== P.mat[r] || inkA !== inkB) E[q] = 1;
+      }
+    }
+    const up = longestRun(V, w, h).up;
+    const across = longestRun(H, w, h).across;
+    assert.ok(up <= RULED && across <= RULED, `${shot} ${k}: his maw's inside, no ruled edge (the longest straight runs ${up / 2} game px up, ${across / 2} across)`);
+    process.stdout.write(`  ${shot} ${k}: his maw's inside, the longest straight runs ${up / 2} game px up, ${across / 2} across\n`);
+  }
+  // THE WATER POURING OFF HIM: its sheets over him (a stretch of him 300 picture pixels square, every third frame of it), and its ropes
+  // (each as the tool draws it, its blobs)
+  let sheet = { across: 0, up: 0 };
+  for (let k = SHOVEL.burst[0]; k < SHOVEL.burst[0] + 50; k += 3) {
+    const w = 300;
+    const M = new Uint8Array(w * w);
+    for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) M[j * w + i] = pourSheet(400 + i, 100 + j, k);
+    const E = edgesOf(M, w, w);
+    const r = { across: longestRun(E.H, w, w).across, up: longestRun(E.V, w, w).up };
+    sheet = { across: Math.max(sheet.across, r.across), up: Math.max(sheet.up, r.up) };
+  }
+  assert.ok(sheet.across <= RULED && sheet.up <= RULED, `the sheets of water off him, no ruled edge (${sheet.up / 2} game px up, ${sheet.across / 2} across)`);
+  let rope = { across: 0, up: 0 };
+  for (let seed = 0; seed < 40; seed++) for (const age of [0, 0.2, 0.5, 0.9]) {
+    const w = 40;
+    const h = 200;
+    const M = new Uint8Array(w * h);
+    for (const B of pourRope(seed * 31 + 7, 180, age, 1 - age / 1.4)) {
+      const rr = Math.max(0.5, B.r);
+      for (let dj = -Math.ceil(rr); dj <= Math.ceil(rr); dj++) for (let di = -Math.ceil(rr); di <= Math.ceil(rr); di++) {
+        if (di * di + dj * dj * 0.6 > rr * rr + 0.3) continue;
+        const x = Math.round(20 + B.di + di);
+        const y = Math.round(4 + B.dj + dj);
+        if (x >= 0 && y >= 0 && x < w && y < h) M[y * w + x] = 1;
+      }
+    }
+    const E = edgesOf(M, w, h);
+    rope = { across: Math.max(rope.across, longestRun(E.H, w, h).across), up: Math.max(rope.up, longestRun(E.V, w, h).up) };
+  }
+  assert.ok(rope.across <= RULED && rope.up <= RULED, `the ropes of water off him, no ruled edge (${rope.up / 2} game px up, ${rope.across / 2} across)`);
+  // THE MARKS SCORED IN THE STONE: each tip's gouges, every few frames of both films, as the tool draws them; only where its tip has been
+  let marks = { across: 0, up: 0 };
+  const SEEN = 2 / Math.sqrt(3);
+  for (const [shot, e] of SHOTS) for (let i = 0; i < SCRAPERS.length; i++) for (let k = SCRAPERS[i].k0; k < SCRAPERS[i].k0 + SCRAPE_FRAMES + 120; k += 7) {
+    const pts = scorePath(e, i, k);
+    if (!pts.length) continue;
+    // (never ahead of its tip, nor where it has not been)
+    const A = scraperAt(e, i, Math.min(k, SCRAPERS[i].k0 + SCRAPE.up + SWEEP - 1));
+    if (A) {
+      const tip = scrapeAt(e, SCRAPERS[i].edge, 0, A.X);
+      for (const [x] of pts) assert.ok(sideOf(e) * (x - tip[0]) <= 30, `${shot} ${k}: tentacle ${i + 1}'s marks only where its tip has been (${x.toFixed(0)}, its tip at ${tip[0].toFixed(0)})`);
+    }
+    const w = 900;
+    const h = 120;
+    const M = new Uint8Array(w * h);
+    const y0 = pts[0][1];
+    for (const G of scoreMarks(i, pts)) {
+      if (G.kind === 'grit' || G.a <= 0) continue;
+      const i0 = 450 + G.x0 * SEEN;
+      const j0 = 60 + (G.y0 - y0) / Math.sqrt(3);
+      const i1 = 450 + G.x1 * SEEN;
+      const j1 = 60 + (G.y1 - y0) / Math.sqrt(3);
+      const m = Math.max(1, Math.round(Math.hypot(i1 - i0, j1 - j0)));
+      for (let q = 0; q <= m; q++) {
+        const x = Math.round(i0 + ((i1 - i0) * q) / m);
+        const y = Math.round(j0 + ((j1 - j0) * q) / m);
+        // (a smear as wide as it is)
+        for (let d = 0; d < (G.kind === 'slime' ? Math.round(G.w / Math.sqrt(3)) : 1); d++) if (x >= 0 && y + d >= 0 && x < w && y + d < h) M[(y + d) * w + x] = 1;
+      }
+    }
+    marks = { across: Math.max(marks.across, longestRun(M, w, h).across), up: Math.max(marks.up, longestRun(M, w, h).up) };
+  }
+  assert.ok(marks.across <= RULED && marks.up <= RULED, `the marks scored in the stone, no ruled line (${marks.across / 2} game px across, ${marks.up / 2} up)`);
+  process.stdout.write(`  the water off him: sheets ${sheet.up / 2} up, ${sheet.across / 2} across; ropes ${rope.up / 2} up, ${rope.across / 2} across; the marks in the stone ${marks.across / 2} across (game px)\n`);
 });

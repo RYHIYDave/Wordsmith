@@ -27,10 +27,35 @@ place. ("Top" is the stone's back edge, by the water he lies in; "bottom" its ne
 
 `src/art/eye_shovel.ts` (behind `EYE2`, off; nothing of the game imports it: `tests/eye_shovel.test.ts`) says each frame as poses for
 the painter; `tools/eye_moves_pics.ts` paints each layer once and lays the frames together in the arena with what the game would draw
-(the boil, the burst's crown and foam, the sparks, grit and slime off each scraping tip, the lines scored in the stone, the spittle of
-the snap, the shakes); `tools/eye_shovel_sheet.py` makes the sheet and the film. The painter, `src/art/eye_colossus.ts`, can now turn
-him (`ColossusPose.orient`, his maw on its side) and lean him (`ColossusPose.lean`, his snap); everything painted before is painted the
-same (checked pixel for pixel, and the earlier layers moved to their new names).
+(the boil, the burst's crown and foam, the water pouring off him, the sparks, grit and slime off each scraping tip, the gouges it
+leaves in the stone, the spittle and the splinters of the snap, the shakes); `tools/eye_shovel_sheet.py` makes the sheet and the film.
+The painter, `src/art/eye_colossus.ts`, can now turn him (`ColossusPose.orient`, his maw on its side) and lean him
+(`ColossusPose.lean`, his snap); everything painted before is painted the same (only what is turned is painted differently; the earlier
+layers moved to their new names).
+
+FIX 1 (the art chat's close look at 3d20af4b, before he saw it; his rule “Everything drawn should not just look like shapes.  That’s
+the rule”, nothing ruled; every beat and number kept):
+1. HIS MAW'S INSIDE was ruled: seen from his side, the wall at the back of his throat showed a straight upright seam where his hide
+   began, its straight faces and the hollows of his jaws showed straight edges, and the lines drawn where one part of the inside lies in
+   front of another made boxes. Now, turned, the wall's face is bowed and lumpy up it and its top sags and swells along it, where his
+   hide begins wanders over it, the hollows and faces of his jaws are lumpy where they meet it, and the inside of his mouth folds over
+   itself soft and dark with no line drawn (his throat going dark, its edges the jaws' own); his drool strings bow and swing instead of
+   hanging ruler-straight. (Turned only: nothing seen from the front is touched.)
+2. THE WATER POURING OFF HIM at the burst was ruled hatching. Now: sheets of black swamp water sliding down him at their own paces,
+   wandering, ragged at their edges, their leading lips beaded with light; ropes of it pouring off where he overhangs the water,
+   wavering and necking, breaking into gobs and drops with slime and weed among them, crashing into foam; thinning over the roar
+   (`pourSheet`, `pourRope` in `src/art/eye_shovel.ts`).
+3. THE RIPPLE RINGS showed over his body. Now they are on the water round him only, hidden wherever he is, over the water or under it
+   (and so the burst's ring of foam).
+4. THE STONE SCORED in long straight lines. Now each tip gouges along its own path, frame by frame (`scorePath`): two or three short,
+   ragged, broken scratches in each step, here and there across the path, dark with a lit lower lip, grit thrown out of them, a blotch
+   or two of wet slime smeared over them fading first (by 1.8 s), the gouges by 4 s; never ahead of where the tip has been
+   (`scoreMarks`).
+5. THE SNAP held shut read as a mound of frills. Now he slams shut on 203 (where the game's snap lands: its reach unchanged) and holds
+   clenched 204 to 211 (open 0.3): his teeth clashed, both rows meeting at the front of the seam, his lips curled back off them, spittle
+   and spray bursting out from between them, splinters of his teeth flung and falling on the stone. The close-up is 1.8 times the size
+   (twice would cut either his teeth or the Warrior), on his maw as it twitches, panning with the strike onto the clash and the Warrior
+   just clear, down with him as he runs on, and back over the maw as it gapes again.
 
 ### Each beat, frame by frame (30 a second; frames from his stand; the same at both ends)
 
@@ -63,8 +88,9 @@ WIND-UP, STRIKE and WIND-DOWN marked (Movement 9). Frame, then seconds.
    high at the top of it; down 171 to 193, getting up.
 7. THE SNAP (the left end's film): THE TWITCH (THE WIND-UP, HELD) 196 to 201 (6.53 to 6.70 s, 0.2 s): drawn back, his jaws flexing
    wider (1.5), his throat glowing; the Warrior up and leaping away 194 to 203. THE STRIKE 202 to 203 (6.73 to 6.77 s): two smeared frames,
-   lunging up out of the water 2.04 tiles and on 0.89, tipped 15 degrees, leaning out over the stone's end, slamming shut on 203: teeth clashing, spittle, spray and gobs
-   bursting out along the stone and up, the screen jolted (10 game pixels, dying over 16 frames). HELD SHUT 204 to 211 (0.27 s). THE
+   lunging up out of the water 2.04 tiles and on 0.89, tipped 15 degrees, leaning out over the stone's end, slamming shut on 203, the screen jolted (10 game pixels, dying over
+   16 frames). HELD CLENCHED 204 to 211 (0.27 s): his teeth clashed, spittle, spray and gobs bursting out from between them along the
+   stone and up, splinters of his teeth flung. THE
    WIND-DOWN 212 to 226 (0.5 s): back into the water and gaping again by 227. The Warrior, 3.8 tiles off the end, just clear.
 8. HE GOES BACK, 300 to 351: the last tentacle drawn back and under (to 327); he sinks at the end, 300 to 313 (0.47 s), the screen
    rumbling; under, 314 to 317; a short rise at his place (not his entrance), 318 to 347 (1 s), the water boiling over him, the
@@ -108,7 +134,7 @@ WIND-UP, STRIKE and WIND-DOWN marked (Movement 9). Frame, then seconds.
   stone): THE LEFT END at full speed (352 frames, 11.7 s: the Warrior weaving low and high through the gaps, caught by tentacle 2 on
   frame 159 and knocked toward the mouth, down, up and leaping away as the jaws twitch, just clear as they slam shut on 203; then
   through the last two); THE RIGHT END at full speed (352 frames, 11.7 s: no snap, the Warrior weaving through all four); THE SNAP close
-  up, 1.4 times the size, at half speed (frames 188 to 230, 2.9 s).
+  up, 1.8 times the size, at half speed (frames 188 to 230, 2.9 s), on his maw twitching, panning with the strike onto the clash.
 - To make them again (the layers kept on the machine's memory disk, `/dev/shm`):
 
 ```
@@ -123,8 +149,9 @@ npx tsx tools/eye_moves_pics.ts cost3                                    (what i
   mended: he now goes on down out of sight under the water between the end and his place (his eye's fire fading into the deep, its glow
   never on the stone), so that nothing of him is seen crossing over; the camera eases down to the stone as it goes to the end (it was a
   jump); the pieces on the stone are left out (below); the reeds in the water off the end he comes up at are under him, and the
-  pieces in the water (the reeds, the lily pads) are hidden where he or a tentacle is in front of them, as is the Warrior; the Warrior goes deeper into each gap, reels when struck, falls,
-  gets up and leaps clear of the snap.
+  pieces in the water (the reeds, the lily pads) are hidden where he or a tentacle is in front of them, as is the Warrior; the Warrior
+  goes deeper into each gap, reels when struck, falls, gets up and leaps clear of the snap. Fix 1 (above): looked at again, every frame
+  of both ends and the close-up, at the game's size and at twice.
 
 ### What it costs
 
@@ -154,9 +181,14 @@ gold, the enemy's; (6) NEVER STILL: him in every frame (but under the water, whe
 in every frame; (7) NO LEAPS: the Warrior no faster than a run or a roll but knocked flying; his sinking and rising eased, but his burst;
 the camera; the snap eased but in its two frames of strike; each tentacle no faster than drawn back; (8) THE CUES: he sinks quicker than
 he rose; the tell held over a second, the water boiling off that end, the screen rumbling; the burst four frames, smeared, the screen
-jolted; the roar wider than his gape; each scrape scraping and scoring; the snap's twitch held wider, two smeared frames, held shut,
-the clash jolting the screen; the Warrior struck, the screen jolted; back at his place, in his stand; (9) THE NUMBERS above, measured
-(his maw gaping never over the stone; the snap's reach; the sweep). `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts` and
+jolted; the roar wider than his gape; each scrape scraping and scoring; the snap's twitch held wider, two smeared frames, shut on the
+second,
+the clash jolting the screen, held clenched; the Warrior struck, the screen jolted; back at his place, in his stand; (9) THE NUMBERS above, measured
+(his maw gaping never over the stone; the snap's reach; the sweep); (10) NOTHING RULED (fix 1): no straight run over 12 game pixels,
+exactly across or up, in his maw's inside (its edges with his flesh, and between its own parts or across a line, as he roars at the left
+end, gapes at the right and twitches before the snap, painted at the game's size; his teeth, tongue and drool are their own shapes),
+in the water pouring off him (its sheets and its ropes) or in the marks scored in the stone, and those never ahead of where the tip has
+been (the longest: his maw 11 game pixels, the sheets 11.5, the ropes 10.5, the marks and their smears 11.5). `tests/eye_moves.test.ts`, `tests/eye_colossus.test.ts` and
 `tests/eye_arms.test.ts`: their first checks now let `art/eye_shovel.ts` import his moves, him and the tentacles (the smallest
 change).
 

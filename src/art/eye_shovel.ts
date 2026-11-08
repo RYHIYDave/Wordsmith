@@ -19,7 +19,10 @@
 //     of it comes up out of the water over the edge, writhing in a loop of a second, `HEAD_LOOP`) and its body behind it under the water
 //     (`bodyWorld`, writhing in a loop of its own), both slid along the stone together;
 //   THE SNAP: the Warrior close, his jaws flex wider, held; then lunging up out of the water, leaning out over the stone's end and
-//     slamming shut in two smeared frames, teeth clashing, spittle and spray bursting; held shut a beat; then back and gaping again;
+//     slamming shut in two smeared frames; held clenched a beat, his teeth clashed, spittle and spray bursting from between them; then
+//     back and gaping again;
+//   and what the game draws over it, given here (the pictures' tool draws them): the water pouring off him as he bursts up (`pourSheet`,
+//   `pourRope`), the gouges each tip leaves in the stone along its own path (`scorePath`, `scoreMarks`); nothing of it ruled;
 //   HE GOES BACK: the last tentacle drawn under, he sinks at the end and rises at his place, into his stand.
 // (The arena's pieces on the stone, its two broken columns at the back corners, the mossy stones and the fallen drums, are left out of
 // his shovel: the tentacles sweep through where each lies. The pictures' tool leaves them out, and the reeds off the end he comes up at,
@@ -96,6 +99,9 @@ export const GAPE_SIDE = { roar: 1.42, gape: 1.32, flex: 1.5, tremble: 0.035 } a
  *  how far he tips forward over it (radians), and how far he leans (`ColossusPose.lean`: his flesh carried forward that much for each of
  *  his lengths of height): as far as he can and stay clear of the stone (his heaps at the water before its end, over its top). */
 export const SNAP = { at: 196, twitch: 6, strike: 2, held: 8, back: 15, frames: 31, lunge: [35, 80, (15 * Math.PI) / 180, 0.9] } as const;
+/** Slammed shut on the strike's last frame (open 0: where the game's snap lands, `SNAP_REACH`), then held clenched (how open): his teeth
+ *  clashed, both rows meeting at the front of the seam, his lips curled back off them; then gaping again from there. */
+export const SNAP_CLENCH = 0.3;
 /** How far his jaws reach over the stone as they snap shut, from its end (his lengths; across the middle of its depth): the game's
  *  snap's place (tests/eye_shovel.test.ts measures it). */
 export const SNAP_REACH = 92;
@@ -112,8 +118,9 @@ export function openAt(k: number, snap: boolean): number {
     const f = k - SNAP.at;
     if (f >= 0 && f < SNAP.twitch) return lerp(GAPE_SIDE.gape, GAPE_SIDE.flex, sm(0, 3, f)) + 0.03 * Math.sin(f * 4.1);
     if (f === SNAP.twitch) return 0.62;
-    if (f > SNAP.twitch && f < SNAP.twitch + SNAP.strike + SNAP.held) return 0;
-    if (f >= SNAP.twitch + SNAP.strike + SNAP.held && f < SNAP.frames) return lerp(0, GAPE_SIDE.gape, sm(SNAP.twitch + SNAP.strike + SNAP.held, SNAP.frames, f)) + tr * sm(SNAP.frames - 4, SNAP.frames, f);
+    if (f === SNAP.twitch + 1) return 0;
+    if (f > SNAP.twitch && f < SNAP.twitch + SNAP.strike + SNAP.held) return SNAP_CLENCH;
+    if (f >= SNAP.twitch + SNAP.strike + SNAP.held && f < SNAP.frames) return lerp(SNAP_CLENCH, GAPE_SIDE.gape, sm(SNAP.twitch + SNAP.strike + SNAP.held, SNAP.frames, f)) + tr * sm(SNAP.frames - 4, SNAP.frames, f);
   }
   return GAPE_SIDE.gape + tr;
 }
@@ -398,6 +405,149 @@ export function heroWorld(e: End, k: number): { x: number; y: number; act: HeroA
 }
 /** Whether he is struck in frame `k` (the knock's first frames: the one place he may touch a tentacle). */
 export const heroStruck = (e: End, k: number): boolean => e === 'left' && k >= 159 && k <= 163;
+/** WHERE A TIP HAS SCORED THE STONE by frame `k`: the point it drags on the stone (`scrapeAt`) in each frame of its sweep so far while
+ *  that is on the stone, and how long ago (seconds); none once all of it has faded (4 s). */
+export function scorePath(e: End, i: number, k: number): Array<[number, number, number]> {
+  const Sc = SCRAPERS[i];
+  const out: Array<[number, number, number]> = [];
+  for (let g = Sc.k0 + SCRAPE.up; g <= Math.min(k, Sc.k0 + SCRAPE.up + SWEEP - 1); g++) {
+    const A = scraperAt(e, i, g);
+    if (!A || A.is !== 'sweep') continue;
+    const p = scrapeAt(e, Sc.edge, mod(g, HEAD_LOOP) / HEAD_LOOP, A.X);
+    if (Math.abs(p[0]) > STONE_BOX.x1 - 2) continue;
+    const age = (k - g) / EYE_FPS;
+    if (age < SCORE_FADE[1]) out.push([p[0], p[1], age]);
+  }
+  return out;
+}
+/** A score's marks fading (seconds after they were made: the gouges from the first to the second; the wet slime smear sooner). */
+export const SCORE_FADE = [1.2, 4] as const;
+export const SMEAR_FADE = [0.2, 1.8] as const;
+const hs = (a: number, b: number, c: number): number => {
+  const v = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
+  return v - Math.floor(v);
+};
+/** A SCORE'S MARKS, as the game draws them along a tip's path (its points, `scorePath`): in each frame's step of it, two or three short
+ *  ragged scratches gouged side by side, each a part of the step only, its ends jittered across, so that none runs on straight; grit
+ *  thrown out of them; and a wet smear of slime over them. Each a piece (the world's across and depth, his lengths): its two ends, how
+ *  wide, how strong (0 to 1, by how long ago), and what. */
+export interface ScoreMark { x0: number; y0: number; x1: number; y1: number; w: number; a: number; kind: 'gouge' | 'grit' | 'slime' }
+export function scoreMarks(seed: number, pts: ReadonlyArray<readonly [number, number, number]>): ScoreMark[] {
+  const out: ScoreMark[] = [];
+  for (let n = 1; n < pts.length; n++) {
+    const [xa, ya, age] = pts[n];
+    const [xb, yb] = pts[n - 1];
+    const fade = 1 - sm(SCORE_FADE[0], SCORE_FADE[1], age);
+    const wet = 1 - sm(SMEAR_FADE[0], SMEAR_FADE[1], age);
+    const m = 2 + Math.floor(hs(seed, n, 1) * 2);
+    for (let q = 0; q < m; q++) {
+      // (a scratch: a part of the step only, beside the path and across it a little, ragged at its ends; now and then none)
+      if (hs(seed, n, 40 + q) < 0.35) continue;
+      const off = (hs(seed, n, 10 + q) - 0.5) * 14 + (q - (m - 1) / 2) * 5;
+      const u0 = 0.05 + 0.45 * hs(seed, n, 20 + q);
+      const u1 = u0 + 0.2 + 0.35 * hs(seed, n, 30 + q);
+      out.push({
+        x0: lerp(xa, xb, u0), y0: lerp(ya, yb, u0) + off + (hs(seed, n, 50 + q) - 0.5) * 6,
+        x1: lerp(xa, xb, Math.min(1, u1)), y1: lerp(ya, yb, Math.min(1, u1)) + off + (hs(seed, n, 60 + q) - 0.5) * 6,
+        w: hs(seed, n, 70 + q) < 0.3 ? 2 : 1, a: fade, kind: 'gouge',
+      });
+    }
+    // (grit out of it)
+    for (let q = 0; q < 3; q++) {
+      const u = hs(seed, n, 80 + q);
+      const x = lerp(xa, xb, u) + (hs(seed, n, 90 + q) - 0.5) * 6;
+      const y = lerp(ya, yb, u) + (hs(seed, n, 100 + q) - 0.5) * 16;
+      out.push({ x0: x, y0: y, x1: x, y1: y, w: 1, a: fade, kind: 'grit' });
+    }
+    // (the slime it leaves: a blotch or two of a wet smear in the step, here and there across the path, never a band)
+    if (wet > 0) for (let q = 0; q < 2; q++) {
+      if (hs(seed, n, 113 + q) < 0.35) continue;
+      const u0 = 0.6 * hs(seed, n, 115 + q);
+      const u1 = u0 + 0.15 + 0.3 * hs(seed, n, 117 + q);
+      const off = (hs(seed, n, 119 + q) - 0.5) * 16;
+      out.push({ x0: lerp(xa, xb, u0), y0: lerp(ya, yb, u0) + off, x1: lerp(xa, xb, Math.min(1, u1)), y1: lerp(ya, yb, Math.min(1, u1)) + off + (hs(seed, n, 121 + q) - 0.5) * 5, w: 3 + 4 * hs(seed, n, 112 + q), a: wet, kind: 'slime' });
+    }
+  }
+  return out;
+}
+
+// =============================================================================================
+// THE WATER POURING OFF HIM AS HE BURSTS UP (the game's, drawn over him by the pictures' tool)
+
+/** How much water is still pouring off him (1 as he bursts up, thinning over the roar), frame `k`. */
+export const pourAt = (k: number): number => (k >= SHOVEL.burst[0] ? 1 - sm(SHOVEL.burst[0] + 10, SHOVEL.burst[0] + 50, k) : 0);
+/** A smooth noise in two numbers (0 to 1). */
+function vn2(x: number, y: number, s: number): number {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const fx = x - xi;
+  const fy = y - yi;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+  const a = hs(xi, yi, s);
+  const b = hs(xi + 1, yi, s);
+  const c = hs(xi, yi + 1, s);
+  const d = hs(xi + 1, yi + 1, s);
+  return lerp(lerp(a, b, ux), lerp(c, d, ux), uy);
+}
+/** THE SHEETS OF WATER SLIDING DOWN OFF HIM, at a pixel of him (picture pixels: `i` across, `jp` down his own painting), frame `k`: 0
+ *  none, 1 a thin sheet of black water over him, 2 a thick one, 3 its leading lip catching the light. Broad sheets and narrow ropes,
+ *  each sliding down at its own pace, wandering as they go, never in ruled columns; fewer and thinner as he roars. */
+export function pourSheet(i: number, jp: number, k: number): 0 | 1 | 2 | 3 {
+  const p = pourAt(k);
+  if (p <= 0.02) return 0;
+  const age = (k - SHOVEL.burst[0]) / EYE_FPS;
+  // (across: warped by how far down, so that a sheet's edges wander as it runs)
+  const v = i * 0.06 + 0.7 * Math.sin(jp * 0.035 + i * 0.013) + 0.4 * Math.sin(jp * 0.083 + i * 0.041 + 1.3) + 0.25 * Math.sin(jp * 0.19 + i * 0.07 + 2.6) + 0.16 * Math.sin(jp * 0.33 + i * 0.03 + 0.9);
+  // (its own pace: by where across, smoothly; its front ragged across, never level)
+  const pace = 1.4 + 1.2 * vn2(v * 0.7, 3.1, 501);
+  const u = jp * 0.024 - age * pace * 2.2 + 0.2 * Math.sin(i * 0.13 + jp * 0.02 + 0.4) + 0.1 * Math.sin(i * 0.31 + 1.7);
+  // (the noise's own grid turned a little off the picture's, so that none of its edges lies along a row or a column)
+  const R = (a: number, b: number): number => vn2(a * 0.978 + b * 0.208, b * 0.978 - a * 0.208, 502);
+  // (its edges wet and ragged, pixel by pixel)
+  const jit = 0.06 * (hs(i, jp, 7) - 0.5);
+  const n = R(v, u) + jit;
+  const th = 0.78 - 0.3 * p;
+  if (n < th) return 0;
+  const lip = R(v, u + 0.09) + jit < th;
+  return lip ? 3 : n > th + 0.1 ? 2 : 1;
+}
+/** A ROPE OF WATER POURING OFF AN OVERHANG of him, `len` picture pixels down to the water, `age` seconds after he burst up: its blobs
+ *  (picture pixels from where it leaves him: across, down; how wide; what): a rope of black water wavering and necking as it falls,
+ *  breaking into gobs and drops below, a gob of slime or a strand of weed in it now and then; at the bottom the foam it crashes into. */
+export interface PourBlob { di: number; dj: number; r: number; kind: 'water' | 'lit' | 'slime' | 'weed' | 'foam' }
+export function pourRope(seed: number, len: number, age: number, p: number): PourBlob[] {
+  const out: PourBlob[] = [];
+  if (p <= 0.02 || len < 4) return out;
+  const unbroken = len * (0.2 + 0.35 * hs(seed, 1, 0)) * p;
+  const ph = hs(seed, 2, 0) * TAU;
+  const lean = (hs(seed, 3, 0) - 0.5) * 0.12;
+  const wob = (s: number): number => (0.9 + 1.4 * (s / len)) * Math.sin(s * 0.19 + ph + age * 9) + 0.5 * Math.sin(s * 0.47 + ph * 2 + age * 13) + lean * s;
+  // (the rope: wavering, necking)
+  for (let s = 0; s < unbroken; s++) {
+    const r = (1.1 + 0.9 * p) * (1 - 0.45 * (s / Math.max(1, unbroken))) + 0.5 * Math.sin(s * 0.31 + ph);
+    out.push({ di: wob(s), dj: s, r: Math.max(0.5, r), kind: s % 7 < 2 ? 'lit' : 'water' });
+  }
+  // (below it, gobs and drops, falling faster the further they fall, each its own size; slime and weed among them)
+  const gap = 7 + 6 * hs(seed, 4, 0);
+  const fall = (age * 30 * (5 + 3 * hs(seed, 5, 0))) % gap;
+  for (let s = unbroken + fall, q = 0; s < len; s += gap * (1 + 0.04 * (s - unbroken)), q++) {
+    const w = hs(seed, 6, q);
+    if (w > 0.55 + 0.4 * p) continue;
+    const kind = w < 0.06 ? 'slime' : w < 0.1 ? 'weed' : w < 0.35 ? 'lit' : 'water';
+    const r = kind === 'weed' ? 0.8 : 0.6 + 1.4 * hs(seed, 7, q) * p;
+    out.push({ di: wob(s) + (hs(seed, 8, q) - 0.5) * 2, dj: s, r, kind });
+    if (kind !== 'weed' && r > 1) out.push({ di: wob(s) + (hs(seed, 8, q) - 0.5) * 2, dj: s - r * 1.4, r: r * 0.6, kind });
+  }
+  // (crashing into the water: foam thrown up round where it lands)
+  for (let q = 0; q < 6; q++) {
+    const a = hs(seed, 9, q) * TAU;
+    const rr = 2 + 4 * hs(seed, 10, q) * p;
+    out.push({ di: wob(len) + Math.cos(a) * rr, dj: len - Math.abs(Math.sin(a)) * rr * 0.5 - hs(seed, 11, q) * 3 * p, r: 0.6 + 0.8 * hs(seed, 12, q), kind: 'foam' });
+  }
+  return out;
+}
+
 /** The Warrior as the pictures' tool draws him. */
 function heroAt(e: End, k: number): HeroAt {
   const h = heroWorld(e, k);
@@ -448,7 +598,8 @@ function jawsKey(e: End, k: number, snap: boolean): { key: string; k: number } {
   if (k < SHOVEL.roar[1]) return { key: `VJ.${c}.r.${pad(k)}`, k };
   const f = k - SNAP.at;
   if (snap && f >= 0 && f < SNAP.frames) {
-    if (f > SNAP.twitch && f < SNAP.twitch + SNAP.strike + SNAP.held) return { key: `VJ.${c}.shut`, k: SNAP.at + SNAP.twitch + 1 };
+    if (f === SNAP.twitch + 1) return { key: `VJ.${c}.shut`, k: SNAP.at + SNAP.twitch + 1 };
+    if (f > SNAP.twitch + 1 && f < SNAP.twitch + SNAP.strike + SNAP.held) return { key: `VJ.${c}.clench`, k: SNAP.at + SNAP.twitch + 2 };
     return { key: `VJ.${c}.n.${pad(f)}`, k };
   }
   // (his gaping: a loop of a second)
@@ -505,17 +656,9 @@ export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
   const scrapes: ShovelFx['scrapes'] = [];
   SCRAPERS.forEach((Sc, i) => {
     const A = scraperAt(e, i, k);
-    // (the line its tip scored in the stone: from the far end to as far as it came, fading once it is off the stone)
-    const f = k - Sc.k0;
-    if (f >= SCRAPE.up && f < SCRAPE_FRAMES + 60) {
-      const at0 = scrapeAt(e, Sc.edge, 0, 0);
-      const far = -s * STONE_BOX.x1;
-      const reached = scraperAt(e, i, Math.min(k, Sc.k0 + SCRAPE.up + SWEEP - 1));
-      const xr = reached ? reached.X + at0[0] : far;
-      const yTip = at0[1];
-      const off = Sc.k0 + SCRAPE.up + SWEEP + SCRAPE.held + 1;
-      scores.push({ y: yTip, xa: far, xb: xr, s: (k - off) / EYE_FPS, seed: i * 17 + (e === 'left' ? 0 : 5) });
-    }
+    // (where its tip has dragged on the stone so far, frame by frame, each with how long ago: the game gouges it there, fading)
+    const pts = scorePath(e, i, k);
+    if (pts.length) scores.push({ seed: i * 17 + (e === 'left' ? 0 : 5), pts });
     if (!A) {
       arms.push(null);
       arms.push(null);
@@ -549,7 +692,7 @@ export function shovelFrame(shot: 's1' | 's2', k: number): EyeFrame {
     at,
     tell: k >= S.tell[0] && k < S.burst[1] ? sm(S.tell[0], S.tell[1], k) : null,
     burst: k >= S.burst[0] && k < S.burst[0] + 60 ? (k - S.burst[0]) / EYE_FPS : null,
-    pour: k >= S.burst[0] ? 1 - sm(S.burst[0] + 10, S.burst[0] + 50, k) : 0,
+    pour: pourAt(k),
     snap: snap && k >= SNAP.at + SNAP.twitch + 1 && k < SNAP.at + SNAP.twitch + 50 ? (k - SNAP.at - SNAP.twitch - 1) / EYE_FPS : null,
     scrapes,
     scores,

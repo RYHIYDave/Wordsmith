@@ -771,6 +771,10 @@ interface Now {
   slides: Array<{ k: number; z0: number; th: number; lk: number }>;
 }
 let NOW: Now | null = null;
+/** The inside of his mouth: his throat, the hollows of his jaws behind their faces, their raw gum. */
+const INSIDE = new Set<number>([M_THROAT, M_MAW, M_GUM]);
+/** Whether the Scene being painted is turned (`ColossusPose.orient`): seen from his side. */
+let TURNED = false;
 /** The point of his space being asked, while a jaw is asked in its own frame (what lies slumped at the water, and what runs and drips
  *  down him, is in his space). */
 let WX = 0;
@@ -968,8 +972,9 @@ function jawBase0(side: number, x: number, y: number, z: number): number {
 function hollow(side: number, x: number, y: number, z: number, a: number): number {
   const c = Math.max(jawBase(side, x, y, z) + 19 + (vn(x * 0.03, y * 0.03, z * 0.03, 175) - 0.5) * 14, a - 130);
   if (c > 12) return c;
-  // (ribbed across, like the roof of a mouth)
-  return c + 2.4 * Math.sin(z * 0.16 + vn(x * 0.02, y * 0.02, z * 0.01, 171) * 3.0) * sm01(6, 26, z);
+  // (ribbed across, like the roof of a mouth; turned, seen from his side, lumpy all over too, down to its lip at the water)
+  const lumps = TURNED ? 1.8 * Math.sin(y * 0.17 + z * 0.11 + 0.5) + 1.4 * Math.sin(z * 0.23 - y * 0.07 + 1.9) : 0;
+  return c + 2.4 * Math.sin(z * 0.16 + vn(x * 0.02, y * 0.02, z * 0.01, 171) * 3.0) * sm01(6, 26, z) + lumps;
 }
 
 /**
@@ -1651,6 +1656,9 @@ class Scene {
   readonly eyeK: number = 1;
   /** Leaning (`ColossusPose.lean`): how far forward his flesh at height `z` is carried; and his distances' bound's share, leaning. */
   readonly lean: { k: number; from: number; ease: number } | null = null;
+  /** Turned (`ColossusPose.orient`, his shovel): seen from his side, so that what of him is ruled flat, seen face on from the front, is
+   *  rounded and wanders. */
+  readonly turned: boolean = false;
   readonly leanK: number = 1;
   leanAt(z: number): number {
     const L = this.lean;
@@ -1668,6 +1676,8 @@ class Scene {
     this.drop = pose.drop;
     this.back = pose.back ?? 0;
     this.body = pose.body;
+    if (pose.orient) this.turned = true;
+    TURNED = this.turned;
     if (pose.lean && pose.lean.k) {
       this.lean = pose.lean;
       this.leanK = 1 / Math.hypot(1, pose.lean.k);
@@ -2068,7 +2078,10 @@ class Scene {
     const gap = N ? N.gap : 0;
     // (winding up: the lips of his seam bulging, swelling out along it)
     if (N && N.puff > 0) h -= N.puff * 7 * Math.exp(-(((a - CRACK - gap - 6) / 16) ** 2)) * sm01(4, 40, z);
-    const cut = CRACK + wander(c) + gap - a - (vn(x * 0.09, y * 0.09, z * 0.09, 173) - 0.5) * 5;
+    // (turned and open, seen from his side: the face lumpy, so that no flat of it shows edge on as a ruled line; shut, flat, pressed to
+    // the other)
+    const fl = TURNED && N ? sm01(0.3, 0.8, N.open) * (3 * Math.sin(y * 0.1 + z * 0.07 + 0.8) + 2 * Math.sin(z * 0.17 - y * 0.05 + 2.4) + 2 * Math.sin(x * 0.08 + z * 0.05 + 1.2)) : 0;
+    const cut = CRACK + wander(c) + gap - a - (vn(x * 0.09, y * 0.09, z * 0.09, 173) - 0.5) * 5 + fl;
     let d = smax(h, cut, 14);
     const cv = hollow(side, x, y, z, a - CRACK - gap);
     d = smax(d, -cv, 8);
@@ -2153,10 +2166,15 @@ class Scene {
       const top = 40 + 0.42 * Math.abs(x);
       // (its foot sloping forward low in the V, under his tongue's root, to the water at the front of his jaws: the floor of his mouth;
       // its back rounded, the back of his throat between his jaws seen from behind)
-      const yF = -21 + 124 * sm01(56, -6, z);
+      // (turned, seen from his side, along his across: its face bowed and lumpy up it and its top sagging and swelling along it, so that
+      // what is seen of their edges from the side wanders, never a ruled edge)
+      const T = this.turned;
+      const yF = -21 + 124 * sm01(56, -6, z) + (T ? 13 * Math.sin(z * 0.055 + 0.4) + 7 * Math.sin(z * 0.14 + 2.1) + 4 * Math.sin(z * 0.2 + 0.9) : 0);
       const back = ell(x, y, z, 0, -24, -10, 240, 40, 150);
-      let w = smax(Math.max(back, y - yF), Math.max(aL, aR) - 22, 8);
-      w = smax(w, z - top, 20);
+      let w = T ? smax(back, y - yF, 14) : Math.max(back, y - yF);
+      // (turned: where it is sunk into his jaws' faces, lumpy, never a ruled line)
+      w = smax(w, Math.max(aL, aR) - 22 + (T ? 4 * Math.sin(y * 0.09 + z * 0.05 + 0.3) + 3 * Math.sin(z * 0.13 + y * 0.04 + 1.7) + 3 * Math.sin(x * 0.07 + y * 0.03 + 0.6) : 0), 8);
+      w = smax(w, z - top - (T ? 12 * Math.sin(y * 0.06 + 0.9) + 6 * Math.sin(y * 0.15 + 2.3) : 0), 20);
       w = smax(w, -40 - z, 10);
       d = w;
     }
@@ -2168,7 +2186,9 @@ class Scene {
     d -= (vn(x * 0.05, y * 0.05, z * 0.05, 172) - 0.5) * 4;
     if (f) {
       // (inside him, wet; at its back, seen from behind, his hide)
-      f.mat = y < -46 ? M_FLESH : z < 8 && y > -16 ? M_MAW : M_THROAT;
+      // (turned, its back seen from the side: where his hide begins wanders over it, never a straight seam)
+      const yb = this.turned ? -50 + 9 * Math.sin(z * 0.045 + x * 0.021) + 16 * (vn(x * 0.04, y * 0.02, z * 0.04, 176) - 0.5) : -46;
+      f.mat = y < yb ? M_FLESH : z < 8 && y > -16 ? M_MAW : M_THROAT;
       // (deep in his gullet it glows; round its rim, faintly; and the throat round it, faintly, low down)
       f.glowK = g < 3 ? 0.4 + 0.6 * sm01(-30, -60, y) : Math.max(0.5 * sm01(22, 0, g), 0.44 * sm01(44, 0, z));
       f.lx = x;
@@ -2989,6 +3009,8 @@ function paint0(pose: ColossusPose, fr: Frame): ColossusPicture {
         else if (kind[kk] === 1 && mt[kk] !== M_STRAND && near[kk] - n0 > 9) {
           // (a tube running on over itself: one skin, no line, unless it truly crosses over itself further along)
           if (aid[k] >= 0 && aid[k] === aid[kk] && Math.abs(as[k] - as[kk]) < 70) continue;
+          // (turned, seen from his side: the inside of his mouth folding over itself, soft, going dark, no line)
+          if (S.turned && INSIDE.has(mt[k]) && INSIDE.has(mt[kk])) continue;
           s = true;
         }
       }
@@ -3100,15 +3122,21 @@ function hangingsMoving(px: Px, near: Float32Array, kind: Uint8Array, zh: Float3
         const len = Math.round(full * (0.86 + 0.14 * Math.sin((t / per + ph) * Math.PI * 2)));
         const beadAt = Math.round(frac(t / per + ph * 3) * len);
         const between = isMouth && m !== M_TONGUE;
+        // (turned, his shovel: the string bowed and swinging as he moves, never a ruled line)
+        const bow = TURNED ? Math.max(1.2, Math.min(4, len * 0.05)) * (h3(id, 7, 0, 110) < 0.5 ? -1 : 1) : 0;
+        const swing = TURNED ? (h3(id, 8, 0, 111) - 0.5) * 0.14 * len * (1 + 0.5 * Math.sin((t / per + ph) * Math.PI * 2)) : 0;
+        const dxs = (s: number): number => (TURNED ? Math.round(bow * Math.sin((Math.PI * s) / Math.max(1, len)) + (swing * s) / Math.max(1, len)) : 0);
         todo.push(() => {
           for (let s = 1; s <= len; s++) {
-            if (between && j + s < h && kind[(j + s) * w + i] === 1 && near[(j + s) * w + i] > n - 25) return;
-            if (!put(i, j + s, s === beadAt ? CO_SPIT[4] : s % 13 === 4 ? CO_SPIT[3] : CO_SPIT[1 + ((s >> 3) & 1)], n, z0 - s / zoom)) return;
-            if (s === beadAt) put(i + 1, j + s, CO_SPIT[2], n, z0 - s / zoom);
+            const x = i + dxs(s);
+            if (between && j + s < h && kind[(j + s) * w + x] === 1 && near[(j + s) * w + x] > n - 25) return;
+            if (!put(x, j + s, s === beadAt ? CO_SPIT[4] : s % 13 === 4 ? CO_SPIT[3] : CO_SPIT[1 + ((s >> 3) & 1)], n, z0 - s / zoom)) return;
+            if (s === beadAt) put(x + 1, j + s, CO_SPIT[2], n, z0 - s / zoom);
           }
-          put(i, j + len + 1, CO_SPIT[3], n, z0 - (len + 1) / zoom);
-          put(i + 1, j + len + 1, CO_SPIT[1], n, z0 - (len + 1) / zoom);
-          put(i, j + len + 2, CO_SPIT[4], n, z0 - (len + 2) / zoom);
+          const xe = i + dxs(len);
+          put(xe, j + len + 1, CO_SPIT[3], n, z0 - (len + 1) / zoom);
+          put(xe + 1, j + len + 1, CO_SPIT[1], n, z0 - (len + 1) / zoom);
+          put(xe, j + len + 2, CO_SPIT[4], n, z0 - (len + 2) / zoom);
         });
       } else {
         // A DRIP of his melting flesh: running longer, its bead swelling, until it lets go and falls; the neck springing back
